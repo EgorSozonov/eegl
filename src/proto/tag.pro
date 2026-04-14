@@ -1,0 +1,27 @@
+/* src/tag.c */
+CS did_set_tagfunc(OptionChange *cha);
+void free_tagfunc_option(void);
+int set_ref_in_tagfunc(int copyID);
+int do_tag(CS tag, Unt type, int count, Boole forceit, Boole verbose);
+void tag_freematch(void);
+void do_tags(Invocation *eap);
+int find_tags(CS pat, Unt flags, int mincount, CS buf_ffname, ExpandMatch *matches);
+void free_tag_stuff(void);
+int get_tagfname(TagName *tnp, int first, CS buf);
+void tagname_free(TagName *tnp);
+void tagstack_clear_entry(Taggy *item);
+int expand_tags(int tagnames, CS pat, ExpandMatch *matches);
+int get_tags(List *list, CS pat, CS buf_fname);
+void get_tagstack(Portal *wp, Bag *retBag);
+int set_tagstack(Portal *wp, Bag *d, int action);
+CS get_cscope_name(Expand *xp, int idx);
+void set_context_in_cscope_cmd(Expand *xp, CS arg, CommIndex id);
+void c_cscope(Invocation *invo);
+void c_scscope(Invocation *invo);
+void c_cstag(Invocation *invo);
+int cs_fgets(Byte *buf, int size);
+void cs_free_tags(void);
+void cs_print_tags(void);
+void cs_end(void);
+void f_cscope_connection(Var *argvars, Var *returnVar);
+/* eegl: set ft=c : */

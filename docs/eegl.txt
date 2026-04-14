@@ -1,0 +1,223 @@
+
+
+   [[[Free keys]]]
+
+Q in normal
+gh, gH g-Ctrl-H in Normal; Ctrl-G in Visual 
+R, gR in Normal mode; Insert in Insert mode. 
+r, gr in Visual mode
+
+
+Source code in src
+
+startEditingFile - open a file
+
+ex_docmd.c - исполнение команд
+
+normal.c - исполнение команд
+
+input.c - чтение ввода из разных источников
+
+map.c - "nnoremap" etc
+
+vgetorpeek() // mappings get resolved here
+safe_vgetc()
+do_cmdkey_command()
+K_COMMAND, K_SCRIPT_COMMAND
+
+// structs in structs.h
+// common definitions in vim.h
+// features in auto/config.h
+if no_mapping (defined in globals.h)
+
+// keymaps
+input.c handleMapping()
+
+//is Ctrl or Alt pressed? modMaskG
+
+// Raw keyboard input:
+ui.c inchar_loop()
+
+// Some sort of transformation of input
+input.c:fix_input_buffer()
+
+input.c:vgetc() // Collects the bytes of a multibyte character into the whole character.
+
+term.c:out_flush() // Write to terminal
+
+
+// input -> normalAction -> safe_vgetc -> vgetc -> input.c:vgetorpeek
+// vgetorpeek -> input:ingestChar -> ui.ui_inchar -> os_unix.mch_inchar -> ui.inchar_loop
+
+// !! the rawest of input
+term.c check_term_codes 
+
+// ui_inchar - still raw bytes. inchar() does something?
+
+
+// command aliases/abbreviations like "Y"
+normal.c:nv_optrans()
+
+// WHEN action from keyboard
+normal.c:normalAction -> findAction
+// WHEN command
+normal.c:nv_colon -> do.c doCommand -> findCommand
+
+// searching for help files
+help.c
+
+// line creation, used in o/O:
+change.c:open_line
+
+// command parsing and execution
+ex_docmd.c:do_cmdline()
+
+// "." (last command)
+repeatCommlineG
+
+
+ml_append etc - functions from memline.c, direct line manipulation
+
+tag.c:get_tagfname - searching for tags files
+
+globals.h mod_mask - current key modifiers (Ctrl etc)
+input:merge_modifyOtherKeys - handles Ctrl and other modifier keys in input
+
+keymap.h - special character keys
+nv_cmds.h - normal mode commands
+
+edit.c:ins_bs - backspace
+
+termdefs.h - definitions for terminal
+
+// opening files
+main.c -> create_windows -> arglistIngest -> bufferOpen -> buflistNew
+
+// switching to another buffer
+ex_cmds -> do_ecmd -> window.c enterWinExt
+
+// shell calling
+misc.c:call_shell
+
+// paste without indenting
+insert.c:bracketed_paste
+
+// autoformatting after text inserted or deleted
+textformat.c:auto_format
+
+// search pattern highlighting
+draw.c start_search_hl
+
+search.c save_re_pat
+
+last_pat_prog
+
+scrolloff - scroll so that there are several lines above and below the cursor position
+
+
+// vimgrep
+location.c:vimgrepProcessFiles
+
+// making lists of files from search patterns
+fileio.c:unix_expandpath
+
+// autocmd types defined 
+script.c:autoEvents
+
+// evaluation: logical "or" (||)
+eval.c:eval2
+
+//commline command line
+script.c:openCommPort()
+
+
+// putting text
+normal.c:nv_put_opt()
+
+// deleting text
+ops.c:op_delete
+
+// Ctrl-F in command mode (i.e. after ":") - edit history of commands as a buffer and run them 
+// with <Enter>
+script.c:openCommPort
+
+// CSI sequences from terminal
+map.c:vim_strsave_escape_csi
+input.c:checkSimplifyModifier
+
+prompt-buffers - type in input for a job
+
+footer (like "123L, 456B"):  usercomm.c redrawCommline
+
+// signs
+mark.c
+
+// emsg
+message.c
+
+// syntax highlighting hiliting
+syntax.c:syn_current_attr
+
+//autocommand create, delete, replace
+script.c:doAutoEvent
+
+//let or unlet a variable
+eval.c:letImpl()
+eval.c:unletImpl()
+
+// variables local to a buffer
+b.bVars
+
+// finding a var depending on whether it's global, buffer-local etc
+eval.c:findVarHashTable()
+
+// expand file path with globs
+script.c:globpath
+
+// source a script file
+script.c:scriptRunFileInternal()
+
+//startup scripts
+main.c:sourceStartupScripts()
+
+//syntax coloring
+hilite.c:getCurrentDeco()
+
+// Get pointer to actual line contents for a buffer and line number
+memory.c:memGetLine()
+
+
+
+//// ideas
+//////////
+d<space> - delete all the spaces until another character.
+"dot" should repeat the last used macro, not the last action from it.
+A command-line option to open the program only if the file exists.
+Just like there are text objects to select or copy text, there should be to replace text.
+   As in, "ri(" = "replace insides of parens with what's in the register"
+A command to get the highlight group under the cursor 
+A command to generate a UUID (v7 by default, v4 if passed an argument)
+If we start searching and find something but add another letter and now there are not matches, do
+   not jump back to the beginning. Stay at the last match there was. This should be an option. 
+Simple command to redirect other command's output to the current buffer. (redir?) 
+Unmodifiable flag on the portal too. For immutable views into data, like JSON pretty viewers
+When selected in linewise mode, "a," to add a comma to every line, `s"` to surround every line 
+   with quotes
+For commands that open a temp portal like `:reg`, `:ls`, make exclamation variants that append
+   lines after cursor instead
+Option to set max file size where syntax higlighting is on by default
+Options for cursor shapes (one for insert mode, one for other modes)
+
+//// regenerations to build code
+make proto
+make indices
+make depend
+
+
+ * +clientserver	Remote control via the remote_send() function
+ *			and the --remote argument
+ 
+ * +persistent_undo	'undofile', 'undodir' options, :wundo and :rundo, and
+ * implementation.
+ */
+

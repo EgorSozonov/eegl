@@ -1,0 +1,309 @@
+
+[[[Features auto-enabled]]]
+
+[+] FEAT_QUICKFIX
+[+] FEAT_EVAL
+[+] FEAT_TABPANEL
+[+] FEAT_DIFF
+[+] FEAT_FOLDING
+[+] FEAT_SYN_HL
+[+] FEAT_FIND_ID
+[+] FEAT_TERMINAL
+[+] FEAT_AUTOSHELLDIR
+[+] FEAT_JOB_CHANNEL
+[+] FEAT_CLIPBOARD
+[+] FEAT_FOLDING
+[+] FEAT_LINEBREAK
+[+] FEAT_BYTEOFF
+[+] HAVE_SANDBOX
+[+] FEAT_COMPL_FUNC
+[+] FEAT_SESSION
+[+] FEAT_PROP_POPUP
+[+] FEAT_SIGNS
+[+] UNIX
+[+] FEAT_DND
+[+] FEAT_TERMGUICOLORS
+[+] FEAT_SPELL
+[+] FEAT_BROWSE_CMD
+[+] FEAT_VIMINFO
+[+] FEAT_TIMERS
+[+] FEAT_RELTIME
+[+] FEAT_BEVAL_TERM
+[+] FEAT_BEVAL
+[+] FEAT_MULTI_LANG
+[+] FEAT_STL_OPT
+[+] FEAT_SEARCH_EXTRA
+[+] FEAT_CON_DIALOG
+[+] FEAT_GETTEXT
+[+] FEAT_TERMRESPONSE
+[+] FEAT_CLIENTSERVER
+[+] FEAT_PERSISTENT_UNDO
+[+] FEAT_XATTR
+[+] FEAT_FILTERPIPE
+[+] FEAT_WRITEBACKUP (seems to not affect anything, even in old Vim)
+[+] p_wb ("writebackup" option) - make it always on
+[+] HAVE_TGETENT
+[+] TERMINFO
+[+] FEAT_CSCOPE
+[+] kitty_keyboard_protocol (CSU u sequences)
+[+] FEAT_TERM_POPUP_MENU
+[+] FNAME_ILLEGAL
+[+] CURSOR_SHAPE
+[+] HAVE_SETENV
+[+] MESSAGE_QUEUE
+[+] HAS_MESSAGE_WINDOW
+[+] VIM_BACKTICK
+
+
+[[[Deleted cruft]]]
+
+[-] cpoptions
+[-] p_ro, readonly mode (merged into unmodifiable)
+[-] readonlymode, BufLocal.readonly - finish merging them into unmodifiable
+[-] FEAT_VARTABS vartabstop (tabs that have different widths in same document)
+[-] FEAT_DIGRAPHS digraphs (replace with action in popup menu?)
+[-] input methods (XIM, IME)
+[-] FEAT_KEYMAP
+[-] FEAT_SOUND
+[-] FEAT_MENU
+[-] BACKSLASH_IN_FILENAME
+[-] FEAT_CONCEAL
+[-] AMIGA
+[-] VMS
+[-] MSWIN
+[-] FEAT_GUI
+[-] VIMDLL
+[-] FEAT_TOOLBAR
+[-] FEAT_VTP
+[-] FEAT_MZSCHEME
+[-] FEAT_BROWSE
+[-] FEAT_WAK
+[-] beeping (misc.c) 
+[-] FEAT_AUTOCHDIR
+[-] FEAT_BEVAL_TIP
+[-] 'compatible'
+[-] FEAT_MOUSESHAPE
+[-] FEAT_RENDER_OPTIONS
+[-] FEAT_PROFILE
+[-] -C, -N flags
+[-] encodings other than UTF-8
+[-] USE_ICONV, DYNAMIC_ICONV
+[-] USE_SYSTEM
+[-] pastetoggle
+[-] paste mode
+[-] tearoff
+[-] popups in mousemodel, and the mousemodel option itself
+[-] FEAT_PRINTER, FEAT_POSTSCRIPT, hardcopy
+[-] FEAT_SIGN_ICONS
+[-] SUN_SYSTEM
+[-] ELAPSED_FUNC
+[-] p_write
+[-] Mac OS aka the Walled Garden OS
+[-] Select mode
+[-] octal in var.c
+[-] Ex modes
+[-] dlopen (for improvement of security - no runtime code loading)
+[-] Select mode
+[-] Replace mode
+[-] Visual Replace character pending mode
+[-] :cgetfile, :cgetbuffer, :lgetfile, :lgetbuffer
+[-] :cdo, :cfdo (use :ldo, :lfdo instead)
+[-] "cedit" option (just have Ctrl-F as the regular mapping for opening command portal)
+[-] "insertmode" option, p_im (silly thing where Vim pretends to be "modeless")
+[-] "more files to edit" error
+[-] vim9script
+[-] p_cpm (clipmethod)
+[-] superfluous text decorations like HL_STANDOUT, HL_UNDERDOUBLE
+[-] "magic" option (p_magic), :smagic and :snomagic commands
+[-] joinspaces option (p_js) (two spaces after sentence ends when J)
+[-] backspace option (p_bs)
+[-] belloff option (p_bo)
+[-] bioskey option
+[-] macatsui option
+[-] conskey option
+[-] termwintype option (p_twt)
+[-] guipty option
+[-] guitablabel option
+[-] guitabtooltip option
+[-] hkmap, hkmapp options
+[-] p_hl (highlight option)
+[-] modelines (b_p_ml, modelines (p_mls), modelineexpr (p_mle)
+[-] ldo, lgrep, lmake etc
+[-] MCH_UPDATE_CURSOR (some Windows thing)
+[-] USE_ON_FLY_SCROLL (some GUI thing)
+[-] rightleft, rightleftcmd options (right-to-left viewing)
+[-] Solaris mentions
+[-] ACL (Git will provide access control, no need to do it at file level)
+[-] tabline (tabpanel is enough)
+[-] p_tbi (always use system terminfo)
+[-] cygwin
+[-] class_T, cctx_T (remnants of Vim9script)
+[-] p_ff, p_ffs "file formats" (different line endings between Unix and Dos)
+[-] p_pi (preserveindent)
+[-] p_ci (copyindent)
+[-] encoding conversions (p_enc, VimConv, vc_type ...)
+[-] p_exrc (loading scripts from some extra place)
+[-] selectmode option (p_slm)
+[-] p_rtp (runtimepath) and p_pp (packpath)
+[-] scriptversion
+[-] p_wmw, p_wmh (fixed minimal portal width and height at 10)
+[-] clipmethod, clipreset
+[-] p_icon, p_iconstring
+[-] p_vb (visual bell)
+[-] crypto-stuff, DYNAMIC_SODIUM (not the Unix way, encryption is an orthogonal concern)
+[-] virtualedit (baked in the "block" value for block visual mode)
+[-] p_eb (ring bell on errors)
+[-] p_fixeol, p_eol (auto end of line at file end)
+[-] p_fdn (foldnestmax, fixed at 32)
+[-] foldcolumn (weird markers for nested folds on the left)
+[-] p_ambw (ambiwidth) and p_emoji
+[-] p_ed (edcompatible option)
+[-] p_gd (gdefault - now "g" is on by default in substitutions)
+[-] p_sr (shift round - indent with "<" and ">" always rounds to multiples of shiftwidth)
+[-] p_smc (max col for syntax coloring, fixed at 256)
+[-] p_cdh (cd home, no effect on Unix)
+[-] p_wiv (weirdinvert, some legacy thing)
+[-] p_sc (fixed at "true", this just means commands being typed are shown at bottom line)
+[-] p_cb (clipboard)
+[-] p_sn (short, MSDOS-style file names)
+[-] p_sta (smarttab), p_ts (tab stop), p_sts (softtabstop)
+[-] window title & icon
+[-] restricted, check_restricted()
+[-] suspending, c_stop (useless)
+[-] p_bomb (Byte-order mark, evil)
+[-] p_dir (directory, location for swap files). Fixed it at ~/.local/state/eegl
+[-] p_mat (matchtime, ui delay in long searches)
+[-] p_hf (name of main help file, hardcoded)
+[-] p_section, p_para (nroff macro support)
+[-] p_window (some weird Vi-compatibility thing)
+[ ] p_more? (weird Vi-compatible crap) (but there's msg printing code in channel.c that exploits it)
+[-] bufhidden (cruft that could close a buffer if there are no portals into it)
+[-] weird mouse protocols (FEAT_MOUSE_XTERM, FEAT_MOUSE_JSB etc)
+[-] manual foldmethod
+[-] syntax foldmethod
+[-] p_xtermcodes
+[-] p_lisp, p_lop, p_lispwords (lisp)
+[-] p_pvp (preview popups, always on)
+[-] p_ek (esckeys, always on)
+[-] p_tpm (max number of tabs)
+[-] p_to (tilde as operator)
+[-] p_ws (searches wrap around file end)
+[-] p_uc (writing to swap files after this many chars)
+[-] p_qe (quoteescape character, it's always the backslash)
+[-] p_fml (min foldable number of lines, useless)
+[-] p_shq, p_sxq, (shellquote, shellxquote - useful only on Shindows)
+[-] p_sxe  (shellxescape - useful only on Shindows)
+[-] p_kpc (keyprotocol option for terminal protocol weirdness)
+[-] p_mmd (max mapping recursion, fixed at 128 in the MAX_MAPPING_RECURSION constant)
+[-] p_mis (menuitems, unused)
+[-] [endoffile], buffer-local cruft from MS-DOS
+[-] p_ep (equalprg, weird useless thing)
+[-] bufOpts.number (always on, always a column of line numbers)
+[-] lisp indenting
+[-] [cursorlineopt] (superfluous)
+[-] p_nf (numberformats, fixed at decimal, alfa and hexadecimal)
+[-] p_tx (textmode, obsolete)
+[-] p_mouse (mouse enablement)
+[-] p_lm (langmenu)
+[-] p_fcl (foldclose, always on: if you don't want it, just make [foldlevel] big)
+[-] p_sel (selection, fixed at "inclusive" - the default)
+[-] p_ta (textauto, obsolete)
+[-] p_terse (terse, whatever)
+[-] p_tf (ttyfast, always on)
+[-] p_warn (warn, always on)
+[-] p_spk (splitkeep, fixed at "cursor")
+[-] p_csqf (cscopequickfix, fixed "all turned on)
+[-] p_prompt (useless)
+[-] p_ru (ruler, always on)
+[-] p_secure (secure, does nothing because no Ex mode anymore)
+[-] p_dy, dy_flags (display, something weird about last line displayin')
+[-] p_tl (taglength, useless)
+[-] p_tr (tagrelative, always on)
+[-] p_mmt (maxmemtot, this isn't Java - we shouldn't limit memory!)
+[-] p_sm (showmatch, some useless thing for matching brackets)
+[-] p_isp (isprint, weird character printing)
+[-] p_ls (laststatus, last portal will have no status line)
+[-] p_pm (patchmode, weird extra type of backup)
+[-] p_lnr (langnoremap, duplicate of langremap)
+[-] p_remap (allow mappings work recursively. Always on, even the official docs forbid disabling it)
+[-] p_ttym (some ancient mouse in terminal support, didn't affect anything)
+[-] p_cmp (casemap - weird collation rules, unused)
+[-] p_hid (hidden - buffers become hidden instead of closed, always on)
+[-] p_mod (modified - the fact a buffer is modified shouldn't be settable by a script)
+[-] p_jop (jumpoptions - fixed at "stack")
+[-] p_report
+[-] p_modifiable (moved to buffer options)
+[-] p_sh (shell, fixed at "bash")
+[-] p_tbi (ttybuiltin, it's fixed at "use only external terminfo")
+[-] p_cino (cinoptions, cindent options)
+[-] spellCapCheck, spellCapCheckProg
+[-] cinkeys (for cindent)
+[-] Portal.futureBufOpts
+[-] P_SECURE, was_set_insecurely for options (complexity for not real gain). Sandbox too
+[-] :mkview, p_vop (weird saving of just one portal, and the @viewoptions)
+[-] p_sop (sessionoptions, always on)
+[-] p_km (keymodel, Windows compatibility selections, fixed at fully ON)
+[-] p_lpl (loadplugins, superfluous)
+[-] sandboxG, secureG (security theater, nobody cares about this crap)
+[-] +-, -= etc for options (superfluous)
+[-] p_ar (autoread, always on)
+[-] @filetype, @syntax (shouldn't be an option)
+[ ] @previewport - shouldn't be an option, just a single global portal
+[ ] s: variables
+[ ] need_highlight_changed?
+[ ] p_writeany
+[ ] forceit?
+[ ] keymodel? (p_km)
+[ ] alloc_type?
+[ ] regex match syntax coloring ?
+[-] tuples (too complex for a simple dynamic scripting language)
+[-] EVENT_OPTIONSET (too hard)
+[ ] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
+[ ] cindent (smartindent is enough)
+
+tag.c:do_tag (weird matches is static, also newMatches?)
+
+
+   [[[Enhancements]]]
+
+[+] Y is same as y$
+[+] o, O do not exit normal mode, and apply auto-indent
+[+] %s (and the substitute command in general) does NOT clobber the last, highlighted search
+[+] Do not clobber registers when pasting in Visual mode
+[+] asynchronous "make"
+[+] the :edit command should work with multiple files `:e a.txt b.txt` 
+[+] Skip the quickfix buffer when looping through buffers
+[+] The :S command: a case-sensitive version of :s substitution
+[+] Comments in Vimscript with "//"
+[+] :hi prints hilite groups sorted by name
+[+] replace CUT_BUFFER0 in X11 with PRIMARY or CLIPBOARD (clipboard.c) and remove string_convert()
+[+] Tab in insert mode enters Normal Mode
+[+] :close closes the program if there are no more portals
+[+] :get to get option values (complementing :set)
+[ ] :commands to get the list of previous commands (what is Ctrl-F by default)
+[+] "==" for strings in scripts is always case-sensitive. Doesn't depend on any options anymore!
+[~] `"10abc" + 2` is not 12 anymore, but an evaluation error - will be corrected by Wren
+[ ] Correct tab handling (insert tabs only at the beginning of a line)
+[?] Command to comment or uncomment out a block
+[+] sane discriminated unions in options.c instead of byte casting 
+[+] move @signcolumn option from string to bool
+[-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
+[ ] "rX", char replacing, shoult not set the "modified" flag on a buffer if previous char was same
+[ ] finish implementing @smoothscroll?
+[ ] "gg" to a line should open all folds this line is in
+[ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down
+[ ] Replace terminfo use with XTGETTCAP
+[ ] Growable strings (search for `TODO growable string`)
+[ ] Remove internet connectivity to massively increase security
+[ ] Replace the "messages" mess with popup portals
+[ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
+   a general way to create auto-updateable views of buffers?
+[ ] Frozen options mode? (options cannot be changed after the init script)
+
+   [[[Bugs to fix]]]
+
+[+] o on the last line after :%s writes gibberish
+[+] when searching, do not show "search hit bottom" message
+[+] saving deletes the file
+[+] C-f in commline opens wrong portal
+[ ] clipboard.c:get_reg_contents - can return a CString or a List, but no type tag. needs fixing

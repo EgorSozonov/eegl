@@ -1,0 +1,18 @@
+/* src/main.c */
+int highest_patch(void);
+void c_version(Invocation *invo);
+void maybe_intro_message(void);
+void c_intro(Invocation *eap);
+int is_not_a_term(void);
+int is_not_a_term_or_gui(void);
+void free_vbuf(void);
+void may_trigger_safestate(int safe);
+void state_no_longer_safe(char *reason);
+int get_was_safe_state(void);
+void may_trigger_safestateagain(void);
+int work_pending(void);
+void mainLoop(int inCommPort);
+void exitEegl(int exitval);
+void mainerr_arg_missing(CS str);
+void __bp(void);
+/* eegl: set ft=c : */
