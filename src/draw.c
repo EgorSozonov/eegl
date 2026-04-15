@@ -3162,15 +3162,6 @@ check_chars_options(CS newVal) {
 //- When messages scroll the screen up, msg_scrolled will be set and drawUpdateScreen() called to 
 //  redraw
  
-struct SpellVars {
-   int      hasSpell;       // drawn portal has spell checking
-   int      unchanged;       // not updating for changed text
-   int      maxCheckedCol;    // column in "checked_lnum" up to which there are no spell errors
-   LineNr   checkedLnum;   // line number for "checked_col"
-   int      capCol;       // column to check for Cap word
-   LineNr   capColLnum;    // line number for "cap_col"
-};
-
 
 private FoldInfo portFoldS;   // info for folds
 
@@ -4409,19 +4400,11 @@ updatePortal(Portal *po) {
 
    lnum = po->topLine;   // first line shown in portal
 
-   SpellVars spv;
-   // Initialize spell related variables for the first drawn line.
-   CLEAR_FIELD(spv);
-   if (isSpellcheckingEnabledInPortal(po)) {
-      spv.hasSpell = TRUE;
-      spv.unchanged = mod_top == 0;
-   }
-
-    // Update all the portal rows.
-    idx = 0;      // first entry in lines[].height
-    row = 0;
-    srow = 0;
-    for (;;) {
+   // Update all the portal rows.
+   idx = 0;      // first entry in lines[].height
+   row = 0;
+   srow = 0;
+   for (;;) {
       // stop updating when reached the end of the  portal (check for _past_
       // the end of the portal is at the end of the loop)
       if (row == (int)po->height) {
@@ -4609,7 +4592,6 @@ updatePortal(Portal *po) {
             po->lines[idx].isFolded = true;
             po->lines[idx].lastBookLnum = lnum + fold_count;
             did_update = DID_FOLD;
-            spv.capColLnum = 0;
          } ei (idx < po->validLines
              && po->lines[idx].isValid
              && po->lines[idx].bookLnum == lnum
@@ -4626,7 +4608,7 @@ updatePortal(Portal *po) {
             if (syntax_last_parsed != 0 && syntax_last_parsed + 1 < lnum && syntax_present(po))
                syntax_end_parsing(po, syntax_last_parsed + 1);
             // Display one line.
-            row = drawLineOnScreen(po, lnum, srow, po->height, 0, &spv);
+            row = drawLineOnScreen(po, lnum, srow, po->height, 0);
 
             po->lines[idx].isFolded = false;
             po->lines[idx].lastBookLnum = lnum;
@@ -4660,7 +4642,7 @@ updatePortal(Portal *po) {
          if (fold_count != 0)
             fold_line(po, fold_count, &portFoldS, lnum, row);
          else
-            (void)drawLineOnScreen(po, lnum, srow, po->height, po->lines[idx].height, &spv);
+            (void)drawLineOnScreen(po, lnum, srow, po->height, po->lines[idx].height);
          }
 
          // This line does not need to be drawn, advance to the next one.
@@ -4669,7 +4651,6 @@ updatePortal(Portal *po) {
             break;
          lnum = po->lines[idx - 1].lastBookLnum + 1;
          did_update = DID_NONE;
-         spv.capColLnum = 0;
       }
 
       if (lnum > buf->mem.lineCount) {
@@ -5825,7 +5806,6 @@ typedef struct {
    int* changeStart;
    int* changeEnd;
    Boole needDecoFromTerm;
-   SpellVars* spv;
    int currCheckedCol;
    int nextLineCol;
    Arr(Byte) nextLine; //len = (SPWORDLEN * 2);
@@ -6246,7 +6226,6 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
    Boole onLastCol = false;
    int prevSyntaxCol = -1;   // column of prevCharDeco
    Decoration prevCharDeco = EMPTY_DECO;   // syntaxDeco at prevSyntaxCol
-   Boole canSpell = false;
    int multibLength = 1;      // multi-byte byte length
    
    // Repeat for the whole displayed line.
@@ -6688,10 +6667,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   // at same column again
                   syntaxDeco = prevCharDeco;
                else {
-                  canSpell = true;
-                  syntaxDeco = syntGetDeco(
-                     (ColNr)m->bufferLen, c->spv->hasSpell ? &canSpell : NULL, FALSE
-                  );
+                  syntaxDeco = syntGetDeco((ColNr)m->bufferLen, FALSE);
                   prevSyntaxCol = m->bufferLen;
                   prevCharDeco = syntaxDeco;
                }
@@ -6929,68 +6905,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          m->ptr++;
 
          if (c->hasExtraHiliting) {
-            // Check spelling (unless at the end of the line). Only do this when there is no 
-            // syntax hiliting, the @Spell cluster is not used or the current syntax item
-            // contains the @Spell cluster.
             m->bufferLen = (long)(m->ptr - m->line);
-            if (c->spv->hasSpell 
-                  && m->bufferLen >= m->wordEnd 
-                  && m->bufferLen > c->currCheckedCol
-            ) {
-               m->spellDeco = EMPTY_DECO;
-               // do not calculate cap_col at the end of the line or when only white space is 
-               // following
-               if (c != 0 && (*skipwhite(prev_ptr) != ZERO)
-                     && (!m->syntaxHilitingOn || canSpell)
-               ) {
-                  Unt spell_hlf = 0;
-
-                  m->bufferLen -= multibLength - 1;
-
-                  // Use nextLine[] if possible, it has the start of the next line concatenated
-                  Byte   *p;
-                  if ((prev_ptr - m->line) - c->nextLineCol >= 0)
-                     p = c->nextLine + (prev_ptr - m->line) - c->nextLineCol;
-                  else
-                     p = prev_ptr;
-                  c->spv->capCol -= (int)(prev_ptr - m->line);
-                  int len = spell_check(
-                        port, p, &spell_hlf, &c->spv->capCol, c->spv->unchanged
-                  );
-                  m->wordEnd = m->bufferLen + len;
-
-                  // In Insert mode only hilite a word that doesn't touch the cursor.
-                  if (spell_hlf != 0
-                     && (stateG & MODE_INSERT)
-                     && port->cursor.lnum == c->lnum
-                     && port->cursor.col >= (ColNr)(prev_ptr - m->line)
-                     && port->cursor.col < (ColNr)m->wordEnd)
-                  {
-                      spell_hlf = 0;
-                      spell_redraw_lnum = c->lnum;
-                  }
-
-                  if (spell_hlf == 0 && p != prev_ptr && (p - c->nextLine) + len > c->nextLineInd) {
-                     // Remember that the good word continues at the start of the next line.
-                     c->spv->checkedLnum = c->lnum + 1;
-                     c->spv->maxCheckedCol = (p - c->nextLine) + len - c->nextLineInd;
-                  }
-
-                  // Turn index into actual decorations.
-                  if (spell_hlf != 0)
-                     m->spellDeco = getFullDecoration(spell_hlf);
-
-                  if (c->spv->capCol > 0) {
-                     if (p != prev_ptr && (p - c->nextLine) + c->spv->capCol >= c->nextLineInd) {
-                        // Remember that the word in the next line must start with a capital.
-                        c->spv->capColLnum = c->lnum + 1;
-                        c->spv->capCol = p - c->nextLine + c->spv->capCol - c->nextLineInd;
-                     } else
-                        // Compute the actual column.
-                        c->spv->capCol += (prev_ptr - m->line);
-                  }
-               }
-            }
             if (m->spellDeco.hiId != SHORT) {
                if (!sc.decoPriority)
                   m->charDeco = combineDecorations(m->charDeco, m->spellDeco);
@@ -7009,7 +6924,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                     && EE_ISBREAK(currSymb) && !EE_ISBREAK((int)*m->ptr)
             ){
                 int mb_off = mb_head_off(m->line, m->ptr - 1);
-                Byte* p = m->ptr - (mb_off + 1);
+                CS p = m->ptr - (mb_off + 1);
                 CharTableSize cts;
 
                 init_chartabsize_arg(OUT &cts, port, c->lnum, m->vcol - c->vcolFirstChar, m->line, p);
@@ -7328,8 +7243,6 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 //Display line "lnum" of portal "po" on the screen. Start at row "startrow", stop when "endrow"
 //is reached. When only updating the number column, "drawingOnlyNumberCol" is set to the height of the 
 //line, otherwise it is set to 0.
-//"spv" is used to store information for spell checking, kept between sequential calls for the 
-//same portal. po->virtCol needs to be valid.
 //
 //Return the number of last row the line occupies.
 int
@@ -7338,8 +7251,7 @@ drawLineOnScreen(
    LineNr   lnum,
    int      startrow,
    int      endrow,
-   int      drawingOnlyNumberCol,
-   SpellVars* spv
+   int      drawingOnlyNumberCol
 ){
    DrawCtx   m;     // mutable context between the massive functions here
    Subcontext c;    // immutable context
@@ -7560,59 +7472,6 @@ drawLineOnScreen(
    if (m.lineDeco.flags != 0)
       c.areaHiliting = true;
 
-   if (spv->hasSpell && drawingOnlyNumberCol == 0) {
-      // Prepare for spell checking.
-      c.hasExtraHiliting = true;
-
-      // When a word wrapped from the previous line the start of the current line is valid.
-      if (lnum == spv->checkedLnum)
-         c.currCheckedCol = spv->maxCheckedCol;
-      ei (lnum != spv->capColLnum)
-         spv->capCol = -1;
-      spv->checkedLnum = 0;
-
-      // Get the start of the next line, so that words that wrap to the
-      // next line are found too: "et<line-break>al.".
-      // Trick: skip a few chars for C/shell/Eegl comments
-      nextLine[SPWORDLEN] = ZERO;
-      if (lnum < port->book->mem.lineCount) {
-         m.line = memGetLine(port->book, lnum + 1, FALSE);
-         spell_cat_line(nextLine + SPWORDLEN, m.line, SPWORDLEN);
-      }
-      m.line = memGetLine(port->book, lnum, FALSE);
-
-      // If current line is empty, check first word in next line for capital.
-      m.ptr = skipwhite(m.line);
-      if (*m.ptr == ZERO) {
-         spv->capCol = 0;
-         spv->capColLnum = lnum + 1;
-      }
-      // For checking first word with a capital skip white space.
-      ei (spv->capCol == 0)
-         spv->capCol = m.ptr - m.line;
-
-      // Copy the end of the current line into nextLine[].
-      if (nextLine[SPWORDLEN] == ZERO) {
-         // No next line or it is empty.
-         c.nextLineCol = MAXCOL;
-         c.nextLineInd = 0;
-      } else {
-          m.bufferLen = memGetBookLen(port->book, lnum);
-          if (m.bufferLen < SPWORDLEN) {
-            // Short line, use it completely and append the start of the next line
-            c.nextLineCol = 0;
-            mch_memmove(nextLine, m.line, (Unt)m.bufferLen);
-            STRMOVE(nextLine + m.bufferLen, nextLine + SPWORDLEN);
-            c.nextLineInd = m.bufferLen + 1;
-         } else {
-            // Long line, use only the last SPWORDLEN bytes.
-            c.nextLineCol = m.bufferLen - SPWORDLEN;
-            mch_memmove(nextLine, m.line + c.nextLineCol, SPWORDLEN);
-            c.nextLineInd = SPWORDLEN + 1;
-         }
-      }
-   }
-
    m.line = memGetLine(port->book, lnum, FALSE);
    m.ptr = m.line;
 
@@ -7786,37 +7645,6 @@ drawLineOnScreen(
       // When skipCol is non-zero, first line needs @showbreak
       if (port->bookOpts.wrap)
          m.need_showbreak = TRUE;
-      // When spell checking a word we need to figure out the start of the
-      // word and if it's badly spelled or not.
-      if (spv->hasSpell) {
-         ColNr linecol = (ColNr)(m.ptr - m.line);
-         Unt spell_hlf = 0;
-
-         pos = port->cursor;
-         port->cursor.lnum = lnum;
-         port->cursor.col = linecol;
-         int len = spell_move_to(port, FORWARD, SMT_ALL, TRUE, &spell_hlf);
-
-         // spell_move_to() may call ml_get() and make "line" invalid
-         m.line = memGetLine(port->book, lnum, FALSE);
-         m.ptr = m.line + linecol;
-
-         if (len == 0 || (int)port->cursor.col > linecol) {
-            // no bad word found at line start, don't check until end of a word
-            spell_hlf = 0;
-            m.wordEnd = (int)(spell_to_word_end(m.ptr, port) - m.line + 1);
-         } else {
-            // bad word found, use decorations until end of word
-            m.wordEnd = port->cursor.col + len + 1;
-            if (spell_hlf != 0)
-               m.spellDeco = getFullDecoration(spell_hlf);
-         }
-         port->cursor = pos;
-
-         // Need to restart syntax hiliting for this line.
-         if (m.syntaxHilitingOn)
-            syntaxStartLine(port, lnum);
-      }
    }
 
    // Correct hiliting for cursor that can't be disabled. Avoids having to check this for each character
@@ -7872,7 +7700,6 @@ drawLineOnScreen(
    c.changeStart = &changeStart;
    c.changeEnd = &changeEnd;
    c.nextLine = nextLine;
-   c.spv = spv;
    
    drawLineLoop(&m, &sc, port);
 

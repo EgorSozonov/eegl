@@ -122,8 +122,6 @@ private void f_settagstack(Var *argvars, Var *returnVar);
 private void f_sha256(Var *argvars, Var *returnVar);
 private void f_shellescape(Var *argvars, Var *returnVar);
 private void f_shiftwidth(Var *argvars, Var *returnVar);
-private void f_spellbadword(Var *argvars, Var *returnVar);
-private void f_spellsuggest(Var *argvars, Var *returnVar);
 private void f_split(Var *argvars, Var *returnVar);
 private void f_srand(Var *argvars, Var *returnVar);
 private void f_submatch(Var *argvars, Var *returnVar);
@@ -9483,8 +9481,6 @@ private BuiltinFn globalFunctions[] = {
    {S"sinh",      1, 1, FEARG_1,          &f_sinh},
    {S"slice",      2, 3, FEARG_1,         &f_slice},
    {S"sort",      1, 3, FEARG_1,          &f_sort},
-   {S"spellbadword",   0, 1, FEARG_1,     &f_spellbadword},
-   {S"spellsuggest",   1, 3, FEARG_1,     &f_spellsuggest},
    {S"split",      1, 3, FEARG_1,         &f_split},
    {S"sqrt",      1, 1, FEARG_1,           &f_sqrt},
    {S"srand",      0, 1, FEARG_1,       &f_srand},
@@ -14554,117 +14550,8 @@ f_shiftwidth(Var *argvars UNUSED, Var *returnVar){
     returnVar->number = get_sw_value(curBook);
 }
 
-// "spellbadword()" function
-private void
-f_spellbadword(Var *argvars UNUSED, Var *returnVar) {
-   Byte   *word = (CS)"";
-   Unt   deco = 0;
-   int      len = 0;
-   int      spell_save = curPor->bookOpts.spell;
-
-   if (!curPor->bookOpts.spell) {
-      parse_spelllang(curPor);
-      curPor->bookOpts.spell = TRUE;
-   }
-
-   if (*curPor->ownSyntax->spellLang == ZERO) {
-      emsg(_(e_spell_checking_is_not_possible));
-      curPor->bookOpts.spell = spell_save;
-      return;
-   }
-
-   allocReturnList(returnVar);
-
-   if (argvars[0].tag == VAR_UNKNOWN) {
-      // Find the start and length of the badly spelled word.
-      len = spell_move_to(curPor, FORWARD, SMT_ALL, TRUE, &deco);
-      if (len != 0) {
-         word = ml_get_cursor();
-         curPor->setCursWant = true;
-      }
-   } ei (*curBook->syntax.spellLang != ZERO) {
-      Byte   *str = convertVarToStringSingleUse(&argvars[0]);
-      int   capcol = -1;
-
-      if (str) {
-         // Check the argument for spelling.
-         while (*str != ZERO) {
-            len = spell_check(curPor, str, &deco, &capcol, FALSE);
-            if (deco != 0) {
-               word = str;
-               break;
-            }
-            str += len;
-            capcol -= len;
-            len = 0;
-         }
-      }
-   }
-   curPor->bookOpts.spell = spell_save;
-
-   list_append_string(returnVar->list, word, len);
-   list_append_string(returnVar->list, (CS)(
-         deco == HLF_SPB ? "bad" :
-         deco == HLF_SPR ? "rare" :
-         deco == HLF_SPL ? "local" :
-         deco == HLF_SPC ? "caps" :
-         ""), -1);
-}
-
-// "spellsuggest()" function
-private void
-f_spellsuggest(Var *argvars UNUSED, Var *returnVar) {
-   Byte   *str;
-   Boole typeerr = false;
-   int      maxcount;
-   ArrayList   ga;
-   int      i;
-   ListItem   *li;
-   int spell_save = curPor->bookOpts.spell;
-
-   if (!curPor->bookOpts.spell) {
-      parse_spelllang(curPor);
-      curPor->bookOpts.spell = TRUE;
-   }
-
-   if (*curPor->ownSyntax->spellLang == ZERO) {
-      emsg(_(e_spell_checking_is_not_possible));
-      curPor->bookOpts.spell = spell_save;
-      return;
-   }
-
-   allocReturnList(returnVar);
-
-   str = tv_get_string(&argvars[0]);
-   if (argvars[1].tag != VAR_UNKNOWN) {
-      maxcount = (int)varGetNumberChk(argvars + 1, OUT &typeerr);
-      if (maxcount <= 0)
-         return;
-      if (argvars[2].tag != VAR_UNKNOWN) {
-         if (typeerr)
-            return;
-      }
-   } else
-      maxcount = 25;
-
-   spell_suggest_list(&ga, str, maxcount, FALSE);
-
-   for (i = 0; i < ga.len; ++i) {
-      str = ((Byte **)ga.c)[i];
-
-      li = listitem_alloc();
-      li->c.tag = VAR_STRING;
-      li->c.lock = 0;
-      li->c.string = str;
-      list_append(returnVar->list, li);
-   }
-   ga_clear(&ga);
-   curPor->bookOpts.spell = spell_save;
-}
-
 private void
 f_split(Var *argvars, Var *returnVar) {
-   Byte   *str;
    Byte   *end;
    Byte   *pat = NULL;
    RegMatch   regmatch;
@@ -14674,8 +14561,7 @@ f_split(Var *argvars, Var *returnVar) {
    int      keepempty = FALSE;
    Boole typeerr = false;
 
-
-   str = tv_get_string(&argvars[0]);
+   CS str = tv_get_string(&argvars[0]);
    if (argvars[1].tag != VAR_UNKNOWN) {
       pat = convertVarToString(&argvars[1], patbuf);
       if (!pat)
@@ -14695,20 +14581,19 @@ f_split(Var *argvars, Var *returnVar) {
    if (regmatch.regprog) {
       regmatch.rm_ic = FALSE;
       while (*str != ZERO || keepempty) {
-          if (*str == ZERO)
-         match = FALSE;   // empty item at the end
-          else
-         match = eeRegexec_nl(&regmatch, str, col);
-          if (match)
-         end = regmatch.startp[0];
-          else
-         end = str + STRLEN(str);
-          if (keepempty || end > str || (returnVar->list->len > 0
+         if (*str == ZERO)
+            match = FALSE;   // empty item at the end
+         else
+            match = eeRegexec_nl(&regmatch, str, col);
+         if (match)
+            end = regmatch.startp[0];
+         else
+            end = str + STRLEN(str);
+         if (keepempty || end > str || (returnVar->list->len > 0
                && *str != ZERO && match && end < regmatch.endp[0])
          ) {
-         if (list_append_string(returnVar->list, str,
-                         (int)(end - str)) == FAIL)
-             break;
+            if (list_append_string(returnVar->list, str, (int)(end - str)) == FAIL)
+               break;
          }
          if (!match)
             break;
@@ -14759,7 +14644,7 @@ f_substitute(Var *argvars, Var *returnVar) {
    Byte patbuf[NUMBUFLEN];
    Byte subbuf[NUMBUFLEN];
    Byte flagsbuf[NUMBUFLEN];
-   Byte* sub = NULL;
+   CS sub = NULL;
    Var* expr = NULL;
 
    CS str = convertVarToStringSingleUse(&argvars[0]);
@@ -14817,7 +14702,7 @@ f_synID(Var *argvars UNUSED, Var *returnVar) {
    if (!transerr && lnum >= 1 && lnum <= curBook->mem.lineCount
           && col >= 0 && col < (long)ml_get_len(lnum)
    )
-      id = syn_get_id(curPor, lnum, col, trans, NULL, false);
+      id = syn_get_id(curPor, lnum, col, trans, false);
 
    returnVar->number = id;
 }
@@ -14909,7 +14794,7 @@ f_synstack(Var *argvars UNUSED, Var *returnVar) {
        && col >= 0 && col <= (long)ml_get_len(lnum)
    ) {
       allocReturnList(returnVar);
-      (void)syn_get_id(curPor, lnum, col, false, NULL, true);
+      (void)syn_get_id(curPor, lnum, col, false, true);
       for (i = 0; ; ++i) {
          id = syn_get_stack_item(i);
          if (id < 0)

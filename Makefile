@@ -1137,7 +1137,6 @@ BASIC_SRC_NO_DIR = \
 	regexp.c \
 	script.c \
 	search.c \
-	spelling.c \
 	strings.c \
 	tag.c \
 	term.c \
@@ -1211,7 +1210,6 @@ OBJ_COMMON = \
 	_build/regexp.o \
 	_build/script.o \
 	_build/search.o \
-	_build/spelling.o \
 	_build/tag.o \
 	_build/term.o \
 	_build/ui.o \
@@ -1299,7 +1297,6 @@ PRO_AUTO = \
 	script.pro \
 	search.pro \
 	sound.pro \
-	spelling.pro \
 	strings.pro \
 	tag.pro \
 	term.pro \
@@ -2328,8 +2325,6 @@ _build/script.o: src/script.c src/eegl.h \
 _build/search.o: src/search.c src/eegl.h \
  src/generic.h src/commands.h
 _build/persist.o: src/persist.c src/eegl.h \
- src/generic.h src/commands.h
-_build/spelling.o: src/spelling.c src/eegl.h \
  src/generic.h src/commands.h
 _build/strings.o: src/strings.c src/eegl.h \
  src/generic.h src/commands.h

@@ -610,14 +610,7 @@ changed_bytes(LineNr lnum, ColNr col) {
    changedOneline(curBook, lnum);
    changed_common(lnum, col, lnum + 1, 0L);
 
-   // When text has been changed at the end of the line, possibly the start of
-   // the next line may have SpellCap that should be removed or it needs to be
-   // displayed.  Schedule the next line for redrawing just in case.
-   // Don't do this when displaying '$' at the end of changed text.
-   if (isSpellcheckingEnabledInPortal(curPor) && lnum < curBook->mem.lineCount) {
-       redrawWinline(curPor, lnum + 1);
-   }
-   // Diff highlighting in other diff portals may need to be updated too.
+   // Diff hiliting in other diff portals may need to be updated too.
    if (curPor->bookOpts.diff) {
       Portal       *po;
       LineNr    wlnum;

@@ -3675,60 +3675,6 @@ nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
    return FALSE;
 }
 
-// "zug" and "zuw": undo "zg" and "zw"
-// "zg": add good word to word list
-// "zw": add wrong word to word list
-// "zG": add good word to temp word list
-// "zW": add wrong word to temp word list
-private int
-nv_zg_zw(ActionArg* aArg, Unt nchar){
-   Byte   *ptr = NULL;
-   int      len;
-   int      undo = FALSE;
-
-   if (nchar == 'u')    {
-      ++no_mapping;
-      ++allow_keys;   // no mapping for nchar, but allow key codes
-      nchar = plain_vgetc();
-      LANGMAP_ADJUST(nchar, TRUE);
-      --no_mapping;
-      --allow_keys;
-      (void)add_to_showcmd(nchar);
-
-      if (firstOccurrence((CS)"gGwW", nchar) == NULL) {
-         clearopbeep(aArg->oper);
-         return OK;
-      }
-      undo = TRUE;
-   }
-
-   if (checkclearop(aArg->oper))
-      return OK;
-   if (VIsual_active && get_visual_text(aArg, &ptr, &len) == FAIL)
-      return FAIL;
-   if (ptr == NULL) {
-      Pos   pos = curPor->cursor;
-
-      // Find bad word under the cursor.  When 'spell' is
-      // off this fails and find_ident_under_cursor() is used below.
-      emsg_off++;
-      len = spell_move_to(curPor, FORWARD, SMT_ALL, TRUE, NULL);
-      emsg_off--;
-      if (len != 0 && curPor->cursor.col <= pos.col)
-          ptr = ml_get_pos(&curPor->cursor);
-      curPor->cursor = pos;
-   }
-
-   if (ptr == NULL
-      && (len = find_ident_under_cursor(&ptr, FIND_IDENT)) == 0)
-   return FAIL;
-    spell_add_word(ptr, len, nchar == 'w' || nchar == 'W'
-       ? SPELL_ADD_BAD : SPELL_ADD_GOOD,
-       (nchar == 'G' || nchar == 'W') ? 0 : (int)aArg->count1, undo);
-
-    return OK;
-}
-
 // Actions that start with "z".
 private void
 nv_zet(ActionArg* aArg) {
@@ -4046,21 +3992,7 @@ nv_zet(ActionArg* aArg) {
          clearopbeep(aArg->oper);
       break;
 
-   case 'u':   // "zug" and "zuw": undo "zg" and "zw"
-   case 'g':   // "zg": add good word to word list
-   case 'w':   // "zw": add wrong word to word list
-   case 'G':   // "zG": add good word to temp word list
-   case 'W':   // "zW": add wrong word to temp word list
-      if (nv_zg_zw(aArg, nchar) == FAIL)
-          return;
-      break;
-
-   case '=':   // "z=": suggestions for a badly spelled word
-      if (!checkclearop(aArg->oper))
-          spell_suggest((int)aArg->count0);
-      break;
-
-      default:   clearopbeep(aArg->oper);
+   default:   clearopbeep(aArg->oper);
    }
 
     // Redraw when 'foldenable' changed
@@ -5091,30 +5023,11 @@ nv_brackets(ActionArg* aArg) {
          clearopbeep(aArg->oper);
    }
 
-    // "[c" and "]c": move to next or previous diff-change.
-    ei (aArg->nchar == 'c')     {
-   if (diff_move_to(aArg->cmdchar == ']' ? FORWARD : BACKWARD,
-                      aArg->count1) == FAIL)
-       clearopbeep(aArg->oper);
+   // "[c" and "]c": move to next or previous diff-change.
+   ei (aArg->nchar == 'c')     {
+      if (diff_move_to(aArg->cmdchar == ']' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
+         clearopbeep(aArg->oper);
    }
-
-    // "[r", "[s", "[S", "]r", "]s" and "]S": move to next spell error.
-    ei (aArg->nchar == 'r' || aArg->nchar == 's' || aArg->nchar == 'S') {
-   setpcmark();
-   for (n = 0; n < aArg->count1; ++n)
-       if (spell_move_to(curPor, aArg->cmdchar == ']' ? FORWARD : BACKWARD,
-           aArg->nchar == 's' ? SMT_ALL :
-           aArg->nchar == 'r' ? SMT_RARE :
-           SMT_BAD, FALSE, NULL) == 0)
-       {
-      clearopbeep(aArg->oper);
-      break;
-      } else
-         curPor->setCursWant = TRUE;
-   if (aArg->oper->op_type == OP_NOP && (p_fdo & FDO_SEARCH) && KeyTyped)
-       foldOpenCursor();
-   }
-
    // Not a valid aArg->nchar.
    else
       clearopbeep(aArg->oper);

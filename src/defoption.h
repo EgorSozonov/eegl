@@ -209,8 +209,6 @@ OPTION("maxmempattern", p_mmp, long, 1000, 0, null, null)
 OPTION("maxsearchcount", p_msc, long, 1000, 0, &did_set_maxsearchcount, NULL)
 OPTION("messagesopt", p_mopt, CS, "history", P_ONECOMMA|P_COLON|P_NODUP, 
    &did_set_messagesopt, &expand_set_messagesopt)
-OPTION("mkspellmem", p_msm, CS, "460000,2000,500", P_EXPAND, 
-   &did_set_mkspellmem, NULL)
 OPTION("more", p_more, Boole, true, 0, NULL, NULL)
 OPTION("mousetime", p_mouset, long, 100, 0, null, null)
 OPTION("operatorfunc", p_opfunc, CS, "", P_FUNC, &did_set_operatorfunc, null)
@@ -238,8 +236,6 @@ OPTION("showmode", p_smd, Boole, true, 0, null, null)
 OPTION("showtabpanel", p_stpl, Boole, true, P_RALL, &setShowTabpanel, NULL)
 OPTION("sidescroll", p_ss, long, 0, 0, &setNonNegative, null)
 OPTION("smartcase", p_scs, Boole, false, 0, null, null)
-OPTION("spellsuggest", p_sps, CS, "", P_EXPAND|P_ONECOMMA, 
-      &setSpellSuggest, &expand_set_spellsuggest)
 OPTION("splitbelow", p_sb, Boole, false, 0, null, null)
 OPTION("splitright", p_spr, Boole, false, 0, null, null) 
 OPTION("startofline", p_sol, Boole, false, 0, null, null) 
@@ -332,7 +328,6 @@ OPTION("portfixheight", portFixHeight, Boole, false, P_RSTAT, null, null)
 OPTION("portfixwidth", portFixWidth, Boole, false, P_RSTAT, null, null)
 OPTION("previewport", previewPortal, Boole, false, P_RSTAT, &setPreviewPortal, null)
 OPTION("smoothscroll", smoothScroll, Boole, false, P_REDRAW_PORT, &did_set_smoothscroll, NULL)
-OPTION("spell", spell, Boole, false, P_REDRAW_PORT|P_HLONLY, &did_set_spell, NULL)
 OPTION("cursorcolumn", cursorColumn, Boole, false, P_REDRAW_PORT|P_HLONLY, null, null)
 OPTION("cursorline", cursorLine, Boole, false, P_REDRAW_PORT|P_HLONLY, null, null)
 OPTION("statusline", statusLine, CS, 
@@ -421,12 +416,6 @@ OPTION("path", path, CS, ".,/usr/include,,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|
 OPTION("makeprog", makeProg, CS, "make", P_EXPAND, null, null)
 OPTION("errorformat", errorFormat, CS, DFLT_EFM, P_ONECOMMA|P_NODUP, null, null)
 OPTION("autoread", autoRead, Boole, true, 0, null, null)
-OPTION("spellfile", spellFile, CS, "", P_EXPAND|P_ONECOMMA, 
-   &did_set_spellfile, NULL)
-OPTION("spelllang", spellLang, CS, "", P_ONECOMMA|P_RBUF|P_HLONLY|P_EXPAND,
-       &did_set_spelllang, NULL)
-OPTION("spelloptions", spellOpts, CS, "", P_ONECOMMA|P_NODUP|P_RBUF|P_HLONLY,  
-   &did_set_spelloptions, &expand_set_spelloptions)
 OPTION("tags", tags, CS, "./tags,tags", P_EXPAND|P_EXPAND_3_BS|P_ONECOMMA|P_NODUP, null, null)
 OPTION("tagcase", tagCase, Byte, TC_FOLLOWIC, 0, &setTagcase, &expand_set_tagcase)
 OPTION("dictionary", dictionary, CS, "", P_EXPAND|P_ONECOMMA|P_NODUP|P_NDNAME, 

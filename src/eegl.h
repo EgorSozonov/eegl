@@ -5650,9 +5650,6 @@ typedef struct {
    ErrBuilder errb;
 } OptionChange;
 
-// Spell checking variables passed from win_update() to win_line().
-typedef struct SpellVars SpellVars;
-
 typedef enum {
    POPUP_NORMAL,
    POPUP_ATCURSOR,
@@ -6104,7 +6101,6 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
 #include "proto/regexp.pro"
 #include "proto/script.pro"
 #include "proto/search.pro"
-#include "proto/spelling.pro"
 #include "proto/strings.pro"
 #include "proto/tag.pro"
 #include "proto/term.pro"

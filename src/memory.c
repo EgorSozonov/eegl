@@ -1247,9 +1247,9 @@ ml_close(Book *book, int del_file) {
 void
 ml_close_all(int del_file) {
    Book   *book;
-   FOR_ALL_BOOKS(book)
+   FOR_ALL_BOOKS(book) {
       ml_close(book, del_file);
-   spell_delete_wordlist();   // delete the internal wordlist
+   } 
    eeDelTempDir();      // delete created temp directory
 }
 

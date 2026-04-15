@@ -2024,7 +2024,6 @@ startEditingFile(
    int solcol = -1;
    Pos* pos;
    Byte* command = NULL;
-   int did_get_winopts = FALSE;
    Unt readfile_flags = 0;
    int did_inc_redrawing_disabled = FALSE;
    long* so_ptr = &curPor->bookOpts.scrollOff;
@@ -2297,7 +2296,6 @@ startEditingFile(
             //another portal). If not used before, reset the local window options to the global
             //values. Also restores old folding stuff.
             get_winopts(curBook);
-            did_get_winopts = TRUE;
          }
          eeglFree(new_name);
          auNewCurBookG = save_auNewCurBuf;
@@ -2477,11 +2475,6 @@ startEditingFile(
       diff_buf_add(curBook);
       diff_invalidate(curBook);
    }
-
-   // If the portal options were changed may need to set the spell language.
-   // Can only do this after the buffer has been properly setup.
-   if (did_get_winopts && curPor->bookOpts.spell && *curPor->ownSyntax->spellLang != ZERO)
-   (void)parse_spelllang(curPor);
 
    if (command == NULL) {
       if (newcol >= 0) {  // position set by autocommands
@@ -14162,11 +14155,6 @@ u_undoredo(int undo) {
       }
       if (oldsize > 0 || newsize > 0) {
          changed_lines(top + 1, 0, bot, newsize - oldsize);
-         // When text has been changed, possibly the start of the next line
-         // may have SpellCap that should be removed or it needs to be
-         // displayed.  Schedule the next line for redrawing just in case.
-         if (isSpellcheckingEnabledInPortal(curPor) && bot <= curBook->mem.lineCount)
-            redrawWinline(curPor, bot);
       }
 
       // Set the '[ mark.

@@ -58,7 +58,6 @@ private int ctrl_x_mode_thesaurus(void);
 private int ctrl_x_mode_cmdline(void);
 private int ctrl_x_mode_function(void);
 private int ctrl_x_mode_omni(void);
-private int ctrl_x_mode_spell(void);
 private int ctrl_x_mode_eval(void);
 private int ctrl_x_mode_line_or_eval(void);
 private int ctrl_x_mode_register(void);
@@ -915,13 +914,6 @@ edit(
          if (!ctrl_x_mode_files())
             goto normalchar;
          goto docomplete;
-
-      case 's':   // Spelling completion after ^X
-      case Ctrl_S:
-          if (!ctrl_x_mode_spell())
-         goto normalchar;
-          goto docomplete;
-
       case Ctrl_L:   // Whole line completion after ^X
          if (!ctrl_x_mode_whole_line()) {
             goto normalchar;
@@ -3228,7 +3220,6 @@ private Callback customCompleteFnS;
 #define CTRL_X_CMDLINE      11
 #define CTRL_X_FUNCTION   12
 #define CTRL_X_OMNI      13
-#define CTRL_X_SPELL      14
 #define CTRL_X_LOCAL_MSG   15   // only used in "ctrl_x_msgs"
 #define CTRL_X_EVAL      16   // for builtin function complete()
 #define CTRL_X_CMDLINE_CTRL_X   17   // CTRL-X typed in CTRL_X_CMDLINE
@@ -3461,8 +3452,6 @@ private void ins_compl_longest_insert(CS prefix);
 private void ins_compl_make_linear(void);
 private int ins_compl_make_cyclic(void);
 
-private void spell_back_to_badword(void);
-private int  spell_bad_len = 0;   // length of located bad word
 
 // CTRL-X pressed in Insert mode.
 void
@@ -3512,8 +3501,6 @@ private int ctrl_x_mode_function(void)
     { return ctrl_x_mode == CTRL_X_FUNCTION; }
 private int ctrl_x_mode_omni(void)
     { return ctrl_x_mode == CTRL_X_OMNI; }
-private int ctrl_x_mode_spell(void)
-    { return ctrl_x_mode == CTRL_X_SPELL; }
 private int ctrl_x_mode_eval(void)
     { return ctrl_x_mode == CTRL_X_EVAL; }
 private int ctrl_x_mode_line_or_eval(void)
@@ -3641,8 +3628,6 @@ eeIsCtrlXKey(Unt c) {
       return (c == Ctrl_U || c == Ctrl_P || c == Ctrl_N);
    case CTRL_X_OMNI:
       return (c == Ctrl_O || c == Ctrl_P || c == Ctrl_N);
-   case CTRL_X_SPELL:
-      return (c == Ctrl_S || c == Ctrl_P || c == Ctrl_N);
    case CTRL_X_EVAL:
       return (c == Ctrl_P || c == Ctrl_N);
    case CTRL_X_REGISTER:
@@ -4723,7 +4708,6 @@ ins_compl_dictionaries(
             ptr = pat + 2;
          else
             ptr = pat;
-         spell_dump_compl(ptr, regmatch.rm_ic, &dir, 0);
       } else  {  // avoid warning for using "files" uninit
          filterFromFiles(files, thesaurus, flags,
                 (cfc_has_mode() ? NULL : &regmatch), builder, OUT &dir);
@@ -5076,7 +5060,6 @@ ins_compl_new_leader(void) {
       if (is_cfn_refresh_always())
          cpt_compl_refresh();
    } else {
-      spell_bad_len = 0;   // need to redetect bad word
       // Matches were cleared, need to search for them now.  Before drawing
       // the popup menu display the changed text before the cursor.  Set
       // "compl_restarting" to avoid that the first match is inserted.
@@ -5280,14 +5263,6 @@ set_ctrl_x_mode(int c) {
    case Ctrl_O:
        // omni completion
        ctrl_x_mode = CTRL_X_OMNI;
-       break;
-   case 's':
-   case Ctrl_S:
-       // complete spelling suggestions
-       ctrl_x_mode = CTRL_X_SPELL;
-       ++emsg_off;   // Avoid getting the E756 error twice.
-       spell_back_to_badword();
-       --emsg_off;
        break;
    case Ctrl_RSB:
        // complete tag names
@@ -6735,17 +6710,6 @@ get_next_cmdline_completion(void) {
       ins_compl_add_matches(OUT &matches, FALSE);
 }
 
-//Get the next set of spell suggestions matching "compl_pattern".
-private void
-get_next_spell_completion(LineNr lnum) {
-   ExpandMatch matches = {};
-   matches.a = createArena();
-   expand_spelling(lnum, compl_pattern.c, OUT &matches);
-   if (matches.len > 0)
-      ins_compl_add_matches(OUT &matches, p_ic);
-   deleteArena(matches.a); 
-}
-
 //Return the next word or line from buffer "scannedBook" at position
 //"cur_match_pos" for completion. The length of the match is set in "len".
 private CS
@@ -7099,10 +7063,6 @@ get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini) {
        break;
    case CTRL_X_OMNI:
        expand_by_function(type, compl_pattern.c, NULL);
-       break;
-
-   case CTRL_X_SPELL:
-       get_next_spell_completion(st->first_match_pos.lnum);
        break;
 
    case CTRL_X_REGISTER:
@@ -8121,7 +8081,7 @@ set_compl_globals(
 }
 
 //Get the pattern, column and length for user defined completion ('omnifunc', 'completefunc' and 
-//'thesaurusfunc'). Use the global variable: spell_bad_len.
+//'thesaurusfunc').
 //Callback function "cb" is set if triggered by a function in the 'cpt' option; otherwise, it is 
 //null. "startcol", when not NULL, contains the column returned by function.
 private int
@@ -8199,34 +8159,6 @@ get_userdefined_compl_info(
    return ret;
 }
 
-//Get the pattern, column and length for spell completion. Set the global variables: compl_col, 
-//compl_length and compl_pattern. Use the global variable: spell_bad_len
-private Unt
-get_spell_compl_info(int startcol, ColNr curs_col) {
-   if (spell_bad_len > 0)
-      compl_col = curs_col - spell_bad_len;
-   else
-      compl_col = spell_word_start(startcol);
-
-   if (compl_col >= (ColNr)startcol) {
-      compl_length = 0;
-      compl_col = curs_col;
-   } else {
-      compl_length = (int)curs_col - compl_col;
-   }
-   // Need to obtain "line" again, it may have become invalid.
-   CS line = ml_get(curPor->cursor.lnum);
-   compl_pattern.c = copySubstr(line + compl_col, (Unt)compl_length);
-   if (!compl_pattern.c) {
-      compl_pattern.len = 0;
-      return FAIL;
-   }
-
-   compl_pattern.len = (Unt)compl_length;
-
-   return OK;
-}
-
 //Get the completion pattern, column and length.
 //"startcol" - start column number of the completion pattern/text "cur_col" - current cursor column
 //On return, "line_invalid" is set to TRUE, if the current line may have
@@ -8248,10 +8180,6 @@ compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid) {
       return get_cmdline_compl_info(line, curs_col);
    } ei (ctrl_x_mode_function() || ctrl_x_mode_omni() || thesaurus_func_complete(ctrl_x_mode)){
       if (get_userdefined_compl_info(curs_col, NULL, NULL) != OK)
-         return FAIL;
-      *line_invalid = true;   // "line" may have become invalid
-   } ei (ctrl_x_mode_spell()) {
-      if (get_spell_compl_info(startcol, curs_col) == FAIL)
          return FAIL;
       *line_invalid = true;   // "line" may have become invalid
    } else {
@@ -8659,17 +8587,6 @@ free_insexpand_stuff(void) {
 }
 #endif
 
-//Called when starting CTRL_X_SPELL mode: Move backwards to a previous badly
-//spelled word, if there is one.
-private void
-spell_back_to_badword(void) {
-   Pos   tpos = curPor->cursor;
-
-   spell_bad_len = spell_move_to(curPor, BACKWARD, SMT_ALL, TRUE, NULL);
-   if (curPor->cursor.col != tpos.col)
-      start_arrow(&tpos);
-}
-
 // Reset the info associated with completion sources.
 private void
 cpt_sources_clear(void) {
@@ -8781,7 +8698,7 @@ remove_old_matches(void) {
 
    // Free all nodes in the sublist
    sublist_end->next = NULL;
-   for (current = sublist_start; current != NULL; current = next) {
+   for (current = sublist_start; current; current = next) {
       next = current->next;
       ins_compl_item_free(current);
    }

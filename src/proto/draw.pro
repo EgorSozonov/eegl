@@ -72,5 +72,5 @@ void redrawAllStatusLinesInFrame(Frame *fr);
 void redrawWinline(Portal *po, LineNr lnum);
 void redrawPortRangeLater(Portal *po, LineNr first, LineNr last);
 int text_prop_position(Portal *po, TextProp *t, int vcol, int scr_col, int *countExtraBytes, Byte **extraBytes, int *numDecoCells, int *toSkipBeforeDeco, int do_skip);
-int drawLineOnScreen(Portal *port, LineNr lnum, int startrow, int endrow, int drawingOnlyNumberCol, SpellVars *spv);
+int drawLineOnScreen(Portal *port, LineNr lnum, int startrow, int endrow, int drawingOnlyNumberCol);
 /* eegl: set ft=c : */

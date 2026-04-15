@@ -3273,11 +3273,6 @@ enterBook(Book* book){
    // Change directories when the 'acd' option is set.
    DO_AUTOCHDIR;
 
-   // May need to set the spell language. Can only do this after the book has been properly setup
-   if (curBook->kind != BOOK_HELP && curPor->bookOpts.spell 
-         && *curPor->ownSyntax->spellLang != ZERO
-   )
-      (void)parse_spelllang(curPor);
    curBook->lastUsed = eeTime();
    redraw_later(UPD_NOT_VALID);
 }

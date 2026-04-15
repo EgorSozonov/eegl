@@ -20,7 +20,7 @@ SED = LANG=C sed
 # compatible with Solaris (and old gettext implementations) unless these are
 # set.  gettext 0.10.36 will not work!
 
-# MSGFMTCMD is defined by Configure in ../auto/config.mk
+MSGFMTCMD = OLD_PO_FILE_INPUT=yes $MSGFMT --no-convert -v
 XGETTEXT = OLD_PO_FILE_INPUT=yes OLD_PO_FILE_OUTPUT=yes xgettext
 MSGMERGE = OLD_PO_FILE_INPUT=yes OLD_PO_FILE_OUTPUT=yes msgmerge
 

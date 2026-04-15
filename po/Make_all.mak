@@ -3,9 +3,7 @@
 #
 
 LANGUAGES = \
-		ca \
 		cs \
-		cs.cp1250 \
 		da \
 		de \
 		en_GB \
@@ -20,36 +18,26 @@ LANGUAGES = \
 		ja \
 		ja.euc-jp \
 		ja.sjis \
-		ko \
 		ko.UTF-8 \
 		nb \
 		nl \
 		no \
 		pl \
 		pl.UTF-8 \
-		pl.cp1250 \
 		pt_BR \
 		ru \
-		ru.cp1251 \
 		sk \
-		sk.cp1250 \
 		sr \
 		sv \
 		tr \
 		uk \
-		uk.cp1251 \
 		vi \
-		zh_CN \
 		zh_CN.UTF-8 \
-		zh_CN.cp936 \
-		zh_TW \
-		zh_TW.UTF-8 \
+		zh_TW.UTF-8
 
 
 POFILES = \
-		ca.po \
 		cs.po \
-		cs.cp1250.po \
 		da.po \
 		de.po \
 		en_GB.po \
@@ -63,35 +51,25 @@ POFILES = \
 		it.po \
 		ja.po \
 		ja.euc-jp.po \
-		ja.sjis.po \
-		ko.po \
 		ko.UTF-8.po \
 		nb.po \
 		nl.po \
 		no.po \
 		pl.po \
 		pl.UTF-8.po \
-		pl.cp1250.po \
 		pt_BR.po \
 		ru.po \
-		ru.cp1251.po \
 		sk.po \
-		sk.cp1250.po \
 		sr.po \
 		sv.po \
 		tr.po \
 		uk.po \
-		uk.cp1251.po \
 		vi.po \
-		zh_CN.po \
 		zh_CN.UTF-8.po \
-		zh_CN.cp936.po \
-		zh_TW.po \
-		zh_TW.UTF-8.po \
+		zh_TW.UTF-8.po
 
 
 MOFILES = \
-		ca.mo \
 		cs.mo \
 		da.mo \
 		de.mo \
@@ -119,13 +97,12 @@ MOFILES = \
 		uk.mo \
 		vi.mo \
 		zh_CN.UTF-8.mo \
-		zh_TW.UTF-8.mo \
+		zh_TW.UTF-8.mo
 
 
 MOCONVERTED = \
 		cs.cp1250.mo \
 		ja.euc-jp.mo \
-		ja.sjis.mo \
 		ko.mo \
 		pl.UTF-8.mo \
 		pl.cp1250.mo \
@@ -134,11 +111,10 @@ MOCONVERTED = \
 		uk.cp1251.mo \
 		zh_CN.mo \
 		zh_CN.cp936.mo \
-		zh_TW.mo \
+		zh_TW.mo
 
 
 CHECKFILES = \
-		ca.ck \
 		cs.ck \
 		cs.cp1250.ck \
 		da.ck \
@@ -165,20 +141,14 @@ CHECKFILES = \
 		pl.cp1250.ck \
 		pt_BR.ck \
 		ru.ck \
-		ru.cp1251.ck \
 		sk.ck \
-		sk.cp1250.ck \
 		sr.ck \
 		sv.ck \
 		tr.ck \
 		uk.ck \
-		uk.cp1251.ck \
 		vi.ck \
 		zh_CN.UTF-8.ck \
-		zh_CN.ck \
-		zh_CN.cp936.ck \
-		zh_TW.UTF-8.ck \
-		zh_TW.ck \
+		zh_TW.UTF-8.ck
 
 PO_VIM_INPUTLIST = \
 	../../runtime/optwin.vim \

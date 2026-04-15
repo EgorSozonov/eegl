@@ -3371,9 +3371,6 @@ inputInitCharLens(void) {
    // translated messages independently from the current locale.
    (void)bind_textdomain_codeset(EEGLPACKAGE, "utf-8");
 
-   // Need to reload spell dictionaries
-   spell_reload();
-
    return NULL;
 }
 

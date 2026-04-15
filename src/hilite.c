@@ -1966,9 +1966,7 @@ private void invalidate_current_state(void);
 private int syn_stack_equal(SyntaxState *sp);
 private void validate_current_state(void);
 private int syn_finish_line(int syncing);
-private Decoration getCurrentDeco(
-      Boole syncing, Boole displaying, OUT Boole* canSpell, Boole keep_state
-);
+private Decoration getCurrentDeco(Boole syncing, Boole displaying, Boole keep_state);
 private int did_match_already(int idx, ArrayList *gap);
 private StateItem *push_next_match(StateItem *currStateItem);
 private void check_state_ends(void);
@@ -3026,7 +3024,7 @@ syn_finish_line(int       syncing) {     // called for syncing
    ColNr   prev_current_col;
 
    while (!currentFinishedS) {
-      (void)getCurrentDeco(syncing, false, NULL, false);
+      (void)getCurrentDeco(syncing, false, false);
       // When syncing, and found some item, need to check the item.
       if (syncing && current_state.len) {
          // Check for match with sync item.
@@ -3053,19 +3051,11 @@ syn_finish_line(int       syncing) {     // called for syncing
 //"col" is normally 0 for the first use in a line, and increments by one each
 //time.  It's allowed to skip characters and to stop before the end of the
 //line.  But only a "col" after a previously used column is allowed.
-//When "canSpell" is not NULL set it to TRUE when spell-checking should be done.
 Decoration
 syntGetDeco(
    ColNr col,
-   OUT Boole* canSpell,
    int keep_state   // keep state of char at "col"
 ){
-   if (canSpell)
-      // Default: Only do spelling when there is no @Spell cluster or when
-      // ":syn spell toplevel" was used.
-      *canSpell = synBlockS->synSpell == SYNSPL_DEFAULT
-             ? (synBlockS->spellClusterId == 0)
-             : (synBlockS->synSpell == SYNSPL_TOP);
 
    // check for out of memory situation
    if (!synBlockS->array)
@@ -3088,7 +3078,7 @@ syntGetDeco(
    // Skip from the current column to "col", get the attributes for "col".
    Decoration deco;
    while (currColS <= col) {
-      deco = getCurrentDeco(false, true, OUT canSpell, currColS == col ? keep_state : false);
+      deco = getCurrentDeco(false, true, currColS == col ? keep_state : false);
       ++currColS;
    }
 
@@ -3100,7 +3090,6 @@ private Decoration
 getCurrentDeco(
    Boole syncing,      // When 1: called for syncing
    Boole displaying,      // result will be displayed
-   OUT Boole* canSpell,      // return: do spell checking
    Boole keep_state      // keep syntax stack afterwards
 ){
    Short      hiId;
@@ -3437,7 +3426,6 @@ getCurrentDeco(
    current_flags = 0;
    current_seqnr = 0;
    if (currStateItem) {
-      int   current_trans_id = 0;
       for (idx = current_state.len - 1; idx >= 0; --idx)    {
          sip = &CUR_STATE(idx);
          if ((currLnumS > sip->hiStartPos.lnum
@@ -3453,42 +3441,6 @@ getCurrentDeco(
          }
       }
 
-      if (canSpell) {
-         SyntaxInfo sps;
-
-         // set "canSpell" to TRUE if spell checking is supposed to be done in the current item.
-         if (synBlockS->spellClusterId == 0) {
-            // There is no @Spell cluster: Do spelling for items without @NoSpell cluster.
-            if (synBlockS->noSpellClusterId == 0 || current_trans_id == 0)
-               *canSpell = (synBlockS->synSpell != SYNSPL_NOTOP);
-            else {
-               sps.inc_tag = 0;
-               sps.hiId = synBlockS->noSpellClusterId;
-               sps.containedInHiId = NULL;
-               *canSpell = !in_id_list(sip, sip->si_containsHiId, &sps, 0);
-            }
-         } else {
-            // The @Spell cluster is defined: Do spelling in items with the @Spell cluster. But 
-            // not when @NoSpell is also there. At the toplevel only spell check when 
-            // ":syn spell toplevel" was used.
-            if (current_trans_id == 0)
-               *canSpell = (synBlockS->synSpell == SYNSPL_TOP);
-            else {
-               sps.inc_tag = 0;
-               sps.hiId = synBlockS->spellClusterId;
-               sps.containedInHiId = NULL;
-               *canSpell = in_id_list(sip, sip->si_containsHiId, &sps, 0);
-
-               if (synBlockS->noSpellClusterId != 0) {
-                  sps.hiId = synBlockS->noSpellClusterId;
-                  if (in_id_list(sip, sip->si_containsHiId, &sps, 0))
-                      *canSpell = FALSE;
-               }
-            }
-         }
-      }
-
-
       //Check for end of current state (and the states before it) at the next column. Don't do 
       //this for syncing, because we would miss a single character match.
       //First check if the current state ends at the current column.  It may be for an empty 
@@ -3501,14 +3453,7 @@ getCurrentDeco(
             --currColS;
          }
       }
-   } ei (canSpell)
-      // Default: Only do spelling when there is no @Spell cluster or when ":syn spell toplevel" 
-      // was used
-      *canSpell = synBlockS->synSpell == SYNSPL_DEFAULT
-             ? (synBlockS->spellClusterId == 0)
-             : (synBlockS->synSpell == SYNSPL_TOP);
-
-   // nextgroup ends at end of line, unless "skipnl" or "skipempty" present
+   }   // nextgroup ends at end of line, unless "skipnl" or "skipempty" present
    if (current_next_list
           && (line = syn_getcurline())[currColS] != ZERO
           && line[currColS + 1] == ZERO
@@ -6767,7 +6712,6 @@ syn_get_id(
    long   lnum,
    ColNr   col,
    int      trans,      // remove transparency
-   OUT Boole* canSpell,  // can do spell checking
    int      keep_state  // keep state of char at "col"
 ){
    // When the position is not after the current position and in the same
@@ -6779,7 +6723,7 @@ syn_get_id(
       // "skip" expression in searchpair()
       nextMatchIdx = -1;
 
-   (void)syntGetDeco(col, OUT canSpell, keep_state);
+   (void)syntGetDeco(col, keep_state);
 
    return (trans ? current_trans_id : current_id);
 }
@@ -6843,7 +6787,7 @@ syn_get_foldlevel(Portal *wp, long lnum) {
          cur_level = level;
          low_level = cur_level;
          while (!currentFinishedS) {
-            (void)getCurrentDeco(false, false, NULL, false);
+            (void)getCurrentDeco(false, false, false);
             cur_level = syn_cur_foldlevel();
             if (cur_level < low_level)
                low_level = cur_level;

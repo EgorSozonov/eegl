@@ -1124,16 +1124,7 @@ expandEnvVarsInStringOption(Option* o, CS val) {
       
    if (!val)
       return Em;
-      
-   //Expanding this with NameBuff, doExpandEnv() must not be passed IObuff.
-   //Escape spaces when expanding @tags or @path, they are used to separate file names.
-   //For @spellsuggest expand after "file:".
-   Boole esc = (o->flags & P_EXPAND_3_BS) != 0;
 
-   doExpandEnvVarsWithEscaped(
-      OUT (Text){NameBuff, MAXPATHL},
-      val, esc, false, eq(o->fullName, S"spellsuggest") ? S"file:" : NULL
-   );
    if (STRCMP(NameBuff, val) == 0)   // they are the same
       return Em;
 
@@ -1859,15 +1850,6 @@ did_set_smoothscroll(OptionChange* cha) {
 }
 
 private CS
-did_set_spell(OptionChange* cha) {
-   updateBoolRef(cha);
-   if (curPor->bookOpts.spell)
-      return parse_spelllang(curPor);
-
-   return NULL;
-}
-
-private CS
 did_set_swapfile(OptionChange* cha) {
    updateStringRef(cha);
    //when @swapfile is set, create swapfile, when reset remove swapfile
@@ -2253,15 +2235,6 @@ optClearPortOptions(PortLocal* t) {
 #undef OPTIONS_FREE
 }
 
-private Arr(Byte)
-saveStringIfNotNull(CS s) {
-   if (s) {
-      return copyStr(s);
-   } else {
-      return NULL;
-   }
-}
-
 private void
 expand1(OUT Expand* xp, Option* o, CS argend) {
    //Now pick. If the option has a custom expander, use that. Otherwise, just
@@ -2326,18 +2299,6 @@ expand1(OUT Expand* xp, Option* o, CS argend) {
    if ((o->flags & P_FLAGLIST) > 0)
       xp->input = mbText(argend);
 
-   //Some options can either be using file/dir expansions, or custom value
-   //expansion depending on what the user typed. Unfortunately we have to
-   //manually handle it here to make sure we have the correct context set.
-   if (eq(o->fullName, S"spellsuggest")) { 
-      if (STRNCMP(xp->input.c, "file:", 5) == 0) {
-         xp->input.c += 5;
-         xp->input.len -= 5;
-         return;
-      } ei (expandOptionS->expander) {
-         xp->context = EXPAND_STRING_OPTION;
-      }
-   }
    return;
 }
 
@@ -3053,14 +3014,6 @@ expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 private CS
-did_set_mkspellmem(OptionChange* cha UNUSED) {
-   if (spell_check_msm() != OK)
-      return e_invalid_argument;
-
-   return NULL;
-}
-
-private CS
 setLiteTheme(OptionChange* cha UNUSED) {
    liteThemeG = cha->newVal.boole;
    initHilite(FALSE);
@@ -3251,62 +3204,6 @@ did_set_showcmdloc(OptionChange* cha) {
 private int
 expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_sloc_values));
-}
-
-private CS
-did_set_spellfile(OptionChange* cha) {
-   OptionRef ref = cha->ref;
-
-   if (!valid_spellfile(*ref.string))
-      return e_invalid_argument;
-
-   // If there is a portal into this buffer in which 'spell' is set load the wordlists.
-   return did_set_spell_option();
-}
-
-private CS
-did_set_spelllang(OptionChange* cha) {
-   OptionRef ref = cha->ref;
-
-   if (!valid_spelllang(*ref.string))
-      return e_invalid_argument;
-
-   // If there is a portal into this buffer in which @spell is set load the wordlists.
-   return did_set_spell_option();
-}
-
-private CS
-did_set_spelloptions(OptionChange* cha) {
-   OptionRef ref = cha->ref;
-
-   if (**(ref.string) != ZERO && STRCMP(*ref.string, "camel") != 0)
-      return e_invalid_argument;
-
-   return NULL;
-}
-
-private int
-expand_set_spelloptions(OptExpand* args, OUT ExpandMatch* matches) {
-   static CS (p_spo_values[]) = {S"camel"};
-   return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_spo_values));
-}
-
-private CS
-setSpellSuggest(OptionChange* cha UNUSED) {
-   if (spell_check_sps() != OK)
-      return e_invalid_argument;
-
-   return NULL;
-}
-
-// Note: Keep this in sync with spell.c:spell_check_sps()
-private CS (p_sps_values[]) = {SMAP((CS), 
-   "best", "fast", "double", "expr:", "file:", "timeout:"
-)};
-
-private int
-expand_set_spellsuggest(OptExpand* args, OUT ExpandMatch* matches) {
-   return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_sps_values));
 }
 
 private CS
@@ -4011,9 +3908,6 @@ private void
 didset_options(void) {
    // initialize the table for @iskeyword et.al.
    (void)init_chartab();
-   (void)spell_check_msm();
-   (void)spell_check_sps();
-   (void)did_set_spell_option();
    // initialize the table for @breakat.
    setBreakat(NULL);
    afterCopyPortOpt(curPor);
@@ -4098,10 +3992,6 @@ optionInit0() {
 
    //Must be before expandEnvVarsInStringOption(), because that one needs eeIsIdentifierChar()
    didset_options();
-
-   //Use the current chartab for the generic chartab. This is not in
-   //didset_options() because it only depends on 'encoding'.
-   init_spell_chartab();
 
    //Expand environment variables and things like "~" for the defaults.
    set_init_doExpandEnv();
@@ -4591,10 +4481,6 @@ copyGlobalToBookImpl(OUT Book* book) {
    inSetCustomCompletionCbForBook(book);
    inSetOmniCbForBook(book);
    inSetTagCbForBook(book);
-
-   book->syntax.spellFile = saveStringIfNotNull(book->o.spellFile);
-   book->syntax.spellLang = saveStringIfNotNull(book->o.spellLang);
-   book->syntax.spellOpts = saveStringIfNotNull(book->o.spellOpts);
 }
 
 //Copy global option values to local options for one book.

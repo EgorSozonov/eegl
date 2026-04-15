@@ -4705,7 +4705,6 @@ prepare_help_buffer(void) {
    RESET_BINDING(curPor);   // no scroll or cursor binding
    curPor->bookOpts.foldEnable = FALSE;   // No folding in the help portal
    curPor->bookOpts.diff = FALSE;   // No 'diff'
-   curPor->bookOpts.spell = FALSE;   // No spell checking
 
    bookSetBooklisted(false);
 }

@@ -259,6 +259,7 @@
 [-] tuples (too complex for a simple dynamic scripting language)
 [-] EVENT_OPTIONSET (too hard)
 [-] TEXTCHANGED, TEXTCHANGEDI, TEXTCHANGEDP, TEXTCHANGEDT (superfluous and slow)
+[-] spelling (will be done with external program)
 [ ] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
 [ ] cindent (smartindent is enough)
 
