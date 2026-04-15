@@ -4713,18 +4713,18 @@ optSetStringOptionDirectInPort(
 //Block autocommands to avoid the old curBook becoming invalid.
 void
 optSetStringOptionDirectInBook(
-   Book* buf,
+   Book* book,
    CS name,
    CS val,
    Unt optFlags,
    int set_sid
 ) {
-   Book   *save_curbuf = curBook;
+   Book   *save_curBook = curBook;
    block_autocmds();
-   curBook = buf;
+   curBook = book;
    curPor->book = curBook;
    optChangeStringOptionDirect(name, val, optFlags, set_sid);
-   curBook = save_curbuf;
+   curBook = save_curBook;
    curPor->book = curBook;
    unblock_autocmds();
 }

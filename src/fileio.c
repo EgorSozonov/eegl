@@ -5369,7 +5369,7 @@ mch_chdir(char *path) {
 
 void
 filemess(
-   Book* buf,
+   Book* book,
    Byte   *name,
    Byte   *s,
    int      attr
@@ -5380,7 +5380,7 @@ filemess(
 
    if (msg_silent != 0)
       return;
-   msg_add_fname(buf, name);       // put file name in IObuff with quotes
+   msg_add_fname(book, name);       // put file name in IObuff with quotes
 
    // If it's extremely long, truncate it.
    len = STRLEN(IObuff);
@@ -6362,7 +6362,7 @@ eeFsync(int fd){
 //name and a ":r" or ":w" command with a file name is used.
 int
 set_rw_fname(CS fname, CS sfname){
-   Book* buf = curBook;
+   Book* book = curBook;
 
    // It's like the unnamed book is deleted....
    if (curBook->o.bookListed)
@@ -6370,7 +6370,7 @@ set_rw_fname(CS fname, CS sfname){
    apply_autocmds(EVENT_BUFWIPEOUT, NULL, NULL, FALSE, curBook);
    if (aborting())       // autocmds may abort script processing
       return FAIL;
-   if (curBook != buf) {
+   if (curBook != book) {
       // We are in another book now, don't do the renaming.
       emsg(_(e_autocommands_changed_buffer_or_buffer_name));
       return FAIL;
@@ -6482,21 +6482,21 @@ shorten_fname(Byte *full_path, Byte *dir_name){
 //When "force" is FALSE: Only try to shorten absolute file names.
 //For books that have buftype "nofile" or "scratch": never change the file name.
 void
-shorten_buf_fname(Book* buf, Byte* dirname, int force) {
-   if (buf->currFileName
-       && !bt_nofilename(buf)
-       && !path_with_url(buf->currFileName)
-       && (force || buf->shortFileName == NULL || mch_isFullName(buf->shortFileName))
+shorten_buf_fname(Book* book, Byte* dirname, int force) {
+   if (book->currFileName
+       && !bt_nofilename(book)
+       && !path_with_url(book->currFileName)
+       && (force || book->shortFileName == NULL || mch_isFullName(book->shortFileName))
    ) {
-      if (buf->shortFileName != buf->fullFileName)
-         EE_CLEAR(buf->shortFileName);
-      CS p = shorten_fname(buf->fullFileName, dirname);
+      if (book->shortFileName != book->fullFileName)
+         EE_CLEAR(book->shortFileName);
+      CS p = shorten_fname(book->fullFileName, dirname);
       if (p) {
-         buf->shortFileName = copyStr(p);
-         buf->currFileName = buf->shortFileName;
+         book->shortFileName = copyStr(p);
+         book->currFileName = book->shortFileName;
       }
-      if (!p || buf->currFileName == NULL)
-         buf->currFileName = buf->fullFileName;
+      if (!p || book->currFileName == NULL)
+         book->currFileName = book->fullFileName;
    }
 }
 
@@ -6504,14 +6504,14 @@ shorten_buf_fname(Book* buf, Byte* dirname, int force) {
 void
 shorten_fnames(int force){
    Byte   dirname[MAXPATHL];
-   Book   *buf;
+   Book* book;
 
    mch_dirname(dirname, MAXPATHL);
-   FOR_ALL_BOOKS(buf) {
-      shorten_buf_fname(buf, dirname, force);
+   FOR_ALL_BOOKS(book) {
+      shorten_buf_fname(book, dirname, force);
 
       // Always make the swap file name a full path, a "nofile" book may also have a swap file
-      mf_fullname(buf->mem.mfile);
+      mf_fullname(book->mem.mfile);
    }
    status_redraw_all();
    needRedrawTabpanelG = TRUE;

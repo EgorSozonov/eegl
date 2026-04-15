@@ -3533,9 +3533,6 @@ bookNew(
 void
 bookFreeOptions(Book* book){
    clearStringOption(&book->o.isKeyword);
-   clearStringOption(&book->o.spellFile);
-   clearStringOption(&book->syntax.spellLang);
-   clearStringOption(&book->syntax.spellOpts);
    evFreeCallback(book->o.completeFn);
    evFreeCallback(book->o.omniFn);
    clearStringOption(&book->o.thesaurus);

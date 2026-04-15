@@ -1,8 +1,8 @@
 /* src/diff.c */
-void diff_buf_delete(Book *buf);
+void diff_buf_delete(Book *book);
 void diff_buf_adjust(Portal *po);
-void diff_buf_add(Book *buf);
-void diff_invalidate(Book *buf);
+void diff_buf_add(Book *book);
+void diff_invalidate(Book *book);
 void diff_mark_adjust(LineNr line1, LineNr line2, long amount, long amount_after);
 void diff_redraw(int dofold);
 int diff_internal(void);

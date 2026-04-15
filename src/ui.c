@@ -6929,7 +6929,7 @@ struct Terminal {
 
    VTerm* vterm;
    Job* job;
-   Book* buf;
+   Book* book;
 
    // Set when setting the size of a vterm, reset after redrawing.
    int vterm_size_changed;
@@ -7242,16 +7242,16 @@ term_start(
     } ei (opt->jo_hidden || (flags & TERM_START_SYSTEM)) {
       //Create a new buffer without a portal. Make it the current buffer for
       //a moment to be able to do the initializations.
-      Book* buf = bookNew(Em, NULL, (LineNr)0, BLN_NEW | BLN_LISTED);
-      if (!buf || ml_open(buf) == FAIL) {
+      Book* book = bookNew(Em, NULL, (LineNr)0, BLN_NEW | BLN_LISTED);
+      if (!book || ml_open(book) == FAIL) {
           eeglFree(term);
           return NULL;
       }
       old_curbuf = curBook;
       --curBook->countPortals;
-      curBook = buf;
+      curBook = book;
       save_cursor = curPor->cursor;
-      curPor->book = buf;
+      curPor->book = book;
       ++curBook->countPortals;
    } else {
       // Open a new portal or tab.
@@ -7282,7 +7282,7 @@ term_start(
          return NULL;
       }
    }
-   term->buf = curBook;
+   term->book = curBook;
    curBook->term = term;
 
    if (!opt->jo_hidden) {
@@ -7699,8 +7699,8 @@ term_write_session(FILE *fd, Portal *po, EeSet* terminal_bufs){
 
 // Return TRUE if "buf" has a terminal that should be restored.
 int
-term_should_restore(Book* buf) {
-   Terminal   *term = buf->term;
+term_should_restore(Book* book) {
+   Terminal   *term = book->term;
    return term != NULL && (term->command == NULL || STRCMP(term->command, "NONE") != 0);
 }
 
@@ -7726,8 +7726,8 @@ private Terminal   *terminals_to_free = NULL;
 // free_unused_terminals(), because callbacks may wipe out a buffer while the terminal is still
 // referenced.
 void
-free_terminal(Book* buf) {
-   Terminal* term = buf->term;
+free_terminal(Book* book) {
+   Terminal* term = book->term;
    if (!term)
       return;
 
@@ -7747,13 +7747,13 @@ free_terminal(Book* buf) {
       if (term->job->jv_status != JOB_ENDED
             && term->job->jv_status != JOB_FINISHED
             && term->job->jv_status != JOB_FAILED)
-         job_stop(term->job, NULL, "kill");
+         job_stop(term->job, NULL, S"kill");
       job_unref(term->job);
    }
    term->next = terminals_to_free;
    terminals_to_free = term;
 
-   buf->term = NULL;
+   book->term = NULL;
    if (in_terminal_loop == term)
       in_terminal_loop = NULL;
 }
@@ -7865,7 +7865,7 @@ update_cursor(Terminal *term, int redraw) {
       windgoto(curPor->portalRow + curPor->cursorRow, curPor->portalCol + curPor->cursorCol);
    }
    if (redraw) {
-      if (term->buf == curBook && term->tl_cursor_visible)
+      if (term->book == curBook && term->tl_cursor_visible)
          cursor_on();
       out_flush();
    }
@@ -7873,9 +7873,9 @@ update_cursor(Terminal *term, int redraw) {
 
 // Invoked when "msg" output from a job was received.  Write it to the terminal of "buffer"
 void
-write_to_term(Book *buffer, Byte *msg, Channel* channel) {
+write_to_term(Book *book, Byte *msg, Channel* channel) {
    Unt   len = STRLEN(msg);
-   Terminal   *term = buffer->term;
+   Terminal   *term = book->term;
 
 
    if (term->vterm == NULL) {
@@ -7886,20 +7886,19 @@ write_to_term(Book *buffer, Byte *msg, Channel* channel) {
    cursor_off();
    term_write_job_output(term, msg, len);
 
-   // In Terminal-Normal mode we are displaying the buffer, not the terminal
+   // In Terminal-Normal mode we are displaying the book, not the terminal
    // contents, thus no screen update is needed.
    if (!term->isNormalMode) {
       // Don't use drawUpdateScreen() when editing the command line, it gets
       // cleared.
       // TODO: only update once in a while.
       ch_log(term->job->jv_channel, "updating screen");
-      if (buffer == curBook && (stateG & MODE_COMMLINE) == 0) {
+      if (book == curBook && (stateG & MODE_COMMLINE) == 0) {
          drawUpdateScreen(UPD_VALID_NO_UPDATE);
          if (needRedrawTabpanelG) 
              draw_tabpanel();
-         // drawUpdateScreen() can be slow, check the terminal wasn't closed
-         // already
-         if (buffer == curBook && curBook->term != NULL)
+         // drawUpdateScreen() can be slow, check the terminal wasn't closed already
+         if (book == curBook && curBook->term != NULL)
             update_cursor(curBook->term, TRUE);
       } else
          redraw_after_callback(TRUE, FALSE);
@@ -8173,7 +8172,7 @@ term_job_running_check(Terminal *term, int check_job_status) {
    Job *job = term->job;
 
    // Careful: Checking the job status may invoke callbacks, which close
-   // the buffer and terminate "term".  However, "job" will not be freed yet.
+   // the book and terminate "term".  However, "job" will not be freed yet.
    if (check_job_status)
       job_status(job);
    return (job->jv_status == JOB_STARTED
@@ -8206,11 +8205,11 @@ term_none_open(Terminal *term) {
 // Used to confirm whether we would like to kill a terminal. Return OK when the user confirms to 
 // kill it. Return FAIL if the user selects otherwise.
 int
-term_confirm_stop(Book* buf) {
+term_confirm_stop(Book* book) {
    Byte   buff[DIALOG_MSG_SIZE];
    int   ret;
 
-   dialog_msg(buff, _("Kill job in \"%s\"?"), bookGetFname(buf));
+   dialog_msg(buff, _("Kill job in \"%s\"?"), bookGetFname(book));
    ret = eeDialog_yesno(EE_QUESTION, NULL, buff, 1);
    if (ret == EE_YES)
       return OK;
@@ -8218,32 +8217,32 @@ term_confirm_stop(Book* buf) {
       return FAIL;
 }
 
-// Used when exiting: kill the job in "buf" if so desired. Return OK when the job finished.
+// Used when exiting: kill the job in "book" if so desired. Return OK when the job finished.
 // Return FAIL when the job is still running.
 int
-term_try_stop_job(Book* buf) {
+term_try_stop_job(Book* book) {
    int       count;
-   char    *how = (char *)buf->term->tl_kill;
+   CS  how = book->term->tl_kill;
 
    if ((how == NULL || *how == ZERO) && (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM))) {
-      if (term_confirm_stop(buf) == OK)
-         how = "kill";
+      if (term_confirm_stop(book) == OK)
+         how = S"kill";
       else
          return FAIL;
    }
    if (how == NULL || *how == ZERO)
       return FAIL;
 
-   job_stop(buf->term->job, NULL, how);
+   job_stop(book->term->job, NULL, how);
 
    // wait for up to a second for the job to die
    for (count = 0; count < 100; ++count) {
       Job *job;
 
-      // buffer, terminal and job may be cleaned up while waiting
-      if (!bookIsValid(buf) || buf->term == NULL || buf->term->job == NULL)
+      // book, terminal and job may be cleaned up while waiting
+      if (!bookIsValid(book) || book->term == NULL || book->term->job == NULL)
          return OK;
-      job = buf->term->job;
+      job = book->term->job;
 
       // Call job_status() to update jv_status. It may cause the job to be
       // cleaned up but it won't be freed.
@@ -8260,14 +8259,14 @@ term_try_stop_job(Book* buf) {
 // Add the last line of the scrollback buffer to the buffer in the portal.
 private void
 add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
-   Book* buf = term->buf;
-   int      empty = (buf->mem.flags & ML_EMPTY);
-   LineNr   lnum = buf->mem.lineCount;
+   Book* book = term->book;
+   int      empty = (book->mem.flags & ML_EMPTY);
+   LineNr   lnum = book->mem.lineCount;
 
-   ml_append_buf(term->buf, lnum, text, len + 1, FALSE);
+   ml_append_buf(term->book, lnum, text, len + 1, FALSE);
    if (empty) {
       // Delete the empty line that was in the empty buffer.
-      ml_deleteBufLine(buf, 1);
+      ml_deleteBufLine(book, 1);
    }
 }
 
@@ -8322,7 +8321,7 @@ cleanup_scrollback(Terminal *term) {
    ScrollbackLine   *line;
    ArrayList   *gap;
 
-   curBook = term->buf;
+   curBook = term->book;
    gap = &term->tl_scrollback;
    while (curBook->mem.lineCount > term->tl_scrollback_scrolled && gap->len > 0) {
       ml_delete(curBook->mem.lineCount);
@@ -8331,7 +8330,7 @@ cleanup_scrollback(Terminal *term) {
       --gap->len;
    }
    curBook = curPor->book;
-   if (curBook == term->buf)
+   if (curBook == term->book)
       check_cursor();
 }
 
@@ -8465,7 +8464,7 @@ may_move_terminal_to_buffer(Terminal *term, int redraw) {
       return;
 
    // Update the snapshot only if something changes or the buffer does not have all the lines.
-   if (term->dirtySnapshot || term->buf->mem.lineCount <= term->tl_scrollback_scrolled) {
+   if (term->dirtySnapshot || term->book->mem.lineCount <= term->tl_scrollback_scrolled) {
       update_snapshot(term);
    } 
 
@@ -8479,8 +8478,8 @@ may_move_terminal_to_buffer(Terminal *term, int redraw) {
       int did_curPor = FALSE;
 
       while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor)) {
-         if (po->book == term->buf) {
-            po->cursor.lnum = term->buf->mem.lineCount;
+         if (po->book == term->book) {
+            po->cursor.lnum = term->book->mem.lineCount;
             po->cursor.col = 0;
             po->cacheState = 0;
             if (po->cursor.lnum >= po->height) {
@@ -9153,7 +9152,7 @@ handle_damage(VTermRect rect, void *user) {
     term->dirtyRowStart = MIN(term->dirtyRowStart, (int)rect.start_row);
     term->dirtyRowEnd = MAX(term->dirtyRowEnd, (int)rect.end_row);
     set_dirty_snapshot(term);
-    redraw_buf_later(term->buf, UPD_SOME_VALID);
+    redraw_buf_later(term->book, UPD_SOME_VALID);
     return 1;
 }
 
@@ -9167,7 +9166,7 @@ term_scroll_up(Terminal *term, int start_row, int count) {
    CLEAR_FIELD(cellAttr);
 
    while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor)) {
-      if (po->book == term->buf) {
+      if (po->book == term->book) {
          // Set the color to clear lines with.
          vterm_state_get_default_colors(vterm_obtain_state(term->vterm), &fg, &bg);
          Decoration clearDeco = cellToDecoration(term, po, &cellAttr, &fg, &bg);
@@ -9199,7 +9198,7 @@ handle_moverect(VTermRect dest, VTermRect src, void *user) {
    set_dirty_snapshot(term);
 
    // Note sure if the scrolling will work correctly, let's do a complete redraw later.
-   redraw_buf_later(term->buf, UPD_NOT_VALID);
+   redraw_buf_later(term->book, UPD_NOT_VALID);
    return 1;
 }
 
@@ -9218,10 +9217,10 @@ handle_movecursor(
    term->tl_cursor_visible = visible;
 
    while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor)) {
-      if (po->book == term->buf)
+      if (po->book == term->book)
           position_cursor(po, &pos);
    }
-   if (term->buf == curBook && !term->isNormalMode)
+   if (term->book == curBook && !term->isNormalMode)
    update_cursor(term, term->tl_cursor_visible);
 
     return 1;
@@ -9324,12 +9323,12 @@ handle_resize(int rows, int cols, void *user) {
    else {
       Portal* po;
       FOR_ALL_PORTALS(po) {
-         if (po->book == term->buf) {
+         if (po->book == term->book) {
             portSetHeight(rows, po);
             portSetWidth(cols, po);
          }
       }
-      redraw_buf_later(term->buf, UPD_NOT_VALID);
+      redraw_buf_later(term->book, UPD_NOT_VALID);
    }
     return 1;
 }
@@ -9347,7 +9346,7 @@ limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
    for (int i = 0; i < todo; ++i) {
       eeglFree(((ScrollbackLine *)scrollback->c + i)->sb_cells);
       if (update_buffer)
-         ml_deleteBufLine(term->buf, 1);
+         ml_deleteBufLine(term->book, 1);
    }
 
    scrollback->len -= todo;
@@ -9361,7 +9360,7 @@ limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
       term->tl_scrollback_scrolled -= todo;
 
       FOR_ALL_PORTALS(po) {
-         if (po->book == term->buf) {
+         if (po->book == term->book) {
             curPor = po;
             check_cursor();
             update_topline();
@@ -9524,23 +9523,23 @@ private int
 term_after_channel_closed(Terminal *term) {
     // Unless in Terminal-Normal mode: clear the vterm.
    if (!term->isNormalMode) {
-      int   fnum = term->buf->fiNum;
+      int   fnum = term->book->fiNum;
 
       cleanup_vterm(term);
 
       if (term->tl_finish == TL_FINISH_CLOSE) {
          AutocommSave   aco;
-         int      do_set_locked = term->buf->countPortals == 0;
+         int      do_set_locked = term->book->countPortals == 0;
          Portal   *pwin = NULL;
 
          // If this was a terminal in a popup portal, go back to the previous portal.
-         if (popup_is_popup(curPor) && curBook == term->buf) {
+         if (popup_is_popup(curPor) && curBook == term->book) {
             pwin = curPor;
             if (portalIsValid(prevPor))
                 enterPortal(prevPor, FALSE);
          } else
             // If this is the last normal portal: exit Em.
-            if (term->buf->countPortals > 0 && onlyOnePortal()) {
+            if (term->book->countPortals > 0 && onlyOnePortal()) {
                Invocation ea;
 
                CLEAR_FIELD(ea);
@@ -9550,8 +9549,8 @@ term_after_channel_closed(Terminal *term) {
 
          // ++close or term_finish == "close"
          lo("terminal job finished, closing portal");
-         auCommPrepareBook(&aco, term->buf);
-         if (curBook == term->buf) {
+         auCommPrepareBook(&aco, term->book);
+         if (curBook == term->book) {
             // Avoid closing the portal if we temporarily use it.
             if (is_autoCommPort(curPor))
                do_set_locked = TRUE;
@@ -9566,7 +9565,7 @@ term_after_channel_closed(Terminal *term) {
          popup_close_with_retval(pwin, 0);
           return TRUE;
       }
-      if (term->tl_finish == TL_FINISH_OPEN && term->buf->countPortals == 0) {
+      if (term->tl_finish == TL_FINISH_OPEN && term->book->countPortals == 0) {
          char    *cmd = term->tl_opencmd == NULL
                ? "botright sbuf %d"
                : (char *)term->tl_opencmd;
@@ -9581,7 +9580,7 @@ term_after_channel_closed(Terminal *term) {
          lo("terminal job finished");
    }
 
-   redraw_buf_and_status_later(term->buf, UPD_NOT_VALID);
+   redraw_buf_and_status_later(term->book, UPD_NOT_VALID);
    return FALSE;
 }
 
@@ -9769,7 +9768,7 @@ termUpdatePortal(Portal *po) {
       Portal *wwp = twp == NULL ? curPor : twp;
 
       // When more than one portal shows the same terminal, use the smallest size.
-      if (wwp->book == term->buf) {
+      if (wwp->book == term->book) {
          newrows = MIN(newrows, wwp->height);
          newcols = MIN(newcols, wwp->width);
       }
@@ -9834,15 +9833,15 @@ termDidUpdatePortal(Portal* po) {
 
 //Return TRUE if "po" is a terminal portals where the job has finished.
 int
-term_is_finished(Book* buf) {
-   return buf->term && buf->term->vterm == NULL;
+term_is_finished(Book* book) {
+   return book->term && book->term->vterm == NULL;
 }
 
 //Return TRUE if "po" is a terminal portals where the job has finished or we
 //are in Terminal-Normal mode, thus we show the buffer contents.
 int
-term_shobuffer(Book* buf) {
-   Terminal *term = buf->term;
+term_shobuffer(Book* book) {
+   Terminal *term = book->term;
 
    return term != NULL && (term->vterm == NULL || term->isNormalMode);
 }
@@ -9856,7 +9855,7 @@ term_change_in_curbuf(void) {
    return;
 
     free_scrollback(term);
-    redraw_buf_later(term->buf, UPD_NOT_VALID);
+    redraw_buf_later(term->book, UPD_NOT_VALID);
 
     // The buffer is now like a normal buffer, it cannot be easily
     // abandoned when changed.
@@ -9867,8 +9866,8 @@ term_change_in_curbuf(void) {
 //filler bg color
 Decoration
 termGetDeco(Portal* po, LineNr lnum, int col) {
-   Book* buf = po->book;
-   Terminal* term = buf->term;
+   Book* book = po->book;
+   Terminal* term = book->term;
    ScrollbackLine* line;
    CellDeco* cellattr;
 
@@ -10132,7 +10131,7 @@ handle_call_command(Terminal *term, Channel *channel, ListItem *item) {
    }
 
    argvars[0].tag = VAR_NUMBER;
-   argvars[0].number = term->buf->fiNum;
+   argvars[0].number = term->book->fiNum;
    argvars[1] = item->next->c;
    CLEAR_FIELD(funcexe);
    funcexe.fe_firstline = 1L;
@@ -10238,7 +10237,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
 
          // Make sure an invoked command doesn't delete the buffer (and the
          // terminal) under our fingers.
-         ++term->buf->locked;
+         ++term->book->locked;
 
          item = item->next;
          if (item == NULL)
@@ -10249,7 +10248,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
          handle_call_command(term, channel, item);
           else
          ch_log(channel, "Invalid command received: %s", cmd);
-          --term->buf->locked;
+          --term->book->locked;
       }
    } else
       ch_log(channel, "Invalid JSON received");
@@ -10284,7 +10283,7 @@ parse_csi(
    (void)uiGetPortPos(&x, &y, (Long)100);
 
    FOR_ALL_PORTALS(po) {
-      if (po->book == term->buf)
+      if (po->book == term->book)
          break;
    } 
    if (po) {
@@ -10448,7 +10447,7 @@ term_get_status_text(Terminal *term) {
       txt = (CS)_("running");
    else
       txt = (CS)_("finished");
-   fname = bookGetFname(term->buf);
+   fname = bookGetFname(term->book);
    len = 9 + STRLEN(fname) + STRLEN(txt);
    term->tl_status_text = alloc(len);
    if (term->tl_status_text != NULL)
@@ -10483,14 +10482,14 @@ set_ref_in_term(int copyID) {
 private Book *
 term_get_buf(Var *argvars, char *where) {
    ++emsg_off;
-   Book* buf = daGetBook(&argvars[0], FALSE);
+   Book* book = daGetBook(&argvars[0], FALSE);
    --emsg_off;
-   if (!buf || !buf->term) {
+   if (!book || !book->term) {
       (void)tv_get_number(&argvars[0]);    // issue errmsg if type error
       lo("%s: invalid buffer argument", where);
       return NULL;
    }
-   return buf;
+   return book;
 }
 
 private void
@@ -10515,7 +10514,7 @@ dump_term_color(FILE *fd, VTermColor *color) {
    fprintf(fd, "%02x%02x%02x%d", (int)color->red, (int)color->green, (int)color->blue, index);
 }
 
-// "term_dumpwrite(buf, filename, options)" function
+// "term_dumpwrite(book, filename, options)" function
 //
 // Each screen cell in full is:
 //    |{characters}+{decorations}#{fg-color}{color-idx}#{bg-color}{color-idx}
@@ -10543,10 +10542,10 @@ f_term_dumpwrite(Var *argvars, Var *returnVar UNUSED) {
    FILE   *fd;
    VTermPos   cursor_pos;
 
-   Book* buf = term_get_buf(argvars, "term_dumpwrite()");
-   if (!buf)
+   Book* book = term_get_buf(argvars, "term_dumpwrite()");
+   if (!book)
       return;
-   Terminal* term = buf->term;
+   Terminal* term = book->term;
    if (term->vterm == NULL) {
       emsg(_(e_job_already_finished));
       return;
@@ -10947,7 +10946,7 @@ get_separator(int text_width, CS fname) {
 private void
 term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
    JobOptions   opt;
-   Book   *buf = NULL;
+   Book   *book = NULL;
    Byte   buf1[NUMBUFLEN];
    Byte   buf2[NUMBUFLEN];
    Byte   *fname1;
@@ -11003,7 +11002,7 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
       if (!po)
          showErrFmtMsg(_(e_invalid_argument_str), "bufnr");
       else {
-         buf = curBook;
+         book = curBook;
          while (!(curBook->mem.flags & ML_EMPTY))
             ml_delete((LineNr)1);
          free_scrollback(curBook->term);
@@ -11011,19 +11010,19 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
       }
    } else
       // Create a new terminal portal.
-      buf = term_start(&argvars[0], NULL, &opt, TERM_START_NOJOB);
+      book = term_start(&argvars[0], NULL, &opt, TERM_START_NOJOB);
 
-   if (!buf || !buf->term) {
+   if (!book || !book->term) {
       goto theend;
    }
    LineNr   lnum;
-   Terminal      *term = buf->term;
+   Terminal      *term = book->term;
    VTermPos   cursor_pos1;
    VTermPos   cursor_pos2;
 
    init_default_colors(term);
 
-   returnVar->number = buf->fiNum;
+   returnVar->number = book->fiNum;
 
    // read the files, fill the buffer with the diff
    Unt width = read_dump_file(fd1, &cursor_pos1);
@@ -11266,19 +11265,16 @@ f_term_dumpload(Var *argvars, Var *returnVar) {
    term_load_dump(argvars, returnVar, FALSE);
 }
 
-// "term_getaltscreen(buf)" function
+// "term_getaltscreen(book)" function
 void
 f_term_getaltscreen(Var *argvars, Var *returnVar) {
-   Book   *buf;
-
-
-   buf = term_get_buf(argvars, "term_getaltscreen()");
-   if (buf == NULL)
+   Book* book = term_get_buf(argvars, "term_getaltscreen()");
+   if (book == NULL)
       return;
-   returnVar->number = buf->term->tl_using_altscreen;
+   returnVar->number = book->term->tl_using_altscreen;
 }
 
-// "term_getcursor(buf)" function
+// "term_getcursor(book)" function
 void
 f_term_getcursor(Var *argvars, Var *returnVar) {
    Book* book = term_get_buf(argvars, "term_getcursor()");
@@ -11302,18 +11298,18 @@ f_term_getcursor(Var *argvars, Var *returnVar) {
    listAppendBag(l, b);
 }
 
-// "term_getjob(buf)" function
+// "term_getjob(book)" function
 void
 f_term_getjob(Var *argvars, Var *returnVar) {
-   Book* buf = term_get_buf(argvars, "term_getjob()");
-   if (buf == NULL) {
+   Book* book = term_get_buf(argvars, "term_getjob()");
+   if (book == NULL) {
       returnVar->tag = VAR_SPECIAL;
       returnVar->number = VVAL_NULL;
       return;
    }
 
    returnVar->tag = VAR_JOB;
-   returnVar->job = buf->term->job;
+   returnVar->job = book->term->job;
    if (returnVar->job != NULL)
       ++returnVar->job->jv_refcount;
 }
@@ -11325,27 +11321,26 @@ get_row_number(Var *tv, Terminal *term) {
    return (int)tv_get_number(tv) - 1;
 }
 
-// "term_getline(buf, row)" function
+// "term_getline(book, row)" function
 void
 f_term_getline(Var *argvars, Var *returnVar) {
-   Book       *buf;
    Terminal       *term;
    int          row;
 
    returnVar->tag = VAR_STRING;
 
-   buf = term_get_buf(argvars, "term_getline()");
-   if (buf == NULL)
+   Book* book = term_get_buf(argvars, "term_getline()");
+   if (book == NULL)
       return;
-   term = buf->term;
+   term = book->term;
    row = get_row_number(&argvars[1], term);
 
    if (term->vterm == NULL) {
       LineNr lnum = row + term->tl_scrollback_scrolled + 1;
 
-      // vterm is finished, get the text from the buffer
-      if (lnum > 0 && lnum <= buf->mem.lineCount)
-         returnVar->string = copyStr(memGetLine(buf, lnum, FALSE));
+      // vterm is finished, get the text from the book
+      if (lnum > 0 && lnum <= book->mem.lineCount)
+         returnVar->string = copyStr(memGetLine(book, lnum, FALSE));
    } else {
       VTermScreen   *screen = vterm_obtain_screen(term->vterm);
       VTermRect   rect;
@@ -11368,18 +11363,16 @@ f_term_getline(Var *argvars, Var *returnVar) {
     }
 }
 
-// "term_getscrolled(buf)" function
+// "term_getscrolled(book)" function
 void
 f_term_getscrolled(Var *argvars, Var *returnVar) {
-   Book   *buf;
-
-   buf = term_get_buf(argvars, "term_getscrolled()");
-   if (buf == NULL)
+   Book* book = term_get_buf(argvars, "term_getscrolled()");
+   if (book == NULL)
       return;
-   returnVar->number = buf->term->tl_scrollback_scrolled;
+   returnVar->number = book->term->tl_scrollback_scrolled;
 }
 
-// "term_getsize(buf)" function
+// "term_getsize(book)" function
 void
 f_term_getsize(Var *argvars, Var *returnVar) {
    Book* book = term_get_buf(argvars, "term_getsize()");
@@ -11392,21 +11385,20 @@ f_term_getsize(Var *argvars, Var *returnVar) {
    list_append_number(l, book->term->cols);
 }
 
-// "term_setsize(buf, rows, cols)" function
+// "term_setsize(book, rows, cols)" function
 void
 f_term_setsize(Var *argvars, Var *returnVar UNUSED) {
-   Book   *buf;
    Terminal   *term;
    Long rows, cols;
 
-   buf = term_get_buf(argvars, "term_setsize()");
-   if (buf == NULL) {
+   Book* book = term_get_buf(argvars, "term_setsize()");
+   if (!book) {
       emsg(_(e_not_terminal_buffer));
       return;
    }
-   if (buf->term->vterm == NULL)
+   if (book->term->vterm == NULL)
       return;
-   term = buf->term;
+   term = book->term;
    rows = tv_get_number(&argvars[1]);
    rows = rows <= 0 ? term->rows : rows;
    cols = tv_get_number(&argvars[2]);
@@ -11419,19 +11411,18 @@ f_term_setsize(Var *argvars, Var *returnVar UNUSED) {
    term_report_winsize(term, term->rows, term->cols);
 }
 
-// "term_getstatus(buf)" function
+// "term_getstatus(book)" function
 void
 f_term_getstatus(Var *argvars, Var *returnVar) {
-   Book   *buf;
    Terminal   *term;
    Byte   val[100];
 
    returnVar->tag = VAR_STRING;
 
-   buf = term_get_buf(argvars, "term_getstatus()");
-   if (buf == NULL)
+   Book* book = term_get_buf(argvars, "term_getstatus()");
+   if (book == NULL)
       return;
-   term = buf->term;
+   term = book->term;
 
    if (term_job_running(term))
       STRCPY(val, "running");
@@ -11442,25 +11433,25 @@ f_term_getstatus(Var *argvars, Var *returnVar) {
    returnVar->string = copyStr(val);
 }
 
-// "term_gettitle(buf)" function
+// "term_gettitle(book)" function
 void
 f_term_gettitle(Var *argvars, Var *returnVar) {
 
    returnVar->tag = VAR_STRING;
 
-   Book* buf = term_get_buf(argvars, "term_gettitle()");
-   if (!buf)
+   Book* book = term_get_buf(argvars, "term_gettitle()");
+   if (!book)
       return;
 
-   if (buf->term->title)
-      returnVar->string = copyStr(buf->term->title);
+   if (book->term->title)
+      returnVar->string = copyStr(book->term->title);
 }
 
-// "term_gettty(buf)" function
+// "term_gettty(book)" function
 void
 f_term_gettty(Var *argvars, Var *returnVar) {
-   Book* buf = term_get_buf(argvars, "term_gettty()");
-   if (!buf)
+   Book* book = term_get_buf(argvars, "term_gettty()");
+   if (!book)
       return;
       
    CS p = NULL;
@@ -11471,12 +11462,12 @@ f_term_gettty(Var *argvars, Var *returnVar) {
 
    switch (num) {
    case 0:
-      if (buf->term->job != NULL)
-         p = buf->term->job->jv_tty_out;
+      if (book->term->job != NULL)
+         p = book->term->job->jv_tty_out;
       break;
    case 1:
-      if (buf->term->job != NULL)
-         p = buf->term->job->jv_tty_in;
+      if (book->term->job != NULL)
+         p = book->term->job->jv_tty_in;
       break;
    default:
       showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[1]));
@@ -11496,12 +11487,12 @@ f_term_list(Var *argvars UNUSED, Var *returnVar) {
    List* l = returnVar->list;
    Terminal* term;
    FOR_ALL_TERMS(term) {
-      if (term->buf && list_append_number(l, (Long)term->buf->fiNum) == FAIL)
+      if (term->book && list_append_number(l, (Long)term->book->fiNum) == FAIL)
          return;
    } 
 }
 
-// "term_scrape(buf, row)" function
+// "term_scrape(book, row)" function
 void
 f_term_scrape(Var *argvars, Var *returnVar) {
    VTermScreen       *screen = NULL;
@@ -11598,7 +11589,7 @@ f_term_scrape(Var *argvars, Var *returnVar) {
    }
 }
 
-// "term_sendkeys(buf, keys)" function
+// "term_sendkeys(book, keys)" function
 void
 f_term_sendkeys(Var *argvars, Var *returnVar UNUSED) {
    Book* book = term_get_buf(argvars, "term_sendkeys()");

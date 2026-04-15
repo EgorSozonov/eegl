@@ -651,8 +651,8 @@ typedef struct {
     int          dio_ctxlen;   // unified diff context length
 } DiffIo;
 
-private Unt diff_buf_idx(Book *buf);
-private Unt diff_buf_idx_tp(Book *buf, Tab *t);
+private Unt diff_buf_idx(Book *);
+private Unt diff_buf_idx_tp(Book *, Tab *);
 private void diff_mark_adjust_tp(Tab *t, Unt idx, LineNr line1, LineNr line2, long amount, long amount_after);
 private void diff_check_unchanged(Tab *t, DiffBlock *dp);
 private int diff_check_sanity(Tab *t, DiffBlock *dp);
@@ -669,7 +669,7 @@ private int parse_diff_unified(Byte *line, diffhunk_T *hunk);
 private int xdiff_out_indices(long start_a, long count_a, long start_b, long count_b, void *priv);
 private int xdiff_out_unified(void *priv, MmBuffer *mb, int nbuf);
 private int parse_diffanchors(
-      CS diffAnchors, Boole check_only, Book *buf, LineNr *anchors, OUT Unt *countAanchors
+      CS diffAnchors, Boole check_only, Book* book, LineNr *anchors, OUT Unt *countAanchors
 );
 
 #define FOR_ALL_DIFFBLOCKS_IN_TAB(t, dp) \
@@ -683,10 +683,10 @@ clear_diffblock(DiffBlock *dp) {
 
 // Called when deleting or unloading a buffer: No longer make a diff with it.
 void
-diff_buf_delete(Book *buf) {
+diff_buf_delete(Book* book) {
    Tab   *t;
    FOR_ALL_TABS(t) {
-      Unt i = diff_buf_idx_tp(buf, t);
+      Unt i = diff_buf_idx_tp(book, t);
       if (i != UNT) {
          t->diffbuf[i] = NULL;
          t->diff_invalid = TRUE;
@@ -729,15 +729,15 @@ diff_buf_adjust(Portal *po) {
 // This must be done before any autocmd, because a command may use info
 // about the screen contents.
 void
-diff_buf_add(Book *buf) {
+diff_buf_add(Book* book) {
    int      i;
 
-   if (diff_buf_idx(buf) != UNT)
+   if (diff_buf_idx(book) != UNT)
       return;      // It's already there.
 
    for (i = 0; i < DB_COUNT; ++i) {
       if (curtab->diffbuf[i] == NULL) {
-         curtab->diffbuf[i] = buf;
+         curtab->diffbuf[i] = book;
          curtab->diff_invalid = TRUE;
          diff_redraw(TRUE);
          return;
@@ -761,34 +761,34 @@ diff_buf_clear(void) {
    } 
 }
 
-// Find buffer "buf" in the list of diff buffers for the current tab.
+// Find book in the list of diff books for the current tab.
 // Return its index or DB_COUNT if not found.
 private Unt
-diff_buf_idx(Book *buf) {
+diff_buf_idx(Book *book) {
    for (Unt idx = 0; idx < DB_COUNT; ++idx) {
-      if (curtab->diffbuf[idx] == buf)
+      if (curtab->diffbuf[idx] == book)
          return idx;
    } 
    return UNT;
 }
 
-//Find buffer "buf" in the list of diff buffers for tab "t". 
+//Find buffer "book" in the list of diff buffers for tab "t". 
 //Return its index or DB_COUNT if not found
 private Unt
-diff_buf_idx_tp(Book *buf, Tab* t) {
+diff_buf_idx_tp(Book* book, Tab* t) {
    for (Unt idx = 0; idx < DB_COUNT; ++idx) {
-      if (t->diffbuf[idx] == buf)
+      if (t->diffbuf[idx] == book)
          return idx;
    } 
    return UNT;
 }
 
-// Mark the diff info involving buffer "buf" as invalid, it will be updated when info is requested.
+// Mark the diff info involving buffer as invalid, it will be updated when info is requested.
 void
-diff_invalidate(Book *buf) {
+diff_invalidate(Book* book) {
    Tab   *t;
    FOR_ALL_TABS(t) {
-      Unt i = diff_buf_idx_tp(buf, t);
+      Unt i = diff_buf_idx_tp(book, t);
       if (i != UNT) {
          t->diff_invalid = TRUE;
          if (t == curtab)
@@ -1224,17 +1224,17 @@ clear_diffout(diffout_T *dout) {
       mch_remove(dout->dout_fname);
 }
 
-//Write buffer "buf" to a memory buffer. Return FAIL for failure.
+//Write buffer "book" to a memory buffer. Return FAIL for failure.
 private int
-diff_write_buffer(Book *buf, diffin_T *din, LineNr start, LineNr end) {
+diff_write_buffer(Book* book, diffin_T *din, LineNr start, LineNr end) {
    LineNr   lnum;
    Byte   *s;
    long   len = 0;
 
    if (end < 0)
-      end = buf->mem.lineCount;
+      end = book->mem.lineCount;
 
-   if (buf->mem.flags & ML_EMPTY || end < start) {
+   if (book->mem.flags & ML_EMPTY || end < start) {
       din->din_mmfile.ptr = NULL;
       din->din_mmfile.size = 0;
       return OK;
@@ -1242,16 +1242,16 @@ diff_write_buffer(Book *buf, diffin_T *din, LineNr start, LineNr end) {
 
    // xdiff requires one big block of memory with all the text.
    for (lnum = start; lnum <= end; ++lnum)
-      len += memGetBookLen(buf, lnum) + 1;
+      len += memGetBookLen(book, lnum) + 1;
    CS ptr = tryBigAlloc(len);
    if (ptr == NULL) {
       //Allocating memory failed.  This can happen, because we try to read
       //the whole buffer text into memory.  Set the failed flag, the diff
       //will be retried with external diff.  The flag is never reset.
-      buf->diffFailed = TRUE;
+      book->diffFailed = TRUE;
       if (p_verbose > 0) {
          verbose_enter();
-         smsg(_("Not enough memory to use internal diff for buffer \"%s\""), buf->currFileName);
+         smsg(_("Not enough memory to use internal diff for buffer \"%s\""), book->currFileName);
          verbose_leave();
       }
       return FAIL;
@@ -1261,7 +1261,7 @@ diff_write_buffer(Book *buf, diffin_T *din, LineNr start, LineNr end) {
 
    len = 0;
    for (lnum = start; lnum <= end; ++lnum) {
-      for (s = memGetLine(buf, lnum, FALSE); *s != ZERO; ) {
+      for (s = memGetLine(book, lnum, FALSE); *s != ZERO; ) {
          if (diff_flags & DIFF_ICASE) {
             int c;
             int   orig_len;
@@ -1301,16 +1301,16 @@ diff_write_buffer(Book *buf, diffin_T *din, LineNr start, LineNr end) {
    return OK;
 }
 
-//Write buffer "buf" to file or memory buffer. Return FAIL for failure.
+//Write "book" to file or memory buffer. Return FAIL for failure.
 private int
-diff_write(Book *buf, diffin_T *din, LineNr start, LineNr end) {
+diff_write(Book* book, diffin_T *din, LineNr start, LineNr end) {
    if (din->din_fname == NULL)
-      return diff_write_buffer(buf, din, start, end);
+      return diff_write_buffer(book, din, start, end);
       
    if (end < 0)
-      end = buf->mem.lineCount;
+      end = book->mem.lineCount;
 
-   int save_ml_flags = buf->mem.flags;
+   int save_ml_flags = book->mem.flags;
    int save_cmod_flags = commModifierG.cmod_flags;
    // Writing the buffer is an implementation detail of performing the diff,
    // so it shouldn't update the '[ and '] marks.
@@ -1318,13 +1318,13 @@ diff_write(Book *buf, diffin_T *din, LineNr start, LineNr end) {
    if (end < start) {
       // The line range specifies a completely empty file.
       end = start;
-      buf->mem.flags |= ML_EMPTY;
+      book->mem.flags |= ML_EMPTY;
    }
-   int r = bookWrite(buf, din->din_fname, NULL,
+   int r = bookWrite(book, din->din_fname, NULL,
         start, end,
         NULL, FALSE, FALSE, FALSE, TRUE);
    commModifierG.cmod_flags = save_cmod_flags;
-   buf->mem.flags = save_ml_flags;
+   book->mem.flags = save_ml_flags;
    return r;
 }
 
@@ -1363,12 +1363,12 @@ diff_try_update(
       goto theend;
 
    // :diffupdate!
-   Book   *buf;
+   Book* book;
    if (invo && invo->forceit) {
       for (int idx_new = idx_orig; idx_new < DB_COUNT; ++idx_new) {
-         buf = curtab->diffbuf[idx_new];
-         if (bookIsValid(buf))
-            fiCheckBookTimestamp(buf);
+         book = curtab->diffbuf[idx_new];
+         if (bookIsValid(book))
+            fiCheckBookTimestamp(book);
       }
    }
 
@@ -1414,8 +1414,8 @@ diff_try_update(
       LineNr lnum_end = (anchorInd == countAnchors) ? -1 : anchors[idx_orig][anchorInd] - 1;
 
       // Write the first buffer to a tempfile or MmFile.
-      buf = curtab->diffbuf[idx_orig];
-      if (diff_write(buf, &dio->dio_orig, lnum_start, lnum_end) == FAIL) {
+      book = curtab->diffbuf[idx_orig];
+      if (diff_write(book, &dio->dio_orig, lnum_start, lnum_end) == FAIL) {
          if (orig_diff) {
             // Clean up in-progress diff blocks
             curtab->first_diff = orig_diff;
@@ -1426,15 +1426,15 @@ diff_try_update(
 
       // Make a difference between the first buffer and every other.
       for (int idx_new = idx_orig + 1; idx_new < DB_COUNT; ++idx_new) {
-         buf = curtab->diffbuf[idx_new];
-         if (!buf || buf->mem.mfile == NULL)
+         book = curtab->diffbuf[idx_new];
+         if (!book || book->mem.mfile == NULL)
             continue; // skip buffer that isn't loaded
 
          lnum_start = anchorInd == 0 ? 1 : anchors[idx_new][anchorInd - 1];
          lnum_end = anchorInd == countAnchors ? -1 : anchors[idx_new][anchorInd] - 1;
 
          // Write the other buffer and diff with the first one.
-         if (diff_write(buf, &dio->dio_new, lnum_start, lnum_end) == FAIL)
+         if (diff_write(book, &dio->dio_new, lnum_start, lnum_end) == FAIL)
             continue;
          if (diff_file(dio) == FAIL)
             continue;
@@ -2508,7 +2508,7 @@ run_linematch_algorithm(DiffBlock *dp) {
    free(decisions);
 }
 
-//Check diff status for line "lnum" in buffer "buf":
+//Check diff status for line "lnum" in book "book":
 //Return > 0 for inserting that many filler lines above it (never happens
 //when @diffopt doesn't contain "filler"). Otherwise return 0.
 //
@@ -2525,7 +2525,7 @@ int
 diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestatus) {
    DiffBlock   *dp;
    int      maxcount;
-   Book   *buf = wp->book;
+   Book   *book = wp->book;
    int      cmp;
 
    if (linestatus)
@@ -2538,12 +2538,12 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
       return 0;
 
    // safety check: "lnum" must be a buffer line
-   if (lnum < 1 || lnum > buf->mem.lineCount + 1)
+   if (lnum < 1 || lnum > book->mem.lineCount + 1)
       return 0;
 
-   Unt idx = diff_buf_idx(buf);      // index in diffbuf[] for this buffer
+   Unt idx = diff_buf_idx(book);      // index in diffbuf[] for this buffer
    if (idx == UNT)
-      return 0;      // no diffs for buffer "buf"
+      return 0;      // no diffs for buffer "book"
 
    // A closed fold never has filler lines.
    if (getFoldsPortal(wp, lnum, NULL, NULL, TRUE, NULL))
@@ -2794,7 +2794,7 @@ private int
 parse_diffanchors(
    CS diffAnchors,
    Boole check_only,
-   Book* buf,
+   Book* book,
    LineNr* anchors,
    OUT Unt* countAnchors
 ) {
@@ -2810,7 +2810,7 @@ parse_diffanchors(
       // Find the first portal tied to this buffer and ignore the rest. Will
       // only matter for portal-specific addresses like `.` or `''`.
       FOR_ALL_PORTALS(bufPort) {
-         if (bufPort->book == buf && bufPort->bookOpts.diff)
+         if (bufPort->book == book && bufPort->bookOpts.diff)
             break;
       } 
       if (!bufPort && *dia != ZERO) {
@@ -2827,7 +2827,7 @@ parse_diffanchors(
       if (*dia == ',') // don't allow empty values
          return FAIL;
 
-      curBook = buf;
+      curBook = book;
       curPor = bufPort;
       LineNr lnum = doGetCommandAddress(NULL, OUT &dia, ADDR_LINES, check_only, TRUE, FALSE, 1);
       curBook = orig_curbuf;
@@ -2836,7 +2836,7 @@ parse_diffanchors(
       if (!dia || (*dia != ',' && *dia != ZERO)) // error detected
          return FAIL;
 
-      if (!check_only && (lnum == MAXLNUM || lnum <= 0 || lnum > buf->mem.lineCount + 1)) {
+      if (!check_only && (lnum == MAXLNUM || lnum <= 0 || lnum > book->mem.lineCount + 1)) {
          emsg(_(e_invalid_range));
          return FAIL;
       }
@@ -3324,8 +3324,8 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
    for (int i = 0; i < DB_COUNT; i++) {
       dio.dio_diff.dout_ga.len = 0;
 
-      Book *buf = curtab->diffbuf[i];
-      if (buf == NULL || buf->mem.mfile == NULL)
+      Book *book = curtab->diffbuf[i];
+      if (book == NULL || book->mem.mfile == NULL)
          continue; // skip buffer that isn't loaded
 
       if (dp->df_count[i] == 0) {

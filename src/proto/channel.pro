@@ -85,7 +85,7 @@ int has_pending_job(void);
 int job_check_ended(void);
 Job *startJob(Var *argvars, Byte **argv_arg, JobOptions *opt_arg, Job **term_job);
 CS job_status(Job *job);
-int job_stop(Job *job, Var *argvars, char *type);
+int job_stop(Job *job, Var *argvars, CS type);
 void invoke_prompt_callback(void);
 int invoke_prompt_interrupt(void);
 CS prompt_text(void);

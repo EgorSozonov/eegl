@@ -6645,13 +6645,13 @@ job_status(Job *job) {
 // Send a signal to "job".  Implements job_stop(). When "type" is not NULL use this for the type.
 // Otherwise use argvars[1] for the type.
 int
-job_stop(Job *job, Var *argvars, char *type) {
+job_stop(Job* job, Var *argvars, CS type) {
    CS arg;
 
-   if (type != NULL)
+   if (type)
       arg = (CS)type;
    ei (argvars[1].tag == VAR_UNKNOWN)
-      arg = (CS)"";
+      arg = Em;
    else {
       arg = convertVarToStringSingleUse(&argvars[1]);
       if (arg == NULL) {
@@ -6716,8 +6716,7 @@ invoke_prompt_interrupt(void) {
    Var   argv[1];
    int      ret;
 
-   if (curBook->promptInterrupt.name == NULL
-          || *curBook->promptInterrupt.name == ZERO)
+   if (curBook->promptInterrupt.name == NULL || *curBook->promptInterrupt.name == ZERO)
       return FALSE;
    argv[0].tag = VAR_UNKNOWN;
 

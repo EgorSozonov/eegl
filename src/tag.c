@@ -426,15 +426,15 @@ do_tag(
    // Makes sure that the tag order doesn't change when using a remembered
    // position for "cur_match".
    if (cur_fnum != curBook->fiNum) {
-      Book *buf = bookFindFileByBookNr(cur_fnum);
-      if (buf)
-         buf_ffname = buf->fullFileName;
+      Book* book = bookFindFileByBookNr(cur_fnum);
+      if (book)
+         buf_ffname = book->fullFileName;
    }
 
    //Repeat searching for tags, when a file has not been found.
    for (;;) {
       int   other_name;
-      Byte   *name;
+      CS name;
 
       //When desired match not found yet, try to find it (and others).
       if (use_tagstack) {

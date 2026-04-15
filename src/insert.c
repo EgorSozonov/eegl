@@ -1512,10 +1512,10 @@ insertchar0(
       int      cc;
 
       if ((cc = (*mb_char2len)(c)) > 1) {
-         Byte builder[MB_MAXBYTES + 1];
-         mb_char2bytes(c, builder);
-         builder[cc] = ZERO;
-         opInsertCharBytes(builder, cc, false);
+         Byte buf[MB_MAXBYTES + 1];
+         mb_char2bytes(c, buf);
+         buf[cc] = ZERO;
+         opInsertCharBytes(buf, cc, false);
          AppendCharToRedobuff(c);
       } else {
          insertChar(c);
@@ -1530,12 +1530,12 @@ insertchar0(
 //Put a character in the redo buffer, for when just after a CTRL-V.
 private void
 redo_literal(int c) {
-   Byte   builder[10];
+   Byte   buf[10];
 
    // Only digits need special treatment.  Translate them into a string of three digits.
    if (EE_ISDIGIT(c)) {
-      eeSnprintf(builder, sizeof(builder), "%03d", c);
-      AppendToRedobuff(builder);
+      eeSnprintf(buf, sizeof(buf), "%03d", c);
+      AppendToRedobuff(buf);
    } else
       AppendCharToRedobuff(c);
 }
@@ -2356,8 +2356,8 @@ ins_start_select(int c) {
       // Execute the key in (insert) Select mode.
       stuffcharReadbuff(Ctrl_O);
       if (modMaskG) {
-         Byte       builder[4] = {K_SPECIAL, KS_MODIFIER, modMaskG, ZERO};
-         stuffReadbuffLen(builder, 3L);
+         Byte       buf[4] = {K_SPECIAL, KS_MODIFIER, modMaskG, ZERO};
+         stuffReadbuffLen(buf, 3L);
       }
       stuffcharReadbuff(c);
       return TRUE;
@@ -3423,7 +3423,7 @@ private Unt addMatchToList(
 private void ins_compl_longest_match(InsertCompletion *match);
 private void ins_compl_del_pum(void);
 private void filterFromFiles(
-   ExpandMatch files, int thesaurus, int flags, RegMatch *regmatch, CS builder, OUT Unt *dir
+   ExpandMatch files, int thesaurus, int flags, RegMatch *regmatch, CS buf, OUT Unt *dir
 );
 private void ins_compl_free(void);
 private int  ins_compl_need_restart(void);
@@ -3565,7 +3565,7 @@ compl_shows_dir_backward(void) {
 // Return TRUE if the 'dictionary' or 'thesaurus' option can be used.
 private int
 has_compl_option(int dict_opt) {
-   if (dict_opt ? (*curBook->o.dictionary == ZERO && !curPor->bookOpts.spell)
+   if (dict_opt ? (*curBook->o.dictionary == ZERO)
        : (*curBook->o.thesaurus == ZERO && !curBook->o.thesaurusFn)
    ) {
       ctrl_x_mode = CTRL_X_NORMAL;
@@ -4649,14 +4649,10 @@ ins_compl_dictionaries(
    Unt dir = compl_direction;
 
    if (*dict == ZERO) {
-      // When 'dictionary' is empty and spell checking is enabled use "spell".
-      if (!thesaurus && curPor->bookOpts.spell)
-         dict = (CS)"spell";
-      else
-         return;
+      return;
    }
 
-   CS builder = alloc(LSIZE);
+   CS buf = alloc(LSIZE);
    regmatch.regprog = NULL;   // so that we can goto theend
 
    // If 'infercase' is set, don't use 'smartcase' here
@@ -4689,16 +4685,16 @@ ins_compl_dictionaries(
    ExpandMatch files = {};
    files.a = createArena();
    while (*dict != ZERO && !gotInterruptG && !compl_interrupted) {
-      // copy one dictionary file name into builder
+      // copy one dictionary file name into buf
       if (flags == DICT_EXACT) {
           files = (ExpandMatch){.c = &dict, .len = 1};
       } else {
          // Expand wildcards in the dictionary name, but do not allow backticks
-         copy_option_part(&dict, builder, LSIZE, ",");
-         if (!thesaurus && STRCMP(builder, "spell") == 0)
+         copy_option_part(&dict, buf, LSIZE, ",");
+         if (!thesaurus && STRCMP(buf, "spell") == 0)
             files.len = 0;
-         ei (firstOccurrence(builder, '`') != NULL
-                || expand_wildcards(1, &builder, EW_FILE|EW_SILENT, OUT &files) != OK)
+         ei (firstOccurrence(buf, '`') != NULL
+                || expand_wildcards(1, &buf, EW_FILE|EW_SILENT, OUT &files) != OK)
             files.len = 0;
       }
 
@@ -4710,7 +4706,7 @@ ins_compl_dictionaries(
             ptr = pat;
       } else  {  // avoid warning for using "files" uninit
          filterFromFiles(files, thesaurus, flags,
-                (cfc_has_mode() ? NULL : &regmatch), builder, OUT &dir);
+                (cfc_has_mode() ? NULL : &regmatch), buf, OUT &dir);
       }
       if (flags != 0)
          break;
@@ -4720,7 +4716,7 @@ ins_compl_dictionaries(
 theend:
    p_scs = save_p_scs;
    eeRegFree(regmatch.regprog);
-   eeglFree(builder);
+   eeglFree(buf);
 }
 
 //Add all the words in the line "*buf_arg" from the thesaurus file "fname"
@@ -4776,7 +4772,7 @@ filterFromFiles(
    int      thesaurus,
    int      flags,
    RegMatch   *regmatch,
-   CS builder,
+   CS buf,
    OUT Unt      *dir
 ) {
    Byte   *ptr;
@@ -4806,10 +4802,10 @@ filterFromFiles(
          continue;
 
       // Read dictionary file line by line. Check each line for a match.
-      while (!gotInterruptG && !ins_compl_interrupted() && !eeFgets(builder, LSIZE, fp)) {
-         ptr = builder;
+      while (!gotInterruptG && !ins_compl_interrupted() && !eeFgets(buf, LSIZE, fp)) {
+         ptr = buf;
          if (regmatch) {
-            while (eeRegexec(regmatch, builder, (ColNr)(ptr - builder))) {
+            while (eeRegexec(regmatch, buf, (ColNr)(ptr - buf))) {
                ptr = regmatch->startp[0];
                ptr = ctrl_x_mode_line_or_eval() ? find_line_end(ptr) : find_word_end(ptr);
                add_r = ins_compl_add_infercase(
@@ -4818,7 +4814,7 @@ filterFromFiles(
                );
                if (thesaurus) {
                   // For a thesaurus, add all the words in the line
-                  ptr = builder;
+                  ptr = buf;
                   add_r = thesaurus_add_words_in_line(files.c[i], &ptr, *dir, regmatch->startp[0]);
                }
                if (add_r == OK)
@@ -5119,13 +5115,13 @@ ins_compl_addleader(int c) {
       
    int cc;
    if ((cc = (*mb_char2len)(c)) > 1) {
-      Byte   builder[MB_MAXBYTES + 1];
+      Byte   buf[MB_MAXBYTES + 1];
 
-      mb_char2bytes(c, builder);
-      builder[cc] = ZERO;
-      opInsertCharBytes(builder, cc, false);
+      mb_char2bytes(c, buf);
+      buf[cc] = ZERO;
+      opInsertCharBytes(buf, cc, false);
       if (compl_opt_refresh_always)
-          AppendToRedobuff(builder);
+          AppendToRedobuff(buf);
    } else {
       insertChar(c);
       if (compl_opt_refresh_always)
@@ -7185,10 +7181,10 @@ ins_compl_get_exp(Pos *ini) {
    Pos start_pos = *ini;
 
    if (!compl_started) {
-      Book *buf;
+      Book* book;
 
-      FOR_ALL_BOOKS(buf)
-         buf->scanned = 0;
+      FOR_ALL_BOOKS(book)
+         book->scanned = 0;
       if (!st_cleared) {
          CLEAR_FIELD(st);
          st_cleared = TRUE;
@@ -8599,8 +8595,8 @@ cpt_sources_clear(void) {
 private Unt
 setup_cpt_sources(void) {
    Byte  buf[LSIZE];
-   int       slen;
-   int       idx = 0;
+   int slen;
+   int idx = 0;
 
    cpt_sources_clear();
 

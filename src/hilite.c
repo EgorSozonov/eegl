@@ -6565,8 +6565,6 @@ c_ownsyntax(Invocation *invo) {
       CLEAR_POINTER(curPor->ownSyntax);
       hash_init(&curPor->ownSyntax->keywords);
       hash_init(&curPor->ownSyntax->keywordsIgnoreCase);
-      // TODO: keep the spell checking as it was.
-      curPor->bookOpts.spell = FALSE;   // No spell checking
    }
 
    // save value of b:currentSyntax

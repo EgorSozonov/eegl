@@ -44,7 +44,7 @@ void free_string_option(CS p);
 void clearStringOption(Byte **pp);
 void optChangeStringOptionDirect(CS name, CS val, SetScope scope, ScriptId set_sid);
 void optSetStringOptionDirectInPort(Portal *po, CS name, CS val, Unt optFlags, int set_sid);
-void optSetStringOptionDirectInBook(Book *buf, CS name, CS val, Unt optFlags, int set_sid);
+void optSetStringOptionDirectInBook(Book *book, CS name, CS val, Unt optFlags, int set_sid);
 void save_clear_shm_value(void);
 void restore_shm_value(void);
 Byte *get_mess_lang(void);

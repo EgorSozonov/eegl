@@ -1109,7 +1109,7 @@ ttest(int pairs) {
 // Represent the given Ulong as individual bytes, with the most significant
 // byte first, and store them in dst.
 void
-add_long_to_buf(Ulong val, Byte *dst) {
+add_long_to_buf(Ulong val, CS dst) {
    for (int i = 1; i <= (int)sizeof(Ulong); i++) {
       int shift = 8 * (sizeof(Ulong) - i);
       dst[i - 1] = (Byte) ((val >> shift) & 0xff);
@@ -4629,7 +4629,7 @@ find_special_key_in_table(int c) {
 //When "escape_ks" is TRUE escape K_SPECIAL bytes in the character.
 //The sequence is not ZERO terminated. This is how characters in a string are encoded.
 int
-special_to_buf(Unt key, int modifiers, int escape_ks, OUT Byte *dst) {
+special_to_buf(Unt key, int modifiers, int escape_ks, OUT CS dst) {
    int dlen = 0;
 
    //Put the appropriate modifier in a string
