@@ -135,7 +135,7 @@ prepareChangeInOtherBook(ChangeOtherBook *cob, Book* book) {
 private void
 restoreChangeInOtherBook(ChangeOtherBook *cob) {
    if (cob->usingAco) {
-      auCommRestoreBuf(&cob->autocommSave);
+      auCommRestoreBook(&cob->autocommSave);
    } else {
       curPor = cob->curPorSave;
       curBook = curPor->book;
@@ -1896,7 +1896,7 @@ bookEnsureLoaded(Book* book) {
       if (swap_exists_action != SEA_READONLY)
           swap_exists_action = SEA_NONE; 
       bookOpenFromInvo(false, NULL, 0);
-      auCommRestoreBuf(&aco);
+      auCommRestoreBook(&aco);
    }
 }
 
@@ -2055,7 +2055,7 @@ bookOpenFromInvo(
             apply_autocmds_retval(EVENT_BUFWINENTER, NULL, NULL, FALSE, curBook, &retval);
 
          // restore curPor/curBook and a few other things
-         auCommRestoreBuf(&aco);
+         auCommRestoreBook(&aco);
       }
    }
 
@@ -4653,7 +4653,7 @@ renderStatusLine(
        // int   called_emsg_before = called_emsg;
    int      anyEmsgG_before = anyEmsgG;
 
-    // When inside update_screen() we do not want redrawing a statusline,
+    // When inside drawUpdateScreen() we do not want redrawing a statusline,
     // ruler, title, etc. to trigger another redraw, it may cause an endless loop.
    if (updating_screen)
       redraw_not_allowed = TRUE;
@@ -5883,7 +5883,7 @@ buf_contents_changed(Book* book){
    eeglFree(invo.comm);
 
    // restore curPor/curBook and a few other things
-   auCommRestoreBuf(&aco);
+   auCommRestoreBook(&aco);
 
    if (curBook != new)   // safety check
       bookWipe(new, FALSE);
@@ -6268,7 +6268,7 @@ bookWrite(
    }
 
    // restore curPor/curBook and a few other things
-   auCommRestoreBuf(&aco);
+   auCommRestoreBook(&aco);
 
    // In three situations we return here and don't write the file:
    // 1. the autocommands deleted or unloaded the book.
@@ -7169,7 +7169,7 @@ nofail:
                         FALSE, curBook, invo);
 
        // restore curPor/curBook and a few other things
-       auCommRestoreBuf(&aco);
+       auCommRestoreBook(&aco);
    }
 
    if (aborting())       // autocmds may abort script processing

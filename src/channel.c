@@ -2002,7 +2002,7 @@ appendToBook(
    appended_lines_mark(lnum, 1L);
 
    // reset notion of book
-   auCommRestoreBuf(&aco);
+   auCommRestoreBook(&aco);
 
    if (fds->ch_nomodifiable) {
       book->o.modifiable = false;

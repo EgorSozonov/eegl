@@ -8504,7 +8504,7 @@ getVarFrom(
 
             if (varname[1] == ZERO) {
                // get all portal-local or book-local options in a dict
-               Bag* opts = getBufOrPortOptions(level == VAR_BOOK);
+               Bag* opts = getBookOrPortOptions(level == VAR_BOOK);
 
                if (opts) {
                   returnVar_dict_set(returnVar, opts);
@@ -8933,7 +8933,7 @@ f_setbufvar(Var *argvars, Var *returnVar UNUSED) {
          optSetFromVar(varname + 1, varp);
 
          // reset notion of book
-         auCommRestoreBuf(&aco);
+         auCommRestoreBook(&aco);
       }
       curPor->topLine = old_topline;
    } else {

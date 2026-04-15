@@ -3907,7 +3907,7 @@ updateBook(LocationStack *stack, LocLine *oldLast) {
           (void)updatePortalPos(stack, 0);
 
           // restore curPor/curBook and a few other things
-          auCommRestoreBuf(&aco);
+          auCommRestoreBook(&aco);
       }
    }
 
@@ -5537,7 +5537,7 @@ elckGrepFiles(
                auCommPrepareBook(&aco, buf);
                if (curBook == buf) {
                   apply_autocmds(EVENT_FILETYPE, buf->fileType, buf->currFileName, true, buf);
-                  auCommRestoreBuf(&aco);
+                  auCommRestoreBook(&aco);
                }
             }
          }
@@ -5720,7 +5720,7 @@ loadDummyBook(
          }
 
          // restore curPor/curBook and a few other things
-         auCommRestoreBuf(&aco);
+         auCommRestoreBook(&aco);
 
          if (newbuf_to_wipe.c != NULL && bookRefValid(&newbuf_to_wipe)) {
             block_autocmds();

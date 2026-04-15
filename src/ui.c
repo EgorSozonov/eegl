@@ -7865,21 +7865,9 @@ update_cursor(Terminal *term, int redraw) {
       windgoto(curPor->portalRow + curPor->cursorRow, curPor->portalCol + curPor->cursorCol);
    }
    if (redraw) {
-      AutocommSave   aco;
-
       if (term->buf == curBook && term->tl_cursor_visible)
          cursor_on();
       out_flush();
-      // Make sure an invoked autocmd doesn't delete the buffer (and the
-      // terminal) under our fingers.
-      ++term->buf->locked;
-
-      // save and restore curPor and curBook, in case the autocmd changes them
-      auCommPrepareBook(&aco, curBook);
-      apply_autocmds(EVENT_TEXTCHANGEDT, NULL, NULL, false, term->buf);
-      auCommRestoreBuf(&aco);
-
-      --term->buf->locked;
    }
 }
 
@@ -7901,15 +7889,15 @@ write_to_term(Book *buffer, Byte *msg, Channel* channel) {
    // In Terminal-Normal mode we are displaying the buffer, not the terminal
    // contents, thus no screen update is needed.
    if (!term->isNormalMode) {
-      // Don't use update_screen() when editing the command line, it gets
+      // Don't use drawUpdateScreen() when editing the command line, it gets
       // cleared.
       // TODO: only update once in a while.
       ch_log(term->job->jv_channel, "updating screen");
       if (buffer == curBook && (stateG & MODE_COMMLINE) == 0) {
-         update_screen(UPD_VALID_NO_UPDATE);
+         drawUpdateScreen(UPD_VALID_NO_UPDATE);
          if (needRedrawTabpanelG) 
              draw_tabpanel();
-         // update_screen() can be slow, check the terminal wasn't closed
+         // drawUpdateScreen() can be slow, check the terminal wasn't closed
          // already
          if (buffer == curBook && curBook->term != NULL)
             update_cursor(curBook->term, TRUE);
@@ -8951,7 +8939,7 @@ terminal_loop(int blocking) {
       // TODO: skip screen update when handling a sequence of keys.
       // Repeat redrawing in case a message is received while redrawing.
       while (must_redraw != 0) {
-         if (update_screen(0) == FAIL)
+         if (drawUpdateScreen(0) == FAIL)
             break;
       }
       if (!term_use_loop_check(TRUE) || in_terminal_loop != curBook->term)
@@ -9572,7 +9560,7 @@ term_after_channel_closed(Terminal *term) {
             do_bufdel(DOBOOK_WIPE, Em, 1, fnum, fnum, FALSE);
             if (do_set_locked)
                 curPor->locked = FALSE;
-            auCommRestoreBuf(&aco);
+            auCommRestoreBook(&aco);
          }
           if (pwin != NULL)
          popup_close_with_retval(pwin, 0);
@@ -11262,7 +11250,7 @@ term_swap_diff(void) {
    term->tl_top_diff_rows = bot_rows;
    term->tl_bot_diff_rows = top_rows;
 
-   update_screen(UPD_NOT_VALID);
+   drawUpdateScreen(UPD_NOT_VALID);
    return OK;
 }
 

@@ -34,7 +34,7 @@ int writeOptionsAsSet(FILE *fd);
 void optSetLocalOptionsToDefault(Portal *wp, Boole doBook);
 void c_get(Invocation *invo);
 void c_set(Invocation *invo);
-Bag *getBufOrPortOptions(Boole bufopt);
+Bag *getBookOrPortOptions(Boole bufopt);
 void optsCopyToBook(Book *book, Unt flags);
 int optExpandOption(Expand *xp, RegMatch *regmatch, CS fuzzystr, Boole canFuzzy, ExpandMatch *matches);
 void optInitScriptPostprocess(CS fname, CS envname);

@@ -8293,7 +8293,7 @@ adjustPosition(Portal *po) {
       }
       if (po->pup.pos == POPPOS_BOTTOM) {
           //Assume that each book line takes one screen line, and one line for the top border.
-          //First make sure commlineRowG is valid, calling update_screen() will set it only later.
+          //First make sure commlineRowG is valid, calling drawUpdateScreen() will set it only later.
           compute_cmdrow();
           po->portalRow = MAX(commlineRowG - po->book->mem.lineCount - 1, 0);
       }
@@ -11323,7 +11323,7 @@ pum_display(
     pum_redraw();
 }
 
-//Set a flag that when pum_redraw() is called it first calls update_screen().
+//Set a flag that when pum_redraw() is called it first calls drawUpdateScreen().
 //This will avoid clearing and redrawing the popup menu, prevent flicker.
 void
 pum_callUpdateScreen(void) {
@@ -11666,7 +11666,7 @@ pum_redraw(void) {
       callUpdateScreen = FALSE;
       // Do not redraw in pum_may_redraw() and don't draw in the area where the popup menu will be
       pum_will_redraw = TRUE;
-      update_screen(0);
+      drawUpdateScreen(0);
       pum_will_redraw = FALSE;
    }
 
@@ -11976,7 +11976,7 @@ pum_set_selected(int n, int repeat UNUSED) {
                   pum_will_redraw = !resized;
                   save_redr_status = curPor_save->statusLineNeedsRedraw;
                   curPor_save->statusLineNeedsRedraw = FALSE;
-                  update_screen(0);
+                  drawUpdateScreen(0);
                   pum_pretend_not_visible = FALSE;
                   pum_will_redraw = FALSE;
                   curPor_save->statusLineNeedsRedraw = save_redr_status;
@@ -11993,7 +11993,7 @@ pum_set_selected(int n, int repeat UNUSED) {
                   // May need to update the screen again when there are autocommands involved.
                   pum_pretend_not_visible = TRUE;
                   pum_will_redraw = !resized;
-                  update_screen(0);
+                  drawUpdateScreen(0);
                   pum_pretend_not_visible = FALSE;
                   pum_will_redraw = FALSE;
                   callUpdateScreen = false;

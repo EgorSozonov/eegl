@@ -4509,7 +4509,7 @@ findOption(CS arg) {
 
 // Get portal- or book-local options.
 Bag*
-getBufOrPortOptions(Boole bufopt) {
+getBookOrPortOptions(Boole bufopt) {
    Bag* b = allocBag();
    Option* o UNUSED;
    if (bufopt) { // book-local

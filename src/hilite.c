@@ -2536,7 +2536,7 @@ syn_update_ends(int startofline) {
 //is often for line 2 (line 1 always starts with an empty stack). There is also a list for free 
 //entries. This construction is used to avoid having to allocate and free memory blocks too often.
 //
-//When making changes to the buffer, this is logged in b_mod_*.  When calling update_screen() to 
+//When making changes to the buffer, this is logged in b_mod_*.  When calling drawUpdateScreen() to 
 //update the display, it will call syn_stack_apply_changes() for each displayed buffer to adjust 
 //the cached entries.  The entries which are inside the changed area are removed, because they must
 //be recomputed. Entries below the changed have their line number adjusted for deleted/inserted 
@@ -2633,7 +2633,7 @@ syn_stack_alloc(void) {
 }
 
 //Check for changes in a buffer to affect stored syntax states.  Uses the b_mod_* fields.
-//Called from update_screen(), before screen is being updated, once for each displayed buffer.
+//Called from drawUpdateScreen(), before screen is being updated, once for each displayed buffer.
 void
 syn_stack_apply_changes(Book *buf) {
    Portal   *wp;

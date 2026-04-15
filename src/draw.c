@@ -3115,7 +3115,7 @@ check_chars_options(CS newVal) {
 
 //Code for updating all the portals on the screen.
 //
-//update_screen() is the function that updates all portals and status lines.
+//drawUpdateScreen() is the function that updates all portals and status lines.
 //It is called form the main loop when must_redraw is non-zero. It may be
 //called from other places when an immediate screen update is needed.
 //
@@ -3131,10 +3131,10 @@ check_chars_options(CS newVal) {
 //
 //Commands that scroll a portal change topLine and must call
 //check_cursor() to move the cursor into the visible part of the portal, and
-//call redraw_later(UPD_VALID) to have the portal displayed by update_screen() later.
+//call redraw_later(UPD_VALID) to have the portal displayed by drawUpdateScreen() later.
 //
 //Commands that change text in the buffer must call changed_bytes() or changed_lines() to mark the 
-//area that changed and will require updating later. The main loop will call update_screen(), 
+//area that changed and will require updating later. The main loop will call drawUpdateScreen(), 
 //which will update each portal that shows the changed buffer. This assumes text above the change
 //can remain displayed as it is.  Text after the change may need updating for scrolling, folding 
 //and syntax hiliting.
@@ -3142,11 +3142,11 @@ check_chars_options(CS newVal) {
 //Commands that change how a portal is displayed (e.g., setting 'list') or
 //invalidate the contents of a portal in another way (e.g., change fold
 //settings), must call redraw_later(UPD_NOT_VALID) to have the whole portal
-//redisplayed by update_screen() later.
+//redisplayed by drawUpdateScreen() later.
 //
 //Commands that change how a buffer is displayed (e.g., setting 'tabstop') must call 
 //redraw_curbuf_later(UPD_NOT_VALID) to have all the portals for the
-//buffer redisplayed by update_screen() later.
+//buffer redisplayed by drawUpdateScreen() later.
 //
 //Commands that change hiliting and possibly cause a scroll too must call 
 //redraw_later(UPD_SOME_VALID) to update the whole portal but still use scrolling to avoid 
@@ -3159,7 +3159,7 @@ check_chars_options(CS newVal) {
 //redraw_all_later(UPD_NOT_VALID) or redraw_all_later(UPD_CLEAR).
 //
 //Things that are handled indirectly:
-//- When messages scroll the screen up, msg_scrolled will be set and update_screen() called to 
+//- When messages scroll the screen up, msg_scrolled will be set and drawUpdateScreen() called to 
 //  redraw
  
 struct SpellVars {
@@ -3183,7 +3183,7 @@ private int  didUpdateOnePortal;
 //of stuff from Filemem to screenLinesG[], and update curPor->bottomLine.
 //Return OK when the screen was updated, FAIL if it was not done.
 int
-update_screen(int type_arg) {
+drawUpdateScreen(int type_arg) {
    int      type = type_arg;
    Portal   *po;
    static int   did_intro = FALSE;
@@ -3563,7 +3563,7 @@ after_updating_screen(int may_resize_shell UNUSED) {
 void
 update_curbuf(int type) {
    redraw_curbuf_later(type);
-   update_screen(type);
+   drawUpdateScreen(type);
 }
 
 // Copy "text" to screenLinesG using "deco". Returns the next screen column.
@@ -3887,7 +3887,7 @@ updatePortal(Portal *po) {
    LineNr   mod_bot = 0;
    int      save_gotInterruptG;
 
-   // This needs to be done only for the first portal when update_screen() is called.
+   // This needs to be done only for the first portal when drawUpdateScreen() is called.
    if (!didUpdateOnePortal) {
       didUpdateOnePortal = TRUE;
       start_search_hl();
@@ -4851,7 +4851,7 @@ redraw_asap(int type) {
          } 
       }
 
-      update_screen(0);
+      drawUpdateScreen(0);
       ret = 3;
 
       if (must_redraw == 0) {
@@ -4900,10 +4900,10 @@ redraw_asap(int type) {
 //Invoked after an asynchronous callback is called.
 //If an echo command was used the cursor needs to be put back where
 //it belongs. If hiliting was changed a redraw is needed.
-//If "call_update_screen" is FALSE don't call update_screen() when at the command line.
+//If "call_drawUpdateScreen" is FALSE don't call drawUpdateScreen() when at the command line.
 //If "redraw_message" is TRUE.
 void
-redraw_after_callback(int call_update_screen, int do_message) {
+redraw_after_callback(int call_drawUpdateScreen, int do_message) {
    ++redrawing_for_callback;
 
    if (stateG == MODE_HITRETURN || stateG == MODE_ASKMORE
@@ -4919,8 +4919,8 @@ redraw_after_callback(int call_update_screen, int do_message) {
       // Don't redraw when in prompt_for_number().
       if (commlineRowG > 0) {
          //Redrawing only works when the screen didn't scroll. Don't clear wildmenu entries.
-         if (msg_scrolled == 0 && wild_menu_showing == 0 && call_update_screen)
-            update_screen(0);
+         if (msg_scrolled == 0 && wild_menu_showing == 0 && call_drawUpdateScreen)
+            drawUpdateScreen(0);
 
          // Redraw in the same position, so that the user can continue editing the command.
          redrawCommlineEx(FALSE);
@@ -4930,7 +4930,7 @@ redraw_after_callback(int call_update_screen, int do_message) {
       validate_cursor();
 
       // keep the command line if possible
-      update_screen(UPD_VALID_NO_UPDATE);
+      drawUpdateScreen(UPD_VALID_NO_UPDATE);
       setcursor();
 
       if (msg_scrolled == 0) {
@@ -4945,7 +4945,7 @@ redraw_after_callback(int call_update_screen, int do_message) {
    --redrawing_for_callback;
 }
 
-//Redraw the current portal later, with update_screen(type).
+//Redraw the current portal later, with drawUpdateScreen(type).
 //Set must_redraw only if not already set to a higher value.
 //E.g. if must_redraw is UPD_CLEAR, type UPD_NOT_VALID will do nothing.
 void

@@ -3338,7 +3338,7 @@ c_substitute(Invocation *invo) {
                   int save_RedrawingDisabled = RedrawingDisabled;
                   RedrawingDisabled = 0;
 
-                  // avoid calling update_screen() in vgetorpeek()
+                  // avoid calling drawUpdateScreen() in vgetorpeek()
                   p_lz = FALSE;
 
                   if (new_start) {
@@ -3374,7 +3374,7 @@ c_substitute(Invocation *invo) {
 
                   update_topline();
                   validate_cursor();
-                  update_screen(UPD_SOME_VALID);
+                  drawUpdateScreen(UPD_SOME_VALID);
                   highlight_match = FALSE;
                   redraw_later(UPD_SOME_VALID);
 
@@ -4531,7 +4531,7 @@ c_listDo(Invocation *invo) {
                auCommPrepareBook(&aco, book);
                if (curBook == book) {
                   apply_autocmds(EVENT_SYNTAX, book->syntaxName, book->currFileName, true, book);
-                  auCommRestoreBuf(&aco);
+                  auCommRestoreBook(&aco);
                }
             }
 
@@ -10719,7 +10719,7 @@ redraw_cmd(int clear) {
 
    validate_cursor();
    update_topline();
-   update_screen(clear ? UPD_CLEAR : VIsual_active ? UPD_INVERTED : 0);
+   drawUpdateScreen(clear ? UPD_CLEAR : VIsual_active ? UPD_INVERTED : 0);
    RedrawingDisabled = save_RedrawingDisabled;
    p_lz = save_p_lz;
 
@@ -10759,7 +10759,7 @@ c_redrawstatus(Invocation *invo UNUSED) {
    if (stateG & MODE_COMMLINE)
       redraw_statuslines();
    else
-      update_screen(VIsual_active ? UPD_INVERTED : 0);
+      drawUpdateScreen(VIsual_active ? UPD_INVERTED : 0);
    RedrawingDisabled = save_RedrawingDisabled;
    p_lz = save_p_lz;
    out_flush();

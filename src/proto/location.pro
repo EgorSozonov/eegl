@@ -1,5 +1,5 @@
 /* src/location.c */
-int llInitFromFile(LocationStack *st, Byte *errorFName, Byte *errorformat, Boole newlist, Byte *title);
+int llInitFromFile(LocationStack *st, CS errorFName, CS errorformat, Boole newlist, CS title);
 int qf_stack_get_bufnr(void);
 void check_qfBusynessG(void);
 void llInitStacksOnce(void);

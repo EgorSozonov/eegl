@@ -1544,7 +1544,7 @@ f_filecopy(Var *argvars, Var *returnVar){
 //If anything fails (except when out of space) dst equals src.
 void
 home_replace(
-   Book* buf, //when not NULL, check for help files
+   Book* book, //when not NULL, check for help files
    CS src, //input file name
    CS dst, //where to put the result
    int dstlen,  //maximum length of the result
@@ -1561,7 +1561,7 @@ home_replace(
    }
 
    //If the file is a help file, remove the path completely.
-   if (buf && buf->kind == BOOK_HELP) {
+   if (book && book->kind == BOOK_HELP) {
       eeSnprintf(dst, dstlen, "%s", gettail(src));
       return;
    }
@@ -1640,14 +1640,14 @@ home_replace(
 //When something fails, src is returned.
 CS
 home_replace_save(
-   Book* buf,   // when not NULL, check for help files
+   Book* book,   // when not NULL, check for help files
    CS src   // input file name
 ){
    int len = 3;         // space for "~/" and trailing ZERO
    if (src)      // just in case
       len += STRLEN(src);
    CS dst = alloc(len);
-   home_replace(buf, src, OUT dst, len, TRUE);
+   home_replace(book, src, OUT dst, len, TRUE);
    return dst;
 }
 
@@ -1655,7 +1655,7 @@ home_replace_save(
 //When something fails, src is returned.
 CS
 homeReplaceA(
-   Book* buf,   // when not NULL, check for help files
+   Book* book,   // when not NULL, check for help files
    CS src,   // input file name
    Arena* a
 ){
@@ -1663,7 +1663,7 @@ homeReplaceA(
    if (src)      // just in case
       len += STRLEN(src);
    CS dst = allocateArray(len, Byte, a);
-   home_replace(buf, src, OUT dst, len, TRUE);
+   home_replace(book, src, OUT dst, len, TRUE);
    return dst;
 }
 
@@ -3270,7 +3270,7 @@ eeChdirfile(CS fname, char *trigger_autocmd) {
 
 //Get the stopdir string.  Check that ';' is not escaped.
 CS
-eeFindFile_stopdir(Byte *buf) {
+eeFindFile_stopdir(CS buf) {
    CS r_ptr = buf;
    CS r_ptr_end = NULL;       // points to ZERO at end of string "r_ptr"
 
@@ -6397,10 +6397,10 @@ set_rw_fname(CS fname, CS sfname){
 
 //Put file name into IObuff with quotes.
 void
-msg_add_fname(Book *buf, CS fname){
+msg_add_fname(Book* book, CS fname){
    if (!fname)
-      fname = (CS)"-stdin-";
-   home_replace(buf, fname, IObuff + 1, IOSIZE - 4, TRUE);
+      fname = S"-stdin-";
+   home_replace(book, fname, IObuff + 1, IOSIZE - 4, TRUE);
    IObuff[0] = '"';
    STRCAT(IObuff, "\" ");
 }
@@ -7241,7 +7241,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    }
 
    // restore curPor/curBook and a few other things
-   auCommRestoreBuf(&aco);
+   auCommRestoreBook(&aco);
    // Careful: autocommands may have made "book" invalid!
 }
 

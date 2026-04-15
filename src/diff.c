@@ -4014,7 +4014,7 @@ c_diffgetput(Invocation *invo) {
    // 100% right when ":diffput" is used in a function or mapping.
    if (KeyTyped)
        u_sync(FALSE);
-   auCommRestoreBuf(&aco);
+   auCommRestoreBook(&aco);
    }
 
 theend:

@@ -552,7 +552,7 @@ set_termname(CS termName) {
                if (curBook == buf) {
                   apply_autocmds(EVENT_TERMCHANGED, NULL, NULL, false, curBook);
                   // restore curPor/curBook and a few other things
-                  auCommRestoreBuf(&aco);
+                  auCommRestoreBook(&aco);
                }
             }
          }
@@ -1243,7 +1243,7 @@ shell_resized_check(void) {
 private void
 set_shellsize_inner(int width, int height, int mustset) {
    if (updating_screen)
-      //resizing while in update_screen() may cause a crash
+      //resizing while in drawUpdateScreen() may cause a crash
       return;
 
    //curPor->book can be NULL when we are closing a window and the
@@ -1280,7 +1280,7 @@ set_shellsize_inner(int width, int height, int mustset) {
       //  redraw, but position the cursor.
       //- While editing the command line, only redraw that.
       //- Otherwise, redraw right now, and position the cursor.
-      //Always need to call update_screen() or screenalloc(), to make
+      //Always need to call drawUpdateScreen() or screenalloc(), to make
       //sure visibleRowsG/visibleColsG and the size of ScreenLines[] is correct!
       if (stateG == MODE_ASKMORE || stateG == MODE_EXTERNCMD || stateG == MODE_CONFIRM) {
          screenalloc(FALSE);
@@ -1289,7 +1289,7 @@ set_shellsize_inner(int width, int height, int mustset) {
          if (curPor->bookOpts.scrollBind)
             normPostProcessScrollbind(TRUE);
          if (stateG & MODE_COMMLINE) {
-            update_screen(UPD_NOT_VALID);
+            drawUpdateScreen(UPD_NOT_VALID);
             redrawCommline();
          } else {
             update_topline();
@@ -1297,7 +1297,7 @@ set_shellsize_inner(int width, int height, int mustset) {
                 redraw_later(UPD_NOT_VALID);
                 ins_compl_show_pum();
             }
-            update_screen(UPD_NOT_VALID);
+            drawUpdateScreen(UPD_NOT_VALID);
             if (redrawing())
                setcursor();
          }

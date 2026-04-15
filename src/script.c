@@ -3181,7 +3181,7 @@ cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw){
    if (!defer_redraw) {
       int save_p_lz = p_lz;
       p_lz = FALSE;  // avoid the popup menu hanging around
-      update_screen(0);
+      drawUpdateScreen(0);
       p_lz = save_p_lz;
    } else
       pum_callUpdateScreen();
@@ -6159,7 +6159,7 @@ wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
    } else {
       // restore 'laststatus' and 'winminheight'
       last_status(FALSE);
-      update_screen(UPD_VALID);   // redraw the screen NOW
+      drawUpdateScreen(UPD_VALID);   // redraw the screen NOW
       redrawcmd();
    }
    KeyTyped = skt;
@@ -7540,7 +7540,7 @@ private void
 finish_incsearch_highlighting(
    int gotesc,
    IncSearch *is_state,
-   int call_update_screen
+   int call_drawUpdateScreen
 ){
    if (!is_state->did_incsearch)
       return;
@@ -7566,8 +7566,8 @@ finish_incsearch_highlighting(
    validate_cursor();   // needed for TAB
    status_redraw_all();
    redraw_all_later(UPD_SOME_VALID);
-   if (call_update_screen)
-      update_screen(UPD_SOME_VALID);
+   if (call_drawUpdateScreen)
+      drawUpdateScreen(UPD_SOME_VALID);
 }
 
 // Do 'incsearch' highlighting if desired.
@@ -7705,7 +7705,7 @@ may_do_incsearch_highlighting(
    if (curPor->statusHeight > 0)
       curPor->statusLineNeedsRedraw = TRUE;
 
-   update_screen(UPD_SOME_VALID);
+   drawUpdateScreen(UPD_SOME_VALID);
    highlight_match = FALSE;
    restore_last_search_pattern();
 
@@ -7826,7 +7826,7 @@ may_adjust_incsearch_highlighting(
       validate_cursor();
       highlight_match = TRUE;
       save_viewstate(&is_state->old_viewstate);
-      update_screen(UPD_NOT_VALID);
+      drawUpdateScreen(UPD_NOT_VALID);
       highlight_match = FALSE;
       redrawCommline();
       curPor->cursor = is_state->match_end;
@@ -8027,7 +8027,7 @@ commline_wildchar_complete(
 
       // Remove popup window if no completion items are available
       if (redraw_if_menu_empty && xp->files.len <= 0)
-          update_screen(0);
+          drawUpdateScreen(0);
 
       // if interrupted while completing, behave like it failed
       if (gotInterruptG) {
@@ -9848,7 +9848,7 @@ redrawcmd(void) {
 
 void
 compute_cmdrow(void) {
-   // ignore "msg_scrolled" in update_screen(), it will be reset soon.
+   // ignore "msg_scrolled" in drawUpdateScreen(), it will be reset soon.
    if (msg_scrolled != 0 && !updating_screen)
       commlineRowG = visibleRowsG - 1;
    else
@@ -10457,7 +10457,7 @@ openCommPort(void) {
 
       if (commPortResultG == K_IGNORE) {
           // It can be confusing that the comm port still shows, redraw the screen.
-          update_screen(UPD_VALID);
+          drawUpdateScreen(UPD_VALID);
           set_cmdspos_cursor();
           redrawcmd();
       }
@@ -17196,10 +17196,6 @@ private Kv autoEvents[NUM_EVENTS] = {
    KEYVALUE_ENTRY(EVENT_TERMINALWINOPEN, "TerminalWinOpen"),
    KEYVALUE_ENTRY(EVENT_TERMRESPONSE, "TermResponse"),
    KEYVALUE_ENTRY(EVENT_TERMRESPONSEALL, "TermResponseAll"),
-   KEYVALUE_ENTRY(-EVENT_TEXTCHANGED, "TextChanged"),
-   KEYVALUE_ENTRY(-EVENT_TEXTCHANGEDI, "TextChangedI"),
-   KEYVALUE_ENTRY(-EVENT_TEXTCHANGEDP, "TextChangedP"),
-   KEYVALUE_ENTRY(-EVENT_TEXTCHANGEDT, "TextChangedT"),
    KEYVALUE_ENTRY(-EVENT_TEXTYANKPOST, "TextYankPost"),
    KEYVALUE_ENTRY(EVENT_USER, "User"),
    KEYVALUE_ENTRY(EVENT_EEGLENTER, "EeglEnter"),
@@ -18197,7 +18193,7 @@ c_doautoall(Invocation *invo) {
       retval = do_doautocmd(arg, false, &did_aucmd);
 
       // restore the current portal
-      auCommRestoreBuf(&aco);
+      auCommRestoreBook(&aco);
 
       // stop if there is some error or buffer was deleted
       if (retval == FAIL || !bookRefValid(&bufref)) {
@@ -18308,7 +18304,7 @@ auCommPrepareBook(
 //Cleanup after executing autocommands for a (hidden) buffer.
 //Restore the portal as it was (if possible).
 void
-auCommRestoreBuf(AutocommSave   *aco)  {    // structure holding saved values
+auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
    int       dummy;
    Portal* curPorSave;
 
@@ -18504,24 +18500,6 @@ has_winresized(void) {
 int
 has_winscrolled(void) {
    return (firstAutopatS[(int)EVENT_PORTSCROLLED] != NULL);
-}
-
-// TRUE when there is a TextChanged autocommand defined.
-int
-has_textchanged(void) {
-   return (firstAutopatS[(int)EVENT_TEXTCHANGED] != NULL);
-}
-
-// TRUE when there is a TextChangedI autocommand defined.
-int
-has_textchangedI(void) {
-   return (firstAutopatS[(int)EVENT_TEXTCHANGEDI] != NULL);
-}
-
-// TRUE when there is a TextChangedP autocommand defined.
-int
-has_textchangedP(void) {
-   return (firstAutopatS[(int)EVENT_TEXTCHANGEDP] != NULL);
 }
 
 // Return TRUE when there is an CmdUndefined autocommand defined.

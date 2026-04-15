@@ -1,6 +1,5 @@
 /* src/insert.c */
 int edit(Unt commChar, int startln, long count);
-void ins_redraw(int ready);
 void edit_putchar(int c, Boole needDoHilite);
 void set_insstart(LineNr lnum, int col);
 void edit_unputchar(void);

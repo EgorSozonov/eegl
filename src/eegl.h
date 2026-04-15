@@ -1633,10 +1633,6 @@ enum AutoEvent {
    EVENT_TERMINALWINOPEN, //after a terminal book was created and entering its window
    EVENT_TERMRESPONSE,    //after setting "v:termresponse"
    EVENT_TERMRESPONSEALL, //after setting terminal response vars
-   EVENT_TEXTCHANGED,     //text was modified not in Insert mode
-   EVENT_TEXTCHANGEDI,    //text was modified in Insert mode
-   EVENT_TEXTCHANGEDP,    //TextChangedI with popup menu visible
-   EVENT_TEXTCHANGEDT,    //text was modified in Terminal mode
    EVENT_TEXTYANKPOST,    //after some text was yanked
    EVENT_USER,            //user defined autocommand
    EVENT_EEGLENTER,        //after starting Eegl

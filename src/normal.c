@@ -2104,7 +2104,7 @@ waitForMsg(void) {
       msgAfterRedrawG = NULL;
       // Showmode() will clear msgAfterRedrawG, but we want to use it anyway. First update topLine
       setcursor();
-      update_screen(0);
+      drawUpdateScreen(0);
       // now reset it, otherwise it's put in the history again
       msgAfterRedrawG = kmsg;
 
@@ -7270,7 +7270,7 @@ void
 update_topline_redraw(void) {
    update_topline();
    if (must_redraw)
-      update_screen(0);
+      drawUpdateScreen(0);
 }
 
 // Update curPor->topLine to move the cursor onto the screen.
@@ -9091,7 +9091,7 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
    }
 
    //If topline didn't change we need to restore bottomLine and emptyRowCount (we changed them).
-   //If topline did change, update_screen() will set botline.
+   //If topline did change, drawUpdateScreen() will set botline.
    if (curPor->topLine == old_topline && curPor->skipCol == old_skipcol && set_topbot) {
       curPor->bottomLine = old_botline;
       curPor->emptyRowCount = old_empty_rows;

@@ -227,7 +227,7 @@ get_keystroke(void) {
                && (stateG & (MODE_COMMLINE | MODE_HITRETURN | MODE_ASKMORE)) == 0
          ) {
             // Redrawing was postponed, do it now.
-            update_screen(0);
+            drawUpdateScreen(0);
             setcursor(); // put cursor back where it belongs
          }
          continue;
@@ -2848,7 +2848,7 @@ vGetOrPeek(Boole advance) {
                      && (stateG & MODE_COMMLINE) == 0 && advance && must_redraw != 0 
                      && !need_wait_return
                      ) {
-                  update_screen(0);
+                  drawUpdateScreen(0);
                   setcursor(); // put cursor back where it belongs
                }
 

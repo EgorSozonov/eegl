@@ -574,7 +574,7 @@ changed_common(
          search_hl_has_cursor_lnum += xtra;
    }
 
-   // Call update_screen() later, which checks out what needs to be redrawn,
+   // Call drawUpdateScreen() later, which checks out what needs to be redrawn,
    // since it notices needsRedraw and then uses b_mod_*.
    set_must_redraw(UPD_VALID);
 
@@ -3008,7 +3008,7 @@ op_insert(Operator *oper, long count1) {
 
    // vis block is still marked. Get rid of it now.
    curPor->cursor.lnum = oper->start.lnum;
-   update_screen(UPD_INVERTED);
+   drawUpdateScreen(UPD_INVERTED);
 
    if (oper->block_mode) {
       //When 'virtualedit' is used, need to insert the extra spaces before
@@ -5632,7 +5632,7 @@ check_due_timer(void) {
    long   next_due = -1;
    ProfTime   now;
    int      did_one = FALSE;
-   int      need_update_screen = FALSE;
+   int      need_drawUpdateScreen = FALSE;
    long   current_id = last_timer_id;
 
    // Don't run any timers while exiting, dealing with an error or at the debug prompt.
@@ -5690,7 +5690,7 @@ check_due_timer(void) {
          exception_state_restore(&estate);
          restoreEeglVars(&vvsave);
          if (must_redraw != 0)
-            need_update_screen = TRUE;
+            need_drawUpdateScreen = TRUE;
          must_redraw = must_redraw > save_must_redraw ? must_redraw : save_must_redraw;
          set_pressedreturn(save_ex_pressedreturn);
          may_garbage_collect = save_may_garbage_collect;
@@ -5719,7 +5719,7 @@ check_due_timer(void) {
    }
 
    if (did_one)
-      redraw_after_callback(need_update_screen, FALSE);
+      redraw_after_callback(need_drawUpdateScreen, FALSE);
 
    if (bevalexpr_due_set) {
       this_due = proftime_time_left(&bevalexpr_due, &now);

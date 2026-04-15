@@ -3130,7 +3130,7 @@ ml_append_buf(
 //memory already. If "copy" is FALSE the "line" may be freed to add text properties! Do not use 
 //it after calling ml_replace().
 //Check: The caller of this function should probably also call changed_lines(), unless 
-//update_screen(UPD_NOT_VALID) is used.
+//drawUpdateScreen(UPD_NOT_VALID) is used.
 //return FAIL for failure, OK otherwise
 int
 ml_replace(LineNr lnum, Byte *line, int copy) {

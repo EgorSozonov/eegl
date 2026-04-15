@@ -87,7 +87,7 @@ private MsgChunk * disp_sb_line(int row, MsgChunk *smp, int clear_to_eol);
 //         should be a delay before redrawing.
 //msg_scroll       The next message should not overwrite the current one.
 //msg_scrolled       How many lines the screen has been scrolled (because of
-//         messages).  Used in update_screen() to scroll the screen
+//         messages).  Used in drawUpdateScreen() to scroll the screen
 //         back.  Incremented each time the screen scrolls a line.
 //msg_scrolled_ign  TRUE when msg_scrolled is non-zero and msgPutsDeco()
 //         writes something without scrolling should not make

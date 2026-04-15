@@ -17,14 +17,14 @@ private Boole isCompletionBusyS = FALSE;
 
 
 private void insertStartVisualBlockMode(void);
-private void insert_special(Unt, Boole, Boole);
+private void insertRegular(Unt, Boole, Boole);
 private void redo_literal(int c);
 private void start_arrow_common(Pos *end_insert_pos, int change);
 private void check_spell_redraw(void);
 private void stop_insert(Pos *end_insert_pos, int esc, int nomove);
 private Boole  echeck_abbr(Unt);
 private int del_char_after_col(int limit_col);
-private void ins_reg(void);
+private void insertRegisterContents(void);
 private void ins_ctrl_g(void);
 private void ins_ctrl_hat(void);
 private int  ins_esc(long *count, int commChar, int nomove);
@@ -85,6 +85,7 @@ private void ins_compl_insert(int move_cursor);
 private Unt ins_complete(Unt c, Boole enable_pum);
 private Boole ins_compl_setup_autocompl(Unt c);
 private int ins_eol(Unt c);
+private void redrawInInsertMode(Boole ready);
 
 //}}}
 
@@ -400,7 +401,7 @@ edit(
 
       //Redraw the display when no characters are waiting.
       //Also shows mode, ruler and positions cursor.
-      ins_redraw(TRUE);
+      redrawInInsertMode(true);
 
       if (curPor->bookOpts.scrollBind)
          normPostProcessScrollbind(TRUE);
@@ -510,7 +511,7 @@ edit(
       // CTRL-\ CTRL-O is like CTRL-O but without moving the cursor.
       if (c == Ctrl_BSL) {
          // may need to redraw when no more chars available now
-         ins_redraw(FALSE);
+         redrawInInsertMode(false);
          ++no_mapping;
          ++allow_keys;
          c = plain_vgetc();
@@ -582,10 +583,6 @@ edit(
                 ins_apply_autocmds(EVENT_INSERTLEAVE);
             did_cursorhold = FALSE;
 
-            // ins_redraw() triggers TextChangedI only when no characters
-            // are in the typeahead buffer, so reset curBook->lastChangeTick only
-            // if the TextChangedI was not blocked by char_avail() (e.g. using :norm!)
-            // and the TextChangedI autocommand has been triggered.
             if (!char_avail() && curBook->lastChangeTickInsert == CHANGEDTICK(curBook))
                 curBook->lastChangeTick = CHANGEDTICK(curBook);
             return (c == Ctrl_O);
@@ -623,7 +620,7 @@ edit(
       case Ctrl_R:   // insert the contents of a register
          if (ctrl_x_mode_register() && !ins_compl_active())
             goto docomplete;
-         ins_reg();
+         insertRegisterContents();
          auto_format(FALSE, TRUE);
          inserted_space = FALSE;
          break;
@@ -668,7 +665,7 @@ edit(
          if (did_backspace && p_ac && !char_avail() && curPor->cursor.col > 0) {
             c = char_before_cursor();
             if (ins_compl_setup_autocompl(c)) {
-                update_screen(UPD_VALID); // Show char deletion immediately
+                drawUpdateScreen(UPD_VALID); // Show char deletion immediately
                 out_flush();
                 goto docomplete; // Trigger autocompletion
             }
@@ -874,9 +871,9 @@ edit(
          // In a quickfix window a <CR> jumps to the error under the cursor.
          if (isLocationListBook(curBook) && c == ENTER) {
             if (curPor->locationStackRef == NULL)    // quickfix window
-               executeCommLine((CS)".mc");
-            else                // location list window
-               executeCommLine((CS)".ll");
+               executeCommLine(S".mc");
+            else                // location list portal
+               executeCommLine(S".ll");
             break;
          }
          if (commPortTypeG != 0) {
@@ -982,7 +979,7 @@ edit(
                   // Add ABBR_OFF for characters above 0x100, this is what check_abbr() expects.
                   && c != Ctrl_RSB)
          ) {
-            insert_special(c, false, false);
+            insertRegular(c, false, false);
          }
 
          auto_format(FALSE, TRUE);
@@ -991,7 +988,7 @@ edit(
          foldOpenCursor();
          // Trigger autocompletion
          if (p_ac && !char_avail() && ins_compl_setup_autocompl(c)) {
-            update_screen(UPD_VALID); // Show character immediately
+            drawUpdateScreen(UPD_VALID); // Show character immediately
             out_flush();
             goto docomplete;
          }
@@ -1022,8 +1019,8 @@ edit(
 //Redraw for Insert mode. This is postponed until getting the next character to make '$' in the 
 //'cpo' option work correctly. Only redraw when there are no characters available. This speeds up
 //inserting sequences of characters (e.g., for CTRL-R).
-void
-ins_redraw(int ready) {      // not busy with something
+private void
+redrawInInsertMode(Boole ready) {      // not busy with something
    if (char_avail())
       return;
 
@@ -1034,47 +1031,10 @@ ins_redraw(int ready) {      // not busy with something
       //a change (e.g., inserting a "(".  The autocommand may also require a redraw, so it's done
       //again below, unfortunately.
       if (syntax_present(curPor) && must_redraw)
-         update_screen(0);
+         drawUpdateScreen(0);
       if (popup_visible)
          popup_check_cursor_pos();
       last_cursormoved = curPor->cursor;
-   }
-
-   //Trigger TextChangedI if wasModifiedtick_i differs.
-   if (ready && has_textchangedI()
-       && curBook->lastChangeTickInsert != CHANGEDTICK(curBook)
-       && !pum_visible()
-   ) {
-      AutocommSave   aco;
-      Long   tick = CHANGEDTICK(curBook);
-
-      // Save and restore curPor and curBook, in case the autocmd changes them.
-      auCommPrepareBook(&aco, curBook);
-      apply_autocmds(EVENT_TEXTCHANGEDI, NULL, NULL, false, curBook);
-      auCommRestoreBuf(&aco);
-      curBook->lastChangeTickInsert = CHANGEDTICK(curBook);
-      if (tick != CHANGEDTICK(curBook))  // see ins_apply_autocmds()
-          u_save(curPor->cursor.lnum, (LineNr)(curPor->cursor.lnum + 1));
-   }
-
-   //Trigger TextChangedP if wasModifiedtick_pum differs. When the popupmenu
-   //closes TextChangedI will need to trigger for backwards compatibility,
-   //thus use different lastChangeTick* variables.
-   if (ready && has_textchangedP()
-       && curBook->lastChangeTickPum != CHANGEDTICK(curBook)
-       && pum_visible()
-   ) {
-      AutocommSave   aco;
-      Long   tick = CHANGEDTICK(curBook);
-
-      // Save and restore curPor and curBook, in case the autocmd changes them.
-      auCommPrepareBook(&aco, curBook);
-      apply_autocmds(EVENT_TEXTCHANGEDP, NULL, NULL, false, curBook);
-      auCommRestoreBuf(&aco);
-      curBook->lastChangeTickPum = CHANGEDTICK(curBook);
-      if (tick != CHANGEDTICK(curBook))  // see ins_apply_autocmds()
-          u_save(curPor->cursor.lnum,
-                  (LineNr)(curPor->cursor.lnum + 1));
    }
 
    if (ready)
@@ -1084,7 +1044,7 @@ ins_redraw(int ready) {      // not busy with something
    may_trigger_safestate(ready && !ins_compl_active() && !pum_visible());
 
    if (must_redraw)
-      update_screen(0);
+      drawUpdateScreen(0);
    ei (mustClearCommlineG || redrawCommlineG)
       showmode();      // clear cmdline and show mode
    showruler(FALSE);
@@ -1098,7 +1058,7 @@ insertStartVisualBlockMode(void) {
    Boole did_putchar = false;
 
    // may need to redraw when no more chars available now
-   ins_redraw(FALSE);
+   redrawInInsertMode(FALSE);
 
    if (redrawing() && !char_avail()) {
       edit_putchar('^', TRUE);
@@ -1116,7 +1076,7 @@ insertStartVisualBlockMode(void) {
       edit_unputchar();
    clear_showcmd();
 
-   insert_special(c, false, true);
+   insertRegular(c, false, true);
 }
 
 //After getting an ESC or CSI for a literal key: If the typeahead buffer
@@ -1357,7 +1317,7 @@ get_literal(int noReduceKeys) {
 
 // Insert character, taking care of special keys and modMaskG
 private void
-insert_special(
+insertRegular(
    Unt c,
    Boole allow_modmask,
    Boole ctrlv       // c was typed after CTRL-V
@@ -2140,7 +2100,7 @@ echeck_abbr(Unt c) {
 }
 
 private void
-ins_reg(void) {
+insertRegisterContents(void) {
    int      need_redraw = FALSE;
    Unt      regname;
    int      literally = 0;
@@ -2150,7 +2110,7 @@ ins_reg(void) {
    pc_status = PC_STATUS_UNSET;
    if (redrawing() && !char_avail()) {
       // may need to redraw when no more chars available now
-      ins_redraw(FALSE);
+      redrawInInsertMode(FALSE);
 
       edit_putchar('"', TRUE);
       add_to_showcmd_c(Ctrl_R);
@@ -3195,7 +3155,7 @@ ins_ctrl_ey(Unt tc) {
             AppendToRedobuff((CS)CTRL_V_STR);   // CTRL-V
          tw_save = curBook->o.textWidth;
          curBook->o.textWidth = -1;
-         insert_special(c, TRUE, FALSE);
+         insertRegular(c, true, false);
          curBook->o.textWidth = tw_save;
          c = Ctrl_V;   // pretend CTRL-V is last character
          auto_format(FALSE, TRUE);
@@ -5107,7 +5067,7 @@ ins_compl_new_leader(void) {
    complUsedMatchS = false;
 
    if (p_acl > 0) {
-      update_screen(UPD_VALID); // Show char (deletion) immediately
+      drawUpdateScreen(UPD_VALID); // Show char (deletion) immediately
       out_flush();
    }
 
@@ -5492,9 +5452,9 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
 
    auto_format(FALSE, TRUE);
 
-   // Trigger the CompleteDonePre event to give scripts a chance to
-   // act upon the completion before clearing the info, and restore
-   // ctrl_x_mode, so that complete_info() can be used.
+   //Trigger the CompleteDonePre event to give scripts a chance to
+   //act upon the completion before clearing the info, and restore
+   //ctrl_x_mode, so that complete_info() can be used.
    ctrl_x_mode = prev_mode;
    ins_apply_autocmds(EVENT_COMPLETEDONEPRE);
 
@@ -5515,7 +5475,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
 
    if (c == Ctrl_C && commPortTypeG != 0)
       // Avoid the popup menu remains displayed when leaving the command line window.
-      update_screen(0);
+      drawUpdateScreen(0);
    // Trigger the CompleteDone event to give scripts a chance to act upon the end of completion.
    trigger_complete_done_event(prev_mode, word);
    eeglFree(word);
@@ -5605,8 +5565,8 @@ ins_compl_prep(Unt c) {
    ei (ctrl_x_mode_not_default()) {
       // We're already in CTRL-X mode, do we stay in it?
       if (!eeIsCtrlXKey(c)) {
-          ctrl_x_mode = ctrl_x_mode_scroll() ? CTRL_X_NORMAL : CTRL_X_FINISHED;
-          edit_submode = NULL;
+         ctrl_x_mode = ctrl_x_mode_scroll() ? CTRL_X_NORMAL : CTRL_X_FINISHED;
+         edit_submode = NULL;
       }
       showmode();
    }
@@ -5616,12 +5576,13 @@ ins_compl_prep(Unt c) {
       // another key is hit, then go back to showing what mode we are in.
       showmode();
       if ((ctrl_x_mode_normal() && c != Ctrl_N && c != Ctrl_P
-                      && c != Ctrl_R && !ins_compl_pum_key(c))
-         || ctrl_x_mode == CTRL_X_FINISHED)
-          retval = ins_compl_stop(c, prev_mode, retval);
+                      && c != Ctrl_R && !ins_compl_pum_key(c)
+          ) || ctrl_x_mode == CTRL_X_FINISHED
+      )
+         retval = ins_compl_stop(c, prev_mode, retval);
    } ei (ctrl_x_mode == CTRL_X_LOCAL_MSG)
-      // Trigger the CompleteDone event to give scripts a chance to act
-      // upon the (possibly failed) completion.
+      //Trigger the CompleteDone event to give scripts a chance to act
+      //upon the (possibly failed) completion.
       trigger_complete_done_event(ctrl_x_mode, NULL);
 
     may_trigger_modechanged();
@@ -5641,9 +5602,9 @@ ins_compl_prep(Unt c) {
 //"ptr" is the known leader text or ZERO.
 private void
 ins_compl_fixRedoBufForLeader(CS ptr_arg) {
-    int       len = 0;
-    Byte  *p;
-    Byte  *ptr = ptr_arg;
+    int len = 0;
+    CS p;
+    CS ptr = ptr_arg;
 
    if (!ptr) {
       if (compl_leader.c)
@@ -5671,7 +5632,7 @@ ins_compl_fixRedoBufForLeader(CS ptr_arg) {
 //starting from book and looking for a non-scanned book (other than curBook).  curBook is special:
 //if it is called with book=curBook then it has to be the first call for a given flag/expansion.
 //Return the book to scan, if any, otherwise returns curBook -- Acevedo
-private Book *
+private Book*
 ins_compl_next_buf(Book* book, Unt flag) {
    static Portal    *wp = NULL;
    Boole skipBook;
@@ -6583,7 +6544,7 @@ private void
 ins_compl_longest_insert(CS prefix) {
    ins_compl_delete();
    ins_compl_insert_bytes(prefix + get_compl_len(), -1);
-   ins_redraw(FALSE);
+   redrawInInsertMode(FALSE);
 }
 
 //Calculate the longest common prefix among the best fuzzy matches
@@ -7801,7 +7762,7 @@ ins_compl_next(
          pum_callUpdateScreen();
       else
          // Not showing the popup menu yet, redraw to show the user what was inserted.
-         update_screen(0);
+         drawUpdateScreen(0);
 
       // display the updated popup menu
       ins_compl_show_pum();

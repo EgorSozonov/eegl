@@ -1024,13 +1024,6 @@ mainLoop(int  inCommPort) {  // TRUE when working in the command-line window
             last_cursormoved = curPor->cursor;
          }
 
-         // Trigger TextChanged if b:changedtick differs.
-         if (!finish_op && has_textchanged()
-              && curBook->lastChangeTick != CHANGEDTICK(curBook)) {
-            apply_autocmds(EVENT_TEXTCHANGED, NULL, NULL, false, curBook);
-            curBook->lastChangeTick = CHANGEDTICK(curBook);
-         }
-
          // Ensure curPor->topLine and curPor->leftCol are up to date before triggering a 
          // WinScrolled autocommand.
          update_topline();
@@ -1075,7 +1068,7 @@ mainLoop(int  inCommPort) {  // TRUE when working in the command-line window
          if (VIsual_active)
             update_curbuf(UPD_INVERTED); // update inverted part
          ei (must_redraw) {
-            update_screen(0);
+            drawUpdateScreen(0);
          } ei (redrawCommlineG || mustClearCommlineG || redraw_mode)
             showmode();
          redraw_statuslines();
