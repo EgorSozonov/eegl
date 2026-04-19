@@ -1,5 +1,5 @@
 /* src/strings.c */
-void trans_characters(Byte *buf, int bufsize);
+void trans_characters(CS buf, int bufsize);
 CS sanitizeStr(CS s);
 CS str_foldcase(CS str, Unt orglen, CS builder, Unt builderLen);
 unsigned nr2hex(unsigned c);
@@ -123,7 +123,7 @@ ArrayList *fuzzyMatchStr_with_pos(Byte *str, Byte *pat);
 CS find_word_end(CS ptr);
 CS find_line_end(CS ptr);
 int fuzzyMatchStr_in_line(Byte **ptr, Byte *pat, int *len, Pos *current_pos, int *score);
-int search_for_fuzzy_match(Book *buf, Pos *pos, CS pattern, int dir, Pos *start_pos, int *len, Byte **ptr, int *score);
+int search_for_fuzzy_match(Book *book, Pos *pos, CS pattern, int dir, Pos *start_pos, int *len, Byte **ptr, int *score);
 void fuzmatch_str_free(FuzzyMatch *fuzmatch, int count);
 int defuzz(ExpandMatch *matches, Fuzzy fuzzy, Boole funcsort);
 CS encodeBase64(void const *binaryData_, int inputLen);

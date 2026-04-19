@@ -129,7 +129,7 @@ void alist_clear(ErArgList *al);
 void alist_init(ErArgList *al);
 void alist_unlink(ErArgList *al);
 void alist_new(void);
-void arglistIngest(ErArgList *al, Byte *fname, int set_fnum);
+void arglistIngest(ErArgList *al, CS fname, int set_fnum);
 int bookParseAndExpandFnames(CS str, Boole omitWildignore, ExpandMatch *matches);
 void set_arglist(CS str);
 int editing_arg_idx(Portal *port);

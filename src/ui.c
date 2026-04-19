@@ -8263,7 +8263,7 @@ add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
    int      empty = (book->mem.flags & ML_EMPTY);
    LineNr   lnum = book->mem.lineCount;
 
-   ml_append_buf(term->book, lnum, text, len + 1, FALSE);
+   memAppendBook(term->book, lnum, text, len + 1, FALSE);
    if (empty) {
       // Delete the empty line that was in the empty buffer.
       ml_deleteBufLine(book, 1);
@@ -13365,7 +13365,7 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
       drawTextLen_for_tabpanel(tplmode, buf, 1, 0, tapa);
    }
 
-   get_trans_bufname(tapa->currPort->book);
+   drawGetTranslatedBookName(tapa->currPort->book);
    shorten_dir(NameBuff);
    len = (int)STRLEN(NameBuff);
    drawTextLen_for_tabpanel(tplmode, NameBuff, len, 0, tapa);

@@ -50,7 +50,7 @@ CS memGetLine(Book *book, LineNr lnum, Boole willChange);
 int ml_line_alloced(void);
 int ml_append(LineNr lnum, Byte *newContent, ColNr len, int newfile);
 int ml_append_flags(LineNr lnum, Byte *newContent, ColNr len, int flags);
-int ml_append_buf(Book *book, LineNr lnum, CS line, ColNr len, int newfile);
+int memAppendBook(Book *book, LineNr lnum, CS line, ColNr len, int newfile);
 int ml_replace(LineNr lnum, Byte *line, int copy);
 int ml_replace_len(LineNr lnum, CS line_arg, ColNr len_arg, int has_props, int copy);
 int ml_delete(LineNr lnum);

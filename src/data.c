@@ -5340,7 +5340,7 @@ eval_number(
       // decimal or hex number
       int len;
       readLongNumber(
-         *arg, NULL, &len, STR2NR_ALL + STR2NR_QUOTE, OUT &n, NULL, 0, true, NULL
+         *arg, NULL, OUT &len, STR2NR_ALL + STR2NR_QUOTE, OUT &n, NULL, 0, true, NULL
       );
       if (len == 0) {
          if (evaluate)
@@ -5377,14 +5377,12 @@ tv2string(
 int
 eval_env_var(Byte **arg, Var *returnVar, int evaluate) {
    Byte   *string = NULL;
-   int      len;
    int      cc;
-   Byte   *name;
    int      mustfree = FALSE;
 
    ++*arg;
-   name = *arg;
-   len = readEnvNameAndGetItsLen(arg);
+   CS name = *arg;
+   int len = readEnvNameAndGetItsLen(arg);
    if (evaluate) {
       if (len == 0)
           return FAIL; // invalid empty name
@@ -5393,7 +5391,7 @@ eval_env_var(Byte **arg, Var *returnVar, int evaluate) {
       name[len] = ZERO;
       // first try eeglGetEnv(), fast for normal environment vars
       string = eeglGetEnv(name);
-      if (string != NULL && *string != ZERO) {
+      if (string && *string != ZERO) {
          if (!mustfree)
             string = copyStr(string);
       } else {
@@ -5424,30 +5422,28 @@ tv_get_lnum(Var *argvars) {
    LineNr lnum = (LineNr)varGetNumberChk(&argvars[0], NULL);
    if (lnum <= 0 && anyEmsgG_before == anyEmsgG && argvars[0].tag != VAR_NUMBER) {
       int   fnum;
-      Pos   *fp;
-
       // no valid number, try using arg like line()
-      fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);
-      if (fp != NULL)
+      Pos* fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);
+      if (fp)
           lnum = fp->lnum;
    }
    return lnum;
 }
 
 //Get the lnum from the first argument.
-//Also accepts "$", then "buf" is used. Return 0 on error.
+//Also accepts "$", then "book" is used. Return 0 on error.
 LineNr
-tv_get_lnum_buf(Var *argvars, Book *buf) {
+tv_get_lnum_buf(Var *argvars, Book* book) {
    if (argvars[0].tag == VAR_STRING
           && argvars[0].string != NULL
           && argvars[0].string[0] == '$'
           && argvars[0].string[1] == ZERO
-          && buf)
-      return buf->mem.lineCount;
+          && book)
+      return book->mem.lineCount;
    return (LineNr)varGetNumberChk(&argvars[0], NULL);
 }
 
-//Get buffer by number or pattern.
+//Get book by number or pattern.
 Book *
 daGetBook(Var *tv, Boole curtab_only) {
    CS name = tv->string;

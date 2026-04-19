@@ -2256,7 +2256,7 @@ op_pending(void) {
        && !finish_op
        && currOperatorG->prev_opcount == 0
        && currOperatorG->prev_count0 == 0
-       && currOperatorG->op_type == OP_NOP
+       && currOperatorG->opTy == OP_NOP
        && currOperatorG->regname == ZERO);
 }
 
@@ -11516,7 +11516,7 @@ getregionpos(
       bookGetVirtualColInVirtualMode(curPor, p2, &sc2, NULL, &ec2);
       oper->motion_type = MBLOCK;
       oper->inclusive = TRUE;
-      oper->op_type = OP_NOP;
+      oper->opTy = OP_NOP;
       oper->start = *p1;
       oper->end = *p2;
       oper->start_vcol = MIN(sc1, sc2);

@@ -196,7 +196,7 @@ int eval_number(Byte **arg, Var *returnVar, int evaluate, int want_string);
 CS tv2string(Var *tv, Byte **tofree, Byte *numbuf, int copyID);
 int eval_env_var(Byte **arg, Var *returnVar, int evaluate);
 LineNr tv_get_lnum(Var *argvars);
-LineNr tv_get_lnum_buf(Var *argvars, Book *buf);
+LineNr tv_get_lnum_buf(Var *argvars, Book *book);
 Book *daGetBook(Var *tv, Boole curtab_only);
 Book *daGetBookFromArg(Var *tv);
 int equal_type(TypeSpec *type1, TypeSpec *type2, int flags);

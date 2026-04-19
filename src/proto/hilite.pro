@@ -42,5 +42,5 @@ Byte *get_syntax_name(Expand *xp, int idx);
 int syn_get_id(Portal *wp, long lnum, ColNr col, int trans, int keep_state);
 int get_syntax_info(int *seqnrp);
 int syn_get_stack_item(int i);
-int syn_get_foldlevel(Portal *wp, long lnum);
+int syn_get_foldlevel(Portal *po, long lnum);
 /* eegl: set ft=c : */

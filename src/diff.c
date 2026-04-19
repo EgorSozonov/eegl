@@ -16,7 +16,7 @@ struct DiffBlock {
    DiffBlock* df_next;
    LineNr   df_lnum[DB_COUNT];   // line number in buffer
    LineNr   df_count[DB_COUNT];   // nr of inserted/changed lines
-   int is_linematched;  // has the linematch algorithm ran on this diff hunk to divide it into
+   Boole isLinematched;  //has the linematch algorithm run on this diff hunk to divide it into
            // smaller diff hunks?
 
    int      has_changes;      // has cached list of inline changes
@@ -48,12 +48,12 @@ struct DiffBlock {
 #define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
 
 typedef struct s_mmfile {
-   char *ptr;
+   Byte* ptr;
    long size;
 } MmFile;
 
 typedef struct s_mmbuffer {
-   char *ptr;
+   Byte* ptr;
    long size;
 } MmBuffer;
 
@@ -80,7 +80,7 @@ typedef struct s_chastore {
 
 
 typedef long (*FindFn)(
-      const char *line, long line_len, char *buffer, long buffer_size, void *priv
+      Byte* line, long line_len, char *buffer, long buffer_size, void *priv
 );
 
 typedef int (*XdlEmitHunkConsumeFn)(long start_a, long count_a,
@@ -104,25 +104,26 @@ typedef struct s_xdemitcb {
    int (*out_hunk)(void *,
          long old_begin, long old_nr,
          long new_begin, long new_nr,
-         const char *func, long funclen);
+         Byte* func, long funclen);
    int (*out_line)(void *, MmBuffer *, int);
 } XdEmitCb;
 
-typedef struct s_xrecord {
-   struct s_xrecord *next;
-   char const *ptr;
+declStruct(Record);
+struct Record {
+   Record* next;
+   CS ptr;
    long size;
    unsigned long ha;
-} xrecord_t;
+};
 
 typedef struct s_xdfile {
    chastore_t rcha;
    long nrec;
    unsigned int hbits;
-   xrecord_t **rhash;
+   Record **rhash;
    long dstart, dend;
-   xrecord_t **recs;
-   char *rchg;
+   Record **recs;
+   CS rchg;
    long *rindex;
    long nreff;
    unsigned long *ha;
@@ -134,8 +135,8 @@ typedef struct s_xdfenv {
 
 //{{{forward declarations
 
-private int xdl_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp,
-        XdEmitConf const *xecfg, XdEmitCb *ecb);
+private int xdl_diff(MmFile *mf1, MmFile *mf2, XpParam* xpp,
+        XdEmitConf *xecfg, XdEmitCb *ecb);
 
 //}}}
 
@@ -163,10 +164,8 @@ private int matching_chars(const MmFile *m1, const MmFile *m2);
 
 private Unt
 line_len(const MmFile *m) {
-    char   *s = m->ptr;
-    char   *end;
-
-    end = memchr(s, '\n', (Unt)m->size);
+    Byte* s = m->ptr;
+    Byte* end = memchr(s, '\n', (Unt)m->size);
     return end ? (Unt)(end - s) : (Unt)m->size;
 }
 
@@ -179,34 +178,32 @@ line_len(const MmFile *m) {
 /// @param s2
 private int
 matching_chars_iwhite(const MmFile *s1, const MmFile *s2) {
-    // the newly processed strings that will be compared
-    // delete the white space characters
-    MmFile   sp[2];
-    char   p[2][MATCH_CHAR_MAX_LEN];
+   // the newly processed strings that will be compared delete the white space characters
+   MmFile sp[2];
+   Byte p[2][MATCH_CHAR_MAX_LEN];
 
-    for (int k = 0; k < 2; k++) {
-   const   MmFile *s = k == 0 ? s1 : s2;
-   Unt   pi = 0;
-   Unt   slen = MIN(MATCH_CHAR_MAX_LEN - 1, line_len(s));
+   for (int k = 0; k < 2; k++) {
+      const   MmFile *s = k == 0 ? s1 : s2;
+      Unt pi = 0;
+      Unt slen = MIN(MATCH_CHAR_MAX_LEN - 1, line_len(s));
 
-   for (Unt i = 0; i <= slen; i++) {
-       char e = s->ptr[i];
+      for (Unt i = 0; i <= slen; i++) {
+         Byte e = s->ptr[i];
 
-       if (e != ' ' && e != '\t') {
-      p[k][pi] = e;
-      pi++;
-       }
+         if (e != ' ' && e != '\t') {
+            p[k][pi] = e;
+            pi++;
+         }
+      }
+
+      sp[k].ptr = p[k];
+      sp[k].size = (int)pi;
    }
 
-   sp[k].ptr = p[k];
-   sp[k].size = (int)pi;
-    }
-
-    return matching_chars(&sp[0], &sp[1]);
+   return matching_chars(&sp[0], &sp[1]);
 }
 
-/// Return matching characters between "s1" and "s2" whilst respecting sequence
-/// order.
+/// Return matching characters between "s1" and "s2" whilst respecting sequence order.
 /// Consider the case of two strings 'AAACCC' and 'CCCAAA', the
 /// return value from this function will be 3, either to match
 /// the 3 C's, or the 3 A's.
@@ -221,32 +218,32 @@ matching_chars_iwhite(const MmFile *s1, const MmFile *s2) {
 /// @param m2
 private int
 matching_chars(const MmFile *m1, const MmFile *m2) {
-    Unt   s1len = MIN(MATCH_CHAR_MAX_LEN - 1, line_len(m1));
-    Unt   s2len = MIN(MATCH_CHAR_MAX_LEN - 1, line_len(m2));
-    char   *s1 = m1->ptr;
-    char   *s2 = m2->ptr;
-    int      matrix[2][MATCH_CHAR_MAX_LEN] = { 0 };
-    int      icur = 1;  // save space by storing only two rows for i axis
+   Unt   s1len = MIN(MATCH_CHAR_MAX_LEN - 1, line_len(m1));
+   Unt   s2len = MIN(MATCH_CHAR_MAX_LEN - 1, line_len(m2));
+   Byte* s1 = m1->ptr;
+   Byte* s2 = m2->ptr;
+   int matrix[2][MATCH_CHAR_MAX_LEN] = { 0 };
+   int icur = 1;  // save space by storing only two rows for i axis
 
-    for (Unt i = 0; i < s1len; i++) {
-   icur = (icur == 1 ? 0 : 1);
-   int *e1 = matrix[icur];
-   int *e2 = matrix[!icur];
+   for (Unt i = 0; i < s1len; i++) {
+      icur = (icur == 1 ? 0 : 1);
+      int *e1 = matrix[icur];
+      int *e2 = matrix[!icur];
 
-   for (Unt j = 0; j < s2len; j++) {
-       // skip char in s1
-       if (e2[j + 1] > e1[j + 1])
-      e1[j + 1] = e2[j + 1];
-       // skip char in s2
-       if (e1[j] > e1[j + 1])
-      e1[j + 1] = e1[j];
-       // compare char in s1 and s2
-       if ((s1[i] == s2[j]) && (e2[j] + 1) > e1[j + 1])
-      e1[j + 1] = e2[j] + 1;
+      for (Unt j = 0; j < s2len; j++) {
+         // skip char in s1
+         if (e2[j + 1] > e1[j + 1])
+            e1[j + 1] = e2[j + 1];
+         // skip char in s2
+         if (e1[j] > e1[j + 1])
+            e1[j + 1] = e1[j];
+         // compare char in s1 and s2
+         if ((s1[i] == s2[j]) && (e2[j] + 1) > e1[j + 1])
+            e1[j + 1] = e2[j] + 1;
+      }
    }
-    }
 
-    return matrix[icur][s2len];
+   return matrix[icur][s2len];
 }
 
 /// count the matching characters between a variable number of strings "sp"
@@ -257,43 +254,42 @@ matching_chars(const MmFile *m1, const MmFile *m2) {
 /// @param n
 private int
 count_n_matched_chars(MmFile **sp, const Unt n, int iwhite) {
-    int matched_chars = 0;
-    int matched = 0;
+   int matched_chars = 0;
+   int matched = 0;
 
-    for (Unt i = 0; i < n; i++) {
-   for (Unt j = i + 1; j < n; j++) {
-       if (sp[i]->ptr != NULL && sp[j]->ptr != NULL) {
-      matched++;
-      // TODO(lewis6991): handle whitespace ignoring higher up in the
-      // stack
-      matched_chars += iwhite ? matching_chars_iwhite(sp[i], sp[j])
-               : matching_chars(sp[i], sp[j]);
-       }
+   for (Unt i = 0; i < n; i++) {
+      for (Unt j = i + 1; j < n; j++) {
+          if (sp[i]->ptr != NULL && sp[j]->ptr != NULL) {
+         matched++;
+         // TODO(lewis6991): handle whitespace ignoring higher up in the
+         // stack
+         matched_chars += iwhite ? matching_chars_iwhite(sp[i], sp[j])
+                  : matching_chars(sp[i], sp[j]);
+          }
+      }
    }
-    }
 
-    // prioritize a match of 3 (or more lines) equally to a match of 2 lines
-    if (matched >= 2) {
-   matched_chars *= 2;
-   matched_chars /= matched;
-    }
+   // prioritize a match of 3 (or more lines) equally to a match of 2 lines
+   if (matched >= 2) {
+      matched_chars *= 2;
+      matched_chars /= matched;
+   }
 
-    return matched_chars;
+   return matched_chars;
 }
 
 private MmFile
 fastforward_buf_to_lnum(MmFile s, LineNr lnum) {
-    for (int i = 0; i < lnum - 1; i++) {
-   char *line_end;
+   for (int i = 0; i < lnum - 1; i++) {
 
-   line_end = memchr(s.ptr, '\n', (Unt)s.size);
-   s.size = line_end ? (int)(s.size - (line_end - s.ptr)) : 0;
-   s.ptr = line_end;
-   if (!s.ptr)
-       break;
-   s.ptr++;
-   s.size--;
-    }
+      CS line_end = memchr(s.ptr, '\n', (Unt)s.size);
+      s.size = line_end ? (int)(s.size - (line_end - s.ptr)) : 0;
+      s.ptr = line_end;
+      if (!s.ptr)
+         break;
+      s.ptr++;
+      s.size--;
+   }
 
     return s;
 }
@@ -322,50 +318,50 @@ try_possible_paths(
     const MmFile   **diff_blk,
     int         iwhite)
 {
-    if (path_idx == npaths) {
-   if ((*choice) > 0) {
-       int from_vals[LN_MAX_BUFS] = { 0 };
-       const int *to_vals = df_iters;
+   if (path_idx == npaths) {
+      if ((*choice) > 0) {
+          int from_vals[LN_MAX_BUFS] = { 0 };
+          const int *to_vals = df_iters;
 
-       MmFile mm[LN_MAX_BUFS];  // stack memory for current_lines
-       MmFile *current_lines[LN_MAX_BUFS];
-       for (Unt k = 0; k < ndiffs; k++) {
-         from_vals[k] = df_iters[k];
-         // get the index at all of the places
-         if ((*choice) & (1 << k)) {
-             from_vals[k]--;
-             mm[k] = fastforward_buf_to_lnum(*diff_blk[k], df_iters[k]);
-         } else
-             CLEAR_FIELD(mm[k]);
-         current_lines[k] = &mm[k];
-      }
-      Unt unwrapped_idx_from = unwrap_indexes(from_vals, diff_len, ndiffs);
-      Unt unwrapped_idx_to = unwrap_indexes(to_vals, diff_len, ndiffs);
-      int matched_chars = count_n_matched_chars(current_lines, ndiffs, iwhite);
-      int score = diffcmppath[unwrapped_idx_from].df_lev_score + matched_chars;
+          MmFile mm[LN_MAX_BUFS];  // stack memory for current_lines
+          MmFile *current_lines[LN_MAX_BUFS];
+          for (Unt k = 0; k < ndiffs; k++) {
+            from_vals[k] = df_iters[k];
+            // get the index at all of the places
+            if ((*choice) & (1 << k)) {
+                from_vals[k]--;
+                mm[k] = fastforward_buf_to_lnum(*diff_blk[k], df_iters[k]);
+            } else
+                CLEAR_FIELD(mm[k]);
+            current_lines[k] = &mm[k];
+         }
+         Unt unwrapped_idx_from = unwrap_indexes(from_vals, diff_len, ndiffs);
+         Unt unwrapped_idx_to = unwrap_indexes(to_vals, diff_len, ndiffs);
+         int matched_chars = count_n_matched_chars(current_lines, ndiffs, iwhite);
+         int score = diffcmppath[unwrapped_idx_from].df_lev_score + matched_chars;
 
-      if (score > diffcmppath[unwrapped_idx_to].df_lev_score) {
-         diffcmppath[unwrapped_idx_to].pathInd = 1;
-         diffcmppath[unwrapped_idx_to].df_decision[0] =
-                  &diffcmppath[unwrapped_idx_from];
-         diffcmppath[unwrapped_idx_to].df_choice[0] = *choice;
-         diffcmppath[unwrapped_idx_to].df_lev_score = score;
-      } ei (score == diffcmppath[unwrapped_idx_to].df_lev_score) {
-         Unt k = diffcmppath[unwrapped_idx_to].pathInd++;
-         diffcmppath[unwrapped_idx_to].df_decision[k] = &diffcmppath[unwrapped_idx_from];
-         diffcmppath[unwrapped_idx_to].df_choice[k] = *choice;
+         if (score > diffcmppath[unwrapped_idx_to].df_lev_score) {
+            diffcmppath[unwrapped_idx_to].pathInd = 1;
+            diffcmppath[unwrapped_idx_to].df_decision[0] =
+                     &diffcmppath[unwrapped_idx_from];
+            diffcmppath[unwrapped_idx_to].df_choice[0] = *choice;
+            diffcmppath[unwrapped_idx_to].df_lev_score = score;
+         } ei (score == diffcmppath[unwrapped_idx_to].df_lev_score) {
+            Unt k = diffcmppath[unwrapped_idx_to].pathInd++;
+            diffcmppath[unwrapped_idx_to].df_decision[k] = &diffcmppath[unwrapped_idx_from];
+            diffcmppath[unwrapped_idx_to].df_choice[k] = *choice;
+         }
       }
+      return;
    }
-   return;
-    }
 
-    Unt bit_place = paths[path_idx];
-    *(choice) |= (1 << bit_place);  // set it to 1
-    try_possible_paths(df_iters, paths, npaths, path_idx + 1, choice,
-       diffcmppath, diff_len, ndiffs, diff_blk, iwhite);
-    *(choice) &= ~(1 << bit_place);  // set it to 0
-    try_possible_paths(df_iters, paths, npaths, path_idx + 1, choice,
-       diffcmppath, diff_len, ndiffs, diff_blk, iwhite);
+   Unt bit_place = paths[path_idx];
+   *(choice) |= (1 << bit_place);  // set it to 1
+   try_possible_paths(df_iters, paths, npaths, path_idx + 1, choice,
+      diffcmppath, diff_len, ndiffs, diff_blk, iwhite);
+   *(choice) &= ~(1 << bit_place);  // set it to 0
+   try_possible_paths(df_iters, paths, npaths, path_idx + 1, choice,
+      diffcmppath, diff_len, ndiffs, diff_blk, iwhite);
 }
 
 /// unwrap indexes to access n dimensional tensor
@@ -374,20 +370,20 @@ try_possible_paths(
 /// @param ndiffs
 private Unt
 unwrap_indexes(const int *values, const int *diff_len, const Unt ndiffs) {
-    Unt num_unwrap_scalar = 1;
+   Unt num_unwrap_scalar = 1;
 
-    for (Unt k = 0; k < ndiffs; k++)
-   num_unwrap_scalar *= (Unt)diff_len[k] + 1;
+   for (Unt k = 0; k < ndiffs; k++)
+      num_unwrap_scalar *= (Unt)diff_len[k] + 1;
 
-    Unt path_idx = 0;
-    for (Unt k = 0; k < ndiffs; k++) {
-   num_unwrap_scalar /= (Unt)diff_len[k] + 1;
+   Unt path_idx = 0;
+   for (Unt k = 0; k < ndiffs; k++) {
+      num_unwrap_scalar /= (Unt)diff_len[k] + 1;
 
-   int n = values[k];
-   path_idx += num_unwrap_scalar * (Unt)n;
-    }
+      int n = values[k];
+      path_idx += num_unwrap_scalar * (Unt)n;
+   }
 
-    return path_idx;
+   return path_idx;
 }
 
 /// populate the values of the linematch algorithm tensor, and find the best
@@ -409,88 +405,83 @@ populate_tensor(
     const MmFile   **diff_blk,
     int         iwhite)
 {
-    if (ch_dim == ndiffs) {
-   int npaths = 0;
-   Unt paths[LN_MAX_BUFS];
+   if (ch_dim == ndiffs) {
+      int npaths = 0;
+      Unt paths[LN_MAX_BUFS];
 
-   for (Unt j = 0; j < ndiffs; j++) {
-       if (df_iters[j] > 0) {
-      paths[npaths] = j;
-      npaths++;
-       }
+      for (Unt j = 0; j < ndiffs; j++) {
+         if (df_iters[j] > 0) {
+            paths[npaths] = j;
+            npaths++;
+         }
+      }
+
+      int choice = 0;
+      Unt unwrapper_idx_to = unwrap_indexes(df_iters, diff_len, ndiffs);
+
+      diffcmppath[unwrapper_idx_to].df_lev_score = -1;
+      try_possible_paths(df_iters, paths, npaths, 0, &choice, diffcmppath,
+                  diff_len, ndiffs, diff_blk, iwhite);
+      return;
    }
 
-   int choice = 0;
-   Unt unwrapper_idx_to = unwrap_indexes(df_iters, diff_len, ndiffs);
-
-   diffcmppath[unwrapper_idx_to].df_lev_score = -1;
-   try_possible_paths(df_iters, paths, npaths, 0, &choice, diffcmppath,
-               diff_len, ndiffs, diff_blk, iwhite);
-   return;
-    }
-
-    for (int i = 0; i <= diff_len[ch_dim]; i++) {
-   df_iters[ch_dim] = i;
-   populate_tensor(df_iters, ch_dim + 1, diffcmppath, diff_len,
-      ndiffs, diff_blk, iwhite);
-    }
+   for (int i = 0; i <= diff_len[ch_dim]; i++) {
+      df_iters[ch_dim] = i;
+      populate_tensor(df_iters, ch_dim + 1, diffcmppath, diff_len,
+         ndiffs, diff_blk, iwhite);
+   }
 }
 
-/// algorithm to find an optimal alignment of lines of a diff block with 2 or
-/// more files. The algorithm is generalized to work for any number of files
-/// which corresponds to another dimension added to the tensor used in the
-/// algorithm
-///
-/// for questions and information about the linematch algorithm please contact
-/// Jonathon White (jonathonwhite@protonmail.com)
-///
-/// for explanation, a summary of the algorithm in 3 dimensions (3 files
-///     compared) follows
-///
-/// The 3d case (for 3 buffers) of the algorithm implemented when diffopt
-/// 'linematch' is enabled. The algorithm constructs a 3d tensor to
-/// compare a diff between 3 buffers. The dimensions of the tensor are
-/// the length of the diff in each buffer plus 1 A path is constructed by
-/// moving from one edge of the cube/3d tensor to the opposite edge.
-/// Motions from one cell of the cube to the next represent decisions. In
-/// a 3d cube, there are a total of 7 decisions that can be made,
-/// represented by the enum df_path3_choice which is defined in
-/// buffer_defs.h a comparison of buffer 0 and 1 represents a motion
-/// toward the opposite edge of the cube with components along the 0 and
-/// 1 axes.  a comparison of buffer 0, 1, and 2 represents a motion
-/// toward the opposite edge of the cube with components along the 0, 1,
-/// and 2 axes. A skip of buffer 0 represents a motion along only the 0
-/// axis. For each action, a point value is awarded, and the path is
-/// saved for reference later, if it is found to have been the optimal
-/// path. The optimal path has the highest score.  The score is
-/// calculated as the summation of the total characters matching between
-/// all of the lines which were compared. The structure of the algorithm
-/// is that of a dynamic programming problem.  We can calculate a point
-/// i,j,k in the cube as a function of i-1, j-1, and k-1. To find the
-/// score and path at point i,j,k, we must determine which path we want
-/// to use, this is done by looking at the possibilities and choosing
-/// the one which results in the local highest score.  The total highest
-/// scored path is, then in the end represented by the cell in the
-/// opposite corner from the start location.  The entire algorithm
-/// consists of populating the 3d cube with the optimal paths from which
-/// it may have came.
-///
-/// Optimizations:
-/// As the function to calculate the cell of a tensor at point i,j,k is a
-/// function of the cells at i-1, j-1, k-1, the whole tensor doesn't need
-/// to be stored in memory at once. In the case of the 3d cube, only two
-/// slices (along k and j axis) are stored in memory. For the 2d matrix
-/// (for 2 files), only two rows are stored at a time. The next/previous
-/// slice (or row) is always calculated from the other, and they alternate
-/// at each iteration.
-/// In the 3d case, 3 arrays are populated to memorize the score (matched
-/// characters) of the 3 buffers, so a redundant calculation of the
-/// scores does not occur
-/// @param diff_blk
-/// @param diff_len
-/// @param ndiffs
-/// @param [out] [allocated] decisions
-/// @return the length of decisions
+// algorithm to find an optimal alignment of lines of a diff block with 2 or
+// more files. The algorithm is generalized to work for any number of files
+// which corresponds to another dimension added to the tensor used in the
+// algorithm
+//
+// for questions and information about the linematch algorithm please contact
+// Jonathon White (jonathonwhite@protonmail.com)
+//
+//for explanation, a summary of the algorithm in 3 dimensions (3 files compared) follows
+//
+//The 3d case (for 3 buffers) of the algorithm implemented when diffopt
+//'linematch' is enabled. The algorithm constructs a 3d tensor to
+//compare a diff between 3 buffers. The dimensions of the tensor are
+//the length of the diff in each buffer plus 1 A path is constructed by
+//moving from one edge of the cube/3d tensor to the opposite edge.
+//Motions from one cell of the cube to the next represent decisions. In
+//a 3d cube, there are a total of 7 decisions that can be made,
+//represented by the enum df_path3_choice which is defined in
+//buffer_defs.h a comparison of buffer 0 and 1 represents a motion
+//toward the opposite edge of the cube with components along the 0 and
+//1 axes.  a comparison of buffer 0, 1, and 2 represents a motion
+//toward the opposite edge of the cube with components along the 0, 1,
+//and 2 axes. A skip of buffer 0 represents a motion along only the 0
+//axis. For each action, a point value is awarded, and the path is
+//saved for reference later, if it is found to have been the optimal
+//path. The optimal path has the highest score.  The score is
+//calculated as the summation of the total characters matching between
+//all of the lines which were compared. The structure of the algorithm
+//is that of a dynamic programming problem.  We can calculate a point
+//i,j,k in the cube as a function of i-1, j-1, and k-1. To find the
+//score and path at point i,j,k, we must determine which path we want
+//to use, this is done by looking at the possibilities and choosing
+//the one which results in the local highest score.  The total highest
+//scored path is, then in the end represented by the cell in the
+//opposite corner from the start location.  The entire algorithm
+//consists of populating the 3d cube with the optimal paths from which it may have came.
+//
+//Optimizations:
+//As the function to calculate the cell of a tensor at point i,j,k is a
+//function of the cells at i-1, j-1, k-1, the whole tensor doesn't need
+//to be stored in memory at once. In the case of the 3d cube, only two
+//slices (along k and j axis) are stored in memory. For the 2d matrix
+//(for 2 files), only two rows are stored at a time. The next/previous
+//slice (or row) is always calculated from the other, and they alternate
+//at each iteration.
+//In the 3d case, 3 arrays are populated to memorize the score (matched
+//characters) of the 3 buffers, so a redundant calculation of the
+//scores does not occur
+//param [out] [allocated] decisions
+//return the length of decisions
 private Unt
 linematch_nbuffers(
     const MmFile   **diff_blk,
@@ -499,15 +490,15 @@ linematch_nbuffers(
     int         **decisions,
     int         iwhite)
 {
-    assert(ndiffs <= LN_MAX_BUFS);
+   assert(ndiffs <= LN_MAX_BUFS);
 
-    Unt memsize = 1;
-    Unt memsize_decisions = 0;
-    for (Unt i = 0; i < ndiffs; i++) {
-   assert(diff_len[i] >= 0);
-   memsize *= (Unt)(diff_len[i] + 1);
-   memsize_decisions += (Unt)diff_len[i];
-    }
+   Unt memsize = 1;
+   Unt memsize_decisions = 0;
+   for (Unt i = 0; i < ndiffs; i++) {
+      assert(diff_len[i] >= 0);
+      memsize *= (Unt)(diff_len[i] + 1);
+      memsize_decisions += (Unt)diff_len[i];
+   }
 
    // create the flattened path matrix
    DiffCmpPath *diffcmppath = lalloc(sizeof(DiffCmpPath) * memsize, TRUE);
@@ -580,32 +571,32 @@ test_charmatch_paths(DiffCmpPath *node, int lastdecision) {
 
 //}}}
 
-private int diff_busy = FALSE;       // using diff structs, don't change them
-private int diff_need_update = FALSE; // c_diffupdate needs to be called
+private Boole isBusyS = false;       // using diff structs, don't change them
+private Boole needUpdateS = false; // c_diffupdate needs to be called
 
 // flags obtained from the 'diffopt' option
-#define DIFF_FILLER   0x001   // display filler lines
-#define DIFF_IBLANK   0x002   // ignore empty lines
-#define DIFF_ICASE   0x004   // ignore case
-#define DIFF_IWHITE   0x008   // ignore change in white space
-#define DIFF_IWHITEALL   0x010   // ignore all white space changes
-#define DIFF_IWHITEEOL   0x020   // ignore change in white space at EOL
-#define DIFF_HORIZONTAL   0x040   // horizontal splits
+#define DIFF_FILLER     0x001   // display filler lines
+#define DIFF_IBLANK     0x002   // ignore empty lines
+#define DIFF_ICASE      0x004   // ignore case
+#define DIFF_IWHITE     0x008   // ignore change in white space
+#define DIFF_IWHITEALL  0x010   // ignore all white space changes
+#define DIFF_IWHITEEOL  0x020   // ignore change in white space at EOL
+#define DIFF_HORIZONTAL 0x040   // horizontal splits
 #define DIFF_VERTICAL   0x080   // vertical splits
-#define DIFF_HIDDEN_OFF   0x100   // diffoff when hidden
+#define DIFF_HIDDEN_OFF 0x100   // diffoff when hidden
 #define DIFF_INTERNAL   0x200   // use internal xdiff algorithm
-#define DIFF_CLOSE_OFF   0x400   // diffoff when closing portal
-#define DIFF_FOLLOWWRAP   0x800   // follow the wrap option
+#define DIFF_CLOSE_OFF  0x400   // diffoff when closing portal
+#define DIFF_FOLLOWWRAP 0x800   // follow the wrap option
 #define DIFF_LINEMATCH  0x1000  // match most similar lines within diff
-#define DIFF_INLINE_NONE    0x2000  // no inline highlight
-#define DIFF_INLINE_SIMPLE  0x4000  // inline highlight with simple algorithm
-#define DIFF_INLINE_CHAR    0x8000  // inline highlight with character diff
+#define DIFF_INLINE_NONE     0x2000  // no inline highlight
+#define DIFF_INLINE_SIMPLE   0x4000  // inline highlight with simple algorithm
+#define DIFF_INLINE_CHAR     0x8000  // inline highlight with character diff
 #define DIFF_INLINE_WORD    0x10000 // inline highlight with word diff
-#define DIFF_ANCHOR   0x20000   // use 'diffanchors' to anchor the diff
+#define DIFF_ANCHOR         0x20000   // use 'diffanchors' to anchor the diff
 #define ALL_WHITE_DIFF (DIFF_IWHITE | DIFF_IWHITEALL | DIFF_IWHITEEOL)
 #define ALL_INLINE (DIFF_INLINE_NONE | DIFF_INLINE_SIMPLE | DIFF_INLINE_CHAR | DIFF_INLINE_WORD)
 #define ALL_INLINE_DIFF (DIFF_INLINE_CHAR | DIFF_INLINE_WORD)
-private int   diff_flags = DIFF_INTERNAL | DIFF_FILLER | DIFF_CLOSE_OFF;
+private Unt diff_flags = DIFF_INTERNAL | DIFF_FILLER | DIFF_CLOSE_OFF;
 
 private long diff_algorithm = 0;
 
@@ -618,36 +609,36 @@ private int diff_a_works = MAYBE; // TRUE when "diff -a" works, FALSE when it
 
 // used for diff input
 typedef struct {
-    Byte   *din_fname;  // used for external diff
-    MmFile   din_mmfile;  // used for internal diff
-} diffin_T;
+   CS din_fname;  // used for external diff
+   MmFile   din_mmfile;  // used for internal diff
+} DiffInp;
 
-// used for diff result
+// used for diff DiffResult
 typedef struct {
-    Byte   *dout_fname;  // used for external diff
-    ArrayList   dout_ga;      // used for internal diff
-} diffout_T;
+   CS dout_fname;  // used for external diff
+   ArrayList dout_ga;      // used for internal diff
+} DiffResult;
 
 // used for recording hunks from xdiff
 typedef struct {
-    LineNr lnum_orig;
-    long     count_orig;
-    LineNr lnum_new;
-    long     count_new;
-} diffhunk_T;
+   LineNr lnum_orig;
+   long count_orig;
+   LineNr lnum_new;
+   long count_new;
+} Hunk;
 
 typedef enum {
-    DIO_OUTPUT_INDICES = 0,   // default
-    DIO_OUTPUT_UNIFIED = 1   // unified diff format
-} dio_outfmt_T;
+   DIO_OUTPUT_INDICES = 0,   // default
+   DIO_OUTPUT_UNIFIED = 1   // unified diff format
+} OutputFormat;
 
-// two diff inputs and one result
+// two diff inputs and one DiffResult
 typedef struct {
-    diffin_T       dio_orig;     // original file input
-    diffin_T       dio_new;      // new file input
-    diffout_T       dio_diff;     // diff result
+    DiffInp       orig;     // original file input
+    DiffInp       new;      // new file input
+    DiffResult       dio_diff;     // diff DiffResult
     int          dio_internal; // using internal diff
-    dio_outfmt_T    dio_outfmt;   // internal diff output format
+    OutputFormat    dio_outfmt;   // internal diff output format
     int          dio_ctxlen;   // unified diff context length
 } DiffIo;
 
@@ -655,7 +646,7 @@ private Unt diff_buf_idx(Book *);
 private Unt diff_buf_idx_tp(Book *, Tab *);
 private void diff_mark_adjust_tp(Tab *t, Unt idx, LineNr line1, LineNr line2, long amount, long amount_after);
 private void diff_check_unchanged(Tab *t, DiffBlock *dp);
-private int diff_check_sanity(Tab *t, DiffBlock *dp);
+private int checkSanity(Tab* t, DiffBlock *dp);
 private int check_external_diff(DiffIo *diffio);
 private int diff_file(DiffIo *diffio);
 private int diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2);
@@ -664,8 +655,8 @@ private void diff_fold_update(DiffBlock *dp, Unt skip_idx);
 private void diff_read(int idx_orig, int idx_new, DiffIo *dio);
 private void diff_copy_entry(DiffBlock *dprev, DiffBlock *dp, int idx_orig, int idx_new);
 private DiffBlock *diff_alloc_new(Tab *t, DiffBlock *dprev, DiffBlock *dp);
-private int parse_diff_ed(Byte *line, diffhunk_T *hunk);
-private int parse_diff_unified(Byte *line, diffhunk_T *hunk);
+private int parse_diff_ed(Byte *line, Hunk *hunk);
+private int parse_diff_unified(Byte *line, Hunk *hunk);
 private int xdiff_out_indices(long start_a, long count_a, long start_b, long count_b, void *priv);
 private int xdiff_out_unified(void *priv, MmBuffer *mb, int nbuf);
 private int parse_diffanchors(
@@ -869,7 +860,7 @@ diff_mark_adjust_tp(
       if ((!dp || dp->df_lnum[idx] - 1 > line2
              || (line2 == MAXLNUM && dp->df_lnum[idx] > line1))
          && (!dprev || dprev->df_lnum[idx] + dprev->df_count[idx] < line1)
-         && !diff_busy)
+         && !isBusyS)
       {
          dnext = diff_alloc_new(t, dprev, dp);
          if (!dnext)
@@ -909,23 +900,23 @@ diff_mark_adjust_tp(
 
       // 1. change completely above line1: nothing to do
       if (last >= line1 - 1) {
-          if (diff_busy) {
-         // Currently in the middle of updating diff blocks. All we want
-         // is to adjust the line numbers and nothing else.
-         if (dp->df_lnum[idx] > line2)
-             dp->df_lnum[idx] += amount_after;
+         if (isBusyS) {
+            //Currently in the middle of updating diff blocks. All we want
+            //is to adjust the line numbers and nothing else.
+            if (dp->df_lnum[idx] > line2)
+                dp->df_lnum[idx] += amount_after;
 
-         // Advance to next entry.
-         dprev = dp;
-         dp = dp->df_next;
-         continue;
+            //Advance to next entry.
+            dprev = dp;
+            dp = dp->df_next;
+            continue;
          }
 
          // 6. change below line2: only adjust for amount_after; also when
          // "deleted" became zero when deleted all lines between two diffs
          if (dp->df_lnum[idx] - (deleted + inserted != 0) > line2) {
             if (amount_after == 0)
-                break;   // nothing left to change
+               break;   // nothing left to change
             dp->df_lnum[idx] += amount_after;
          } else {
             check_unchanged = FALSE;
@@ -957,20 +948,16 @@ diff_mark_adjust_tp(
                   dp->df_lnum[idx] = line1;
                } else {
                   if (last < line2) {
-                      // 2. delete at end of diff
-                      dp->df_count[idx] -= last - lnum_deleted + 1;
-                      if (dp->df_next != NULL
-                         && dp->df_next->df_lnum[idx] - 1 <= line2)
-                      {
-                     // delete continues in next diff, only do
-                     // lines until that one
-                     n = dp->df_next->df_lnum[idx] - 1 - last;
-                     deleted -= dp->df_next->df_lnum[idx]
-                                     - lnum_deleted;
-                     lnum_deleted = dp->df_next->df_lnum[idx];
-                      } else
+                     // 2. delete at end of diff
+                     dp->df_count[idx] -= last - lnum_deleted + 1;
+                     if (dp->df_next && dp->df_next->df_lnum[idx] - 1 <= line2) {
+                        //delete continues in next diff, only do lines until that one
+                        n = dp->df_next->df_lnum[idx] - 1 - last;
+                        deleted -= dp->df_next->df_lnum[idx] - lnum_deleted;
+                        lnum_deleted = dp->df_next->df_lnum[idx];
+                     } else
                         n = line2 - last;
-                      check_unchanged = TRUE;
+                     check_unchanged = TRUE;
                   } else {
                       // 3. delete lines inside the diff
                       n = 0;
@@ -998,23 +985,23 @@ diff_mark_adjust_tp(
             }
 
             if (check_unchanged)
-                // Check if inserted lines are equal, may reduce the
-                // size of the diff.  TODO: also check for equal lines
-                // in the middle and perhaps split the block.
-                diff_check_unchanged(t, dp);
+               //Check if inserted lines are equal, may reduce the size of the diff. TODO: also 
+               //check for equal lines in the middle and perhaps split the block.
+               diff_check_unchanged(t, dp);
           }
       }
 
       // check if this block touches the previous one, may merge them.
-      if (dprev != NULL && !dp->is_linematched && !diff_busy
-               && dprev->df_lnum[idx] + dprev->df_count[idx] == dp->df_lnum[idx])
-      {
-         for (Unt i = 0; i < DB_COUNT; ++i)
-         if (t->diffbuf[i] != NULL)
-             dprev->df_count[i] += dp->df_count[i];
-          dprev->df_next = dp->df_next;
-          clear_diffblock(dp);
-          dp = dprev->df_next;
+      if (dprev && !dp->isLinematched && !isBusyS
+               && dprev->df_lnum[idx] + dprev->df_count[idx] == dp->df_lnum[idx]
+      ) {
+         for (Unt i = 0; i < DB_COUNT; ++i) {
+            if (t->diffbuf[i])
+               dprev->df_count[i] += dp->df_count[i];
+         } 
+         dprev->df_next = dp->df_next;
+         clear_diffblock(dp);
+         dp = dprev->df_next;
       } else {
          // Advance to next entry.
          dprev = dp;
@@ -1059,14 +1046,10 @@ diff_mark_adjust_tp(
 }
 
 //Allocate a new diff block and link it between "dprev" and "dp".
-private DiffBlock *
-diff_alloc_new(Tab* t, DiffBlock *dprev, DiffBlock *dp) {
-
+private DiffBlock*
+diff_alloc_new(Tab* t, DiffBlock* dprev, DiffBlock* dp) {
    DiffBlock* dnew = ALLOC_CLEAR_ONE(DiffBlock);
-   if (!dnew)
-      return NULL;
-
-   dnew->is_linematched = FALSE;
+   dnew->isLinematched = false;
    dnew->df_next = dp;
    if (!dprev)
       t->first_diff = dnew;
@@ -1079,12 +1062,11 @@ diff_alloc_new(Tab* t, DiffBlock *dprev, DiffBlock *dp) {
 }
 
 //Check if the diff block "dp" can be made smaller for lines at the start and end that are equal.
-//Called after inserting lines. This may result in a change where all buffers have zero lines, 
+//Called after inserting lines. This may DiffResult in a change where all buffers have zero lines, 
 //the caller must take care of removing it.
 private void
 diff_check_unchanged(Tab* t, DiffBlock *dp) {
-   int      off_org, off_new;
-   Byte   *line_org;
+   CS line_org;
    Unt dir = FORWARD;
 
    // Find the first buffers, use it as the original, compare the other
@@ -1097,12 +1079,12 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
    if (i_org == DB_COUNT)   // safety check
       return;
 
-   if (diff_check_sanity(t, dp) == FAIL)
+   if (checkSanity(t, dp) == FAIL)
       return;
 
    // First check lines at the top, then at the bottom.
-   off_org = 0;
-   off_new = 0;
+   int off_org = 0;
+   int off_new = 0;
    for (;;) {
       //Repeat until a line is found which is different or the number of lines has become zero.
       while (dp->df_count[i_org] > 0) {
@@ -1141,7 +1123,7 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
          } 
       }
       if (dir == BACKWARD)
-          break;
+         break;
       dir = BACKWARD;
     }
 }
@@ -1149,7 +1131,7 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
 //Check if a diff block doesn't contain invalid line numbers.
 //This can happen when the diff program returns invalid results.
 private int
-diff_check_sanity(Tab* t, DiffBlock *dp) {
+checkSanity(Tab* t, DiffBlock *dp) {
    for (int i = 0; i < DB_COUNT; ++i) {
       if (t->diffbuf[i] != NULL) {
          if (dp->df_lnum[i] + dp->df_count[i] - 1 > t->diffbuf[i]->mem.lineCount)
@@ -1183,20 +1165,20 @@ diff_redraw(int      dofold)  {    // also recompute the folds
       //that for other portals.
       n = diff_check_fill(wp, wp->topLine);
       if ((wp != curPor && wp->topFill > 0) || n > 0) {
-          if (wp->topFill > n)
-         wp->topFill = (n < 0 ? 0 : n);
-          ei (n > 0 && n > wp->topFill) {
-         wp->topFill = n;
-         if (wp == curPor)
-             used_max_fill_curPor = TRUE;
-         ei (wp_other != NULL)
-             used_max_fill_other = TRUE;
-         }
-         check_topfill(wp, FALSE);
-      }
-   }
+         if (wp->topFill > n)
+            wp->topFill = (n < 0 ? 0 : n);
+         ei (n > 0 && n > wp->topFill) {
+            wp->topFill = n;
+        if (wp == curPor)
+            used_max_fill_curPor = TRUE;
+        ei (wp_other != NULL)
+            used_max_fill_other = TRUE;
+        }
+        check_topfill(wp, FALSE);
+     }
+  }
 
-   if (wp_other != NULL && curPor->bookOpts.scrollBind) {
+  if (wp_other != NULL && curPor->bookOpts.scrollBind) {
       if (used_max_fill_curPor)
          //The current portal was set to use the maximum number of filler
          //lines, may need to reduce them.
@@ -1209,7 +1191,7 @@ diff_redraw(int      dofold)  {    // also recompute the folds
 }
 
 private void
-clear_diffin(diffin_T *din) {
+clear_diffin(DiffInp *din) {
    if (din->din_fname == NULL)
       EE_CLEAR(din->din_mmfile.ptr);
    else
@@ -1217,7 +1199,7 @@ clear_diffin(diffin_T *din) {
 }
 
 private void
-clear_diffout(diffout_T *dout) {
+clear_diffout(DiffResult *dout) {
    if (dout->dout_fname == NULL)
       ga_clear_strings(&dout->dout_ga);
    else
@@ -1226,11 +1208,7 @@ clear_diffout(diffout_T *dout) {
 
 //Write buffer "book" to a memory buffer. Return FAIL for failure.
 private int
-diff_write_buffer(Book* book, diffin_T *din, LineNr start, LineNr end) {
-   LineNr   lnum;
-   Byte   *s;
-   long   len = 0;
-
+diff_write_buffer(Book* book, DiffInp *din, LineNr start, LineNr end) {
    if (end < 0)
       end = book->mem.lineCount;
 
@@ -1240,14 +1218,16 @@ diff_write_buffer(Book* book, diffin_T *din, LineNr start, LineNr end) {
       return OK;
    }
 
-   // xdiff requires one big block of memory with all the text.
+   //xdiff requires one big block of memory with all the text.
+   long len = 0;
+   LineNr lnum;
    for (lnum = start; lnum <= end; ++lnum)
       len += memGetBookLen(book, lnum) + 1;
    CS ptr = tryBigAlloc(len);
-   if (ptr == NULL) {
-      //Allocating memory failed.  This can happen, because we try to read
-      //the whole buffer text into memory.  Set the failed flag, the diff
-      //will be retried with external diff.  The flag is never reset.
+   if (!ptr) {
+      //Allocating memory failed. This can happen, because we try to read
+      //the whole buffer text into memory. Set the failed flag, the diff
+      //will be retried with external diff. The flag is never reset.
       book->diffFailed = TRUE;
       if (p_verbose > 0) {
          verbose_enter();
@@ -1256,10 +1236,11 @@ diff_write_buffer(Book* book, diffin_T *din, LineNr start, LineNr end) {
       }
       return FAIL;
    }
-   din->din_mmfile.ptr = (char *)ptr;
+   din->din_mmfile.ptr = ptr;
    din->din_mmfile.size = len;
 
    len = 0;
+   CS s;
    for (lnum = start; lnum <= end; ++lnum) {
       for (s = memGetLine(book, lnum, FALSE); *s != ZERO; ) {
          if (diff_flags & DIFF_ICASE) {
@@ -1278,8 +1259,7 @@ diff_write_buffer(Book* book, diffin_T *din, LineNr start, LineNr end) {
             }
             orig_len = utfCharLen(s);
             if (mb_char2bytes(c, cbuf) != c_len)
-               // TODO: handle byte length difference.
-               // One example is Å (3 bytes) and å (2 bytes).
+               // TODO: handle byte length difference. One example is Å (3 bytes) and å (2 bytes)
                mch_memmove(ptr + len, s, orig_len);
             else {
                mch_memmove(ptr + len, cbuf, c_len);
@@ -1303,7 +1283,7 @@ diff_write_buffer(Book* book, diffin_T *din, LineNr start, LineNr end) {
 
 //Write "book" to file or memory buffer. Return FAIL for failure.
 private int
-diff_write(Book* book, diffin_T *din, LineNr start, LineNr end) {
+diff_write(Book* book, DiffInp *din, LineNr start, LineNr end) {
    if (din->din_fname == NULL)
       return diff_write_buffer(book, din, start, end);
       
@@ -1342,19 +1322,19 @@ lnum_compare(const void *s1, const void *s2) {
 //Update the diffs for all buffers involved.
 private void
 diff_try_update(
-   DiffIo    *dio,
+   DiffIo* dio,
    int       idx_orig,
-   Invocation       *invo
+   Invocation* invo
 ) {  // "invo" can be NULL
 
    if (dio->dio_internal) {
       ga_init2(&dio->dio_diff.dout_ga, sizeof(char *), 1000);
    } else {
       // We need three temp file names.
-      dio->dio_orig.din_fname = eeTempName('o', TRUE);
-      dio->dio_new.din_fname = eeTempName('n', TRUE);
+      dio->orig.din_fname = eeTempName('o', TRUE);
+      dio->new.din_fname = eeTempName('n', TRUE);
       dio->dio_diff.dout_fname = eeTempName('d', TRUE);
-      if (!dio->dio_orig.din_fname || !dio->dio_new.din_fname || !dio->dio_diff.dout_fname)
+      if (!dio->orig.din_fname || !dio->new.din_fname || !dio->dio_diff.dout_fname)
          goto theend;
    }
 
@@ -1376,7 +1356,7 @@ diff_try_update(
    Unt countAnchors = UNT;
    LineNr anchors[DB_COUNT][MAX_DIFF_ANCHORS];
    CLEAR_FIELD(anchors);
-   if (diff_flags & DIFF_ANCHOR) {
+   if ((diff_flags & DIFF_ANCHOR) != 0) {
       for (int idx = 0; idx < DB_COUNT; idx++) {
          if (curtab->diffbuf[idx] == NULL)
             continue;
@@ -1415,7 +1395,7 @@ diff_try_update(
 
       // Write the first buffer to a tempfile or MmFile.
       book = curtab->diffbuf[idx_orig];
-      if (diff_write(book, &dio->dio_orig, lnum_start, lnum_end) == FAIL) {
+      if (diff_write(book, &dio->orig, lnum_start, lnum_end) == FAIL) {
          if (orig_diff) {
             // Clean up in-progress diff blocks
             curtab->first_diff = orig_diff;
@@ -1434,7 +1414,7 @@ diff_try_update(
          lnum_end = anchorInd == countAnchors ? -1 : anchors[idx_new][anchorInd] - 1;
 
          // Write the other buffer and diff with the first one.
-         if (diff_write(book, &dio->dio_new, lnum_start, lnum_end) == FAIL)
+         if (diff_write(book, &dio->new, lnum_start, lnum_end) == FAIL)
             continue;
          if (diff_file(dio) == FAIL)
             continue;
@@ -1442,10 +1422,10 @@ diff_try_update(
          // Read the diff output and add each entry to the diff list.
          diff_read(idx_orig, idx_new, dio);
 
-         clear_diffin(&dio->dio_new);
+         clear_diffin(&dio->new);
          clear_diffout(&dio->dio_diff);
       }
-      clear_diffin(&dio->dio_orig);
+      clear_diffin(&dio->orig);
 
       if (anchorInd != 0) {
          // Combine the new diff blocks with the existing ones
@@ -1466,8 +1446,8 @@ diff_try_update(
    }
 
 theend:
-   eeglFree(dio->dio_orig.din_fname);
-   eeglFree(dio->dio_new.din_fname);
+   eeglFree(dio->orig.din_fname);
+   eeglFree(dio->new.din_fname);
    eeglFree(dio->dio_diff.dout_fname);
 }
 
@@ -1497,8 +1477,8 @@ diff_internal_failed(void) {
 void
 c_diffupdate(Invocation *invo) {  // "invo" can be NULL
 
-   if (diff_busy) {
-      diff_need_update = TRUE;
+   if (isBusyS) {
+      needUpdateS = true;
       return;
    }
 
@@ -1560,14 +1540,14 @@ check_external_diff(DiffIo *diffio) {
    // May try twice, first with "-a" and then without.
    for (;;) {
       ok = FALSE;
-      fd = fopen((char *)diffio->dio_orig.din_fname, "w");
+      fd = fopen((char *)diffio->orig.din_fname, "w");
       if (fd == NULL)
          io_error = TRUE;
       else {
          if (fwrite("line1\n", (Unt)6, (Unt)1, fd) != 1)
             io_error = TRUE;
          fclose(fd);
-         fd = fopen((char *)diffio->dio_new.din_fname, "w");
+         fd = fopen((char *)diffio->new.din_fname, "w");
          if (fd == NULL)
             io_error = TRUE;
          else {
@@ -1593,9 +1573,9 @@ check_external_diff(DiffIo *diffio) {
                fclose(fd);
             }
             mch_remove(diffio->dio_diff.dout_fname);
-            mch_remove(diffio->dio_new.din_fname);
+            mch_remove(diffio->new.din_fname);
          }
-          mch_remove(diffio->dio_orig.din_fname);
+          mch_remove(diffio->orig.din_fname);
       }
 
       // When using 'diffexpr' break here.
@@ -1634,13 +1614,13 @@ diff_file_internal(DiffIo *diffio) {
 
    param.flags = diff_algorithm;
 
-   if (diff_flags & DIFF_IWHITE)
+   if ((diff_flags & DIFF_IWHITE) != 0)
       param.flags |= IGNORE_WHITESPACE_CHANGE;
-   if (diff_flags & DIFF_IWHITEALL)
+   if ((diff_flags & DIFF_IWHITEALL) != 0)
       param.flags |= IGNORE_WHITESPACE;
-   if (diff_flags & DIFF_IWHITEEOL)
+   if ((diff_flags & DIFF_IWHITEEOL) != 0)
       param.flags |= IGNORE_WHITESPACE_AT_EOL;
-   if (diff_flags & DIFF_IBLANK)
+   if ((diff_flags & DIFF_IBLANK) != 0)
       param.flags |= IGNORE_BLANK_LINES;
 
    emit_cfg.ctxlen = diffio->dio_ctxlen;
@@ -1649,10 +1629,10 @@ diff_file_internal(DiffIo *diffio) {
       emit_cfg.hunk_func = xdiff_out_indices;
    else
       emit_cb.out_line = xdiff_out_unified;
-   if (xdl_diff(&diffio->dio_orig.din_mmfile,
-      &diffio->dio_new.din_mmfile,
-      &param, &emit_cfg, &emit_cb) < 0)
-    {
+   if (xdl_diff(
+            &diffio->orig.din_mmfile, &diffio->new.din_mmfile, &param, &emit_cfg, &emit_cb
+       ) < 0
+   ) {
       emsg(_(e_problem_creating_internal_diff));
       return FAIL;
    }
@@ -1664,8 +1644,8 @@ private int
 diff_file(DiffIo *dio) {
    Byte   *cmd;
    Unt   len;
-   CS tmp_orig = dio->dio_orig.din_fname;
-   CS tmp_new = dio->dio_new.din_fname;
+   CS tmp_orig = dio->orig.din_fname;
+   CS tmp_new = dio->new.din_fname;
    CS tmp_diff = dio->dio_diff.dout_fname;
 
    if (*p_dex != ZERO) {
@@ -1790,7 +1770,7 @@ c_diffpatch(Invocation *invo) {
       // don't use a new tab page, each tab page has its own diffs
       commModifierG.cmod_tab = 0;
 
-      if (splitPortal(0, (diff_flags & DIFF_VERTICAL) ? WSP_VERT : 0) != FAIL) {
+      if (splitPortal(0, (diff_flags & DIFF_VERTICAL) != 0 ? WSP_VERT : 0) != FAIL) {
          // Pretend it was a ":split fname" command
          invo->id = C_split;
          invo->arg = tmp_new;
@@ -1841,7 +1821,7 @@ c_diffsplit(Invocation* invo) {
    // don't use a new tab page, each tab page has its own diffs
    commModifierG.cmod_tab = 0;
 
-   if (splitPortal(0, (diff_flags & DIFF_VERTICAL) ? WSP_VERT : 0) == FAIL)
+   if (splitPortal(0, (diff_flags & DIFF_VERTICAL) != 0 ? WSP_VERT : 0) == FAIL)
       return;
 
    // Pretend it was a ":split fname" command
@@ -1903,7 +1883,7 @@ diff_win_options( Portal   *wp, int addbuf) {     // Add buffer to diff.
    if (!wp->bookOpts.diff)
       wp->bookOpts.cursorBindSaved = wp->bookOpts.cursorBind;
    wp->bookOpts.cursorBind = TRUE;
-   if (!(diff_flags & DIFF_FOLLOWWRAP)) {
+   if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
       if (!wp->bookOpts.diff)
          wp->bookOpts.wrapSaved = wp->bookOpts.wrap;
       wp->bookOpts.wrap = FALSE;
@@ -1952,7 +1932,7 @@ c_diffoff(Invocation *invo) {
                 wp->bookOpts.scrollBind = wp->bookOpts.scrollBindSave;
             if (wp->bookOpts.cursorBind)
                 wp->bookOpts.cursorBind = wp->bookOpts.cursorBindSaved;
-            if (!(diff_flags & DIFF_FOLLOWWRAP)) {
+            if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
                if (!wp->bookOpts.wrap && wp->bookOpts.wrapSaved) {
                   wp->bookOpts.wrap = TRUE;
                   wp->leftCol = 0;
@@ -1985,7 +1965,7 @@ c_diffoff(Invocation *invo) {
       diff_buf_clear();
 
    if (!diffwin) {
-      diff_need_update = FALSE;
+      needUpdateS = false;
       curtab->diff_invalid = FALSE;
       curtab->diff_update = FALSE;
       diff_clear(curtab);
@@ -2008,13 +1988,13 @@ diff_read(
    DiffBlock   *dprev = NULL;
    DiffBlock   *dp = curtab->first_diff;
    DiffBlock   *dn, *dpl;
-   diffout_T   *dout = &dio->dio_diff;
+   DiffResult   *dout = &dio->dio_diff;
    Byte   linebuf[LBUFLEN];   // only need to hold the diff line
    Byte   *line;
    long   off;
    int      i;
    int      notset = TRUE;       // block "*dp" not set yet
-   diffhunk_T   *hunk = NULL;       // init to avoid gcc warning
+   Hunk   *hunk = NULL;       // init to avoid gcc warning
 
    enum {
       DIFF_ED,
@@ -2033,7 +2013,7 @@ diff_read(
    }
 
    if (!dio->dio_internal) {
-      hunk = ALLOC_ONE(diffhunk_T);
+      hunk = ALLOC_ONE(Hunk);
       if (hunk == NULL) {
          if (fd != NULL)
             fclose(fd);
@@ -2045,7 +2025,7 @@ diff_read(
       if (dio->dio_internal) {
           if (line_hunk_idx >= dout->dout_ga.len)
          break;      // did last hunk
-          hunk = ((diffhunk_T **)dout->dout_ga.c)[line_hunk_idx++];
+          hunk = ((Hunk **)dout->dout_ga.c)[line_hunk_idx++];
       } else {
           if (fd == NULL) {
          if (line_hunk_idx >= dout->dout_ga.len)
@@ -2255,7 +2235,7 @@ diff_clear(Tab *t) {
 // return true if the options are set to use diff linematch
 private int
 diff_linematch(DiffBlock *dp) {
-   if (!(diff_flags & DIFF_LINEMATCH))
+   if ((diff_flags & DIFF_LINEMATCH) == 0)
       return 0;
 
    // are there more than three diff buffers?
@@ -2404,7 +2384,7 @@ calculate_topfill_and_topline(
       }
    }
 
-   if (diff_flags & DIFF_FILLER)
+   if ((diff_flags & DIFF_FILLER) != 0)
       // should always be non-negative as max_virt_lines is larger
       (*topfill) = max_virt_lines - virtual_lines_passed;
    (*topline) = curlinenum_to;
@@ -2444,7 +2424,7 @@ apply_linematch_results(
          // create new sub diff blocks to segment the original diff block
          // which we further divided by running the linematch algorithm
          dp_s = diff_alloc_new(curtab, dp_s, dp_s->df_next);
-         dp_s->is_linematched = TRUE;
+         dp_s->isLinematched = true;
          for (int j = 0; j < DB_COUNT; j++) {
             if (curtab->diffbuf[j] != NULL) {
                dp_s->df_lnum[j] = line_numbers[j];
@@ -2460,13 +2440,13 @@ apply_linematch_results(
          }
       }
    }
-   dp->is_linematched = TRUE;
+   dp->isLinematched = true;
 }
 
 private void
 run_linematch_algorithm(DiffBlock *dp) {
    // define buffers for diff algorithm
-   diffin_T      diffbufs_mm[DB_COUNT];
+   DiffInp      diffbufs_mm[DB_COUNT];
    const MmFile   *diffbufs[DB_COUNT];
    int         diff_length[DB_COUNT];
    Unt      ndiffs = 0;
@@ -2560,8 +2540,8 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
    // Don't run linematch when lnum is offscreen.  Useful for scrollbind
    // calculations which need to count all the filler lines above the screen.
    if (lnum >= wp->topLine && lnum < wp->bottomLine
-            && !dp->is_linematched && diff_linematch(dp)
-            && diff_check_sanity(curtab, dp))
+            && !dp->isLinematched && diff_linematch(dp)
+            && checkSanity(curtab, dp))
       run_linematch_algorithm(dp);
 
    // Insert filler lines above the line just below the change.  Will return 0
@@ -2569,7 +2549,7 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
    int num_fill = 0;
    while (lnum == dp->df_lnum[idx] + dp->df_count[idx]) {
       // Only calculate fill lines if 'diffopt' contains "filler". Otherwise return 0 filler lines
-      if (diff_flags & DIFF_FILLER) {
+      if ((diff_flags & DIFF_FILLER) != 0) {
          maxcount = get_max_diff_length(dp);
          num_fill += maxcount - dp->df_count[idx];
       }
@@ -2637,7 +2617,7 @@ private int
 diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2) {
    if (dp->df_count[idx1] != dp->df_count[idx2])
       return FALSE;
-   if (diff_check_sanity(curtab, dp) == FAIL)
+   if (checkSanity(curtab, dp) == FAIL)
       return FALSE;
    for (int i = 0; i < dp->df_count[idx1]; ++i) {
       CS line = copyStr(memGetLine(curtab->diffbuf[idx1], dp->df_lnum[idx1] + i, FALSE));
@@ -2659,16 +2639,14 @@ diff_equal_char(Byte *p1, Byte *p2, int *len) {
       return FALSE;
    if (l > 1) {
       if (STRNCMP(p1, p2, l) != 0
-         && (!(diff_flags & DIFF_ICASE)
+         && ((diff_flags & DIFF_ICASE) == 0
              || utf_fold(mb_ptr2char(p1)) != utf_fold(mb_ptr2char(p2)))) {
           return FALSE;
       } 
       *len = l;
    } else {
-      if ((*p1 != *p2)
-         && (!(diff_flags & DIFF_ICASE)
-             || TOLOWER_LOC(*p1) != TOLOWER_LOC(*p2)))
-          return FALSE;
+      if ((*p1 != *p2) && ((diff_flags & DIFF_ICASE) == 0 || TOLOWER_LOC(*p1) != TOLOWER_LOC(*p2)))
+         return FALSE;
       *len = 1;
    }
    return TRUE;
@@ -2680,13 +2658,13 @@ diff_cmp(Byte *s1, Byte *s2){
    Byte   *p1, *p2;
    int      l;
 
-   if ((diff_flags & DIFF_IBLANK)
+   if ((diff_flags & DIFF_IBLANK) != 0
          && (*skipwhite(s1) == ZERO || *skipwhite(s2) == ZERO))
       return 0;
 
    if ((diff_flags & (DIFF_ICASE | ALL_WHITE_DIFF)) == 0)
       return STRCMP(s1, s2);
-   if ((diff_flags & DIFF_ICASE) && !(diff_flags & ALL_WHITE_DIFF))
+   if ((diff_flags & DIFF_ICASE) != 0 && (diff_flags & ALL_WHITE_DIFF) == 0)
       return caseInsensitiveCompareMaxCol(s1, s2);
 
    p1 = s1;
@@ -2719,7 +2697,7 @@ diff_cmp(Byte *s1, Byte *s2){
 int
 diff_check_fill(Portal *wp, LineNr lnum){
    // be quick when there are no filler lines
-   if (!(diff_flags & DIFF_FILLER))
+   if ((diff_flags & DIFF_FILLER) == 0)
       return 0;
    int n = diff_check_with_linestatus(wp, lnum, NULL);
    if (n <= 0)
@@ -2859,8 +2837,8 @@ parse_diffanchors(
 // This is called when @diffanchors is changed.
 int
 diffanchors_changed(CS newVal, Boole buflocal) {
-   int result = parse_diffanchors(newVal, true, curBook, NULL, NULL);
-   if (result == OK && (diff_flags & DIFF_ANCHOR) != 0) {
+   int DiffResult = parse_diffanchors(newVal, true, curBook, NULL, NULL);
+   if (DiffResult == OK && (diff_flags & DIFF_ANCHOR) != 0) {
       Tab   *t;
       FOR_ALL_TABS(t) {
          if (!buflocal)
@@ -2868,13 +2846,13 @@ diffanchors_changed(CS newVal, Boole buflocal) {
          else {
             for (Unt idx = 0; idx < DB_COUNT; ++idx)
                if (t->diffbuf[idx] == curBook) {
-                 t->diff_invalid = TRUE;
-                 break;
+                  t->diff_invalid = TRUE;
+                  break;
                }
          }
       }
    }
-   return result;
+   return DiffResult;
 }
 
 // This is called when 'diffopt' is changed.
@@ -2882,7 +2860,7 @@ int
 diffopt_changed(void) {
    int      diff_context_new = 6;
    int      linematch_lines_new = 0;
-   int      diff_flags_new = 0;
+   Unt      diff_flags_new = 0;
    long   diff_algorithm_new = 0;
    long   diff_indent_heuristic = 0;
    Tab* t;
@@ -2936,42 +2914,42 @@ diffopt_changed(void) {
           p += 8;
           diff_flags_new |= DIFF_INTERNAL;
       } ei (STRNCMP(p, "algorithm:", 10) == 0) {
-          // Note: Keep this in sync with p_dip_algorithm_values.
-          p += 10;
-          if (STRNCMP(p, "myers", 5) == 0) {
-         p += 5;
-         diff_algorithm_new = 0;
-          } ei (STRNCMP(p, "minimal", 7) == 0) {
-         p += 7;
-         diff_algorithm_new = NEED_MINIMAL;
-          } ei (STRNCMP(p, "patience", 8) == 0) {
-         p += 8;
-         diff_algorithm_new = PATIENCE_DIFF;
-          } ei (STRNCMP(p, "histogram", 9) == 0) {
-         p += 9;
-         diff_algorithm_new = XDF_HISTOGRAM_DIFF;
-          } else
-         return FAIL;
+         // Note: Keep this in sync with p_dip_algorithm_values.
+         p += 10;
+         if (STRNCMP(p, "myers", 5) == 0) {
+            p += 5;
+            diff_algorithm_new = 0;
+         } ei (STRNCMP(p, "minimal", 7) == 0) {
+            p += 7;
+            diff_algorithm_new = NEED_MINIMAL;
+         } ei (STRNCMP(p, "patience", 8) == 0) {
+            p += 8;
+            diff_algorithm_new = PATIENCE_DIFF;
+         } ei (STRNCMP(p, "histogram", 9) == 0) {
+            p += 9;
+            diff_algorithm_new = XDF_HISTOGRAM_DIFF;
+         } else
+            return FAIL;
       } ei (STRNCMP(p, "inline:", 7) == 0) {
           // Note: Keep this in sync with p_dip_inline_values.
           p += 7;
           if (STRNCMP(p, "none", 4) == 0) {
-         p += 4;
-         diff_flags_new &= ~(ALL_INLINE);
-         diff_flags_new |= DIFF_INLINE_NONE;
+            p += 4;
+            diff_flags_new &= ~(ALL_INLINE);
+            diff_flags_new |= DIFF_INLINE_NONE;
           } ei (STRNCMP(p, "simple", 6) == 0) {
-         p += 6;
-         diff_flags_new &= ~(ALL_INLINE);
-         diff_flags_new |= DIFF_INLINE_SIMPLE;
-          } ei (STRNCMP(p, "char", 4) == 0) {
-         p += 4;
-         diff_flags_new &= ~(ALL_INLINE);
-         diff_flags_new |= DIFF_INLINE_CHAR;
-          } ei (STRNCMP(p, "word", 4) == 0) {
-         p += 4;
-         diff_flags_new &= ~(ALL_INLINE);
-         diff_flags_new |= DIFF_INLINE_WORD;
-          } else
+            p += 6;
+            diff_flags_new &= ~(ALL_INLINE);
+            diff_flags_new |= DIFF_INLINE_SIMPLE;
+         } ei (STRNCMP(p, "char", 4) == 0) {
+            p += 4;
+            diff_flags_new &= ~(ALL_INLINE);
+            diff_flags_new |= DIFF_INLINE_CHAR;
+         } ei (STRNCMP(p, "word", 4) == 0) {
+            p += 4;
+            diff_flags_new &= ~(ALL_INLINE);
+            diff_flags_new |= DIFF_INLINE_WORD;
+         } else
             return FAIL;
       } ei (STRNCMP(p, "linematch:", 10) == 0 && EE_ISDIGIT(p[10])) {
           p += 10;
@@ -3281,7 +3259,7 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
 
 //Find the inline difference within a diff block among different buffers.  Do
 //this by splitting each block's content into characters or words, and then
-//use internal xdiff to calculate the per-character/word diff.  The result is
+//use internal xdiff to calculate the per-character/word diff.  The DiffResult is
 //stored in dp instead of returned by the function.
 private void
 diff_find_change_inline_diff( DiffBlock   *dp) {
@@ -3484,11 +3462,11 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
       }
 
       if (file1_idx != i) {
-          dio.dio_new.din_mmfile.ptr = (char *)curstr->c;
-          dio.dio_new.din_mmfile.size = curstr->len;
+          dio.new.din_mmfile.ptr = curstr->c;
+          dio.new.din_mmfile.size = curstr->len;
       } else {
-          dio.dio_orig.din_mmfile.ptr = (char *)curstr->c;
-          dio.dio_orig.din_mmfile.size = curstr->len;
+          dio.orig.din_mmfile.ptr = curstr->c;
+          dio.orig.din_mmfile.size = curstr->len;
       }
       if (file1_idx != i) {
          // Perform diff with first file and read the results
@@ -3555,7 +3533,7 @@ done:
 
    ga_clear(&file1_str);
    ga_clear(&file2_str);
-   // No need to clear dio.dio_orig/dio_new because they were referencing
+   // No need to clear dio.orig/new because they were referencing
    // strings that are now cleared.
    clear_diffout(&dio.dio_diff);
    for (int i = 0; i < DB_COUNT; i++)
@@ -3566,8 +3544,8 @@ done:
 // Return TRUE if the line was added, no other buffer has it.
 int
 diff_find_change(
-   Portal   *wp,
-   LineNr   lnum,
+   Portal* wp,
+   LineNr lnum,
    DiffLine* diffline
 ){
 
@@ -3581,7 +3559,7 @@ diff_find_change(
       if (lnum < dp->df_lnum[idx] + dp->df_count[idx])
          break;
    } 
-   if (dp == NULL || diff_check_sanity(curtab, dp) == FAIL)
+   if (!dp || checkSanity(curtab, dp) == FAIL)
       return FALSE;
 
    if (lnum - dp->df_lnum[idx] > INT_MAX)
@@ -3657,7 +3635,7 @@ diff_find_change(
          if (change->dc_start_lnum_off[i] != INT_MAX) {
             added = FALSE;
             break;
-          }
+         }
       }
    }
    return added;
@@ -3715,7 +3693,7 @@ nvDiffGetPut(int put, long count) {
       return;
    }
    if (count == 0)
-      ea.arg = (CS)"";
+      ea.arg = Em;
    else {
       eeSnprintf(buf, 30, "%ld", count);
       ea.arg = buf;
@@ -3773,7 +3751,7 @@ c_diffgetput(Invocation *invo) {
       for (idx_other = 0; idx_other < DB_COUNT; ++idx_other)
          if (curtab->diffbuf[idx_other] != curBook && curtab->diffbuf[idx_other] != NULL) {
             if (invo->id != C_diffput || curtab->diffbuf[idx_other]->o.modifiable)
-                break;
+               break;
             found_not_ma = TRUE;
          }
       if (idx_other == DB_COUNT) {
@@ -3797,11 +3775,11 @@ c_diffgetput(Invocation *invo) {
       // Book number or pattern given.  Ignore trailing white space.
       p = invo->arg + STRLEN(invo->arg);
       while (p > invo->arg && SPACE_OR_TAB(p[-1]))
-          --p;
+         --p;
       for (i = 0; eeIsDigit(invo->arg[i]) && invo->arg + i < p; ++i)
-          ;
+         ;
       if (invo->arg + i == p)       // digits only
-          i = atol((char *)invo->arg);
+         i = atol((char *)invo->arg);
       else {
          i = buflist_findpat(invo->arg, p, FALSE, TRUE, FALSE);
          if (i < 0)
@@ -3821,7 +3799,7 @@ c_diffgetput(Invocation *invo) {
       }
    }
 
-    diff_busy = TRUE;
+   isBusyS = true;
 
    // When no range given include the line above or below the cursor.
    if (invo->addr_count == 0) {
@@ -3866,65 +3844,64 @@ c_diffgetput(Invocation *invo) {
    dprev = NULL;
    for (dp = curtab->first_diff; dp != NULL; ) {
       if (!invo->addr_count) {
-          // Handle the case with adjacent diff blocks (e.g. using linematch
-          // or anchors) at/above the cursor. Since a range wasn't specified,
-          // we just want to grab one diff block rather than all of them in
-          // the vicinity.
-          while (dp->df_next
+         //Handle the case with adjacent diff blocks (e.g. using linematch or anchors) at/above 
+         //the cursor. Since a range wasn't specified, we just want to grab one diff block rather 
+         //than all of them in the vicinity.
+         while (dp->df_next
              && dp->df_next->df_lnum[idx_cur] == dp->df_lnum[idx_cur] +
                         dp->df_count[idx_cur]
-             && dp->df_next->df_lnum[idx_cur] == invo->line1 + off + 1)
-          {
-         dprev = dp;
-         dp = dp->df_next;
-          }
+             && dp->df_next->df_lnum[idx_cur] == invo->line1 + off + 1
+         ) {
+            dprev = dp;
+            dp = dp->df_next;
+         }
       }
       if (dp->df_lnum[idx_cur] > invo->line2 + off)
-          break;   // past the range that was specified
+         break;   // past the range that was specified
 
       dfree = NULL;
       lnum = dp->df_lnum[idx_to];
       count = dp->df_count[idx_to];
       if (dp->df_lnum[idx_cur] + dp->df_count[idx_cur] > invo->line1 + off
-         && u_save(lnum - 1, lnum + count) != FAIL)
-      {
-          // Inside the specified range and saving for undo worked.
-          start_skip = 0;
-          end_skip = 0;
-          if (invo->addr_count > 0) {
-         // A range was specified: check if lines need to be skipped.
-         start_skip = invo->line1 + off - dp->df_lnum[idx_cur];
-         if (start_skip > 0) {
-             // range starts below start of current diff block
-             if (start_skip > count) {
-            lnum += count;
-            count = 0;
-             } else {
-            count -= start_skip;
-            lnum += start_skip;
-             }
-         } else
-            start_skip = 0;
+         && u_save(lnum - 1, lnum + count) != FAIL
+      ) {
+         // Inside the specified range and saving for undo worked.
+         start_skip = 0;
+         end_skip = 0;
+         if (invo->addr_count > 0) {
+            // A range was specified: check if lines need to be skipped.
+            start_skip = invo->line1 + off - dp->df_lnum[idx_cur];
+            if (start_skip > 0) {
+                // range starts below start of current diff block
+                if (start_skip > count) {
+               lnum += count;
+               count = 0;
+                } else {
+               count -= start_skip;
+               lnum += start_skip;
+                }
+            } else
+               start_skip = 0;
 
-         end_skip = dp->df_lnum[idx_cur] + dp->df_count[idx_cur] - 1 - (invo->line2 + off);
-         if (end_skip > 0) {
-             // range ends above end of current/from diff block
-             if (idx_cur == idx_from) {  // :diffput
-            i = dp->df_count[idx_cur] - start_skip - end_skip;
-            if (count > i)
-                count = i;
-             } else {        // :diffget
-            count -= end_skip;
-            end_skip = dp->df_count[idx_from] - start_skip - count;
-            if (end_skip < 0)
+            end_skip = dp->df_lnum[idx_cur] + dp->df_count[idx_cur] - 1 - (invo->line2 + off);
+            if (end_skip > 0) {
+                // range ends above end of current/from diff block
+                if (idx_cur == idx_from) {  // :diffput
+               i = dp->df_count[idx_cur] - start_skip - end_skip;
+               if (count > i)
+                   count = i;
+                } else {        // :diffget
+               count -= end_skip;
+               end_skip = dp->df_count[idx_from] - start_skip - count;
+               if (end_skip < 0)
+                   end_skip = 0;
+                }
+            } else
                 end_skip = 0;
-             }
-         } else
-             end_skip = 0;
-          }
+         }
 
-          buf_empty = BUFEMPTY();
-          added = 0;
+         buf_empty = BUFEMPTY();
+         added = 0;
          for (i = 0; i < count; ++i) {
             // remember deleting the last line of the buffer
             buf_empty = curBook->mem.lineCount == 1;
@@ -3951,11 +3928,12 @@ c_diffgetput(Invocation *invo) {
          if (start_skip == 0 && end_skip == 0) {
             // Check if there are any other buffers and if the diff is equal in them.
             Unt i;
-            for (i = 0; i < DB_COUNT; ++i)
+            for (i = 0; i < DB_COUNT; ++i) {
                if (curtab->diffbuf[i] 
                       && i != idx_from && i != idx_to
                       && !diff_equal_entry(dp, idx_from, i))
                   break;
+            } 
             if (i == DB_COUNT) {
                // delete the diff entry, the buffers are now equal here
                dfree = dp;
@@ -3980,7 +3958,7 @@ c_diffgetput(Invocation *invo) {
          }
          changed_lines(lnum, 0, lnum + count, (long)added);
 
-         if (dfree != NULL) {
+         if (dfree) {
             // Diff is deleted, update folds in other portals.
             diff_fold_update(dfree, idx_to);
             clear_diffblock(dfree);
@@ -3991,7 +3969,7 @@ c_diffgetput(Invocation *invo) {
          if (added != 0 && !valid_diff(dp))
             break;
 
-         if (dfree == NULL)
+         if (!dfree)
             // mark_adjust() may have changed the count in a wrong way
             dp->df_count[idx_to] = new_count;
 
@@ -4002,24 +3980,24 @@ c_diffgetput(Invocation *invo) {
 
       // If before the range or not deleted, go to next diff.
       if (dfree == NULL) {
-          dprev = dp;
-          dp = dp->df_next;
+         dprev = dp;
+         dp = dp->df_next;
       }
    }
 
    // restore curPor/curBook and a few other things
    if (invo->id != C_diffget) {
-   // Syncing undo only works for the current buffer, but we change
-   // another buffer.  Sync undo if the command was typed.  This isn't
-   // 100% right when ":diffput" is used in a function or mapping.
-   if (KeyTyped)
-       u_sync(FALSE);
-   auCommRestoreBook(&aco);
+      // Syncing undo only works for the current buffer, but we change
+      // another buffer.  Sync undo if the command was typed.  This isn't
+      // 100% right when ":diffput" is used in a function or mapping.
+      if (KeyTyped)
+         u_sync(FALSE);
+      auCommRestoreBook(&aco);
    }
 
 theend:
-   diff_busy = FALSE;
-   if (diff_need_update)
+   isBusyS = false;
+   if (needUpdateS)
       c_diffupdate(NULL);
 
    // Check that the cursor is on a valid character and update its
@@ -4037,9 +4015,9 @@ theend:
       } 
    }
 
-   if (diff_need_update)
+   if (needUpdateS)
       // redraw already done by c_diffupdate()
-      diff_need_update = FALSE;
+      needUpdateS = false;
    else {
       // Also need to redraw the other buffers.
       diff_redraw(FALSE);
@@ -4174,8 +4152,8 @@ diff_get_corresponding_line_int(Book   *buf1, LineNr   lnum1) {
 //Return the line number in the current portal that is closest to "lnum1" in
 //"buf1" in diff mode.  Checks the line number to be valid.
 LineNr
-diff_get_corresponding_line(Book *buf1, LineNr lnum1) {
-   LineNr lnum = diff_get_corresponding_line_int(buf1, lnum1);
+diff_get_corresponding_line(Book* book1, LineNr lnum1) {
+   LineNr lnum = diff_get_corresponding_line_int(book1, lnum1);
 
    // don't end up past the end of the file
    if (lnum > curBook->mem.lineCount)
@@ -4219,7 +4197,7 @@ diff_lnum_win(LineNr lnum, Portal *wp) {
 
 //Handle an ED style diff line. Return FAIL if the line does not contain diff info.
 private int
-parse_diff_ed(Byte       *line, diffhunk_T  *hunk) {
+parse_diff_ed(Byte       *line, Hunk  *hunk) {
    Byte *p;
    long    f1, l1, f2, l2;
    int       difftype;
@@ -4267,7 +4245,7 @@ parse_diff_ed(Byte       *line, diffhunk_T  *hunk) {
 //Parse unified diff with zero(!) context lines.
 //Return FAIL if there is no diff information in "line".
 private int
-parse_diff_unified(Byte       *line, diffhunk_T  *hunk) {
+parse_diff_unified(Byte       *line, Hunk  *hunk) {
     Byte *p;
     long    oldline, oldcount, newline, newcount;
 
@@ -4321,8 +4299,8 @@ xdiff_out_indices(
    long count_b,
    void *priv)
 {
-    diffout_T   *dout = (diffout_T *)priv;
-    diffhunk_T *p = ALLOC_ONE(diffhunk_T);
+    DiffResult   *dout = (DiffResult *)priv;
+    Hunk *p = ALLOC_ONE(Hunk);
 
     if (p == NULL)
    return -1;
@@ -4336,7 +4314,7 @@ xdiff_out_indices(
     p->count_orig = count_a;
     p->lnum_new   = start_b + 1;
     p->count_new  = count_b;
-    ((diffhunk_T **)dout->dout_ga.c)[dout->dout_ga.len++] = p;
+    ((Hunk **)dout->dout_ga.c)[dout->dout_ga.len++] = p;
     return 0;
 }
 
@@ -4347,13 +4325,13 @@ xdiff_out_unified(
    MmBuffer *mb,
    int nbuf
 ){
-    diffout_T   *dout = (diffout_T *)priv;
-    int      i;
+   DiffResult   *dout = (DiffResult *)priv;
+   int      i;
 
-    for (i = 0; i < nbuf; i++)
-   ga_concat_len(&dout->dout_ga, (CS)mb[i].ptr, mb[i].size);
+   for (i = 0; i < nbuf; i++)
+      ga_concat_len(&dout->dout_ga, (CS)mb[i].ptr, mb[i].size);
 
-    return 0;
+   return 0;
 }
 
 void
@@ -4367,7 +4345,7 @@ f_diff_hlID(Var *argvars UNUSED, Var *returnVar UNUSED) {
    static LineNr prev_lnum = 0;
    static Long   changedtick = 0;
    static int fnum = 0;
-   static int prev_diff_flags = 0;
+   static Unt prev_diff_flags = 0;
    static int change_start = 0;
    static int change_end = 0;
    static Short hlID = 0;
@@ -4380,7 +4358,7 @@ f_diff_hlID(Var *argvars UNUSED, Var *returnVar UNUSED) {
    if (diff_flags & ALL_INLINE_DIFF) {
       // Remember the results if using simple since it's recalculated per
       // call. Otherwise just call diff_find_change() every time since
-      // internally the result is cached internally.
+      // internally the DiffResult is cached internally.
       cache_results = FALSE;
    }
 
@@ -4452,12 +4430,12 @@ f_diff_hlID(Var *argvars UNUSED, Var *returnVar UNUSED) {
 //the options in "diffopts" and the diff algorithm in "diffalgo".
 private int
 parse_diff_optarg(
-   Var       *opts,
-   int          *diffopts,
-   long       *diffalgo,
-   dio_outfmt_T    *diff_output_fmt,
-   int          *diff_ctxlen)
-{
+   Var* opts,
+   Unt* diffopts,
+   long* diffalgo,
+   OutputFormat* diff_output_fmt,
+   int* diff_ctxlen
+) {
    Bag* d = opts->bag;
 
    CS algo = bagGetString(d, tConst("algorithm"), false);
@@ -4472,8 +4450,8 @@ parse_diff_optarg(
          *diffalgo = XDF_HISTOGRAM_DIFF;
    }
 
-   Byte  *output_fmt = bagGetString(d, tConst("output"), false);
-   if (output_fmt != NULL) {
+   CS output_fmt = bagGetString(d, tConst("output"), false);
+   if (output_fmt) {
       if (STRNCMP(output_fmt, "unified", 7) == 0)
           *diff_output_fmt = DIO_OUTPUT_UNIFIED;
       ei (STRNCMP(output_fmt, "indices", 7) == 0)
@@ -4504,36 +4482,35 @@ parse_diff_optarg(
    return OK;
 }
 
-//Concatenate the List of strings in "l" and store the result in
+//Concatenate the List of strings in "l" and store the DiffResult in
 //"din->din_mmfile.ptr" and the length in "din->din_mmfile.size".
 private void
-list_to_diffin(List *l, diffin_T *din, int icase) {
+list_to_diffin(List* l, DiffInp* din, int icase) {
    ArrayList   ga;
    ListItem   *li;
-   Byte   *str;
 
    ga_init2(&ga, 1, 2048);
 
    FOR_ALL_LIST_ITEMS(l, li) {
-      str = tv_get_string(&li->c);
+      CS str = tv_get_string(&li->c);
       if (icase) {
          str = strlow_save(str);
-         if (str == NULL)
+         if (!str)
             continue;
       }
       ga_concat(&ga, str);
       ga_append(&ga, NL);
       if (icase)
          eeglFree(str);
-    }
+   }
 
-    din->din_mmfile.ptr = (char *)ga.c;
-    din->din_mmfile.size = ga.len;
+   din->din_mmfile.ptr = (Byte *)ga.c;
+   din->din_mmfile.size = ga.len;
 }
 
 //Get the start and end indices from the diff "hunk".
 private Bag *
-get_diff_hunk_indices(diffhunk_T *hunk) {
+get_diff_hunk_indices(Hunk *hunk) {
    Bag* hunkBag = allocBag();
    bagAddNumber(hunkBag, S"from_idx", hunk->lnum_orig - 1);
    bagAddNumber(hunkBag, S"from_count", hunk->count_orig);
@@ -4544,20 +4521,19 @@ get_diff_hunk_indices(diffhunk_T *hunk) {
 }
 
 void
-f_diff(Var *argvars UNUSED, Var *returnVar UNUSED) {
-   DiffIo dio;
-
+f_diff(Var* argvars, Var *returnVar UNUSED) {
    if (confirmVarIsNonnullList(argvars, 0) == FAIL
         || confirmVarIsNonnullList(argvars, 1) == FAIL
         || check_for_opt_nonnull_dict_arg(argvars, 2) == FAIL)
       return;
 
+   DiffIo dio;
    CLEAR_FIELD(dio);
    dio.dio_internal = TRUE;
    ga_init2(&dio.dio_diff.dout_ga, sizeof(char *), 1000);
 
-   List *orig_list = argvars[0].list;
-   List *new_list = argvars[1].list;
+   List* orig_list = argvars[0].list;
+   List* new_list = argvars[1].list;
 
    // Save the 'diffopt' option value and restore it after getting the diff.
    int      save_diff_flags = diff_flags;
@@ -4565,37 +4541,38 @@ f_diff(Var *argvars UNUSED, Var *returnVar UNUSED) {
    diff_flags = DIFF_INTERNAL;
    diff_algorithm = 0;
    dio.dio_outfmt = DIO_OUTPUT_UNIFIED;
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      if (parse_diff_optarg(&argvars[2], &diff_flags, &diff_algorithm,
-            &dio.dio_outfmt, &dio.dio_ctxlen) == FAIL)
-          return;
-   } 
+   if (argvars[2].tag != VAR_UNKNOWN
+      && parse_diff_optarg(
+            &argvars[2], &diff_flags, &diff_algorithm, &dio.dio_outfmt, &dio.dio_ctxlen
+         ) == FAIL
+   ) 
+      return;
 
-   // Concatenate the List of strings into a single string using newline
-   // separator.  Internal diff library expects a single string.
-   list_to_diffin(orig_list, &dio.dio_orig, diff_flags & DIFF_ICASE);
-   list_to_diffin(new_list, &dio.dio_new, diff_flags & DIFF_ICASE);
+   //Concatenate the List of strings into a single string using newline
+   //separator.  Internal diff library expects a single string.
+   list_to_diffin(orig_list, &dio.orig, diff_flags & DIFF_ICASE);
+   list_to_diffin(new_list, &dio.new, diff_flags & DIFF_ICASE);
 
-   // If 'diffexpr' is set, then the internal diff is not used.  Set
-   // 'diffexpr' to an empty string temporarily.
-   int       restore_diffexpr = FALSE;
-   Byte  cc = *p_dex;
+   //If 'diffexpr' is set, then the internal diff is not used.  Set
+   //'diffexpr' to an empty string temporarily.
+   int restore_diffexpr = FALSE;
+   Byte cc = *p_dex;
    if (*p_dex != ZERO) {
       restore_diffexpr = TRUE;
       *p_dex = ZERO;
    }
 
-   // Compute the diff
+   //Compute the diff
    int diff_status = diff_file(&dio);
 
-   // restore 'diffexpr'
+   //restore @diffexpr
    if (restore_diffexpr)
       *p_dex = cc;
 
    if (diff_status == FAIL)
       goto done;
       
-   int      hunk_idx = 0;
+   int hunk_idx = 0;
    Bag* hunkBag;
 
    if (dio.dio_outfmt == DIO_OUTPUT_INDICES) {
@@ -4603,9 +4580,9 @@ f_diff(Var *argvars UNUSED, Var *returnVar UNUSED) {
       List   *l = returnVar->list;
 
       // Process each diff hunk
-      diffhunk_T   *hunk = NULL;
+      Hunk   *hunk = NULL;
       while (hunk_idx < dio.dio_diff.dout_ga.len) {
-         hunk = ((diffhunk_T **)dio.dio_diff.dout_ga.c)[hunk_idx++];
+         hunk = ((Hunk **)dio.dio_diff.dout_ga.c)[hunk_idx++];
 
          hunkBag = get_diff_hunk_indices(hunk);
          if (hunkBag == NULL)
@@ -4620,12 +4597,12 @@ f_diff(Var *argvars UNUSED, Var *returnVar UNUSED) {
    }
 
 done:
-   clear_diffin(&dio.dio_new);
+   clear_diffin(&dio.new);
    if (dio.dio_outfmt == DIO_OUTPUT_INDICES)
       clear_diffout(&dio.dio_diff);
    else
       ga_clear(&dio.dio_diff.dout_ga);
-   clear_diffin(&dio.dio_orig);
+   clear_diffin(&dio.orig);
    // Restore the 'diffopt' option value.
    diff_flags = save_diff_flags;
    diff_algorithm = save_diff_algorithm;
@@ -4656,13 +4633,9 @@ done:
 #define XDL_MERGE_FAVOR_THEIRS 2
 #define XDL_MERGE_FAVOR_UNION 3
 
-/* merge output styles */
+// merge output styles
 #define XDL_MERGE_DIFF3 1
 #define XDL_MERGE_ZEALOUS_DIFF3 2
-
-typedef struct s_bdiffparam {
-   long bsize;
-} bdiffparam_t;
 
 
 #define xdl_malloc(x) lalloc((x), TRUE)
@@ -4671,17 +4644,6 @@ typedef struct s_bdiffparam {
 
 private void* xdl_mmfile_first(MmFile *mmf, long *size);
 private long xdl_mmfile_size(MmFile *mmf);
-
-typedef struct s_xmparam {
-   XpParam xpp;
-   int marker_size;
-   int level;
-   int favor;
-   int style;
-   const char *ancestor;   /* label for orig */
-   const char *file1;   /* label for mf1 */
-   const char *file2;   /* label for mf2 */
-} xmparam_t;
 
 #define DEFAULT_CONFLICT_MARKER_SIZE 7
 
@@ -4703,20 +4665,20 @@ typedef struct s_diffdata {
    long nrec;
    unsigned long const *ha;
    long *rindex;
-   char *rchg;
+   CS rchg;
 } DiffData;
 
-typedef struct s_xdalgoenv {
+typedef struct s_xdg {
    long mxcost;
    long snake_cnt;
    long heur_min;
-} xdalgoenv_t;
+} Environment;
 
 
 private int matching_chars(const MmFile *m1, const MmFile *m2);
 private int xdl_recs_cmp(
    DiffData *dd1, long off1, long lim1, DiffData *dd2, long off2, long lim2,
-   long *kvdf, long *kvdb, int need_min, xdalgoenv_t *xenv
+   long *kvdf, long *kvdb, int need_min, Environment *xenv
 );
 private int xdl_do_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe);
 private int xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags);
@@ -4737,19 +4699,18 @@ typedef struct s_xdpsplit {
 } xdpsplit_t;
 
 private long xdl_bogosqrt(long n);
-private int xdl_emit_diffrec(char const *rec, long size, char const *pre, long psize,
-           XdEmitCb *ecb);
+private int xdl_emit_diffrec(Byte* rec, long size, Byte* pre, long psize, XdEmitCb *ecb);
 private int xdl_cha_init(chastore_t *cha, long isize, long icount);
 private void xdl_cha_free(chastore_t *cha);
 private void *xdl_cha_alloc(chastore_t *cha);
 private long xdl_guess_lines(MmFile *mf, long sample);
-private int xdl_blankline(const char *line, long size, long flags);
-private int xdl_recmatch(const char *l1, long s1, const char *l2, long s2, long flags);
-private Ulong xdl_hash_record(char const **data, char const *top, long flags);
+private int xdl_blankline(Byte *line, long size, long flags);
+private int xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags);
+private Ulong xdl_hash_record(Byte** data, Byte* top, long flags);
 private Unt xdl_hashbits(unsigned int size);
-int xdl_num_out(char *out, long val);
+private int xdl_num_out(Byte *out, long val);
 private int xdl_emit_hunk_hdr(long s1, long c1, long s2, long c2,
-            const char *func, long funclen, XdEmitCb *ecb);
+            Byte* func, long funclen, XdEmitCb *ecb);
 private int xdl_fall_back_diff(XdfEnv *diff_env, XpParam const *xpp,
              int line1, int count1, int line2, int count2);
 
@@ -4809,7 +4770,7 @@ do { \
 //search and to return a suboptimal point.
 private long xdl_split(
    unsigned long const *ha1, long off1, long lim1, unsigned long const *ha2, long off2, long lim2,
-   long *kvdf, long *kvdb, int need_min, xdpsplit_t *spl, xdalgoenv_t *xenv
+   long *kvdf, long *kvdb, int need_min, xdpsplit_t *spl, Environment *xenv
 ) {
    long dmin = off1 - lim2, dmax = lim1 - off2;
    long fmid = off1 - off2, bmid = lim1 - lim2;
@@ -5005,7 +4966,8 @@ private long xdl_split(
 private int 
 xdl_recs_cmp(DiffData *dd1, long off1, long lim1,
        DiffData *dd2, long off2, long lim2,
-       long *kvdf, long *kvdb, int need_min, xdalgoenv_t *xenv) {
+       long *kvdf, long *kvdb, int need_min, Environment *xenv
+) {
    unsigned long const *ha1 = dd1->ha, *ha2 = dd2->ha;
 
    //Shrink the box by walking through each diagonal snake (SW and NE).
@@ -5014,13 +4976,13 @@ xdl_recs_cmp(DiffData *dd1, long off1, long lim1,
 
    //If one dimension is empty, then all records on the other one must be obviously changed.
    if (off1 == lim1) {
-      char *rchg2 = dd2->rchg;
+      Byte* rchg2 = dd2->rchg;
       long *rindex2 = dd2->rindex;
 
       for (; off2 < lim2; off2++)
          rchg2[rindex2[off2]] = 1;
    } ei (off2 == lim2) {
-      char *rchg1 = dd1->rchg;
+      Byte* rchg1 = dd1->rchg;
       long *rindex1 = dd1->rindex;
 
       for (; off1 < lim1; off1++)
@@ -5049,8 +5011,7 @@ xdl_recs_cmp(DiffData *dd1, long off1, long lim1,
 
 private int
 xdl_do_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe) {
-   long *kvd, *kvdf, *kvdb;
-   xdalgoenv_t xenv;
+   Environment xenv;
    DiffData dd1, dd2;
    int res;
 
@@ -5071,12 +5032,13 @@ xdl_do_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe) {
    //
    //One is to store the forward path and one to store the backward path.
    long ndiags = xe->xdf1.nreff + xe->xdf2.nreff + 3;
+   long* kvd;
    if (!XDL_ALLOC_ARRAY(kvd, 2 * ndiags + 2)) {
       xdl_free_env(xe);
       return -1;
    }
-   kvdf = kvd;
-   kvdb = kvdf + ndiags;
+   long* kvdf = kvd;
+   long* kvdb = kvdf + ndiags;
    kvdf += xe->xdf2.nreff + 1;
    kvdb += xe->xdf2.nreff + 1;
 
@@ -5125,7 +5087,7 @@ private XdChange *xdl_add_change(XdChange *xscr, long i1, long i2, long chg1, lo
 
 
 private int
-recs_match(xrecord_t *rec1, xrecord_t *rec2) {
+recs_match(Record *rec1, Record *rec2) {
    return (rec1->ha == rec2->ha);
 }
 
@@ -5138,11 +5100,11 @@ recs_match(xrecord_t *rec1, xrecord_t *rec2) {
 //columns. Return -1 if line is empty or contains only whitespace. Clamp the
 //output value at MAX_INDENT.
 private int
-xget_indent(xrecord_t *rec) {
+xget_indent(Record *rec) {
    int ret = 0;
 
    for (int i = 0; i < rec->size; i++) {
-      char c = rec->ptr[i];
+      Byte c = rec->ptr[i];
 
       if (!XDL_ISSPACE(c))
          return ret;
@@ -5329,13 +5291,10 @@ score_add_split(const struct split_measurement *m, struct split_score *s) {
       //The line has the same indentation level as its predecessor.
       //No additional adjustments needed.
    } else {
-      /*
-       * The line is indented less than its predecessor. It could be
-       * the block terminator of the previous block, but it could
-       * also be the start of a new block (e.g., an "else" block, or
-       * maybe the previous block didn't have a block terminator).
-       * Try to distinguish those cases based on what comes next:
-       */
+      //The line is indented less than its predecessor. It could be the block terminator of the 
+      //previous block, but it could also be the start of a new block (e.g., an "else" block, or
+      //maybe the previous block didn't have a block terminator). Try to distinguish those cases 
+      //based on what comes next:
       if (m->post_indent != -1 && m->post_indent > indent) {
          //The following line is indented more. So it is likely
          //that this line is the start of a block.
@@ -5439,8 +5398,7 @@ private int group_slide_down(XdFile *xdf, struct xdlgroup *g) {
 //expand this group to include it. Return 0 on success or -1 if g cannot be slid up.
 private int
 group_slide_up(XdFile *xdf, struct xdlgroup *g) {
-   if (g->start > 0 &&
-       recs_match(xdf->recs[g->start - 1], xdf->recs[g->end - 1])) {
+   if (g->start > 0 && recs_match(xdf->recs[g->start - 1], xdf->recs[g->end - 1])) {
       xdf->rchg[--g->start] = 1;
       xdf->rchg[--g->end] = 0;
 
@@ -5548,8 +5506,7 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
             score_add_split(&m, &score);
             measure_split(xdf, shift - groupsize, &m);
             score_add_split(&m, &score);
-            if (best_shift == -1 ||
-                score_cmp(&score, &best_score) <= 0) {
+            if (best_shift == -1 || score_cmp(&score, &best_score) <= 0) {
                best_score.effective_indent = score.effective_indent;
                best_score.penalty = score.penalty;
                best_shift = shift;
@@ -5582,11 +5539,11 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
 private int
 xdl_build_script(XdfEnv *xe, XdChange **xscr) {
    XdChange *cscr = NULL, *xch;
-   char *rchg1 = xe->xdf1.rchg, *rchg2 = xe->xdf2.rchg;
+   Byte *rchg1 = xe->xdf1.rchg, *rchg2 = xe->xdf2.rchg;
    long i1, i2, l1, l2;
 
    //Trivial. Collects "groups" of changes and creates an edit script.
-   for (i1 = xe->xdf1.nrec, i2 = xe->xdf2.nrec; i1 >= 0 || i2 >= 0; i1--, i2--)
+   for (i1 = xe->xdf1.nrec, i2 = xe->xdf2.nrec; i1 >= 0 || i2 >= 0; i1--, i2--) {
       if (rchg1[i1 - 1] || rchg2[i2 - 1]) {
          for (l1 = i1; rchg1[i1 - 1]; i1--);
          for (l2 = i2; rchg2[i2 - 1]; i2--);
@@ -5597,6 +5554,7 @@ xdl_build_script(XdfEnv *xe, XdChange **xscr) {
          }
          cscr = xch;
       }
+   } 
 
    *xscr = cscr;
 
@@ -5605,9 +5563,8 @@ xdl_build_script(XdfEnv *xe, XdChange **xscr) {
 
 
 private void
-xdl_free_script(XdChange *xscr) {
-   XdChange *xch;
-
+xdl_free_script(XdChange* xscr) {
+   XdChange* xch;
    while ((xch = xscr) != NULL) {
       xscr = xscr->next;
       eeglFree(xch);
@@ -5636,7 +5593,7 @@ private void
 xdl_mark_ignorable_lines(XdChange *xscr, XdfEnv *xe, long flags) {
    for (XdChange* xch = xscr; xch; xch = xch->next) {
       int ignore = 1;
-      xrecord_t **rec;
+      Record **rec;
       long i;
 
       rec = &xe->xdf1.recs[xch->i1];
@@ -5652,8 +5609,7 @@ xdl_mark_ignorable_lines(XdChange *xscr, XdfEnv *xe, long flags) {
 }
 
 private int
-xdl_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp,
-        XdEmitConf const *xecfg, XdEmitCb *ecb) {
+xdl_diff(MmFile* mf1, MmFile* mf2, XpParam* xpp, XdEmitConf* xecfg, XdEmitCb* ecb) {
    XdChange *xscr;
    XdfEnv xe;
    emit_func_t ef = xecfg->hunk_func ? xdl_call_hunk_func : xdl_emit_diff;
@@ -5696,23 +5652,21 @@ xdl_bogosqrt(long n) {
    return i;
 }
 
-
 private int
-xdl_emit_diffrec(char const *rec, long size, char const *pre, long psize, XdEmitCb *ecb) {
+xdl_emit_diffrec(Byte* rec, long size, Byte* pre, long psize, XdEmitCb* ecb) {
    int i = 2;
    MmBuffer mb[3];
 
-   mb[0].ptr = (char *) pre;
+   mb[0].ptr = pre;
    mb[0].size = psize;
-   mb[1].ptr = (char *) rec;
+   mb[1].ptr = rec;
    mb[1].size = size;
    if (size > 0 && rec[size - 1] != '\n') {
-      mb[2].ptr = (char *) "\n\\ No newline at end of file\n";
-      mb[2].size = (long)strlen(mb[2].ptr);
+      mb[2].ptr = S"\n\\ No newline at end of file\n";
+      mb[2].size = (long)STRLEN(mb[2].ptr);
       i++;
    }
    if (ecb->out_line(ecb->priv, mb, i) < 0) {
-
       return -1;
    }
 
@@ -5803,12 +5757,11 @@ xdl_guess_lines(MmFile *mf, long sample) {
 }
 
 private int
-xdl_blankline(const char *line, long size, long flags) {
-   long i;
-
-   if (!(flags & WHITESPACE_FLAGS))
+xdl_blankline(CS line, long size, long flags) {
+   if ((flags & WHITESPACE_FLAGS) == 0)
       return (size <= 1);
 
+   long i;
    for (i = 0; i < size && XDL_ISSPACE(line[i]); i++)
       ;
 
@@ -5817,7 +5770,7 @@ xdl_blankline(const char *line, long size, long flags) {
 
 //Have we eaten everything on the line, except for an optional CR at the very end?
 private int
-ends_with_optional_cr(const char *l, long s, long i) {
+ends_with_optional_cr(CS l, long s, long i) {
    int complete = s && l[s-1] == '\n';
 
    if (complete)
@@ -5831,7 +5784,7 @@ ends_with_optional_cr(const char *l, long s, long i) {
 }
 
 private int
-xdl_recmatch(const char *l1, long s1, const char *l2, long s2, long flags) {
+xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags) {
    int i1, i2;
 
    if (s1 == s2 && !memcmp(l1, l2, s1))
@@ -5904,35 +5857,32 @@ xdl_recmatch(const char *l1, long s1, const char *l2, long s2, long flags) {
    return 1;
 }
 
-private unsigned long xdl_hash_record_with_whitespace(char const **data,
-      char const *top, long flags) {
+private unsigned long xdl_hash_record_with_whitespace(
+   Byte** data, Byte* top, long flags
+) {
    unsigned long ha = 5381;
-   char const *ptr = *data;
+   Byte* ptr = *data;
    int cr_at_eol_only = (flags & WHITESPACE_FLAGS) == IGNORE_CR_AT_EOL;
 
    for (; ptr < top && *ptr != '\n'; ptr++) {
       if (cr_at_eol_only) {
-         /* do not ignore CR at the end of an incomplete line */
+         // do not ignore CR at the end of an incomplete line
          if (*ptr == '\r' &&
              (ptr + 1 < top && ptr[1] == '\n'))
             continue;
       }
       ei (XDL_ISSPACE(*ptr)) {
-         const char *ptr2 = ptr;
+         Byte* ptr2 = ptr;
          int at_eol;
-         while (ptr + 1 < top && XDL_ISSPACE(ptr[1])
-               && ptr[1] != '\n')
+         while (ptr + 1 < top && XDL_ISSPACE(ptr[1]) && ptr[1] != '\n')
             ptr++;
          at_eol = (top <= ptr + 1 || ptr[1] == '\n');
          if (flags & IGNORE_WHITESPACE)
-            ; /* already handled */
-         ei (flags & IGNORE_WHITESPACE_CHANGE
-             && !at_eol) {
+            ; // already handled
+         ei (flags & IGNORE_WHITESPACE_CHANGE && !at_eol) {
             ha += (ha << 5);
             ha ^= (unsigned long) ' ';
-         }
-         ei (flags & IGNORE_WHITESPACE_AT_EOL
-             && !at_eol) {
+         } ei (flags & IGNORE_WHITESPACE_AT_EOL && !at_eol) {
             while (ptr2 != ptr + 1) {
                ha += (ha << 5);
                ha ^= (unsigned long) *ptr2;
@@ -5950,11 +5900,11 @@ private unsigned long xdl_hash_record_with_whitespace(char const **data,
 }
 
 private Ulong
-xdl_hash_record(char const **data, char const *top, long flags) {
+xdl_hash_record(Byte** data, Byte* top, long flags) {
    unsigned long ha = 5381;
-   char const *ptr = *data;
+   Byte* ptr = *data;
 
-   if (flags & WHITESPACE_FLAGS)
+   if ((flags & WHITESPACE_FLAGS) != 0)
       return xdl_hash_record_with_whitespace(data, top, flags);
 
    for (; ptr < top && *ptr != '\n'; ptr++) {
@@ -5974,12 +5924,12 @@ xdl_hashbits(unsigned int size) {
    return bits ? bits: 1;
 }
 
+private int 
+xdl_num_out(Byte* out, long val) {
+   Byte *str = out;
+   Byte buf[32];
 
-int xdl_num_out(char *out, long val) {
-   char *ptr, *str = out;
-   char buf[32];
-
-   ptr = buf + sizeof(buf) - 1;
+   Byte* ptr = buf + sizeof(buf) - 1;
    *ptr = '\0';
    if (val < 0) {
       *--ptr = '-';
@@ -5997,12 +5947,12 @@ int xdl_num_out(char *out, long val) {
    return str - out;
 }
 
-private int xdl_format_hunk_hdr(long s1, long c1, long s2, long c2,
-                const char *func, long funclen,
-                XdEmitCb *ecb) {
+private int xdl_format_hunk_hdr(
+   long s1, long c1, long s2, long c2, Byte* func, long funclen, XdEmitCb *ecb
+) {
    int nb = 0;
    MmBuffer mb;
-   char buf[128];
+   Byte buf[128];
 
    memcpy(buf, "@@ -", 4);
    nb += 4;
@@ -6048,7 +5998,7 @@ private int xdl_format_hunk_hdr(long s1, long c1, long s2, long c2,
 
 private int
 xdl_emit_hunk_hdr(
-   long s1, long c1, long s2, long c2, const char *func, long funclen, XdEmitCb *ecb
+   long s1, long c1, long s2, long c2, Byte* func, long funclen, XdEmitCb *ecb
 ) {
    if (!ecb->out_hunk)
       return xdl_format_hunk_hdr(s1, c1, s2, c2, func, funclen, ecb);
@@ -6073,10 +6023,10 @@ xdl_fall_back_diff(XdfEnv *diff_env, XpParam const *xpp,
    MmFile subfile1, subfile2;
    XdfEnv env;
 
-   subfile1.ptr = (char *)diff_env->xdf1.recs[line1 - 1]->ptr;
+   subfile1.ptr = diff_env->xdf1.recs[line1 - 1]->ptr;
    subfile1.size = diff_env->xdf1.recs[line1 + count1 - 2]->ptr +
       diff_env->xdf1.recs[line1 + count1 - 2]->size - subfile1.ptr;
-   subfile2.ptr = (char *)diff_env->xdf2.recs[line2 - 1]->ptr;
+   subfile2.ptr = diff_env->xdf2.recs[line2 - 1]->ptr;
    subfile2.size = diff_env->xdf2.recs[line2 + count2 - 2]->ptr +
       diff_env->xdf2.recs[line2 + count2 - 2]->size - subfile2.ptr;
    if (xdl_do_diff(&subfile1, &subfile2, xpp, &env) < 0)
@@ -6116,18 +6066,18 @@ void* xdl_alloc_grow_helper(void *p, long nr, long *alloc, Unt size) {
 typedef struct s_xdlclass {
    struct s_xdlclass *next;
    unsigned long ha;
-   char const *line;
+   CS line;
    long size;
    long idx;
    long len1, len2;
-} xdlclass_t;
+} XdlClass;
 
 typedef struct s_xdlclassifier {
    unsigned int hbits;
    long hsize;
-   xdlclass_t **rchash;
+   XdlClass **rchash;
    chastore_t ncha;
-   xdlclass_t **rcrecs;
+   XdlClass **rcrecs;
    long alloc;
    long count;
    long flags;
@@ -6136,12 +6086,12 @@ typedef struct s_xdlclassifier {
 
 private int xdl_init_classifier(xdlclassifier_t *cf, long size, long flags);
 private void xdl_free_classifier(xdlclassifier_t *cf);
-private int xdl_classify_record(unsigned int pass, xdlclassifier_t *cf, xrecord_t **rhash,
-                unsigned int hbits, xrecord_t *rec);
+private int xdl_classify_record(unsigned int pass, xdlclassifier_t *cf, Record **rhash,
+                unsigned int hbits, Record *rec);
 private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam const *xpp,
             xdlclassifier_t *cf, XdFile *xdf);
 private void xdl_free_ctx(XdFile *xdf);
-private int xdl_clean_mmatch(char const *dis, long i, long s, long e);
+private int xdl_clean_mmatch(Byte* dis, long i, long s, long e);
 private int xdl_cleanup_records(xdlclassifier_t *cf, XdFile *xdf1, XdFile *xdf2);
 private int xdl_trim_ends(XdFile *xdf1, XdFile *xdf2);
 private int xdl_optimize_ctxs(xdlclassifier_t *cf, XdFile *xdf1, XdFile *xdf2);
@@ -6153,7 +6103,7 @@ private int xdl_init_classifier(xdlclassifier_t *cf, long size, long flags) {
    cf->hbits = xdl_hashbits((unsigned int) size);
    cf->hsize = 1 << cf->hbits;
 
-   if (xdl_cha_init(&cf->ncha, sizeof(xdlclass_t), size / 4 + 1) < 0) {
+   if (xdl_cha_init(&cf->ncha, sizeof(XdlClass), size / 4 + 1) < 0) {
       return -1;
    }
    if (!XDL_CALLOC_ARRAY(cf->rchash, cf->hsize)) {
@@ -6183,19 +6133,18 @@ private void xdl_free_classifier(xdlclassifier_t *cf) {
 }
 
 
-private int xdl_classify_record(unsigned int pass, xdlclassifier_t *cf, xrecord_t **rhash,
-                unsigned int hbits, xrecord_t *rec) {
-   long hi;
-   char const *line;
-   xdlclass_t *rcrec;
+private int xdl_classify_record(unsigned int pass, xdlclassifier_t *cf, Record **rhash,
+                unsigned int hbits, Record *rec) {
+   XdlClass *rcrec;
 
-   line = rec->ptr;
-   hi = (long) XDL_HASHLONG(rec->ha, cf->hbits);
-   for (rcrec = cf->rchash[hi]; rcrec; rcrec = rcrec->next)
-      if (rcrec->ha == rec->ha &&
-            xdl_recmatch(rcrec->line, rcrec->size,
-               rec->ptr, rec->size, cf->flags))
+   CS line = rec->ptr;
+   long hi = (long) XDL_HASHLONG(rec->ha, cf->hbits);
+   for (rcrec = cf->rchash[hi]; rcrec; rcrec = rcrec->next) {
+      if (rcrec->ha == rec->ha 
+            && xdl_recmatch(rcrec->line, rcrec->size, rec->ptr, rec->size, cf->flags)
+      )
          break;
+   } 
 
    if (!rcrec) {
       if (!(rcrec = xdl_cha_alloc(&cf->ncha))) {
@@ -6226,30 +6175,25 @@ private int xdl_classify_record(unsigned int pass, xdlclassifier_t *cf, xrecord_
 
 
 private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam const *xpp,
-            xdlclassifier_t *cf, XdFile *xdf) {
-   unsigned int hbits;
+            xdlclassifier_t *cf, XdFile *xdf
+) {
    long nrec, hsize, bsize;
    unsigned long hav;
-   char const *blk, *cur, *top, *prev;
-   xrecord_t *crec;
-   xrecord_t **recs;
-   xrecord_t **rhash;
-   unsigned long *ha;
-   char *rchg;
-   long *rindex;
+   Byte *blk, *cur, *top, *prev;
+   Record *crec;
 
-   ha = NULL;
-   rindex = NULL;
-   rchg = NULL;
-   rhash = NULL;
-   recs = NULL;
+   Ulong* ha = NULL;
+   long* rindex = NULL;
+   Byte* rchg = NULL;
+   Record** rhash = NULL;
+   Record** recs = NULL;
 
-   if (xdl_cha_init(&xdf->rcha, sizeof(xrecord_t), narec / 4 + 1) < 0)
+   if (xdl_cha_init(&xdf->rcha, sizeof(Record), narec / 4 + 1) < 0)
       goto abort;
    if (!XDL_ALLOC_ARRAY(recs, narec))
       goto abort;
 
-   hbits = xdl_hashbits((unsigned int) narec);
+   Unt hbits = xdl_hashbits((unsigned int) narec);
    hsize = 1 << hbits;
    if (!XDL_CALLOC_ARRAY(rhash, hsize))
       goto abort;
@@ -6370,7 +6314,7 @@ xdl_free_env(XdfEnv *xe) {
 
 
 private int 
-xdl_clean_mmatch(char const *dis, long i, long s, long e) {
+xdl_clean_mmatch(Byte* dis, long i, long s, long e) {
    long r, rdis0, rpdis0, rdis1, rpdis1;
 
    //Limits the portal that is examined during the similar-lines scan. The loops below stops when 
@@ -6421,9 +6365,9 @@ xdl_clean_mmatch(char const *dis, long i, long s, long e) {
 //of discardable.
 private int xdl_cleanup_records(xdlclassifier_t *cf, XdFile *xdf1, XdFile *xdf2) {
    long i, nm, nreff, mlim;
-   xrecord_t **recs;
-   xdlclass_t *rcrec;
-   char *dis, *dis1, *dis2;
+   Record **recs;
+   XdlClass* rcrec;
+   Byte *dis, *dis1, *dis2;
 
    if (!XDL_CALLOC_ARRAY(dis, xdf1->nrec + xdf2->nrec + 2))
       return -1;
@@ -6447,9 +6391,9 @@ private int xdl_cleanup_records(xdlclassifier_t *cf, XdFile *xdf1, XdFile *xdf2)
    }
 
    for (nreff = 0, i = xdf1->dstart, recs = &xdf1->recs[xdf1->dstart];
-        i <= xdf1->dend; i++, recs++) {
-      if (dis1[i] == 1 ||
-          (dis1[i] == 2 && !xdl_clean_mmatch(dis1, i, xdf1->dstart, xdf1->dend))) {
+        i <= xdf1->dend; i++, recs++
+   ) {
+      if (dis1[i] == 1 || (dis1[i] == 2 && !xdl_clean_mmatch(dis1, i, xdf1->dstart, xdf1->dend))) {
          xdf1->rindex[nreff] = i;
          xdf1->ha[nreff] = (*recs)->ha;
          nreff++;
@@ -6478,7 +6422,7 @@ private int xdl_cleanup_records(xdlclassifier_t *cf, XdFile *xdf1, XdFile *xdf2)
 //Early trim initial and terminal matching records.
 private int xdl_trim_ends(XdFile *xdf1, XdFile *xdf2) {
    long i, lim;
-   xrecord_t **recs1, **recs2;
+   Record **recs1, **recs2;
 
    recs1 = xdf1->recs;
    recs2 = xdf2->recs;
@@ -6554,10 +6498,9 @@ struct hashmap {
    XpParam const *xpp;
 };
 
-private int is_anchor(XpParam const *xpp, const char *line) {
-   int i;
-   for (i = 0; i < (int)xpp->anchors_nr; i++) {
-      if (!strncmp(line, xpp->anchors[i], strlen(xpp->anchors[i])))
+private int is_anchor(XpParam const *xpp, Byte* line) {
+   for (int i = 0; i < (int)xpp->anchors_nr; i++) {
+      if (!STRNCMP(line, xpp->anchors[i], STRLEN(xpp->anchors[i])))
          return 1;
    }
    return 0;
@@ -6565,9 +6508,9 @@ private int is_anchor(XpParam const *xpp, const char *line) {
 
 // The argument "pass" is 1 for the first file, 2 for the second.
 private void insert_record(XpParam const *xpp, int line, struct hashmap *map, int pass) {
-   xrecord_t **records = pass == 1 ?
+   Record **records = pass == 1 ?
       map->env->xdf1.recs : map->env->xdf2.recs;
-   xrecord_t *record = records[line - 1];
+   Record *record = records[line - 1];
    //After xdl_prepare_env() (or more precisely, due to xdl_classify_record()), the "ha" member of
    //the records (AKA lines) is _not_ the hash anymore, but a linearized version of it. In other 
    //words, the "ha" member is guaranteed to start with 0 and the second record's ha can only be 
@@ -6610,24 +6553,24 @@ private void insert_record(XpParam const *xpp, int line, struct hashmap *map, in
 //
 //It is assumed that env has been prepared using xdl_prepare().
 private int fill_hashmap(XpParam const *xpp, XdfEnv *env,
-      struct hashmap *result,
+      struct hashmap *DiffResult,
       int line1, int count1, int line2, int count2)
 {
-   result->xpp = xpp;
-   result->env = env;
+   DiffResult->xpp = xpp;
+   DiffResult->env = env;
 
    // We know exactly how large we want the hash map
-   result->alloc = count1 * 2;
-   if (!XDL_CALLOC_ARRAY(result->entries, result->alloc))
+   DiffResult->alloc = count1 * 2;
+   if (!XDL_CALLOC_ARRAY(DiffResult->entries, DiffResult->alloc))
       return -1;
 
    /* First, fill with entries from the first file */
    while (count1--)
-      insert_record(xpp, line1++, result, 1);
+      insert_record(xpp, line1++, DiffResult, 1);
 
    /* Then search for matches in the second file */
    while (count2--)
-      insert_record(xpp, line2++, result, 2);
+      insert_record(xpp, line2++, DiffResult, 2);
 
    return 0;
 }
@@ -6707,8 +6650,8 @@ private int find_longest_common_sequence(struct hashmap *map, struct entry **res
 
 private int 
 match(struct hashmap *map, int line1, int line2) {
-   xrecord_t *record1 = map->env->xdf1.recs[line1 - 1];
-   xrecord_t *record2 = map->env->xdf2.recs[line2 - 1];
+   Record *record1 = map->env->xdf1.recs[line1 - 1];
+   Record *record2 = map->env->xdf2.recs[line2 - 1];
    return record1->ha == record2->ha;
 }
 
@@ -6788,7 +6731,7 @@ patience_diff(
 ) {
    struct hashmap map;
    struct entry *first;
-   int result = 0;
+   int DiffResult = 0;
 
    // trivial case: one side is empty
    if (!count1) {
@@ -6816,17 +6759,17 @@ patience_diff(
       return 0;
    }
 
-   result = find_longest_common_sequence(&map, &first);
-   if (result)
+   DiffResult = find_longest_common_sequence(&map, &first);
+   if (DiffResult)
       goto out;
    if (first)
-      result = walk_common_sequence(&map, first,
+      DiffResult = walk_common_sequence(&map, first,
          line1, count1, line2, count2);
    else
-      result = fall_back_to_classic_diff(&map, line1, count1, line2, count2);
+      DiffResult = fall_back_to_classic_diff(&map, line1, count1, line2, count2);
  out:
    eeglFree(map.entries);
-   return result;
+   return DiffResult;
 }
 
 private int
@@ -6883,7 +6826,7 @@ struct region {
    (env->xdf##s.recs[l - 1])
 
 private int 
-cmp_recs(xrecord_t *r1, xrecord_t *r2) {
+cmp_recs(Record *r1, Record *r2) {
    return r1->ha == r2->ha;
 }
 
@@ -7097,9 +7040,9 @@ private int
 histogram_diff(XpParam const *xpp, XdfEnv *env, int line1, int count1, int line2, int count2) {
    struct region lcs;
    int lcs_found;
-   int result;
+   int DiffResult;
 redo:
-   result = -1;
+   DiffResult = -1;
 
    if (count1 <= 0 && count2 <= 0)
       return 0;
@@ -7122,21 +7065,21 @@ redo:
    if (lcs_found < 0)
       goto out;
    ei (lcs_found)
-      result = fall_back_to_classic_diff1(xpp, env, line1, count1, line2, count2);
+      DiffResult = fall_back_to_classic_diff1(xpp, env, line1, count1, line2, count2);
    else {
       if (lcs.begin1 == 0 && lcs.begin2 == 0) {
          while (count1--)
             env->xdf1.rchg[line1++ - 1] = 1;
          while (count2--)
             env->xdf2.rchg[line2++ - 1] = 1;
-         result = 0;
+         DiffResult = 0;
       } else {
-         result = histogram_diff(xpp, env,
+         DiffResult = histogram_diff(xpp, env,
                   line1, lcs.begin1 - line1,
                   line2, lcs.begin2 - line2);
-         if (result)
+         if (DiffResult)
             goto out;
-         //result = histogram_diff(xpp, env,
+         //DiffResult = histogram_diff(xpp, env,
          //           lcs.end1 + 1, LINE_END(1) - lcs.end1,
          //           lcs.end2 + 1, LINE_END(2) - lcs.end2);
          //but let's optimize tail recursion ourself:
@@ -7148,7 +7091,7 @@ redo:
       }
    }
 out:
-   return result;
+   return DiffResult;
 }
 
 private int
@@ -7159,19 +7102,17 @@ xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env) {
 }
 
 
-private long xdl_get_rec(XdFile *xdf, long ri, char const **rec) {
+private long xdl_get_rec(XdFile *xdf, long ri, Byte** rec) {
    *rec = xdf->recs[ri]->ptr;
    return xdf->recs[ri]->size;
 }
 
 
-private int xdl_emit_record(XdFile *xdf, long ri, char const *pre, XdEmitCb *ecb) {
-   long size, psize = (long)strlen(pre);
-   char const *rec;
-
-   size = xdl_get_rec(xdf, ri, &rec);
+private int xdl_emit_record(XdFile *xdf, long ri, Byte* pre, XdEmitCb *ecb) {
+   long psize = (long)STRLEN(pre);
+   Byte* rec;
+   long size = xdl_get_rec(xdf, ri, OUT &rec);
    if (xdl_emit_diffrec(rec, size, pre, psize, ecb) < 0) {
-
       return -1;
    }
 
@@ -7230,7 +7171,7 @@ xdl_get_hunk(XdChange **xscr, XdEmitConf const *xecfg) {
 
 struct func_line {
    long len;
-   char buf[80];
+   Byte buf[80];
 };
 
 private int
@@ -7259,30 +7200,31 @@ xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg
 
       //Emit current hunk header.
 
-      if (!(xecfg->flags & XDL_EMIT_NO_HUNK_HDR) &&
-          xdl_emit_hunk_hdr(s1 + 1, e1 - s1, s2 + 1, e2 - s2,
-                  func_line.buf, func_line.len, ecb) < 0)
+      if (!(xecfg->flags & XDL_EMIT_NO_HUNK_HDR) 
+            && xdl_emit_hunk_hdr(s1 + 1, e1 - s1, s2 + 1, e2 - s2,
+                  func_line.buf, func_line.len, ecb) < 0
+      )
          return -1;
 
       //Emit pre-context.
       for (; s2 < xch->i2; s2++)
-         if (xdl_emit_record(&xe->xdf2, s2, " ", ecb) < 0)
+         if (xdl_emit_record(&xe->xdf2, s2, S" ", ecb) < 0)
             return -1;
 
       for (s1 = xch->i1, s2 = xch->i2;; xch = xch->next) {
          //Merge previous with current change atom.
          for (; s1 < xch->i1 && s2 < xch->i2; s1++, s2++)
-            if (xdl_emit_record(&xe->xdf2, s2, " ", ecb) < 0)
+            if (xdl_emit_record(&xe->xdf2, s2, S" ", ecb) < 0)
                return -1;
 
          //Removes lines from the first file.
          for (s1 = xch->i1; s1 < xch->i1 + xch->chg1; s1++)
-            if (xdl_emit_record(&xe->xdf1, s1, "-", ecb) < 0)
+            if (xdl_emit_record(&xe->xdf1, s1, S"-", ecb) < 0)
                return -1;
 
          //Adds lines from the second file.
          for (s2 = xch->i2; s2 < xch->i2 + xch->chg2; s2++)
-            if (xdl_emit_record(&xe->xdf2, s2, "+", ecb) < 0)
+            if (xdl_emit_record(&xe->xdf2, s2, S"+", ecb) < 0)
                return -1;
 
          if (xch == xche)
@@ -7292,9 +7234,10 @@ xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg
       }
 
       //Emit post-context.
-      for (s2 = xche->i2 + xche->chg2; s2 < e2; s2++)
-         if (xdl_emit_record(&xe->xdf2, s2, " ", ecb) < 0)
+      for (s2 = xche->i2 + xche->chg2; s2 < e2; s2++) {
+         if (xdl_emit_record(&xe->xdf2, s2, S" ", ecb) < 0)
             return -1;
+      } 
    }
 
    return 0;

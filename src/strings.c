@@ -19,10 +19,10 @@ CS const Em = S"";
 // The result is a string with only printable characters, but if there is not
 // enough room, not all characters will be translated.
 void
-trans_characters( Byte   *buf, int      bufsize) {
+trans_characters(CS buf, int bufsize) {
    int      len;      // length of string needing translation
    int      room;      // room in buffer after string
-   Byte   *trs;      // translated character
+   Byte* trs;      // translated character
    int      trs_len;   // length of trs[]
 
    len = (int)STRLEN(buf);
@@ -4621,7 +4621,7 @@ fuzzyMatchStr_in_line(
 //direction of search. Return TRUE if a match is found, otherwise FALSE.
 int
 search_for_fuzzy_match(
-   Book* buf,
+   Book* book,
    Pos* pos,
    CS pattern,
    int dir,
@@ -4636,10 +4636,10 @@ search_for_fuzzy_match(
    int looped_around = FALSE;
    int whole_line = ctrl_x_mode_whole_line();
 
-   if (buf == curBook)
+   if (book == curBook)
       circly_end = *start_pos;
    else {
-      circly_end.lnum = buf->mem.lineCount;
+      circly_end.lnum = book->mem.lineCount;
       circly_end.col = 0;
       circly_end.coladd = 0;
    }
@@ -4654,9 +4654,9 @@ search_for_fuzzy_match(
          break;
 
       // Ensure current_pos is valid
-      if (current_pos.lnum >= 1 && current_pos.lnum <= buf->mem.lineCount) {
+      if (current_pos.lnum >= 1 && current_pos.lnum <= book->mem.lineCount) {
          // Get the current line buffer
-         *ptr = memGetLine(buf, current_pos.lnum, false);
+         *ptr = memGetLine(book, current_pos.lnum, false);
          if (!whole_line)
             *ptr += current_pos.col;
 
@@ -4675,7 +4675,7 @@ search_for_fuzzy_match(
                if (fuzzyMatchStr(*ptr, pattern) != FUZZY_SCORE_NONE) {
                   found_new_match = TRUE;
                   *pos = current_pos;
-                  *len = (int)memGetBookLen(buf, current_pos.lnum);
+                  *len = (int)memGetBookLen(book, current_pos.lnum);
                   break;
                }
             }
@@ -4684,7 +4684,7 @@ search_for_fuzzy_match(
 
       // Move to the next line or previous line based on direction
       if (dir == FORWARD) {
-         if (++current_pos.lnum > buf->mem.lineCount) {
+         if (++current_pos.lnum > book->mem.lineCount) {
             if (wrapSearchG) {
                current_pos.lnum = 1;
                looped_around = TRUE;
@@ -4694,7 +4694,7 @@ search_for_fuzzy_match(
       } else {
          if (--current_pos.lnum < 1) {
             if (wrapSearchG) {
-               current_pos.lnum = buf->mem.lineCount;
+               current_pos.lnum = book->mem.lineCount;
                looped_around = TRUE;
             } else
                break;
@@ -5512,7 +5512,7 @@ internal_format(
    curPor->bookOpts.breakIndent = has_bri;
    if (!format_only && haveto_redraw) {
       update_topline();
-      redraw_curbuf_later(UPD_VALID);
+      drawCurBookLater(UPD_VALID);
    }
 }
 
@@ -5835,7 +5835,7 @@ op_format(
 
    if (oper->is_VIsual)
       // When there is no change: need to remove the Visual selection
-      redraw_curbuf_later(UPD_INVERTED);
+      drawCurBookLater(UPD_INVERTED);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
       // Set '[ mark at the start of the formatted area
@@ -5890,7 +5890,7 @@ void
 op_formatexpr(Operator *oper) {
    if (oper->is_VIsual)
       // When there is no change: need to remove the Visual selection
-      redraw_curbuf_later(UPD_INVERTED);
+      drawCurBookLater(UPD_INVERTED);
 
    if (fex_format(oper->start.lnum, oper->line_count, ZERO) != 0)
       // As documented: when 'formatexpr' returns non-zero fall back to internal formatting.

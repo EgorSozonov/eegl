@@ -626,7 +626,7 @@ current_word(
       if (VIsual_active) {
          // should do something when inclusive == FALSE !
          VIsual = start_pos;
-         redraw_curbuf_later(UPD_INVERTED);   // update the inversion
+         drawCurBookLater(UPD_INVERTED);   // update the inversion
       } else {
          oper->start = start_pos;
          oper->motion_type = MCHAR;
@@ -825,7 +825,7 @@ extend:
       VIsual = start_pos;
       VIsual_mode = 'v';
       redrawCommlineG = TRUE;      // show mode later
-      redraw_curbuf_later(UPD_INVERTED);   // update the inversion
+      drawCurBookLater(UPD_INVERTED);   // update the inversion
    } else {
       // include a newline after the sentence, if there is one
       if (incl(&curPor->cursor) == -1)
@@ -948,7 +948,7 @@ current_block(
          inc(&curPor->cursor);   // include the line break
       VIsual = start_pos;
       VIsual_mode = 'v';
-      redraw_curbuf_later(UPD_INVERTED);   // update the inversion
+      drawCurBookLater(UPD_INVERTED);   // update the inversion
       showmode();
    } else {
       oper->start = start_pos;
@@ -1165,7 +1165,7 @@ again:
           curPor->cursor = start_pos;
       VIsual = start_pos;
       VIsual_mode = 'v';
-      redraw_curbuf_later(UPD_INVERTED);   // update the inversion
+      drawCurBookLater(UPD_INVERTED);   // update the inversion
       showmode();
    } else {
    oper->start = start_pos;
@@ -1317,7 +1317,7 @@ current_par(
          VIsual.col = 0;
       }
       VIsual_mode = 'V';
-      redraw_curbuf_later(UPD_INVERTED);   // update the inversion
+      drawCurBookLater(UPD_INVERTED);   // update the inversion
       showmode();
    } else {
       oper->start.lnum = start_lnum;
@@ -1542,7 +1542,7 @@ current_quote(
             )
       ) {
           VIsual = curPor->cursor;
-          redraw_curbuf_later(UPD_INVERTED);
+          drawCurBookLater(UPD_INVERTED);
       }
    } else {
       oper->start = curPor->cursor;
@@ -1860,7 +1860,7 @@ getcount:
    }
 
    // If we got CTRL-W there may be a/another count
-   if (c == Ctrl_W && !*ctrl_w && aArg->oper->op_type == OP_NOP) {
+   if (c == Ctrl_W && !*ctrl_w && aArg->oper->opTy == OP_NOP) {
       *ctrl_w = TRUE;
       aArg->opcount = aArg->count0;   // remember first count
       aArg->count0 = 0;
@@ -1915,14 +1915,14 @@ getcount:
 private int
 needsMoreChars(ActionArg* aArg, Short cmd_flags) {
    return ((cmd_flags & NV_NCH)
-       && (((cmd_flags & NV_NCH_NOP) == NV_NCH_NOP && aArg->oper->op_type == OP_NOP)
+       && (((cmd_flags & NV_NCH_NOP) == NV_NCH_NOP && aArg->oper->opTy == OP_NOP)
             || (cmd_flags & NV_NCH_ALW) == NV_NCH_ALW
             || (aArg->cmdchar == 'q'
-                && aArg->oper->op_type == OP_NOP
+                && aArg->oper->opTy == OP_NOP
                 && reg_recording == 0
                 && reg_executing == 0)
             || ((aArg->cmdchar == 'a' || aArg->cmdchar == 'i')
-                && (aArg->oper->op_type != OP_NOP || VIsual_active))
+                && (aArg->oper->opTy != OP_NOP || VIsual_active))
          )
    );
 }
@@ -1996,7 +1996,7 @@ getMoreChars(
          aArg->nchar = aArg->extra_char;
          idx = findAction(aArg->cmdchar);
       } ei ((aArg->nchar == 'n' || aArg->nchar == 'N') && aArg->cmdchar == 'g')
-         aArg->oper->op_type = get_op_type(*cp, ZERO);
+         aArg->oper->opTy = get_op_type(*cp, ZERO);
       ei (*cp == Ctrl_BSL) {
          long towait = (p_ttm >= 0 ? p_ttm : p_tm);
 
@@ -2083,7 +2083,7 @@ needToWaitForMsg(ActionArg* aArg, Pos *old_pos) {
        && emsg_silent == 0
        && !in_assert_fails
        && !did_wait_return
-       && aArg->oper->op_type == OP_NOP);
+       && aArg->oper->opTy == OP_NOP);
 }
 
 // After processing a normal mode command, wait for a moment when a message is
@@ -2155,7 +2155,7 @@ normalAction(
    // will terminate it. Finish_op tells us to finish the operation before
    // returning this time (unless the operation was cancelled).
    Boole finishOpSaved = finish_op;
-   finish_op = (oper->op_type != OP_NOP);
+   finish_op = (oper->opTy != OP_NOP);
    if (finish_op != finishOpSaved) {
       ui_cursor_shape();      // may show different cursor shape
    }
@@ -2237,7 +2237,7 @@ normalAction(
             && !(modMaskG & MOD_MASK_SHIFT)
          ) {
              end_visual_mode();
-             redraw_curbuf_later(UPD_INVERTED);
+             drawCurBookLater(UPD_INVERTED);
          }
 
          // Keys that work different when 'keymodel' contains "startsel"
@@ -2301,7 +2301,7 @@ normalAction(
    (actions[idx].fn)(&cmdArg);
 
    // If we didn't start or finish an operator, reset oper->regname, unless we need it later. 
-   if (!finish_op && !oper->op_type && (idx < 0 || !(actions[idx].cmd_flags & NV_KEEPREG))) {
+   if (!finish_op && !oper->opTy && (idx < 0 || !(actions[idx].cmd_flags & NV_KEEPREG))) {
       clearop(oper);
       reset_reg_var();
    }
@@ -2327,7 +2327,7 @@ normal_end:
       reset_reg_var();
 
    int prev_finish_op = finish_op;
-   if (oper->op_type == OP_NOP) {
+   if (oper->opTy == OP_NOP) {
        // Reset finish_op, in case it was set
        finish_op = FALSE;
        may_trigger_modechanged();
@@ -2339,7 +2339,7 @@ normal_end:
        ui_cursor_shape();      // may show different cursor shape
    }
 
-   if (oper->op_type == OP_NOP && oper->regname == 0 && cmdArg.cmdchar != K_CURSORHOLD)
+   if (oper->opTy == OP_NOP && oper->regname == 0 && cmdArg.cmdchar != K_CURSORHOLD)
       clear_showcmd();
 
    checkpcmark();      // check if we moved since setting pcmark
@@ -2364,7 +2364,7 @@ normal_end:
    // May restart edit(), if we got here with CTRL-O in Insert mode (but not
    // if still inside a mapping that started in Visual mode).
    // May switch from Visual to Select mode after CTRL-O action.
-   if (oper->op_type == OP_NOP
+   if (oper->opTy == OP_NOP
        && (restart_edit != 0 && !VIsual_active && old_mapped_len == 0)
        && !(cmdArg.retval & CA_COMMAND_BUSY)
        && stuff_empty()
@@ -2410,7 +2410,7 @@ callYankDoAutocmd(int regname) {
 
    clear_oparg(&oper);
    oper.regname = regname;
-   oper.op_type = OP_YANK;
+   oper.opTy = OP_YANK;
    oper.is_VIsual = TRUE;
    reg = get_register(regname, TRUE);
    yank_do_autocmd(&oper, reg);
@@ -2461,7 +2461,7 @@ void
 reset_VIsual_and_resel(void) {
    if (VIsual_active) {
       end_visual_mode();
-      redraw_curbuf_later(UPD_INVERTED);   // delete the inversion later
+      drawCurBookLater(UPD_INVERTED);   // delete the inversion later
    }
    VIsual_reselect = FALSE;
 }
@@ -2471,7 +2471,7 @@ void
 reset_VIsual(void) {
    if (VIsual_active) {
       end_visual_mode();
-      redraw_curbuf_later(UPD_INVERTED);   // delete the inversion later
+      drawCurBookLater(UPD_INVERTED);   // delete the inversion later
       VIsual_reselect = FALSE;
    }
 }
@@ -2708,7 +2708,7 @@ prep_redo_num2(
 // Check for operator active and clear it.
 private int
 checkclearop(Operator *oper) {
-   if (oper->op_type == OP_NOP)
+   if (oper->opTy == OP_NOP)
       return FALSE;
    clearopbeep(oper);
       return TRUE;
@@ -2717,7 +2717,7 @@ checkclearop(Operator *oper) {
 // Check for operator or Visual active.  Clear active operator.
 private int
 checkclearopq(Operator *oper) {
-   if (oper->op_type == OP_NOP && !VIsual_active)
+   if (oper->opTy == OP_NOP && !VIsual_active)
       return FALSE;
    clearopbeep(oper);
    return TRUE;
@@ -2725,7 +2725,7 @@ checkclearopq(Operator *oper) {
 
 void
 clearop(Operator *oper) {
-   oper->op_type = OP_NOP;
+   oper->opTy = OP_NOP;
    oper->regname = 0;
    oper->motion_force = ZERO;
    oper->use_reg_one = FALSE;
@@ -3009,7 +3009,7 @@ normPostProcessScrollbind(int check) {
 void
 check_scrollbind(LineNr topline_diff, long leftcol_diff) {
    Portal   *old_curPor = curPor;
-   Book   *old_curbuf = curBook;
+   Book   *oldCurBook = curBook;
    int      old_VIsual_active = VIsual_active;
    ColNr   tgt_leftcol = curPor->leftCol;
    long   topline;
@@ -3060,7 +3060,7 @@ check_scrollbind(LineNr topline_diff, long leftcol_diff) {
    // reset current portal
    VIsual_active = old_VIsual_active;
    curPor = old_curPor;
-   curBook = old_curbuf;
+   curBook = oldCurBook;
 }
 
 
@@ -3293,7 +3293,7 @@ normal_search(
       if (i == 2)
          aArg->oper->motion_type = MLINE;
       curPor->cursor.coladd = 0;
-      if (aArg->oper->op_type == OP_NOP && (p_fdo & FDO_SEARCH) && KeyTyped)
+      if (aArg->oper->opTy == OP_NOP && (p_fdo & FDO_SEARCH) && KeyTyped)
          foldOpenCursor();
    }
    // Redraw the portal to refresh the hilited matches.
@@ -3427,11 +3427,11 @@ private void
 nvAddSub(ActionArg* aArg) {
    if (bt_prompt(curBook) && !prompt_curpos_editable())
        clearopbeep(aArg->oper);
-   ei (!VIsual_active && aArg->oper->op_type == OP_NOP) {
+   ei (!VIsual_active && aArg->oper->opTy == OP_NOP) {
       prepareForRedo(aArg);
-      aArg->oper->op_type = aArg->cmdchar == Ctrl_A ?  OP_ADD : OP_SUB;
+      aArg->oper->opTy = aArg->cmdchar == Ctrl_A ?  OP_ADD : OP_SUB;
       op_addsub(aArg->oper, aArg->count1, aArg->arg);
-      aArg->oper->op_type = OP_NOP;
+      aArg->oper->opTy = OP_NOP;
    } ei (VIsual_active)
       nv_operator(aArg);
    else
@@ -3472,7 +3472,7 @@ nv_gd(
       return;
    }
 
-   if ((p_fdo & FDO_SEARCH) && KeyTyped && oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_SEARCH) && KeyTyped && oper->opTy == OP_NOP)
       foldOpenCursor();
    // clear any search statistics
    if (messaging() && !msg_silent && !shortmess(SHM_SEARCHCOUNT))
@@ -3671,7 +3671,7 @@ nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
           break;
       }
    }
-   aArg->oper->op_type = OP_NOP;
+   aArg->oper->opTy = OP_NOP;
    return FALSE;
 }
 
@@ -3791,20 +3791,20 @@ nv_zet(ActionArg* aArg) {
       break;
 
       // "zs" - scroll screen, cursor at the start
-    case 's':   if (!curPor->bookOpts.wrap)       {
-          if (getFolds(curPor->cursor.lnum, NULL, NULL))
-         col = 0;   // like the cursor is in col 0
-          else
-          getvcol(curPor, &curPor->cursor, &col, NULL, NULL);
-          if ((long)col > siso)
-         col -= siso;
-          else
-         col = 0;
-          if (curPor->leftCol != col)
-          {
-         curPor->leftCol = col;
-         redraw_later(UPD_NOT_VALID);
-          }
+    case 's':   
+       if (!curPor->bookOpts.wrap)       {
+         if (getFolds(curPor->cursor.lnum, NULL, NULL))
+            col = 0;   // like the cursor is in col 0
+         else
+            getvcol(curPor, &curPor->cursor, &col, NULL, NULL);
+         if ((long)col > siso)
+            col -= siso;
+         else
+            col = 0;
+         if (curPor->leftCol != col) {
+            curPor->leftCol = col;
+            redraw_later(UPD_NOT_VALID);
+         }
       }
       break;
 
@@ -3845,7 +3845,7 @@ nv_zet(ActionArg* aArg) {
          curPor->bookOpts.foldEnable = TRUE;
 
          // "zF" is like "zfzf"
-         if (nchar == 'F' && aArg->oper->op_type == OP_FOLD) {
+         if (nchar == 'F' && aArg->oper->opTy == OP_FOLD) {
             nv_operator(aArg);
             finish_op = TRUE;
          }
@@ -3900,57 +3900,64 @@ nv_zet(ActionArg* aArg) {
       // "zA": open fold at cursor recursively
     case 'A':   
       if (getFolds(curPor->cursor.lnum, NULL, NULL))
-          openFoldRecurse(curPor->cursor.lnum);
+         openFoldRecurse(curPor->cursor.lnum);
       else {
-          closeFoldRecurse(curPor->cursor.lnum);
-          curPor->bookOpts.foldEnable = TRUE;
+         closeFoldRecurse(curPor->cursor.lnum);
+         curPor->bookOpts.foldEnable = TRUE;
       }
       break;
 
       // "zo": open fold at cursor or Visual area
-    case 'o':   if (VIsual_active)
-          nv_operator(aArg);
+    case 'o':   
+      if (VIsual_active)
+         nv_operator(aArg);
       else
-          openFold(curPor->cursor.lnum, aArg->count1);
+         openFold(curPor->cursor.lnum, aArg->count1);
       break;
 
       // "zO": open fold recursively
-    case 'O':   if (VIsual_active)
-          nv_operator(aArg);
+    case 'O':   
+      if (VIsual_active)
+         nv_operator(aArg);
       else
-          openFoldRecurse(curPor->cursor.lnum);
+         openFoldRecurse(curPor->cursor.lnum);
       break;
 
       // "zc": close fold at cursor or Visual area
-    case 'c':   if (VIsual_active)
-          nv_operator(aArg);
+    case 'c':   
+      if (VIsual_active)
+         nv_operator(aArg);
       else
-          closeFold(curPor->cursor.lnum, aArg->count1);
+         closeFold(curPor->cursor.lnum, aArg->count1);
       curPor->bookOpts.foldEnable = TRUE;
       break;
 
       // "zC": close fold recursively
-    case 'C':   if (VIsual_active)
-          nv_operator(aArg);
+    case 'C':   
+      if (VIsual_active)
+         nv_operator(aArg);
       else
-          closeFoldRecurse(curPor->cursor.lnum);
+         closeFoldRecurse(curPor->cursor.lnum);
       curPor->bookOpts.foldEnable = TRUE;
       break;
 
       // "zv": open folds at the cursor
-    case 'v':   foldOpenCursor();
+    case 'v':   
+      foldOpenCursor();
       break;
 
       // "zx": re-apply 'foldlevel' and open folds at the cursor
-    case 'x':   curPor->bookOpts.foldEnable = TRUE;
-      curPor->foldNeedsRecomputation = TRUE;   // recompute folds
+    case 'x':   
+      curPor->bookOpts.foldEnable = true;
+      curPor->foldNeedsRecomputation = true;   // recompute folds
       newFoldLevel();         // update right now
       foldOpenCursor();
       break;
 
       // "zX": undo manual opens/closes, re-apply 'foldlevel'
-    case 'X':   curPor->bookOpts.foldEnable = TRUE;
-      curPor->foldNeedsRecomputation = TRUE;   // recompute folds
+    case 'X':   
+      curPor->bookOpts.foldEnable = true;
+      curPor->foldNeedsRecomputation = true;   // recompute folds
       old_fdl = -1;         // force an update
       break;
 
@@ -4026,7 +4033,7 @@ nv_colon(ActionArg* aArg) {
       return;
    }
 
-   if (aArg->oper->op_type != OP_NOP) {
+   if (aArg->oper->opTy != OP_NOP) {
       // Using ":" as a movement is characterwise exclusive.
       aArg->oper->motion_type = MCHAR;
       aArg->oper->inclusive = FALSE;
@@ -4045,7 +4052,7 @@ nv_colon(ActionArg* aArg) {
 
 
    // get a command line and execute it
-   int flags = aArg->oper->op_type != OP_NOP ? DOCMD_KEEPLINE : 0;
+   int flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
    
    int   commResult;
    if (isCmdkey)
@@ -4056,7 +4063,7 @@ nv_colon(ActionArg* aArg) {
    if (commResult == FAIL) {
       // The command failed, do not execute the operator.
       clearop(aArg->oper);
-   } ei (aArg->oper->op_type != OP_NOP
+   } ei (aArg->oper->opTy != OP_NOP
           && (aArg->oper->start.lnum > curBook->mem.lineCount
             || aArg->oper->start.col > ml_get_len(aArg->oper->start.lnum)
             || anyEmsgG)
@@ -4474,7 +4481,7 @@ nv_scroll(ActionArg* aArg) {
    }
 
    // Correct for 'so', except when an operator is pending.
-   if (aArg->oper->op_type == OP_NOP)
+   if (aArg->oper->opTy == OP_NOP)
       cursor_correct();
    beginline(BL_SOL | BL_FIX);
 }
@@ -4518,7 +4525,7 @@ nv_right(ActionArg* aArg) {
             // When deleting we also count the NL as a character.
             // Set aArg->oper->inclusive when last char in the line is
             // included, move to next line after that
-            if (      aArg->oper->op_type != OP_NOP
+            if (      aArg->oper->opTy != OP_NOP
                && !aArg->oper->inclusive
                && !LINEEMPTY(curPor->cursor.lnum))
                 aArg->oper->inclusive = TRUE;
@@ -4531,7 +4538,7 @@ nv_right(ActionArg* aArg) {
             }
             continue;
          }
-         if (aArg->oper->op_type == OP_NOP) {
+         if (aArg->oper->opTy == OP_NOP) {
             // Only beep and flush if not moved at all
             if (n == aArg->count1)
                 beep_flush();
@@ -4549,7 +4556,7 @@ nv_right(ActionArg* aArg) {
          }
       }
    }
-   if (n != aArg->count1 && (p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if (n != aArg->count1 && (p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4590,8 +4597,8 @@ nv_left(ActionArg* aArg) {
             // put the cursor on the ZERO after the previous line.
             // This is a very special case, be careful!
             // Don't adjust op_end now, otherwise it won't work.
-            if ((aArg->oper->op_type == OP_DELETE
-                   || aArg->oper->op_type == OP_CHANGE)
+            if ((aArg->oper->opTy == OP_DELETE
+                   || aArg->oper->opTy == OP_CHANGE)
                      && !LINEEMPTY(curPor->cursor.lnum)
             ){
                CS cp = ml_get_cursor();
@@ -4603,12 +4610,12 @@ nv_left(ActionArg* aArg) {
             continue;
          }
          // Only beep and flush if not moved at all
-         ei (aArg->oper->op_type == OP_NOP && n == aArg->count1)
+         ei (aArg->oper->opTy == OP_NOP && n == aArg->count1)
             beep_flush();
          break;
       }
    }
-   if (n != aArg->count1 && (p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if (n != aArg->count1 && (p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4623,7 +4630,7 @@ nv_up(ActionArg* aArg) {
    }
 
    aArg->oper->motion_type = MLINE;
-   if (cursor_up(aArg->count1, aArg->oper->op_type == OP_NOP) == FAIL)
+   if (cursor_up(aArg->count1, aArg->oper->opTy == OP_NOP) == FAIL)
       clearopbeep(aArg->oper);
    ei (aArg->arg)
       beginline(BL_WHITE | BL_FIX);
@@ -4653,7 +4660,7 @@ nv_down(ActionArg* aArg) {
       restart_edit = 'a';
    } else {
       aArg->oper->motion_type = MLINE;
-      if (cursor_down(aArg->count1, aArg->oper->op_type == OP_NOP) == FAIL)
+      if (cursor_down(aArg->count1, aArg->oper->opTy == OP_NOP) == FAIL)
          clearopbeep(aArg->oper);
       ei (aArg->arg)
          beginline(BL_WHITE | BL_FIX);
@@ -4709,11 +4716,11 @@ nv_dollar(ActionArg* aArg) {
    aArg->oper->inclusive = TRUE;
    // In virtual mode when off the edge of a line and an operator
    // is pending (whew!) keep the cursor where it is. Otherwise, send it to the end of the line.
-   if (!virtual_active() || gchar_cursor() != ZERO || aArg->oper->op_type == OP_NOP)
+   if (!virtual_active() || gchar_cursor() != ZERO || aArg->oper->opTy == OP_NOP)
       curPor->cursWant = MAXCOL;   // so we stay at the end
-   if (cursor_down((long)(aArg->count1 - 1), aArg->oper->op_type == OP_NOP) == FAIL)
+   if (cursor_down((long)(aArg->count1 - 1), aArg->oper->opTy == OP_NOP) == FAIL)
       clearopbeep(aArg->oper);
-   ei ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   ei ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4723,7 +4730,7 @@ nv_search(ActionArg* aArg) {
    Operator   *oper = aArg->oper;
    Pos   save_cursor = curPor->cursor;
 
-   if (aArg->cmdchar == '?' && aArg->oper->op_type == OP_ROT13) {
+   if (aArg->cmdchar == '?' && aArg->oper->opTy == OP_ROT13) {
       // Translate "g??" to "g?g?"
       aArg->cmdchar = 'g';
       aArg->nchar = '?';
@@ -4785,7 +4792,7 @@ nv_csearch(ActionArg* aArg) {
    curPor->setCursWant = TRUE;
    // Include a Tab for "tx" and for "dfx".
    if (gchar_cursor() == TAB && virtual_active() && aArg->arg == FORWARD
-       && (t_cmd || aArg->oper->op_type != OP_NOP)
+       && (t_cmd || aArg->oper->opTy != OP_NOP)
    ) {
       ColNr   scol, ecol;
 
@@ -4793,7 +4800,7 @@ nv_csearch(ActionArg* aArg) {
       curPor->cursor.coladd = ecol - scol;
    } else
       curPor->cursor.coladd = 0;
-   if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4901,7 +4908,7 @@ nv_bracket_block(ActionArg* aArg, Pos *old_pos) {
    setpcmark();
    curPor->cursor = *pos;
    curPor->setCursWant = TRUE;
-   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
    }
 }
@@ -4981,13 +4988,13 @@ nv_brackets(ActionArg* aArg) {
       // Imitate strange Vi behaviour: When using "]]" with an operator
       // we also stop at '}'.
       if (!findpar(&aArg->oper->inclusive, aArg->arg, aArg->count1, flag,
-            (aArg->oper->op_type != OP_NOP
+            (aArg->oper->opTy != OP_NOP
                      && aArg->arg == FORWARD && flag == '{')))
           clearopbeep(aArg->oper);
       else    {
-         if (aArg->oper->op_type == OP_NOP)
+         if (aArg->oper->opTy == OP_NOP)
              beginline(BL_WHITE | BL_FIX);
-         if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->op_type == OP_NOP)
+         if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
             foldOpenCursor();
       }
    }
@@ -5072,7 +5079,7 @@ nv_percent(ActionArg* aArg) {
          curPor->cursor.coladd = 0;
       }
    }
-   if (aArg->oper->op_type == OP_NOP
+   if (aArg->oper->opTy == OP_NOP
        && lnum != curPor->cursor.lnum
        && (p_fdo & FDO_PERCENT)
        && KeyTyped)
@@ -5096,7 +5103,7 @@ nv_brace(ActionArg* aArg) {
    // Don't leave the cursor on the ZERO past end of line.
    adjust_cursor(aArg->oper);
    curPor->cursor.coladd = 0;
-   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -5124,14 +5131,14 @@ nv_findpar(ActionArg* aArg) {
    }
 
    curPor->cursor.coladd = 0;
-   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
 // "u" command: Undo or make lower case.
 private void
 nv_undo(ActionArg* aArg) {
-   if (aArg->oper->op_type == OP_LOWER || VIsual_active) {
+   if (aArg->oper->opTy == OP_LOWER || VIsual_active) {
       // translate "<Visual>u" to "<Visual>gu" and "guu" to "gugu"
       aArg->cmdchar = 'g';
       aArg->nchar = 'u';
@@ -5372,7 +5379,7 @@ nv_gomark(ActionArg* aArg) {
       c = aArg->extra_char;
    else
       c = aArg->nchar;
-   Pos* pos = getmark(c, (aArg->oper->op_type == OP_NOP));
+   Pos* pos = getmark(c, (aArg->oper->opTy == OP_NOP));
    if (pos == (Pos *)-1) {      // jumped to other file
       if (aArg->arg) {
           check_cursor_lnum();
@@ -5387,7 +5394,7 @@ nv_gomark(ActionArg* aArg) {
    if (!virtual_active())
       curPor->cursor.coladd = 0;
    check_cursor_col();
-   if (aArg->oper->op_type == OP_NOP
+   if (aArg->oper->opTy == OP_NOP
           && pos
           && (pos == (Pos *)-1 || !EQUAL_POS(old_cursor, *pos))
           && (p_fdo & FDO_MARK)
@@ -5429,7 +5436,7 @@ nv_pcmark(ActionArg* aArg) {
           emsg(_(e_at_end_of_changelist));
    } else
       clearopbeep(aArg->oper);
-   if (aArg->oper->op_type == OP_NOP
+   if (aArg->oper->opTy == OP_NOP
          && (pos == (Pos *)-1 || lnum != curPor->cursor.lnum)
          && (p_fdo & FDO_MARK)
          && old_KeyTyped)
@@ -5460,7 +5467,7 @@ nv_visual(ActionArg* aArg) {
 
    // 'v', 'V' and CTRL-V can be used while an operator is pending to make it
    // characterwise, linewise, or blockwise.
-   if (aArg->oper->op_type != OP_NOP) {
+   if (aArg->oper->opTy != OP_NOP) {
       motion_force = aArg->oper->motion_force = aArg->cmdchar;
       finish_op = FALSE;   // operator doesn't finish now but later
       return;
@@ -5474,7 +5481,7 @@ nv_visual(ActionArg* aArg) {
          showmode();
          may_trigger_modechanged();
       }
-      redraw_curbuf_later(UPD_INVERTED);       // update the inversion
+      drawCurBookLater(UPD_INVERTED);       // update the inversion
    } else  {        // start Visual mode
       check_visual_highlight();
       if (aArg->count0 > 0 && resel_VIsual_mode != ZERO) {
@@ -5515,7 +5522,7 @@ nv_visual(ActionArg* aArg) {
             coladvance(curPor->cursWant);
          } else
             curPor->setCursWant = TRUE;
-         redraw_curbuf_later(UPD_INVERTED);   // show the inversion
+         drawCurBookLater(UPD_INVERTED);   // show the inversion
       } else {
          n_start_visual_mode(aArg->cmdchar);
          VIsual_select_exclu_adj = FALSE;
@@ -5602,7 +5609,7 @@ nv_gv_cmd(ActionArg* aArg UNUSED) {
    // Make sure the clipboard gets updated.  Needed because start and
    // end are still the same, and the selection needs to be owned
    clipboard.vmode = ZERO;
-   redraw_curbuf_later(UPD_INVERTED);
+   drawCurBookLater(UPD_INVERTED);
    showmode();
 }
 
@@ -5665,7 +5672,7 @@ gUnderscoreAction(ActionArg* aArg) {
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = TRUE;
    curPor->cursWant = MAXCOL;
-   if (cursor_down((long)(aArg->count1 - 1), aArg->oper->op_type == OP_NOP) == FAIL) {
+   if (cursor_down((long)(aArg->count1 - 1), aArg->oper->opTy == OP_NOP) == FAIL) {
       clearopbeep(aArg->oper);
       return;
    }
@@ -5830,7 +5837,7 @@ nv_g_cmd(ActionArg* aArg) {
       // with 'nowrap' it works just like the normal "j" command.
       if (!curPor->bookOpts.wrap) {
           oper->motion_type = MLINE;
-          i = cursor_down(aArg->count1, oper->op_type == OP_NOP);
+          i = cursor_down(aArg->count1, oper->opTy == OP_NOP);
       } else
          i = nv_screengo(oper, FORWARD, aArg->count1);
       if (i == FAIL)
@@ -5842,7 +5849,7 @@ nv_g_cmd(ActionArg* aArg) {
       // with 'nowrap' it works just like the normal "k" command.
       if (!curPor->bookOpts.wrap) {
           oper->motion_type = MLINE;
-          i = cursor_up(aArg->count1, oper->op_type == OP_NOP);
+          i = cursor_up(aArg->count1, oper->opTy == OP_NOP);
       } else
           i = nv_screengo(oper, BACKWARD, aArg->count1);
       if (i == FAIL)
@@ -6102,7 +6109,7 @@ nv_redo_or_register(ActionArg* aArg) {
 private void
 nv_Undo(ActionArg* aArg) {
     // In Visual mode and typing "gUU" triggers an operator
-   if (aArg->oper->op_type == OP_UPPER || VIsual_active) {
+   if (aArg->oper->opTy == OP_UPPER || VIsual_active) {
        // translate "gUU" to "gUgU"
        aArg->cmdchar = 'g';
        aArg->nchar = 'U';
@@ -6120,7 +6127,7 @@ nv_Undo(ActionArg* aArg) {
 // '~' action: If tilde is not an operator and Visual is off: swap case of a single character.
 private void
 nv_tilde(ActionArg* aArg) {
-   if (!VIsual_active && aArg->oper->op_type != OP_TILDE) {
+   if (!VIsual_active && aArg->oper->opTy != OP_TILDE) {
       if (bt_prompt(curBook) && !prompt_curpos_editable()) {
          clearopbeep(aArg->oper);
          return;
@@ -6133,20 +6140,18 @@ nv_tilde(ActionArg* aArg) {
 // Handle an operator action. The actual work is done by visualOperator().
 private void
 nv_operator(ActionArg* aArg) {
-   int op_type;
-
-   op_type = get_op_type(aArg->cmdchar, aArg->nchar);
-   if (bt_prompt(curBook) && op_is_change(op_type) && !prompt_curpos_editable()) {
+   Unt opTy = get_op_type(aArg->cmdchar, aArg->nchar);
+   if (bt_prompt(curBook) && op_is_change(opTy) && !prompt_curpos_editable()) {
       clearopbeep(aArg->oper);
       return;
    }
 
-   if (op_type == aArg->oper->op_type)       // double operator works on lines
+   if (opTy == aArg->oper->opTy)       // double operator works on lines
       a_linewiseOperator(aArg);
    ei (!checkclearop(aArg->oper)) {
       aArg->oper->start = curPor->cursor;
-      aArg->oper->op_type = op_type;
-      set_op_var(op_type);
+      aArg->oper->opTy = opTy;
+      set_op_var(opTy);
    }
 }
 
@@ -6174,15 +6179,15 @@ set_op_var(int optype) {
 void
 a_linewiseOperator(ActionArg* aArg) {
    aArg->oper->motion_type = MLINE;
-   if (cursor_down(aArg->count1 - 1L, aArg->oper->op_type == OP_NOP) == FAIL)
+   if (cursor_down(aArg->count1 - 1L, aArg->oper->opTy == OP_NOP) == FAIL)
       clearopbeep(aArg->oper);
-   ei (  (aArg->oper->op_type == OP_DELETE // only with linewise motions
+   ei (  (aArg->oper->opTy == OP_DELETE // only with linewise motions
          && aArg->oper->motion_force != 'v'
          && aArg->oper->motion_force != Ctrl_V)
-          || aArg->oper->op_type == OP_LSHIFT
-          || aArg->oper->op_type == OP_RSHIFT)
+          || aArg->oper->opTy == OP_LSHIFT
+          || aArg->oper->opTy == OP_RSHIFT)
       beginline(BL_SOL | BL_FIX);
-   ei (aArg->oper->op_type != OP_YANK)   // 'Y' does not move cursor
+   ei (aArg->oper->opTy != OP_YANK)   // 'Y' does not move cursor
       beginline(BL_WHITE | BL_FIX);
 }
 
@@ -6223,7 +6228,7 @@ nv_bck_word(ActionArg* aArg) {
    curPor->setCursWant = TRUE;
    if (bck_word(aArg->count1, aArg->arg, FALSE) == FAIL)
       clearopbeep(aArg->oper);
-   ei ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   ei ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -6243,7 +6248,7 @@ nv_wordcmd(ActionArg* aArg) {
    aArg->oper->inclusive = word_end;
 
    // "cw" and "cW" are a special case.
-   if (!word_end && aArg->oper->op_type == OP_CHANGE) {
+   if (!word_end && aArg->oper->opTy == OP_CHANGE) {
       n = gchar_cursor();
       if (n != ZERO) {        // not an empty line
          if (SPACE_OR_TAB(n)) {
@@ -6260,16 +6265,16 @@ nv_wordcmd(ActionArg* aArg) {
    if (word_end)
        n = end_word(aArg->count1, aArg->arg, flag, FALSE);
     else
-       n = fwd_word(aArg->count1, aArg->arg, aArg->oper->op_type != OP_NOP);
+       n = fwd_word(aArg->count1, aArg->arg, aArg->oper->opTy != OP_NOP);
 
    // Don't leave the cursor on the ZERO past the end of line. Unless we didn't move it forward.
    if (LT_POS(startpos, curPor->cursor))
        adjust_cursor(aArg->oper);
 
-   if (n == FAIL && aArg->oper->op_type == OP_NOP)
+   if (n == FAIL && aArg->oper->opTy == OP_NOP)
        clearopbeep(aArg->oper);
     else {
-      if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+      if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
          foldOpenCursor();
    }
 }
@@ -6281,7 +6286,7 @@ nv_beginline(ActionArg* aArg) {
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = FALSE;
    beginline(aArg->arg);
-   if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
    ins_at_eol = FALSE; // Don't move cursor past eol (only necessary in a one-character line).
 }
@@ -6307,7 +6312,7 @@ nv_goto(ActionArg* aArg) {
       lnum = curBook->mem.lineCount;
    curPor->cursor.lnum = lnum;
    beginline(BL_SOL | BL_FIX);
-   if ((p_fdo & FDO_JUMP) && KeyTyped && aArg->oper->op_type == OP_NOP)
+   if ((p_fdo & FDO_JUMP) && KeyTyped && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -6323,7 +6328,7 @@ nv_normal(ActionArg* aArg) {
          commPortResultG = Ctrl_C;
       if (VIsual_active)    {
           end_visual_mode();      // stop Visual
-          redraw_curbuf_later(UPD_INVERTED);
+          drawCurBookLater(UPD_INVERTED);
       } 
    } else 
       clearopbeep(aArg->oper);
@@ -6334,7 +6339,7 @@ private void
 nv_esc(ActionArg* aArg) {
    int      no_reason;
 
-   no_reason = (aArg->oper->op_type == OP_NOP
+   no_reason = (aArg->oper->opTy == OP_NOP
       && aArg->opcount == 0
       && aArg->count0 == 0
       && aArg->oper->regname == 0
@@ -6383,7 +6388,7 @@ nv_esc(ActionArg* aArg) {
       end_visual_mode();   // stop Visual
       check_cursor_col();   // make sure cursor is not beyond EOL
       curPor->setCursWant = TRUE;
-      redraw_curbuf_later(UPD_INVERTED);
+      drawCurBookLater(UPD_INVERTED);
    } ei (no_reason) {
    if (!aArg->arg && popup_message_win_visible())
        popup_hide_messagePort();
@@ -6411,7 +6416,7 @@ nv_edit(ActionArg* aArg) {
 
    // in Visual mode and after an operator "a" and "i" are for text objects
    ei ((aArg->cmdchar == 'a' || aArg->cmdchar == 'i')
-         && (aArg->oper->op_type != OP_NOP || VIsual_active)) {
+         && (aArg->oper->opTy != OP_NOP || VIsual_active)) {
       nv_object(aArg);
    } ei (term_in_normal_mode()) {
       clearop(aArg->oper);
@@ -6512,7 +6517,7 @@ nv_edit(ActionArg* aArg) {
 private void
 nvOpen(ActionArg* aArg) {
    // "do" is ":diffget"
-   if (aArg->oper->op_type == OP_DELETE && aArg->cmdchar == 'o') {
+   if (aArg->oper->opTy == OP_DELETE && aArg->cmdchar == 'o') {
       clearop(aArg->oper);
       nvDiffGetPut(FALSE, aArg->opcount);
    } else {
@@ -6623,7 +6628,7 @@ nv_object(ActionArg   *aArg) {
 // "q:", "q/", "q?": edit command-line in command-line portal.
 private void
 nv_record(ActionArg* aArg) {
-   if (aArg->oper->op_type == OP_FORMAT) {
+   if (aArg->oper->opTy == OP_FORMAT) {
       // "gqq" is the same as "gqgq": format line
       aArg->cmdchar = 'g';
       aArg->nchar = 'q';
@@ -6719,9 +6724,9 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
    int      flags = 0;
    int      save_fen = curPor->bookOpts.foldEnable;
 
-   if (aArg->oper->op_type != OP_NOP) {
+   if (aArg->oper->opTy != OP_NOP) {
       // "dp" is ":diffput"
-      if (aArg->oper->op_type == OP_DELETE && aArg->cmdchar == 'p') {
+      if (aArg->oper->opTy == OP_DELETE && aArg->cmdchar == 'p') {
          clearop(aArg->oper);
          nvDiffGetPut(TRUE, aArg->opcount);
       } else
@@ -6855,7 +6860,7 @@ n_swapchar(ActionArg* aArg) {
 
    startpos = curPor->cursor;
    for (n = aArg->count1; n > 0; --n) {
-      did_change |= swapchar(aArg->oper->op_type, &curPor->cursor);
+      did_change |= swapchar(aArg->oper->opTy, &curPor->cursor);
       inc_cursor();
       if (gchar_cursor() == ZERO) {
           if (firstOccurrence(p_ww, '~') != NULL
@@ -7472,11 +7477,11 @@ didChangePortalSetting(Portal *po) {
 
 // Call didChangePortalSetting() for every portal containing "buf".
 void
-didChangePortalSettingBuf(Book* buf) {
+didChangePortalSettingBuf(Book *book) {
    Tab* t;
    Portal* po;
    FOR_ALL_TAB_PORTALS(t, po) {
-      if (po->book == buf)
+      if (po->book == book)
           didChangePortalSetting(po);
    } 
 }
@@ -7543,12 +7548,12 @@ changed_line_abv_curs_win(Portal *po) {
                   |VALID_CHEIGHT|VALID_TOPLINE);
 }
 
-// Display of line has changed for "buf", invalidate cursor position and bottomLine.
+// Display of line has changed for "book", invalidate cursor position and bottomLine.
 void
-changed_line_display_buf(Book* buf) {
+normInvalidateDisplayOfChangedBookLine(Book* book) {
    Portal *po;
    FOR_ALL_PORTALS(po) {
-      if (po->book == buf)
+      if (po->book == book)
          po->cacheState &= ~(
                 VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT 
                 |VALID_TOPLINE|VALID_BOTLINE|VALID_BOTLINE_AP
@@ -9438,7 +9443,7 @@ do_check_cursorbind(void) {
    ColNr   curswant = curPor->cursWant;
    int      set_curswant = curPor->setCursWant;
    Portal   *old_curPor = curPor;
-   Book   *old_curbuf = curBook;
+   Book* oldCurBook = curBook;
    int      old_VIsual_active = VIsual_active;
 
    // loop through the cursorbound portals
@@ -9448,7 +9453,7 @@ do_check_cursorbind(void) {
       // skip original portal and portals without @cursorbind
       if (curPor != old_curPor && curPor->bookOpts.cursorBind) {
          if (curPor->bookOpts.diff)
-            curPor->cursor.lnum = diff_get_corresponding_line(old_curbuf, line);
+            curPor->cursor.lnum = diff_get_corresponding_line(oldCurBook, line);
          else
             curPor->cursor.lnum = line;
          curPor->cursor.col = col;
@@ -9478,10 +9483,10 @@ do_check_cursorbind(void) {
       }
    }
 
-    // reset current-portal
-    VIsual_active = old_VIsual_active;
-    curPor = old_curPor;
-    curBook = old_curbuf;
+   // reset current-portal
+   VIsual_active = old_VIsual_active;
+   curPor = old_curPor;
+   curBook = oldCurBook;
 }
 
 //}}}
@@ -12105,7 +12110,7 @@ opFoldRange(
        emsg(_(e_no_fold_found));
     // Force a redraw to remove the Visual highlighting.
    if (had_visual)
-       redraw_curbuf_later(UPD_INVERTED);
+       drawCurBookLater(UPD_INVERTED);
 }
 
 //Open fold for current portal at line "lnum". Repeat "count" times.
@@ -12403,7 +12408,7 @@ deleteFold(
       emsg(_(e_no_fold_found));
       // Force a redraw to remove the Visual highlighting.
       if (had_visual)
-         redraw_curbuf_later(UPD_INVERTED);
+         drawCurBookLater(UPD_INVERTED);
    }
    else
       // Deleting markers may make cursor column invalid.
@@ -12417,7 +12422,7 @@ deleteFold(
 void
 clearFolding(Portal* po) {
    deleteFoldRecurse(&po->folds);
-   po->foldNeedsRecomputation = FALSE;
+   po->foldNeedsRecomputation = false;
 }
 
 //Update folds for changes in the buffer of a portal.
@@ -12465,7 +12470,7 @@ foldUpdate(Portal *wp, LineNr top, LineNr bot) {
 //every time a setting is changed or a syntax item is added.
 void
 foldUpdateAll(Portal* po) {
-   po->foldNeedsRecomputation = TRUE;
+   po->foldNeedsRecomputation = true;
    redrawPortLater(po, UPD_NOT_VALID);
 }
 
@@ -12733,7 +12738,7 @@ checkupdate(Portal *wp) {
       return;
 
    foldUpdate(wp, (LineNr)1, (LineNr)MAXLNUM); // will update all
-   wp->foldNeedsRecomputation = FALSE;
+   wp->foldNeedsRecomputation = false;
 }
 
 //Open or close fold for current portal at line "lnum". Repeat "count" times.
@@ -13501,7 +13506,7 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
       // Need to update all folds.
       top = 1;
       bot = po->book->mem.lineCount;
-      po->foldNeedsRecomputation = FALSE;
+      po->foldNeedsRecomputation = false;
 
       // Mark all folds as maybe-small.
       setSmallMaybe(&po->folds);
@@ -14332,19 +14337,19 @@ foldMerge(Fold *fp1, ArrayList *gap, Fold *fp2) {
 private void
 foldlevelIndent(FoldLine *flp) {
    LineNr   lnum = flp->lnum + flp->off;
-   Book* buf = flp->po->book;
-   CS s = skipwhite(memGetLine(buf, lnum, FALSE));
+   Book* book = flp->po->book;
+   CS s = skipwhite(memGetLine(book, lnum, FALSE));
 
    // empty line or lines starting with a character in 'foldignore': level
    // depends on surrounding lines
    if (*s == ZERO || firstOccurrence(flp->po->bookOpts.foldIgnore, *s) != NULL) {
       // first and last line can't be undefined, use level 0
-      if (lnum == 1 || lnum == buf->mem.lineCount)
+      if (lnum == 1 || lnum == book->mem.lineCount)
          flp->lvl = 0;
       else
          flp->lvl = -1;
    } else
-      flp->lvl = get_indent_buf(buf, lnum) / get_sw_value(buf);
+      flp->lvl = get_indent_buf(book, lnum) / get_sw_value(book);
    if (flp->lvl > FOLD_NEST_MAX) {
       flp->lvl = FOLD_NEST_MAX;
    } 

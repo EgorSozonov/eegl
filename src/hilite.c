@@ -1952,7 +1952,7 @@ private int   current_line_id = 0;   // unique number for current line
 
 #define CUR_STATE(idx)   ((StateItem *)(current_state.c))[idx]
 
-private void syn_sync(Portal *wp, LineNr lnum, SyntaxState *last_valid);
+private void syn_sync(Portal *po, LineNr lnum, SyntaxState *last_valid);
 private int syn_match_linecont(LineNr lnum);
 private void syn_start_line(void);
 private void syn_update_ends(int startofline);
@@ -2033,7 +2033,7 @@ syntaxStartLine(Portal *wp, LineNr lnum) {
    int      dist;
    static Long changedtick = 0;   // remember the last change ID
 
-   // After switching buffers, invalidate current_state.
+   // After switching books, invalidate current_state.
    // Also do this when a change was made, the current state may be invalid then.
    if (synBlockS != wp->ownSyntax || synBookS != wp->book || changedtick != CHANGEDTICK(synBookS)) {
       invalidate_current_state();
@@ -3049,8 +3049,8 @@ syn_finish_line(int       syncing) {     // called for syncing
 
 //Return hilite decorations for next character. Must first call syntaxStartLine() once for the line.
 //"col" is normally 0 for the first use in a line, and increments by one each
-//time.  It's allowed to skip characters and to stop before the end of the
-//line.  But only a "col" after a previously used column is allowed.
+//time. It's allowed to skip characters and to stop before the end of the
+//line, but not going back within the line (only a "col" after a previously used column is allowed).
 Decoration
 syntGetDeco(
    ColNr col,
@@ -4503,7 +4503,7 @@ clearSubcommand(Invocation *invo, int syncing) {
           arg = skipwhite(arg_end);
       }
    }
-   redraw_curbuf_later(UPD_SOME_VALID);
+   drawCurBookLater(UPD_SOME_VALID);
    synFreeBlock(curPor->ownSyntax);      // Need to recompute all syntax.
 }
 
@@ -4539,9 +4539,9 @@ offSubcommand(Invocation *invo UNUSED, int syncing UNUSED) {
    );
    unletImpl(S"syntax_on", true);
    unletImpl(S"syntax_manual", true);
-   Book* buf;
-   FOR_ALL_BOOKS(buf) {
-      unletVarFromHashTable(S"currentSyntax", BUFF_SYN_VAR, &buf->bVars->hashTable, true);
+   Book* book;
+   FOR_ALL_BOOKS(book) {
+      unletVarFromHashTable(S"currentSyntax", BUFF_SYN_VAR, &book->bVars->hashTable, true);
    }
 }
 
@@ -5458,7 +5458,7 @@ syn_cmd_keyword(Invocation *invo, int syncing UNUSED) {
    else
       showErrFmtMsg(_(e_invalid_argument_str), arg);
 
-   redraw_curbuf_later(UPD_SOME_VALID);
+   drawCurBookLater(UPD_SOME_VALID);
    synFreeBlock(curPor->ownSyntax);      // Need to recompute all syntax.
 }
 
@@ -5532,7 +5532,7 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      // TRUE for ":syntax
          if (syn_opt_arg.flags & HL_FOLD)
             ++curPor->ownSyntax->b_syn_folditems;
 
-         redraw_curbuf_later(UPD_SOME_VALID);
+         drawCurBookLater(UPD_SOME_VALID);
          synFreeBlock(curPor->ownSyntax);   // Need to recompute all syntax.
          return;   // don't free the progs and patterns now
       }
@@ -5733,7 +5733,7 @@ syn_cmd_region(
             }
          }
 
-         redraw_curbuf_later(UPD_SOME_VALID);
+         drawCurBookLater(UPD_SOME_VALID);
          synFreeBlock(curPor->ownSyntax);   // Need to recompute all syntax.
          success = TRUE;       // don't free the progs and patterns now
       }
@@ -6001,7 +6001,7 @@ syn_cmd_cluster(Invocation *invo, int syncing UNUSED) {
       }
 
       if (got_clstr) {
-          redraw_curbuf_later(UPD_SOME_VALID);
+          drawCurBookLater(UPD_SOME_VALID);
           synFreeBlock(curPor->ownSyntax);   // Need to recompute all.
       }
    }
@@ -6219,7 +6219,7 @@ syn_cmd_sync(Invocation *invo, int syncing UNUSED) {
       showErrFmtMsg(_(e_illegal_arguments_str), arg_start);
    ei (!finished) {
       set_nextcmd(invo, arg_start);
-      redraw_curbuf_later(UPD_SOME_VALID);
+      drawCurBookLater(UPD_SOME_VALID);
       synFreeBlock(curPor->ownSyntax);   // Need to recompute all syntax.
    }
 }
@@ -6761,26 +6761,26 @@ syn_cur_foldlevel(void) {
    return level;
 }
 
-// Function called to get folding level for line "lnum" in window "wp".
+// Function called to get folding level for line "lnum" in portal "po".
 int
-syn_get_foldlevel(Portal *wp, long lnum) {
+syn_get_foldlevel(Portal *po, long lnum) {
    int level = 0;
    int low_level;
    int cur_level;
 
    // Return quickly when there are no fold items at all.
-   if (wp->ownSyntax->b_syn_folditems != 0
-       && !wp->ownSyntax->b_syn_error
+   if (po->ownSyntax->b_syn_folditems != 0
+       && !po->ownSyntax->b_syn_error
 # ifdef SYN_TIME_LIMIT
-       && !wp->ownSyntax->redrawTime
+       && !po->ownSyntax->redrawTime
 # endif
    ){
-      syntaxStartLine(wp, lnum);
+      syntaxStartLine(po, lnum);
 
       // Start with the fold level at the start of the line.
       level = syn_cur_foldlevel();
 
-      if (wp->ownSyntax->foldLevel == SYNFLD_MINIMUM) {
+      if (po->ownSyntax->foldLevel == SYNFLD_MINIMUM) {
          // Find the lowest fold level that is followed by a higher one.
          cur_level = level;
          low_level = cur_level;

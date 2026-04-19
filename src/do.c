@@ -1119,7 +1119,7 @@ do_filter(
           eeglFree(cmd_buf);
           goto error;
       }
-      redraw_curbuf_later(UPD_VALID);
+      drawCurBookLater(UPD_VALID);
    }
    read_linecount = curBook->mem.lineCount;
 
@@ -2536,7 +2536,7 @@ startEditingFile(
       update_topline();
       curPor->scbindPos = curPor->topLine;
       *so_ptr = n;
-      redraw_curbuf_later(UPD_NOT_VALID);   // redraw this buffer later
+      drawCurBookLater(UPD_NOT_VALID);   // redraw this buffer later
    }
 
 theend:
@@ -10080,7 +10080,7 @@ c_read(Invocation *invo) {
       if (!aborting())
           showErrFmtMsg(_(e_cant_open_file_str), invo->arg);
    } else {
-      redraw_curbuf_later(UPD_VALID);
+      drawCurBookLater(UPD_VALID);
    }
 }
 
@@ -10412,20 +10412,20 @@ c_operators(Invocation *invo) {
 
    switch (invo->id) {
    case C_delete:
-      oper.op_type = OP_DELETE;
+      oper.opTy = OP_DELETE;
       op_delete(&oper);
       break;
 
    case C_yank:
-      oper.op_type = OP_YANK;
+      oper.opTy = OP_YANK;
       (void)op_yank(&oper, FALSE, TRUE);
       break;
 
    default:    // C_rshift or C_lshift
       if (invo->id == C_rshift)
-         oper.op_type = OP_RSHIFT;
+         oper.opTy = OP_RSHIFT;
       else
-         oper.op_type = OP_LSHIFT;
+         oper.opTy = OP_LSHIFT;
       op_shift(&oper, FALSE, invo->amount);
       break;
    }
@@ -11031,7 +11031,7 @@ exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
    ) {
       update_topline_cursor();
       if (may_use_terminal_loop && term_use_loop()
-         && oper.op_type == OP_NOP && oper.regname == ZERO
+         && oper.opTy == OP_NOP && oper.regname == ZERO
          && !VIsual_active
       ) {
          // If terminal_loop() returns OK we got a key that is handled

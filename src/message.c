@@ -2315,7 +2315,7 @@ put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum) {
          p = copySubstr(t_s, end - t_s);
       } else
          p = t_s;
-      ml_append_buf(wp->book, lnum, p, (ColNr)0, FALSE);
+      memAppendBook(wp->book, lnum, p, (ColNr)0, FALSE);
       if (p != t_s)
          eeglFree(p);
    } else {

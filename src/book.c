@@ -4124,13 +4124,13 @@ get_winopts(Book* book) {
 
       copyPortOpt(&curPor->bookOpts, &po->bookOpts);
       curPor->foldManual = po->foldManual;
-      curPor->foldNeedsRecomputation = TRUE;
+      curPor->foldNeedsRecomputation = true;
       cloneFoldArrayList(&po->folds, &curPor->folds);
    } ei (wip && wip->isOptChanged) {
       // the book was displayed in the current portal earlier
       copyPortOpt(&curPor->bookOpts, &wip->opt);
       curPor->foldManual = wip->foldManual;
-      curPor->foldNeedsRecomputation = TRUE;
+      curPor->foldNeedsRecomputation = true;
       cloneFoldArrayList(&wip->folds, &curPor->folds);
    }
    if (wip)
@@ -4530,12 +4530,10 @@ fileinfo(
    (void)append_arg_number(curPor, buf + bufLen, IOSIZE - bufLen, !shortmess(SHM_FILE));
 
    if (dont_truncate) {
-      int   n;
-
       // Temporarily set msg_scroll to avoid the message being truncated.
       // First call msg_start() to get the message in the right place.
       msg_start();
-      n = msg_scroll;
+      int n = msg_scroll;
       msg_scroll = TRUE;
       msg(buf);
       msg_scroll = n;
@@ -4555,8 +4553,8 @@ int
 col_print(
    CS buf,
    Unt  buflen,
-   int       col,
-   int       vcol
+   int col,
+   int vcol
 ){
    if (col == vcol)
       return (int)eeSnprintfSafelen(buf, buflen, "%d", col);
@@ -6029,9 +6027,9 @@ writeBytes(BwInfo* ip) {
 //Check modification time of file, before writing to it. The size isn't checked, because using 
 //a tool like "gzip" takes care of using the same timestamp but can't set the size.
 private int
-check_mtime(Book* buf, FileStat *st) {
-   if (buf->readTime != 0
-        && time_differs(st, buf->readTime, buf->readTimeNs)
+check_mtime(Book* book, FileStat *st) {
+   if (book->readTime != 0
+        && time_differs(st, book->readTime, book->readTimeNs)
    ) {
       msg_scroll = TRUE;       // don't overwrite messages here
       msg_silent = 0;          // must give this prompt
@@ -7287,8 +7285,8 @@ alist_set(
 void
 arglistIngest(
     ErArgList   *al,
-    Byte   *fname,
-    int      set_fnum   // 1: set book number; 2: re-use curBook
+    CS fname,
+    int set_fnum   // 1: set book number; 2: re-use curBook
 ){
    if (fname == NULL)      // don't add NULL file names
       return;
@@ -8555,7 +8553,7 @@ addProp(OUT Book* book, Prop prop) {
       book->mem.flags |= ML_LINE_DIRTY;
    }
 
-   changed_line_display_buf(book);
+   normInvalidateDisplayOfChangedBookLine(book);
    changed_lines_buf(book, prop.startLnum, prop.endLnum + 1, 0);
    res = OK;
 
@@ -8812,7 +8810,7 @@ theend:
     return id;
 }
 
-//Fetch the text properties for line "lnum" in book "buf".
+//Fetch the text properties for line "lnum" in book "book".
 //Return the number of text properties and, when non-zero, a pointer to the
 //first one in "props" (note that it is not aligned, therefore the Byte pointer).
 int
@@ -9710,7 +9708,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
    }
 
    if (first_changed > 0) {
-      changed_line_display_buf(book);
+      normInvalidateDisplayOfChangedBookLine(book);
       changed_lines_buf(book, first_changed, last_changed + 1, 0);
       redraw_buf_later(book, UPD_VALID);
    }

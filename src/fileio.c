@@ -6072,7 +6072,7 @@ failed:
    if (filesize == 0)
       linecnt = 0;
    if (newfile || read_buffer) {
-      redraw_curbuf_later(UPD_NOT_VALID);
+      drawCurBookLater(UPD_NOT_VALID);
       // After reading the text into the buffer the diff info needs to be updated.
       diff_invalidate(curBook);
       // All folds in the portal are invalid now. Mark them for update before triggering autocomms

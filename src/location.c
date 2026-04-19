@@ -1907,7 +1907,7 @@ addEntry(
    Var* user_data,     // custom user data or NULL
    Boole valid      // valid entry
 ){
-   Book* buf;
+   Book* book;
    LocLine* lline;
    LocLine** lastp;   // pointer to last or NULL
    Byte   *fullname = NULL;
@@ -1916,19 +1916,19 @@ addEntry(
    if ((lline = ALLOC_ONE_ID(LocLine, aid_ll_line)) == NULL)
       return QF_FAIL;
    if (bufnum != 0) {
-      buf = bookFindFileByBookNr(bufnum);
+      book = bookFindFileByBookNr(bufnum);
 
       lline->fNum = bufnum;
-      if (buf != NULL)
-         buf->hasLocationEntry = true;
+      if (book != NULL)
+         book->hasLocationEntry = true;
    } else {
       lline->fNum = getBufNrForPath(ll, dir, fname);
-      buf = bookFindFileByBookNr(lline->fNum);
+      book = bookFindFileByBookNr(lline->fNum);
    }
    fullname = FullName_save(fname, true);
    lline->fName = NULL;
-   if (buf && buf->fullFileName && fullname) {
-      if (fnamecmp(fullname, buf->fullFileName) != 0) {
+   if (book && book->fullFileName && fullname) {
+      if (fnamecmp(fullname, book->fullFileName) != 0) {
          p = shorten_fname1(fullname);
          if (p)
             lline->fName = copyStr(p);
@@ -3084,7 +3084,7 @@ private Decoration lineDeco;
 private void
 displayListEntry(LocLine *lline, int ind, int cursel) {
    Byte   *fname;
-   Book   *buf;
+   Book   *book;
    int      filter_entry;
    ArrayList   *gap;
 
@@ -3092,9 +3092,9 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
    if (lline->moduleName != NULL && *lline->moduleName != ZERO)
       eeSnprintf(IObuff, IOSIZE, "%2d %s", ind, lline->moduleName);
    else {
-      if (lline->fNum != 0 && (buf = bookFindFileByBookNr(lline->fNum)) != NULL) {
+      if (lline->fNum != 0 && (book = bookFindFileByBookNr(lline->fNum)) != NULL) {
          if (lline->fName == NULL)
-            fname = buf->currFileName;
+            fname = book->currFileName;
          else
             fname = lline->fName;
          if (lline->kind == 1)   // :helpgrep
@@ -3869,15 +3869,13 @@ updateTitleVar(LocationStack *stack) {
 // Find the location book. If it exists, update the contents.
 private void
 updateBook(LocationStack *stack, LocLine *oldLast) {
-   Book   *buf;
    AutocommSave   aco;
-
-   // Check if a buffer for the location list exists. Update it.
-   buf = findLlBook(stack);
-   if (buf == NULL)
+   // Check if a book for the location list exists. Update it.
+   Book* book = findLlBook(stack);
+   if (book == NULL)
       return;
 
-   LineNr   old_line_count = buf->mem.lineCount;
+   LineNr   old_line_count = book->mem.lineCount;
    int      getLlPortalId = 0;
 
    Portal* port = findPortalIntoLocList(stack);
@@ -3891,17 +3889,17 @@ updateBook(LocationStack *stack, LocLine *oldLast) {
 
    int doFill = TRUE;
    if (oldLast == NULL) {
-      // set curPor/curBook to buf and save a few things
-      auCommPrepareBook(&aco, buf);
-      if (curBook != buf)
-         doFill = FALSE;  // failed to find a portal into "buf"
+      // set curPor/curBook to book and save a few things
+      auCommPrepareBook(&aco, book);
+      if (curBook != book)
+         doFill = FALSE;  // failed to find a portal into "book"
    }
 
    if (doFill) {
       updateTitleVar(stack);
 
-      fillBookWithLocList(getCurrent(stack), buf, oldLast, getLlPortalId);
-      ++CHANGEDTICK(buf);
+      fillBookWithLocList(getCurrent(stack), book, oldLast, getLlPortalId);
+      ++CHANGEDTICK(book);
 
       if (oldLast == NULL) {
           (void)updatePortalPos(stack, 0);
@@ -3914,23 +3912,23 @@ updateBook(LocationStack *stack, LocLine *oldLast) {
    // Only redraw when added lines are visible. This avoids flickering
    // when the added lines are not visible.
    if ((port = findPortalIntoLocList(stack)) != NULL && old_line_count < port->bottomLine)
-      redraw_buf_later(buf, UPD_NOT_VALID);
+      redraw_buf_later(book, UPD_NOT_VALID);
 
    // always called after incrementLlBusyness()
    decrementLlBusyness();
 }
 
-// Add an error line to the loc list buffer.
+// Add an error line to the loc list book.
 private inline int
 addLine(
-   Book      *buf,      // location portal's buffer
+   Book* book,      // location portal's book
    LineNr   lnum,
-   LocLine   *lline,
-   Arr(Byte) dirname,
-   int      first_bufline,
-   Byte      *qftf_str
+   LocLine* lline,
+   CS dirname,
+   Boole  firstBookLine,
+   CS qftf_str
 ){
-   Book* errbuf;
+   Book* errBook;
    ArrayList   *gap;
 
    gap = getTempList();
@@ -3942,23 +3940,23 @@ addLine(
       if (lline->moduleName != NULL)
           ga_concat(gap, lline->moduleName);
       ei (lline->fNum != 0
-         && (errbuf = bookFindFileByBookNr(lline->fNum)) != NULL
-         && errbuf->currFileName != NULL
+         && (errBook = bookFindFileByBookNr(lline->fNum)) != NULL
+         && errBook->currFileName != NULL
       ){
          if (lline->kind == 1)   // :helpgrep
-            ga_concat(gap, gettail(errbuf->currFileName));
+            ga_concat(gap, gettail(errBook->currFileName));
          else {
             // Shorten the file name if not done already.
             // For optimization, do this only for the first entry in a buffer.
-            if (first_bufline && (errbuf->shortFileName == NULL
-                  || mch_isFullName(errbuf->shortFileName))
+            if (firstBookLine 
+                  && (errBook->shortFileName == NULL || mch_isFullName(errBook->shortFileName))
             ){
                if (*dirname == ZERO)
                   mch_dirname(dirname, MAXPATHL);
-               shorten_buf_fname(errbuf, dirname, FALSE);
+               shorten_buf_fname(errBook, dirname, FALSE);
             }
             if (lline->fName == NULL)
-               ga_concat(gap, errbuf->currFileName);
+               ga_concat(gap, errBook->currFileName);
             else
                ga_concat(gap, lline->fName);
           }
@@ -3980,7 +3978,7 @@ addLine(
    }
 
    ga_append(gap, ZERO);
-   if (ml_append_buf(buf, lnum, gap->c, gap->len, FALSE) == FAIL)
+   if (memAppendBook(book, lnum, gap->c, gap->len, FALSE) == FAIL)
       return FAIL;
 
    return OK;
@@ -4037,9 +4035,9 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
 
 // Fill current buffer with location entries, replacing any previous contents curBook must be the 
 // location buffer! If "oldLast" is not NULL append the items after this one. When "oldLast" is 
-// NULL then "buf" must equal "curBook"! Because ml_delete() is used and autocommands will be run.
+// NULL then "book" must equal "curBook"! Because ml_delete() is used and autocommands will be run.
 private void
-fillBookWithLocList(LocationList *ll, Book *buf, LocLine *oldLast, int getLlPortalId) {
+fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPortalId) {
    LineNr   lnum;
    LocLine* lline;
    int keyTypedSave = KeyTyped;
@@ -4047,7 +4045,7 @@ fillBookWithLocList(LocationList *ll, Book *buf, LocLine *oldLast, int getLlPort
    ListItem* listItem = NULL;
 
    if (!oldLast) {
-      if (buf != curBook) {
+      if (book != curBook) {
          internal_error((CS)"fillBookWithLocList()");
          return;
       }
@@ -4090,7 +4088,7 @@ fillBookWithLocList(LocationList *ll, Book *buf, LocLine *oldLast, int getLlPort
             lline = oldLast->next;
          else
            lline = oldLast;
-         lnum = buf->mem.lineCount;
+         lnum = book->mem.lineCount;
       }
 
       locList = callLocListToText(ll, getLlPortalId, (long)(lnum + 1), (long)ll->count);
@@ -4109,7 +4107,7 @@ fillBookWithLocList(LocationList *ll, Book *buf, LocLine *oldLast, int getLlPort
                invalid_val = TRUE;
          }
 
-         if (addLine(buf, lnum, lline, dirname, prev_bufnr != lline->fNum, str) == FAIL)
+         if (addLine(book, lnum, lline, dirname, prev_bufnr != lline->fNum, str) == FAIL)
             break;
 
          prev_bufnr = lline->fNum;
@@ -4148,7 +4146,7 @@ fillBookWithLocList(LocationList *ll, Book *buf, LocLine *oldLast, int getLlPort
       --curBookLock;
 
       // make sure it will be redrawn
-      redraw_curbuf_later(UPD_NOT_VALID);
+      drawCurBookLater(UPD_NOT_VALID);
    }
 
    // Restore KeyTyped, setting 'filetype' may reset it.
@@ -5204,26 +5202,24 @@ vgr_display_fname(Byte *fname) {
 }
 
 // Load a dummy buffer to search for a pattern using vimgrep.
-private Book *
+private Book*
 vgr_load_dummy_buf(
-   Byte *fname,
-   Byte *dirname_start,
-   Byte *dirname_now)
+   CS fname,
+   CS dirname_start,
+   CS dirname_now)
 {
-   Byte   *save_ei = NULL;
-   Book   *buf;
 
    // Don't do Filetype autocommands to avoid loading syntax and
    // indent scripts, a great speed improvement.
-   save_ei = au_event_disable(S",Filetype");
+   CS save_ei = au_event_disable(S",Filetype");
 
    // Load file into a buffer, so that 'fileencoding' is detected,
    // autocommands applied, etc.
-   buf = loadDummyBook(fname, dirname_start, dirname_now);
+   Book* book = loadDummyBook(fname, dirname_start, dirname_now);
 
    au_event_restore(save_ei);
 
-   return buf;
+   return book;
 }
 
 /*
@@ -5252,34 +5248,33 @@ private int
 vgr_match_buflines(
    LocationList   *ll,
    Byte       *fname,
-   Book       *buf,
+   Book       *book,
    Byte       *spat,
    RegMultilineMatch *regmatch,
    long       *tomatch,
    int       duplicate_name,
    int       flags)
 {
-    int      found_match = FALSE;
-    long   lnum;
-    ColNr   col;
-    int      pat_len = (int)STRLEN(spat);
+   int      found_match = FALSE;
+   long   lnum;
+   ColNr   col;
+   int      pat_len = (int)STRLEN(spat);
    if (pat_len > FUZZY_MATCH_MAX_LEN)
-   pat_len = FUZZY_MATCH_MAX_LEN;
+      pat_len = FUZZY_MATCH_MAX_LEN;
 
-   for (lnum = 1; lnum <= buf->mem.lineCount && *tomatch > 0; ++lnum) {
+   for (lnum = 1; lnum <= book->mem.lineCount && *tomatch > 0; ++lnum) {
       col = 0;
       if (!(flags & VGR_FUZZY)) {
          // Regular expression match
-         while (eeRegexec_multi(regmatch, curPor, buf, lnum, col, NULL) > 0) {
-         // Pass the buffer number so that it gets used even for a
-         // dummy buffer, unless duplicate_name is set, then the
-         // buffer will be wiped out below.
+         while (eeRegexec_multi(regmatch, curPor, book, lnum, col, NULL) > 0) {
+         //Pass the book number so that it gets used even for a dummy book, unless duplicate_name 
+         //is set, then the book will be wiped out below.
          if (addEntry(ll,
                 NULL,   // dir
                 fname,
                 NULL,
-                duplicate_name ? 0 : buf->fiNum,
-                memGetLine(buf, regmatch->startpos[0].lnum + lnum, false),
+                duplicate_name ? 0 : book->fiNum,
+                memGetLine(book, regmatch->startpos[0].lnum + lnum, false),
                 regmatch->startpos[0].lnum + lnum,
                 regmatch->endpos[0].lnum + lnum,
                 regmatch->startpos[0].col + 1,
@@ -5301,12 +5296,12 @@ vgr_match_buflines(
          if ((flags & VGR_GLOBAL) == 0 || regmatch->endpos[0].lnum > 0)
             break;
          col = regmatch->endpos[0].col + (col == regmatch->endpos[0].col);
-         if (col > memGetBookLen(buf, lnum))
+         if (col > memGetBookLen(book, lnum))
             break;
          }
       } else {
-         Byte  *str = memGetLine(buf, lnum, false);
-         ColNr linelen = memGetBookLen(buf, lnum);
+         Byte  *str = memGetLine(book, lnum, false);
+         ColNr linelen = memGetBookLen(book, lnum);
          int       score;
          Unt   matches[FUZZY_MATCH_MAX_LEN];
          Unt   sz = ARRAY_LENGTH(matches);
@@ -5314,14 +5309,13 @@ vgr_match_buflines(
          // Fuzzy string match
          CLEAR_FIELD(matches);
          while (fuzzy_match(str + col, spat, FALSE, &score, matches, sz) > 0) {
-            // Pass the buffer number so that it gets used even for a
-            // dummy buffer, unless duplicate_name is set, then the
-            // buffer will be wiped out below.
+            //Pass the book number so that it gets used even for a dummy book, unless 
+            //duplicate_name is set, then the book will be wiped out below.
             if (addEntry(ll,
                    NULL,   // dir
                    fname,
                    NULL,
-                   duplicate_name ? 0 : buf->fiNum,
+                   duplicate_name ? 0 : book->fiNum,
                    str,
                    lnum,
                    0,
@@ -5364,14 +5358,13 @@ jumpToFirstMatchAndUpdateDir(
    OUT Book* first_match_buf,
    CS target_dir
 ){
-   Book* buf = curBook;
+   Book* book = curBook;
    llJump(stack, 0, 0, forceit);
-   if (buf != curBook)
-      // If we jumped to another buffer redrawing will already be
-      // taken care of.
+   if (book != curBook)
+      // If we jumped to another book redrawing will already be taken care of.
       *redraw_for_dummy = FALSE;
 
-    // Jump to the directory used after loading the buffer.
+   // Jump to the directory used after loading the book.
    if (curBook == first_match_buf && target_dir != NULL) {
       Invocation ea;
 
@@ -5427,11 +5420,11 @@ vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
    return OK;
 }
 
-// Return TRUE if "buf" had an existing swap file, the current swap file does not end in ".swp".
+// Return TRUE if "book" had an existing swap file, the current swap file does not end in ".swp".
 private int
-existing_swapfile(Book *buf) {
-   if (buf->mem.mfile != NULL && buf->mem.mfile->fName != NULL) {
-      Byte *fname = buf->mem.mfile->fName;
+existing_swapfile(Book* book) {
+   if (book->mem.mfile != NULL && book->mem.mfile->fName != NULL) {
+      Byte *fname = book->mem.mfile->fName;
       Unt len = STRLEN(fname);
       return fname[len - 1] != 'p' || fname[len - 2] != 'w';
    }
@@ -5466,77 +5459,76 @@ elckGrepFiles(
          vgr_display_fname(fname);
       }
 
-      Book* buf = buflistFindByNameExpandingLinks(invos->fnames[fi]);
+      Book* book = buflistFindByNameExpandingLinks(invos->fnames[fi]);
       int using_dummy;
-      if (!buf || buf->mem.mfile == NULL) {
-         // Remember that a buffer with this name already exists.
-         duplicate_name = (buf != NULL);
+      if (!book || book->mem.mfile == NULL) {
+         //Remember that a book with this name already exists.
+         duplicate_name = (book != NULL);
          using_dummy = TRUE;
          *redraw_for_dummy = TRUE;
-         buf = vgr_load_dummy_buf(fname, dirnameStart, dirnameNow);
+         book = vgr_load_dummy_buf(fname, dirnameStart, dirnameNow);
       } else
-         // Use existing, loaded buffer.
+         // Use existing, loaded book.
          using_dummy = FALSE;
 
       //Check whether the location list is still valid. When loading a
-      //buffer above, autocommands might have changed the location list.
+      //book above, autocommands might have changed the location list.
       if (!vgr_isIdValid(stack, idSave, invos->title))
          goto theend;
 
       idSave = getCurrent(stack)->id;
 
-      if (buf == NULL) {
+      if (book == NULL) {
          if (!gotInterruptG)
             smsg(_("Cannot open file \"%s\""), fname);
       } else {
-         //Try for a match in all lines of the buffer.
+         //Try for a match in all lines of the book.
          //For ":1vimgrep" look for first match only.
          int found_match = vgr_match_buflines(getCurrent(stack),
-             fname, buf, invos->spat, &invos->regmatch,
+             fname, book, invos->spat, &invos->regmatch,
              &invos->tomatch, duplicate_name, invos->flags);
 
          if (using_dummy) {
             if (found_match && *first_match_buf == NULL)
-               *first_match_buf = buf;
+               *first_match_buf = book;
             if (duplicate_name) {
-               //Never keep a dummy buffer if there is another buffer with the same name.
-               wipeDummyBook(buf, dirnameStart);
-               buf = NULL;
+               //Never keep a dummy buffer if there is another book with the same name.
+               wipeDummyBook(book, dirnameStart);
+               book = NULL;
             } ei ((commModifierG.cmod_flags & CMOD_HIDE) == 0){
-               //When no match was found we don't need to remember the buffer, wipe it out. If 
+               //When no match was found we don't need to remember the book, wipe it out. If 
                //there was a match and it wasn't the first one or we won't jump there: only unload
                //the buffer. Ignore 'hidden' here, because it may lead to having too many swap files
                if (!found_match) {
-                  wipeDummyBook(buf, dirnameStart);
-                  buf = NULL;
-               } ei (buf != *first_match_buf
+                  wipeDummyBook(book, dirnameStart);
+                  book = NULL;
+               } ei (book != *first_match_buf
                      || (invos->flags & VGR_NOJUMP)
-                     || existing_swapfile(buf)
+                     || existing_swapfile(book)
                ) {
-                  unloadDummyBook(buf, dirnameStart);
-                  // Keeping the buffer, remove the dummy flag.
-                  buf->flags &= ~BF_DUMMY;
-                  buf = NULL;
+                  unloadDummyBook(book, dirnameStart);
+                  // Keeping the book, remove the dummy flag.
+                  book->flags &= ~BF_DUMMY;
+                  book = NULL;
                }
             }
 
-            if (buf) {
+            if (book) {
                // Keeping the buffer, remove the dummy flag.
-               buf->flags &= ~BF_DUMMY;
+               book->flags &= ~BF_DUMMY;
 
-               // If the buffer is still loaded we need to use the
-               // directory we jumped to below.
-               if (buf == *first_match_buf
+               // If the buffer is still loaded we need to use the directory we jumped to below.
+               if (book == *first_match_buf
                       && *target_dir == NULL
                       && STRCMP(dirnameStart, dirnameNow) != 0)
                   *target_dir = copyStr(dirnameNow);
 
-               // The buffer is still loaded, the Filetype autocommands need to be done now, in 
-               // that buffer. need to be done (again). But not the portal-local options!
+               // The book is still loaded, the Filetype autocommands need to be done now, in 
+               // that book. need to be done (again). But not the portal-local options!
                AutocommSave   aco;
-               auCommPrepareBook(&aco, buf);
-               if (curBook == buf) {
-                  apply_autocmds(EVENT_FILETYPE, buf->fileType, buf->currFileName, true, buf);
+               auCommPrepareBook(&aco, book);
+               if (curBook == book) {
+                  apply_autocmds(EVENT_FILETYPE, book->fileType, book->currFileName, true, book);
                   auCommRestoreBook(&aco);
                }
             }
@@ -5688,7 +5680,7 @@ loadDummyBook(
       // Make sure this book isn't wiped out by autocommands.
       ++newbuf->locked;
 
-      // set curPor/curBook to buf and save a few things
+      // set curPor/curBook to book and save a few things
       auCommPrepareBook(&aco, newbuf);
       if (curBook == newbuf) {
          // Need to set the filename for autocommands.
@@ -5751,16 +5743,16 @@ loadDummyBook(
 //directory to "dirname_start" if not NULL prior to returning, if autocmds or
 //the 'autochdir' option have changed it.
 private void
-wipeDummyBook(Book *buf, Byte *dirname_start) {
+wipeDummyBook(Book* book, Byte *dirname_start) {
    // If any autocommand opened a portal into the dummy book, close that portal.  
    // If we can't close them all then give up.
-   while (buf->countPortals > 0) {
+   while (book->countPortals > 0) {
       int       did_one = FALSE;
       Portal       *wp;
 
       if (firstPor->next != NULL)
          FOR_ALL_PORTALS(wp)
-         if (wp->book == buf) {
+         if (wp->book == book) {
              if (closePortal(wp, FALSE) == OK)
             did_one = TRUE;
              break;
@@ -5769,7 +5761,7 @@ wipeDummyBook(Book *buf, Byte *dirname_start) {
           goto fail;
     }
 
-   if (curBook != buf && buf->countPortals == 0) {  // safety check
+   if (curBook != book && book->countPortals == 0) {  // safety check
       Cleanup   cs;
 
       // Reset the error/interrupt/exception state here so that aborting()
@@ -5777,7 +5769,7 @@ wipeDummyBook(Book *buf, Byte *dirname_start) {
       // work when gotInterruptG is set.
       enter_cleanup(&cs);
 
-      bookWipe(buf, TRUE);
+      bookWipe(book, TRUE);
 
       // Restore the error/interrupt/exception state if not discarded by a
       // new aborting error, interrupt, or uncaught exception.
@@ -5791,7 +5783,7 @@ wipeDummyBook(Book *buf, Byte *dirname_start) {
 
 fail:
     // Keeping the book, remove the dummy flag.
-    buf->flags &= ~BF_DUMMY;
+    book->flags &= ~BF_DUMMY;
 }
 
 //Unload the dummy book that loadDummyBook() created. Restores
@@ -6813,37 +6805,37 @@ processCbookArgs(
    LineNr* line1,
    LineNr* line2
 ){
-   Book* buf = NULL;
+   Book* book = NULL;
 
    if (*invo->arg == ZERO)
-      buf = curBook;
+      book = curBook;
    ei (*skipwhite(skipdigits(invo->arg)) == ZERO)
-      buf = bookFindFileByBookNr(atoi((char *)invo->arg));
+      book = bookFindFileByBookNr(atoi((char *)invo->arg));
 
-   if (buf == NULL) {
+   if (book == NULL) {
       emsg(_(e_invalid_argument));
       return FAIL;
    }
 
-   if (buf->mem.mfile == NULL) {
+   if (book->mem.mfile == NULL) {
       emsg(_(e_buffer_is_not_loaded));
       return FAIL;
    }
 
    if (invo->addr_count == 0) {
       invo->line1 = 1;
-      invo->line2 = buf->mem.lineCount;
+      invo->line2 = book->mem.lineCount;
    }
 
-   if (invo->line1 < 1 || invo->line1 > buf->mem.lineCount
-       || invo->line2 < 1 || invo->line2 > buf->mem.lineCount) {
+   if (invo->line1 < 1 || invo->line1 > book->mem.lineCount
+       || invo->line2 < 1 || invo->line2 > book->mem.lineCount) {
       emsg(_(e_invalid_range));
       return FAIL;
    }
 
    *line1 = invo->line1;
    *line2 = invo->line2;
-   *bufp = buf;
+   *bufp = book;
 
    return OK;
 }

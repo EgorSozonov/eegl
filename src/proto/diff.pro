@@ -29,11 +29,10 @@ void nvDiffGetPut(int put, long count);
 void c_diffgetput(Invocation *invo);
 Boole diffIsBookInDiffMode(Book *book);
 int diff_move_to(int dir, long count);
-LineNr diff_get_corresponding_line(Book *buf1, LineNr lnum1);
+LineNr diff_get_corresponding_line(Book *book1, LineNr lnum1);
 LineNr diff_lnum_win(LineNr lnum, Portal *wp);
 void f_diff_filler(Var *argvars, Var *returnVar);
 void f_diff_hlID(Var *argvars, Var *returnVar);
 void f_diff(Var *argvars, Var *returnVar);
-int xdl_num_out(char *out, long val);
 void *xdl_alloc_grow_helper(void *p, long nr, long *alloc, Unt size);
 /* eegl: set ft=c : */

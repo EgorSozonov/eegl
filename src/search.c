@@ -2187,7 +2187,7 @@ current_search(
    // Make sure the clipboard gets updated.  Needed because start and
    // end are still the same, and the selection needs to be owned
    clipboard.vmode = ZERO;
-   redraw_curbuf_later(UPD_INVERTED);
+   drawCurBookLater(UPD_INVERTED);
    showmode();
 
    return OK;

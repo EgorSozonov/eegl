@@ -1835,7 +1835,7 @@ ml_recover(int checkext) {
       msg_puts(S"\n\n");
       commlineRowG = msgRowG;
    }
-   redraw_curbuf_later(UPD_NOT_VALID);
+   drawCurBookLater(UPD_NOT_VALID);
 
 theend:
    eeglFree(fname_used);
@@ -2510,7 +2510,7 @@ errorret:
             // Avoid giving this message for a recursive call, may happen
             // when the UI redraws part of the text.
             ++recursive;
-            get_trans_bufname(book);
+            drawGetTranslatedBookName(book);
             shorten_dir(NameBuff);
             internalErrFmtMsg(
                e_ml_get_cannot_find_line_nr_in_buffer_nr_str, lnum, book->fiNum, NameBuff
@@ -3112,7 +3112,7 @@ ml_append_flags(
 //Like ml_append() but for an arbitrary book. The buffer must already have a memline.
 //"newfile": TRUE when starting to edit a new file, meaning that oldLnum will be set for recovery.
 int
-ml_append_buf(
+memAppendBook(
    Book* book,
    LineNr lnum,  // append after this line (can be 0)
    CS line,      // text of the new line

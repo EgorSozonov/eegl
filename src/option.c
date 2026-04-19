@@ -435,7 +435,6 @@ setDefault(
             o, o->defaultValue.string, setScope, 0
          );
       } else {
-         free_string_option(*ref.string);
          *ref.string = o->defaultValue.string;
       }
    } ei (o->defaultValue.tag == OPTION_NUM) {
@@ -1159,7 +1158,7 @@ check_redraw(Unt flags) {
          didChangePortalSettingCurPor();
    }
    if (flags & P_RBUF)
-      redraw_curbuf_later(UPD_NOT_VALID);
+      drawCurBookLater(UPD_NOT_VALID);
    if (doclear)
       redraw_all_later(UPD_CLEAR);
    ei (all)

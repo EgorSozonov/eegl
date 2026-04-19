@@ -5161,7 +5161,7 @@ struct Portal { //:Portal
 
    ArrayList folds;  // array of nested folds
    Bool foldManual; // when TRUE: some folds are opened/closed manually
-   char foldNeedsRecomputation; // when TRUE: folding needs to be recomputed
+   Boole foldNeedsRecomputation; // when TRUE: folding needs to be recomputed
    int numberColWidth;      // width of 'number' and 'relativenumber' column being used
    TermCellColor termHiliteGroupName;    // cache for term color of a portal's "hiliteGroupName"
 ///////////////////////////////////////////////////////////////////
@@ -5201,16 +5201,16 @@ struct Portal { //:Portal
 
    // The prev_pcmark field is used to check whether we really did jump to
    // a new line after setting the w_pcmark.  If not, then we revert to using the previous w_pcmark.
-   Pos   prevContextMark;   // previous context mark
-   Pos   prevPrevContextMark;   // previous w_pcmark
+   Pos prevContextMark;   // previous context mark
+   Pos prevPrevContextMark;   // previous w_pcmark
 
    // the jumplist contains old cursor positions
    FileMarkExt   jumpList[JUMPLISTSIZE];
-   int      jumpListLen;      // number of active entries
-   int      jumpListInd;      // current position
-   int      changeListInd;   // current position in b_changelist
+   int jumpListLen;      // number of active entries
+   int jumpListInd;      // current position
+   int changeListInd;   // current position in b_changelist
    MatchItem* firstMatch;      // head of match list
-   int      nextMatchId;   // next match ID
+   int nextMatchId;   // next match ID
 
    // the tagstack grows from 0 upwards:
    // entry 0: older
@@ -5237,7 +5237,7 @@ struct Portal { //:Portal
 
 // Arguments for operators.
 typedef struct Operator {
-   int op_type;   // current pending operator type
+   Unt opTy;   // current pending operator type
    int regname;   // register to use for the operator
    int motion_type;   // type of the current cursor motion
    int motion_force;   // force motion type: 'v', 'V' or CTRL-V
@@ -5272,7 +5272,7 @@ typedef struct {
    long count1;    //count before command, default 1
    int arg;        //extra argument from actions[]
    int retval;     //return: CA_* values
-   Byte* searchbuf;//return: pointer to search pattern or NULL
+   CS searchbuf;//return: pointer to search pattern or NULL
 } ActionArg;
 
 //}}}

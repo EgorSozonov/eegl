@@ -669,7 +669,7 @@ deleted_lines_mark(LineNr lnum, long count) {
 }
 
 //Mark the area to be redrawn after a change.
-//Consider also calling changed_line_display_buf().
+//Consider also calling normInvalidateDisplayOfChangedBookLine().
 void
 changed_lines_buf(
    Book   *book,
@@ -1833,7 +1833,7 @@ del_lines(long nlines,   int undo) {
 
 private void shift_block(Operator *oper, int amount);
 private void   mb_adjust_opend(Operator *oper);
-private int   do_addsub(int op_type, Pos *pos, int length, LineNr Prenum1);
+private int   do_addsub(int opTy, Pos *pos, int length, LineNr Prenum1);
 private void   pbyte(Pos lp, int c);
 #define PBYTE(lp, c) pbyte(lp, c)
 
@@ -1845,9 +1845,9 @@ private void   pbyte(Pos lp, int c);
 // The names of operators.
 // IMPORTANT: Index must correspond with defines in eegl.h!!! The third field holds OPF_ flags.
 private Byte opchars[][3] = {
-   {ZERO, ZERO, 0},         // OP_NOP
+   {ZERO, ZERO, 0},              // OP_NOP
    {'d', ZERO, OPF_CHANGE},      // OP_DELETE
-   {'y', ZERO, 0},         // OP_YANK
+   {'y', ZERO, 0},               // OP_YANK
    {'c', ZERO, OPF_CHANGE},      // OP_CHANGE
    {'<', ZERO, OPF_LINES | OPF_CHANGE},   // OP_LSHIFT
    {'>', ZERO, OPF_LINES | OPF_CHANGE},   // OP_RSHIFT
@@ -1860,28 +1860,26 @@ private Byte opchars[][3] = {
    {'g', 'u', OPF_CHANGE},      // OP_LOWER
    {'J', ZERO, OPF_LINES | OPF_CHANGE},   // DO_JOIN
    {'g', 'J', OPF_LINES | OPF_CHANGE},   // DO_JOIN_NS
-   {'g', '?', OPF_CHANGE},      // OP_ROT13
+   {'g', '?', OPF_CHANGE},       // OP_ROT13
    {'r', ZERO, OPF_CHANGE},      // OP_REPLACE
    {'I', ZERO, OPF_CHANGE},      // OP_INSERT
    {'A', ZERO, OPF_CHANGE},      // OP_APPEND
-   {'z', 'f', OPF_LINES},      // OP_FOLD
-   {'z', 'o', OPF_LINES},      // OP_FOLDOPEN
-   {'z', 'O', OPF_LINES},      // OP_FOLDOPENREC
-   {'z', 'c', OPF_LINES},      // OP_FOLDCLOSE
-   {'z', 'C', OPF_LINES},      // OP_FOLDCLOSEREC
-   {'z', 'd', OPF_LINES},      // OP_FOLDDEL
-   {'z', 'D', OPF_LINES},      // OP_FOLDDELREC
+   {'z', 'f', OPF_LINES},        // OP_FOLD
+   {'z', 'o', OPF_LINES},        // OP_FOLDOPEN
+   {'z', 'O', OPF_LINES},        // OP_FOLDOPENREC
+   {'z', 'c', OPF_LINES},        // OP_FOLDCLOSE
+   {'z', 'C', OPF_LINES},        // OP_FOLDCLOSEREC
+   {'z', 'd', OPF_LINES},        // OP_FOLDDEL
+   {'z', 'D', OPF_LINES},        // OP_FOLDDELREC
    {'g', 'w', OPF_LINES | OPF_CHANGE},   // OP_FORMAT2
-   {'g', '@', OPF_CHANGE},      // OP_FUNCTION
-   {Ctrl_A, ZERO, OPF_CHANGE},      // OP_ADD
-   {Ctrl_X, ZERO, OPF_CHANGE},      // OP_SUB
+   {'g', '@', OPF_CHANGE},       // OP_FUNCTION
+   {Ctrl_A, ZERO, OPF_CHANGE},   // OP_ADD
+   {Ctrl_X, ZERO, OPF_CHANGE}    // OP_SUB
 };
 
 // Translate an action name into an operator type. Must only be called with a valid operator name!
-int
-get_op_type(int char1, int char2) {
-   int i;
-
+Unt
+get_op_type(Unt char1, Unt char2) {
    if (char1 == 'r')      // ignore second character
       return OP_REPLACE;
    if (char1 == '~')      // when tilde is an operator
@@ -1892,6 +1890,8 @@ get_op_type(int char1, int char2) {
       return OP_SUB;
    if (char1 == 'z' && char2 == 'y')   // OP_YANK
       return OP_YANK;
+      
+   Unt i;
    for (i = 0; ; ++i) {
       if (opchars[i][0] == char1 && opchars[i][1] == char2)
          break;
@@ -1946,7 +1946,7 @@ op_shift(Operator *oper, int curs_top, int amount) {
       ei (first_char != '#' || !preprocs_left())
          // Move the line right if it doesn't start with '#', 'smartindent'
          // isn't set or 'cindent' isn't set or '#' isn't in 'cino'.
-         shift_line(oper->op_type == OP_LSHIFT, TRUE, amount, FALSE);
+         shift_line(oper->opTy == OP_LSHIFT, TRUE, amount, FALSE);
       ++curPor->cursor.lnum;
    }
 
@@ -1963,7 +1963,7 @@ op_shift(Operator *oper, int curs_top, int amount) {
    // The cursor line is not in a closed fold
    foldOpenCursor();
 
-   CS op = (oper->op_type == OP_RSHIFT) ? S">" : S"<";
+   CS op = (oper->opTy == OP_RSHIFT) ? S">" : S"<";
    CS msg_line_single = NGETTEXT("%ld line %sed %d time", "%ld line %sed %d times", amount);
    CS msg_line_plural = NGETTEXT("%ld lines %sed %d time", "%ld lines %sed %d times", amount);
    eeSnprintf(IObuff, IOSIZE,
@@ -2000,9 +2000,9 @@ get_new_sw_indent(
       if (left) {
          i -= amount;
          if (i < 0)
-         i = 0;
+            i = 0;
       } else
-          i += amount;
+         i += amount;
       count = i * sw_val;
    } else {        // original vi indent
       if (left) {
@@ -2042,10 +2042,10 @@ shift_line(
 //Leave cursor on first character in block.
 private void
 shift_block(Operator *oper, int amount) {
-   int         left = (oper->op_type == OP_LSHIFT);
+   int         left = (oper->opTy == OP_LSHIFT);
    int         oldstate = stateG;
    int         total;
-   Byte      *newp, *oldp;
+   CS      newp;
    Unt      newlen, oldlen;
    int         oldcol = curPor->cursor.col;
    int         sw_val = (int)get_sw_value_indent(curBook, left);
@@ -2065,7 +2065,7 @@ shift_block(Operator *oper, int amount) {
    if ((total / sw_val) != amount)
       return; // multiplication overflow
 
-    oldp = ml_get_curline();
+    CS oldp = ml_get_curline();
     oldlen = ml_get_curline_len();
 
    if (!left) {
@@ -2119,100 +2119,99 @@ shift_block(Operator *oper, int amount) {
       memset(newp + newlen, ' ', (Unt)spaces);
       STRCPY(newp + newlen + spaces, bd.textstart);
    } else {// left
-   ColNr       destination_col;   // column to which text in block will
-               // be shifted
-   Byte       *verbatim_copy_end;   // end of the part of the line which is
-               // copied verbatim
-   ColNr       verbatim_copy_width;// the (displayed) width of this part
-               // of line
-   Unt       fill;      // nr of spaces that replace a TAB
-   Unt       block_space_width;
-   Unt       shift_amount;
-   Byte       *non_white = bd.textstart;
-   ColNr       non_white_col;
-   Unt       fixedlen;      // length of string left of the shift
-               // position (ie the string not being shifted)
-   CharTableSize cts;
+      ColNr       destination_col;   // column to which text in block will
+                  // be shifted
+      Byte       *verbatim_copy_end;   // end of the part of the line which is
+                  // copied verbatim
+      ColNr       verbatim_copy_width;// the (displayed) width of this part
+                  // of line
+      Unt       fill;      // nr of spaces that replace a TAB
+      Unt       block_space_width;
+      Unt       shift_amount;
+      Byte       *non_white = bd.textstart;
+      ColNr       non_white_col;
+      Unt       fixedlen;      // length of string left of the shift
+                  // position (ie the string not being shifted)
+      CharTableSize cts;
 
-   /*
-    * Firstly, let's find the first non-whitespace character that is
-    * displayed after the block's start column and the character's column
-    * number. Also, let's calculate the width of all the whitespace
-    * characters that are displayed in the block and precede the searched
-    * non-whitespace character.
-    */
+      /*
+       * Firstly, let's find the first non-whitespace character that is
+       * displayed after the block's start column and the character's column
+       * number. Also, let's calculate the width of all the whitespace
+       * characters that are displayed in the block and precede the searched
+       * non-whitespace character.
+       */
 
-   // If "bd.startspaces" is set, "bd.textstart" points to the character,
-   // the part of which is displayed at the block's beginning. Let's start
-   // searching from the next character.
-   if (bd.startspaces)
-       MB_PTR_ADV(non_white);
+      // If "bd.startspaces" is set, "bd.textstart" points to the character,
+      // the part of which is displayed at the block's beginning. Let's start
+      // searching from the next character.
+      if (bd.startspaces)
+          MB_PTR_ADV(non_white);
 
-   // The character's column is in "bd.start_vcol".
-   non_white_col = bd.start_vcol;
+      // The character's column is in "bd.start_vcol".
+      non_white_col = bd.start_vcol;
 
-   init_chartabsize_arg(&cts, curPor, curPor->cursor.lnum,
-               non_white_col, bd.textstart, non_white);
-   while (SPACE_OR_TAB(*cts.cts_ptr)) {
-      incr = lbr_chartabsize_adv(&cts);
-      cts.cts_vcol += incr;
-   }
-   non_white_col = cts.cts_vcol;
-   non_white = cts.cts_ptr;
-   clear_chartabsize_arg(&cts);
+      init_chartabsize_arg(&cts, curPor, curPor->cursor.lnum,
+                  non_white_col, bd.textstart, non_white);
+      while (SPACE_OR_TAB(*cts.cts_ptr)) {
+         incr = lbr_chartabsize_adv(&cts);
+         cts.cts_vcol += incr;
+      }
+      non_white_col = cts.cts_vcol;
+      non_white = cts.cts_ptr;
+      clear_chartabsize_arg(&cts);
 
-   block_space_width = non_white_col - oper->start_vcol;
-   // We will shift by "total" or "block_space_width", whichever is less.
-   shift_amount = (block_space_width < (Unt)total ? block_space_width : (Unt)total);
+      block_space_width = non_white_col - oper->start_vcol;
+      // We will shift by "total" or "block_space_width", whichever is less.
+      shift_amount = (block_space_width < (Unt)total ? block_space_width : (Unt)total);
 
-   // The column to which we will shift the text.
-   destination_col = (ColNr)(non_white_col - shift_amount);
+      // The column to which we will shift the text.
+      destination_col = (ColNr)(non_white_col - shift_amount);
 
-   // Now let's find out how much of the beginning of the line we can
-   // reuse without modification.
-   verbatim_copy_end = bd.textstart;
-   verbatim_copy_width = bd.start_vcol;
+      // Now let's find out how much of the beginning of the line we can
+      // reuse without modification.
+      verbatim_copy_end = bd.textstart;
+      verbatim_copy_width = bd.start_vcol;
 
-   // If "bd.startspaces" is set, "bd.textstart" points to the character
-   // preceding the block. We have to subtract its width to obtain its column number.
-   if (bd.startspaces)
-       verbatim_copy_width -= bd.start_char_vcols;
-   init_chartabsize_arg(&cts, curPor, 0, verbatim_copy_width, bd.textstart, verbatim_copy_end);
-   while (cts.cts_vcol < destination_col) {
-      incr = lbr_chartabsize(&cts);
-      if (cts.cts_vcol + incr > destination_col)
-         break;
-      cts.cts_vcol += incr;
-      MB_PTR_ADV(cts.cts_ptr);
-   }
-   verbatim_copy_width = cts.cts_vcol;
-   verbatim_copy_end = cts.cts_ptr;
-   clear_chartabsize_arg(&cts);
+      // If "bd.startspaces" is set, "bd.textstart" points to the character
+      // preceding the block. We have to subtract its width to obtain its column number.
+      if (bd.startspaces)
+          verbatim_copy_width -= bd.start_char_vcols;
+      init_chartabsize_arg(&cts, curPor, 0, verbatim_copy_width, bd.textstart, verbatim_copy_end);
+      while (cts.cts_vcol < destination_col) {
+         incr = lbr_chartabsize(&cts);
+         if (cts.cts_vcol + incr > destination_col)
+            break;
+         cts.cts_vcol += incr;
+         MB_PTR_ADV(cts.cts_ptr);
+      }
+      verbatim_copy_width = cts.cts_vcol;
+      verbatim_copy_end = cts.cts_ptr;
+      clear_chartabsize_arg(&cts);
 
-   // If "destination_col" is different from the width of the initial
-   // part of the line that will be copied, it means we encountered a tab
-   // character, which we will have to partly replace with spaces.
-   fill = destination_col - verbatim_copy_width;
+      // If "destination_col" is different from the width of the initial
+      // part of the line that will be copied, it means we encountered a tab
+      // character, which we will have to partly replace with spaces.
+      fill = destination_col - verbatim_copy_width;
 
-   // The replacement line will consist of:
-   // - the beginning of the original line up to "verbatim_copy_end",
-   // - "fill" number of spaces,
-   // - the rest of the line, pointed to by non_white.
-   fixedlen = verbatim_copy_end - oldp;
-   new_line_len = fixedlen + fill + (oldlen - (non_white - oldp));
+      // The replacement line will consist of:
+      // - the beginning of the original line up to "verbatim_copy_end",
+      // - "fill" number of spaces,
+      // - the rest of the line, pointed to by non_white.
+      fixedlen = verbatim_copy_end - oldp;
+      new_line_len = fixedlen + fill + (oldlen - (non_white - oldp));
 
-   newp = alloc(new_line_len + 1);
-   mch_memmove(newp, oldp, fixedlen);
-   newlen = fixedlen;
-   memset(newp + newlen, ' ', (Unt)fill);
-   STRCPY(newp + newlen + fill, non_white);
+      newp = alloc(new_line_len + 1);
+      mch_memmove(newp, oldp, fixedlen);
+      newlen = fixedlen;
+      memset(newp + newlen, ' ', (Unt)fill);
+      STRCPY(newp + newlen + fill, non_white);
    }
    // replace the line
    ml_replace(curPor->cursor.lnum, newp, FALSE);
 
-   // compute the number of bytes added or subtracted.
-   // note new_line_len and oldlen are unsigned so we have
-   // to be careful about how we calculate this.
+   //compute the number of bytes added or subtracted. note new_line_len and oldlen are unsigned 
+   //so we have to be careful about how we calculate this.
    if (new_line_len >= oldlen)
       added = (int)(new_line_len - oldlen);
    else
@@ -2225,11 +2224,11 @@ shift_block(Operator *oper, int amount) {
 //Insert string "s" (b_insert ? before : after) block :AKelly Caller must prepare for undo.
 private void
 block_insert(
-   Operator      *oper,
-   Byte      *s,
-   Unt      slen,
-   int         b_insert,
-   OUT BlockDef   *bdp)
+   Operator* oper,
+   CS s,
+   Unt slen,
+   int b_insert,
+   OUT BlockDef* bdp)
 {
    int      count = 0;   // extra spaces to replace a cut TAB
    int      spaces = 0;   // non-zero if cutting a TAB
@@ -2394,7 +2393,7 @@ op_delete(Operator* oper) {
        && !oper->block_mode
        && oper->line_count > 1
        && oper->motion_force == ZERO
-       && oper->op_type == OP_DELETE
+       && oper->opTy == OP_DELETE
    ) {
       ptr = ml_get(oper->end.lnum) + oper->end.col;
       if (*ptr != ZERO)
@@ -2407,7 +2406,7 @@ op_delete(Operator* oper) {
    // Check for trying to delete (e.g. "D") in an empty line. Note: For the change operator it is ok
    if (   oper->motion_type == MCHAR
        && oper->line_count == 1
-       && oper->op_type == OP_DELETE
+       && oper->opTy == OP_DELETE
        && *ml_get(oper->start.lnum) == ZERO
    ){
       // It's an error to operate on an empty region
@@ -2440,8 +2439,8 @@ op_delete(Operator* oper) {
             did_yank = TRUE;
       }
 
-      // Yank into small delete register when no named register specified
-      // and the delete is within one line.
+      //Yank into small delete register when no named register specified
+      //and the delete is within one line.
       if ((oper->regname == '*' || oper->regname == '+' || oper->regname == 0) 
          && oper->motion_type != MLINE && oper->line_count == 1
       ){
@@ -2510,10 +2509,10 @@ op_delete(Operator* oper) {
       changed_lines(curPor->cursor.lnum, curPor->cursor.col, oper->end.lnum + 1, 0L);
       oper->line_count = 0;       // no lines deleted
    } ei (oper->motion_type == MLINE) {
-      if (oper->op_type == OP_CHANGE) {
-         // Delete the lines except the first one.  Temporarily move the
-         // cursor to the next line.  Save the current line number, if the
-         // last line is deleted it may be changed.
+      if (oper->opTy == OP_CHANGE) {
+         //Delete the lines except the first one.  Temporarily move the
+         //cursor to the next line.  Save the current line number, if the
+         //last line is deleted it may be changed.
          if (oper->line_count > 1) {
             lnum = curPor->cursor.lnum;
             ++curPor->cursor.lnum;
@@ -2576,24 +2575,24 @@ op_delete(Operator* oper) {
          n = oper->end.col - oper->start.col + 1 - !oper->inclusive;
 
          if (virtual_op) {
-            // fix up things for virtualedit-delete:
-            // break the tabs which are going to get in our way
-            int      len = ml_get_curline_len();
+            //fix up things for virtualedit-delete:
+            //break the tabs which are going to get in our way
+            int len = ml_get_curline_len();
 
             if (oper->end.coladd != 0
                   && (int)oper->end.col >= len - 1
                   && !(oper->start.coladd && (int)oper->end.col >= len - 1)
             )
                n++;
-            // Delete at least one char (e.g, when on a control char).
+            //Delete at least one char (e.g, when on a control char).
             if (n == 0 && oper->start.coladd != oper->end.coladd)
                n = 1;
 
-            // When deleted a char in the line, reset coladd.
+            //When deleted a char in the line, reset coladd.
             if (gchar_cursor() != ZERO)
                curPor->cursor.coladd = 0;
          }
-         (void)del_bytes((long)n, !virtual_op,  oper->op_type == OP_DELETE && !oper->is_VIsual);
+         (void)del_bytes((long)n, !virtual_op,  oper->opTy == OP_DELETE && !oper->is_VIsual);
       } else {          // delete characters between lines
          Pos   curpos;
 
@@ -2612,11 +2611,11 @@ op_delete(Operator* oper) {
           n = (oper->end.col + 1 - !oper->inclusive);
           curPor->cursor.col = 0;
           (void)del_bytes((long)n, !virtual_op,
-                oper->op_type == OP_DELETE && !oper->is_VIsual);
+                oper->opTy == OP_DELETE && !oper->is_VIsual);
           curPor->cursor = curpos;   // restore curPor->cursor
           (void)do_join(2, FALSE, FALSE, FALSE, FALSE);
       }
-      if (oper->op_type == OP_DELETE)
+      if (oper->opTy == OP_DELETE)
           auto_format(FALSE, TRUE);
     }
 
@@ -2638,14 +2637,11 @@ setmarks:
 //Adjust end of operating area for ending on a multi-byte character. Used for deletion.
 private void
 mb_adjust_opend(Operator *oper) {
-   Byte   *line;
-   Byte   *ptr;
-
    if (!oper->inclusive)
       return;
 
-   line = ml_get(oper->end.lnum);
-   ptr = line + oper->end.col;
+   CS line = ml_get(oper->end.lnum);
+   CS ptr = line + oper->end.col;
    if (*ptr != ZERO) {
       ptr -= (*mb_head_off)(line, ptr);
       ptr += utfCharLen(ptr) - 1;
@@ -2778,11 +2774,11 @@ op_replace(Operator *oper, Unt c) {
    } else {
       //MCHAR and MLINE motion replace.
       if (oper->motion_type == MLINE) {
-          oper->start.col = 0;
-          curPor->cursor.col = 0;
-          oper->end.col = ml_get_len(oper->end.lnum);
-          if (oper->end.col)
-         --oper->end.col;
+         oper->start.col = 0;
+         curPor->cursor.col = 0;
+         oper->end.col = ml_get_len(oper->end.lnum);
+         if (oper->end.col)
+            --oper->end.col;
       } ei (!oper->inclusive)
          dec(&(oper->end));
 
@@ -2843,9 +2839,9 @@ op_replace(Operator *oper, Unt c) {
             }
          }
 
-          // Advance to next character, stop at the end of the file.
-          if (inc_cursor() == -1)
-         break;
+         // Advance to next character, stop at the end of the file.
+         if (inc_cursor() == -1)
+            break;
       }
    }
 
@@ -2862,29 +2858,28 @@ op_replace(Operator *oper, Unt c) {
    return OK;
 }
 
-private int swapchars(int op_type, Pos *pos, int length);
+private Boole swapchars(Unt opTy, Pos* pos, int length);
 
 //Handle the (non-standard vi) tilde operator.  Also for "gu", "gU" and "g?".
 private void
-op_tilde(Operator *oper) {
-   Pos      pos;
+op_tilde(Operator* oper) {
    BlockDef   bd;
-   int         did_change = FALSE;
+   Boole didChange = false;
 
    if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
       return;
 
-   pos = oper->start;
+   Pos pos = oper->start;
    if (oper->block_mode) {         // Visual block mode
       for (; pos.lnum <= oper->end.lnum; ++pos.lnum) {
          int one_change;
 
          block_prep(oper, OUT &bd, pos.lnum, false);
          pos.col = bd.textcol;
-         one_change = swapchars(oper->op_type, &pos, bd.textlen);
-         did_change |= one_change;
+         one_change = swapchars(oper->opTy, &pos, bd.textlen);
+         didChange = didChange || one_change;
       }
-      if (did_change)
+      if (didChange)
          changed_lines(oper->start.lnum, 0, oper->end.lnum + 1, 0L);
    } else {               // not block mode
       if (oper->motion_type == MLINE) {
@@ -2897,22 +2892,24 @@ op_tilde(Operator *oper) {
           dec(&(oper->end));
 
       if (pos.lnum == oper->end.lnum)
-          did_change = swapchars(oper->op_type, &pos, oper->end.col - pos.col + 1);
+          didChange = swapchars(oper->opTy, &pos, oper->end.col - pos.col + 1);
       else
-          for (;;) {
-         did_change |= swapchars(oper->op_type, &pos,
-            pos.lnum == oper->end.lnum ? oper->end.col + 1 : ml_get_pos_len(&pos));
-         if (LTOREQ_POS(oper->end, pos) || inc(&pos) == -1)
-             break;
-          }
-      if (did_change) {
+         for (;;) {
+            didChange = didChange || swapchars(
+               oper->opTy, &pos, 
+               pos.lnum == oper->end.lnum ? oper->end.col + 1 : ml_get_pos_len(&pos)
+            );
+            if (LTOREQ_POS(oper->end, pos) || inc(&pos) == -1)
+                break;
+         }
+      if (didChange) {
           changed_lines(oper->start.lnum, oper->start.col, oper->end.lnum + 1, 0L);
       }
    }
 
-   if (!did_change && oper->is_VIsual)
-   // No change: need to remove the Visual selection
-   redraw_curbuf_later(UPD_INVERTED);
+   if (!didChange && oper->is_VIsual)
+      // No change: need to remove the Visual selection
+      drawCurBookLater(UPD_INVERTED);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       // Set '[ and '] marks.
@@ -2926,10 +2923,10 @@ op_tilde(Operator *oper) {
 //Invoke swapchar() on "length" bytes at position "pos". "pos" is advanced to just after the 
 //changed characters. "length" is rounded up to include the whole last multi-byte character.
 //Also work correctly when the number of bytes changes. Return TRUE if some character was changed.
-private int
-swapchars(int op_type, Pos *pos, int length) {
+private Boole
+swapchars(Unt opTy, Pos* pos, int length) {
    int todo;
-   int   did_change = 0;
+   Boole didChange = false;
 
    for (todo = length; todo > 0; --todo) {
       int len = utfCharLen(ml_get_pos(pos));
@@ -2937,49 +2934,48 @@ swapchars(int op_type, Pos *pos, int length) {
       // we're counting bytes, not characters
       if (len > 0)
          todo -= len - 1;
-      did_change |= swapchar(op_type, pos);
+      didChange = didChange || swapchar(opTy, pos);
       if (inc(pos) == -1)    // at end of file
          break;
-    }
-    return did_change;
+   }
+   return didChange;
 }
 
-//If op_type == OP_UPPER: make uppercase,
-//if op_type == OP_LOWER: make lowercase,
-//if op_type == OP_ROT13: do rot13 encoding, else swap case of character at 'pos'.
+//If opTy == OP_UPPER: make uppercase,
+//if opTy == OP_LOWER: make lowercase,
+//if opTy == OP_ROT13: do rot13 encoding, else swap case of character at 'pos'.
 //Return TRUE when something actually changed.
-int
-swapchar(int op_type, Pos *pos) {
+Boole
+swapchar(Unt opTy, Pos* pos) {
    Unt c = gchar_pos(pos);
 
    // Only do rot13 encoding for ASCII characters.
-   if (c >= 0x80 && op_type == OP_ROT13)
+   if (c >= 0x80 && opTy == OP_ROT13)
       return FALSE;
 
    Unt nc = c;
    if (MB_ISLOWER(c)) {
-      if (op_type == OP_ROT13)
+      if (opTy == OP_ROT13)
           nc = ROT13(c, 'a');
-      ei (op_type != OP_LOWER)
+      ei (opTy != OP_LOWER)
           nc = MB_TOUPPER(c);
    } ei (MB_ISUPPER(c)) {
-      if (op_type == OP_ROT13)
+      if (opTy == OP_ROT13)
          nc = ROT13(c, 'A');
-      ei (op_type != OP_UPPER)
+      ei (opTy != OP_UPPER)
          nc = MB_TOLOWER(c);
    }
    if (nc != c) {
       if (c >= 0x80 || nc >= 0x80) {
-          Pos   sp = curPor->cursor;
+         Pos   sp = curPor->cursor;
 
-          curPor->cursor = *pos;
-          // don't use del_char(), it also removes composing chars
-          del_bytes(utf_ptr2len(ml_get_cursor()), FALSE, FALSE);
-          insertChar(nc);
-          curPor->cursor = sp;
-      }
-      else
-          PBYTE(*pos, nc);
+         curPor->cursor = *pos;
+         // don't use del_char(), it also removes composing chars
+         del_bytes(utf_ptr2len(ml_get_cursor()), FALSE, FALSE);
+         insertChar(nc);
+         curPor->cursor = sp;
+      } else
+         PBYTE(*pos, nc);
       return TRUE;
    }
    return FALSE;
@@ -3011,8 +3007,8 @@ op_insert(Operator *oper, long count1) {
          if (u_save_cursor() == FAIL)
             return;
 
-         coladvance_force(oper->op_type == OP_APPEND ? oper->end_vcol + 1 : getviscol());
-         if (oper->op_type == OP_APPEND)
+         coladvance_force(oper->opTy == OP_APPEND ? oper->end_vcol + 1 : getviscol());
+         if (oper->opTy == OP_APPEND)
             --curPor->cursor.col;
       }
       // Get the info about the block before entering the text
@@ -3021,11 +3017,11 @@ op_insert(Operator *oper, long count1) {
       ind_pre_col = (ColNr)getwhitecols_curline();
       ind_pre_vcol = get_indent();
       pre_textlen = ml_get_len(oper->start.lnum) - bd.textcol;
-      if (oper->op_type == OP_APPEND)
+      if (oper->opTy == OP_APPEND)
          pre_textlen -= bd.textlen;
    }
 
-   if (oper->op_type == OP_APPEND) {
+   if (oper->opTy == OP_APPEND) {
       if (oper->block_mode && curPor->cursor.coladd == 0) {
           // Move the cursor to the character right of the block.
           curPor->setCursWant = true;
@@ -3095,14 +3091,14 @@ op_insert(Operator *oper, long count1) {
       if (oper->start.lnum == curBook->opStartOrig.lnum && !bd.is_MAX && !did_indent) {
           int t = getviscol2(curBook->opStartOrig.col, curBook->opStartOrig.coladd);
 
-          if (oper->op_type == OP_INSERT
+          if (oper->opTy == OP_INSERT
              && oper->start.col + oper->start.coladd
                 != curBook->opStartOrig.col + curBook->opStartOrig.coladd)
           {
          oper->start.col = curBook->opStartOrig.col;
          pre_textlen -= t - oper->start_vcol;
          oper->start_vcol = t;
-          } ei (oper->op_type == OP_APPEND
+          } ei (oper->opTy == OP_APPEND
              && oper->start.col + oper->start.coladd
                 >= curBook->opStartOrig.col
                         + curBook->opStartOrig.coladd
@@ -3112,7 +3108,7 @@ op_insert(Operator *oper, long count1) {
             pre_textlen += bd.textlen;
             pre_textlen -= t - oper->start_vcol;
             oper->start_vcol = t;
-            oper->op_type = OP_INSERT;
+            oper->opTy = OP_INSERT;
          }
       }
 
@@ -3137,7 +3133,7 @@ op_insert(Operator *oper, long count1) {
           oper->end_vcol -= ind_post_vcol - ind_pre_vcol;
       }
       if (!bd.is_MAX || bd2.textlen < bd.textlen) {
-          if (oper->op_type == OP_APPEND) {
+          if (oper->opTy == OP_APPEND) {
          pre_textlen += bd2.textlen - bd.textlen;
          if (bd2.endspaces)
              --bd2.textlen;
@@ -3153,7 +3149,7 @@ op_insert(Operator *oper, long count1) {
       firstline = ml_get(oper->start.lnum);
       len = ml_get_len(oper->start.lnum);
       add = bd.textcol;
-      if (oper->op_type == OP_APPEND) {
+      if (oper->opTy == OP_APPEND) {
           add += bd.textlen;
           // account for pressing cursor in insert mode when '$' was used
          if (bd.is_MAX
@@ -3177,7 +3173,7 @@ op_insert(Operator *oper, long count1) {
          // block handled here
          if (u_save(oper->start.lnum,
                    (LineNr)(oper->end.lnum + 1)) == OK)
-            block_insert(oper, ins_text, ins_len, (oper->op_type == OP_INSERT), &bd);
+            block_insert(oper, ins_text, ins_len, (oper->opTy == OP_INSERT), &bd);
 
          curPor->cursor.col = oper->start.col;
          check_cursor();
@@ -3773,7 +3769,7 @@ block_prep(
    if (bdp->start_vcol < oper->start_vcol) {  // line too short
       bdp->end_vcol = bdp->start_vcol;
       bdp->is_short = TRUE;
-      if (!is_del || oper->op_type == OP_APPEND)
+      if (!is_del || oper->opTy == OP_APPEND)
          bdp->endspaces = oper->end_vcol - oper->start_vcol + 1;
    } else {
       // notice: this converts partly selected Multibyte characters to spaces, too.
@@ -3784,14 +3780,14 @@ block_prep(
       bdp->end_vcol = bdp->start_vcol;
       if (bdp->end_vcol > oper->end_vcol) {  // it's all in one character
          bdp->is_oneChar = TRUE;
-         if (oper->op_type == OP_INSERT)
+         if (oper->opTy == OP_INSERT)
             bdp->endspaces = bdp->start_char_vcols - bdp->startspaces;
-         ei (oper->op_type == OP_APPEND) {
+         ei (oper->opTy == OP_APPEND) {
             bdp->startspaces += oper->end_vcol - oper->start_vcol + 1;
             bdp->endspaces = bdp->start_char_vcols - bdp->startspaces;
          } else {
             bdp->startspaces = oper->end_vcol - oper->start_vcol + 1;
-            if (is_del && oper->op_type != OP_LSHIFT) {
+            if (is_del && oper->opTy != OP_LSHIFT) {
                // just putting the sum of those two into bdp->startspaces doesn't work for Visual 
                // replace, so we have to split the tab in two
                bdp->startspaces = bdp->start_char_vcols - (bdp->start_vcol - oper->start_vcol);
@@ -3813,14 +3809,14 @@ block_prep(
 
          if (bdp->end_vcol <= oper->end_vcol
              && (!is_del
-               || oper->op_type == OP_APPEND
-               || oper->op_type == OP_REPLACE) // line too short
+               || oper->opTy == OP_APPEND
+               || oper->opTy == OP_REPLACE) // line too short
          ){
             bdp->is_short = TRUE;
             // Alternative: include spaces to fill up the block. Disadvantage: can lead to 
             // trailing spaces when the line is short where the text is put
-            // if (!is_del || oper->op_type == OP_APPEND)
-            if (oper->op_type == OP_APPEND || virtual_op)
+            // if (!is_del || oper->opTy == OP_APPEND)
+            if (oper->opTy == OP_APPEND || virtual_op)
                 bdp->endspaces = oper->end_vcol - bdp->end_vcol
                                 + oper->inclusive;
             else
@@ -3931,7 +3927,7 @@ op_addsub(
          disable_fold_update--;
          return;
       }
-      change_cnt = do_addsub(oper->op_type, &pos, 0, amount);
+      change_cnt = do_addsub(oper->opTy, &pos, 0, amount);
       disable_fold_update--;
       if (change_cnt)
          changed_lines(pos.lnum, 0, pos.lnum + 1, 0L);
@@ -3971,7 +3967,7 @@ op_addsub(
                 length = oper->end.col - pos.col + 1;
             }
          }
-         one_change = do_addsub(oper->op_type, &pos, length, amount);
+         one_change = do_addsub(oper->opTy, &pos, length, amount);
          if (one_change) {
             // Remember the start position of the first change.
             if (change_cnt == 0)
@@ -3989,7 +3985,7 @@ op_addsub(
 
       if (!change_cnt && oper->is_VIsual)
          // No change: need to remove the Visual selection
-         redraw_curbuf_later(UPD_INVERTED);
+         drawCurBookLater(UPD_INVERTED);
 
       // Set '[ mark if something changed. Keep the last end
       // position from do_addsub().
@@ -4000,11 +3996,11 @@ op_addsub(
    }
 }
 
-//Add or subtract 'Prenum1' from a number in a line op_type is OP_ADD or OP_SUB
+//Add or subtract 'Prenum1' from a number in a line opTy is OP_ADD or OP_SUB
 //Return TRUE if some character was changed.
 private int
 do_addsub(
-   int      op_type,
+   int      opTy,
    Pos   *pos,
    int      length,
    LineNr   Prenum1
@@ -4023,7 +4019,7 @@ do_addsub(
    int      negative = FALSE;
    int      was_positive = TRUE;
    int      visual = VIsual_active;
-   int      did_change = FALSE;
+   int      didChange = FALSE;
    Pos   save_cursor = curPor->cursor;
    int      maxlen = 0;
    Pos   startpos;
@@ -4100,7 +4096,7 @@ do_addsub(
 
    if (ASCII_ISALPHA(firstdigit)) {
       // decrement or increment alphabetic character
-      if (op_type == OP_SUB) {
+      if (opTy == OP_SUB) {
          if (indexInLatinAlfabet(firstdigit) < Prenum1) {
             if (SAFE_isupper(firstdigit))
                firstdigit = 'A';
@@ -4118,9 +4114,9 @@ do_addsub(
             firstdigit += Prenum1;
       }
       curPor->cursor.col = col;
-      if (!did_change)
+      if (!didChange)
          startpos = curPor->cursor;
-      did_change = TRUE;
+      didChange = TRUE;
       (void)del_char(false);
       insertChar(firstdigit);
       endpos = curPor->cursor;
@@ -4150,7 +4146,7 @@ do_addsub(
       }
       // add or subtract
       subtract = FALSE;
-      if (op_type == OP_SUB)
+      if (opTy == OP_SUB)
           subtract ^= TRUE;
       if (negative)
           subtract ^= TRUE;
@@ -4197,9 +4193,9 @@ do_addsub(
 
       // Delete the old number.
       curPor->cursor.col = col;
-      if (!did_change)
+      if (!didChange)
          startpos = curPor->cursor;
-      did_change = TRUE;
+      didChange = TRUE;
       todel = length;
       c = gchar_cursor();
       //Don't include the '-' in the length, only the length of the part after it is kept the same
@@ -4294,11 +4290,11 @@ do_addsub(
           (void)del_char(false);
 
       endpos = curPor->cursor;
-      if (did_change && curPor->cursor.col)
+      if (didChange && curPor->cursor.col)
           --curPor->cursor.col;
    }
 
-   if (did_change && (commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
+   if (didChange && (commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       // set the '[ and '] marks
       curBook->opStart = startpos;
       curBook->opEnd = endpos;
@@ -4309,12 +4305,12 @@ do_addsub(
 theend:
    if (visual)
       curPor->cursor = save_cursor;
-   ei (did_change)
+   ei (didChange)
       curPor->setCursWant = true;
    ei (virtual_active())
       curPor->cursor.coladd = save_coladd;
 
-   return did_change;
+   return didChange;
 }
 
 void
@@ -4419,7 +4415,7 @@ cursor_pos_info(Bag *dict) {
             p_sbr = Em;
             oparg.is_VIsual = 1;
             oparg.block_mode = TRUE;
-            oparg.op_type = OP_NOP;
+            oparg.opTy = OP_NOP;
             getvcols(curPor, &min_pos, &max_pos,
                        &oparg.start_vcol, &oparg.end_vcol);
             p_sbr = saved_sbr;
@@ -4617,12 +4613,12 @@ op_colon(Operator *oper) {
          stuffnumReadbuff((long)oper->end.lnum);
       }
    }
-   if (oper->op_type != OP_COLON)
+   if (oper->opTy != OP_COLON)
       stuffReadbuff(S"!");
-   if (oper->op_type == OP_INDENT) {
+   if (oper->opTy == OP_INDENT) {
       stuffReadbuff(S"indent");
       stuffReadbuff(S"\n");
-   } ei (oper->op_type == OP_FORMAT) {
+   } ei (oper->opTy == OP_FORMAT) {
       if (*curBook->o.formatProg != ZERO)
          stuffReadbuff(curBook->o.formatProg);
       ei (*p_fp != ZERO)
@@ -4802,7 +4798,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    //This could call visualOperator() recursively, but that's OK
    //because clipbYank will be TRUE for the nested call.
    if (clipboard.available
-          && oper->op_type != OP_NOP
+          && oper->opTy != OP_NOP
           && !clipbYank
           && VIsual_active
           && !isRedoVisualBusy
@@ -4812,7 +4808,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    old_cursor = curPor->cursor;
 
    //If an operation is pending, handle it...
-   if ((finish_op || VIsual_active) && oper->op_type != OP_NOP) {
+   if ((finish_op || VIsual_active) && oper->opTy != OP_NOP) {
       //Avoid a problem with unwanted linebreaks in block mode.
       (void)reset_lbr();
       oper->is_VIsual = VIsual_active;
@@ -4838,22 +4834,22 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       }
 
       //Only redo yank when 'y' flag is in 'cpoptions'. Never redo "zf" (define fold).
-      if (oper->op_type != OP_YANK
+      if (oper->opTy != OP_YANK
          && ((!VIsual_active || oper->motion_force)
              //Also redo Operator-pending Visual mode mappings
              || (VIsual_active
-                && is_ex_cmdchar(cap) && oper->op_type != OP_COLON))
+                && is_ex_cmdchar(cap) && oper->opTy != OP_COLON))
          && cap->cmdchar != 'D'
-         && oper->op_type != OP_FOLD
-         && oper->op_type != OP_FOLDOPEN
-         && oper->op_type != OP_FOLDOPENREC
-         && oper->op_type != OP_FOLDCLOSE
-         && oper->op_type != OP_FOLDCLOSEREC
-         && oper->op_type != OP_FOLDDEL
-         && oper->op_type != OP_FOLDDELREC
+         && oper->opTy != OP_FOLD
+         && oper->opTy != OP_FOLDOPEN
+         && oper->opTy != OP_FOLDOPENREC
+         && oper->opTy != OP_FOLDCLOSE
+         && oper->opTy != OP_FOLDCLOSEREC
+         && oper->opTy != OP_FOLDDEL
+         && oper->opTy != OP_FOLDDELREC
       ) {
          prep_redo(oper->regname, cap->count0,
-             get_op_char(oper->op_type), get_extra_op_char(oper->op_type),
+             get_op_char(oper->opTy), get_extra_op_char(oper->opTy),
              oper->motion_force, cap->cmdchar, cap->nchar);
          if (cap->cmdchar == '/' || cap->cmdchar == '?') {// was a search
             //Insert the search pattern to really repeat the same command.
@@ -4980,28 +4976,28 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          }
 
          // can't redo yank (unless 'y' is in 'cpoptions') and ":"
-         if (oper->op_type != OP_YANK
-             && oper->op_type != OP_COLON
-             && oper->op_type != OP_FOLD
-             && oper->op_type != OP_FOLDOPEN
-             && oper->op_type != OP_FOLDOPENREC
-             && oper->op_type != OP_FOLDCLOSE
-             && oper->op_type != OP_FOLDCLOSEREC
-             && oper->op_type != OP_FOLDDEL
-             && oper->op_type != OP_FOLDDELREC
+         if (oper->opTy != OP_YANK
+             && oper->opTy != OP_COLON
+             && oper->opTy != OP_FOLD
+             && oper->opTy != OP_FOLDOPEN
+             && oper->opTy != OP_FOLDOPENREC
+             && oper->opTy != OP_FOLDCLOSE
+             && oper->opTy != OP_FOLDCLOSEREC
+             && oper->opTy != OP_FOLDDEL
+             && oper->opTy != OP_FOLDDELREC
              && oper->motion_force == ZERO
          ) {
             // Prepare for redoing.  Only use the nchar field for "r",
             // otherwise it might be the second char of the operator.
             if (cap->cmdchar == 'g' && (cap->nchar == 'n' || cap->nchar == 'N'))
                 prep_redo(oper->regname, cap->count0,
-                   get_op_char(oper->op_type),
-                   get_extra_op_char(oper->op_type),
+                   get_op_char(oper->opTy),
+                   get_extra_op_char(oper->opTy),
                    oper->motion_force, cap->cmdchar, cap->nchar);
             ei (!is_ex_cmdchar(cap)) {
-               int opchar = get_op_char(oper->op_type);
-               int extra_opchar = get_extra_op_char(oper->op_type);
-               Unt nchar = oper->op_type == OP_REPLACE ? cap->nchar : ZERO;
+               int opchar = get_op_char(oper->opTy);
+               int extra_opchar = get_extra_op_char(oper->opTy);
+               Unt nchar = oper->opTy == OP_REPLACE ? cap->nchar : ZERO;
 
                // reverse what nv_replace() did
                if (nchar == REPLACE_CR_NCHAR)
@@ -5039,7 +5035,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             {
                 oper->inclusive = FALSE;
                 //Try to include the newline, unless it's an operator that works on lines only.
-                if (!op_on_lines(oper->op_type)
+                if (!op_on_lines(oper->opTy)
                    && oper->end.lnum < curBook->mem.lineCount)
                 {
                   ++oper->end.lnum;
@@ -5060,15 +5056,15 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             setmouse();
             mouseDraggingG = 0;
             may_clear_cmdline();
-            if ((oper->op_type == OP_YANK
-                   || oper->op_type == OP_COLON
-                   || oper->op_type == OP_FUNCTION
-                   || oper->op_type == OP_FILTER)
+            if ((oper->opTy == OP_YANK
+                   || oper->opTy == OP_COLON
+                   || oper->opTy == OP_FUNCTION
+                   || oper->opTy == OP_FILTER)
                && oper->motion_force == ZERO
             ){
                 // make sure redrawing is correct
                 restore_lbr(lbr_saved);
-                redraw_curbuf_later(UPD_INVERTED);
+                drawCurBookLater(UPD_INVERTED);
             }
          }
       }
@@ -5085,16 +5081,16 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       // flag affects this too, unless yanking and the end is on a ZERO.
       oper->empty = (oper->motion_type == MCHAR
              && (!oper->inclusive
-            || (oper->op_type == OP_YANK
+            || (oper->opTy == OP_YANK
                 && gchar_pos(&oper->end) == ZERO))
              && EQUAL_POS(oper->start, oper->end)
              && !(virtual_op && oper->start.coladd != oper->end.coladd));
 
       //Force a redraw when operating on an empty Visual region, when
       //'modifiable is off or creating a fold.
-      if (oper->is_VIsual && (oper->empty || !curBook->o.modifiable || oper->op_type == OP_FOLD)) {
+      if (oper->is_VIsual && (oper->empty || !curBook->o.modifiable || oper->opTy == OP_FOLD)) {
           restore_lbr(lbr_saved);
-          redraw_curbuf_later(UPD_INVERTED);
+          drawCurBookLater(UPD_INVERTED);
       }
 
       //If the end of an operator is in column one while oper->motion_type is MCHAR and 
@@ -5124,7 +5120,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       } else
          oper->end_adjusted = FALSE;
 
-      switch (oper->op_type) {
+      switch (oper->opTy) {
       case OP_LSHIFT:
       case OP_RSHIFT:
          op_shift(oper, TRUE, oper->is_VIsual ? (int)cap->count1 : 1);
@@ -5138,7 +5134,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          if (curPor->cursor.lnum + oper->line_count - 1 > curBook->mem.lineCount)
             beep_flush();
          else {
-            (void)do_join(oper->line_count, oper->op_type == OP_JOIN, TRUE, TRUE, TRUE);
+            (void)do_join(oper->line_count, oper->opTy == OP_JOIN, TRUE, TRUE, TRUE);
             auto_format(FALSE, TRUE);
          }
          break;
@@ -5185,7 +5181,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 
       case OP_INDENT:
       case OP_COLON:
-         if (oper->op_type == OP_INDENT) {
+         if (oper->opTy == OP_INDENT) {
             op_reindent(oper, *curBook->o.indentExpr != ZERO ? &get_expr_indent : null);
             break;
          }
@@ -5274,8 +5270,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          VIsual_reselect = FALSE;   // don't reselect now
          opFoldRange(
             oper->start.lnum, oper->end.lnum,
-            oper->op_type == OP_FOLDOPEN || oper->op_type == OP_FOLDOPENREC,
-            oper->op_type == OP_FOLDOPENREC || oper->op_type == OP_FOLDCLOSEREC,
+            oper->opTy == OP_FOLDOPEN || oper->opTy == OP_FOLDOPENREC,
+            oper->opTy == OP_FOLDOPENREC || oper->opTy == OP_FOLDCLOSEREC,
             oper->is_VIsual
          );
          break;
@@ -5284,7 +5280,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       case OP_FOLDDELREC:
          VIsual_reselect = FALSE;   // don't reselect now
          deleteFold(oper->start.lnum, oper->end.lnum,
-                   oper->op_type == OP_FOLDDELREC, oper->is_VIsual);
+                   oper->opTy == OP_FOLDDELREC, oper->is_VIsual);
          break;
       case OP_ADD:
       case OP_SUB:
@@ -5301,8 +5297,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       if (!clipbYank) {
          // if 'sol' not set, go back to old column for some commands
          if (!p_sol && oper->motion_type == MLINE && !oper->end_adjusted
-             && (oper->op_type == OP_LSHIFT || oper->op_type == OP_RSHIFT
-                     || oper->op_type == OP_DELETE)) {
+             && (oper->opTy == OP_LSHIFT || oper->opTy == OP_RSHIFT
+                     || oper->opTy == OP_DELETE)) {
              (void)reset_lbr();
              coladvance(curPor->cursWant = old_col);
          }
@@ -6681,12 +6677,12 @@ decl(Pos *lp) {
 //Make sure "pos.lnum" and "pos.col" are valid in "buf".
 //This allows for the col to be on the ZERO byte.
 void
-check_pos(Book *buf, Pos *pos) {
-   if (pos->lnum > buf->mem.lineCount)
-      pos->lnum = buf->mem.lineCount;
+check_pos(Book* book, Pos *pos) {
+   if (pos->lnum > book->mem.lineCount)
+      pos->lnum = book->mem.lineCount;
 
    if (pos->col > 0) {
-      ColNr len = memGetBookLen(buf, pos->lnum);
+      ColNr len = memGetBookLen(book, pos->lnum);
       if (pos->col > len)
          pos->col = len;
    }
@@ -7090,7 +7086,7 @@ op_reindent(Operator *oper, int (*how)(void)) {
          first_changed, 0, oper->is_VIsual ? start_lnum + oper->line_count : last_changed + 1, 0L
       );
    ei (oper->is_VIsual)
-      redraw_curbuf_later(UPD_INVERTED);
+      drawCurBookLater(UPD_INVERTED);
 
    i = oper->line_count - (i + 1);
    smsg(NGETTEXT("%ld line indented ", "%ld lines indented ", i), i);
@@ -7457,7 +7453,7 @@ c_retab(Invocation *eap) {
       emsg(_(e_interrupted));
 
    if (curBook->o.shiftWidth != new_ts)
-      redraw_curbuf_later(UPD_NOT_VALID);
+      drawCurBookLater(UPD_NOT_VALID);
    if (first_line != 0)
       changed_lines(first_line, 0, last_line + 1, 0L);
 

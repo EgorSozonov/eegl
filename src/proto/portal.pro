@@ -39,7 +39,7 @@ void unloadTab(Tab *t);
 void loadTab(Tab *t);
 int portAllocFirst(void);
 Portal *portAllocPopup(void);
-void initPopupPortal(Portal *po, Book *buf);
+void initPopupPortal(Portal *po, Book *book);
 void portalInitSize(void);
 void freeTab(Tab *t);
 int portNewTab(int after);

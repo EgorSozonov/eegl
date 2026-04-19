@@ -6025,7 +6025,7 @@ do_mouse(
       if (stateG == MODE_NORMAL) {
          // If an operator was pending, we don't know what the user wanted
          // to do. Go back to normal mode: Clear the operator and beep().
-         if (oper != NULL && oper->op_type != OP_NOP) {
+         if (oper != NULL && oper->opTy != OP_NOP) {
             clearopbeep(oper);
             return FALSE;
           }
@@ -6189,7 +6189,7 @@ do_mouse(
    }
 
    // If an operator is pending, ignore all drags and releases until the next mouse click.
-   if (!is_drag && oper != NULL && oper->op_type != OP_NOP) {
+   if (!is_drag && oper != NULL && oper->opTy != OP_NOP) {
       got_click = FALSE;
       oper->motion_type = MCHAR;
    }
@@ -6208,7 +6208,7 @@ do_mouse(
 
    // When jumping to another portal, clear a pending operator.  That's a bit
    // friendlier than beeping and not jumping to that portal.
-   if (curPor != old_curPor && oper != NULL && oper->op_type != OP_NOP)
+   if (curPor != old_curPor && oper != NULL && oper->opTy != OP_NOP)
       clearop(oper);
 
    if (modMaskG == 0
@@ -6431,7 +6431,7 @@ do_mouse(
          curPor->setCursWant = TRUE;
       }
       if (is_click)
-         redraw_curbuf_later(UPD_INVERTED);   // update the inversion
+         drawCurBookLater(UPD_INVERTED);   // update the inversion
    } ei (VIsual_active && !old_active) {
       if (modMaskG & MOD_MASK_ALT)
          VIsual_mode = Ctrl_V;
@@ -6837,7 +6837,7 @@ retnomove:
           return IN_SEP_LINE;
       if (flags & MOUSE_MAY_STOP_VIS) {
          end_visual_mode_keep_button();
-         redraw_curbuf_later(UPD_INVERTED);   // delete the inversion
+         drawCurBookLater(UPD_INVERTED);   // delete the inversion
       }
       // Continue a modeless selection in another portal.
       if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->portalRow))
@@ -6931,7 +6931,7 @@ retnomove:
             && (flags & MOUSE_MAY_STOP_VIS))))
       {
           end_visual_mode_keep_button();
-          redraw_curbuf_later(UPD_INVERTED);   // delete the inversion
+          drawCurBookLater(UPD_INVERTED);   // delete the inversion
       }
       if (commPortTypeG != 0 && po != commPortPortG) {
          //A click outside the command-line portal: Use modeless
@@ -6992,7 +6992,7 @@ retnomove:
       // before moving the cursor for a left click, stop Visual mode
       if (flags & MOUSE_MAY_STOP_VIS) {
          end_visual_mode_keep_button();
-         redraw_curbuf_later(UPD_INVERTED);   // delete the inversion
+         drawCurBookLater(UPD_INVERTED);   // delete the inversion
       }
 
       // Continue a modeless selection in another portal.

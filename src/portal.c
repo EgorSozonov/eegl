@@ -3598,9 +3598,9 @@ portAllocPopup(void) {
 
 // Initialize portal "po" to display buffer "buf".
 void
-initPopupPortal(Portal *po, Book *buf) {
-   po->book = buf;
-   ++buf->countPortals;
+initPopupPortal(Portal* po, Book* book) {
+   po->book = book;
+   ++book->countPortals;
    initEmptyPortal(po); // set cursor and topline to safe values
 
    // Make sure localDir is NULL to avoid a chdir() in enterPortalWorker().
@@ -8073,7 +8073,7 @@ applyParams(Portal *po, Bag* params, int create) {
 
 // Add lines to the popup from a list of strings.
 private void
-add_popup_strings(Book *buf, List *l) {
+add_popup_strings(Book* book, List *l) {
    ListItem  *li;
    LineNr    lnum = 0;
    Byte   *p;
@@ -8081,14 +8081,14 @@ add_popup_strings(Book *buf, List *l) {
    FOR_ALL_LIST_ITEMS(l, li) {
       if (li->c.tag == VAR_STRING) {
          p = li->c.string;
-         ml_append_buf(buf, lnum++, p == NULL ? (CS)"" : p, (ColNr)0, TRUE);
+         memAppendBook(book, lnum++, p == NULL ? Em : p, (ColNr)0, TRUE);
       }
    }
 }
 
 // Add lines to the popup from a list of dictionaries.
 private void
-add_popup_dicts(Book *buf, List *l) {
+add_popup_dicts(Book* book, List *l) {
    ListItem  *li;
    ListItem  *pli;
    LineNr    lnum = 0;
@@ -8103,7 +8103,7 @@ add_popup_dicts(Book *buf, List *l) {
       }
       dict = li->c.bag;
       p = dict == NULL ? NULL : bagGetString(dict, tConst("text"), FALSE);
-      ml_append_buf(buf, lnum++, p == NULL ? (CS)"" : p, (ColNr)0, TRUE);
+      memAppendBook(book, lnum++, p == NULL ? (CS)"" : p, (ColNr)0, TRUE);
    }
 
    // add the text properties
@@ -8128,7 +8128,7 @@ add_popup_dicts(Book *buf, List *l) {
             dict = pli->c.bag;
             if (dict) {
                int col = bagGetNumber(dict, tConst("col"));
-               prop_add_common(lnum, col, dict, buf, NULL);
+               prop_add_common(lnum, col, dict, book, NULL);
             }
          }
       }
@@ -8604,7 +8604,7 @@ isNotification(PopupKind kind) {
    return kind == POPUP_NOTIFICATION || kind == POPUP_MESSAGE_WIN;
 }
 
-//Make "buf" empty and set the contents to "text". Used by createPopup() and popup_settext().
+//Make "book" empty and set the contents to "text". Used by createPopup() and popup_settext().
 private inline void
 setBookText(Book* book, Var text) {
    // Clear the book, then replace the lines.
@@ -8617,7 +8617,7 @@ setBookText(Book* book, Var text) {
       Unt len = STRLEN(s) + 1;
 
       // just a string
-      ml_append_buf(book, 0, s, len, FALSE);
+      memAppendBook(book, 0, s, len, FALSE);
    } else {
       List *l = text.list;
 

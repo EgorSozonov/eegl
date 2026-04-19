@@ -2417,8 +2417,6 @@ redrawRuler(Portal *po, int always, int ignore_pum) {
       Byte   rel_pos[RULER_BUF_LEN];
       int   rel_poslen;
       int   this_ru_col;
-      int   n1;             // scratch value
-      int   n2;             // scratch value
 
       cursor_off();
       Decoration deco;
@@ -2457,13 +2455,13 @@ redrawRuler(Portal *po, int always, int ignore_pum) {
       //Add a "50%" if there is room for it.
       //On the last line, don't print in the last column (scrolls the screen up on some terminals).
       rel_poslen = get_rel_pos(po, rel_pos, RULER_BUF_LEN);
-      n1 = bufferlen + eeglStrSize(rel_pos);
+      int n1 = bufferlen + eeglStrSize(rel_pos); //scratch value
       if (po->statusHeight == 0)   // can't use last char of screen
          ++n1;
 
       this_ru_col = rulerColS - (visibleColsG - width);
       // Never use more than half the portal/screen width, leave the other half for the filename.
-      n2 = (width + 1) / 2;
+      int n2 = (width + 1) / 2; //scratch value
       if (this_ru_col < n2)
          this_ru_col = n2;
       if (this_ru_col + n1 < width) {
@@ -2672,14 +2670,14 @@ recording_mode(char flags) {
    msgPutsDeco(s, flags);
 }
 
-// Get buffer name for "buf" into NameBuff[].
-// Takes care of special buffer names and translates special characters.
+//Get buffer name for "book" into NameBuff[].
+//Take care of special book names and translate special characters.
 void
-get_trans_bufname(Book *buf) {
-   if (bookSpName(buf))
-      copySubstrToAllocation(NameBuff, (Text){bookSpName(buf), MAXPATHL - 1});
+drawGetTranslatedBookName(Book* book) {
+   if (bookSpName(book))
+      copySubstrToAllocation(NameBuff, (Text){bookSpName(book), MAXPATHL - 1});
    else
-      home_replace(buf, buf->currFileName, NameBuff, MAXPATHL, TRUE);
+      home_replace(book, book->currFileName, NameBuff, MAXPATHL, TRUE);
    trans_characters(NameBuff, MAXPATHL);
 }
 
@@ -3145,7 +3143,7 @@ check_chars_options(CS newVal) {
 //redisplayed by drawUpdateScreen() later.
 //
 //Commands that change how a buffer is displayed (e.g., setting 'tabstop') must call 
-//redraw_curbuf_later(UPD_NOT_VALID) to have all the portals for the
+//drawCurBookLater(UPD_NOT_VALID) to have all the portals for the
 //buffer redisplayed by drawUpdateScreen() later.
 //
 //Commands that change hiliting and possibly cause a scroll too must call 
@@ -3428,7 +3426,7 @@ redrawPortalStatusLine(Portal *po, int ignore_pum UNUSED) {
 
       fillchar = statusLineNextChar(OUT &deco, po);
 
-      get_trans_bufname(po->book);
+      drawGetTranslatedBookName(po->book);
       p = NameBuff;
       plen = (int)STRLEN(p);
 
@@ -3553,7 +3551,7 @@ after_updating_screen(int may_resize_shell UNUSED) {
 // Update all portals into the current buffer.
 void
 update_curbuf(int type) {
-   redraw_curbuf_later(type);
+   drawCurBookLater(type);
    drawUpdateScreen(type);
 }
 
@@ -4982,7 +4980,7 @@ set_must_redraw(int type) {
 
 //Mark all portals that are editing the current buffer to be updated later.
 void
-redraw_curbuf_later(int type) {
+drawCurBookLater(int type) {
    redraw_buf_later(curBook, type);
 }
 
@@ -5154,7 +5152,7 @@ typedef struct {
    int virtualOffset;   // offset for virtual text
    int eol_hl_off;   // 1 if hilited char after EOL
    Unt off;      // offset in screenLinesG/screenDecosG
-   CS ptr; // current position in text
+   CS ptr; // current position in text line
    CS line; // current text line start
 
    Decoration portalDeco;   // background for the whole portal, except margins and "~" lines.
@@ -5202,12 +5200,12 @@ typedef struct {
    int filler_todo;   // nr of filler lines still to do + 1
    SignHilite signHilites;
    // do consider wrapping in linebreak mode only after encountering a non whitespace char
-   int      need_lbr;
+   Boole needLinebreak;
    int textPropNext; // next text property to use
    Boole syntaxHilitingOn;
    int* anyEmsgSave;
    int cellsToSkip;   // nr of cells to skip for leftCol or skipCol
-   long bufferLen;
+   long bufferLen; // length of the currently built part of the text line
    int changeIndex;
    Short searchHiId;
    Decoration spellDeco;      // decorations desired by spelling
@@ -5717,7 +5715,7 @@ private void
 drawLineOnScreen_start(OUT DrawCtx* m, int save_extra) {
    m->col = 0;
    m->off = (unsigned)(currScreenLineS - screenLinesG);
-   m->need_lbr = FALSE;
+   m->needLinebreak = false;
 
    if (save_extra) {
       // reset the drawing state for the start of a wrapped line
@@ -5732,7 +5730,7 @@ drawLineOnScreen_start(OUT DrawCtx* m, int save_extra) {
       m->saved_extra_for_textprop = m->extra_for_textprop;
       m->saved_c_extra = m->c_extra;
       m->saved_c_final = m->c_final;
-      m->need_lbr = TRUE;
+      m->needLinebreak = true;
       if (!(m->cul_screenline && m->diff_hlf == 0))
          m->saved_charDeco = m->charDeco;
       else
@@ -6584,9 +6582,9 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             areaDecoTmp->hiId = SHORT;      // stop hiliting
 
          if (m->countExtraBytes == 0) {
-            // Check for start/end of 'hlsearch' and other matches.
-            // After end, check for start/end of next match.
-            // When another match, have to check for start again.
+            //Check for start/end of 'hlsearch' and other matches.
+            //After end, check for start/end of next match.
+            //When another match, have to check for start again.
             m->bufferLen = (long)(m->ptr - m->line);
             m->searchHiId = update_search_hl(
                port, c->lnum, (ColNr)m->bufferLen, &(m->line), &screenSearchMatchG, sc.didLineDeco, 
@@ -6810,21 +6808,20 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             inLineBreak = false;
          }
       } else {
-         Unt      c0;
-         Byte   *prev_ptr = m->ptr;
+         CS prev_ptr = m->ptr;
 
-         // Get a character from the line itself.
+         //Get a character from the line itself.
          currSymb = *m->ptr;
-         c0 = currSymb;
+         Unt c0 = currSymb;
          if (currSymb == ZERO) {
-            // text is finished, may display a "below" virtual text
+            //text is finished, may display a "below" virtual text
             didLine = true;
-            // no more cells to skip
+            //no more cells to skip
             m->cellsToSkip = 0;
             if (term_shobuffer(port->book)
                   && m->vcol == 0
-                  && decoEq(m->portalDeco, termGetDeco(port, c->lnum, -1)))
-               // reset hiliting decoration
+                  && decoEq(m->portalDeco, termGetDeco(port, c->lnum, -1))
+            ) //reset hiliting decoration
                m->portalDeco = EMPTY_DECO;
          }
 
@@ -6834,16 +6831,16 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          sc.mb_utf8 = false;
          if (multibLength > 1) {
             sc.mb_c = utfc_ptr2char(m->ptr, characterCombiner);
-            // Overlong encoded ASCII or ASCII with composing char
-            // is displayed normally, except a ZERO.
+            //Overlong encoded ASCII or ASCII with composing char
+            //is displayed normally, except a ZERO.
             if (sc.mb_c < 0x80) {
                currSymb = sc.mb_c;
                c0 = sc.mb_c;
             }
             sc.mb_utf8 = true;
 
-            // At start of the line we can have a composing char.
-            // Draw it as a space with a composing char.
+            //At start of the line we can have a composing char.
+            //Draw it as a space with a composing char.
             if (utf_iscomposing(sc.mb_c)) {
                for (int i = MAX_COMBINED_SYMBOLS - 1; i > 0; --i)
                   characterCombiner[i] = characterCombiner[i - 1];
@@ -6852,27 +6849,28 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             }
          }
 
-            if ((multibLength == 1 && currSymb >= 0x80)
-                || (multibLength >= 1 && sc.mb_c == 0)
-                || (multibLength > 1 && (!eeIsPrintable(sc.mb_c)))
-            ) {
-               // Illegal UTF-8 byte: display as <xx>.
-               // Non-BMP character : display as ? or fullwidth ?.
-               transchar_hex(m->extra, sc.mb_c);
-               m->extraBytes = m->extra;
-               currSymb = *m->extraBytes;
-               sc.mb_c = mb_ptr2char_adv(&m->extraBytes);
-               sc.mb_utf8 = (currSymb >= 0x80);
-               m->countExtraBytes = (int)STRLEN(m->extraBytes);
-               m->c_extra = ZERO;
-               m->c_final = ZERO;
-               if (sc.areaDeco.hiId == SHORT && m->searchHiId == 0) {
-                  sc.numDecoCells = m->countExtraBytes + 1;
-                  m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
-                  sc.charDecoSaved = m->charDeco; // save current deco
-               }
-            } ei (multibLength == 0)  // at the ZERO at end-of-line
-               multibLength = 1;
+         if ((multibLength == 1 && currSymb >= 0x80)
+             || (multibLength >= 1 && sc.mb_c == 0)
+             || (multibLength > 1 && (!eeIsPrintable(sc.mb_c)))
+         ) {
+            // Illegal UTF-8 byte: display as <xx>.
+            // Non-BMP character : display as ? or fullwidth ?.
+            transchar_hex(m->extra, sc.mb_c);
+            m->extraBytes = m->extra;
+            currSymb = *m->extraBytes;
+            sc.mb_c = mb_ptr2char_adv(&m->extraBytes);
+            sc.mb_utf8 = (currSymb >= 0x80);
+            m->countExtraBytes = (int)STRLEN(m->extraBytes);
+            m->c_extra = ZERO;
+            m->c_final = ZERO;
+            if (sc.areaDeco.hiId == SHORT && m->searchHiId == 0) {
+               sc.numDecoCells = m->countExtraBytes + 1;
+               m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
+               sc.charDecoSaved = m->charDeco; // save current deco
+            }
+         } ei (multibLength == 0)  // at the ZERO at end-of-line
+            multibLength = 1;
+            
          // If a double-width char doesn't fit display a '>' in the
          // last column; the character is displayed at the start of the next line.
          if (( (m->col >= (int)port->width - 1)) && mb_char2cells(sc.mb_c) == 2) {
@@ -6916,22 +6914,22 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             // by long letters (since it would add a break at the beginning of a line and this 
             // might be unexpected)
             // So only allow to linebreak, once we have found chars not in 'breakat' in the line.
-            if ( port->bookOpts.lineBreak && !m->need_lbr && c != ZERO &&
+            if ( port->bookOpts.lineBreak && !m->needLinebreak && c != ZERO &&
                !EE_ISBREAK((int)*m->ptr))
-                m->need_lbr = TRUE;
+                m->needLinebreak = true;
             // Found last space before word: check for line break.
-            if (port->bookOpts.lineBreak && c0 == currSymb && m->need_lbr
+            if (port->bookOpts.lineBreak && c0 == currSymb && m->needLinebreak
                     && EE_ISBREAK(currSymb) && !EE_ISBREAK((int)*m->ptr)
             ){
-                int mb_off = mb_head_off(m->line, m->ptr - 1);
-                CS p = m->ptr - (mb_off + 1);
-                CharTableSize cts;
+               int mb_off = mb_head_off(m->line, m->ptr - 1);
+               CS p = m->ptr - (mb_off + 1);
+               CharTableSize cts;
 
-                init_chartabsize_arg(OUT &cts, port, c->lnum, m->vcol - c->vcolFirstChar, m->line, p);
-                // do not want virtual text counted here
-                cts.cts_has_prop_with_text = FALSE;
-                m->countExtraBytes = win_lbr_chartabsize(&cts, NULL) - 1;
-                clear_chartabsize_arg(&cts);
+               init_chartabsize_arg(OUT &cts, port, c->lnum, m->vcol - c->vcolFirstChar, m->line, p);
+               // do not want virtual text counted here
+               cts.cts_has_prop_with_text = FALSE;
+               m->countExtraBytes = win_lbr_chartabsize(&cts, NULL) - 1;
+               clear_chartabsize_arg(&cts);
 
                if (onLastCol && currSymb != TAB)
                   // Do not continue search/match hiliting over the line break, but for TABs the 
@@ -7635,8 +7633,8 @@ drawLineOnScreen(
       if (m.bufferLen > m.vcol)
          m.cellsToSkip = m.bufferLen - m.vcol - head;
 
-      // Adjust for when the inverted text is before the screen,
-      // and when the start of the inverted text is before the screen.
+      //Adjust for when the inverted text is before the screen,
+      //and when the start of the inverted text is before the screen.
       if (m.tocol <= m.vcol)
          m.fromcol = 0;
       ei (m.fromcol >= 0 && m.fromcol < m.vcol)

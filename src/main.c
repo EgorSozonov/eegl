@@ -1126,7 +1126,7 @@ mainLoop(int  inCommPort) {  // TRUE when working in the command-line window
       may_garbage_collect = (!inCommPort);
       // get and execute a normal mode command.
       if (term_use_loop()
-          && oper.op_type == OP_NOP && oper.regname == ZERO
+          && oper.opTy == OP_NOP && oper.regname == ZERO
           && !VIsual_active
           && !skip_term_loop
       ){

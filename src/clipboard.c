@@ -846,8 +846,8 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
    (void)bagAdd_bool(v_event, S"inclusive", opArg->inclusive);
 
    // kind of operation (yank, delete, change)
-   buf[0] = get_op_char(opArg->op_type);
-   buf[1] = get_extra_op_char(opArg->op_type);
+   buf[0] = get_op_char(opArg->opTy);
+   buf[1] = get_extra_op_char(opArg->opTy);
    buf[2] = ZERO;
    (void)bagAddString(v_event, S"operator", buf);
 
@@ -2558,7 +2558,7 @@ clip_own_selection(ClipBoard *cbd){
             && (get_real_state() == MODE_VISUAL)
             && getDecoFlags(HLF_V) != getDecoFlags(HLF_VNC)
       )
-         redraw_curbuf_later(UPD_INVERTED_ALL);
+         drawCurBookLater(UPD_INVERTED_ALL);
    }
 }
 
@@ -3762,7 +3762,7 @@ clip_get_selection(ClipBoard *cbd) {
       old_visual_mode = VIsual_mode;
       clear_oparg(&oa);
       oa.regname = (cbd == &clipboard ? '+' : '*');
-      oa.op_type = OP_YANK;
+      oa.opTy = OP_YANK;
       CLEAR_FIELD(ca);
       ca.oper = &oa;
       ca.cmdchar = 'y';
