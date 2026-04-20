@@ -68,7 +68,7 @@ findBook(Var *avar){
    if (avar->tag == VAR_NUMBER)
       book = bookFindFileByBookNr((int)avar->number);
    ei (avar->tag == VAR_STRING && avar->string) {
-      book = buflistFindByNameExpandingLinks(avar->string);
+      book = booklistFindByNameExpandingLinks(avar->string);
       if (!book) {
          // No full path name match, try a match with a URL or a "nofile"
          // book, these don't use the full path.
@@ -1768,7 +1768,7 @@ private void   enterBook(Book* book);
 private void   getLastKnownLineNumber(void);
 private Byte   *checkFilenameMatch(RegMatch *rmp, Book* book);
 private Byte   *fname_match(RegMatch *rmp, Byte *name);
-private Book   *buflist_findname_stat(Byte *fullFName, FileStat *st);
+private Book   *booklistFindName_stat(Byte *fullFName, FileStat *st);
 private int   areSameInode(Book* book, FileStat *stp);
 private int   append_arg_number(Portal *po, CS buf, Unt buflen, int add_file);
 private void   freeBook(Book *);
@@ -2557,7 +2557,7 @@ freeAttachedData(Book* book, int free_options) {     // free options as well
       remove_listeners(book);
    }
    uc_clear(&book->userCommands);      // clear local user commands
-   buf_delete_signs(book, S"*");   // delete any signs
+   markDeleteSigns(book, S"*");   // delete any signs
    ga_clear_strings(&book->textPropText);
    mapClearAllMappingsInMode(book, MAP_ALL_MODES, TRUE, FALSE);  // clear local mappings
    mapClearAllMappingsInMode(book, MAP_ALL_MODES, TRUE, TRUE);   // clear local abbrevs
@@ -3350,7 +3350,7 @@ bookNew(
       
    Book* book;
    if (fullFName && (flags & (BLN_DUMMY | BLN_NEW)) == 0 
-         && (book = buflist_findname_stat(fullFName, &st)) != NULL
+         && (book = booklistFindName_stat(fullFName, &st)) != NULL
    ) { // found existing book with this file
       eeglFree(fullFName);
       if (lnum != 0)
@@ -3638,14 +3638,14 @@ getLastKnownLineNumber(void) {
 
 // Find file in book list by name. Return NULL if not found.
 Book *
-buflistFindByNameExpandingLinks(CS fname) {
+booklistFindByNameExpandingLinks(CS fname) {
    // First make the name into a full path name
    CS fullFName = FullName_save(fname,
        TRUE       // force expansion, get rid of symbolic links
    );
    Book* book = NULL;
    if (fullFName) {
-      book = buflist_findname(fullFName);
+      book = booklistFindName(fullFName);
       eeglFree(fullFName);
    }
    return book;
@@ -3654,16 +3654,16 @@ buflistFindByNameExpandingLinks(CS fname) {
 //Find file in book list by name. "fullFName" must have a full path.
 //Skip dummy books. Return NULL if not found.
 Book *
-buflist_findname(Arr(Byte) fullFName){
+booklistFindName(Arr(Byte) fullFName){
    FileStat   st;
 
    if (stat((char *)fullFName, &st) < 0)
       st.st_dev = (Device)-1;
-   return buflist_findname_stat(fullFName, &st);
+   return booklistFindName_stat(fullFName, &st);
 }
 
 private Boole
-sameFileInBook(Book* book, Arr(Byte) fullFName, FileStat* stp) {
+sameFileInBook(Book* book, CS fullFName, FileStat* stp) {
    // no name is different
    if (fullFName == NULL || *fullFName == ZERO || book->fullFileName == NULL)
       return false;
@@ -3695,7 +3695,7 @@ sameFileInBook(Book* book, Arr(Byte) fullFName, FileStat* stp) {
 // Find file in book list by name, but pass the stat structure to avoid getting it twice for 
 // the same file. Return NULL if not found.
 private Book *
-buflist_findname_stat(Arr(Byte) fullFName, FileStat   *stp) {
+booklistFindName_stat(Arr(Byte) fullFName, FileStat   *stp) {
    Book   *book;
 
    // Start at the last book, expect to find a match sooner.
@@ -4314,7 +4314,7 @@ setfname(
       if (stat((char *)fullFName, &st) < 0)
          st.st_dev = (Device)-1;
       if (!(book->flags & BF_DUMMY))
-         obook = buflist_findname_stat(fullFName, &st);
+         obook = booklistFindName_stat(fullFName, &st);
       if (obook && obook != book) {
          Portal   *port;
          Tab   *tab;
@@ -8633,7 +8633,7 @@ f_prop_add_list(Var *argvars, Var *returnVar UNUSED) {
          return;
    }
 
-   redraw_buf_later(book, UPD_VALID);
+   drawBookLater(book, UPD_VALID);
 }
 
 // Get the next ID to use for a textprop with text in book.
@@ -8803,7 +8803,7 @@ prop_add_common(
    addProp(OUT book, prop);
    text = NULL;
 
-   redraw_buf_later(book, UPD_VALID);
+   drawBookLater(book, UPD_VALID);
 
 theend:
     eeglFree(text);
@@ -9192,7 +9192,7 @@ f_prop_clear(Var *argvars, Var *returnVar UNUSED) {
       }
    }
    if (did_clear)
-      redraw_buf_later(book, UPD_NOT_VALID);
+      drawBookLater(book, UPD_NOT_VALID);
 }
 
 //prop_find({props} [, {direction}])
@@ -9710,7 +9710,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
    if (first_changed > 0) {
       normInvalidateDisplayOfChangedBookLine(book);
       changed_lines_buf(book, first_changed, last_changed + 1, 0);
-      redraw_buf_later(book, UPD_VALID);
+      drawBookLater(book, UPD_VALID);
    }
 
    if (did_remove_text) {

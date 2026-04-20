@@ -3912,7 +3912,7 @@ updateBook(LocationStack *stack, LocLine *oldLast) {
    // Only redraw when added lines are visible. This avoids flickering
    // when the added lines are not visible.
    if ((port = findPortalIntoLocList(stack)) != NULL && old_line_count < port->bottomLine)
-      redraw_buf_later(book, UPD_NOT_VALID);
+      drawBookLater(book, UPD_NOT_VALID);
 
    // always called after incrementLlBusyness()
    decrementLlBusyness();
@@ -5459,7 +5459,7 @@ elckGrepFiles(
          vgr_display_fname(fname);
       }
 
-      Book* book = buflistFindByNameExpandingLinks(invos->fnames[fi]);
+      Book* book = booklistFindByNameExpandingLinks(invos->fnames[fi]);
       int using_dummy;
       if (!book || book->mem.mfile == NULL) {
          //Remember that a book with this name already exists.
@@ -5721,7 +5721,7 @@ loadDummyBook(
          }
       }
 
-      // Add back the "dummy" flag, otherwise buflist_findname_stat() won't skip it.
+      // Add back the "dummy" flag, otherwise booklistFindName_stat() won't skip it.
       newbuf->flags |= BF_DUMMY;
    }
 

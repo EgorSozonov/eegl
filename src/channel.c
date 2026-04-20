@@ -655,9 +655,9 @@ chaFindBook(CS name, int err, int msg) {
    Book *save_curbuf = curBook;
 
    if (name && *name != ZERO) {
-      book = buflist_findname(name);
+      book = booklistFindName(name);
       if (!book)
-         book = buflistFindByNameExpandingLinks(name);
+         book = booklistFindByNameExpandingLinks(name);
    }
 
    if (book)
@@ -2034,7 +2034,7 @@ appendToBook(
          }
           }
       }
-      redraw_buf_and_status_later(book, UPD_VALID);
+      drawBookAndStatusLater(book, UPD_VALID);
       channel_need_redraw = TRUE;
     }
 

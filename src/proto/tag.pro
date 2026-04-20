@@ -13,7 +13,7 @@ void tagstack_clear_entry(Taggy *item);
 int expand_tags(int tagnames, CS pat, ExpandMatch *matches);
 int get_tags(List *list, CS pat, CS buf_fname);
 void get_tagstack(Portal *wp, Bag *retBag);
-int set_tagstack(Portal *wp, Bag *d, int action);
+int set_tagstack(Portal *wp, Bag *d, Unt action);
 CS get_cscope_name(Expand *xp, int idx);
 void set_context_in_cscope_cmd(Expand *xp, CS arg, CommIndex id);
 void c_cscope(Invocation *invo);

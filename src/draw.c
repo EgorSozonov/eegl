@@ -3190,9 +3190,9 @@ drawUpdateScreen(int type_arg) {
 
    {
    // Before updating the screen, notify any listeners of changed text.
-   Book *buf;
-   FOR_ALL_BOOKS(buf)
-       invoke_listeners(buf);
+   Book* book;
+   FOR_ALL_BOOKS(book)
+       invoke_listeners(book);
    }
 
    // May have postponed updating diffs.
@@ -3840,7 +3840,7 @@ fold_line(
 //bot: from bot_start to last row (when scrolled up)
 private void
 updatePortal(Portal *po) {
-   Book* buf = po->book;
+   Book* book = po->book;
    int type;
    int top_end = 0; //Below last row of the top area that needs updating. 
                     //0 when no top area updating.
@@ -3944,18 +3944,18 @@ updatePortal(Portal *po) {
          mod_bot = po->redrawBott + 1;
       else
          mod_bot = 0;
-      if (buf->needsRedraw) {
-         if (mod_top == 0 || mod_top > buf->needsRedrawTop) {
-            mod_top = buf->needsRedrawTop;
+      if (book->needsRedraw) {
+         if (mod_top == 0 || mod_top > book->needsRedrawTop) {
+            mod_top = book->needsRedrawTop;
             // Need to redraw lines above the change that may be included in a pattern match.
             if (syntax_present(po)) {
-               mod_top -= buf->syntax.syncLinebreaks;
+               mod_top -= book->syntax.syncLinebreaks;
                if (mod_top < 1)
                   mod_top = 1;
             }
          }
-         if (mod_bot == 0 || mod_bot < buf->needsRedrawBott)
-            mod_bot = buf->needsRedrawBott;
+         if (mod_bot == 0 || mod_bot < book->needsRedrawBott)
+            mod_bot = book->needsRedrawBott;
 
          // When 'hlsearch' is on and using a multi-line search pattern, a change in one line may 
          // make the Search hiliting in a previous line invalid.  Simple solution: redraw all 
@@ -4223,7 +4223,7 @@ updatePortal(Portal *po) {
    }
 
     // check if we are updating or removing the inverted part
-   if ((VIsual_active && buf == curPor->book)
+   if ((VIsual_active && book == curPor->book)
        || (po->prevVisualEnd != 0 && type != UPD_NOT_VALID))
     {
       LineNr    from, to;
@@ -4372,7 +4372,7 @@ updatePortal(Portal *po) {
       }
    }
 
-   if (VIsual_active && buf == curPor->book) {
+   if (VIsual_active && book == curPor->book) {
       po->prevVisualMode = VIsual_mode;
       po->prevVisualEnd = curPor->cursor.lnum;
       po->oldVisualLnum = VIsual.lnum;
@@ -4411,7 +4411,7 @@ updatePortal(Portal *po) {
       }
 
       // stop updating when hit the end of the file
-      if (lnum > buf->mem.lineCount) {
+      if (lnum > book->mem.lineCount) {
          eof = TRUE;
          break;
       }
@@ -4441,7 +4441,7 @@ updatePortal(Portal *po) {
                               )
                            //match in fixed position might need redraw if lines were 
                            //inserted or deleted
-                           || (po->firstMatch && buf->needsRedraw && buf->lineCountDiff != 0)
+                           || (po->firstMatch && book->needsRedraw && book->lineCountDiff != 0)
                          )
                    )
                 )
@@ -4633,7 +4633,7 @@ updatePortal(Portal *po) {
           // - 'number' is set and below inserted/deleted lines, or
           // - 'relativenumber' is set and cursor moved vertically,
           // the text doesn't need to be redrawn, but the number column does.
-          if ((mod_top != 0 && lnum >= mod_bot && buf->needsRedraw && buf->lineCountDiff != 0)
+          if ((mod_top != 0 && lnum >= mod_bot && book->needsRedraw && book->lineCountDiff != 0)
              || (po->bookOpts.relativeNumber && po->lastCursorLnumRnu != po->cursor.lnum)
          ) {
          fold_count = foldedCount(po, lnum, OUT &portFoldS);
@@ -4651,7 +4651,7 @@ updatePortal(Portal *po) {
          did_update = DID_NONE;
       }
 
-      if (lnum > buf->mem.lineCount) {
+      if (lnum > book->mem.lineCount) {
          eof = TRUE;
          break;
       }
@@ -4699,7 +4699,7 @@ updatePortal(Portal *po) {
    } else {
       drawVerticalSeparator(po, row);
       if (eof) {     // we hit the end of the file
-         po->bottomLine = buf->mem.lineCount + 1;
+         po->bottomLine = book->mem.lineCount + 1;
          j = diff_check_fill(po, po->bottomLine);
          if (j > 0 && !po->bottFill) {
             // Display filler lines at the end of the file.
@@ -4981,38 +4981,38 @@ set_must_redraw(int type) {
 //Mark all portals that are editing the current buffer to be updated later.
 void
 drawCurBookLater(int type) {
-   redraw_buf_later(curBook, type);
+   drawBookLater(curBook, type);
 }
 
 void
-redraw_buf_later(Book *buf, int type) {
+drawBookLater(Book* book, int type) {
    Portal   *po;
    FOR_ALL_PORTALS(po) {
-      if (po->book == buf)
+      if (po->book == book)
           redrawPortLater(po, type);
    }
    // terminal in popup portal is not in list of portals
-   if (curPor->book == buf)
+   if (curPor->book == book)
       redrawPortLater(curPor, type);
 }
 
 void
-redraw_buf_line_later(Book *buf, LineNr lnum) {
+drawBookLineLater(Book* book, LineNr lnum) {
    Portal   *po;
    FOR_ALL_PORTALS(po) {
-      if (po->book == buf && lnum >= po->topLine && lnum < po->bottomLine)
-          redrawWinline(po, lnum);
+      if (po->book == book && lnum >= po->topLine && lnum < po->bottomLine)
+          drawPortLineLater(po, lnum);
    } 
 }
 
 void
-redraw_buf_and_status_later(Book *buf, int type) {
+drawBookAndStatusLater(Book* book, int type) {
    if (wild_menu_showing != 0)
       // Don't redraw while the command line completion is displayed, it would disappear.
       return;
    Portal   *po;
    FOR_ALL_PORTALS(po) {
-      if (po->book == buf) {
+      if (po->book == book) {
          redrawPortLater(po, type);
          po->statusLineNeedsRedraw = TRUE;
       }
@@ -5031,9 +5031,9 @@ status_redraw_all(void) {
    } 
 }
 
-// mark all status lines of the current buffer for redraw
+// mark all status lines of the current book for redraw
 void
-status_redraw_curbuf(void) {
+drawAllStatusLinesOfCurBookLater(void) {
    Portal   *po;
    FOR_ALL_PORTALS(po)
    if (po->statusHeight != 0 && po->book == curBook) {
@@ -5071,14 +5071,14 @@ redrawAllStatusLinesInFrame(Frame *fr) {
    }
 }
 
-//Changed something in the current portal, at buffer line "lnum", which requires that line and 
+//Changed something in the current portal, at book line "lnum", which requires that line and 
 //possibly other lines to be redrawn.
 //Used when entering/leaving Insert mode with the cursor on a folded line. Used to remove the "$" 
 //from a change command.
 //Note that when also inserting/deleting lines redrawTop and redrawBott
 //may become invalid and the whole portal will have to be redrawn.
 void
-redrawWinline(Portal   *po, LineNr   lnum) {
+drawPortLineLater(Portal   *po, LineNr   lnum) {
    redrawPortRangeLater(po, lnum, lnum);
 }
 
@@ -5572,7 +5572,7 @@ text_prop_position(
                Byte *lp = l + off - 1;
 
                Byte   buf[MB_MAXBYTES + 1];
-               Byte   *cp = buf;
+               CS cp = buf;
 
                // change the last character to '…', converted to the current 'encoding'
                STRCPY(buf, "…");

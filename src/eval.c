@@ -4482,7 +4482,7 @@ var2fpos(
           pos = curPor->cursor;
    } ei (name[0] == '\'') {
    // mark
-   pp = getmark_buf_fnum(curBook, name[1], FALSE, fnum);
+   pp = markGetBookFnum(curBook, name[1], FALSE, fnum);
    if (pp == NULL || pp == (Pos *)-1 || pp->lnum <= 0)
        return NULL;
    pos = *pp;
@@ -14474,7 +14474,7 @@ f_setreg(Var *argvars, Var *returnVar) {
 private void
 f_settagstack(Var *argvars, Var *returnVar) {
    Portal   *wp;
-   int      action = 'r';
+   Unt action = 'r';
 
    returnVar->number = -1;
 
@@ -14497,8 +14497,7 @@ f_settagstack(Var *argvars, Var *returnVar) {
    ei (check_for_string_arg(argvars, 2) == FAIL)
       return;
    else {
-      Byte   *actstr;
-      actstr = convertVarToStringSingleUse(&argvars[2]);
+      CS actstr = convertVarToStringSingleUse(&argvars[2]);
       if (actstr == NULL)
          return;
       if ((*actstr == 'r' || *actstr == 'a' || *actstr == 't') && actstr[1] == ZERO)
@@ -14510,7 +14509,7 @@ f_settagstack(Var *argvars, Var *returnVar) {
    }
 
    if (set_tagstack(wp, d, action) == OK)
-   returnVar->number = 0;
+      returnVar->number = 0;
 }
 
 // "sha256({string})" function
@@ -14526,9 +14525,7 @@ f_sha256(Var *argvars, Var *returnVar) {
 // "shellescape({string})" function
 private void
 f_shellescape(Var *argvars, Var *returnVar) {
-   int do_special;
-
-   do_special = non_zero_arg(&argvars[1]);
+   int do_special = non_zero_arg(&argvars[1]);
    returnVar->string = copyStr_shellescape(tv_get_string(&argvars[0]), do_special, do_special);
    returnVar->tag = VAR_STRING;
 }
@@ -14538,7 +14535,6 @@ private void
 f_shiftwidth(Var *argvars UNUSED, Var *returnVar){
    returnVar->number = 0;
 
-
    if (argvars[0].tag != VAR_UNKNOWN) {
       long   col;
 
@@ -14547,7 +14543,7 @@ f_shiftwidth(Var *argvars UNUSED, Var *returnVar){
          return;   // type error; errmsg already given
    }
 
-    returnVar->number = get_sw_value(curBook);
+   returnVar->number = get_sw_value(curBook);
 }
 
 private void
@@ -14890,24 +14886,23 @@ f_virtcol(Var *argvars, Var *returnVar) {
    ColNr   vcol_end = 0;
    Pos   *fp;
    SwitchPort   switchPort;
-   int      winchanged = FALSE;
+   Boole portChanged = false;
    int      len;
 
    if (argvars[1].tag != VAR_UNKNOWN && argvars[2].tag != VAR_UNKNOWN) {
       Tab   *t;
-      Portal      *wp;
 
-      // use the window specified in the third argument
-      wp = getPortAndTab((int)tv_get_number(&argvars[2]), OUT &t);
-      if (!wp || !t)
+      // use the portal specified in the third argument
+      Portal* po = getPortAndTab((int)tv_get_number(&argvars[2]), OUT &t);
+      if (!po || !t)
           goto theend;
 
-      if (portSwitchNoblock(&switchPort, wp, t, TRUE) != OK)
+      if (portSwitchNoblock(&switchPort, po, t, TRUE) != OK)
           goto theend;
 
       check_cursor();
-      winchanged = TRUE;
-    }
+      portChanged = true;
+   }
 
    int fnum = curBook->fiNum;
    fp = var2fpos(&argvars[0], FALSE, &fnum, FALSE);
@@ -14933,8 +14928,8 @@ theend:
    } else
       returnVar->number = vcol_end;
 
-   if (winchanged)
-      portRestoreNoblock(&switchPort, TRUE);
+   if (portChanged)
+      portRestoreNoblock(&switchPort, true);
 }
 
 private void
@@ -14954,7 +14949,7 @@ f_visualmode(Var *argvars, Var *returnVar) {
 private void
 f_wildmenumode(Var *argvars UNUSED, Var *returnVar UNUSED) {
    if (wild_menu_showing || ((stateG & MODE_COMMLINE) && cmdline_pum_active()))
-   returnVar->number = 1;
+      returnVar->number = 1;
 }
 
 private void
@@ -15686,7 +15681,7 @@ report_pending(int action, int pending, void *value) {
 }
 
 //If something is made pending in a finally clause, report it if required by
-//the 'verbose' option or when debugging.
+//the @verbose option or when debugging.
 void
 report_make_pending(int pending, void *value) {
    if (p_verbose >= 14 || debug_break_level > 0) {
@@ -15929,9 +15924,9 @@ c_else(Invocation *invo) {
 // Handle ":while" and ":for".
 void
 c_while(Invocation *invo) {
-   int      result;
-   CondStack   *cstack = invo->cstack;
-   int      prev_flags = 0;
+   int result;
+   CondStack* cstack = invo->cstack;
+   int prev_flags = 0;
 
    if (cstack->ind == CSTACK_LEN - 1) {
       invo->errmsg = _(e_while_for_nesting_too_deep);
@@ -16085,7 +16080,7 @@ c_endwhile(Invocation *invo) {
       invo->errmsg = _(err);
    else {
       int fl = cstack->flags[cstack->ind];
-      if (!(fl & csf)) {
+      if ((fl & csf) == 0) {
          // If we are in a ":while" or ":for" but used the wrong endloop
          // command, do not rewind to the next enclosing ":for"/":while".
          if (fl & CSF_WHILE)
@@ -16093,10 +16088,10 @@ c_endwhile(Invocation *invo) {
          ei (fl & CSF_FOR)
             invo->errmsg = _(e_using_endwhile_with_for);
       }
-      if (!(fl & (CSF_WHILE | CSF_FOR))) {
-         if (!(fl & CSF_TRY))
+      if ((fl & (CSF_WHILE | CSF_FOR)) == 0) {
+         if ((fl & CSF_TRY) == 0)
             invo->errmsg = _(e_missing_endif);
-         ei (fl & CSF_FINALLY)
+         ei ((fl & CSF_FINALLY) != 0)
             invo->errmsg = _(e_missing_endtry);
          // Try to find the matching ":while" and report what's missing.
          int idx;
@@ -16108,7 +16103,7 @@ c_endwhile(Invocation *invo) {
                invo->errmsg = _(err);
                return;
             }
-            if (fl & csf)
+            if ((fl & csf) != 0)
                break;
          }
          // Cleanup and rewind all contained (and unclosed) conditionals.
@@ -16135,7 +16130,7 @@ c_endwhile(Invocation *invo) {
 //"opening bracket", start of a block
 void
 c_block(Invocation *invo) {
-   CondStack   *cstack = invo->cstack;
+   CondStack* cstack = invo->cstack;
 
    if (cstack->ind == CSTACK_LEN - 1)
       invo->errmsg = _(e_block_nesting_too_deep);
@@ -16148,7 +16143,7 @@ c_block(Invocation *invo) {
 //"closing bracket", end of a block in Vimscript
 void
 c_endblock(Invocation *invo) {
-   CondStack   *cstack = invo->cstack;
+   CondStack* cstack = invo->cstack;
 
    if (cstack->ind < 0 || (cstack->flags[cstack->ind] & CSF_BLOCK) == 0)
       invo->errmsg = _(e_endblock_without_block);
@@ -16157,11 +16152,9 @@ c_endblock(Invocation *invo) {
 }
 
 int
-inside_block(Invocation *invo) {
-   CondStack   *cstack = invo->cstack;
-   int      i;
-
-   for (i = 0; i <= cstack->ind; ++i) {
+inside_block(Invocation* invo) {
+   CondStack* cstack = invo->cstack;
+   for (int i = 0; i <= cstack->ind; ++i) {
       if (cstack->flags[cstack->ind] & CSF_BLOCK)
           return TRUE;
    } 

@@ -1980,7 +1980,7 @@ private void pop_current_state(void);
 #define IF_SYN_TIME(p) NULL
 typedef int syn_Time;
 
-private void syn_stack_apply_changes_block(SyntaxBlock *block, Book *buf);
+private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
       int idx, PosNoVirt *startpos, PosNoVirt *m_endpos, PosNoVirt *hl_endpos, long *flagsp, 
       PosNoVirt *end_endpos, int *end_idx, RegExternalMatch *start_ext
@@ -2633,26 +2633,26 @@ syn_stack_alloc(void) {
 //Check for changes in a buffer to affect stored syntax states.  Uses the b_mod_* fields.
 //Called from drawUpdateScreen(), before screen is being updated, once for each displayed buffer.
 void
-syn_stack_apply_changes(Book *buf) {
+syn_stack_apply_changes(Book* book) {
    Portal   *wp;
 
-   syn_stack_apply_changes_block(&buf->syntax, buf);
+   syn_stack_apply_changes_block(&book->syntax, book);
 
    FOR_ALL_PORTALS(wp) {
-      if ((wp->book == buf) && (wp->ownSyntax != &buf->syntax))
-          syn_stack_apply_changes_block(wp->ownSyntax, buf);
+      if ((wp->book == book) && (wp->ownSyntax != &book->syntax))
+          syn_stack_apply_changes_block(wp->ownSyntax, book);
    }
 }
 
 private void
-syn_stack_apply_changes_block(SyntaxBlock *block, Book *buf) {
+syn_stack_apply_changes_block(SyntaxBlock *block, Book *book) {
    SyntaxState   *p, *prev, *np;
 
    prev = NULL;
    for (p = block->first; p; ) {
-      if (p->lnum + block->syncLinebreaks > buf->needsRedrawTop) {
-         LineNr n = p->lnum + buf->lineCountDiff;
-         if (n <= buf->needsRedrawBott) {
+      if (p->lnum + block->syncLinebreaks > book->needsRedrawTop) {
+         LineNr n = p->lnum + book->lineCountDiff;
+         if (n <= book->needsRedrawBott) {
             // this state is inside the changed area, remove it
             np = p->next;
             if (prev == NULL)
@@ -2665,14 +2665,14 @@ syn_stack_apply_changes_block(SyntaxBlock *block, Book *buf) {
          }
          // This state is below the changed area.  Remember the line
          // that needs to be parsed before this entry can be made valid again.
-         if (p->invalidatingChangeLnum != 0 && p->invalidatingChangeLnum > buf->needsRedrawTop) {
-            if (p->invalidatingChangeLnum + buf->lineCountDiff > buf->needsRedrawTop)
-               p->invalidatingChangeLnum += buf->lineCountDiff;
+         if (p->invalidatingChangeLnum != 0 && p->invalidatingChangeLnum > book->needsRedrawTop) {
+            if (p->invalidatingChangeLnum + book->lineCountDiff > book->needsRedrawTop)
+               p->invalidatingChangeLnum += book->lineCountDiff;
             else
-               p->invalidatingChangeLnum = buf->needsRedrawTop;
+               p->invalidatingChangeLnum = book->needsRedrawTop;
          }
-         if (p->invalidatingChangeLnum == 0 || p->invalidatingChangeLnum < buf->needsRedrawBott)
-            p->invalidatingChangeLnum = buf->needsRedrawBott;
+         if (p->invalidatingChangeLnum == 0 || p->invalidatingChangeLnum < book->needsRedrawBott)
+            p->invalidatingChangeLnum = book->needsRedrawBott;
 
          p->lnum = n;
       }

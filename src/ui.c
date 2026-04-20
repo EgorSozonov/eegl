@@ -7332,7 +7332,7 @@ term_start(
             eeSnprintf(p, len, "!%s", cmd);
          else
             eeSnprintf(p, len, "!%s (%d)", cmd, i);
-         if (buflist_findname(p) == NULL) {
+         if (booklistFindName(p) == NULL) {
             eeglFree(curBook->fullFileName);
             curBook->fullFileName = p;
             break;
@@ -8574,7 +8574,7 @@ term_enter_job_mode(void) {
 
    if (term->isChannelClosed)
       cleanup_vterm(term);
-   redraw_buf_and_status_later(curBook, UPD_NOT_VALID);
+   drawBookAndStatusLater(curBook, UPD_NOT_VALID);
    if (PORTAL_IS_POPUP(curPor))
       redraw_later(UPD_NOT_VALID);
 }
@@ -9152,7 +9152,7 @@ handle_damage(VTermRect rect, void *user) {
     term->dirtyRowStart = MIN(term->dirtyRowStart, (int)rect.start_row);
     term->dirtyRowEnd = MAX(term->dirtyRowEnd, (int)rect.end_row);
     set_dirty_snapshot(term);
-    redraw_buf_later(term->book, UPD_SOME_VALID);
+    drawBookLater(term->book, UPD_SOME_VALID);
     return 1;
 }
 
@@ -9198,7 +9198,7 @@ handle_moverect(VTermRect dest, VTermRect src, void *user) {
    set_dirty_snapshot(term);
 
    // Note sure if the scrolling will work correctly, let's do a complete redraw later.
-   redraw_buf_later(term->book, UPD_NOT_VALID);
+   drawBookLater(term->book, UPD_NOT_VALID);
    return 1;
 }
 
@@ -9328,7 +9328,7 @@ handle_resize(int rows, int cols, void *user) {
             portSetWidth(cols, po);
          }
       }
-      redraw_buf_later(term->book, UPD_NOT_VALID);
+      drawBookLater(term->book, UPD_NOT_VALID);
    }
     return 1;
 }
@@ -9580,7 +9580,7 @@ term_after_channel_closed(Terminal *term) {
          lo("terminal job finished");
    }
 
-   redraw_buf_and_status_later(term->book, UPD_NOT_VALID);
+   drawBookAndStatusLater(term->book, UPD_NOT_VALID);
    return FALSE;
 }
 
@@ -9855,7 +9855,7 @@ term_change_in_curbuf(void) {
    return;
 
     free_scrollback(term);
-    redraw_buf_later(term->book, UPD_NOT_VALID);
+    drawBookLater(term->book, UPD_NOT_VALID);
 
     // The buffer is now like a normal buffer, it cannot be easily
     // abandoned when changed.

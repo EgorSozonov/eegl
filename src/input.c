@@ -4767,7 +4767,7 @@ utf_class(int c) {
 }
 
 int
-utf_class_buf(int c, Book *buf) {
+utf_class_buf(int c, Book* book) {
    // sorted list of non-overlapping intervals
    static struct clinterval {
       unsigned int first;
@@ -4855,7 +4855,7 @@ utf_class_buf(int c, Book *buf) {
    if (c < 0x100) {
       if (c == ' ' || c == '\t' || c == ZERO || c == 0xa0)
           return 0;       // blank
-      if (eeIsWordc_buf(c, buf))
+      if (eeIsWordc_buf(c, book))
           return 2;       // word character
       return 1;       // punctuation
    }
@@ -5611,12 +5611,12 @@ mb_adjust_cursor(void) {
 //Adjust position "*lp" to point to the first byte of a multi-byte character.
 //If it points to a tail byte it's moved backwards to the head byte.
 void
-mb_adjustpos(Book *buf, Pos *lp) {
+mb_adjustpos(Book* book, Pos *lp) {
    Byte   *p;
 
    if (lp->col > 0 || lp->coladd > 1) {
-      p = memGetLine(buf, lp->lnum, FALSE);
-      if (*p == ZERO || memGetBookLen(buf, lp->lnum) < lp->col)
+      p = memGetLine(book, lp->lnum, FALSE);
+      if (*p == ZERO || memGetBookLen(book, lp->lnum) < lp->col)
           lp->col = 0;
       else
           lp->col -= mb_head_off(p, p + lp->col);

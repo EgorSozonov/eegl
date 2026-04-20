@@ -262,7 +262,7 @@ int set_ref_in_func(CS name, UserFunc *fp_in, int copyID);
 UserFunc *define_function(Invocation *invo, ArrayList *lines_to_free);
 void c_function(Invocation *invo);
 int var_wrong_func_name(Text name, int new_var);
-void scrRemoveAutocommsFromBook(Book *buf);
+void scrRemoveAutocommsFromBook(Book *book);
 Boole auGroupExists(CS name);
 void do_augroup(CS arg, Boole del_group);
 void autocmd_init(void);

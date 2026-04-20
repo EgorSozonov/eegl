@@ -25,7 +25,7 @@ Boole decoEq(Decoration a, Decoration b);
 void restore_cterm_colors(void);
 void syntaxStartLine(Portal *wp, LineNr lnum);
 void synFreeBlock(SyntaxBlock *block);
-void syn_stack_apply_changes(Book *buf);
+void syn_stack_apply_changes(Book *book);
 void syntax_end_parsing(Portal *wp, LineNr lnum);
 int syntax_check_changed(LineNr lnum);
 Decoration syntGetDeco(ColNr col, int keep_state);

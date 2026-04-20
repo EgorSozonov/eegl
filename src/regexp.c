@@ -8360,7 +8360,7 @@ match(
          Pos   *pos;
          Unt   col = REG_MULTI ? exe.input - exe.line : 0;
 
-         pos = getmark_buf(exe.book, t->state->val, FALSE);
+         pos = markGetBook(exe.book, t->state->val, FALSE);
 
          // Line may have been freed, get it again.
          if (REG_MULTI) {

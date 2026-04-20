@@ -10739,7 +10739,7 @@ c_redrawstatus(Invocation *invo UNUSED) {
    if (invo->forceit)
       status_redraw_all();
    else
-      status_redraw_curbuf();
+      drawAllStatusLinesOfCurBookLater();
    if (msg_scrolled && (stateG & MODE_COMMLINE))
       return;  // redraw later
 

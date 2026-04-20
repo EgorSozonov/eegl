@@ -545,7 +545,7 @@ portGotoFile:
          // file is already opened in a portal, then jump to it.
          po = NULL;
          if ((p_swb & (SWB_USEOPEN | SWB_USETAB)) != 0 && commModifierG.cmod_tab == 0)
-            po = switchBufGotoPortalIntoBuf(buflistFindByNameExpandingLinks(ptr));
+            po = switchBufGotoPortalIntoBuf(booklistFindByNameExpandingLinks(ptr));
 
          if (po == NULL && splitPortal(0, 0) == OK) {
             RESET_BINDING(curPor);
@@ -7776,7 +7776,7 @@ highlightCurrentLine(Portal *po) {
    int       sign_id = 0;
    Byte  *sign_name = popup_get_sign_name(po);
 
-   buf_delete_signs(po->book, (CS)"PopUpMenu");
+   markDeleteSigns(po->book, (CS)"PopUpMenu");
 
    if ((po->pup.flags & POPF_CURSORLINE) != 0) {
       scrollToCurrent(po);
@@ -10393,7 +10393,7 @@ may_update_popup_mask(int type) {
                         else {
                            // compute position in the book line from the position in the portal
                            (void)mouse_comp_pos(po, &line_cp, &col_cp, &lnum, plines_cache);
-                           redrawWinline(po, lnum);
+                           drawPortLineLater(po, lnum);
                         }
                      }
 

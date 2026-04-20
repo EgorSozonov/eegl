@@ -10,7 +10,7 @@
 // This file contains routines to maintain and manipulate marks.
 
 //If a named file mark's lnum is non-zero, it is valid.
-//If a named file mark's fnum is non-zero, it is for an existing buffer,
+//If a named file mark's fnum is non-zero, it is for an existing book,
 //otherwise it is from .eeglinfo and namedfm[n].fname is the file name.
 //There are marks 'A - 'Z (set by user) and '0 to '9 (set when writing eeglinfo).
 private FileMarkExt namedfm[NMARKS + EXTRA_MARKS];      // marks with file nr
@@ -246,7 +246,7 @@ movechangelist(int count) {
    return curBook->changeList + n;
 }
 
-//Find mark "c" in buffer pointed to by "book".
+//Find mark "c" in book pointed to by "book".
 //If "changefile" is TRUE it's allowed to edit another file for '0, 'A, etc.
 //If "fnum" is not NULL store the fnum there for '0, 'A etc., don't edit another file.
 //Return:
@@ -255,21 +255,21 @@ movechangelist(int count) {
 //- NULL if there is no mark called 'c'.
 //- -1 if mark is in other file and jumped there (only if changefile is TRUE)
 Pos *
-getmark_buf(Book *book, int c, int changefile) {
-   return getmark_buf_fnum(book, c, changefile, NULL);
+markGetBook(Book* book, int c, int changefile) {
+   return markGetBookFnum(book, c, changefile, NULL);
 }
 
 Pos *
 getmark(int c, int changefile) {
-   return getmark_buf_fnum(curBook, c, changefile, NULL);
+   return markGetBookFnum(curBook, c, changefile, NULL);
 }
 
 Pos *
-getmark_buf_fnum(
-   Book   *book,
-   int      c,
-   int      changefile,
-   int      *fnum
+markGetBookFnum(
+   Book* book,
+   int c,
+   int changefile,
+   int* fnum
 ) {
    Pos      *posp;
    Pos      *startp, *endp;
@@ -277,8 +277,7 @@ getmark_buf_fnum(
 
    posp = NULL;
 
-    // Check for special key, can't be a mark name and might cause islower()
-    // to crash.
+   // Check for special key, can't be a mark name and might cause islower() to crash.
    if (c < 0)
       return posp;
    if (c > '~')         // check for islower()/isupper()
@@ -380,8 +379,8 @@ Pos *
 getnextmark(
    Pos   *startpos,   // where to start
    int      dir,   // direction for search
-   int      begin_line)
-{
+   int      begin_line
+) {
    int      i;
    Pos   *result = NULL;
 
@@ -490,19 +489,20 @@ check_mark(Pos *pos) {
    return OK;
 }
 
-//clrallmarks() - clear all marks in the buffer 'book'
+//clrallmarks() - clear all marks in the book 'book'
 //
-//Used mainly when trashing the entire buffer during ":e" type commands
+//Used mainly when trashing the entire book during ":e" type commands
 void
-clrallmarks(Book *book) {
-   static int      i = -1;
+clrallmarks(Book* book) {
+   static int i = -1;
 
-   if (i == -1)   // first call ever: initialize
-   for (i = 0; i < NMARKS + 1; i++) {
-      namedfm[i].fmark.mark.lnum = 0;
-      namedfm[i].fname = NULL;
-      namedfm[i].time_set = 0;
-   }
+   if (i == -1) {   // first call ever: initialize
+      for (i = 0; i < NMARKS + 1; i++) {
+         namedfm[i].fmark.mark.lnum = 0;
+         namedfm[i].fname = NULL;
+         namedfm[i].time_set = 0;
+      }
+   } 
 
    for (i = 0; i < NMARKS; i++)
       book->namedMarks[i].lnum = 0;
@@ -518,22 +518,21 @@ clrallmarks(Book *book) {
 
 //Get name of file from a filemark.
 //When it's in the current buffer, return the text at the mark. Returns an allocated string.
-Byte *
-fm_getname(FileMark *fmark, int lead_len) {
+CS
+fm_getname(FileMark* fmark, int lead_len) {
    if (fmark->fnum == curBook->fiNum)          // current buffer
       return mark_line(&(fmark->mark), lead_len);
    return bookGetNameByBookNr(fmark->fnum, FALSE, TRUE);
 }
 
 // Return the line at mark "mp". Truncate to fit in portal. The returned string has been allocated
-private Byte *
-mark_line(Pos *mp, int lead_len) {
+private CS
+mark_line(Pos* mp, int lead_len) {
    if (mp->lnum == 0 || mp->lnum > curBook->mem.lineCount)
       return copyStr(S"-invalid-");
    // Allow for up to 5 bytes per character.
    CS s = copySubstr(skipwhite(ml_get(mp->lnum)), visibleColsG * 5);
-   if (!s)
-      return NULL;
+   
    // Truncate the line to fit it in the portal.
    int len = 0;
    CS p;
@@ -549,9 +548,9 @@ mark_line(Pos *mp, int lead_len) {
 // print the marks
 void
 c_marks(Invocation *invo) {
-   Byte   *arg = invo->arg;
-   int      i;
-   Byte   *name;
+   CS arg = invo->arg;
+   int i;
+   CS name;
    Pos   *posp, *startp, *endp;
 
    if (arg && *arg == ZERO)
@@ -596,53 +595,53 @@ c_marks(Invocation *invo) {
 private void
 show_one_mark(
    int      c,
-   Byte   *arg,
-   Pos   *p,
-   Byte   *name_arg,
-   int      current)   // in current file
-{
+   CS arg,
+   Pos* p,
+   CS name_arg,
+   int      current   // in current file
+){
    static int   did_title = FALSE;
    int      mustfree = FALSE;
-   Byte   *name = name_arg;
+   CS name = name_arg;
 
-      if (c == -1) {            // finish up
-         if (did_title)
-            did_title = FALSE;
-         else {
-            if (arg == NULL)
-               msg(_("No marks set"));
-            else
-               showErrFmtMsg(_(e_no_marks_matching_str), arg);
-         }
+   if (c == -1) {            // finish up
+      if (did_title)
+         did_title = FALSE;
+      else {
+         if (arg == NULL)
+            msg(_("No marks set"));
+         else
+            showErrFmtMsg(_(e_no_marks_matching_str), arg);
       }
-       // don't output anything if 'q' typed at --more-- prompt
-      ei (!gotInterruptG && (!arg || firstOccurrence(arg, c) != NULL) && p->lnum != 0) {
-         if (!name && current) {
-            name = mark_line(p, 15);
-            if (!name) {
-               emsg(_(e_out_of_memory));
-               return;
-            }
-            mustfree = TRUE;
+   }
+   // don't output anything if 'q' typed at --more-- prompt
+   ei (!gotInterruptG && (!arg || firstOccurrence(arg, c) != NULL) && p->lnum != 0) {
+      if (!name && current) {
+         name = mark_line(p, 15);
+         if (!name) {
+            emsg(_(e_out_of_memory));
+            return;
          }
-         if (!message_filtered(name)) {
-            if (!did_title) {
-               // Highlight title
-               msg_puts_title(_("\nmark line  col file/text"));
-               did_title = TRUE;
-            }
-            msg_putchar('\n');
-            if (!gotInterruptG) {
-               sprintf((char *)IObuff, " %c %6ld %4d ", c, p->lnum, p->col);
-               msg_outtrans(IObuff);
-               if (name != NULL) {
-                  msgOuttransDeco(name, current ? getDecoFlags(HLF_D) : 0);
-               }
-            }
-            out_flush();          // show one line at a time
+         mustfree = TRUE;
+      }
+      if (!message_filtered(name)) {
+         if (!did_title) {
+            // Highlight title
+            msg_puts_title(_("\nmark line  col file/text"));
+            did_title = TRUE;
          }
-         if (mustfree)
-            eeglFree(name);
+         msg_putchar('\n');
+         if (!gotInterruptG) {
+            sprintf((char *)IObuff, " %c %6ld %4d ", c, p->lnum, p->col);
+            msg_outtrans(IObuff);
+            if (name) {
+               msgOuttransDeco(name, current ? getDecoFlags(HLF_D) : 0);
+            }
+         }
+         out_flush();          // show one line at a time
+      }
+      if (mustfree)
+         eeglFree(name);
    }
 }
 
@@ -720,19 +719,18 @@ c_delmarks(Invocation *invo) {
 // print the jumplist
 void
 c_jumps(Invocation *invo UNUSED) {
-   int      i;
-   Byte   *name;
+   CS name;
 
    cleanup_jumplist(curPor, TRUE);
 
    // Highlight title
    msg_puts_title(_("\n jump line  col file/text"));
-   for (i = 0; i < curPor->jumpListLen && !gotInterruptG; ++i) {
+   for (int i = 0; i < curPor->jumpListLen && !gotInterruptG; ++i) {
       if (curPor->jumpList[i].fmark.mark.lnum != 0) {
          name = fm_getname(&curPor->jumpList[i].fmark, 16);
 
-         // Make sure to output the current indicator, even when on an wiped
-         // out buffer.  ":filter" may still skip it.
+         // Make sure to output the current indicator, even when on a wiped
+         // out book.  ":filter" may still skip it.
          if (name == NULL && i == curPor->jumpListInd)
             name = copyStr((CS)"-invalid-");
          // apply :filter /pat/ or file name not available
@@ -746,12 +744,14 @@ c_jumps(Invocation *invo UNUSED) {
             eeglFree(name);
             break;
          }
-         sprintf((char *)IObuff, "%c %2d %5ld %4d ",
-         i == curPor->jumpListInd ? '>' : ' ',
-         i > curPor->jumpListInd ? i - curPor->jumpListInd
-                    : curPor->jumpListInd - i,
-         curPor->jumpList[i].fmark.mark.lnum,
-         curPor->jumpList[i].fmark.mark.col);
+         sprintf(
+            (char *)IObuff, "%c %2d %5ld %4d ",
+            i == curPor->jumpListInd ? '>' : ' ',
+            i > curPor->jumpListInd ? i - curPor->jumpListInd
+                       : curPor->jumpListInd - i,
+            curPor->jumpList[i].fmark.mark.lnum,
+            curPor->jumpList[i].fmark.mark.col
+         );
          msg_outtrans(IObuff);
          msgOuttransDeco(
             name, curPor->jumpList[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0
@@ -873,7 +873,6 @@ mark_adjust_internal(
    int      i;
    int      fnum = curBook->fiNum;
    LineNr   *lp;
-   Tab   *tab;
    static Pos initpos = {1, 0, 0};
 
    if (line2 < line1 && amount_after == 0L)       // nothing to do
@@ -927,6 +926,7 @@ mark_adjust_internal(
    // Adjust items in all portals into the current buffer
    
    Portal* port;
+   Tab* tab;
    FOR_ALL_TAB_PORTALS(tab, port) {
       if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
          // Marks in the jumplist.  When deleting lines, this may create
@@ -1445,7 +1445,7 @@ insert_sign(
    if (!prev) {
       // When adding first sign need to redraw the windows to create the column for signs.
       if (!book->signList) {
-         redraw_buf_later(book, UPD_NOT_VALID);
+         drawBookLater(book, UPD_NOT_VALID);
          changed_line_abv_curs();
       }
 
@@ -1700,28 +1700,26 @@ markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites) {
    return FALSE;
 }
 
-/*
- * Delete sign 'id' in group 'group' from buffer 'buf'.
- * If 'id' is zero, then delete all the signs in group 'group'. Otherwise
- * delete only the specified sign.
- * If 'group' is '*', then delete the sign in all the groups. If 'group' is
- * NULL, then delete the sign in the global group. Otherwise delete the sign in
- * the specified group.
- * Returns the line number of the deleted sign. If multiple signs are deleted,
- * then returns the line number of the last sign deleted.
- */
-LineNr
-buf_delsign(Book *buf, // buffer sign is stored in
+//Delete sign 'id' in group 'group' from buffer 'buf'.
+//If 'id' is zero, then delete all the signs in group 'group'. Otherwise
+//delete only the specified sign.
+//If 'group' is '*', then delete the sign in all the groups. If 'group' is
+//NULL, then delete the sign in the global group. Otherwise delete the sign in
+//the specified group.
+//Return the line number of the deleted sign. If multiple signs are deleted,
+//then returns the line number of the last sign deleted.
+private LineNr
+delsign(Book* book, // buffer sign is stored in
             LineNr atlnum, // sign at this line, 0 - at any line
             int id, // sign id
             Byte *group) // sign group
 {
    // pointer to pointer to current sign
-   SignEntry **lastp = &buf->signList;
+   SignEntry **lastp = &book->signList;
    SignEntry *next = NULL; // the next sign in a signList
    LineNr lnum = 0; // line number whose sign was deleted
 
-   for (SignEntry *sign = buf->signList; sign != NULL; sign = next) {
+   for (SignEntry *sign = book->signList; sign != NULL; sign = next) {
       next = sign->next;
 
       if ((id == 0 || sign->id == id) &&
@@ -1737,7 +1735,7 @@ buf_delsign(Book *buf, // buffer sign is stored in
              sign_group_unref(sign->group->sg_name);
 
           eeglFree(sign);
-          redraw_buf_line_later(buf, lnum);
+          drawBookLineLater(book, lnum);
 
             // Check whether only one sign needs to be deleted
             // If deleting a sign with a specific identifier in a particular
@@ -1753,26 +1751,24 @@ buf_delsign(Book *buf, // buffer sign is stored in
 
     // When deleting the last sign the cursor position may change, because the
     // sign columns no longer shows.  And the 'signcolumn' may be hidden.
-    if (buf->signList == NULL) {
-        redraw_buf_later(buf, UPD_NOT_VALID);
+    if (book->signList == NULL) {
+        drawBookLater(book, UPD_NOT_VALID);
         changed_line_abv_curs();
     }
 
     return lnum;
 }
 
-/*
- * Find the line number of the sign with the requested id in group 'group'. If
- * the sign does not exist, return 0 as the line number. This will still let
- * the correct file get loaded.
- */
+//Find the line number of the sign with the requested id in group 'group'. If
+//the sign does not exist, return 0 as the line number. This will still let
+//the correct file get loaded.
 int
-buf_findsign(Book *buf, // buffer to store sign in
+buf_findsign(Book *book, // buffer to store sign in
              int id, // sign ID
              Byte *group) // sign group
 {
     SignEntry *sign = NULL; // a sign in the signlist
-    FOR_ALL_SIGNS_IN_BOOK(buf, sign) {
+    FOR_ALL_SIGNS_IN_BOOK(book, sign) {
        if (sign->id == id && sign_in_group(sign, group))
           return sign->lnum;
     } 
@@ -1780,40 +1776,35 @@ buf_findsign(Book *buf, // buffer to store sign in
     return 0;
 }
 
-/*
- * Return the sign at line 'lnum' in buffer 'buf'. Returns NULL if a sign is
- * not found at the line. If 'groupname' is NULL, searches in the global group.
- */
+//Return the sign at line 'lnum' in book. Return NULL if a sign is
+//not found at the line. If 'groupname' is NULL, search in the global group.
 private SignEntry *
-buf_getsign_at_line(Book *buf, // buffer whose sign we are searching for
-                    LineNr lnum, // line number of sign
-                    Byte *groupname) // sign group name
-{
-    SignEntry *sign = NULL; // a sign in the signlist
-    FOR_ALL_SIGNS_IN_BOOK(buf, sign)
-    {
-        // Signs are sorted by line number in the buffer. No need to check
-        // for signs after the specified line number 'lnum'.
-        if (sign->lnum > lnum)
-            break;
+getsignAtLine(Book* book, // book whose sign we are searching for
+              LineNr lnum, // line number of sign
+              CS groupname // sign group name
+){
+   SignEntry *sign = NULL; // a sign in the signlist
+   FOR_ALL_SIGNS_IN_BOOK(book, sign) {
+       // Signs are sorted by line number in the book. No need to check
+       // for signs after the specified line number 'lnum'.
+       if (sign->lnum > lnum)
+          break;
 
-        if (sign->lnum == lnum && sign_in_group(sign, groupname))
-            return sign;
-    }
+       if (sign->lnum == lnum && sign_in_group(sign, groupname))
+          return sign;
+   }
 
-    return NULL;
+   return NULL;
 }
 
-/*
- * Return the identifier of the sign at line number 'lnum' in buffer 'buf'.
- */
-int
-buf_findsign_id(Book *buf, // buffer whose sign we are searching for
-                LineNr lnum, // line number of sign
-                Byte *groupname) // sign group name
-{
+//Return the identifier of the sign at line number 'lnum' in book.
+private int
+findsign_id(Book* book, // book whose sign we are searching for
+            LineNr lnum, // line number of sign
+            CS groupname // sign group name
+){
     // a sign in the signlist
-    SignEntry *sign = buf_getsign_at_line(buf, lnum, groupname);
+    SignEntry *sign = getsignAtLine(book, lnum, groupname);
     if (sign != NULL)
         return sign->id;
 
@@ -1821,17 +1812,15 @@ buf_findsign_id(Book *buf, // buffer whose sign we are searching for
 }
 
 # if defined(PROTO)
-/*
- * See if a given type of sign exists on a specific line.
- */
+//See if a given type of sign exists on a specific line.
 int
-buf_findsigntype_id(Book *buf, // buffer whose sign we are searching for
+buf_findsigntype_id(Book* book, // buffer whose sign we are searching for
                     LineNr lnum, // line number of sign
                     int typenr) // sign type number
 {
    SignEntry *sign = NULL; // a sign in the signlist
-   FOR_ALL_SIGNS_IN_BOOK(buf, sign) {
-      // Signs are sorted by line number in the buffer. No need to check
+   FOR_ALL_SIGNS_IN_BOOK(book, sign) {
+      // Signs are sorted by line number in the book. No need to check
       // for signs after the specified line number 'lnum'.
       if (sign->lnum > lnum)
          break;
@@ -1845,25 +1834,21 @@ buf_findsigntype_id(Book *buf, // buffer whose sign we are searching for
 
 # endif // FEAT_PROTO
 
-/*
- * Delete signs in group 'group' in buffer "buf". If 'group' is '*', then
- * delete all the signs.
- */
+//Delete signs in group 'group' in book. If 'group' is '*', then delete all the signs.
 void
-buf_delete_signs(Book *buf, Byte *group) {
+markDeleteSigns(Book* book, CS group) {
     // When deleting the last sign need to redraw the windows to remove the
     // sign column. Not when curPor is NULL (this means we're exiting).
-    if (buf->signList != NULL && curPor != NULL)
-    {
-        redraw_buf_later(buf, UPD_NOT_VALID);
+    if (book->signList && curPor) {
+        drawBookLater(book, UPD_NOT_VALID);
         changed_line_abv_curs();
     }
 
     // pointer to pointer to current sign
-    SignEntry **lastp = &buf->signList;
+    SignEntry **lastp = &book->signList;
     SignEntry *next = NULL;
 
-    for (SignEntry *sign = buf->signList; sign != NULL; sign = next) {
+    for (SignEntry *sign = book->signList; sign != NULL; sign = next) {
         next = sign->next;
         if (sign_in_group(sign, group)) {
             *lastp = next;
@@ -1881,25 +1866,25 @@ buf_delete_signs(Book *buf, Byte *group) {
     }
 }
 
-// List placed signs for "rbuf".  If "rbuf" is NULL do it for all buffers.
+// List placed signs for "rbook".  If "rbook" is NULL do it for all books.
 private void
-sign_list_placed(Book *rbuf, Byte *sign_group) {
+sign_list_placed(Book* rbook, Byte *sign_group) {
    Byte lbuf[MSG_BUF_LEN];
    Byte group[MSG_BUF_LEN];
 
    msg_puts_title(_("\n--- Signs ---"));
    msg_putchar('\n');
 
-   Book *buf = (!rbuf) ? firstBook : rbuf;
-   while (buf != NULL && !gotInterruptG) {
-     if (buf->signList != NULL) {
-         eeSnprintf(lbuf, MSG_BUF_LEN, _("Signs for %s:"), buf->currFileName);
+   Book* book = (!rbook) ? firstBook : rbook;
+   while (book && !gotInterruptG) {
+     if (book->signList != NULL) {
+         eeSnprintf(lbuf, MSG_BUF_LEN, _("Signs for %s:"), book->currFileName);
          msgPutsDeco(lbuf, getDecoFlags(HLF_D));
          msg_putchar('\n');
       }
 
       SignEntry *sign = NULL;
-      FOR_ALL_SIGNS_IN_BOOK(buf, sign) {
+      FOR_ALL_SIGNS_IN_BOOK(book, sign) {
          if (gotInterruptG)
             break;
 
@@ -1920,10 +1905,10 @@ sign_list_placed(Book *rbuf, Byte *sign_group) {
          msg_putchar('\n');
       }
 
-      if (rbuf)
+      if (rbook)
          break;
 
-      buf = buf->next;
+      book = book->next;
    }
 }
 
@@ -1951,7 +1936,7 @@ sign_mark_adjust(
             new_lnum += amount_after;
         }
 
-        // If the new sign line number is past the last line in the buffer,
+        // If the new sign line number is past the last line in the book,
         // then don't adjust the line number. Otherwise, it will always be past
         // the last line and will not be visible.
         if (new_lnum <= curBook->mem.lineCount)
@@ -1959,13 +1944,10 @@ sign_mark_adjust(
     }
 }
 
-/*
- * Find index of a ":sign" subcmd from its name.
- * "*end_cmd" must be writable.
- */
+//Find index of a ":sign" subcmd from its name. "*end_cmd" must be writable.
 private int
-sign_cmd_idx(Byte *begin_cmd, // begin of sign subcmd
-             Byte *end_cmd // just after sign subcmd
+sign_cmd_idx(CS begin_cmd, // begin of sign subcmd
+             CS end_cmd // just after sign subcmd
 ){
     int idx = 0;
     char save = *end_cmd;
@@ -1979,9 +1961,9 @@ sign_cmd_idx(Byte *begin_cmd, // begin of sign subcmd
 }
 
 // Find a sign by name. Also returns pointer to the previous sign.
-private Sign *
-sign_find(Byte *name, Sign **sp_prev) {
-    if (sp_prev != NULL)
+private Sign*
+sign_find(CS name, Sign** sp_prev) {
+    if (sp_prev)
        *sp_prev = NULL;
 
     Sign *sp = NULL;
@@ -1998,7 +1980,7 @@ sign_find(Byte *name, Sign **sp_prev) {
 
 // Allocate a new sign
 private Sign *
-alloc_new_sign(Byte *name) {
+alloc_new_sign(CS name) {
     int start = next_sign_typenr;
 
     // Allocate a new sign.
@@ -2107,7 +2089,7 @@ sign_define_by_name(
         // non-empty sign list.
         FOR_ALL_PORTALS(wp) {
            if (wp->book->signList != NULL)
-               redraw_buf_later(wp->book, UPD_NOT_VALID);
+               drawBookLater(wp->book, UPD_NOT_VALID);
         }
     }
 
@@ -2181,11 +2163,11 @@ sign_list_by_name(Byte *name) {
 }
 
 private void
-may_force_numberwidth_recompute(Book *buf, int unplace) {
+may_force_numberwidth_recompute(Book* book, int unplace) {
    Tab *t;
    Portal *wp;
    FOR_ALL_TAB_PORTALS(t, wp) {
-      if (wp->book == buf && (unplace || wp->lineCountSaved < 2) && wp->bookOpts.signColumn)
+      if (wp->book == book && (unplace || wp->lineCountSaved < 2) && wp->bookOpts.signColumn)
          wp->lineCountSaved = 0;
    }
 }
@@ -2194,9 +2176,9 @@ may_force_numberwidth_recompute(Book *buf, int unplace) {
 int
 sign_place(
    int *sign_id,
-   Byte *sign_group,
-   Byte *sign_name,
-   Book *buf,
+   CS sign_group,
+   CS sign_name,
+   Book* book,
    LineNr lnum,
    int prio
 ) {
@@ -2216,7 +2198,7 @@ sign_place(
    }
 
    if (*sign_id == 0)
-      *sign_id = sign_group_get_next_signid(buf, sign_group);
+      *sign_id = sign_group_get_next_signid(book, sign_group);
 
    //Use the default priority value for this sign.
    if (prio == -1)
@@ -2224,18 +2206,18 @@ sign_place(
 
    if (lnum > 0) {
       //":sign place {id} line={lnum} name={name} file={fname}": place a sign
-      buf_addsign(buf, *sign_id, sign_group, prio, lnum, sp->typeNr);
+      buf_addsign(book, *sign_id, sign_group, prio, lnum, sp->typeNr);
    } else {
       //":sign place {id} file={fname}": change sign type and/or priority
-      lnum = buf_change_sign_type(buf, *sign_id, sign_group, sp->typeNr, prio);
+      lnum = buf_change_sign_type(book, *sign_id, sign_group, sp->typeNr, prio);
    }
 
     if (lnum > 0) {
-       redraw_buf_line_later(buf, lnum);
+       drawBookLineLater(book, lnum);
 
        //When displaying signs in the 'number' column, if the width of the
        //number column is less than 2, then force recomputing the width.
-       may_force_numberwidth_recompute(buf, FALSE);
+       may_force_numberwidth_recompute(book, FALSE);
     } else {
        showErrFmtMsg(_(e_not_possible_to_change_sign_str), sign_name);
        return FAIL;
@@ -2246,34 +2228,33 @@ sign_place(
 
 // Unplace the specified sign
 private int
-sign_unplace(int sign_id, Byte *sign_group, Book *buf, LineNr atlnum) {
-    if (!buf->signList) // No signs in the buffer
-       return OK;
+sign_unplace(int sign_id, Byte *sign_group, Book* book, LineNr atlnum) {
+   if (!book->signList) // No signs in the book
+      return OK;
 
-    if (sign_id == 0) {
-       //Delete all the signs in the specified buffer
-       redraw_buf_later(buf, UPD_NOT_VALID);
-       buf_delete_signs(buf, sign_group);
-    } else {
-       //Delete only the specified signs
-       LineNr lnum = buf_delsign(buf, atlnum, sign_id, sign_group);
-       if (lnum == 0)
-          return FAIL;
-    }
+   if (sign_id == 0) {
+      //Delete all the signs in the specified book
+      drawBookLater(book, UPD_NOT_VALID);
+      markDeleteSigns(book, sign_group);
+   } else {
+      //Delete only the specified signs
+      LineNr lnum = delsign(book, atlnum, sign_id, sign_group);
+      if (lnum == 0)
+         return FAIL;
+   }
 
-    //When all the signs in a buffer are removed, force recomputing the
-    //number column width (if enabled) in all the windows displaying the
-    //buffer if 'signcolumn' is set to 'number' in that window.
-    if (buf->signList == NULL)
-        may_force_numberwidth_recompute(buf, TRUE);
+   //When all the signs in a book are removed, force recomputing the number column width 
+   //(if enabled) in all the portals into the book if @signcolumn is set to 'number' in that portal
+   if (book->signList == NULL)
+      may_force_numberwidth_recompute(book, TRUE);
 
-    return OK;
+   return OK;
 }
 
 // Unplace the sign at the current cursor line.
 private void
-sign_unplace_at_cursor(Byte *groupname) {
-    int id = buf_findsign_id(curPor->book, curPor->cursor.lnum, groupname);
+sign_unplace_at_cursor(CS groupname) {
+    int id = findsign_id(curPor->book, curPor->cursor.lnum, groupname);
 
     if (id > 0)
        sign_unplace(id, groupname, curPor->book, curPor->cursor.lnum);
@@ -2283,26 +2264,26 @@ sign_unplace_at_cursor(Byte *groupname) {
 
 //  Jump to a sign.
 private LineNr
-sign_jump(int sign_id, Byte *sign_group, Book *buf) {
-    LineNr lnum = buf_findsign(buf, sign_id, sign_group);
+sign_jump(int sign_id, Byte *sign_group, Book* book) {
+    LineNr lnum = buf_findsign(book, sign_id, sign_group);
     if (lnum <= 0) {
        showErrFmtMsg(_(e_invalid_sign_id_nr), sign_id);
        return -1;
     }
 
     // goto a sign ...
-    if (portTryFindOpenBook(buf) != NULL) { // ... in a current portal
+    if (portTryFindOpenBook(book) != NULL) { // ... in a current portal
        curPor->cursor.lnum = lnum;
        check_cursor_lnum();
        beginline(BL_WHITE);
     } else { // ... not currently in a portal
-        if (buf->currFileName == NULL) {
+        if (book->currFileName == NULL) {
            emsg(_(e_cannot_jump_to_buffer_that_does_not_have_name));
            return -1;
         }
-        Byte *cmd = alloc(STRLEN(buf->currFileName) + 25);
+        Byte *cmd = alloc(STRLEN(book->currFileName) + 25);
 
-        sprintf((char *)cmd, "e +%ld %s", (long)lnum, buf->currFileName);
+        sprintf((char *)cmd, "e +%ld %s", (long)lnum, book->currFileName);
         executeCommLine(cmd);
         eeglFree(cmd);
     }
@@ -2368,13 +2349,14 @@ sign_define_cmd(Byte *sign_name, Byte *cmdline) {
 
 // ":sign place" command
 private void
-sign_place_cmd(Book *buf,
-               LineNr lnum,
-               Byte *sign_name,
-               int id,
-               Byte *group,
-               int prio)
-{
+sign_place_cmd(
+      Book* book,
+      LineNr lnum,
+      CS sign_name,
+      int id,
+      CS group,
+      int prio
+) {
     if (id <= 0) {
         // List signs placed in a file/buffer
         //   :sign place file={fname}
@@ -2389,54 +2371,53 @@ sign_place_cmd(Book *buf,
         if (lnum >= 0 || sign_name != NULL || (group != NULL && *group == '\0'))
             emsg(_(e_invalid_argument));
         else
-            sign_list_placed(buf, group);
+            sign_list_placed(book, group);
     } else {
         // Place a new sign
-        if (sign_name == NULL || !buf || (group && *group == '\0')) {
+        if (sign_name == NULL || !book || (group && *group == '\0')) {
             emsg(_(e_invalid_argument));
             return;
         }
 
-        sign_place(&id, group, sign_name, buf, lnum, prio);
+        sign_place(&id, group, sign_name, book, lnum, prio);
     }
 }
 
 // ":sign unplace" command
 private void
-sign_unplace_cmd(Book *buf, LineNr lnum, Byte *sign_name, int id, Byte *group) {
+sign_unplace_cmd(Book* book, LineNr lnum, Byte *sign_name, int id, Byte *group) {
    if (lnum >= 0 || sign_name != NULL || (group != NULL && *group == '\0')) {
        emsg(_(e_invalid_argument));
        return;
    }
 
    if (id == -2) {
-       if (buf != NULL) {
+       if (book) {
             // :sign unplace * file={fname}
             // :sign unplace * group={group} file={fname}
             // :sign unplace * group=* file={fname}
             // :sign unplace * buffer={nr}
             // :sign unplace * group={group} buffer={nr}
             // :sign unplace * group=* buffer={nr}
-            sign_unplace(0, group, buf, 0);
+            sign_unplace(0, group, book, 0);
         } else {
             // :sign unplace *
             // :sign unplace * group={group}
             // :sign unplace * group=*
-            FOR_ALL_BOOKS(buf)
-            {
-                if (buf->signList != NULL)
-                    buf_delete_signs(buf, group);
+            FOR_ALL_BOOKS(book) {
+                if (book->signList != NULL)
+                    markDeleteSigns(book, group);
             }
         }
     } else {
-        if (buf != NULL) {
+        if (book) {
             // :sign unplace {id} file={fname}
             // :sign unplace {id} group={group} file={fname}
             // :sign unplace {id} group=* file={fname}
             // :sign unplace {id} buffer={nr}
             // :sign unplace {id} group={group} buffer={nr}
             // :sign unplace {id} group=* buffer={nr}
-            sign_unplace(id, group, buf, 0);
+            sign_unplace(id, group, book, 0);
         } else {
             if (id == -1) {
                 // :sign unplace group={group}
@@ -2446,58 +2427,56 @@ sign_unplace_cmd(Book *buf, LineNr lnum, Byte *sign_name, int id, Byte *group) {
                 // :sign unplace {id}
                 // :sign unplace {id} group={group}
                 // :sign unplace {id} group=*
-                FOR_ALL_BOOKS(buf)
-                    sign_unplace(id, group, buf, 0);
+                FOR_ALL_BOOKS(book)
+                    sign_unplace(id, group, book, 0);
             }
         }
     }
 }
 
-/*
- * Jump to a placed sign commands:
- *   :sign jump {id} file={fname}
- *   :sign jump {id} buffer={nr}
- *   :sign jump {id} group={group} file={fname}
- *   :sign jump {id} group={group} buffer={nr}
- */
+//Jump to a placed sign commands:
+//  :sign jump {id} file={fname}
+//  :sign jump {id} buffer={nr}
+//  :sign jump {id} group={group} file={fname}
+//  :sign jump {id} group={group} buffer={nr}
 private void
-sign_jump_cmd(Book *buf,
-              LineNr lnum,
-              Byte *sign_name,
-              int id,
-              Byte *group)
-{
+sign_jump_cmd(
+   Book* book,
+   LineNr lnum,
+   CS sign_name,
+   int id,
+   CS group
+) {
     if (!sign_name && !group && id == -1) {
         emsg(_(e_argument_required));
         return;
     }
 
-    if (!buf || (group != NULL && *group == '\0') || lnum >= 0 || sign_name != NULL) {
-        // File or buffer is not specified or an empty group is used
+    if (!book || (group && *group == ZERO) || lnum >= 0 || sign_name) {
+        // File or book is not specified or an empty group is used
         // or a line number or a sign name is specified.
         emsg(_(e_invalid_argument));
         return;
     }
 
-    (void)sign_jump(id, group, buf);
+    (void)sign_jump(id, group, book);
 }
 
-/*
- * Parse the command line arguments for the ":sign place", ":sign unplace" and
- * ":sign jump" commands.
- * The supported arguments are: line={lnum} name={name} group={group}
- * priority={prio} and file={fname} or buffer={nr}.
- */
+//Parse the command line arguments for the ":sign place", ":sign unplace" and
+//":sign jump" commands.
+//The supported arguments are: line={lnum} name={name} group={group}
+//priority={prio} and file={fname} or buffer={nr}.
 private int
-parse_sign_cmd_args(int cmd,
-                    Byte *arg,
-                    Byte **sign_name,
-                    int *signid,
-                    Byte **group,
-                    int *prio,
-                    Book **buf,
-                    LineNr *lnum)
-{
+parse_sign_cmd_args(
+   int cmd,
+   CS arg,
+   OUT CS* sign_name,
+   int* signid,
+   Byte** group,
+   int *prio,
+   Book** book,
+   LineNr* lnum
+) {
     Byte *arg1 = arg;
     Byte *filename = NULL;
     int lnum_arg = FALSE;
@@ -2550,12 +2529,12 @@ parse_sign_cmd_args(int cmd,
         } ei (STRNCMP(arg, "file=", 5) == 0) {
             arg += 5;
             filename = arg;
-            *buf = buflistFindByNameExpandingLinks(arg);
+            *book = booklistFindByNameExpandingLinks(arg);
             break;
         } ei (STRNCMP(arg, "buffer=", 7) == 0) {
             arg += 7;
             filename = arg;
-            *buf = bookFindFileByBookNr((int)getdigits(&arg));
+            *book = bookFindFileByBookNr((int)getdigits(&arg));
 
             if (*skipwhite(arg) != ZERO)
                 showErrFmtMsg(_(e_trailing_characters_str), arg);
@@ -2569,16 +2548,16 @@ parse_sign_cmd_args(int cmd,
         arg = skipwhite(arg);
     }
 
-    if (filename != NULL && *buf == NULL) {
+    if (filename != NULL && *book == NULL) {
        showErrFmtMsg(_(e_invalid_buffer_name_str), filename);
        return FAIL;
     }
 
     // If the filename is not supplied for the sign place or the sign jump
-    // command, then use the current buffer.
+    // command, then use the current book.
     if (filename == NULL &&
        ((cmd == SIGNCMD_PLACE && lnum_arg) || cmd == SIGNCMD_JUMP))
-       *buf = curPor->book;
+       *book = curPor->book;
 
     return OK;
 }
@@ -2597,23 +2576,23 @@ c_sign(Invocation *invo) {
     arg = skipwhite(p);
 
     if (idx > SIGNCMD_LIST) {
-       Byte *sign_name = NULL;
        int id = -1;
-       Byte *group = NULL;
+       CS group = NULL;
        int prio = -1;
-       Book *buf = NULL;
+       Book* book = NULL;
        LineNr lnum = -1;
 
        // Parse command line arguments
-       if (parse_sign_cmd_args(idx, arg, &sign_name, &id, &group, &prio, &buf, &lnum) == FAIL)
+       CS sign_name = NULL;
+       if (parse_sign_cmd_args(idx, arg, OUT &sign_name, &id, &group, &prio, &book, &lnum) == FAIL)
           return;
 
        if (idx == SIGNCMD_PLACE)
-           sign_place_cmd(buf, lnum, sign_name, id, group, prio);
+          sign_place_cmd(book, lnum, sign_name, id, group, prio);
        ei (idx == SIGNCMD_UNPLACE)
-           sign_unplace_cmd(buf, lnum, sign_name, id, group);
+          sign_unplace_cmd(book, lnum, sign_name, id, group);
        ei (idx == SIGNCMD_JUMP)
-           sign_jump_cmd(buf, lnum, sign_name, id, group);
+          sign_jump_cmd(book, lnum, sign_name, id, group);
 
        return;
    }
@@ -2631,12 +2610,12 @@ c_sign(Invocation *invo) {
         // so that "099" and "99" are the same sign.  But keep "0".
         p = skiptowhite(arg);
         if (*p != ZERO)
-            *p++ = ZERO;
+           *p++ = ZERO;
 
         while (arg[0] == '0' && arg[1] != ZERO)
-            ++arg;
+           ++arg;
 
-        Byte *name = copyStr(arg);
+        CS name = copyStr(arg);
 
         if (idx == SIGNCMD_DEFINE)
             sign_define_cmd(name, p);
@@ -2694,8 +2673,8 @@ sign_getinfo(Sign *sp, Bag *retBag) {
 //If 'name' is NULL, return a list of all the defined signs.
 //Otherwise, return information about the specified sign.
 private void
-sign_getlist(Byte *name, List *retlist) {
-    Sign *sp = first_sign;
+sign_getlist(CS name, List* retlist) {
+    Sign* sp = first_sign;
 
     if (name) {
        sp = sign_find(name, NULL);
@@ -2729,31 +2708,31 @@ markGetBookSigns(Book *book, List *l){
     }
 }
 
-// Return information about all the signs placed in a buffer
+// Return information about all the signs placed in a book
 private void
 getSignsInBook(
-   Book *buf,
+   Book* book,
    LineNr lnum,
    int sign_id,
    CS sign_group,
    List *retlist
 ) {
-   Bag *d = allocBag_id(aid_sign_getplaced_dict);
-   if (d == NULL)
+   Bag *b = allocBag_id(aid_sign_getplaced_dict);
+   if (!b)
       return;
 
-   listAppendBag(retlist, d);
+   listAppendBag(retlist, b);
 
-   bagAddNumber(d, S"bufnr", (long)buf->fiNum);
+   bagAddNumber(b, S"bufnr", (long)book->fiNum);
 
    List *l = list_alloc_id(aid_sign_getplaced_list);
    if (!l)
       return;
 
-   bagAddList(d, S"signs", l);
+   bagAddList(b, S"signs", l);
 
    SignEntry *sign = NULL;
-   FOR_ALL_SIGNS_IN_BOOK(buf, sign) {
+   FOR_ALL_SIGNS_IN_BOOK(book, sign) {
       if (!sign_in_group(sign, sign_group))
           continue;
 
@@ -2769,9 +2748,9 @@ getSignsInBook(
    }
 }
 
-//Get a list of signs placed in buffer 'buf'. If 'num' is non-zero, return the
+//Get a list of signs placed in book. If 'num' is non-zero, return the
 //sign placed at the line number. If 'lnum' is zero, return all the signs
-//placed in 'buf'. If 'buf' is NULL, return signs placed in all the buffers.
+//placed in 'book'. If 'book' is NULL, return signs placed in all the books.
 private void
 sign_get_placed(
    Book* book,
@@ -2948,30 +2927,27 @@ get_sign_name(Expand *xp UNUSED, int idx) {
 
 // Handle command line completion for :sign command.
 void
-set_context_in_sign_cmd(Expand *xp, CS arg) {
-   Byte *p;
-   Byte *end_subcmd;
-   Byte *last;
-   int cmd_idx;
-   Byte *begin_subcmd_args;
+set_context_in_sign_cmd(Expand* xp, CS arg) {
+   CS p;
+   CS last;
 
    // Default: expand subcommands.
    xp->context = EXPAND_SIGN;
    expandWhatS = EXP_SUBCMD;
    xp->input = mbText(arg);
 
-   end_subcmd = skiptowhite(arg);
+   CS end_subcmd = skiptowhite(arg);
    // expand subcmd name
    // :sign {subcmd}<CTRL-D>
    if (*end_subcmd == ZERO)
       return;
 
-   cmd_idx = sign_cmd_idx(arg, end_subcmd);
+   int cmd_idx = sign_cmd_idx(arg, end_subcmd);
 
    // :sign {subcmd} {subcmd_args}
    //                |
    //                begin_subcmd_args
-   begin_subcmd_args = skipwhite(end_subcmd);
+   CS begin_subcmd_args = skipwhite(end_subcmd);
 
    // expand last argument of subcmd
 
@@ -3065,11 +3041,11 @@ set_context_in_sign_cmd(Expand *xp, CS arg) {
 // Define a sign using the attributes in 'dict'. Returns 0 on success and -1 on failure.
 private int
 sign_define_from_dict(CS name_arg, Bag* bag) {
-   Byte *linehl = NULL;
-   Byte *text = NULL;
-   Byte *texthl = NULL;
-   Byte *culhl = NULL;
-   Byte *numhl = NULL;
+   CS linehl = NULL;
+   CS text = NULL;
+   CS texthl = NULL;
+   CS culhl = NULL;
+   CS numhl = NULL;
    int prio = -1;
    int retval = -1;
 
@@ -3106,7 +3082,7 @@ cleanup:
 
 // Define multiple signs using attributes from list 'l' and store the return values in 'retlist'.
 private void
-sign_define_multiple(List *l, List *retlist) {
+sign_define_multiple(List* l, List* retlist) {
    ListItem *li = NULL;
    FOR_ALL_LIST_ITEMS(l, li) {
       int retval = -1;
@@ -3147,9 +3123,9 @@ f_sign_define(Var *argvars, Var *returnVar) {
 void
 f_sign_getdefined(Var *argvars, Var *returnVar) {
     if (allocReturnList_id(returnVar, aid_sign_getdefined) == FAIL)
-        return;
+       return;
 
-    Byte *name = NULL;
+    CS name = NULL;
     if (argvars[0].tag != VAR_UNKNOWN)
         name = tv_get_string(&argvars[0]);
 
@@ -3158,57 +3134,57 @@ f_sign_getdefined(Var *argvars, Var *returnVar) {
 
 void
 f_sign_getplaced(Var *argvars, Var *returnVar) {
-    Book *buf = NULL;
-    LineNr lnum = 0;
-    int sign_id = 0;
-    Byte *group = NULL;
+   Book* book = NULL;
+   LineNr lnum = 0;
+   int sign_id = 0;
+   Byte *group = NULL;
 
-    if (allocReturnList_id(returnVar, aid_sign_getplaced) == FAIL)
-        return;
+   if (allocReturnList_id(returnVar, aid_sign_getplaced) == FAIL)
+       return;
 
-    if (argvars[0].tag != VAR_UNKNOWN) {
-        // get signs placed in the specified buffer
-        buf = evGetBookArg(&argvars[0]);
-        if (buf == NULL)
+   if (argvars[0].tag != VAR_UNKNOWN) {
+      // get signs placed in the specified book
+      book = evGetBookArg(&argvars[0]);
+      if (!book)
+         return;
+
+      if (argvars[1].tag != VAR_UNKNOWN) {
+         if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
             return;
 
-        if (argvars[1].tag != VAR_UNKNOWN) {
-            if (check_for_nonnull_dict_arg(argvars, 1) == FAIL)
-                return;
+         DictItem *di = NULL;
+         Bag *dict = argvars[1].bag;
 
-            DictItem *di = NULL;
-            Bag *dict = argvars[1].bag;
+         if ((di = bagFind(dict, tConst("lnum"))) != NULL) {
+            // get signs placed at this line
+            Boole notanum = false;
+            varGetNumberChk(&di->c, OUT &notanum);
+            if (notanum)
+               return;
 
-            if ((di = bagFind(dict, tConst("lnum"))) != NULL) {
-                // get signs placed at this line
-                Boole notanum = false;
-                varGetNumberChk(&di->c, OUT &notanum);
-                if (notanum)
-                   return;
+            lnum = tv_get_lnum(&di->c);
+         }
 
-                lnum = tv_get_lnum(&di->c);
-            }
+         if ((di = bagFind(dict, tConst("id"))) != NULL) {
+            // get sign placed with this identifier
+            Boole notanum = false;
+            sign_id = (int)varGetNumberChk(&di->c, OUT &notanum);
+            if (notanum)
+               return;
+         }
 
-            if ((di = bagFind(dict, tConst("id"))) != NULL) {
-               // get sign placed with this identifier
-               Boole notanum = false;
-               sign_id = (int)varGetNumberChk(&di->c, OUT &notanum);
-               if (notanum)
-                  return;
-            }
+         if ((di = bagFind(dict, tConst("group"))) != NULL) {
+            group = convertVarToStringSingleUse(&di->c);
+            if (!group)
+               return;
 
-            if ((di = bagFind(dict, tConst("group"))) != NULL) {
-                group = convertVarToStringSingleUse(&di->c);
-                if (group == NULL)
-                    return;
+            if (*group == '\0') // empty string means global group
+               group = NULL;
+         }
+      }
+   }
 
-                if (*group == '\0') // empty string means global group
-                    group = NULL;
-            }
-        }
-    }
-
-    sign_get_placed(buf, lnum, sign_id, group, returnVar->list);
+   sign_get_placed(book, lnum, sign_id, group, returnVar->list);
 }
 
 void
@@ -3238,28 +3214,28 @@ f_sign_jump(Var *argvars, Var *returnVar) {
    }
 
    // Book to place the sign
-   Book *buf = evGetBookArg(&argvars[2]);
-   if (buf == NULL)
+   Book* book = evGetBookArg(&argvars[2]);
+   if (!book)
        goto cleanup;
 
-    returnVar->number = sign_jump(sign_id, sign_group, buf);
+   returnVar->number = sign_jump(sign_id, sign_group, book);
 
 cleanup:
-    eeglFree(sign_group);
+   eeglFree(sign_group);
 }
 
 //Place a new sign using the values specified in dict 'dict'. Returns the sign
 //identifier if successfully placed, otherwise returns 0.
 private int
 sign_place_from_dict(
-   Var *id_tv,
-   Var *group_tv,
-   Var *name_tv,
-   Var *buf_tv,
-   Bag *dict
+   Var* id_tv,
+   Var* group_tv,
+   Var* name_tv,
+   Var* buf_tv,
+   Bag* dict
 ){
    int sign_id = 0;
-   Byte *group = NULL;
+   CS group = NULL;
    Byte *sign_name = NULL;
    DictItem *di = NULL;
    LineNr lnum = 0;
@@ -3296,7 +3272,7 @@ sign_place_from_dict(
       group = NULL; // global group
    } else {
       group = convertVarToStringSingleUse(group_tv);
-      if (group == NULL)
+      if (!group)
          goto cleanup;
 
       if (group[0] == '\0') { // global sign group
@@ -3307,10 +3283,10 @@ sign_place_from_dict(
    }
 
    // sign name
-   if (name_tv == NULL) {
-       di = bagFind(dict, tConst("name"));
-       if (di)
-          name_tv = &di->c;
+   if (!name_tv) {
+      di = bagFind(dict, tConst("name"));
+      if (di)
+         name_tv = &di->c;
    }
 
    if (name_tv == NULL)
@@ -3323,15 +3299,15 @@ sign_place_from_dict(
    // buffer to place the sign
    if (buf_tv == NULL) {
         di = bagFind(dict, tConst("buffer"));
-        if (di != NULL)
-            buf_tv = &di->c;
+        if (di)
+           buf_tv = &di->c;
    }
 
    if (!buf_tv)
       goto cleanup;
 
-   Book* buf = evGetBookArg(buf_tv);
-   if (!buf)
+   Book* book = evGetBookArg(buf_tv);
+   if (!book)
       goto cleanup;
 
    // line number of the sign
@@ -3353,7 +3329,7 @@ sign_place_from_dict(
            goto cleanup;
     }
 
-    if (sign_place(&sign_id, group, sign_name, buf, lnum, prio) == OK)
+    if (sign_place(&sign_id, group, sign_name, book, lnum, prio) == OK)
         ret_sign_id = sign_id;
 
 cleanup:
@@ -3364,16 +3340,16 @@ cleanup:
 
 void
 f_sign_place(Var *argvars, Var *returnVar) {
-   Bag *dict = NULL;
+   Bag* bag = NULL;
    returnVar->number = -1;
 
    if (argvars[4].tag != VAR_UNKNOWN) {
         if (check_for_nonnull_dict_arg(argvars, 4) == FAIL)
             return;
-        dict = argvars[4].bag;
+        bag = argvars[4].bag;
    }
 
-   returnVar->number = sign_place_from_dict(&argvars[0], &argvars[1], &argvars[2], &argvars[3], dict);
+   returnVar->number = sign_place_from_dict(&argvars[0], &argvars[1], &argvars[2], &argvars[3], bag);
 }
 
 //"sign_placelist()" function.  Place multiple signs.
@@ -3442,7 +3418,7 @@ f_sign_undefine(Var *argvars, Var *returnVar) {
 private int
 sign_unplace_from_dict(Var *group_tv, Bag *dict) {
    int sign_id = 0;
-   Book *buf = NULL;
+   Book* book = NULL;
    int retval = -1;
 
    // sign group
@@ -3458,9 +3434,9 @@ sign_unplace_from_dict(Var *group_tv, Bag *dict) {
 
     if (dict) {
       DictItem *di = bagFind(dict, tConst("buffer"));
-      if (di != NULL) {
-          buf = evGetBookArg(&di->c);
-          if (buf == NULL)
+      if (di) {
+         book = evGetBookArg(&di->c);
+          if (!book)
               goto cleanup;
       }
 
@@ -3473,14 +3449,14 @@ sign_unplace_from_dict(Var *group_tv, Bag *dict) {
       }
    }
 
-   if (!buf) {
-      // Delete the sign in all the buffers
+   if (!book) {
+      // Delete the sign in all the books
       retval = 0;
-      FOR_ALL_BOOKS(buf) {
-         if (sign_unplace(sign_id, group, buf, 0) != OK)
+      FOR_ALL_BOOKS(book) {
+         if (sign_unplace(sign_id, group, book, 0) != OK)
             retval = -1;
       } 
-   } ei (sign_unplace(sign_id, group, buf, 0) == OK)
+   } ei (sign_unplace(sign_id, group, book, 0) == OK)
       retval = 0;
 
 cleanup:

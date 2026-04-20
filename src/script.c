@@ -8161,7 +8161,7 @@ cmdline_toggle_langmap(long *b_im_ptr) {
    }
    ui_cursor_shape();   // may show different cursor shape
    // Show/unshow value of 'keymap' in status lines later.
-   status_redraw_curbuf();
+   drawAllStatusLinesOfCurBookLater();
 }
 
 // Handle the CTRL-R key in the command-line mode and insert the contents of a register
@@ -8825,7 +8825,7 @@ getCommandWorker(
          commInfo.overstrike = !commInfo.overstrike;
          ui_cursor_shape();   // may show different cursor shape
          may_trigger_modechanged();
-         status_redraw_curbuf();
+         drawAllStatusLinesOfCurBookLater();
          redraw_statuslines();
          goto commlineUnchanged;
 
@@ -17248,8 +17248,8 @@ private int au_need_clean = FALSE;   // need to delete marked patterns
 private AutoEvent event_name2nr(Byte *start, Byte **end);
 private CS event_nr2name(AutoEvent event);
 private int au_get_grouparg(Byte **argp);
-private int applyAutocommGroup(AutoEvent event, Byte *fname, Byte *fname_io, Boole force, 
-   Unt group, Book *buf, Invocation *invo);
+private int applyAutocommGroup(AutoEvent event, CS fname, CS fname_io, Boole force, 
+   Unt group, Book* book, Invocation *invo);
 private void auto_next_pat(AutoPatComm *apc, int stop_at_last);
 private Unt findGroup(Byte *name);
 
@@ -17415,14 +17415,14 @@ au_cleanup(void) {
 
 //Called when a book is freed, to remove/invalidate related book-local autocommands.
 void
-scrRemoveAutocommsFromBook(Book* buf) {
+scrRemoveAutocommsFromBook(Book* book) {
    AutoPat       *ap;
    AutoEvent       event;
    AutoPatComm    *apc;
 
    // invalidate currently executing autocommands
    for (apc = active_apc_list; apc; apc = apc->next) {
-      if (buf->fiNum == apc->arg_bufnr)
+      if (book->fiNum == apc->arg_bufnr)
          apc->arg_bufnr = 0;
    } 
 
@@ -17430,12 +17430,12 @@ scrRemoveAutocommsFromBook(Book* buf) {
    for (event = (AutoEvent)0; (int)event < NUM_EVENTS; event = (AutoEvent)((int)event + 1)) {
       // loop over all autocommand patterns
       FOR_ALL_AUTOCMD_PATTERNS(event, ap) {
-         if (ap->buflocal_nr == buf->fiNum) {
+         if (ap->buflocal_nr == book->fiNum) {
             au_remove_pat(ap);
             if (p_verbose >= 6) {
                verbose_enter();
                smsg(
-                  _("auto-removing autocommand: %s <buffer=%d>"), event_nr2name(event), buf->fiNum
+                  _("auto-removing autocommand: %s <buffer=%d>"), event_nr2name(event), book->fiNum
                );
                verbose_leave();
             }
@@ -18165,7 +18165,7 @@ void
 c_doautoall(Invocation *invo) {
    int      retval = OK;
    AutocommSave   aco;
-   Book   *buf;
+   Book   *book;
    BookRef   bufref;
    Byte   *arg = invo->arg;
    Boole      did_aucmd;
@@ -18174,20 +18174,20 @@ c_doautoall(Invocation *invo) {
    //for some buffers there may not be a portal. So we change the buffer for the current portal 
    //for a moment. This gives problems when the autocommands make changes to the list of buffers 
    //or portals...
-   FOR_ALL_BOOKS(buf) {
+   FOR_ALL_BOOKS(book) {
       // Only do loaded buffers and skip the current buffer, it's done last.
-      if (buf->mem.mfile == NULL || buf == curBook)
+      if (book->mem.mfile == NULL || book == curBook)
          continue;
 
       // Find a portal into this buffer and save some values.
-      auCommPrepareBook(&aco, buf);
-      if (curBook != buf) {
+      auCommPrepareBook(&aco, book);
+      if (curBook != book) {
          // Failed to find a portal into this buffer.  Better not execute autocommands then.
          retval = FAIL;
          break;
       }
 
-      bookStoreInRef(OUT &bufref, buf);
+      bookStoreInRef(OUT &bufref, book);
 
       // execute the autocommands for this buffer
       retval = do_doautocmd(arg, false, &did_aucmd);

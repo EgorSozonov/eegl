@@ -1172,7 +1172,7 @@ edit_unputchar(void) {
       if (pc_status == PC_STATUS_RIGHT)
          ++curPor->cursorCol;
       if (pc_status == PC_STATUS_RIGHT || pc_status == PC_STATUS_LEFT)
-         redrawWinline(curPor, curPor->cursor.lnum);
+         drawPortLineLater(curPor, curPor->cursor.lnum);
       else
          drawText(pc_bytes, pc_row - msg_scrolled, pc_col, charDecoFlagsS);
    }
@@ -1581,7 +1581,7 @@ check_spell_redraw(void) {
    if (spell_redraw_lnum != 0) {
       LineNr   lnum = spell_redraw_lnum;
       spell_redraw_lnum = 0;
-      redrawWinline(curPor, lnum);
+      drawPortLineLater(curPor, lnum);
    }
 }
 
@@ -2238,7 +2238,7 @@ ins_ctrl_hat(void) {
    }
    showmode();
    // Show/unshow value of 'keymap' in status lines.
-   status_redraw_curbuf();
+   drawAllStatusLinesOfCurBookLater();
 }
 
 //Handle ESC in insert mode.

@@ -94,7 +94,7 @@ private int parse_match(CS lbuf, Tagline *tagp);
 private CS tag_full_fname(Tagline *tagp);
 private CS expand_tag_fname(CS fname, CS tag_fname, int expand);
 private int test_for_current(CS, CS, CS, CS);
-private int find_extra(Byte **pp);
+private int find_extra(OUT CS* pp);
 private void print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches);
 private int add_llist_tags(CS tag, ExpandMatch matches);
 
@@ -2496,7 +2496,7 @@ parse_match(
 
    // Try to find a kind field: "kind:<kind>" or just "<kind>"
    CS p = tagp->command;
-   if (find_extra(&p) == OK) {
+   if (find_extra(OUT &p) == OK) {
       if (p > tagp->command && p[-1] == '|')
          tagp->command_end = p - 1;  // drop trailing bar
       else
@@ -2612,7 +2612,7 @@ jumpto_tag(
    // skip over the ':'
    if (isdigit != 0)
        str++;
-   if (find_extra(&str) == OK) {
+   if (find_extra(OUT &str) == OK) {
        pbuf_end = str;
        *pbuf_end = ZERO;
    }
@@ -2652,11 +2652,11 @@ jumpto_tag(
 
    // If it was a CTRL-W CTRL-] command split window now.  For ":tab tag" open a new tab.
    if (postponed_split && (p_swb & (SWB_USEOPEN | SWB_USETAB)) != 0) {
-      Book *existing_buf = buflistFindByNameExpandingLinks(fname);
+      Book* existingBook = booklistFindByNameExpandingLinks(fname);
 
-      if (existing_buf != NULL) {
+      if (existingBook) {
          // If 'switchbuf' is set jump to the window containing "buf".
-         if (switchBufGotoPortalIntoBuf(existing_buf) != NULL)
+         if (switchBufGotoPortalIntoBuf(existingBook) != NULL)
             // We've switched to the buffer, the usual loading of the file must be skipped.
             getfile_result = GETFILE_SAME_FILE;
       }
@@ -2785,7 +2785,7 @@ jumpto_tag(
          retval = OK;
 
       if (retval == OK) {
-         //For a help buffer: Put the cursor line at the top of the portal,
+         //For a help book: Put the cursor line at the top of the portal,
          //the help subject will be below it.
          if (curBook->kind == BOOK_HELP)
             set_topline(curPor, curPor->cursor.lnum);
@@ -2832,7 +2832,7 @@ erret:
 }
 
 //If "expand" is TRUE, expand wildcards in fname.
-//If 'tagrelative' option set, change fname (name of file containing tag)
+//If @tagrelative option set, change fname (name of file containing tag)
 //according to tag_fname (name of tag file containing fname). Return a pointer to allocated memory
 private CS
 expand_tag_fname(CS fname, CS tag_fname, int expand) {
@@ -2876,8 +2876,8 @@ test_for_current(
    CS fname,
    CS fname_end,
    CS tag_fname,
-   CS buf_ffname)
-{
+   CS buf_ffname
+) {
    int       c;
    int       retval = FALSE;
    Byte  *fullname;
@@ -2896,9 +2896,9 @@ test_for_current(
 
 //Find the end of the tag address. Return OK if ";\"" is following, FAIL otherwise.
 private int
-find_extra(Byte **pp) {
-   Byte   *str = *pp;
-   Byte   first_char = **pp;
+find_extra(OUT CS* pp) {
+   CS str = *pp;
+   Byte first_char = **pp;
 
    // Repeat for addresses separated with ';'
    for (;;) {
@@ -2989,7 +2989,7 @@ expand_tags(
 //Add a tag field to the dictionary "dict". Return OK or FAIL.
 private int
 add_tag_field(
-   Bag  *dict,
+   Bag* dict,
    CS field_name,
    CS start,      // start of the value
    CS end      // after the value; can be NULL
@@ -3177,14 +3177,14 @@ tagstack_shift(Portal *wp) {
 //Push a new item to the tag stack
 private void
 tagstack_push_item(
-   Portal   *wp,
-   Byte   *tagname,
-   int   cur_fnum,
-   int   cur_match,
-   Pos   mark,
-   int   fnum,
-   Byte  *user_data)
-{
+   Portal* wp,
+   CS tagname,
+   int cur_fnum,
+   int cur_match,
+   Pos mark,
+   int fnum,
+   Byte  *user_data
+) {
    Taggy   *tagstack = wp->tagStack;
    int      idx = wp->tagStackLen;   // top of the stack
 
@@ -3210,8 +3210,7 @@ private void
 tagstack_push_items(Portal *wp, List *l) {
    ListItem   *li;
    DictItem   *di;
-   Bag   *itemdict;
-   Byte   *tagname;
+   Bag* itemdict;
    Pos   mark;
    int      fnum;
 
@@ -3226,8 +3225,10 @@ tagstack_push_items(Portal *wp, List *l) {
           continue;
       if (list2fpos(&di->c, &mark, &fnum, NULL, FALSE) != OK)
           continue;
+          
+      CS  tagname;
       if ((tagname = bagGetString(itemdict, tConst("tagname"), TRUE)) == NULL)
-          continue;
+         continue;
 
       if (mark.col > 0)
           mark.col--;
@@ -3256,7 +3257,7 @@ tagstack_set_curidx(Portal *wp, int curidx) {
 //  'r' for replace
 //  't' for truncate
 int
-set_tagstack(Portal *wp, Bag *d, int action) {
+set_tagstack(Portal *wp, Bag *d, Unt action) {
    // not allowed to alter the tag stack entries from inside tagfunc
    if (tfu_in_use) {
       emsg(_(e_cannot_modify_tag_stack_within_tagfunc));
