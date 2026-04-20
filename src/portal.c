@@ -11039,7 +11039,7 @@ popup_update_preview_title(void) {
 
 // Show a popup notification (like a toast) with a timeout.
 void
-showNotification(Arr(Byte) text) {
+showNotification(CS text) {
    Var vars[2];
    vars[0] = *allocStringVar(text);
    Bag* emptyBag = allocBag();

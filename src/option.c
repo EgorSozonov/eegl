@@ -1703,8 +1703,8 @@ setCommHeight(OptionChange* cha) {
 
 //Process the updated @diff
 private CS
-did_set_diff(OptionChange* cha UNUSED) {
-   // May add or remove the buffer from the list of diff buffers.
+did_set_diff(OptionChange* cha) {
+   // May add or remove the book from the list of diff books.
    updateBoolRef(cha);
    diff_buf_adjust(curPor);
    
@@ -1731,7 +1731,7 @@ did_set_foldlevel(OptionChange* cha) {
 }
 
 private CS
-did_set_hlsearch(OptionChange* cha UNUSED) {
+did_set_hlsearch(OptionChange* cha) {
    // when @hlsearch is set or reset: reset hiliteSearchG
    updateBoolRef(cha);
    setHlsearch(true);
@@ -1739,7 +1739,7 @@ did_set_hlsearch(OptionChange* cha UNUSED) {
 }
 
 private CS
-did_set_ignorecase(OptionChange* cha UNUSED) {
+did_set_ignorecase(OptionChange* cha) {
    // when @ignorecase is set or reset and @hlsearch is set, redraw
    updateBoolRef(cha);
    if (cha->newVal.boole)
@@ -1828,7 +1828,7 @@ did_set_maxsearchcount(OptionChange* cha) {
 }
 
 private CS
-setShiftWidth(OptionChange *cha) {
+setShiftWidth(OptionChange* cha) {
    if (cha->newVal.num <= 0) {
       return e_argument_must_be_positive;
    }
@@ -1889,20 +1889,20 @@ did_set_undofile(OptionChange* cha) {
     //When reset we do not delete the undo file, the option may be set again
     //without making any changes in between.
     Byte hash[UNDO_HASH_SIZE];
-    Book* save_curbuf = curBook;
+    Book* saveCurBook = curBook;
 
     FOR_ALL_BOOKS(curBook) {
-      // When @undofile is set globally: for every buffer, otherwise
-      // only for the current buffer: Try to read in the undofile,
-      // if one exists, the buffer wasn't changed and the buffer was loaded
-      if ((curBook == save_curbuf || (cha->setScope == SET_GLOBAL))
+      //When @undofile is set globally: for every buffer, otherwise only for the current buffer: 
+      //Try to read in the undofile, if one exists, the buffer wasn't changed and the buffer was 
+      //loaded
+      if ((curBook == saveCurBook || (cha->setScope == SET_GLOBAL))
          && !doWasCurBookChanged() && curBook->mem.mfile != NULL
       ){
          u_compute_hash(hash);
          u_read_undo(NULL, hash, curBook->currFileName);
       }
    }
-   curBook = save_curbuf;
+   curBook = saveCurBook;
 
    return NULL;
 }
@@ -2420,7 +2420,7 @@ wildcharUseKeyname(OptionRef ref, long *wcp) {
 
 //Return TRUE if "x" is present in 'shortmess' option, or
 //'shortmess' contains 'a' and "x" is present in SHM_A.
-int
+Boole
 shortmess(int x) {
    return p_shm
       && (   firstOccurrence(p_shm, x) != NULL
@@ -3698,7 +3698,7 @@ calcGlobalStringsLength() {
    Unt totalLen = 0;
    Option* o UNUSED;
    FOR_GLOBAL(o) {
-      if (o->defaultValue.tag == OPTION_STRING) {
+      if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string != Em)) {
          totalLen += (STRLEN(*o->c.reference.string) + 1); // +1 for the ZERO
       }
    }
@@ -3710,8 +3710,20 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
    Unt totalLen = 0;
    for (Unt i = 0; i < count; i++) {
       Option* o = opts + i;
-      if (o->defaultValue.tag == OPTION_STRING) {
+      if (o->defaultValue.tag == OPTION_STRING && o->c.local.val.string != Em) {
          totalLen += (STRLEN(o->c.local.val.string) + 1); // +1 for the ZERO
+      }
+   }
+   return totalLen;
+}
+
+private Unt
+calcDefaultStringsLength(Arr(Option) opts, Unt count) {
+   Unt totalLen = 0;
+   for (Unt i = 0; i < count; i++) {
+      Option* o = opts + i;
+      if (o->defaultValue.tag == OPTION_STRING && o->defaultValue.val.string != Em) {
+         totalLen += (STRLEN(o->defaultValue.val.string) + 1); // +1 for the ZERO
       }
    }
    return totalLen;
@@ -4191,16 +4203,24 @@ setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos) {
 private void
 setDefaultValuesForAllOptions(SetScope setScope) {
    Option* o UNUSED;
+   int globalDefaultSize = calcDefaultStringsLength(OPTIONS_GLOBAL, OPTION_GLOBAL_COUNT);
+   globalStringOptionsG = sbuf(globalDefaultSize);
+   
    FOR_GLOBAL(o) {
       if ((o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
       } 
    }
+   
+   int portalDefaultSize = calcDefaultStringsLength(OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
+   portalStringOptionsG = sbuf(globalDefaultSize);
    FOR_PORTAL(o) {
       if ((o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
       } 
    }
+   int bookDefaultSize = calcDefaultStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
+   bookStringOptionsG = sbuf(globalDefaultSize);
    FOR_BOOK(o) {
       if ((o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
@@ -4912,9 +4932,9 @@ is_valid_mess_lang(Byte *lang) {
 
 //Obtain the current messages language.  Used to set the default for
 //'helplang'.  May return NULL or an empty string.
-Byte *
+CS
 get_mess_lang(void) {
-   Byte *p;
+   CS p;
 
 #ifdef HAVE_GET_LOCALE_VAL
 # if defined(LC_MESSAGES)
@@ -4925,11 +4945,11 @@ get_mess_lang(void) {
    p = get_locale_val(LC_COLLATE);
 # endif
 #else
-   p = mch_getenv((CS)"LC_ALL");
+   p = mch_getenv(S"LC_ALL");
    if (!is_valid_mess_lang(p)) {
-      p = mch_getenv((CS)"LC_MESSAGES");
+      p = mch_getenv(S"LC_MESSAGES");
       if (!is_valid_mess_lang(p))
-         p = mch_getenv((CS)"LANG");
+         p = mch_getenv(S"LANG");
    }
 #endif
     return is_valid_mess_lang(p) ? p : NULL;

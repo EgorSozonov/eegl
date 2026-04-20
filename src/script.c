@@ -2117,7 +2117,7 @@ do_debug(Byte *comm){
 
       debug_break_level = n;
       if (typeahead_saved) {
-         restore_typeahead(&typeaheadbuf, TRUE);
+         restore_typeahead(&typeaheadbuf, true);
          ignore_script = save_ignore_script;
       }
       ex_normal_busy = save_ex_normal_busy;

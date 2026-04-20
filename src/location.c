@@ -5693,14 +5693,11 @@ loadDummyBook(
          curBook->flags &= ~BF_DUMMY;
 
          newbuf_to_wipe.c = NULL;
-         readfile_result = readfile(fname, NULL,
-           (LineNr)0, (LineNr)0, (LineNr)MAXLNUM,
-           NULL, READ_NEW | READ_DUMMY);
+         readfile_result = readfile(
+            fname, NULL, (LineNr)0, (LineNr)0, (LineNr)MAXLNUM, NULL, READ_NEW | READ_DUMMY
+         );
          --newbuf->locked;
-         if (readfile_result == OK
-             && !gotInterruptG
-             && !(curBook->flags & BF_NEW))
-          {
+         if (readfile_result == OK && !gotInterruptG && !(curBook->flags & BF_NEW)) {
             failed = FALSE;
             if (curBook != newbuf) {
                 // Bloody autocommands changed the book!  Can happen when

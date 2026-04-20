@@ -2197,7 +2197,7 @@ getreg_wrap_one_line(CS s, int flags) {
 //  GREG_EXPR_SRC   For the expression register: return expression itself,
 //        not the result of its evaluation.
 //  GREG_LIST   Return a list of lines instead of a single string.
-Byte*
+CS
 get_reg_contents(int regname, int flags) {
    LineNr   i;
    Byte   *retval;

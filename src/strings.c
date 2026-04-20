@@ -176,7 +176,7 @@ nr2hex(unsigned c) {
 }
 
 void
-transchar_hex(Byte *buf, int c) {
+transchar_hex(CS buf, int c) {
    buf[0] = '<';
    int i = 0;
    if (c > 255) {
@@ -192,7 +192,7 @@ transchar_hex(Byte *buf, int c) {
 //Return the number of character cells string "s[len]" will take on the
 //screen, counting TABs as two characters: "^I".
 int
-eeglStrNsize(Byte *s, int len) {
+eeglStrNsize(CS s, int len) {
    int size = 0;
 
    while (*s != ZERO && --len >= 0) {
@@ -261,13 +261,13 @@ getwhitecols_curline(void) {
 }
 
 int
-getwhitecols(Byte *p) {
+getwhitecols(CS p) {
    return skipwhite(p) - p;
 }
 
 // skip over digits
-Byte *
-skipdigits(Byte *q) {
+CS
+skipdigits(CS q) {
    Byte   *p = q;
 
    while (EE_ISDIGIT(*p))   // skip to next non-digit
@@ -645,7 +645,7 @@ hex2nr(int c) {
 
 // Convert two hex characters to a byte. Return -1 if one of the characters is not hex.
 int
-hexhex2nr(Byte *p) {
+hexhex2nr(CS p) {
    if (!eeIsXDigit(p[0]) || !eeIsXDigit(p[1]))
       return -1;
    return (hex2nr(p[0]) << 4) + hex2nr(p[1]);
@@ -664,7 +664,7 @@ rem_backslash(CS filename) {
 
 // Halve the number of backslashes in a file name argument.
 void
-backslash_halve(Byte *p) {
+backslash_halve(CS p) {
    for ( ; *p; ++p) {
       if (rem_backslash(p))
          STRMOVE(p, p + 1);
@@ -776,9 +776,9 @@ appendToChunkyString(Arr(Byte const) c, ChunkyString* chunky) {
 }
 
 // Linearize a chunky string into a contiguous ZERO-terminated string in the same arena
-Arr(Byte)
+CS
 toStringChunky(ChunkyString* chunky) {
-   Arr(Byte) contiguous = allocateArray(chunky->len + 1, Byte, chunky->a);
+   CS contiguous = allocateArray(chunky->len + 1, Byte, chunky->a);
    contiguous[chunky->len] = ZERO;
    int i = 0;
    for (ChunkString* p = &(chunky->first); p; p = p->next) {
@@ -984,7 +984,7 @@ splitByCharIntoArray(CS inp, Byte delimiter, OUT Unt* len) {
 
 // "a b c" -> ["a" "b" "c"]
 ArrayList
-splitBySpace(Arr(Byte) inp) {
+splitBySpace(CS inp) {
    ArrayList split;
    ga_init(&split);
    split.c = alloc(2*sizeof(Byte*));
@@ -1095,7 +1095,7 @@ copyStr_up(CS string) {
 //Like copySubstr(), but make all characters uppercase.
 //This uses ASCII lower-to-upper case translation, language independent.
 CS
-copySubstr_up(Byte *string, Unt len) {
+copySubstr_up(CS string, Unt len) {
    CS p1 = copySubstr(string, len);
    asciiToUpper(p1);
    return p1;
@@ -1359,13 +1359,13 @@ stringComparer(void const *s1, void const*s2) {
 }
 
 void
-sortStrings(Byte   **files, int      count) {
+sortStrings(Arr(CS) files, int count) {
    qsort((void *)files, (Unt)count, sizeof(CS), stringComparer);
 }
 
 // Return TRUE if string "s" contains a non-ASCII character (128 or higher). FALSE for null
 int
-has_non_ascii(Byte *s) {
+has_non_ascii(CS s) {
    if (s) {
       for (Byte* p = s; *p != ZERO; ++p) {
          if (*p >= 128)
@@ -1473,14 +1473,13 @@ string_count(CS haystack, CS needle, int ic) {
 
 //Make a Var of the first character of "input" and store it in "output". Return OK or FAIL.
 private int
-copy_first_char_to_tv(Byte *input, Var *output) {
+copy_first_char_to_tv(CS input, Var* output) {
    Byte   buf[MB_MAXBYTES + 1];
-   int      len;
 
    if (input == NULL || output == NULL)
       return FAIL;
 
-   len = utfCharLen(input);
+   int len = utfCharLen(input);
    STRNCPY(buf, input, len);
    buf[len] = ZERO;
    output->tag = VAR_STRING;
@@ -1493,10 +1492,10 @@ copy_first_char_to_tv(Byte *input, Var *output) {
 //character in string "str" and return the result in "returnVar".
 void
 string_filter_map(
-   Byte      *str,
-   FilterMap   filtermap,
-   Var   *expr,
-   Var   *returnVar)
+   CS str,
+   FilterMap filtermap,
+   Var* expr,
+   Var* returnVar)
 {
    Byte   *p;
    Var   tv;
@@ -1589,7 +1588,7 @@ byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
    returnVar->number = -1;
 
    CS str = convertVarToStringSingleUse(&argvars[0]);
-   Long   idx = varGetNumberChk(argvars + 1, NULL);
+   Long idx = varGetNumberChk(argvars + 1, NULL);
    if (str == NULL || idx < 0)
       return;
 
@@ -1647,7 +1646,7 @@ f_charidx(Var *argvars, Var *returnVar) {
          || (argvars[2].tag != VAR_UNKNOWN && check_for_opt_bool_arg(argvars, 3) == FAIL))
       return;
 
-   Byte *str = convertVarToStringSingleUse(&argvars[0]);
+   CS str = convertVarToStringSingleUse(&argvars[0]);
    Long   idx = varGetNumberChk(argvars + 1, NULL);
    if (str == NULL || idx < 0)
       return;
@@ -1690,7 +1689,7 @@ f_charidx(Var *argvars, Var *returnVar) {
 
 // Add the bytes from "str" to "blob".
 private void
-blob_from_string(Byte *str, Blob *blob) {
+blob_from_string(CS str, Blob* blob) {
    Unt len = STRLEN(str);
 
    for (Unt i = 0; i < len; i++) {
@@ -1707,7 +1706,7 @@ blob_from_string(Byte *str, Blob *blob) {
 //Return a string created from the bytes in blob starting at "start_idx". A NL character in the 
 //blob indicates end of string. A ZERO character in the blob is translated to a NL.
 //On return, "start_idx" points to next byte to process in blob.
-private Byte *
+private CS
 string_from_blob(Blob *blob, long *start_idx) {
    ArrayList str_ga;
    int idx;
@@ -2298,7 +2297,7 @@ tv_nr(Var *tvs, OUT int *idxp) {
 //If "tofree" is not NULL echo_string() is used. All types are converted to
 //a string with the same format as ":echo". The caller must free "*tofree". NULL for an error.
 private CS
-tv_str(Var *tvs, int *idxp, Byte **tofree) {
+tv_str(Var* tvs, int* idxp, Byte** tofree) {
    int idx = *idxp - 1;
    CS s = NULL;
    static Byte   numbuilder[NUMBUFLEN];
@@ -2335,15 +2334,15 @@ tv_float(Var *tvs, int *idxp) {
    return f;
 }
 
-
 //Return the representation of infinity for printf() function:
 //"-inf", "inf", "+inf", " inf", "-INF", "INF", "+INF" or " INF".
 private CS
-infinity_str(int positive,
-        char fmt_spec,
-        int force_sign,
-        int space_for_positive)
-{
+infinity_str(
+      Unt positive,
+      char fmt_spec,
+      int force_sign,
+      int space_for_positive
+) {
    static CS table[] = {SMAP((CS),
       "-inf", "inf", "+inf", " inf",
       "-INF", "INF", "+INF", " INF"
@@ -3672,24 +3671,21 @@ eeVarPrintf0(
                 abs_f > 1.0e307
 # endif
                 )
-             {
+            {
             // Avoid a buffer overflow
-            STRCPY(tmp, infinity_str(f > 0.0, fmt_spec,
-                        force_sign, space_for_positive));
+            STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
             str_arg_l = STRLEN(tmp);
             zero_padding = 0;
             } else {
                if (isnan(f)) {
-                   // Not a number: nan or NAN
-                   STRCPY(tmp, ASCII_ISUPPER(fmt_spec) ? "NAN"
-                                    : "nan");
-                   str_arg_l = 3;
-                   zero_padding = 0;
+                  // Not a number: nan or NAN
+                  STRCPY(tmp, ASCII_ISUPPER(fmt_spec) ? "NAN" : "nan");
+                  str_arg_l = 3;
+                  zero_padding = 0;
                } ei (isinf(f)) {
-                   STRCPY(tmp, infinity_str(f > 0.0, fmt_spec,
-                           force_sign, space_for_positive));
-                   str_arg_l = STRLEN(tmp);
-                   zero_padding = 0;
+                  STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
+                  str_arg_l = STRLEN(tmp);
+                  zero_padding = 0;
                } else {
                   // Regular float number
                   format[0] = '%';
@@ -3908,7 +3904,7 @@ error:
 //If "idx" is negative count from the end, -1 is the last character.
 //When going over the start return -1.
 long
-char_idx2byte(Byte *str, Unt str_len, Long idx) {
+char_idx2byte(CS str, Unt str_len, Long idx) {
    Long nchar = idx;
    Unt   nbyte = 0;
 
@@ -3918,14 +3914,14 @@ char_idx2byte(Byte *str, Unt str_len, Long idx) {
           --nchar;
       }
    } else {
-   nbyte = str_len;
-   while (nchar < 0 && nbyte > 0) {
-      --nbyte;
-      nbyte -= mb_head_off(str, str + nbyte);
-      ++nchar;
-   }
-   if (nchar < 0)
-      return -1;
+      nbyte = str_len;
+      while (nchar < 0 && nbyte > 0) {
+         --nbyte;
+         nbyte -= mb_head_off(str, str + nbyte);
+         ++nchar;
+      }
+      if (nchar < 0)
+         return -1;
    }
    return (long)nbyte;
 }
@@ -3970,7 +3966,7 @@ fileExtension(Text fName) {
 
 // Does longerStr start with shorterStr?
 Boole
-startsWith(Arr(Byte) longerStr, Arr(Byte) shorterStr) {
+startsWith(CS longerStr, CS shorterStr) {
    CS l = longerStr;
    CS s = shorterStr;
    for(; *l == *s && *l != ZERO && s != ZERO; l++, s++)
@@ -4016,8 +4012,8 @@ private int fuzzyMatchStr_compare(const void *s1, const void *s2);
 private int fuzzy_match_func_compare(const void *s1, const void *s2);
 private void sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz);
 
-private double match_positions(Byte *needle, Byte *haystack, Unt *positions);
-private int has_match(Byte *needle, Byte *haystack);
+private double match_positions(CS needle, CS haystack, Unt* positions);
+private int has_match(CS needle, CS haystack);
 
 #define SCORE_MAX INFINITY
 #define SCORE_MIN (-INFINITY)
@@ -4477,7 +4473,7 @@ sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz) {
 
 //Fuzzy match 'pat' in 'str'. Return 0 if there is no match. Otherwise, return the match score.
 int
-fuzzyMatchStr(Byte *str, Byte *pat) {
+fuzzyMatchStr(CS str, CS pat) {
    int      score = FUZZY_SCORE_NONE;
    Unt   matchpos[FUZZY_MATCH_MAX_LEN];
 
@@ -4492,7 +4488,7 @@ fuzzyMatchStr(Byte *str, Byte *pat) {
 //Fuzzy match the position of string 'pat' in string 'str'.
 //Return a dynamic array of matching positions. If there is no match, return NULL.
 ArrayList *
-fuzzyMatchStr_with_pos(Byte *str UNUSED, Byte *pat UNUSED) {
+fuzzyMatchStr_with_pos(CS str, CS pat) {
    int          score = FUZZY_SCORE_NONE;
    ArrayList       *match_positions = NULL;
    Unt       matches[FUZZY_MATCH_MAX_LEN];
@@ -4627,9 +4623,9 @@ search_for_fuzzy_match(
    int dir,
    Pos* start_pos,
    OUT int* len,
-   Byte** ptr,
-   int* score)
-{
+   OUT CS* ptr,
+   int* score
+) {
    Pos current_pos = *pos;
    Pos circly_end;
    int found_new_match = FALSE;
@@ -5101,9 +5097,9 @@ same_directory(CS f1, CS f2) {
 //If the string between "p" and "pend" ends in "name/", return "pend" minus
 //the length of "name/".  Otherwise return "pend".
 CS
-remove_tail(Byte *p, Byte *pend, Byte *name) {
+remove_tail(CS p, CS pend, CS name) {
    int      len = (int)STRLEN(name) + 1;
-   Byte   *newend = pend - len;
+   CS newend = pend - len;
 
    if (newend >= p
           && fnamencmp(newend, name, len - 1) == 0
@@ -6172,7 +6168,7 @@ decode_hex_color(Text hex) {
 
 //Decode a hex color with a guarantee that there is no need to check ZERO
 UiColor
-decodeHexColorLengthGuaranteed(Byte* hex) {
+decodeHexColorLengthGuaranteed(CS hex) {
    UiColor color = 0;
 
    // Name is in "#rrggbb" format

@@ -21,7 +21,7 @@ void copyPortOpt(PortLocal *t, PortLocal *s);
 void optClearPortOptions(PortLocal *t);
 void optInitExpandContextForSet(Expand *xp, CS arg, SetScope setScope);
 int optExpandOldOption(ExpandMatch *matches);
-int shortmess(int x);
+Boole shortmess(int x);
 int reset_optWasSet(CS name);
 long get_sidescrolloff_value(void);
 int optSetCallback(Callback *cb, CS new);
@@ -47,7 +47,7 @@ void optSetStringOptionDirectInPort(Portal *po, CS name, CS val, Unt optFlags, i
 void optSetStringOptionDirectInBook(Book *book, CS name, CS val, Unt optFlags, int set_sid);
 void save_clear_shm_value(void);
 void restore_shm_value(void);
-Byte *get_mess_lang(void);
+CS get_mess_lang(void);
 void set_lang_var(void);
 void init_locale(void);
 void c_language(Invocation *invo);

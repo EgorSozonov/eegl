@@ -176,7 +176,7 @@ get_search_pat(void) {
 }
 
 void
-save_re_pat(int idx, Byte *pat, Unt patlen, int magic) {
+save_re_pat(int idx, CS pat, Unt patlen, int magic) {
    if (prevSearchPatternsG[idx].pat == pat)
       return;
 
@@ -319,7 +319,7 @@ restore_incsearch_state(void) {
    search_match_lines  = saved_search_match_lines;
 }
 
-Byte *
+CS
 last_search_pattern(void) {
    return prevSearchPatternsG[RE_SEARCH].pat;
 }
@@ -332,7 +332,7 @@ last_search_patternLen(void) {
 //Return TRUE when case should be ignored for search pattern "pat".
 //Use the 'ignorecase' and 'smartcase' options.
 int
-ignorecase(Byte *pat) {
+ignorecase(CS pat) {
    return ignorecase_opt(pat, p_ic, p_scs);
 }
 
@@ -349,7 +349,7 @@ ignorecase_opt(Byte *pat, int ic_in, int scs) {
 
 // Return TRUE if pattern "pat" has an uppercase character.
 int
-pat_has_uppercase(Byte *pat) {
+pat_has_uppercase(CS pat) {
    Byte *p = pat;
    Magic magic_val = MAGIC_ON;
 
@@ -2384,7 +2384,7 @@ get_line_and_copy(LineNr lnum, CS builder) {
 //If p_ic && compl_status_sol() then ptr must be in lowercase.
 void
 find_pattern_in_path(
-   Byte   *ptr,      // pointer to search pattern
+   CS ptr,      // pointer to search pattern
    int      dir UNUSED,   // direction of expansion
    int      len,      // length of search pattern
    int      whole,      // match whole words only
@@ -2436,8 +2436,8 @@ find_pattern_in_path(
    if (type != CHECK_PATH && type != FIND_DEFINE
        // when CONT_SOL is set compare "ptr" with the beginning of the
        // line is faster than quote_meta/regcomp/regexec "ptr" -- Acevedo
-       && !compl_status_sol())
-    {
+       && !compl_status_sol()
+   ) {
       pat = alloc(len + 5);
       eeSnprintf(pat, len + 5, whole ? "\\<%.*s\\>" : "%.*s", len, ptr);
       // ignore case according to p_ic, p_scs and pat
@@ -2473,7 +2473,7 @@ find_pattern_in_path(
 
    for (;;) {
       if (incl_regmatch.regprog != NULL && eeRegexec(&incl_regmatch, line, (ColNr)0)){
-         Byte *p_fname = (curr_fname == curBook->currFileName)
+         CS p_fname = (curr_fname == curBook->currFileName)
                         ? curBook->fullFileName : curr_fname;
 
          if (inc_opt != NULL && strstr((char *)inc_opt, "\\zs") != NULL)
@@ -2511,8 +2511,8 @@ find_pattern_in_path(
             }
          }
 
-         if (type == CHECK_PATH && (action == ACTION_SHOW_ALL
-                || (new_fname == NULL && !already_searched))
+         if (type == CHECK_PATH 
+               && (action == ACTION_SHOW_ALL || (new_fname == NULL && !already_searched))
          ) {
             if (did_show)
                 msg_putchar('\n');       // cursor below last one
@@ -2539,20 +2539,17 @@ find_pattern_in_path(
                   // 'includeexpr' is set.
                   msgOuttransDeco(new_fname, getDecoFlags(HLF_D));
                } else {
-                  /*
-                   * Isolate the file name.
-                   * Include the surrounding "" or <> if present.
-                   */
+                  //Isolate the file name. Include the surrounding "" or <> if present.
                   if (inc_opt != NULL && strstr((char *)inc_opt, "\\zs") != NULL) {
-                      // pattern contains \zs, use the match
-                      p = incl_regmatch.startp[0];
-                      i = (int)(incl_regmatch.endp[0] - incl_regmatch.startp[0]);
+                     // pattern contains \zs, use the match
+                     p = incl_regmatch.startp[0];
+                     i = (int)(incl_regmatch.endp[0] - incl_regmatch.startp[0]);
                   } else {
-                      // find the file name after the end of the match
-                      for (p = incl_regmatch.endp[0]; *p && !eeIsFnameChar(*p); p++)
-                         {}
-                      for (i = 0; eeIsFnameChar(p[i]); i++)
-                         {}
+                     // find the file name after the end of the match
+                     for (p = incl_regmatch.endp[0]; *p && !eeIsFnameChar(*p); p++)
+                        {}
+                     for (i = 0; eeIsFnameChar(p[i]); i++)
+                        {}
                   }
 
                   if (i == 0) {
@@ -2560,8 +2557,8 @@ find_pattern_in_path(
                       p = incl_regmatch.endp[0];
                       i = (int)STRLEN(p);
                   }
-                  // Avoid checking before the start of the line, can
-                  // happen if \zs appears in the regexp.
+                  //Avoid checking before the start of the line, can
+                  //happen if \zs appears in the regexp.
                   ei (p > line) {
                      if (p[-1] == '"' || p[-1] == '<') {
                         --p;
@@ -4316,8 +4313,8 @@ c_helpclose(Invocation *invo UNUSED) {
 
 //In an argument search for a language specifiers in the form "@xx".
 //Changes the "@" to ZERO if found, and returns a pointer to "xx". Returns NULL if not found.
-Byte *
-check_help_lang(Byte *arg) {
+CS
+check_help_lang(CS arg) {
    int len = (int)STRLEN(arg);
 
    if (len >= 3 && arg[len - 3] == '@' 
@@ -4401,8 +4398,8 @@ helpCompare(const void *s1, const void *s2) {
 //When "keep_lang" is TRUE try keeping the language of the current buffer.
 int
 find_help_tags(
-   Byte   *arg,
-   int      keep_lang,
+   CS arg,
+   int keep_lang,
    OUT ExpandMatch* matches
 ) {
    Byte   *s, *d;

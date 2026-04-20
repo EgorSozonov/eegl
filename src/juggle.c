@@ -1029,11 +1029,11 @@ insertLine(
 //If "include_space" is set, include trailing whitespace while calculating the length.
 int
 get_leader_len(
-   Byte   *line,
+   CS line,
    Byte   **flags,
    int      backward,
-   int      include_space)
-{
+   int      include_space
+) {
    int      i, j;
    int      result;
    int      got_com = FALSE;
@@ -1065,8 +1065,7 @@ get_leader_len(
             continue;
          *string++ = ZERO;       // isolate flags from string
 
-         // If we found a middle match previously, use that match when this
-         // is not a middle or end.
+         // If we found a middle match previously, use that match when this is not a middle or end.
          if (middle_match_len != 0
                 && firstOccurrence(part_buf, COM_MIDDLE) == NULL
                 && firstOccurrence(part_buf, COM_END) == NULL)

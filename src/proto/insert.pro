@@ -34,7 +34,7 @@ int compl_status_adding(void);
 int compl_status_sol(void);
 int compl_status_local(void);
 int eeIsCtrlXKey(Unt c);
-Unt ins_compl_add_infercase(CS str_arg, int len, int icase, Byte *fname, Unt dir, int cont_s_ipos, int score);
+Unt ins_compl_add_infercase(CS str_arg, int len, int icase, CS fname, Unt dir, int cont_s_ipos, int score);
 Decoration getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col);
 int ins_compl_lnum_in_range(LineNr lnum);
 void ins_compl_show_pum(void);

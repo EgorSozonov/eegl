@@ -34,7 +34,7 @@ int get_unname_register(void);
 void c_display(Invocation *invo);
 void dnd_yank_drag_data(CS str, long len);
 Byte get_reg_type(int regname, long *reglen);
-Byte *get_reg_contents(int regname, int flags);
+CS get_reg_contents(int regname, int flags);
 void write_reg_contents(int name, CS str, int maxlen, int must_append);
 void write_reg_contents_lst(int name, Byte **strings, int maxlen, int must_append, int yank_type, long block_len);
 void write_reg_contents_ex(int name, CS str, int maxlen, int must_append, int yank_type, long block_len);

@@ -217,7 +217,7 @@ void start_echowindow(int time_sec);
 void end_echowindow(void);
 void setPopupTitle(Portal *po);
 void popup_update_preview_title(void);
-void showNotification(Byte *text);
+void showNotification(CS text);
 Boole canStartDrag(Portal *po, int row, int col);
 Boole isInfoPopup(Portal *po);
 void pum_display(PopupItem *array, Unt size, int selected);

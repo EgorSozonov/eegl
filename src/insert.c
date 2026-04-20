@@ -3791,19 +3791,19 @@ ins_compl_infercase_gettext(
 Unt
 ins_compl_add_infercase(
    CS str_arg,
-   int      len,
-   int      icase,
-   Byte   *fname,
-   Unt      dir,
-   int      cont_s_ipos,  // next ^X<> will set initial_pos
-   int      score)
+   int len,
+   int icase,
+   CS fname,
+   Unt dir,
+   int cont_s_ipos,  // next ^X<> will set initial_pos
+   int score)
 {
-   Byte   *str = str_arg;
+   CS str = str_arg;
    Byte   *p;
-   int      char_len;      // count multi-byte characters
-   int      compl_char_len;
-   int      min_len;
-   int      flags = 0;
+   int char_len;      // count multi-byte characters
+   int compl_char_len;
+   int min_len;
+   Unt flags = 0;
    Byte   *tofree = NULL;
 
    if (p_ic && curBook->o.inferCase && len > 0) {

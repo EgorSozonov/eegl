@@ -12471,7 +12471,7 @@ private void
 f_inputrestore(Var *argvars UNUSED, Var *returnVar) {
    if (ga_userinput.len > 0) {
       --ga_userinput.len;
-      restore_typeahead((TypeaheadSave *)(ga_userinput.c) + ga_userinput.len, TRUE);
+      restore_typeahead((TypeaheadSave *)(ga_userinput.c) + ga_userinput.len, true);
       // default return is zero == OK
    } ei (p_verbose > 1) {
       verb_msg(_("called inputrestore() more often than inputsave()"));

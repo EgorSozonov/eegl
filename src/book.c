@@ -973,12 +973,12 @@ ptr2cells(CS p) {
       return ptr2cells(p);
 
 int
-chartabsize(Byte *p, ColNr col) {
+chartabsize(CS p, ColNr col) {
    RET_WIN_BUF_CHARTABSIZE(curPor, curBook, p, col)
 }
 
 int
-win_chartabsize(Portal *po, Byte *p, ColNr col) {
+win_chartabsize(Portal *po, CS p, ColNr col) {
    RET_WIN_BUF_CHARTABSIZE(po, po->book, p, col)
 }
 
@@ -991,7 +991,7 @@ linetabsize_str(CS s) {
 
 // Like linetabsize_str(), but "s" starts at column "startcol".
 int
-linetabsize_col(int startcol, Byte *s) {
+linetabsize_col(int startcol, CS s) {
    CharTableSize cts;
    Long vcol;
 
@@ -1119,7 +1119,7 @@ eeIsWordc(Unt c) {
 
 int
 eeIsWordPtr_buf(CS p, Book* book) {
-   Unt   c = *p;
+   Unt c = *p;
    if (utf8CharLens[c] > 1)
       c = mb_ptr2char(p);
    return eeIsWordc_buf(c, book);
@@ -1127,7 +1127,7 @@ eeIsWordPtr_buf(CS p, Book* book) {
 
 // Just like eeIsWordc() but uses a pointer to the (multi-byte) character.
 int
-eeIsWordPtr(Byte *p) {
+eeIsWordPtr(CS p) {
    return eeIsWordPtr_buf(p, curBook);
 }
 
@@ -1770,7 +1770,7 @@ private Byte   *checkFilenameMatch(RegMatch *rmp, Book* book);
 private Byte   *fname_match(RegMatch *rmp, Byte *name);
 private Book   *booklistFindName_stat(Byte *fullFName, FileStat *st);
 private int   areSameInode(Book* book, FileStat *stp);
-private int   append_arg_number(Portal *po, CS buf, Unt buflen, int add_file);
+private int   append_arg_number(Portal *po, CS buf, Unt buflen, Boole add_file);
 private void   freeBook(Book *);
 private void   freeAttachedData(Book* book, int free_options);
 private int   bt_nofileread(Book* book);
@@ -1846,8 +1846,8 @@ bookCharidxToByteidx(Book* book, int lnum, int charidx) {
 private int
 readBook(
    int read_stdin,       // read file from stdin, otherwise fifo
-   Invocation   *invo,          // for forced 'ff' or NULL
-   int      flags          // extra flags for readfile()
+   Invocation* invo,          // for forced 'ff' or NULL
+   Unt      flags          // extra flags for readfile()
 ){
    int retval = OK;
    LineNr   line_count;
@@ -3039,12 +3039,12 @@ bookDo(
 //Return error message or NULL
 CS
 do_bufdel(
-   int      command,
-   Byte   *arg,      // pointer to extra arguments
-   int      addr_count,
-   int      start_bnr,   // first book number in a range
-   int      end_bnr,   // book nr or last book nr in a range
-   int      forceit
+   int command,
+   CS arg,      // pointer to extra arguments
+   int addr_count,
+   int start_bnr,   // first book number in a range
+   int end_bnr,   // book nr or last book nr in a range
+   int forceit
 ) {
    int      do_current = 0;   // delete current book?
    int      deleted = 0;   // number of books deleted
@@ -3653,8 +3653,8 @@ booklistFindByNameExpandingLinks(CS fname) {
 
 //Find file in book list by name. "fullFName" must have a full path.
 //Skip dummy books. Return NULL if not found.
-Book *
-booklistFindName(Arr(Byte) fullFName){
+Book*
+booklistFindName(CS fullFName){
    FileStat   st;
 
    if (stat((char *)fullFName, &st) < 0)
@@ -4364,7 +4364,7 @@ setfname(
 // Crude way of changing the name of a book.  Use with care!
 // The name should be relative to the current directory.
 void
-bookSetName(int fnum, Byte *name) {
+bookSetName(int fnum, CS name) {
    Book* book = bookFindFileByBookNr(fnum);
    if (!book)
       return;
@@ -4446,7 +4446,7 @@ buflist_altfpos(Portal *port){
 // Return TRUE if 'fullFName' is not the same file as current file.
 // Fname must have a full path (expanded by mch_FullName()).
 Boole
-fNameMatchesCurBook(Arr(Byte) fullFName){
+fNameMatchesCurBook(CS fullFName){
    return sameFileInBook(curBook, fullFName, NULL);
 }
 
@@ -4465,8 +4465,8 @@ buf_setino(Book* book) {
 // Return TRUE if dev/ino in book "book" matches with "stp".
 private int
 areSameInode(
-   Book   *book,
-   FileStat   *stp
+   Book* book,
+   FileStat* stp
 ){
    return (book->isDevNumValid && stp->st_dev == book->devNum && stp->st_ino == book->inode);
 }
@@ -4550,12 +4550,7 @@ fileinfo(
 }
 
 int
-col_print(
-   CS buf,
-   Unt  buflen,
-   int col,
-   int vcol
-){
+col_print(CS buf, Unt  buflen, int col, int vcol){
    if (col == vcol)
       return (int)eeSnprintfSafelen(buf, buflen, "%d", col);
    return (int)eeSnprintfSafelen(buf, buflen, "%d-%d", col, vcol);
@@ -4882,18 +4877,19 @@ renderStatusLine(
          continue;
       }
       if (*s == STL_TABPAGENR || *s == STL_TABCLOSENR) {
-          if (*s == STL_TABCLOSENR) {
-         if (minwid == 0) {
-             // %X ends the close label, go back to the previously
-             // define tab label nr.
-             for (n = curitem - 1; n >= 0; --n)
-            if (stl_items[n].StatusTag == TabPage && stl_items[n].stl_minwid >= 0) {
-                minwid = stl_items[n].stl_minwid;
-                break;
-            }
-         } else
-             // close nrs are stored as negative values
-             minwid = - minwid;
+         if (*s == STL_TABCLOSENR) {
+            if (minwid == 0) {
+               // %X ends the close label, go back to the previously
+               // define tab label nr.
+               for (n = curitem - 1; n >= 0; --n) {
+                  if (stl_items[n].StatusTag == TabPage && stl_items[n].stl_minwid >= 0) {
+                      minwid = stl_items[n].stl_minwid;
+                      break;
+                  }
+               } 
+            } else
+               // close nrs are stored as negative values
+               minwid = - minwid;
          }
          stl_items[curitem].StatusTag = TabPage;
          stl_items[curitem].stl_start = p;
@@ -4945,14 +4941,12 @@ renderStatusLine(
       case STL_FILEPATH:
       case STL_FULLPATH:
       case STL_FILENAME: {
-         Byte  *name;
-
          fillable = FALSE;   // don't change ' ' to fillchar
-         name = bookSpName(po->book);
+         CS name = bookSpName(po->book);
          if (name)
             copySubstrToAllocation(OUT NameBuff, (Text){name, MAXPATHL - 1});
          else {
-            Byte* t = (opt == STL_FULLPATH) ? po->book->fullFileName : po->book->currFileName;
+            CS t = (opt == STL_FULLPATH) ? po->book->fullFileName : po->book->currFileName;
             home_replace(po->book, t, NameBuff, MAXPATHL, TRUE);
          }
          trans_characters(NameBuff, MAXPATHL);
@@ -4966,14 +4960,11 @@ renderStatusLine(
       case STL_EE_EXPR: { // opening curly brace
          CS block_start = s - 1;
          int       reevaluate = (*s == '%');
-         CS t;
-         Book* curBookSaved;
-         Portal   *save_curPor;
 
          if (reevaluate)
             s++;
          itemisflag = TRUE;
-         t = p;
+         CS t = p;
          while ((*s != '}' || (reevaluate && s[-1] != '%'))
                     && *s != ZERO && p + 1 < out + outlen)
          *p++ = *s++;
@@ -4990,8 +4981,8 @@ renderStatusLine(
          eeSnprintf(buf_tmp, sizeof(buf_tmp), "%d", curPor->id);
          set_internal_string_var(S"g:actual_curPor", buf_tmp);
 
-         curBookSaved = curBook;
-         save_curPor = curPor;
+         Book* curBookSaved = curBook;
+         Portal* save_curPor = curPor;
          save_VIsual_active = VIsual_active;
          curPor = po;
          curBook = po->book;
@@ -5090,7 +5081,7 @@ renderStatusLine(
       case STL_ARGLISTSTAT:
          fillable = FALSE;
          buf_tmp[0] = ZERO;
-         if (append_arg_number(po, buf_tmp, sizeof(buf_tmp), FALSE) > 0)
+         if (append_arg_number(po, buf_tmp, sizeof(buf_tmp), false) > 0)
             str = buf_tmp;
          break;
 
@@ -5249,7 +5240,7 @@ renderStatusLine(
       } ei (num >= 0) {
          int       nbase = (base == 'D' ? 10 : (base == 'O' ? 8 : 16));
          Byte  nstr[20];
-         Byte  *t = nstr;
+         CS t = nstr;
 
          if (p + 20 >= out + outlen)
             break;      // not sufficient space
@@ -5342,7 +5333,7 @@ renderStatusLine(
          *s++ = '>';
          *s = ZERO;
       } else {
-         Byte  *end = out + outputlen;
+         CS end = out + outputlen;
 
          n = 0;
          while (width >= maxwidth) {
@@ -5386,11 +5377,8 @@ renderStatusLine(
 
       // If we have separated groups, then we deal with it now
       if (num_separators) {
-         int standard_spaces;
-         int final_spaces;
-
-         standard_spaces = (maxwidth - width) / num_separators;
-         final_spaces = (maxwidth - width) - standard_spaces * (num_separators - 1);
+         int standard_spaces = (maxwidth - width) / num_separators;
+         int final_spaces = (maxwidth - width) - standard_spaces * (num_separators - 1);
          for (l = 0; l < num_separators; l++) {
             int dislocation = (l == (num_separators - 1)) ? final_spaces : standard_spaces;
             dislocation *= MB_CHAR2LEN(fillchar);
@@ -5493,7 +5481,7 @@ append_arg_number(
    Portal   *po,
    CS buf,
    Unt   buflen,
-   int      add_file   // Add "file" before the arg number
+   Boole add_file   // Add "file" before the arg number
 ){
    if (ARGCOUNT <= 1)      // nothing to do
       return 0;
@@ -7883,12 +7871,12 @@ typedef struct {
    int opened_len;   // length of opened[]
    Portal* new_curPor;
    Tab* new_curtab;
-} arg_all_state_T;
+} ArgAllState;
 
 // Close all the portals containing files which are not in the argument list.
 // Used by the ":all" command.
 private void
-argAllCloseUnusedPortals(arg_all_state_T *aall) {
+argAllCloseUnusedPortals(ArgAllState *aall) {
    Portal* po;
    Portal* wpnext;
    Tab* tNext;
@@ -7984,7 +7972,7 @@ argAllCloseUnusedPortals(arg_all_state_T *aall) {
 
 // Open upto "count" portals for the files in the argument list 'aall->alist'.
 private void
-openPortalsIntoFiles(arg_all_state_T *aall, int count) {
+openPortalsIntoFiles(ArgAllState *aall, int count) {
    Portal   *po;
    Boole tabDropEmptyPortal = false;
    int      i;
@@ -8066,7 +8054,7 @@ openAllArgs(
     int   forceit,      // hide books in current portals
     int keep_tabs      // keep current tabs, for ":tab drop file"
 ){
-    arg_all_state_T   aall;
+    ArgAllState   aall;
     Portal      *last_curPor;
     Tab      *last_curtab;
     int         prev_arglist_locked = arglist_locked;
@@ -8160,18 +8148,15 @@ c_all(Invocation *invo) {
    openAllArgs((int)invo->line2, invo->forceit, invo->id == C_drop);
 }
 
-/*
- * Concatenate all files in the argument list, separated by spaces, and return
- * it in one allocated string.
- * Spaces and backslashes in the file names are escaped with a backslash.
- * Returns NULL when out of memory.
- */
-Byte *
+//Concatenate all files in the argument list, separated by spaces, and return it in one allocated 
+//string. Spaces and backslashes in the file names are escaped with a backslash.
+//Return NULL when out of memory.
+CS
 arg_all(void) {
    int      len;
    int      idx;
-   Byte   *retval = NULL;
-   Byte   *p;
+   CS retval = NULL;
+   CS p;
 
    // Do this loop twice: first time: compute the total length second time: concatenate the names
    for (;;) {
@@ -8217,8 +8202,8 @@ arg_all(void) {
 
 // "argc([portal id])" function
 void
-f_argc(Var *argvars, Var *returnVar) {
-   Portal   *po;
+f_argc(Var* argvars, Var* returnVar) {
+   Portal* po;
 
    if (argvars[0].tag == VAR_UNKNOWN)
       // use the current portal

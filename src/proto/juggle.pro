@@ -28,7 +28,7 @@ int del_char(Boole fixpos);
 int del_chars(long count, Boole fixpos);
 int del_bytes(long count, Boole fixpos_arg, int use_delcombine);
 int insertLine(int dir);
-int get_leader_len(Byte *line, Byte **flags, int backward, int include_space);
+int get_leader_len(CS line, Byte **flags, int backward, int include_space);
 int openLine(Unt flags, int second_line_indent);
 int truncate_line(int fixpos);
 void del_lines(long nlines, int undo);

@@ -83,7 +83,7 @@ get_users(Expand *xp UNUSED, int idx) {
 //1 if name partially matches the beginning of a user name.
 //2 is name fully matches a user name.
 int
-match_user(Byte *name) {
+match_user(CS name) {
    int i;
    int n = (int)STRLEN(name);
    int result = 0;
@@ -901,10 +901,7 @@ c_loadview(Invocation *invo) {
 //Save the value of v:this_session before running :mksession in order to make
 //automagic session save fully transparent.  Return TRUE on success.
 int
-write_session_file(Byte *filename) {
-   unsigned int    save_ssop_flags;
-   int          failed;
-
+write_session_file(CS filename) {
    // Build a command line to create a script that restores the current
    // session if executed.  Escape the filename to avoid nasty surprises.
    CS escaped_filename = copyStr_escaped(filename, escape_chars);
@@ -917,11 +914,10 @@ write_session_file(Byte *filename) {
    //when the session is saved automatically.
 
    executeCommLine(S"let Save_VV_this_session = v:this_session");
-   failed = (executeCommLine((CS)mksession_cmdline) == FAIL);
+   int failed = (executeCommLine((CS)mksession_cmdline) == FAIL);
    executeCommLine(S"let v:this_session = Save_VV_this_session");
    unletImpl(S"Save_VV_this_session", true);
 
-   ssop_flags = save_ssop_flags;
    eeglFree(mksession_cmdline);
 
    //Reopen the file and append a command to restore v:this_session,

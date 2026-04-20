@@ -13,13 +13,13 @@ private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 
 private int linelen(int *has_tab);
 private void 
-do_filter(LineNr line1, LineNr line2, Invocation *invo, CS cmd, Boole do_in, Boole do_out);
+do_filter(LineNr line1, LineNr line2, Invocation* invo, CS cmd, Boole do_in, Boole do_out);
 private Boole isWritingForbidden(void);
 private int check_readonly(int *forceit, Book *book);
 private void delbuf_msg(Byte *name);
 private int u_inssub(LineNr lnum);
 private Boole wasBookChangedNotTerm(Book *book);
-private void mayPrint(Invocation *invo);
+private void mayPrint(Invocation* invo);
 private void closePortalInternal(Portal* port, Tab* t);
 
 //}}}
@@ -27,7 +27,7 @@ private void closePortalInternal(Portal* port, Tab* t);
 
 // ":ascii" and "ga".
 void
-do_ascii(Invocation *invo UNUSED){
+do_ascii(Invocation* invo UNUSED){
    int      cval;
    Byte   buf1[20];
    Byte   buf2[20];
@@ -88,7 +88,7 @@ do_ascii(Invocation *invo UNUSED){
 
 //":left", ":center" and ":right": align text.
 void
-c_align(Invocation *invo) {
+c_align(Invocation* invo) {
    int      len;
    int      indent = 0;
    int width = atoi((char *)invo->arg);
@@ -262,7 +262,7 @@ sort_compare(const void *s1, const void *s2) {
 
 // ":sort".
 void
-c_sort(Invocation *invo) {
+c_sort(Invocation* invo) {
    RegMatch   regmatch;
    int      len;
    LineNr   lnum;
@@ -503,7 +503,7 @@ sortend:
 
 // ":uniq".
 void
-c_uniq(Invocation *invo) {
+c_uniq(Invocation* invo) {
    RegMatch   regmatch;
    int      len;
    LineNr   lnum;
@@ -1401,7 +1401,7 @@ append_redir(
 //  ^?      ^H
 //not ^?   ^?
 void
-do_fixdel(Invocation *invo UNUSED) {
+do_fixdel(Invocation* invo UNUSED) {
     CS p = find_termcode((CS)"kb");
     add_termcode((CS)"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, FALSE);
 }
@@ -1480,7 +1480,7 @@ renameBook(CS new_fname) {
 
 // ":file[!] [fname]".
 void
-c_file(Invocation *invo) {
+c_file(Invocation* invo) {
    // ":0file" removes the file name.  Check for illegal uses ":3file", "0file name", etc.
    if (invo->addr_count > 0 && (*invo->arg != ZERO || invo->line2 > 0 || invo->addr_count > 1)) {
       emsg(_(e_invalid_argument));
@@ -1500,14 +1500,14 @@ c_file(Invocation *invo) {
 
 // ":update".
 void
-c_update(Invocation *invo) {
+c_update(Invocation* invo) {
    if (doWasCurBookChanged())
       (void)do_write(invo);
 }
 
 // ":write" and ":saveas".
 void
-c_write(Invocation *invo) {
+c_write(Invocation* invo) {
    if (invo->id == C_saveas) {
       // :saveas does not take a range, uses all lines.
       invo->line1 = 1;
@@ -1529,6 +1529,78 @@ check_writable(Byte *fname) {
    return OK;
 }
 
+//Check if it is allowed to overwrite a file.  If flags has BF_NOTEDITED, BF_NEW or BF_READERR, 
+//check for overwriting current file. May set invo->forceit if a dialog says it's OK to overwrite.
+//Return OK if it's OK, FAIL if it is not.
+private int
+check_overwrite(
+   Invocation* invo,
+   Book* book,
+   CS fname,       // file name to be used (can differ from book->fullFName)
+   CS fullFName,    // full path version of fname
+   Boole other)       // writing under other name
+{
+   //Write to another file or flags set or not writing the whole file: overwriting only allowed 
+   //with '!'. If "other" is FALSE and bt_nofilename(book) is TRUE, this must be
+   //writing an "acwrite" book to the same file as its fullFileName, and bookWrite() will only 
+   //allow writing with BufWriteCmd autocommands, so there is no need for an overwrite check.
+   if (       (other
+      || (!bt_nofilename(book)
+          && ((book->flags & BF_NOTEDITED)
+         || (book->flags & BF_NEW)
+         || (book->flags & BF_READERR))))
+       && !p_wa
+       && eeFexists(fullFName)
+   ) {
+      if (!invo->forceit && !invo->append) {
+         if (mch_isdir(fullFName)) {
+            showErrFmtMsg(_(e_str_is_directory), fullFName);
+            return FAIL;
+         }
+         if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
+            Byte   buff[DIALOG_MSG_SIZE];
+            dialog_msg(buff, _("Overwrite existing file \"%s\"?"), fname);
+            if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES)
+                return FAIL;
+            invo->forceit = TRUE;
+         } else {
+            emsg(_(e_file_exists));
+            return FAIL;
+         }
+      }
+
+      // For ":w! filename" check that no swap file exists for "filename".
+      if (other && !emsg_silent) {
+         Byte   *swapname;
+
+         // We only try the first entry in 'directory', without checking if it's writable. 
+         // If the "." directory is not writable, the write will probably fail anyway.
+         // Use 'shortname' of the current book, since there is no book for the written file.
+            
+         swapname = makeswapname(fname, fullFName, S"~/.local/state/");
+         int r = eeFexists(swapname);
+         if (r) {
+            if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
+               Byte   buff[DIALOG_MSG_SIZE];
+               dialog_msg(buff, _("Swap file \"%s\" exists, overwrite anyway?"), swapname);
+               if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES) {
+                  eeglFree(swapname);
+                  return FAIL;
+               }
+               invo->forceit = TRUE;
+            } else {
+               showErrFmtMsg(_(e_swap_file_exists_str_silent_overrides), swapname);
+               eeglFree(swapname);
+               return FAIL;
+            }
+         }
+         eeglFree(swapname);
+      }
+   }
+   return OK;
+}
+
+
 //Write the current book to file "invo->arg".
 //If "invo->append" is TRUE, append to the file.
 //
@@ -1536,7 +1608,7 @@ check_writable(Byte *fname) {
 //
 //Return FAIL for failure, OK otherwise.
 int
-do_write(Invocation *invo) {
+do_write(Invocation* invo) {
    Byte   *fname = NULL;      // init to shut up gcc
    int      retval = FAIL;
    CS free_fname = NULL;
@@ -1710,80 +1782,9 @@ copy_option_part(
 }
 
 
-//Check if it is allowed to overwrite a file.  If flags has BF_NOTEDITED, BF_NEW or BF_READERR, 
-//check for overwriting current file. May set invo->forceit if a dialog says it's OK to overwrite.
-//Return OK if it's OK, FAIL if it is not.
-int
-check_overwrite(
-   Invocation   *invo,
-   Book   *book,
-   Byte   *fname,       // file name to be used (can differ from book->fullFName)
-   Byte   *fullFName,    // full path version of fname
-   int      other)       // writing under other name
-{
-   //Write to another file or flags set or not writing the whole file: overwriting only allowed 
-   //with '!'. If "other" is FALSE and bt_nofilename(book) is TRUE, this must be
-   //writing an "acwrite" book to the same file as its fullFileName, and bookWrite() will only 
-   //allow writing with BufWriteCmd autocommands, so there is no need for an overwrite check.
-   if (       (other
-      || (!bt_nofilename(book)
-          && ((book->flags & BF_NOTEDITED)
-         || (book->flags & BF_NEW)
-         || (book->flags & BF_READERR))))
-       && !p_wa
-       && eeFexists(fullFName)
-   ) {
-      if (!invo->forceit && !invo->append) {
-         if (mch_isdir(fullFName)) {
-            showErrFmtMsg(_(e_str_is_directory), fullFName);
-            return FAIL;
-         }
-         if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
-            Byte   buff[DIALOG_MSG_SIZE];
-            dialog_msg(buff, _("Overwrite existing file \"%s\"?"), fname);
-            if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES)
-                return FAIL;
-            invo->forceit = TRUE;
-         } else {
-            emsg(_(e_file_exists));
-            return FAIL;
-         }
-      }
-
-      // For ":w! filename" check that no swap file exists for "filename".
-      if (other && !emsg_silent) {
-         Byte   *swapname;
-
-         // We only try the first entry in 'directory', without checking if it's writable. 
-         // If the "." directory is not writable, the write will probably fail anyway.
-         // Use 'shortname' of the current book, since there is no book for the written file.
-            
-         swapname = makeswapname(fname, fullFName, S"~/.local/state/");
-         int r = eeFexists(swapname);
-         if (r) {
-            if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
-               Byte   buff[DIALOG_MSG_SIZE];
-               dialog_msg(buff, _("Swap file \"%s\" exists, overwrite anyway?"), swapname);
-               if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES) {
-                  eeglFree(swapname);
-                  return FAIL;
-               }
-               invo->forceit = TRUE;
-            } else {
-               showErrFmtMsg(_(e_swap_file_exists_str_silent_overrides), swapname);
-               eeglFree(swapname);
-               return FAIL;
-            }
-         }
-         eeglFree(swapname);
-      }
-   }
-   return OK;
-}
-
 // Handle ":wnext", ":wNext" and ":wprevious" commands.
 void
-c_wnext(Invocation *invo){
+c_wnext(Invocation* invo){
    int      i;
    if (invo->comm[1] == 'n')
       i = curPor->argListInd + (int)invo->line2;
@@ -1800,7 +1801,7 @@ c_wnext(Invocation *invo){
 
 // ":wall", ":wqall" and ":xall": Write all changed files (and exit).
 void
-do_wqall(Invocation *invo){
+do_wqall(Invocation* invo){
    Book   *book;
    int      error = 0;
    int      save_forceit = invo->forceit;
@@ -1829,7 +1830,7 @@ do_wqall(Invocation *invo){
             showErrFmtMsg(_(e_no_file_name_for_buffer_nr), (long)book->fiNum);
             ++error;
          } ei (check_readonly(&invo->forceit, book)
-             || check_overwrite(invo, book, book->currFileName, book->fullFileName, FALSE) == FAIL
+             || check_overwrite(invo, book, book->currFileName, book->fullFileName, false) == FAIL
          ) {
             ++error;
          } else {
@@ -2560,7 +2561,7 @@ private int append_indent = 0;       // autoindent for first line
 
 // ":insert" and ":append", also used by ":change"
 void
-c_append(Invocation *invo) {
+c_append(Invocation* invo) {
    Byte   *theline;
    int      did_undo = FALSE;
    LineNr   lnum = invo->line2;
@@ -2697,7 +2698,7 @@ c_append(Invocation *invo) {
 
 //":change"
 void
-c_change(Invocation *invo) {
+c_change(Invocation* invo) {
    if (invo->line2 >= invo->line1 && u_save(invo->line1 - 1, invo->line2 + 1) == FAIL)
       return;
 
@@ -2723,7 +2724,7 @@ c_change(Invocation *invo) {
 
 // "z" family of commands
 void
-c_z(Invocation *invo) {
+c_z(Invocation* invo) {
    Byte   *x;
    long   bigness;
    Byte   *kind;
@@ -2894,7 +2895,7 @@ check_regexp_delim(int c) {
 // :S is the case-sensitive variant
 // The & repeats previous substitute command
 void
-c_substitute(Invocation *invo) {
+c_substitute(Invocation* invo) {
    LineNr   lnum;
    long   i = 0;
    RegMultilineMatch regmatch;
@@ -3908,7 +3909,7 @@ global_exe_one(Byte *cmd, LineNr lnum) {
 // each line that (not) matches. Secondly we execute the command for each line that has a mark. 
 // This is required because after deleting lines we do not know where to search for the next match.
 void
-c_global(Invocation *invo) {
+c_global(Invocation* invo) {
    LineNr   lnum;      // line number according to old situation
    int      ndone = 0;
    int      type;      // first char of cmd: 'v' or 'g'
@@ -4123,7 +4124,7 @@ prepare_tagpreview(
 
 // Make the user happy.
 void
-c_smile(Invocation *invo UNUSED) {
+c_smile(Invocation* invo UNUSED) {
    static char *code[] = {
    "\34 \4o\14$\4ox\30 \2o\30$\1ox\25 \2o\36$\1o\11 \1o\1$\3 \2$\1 \1o\1$x\5 \1o\1 \1$\1 \2o\10 "
    "\1o\44$\1o\7 \2$\1 \2$\1 \2$\1o\1$x\2 \2o\1 \1$\1 \1$\1 \1\"\1$\6 \1o\11$\4 \15$\4 \11$\1o\7 "
@@ -4161,7 +4162,7 @@ c_smile(Invocation *invo UNUSED) {
 
 // ":drop" Open the first argument in a portal, and the argument list is redefined.
 void
-c_drop(Invocation *invo) {
+c_drop(Invocation* invo) {
    int      split = FALSE;
    Portal   *wp;
 
@@ -4282,7 +4283,7 @@ skipEeglGrepPat(CS p, Byte **s, Unt *flags) {
 
 // List v:oldfiles in a nice way.
 void
-c_oldfiles(Invocation *invo UNUSED) {
+c_oldfiles(Invocation* invo UNUSED) {
    List   *l = get_EeglVar_list(VV_OLDFILES);
    if (!l) {
       msg(_("No old files"));
@@ -4344,7 +4345,7 @@ c_oldfiles(Invocation *invo UNUSED) {
 
 //":argdo", ":windo", ":bufdo", ":tabdo", ":ldo"
 void
-c_listDo(Invocation *invo) {
+c_listDo(Invocation* invo) {
    int i;
    Portal* wp;
    Tab* t;
@@ -4538,7 +4539,7 @@ c_listDo(Invocation *invo) {
 
 // ":compiler[!] {name}"
 void
-c_compiler(Invocation *invo) {
+c_compiler(Invocation* invo) {
    Byte   *old_cur_comp = NULL;
    Byte   *p;
 
@@ -4594,7 +4595,7 @@ c_compiler(Invocation *invo) {
 
 // ":checktime [buffer]"
 void
-c_checktime(Invocation *invo){
+c_checktime(Invocation* invo){
    Book   *book;
    int      save_no_check_timestamps = no_check_timestamps;
 
@@ -4725,7 +4726,7 @@ dialog_changed(Book   *book, int      checkall) {  // may abandon all changed bu
       if (empty_bufname)
          bookSetName(book->fiNum, S"Untitled");
 
-      if (check_overwrite(&invo, book, book->currFileName, book->fullFileName, FALSE) == OK) {
+      if (check_overwrite(&invo, book, book->currFileName, book->fullFileName, false) == OK) {
          // didn't hit Cancel
          if (bookWrite_all(book, FALSE) == OK)
             return;
@@ -4753,7 +4754,7 @@ dialog_changed(Book   *book, int      checkall) {  // may abandon all changed bu
 
             bookStoreInRef(OUT &bufref, buf2);
             if (buf2->currFileName && check_overwrite(&invo, buf2,
-                    buf2->currFileName, buf2->fullFileName, FALSE) == OK
+                    buf2->currFileName, buf2->fullFileName, false) == OK
             )
                // didn't hit Cancel
                (void)bookWrite_all(buf2, FALSE);
@@ -4944,20 +4945,20 @@ private int   ex_pressedreturn = FALSE;
 private CS doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
 private void   append_command(Byte *cmd);
 
-private void   do_exbuffer(Invocation *invo);
+private void   do_exbuffer(Invocation* invo);
 private Byte   *getargcmd(Byte **);
-private int   getargopt(Invocation *invo);
+private int   getargopt(Invocation* invo);
 
-private LineNr default_address(Invocation *invo);
-private void address_default_all(Invocation *invo);
-private void   get_flags(Invocation *invo);
+private LineNr default_address(Invocation* invo);
+private void address_default_all(Invocation* invo);
+private void   get_flags(Invocation* invo);
 #define HAVE_EX_SCRIPT_NI
-private void   ex_script_ni(Invocation *invo);
-private CS invalid_range(Invocation *invo);
-private void   correct_range(Invocation *invo);
-private Arr(Byte) replaceMakeProgramName(Invocation *invo, OUT Byte *p, Byte **commline);
+private void   ex_script_ni(Invocation* invo);
+private CS invalid_range(Invocation* invo);
+private void   correct_range(Invocation* invo);
+private Arr(Byte) replaceMakeProgramName(Invocation* invo, OUT Byte *p, Byte **commline);
 private Byte* repl_commline(
-      Invocation *invo, Byte *src, Unt srclen, Byte *repl, Byte **commline
+      Invocation* invo, Byte *src, Unt srclen, Byte *repl, Byte **commline
 );
 private void   prepare_preview_window(void);
 private void   back_to_current_window(Portal *curPor_save);
@@ -6604,7 +6605,7 @@ private char exmode_plus[] = "+";
 
 // Handle a range without a command. Returns an error message on failure.
 CS
-ex_range_without_command(Invocation *invo) {
+ex_range_without_command(Invocation* invo) {
    CS errorMsg = NULL;
 
    if (*invo->comm == '|') {
@@ -7689,7 +7690,7 @@ addr_error(CommandAddress addressKind) {
 
 //Return the default address for an address type.
 private LineNr
-default_address(Invocation *invo) {
+default_address(Invocation* invo) {
    LineNr lnum = 0;
 
    switch (invo->addressKind) {
@@ -8063,7 +8064,7 @@ error:
 //Set invo->line1 and invo->line2 to the whole range.
 //Used for commands with the DFLALL flag and no range given.
 private void
-address_default_all(Invocation *invo) {
+address_default_all(Invocation* invo) {
    invo->line1 = 1;
    switch (invo->addressKind) {
    case ADDR_LINES:
@@ -8116,7 +8117,7 @@ address_default_all(Invocation *invo) {
 
 //Get flags from a command argument.
 private void
-get_flags(Invocation *invo) {
+get_flags(Invocation* invo) {
    while (firstOccurrence((CS)"lp#", *invo->arg) != NULL) {
       if (*invo->arg == 'l')
           invo->flags |= EXFLAG_LIST;
@@ -8130,7 +8131,7 @@ get_flags(Invocation *invo) {
 
 //Function called for command which is Not Implemented.  NI!
 void
-c_ni(Invocation *invo) {
+c_ni(Invocation* invo) {
    if (!invo->skip)
       invo->errmsg = _(e_sorry_command_is_not_available_in_this_version);
 }
@@ -8139,7 +8140,7 @@ c_ni(Invocation *invo) {
 //Function called for script command which is Not Implemented.  NI!
 //Skips over ":perl <<EOF" constructs.
 private void
-ex_script_ni(Invocation *invo) {
+ex_script_ni(Invocation* invo) {
    if (!invo->skip)
       c_ni(invo);
    else
@@ -8149,7 +8150,7 @@ ex_script_ni(Invocation *invo) {
 
 //Check range in a command for validity. Return NULL when valid, error message when invalid.
 private CS
-invalid_range(Invocation *invo) {
+invalid_range(Invocation* invo) {
    Book   *book;
 
    if (invo->line1 < 0 || invo->line2 < 0 || invo->line1 > invo->line2)
@@ -8226,7 +8227,7 @@ invalid_range(Invocation *invo) {
 
 // Correct the range for zero line number, if required.
 private void
-correct_range(Invocation *invo) {
+correct_range(Invocation* invo) {
    if (!(invo->argFlags & ZERO_LINE_OK)) { // zero in range not allowed
       if (invo->line1 == 0)
          invo->line1 = 1;
@@ -8238,7 +8239,7 @@ correct_range(Invocation *invo) {
 //For a ":vimgrep" or ":vimgrepadd" command return a pointer past the
 //pattern.  Otherwise return invo->arg.
 private Byte *
-skip_grep_pat(Invocation *invo) {
+skip_grep_pat(Invocation* invo) {
    Byte   *p = invo->arg;
 
    if (*p != ZERO && (invo->id == C_vimgrep
@@ -8515,7 +8516,7 @@ repl_commline(
 // Check for '|' to separate commands and '//' to start comments.
 // If "keep_backslash" is TRUE do not remove any backslash.
 void
-separateNextCommand(Invocation *invo, int keep_backslash) {
+separateNextCommand(Invocation* invo, int keep_backslash) {
    for (CS p = skip_grep_pat(invo) ; *p; MB_PTR_ADV(p)) {
       if (*p == Ctrl_V) {
          if ((invo->argFlags & (CTRLV | XFILE)) || keep_backslash)
@@ -8599,7 +8600,7 @@ skip_cmd_arg(
 }
 
 int
-get_bad_opt(Byte *p, Invocation *invo) {
+get_bad_opt(Byte *p, Invocation* invo) {
    if (caseInsensitiveCompare(p, "keep") == 0)
       invo->bad_char = BAD_KEEP;
    ei (caseInsensitiveCompare(p, "drop") == 0)
@@ -8629,7 +8630,7 @@ get_bad_name(Expand *xp UNUSED, int idx) {
 
 // Get "++opt=arg" argument. Return FAIL or OK.
 private int
-getargopt(Invocation *invo) {
+getargopt(Invocation* invo) {
    Byte   *arg = invo->arg + 2;
    int      *pp = NULL;
    int      bad_char_idx;
@@ -8730,7 +8731,7 @@ expand_argopt(
 //{{{misc 1
 
 void
-c_autocmd(Invocation *invo) {
+c_autocmd(Invocation* invo) {
    //Disallow autocommands from .exrc and .vimrc in current directory for security reasons.
    if (invo->id == C_autocmd)
       do_autocmd(invo, invo->arg, invo->forceit);
@@ -8740,7 +8741,7 @@ c_autocmd(Invocation *invo) {
 
 // ":doautocmd": Apply the automatic commands to the current book.
 void
-c_doautocmd(Invocation *invo) {
+c_doautocmd(Invocation* invo) {
    CS arg = invo->arg;
    Boole did_aucmd;
 
@@ -8751,7 +8752,7 @@ c_doautocmd(Invocation *invo) {
 //:[N]bdelete[!] [N] [bookname] delete book from book list
 //:[N]bwipeout[!] [N] [bookname] delete book really
 void
-c_bunload(Invocation *invo) {
+c_bunload(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
    invo->errmsg = do_bufdel(
@@ -8771,7 +8772,7 @@ c_book(Invocation* invo) {
 
 // ":book" command and alike.
 private void
-do_exbuffer(Invocation *invo) {
+do_exbuffer(Invocation* invo) {
    if (*invo->arg)
       invo->errmsg = ex_errmsg(e_trailing_characters_str, invo->arg);
    else {
@@ -8787,7 +8788,7 @@ do_exbuffer(Invocation *invo) {
 //:[N]bmodified [N]   to next mod. book
 //:[N]sbmodified [N]   to next mod. book
 void
-c_bmodified(Invocation *invo) {
+c_bmodified(Invocation* invo) {
    bookGoto(invo, DOBOOK_MOD, FORWARD, (int)invo->line2);
    if (invo->higherOrderComm)
       do_cmd_argument(invo->higherOrderComm);
@@ -8796,7 +8797,7 @@ c_bmodified(Invocation *invo) {
 //:[N]bnext [N]   to next book
 //:[N]sbnext [N]   split and to next book
 void
-c_bnext(Invocation *invo){
+c_bnext(Invocation* invo){
    if (portErrorIfPopup(true))
       return;
 
@@ -8810,7 +8811,7 @@ c_bnext(Invocation *invo){
 //:[N]sbNext [N]   split and to previous book
 //:[N]sbprevious [N]   split and to previous book
 void
-c_bprevious(Invocation *invo) {
+c_bprevious(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
 
@@ -8824,7 +8825,7 @@ c_bprevious(Invocation *invo) {
 //:sbrewind      split and to first book
 //:sbfirst      split and to first book
 void
-c_brewind(Invocation *invo) {
+c_brewind(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
 
@@ -8836,7 +8837,7 @@ c_brewind(Invocation *invo) {
 //:blast      to last book
 //:sblast      split and to last book
 void
-c_blast(Invocation *invo) {
+c_blast(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
 
@@ -8898,7 +8899,7 @@ get_command_name(Expand *xp UNUSED, int idx) {
 }
 
 void
-c_hilite(Invocation *invo) {
+c_hilite(Invocation* invo) {
    if (*invo->arg == ZERO && invo->comm[2] == '!')
       msg(_("Greetings, Eegl user!"));
    doHilite(invo->arg, invo->forceit, false);
@@ -8940,7 +8941,7 @@ before_quit_autocmds(Portal *wp, int quit_all) {
 //":{nr}quit": quit portal {nr}
 //Also used when closing a terminal portal that's the last one.
 void
-c_quit(Invocation *invo) {
+c_quit(Invocation* invo) {
     Portal   *wp;
 
    if (commPortTypeG != 0) {
@@ -8990,14 +8991,14 @@ c_quit(Invocation *invo) {
 
 // ":cquit".
 void
-c_cquit(Invocation *invo UNUSED) {
+c_cquit(Invocation* invo UNUSED) {
    // this does not always pass on the exit code to the Manx compiler. why?
    exitEegl(invo->addr_count > 0 ? (int)invo->line2 : EXIT_FAILURE);
 }
 
 //Do preparations for "qall" and "wqall". Return FAIL when quitting should be aborted.
 int
-before_quit_all(Invocation *invo) {
+before_quit_all(Invocation* invo) {
    if (commPortTypeG != 0) {
       if (invo->forceit)
           commPortResultG = K_XF1;   // ex_window() takes care of this
@@ -9020,7 +9021,7 @@ before_quit_all(Invocation *invo) {
 
 // ":qall": try to quit all portals
 void
-c_quit_all(Invocation *invo) {
+c_quit_all(Invocation* invo) {
    if (before_quit_all(invo) == FAIL)
       return;
    exiting = TRUE;
@@ -9031,7 +9032,7 @@ c_quit_all(Invocation *invo) {
 
 // ":close": close current portal; if it is the last one, close the program
 void
-c_close(Invocation *invo) {
+c_close(Invocation* invo) {
    if (commPortTypeG != 0)
       commPortResultG = Ctrl_C;
    ei (!text_locked() && !curBookLocked()) {
@@ -9061,7 +9062,7 @@ private Callback findFnCb;
 
 // ":pclose": Close any preview portal.
 void
-c_pclose(Invocation *invo UNUSED) {
+c_pclose(Invocation* invo UNUSED) {
    Portal   *port;
 
    // First close any normal portal.
@@ -9100,7 +9101,7 @@ closePortalInternal(Portal* port, Tab   *t) {     // NULL or the tab "port" is i
 //Handle the argument for a tab-related command. Return a tab number.
 //When an error is encountered then invo->errmsg is set.
 private int
-getTabRelatedArg(Invocation *invo) {
+getTabRelatedArg(Invocation* invo) {
    int tabId;
    int unaccept_arg0 = (invo->id == C_tabmove) ? 0 : 1;
 
@@ -9192,7 +9193,7 @@ theend:
 
 //":tabclose": close current tab, unless it is the last one. ":tabclose N": close tab N.
 void
-c_tabclose(Invocation *invo) {
+c_tabclose(Invocation* invo) {
 
    if (commPortTypeG != 0) {
       commPortResultG = K_IGNORE;
@@ -9225,7 +9226,7 @@ c_tabclose(Invocation *invo) {
 
 // ":tabonly": close all tabs except the current one
 void
-c_tabonly(Invocation *invo) {
+c_tabonly(Invocation* invo) {
    if (commPortTypeG != 0) {
       commPortResultG = K_IGNORE;
       return;
@@ -9300,7 +9301,7 @@ tabCloseOther(Tab *t) {
 
 // ":only".
 void
-c_only(Invocation *invo) {
+c_only(Invocation* invo) {
    if (portalLayout_locked(C_only))
       return;
    if (invo->addr_count > 0) {
@@ -9318,7 +9319,7 @@ c_only(Invocation *invo) {
 }
 
 void
-c_hide(Invocation *invo UNUSED) {
+c_hide(Invocation* invo UNUSED) {
    // ":hide" or ":hide | cmd": hide current portal
    if (invo->skip)
       return;
@@ -9344,7 +9345,7 @@ c_hide(Invocation *invo UNUSED) {
 
 // ":exit", ":xit" and ":wq": Write file and quit the current portal.
 void
-c_exit(Invocation *invo) {
+c_exit(Invocation* invo) {
    if (commPortTypeG != 0) {
       commPortResultG = Ctrl_C;
       return;
@@ -9378,7 +9379,7 @@ c_exit(Invocation *invo) {
 
 // ":print", ":list", ":number".
 void
-c_print(Invocation *invo) {
+c_print(Invocation* invo) {
    if (curBook->mem.flags & ML_EMPTY)
       emsg(_(e_empty_buffer));
    else {
@@ -9398,26 +9399,26 @@ c_print(Invocation *invo) {
 }
 
 void
-c_goto(Invocation *invo) {
+c_goto(Invocation* invo) {
    goto_byte(invo->line2);
 }
 
 // ":shell".
 void
-c_shell(Invocation *invo UNUSED) {
+c_shell(Invocation* invo UNUSED) {
    do_shell(NULL, 0);
 }
 
 // ":preserve".
 void
-c_preserve(Invocation *invo UNUSED) {
+c_preserve(Invocation* invo UNUSED) {
    curBook->flags |= BF_PRESERVED;
    ml_preserve(curBook, TRUE);
 }
 
 // ":recover".
 void
-c_recover(Invocation *invo) {
+c_recover(Invocation* invo) {
    // Set recoveryModeG right away to avoid the ATTENTION prompt.
    recoveryModeG = true;
    if (!check_changed(curBook, (p_awa ? CCGD_AW : 0)
@@ -9432,7 +9433,7 @@ c_recover(Invocation *invo) {
 
 // Command modifier used in a wrong way.  Also for other commands that can't appear at the toplevel
 void
-c_wrongmodifier(Invocation *invo) {
+c_wrongmodifier(Invocation* invo) {
    invo->errmsg = ex_errmsg(e_invalid_command_str, invo->comm);
 }
 
@@ -9594,7 +9595,7 @@ set_ref_in_findfunc(int copyID UNUSED) {
 //:tabnew [[+command] file]   just like :tabedit
 //:tabfind [+command] file   open new Tab and find "file"
 void
-c_splitview(Invocation *invo) {
+c_splitview(Invocation* invo) {
    Portal* old_curPor = curPor;
    CS fname = null;
    Boole use_tab = invo->id == C_tabedit
@@ -9675,7 +9676,7 @@ tabNew(void) {
 
 // :tabnext command
 void
-c_tabnext(Invocation *invo) {
+c_tabnext(Invocation* invo) {
    int tabId;
 
    if (portErrorIfPopup(false))
@@ -9723,7 +9724,7 @@ c_tabnext(Invocation *invo) {
 
 // :tabmove command
 void
-c_tabmove(Invocation *invo) {
+c_tabmove(Invocation* invo) {
    int tabId = getTabRelatedArg(invo);
    if (invo->errmsg == NULL)
       moveTab(tabId);
@@ -9731,7 +9732,7 @@ c_tabmove(Invocation *invo) {
 
 // :tabs command: List tabs and their contents.
 void
-c_tabs(Invocation *invo UNUSED) {
+c_tabs(Invocation* invo UNUSED) {
    Portal   *wp;
    int      tabcount = 1;
 
@@ -9770,7 +9771,7 @@ c_tabs(Invocation *invo UNUSED) {
 
 //":mode": Set screen mode. If no argument given, just get the screen size and redraw.
 void
-c_mode(Invocation *invo) {
+c_mode(Invocation* invo) {
    if (*invo->arg == ZERO)
       shell_resized();
    else
@@ -9779,7 +9780,7 @@ c_mode(Invocation *invo) {
 
 // ":resize". set, increment or decrement current portal height
 void
-c_resize(Invocation *invo) {
+c_resize(Invocation* invo) {
    int      n;
    Portal   *wp = curPor;
 
@@ -9807,7 +9808,7 @@ c_resize(Invocation *invo) {
 
 // ":find [+command] <file>" command.
 void
-c_find(Invocation *invo) {
+c_find(Invocation* invo) {
    if (!check_can_set_curbuf_forceit(invo->forceit))
       return;
 
@@ -9852,7 +9853,7 @@ c_find(Invocation *invo) {
 
 // ":open" simulation: for now works just like ":visual".
 void
-c_open(Invocation *invo) {
+c_open(Invocation* invo) {
    RegMatch   regmatch;
    Byte   *p;
 
@@ -9990,7 +9991,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      // curPor before doing a 
 }
 
 void
-c_swapname(Invocation *invo UNUSED) {
+c_swapname(Invocation* invo UNUSED) {
    if (curBook->mem.mfile == NULL || curBook->mem.mfile->fName == NULL)
       msg(_("No swap file"));
    else
@@ -10000,7 +10001,7 @@ c_swapname(Invocation *invo UNUSED) {
 //":syncbind" forces all 'scrollbind' portals to have the same relative offset.
 //(1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
 void
-c_syncbind(Invocation *invo UNUSED) {
+c_syncbind(Invocation* invo UNUSED) {
    Portal   *wp;
    Portal   *save_curPor = curPor;
    Book   *save_curbuf = curBook;
@@ -10055,7 +10056,7 @@ c_syncbind(Invocation *invo UNUSED) {
 }
 
 void
-c_read(Invocation *invo) {
+c_read(Invocation* invo) {
    if (invo->usefilter) {        // :r!cmd
       do_bang(1, invo, false, false, true);
       return;
@@ -10072,8 +10073,7 @@ c_read(Invocation *invo) {
           invo->line2, (LineNr)0, (LineNr)MAXLNUM, invo, 0);
    } else {
        (void)setaltfname(invo->arg, invo->arg, (LineNr)1);
-       i = readfile(invo->arg, NULL,
-          invo->line2, (LineNr)0, (LineNr)MAXLNUM, invo, 0);
+       i = readfile(invo->arg, NULL, invo->line2, (LineNr)0, (LineNr)MAXLNUM, invo, 0);
 
    }
    if (i != OK) {
@@ -10223,7 +10223,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
 
 // ":cd", ":tcd", ":lcd", ":chdir" ":tchdir" and ":lchdir".
 void
-c_cd(Invocation *invo) {
+c_cd(Invocation* invo) {
    CS new_dir = invo->arg;
    CdScopeKind   scope = CDSCOPE_GLOBAL;
 
@@ -10239,7 +10239,7 @@ c_cd(Invocation *invo) {
 
 // ":pwd".
 void
-c_pwd(Invocation *invo UNUSED) {
+c_pwd(Invocation* invo UNUSED) {
    if (mch_dirname(NameBuff, MAXPATHL) == OK) {
       if (p_verbose > 0) {
          CS context = S"global";
@@ -10259,13 +10259,13 @@ c_pwd(Invocation *invo UNUSED) {
 
 // ":=".
 void
-c_equal(Invocation *invo) {
+c_equal(Invocation* invo) {
    smsg("%ld", (long)invo->line2);
    mayPrint(invo);
 }
 
 void
-c_sleep(Invocation *invo) {
+c_sleep(Invocation* invo) {
    int      n;
    long   len;
 
@@ -10337,7 +10337,7 @@ do_sleep(long msec, int hide_cursor) {
 }
 
 void
-c_wincmd(Invocation *invo) {
+c_wincmd(Invocation* invo) {
    int      xchar = ZERO;
    Byte   *p;
 
@@ -10368,7 +10368,7 @@ c_wincmd(Invocation *invo) {
 
 // ":winpos".
 void
-c_portPos(Invocation *invo) {
+c_portPos(Invocation* invo) {
    int      x, y;
    Byte   *arg = invo->arg;
    Byte   *p;
@@ -10391,7 +10391,7 @@ c_portPos(Invocation *invo) {
 
 // Handle commands that work like operators: ":delete", ":yank", ":>" and ":<"
 void
-c_operators(Invocation *invo) {
+c_operators(Invocation* invo) {
    Operator   oper;
 
    clear_oparg(&oper);
@@ -10435,7 +10435,7 @@ c_operators(Invocation *invo) {
 
 // ":put".
 void
-c_put(Invocation *invo) {
+c_put(Invocation* invo) {
    // ":0put" works like ":1put!".
    if (invo->line2 == 0) {
       invo->line2 = 1;
@@ -10448,7 +10448,7 @@ c_put(Invocation *invo) {
 
 // ":iput".
 void
-c_iput(Invocation *invo) {
+c_iput(Invocation* invo) {
    // ":0iput" works like ":1iput!".
    if (invo->line2 == 0) {
       invo->line2 = 1;
@@ -10464,7 +10464,7 @@ c_iput(Invocation *invo) {
 
 // Handle ":copy" and ":move".
 void
-c_copymove(Invocation *invo) {
+c_copymove(Invocation* invo) {
    long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, FALSE, FALSE, FALSE, 1);
    if (invo->arg == NULL) {      // error detected
       invo->nextComm = NULL;
@@ -10490,7 +10490,7 @@ c_copymove(Invocation *invo) {
 
 // Print the current line if flags were given to the command.
 private void
-mayPrint(Invocation *invo) {
+mayPrint(Invocation* invo) {
    if (invo->flags != 0) {
       print_line(curPor->cursor.lnum, (invo->flags & EXFLAG_LIST));
       ex_no_reprint = TRUE;
@@ -10499,7 +10499,7 @@ mayPrint(Invocation *invo) {
 
 // ":join".
 void
-c_join(Invocation *invo) {
+c_join(Invocation* invo) {
    curPor->cursor.lnum = invo->line1;
    if (invo->line1 == invo->line2) {
       if (invo->addr_count >= 2)   // :2,2join does nothing
@@ -10517,7 +10517,7 @@ c_join(Invocation *invo) {
 
 // ":[addr]@r" or ":[addr]*r": execute register
 void
-c_at(Invocation *invo) {
+c_at(Invocation* invo) {
    int prev_len = typeBufG.validLen;
 
    curPor->cursor.lnum = invo->line2;
@@ -10547,13 +10547,13 @@ c_at(Invocation *invo) {
 
 // ":!".
 void
-c_bang(Invocation *invo) {
+c_bang(Invocation* invo) {
    do_bang(invo->addr_count, invo, invo->forceit, true, true);
 }
 
 // ":undo".
 void
-c_undo(Invocation *invo) {
+c_undo(Invocation* invo) {
    if (invo->addr_count == 1)       // :undo 123
       undo_time(invo->line2, FALSE, FALSE, TRUE);
    else
@@ -10561,7 +10561,7 @@ c_undo(Invocation *invo) {
 }
 
 void
-c_wundo(Invocation *invo) {
+c_wundo(Invocation* invo) {
    Byte hash[UNDO_HASH_SIZE];
 
    u_compute_hash(hash);
@@ -10569,7 +10569,7 @@ c_wundo(Invocation *invo) {
 }
 
 void
-c_rundo(Invocation *invo) {
+c_rundo(Invocation* invo) {
    Byte hash[UNDO_HASH_SIZE];
 
    u_compute_hash(hash);
@@ -10578,13 +10578,13 @@ c_rundo(Invocation *invo) {
 
 // ":redo".
 void
-c_redo(Invocation *invo UNUSED) {
+c_redo(Invocation* invo UNUSED) {
    u_redo(1);
 }
 
 // ":earlier" and ":later".
 void
-c_later(Invocation *invo) {
+c_later(Invocation* invo) {
    long   count = 0;
    int      sec = FALSE;
    int      file = FALSE;
@@ -10611,7 +10611,7 @@ c_later(Invocation *invo) {
 
 // ":redir": start/stop redirection.
 void
-c_redir(Invocation *invo) {
+c_redir(Invocation* invo) {
    char   *mode;
    CS  fname;
    Byte   *arg = invo->arg;
@@ -10697,7 +10697,7 @@ c_redir(Invocation *invo) {
 
 // ":redraw": force redraw, with clear for ":redraw!".
 void
-c_redraw(Invocation *invo) {
+c_redraw(Invocation* invo) {
    redraw_cmd(invo->forceit);
 }
 
@@ -10735,7 +10735,7 @@ redraw_cmd(int clear) {
 
 // ":redrawstatus": force redraw of status line(s)
 void
-c_redrawstatus(Invocation *invo UNUSED) {
+c_redrawstatus(Invocation* invo) {
    if (invo->forceit)
       status_redraw_all();
    else
@@ -10760,7 +10760,7 @@ c_redrawstatus(Invocation *invo UNUSED) {
 
 // ":redrawtabpanel": force redraw of the tabpanel
 void
-c_redrawtabpanel(Invocation *invo UNUSED) {
+c_redrawtabpanel(Invocation* invo UNUSED) {
    int save_RedrawingDisabled = RedrawingDisabled;
    RedrawingDisabled = 0;
 
@@ -10788,7 +10788,7 @@ close_redir(void) {
 }
 
 int
-eeMkdir_emsg(Byte *name, int prot UNUSED) {
+eeMkdir_emsg(CS name, int prot UNUSED) {
    if (eeMkdir(name, prot) != 0) {
       showErrFmtMsg(_(e_cannot_create_directory_str), name);
       return FAIL;
@@ -10823,7 +10823,7 @@ open_exfile(
 
 // ":mark" and ":k".
 void
-c_mark(Invocation *invo) {
+c_mark(Invocation* invo) {
    if (*invo->arg == ZERO) {     // No argument?
       emsg(_(e_argument_required));
       return;
@@ -10854,7 +10854,7 @@ update_topline_cursor(void) {
 // Save the current stateG and go to Normal mode.
 // Return TRUE if the typeahead could be saved.
 int
-save_current_state(SaveState *sst) {
+save_current_state(SaveState* sst) {
    sst->save_msg_scroll = msg_scroll;
    sst->save_restart_edit = restart_edit;
    sst->save_msg_didout = msg_didout;
@@ -10874,9 +10874,9 @@ save_current_state(SaveState *sst) {
 }
 
 void
-restore_current_state(SaveState *sst) {
+restore_current_state(SaveState* sst) {
    // Restore the previous typeahead.
-   restore_typeahead(&sst->tabuf, FALSE);
+   restore_typeahead(&sst->tabuf, false);
 
    msg_scroll = sst->save_msg_scroll;
    restart_edit = sst->save_restart_edit;
@@ -10894,7 +10894,7 @@ restore_current_state(SaveState *sst) {
 
 // ":normal[!] {commands}": Execute normal mode commands.
 void
-c_normal(Invocation *invo) {
+c_normal(Invocation* invo) {
    SaveState saveState;
    Byte   *arg = NULL;
    int      l;
@@ -10966,7 +10966,7 @@ c_normal(Invocation *invo) {
 
 // ":startinsert", ":startreplace" and ":startgreplace"
 void
-c_startinsert(Invocation *invo) {
+c_startinsert(Invocation* invo) {
    if (invo->forceit) {
       // cursor line can be zero on startup
       if (!curPor->cursor.lnum)
@@ -10996,7 +10996,7 @@ c_startinsert(Invocation *invo) {
 
 // ":stopinsert"
 void
-c_stopinsert(Invocation *invo UNUSED) {
+c_stopinsert(Invocation* invo UNUSED) {
    restart_edit = 0;
    stop_insert_mode = TRUE;
    // when called from remote_expr in insert mode, make sure insert mode is
@@ -11047,7 +11047,7 @@ exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
 }
 
 void
-c_checkpath(Invocation *invo) {
+c_checkpath(Invocation* invo) {
    find_pattern_in_path(NULL, 0, 0, FALSE, FALSE, CHECK_PATH, 1L,
       invo->forceit ? ACTION_SHOW_ALL : ACTION_SHOW,
       (LineNr)1, (LineNr)MAXLNUM, invo->forceit, FALSE);
@@ -11055,14 +11055,14 @@ c_checkpath(Invocation *invo) {
 
 // ":psearch"
 void
-c_psearch(Invocation *invo) {
+c_psearch(Invocation* invo) {
    g_do_tagpreview = p_pvh;
    c_findpat(invo);
    g_do_tagpreview = 0;
 }
 
 void
-c_findpat(Invocation *invo) {
+c_findpat(Invocation* invo) {
    int      whole = TRUE;
    Byte   *p;
    int      action;
@@ -11113,7 +11113,7 @@ c_findpat(Invocation *invo) {
 }
 
 private void
-tagCmd(Invocation *invo, Byte *name) {
+tagCmd(Invocation* invo, Byte *name) {
    int      cmd;
 
    switch (name[1]) {
@@ -11155,14 +11155,14 @@ tagCmd(Invocation *invo, Byte *name) {
 
 // ":ptag", ":ptselect", ":ptjump", ":ptnext", etc.
 void
-c_ptag(Invocation *invo) {
+c_ptag(Invocation* invo) {
    g_do_tagpreview = p_pvh;  // will be reset to 0 in tagCmd()
    tagCmd(invo, commands[invo->id].name + 1);
 }
 
 // ":pedit"
 void
-c_pedit(Invocation *invo) {
+c_pedit(Invocation* invo) {
    Portal   *curPor_save = curPor;
    prepare_preview_window();
 
@@ -11174,7 +11174,7 @@ c_pedit(Invocation *invo) {
 
 // ":pbook"
 void
-c_pbuffer(Invocation *invo) {
+c_pbuffer(Invocation* invo) {
    Portal   *curPor_save = curPor;
    prepare_preview_window();
 
@@ -11210,7 +11210,7 @@ back_to_current_window(Portal *curPor_save) {
 
 // ":stag", ":stselect" and ":stjump".
 void
-c_stag(Invocation *invo) {
+c_stag(Invocation* invo) {
    postponed_split = -1;
    postponed_split_flags = commModifierG.cmod_split;
    postponed_split_tab = commModifierG.cmod_tab;
@@ -11221,7 +11221,7 @@ c_stag(Invocation *invo) {
 
 // ":tag", ":tselect", ":tjump", ":tnext", etc.
 void
-c_tag(Invocation *invo) {
+c_tag(Invocation* invo) {
    tagCmd(invo, commands[invo->id].name);
 }
 
@@ -11654,7 +11654,7 @@ private int filetype_indent = FALSE;
 // indent on: load filetype.vim and indent.vim
 // indent off: load indoff.vim
 void
-c_filetype(Invocation *invo) {
+c_filetype(Invocation* invo) {
    Byte   *arg = invo->arg;
    int      plugin = FALSE;
    int      indent = FALSE;
@@ -11718,7 +11718,7 @@ c_filetype(Invocation *invo) {
 
 // ":setfiletype [FALLBACK] {name}"
 void
-c_setfiletype(Invocation *invo) {
+c_setfiletype(Invocation* invo) {
    if (curBook->didFiletype)
       return;
 
@@ -11741,24 +11741,24 @@ setHlsearch(Boole flag) {
 
 // ":nohlsearch"
 void
-c_nohlsearch(Invocation *invo UNUSED) {
+c_nohlsearch(Invocation* invo UNUSED) {
    setHlsearch(false);
    redraw_all_later(UPD_SOME_VALID);
 }
 
 void
-c_fold(Invocation *invo) {
+c_fold(Invocation* invo) {
    if (foldManualAllowed(TRUE))
       foldCreate(invo->line1, invo->line2);
 }
 
 void
-c_foldopen(Invocation *invo) {
+c_foldopen(Invocation* invo) {
     opFoldRange(invo->line1, invo->line2, invo->id == C_foldopen, invo->forceit, FALSE);
 }
 
 void
-c_folddo(Invocation *invo) {
+c_folddo(Invocation* invo) {
    start_global_changes();
 
    // First set the marks for all lines closed/open.
@@ -14349,7 +14349,7 @@ u_sync(int force) {  // Also sync when no_u_sync is set.
 
 //":undolist": List the leaves of the undo tree
 void
-c_undolist(Invocation *invo UNUSED) {
+c_undolist(Invocation* invo UNUSED) {
    ArrayList   ga;
    UndoHeader   *uhp;
    int      mark;
@@ -14445,7 +14445,7 @@ c_undolist(Invocation *invo UNUSED) {
 
 //":undojoin": continue adding to the last entry list
 void
-c_undojoin(Invocation *invo UNUSED) {
+c_undojoin(Invocation* invo UNUSED) {
    if (curBook->undo.newHead == NULL)
       return;          // nothing changed before
    if (curBook->undo.currHead != NULL) {

@@ -1765,7 +1765,7 @@ delsign(Book* book, // buffer sign is stored in
 int
 buf_findsign(Book *book, // buffer to store sign in
              int id, // sign ID
-             Byte *group) // sign group
+             CS group) // sign group
 {
     SignEntry *sign = NULL; // a sign in the signlist
     FOR_ALL_SIGNS_IN_BOOK(book, sign) {
@@ -1868,7 +1868,7 @@ markDeleteSigns(Book* book, CS group) {
 
 // List placed signs for "rbook".  If "rbook" is NULL do it for all books.
 private void
-sign_list_placed(Book* rbook, Byte *sign_group) {
+sign_list_placed(Book* rbook, CS sign_group) {
    Byte lbuf[MSG_BUF_LEN];
    Byte group[MSG_BUF_LEN];
 
@@ -1915,33 +1915,33 @@ sign_list_placed(Book* rbook, Byte *sign_group) {
 // Adjust a placed sign for inserted/deleted lines.
 void
 sign_mark_adjust(
-    LineNr    line1,
-    LineNr    line2,
-    long        amount,
-    long        amount_after
+    LineNr line1,
+    LineNr line2,
+    long amount,
+    long amount_after
 ) {
-    SignEntry *sign = NULL; // a sign in a signList
-    FOR_ALL_SIGNS_IN_BOOK(curBook, sign) {
-        // Ignore changes to lines after the sign
-        if (sign->lnum < line1)
-            continue;
+   SignEntry *sign = NULL; // a sign in a signList
+   FOR_ALL_SIGNS_IN_BOOK(curBook, sign) {
+      // Ignore changes to lines after the sign
+      if (sign->lnum < line1)
+         continue;
 
-        LineNr new_lnum = sign->lnum;
+      LineNr new_lnum = sign->lnum;
 
-        if (sign->lnum <= line2) {
-            if (amount != MAXLNUM)
-                new_lnum += amount;
-        } ei (sign->lnum > line2) {
-            // Lines inserted or deleted before the sign
-            new_lnum += amount_after;
-        }
+      if (sign->lnum <= line2) {
+         if (amount != MAXLNUM)
+            new_lnum += amount;
+      } ei (sign->lnum > line2) {
+         // Lines inserted or deleted before the sign
+         new_lnum += amount_after;
+      }
 
-        // If the new sign line number is past the last line in the book,
-        // then don't adjust the line number. Otherwise, it will always be past
-        // the last line and will not be visible.
-        if (new_lnum <= curBook->mem.lineCount)
-            sign->lnum = new_lnum;
-    }
+      // If the new sign line number is past the last line in the book,
+      // then don't adjust the line number. Otherwise, it will always be past
+      // the last line and will not be visible.
+      if (new_lnum <= curBook->mem.lineCount)
+         sign->lnum = new_lnum;
+   }
 }
 
 //Find index of a ":sign" subcmd from its name. "*end_cmd" must be writable.
@@ -1949,197 +1949,193 @@ private int
 sign_cmd_idx(CS begin_cmd, // begin of sign subcmd
              CS end_cmd // just after sign subcmd
 ){
-    int idx = 0;
-    char save = *end_cmd;
-    *end_cmd = ZERO;
+   int idx = 0;
+   Byte save = *end_cmd;
+   *end_cmd = ZERO;
 
-    while (cmds[idx] != NULL && STRCMP(begin_cmd, cmds[idx]) != 0)
-       ++idx;
+   while (cmds[idx] != NULL && STRCMP(begin_cmd, cmds[idx]) != 0)
+      ++idx;
 
-    *end_cmd = save;
-    return idx;
+   *end_cmd = save;
+   return idx;
 }
 
-// Find a sign by name. Also returns pointer to the previous sign.
+//Find a sign by name. Also return pointer to the previous sign.
 private Sign*
 sign_find(CS name, Sign** sp_prev) {
-    if (sp_prev)
-       *sp_prev = NULL;
+   if (sp_prev)
+      *sp_prev = NULL;
 
-    Sign *sp = NULL;
-    FOR_ALL_SIGNS(sp) {
-       if (STRCMP(sp->name, name) == 0)
-          break;
+   Sign *sp = NULL;
+   FOR_ALL_SIGNS(sp) {
+      if (STRCMP(sp->name, name) == 0)
+         break;
 
-       if (sp_prev != NULL)
-          *sp_prev = sp;
-    }
+      if (sp_prev != NULL)
+         *sp_prev = sp;
+   }
 
-    return sp;
+   return sp;
 }
 
 // Allocate a new sign
 private Sign *
 alloc_new_sign(CS name) {
-    int start = next_sign_typenr;
+   int start = next_sign_typenr;
 
-    // Allocate a new sign.
-    Sign *sp = allocZeroed_id(sizeof(Sign), aid_sign_define_by_name);
+   // Allocate a new sign.
+   Sign *sp = allocZeroed_id(sizeof(Sign), aid_sign_define_by_name);
 
-    // Check that next_sign_typenr is not already being used.
-    // This only happens after wrapping around.  Hopefully
-    // another one got deleted and we can use its number.
-    Sign *lp = first_sign;
-    while (lp != NULL) {
-        if (lp->typeNr == next_sign_typenr) {
-            ++next_sign_typenr;
+   //Check that next_sign_typenr is not already being used.
+   //This only happens after wrapping around. Hopefully
+   //another one got deleted and we can use its number.
+   Sign *lp = first_sign;
+   while (lp != NULL) {
+       if (lp->typeNr == next_sign_typenr) {
+           ++next_sign_typenr;
 
-            if (next_sign_typenr == MAX_TYPENR)
-               next_sign_typenr = 1;
+           if (next_sign_typenr == MAX_TYPENR)
+              next_sign_typenr = 1;
 
-            if (next_sign_typenr == start) {
-               eeglFree(sp);
-               emsg(_(e_too_many_signs_defined));
-               return NULL;
-            }
+           if (next_sign_typenr == start) {
+              eeglFree(sp);
+              emsg(_(e_too_many_signs_defined));
+              return NULL;
+           }
 
-            lp = first_sign; // start all over
-            continue;
-        }
-        lp = lp->next;
-    }
+           lp = first_sign; // start all over
+           continue;
+       }
+       lp = lp->next;
+   }
 
-    sp->typeNr = next_sign_typenr;
+   sp->typeNr = next_sign_typenr;
 
-    if (++next_sign_typenr == MAX_TYPENR)
-        next_sign_typenr = 1; // wrap around
+   if (++next_sign_typenr == MAX_TYPENR)
+      next_sign_typenr = 1; // wrap around
 
-    sp->name = copyStr(name);
+   sp->name = copyStr(name);
 
-    return sp;
+   return sp;
 }
 
 // Initialize the text for a new sign
 private int
 sign_define_init_text(Sign *sp, Byte *text) {
-    Byte *s = NULL;
-    Byte *endp = text + (int)STRLEN(text);
-    int cells = 0;
+   Byte *s = NULL;
+   Byte *endp = text + (int)STRLEN(text);
+   int cells = 0;
 
-    // Remove backslashes so that it is possible to use a space.
-    for (s = text; s + 1 < endp; ++s) {
-       if (*s == '\\') {
-           STRMOVE(s, s + 1);
-           --endp;
-       }
-    }
+   // Remove backslashes so that it is possible to use a space.
+   for (s = text; s + 1 < endp; ++s) {
+      if (*s == '\\') {
+          STRMOVE(s, s + 1);
+          --endp;
+      }
+   }
 
-    // Count cells and check for non-printable chars
-    for (s = text; s < endp; s += utfCharLen(s)) {
-            if (!eeIsPrintable((*mb_ptr2char)(s)))
-                break;
+   // Count cells and check for non-printable chars
+   for (s = text; s < endp; s += utfCharLen(s)) {
+      if (!eeIsPrintable((*mb_ptr2char)(s)))
+         break;
+      cells += (*mb_ptr2cells)(s);
+   }
 
-            cells += (*mb_ptr2cells)(s);
-    }
+   // Currently sign text must be one or two display cells
+   if (s != endp || cells < 1 || cells > 2) {
+      showErrFmtMsg(_(e_invalid_sign_text_str), text);
+      return FAIL;
+   }
 
-    // Currently sign text must be one or two display cells
-    if (s != endp || cells < 1 || cells > 2) {
-       showErrFmtMsg(_(e_invalid_sign_text_str), text);
-       return FAIL;
-    }
+   eeglFree(sp->text);
+   // Allocate one byte more if we need to pad up with a space.
+   int len = (int)(endp - text + ((cells == 1) ? 1 : 0));
+   sp->text = copySubstr(text, len);
 
-    eeglFree(sp->text);
-    // Allocate one byte more if we need to pad up with a space.
-    int len = (int)(endp - text + ((cells == 1) ? 1 : 0));
-    sp->text = copySubstr(text, len);
+   // For single character sign text, pad with a space.
+   if (sp->text && cells == 1)
+      STRCPY(sp->text + len - 1, " ");
 
-    // For single character sign text, pad with a space.
-    if (sp->text != NULL && cells == 1)
-        STRCPY(sp->text + len - 1, " ");
-
-    return OK;
+   return OK;
 }
 
 // Define a new sign or update an existing sign
 int
 sign_define_by_name(
-   Byte *name,
-   Byte *linehl,
-   Byte *textt,
-   Byte *texthl,
-   Byte *culhl,
-   Byte *numhl,
+   CS name,
+   CS linehl,
+   CS textt,
+   CS texthl,
+   CS culhl,
+   CS numhl,
    int prio
 ){
-    Sign *sp_prev = NULL;
-    Sign *sp = sign_find(name, &sp_prev);
-    if (!sp) {
-        sp = alloc_new_sign(name);
-        if (!sp)
-           return FAIL;
+   Sign *sp_prev = NULL;
+   Sign *sp = sign_find(name, &sp_prev);
+   if (!sp) {
+      sp = alloc_new_sign(name);
+      // add the new sign to the list of signs
+      if (!sp_prev)
+         first_sign = sp;
+      else
+         sp_prev->next = sp;
+   } else {
+       Portal *wp = NULL;
+       // Signs may already exist, a redraw is needed in windows with a
+       // non-empty sign list.
+       FOR_ALL_PORTALS(wp) {
+          if (wp->book->signList != NULL)
+              drawBookLater(wp->book, UPD_NOT_VALID);
+       }
+   }
 
-        // add the new sign to the list of signs
-        if (!sp_prev)
-           first_sign = sp;
-        else
-           sp_prev->next = sp;
-    } else {
-        Portal *wp = NULL;
-        // Signs may already exist, a redraw is needed in windows with a
-        // non-empty sign list.
-        FOR_ALL_PORTALS(wp) {
-           if (wp->book->signList != NULL)
-               drawBookLater(wp->book, UPD_NOT_VALID);
-        }
-    }
+   // set values for a defined sign.
 
-    // set values for a defined sign.
+   if (textt && (sign_define_init_text(sp, textt) == FAIL))
+      return FAIL;
 
-    if (textt && (sign_define_init_text(sp, textt) == FAIL))
-        return FAIL;
+   sp->priority = prio;
 
-    sp->priority = prio;
+   if (linehl) {
+      if (*linehl == ZERO)
+         sp->lineHiId = 0;
+      else
+         sp->lineHiId = hiliteGroupByName(text(linehl));
+   }
 
-    if (linehl) {
-       if (*linehl == ZERO)
-          sp->lineHiId = 0;
-       else
-          sp->lineHiId = hiliteGroupByName(text(linehl));
-    }
+   if (texthl) {
+      if (*texthl == ZERO)
+         sp->textHiId = 0;
+      else
+         sp->textHiId = hiliteGroupByName(text(texthl));
+   }
 
-    if (texthl) {
-       if (*texthl == ZERO)
-          sp->textHiId = 0;
-       else
-          sp->textHiId = hiliteGroupByName(text(texthl));
-    }
+   if (culhl) {
+      if (*culhl == ZERO)
+         sp->cursorLineHiId = 0;
+      else
+         sp->cursorLineHiId = hiliteGroupByName(text(culhl));
+   }
 
-    if (culhl) {
-       if (*culhl == ZERO)
-          sp->cursorLineHiId = 0;
-       else
-          sp->cursorLineHiId = hiliteGroupByName(text(culhl));
-    }
+   if (numhl) {
+      if (*numhl == ZERO)
+         sp->lineNumHiId = 0;
+      else
+         sp->lineNumHiId = hiliteGroupByName(text(numhl));
+   }
 
-    if (numhl) {
-       if (*numhl == ZERO)
-          sp->lineNumHiId = 0;
-       else
-          sp->lineNumHiId = hiliteGroupByName(text(numhl));
-    }
-
-    return OK;
+   return OK;
 }
 
 // Return TRUE if sign "name" exists.
 int
-sign_exists_by_name(Byte *name) {
+sign_exists_by_name(CS name) {
    return sign_find(name, NULL) != NULL;
 }
 
 // Free the sign specified by 'name'.
 int
-sign_undefine_by_name(Byte *name, Boole give_error) {
+sign_undefine_by_name(CS name, Boole give_error) {
    Sign *sp_prev = NULL;
    Sign *sp = sign_find(name, &sp_prev);
    if (!sp) {
@@ -2891,7 +2887,7 @@ get_nth_sign_group_name(int idx) {
 }
 
 // Function given to expandGeneric() to obtain the sign command expansion.
-Byte *
+CS
 get_sign_name(Expand *xp UNUSED, int idx) {
     switch (expandWhatS) {
     case EXP_SUBCMD:

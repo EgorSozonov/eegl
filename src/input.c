@@ -135,12 +135,10 @@ get_buffcont(
 
 // Return the contents of the record buffer as a single string and clear the record buffer.
 // K_SPECIAL and CSI in the returned string are escaped.
-Byte *
+CS
 get_recorded(void) {
-   Byte   *p;
    Unt len;
-
-   p = get_buffcont(&recordbuff, TRUE, &len);
+   CS p = get_buffcont(&recordbuff, TRUE, OUT &len);
    if (!p)
       return NULL;
 
@@ -688,26 +686,26 @@ AppendNumberToRedobuff(long n) {
 
 // Append string "s" to the stuff buffer. CSI and K_SPECIAL must already have been escaped.
 void
-stuffReadbuff(Byte *s) {
+stuffReadbuff(CS s) {
    add_buff(&readbuf1, s, -1L);
 }
 
 // Append string "s" to the redo stuff buffer.
 // CSI and K_SPECIAL must already have been escaped.
 void
-stuffRedoReadbuff(Byte *s) {
+stuffRedoReadbuff(CS s) {
    add_buff(&readbuf2, s, -1L);
 }
 
 void
-stuffReadbuffLen(Byte *s, long len) {
+stuffReadbuffLen(CS s, long len) {
    add_buff(&readbuf1, s, len);
 }
 
 // Stuff "s" into the stuff buffer, leaving special key codes unmodified and
 // escaping other K_SPECIAL and CSI bytes. Change CR, LF and ESC into a space.
 void
-stuffReadbuffSpec(Byte *s) {
+stuffReadbuffSpec(CS s) {
    while (*s != ZERO) {
       if (*s == K_SPECIAL && s[1] != ZERO && s[2] != ZERO) {
       // Insert special key literally.
@@ -1376,7 +1374,7 @@ save_typeahead(TypeaheadSave *tp) {
 // The allocated memory is freed, can only be called once!
 // When "overwrite" is FALSE input typed later is kept.
 void
-restore_typeahead(TypeaheadSave *tp, int overwrite UNUSED) {
+restore_typeahead(TypeaheadSave *tp, Boole overwrite) {
     if (tp->typebuf_valid) {
        free_typeBufG();
        typeBufG = tp->save_typebuf;
@@ -3934,7 +3932,7 @@ mb_cptr2char_adv(OUT CS* pp) {
 //comes after "p1".  For Arabic sometimes "ab" is replaced with "c", which
 //behaves like a composing character.
 int
-utf_composinglike(Byte *p1, Byte *p2) {
+utf_composinglike(CS p1, CS p2) {
    int c2 = mb_ptr2char(p2);
    if (utf_iscomposing(c2))
       return TRUE;
@@ -3948,16 +3946,14 @@ utf_composinglike(Byte *p1, Byte *p2) {
 //composing characters.
 int
 utfc_ptr2char(
-   Byte   *p,
-   int      *pcc)   // return: composing chars, last one is 0
-{
-   int      len;
-   int      c;
+   CS p,
+   int* pcc   // return: composing chars, last one is 0
+){
    int      cc;
    int      i = 0;
 
-   c = mb_ptr2char(p);
-   len = utf_ptr2len(p);
+   Unt c = mb_ptr2char(p);
+   int len = utf_ptr2len(p);
 
    // Only accept a composing char when the first char isn't illegal.
    if ((len > 1 || *p < 0x80) && p[len] >= 0x80 && UTF_COMPOSINGLIKE(p, p + len)) {
@@ -3982,35 +3978,29 @@ utfc_ptr2char(
 //composing characters. Use no more than p[maxlen].
 int
 utfc_ptr2char_len(
-    Byte   *p,
-    int      *pcc,   // return: composing chars, last one is 0
-    int      maxlen)
-{
-    int      len;
-    int      c;
-    int      cc;
-    int      i = 0;
+    CS p,
+    int* pcc,   // return: composing chars, last one is 0
+    int maxlen
+) {
+   int      cc;
+   int      i = 0;
 
-    c = mb_ptr2char(p);
-    len = utf_ptr2len_len(p, maxlen);
-    // Only accept a composing char when the first char isn't illegal.
-    if ((len > 1 || *p < 0x80)
-       && len < maxlen
-       && p[len] >= 0x80
-       && UTF_COMPOSINGLIKE(p, p + len))
-    {
-   cc = mb_ptr2char(p + len);
-   for (;;) {
-       pcc[i++] = cc;
-       if (i == MAX_COMBINED_SYMBOLS)
-      break;
-       len += utf_ptr2len_len(p + len, maxlen - len);
-       if (len >= maxlen
-          || p[len] < 0x80
-          || !utf_iscomposing(cc = mb_ptr2char(p + len)))
-      break;
+   Unt c = mb_ptr2char(p);
+   int len = utf_ptr2len_len(p, maxlen);
+   // Only accept a composing char when the first char isn't illegal.
+   if ((len > 1 || *p < 0x80) && len < maxlen && p[len] >= 0x80 && UTF_COMPOSINGLIKE(p, p + len)) {
+      cc = mb_ptr2char(p + len);
+      for (;;) {
+          pcc[i++] = cc;
+          if (i == MAX_COMBINED_SYMBOLS)
+         break;
+          len += utf_ptr2len_len(p + len, maxlen - len);
+          if (len >= maxlen
+             || p[len] < 0x80
+             || !utf_iscomposing(cc = mb_ptr2char(p + len)))
+         break;
+      }
    }
-    }
 
     if (i < MAX_COMBINED_SYMBOLS)   // last composing char must be 0
    pcc[i] = 0;
@@ -4022,17 +4012,14 @@ utfc_ptr2char_len(
 //Include the composing characters. "buf" must at least have the length MB_MAXBYTES + 1.
 //Only to be used when screenLinesUCG[off] != 0. Return the produced number of bytes.
 int
-utfc_char2bytes(int off, Byte *buf) {
-    int      len;
-    int      i;
-
-    len = mb_char2bytes(screenLinesUCG[off], buf);
-    for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-   if (screenLinesCG[i][off] == 0)
-       break;
-   len += mb_char2bytes(screenLinesCG[i][off], buf + len);
-    }
-    return len;
+utfc_char2bytes(int off, CS buf) {
+   int  len = mb_char2bytes(screenLinesUCG[off], buf);
+   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+      if (screenLinesCG[i][off] == 0)
+          break;
+      len += mb_char2bytes(screenLinesCG[i][off], buf + len);
+   }
+   return len;
 }
 
 // Get the length of a UTF-8 byte sequence, excluding any following composing characters.
@@ -5256,7 +5243,7 @@ utf_strnicmp(
 //Needed for Big5, Shift-JIS and UTF-8 encoding. Return zero if s1 and s2 are equal (ignoring case),
 //the difference between two characters otherwise.
 int
-caseInsensitiveCompareNChars2(Byte *s1, Byte *s2, Unt n1, Unt n2) {
+caseInsensitiveCompareNChars2(CS s1, CS s2, Unt n1, Unt n2) {
    if (n1 == n2)
       return caseInsensitiveCompareNChars(s1, s2, n1);
    else
@@ -5264,7 +5251,7 @@ caseInsensitiveCompareNChars2(Byte *s1, Byte *s2, Unt n1, Unt n2) {
 }
 
 int
-caseInsensitiveCompareNChars(Byte *s1, Byte *s2, Unt nn) {
+caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
    return utf_strnicmp(s1, s2, nn, nn);
 }
 
@@ -5292,8 +5279,7 @@ show_utf8(void) {
          }
          clen = utf_ptr2len(line + i);
       }
-      SPRINTF(IObuff + rlen, "%02x ",
-         (line[i] == NL) ? ZERO : line[i]);  // ZERO is stored as NL
+      SPRINTF(IObuff + rlen, "%02x ", (line[i] == NL) ? ZERO : line[i]);  // ZERO is stored as NL
       --clen;
       rlen += (int)STRLEN(IObuff + rlen);
       if (rlen > IOSIZE - 20)
@@ -5495,7 +5481,7 @@ utf_allow_break(Unt cc, Unt ncc) {
 // Copy a character from "*fp" to "*tp" and advance the pointers.
 void
 mb_copy_char(Byte **fp, Byte **tp) {
-   int       l = utfCharLen(*fp);
+   int l = utfCharLen(*fp);
 
    mch_memmove(*tp, *fp, (Unt)l);
    *tp += l;

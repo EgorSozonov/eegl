@@ -7028,14 +7028,14 @@ private int   last_set_cursor_blink = -1;
 private int   desired_cursor_blink = -1;
 
 private int
-cursor_color_equal(Byte *lhs_color, Byte *rhs_color) {
+cursor_color_equal(CS lhs_color, CS rhs_color) {
    if (lhs_color && rhs_color)
       return STRCMP(lhs_color, rhs_color) == 0;
    return !lhs_color && !rhs_color;
 }
 
 private void
-cursor_color_copy(Byte **to_color, Byte *from_color) {
+cursor_color_copy(OUT CS* to_color, CS from_color) {
    // Avoid a free & alloc if the value is already right.
    if (cursor_color_equal(*to_color, from_color))
       return;
@@ -8801,25 +8801,25 @@ private void
 may_output_cursor_props(void) {
    if (!cursor_color_equal(last_set_cursor_color, desired_cursor_color)
        || last_set_cursor_shape != desired_cursor_shape
-       || last_set_cursor_blink != desired_cursor_blink)
-    {
-   cursor_color_copy(&last_set_cursor_color, desired_cursor_color);
-   last_set_cursor_shape = desired_cursor_shape;
-   last_set_cursor_blink = desired_cursor_blink;
-   term_cursor_color(cursor_color_get(desired_cursor_color));
-   if (desired_cursor_shape == -1 || desired_cursor_blink == -1)
-       // this will restore the initial cursor style, if possible
-       ui_cursor_shape_forced(TRUE);
-   else
-       term_cursor_shape(desired_cursor_shape, desired_cursor_blink);
-    }
+       || last_set_cursor_blink != desired_cursor_blink
+   ) {
+      cursor_color_copy(OUT &last_set_cursor_color, desired_cursor_color);
+      last_set_cursor_shape = desired_cursor_shape;
+      last_set_cursor_blink = desired_cursor_blink;
+      term_cursor_color(cursor_color_get(desired_cursor_color));
+      if (desired_cursor_shape == -1 || desired_cursor_blink == -1)
+         // this will restore the initial cursor style, if possible
+         ui_cursor_shape_forced(TRUE);
+      else
+         term_cursor_shape(desired_cursor_shape, desired_cursor_blink);
+   }
 }
 
 // Set the cursor color and shape, if not last set to these.
 private void
 may_set_cursor_props(Terminal *term) {
    if (in_terminal_loop == term) {
-      cursor_color_copy(&desired_cursor_color, term->tl_cursor_color);
+      cursor_color_copy(OUT &desired_cursor_color, term->tl_cursor_color);
       desired_cursor_shape = term->tl_cursor_shape;
       desired_cursor_blink = term->tl_cursor_blink;
       may_output_cursor_props();
@@ -8829,7 +8829,7 @@ may_set_cursor_props(Terminal *term) {
 // Reset the desired cursor properties and restore them when needed.
 private void
 prepare_restoreCursor_props(void) {
-   cursor_color_copy(&desired_cursor_color, NULL);
+   cursor_color_copy(OUT &desired_cursor_color, NULL);
    desired_cursor_shape = -1;
    desired_cursor_blink = -1;
    may_output_cursor_props();
@@ -9282,26 +9282,25 @@ handle_settermprop(
        break;
 
    case VTERM_PROP_CURSORCOLOR:
-       strval = copySubstr((CS)value->string.str,
-                         value->string.len);
-       if (strval == NULL)
+      strval = copySubstr((CS)value->string.str, value->string.len);
+      if (strval == NULL)
+         break;
+      cursor_color_copy(OUT &term->tl_cursor_color, strval);
+      may_set_cursor_props(term);
       break;
-       cursor_color_copy(&term->tl_cursor_color, strval);
-       may_set_cursor_props(term);
-       break;
 
    case VTERM_PROP_ALTSCREEN:
-       // TODO: do anything else?
-       term->tl_using_altscreen = value->boolean;
-       break;
+      // TODO: do anything else?
+      term->tl_using_altscreen = value->boolean;
+      break;
 
    default:
        break;
-    }
-    eeglFree(strval);
+   }
+   eeglFree(strval);
 
-    // Always return 1, otherwise vterm doesn't store the value internally.
-    return 1;
+   // Always return 1, otherwise vterm doesn't store the value internally.
+   return 1;
 }
 
 private void
@@ -10424,21 +10423,18 @@ term_update_colors_all(void) {
    }
 }
 
-// Return the text to show for the buffer name and status.
-Byte *
+// Return the text to show for the book name and status.
+CS
 term_get_status_text(Terminal *term) {
    if (term->tl_status_text != NULL)
       return term->tl_status_text;
 
-   Byte *txt;
-   Unt len;
-   Byte *fname;
-
+   CS txt;
    if (term->isNormalMode) {
-   if (term_job_running(term))
-       txt = (CS)_("Terminal");
-   else
-       txt = (CS)_("Terminal-finished");
+      if (term_job_running(term))
+          txt = (CS)_("Terminal");
+      else
+          txt = (CS)_("Terminal-finished");
    } ei (term->title != NULL)
       txt = term->title;
    ei (term_none_open(term))
@@ -10447,8 +10443,8 @@ term_get_status_text(Terminal *term) {
       txt = (CS)_("running");
    else
       txt = (CS)_("finished");
-   fname = bookGetFname(term->book);
-   len = 9 + STRLEN(fname) + STRLEN(txt);
+   CS fname = bookGetFname(term->book);
+   Unt len = 9 + STRLEN(fname) + STRLEN(txt);
    term->tl_status_text = alloc(len);
    if (term->tl_status_text != NULL)
       eeSnprintf(term->tl_status_text, len, "%s [%s]", fname, txt);
@@ -10480,7 +10476,7 @@ set_ref_in_term(int copyID) {
 // Get the buffer from the first argument in "argvars".
 // Return NULL when the buffer is not for a terminal portal and logs a message with "where".
 private Book *
-term_get_buf(Var *argvars, char *where) {
+term_get_buf(Var* argvars, CS where) {
    ++emsg_off;
    Book* book = daGetBook(&argvars[0], FALSE);
    --emsg_off;
@@ -10542,7 +10538,7 @@ f_term_dumpwrite(Var *argvars, Var *returnVar UNUSED) {
    FILE   *fd;
    VTermPos   cursor_pos;
 
-   Book* book = term_get_buf(argvars, "term_dumpwrite()");
+   Book* book = term_get_buf(argvars, S"term_dumpwrite()");
    if (!book)
       return;
    Terminal* term = book->term;
@@ -11267,8 +11263,8 @@ f_term_dumpload(Var *argvars, Var *returnVar) {
 
 // "term_getaltscreen(book)" function
 void
-f_term_getaltscreen(Var *argvars, Var *returnVar) {
-   Book* book = term_get_buf(argvars, "term_getaltscreen()");
+f_term_getaltscreen(Var* argvars, Var* returnVar) {
+   Book* book = term_get_buf(argvars, S"term_getaltscreen()");
    if (book == NULL)
       return;
    returnVar->number = book->term->tl_using_altscreen;
@@ -11276,8 +11272,8 @@ f_term_getaltscreen(Var *argvars, Var *returnVar) {
 
 // "term_getcursor(book)" function
 void
-f_term_getcursor(Var *argvars, Var *returnVar) {
-   Book* book = term_get_buf(argvars, "term_getcursor()");
+f_term_getcursor(Var* argvars, Var* returnVar) {
+   Book* book = term_get_buf(argvars, S"term_getcursor()");
    if (!book)
       return;
       
@@ -11301,7 +11297,7 @@ f_term_getcursor(Var *argvars, Var *returnVar) {
 // "term_getjob(book)" function
 void
 f_term_getjob(Var *argvars, Var *returnVar) {
-   Book* book = term_get_buf(argvars, "term_getjob()");
+   Book* book = term_get_buf(argvars, S"term_getjob()");
    if (book == NULL) {
       returnVar->tag = VAR_SPECIAL;
       returnVar->number = VVAL_NULL;
@@ -11329,7 +11325,7 @@ f_term_getline(Var *argvars, Var *returnVar) {
 
    returnVar->tag = VAR_STRING;
 
-   Book* book = term_get_buf(argvars, "term_getline()");
+   Book* book = term_get_buf(argvars, S"term_getline()");
    if (book == NULL)
       return;
    term = book->term;
@@ -11366,7 +11362,7 @@ f_term_getline(Var *argvars, Var *returnVar) {
 // "term_getscrolled(book)" function
 void
 f_term_getscrolled(Var *argvars, Var *returnVar) {
-   Book* book = term_get_buf(argvars, "term_getscrolled()");
+   Book* book = term_get_buf(argvars, S"term_getscrolled()");
    if (book == NULL)
       return;
    returnVar->number = book->term->tl_scrollback_scrolled;
@@ -11375,7 +11371,7 @@ f_term_getscrolled(Var *argvars, Var *returnVar) {
 // "term_getsize(book)" function
 void
 f_term_getsize(Var *argvars, Var *returnVar) {
-   Book* book = term_get_buf(argvars, "term_getsize()");
+   Book* book = term_get_buf(argvars, S"term_getsize()");
    if (!book)
       return;
 
@@ -11391,7 +11387,7 @@ f_term_setsize(Var *argvars, Var *returnVar UNUSED) {
    Terminal   *term;
    Long rows, cols;
 
-   Book* book = term_get_buf(argvars, "term_setsize()");
+   Book* book = term_get_buf(argvars, S"term_setsize()");
    if (!book) {
       emsg(_(e_not_terminal_buffer));
       return;
@@ -11419,7 +11415,7 @@ f_term_getstatus(Var *argvars, Var *returnVar) {
 
    returnVar->tag = VAR_STRING;
 
-   Book* book = term_get_buf(argvars, "term_getstatus()");
+   Book* book = term_get_buf(argvars, S"term_getstatus()");
    if (book == NULL)
       return;
    term = book->term;
@@ -11439,7 +11435,7 @@ f_term_gettitle(Var *argvars, Var *returnVar) {
 
    returnVar->tag = VAR_STRING;
 
-   Book* book = term_get_buf(argvars, "term_gettitle()");
+   Book* book = term_get_buf(argvars, S"term_gettitle()");
    if (!book)
       return;
 
@@ -11450,7 +11446,7 @@ f_term_gettitle(Var *argvars, Var *returnVar) {
 // "term_gettty(book)" function
 void
 f_term_gettty(Var *argvars, Var *returnVar) {
-   Book* book = term_get_buf(argvars, "term_gettty()");
+   Book* book = term_get_buf(argvars, S"term_gettty()");
    if (!book)
       return;
       
@@ -11504,7 +11500,7 @@ f_term_scrape(Var *argvars, Var *returnVar) {
 
    allocReturnList(returnVar);
 
-   Book* book = term_get_buf(argvars, "term_scrape()");
+   Book* book = term_get_buf(argvars, S"term_scrape()");
    if (!book)
       return;
       
@@ -11592,7 +11588,7 @@ f_term_scrape(Var *argvars, Var *returnVar) {
 // "term_sendkeys(book, keys)" function
 void
 f_term_sendkeys(Var *argvars, Var *returnVar UNUSED) {
-   Book* book = term_get_buf(argvars, "term_sendkeys()");
+   Book* book = term_get_buf(argvars, S"term_sendkeys()");
    if (!book)
       return;
 
@@ -11628,7 +11624,7 @@ f_term_getansicolors(Var *argvars, Var *returnVar) {
 
    allocReturnList(returnVar);
 
-   Book* book = term_get_buf(argvars, "term_getansicolors()");
+   Book* book = term_get_buf(argvars, S"term_getansicolors()");
    if (book == NULL)
       return;
    Terminal* term = book->term;
@@ -11653,7 +11649,7 @@ f_term_setansicolors(Var *argvars, Var *returnVar UNUSED) {
    ListItem   *li;
    int      n = 0;
 
-   book = term_get_buf(argvars, "term_setansicolors()");
+   book = term_get_buf(argvars, S"term_setansicolors()");
    if (book == NULL)
       return;
    term = book->term;
@@ -11694,7 +11690,7 @@ f_term_setansicolors(Var *argvars, Var *returnVar UNUSED) {
 // "term_setapi(book, api)" function
 void
 f_term_setapi(Var *argvars, Var *returnVar UNUSED) {
-   Book* book = term_get_buf(argvars, "term_setapi()");
+   Book* book = term_get_buf(argvars, S"term_setapi()");
    if (!book)
       return;
    Terminal* term = book->term;
@@ -11706,7 +11702,7 @@ f_term_setapi(Var *argvars, Var *returnVar UNUSED) {
 // "term_setrestore(book, command)" function
 void
 f_term_setrestore(Var *argvars UNUSED, Var *returnVar UNUSED) {
-   Book* book = term_get_buf(argvars, "term_setrestore()");
+   Book* book = term_get_buf(argvars, S"term_setrestore()");
    if (!book)
       return;
    Terminal* term = book->term;
@@ -11718,7 +11714,7 @@ f_term_setrestore(Var *argvars UNUSED, Var *returnVar UNUSED) {
 // "term_setkill(book, how)" function
 void
 f_term_setkill(Var *argvars UNUSED, Var *returnVar UNUSED) {
-   Book* book = term_get_buf(argvars, "term_setkill()");
+   Book* book = term_get_buf(argvars, S"term_setkill()");
    if (!book)
       return;
    Terminal* term = book->term;
@@ -11753,7 +11749,7 @@ f_term_start(Var *argvars, Var *returnVar) {
 
 void
 f_term_wait(Var *argvars, Var *returnVar UNUSED) {
-   Book* book = term_get_buf(argvars, "term_wait()");
+   Book* book = term_get_buf(argvars, S"term_wait()");
    if (!book)
       return;
    if (book->term->job == NULL) {
@@ -12148,14 +12144,13 @@ uiInit(void) {
 }
 
 void
-ui_write(Byte *s, int len, int console UNUSED) {
+ui_write(CS s, int len, int console UNUSED) {
    // Don't output anything in silent mode ("ex -s") unless 'verbose' set
    if (!(silentModeG && p_verbose == 0)) {
       mch_write(s, len);
       if (console && s[len - 1] == '\n')
-          eeFsync(1);
-
-    }
+         eeFsync(1);
+   }
 }
 
 // When executing an external program, there may be some typed characters that
@@ -12646,10 +12641,9 @@ get_input_buf(void) {
 // Restore the input buffer with a pointer returned from get_input_buf(). The allocated memory is 
 // freed, this only works once! When "overwrite" is FALSE input typed later is kept.
 void
-set_input_buf(Byte *p, int overwrite) {
+set_input_buf(CS p, Boole overwrite) {
    ArrayList   *gap = (ArrayList *)p;
-
-   if (gap == NULL)
+   if (!gap)
       return;
 
    if (gap->c != NULL) {

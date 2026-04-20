@@ -45,16 +45,15 @@ private Boole recursivelyDeleteDir(CS name);
 //When there is an error, *fnamep is set to NULL.
 int
 modify_fname(
-   Byte   *src,      // string with modifiers
+   CS src,      // string with modifiers
    int      tilde_file,   // "~" is a file name, not $HOME
    Unt   *usedlen,   // characters after src that are used
    Byte   **fnamep,   // file name so far
    Byte   **bufp,      // buffer for allocated file name or NULL
-   Unt   *fnamelen)   // length of fnamep
-{
+   Unt* fnamelen   // length of fnamep
+){
    int      valid = 0;
-   Byte   *tail;
-   Byte   *s, *p, *pbuf;
+   Byte   *s, *p;
    Byte   dirname[MAXPATHL];
    int      c;
    int      has_fullname = 0;
@@ -115,66 +114,66 @@ repeat:
    while (src[*usedlen] == ':'
         && ((c = src[*usedlen + 1]) == '.' || c == '~')
    ){
-   *usedlen += 2;
-   if (c == '8') {
-      continue;
-   }
-   pbuf = NULL;
-   // Need full path first (use doExpandEnv() to remove a "~/")
-   if (!has_fullname && !has_homerelative) {
-      if (**fnamep == '~')
-         p = pbuf = expand_env_save(*fnamep);
-      else
-         p = pbuf = FullName_save(*fnamep, FALSE);
-   } else
-      p = *fnamep;
+      *usedlen += 2;
+      if (c == '8') {
+         continue;
+      }
+      CS pbuf = NULL;
+      // Need full path first (use doExpandEnv() to remove a "~/")
+      if (!has_fullname && !has_homerelative) {
+         if (**fnamep == '~')
+            p = pbuf = expand_env_save(*fnamep);
+         else
+            p = pbuf = FullName_save(*fnamep, FALSE);
+      } else
+         p = *fnamep;
 
-   has_fullname = 0;
+      has_fullname = 0;
 
-   if (p != NULL) {
-      if (c == '.') {
-         Unt   namelen;
+      if (p) {
+         if (c == '.') {
+            Unt   namelen;
 
-         mch_dirname(dirname, MAXPATHL);
-         if (has_homerelative) {
-            s = copyStr(dirname);
-            home_replace(NULL, s, dirname, MAXPATHL, TRUE);
-            eeglFree(s);
-         }
-         namelen = STRLEN(dirname);
+            mch_dirname(dirname, MAXPATHL);
+            if (has_homerelative) {
+               s = copyStr(dirname);
+               home_replace(NULL, s, dirname, MAXPATHL, TRUE);
+               eeglFree(s);
+            }
+            namelen = STRLEN(dirname);
 
-         // Do not call shorten_fname() here since it removes the prefix
-         // even though the path does not have a prefix.
-         if (fnamencmp(p, dirname, namelen) == 0) {
-            p += namelen;
-            if (*p == '/') {
-               while (*p == '/')
-                  ++p;
-               *fnamep = p;
-               if (pbuf) {
-                   // free any allocated file name
-                   eeglFree(*bufp);
-                   *bufp = pbuf;
-                   pbuf = NULL;
+            // Do not call shorten_fname() here since it removes the prefix
+            // even though the path does not have a prefix.
+            if (fnamencmp(p, dirname, namelen) == 0) {
+               p += namelen;
+               if (*p == '/') {
+                  while (*p == '/')
+                     ++p;
+                  *fnamep = p;
+                  if (pbuf) {
+                      // free any allocated file name
+                      eeglFree(*bufp);
+                      *bufp = pbuf;
+                      pbuf = NULL;
+                  }
                }
             }
-         }
-      } else {
-         home_replace(NULL, p, dirname, MAXPATHL, TRUE);
-         // Only replace it when it starts with '~'
-         if (*dirname == '~') {
-            s = copyStr(dirname);
-            *fnamep = s;
-            eeglFree(*bufp);
-            *bufp = s;
-            has_homerelative = TRUE;
-         }
-       }
-       eeglFree(pbuf);
-   }
+         } else {
+            home_replace(NULL, p, dirname, MAXPATHL, TRUE);
+            // Only replace it when it starts with '~'
+            if (*dirname == '~') {
+               s = copyStr(dirname);
+               *fnamep = s;
+               eeglFree(*bufp);
+               *bufp = s;
+               has_homerelative = TRUE;
+            }
+          }
+          eeglFree(pbuf);
+      }
    }
 
-   tail = gettail(*fnamep);
+   CS tail = gettail(*fnamep);
    *fnamelen = STRLEN(*fnamep);
 
    // ":h" - head, remove "/file_name", can be repeated
@@ -210,30 +209,31 @@ repeat:
    while (src[*usedlen] == ':'
        && (src[*usedlen + 1] == 'e' || src[*usedlen + 1] == 'r')
    ){
-   // find a '.' in the tail:
-   // - for second :e: before the current fname
-   // - otherwise: The last '.'
-   if (src[*usedlen + 1] == 'e' && *fnamep > tail)
-       s = *fnamep - 2;
-   else
-       s = *fnamep + *fnamelen - 1;
-   for ( ; s > tail; --s)
-       if (s[0] == '.')
-      break;
-   if (src[*usedlen + 1] == 'e') {     // :e
-      if (s > tail) {
-         *fnamelen += (*fnamep - (s + 1));
-         *fnamep = s + 1;
-      } ei (*fnamep <= tail)
-         *fnamelen = 0;
-   } else {           // :r
-      CS limit = *fnamep;
-      if (limit < tail)
-         limit = tail;
-      if (s > limit)   // remove one extension
-         *fnamelen = s - *fnamep;
-   }
-   *usedlen += 2;
+      // find a '.' in the tail:
+      // - for second :e: before the current fname
+      // - otherwise: The last '.'
+      if (src[*usedlen + 1] == 'e' && *fnamep > tail)
+          s = *fnamep - 2;
+      else
+          s = *fnamep + *fnamelen - 1;
+      for ( ; s > tail; --s) {
+         if (s[0] == '.')
+            break;
+      } 
+      if (src[*usedlen + 1] == 'e') {     // :e
+         if (s > tail) {
+            *fnamelen += (*fnamep - (s + 1));
+            *fnamep = s + 1;
+         } ei (*fnamep <= tail)
+            *fnamelen = 0;
+      } else {           // :r
+         CS limit = *fnamep;
+         if (limit < tail)
+            limit = tail;
+         if (s > limit)   // remove one extension
+            *fnamelen = s - *fnamep;
+      }
+      *usedlen += 2;
    }
 
    // ":s?pat?foo?" - substitute
@@ -846,24 +846,20 @@ f_isabsolutepath(Var *argvars, Var *returnVar) {
 //NULL until that happens. Return OK or FAIL.
 private int
 mkdir_recurse(CS dir, int prot, Byte **created) {
-   Byte   *updir;
-   int      r = FAIL;
-
+   int r = FAIL;
    // Get end of directory name in "dir". We're done when it's "/" or "c:/".
    CS p = gettail_sep(dir);
    if (p <= get_past_head(dir))
       return OK;
 
    // If the directory exists we're done.  Otherwise: create it.
-   updir = copySubstr(dir, p - dir);
-   if (updir == NULL)
-      return FAIL;
+   CS updir = copySubstr(dir, p - dir);
    if (mch_isdir(updir))
-         r = OK;
+      r = OK;
    ei (mkdir_recurse(updir, prot, created) == OK) {
       r = eeMkdir_emsg(updir, prot);
       if (r == OK && created != NULL && *created == NULL)
-          *created = FullName_save(updir, FALSE);
+         *created = FullName_save(updir, FALSE);
    }
    eeglFree(updir);
    return r;
@@ -1230,13 +1226,13 @@ read_file_or_blob(Var *argvars, Var *returnVar, int always_blob) {
 
 // "readblob()" function
 void
-f_readblob(Var *argvars, Var *returnVar) {
+f_readblob(Var* argvars, Var* returnVar) {
    read_file_or_blob(argvars, returnVar, TRUE);
 }
 
 // "readfile()" function
 void
-f_readfile(Var *argvars, Var *returnVar) {
+f_readfile(Var* argvars, Var* returnVar) {
    read_file_or_blob(argvars, returnVar, FALSE);
 }
 
@@ -2538,7 +2534,7 @@ pathcmp(const char *p, const char *q, int maxlen) {
 
 //TRUE if "name" is a full (absolute) path name or URL.
 int
-eeIsAbsName(Byte *name){
+eeIsAbsName(CS name){
    return (path_with_url(name) != 0 || mch_isFullName(name));
 }
 
@@ -5016,7 +5012,7 @@ mch_has_exp_wildcard(Byte *p) {
 
 //Return TRUE if the string "p" contains a wildcard. Don't recognize '~' at the end as a wildcard.
 int
-mch_has_wildcard(Byte *p){
+mch_has_wildcard(CS p){
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
          ++p;
@@ -5366,24 +5362,22 @@ mch_chdir(char *path) {
    return chdir(path);
 }
 
-
 void
 filemess(
    Book* book,
-   Byte   *name,
-   Byte   *s,
-   int      attr
+   CS name,
+   CS s,
+   int attr
 ){
    int      msg_scroll_save;
    int      prevMsgCol = msgColG;
-   Unt   len;
 
    if (msg_silent != 0)
       return;
    msg_add_fname(book, name);       // put file name in IObuff with quotes
 
    // If it's extremely long, truncate it.
-   len = STRLEN(IObuff);
+   Unt len = STRLEN(IObuff);
    if (len > IOSIZE - 100) {
       len = IOSIZE - 100;
       IObuff[len] = ZERO;
@@ -5438,13 +5432,13 @@ filemess(
 //return FAIL for failure, NOTDONE for directory (failure), or OK
 int
 readfile(
-   Byte   *fname,
-   Byte   *sfname,
+   CS fname,
+   CS sfname,
    LineNr   from,
    LineNr   lines_to_skip,
    LineNr   lines_to_read,
-   Invocation   *invo,         // can be NULL!
-   int      flags
+   Invocation* invo,         // can be NULL!
+   Unt      flags
 ){
    int      retval = FAIL;   // jump to "theend" instead of returning
    int      fd = 0;
@@ -6482,7 +6476,7 @@ shorten_fname(Byte *full_path, Byte *dir_name){
 //When "force" is FALSE: Only try to shorten absolute file names.
 //For books that have buftype "nofile" or "scratch": never change the file name.
 void
-shorten_buf_fname(Book* book, Byte* dirname, int force) {
+shorten_buf_fname(Book* book, CS dirname, int force) {
    if (book->currFileName
        && !bt_nofilename(book)
        && !path_with_url(book->currFileName)
@@ -7321,10 +7315,9 @@ readdir_core(ArrayList   *gap, int withattr UNUSED, int sort) {
 }
 
 //return TRUE if "name" is a directory, NOT a symlink to a directory
-//return FALSE if "name" is not a directory
-//return FALSE for error
+//return FALSE if "name" is not a directory. return FALSE for error
 int
-mch_isrealdir(Byte *name) {
+mch_isrealdir(CS name) {
    struct stat statb;
 
    if (*name == ZERO)       // Some stat()s don't flag "" as an error.
@@ -7337,7 +7330,7 @@ mch_isrealdir(Byte *name) {
 //TRUE if "name" is a directory or a symlink to a directory
 //FALSE if "name" is not a directory. FALSE for error
 Boole
-mch_isdir(Byte *name) {
+mch_isdir(CS name) {
    struct stat statb;
 
    if (*name == ZERO)       // Some stat()s don't flag "" as an error.
@@ -7352,7 +7345,7 @@ mch_isdir(Byte *name) {
 //NODE_WRITABLE: writable device, socket, fifo, etc.
 //NODE_OTHER: non-writable things
 int
-mch_nodetype(Byte *name) {
+mch_nodetype(CS name) {
    struct stat   st;
 
    if (stat((char *)name, &st))
@@ -7966,13 +7959,13 @@ f_systemlist(Var *argvars, Var *returnVar) {
 
 // Return 0 for not writable, 1 for writable file, 2 for a dir which we have rights to write into.
 int
-filewritable(Byte *fname) {
-   int      retval = 0;
+filewritable(CS fname) {
+   int retval = 0;
    int perm = mch_getperm(fname);
    if ((perm & 0222) && mch_access((char *)fname, W_OK) == 0) {
       ++retval;
       if (mch_isdir(fname))
-          ++retval;
+         ++retval;
    }
    return retval;
 }
