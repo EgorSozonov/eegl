@@ -41,10 +41,6 @@ extern CS const Em;
 #  endif
 # endif
 
-// We may need to define the uint32_t on non-Unix system, but using the same
-// identifier causes conflicts.  Therefore use UINT32_T.
-#define UINT32_TYPEDEF uint32_t
-
 #include <stdint.h>
 
 #define private static
@@ -99,16 +95,6 @@ typedef struct timeval TimeVal;
 #define PROC_EXE_LINK "/proc/self/exe"
 
 //}}}
-
-#if !defined(UINT32_TYPEDEF)
-# if defined(uint32_t)  // this doesn't catch typedefs, unfortunately
-#  define UINT32_TYPEDEF uint32_t
-# else
-  // Fall back to assuming unsigned int is 32 bit.  If this is wrong then the
-  // test in blowfish.c will fail.
-#  define UINT32_TYPEDEF unsigned int
-# endif
-#endif
 
 // user ID of root is usually zero, but not for everybody
 #define ROOT_UID 0
@@ -352,7 +338,7 @@ typedef unsigned int u8char_T;   // int is 32 bits or more
 
 //{{{termdefs
 
-//This file contains the defines for the machine dependent escape sequences that the editor needs 
+//This list contains the defines for the machine dependent escape sequences that the editor needs 
 //to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
 
 // Index of the terminfo codes in the terminalCommandsS array.
@@ -1737,10 +1723,6 @@ typedef enum{
 //If "--log logfile" was used or ch_logfile() was called then log some or all
 //terminal output.
 # define MAY_WANT_TO_LOG_THIS if (ch_log_output == FALSE) ch_log_output = TRUE;
-
-#ifndef UINT32_T
-typedef UINT32_TYPEDEF UINT32;
-#endif
 
 // Operator IDs; The order must correspond to opchars[] in ops.c!
 #define OP_NOP           0   //no pending operation
@@ -3206,11 +3188,11 @@ typedef struct {
    int      cmod_verbose;      // 0 if not set, > 0 to set 'verbose' to cmod_verbose - 1
 
    // values for undo_cmdmod()
-   Byte   *cmod_save_ei;      // saved value of 'eventignore'
+   CS  cmod_save_ei;      // saved value of 'eventignore'
    long   cmod_verbose_save;   // if 'verbose' was set: value of p_verbose plus one
-   int      cmod_save_msg_silent;   // if non-zero: saved value of msg_silent + 1
-   int      cmod_save_msg_scroll;   // for restoring msg_scroll
-   int      cmod_did_esilent;   // incremented when emsg_silent is
+   int cmod_save_msg_silent;   // if non-zero: saved value of msg_silent + 1
+   int cmod_save_msg_scroll;   // for restoring msg_scroll
+   int cmod_did_esilent;   // incremented when emsg_silent is
 } CommandModifier;
 
 //}}}
@@ -4909,23 +4891,24 @@ typedef enum {
 //"curPor", "firstPor", etc. for that. .topframe is always valid and can be compared against 
 //topframeG to find the current tab.
 declStruct(Tab);
-struct Tab {
-   Tab* next;       // next tabpage or NULL
+struct Tab {        //:Tab
+   Tab* next;       // next tab or NULL
    Frame* topframe;   // topframe for the portals
-   Portal* curPor;       // current portal in this tab
+   Portal* curPor;     // current portal in this tab
    Portal* prevPor;    // previous portal in this tab
    Portal* firstPor;   // first portal in this tab
    Portal* lastPor;    // last portal in this tab
    Portal* firstPopupPort; // first popup portal in this Tab
+   NULLABLE Portal* previewPortal; // the preview portal in this Tab
    long old_Rows;    // Rows when tab was left
    long old_Columns; // Columns when tab was left, -1 when calling shell_new_columns() postponed
    int old_coloff;  // Column offset when tab was left
    long  ch_used;       // value of @commheight when frame size was set
-   Arr(Byte) localdir;   // absolute path of local directory or NULL
-   Byte* prevdir;   // previous directory
+   CS localdir;   // absolute path of local directory or NULL
+   CS prevdir;   // previous directory
 
    DiffBlock* first_diff;
-   Book* (diffbuf[DB_COUNT]);
+   Book* diffbuf[DB_COUNT];
    int diff_invalid;   // list of diffs is outdated
    int diff_update;   // update diffs before redrawing
    Frame *(snapshot[SNAP_COUNT]);  // window layout snapshots
@@ -5119,7 +5102,7 @@ struct Portal { //:Portal
    int      needFixCursor;//if TRUE cursor may be invalid
 
    PortalPopup pup;
-
+   Boole isPreview;   // is this the preview portal of the tab?
    Unt  flags;        // WFLAG_ flags
 
 ///////////////////////////////////////////////////////////////////
@@ -6153,7 +6136,7 @@ EXTERN long   visibleColsG INIT(= 80);   // nr of columns in the screen
 EXTERN CS screenLinesG INIT(= null);
 EXTERN Arr(Decoration) screenDecosG INIT(= NULL);
 EXTERN Arr(ColNr) screenColsG INIT(= NULL);
-EXTERN Arr(unsigned) lineOffsetG INIT(= NULL);
+EXTERN Arr(Unt) lineOffsetG INIT(= NULL);
 EXTERN CS lineWrapsG INIT(= null);   // line wraps to next line
 EXTERN Bool wrapSearchG INIT(= true); // search wraps on file end
 
@@ -6185,16 +6168,12 @@ EXTERN int screen_cur_col INIT(= 0);
 EXTERN Match screenSearchMatchG;
 
 // last lnum where CurSearch was displayed
-EXTERN LineNr search_hl_has_cursor_lnum INIT(= 0);
+EXTERN LineNr searchLastLnumG INIT(= 0);
 
 // do hilite search results?
 EXTERN Boole hiliteSearchG INIT(= false);
 
-// Flag that is set when drawing for a callback, not from the main command loop.
-EXTERN int redrawing_for_callback INIT(= 0);
-
 // volatile because it is used in signal handler sig_winch().
-
 typedef sig_atomic_t SigAtomic;
 EXTERN volatile SigAtomic doResizeG INIT(= FALSE);
 EXTERN Unt* tabIndsG INIT(= NULL);
@@ -6203,14 +6182,14 @@ EXTERN Unt* tabIndsG INIT(= NULL);
 EXTERN Arr(Short) popupMaskG INIT(= NULL);
 EXTERN Arr(Short) popupMaskNextG INIT(= NULL);
 //Array with flags for transparent cells of current popup.
-EXTERN Arr(Byte) popup_transparent INIT(= NULL);
+EXTERN Arr(Byte) popupTransparencyG INIT(= NULL);
 
 //Flag set to TRUE when popup_mask needs to be updated.
 EXTERN int needRefreshPopupMaskG INIT(= TRUE);
 
 //Zindex in for screen_char(): if lower than the value in "popup_mask"
 //drawing the character is skipped.
-EXTERN int screen_zindex INIT(= 0);
+EXTERN int screenZindexG INIT(= 0);
 
 //When vgetc() is called, it sets modMaskG to the set of modifiers that are
 //held down based on the MOD_MASK_* symbols that are read first.
@@ -6228,12 +6207,12 @@ EXTERN int vgetcOrigCharG INIT(= 0);
 //update_screen()
 EXTERN Unt commlineRowG;
 
-EXTERN int redrawCommlineG INIT(= FALSE);   // commline must be redrawn
-EXTERN int redraw_mode INIT(= FALSE);   // mode must be redrawn
-EXTERN int mustClearCommlineG INIT(= FALSE);
-EXTERN int mode_displayed INIT(= FALSE);   // mode is being displayed
+EXTERN Boole redrawCommlineG INIT(= false);   // commline must be redrawn
+EXTERN Boole redrawModeG INIT(= false);   // mode must be redrawn
+EXTERN Boole mustClearCommlineG INIT(= false);
+EXTERN Boole isModeDisplayedG INIT(= false);   // mode is being displayed
 
-EXTERN int exec_from_reg INIT(= FALSE);   // executing register
+EXTERN Boole executingFromRegG INIT(= false);   // executing register
 
 // Variables for Insert mode completion.
 EXTERN CS edit_submode INIT(= NULL); // msg for CTRL-X submode
@@ -6746,7 +6725,7 @@ EXTERN Byte msg_buf[MSG_BUF_LEN];   // small buffer for messages
 
 
 // When non-zero, postpone redrawing.
-EXTERN int   RedrawingDisabled INIT(= 0);
+EXTERN int   isRedrawingDisabledG INIT(= 0);
 
 EXTERN Bool recoveryModeG INIT(= false); // Set to TRUE for "-r" option
 

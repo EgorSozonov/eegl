@@ -2697,7 +2697,7 @@ clip_invert_rectangle(
    int width = width_arg;
 
    // this goes on top of all popup portals
-   screen_zindex = CLIP_ZINDEX;
+   screenZindexG = CLIP_ZINDEX;
 
    if (col < cbd->min_col) {
       width -= cbd->min_col - col;
@@ -2712,7 +2712,7 @@ clip_invert_rectangle(
    if (height > cbd->max_row - row + 1)
       height = cbd->max_row - row + 1;
    screen_draw_rectangle(row, col, height, width, invert);
-   screen_zindex = 0;
+   screenZindexG = 0;
 }
 
 //Invert a region of the display between a starting and ending row and column Values for "how":

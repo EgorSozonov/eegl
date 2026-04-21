@@ -11,6 +11,10 @@ private int screenClearedS = FALSE;   // screen has been cleared, yes/no/maybe
 private Boole avoidLineInsertionS = false; // don't insert lines
 private int   rulerColS;      // column for ruler
 
+// Flag that is set when drawing for a callback, not from the main command loop.
+private int redrawingForCallbackS INIT(= 0);
+
+
 //Lower level code for displaying on the screen.
 //
 //Output to the screen (console, terminal emulator) is minimized
@@ -183,7 +187,7 @@ blocked_by_popup(int row, int col) {
    if (!popup_visible)
       return FALSE;
    int off = row * screenLinesColsG + col;
-   return popupMaskG[off] > screen_zindex || popup_transparent[off];
+   return popupMaskG[off] > screenZindexG || popupTransparencyG[off];
 }
 
 // Reset the hiliting.  Used before clearing the screen.
@@ -198,7 +202,7 @@ resetActiveDeco(void) {
 private int
 skip_for_popup(int row, int col) {
    // Popup portals with zindex higher than POPUPMENU_ZINDEX go on top.
-   if (pum_under_menu(row, col, TRUE) && screen_zindex <= POPUPMENU_ZINDEX)
+   if (pum_under_menu(row, col, TRUE) && screenZindexG <= POPUPMENU_ZINDEX)
       return TRUE;
    if (blocked_by_popup(row, col))
       return TRUE;
@@ -1127,7 +1131,7 @@ fillRowsWithTwoChars(
             mustClearCommlineG = FALSE;   // command line has been cleared
          } 
          if (start_col == 0)
-            mode_displayed = FALSE; // mode cleared or overwritten
+            isModeDisplayedG = FALSE; // mode cleared or overwritten
       }
    }
 }
@@ -1190,7 +1194,7 @@ screenalloc(int doclear) {
    Arr(Unt) new_tabInds;
    Short* new_popupMaskG;
    Short* new_popupMaskNextG;
-   Arr(Byte) new_popup_transparent;
+   Arr(Byte) new_popupTransparencyG;
    Tab* t;
    static int       entered = FALSE;      // avoid recursiveness
    static int       done_outofmem_msg = FALSE;   // did outofmem message
@@ -1218,7 +1222,7 @@ retry:
    entered = TRUE;
 
    // Note: the portal sizes are updated before reallocating the arrays, so we must not redraw here!
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    win_new_shellsize();    // fit the portals in the new sized shell
 
@@ -1262,7 +1266,7 @@ retry:
    new_tabInds = LALLOC_MULT(Unt, visibleColsG);
    new_popupMaskG = LALLOC_MULT(Short, visibleRowsG * visibleColsG);
    new_popupMaskNextG = LALLOC_MULT(Short, visibleRowsG * visibleColsG);
-   new_popup_transparent = LALLOC_MULT(Byte, visibleRowsG * visibleColsG);
+   new_popupTransparencyG = LALLOC_MULT(Byte, visibleRowsG * visibleColsG);
 
    FOR_ALL_TAB_PORTALS(t, po) {
       allocLinesPortal(po);
@@ -1299,7 +1303,7 @@ retry:
        || new_tabInds == NULL
        || new_popupMaskG == NULL
        || new_popupMaskNextG == NULL
-       || new_popup_transparent == NULL
+       || new_popupTransparencyG == NULL
        || outofmem
    ) {
       if (screenLinesG || !done_outofmem_msg) {
@@ -1321,7 +1325,7 @@ retry:
       EE_CLEAR(new_tabInds);
       EE_CLEAR(new_popupMaskG);
       EE_CLEAR(new_popupMaskNextG);
-      EE_CLEAR(new_popup_transparent);
+      EE_CLEAR(new_popupTransparencyG);
    } else {
       done_outofmem_msg = FALSE;
 
@@ -1387,7 +1391,7 @@ retry:
       // Use the last line of the screen for the current line.
       currScreenLineS = new_screenLinesG + visibleRowsG * visibleColsG;
       memset(new_popupMaskG, 0, visibleRowsG * visibleColsG * sizeof(short));
-      memset(new_popup_transparent, 0, visibleRowsG * visibleColsG * sizeof(char));
+      memset(new_popupTransparencyG, 0, visibleRowsG * visibleColsG * sizeof(char));
    }
 
    free_screenlines();
@@ -1404,7 +1408,7 @@ retry:
    tabIndsG = new_tabInds;
    popupMaskG = new_popupMaskG;
    popupMaskNextG = new_popupMaskNextG;
-   popup_transparent = new_popup_transparent;
+   popupTransparencyG = new_popupTransparencyG;
    needRefreshPopupMaskG = TRUE;
 
    // It's important that screenLinesRowsG and screenLinesColsG reflect the actual
@@ -1419,8 +1423,8 @@ retry:
 
 
    entered = FALSE;
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
 
    // Do not apply autocommands more than 3 times to avoid an endless loop
    // in case applying autocommands always changes visibleRowsG or visibleColsG.
@@ -1446,7 +1450,7 @@ free_screenlines(void) {
    EE_CLEAR(tabIndsG);
    EE_CLEAR(popupMaskG);
    EE_CLEAR(popupMaskNextG);
-   EE_CLEAR(popup_transparent);
+   EE_CLEAR(popupTransparencyG);
 }
 
 //Clear the screen. May delay if there is something the user should read. Allocated the screen for
@@ -1488,7 +1492,7 @@ screenclear2(int doclear) {
       out_str(termCodeS[KS_CL]);      // clear the display
       did_clear = TRUE;
       mustClearCommlineG = FALSE;
-      mode_displayed = FALSE;
+      isModeDisplayedG = FALSE;
    } else {
       // can't clear the screen, mark all chars with invalid decorations
       for (int i = 0; i < visibleRowsG; ++i)
@@ -2022,7 +2026,7 @@ screen_ins_lines(
    if (!screen_valid(TRUE)
         || line_count <= 0 || line_count > p_ttyscroll
         || end > visibleRowsG
-        || (clipboard.state != SELECT_CLEARED && redrawing_for_callback > 0)
+        || (clipboard.state != SELECT_CLEARED && redrawingForCallbackS > 0)
         || popup_visible
    )
       return FAIL;
@@ -2206,7 +2210,7 @@ screen_del_lines(
           || line_count <= 0
           || (!force && line_count > p_ttyscroll)
           || end > visibleRowsG
-          || (clipboard.state != SELECT_CLEARED && redrawing_for_callback > 0)
+          || (clipboard.state != SELECT_CLEARED && redrawingForCallbackS > 0)
     )
       return FAIL;
 
@@ -2361,7 +2365,7 @@ skip_showmode(void) {
        || !redrawing()
        || (char_avail() && !KeyTyped)
    ) {
-      redraw_mode = TRUE;      // show mode later
+      redrawModeG = TRUE;      // show mode later
       return TRUE;
    }
    return FALSE;
@@ -2502,7 +2506,7 @@ redrawRuler(Portal *po, int always, int ignore_pum) {
 
 //Show the current mode and ruler.
 //If mustClearCommlineG, clear the rest of the cmdline. If not mustClearCommlineG, there may be a 
-//message there that needs to be cleared only if a mode is shown. If redraw_mode is TRUE show or 
+//message there that needs to be cleared only if a mode is shown. If redrawModeG is TRUE show or 
 //clear the mode. Return the length of the message (0 if no message).
 int
 showmode(void) {
@@ -2594,8 +2598,8 @@ showmode(void) {
          need_clear = TRUE;
       }
 
-      mode_displayed = TRUE;
-      if (need_clear || mustClearCommlineG || redraw_mode)
+      isModeDisplayedG = TRUE;
+      if (need_clear || mustClearCommlineG || redrawModeG)
          msg_clr_eos();
       msg_didout = FALSE;      // overwrite this message
       length = msgColG;
@@ -2604,7 +2608,7 @@ showmode(void) {
    } ei (mustClearCommlineG && msg_silent == 0)
       // Clear the whole command line.  Will reset "mustClearCommlineG".
       msgClearCommline();
-   ei (redraw_mode) {
+   ei (redrawModeG) {
       msg_pos_mode();
       msg_clr_eos();
    }
@@ -2619,7 +2623,7 @@ showmode(void) {
       redrawRuler(lastPor, TRUE, show_ruler_with_pum);
 
    redrawCommlineG = FALSE;
-   redraw_mode = FALSE;
+   redrawModeG = FALSE;
    mustClearCommlineG = FALSE;
 
    return length;
@@ -2633,7 +2637,7 @@ msg_pos_mode(void) {
 }
 
 //Delete mode message.  Used when ESC is typed which is expected to end
-//Insert mode (but Insert mode didn't end yet!). Caller should check "mode_displayed".
+//Insert mode (but Insert mode didn't end yet!). Caller should check "isModeDisplayedG".
 void
 unshowmode(int force) {
    // Don't delete it right now, when not redrawing or inside a mapping.
@@ -2710,7 +2714,7 @@ redrawing(void) {
    if (disable_redraw_for_testing)
       return 0;
    else
-      return ((RedrawingDisabled == 0 || ignore_redraw_flag_for_testing) 
+      return ((isRedrawingDisabledG == 0 || ignore_redraw_flag_for_testing) 
          && !(p_lz && char_avail() && !KeyTyped && !do_redraw)
       );
 }
@@ -3371,7 +3375,7 @@ drawUpdateScreen(int type_arg) {
 
    // Clear or redraw the command line.  Done last, because scrolling may
    // mess up the command line.
-   if (mustClearCommlineG || redrawCommlineG || redraw_mode)
+   if (mustClearCommlineG || redrawCommlineG || redrawModeG)
       showmode();
 
    if (no_update)
@@ -3419,19 +3423,17 @@ redrawPortalStatusLine(Portal *po, int ignore_pum UNUSED) {
       // redraw custom status line
       redraw_custom_statusline(po);
    } else {
-      Byte   *p;
-      int   plen;
-      int   NameBufflen;
+      int   nameBufflen;
       int   n;         // scratch value
 
       fillchar = statusLineNextChar(OUT &deco, po);
 
       drawGetTranslatedBookName(po->book);
-      p = NameBuff;
-      plen = (int)STRLEN(p);
+      CS p = NameBuff;
+      int plen = (int)STRLEN(p);
 
       if ((bookIsHelp(po->book)
-             || po->bookOpts.previewPortal
+             || po->isPreview
              || doWasBookChanged(po->book)
              || !po->book->o.modifiable)
          && plen < MAXPATHL - 1
@@ -3441,7 +3443,7 @@ redrawPortalStatusLine(Portal *po, int ignore_pum UNUSED) {
       }
       if (bookIsHelp(po->book))
           plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Help]"));
-      if (po->bookOpts.previewPortal)
+      if (po->isPreview)
           plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Preview]"));
       if (doWasBookChanged(po->book) && !bt_terminal(po->book))
           plen += eeSnprintf(p + plen, MAXPATHL - plen, "[+]");
@@ -3475,10 +3477,10 @@ redrawPortalStatusLine(Portal *po, int ignore_pum UNUSED) {
       drawText(p, row, po->portalCol, deco.flags);
       fillRowsWithTwoChars(row, row + 1, plen + po->portalCol,
             this_ru_col + po->portalCol, fillchar, fillchar, deco.flags);
-      if ((NameBufflen = get_keymap_str(po, (CS)"<%s>", NameBuff, MAXPATHL)) > 0
-            && (this_ru_col - plen) > (NameBufflen + 1))
+      if ((nameBufflen = get_keymap_str(po, (CS)"<%s>", NameBuff, MAXPATHL)) > 0
+            && (this_ru_col - plen) > (nameBufflen + 1))
          drawText(
-            NameBuff, row, (int)(this_ru_col - NameBufflen - 1 + po->portalCol), deco.flags
+            NameBuff, row, (int)(this_ru_col - nameBufflen - 1 + po->portalCol), deco.flags
          );
 
       redrawRuler(po, TRUE, ignore_pum);
@@ -3975,13 +3977,13 @@ updatePortal(Portal *po) {
          }
       }
 
-      if (search_hl_has_cursor_lnum > 0) {
+      if (searchLastLnumG > 0) {
          // CurSearch was used last time, need to redraw the line with it to
          // avoid having two matches hilited with CurSearch.
-         if (mod_top == 0 || mod_top > search_hl_has_cursor_lnum)
-            mod_top = search_hl_has_cursor_lnum;
-         if (mod_bot == 0 || mod_bot < search_hl_has_cursor_lnum + 1)
-            mod_bot = search_hl_has_cursor_lnum + 1;
+         if (mod_top == 0 || mod_top > searchLastLnumG)
+            mod_top = searchLastLnumG;
+         if (mod_bot == 0 || mod_bot < searchLastLnumG + 1)
+            mod_bot = searchLastLnumG + 1;
       }
 
       if (mod_top != 0 && hasAnyFolding(po)) {
@@ -4032,7 +4034,7 @@ updatePortal(Portal *po) {
    }
    po->redrawTop = 0;   // reset for next time
    po->redrawBott = 0;
-   search_hl_has_cursor_lnum = 0;
+   searchLastLnumG = 0;
 
 
    // When only displaying the lines at the top, set top_end. Used when
@@ -4883,7 +4885,7 @@ redraw_asap(int type) {
 //If "redraw_message" is TRUE.
 void
 redraw_after_callback(int call_drawUpdateScreen, int do_message) {
-   ++redrawing_for_callback;
+   ++redrawingForCallbackS;
 
    if (stateG == MODE_HITRETURN || stateG == MODE_ASKMORE
        || stateG == MODE_SETWSIZE || stateG == MODE_EXTERNCMD
@@ -4921,7 +4923,7 @@ redraw_after_callback(int call_drawUpdateScreen, int do_message) {
    cursor_on();
    out_flush();
 
-   --redrawing_for_callback;
+   --redrawingForCallbackS;
 }
 
 //Redraw the current portal later, with drawUpdateScreen(type).

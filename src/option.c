@@ -469,29 +469,18 @@ optSetStringDefault(CS name, CS val) {
 void
 set_number_default(CS name, long val) {
    Option* o = findOption(name);
-   if (o)
-      o->defaultValue.num = val;
+   o->defaultValue.num = val;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
 
 //Free all options.
 
-private void
-freeOptionArray(Arr(Option) opts, int const count) {
-   for (Option* o = opts; o < opts + count; o++) {
-      if (o->defaultValue.tag == OPTION_STRING) {
-         free_string_option(*o->reference.string);
-         free_string_option(o->defaultValue.string);
-      }
-   }
-}
-
 void
 optFreeAllOptions(void) {
-   freeOptionArray(OPTIONS_GLOBAL, OPTION_GLOBAL_COUNT);
-   freeOptionArray(OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
-   freeOptionArray(OPTIONS_BOOK, OPTION_BOOK_COUNT);
+   free(globalStringOptionsG);
+   free(bookStringOptionsG);
+   free(portalStringOptionsG);
    
    opsFreeOperatorFnOption();
    tagFreeTagFnOption();
@@ -541,7 +530,6 @@ set_helplang_default(CS lang) {
    if (!o || (o->flags & P_WAS_SET) != 0)
       return;
 
-   free_string_option(*o->c.reference.string);
    p_hlg = copySubstr(lang, langlen);
    // zh_CN becomes "cn", zh_TW becomes "tw"
    if (STRNICMP(p_hlg, "zh_", 3) == 0 && langlen >= 5) {
@@ -685,9 +673,7 @@ setStringImpl(
       }
    } 
 
-   //If an error is detected, free the allocated new value
    if (errmsg) {
-      free_string_option(newVal);
       return errmsg;
    } 
    
@@ -1571,6 +1557,66 @@ parseEnumValue(CS newVal, Arr(CS) validValues) {
    return 255;
 }
 
+//Check validity of options with the @statusline format.
+//Return an untranslated error message or NULL.
+private CS
+check_stl_option(CS s) {
+   int groupdepth = 0;
+   static Byte errbuf[ERR_BUFLEN];
+   ErrBuilder errb = (ErrBuilder){.c = errbuf, .len = ERR_BUFLEN};
+
+   while (*s) {
+      // Check for valid keys after % sequences
+      while (*s && *s != '%')
+         s++;
+      if (!*s)
+         break;
+      s++;
+      if (*s == '%' || *s == STL_TRUNCMARK || *s == STL_SEPARATE) {
+         s++;
+         continue;
+      }
+      if (*s == ')') {
+         s++;
+         if (--groupdepth < 0)
+            break;
+         continue;
+      }
+      if (*s == '-')
+          s++;
+      while (EE_ISDIGIT(*s))
+          s++;
+      if (*s == STL_USER_HL)
+          continue;
+      if (*s == '.') {
+          s++;
+          while (*s && EE_ISDIGIT(*s))
+         s++;
+      }
+      if (*s == '(') {
+         groupdepth++;
+         continue;
+      }
+      if (firstOccurrence(STL_ALL, *s) == NULL) {
+         return illegal_char(OUT &errb, *s);
+      }
+      if (*s == '{') {
+         int reevaluate = (*++s == '%');
+
+         if (reevaluate && *++s == '}')
+            // "}" is not allowed immediately after "%{%"
+            return illegal_char(OUT &errb, '}');
+         while ((*s != '}' || (reevaluate && s[-1] != '%')) && *s)
+            s++;
+         if (*s != '}')
+            return e_unclosed_expression_sequence;
+      }
+   }
+   if (groupdepth != 0)
+      return e_unbalanced_groups;
+   return NULL;
+}
+
 //}}}
 //{{{setter functions (validation, option setting and postprocessing actions)
 
@@ -1690,8 +1736,8 @@ setCommHeight(OptionChange* cha) {
    if (newVal > visibleRowsG - min_rows() + MIN_COMMHEIGHT)
       newVal = visibleRowsG - min_rows() + MIN_COMMHEIGHT;
 
-   // Only compute the new portal layout when startup has been
-   // completed. Otherwise the frame sizes may be wrong.
+   //Only compute the new portal layout when startup has been
+   //completed. Otherwise the frame sizes may be wrong.
    if ((newVal != oldVal || topframeG->width != visibleRowsG - commlineHeightG)
           && fullScreenG
    ) {
@@ -1704,9 +1750,9 @@ setCommHeight(OptionChange* cha) {
 //Process the updated @diff
 private CS
 did_set_diff(OptionChange* cha) {
-   // May add or remove the book from the list of diff books.
+   //May add or remove the book from the list of diff books.
    updateBoolRef(cha);
-   diff_buf_adjust(curPor);
+   diffBookAdjust(curPor);
    
    if (curPor->bookOpts.foldMethod == FOLD_DIFF)
       foldUpdateAll(curPor);
@@ -1757,7 +1803,6 @@ setModifiable(OptionChange* cha) {
    return NULL;
 }
 
-//Process the new @numberwidth option value.
 private CS
 did_set_numberwidth(OptionChange* cha) {
    CS errmsg = NULL;
@@ -1772,32 +1817,6 @@ did_set_numberwidth(OptionChange* cha) {
    curPor->lineCountSaved = 0; // trigger a redraw
 
    return errmsg;
-}
-
-// Process the updated @previewwindow' option value.
-private CS
-setPreviewPortal(OptionChange* cha) {
-   if (!curPor->bookOpts.previewPortal)
-      return NULL;
-      
-   Boole new = cha->newVal.boole;
-   if (!new) {
-      updateBoolRef(cha);
-      return null;
-   } 
-
-   // There can be only one portal with @previewwindow set.
-   
-   Portal* po;
-   FOR_ALL_PORTALS(po) {
-      if (po->bookOpts.previewPortal && po != curPor) {
-          curPor->bookOpts.previewPortal = FALSE;
-          return e_preview_portal_already_exists;
-      }
-   } 
-   updateBoolRef(cha);
-
-   return NULL;
 }
 
 // Process the updated @scrollbind value.
@@ -2733,10 +2752,8 @@ setOptexpr(OptionChange* cha) {
 
    //If the option value starts with <SID> or s:, then replace that with the script identifier.
    CS name = get_scriptlocal_funcname(*ref.string);
-   if (name) {
-      free_string_option(*ref.string);
-      *ref.string = name;
-   }
+   cha->newVal.string = name;
+   updateStringRef(cha);
 
    return NULL;
 }
@@ -3717,18 +3734,6 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
    return totalLen;
 }
 
-private Unt
-calcDefaultStringsLength(Arr(Option) opts, Unt count) {
-   Unt totalLen = 0;
-   for (Unt i = 0; i < count; i++) {
-      Option* o = opts + i;
-      if (o->defaultValue.tag == OPTION_STRING && o->defaultValue.val.string != Em) {
-         totalLen += (STRLEN(o->defaultValue.val.string) + 1); // +1 for the ZERO
-      }
-   }
-   return totalLen;
-}
-
 private void
 copyGlobalStringOptionsToBuffer(OUT Sbuf* bui) {
    Unt totalLen = calcGlobalStringsLength(OPTIONS_GLOBAL, OPTION_GLOBAL_COUNT);
@@ -3750,7 +3755,7 @@ copyGlobalStringOptionsToBuffer(OUT Sbuf* bui) {
    bui->len = wr - bui->c;
 }
 
-// Copy global values of portal- or buffer-local options to their global builder
+// Copy global values of portal- or book-local options to their global builder
 private void
 copyLocalStringOptionsToBuffer(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
    Unt totalLen = calcLocalStringsLength(opts, count);
@@ -3896,21 +3901,27 @@ updateNumRef(OptionChange* cha) {
    *cha->ref.num = cha->newVal.num;
 }
 
-// Check for string options that are NULL (normally only termcap options).
+// Check for string options that are NULL 
 void
 optMakeStringOptionsNonnull(void) {
    Option* o UNUSED;
    FOR_GLOBAL(o) {
-      if ((o->defaultValue.tag == OPTION_STRING))
+      if ((o->defaultValue.tag == OPTION_STRING)) {
          makeStringOptionNotNull(o->c.reference.string);
+         makeStringOptionNotNull(&o->defaultValue.string);
+      } 
    }
    FOR_PORTAL(o) {
-      if ((o->defaultValue.tag == OPTION_STRING))
+      if ((o->defaultValue.tag == OPTION_STRING)) {
          makeStringOptionNotNull(&o->c.local.val.string);
+         makeStringOptionNotNull(&o->defaultValue.string);
+      } 
    }
    FOR_BOOK(o) {
-      if ((o->defaultValue.tag == OPTION_STRING))
+      if ((o->defaultValue.tag == OPTION_STRING)) {
          makeStringOptionNotNull(&o->c.local.val.string);
+         makeStringOptionNotNull(&o->defaultValue.string);
+      } 
    }
 }
 
@@ -3964,12 +3975,12 @@ set_init_doExpandEnv(void) {
 }
 
 //Initialize the options, first part.
-//Called only once from main(), just after creating the first buffer.
-//If "clean_arg" is TRUE Eegl was started with --clean.
+//Called only once from main(), just after creating the first book.
 void
 optionInit0() {
    langmap_init();
    
+   optMakeStringOptionsNonnull();
    Option* o UNUSED;
    FOR_BOOK(o) {
       o->flags |= P_BOOK;
@@ -3999,7 +4010,6 @@ optionInit0() {
    curBook->o.initialized = true;
    optCheckBookOptions(&curBook->o);
    checkPortOptions(&curPor->bookOpts);
-   optMakeStringOptionsNonnull();
 
    //Must be before expandEnvVarsInStringOption(), because that one needs eeIsIdentifierChar()
    didset_options();
@@ -4203,24 +4213,16 @@ setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos) {
 private void
 setDefaultValuesForAllOptions(SetScope setScope) {
    Option* o UNUSED;
-   int globalDefaultSize = calcDefaultStringsLength(OPTIONS_GLOBAL, OPTION_GLOBAL_COUNT);
-   globalStringOptionsG = sbuf(globalDefaultSize);
-   
    FOR_GLOBAL(o) {
       if ((o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
       } 
    }
-   
-   int portalDefaultSize = calcDefaultStringsLength(OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
-   portalStringOptionsG = sbuf(globalDefaultSize);
    FOR_PORTAL(o) {
       if ((o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
       } 
    }
-   int bookDefaultSize = calcDefaultStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
-   bookStringOptionsG = sbuf(globalDefaultSize);
    FOR_BOOK(o) {
       if ((o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
@@ -4633,15 +4635,6 @@ optCheckBookOptions(BookLocal* t) {
 
 }
 
-//Free the string allocated for an option. Check for the string being Em. This may 
-//happen if we're out of memory, copyStr() returned NULL, which was replaced by Em by
-//optMakeStringOptionsNonnull().
-void
-free_string_option(CS p) {
-   if (p != Em)
-      eeglFree(p);
-}
-
 void
 clearStringOption(Byte **pp) {
    if (*pp != Em)
@@ -4669,7 +4662,6 @@ changeStringOptionDirectImpl(
    CS copyOfValue = copyStr(val);
 
    OptionRef ref = getRefInScope(o, scope);
-   free_string_option(*ref.string);
    *ref.string = copyOfValue;
 
    if (setSid != SID_NONE) {
@@ -4746,66 +4738,6 @@ optSetStringOptionDirectInBook(
    curBook = save_curBook;
    curPor->book = curBook;
    unblock_autocmds();
-}
-
-//Check validity of options with the @statusline format.
-//Return an untranslated error message or NULL.
-private CS
-check_stl_option(CS s) {
-   int groupdepth = 0;
-   static Byte errbuf[ERR_BUFLEN];
-   ErrBuilder errb = (ErrBuilder){.c = errbuf, .len = ERR_BUFLEN};
-
-   while (*s) {
-      // Check for valid keys after % sequences
-      while (*s && *s != '%')
-         s++;
-      if (!*s)
-         break;
-      s++;
-      if (*s == '%' || *s == STL_TRUNCMARK || *s == STL_SEPARATE) {
-         s++;
-         continue;
-      }
-      if (*s == ')') {
-         s++;
-         if (--groupdepth < 0)
-            break;
-         continue;
-      }
-      if (*s == '-')
-          s++;
-      while (EE_ISDIGIT(*s))
-          s++;
-      if (*s == STL_USER_HL)
-          continue;
-      if (*s == '.') {
-          s++;
-          while (*s && EE_ISDIGIT(*s))
-         s++;
-      }
-      if (*s == '(') {
-         groupdepth++;
-         continue;
-      }
-      if (firstOccurrence(STL_ALL, *s) == NULL) {
-         return illegal_char(OUT &errb, *s);
-      }
-      if (*s == '{') {
-         int reevaluate = (*++s == '%');
-
-         if (reevaluate && *++s == '}')
-            // "}" is not allowed immediately after "%{%"
-            return illegal_char(OUT &errb, '}');
-         while ((*s != '}' || (reevaluate && s[-1] != '%')) && *s)
-            s++;
-         if (*s != '}')
-            return e_unclosed_expression_sequence;
-      }
-   }
-   if (groupdepth != 0)
-      return e_unbalanced_groups;
-   return NULL;
 }
 
 private Byte *set_opt_callback_orig_option = NULL;
@@ -4930,8 +4862,8 @@ is_valid_mess_lang(Byte *lang) {
     return lang && ASCII_ISALPHA(lang[0]) && ASCII_ISALPHA(lang[1]);
 }
 
-//Obtain the current messages language.  Used to set the default for
-//'helplang'.  May return NULL or an empty string.
+//Obtain the current messages language.  Used to set the default for @helplang. 
+//May return NULL or an empty string.
 CS
 get_mess_lang(void) {
    CS p;

@@ -2312,7 +2312,7 @@ startEditingFile(
 
    // Don't redraw until the cursor is in the right line, otherwise
    // autocommands may cause ml_get errors.
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
    did_inc_redrawing_disabled = TRUE;
 
    book = curBook;
@@ -2466,14 +2466,14 @@ startEditingFile(
       // Even when cursor didn't move we need to recompute topline.
       changed_line_abv_curs();
 
-      if (PORTAL_IS_POPUP(curPor) && curPor->bookOpts.previewPortal && retval != FAIL)
+      if (PORTAL_IS_POPUP(curPor) && curPor->isPreview && retval != FAIL)
          setPopupTitle(curPor);
    }
 
    // Tell the diff stuff that this buffer is new and/or needs updating. Also needed when 
    // re-editing the same buffer, because unloading will have removed it as a diff buffer.
    if (curPor->bookOpts.diff) {
-      diff_buf_add(curBook);
+      diffAddBook(curBook);
       diff_invalidate(curBook);
    }
 
@@ -2527,8 +2527,8 @@ startEditingFile(
    if (command)
       doCommand(command, NULL, NULL, DOCMD_VERBOSE);
 
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
    did_inc_redrawing_disabled = FALSE;
    if (!skip_redraw) {
       n = *so_ptr;
@@ -2541,8 +2541,8 @@ startEditingFile(
    }
 
 theend:
-   if (did_inc_redrawing_disabled && RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (did_inc_redrawing_disabled && isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
    if (did_set_swapcommand)
       set_EeglVar_string(VV_SWAPCOMMAND, NULL, -1);
    eeglFree(free_fname);
@@ -3329,8 +3329,8 @@ c_substitute(Invocation* invo) {
 
                   curPor->bookOpts.foldEnable = FALSE;
                   // Invert the matched string. Remove the inversion afterwards.
-                  int save_RedrawingDisabled = RedrawingDisabled;
-                  RedrawingDisabled = 0;
+                  int save_isRedrawingDisabledG = isRedrawingDisabledG;
+                  isRedrawingDisabledG = 0;
 
                   // avoid calling drawUpdateScreen() in vgetorpeek()
                   p_lz = FALSE;
@@ -3385,7 +3385,7 @@ c_substitute(Invocation* invo) {
                   msg_scroll = i;
                   showruler(TRUE);
                   windgoto(msgRowG, msgColG);
-                  RedrawingDisabled = save_RedrawingDisabled;
+                  isRedrawingDisabledG = save_isRedrawingDisabledG;
 
                   ++no_mapping;   // don't map this key
                   ++allow_keys;   // allow special keys
@@ -4077,48 +4077,48 @@ prepare_tagpreview(
    int      use_previewpopup,   // use popup if 'previewpopup' set
    UsePopup   use_popup)       // use other popup portal
 {
-   if (curPor->bookOpts.previewPortal)
+   if (curPor->isPreview)
       return FALSE;
 
    // If there is already a preview portal open, use that one.
-   Portal   *wp;
+   Portal* po;
    if (use_previewpopup) {
-      wp = popupFindPreviewPortal();
-      if (wp)
-         popup_set_wantpos_cursor(wp, wp->pup.minWidth, NULL);
+      po = popupFindPreviewPortal();
+      if (po)
+         popup_set_wantpos_cursor(po, po->pup.minWidth, NULL);
    } ei (use_popup != USEPOPUP_NONE) {
-      wp = popupFindInfoPortal();
-      if (wp) {
+      po = popupFindInfoPortal();
+      if (po) {
          if (use_popup == USEPOPUP_NORMAL)
-            popup_show(wp);
+            popup_show(po);
          else
-            popup_hide(wp);
+            popup_hide(po);
          // When the popup moves or resizes it may reveal part of
          // another portal.  TODO: can this be done more efficiently?
          redraw_all_later(UPD_NOT_VALID);
       }
    } else {
-      FOR_ALL_PORTALS(wp) {
-         if (wp->bookOpts.previewPortal)
+      FOR_ALL_PORTALS(po) {
+         if (po->isPreview)
             break;
       } 
    }
-   if (wp) {
-      enterPortal(wp, undo_sync);
+   if (po) {
+      enterPortal(po, undo_sync);
       return FALSE;
    }
 
    // There is no preview portal open yet.  Create one.
    if ((use_previewpopup) || use_popup != USEPOPUP_NONE)
-      return createPopup_preview_window(use_popup != USEPOPUP_NONE);
+      return portalCreatePreviewPortal(use_popup != USEPOPUP_NONE);
    if (splitPortal(g_do_tagpreview > 0 ? g_do_tagpreview : 0, 0) == FAIL)
       return FALSE;
-   curPor->bookOpts.previewPortal = TRUE;
-    curPor->bookOpts.portFixHeight = TRUE;
-    RESET_BINDING(curPor);       // don't take over 'scrollbind'
-                // and 'cursorbind'
-    curPor->bookOpts.diff = FALSE;       // no 'diff'
-    return TRUE;
+   curPor->isPreview = true;
+   curPor->bookOpts.portFixHeight = TRUE;
+   RESET_BINDING(curPor);       // don't take over 'scrollbind'
+               // and 'cursorbind'
+   curPor->bookOpts.diff = FALSE;       // no 'diff'
+   return TRUE;
 }
 
 
@@ -4164,7 +4164,7 @@ c_smile(Invocation* invo UNUSED) {
 void
 c_drop(Invocation* invo) {
    int      split = FALSE;
-   Portal   *wp;
+   Portal   *po;
 
    if (portErrorIfPopup(false) || portErrorIfTermPopup())
       return;
@@ -4196,9 +4196,9 @@ c_drop(Invocation* invo) {
    Book* book = bookFindFileByBookNr(ARGLIST[0].fnum);
 
    Tab   *t;
-   FOR_ALL_TAB_PORTALS(t, wp) {
-      if (wp->book == book) {
-         goto_tab_port(t, wp);
+   FOR_ALL_TAB_PORTALS(t, po) {
+      if (po->book == book) {
+         goto_tab_port(t, po);
          curPor->argListInd = 0;
          if (!doWasBookChanged(curBook)) {
             fiCheckBookTimestamp(curBook);
@@ -4347,7 +4347,7 @@ c_oldfiles(Invocation* invo UNUSED) {
 void
 c_listDo(Invocation* invo) {
    int i;
-   Portal* wp;
+   Portal* po;
    Tab* t;
    Book* book = curBook;
    int next_fnum = 0;
@@ -4384,11 +4384,11 @@ c_listDo(Invocation* invo) {
 
    i = 0;
    // start at the invo->line1 argument/portal/book
-   wp = firstPor;
+   po = firstPor;
    t = firstTabG;
    switch (invo->id) {
    case C_windo:
-      for ( ; wp && i + 1 < invo->line1; wp = wp->next)
+      for ( ; po && i + 1 < invo->line1; po = po->next)
           i++;
       break;
    case C_tabdo:
@@ -4435,13 +4435,13 @@ c_listDo(Invocation* invo) {
          if (curPor->argListInd != i)
              break;
       } ei (invo->id == C_windo) {
-         // go to portal "wp"
-         if (!portalIsValid(wp))
+         // go to portal "po"
+         if (!portalIsValid(po))
             break;
-         gotoPortal(wp);
-         if (curPor != wp)
+         gotoPortal(po);
+         if (curPor != po)
             break;  // something must be wrong
-         wp = curPor->next;
+         po = curPor->next;
       } ei (invo->id == C_tabdo) {
          // go to portal "t"
          if (!isTabValid(t))
@@ -4797,7 +4797,7 @@ check_changed_any(
    int      bufcount = 0;
    int      *bufnrs;
    Tab   *t;
-   Portal   *wp;
+   Portal   *po;
 
    // Make a list of all buffers, with the most important ones first.
    FOR_ALL_BOOKS(book)
@@ -4812,16 +4812,16 @@ check_changed_any(
    bufnrs[bufnum++] = curBook->fiNum;
 
    // buffers in current tab
-   FOR_ALL_PORTALS(wp) {
-      if (wp->book != curBook)
-         add_bufnum(bufnrs, &bufnum, wp->book->fiNum);
+   FOR_ALL_PORTALS(po) {
+      if (po->book != curBook)
+         add_bufnum(bufnrs, &bufnum, po->book->fiNum);
    } 
 
     // buffers in other tabs
    FOR_ALL_TABS(t) {
       if (t != curtab) {
-         FOR_ALL_PORTALS_IN_TAB(t, wp)
-            add_bufnum(bufnrs, &bufnum, wp->book->fiNum);
+         FOR_ALL_PORTALS_IN_TAB(t, po)
+            add_bufnum(bufnrs, &bufnum, po->book->fiNum);
       } 
    } 
 
@@ -4883,13 +4883,13 @@ check_changed_any(
 
    // Try to find a portal into the buffer.
    if (book != curBook) {
-      FOR_ALL_TAB_PORTALS(t, wp) {
-         if (wp->book == book) {
+      FOR_ALL_TAB_PORTALS(t, po) {
+         if (po->book == book) {
             BookRef bufref;
 
             bookStoreInRef(OUT &bufref, book);
 
-            goto_tab_port(t, wp);
+            goto_tab_port(t, po);
 
             // Paranoia: did autocomm wipe out the buffer with changes?
             if (!bookRefValid(&bufref))
@@ -5394,7 +5394,7 @@ doCommand(
    static int   recursive = 0;      // recursive depth
    int      msg_didout_before_start = 0;
    int      count = 0;      // line number count
-   int      did_inc_RedrawingDisabled = FALSE;
+   int      did_inc_isRedrawingDisabledG = FALSE;
    int      retval = OK;
    CondStack   cstack;         // conditional stack
    ArrayList   lines_ga;      // keep lines for ":while"/":for"
@@ -5628,8 +5628,8 @@ doCommand(
             msg_start();
             msg_scroll = TRUE;  // put messages below each other
             ++no_wait_return;   // don't wait for return until finished
-            ++RedrawingDisabled;
-            did_inc_RedrawingDisabled = TRUE;
+            ++isRedrawingDisabledG;
+            did_inc_isRedrawingDisabledG = TRUE;
          }
       }
 
@@ -5907,9 +5907,9 @@ doCommand(
     * hit return before redrawing the screen. With the ":global" command we do
     * this only once after the command is finished.
     */
-   if (did_inc_RedrawingDisabled) {
-      if (RedrawingDisabled > 0)
-         --RedrawingDisabled;
+   if (did_inc_isRedrawingDisabledG) {
+      if (isRedrawingDisabledG > 0)
+         --isRedrawingDisabledG;
       --no_wait_return;
       msg_scroll = FALSE;
 
@@ -6998,7 +6998,6 @@ undoCommModifier(CommandModifier *cmod) {
    if (cmod->cmod_save_ei) {
       // Restore 'eventignore' to the value before ":noautocmd".
       optChangeStringOptionDirect(S"eventignore", cmod->cmod_save_ei, 0, SID_NONE);
-      free_string_option(cmod->cmod_save_ei);
       cmod->cmod_save_ei = NULL;
    }
 
@@ -8915,21 +8914,21 @@ not_exiting(void) {
 }
 
 private int
-before_quit_autocmds(Portal *wp, int quit_all) {
-   apply_autocmds(EVENT_QUITPRE, NULL, NULL, false, wp->book);
+before_quit_autocmds(Portal *po, int quit_all) {
+   apply_autocmds(EVENT_QUITPRE, NULL, NULL, false, po->book);
 
    // Bail out when autocommands closed the portal. Refuse to quit when the book in the last 
    // portal is being closed (can only happen in autocommands).
-   if (!portalIsValid(wp)
+   if (!portalIsValid(po)
           || curBookLocked()
-          || (wp->book->countPortals == 1 && wp->book->locked > 0))
+          || (po->book->countPortals == 1 && po->book->locked > 0))
       return TRUE;
 
    if (quit_all) {
       apply_autocmds(EVENT_EXITPRE, NULL, NULL, false, curBook);
       // Refuse to quit when locked or when the portal was closed or the book in the last portal 
       // is being closed (can only happen in autocommands).
-      if (!portalIsValid(wp) || curBookLocked()
+      if (!portalIsValid(po) || curBookLocked()
               || (curBook->countPortals == 1 && curBook->locked > 0))
           return TRUE;
    }
@@ -8942,7 +8941,7 @@ before_quit_autocmds(Portal *wp, int quit_all) {
 //Also used when closing a terminal portal that's the last one.
 void
 c_quit(Invocation* invo) {
-    Portal   *wp;
+    Portal   *po;
 
    if (commPortTypeG != 0) {
       commPortResultG = Ctrl_C;
@@ -8956,18 +8955,18 @@ c_quit(Invocation* invo) {
    if (invo->addr_count > 0) {
       int   wnr = invo->line2;
 
-      for (wp = firstPor; wp->next != NULL; wp = wp->next)
+      for (po = firstPor; po->next != NULL; po = po->next)
          if (--wnr <= 0)
             break;
     } else
-      wp = curPor;
+      po = curPor;
 
    // Refuse to quit when locked.
    if (curBookLocked())
       return;
 
    // Trigger QuitPre and maybe ExitPre
-   if (before_quit_autocmds(wp, FALSE))
+   if (before_quit_autocmds(po, FALSE))
       return;
 
    // If there is only one relevant portal, we will exit.
@@ -8985,7 +8984,7 @@ c_quit(Invocation* invo) {
          exitEegl(0);
       not_exiting();
       // close portal; may free book
-      closePortal(wp, invo->forceit);
+      closePortal(po, invo->forceit);
     }
 }
 
@@ -9067,7 +9066,7 @@ c_pclose(Invocation* invo UNUSED) {
 
    // First close any normal portal.
    FOR_ALL_PORTALS(port) {
-      if (port->bookOpts.previewPortal) {
+      if (port->isPreview) {
          closePortalInternal(port, NULL);
          return;
       }
@@ -9287,12 +9286,12 @@ tabCloseOther(Tab *t) {
 
    // Limit to 1000 portals, autocommands may add a portal while we close one. OK, so I'm paranoid..
    while (++done < 1000) {
-      Portal* wp = t->firstPor;
-      closePortalInternal(wp, t);
+      Portal* po = t->firstPor;
+      closePortalInternal(po, t);
 
       // Autocommands may delete the tab under our fingers and we may
       // fail to close a portal with a modified book.
-      if (!isTabValid(t) || t->firstPor == wp)
+      if (!isTabValid(t) || t->firstPor == po)
           break;
    }
 
@@ -9305,15 +9304,15 @@ c_only(Invocation* invo) {
    if (portalLayout_locked(C_only))
       return;
    if (invo->addr_count > 0) {
-      Portal   *wp;
+      Portal   *po;
       int   wnr = invo->line2;
-      for (wp = firstPor; --wnr > 0; ) {
-          if (wp->next == NULL)
+      for (po = firstPor; --wnr > 0; ) {
+          if (po->next == NULL)
          break;
           else
-         wp = wp->next;
+         po = po->next;
       }
-      gotoPortal(wp);
+      gotoPortal(po);
    }
    close_others(true);
 }
@@ -9562,7 +9561,6 @@ setFindFn(OptionChange* cha) {
    OptionRef ref = cha->ref;
    CS name = get_scriptlocal_funcname(*ref.string);
    if (name) {
-      free_string_option(*ref.string);
       *ref.string = name;
    }
 
@@ -9733,7 +9731,7 @@ c_tabmove(Invocation* invo) {
 // :tabs command: List tabs and their contents.
 void
 c_tabs(Invocation* invo UNUSED) {
-   Portal   *wp;
+   Portal   *po;
    int      tabcount = 1;
 
    msg_start();
@@ -9746,19 +9744,19 @@ c_tabs(Invocation* invo UNUSED) {
       ui_breakcheck();
 
       if (t  == curtab)
-         wp = firstPor;
+         po = firstPor;
       else
-         wp = t->firstPor;
-      for ( ; wp && !gotInterruptG; wp = wp->next) {
+         po = t->firstPor;
+      for ( ; po && !gotInterruptG; po = po->next) {
          msg_putchar('\n');
-         msg_putchar(wp == curPor ? '>' : ' ');
+         msg_putchar(po == curPor ? '>' : ' ');
          msg_putchar(' ');
-         msg_putchar(doWasBookChanged(wp->book) ? '+' : ' ');
+         msg_putchar(doWasBookChanged(po->book) ? '+' : ' ');
          msg_putchar(' ');
-         if (bookSpName(wp->book) != NULL)
-            copySubstrToAllocation(OUT IObuff, (Text){bookSpName(wp->book), IOSIZE - 1});
+         if (bookSpName(po->book) != NULL)
+            copySubstrToAllocation(OUT IObuff, (Text){bookSpName(po->book), IOSIZE - 1});
          else
-            home_replace(wp->book, wp->book->currFileName, IObuff, IOSIZE, TRUE);
+            home_replace(po->book, po->book->currFileName, IObuff, IOSIZE, TRUE);
          msg_outtrans(IObuff);
          out_flush();       // output one line at a time
          ui_breakcheck();
@@ -9782,27 +9780,27 @@ c_mode(Invocation* invo) {
 void
 c_resize(Invocation* invo) {
    int      n;
-   Portal   *wp = curPor;
+   Portal   *po = curPor;
 
    if (invo->addr_count > 0) {
       n = invo->line2;
-      for (wp = firstPor; wp->next && --n > 0; wp = wp->next)
+      for (po = firstPor; po->next && --n > 0; po = po->next)
           ;
    }
 
    n = atol((char *)invo->arg);
    if (commModifierG.cmod_split & WSP_VERT) {
       if (*invo->arg == '-' || *invo->arg == '+')
-          n += wp->width;
+          n += po->width;
       ei (n == 0 && invo->arg[0] == ZERO)   // default is very wide
           n = 9999;
-      portSetWidth(n, wp);
+      portSetWidth(n, po);
    } else {
       if (*invo->arg == '-' || *invo->arg == '+')
-         n += wp->height;
+         n += po->height;
       ei (n == 0 && invo->arg[0] == ZERO)   // default is very high
          n = 9999;
-      portSetHeight(n, wp);
+      portSetHeight(n, po);
    }
 }
 
@@ -10002,7 +10000,7 @@ c_swapname(Invocation* invo UNUSED) {
 //(1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
 void
 c_syncbind(Invocation* invo UNUSED) {
-   Portal   *wp;
+   Portal   *po;
    Portal   *save_curPor = curPor;
    Book   *save_curbuf = curBook;
    long   topline;
@@ -10014,9 +10012,9 @@ c_syncbind(Invocation* invo UNUSED) {
    // determine max topline
    if (curPor->bookOpts.scrollBind) {
       topline = curPor->topLine;
-      FOR_ALL_PORTALS(wp) {
-         if (wp->bookOpts.scrollBind && wp->book) {
-            y = wp->book->mem.lineCount - curPor->bookOpts.scrollOff;
+      FOR_ALL_PORTALS(po) {
+         if (po->bookOpts.scrollBind && po->book) {
+            y = po->book->mem.lineCount - curPor->bookOpts.scrollOff;
             if (topline > y)
                topline = y;
           }
@@ -10533,16 +10531,16 @@ c_at(Invocation* invo) {
       return;
    }
 
-    int   save_efr = exec_from_reg;
+    int   save_efr = executingFromRegG;
 
-   exec_from_reg = TRUE;
+   executingFromRegG = TRUE;
 
    // Execute from the typeahead buffer.
    // Continue until the stuff buffer is empty and all added characters have been consumed.
    while (!stuff_empty() || typeBufG.validLen > prev_len)
       (void)doCommand(NULL, getexline, NULL, DOCMD_NOWAIT|DOCMD_VERBOSE);
 
-   exec_from_reg = save_efr;
+   executingFromRegG = save_efr;
 }
 
 // ":!".
@@ -10704,8 +10702,8 @@ c_redraw(Invocation* invo) {
 // ":redraw": force redraw, with clear if "clear" is TRUE.
 void
 redraw_cmd(int clear) {
-   int save_RedrawingDisabled = RedrawingDisabled;
-   RedrawingDisabled = 0;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
+   isRedrawingDisabledG = 0;
 
    int save_p_lz = p_lz;
    p_lz = FALSE;
@@ -10713,7 +10711,7 @@ redraw_cmd(int clear) {
    validate_cursor();
    update_topline();
    drawUpdateScreen(clear ? UPD_CLEAR : VIsual_active ? UPD_INVERTED : 0);
-   RedrawingDisabled = save_RedrawingDisabled;
+   isRedrawingDisabledG = save_isRedrawingDisabledG;
    p_lz = save_p_lz;
 
    // After drawing the statusline screen_attr may still be set.
@@ -10743,8 +10741,8 @@ c_redrawstatus(Invocation* invo) {
    if (msg_scrolled && (stateG & MODE_COMMLINE))
       return;  // redraw later
 
-   int save_RedrawingDisabled = RedrawingDisabled;
-   RedrawingDisabled = 0;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
+   isRedrawingDisabledG = 0;
 
    int save_p_lz = p_lz;
    p_lz = FALSE;
@@ -10753,7 +10751,7 @@ c_redrawstatus(Invocation* invo) {
       redraw_statuslines();
    else
       drawUpdateScreen(VIsual_active ? UPD_INVERTED : 0);
-   RedrawingDisabled = save_RedrawingDisabled;
+   isRedrawingDisabledG = save_isRedrawingDisabledG;
    p_lz = save_p_lz;
    out_flush();
 }
@@ -10761,15 +10759,15 @@ c_redrawstatus(Invocation* invo) {
 // ":redrawtabpanel": force redraw of the tabpanel
 void
 c_redrawtabpanel(Invocation* invo UNUSED) {
-   int save_RedrawingDisabled = RedrawingDisabled;
-   RedrawingDisabled = 0;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
+   isRedrawingDisabledG = 0;
 
    int save_p_lz = p_lz;
    p_lz = FALSE;
 
    draw_tabpanel();
 
-   RedrawingDisabled = save_RedrawingDisabled;
+   isRedrawingDisabledG = save_isRedrawingDisabledG;
    p_lz = save_p_lz;
    out_flush();
 }

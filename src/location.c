@@ -2035,7 +2035,7 @@ identifyStackByInvo(Invocation* invo) {
 
 // Get the location list stack to use for the specified Command.
 private LocationStack *
-getStackForCommand(Invocation *invo, int print_emsg) {
+getStackForCommand(Invocation* invo, int print_emsg) {
    LocationStack* stack = identifyStackByInvo(invo);
    if (stack == NULL && print_emsg)
       emsg(_(e_no_location_stack));
@@ -2642,8 +2642,7 @@ gotoPortalIntoQflFile(int fNum) {
       }
 
       // Remember a usable portal
-      if (altPort == NULL && !port->bookOpts.previewPortal && !port->bookOpts.portFixBuf 
-            && bt_normal(port->book))
+      if (!altPort && !port->isPreview && !port->bookOpts.portFixBuf && bt_normal(port->book))
          altPort = port;
    }
 
@@ -2654,7 +2653,7 @@ gotoPortalIntoQflFile(int fNum) {
 //there already is a portal into the file, jump to it. Otherwise open a new portal into the file.
 //If 'newPort' is TRUE, then always open a new portal. This is called from  location list portals.
 private int
-jumpToUsablePortal(int fNum, int newPort, int *openedPortal) {
+jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
    Portal* usable_wp = NULL;
    int      usablePort = FALSE;
    LocationStack   *ll_ref = NULL;
@@ -2706,7 +2705,7 @@ jumpAndEditBook(
    LocLine* curr,
    int forceit,
    int prevPortId,
-   int *openedPortal
+   int* openedPortal
 ){
    LocationList* ll = getCurrent(stack);
    int old_changedtick = ll->changedTick;
@@ -2824,16 +2823,14 @@ jumpToEntry(
 // Display location list index and size message
 private void
 printMsg(
-   LocationStack   *stack,
-   int      currentIdx,
-   LocLine   *curr,
-   Book      *old_curbuf,
-   LineNr   old_lnum
+   LocationStack* stack,
+   int currentIdx,
+   LocLine* curr,
+   Book* oldCurBook,
+   LineNr old_lnum
 ) {
    LineNr      i;
-   ArrayList      *gap;
-
-   gap = getTempList();
+   ArrayList* gap = getTempList();
 
    // Update the screen before showing the message, unless the screen scrolled up.
    if (!msg_scrolled)
@@ -2850,7 +2847,7 @@ printMsg(
    //Output the message. Overwrite to avoid scrolling when the 'O'
    //flag is present in 'shortmess'; But when not jumping, print the whole message.
    i = msg_scroll;
-   if (curBook == old_curbuf && curPor->cursor.lnum == old_lnum)
+   if (curBook == oldCurBook && curPor->cursor.lnum == old_lnum)
       msg_scroll = TRUE;
    ei (!msg_scrolled && shortmess(SHM_OVERALL))
       msg_scroll = FALSE;
@@ -2867,10 +2864,10 @@ printMsg(
 //by an autocmd.
 private int
 jumpOrOpenPortal(
-   LocationStack   *stack,
-   LocLine   *curr,
-   int      newPort,
-   int      *openedPortal
+   LocationStack* stack,
+   LocLine* curr,
+   int newPort,
+   int* openedPortal
 ){
    LocationList   *ll = getCurrent(stack);
    int      old_changedtick = ll->changedTick;
@@ -2907,14 +2904,10 @@ jumpOrOpenPortal(
    return OK;
 }
 
-/*
- * Edit a selected file from the location list and jump to a
- * particular line/column, adjust the folds and display a message about the
- * jump.
- * Returns OK on success and FAIL on failing to open the file/buffer.  Returns
- * QF_ABORT if the location list is freed by an autocmd when opening
- * the file.
- */
+//Edit a selected file from the location list and jump to a
+//particular line/column, adjust the folds and display a message about the jump.
+//Returns OK on success and FAIL on failing to open the file/buffer.  Returns
+//QF_ABORT if the location list is freed by an autocmd when opening the file.
 private int
 jumpToBuffer(
    LocationStack* stack,
@@ -2924,16 +2917,13 @@ jumpToBuffer(
    int prevPortId,
    int *openedPortal,
    int openfold,
-   int print_message)
-{
-   Book* old_curbuf;
-   LineNr old_lnum;
+   int print_message
+) {
    int retval = OK;
 
-   // If there is a file name, read the wanted file if needed, and check
-   // autowrite etc.
-   old_curbuf = curBook;
-   old_lnum = curPor->cursor.lnum;
+   //If there is a file name, read the wanted file if needed, and check autowrite etc.
+   Book* oldCurBook = curBook;
+   LineNr old_lnum = curPor->cursor.lnum;
 
    if (curr->fNum != 0) {
       retval = jumpAndEditBook(stack, curr, forceit, prevPortId, openedPortal);
@@ -2941,8 +2931,8 @@ jumpToBuffer(
           return retval;
    }
 
-   // When not switched to another buffer, still need to set pc mark
-   if (curBook == old_curbuf)
+   // When not switched to another book, still need to set pc mark
+   if (curBook == oldCurBook)
       setpcmark();
 
    jumpToEntry(curr->lNum, curr->col, curr->visCol, curr->pattern);
@@ -2950,7 +2940,7 @@ jumpToBuffer(
    if ((p_fdo & FDO_LOCATION) != 0 && openfold)
       foldOpenCursor();
    if (print_message)
-      printMsg(stack, currentIdx, curr, old_curbuf, old_lnum);
+      printMsg(stack, currentIdx, curr, oldCurBook, old_lnum);
 
    return retval;
 }
@@ -2984,7 +2974,7 @@ llJump(
 //If 'newPort' is TRUE, then open the file in a new portal.
 private void
 jumpToNewPortal(
-   LocationStack   *stack,
+   LocationStack* stack,
    Unt dir,
    int errornr,
    Boole forceit,
@@ -3083,12 +3073,11 @@ private Decoration lineDeco;
 //'cursel' will be set to TRUE for the currently selected entry in the list.
 private void
 displayListEntry(LocLine *lline, int ind, int cursel) {
-   Byte   *fname;
    Book   *book;
    int      filter_entry;
    ArrayList   *gap;
 
-   fname = NULL;
+   CS fname = NULL;
    if (lline->moduleName != NULL && *lline->moduleName != ZERO)
       eeSnprintf(IObuff, IOSIZE, "%2d %s", ind, lline->moduleName);
    else {
@@ -3106,10 +3095,10 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
          eeSnprintf(IObuff, IOSIZE, "%2d %s", ind, fname);
    }
 
-    // Support for filtering entries using :filter /pat/ clist
-    // Match against the module name, file name, search pattern and
-    // text of the entry.
-    filter_entry = TRUE;
+   // Support for filtering entries using :filter /pat/ clist
+   // Match against the module name, file name, search pattern and
+   // text of the entry.
+   filter_entry = TRUE;
    if (lline->moduleName != NULL && *lline->moduleName != ZERO)
       filter_entry &= message_filtered(lline->moduleName);
    if (filter_entry && fname != NULL)
@@ -3125,7 +3114,7 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
    msgOuttransDeco(IObuff, cursel ? getDecoFlags(HLF_QFL) : fileDeco.flags);
 
    if (lline->lNum != 0)
-      msgPutsDeco((CS)":", separatorDeco.flags);
+      msgPutsDeco(S":", separatorDeco.flags);
    gap = getTempList();
    if (lline->lNum != 0)
       addRangeInformationToArrayList(gap, lline);
@@ -3138,9 +3127,9 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
       formatText(gap, lline->pattern);
       ga_append(gap, ZERO);
       msg_puts((CS)gap->c);
-      msgPutsDeco((CS)":", separatorDeco.flags);
+      msgPutsDeco(S":", separatorDeco.flags);
    }
-   msg_puts((CS)" ");
+   msg_puts(S" ");
 
    //Remove newlines and leading whitespace from the text.  For an
    //unrecognized line keep the indent, the compiler may mark a word
@@ -3154,15 +3143,14 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
 
 // ":llist": list all locations
 void
-c_list(Invocation *invo) {
-   LocationList   *ll;
+c_list(Invocation* invo) {
    LocLine   *lline;
    int      i;
    int      idx1 = 1;
    int      idx2 = -1;
-   Byte   *arg = invo->arg;
-   int      plus = FALSE;
-   int      all = invo->forceit;   // if not :ml!, only show recognized errors
+   CS arg = invo->arg;
+   Boole plus = false;
+   int all = invo->forceit;   // if not :ml!, only show recognized errors
    LocationStack   *stack;
    if ((stack = getStackForCommand(invo, TRUE)) == NULL)
       return;
@@ -3173,13 +3161,13 @@ c_list(Invocation *invo) {
    }
    if (*arg == '+') {
       ++arg;
-      plus = TRUE;
+      plus = true;
    }
    if (!get_list_range(&arg, &idx1, &idx2) || *arg != ZERO) {
       showErrFmtMsg(_(e_trailing_characters_str), arg);
       return;
    }
-   ll = getCurrent(stack);
+   LocationList* ll = getCurrent(stack);
    if (plus) {
       i = ll->currentIdx;
       idx2 = i + idx1;
@@ -3267,15 +3255,18 @@ qf_msg(LocationStack *stack, int which, CS lead) {
     int    count = stack->lists[which].count;
     Byte builder[IOSIZE];
 
-    eeSnprintf(builder, IOSIZE, _("%serror list %d of %d; %d errors "),
+    eeSnprintf(
+       builder, 
+       IOSIZE, 
+       _("%serror list %d of %d; %d errors "),
        lead,
        which + 1,
        stack->listcount,
-       count);
+       count
+   );
 
    if (title) {
-      Unt   len = STRLEN(builder);
-
+      Unt len = STRLEN(builder);
       if (len < 34) {
          memset(builder + len, ' ', 34 - len);
          builder[34] = ZERO;
@@ -3291,7 +3282,7 @@ qf_msg(LocationStack *stack, int which, CS lead) {
 //":lolder [count]": Up in the location list stack.
 //":lnewer [count]": Down in the location list stack.
 void
-c_llAge(Invocation *invo) {
+c_llAge(Invocation* invo) {
    LocationStack   *stack;
    int      count;
 
@@ -3323,7 +3314,7 @@ c_llAge(Invocation *invo) {
 
 // Display the information about all the location lists in the stack
 void
-qf_history(Invocation *invo) {
+qf_history(Invocation* invo) {
    LocationStack   *stack = getStackForCommand(invo, FALSE);
    int      i;
 
@@ -3528,7 +3519,7 @@ llViewLocation(int split) {
 //":mwindow": open the location portal if we have errors to display, close it if not. TODO delete
 //":lwindow": open the location list portal if we have locations to display, close it if not.
 void
-c_cPortal(Invocation *invo) {
+c_cPortal(Invocation* invo) {
    LocationStack   *stack;
    LocationList   *ll;
    Portal   *win;
@@ -3556,7 +3547,7 @@ c_cPortal(Invocation *invo) {
 
 // ":lclose": close the window showing the location list
 void
-c_lClose(Invocation *invo) {
+c_lClose(Invocation* invo) {
    LocationStack   *stack;
    if ((stack = getStackForCommand(invo, FALSE)) == NULL)
       return;
@@ -3683,7 +3674,7 @@ openNewPortal(LocationStack *stack, int height) {
 
 // ":lopen": open a window that shows the location list.
 void
-c_lOpen(Invocation *invo) {
+c_lOpen(Invocation* invo) {
    LocationStack   *stack;
    LocationList   *ll;
    int      status = FAIL;
@@ -3748,7 +3739,7 @@ gotoLine(Portal* po, LineNr lnum) {
 
  // :mbottom/:lbottom commands.
 void
-c_lBottom(Invocation *invo) {
+c_lBottom(Invocation* invo) {
    LocationStack   *stack;
    if ((stack = getStackForCommand(invo, TRUE)) == NULL)
       return;
@@ -4561,7 +4552,7 @@ c_make(Invocation* invo UNUSED) {
 
 // Returns the number of entries in the current location list.
 int
-llGetSize(Invocation *invo) {
+llGetSize(Invocation* invo) {
    LocationStack   *stack;
 
    if ((stack = getStackForCommand(invo, FALSE)) == NULL)
@@ -4571,7 +4562,7 @@ llGetSize(Invocation *invo) {
 
 // Returns the number of valid entries in the current location list.
 int
-llGetValidSize(Invocation *invo){
+llGetValidSize(Invocation* invo){
    LocationStack   *stack;
    LocationList   *ll;
    LocLine   *lline;
@@ -4602,7 +4593,7 @@ llGetValidSize(Invocation *invo){
  * Returns 0 if there is an error.
  */
 int
-llGetCurrIndex(Invocation *invo) {
+llGetCurrIndex(Invocation* invo) {
    LocationStack   *stack;
 
    if ((stack = getStackForCommand(invo, FALSE)) == NULL)
@@ -4616,7 +4607,7 @@ llGetCurrIndex(Invocation *invo) {
  * entries). If no valid entries are in the list, then returns 1.
  */
 int
-llGetCurrValidIndex(Invocation *invo) {
+llGetCurrValidIndex(Invocation* invo) {
    LocationStack   *stack;
    LocationList   *ll;
    LocLine   *lline;
@@ -4694,7 +4685,7 @@ nthValidEntry(LocationList *ll, int n, int fdo){
  * ":ldo" and ":lfdo"
  */
 void
-c_lMove(Invocation *invo) {
+c_lMove(Invocation* invo) {
    LocationStack   *stack;
    int      errornr;
 
@@ -4733,7 +4724,7 @@ c_lMove(Invocation *invo) {
 //":lnext", ":lNext", ":lprevious", ":lnfile", ":lNfile" and ":lpfile".
 //Also, used by ":ldo" and ":lfdo" commands.
 void
-c_lNext(Invocation *invo) {
+c_lNext(Invocation* invo) {
    LocationStack* stack;
    if ((stack = getStackForCommand(invo, TRUE)) == NULL)
       return;
@@ -5046,7 +5037,7 @@ findNthAdjacentEntry(
 
 // Jump to a location entry in the current file nearest to the current line. ":labove", ":lbelow"
 void
-c_lBelow(Invocation *invo) {
+c_lBelow(Invocation* invo) {
    LocationStack   *stack;
    LocationList   *ll;
    int      dir;
@@ -5107,7 +5098,7 @@ cfile_get_auname(CommIndex id){
 
 // ":lfile"/":laddfile" commands.
 void
-c_lFile(Invocation *invo) {
+c_lFile(Invocation* invo) {
    Unt   idSave = 0;      // init for gcc
    int      res;
 
@@ -5544,7 +5535,7 @@ theend:
 
 //":vimgrep {pattern} file(s)". ":vimgrepadd {pattern} file(s)"
 void
-c_vimgrep(Invocation *invo) {
+c_vimgrep(Invocation* invo) {
    if (!check_can_set_curbuf_forceit(invo->forceit))
       return;
       
@@ -6376,11 +6367,11 @@ addEntries(
       ll = getList(stack, ind);
    } ei (action == LL_ACTION_ADD) {
       if (isEmpty(ll))
-          // Appending to empty list, select first entry.
-          select_first_entry = TRUE;
+         // Appending to empty list, select first entry.
+         select_first_entry = TRUE;
       else
-          // Adding to existing list, use last entry.
-          oldLast = ll->last;
+         // Adding to existing list, use last entry.
+         oldLast = ll->last;
    } ei (action == LL_ACTION_REPLACE) {
       select_first_entry = TRUE;
       freeItems(ll);
@@ -6841,7 +6832,7 @@ processCbookArgs(
 // ":[range]laddbook [booknr]" command.
 // ":[range]lgetbook [booknr]" command.
 void
-c_lbook(Invocation *invo) {
+c_lbook(Invocation* invo) {
    Book* book = NULL;
    LocationStack   *stack;
    int      res;
@@ -6929,7 +6920,7 @@ trigger_cexpr_autocmd(int id) {
 }
 
 int
-cexpr_core(Invocation *invo, Var *tv) {
+cexpr_core(Invocation* invo, Var *tv) {
    LocationStack* stack = locationStacksS + LOC_LIST_GREP;
 
    if ((tv->tag == VAR_STRING && tv->string) || (tv->tag == VAR_LIST && tv->list)) {
@@ -6971,7 +6962,7 @@ cexpr_core(Invocation *invo, Var *tv) {
 //":lexpr {expr}", ":lgetexpr {expr}", ":laddexpr {expr}" command.
 //Also: ":maddexpr", ":mgetexpr", "laddexpr" and "laddexpr".
 void
-c_lExpr(Invocation *invo) {
+c_lExpr(Invocation* invo) {
    if (trigger_cexpr_autocmd(invo->id) == FAIL)
       return;
 
@@ -7074,12 +7065,11 @@ searchFilesInDir(
 
 // ":helpgrep {pattern}"
 void
-c_helpgrep(Invocation *invo) {
-   RegMatch   regmatch;
-   Arr(Byte) lang = NULL;
-   int      updated = FALSE;
+c_helpgrep(Invocation* invo) {
+   CS lang = NULL;
+   int updated = FALSE;
 
-   Arr(Byte) auName = (CS)"helpgrep";
+   CS auName = S"helpgrep";
    
    if (apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
          && aborting()) {
@@ -7092,6 +7082,7 @@ c_helpgrep(Invocation *invo) {
 
    // Check for a specified language
    lang = check_help_lang(invo->arg);
+   RegMatch regmatch;
    regmatch.regprog = compileRegexp(invo->arg, RE_MAGIC + RE_STRING);
    regmatch.rm_ic = FALSE;
    if (regmatch.regprog != NULL) {

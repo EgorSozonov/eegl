@@ -372,28 +372,14 @@ private CS main_errors[] = {
 // Various parameters passed between main() and other functions.
 private MainParams   params;
 
-#ifdef _IOLBF
 private void *s_vbuf = NULL;      // buffer for setvbuf()
-#endif
 
 #ifndef NO_EEGL_MAIN   // skip this for unittests
 
 private CS start_dir = NULL;   // current working dir on startup
 
-//{{{auxiliary functions
-
-//Check whether we have an interactive stdout.
-int
-mch_check_win(int argc UNUSED, char **argv UNUSED) {
-   if (isatty(1))
-      return OK;
-   return FAIL;
-}
-
-//}}}
-
 int 
-main(int argc, char **argv) {
+main(int argc, char** argv) {
    // Do any system-specific initialisations.  These can NOT use IObuff or NameBuff.  
    // Thus emsg2() cannot be called!
    mch_early_init();
@@ -462,7 +448,7 @@ main(int argc, char **argv) {
       params.portalCount = 0;   // open up to 3 portals
 
    // Don't redraw until much later.
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    // When listing swap file names, don't do cursor positioning et. al.
    if (recoveryModeG && params.fname == NULL)
@@ -476,13 +462,11 @@ main(int argc, char **argv) {
    // Print a warning if stdout is not a terminal.
    check_tty(&params);
 
-#ifdef _IOLBF
    if (silentModeG) {
       // Ensure output works usefully without a tty: buffer lines instead of fully buffered.
       s_vbuf = malloc(BUFSIZ);
       setvbuf(stdout, s_vbuf, _IOLBF, BUFSIZ);
    }
-#endif
 
    //This message comes before term inits, but after setting "silentModeG"
    //when the input is not a tty. Omit the message with --not-a-term.
@@ -500,8 +484,8 @@ main(int argc, char **argv) {
    //Set the default values for the options that use visibleRowsG and visibleColsG.
    ui_get_shellsize();      // inits Rows and Columns
    portalInitSize();
-   //Set the 'diff' option now, so that it can be checked for in an init.vim
-   //file. There is no buffer yet though.
+   //Set the @diff option now, so that it can be checked for in an init.vim
+   //file. There is no book yet, though.
    if (params.diff_mode)
       diff_win_options(firstPor, FALSE);
 
@@ -542,7 +526,7 @@ xRestoreState(void) {
    need_wait_return = FALSE;
    global_busy = FALSE;
    skip_redraw = FALSE;
-   RedrawingDisabled = 0;
+   isRedrawingDisabledG = 0;
    no_wait_return = 0;
    vgetcBusyG = 0;
    emsg_skip = 0;
@@ -743,7 +727,7 @@ eeglMain1(void) {
    // Must be done before redrawing, puts a few characters on the screen.
    check_terminal_behavior();
 
-   RedrawingDisabled = 0;
+   isRedrawingDisabledG = 0;
    redraw_all_later(UPD_NOT_VALID);
    no_wait_return = FALSE;
 
@@ -830,8 +814,8 @@ init1(OUT MainParams *paramp) {
    clip_init(FALSE);      // Initialise clipboard stuff
    TIME_MSG("clipboard setup");
 
-   //Check if we have an interactive window. mch_check_win() will also handle the -d or -dev arg
-   stdout_isatty = (mch_check_win(paramp->argc, paramp->argv) != FAIL);
+   //Check if we have an interactive window.
+   stdout_isatty = (isatty(1) != FAIL);
    TIME_MSG("window checked");
 
    // Allocate the first portal and buffer. Can't do anything without it, exit when it fails.
@@ -879,13 +863,11 @@ is_not_a_term_or_gui(void) {
 #if defined(EXITFREE) || defined(PROTO)
 void
 free_vbuf(void) {
-# ifdef _IOLBF
    if (s_vbuf != NULL) {
       setvbuf(stdout, NULL, _IONBF, 0);
       free(s_vbuf);
       s_vbuf = NULL;
    }
-# endif
 }
 #endif
 
@@ -1069,7 +1051,7 @@ mainLoop(int  inCommPort) {  // TRUE when working in the command-line window
             update_curbuf(UPD_INVERTED); // update inverted part
          ei (must_redraw) {
             drawUpdateScreen(0);
-         } ei (redrawCommlineG || mustClearCommlineG || redraw_mode)
+         } ei (redrawCommlineG || mustClearCommlineG || redrawModeG)
             showmode();
          redraw_statuslines();
          curBook->lastUsed = eeTime();
@@ -1960,7 +1942,7 @@ editBuffers(MainParams   *params, Byte   *cwd) {        // current working dir
    // make the first portal the current one
    Portal* po = firstPor;
    // Avoid making a preview portal the current one.
-   while (po->bookOpts.previewPortal) {
+   while (po->isPreview) {
       po = po->next;
       if (!po) {
          po = firstPor;
@@ -2002,7 +1984,6 @@ executePreCommands(MainParams* params) {
 // Execute "+", "-c" and "-S" arguments.
 private void
 exeCommands(MainParams *params) {
-   int      i;
    ESTACK_CHECK_DECLARATION;
 
    // We start commands on line 0, make "eegl +/pat file" match a
@@ -2010,11 +1991,11 @@ exeCommands(MainParams *params) {
    msg_scroll = TRUE;
    if (params->tagname == NULL && curPor->cursor.lnum <= 1)
       curPor->cursor.lnum = 0;
-   estack_push(ETYPE_ARGS, (CS)"command line", 0);
+   estack_push(ETYPE_ARGS, S"command line", 0);
    ESTACK_CHECK_SETUP;
    scriptPosG.sid = SID_CARG;
    scriptPosG.seq = 0;
-   for (i = 0; i < params->n_commands; ++i) {
+   for (int i = 0; i < params->n_commands; ++i) {
       executeCommLine(params->commands[i]);
       if (params->cmds_tofree[i])
           eeglFree(params->commands[i]);

@@ -12521,9 +12521,9 @@ ui_delay(long msec_arg, int ignoreinput) {
    mch_delay(msec, ignoreinput ? MCH_DELAY_IGNOREINPUT : 0);
 }
 
-// Try to get the current Eegl shell size. Put the result in visibleRowsG and visibleColsG.
-// Use the new sizes as defaults for 'columns' and 'lines'. Return OK when size could be 
-// determined, FAIL otherwise.
+//Try to get the current Eegl shell size. Put the result in visibleRowsG and visibleColsG.
+//Use the new sizes as defaults for @columns and @lines. Return OK when size could be 
+//determined, FAIL otherwise.
 int
 ui_get_shellsize(void) {
    int retval = mch_get_shellsize();

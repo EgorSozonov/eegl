@@ -14,13 +14,13 @@
 
 struct DiffBlock {
    DiffBlock* df_next;
-   LineNr   df_lnum[DB_COUNT];   // line number in buffer
-   LineNr   df_count[DB_COUNT];   // nr of inserted/changed lines
+   LineNr   lnum[DB_COUNT];   // line number in buffer
+   LineNr   count[DB_COUNT];   // nr of inserted/changed lines
    Boole isLinematched;  //has the linematch algorithm run on this diff hunk to divide it into
            // smaller diff hunks?
 
    int      has_changes;      // has cached list of inline changes
-   ArrayList   df_changes;      // list of inline changes (DifflineChange)
+   ArrayList   changes;      // list of inline changes (DifflineChange)
 };
 
 #define IGNORE_WHITESPACE (1 << 1)
@@ -59,31 +59,32 @@ typedef struct s_mmbuffer {
 
 typedef struct s_xpparam {
    unsigned long flags;
-   // See Documentation/diff-options.txt. */
+   // See Documentation/diff-options.txt
    char **anchors;
    Unt anchors_nr;
 } XpParam;
 
-typedef struct s_chanode {
-   struct s_chanode *next;
+declStruct(ChaNode);
+struct ChaNode {
+   ChaNode* next;
    long icurr;
-} chanode_t;
+};
 
 typedef struct s_chastore {
-   chanode_t *head, *tail;
+   ChaNode *head, *tail;
    long isize, nsize;
-   chanode_t *ancur;
-   chanode_t *sncur;
+   ChaNode *ancur;
+   ChaNode *sncur;
    long scurr;
-} chastore_t;
+} ChaStore;
 
 
 typedef long (*FindFn)(
-      Byte* line, long line_len, char *buffer, long buffer_size, void *priv
+   CS line, long line_len, char *buffer, long buffer_size, void *priv
 );
 
 typedef int (*XdlEmitHunkConsumeFn)(
-      long start_a, long count_a, long start_b, long count_b, void *cb_data
+   long start_a, long count_a, long start_b, long count_b, void *cb_data
 );
 
 
@@ -92,7 +93,7 @@ typedef struct s_xdemitconf {
    long interhunkctxlen;
    unsigned long flags;
    FindFn find_func;
-   void *find_func_priv;
+   void* find_func_priv;
    XdlEmitHunkConsumeFn hunk_func;
 } XdEmitConf;
 
@@ -115,7 +116,7 @@ struct Record {
 };
 
 typedef struct s_xdfile {
-   chastore_t rcha;
+   ChaStore rcha;
    long nrec;
    unsigned int hbits;
    Record **rhash;
@@ -144,16 +145,16 @@ private int xdl_diff(MmFile *mf1, MmFile *mf2, XpParam* xpp,
 #define LN_DECISION_MAX 255  // pow(2, LN_MAX_BUFS(8)) - 1 = 255
 
 // struct for running the diff linematch algorithm
-typedef struct diffcmppath_S DiffCmpPath;
-struct diffcmppath_S {
+declStruct(DiffCmpPath);
+struct DiffCmpPath {
     // to keep track of the total score of this path
-    int         df_lev_score;
-    Unt      pathInd;   // current index of this path
-    int         df_choice_mem[LN_DECISION_MAX + 1];
-    int         df_choice[LN_DECISION_MAX];
+    int levScore;
+    Unt pathInd;   // current index of this path
+    int choiceMem[LN_DECISION_MAX + 1];
+    int choice[LN_DECISION_MAX];
     // to keep track of this path traveled
-    DiffCmpPath   *df_decision[LN_DECISION_MAX];
-    Unt      df_optimal_choice;
+    DiffCmpPath* decision[LN_DECISION_MAX];
+    Unt optimalChoice;
 };
 
 private Unt unwrap_indexes(const int *values, const int *diff_len, const Unt ndiffs);
@@ -336,18 +337,17 @@ try_possible_paths(
          Unt unwrapped_idx_from = unwrap_indexes(from_vals, diff_len, ndiffs);
          Unt unwrapped_idx_to = unwrap_indexes(to_vals, diff_len, ndiffs);
          int matched_chars = count_n_matched_chars(current_lines, ndiffs, iwhite);
-         int score = diffcmppath[unwrapped_idx_from].df_lev_score + matched_chars;
+         int score = diffcmppath[unwrapped_idx_from].levScore + matched_chars;
 
-         if (score > diffcmppath[unwrapped_idx_to].df_lev_score) {
+         if (score > diffcmppath[unwrapped_idx_to].levScore) {
             diffcmppath[unwrapped_idx_to].pathInd = 1;
-            diffcmppath[unwrapped_idx_to].df_decision[0] =
-                     &diffcmppath[unwrapped_idx_from];
-            diffcmppath[unwrapped_idx_to].df_choice[0] = *choice;
-            diffcmppath[unwrapped_idx_to].df_lev_score = score;
-         } ei (score == diffcmppath[unwrapped_idx_to].df_lev_score) {
+            diffcmppath[unwrapped_idx_to].decision[0] = &diffcmppath[unwrapped_idx_from];
+            diffcmppath[unwrapped_idx_to].choice[0] = *choice;
+            diffcmppath[unwrapped_idx_to].levScore = score;
+         } ei (score == diffcmppath[unwrapped_idx_to].levScore) {
             Unt k = diffcmppath[unwrapped_idx_to].pathInd++;
-            diffcmppath[unwrapped_idx_to].df_decision[k] = &diffcmppath[unwrapped_idx_from];
-            diffcmppath[unwrapped_idx_to].df_choice[k] = *choice;
+            diffcmppath[unwrapped_idx_to].decision[k] = &diffcmppath[unwrapped_idx_from];
+            diffcmppath[unwrapped_idx_to].choice[k] = *choice;
          }
       }
       return;
@@ -417,7 +417,7 @@ populate_tensor(
       int choice = 0;
       Unt unwrapper_idx_to = unwrap_indexes(df_iters, diff_len, ndiffs);
 
-      diffcmppath[unwrapper_idx_to].df_lev_score = -1;
+      diffcmppath[unwrapper_idx_to].levScore = -1;
       try_possible_paths(df_iters, paths, npaths, 0, &choice, diffcmppath,
                   diff_len, ndiffs, diff_blk, iwhite);
       return;
@@ -504,10 +504,10 @@ linematch_nbuffers(
    // allocate memory here
    Unt n = (Unt)pow(2.0, (double)ndiffs);
    for (Unt i = 0; i < memsize; i++) {
-      diffcmppath[i].df_lev_score = 0;
+      diffcmppath[i].levScore = 0;
       diffcmppath[i].pathInd = 0;
       for (Unt j = 0; j < n; j++)
-          diffcmppath[i].df_choice_mem[j] = -1;
+         diffcmppath[i].choiceMem[j] = -1;
    }
 
    // memory for avoiding repetitive calculations of score
@@ -522,9 +522,9 @@ linematch_nbuffers(
    Unt n_optimal = 0;
    test_charmatch_paths(startNode, 0);
    while (startNode->pathInd > 0) {
-      Unt j = startNode->df_optimal_choice;
-      (*decisions)[n_optimal++] = startNode->df_choice[j];
-      startNode = startNode->df_decision[j];
+      Unt j = startNode->optimalChoice;
+      (*decisions)[n_optimal++] = startNode->choice[j];
+      startNode = startNode->decision[j];
    }
    // reverse array
    for (Unt i = 0; i < (n_optimal / 2); i++) {
@@ -540,32 +540,30 @@ linematch_nbuffers(
 
 // return the minimum amount of path changes from start to end
 private Ulong
-test_charmatch_paths(DiffCmpPath *node, int lastdecision) {
+test_charmatch_paths(DiffCmpPath* node, int lastdecision) {
    // memoization
-   if (node->df_choice_mem[lastdecision] == -1) {
+   if (node->choiceMem[lastdecision] == -1) {
       if (node->pathInd == 0)
-          // we have reached the end of the tree
-          node->df_choice_mem[lastdecision] = 0;
+         // we have reached the end of the tree
+         node->choiceMem[lastdecision] = 0;
       else {
          // the minimum amount of turns required to reach the end
          Ulong minimum_turns = SIZE_MAX;
          for (Ulong i = 0; i < node->pathInd; i++) {
             // recurse
-            Ulong t = test_charmatch_paths(node->df_decision[i],
-                           node->df_choice[i]) +
-                (lastdecision != node->df_choice[i] ? 1 : 0);
+            Ulong t = test_charmatch_paths( node->decision[i], node->choice[i]) 
+                        + (lastdecision != node->choice[i] ? 1 : 0);
             if (t < minimum_turns) {
-                node->df_optimal_choice = i;
-                minimum_turns = t;
+               node->optimalChoice = i;
+               minimum_turns = t;
             }
          }
-         node->df_choice_mem[lastdecision] = (int)minimum_turns;
+         node->choiceMem[lastdecision] = (int)minimum_turns;
       }
    }
 
-   return (Unt)node->df_choice_mem[lastdecision];
+   return (Unt)node->choiceMem[lastdecision];
 }
-
 
 //}}}
 
@@ -607,8 +605,8 @@ private int diff_a_works = MAYBE; // TRUE when "diff -a" works, FALSE when it
 
 // used for diff input
 typedef struct {
-   CS din_fname;  // used for external diff
-   MmFile   din_mmfile;  // used for internal diff
+   CS externalFname;  // used for external diff
+   MmFile mmfile;  // used for internal diff
 } DiffInp;
 
 // used for diff DiffResult
@@ -619,10 +617,10 @@ typedef struct {
 
 // used for recording hunks from xdiff
 typedef struct {
-   LineNr lnum_orig;
-   long count_orig;
-   LineNr lnum_new;
-   long count_new;
+   LineNr origLnum;
+   long origCount;
+   LineNr newLnum;
+   long newCount;
 } Hunk;
 
 typedef enum {
@@ -640,8 +638,8 @@ typedef struct {
     int          dio_ctxlen;   // unified diff context length
 } DiffIo;
 
-private Unt diff_buf_idx(Book *);
-private Unt diff_buf_idx_tp(Book *, Tab *);
+private Unt bookIndex(Book *);
+private Unt bookIndexInTab(Book *, Tab *);
 private void diff_mark_adjust_tp(Tab *t, Unt idx, LineNr line1, LineNr line2, long amount, long amount_after);
 private void diff_check_unchanged(Tab *t, DiffBlock *dp);
 private int checkSanity(Tab* t, DiffBlock *dp);
@@ -666,16 +664,16 @@ private int parse_diffanchors(
 
 private void
 clear_diffblock(DiffBlock *dp) {
-   ga_clear(&dp->df_changes);
+   ga_clear(&dp->changes);
    eeglFree(dp);
 }
 
 // Called when deleting or unloading a buffer: No longer make a diff with it.
 void
-diff_buf_delete(Book* book) {
+diffDeleteBook(Book* book) {
    Tab   *t;
    FOR_ALL_TABS(t) {
-      Unt i = diff_buf_idx_tp(book, t);
+      Unt i = bookIndexInTab(book, t);
       if (i != UNT) {
          t->diffbuf[i] = NULL;
          t->diff_invalid = TRUE;
@@ -689,19 +687,18 @@ diff_buf_delete(Book* book) {
    }
 }
 
-// Check if the current buffer should be added to or removed from the list of diff buffers.
+// Check if the current book should be added to or removed from the list of diff books.
 void
-diff_buf_adjust(Portal *po) {
-   Portal   *wp;
-
-   if (!po->bookOpts.diff) {
-      // When there is no portal showing a diff for this buffer, remove it from the diffs.
-      FOR_ALL_PORTALS(wp) {
-         if (wp->book == po->book && wp->bookOpts.diff)
+diffBookAdjust(Portal* port) {
+   if (!port->bookOpts.diff) {
+      // When there is no portal showing a diff for this book, remove it from the diffs.
+      Portal* po;
+      FOR_ALL_PORTALS(po) {
+         if (po->book == port->book && po->bookOpts.diff)
             break;
       } 
-      if (!wp) {
-         Unt i = diff_buf_idx(po->book);
+      if (!po) {
+         Unt i = bookIndex(port->book);
          if (i != UNT) {
             curtab->diffbuf[i] = NULL;
             curtab->diff_invalid = TRUE;
@@ -709,7 +706,7 @@ diff_buf_adjust(Portal *po) {
          }
       }
    } else
-      diff_buf_add(po->book);
+      diffAddBook(port->book);
 }
 
 // Add a buffer to make diffs for.
@@ -718,8 +715,8 @@ diff_buf_adjust(Portal *po) {
 // This must be done before any autocmd, because a command may use info
 // about the screen contents.
 void
-diff_buf_add(Book* book) {
-   if (diff_buf_idx(book) != UNT)
+diffAddBook(Book* book) {
+   if (bookIndex(book) != UNT)
       return;      // It's already there.
 
    for (int i = 0; i < DB_COUNT; ++i) {
@@ -736,7 +733,7 @@ diff_buf_add(Book* book) {
 
 // Remove all buffers to make diffs for.
 private void
-diff_buf_clear(void) {
+clearAllBooks(void) {
    for (int i = 0; i < DB_COUNT; ++i) {
       if (curtab->diffbuf[i] != NULL) {
          curtab->diffbuf[i] = NULL;
@@ -746,10 +743,10 @@ diff_buf_clear(void) {
    } 
 }
 
-// Find book in the list of diff books for the current tab.
-// Return its index or DB_COUNT if not found.
+//Find book in the list of diff books for the current tab.
+//Return its index or DB_COUNT if not found.
 private Unt
-diff_buf_idx(Book *book) {
+bookIndex(Book* book) {
    for (Unt idx = 0; idx < DB_COUNT; ++idx) {
       if (curtab->diffbuf[idx] == book)
          return idx;
@@ -760,7 +757,7 @@ diff_buf_idx(Book *book) {
 //Find buffer "book" in the list of diff buffers for tab "t". 
 //Return its index or DB_COUNT if not found
 private Unt
-diff_buf_idx_tp(Book* book, Tab* t) {
+bookIndexInTab(Book* book, Tab* t) {
    for (Unt idx = 0; idx < DB_COUNT; ++idx) {
       if (t->diffbuf[idx] == book)
          return idx;
@@ -773,7 +770,7 @@ void
 diff_invalidate(Book* book) {
    Tab   *t;
    FOR_ALL_TABS(t) {
-      Unt i = diff_buf_idx_tp(book, t);
+      Unt i = bookIndexInTab(book, t);
       if (i != UNT) {
          t->diff_invalid = TRUE;
          if (t == curtab)
@@ -793,7 +790,7 @@ diff_mark_adjust(
    Tab   *t;
    // Handle all tabs that use the current buffer in a diff.
    FOR_ALL_TABS(t) {
-      Unt idx = diff_buf_idx_tp(curBook, t);
+      Unt idx = bookIndexInTab(curBook, t);
       if (idx != UNT)
          diff_mark_adjust_tp(t, idx, line1, line2, amount, amount_after);
     }
@@ -848,26 +845,26 @@ diff_mark_adjust_tp(
       // If the change is after the previous diff block and before the next
       // diff block, thus not touching an existing change, create a new diff
       // block.  Don't do this when c_diffgetput() is busy.
-      if ((!dp || dp->df_lnum[idx] - 1 > line2
-             || (line2 == MAXLNUM && dp->df_lnum[idx] > line1))
-         && (!dprev || dprev->df_lnum[idx] + dprev->df_count[idx] < line1)
-         && !isBusyS)
-      {
+      if ((!dp || dp->lnum[idx] - 1 > line2
+             || (line2 == MAXLNUM && dp->lnum[idx] > line1))
+         && (!dprev || dprev->lnum[idx] + dprev->count[idx] < line1)
+         && !isBusyS
+      ) {
          dnext = diff_alloc_new(t, dprev, dp);
          if (!dnext)
             return;
 
-         dnext->df_lnum[idx] = line1;
-         dnext->df_count[idx] = inserted;
+         dnext->lnum[idx] = line1;
+         dnext->count[idx] = inserted;
          for (Unt i = 0; i < DB_COUNT; ++i) {
             if (t->diffbuf[i] != NULL && i != idx) {
                if (dprev == NULL)
-                  dnext->df_lnum[i] = line1;
+                  dnext->lnum[i] = line1;
                else
-                  dnext->df_lnum[i] = line1
-                      + (dprev->df_lnum[i] + dprev->df_count[i])
-                      - (dprev->df_lnum[idx] + dprev->df_count[idx]);
-               dnext->df_count[i] = deleted;
+                  dnext->lnum[i] = line1
+                      + (dprev->lnum[i] + dprev->count[i])
+                      - (dprev->lnum[idx] + dprev->count[idx]);
+               dnext->count[i] = deleted;
             }
          }
       }
@@ -887,15 +884,15 @@ diff_mark_adjust_tp(
       //      3     5  6
       //
       // compute last line of this change
-      last = dp->df_lnum[idx] + dp->df_count[idx] - 1;
+      last = dp->lnum[idx] + dp->count[idx] - 1;
 
       // 1. change completely above line1: nothing to do
       if (last >= line1 - 1) {
          if (isBusyS) {
             //Currently in the middle of updating diff blocks. All we want
             //is to adjust the line numbers and nothing else.
-            if (dp->df_lnum[idx] > line2)
-                dp->df_lnum[idx] += amount_after;
+            if (dp->lnum[idx] > line2)
+                dp->lnum[idx] += amount_after;
 
             //Advance to next entry.
             dprev = dp;
@@ -905,73 +902,72 @@ diff_mark_adjust_tp(
 
          // 6. change below line2: only adjust for amount_after; also when
          // "deleted" became zero when deleted all lines between two diffs
-         if (dp->df_lnum[idx] - (deleted + inserted != 0) > line2) {
+         if (dp->lnum[idx] - (deleted + inserted != 0) > line2) {
             if (amount_after == 0)
                break;   // nothing left to change
-            dp->df_lnum[idx] += amount_after;
+            dp->lnum[idx] += amount_after;
          } else {
             check_unchanged = FALSE;
 
             // 2. 3. 4. 5.: inserted/deleted lines touching this diff.
             if (deleted > 0) {
                off = 0;
-               if (dp->df_lnum[idx] >= line1) {
+               if (dp->lnum[idx] >= line1) {
                   if (last <= line2) {
                      // 4. delete all lines of diff
-                     if (dp->df_next != NULL && dp->df_next->df_lnum[idx] - 1 <= line2) {
+                     if (dp->df_next != NULL && dp->df_next->lnum[idx] - 1 <= line2) {
                         // delete continues in next diff, only do lines until that one
-                        n = dp->df_next->df_lnum[idx] - lnum_deleted;
+                        n = dp->df_next->lnum[idx] - lnum_deleted;
                         deleted -= n;
-                        n -= dp->df_count[idx];
-                        lnum_deleted = dp->df_next->df_lnum[idx];
-                      }
-                      else
-                     n = deleted - dp->df_count[idx];
-                      dp->df_count[idx] = 0;
+                        n -= dp->count[idx];
+                        lnum_deleted = dp->df_next->lnum[idx];
+                     } else
+                        n = deleted - dp->count[idx];
+                     dp->count[idx] = 0;
                   } else {
-                      // 5. delete lines at or just before top of diff
-                      off = dp->df_lnum[idx] - lnum_deleted;
-                      n = off;
-                      dp->df_count[idx] -= line2 - dp->df_lnum[idx] + 1;
-                      check_unchanged = TRUE;
+                     // 5. delete lines at or just before top of diff
+                     off = dp->lnum[idx] - lnum_deleted;
+                     n = off;
+                     dp->count[idx] -= line2 - dp->lnum[idx] + 1;
+                     check_unchanged = TRUE;
                   }
-                  dp->df_lnum[idx] = line1;
+                  dp->lnum[idx] = line1;
                } else {
                   if (last < line2) {
                      // 2. delete at end of diff
-                     dp->df_count[idx] -= last - lnum_deleted + 1;
-                     if (dp->df_next && dp->df_next->df_lnum[idx] - 1 <= line2) {
+                     dp->count[idx] -= last - lnum_deleted + 1;
+                     if (dp->df_next && dp->df_next->lnum[idx] - 1 <= line2) {
                         //delete continues in next diff, only do lines until that one
-                        n = dp->df_next->df_lnum[idx] - 1 - last;
-                        deleted -= dp->df_next->df_lnum[idx] - lnum_deleted;
-                        lnum_deleted = dp->df_next->df_lnum[idx];
+                        n = dp->df_next->lnum[idx] - 1 - last;
+                        deleted -= dp->df_next->lnum[idx] - lnum_deleted;
+                        lnum_deleted = dp->df_next->lnum[idx];
                      } else
                         n = line2 - last;
                      check_unchanged = TRUE;
                   } else {
                       // 3. delete lines inside the diff
                       n = 0;
-                      dp->df_count[idx] -= deleted;
+                      dp->count[idx] -= deleted;
                   }
                }
 
                for (Unt i = 0; i < DB_COUNT; ++i) {
                   if (t->diffbuf[i] != NULL && i != idx) {
-                     if (dp->df_lnum[i] > off)
-                        dp->df_lnum[i] -= off;
+                     if (dp->lnum[i] > off)
+                        dp->lnum[i] -= off;
                      else
-                        dp->df_lnum[i] = 1;
-                     dp->df_count[i] += n;
+                        dp->lnum[i] = 1;
+                     dp->count[i] += n;
                   }
                } 
             } else {
-               if (dp->df_lnum[idx] <= line1) {
+               if (dp->lnum[idx] <= line1) {
                   // inserted lines somewhere in this diff
-                  dp->df_count[idx] += inserted;
+                  dp->count[idx] += inserted;
                   check_unchanged = TRUE;
                } else
                   // inserted lines somewhere above this diff
-                  dp->df_lnum[idx] += inserted;
+                  dp->lnum[idx] += inserted;
             }
 
             if (check_unchanged)
@@ -983,11 +979,11 @@ diff_mark_adjust_tp(
 
       // check if this block touches the previous one, may merge them.
       if (dprev && !dp->isLinematched && !isBusyS
-               && dprev->df_lnum[idx] + dprev->df_count[idx] == dp->df_lnum[idx]
+               && dprev->lnum[idx] + dprev->count[idx] == dp->lnum[idx]
       ) {
          for (Unt i = 0; i < DB_COUNT; ++i) {
             if (t->diffbuf[i])
-               dprev->df_count[i] += dp->df_count[i];
+               dprev->count[i] += dp->count[i];
          } 
          dprev->df_next = dp->df_next;
          clear_diffblock(dp);
@@ -1005,7 +1001,7 @@ diff_mark_adjust_tp(
       // All counts are zero, remove this entry.
       Unt i;
       for (i = 0; i < DB_COUNT; ++i) {
-         if (t->diffbuf[i] != NULL && dp->df_count[i] != 0)
+         if (t->diffbuf[i] != NULL && dp->count[i] != 0)
             break;
       } 
       if (i == DB_COUNT) {
@@ -1046,7 +1042,7 @@ diff_alloc_new(Tab* t, DiffBlock* dprev, DiffBlock* dp) {
       dprev->df_next = dnew;
 
    dnew->has_changes = FALSE;
-   ga_init2(&dnew->df_changes, sizeof(DifflineChange), 20);
+   ga_init2(&dnew->changes, sizeof(DifflineChange), 20);
    return dnew;
 }
 
@@ -1076,24 +1072,24 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
    int off_new = 0;
    for (;;) {
       //Repeat until a line is found which is different or the number of lines has become zero.
-      while (dp->df_count[i_org] > 0) {
+      while (dp->count[i_org] > 0) {
          // Copy the line, the next ml_get() will invalidate it.
          if (dir == BACKWARD)
-            off_org = dp->df_count[i_org] - 1;
+            off_org = dp->count[i_org] - 1;
          line_org = copyStr(
-               memGetLine(t->diffbuf[i_org], dp->df_lnum[i_org] + off_org, FALSE)
+               memGetLine(t->diffbuf[i_org], dp->lnum[i_org] + off_org, FALSE)
          );
          Unt i_new;
          for (i_new = i_org + 1; i_new < DB_COUNT; ++i_new) {
             if (t->diffbuf[i_new] == NULL)
                continue;
             if (dir == BACKWARD)
-               off_new = dp->df_count[i_new] - 1;
+               off_new = dp->count[i_new] - 1;
             // if other buffer doesn't have this line, it was inserted
-            if (off_new < 0 || off_new >= dp->df_count[i_new])
+            if (off_new < 0 || off_new >= dp->count[i_new])
                break;
             if (diff_cmp(line_org, memGetLine(t->diffbuf[i_new],
-                     dp->df_lnum[i_new] + off_new, FALSE)) != 0)
+                     dp->lnum[i_new] + off_new, FALSE)) != 0)
                break;
          }
          eeglFree(line_org);
@@ -1106,8 +1102,8 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
          for (Unt i_new = i_org; i_new < DB_COUNT; ++i_new) {
             if (t->diffbuf[i_new] != NULL) {
                if (dir == FORWARD)
-                  ++dp->df_lnum[i_new];
-               --dp->df_count[i_new];
+                  ++dp->lnum[i_new];
+               --dp->count[i_new];
             }
          } 
       }
@@ -1123,7 +1119,7 @@ private int
 checkSanity(Tab* t, DiffBlock *dp) {
    for (int i = 0; i < DB_COUNT; ++i) {
       if (t->diffbuf[i] != NULL) {
-         if (dp->df_lnum[i] + dp->df_count[i] - 1 > t->diffbuf[i]->mem.lineCount)
+         if (dp->lnum[i] + dp->count[i] - 1 > t->diffbuf[i]->mem.lineCount)
             return FAIL;
       } 
    }
@@ -1132,59 +1128,59 @@ checkSanity(Tab* t, DiffBlock *dp) {
 
 //Mark all diff buffers in the current tab for redraw.
 void
-diff_redraw(int      dofold)  {    // also recompute the folds
-   Portal   *wp;
-   Portal   *wp_other = NULL;
+diff_redraw(int dofold)  {    // also recompute the folds
+   Portal   *po;
+   Portal   *other = NULL;
    int      used_max_fill_other = FALSE;
    int      used_max_fill_curPor = FALSE;
    int      n;
 
    need_diff_redraw = FALSE;
-   FOR_ALL_PORTALS(wp) {
+   FOR_ALL_PORTALS(po) {
       // when closing portals or wiping buffers skip invalid portal
-      if (!wp->bookOpts.diff || !bookIsValid(wp->book))
+      if (!po->bookOpts.diff || !bookIsValid(po->book))
           continue;
 
-      redrawPortLater(wp, UPD_SOME_VALID);
-      if (wp != curPor)
-          wp_other = wp;
-      if (dofold && wp->bookOpts.foldMethod == FOLD_DIFF)
-          foldUpdateAll(wp);
+      redrawPortLater(po, UPD_SOME_VALID);
+      if (po != curPor)
+          other = po;
+      if (dofold && po->bookOpts.foldMethod == FOLD_DIFF)
+          foldUpdateAll(po);
       //A change may have made filler lines invalid, need to take care of
       //that for other portals.
-      n = diff_check_fill(wp, wp->topLine);
-      if ((wp != curPor && wp->topFill > 0) || n > 0) {
-         if (wp->topFill > n)
-            wp->topFill = (n < 0 ? 0 : n);
-         ei (n > 0 && n > wp->topFill) {
-            wp->topFill = n;
-        if (wp == curPor)
+      n = diff_check_fill(po, po->topLine);
+      if ((po != curPor && po->topFill > 0) || n > 0) {
+         if (po->topFill > n)
+            po->topFill = (n < 0 ? 0 : n);
+         ei (n > 0 && n > po->topFill) {
+            po->topFill = n;
+        if (po == curPor)
             used_max_fill_curPor = TRUE;
-        ei (wp_other != NULL)
+        ei (other != NULL)
             used_max_fill_other = TRUE;
         }
-        check_topfill(wp, FALSE);
+        check_topfill(po, FALSE);
      }
   }
 
-  if (wp_other != NULL && curPor->bookOpts.scrollBind) {
+  if (other != NULL && curPor->bookOpts.scrollBind) {
       if (used_max_fill_curPor)
          //The current portal was set to use the maximum number of filler
          //lines, may need to reduce them.
-         diff_set_topline(wp_other, curPor);
+         diff_set_topline(other, curPor);
       ei (used_max_fill_other)
          //The other portal was set to use the maximum number of filler
          //lines, may need to reduce them.
-         diff_set_topline(curPor, wp_other);
+         diff_set_topline(curPor, other);
    }
 }
 
 private void
-clear_diffin(DiffInp *din) {
-   if (din->din_fname == NULL)
-      EE_CLEAR(din->din_mmfile.ptr);
+clear_diffin(DiffInp* din) {
+   if (din->externalFname == NULL)
+      EE_CLEAR(din->mmfile.ptr);
    else
-      mch_remove(din->din_fname);
+      mch_remove(din->externalFname);
 }
 
 private void
@@ -1197,13 +1193,13 @@ clear_diffout(DiffResult* dout) {
 
 //Write buffer "book" to a memory buffer. Return FAIL for failure.
 private int
-diff_write_buffer(Book* book, DiffInp *din, LineNr start, LineNr end) {
+diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
    if (end < 0)
       end = book->mem.lineCount;
 
    if (book->mem.flags & ML_EMPTY || end < start) {
-      din->din_mmfile.ptr = NULL;
-      din->din_mmfile.size = 0;
+      din->mmfile.ptr = NULL;
+      din->mmfile.size = 0;
       return OK;
    }
 
@@ -1225,19 +1221,19 @@ diff_write_buffer(Book* book, DiffInp *din, LineNr start, LineNr end) {
       }
       return FAIL;
    }
-   din->din_mmfile.ptr = ptr;
-   din->din_mmfile.size = len;
+   din->mmfile.ptr = ptr;
+   din->mmfile.size = len;
 
    len = 0;
    CS s;
    for (lnum = start; lnum <= end; ++lnum) {
       for (s = memGetLine(book, lnum, FALSE); *s != ZERO; ) {
          if (diff_flags & DIFF_ICASE) {
-            int c;
             int   orig_len;
             int   c_len = 1;
-            Byte   cbuf[MB_MAXBYTES + 1];
+            Byte cbuf[MB_MAXBYTES + 1];
 
+            Unt c;
             if (*s == NL)
                c = ZERO;
             else {
@@ -1272,8 +1268,8 @@ diff_write_buffer(Book* book, DiffInp *din, LineNr start, LineNr end) {
 
 //Write "book" to file or memory buffer. Return FAIL for failure.
 private int
-diff_write(Book* book, DiffInp *din, LineNr start, LineNr end) {
-   if (din->din_fname == NULL)
+diff_write(Book* book, DiffInp* din, LineNr start, LineNr end) {
+   if (din->externalFname == NULL)
       return diff_write_buffer(book, din, start, end);
       
    if (end < 0)
@@ -1289,7 +1285,7 @@ diff_write(Book* book, DiffInp *din, LineNr start, LineNr end) {
       end = start;
       book->mem.flags |= ML_EMPTY;
    }
-   int r = bookWrite( book, din->din_fname, NULL, start, end, NULL, FALSE, FALSE, FALSE, TRUE);
+   int r = bookWrite( book, din->externalFname, NULL, start, end, NULL, FALSE, FALSE, FALSE, TRUE);
    commModifierG.cmod_flags = save_cmod_flags;
    book->mem.flags = save_ml_flags;
    return r;
@@ -1310,7 +1306,7 @@ lnum_compare(const void *s1, const void *s2) {
 private void
 diff_try_update(
    DiffIo* dio,
-   int       idx_orig,
+   int idx_orig,
    Invocation* invo
 ) {  // "invo" can be NULL
 
@@ -1318,10 +1314,10 @@ diff_try_update(
       ga_init2(&dio->dio_diff.dout_ga, sizeof(char *), 1000);
    } else {
       // We need three temp file names.
-      dio->orig.din_fname = eeTempName('o', TRUE);
-      dio->new.din_fname = eeTempName('n', TRUE);
+      dio->orig.externalFname = eeTempName('o', TRUE);
+      dio->new.externalFname = eeTempName('n', TRUE);
       dio->dio_diff.dout_fname = eeTempName('d', TRUE);
-      if (!dio->orig.din_fname || !dio->new.din_fname || !dio->dio_diff.dout_fname)
+      if (!dio->orig.externalFname || !dio->new.externalFname || !dio->dio_diff.dout_fname)
          goto theend;
    }
 
@@ -1372,7 +1368,7 @@ diff_try_update(
    //Diff each section separately before combining the results. If we don't
    //have any anchors, we will have one big section of the entire file.
    for (Unt anchorInd = 0; anchorInd <= countAnchors; anchorInd++) {
-      DiffBlock   *orig_diff = NULL;
+      DiffBlock* orig_diff = NULL;
       if (anchorInd != 0) {
          orig_diff = curtab->first_diff;
          curtab->first_diff = NULL;
@@ -1380,11 +1376,11 @@ diff_try_update(
       LineNr lnum_start = (anchorInd == 0) ? 1 : anchors[idx_orig][anchorInd - 1];
       LineNr lnum_end = (anchorInd == countAnchors) ? -1 : anchors[idx_orig][anchorInd] - 1;
 
-      // Write the first buffer to a tempfile or MmFile.
+      //Write the first buffer to a tempfile or MmFile.
       book = curtab->diffbuf[idx_orig];
       if (diff_write(book, &dio->orig, lnum_start, lnum_end) == FAIL) {
          if (orig_diff) {
-            // Clean up in-progress diff blocks
+            //Clean up in-progress diff blocks
             curtab->first_diff = orig_diff;
             diff_clear(curtab);
          }
@@ -1418,12 +1414,12 @@ diff_try_update(
          // Combine the new diff blocks with the existing ones
          for (DiffBlock *dp = curtab->first_diff; dp != NULL; dp = dp->df_next) {
             for (int idx = 0; idx < DB_COUNT; idx++) {
-                if (anchors[idx][anchorInd - 1] > 0)
-               dp->df_lnum[idx] += anchors[idx][anchorInd - 1] - 1;
+               if (anchors[idx][anchorInd - 1] > 0)
+                  dp->lnum[idx] += anchors[idx][anchorInd - 1] - 1;
             }
          }
-         if (orig_diff != NULL) {
-            DiffBlock *last_diff = orig_diff;
+         if (orig_diff) {
+            DiffBlock* last_diff = orig_diff;
             while (last_diff->df_next != NULL)
                last_diff = last_diff->df_next;
             last_diff->df_next = curtab->first_diff;
@@ -1433,8 +1429,8 @@ diff_try_update(
    }
 
 theend:
-   eeglFree(dio->orig.din_fname);
-   eeglFree(dio->new.din_fname);
+   eeglFree(dio->orig.externalFname);
+   eeglFree(dio->new.externalFname);
    eeglFree(dio->dio_diff.dout_fname);
 }
 
@@ -1449,12 +1445,12 @@ diff_internal(void) {
 //Return TRUE if the internal diff failed for one of the diff buffers.
 private int
 diff_internal_failed(void) {
-  // Only need to do something when there is another buffer.
-  for (int idx = 0; idx < DB_COUNT; ++idx) {
-     if (curtab->diffbuf[idx] != NULL && curtab->diffbuf[idx]->diffFailed)
-        return TRUE;
-  } 
-  return FALSE;
+   // Only need to do something when there is another buffer.
+   for (int idx = 0; idx < DB_COUNT; ++idx) {
+      if (curtab->diffbuf[idx] != NULL && curtab->diffbuf[idx]->diffFailed)
+         return TRUE;
+   } 
+   return FALSE;
 }
 
 //Completely update the diffs for the buffers involved.
@@ -1526,14 +1522,14 @@ check_external_diff(DiffIo *diffio) {
    // May try twice, first with "-a" and then without.
    for (;;) {
       ok = FALSE;
-      fd = fopen((char *)diffio->orig.din_fname, "w");
+      fd = fopen((char *)diffio->orig.externalFname, "w");
       if (fd == NULL)
          io_error = TRUE;
       else {
          if (fwrite("line1\n", (Unt)6, (Unt)1, fd) != 1)
             io_error = TRUE;
          fclose(fd);
-         fd = fopen((char *)diffio->new.din_fname, "w");
+         fd = fopen((char *)diffio->new.externalFname, "w");
          if (fd == NULL)
             io_error = TRUE;
          else {
@@ -1559,9 +1555,9 @@ check_external_diff(DiffIo *diffio) {
                fclose(fd);
             }
             mch_remove(diffio->dio_diff.dout_fname);
-            mch_remove(diffio->new.din_fname);
+            mch_remove(diffio->new.externalFname);
          }
-         mch_remove(diffio->orig.din_fname);
+         mch_remove(diffio->orig.externalFname);
       }
 
       // When using 'diffexpr' break here.
@@ -1616,7 +1612,7 @@ diff_file_internal(DiffIo *diffio) {
    else
       emit_cb.out_line = xdiff_out_unified;
    if (xdl_diff(
-            &diffio->orig.din_mmfile, &diffio->new.din_mmfile, &param, &emit_cfg, &emit_cb
+            &diffio->orig.mmfile, &diffio->new.mmfile, &param, &emit_cfg, &emit_cb
        ) < 0
    ) {
       emsg(_(e_problem_creating_internal_diff));
@@ -1627,11 +1623,11 @@ diff_file_internal(DiffIo *diffio) {
 
 //Make a diff between files "tmp_orig" and "tmp_new", results in "tmp_diff". return OK or FAIL;
 private int
-diff_file(DiffIo *dio) {
+diff_file(DiffIo* dio) {
    CS cmd;
    Unt len;
-   CS tmp_orig = dio->orig.din_fname;
-   CS tmp_new = dio->new.din_fname;
+   CS tmp_orig = dio->orig.externalFname;
+   CS tmp_new = dio->new.externalFname;
    CS tmp_diff = dio->dio_diff.dout_fname;
 
    if (*p_dex != ZERO) {
@@ -1675,10 +1671,10 @@ diff_file(DiffIo *dio) {
 //could have been produced by autocommands, e.g. the netrw plugin).
 void
 c_diffpatch(Invocation *invo) {
-   Portal   *old_curPor = curPor;
-   Byte   *newname = NULL;   // name of patched file buffer
-   Byte   dirbuf[MAXPATHL];
-   FileStat   st;
+   Portal* old_curPor = curPor;
+   CS newname = NULL;   // name of patched file buffer
+   Byte dirbuf[MAXPATHL];
+   FileStat st;
 
    // We need two temp file names.
    CS tmp_orig = eeTempName('o', FALSE); // name of original temp file
@@ -1748,7 +1744,7 @@ c_diffpatch(Invocation *invo) {
    else {
       if (curBook->currFileName != NULL) {
          newname = copySubstr(curBook->currFileName, STRLEN(curBook->currFileName) + 4);
-         if (newname != NULL)
+         if (newname)
             STRCAT(newname, ".new");
       }
 
@@ -1837,10 +1833,10 @@ c_diffthis(Invocation *invo UNUSED) {
 }
 
 private void
-set_diff_option(Portal *wp, int value) {
+set_diff_option(Portal* po, int value) {
    Portal* old_curPor = curPor;
 
-   curPor = wp;
+   curPor = po;
    curBook = curPor->book;
    ++curBookLock;
    optChangeAndReportError(
@@ -1851,103 +1847,103 @@ set_diff_option(Portal *wp, int value) {
    curBook = curPor->book;
 }
 
-//Set options in portal "wp" for diff mode.
+//Set options in portal "po" for diff mode.
 void
-diff_win_options( Portal   *wp, int addbuf) {     // Add buffer to diff.
+diff_win_options(Portal* po, int addbuf) {     // Add buffer to diff.
    Portal* old_curPor = curPor;
 
    // close the manually opened folds
-   curPor = wp;
+   curPor = po;
    newFoldLevel();
    curPor = old_curPor;
 
    //Use @scrollbind and @cursorbind when available
-   if (!wp->bookOpts.diff)
-      wp->bookOpts.scrollBindSave = wp->bookOpts.scrollBind;
-   wp->bookOpts.scrollBind = TRUE;
-   if (!wp->bookOpts.diff)
-      wp->bookOpts.cursorBindSaved = wp->bookOpts.cursorBind;
-   wp->bookOpts.cursorBind = TRUE;
+   if (!po->bookOpts.diff)
+      po->bookOpts.scrollBindSave = po->bookOpts.scrollBind;
+   po->bookOpts.scrollBind = TRUE;
+   if (!po->bookOpts.diff)
+      po->bookOpts.cursorBindSaved = po->bookOpts.cursorBind;
+   po->bookOpts.cursorBind = TRUE;
    if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
-      if (!wp->bookOpts.diff)
-         wp->bookOpts.wrapSaved = wp->bookOpts.wrap;
-      wp->bookOpts.wrap = FALSE;
-      wp->skipCol = 0;
+      if (!po->bookOpts.diff)
+         po->bookOpts.wrapSaved = po->bookOpts.wrap;
+      po->bookOpts.wrap = FALSE;
+      po->skipCol = 0;
    }
-   if (!wp->bookOpts.diff) {
-      wp->bookOpts.foldMethodSaved = wp->bookOpts.foldMethod;
+   if (!po->bookOpts.diff) {
+      po->bookOpts.foldMethodSaved = po->bookOpts.foldMethod;
    }
-   optSetStringOptionDirectInPort(wp, S"foldmethod", S"diff", OPT_LOCAL, 0);
-   if (!wp->bookOpts.diff) {
-      wp->bookOpts.foldEnableSave = wp->bookOpts.foldEnable;
-      wp->bookOpts.foldLevelSaved = wp->bookOpts.foldLevel;
+   optSetStringOptionDirectInPort(po, S"foldmethod", S"diff", OPT_LOCAL, 0);
+   if (!po->bookOpts.diff) {
+      po->bookOpts.foldEnableSave = po->bookOpts.foldEnable;
+      po->bookOpts.foldLevelSaved = po->bookOpts.foldLevel;
    }
-   wp->bookOpts.foldEnable = TRUE;
-   wp->bookOpts.foldLevel = 0;
-   foldUpdateAll(wp);
+   po->bookOpts.foldEnable = TRUE;
+   po->bookOpts.foldLevel = 0;
+   foldUpdateAll(po);
    // make sure topline is not halfway a fold
-   didChangePortalSetting(wp);
+   didChangePortalSetting(po);
    if ((p_sbo & SCR_HOR) != 0)
       executeCommLine((CS)"set sbo+=hor");
    // Save the current values, to be restored in c_diffoff().
-   wp->bookOpts.diffSaved = TRUE;
+   po->bookOpts.diffSaved = TRUE;
 
-   set_diff_option(wp, TRUE);
+   set_diff_option(po, TRUE);
 
    if (addbuf)
-      diff_buf_add(wp->book);
-   redrawPortLater(wp, UPD_NOT_VALID);
+      diffAddBook(po->book);
+   redrawPortLater(po, UPD_NOT_VALID);
 }
 
 //Set options not to show diffs. For the current portal or all portals. Only in the current tab.
 void
-c_diffoff(Invocation *invo) {
-   Portal   *wp;
+c_diffoff(Invocation* invo) {
    int diffwin = FALSE;
 
-   FOR_ALL_PORTALS(wp) {
-      if (invo->forceit ? wp->bookOpts.diff : wp == curPor) {
+   Portal   *po;
+   FOR_ALL_PORTALS(po) {
+      if (invo->forceit ? po->bookOpts.diff : po == curPor) {
           // Set 'diff' off. If option values were saved in
           // diff_win_options(), restore the ones whose settings seem to have
           // been left over from diff mode.
-          set_diff_option(wp, FALSE);
+          set_diff_option(po, FALSE);
 
-         if (wp->bookOpts.diffSaved) {
-            if (wp->bookOpts.scrollBind)
-                wp->bookOpts.scrollBind = wp->bookOpts.scrollBindSave;
-            if (wp->bookOpts.cursorBind)
-                wp->bookOpts.cursorBind = wp->bookOpts.cursorBindSaved;
+         if (po->bookOpts.diffSaved) {
+            if (po->bookOpts.scrollBind)
+                po->bookOpts.scrollBind = po->bookOpts.scrollBindSave;
+            if (po->bookOpts.cursorBind)
+                po->bookOpts.cursorBind = po->bookOpts.cursorBindSaved;
             if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
-               if (!wp->bookOpts.wrap && wp->bookOpts.wrapSaved) {
-                  wp->bookOpts.wrap = TRUE;
-                  wp->leftCol = 0;
+               if (!po->bookOpts.wrap && po->bookOpts.wrapSaved) {
+                  po->bookOpts.wrap = TRUE;
+                  po->leftCol = 0;
                }
             }
-            wp->bookOpts.foldMethod = wp->bookOpts.foldMethodSaved;
+            po->bookOpts.foldMethod = po->bookOpts.foldMethodSaved;
 
-            if (wp->bookOpts.foldLevel == 0)
-                wp->bookOpts.foldLevel = wp->bookOpts.foldLevelSaved;
+            if (po->bookOpts.foldLevel == 0)
+                po->bookOpts.foldLevel = po->bookOpts.foldLevelSaved;
 
-            if (wp->bookOpts.foldEnable)
-               wp->bookOpts.foldEnable = wp->bookOpts.foldEnableSave;
+            if (po->bookOpts.foldEnable)
+               po->bookOpts.foldEnable = po->bookOpts.foldEnableSave;
 
-            foldUpdateAll(wp);
+            foldUpdateAll(po);
          }
          //remove filler lines
-         wp->topFill = 0;
+         po->topFill = 0;
 
          // make sure topline is not halfway a fold and cursor is invalidated
-         didChangePortalSetting(wp);
+         didChangePortalSetting(po);
 
          // Note: 'sbo' is not restored, it's a global option.
-         diff_buf_adjust(wp);
+         diffBookAdjust(po);
       }
-      diffwin |= wp->bookOpts.diff;
+      diffwin |= po->bookOpts.diff;
    }
 
    // Also remove hidden buffers from the list.
    if (invo->forceit)
-      diff_buf_clear();
+      clearAllBooks();
 
    if (!diffwin) {
       needUpdateS = false;
@@ -2061,7 +2057,7 @@ diff_read(
 
       //Go over blocks before the change, for which orig and new are equal.
       //Copy blocks from orig to new.
-      while (dp && hunk->lnum_orig > dp->df_lnum[idx_orig] + dp->df_count[idx_orig]) {
+      while (dp && hunk->origLnum > dp->lnum[idx_orig] + dp->count[idx_orig]) {
          if (notset)
             diff_copy_entry(dprev, dp, idx_orig, idx_new);
          dprev = dp;
@@ -2070,67 +2066,67 @@ diff_read(
       }
 
       if (dp
-         && hunk->lnum_orig <= dp->df_lnum[idx_orig] + dp->df_count[idx_orig]
-         && hunk->lnum_orig + hunk->count_orig >= dp->df_lnum[idx_orig]
+         && hunk->origLnum <= dp->lnum[idx_orig] + dp->count[idx_orig]
+         && hunk->origLnum + hunk->origCount >= dp->lnum[idx_orig]
       ) {
          // New block overlaps with existing block(s).
          // First find last block that overlaps.
          for (dpl = dp; dpl->df_next != NULL; dpl = dpl->df_next)
-            if (hunk->lnum_orig + hunk->count_orig < dpl->df_next->df_lnum[idx_orig])
+            if (hunk->origLnum + hunk->origCount < dpl->df_next->lnum[idx_orig])
                 break;
 
          // If the newly found block starts before the old one, set the
          // start back a number of lines.
-         off = dp->df_lnum[idx_orig] - hunk->lnum_orig;
+         off = dp->lnum[idx_orig] - hunk->origLnum;
          if (off > 0) {
             for (i = idx_orig; i < idx_new; ++i) {
                if (curtab->diffbuf[i] != NULL) {
-                  dp->df_lnum[i] -= off;
-                  dp->df_count[i] += off;
+                  dp->lnum[i] -= off;
+                  dp->count[i] += off;
                }
             } 
-            dp->df_lnum[idx_new] = hunk->lnum_new;
-            dp->df_count[idx_new] = hunk->count_new;
+            dp->lnum[idx_new] = hunk->newLnum;
+            dp->count[idx_new] = hunk->newCount;
          } ei (notset) {
             // new block inside existing one, adjust new block
-            dp->df_lnum[idx_new] = hunk->lnum_new + off;
-            dp->df_count[idx_new] = hunk->count_new - off;
+            dp->lnum[idx_new] = hunk->newLnum + off;
+            dp->count[idx_new] = hunk->newCount - off;
          } else {
             // second overlap of new block with existing block
 
             //if this hunk has different orig/new counts, adjust
             //the diff block size first. When we handled the first hunk we
             //would have expanded it to fit, without knowing that this hunk exists
-            int orig_size_in_dp = MIN(hunk->count_orig,
-               dp->df_lnum[idx_orig] +
-               dp->df_count[idx_orig] - hunk->lnum_orig);
-            int size_diff = hunk->count_new - orig_size_in_dp;
-            dp->df_count[idx_new] += size_diff;
+            int orig_size_in_dp = MIN(hunk->origCount,
+               dp->lnum[idx_orig] +
+               dp->count[idx_orig] - hunk->origLnum);
+            int size_diff = hunk->newCount - orig_size_in_dp;
+            dp->count[idx_new] += size_diff;
 
             // grow existing block to include the overlap completely
-            off = hunk->lnum_new + hunk->count_new
-                - (dp->df_lnum[idx_new] + dp->df_count[idx_new]);
+            off = hunk->newLnum + hunk->newCount
+                - (dp->lnum[idx_new] + dp->count[idx_new]);
             if (off > 0)
-                dp->df_count[idx_new] += off;
+                dp->count[idx_new] += off;
          }
 
          // Adjust the size of the block to include all the lines to the
          // end of the existing block or the new diff, whatever ends last.
-         off = (hunk->lnum_orig + hunk->count_orig)
-                - (dpl->df_lnum[idx_orig] + dpl->df_count[idx_orig]);
+         off = (hunk->origLnum + hunk->origCount)
+                - (dpl->lnum[idx_orig] + dpl->count[idx_orig]);
          if (off < 0) {
             //new change ends in existing block, adjust the end. We only
             //need to do this once per block or we will over-adjust.
             if (notset || dp != dpl) {
                //adjusting by 'off' here is only correct if there is not another hunk in this block. we
                //adjust for this when we encounter a second overlap later.
-               dp->df_count[idx_new] += -off;
+               dp->count[idx_new] += -off;
             }
             off = 0;
          }
          for (i = idx_orig; i < idx_new; ++i) {
             if (curtab->diffbuf[i] != NULL)
-                dp->df_count[i] = dpl->df_lnum[i] + dpl->df_count[i] - dp->df_lnum[i] + off;
+                dp->count[i] = dpl->lnum[i] + dpl->count[i] - dp->lnum[i] + off;
          } 
 
          // Delete the diff blocks that have been merged into one.
@@ -2147,10 +2143,10 @@ diff_read(
          if (!dp)
             goto done;
 
-         dp->df_lnum[idx_orig] = hunk->lnum_orig;
-         dp->df_count[idx_orig] = hunk->count_orig;
-         dp->df_lnum[idx_new] = hunk->lnum_new;
-         dp->df_count[idx_new] = hunk->count_new;
+         dp->lnum[idx_orig] = hunk->origLnum;
+         dp->count[idx_orig] = hunk->origCount;
+         dp->lnum[idx_new] = hunk->newLnum;
+         dp->count[idx_new] = hunk->newCount;
 
          // Set values for other buffers, these must be equal to the
          // original buffer, otherwise there would have been a change
@@ -2192,10 +2188,10 @@ diff_copy_entry(
    if (dprev == NULL)
       off = 0;
    else
-      off = (dprev->df_lnum[idx_orig] + dprev->df_count[idx_orig])
-       - (dprev->df_lnum[idx_new] + dprev->df_count[idx_new]);
-   dp->df_lnum[idx_new] = dp->df_lnum[idx_orig] - off;
-   dp->df_count[idx_new] = dp->df_count[idx_orig];
+      off = (dprev->lnum[idx_orig] + dprev->count[idx_orig])
+       - (dprev->lnum[idx_new] + dprev->count[idx_new]);
+   dp->lnum[idx_new] = dp->lnum[idx_orig] - off;
+   dp->count[idx_new] = dp->count[idx_orig];
 }
 
 //Clear the list of diffblocks for tab "t".
@@ -2222,9 +2218,9 @@ diff_linematch(DiffBlock *dp) {
       if (curtab->diffbuf[i] != NULL) {
          //for the rare case (bug?) that the count of a diff block is negative, do not run the 
          //algorithm because this will try to allocate a negative amount of space and crash
-         if (dp->df_count[i] < 0)
+         if (dp->count[i] < 0)
             return FALSE;
-         tsize += dp->df_count[i];
+         tsize += dp->count[i];
       }
    }
 
@@ -2238,8 +2234,8 @@ get_max_diff_length(const DiffBlock* dp) {
 
    for (int k = 0; k < DB_COUNT; k++) {
       if (curtab->diffbuf[k] != NULL) {
-         if (dp->df_count[k] > maxlength)
-            maxlength = dp->df_count[k];
+         if (dp->count[k] > maxlength)
+            maxlength = dp->count[k];
       }
    }
    return maxlength;
@@ -2269,8 +2265,8 @@ find_top_diff_block(
 
       // check if the fromwin topline is matched by the current diff. if so,
       // set it to the top of the diff block
-      if (topline >= topdiff->df_lnum[fromidx] && topline <=
-         (topdiff->df_lnum[fromidx] + topdiff->df_count[fromidx]))
+      if (topline >= topdiff->lnum[fromidx] && topline <=
+         (topdiff->lnum[fromidx] + topdiff->count[fromidx]))
       {
          // this line is inside the current diff block, so we will save the
          // top block of the set of blocks to refer to later
@@ -2279,8 +2275,8 @@ find_top_diff_block(
       }
 
       // check if the next set of overlapping diff blocks is next
-      if (!(topdiff->df_next && (topdiff->df_next->df_lnum[fromidx] ==
-            (topdiff->df_lnum[fromidx] + topdiff->df_count[fromidx])))
+      if (!(topdiff->df_next && (topdiff->df_next->lnum[fromidx] ==
+            (topdiff->lnum[fromidx] + topdiff->count[fromidx])))
       ) {
          // mark that the next diff block is belongs to a different set of overlapping diff blocks
          topdiffchange = 1;
@@ -2318,13 +2314,13 @@ calculate_topfill_and_topline(
    // passed in the source buffer. There could be multiple diff blocks if
    // there are adjacent empty blocks (count == 0 at fromidx).
    DiffBlock *curdif = thistopdiff;
-   while (curdif && (curdif->df_lnum[fromidx] + curdif->df_count[fromidx]) <= from_topline) {
+   while (curdif && (curdif->lnum[fromidx] + curdif->count[fromidx]) <= from_topline) {
       virtual_lines_passed += get_max_diff_length(curdif);
       curdif = curdif->df_next;
    }
 
    if (curdif != next_adjacent_blocks)
-      virtual_lines_passed += from_topline - curdif->df_lnum[fromidx];
+      virtual_lines_passed += from_topline - curdif->lnum[fromidx];
    virtual_lines_passed -= from_topfill;
 
    //clamp negative values in case from_topfill hasn't been updated yet and
@@ -2334,12 +2330,12 @@ calculate_topfill_and_topline(
       virtual_lines_passed = 0;
 
    //move the same amount of virtual lines in the target buffer to find the cursor's line number
-   int curlinenum_to = thistopdiff->df_lnum[toidx];
+   int curlinenum_to = thistopdiff->lnum[toidx];
 
    int virt_lines_left = virtual_lines_passed;
    curdif = thistopdiff;
    while (virt_lines_left > 0 && curdif != NULL && curdif != next_adjacent_blocks) {
-      curlinenum_to += MIN(virt_lines_left, curdif->df_count[toidx]);
+      curlinenum_to += MIN(virt_lines_left, curdif->count[toidx]);
       virt_lines_left -= MIN(virt_lines_left, get_max_diff_length(curdif));
       curdif = curdif->df_next;
    }
@@ -2348,11 +2344,11 @@ calculate_topfill_and_topline(
    //the found line in the target buffer
    int max_virt_lines = 0;
    for (DiffBlock *dp = thistopdiff; dp != NULL; dp = dp->df_next) {
-      if (dp->df_lnum[toidx] + dp->df_count[toidx] <= curlinenum_to)
+      if (dp->lnum[toidx] + dp->count[toidx] <= curlinenum_to)
           max_virt_lines += get_max_diff_length(dp);
       else {
-         if (dp->df_lnum[toidx] <= curlinenum_to)
-            max_virt_lines += curlinenum_to - dp->df_lnum[toidx];
+         if (dp->lnum[toidx] <= curlinenum_to)
+            max_virt_lines += curlinenum_to - dp->lnum[toidx];
          break;
       }
    }
@@ -2378,8 +2374,8 @@ apply_linematch_results(
 
    for (int i = 0; i < DB_COUNT; i++) {
       if (curtab->diffbuf[i] != NULL) {
-         line_numbers[i] = dp->df_lnum[i];
-         dp->df_count[i] = 0;
+         line_numbers[i] = dp->lnum[i];
+         dp->count[i] = 0;
 
          //Keep track of the index of the diff buffer we are using here. We will use this to write 
          //the output of the algorithm to DiffBlock structs at the correct indexes
@@ -2399,15 +2395,15 @@ apply_linematch_results(
          dp_s->isLinematched = true;
          for (int j = 0; j < DB_COUNT; j++) {
             if (curtab->diffbuf[j] != NULL) {
-               dp_s->df_lnum[j] = line_numbers[j];
-               dp_s->df_count[j] = 0;
+               dp_s->lnum[j] = line_numbers[j];
+               dp_s->count[j] = 0;
             }
          }
       }
       for (Unt j = 0; j < ndiffs; j++) {
          if (decisions[i] & (1 << j)) {
             // will need to use the map here
-            dp_s->df_count[outputmap[j]]++;
+            dp_s->count[outputmap[j]]++;
             line_numbers[outputmap[j]]++;
          }
       }
@@ -2426,18 +2422,18 @@ run_linematch_algorithm(DiffBlock *dp) {
    for (int i = 0; i < DB_COUNT; i++) {
       if (curtab->diffbuf[i] != NULL) {
          // write the contents of the entire buffer to diffbufs_mm[diffbuffers_count]
-         if (dp->df_count[i] > 0) {
+         if (dp->count[i] > 0) {
             diff_write_buffer(curtab->diffbuf[i], &diffbufs_mm[ndiffs],
-               dp->df_lnum[i], dp->df_lnum[i] + dp->df_count[i] - 1);
+               dp->lnum[i], dp->lnum[i] + dp->count[i] - 1);
          } else {
-            diffbufs_mm[ndiffs].din_mmfile.size = 0;
-            diffbufs_mm[ndiffs].din_mmfile.ptr = NULL;
+            diffbufs_mm[ndiffs].mmfile.size = 0;
+            diffbufs_mm[ndiffs].mmfile.ptr = NULL;
          }
 
-         diffbufs[ndiffs] = &diffbufs_mm[ndiffs].din_mmfile;
+         diffbufs[ndiffs] = &diffbufs_mm[ndiffs].mmfile;
 
          // keep track of the length of this diff block to pass it to the linematch algorithm
-         diff_length[ndiffs] = dp->df_count[i];
+         diff_length[ndiffs] = dp->count[i];
 
          // increment the amount of diff buffers we are passing to the algorithm
          ndiffs++;
@@ -2451,7 +2447,7 @@ run_linematch_algorithm(DiffBlock *dp) {
    Unt decisions_length = linematch_nbuffers(diffbufs, diff_length, ndiffs, &decisions, iwhite);
 
    for (Unt i = 0; i < ndiffs; i++)
-      free(diffbufs_mm[i].din_mmfile.ptr); // TODO should this be eeglFree ?
+      free(diffbufs_mm[i].mmfile.ptr); // TODO should this be eeglFree ?
 
    apply_linematch_results(dp, decisions_length, decisions);
 
@@ -2472,10 +2468,10 @@ run_linematch_algorithm(DiffBlock *dp) {
 //Note that it's possible for a changed/added/deleted line to also have filler
 //lines above it. This happens when using linematch or using diff anchors (at the anchored lines).
 int
-diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestatus) {
+diff_check_with_linestatus(Portal *po, LineNr lnum, OUT LineDiffStatus* linestatus) {
    DiffBlock   *dp;
    int      maxcount;
-   Book* book = wp->book;
+   Book* book = po->book;
    int      cmp;
 
    if (linestatus)
@@ -2484,32 +2480,32 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
    if (curtab->diff_invalid)
       c_diffupdate(NULL);      // update after a big change
 
-   if (curtab->first_diff == NULL || !wp->bookOpts.diff)   // no diffs at all
+   if (curtab->first_diff == NULL || !po->bookOpts.diff)   // no diffs at all
       return 0;
 
    //safety check: "lnum" must be a buffer line
    if (lnum < 1 || lnum > book->mem.lineCount + 1)
       return 0;
 
-   Unt idx = diff_buf_idx(book);      // index in diffbuf[] for this buffer
+   Unt idx = bookIndex(book);      // index in diffbuf[] for this buffer
    if (idx == UNT)
       return 0;      // no diffs for buffer "book"
 
    //A closed fold never has filler lines.
-   if (getFoldsPortal(wp, lnum, NULL, NULL, TRUE, NULL))
+   if (getFoldsPortal(po, lnum, NULL, NULL, TRUE, NULL))
       return 0;
 
    //search for a change that includes "lnum" in the list of diffblocks.
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
-      if (lnum <= dp->df_lnum[idx] + dp->df_count[idx])
+      if (lnum <= dp->lnum[idx] + dp->count[idx])
          break;
    } 
-   if (dp == NULL || lnum < dp->df_lnum[idx])
+   if (dp == NULL || lnum < dp->lnum[idx])
       return 0;
 
    //Don't run linematch when lnum is offscreen.  Useful for scrollbind
    //calculations which need to count all the filler lines above the screen.
-   if (lnum >= wp->topLine && lnum < wp->bottomLine
+   if (lnum >= po->topLine && lnum < po->bottomLine
             && !dp->isLinematched && diff_linematch(dp)
             && checkSanity(curtab, dp))
       run_linematch_algorithm(dp);
@@ -2517,11 +2513,11 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
    //Insert filler lines above the line just below the change.  Will return 0
    //when this buf had the max count.
    int num_fill = 0;
-   while (lnum == dp->df_lnum[idx] + dp->df_count[idx]) {
+   while (lnum == dp->lnum[idx] + dp->count[idx]) {
       // Only calculate fill lines if 'diffopt' contains "filler". Otherwise return 0 filler lines
       if ((diff_flags & DIFF_FILLER) != 0) {
          maxcount = get_max_diff_length(dp);
-         num_fill += maxcount - dp->df_count[idx];
+         num_fill += maxcount - dp->count[idx];
       }
 
       //If there are adjacent blocks (e.g. linematch or anchor), loop through them. It's possible 
@@ -2529,14 +2525,14 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
       //This also helps us find the last diff block in the list of adjacent
       //blocks which is necessary when it is a change/inserted line right after added lines.
       if (dp->df_next != NULL
-            && lnum >= dp->df_next->df_lnum[idx]
-            && lnum <= dp->df_next->df_lnum[idx] + dp->df_next->df_count[idx])
+            && lnum >= dp->df_next->lnum[idx]
+            && lnum <= dp->df_next->lnum[idx] + dp->df_next->count[idx])
          dp = dp->df_next;
       else
          break;
    }
 
-   if (lnum < dp->df_lnum[idx] + dp->df_count[idx]) {
+   if (lnum < dp->lnum[idx] + dp->count[idx]) {
       int zero = FALSE;
 
       //Changed or inserted line. If the other buffers have a count of 0, the lines were 
@@ -2544,10 +2540,10 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
       cmp = FALSE;
       for (Unt i = 0; i < DB_COUNT; ++i) {
          if (i != idx && curtab->diffbuf[i] != NULL) {
-            if (dp->df_count[i] == 0)
+            if (dp->count[i] == 0)
                zero = TRUE;
             else {
-               if (dp->df_count[i] != dp->df_count[idx]) {
+               if (dp->count[i] != dp->count[idx]) {
                   if (linestatus)
                      *linestatus = LINE_STATUS_CHANGED;   // nr of lines changed.
                   return num_fill;
@@ -2560,7 +2556,7 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
          //Compare all lines.  If they are equal the lines were inserted
          //in some books, deleted in others, but not changed.
          for (Unt i = 0; i < DB_COUNT; ++i) {
-            if ((i != idx && curtab->diffbuf[i] != NULL && dp->df_count[i] != 0)
+            if ((i != idx && curtab->diffbuf[i] != NULL && dp->count[i] != 0)
                && (!diff_equal_entry(dp, idx, i))
             ) {
                if (linestatus)
@@ -2584,13 +2580,13 @@ diff_check_with_linestatus(Portal *wp, LineNr lnum, OUT LineDiffStatus* linestat
 // Compare two entries in diff "*dp" and return TRUE if they are equal.
 private int
 diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2) {
-   if (dp->df_count[idx1] != dp->df_count[idx2])
+   if (dp->count[idx1] != dp->count[idx2])
       return FALSE;
    if (checkSanity(curtab, dp) == FAIL)
       return FALSE;
-   for (int i = 0; i < dp->df_count[idx1]; ++i) {
-      CS line = copyStr(memGetLine(curtab->diffbuf[idx1], dp->df_lnum[idx1] + i, FALSE));
-      int cmp = diff_cmp(line, memGetLine(curtab->diffbuf[idx2], dp->df_lnum[idx2] + i, FALSE));
+   for (int i = 0; i < dp->count[idx1]; ++i) {
+      CS line = copyStr(memGetLine(curtab->diffbuf[idx1], dp->lnum[idx1] + i, FALSE));
+      int cmp = diff_cmp(line, memGetLine(curtab->diffbuf[idx2], dp->lnum[idx2] + i, FALSE));
       eeglFree(line);
       if (cmp != 0)
          return FALSE;
@@ -2662,11 +2658,11 @@ diff_cmp(Byte *s1, Byte *s2){
 
 // Return the number of filler lines above "lnum".
 int
-diff_check_fill(Portal *wp, LineNr lnum){
+diff_check_fill(Portal *po, LineNr lnum){
    // be quick when there are no filler lines
    if ((diff_flags & DIFF_FILLER) == 0)
       return 0;
-   int n = diff_check_with_linestatus(wp, lnum, NULL);
+   int n = diff_check_with_linestatus(po, lnum, NULL);
    if (n <= 0)
       return 0;
    return n;
@@ -2681,7 +2677,7 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
    Unt      toidx;
    DiffBlock   *dp;
 
-   Unt fromidx = diff_buf_idx(fromBook);
+   Unt fromidx = bookIndex(fromBook);
    if (fromidx == UNT)
       return;      // safety check
 
@@ -2692,7 +2688,7 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
 
    // search for a change that includes "lnum" in the list of diffblocks.
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
-      if (lnum <= dp->df_lnum[fromidx] + dp->df_count[fromidx])
+      if (lnum <= dp->lnum[fromidx] + dp->count[fromidx])
           break;
    } 
    if (!dp) {
@@ -2700,12 +2696,12 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
       toPort->topLine = toPort->book->mem.lineCount - (fromBook->mem.lineCount - lnum);
    } else {
       // Find index for "towin".
-      toidx = diff_buf_idx(toPort->book);
+      toidx = bookIndex(toPort->book);
       if (toidx == UNT)
          return;      // safety check
 
-      toPort->topLine = lnum + (dp->df_lnum[toidx] - dp->df_lnum[fromidx]);
-      if (lnum >= dp->df_lnum[fromidx]) {
+      toPort->topLine = lnum + (dp->lnum[toidx] - dp->lnum[fromidx]);
+      if (lnum >= dp->lnum[fromidx]) {
          calculate_topfill_and_topline(fromidx, toidx,
                       fromPort->topLine,
                       fromPort->topFill,
@@ -2988,18 +2984,18 @@ diff_update_line(LineNr lnum) {
       // We only care if we are doing inline-diff where we cache the diff results
       return;
 
-   Unt idx = diff_buf_idx(curBook);
+   Unt idx = bookIndex(curBook);
    if (idx == UNT)
       return;
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
-      if (lnum <= dp->df_lnum[idx] + dp->df_count[idx])
+      if (lnum <= dp->lnum[idx] + dp->count[idx])
           break;
    } 
 
    // clear the inline change cache as it's invalid
    if (dp != NULL) {
       dp->has_changes = FALSE;
-      dp->df_changes.len = 0;
+      dp->changes.len = 0;
    }
 }
 
@@ -3054,7 +3050,7 @@ diff_change_parse(
 //Return TRUE if the line was added, no other buffer has it.
 private int
 diff_find_change_simple(
-   Portal* wp,
+   Portal* po,
    LineNr lnum,
    DiffBlock* dp,
    int idx,
@@ -3076,21 +3072,21 @@ diff_find_change_simple(
       line_org = NULL;
    } else {
       // Make a copy of the line, the next ml_get() will invalidate it.
-      line_org = copyStr(memGetLine(wp->book, lnum, FALSE));
+      line_org = copyStr(memGetLine(po->book, lnum, FALSE));
    }
 
-   off = lnum - dp->df_lnum[idx];
+   off = lnum - dp->lnum[idx];
 
    for (i = 0; i < DB_COUNT; ++i) {
       if (curtab->diffbuf[i] != NULL && i != idx) {
          // Skip lines that are not in the other change (filler lines).
-         if (off >= dp->df_count[i])
+         if (off >= dp->count[i])
             continue;
          added = FALSE;
          if (diff_flags & DIFF_INLINE_NONE)
             break; // early terminate as we only care about the return value
 
-         line_new = memGetLine(curtab->diffbuf[i], dp->df_lnum[i] + off, FALSE);
+         line_new = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, FALSE);
 
          // Search for start of difference
          si_org = si_new = 0;
@@ -3182,8 +3178,8 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
       while (dp && dp->df_next) {
          // Only use first buffer to calculate the gap because the gap is
          // unchanged text, which would be the same in all buffers.
-         if (dp->df_lnum[idx1] + dp->df_count[idx1] - 1 >= linemap[idx1].len
-             || dp->df_next->df_lnum[idx1] - 1 >= linemap[idx1].len
+         if (dp->lnum[idx1] + dp->count[idx1] - 1 >= linemap[idx1].len
+             || dp->df_next->lnum[idx1] - 1 >= linemap[idx1].len
          ) {
             dp = dp->df_next;
             continue;
@@ -3191,26 +3187,26 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
 
          // If the gap occurs over different lines, don't consider it
          LinemapEntry *entry1 = 
-            &((LinemapEntry*)linemap[idx1].c)[dp->df_lnum[idx1] + dp->df_count[idx1] - 1];
+            &((LinemapEntry*)linemap[idx1].c)[dp->lnum[idx1] + dp->count[idx1] - 1];
          LinemapEntry *entry2 = 
-            &((LinemapEntry*)linemap[idx1].c)[dp->df_next->df_lnum[idx1] - 1];
+            &((LinemapEntry*)linemap[idx1].c)[dp->df_next->lnum[idx1] - 1];
          if (entry1->lineoff != entry2->lineoff) {
             dp = dp->df_next;
             continue;
          }
 
-         LineNr gap = dp->df_next->df_lnum[idx1] - (dp->df_lnum[idx1] + dp->df_count[idx1]);
+         LineNr gap = dp->df_next->lnum[idx1] - (dp->lnum[idx1] + dp->count[idx1]);
          if (gap <= 3) {
             LineNr max_df_count = 0;
             for (int i = 0; i < DB_COUNT; i++)
-               max_df_count = MAX(max_df_count, dp->df_count[i] + dp->df_next->df_count[i]);
+               max_df_count = MAX(max_df_count, dp->count[i] + dp->df_next->count[i]);
 
             if (max_df_count >= gap * 4) {
                // Merge current block with the next one. Don't advance the
                // pointer so we try the same merged block against the next one.
                for (int i = 0; i < DB_COUNT; i++) {
-                  dp->df_count[i] = dp->df_next->df_lnum[i]
-                      + dp->df_next->df_count[i] - dp->df_lnum[i];
+                  dp->count[i] = dp->df_next->lnum[i]
+                      + dp->df_next->count[i] - dp->lnum[i];
                }
                DiffBlock *dp_next = dp->df_next;
                dp->df_next = dp_next->df_next;
@@ -3276,7 +3272,7 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
       if (book == NULL || book->mem.mfile == NULL)
          continue; // skip buffer that isn't loaded
 
-      if (dp->df_count[i] == 0) {
+      if (dp->count[i] == 0) {
          // skip buffers that don't have any texts in this block so we don't
          // end up marking the entire block as modified in multi-buffer diff
          curtab->diffbuf[i] = NULL;
@@ -3293,8 +3289,8 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
 
       // Split each line into chars/words and populate fake file buffer as
       // newline-delimited tokens as that's what xdiff requires.
-      for (int off = 0; off < dp->df_count[i]; off++) {
-         CS curline = memGetLine(curtab->diffbuf[i], dp->df_lnum[i] + off, FALSE);
+      for (int off = 0; off < dp->count[i]; off++) {
+         CS curline = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, FALSE);
 
          int in_keyword = FALSE;
 
@@ -3430,11 +3426,11 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
       }
 
       if (file1_idx != i) {
-         dio.new.din_mmfile.ptr = curstr->c;
-         dio.new.din_mmfile.size = curstr->len;
+         dio.new.mmfile.ptr = curstr->c;
+         dio.new.mmfile.size = curstr->len;
       } else {
-         dio.orig.din_mmfile.ptr = curstr->c;
-         dio.orig.din_mmfile.size = curstr->len;
+         dio.orig.mmfile.ptr = curstr->c;
+         dio.orig.mmfile.size = curstr->len;
       }
       if (file1_idx != i) {
          // Perform diff with first file and read the results
@@ -3453,15 +3449,15 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
 
    //After the diff, use the linemap to obtain the original line/col of the
    //changes and cache them in dp.
-   dp->df_changes.len = 0; // this should already be zero
+   dp->changes.len = 0; // this should already be zero
    for (; new_diff; new_diff = new_diff->df_next) {
       DifflineChange change;
       CLEAR_FIELD(change);
       for (int i = 0; i < DB_COUNT; i++) {
-         if (new_diff->df_lnum[i] <= 0) // should never be < 0. Checking just for safety.
+         if (new_diff->lnum[i] <= 0) // should never be < 0. Checking just for safety.
             continue;
-         LineNr diff_lnum = new_diff->df_lnum[i] - 1; // use zero-index
-         LineNr diff_lnum_end = diff_lnum + new_diff->df_count[i];
+         LineNr diff_lnum = new_diff->lnum[i] - 1; // use zero-index
+         LineNr diff_lnum_end = diff_lnum + new_diff->count[i];
 
          if (diff_lnum >= linemap[i].len) {
             change.dc_start[i] = MAXCOL;
@@ -3482,12 +3478,12 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
             change.dc_end_lnum_off[i] = ((LinemapEntry*)linemap[i].c)[diff_lnum_end-1].lineoff;
          }
       }
-      if (ga_grow(&dp->df_changes, 1) != OK) {
-          dp->df_changes.len = 0;
+      if (ga_grow(&dp->changes, 1) != OK) {
+          dp->changes.len = 0;
           goto done;
       }
-      ((DifflineChange*)(dp->df_changes.c))[dp->df_changes.len] = change;
-      dp->df_changes.len += 1;
+      ((DifflineChange*)(dp->changes.c))[dp->changes.len] = change;
+      dp->changes.len += 1;
    }
 
 done:
@@ -3512,28 +3508,28 @@ done:
 // Return TRUE if the line was added, no other buffer has it.
 int
 diff_find_change(
-   Portal* wp,
+   Portal* po,
    LineNr lnum,
    DiffLine* diffline
 ){
 
-   Unt idx = diff_buf_idx(wp->book);
+   Unt idx = bookIndex(po->book);
    if (idx == UNT)   // cannot happen
       return FALSE;
 
    // search for a change that includes "lnum" in the list of diffblocks.
    DiffBlock   *dp;
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
-      if (lnum < dp->df_lnum[idx] + dp->df_count[idx])
+      if (lnum < dp->lnum[idx] + dp->count[idx])
          break;
    } 
    if (!dp || checkSanity(curtab, dp) == FAIL)
       return FALSE;
 
-   if (lnum - dp->df_lnum[idx] > INT_MAX)
+   if (lnum - dp->lnum[idx] > INT_MAX)
       // Integer overflow protection
       return FALSE;
-   int off = lnum - dp->df_lnum[idx];
+   int off = lnum - dp->lnum[idx];
 
    if (!(diff_flags & ALL_INLINE_DIFF) || diff_internal_failed()) {
       // Use simple algorithm
@@ -3541,7 +3537,7 @@ diff_find_change(
       int   change_end = -1;   // last col of changed area
       int   ret;
 
-      ret = diff_find_change_simple(wp, lnum, dp, idx, &change_start, &change_end);
+      ret = diff_find_change_simple(po, lnum, dp, idx, &change_start, &change_end);
 
       // convert from inclusive end to exclusive end per diffline's contract
       change_end += 1;
@@ -3551,7 +3547,7 @@ diff_find_change(
       diffline->changes = &simple_diffline_change;
       diffline->num_changes = 1;
       diffline->bufidx = idx;
-      diffline->lineoff = lnum - dp->df_lnum[idx];
+      diffline->lineoff = lnum - dp->lnum[idx];
 
       simple_diffline_change.dc_start[idx] = change_start;
       simple_diffline_change.dc_end[idx] = change_end;
@@ -3564,7 +3560,7 @@ diff_find_change(
    if (!dp->has_changes)
       diff_find_change_inline_diff(dp);
 
-   ArrayList *changes = &dp->df_changes;
+   ArrayList *changes = &dp->changes;
 
    //Use linear search to find the first change for this line. We could
    //optimize this to use binary search, but there should usually be a
@@ -3574,7 +3570,7 @@ diff_find_change(
    int change_idx = 0;
    diffline->changes = NULL;
    for (change_idx = 0; change_idx < changes->len; change_idx++) {
-      DifflineChange *change = &((DifflineChange*)dp->df_changes.c)[change_idx];
+      DifflineChange *change = &((DifflineChange*)dp->changes.c)[change_idx];
       if (change->dc_end_lnum_off[idx] < off)
           continue;
       if (change->dc_start_lnum_off[idx] > off)
@@ -3592,14 +3588,14 @@ diff_find_change(
    // considering this to be an addition past their last line. Other scenarios
    // will be considered a changed line instead.
    int added = FALSE;
-   if (num_changes == 1 && change_idx == dp->df_changes.len) {
+   if (num_changes == 1 && change_idx == dp->changes.len) {
       added = TRUE;
       for (Unt i = 0; i < DB_COUNT; i++) {
          if (idx == i)
             continue;
          if (curtab->diffbuf[i] == NULL)
             continue;
-         DifflineChange *change = &((DifflineChange*)dp->df_changes.c)[dp->df_changes.len-1];
+         DifflineChange *change = &((DifflineChange*)dp->changes.c)[dp->changes.len-1];
          if (change->dc_start_lnum_off[i] != INT_MAX) {
             added = FALSE;
             break;
@@ -3612,18 +3608,18 @@ diff_find_change(
 //Return TRUE if line "lnum" is not close to a diff block, this line should be in a fold.
 //Return FALSE if there are no diff blocks at all in this portal.
 int
-diff_infold(Portal *wp, LineNr lnum) {
+diff_infold(Portal *po, LineNr lnum) {
    int      i;
    Unt idx = UNT;
    int      other = FALSE;
    DiffBlock   *dp;
 
    // Return if 'diff' isn't set.
-   if (!wp->bookOpts.diff)
+   if (!po->bookOpts.diff)
       return FALSE;
 
    for (i = 0; i < DB_COUNT; ++i) {
-      if (curtab->diffbuf[i] == wp->book)
+      if (curtab->diffbuf[i] == po->book)
          idx = i;
       ei (curtab->diffbuf[i] != NULL)
          other = TRUE;
@@ -3642,10 +3638,10 @@ diff_infold(Portal *wp, LineNr lnum) {
 
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
       // If this change is below the line there can't be any further match.
-      if (dp->df_lnum[idx] - diff_context > lnum)
+      if (dp->lnum[idx] - diff_context > lnum)
           break;
       // If this change ends before the line we have a match.
-      if (dp->df_lnum[idx] + dp->df_count[idx] + diff_context > lnum)
+      if (dp->lnum[idx] + dp->count[idx] + diff_context > lnum)
           return FALSE;
    }
    return TRUE;
@@ -3708,7 +3704,7 @@ c_diffgetput(Invocation *invo) {
    int found_not_ma = FALSE;
 
    // Find the current buffer in the list of diff buffers.
-   Unt idx_cur = diff_buf_idx(curBook);
+   Unt idx_cur = bookIndex(curBook);
    if (idx_cur == UNT) {
       emsg(_(e_current_buffer_is_not_in_diff_mode));
       return;
@@ -3761,7 +3757,7 @@ c_diffgetput(Invocation *invo) {
       }
       if (book == curBook)
          return;      // nothing to do
-      idx_other = diff_buf_idx(book);
+      idx_other = bookIndex(book);
       if (idx_other == DB_COUNT) {
          showErrFmtMsg(_(e_buffer_str_is_not_in_diff_mode), invo->arg);
          return;
@@ -3805,7 +3801,7 @@ c_diffgetput(Invocation *invo) {
    // autocommand, which may do nasty things and mess everything up.
    if (!curBook->wasModified) {
       change_warning(0);
-      if (diff_buf_idx(curBook) != idx_to) {
+      if (bookIndex(curBook) != idx_to) {
          emsg(_(e_buffer_changed_unexpectedly));
          goto theend;
       }
@@ -3818,21 +3814,21 @@ c_diffgetput(Invocation *invo) {
          //the cursor. Since a range wasn't specified, we just want to grab one diff block rather 
          //than all of them in the vicinity.
          while (dp->df_next
-             && dp->df_next->df_lnum[idx_cur] == dp->df_lnum[idx_cur] +
-                        dp->df_count[idx_cur]
-             && dp->df_next->df_lnum[idx_cur] == invo->line1 + off + 1
+             && dp->df_next->lnum[idx_cur] == dp->lnum[idx_cur] +
+                        dp->count[idx_cur]
+             && dp->df_next->lnum[idx_cur] == invo->line1 + off + 1
          ) {
             dprev = dp;
             dp = dp->df_next;
          }
       }
-      if (dp->df_lnum[idx_cur] > invo->line2 + off)
+      if (dp->lnum[idx_cur] > invo->line2 + off)
          break;   // past the range that was specified
 
       dfree = NULL;
-      lnum = dp->df_lnum[idx_to];
-      count = dp->df_count[idx_to];
-      if (dp->df_lnum[idx_cur] + dp->df_count[idx_cur] > invo->line1 + off
+      lnum = dp->lnum[idx_to];
+      count = dp->count[idx_to];
+      if (dp->lnum[idx_cur] + dp->count[idx_cur] > invo->line1 + off
          && u_save(lnum - 1, lnum + count) != FAIL
       ) {
          // Inside the specified range and saving for undo worked.
@@ -3840,7 +3836,7 @@ c_diffgetput(Invocation *invo) {
          end_skip = 0;
          if (invo->addr_count > 0) {
             // A range was specified: check if lines need to be skipped.
-            start_skip = invo->line1 + off - dp->df_lnum[idx_cur];
+            start_skip = invo->line1 + off - dp->lnum[idx_cur];
             if (start_skip > 0) {
                // range starts below start of current diff block
                if (start_skip > count) {
@@ -3853,16 +3849,16 @@ c_diffgetput(Invocation *invo) {
             } else
                start_skip = 0;
 
-            end_skip = dp->df_lnum[idx_cur] + dp->df_count[idx_cur] - 1 - (invo->line2 + off);
+            end_skip = dp->lnum[idx_cur] + dp->count[idx_cur] - 1 - (invo->line2 + off);
             if (end_skip > 0) {
                // range ends above end of current/from diff block
                if (idx_cur == idx_from) {  // :diffput
-               i = dp->df_count[idx_cur] - start_skip - end_skip;
+               i = dp->count[idx_cur] - start_skip - end_skip;
                if (count > i)
                    count = i;
                } else {        // :diffget
                   count -= end_skip;
-                  end_skip = dp->df_count[idx_from] - start_skip - count;
+                  end_skip = dp->count[idx_from] - start_skip - count;
                   if (end_skip < 0)
                       end_skip = 0;
                }
@@ -3878,8 +3874,8 @@ c_diffgetput(Invocation *invo) {
             if (ml_delete(lnum) == OK)
                --added;
          }
-         for (i = 0; i < dp->df_count[idx_from] - start_skip - end_skip; ++i) {
-            LineNr nr = dp->df_lnum[idx_from] + start_skip + i;
+         for (i = 0; i < dp->count[idx_from] - start_skip - end_skip; ++i) {
+            LineNr nr = dp->lnum[idx_from] + start_skip + i;
             if (nr > curtab->diffbuf[idx_from]->mem.lineCount)
                 break;
             p = copyStr(memGetLine(curtab->diffbuf[idx_from], nr, FALSE));
@@ -3892,8 +3888,8 @@ c_diffgetput(Invocation *invo) {
                ml_delete((LineNr)2);
             }
          }
-         new_count = dp->df_count[idx_to] + added;
-         dp->df_count[idx_to] = new_count;
+         new_count = dp->count[idx_to] + added;
+         dp->count[idx_to] = new_count;
 
          if (start_skip == 0 && end_skip == 0) {
             // Check if there are any other buffers and if the diff is equal in them.
@@ -3941,7 +3937,7 @@ c_diffgetput(Invocation *invo) {
 
          if (!dfree)
             // mark_adjust() may have changed the count in a wrong way
-            dp->df_count[idx_to] = new_count;
+            dp->count[idx_to] = new_count;
 
          // When changing the current buffer, keep track of line numbers
          if (idx_cur == idx_to)
@@ -3998,20 +3994,20 @@ theend:
 //Skip buffer with index "skip_idx". When there are no diffs, all folds are removed.
 private void
 diff_fold_update(DiffBlock *dp, Unt skip_idx) {
-   Portal   *wp;
-   FOR_ALL_PORTALS(wp) {
+   Portal   *po;
+   FOR_ALL_PORTALS(po) {
       for (Unt i = 0; i < DB_COUNT; ++i)
-         if (curtab->diffbuf[i] == wp->book && i != skip_idx)
-            foldUpdate(wp, dp->df_lnum[i], dp->df_lnum[i] + dp->df_count[i]);
+         if (curtab->diffbuf[i] == po->book && i != skip_idx)
+            foldUpdate(po, dp->lnum[i], dp->lnum[i] + dp->count[i]);
    } 
 }
 
 //Return TRUE if book "book" is in diff-mode.
 Boole
 diffIsBookInDiffMode(Book* book) {
-   Tab   *t;
+   Tab* t;
    FOR_ALL_TABS(t) {
-      if (diff_buf_idx_tp(book, t) != UNT)
+      if (bookIndexInTab(book, t) != UNT)
          return true;
    } 
    return false;
@@ -4024,7 +4020,7 @@ diff_move_to(int dir, long count) {
    LineNr   lnum = curPor->cursor.lnum;
    DiffBlock   *dp;
 
-   Unt idx = diff_buf_idx(curBook);
+   Unt idx = bookIndex(curBook);
    if (idx == UNT || curtab->first_diff == NULL)
       return FAIL;
 
@@ -4036,16 +4032,16 @@ diff_move_to(int dir, long count) {
 
    while (--count >= 0) {
       // Check if already before first diff.
-      if (dir == BACKWARD && lnum <= curtab->first_diff->df_lnum[idx])
+      if (dir == BACKWARD && lnum <= curtab->first_diff->lnum[idx])
           break;
 
       for (dp = curtab->first_diff; ; dp = dp->df_next) {
          if (!dp)
             break;
-         if ((dir == FORWARD && lnum < dp->df_lnum[idx])
-             || (dir == BACKWARD && (dp->df_next == NULL || lnum <= dp->df_next->df_lnum[idx]))
+         if ((dir == FORWARD && lnum < dp->lnum[idx])
+             || (dir == BACKWARD && (dp->df_next == NULL || lnum <= dp->df_next->lnum[idx]))
          ) {
-            lnum = dp->df_lnum[idx];
+            lnum = dp->lnum[idx];
             break;
          }
       }
@@ -4072,8 +4068,8 @@ diff_get_corresponding_line_int(Book* book, LineNr lnum1) {
    DiffBlock* dp;
    int baseline = 0;
 
-   Unt idx1 = diff_buf_idx(book);
-   Unt idx2 = diff_buf_idx(curBook);
+   Unt idx1 = bookIndex(book);
+   Unt idx2 = bookIndex(curBook);
    if (idx1 == UNT || idx2 == UNT || curtab->first_diff == NULL)
       return lnum1;
 
@@ -4084,20 +4080,20 @@ diff_get_corresponding_line_int(Book* book, LineNr lnum1) {
       return lnum1;
 
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
-      if (dp->df_lnum[idx1] > lnum1)
+      if (dp->lnum[idx1] > lnum1)
           return lnum1 - baseline;
-      if ((dp->df_lnum[idx1] + dp->df_count[idx1]) > lnum1) {
+      if ((dp->lnum[idx1] + dp->count[idx1]) > lnum1) {
           // Inside the diffblock
-          baseline = lnum1 - dp->df_lnum[idx1];
-          if (baseline > dp->df_count[idx2])
-         baseline = dp->df_count[idx2];
+          baseline = lnum1 - dp->lnum[idx1];
+          if (baseline > dp->count[idx2])
+         baseline = dp->count[idx2];
 
-          return dp->df_lnum[idx2] + baseline;
+          return dp->lnum[idx2] + baseline;
       }
-      if (    (dp->df_lnum[idx1] == lnum1)
-           && (dp->df_count[idx1] == 0)
-           && (dp->df_lnum[idx2] <= curPor->cursor.lnum)
-           && ((dp->df_lnum[idx2] + dp->df_count[idx2])
+      if (    (dp->lnum[idx1] == lnum1)
+           && (dp->count[idx1] == 0)
+           && (dp->lnum[idx2] <= curPor->cursor.lnum)
+           && ((dp->lnum[idx2] + dp->count[idx2])
                            > curPor->cursor.lnum))
           /*
            * Special case: if the cursor is just after a zero-count
@@ -4107,8 +4103,8 @@ diff_get_corresponding_line_int(Book* book, LineNr lnum1) {
            * as expected.
            */
           return curPor->cursor.lnum;
-      baseline = (dp->df_lnum[idx1] + dp->df_count[idx1])
-                  - (dp->df_lnum[idx2] + dp->df_count[idx2]);
+      baseline = (dp->lnum[idx1] + dp->count[idx1])
+                  - (dp->lnum[idx2] + dp->count[idx2]);
    }
 
     // If we get here then the cursor is after the last diff
@@ -4128,12 +4124,12 @@ diff_get_corresponding_line(Book* book1, LineNr lnum1) {
 }
 
 //For line "lnum" in the current portal find the equivalent lnum in portal
-//"wp", compensating for inserted/deleted lines.
+//"po", compensating for inserted/deleted lines.
 LineNr
-diff_lnum_win(LineNr lnum, Portal *wp) {
+diff_lnum_win(LineNr lnum, Portal *po) {
    DiffBlock   *dp;
 
-   Unt idx = diff_buf_idx(curBook);
+   Unt idx = bookIndex(curBook);
    if (idx == UNT)      // safety check
       return (LineNr)0;
 
@@ -4142,22 +4138,22 @@ diff_lnum_win(LineNr lnum, Portal *wp) {
 
    // search for a change that includes "lnum" in the list of diffblocks.
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
-      if (lnum <= dp->df_lnum[idx] + dp->df_count[idx])
+      if (lnum <= dp->lnum[idx] + dp->count[idx])
           break;
    }
 
    // When after the last change, compute relative to the last line number.
    if (dp == NULL)
-      return wp->book->mem.lineCount - (curBook->mem.lineCount - lnum);
+      return po->book->mem.lineCount - (curBook->mem.lineCount - lnum);
 
-   // Find index for "wp".
-   Unt i = diff_buf_idx(wp->book);
+   // Find index for "po".
+   Unt i = bookIndex(po->book);
    if (i == UNT)         // safety check
       return (LineNr)0;
 
-   LineNr n = lnum + (dp->df_lnum[i] - dp->df_lnum[idx]);
-   if (n > dp->df_lnum[i] + dp->df_count[i])
-      n = dp->df_lnum[i] + dp->df_count[i];
+   LineNr n = lnum + (dp->lnum[i] - dp->lnum[idx]);
+   if (n > dp->lnum[i] + dp->count[i])
+      n = dp->lnum[i] + dp->count[i];
    return n;
 }
 
@@ -4190,18 +4186,18 @@ parse_diff_ed(CS line, Hunk* hunk) {
       return FAIL;
 
    if (difftype == 'a') {
-      hunk->lnum_orig = f1 + 1;
-      hunk->count_orig = 0;
+      hunk->origLnum = f1 + 1;
+      hunk->origCount = 0;
    } else {
-      hunk->lnum_orig = f1;
-      hunk->count_orig = l1 - f1 + 1;
+      hunk->origLnum = f1;
+      hunk->origCount = l1 - f1 + 1;
    }
    if (difftype == 'd') {
-      hunk->lnum_new = f2 + 1;
-      hunk->count_new = 0;
+      hunk->newLnum = f2 + 1;
+      hunk->newCount = 0;
    } else {
-      hunk->lnum_new = f2;
-      hunk->count_new = l2 - f2 + 1;
+      hunk->newLnum = f2;
+      hunk->newCount = l2 - f2 + 1;
    }
    return OK;
 }
@@ -4238,10 +4234,10 @@ parse_diff_unified(CS line, Hunk* hunk) {
       if (newline == 0)
          newline = 1;
 
-      hunk->lnum_orig = oldline;
-      hunk->count_orig = oldcount;
-      hunk->lnum_new = newline;
-      hunk->count_new = newcount;
+      hunk->origLnum = oldline;
+      hunk->origCount = oldcount;
+      hunk->newLnum = newline;
+      hunk->newCount = newcount;
 
       return OK;
    }
@@ -4256,20 +4252,20 @@ xdiff_out_indices(
    long count_a,
    long start_b,
    long count_b,
-   void *priv)
-{
+   void* priv
+) {
    DiffResult* dout = (DiffResult *)priv;
-   Hunk *p = ALLOC_ONE(Hunk);
+   Hunk* p = ALLOC_ONE(Hunk);
 
    if (ga_grow(&dout->dout_ga, 1) == FAIL) {
       eeglFree(p);
       return -1;
    }
 
-   p->lnum_orig  = start_a + 1;
-   p->count_orig = count_a;
-   p->lnum_new   = start_b + 1;
-   p->count_new  = count_b;
+   p->origLnum  = start_a + 1;
+   p->origCount = count_a;
+   p->newLnum   = start_b + 1;
+   p->newCount  = count_b;
    ((Hunk **)dout->dout_ga.c)[dout->dout_ga.len++] = p;
    return 0;
 }
@@ -4436,11 +4432,11 @@ parse_diff_optarg(
 }
 
 //Concatenate the List of strings in "l" and store the DiffResult in
-//"din->din_mmfile.ptr" and the length in "din->din_mmfile.size".
+//"din->mmfile.ptr" and the length in "din->mmfile.size".
 private void
 list_to_diffin(List* l, DiffInp* din, int icase) {
    ArrayList   ga;
-   ListItem   *li;
+   ListItem* li;
 
    ga_init2(&ga, 1, 2048);
 
@@ -4457,24 +4453,24 @@ list_to_diffin(List* l, DiffInp* din, int icase) {
          eeglFree(str);
    }
 
-   din->din_mmfile.ptr = (Byte *)ga.c;
-   din->din_mmfile.size = ga.len;
+   din->mmfile.ptr = (Byte *)ga.c;
+   din->mmfile.size = ga.len;
 }
 
 //Get the start and end indices from the diff "hunk".
 private Bag *
-get_diff_hunk_indices(Hunk *hunk) {
+get_diff_hunk_indices(Hunk* hunk) {
    Bag* hunkBag = allocBag();
-   bagAddNumber(hunkBag, S"from_idx", hunk->lnum_orig - 1);
-   bagAddNumber(hunkBag, S"from_count", hunk->count_orig);
-   bagAddNumber(hunkBag, S"to_idx", hunk->lnum_new  - 1);
-   bagAddNumber(hunkBag, S"to_count", hunk->count_new);
+   bagAddNumber(hunkBag, S"from_idx", hunk->origLnum - 1);
+   bagAddNumber(hunkBag, S"from_count", hunk->origCount);
+   bagAddNumber(hunkBag, S"to_idx", hunk->newLnum  - 1);
+   bagAddNumber(hunkBag, S"to_count", hunk->newCount);
 
    return hunkBag;
 }
 
 void
-f_diff(Var* argvars, Var *returnVar UNUSED) {
+f_diff(Var* argvars, Var* returnVar) {
    if (confirmVarIsNonnullList(argvars, 0) == FAIL
         || confirmVarIsNonnullList(argvars, 1) == FAIL
         || check_for_opt_nonnull_dict_arg(argvars, 2) == FAIL)
@@ -4530,10 +4526,10 @@ f_diff(Var* argvars, Var *returnVar UNUSED) {
 
    if (dio.dio_outfmt == DIO_OUTPUT_INDICES) {
       allocReturnList(returnVar);
-      List   *l = returnVar->list;
+      List* l = returnVar->list;
 
       // Process each diff hunk
-      Hunk   *hunk = NULL;
+      Hunk* hunk = NULL;
       while (hunk_idx < dio.dio_diff.dout_ga.len) {
          hunk = ((Hunk **)dio.dio_diff.dout_ga.c)[hunk_idx++];
 
@@ -4653,9 +4649,9 @@ typedef struct s_xdpsplit {
 
 private long xdl_bogosqrt(long n);
 private int xdl_emit_diffrec(Byte* rec, long size, Byte* pre, long psize, XdEmitCb *ecb);
-private int xdl_cha_init(chastore_t *cha, long isize, long icount);
-private void xdl_cha_free(chastore_t *cha);
-private void *xdl_cha_alloc(chastore_t *cha);
+private int xdl_cha_init(ChaStore *cha, long isize, long icount);
+private void xdl_cha_free(ChaStore *cha);
+private void *xdl_cha_alloc(ChaStore *cha);
 private long xdl_guess_lines(MmFile *mf, long sample);
 private int xdl_blankline(Byte *line, long size, long flags);
 private int xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags);
@@ -4667,8 +4663,8 @@ private int xdl_emit_hunk_hdr(long s1, long c1, long s2, long c2,
 private int xdl_fall_back_diff(XdfEnv *diff_env, XpParam const *xpp,
              int line1, int count1, int line2, int count2);
 
-// Do not call this function, use XDL_ALLOC_GROW instead
-void* xdl_alloc_grow_helper(void* p, long nr, long* alloc, Unt size);
+// Do not call this function directly, use XDL_ALLOC_GROW instead
+private void* xdl_alloc_grow_helper(void* p, long nr, long* alloc, Unt size);
 
 private int xdl_prepare_env(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe);
 private void xdl_free_env(XdfEnv *xe);
@@ -4846,9 +4842,9 @@ private long xdl_split(
             i2 = i1 - d;
             v = (lim1 - i1) + (lim2 - i2) - dd;
 
-            if (v > XDL_K_HEUR * ec && v > best &&
-                off1 < i1 && i1 <= lim1 - xenv->snake_cnt &&
-                off2 < i2 && i2 <= lim2 - xenv->snake_cnt
+            if (v > XDL_K_HEUR * ec && v > best 
+                  && off1 < i1 && i1 <= lim1 - xenv->snake_cnt 
+                  && off2 < i2 && i2 <= lim2 - xenv->snake_cnt
             ) {
                for (k = 0; ha1[i1 + k] == ha2[i2 + k]; k++) {
                   if (k == xenv->snake_cnt - 1) {
@@ -4912,14 +4908,13 @@ private long xdl_split(
    }
 }
 
-
 //Rule: "Divide et Impera" (divide & conquer). Recursively split the box in
 //sub-boxes by calling the box splitting function. Note that the real job
 //(marking changed lines) is done in the two boundary reaching checks.
 private int 
-xdl_recs_cmp(DiffData *dd1, long off1, long lim1,
-       DiffData *dd2, long off2, long lim2,
-       long *kvdf, long *kvdb, int need_min, Environment *xenv
+xdl_recs_cmp(DiffData* dd1, long off1, long lim1,
+       DiffData* dd2, long off2, long lim2,
+       long* kvdf, long* kvdb, int need_min, Environment* xenv
 ) {
    unsigned long const *ha1 = dd1->ha, *ha2 = dd2->ha;
 
@@ -4929,7 +4924,7 @@ xdl_recs_cmp(DiffData *dd1, long off1, long lim1,
 
    //If one dimension is empty, then all records on the other one must be obviously changed.
    if (off1 == lim1) {
-      Byte* rchg2 = dd2->rchg;
+      CS rchg2 = dd2->rchg;
       long *rindex2 = dd2->rindex;
 
       for (; off2 < lim2; off2++)
@@ -4950,11 +4945,9 @@ xdl_recs_cmp(DiffData *dd1, long off1, long lim1,
       }
 
       //... et Impera.
-      if (xdl_recs_cmp(dd1, off1, spl.i1, dd2, off2, spl.i2,
-             kvdf, kvdb, spl.min_lo, xenv) < 0 ||
-          xdl_recs_cmp(dd1, spl.i1, lim1, dd2, spl.i2, lim2,
-             kvdf, kvdb, spl.min_hi, xenv) < 0) {
-
+      if (xdl_recs_cmp(dd1, off1, spl.i1, dd2, off2, spl.i2, kvdf, kvdb, spl.min_lo, xenv) < 0 
+            || xdl_recs_cmp(dd1, spl.i1, lim1, dd2, spl.i2, lim2, kvdf, kvdb, spl.min_hi, xenv) < 0
+      ) {
          return -1;
       }
    }
@@ -5022,7 +5015,7 @@ xdl_do_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe) {
 }
 
 
-private XdChange *xdl_add_change(XdChange *xscr, long i1, long i2, long chg1, long chg2) {
+private XdChange* xdl_add_change(XdChange* xscr, long i1, long i2, long chg1, long chg2) {
    XdChange *xch;
 
    if (!(xch = (XdChange *) xdl_malloc(sizeof(XdChange))))
@@ -5038,9 +5031,8 @@ private XdChange *xdl_add_change(XdChange *xscr, long i1, long i2, long chg1, lo
    return xch;
 }
 
-
 private int
-recs_match(Record *rec1, Record *rec2) {
+recs_match(Record* rec1, Record* rec2) {
    return (rec1->ha == rec2->ha);
 }
 
@@ -5049,11 +5041,10 @@ recs_match(Record *rec1, Record *rec2) {
 //human-readable text, and also ensures that the output of xget_indent fits within an int.
 #define MAX_INDENT 200
 
-//Return the amount of indentation of the specified line, treating TAB as 8
-//columns. Return -1 if line is empty or contains only whitespace. Clamp the
-//output value at MAX_INDENT.
+//Return the amount of indentation of the specified line, treating TAB as 8 columns. 
+//Return -1 if line is empty or contains only whitespace. Clamp the output value at MAX_INDENT.
 private int
-xget_indent(Record *rec) {
+xget_indent(Record* rec) {
    int ret = 0;
 
    for (int i = 0; i < rec->size; i++) {
@@ -5081,7 +5072,7 @@ xget_indent(Record *rec) {
 #define MAX_BLANKS 20
 
 // Characteristics measured about a hypothetical split position.
-struct split_measurement {
+typedef struct SplitMeasurement {
    //Is the split at the end of the file (aside from any blank lines)?
    int end_of_file;
 
@@ -5101,19 +5092,19 @@ struct split_measurement {
    //How much is the nearest non-blank line after the line following the
    //split indented (or -1 if there is no such line)?
    int post_indent;
-};
+} SplitMeasurement;
 
-struct split_score {
+typedef struct {
    // The effective indent of this split (smaller is preferred).
    int effective_indent;
 
    // Penalty for this split (smaller is preferred).
    int penalty;
-};
+} SplitScore;
 
 //Fill m with information about a hypothetical split of xdf above line split.
 private void 
-measure_split(const XdFile *xdf, long split, struct split_measurement *m) {
+measure_split(const XdFile* xdf, long split, SplitMeasurement* m) {
    long i;
 
    if (split >= xdf->nrec) {
@@ -5202,7 +5193,7 @@ measure_split(const XdFile *xdf, long split, struct split_measurement *m) {
 //Also see that project if you want to improve the weights based on, for
 //example, a larger or more diverse corpus.
 private void
-score_add_split(const struct split_measurement *m, struct split_score *s) {
+score_add_split(const SplitMeasurement* m, SplitScore* s) {
    //A place to accumulate penalty factors (positive makes this index more favored):
    int post_blank, total_blank, indent, any_blanks;
 
@@ -5264,10 +5255,10 @@ score_add_split(const struct split_measurement *m, struct split_score *s) {
 }
 
 private int
-score_cmp(struct split_score *s1, struct split_score *s2) {
+score_cmp(SplitScore* s1, SplitScore* s2) {
    // -1 if s1.effective_indent < s2->effective_indent, etc.
-   int cmp_indents = ((s1->effective_indent > s2->effective_indent) -
-            (s1->effective_indent < s2->effective_indent));
+   int cmp_indents = ((s1->effective_indent > s2->effective_indent) 
+         - (s1->effective_indent < s2->effective_indent));
 
    return INDENT_WEIGHT * cmp_indents + (s1->penalty - s2->penalty);
 }
@@ -5285,18 +5276,18 @@ score_cmp(struct split_score *s1, struct split_score *s2) {
 //
 //Note that loops that are testing for changed lines in xdf->rchg do not need
 //index bounding since the array is prepared with a zero at position -1 and N.
-struct xdlgroup {
+typedef struct {
    //The index of the first changed line in the group, or the index of
    //the unchanged line above which the (empty) group is located.
    long start;
 
    //The index of the first unchanged line after the group. For an empty group, end == start
    long end;
-};
+} XdlGroup;
 
 //Initialize g to point at the first group in xdf.
 private void
-group_init(XdFile *xdf, struct xdlgroup *g) {
+group_init(XdFile* xdf, XdlGroup* g) {
    g->start = g->end = 0;
    while (xdf->rchg[g->end])
       g->end++;
@@ -5305,7 +5296,7 @@ group_init(XdFile *xdf, struct xdlgroup *g) {
 //Move g to describe the next (possibly empty) group in xdf and return 0. If g
 //is already at the end of the file, do nothing and return -1.
 private inline int 
-group_next(XdFile *xdf, struct xdlgroup *g) {
+group_next(XdFile* xdf, XdlGroup* g) {
    if (g->end == xdf->nrec)
       return -1;
 
@@ -5319,7 +5310,7 @@ group_next(XdFile *xdf, struct xdlgroup *g) {
 //Move g to describe the previous (possibly empty) group in xdf and return 0.
 //If g is already at the beginning of the file, do nothing and return -1.
 private inline int
-group_previous(XdFile *xdf, struct xdlgroup *g) {
+group_previous(XdFile* xdf, XdlGroup* g) {
    if (g->start == 0)
       return -1;
 
@@ -5333,7 +5324,7 @@ group_previous(XdFile *xdf, struct xdlgroup *g) {
 //If g can be slid toward the end of the file, do so, and if it bumps into a
 //following group, expand this group to include it. Return 0 on success or -1
 //if g cannot be slid down.
-private int group_slide_down(XdFile *xdf, struct xdlgroup *g) {
+private int group_slide_down(XdFile* xdf, XdlGroup* g) {
    if (g->end < xdf->nrec && recs_match(xdf->recs[g->start], xdf->recs[g->end])) {
       xdf->rchg[g->start++] = 0;
       xdf->rchg[g->end++] = 1;
@@ -5350,7 +5341,7 @@ private int group_slide_down(XdFile *xdf, struct xdlgroup *g) {
 //If g can be slid toward the beginning of the file, do so, and if it bumps into a previous group,
 //expand this group to include it. Return 0 on success or -1 if g cannot be slid up.
 private int
-group_slide_up(XdFile *xdf, struct xdlgroup *g) {
+group_slide_up(XdFile* xdf, XdlGroup* g) {
    if (g->start > 0 && recs_match(xdf->recs[g->start - 1], xdf->recs[g->end - 1])) {
       xdf->rchg[--g->start] = 1;
       xdf->rchg[--g->end] = 0;
@@ -5365,7 +5356,7 @@ group_slide_up(XdFile *xdf, struct xdlgroup *g) {
 }
 
 private void
-xdl_bug(const char *msg) {
+xdl_bug(CS msg) {
    fprintf(stderr, "BUG: %s\n", msg);
    exit(1);
 }
@@ -5373,8 +5364,8 @@ xdl_bug(const char *msg) {
 //Move back and forward change groups for a consistent and pretty diff output.
 //This also helps in finding joinable change groups and reducing the diff size.
 private int
-xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
-   struct xdlgroup g, go;
+xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags) {
+   XdlGroup g, go;
    long earliest_end, end_matching_other;
    long groupsize;
 
@@ -5392,14 +5383,13 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
          groupsize = g.end - g.start;
 
          //Keep track of the last "end" index that causes this group to align with a group of 
-         //changed lines in the other file. -1 indicates that we haven't found such
-         //a match yet:
+         //changed lines in the other file. -1 indicates that we haven't found such a match yet:
          end_matching_other = -1;
 
          // Shift the group backward as much as possible:
          while (!group_slide_up(xdf, &g))
             if (group_previous(xdfo, &go))
-               xdl_bug("group sync broken sliding up");
+               xdl_bug(S"group sync broken sliding up");
 
          //This is this highest that this group can be shifted. Record its end index:
          earliest_end = g.end;
@@ -5412,7 +5402,7 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
             if (group_slide_down(xdf, &g))
                break;
             if (group_next(xdfo, &go))
-               xdl_bug("group sync broken sliding down");
+               xdl_bug(S"group sync broken sliding down");
 
             if (go.end > go.start)
                end_matching_other = g.end;
@@ -5432,9 +5422,9 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
          //changes from the other file that it can align with.
          while (go.end == go.start) {
             if (group_slide_up(xdf, &g))
-               xdl_bug("match disappeared");
+               xdl_bug(S"match disappeared");
             if (group_previous(xdfo, &go))
-               xdl_bug("group sync broken sliding to match");
+               xdl_bug(S"group sync broken sliding to match");
          }
       } ei (flags & INDENT_HEURISTIC) {
          //Indent heuristic: a group of pure add/delete lines implies two splits, one between the 
@@ -5444,7 +5434,7 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
          //for the two splits to define a "score" for each position that the group can be shifted 
          //to. Then we pick the shift with the lowest score.
          long shift, best_shift = -1;
-         struct split_score best_score;
+         SplitScore best_score;
 
          shift = earliest_end;
          if (g.end - groupsize - 1 > shift)
@@ -5452,8 +5442,8 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
          if (g.end - INDENT_HEURISTIC_MAX_SLIDING > shift)
             shift = g.end - INDENT_HEURISTIC_MAX_SLIDING;
          for (; shift <= g.end; shift++) {
-            struct split_measurement m;
-            struct split_score score = {0, 0};
+            SplitMeasurement m;
+            SplitScore score = {0, 0};
 
             measure_split(xdf, shift, &m);
             score_add_split(&m, &score);
@@ -5468,9 +5458,9 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
 
          while (g.end > best_shift) {
             if (group_slide_up(xdf, &g))
-               xdl_bug("best shift unreached");
+               xdl_bug(S"best shift unreached");
             if (group_previous(xdfo, &go))
-               xdl_bug("group sync broken sliding to blank line");
+               xdl_bug(S"group sync broken sliding to blank line");
          }
       }
 
@@ -5479,18 +5469,18 @@ xdl_change_compact(XdFile *xdf, XdFile *xdfo, long flags) {
       if (group_next(xdf, &g))
          break;
       if (group_next(xdfo, &go))
-         xdl_bug("group sync broken moving to next group");
+         xdl_bug(S"group sync broken moving to next group");
    }
 
    if (!group_next(xdfo, &go))
-      xdl_bug("group sync broken at end of file");
+      xdl_bug(S"group sync broken at end of file");
 
    return 0;
 }
 
 
 private int
-xdl_build_script(XdfEnv *xe, XdChange **xscr) {
+xdl_build_script(XdfEnv* xe, XdChange** xscr) {
    XdChange *cscr = NULL, *xch;
    Byte *rchg1 = xe->xdf1.rchg, *rchg2 = xe->xdf2.rchg;
    long i1, i2, l1, l2;
@@ -5526,7 +5516,7 @@ xdl_free_script(XdChange* xscr) {
 
 private int 
 xdl_call_hunk_func(
-      XdfEnv *xe UNUSED, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg
+      XdfEnv* xe UNUSED, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
 ) {
    XdChange *xch, *xche;
 
@@ -5606,7 +5596,7 @@ xdl_bogosqrt(long n) {
 }
 
 private int
-xdl_emit_diffrec(Byte* rec, long size, Byte* pre, long psize, XdEmitCb* ecb) {
+xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb* ecb) {
    int i = 2;
    MmBuffer mb[3];
 
@@ -5627,20 +5617,20 @@ xdl_emit_diffrec(Byte* rec, long size, Byte* pre, long psize, XdEmitCb* ecb) {
 }
 
 private void*
-xdl_mmfile_first(MmFile *mmf, long *size) {
+xdl_mmfile_first(MmFile* mmf, long* size) {
    *size = mmf->size;
    return mmf->ptr;
 }
 
 
 private long
-xdl_mmfile_size(MmFile *mmf) {
+xdl_mmfile_size(MmFile* mmf) {
    return mmf->size;
 }
 
 
 private int
-xdl_cha_init(chastore_t *cha, long isize, long icount) {
+xdl_cha_init(ChaStore* cha, long isize, long icount) {
    cha->head = cha->tail = NULL;
    cha->isize = isize;
    cha->nsize = icount * isize;
@@ -5651,8 +5641,8 @@ xdl_cha_init(chastore_t *cha, long isize, long icount) {
 }
 
 private void
-xdl_cha_free(chastore_t *cha) {
-   chanode_t *cur, *tmp;
+xdl_cha_free(ChaStore* cha) {
+   ChaNode *cur, *tmp;
 
    for (cur = cha->head; (tmp = cur) != NULL;) {
       cur = cur->next;
@@ -5661,13 +5651,13 @@ xdl_cha_free(chastore_t *cha) {
 }
 
 
-private void *
-xdl_cha_alloc(chastore_t *cha) {
-   chanode_t *ancur;
-   void *data;
+private void*
+xdl_cha_alloc(ChaStore* cha) {
+   ChaNode* ancur;
+   void* data;
 
    if (!(ancur = cha->ancur) || ancur->icurr == cha->nsize) {
-      if (!(ancur = (chanode_t *) xdl_malloc(sizeof(chanode_t) + cha->nsize))) {
+      if (!(ancur = (ChaNode *) xdl_malloc(sizeof(ChaNode) + cha->nsize))) {
 
          return NULL;
       }
@@ -5681,14 +5671,14 @@ xdl_cha_alloc(chastore_t *cha) {
       cha->ancur = ancur;
    }
 
-   data = (char *) ancur + sizeof(chanode_t) + ancur->icurr;
+   data = (char *) ancur + sizeof(ChaNode) + ancur->icurr;
    ancur->icurr += cha->isize;
 
    return data;
 }
 
 private long
-xdl_guess_lines(MmFile *mf, long sample) {
+xdl_guess_lines(MmFile* mf, long sample) {
    long nl = 0, size, tsize = 0;
    char const *data, *cur, *top;
 
@@ -5724,7 +5714,7 @@ xdl_blankline(CS line, long size, long flags) {
 //Have we eaten everything on the line, except for an optional CR at the very end?
 private int
 ends_with_optional_cr(CS l, long s, long i) {
-   int complete = s && l[s-1] == '\n';
+   int complete = s && l[s - 1] == '\n';
 
    if (complete)
       s--;
@@ -5985,9 +5975,10 @@ xdl_fall_back_diff(
    return 0;
 }
 
-void* xdl_alloc_grow_helper(void *p, long nr, long *alloc, Unt size) {
-   void *tmp = NULL;
-   Unt n = ((LONG_MAX - 16) / 2 >= *alloc) ? 2 * *alloc + 16 : LONG_MAX;
+private void*
+xdl_alloc_grow_helper(void* p, long nr, long* alloc, Unt size) {
+   void* tmp = NULL;
+   Unt n = ((LONG_MAX - 16) / 2 >= (*alloc)) ? 2 * (*alloc) + 16 : LONG_MAX;
    if (nr > (long)n)
       n = nr;
    if (SIZE_MAX / size >= n)
@@ -6008,20 +5999,22 @@ void* xdl_alloc_grow_helper(void *p, long nr, long *alloc, Unt size) {
 #define XDL_GUESS_NLINES1 256
 #define XDL_GUESS_NLINES2 20
 
-typedef struct s_xdlclass {
-   struct s_xdlclass *next;
-   unsigned long ha;
+declStruct(XdlClass);
+struct XdlClass {
+   XdlClass* next;
+   Ulong ha;
    CS line;
    long size;
    long idx;
-   long len1, len2;
-} XdlClass;
+   long len1;
+   long len2;
+};
 
 typedef struct s_xdlclassifier {
    unsigned int hbits;
    long hsize;
    XdlClass **rchash;
-   chastore_t ncha;
+   ChaStore ncha;
    XdlClass **rcrecs;
    long alloc;
    long count;
@@ -6727,14 +6720,18 @@ xdl_do_patience_diff(XpParam const *xpp, XdfEnv *env) {
 #define LINE_END(n) (line##n + count##n - 1)
 #define LINE_END_PTR(n) (*line##n + *count##n - 1)
 
+
+declStruct(XdRecord);
+struct XdRecord {
+   Unt ptr;
+   Unt cnt;
+   XdRecord* next;
+};
+
 typedef struct {
-   struct record {
-      Unt ptr;
-      Unt cnt;
-      struct record* next;
-   } **records, // an occurrence
-     **line_map; // map of line to record chain
-   chastore_t rcha;
+   XdRecord** records; // an occurrence
+   XdRecord** line_map; // map of line to record chain
+   ChaStore rcha;
    Unt* next_ptrs;
    Unt table_bits;
    Unt records_size;
@@ -6751,10 +6748,12 @@ typedef struct {
    XpParam const* xpp;
 } HistIndex;
 
-struct region {
-   unsigned int begin1, end1;
-   unsigned int begin2, end2;
-};
+typedef struct {
+   Unt begin1;
+   Unt end1;
+   Unt begin2;
+   Unt end2;
+} DRegion;
 
 #define LINE_MAP(i, a) (i->line_map[(a) - i->ptr_shift])
 
@@ -6781,8 +6780,9 @@ cmp_recs(Record *r1, Record *r2) {
 private int 
 scanA(HistIndex* index, int line1, int count1) {
    int ptr, tbl_idx;
-   unsigned int chain_len;
-   struct record **rec_chain, *rec;
+   Unt chain_len;
+   XdRecord** rec_chain;
+   XdRecord* rec;
 
    for (ptr = LINE_END(1); line1 <= ptr; ptr--) {
       tbl_idx = TABLE_HASH(index, 1, ptr);
@@ -6828,11 +6828,11 @@ continue_scan:
 
 private int
 try_lcs(
-   HistIndex* index, struct region* lcs, int b_ptr, int line1, int count1, int line2, 
+   HistIndex* index, DRegion* lcs, int b_ptr, int line1, int count1, int line2, 
    int count2
 ) {
-   unsigned int b_next = b_ptr + 1;
-   struct record *rec = index->records[TABLE_HASH(index, 2, b_ptr)];
+   Unt b_next = b_ptr + 1;
+   XdRecord* rec = index->records[TABLE_HASH(index, 2, b_ptr)];
    unsigned int as, ae, bs, be, np, rc;
    int should_break;
 
@@ -6922,8 +6922,7 @@ free_index(HistIndex* index) {
 
 private int 
 find_lcs(
-   XpParam const* xpp, XdfEnv* env, struct region* lcs, int line1, int count1, int line2, 
-   int count2
+   XpParam const* xpp, XdfEnv* env, DRegion* lcs, int line1, int count1, int line2, int count2
 ) {
    int b_ptr;
    int ret = -1;
@@ -6951,7 +6950,7 @@ find_lcs(
       goto cleanup;
 
    // lines / 4 + 1 comes from xprepare.c:xdl_prepare_ctx()
-   if (xdl_cha_init(&index.rcha, sizeof(struct record), count1 / 4 + 1) < 0)
+   if (xdl_cha_init(&index.rcha, sizeof(Record), count1 / 4 + 1) < 0)
       goto cleanup;
 
    index.ptr_shift = line1;
@@ -6977,7 +6976,7 @@ cleanup:
 
 private int 
 histogram_diff(XpParam const* xpp, XdfEnv* env, int line1, int count1, int line2, int count2) {
-   struct region lcs;
+   DRegion lcs;
    int lcs_found;
    int diffResult;
 redo:
@@ -7040,12 +7039,10 @@ xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env) {
       env->xdf2.dstart + 1, env->xdf2.dend - env->xdf2.dstart + 1);
 }
 
-
 private long xdl_get_rec(XdFile *xdf, long ri, Byte** rec) {
    *rec = xdf->recs[ri]->ptr;
    return xdf->recs[ri]->size;
 }
-
 
 private int xdl_emit_record(XdFile *xdf, long ri, CS pre, XdEmitCb* ecb) {
    long psize = (long)STRLEN(pre);
@@ -7057,7 +7054,6 @@ private int xdl_emit_record(XdFile *xdf, long ri, CS pre, XdEmitCb* ecb) {
 
    return 0;
 }
-
 
 //Starting at the passed change atom, find the latest change atom to be included
 //inside the differential hunk according to the specified configuration.
@@ -7107,16 +7103,16 @@ xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg) {
 }
 
 
-struct func_line {
+typedef struct {
    long len;
    Byte buf[80];
-};
+} FuncLine;
 
 private int
 xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg) {
    long s1, s2, e1, e2, lctx;
    XdChange *xch, *xche;
-   struct func_line func_line;
+   FuncLine func_line;
 
    func_line.len = 0;
 
@@ -7134,7 +7130,6 @@ xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
 
       e1 = xche->i1 + xche->chg1 + lctx;
       e2 = xche->i2 + xche->chg2 + lctx;
-
 
       //Emit current hunk header.
 
@@ -7161,9 +7156,10 @@ xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
                return -1;
 
          //Adds lines from the second file.
-         for (s2 = xch->i2; s2 < xch->i2 + xch->chg2; s2++)
+         for (s2 = xch->i2; s2 < xch->i2 + xch->chg2; s2++) {
             if (xdl_emit_record(&xe->xdf2, s2, S"+", ecb) < 0)
                return -1;
+         } 
 
          if (xch == xche)
             break;

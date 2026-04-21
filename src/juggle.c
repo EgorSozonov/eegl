@@ -570,8 +570,8 @@ changed_common(
                po->lastCursorLine += xtra;
          }
       }
-      if (po == curPor && xtra != 0 && search_hl_has_cursor_lnum >= lnum)
-         search_hl_has_cursor_lnum += xtra;
+      if (po == curPor && xtra != 0 && searchLastLnumG >= lnum)
+         searchLastLnumG += xtra;
    }
 
    // Call drawUpdateScreen() later, which checks out what needs to be redrawn,

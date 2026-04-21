@@ -188,12 +188,12 @@ switchBufGotoPortalIntoBuf(Book* book) {
 // All CTRL-W portal commands are handled here, called from normal_cmd().
 void
 doPortal(int nchar, long Prenum, Unt xchar) { // extra char from ":wincmd gx" or ZERO
-   long   Prenum1;
-   Portal   *po;
-   Byte* ptr;
-   LineNr    lnum = -1;
-   int      type = FIND_DEFINE;
-   int      len;
+   long   prenum1;
+   Portal* po;
+   CS ptr;
+   LineNr lnum = -1;
+   Unt type = FIND_DEFINE;
+   int len;
    Byte cbuf[40];
 
    if (portErrorIfPopup(true))
@@ -208,7 +208,7 @@ doPortal(int nchar, long Prenum, Unt xchar) { // extra char from ":wincmd gx" or
    } \
     } while (0)
 
-   Prenum1 = Prenum == 0 ? 1 : Prenum;
+   prenum1 = Prenum == 0 ? 1 : Prenum;
 
    switch (nchar) {
    // split current portal in two parts, horizontally
@@ -300,7 +300,7 @@ newPortal:
    // cursor to preview portal
    case 'P':
       FOR_ALL_PORTALS(po) {
-         if (po->bookOpts.previewPortal)
+         if (po->isPreview)
             break;
       } 
       if (!po)
@@ -354,7 +354,7 @@ newPortal:
    case K_DOWN:
    case Ctrl_J:
       CHECK_COMMPORT;
-      gotoPortal_ver(FALSE, Prenum1);
+      gotoPortal_ver(FALSE, prenum1);
       break;
 
    // cursor to portal above
@@ -362,7 +362,7 @@ newPortal:
    case K_UP:
    case Ctrl_K:
       CHECK_COMMPORT;
-      gotoPortal_ver(TRUE, Prenum1);
+      gotoPortal_ver(TRUE, prenum1);
       break;
 
    // cursor to left portal
@@ -371,7 +371,7 @@ newPortal:
    case Ctrl_H:
    case K_BS:
       CHECK_COMMPORT;
-      gotoPortal_hor(TRUE, Prenum1);
+      gotoPortal_hor(TRUE, prenum1);
       break;
 
    // cursor to right portal
@@ -379,7 +379,7 @@ newPortal:
    case K_RIGHT:
    case Ctrl_L:
       CHECK_COMMPORT;
-      gotoPortal_hor(FALSE, Prenum1);
+      gotoPortal_hor(FALSE, prenum1);
       break;
 
    // move portal to new tab
@@ -438,14 +438,14 @@ newPortal:
     case 'r':
       CHECK_COMMPORT;
       reset_VIsual_and_resel();   // stop Visual mode
-      rotatePortals(FALSE, (int)Prenum1);    // downwards
+      rotatePortals(FALSE, (int)prenum1);    // downwards
       break;
 
    // rotate portals upwards
    case 'R':
       CHECK_COMMPORT;
       reset_VIsual_and_resel();   // stop Visual mode
-      rotatePortals(TRUE, (int)Prenum1);       // upwards
+      rotatePortals(TRUE, (int)prenum1);       // upwards
       break;
 
    // move portal to the very top/bottom/left/right
@@ -472,12 +472,12 @@ newPortal:
 
    // increase current portal height
    case '+':
-      portSetHeight(curPor->height + (int)Prenum1, curPor);
+      portSetHeight(curPor->height + (int)prenum1, curPor);
       break;
 
    // decrease current portal height
    case '-':
-      portSetHeight(curPor->height - (int)Prenum1, curPor);
+      portSetHeight(curPor->height - (int)prenum1, curPor);
       break;
 
    // set current portal height
@@ -488,12 +488,12 @@ newPortal:
 
    // increase current portal width
    case '>':
-      portSetWidth(curPor->width + (int)Prenum1, curPor);
+      portSetWidth(curPor->width + (int)prenum1, curPor);
       break;
 
    // decrease current portal width
    case '<':
-      portSetWidth(curPor->width - (int)Prenum1, curPor);
+      portSetWidth(curPor->width - (int)prenum1, curPor);
       break;
 
 // set current portal width
@@ -535,7 +535,7 @@ portGotoFile:
       if (check_text_or_curbuf_locked(NULL))
          break;
 
-      ptr = grab_file_name(Prenum1, &lnum);
+      ptr = grab_file_name(prenum1, &lnum);
       if (ptr != NULL) {
           Tab   *oldtab = curtab;
           Portal   *oldPortal = curPor;
@@ -580,10 +580,10 @@ portGotoFile:
       // Make a copy, if the line was changed it will be freed.
       ptr = copySubstr(ptr, len);
 
-      find_pattern_in_path(ptr, 0, len, TRUE,
-         Prenum == 0 ? TRUE : FALSE, type,
-         Prenum1, ACTION_SPLIT, (LineNr)1, (LineNr)MAXLNUM,
-         FALSE, FALSE);
+      find_pattern_in_path(
+         ptr, 0, len, TRUE, Prenum == 0 ? TRUE : FALSE, type,
+         prenum1, ACTION_SPLIT, (LineNr)1, (LineNr)MAXLNUM, FALSE, FALSE
+      );
       eeglFree(ptr);
       curPor->setCursWant = true;
       break;
@@ -640,7 +640,7 @@ portGotoFile:
          break;
 
       case 'T':       // CTRL-W gT: go to previous tab
-         gotoTabById(-(int)Prenum1);
+         gotoTabById(-(int)prenum1);
          break;
 
       case TAB:       // CTRL-W g<Tab>: go to last used tab
@@ -847,7 +847,7 @@ splitPortal_ins(
    int      retval = FAIL;
 
    // Do not redraw here, curPor->book may be invalid.
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    if (!newPort)
       triggerPortalNewPre();
@@ -1250,8 +1250,8 @@ splitPortal_ins(
    retval = OK;
 
 theend:
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
    return retval;
 }
 
@@ -1983,7 +1983,7 @@ leavingPortal(Portal *port) {
    // When leaving a prompt portal stop Insert mode and perhaps restart
    // it when entering that portal again.
    port->book->promptInsert = restart_edit;
-   if (restart_edit != 0 && mode_displayed)
+   if (restart_edit != 0 && isModeDisplayedG)
       mustClearCommlineG = TRUE;      // unshow mode later
    restart_edit = ZERO;
 
@@ -2048,7 +2048,7 @@ closePortalsInto(
    Tab   *t, *nexttp;
    Unt      count = indexOfTab(NULL);
 
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    for (po = firstPor; po && !ONLY_ONE_PORTAL; ) {
       if (po->book == book && (!keep_curPor || po != curPor)
@@ -2082,8 +2082,8 @@ closePortalsInto(
       }
    }
 
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
 
    if (count != indexOfTab(NULL))
       apply_autocmds(EVENT_TABCLOSED, NULL, NULL, false, curBook);
@@ -2317,7 +2317,7 @@ closePortal(Portal* port, int free_buf) {
    // printing an error message.  For portEqualizeHeight() curBook needs to be valid too.
    if (port == curPor) {
       curPor = po;
-      if (po->bookOpts.previewPortal || isLocationListBook(po->book)) {
+      if (po->isPreview || isLocationListBook(po->book)) {
          //If the cursor goes to the preview or the quickfix portal, try
          //finding another portal to go to.
          for (;;) {
@@ -2327,7 +2327,7 @@ closePortal(Portal* port, int free_buf) {
                po = po->next;
             if (po == curPor)
                break;
-            if (!po->bookOpts.previewPortal && !isLocationListBook(po->book)) {
+            if (!po->isPreview && !isLocationListBook(po->book)) {
                curPor = po;
                break;
             }
@@ -4420,7 +4420,7 @@ enterPortalWorker(Portal *po, int flags) {
    curPor->statusLineNeedsRedraw = true;
    if (bt_terminal(curPor->book))
       // terminal is likely in another mode
-      redraw_mode = TRUE;
+      redrawModeG = TRUE;
    needRedrawTabpanelG = TRUE;
    if (restart_edit)
       redraw_later(UPD_VALID);   // causes status line redraw
@@ -5982,7 +5982,7 @@ onlyOnePortal(void) {
    FOR_ALL_PORTALS(po) {
       if (po->book
          && (!((bookIsHelp(po->book) && !bookIsHelp(curBook))
-             || po->bookOpts.previewPortal
+             || po->isPreview
            ) || po == curPor) && !is_autoCommPort(po))
           ++count;
    } 
@@ -6965,7 +6965,7 @@ f_win_gettype(Var *argvars, Var *returnVar) {
    }
    if (is_autoCommPort(po))
       returnVar->string = copyStr(S"autocmd");
-   ei (po->bookOpts.previewPortal)
+   ei (po->isPreview)
       returnVar->string = copyStr(S"preview");
    ei (PORTAL_IS_POPUP(po))
       returnVar->string = copyStr(S"popup");
@@ -10175,9 +10175,9 @@ popupMaskGed(Portal *po, int width, int height, int screencol, int screenline) {
        && po->pup.maskCells[line * width + col];
 }
 
-//Set flags in popup_transparent[] for portal "po" to "val".
+//Set flags in popupTransparencyG[] for portal "po" to "val".
 private void
-update_popup_transparent(Portal *po, int val) {
+update_popupTransparencyG(Portal *po, int val) {
    if (po->pup.mask == NULL)
       return;
 
@@ -10216,7 +10216,7 @@ update_popup_transparent(Portal *po, int val) {
           lines = 0;
       for (line = lines; line < linee && line + po->portalRow < screenLinesRowsG; ++line) {
          for (col = cols; col < cole && col + po->portalCol < screenLinesColsG; ++col) {
-            popup_transparent[(line + po->portalRow) * screenLinesColsG + col + po->portalCol] 
+            popupTransparencyG[(line + po->portalRow) * screenLinesColsG + col + po->portalCol] 
                = val;
          } 
       } 
@@ -10463,10 +10463,10 @@ update_popups(void (*win_update)(Portal *po)) {
 
       //This drawing uses the zindex of the popup portal, so that it's on top of the text but 
       //doesn't draw when another popup with higher zindex is on top of the character.
-      screen_zindex = po->pup.zIndex;
+      screenZindexG = po->pup.zIndex;
 
-      //Set flags in popup_transparent[] for masked cells.
-      update_popup_transparent(po, 1);
+      //Set flags in popupTransparencyG[] for masked cells.
+      update_popupTransparencyG(po, 1);
 
       //adjust portalRow and portalCol for border and padding, since
       //win_update() doesn't handle them.
@@ -10725,10 +10725,10 @@ update_popups(void (*win_update)(Portal *po)) {
                po->pup.border[0] > 0 ? borderDeco[0].flags : popupDeco.flags);
       }
 
-      update_popup_transparent(po, 0);
+      update_popupTransparencyG(po, 0);
 
       // Back to the normal zindex.
-      screen_zindex = 0;
+      screenZindexG = 0;
 
       // if this was the message portal popup may start the timer now
       mayStartMessagePortalTimer(po);
@@ -10785,14 +10785,7 @@ popup_is_popup(Portal *po) {
 // Find an existing popup used as the preview portal, in the current tab. Return NULL if not found.
 Portal *
 popupFindPreviewPortal(void) {
-   Portal *po;
-
-   // Preview portal popup is always local to tab.
-   FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
-      if (po->bookOpts.previewPortal)
-         return po;
-   } 
-   return NULL;
+   return curtab->previewPortal;
 }
 
 // Find an existing popup used as the info portal, in the current tab. Return NULL if not found.
@@ -10821,7 +10814,7 @@ f_popup_findinfo(Var *argvars UNUSED, OUT Var *returnVar) {
 
 void
 f_popup_findpreview(Var *argvars UNUSED, OUT Var *returnVar) {
-   Portal   *po = popupFindPreviewPortal();
+   Portal* po = popupFindPreviewPortal();
 
    returnVar->number = po == NULL ? 0 : po->id;
 }
@@ -10830,7 +10823,7 @@ f_popup_findpreview(Var *argvars UNUSED, OUT Var *returnVar) {
 //NOTE: this makes the popup the current portal, so that the file can be edited.  However it 
 //must not remain the current portal, which the caller must make sure of.
 int
-createPopup_preview_window(int info) {
+portalCreatePreviewPortal(int info) {
    Portal* po = createPopup(NULL, NULL, info ? POPUP_INFO : POPUP_PREVIEW);
    if (!po)
       return FAIL;
@@ -10838,7 +10831,8 @@ createPopup_preview_window(int info) {
    if (info)
       po->pup.flags |= POPF_INFO;
    else
-      po->bookOpts.previewPortal = TRUE;
+      po->isPreview = true;
+   curtab->previewPortal = po;
 
    // Set the width to a reasonable value, so that topLine can be computed.
    if (po->pup.minWidth > 0)
@@ -11166,7 +11160,7 @@ pum_display(
       pumWWidth = curPor->width;
 
       FOR_ALL_PORTALS(pvPort) {
-         if (pvPort->bookOpts.previewPortal)
+         if (pvPort->isPreview)
             break;
       } 
       if (pvPort) {
@@ -11681,7 +11675,7 @@ pum_redraw(void) {
    }
 
    // The popup menu is drawn over popup menus with zindex under POPUPMENU_ZINDEX.
-   screen_zindex = POPUPMENU_ZINDEX;
+   screenZindexG = POPUPMENU_ZINDEX;
 
    for  (i = 0; i < pum_height; ++i) {
       idx = i + firstItemIndS;
@@ -11741,7 +11735,7 @@ pum_redraw(void) {
       ++row;
    }
 
-    screen_zindex = 0;
+    screenZindexG = 0;
 }
 
 // Position the info popup relative to the popup menu item.
@@ -11868,17 +11862,17 @@ pum_set_selected(int n, int repeat UNUSED) {
          g_do_tagpreview = 3;
          if (p_pvh > 0 && p_pvh < g_do_tagpreview)
             g_do_tagpreview = p_pvh;
-         ++RedrawingDisabled;
+         ++isRedrawingDisabledG;
          // Prevent undo sync here, if an autocommand syncs undo weird
          // things can happen to the undo tree.
          ++no_u_sync;
          resized = prepare_tagpreview(FALSE, FALSE, use_popup);
          --no_u_sync;
-         if (RedrawingDisabled > 0)
-            --RedrawingDisabled;
+         if (isRedrawingDisabledG > 0)
+            --isRedrawingDisabledG;
          g_do_tagpreview = 0;
 
-         if (curPor->bookOpts.previewPortal || (curPor->pup.flags & POPF_INFO)) {
+         if (curPor->isPreview || (curPor->pup.flags & POPF_INFO)) {
             // Don't want to sync undo in the current book.
             ++no_u_sync;
             int res = startEditingFile(0, NULL, NULL, NULL, ECMD_ONE, 0, NULL);

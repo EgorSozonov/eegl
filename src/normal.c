@@ -2755,7 +2755,7 @@ unshift_special(ActionArg* aArg) {
 // If the mode is currently displayed clear the command line or update the command displayed.
 void
 may_clear_cmdline(void) {
-   if (mode_displayed)
+   if (isModeDisplayedG)
       mustClearCommlineG = TRUE;   // unshow visual mode later
    else
       clear_showcmd();
@@ -6321,7 +6321,7 @@ private void
 nv_normal(ActionArg* aArg) {
    if (aArg->nchar == Ctrl_N || aArg->nchar == Ctrl_G)     {
       clearop(aArg->oper);
-      if (restart_edit != 0 && mode_displayed)
+      if (restart_edit != 0 && isModeDisplayedG)
          mustClearCommlineG = TRUE;      // unshow mode later
       restart_edit = 0;
       if (commPortTypeG != 0)
@@ -6369,7 +6369,7 @@ nv_esc(ActionArg* aArg) {
       }
 
       if (restart_edit != 0)
-          redraw_mode = TRUE;  // remove "-- (insert) --"
+          redrawModeG = TRUE;  // remove "-- (insert) --"
 
       restart_edit = 0;
       if (commPortTypeG != 0)    {

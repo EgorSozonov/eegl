@@ -2287,7 +2287,7 @@ aucmd_abort:
       --book->countPortals;
 
    if (diffopt_hiddenoff() && !unload_buf && book->countPortals == 0)
-      diff_buf_delete(book);   // Clear 'diff' for hidden book.
+      diffDeleteBook(book);   // Clear 'diff' for hidden book.
 
    // Return when a portal is displaying the book or when it's not unloaded.
    if (book->countPortals > 0 || !unload_buf)
@@ -2459,7 +2459,7 @@ bookFreeAll(Book* book, Unt flags){
    // Therefore only return if curBook changed to the deleted book.
    if (book == curBook && !isCurBook)
       return;
-   diff_buf_delete(book);       // Can't use 'diff' for unloaded book.
+   diffDeleteBook(book);       // Can't use 'diff' for unloaded book.
    // Remove any ownsyntax, unless exiting.
    if (curPor && curPor->book == book)
       reset_synblock(curPor);
@@ -3225,7 +3225,7 @@ enterBook(Book* book){
    foldUpdateAll(curPor);   // update folds (later).
 
    if (curPor->bookOpts.diff)
-      diff_buf_add(curBook);
+      diffAddBook(curBook);
 
    curPor->ownSyntax = &(curBook->syntax);
 
@@ -3600,7 +3600,7 @@ buflist_getfile(
       }
    }
 
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
    int retval = FAIL;
    if (GETFILE_SUCCESS(getfile(book->fiNum, NULL, NULL, (options & GETF_SETMARK), lnum, forceit))) {
       // cursor is at to BOL and cursor.lnum is checked due to getfile()
@@ -3613,8 +3613,8 @@ buflist_getfile(
       retval = OK;
    }
 
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
    return retval;
 }
 
@@ -5151,8 +5151,8 @@ renderStatusLine(
       case STL_PREVIEWFLAG:
       case STL_PREVIEWFLAG_ALT:
          itemisflag = TRUE;
-         if (po->bookOpts.previewPortal)
-            str = (CS)((opt == STL_PREVIEWFLAG_ALT) ? (CS)",PRV" : _("[Preview]"));
+         if (po->isPreview)
+            str = (CS)((opt == STL_PREVIEWFLAG_ALT) ? S",PRV" : _("[Preview]"));
          break;
 
       case STL_QUICKFIX:

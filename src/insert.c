@@ -2251,8 +2251,8 @@ ins_esc( long   *count, int      commChar, int      nomove) {      // don't move
 
    int temp = curPor->cursor.col;
    if (disabled_redraw) {
-      if (RedrawingDisabled > 0)
-         --RedrawingDisabled;
+      if (isRedrawingDisabledG > 0)
+         --isRedrawingDisabledG;
       disabled_redraw = FALSE;
    }
    if (!arrow_used) {
@@ -2272,7 +2272,7 @@ ins_esc( long   *count, int      commChar, int      nomove) {      // don't move
           (void)start_redo_ins();
           if (commChar == 'r' || commChar == 'v')
          stuffRedoReadbuff(ESC_STR);   // no ESC in redo buffer
-          ++RedrawingDisabled;
+          ++isRedrawingDisabledG;
           disabled_redraw = TRUE;
           return FALSE;   // repeat the insert
       }
@@ -5987,13 +5987,13 @@ f_complete_add(Var *argvars, Var *returnVar) {
 
 void
 f_complete_check(Var *argvars UNUSED, Var *returnVar) {
-   int save_RedrawingDisabled = RedrawingDisabled;
-   RedrawingDisabled = 0;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
+   isRedrawingDisabledG = 0;
 
    ins_compl_check_keys(0, true);
    returnVar->number = ins_compl_interrupted();
 
-   RedrawingDisabled = save_RedrawingDisabled;
+   isRedrawingDisabledG = save_isRedrawingDisabledG;
 }
 
 // Add match item to the return list. Returns FAIL if out of memory, OK otherwise.
@@ -8512,9 +8512,9 @@ ins_compl_setup_autocompl(Unt c) {
 // Remove (if needed) and show the popup menu
 private void
 show_pum(int prev_cursorRow, int prev_leftCol) {
-   // RedrawingDisabled may be set when invoked through complete().
-   int save_RedrawingDisabled = RedrawingDisabled;
-   RedrawingDisabled = 0;
+   // isRedrawingDisabledG may be set when invoked through complete().
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
+   isRedrawingDisabledG = 0;
 
    // If the cursor moved or the display scrolled we need to remove the pum first.
    setcursor();
@@ -8524,7 +8524,7 @@ show_pum(int prev_cursorRow, int prev_leftCol) {
    ins_compl_show_pum();
    setcursor();
 
-   RedrawingDisabled = save_RedrawingDisabled;
+   isRedrawingDisabledG = save_isRedrawingDisabledG;
 }
 
 //Looks in the first "len" chars. of "src" for search-metachars. If dest is not NULL the chars. 

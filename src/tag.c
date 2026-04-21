@@ -225,7 +225,6 @@ do_tag(
    }
 
    Unt prev_num_matches = matches.len;
-   free_string_option(nofile_fname);
    nofile_fname = NULL;
 
    CLEAR_POS(&saved_fmark.mark);   // shutup gcc 4.0
@@ -2553,16 +2552,13 @@ tag_full_fname(Tagline *tagp) {
 //return OK for success, NOTAGFILE when file not found, FAIL otherwise.
 private int
 jumpto_tag(
-   Byte   *lbuf_arg,   // line from the tags file for this tag
-   int      forceit,   // :ta with !
-   int      keep_help)   // keep help flag (FALSE for cscope)
+   CS lbuf_arg,   // line from the tags file for this tag
+   int forceit,   // :ta with !
+   int keep_help)   // keep help flag (FALSE for cscope)
 {
    int      save_p_scs, save_p_ic;
    LineNr   save_lnum;
-   Byte   *str;
-   Byte   *pbuf_end;
-   Byte   *tofree_fname = NULL;
-   Tagline   tagp;
+   CS pbuf_end;
    int      retval = FAIL;
    int      getfile_result = GETFILE_UNUSED;
    int      search_options;
@@ -2574,8 +2570,7 @@ jumpto_tag(
    if (postponed_split == 0 && !check_can_set_curbuf_forceit(forceit))
       return FAIL;
 
-   // Make a copy of the line, it can become invalid when an autocommand calls
-   // back here recursively.
+   //Make a copy of the line, it can become invalid when an autocommand calls back here recursively
    Unt len = matching_line_len(lbuf_arg) + 1;
    CS lbuf = alloc(len);
    mch_memmove(lbuf, lbuf_arg, len);
@@ -2583,6 +2578,7 @@ jumpto_tag(
    CS pbuf = allocZeroed(LSIZE);
 
    // parse the match line into the tagp structure
+   Tagline tagp;
    if (lbuf == NULL || parse_match(lbuf, &tagp) == FAIL) {
       tagp.fname_end = NULL;
       goto erret;
@@ -2593,7 +2589,7 @@ jumpto_tag(
    CS fname = tagp.fname;
 
    // copy the command to pbuf[], remove trailing CR/NL
-   str = tagp.command;
+   CS str = tagp.command;
    int isdigit = 0;
    if (EE_ISDIGIT(*str)) {
       // need to inject a ':' for a proper Vim9 :nr command
@@ -2620,7 +2616,7 @@ jumpto_tag(
    //Expand file name, when needed (for environment variables).
    //If 'tagrelative' option set, may change file name.
    fname = expand_tag_fname(fname, tagp.tag_fname, TRUE);
-   tofree_fname = fname;   // free() it later
+   CS tofree_fname = fname;   // free() it later
 
    //Check if the file with the tag exists before abandoning the current file. Also accept a file
    //name for which there is a matching BufReadCmd autocommand event (e.g., http://sys/file).
@@ -2633,20 +2629,20 @@ jumpto_tag(
       goto erret;
    }
 
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    if (g_do_tagpreview != 0) {
       postponed_split = 0;   // don't split again below
       curPor_save = curPor;   // Save current window
 
-      //If we are reusing a window, we may change dir when
+      //If we are reusing a portal, we may change dir when
       //entering it (autocommands) so turn the tag filename into a fullpath
-      if (!curPor->bookOpts.previewPortal) {
-          full_fname = FullName_save(fname, FALSE);
-          fname = full_fname;
+      if (!curPor->isPreview) {
+         full_fname = FullName_save(fname, FALSE);
+         fname = full_fname;
 
-          //Make the preview window the current window. Open a preview window when needed.
-          prepare_tagpreview(TRUE, TRUE, FALSE);
+         //Make the preview window the current window. Open a preview window when needed.
+         prepare_tagpreview(TRUE, TRUE, FALSE);
       }
    }
 
@@ -2655,16 +2651,16 @@ jumpto_tag(
       Book* existingBook = booklistFindByNameExpandingLinks(fname);
 
       if (existingBook) {
-         // If 'switchbuf' is set jump to the window containing "buf".
+         // If @switchbuf is set, jump to the portal containing "book".
          if (switchBufGotoPortalIntoBuf(existingBook) != NULL)
-            // We've switched to the buffer, the usual loading of the file must be skipped.
+            // We've switched to the book, the usual loading of the file must be skipped.
             getfile_result = GETFILE_SAME_FILE;
       }
    }
    if (getfile_result == GETFILE_UNUSED && (postponed_split || commModifierG.cmod_tab != 0)) {
       if (splitPortal(postponed_split > 0 ? postponed_split : 0, postponed_split_flags) == FAIL) {
-         if (RedrawingDisabled > 0)
-            --RedrawingDisabled;
+         if (isRedrawingDisabledG > 0)
+            --isRedrawingDisabledG;
          goto erret;
       }
       RESET_BINDING(curPor);
@@ -2800,21 +2796,21 @@ jumpto_tag(
           enterPortal(curPor_save, TRUE);
       }
 
-      if (RedrawingDisabled > 0)
-         --RedrawingDisabled;
+      if (isRedrawingDisabledG > 0)
+         --isRedrawingDisabledG;
    } else {
-      if (RedrawingDisabled > 0)
-         --RedrawingDisabled;
+      if (isRedrawingDisabledG > 0)
+         --isRedrawingDisabledG;
       gotInterruptG = FALSE;  // don't want entering window to fail
       if (postponed_split) {     // close the window
          closePortal(curPor, FALSE);
          postponed_split = 0;
       } ei (PORTAL_IS_POPUP(curPor)) {
-         Portal   *wp = curPor;
+         Portal* po = curPor;
 
          if (portalIsValid(curPor_save))
             enterPortal(curPor_save, TRUE);
-         popup_close(wp->id, FALSE);
+         popup_close(po->id, FALSE);
       }
    }
    if (PORTAL_IS_POPUP(curPor))
@@ -2880,12 +2876,11 @@ test_for_current(
 ) {
    int       c;
    int       retval = FALSE;
-   Byte  *fullname;
 
    if (buf_ffname) {   // if the buffer has a name
       c = *fname_end;
       *fname_end = ZERO;
-      fullname = expand_tag_fname(fname, tag_fname, TRUE);
+      CS fullname = expand_tag_fname(fname, tag_fname, TRUE);
       retval = (fullpathcmp(fullname, buf_ffname, TRUE, TRUE) & FPC_SAME);
       eeglFree(fullname);
       *fname_end = c;
@@ -3009,14 +3004,14 @@ add_tag_field(
    Byte buf[MAXPATHL];
       
    if (start) {
-      if (end == NULL) {
-          end = start + STRLEN(start);
-          while (end > start && (end[-1] == '\r' || end[-1] == '\n'))
-         --end;
+      if (!end) {
+         end = start + STRLEN(start);
+         while (end > start && (end[-1] == '\r' || end[-1] == '\n'))
+            --end;
       }
       len = (int)(end - start);
       if (len > MAXPATHL - 1)
-          len = MAXPATHL - 1;
+         len = MAXPATHL - 1;
       copySubstrToAllocation(buf, (Text){start, len});
    }
    buf[len] = ZERO;
@@ -3079,21 +3074,20 @@ get_tags(List *list, CS pat, CS buf_fname) {
                 // skip "file:" (static tag)
                 p += 4;
             ei (!SPACE_OR_TAB(*p)) {
-               Byte   *s, *n;
-               int   len;
+               CS s;
 
                // Add extra field as a bag entry. Fields are separated by Tabs.
-               n = p;
+               CS n = p;
                while (*p != ZERO && *p >= ' ' && *p < 127 && *p != ':')
                   ++p;
-               len = (int)(p - n);
+               int len = (int)(p - n);
                if (*p == ':' && len > 0) {
                   s = ++p;
                   while (*p != ZERO && *p >= ' ')
                      ++p;
                   n[len] = ZERO;
                   if (add_tag_field(bag, n, s, p) == FAIL)
-                      ret = FAIL;
+                     ret = FAIL;
                   n[len] = ':';
                } else {
                   // Skip field without colon.
@@ -3166,7 +3160,7 @@ tagstack_clear(Portal *wp) {
 //the entries to free up the top of the stack.
 private void
 tagstack_shift(Portal *wp) {
-   Taggy   *tagstack = wp->tagStack;
+   Taggy* tagstack = wp->tagStack;
 
    tagstack_clear_entry(&tagstack[0]);
    for (Unt i = 1; i < wp->tagStackLen; ++i)

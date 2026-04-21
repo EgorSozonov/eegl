@@ -382,7 +382,7 @@ msgOuttransLenDeco(Text slice, char flags) {
    // the mode message.
    if (msg_silent == 0 && slice.len > 0 && msgRowG >= commlineRowG && msgColG == 0) {
       mustClearCommlineG = FALSE;
-      mode_displayed = FALSE;
+      isModeDisplayedG = FALSE;
    }
 
    // If the string starts with a composing character, first draw a space on which the composing 

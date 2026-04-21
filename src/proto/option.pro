@@ -40,7 +40,6 @@ int optExpandOption(Expand *xp, RegMatch *regmatch, CS fuzzystr, Boole canFuzzy,
 void optInitScriptPostprocess(CS fname, CS envname);
 Boole optImmutableMode(void);
 void optCheckBookOptions(BookLocal *t);
-void free_string_option(CS p);
 void clearStringOption(Byte **pp);
 void optChangeStringOptionDirect(CS name, CS val, SetScope scope, ScriptId set_sid);
 void optSetStringOptionDirectInPort(Portal *po, CS name, CS val, Unt optFlags, int set_sid);

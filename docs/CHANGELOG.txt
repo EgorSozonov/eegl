@@ -248,7 +248,7 @@
 [-] +-, -= etc for options (superfluous)
 [-] p_ar (autoread, always on)
 [-] @filetype, @syntax (shouldn't be an option)
-[ ] @previewport - shouldn't be an option, just a single global portal
+[-] @previewport - shouldn't be an option, just a single portal per tab
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany

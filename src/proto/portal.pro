@@ -205,7 +205,7 @@ Portal *popupFindInfoPortal(void);
 void f_popup_findecho(Var *argvars, Var *returnVar);
 void f_popup_findinfo(Var *argvars, Var *returnVar);
 void f_popup_findpreview(Var *argvars, Var *returnVar);
-int createPopup_preview_window(int info);
+int portalCreatePreviewPortal(int info);
 void popup_close_preview(void);
 void popup_close_info(void);
 int popup_overlaps_cmdline(void);

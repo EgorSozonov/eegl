@@ -2957,7 +2957,7 @@ vGetOrPeek(Boole advance) {
    //   if we return an ESC to exit insert mode, the message is deleted
    //   if we don't return an ESC but deleted the message before, redisplay it
    if (advance && p_smd && msg_silent == 0 && (stateG & MODE_INSERT)) {
-      if (specialChar == ESC && !mode_deleted && !no_mapping && mode_displayed) {
+      if (specialChar == ESC && !mode_deleted && !no_mapping && isModeDisplayedG) {
            if (typeBufG.validLen && !KeyTyped)
               redrawCommlineG = TRUE; // delete mode later
            else
@@ -6426,7 +6426,7 @@ do_mouse(
    }
 
    // If Visual mode changed show it later.
-   if ((!VIsual_active && old_active && mode_displayed)
+   if ((!VIsual_active && old_active && isModeDisplayedG)
           || (VIsual_active && p_smd && msg_silent == 0
                 && (!old_active || VIsual_mode != old_mode))
    )

@@ -3692,7 +3692,7 @@ update_search_hl(
             if (match == search_hl && match->has_cursor) {
                match->currHiId = getDecoFlags(HLF_LC);
                if (match->currHiId != match->hiId)
-                  search_hl_has_cursor_lnum = lnum;
+                  searchLastLnumG = lnum;
             }
          } ei (col == match->endcol) {
             match->currHiId = SHORT;

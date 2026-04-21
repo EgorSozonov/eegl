@@ -2059,7 +2059,7 @@ do_debug(Byte *comm){
    termSetMode(TMODE_RAW);
    starttermcap();
 
-   ++RedrawingDisabled;   // don't redisplay the window
+   ++isRedrawingDisabledG;   // don't redisplay the window
    ++no_wait_return;      // don't wait for return
    anyEmsgG = FALSE;      // don't use error from debugged stuff
    cmd_silent = FALSE;      // display commands
@@ -2251,8 +2251,8 @@ do_debug(Byte *comm){
    }
    eeglFree(cmdline);
 
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
    --no_wait_return;
    redraw_all_later(UPD_NOT_VALID);
    need_wait_return = FALSE;
@@ -3171,9 +3171,9 @@ cmdline_pum_active(void){
 void
 cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw){
    int   save_KeyTyped = KeyTyped;
-   int   save_RedrawingDisabled = RedrawingDisabled;
+   int   save_isRedrawingDisabledG = isRedrawingDisabledG;
    if (cclp->input_fn)
-      RedrawingDisabled = 0;
+      isRedrawingDisabledG = 0;
 
    pum_undisplay();
    EE_CLEAR(popupItemsS);
@@ -3190,7 +3190,7 @@ cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw){
    // When a function is called (e.g. for 'foldtext') KeyTyped might be reset as a side effect.
    KeyTyped = save_KeyTyped;
    if (cclp->input_fn)
-      RedrawingDisabled = save_RedrawingDisabled;
+      isRedrawingDisabledG = save_isRedrawingDisabledG;
 }
 
 void
@@ -6145,9 +6145,9 @@ wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
    if (!p_wmnu || wild_menu_showing == 0)
       return;
 
-   int save_RedrawingDisabled = RedrawingDisabled;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
    if (cclp->input_fn)
-      RedrawingDisabled = 0;
+      isRedrawingDisabledG = 0;
 
    // Clear hiliting applied during wildmenu activity
    setHlsearch(false);
@@ -6165,7 +6165,7 @@ wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
    KeyTyped = skt;
    wild_menu_showing = 0;
    if (cclp->input_fn)
-      RedrawingDisabled = save_RedrawingDisabled;
+      isRedrawingDisabledG = save_isRedrawingDisabledG;
 }
 
 void
@@ -9400,7 +9400,7 @@ getexline(
    GetlineAlgo options
 ){
    // When executing a register, remove ':' that's in front of each line.
-   if (exec_from_reg && vpeekc() == ':')
+   if (executingFromRegG && vpeekc() == ':')
       (void)vgetc();
    return getCommline(c, 1L, indent, options);
 }
@@ -10362,13 +10362,13 @@ openCommPort(void) {
    if (restart_edit != 0)   // autocmd with ":startinsert"
       stuffcharReadbuff(K_NOP);
 
-   int save_RedrawingDisabled = RedrawingDisabled;
-   RedrawingDisabled = 0;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
+   isRedrawingDisabledG = 0;
 
    // Call the main loop until <CR> or CTRL-C is typed.
    mainLoop(TRUE);
 
-   RedrawingDisabled = save_RedrawingDisabled;
+   isRedrawingDisabledG = save_isRedrawingDisabledG;
 
    int save_KeyTyped = KeyTyped;
 
@@ -14227,7 +14227,7 @@ call_user_func(
    }
 
    // Don't redraw while executing the function.
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    estack_push_ufunc(fp, 1);
    ESTACK_CHECK_SETUP;
@@ -14297,8 +14297,8 @@ call_user_func(
    // Invoke functions added with ":defer".
    applyDeferred(currentCallS);
 
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
 
    // when the function was aborted because of an error, return -1
    if ((anyEmsgG && (fp->uf_flags & FC_ABORT)) || returnVar->tag == VAR_UNKNOWN) {
@@ -18703,7 +18703,7 @@ applyAutocommGroup(
    autocmd_match = fname;
 
    // Don't redraw while doing autocommands.
-   ++RedrawingDisabled;
+   ++isRedrawingDisabledG;
 
    // name and lnum are filled in later
    estack_push(ETYPE_AUCMD, NULL, 0);
@@ -18796,8 +18796,8 @@ applyAutocommGroup(
           active_apc_list = patcmd.next;
    }
 
-   if (RedrawingDisabled > 0)
-      --RedrawingDisabled;
+   if (isRedrawingDisabledG > 0)
+      --isRedrawingDisabledG;
    autocmd_busy = save_autocmd_busy;
    filechangeshell_busy = FALSE;
    autocmd_nested = save_autocmd_nested;
