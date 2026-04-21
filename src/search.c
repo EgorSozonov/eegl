@@ -4690,7 +4690,6 @@ prepare_help_buffer(void) {
    CS p = S"!-~,^*,^|,^\",192-255";
    if (STRCMP(curBook->o.isKeyword, p) != 0) {
       optChangeStringOptionDirect(S"iskeyword", p, OPT_LOCAL, 0);
-      optCheckBookOptions(&curBook->o);
       (void)bufInitCharsForKeywords(curBook, FALSE);
    }
 

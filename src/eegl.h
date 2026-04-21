@@ -14,7 +14,6 @@ typedef double _Float32x;
 typedef double _Float64x;
 #endif
 
-
 typedef unsigned char* CS; // ZERO-terminated byte arrays only
 extern CS const Em;
 #define S (unsigned char*)
@@ -24,10 +23,9 @@ extern CS const Em;
 // ============ the header file puzzle: order matters =========
 
 
-# if (!defined(__ANDROID__)) || defined(__GNU__)
+#if (!defined(__ANDROID__)) || defined(__GNU__)
 // Needed for strptime().  Needs to be done early, since header files can
-// include other header files and end up including time.h, where these symbols
-// matter for Eegl.
+// include other header files and end up including time.h, where these symbols matter for Eegl.
 // 700 is needed for mkdtemp().
 #  ifndef _XOPEN_SOURCE
 #   define _XOPEN_SOURCE    700
@@ -39,7 +37,7 @@ extern CS const Em;
 #    define _DEFAULT_SOURCE 1
 #   endif
 #  endif
-# endif
+#endif
 
 #include <stdint.h>
 
@@ -90,9 +88,6 @@ typedef struct timeval TimeVal;
 
 // Define if we can use IPv6 networking
 #define FEAT_IPV6 1
-
-// Define if /proc/self/exe or similar can be read
-#define PROC_EXE_LINK "/proc/self/exe"
 
 //}}}
 
@@ -288,9 +283,7 @@ typedef void (*sighandler_T) SIGPROTOARG;
 #define STR2NR_FORCE 0x80   // only when ONE of the above is used
 #define STR2NR_QUOTE 0x10   // ignore embedded single quotes
 
-//Shorthand for unsigned variables. Many systems, but not all, have u_char
-//already defined, so we use Byte to avoid trouble.
-typedef unsigned char  Byte;
+typedef unsigned char Byte;
 
 // Make sure Ulong is big enough to hold a pointer.
 // For printf() and scanf(), we need to take care of Ulong specifically.
@@ -322,9 +315,6 @@ typedef off_t off_T;
 typedef Byte Byte;
 #define MAX_TYPENR 65535
 
-//The u8char_T can hold one decoded UTF-8 character.
-//We use 32 bits, since some Asian characters don't fit in 16 bits.
-typedef unsigned int u8char_T;   // int is 32 bits or more
 
 #define EXTRA_H
 #include "generic.h" // keymap, version
@@ -1278,7 +1268,7 @@ LIST_TY(Unt)
 #define GETFILE_UNUSED       8
 #define GETFILE_SUCCESS(x)  ((x) <= 0)
 
-// Values for buflist_new() flags
+// Values for bookNew() flags
 #define BLN_CURBOOK      1 //may re-use curBook for new book
 #define BLN_LISTED       2 //put new book in book list
 #define BLN_DUMMY        4 //allocating dummy book
@@ -3008,22 +2998,7 @@ struct ListWatch {
    ListWatch* next;   // next watcher
 };
 
-// Info used by a ":for" loop.
-typedef struct {
-   int      endsWithSemicolon;   // TRUE if ending in '; var]'
-   int      fi_varcount;   // nr of variables in [] or zero
-   int      fi_break_count;   // nr of line breaks encountered
-   ListWatch   fi_lw;      // keep an eye on the item used.
-   List   *fi_list;   // list being used
-   int      fi_bi;      // index of blob
-   Blob   *fi_blob;   // blob being used
-   Arr(Byte) fi_string;   // copy of string being used
-   int      fi_byte_idx;   // byte index in fi_string
-   List* fi_tuple;   // list being used
-   int      fi_tuple_idx;   // list index in fi_tuple
-   int      csFlags;   // cs_flags or'ed together
-} ForInfo;
-
+declStruct(ForInfo);
 
 // A list used for saving values of "emsg_silent".  Used by ex_try() to save the
 // value of "emsg_silent" if it was non-zero.  When this is done, the CSF_SILENT flag below is set.
@@ -5322,8 +5297,8 @@ typedef struct {
 } TagName;
 
 typedef struct {
-   UINT32 total[2];
-   UINT32 state[8];
+   Unt total[2];
+   Unt state[8];
    Byte buffer[64];
 } ContextSha256;
 
@@ -6152,12 +6127,12 @@ EXTERN Window x11WindowG INIT(= 0);
 // the character at this position, or ZERO when the character in ScreenLines[] is to be 
 // used (ASCII char). The composing characters are to be drawn on top of the original character.
 // ScreenLinesC[0][off] is only to be used when ScreenLinesUC[off] != 0.
-EXTERN Arr(u8char_T) screenLinesUCG INIT(= NULL);   // decoded UTF-8 characters
+EXTERN Arr(Unt) screenLinesUCG INIT(= NULL);   // decoded UTF-8 characters
 
 // How many Unicode symbols to combine max
 #define MAX_COMBINED_SYMBOLS 6
 
-EXTERN Arr(u8char_T) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
+EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
 
 // Last known cursor position. Positioning the cursor is reduced by remembering the last position.
 // Mostly used by windgoto() and screen_char().
@@ -6664,17 +6639,17 @@ EXTERN int seenModifyOtherKeys INIT(= FALSE);
 
 // The state for the modifyOtherKeys level
 typedef enum {
-   // Initially we have no clue if the protocol is on or off.
+   //Initially we have no clue if the protocol is on or off.
    MOKS_INITIAL,
-   // Used when receiving the state and the level is not two.
+   //Used when receiving the state and the level is not two.
    MOKS_OFF,
-   // Used when receiving the state and the level is two.
+   //Used when receiving the state and the level is two.
    MOKS_ENABLED,
-   // Used after outputting t_TE when the state was MOKS_ENABLED.  We do not
-   // really know if t_TE actually disabled the protocol, the following t_TI
-   // is expected to request the state, but the response may come only later.
+   //Used after outputting t_TE when the state was MOKS_ENABLED.  We do not
+   //really know if t_TE actually disabled the protocol, the following t_TI
+   //is expected to request the state, but the response may come only later.
    MOKS_DISABLED,
-   // Used after outputting t_TE when the state was not MOKS_ENABLED.
+   //Used after outputting t_TE when the state was not MOKS_ENABLED.
    MOKS_AFTER_T_TE,
 } mokstate_T;
 
@@ -6697,7 +6672,7 @@ EXTERN Boole ins_at_eol INIT(= false); // put cursor after eol when restarting e
 EXTERN Boole no_abbr INIT(= true);   // TRUE when no abbreviations loaded
 
 #ifdef USE_EXE_NAME
-EXTERN Byte   *exe_name;      // the name of the executable
+EXTERN CS exe_name;      // the name of the executable
 #endif
 
 EXTERN int   mapped_ctrl_c INIT(= FALSE); // modes where CTRL-C is mapped
@@ -6761,10 +6736,10 @@ EXTERN int   redrawtime_limit_set INIT(= FALSE);
 EXTERN int   need_highlight_changed INIT(= TRUE);
 
 #define NSCRIPT 15
-EXTERN FILE   *scriptin[NSCRIPT];       // streams to read script from
-EXTERN int   curscript INIT(= 0);       // index in scriptin[]
-EXTERN FILE   *scriptout  INIT(= NULL);   // stream to write script to
-EXTERN int   read_cmd_fd INIT(= 0);       // fd to read commands from
+EXTERN FILE* scriptin[NSCRIPT];       // streams to read script from
+EXTERN int curscript INIT(= 0);       // index in scriptin[]
+EXTERN FILE* scriptout  INIT(= NULL);   // stream to write script to
+EXTERN int  read_cmd_fd INIT(= 0);       // fd to read commands from
 
 // Set to TRUE when an interrupt signal occurred.
 // Volatile because it is used in signal handler catch_sigint().
@@ -6809,7 +6784,7 @@ EXTERN int   autocmd_fname_full;        // autocmd_fname is full path
 EXTERN int   autocmd_bufnr INIT(= 0);     // fnum for <abuf> on commline
 EXTERN CS autocmd_match INIT(= E); // name for <amatch> on commline
 
-EXTERN int   did_cursorhold INIT(= TRUE);  // set when CursorHold t'gerd
+EXTERN int   did_cursorhold INIT(= TRUE);  // set when CursorHold triggered
 EXTERN Pos   last_cursormoved         // for CursorMoved event
 # ifdef MAIN_C
           = {0, 0, 0}
@@ -6819,12 +6794,10 @@ EXTERN Pos   last_cursormoved         // for CursorMoved event
 EXTERN int   postponed_split INIT(= 0);  // for CTRL-W CTRL-] command
 EXTERN int   postponed_split_flags INIT(= 0);  // args for win_split()
 EXTERN int   postponed_split_tab INIT(= 0);  // commModifierG.cmod_tab
-EXTERN int   g_do_tagpreview INIT(= 0);  // for tag preview commands:
-                   // height of preview window
+EXTERN int   g_do_tagpreview INIT(= 0);  // for tag preview commands: height of preview portal
 EXTERN int   g_tag_at_cursor INIT(= FALSE); // whether the tag command comes
                    // from the command line (0) or was invoked as a normal command (1)
 
-EXTERN int   replace_offset INIT(= 0);   // offset for replace_push()
 
 EXTERN Byte   *escape_chars INIT(= (Byte *)" \t\\\"|"); // need backslash in cmd line
                    
@@ -6841,21 +6814,19 @@ EXTERN int  redir_execute INIT(= 0);   // execute() redirection
 EXTERN Byte   langmap_mapchar[256];   // mapping for language keys
 
 EXTERN int  wild_menu_showing INIT(= 0);
-#define WM_SHOWN   1      // wildmenu showing
-#define WM_SCROLLED   2      // wildmenu showing with scroll
+#define WM_SHOWN     1      // wildmenu showing
+#define WM_SCROLLED  2      // wildmenu showing with scroll
 
 EXTERN char   breakat_flags[256];   // which characters are in 'breakat'
 
 // These are in main.c, call initLongVersion() before use.
-extern char *Version;
-
-
-EXTERN Byte   *homedir INIT(= NULL);
+extern CS Version;
+EXTERN CS homedir INIT(= NULL);
 
 // When a window has a local directory, the absolute path of the global
 // current directory is stored here (in allocated memory).  If the current
 // directory is not a local directory, globaldir is NULL.
-EXTERN Byte   *globaldir INIT(= NULL);
+EXTERN CS globaldir INIT(= NULL);
 
 EXTERN int   disable_fold_update INIT(= 0);
 
@@ -6865,23 +6836,10 @@ EXTERN int   km_startsel INIT(= FALSE);
 
 EXTERN int   commPortTypeG INIT(= 0);   // type of commline portal or 0
 EXTERN Unt   commPortResultG INIT(= 0); // result of commline portal or 0
-EXTERN Book   *commPortBookG INIT(= NULL); // book of commline portal or NULL
-EXTERN Portal   *commPortPortG INIT(= NULL); // portal of commmline portal or NULL
+EXTERN Book* commPortBookG INIT(= NULL); // book of commline portal or NULL
+EXTERN Portal* commPortPortG INIT(= NULL); // portal of commmline portal or NULL
 
 EXTERN Byte no_lines_msg[]   INIT(= "--No lines in book--");
-
-EXTERN char typename_unknown[]   INIT(= "unknown");
-EXTERN char typename_int[]   INIT(= "int");
-EXTERN char typename_longint[]   INIT(= "long int");
-EXTERN char typename_longlongint[]   INIT(= "long long int");
-EXTERN char typename_unsignedint[]   INIT(= "unsigned int");
-EXTERN char typename_unsignedlongint[]   INIT(= "unsigned long int");
-EXTERN char typename_unsignedlonglongint[]   INIT(= "unsigned long long int");
-EXTERN char typename_pointer[]   INIT(= "pointer");
-EXTERN char typename_percent[]   INIT(= "percent");
-EXTERN char typename_char[] INIT(= "char");
-EXTERN char typename_string[]   INIT(= "string");
-EXTERN char typename_float[]   INIT(= "float");
 
 // When ":global" is used to number of substitutions and changed lines is
 // accumulated until it's finished.
@@ -8129,8 +8087,6 @@ EXTERN Byte e_endfor_without_for[]
    INIT(= "E588: :endfor without :for");
 EXTERN Byte e_backupext_and_patchmode_are_equal[]
    INIT(= "E589: 'backupext' and 'patchmode' are equal");
-EXTERN Byte e_preview_portal_already_exists[]
-   INIT(= "E590: A preview portal already exists");
 EXTERN Byte e_winheight_cannot_be_smaller_than_winminheight[]
    INIT(= "E591: 'winheight' cannot be smaller than 'winminheight'");
 EXTERN Byte e_winwidth_cannot_be_smaller_than_winminwidth[]

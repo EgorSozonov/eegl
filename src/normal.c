@@ -4119,7 +4119,7 @@ nv_ctrlo(ActionArg* aArg) {
 private void
 nv_hat(ActionArg* aArg) {
    if (!checkclearopq(aArg->oper)) {
-      (void)buflist_getfile((int)aArg->count0, (LineNr)0, GETF_SETMARK|GETF_ALT, FALSE);
+      (void)booklistGetFile((int)aArg->count0, (LineNr)0, GETF_SETMARK|GETF_ALT, FALSE);
    }
 }
 

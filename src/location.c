@@ -2752,7 +2752,7 @@ jumpAndEditBook(
       }
 
       if (retval == OK) {
-          retval = buflist_getfile(fnum, (LineNr)1, GETF_SETMARK | GETF_SWITCH, forceit);
+          retval = booklistGetFile(fnum, (LineNr)1, GETF_SETMARK | GETF_SWITCH, forceit);
       }
    }
 

@@ -11,12 +11,6 @@
 
 //Code to handle user-settable options. Checklist for adding a new option:
 //- Put it in one of the arrays in defoption.h (depending on if it's global or local).
-//- For a global option: Add a variable for it in eegl.h
-//- For a buffer- or portal-local option:
-//  - For a portal option, add some code to copyPortOpt().
-//  - For a portal string option, add code to checkPortOptions() and clearPortOpt().
-//  - For a buffer option, add some code to optsCopyToBook().
-//  - For a buffer string option, add code to optCheckBookOptions().
 //- If it's a numeric option, add a setter callback and perform necessary bounds checks there
 //- If it's a list of flags, add some code in setStringImpl(), search for WW_ALL.
 //- Add documentation!  One line in manual/manual.help, full description in
@@ -195,7 +189,6 @@ private int put_setnum(FILE *fd, CS cmd, CS name, OptionRef ref);
 private int put_setstring(FILE *fd, CS cmd, CS name, OptionRef ref, Ulong flags);
 private int put_setbool(FILE *fd, CS cmd, CS name, Boole value);
 private int briopt_check(CS briopt, Portal* po);
-private void makeStringOptionNotNull(OUT CS* pp);
 private CS validateAndSetListOfStrings(OUT OptionChange* cha, Arr(CS) values);
 private int optionCompletionExpand(
       OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int))
@@ -252,7 +245,7 @@ isOptionAtDefault(Option* o, OptionRef ref) {
 //}
 
 //Set the default value of a string option from @Option.defaultValue.
-//Used for [sh], [backupskip] and [term]. When "escape" is TRUE, escape spaces with a backslash.
+//Used for @sh, @backupskip and @term. When "escape" is TRUE, escape spaces with a backslash.
 private void
 optSetStringDefault_esc(CS name, CS val, Boole escape) {
    Option* o = findOption(name);
@@ -267,7 +260,6 @@ optSetStringDefault_esc(CS name, CS val, Boole escape) {
       p = copyStr(val);
 
 
-   eeglFree(o->defaultValue.string);
    o->defaultValue.string = p;
 }
 
@@ -308,7 +300,7 @@ setBoolImpl(
 private CS
 findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags) {
    if (!origVal)
-      return Em;
+      return null;
       
    int bs = 0;
    for (CS s = origVal; *s != ZERO; ++s) {
@@ -328,15 +320,14 @@ findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags) 
       else
          bs = 0;
    }
-   return Em;
+   return null;
 }
 
 //Set the default for @backupskip to include environment variables for temp files.
 private void
 set_init_default_backupskip(void) {
    Byte   *p;
-   static CS names[4] = {null, S"TMPDIR", S"TEMP", S"TMP"};
-   names[0] = Em;
+   static CS names[4] = {S"", S"TMPDIR", S"TEMP", S"TMP"};
    ArrayList ga;
 
    Option* o = findOption(S"backupskip");
@@ -435,6 +426,7 @@ setDefault(
             o, o->defaultValue.string, setScope, 0
          );
       } else {
+         
          *ref.string = o->defaultValue.string;
       }
    } ei (o->defaultValue.tag == OPTION_NUM) {
@@ -596,7 +588,7 @@ getNewValOfStringOption(
 
    //Expand environment variables and ~.
    newVal = expandEnvVarsInStringOption(o, newVal);
-   if (newVal == Em)
+   if (!newVal)
       return newVal;
 
    if (save_arg)
@@ -1092,12 +1084,12 @@ private CS
 expandEnvVarsInStringOption(Option* o, CS val) {
    //if option doesn't need expansion, nothing to do
    if ((o->flags & P_EXPAND) == 0)
-      return Em;
+      return null;
 
    //If val is longer than MAXPATHL, no meaningful expansion can be done;
    //doExpandEnv() would truncate the string.
    if (val && STRLEN(val) > MAXPATHL)
-      return Em;
+      return null;
 
    if (!val) {
       if ((o->flags & (P_BOOK|P_PORTAL)) != 0) {
@@ -1108,10 +1100,10 @@ expandEnvVarsInStringOption(Option* o, CS val) {
    }
       
    if (!val)
-      return Em;
+      return null;
 
    if (STRCMP(NameBuff, val) == 0)   // they are the same
-      return Em;
+      return null;
 
    return copyStr(NameBuff);
 }
@@ -1433,7 +1425,7 @@ expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, CS flags) {
 private CS
 illegal_char(OUT ErrBuilder* errb, Unt c) {
    if (!errb->c)
-      return Em;
+      return null;
    eeSnprintf(errb->c, errb->len, _(e_illegal_character_str), transchar(c));
    return errb->c;
 }
@@ -2184,7 +2176,7 @@ afterCopyPortOpt(Portal* po) {
 private CS
 copyOptionVal(CS val) {
    if (*val == ZERO)
-      return Em;  // no need to allocate memory
+      return null;  // no need to allocate memory
    return copyStr(val);
 }
 
@@ -2197,40 +2189,12 @@ private inline void nopLong(long* a UNUSED){
 private inline void nopByte(Byte* a UNUSED){
 }
 
-//Check for NULL pointers in a PortLocal and replace them with Em.
-private void
-checkPortOptions(PortLocal* t) {
-#define nopp(x) 
-#define OPTIONS_MAKE_STRINGS_NONNULL
-#define OPTIONS_DEF_PORTAL
-#include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
-#undef OPTIONS_MAKE_STRINGS_NONNULL
-
-//   makeStringOptionNotNull(&wop->foldIgnore);
-//   makeStringOptionNotNull(&wop->foldExpr);
-//   makeStringOptionNotNull(&wop->foldText);
-//   makeStringOptionNotNull(&wop->foldMarker);
-//   makeStringOptionNotNull(&wop->eventIgnorePort);
-//   makeStringOptionNotNull(&wop->showBreak);
-//   makeStringOptionNotNull(&wop->statusLine);
-//   makeStringOptionNotNull(&wop->termWinKey);
-//   makeStringOptionNotNull(&wop->termWinSize);
-//   makeStringOptionNotNull(&wop->breakIndentOpt);
-//   makeStringOptionNotNull(&wop->hiliteGroupName);
-//   makeStringOptionNotNull(&wop->listChars);
-//   makeStringOptionNotNull(&wop->fillChars);
-//   makeStringOptionNotNull(&wop->virtualEdit);
-}
-
-
 //Copy the options from one PortLocal to another.
 //Don't free the old option values in "to", use clearPortOpt() for that.
 //The @scroll is not copied because it depends on the portal height.
 //The @previewwindow is reset, there can be only one preview portal.
 void
 copyPortOpt(PortLocal* t, PortLocal* s) {
-
 
 #define OPTIONS_COPY
 #define OPTIONS_DEF_PORTAL
@@ -2240,17 +2204,12 @@ copyPortOpt(PortLocal* t, PortLocal* s) {
 
    // Copy the script context so that we know where the value was last set.
    mch_memmove(t->scriptLocs, s->scriptLocs, sizeof(t->scriptLocs));
-   checkPortOptions(t);      // don't want NULL pointers
 }
 
 // Free the allocated memory inside a PortLocal.
 void
 optClearPortOptions(PortLocal* t) {
-#define OPTIONS_FREE
-#define OPTIONS_DEF_PORTAL
-#include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
-#undef OPTIONS_FREE
+   free(t->stringOptions.c);
 }
 
 private void
@@ -2414,8 +2373,7 @@ optExpandOldOption(OUT ExpandMatch* matches) {
       // put string of option value in NameBuff
       toString(expandOptionS, expandOptionScopeS);
       var = NameBuff;
-   } ei (!var)
-      var = Em;
+   }
 
    CS buffer = escape_option_str_cmdline(var);
 
@@ -2424,11 +2382,10 @@ optExpandOldOption(OUT ExpandMatch* matches) {
    return OK;
 }
 
-//Return TRUE if "ref" points to 'wildchar' or 'wildcharm' and it can be
-//printed as a keyname.
+//Return TRUE if "ref" points to 'wildchar' or 'wildcharm' and it can be printed as a keyname.
 //"*wcp" is set to the value of the option if it's 'wildchar' or 'wildcharm'.
 private int
-wildcharUseKeyname(OptionRef ref, long *wcp) {
+wildcharUseKeyname(OptionRef ref, long* wcp) {
    if (ref.tag == OPTION_NUM && (ref.num == &p_wc || ref.num == &p_wcm)) {
       *wcp = *ref.num;
    if (IS_SPECIAL(*wcp) || find_special_key_in_table((int)*wcp) >= 0)
@@ -2451,7 +2408,6 @@ shortmess(int x) {
 int
 reset_optWasSet(CS name) {
    Option* o = findOption(name);
-
    if (!o)
       return FAIL;
 
@@ -2822,7 +2778,7 @@ setEeglinfo(OptionChange* cha) {
                );
                errmsg = cha->errb.c;
             } else
-               errmsg = Em;
+               errmsg = null;
             break;
          }
       }
@@ -2832,7 +2788,7 @@ setEeglinfo(OptionChange* cha) {
          if (cha->errb.c)
             errmsg = e_missing_comma;
          else
-            errmsg = Em;
+            errmsg = null;
          break;
       }
    }
@@ -3700,12 +3656,10 @@ private void didset_options(void);
 private int find_key_option(CS arg_arg, Boole has_lt);
 private void printOptions(ToPrint which);
 private OptionRef getRefInScope(Option *p, SetScope setScope);
-private void checkPortOptions(PortLocal *);
 
 private CS setStringImpl(
    OUT Option* o, CS oldVal, CS newVal, SetScope setScope
 );
-private void makeStringOptionNotNull(CS* pp);
 
 //}}}
 //{{{other general functions
@@ -3715,7 +3669,7 @@ calcGlobalStringsLength() {
    Unt totalLen = 0;
    Option* o UNUSED;
    FOR_GLOBAL(o) {
-      if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string != Em)) {
+      if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string)) {
          totalLen += (STRLEN(*o->c.reference.string) + 1); // +1 for the ZERO
       }
    }
@@ -3727,7 +3681,7 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
    Unt totalLen = 0;
    for (Unt i = 0; i < count; i++) {
       Option* o = opts + i;
-      if (o->defaultValue.tag == OPTION_STRING && o->c.local.val.string != Em) {
+      if (o->defaultValue.tag == OPTION_STRING && o->c.local.val.string) {
          totalLen += (STRLEN(o->c.local.val.string) + 1); // +1 for the ZERO
       }
    }
@@ -3744,12 +3698,10 @@ copyGlobalStringOptionsToBuffer(OUT Sbuf* bui) {
    
    Option* o UNUSED;
    FOR_GLOBAL(o) {
-      if (o->defaultValue.tag == OPTION_STRING) {
+      if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string)) {
          Unt len = STRLEN(*o->c.reference.string) + 1; // +1 for the ZERO
-         if (len > 1) {
-            memcpy(wr, *o->c.reference.string, len);
-            wr += len;
-         }
+         memcpy(wr, *o->c.reference.string, len);
+         wr += len;
       }
    }
    bui->len = wr - bui->c;
@@ -3778,7 +3730,7 @@ copyLocalStringOptionsToBuffer(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
 
 private void
 copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha) {
-   if (*old != Em && old != cha->ref.string) {
+   if (*old && old != cha->ref.string) {
       Unt len = STRLEN(*old) + 1;
       memcpy(wr, *old, len);
       wr += len;
@@ -3791,7 +3743,7 @@ updateStringRef(OptionChange* cha) {
    Unt newLen = STRLEN(new) + 1;
    
    if (newLen == 0) {
-      *cha->ref.string = Em;
+      *cha->ref.string = null;
       return;
    }
    
@@ -3901,30 +3853,6 @@ updateNumRef(OptionChange* cha) {
    *cha->ref.num = cha->newVal.num;
 }
 
-// Check for string options that are NULL 
-void
-optMakeStringOptionsNonnull(void) {
-   Option* o UNUSED;
-   FOR_GLOBAL(o) {
-      if ((o->defaultValue.tag == OPTION_STRING)) {
-         makeStringOptionNotNull(o->c.reference.string);
-         makeStringOptionNotNull(&o->defaultValue.string);
-      } 
-   }
-   FOR_PORTAL(o) {
-      if ((o->defaultValue.tag == OPTION_STRING)) {
-         makeStringOptionNotNull(&o->c.local.val.string);
-         makeStringOptionNotNull(&o->defaultValue.string);
-      } 
-   }
-   FOR_BOOK(o) {
-      if ((o->defaultValue.tag == OPTION_STRING)) {
-         makeStringOptionNotNull(&o->c.local.val.string);
-         makeStringOptionNotNull(&o->defaultValue.string);
-      } 
-   }
-}
-
 //After setting various option values: recompute variables that depend on option values.
 private void
 didset_options(void) {
@@ -3947,7 +3875,7 @@ set_init_doExpandEnv(void) {
          continue;
       }
       p = expandEnvVarsInStringOption(o, NULL);
-      if (p != Em) {
+      if (p) {
          *(o->c.reference.string) = p;
          o->defaultValue.string = p;
       }
@@ -3957,7 +3885,7 @@ set_init_doExpandEnv(void) {
          continue;
       }
       p = expandEnvVarsInStringOption(o, NULL);
-      if (p != Em) {
+      if (p) {
          o->c.local.val.string = p;
          o->defaultValue.string = p;
       }
@@ -3967,7 +3895,7 @@ set_init_doExpandEnv(void) {
          continue;
       }
       p = expandEnvVarsInStringOption(o, NULL);
-      if (p != Em) {
+      if (p) {
          o->c.local.val.string = p;
          o->defaultValue.string = p;
       }
@@ -3980,7 +3908,6 @@ void
 optionInit0() {
    langmap_init();
    
-   optMakeStringOptionsNonnull();
    Option* o UNUSED;
    FOR_BOOK(o) {
       o->flags |= P_BOOK;
@@ -4008,8 +3935,6 @@ optionInit0() {
 #endif
 
    curBook->o.initialized = true;
-   optCheckBookOptions(&curBook->o);
-   checkPortOptions(&curPor->bookOpts);
 
    //Must be before expandEnvVarsInStringOption(), because that one needs eeIsIdentifierChar()
    didset_options();
@@ -4522,7 +4447,6 @@ optsCopyToBook(OUT Book* book, Unt flags) {
    //flag that indicates that the options have been initialized.
    if (shouldCopy)
       book->o.initialized = true;
-   optCheckBookOptions(&book->o);       // make sure we don't have NULLs
 }
 
 int
@@ -4618,34 +4542,9 @@ private int set_shm_recursive = 0;
 private CS
 illegal_char_after_chr(OUT ErrBuilder* errb, int c) {
    if (!errb->c)
-      return Em;
+      return null;
    eeSnprintf(errb->c, errb->len, _(e_illegal_character_after_chr), c);
    return errb->c;
-}
-
-//Check string options in a buffer for NULL value.
-void
-optCheckBookOptions(BookLocal* t) {
-
-#define OPTIONS_MAKE_STRINGS_NONNULL
-#define OPTIONS_DEF_BOOK
-#include "defoption.h"
-#undef OPTIONS_DEF_BOOK
-#undef OPTIONS_MAKE_STRINGS_NONNULL
-
-}
-
-void
-clearStringOption(Byte **pp) {
-   if (*pp != Em)
-      eeglFree(*pp);
-   *pp = Em;
-}
-
-private void
-makeStringOptionNotNull(OUT CS* pp) {
-   if (*pp == NULL)
-      *pp = Em;
 }
 
 //Set a string option to a new value (without checking the effect).

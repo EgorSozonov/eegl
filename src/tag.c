@@ -316,7 +316,7 @@ do_tag(
             if (saved_fmark.fnum != curBook->fiNum) {
                //Jump to other file. If this fails (e.g. because the
                //file was changed) keep original position in tag stack.
-               if (buflist_getfile(saved_fmark.fnum, saved_fmark.mark.lnum, GETF_SETMARK, forceit)
+               if (booklistGetFile(saved_fmark.fnum, saved_fmark.mark.lnum, GETF_SETMARK, forceit)
                    == FAIL
                ) {
                   tagstackidx = oldtagstackidx;  // back to old posn

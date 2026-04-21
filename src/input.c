@@ -3622,7 +3622,7 @@ private struct interval ambiguous[] = {
 
 // mb_char2cells() with different argument type for libvterm.
 int
-utf_uint2cells(UINT32 c) {
+utf_uint2cells(Unt c) {
    if (c >= 0x100 && utf_iscomposing((int)c))
       return 0;
    return mb_char2cells((int)c);

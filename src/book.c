@@ -54,7 +54,7 @@ setRefInBooks(int copyID) {
 Book *
 bookFindByName(CS name, Boole curtab_only) {
    Book* book = bookFindFileByBookNr(
-      buflist_findpat(name, name + STRLEN(name), true, false, curtab_only)
+      booklistFindPattern(name, name + STRLEN(name), true, false, curtab_only)
    );
 
    return book;
@@ -3083,7 +3083,7 @@ do_bufdel(
                break;
             if (!EE_ISDIGIT(*arg)) {
                p = skiptowhite_esc(arg);
-               bnr = buflist_findpat(
+               bnr = booklistFindPattern(
                       arg, p, command == DOBOOK_WIPE || command == DOBOOK_WIPE_REUSE, FALSE, FALSE
                );
                if (bnr < 0)       // failed
@@ -3137,7 +3137,8 @@ bookSetCurBook(Book* book, int action) {
    setpcmark();
    if ((commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
       curPor->altFnum = curBook->fiNum; // remember alternate file
-   buflist_altfpos(curPor);          // remember curpos
+      
+   bookSetPosInPort(curBook, curPor, curPor->cursor.lnum, curPor->cursor.col, TRUE);
 
    // Don't restart Select mode after switching to another book.
    VIsual_reselect = FALSE;
@@ -3532,10 +3533,10 @@ bookNew(
 //Free the memory for the options of a book.
 void
 bookFreeOptions(Book* book){
-   clearStringOption(&book->o.isKeyword);
+   book->o.isKeyword = null;
    evFreeCallback(book->o.completeFn);
    evFreeCallback(book->o.omniFn);
-   clearStringOption(&book->o.thesaurus);
+   book->o.thesaurus = null;
    evFreeCallback(book->o.thesaurusFn);
    evFreeCallback(book->o.completeFn);
    evFreeCallback(book->o.tagFn);
@@ -3551,7 +3552,7 @@ bookFreeOptions(Book* book){
 //
 //Return FAIL for failure, OK for success.
 int
-buflist_getfile(
+booklistGetFile(
    int      n,
    LineNr   lnum,
    int      options,
@@ -3709,7 +3710,7 @@ booklistFindName_stat(Arr(Byte) fullFName, FileStat   *stp) {
 //Find file in book list by a regexp pattern.
 //Return fnum of the found book. Return < 0 for error.
 int
-buflist_findpat(
+booklistFindPattern(
    CS pattern,
    CS pattern_end,   // pointer to first char after pattern
    int unlisted,   // find unlisted books
@@ -4163,25 +4164,24 @@ bookListFiles(Invocation *invo) {
    int      job_none_open;
 
    ArrayList   buflist;
-   Book   **buflist_data = NULL, **p;
+   Book** booklistData = NULL, **p;
 
    if (firstOccurrence(invo->arg, 't')) {
       ga_init2(&buflist, sizeof(Book *), 50);
       FOR_ALL_BOOKS(book) {
-          if (ga_grow(&buflist, 1) == OK)
-         ((Book **)buflist.c)[buflist.len++] = book;
+         if (ga_grow(&buflist, 1) == OK)
+            ((Book **)buflist.c)[buflist.len++] = book;
       }
 
-      qsort(buflist.c, (Unt)buflist.len,
-         sizeof(Book *), bookCompare);
+      qsort(buflist.c, (Unt)buflist.len, sizeof(Book *), bookCompare);
 
-      buflist_data = (Book **)buflist.c;
-      book = *buflist_data;
+      booklistData = (Book **)buflist.c;
+      book = *booklistData;
    }
-   p = buflist_data;
+   p = booklistData;
 
-   for (; book && !gotInterruptG; book = buflist_data
-       ? (++p < buflist_data + buflist.len ? *p : NULL)
+   for (; book && !gotInterruptG; book = booklistData
+       ? (++p < booklistData + buflist.len ? *p : NULL)
        : book->next
    ){
       job_running = term_job_running(book->term);
@@ -4258,7 +4258,7 @@ bookListFiles(Invocation *invo) {
       ui_breakcheck();
    }
 
-   if (buflist_data)
+   if (booklistData)
       ga_clear(&buflist);
 }
 
@@ -4403,7 +4403,7 @@ Book *
 setaltfname(
    CS fullFName,
    CS sfname,
-   LineNr   lnum
+   LineNr lnum
 ){
    // Create a book.  'buflisted' is not set if it's a new book
    Book* book = bookNew(fullFName, sfname, lnum, 0);
@@ -4417,7 +4417,7 @@ setaltfname(
 CS
 getaltfname(int      errmsg) {      // give error message
    CS fname;
-   LineNr   dummy;
+   LineNr dummy;
    if (bookGetFnameByFileId(0, OUT &fname, OUT &dummy) == FAIL) {
       if (errmsg)
          emsg(_(e_no_alternate_file));
@@ -4434,13 +4434,6 @@ bookOpen(CS fname, Unt flags){
    if (book)
       return book->fiNum;
    return 0;
-}
-
-// Set alternate cursor position for the current book and specified portal.
-// Also save the local portal option values.
-void
-buflist_altfpos(Portal *port){
-   bookSetPosInPort(curBook, port, port->cursor.lnum, port->cursor.col, TRUE);
 }
 
 // Return TRUE if 'fullFName' is not the same file as current file.
@@ -6854,7 +6847,7 @@ endOfName:
       // The next while loop is done once for each character written. Keep it fast!
       ptr = memGetLine(book, lnum, FALSE) - 1;
       if (write_undo_file)
-         sha256_update(&sha_ctx, ptr + 1, (UINT32)(STRLEN(ptr + 1) + 1));
+         sha256_update(&sha_ctx, ptr + 1, (Unt)(STRLEN(ptr + 1) + 1));
       while ((c = *++ptr) != ZERO) {
          if (c == NL)
             *s = ZERO;      // replace newlines with NULs

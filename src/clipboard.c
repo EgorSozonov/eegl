@@ -2393,7 +2393,7 @@ write_reg_contents_ex(
          if (!buf)
             showErrFmtMsg(_(e_book_nr_does_not_exist), (long)num);
       } else
-         buf = bookFindFileByBookNr(buflist_findpat(str, str + len, TRUE, FALSE, FALSE));
+         buf = bookFindFileByBookNr(booklistFindPattern(str, str + len, TRUE, FALSE, FALSE));
       if (!buf)
          return;
       curPor->altFnum = buf->fiNum;

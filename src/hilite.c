@@ -4329,7 +4329,7 @@ syn_cmd_iskeyword(Invocation *invo, int syncing UNUSED) {
    } else {
       if (STRNICMP(arg, "clear", 5) == 0) {
          mch_memmove(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
-         clearStringOption(&curPor->book->o.isKeyword);
+         curPor->book->o.isKeyword = null;
       } else {
          mch_memmove(save_chartab, curBook->charsForKeywords, (Unt)32);
          CS save_isk = curBook->o.isKeyword;
@@ -4338,7 +4338,7 @@ syn_cmd_iskeyword(Invocation *invo, int syncing UNUSED) {
          bufInitCharsForKeywords(curBook, FALSE);
          mch_memmove(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
          mch_memmove(curBook->charsForKeywords, save_chartab, (Unt)32);
-         clearStringOption(&curPor->book->o.isKeyword);
+         curPor->book->o.isKeyword = null;
          curBook->o.isKeyword = save_isk;
       }
    }

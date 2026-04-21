@@ -57,17 +57,6 @@
     o->oFieldName = OPTIONS_PORTAL[PORT_##oFieldName].defaultValue.TYPEBASED_##oType;
 #endif
 
-#ifdef OPTIONS_MAKE_STRINGS_NONNULL
-#define TYPEBASED_CS(x) makeStringOptionNotNull(x);
-#define TYPEBASED_Boole(x) 
-#define TYPEBASED_long(x)
-#define TYPEBASED_Byte(x)
-#define TYPEBASED_Unt(x)
-#define TYPEBASED_CallbackPtr(x)
-#define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
-   TYPEBASED_##oType(&t->oFieldName)
-#endif 
-
 #ifdef OPTIONS_COPY
 #define TYPEBASED_CS(x) t->x = copyOptionVal(s->x);
 #define TYPEBASED_Boole(x) t->x = s->x;
@@ -91,17 +80,6 @@
 #define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
    TYPEBASED_##oType(t->oFieldName, BOOK_##oFieldName)
    
-#endif
-
-#ifdef OPTIONS_FREE
-#define TYPEBASED_CS(x) clearStringOption(&t->x);
-#define TYPEBASED_Boole(x)
-#define TYPEBASED_long(x)
-#define TYPEBASED_Byte(x)
-#define TYPEBASED_Unt(x)
-#define TYPEBASED_CallbackPtr(x)
-#define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
-   TYPEBASED_##oType(oFieldName)
 #endif
 
 #ifdef OPTIONS_COPY_STRINGS_TO_BOOK_EXCEPT_ONE

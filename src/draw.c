@@ -636,7 +636,7 @@ screen_comp_differs(int off, int *characterCombiner) {
    int       i;
 
    for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      if (screenLinesCG[i][off] != (u8char_T)characterCombiner[i])
+      if (screenLinesCG[i][off] != (Unt)characterCombiner[i])
          return TRUE;
       if (characterCombiner[i] == 0)
          break;
@@ -731,7 +731,7 @@ drawTextLen(
 
       need_redraw = screenLinesG[off] != c
          || (mbyte_cells == 2 && screenLinesG[off + 1] != 0)
-         || ((screenLinesUCG[off] != (u8char_T)(c < 0x80 && characterCombiner[0] == 0 ? 0 : u8c)
+         || ((screenLinesUCG[off] != (Unt)(c < 0x80 && characterCombiner[0] == 0 ? 0 : u8c)
                || (screenLinesUCG[off] != 0 && screen_comp_differs(off, characterCombiner)))
             )
          || screenDecosG[off].flags != flags;
@@ -1184,8 +1184,8 @@ screenalloc(int doclear) {
    int outofmem = FALSE;
    int len;
    Byte* new_screenLinesG;
-   u8char_T* new_screenLinesUCG = NULL;
-   u8char_T* new_screenLinesCG[MAX_COMBINED_SYMBOLS];
+   Unt* new_screenLinesUCG = NULL;
+   Unt* new_screenLinesCG[MAX_COMBINED_SYMBOLS];
    Byte* new_ScreenLines2 = NULL;
    Arr(Decoration) new_screenDecosG;
    ColNr* new_screenColsG;
@@ -1253,10 +1253,10 @@ retry:
    } 
 
    new_screenLinesG = LALLOC_MULT(Byte, (visibleRowsG + 1) * visibleColsG);
-   memset(new_screenLinesCG, 0, sizeof(u8char_T *) * MAX_COMBINED_SYMBOLS);
-   new_screenLinesUCG = LALLOC_MULT(u8char_T, (visibleRowsG + 1) * visibleColsG);
+   memset(new_screenLinesCG, 0, sizeof(Unt *) * MAX_COMBINED_SYMBOLS);
+   new_screenLinesUCG = LALLOC_MULT(Unt, (visibleRowsG + 1) * visibleColsG);
    for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      new_screenLinesCG[i] = LALLOC_CLEAR_MULT(u8char_T, (visibleRowsG + 1) * visibleColsG);
+      new_screenLinesCG[i] = LALLOC_CLEAR_MULT(Unt, (visibleRowsG + 1) * visibleColsG);
    } 
    new_screenDecosG = LALLOC_MULT(Decoration, (visibleRowsG + 1) * visibleColsG);
    // Clear screenColsG to avoid a warning for uninitialized memory in jump_to_mouse().
@@ -1337,11 +1337,11 @@ retry:
             new_screenLinesG + new_row * visibleColsG, ' ', (Unt)visibleColsG * sizeof(Byte)
          );
          (void)memset(
-            new_screenLinesUCG + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(u8char_T)
+            new_screenLinesUCG + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(Unt)
          );
          for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
              (void)memset(
-                 new_screenLinesCG[i] + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(u8char_T)
+                 new_screenLinesCG[i] + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(Unt)
              );
          } 
          (void)memset(
@@ -1372,10 +1372,10 @@ retry:
                if (screenLinesUCG) {
                   mch_memmove(new_screenLinesUCG + new_lineOffsetG[new_row],
                      screenLinesUCG + lineOffsetG[old_row],
-                     (Unt)len * sizeof(u8char_T));
+                     (Unt)len * sizeof(Unt));
                   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
                      mch_memmove(new_screenLinesCG[i] + new_lineOffsetG[new_row],
-                        screenLinesCG[i] + lineOffsetG[old_row], (Unt)len * sizeof(u8char_T)
+                        screenLinesCG[i] + lineOffsetG[old_row], (Unt)len * sizeof(Unt)
                      );
                   } 
                }
@@ -1523,7 +1523,7 @@ screenclear2(int doclear) {
 private void
 lineclear(unsigned off, int width, Unt hiId) {
    (void)memset(screenLinesG + off, ' ', (Unt)width * sizeof(Byte));
-   (void)memset(screenLinesUCG + off, 0, (Unt)width * sizeof(u8char_T));
+   (void)memset(screenLinesUCG + off, 0, (Unt)width * sizeof(Unt));
    (void)memset(screenDecosG + off, hiId, (Unt)width);
    (void)memset(screenColsG + off, -1, (Unt)width * sizeof(ColNr));
 }
@@ -1550,12 +1550,12 @@ linecopy(int to, int from, Portal *po) {
    mch_memmove(screenLinesG + off_to, screenLinesG + off_from, po->width * sizeof(Byte));
 
    mch_memmove(screenLinesUCG + off_to, screenLinesUCG + off_from,
-      po->width * sizeof(u8char_T));
+      po->width * sizeof(Unt));
    for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
       mch_memmove(
          screenLinesCG[i] + off_to, 
          screenLinesCG[i] + off_from, 
-         po->width * sizeof(u8char_T)
+         po->width * sizeof(Unt)
       );
    } 
    mch_memmove( screenDecosG + off_to, screenDecosG + off_from, po->width);
@@ -3597,7 +3597,7 @@ text_to_screenline(Portal *po, Byte *text, int col) {
 private void
 copyTextWithDecos(int off, Byte* builder, int len, char flags) {
    mch_memmove(screenLinesG + off, builder, (Unt)len);
-   memset(screenLinesUCG + off, 0, sizeof(u8char_T) * (Unt)len);
+   memset(screenLinesUCG + off, 0, sizeof(Unt) * (Unt)len);
    for (int i = 0; i < len; ++i)
       screenDecosG[off + i].flags = flags;
 }
@@ -4785,8 +4785,8 @@ redraw_asap(int type) {
    int      ret = 0;
    Byte   *screenline;   // copy from screenLinesG[]
    int      i;
-   u8char_T   *screenlineUC = NULL;   // copy from screenLinesUCG[]
-   u8char_T   *screenlineC[MAX_COMBINED_SYMBOLS];   // copy from screenLinesCG[][]
+   Unt   *screenlineUC = NULL;   // copy from screenLinesUCG[]
+   Unt   *screenlineC[MAX_COMBINED_SYMBOLS];   // copy from screenLinesCG[][]
 
    redraw_later(type);
    if (msg_scrolled
@@ -4800,9 +4800,9 @@ redraw_asap(int type) {
    Arr(Unt) screenDecos = LALLOC_MULT(Unt, rows * cols); // copy from screenDecosG[]
    if (!screenline)
       ret = 2;
-   screenlineUC = LALLOC_MULT(u8char_T, rows * cols);
+   screenlineUC = LALLOC_MULT(Unt, rows * cols);
    for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      screenlineC[i] = LALLOC_MULT(u8char_T, rows * cols);
+      screenlineC[i] = LALLOC_MULT(Unt, rows * cols);
    }
 
    if (ret != 2) {
@@ -4821,13 +4821,13 @@ redraw_asap(int type) {
          mch_memmove(
             screenlineUC + r * cols, 
             screenLinesUCG + lineOffsetG[commlineRowG + r],
-            (Unt)cols * sizeof(u8char_T)
+            (Unt)cols * sizeof(Unt)
          );
          for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
             mch_memmove(
                 screenlineC[i] + r * cols, 
                 screenLinesCG[i] + lineOffsetG[commlineRowG + r], 
-                (Unt)cols * sizeof(u8char_T)
+                (Unt)cols * sizeof(Unt)
             );
          } 
       }
@@ -4853,11 +4853,11 @@ redraw_asap(int type) {
             mch_memmove(
                screenLinesUCG + off,
                screenlineUC + r * cols,
-               (Unt)cols * sizeof(u8char_T)
+               (Unt)cols * sizeof(Unt)
             );
             for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
                mch_memmove(
-                  screenLinesCG[i] + off, screenlineC[i] + r * cols, (Unt)cols * sizeof(u8char_T)
+                  screenLinesCG[i] + off, screenlineC[i] + r * cols, (Unt)cols * sizeof(Unt)
                );
             } 
             screen_line(commlineRowG + r, 0, cols, cols, -1, 0);

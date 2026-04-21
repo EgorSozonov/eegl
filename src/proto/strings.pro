@@ -1,7 +1,7 @@
 /* src/strings.c */
 void trans_characters(CS buf, int bufsize);
 CS sanitizeStr(CS s);
-CS str_foldcase(CS str, Unt orglen, CS builder, Unt builderLen);
+CS str_foldcase(CS str, Unt orglen, CS buf, Unt bufLen);
 unsigned nr2hex(unsigned c);
 void transchar_hex(CS buf, int c);
 int eeglStrNsize(CS s, int len);
@@ -54,6 +54,7 @@ CS skip_to_option_part(CS p);
 CS copyStr(CS string);
 CS copySubstr(CS string, Unt len);
 Sbuf sbuf(Unt cap);
+void concatToBuf(Text s, Sbuf *buf);
 CS copySubstrA(CS string, Unt len, Arena *a);
 Text copyText(Text slice);
 CS copyStrA(CS string, Arena *a);

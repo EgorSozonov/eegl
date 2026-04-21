@@ -3746,7 +3746,7 @@ c_diffgetput(Invocation *invo) {
       if (invo->arg + i == p)       // digits only
          i = atol((char *)invo->arg);
       else {
-         i = buflist_findpat(invo->arg, p, FALSE, TRUE, FALSE);
+         i = booklistFindPattern(invo->arg, p, FALSE, TRUE, FALSE);
          if (i < 0)
             return;      // error message already given
       }

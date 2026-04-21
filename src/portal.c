@@ -251,7 +251,7 @@ doPortal(int nchar, long Prenum, Unt xchar) { // extra char from ":wincmd gx" or
       }
 
       if (!curBookLocked() && splitPortal(0, 0) == OK)
-          (void)buflist_getfile(
+          (void)booklistGetFile(
              Prenum == 0 ? curPor->altFnum : Prenum,
              (LineNr)0, GETF_ALT, FALSE);
       break;
@@ -303,10 +303,10 @@ newPortal:
          if (po->isPreview)
             break;
       } 
-      if (!po)
+      if (!curtab->previewPortal)
          emsg(_(e_there_is_no_preview_portal));
       else
-         gotoPortal(po);
+         gotoPortal(curtab->previewPortal);
       break;
 
    // close all but current portal

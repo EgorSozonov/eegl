@@ -1019,78 +1019,76 @@ term_underlRgb_color(UiColor rgb) {
 // Make sure we have a valid set or terminal options. Replace all null entries by Em
 void
 ttest(int pairs) {
-   optMakeStringOptionsNonnull();          // make sure no options are NULL
-
    //MUST have "cm": cursor motion.
-   if (termCodeS[KS_CM] == Em)
+   if (termCodeS[KS_CM] == null)
       emsg(_(e_terminal_capability_cm_required));
 
    //if "cs" defined, use a scroll region, it's faster.
-   if (termCodeS[KS_CS] != Em)
-     scroll_region = TRUE;
+   if (termCodeS[KS_CS])
+      scroll_region = TRUE;
    else
-     scroll_region = FALSE;
+      scroll_region = FALSE;
 
    if (pairs) {
       // optional pairs. TP goes to normal mode for TI (invert) and TB (bold)
-      if (termCodeS[KS_ME] == Em) {
-         termCodeS[KS_MB] = Em;
-         termCodeS[KS_MD] = Em;
-         termCodeS[KS_MR] = Em;
-         termCodeS[KS_ME] = Em;
+      if (termCodeS[KS_ME] == null) {
+         termCodeS[KS_MB] = null;
+         termCodeS[KS_MD] = null;
+         termCodeS[KS_MR] = null;
+         termCodeS[KS_ME] = null;
       }
-      if (termCodeS[KS_SO] == Em || termCodeS[KS_SE] == Em) {
-         termCodeS[KS_SO] = Em;
-         termCodeS[KS_SE] = Em;
+      if (termCodeS[KS_SO] == null || termCodeS[KS_SE] == null) {
+         termCodeS[KS_SO] = null;
+         termCodeS[KS_SE] = null;
       }
-      if (termCodeS[KS_US] == Em || termCodeS[KS_UE] == Em) {
-         termCodeS[KS_US] = Em;
-         termCodeS[KS_UE] = Em;
+      if (!termCodeS[KS_US] || termCodeS[KS_UE] == null) {
+         termCodeS[KS_US] = null;
+         termCodeS[KS_UE] = null;
       }
-      if (termCodeS[KS_CZH] == Em || termCodeS[KS_CZR] == Em) {
-         termCodeS[KS_CZH] = Em;
-         termCodeS[KS_CZR] = Em;
+      if (!termCodeS[KS_CZH] || !termCodeS[KS_CZR]) {
+         termCodeS[KS_CZH] = null;
+         termCodeS[KS_CZR] = null;
       }
 
-      // termCodeS[KS_VE is needed even though termCodeS[KS_VI is not defined
-      if (termCodeS[KS_VE] == Em)
-         termCodeS[KS_VI] = Em;
+      // termCodeS[KS_VE] is needed even though termCodeS[KS_VI] is not defined
+      if (!termCodeS[KS_VE])
+         termCodeS[KS_VI] = null;
 
-      // if 'mr' or 'me' is not defined, use 'so' and 'se'
-      if (termCodeS[KS_ME] == Em) {
+      //if 'mr' or 'me' is not defined, use 'so' and 'se'
+      if (!termCodeS[KS_ME]) {
          termCodeS[KS_ME] = termCodeS[KS_SE];
          termCodeS[KS_MR] = termCodeS[KS_SO];
          termCodeS[KS_MD] = termCodeS[KS_SO];
       }
 
       // if 'so' or 'se' is not defined, use 'mr' and 'me'
-      if (termCodeS[KS_SO] == Em) {
+      if (!termCodeS[KS_SO]) {
          termCodeS[KS_SE] = termCodeS[KS_ME];
-         if (termCodeS[KS_MR] == Em)
+         if (!termCodeS[KS_MR])
             termCodeS[KS_SO] = termCodeS[KS_MD];
          else
             termCodeS[KS_SO] = termCodeS[KS_MR];
       }
 
       // if 'ZH' or 'ZR' is not defined, use 'mr' and 'me'
-      if (termCodeS[KS_CZH] == Em) {
+      if (!termCodeS[KS_CZH]) {
          termCodeS[KS_CZR] = termCodeS[KS_ME];
-         if (termCodeS[KS_MR] == Em)
+         if (!termCodeS[KS_MR])
             termCodeS[KS_CZH] = termCodeS[KS_MD];
          else
             termCodeS[KS_CZH] = termCodeS[KS_MR];
       }
 
       // "Sb" and "Sf" come in pairs
-      if (termCodeS[KS_CSB] == Em || termCodeS[KS_CSF] == Em) {
-         termCodeS[KS_CSB] = Em;
-         termCodeS[KS_CSF] = Em;
+      if (!termCodeS[KS_CSB] || !termCodeS[KS_CSF]) {
+         termCodeS[KS_CSB] = null;
+         termCodeS[KS_CSF] = null;
       }
 
       // "AB" and "AF" come in pairs
-      if (termCodeS[KS_CAB] == Em || termCodeS[KS_CAF] == Em) {
-         termCodeS[KS_CAB] = Em;
-         termCodeS[KS_CAF] = Em;
+      if (!termCodeS[KS_CAB] || !termCodeS[KS_CAF]) {
+         termCodeS[KS_CAB] = null;
+         termCodeS[KS_CAF] = null;
       }
    }
    needToGatherTermLeaders = TRUE;

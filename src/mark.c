@@ -213,7 +213,7 @@ movemark(int count) {
             count += count < 0 ? -1 : 1;
             continue;
          }
-         if (buflist_getfile(fmark.fnum, fmark.mark.lnum, 0, FALSE) == FAIL)
+         if (booklistGetFile(fmark.fnum, fmark.mark.lnum, 0, FALSE) == FAIL)
             return (Pos *)NULL;
          // Set lnum again, autocommands my have changed it
          curPor->cursor = fmark.mark;
@@ -358,7 +358,7 @@ markGetBookFnum(
          posp = &pos_copy;
 
          if (namedfm[c].fmark.mark.lnum != 0 && changefile && namedfm[c].fmark.fnum) {
-            if (buflist_getfile(namedfm[c].fmark.fnum, (LineNr)1, GETF_SETMARK, FALSE) == OK) {
+            if (booklistGetFile(namedfm[c].fmark.fnum, (LineNr)1, GETF_SETMARK, FALSE) == OK) {
                // Set the lnum now, autocommands could have changed it
                curPor->cursor = namedfm[c].fmark.mark;
                return (Pos *)-1;

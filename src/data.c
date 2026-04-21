@@ -3240,10 +3240,10 @@ calcHash(Text const key) {
 
 #define GET_UINT32(n, b, i)          \
 {                   \
-    (n) = ( (UINT32)(b)[(i)    ] << 24)   \
-   | ( (UINT32)(b)[(i) + 1] << 16)   \
-   | ( (UINT32)(b)[(i) + 2] <<  8)   \
-   | ( (UINT32)(b)[(i) + 3]   );  \
+    (n) = ( (Unt)(b)[(i)    ] << 24)   \
+   | ( (Unt)(b)[(i) + 1] << 16)   \
+   | ( (Unt)(b)[(i) + 2] <<  8)   \
+   | ( (Unt)(b)[(i) + 3]   );  \
 }
 
 #define PUT_UINT32(n,b,i)        \
@@ -3271,8 +3271,8 @@ sha256_start(ContextSha256 *ctx) {
 
 private void
 sha256_process(ContextSha256 *ctx, Byte data[64]) {
-   UINT32 temp1, temp2, W[64];
-   UINT32 A, B, C, D, EE, F, G, H;
+   Unt temp1, temp2, W[64];
+   Unt A, B, C, D, EE, F, G, H;
 
    GET_UINT32(W[0],  data,  0);
    GET_UINT32(W[1],  data,  4);
@@ -3401,8 +3401,8 @@ sha256_process(ContextSha256 *ctx, Byte data[64]) {
 }
 
 void
-sha256_update(ContextSha256 *ctx, CS input, UINT32 length) {
-   UINT32 left, fill;
+sha256_update(ContextSha256 *ctx, CS input, Unt length) {
+   Unt left, fill;
 
    if (length == 0)
       return;
@@ -3430,43 +3430,43 @@ sha256_update(ContextSha256 *ctx, CS input, UINT32 length) {
       input  += 64;
    }
 
-    if (length)
-   memcpy((void *)(ctx->buffer + left), (void *)input, length);
+   if (length)
+      memcpy((void *)(ctx->buffer + left), (void *)input, length);
 }
 
 private Byte sha256_padding[64] = {
-    0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+   0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 void
 sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
-    UINT32 last, padn;
-    UINT32 high, low;
-    Byte   msglen[8];
+   Unt last, padn;
+   Unt high, low;
+   Byte   msglen[8];
 
-    high = (ctx->total[0] >> 29) | (ctx->total[1] <<  3);
-    low  = (ctx->total[0] <<  3);
+   high = (ctx->total[0] >> 29) | (ctx->total[1] <<  3);
+   low  = (ctx->total[0] <<  3);
 
-    PUT_UINT32(high, msglen, 0);
-    PUT_UINT32(low,  msglen, 4);
+   PUT_UINT32(high, msglen, 0);
+   PUT_UINT32(low,  msglen, 4);
 
-    last = ctx->total[0] & 0x3F;
-    padn = (last < 56) ? (56 - last) : (120 - last);
+   last = ctx->total[0] & 0x3F;
+   padn = (last < 56) ? (56 - last) : (120 - last);
 
-    sha256_update(ctx, sha256_padding, padn);
-    sha256_update(ctx, msglen, 8);
+   sha256_update(ctx, sha256_padding, padn);
+   sha256_update(ctx, msglen, 8);
 
-    PUT_UINT32(ctx->state[0], digest,  0);
-    PUT_UINT32(ctx->state[1], digest,  4);
-    PUT_UINT32(ctx->state[2], digest,  8);
-    PUT_UINT32(ctx->state[3], digest, 12);
-    PUT_UINT32(ctx->state[4], digest, 16);
-    PUT_UINT32(ctx->state[5], digest, 20);
-    PUT_UINT32(ctx->state[6], digest, 24);
-    PUT_UINT32(ctx->state[7], digest, 28);
+   PUT_UINT32(ctx->state[0], digest,  0);
+   PUT_UINT32(ctx->state[1], digest,  4);
+   PUT_UINT32(ctx->state[2], digest,  8);
+   PUT_UINT32(ctx->state[3], digest, 12);
+   PUT_UINT32(ctx->state[4], digest, 16);
+   PUT_UINT32(ctx->state[5], digest, 20);
+   PUT_UINT32(ctx->state[6], digest, 24);
+   PUT_UINT32(ctx->state[7], digest, 28);
 }
 
 // Return hex digest of "buf[buf_len]" in a static array.

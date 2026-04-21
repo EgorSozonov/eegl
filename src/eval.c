@@ -2088,6 +2088,22 @@ tv_op(Var *tv1, Var *tv2, CS op) {
 //}}}
 //{{{loops
 
+// Info used by a ":for" loop.
+struct ForInfo {
+   int      endsWithSemicolon;   // TRUE if ending in '; var]'
+   int      fi_varcount;   // nr of variables in [] or zero
+   int      fi_break_count;   // nr of line breaks encountered
+   ListWatch   fi_lw;      // keep an eye on the item used.
+   List* fi_list;   // list being used
+   int fi_bi;      // index of blob
+   Blob* fi_blob;   // blob being used
+   CS fi_string;   // copy of string being used
+   int fi_byte_idx;   // byte index in fi_string
+   List* fi_tuple;   // list being used
+   int fi_tuple_idx;   // list index in fi_tuple
+   int csFlags;   // cs_flags or'ed together
+};
+
 //Evaluate the expression used in a ":for var in expr" command. "arg" points to "var".
 //Set "*errp" to TRUE for an error, FALSE otherwise;
 //Return a pointer that holds the info.  Null when there is an error.
@@ -13290,7 +13306,7 @@ f_pumvisible(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 
-private UINT32 srand_seed_for_testing = 0;
+private Unt srand_seed_for_testing = 0;
 private int   srand_seed_for_testing_is_used = FALSE;
 
 private void
@@ -13298,17 +13314,17 @@ f_test_srand_seed(Var *argvars, Var *returnVar UNUSED) {
    if (argvars[0].tag == VAR_UNKNOWN)
       srand_seed_for_testing_is_used = FALSE;
    else {
-      srand_seed_for_testing = (UINT32)tv_get_number(&argvars[0]);
+      srand_seed_for_testing = (Unt)tv_get_number(&argvars[0]);
       srand_seed_for_testing_is_used = TRUE;
    }
 }
 
 private void
-init_srand(UINT32 *x) {
+init_srand(Unt *x) {
    struct {
       union {
-         UINT32 number;
-         Byte   bytes[sizeof(UINT32)];
+         Unt number;
+         Byte   bytes[sizeof(Unt)];
       } contents;
    } buf;
 
@@ -13328,7 +13344,7 @@ init_srand(UINT32 *x) {
    // - XOR with process ID
    ProfTime res;
    profile_start(&res);
-   *x = (UINT32)res.tv_fsec;
+   *x = (Unt)res.tv_fsec;
    *x ^= mch_get_pid();
 }
 
@@ -13351,10 +13367,10 @@ init_srand(UINT32 *x) {
 private void
 f_rand(Var *argvars, Var *returnVar) {
    List   *l = NULL;
-   static UINT32   gx, gy, gz, gw;
+   static Unt   gx, gy, gz, gw;
    static int   initialized = FALSE;
    ListItem   *lx, *ly, *lz, *lw;
-   UINT32   x = 0, y, z, w, t, result;
+   Unt   x = 0, y, z, w, t, result;
 
    if (argvars[0].tag == VAR_UNKNOWN) {
       // When no argument is given use the global seed list.
@@ -13383,10 +13399,10 @@ f_rand(Var *argvars, Var *returnVar) {
       if (ly->c.tag != VAR_NUMBER) goto theend;
       if (lz->c.tag != VAR_NUMBER) goto theend;
       if (lw->c.tag != VAR_NUMBER) goto theend;
-      x = (UINT32)lx->c.number;
-      y = (UINT32)ly->c.number;
-      z = (UINT32)lz->c.number;
-      w = (UINT32)lw->c.number;
+      x = (Unt)lx->c.number;
+      y = (Unt)ly->c.number;
+      z = (Unt)lz->c.number;
+      w = (Unt)lw->c.number;
 
       SHUFFLE_XOSHIRO128STARSTAR(x, y, z, w);
 
@@ -13409,7 +13425,7 @@ theend:
 
 private void
 f_srand(Var *argvars, Var *returnVar) {
-   UINT32 x = 0, z;
+   Unt x = 0, z;
 
    allocReturnList(returnVar);
 
@@ -13417,7 +13433,7 @@ f_srand(Var *argvars, Var *returnVar) {
       init_srand(&x);
    } else {
       Boole error = false;
-      x = (UINT32)varGetNumberChk(argvars, OUT &error);
+      x = (Unt)varGetNumberChk(argvars, OUT &error);
       if (error)
          return;
    }

@@ -29,7 +29,7 @@ extern void __gcov_flush(void);
 // It has been changed beyond recognition since then.
 // Now there is a simple IDE forked off from it, Eegl.
 
-char      *Version = EEGL_VERSION_SHORT;
+CS Version = (CS)EEGL_VERSION_SHORT;
 private char   *mediumVersion = EEGL_VERSION_MEDIUM;
 
 //char longVersion[sizeof(EEGL_VERSION_LONG_DATE) + sizeof(__DATE__) + sizeof(__TIME__) + 3];
@@ -137,12 +137,6 @@ list_version(void) {
       }
    }
 
-#ifdef MODIFIED_BY
-   msg_puts("\n");
-   msg_puts(_("Modified by "));
-   msg_puts(MODIFIED_BY);
-#endif
-
    printMsgWithWrap(_("Features included (+) or not (-):\n"));
 
    list_features();
@@ -197,9 +191,6 @@ intro_message( int      colon) {     // TRUE for ":intro"
       "",
       "version ",
       "by Bram Moolenaar, Egor Sozonov et al.",
-#ifdef MODIFIED_BY
-      " ",
-#endif
       "Eegl is open source and freely distributable",
       "",
       "type  :q<Enter>               to exit         ",
@@ -264,17 +255,6 @@ do_intro_line(
    Byte   *p;
    int      l;
    int      clen;
-#ifdef MODIFIED_BY
-# define MODBY_LEN 150
-   Byte   modby[MODBY_LEN];
-
-   if (*mesg == ' ') {
-      copySubstrToAllocation(modby, (CS)_("Modified by "), MODBY_LEN - 1);
-      l = (int)STRLEN(modby);
-      copySubstrToAllocation(modby + l, (CS)MODIFIED_BY, MODBY_LEN - l - 1);
-      mesg = modby;
-   }
-#endif
 
    // Center the message horizontally.
    col = eeglStrSize(mesg);
@@ -2178,17 +2158,13 @@ __bp() { // breakpoints for debugger
 private void
 set_progpath(CS argv0) {
    CS val = argv0;
-
    Byte   buf[MAXPATHL + 1];
-#  ifdef PROC_EXE_LINK
    char   linkBuf[MAXPATHL + 1];
-
-   Long len = readlink(PROC_EXE_LINK, linkBuf, MAXPATHL);
+   Long len = readlink("/proc/self/exe", linkBuf, MAXPATHL);
    if (len > 0) {
       linkBuf[len] = ZERO;
       val = (CS)linkBuf;
    }
-#  endif
 
    if (!mch_isFullName(val)) {
       if (gettail(val) != val && eeFullFileName(val, buf, MAXPATHL, TRUE) != FAIL)
@@ -2196,7 +2172,6 @@ set_progpath(CS argv0) {
    }
 
    set_EeglVar_string(VV_PROGPATH, val, -1);
-
 }
 
 #endif // NO_EEGL_MAIN

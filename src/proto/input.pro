@@ -63,7 +63,7 @@ void reset_last_used_map(MapBlock *mp);
 CS inputInitCharLens(void);
 int mb_get_class(CS p);
 int inpGetClassForBook(CS p, Book *book);
-int utf_uint2cells(UINT32 c);
+int utf_uint2cells(Unt c);
 int mb_char2cells(int c);
 int mb_ptr2cells(Byte *p);
 int mb_ptr2cells_len(Byte *p, int size);

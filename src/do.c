@@ -2117,7 +2117,7 @@ startEditingFile(
          if ((commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
             curPor->altFnum = curBook->fiNum;
          if (oldPort)
-            buflist_altfpos(oldPort);
+            bookSetPosInPort(curBook, oldPort, oldPort->cursor.lnum, oldPort->cursor.col, TRUE);
       }
 
       if (fnum) {
@@ -6496,7 +6496,7 @@ doOneCommand(
          while (p > invo.arg && SPACE_OR_TAB(p[-1]))
             --p;
       }
-      invo.line2 = buflist_findpat(invo.arg, p, (invo.argFlags & BUFUNL) != 0,
+      invo.line2 = booklistFindPattern(invo.arg, p, (invo.argFlags & BUFUNL) != 0,
                            FALSE, FALSE);
       if (invo.line2 < 0)       // failed
           goto doend;
@@ -12662,7 +12662,7 @@ u_compute_hash(CS hash) {
 
    sha256_start(&ctx);
    for (lnum = 1; lnum <= curBook->mem.lineCount; ++lnum)
-      sha256_update(&ctx, ml_get(lnum), (UINT32)(ml_get_len(lnum) + 1));
+      sha256_update(&ctx, ml_get(lnum), (Unt)(ml_get_len(lnum) + 1));
    sha256_finish(&ctx, hash);
 }
 

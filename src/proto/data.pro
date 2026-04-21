@@ -108,7 +108,7 @@ void hash_lock_size(EeSet *ht, int size);
 void hash_unlock(EeSet *ht);
 Hash calcHash(Text const key);
 void sha256_start(ContextSha256 *ctx);
-void sha256_update(ContextSha256 *ctx, CS input, UINT32 length);
+void sha256_update(ContextSha256 *ctx, CS input, Unt length);
 void sha256_finish(ContextSha256 *ctx, Byte digest[32]);
 CS sha256_bytes(CS buf, int buf_len, CS salt, int salt_len);
 CS sha256_key(CS buf, CS salt, int salt_len);
