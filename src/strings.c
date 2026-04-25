@@ -5202,12 +5202,12 @@ internal_format(
    int      no_leader = FALSE;
    int      doComments = (flags & INSCHAR_DO_COM);
    int      safe_tw = trim_to_int(8 * (Long)textwidth);
-   int      has_lbr = curPor->bookOpts.lineBreak;
-   int      has_bri = curPor->bookOpts.breakIndent;
+   int      has_lbr = curPor->o.lineBreak;
+   int      has_bri = curPor->o.breakIndent;
 
    // make sure win_lbr_chartabsize() counts correctly
-   curPor->bookOpts.lineBreak = FALSE;
-   curPor->bookOpts.breakIndent = FALSE;
+   curPor->o.lineBreak = FALSE;
+   curPor->o.breakIndent = FALSE;
 
    // When 'ai' is off we don't want a space under the cursor to be
    // deleted.  Replace it with an 'x' temporarily.
@@ -5500,8 +5500,8 @@ internal_format(
    if (save_char != ZERO)      // put back space after cursor
       pchar_cursor(save_char);
 
-   curPor->bookOpts.lineBreak = has_lbr;
-   curPor->bookOpts.breakIndent = has_bri;
+   curPor->o.lineBreak = has_lbr;
+   curPor->o.breakIndent = has_bri;
    if (!format_only && haveto_redraw) {
       update_topline();
       drawCurBookLater(UPD_VALID);
@@ -5782,7 +5782,7 @@ comp_textwidth(int      ff) {  // force formatting (for "gq" command)
           textwidth -= 1;
       if (isSigncolumnOn(curPor))
          textwidth -= 1;
-      if (curPor->bookOpts.relativeNumber)
+      if (curPor->o.relativeNumber)
          textwidth -= 8;
    }
    if (textwidth < 0)

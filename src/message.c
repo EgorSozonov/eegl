@@ -611,7 +611,7 @@ msg_prt_line(CS s, int list) {
    int      l;
    Byte builder[MB_MAXBYTES + 1];
 
-   if (curPor->bookOpts.list)
+   if (curPor->o.list)
       list = TRUE;
 
    if (list) {

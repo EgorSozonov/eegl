@@ -3753,7 +3753,7 @@ update_search_hl(
    }
    // Only highlight one character after the last column.
    if (*(*line + col) == ZERO 
-          && (didLineDecorations >= 1 || (wp->bookOpts.list && lcs_eol_one == -1)))
+          && (didLineDecorations >= 1 || (wp->o.list && lcs_eol_one == -1)))
       searchHiId = SHORT;
    return searchHiId;
 }
@@ -3769,7 +3769,7 @@ get_prevcol_hl_flag(Portal *wp, Match *search_hl, long curcol) {
       return FALSE;
 
    // we're not really at that column when skipping some text
-   if ((long)(wp->bookOpts.wrap ? wp->skipCol : wp->leftCol) > prevcol)
+   if ((long)(wp->o.wrap ? wp->skipCol : wp->leftCol) > prevcol)
       ++prevcol;
 
    // Highlight a character after the end of the line if the match started
@@ -4694,13 +4694,13 @@ prepare_help_buffer(void) {
    }
 
    curBook->o.shiftWidth = 3;      // tab size is 8
-   curPor->bookOpts.list = FALSE;   // no list mode
+   curPor->o.list = FALSE;   // no list mode
 
    curBook->o.binary = FALSE;   // reset 'bin' before reading file
-   curPor->bookOpts.relativeNumber = false;   // no relative line numbers
+   curPor->o.relativeNumber = false;   // no relative line numbers
    RESET_BINDING(curPor);   // no scroll or cursor binding
-   curPor->bookOpts.foldEnable = FALSE;   // No folding in the help portal
-   curPor->bookOpts.diff = FALSE;   // No 'diff'
+   curPor->o.foldEnable = FALSE;   // No folding in the help portal
+   curPor->o.diff = FALSE;   // No 'diff'
 
    bookSetBooklisted(false);
 }

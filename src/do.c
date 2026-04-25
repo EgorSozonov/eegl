@@ -2027,7 +2027,7 @@ startEditingFile(
    Byte* command = NULL;
    Unt readfile_flags = 0;
    int did_inc_redrawing_disabled = FALSE;
-   long* so_ptr = &curPor->bookOpts.scrollOff;
+   long* so_ptr = &curPor->o.scrollOff;
 
    if (portErrorIfTermPopup())
       return FAIL;
@@ -2472,7 +2472,7 @@ startEditingFile(
 
    // Tell the diff stuff that this buffer is new and/or needs updating. Also needed when 
    // re-editing the same buffer, because unloading will have removed it as a diff buffer.
-   if (curPor->bookOpts.diff) {
+   if (curPor->o.diff) {
       diffAddBook(curBook);
       diff_invalidate(curBook);
    }
@@ -3316,7 +3316,7 @@ c_substitute(Invocation* invo) {
                stateG = MODE_CONFIRM;
                setmouse();      // disable mouse in xterm
                curPor->cursor.col = regmatch.startpos[0].col;
-               if (curPor->bookOpts.cursorBind)
+               if (curPor->o.cursorBind)
                   do_check_cursorbind();
 
 
@@ -3325,9 +3325,9 @@ c_substitute(Invocation* invo) {
                   Byte *orig_line = NULL;
                   int    len_change = 0;
                   int      save_p_lz = p_lz;
-                  int save_p_fen = curPor->bookOpts.foldEnable;
+                  int save_p_fen = curPor->o.foldEnable;
 
-                  curPor->bookOpts.foldEnable = FALSE;
+                  curPor->o.foldEnable = FALSE;
                   // Invert the matched string. Remove the inversion afterwards.
                   int save_isRedrawingDisabledG = isRedrawingDisabledG;
                   isRedrawingDisabledG = 0;
@@ -3372,7 +3372,7 @@ c_substitute(Invocation* invo) {
                   highlight_match = FALSE;
                   redraw_later(UPD_SOME_VALID);
 
-                  curPor->bookOpts.foldEnable = save_p_fen;
+                  curPor->o.foldEnable = save_p_fen;
                   if (msgRowG == visibleRowsG - 1)
                      msg_didout = FALSE;   // avoid a scroll-up
                   msg_starthere();
@@ -4114,10 +4114,10 @@ prepare_tagpreview(
    if (splitPortal(g_do_tagpreview > 0 ? g_do_tagpreview : 0, 0) == FAIL)
       return FALSE;
    curPor->isPreview = true;
-   curPor->bookOpts.portFixHeight = TRUE;
+   curPor->o.portFixHeight = TRUE;
    RESET_BINDING(curPor);       // don't take over 'scrollbind'
                // and 'cursorbind'
-   curPor->bookOpts.diff = FALSE;       // no 'diff'
+   curPor->o.diff = FALSE;       // no 'diff'
    return TRUE;
 }
 
@@ -4352,15 +4352,15 @@ c_listDo(Invocation* invo) {
    Book* book = curBook;
    int next_fnum = 0;
 
-   if (curPor->bookOpts.portFixBuf) {
-      if (portalIsValid(prevPor) && !prevPor->bookOpts.portFixBuf)
+   if (curPor->o.portFixBuf) {
+      if (portalIsValid(prevPor) && !prevPor->o.portFixBuf)
           //@portfixbuf is set; attempt to change to a portal without it.
           gotoPortal(prevPor);
-      if (curPor->bookOpts.portFixBuf) {
+      if (curPor->o.portFixBuf) {
           //Split the portal, which will have its @portfixbuf off, and set curPor to that
           (void)splitPortal(0, 0);
 
-         if (curPor->bookOpts.portFixBuf) {
+         if (curPor->o.portFixBuf) {
             //Autocommands set @portfixbuf or sent us to another portal
             //with it set, or we failed to split the portal.  Give up.
             emsg(_(e_portfixbuf_cannot_go_to_buffer));
@@ -4492,7 +4492,7 @@ c_listDo(Invocation* invo) {
          validate_cursor();   // cursor may have moved
 
          // required when @scrollbind has been set
-         if (curPor->bookOpts.scrollBind)
+         if (curPor->o.scrollBind)
             normPostProcessScrollbind(TRUE);
       }
 
@@ -10010,11 +10010,11 @@ c_syncbind(Invocation* invo UNUSED) {
    setpcmark();
 
    // determine max topline
-   if (curPor->bookOpts.scrollBind) {
+   if (curPor->o.scrollBind) {
       topline = curPor->topLine;
       FOR_ALL_PORTALS(po) {
-         if (po->bookOpts.scrollBind && po->book) {
-            y = po->book->mem.lineCount - curPor->bookOpts.scrollOff;
+         if (po->o.scrollBind && po->book) {
+            y = po->book->mem.lineCount - curPor->o.scrollOff;
             if (topline > y)
                topline = y;
           }
@@ -10028,7 +10028,7 @@ c_syncbind(Invocation* invo UNUSED) {
 
    // Set all scrollbind portals to the same topline.
    FOR_ALL_PORTALS(curPor) {
-      if (curPor->bookOpts.scrollBind) {
+      if (curPor->o.scrollBind) {
          curBook = curPor->book;
          y = topline - curPor->topLine;
          if (y > 0)
@@ -10043,7 +10043,7 @@ c_syncbind(Invocation* invo UNUSED) {
    }
    curPor = save_curPor;
    curBook = save_curbuf;
-   if (curPor->bookOpts.scrollBind) {
+   if (curPor->o.scrollBind) {
       did_syncbind = TRUE;
       checkpcmark();
       if (old_linenr != curPor->cursor.lnum) {
@@ -10844,7 +10844,7 @@ void
 update_topline_cursor(void) {
    check_cursor();      // put cursor on valid line
    update_topline();
-   if (!curPor->bookOpts.wrap)
+   if (!curPor->o.wrap)
       validate_cursor();
    update_curswant();
 }

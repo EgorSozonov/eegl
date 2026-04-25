@@ -474,7 +474,7 @@ put_view(
          if (put_line(fd, S"normal! 0") == FAIL)
             return FAIL;
       } else {
-         if (!wp->bookOpts.wrap && wp->leftCol > 0 && wp->width > 0) {
+         if (!wp->o.wrap && wp->leftCol > 0 && wp->width > 0) {
             if (fprintf(fd,
                  "let s:c = %ld - ((%ld * winwidth(0) + %ld) / %ld)",
                    (long)wp->virtCol + 1,

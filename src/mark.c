@@ -2163,7 +2163,7 @@ may_force_numberwidth_recompute(Book* book, int unplace) {
    Tab *t;
    Portal *wp;
    FOR_ALL_TAB_PORTALS(t, wp) {
-      if (wp->book == book && (unplace || wp->lineCountSaved < 2) && wp->bookOpts.signColumn)
+      if (wp->book == book && (unplace || wp->lineCountSaved < 2) && wp->o.signColumn)
          wp->lineCountSaved = 0;
    }
 }
@@ -3471,7 +3471,7 @@ get_first_valid_sign(Portal *wp) {
 
 Boole
 isSigncolumnOn(Portal *wp) {
-   return get_first_valid_sign(wp) != NULL ? wp->bookOpts.signColumn : false;
+   return get_first_valid_sign(wp) != NULL ? wp->o.signColumn : false;
 }
 
 void

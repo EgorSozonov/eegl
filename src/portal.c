@@ -140,7 +140,7 @@ portalLayout_locked(CommIndex cmd) {
 // If the portal has 'portFixBuf', this function will return FALSE.
 int
 check_can_set_curbuf_disabled(void) {
-   if (curPor->bookOpts.portFixBuf) {
+   if (curPor->o.portFixBuf) {
       emsg(_(e_portfixbuf_cannot_go_to_buffer));
       return FALSE;
    }
@@ -151,7 +151,7 @@ check_can_set_curbuf_disabled(void) {
 // If the portal has 'portFixBuf', then forceit must be TRUE or this function will return FALSE.
 int
 check_can_set_curbuf_forceit(int forceit) {
-   if (!forceit && curPor->bookOpts.portFixBuf) {
+   if (!forceit && curPor->o.portFixBuf) {
       emsg(_(e_portfixbuf_cannot_go_to_buffer));
       return FALSE;
    }
@@ -920,7 +920,7 @@ splitPortal_ins(
       // We don't like to take lines for the new portal from a
       // 'portfixwidth' portal.  Take them from a portal to the left or right
       // instead, if possible. Add one for the separator.
-      if (oldPortal->bookOpts.portFixWidth)
+      if (oldPortal->o.portFixWidth)
          portSetWidth(oldPortal->width + new_size + 1, oldPortal);
 
       // Only make all portals the same width if one of them (except oldPortal)
@@ -992,7 +992,7 @@ splitPortal_ins(
 
       // We don't like to take lines for the new portal from a
       // 'portfixheight' portal.  Take them from a portal above or below instead, if possible.
-      if (oldPortal->bookOpts.portFixHeight) {
+      if (oldPortal->o.portFixHeight) {
          // Set fraction now so that the cursor keeps the same relative
          // vertical position using the old height.
          set_fraction(oldPortal);
@@ -2189,7 +2189,7 @@ closePortal(Portal* port, int free_buf) {
    Boole      isHelpPortal = false;
    Tab   *prev_curtab = curtab;
    Frame* portFrame = port->frame->parent;
-   int      had_diffmode = port->bookOpts.diff;
+   int      had_diffmode = port->o.diff;
    Boole      did_decrement = false;
 
    // Can close a popup portal with a terminal if the job has finished.
@@ -2382,7 +2382,7 @@ closePortal(Portal* port, int free_buf) {
       Portal   *dPort;
 
       FOR_ALL_PORTALS(dPort) {
-         if (dPort->bookOpts.diff)
+         if (dPort->o.diff)
             ++diffcount;
       } 
       if (diffcount == 1)
@@ -2551,8 +2551,8 @@ checkWhichPortalsResized(
 
    Portal *po;
    FOR_ALL_PORTALS(po) {
-      int ignore_scroll = event_ignored(EVENT_PORTSCROLLED, po->bookOpts.eventIgnorePort);
-      int size_changed = !event_ignored(EVENT_WINRESIZED, po->bookOpts.eventIgnorePort)
+      int ignore_scroll = event_ignored(EVENT_PORTSCROLLED, po->o.eventIgnorePort);
+      int size_changed = !event_ignored(EVENT_WINRESIZED, po->o.eventIgnorePort)
                 && (po->lastWidth != po->width || po->lastHeight != po->height);
       if (size_changed) {
          if (portlist) {
@@ -2873,7 +2873,7 @@ portRemoveFrame(
    if (frp_close->parent->layout == FR_COL) {
       // When 'portfixheight' is set, try to find another frame in the column
       // (as close to the closed frame as possible) to distribute the height to.
-      if (fr2->port != NULL && fr2->port->bookOpts.portFixHeight) {
+      if (fr2->port != NULL && fr2->port->o.portFixHeight) {
          fr = frp_close->prev;
          frp3 = frp_close->next;
          while (fr || frp3) {
@@ -2886,7 +2886,7 @@ portRemoveFrame(
             fr = fr->prev;
          }
          if (frp3) {
-            if (frp3->port != NULL && !frp3->port->bookOpts.portFixHeight) {
+            if (frp3->port != NULL && !frp3->port->o.portFixHeight) {
                fr2 = frp3;
                po = frp3->port;
                break;
@@ -2901,7 +2901,7 @@ portRemoveFrame(
    } else {
       // When 'portfixwidth' is set, try to find another frame in the column
       // (as close to the closed frame as possible) to distribute the width to.
-      if (fr2->port != NULL && fr2->port->bookOpts.portFixWidth) {
+      if (fr2->port != NULL && fr2->port->o.portFixWidth) {
          fr = frp_close->prev;
          frp3 = frp_close->next;
          while (fr || frp3) {
@@ -2914,7 +2914,7 @@ portRemoveFrame(
                fr = fr->prev;
             }
             if (frp3) {
-               if (frp3->port != NULL && !frp3->port->bookOpts.portFixWidth) {
+               if (frp3->port != NULL && !frp3->port->o.portFixWidth) {
                   fr2 = frp3;
                   po = frp3->port;
                   break;
@@ -3231,7 +3231,7 @@ private int
 frame_fixed_height(Frame *fr) {
    // frame with one portal: fixed height if 'portfixheight' set.
    if (fr->port != NULL)
-      return fr->port->bookOpts.portFixHeight;
+      return fr->port->o.portFixHeight;
 
    if (fr->layout == FR_ROW) {
       // The frame is fixed height if one of the frames in the row is fixed height.
@@ -3256,7 +3256,7 @@ private int
 frame_fixed_width(Frame *fr) {
    // frame with one portal: fixed width if 'portfixwidth' set.
    if (fr->port != NULL)
-      return fr->port->bookOpts.portFixWidth;
+      return fr->port->o.portFixWidth;
 
    if (fr->layout == FR_COL) {
       // The frame is fixed width if one of the frames in the row is fixed width.
@@ -4426,13 +4426,13 @@ enterPortalWorker(Portal *po, int flags) {
       redraw_later(UPD_VALID);   // causes status line redraw
 
    // set portal height to desired minimal value
-   if (curPor->height < p_wh && !curPor->bookOpts.portFixHeight  && !popup_is_popup(curPor))
+   if (curPor->height < p_wh && !curPor->o.portFixHeight  && !popup_is_popup(curPor))
       portSetHeight((int)p_wh, curPor);
    ei (curPor->height == 0)
       portSetHeight(1, curPor);
 
    // set portal width to desired minimal value
-   if (curPor->width < p_wiw && !curPor->bookOpts.portFixWidth)
+   if (curPor->width < p_wiw && !curPor->o.portFixWidth)
       portSetWidth((int)p_wiw, curPor);
 
    setmouse();         // in case jumped to/from help buffer
@@ -4551,7 +4551,7 @@ freePortal(Portal* po, Tab* t) { // tab "po" is in, NULL for current
    // gui_mch_destroy_scrollbar() may trigger a FocusGained event.
    block_autocmds();
 
-   optClearPortOptions(&po->bookOpts);
+   optClearPortOptions(&po->o);
 
    vars_clear(&po->internalVars->hashTable);   // free all w: variables
    hash_init(&po->internalVars->hashTable);
@@ -4960,7 +4960,7 @@ frame_setheight(Frame *curfrp, int height) {
          room = 0;
          room_reserved = 0;
          FOR_ALL_FRAMES(fr, curfrp->parent->child) {
-            if (fr != curfrp && fr->port && fr->port->bookOpts.portFixHeight)
+            if (fr != curfrp && fr->port && fr->port->o.portFixHeight)
                room_reserved += fr->height;
             room += fr->height;
             if (fr != curfrp)
@@ -5022,7 +5022,7 @@ frame_setheight(Frame *curfrp, int height) {
             h = frame_minheight(fr, NULL);
             if (room_reserved > 0
                && fr->port
-               && fr->port->bookOpts.portFixHeight)
+               && fr->port->o.portFixHeight)
             {
                if (room_reserved >= (int)fr->height)
                   room_reserved -= fr->height;
@@ -5110,7 +5110,7 @@ frame_setwidth(Frame *curfrp, int width) {
          room = 0;
          room_reserved = 0;
          FOR_ALL_FRAMES(fr, curfrp->parent->child) {
-         if (fr != curfrp && fr->port && fr->port->bookOpts.portFixWidth)
+         if (fr != curfrp && fr->port && fr->port->o.portFixWidth)
             room_reserved += fr->width;
          room += fr->width;
          if (fr != curfrp)
@@ -5152,7 +5152,7 @@ frame_setwidth(Frame *curfrp, int width) {
            fr = curfrp->prev;   // 2nd run: start with prev portal
          while (fr && take != 0) {
             w = frame_minwidth(fr, NULL);
-            if (room_reserved > 0 && fr->port && fr->port->bookOpts.portFixWidth) {
+            if (room_reserved > 0 && fr->port && fr->port->o.portFixWidth) {
                if (room_reserved >= (int)fr->width)
                   room_reserved -= fr->width;
                else {
@@ -5593,7 +5593,7 @@ plines_win_nofill(
     if (lineFolded(wp, lnum) == TRUE)
    return 1;
 
-   if (!wp->bookOpts.wrap)
+   if (!wp->o.wrap)
       // add a line for each "above" and "below" aligned text property
       lines = 1  + prop_count_above_below(wp->book, lnum);
    else
@@ -5619,7 +5619,7 @@ plines_win_nofold(Portal *wp, LineNr lnum) {
 
    // If list mode is on, then the '$' at the end of the line may take up one
    // extra column.
-   if (wp->bookOpts.list && listCharsG.eol != ZERO)
+   if (wp->o.list && listCharsG.eol != ZERO)
       col += 1;
 
    //Add column offset for 'number', 'relativenumber' and 'foldcolumn'.
@@ -5669,7 +5669,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
    //Check for filler lines above this book line. When folded, the result is one line anyway.
    int lines = diff_check_fill(wp, lnum);
 
-   if (!wp->bookOpts.wrap)
+   if (!wp->o.wrap)
       return lines + 1;
 
    if (wp->width == 0)
@@ -5689,7 +5689,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
    //This only fixes an error when the TAB wraps from one screen line to the next (when
    //'columns' is not a multiple of 'ts') -- webb.
    long col = cts.cts_vcol;
-   if (*cts.cts_ptr == TAB && (stateG & MODE_NORMAL) && (!wp->bookOpts.list || listCharsG.tab1))
+   if (*cts.cts_ptr == TAB && (stateG & MODE_NORMAL) && (!wp->o.list || listCharsG.tab1))
       col += win_lbr_chartabsize(&cts, NULL) - 1;
    clear_chartabsize_arg(&cts);
 
@@ -5717,7 +5717,7 @@ scroll_to_fraction(Portal *po, int prevHeight) {
    // - 'scrollbind' is set and this isn't the current portal
    // - portal height is sufficient to display the whole book and first line is visible.
    if (height > 0
-      && (!po->bookOpts.scrollBind || po == curPor)
+      && (!po->o.scrollBind || po == curPor)
       && (height < po->book->mem.lineCount || po->topLine > 1)
    ) {
       // Find a value for topLine that shows the cursor at the same
@@ -5825,7 +5825,7 @@ command_height(void) {
    fr = fr->parent;
 
    // Avoid changing the height of a portal with 'portfixheight' set.
-   while (fr->prev != NULL && fr->layout == FR_LEAF && fr->port->bookOpts.portFixHeight)
+   while (fr->prev != NULL && fr->layout == FR_LEAF && fr->port->o.portFixHeight)
       fr = fr->prev;
 
    while (commlineHeightG > old_p_ch && command_frame_height) {
@@ -7818,7 +7818,7 @@ apply_general_options(Portal* po, Bag* dict) {
    }
 
    Boole bl = bagGetBool(dict, tConst("wrap"), false);
-   po->bookOpts.wrap = bl;
+   po->o.wrap = bl;
 
    bl = bagGetBool(dict, tConst("drag"), false);
    if (bl)
@@ -8383,7 +8383,7 @@ adjustPosition(Portal *po) {
          maxwidth += shift_by;
          po->width = maxwidth;
       }
-      if (po->bookOpts.wrap) {
+      if (po->o.wrap) {
          while (len + margin_width > maxwidth) {
             ++wrapped;
             len -= maxwidth - margin_width;
@@ -8441,7 +8441,7 @@ adjustPosition(Portal *po) {
    if (minwidth > 0 && (int)po->width < minwidth)
       po->width = minwidth;
    if (po->width > (Unt)maxwidth) {
-      if (po->width > (Unt)maxspace && !po->bookOpts.wrap)
+      if (po->width > (Unt)maxspace && !po->o.wrap)
          // some columns cut off on the right
          po->pup.rightOff = po->width - maxspace;
 
@@ -8484,7 +8484,7 @@ adjustPosition(Portal *po) {
       }
    }
 
-   if (po->bookOpts.wrap 
+   if (po->o.wrap 
          || (!po->pup.fixed && (po->pup.pos == POPPOS_TOPLEFT || po->pup.pos == POPPOS_BOTLEFT))
    ) {
       int want_col = 0;
@@ -8926,8 +8926,8 @@ createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) {
       optSetLocalOptionsToDefault(po, true);
       initPopupBook(book);
    }
-   po->bookOpts.wrap = TRUE;   // 'wrap' is default on
-   po->bookOpts.scrollOff = 0;      // 'scrolloff' zero
+   po->o.wrap = TRUE;   // 'wrap' is default on
+   po->o.scrollOff = 0;      // 'scrolloff' zero
 
    if (tab) {
       // popup on specified tab
@@ -9037,7 +9037,7 @@ createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) {
             eeglFree(callback.name);
       }
 
-      po->bookOpts.wrap = 0;
+      po->o.wrap = 0;
       po->pup.flags |= POPF_CURSORLINE;
    } ei (kind == POPUP_PREVIEW) {
          po->pup.flags |= POPF_DRAG | POPF_RESIZE;
@@ -9819,14 +9819,14 @@ f_popup_getoptions(Var *argvars, OUT Var *returnVar) {
       bagAddNumber(b, S"textpropid", po->pup.propId);
    }
    bagAddString(b, S"title", po->pup.title);
-   bagAddNumber(b, S"wrap", po->bookOpts.wrap);
+   bagAddNumber(b, S"wrap", po->o.wrap);
    bagAddNumber(b, S"drag", (po->pup.flags & POPF_DRAG) != 0);
    bagAddNumber(b, S"dragall", (po->pup.flags & POPF_DRAGALL) != 0);
    bagAddNumber(b, S"mapping", (po->pup.flags & POPF_MAPPING) != 0);
    bagAddNumber(b, S"resize", (po->pup.flags & POPF_RESIZE) != 0);
    bagAddNumber(b, S"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
    bagAddNumber(b, S"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
-   bagAddString(b, S"highlight", po->bookOpts.hiliteGroupName);
+   bagAddString(b, S"highlight", po->o.hiliteGroupName);
    if (po->pup.scrollbarHilite)
       bagAddString(b, S"scrollbarhighlight", po->pup.scrollbarHilite);
    if (po->pup.thumbHilite)

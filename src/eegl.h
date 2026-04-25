@@ -5145,7 +5145,7 @@ struct Portal { //:Portal
 
    //Options local to a portal.
    //They are local because they influence the layout of the portal or depend on the portal layout.
-   PortLocal bookOpts;
+   PortLocal o;
 
    // A few options have local flags for P_INSECURE.
    Unt statuslineFlags;  // flags for @statusline

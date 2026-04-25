@@ -730,7 +730,7 @@ eeglMain1(void) {
 
    // When a startup script or session file setup for diff'ing and
    // scrollbind, sync the scrollbind now.
-   if (curPor->bookOpts.diff && curPor->bookOpts.scrollBind) {
+   if (curPor->o.diff && curPor->o.scrollBind) {
       update_topline();
       check_scrollbind((LineNr)0, 0L);
       TIME_MSG("diff scrollbinding");
@@ -1785,7 +1785,7 @@ createPortals(MainParams *params) {
          curBook = curPor->book;
          if (curBook->mem.mfile == NULL) {
             if (foldLevelStart >= 0)
-               curPor->bookOpts.foldLevel = foldLevelStart;
+               curPor->o.foldLevel = foldLevelStart;
             // When getting the ATTENTION prompt here, use a dialog
             swap_exists_action = SEA_DIALOG;
 

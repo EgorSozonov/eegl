@@ -8577,7 +8577,7 @@ getCommandWorker(
       Portal   *wp;
 
       FOR_ALL_PORTALS(wp) {
-         if (*wp->bookOpts.statusLine != ZERO) {
+         if (*wp->o.statusLine != ZERO) {
             wp->statusLineNeedsRedraw = TRUE;
             found_one = TRUE;
          }
@@ -10294,7 +10294,7 @@ openCommPort(void) {
       S"buftype", (OptionValue){.tag = OPTION_STRING, .string = S"nofile"}, SET_LOCAL
    );
    curBook->o.modifiable = true;
-   curPor->bookOpts.foldEnable = FALSE;
+   curPor->o.foldEnable = FALSE;
    RESET_BINDING(curPor);
 
    // Don't allow switching to another buffer.
@@ -18587,13 +18587,13 @@ applyAutocommGroup(
    //If event is allowed in 'eventignorewin', check if curPor or all portals
    //into "book" are ignoring the event.
    if (book == curBook && autoEvents[event].key <= 0)
-      portIgnore = event_ignored(event, curPor->bookOpts.eventIgnorePort);
+      portIgnore = event_ignored(event, curPor->o.eventIgnorePort);
    ei (book && autoEvents[event].key <= 0 && book->countPortals > 0) {
       Tab *t;
       Portal* port;
       portIgnore = true;
       FOR_ALL_TAB_PORTALS(t, port) {
-         if (port->book == book && !event_ignored(event, port->bookOpts.eventIgnorePort)) {
+         if (port->book == book && !event_ignored(event, port->o.eventIgnorePort)) {
             portIgnore = false;
             break;
          }

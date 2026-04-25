@@ -1163,8 +1163,8 @@ int
 eval_foldexpr(Portal *wp, int *cp) {
    ScriptPos saved_sctx = scriptPosG;
 
-   CS arg = skipwhite(wp->bookOpts.foldExpr);
-   scriptPosG = wp->bookOpts.scriptLocs[PORT_foldExpr];
+   CS arg = skipwhite(wp->o.foldExpr);
+   scriptPosG = wp->o.scriptLocs[PORT_foldExpr];
 
    ++emsg_off;
    ++textlock;
@@ -12665,7 +12665,7 @@ f_line(Var *argvars, Var *returnVar) {
          if (portSwitchNoblock(&switchPort, wp, t, TRUE) == OK) {
             // With 'splitkeep' != cursor and in diff mode, prevent that the
             // window scrolls and keep the topline.
-            if (curPor->bookOpts.diff && switchPort.curPor->bookOpts.diff)
+            if (curPor->o.diff && switchPort.curPor->o.diff)
                skipUpdateToplineG = TRUE;
             check_cursor();
             fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);

@@ -13,9 +13,6 @@ bin/*
 *.zstd
 *.bak
 
-# Mac OSX
-src/xxd/xxd.dSYM
-.DS_Store
 
 # All platforms
 *.rej

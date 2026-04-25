@@ -7057,18 +7057,18 @@ parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols) {
 
    *rows = 0;
    *cols = 0;
-   if (*po->bookOpts.termWinSize == ZERO)
+   if (*po->o.termWinSize == ZERO)
       return false;
 
-   CS p = firstOccurrence(po->bookOpts.termWinSize, 'x');
+   CS p = firstOccurrence(po->o.termWinSize, 'x');
 
    // Syntax of value was already checked when it's set.
    Boole minsize = false;
    if (!p) {
       minsize = true;
-      p = firstOccurrence(po->bookOpts.termWinSize, '*');
+      p = firstOccurrence(po->o.termWinSize, '*');
    }
-   *rows = atoi((char *)po->bookOpts.termWinSize);
+   *rows = atoi((char *)po->o.termWinSize);
    *cols = atoi((char *)p + 1);
    if (*rows > VTERM_MAX_ROWS)
       *rows = VTERM_MAX_ROWS;
@@ -7108,7 +7108,7 @@ set_term_and_win_size(Terminal *term, JobOptions *opt) {
          portSetWidth(term->cols, curPor);
 
       //Set 'winsize' now to avoid a resize at the next redraw.
-      if (!minsize && *curPor->bookOpts.termWinSize != ZERO) {
+      if (!minsize && *curPor->o.termWinSize != ZERO) {
          Byte buf[100];
 
          eeSnprintf(buf, 100, "%dx%d", term->rows, term->cols);
@@ -8787,8 +8787,8 @@ private int
 term_get_highlight_id(Terminal *term, Portal *po) {
    CS name;
 
-   if (po && *po->bookOpts.hiliteGroupName != ZERO)
-      name = po->bookOpts.hiliteGroupName;
+   if (po && *po->o.hiliteGroupName != ZERO)
+      name = po->o.hiliteGroupName;
    ei (term->tl_highlight_name != NULL)
       name = term->tl_highlight_name;
    else
@@ -8925,8 +8925,8 @@ terminal_loop(int blocking) {
    // curBook->term instead of a stored reference.
    in_terminal_loop = curBook->term;
 
-   if (*curPor->bookOpts.termWinKey != ZERO) {
-      termwinkey = stringToChar(curPor->bookOpts.termWinKey, TRUE);
+   if (*curPor->o.termWinKey != ZERO) {
+      termwinkey = stringToChar(curPor->o.termWinKey, TRUE);
 
       if (termwinkey == Ctrl_W)
          termwinkey = 0;
@@ -9111,7 +9111,7 @@ cellToDecoration(
    int is_default_bg = VTERM_COLOR_IS_DEFAULT_BG(bg);
 
    if (is_default_fg || is_default_bg) {
-      if (po && *po->bookOpts.hiliteGroupName != ZERO) {
+      if (po && *po->o.hiliteGroupName != ZERO) {
          if (is_default_fg)
             fg = &po->termHiliteGroupName.fg;
          if (is_default_bg)
@@ -9935,8 +9935,8 @@ void
 termUpdatePortcolor(Portal *po) {
    int id = 0;
 
-   if (*po->bookOpts.hiliteGroupName != ZERO)
-      id = hiliteGroupByName(mbText(po->bookOpts.hiliteGroupName));
+   if (*po->o.hiliteGroupName != ZERO)
+      id = hiliteGroupByName(mbText(po->o.hiliteGroupName));
    if (id == 0 || !get_vterm_color_from_synid(id, &po->termHiliteGroupName.fg,
                         &po->termHiliteGroupName.bg))
       termResetPortcolor(po);
@@ -11151,7 +11151,7 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
    term->cols = width;
 
    // looks better without wrapping
-   curPor->bookOpts.wrap = 0;
+   curPor->o.wrap = 0;
 
 theend:
    eeglFree(textline);
@@ -13385,8 +13385,8 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    int      n;
 
    //Temporarily reset 'cursorbind', we don't want a side effect from moving the cursor away & back
-   p_crb_save = tapa->currPort->bookOpts.cursorBind;
-   tapa->currPort->bookOpts.cursorBind = FALSE;
+   p_crb_save = tapa->currPort->o.cursorBind;
+   tapa->currPort->o.cursorBind = FALSE;
 
    // Make a copy, because the statusline may include a function call that
    // might change the option value and free the memory.
@@ -13398,7 +13398,7 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    );
 
    eeglFree(p);
-   tapa->currPort->bookOpts.cursorBind = p_crb_save;
+   tapa->currPort->o.cursorBind = p_crb_save;
 
    currDecoFlags = 0;
    p = buf;

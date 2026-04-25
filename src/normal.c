@@ -2347,12 +2347,12 @@ normal_end:
 
    mb_adjust_cursor();
 
-   if (curPor->bookOpts.scrollBind && toplevel) {
+   if (curPor->o.scrollBind && toplevel) {
       validate_cursor();   // may need to update leftCol
       normPostProcessScrollbind(TRUE);
    }
 
-   if (curPor->bookOpts.cursorBind && toplevel) {
+   if (curPor->o.cursorBind && toplevel) {
       validate_cursor();   // may need to update leftCol
       do_check_cursorbind();
    }
@@ -2969,14 +2969,14 @@ normPostProcessScrollbind(int check) {
    static Book   *old_buf = NULL;
    static ColNr   old_leftcol = 0;
 
-   if (check && curPor->bookOpts.scrollBind) {
+   if (check && curPor->o.scrollBind) {
       // If the ":syncbind" command was just used, don't scroll, only reset the values.
       if (did_syncbind)
           did_syncbind = FALSE;
       ei (curPor == old_curPor) {
           //Synchronize other portals, as necessary according to
           //@scrollbind. Don't do this after an ":edit" command, except when @diff is set.
-          if ((curPor->book == old_buf || curPor->bookOpts.diff)
+          if ((curPor->book == old_buf || curPor->o.diff)
         && (curPor->topLine != old_topline
            || curPor->topFill != old_topfill
            || curPor->leftCol != old_leftcol))
@@ -3017,7 +3017,7 @@ check_scrollbind(LineNr topline_diff, long leftcol_diff) {
 
    // check @scrollopt string for vertical and horizontal scroll options
    Boole want_ver = ((p_sbo & SCR_VER) != 0 && topline_diff != 0);
-   want_ver |= old_curPor->bookOpts.diff;
+   want_ver |= old_curPor->o.diff;
    Boole want_hor = ((p_sbo & SCR_HOR) != 0 && (leftcol_diff || topline_diff != 0));
 
    // loop through the scrollbound portals and scroll accordingly
@@ -3025,12 +3025,12 @@ check_scrollbind(LineNr topline_diff, long leftcol_diff) {
    FOR_ALL_PORTALS(curPor) {
       curBook = curPor->book;
       // skip original portal and portals without @scrollbind
-      if (curPor == old_curPor || !curPor->bookOpts.scrollBind)
+      if (curPor == old_curPor || !curPor->o.scrollBind)
           continue;
 
       // do the vertical scroll
       if (want_ver)    {
-         if (old_curPor->bookOpts.diff && curPor->bookOpts.diff) {
+         if (old_curPor->o.diff && curPor->o.diff) {
             diff_set_topline(old_curPor, curPor);
          } else {
             curPor->scbindPos += topline_diff;
@@ -3580,7 +3580,7 @@ nv_screengo(Operator *oper, Unt dir, long dist) {
     else
    coladvance(curPor->cursWant);
 
-   if (curPor->cursor.col > 0 && curPor->bookOpts.wrap) {
+   if (curPor->cursor.col > 0 && curPor->o.wrap) {
       ColNr virtcol;
       int   c;
 
@@ -3681,8 +3681,8 @@ nv_zet(ActionArg* aArg) {
    long   n;
    ColNr   col;
    Unt      nchar = aArg->nchar;
-   long   old_fdl = curPor->bookOpts.foldLevel;
-   int      old_fen = curPor->bookOpts.foldEnable;
+   long   old_fdl = curPor->o.foldLevel;
+   int      old_fen = curPor->o.foldEnable;
    long   siso = get_sidescrolloff_value();
 
    if (EE_ISDIGIT(nchar) && !nv_z_get_count(aArg, &nchar))
@@ -3774,7 +3774,7 @@ nv_zet(ActionArg* aArg) {
       // "zh" - scroll screen to the right
     case 'h':
     case K_LEFT:
-      if (!curPor->bookOpts.wrap)
+      if (!curPor->o.wrap)
           (void)set_leftcol((ColNr)aArg->count1 > curPor->leftCol
                 ? 0 : curPor->leftCol - (ColNr)aArg->count1);
       break;
@@ -3786,13 +3786,13 @@ nv_zet(ActionArg* aArg) {
       // "zl" - scroll portal to the left if not wrapping
     case 'l':
     case K_RIGHT:
-      if (!curPor->bookOpts.wrap)
+      if (!curPor->o.wrap)
           (void)set_leftcol(curPor->leftCol + (ColNr)aArg->count1);
       break;
 
       // "zs" - scroll screen, cursor at the start
     case 's':   
-       if (!curPor->bookOpts.wrap)       {
+       if (!curPor->o.wrap)       {
          if (getFolds(curPor->cursor.lnum, NULL, NULL))
             col = 0;   // like the cursor is in col 0
          else
@@ -3810,7 +3810,7 @@ nv_zet(ActionArg* aArg) {
 
       // "ze" - scroll screen, cursor at the end
     case 'e':   
-      if (!curPor->bookOpts.wrap) {
+      if (!curPor->o.wrap) {
          if (getFolds(curPor->cursor.lnum, NULL, NULL))
             col = 0;   // like the cursor is in col 0
          else
@@ -3842,7 +3842,7 @@ nv_zet(ActionArg* aArg) {
       if (foldManualAllowed(TRUE)) {
          aArg->nchar = 'f';
          nv_operator(aArg);
-         curPor->bookOpts.foldEnable = TRUE;
+         curPor->o.foldEnable = TRUE;
 
          // "zF" is like "zfzf"
          if (nchar == 'F' && aArg->oper->opTy == OP_FOLD) {
@@ -3869,22 +3869,22 @@ nv_zet(ActionArg* aArg) {
 
       // "zE": erase all folds
    case 'E':   
-      if (curPor->bookOpts.foldMethod == FOLD_MARKER)
+      if (curPor->o.foldMethod == FOLD_MARKER)
          deleteFold((LineNr)1, curBook->mem.lineCount, TRUE, FALSE);
       else
          emsg(_(e_cannot_erase_folds_with_current_foldmethod));
       break;
 
       // "zn": fold none: reset @foldenable
-    case 'n':   curPor->bookOpts.foldEnable = FALSE;
+    case 'n':   curPor->o.foldEnable = FALSE;
       break;
 
       // "zN": fold Normal: set @foldenable
-    case 'N':   curPor->bookOpts.foldEnable = TRUE;
+    case 'N':   curPor->o.foldEnable = TRUE;
       break;
 
       // "zi": invert folding: toggle @foldenable
-    case 'i':   curPor->bookOpts.foldEnable = !curPor->bookOpts.foldEnable;
+    case 'i':   curPor->o.foldEnable = !curPor->o.foldEnable;
       break;
 
       // "za": open closed fold or close open fold at cursor
@@ -3893,7 +3893,7 @@ nv_zet(ActionArg* aArg) {
          openFold(curPor->cursor.lnum, aArg->count1);
       else {
          closeFold(curPor->cursor.lnum, aArg->count1);
-         curPor->bookOpts.foldEnable = TRUE;
+         curPor->o.foldEnable = TRUE;
       }
       break;
 
@@ -3903,7 +3903,7 @@ nv_zet(ActionArg* aArg) {
          openFoldRecurse(curPor->cursor.lnum);
       else {
          closeFoldRecurse(curPor->cursor.lnum);
-         curPor->bookOpts.foldEnable = TRUE;
+         curPor->o.foldEnable = TRUE;
       }
       break;
 
@@ -3929,7 +3929,7 @@ nv_zet(ActionArg* aArg) {
          nv_operator(aArg);
       else
          closeFold(curPor->cursor.lnum, aArg->count1);
-      curPor->bookOpts.foldEnable = TRUE;
+      curPor->o.foldEnable = TRUE;
       break;
 
       // "zC": close fold recursively
@@ -3938,7 +3938,7 @@ nv_zet(ActionArg* aArg) {
          nv_operator(aArg);
       else
          closeFoldRecurse(curPor->cursor.lnum);
-      curPor->bookOpts.foldEnable = TRUE;
+      curPor->o.foldEnable = TRUE;
       break;
 
       // "zv": open folds at the cursor
@@ -3948,7 +3948,7 @@ nv_zet(ActionArg* aArg) {
 
       // "zx": re-apply 'foldlevel' and open folds at the cursor
     case 'x':   
-      curPor->bookOpts.foldEnable = true;
+      curPor->o.foldEnable = true;
       curPor->foldNeedsRecomputation = true;   // recompute folds
       newFoldLevel();         // update right now
       foldOpenCursor();
@@ -3956,40 +3956,40 @@ nv_zet(ActionArg* aArg) {
 
       // "zX": undo manual opens/closes, re-apply 'foldlevel'
     case 'X':   
-      curPor->bookOpts.foldEnable = true;
+      curPor->o.foldEnable = true;
       curPor->foldNeedsRecomputation = true;   // recompute folds
       old_fdl = -1;         // force an update
       break;
 
       // "zm": fold more
     case 'm':  
-      if (curPor->bookOpts.foldLevel > 0) {
-          curPor->bookOpts.foldLevel -= aArg->count1;
-          if (curPor->bookOpts.foldLevel < 0)
-         curPor->bookOpts.foldLevel = 0;
+      if (curPor->o.foldLevel > 0) {
+          curPor->o.foldLevel -= aArg->count1;
+          if (curPor->o.foldLevel < 0)
+         curPor->o.foldLevel = 0;
       }
       old_fdl = -1;      // force an update
-      curPor->bookOpts.foldEnable = TRUE;
+      curPor->o.foldEnable = TRUE;
       break;
 
       // "zM": close all folds
-    case 'M':   curPor->bookOpts.foldLevel = 0;
+    case 'M':   curPor->o.foldLevel = 0;
       old_fdl = -1;      // force an update
-      curPor->bookOpts.foldEnable = TRUE;
+      curPor->o.foldEnable = TRUE;
       break;
 
       // "zr": reduce folding
     case 'r':   {
-         curPor->bookOpts.foldLevel += aArg->count1;
+         curPor->o.foldLevel += aArg->count1;
          int d = getDeepestNesting();
 
-         if (curPor->bookOpts.foldLevel >= d)
-            curPor->bookOpts.foldLevel = d;
+         if (curPor->o.foldLevel >= d)
+            curPor->o.foldLevel = d;
       }
       break;
 
       // "zR": open all folds
-   case 'R':   curPor->bookOpts.foldLevel = getDeepestNesting();
+   case 'R':   curPor->o.foldLevel = getDeepestNesting();
       old_fdl = -1;      // force an update
       break;
 
@@ -4003,14 +4003,14 @@ nv_zet(ActionArg* aArg) {
    }
 
     // Redraw when 'foldenable' changed
-   if (old_fen != curPor->bookOpts.foldEnable)     {
+   if (old_fen != curPor->o.foldEnable)     {
       Portal* wp;
 
-      if (curPor->bookOpts.foldMethod == FOLD_DIFF && curPor->bookOpts.scrollBind) {
+      if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
          // Adjust @foldenable in diff-synced portals.
          FOR_ALL_PORTALS(wp) {
-            if (wp != curPor && wp->bookOpts.foldMethod == FOLD_DIFF && wp->bookOpts.scrollBind) {
-                wp->bookOpts.foldEnable = curPor->bookOpts.foldEnable;
+            if (wp != curPor && wp->o.foldMethod == FOLD_DIFF && wp->o.scrollBind) {
+                wp->o.foldEnable = curPor->o.foldEnable;
                 didChangePortalSetting(wp);
             }
          }
@@ -4019,7 +4019,7 @@ nv_zet(ActionArg* aArg) {
    }
 
     // Redraw when @foldlevel changed.
-   if (old_fdl != curPor->bookOpts.foldLevel)
+   if (old_fdl != curPor->o.foldLevel)
        newFoldLevel();
 }
 
@@ -5624,7 +5624,7 @@ nv_g_home_m_cmd(ActionArg* aArg) {
 
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = FALSE;
-   if (curPor->bookOpts.wrap && curPor->width != 0) {
+   if (curPor->o.wrap && curPor->width != 0) {
       int   width1 = curPor->width - curPor_col_off();
       int   virtcol;
 
@@ -5702,7 +5702,7 @@ nvGDollarAction(ActionArg* aArg) {
 
    oper->motion_type = MCHAR;
    oper->inclusive = TRUE;
-   if (curPor->bookOpts.wrap && curPor->width != 0) {
+   if (curPor->o.wrap && curPor->width != 0) {
    curPor->cursWant = MAXCOL;    // so we stay at the end
    if (aArg->count1 == 1) {
       int      width1 = curPor->width - col_off;
@@ -5717,7 +5717,7 @@ nvGDollarAction(ActionArg* aArg) {
 
       // Make sure we stick in this column.
       update_curswant_force();
-      if (curPor->cursor.col > 0 && curPor->bookOpts.wrap) {
+      if (curPor->cursor.col > 0 && curPor->o.wrap) {
          // Check for landing on a character that got split at
          // the end of the line.  We do not want to advance to the next screen line.
          if (curPor->virtCol - curPor->virtColFirstChar > (ColNr)i)
@@ -5835,7 +5835,7 @@ nv_g_cmd(ActionArg* aArg) {
    case 'j':
    case K_DOWN:
       // with 'nowrap' it works just like the normal "j" command.
-      if (!curPor->bookOpts.wrap) {
+      if (!curPor->o.wrap) {
           oper->motion_type = MLINE;
           i = cursor_down(aArg->count1, oper->opTy == OP_NOP);
       } else
@@ -5847,7 +5847,7 @@ nv_g_cmd(ActionArg* aArg) {
    case 'k':
    case K_UP:
       // with 'nowrap' it works just like the normal "k" command.
-      if (!curPor->bookOpts.wrap) {
+      if (!curPor->o.wrap) {
           oper->motion_type = MLINE;
           i = cursor_up(aArg->count1, oper->opTy == OP_NOP);
       } else
@@ -6722,7 +6722,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
    int      was_visual = FALSE;
    int      dir;
    int      flags = 0;
-   int      save_fen = curPor->bookOpts.foldEnable;
+   int      save_fen = curPor->o.foldEnable;
 
    if (aArg->oper->opTy != OP_NOP) {
       // "dp" is ":diffput"
@@ -6770,7 +6770,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
 
       // Temporarily disable folding, as deleting a fold marker may cause
       // the cursor to be included in a fold.
-      curPor->bookOpts.foldEnable = FALSE;
+      curPor->o.foldEnable = FALSE;
 
       // Now delete the selected text. Avoid messages here.
       aArg->cmdchar = 'd';
@@ -6813,7 +6813,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
 
    if (was_visual) {
       if (save_fen)
-         curPor->bookOpts.foldEnable = TRUE;
+         curPor->o.foldEnable = TRUE;
       // What to reselect with "gv"?  Selecting the just put text seems to be the most useful, 
       // since the original text was removed.
       curBook->visual.vi_start = curBook->opStart;
@@ -6912,7 +6912,7 @@ nOpenAction(ActionArg* aArg) {
         ) == OK
         && insertLine(aArg->cmdchar == 'O' ? BACKWARD : FORWARD) == OK
    ) {
-         if (curPor->bookOpts.cursorLine) {
+         if (curPor->o.cursorLine) {
              // force redraw of cursorline
              curPor->cacheState &= ~VALID_CROW;
          }
@@ -7112,7 +7112,7 @@ comp_botline(Portal *po) {
 // Redraw when cursorLineRow changes and 'relativenumber' or 'cursorline' is set.
 private void
 redraw_for_cursorline(Portal *po) {
-   if ((po->bookOpts.relativeNumber || po->bookOpts.cursorLine )
+   if ((po->o.relativeNumber || po->o.cursorLine )
        && (po->cacheState & VALID_CROW) == 0
        && !pum_visible())
     {
@@ -7126,10 +7126,10 @@ private void
 redraw_for_cursorcolumn(Portal *po) {
    if ((po->cacheState & VALID_VIRTCOL) == 0 && !pum_visible()) {
       // When 'cursorcolumn' is set need to redraw with UPD_SOME_VALID.
-      if (po->bookOpts.cursorColumn)
+      if (po->o.cursorColumn)
           redrawPortLater(po, UPD_SOME_VALID);
       // When 'cursorlineopt' contains "screenline" need to redraw with UPD_VALID.
-      ei (po->bookOpts.cursorLine)
+      ei (po->o.cursorLine)
           redrawPortLater(po, UPD_VALID);
    }
 }
@@ -7149,7 +7149,7 @@ sms_marker_overlap(Portal *po, int extra2) {
    if (*p_sbr != ZERO)
       return 0;
    // Overlap when 'list' and @listchars "precedes" are set is 1.
-   if (po->bookOpts.list && listCharsG.prec)
+   if (po->o.list && listCharsG.prec)
       return 1;
 
    return extra2 > 3 ? 0 : 3 - extra2;
@@ -7200,7 +7200,7 @@ update_topline(void) {
    LineNr   lnum;
    int check_topline = FALSE;
    int check_botline = FALSE;
-   long* scrollOff = &curPor->bookOpts.scrollOff;
+   long* scrollOff = &curPor->o.scrollOff;
    int save_so = *scrollOff;
 
    // Cursor is updated instead when this is TRUE for 'splitkeep'.
@@ -7366,7 +7366,7 @@ update_topline(void) {
       redraw_later(UPD_VALID);
 
       // When 'smoothscroll' is not set, should reset skipCol.
-      if (!curPor->bookOpts.smoothScroll)
+      if (!curPor->o.smoothScroll)
         reset_skipcol();
       ei (curPor->skipCol != 0)
         redraw_later(UPD_SOME_VALID);
@@ -7394,7 +7394,7 @@ private int
 check_top_offset(void) {
    LineOffset   loff;
    int      n;
-   long   so = curPor->bookOpts.scrollOff;
+   long   so = curPor->o.scrollOff;
 
    if (curPor->cursor.lnum < curPor->topLine + so || hasAnyFolding(curPor)) {
       loff.lnum = curPor->cursor.lnum;
@@ -7637,7 +7637,7 @@ curs_rows(Portal *po) {
          } ei (po->lines[i].bookLnum > lnum)
             --i;         // hold at inserted lines
       }
-      if (valid && (lnum != po->topLine || (po->skipCol == 0 && !po->bookOpts.diff))) {
+      if (valid && (lnum != po->topLine || (po->skipCol == 0 && !po->o.diff))) {
           lnum = po->lines[i].lastBookLnum + 1;
           // Cursor inside folded lines, don't count this row
           if (lnum > po->cursor.lnum)
@@ -7738,7 +7738,7 @@ validate_cursor_col(void) {
     width = curPor->width - off;
 
     // long line wrapping, adjust curPor->cursorRow
-   if (curPor->bookOpts.wrap
+   if (curPor->o.wrap
        && col >= (ColNr)curPor->width
        && width > 0)
    // use same formula as what is used in curs_columns()
@@ -7781,7 +7781,7 @@ curs_columns( int may_scroll) { // when TRUE, may scroll horizontally
    ColNr   startcol;
    ColNr   endcol;
    ColNr   prev_skipcol;
-   long   so = curPor->bookOpts.scrollOff;
+   long   so = curPor->o.scrollOff;
    long   siso = get_sidescrolloff_value();
    int      did_sub_skipcol = FALSE;
 
@@ -7814,11 +7814,11 @@ curs_columns( int may_scroll) { // when TRUE, may scroll horizontally
       // No room for text, put cursor in last char of portal.
       // If not wrapping, the last non-empty line.
       curPor->cursorCol = curPor->width - 1;
-      if (curPor->bookOpts.wrap)
+      if (curPor->o.wrap)
          curPor->cursorRow = curPor->height - 1;
       else
          curPor->cursorRow = curPor->height - 1 - curPor->emptyRowCount;
-   } ei (curPor->bookOpts.wrap && curPor->width != 0) {
+   } ei (curPor->o.wrap && curPor->width != 0) {
 
       // skip columns that are not visible
       if (curPor->cursor.lnum == curPor->topLine
@@ -7987,7 +7987,7 @@ curs_columns( int may_scroll) { // when TRUE, may scroll horizontally
          insertLinesIntoPortal(curPor, 0, extra, FALSE, FALSE);
       ei (extra < 0)
          deleteLinesFromPortal(curPor, 0, -extra, FALSE, FALSE, 0);
-   } ei (!curPor->bookOpts.smoothScroll)
+   } ei (!curPor->o.smoothScroll)
       curPor->skipCol = 0;
    if (prev_skipcol != curPor->skipCol)
       redraw_later(UPD_SOME_VALID);
@@ -8051,7 +8051,7 @@ textpos2screenpos(
          width = po->width - off;
 
          // long line wrapping, adjust row
-         if (po->bookOpts.wrap && col >= (ColNr)po->width && width > 0) {
+         if (po->o.wrap && col >= (ColNr)po->width && width > 0) {
             // use same formula as what is used in curs_columns()
             int rowoff = ((col - po->width) / width + 1);
             col -= rowoff * width;
@@ -8151,11 +8151,11 @@ f_virtcol2col(Var *argvars UNUSED, Var *returnVar) {
 // Make sure the cursor is in the visible part of the topline after scrolling
 // the screen with 'smoothscroll'.
 private void cursor_correct_sms(void) {
-   if (!curPor->bookOpts.smoothScroll || !curPor->bookOpts.wrap
+   if (!curPor->o.smoothScroll || !curPor->o.wrap
          || curPor->cursor.lnum != curPor->topLine)
       return;
 
-   long    scrollOff = curPor->bookOpts.scrollOff;
+   long    scrollOff = curPor->o.scrollOff;
    int       width1 = curPor->width - curPor_col_off();
    int       so_cols = scrollOff == 0 ? 0 : (scrollOff * width1);
    int       space_cols = (curPor->height - 1) * width1;
@@ -8229,7 +8229,7 @@ scroll_redraw(int up, long count) {
    } else {
       scrolldown(count, TRUE);
    }
-   if (curPor->bookOpts.scrollOff > 0) {
+   if (curPor->o.scrollOff > 0) {
       // Adjust the cursor position for 'scrolloff'.  Mark topLine as
       // valid, otherwise the screen jumps back at the end of the file.
       cursor_correct();
@@ -8273,7 +8273,7 @@ scrolldown(
    long   done = 0;   // total # of physical lines done
    int      wrow;
    int      moved = FALSE;
-   int      doSmoothly = curPor->bookOpts.wrap && curPor->bookOpts.smoothScroll;
+   int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
    int      width1 = 0;
 
    if (doSmoothly) {
@@ -8344,7 +8344,7 @@ scrolldown(
    //Compute the row number of the last row of the cursor line
    //and move the cursor onto the displayed part of the portal.
    wrow = curPor->cursorRow;
-   if (curPor->bookOpts.wrap && curPor->width != 0) {
+   if (curPor->o.wrap && curPor->width != 0) {
       validate_virtcol();
       validate_cheight();
       wrow += curPor->cursorLineHeight - 1 - curPor->virtCol / curPor->width;
@@ -8378,11 +8378,11 @@ scrollup(
     long   line_count,
     int      byfold UNUSED)   // TRUE: count a closed fold as one line
 {
-    int      doSmoothly = curPor->bookOpts.wrap && curPor->bookOpts.smoothScroll;
+    int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
 
    if (doSmoothly
        || (byfold && hasAnyFolding(curPor))
-       || (curPor->bookOpts.diff && !curPor->bookOpts.wrap)) {
+       || (curPor->o.diff && !curPor->o.wrap)) {
    int       width1 = curPor->width - curPor_col_off();
    int       size = 0;
    ColNr       prev_skipcol = curPor->skipCol;
@@ -8465,8 +8465,8 @@ scrollup(
 //After changing the cursor column: make sure that curPor->skipCol is valid for 'smoothscroll'
 void
 adjust_skipcol(void) {
-   if (!curPor->bookOpts.wrap
-         || !curPor->bookOpts.smoothScroll
+   if (!curPor->o.wrap
+         || !curPor->o.smoothScroll
          || curPor->cursor.lnum != curPor->topLine)
       return;
 
@@ -8474,7 +8474,7 @@ adjust_skipcol(void) {
    if (width1 <= 0)
       return;  // no text will be displayed
 
-   long so = curPor->bookOpts.scrollOff;
+   long so = curPor->o.scrollOff;
    int scrolloff_cols = so == 0 ? 0 : (so * width1);
    int scrolled = FALSE;
    int row = 0;
@@ -8577,12 +8577,12 @@ scrolldown_clamp(void) {
       ++end_row;
    else
       end_row += plines_nofill(curPor->topLine - 1);
-   if (curPor->bookOpts.wrap && curPor->width != 0) {
+   if (curPor->o.wrap && curPor->width != 0) {
       validate_cheight();
       validate_virtcol();
       end_row += curPor->cursorLineHeight - 1 - curPor->virtCol / curPor->width;
    }
-   if (end_row < curPor->height - curPor->bookOpts.scrollOff) {
+   if (end_row < curPor->height - curPor->o.scrollOff) {
       if (can_fill) {
          ++curPor->topFill;
          check_topfill(curPor, TRUE);
@@ -8608,11 +8608,11 @@ scrollup_clamp(void) {
    //and make sure it doesn't go off the screen. Make sure the cursor
    //doesn't go before 'scrolloff' lines from the screen start.
    int start_row = curPor->cursorRow - plines_nofill(curPor->topLine) - curPor->topFill;
-   if (curPor->bookOpts.wrap && curPor->width != 0) {
+   if (curPor->o.wrap && curPor->width != 0) {
       validate_virtcol();
       start_row -= curPor->virtCol / curPor->width;
    }
-   if (start_row >= curPor->bookOpts.scrollOff) {
+   if (start_row >= curPor->o.scrollOff) {
       if (curPor->topFill > 0)
          --curPor->topFill;
       else {
@@ -8689,7 +8689,7 @@ scroll_cursor_top(int min_scroll, int always) {
    LineNr   old_topline = curPor->topLine;
    int      old_skipcol = curPor->skipCol;
    LineNr   old_topfill = curPor->topFill;
-   int      off = curPor->bookOpts.scrollOff;
+   int      off = curPor->o.scrollOff;
 
    if (mouseDraggingG > 0)
       off = mouseDraggingG - 1;
@@ -8828,8 +8828,8 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
    LineNr   old_valid = curPor->cacheState;
    int      old_empty_rows = curPor->emptyRowCount;
    LineNr   cln;          // Cursor Line Number
-   long   so = curPor->bookOpts.scrollOff;
-   int      doSmoothly = curPor->bookOpts.wrap && curPor->bookOpts.smoothScroll;
+   long   so = curPor->o.scrollOff;
+   int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
 
    cln = curPor->cursor.lnum;
    if (set_topbot) {
@@ -9046,7 +9046,7 @@ scroll_cursor_halfway(int atend, int prefer_above) {
    topline = loff.lnum;
 
    int want_height;
-   int doSmoothly = curPor->bookOpts.wrap && curPor->bookOpts.smoothScroll;
+   int doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
    if (doSmoothly) {
       // @smoothscroll and @wrap are set
       if (atend) {
@@ -9155,7 +9155,7 @@ cursor_correct(void) {
    int      above_wanted, below_wanted;
    LineNr   cln;          // Cursor Line Number
    int      max_off;
-   long   so = curPor->bookOpts.scrollOff;
+   long   so = curPor->o.scrollOff;
 
    //How many lines we would like to have above/below the cursor depends on
    //whether the first/last line of the file is on screen.
@@ -9188,7 +9188,7 @@ cursor_correct(void) {
       return;
    }
 
-   if (curPor->bookOpts.smoothScroll && !curPor->bookOpts.wrap) {
+   if (curPor->o.smoothScroll && !curPor->o.wrap) {
       // @smoothscroll is active
       if (curPor->cursorLineHeight == curPor->height) {
           // The cursor line just fits in the portal, don't scroll.
@@ -9305,12 +9305,12 @@ get_scroll_overlap(int dir) {
 // lines when 'smoothscroll' is disabled.
 private int
 scrollSmoothly(int dir, long count, long *curscount) {
-   int      prev_sms = curPor->bookOpts.smoothScroll;
+   int      prev_sms = curPor->o.smoothScroll;
    ColNr   prev_skipcol = curPor->skipCol;
    LineNr   prev_topline = curPor->topLine;
    int      prev_topfill = curPor->topFill;
 
-   curPor->bookOpts.smoothScroll = TRUE;
+   curPor->o.smoothScroll = TRUE;
    scroll_redraw(dir == FORWARD, count);
 
    // Not actually smoothscrolling but ended up with partially visible line.
@@ -9331,7 +9331,7 @@ scrollSmoothly(int dir, long count, long *curscount) {
       scroll_redraw(fixdir == FORWARD, count);
       *curscount += count * (fixdir == dir ? 1 : -1);
    }
-   curPor->bookOpts.smoothScroll = prev_sms;
+   curPor->o.smoothScroll = prev_sms;
 
    return curPor->topLine == prev_topline
       && curPor->topFill == prev_topfill
@@ -9384,7 +9384,7 @@ pagescroll(int dir, long count, int half) {
       }
 
       // Move the cursor the same amount of screen lines.
-      if (curPor->bookOpts.wrap)
+      if (curPor->o.wrap)
           nv_screengo(&oa, dir, curscount);
       ei (dir == FORWARD)
           cursor_down_inner(curPor, curscount);
@@ -9407,7 +9407,7 @@ pagescroll(int dir, long count, int half) {
       }
    }
 
-   if (curPor->bookOpts.scrollOff > 0)
+   if (curPor->o.scrollOff > 0)
       cursor_correct();
    // Move cursor to first line of closed fold.
    foldAdjustCursor();
@@ -9419,7 +9419,7 @@ pagescroll(int dir, long count, int half) {
    // Error if both the viewport and cursor did not change.
    if (nochange)
       beep_flush();
-   ei (!curPor->bookOpts.smoothScroll)
+   ei (!curPor->o.smoothScroll)
       beginline(BL_SOL | BL_FIX);
    ei (p_sol)
       nv_g_home_m_cmd(&ca);
@@ -9451,8 +9451,8 @@ do_check_cursorbind(void) {
    FOR_ALL_PORTALS(curPor) {
       curBook = curPor->book;
       // skip original portal and portals without @cursorbind
-      if (curPor != old_curPor && curPor->bookOpts.cursorBind) {
-         if (curPor->bookOpts.diff)
+      if (curPor != old_curPor && curPor->o.cursorBind) {
+         if (curPor->o.diff)
             curPor->cursor.lnum = diff_get_corresponding_line(oldCurBook, line);
          else
             curPor->cursor.lnum = line;
@@ -9468,7 +9468,7 @@ do_check_cursorbind(void) {
          check_cursor();
 
          // Avoid a scroll here for the cursor position, 'scrollbind' is more important.
-         if (!curPor->bookOpts.scrollBind)
+         if (!curPor->o.scrollBind)
             validate_cursor();
 
          restart_edit = restart_edit_save;
@@ -9477,7 +9477,7 @@ do_check_cursorbind(void) {
          redraw_later(UPD_VALID);
 
          // Only scroll when 'scrollbind' hasn't done this.
-         if (!curPor->bookOpts.scrollBind)
+         if (!curPor->o.scrollBind)
             update_topline();
          curPor->statusLineNeedsRedraw = TRUE;
       }
@@ -11920,7 +11920,7 @@ copyFoldingState(Portal *wp_from, Portal *wp_to) {
 int
 hasAnyFolding(Portal *po) {
    //very simple now, but can become more complex later
-   return po->bookOpts.foldEnable;
+   return po->o.foldEnable;
 }
 
 // getFolds()
@@ -12164,12 +12164,12 @@ void
 newFoldLevel(void) {
    newFoldLevelForPortal(curPor);
 
-   if (curPor->bookOpts.foldMethod == FOLD_DIFF && curPor->bookOpts.scrollBind) {
+   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
       Portal* wp;
       // Set the same foldlevel in other portals in diff mode.
       FOR_ALL_PORTALS(wp) {
-         if (wp != curPor && wp->bookOpts.foldMethod == FOLD_DIFF && wp->bookOpts.scrollBind) {
-            wp->bookOpts.foldLevel = curPor->bookOpts.foldLevel;
+         if (wp != curPor && wp->o.foldMethod == FOLD_DIFF && wp->o.scrollBind) {
+            wp->o.foldLevel = curPor->o.foldLevel;
             newFoldLevelForPortal(wp);
          }
       }
@@ -12182,7 +12182,7 @@ foldCheckClose(void) {
    // @foldclose can only be "all" right now
    checkupdate(curPor);
    if (checkCloseRec(&curPor->folds, curPor->cursor.lnum,
-      (int)curPor->bookOpts.foldLevel))
+      (int)curPor->o.foldLevel))
    didChangePortalSettingCurPor();
 }
 
@@ -12210,7 +12210,7 @@ checkCloseRec(ArrayList *gap, LineNr lnum, int level) {
 //Give an error message and return FALSE if not.
 int
 foldManualAllowed(int create) {
-   if (curPor->bookOpts.foldMethod == FOLD_MARKER)
+   if (curPor->o.foldMethod == FOLD_MARKER)
       return TRUE;
    if (create)
       emsg(_(e_cannot_create_fold_with_current_foldmethod));
@@ -12242,7 +12242,7 @@ foldCreate(LineNr start, LineNr end) {
    }
 
    // When @foldmethod is "marker", add markers, which creates the folds.
-   if (curPor->bookOpts.foldMethod == FOLD_MARKER) {
+   if (curPor->o.foldMethod == FOLD_MARKER) {
       foldCreateMarkers(start, end);
       return;
    }
@@ -12264,7 +12264,7 @@ foldCreate(LineNr start, LineNr end) {
             end_rel -= fp->fd_top;
             if (use_level || fp->fd_flags == FD_LEVEL) {
                use_level = true;
-               if (level >= curPor->bookOpts.foldLevel)
+               if (level >= curPor->o.foldLevel)
                   closed = TRUE;
             } ei (fp->fd_flags == FD_CLOSED)
                closed = TRUE;
@@ -12325,7 +12325,7 @@ foldCreate(LineNr start, LineNr end) {
 
    // We want the new fold to be closed.  If it would remain open because
    // of using 'foldlevel', need to adjust fd_flags of containing folds.
-   if (use_level && !closed && level < curPor->bookOpts.foldLevel)
+   if (use_level && !closed && level < curPor->o.foldLevel)
       closeFold(start, 1L);
    if (!use_level)
       curPor->foldManual = true;
@@ -12807,7 +12807,7 @@ setManualFoldPort(
        // Change from level-dependent folding to manual.
        if (use_level || fp->fd_flags == FD_LEVEL) {
            use_level = TRUE;
-           if (level >= wp->bookOpts.foldLevel)
+           if (level >= wp->o.foldLevel)
               fp->fd_flags = FD_CLOSED;
            else
               fp->fd_flags = FD_OPEN;
@@ -12867,13 +12867,13 @@ setManualFold(
    int      opening,    // TRUE when opening, FALSE when closing
    int      recurse,    // TRUE when closing/opening recursive
    int      *donep) {
-   if (curPor->bookOpts.foldMethod == FOLD_DIFF && curPor->bookOpts.scrollBind) {
+   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
       Portal       *wp;
       LineNr    dlnum;
 
       //Do the same operation in other portals in diff mode. Calculate line number from the diffs
       FOR_ALL_PORTALS(wp) {
-         if (wp != curPor && wp->bookOpts.foldMethod == FOLD_DIFF && wp->bookOpts.scrollBind) {
+         if (wp != curPor && wp->o.foldMethod == FOLD_DIFF && wp->o.scrollBind) {
             dlnum = diff_lnum_win(curPor->cursor.lnum, wp);
             if (dlnum != 0)
                (void)setManualFoldPort(wp, dlnum, opening, recurse, NULL);
@@ -13119,7 +13119,7 @@ check_closed(
    // fold and all folds it contains depend on 'foldlevel'.
    if (*use_levelp || fp->fd_flags == FD_LEVEL) {
       *use_levelp = true;
-      if (level >= po->bookOpts.foldLevel)
+      if (level >= po->o.foldLevel)
          closed = true;
    } ei (fp->fd_flags == FD_CLOSED)
       closed = true;
@@ -13186,7 +13186,7 @@ foldCreateMarkers(LineNr start, LineNr end) {
    }
    parseMarker(curPor);
 
-   foldAddMarker(start, curPor->bookOpts.foldMarker, foldstartmarkerlen);
+   foldAddMarker(start, curPor->o.foldMarker, foldstartmarkerlen);
    foldAddMarker(end, foldendmarker, foldendmarkerlen);
 
    // Update both changes here, to avoid all folds after the start are
@@ -13234,7 +13234,7 @@ deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off
           deleteFoldMarkers((Fold *)fp->fd_nested.c + i, TRUE, lnum_off + fp->fd_top);
       }
    } 
-   foldDelMarker(fp->fd_top + lnum_off, curPor->bookOpts.foldMarker, foldstartmarkerlen);
+   foldDelMarker(fp->fd_top + lnum_off, curPor->o.foldMarker, foldstartmarkerlen);
    foldDelMarker(fp->fd_top + lnum_off + fp->fd_len - 1, foldendmarker, foldendmarkerlen);
 }
 
@@ -13307,7 +13307,7 @@ get_foldtext(
        // a previous error should not abort evaluating 'foldexpr'
        anyEmsgG = FALSE;
 
-   if (*wp->bookOpts.foldText != ZERO) {
+   if (*wp->o.foldText != ZERO) {
        Byte   dashes[MAX_LEVEL + 2];
        int   level;
        Byte   *p;
@@ -13333,10 +13333,10 @@ get_foldtext(
 
            curPor = wp;
            curBook = wp->book;
-           scriptPosG = wp->bookOpts.scriptLocs[PORT_foldText];
+           scriptPosG = wp->o.scriptLocs[PORT_foldText];
 
            ++emsg_off; // handle exceptions, but don't display errors
-           text = eval_to_string_safe(wp->bookOpts.foldText, TRUE);
+           text = eval_to_string_safe(wp->o.foldText, TRUE);
            --emsg_off;
 
            if (text == NULL || anyEmsgG)
@@ -13419,7 +13419,7 @@ foldtext_cleanup(CS str) {
 
    for (s = str; *s != ZERO; ) {
       len = 0;
-      if (STRNCMP(s, curPor->bookOpts.foldMarker, foldstartmarkerlen) == 0)
+      if (STRNCMP(s, curPor->o.foldMarker, foldstartmarkerlen) == 0)
          len = foldstartmarkerlen;
       ei (STRNCMP(s, foldendmarker, foldendmarkerlen) == 0)
          len = foldendmarkerlen;
@@ -13513,7 +13513,7 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
    }
 
    // add the context for "diff" folding
-   if (po->bookOpts.foldMethod == FOLD_DIFF) {
+   if (po->o.foldMethod == FOLD_DIFF) {
       if (top > diff_context)
          top -= diff_context;
       else
@@ -13537,7 +13537,7 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
    invalid_top = top;
    invalid_bot = bot;
 
-   if (po->bookOpts.foldMethod == FOLD_MARKER) {
+   if (po->o.foldMethod == FOLD_MARKER) {
       getlevel = foldlevelMarker;
 
       // Init marker variables to speed up foldlevelMarker().
@@ -13566,12 +13566,12 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
       getlevel(&fline);
    } else {
       fline.lnum = top;
-      if (po->bookOpts.foldMethod == FOLD_EXPR) {
+      if (po->o.foldMethod == FOLD_EXPR) {
          getlevel = foldlevelExpr;
          // start one line back, because a "<1" may indicate the end of a fold in the topline
          if (top > 1)
             --fline.lnum;
-      } ei (po->bookOpts.foldMethod == FOLD_DIFF)
+      } ei (po->o.foldMethod == FOLD_DIFF)
          getlevel = foldlevelDiff;
       else {
          getlevel = foldlevelIndent;
@@ -13637,7 +13637,7 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
    foldRemove(&po->folds, start, end);
 
    //If some fold changed, need to redraw and position cursor.
-   if (fold_changed && po->bookOpts.foldEnable)
+   if (fold_changed && po->o.foldEnable)
       didChangePortalSetting(po);
 
    //If we updated folds past "bot", need to redraw more lines. Don't do this in other 
@@ -14342,7 +14342,7 @@ foldlevelIndent(FoldLine *flp) {
 
    // empty line or lines starting with a character in 'foldignore': level
    // depends on surrounding lines
-   if (*s == ZERO || firstOccurrence(flp->po->bookOpts.foldIgnore, *s) != NULL) {
+   if (*s == ZERO || firstOccurrence(flp->po->o.foldIgnore, *s) != NULL) {
       // first and last line can't be undefined, use level 0
       if (lnum == 1 || lnum == book->mem.lineCount)
          flp->lvl = 0;
@@ -14457,8 +14457,8 @@ foldlevelExpr(FoldLine *flp) {
 //Rely on the option value to have been checked for correctness already.
 private void
 parseMarker(Portal *wp) {
-   foldendmarker = firstOccurrence(wp->bookOpts.foldMarker, ',');
-   foldstartmarkerlen = (int)(foldendmarker++ - wp->bookOpts.foldMarker);
+   foldendmarker = firstOccurrence(wp->o.foldMarker, ',');
+   foldstartmarkerlen = (int)(foldendmarker++ - wp->o.foldMarker);
    foldendmarkerlen = (int)STRLEN(foldendmarker);
 }
 
@@ -14477,7 +14477,7 @@ foldlevelMarker(FoldLine *flp) {
    int      n;
 
    // cache a few values for speed
-   startmarker = flp->po->bookOpts.foldMarker;
+   startmarker = flp->po->o.foldMarker;
    cstart = *startmarker;
    ++startmarker;
    cend = *foldendmarker;
@@ -14574,8 +14574,8 @@ put_foldopen_recurse(
          // Open or close the leaf according to the portal foldlevel.
          // Do not close a leaf that is already closed, as it will close the parent.
          int level = foldLevelWin(wp, off + fp->fd_top);
-         if (((fp->fd_flags == FD_CLOSED && wp->bookOpts.foldLevel >= level)
-               || (fp->fd_flags != FD_CLOSED && wp->bookOpts.foldLevel < level)
+         if (((fp->fd_flags == FD_CLOSED && wp->o.foldLevel >= level)
+               || (fp->fd_flags != FD_CLOSED && wp->o.foldLevel < level)
              ) 
              && put_fold_open_close(fd, fp, off) == FAIL
          )

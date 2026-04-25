@@ -6218,7 +6218,7 @@ do_mouse(
    }
 
    //Set global flag that we are extending the Visual area with mouse dragging
-   if (VIsual_active && is_drag && curPor->bookOpts.scrollOff > 0) {
+   if (VIsual_active && is_drag && curPor->o.scrollOff > 0) {
       //In the very first line, allow scrolling one line
       if (mouseRowG == 0)
          mouseDraggingG = 2;
@@ -7125,7 +7125,7 @@ retnomove:
 // Make a horizontal scroll to "leftcol". Return TRUE if the cursor moved, FALSE otherwise.
 private int
 do_mousescroll_horiz(Ulong leftcol) {
-   if (curPor->bookOpts.wrap)
+   if (curPor->o.wrap)
       return FALSE;  // no horizontal scrolling when wrapping
 
    if (curPor->leftCol == (ColNr)leftcol)
@@ -7338,7 +7338,7 @@ mouse_comp_pos(
           count = plines_cache[cache_idx];
       else {
           // Don't include filler lines in "count"
-          if (port->bookOpts.diff
+          if (port->o.diff
              && !getFoldsPortal(port, lnum, NULL, NULL, TRUE, NULL)
              )
           {
@@ -7395,7 +7395,7 @@ mouse_comp_pos(
          col += port->skipCol;
    }
 
-   if (!port->bookOpts.wrap)
+   if (!port->o.wrap)
       col += port->leftCol;
 
    // skip line number and fold column in front of the line

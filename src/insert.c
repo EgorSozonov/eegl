@@ -365,8 +365,8 @@ edit(
       //(by insertchar() calling openLine())). Also don't do this when @smoothscroll is set, as 
       //the portal should then be scrolled by screen lines.
       if (curBook->needsRedraw
-            && curPor->bookOpts.wrap
-            && !curPor->bookOpts.smoothScroll
+            && curPor->o.wrap
+            && !curPor->o.smoothScroll
             && !did_backspace
             && curPor->topLine == old_topline
             && curPor->topFill == old_topfill
@@ -377,7 +377,7 @@ edit(
 
          if (
             (int)curPor->cursorCol < mincol - curBook->o.shiftWidth
-             && curPor->cursorRow == curPor->height - 1 - curPor->bookOpts.scrollOff
+             && curPor->cursorRow == curPor->height - 1 - curPor->o.scrollOff
              && (curPor->cursor.lnum != curPor->topLine || curPor->topFill > 0)
          ) {
             if (curPor->topFill > 0)
@@ -402,10 +402,10 @@ edit(
       //Also shows mode, ruler and positions cursor.
       redrawInInsertMode(true);
 
-      if (curPor->bookOpts.scrollBind)
+      if (curPor->o.scrollBind)
          normPostProcessScrollbind(TRUE);
 
-      if (curPor->bookOpts.cursorBind)
+      if (curPor->o.cursorBind)
          do_check_cursorbind();
       if (count <= 1)
          update_curswant();
@@ -2975,7 +2975,7 @@ ins_tab(void) {
       Pos      *cursor;
       ColNr      want_vcol, vcol;
       int      change_col = -1;
-      int      save_list = curPor->bookOpts.list;
+      int      save_list = curPor->o.list;
       Byte      *tab = (CS)"\t";
       CharTableSize   cts;
 
@@ -2984,7 +2984,7 @@ ins_tab(void) {
       cursor = &curPor->cursor;
 
       // When 'L' is not in 'cpoptions' a tab always takes up 'ts' spaces.
-      curPor->bookOpts.list = FALSE;
+      curPor->o.list = FALSE;
 
       // Find first white before the cursor
       Pos fpos = curPor->cursor;
@@ -3061,7 +3061,7 @@ ins_tab(void) {
             cursor->col -= i;
          }
       }
-      curPor->bookOpts.list = save_list;
+      curPor->o.list = save_list;
    }
    return FALSE;
 }
@@ -3164,7 +3164,7 @@ get_nolist_virtcol(void) {
          || !curPor->book->mem.mfile
          || curPor->cursor.lnum > curPor->book->mem.lineCount)
       return 0;
-   if (curPor->bookOpts.list)
+   if (curPor->o.list)
       return getvcol_nolist(&curPor->cursor);
    validate_virtcol();
    return curPor->virtCol;

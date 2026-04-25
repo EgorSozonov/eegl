@@ -62,8 +62,8 @@ private int screen_charDeco = 0;
 Decoration
 getPortcolorDeco(Portal *po) {
    Decoration portalDeco;
-   if (*po->bookOpts.hiliteGroupName != ZERO)
-      portalDeco = decosByHiliteName(po->bookOpts.hiliteGroupName);
+   if (*po->o.hiliteGroupName != ZERO)
+      portalDeco = decosByHiliteName(po->o.hiliteGroupName);
    ei (PORTAL_IS_POPUP(po)) {
       if (isInfoPopup(po))
          portalDeco = getFullDecoration(HLF_PSI);    // PmenuSel
@@ -539,7 +539,7 @@ redrawStatusLineOrRuler(Portal   *po, int draw_ruler) {  // TRUE or FALSE
       }
    } else {
       oname = (CS)"statusline";
-      stl = po->bookOpts.statusLine;
+      stl = po->o.statusLine;
       opt_scope = OPT_LOCAL;
    }
 
@@ -552,8 +552,8 @@ redrawStatusLineOrRuler(Portal   *po, int draw_ruler) {  // TRUE or FALSE
    // Temporarily reset 'cursorbind', we don't want a side effect from moving
    // the cursor away and back.
    ewp = po == NULL ? curPor : po;
-   p_crb_save = ewp->bookOpts.cursorBind;
-   ewp->bookOpts.cursorBind = FALSE;
+   p_crb_save = ewp->o.cursorBind;
+   ewp->o.cursorBind = FALSE;
 
    // Make a copy, because the statusline may include a function call that
    // might change the option value and free the memory.
@@ -563,7 +563,7 @@ redrawStatusLineOrRuler(Portal   *po, int draw_ruler) {  // TRUE or FALSE
       fillchar, maxwidth, OUT &hilites, OUT &labels
    );
    eeglFree(stl);
-   ewp->bookOpts.cursorBind = p_crb_save;
+   ewp->o.cursorBind = p_crb_save;
 
    // Make all characters printable.
    p = sanitizeStr(builder);
@@ -2439,10 +2439,10 @@ redrawRuler(Portal *po, int always, int ignore_pum) {
 
       // In list mode virtcol needs to be recomputed
       virtcol = po->virtCol;
-      if (po->bookOpts.list && listCharsG.tab1 == ZERO) {
-         po->bookOpts.list = FALSE;
+      if (po->o.list && listCharsG.tab1 == ZERO) {
+         po->o.list = FALSE;
          bookGetVirtualColInVirtualMode(po, &po->cursor, NULL, &virtcol, NULL);
-         po->bookOpts.list = TRUE;
+         po->o.list = TRUE;
       }
 
       // row number, column number is appended
@@ -2763,7 +2763,7 @@ number_width(Portal *po) {
    // cursor line shows absolute line number
    LineNr lnum = po->book->mem.lineCount;
 
-   if (lnum == po->lineCountSaved && po->numWidthCached == po->bookOpts.numberWidth)
+   if (lnum == po->lineCountSaved && po->numWidthCached == po->o.numberWidth)
       return po->lineCountSaved;
    po->lineCountSaved = lnum;
 
@@ -2774,15 +2774,15 @@ number_width(Portal *po) {
    } while (lnum > 0);
 
    //'numberwidth' gives the minimal width plus one
-   if (n < po->bookOpts.numberWidth - 1)
-      n = po->bookOpts.numberWidth - 1;
+   if (n < po->o.numberWidth - 1)
+      n = po->o.numberWidth - 1;
 
    //If 'signcolumn' is on for the portal, then the minimal width for the number column is 2.
    if (n < 2 && isSigncolumnOn(po))
       n = 2;
 
    po->lineCountSaved = n;
-   po->numWidthCached = po->bookOpts.numberWidth;
+   po->numWidthCached = po->o.numberWidth;
    return n;
 }
 
@@ -3419,7 +3419,7 @@ redrawPortalStatusLine(Portal *po, int ignore_pum UNUSED) {
     {
       // Don't redraw right now, do it later.
       po->statusLineNeedsRedraw = TRUE;
-   } ei (*po->bookOpts.statusLine != ZERO) {
+   } ei (*po->o.statusLine != ZERO) {
       // redraw custom status line
       redraw_custom_statusline(po);
    } else {
@@ -3534,7 +3534,7 @@ showruler(int always) {
       curPor->statusLineNeedsRedraw = TRUE;
       return;
    }
-   if ((*curPor->bookOpts.statusLine != ZERO) && curPor->statusHeight)
+   if ((*curPor->o.statusLine != ZERO) && curPor->statusHeight)
       redraw_custom_statusline(curPor);
    else
       redrawRuler(curPor, always, FALSE);
@@ -3703,13 +3703,13 @@ fold_line(
       if (len > w + 1)
          len = w + 1;
 
-      if (!po->bookOpts.relativeNumber)
+      if (!po->o.relativeNumber)
          // 'norelativenumber'
          num = (long)lnum;
       else {
          // 'relativenumber', don't use negative numbers
          num = labs((long)get_cursor_rel_lnum(po, lnum));
-         if (num == 0 && po->bookOpts.relativeNumber) {
+         if (num == 0 && po->o.relativeNumber) {
              // 'number' + 'relativenumber': cursor line shows absolute
              // line number
              num = lnum;
@@ -3790,9 +3790,9 @@ fold_line(
    }
 
    // Show 'cursorcolumn' in the fold line.
-   if (po->bookOpts.cursorColumn) {
+   if (po->o.cursorColumn) {
       txtcol += po->virtCol;
-      if (po->bookOpts.wrap)
+      if (po->o.wrap)
          txtcol -= po->skipCol;
       else
          txtcol -= po->leftCol;
@@ -4190,7 +4190,7 @@ updatePortal(Portal *po) {
                }
                // Correct the first entry for filler lines at the top
                // when it won't get updated below.
-               if (po->bookOpts.diff && bot_start > 0) {
+               if (po->o.diff && bot_start > 0) {
                   int n = plines_win_nofill(po, po->topLine, FALSE)
                         + po->topFill - adjust_plines_for_skipcol(po);
                   if (n > (int)po->height)
@@ -4448,7 +4448,7 @@ updatePortal(Portal *po) {
                    )
                 )
             )
-         || (po->bookOpts.cursorLine && lnum == po->cursor.lnum)
+         || (po->o.cursorLine && lnum == po->cursor.lnum)
          || lnum == po->lastCursorLine
       ){
          if (lnum == mod_top)
@@ -4636,7 +4636,7 @@ updatePortal(Portal *po) {
           // - 'relativenumber' is set and cursor moved vertically,
           // the text doesn't need to be redrawn, but the number column does.
           if ((mod_top != 0 && lnum >= mod_bot && book->needsRedraw && book->lineCountDiff != 0)
-             || (po->bookOpts.relativeNumber && po->lastCursorLnumRnu != po->cursor.lnum)
+             || (po->o.relativeNumber && po->lastCursorLnumRnu != po->cursor.lnum)
          ) {
          fold_count = foldedCount(po, lnum, OUT &portFoldS);
          if (fold_count != 0)
@@ -4668,8 +4668,8 @@ updatePortal(Portal *po) {
 
    // Now that the portal has been redrawn with the old and new cursor line,
    // update lastCursorLine.
-   po->lastCursorLine = po->bookOpts.cursorLine ? po->cursor.lnum : 0;
-   po->lastCursorLnumRnu = po->bookOpts.relativeNumber ? po->cursor.lnum : 0;
+   po->lastCursorLine = po->o.cursorLine ? po->cursor.lnum : 0;
+   po->lastCursorLnumRnu = po->o.relativeNumber ? po->cursor.lnum : 0;
 
 
    if (idx > po->validLines)
@@ -5229,7 +5229,7 @@ typedef struct {
 // Return TRUE if CursorLineSign hilite is to be used.
 private int
 useCursorLineHilite(Portal *po, LineNr lnum) {
-   return po->bookOpts.cursorLine && lnum == po->cursor.lnum;
+   return po->o.cursorLine && lnum == po->cursor.lnum;
 }
 
 //Get information needed to display the sign in line "m->lnum" in portal "po".
@@ -5298,18 +5298,18 @@ handle_lnum_col(
       // Draw the line number (empty space after wrapping).
       // When there are text properties above the line put the line number below them.
       if (m->row == lnum_row
-          && (po->skipCol == 0 || m->row > 0 || po->bookOpts.relativeNumber)
+          && (po->skipCol == 0 || m->row > 0 || po->o.relativeNumber)
       ){
          long num;
          char *fmt = "%*ld ";
 
-         if (!po->bookOpts.relativeNumber)
+         if (!po->o.relativeNumber)
             // 'norelativenumber'
             num = (long)m->lnum;
          else {
             // 'relativenumber', don't use negative numbers
             num = labs((long)get_cursor_rel_lnum(po, m->lnum));
-            if (num == 0 && po->bookOpts.relativeNumber) {
+            if (num == 0 && po->o.relativeNumber) {
                // 'relativenumber'
                num = m->lnum;
                fmt = "%-*ld ";
@@ -5333,17 +5333,17 @@ handle_lnum_col(
       // When 'cursorline' is set, hilite the line number of the current line differently.
       // When 'cursorlineopt' does not have "line" only hilite the line number itself.
       // TODO: Can we use CursorLine instead of CursorLineNr when CursorLineNr isn't set?
-      if (po->bookOpts.cursorLine
+      if (po->o.cursorLine
               && m->lnum == po->cursor.lnum
               && (m->row == lnum_row || (m->row > lnum_row))
       )
          m->charDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_CLN));
-      if (po->bookOpts.relativeNumber 
+      if (po->o.relativeNumber 
             && m->lnum < po->cursor.lnum && getDecoFlags(HLF_LNA) != 0
       )
          // Use LineNrAbove
          m->charDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_LNA));
-      if (po->bookOpts.relativeNumber 
+      if (po->o.relativeNumber 
             && m->lnum > po->cursor.lnum && getDecoFlags(HLF_LNB) != 0
       )
          // Use LineNrBelow
@@ -5366,7 +5366,7 @@ breakIndent(Portal *po, DrawCtx *m) {
    if (m->draw_state == WL_BRI - 1) {
       m->draw_state = WL_BRI;
       // if m->need_showbreak is set, breakindent also applies
-      if (po->bookOpts.breakIndent 
+      if (po->o.breakIndent 
             && (m->row > m->startrow + m->filler_lines || m->need_showbreak)
          && !m->dont_use_showbreak
       ){
@@ -5392,7 +5392,7 @@ breakIndent(Portal *po, DrawCtx *m) {
             m->tocol += m->countExtraBytes;
       }
 
-      if (po->skipCol > 0 && m->startrow == 0 && po->bookOpts.wrap && po->breakIndent.showBreak)
+      if (po->skipCol > 0 && m->startrow == 0 && po->o.wrap && po->breakIndent.showBreak)
          m->need_showbreak = FALSE;
    }
 }
@@ -5435,7 +5435,7 @@ showbreakAndFiller(Portal *po, DrawCtx *m) {
          m->charDeco = combineDecorations( m->charDeco, m->cursorlineDeco);
    }
 
-   if (po->skipCol == 0 || m->startrow > 0 || !po->bookOpts.wrap || !po->breakIndent.showBreak)
+   if (po->skipCol == 0 || m->startrow > 0 || !po->o.wrap || !po->breakIndent.showBreak)
       m->need_showbreak = FALSE;
 }
 
@@ -5455,7 +5455,7 @@ textprop_size_after_trunc(
    Byte *p;
 
    // if the remaining size is too small and 'wrap' is set we wrap anyway and use the next line
-   if (space < PROP_TEXT_MIN_CELLS && po->bookOpts.wrap)
+   if (space < PROP_TEXT_MIN_CELLS && po->o.wrap)
       space += po->width;
    if (flags & (TEXT_PROP_ALIGN_BELOW | TEXT_PROP_ALIGN_ABOVE))
       space -= padding;
@@ -5526,9 +5526,9 @@ text_prop_position(
 
          if (before < 0
              || !(right || below)
-             || (below ? (col_with_padding <= col_off || !po->bookOpts.wrap) : (n_used < *countExtraBytes))
+             || (below ? (col_with_padding <= col_off || !po->o.wrap) : (n_used < *countExtraBytes))
          ) {
-            if (right && (wrap || (room < PROP_TEXT_MIN_CELLS && po->bookOpts.wrap))) {
+            if (right && (wrap || (room < PROP_TEXT_MIN_CELLS && po->o.wrap))) {
                // right-align on next line instead of wrapping if possible
                before = po->width - col_off - strsize + room;
                if (before < 0)
@@ -5544,10 +5544,10 @@ text_prop_position(
 
       // With 'nowrap' add one to show the "extends" character if needed (it doesn't show if the 
       // text just fits).
-      if (!po->bookOpts.wrap
+      if (!po->o.wrap
             && n_used < *countExtraBytes
             && listCharsG.ext != ZERO
-            && po->bookOpts.list)
+            && po->o.list)
          ++n_used;
 
       // add 1 for ZERO, 2 for when '…' is used
@@ -5570,7 +5570,7 @@ text_prop_position(
             cells += before + after + padding;
          }
          if (numDecoCells) {
-            if (n_used < *countExtraBytes && po->bookOpts.wrap) {
+            if (n_used < *countExtraBytes && po->o.wrap) {
                Byte *lp = l + off - 1;
 
                Byte   buf[MB_MAXBYTES + 1];
@@ -5604,7 +5604,7 @@ text_prop_position(
 
    if (!numDecoCells)
       return cells;
-   return (below && col_with_padding > normalPortalColumnOffset(po) && !po->bookOpts.wrap);
+   return (below && col_with_padding > normalPortalColumnOffset(po) && !po->o.wrap);
 }
 
 // Call screen_line() using values from "m". Also takes care of putting "<<<" on the first line 
@@ -5616,13 +5616,13 @@ wlv_screen_line(Portal *po, DrawCtx* m, int clear_end) {
        // do not overwrite the @showbreak text with "<<<"
        && *p_sbr == ZERO
        // do not overwrite the @listchars "precedes" text with "<<<"
-       && !(po->bookOpts.list && listCharsG.prec != 0)
+       && !(po->o.list && listCharsG.prec != 0)
    ) {
       int off = (int)(currScreenLineS - screenLinesG);
       int max_off = off + screenLinesColsG;
       int skip = 0;
 
-      if (po->bookOpts.relativeNumber) {
+      if (po->o.relativeNumber) {
          // Do not overwrite the line number, change "123 text" to "123<<<xt"
          while (skip < (int)po->width && EE_ISDIGIT(screenLinesG[off])) {
             ++off;
@@ -5656,7 +5656,7 @@ finalizeDrawingLineOnScreen(Portal *po, DrawCtx* m) {
    int      wcol;
 
    // Hilite 'cursorcolumn' past end of the line.
-   if (po->bookOpts.wrap)
+   if (po->o.wrap)
       v = m->startrow == 0 ? po->skipCol : 0;
    else
       v = po->leftCol;
@@ -5667,7 +5667,7 @@ finalizeDrawingLineOnScreen(Portal *po, DrawCtx* m) {
       m->vcol = v + wcol - normalPortalColumnOffset(po);
 #  define VCOL_HLC (m->vcol - m->virtualOffset)
 
-   if ((po->bookOpts.cursorColumn
+   if ((po->o.cursorColumn
           && (int)po->virtCol >= VCOL_HLC - m->eol_hl_off
           && (int)po->virtCol <
           (long)po->width * (m->row - m->startrow + 1) + v
@@ -5677,7 +5677,7 @@ finalizeDrawingLineOnScreen(Portal *po, DrawCtx* m) {
    ) {
       int rightmost_vcol = 0;
 
-      if (po->bookOpts.cursorColumn)
+      if (po->o.cursorColumn)
          rightmost_vcol = po->virtCol;
 
       while ((m->col < (int)po->width)) {
@@ -5687,7 +5687,7 @@ finalizeDrawingLineOnScreen(Portal *po, DrawCtx* m) {
          Decoration deco = m->portalDeco;
          if (m->lineDeco.hiId != SHORT)
             deco = combineDecorations(deco, m->lineDeco);
-         if (po->bookOpts.cursorColumn 
+         if (po->o.cursorColumn 
                && VCOL_HLC == (long)po->virtCol && m->lnum != po->cursor.lnum)
             deco = combineDecorations(deco, getFullDecoration(HLF_CUC));
          screenDecosG[m->off].flags = deco.flags;
@@ -5865,8 +5865,8 @@ drawLineSub( DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int cur
    // character of the line and the user wants us to show us a
    // special character (via @listchars "precedes:<char>").
    if (lcs_prec_todo != ZERO
-      && port->bookOpts.list
-      && (port->bookOpts.wrap ? (port->skipCol > 0 && m->row == 0) : port->leftCol > 0)
+      && port->o.list
+      && (port->o.wrap ? (port->skipCol > 0 && m->row == 0) : port->leftCol > 0)
       && m->filler_todo <= 0
       && m->draw_state > WL_NR
       && m->cellsToSkip <= 0
@@ -5913,7 +5913,7 @@ drawLineSub( DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int cur
                    && currSymb == ZERO)
                // hilite 'hlsearch' match at end of line
                || (prevcol_hl_flag
-                   && !(port->bookOpts.cursorLine && c->lnum == port->cursor.lnum
+                   && !(port->o.cursorLine && c->lnum == port->cursor.lnum
                       && !(port == curPor && VIsual_active))
                    && m->diff_hlf == 0
                    && sc->didLineDeco <= 1
@@ -5973,8 +5973,8 @@ drawLineSub( DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int cur
    // Show "extends" character from @listchars if beyond the line end and 'list' is set.
    if (listCharsG.ext != ZERO
       && m->draw_state == WL_LINE
-      && port->bookOpts.list
-      && !port->bookOpts.wrap
+      && port->o.list
+      && !port->o.wrap
       && m->filler_todo <= 0
       && ( m->col == (int)port->width - 1)
       && (*m->ptr != ZERO
@@ -6003,7 +6003,7 @@ drawLineSub( DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int cur
        )
          && m->filler_todo <= 0
    ) {
-       if (port->bookOpts.cursorColumn && VCOL_HLC == (long)port->virtCol
+       if (port->o.cursorColumn && VCOL_HLC == (long)port->virtCol
              && c->lnum != port->cursor.lnum
        ){
          vcolDecoSaved = m->charDeco;
@@ -6097,7 +6097,7 @@ drawLineSub( DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int cur
           || m->filler_todo > 0
           || sc->textPropAbove || sc->textPropFollows
           || m->textPropNext <= c->lastTextpropTextInd
-          || (port->bookOpts.list && listCharsG.eol != ZERO && sc->listCharEndOfLine != UNT)
+          || (port->o.list && listCharsG.eol != ZERO && sc->listCharEndOfLine != UNT)
           || (m->countExtraBytes != 0 && (m->c_extra != ZERO || *m->extraBytes != ZERO)))
    ){
       wlv_screen_line(port, m, TRUE);
@@ -6105,13 +6105,13 @@ drawLineSub( DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int cur
       ++m->screen_row;
 
       // When not wrapping and finished diff lines, break here.
-      if (!port->bookOpts.wrap
+      if (!port->o.wrap
             && m->filler_todo <= 0
             && !sc->textPropAbove
             && !sc->textPropFollows
       )
          return false;
-      if (!port->bookOpts.wrap && sc->textPropFollows && !sc->textPropAbove) {
+      if (!port->o.wrap && sc->textPropFollows && !sc->textPropAbove) {
          // do not output more of the line, only the "below" prop
          m->ptr = m->line + (Unt)memGetBookLen(port->book, c->lnum);
          m->dont_use_showbreak = TRUE;
@@ -6345,7 +6345,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      break;
                   else {
                      // With 'nowrap' and not in the first screen line only "below" text prop can show
-                     active = port->bookOpts.wrap 
+                     active = port->o.wrap 
                         || m->row == m->startrow 
                         || (t->flags & TEXT_PROP_ALIGN_BELOW);
                   }
@@ -6396,7 +6396,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      && (pt->hilite > 0 || t->id < 0)
                      && t->id != -MAXCOL
                      && !(t->id < 0
-                         && !port->bookOpts.wrap
+                         && !port->o.wrap
                          && (t->flags 
                                & (TEXT_PROP_ALIGN_RIGHT | TEXT_PROP_ALIGN_ABOVE | TEXT_PROP_ALIGN_BELOW)
                             ) == 0
@@ -6404,7 +6404,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   ){
                       if (t->col == MAXCOL
                           && *m->ptr == ZERO
-                          && ((port->bookOpts.list && sc.listCharEndOfLine != UNT
+                          && ((port->o.list && sc.listCharEndOfLine != UNT
                                 && (t->flags & TEXT_PROP_ALIGN_ABOVE) == 0)
                                 || (m->ptr == m->line
                                  && !didLine
@@ -6478,7 +6478,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                            m->virtualOffset += eeglStrSize(m->extraBytes);
 
                         if (sc.listCharEndOfLine == UNT
-                              && port->bookOpts.wrap
+                              && port->o.wrap
                               && m->col + m->countExtraBytes - 2 > (int)port->width)
                            // don't bail out at end of line
                            sc.textPropFollows = true;
@@ -6525,7 +6525,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   sc.textPropAbove = above;
                   sc.textPropFollows = sc.textPropFollows 
                      || (other_tpi != -1
-                        && (port->bookOpts.wrap
+                        && (port->o.wrap
                            || (c->textProps[other_tpi].flags
                                & (TEXT_PROP_ALIGN_BELOW | TEXT_PROP_ALIGN_RIGHT)))
                   );
@@ -6536,13 +6536,13 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                 }
             } ei (m->textPropNext < c->textPropCount
                   && ((*m->ptr != ZERO && m->ptr[utfCharLen(m->ptr)] == ZERO)
-                      || (!port->bookOpts.wrap && m->col == (int)port->width - 1))
+                      || (!port->o.wrap && m->col == (int)port->width - 1))
             ){
                 //When at last-but-one character and a text property follows after it, we may 
                 //need to flush the line after displaying that character.
                 //Or when not wrapping and at the rightmost column.
 
-                int only_below_follows = !port->bookOpts.wrap && m->col == (int)port->width - 1;
+                int only_below_follows = !port->o.wrap && m->col == (int)port->width - 1;
                 // TODO: Store "after"/"right"/"below" text properties in order
                 //       in the buffer so only `textProps[textPropCount - 1]`
                 //       needs to be checked for following "below" virtual text
@@ -6642,7 +6642,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             )
                m->diff_hlf = HLF_CHD;      // changed line
             m->lineDeco = getFullDecoration(m->diff_hlf);
-            if (port->bookOpts.cursorLine && c->lnum == port->cursor.lnum
+            if (port->o.cursorLine && c->lnum == port->cursor.lnum
                && (!m->cul_screenline 
                      || (m->vcol >= c->left_curline_col && m->vcol <= c->right_curline_col))
             )
@@ -6916,11 +6916,11 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             // by long letters (since it would add a break at the beginning of a line and this 
             // might be unexpected)
             // So only allow to linebreak, once we have found chars not in 'breakat' in the line.
-            if ( port->bookOpts.lineBreak && !m->needLinebreak && c != ZERO &&
+            if ( port->o.lineBreak && !m->needLinebreak && c != ZERO &&
                !EE_ISBREAK((int)*m->ptr))
                 m->needLinebreak = true;
             // Found last space before word: check for line break.
-            if (port->bookOpts.lineBreak && c0 == currSymb && m->needLinebreak
+            if (port->o.lineBreak && c0 == currSymb && m->needLinebreak
                     && EE_ISBREAK(currSymb) && !EE_ISBREAK((int)*m->ptr)
             ){
                int mb_off = mb_head_off(m->line, m->ptr - 1);
@@ -6947,11 +6947,11 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                if (m->countExtraBytes > 0 && currSymb != TAB)
                   inLineBreak = true;
                if (SPACE_OR_TAB(currSymb)) {
-                  if (!port->bookOpts.list)
+                  if (!port->o.list)
                      currSymb = ' ';
                }
             }
-            if (port->bookOpts.list) {
+            if (port->o.list) {
                m->inMultispace = currSymb == ' ' 
                   && (*m->ptr == ' ' || (prev_ptr > m->line && prev_ptr[-1] == ' '));
                if (!m->inMultispace)
@@ -6961,7 +6961,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             // 'list': Change char 160 to 'nbsp' and space to 'space' setting in @listchars.
             // But not when the character is followed by a composing character (use multibLength 
             // to check that).
-            if (port->bookOpts.list
+            if (port->o.list
                && ((((currSymb == 160 && multibLength == 1)
                      || (sc.mb_utf8 && ((sc.mb_c == 160 && multibLength == 2) 
                            || (sc.mb_c == 0x202f && multibLength == 3)))
@@ -7032,19 +7032,19 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          if (!eeIsPrintable(currSymb)) {
             // when getting a character from the file, we may have to
             // turn it into something else on the way to putting it into "screenLinesG".
-            if (currSymb == TAB && (!port->bookOpts.list || listCharsG.tab1)) {
+            if (currSymb == TAB && (!port->o.list || listCharsG.tab1)) {
                int       tab_len = 0;
                long    vcol_adjusted = m->vcol; // removed showbreak len
 
                // only adjust the tab_len, when at the first column
                // after the showbreak value was drawn
-               if (*p_sbr != ZERO && m->vcol == m->vcol_sbr && port->bookOpts.wrap)
+               if (*p_sbr != ZERO && m->vcol == m->vcol_sbr && port->o.wrap)
                   vcol_adjusted = m->vcol - MB_CHARLEN(p_sbr);
                // tab amount depends on current column
                tab_len = (int)port->book->o.shiftWidth - vcol_adjusted 
                   % (int)port->book->o.shiftWidth - 1;
 
-               if (!port->bookOpts.lineBreak || !port->bookOpts.list) {
+               if (!port->o.lineBreak || !port->o.list) {
                   // tab amount depends on current column
                   m->countExtraBytes = tab_len;
                } else {
@@ -7087,11 +7087,11 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   }
                }
                sc.mb_utf8 = false;   // don't draw as UTF-8
-               if (port->bookOpts.list) {
+               if (port->o.list) {
                   currSymb = (m->countExtraBytes == 0 && listCharsG.tab3)
                               ? listCharsG.tab3
                               : listCharsG.tab1;
-                  if (port->bookOpts.lineBreak && m->extraBytes && *m->extraBytes != ZERO)
+                  if (port->o.lineBreak && m->extraBytes && *m->extraBytes != ZERO)
                      m->c_extra = ZERO; // using extraBytes from above
                   else
                      m->c_extra = listCharsG.tab2;
@@ -7111,7 +7111,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                }
             } ei (currSymb == ZERO
                && m->countExtraBytes == 0
-               && (port->bookOpts.list
+               && (port->o.list
                    || ((m->fromcol >= 0 || c->fromcol_prev >= 0)
                   && m->tocol > m->vcol
                   && VIsual_mode != Ctrl_V
@@ -7131,7 +7131,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      m->extraBytes = E;
                   m->countExtraBytes = 0;
                }
-               if (port->bookOpts.list && listCharsG.eol > 0)
+               if (port->o.list && listCharsG.eol > 0)
                   currSymb = listCharsG.eol;
                else
                   currSymb = ' ';
@@ -7154,7 +7154,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   m->countExtraBytes = byte2cells(currSymb) - 1;
                m->c_extra = ZERO;
                m->c_final = ZERO;
-               if (port->bookOpts.lineBreak) {
+               if (port->o.lineBreak) {
                   currSymb = *m->extraBytes;
                   CS p = alloc(m->countExtraBytes + 1);
                   memset(p, ' ', m->countExtraBytes);
@@ -7197,20 +7197,20 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
                // don't do search HL for the rest of the line
                if (m->lineDeco.hiId != SHORT && m->charDeco.hiId == m->searchHiId
-                     && (sc.didLineDeco > 1 || (port->bookOpts.list && listCharsG.eol > 0))
+                     && (sc.didLineDeco > 1 || (port->o.list && listCharsG.eol > 0))
                )
                m->charDeco = m->lineDeco;
                // At end of line: if Sign is present with line hilite, reset charDeco
                // but not when cursorline is active
                if (c->signPresent && m->signHilites.lineHiId > 0 && m->draw_state == WL_LINE
-                   && !(port->bookOpts.cursorLine && c->lnum == port->cursor.lnum)
+                   && !(port->o.cursorLine && c->lnum == port->cursor.lnum)
                )
                   m->charDeco = getFullDecoration(m->signHilites.lineHiId);
                if (m->diff_hlf == HLF_TXD || m->diff_hlf == HLF_TXA) {
                   m->diff_hlf = HLF_CHD;
                   if (c->visualDeco.hiId == SHORT || !decoEq(m->charDeco, c->visualDeco)) {
                      m->charDeco = getFullDecoration(m->diff_hlf);
-                     if (port->bookOpts.cursorLine && c->lnum == port->cursor.lnum
+                     if (port->o.cursorLine && c->lnum == port->cursor.lnum
                             && (!m->cul_screenline
                               || (m->vcol >= c->left_curline_col 
                                     && m->vcol <= c->right_curline_col)
@@ -7309,7 +7309,7 @@ drawLineOnScreen(
    if (drawingOnlyNumberCol == 0) { // normal line, with content
       //To speed up the loop below, set hasExtraHiliting when there is linebreak,
       //trailing white space and/or syntax processing to be done.
-      c.hasExtraHiliting = port->bookOpts.lineBreak;
+      c.hasExtraHiliting = port->o.lineBreak;
       if (syntax_present(port) && !port->ownSyntax->b_syn_error
 # ifdef SYN_TIME_LIMIT
          && !port->ownSyntax->redrawTime
@@ -7475,7 +7475,7 @@ drawLineOnScreen(
    m.line = memGetLine(port->book, lnum, FALSE);
    m.ptr = m.line;
 
-   if (port->bookOpts.list) {
+   if (port->o.list) {
       if (listCharsG.space
             || listCharsG.multispace
             || listCharsG.leadmultispace
@@ -7567,7 +7567,7 @@ drawLineOnScreen(
    }
 
    c.vcolFirstChar = 0;
-   if (port->bookOpts.lineBreak && drawingOnlyNumberCol == 0) {
+   if (port->o.lineBreak && drawingOnlyNumberCol == 0) {
       CharTableSize cts;
       init_chartabsize_arg(OUT &cts, port, lnum, 0, m.line, m.line);
       (void)win_lbr_chartabsize(&cts, NULL);
@@ -7577,7 +7577,7 @@ drawLineOnScreen(
 
    //'nowrap' or 'wrap' and a single line that doesn't fit: Advance to the
    //first character to be displayed.
-   if (port->bookOpts.wrap)
+   if (port->o.wrap)
       m.bufferLen = startrow == 0 ? port->skipCol - skipcol_in_textPropAbove : 0;
    else
       m.bufferLen = port->leftCol;
@@ -7595,7 +7595,7 @@ drawLineOnScreen(
          cts.cts_vcol += charsize;
          prev_ptr = cts.cts_ptr;
          MB_PTR_ADV(cts.cts_ptr);
-         if (port->bookOpts.list) {
+         if (port->o.list) {
             m.inMultispace = *prev_ptr == ' ' 
                && (*cts.cts_ptr == ' ' || (prev_ptr > m.line && prev_ptr[-1] == ' '));
             if (!m.inMultispace)
@@ -7620,7 +7620,7 @@ drawLineOnScreen(
       // - the visual mode is active,
       // the end of the line may be before the start of the displayed part.
       if (m.vcol < m.bufferLen 
-            && (port->bookOpts.cursorColumn
+            && (port->o.cursorColumn
                 || virtual_active() || (VIsual_active && port->book == curPor->book)
                )
       )
@@ -7643,7 +7643,7 @@ drawLineOnScreen(
          m.fromcol = m.vcol;
 
       // When skipCol is non-zero, first line needs @showbreak
-      if (port->bookOpts.wrap)
+      if (port->o.wrap)
          m.need_showbreak = TRUE;
    }
 
@@ -7675,11 +7675,11 @@ drawLineOnScreen(
       c.areaHiliting = true;
 
    // Cursor line hiliting for 'cursorline' in the current portal.
-   if (port->bookOpts.cursorLine && lnum == port->cursor.lnum) {
+   if (port->o.cursorLine && lnum == port->cursor.lnum) {
       // Do not show the cursor line in the text when Visual mode is active,
       // because it's not clear what is selected then.
       if (!(port == curPor && VIsual_active)) {
-         m.cul_screenline = (port->bookOpts.wrap);
+         m.cul_screenline = (port->o.wrap);
 
          // Only apply CursorLine hilite here when "screenline" is not
          // present in 'cursorlineopt'.  Otherwise it's done later.

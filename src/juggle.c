@@ -393,7 +393,7 @@ changed_common(
    changed();
 
    may_record_change(lnum, col, lnume, xtra);
-   if (curPor->bookOpts.diff && diff_internal()) {
+   if (curPor->o.diff && diff_internal()) {
       curtab->diff_update = TRUE;
       diff_update_line(lnum);
    }
@@ -556,11 +556,11 @@ changed_common(
          }
          // If lines have been added or removed, relative numbering always
          // requires an update even if cursor didn't move.
-         if (po->bookOpts.relativeNumber && xtra != 0) {
+         if (po->o.relativeNumber && xtra != 0) {
             po->lastCursorLnumRnu = 0;
          }
 
-         if (po->bookOpts.cursorLine && po->lastCursorLine >= lnum) {
+         if (po->o.cursorLine && po->lastCursorLine >= lnum) {
             if (po->lastCursorLine < lnume)
                // If 'cursorline' was inside the change, it has already
                // been invalidated in lines[] by the loop above.
@@ -611,12 +611,12 @@ changed_bytes(LineNr lnum, ColNr col) {
    changed_common(lnum, col, lnum + 1, 0L);
 
    // Diff hiliting in other diff portals may need to be updated too.
-   if (curPor->bookOpts.diff) {
+   if (curPor->o.diff) {
       Portal       *po;
       LineNr    wlnum;
 
       FOR_ALL_PORTALS(po) {
-         if (po->bookOpts.diff && po != curPor) {
+         if (po->o.diff && po != curPor) {
             redrawPortLater(po, UPD_VALID);
             wlnum = diff_lnum_win(lnum, po);
             if (wlnum > 0)
@@ -717,14 +717,14 @@ changed_lines(
 {
    changed_lines_buf(curBook, lnum, lnume, xtra);
 
-   if (xtra == 0 && curPor->bookOpts.diff && !diff_internal()) {
+   if (xtra == 0 && curPor->o.diff && !diff_internal()) {
       // When the number of lines doesn't change then mark_adjust() isn't
       // called and other diff books still need to be marked for displaying.
       Portal       *po;
       LineNr    wlnum;
 
       FOR_ALL_PORTALS(po) {
-         if (po->bookOpts.diff && po != curPor) {
+         if (po->o.diff && po != curPor) {
             redrawPortLater(po, UPD_VALID);
             wlnum = diff_lnum_win(lnum, po);
             if (wlnum > 0)
@@ -3689,10 +3689,10 @@ theend:
 //Return the previous value, to be passed to restore_lbr().
 private int
 reset_lbr(void) {
-   if (!curPor->bookOpts.lineBreak)
+   if (!curPor->o.lineBreak)
       return FALSE;
    // changing 'linebreak' may require virtCol to be updated
-   curPor->bookOpts.lineBreak = FALSE;
+   curPor->o.lineBreak = FALSE;
    curPor->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL);
    return TRUE;
 }
@@ -3700,11 +3700,11 @@ reset_lbr(void) {
 //Restore 'linebreak' and take care of side effects.
 private void
 restore_lbr(int lbr_saved) {
-   if (curPor->bookOpts.lineBreak || !lbr_saved)
+   if (curPor->o.lineBreak || !lbr_saved)
       return;
 
    // changing 'linebreak' may require virtCol to be updated
-   curPor->bookOpts.lineBreak = TRUE;
+   curPor->o.lineBreak = TRUE;
    curPor->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL);
 }
 
@@ -4786,7 +4786,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    Operator   *oper = cap->oper;
    Pos old_cursor;
    int restart_edit_save;
-   int lbr_saved = curPor->bookOpts.lineBreak;
+   int lbr_saved = curPor->o.lineBreak;
 
    //The visual area is remembered for redo
    static redo_VIsual_T   redo_VIsual = {ZERO, 0, 0, 0,0};
@@ -6451,7 +6451,7 @@ coladvance2(
       CharTableSize   cts;
 
       if (finetune
-         && curPor->bookOpts.wrap
+         && curPor->o.wrap
          && curPor->width != 0
          && wcol >= (ColNr)width
          && width > 0)
@@ -6916,7 +6916,7 @@ getBreakindentForPort(Portal* po, CS line) {
    static CS prev_line  = NULL;   // cached copy of "line"
    static Long prev_tick = 0;   // changedtick of cached value
    static int preList = 0;   // cached list indent
-   static int preListopt = 0;   // cached bookOpts.breakIndent_list value
+   static int preListopt = 0;   // cached o.breakIndent_list value
    static int prev_no_ts = FALSE;   // cached no_ts value
    // cached formatlistpat value
    static Byte   *prev_flp = NULL;
@@ -6925,7 +6925,7 @@ getBreakindentForPort(Portal* po, CS line) {
    const int       eff_wwidth = po->width  - normalPortalColumnOffset(po);
 
    // In list mode, if 'listchars' "tab" isn't set, a TAB is displayed as ^I.
-   int no_ts = po->bookOpts.list && listCharsG.tab1 == ZERO;
+   int no_ts = po->o.list && listCharsG.tab1 == ZERO;
 
    // Used cached indent, unless
    // - book changed, or
@@ -7193,8 +7193,8 @@ opChangeIndent(
    int save_p_list;
 
    // for the following tricks we don't want list mode
-   save_p_list = curPor->bookOpts.list;
-   curPor->bookOpts.list = FALSE;
+   save_p_list = curPor->o.list;
+   curPor->o.list = FALSE;
    ignore_text_props = TRUE;
    ColNr vc = getvcol_nolist(&curPor->cursor);
    vcol = vc;
@@ -7276,7 +7276,7 @@ opChangeIndent(
       insstart_less = MAXCOL;
    }
 
-   curPor->bookOpts.list = save_p_list;
+   curPor->o.list = save_p_list;
 
    if (necursor_col <= 0)
       curPor->cursor.col = 0;
@@ -7335,8 +7335,8 @@ c_retab(Invocation *eap) {
    LineNr   last_line = 0;      // last changed line
    int      is_indent_only = 0;   // Only process leading whitespace
 
-   save_list = curPor->bookOpts.list;
-   curPor->bookOpts.list = 0;       // don't want list mode here
+   save_list = curPor->o.list;
+   curPor->o.list = 0;       // don't want list mode here
 
    ptr = eap->arg;
    if (STRNCMP(ptr, "-indentonly", 11) == 0 && IS_WHITE_OR_ZERO(ptr[11])) {
@@ -7456,7 +7456,7 @@ c_retab(Invocation *eap) {
    if (first_line != 0)
       changed_lines(first_line, 0, last_line + 1, 0L);
 
-   curPor->bookOpts.list = save_list;   // restore 'list'
+   curPor->o.list = save_list;   // restore 'list'
 
    curBook->o.shiftWidth = new_ts;
    coladvance(curPor->cursWant);

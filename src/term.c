@@ -1284,7 +1284,7 @@ set_shellsize_inner(int width, int height, int mustset) {
          screenalloc(FALSE);
          repeat_message();
       } else {
-         if (curPor->bookOpts.scrollBind)
+         if (curPor->o.scrollBind)
             normPostProcessScrollbind(TRUE);
          if (stateG & MODE_COMMLINE) {
             drawUpdateScreen(UPD_NOT_VALID);

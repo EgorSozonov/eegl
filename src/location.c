@@ -2630,7 +2630,7 @@ gotoPortalIntoQflFile(int fNum) {
       if (isLocListPortalDOW(port)) {
          // Didn't find it, go to the portal before the location portal, unless 'switchbuf' 
          // contains 'uselast': in this case we try to jump to the previously used window first.
-         if ((p_swb & SWB_USELAST) != 0 && portalIsValid(prevPor) && !prevPor->bookOpts.portFixBuf)
+         if ((p_swb & SWB_USELAST) != 0 && portalIsValid(prevPor) && !prevPor->o.portFixBuf)
             port = prevPor;
          ei (altPort)
             port = altPort;
@@ -2642,7 +2642,7 @@ gotoPortalIntoQflFile(int fNum) {
       }
 
       // Remember a usable portal
-      if (!altPort && !port->isPreview && !port->bookOpts.portFixBuf && bt_normal(port->book))
+      if (!altPort && !port->isPreview && !port->o.portFixBuf && bt_normal(port->book))
          altPort = port;
    }
 
@@ -2722,26 +2722,26 @@ jumpAndEditBook(
    } else {
       int   fnum = curr->fNum;
 
-      if (!forceit && curPor->bookOpts.portFixBuf && curBook->fiNum != fnum) {
+      if (!forceit && curPor->o.portFixBuf && curBook->fiNum != fnum) {
          if (curPor->locationStackRef != NULL) { 
             //Location lists cannot split or reassign their portal so 'portfixbuf' portals must fail
             emsg(_(e_portfixbuf_cannot_go_to_buffer));
             return FAIL;
          } 
 
-         if (portalIsValid(prevPor) && !prevPor->bookOpts.portFixBuf 
+         if (portalIsValid(prevPor) && !prevPor->o.portFixBuf 
                && !isLocationListBook(prevPor->book)
          ) {
             //'portfixbuf' is set; attempt to change to a window without it
             //that isn't a location list portal.
             gotoPortal(prevPor);
          }
-         if (curPor->bookOpts.portFixBuf) {
+         if (curPor->o.portFixBuf) {
             // Split the window, which will be 'noportfixbuf', and set curPor to that
             if (splitPortal(0, 0) == OK)
                 *openedPortal = TRUE;
 
-            if (curPor->bookOpts.portFixBuf) {
+            if (curPor->o.portFixBuf) {
                 // Autocommands set 'portfixbuf' or sent us to another window
                 // with it set, or we failed to split the window. Give up,
                 // but don't return immediately, as they may have messed with the list.
@@ -3599,7 +3599,7 @@ setPortalOptions() {
       S"bufhdden", (OptionValue){.tag = OPTION_STRING, .string = S"hide"}, SET_LOCAL
    );
    RESET_BINDING(curPor);
-   curPor->bookOpts.diff = FALSE;
+   curPor->o.diff = FALSE;
    optChangeAndReportError(
       S"foldmethod", (OptionValue){.tag = OPTION_STRING, .string = S"manual"}, SET_LOCAL
    );
@@ -3665,7 +3665,7 @@ openNewPortal(LocationStack *stack, int height) {
    // Only set the height when still in the same tab and there is no portal to the side.
    if (curtab == prevtab && curPor->width == visibleColsG)
       portSetHeight(height, curPor);
-   curPor->bookOpts.portFixHeight = TRUE;       // set 'winfixheight'
+   curPor->o.portFixHeight = TRUE;       // set 'winfixheight'
    if (portalIsValid(port))
       prevPor = port;
 

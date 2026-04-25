@@ -432,7 +432,7 @@ setDefault(
    } ei (o->defaultValue.tag == OPTION_NUM) {
       long defaultValue = o->defaultValue.num;
 
-      if (ref.num == &curPor->bookOpts.scrollOff || ref.num == &curPor->bookOpts.sideScrollOff)
+      if (ref.num == &curPor->o.scrollOff || ref.num == &curPor->o.sideScrollOff)
          //@scrolloff and @sidescrolloff local values have a
          //different default value than the global default.
          *ref.num = -1;
@@ -625,7 +625,7 @@ getSbuf(Option* o, SetScope setScope) {
       if ((o->flags & P_BOOK) != 0) {
          return &curBook->o.stringOptions;
       } else {
-         return &curPor->bookOpts.stringOptions;
+         return &curPor->o.stringOptions;
       }
       
    }
@@ -1521,12 +1521,12 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
 //[sessionoptions] or [viewoptions] contains "folds" but not "options".
 int
 makefoldset(FILE *fd) {
-   if (put_setnum(fd, S"set", S"foldmethod", refNum((long*)&curPor->bookOpts.foldMethod)) == FAIL
-       || put_setstring(fd, S"set", S"foldexpr", refStr(&curPor->bookOpts.foldExpr), 0) == FAIL
-       || put_setstring(fd, S"set", S"foldmarker", refStr(&curPor->bookOpts.foldMarker), 0) == FAIL
-       || put_setstring(fd, S"set", S"foldignore", refStr(&curPor->bookOpts.foldIgnore), 0) == FAIL
-       || put_setnum(fd, S"set", S"foldlevel", refNum(&curPor->bookOpts.foldLevel)) == FAIL
-       || put_setbool(fd, S"set", S"foldenable", curPor->bookOpts.foldEnable) == FAIL
+   if (put_setnum(fd, S"set", S"foldmethod", refNum((long*)&curPor->o.foldMethod)) == FAIL
+       || put_setstring(fd, S"set", S"foldexpr", refStr(&curPor->o.foldExpr), 0) == FAIL
+       || put_setstring(fd, S"set", S"foldmarker", refStr(&curPor->o.foldMarker), 0) == FAIL
+       || put_setstring(fd, S"set", S"foldignore", refStr(&curPor->o.foldIgnore), 0) == FAIL
+       || put_setnum(fd, S"set", S"foldlevel", refNum(&curPor->o.foldLevel)) == FAIL
+       || put_setbool(fd, S"set", S"foldenable", curPor->o.foldEnable) == FAIL
    )
       return FAIL;
 
@@ -1746,7 +1746,7 @@ did_set_diff(OptionChange* cha) {
    updateBoolRef(cha);
    diffBookAdjust(curPor);
    
-   if (curPor->bookOpts.foldMethod == FOLD_DIFF)
+   if (curPor->o.foldMethod == FOLD_DIFF)
       foldUpdateAll(curPor);
    return NULL;
 }
@@ -1817,7 +1817,7 @@ did_set_scrollbind(OptionChange* cha) {
    updateBoolRef(cha);
    //when @scrollbind is set: snapshot the current position to avoid a jump
    //at the end of normal_cmd()
-   if (!curPor->bookOpts.scrollBind)
+   if (!curPor->o.scrollBind)
       return NULL;
 
    normPostProcessScrollbind(FALSE);
@@ -1845,7 +1845,7 @@ setShiftWidth(OptionChange* cha) {
    }
    updateNumRef(cha);
 
-   if (curPor->bookOpts.foldMethod == FOLD_INDENT)
+   if (curPor->o.foldMethod == FOLD_INDENT)
       foldUpdateAll(curPor);
 
    return null;
@@ -2158,7 +2158,7 @@ printSingleOption(
 //Copy options from one portal to another. Used when portal splittin'
 void
 portCopyOptions(Portal *to, Portal *from) {
-   copyPortOpt(&to->bookOpts, &from->bookOpts);
+   copyPortOpt(&to->o, &from->o);
    afterCopyPortOpt(to);
 }
 
@@ -2166,7 +2166,7 @@ portCopyOptions(Portal *to, Portal *from) {
 void
 afterCopyPortOpt(Portal* po) {
    // Set leftCol or skipCol to zero.
-   if (po->bookOpts.wrap)
+   if (po->o.wrap)
       po->leftCol = 0;
    else
       po->skipCol = 0;
@@ -2180,19 +2180,18 @@ copyOptionVal(CS val) {
    return copyStr(val);
 }
 
-private inline void nopBool(Boole* a UNUSED){
-}
-
-private inline void nopLong(long* a UNUSED){
-}
-
-private inline void nopByte(Byte* a UNUSED){
-}
-
 //Copy the options from one PortLocal to another.
-//Don't free the old option values in "to", use clearPortOpt() for that.
 void
 copyPortOpt(PortLocal* t, PortLocal* s) {
+   int neededCap = s->o.stringOptions.cap;
+   //If target buffer is big enouth enough, reuse it. Otherwise, free and allocate new one
+   if (t->o.stringOptions.cap < neededCap) {
+      free(t->o.stringOptions.c);
+      t->o.stringOptions.c = malloc(neededCap);
+      t->o.stringOptions.c[neededCap - 1] = ZERO;
+      t->o.stringOptions.len = 0;
+      t->o.stringOptions.cap = neededCap;
+   }
 
 #define OPTIONS_COPY
 #define OPTIONS_DEF_PORTAL
@@ -2417,7 +2416,7 @@ reset_optWasSet(CS name) {
 //global value when appropriate.
 long
 get_sidescrolloff_value(void) {
-   return curPor->bookOpts.sideScrollOff;
+   return curPor->o.sideScrollOff;
 }
 
 //Set the callback function value for an option that accepts a function name,
@@ -2863,14 +2862,14 @@ expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches) {
 private CS
 did_set_foldexpr(OptionChange* cha) {
    (void)setOptexpr(cha);
-   if (curPor->bookOpts.foldMethod == FOLD_EXPR)
+   if (curPor->o.foldMethod == FOLD_EXPR)
       foldUpdateAll(curPor);
    return NULL;
 }
 
 private CS
 did_set_foldignore(OptionChange* cha UNUSED) {
-   if (curPor->bookOpts.foldMethod == FOLD_INDENT)
+   if (curPor->o.foldMethod == FOLD_INDENT)
       foldUpdateAll(curPor);
    return NULL;
 }
@@ -2885,7 +2884,7 @@ did_set_foldmarker(OptionChange* cha) {
    ei (p == *ref.string || p[1] == ZERO)
       return e_invalid_argument;
       
-   if (curPor->bookOpts.foldMethod == FOLD_MARKER)
+   if (curPor->o.foldMethod == FOLD_MARKER)
       foldUpdateAll(curPor);
 
    return NULL;
@@ -3426,7 +3425,7 @@ private CS brioptValues[] = {SMAP((CS), "shift:", "min:", "sbr", "list:", "colum
 //Return FAIL for failure, OK otherwise.
 private int
 briopt_check(
-   CS briopt,  // when NULL: use "po->bookOpts.breakIndent"
+   CS briopt,  // when NULL: use "po->o.breakIndent"
    Portal* po       // when NULL: only check "briopt"
 ){
    CS p;
@@ -3439,7 +3438,7 @@ briopt_check(
    if (briopt)
       p = briopt;
    else
-      p = po->bookOpts.breakIndentOpt;
+      p = po->o.breakIndentOpt;
 
    while (*p != ZERO) {
       // Note: Keep this in sync with p_briopt_values
@@ -3484,14 +3483,14 @@ private CS
 setBreakindentOpt(OptionChange* cha) {
    OptionRef ref = cha->ref;
 
-   if (briopt_check(*ref.string, ref.string == &curPor->bookOpts.breakIndentOpt ? curPor : NULL
+   if (briopt_check(*ref.string, ref.string == &curPor->o.breakIndentOpt ? curPor : NULL
        ) == FAIL
    )
       return e_invalid_argument;
 
    updateStringRef(cha);
    // list setting requires a redraw
-   if (ref.string == &curPor->bookOpts.breakIndentOpt && curPor->breakIndent.list)
+   if (ref.string == &curPor->o.breakIndentOpt && curPor->breakIndent.list)
       redraw_all_later(UPD_NOT_VALID);
 
    return NULL;
@@ -4127,7 +4126,7 @@ setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos) {
       if ((o->flags & P_BOOK) != 0)
          curBook->o.scriptLocs[o - OPTIONS_BOOK] = newScriptPos;
       else {
-         curPor->bookOpts.scriptLocs[o - OPTIONS_PORTAL] = newScriptPos;
+         curPor->o.scriptLocs[o - OPTIONS_PORTAL] = newScriptPos;
       }
    }
 }
@@ -4243,7 +4242,7 @@ c_get(Invocation *invo) {
 //      if (eqRef(ref, o->reference))
 //         lastSetMsg(od.scriptPos);
 //      ei ((int)od.scope & PV_PORTAL)
-//         lastSetMsg(curPor->bookOpts.scriptLocs[od.scope & PV_ID_MASK]);
+//         lastSetMsg(curPor->o.scriptLocs[od.scope & PV_ID_MASK]);
 //      ei ((int)od.scope & PV_BUF)
 //         lastSetMsg(curBook->o.scriptLocs[od.scope & PV_ID_MASK]);
 //    }
@@ -4380,7 +4379,7 @@ getRefInScope(Option* o, SetScope setScope) {
    case SET_LOCAL: {
       void* offsetPtr = (o->flags & P_BOOK) != 0 
          ? (void*)(&curBook->o) + o->c.local.offset
-         : (void*)(&curPor->bookOpts) + o->c.local.offset;
+         : (void*)(&curPor->o) + o->c.local.offset;
       switch (o->defaultValue.tag) {
       case OPTION_NUM:  return refNum((long*)offsetPtr);
       case OPTION_ENUM: return refEnum((Byte*)offsetPtr);

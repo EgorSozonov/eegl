@@ -965,7 +965,7 @@ ptr2cells(CS p) {
 //Return the number of characters 'c' will take on the screen, taking into account the size of a tab
 //Use a define to make it fast, this is used very often!!! Also see getvcol() below.
 # define RET_WIN_BUF_CHARTABSIZE(po, book, p, col) \
-   if (*(p) == TAB && (!(po)->bookOpts.list || listCharsG.tab1)) { \
+   if (*(p) == TAB && (!(po)->o.list || listCharsG.tab1)) { \
       int ts; \
       ts = (book)->o.shiftWidth; \
       return (int)(ts - (col % ts)); \
@@ -1033,7 +1033,7 @@ linetabsize(Portal *po, LineNr lnum) {
 // Like linetabsize(), but counts the size of 'listchars' "eol".
 int
 linetabsize_eol(Portal *po, LineNr lnum) {
-   return linetabsize(po, lnum) + ((po->bookOpts.list && listCharsG.eol != ZERO) ? 1 : 0);
+   return linetabsize(po, lnum) + ((po->o.list && listCharsG.eol != ZERO) ? 1 : 0);
 }
 
 //Like linetabsize(), but excludes 'above'/'after'/'right'/'below' aligned
@@ -1222,11 +1222,11 @@ clear_chartabsize_arg(OUT CharTableSize* cts) {
 // Like chartabsize(), but also check for line breaks on the screen and text properties that insert
 int
 lbr_chartabsize(CharTableSize *cts) {
-   if (!curPor->bookOpts.lineBreak && *p_sbr == ZERO
-        && !curPor->bookOpts.breakIndent
+   if (!curPor->o.lineBreak && *p_sbr == ZERO
+        && !curPor->o.breakIndent
         && !cts->cts_has_prop_with_text
    ) {
-      if (curPor->bookOpts.wrap)
+      if (curPor->o.wrap)
          return win_nolbr_chartabsize(cts, NULL);
       RET_WIN_BUF_CHARTABSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
    }
@@ -1271,15 +1271,15 @@ win_lbr_chartabsize(
    cts->cts_first_char = 0;
 
    // No 'linebreak', 'showbreak', 'breakindent' and text properties that insert text: finish quickly
-   if (!po->bookOpts.lineBreak && !po->bookOpts.breakIndent && *p_sbr == ZERO
+   if (!po->o.lineBreak && !po->o.breakIndent && *p_sbr == ZERO
        && !cts->cts_has_prop_with_text
    ) {
-      if (po->bookOpts.wrap)
+      if (po->o.wrap)
          return win_nolbr_chartabsize(cts, headp);
       RET_WIN_BUF_CHARTABSIZE(po, po->book, s, vcol)
    }
 
-   int has_lcs_eol = po->bookOpts.list && listCharsG.eol != ZERO;
+   int has_lcs_eol = po->o.list && listCharsG.eol != ZERO;
 
    //First get the normal size, without 'linebreak' or text properties
    int size = win_chartabsize(po, s, vcol);
@@ -1360,7 +1360,7 @@ win_lbr_chartabsize(
       }
    }
 
-   if (is_doublewidth && po->bookOpts.wrap && inPortalBorder(po, vcol + size - 2)) {
+   if (is_doublewidth && po->o.wrap && inPortalBorder(po, vcol + size - 2)) {
       ++size;      // Count the ">" in the last column.
       mb_added = 1;
    }
@@ -1370,7 +1370,7 @@ win_lbr_chartabsize(
    int head = mb_added;
    CS sbr = no_sbr ? Em : p_sbr;
    // When "size" is 0, no new screen line is started.
-   if (size > 0 && po->bookOpts.wrap && (*sbr != ZERO || po->bookOpts.breakIndent)) {
+   if (size > 0 && po->o.wrap && (*sbr != ZERO || po->o.breakIndent)) {
       int   col_off_prev = normalPortalColumnOffset(po);
       int   width2 = po->width - col_off_prev;
       ColNr   wcol = vcol + col_off_prev;
@@ -1387,7 +1387,7 @@ win_lbr_chartabsize(
             wcol %= width2;
          if (*sbr != ZERO)
             head_prev += eeglStrSize(sbr);
-         if (po->bookOpts.breakIndent) {
+         if (po->o.breakIndent) {
             if (cts->cts_bri_size < 0)
                cts->cts_bri_size = getBreakindentForPort(po, line);
             head_prev += cts->cts_bri_size;
@@ -1408,7 +1408,7 @@ win_lbr_chartabsize(
          int   head_mid = 0;
          if (*sbr != ZERO)
             head_mid += eeglStrSize(sbr);
-         if (po->bookOpts.breakIndent) {
+         if (po->o.breakIndent) {
             if (cts->cts_bri_size < 0)
                cts->cts_bri_size = getBreakindentForPort(po, line);
             head_mid += cts->cts_bri_size;
@@ -1447,7 +1447,7 @@ win_lbr_chartabsize(
 
    Boole need_lbr = false;
    // If 'linebreak' set check at a blank before a non-blank if the line needs a break here.
-   if (po->bookOpts.lineBreak && po->bookOpts.wrap && po->width != 0
+   if (po->o.lineBreak && po->o.wrap && po->width != 0
        && EE_ISBREAK((int)s[0]) && !EE_ISBREAK((int)s[1])
    ){
       Byte   *t = cts->cts_line;
@@ -1504,7 +1504,7 @@ win_nolbr_chartabsize(
    ColNr   col = cts->cts_vcol;
    int      n;
 
-   if (*s == TAB && (!po->bookOpts.list || listCharsG.tab1)) {
+   if (*s == TAB && (!po->o.list || listCharsG.tab1)) {
       n = po->book->o.shiftWidth;
       return (int)(n - (col % n));
    }
@@ -1569,8 +1569,8 @@ getvcol(
    //When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set
    //and there are no text properties with "text" use a simple loop.
    //Also use this when 'list' is set but tabs take their normal size.
-   if ((!po->bookOpts.list || listCharsG.tab1 != ZERO)
-       && !po->bookOpts.lineBreak && *p_sbr == ZERO && !po->bookOpts.breakIndent
+   if ((!po->o.list || listCharsG.tab1 != ZERO)
+       && !po->o.lineBreak && *p_sbr == ZERO && !po->o.breakIndent
        && !cts.cts_has_prop_with_text
    ) {
       for (;;) {
@@ -1593,7 +1593,7 @@ getvcol(
 
             //If a double-cell char doesn't fit at the end of a line
             //it wraps to the next line, it's like this char is three cells wide.
-            if (incr == 2 && po->bookOpts.wrap && utf8CharLens[*ptr] > 1 && inPortalBorder(po, vcol)
+            if (incr == 2 && po->o.wrap && utf8CharLens[*ptr] > 1 && inPortalBorder(po, vcol)
             ) {
                ++incr;
                head = 1;
@@ -1646,7 +1646,7 @@ getvcol(
    if (cursor) {
       if (*ptr == TAB
          && (stateG & MODE_NORMAL)
-         && !po->bookOpts.list
+         && !po->o.list
          && !virtual_active()
          && !(VIsual_active
                && LTOREQ_POS(*pos, VIsual))
@@ -1669,15 +1669,15 @@ getvcol(
 // Get virtual cursor column in the current portal, pretending 'list' is off.
 ColNr
 getvcol_nolist(Pos *posp) {
-   int      list_save = curPor->bookOpts.list;
+   int      list_save = curPor->o.list;
    ColNr   vcol;
 
-   curPor->bookOpts.list = FALSE;
+   curPor->o.list = FALSE;
    if (posp->coladd)
       bookGetVirtualColInVirtualMode(curPor, posp, NULL, &vcol, NULL);
    else
       getvcol(curPor, posp, NULL, &vcol, NULL);
-   curPor->bookOpts.list = list_save;
+   curPor->o.list = list_save;
    return vcol;
 }
 
@@ -3225,7 +3225,7 @@ enterBook(Book* book){
       clearFolding(curPor);
    foldUpdateAll(curPor);   // update folds (later).
 
-   if (curPor->bookOpts.diff)
+   if (curPor->o.diff)
       diffAddBook(curBook);
 
    curPor->ownSyntax = &(curBook->syntax);
@@ -3838,7 +3838,7 @@ bufExpandBufnames(
    int      score = 0;
    Boole to_free = false;
 
-   if ((options & BOOK_DIFF_FILTER) != 0 && !curPor->bookOpts.diff)
+   if ((options & BOOK_DIFF_FILTER) != 0 && !curPor->o.diff)
       return FAIL;
 
    Boole doFuzzy = scrIsCommlineFuzzyCompletable(pat);
@@ -4038,7 +4038,7 @@ bookSetPosInPort(
       wip->wi_changelistidx = port->changeListInd;
    if (copy_options && port) {
       // Save the portal-specific option values.
-      copyPortOpt(&wip->opt, &port->bookOpts);
+      copyPortOpt(&wip->opt, &port->o);
       wip->foldManual = port->foldManual;
       cloneFoldArrayList(&port->folds, &wip->folds);
       wip->isOptChanged = true;
@@ -4114,7 +4114,7 @@ find_wininfo(
 // global values for the portal.
 void
 get_winopts(Book* book) {
-   optClearPortOptions(&curPor->bookOpts);
+   optClearPortOptions(&curPor->o);
    clearFolding(curPor);
 
    PortInfo* wip = find_wininfo(book, TRUE, TRUE);
@@ -4123,13 +4123,13 @@ get_winopts(Book* book) {
       // option values instead of the saved (possibly outdated) values.
       Portal *po = wip->portal;
 
-      copyPortOpt(&curPor->bookOpts, &po->bookOpts);
+      copyPortOpt(&curPor->o, &po->o);
       curPor->foldManual = po->foldManual;
       curPor->foldNeedsRecomputation = true;
       cloneFoldArrayList(&po->folds, &curPor->folds);
    } ei (wip && wip->isOptChanged) {
       // the book was displayed in the current portal earlier
-      copyPortOpt(&curPor->bookOpts, &wip->opt);
+      copyPortOpt(&curPor->o, &wip->opt);
       curPor->foldManual = wip->foldManual;
       curPor->foldNeedsRecomputation = true;
       cloneFoldArrayList(&wip->folds, &curPor->folds);
@@ -4139,7 +4139,7 @@ get_winopts(Book* book) {
 
    // Set 'foldlevel' to 'foldlevelstart' if it's not negative.
    if (foldLevelStart >= 0)
-      curPor->bookOpts.foldLevel = foldLevelStart;
+      curPor->o.foldLevel = foldLevelStart;
    afterCopyPortOpt(curPor);
 }
 

@@ -690,11 +690,11 @@ diffDeleteBook(Book* book) {
 // Check if the current book should be added to or removed from the list of diff books.
 void
 diffBookAdjust(Portal* port) {
-   if (!port->bookOpts.diff) {
+   if (!port->o.diff) {
       // When there is no portal showing a diff for this book, remove it from the diffs.
       Portal* po;
       FOR_ALL_PORTALS(po) {
-         if (po->book == port->book && po->bookOpts.diff)
+         if (po->book == port->book && po->o.diff)
             break;
       } 
       if (!po) {
@@ -1138,13 +1138,13 @@ diff_redraw(int dofold)  {    // also recompute the folds
    need_diff_redraw = FALSE;
    FOR_ALL_PORTALS(po) {
       // when closing portals or wiping buffers skip invalid portal
-      if (!po->bookOpts.diff || !bookIsValid(po->book))
+      if (!po->o.diff || !bookIsValid(po->book))
           continue;
 
       redrawPortLater(po, UPD_SOME_VALID);
       if (po != curPor)
           other = po;
-      if (dofold && po->bookOpts.foldMethod == FOLD_DIFF)
+      if (dofold && po->o.foldMethod == FOLD_DIFF)
           foldUpdateAll(po);
       //A change may have made filler lines invalid, need to take care of
       //that for other portals.
@@ -1163,7 +1163,7 @@ diff_redraw(int dofold)  {    // also recompute the folds
      }
   }
 
-  if (other != NULL && curPor->bookOpts.scrollBind) {
+  if (other != NULL && curPor->o.scrollBind) {
       if (used_max_fill_curPor)
          //The current portal was set to use the maximum number of filler
          //lines, may need to reduce them.
@@ -1807,7 +1807,7 @@ c_diffsplit(Invocation* invo) {
 
    // Pretend it was a ":split fname" command
    invo->id = C_split;
-   curPor->bookOpts.diff = TRUE;
+   curPor->o.diff = TRUE;
    do_exedit(invo, old_curPor);
 
    if (curPor == old_curPor)      // split didn't work
@@ -1858,35 +1858,35 @@ diff_win_options(Portal* po, int addbuf) {     // Add buffer to diff.
    curPor = old_curPor;
 
    //Use @scrollbind and @cursorbind when available
-   if (!po->bookOpts.diff)
-      po->bookOpts.scrollBindSave = po->bookOpts.scrollBind;
-   po->bookOpts.scrollBind = TRUE;
-   if (!po->bookOpts.diff)
-      po->bookOpts.cursorBindSaved = po->bookOpts.cursorBind;
-   po->bookOpts.cursorBind = TRUE;
+   if (!po->o.diff)
+      po->o.scrollBindSave = po->o.scrollBind;
+   po->o.scrollBind = TRUE;
+   if (!po->o.diff)
+      po->o.cursorBindSaved = po->o.cursorBind;
+   po->o.cursorBind = TRUE;
    if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
-      if (!po->bookOpts.diff)
-         po->bookOpts.wrapSaved = po->bookOpts.wrap;
-      po->bookOpts.wrap = FALSE;
+      if (!po->o.diff)
+         po->o.wrapSaved = po->o.wrap;
+      po->o.wrap = FALSE;
       po->skipCol = 0;
    }
-   if (!po->bookOpts.diff) {
-      po->bookOpts.foldMethodSaved = po->bookOpts.foldMethod;
+   if (!po->o.diff) {
+      po->o.foldMethodSaved = po->o.foldMethod;
    }
    optSetStringOptionDirectInPort(po, S"foldmethod", S"diff", OPT_LOCAL, 0);
-   if (!po->bookOpts.diff) {
-      po->bookOpts.foldEnableSave = po->bookOpts.foldEnable;
-      po->bookOpts.foldLevelSaved = po->bookOpts.foldLevel;
+   if (!po->o.diff) {
+      po->o.foldEnableSave = po->o.foldEnable;
+      po->o.foldLevelSaved = po->o.foldLevel;
    }
-   po->bookOpts.foldEnable = TRUE;
-   po->bookOpts.foldLevel = 0;
+   po->o.foldEnable = TRUE;
+   po->o.foldLevel = 0;
    foldUpdateAll(po);
    // make sure topline is not halfway a fold
    didChangePortalSetting(po);
    if ((p_sbo & SCR_HOR) != 0)
       executeCommLine((CS)"set sbo+=hor");
    // Save the current values, to be restored in c_diffoff().
-   po->bookOpts.diffSaved = TRUE;
+   po->o.diffSaved = TRUE;
 
    set_diff_option(po, TRUE);
 
@@ -1902,30 +1902,30 @@ c_diffoff(Invocation* invo) {
 
    Portal   *po;
    FOR_ALL_PORTALS(po) {
-      if (invo->forceit ? po->bookOpts.diff : po == curPor) {
+      if (invo->forceit ? po->o.diff : po == curPor) {
           // Set 'diff' off. If option values were saved in
           // diff_win_options(), restore the ones whose settings seem to have
           // been left over from diff mode.
           set_diff_option(po, FALSE);
 
-         if (po->bookOpts.diffSaved) {
-            if (po->bookOpts.scrollBind)
-                po->bookOpts.scrollBind = po->bookOpts.scrollBindSave;
-            if (po->bookOpts.cursorBind)
-                po->bookOpts.cursorBind = po->bookOpts.cursorBindSaved;
+         if (po->o.diffSaved) {
+            if (po->o.scrollBind)
+                po->o.scrollBind = po->o.scrollBindSave;
+            if (po->o.cursorBind)
+                po->o.cursorBind = po->o.cursorBindSaved;
             if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
-               if (!po->bookOpts.wrap && po->bookOpts.wrapSaved) {
-                  po->bookOpts.wrap = TRUE;
+               if (!po->o.wrap && po->o.wrapSaved) {
+                  po->o.wrap = TRUE;
                   po->leftCol = 0;
                }
             }
-            po->bookOpts.foldMethod = po->bookOpts.foldMethodSaved;
+            po->o.foldMethod = po->o.foldMethodSaved;
 
-            if (po->bookOpts.foldLevel == 0)
-                po->bookOpts.foldLevel = po->bookOpts.foldLevelSaved;
+            if (po->o.foldLevel == 0)
+                po->o.foldLevel = po->o.foldLevelSaved;
 
-            if (po->bookOpts.foldEnable)
-               po->bookOpts.foldEnable = po->bookOpts.foldEnableSave;
+            if (po->o.foldEnable)
+               po->o.foldEnable = po->o.foldEnableSave;
 
             foldUpdateAll(po);
          }
@@ -1938,7 +1938,7 @@ c_diffoff(Invocation* invo) {
          // Note: 'sbo' is not restored, it's a global option.
          diffBookAdjust(po);
       }
-      diffwin |= po->bookOpts.diff;
+      diffwin |= po->o.diff;
    }
 
    // Also remove hidden buffers from the list.
@@ -2480,7 +2480,7 @@ diff_check_with_linestatus(Portal *po, LineNr lnum, OUT LineDiffStatus* linestat
    if (curtab->diff_invalid)
       c_diffupdate(NULL);      // update after a big change
 
-   if (curtab->first_diff == NULL || !po->bookOpts.diff)   // no diffs at all
+   if (curtab->first_diff == NULL || !po->o.diff)   // no diffs at all
       return 0;
 
    //safety check: "lnum" must be a buffer line
@@ -2751,7 +2751,7 @@ parse_diffanchors(
       // Find the first portal tied to this buffer and ignore the rest. Will
       // only matter for portal-specific addresses like `.` or `''`.
       FOR_ALL_PORTALS(bookPort) {
-         if (bookPort->book == book && bookPort->bookOpts.diff)
+         if (bookPort->book == book && bookPort->o.diff)
             break;
       } 
       if (!bookPort && *dia != ZERO) {
@@ -3615,7 +3615,7 @@ diff_infold(Portal *po, LineNr lnum) {
    DiffBlock   *dp;
 
    // Return if 'diff' isn't set.
-   if (!po->bookOpts.diff)
+   if (!po->o.diff)
       return FALSE;
 
    for (i = 0; i < DB_COUNT; ++i) {
@@ -3975,7 +3975,7 @@ theend:
    if (curtab->first_diff == NULL) {
       Portal* po;
       FOR_ALL_PORTALS_IN_TAB(curtab, po) {
-         if (po->bookOpts.diff && po->bookOpts.foldMethod == FOLD_DIFF && po->bookOpts.foldEnable)
+         if (po->o.diff && po->o.foldMethod == FOLD_DIFF && po->o.foldEnable)
             foldUpdateAll(po);
       } 
    }
