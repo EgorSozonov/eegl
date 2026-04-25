@@ -2191,8 +2191,6 @@ private inline void nopByte(Byte* a UNUSED){
 
 //Copy the options from one PortLocal to another.
 //Don't free the old option values in "to", use clearPortOpt() for that.
-//The @scroll is not copied because it depends on the portal height.
-//The @previewwindow is reset, there can be only one preview portal.
 void
 copyPortOpt(PortLocal* t, PortLocal* s) {
 
@@ -3742,7 +3740,7 @@ updateStringRef(OptionChange* cha) {
    CS const new = cha->newVal.string;
    Unt newLen = STRLEN(new) + 1;
    
-   if (newLen == 0) {
+   if (newLen == 1) {
       *cha->ref.string = null;
       return;
    }
@@ -3765,21 +3763,22 @@ updateStringRef(OptionChange* cha) {
    if (cha->setScope == SET_LOCAL) {
       // copy all local string opts except the old one into the buffer
       CS wr = cha->buf->c;
+      *cha->ref.string = new;
       if (cha->buf == &curBook->o.stringOptions) {
       
-#define OPTIONS_COPY_STRINGS_TO_BOOK_EXCEPT_ONE
+#define OPTIONS_COPY_STRINGS_TO_BOOK
 #define OPTIONS_DEF_BOOK
 #include "defoption.h"
 #undef OPTIONS_DEF_BOOK
-#undef OPTIONS_COPY_STRINGS_TO_BOOK_EXCEPT_ONE
+#undef OPTIONS_COPY_STRINGS_TO_BOOK
 
       } else {
       
-#define OPTIONS_COPY_STRINGS_TO_PORTAL_EXCEPT_ONE
+#define OPTIONS_COPY_STRINGS_TO_PORTAL
 #define OPTIONS_DEF_PORTAL
 #include "defoption.h"
 #undef OPTIONS_DEF_PORTAL
-#undef OPTIONS_COPY_STRINGS_TO_PORTAL_EXCEPT_ONE
+#undef OPTIONS_COPY_STRINGS_TO_PORTAL
 
       }
       cha->buf->len = wr - cha->buf->c;

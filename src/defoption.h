@@ -68,7 +68,7 @@
    TYPEBASED_##oType(oFieldName)
 #endif
 
-#ifdef OPTIONS_COPY_GLOBAL_TO_BOOK
+#ifdef COPY_GLOBAL_TO_BOOK
 
 #define TYPEBASED_CS(f, localInd) f = copyOptionVal(OPTIONS_BOOK[localInd].c.local.val.string);
 #define TYPEBASED_Boole(f, localInd) f = OPTIONS_BOOK[localInd].c.local.val.boole;
@@ -82,7 +82,7 @@
    
 #endif
 
-#ifdef OPTIONS_COPY_STRINGS_TO_BOOK_EXCEPT_ONE
+#ifdef COPY_STRINGS_TO_BOOK
 
 #define TYPEBASED_CS(old) copyStringOptToBook(wr, old, cha);
 #define TYPEBASED_Boole(x)
@@ -95,7 +95,7 @@
    
 #endif
 
-#ifdef OPTIONS_COPY_STRINGS_TO_PORTAL_EXCEPT_ONE
+#ifdef COPY_STRINGS_TO_PORTAL
 
 #define TYPEBASED_CS(old)  copyStringOptToBook(wr, old, cha);
 #define TYPEBASED_Boole(x)
