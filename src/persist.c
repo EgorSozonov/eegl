@@ -892,7 +892,7 @@ c_loadview(Invocation *invo) {
    if (!fname)
       return;
 
-   (void)scriptRunFile(fname, DOSO_NONE, NULL);
+   (void)scriptRunFile(fname, NULL);
    eeglFree(fname);
 }
 

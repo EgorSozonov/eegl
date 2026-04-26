@@ -15,7 +15,7 @@ int pat_has_uppercase(CS pat);
 Byte *last_csearch(void);
 int last_csearch_forward(void);
 int last_csearch_until(void);
-void set_last_csearch(int c, Byte *s, int len);
+void set_last_csearch(int c, CS s, int len);
 void set_csearch_direction(int cdir);
 void set_csearch_until(int t_cmd);
 CS last_search_pat(void);

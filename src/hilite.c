@@ -1910,7 +1910,7 @@ typedef struct {
    Short* containsHiId;   // group IDs for "contains" argument
    Short* containedInHiId;   // group IDs for "containedin" argument
    Short* next_list;   // group IDs for "nextgroup" argument
-} syn_opt_arg_T;
+} SynOptArg;
 
 //The next possible match in the current line for any pattern is remembered,
 //to avoid having to try for a match in each column.
@@ -5149,7 +5149,7 @@ get_group_name(
 private Byte *
 get_syn_options(
    Byte       *start,      // next argument to be checked
-   syn_opt_arg_T   *opt,      // various things
+   SynOptArg   *opt,      // various things
    int          skip      // TRUE if skipping over command
 ) {
    Byte   *arg = start;
@@ -5350,7 +5350,7 @@ syn_cmd_include(Invocation *invo, int syncing UNUSED) {
    current_syn_inc_tag = ++running_syn_inc_tag;
    prev_toplvl_grp = curPor->ownSyntax->b_syn_topgrp;
    curPor->ownSyntax->b_syn_topgrp = sgl_id;
-   if (source ? scriptRunFile(invo->arg, DOSO_NONE, NULL) == FAIL
+   if (source ? scriptRunFile(invo->arg, NULL) == FAIL
             : source_runtime(invo->arg, DIP_ALL) == FAIL)
       showErrFmtMsg(_(e_cant_open_file_str), invo->arg);
    curPor->ownSyntax->b_syn_topgrp = prev_toplvl_grp;
@@ -5360,17 +5360,16 @@ syn_cmd_include(Invocation *invo, int syncing UNUSED) {
 // Handle ":syntax keyword {group-name} [{option}] keyword .." command.
 private void
 syn_cmd_keyword(Invocation *invo, int syncing UNUSED) {
-   Byte   *arg = invo->arg;
-   Byte   *group_name_end;
-   Short      hiId;
-   Byte   *rest;
-   Byte   *keyword_copy = NULL;
-   Byte   *p;
-   Byte   *kw;
-   syn_opt_arg_T syn_opt_arg;
+   CS arg = invo->arg;
+   CS group_name_end;
+   Short hiId;
+   CS keyword_copy = NULL;
+   CS p;
+   CS kw;
+   SynOptArg syn_opt_arg;
    int      cnt;
 
-   rest = get_group_name(arg, OUT &group_name_end);
+   CS rest = get_group_name(arg, OUT &group_name_end);
 
    if (rest) {
       if (invo->skip)
@@ -5405,9 +5404,9 @@ syn_cmd_keyword(Invocation *invo, int syncing UNUSED) {
             }
             *p++ = ZERO;
             ++cnt;
-          }
+         }
 
-          if (!invo->skip) {
+         if (!invo->skip) {
             Unt   kwlen = 0;
 
             //Adjust flags for use of ":syn include".
@@ -5454,9 +5453,9 @@ syn_cmd_keyword(Invocation *invo, int syncing UNUSED) {
    }
 
    if (rest)
-      set_nextcmd(invo, rest);
+     set_nextcmd(invo, rest);
    else
-      showErrFmtMsg(_(e_invalid_argument_str), arg);
+     showErrFmtMsg(_(e_invalid_argument_str), arg);
 
    drawCurBookLater(UPD_SOME_VALID);
    synFreeBlock(curPor->ownSyntax);      // Need to recompute all syntax.
@@ -5467,18 +5466,17 @@ syn_cmd_keyword(Invocation *invo, int syncing UNUSED) {
 //Also ":syntax sync match {name} [[grouphere | groupthere] {group-name}] .."
 private void
 syn_cmd_match( Invocation   *invo, int      syncing) {      // TRUE for ":syntax sync match .. "
-   Byte   *arg = invo->arg;
-   Byte   *group_name_end;
-   Byte   *rest;
+   CS arg = invo->arg;
    SyntaxPattern   item;      // the item found in the line
    Unt      hiId;
    int      idx;
-   syn_opt_arg_T syn_opt_arg;
+   SynOptArg syn_opt_arg;
    int      sync_idx = 0;
    int      orig_called_emsg = called_emsg;
 
    // Isolate the group name, check for validity
-   rest = get_group_name(arg, OUT &group_name_end);
+   CS group_name_end;
+   CS rest = get_group_name(arg, OUT &group_name_end);
 
    // Get options before the pattern
    syn_opt_arg.flags = 0;
@@ -5582,7 +5580,6 @@ syn_cmd_region(
    int         illegal = FALSE;   // illegal arguments
    int         success = FALSE;
    int         idx;
-   syn_opt_arg_T   syn_opt_arg;
 
    // Isolate the group name, check for validity
    rest = get_group_name(arg, OUT &group_name_end);
@@ -5593,6 +5590,7 @@ syn_cmd_region(
 
    init_syn_patterns();
 
+   SynOptArg   syn_opt_arg;
    syn_opt_arg.flags = 0;
    syn_opt_arg.keyword = FALSE;
    syn_opt_arg.sync_idx = NULL;
@@ -5672,8 +5670,8 @@ syn_cmd_region(
             break;
          }
 
-         // Get the syntax pattern and the following offset(s).
-         // Enable the appropriate \z specials.
+         //Get the syntax pattern and the following offset(s).
+         //Enable the appropriate \z specials.
          if (item == ITEM_START)
             reg_do_extmatch = REX_SET;
          ei (item == ITEM_SKIP || item == ITEM_END)
@@ -5781,7 +5779,6 @@ syn_combine_list(Short **clstr1, Short **clstr2, int list_op) {
    Short   *g2;
    Short   *clstr = NULL;
    int      count;
-   int      round;
 
    // Handle degenerate cases.
    if (*clstr2 == NULL)
@@ -5808,7 +5805,7 @@ syn_combine_list(Short **clstr1, Short **clstr2, int list_op) {
    // We proceed in two passes; in round 1, we count the elements to place in the new list, and in 
    // round 2, we allocate and populate the new list.  For speed, we use a mergesort-like method, 
    // adding the smaller of the current elements in each list to the new list.
-   for (round = 1; round <= 2; round++) {
+   for (int round = 1; round <= 2; round++) {
       g1 = *clstr1;
       g2 = *clstr2;
       count = 0;
@@ -5836,13 +5833,15 @@ syn_combine_list(Short **clstr1, Short **clstr2, int list_op) {
 
       //Now add the leftovers from whichever list didn't get finished
       //first.  As before, we only want to add from the second list if we're adding the lists.
-      for (; *g1; g1++, count++)
-          if (round == 2)
-         clstr[count] = *g1;
-      if (list_op == CLUSTER_ADD)
-          for (; *g2; g2++, count++)
+      for (; *g1; g1++, count++) {
          if (round == 2)
-             clstr[count] = *g2;
+            clstr[count] = *g1;
+      } 
+      if (list_op == CLUSTER_ADD)
+         for (; *g2; g2++, count++) {
+            if (round == 2)
+                clstr[count] = *g2;
+         }
 
       if (round == 1) {
          //If the group ended up empty, we don't need to allocate any space for it.
@@ -5863,9 +5862,9 @@ syn_combine_list(Short **clstr1, Short **clstr2, int list_op) {
 
 // Lookup a syntax cluster name and return its ID. If it is not found, SHORT is returned.
 private Short
-clusterByName(Byte *name) {
+clusterByName(CS name) {
    // Avoid using stricmp() too much, it's slow on some systems
-   Byte* name_u = copyStr_up(name);
+   CS name_u = copyStr_up(name);
    if (!name_u)
       return 0;
    Short      i;
@@ -5895,7 +5894,7 @@ syntaxClusterByName(Text line) {
 // and the length of the name. If it doesn't exist yet, a new entry is created. Return 0 for 
 // failure.
 private int
-syn_check_cluster(Byte *pp, int len) {
+syn_check_cluster(CS pp, int len) {
    CS name = copySubstr(pp, len);
    if (!name)
       return 0;
@@ -5911,16 +5910,14 @@ syn_check_cluster(Byte *pp, int len) {
 //Add new syntax cluster and return its ID.
 //"name" must be an allocated string, it will be consumed. Return 0 for failure.
 private int
-addCluster(Byte *name) {
-   int      len;
-
+addCluster(CS name) {
    // First call for this growarray: init growing array.
    if (curPor->ownSyntax->syntaxClusters.c == NULL) {
       curPor->ownSyntax->syntaxClusters.ga_itemsize = sizeof(SynCluster);
       curPor->ownSyntax->syntaxClusters.ga_growsize = 10;
    }
 
-   len = curPor->ownSyntax->syntaxClusters.len;
+   int len = curPor->ownSyntax->syntaxClusters.len;
    if (len >= MAX_CLUSTER_ID) {
       emsg(_(e_too_many_syntax_clusters));
       eeglFree(name);

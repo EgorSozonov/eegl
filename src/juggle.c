@@ -5978,7 +5978,7 @@ time_diff(TimeVal *then, TimeVal *now) {
 void
 time_msg(
    CS mesg,
-   void   *tv_start  // only for scriptRunFile: start time; actually (TimeVal *)
+   void* tv_start  // only for scriptRunFile: start time; actually (TimeVal *)
 ){
    static TimeVal start;
    TimeVal now;

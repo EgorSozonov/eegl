@@ -2000,17 +2000,17 @@ sourceStartupScripts(MainParams* params) {
    // If -u argument given, use only the initializations from that file and nothing else.
    if (params->altInitFile) {
       if (STRCMP(params->altInitFile, "DEFAULTS") == 0) {
-         if (scriptRunFile((CS)EE_DEFAULTS_FILE, DOSO_NONE, NULL) != OK)
+         if (scriptRunFile((CS)EE_DEFAULTS_FILE, NULL) != OK)
             emsg(_(e_failed_to_source_defaults));
       } ei (STRCMP(params->altInitFile, "NONE") == 0 || STRCMP(params->altInitFile, "NORC") == 0) {
       } else {
-         if (scriptRunFile(params->altInitFile, DOSO_NONE, NULL) != OK)
+         if (scriptRunFile(params->altInitFile, NULL) != OK)
             showErrFmtMsg(_(e_cannot_read_from_str_2), params->altInitFile);
       }
    } ei (!silentModeG) {
       //Get system wide defaults, if the file name is defined.
-      (void)scriptRunFile(INIT_FILE, DOSO_INIT, NULL);
-      (void)scriptRunFile(FILETYPES_FILE, DOSO_NONE, NULL);
+      (void)scriptRunFile(INIT_FILE, NULL);
+      (void)scriptRunFile(FILETYPES_FILE, NULL);
    }
    TIME_MSG(S"sourcing init.vim file(s)");
 }

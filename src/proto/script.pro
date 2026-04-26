@@ -29,7 +29,7 @@ int *source_dbg_tick(void *cookie);
 int source_level(void *cookie);
 Byte *source_nextline(void *cookie);
 int may_load_script(int sid, int *loaded);
-int scriptRunFile(CS fname, int isInit, int *retSid);
+int scriptRunFile(CS fname, int *retSid);
 void c_scriptnames(Invocation *invo);
 Byte *get_scriptname(ScriptId id);
 void free_scriptnames(void);

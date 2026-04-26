@@ -422,11 +422,8 @@ setDefault(
    if (o->defaultValue.tag == OPTION_STRING) {
       // Use optChangeStringOptionDirect() for local options to handle freeing and allocating the value
       if ((o->flags & (P_BOOK|P_PORTAL)) != 0) {
-         changeStringOptionDirectImpl(
-            o, o->defaultValue.string, setScope, 0
-         );
+         changeStringOptionDirectImpl(o, o->defaultValue.string, setScope, 0);
       } else {
-         
          *ref.string = o->defaultValue.string;
       }
    } ei (o->defaultValue.tag == OPTION_NUM) {
@@ -3653,7 +3650,6 @@ private Option OPTIONS_BOOK[] = {
 private void optSetStringDefault_esc(CS name, CS val, Boole escape);
 private CS findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags);
 private CS expandEnvVarsInStringOption(Option* o, CS val);
-private void didset_options(void);
 private int find_key_option(CS arg_arg, Boole has_lt);
 private void printOptions(ToPrint which);
 private OptionRef getRefInScope(Option *p, SetScope setScope);
@@ -3689,41 +3685,23 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
    return totalLen;
 }
 
+//String defaults -> a global buffer
 private void
-copyGlobalStringOptionsToBuffer(OUT Sbuf* bui) {
-   Unt totalLen = calcGlobalStringsLength(OPTIONS_GLOBAL, OPTION_GLOBAL_COUNT);
+copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
+   Unt totalLen = calcGlobalStringsLength(opts, count);
    Unt newCap = calcNewBufferCap(totalLen);
    *bui = sbuf(newCap);
    
    CS wr = bui->c;
    
-   Option* o UNUSED;
-   FOR_GLOBAL(o) {
-      if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string)) {
-         Unt len = STRLEN(*o->c.reference.string) + 1; // +1 for the ZERO
-         memcpy(wr, *o->c.reference.string, len);
+   for (Option* o = opts; o < opts + count; o++) {
+      if (o->defaultValue.tag == OPTION_STRING 
+            && (o->flags & P_NODEFAULT) == 0 
+            && (*o->defaultValue.string)
+      ) {
+         Unt len = STRLEN(o->defaultValue.string) + 1; // +1 for the ZERO
+         memcpy(wr, o->defaultValue.string, len);
          wr += len;
-      }
-   }
-   bui->len = wr - bui->c;
-}
-
-// Copy global values of portal- or book-local options to their global builder
-private void
-copyGlobalValuesOfLocalOptionsToGlobalBuffer(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
-   Unt totalLen = calcLocalStringsLength(opts, count);
-   *bui = sbuf(calcNewBufferCap(totalLen));
-   
-   CS wr = bui->c;
-   
-   for (Unt i = 0; i < count; i++) {
-      Option* o = opts + i;
-      if (o->defaultValue.tag == OPTION_STRING) {
-         Unt len = STRLEN(o->c.local.val.string) + 1; // +1 for the ZERO
-         if (len > 1) {
-            memcpy(wr, o->c.local.val.string, len);
-            wr += len;
-         }
       }
    }
    bui->len = wr - bui->c;
@@ -3927,13 +3905,6 @@ optionInit0() {
    set_init_default_cdpath();
 
    setDefaultValuesForAllOptions(0);
-   copyGlobalStringOptionsToBuffer(OUT &globalStringOptionsG);
-   copyGlobalValuesOfLocalOptionsToGlobalBuffer(
-      OUT &bookStringOptionsG, OPTIONS_BOOK, OPTION_BOOK_COUNT
-   );
-   copyGlobalValuesOfLocalOptionsToGlobalBuffer(
-      OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT
-   );
 
 #ifdef CLEAN_RUNTIMEPATH
    if (clean_arg)
@@ -4143,22 +4114,22 @@ setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos) {
 //Also set the global value for local options.
 private void
 setDefaultValuesForAllOptions(SetScope setScope) {
+   copyDefaultsToGlobalStringValues(OUT &globalStringOptionsG, OPTIONS_GLOBAL, OPTION_GLOBAL_COUNT);
+   copyDefaultsToGlobalStringValues(OUT &bookStringOptionsG, OPTIONS_BOOK, OPTION_BOOK_COUNT);
+   copyDefaultsToGlobalStringValues(OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
+   
    Option* o UNUSED;
-   FOR_GLOBAL(o) {
-      if ((o->flags & P_NODEFAULT) == 0) {
-         setDefault(o, setScope);
-      } 
-   }
    FOR_PORTAL(o) {
-      if ((o->flags & P_NODEFAULT) == 0) {
+      if (o->defaultValue.tag != OPTION_STRING && (o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
       } 
    }
    FOR_BOOK(o) {
-      if ((o->flags & P_NODEFAULT) == 0) {
+      if (o->defaultValue.tag != OPTION_STRING && (o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);
       } 
    }
+   
    // The @scroll must be computed for all portals.
    Portal* port;
    Tab* t;
@@ -4497,43 +4468,6 @@ optExpandOption(
    return OK;
 }
 
-//Called when an "init.vim" has been found.
-//set the values for options that didn't get set yet to the Eegl defaults.
-//When "fname" is not NULL, use it to set $"envname" when it wasn't set yet.
-void
-optInitScriptPostprocess(CS fname, CS envname) {
-   Boole dofree = false;
-   Option* o UNUSED;
-   FOR_GLOBAL(o) {
-      if (!(o->flags & (P_WAS_SET)))
-         setDefault(o, SET_GLOBAL);
-      didset_options();
-   }
-   FOR_BOOK(o) {
-      if (!(o->flags & (P_WAS_SET)))
-         setDefault(o, SET_GLOBAL);
-      didset_options();
-   }
-   FOR_PORTAL(o) {
-      if (!(o->flags & (P_WAS_SET)))
-         setDefault(o, SET_GLOBAL);
-      didset_options();
-   }
-
-   CS p;
-   if (fname) {
-      p = eeglGetEnv(envname);
-   if (!p) {
-      p = FullName_save(fname, FALSE);
-      if (p) {
-         eeSetenv(envname, p);
-         eeglFree(p);
-      }
-   } ei (dofree)
-       eeglFree(p);
-   }
-}
-
 Boole
 optImmutableMode() {
    return !(OPTIONS_BOOK[BOOK_modifiable].c.local.val.boole);
@@ -4564,10 +4498,15 @@ changeStringOptionDirectImpl(
    SetScope scope,
    ScriptId setSid
 ) {
-   CS copyOfValue = copyStr(val);
-
    OptionRef ref = getRefInScope(o, scope);
-   *ref.string = copyOfValue;
+   if (val) {
+      if ((o->flags & (P_BOOK|P_PORTAL)) != 0)  {
+      
+      }
+      *ref.string = copyStr(val);
+   } else {
+      *ref.string = null;
+   }
 
    if (setSid != SID_NONE) {
       ScriptPos scriptPos;

@@ -36,7 +36,6 @@ void c_set(Invocation *invo);
 Bag *getBookOrPortOptions(Boole bufopt);
 void optsCopyToBook(Book *book, Unt flags);
 int optExpandOption(Expand *xp, RegMatch *regmatch, CS fuzzystr, Boole canFuzzy, ExpandMatch *matches);
-void optInitScriptPostprocess(CS fname, CS envname);
 Boole optImmutableMode(void);
 void optChangeStringOptionDirect(CS name, CS val, SetScope scope, ScriptId set_sid);
 void optSetStringOptionDirectInPort(Portal *po, CS name, CS val, Unt optFlags, int set_sid);

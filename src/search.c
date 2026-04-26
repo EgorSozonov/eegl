@@ -23,8 +23,8 @@ private CS get_line_and_copy(LineNr lnum, Byte *buf);
 private void show_pat_in_path(CS, int, int, int, FILE *, LineNr *, long);
 private void save_incsearch_state(void);
 private void restore_incsearch_state(void);
-private int check_prevcol(Byte *linep, int col, int ch, int *prevcol);
-private int find_rawstring_end(Byte *linep, Pos *startpos, Pos *endpos);
+private int check_prevcol(CS linep, int col, int ch, int *prevcol);
+private int find_rawstring_end(CS linep, Pos *startpos, Pos *endpos);
 private void find_mps_values(OUT Unt* initc, OUT Unt* findc, OUT int *backwards, int switchit);
 private int is_zero_width(CS pattern, Unt patternlen, int move, Pos* cur, int direction);
 private void cmdline_search_stat(
@@ -90,10 +90,10 @@ private Unt mrPatternLen = 0;
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
 typedef struct SearchedFile {
-   FILE   *fp;      // File pointer
+   FILE* fp;     // File pointer
    CS name;      // Full name of file
-   LineNr   lnum;      // Line we were up to in file
-   int      matched;   // Found a match in this file
+   LineNr lnum;  // Line we were up to in file
+   int matched;  // Found a match in this file
 } SearchedFile;
 
 //translate search pattern for compileRegexp()
@@ -111,13 +111,12 @@ search_regcomp(
    CS pat,
    Unt patlen,
    Arr(CS) used_pat,
-   int      pat_save,
-   int      pat_use,
-   int      options,
+   int pat_save,
+   int pat_use,
+   int options,
    OUT RegMultilineMatch* regmatch   // return: pattern and ignore-case flag
- ){
+){
    int      magic;
-
    anyRegexEmsgG = false;
 
    // If no pattern given, use a previously defined pattern.
@@ -401,7 +400,7 @@ last_csearch_until(void) {
 }
 
 void
-set_last_csearch(int c, Byte *s, int len) {
+set_last_csearch(int c, CS s, int len) {
    *lastc = c;
    lastc_bytelen = len;
    if (len)
@@ -1333,28 +1332,22 @@ search_for_exact_line(
 //position of the character, otherwise move to just before the char.
 //Do this "cap->count1" times. Return FAIL or OK.
 int
-searchc(ActionArg *cap, int t_cmd) {
-   int         c = cap->nchar;   // char to search for
-   int         dir = cap->arg;   // TRUE for searching forward
-   long      count = cap->count1;   // repeat count
-   int         col;
-   Byte      *p;
-   int         len;
-   int         stop = TRUE;
+searchc(ActionArg* cap, int t_cmd) {
+   int c = cap->nchar;   // char to search for
+   int dir = cap->arg;   // TRUE for searching forward
+   long count = cap->count1;   // repeat count
+   int stop = TRUE;
 
    if (c != ZERO) {  // normal search: remember args for repeat
       if (!KeyStuffed) {   // don't remember when redoing
-          *lastc = c;
-          set_csearch_direction(dir);
-          set_csearch_until(t_cmd);
-          lastc_bytelen = (*mb_char2bytes)(c, lastc_bytes);
-          if (cap->ncharC1 != 0)
-          {
-         lastc_bytelen += (*mb_char2bytes)(cap->ncharC1,
-            lastc_bytes + lastc_bytelen);
-         if (cap->ncharC2 != 0)
-             lastc_bytelen += (*mb_char2bytes)(cap->ncharC2,
-                lastc_bytes + lastc_bytelen);
+         *lastc = c;
+         set_csearch_direction(dir);
+         set_csearch_until(t_cmd);
+         lastc_bytelen = (*mb_char2bytes)(c, lastc_bytes);
+         if (cap->ncharC1 != 0) {
+            lastc_bytelen += mb_char2bytes(cap->ncharC1, lastc_bytes + lastc_bytelen);
+            if (cap->ncharC2 != 0)
+               lastc_bytelen += mb_char2bytes(cap->ncharC2, lastc_bytes + lastc_bytelen);
           }
       }
    } else {     // repeat previous search
@@ -1379,9 +1372,9 @@ searchc(ActionArg *cap, int t_cmd) {
    else
       cap->oper->inclusive = TRUE;
 
-   p = ml_get_curline();
-   col = curPor->cursor.col;
-   len = ml_get_curline_len();
+   CS p = ml_get_curline();
+   int col = curPor->cursor.col;
+   int len = ml_get_curline_len();
 
    while (count--) {
       for (;;) {

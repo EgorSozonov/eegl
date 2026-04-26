@@ -46,7 +46,7 @@ private ArrayList      ga_loaded = {0, 0, sizeof(CS), 4, NULL};
 private int last_current_SID_seq = 0;
 
 private int scriptRunFileInternal(
-   CS fname, Unt isInit, OUT int *ret_sid, Invocation *invo, Boole clearvars
+   CS fname, OUT int *ret_sid, Invocation *invo, Boole clearvars
 );
 
 
@@ -313,7 +313,7 @@ set_context_in_runtime_cmd(Expand *xp, CS arg) {
 
 private void
 source_callback(Byte *fname, void *cookie) {
-   (void)scriptRunFile(fname, DOSO_NONE, cookie);
+   (void)scriptRunFile(fname, cookie);
 }
 
 //Find an already loaded script "name". If found returns its script ID, else -1.
@@ -601,7 +601,7 @@ source_all_matches(Byte *pat) {
       return;
 
    for (Unt i = 0; i < files.len; ++i)
-      (void)scriptRunFile(files.c[i], DOSO_NONE, NULL);
+      (void)scriptRunFile(files.c[i], NULL);
    
    deleteArena(files.a);
 }
@@ -900,7 +900,7 @@ cmd_source(Byte *fname, Invocation *invo) {
          emsg(_(e_argument_required));
       else
          // source commands from the current buffer
-         scriptRunFileInternal(NULL, DOSO_NONE, NULL, invo, clearvars);
+         scriptRunFileInternal(NULL, NULL, invo, clearvars);
    } ei (invo != NULL && invo->forceit)
       // ":source!": read Normal mode commands
       // Need to execute the commands directly.  This is required at least
@@ -914,7 +914,7 @@ cmd_source(Byte *fname, Invocation *invo) {
       );
 
    // ":source" read commands
-   ei (scriptRunFile(fname, DOSO_NONE, NULL) == FAIL)
+   ei (scriptRunFile(fname, NULL) == FAIL)
       showErrFmtMsg(_(e_cant_open_file_str), fname);
 }
 
@@ -1034,7 +1034,7 @@ may_load_script(int sid, int *loaded) {
 
    if (si->sn_state == SN_STATE_NOT_LOADED) {
       *loaded = TRUE;
-      if (scriptRunFile(si->sn_name, DOSO_NONE, NULL) == FAIL) {
+      if (scriptRunFile(si->sn_name, NULL) == FAIL) {
           showErrFmtMsg(_(e_cant_open_file_str), si->sn_name);
           return FAIL;
       }
@@ -1058,7 +1058,6 @@ may_load_script(int sid, int *loaded) {
 private int
 scriptRunFileInternal(
    CS fname,
-   Unt isInit,       // DOSO_ value
    OUT int* ret_sid,
    Invocation* invo,
    Boole      clearvars
@@ -1143,7 +1142,6 @@ scriptRunFileInternal(
 
    //The file exists.
    //- In verbose mode, give a message.
-   //- For an init file, may want call optInitScriptPostprocess().
    if (p_verbose > 1) {
       verbose_enter();
       if (SOURCING_NAME == NULL)
@@ -1152,8 +1150,6 @@ scriptRunFileInternal(
          smsg(_("line %ld: sourcing \"%s\""), SOURCING_LNUM, fname);
       verbose_leave();
    }
-   if (isInit == DOSO_INIT)
-      optInitScriptPostprocess(fname_exp, S"MYEEGLINIT");
 
    // Check if this script has a breakpoint.
    cookie.breakpoint = dbg_find_breakpoint(TRUE, fname_exp, (LineNr)0);
@@ -1301,10 +1297,9 @@ theend:
 int
 scriptRunFile(
    CS fname,
-   int isInit,       // DOSO_ value
    OUT int* retSid
 ){
-   return scriptRunFileInternal(fname, isInit, OUT retSid, NULL, FALSE);
+   return scriptRunFileInternal(fname, OUT retSid, NULL, FALSE);
 }
 
 //":scriptnames"
