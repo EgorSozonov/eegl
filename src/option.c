@@ -2174,23 +2174,27 @@ afterCopyPortOpt(Portal* po) {
 }
 
 private CS
-copyOptionVal(CS val) {
-   if (*val == ZERO)
+copyOptionVal(OUT Sbuf* buf, CS val) {
+   if (!val)
       return null;  // no need to allocate memory
-   return copyStr(val);
+   int len = STRLEN(val) + 1;
+   CS valueInBuffer = buf->c + buf->len; 
+   memcpy(valueInBuffer, val, len);
+   buf->len += len;
+   return valueInBuffer;
 }
 
 //Copy the options from one PortLocal to another.
 void
 copyPortOpt(PortLocal* t, PortLocal* s) {
-   int neededCap = s->o.stringOptions.cap;
+   Unt neededCap = s->stringOptions.cap;
    //If target buffer is big enouth enough, reuse it. Otherwise, free and allocate new one
-   if (t->o.stringOptions.cap < neededCap) {
-      free(t->o.stringOptions.c);
-      t->o.stringOptions.c = malloc(neededCap);
-      t->o.stringOptions.c[neededCap - 1] = ZERO;
-      t->o.stringOptions.len = 0;
-      t->o.stringOptions.cap = neededCap;
+   if (t->stringOptions.cap < neededCap) {
+      free(t->stringOptions.c);
+      t->stringOptions.c = malloc(neededCap);
+      t->stringOptions.c[neededCap - 1] = ZERO;
+      t->stringOptions.len = 0;
+      t->stringOptions.cap = neededCap;
    }
 
 #define OPTIONS_COPY
@@ -3706,7 +3710,7 @@ copyGlobalStringOptionsToBuffer(OUT Sbuf* bui) {
 
 // Copy global values of portal- or book-local options to their global builder
 private void
-copyLocalStringOptionsToBuffer(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
+copyGlobalValuesOfLocalOptionsToGlobalBuffer(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
    Unt totalLen = calcLocalStringsLength(opts, count);
    *bui = sbuf(calcNewBufferCap(totalLen));
    
@@ -3765,19 +3769,19 @@ updateStringRef(OptionChange* cha) {
       *cha->ref.string = new;
       if (cha->buf == &curBook->o.stringOptions) {
       
-#define OPTIONS_COPY_STRINGS_TO_BOOK
+#define COPY_STRINGS_TO_BOOK
 #define OPTIONS_DEF_BOOK
 #include "defoption.h"
 #undef OPTIONS_DEF_BOOK
-#undef OPTIONS_COPY_STRINGS_TO_BOOK
+#undef COPY_STRINGS_TO_BOOK
 
       } else {
       
-#define OPTIONS_COPY_STRINGS_TO_PORTAL
+#define COPY_STRINGS_TO_PORTAL
 #define OPTIONS_DEF_PORTAL
 #include "defoption.h"
 #undef OPTIONS_DEF_PORTAL
-#undef OPTIONS_COPY_STRINGS_TO_PORTAL
+#undef COPY_STRINGS_TO_PORTAL
 
       }
       cha->buf->len = wr - cha->buf->c;
@@ -3924,8 +3928,12 @@ optionInit0() {
 
    setDefaultValuesForAllOptions(0);
    copyGlobalStringOptionsToBuffer(OUT &globalStringOptionsG);
-   copyLocalStringOptionsToBuffer(OUT &bookStringOptionsG, OPTIONS_BOOK, OPTION_BOOK_COUNT);
-   copyLocalStringOptionsToBuffer(OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
+   copyGlobalValuesOfLocalOptionsToGlobalBuffer(
+      OUT &bookStringOptionsG, OPTIONS_BOOK, OPTION_BOOK_COUNT
+   );
+   copyGlobalValuesOfLocalOptionsToGlobalBuffer(
+      OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT
+   );
 
 #ifdef CLEAN_RUNTIMEPATH
    if (clean_arg)
@@ -4412,11 +4420,11 @@ copyGlobalToBookImpl(OUT Book* book) {
    Sbuf buf UNUSED = sbuf(newCap);
    BookLocal* t = &book->o;
 
-#define OPTIONS_COPY_GLOBAL_TO_BOOK
+#define COPY_GLOBAL_TO_BOOK
 #define OPTIONS_DEF_BOOK
 #include "defoption.h"
 #undef OPTIONS_DEF_BOOK
-#undef OPTIONS_COPY_GLOBAL_TO_BOOK
+#undef COPY_GLOBAL_TO_BOOK
 
    for (Unt i = 0; i < OPTION_BOOK_COUNT; i++) {
       t->scriptLocs[i] = OPTIONS_BOOK[i].scriptPos;

@@ -1102,7 +1102,7 @@ DEST_MAN_TR_U = $(DEST_MAN_TOP)/tr.UTF-8$(MAN1DIR)
 
 
 # get the list of tests
-include tests/Make_all.mak
+include noncode/tests/Make_all.mak
 
 #	     BASIC_SRC: files that are always used
 #	       GUI_SRC: extra GUI files for current configuration
@@ -1434,7 +1434,8 @@ scripttests:
 	-if test $(EEGLTARGET) != vim -a ! -r vim; then \
 		ln -s $(EEGLTARGET) vim; \
 	fi
-	cd tests; $(MAKE) -f Makefile $(GUI_TESTTARGET) VIMPROG=../$(EEGLTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
+	cd noncode/tests;\
+   $(MAKE) -f Makefile VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 testtiny:
 	cd tests; $(MAKE) -f Makefile tiny VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)

@@ -58,7 +58,7 @@
 #endif
 
 #ifdef OPTIONS_COPY
-#define TYPEBASED_CS(x) t->x = copyOptionVal(s->x);
+#define TYPEBASED_CS(x) t->x = copyOptionVal(&t->stringOptions, s->x);
 #define TYPEBASED_Boole(x) t->x = s->x;
 #define TYPEBASED_long(x) t->x = s->x;
 #define TYPEBASED_Byte(x) t->x = s->x;
@@ -70,7 +70,8 @@
 
 #ifdef COPY_GLOBAL_TO_BOOK
 
-#define TYPEBASED_CS(f, localInd) f = copyOptionVal(OPTIONS_BOOK[localInd].c.local.val.string);
+#define TYPEBASED_CS(f, localInd) \
+   f = copyOptionVal(&t->stringOptions, OPTIONS_BOOK[localInd].c.local.val.string);
 #define TYPEBASED_Boole(f, localInd) f = OPTIONS_BOOK[localInd].c.local.val.boole;
 #define TYPEBASED_long(f, localInd) f = OPTIONS_BOOK[localInd].c.local.val.num;
 #define TYPEBASED_Byte(f, localInd) f = OPTIONS_BOOK[localInd].c.local.val.enume;
@@ -104,7 +105,7 @@
 #define TYPEBASED_Unt(x)
 #define TYPEBASED_CallbackPtr(x)
 #define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
-   TYPEBASED_##oType(&curPor->bookOpts.oFieldName)
+   TYPEBASED_##oType(&curPor->o.oFieldName)
    
 #endif
 

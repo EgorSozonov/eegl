@@ -724,12 +724,12 @@ typedef enum {
 #define MB_COPY_CHAR(f, t) do { mb_copy_char(&(f), &(t)); } while (0)
 #define MB_CHARLEN(p)       (mb_charlen(p))
 #define MB_CHAR2LEN(c)       (mb_char2len(c))
-#define MB_CHAR2BYTES(c, b) do { (b) += (*mb_char2bytes)((c), (b)); } while (0)
+#define MB_CHAR2BYTES(c, b) do { (b) += mb_char2bytes((c), (b)); } while (0)
 
 # define DO_AUTOCHDIR do { } while (0)
 
-#define RESET_BINDING(wp)  do { \
-   (wp)->bookOpts.scrollBind = FALSE; (wp)->bookOpts.cursorBind = FALSE; } while (0)
+#define RESET_BINDING(po)  do { \
+   (po)->o.scrollBind = FALSE; (po)->o.cursorBind = FALSE; } while (0)
 
 # define PLINES_NOFILL(x) plines_nofill(x)
 # define PLINES_WIN_NOFILL(w, l, h) plines_win_nofill((w), (l), (h))
@@ -2948,8 +2948,8 @@ typedef struct {
    LineNr first_lnum; // first lnum to search for multi-line pat
    ColNr startcol;   // in win_line() points to char where HL starts
    ColNr endcol;       // in win_line() points to char where HL ends
-   char is_addpos;  // position specified directly by matchaddpos(). TRUE/FALSE
-   char has_cursor; // TRUE if the cursor is inside the match, used for CurSearch
+   Boole is_addpos;  // position specified directly by matchaddpos(). TRUE/FALSE
+   Boole has_cursor; // TRUE if the cursor is inside the match, used for CurSearch
 } Match;
 
 // Same as PosNoVirt, but with additional field len.

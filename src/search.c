@@ -19,16 +19,16 @@ typedef struct searchstat {
 
 private void set_vv_searchforward(void);
 private int first_submatch(RegMultilineMatch* rp);
-private Byte *get_line_and_copy(LineNr lnum, Byte *builder);
+private CS get_line_and_copy(LineNr lnum, Byte *buf);
 private void show_pat_in_path(CS, int, int, int, FILE *, LineNr *, long);
 private void save_incsearch_state(void);
 private void restore_incsearch_state(void);
 private int check_prevcol(Byte *linep, int col, int ch, int *prevcol);
 private int find_rawstring_end(Byte *linep, Pos *startpos, Pos *endpos);
 private void find_mps_values(OUT Unt* initc, OUT Unt* findc, OUT int *backwards, int switchit);
-private int is_zero_width(Byte *pattern, Unt patternlen, int move, Pos *cur, int direction);
+private int is_zero_width(CS pattern, Unt patternlen, int move, Pos* cur, int direction);
 private void cmdline_search_stat(
-   int dirc, Pos *pos, Pos *cursor_pos, int show_top_bot_msg, Byte *msgbuf, Unt msgbuflen, 
+   int dirc, Pos *pos, Pos *cursor_pos, int show_top_bot_msg, CS msgbuf, Unt msgbuflen, 
    int recompute, int maxcount, long timeout
 );
 private void update_search_stat(
@@ -611,7 +611,7 @@ searchit(
          lnum = pos->lnum;
 
       for (loop = 0; loop <= 1; ++loop) {  // loop twice if 'wrapscan' set
-          for ( ; lnum > 0 && lnum <= book->mem.lineCount; lnum += dir, at_first_line = FALSE) {
+         for ( ; lnum > 0 && lnum <= book->mem.lineCount; lnum += dir, at_first_line = FALSE) {
             // Stop after checking "stop_lnum", if it's set.
             if (stop_lnum != 0 && (dir == FORWARD ? lnum > stop_lnum : lnum < stop_lnum))
                break;
@@ -702,20 +702,16 @@ searchit(
                       // the line.  Always accept a position after wrapping around.
                       if (loop
                            || ((options & SEARCH_END)
-                               ? (lnum + regmatch.endpos[0].lnum
-                                                < start_pos.lnum
-                                    || (lnum + regmatch.endpos[0].lnum
-                                               == start_pos.lnum
+                               ? (lnum + regmatch.endpos[0].lnum < start_pos.lnum
+                                    || (lnum + regmatch.endpos[0].lnum == start_pos.lnum
                                          && (int)regmatch.endpos[0].col - 1
-                                          < (int)start_pos.col
-                                             + extra_col))
-                               : (lnum + regmatch.startpos[0].lnum
-                                             < start_pos.lnum
-                                 || (lnum + regmatch.startpos[0].lnum
-                                            == start_pos.lnum
-                                      && (int)regmatch.startpos[0].col
-                                          < (int)start_pos.col
-                                             + extra_col)))
+                                             < (int)start_pos.col + extra_col))
+                               : (lnum + regmatch.startpos[0].lnum < start_pos.lnum
+                                    || (lnum + regmatch.startpos[0].lnum == start_pos.lnum
+                                         && (int)regmatch.startpos[0].col 
+                                            < (int)start_pos.col + extra_col)
+                                 )
+                           )
                      ) {
                         match_ok = TRUE;
                         matchpos = regmatch.startpos[0];
@@ -761,39 +757,38 @@ searchit(
                //With the SEARCH_END option move to the last character of the match. Don't do it 
                //for an empty match, end should be same as start then.
                if ((options & SEARCH_END) && !(options & SEARCH_NOOF)
-                   && !(matchpos.lnum == endpos.lnum
-                  && matchpos.col == endpos.col)
+                   && !(matchpos.lnum == endpos.lnum && matchpos.col == endpos.col)
                ) {
-               // For a match in the first column, set the position
-               // on the ZERO in the previous line.
-               pos->lnum = lnum + endpos.lnum;
-               pos->col = endpos.col;
-               if (endpos.col == 0) {
-                  if (pos->lnum > 1) { // just in case
-                     --pos->lnum;
-                     pos->col = memGetBookLen(book, pos->lnum);
+                  // For a match in the first column, set the position
+                  // on the ZERO in the previous line.
+                  pos->lnum = lnum + endpos.lnum;
+                  pos->col = endpos.col;
+                  if (endpos.col == 0) {
+                     if (pos->lnum > 1) { // just in case
+                        --pos->lnum;
+                        pos->col = memGetBookLen(book, pos->lnum);
+                     }
+                  } else {
+                      --pos->col;
+                      if (pos->lnum <= book->mem.lineCount) {
+                        ptr = memGetLine(book, pos->lnum, false);
+                        pos->col -= (*mb_head_off)(ptr, ptr + pos->col);
+                      }
+                  }
+                  if (end_pos) {
+                      end_pos->lnum = lnum + matchpos.lnum;
+                      end_pos->col = matchpos.col;
                   }
                } else {
-                   --pos->col;
-                   if (pos->lnum <= book->mem.lineCount) {
-                     ptr = memGetLine(book, pos->lnum, false);
-                     pos->col -= (*mb_head_off)(ptr, ptr + pos->col);
-                   }
+                  pos->lnum = lnum + matchpos.lnum;
+                  pos->col = matchpos.col;
+                  if (end_pos) {
+                      end_pos->lnum = lnum + endpos.lnum;
+                      end_pos->col = endpos.col;
+                  }
                }
-               if (end_pos != NULL) {
-                   end_pos->lnum = lnum + matchpos.lnum;
-                   end_pos->col = matchpos.col;
-               }
-                } else {
-               pos->lnum = lnum + matchpos.lnum;
-               pos->col = matchpos.col;
-               if (end_pos != NULL) {
-                   end_pos->lnum = lnum + endpos.lnum;
-                   end_pos->col = endpos.col;
-               }
-                }
                pos->coladd = 0;
-               if (end_pos != NULL)
+               if (end_pos)
                   end_pos->coladd = 0;
                found = 1;
                first_match = FALSE;
@@ -807,9 +802,8 @@ searchit(
             if (gotInterruptG)
                 break;
 
-            // Cancel searching if a character was typed.  Used for
-            // 'incsearch'.  Don't check too often, that would slowdown
-            // searching too much.
+            //Cancel searching if a character was typed.  Used for
+            //'incsearch'.  Don't check too often, that would slowdown searching too much.
             if ((options & SEARCH_PEEK) && ((lnum - pos->lnum) & 0x3f) == 0 && char_avail()) {
                 break_loop = TRUE;
                 break;
@@ -817,34 +811,34 @@ searchit(
 
             if (loop && lnum == start_pos.lnum)
                 break;       // if second loop, stop where started
-          }
-          at_first_line = FALSE;
-
-            // eeRegexec_multi() may clear "regprog"
-            if (regmatch.regprog == NULL)
-               break;
-
-            //Stop the search if wrapscan isn't set, "stop_lnum" is
-            //specified, after an interrupt, after a match and after looping twice.
-            if (wrapSearchG || stop_lnum != 0 || gotInterruptG
-                     || called_emsg > called_emsg_before || *timed_out
-                     || break_loop
-                     || found || loop)
-               break;
-
-            //If 'wrapscan' is set we continue at the other end of the file.
-            //If 'shortmess' does not contain 's', we give a message, but
-            //only, if we won't show the search stat later anyhow,
-            //(so SEARCH_COUNT must be absent).
-            //This message is also remembered in msgAfterRedrawG for when the screen is redrawn. 
-            //The msgAfterRedrawG is cleared whenever another message is written.
-            if (dir == BACKWARD)    // start second loop at the other end
-               lnum = book->mem.lineCount;
-            else
-               lnum = 1;
-            if (extra_arg != NULL)
-               extra_arg->sa_wrapped = TRUE;
          }
+         at_first_line = FALSE;
+
+         // eeRegexec_multi() may clear "regprog"
+         if (regmatch.regprog == NULL)
+            break;
+
+         //Stop the search if wrapscan isn't set, "stop_lnum" is
+         //specified, after an interrupt, after a match and after looping twice.
+         if (wrapSearchG || stop_lnum != 0 || gotInterruptG
+                  || called_emsg > called_emsg_before || *timed_out
+                  || break_loop
+                  || found || loop)
+            break;
+
+         //If 'wrapscan' is set we continue at the other end of the file.
+         //If 'shortmess' does not contain 's', we give a message, but
+         //only, if we won't show the search stat later anyhow,
+         //(so SEARCH_COUNT must be absent).
+         //This message is also remembered in msgAfterRedrawG for when the screen is redrawn. 
+         //The msgAfterRedrawG is cleared whenever another message is written.
+         if (dir == BACKWARD)    // start second loop at the other end
+            lnum = book->mem.lineCount;
+         else
+            lnum = 1;
+         if (extra_arg != NULL)
+            extra_arg->sa_wrapped = TRUE;
+      }
       if (gotInterruptG || called_emsg > called_emsg_before || *timed_out || break_loop)
          break;
    }
@@ -931,9 +925,8 @@ do_search(
    int options,
    SearchitArg  *sia)   // optional arguments or NULL
 {
-   Pos       pos;   // position of the last match
-   Byte       *searchstr;
-   Unt       searchstrlen;
+   CS  searchstr;
+   Unt searchstrlen;
    SearchOffset       old_off;
    int          retval;   // Return value
    Byte       *p;
@@ -946,13 +939,13 @@ do_search(
    Unt       msgbuflen = 0;
    int          has_offset = FALSE;
 
-   searchcmdlen = 0;
+   int searchcmdlen = 0;
 
    //Save the values for when (options & SEARCH_KEEP) is used.
    //(there is no "if ()" around this because gcc wants them initialized)
    old_off = prevSearchPatternsG[0].off;
-
-   pos = curPor->cursor;   // start searching at the cursor position
+   // position of the last match
+   Pos pos = curPor->cursor;   // start searching at the cursor position
 
    //Find out the direction of the search.
    if (dirc == 0)
@@ -2203,16 +2196,16 @@ linewhite(LineNr lnum) {
 //Add the search count "[3/19]" to "msgbuf". See update_search_stat() for other arguments.
 private void
 cmdline_search_stat(
-   int      dirc,
-   Pos   *pos,
-   Pos   *cursor_pos,
-   int      show_top_bot_msg,
-   Byte   *msgbuf,
-   Unt   msgbuflen,
-   int      recompute,
-   int      maxcount,
-   long   timeout)
-{
+   int dirc,
+   Pos* pos,
+   Pos* cursor_pos,
+   int show_top_bot_msg,
+   CS msgbuf,
+   Unt msgbuflen,
+   int recompute,
+   int maxcount,
+   long timeout
+) {
    SearchFileStat stat;
 
    update_search_stat(dirc, pos, cursor_pos, &stat, recompute, maxcount, timeout);
@@ -2222,16 +2215,14 @@ cmdline_search_stat(
    Byte t[SEARCH_STAT_BUF_LEN];
    Unt   len;
 
-   {
    if (stat.incomplete == 1)
-       len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[?/??]");
+      len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[?/??]");
    ei (stat.cnt > maxcount && stat.cur > maxcount)
-       len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[>%d/>%d]", maxcount, maxcount);
+      len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[>%d/>%d]", maxcount, maxcount);
    ei (stat.cnt > maxcount)
-       len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[%d/>%d]", stat.cur, maxcount);
+      len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[%d/>%d]", stat.cur, maxcount);
    else
-       len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[%d/%d]", stat.cur, stat.cnt);
-   }
+      len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[%d/%d]", stat.cur, stat.cnt);
 
    if (show_top_bot_msg && len + 2 < SEARCH_STAT_BUF_LEN) {
       mch_memmove(t + 2, t, len);
@@ -2260,14 +2251,14 @@ cmdline_search_stat(
 //dirc == '?': find the previous match
 private void
 update_search_stat(
-   int         dirc,
-   Pos      *pos,
-   Pos      *cursor_pos,
-   SearchFileStat   *stat,
-   int         recompute,
-   int         maxcount,
-   long      timeout UNUSED)
-{
+   int dirc,
+   Pos* pos,
+   Pos* cursor_pos,
+   SearchFileStat* stat,
+   int recompute,
+   int maxcount,
+   long timeout
+) {
    int          wraparound = FALSE;
    Pos       p = (*pos);
    static Pos    lastpos = {0, 0, 0};
@@ -2373,11 +2364,10 @@ update_search_stat(
 //Get line "lnum" and copy it into "buf[LSIZE]".
 //The copy is made because the regexp may make the line invalid when using a mark.
 private CS
-get_line_and_copy(LineNr lnum, CS builder) {
+get_line_and_copy(LineNr lnum, CS buf) {
    CS line = ml_get(lnum);
-
-   copySubstrToAllocation(builder, (Text){line, LSIZE - 1});
-   return builder;
+   copySubstrToAllocation(buf, (Text){line, LSIZE - 1});
+   return buf;
 }
 
 //Find identifiers or defines in included files.
@@ -2397,16 +2387,14 @@ find_pattern_in_path(
    int      forceit,   // If true, always switch to the found path
    int      silent)      // Do not print messages when ACTION_EXPAND
 {
-   SearchedFile *files;      // Stack of included files
-   SearchedFile *bigger;      // When we need more space
+   SearchedFile* bigger;      // When we need more space
    int      max_path_depth = 50;
    long   match_count = 1;
 
-   Byte   *pat;
-   Byte   *new_fname;
-   Byte   *curr_fname = curBook->currFileName;
-   Byte   *prev_fname = NULL;
-   LineNr   lnum;
+   CS pat;
+   CS new_fname;
+   CS curr_fname = curBook->currFileName;
+   CS prev_fname = NULL;
    int      depth;
    int      depth_displayed;   // For type==CHECK_PATH
    int      old_files;
@@ -2420,7 +2408,7 @@ find_pattern_in_path(
    RegMatch   def_regmatch;
    int      matched = FALSE;
    int      did_show = FALSE;
-   int      found = FALSE;
+   Boole      found = false;
    int      i;
    Byte   *already = NULL;
    Byte   *startp = NULL;
@@ -2460,11 +2448,12 @@ find_pattern_in_path(
          goto fpip_end;
       def_regmatch.rm_ic = FALSE;   // don't ignore case in define pat.
    }
-   files = lallocZeroed(max_path_depth * sizeof(SearchedFile), TRUE);
+   // Stack of included files
+   Arr(SearchedFile) files = lallocZeroed(max_path_depth * sizeof(SearchedFile), TRUE);
    old_files = max_path_depth;
    depth = depth_displayed = -1;
 
-   lnum = start_lnum;
+   LineNr lnum = start_lnum;
    if (end_lnum > curBook->mem.lineCount)
       end_lnum = curBook->mem.lineCount;
    if (lnum > end_lnum)      // do at least one line
@@ -2535,8 +2524,7 @@ find_pattern_in_path(
                for (i = 0; i <= depth_displayed; i++)
                   msg_puts(S"  ");
                if (new_fname) {
-                  // using "new_fname" is more reliable, e.g., when
-                  // 'includeexpr' is set.
+                  // using "new_fname" is more reliable, e.g., when @includeexpr is set.
                   msgOuttransDeco(new_fname, getDecoFlags(HLF_D));
                } else {
                   //Isolate the file name. Include the surrounding "" or <> if present.
@@ -2583,7 +2571,7 @@ find_pattern_in_path(
             out_flush();       // output each line directly
          }
 
-         if (new_fname != NULL) {
+         if (new_fname) {
             // Push the new file onto the file stack
             if (depth + 1 == old_files) {
                bigger = ALLOC_MULT(SearchedFile, max_path_depth * 2);
@@ -2641,11 +2629,11 @@ find_pattern_in_path(
             define_matched = TRUE;
          }
 
-         //Look for a match.  Don't do this if we are looking for a
+         //Look for a match. Don't do this if we are looking for a
          //define and this line didn't match define_prog above.
          if (def_regmatch.regprog == NULL || define_matched) {
             if (define_matched || compl_status_sol()) {
-               // compare the first "len" chars from "ptr"
+               //compare the first "len" chars from "ptr"
                startp = skipwhite(p);
                if (p_ic)
                   matched = !MB_STRNICMP(startp, ptr, len);
@@ -2671,25 +2659,25 @@ find_pattern_in_path(
                   //* /" when looking for "normal".
                   //Note: Doesn't skip "/ *" in comments.
                   p = skipwhite(line);
-                  if (matched
-                     || (p[0] == '/' && p[1] == '*') || p[0] == '*')
-                      for (p = line; *p && p < startp; ++p) {
-                     if (matched
-                        && p[0] == '/'
-                        && (p[1] == '*' || p[1] == '/'))
-                     {
-                         matched = FALSE;
-                         // After "//" all text is comment
-                         if (p[1] == '/')
-                        break;
-                         ++p;
-                     } ei (!matched && p[0] == '*' && p[1] == '/') {
-                         // Can find match after "* /".
-                         matched = TRUE;
-                         ++p;
+                  if (matched || (p[0] == '/' && p[1] == '*') || p[0] == '*') {
+                     for (p = line; *p && p < startp; ++p) {
+                        if (matched
+                           && p[0] == '/'
+                           && (p[1] == '*' || p[1] == '/')
+                        ) {
+                           matched = FALSE;
+                           // After "//" all text is comment
+                           if (p[1] == '/')
+                              break;
+                            ++p;
+                        } ei (!matched && p[0] == '*' && p[1] == '/') {
+                            // Can find match after "* /".
+                            matched = TRUE;
+                            ++p;
+                        }
                      }
-                     }
-                }
+                  } 
+               }
             }
          }
       }
@@ -2697,12 +2685,12 @@ find_pattern_in_path(
          if (action == ACTION_EXPAND) {
             int   cont_s_ipos = FALSE;
             int   add_r;
-            Byte   *aux;
 
             if (depth == -1 && lnum == curPor->cursor.lnum)
                break;
-            found = TRUE;
-            aux = p = startp;
+            found = true;
+            p = startp; 
+            CS aux = p;
             if (compl_status_adding()) {
                p += ins_compl_len();
                if (eeIsWordPtr(p))
@@ -2716,9 +2704,8 @@ find_pattern_in_path(
                // IOSIZE > compl_length, so the STRNCPY works
                STRNCPY(IObuff, aux, i);
 
-               // Get the next line: when "depth" < 0  from the current
-               // buffer, otherwise from the included file.  Jump to
-               // exit_matched when past the last line.
+               //Get the next line: when "depth" < 0  from the current buffer, otherwise from the 
+               //included file. Jump to exit_matched when past the last line.
                if (depth < 0) {
                   if (lnum >= end_lnum)
                      goto exit_matched;
@@ -2726,9 +2713,8 @@ find_pattern_in_path(
                } ei (eeFgets(line = file_line, LSIZE, files[depth].fp))
                   goto exit_matched;
 
-               // we read a line, set "already" to check this "line" later
-               // if depth >= 0 we'll increase files[depth].lnum far
-               // below  -- Acevedo
+               //we read a line, set "already" to check this "line" later if depth >= 0 we'll 
+               //increase files[depth].lnum far below  -- Acevedo
                already = aux = p = skipwhite(line);
                p = findWordStart(p);
                p = find_word_end(p);
@@ -2736,9 +2722,9 @@ find_pattern_in_path(
                   if (*aux != ')' && IObuff[i-1] != TAB) {
                       if (IObuff[i-1] != ' ')
                          IObuff[i++] = ' ';
-                      // IObuf =~ "\(\k\|\i\).* ", thus i >= 2
+                      //IObuf =~ "\(\k\|\i\).* ", thus i >= 2
                   }
-                  // copy as much as possible of the new word
+                  //copy as much as possible of the new word
                   if (p - aux >= IOSIZE - i)
                      p = aux + IOSIZE - i - 1;
                   STRNCPY(IObuff + i, aux, p - aux);
@@ -2752,16 +2738,17 @@ find_pattern_in_path(
                   goto exit_matched;
             }
 
-            add_r = ins_compl_add_infercase(aux, i, p_ic,
-               curr_fname == curBook->currFileName ? NULL : curr_fname,
-               dir, cont_s_ipos, 0);
+            add_r = ins_compl_add_infercase(
+               aux, i, p_ic, curr_fname == curBook->currFileName ? NULL : curr_fname, dir, 
+               cont_s_ipos, 0
+            );
             if (add_r == OK)
-                // if dir was BACKWARD then honor it just once
-                dir = FORWARD;
+               // if dir was BACKWARD then honor it just once
+               dir = FORWARD;
             ei (add_r == FAIL)
-                break;
+               break;
           } ei (action == ACTION_SHOW_ALL) {
-            found = TRUE;
+            found = true;
             if (!did_show)
                gotoCommline(TRUE);      // cursor at status line
             if (curr_fname != prev_fname) {
@@ -2783,7 +2770,7 @@ find_pattern_in_path(
             for (i = 0; i <= depth; ++i)
                 files[i].matched = TRUE;
          } ei (--count <= 0) {
-            found = TRUE;
+            found = true;
             if (depth == -1 && lnum == curPor->cursor.lnum && g_do_tagpreview == 0)
                emsg(_(e_match_is_on_current_line));
             ei (action == ACTION_SHOW) {
@@ -2820,39 +2807,39 @@ find_pattern_in_path(
                 }
                else {
                   if (!GETFILE_SUCCESS(getfile(
-                        0, files[depth].name, NULL, TRUE,
-                               files[depth].lnum, forceit))
+                           0, files[depth].name, NULL, TRUE, files[depth].lnum, forceit
+                         )
+                      )
                   )
                      break;   // failed to jump to file
-                  // autocommands may have changed the lnum, we don't
-                  // want that here
+                  // autocommands may have changed the lnum, we don't want that here
                   curPor->cursor.lnum = files[depth].lnum;
                }
             }
             if (action != ACTION_SHOW) {
-                curPor->cursor.col = (ColNr)(startp - line);
-                curPor->setCursWant = true;
+               curPor->cursor.col = (ColNr)(startp - line);
+               curPor->setCursWant = true;
             }
 
             if (g_do_tagpreview != 0 && curPor != curPor_save && portalIsValid(curPor_save)) {
-                // Return cursor to where we were
-                validate_cursor();
-                redraw_later(UPD_VALID);
-                enterPortal(curPor_save, TRUE);
+               //Return cursor to where we were
+               validate_cursor();
+               redraw_later(UPD_VALID);
+               enterPortal(curPor_save, TRUE);
             } ei (PORTAL_IS_POPUP(curPor))
-                // can't keep focus in popup portal
-                enterPortal(firstPor, TRUE);
+               //can't keep focus in popup portal
+               enterPortal(firstPor, TRUE);
             break;
          }
    exit_matched:
          matched = FALSE;
-         // look for other matches in the rest of the line if we
-         // are not at the end of it already
+         //look for other matches in the rest of the line if we are not at the end of it already
          if (def_regmatch.regprog == NULL
                 && action == ACTION_EXPAND
                 && !compl_status_sol()
                 && *startp != ZERO
-                && *(startp + utfCharLen(startp)) != ZERO)
+                && *(startp + utfCharLen(startp)) != ZERO
+         )
             goto search_line;
       }
       line_breakcheck();
@@ -2926,16 +2913,16 @@ fpip_end:
 
 private void
 show_pat_in_path(
-   Byte  *line,
+   CS  line,
    int       type,
    int       did_show,
    int       action,
-   FILE    *fp,
-   LineNr *lnum,
-   long    count)
-{
-   Byte  *p;
-   Unt  linelen;
+   FILE* fp,
+   LineNr* lnum,
+   long    count
+) {
+   CS p;
+   Unt linelen;
 
    if (did_show)
       msg_putchar('\n');   // cursor below last one
@@ -2969,16 +2956,16 @@ show_pat_in_path(
       if (gotInterruptG || type != FIND_DEFINE || p < line || *p != '\\')
           break;
 
-      if (fp != NULL) {
-          if (eeFgets(line, LSIZE, fp)) // end of file
-         break;
-          linelen = STRLEN(line);
-          ++*lnum;
+      if (fp) {
+         if (eeFgets(line, LSIZE, fp)) // end of file
+            break;
+         linelen = STRLEN(line);
+         ++*lnum;
       } else {
-          if (++*lnum > curBook->mem.lineCount)
-         break;
-          line = ml_get(*lnum);
-          linelen = ml_get_len(*lnum);
+         if (++*lnum > curBook->mem.lineCount)
+            break;
+         line = ml_get(*lnum);
+         linelen = ml_get_len(*lnum);
       }
       msg_putchar('\n');
    }
@@ -3048,26 +3035,25 @@ f_searchcount(Var *argvars, Var *returnVar) {
             return;
          }
          li = list_find(di->c.list, 0L);
-         if (li != NULL) {
+         if (li) {
             pos.lnum = varGetNumberChk(&li->c, OUT &error);
             if (error)
                 return;
          }
          li = list_find(di->c.list, 1L);
-         if (li != NULL) {
+         if (li) {
             pos.col = varGetNumberChk(&li->c, OUT &error) - 1;
             if (error)
                 return;
          }
-          li = list_find(di->c.list, 2L);
-          if (li != NULL)
-          {
-         pos.coladd = varGetNumberChk(&li->c, OUT &error);
-         if (error)
-             return;
-          }
+         li = list_find(di->c.list, 2L);
+         if (li) {
+            pos.coladd = varGetNumberChk(&li->c, OUT &error);
+            if (error)
+               return;
+         }
       }
-    }
+   }
 
    save_last_search_pattern();
    save_incsearch_state();
@@ -3109,13 +3095,13 @@ the_end:
 // be specified for "id". Return ID of added match, -1 on failure.
 private int
 match_add(
-   Portal   *wp,
-   Byte   *grp,
-   Byte   *pat,
-   int      prio,
-   int      id,
-   List   *pos_list)
-{
+   Portal* wp,
+   CS grp,
+   CS pat,
+   int prio,
+   int id,
+   List* pos_list
+) {
    MatchItem   *cur;
    MatchItem   *prev;
    MatchItem   *m;
@@ -3245,7 +3231,7 @@ match_add(
    // Insert new match.  The match list is in ascending order with regard to the match priorities.
    cur = wp->firstMatch;
    prev = cur;
-   while (cur != NULL && prio >= cur->priority) {
+   while (cur && prio >= cur->priority) {
       prev = cur;
       cur = cur->next;
    }
@@ -3318,22 +3304,20 @@ clear_matches(Portal *wp) {
 }
 
 // Get match from ID 'id' in portal 'wp'. Return NULL if match not found.
-private MatchItem *
-get_match(Portal *wp, int id) {
-    MatchItem *cur = wp->firstMatch;
+private MatchItem*
+get_match(Portal* wp, int id) {
+   MatchItem *cur = wp->firstMatch;
 
-    while (cur != NULL && cur->id != id)
-   cur = cur->next;
-    return cur;
+   while (cur != NULL && cur->id != id)
+      cur = cur->next;
+   return cur;
 }
 
 // Init for calling prepare_search_hl().
 void
 init_search_hl(Portal *wp, Match *search_hl) {
-   MatchItem *cur;
-
-   // Setup for match and 'hlsearch' hiliting.  Disable any previous match
-   cur = wp->firstMatch;
+   // Setup for match and @hlsearch hiliting.  Disable any previous match
+   MatchItem* cur = wp->firstMatch;
    while (cur) {
       cur->mit_hl.rm = cur->match;
       if (cur->hiId == SHORT)
@@ -3393,7 +3377,7 @@ next_search_hl_pos(
       match->rm.endpos[0].lnum = 0;
       match->rm.endpos[0].col = end;
       match->is_addpos = TRUE;
-      match->has_cursor = FALSE;
+      match->has_cursor = false;
       matchItem->currPos = found + 1;
       return 1;
    }
@@ -3408,12 +3392,12 @@ next_search_hl_pos(
 private void
 next_search_hl(
    Portal* port,
-   Match       *search_hl,
-   Match       *match,   // points to search_hl or a match
-   LineNr       lnum,
-   ColNr       mincol,   // minimal column for a match
-   MatchItem       *cur)   // to retrieve match positions if any
-{
+   Match* search_hl,
+   Match* match,   // points to search_hl or a match
+   LineNr lnum,
+   ColNr mincol,   // minimal column for a match
+   MatchItem* cur   // to retrieve match positions if any
+){
    LineNr   l;
    ColNr   matchcol;
    long   nmatched;
@@ -3446,12 +3430,10 @@ next_search_hl(
       // 2. Empty match: continue at next character.
       //    Break the loop if this is beyond the end of the line.
       if (match->lnum == 0)
-          matchcol = 0;
+         matchcol = 0;
       ei (match->rm.endpos[0].lnum == 0 && match->rm.endpos[0].col <= match->rm.startpos[0].col) {
-         Byte   *ml;
-
          matchcol = match->rm.startpos[0].col;
-         ml = memGetLine(match->book, lnum, false) + matchcol;
+         CS ml = memGetLine(match->book, lnum, false) + matchcol;
          if (*ml == ZERO) {
             ++matchcol;
             match->lnum = 0;
@@ -3463,11 +3445,9 @@ next_search_hl(
 
       match->lnum = lnum;
       if (match->rm.regprog != NULL) {
-         // Remember whether match->rm is using a copy of the regprog in
-         // cur->match.
-         int regprog_is_copy = (match != search_hl && cur != NULL
-             && match == &cur->mit_hl
-             && cur->match.regprog == cur->mit_hl.rm.regprog);
+         // Remember whether match->rm is using a copy of the regprog in cur->match.
+         int regprog_is_copy = (match != search_hl 
+               && cur && match == &cur->mit_hl && cur->match.regprog == cur->mit_hl.rm.regprog);
 
          nmatched = eeRegexec_multi(&match->rm, port, match->book, lnum, matchcol, &timed_out);
          // Copy the regprog, in case it got freed and recompiled.
@@ -3508,15 +3488,14 @@ next_search_hl(
 // Advance to the match in portal "wp" line "lnum" or past it.
 void
 prepare_search_hl(Portal *wp, Match *search_hl, LineNr lnum) {
-   MatchItem *cur;      // points to the match list
    Match   *match;      // points to search_hl or a match
-   int      pos_inprogress;   // marks that position match search is in progress
+   Boole pos_inprogress;   // marks that position match search is in progress
    int      n;
 
    // When using a multi-line pattern, start searching at the top
    // of the portal or just after a closed fold.
    // Do this both for search_hl and the match list.
-   cur = wp->firstMatch;
+   MatchItem* cur = wp->firstMatch; //points to the match list
    Boole didHiliteSearch = PORTAL_IS_POPUP(wp);  // skip search_hl in a popup portal
    while (cur || didHiliteSearch == FALSE) {
       if (didHiliteSearch == FALSE) {
@@ -3534,69 +3513,62 @@ prepare_search_hl(Portal *wp, Match *search_hl, LineNr lnum) {
          }
          if (cur)
             cur->currPos = 0;
-         pos_inprogress = TRUE;
+         pos_inprogress = true;
          n = 0;
-          while (match->first_lnum < lnum && (match->rm.regprog != NULL
-                    || (cur != NULL && pos_inprogress)))
-          {
-         next_search_hl(wp, search_hl, match, match->first_lnum, (ColNr)n,
-                         match == search_hl ? NULL : cur);
-         pos_inprogress = cur == NULL || cur->currPos == 0
-                              ? FALSE : TRUE;
-         if (match->lnum != 0)
-         {
-             match->first_lnum = match->lnum
-                   + match->rm.endpos[0].lnum
-                   - match->rm.startpos[0].lnum;
-             n = match->rm.endpos[0].col;
+         while (match->first_lnum < lnum && (match->rm.regprog || (cur && pos_inprogress))) {
+            next_search_hl(wp, search_hl, match, match->first_lnum, (ColNr)n,
+                            match == search_hl ? NULL : cur);
+            pos_inprogress = !(!cur || cur->currPos == 0);
+            if (match->lnum != 0) {
+                match->first_lnum = match->lnum
+                      + match->rm.endpos[0].lnum
+                      - match->rm.startpos[0].lnum;
+                n = match->rm.endpos[0].col;
+            } else {
+                ++match->first_lnum;
+                n = 0;
+            }
          }
-         else
-         {
-             ++match->first_lnum;
-             n = 0;
-         }
-          }
       }
-      if (match != search_hl && cur != NULL)
+      if (match != search_hl && cur)
           cur = cur->next;
-    }
+   }
 }
 
 // Update "match->has_cursor" based on the match in "match" and the cursor position.
 private void
-check_cur_search_hl(Portal *wp, Match *match) {
+check_cur_search_hl(Portal* wp, Match* match) {
    LineNr linecount = match->rm.endpos[0].lnum - match->rm.startpos[0].lnum;
 
    if (wp->cursor.lnum >= match->lnum
          && wp->cursor.lnum <= match->lnum + linecount
          && (wp->cursor.lnum > match->lnum || wp->cursor.col >= match->rm.startpos[0].col)
-         && (wp->cursor.lnum < match->lnum + linecount || wp->cursor.col < match->rm.endpos[0].col))
-      match->has_cursor = TRUE;
+         && (wp->cursor.lnum < match->lnum + linecount || wp->cursor.col < match->rm.endpos[0].col)
+   )
+      match->has_cursor = true;
    else
-      match->has_cursor = FALSE;
+      match->has_cursor = false;
 }
 
 //Prepare for 'hlsearch' and match hiliting in one portal line.
 //Return TRUE if there is such hiliting and set "searchDeco" to the current hilite decoration.
-int
+Boole
 searchPrepareHiliteLine(
-   Portal       *wp,
-   LineNr    lnum,
-   ColNr       mincol,
-   Byte       **line,
-   Match       *search_hl,
+   Portal* wp,
+   LineNr lnum,
+   ColNr mincol,
+   OUT CS* line,
+   Match* search_hl,
    OUT Short* searchHiId
 ){
-   MatchItem *cur;         // points to the match list
-   Match* match;         // points to search_hl or a match
-   Boole didHiliteSearch;      // flag to indicate whether search_hl has been processed or not
-   int      areaHiliting = FALSE;
+   Boole areaHiliting = false;
 
    // Handle hiliting the last used search pattern and matches.
    // Do this for both search_hl and the match list.
    // Do not use search_hl in a popup portal.
-   cur = wp->firstMatch;
-   didHiliteSearch = PORTAL_IS_POPUP(wp);
+   MatchItem* cur = wp->firstMatch; //points to the match list
+   Boole didHiliteSearch = PORTAL_IS_POPUP(wp); //whether search_hl has been processed or not
+   Match* match; //search_hl or a match
    while (cur || didHiliteSearch == FALSE) {
       if (didHiliteSearch == FALSE) {
          match = search_hl;
@@ -3607,7 +3579,7 @@ searchPrepareHiliteLine(
       match->endcol = MAXCOL;
       match->currHiId = SHORT;
       match->is_addpos = FALSE;
-      match->has_cursor = FALSE;
+      match->has_cursor = false;
       if (cur)
          cur->currPos = 0;
       next_search_hl(wp, search_hl, match, lnum, mincol, match == search_hl ? NULL : cur);
@@ -3640,7 +3612,7 @@ searchPrepareHiliteLine(
             match->currHiId = match->hiId;
             *searchHiId = match->hiId;
          }
-         areaHiliting = TRUE;
+         areaHiliting = true;
       }
       if (match != search_hl && cur)
          cur = cur->next;
@@ -3654,24 +3626,22 @@ searchPrepareHiliteLine(
 // column is endcol. Return the updated searchDeco.
 Short
 update_search_hl(
-   Portal       *wp,
-   LineNr    lnum,
-   ColNr       col,
-   Byte       **line,
-   Match       *search_hl,
-   int       didLineDecorations,
-   int       lcs_eol_one,
+   Portal* wp,
+   LineNr lnum,
+   ColNr col,
+   OUT CS* line,
+   Match* search_hl,
+   int didLineDecorations,
+   int lcs_eol_one,
    OUT Boole* onLastCol)
 {
-   MatchItem *cur;          // points to the match list
    Match* match;          // points to search_hl or a match
-   Boole didHiliteSearch;       // flag to indicate whether search_hl has been processed or not
-   int      pos_inprogress;       // marks that position match search is in progress
+   Boole pos_inprogress;       // marks that position match search is in progress
    Short      searchHiId = 0;
 
    // Do this for 'search_hl' and the match list (ordered by priority).
-   cur = wp->firstMatch;
-   didHiliteSearch = PORTAL_IS_POPUP(wp);
+   MatchItem* cur = wp->firstMatch; //the match list
+   Boole didHiliteSearch = PORTAL_IS_POPUP(wp); //whether search_hl has been processed or not
    while (cur || didHiliteSearch == FALSE) {
       if (didHiliteSearch == FALSE && (cur == NULL || cur->priority > SEARCH_HL_PRIORITY)) {
          match = search_hl;
@@ -3680,8 +3650,8 @@ update_search_hl(
          match = &cur->mit_hl;
       if (cur)
          cur->currPos = 0;
-      pos_inprogress = TRUE;
-      while (match->rm.regprog != NULL || (cur != NULL && pos_inprogress)) {
+      pos_inprogress = true;
+      while (match->rm.regprog != NULL || (cur && pos_inprogress)) {
          if (match->startcol != MAXCOL && col >= match->startcol && col < match->endcol) {
             int next_col = col + utfCharLen(*line + col);
 
@@ -3776,12 +3746,12 @@ get_prevcol_hl_flag(Portal *wp, Match *search_hl, long curcol) {
    // at the end of the line or when the match continues in the next line
    // (match includes the line break).
    if (!search_hl->is_addpos && (prevcol == (long)search_hl->startcol
-      || (prevcol > (long)search_hl->startcol
-                     && search_hl->endcol == MAXCOL)))
+      || (prevcol > (long)search_hl->startcol && search_hl->endcol == MAXCOL))
+   )
       prevcol_hl_flag = TRUE;
    else {
       cur = wp->firstMatch;
-      while (cur != NULL) {
+      while (cur) {
          if (!cur->mit_hl.is_addpos && (prevcol == (long)cur->mit_hl.startcol
             || (prevcol > (long)cur->mit_hl.startcol && cur->mit_hl.endcol == MAXCOL))
          ){
@@ -3796,17 +3766,16 @@ get_prevcol_hl_flag(Portal *wp, Match *search_hl, long curcol) {
 
 // Get hiliting for the char after the text in "char_attr" from 'hlsearch' or match hiliting
 void
-get_search_match_hl(Portal *wp, Match* search_hl, long col, OUT Short* charHiId) {
-
+get_search_match_hl(Portal* wp, Match* search_hl, long col, OUT Short* charHiId) {
    MatchItem* cur = wp->firstMatch;         // points to the match list
-   int isPopup = PORTAL_IS_POPUP(wp);  // flag to indicate whether search_hl has been processed or not
+   Boole isPopup = PORTAL_IS_POPUP(wp);  // flag to indicate whether search_hl has been processed or not
    Match* match; // points to search_hl or a match        
    while (cur || isPopup == FALSE) {
       if (isPopup == FALSE
             && ((cur && cur->priority > SEARCH_HL_PRIORITY) || !cur)
       ){
          match = search_hl;
-         isPopup = TRUE;
+         isPopup = true;
       } else
          match = &cur->mit_hl;
       if (col - 1 == (long)match->startcol && (match == search_hl || !match->is_addpos))
@@ -3817,7 +3786,7 @@ get_search_match_hl(Portal *wp, Match* search_hl, long col, OUT Short* charHiId)
 }
 
 private int
-matchadd_dict_arg(Var *tv, Portal** port) {
+matchadd_dict_arg(Var *tv, OUT Portal** port) {
    DictItem *di;
 
    if (tv->tag != VAR_BAG) {
@@ -3860,7 +3829,7 @@ f_getmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
          // match added with matchaddpos()
          for (int i = 0; i < cur->posLen; ++i) {
             lPosNoVirt   *llpos;
-            Byte builder[30];  // use 30 to avoid compiler warning
+            Byte buf[30];  // use 30 to avoid compiler warning
             List   *l;
 
             llpos = &cur->pos[i];
@@ -3872,8 +3841,8 @@ f_getmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
                list_append_number(l, (Long)llpos->col);
                list_append_number(l, (Long)llpos->len);
             }
-            SPRINTF(builder, S"pos%d", i + 1);
-            bagAddList(bag, builder, l);
+            SPRINTF(buf, S"pos%d", i + 1);
+            bagAddList(bag, buf, l);
          }
       } else {
          bagAddString(bag, S"pattern", cur->pattern);
@@ -3883,7 +3852,7 @@ f_getmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
       bagAddNumber(bag, S"id", (long)cur->id);
       listAppendBag(returnVar->list, bag);
       cur = cur->next;
-    }
+   }
 }
 
 void
@@ -3925,7 +3894,7 @@ f_setmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
       li = l->first;
       while (li) {
          int      i = 0;
-         Byte   builder[30];  // use 30 to avoid compiler warning
+         Byte   buf[30];  // use 30 to avoid compiler warning
          DictItem  *di;
          Byte   *group;
          int      priority;
@@ -3939,8 +3908,8 @@ f_setmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
 
             // match from matchaddpos()
             for (i = 1; i < 9; i++) {
-               sprintf((char *)builder, (char *)"pos%d", i);
-               if ((di = bagFind(d, mbText(builder))) != NULL) {
+               sprintf((char *)buf, (char *)"pos%d", i);
+               if ((di = bagFind(d, mbText(buf))) != NULL) {
                   if (di->c.tag != VAR_LIST)
                       return;
 
@@ -3951,19 +3920,19 @@ f_setmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
             }
          }
 
-          group = bagGetString(d, tConst("group"), TRUE);
-          priority = (int)bagGetNumber(d, tConst("priority"));
-          id = (int)bagGetNumber(d, tConst("id"));
+         group = bagGetString(d, tConst("group"), TRUE);
+         priority = (int)bagGetNumber(d, tConst("priority"));
+         id = (int)bagGetNumber(d, tConst("id"));
          if (i == 0) {
             match_add(port, group, bagGetString(d, tConst("pattern"), FALSE), priority, id, NULL);
          } else {
             match_add(port, group, NULL, priority, id, s);
             list_unref(s);
             s = NULL;
-          }
-          eeglFree(group);
+         }
+         eeglFree(group);
 
-          li = li->next;
+         li = li->next;
       }
       returnVar->number = 0;
    }
@@ -3971,18 +3940,16 @@ f_setmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
 
 void
 f_matchadd(Var *argvars UNUSED, Var *returnVar UNUSED) {
-   Byte   builder[NUMBUFLEN];
-   Byte   *grp;      // group
-   Byte   *pat;      // pattern
-   int      prio = 10;   // default priority
-   int      id = -1;
+   Byte buf[NUMBUFLEN];
+   int prio = 10;   // default priority
+   int id = -1;
    Boole error = false;
    Portal* port = curPor;
 
    returnVar->number = -1;
 
-   grp = convertVarToString(&argvars[0], builder);   // group
-   pat = convertVarToString(&argvars[1], builder);   // pattern
+   CS grp = convertVarToString(&argvars[0], buf);   // group
+   CS pat = convertVarToString(&argvars[1], buf);   // pattern
    if (grp == NULL || pat == NULL)
       return;
    if (argvars[2].tag != VAR_UNKNOWN) {
@@ -4007,15 +3974,14 @@ f_matchadd(Var *argvars UNUSED, Var *returnVar UNUSED) {
 // "matchaddpos()" function
 void
 f_matchaddpos(Var *argvars UNUSED, Var *returnVar UNUSED) {
-   Byte   builder[NUMBUFLEN];
-   Byte   *group;
-   int      prio = 10;
-   int      id = -1;
+   Byte buf[NUMBUFLEN];
+   int prio = 10;
+   int id = -1;
    Boole error = false;
    Portal* port = curPor;
    returnVar->number = -1;
 
-   group = convertVarToString(&argvars[0], builder);
+   CS group = convertVarToString(&argvars[0], buf);
    if (group == NULL)
       return;
 
@@ -4049,7 +4015,7 @@ f_matchaddpos(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 void
-f_matcharg(Var *argvars UNUSED, Var *returnVar) {
+f_matcharg(Var* argvars, Var *returnVar) {
    allocReturnList(returnVar);
 
    MatchItem *m;
@@ -4057,8 +4023,7 @@ f_matcharg(Var *argvars UNUSED, Var *returnVar) {
    int id = (int)tv_get_number(&argvars[0]);
    if (id >= 1 && id <= 3) {
       if ((m = get_match(curPor, id)) != NULL) {
-          list_append_string(returnVar->list,
-             syn_id2name(m->hiId), -1);
+          list_append_string(returnVar->list, syn_id2name(m->hiId), -1);
           list_append_string(returnVar->list, m->pattern, -1);
       } else {
          list_append_string(returnVar->list, NULL, -1);
@@ -4076,18 +4041,14 @@ f_matchdelete(Var *argvars UNUSED, Var *returnVar UNUSED) {
       returnVar->number = match_delete(port, (int)tv_get_number(&argvars[0]), TRUE);
 }
 
-/*
- * ":[N]match {group} {pattern}"
- * Sets nextComm to the start of the next command, if any.  Also called when
- * skipping commands to find the next command.
- */
+//":[N]match {group} {pattern}"
+//Set nextComm to the start of the next command, if any. Also called when
+//skipping commands to find the next command.
 void
-c_match(Invocation *invo) {
-   Byte   *p;
-   Byte   *g = NULL;
-   Byte   *end;
-   int      c;
-   int      id;
+c_match(Invocation* invo) {
+   CS g = NULL;
+   int c;
+   int id;
 
    if (invo->line2 <= 3)
       id = invo->line2;
@@ -4100,6 +4061,8 @@ c_match(Invocation *invo) {
    if (!invo->skip)
       match_delete(curPor, id, FALSE);
 
+   CS end;
+   CS p;
    if (endsComm(invo->arg))
       end = invo->arg;
    ei ((STRNICMP(invo->arg, "none", 4) == 0
@@ -4147,12 +4110,9 @@ void
 c_help(Invocation* invo) {
    CS arg;
    int      n;
-   Byte   *p;
    int      empty_fnum = 0;
    int      alt_fnum = 0;
-   Book* book;
    int len;
-   Byte* lang;
    int old_KeyTyped = KeyTyped;
 
    if (portErrorIfPopup(true))
@@ -4179,20 +4139,20 @@ c_help(Invocation* invo) {
       if (invo->skip)       // not executing commands
           return;
    } else
-      arg = E;
+      arg = Em;
 
    // remove trailing blanks
-   p = arg + STRLEN(arg) - 1;
+   CS p = arg + STRLEN(arg) - 1;
    while (p > arg && SPACE_OR_TAB(*p) && p[-1] != '\\') {
       *p-- = ZERO;
    }
 
    // Check for a specified language
-   lang = check_help_lang(arg);
+   CS lang = check_help_lang(arg);
 
    // When no argument given go to the index.
    if (*arg == ZERO)
-      arg = (CS)"help.txt";
+      arg = S"help.txt";
 
    // Check if there is a match for the argument.
    ExpandMatch matches = {};
@@ -4281,10 +4241,10 @@ c_help(Invocation* invo) {
    if (tag != NULL)
       do_tag(tag, DT_HELP, 1, FALSE, TRUE);
 
-   // Delete the empty buffer if we're not using it.  Careful: autocommands
-   // may have jumped to another portal, check that the buffer is not in a portal.
+   //Delete the empty book if we're not using it.  Careful: autocommands
+   //may have jumped to another portal, check that the book is not in a portal.
    if (empty_fnum != 0 && curBook->fiNum != empty_fnum) {
-      book = bookFindFileByBookNr(empty_fnum);
+      Book* book = bookFindFileByBookNr(empty_fnum);
       if (book && book->countPortals == 0)
           bookWipe(book, TRUE);
    }
@@ -4300,7 +4260,7 @@ erret:
 
 // ":helpclose": Close one help portal
 void
-c_helpclose(Invocation *invo UNUSED) {
+c_helpclose(Invocation* invo UNUSED) {
    Portal *port;
 
    FOR_ALL_PORTALS(port) {
@@ -4312,7 +4272,7 @@ c_helpclose(Invocation *invo UNUSED) {
 }
 
 //In an argument search for a language specifiers in the form "@xx".
-//Changes the "@" to ZERO if found, and returns a pointer to "xx". Returns NULL if not found.
+//Change the "@" to ZERO if found, and return a pointer to "xx". NULL if not found.
 CS
 check_help_lang(CS arg) {
    int len = (int)STRLEN(arg);
@@ -4326,8 +4286,8 @@ check_help_lang(CS arg) {
    return NULL;
 }
 
-//Return a heuristic indicating how well the given string matches.  The
-//smaller the number, the better the match.  This is the order of priorities,
+//Return a heuristic indicating how well the given string matches. The
+//smaller the number, the better the match. This is the order of priorities,
 //from best match to worst match:
 //  - Match with least alphanumeric characters is better.
 //  - Match with least total characters is better.
@@ -4338,25 +4298,22 @@ check_help_lang(CS arg) {
 int
 help_heuristic(
    CS matched_string,
-   int      offset,         // offset for match
-   int      wrong_case      // no matching case
+   int offset,         // offset for match
+   int wrong_case      // no matching case
 ){
-   int      num_letters;
-   Byte   *p;
-
-   num_letters = 0;
+   int num_letters = 0;
+   CS p;
    for (p = matched_string; *p; p++) {
       if (ASCII_ISALNUM(*p))
           num_letters++;
    } 
 
-   // Multiply the number of letters by 100 to give it a much bigger
-   // weighting than the number of characters.
-   // If there only is a match while ignoring case, add 5000.
-   // If the match starts in the middle of a word, add 10000 to put it
-   // somewhere in the last half.
-   // If the match is more than 2 chars from the start, multiply by 200 to
-   // put it after matches at the start.
+   //Multiply the number of letters by 100 to give it a much bigger
+   //weighting than the number of characters.
+   //If there only is a match while ignoring case, add 5000.
+   //If the match starts in the middle of a word, add 10000 to put it somewhere in the last half.
+   //If the match is more than 2 chars from the start, multiply by 200 to
+   //put it after matches at the start.
    if (ASCII_ISALNUM(matched_string[offset]) && offset > 0
              && ASCII_ISALNUM(matched_string[offset - 1])
    )
@@ -4365,8 +4322,7 @@ help_heuristic(
       offset *= 200;
    if (wrong_case)
       offset += 5000;
-   // Features are less interesting than the subjects themselves, but "+"
-   // alone is not a feature.
+   //Features are less interesting than the subjects themselves, but "+" alone is not a feature.
    if (matched_string[0] == '+' && matched_string[1] != ZERO)
       offset += 100;
    return (int)(100 * num_letters + STRLEN(matched_string) + offset);
@@ -4376,15 +4332,11 @@ help_heuristic(
 //that has been put after the tagname by find_tags().
 private int
 helpCompare(const void *s1, const void *s2) {
-   char    *p1;
-   char    *p2;
-   int       cmp;
-
-   p1 = *(char **)s1 + strlen(*(char **)s1) + 1;
-   p2 = *(char **)s2 + strlen(*(char **)s2) + 1;
+   CS p1 = *(Byte **)s1 + strlen(*(char**)s1) + 1;
+   CS p2 = *(Byte **)s2 + strlen(*(char**)s2) + 1;
 
    // Compare by help heuristic number first.
-   cmp = strcmp(p1, p2);
+   int cmp = STRCMP(p1, p2);
    if (cmp != 0)
       return cmp;
 
@@ -4457,9 +4409,9 @@ find_help_tags(
    d[0] = ZERO;
 
    if (STRNICMP(arg, "expr-", 5) == 0) {
-      // When the string starting with "expr-" and containing '?' and matches
-      // the table, it is taken literally (but ~ is escaped).  Otherwise '?'
-      // is recognized as a wildcard.
+      //When the string starting with "expr-" and containing '?' and matches
+      //the table, it is taken literally (but ~ is escaped). Otherwise '?'
+      //is recognized as a wildcard.
       for (i = (int)ARRAY_LENGTH(expr_table); --i >= 0; ) {
          if (STRCMP(arg + 5, expr_table[i]) == 0) {
             int si = 0, di = 0;
@@ -4487,25 +4439,25 @@ find_help_tags(
    }
     
    if (d[0] == ZERO) {// no match in table
-      // Replace "\S" with "/\\S", etc.  Otherwise every tag is matched.
-      // Also replace "\%^" and "\%(", they match every tag too.
-      // Also "\zs", "\z1", etc.
-      // Also "\@<", "\@=", "\@<=", etc.
-      // And also "\_$" and "\_^".
+      //Replace "\S" with "/\\S", etc.  Otherwise every tag is matched.
+      //Also replace "\%^" and "\%(", they match every tag too.
+      //Also "\zs", "\z1", etc.
+      //Also "\@<", "\@=", "\@<=", etc.
+      //And also "\_$" and "\_^".
       if (arg[0] == '\\'
          && ((arg[1] != ZERO && arg[2] == ZERO)
              || (firstOccurrence((CS)"%_z@", arg[1]) != NULL
-                           && arg[2] != ZERO)))
-      {
+                           && arg[2] != ZERO))
+      ) {
          eeSnprintf(d, IOSIZE, "/\\\\%s", arg + 1);
-         // Check for "/\\_$", should be "/\\_\$"
+         //Check for "/\\_$", should be "/\\_\$"
          if (d[3] == '_' && d[4] == '$')
             STRCPY(d + 4, "\\$");
       } else {
-         // Replace:
-         // "[:...:]" with "\[:...:]"
-         // "[++...]" with "\[++...]"
-         // "\{" with "\\{"         -- matching "} \}"
+         //Replace:
+         //"[:...:]" with "\[:...:]"
+         //"[++...]" with "\[++...]"
+         //"\{" with "\\{"         -- matching "} \}"
          if ((arg[0] == '[' && (arg[1] == ':'
              || (arg[1] == '+' && arg[2] == '+')))
              || (arg[0] == '\\' && arg[1] == '{'))
@@ -4515,30 +4467,29 @@ find_help_tags(
          if (*arg == '(' && arg[1] == '\'')
             arg++;
          for (s = arg; *s; ++s)  {
-             // Replace "|" with "bar" and '"' with "quote" to match the name of
-             // the tags for these commands.
-             // Replace "*" with ".*" and "?" with "." to match command line
-             // completion.
-             // Insert a backslash before '~', '$' and '.' to avoid their
-             // special meaning.
-             if (d - IObuff > IOSIZE - 10)   // getting too long!?
-            break;
-             switch (*s) {
-             case '|':   STRCPY(d, "bar");
+            //Replace "|" with "bar" and '"' with "quote" to match the name of
+            //the tags for these commands.
+            //Replace "*" with ".*" and "?" with "." to match command line completion.
+            //Insert a backslash before '~', '$' and '.' to avoid their special meaning.
+            if (d - IObuff > IOSIZE - 10)   // getting too long!?
+               break;
+               
+            switch (*s) {
+            case '|':   STRCPY(d, "bar");
                d += 3;
                continue;
-             case '"':   STRCPY(d, "quote");
+            case '"':   STRCPY(d, "quote");
                d += 5;
                continue;
-             case '*':   *d++ = '.';
+            case '*':   *d++ = '.';
                break;
-             case '?':   *d++ = '.';
+            case '?':   *d++ = '.';
                continue;
-             case '$':
-             case '.':
-             case '~':   *d++ = '\\';
+            case '$':
+            case '.':
+            case '~':   *d++ = '\\';
                break;
-             }
+            }
 
             // Replace "^x" by "CTRL-X". Don't do this for "^_" to make
             // ":help i_^_CTRL-D" work.
@@ -4547,66 +4498,65 @@ find_help_tags(
                   || firstOccurrence((CS)"?@[\\]^", s[1]) != NULL))
             ){
                if (d > IObuff && d[-1] != '_' && d[-1] != '\\')
-                   *d++ = '_';      // prepend a '_' to make x_CTRL-x
+                  *d++ = '_';      // prepend a '_' to make x_CTRL-x
                STRCPY(d, "CTRL-");
                d += 5;
                if (*s < ' ') {
-                   *d++ = *s + '@';
-                   if (d[-1] == '\\')
-                  *d++ = '\\';   // double a backslash
+                  *d++ = *s + '@';
+                  if (d[-1] == '\\')
+                     *d++ = '\\';   // double a backslash
                } else
                   *d++ = *++s;
                if (s[1] != ZERO && s[1] != '_')
-                   *d++ = '_';      // append a '_'
+                  *d++ = '_';      // append a '_'
                continue;
             } ei (*s == '^')      // "^" or "CTRL-^" or "^_"
                *d++ = '\\';
 
-            // Insert a backslash before a backslash after a slash, for search
-            // pattern tags: "/\|" --> "/\\|".
+            //Insert a backslash before a backslash after a slash, for search
+            //pattern tags: "/\|" --> "/\\|".
             ei (s[0] == '\\' && s[1] != '\\' && *arg == '/' && s == arg + 1)
                *d++ = '\\';
 
-            // "CTRL-\_" -> "CTRL-\\_" to avoid the special meaning of "\_" in
-            // "CTRL-\_CTRL-N"
+            // "CTRL-\_" -> "CTRL-\\_" to avoid the special meaning of "\_" in "CTRL-\_CTRL-N"
             if (STRNICMP(s, "CTRL-\\_", 7) == 0) {
                STRCPY(d, "CTRL-\\\\");
                d += 7;
                s += 6;
-             }
+            }
 
-             *d++ = *s;
+            *d++ = *s;
 
-            // If tag contains "({" or "([", tag terminates at the "(".
-            // This is for help on functions, e.g.: abs({expr}).
+            //If tag contains "({" or "([", tag terminates at the "(".
+            //This is for help on functions, e.g.: abs({expr}).
             if (*s == '(' && (s[1] == '{' || s[1] =='['))
                break;
 
-            // If tag starts with ', toss everything after a second '. Fixes
-            // CTRL-] on 'option'. (would include the trailing '.').
+            //If tag starts with ', toss everything after a second '. Fixes
+            //CTRL-] on 'option'. (would include the trailing '.').
             if (*s == '\'' && s > arg && *arg == '\'')
                break;
-            // Also '{' and '}'.
+            //Also '{' and '}'.
             if (*s == '}' && s > arg && *arg == '{')
                break;
-        }
-        *d = ZERO;
+         }
+         *d = ZERO;
 
-        if (*IObuff == '`') {
+         if (*IObuff == '`') {
             if (d > IObuff + 2 && d[-1] == '`') {
-           // remove the backticks from `command`
-           mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
-           d[-2] = ZERO;
+               // remove the backticks from `command`
+               mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
+               d[-2] = ZERO;
             } ei (d > IObuff + 3 && d[-2] == '`' && d[-1] == ',') {
-           // remove the backticks and comma from `command`,
-           mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
-           d[-3] = ZERO;
+               // remove the backticks and comma from `command`,
+               mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
+               d[-3] = ZERO;
             } ei (d > IObuff + 4 && d[-3] == '`' && d[-2] == '\\' && d[-1] == '.') {
-           // remove the backticks and dot from `command`\.
-           mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
-           d[-4] = ZERO;
+               // remove the backticks and dot from `command`\.
+               mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
+               d[-4] = ZERO;
             }
-        }
+         }
       }
    }
 
@@ -4632,9 +4582,9 @@ find_help_tags(
 void
 cleanup_help_tags(OUT ExpandMatch* matches) {
    int len;
-   Byte builder[4];
-   builder[3] = ZERO;
-   CS p = builder;
+   Byte buf[4];
+   buf[3] = ZERO;
+   CS p = buf;
 
    if (p_hlg[0] != ZERO && (p_hlg[0] != 'e' || p_hlg[1] != 'n')) {
       *p++ = '@';
@@ -4650,22 +4600,24 @@ cleanup_help_tags(OUT ExpandMatch* matches) {
          //Sorting on priority means the same item in another language may
          //be anywhere. Search all items for a match up to the "@en".
          Unt j;
-         for (j = 0; j < matches->len; ++j)
+         for (j = 0; j < matches->len; ++j) {
             if (j != i && (int)STRLEN(matches->c[j]) == len + 3
-                  && STRNCMP(matches->c[i], matches->c[j], len + 1) == 0)
+                  && STRNCMP(matches->c[i], matches->c[j], len + 1) == 0
+            )
                 break;
+         } 
          if (j == matches->len)
             //item only exists with @en, remove it
             matches->c[i][len] = ZERO;
       }
    }
 
-   if (*builder != ZERO) {
+   if (*buf != ZERO) {
       for (Unt i = 0; i < matches->len; ++i) {
          len = (int)STRLEN(matches->c[i]) - 3;
          if (len <= 0)
             continue;
-         if (STRCMP(matches->c[i] + len, builder) == 0) {
+         if (STRCMP(matches->c[i] + len, buf) == 0) {
             //remove the default language
             matches->c[i][len] = ZERO;
          }
@@ -4676,17 +4628,16 @@ cleanup_help_tags(OUT ExpandMatch* matches) {
 // Called when starting to edit a buffer for a help file.
 void
 prepare_help_buffer(void) {
-
    curBook->kind = BOOK_HELP;
    optSetByName(S"buftype", optEnum(BOOK_HELP), SET_LOCAL);
 
-   // Always set these options after jumping to a help tag, because the
-   // user may have an autocommand that gets in the way.
-   // When adding an option here, also update the help file helphelp.txt.
+   //Always set these options after jumping to a help tag, because the
+   //user may have an autocommand that gets in the way.
+   //When adding an option here, also update the help file helphelp.txt.
 
-   // Accept all ASCII chars for keywords, except ' ', '*', '"', '|', and
-   // latin1 word characters (for translated help files).
-   // Only set it when needed, bufInitCharsForKeywords() is some work.
+   //Accept all ASCII chars for keywords, except ' ', '*', '"', '|', and
+   //latin1 word characters (for translated help files).
+   //Only set it when needed, bufInitCharsForKeywords() is some work.
    CS p = S"!-~,^*,^|,^\",192-255";
    if (STRCMP(curBook->o.isKeyword, p) != 0) {
       optChangeStringOptionDirect(S"iskeyword", p, OPT_LOCAL, 0);
@@ -4839,9 +4790,9 @@ searchFixHelpBook(void) {
 
                      cp = IObuff;
                      ml_append(lnum, cp, (ColNr)0, FALSE);
-                      if (cp != IObuff)
-                     eeglFree(cp);
-                      ++lnum;
+                     if (cp != IObuff)
+                        eeglFree(cp);
+                     ++lnum;
                   }
                   fclose(fd);
                }
@@ -4854,25 +4805,25 @@ searchFixHelpBook(void) {
 
 // ":exusage"
 void
-c_exusage(Invocation *invo UNUSED) {
-   executeCommLine((CS)"help ex-cmd-index");
+c_exusage(Invocation* invo UNUSED) {
+   executeCommLine(S"help ex-cmd-index");
 }
 
 // ":usage"
 void
-c_usage(Invocation *invo UNUSED) {
-   executeCommLine((CS)"help normal-index");
+c_usage(Invocation* invo UNUSED) {
+   executeCommLine(S"help normal-index");
 }
 
 // Generate tags in one help directory.
 private void
 generateHelpTagsForDir(
-   Byte   *dir,      // doc directory
-   Byte   *ext,      // suffix, ".txt", ".itx", ".frx", etc.
-   Byte   *tagfname,   // "tags" for English, "tags-fr" for French.
-   int      add_help_tags,   // add "help-tags" tag
-   int      ignore_writeerr)    // ignore write error
-{
+   CS dir,              //doc directory
+   CS ext,              // suffix, ".txt", ".itx", ".frx", etc.
+   CS tagfname,         //"tags" for English, "tags-fr" for French.
+   int add_help_tags,   //add "help-tags" tag
+   int ignore_writeerr  //ignore write error
+){
    ArrayList   ga;
    Byte   *p1, *p2;
    Byte* s;
@@ -4943,14 +4894,12 @@ generateHelpTagsForDir(
             this_utf8 = MAYBE;
             for (s = IObuff; *s != ZERO; ++s) {
                if (*s >= 0x80) {
-                  int l;
-
                   this_utf8 = TRUE;
-                  l = utf_ptr2len(s);
+                  int l = utf_ptr2len(s);
                   if (l == 1) {
-                      // Illegal UTF-8 byte sequence.
-                      this_utf8 = FALSE;
-                      break;
+                     // Illegal UTF-8 byte sequence.
+                     this_utf8 = FALSE;
+                     break;
                   }
                   s += l - 1;
                }
@@ -5080,9 +5029,9 @@ do_helptags(Byte *dirname, int add_help_tags, int ignore_writeerr) {
    int      len;
    int      j;
    ArrayList   ga;
-   Byte   lang[2];
-   Byte   ext[5];
-   Byte   fname[8];
+   Byte lang[2];
+   Byte ext[5];
+   Byte fname[8];
    ExpandMatch files = {};
 
    // Get a list of all files in the help directory and in subdirectories.
@@ -5147,20 +5096,20 @@ do_helptags(Byte *dirname, int add_help_tags, int ignore_writeerr) {
 }
 
 private void
-helptagsCb(Byte *fname, void *cookie) {
+helptagsCb(CS fname, void *cookie) {
    do_helptags(fname, *(int *)cookie, TRUE);
 }
 
 // ":helptags"
 void
-c_helptags(Invocation *invo) {
+c_helptags(Invocation* invo) {
    Expand expand;
-   Byte   *dirname;
-   int      add_help_tags = FALSE;
+   CS dirname;
+   Boole add_help_tags = false;
 
    // Check for ":helptags ++t {dir}".
    if (STRNCMP(invo->arg, "++t", 3) == 0 && SPACE_OR_TAB(invo->arg[3])) {
-      add_help_tags = TRUE;
+      add_help_tags = true;
       invo->arg = skipwhite(invo->arg + 3);
    }
 
@@ -5179,6 +5128,5 @@ c_helptags(Invocation *invo) {
       eeglFree(dirname);
    }
 }
-
 
 //}}}
