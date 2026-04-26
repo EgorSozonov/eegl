@@ -12168,7 +12168,7 @@ private void unserialize_visualinfo(BufInfo *bi, VisualInfo *info);
 private void u_saveline(LineNr lnum);
 private void u_blockfree(Book *book);
 
-#define U_ALLOC_LINE(size) lalloc(size, FALSE)
+#define U_ALLOC_LINE(size) lalloc(size, false)
 
 // used in undo_end() to report number of added and deleted lines
 private long   u_newcount, u_oldcount;

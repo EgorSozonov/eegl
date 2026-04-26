@@ -1,7 +1,7 @@
 //EEGL - the Extensible development Environment for GNU/Linux
 //Licensed under GPLv3, see the LICENSE file (c) Egor Sozonov
 
-//## diff.c: code for diffing two, three or four buffers.
+//## diff.c: code for diffing two, three or four books.
 
 //There are three ways to diff:
 //- Shell out to an external diff program, using files.
@@ -14,7 +14,7 @@
 
 struct DiffBlock {
    DiffBlock* df_next;
-   LineNr   lnum[DB_COUNT];   // line number in buffer
+   LineNr   lnum[DB_COUNT];   // line number in book
    LineNr   count[DB_COUNT];   // nr of inserted/changed lines
    Boole isLinematched;  //has the linematch algorithm run on this diff hunk to divide it into
            // smaller diff hunks?
@@ -80,7 +80,7 @@ typedef struct s_chastore {
 
 
 typedef long (*FindFn)(
-   CS line, long line_len, char *buffer, long buffer_size, void *priv
+   CS line, long line_len, char* buffer, long buffer_size, void *priv
 );
 
 typedef int (*XdlEmitHunkConsumeFn)(
@@ -385,7 +385,7 @@ unwrap_indexes(const int *values, const int *diff_len, const Unt ndiffs) {
 }
 
 /// populate the values of the linematch algorithm tensor, and find the best
-/// decision for how to compare the relevant lines from each of the buffers at
+/// decision for how to compare the relevant lines from each of the books at
 /// each point in the tensor
 /// @param df_iters
 /// @param ch_dim
@@ -432,62 +432,50 @@ populate_tensor(
 
 // algorithm to find an optimal alignment of lines of a diff block with 2 or
 // more files. The algorithm is generalized to work for any number of files
-// which corresponds to another dimension added to the tensor used in the
-// algorithm
+// which corresponds to another dimension added to the tensor used in the algorithm
 //
 // for questions and information about the linematch algorithm please contact
 // Jonathon White (jonathonwhite@protonmail.com)
 //
 //for explanation, a summary of the algorithm in 3 dimensions (3 files compared) follows
 //
-//The 3d case (for 3 buffers) of the algorithm implemented when diffopt
-//'linematch' is enabled. The algorithm constructs a 3d tensor to
-//compare a diff between 3 buffers. The dimensions of the tensor are
-//the length of the diff in each buffer plus 1 A path is constructed by
-//moving from one edge of the cube/3d tensor to the opposite edge.
-//Motions from one cell of the cube to the next represent decisions. In
-//a 3d cube, there are a total of 7 decisions that can be made,
-//represented by the enum df_path3_choice which is defined in
-//buffer_defs.h a comparison of buffer 0 and 1 represents a motion
-//toward the opposite edge of the cube with components along the 0 and
-//1 axes.  a comparison of buffer 0, 1, and 2 represents a motion
-//toward the opposite edge of the cube with components along the 0, 1,
-//and 2 axes. A skip of buffer 0 represents a motion along only the 0
-//axis. For each action, a point value is awarded, and the path is
-//saved for reference later, if it is found to have been the optimal
-//path. The optimal path has the highest score.  The score is
-//calculated as the summation of the total characters matching between
-//all of the lines which were compared. The structure of the algorithm
-//is that of a dynamic programming problem.  We can calculate a point
-//i,j,k in the cube as a function of i-1, j-1, and k-1. To find the
-//score and path at point i,j,k, we must determine which path we want
-//to use, this is done by looking at the possibilities and choosing
-//the one which results in the local highest score.  The total highest
-//scored path is, then in the end represented by the cell in the
-//opposite corner from the start location.  The entire algorithm
-//consists of populating the 3d cube with the optimal paths from which it may have came.
+//The 3d case (for 3 books) of the algorithm implemented when diffopt 'linematch' is enabled. 
+//The algorithm constructs a 3d tensor to compare a diff between 3 books. The dimensions of 
+//the tensor are the length of the diff in each buffer plus 1 A path is constructed by
+//moving from one edge of the cube/3d tensor to the opposite edge. Motions from one cell of the 
+//cube to the next represent decisions. In a 3d cube, there are a total of 7 decisions that can 
+//be made, represented by the enum df_path3_choice which is defined in buffer_defs.h a comparison 
+//of buffer 0 and 1 represents a motion toward the opposite edge of the cube with components along 
+//the 0 and 1 axes.  a comparison of buffer 0, 1, and 2 represents a motion toward the opposite 
+//edge of the cube with components along the 0, 1, and 2 axes. A skip of buffer 0 represents a 
+//motion along only the 0 axis. For each action, a point value is awarded, and the path is
+//saved for reference later, if it is found to have been the optimal path. The optimal path has 
+//the highest score. The score is calculated as the summation of the total characters matching 
+//between all of the lines which were compared. The structure of the algorithm is that of a dynamic
+//programming problem. We can calculate a point i,j,k in the cube as a function of i-1, j-1, 
+//and k-1. To find the score and path at point i,j,k, we must determine which path we want
+//to use, this is done by looking at the possibilities and choosing the one which results in the 
+//local highest score. The total highest scored path is, then in the end represented by the cell 
+//in the opposite corner from the start location. The entire algorithm consists of populating the 
+//3d cube with the optimal paths from which it may have came.
 //
 //Optimizations:
-//As the function to calculate the cell of a tensor at point i,j,k is a
-//function of the cells at i-1, j-1, k-1, the whole tensor doesn't need
-//to be stored in memory at once. In the case of the 3d cube, only two
-//slices (along k and j axis) are stored in memory. For the 2d matrix
-//(for 2 files), only two rows are stored at a time. The next/previous
-//slice (or row) is always calculated from the other, and they alternate
-//at each iteration.
-//In the 3d case, 3 arrays are populated to memorize the score (matched
-//characters) of the 3 buffers, so a redundant calculation of the
-//scores does not occur
-//param [out] [allocated] decisions
-//return the length of decisions
+//As the function to calculate the cell of a tensor at point i,j,k is a function of the cells at 
+//i-1, j-1, k-1, the whole tensor doesn't need to be stored in memory at once. In the case of the 
+//3d cube, only two slices (along k and j axis) are stored in memory. For the 2d matrix
+//(for 2 files), only two rows are stored at a time. The next/previous slice (or row) is always 
+//calculated from the other, and they alternate at each iteration. In the 3d case, 3 arrays are 
+//populated to memorize the score (matched characters) of the 3 books, so a redundant 
+//calculation of the scores does not occur param [out] [allocated] decisions return the length of 
+//decisions
 private Unt
 linematch_nbuffers(
-    const MmFile   **diff_blk,
-    const int      *diff_len,
-    const Unt   ndiffs,
-    int         **decisions,
-    int         iwhite)
-{
+   const MmFile** diff_blk,
+   const int* diff_len,
+   const Unt   ndiffs,
+   OUT int** decisions,
+   int iwhite
+) {
    assert(ndiffs <= LN_MAX_BUFS);
 
    Unt memsize = 1;
@@ -499,7 +487,7 @@ linematch_nbuffers(
    }
 
    // create the flattened path matrix
-   DiffCmpPath *diffcmppath = lalloc(sizeof(DiffCmpPath) * memsize, TRUE);
+   DiffCmpPath *diffcmppath = lalloc(sizeof(DiffCmpPath) * memsize, true);
 
    // allocate memory here
    Unt n = (Unt)pow(2.0, (double)ndiffs);
@@ -517,7 +505,7 @@ linematch_nbuffers(
    const Unt u = unwrap_indexes(diff_len, diff_len, ndiffs);
    DiffCmpPath *startNode = &diffcmppath[u];
 
-   *decisions = lalloc(sizeof(int) * memsize_decisions, TRUE);
+   *decisions = lalloc(sizeof(int) * memsize_decisions, true);
 
    Unt n_optimal = 0;
    test_charmatch_paths(startNode, 0);
@@ -630,12 +618,12 @@ typedef enum {
 
 // two diff inputs and one DiffResult
 typedef struct {
-    DiffInp       orig;     // original file input
-    DiffInp       new;      // new file input
-    DiffResult       dio_diff;     // diff DiffResult
-    int          dio_internal; // using internal diff
-    OutputFormat    dio_outfmt;   // internal diff output format
-    int          dio_ctxlen;   // unified diff context length
+   DiffInp       orig;     // original file input
+   DiffInp       new;      // new file input
+   DiffResult       dio_diff;     // diff DiffResult
+   int          dio_internal; // using internal diff
+   OutputFormat    dio_outfmt;   // internal diff output format
+   int          dio_ctxlen;   // unified diff context length
 } DiffIo;
 
 private Unt bookIndex(Book *);
@@ -646,7 +634,7 @@ private int checkSanity(Tab* t, DiffBlock *dp);
 private int check_external_diff(DiffIo *diffio);
 private int diff_file(DiffIo *diffio);
 private int diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2);
-private int diff_cmp(Byte *s1, Byte *s2);
+private int diff_cmp(CS s1, CS s2);
 private void diff_fold_update(DiffBlock *dp, Unt skip_idx);
 private void diff_read(int idx_orig, int idx_new, DiffIo *dio);
 private void diff_copy_entry(DiffBlock *dprev, DiffBlock *dp, int idx_orig, int idx_new);
@@ -668,7 +656,7 @@ clear_diffblock(DiffBlock *dp) {
    eeglFree(dp);
 }
 
-// Called when deleting or unloading a buffer: No longer make a diff with it.
+// Called when deleting or unloading a book: No longer make a diff with it.
 void
 diffDeleteBook(Book* book) {
    Tab   *t;
@@ -678,9 +666,8 @@ diffDeleteBook(Book* book) {
          t->diffbuf[i] = NULL;
          t->diff_invalid = TRUE;
          if (t == curtab) {
-            // don't redraw right away, more might change or buffer state
-            // is invalid right now
-            need_diff_redraw = TRUE;
+            // don't redraw right away, more might change or book state is invalid right now
+            diffNeedsRedrawG = true;
             redraw_later(UPD_VALID);
          }
       }
@@ -709,11 +696,10 @@ diffBookAdjust(Portal* port) {
       diffAddBook(port->book);
 }
 
-// Add a buffer to make diffs for.
-// Call this when a new buffer is being edited in the current portal where @diff is set.
-// Marks the current buffer as being part of the diff and requiring updating.
-// This must be done before any autocmd, because a command may use info
-// about the screen contents.
+//Add a book to make diffs for.
+//Call this when a new book is being edited in the current portal where @diff is set.
+//Mark the current book as being part of the diff and requiring updating.
+//This must be done before any autocmd, because a command may use info about the screen contents.
 void
 diffAddBook(Book* book) {
    if (bookIndex(book) != UNT)
@@ -731,7 +717,7 @@ diffAddBook(Book* book) {
    showErrFmtMsg(_(e_cannot_diff_more_than_nr_buffers), DB_COUNT);
 }
 
-// Remove all buffers to make diffs for.
+// Remove all books to make diffs for.
 private void
 clearAllBooks(void) {
    for (int i = 0; i < DB_COUNT; ++i) {
@@ -754,7 +740,7 @@ bookIndex(Book* book) {
    return UNT;
 }
 
-//Find buffer "book" in the list of diff buffers for tab "t". 
+//Find book "book" in the list of diff books for tab "t". 
 //Return its index or DB_COUNT if not found
 private Unt
 bookIndexInTab(Book* book, Tab* t) {
@@ -765,10 +751,10 @@ bookIndexInTab(Book* book, Tab* t) {
    return UNT;
 }
 
-// Mark the diff info involving buffer as invalid, it will be updated when info is requested.
+// Mark the diff info involving book as invalid, it will be updated when info is requested.
 void
 diff_invalidate(Book* book) {
-   Tab   *t;
+   Tab* t;
    FOR_ALL_TABS(t) {
       Unt i = bookIndexInTab(book, t);
       if (i != UNT) {
@@ -782,13 +768,13 @@ diff_invalidate(Book* book) {
 // Called by mark_adjust(): update line numbers in "curBook".
 void
 diff_mark_adjust(
-   LineNr   line1,
-   LineNr   line2,
-   long   amount,
-   long   amount_after
+   LineNr line1,
+   LineNr line2,
+   long amount,
+   long amount_after
 ){
    Tab   *t;
-   // Handle all tabs that use the current buffer in a diff.
+   // Handle all tabs that use the current book in a diff.
    FOR_ALL_TABS(t) {
       Unt idx = bookIndexInTab(curBook, t);
       if (idx != UNT)
@@ -804,18 +790,18 @@ diff_mark_adjust(
 private void
 diff_mark_adjust_tp(
    Tab* t,
-   Unt      idx,
-   LineNr   line1,
-   LineNr   line2,
-   long   amount,
-   long   amount_after
+   Unt idx,
+   LineNr line1,
+   LineNr line2,
+   long amount,
+   long amount_after
 ) {
-   DiffBlock   *dnext;
+   DiffBlock* dnext;
    int      inserted, deleted;
    int      n, off;
    LineNr   last;
    LineNr   lnum_deleted = line1;   // lnum of remaining deletion
-   int      check_unchanged;
+   Boole      check_unchanged;
 
    if (diff_internal()) {
       // Will update diffs before redrawing.  Set _invalid to update the
@@ -907,7 +893,7 @@ diff_mark_adjust_tp(
                break;   // nothing left to change
             dp->lnum[idx] += amount_after;
          } else {
-            check_unchanged = FALSE;
+            check_unchanged = false;
 
             // 2. 3. 4. 5.: inserted/deleted lines touching this diff.
             if (deleted > 0) {
@@ -929,7 +915,7 @@ diff_mark_adjust_tp(
                      off = dp->lnum[idx] - lnum_deleted;
                      n = off;
                      dp->count[idx] -= line2 - dp->lnum[idx] + 1;
-                     check_unchanged = TRUE;
+                     check_unchanged = true;
                   }
                   dp->lnum[idx] = line1;
                } else {
@@ -943,7 +929,7 @@ diff_mark_adjust_tp(
                         lnum_deleted = dp->df_next->lnum[idx];
                      } else
                         n = line2 - last;
-                     check_unchanged = TRUE;
+                     check_unchanged = true;
                   } else {
                       // 3. delete lines inside the diff
                       n = 0;
@@ -964,7 +950,7 @@ diff_mark_adjust_tp(
                if (dp->lnum[idx] <= line1) {
                   // inserted lines somewhere in this diff
                   dp->count[idx] += inserted;
-                  check_unchanged = TRUE;
+                  check_unchanged = true;
                } else
                   // inserted lines somewhere above this diff
                   dp->lnum[idx] += inserted;
@@ -1022,7 +1008,7 @@ diff_mark_adjust_tp(
 
    if (t == curtab) {
       // Don't redraw right away, this updates the diffs, which can be slow.
-      need_diff_redraw = TRUE;
+      diffNeedsRedrawG = true;
 
       //Need to recompute the scroll binding, may remove or add filler lines (e.g., when adding 
       //lines above topLine). But it's slow when making many changes, postpone until redrawing.
@@ -1047,15 +1033,14 @@ diff_alloc_new(Tab* t, DiffBlock* dprev, DiffBlock* dp) {
 }
 
 //Check if the diff block "dp" can be made smaller for lines at the start and end that are equal.
-//Called after inserting lines. This may DiffResult in a change where all buffers have zero lines, 
+//Called after inserting lines. This may DiffResult in a change where all books have 0 lines, 
 //the caller must take care of removing it.
 private void
 diff_check_unchanged(Tab* t, DiffBlock *dp) {
    CS line_org;
    Unt dir = FORWARD;
 
-   // Find the first buffers, use it as the original, compare the other
-   // buffer lines against this one.
+   // Find the first book, use it as the original, compare the other book lines against this one.
    Unt i_org;
    for (i_org = 0; i_org < DB_COUNT; ++i_org) {
       if (t->diffbuf[i_org] != NULL)
@@ -1085,7 +1070,7 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
                continue;
             if (dir == BACKWARD)
                off_new = dp->count[i_new] - 1;
-            // if other buffer doesn't have this line, it was inserted
+            // if other book doesn't have this line, it was inserted
             if (off_new < 0 || off_new >= dp->count[i_new])
                break;
             if (diff_cmp(line_org, memGetLine(t->diffbuf[i_new],
@@ -1094,11 +1079,11 @@ diff_check_unchanged(Tab* t, DiffBlock *dp) {
          }
          eeglFree(line_org);
 
-         //Stop when a line isn't equal in all diff buffers.
+         //Stop when a line isn't equal in all diff books.
          if (i_new != DB_COUNT)
             break;
 
-         //Line matched in all buffers, remove it from the diff.
+         //Line matched in all books, remove it from the diff.
          for (Unt i_new = i_org; i_new < DB_COUNT; ++i_new) {
             if (t->diffbuf[i_new] != NULL) {
                if (dir == FORWARD)
@@ -1126,18 +1111,18 @@ checkSanity(Tab* t, DiffBlock *dp) {
    return OK;
 }
 
-//Mark all diff buffers in the current tab for redraw.
+//Mark all diff books in the current tab for redraw.
 void
 diff_redraw(int dofold)  {    // also recompute the folds
    Portal   *po;
    Portal   *other = NULL;
-   int      used_max_fill_other = FALSE;
-   int      used_max_fill_curPor = FALSE;
-   int      n;
+   int used_max_fill_other = FALSE;
+   int used_max_fill_curPor = FALSE;
+   int n;
 
-   need_diff_redraw = FALSE;
+   diffNeedsRedrawG = false;
    FOR_ALL_PORTALS(po) {
-      // when closing portals or wiping buffers skip invalid portal
+      // when closing portals or wiping books skip invalid portal
       if (!po->o.diff || !bookIsValid(po->book))
           continue;
 
@@ -1191,7 +1176,7 @@ clear_diffout(DiffResult* dout) {
       mch_remove(dout->dout_fname);
 }
 
-//Write buffer "book" to a memory buffer. Return FAIL for failure.
+//Write "book" to a memory buffer. Return FAIL for failure.
 private int
 diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
    if (end < 0)
@@ -1211,12 +1196,12 @@ diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
    CS ptr = tryBigAlloc(len);
    if (!ptr) {
       //Allocating memory failed. This can happen, because we try to read
-      //the whole buffer text into memory. Set the failed flag, the diff
+      //the whole book text into memory. Set the failed flag, the diff
       //will be retried with external diff. The flag is never reset.
       book->diffFailed = TRUE;
       if (p_verbose > 0) {
          verbose_enter();
-         smsg(_("Not enough memory to use internal diff for buffer \"%s\""), book->currFileName);
+         smsg(_("Not enough memory to use internal diff for book \"%s\""), book->currFileName);
          verbose_leave();
       }
       return FAIL;
@@ -1302,7 +1287,7 @@ lnum_compare(const void *s1, const void *s2) {
    return 0;
 }
 
-//Update the diffs for all buffers involved.
+//Update the diffs for all books involved.
 private void
 diff_try_update(
    DiffIo* dio,
@@ -1376,7 +1361,7 @@ diff_try_update(
       LineNr lnum_start = (anchorInd == 0) ? 1 : anchors[idx_orig][anchorInd - 1];
       LineNr lnum_end = (anchorInd == countAnchors) ? -1 : anchors[idx_orig][anchorInd] - 1;
 
-      //Write the first buffer to a tempfile or MmFile.
+      //Write the first book to a tempfile or MmFile.
       book = curtab->diffbuf[idx_orig];
       if (diff_write(book, &dio->orig, lnum_start, lnum_end) == FAIL) {
          if (orig_diff) {
@@ -1387,16 +1372,16 @@ diff_try_update(
          goto theend;
       }
 
-      // Make a difference between the first buffer and every other.
+      // Make a difference between the first book and every other.
       for (int idx_new = idx_orig + 1; idx_new < DB_COUNT; ++idx_new) {
          book = curtab->diffbuf[idx_new];
          if (!book || book->mem.mfile == NULL)
-            continue; // skip buffer that isn't loaded
+            continue; // skip book that isn't loaded
 
          lnum_start = anchorInd == 0 ? 1 : anchors[idx_new][anchorInd - 1];
          lnum_end = anchorInd == countAnchors ? -1 : anchors[idx_new][anchorInd] - 1;
 
-         // Write the other buffer and diff with the first one.
+         // Write the other book and diff with the first one.
          if (diff_write(book, &dio->new, lnum_start, lnum_end) == FAIL)
             continue;
          if (diff_file(dio) == FAIL)
@@ -1435,17 +1420,16 @@ theend:
 }
 
 //Return TRUE if the options are set to use the internal diff library.
-//Note that if the internal diff failed for one of the buffers, the external
-//diff will be used anyway.
+//Note that if the internal diff failed for one of the books, the external diff will be used anyway.
 int
 diff_internal(void) {
    return (diff_flags & DIFF_INTERNAL) != 0 && *p_dex == ZERO;
 }
 
-//Return TRUE if the internal diff failed for one of the diff buffers.
+//Return TRUE if the internal diff failed for one of the diff books.
 private int
 diff_internal_failed(void) {
-   // Only need to do something when there is another buffer.
+   // Only need to do something when there is another book.
    for (int idx = 0; idx < DB_COUNT; ++idx) {
       if (curtab->diffbuf[idx] != NULL && curtab->diffbuf[idx]->diffFailed)
          return TRUE;
@@ -1453,9 +1437,9 @@ diff_internal_failed(void) {
    return FALSE;
 }
 
-//Completely update the diffs for the buffers involved.
-//When using the external "diff" command the buffers are written to a file,
-//also for unmodified buffers (the file could have been produced by
+//Completely update the diffs for the books involved.
+//When using the external "diff" command the books are written to a file,
+//also for unmodified books (the file could have been produced by
 //autocommands, e.g. the netrw plugin).
 void
 c_diffupdate(Invocation* invo) {  // "invo" can be NULL
@@ -1468,7 +1452,7 @@ c_diffupdate(Invocation* invo) {  // "invo" can be NULL
    diff_clear(curtab);
    curtab->diff_invalid = FALSE;
 
-   // Use the first buffer as the original text.
+   // Use the first book as the original text.
    Unt      idx_orig;
    for (idx_orig = 0; idx_orig < DB_COUNT; ++idx_orig) {
       if (curtab->diffbuf[idx_orig] != NULL)
@@ -1477,7 +1461,7 @@ c_diffupdate(Invocation* invo) {  // "invo" can be NULL
    if (idx_orig == DB_COUNT)
       goto theend;
 
-   // Only need to do something when there is another buffer.
+   // Only need to do something when there is another book.
    Unt idx_new;
    for (idx_new = idx_orig + 1; idx_new < DB_COUNT; ++idx_new) {
       if (curtab->diffbuf[idx_new] != NULL)
@@ -1486,7 +1470,7 @@ c_diffupdate(Invocation* invo) {  // "invo" can be NULL
    if (idx_new == DB_COUNT)
       goto theend;
 
-   // Only use the internal method if it did not fail for one of the buffers.
+   // Only use the internal method if it did not fail for one of the books.
    DiffIo   diffio;
    CLEAR_FIELD(diffio);
    diffio.dio_internal = diff_internal() && !diff_internal_failed();
@@ -1666,13 +1650,13 @@ diff_file(DiffIo* dio) {
     return OK;
 }
 
-//Create a new version of a file from the current buffer and a diff file.
-//The buffer is written to a file, also for unmodified buffers (the file
+//Create a new version of a file from the current book and a diff file.
+//The book is written to a file, also for unmodified books (the file
 //could have been produced by autocommands, e.g. the netrw plugin).
 void
-c_diffpatch(Invocation *invo) {
+c_diffpatch(Invocation* invo) {
    Portal* old_curPor = curPor;
-   CS newname = NULL;   // name of patched file buffer
+   CS newname = NULL;   // name of patched file book
    Byte dirbuf[MAXPATHL];
    FileStat st;
 
@@ -1682,7 +1666,7 @@ c_diffpatch(Invocation *invo) {
    if (tmp_orig == NULL || tmp_new == NULL)
       goto theend;
 
-   // Write the current buffer to "tmp_orig".
+   // Write the current book to "tmp_orig".
    if (bookWrite(curBook, tmp_orig, NULL,
          (LineNr)1, curBook->mem.lineCount, NULL, FALSE, FALSE, FALSE, TRUE) == FAIL)
       goto theend;
@@ -1764,7 +1748,7 @@ c_diffpatch(Invocation *invo) {
             diff_win_options(old_curPor, TRUE);
 
             if (newname) {
-               // do a ":file filename.new" on the patched buffer
+               // do a ":file filename.new" on the patched book
                invo->arg = newname;
                c_file(invo);
 
@@ -1827,7 +1811,7 @@ c_diffsplit(Invocation* invo) {
 
 //Set options to show diffs for the current portal.
 void
-c_diffthis(Invocation *invo UNUSED) {
+c_diffthis(Invocation* invo UNUSED) {
    // Set 'diff', 'scrollbind' on and 'wrap' off.
    diff_win_options(curPor, TRUE);
 }
@@ -1849,7 +1833,7 @@ set_diff_option(Portal* po, int value) {
 
 //Set options in portal "po" for diff mode.
 void
-diff_win_options(Portal* po, int addbuf) {     // Add buffer to diff.
+diff_win_options(Portal* po, int addbuf) {     // Add book to diff.
    Portal* old_curPor = curPor;
 
    // close the manually opened folds
@@ -1941,7 +1925,7 @@ c_diffoff(Invocation* invo) {
       diffwin |= po->o.diff;
    }
 
-   // Also remove hidden buffers from the list.
+   // Also remove hidden books from the list.
    if (invo->forceit)
       clearAllBooks();
 
@@ -2148,9 +2132,8 @@ diff_read(
          dp->lnum[idx_new] = hunk->newLnum;
          dp->count[idx_new] = hunk->newCount;
 
-         // Set values for other buffers, these must be equal to the
-         // original buffer, otherwise there would have been a change
-         // already.
+         // Set values for other books, these must be equal to the
+         // original buffer, otherwise there would have been a change already.
          for (i = idx_orig + 1; i < idx_new; ++i) {
             if (curtab->diffbuf[i] != NULL)
                 diff_copy_entry(dprev, dp, idx_orig, i);
@@ -2212,7 +2195,7 @@ diff_linematch(DiffBlock *dp) {
    if ((diff_flags & DIFF_LINEMATCH) == 0)
       return 0;
 
-   // are there more than three diff buffers?
+   // are there more than three diff books?
    int tsize = 0;
    for (int i = 0; i < DB_COUNT; i++) {
       if (curtab->diffbuf[i] != NULL) {
@@ -2311,7 +2294,7 @@ calculate_topfill_and_topline(
    find_top_diff_block(&thistopdiff, &next_adjacent_blocks, fromidx, from_topline);
 
    // count the virtual lines (either filler or concrete line) that have been
-   // passed in the source buffer. There could be multiple diff blocks if
+   // passed in the source book. There could be multiple diff blocks if
    // there are adjacent empty blocks (count == 0 at fromidx).
    DiffBlock *curdif = thistopdiff;
    while (curdif && (curdif->lnum[fromidx] + curdif->count[fromidx]) <= from_topline) {
@@ -2329,7 +2312,7 @@ calculate_topfill_and_topline(
    if (virtual_lines_passed < 0)
       virtual_lines_passed = 0;
 
-   //move the same amount of virtual lines in the target buffer to find the cursor's line number
+   //move the same amount of virtual lines in the target book to find the cursor's line number
    int curlinenum_to = thistopdiff->lnum[toidx];
 
    int virt_lines_left = virtual_lines_passed;
@@ -2341,7 +2324,7 @@ calculate_topfill_and_topline(
    }
 
    //count the total number of virtual lines between the top diff block and
-   //the found line in the target buffer
+   //the found line in the target book
    int max_virt_lines = 0;
    for (DiffBlock *dp = thistopdiff; dp != NULL; dp = dp->df_next) {
       if (dp->lnum[toidx] + dp->count[toidx] <= curlinenum_to)
@@ -2367,7 +2350,7 @@ apply_linematch_results(
    Unt   decisions_length,
    const int* decisions
 ) {
-   //get the start line number here in each diff buffer, and then increment
+   //get the start line number here in each diff book, and then increment
    int line_numbers[DB_COUNT];
    int outputmap[DB_COUNT];
    Unt ndiffs = 0;
@@ -2377,7 +2360,7 @@ apply_linematch_results(
          line_numbers[i] = dp->lnum[i];
          dp->count[i] = 0;
 
-         //Keep track of the index of the diff buffer we are using here. We will use this to write 
+         //Keep track of the index of the diff book we are using here. We will use this to write 
          //the output of the algorithm to DiffBlock structs at the correct indexes
          outputmap[ndiffs] = i;
          ndiffs++;
@@ -2483,13 +2466,13 @@ diff_check_with_linestatus(Portal *po, LineNr lnum, OUT LineDiffStatus* linestat
    if (curtab->first_diff == NULL || !po->o.diff)   // no diffs at all
       return 0;
 
-   //safety check: "lnum" must be a buffer line
+   //safety check: "lnum" must be a book line
    if (lnum < 1 || lnum > book->mem.lineCount + 1)
       return 0;
 
-   Unt idx = bookIndex(book);      // index in diffbuf[] for this buffer
+   Unt idx = bookIndex(book);      // index in diffbuf[] for this book
    if (idx == UNT)
-      return 0;      // no diffs for buffer "book"
+      return 0;      // no diffs for book "book"
 
    //A closed fold never has filler lines.
    if (getFoldsPortal(po, lnum, NULL, NULL, TRUE, NULL))
@@ -2535,7 +2518,7 @@ diff_check_with_linestatus(Portal *po, LineNr lnum, OUT LineDiffStatus* linestat
    if (lnum < dp->lnum[idx] + dp->count[idx]) {
       int zero = FALSE;
 
-      //Changed or inserted line. If the other buffers have a count of 0, the lines were 
+      //Changed or inserted line. If the other books have a count of 0, the lines were 
       //inserted. If the other books have the same count, check if the lines are identical
       cmp = FALSE;
       for (Unt i = 0; i < DB_COUNT; ++i) {
@@ -2565,7 +2548,7 @@ diff_check_with_linestatus(Portal *po, LineNr lnum, OUT LineDiffStatus* linestat
             }
          }
       }
-      //If there is no buffer with zero lines then there is no difference any longer. Happens when 
+      //If there is no book with zero lines then there is no difference any longer. Happens when 
       //making a change (or undo) that removes the difference. Can't remove the entry here, we 
       //might be halfway updating the portal. Just report the text as unchanged. Other
       //portals might still show the change though.
@@ -2586,7 +2569,7 @@ diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2) {
       return FALSE;
    for (int i = 0; i < dp->count[idx1]; ++i) {
       CS line = copyStr(memGetLine(curtab->diffbuf[idx1], dp->lnum[idx1] + i, FALSE));
-      int cmp = diff_cmp(line, memGetLine(curtab->diffbuf[idx2], dp->lnum[idx2] + i, FALSE));
+      int cmp = diff_cmp(line, memGetLine(curtab->diffbuf[idx2], dp->lnum[idx2] + i, false));
       eeglFree(line);
       if (cmp != 0)
          return FALSE;
@@ -2597,7 +2580,7 @@ diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2) {
 //Compare the characters at "p1" and "p2".  If they are equal (possibly
 //ignoring case) return TRUE and set "len" to the number of bytes.
 private int
-diff_equal_char(Byte *p1, Byte *p2, int *len) {
+diff_equal_char(CS p1, CS p2, OUT int* len) {
    Unt l  = utfCharLen(p1);
 
    if (l != utfCharLen(p2))
@@ -2619,7 +2602,7 @@ diff_equal_char(Byte *p1, Byte *p2, int *len) {
 
 //Compare strings "s1" and "s2" according to 'diffopt'. Return non-zero when they are different.
 private int
-diff_cmp(Byte *s1, Byte *s2){
+diff_cmp(CS s1, CS s2){
    int      l;
 
    if ((diff_flags & DIFF_IBLANK) != 0 && (*skipwhite(s1) == ZERO || *skipwhite(s2) == ZERO))
@@ -2641,7 +2624,7 @@ diff_cmp(Byte *s1, Byte *s2){
          p1 = skipwhite(p1);
          p2 = skipwhite(p2);
       } else {
-         if (!diff_equal_char(p1, p2, &l))
+         if (!diff_equal_char(p1, p2, OUT &l))
             break;
          p1 += l;
          p2 += l;
@@ -2658,7 +2641,7 @@ diff_cmp(Byte *s1, Byte *s2){
 
 // Return the number of filler lines above "lnum".
 int
-diff_check_fill(Portal *po, LineNr lnum){
+diff_check_fill(Portal* po, LineNr lnum){
    // be quick when there are no filler lines
    if ((diff_flags & DIFF_FILLER) == 0)
       return 0;
@@ -2748,7 +2731,7 @@ parse_diffanchors(
    if (check_only)
       bookPort = curPor;
    else {
-      // Find the first portal tied to this buffer and ignore the rest. Will
+      // Find the first portal tied to this book and ignore the rest. Will
       // only matter for portal-specific addresses like `.` or `''`.
       FOR_ALL_PORTALS(bookPort) {
          if (bookPort->book == book && bookPort->o.diff)
@@ -3002,7 +2985,7 @@ diff_update_line(LineNr lnum) {
 private DifflineChange simple_diffline_change; // used for simple inline diff algorithm
 
 // Parse a diffline struct and return the [start,end] byte offsets
-// Return TRUE if this change was added, no other buffer has it.
+// Return TRUE if this change was added, no other book has it.
 int
 diff_change_parse(
    DiffLine* diffline,
@@ -3025,7 +3008,7 @@ diff_change_parse(
       return FALSE;
    }
 
-   // Find out whether this is an addition. Note that for multi buffer diff,
+   // Find out whether this is an addition. Note that for multi book diff,
    // to tell whether lines are additions we check whether all the other diff
    // lines are identical (in diff_check_with_linestatus). If so, we mark them
    // as add. We don't do that for inline diff here for simplicity.
@@ -3047,7 +3030,7 @@ diff_change_parse(
 //If diffopt has DIFF_INLINE_NONE set, then this will only calculate the return
 //value (added or changed), but startp/endp will not be calculated.
 //
-//Return TRUE if the line was added, no other buffer has it.
+//Return TRUE if the line was added, no other book has it.
 private int
 diff_find_change_simple(
    Portal* po,
@@ -3101,7 +3084,7 @@ diff_find_change_simple(
                 si_org = (int)(skipwhite(line_org + si_org) - line_org);
                 si_new = (int)(skipwhite(line_new + si_new) - line_new);
             } else {
-               if (!diff_equal_char(line_org + si_org, line_new + si_new, &l))
+               if (!diff_equal_char(line_org + si_org, line_new + si_new, OUT &l))
                   break;
                si_org += l;
                si_new += l;
@@ -3136,7 +3119,7 @@ diff_find_change_simple(
                   p2 = line_new + ei_new;
                   p1 -= (*mb_head_off)(line_org, p1);
                   p2 -= (*mb_head_off)(line_new, p2);
-                  if (!diff_equal_char(p1, p2, &l))
+                  if (!diff_equal_char(p1, p2, OUT &l))
                       break;
                   ei_org -= l;
                   ei_new -= l;
@@ -3153,7 +3136,7 @@ diff_find_change_simple(
 }
 
 //Mapping used for mapping from temporary mmfile created for inline diff back
-//to original buffer's line/col.
+//to original book's line/col.
 typedef struct {
    long byte_start;
    long num_bytes;
@@ -3176,8 +3159,8 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
       int has_merged_gaps = FALSE;
       DiffBlock *dp = dp_orig;
       while (dp && dp->df_next) {
-         // Only use first buffer to calculate the gap because the gap is
-         // unchanged text, which would be the same in all buffers.
+         // Only use first book to calculate the gap because the gap is
+         // unchanged text, which would be the same in all books.
          if (dp->lnum[idx1] + dp->count[idx1] - 1 >= linemap[idx1].len
              || dp->df_next->lnum[idx1] - 1 >= linemap[idx1].len
          ) {
@@ -3223,7 +3206,7 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
    } while (pass++ < 4); // use limited number of passes to avoid excessive looping
 }
 
-//Find the inline difference within a diff block among different buffers.  Do
+//Find the inline difference within a diff block among different books.  Do
 //this by splitting each block's content into characters or words, and then
 //use internal xdiff to calculate the per-character/word diff.  The DiffResult is
 //stored in dp instead of returned by the function.
@@ -3250,7 +3233,7 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
    DiffBlock   *orig_diff = curtab->first_diff;
    curtab->first_diff = NULL;
 
-   // diff_read() also uses curtab->diffbuf to determine what's an active buffer
+   // diff_read() also uses curtab->diffbuf to determine what's an active book
    Book   *(orig_diffbuf[DB_COUNT]);
    memcpy(orig_diffbuf, curtab->diffbuf, sizeof(orig_diffbuf));
 
@@ -3270,11 +3253,11 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
 
       Book *book = curtab->diffbuf[i];
       if (book == NULL || book->mem.mfile == NULL)
-         continue; // skip buffer that isn't loaded
+         continue; // skip book that isn't loaded
 
       if (dp->count[i] == 0) {
          // skip buffers that don't have any texts in this block so we don't
-         // end up marking the entire block as modified in multi-buffer diff
+         // end up marking the entire block as modified in multi-book diff
          curtab->diffbuf[i] = NULL;
          continue;
       }
@@ -3287,7 +3270,7 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
       LineNr numlines = 0;
       curstr->len = 0;
 
-      // Split each line into chars/words and populate fake file buffer as
+      // Split each line into chars/words and populate fake file book as
       // newline-delimited tokens as that's what xdiff requires.
       for (int off = 0; off < dp->count[i]; off++) {
          CS curline = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, FALSE);
@@ -3304,7 +3287,7 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
          for (s = curline; *s != ZERO;) {
             int new_in_keyword = FALSE;
             if (diff_flags & DIFF_INLINE_WORD) {
-                // Always use the first buffer's 'iskeyword' to have a consistent diff.
+                // Always use the first book's 'iskeyword' to have a consistent diff.
                 // For multibyte chars, only treat alphanumeric chars
                 // (class 2) as "word", as other classes such as emojis and
                 // CJK ideographs do not usually benefit from word diff as
@@ -3505,7 +3488,7 @@ done:
 }
 
 // Find the difference within a changed line.
-// Return TRUE if the line was added, no other buffer has it.
+// Return TRUE if the line was added, no other book has it.
 int
 diff_find_change(
    Portal* po,
@@ -3685,7 +3668,7 @@ valid_diff(DiffBlock *diff) {
 
 // ":diffget", ":diffput"
 void
-c_diffgetput(Invocation *invo) {
+c_diffgetput(Invocation* invo) {
    LineNr lnum;
    int count;
    LineNr off = 0;
@@ -3703,7 +3686,7 @@ c_diffgetput(Invocation *invo) {
    int buf_empty;
    int found_not_ma = FALSE;
 
-   // Find the current buffer in the list of diff buffers.
+   // Find the current book in the list of diff buffers.
    Unt idx_cur = bookIndex(curBook);
    if (idx_cur == UNT) {
       emsg(_(e_current_buffer_is_not_in_diff_mode));
@@ -3711,7 +3694,7 @@ c_diffgetput(Invocation *invo) {
    }
 
    if (*invo->arg == ZERO) {
-      // No argument: Find the other buffer in the list of diff buffers.
+      // No argument: Find the other book in the list of diff buffers.
       for (idx_other = 0; idx_other < DB_COUNT; ++idx_other) {
          if (curtab->diffbuf[idx_other] != curBook && curtab->diffbuf[idx_other] != NULL) {
             if (invo->id != C_diffput || curtab->diffbuf[idx_other]->o.modifiable)
@@ -3727,7 +3710,7 @@ c_diffgetput(Invocation *invo) {
          return;
       }
 
-      // Check that there isn't a third buffer in the list
+      // Check that there isn't a third book in the list
       for (i = idx_other + 1; i < DB_COUNT; ++i)
          if (curtab->diffbuf[i] != curBook
              && curtab->diffbuf[i] != NULL
@@ -3789,15 +3772,15 @@ c_diffgetput(Invocation *invo) {
    } else {
       idx_from = idx_cur;
       idx_to = idx_other;
-      // Need to make the other buffer the current buffer to be able to make changes in it.
+      // Need to make the other book the current book to be able to make changes in it.
       // Set curPor/curBook to book and save a few things.
       auCommPrepareBook(&aco, curtab->diffbuf[idx_other]);
       if (curBook != curtab->diffbuf[idx_other])
-          // Could not find a portal for this buffer, the rest is likely to fail.
+          // Could not find a portal for this book, the rest is likely to fail.
           goto theend;
     }
 
-   // May give the warning for a changed buffer here, which can trigger the FileChangedRO 
+   // May give the warning for a changed book here, which can trigger the FileChangedRO 
    // autocommand, which may do nasty things and mess everything up.
    if (!curBook->wasModified) {
       change_warning(0);
@@ -3814,8 +3797,7 @@ c_diffgetput(Invocation *invo) {
          //the cursor. Since a range wasn't specified, we just want to grab one diff block rather 
          //than all of them in the vicinity.
          while (dp->df_next
-             && dp->df_next->lnum[idx_cur] == dp->lnum[idx_cur] +
-                        dp->count[idx_cur]
+             && dp->df_next->lnum[idx_cur] == dp->lnum[idx_cur] + dp->count[idx_cur]
              && dp->df_next->lnum[idx_cur] == invo->line1 + off + 1
          ) {
             dprev = dp;
@@ -3869,7 +3851,7 @@ c_diffgetput(Invocation *invo) {
          buf_empty = BUFEMPTY();
          added = 0;
          for (i = 0; i < count; ++i) {
-            // remember deleting the last line of the buffer
+            // remember deleting the last line of the book
             buf_empty = curBook->mem.lineCount == 1;
             if (ml_delete(lnum) == OK)
                --added;
@@ -3883,7 +3865,7 @@ c_diffgetput(Invocation *invo) {
             eeglFree(p);
             ++added;
             if (buf_empty && curBook->mem.lineCount == 2) {
-               //Added the first line into an empty buffer, need to delete the dummy empty line.
+               //Added the first line into an empty book, need to delete the dummy empty line.
                buf_empty = FALSE;
                ml_delete((LineNr)2);
             }
@@ -3939,7 +3921,7 @@ c_diffgetput(Invocation *invo) {
             // mark_adjust() may have changed the count in a wrong way
             dp->count[idx_to] = new_count;
 
-         // When changing the current buffer, keep track of line numbers
+         // When changing the current book, keep track of line numbers
          if (idx_cur == idx_to)
             off += added;
       }
@@ -3953,9 +3935,8 @@ c_diffgetput(Invocation *invo) {
 
    // restore curPor/curBook and a few other things
    if (invo->id != C_diffget) {
-      //Syncing undo only works for the current buffer, but we change another book. Sync undo if 
-      //the command was typed. This isn't 100% right when ":diffput" is used in a function or 
-      //mapping.
+      //Syncing undo only works for the current book, but we change another book. Sync undo if the 
+      //command was typed. This isn't 100% right when ":diffput" is used in a function or mapping
       if (KeyTyped)
          u_sync(FALSE);
       auCommRestoreBook(&aco);
@@ -3984,16 +3965,16 @@ theend:
       // redraw already done by c_diffupdate()
       needUpdateS = false;
    else {
-      // Also need to redraw the other buffers.
+      // Also need to redraw the other books.
       diff_redraw(FALSE);
       apply_autocmds(EVENT_DIFFUPDATED, NULL, NULL, false, curBook);
    }
 }
 
 //Update folds for all diff buffers for entry "dp".
-//Skip buffer with index "skip_idx". When there are no diffs, all folds are removed.
+//Skip book with index "skip_idx". When there are no diffs, all folds are removed.
 private void
-diff_fold_update(DiffBlock *dp, Unt skip_idx) {
+diff_fold_update(DiffBlock* dp, Unt skip_idx) {
    Portal   *po;
    FOR_ALL_PORTALS(po) {
       for (Unt i = 0; i < DB_COUNT; ++i)
@@ -4093,18 +4074,14 @@ diff_get_corresponding_line_int(Book* book, LineNr lnum1) {
       if (    (dp->lnum[idx1] == lnum1)
            && (dp->count[idx1] == 0)
            && (dp->lnum[idx2] <= curPor->cursor.lnum)
-           && ((dp->lnum[idx2] + dp->count[idx2])
-                           > curPor->cursor.lnum))
-          /*
-           * Special case: if the cursor is just after a zero-count
-           * block (i.e. all filler) and the target cursor is already
-           * inside the corresponding block, leave the target cursor
-           * unmoved. This makes repeated CTRL-W W operations work
-           * as expected.
-           */
+           && ((dp->lnum[idx2] + dp->count[idx2]) > curPor->cursor.lnum)
+      )
+          //Special case: if the cursor is just after a zero-count
+          //block (i.e. all filler) and the target cursor is already
+          //inside the corresponding block, leave the target cursor
+          //unmoved. This makes repeated CTRL-W W operations work as expected.
           return curPor->cursor.lnum;
-      baseline = (dp->lnum[idx1] + dp->count[idx1])
-                  - (dp->lnum[idx2] + dp->count[idx2]);
+      baseline = (dp->lnum[idx1] + dp->count[idx1]) - (dp->lnum[idx2] + dp->count[idx2]);
    }
 
     // If we get here then the cursor is after the last diff
@@ -4383,7 +4360,7 @@ parse_diff_optarg(
    Unt* diffopts,
    long* diffalgo,
    OutputFormat* diff_output_fmt,
-   int* diff_ctxlen
+   OUT int* diff_ctxlen
 ) {
    Bag* d = opts->bag;
 
@@ -4492,7 +4469,7 @@ f_diff(Var* argvars, Var* returnVar) {
    dio.dio_outfmt = DIO_OUTPUT_UNIFIED;
    if (argvars[2].tag != VAR_UNKNOWN
       && parse_diff_optarg(
-            &argvars[2], &diff_flags, &diff_algorithm, &dio.dio_outfmt, &dio.dio_ctxlen
+            &argvars[2], &diff_flags, &diff_algorithm, &dio.dio_outfmt, OUT &dio.dio_ctxlen
          ) == FAIL
    ) 
       return;
@@ -4587,7 +4564,7 @@ done:
 #define XDL_MERGE_ZEALOUS_DIFF3 2
 
 
-#define xdl_malloc(x) lalloc((x), TRUE)
+#define xdl_malloc(x) lalloc((x), true)
 #define xdl_calloc(n, sz) lallocZeroed(n*sz, TRUE)
 #define xdl_realloc(ptr,x) eeRealloc((ptr),(x))
 
@@ -4648,12 +4625,12 @@ typedef struct s_xdpsplit {
 } xdpsplit_t;
 
 private long xdl_bogosqrt(long n);
-private int xdl_emit_diffrec(Byte* rec, long size, Byte* pre, long psize, XdEmitCb *ecb);
+private int xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb *ecb);
 private int xdl_cha_init(ChaStore *cha, long isize, long icount);
 private void xdl_cha_free(ChaStore *cha);
 private void *xdl_cha_alloc(ChaStore *cha);
 private long xdl_guess_lines(MmFile *mf, long sample);
-private int xdl_blankline(Byte *line, long size, long flags);
+private int xdl_blankline(CS line, long size, long flags);
 private int xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags);
 private Ulong xdl_hash_record(Byte** data, Byte* top, long flags);
 private Unt xdl_hashbits(unsigned int size);
@@ -6440,7 +6417,8 @@ typedef struct {
    XpParam const *xpp;
 } DiffMap;
 
-private int is_anchor(XpParam const *xpp, Byte* line) {
+private int 
+is_anchor(XpParam const *xpp, CS line) {
    for (int i = 0; i < (int)xpp->anchors_nr; i++) {
       if (!STRNCMP(line, xpp->anchors[i], STRLEN(xpp->anchors[i])))
          return 1;

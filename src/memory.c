@@ -237,7 +237,7 @@ alloc_does_fail(Unt size) {
 //This means the return value doesn't need to be checked for null.
 void *
 alloc(Unt size) {
-   return lalloc(size, TRUE);
+   return lalloc(size, true);
 }
 
 //Try to make a big allocation. Quietly return null if unsucessful.
@@ -291,13 +291,13 @@ void *
 alloc_id(Unt size, AllocId id UNUSED) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
-   return lalloc(size, TRUE);
+   return lalloc(size, true);
 }
 
 // Allocate memory and set all bytes to zero.
 void *
 allocZeroed(Unt size) {
-   void* p = lalloc(size, TRUE);
+   void* p = lalloc(size, true);
    (void)memset(p, 0, size);
    return p;
 }
@@ -312,7 +312,7 @@ allocZeroed_id(Unt size, AllocId id UNUSED) {
 
 // Allocate memory like lalloc() and set all bytes to zero.
 void *
-lallocZeroed(Unt size, int message){
+lallocZeroed(Unt size, Boole message){
    void* p = lalloc(size, message);
    if (p)
       (void)memset(p, 0, size);
@@ -321,7 +321,7 @@ lallocZeroed(Unt size, int message){
 
 // Low-level memory allocation function. This is used often, KEEP IT FAST!
 void *
-lalloc(Unt size, int message) {
+lalloc(Unt size, Boole message) {
    static int   releasing = FALSE;  // don't do mf_release_all() recursive
 
 #ifdef MEM_PROFILE

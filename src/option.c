@@ -3697,7 +3697,7 @@ copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
    for (Option* o = opts; o < opts + count; o++) {
       if (o->defaultValue.tag == OPTION_STRING 
             && (o->flags & P_NODEFAULT) == 0 
-            && (*o->defaultValue.string)
+            && (o->defaultValue.string)
       ) {
          Unt len = STRLEN(o->defaultValue.string) + 1; // +1 for the ZERO
          memcpy(wr, o->defaultValue.string, len);

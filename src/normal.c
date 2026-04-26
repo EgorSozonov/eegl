@@ -12435,7 +12435,7 @@ foldUpdate(Portal *wp, LineNr top, LineNr bot) {
 
    if (disable_fold_update > 0)
       return;
-   if (need_diff_redraw)
+   if (diffNeedsRedrawG)
       // will update later
       return;
 

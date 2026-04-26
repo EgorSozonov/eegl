@@ -3200,7 +3200,7 @@ drawUpdateScreen(int type_arg) {
    }
 
    // May have postponed updating diffs.
-   if (need_diff_redraw)
+   if (diffNeedsRedrawG)
       diff_redraw(TRUE);
 
    if (must_redraw) {
