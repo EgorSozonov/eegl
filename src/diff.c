@@ -2822,7 +2822,7 @@ diffopt_changed(void) {
          diff_flags_new |= DIFF_ANCHOR;
       } ei (STRNCMP(p, "context:", 8) == 0 && EE_ISDIGIT(p[8])) {
          p += 8;
-         diff_context_new = getdigits(&p);
+         diff_context_new = parseLong(&p);
       } ei (STRNCMP(p, "iblank", 6) == 0) {
          p += 6;
          diff_flags_new |= DIFF_IBLANK;
@@ -2899,7 +2899,7 @@ diffopt_changed(void) {
             return FAIL;
       } ei (STRNCMP(p, "linematch:", 10) == 0 && EE_ISDIGIT(p[10])) {
          p += 10;
-         linematch_lines_new = getdigits(&p);
+         linematch_lines_new = parseLong(&p);
          diff_flags_new |= DIFF_LINEMATCH;
 
          // linematch does not make sense without filler set
@@ -4142,21 +4142,21 @@ parse_diff_ed(CS line, Hunk* hunk) {
    // append: {first}a{first}[,{last}]
    // delete: {first}[,{last}]d{first}
    CS p = line;
-   long f1 = getdigits(&p);
+   long f1 = parseLong(&p);
    long l1;
    if (*p == ',') {
       ++p;
-      l1 = getdigits(&p);
+      l1 = parseLong(&p);
    } else
       l1 = f1;
    if (*p != 'a' && *p != 'c' && *p != 'd')
       return FAIL;      // invalid diff format
    int difftype = *p++;
-   long f2 = getdigits(&p);
+   long f2 = parseLong(&p);
    long l2; 
    if (*p == ',') {
       ++p;
-      l2 = getdigits(&p);
+      l2 = parseLong(&p);
    } else
       l2 = f2;
    if (l1 < f1 || l2 < f2)
@@ -4188,17 +4188,17 @@ parse_diff_unified(CS line, Hunk* hunk) {
    //Parse unified diff hunk header: @@ -oldline,oldcount +newline,newcount @@
    CS p = line;
    if (*p++ == '@' && *p++ == '@' && *p++ == ' ' && *p++ == '-') {
-      oldline = getdigits(&p);
+      oldline = parseLong(&p);
       if (*p == ',') {
          ++p;
-         oldcount = getdigits(&p);
+         oldcount = parseLong(&p);
       } else
          oldcount = 1;
       if (*p++ == ' ' && *p++ == '+') {
-         newline = getdigits(&p);
+         newline = parseLong(&p);
          if (*p == ',') {
             ++p;
-            newcount = getdigits(&p);
+            newcount = parseLong(&p);
          } else
             newcount = 1;
       } else

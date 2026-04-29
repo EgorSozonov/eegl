@@ -1424,7 +1424,7 @@ do_put(
          // get the old line and advance to the position to insert at
          oldp = ml_get_curline();
          oldlen = ml_get_curline_len();
-         init_chartabsize_arg(&cts, curPor, curPor->cursor.lnum, 0, oldp, oldp);
+         bookInitCharsForKeywordsSizeArg(&cts, curPor, curPor->cursor.lnum, 0, oldp, oldp);
 
          while (cts.cts_vcol < col && *cts.cts_ptr != ZERO) {
             // Count a tab for what it's worth (if list mode not on)
@@ -1459,7 +1459,7 @@ do_put(
          if ((flags & PUT_BLOCK_INNER) == 0) {
             // calculate number of spaces required to fill right side of block
             spaces = y_width + 1;
-            init_chartabsize_arg(&cts, curPor, 0, 0, y_array[i].c, y_array[i].c);
+            bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, 0, y_array[i].c, y_array[i].c);
 
             while (*cts.cts_ptr != ZERO) {
                spaces -= lbr_chartabsize_adv(&cts);

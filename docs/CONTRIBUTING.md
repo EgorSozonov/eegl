@@ -52,6 +52,10 @@ Generic types are defined in eegl.h searchable via @@@generics
 
 Generic functions are defined in generic.h
 
+## Abbreviations
+CS = C String, a zero-terminated byte array
+Unt = Unsigned 4-byte integer
+
 
 ## Source file descriptions (regenerate with ```grep '//##' -h *.c```)
 
@@ -132,19 +136,18 @@ After compiling and starting Vim, do:
 And edit `debuglog` to see what happens.  The channel functions already have
 `ch_log()` calls, thus you always see that in the log.
 
+To debug memory issues, uncomment the SANITIZER_FLAGS in the main Makefile.
+
 
 ## Important Variables ##
 
 The current mode is stored in `State`.  The values it can have are `NORMAL`,
 `INSERT`, `CMDLINE`, and a few others.
 
-The current window is `curwin`.  The current buffer is `curbuf`.  These point
-to structures with the cursor position in the window, option values, the file
+The current portal is `curPor`.  The current book is `curBook`.  These point
+to structures with the cursor position in the portal, option values, the file
 name, etc.  These are defined in
-[`structs.h`](https://github.com/vim/vim/blob/master/src/structs.h).
-
-All the global variables are declared in
-[`globals.h`](https://github.com/vim/vim/blob/master/src/globals.h).
+[`eegl.h`](https://github.com/eegl/eegl/blob/trunk/src/eegl.h).
 
 
 ## The main loop ##

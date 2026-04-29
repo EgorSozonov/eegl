@@ -1,13 +1,13 @@
-# Makefile for Vim on Unix and Unix-like systems
+# Makefile for Eegl on Unix and Unix-like systems
 #
 # This Makefile is loosely based on the GNU Makefile conventions found in standards.info.
 #
-# Compiling Vim, summary:
+# Compiling Eegl, summary:
 #
 #	3. make
 #	5. make install
 #
-# Compiling Vim, details:
+# Compiling Eegl, details:
 #
 # Edit this file for adjusting to your system. You should not need to edit any
 # other file for machine specific things!
@@ -99,7 +99,7 @@ MAKEMO		= yes
 
 MSGFMT		= msgfmt
 MSGFMTCMD	= OLD_PO_FILE_INPUT=yes msgfmt --no-convert -v
-MSGFMT_DESKTOP	= gvim.desktop vim.desktop
+MSGFMT_DESKTOP	= eegl.desktop
 
 ### set if $SOURCE_DATE_EPOCH was set when running configure
 BUILD_DATE_MSG	= 
@@ -111,25 +111,20 @@ BUILD_DATE_MSG	=
 #}}}
 #
 # 1. Edit this Makefile  {{{1
-#	The defaults for Vim should work on most machines, but you may want to
+#	The defaults for Eegl should work on most machines, but you may want to
 #	uncomment some lines or make other changes below to tune it to your
 #	system, compiler or preferences.  Uncommenting means that the '#' in
 #	the first column of a line is removed.
-#	- If you want a version of Vim that is small and starts up quickly,
+#	- If you want a version of Eegl that is small and starts up quickly,
 #	  you might want to disable the GUI, X11, Perl, Python and Tcl.
-#	- Uncomment the line with --disable-gui if you have Motif and/or GTK
-#	  but don't want to make gvim (the GUI version of Vim with nice
-#	  menus and scrollbars, but makes Vim bigger and startup slower).
-#	- Uncomment --disable-darwin if on Mac OS X but you want to compile a
-#	  Unix version.
 #	- Uncomment the line "CONF_OPT_X = --without-x" if you have X11 but
-#	  want to disable using X11 libraries.	This speeds up starting Vim,
+#	  want to disable using X11 libraries.	This speeds up starting Eegl,
 #	  but the window title will not be set and the X11 selection can not
 #	  be used.
 #	- Uncomment the line "CONF_OPT_XSMP = --disable-xsmp" if you have the
 #	  X11 Session Management Protocol (XSMP) library (libSM) but do not
 #	  want to use it.
-#	  This can speedup Vim startup but Vim loses the ability to catch the
+#	  This can speedup Eegl startup but Eegl loses the ability to catch the
 #	  user logging out from session-managers like GNOME and work
 #	  could be lost.
 #	- Uncomment one of the lines with --with-features= to enable a set of
@@ -146,11 +141,11 @@ BUILD_DATE_MSG	=
 #
 # 2. Edit feature.h  {{{1
 #	Only if you do not agree with the default compile features, e.g.:
-#	- you want Vim to be as vi compatible as it can be
+#	- you want Eegl to be as vi compatible as it can be
 #	- you want to use Emacs tags files
 #	- you want right-to-left editing (Hebrew)
 #	- you want 'langmap' support (Greek)
-#	- you want to remove features to make Vim smaller
+#	- you want to remove features to make Eegl smaller
 #
 # 3. "make"  {{{1
 #	Will first run ./configure with the options in this file. Then it will
@@ -177,18 +172,18 @@ BUILD_DATE_MSG	=
 #	  compiler to an ANSI C compiler). Only when auto/configure does
 #	  something wrong you may need to change one of the other files. If
 #	  you find a clean way to fix the problem, consider sending a note to
-#	  the author of autoconf (bug-gnu-utils@prep.ai.mit.edu) or Vim
+#	  the author of autoconf (bug-gnu-utils@prep.ai.mit.edu) or Eegl
 #	  (vim-dev@vim.org). Don't bother to do that when you made a hack
 #	  solution for a non-standard system.
 #
 # 4. "make test"  {{{1
-#	This is optional.  This will run Vim scripts on a number of test
+#	This is optional.  This will run Eegl scripts on a number of test
 #	files, and compare the produced output with the expected output.
 #	If all is well, you will get the "ALL DONE" message in the end.  If a
 #	test fails you get "TEST FAILURE".  See below (search for "/^test").
 #
 # 5. "make install"  {{{1
-#	If the new Vim seems to be working OK you can install it and the
+#	If the new Eegl seems to be working OK you can install it and the
 #	documentation in the appropriate location. The default is
 #	"/usr/local".  Change "prefix" below to change the location.
 #	Note that any existing executable is removed or overwritten.  If you
@@ -196,21 +191,21 @@ BUILD_DATE_MSG	=
 #	The runtime files are in a different directory for each version.  You
 #	might want to delete an older version.
 #	If you don't want to install everything, there are other targets:
-#		make installvim		only installs Vim, not the tools
-#		make installvimbin	only installs the Vim executable
+#		make installvim		only installs Eegl, not the tools
+#		make installvimbin	only installs the Eegl executable
 #		make installruntime	installs most of the runtime files
-#		make installrtbase	only installs the Vim help and runtime files
-#		make installlinks	only installs the Vim binary links
-#		make installmanlinks	only installs the Vim manpage links
-#		make installmacros	only installs the Vim macros
+#		make installrtbase	only installs the Eegl help and runtime files
+#		make installlinks	only installs the Eegl binary links
+#		make installmanlinks	only installs the Eegl manpage links
+#		make installmacros	only installs the Eegl macros
 #		make installpack	only installs the packages
-#		make installtutorbin	only installs the Vim tutor program
-#		make installtutor	only installs the Vim tutor files
+#		make installtutorbin	only installs the Eegl tutor program
+#		make installtutor	only installs the Eegl tutor files
 #		make installspell	only installs the spell files
-#	If you install Vim, not to install for real but to prepare a package
+#	If you install Eegl, not to install for real but to prepare a package
 #	or RPM, set DESTDIR to the root of the tree.
 #
-# 6. Use Vim until a new version comes out.  {{{1
+# 6. Use Eegl until a new version comes out.  {{{1
 #
 # 7. "make uninstall_runtime"  {{{1
 #	Will remove the runtime files for the current version.	This is safe
@@ -222,7 +217,7 @@ BUILD_DATE_MSG	=
 #		make uninstall
 #	Note that this will delete files that have the same name for any
 #	version, thus you might need to do a "make install" soon after this.
-#	Be careful not to remove a version of Vim that is still being used!
+#	Be careful not to remove a version of Eegl that is still being used!
 #	To find out which files and directories will be deleted, use:
 #		make -n uninstall
 # }}}
@@ -230,7 +225,7 @@ BUILD_DATE_MSG	=
 ### This Makefile has been successfully tested on many systems. {{{
 ### Only the ones that require special options are mentioned here.
 ### Check the (*) column for remarks, listed below.
-### Later code changes may cause small problems, otherwise Vim is supposed to
+### Later code changes may cause small problems, otherwise Eegl is supposed to
 ### compile and run without problems.
 
 #system:	      configurations:		     version (*) tested by:
@@ -342,7 +337,7 @@ VIEWNAME	= view
 
 CC		= gcc
 DEFS		= -DHAVE_CONFIG_H
-CFLAGS	= --std=c17 -gdwarf-5 -gsplit-dwarf -Wall -Wextra -Wfatal-errors -O0 \
+CFLAGS	= --std=c17  -gdwarf-5 -gsplit-dwarf -Wall -Wextra -Wfatal-errors -O0 \
               -Wno-cpp -Werror=return-type -D_REENTRANT -Werror=pointer-compare \
               -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -fno-pie
         
@@ -447,7 +442,7 @@ first: all
 # below. As shipped, this file contains a target that causes to run
 # configure. Once configure was run, this file contains a list of
 # make variables with predefined values instead. Thus any second invocation
-# of make, will build Vim.
+# of make, will build Eegl.
 
 # CONFIGURE - configure arguments {{{1
 # You can give a lot of options to configure.
@@ -460,7 +455,7 @@ first: all
 #CONF_ARGS4 = --with-local-dir=/usr/share
 #CONF_ARGS5 = --without-local-dir
 
-# Use this one if you distribute a modified version of Vim.
+# Use this one if you distribute a modified version of Eegl.
 #CONF_ARGS6 = --with-modified-by="John Doe"
 
 # Uncomment one of these lines if you have that GUI but don't want to use it.
@@ -473,7 +468,7 @@ first: all
 #
 # GTK versions that are known not to work 100% are rejected.
 # Use "--disable-gtktest" to accept them anyway.
-# For GTK 1 use Vim 7.2.
+# For GTK 1 use Eegl 7.2.
 #
 # GNOME means GTK with Gnome support.  If using GTK and --enable-gnome-check
 # is used then GNOME will automatically be used if it is found.  If you have
@@ -486,7 +481,7 @@ first: all
 #
 
 # DARWIN - detecting Mac OS X
-# Uncomment this line when you want to compile a Unix version of Vim on
+# Uncomment this line when you want to compile a Unix version of Eegl on
 # Darwin.  None of the Mac specific options or files will be used.
 #CONF_OPT_DARWIN = --disable-darwin
 
@@ -499,7 +494,7 @@ first: all
 #CONF_OPT_DARWIN = --with-mac-arch=both
 
 # Uncomment the next line to fail if one of the requested language interfaces
-# cannot be configured.  Without this Vim will be build anyway, without
+# cannot be configured.  Without this Eegl will be build anyway, without
 # the failing interfaces.
 #CONF_OPT_FAIL = --enable-fail-if-missing
 
@@ -556,7 +551,7 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 # CONF_OPT_CANBERRA = --disable-canberra
 
 
-# FEATURES - For creating Vim with more or less features
+# FEATURES - For creating Eegl with more or less features
 # Uncomment one of these lines when you want to include few to many features.
 # The default is "huge" for most systems.
 #CONF_OPT_FEAT = --with-features=tiny
@@ -566,11 +561,11 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 # COMPILED BY - For including a specific e-mail address for ":version".
 #CONF_OPT_COMPBY = "--with-compiledby=John Doe <JohnDoe@yahoo.com>"
 
-# X WINDOWS DISABLE - For creating a plain Vim without any X11 related fancies
-# (otherwise Vim configure will try to include xterm titlebar access)
+# X WINDOWS DISABLE - For creating a plain Eegl without any X11 related fancies
+# (otherwise Eegl configure will try to include xterm titlebar access)
 # Also disable the GUI above, otherwise it will be included anyway.
 # When both GUI and X11 have been disabled this may save about 15% of the
-# code and make Vim startup quicker.
+# code and make Eegl startup quicker.
 #CONF_OPT_X = --without-x
 
 # X WINDOWS DIRECTORY - specify X directories
@@ -582,7 +577,7 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 #CONF_OPT_X = --x-include=$(XROOT)/include --x-libraries=$(XROOT)/lib
 
 # X11 Session Management Protocol support
-# Vim will try to use XSMP to catch the user logging out if there are unsaved
+# Eegl will try to use XSMP to catch the user logging out if there are unsaved
 # files.  Uncomment this line to disable that (it prevents vim trying to open
 # communications with the session manager).
 #CONF_OPT_XSMP = --disable-xsmp
@@ -590,8 +585,8 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 # You may wish to include xsmp but use exclude xsmp-interact if the logout
 # XSMP functionality does not work well with your session-manager (at time of
 # writing, this would be early GNOME-1 gnome-session: it 'freezes' other
-# applications after Vim has cancelled a logout (until Vim quits).  This
-# *might* be the Vim code, but is more likely a bug in early GNOME-1.
+# applications after Eegl has cancelled a logout (until Eegl quits).  This
+# *might* be the Eegl code, but is more likely a bug in early GNOME-1.
 # This disables the dialog that asks you if you want to save files or not.
 #CONF_OPT_XSMP = --disable-xsmp-interact
 
@@ -668,7 +663,7 @@ LINT_OPTIONS = -beprxzF
 
 # PROFILING - Uncomment the next two lines to do profiling with gcc and gprof.
 # Might not work with GUI or Perl.
-# After running Vim see the profile result with: gprof vim gmon.out | vim -
+# After running Eegl see the profile result with: gprof vim gmon.out | vim -
 # Need to recompile everything after changing this: "make clean" "make".
 #PROFILE_FLAGS = -pg -g -DWE_ARE_PROFILING
 #PROFILE_LIBS = -pg
@@ -683,7 +678,7 @@ LINT_OPTIONS = -beprxzF
 
 # TEST COVERAGE - Uncomment the two lines below the explanation to get code
 # coverage information. (provided by Yegappan Lakshmanan)
-# 1. make clean, run configure and build Vim as usual.
+# 1. make clean, run configure and build Eegl as usual.
 # 2. Generate the baseline code coverage information:
 #	$ lcov -c -i -b . -d objects -o _build/coverage_base.info
 # 3. Run "make test" to run the unit tests.  The code coverage information will
@@ -703,12 +698,12 @@ LINT_OPTIONS = -beprxzF
 # PROFILE_FLAGS=-g -O0 --coverage -DWE_ARE_PROFILING -DUSE_GCOV_FLUSH
 
 
-# Uncomment the next lines to compile Vim with the address sanitizer (asan) and
-# with the undefined sanitizer.  Works with gcc.
-# You should also use -DEXITFREE to avoid false reports.
-# May make Vim twice as slow.  Errors are reported on stderr.
-# More at: https://code.google.com/p/address-sanitizer/
-# Useful environment variables:
+#Uncomment the next lines to compile Eegl on GCC with the address sanitizer (asan) and
+#with the undefined sanitizer.
+#You should also use -DEXITFREE to avoid false reports.
+#May make Eegl twice as slow.  Errors are reported on stderr.
+#More at: https://code.google.com/p/address-sanitizer/
+#Useful environment variables:
 # $ export ASAN_OPTIONS="print_stacktrace=1 log_path=asan"
 # $ export LSAN_OPTIONS="suppressions=`pwd`/tests/lsan-suppress.txt"
 # When running tests output can be found in tests/asan.*
@@ -732,7 +727,7 @@ SANITIZER_LIBS = $(SANITIZER_FLAGS)
 #LEAK_FLAGS = -DEXITFREE
 #LEAK_LIBS = -lccmalloc
 
-# Uncomment this line to have Vim call abort() when an internal error is
+# Uncomment this line to have Eegl call abort() when an internal error is
 # detected.  Useful when using a tool to find errors.
 #ABORT_FLAGS = -DABORT_ON_INTERNAL_ERROR
 
@@ -749,12 +744,12 @@ VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 #
 ### prefix	the top directory for the data (default "/usr/local")
 #
-# Uncomment the next line to install Vim in your home directory.
+# Uncomment the next line to install Eegl in your home directory.
 #prefix = $(HOME)
 
 ### exec_prefix	is the top directory for the executable (default $(prefix))
 #
-# Uncomment the next line to install the Vim executable in "/usr/machine/bin"
+# Uncomment the next line to install the Eegl executable in "/usr/machine/bin"
 #exec_prefix = /usr/machine
 
 ### BINDIR	dir for the executable	 (default "$(exec_prefix)/bin")
@@ -764,11 +759,11 @@ VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 # They may be different when using different architectures for the
 # executable and a common directory for the other files.
 #
-# Uncomment the next line to install Vim in "/usr/bin"
+# Uncomment the next line to install Eegl in "/usr/bin"
 #BINDIR   = /usr/bin
-# Uncomment the next line to install Vim manuals in "/usr/share/man/man1"
+# Uncomment the next line to install Eegl manuals in "/usr/share/man/man1"
 #MANDIR   = /usr/share/man
-# Uncomment the next line to install Vim help files in "/usr/share/vim"
+# Uncomment the next line to install Eegl help files in "/usr/share/vim"
 #DATADIR  = /usr/share
 
 ### DESTDIR	root of the installation tree.  This is prepended to the other
@@ -778,11 +773,11 @@ VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 ### Directory of the man pages
 MAN1DIR = /man1
 
-### Vim version (adjusted by a script)
+### Eegl version (adjusted by a script)
 VIMMAJOR = 9
 VIMMINOR = 1
 
-### Location of Vim files (should not need to be changed, and  {{{1
+### Location of Eegl files (should not need to be changed, and  {{{1
 ### some things might not work when they are changed!)
 VIMDIR = /vim
 VIMRTDIR = /vim$(VIMMAJOR)$(VIMMINOR)
@@ -805,8 +800,8 @@ SPELLSUBDIR = /spell
 PRINTSUBDIR = /print
 PODIR = po
 
-### VIMLOC	common root of the Vim files (all versions)
-### VIMRTLOC	common root of the runtime Vim files (this version)
+### VIMLOC	common root of the Eegl files (all versions)
+### VIMRTLOC	common root of the runtime Eegl files (this version)
 ### VIMRCLOC	compiled-in location for global [g]vimrc files (all versions)
 ### VIMRUNTIMEDIR  compiled-in location for runtime files (optional)
 ### HELPSUBLOC	location for help files
@@ -907,7 +902,7 @@ HELPMOD = 644
 ### Permissions for Perl and shell scripts
 SCRIPTMOD = 755
 
-### Permission for Vim script files (menu.vim, bugreport.vim, ..)
+### Permission for Eegl script files (menu.vim, bugreport.vim, ..)
 VIMSCRIPTMOD = 644
 
 ### Permissions for all directories that are created
@@ -974,7 +969,7 @@ PRINTSOURCE = ../runtime/print
 TRANSSOURCE = ../lang
 
 # If you are using Linux, you might want to use this to make vim the
-# default vi editor, it will create a link from vi to Vim when doing
+# default vi editor, it will create a link from vi to Eegl when doing
 # "make install".  An existing file will be overwritten!
 # When not using it, some make programs can't handle an undefined $(LINKIT).
 #LINKIT = ln -f -s $(DEST_BIN)/$(EEGLTARGET) $(DESTDIR)/usr/bin/vi
@@ -1312,7 +1307,7 @@ tools: $(TOOLS)
 
 # Run the script to generate the Command lookup table and the normal/visual mode command lookup 
 # tables. This only needs to be run when command has been added or changed.
-# If this fails because you don't have Vim yet, first build and install Vim without changes.
+# If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
 	$(CC) -I$(srcdir) $(INDICES_FLAGS) src/indices/indexGenerator.c -o _build/indexGenerator
 	_build/indexGenerator actions
@@ -1361,7 +1356,7 @@ languages:
 update-po:
 	cd $(PODIR); CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) update-po
 
-# Generate function prototypes.  This is not needed to compile vim, but if
+# Generate function prototypes.  This is not needed to compile Eegl, but if
 # you want to use it, cproto is out there on the net somewhere -- Webb
 
 
@@ -1417,7 +1412,7 @@ types.vim: $(TAGS_FILES)
 # Do the scripttests first, so that the summary shows last.
 test check: unittests $(TERM_TEST) scripttests
 
-# Execute the test scripts.  Run these after compiling Vim, before installing.
+# Execute the test scripts.  Run these after compiling Eegl, before installing.
 # This doesn't depend on $(EEGLTARGET), because that won't work when configure
 # wasn't run yet.  Restart make to build it instead.
 #
@@ -1431,8 +1426,8 @@ scripttests:
 	if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
 		cd $(PODIR); $(MAKE) -f Makefile check VIMPROG=../$(EEGLTARGET); \
 	fi
-	-if test $(EEGLTARGET) != vim -a ! -r vim; then \
-		ln -s $(EEGLTARGET) vim; \
+	-if test $(EEGLTARGET) != eegl -a ! -r eegl; then \
+		ln -s $(EEGLTARGET) eegl; \
 	fi
 	cd noncode/tests;\
    $(MAKE) -f Makefile VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
@@ -1449,9 +1444,7 @@ benchmark:
 unittesttargets:
 	$(MAKE) -f Makefile $(UNITTEST_TARGETS)
 
-# Swap these lines to run individual tests with gvim instead of vim.
 VIMTESTTARGET = $(EEGLTARGET)
-# VIMTESTTARGET = $(GEEGLTARGET)
 
 # Execute the unittests one by one.
 unittest unittests: $(RUN_UNITTESTS)
@@ -1506,7 +1499,7 @@ testclean:
 	fi
 
 # Unittests
-# It's build just like Vim to satisfy all dependencies.
+# It's build just like Eegl to satisfy all dependencies.
 $(JSON_TEST_TARGET): $(JSON_TEST_OBJ)
 	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
 		-o $(JSON_TEST_TARGET) $(JSON_TEST_OBJ) $(ALL_LIBS)" \
@@ -2073,7 +2066,7 @@ uninstall_runtime:
 	-rm -f $(DEST_RT)/LICENSE.??_??.txt
 	-rm -f $(DEST_RT)/README.txt $(DEST_RT)/LICENSE
 	-rmdir $(DEST_PLUG) $(DEST_RT)
-#	This will fail when other Vim versions are installed, no worries.
+#	This will fail when other Eegl versions are installed, no worries.
 	-rmdir $(DEST_VIM)
 
 # Clean up all the files that have been produced, except configure's.
@@ -2145,7 +2138,7 @@ shadow:	runtime
 				 ../../tests/testluaplugin \
 				 .
 
-# After updating Vim new files may have been created, use this to refresh the
+# After updating Eegl new files may have been created, use this to refresh the
 # symbolic links in the shadow directory. This isn't guaranteed to catch all
 # changes, running "make shadow" again might sometimes be needed.
 shadowupdate:

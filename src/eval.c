@@ -1120,15 +1120,13 @@ void *
 call_func_retstr(
    Byte      *func,
    int      argc,
-   Var   *argv)
-{
+   Var   *argv
+) {
    Var   returnVar;
-   Byte   *retval;
-
    if (callEeglFunction(func, argc, argv, &returnVar) == FAIL)
       return NULL;
 
-   retval = copyStr(tv_get_string(&returnVar));
+   CS retval = copyStr(tv_get_string(&returnVar));
    clearVar(&returnVar);
    return retval;
 }
@@ -2169,7 +2167,7 @@ eval_for_line(
          fi->fi_string = tv.string;
          tv.string = NULL;
          if (fi->fi_string == NULL)
-             fi->fi_string = copyStr((CS)"");
+             fi->fi_string = copyStr(S"");
          } else {
             emsg(_(e_string_list_tuple_or_blob_required));
             clearVar(&tv);
@@ -4091,8 +4089,10 @@ func_tv2string(Var *tv, Byte **tofree, int echo_style) {
          r = S"function()";
       else {
          r = make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN);
-         if (r == buf)
-            r = *tofree = copyStr(buf);
+         if (r == buf) {
+            *tofree = copyStr(buf);
+            r = *tofree;
+         } 
       }
    } else {
       CS s = (tv->string) ? make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN) : null;
@@ -5367,9 +5367,9 @@ do_string_sub(
    if (ga.c) {
       str = (CS)ga.c;
       len = (Unt)ga.len;
-    }
-    ret = copySubstr(str, len);
-    ga_clear(&ga);
+   }
+   ret = copySubstr(str, len);
+   ga_clear(&ga);
 
    if (ret_len)
       *ret_len = len;
@@ -7019,7 +7019,7 @@ c_lockvar(Invocation *invo) {
    if (invo->forceit)
       deep = -1;
    ei (eeIsDigit(*arg)) {
-      deep = getdigits(&arg);
+      deep = parseLong(&arg);
       arg = skipwhite(arg);
    }
 
@@ -7882,7 +7882,7 @@ DictItem *
 findVar_also_in_script(CS name, OUT EeSet** htp, Boole no_autoload) {
    if (STRNCMP(name, "<SNR>", 5) == 0 && SAFE_isdigit(name[5])) {
       Byte       *p = name + 5;
-      int       sid = getdigits(&p);
+      int       sid = parseLong(&p);
 
       if (SCRIPT_ID_VALID(sid) && *p == '_') {
          EeSet   *ht = &SCRIPT_VARS(sid);
@@ -8207,8 +8207,7 @@ before_set_vvar(
          CS val = tv_get_string(tv);
 
          // Careful: when assigning to v:errmsg and
-         // tv_get_string() causes an error message the variable
-         // will already be set.
+         // tv_get_string() causes an error message the variable will already be set.
          if (di->c.string == NULL)
             di->c.string = copyStr(val);
       } else {
@@ -11466,7 +11465,7 @@ getregionpos(
    ei (type[0] == Ctrl_V) {
       Byte *p = type + 1;
 
-      if (*p != ZERO && ((block_width = getdigits(&p)) <= 0 || *p != ZERO)) {
+      if (*p != ZERO && ((block_width = parseLong(&p)) <= 0 || *p != ZERO)) {
          showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "type", type);
          return FAIL;
       }
@@ -12969,7 +12968,7 @@ f_matchbufline(Var *argvars, Var *returnVar) {
    CS pat = tv_get_string_buf(&argvars[1], patbuf);
 
    int      anyEmsgG_before = anyEmsgG;
-   LineNr slnum = tv_get_lnum_buf(&argvars[2], book);
+   LineNr slnum = daGetLnumFromBookOrVar(&argvars[2], book);
    if (anyEmsgG > anyEmsgG_before)
       return;
    if (slnum < 1) {
@@ -12977,7 +12976,7 @@ f_matchbufline(Var *argvars, Var *returnVar) {
       return;
    }
 
-   LineNr elnum = tv_get_lnum_buf(&argvars[3], book);
+   LineNr elnum = daGetLnumFromBookOrVar(&argvars[3], book);
    if (anyEmsgG > anyEmsgG_before)
       return;
    if (elnum < 1 || elnum < slnum) {
@@ -14349,7 +14348,7 @@ get_yank_type(Byte **pp, CS yank_type, long *block_len) {
       *yank_type = MBLOCK;
       if (EE_ISDIGIT(stropt[1])) {
          ++stropt;
-         *block_len = getdigits(&stropt) - 1;
+         *block_len = parseLong(&stropt) - 1;
          --stropt;
       }
       break;
@@ -14531,11 +14530,9 @@ f_settagstack(Var *argvars, Var *returnVar) {
 // "sha256({string})" function
 private void
 f_sha256(Var *argvars, Var *returnVar) {
-   Byte   *p;
-
-   p = tv_get_string(&argvars[0]);
+   CS p = tv_get_string(&argvars[0]);
    returnVar->string = copyStr(sha256_bytes(p, (int)STRLEN(p), NULL, 0));
-    returnVar->tag = VAR_STRING;
+   returnVar->tag = VAR_STRING;
 }
 
 // "shellescape({string})" function
@@ -15167,40 +15164,29 @@ cause_errthrow(Byte   *mesg, int severe, int* ignore) {
          plist = &(*plist)->next;
 
       elem = ALLOC_CLEAR_ONE(MsgList);
-      if (elem == NULL) {
-         suppress_errthrow = TRUE;
-         emsg(_(e_out_of_memory));
-      } else {
-         elem->msg = copyStr(mesg);
-         if (elem->msg == NULL) {
-            eeglFree(elem);
-            suppress_errthrow = TRUE;
-            emsg(_(e_out_of_memory));
-         } else {
-            elem->next = NULL;
-            elem->throw_msg = NULL;
-            *plist = elem;
-            if (plist == msg_list || severe) {
-               // Skip the extra "Eegl " prefix for message "E458".
-               CS tmsg = elem->msg;
-               if (STRNCMP(tmsg, "Eegl E", 5) == 0
-                     && EE_ISDIGIT(tmsg[5])
-                     && EE_ISDIGIT(tmsg[6])
-                     && EE_ISDIGIT(tmsg[7])
-                     && tmsg[8] == ':'
-                     && tmsg[9] == ' ')
-                  (*msg_list)->throw_msg = &tmsg[4];
-               else
-                  (*msg_list)->throw_msg = tmsg;
-             }
+      elem->msg = copyStr(mesg);
+      elem->next = NULL;
+      elem->throw_msg = NULL;
+      *plist = elem;
+      if (plist == msg_list || severe) {
+         // Skip the extra "Eegl " prefix for message "E458".
+         CS tmsg = elem->msg;
+         if (STRNCMP(tmsg, "Eegl E", 5) == 0
+               && EE_ISDIGIT(tmsg[5])
+               && EE_ISDIGIT(tmsg[6])
+               && EE_ISDIGIT(tmsg[7])
+               && tmsg[8] == ':'
+               && tmsg[9] == ' ')
+            (*msg_list)->throw_msg = &tmsg[4];
+         else
+            (*msg_list)->throw_msg = tmsg;
+       }
 
-             // Get the source name and lnum now, it may change before
-             // reaching do_errthrow().
-             elem->sfile = estack_sfile(ESTACK_NONE);
-             elem->slnum = SOURCING_LNUM;
-             elem->msg_compiling = estack_compiling;
-         }
-      }
+       // Get the source name and lnum now, it may change before
+       // reaching do_errthrow().
+       elem->sfile = estack_sfile(ESTACK_NONE);
+       elem->slnum = SOURCING_LNUM;
+       elem->msg_compiling = estack_compiling;
    }
    return TRUE;
    }
@@ -15404,11 +15390,6 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
       excp->throw_name = estack_sfile(ESTACK_NONE);
       if (excp->throw_name == NULL)
          excp->throw_name = copyStr((CS)"");
-      if (excp->throw_name == NULL) {
-         if (should_free)
-            eeglFree(excp->value);
-         goto nomem;
-      }
       excp->throw_lnum = SOURCING_LNUM;
    }
 

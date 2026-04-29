@@ -3362,7 +3362,7 @@ private Byte utf8LenTable_zero[256] = {
 CS
 inputInitCharLens(void) {
    // The cell width depends on the type of multi-byte characters.
-   (void)init_chartab();
+   (void)bookInitCharsForKeywordsForCurbook();
 
    screenalloc(FALSE);
    // GNU gettext 0.10.37 supports this feature: set the codeset used for
@@ -3912,14 +3912,14 @@ utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
 //Get character at **pp and advance *pp to the next character.
 //Note: composing characters are skipped!
 Unt
-mb_ptr2char_adv(Byte **pp) {
+inpAdvanceMultibyte(Byte **pp) {
     int c = mb_ptr2char(*pp);
     *pp += utfCharLen(*pp);
     return c;
 }
 
 //Get character at **pp and advance *pp to the next character.
-// Note: composing characters are returned as separate characters.
+//Note: composing characters are returned as separate characters.
 Unt
 mb_cptr2char_adv(OUT CS* pp) {
    Unt c = mb_ptr2char(*pp);
@@ -7477,7 +7477,7 @@ vcol2col(Portal *po, LineNr lnum, int vcol, ColNr *coladdp) {
 
    // try to advance to the specified column
    line = memGetLine(po->book, lnum, FALSE);
-   init_chartabsize_arg(&cts, po, lnum, 0, line, line);
+   bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
    while (cts.cts_vcol < vcol && *cts.cts_ptr != ZERO) {
       int size = win_lbr_chartabsize(&cts, NULL);
       if (cts.cts_vcol + size > vcol)

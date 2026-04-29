@@ -9787,8 +9787,7 @@ termUpdatePortal(Portal *po) {
    if (term->rows != newrows || term->cols != newcols) {
       term->vterm_size_changed = TRUE;
       vterm_set_size(vterm, newrows, newcols);
-      ch_log(term->job->jv_channel, "Resizing terminal to %d lines",
-                                 newrows);
+      ch_log(term->job->jv_channel, "Resizing terminal to %d lines", newrows);
       term_report_winsize(term, newrows, newcols);
 
       //Updating the terminal size will cause the snapshot to be cleared.
@@ -12528,12 +12527,6 @@ int
 ui_get_shellsize(void) {
    int retval = mch_get_shellsize();
    check_shellsize();
-
-   // adjust the default for 'lines' and 'columns'
-   if (retval == OK) {
-      set_number_default((CS)"lines", visibleRowsG);
-      set_number_default((CS)"columns", visibleColsG);
-   }
    return retval;
 }
 
@@ -12541,13 +12534,13 @@ ui_get_shellsize(void) {
 //The mch_set_shellsize() function will try to set the new size. If this is not possible, 
 //it will adjust visibleRowsG and visibleColsG.
 void
-ui_set_shellsize( int      mustset UNUSED) {  // set by the user
+ui_set_shellsize(int mustset UNUSED) {  // set by the user
    mch_set_shellsize();
 }
 
 // Get the portal position in pixels, if possible. Return FAIL when not possible.
 int
-uiGetPortPos(int *x, int *y, Long timeout UNUSED) {
+uiGetPortPos(int* x, int* y, Long timeout UNUSED) {
    return term_get_winpos(x, y, timeout);
 }
 
@@ -13133,7 +13126,7 @@ tabpanelopt_changed(void) {
             return FAIL;
       } ei (STRNCMP(p, "columns:", 8) == 0 && EE_ISDIGIT(p[8])) {
          p += 8;
-         new_columns = getdigits(&p);
+         new_columns = parseLong(&p);
       } ei (STRNCMP(p, "vert", 4) == 0) {
          p += 4;
          new_is_vert = TRUE;

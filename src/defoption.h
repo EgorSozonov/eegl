@@ -177,7 +177,7 @@ OPTION("isident", p_isi, CS, "@,48-57,_,192-255", P_COMMA|P_NODUP, &setIsopt, NU
 OPTION("langmap", p_langmap, CS, null, P_ONECOMMA|P_NODUP, &setLangmap, NULL)
 OPTION("langremap", p_lrm, Boole, false, 0, null, NULL)
 OPTION("lazyredraw", p_lz, Boole, false, 0, null, null)
-OPTION("lines", visibleRowsG, long, 24, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleRows, NULL)
+OPTION("lines", visibleRowsG, long, 24, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleLines, NULL)
 OPTION("liteTheme", liteThemeG, Boole, false, P_RCLR|P_HLONLY, &setLiteTheme, null)
 OPTION("makeef", p_mef, CS, "make.err", P_EXPAND, NULL, NULL)
 // open the location list when "make" is done

@@ -326,7 +326,7 @@ allocReturnList(OUT Var* returnVar) {
 // Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
 // Uses an allocation id for testing.
 int
-allocReturnList_id(Var *returnVar, AllocId id) {
+allocReturnList_id(Var* returnVar, AllocId id) {
    if (id == alloc_fail_id && alloc_does_fail(sizeof(List)))
       return FAIL;
    allocReturnList(returnVar);
@@ -336,7 +336,7 @@ allocReturnList_id(Var *returnVar, AllocId id) {
 
 // Set a list as the return value.  Increments the reference count.
 void
-returnVar_list_set(OUT Var *returnVar, List *l) {
+returnVar_list_set(OUT Var* returnVar, List *l) {
    returnVar->tag = VAR_LIST;
    returnVar->list = l;
    if (l)
@@ -919,7 +919,7 @@ list_flatten(List *list, ListItem *first, long maxitems, long maxdepth) {
 
 // "flatten()" and "flattennew()" functions
 private void
-flatten_common(Var *argvars, Var *returnVar, int make_copy) {
+flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
    List  *l;
    long    maxdepth;
    Boole error = false;
@@ -966,19 +966,19 @@ flatten_common(Var *argvars, Var *returnVar, int make_copy) {
 
 // "flatten(list[, {maxdepth}])" function
 void
-f_flatten(Var *argvars, Var *returnVar) {
+f_flatten(Arr(Var) argvars, Var* returnVar) {
    flatten_common(argvars, returnVar, FALSE);
 }
 
 // "flattennew(list[, {maxdepth}])" function
 void
-f_flattennew(Var *argvars, Var *returnVar) {
+f_flattennew(Arr(Var) argvars, Var* returnVar) {
    flatten_common(argvars, returnVar, TRUE);
 }
 
 // "items(list)" function Caller must have already checked that argvars[0] is a List.
 void
-list2items(Var *argvars, Var *returnVar) {
+list2items(Arr(Var) argvars, Var* returnVar) {
    List   *l = argvars[0].list;
    ListItem   *li;
    Long   idx;
@@ -1003,7 +1003,7 @@ list2items(Var *argvars, Var *returnVar) {
 
 // "items(string)" function. Precond: Caller must have already checked that argvars[0] is a String.
 void
-string2items(Var *argvars, Var *returnVar) {
+string2items(Arr(Var) argvars, Var* returnVar) {
    Byte   *p = argvars[0].string;
    allocReturnList(returnVar);
    if (!p)  // null string behaves like an empty string
@@ -1337,7 +1337,7 @@ list_join(
 }
 
 void
-f_join(Var *argvars, Var *returnVar) {
+f_join(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
    Byte   *sep;
 
@@ -1368,7 +1368,7 @@ f_join(Var *argvars, Var *returnVar) {
 // Allocate a variable for a List and fill it from "*arg".
 // "*arg" points to the "[". Return OK or FAIL.
 int
-eval_list(Byte **arg, Var *returnVar, EvalCtx *evalarg, int do_error) {
+eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
    int evaluate = evalarg == NULL ? FALSE : evalarg->eval_flags & EVAL_EVALUATE;
    List* l = NULL;
    Var tv;
@@ -1493,7 +1493,7 @@ init_static_list(StaticList10 *sl) {
 }
 
 void
-f_list2str(Var *argvars, Var *returnVar) {
+f_list2str(Arr(Var) argvars, Var* returnVar) {
    ListItem   *li;
    ArrayList   ga;
 
@@ -1524,7 +1524,7 @@ f_list2str(Var *argvars, Var *returnVar) {
 // Remove item argvars[1] from List argvars[0]. If argvars[2] is supplied, then
 // remove the range of items from argvars[1] to argvars[2] (inclusive).
 private void
-listVar_remove(Var *argvars, Var *returnVar, CS arg_errmsg) {
+listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    List   *l;
    ListItem   *item, *item2;
    ListItem   *li;
@@ -1841,7 +1841,7 @@ do_uniq(List *l, SortInfo *info) {
 // Parse the optional arguments supplied to the sort() or uniq() function and
 // return the values in "info".
 private int
-parse_sort_uniq_args(Var *argvars, SortInfo *info) {
+parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
    info->item_compare_ic = FALSE;
    info->item_compare_lc = FALSE;
    info->item_compare_numeric = FALSE;
@@ -1913,7 +1913,7 @@ parse_sort_uniq_args(Var *argvars, SortInfo *info) {
 
 // "sort()" or "uniq()" function
 private void
-do_sort_uniq(Var *argvars, Var *returnVar, int sort) {
+do_sort_uniq(Arr(Var) argvars, Var* returnVar, int sort) {
    SortInfo info;
 
    if (argvars[0].tag != VAR_LIST) {
@@ -1954,13 +1954,13 @@ theend:
 
 // "sort({list})" function
 void
-f_sort(Var *argvars, Var *returnVar) {
+f_sort(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, TRUE);
 }
 
 // "uniq({list})" function
 void
-f_uniq(Var *argvars, Var *returnVar) {
+f_uniq(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, FALSE);
 }
 
@@ -2116,7 +2116,7 @@ list_filter_map(
 
 // Implementation of map(), filter() and foreach().
 private void
-filter_map(Var *argvars, Var *returnVar, FilterMap filtermap) {
+filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
     CS func_name = (CS)(
           filtermap == FILTERMAP_MAP 
              ? "map()"
@@ -2188,28 +2188,28 @@ filter_map(Var *argvars, Var *returnVar, FilterMap filtermap) {
 }
 
 void
-f_filter(Var *argvars, Var *returnVar) {
+f_filter(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_FILTER);
 }
 
 void
-f_map(Var *argvars, Var *returnVar) {
+f_map(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_MAP);
 }
 
 void
-f_mapnew(Var *argvars, Var *returnVar) {
+f_mapnew(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_MAPNEW);
 }
 
 void
-f_foreach(Var *argvars, Var *returnVar) {
+f_foreach(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_FOREACH);
 }
 
 // "add(list, item)" function
 private void
-list_add(Var *argvars, Var *returnVar) {
+list_add(Arr(Var) argvars, Var* returnVar) {
    List   *l = argvars[0].list;
 
    if (!l) {
@@ -2222,7 +2222,7 @@ list_add(Var *argvars, Var *returnVar) {
 
 // "add(object, item)" function
 void
-f_add(Var *argvars, Var *returnVar) {
+f_add(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = 1; // Default: Failed
 
    if (argvars[0].tag == VAR_LIST)
@@ -2262,7 +2262,7 @@ list_count(List *l, Var *needle, long idx, int ic) {
 }
 
 void
-f_count(Var *argvars, Var *returnVar) {
+f_count(Arr(Var) argvars, Var* returnVar) {
    long   n = 0;
    int      ic = FALSE;
    Boole error = false;
@@ -2343,7 +2343,7 @@ list_extend_func(
 
 // "extend()" or "extendnew()" function.  "is_new" is TRUE for extendnew().
 private void
-extend(Var *argvars, Var *returnVar, CS arg_errmsg, int is_new) {
+extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
    CS func_name = (CS)( is_new ? "extendnew()" : "extend()");
 
    if (argvars[0].tag == VAR_LIST && argvars[1].tag == VAR_LIST) {
@@ -2358,20 +2358,20 @@ extend(Var *argvars, Var *returnVar, CS arg_errmsg, int is_new) {
 
 // "extend(list, list [, idx])" function. "extend(dict, dict [, action])" function
 void
-f_extend(Var *argvars, Var *returnVar) {
+f_extend(Arr(Var) argvars, Var* returnVar) {
    Byte      *errmsg = (CS)N_("extend() argument");
    extend(argvars, returnVar, errmsg, FALSE);
 }
 
 // "extendnew(list, list [, idx])" function. "extendnew(dict, dict [, action])" function
 void
-f_extendnew(Var *argvars, Var *returnVar) {
+f_extendnew(Arr(Var) argvars, Var* returnVar) {
    Byte* errmsg = (CS)N_("extendnew() argument");
    extend(argvars, returnVar, errmsg, TRUE);
 }
 
 private void
-list_insert_func(Var *argvars, Var *returnVar) {
+list_insert_func(Arr(Var) argvars, Var* returnVar) {
    List* l = argvars[0].list;
    long before = 0;
    ListItem   *item;
@@ -2405,7 +2405,7 @@ list_insert_func(Var *argvars, Var *returnVar) {
 }
 
 void
-f_insert(Var *argvars, Var *returnVar) {
+f_insert(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_BLOB)
       blob_insert_func(argvars, returnVar);
    ei (argvars[0].tag != VAR_LIST)
@@ -2415,7 +2415,7 @@ f_insert(Var *argvars, Var *returnVar) {
 }
 
 void
-f_remove(Var *argvars, Var *returnVar) {
+f_remove(Arr(Var) argvars, Var* returnVar) {
    CS arg_errmsg = (CS)N_("remove() argument");
 
    if (argvars[0].tag == VAR_BAG)
@@ -2429,7 +2429,7 @@ f_remove(Var *argvars, Var *returnVar) {
 }
 
 private void
-list_reverse(List *l, Var *returnVar) {
+list_reverse(List *l, Var* returnVar) {
    ListItem   *li, *ni;
 
    returnVar_list_set(returnVar, l);
@@ -2455,7 +2455,7 @@ list_reverse(List *l, Var *returnVar) {
 
 // "reverse({list})" function
 void
-f_reverse(Var *argvars, Var *returnVar) {
+f_reverse(Arr(Var) argvars, Var* returnVar) {
    if (check_for_string_or_list_or_blob_arg(argvars, 0) == FAIL)
       return;
 
@@ -2553,7 +2553,7 @@ list_reduce(
 //"reduce(blob, { accumulator, element -> value } [, initial])"
 //"reduce(string, { accumulator, element -> value } [, initial])"
 void
-f_reduce(Var *argvars, Var *returnVar) {
+f_reduce(Arr(Var) argvars, Var* returnVar) {
    Byte   *func_name;
 
    if (check_for_string_or_list_or_blob_arg(argvars, 0) == FAIL)
@@ -2579,7 +2579,7 @@ f_reduce(Var *argvars, Var *returnVar) {
 }
 
 void
-f_slice(Var *argvars, Var *returnVar) {
+f_slice(Arr(Var) argvars, Var* returnVar) {
    if (check_can_index(&argvars[0], TRUE, FALSE) != OK)
       return;
 
@@ -5304,8 +5304,7 @@ eval_number(
    }
    if (get_float) {
       double   f;
-
-      *arg += string2float(*arg, &f, TRUE);
+      *arg += string2float(*arg, OUT &f, true);
       if (evaluate) {
           returnVar->tag = VAR_FLOAT;
           returnVar->floatt = f;
@@ -5375,7 +5374,7 @@ tv2string(
 //If the environment variable was not set, silently assume it is empty.
 //Return FAIL if the name is invalid.
 int
-eval_env_var(Byte **arg, Var *returnVar, int evaluate) {
+eval_env_var(Byte **arg, Var* returnVar, int evaluate) {
    Byte   *string = NULL;
    int      cc;
    int      mustfree = FALSE;
@@ -5416,7 +5415,7 @@ eval_env_var(Byte **arg, Var *returnVar, int evaluate) {
 //Get the lnum from the first argument.
 //Also accepts ".", "$", etc., but that only works for the current buffer. Return -1 on error.
 LineNr
-tv_get_lnum(Var *argvars) {
+tv_get_lnum(Arr(Var) argvars) {
    int      anyEmsgG_before = anyEmsgG;
 
    LineNr lnum = (LineNr)varGetNumberChk(&argvars[0], NULL);
@@ -5430,10 +5429,9 @@ tv_get_lnum(Var *argvars) {
    return lnum;
 }
 
-//Get the lnum from the first argument.
-//Also accepts "$", then "book" is used. Return 0 on error.
+//Get the lnum from the first argument. Also accept "$", then "book" is used. Return 0 on error.
 LineNr
-tv_get_lnum_buf(Var *argvars, Book* book) {
+daGetLnumFromBookOrVar(Var* argvars, Book* book) {
    if (argvars[0].tag == VAR_STRING
           && argvars[0].string != NULL
           && argvars[0].string[0] == '$'
@@ -5504,24 +5502,22 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
    case VAR_BLOB:
    case VAR_JOB:
    case VAR_CHANNEL:
-       break;  // not composite is always OK
+      break;  // not composite is always OK
    case VAR_LIST:
    case VAR_BAG:
-       return equal_type(type1->member, type2->member, flags);
+      return equal_type(type1->member, type2->member, flags);
    case VAR_FUNC:
    case VAR_PARTIAL:
-       if (!equal_type(type1->member, type2->member, flags)
-          || type1->argCount != type2->argCount)
-      return FALSE;
-       if (type1->argCount < 0
-            || type1->args == NULL || type2->args == NULL)
+      if (!equal_type(type1->member, type2->member, flags) || type1->argCount != type2->argCount)
+         return FALSE;
+      if (type1->argCount < 0 || type1->args == NULL || type2->args == NULL)
+         return TRUE;
+      for (i = 0; i < type1->argCount; ++i) {
+         if ((flags & ETYPE_ARG_UNKNOWN) == 0
+            && !equal_type(type1->args[i], type2->args[i], flags))
+             return FALSE;
+      } 
       return TRUE;
-       for (i = 0; i < type1->argCount; ++i)
-      if ((flags & ETYPE_ARG_UNKNOWN) == 0
-         && !equal_type(type1->args[i], type2->args[i],
-                           flags))
-          return FALSE;
-       return TRUE;
     }
     return TRUE;
 }
@@ -5535,31 +5531,31 @@ get_compare_type(CS p, int *len, int *type_is) {
    case '=':
       if (p[1] == '=')
          type = EXPR_EQUAL;
-          ei (p[1] == '~')
+      ei (p[1] == '~')
          type = EXPR_MATCH;
-          break;
+      break;
    case '!': 
-          if (p[1] == '=')
+      if (p[1] == '=')
          type = EXPR_NEQUAL;
-          ei (p[1] == '~')
+      ei (p[1] == '~')
          type = EXPR_NOMATCH;
-          break;
+      break;
    case '>':
-          if (p[1] != '=') {
+      if (p[1] != '=') {
          type = EXPR_GREATER;
          *len = 1;
-          } else
+      } else
          type = EXPR_GEQUAL;
-          break;
+      break;
    case '<':   
-          if (p[1] != '=') {
+      if (p[1] != '=') {
          type = EXPR_SMALLER;
          *len = 1;
-          } else
+      } else
          type = EXPR_SEQUAL;
-          break;
+      break;
    case 'i':   
-          if (p[1] == 's') {
+      if (p[1] == 's') {
          // "is" and "isnot"; but not a prefix of a name
          if (p[2] == 'n' && p[3] == 'o' && p[4] == 't')
              *len = 5;
@@ -5568,10 +5564,10 @@ get_compare_type(CS p, int *len, int *type_is) {
              type = *len == 2 ? EXPR_IS : EXPR_ISNOT;
              *type_is = TRUE;
          }
-          }
-          break;
-    }
-    return type;
+      }
+      break;
+   }
+   return type;
 }
 
 //Return TRUE when "tv" is not falsy: non-zero, non-empty string, non-empty
@@ -5657,20 +5653,19 @@ allocBag_lock(int lock) {
 
 // Allocate an empty dict for a return value. Return OK or FAIL.
 void
-allocReturnDict(Var *returnVar) {
+allocReturnDict(Var* returnVar) {
    Bag* b = allocBag_lock(0);
    returnVar_dict_set(returnVar, b);
 }
 
 // Set a dictionary as the return value
 void
-returnVar_dict_set(Var *returnVar, Bag *d) {
+returnVar_dict_set(Var* returnVar, Bag *d) {
    returnVar->tag = VAR_BAG;
    returnVar->bag = d;
    if (d)
       ++d->refcount;
 }
-
 
 //Return the character "str[index]" where "index" is the character index,
 //including composing characters.
@@ -5713,8 +5708,6 @@ char_from_string(CS str, Long index) {
    return copySubstr(str + nbyte, utfCharLen(str + nbyte));
 }
 
-
-
 Text
 textOfDi(DictItem* di) {
    return (Text){.c = di->key, .len = di->len};
@@ -5753,19 +5746,19 @@ bagAddNumber_special(Bag* b, CS key, Long nr, VarTag vartype) {
 
 // Add a number entry to a Bag. Return FAIL when out of memory or when key already exists.
 int
-bagAddNumber(Bag *d, CS key, Long nr) {
+bagAddNumber(Bag* d, CS key, Long nr) {
    return bagAddNumber_special(d, key, nr, VAR_NUMBER);
 }
 
 // Add a special entry to a Bag. FAIL when out of memory or when key already exists.
 int
-bagAdd_bool(Bag *d, CS key, Long nr) {
+bagAdd_bool(Bag* d, CS key, Long nr) {
    return bagAddNumber_special(d, key, nr, VAR_BOOL);
 }
 
 // Add a string entry to Bag. Return FAIL when out of memory or when key already exists.
 int
-bagAddString(Bag *d, CS key, CS str) {
+bagAddString(Bag* d, CS key, CS str) {
    return bagAddString_len(d, key, str, -1);
 }
 
@@ -5809,7 +5802,7 @@ bagAddList(Bag *d, CS key, List *list) {
 
 // Add a Var entry to dictionary "d". Return FAIL when out of memory and when key already exists.
 int
-bagAddVar(Bag* b, CS key, Var *tv) {
+bagAddVar(Bag* b, CS key, Var* tv) {
    DictItem* item = dictitem_alloc(mbText(key));
    copy_tv(OUT &item->c, tv);
    if (bagAdd(b, item) == FAIL) {
@@ -5821,7 +5814,7 @@ bagAddVar(Bag* b, CS key, Var *tv) {
 
 // Add a callback to dictionary "d". Return FAIL when out of memory and when key already exists.
 int
-bagAddCallback(Bag *d, CS key, Callback *cb) {
+bagAddCallback(Bag* d, CS key, Callback* cb) {
    DictItem* item = dictitem_alloc(mbText(key));
    putCallback(OUT &item->c, cb);
    if (bagAdd(d, item) == FAIL) {
@@ -5833,7 +5826,7 @@ bagAddCallback(Bag *d, CS key, Callback *cb) {
 
 // Add a function entry to dictionary "d". FAIL when out of memory or when key already exists.
 int
-bagAddFn(Bag *d, CS key, UserFunc *fp) {
+bagAddFn(Bag* d, CS key, UserFunc* fp) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_FUNC;
    item->c.string = copySubstr(fp->uf_name, fp->uf_namelen);
@@ -5860,22 +5853,19 @@ bagIterateStart(Var *var, DictIterator *iter) {
    }
 }
 
-// Iterate over the items referred to by "iter". It should be initialized with bagIterateStart().
-// Return a pointer to the key. "*tv_result" is set to point to the value for that key.
-// If there are no more items, NULL is returned.
+//Iterate over the items referred to by "iter". It should be initialized with bagIterateStart().
+//Return a pointer to the key. "*tv_result" is set to point to the value for that key.
+//If there are no more items, NULL is returned.
 CS
 bagIterateNext(DictIterator *iter, Var **tv_result) {
-   DictItem   *di;
-   Byte      *result;
-
    if (iter->dit_todo == 0)
       return NULL;
 
    while (HASHITEM_EMPTY(iter->dit_hi))
       ++iter->dit_hi;
 
-   di = HI2DI(iter->dit_hi);
-   result = di->key;
+   DictItem* di = HI2DI(iter->dit_hi);
+   CS result = di->key;
    *tv_result = &di->c;
 
    --iter->dit_todo;
@@ -5886,7 +5876,7 @@ bagIterateNext(DictIterator *iter, Var **tv_result) {
 // Add a dict entry to dictionary "d".
 // Return FAIL when out of memory and when key already exists.
 int
-bagAddBag(Bag *d, CS key, Bag *dict) {
+bagAddBag(Bag* d, CS key, Bag* dict) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_BAG;
    item->c.bag = dict;
@@ -5900,18 +5890,17 @@ bagAddBag(Bag *d, CS key, Bag *dict) {
 
 // Get the number of items in a Dictionary.
 Ulong
-bagSize(Bag *d) {
-   return d ? (Long)d->hashTable.count : 0L;
+bagSize(Bag* b) {
+   return b ? (Long)b->hashTable.count : 0L;
 }
 
 // Find item "key[len]" in Dictionary "d". If "len" is negative use strlen(key). NULL when not found
-DictItem *
-bagFind(Bag *b, Text const key) {
+DictItem*
+bagFind(Bag* b, Text const key) {
 #define AKEYLEN 200
    Byte   buf[AKEYLEN];
    CS akey;
    CS tofree = NULL;
-   EeSetItem   *hi;
 
    if (!b)
       return NULL;
@@ -5923,7 +5912,7 @@ bagFind(Bag *b, Text const key) {
       akey = buf;
    }
 
-   hi = hash_find(&b->hashTable, (Text){.c = akey, .len = key.len});
+   EeSetItem* hi = hash_find(&b->hashTable, (Text){.c = akey, .len = key.len});
    eeglFree(tofree);
    if (HASHITEM_EMPTY(hi))
       return NULL;
@@ -5939,7 +5928,7 @@ bagHasKey(Bag* b, Text key) {
 // Get a Var item from a dictionary and copy it into "returnVar".
 // Return FAIL if the entry doesn't exist or out of memory.
 int
-bagGetVar(Bag *d, Text key, Var *returnVar) {
+bagGetVar(Bag *d, Text key, Var* returnVar) {
    DictItem* di = bagFind(d, key);
    if (!di)
       return FAIL;
@@ -6050,14 +6039,14 @@ bagToString(Var *tv, int copyID, int restore_copyID) {
    return (CS)ga.c;
 }
 
-// Advance over a literal key, including "-".  If the first character is not a
+//Advance over a literal key, including "-".  If the first character is not a
 // literal key character then "key" is returned.
 private CS
 skip_literal_key(CS key) {
    CS p;
 
    for (p = key; ASCII_ISALNUM(*p) || *p == '_' || *p == '-'; ++p)
-   ;
+      {}
    return p;
 }
 
@@ -6075,13 +6064,11 @@ get_literal_key_tv(Arr(CS) arg, Var *tv) {
    return OK;
 }
 
-
-
 //Allocate a variable for a Dictionary and fill it from "*arg". "*arg" points to the opening brace.
 //"literal" is TRUE for #{key: val}
 //Return OK or FAIL, or NOTDONE for {expr}.
 int
-bagEval(OUT CS* arg, Var *returnVar, EvalCtx *evalarg, int literal) {
+bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
    int evaluate = evalarg == NULL ? FALSE : (evalarg->eval_flags & EVAL_EVALUATE);
    Bag   *d = NULL;
    Var   tvkey;
@@ -6202,7 +6189,7 @@ failret:
 // On return, "*arg" points to the character after the Bag.
 // Return OK or FAIL.  Returns NOTDONE for {expr}.
 int
-bagEvalLiteral(OUT CS* arg, Var *returnVar, EvalCtx *evalarg) {
+bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg) {
    int      ret = OK;
 
    if ((*arg)[1] == '{') {
@@ -6216,7 +6203,7 @@ bagEvalLiteral(OUT CS* arg, Var *returnVar, EvalCtx *evalarg) {
 
 // Make a copy of a Dictionary item.
 private DictItem *
-dictitem_copy(DictItem *org) {
+dictitem_copy(DictItem* org) {
    Unt   len = STRLEN(org->key);
    DictItem* di = alloc(offsetof(DictItem, key) + len + 1);
 
@@ -6233,8 +6220,8 @@ dictitem_copy(DictItem *org) {
 // Otherwise duplicate keys are ignored ("action" is "keep").
 // "func_name" is used for reporting where an error occurred.
 void
-bagExtend(Bag *d1, Bag *d2, CS action) {
-   DictItem   *di1;
+bagExtend(Bag* d1, Bag* d2, CS action) {
+   DictItem* di1;
    Text arg_errmsg = tConst("extend() argument");
 
    if (check_hashtab_frozen(&d1->hashTable, S"extend"))
@@ -6291,7 +6278,7 @@ bagExtend(Bag *d1, Bag *d2, CS action) {
 
 // Return the dictitem that an entry in a hashtable points to.
 DictItem *
-bagLookup(EeSetItem *hi) {
+bagLookup(EeSetItem* hi) {
    return HI2DI(hi);
 }
 
@@ -6328,8 +6315,8 @@ bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
 
 // Count the number of times item "needle" occurs in Bag "d". Case is ignored if "ic" is TRUE.
 long
-bagCount(Bag *d, Var *needle, int ic) {
-   if (d == NULL)
+bagCount(Bag* d, Var* needle, int ic) {
+   if (!d)
       return 0;
 
    int todo = (int)d->hashTable.count;
@@ -6350,11 +6337,11 @@ bagCount(Bag *d, Var *needle, int ic) {
 // resulting Bag in "returnVar".  "is_new" is TRUE for extendnew().
 void
 bagExtend_func(
-   Var   *argvars,
+   Var* argvars,
    CS arg_errmsg,
-   int      is_new,
-   Var   *returnVar)
-{
+   int is_new,
+   Var* returnVar
+) {
    int   i;
 
    Bag* d1 = argvars[0].bag;
@@ -6413,17 +6400,16 @@ bagExtend_func(
 // every item in Bag "d" and return the result in "returnVar".
 void
 bagFilterMap(
-   Bag      *d,
-   FilterMap   filtermap,
+   Bag* d,
+   FilterMap filtermap,
    CS arg_errmsg,
-   Var   *expr,
-   Var   *returnVar
+   Var* expr,
+   Var* returnVar
 ) {
    Bag   *d_ret = NULL;
    EeSet   *ht;
    EeSetItem   *hi;
    DictItem   *di;
-   int      todo;
    int      rem;
    Var   newtv;
 
@@ -6445,11 +6431,9 @@ bagFilterMap(
       d->lock = VAR_LOCKED;
    ht = &d->hashTable;
    hash_lock(ht);
-   todo = (int)ht->count;
+   int todo = (int)ht->count;
    FOR_ALL_HASHTAB_ITEMS(ht, hi, todo) {
       if (!HASHITEM_EMPTY(hi)) {
-         int      r;
-
          --todo;
          di = HI2DI(hi);
          Text errMsg = mbText(arg_errmsg);
@@ -6458,7 +6442,7 @@ bagFilterMap(
                   || var_check_ro(di->flags, errMsg, true)))
             break;
          set_EeglVar_string(VV_KEY, di->key, -1);
-         r = filter_map_one(&di->c, expr, filtermap, &newtv, &rem);
+         int r = filter_map_one(&di->c, expr, filtermap, &newtv, &rem);
          clearVar(get_EeglVar_tv(VV_KEY));
          if (r == FAIL || anyEmsgG) {
             clearVar(&newtv);
@@ -6490,7 +6474,7 @@ bagFilterMap(
 
 // "remove({dict})" function
 void
-bagRemove(Var *argvars, Var *returnVar, CS arg_errmsg) {
+bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    if (argvars[2].tag != VAR_UNKNOWN) {
       showErrFmtMsg(_(e_too_many_arguments_for_function_str), "remove()");
       return;
@@ -6526,7 +6510,7 @@ typedef enum {
 
 // Turn a dict into a list.
 private void
-bagToList(Var *argvars, Var *returnVar, dict2List what) {
+bagToList(Arr(Var) argvars, Var* returnVar, dict2List what) {
    List   *l2;
    DictItem   *di;
    EeSetItem   *hi;
@@ -6584,7 +6568,7 @@ bagToList(Var *argvars, Var *returnVar, dict2List what) {
 
 // "items(dict)" function
 void
-f_items(Var *argvars, Var *returnVar) {
+f_items(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_STRING)
       string2items(argvars, returnVar);
    ei (argvars[0].tag == VAR_LIST)
@@ -6594,12 +6578,12 @@ f_items(Var *argvars, Var *returnVar) {
 }
 
 void
-f_keys(Var *argvars, Var *returnVar) {
+f_keys(Arr(Var) argvars, Var* returnVar) {
    bagToList(argvars, returnVar, DICT2LIST_KEYS);
 }
 
 void
-f_values(Var *argvars, Var *returnVar) {
+f_values(Arr(Var) argvars, Var* returnVar) {
    bagToList(argvars, returnVar, DICT2LIST_VALUES);
 }
 
@@ -6619,7 +6603,7 @@ bagSetItemsRo(Bag* di) {
 }
 
 void
-f_has_key(Var *argvars, Var *returnVar) {
+f_has_key(Arr(Var) argvars, Var* returnVar) {
    if (check_for_dict_arg(argvars, 0) == FAIL || argvars[0].bag == NULL)
       return;
 
@@ -6782,7 +6766,7 @@ dictitem_free(DictItem *item) {
 // Make a copy of dict "d".  Shallow if "deep" is FALSE. The refcount of the new dict is set to 1.
 // See item_copy() for "top" and "copyID". Return NULL when out of memory.
 Bag *
-dict_copy(Bag *orig, int deep, int top, int copyID) {
+dict_copy(Bag* orig, int deep, int top, int copyID) {
    if (!orig)
       return NULL;
 
@@ -6829,7 +6813,7 @@ dict_copy(Bag *orig, int deep, int top, int copyID) {
 // Check for adding a function to g: or or l:.
 // If the name is wrong give an error message and return TRUE.
 int
-dict_wrong_func_name(Bag *b, Var *tv, Text name) {
+dict_wrong_func_name(Bag* b, Var* tv, Text name) {
    return (b == get_globvar_dict() || &b->hashTable == get_funccal_local_ht())
        && (tv->tag == VAR_FUNC || tv->tag == VAR_PARTIAL)
        && var_wrong_func_name(name, TRUE);
@@ -6847,7 +6831,7 @@ private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
 // Encode "val" into a JSON format string. The result is added to "gap"
 // Returns FAIL on failure and makes gap->c empty.
 private int
-json_encode_gap(ArrayList *gap, Var *val, int options) {
+json_encode_gap(ArrayList* gap, Var* val, int options) {
    if (json_encode_item(gap, val, get_copyID(), options) == FAIL) {
       ga_clear(gap);
       gap->c = copyStr(E);
@@ -6929,8 +6913,8 @@ private const char ascii_needs_escape[128] = {
 
 //Encode the utf-8 encoded string "str" into "gap".
 private void
-write_string(ArrayList *gap, CS str) {
-   Byte   *res = str;
+write_string(ArrayList* gap, CS str) {
+   CS res = str;
    Unt      c;
 
    if (!res) {
@@ -7007,7 +6991,7 @@ write_string(ArrayList *gap, CS str) {
 private int
 json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
    Byte   numbuf[NUMBUFLEN];
-   Byte   *res;
+   CS res;
    Blob   *b;
    List   *l;
    Bag   *d;
@@ -7048,12 +7032,12 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
    case VAR_BLOB:
       b = val->blob;
       if (b == NULL || b->c.len == 0)
-         ga_concat(gap, (CS)"[]");
+         ga_concat(gap, S"[]");
       else {
          ga_append(gap, '[');
          for (i = 0; i < b->c.len; i++) {
             if (i > 0)
-               ga_concat(gap, (CS)",");
+               ga_concat(gap, S",");
             eeSnprintf(numbuf, NUMBUFLEN, "%d", blob_get(b, i));
             ga_concat(gap, numbuf);
          }
@@ -7064,10 +7048,10 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
    case VAR_LIST:
       l = val->list;
       if (!l)
-         ga_concat(gap, (CS)"[]");
+         ga_concat(gap, S"[]");
       else {
          if (l->copyId == copyID)
-             ga_concat(gap, (CS)"[]");
+             ga_concat(gap, S"[]");
          else {
             ListItem   *li;
 
@@ -7078,8 +7062,8 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
                if (json_encode_item(gap, &li->c, copyID, 0) == FAIL)
                   return FAIL;
                li = li->next;
-               if (li != NULL)
-                   ga_append(gap, ',');
+               if (li)
+                  ga_append(gap, ',');
             }
             ga_append(gap, ']');
             l->copyId = 0;
@@ -7315,24 +7299,22 @@ typedef struct {
 // incomplete message.
 private int
 json_decode_item(JsReader* reader, Var *res) {
-   Byte   *p;
-   int      i;
-   int      len;
-   int      retval;
-   ArrayList   stack;
-   Var   item;
-   Var   *cur_item;
+   int i;
+   int len;
+   int retval;
+   ArrayList stack;
    JsonDecodeItem* topJson;
-   Byte   key_buf[NUMBUFLEN];
+   Byte key_buf[NUMBUFLEN];
 
    ga_init2(&stack, sizeof(JsonDecodeItem), 100);
-   cur_item = res;
+   Var* cur_item = res;
+   Var item;
    initVarToNull(OUT &item);
    if (res)
       initVarToNull(OUT res);
 
    fill_numbuflen(reader);
-   p = reader->js_buf + reader->js_used;
+   CS p = reader->js_buf + reader->js_used;
    for (;;) {
       topJson = NULL;
       if (stack.len > 0) {
@@ -7430,7 +7412,7 @@ json_decode_item(JsReader* reader, Var *res) {
 
       default:
          if (EE_ISDIGIT(*p) || (*p == '-' && (EE_ISDIGIT(p[1]) || p[1] == ZERO))) {
-            Byte  *sp = p;
+            CS sp = p;
 
             if (*sp == '-') {
                ++sp;
@@ -7448,11 +7430,10 @@ json_decode_item(JsReader* reader, Var *res) {
             if (*sp == '.' || *sp == 'e' || *sp == 'E') {
                if (cur_item == NULL) {
                   double f;
-
-                  len = string2float(p, &f, FALSE);
+                  len = string2float(p, OUT &f, false);
                } else {
                   cur_item->tag = VAR_FLOAT;
-                  len = string2float(p, &cur_item->floatt, FALSE);
+                  len = string2float(p, OUT &cur_item->floatt, false);
                }
             } else {
                Long nr;
@@ -7723,18 +7704,18 @@ json_find_end(JsReader* reader) {
 }
 
 void
-f_json_decode(Var *argvars, Var *returnVar) {
+f_json_decode(Arr(Var) argvars, Var* returnVar) {
    JsReader   reader;
-   reader.js_buf = tv_get_string(&argvars[0]);
+   reader.js_buf = tv_get_string(argvars);
    reader.js_fill = NULL;
    reader.js_used = 0;
    json_decode_all(OUT returnVar, &reader);
 }
 
 void
-f_json_encode(Var *argvars, Var *returnVar) {
+f_json_encode(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_STRING;
-   returnVar->string = json_encode(&argvars[0], 0);
+   returnVar->string = json_encode(argvars, 0);
 }
 //}}}
 //{{{floating-point numerics
@@ -7748,9 +7729,9 @@ f_json_encode(Var *argvars, Var *returnVar) {
 int
 string2float(
    CS text,
-   double   *value,       // result stored here
-   int      skip_quotes)
-{
+   OUT double* value,       // result stored here
+   Boole skip_quotes
+) {
    CS s = text;
    double   f;
 
@@ -7796,7 +7777,7 @@ string2float(
 // Get the float value of "argvars[0]" into "f".
 // Return FAIL when the argument is not a Number or Float.
 private int
-get_float_arg(Var *argvars, double *f) {
+get_float_arg(Arr(Var) argvars, OUT double* f) {
    if (argvars[0].tag == VAR_FLOAT) {
       *f = argvars[0].floatt;
       return OK;
@@ -7811,7 +7792,7 @@ get_float_arg(Var *argvars, double *f) {
 
 // "abs(expr)" function
 void
-f_abs(Var *argvars, Var *returnVar) {
+f_abs(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_FLOAT) {
       returnVar->tag = VAR_FLOAT;
       returnVar->floatt = fabs(argvars[0].floatt);
@@ -7828,44 +7809,43 @@ f_abs(Var *argvars, Var *returnVar) {
 }
 
 void
-f_acos(Var *argvars, Var *returnVar) {
+f_acos(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = acos(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_asin(Var *argvars, Var *returnVar) {
+f_asin(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = asin(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_atan(Var *argvars, Var *returnVar) {
+f_atan(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = atan(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_atan2(Var *argvars, Var *returnVar) {
+f_atan2(Arr(Var) argvars, Var* returnVar) {
    double   fx = 0.0, fy = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &fx) == OK
-                 && get_float_arg(&argvars[1], &fy) == OK)
+   if (get_float_arg(argvars, OUT &fx) == OK && get_float_arg(argvars + 1, OUT &fy) == OK)
       returnVar->floatt = atan2(fx, fy);
    else
       returnVar->floatt = 0.0;
@@ -7873,43 +7853,43 @@ f_atan2(Var *argvars, Var *returnVar) {
 
 // "ceil({float})" function
 void
-f_ceil(Var *argvars, Var *returnVar) {
+f_ceil(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = ceil(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_cos(Var *argvars, Var *returnVar) {
+f_cos(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = cos(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_cosh(Var *argvars, Var *returnVar) {
+f_cosh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = cosh(f);
     else
    returnVar->floatt = 0.0;
 }
 
 void
-f_exp(Var *argvars, Var *returnVar) {
+f_exp(Arr(Var) argvars, Var* returnVar) {
     double   f = 0.0;
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = exp(f);
    else
       returnVar->floatt = 0.0;
@@ -7917,10 +7897,10 @@ f_exp(Var *argvars, Var *returnVar) {
 
 // "float2nr({float})" function
 void
-f_float2nr(Var *argvars, Var *returnVar) {
+f_float2nr(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
-   if (get_float_arg(argvars, &f) != OK)
+   if (get_float_arg(argvars, OUT &f) != OK)
       return;
 
    if (f <= (double)-VARNUM_MAX + DBL_EPSILON)
@@ -7933,24 +7913,22 @@ f_float2nr(Var *argvars, Var *returnVar) {
 
 // "floor({float})" function
 void
-f_floor(Var *argvars, Var *returnVar) {
+f_floor(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = floor(f);
    else
       returnVar->floatt = 0.0;
 }
 
-// "fmod()" function
 void
-f_fmod(Var *argvars, Var *returnVar) {
-    double   fx = 0.0, fy = 0.0;
+f_fmod(Arr(Var) argvars, Var* returnVar) {
+   double   fx = 0.0, fy = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &fx) == OK
-                 && get_float_arg(&argvars[1], &fy) == OK)
+   if (get_float_arg(argvars, OUT &fx) == OK && get_float_arg(argvars + 1, OUT &fy) == OK)
       returnVar->floatt = fmod(fx, fy);
    else
       returnVar->floatt = 0.0;
@@ -7958,96 +7936,83 @@ f_fmod(Var *argvars, Var *returnVar) {
 
 // "isinf()" function
 void
-f_isinf(Var *argvars, Var *returnVar) {
+f_isinf(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_FLOAT && isinf(argvars[0].floatt))
       returnVar->number = argvars[0].floatt > 0.0 ? 1 : -1;
 }
 
 // "isnan()" function
 void
-f_isnan(Var *argvars, Var *returnVar) {
+f_isnan(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = argvars[0].tag == VAR_FLOAT && isnan(argvars[0].floatt);
 }
 
-/*
- * "log()" function
- */
+//"log()" the logarithm function
 void
-f_log(Var *argvars, Var *returnVar) {
+f_log(Arr(Var) argvars, Var* returnVar) {
     double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = log(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_log10(Var *argvars, Var *returnVar) {
+f_log10(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = log10(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_pow(Var *argvars, Var *returnVar) {
+f_pow(Arr(Var) argvars, Var* returnVar) {
     double   fx = 0.0, fy = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &fx) == OK
-                 && get_float_arg(&argvars[1], &fy) == OK)
+   if (get_float_arg(argvars, OUT &fx) == OK && get_float_arg(argvars + 1, OUT &fy) == OK)
       returnVar->floatt = pow(fx, fy);
    else
       returnVar->floatt = 0.0;
 }
 
-
-// round() is not in C90, use ceil() or floor() instead.
-private double
-eeRound(double f) {
-   return f > 0 ? floor(f + 0.5) : ceil(f - 0.5);
-}
-
 void
-f_sqrt(Var *argvars, Var *returnVar) {
+f_sqrt(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = sqrt(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_str2float(Var *argvars, Var *returnVar) {
-   Byte *p;
-   int     isneg;
-   int       skip_quotes;
-   skip_quotes = argvars[1].tag != VAR_UNKNOWN && tv_get_bool(&argvars[1]);
+f_str2float(Arr(Var) argvars, Var* returnVar) {
+   Boole skip_quotes = argvars[1].tag != VAR_UNKNOWN && tv_get_bool(&argvars[1]);
 
-   p = skipwhite(tv_get_string_strict(&argvars[0]));
-   isneg = (*p == '-');
+   CS p = skipwhite(tv_get_string_strict(&argvars[0]));
+   Boole isneg = (*p == '-');
 
    if (*p == '+' || *p == '-')
       p = skipwhite(p + 1);
-   (void)string2float(p, &returnVar->floatt, skip_quotes);
+   (void)string2float(p, OUT &returnVar->floatt, skip_quotes);
    if (isneg)
       returnVar->floatt *= -1;
    returnVar->tag = VAR_FLOAT;
 }
 
 void
-f_tan(Var *argvars, Var *returnVar) {
+f_tan(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = tan(f);
    else
       returnVar->floatt = 0.0;
@@ -8055,11 +8020,11 @@ f_tan(Var *argvars, Var *returnVar) {
 
 // "tanh()" function
 void
-f_tanh(Var *argvars, Var *returnVar) {
+f_tanh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = tanh(f);
    else
       returnVar->floatt = 0.0;
@@ -8067,11 +8032,11 @@ f_tanh(Var *argvars, Var *returnVar) {
 
 // "trunc({float})" function
 void
-f_trunc(Var *argvars, Var *returnVar) {
+f_trunc(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       // trunc() is not in C90, use floor() or ceil() instead.
       returnVar->floatt = f > 0 ? floor(f) : ceil(f);
    else
@@ -8080,33 +8045,33 @@ f_trunc(Var *argvars, Var *returnVar) {
 
 // "round({float})" function
 void
-f_round(Var *argvars, Var *returnVar) {
+f_round(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
-      returnVar->floatt = eeRound(f);
+   if (get_float_arg(argvars, OUT &f) == OK)
+      returnVar->floatt = round(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_sin(Var *argvars, Var *returnVar) {
+f_sin(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = sin(f);
    else
       returnVar->floatt = 0.0;
 }
 
 void
-f_sinh(Var *argvars, Var *returnVar) {
+f_sinh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
    returnVar->tag = VAR_FLOAT;
-   if (get_float_arg(argvars, &f) == OK)
+   if (get_float_arg(argvars, OUT &f) == OK)
       returnVar->floatt = sinh(f);
    else
       returnVar->floatt = 0.0;
@@ -8320,7 +8285,7 @@ fill_assert_error(
 }
 
 private int
-assert_equal_common(Var *argvars, AssertKind assKind) {
+assert_equal_common(Arr(Var) argvars, AssertKind assKind) {
    if (tv_equal(&argvars[0], &argvars[1], FALSE) != (assKind == ASSERT_EQUAL)) {
       ArrayList   ga;
       prepare_assert_error(&ga);
@@ -8333,7 +8298,7 @@ assert_equal_common(Var *argvars, AssertKind assKind) {
 }
 
 private int
-assert_match_common(Var *argvars, AssertKind assKind) {
+assert_match_common(Arr(Var) argvars, AssertKind assKind) {
    ArrayList   ga;
    Byte   buf1[NUMBUFLEN];
    Byte   buf2[NUMBUFLEN];
@@ -8351,7 +8316,7 @@ assert_match_common(Var *argvars, AssertKind assKind) {
 
 //Common for assert_true() and assert_false(). Return non-zero for failure.
 private int
-assert_bool(Var *argvars, int isTrue) {
+assert_bool(Arr(Var) argvars, int isTrue) {
    Boole error = false;
    ArrayList   ga;
 
@@ -8373,7 +8338,7 @@ assert_bool(Var *argvars, int isTrue) {
 }
 
 private void
-assert_append_cmd_or_arg(ArrayList *gap, Var *argvars, Byte *cmd) {
+assert_append_cmd_or_arg(ArrayList *gap, Arr(Var) argvars, Byte *cmd) {
    Byte   *tofree;
    Byte   numbuf[NUMBUFLEN];
 
@@ -8386,12 +8351,12 @@ assert_append_cmd_or_arg(ArrayList *gap, Var *argvars, Byte *cmd) {
 
 //"assert_equal(expected, actual[, msg])" function
 void
-f_assert_equal(Var *argvars, Var *returnVar) {
+f_assert_equal(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equal_common(argvars, ASSERT_EQUAL);
 }
 
 private int
-assert_equalfile(Var *argvars) {
+assert_equalfile(Arr(Var) argvars) {
    Byte   buf1[NUMBUFLEN];
    Byte   buf2[NUMBUFLEN];
    Byte   *fname1 = convertVarToString(&argvars[0], buf1);
@@ -8485,19 +8450,19 @@ assert_equalfile(Var *argvars) {
 
 //"assert_equalfile(fname-one, fname-two[, msg])" function
 void
-f_assert_equalfile(Var *argvars, Var *returnVar) {
+f_assert_equalfile(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equalfile(argvars);
 }
 
 //"assert_notequal(expected, actual[, msg])" function
 void
-f_assert_notequal(Var *argvars, Var *returnVar) {
+f_assert_notequal(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equal_common(argvars, ASSERT_NOTEQUAL);
 }
 
 //"assert_exception(string[, msg])" function
 void
-f_assert_exception(Var *argvars, Var *returnVar) {
+f_assert_exception(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
 
    CS error = convertVarToStringSingleUse(&argvars[0]);
@@ -8519,7 +8484,7 @@ f_assert_exception(Var *argvars, Var *returnVar) {
 
 //"assert_fails(cmd [, error[, msg]])" function
 void
-f_assert_fails(Var *argvars, Var *returnVar) {
+f_assert_fails(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
    int      save_trylevel = trylevel;
    int      called_emsg_before = called_emsg;
@@ -8667,12 +8632,12 @@ theend:
 
 //"assert_false(actual[, msg])" function
 void
-f_assert_false(Var *argvars, Var *returnVar) {
+f_assert_false(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_bool(argvars, FALSE);
 }
 
 private int
-assert_inrange(Var *argvars) {
+assert_inrange(Arr(Var) argvars) {
    ArrayList   ga;
    Boole error = false;
    Byte expected_str[200];
@@ -8711,7 +8676,7 @@ assert_inrange(Var *argvars) {
 
 //"assert_inrange(lower, upper[, msg])" function
 void
-f_assert_inrange(Var *argvars, Var *returnVar) {
+f_assert_inrange(Arr(Var) argvars, Var* returnVar) {
    if (check_for_float_or_nr_arg(argvars, 0) == FAIL
           || check_for_float_or_nr_arg(argvars, 1) == FAIL
           || check_for_float_or_nr_arg(argvars, 2) == FAIL
@@ -8724,19 +8689,19 @@ f_assert_inrange(Var *argvars, Var *returnVar) {
 
 //"assert_match(pattern, actual[, msg])" function
 void
-f_assert_match(Var *argvars, Var *returnVar) {
+f_assert_match(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_match_common(argvars, ASSERT_MATCH);
 }
 
 //"assert_notmatch(pattern, actual[, msg])" function
 void
-f_assert_notmatch(Var *argvars, Var *returnVar) {
+f_assert_notmatch(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_match_common(argvars, ASSERT_NOTMATCH);
 }
 
 //"assert_report(msg)" function
 void
-f_assert_report(Var *argvars, Var *returnVar) {
+f_assert_report(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
    prepare_assert_error(OUT &ga);
    ga_concat(&ga, tv_get_string(&argvars[0]));
@@ -8747,13 +8712,13 @@ f_assert_report(Var *argvars, Var *returnVar) {
 
 //"assert_true(actual[, msg])" function
 void
-f_assert_true(Var *argvars, Var *returnVar) {
+f_assert_true(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_bool(argvars, TRUE);
 }
 
 //"test_alloc_fail(id, countdown, repeat)" function
 void
-f_test_alloc_fail(Var *argvars, Var *returnVar UNUSED) {
+f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED) {
     if (argvars[0].tag != VAR_NUMBER
        || argvars[0].number <= 0
        || argvars[1].tag != VAR_NUMBER
@@ -8772,11 +8737,11 @@ f_test_alloc_fail(Var *argvars, Var *returnVar UNUSED) {
 }
 
 void
-f_test_autochdir(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_test_autochdir(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 void
-f_test_feedinput(Var *argvars, Var *returnVar UNUSED) {
+f_test_feedinput(Arr(Var) argvars, Var* returnVar UNUSED) {
 #ifdef USE_INPUT_BUF
    CS val = convertVarToStringSingleUse(&argvars[0]);
    if (val) {
@@ -8788,7 +8753,7 @@ f_test_feedinput(Var *argvars, Var *returnVar UNUSED) {
 
 //"test_getvalue({name})" function
 void
-f_test_getvalue(Var *argvars, Var *returnVar) {
+f_test_getvalue(Arr(Var) argvars, Var* returnVar) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
 
@@ -8802,7 +8767,7 @@ f_test_getvalue(Var *argvars, Var *returnVar) {
 
 //"test_option_not_set({name})" function
 void
-f_test_option_not_set(Var *argvars, Var *returnVar UNUSED) {
+f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
 
@@ -8813,7 +8778,7 @@ f_test_option_not_set(Var *argvars, Var *returnVar UNUSED) {
 
 //"test_override({name}, {val})" function
 void
-f_test_override(Var *argvars, Var *returnVar UNUSED) {
+f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
    Byte *name = Em;
    static int save_starting = -1;
 
@@ -8878,7 +8843,7 @@ f_test_override(Var *argvars, Var *returnVar UNUSED) {
 
 //"test_refcount({expr})" function
 void
-f_test_refcount(Var *argvars, Var *returnVar) {
+f_test_refcount(Arr(Var) argvars, Var* returnVar) {
    int retval = -1;
 
    switch (argvars[0].tag) {
@@ -8932,7 +8897,7 @@ f_test_refcount(Var *argvars, Var *returnVar) {
 }
 
 void
-f_test_garbagecollect_now(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_test_garbagecollect_now(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
     // This is dangerous, any Lists and Dicts used internally may be freed while still in use.
     if (!get_EeglVar_nr(VV_TESTING))
    emsg(_(e_calling_test_garbagecollect_now_while_v_testing_is_not_set));
@@ -8941,12 +8906,12 @@ f_test_garbagecollect_now(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 void
-f_test_garbagecollect_soon(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_test_garbagecollect_soon(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    may_garbage_collect = TRUE;
 }
 
 void
-f_test_ignore_error(Var *argvars, Var *returnVar UNUSED) {
+f_test_ignore_error(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
 
@@ -8954,63 +8919,63 @@ f_test_ignore_error(Var *argvars, Var *returnVar UNUSED) {
 }
 
 void
-f_test_null_blob(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_blob(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_BLOB;
    returnVar->blob = NULL;
 }
 
 void
-f_test_null_channel(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_channel(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_CHANNEL;
    returnVar->channel = NULL;
 }
 
 void
-f_test_null_dict(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_dict(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar_dict_set(returnVar, NULL);
 }
 
 void
-f_test_null_job(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_job(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_JOB;
    returnVar->job = NULL;
 }
 
 void
-f_test_null_list(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_list(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar_list_set(returnVar, NULL);
 }
 
 void
-f_test_null_function(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_function(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_FUNC;
    returnVar->string = NULL;
 }
 
 void
-f_test_null_partial(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_partial(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_PARTIAL;
    returnVar->partial = NULL;
 }
 
 void
-f_test_null_string(Var *argvars UNUSED, Var *returnVar) {
+f_test_null_string(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 }
 
 void
-f_test_unknown(Var *argvars UNUSED, Var *returnVar) {
+f_test_unknown(Arr(Var) argvars UNUSED, Var* returnVar) {
     returnVar->tag = VAR_UNKNOWN;
 }
 
 void
-f_test_void(Var *argvars UNUSED, Var *returnVar) {
+f_test_void(Arr(Var) argvars UNUSED, Var* returnVar) {
     returnVar->tag = VAR_VOID;
 }
 
 void
-f_test_setmouse(Var *argvars, Var *returnVar UNUSED) {
+f_test_setmouse(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (argvars[0].tag != VAR_NUMBER || argvars[1].tag != VAR_NUMBER) {
       emsg(_(e_invalid_argument));
       return;
@@ -9021,7 +8986,7 @@ f_test_setmouse(Var *argvars, Var *returnVar UNUSED) {
 }
 
 void
-f_test_settime(Var *argvars, Var *returnVar UNUSED) {
+f_test_settime(Arr(Var) argvars, Var* returnVar UNUSED) {
    time_for_testing = (time_t)tv_get_number(&argvars[0]);
 }
 
@@ -9245,7 +9210,7 @@ blob_alloc(void) {
 
 // Allocate an empty blob for a return value, with reference count set. Returns OK or FAIL.
 int
-returnVar_blob_alloc(Var *returnVar) {
+returnVar_blob_alloc(Var* returnVar) {
    Blob   *b = blob_alloc();
 
    if (!b)
@@ -9257,7 +9222,7 @@ returnVar_blob_alloc(Var *returnVar) {
 
 // Set a blob as the return value.
 void
-returnVar_blob_set(Var *returnVar, Blob *b) {
+returnVar_blob_set(Var* returnVar, Blob *b) {
    returnVar->tag = VAR_BLOB;
    returnVar->blob = b;
    if (b != NULL)
@@ -9541,7 +9506,7 @@ blob_set_range(Blob *dest, long n1, long n2, Var *src) {
 
 // "add(blob, item)" function
 void
-blob_add(Var *argvars, Var *returnVar) {
+blob_add(Arr(Var) argvars, Var* returnVar) {
    Blob   *b = argvars[0].blob;
    Boole error = false;
 
@@ -9562,7 +9527,7 @@ blob_add(Var *argvars, Var *returnVar) {
 
 // "remove({blob}, {idx} [, {end}])" function
 void
-blob_remove(Var *argvars, Var *returnVar, Byte *arg_errmsg) {
+blob_remove(Arr(Var) argvars, Var* returnVar, Byte *arg_errmsg) {
    Blob   *b = argvars[0].blob;
    Blob   *newblob;
    Boole error = false;
@@ -9697,7 +9662,7 @@ blob_filter_map(
 
 // "insert(blob, {item} [, {idx}])" function
 void
-blob_insert_func(Var *argvars, Var *returnVar) {
+blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    Blob   *b = argvars[0].blob;
    long   before = 0;
    Boole error = false;
@@ -9787,7 +9752,7 @@ blob_reduce(
 }
 
 void
-blob_reverse(Blob *b, Var *returnVar) {
+blob_reverse(Blob *b, Var* returnVar) {
    int   i, len = blob_len(b);
 
    for (i = 0; i < len / 2; i++) {
@@ -9800,7 +9765,7 @@ blob_reverse(Blob *b, Var *returnVar) {
 }
 
 void
-f_blob2list(Var *argvars, Var *returnVar) {
+f_blob2list(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
    if (check_for_blob_arg(argvars, 0) == FAIL)
@@ -9813,7 +9778,7 @@ f_blob2list(Var *argvars, Var *returnVar) {
 }
 
 void
-f_list2blob(Var *argvars, Var *returnVar) {
+f_list2blob(Arr(Var) argvars, Var* returnVar) {
    ListItem   *li;
 
    if (returnVar_blob_alloc(returnVar) == FAIL)

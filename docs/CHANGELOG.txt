@@ -247,6 +247,7 @@
 [-] sandboxG, secureG (security theater, nobody cares about this crap)
 [-] +-, -= etc for options (superfluous)
 [-] p_ar (autoread, always on)
+[ ] @lines, @columns - no longer options but regular fields of Portal with setters ??
 [-] @filetype, @syntax (shouldn't be an option)
 [-] @previewport - shouldn't be an option, just a single portal per tab
 [ ] s: variables

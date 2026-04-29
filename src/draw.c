@@ -2798,7 +2798,7 @@ screen_screenrow(void) {
     return screen_cur_row;
 }
 
-//Call mb_ptr2char_adv(p) and returns the character.
+//Call inpAdvanceMultibyte(p) and returns the character.
 //If "p" starts with "\x", "\u" or "\U" the hex or unicode value is used.
 private int
 get_encoded_char_adv(Byte **p) {
@@ -2819,7 +2819,7 @@ get_encoded_char_adv(Byte **p) {
       *p += 2;
       return num;
    }
-   return mb_ptr2char_adv(p);
+   return inpAdvanceMultibyte(p);
 }
 
 typedef struct {
@@ -6860,7 +6860,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             transchar_hex(m->extra, sc.mb_c);
             m->extraBytes = m->extra;
             currSymb = *m->extraBytes;
-            sc.mb_c = mb_ptr2char_adv(&m->extraBytes);
+            sc.mb_c = inpAdvanceMultibyte(&m->extraBytes);
             sc.mb_utf8 = (currSymb >= 0x80);
             m->countExtraBytes = (int)STRLEN(m->extraBytes);
             m->c_extra = ZERO;
@@ -6927,7 +6927,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                CS p = m->ptr - (mb_off + 1);
                CharTableSize cts;
 
-               init_chartabsize_arg(OUT &cts, port, c->lnum, m->vcol - c->vcolFirstChar, m->line, p);
+               bookInitCharsForKeywordsSizeArg(OUT &cts, port, c->lnum, m->vcol - c->vcolFirstChar, m->line, p);
                // do not want virtual text counted here
                cts.cts_has_prop_with_text = FALSE;
                m->countExtraBytes = win_lbr_chartabsize(&cts, NULL) - 1;
@@ -7569,7 +7569,7 @@ drawLineOnScreen(
    c.vcolFirstChar = 0;
    if (port->o.lineBreak && drawingOnlyNumberCol == 0) {
       CharTableSize cts;
-      init_chartabsize_arg(OUT &cts, port, lnum, 0, m.line, m.line);
+      bookInitCharsForKeywordsSizeArg(OUT &cts, port, lnum, 0, m.line, m.line);
       (void)win_lbr_chartabsize(&cts, NULL);
       c.vcolFirstChar = cts.cts_first_char;
       clear_chartabsize_arg(&cts);
@@ -7587,7 +7587,7 @@ drawLineOnScreen(
       int      charsize = 0;
       int      head = 0;
 
-      init_chartabsize_arg(OUT &cts, port, lnum, m.vcol, m.line, m.ptr);
+      bookInitCharsForKeywordsSizeArg(OUT &cts, port, lnum, m.vcol, m.line, m.ptr);
       cts.cts_max_head_vcol = m.bufferLen;
       while (cts.cts_vcol < m.bufferLen && *cts.cts_ptr != ZERO) {
          head = 0;

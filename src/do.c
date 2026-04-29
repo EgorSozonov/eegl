@@ -3089,7 +3089,7 @@ c_substitute(Invocation* invo) {
    // check for a trailing count
    cmd = skipwhite(cmd);
    if (EE_ISDIGIT(*cmd)) {
-      i = getdigits(&cmd);
+      i = parseLong(&cmd);
       if (i <= 0 && !invo->skip && subflags.do_error) {
          emsg(_(e_positive_count_required));
          eeglFree(sub);
@@ -6353,7 +6353,7 @@ doOneCommand(
    if ((invo.argFlags & COUNT) && EE_ISDIGIT(*invo.arg)
        && (!(invo.argFlags & BUFNAME) || *(p = skipdigits(invo.arg + 1)) == ZERO
                        || SPACE_OR_TAB(*p))) {
-      n = getdigits_quoted(&invo.arg);
+      n = parseLong_quoted(&invo.arg);
       invo.arg = skipwhite(invo.arg);
       if (n <= 0 && !ni && (invo.argFlags & ZERO_LINE_OK) == 0) {
           errorMsg = _(e_positive_count_required);
@@ -7969,7 +7969,7 @@ doGetCommandAddress(
 
       default:
       if (EE_ISDIGIT(*cmd))   // absolute line number
-         lnum = getdigits(&cmd);
+         lnum = parseLong(&cmd);
       }
 
       for (;;) {
@@ -8021,7 +8021,7 @@ doGetCommandAddress(
             n = 1;
          else {
             // "number", "+number" or "-number"
-            n = getdigits(&cmd);
+            n = parseLong(&cmd);
             if (n == MAXLNUM) {
                emsg(_(e_line_number_out_of_range));
                cmd = NULL;
@@ -9119,7 +9119,7 @@ getTabRelatedArg(Invocation* invo) {
    }
 
    p_save = p;
-   tabId = getdigits(&p);
+   tabId = parseLong(&p);
 
    if (relative == 0) {
        if (STRCMP(p, "$") == 0)
@@ -9693,7 +9693,7 @@ c_tabnext(Invocation* invo) {
          Byte *p = invo->arg;
          Byte *p_save = p;
 
-         tabId = getdigits(&p);
+         tabId = parseLong(&p);
          if (p == p_save || *p_save == '-' || *p != ZERO || tabId == 0) {
             // No numbers as argument.
             invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
@@ -10374,10 +10374,10 @@ c_portPos(Invocation* invo) {
    if (*arg == ZERO) {
        emsg(_(e_obtaining_window_position_not_implemented_for_this_platform));
    } else {
-      x = getdigits(&arg);
+      x = parseLong(&arg);
       arg = skipwhite(arg);
       p = arg;
-      y = getdigits(&arg);
+      y = parseLong(&arg);
       if (*p == ZERO || *arg != ZERO) {
          emsg(_(e_winpos_requires_two_number_arguments));
          return;
@@ -10591,7 +10591,7 @@ c_later(Invocation* invo) {
    if (*p == ZERO)
       count = 1;
    ei (SAFE_isdigit(*p)) {
-      count = getdigits(&p);
+      count = parseLong(&p);
       switch (*p) {
          case 's': ++p; sec = TRUE; break;
          case 'm': ++p; sec = TRUE; count *= 60; break;
@@ -11085,7 +11085,7 @@ c_findpat(Invocation* invo) {
 
    long n = 1;
    if (eeIsDigit(*invo->arg))   { // get count
-      n = getdigits(&invo->arg);
+      n = parseLong(&invo->arg);
       invo->arg = skipwhite(invo->arg);
    }
    if (*invo->arg == '/') {  // Match regexp, not just whole words
@@ -11408,7 +11408,7 @@ evalVars(
          s = src + off + 1;
          if (*s == '<')      // "#<99" uses v:oldfiles
             ++s;
-         i = (int)getdigits(&s);
+         i = (int)parseLong(&s);
          if (s == src + off + 2 && src[off + 1] == '-')
             // just a minus sign, don't skip over it
             s--;

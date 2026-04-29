@@ -1476,14 +1476,14 @@ messagesopt_changed(void) {
           && EE_ISDIGIT(p[STRLEN_LITERAL(MESSAGES_OPT_WAIT)])
       ){
           p += STRLEN_LITERAL(MESSAGES_OPT_WAIT);
-          messages_wait_new = getdigits(&p);
+          messages_wait_new = parseLong(&p);
           messages_flags_new |= MESSAGES_WAIT;
       } ei (STRNCMP(p, MESSAGES_OPT_HISTORY,
            STRLEN_LITERAL(MESSAGES_OPT_HISTORY)) == 0
           && EE_ISDIGIT(p[STRLEN_LITERAL(MESSAGES_OPT_HISTORY)])
       ){
           p += STRLEN_LITERAL(MESSAGES_OPT_HISTORY);
-          messages_history_new = getdigits(&p);
+          messages_history_new = parseLong(&p);
           messages_flags_new |= MESSAGES_HISTORY;
       }
 

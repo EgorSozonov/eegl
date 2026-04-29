@@ -954,7 +954,7 @@ the last line if there is none; this would make the file longer). See the @endof
 @@breakat                Global. String. Default = "\t!@*-+;:,./?"
    
 This option lets you choose which characters might cause a line
-break if @linebreak is on.  Only works for ASCII.
+break if @linebreak is on. Characters must be from ASCII.
 
 
 @@breakindent            Portal. Boolean. Default = off

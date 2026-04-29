@@ -6,7 +6,6 @@
 #define IN_OPTION_C
 #include "eegl.h"
 
-
 //{{{info & types
 
 //Code to handle user-settable options. Checklist for adding a new option:
@@ -14,7 +13,7 @@
 //- If it's a numeric option, add a setter callback and perform necessary bounds checks there
 //- If it's a list of flags, add some code in setStringImpl(), search for WW_ALL.
 //- Add documentation!  One line in manual/manual.help, full description in
-//  manual/reference.help, and any other related places.
+//  noncode/help/reference.help, and any other related places.
 //When making changes:
 //- Adjust the help for the option in /usr/share/eegl/doc/reference.help.
 
@@ -188,7 +187,7 @@ private void set_helplang_default(CS lang);
 private int put_setnum(FILE *fd, CS cmd, CS name, OptionRef ref);
 private int put_setstring(FILE *fd, CS cmd, CS name, OptionRef ref, Ulong flags);
 private int put_setbool(FILE *fd, CS cmd, CS name, Boole value);
-private int briopt_check(CS briopt, Portal* po);
+private int checkBreakIndent(CS briopt, Portal* po);
 private CS validateAndSetListOfStrings(OUT OptionChange* cha, Arr(CS) values);
 private int optionCompletionExpand(
       OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int))
@@ -213,7 +212,6 @@ private void printSingleOption(
 private CS get_eventignore_name(Expand *xp, int idx);
 private CS check_stl_option(CS s);
 private CS illegal_char_after_chr(OUT ErrBuilder* errb, int c);
-private Unt calcGlobalStringsLength();
 private void updateBoolRef(OptionChange* cha);
 private void updateNumRef(OptionChange* cha);
 
@@ -326,13 +324,13 @@ findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags) 
 //Set the default for @backupskip to include environment variables for temp files.
 private void
 set_init_default_backupskip(void) {
-   Byte   *p;
    static CS names[4] = {S"", S"TMPDIR", S"TEMP", S"TMP"};
    ArrayList ga;
 
    Option* o = findOption(S"backupskip");
 
    ga_init2(&ga, 1, 100);
+   CS p;
    for (int i = 0; i < (int)ARRAY_LENGTH(names); ++i) {
       int mustfree = FALSE;
       int plen;
@@ -454,13 +452,6 @@ optSetStringDefault(CS name, CS val) {
    optSetStringDefault_esc(name, val, false);
 }
 
-//Set the default value of a numeric option. Used for [lines] and [columns].
-void
-set_number_default(CS name, long val) {
-   Option* o = findOption(name);
-   o->defaultValue.num = val;
-}
-
 #if defined(EXITFREE) || defined(PROTO)
 
 //Free all options.
@@ -536,15 +527,11 @@ set_helplang_default(CS lang) {
 //Copy the new string value into allocated memory for the option.
 //Can't use optChangeStringOptionDirect(), because we need to remove the backslashes.
 private CS
-stropt_copy_value(
-   CS arg
-) {
-   Byte   *s = NULL;
-
+stropt_copy_value( CS arg) {
    // get a bit too much
    Unt newlen = STRLEN(arg) + 1;
    CS newVal = alloc(newlen);
-   s = newVal;
+   CS s = newVal;
 
    //Copy the string, skip over escaped chars.
    //The reverse is found in escape_option_str_cmdline().
@@ -569,11 +556,7 @@ stropt_copy_value(
 //Get the string value specified for a ":set" command. The following set options are supported:
 //  set {o}={val}
 private CS
-getNewValOfStringOption(
-   Option* o,
-   OUT CS* argp,
-   OUT CS* origval_arg
-) {
+getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg) {
    CS arg = *argp;
    CS origVal = *origval_arg;
    CS save_arg = NULL;
@@ -735,11 +718,7 @@ parseAndSetCallback(OUT Option* o, CS arg, SetScope setScope) {
 
 //Part of c_set() for string options. Return FAIL on failure, do not process further options.
 private CS
-changeStringOption(
-   OUT Option* o,
-   CS arg,
-   SetScope scope
-) {
+changeStringOption(OUT Option* o, CS arg, SetScope scope) {
    CS errmsg = null;
    
    CS oldVal = NULL;
@@ -767,11 +746,7 @@ changeStringOption(
 
 //Set a boolean option. Return an untranslated error message or NULL.
 private CS
-parseAndSetBool(
-   OUT Option* o,
-   CS newString,
-   SetScope setScope
-){
+parseAndSetBool(OUT Option* o, CS newString, SetScope setScope){
    if (eq(newString, S"true")) {
       return setBoolImpl(o, true, setScope);
    } ei (eq(newString, S"false")) {
@@ -831,11 +806,7 @@ setNumericImpl(
 
 //Set a numeric option. Return an untranslated error message or NULL.
 private CS
-parseAndSetNumeric(
-   OUT Option* o,
-   CS arg,
-   SetScope setScope
-) {
+parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope) {
    Long newValue;
    CS errmsg = NULL;
    
@@ -866,9 +837,7 @@ skip:
 //Call this when an option has been given a new value through a user command.
 //Set the P_WAS_SET flag.
 private void
-did_set_option(
-   Option* o
-){
+did_set_option(Option* o){
    o->flags |= P_WAS_SET;
 }
 
@@ -986,11 +955,7 @@ end:
 
 //Set an option to a new value.
 private CS
-parseAndSetImpl(
-   Option* o,
-   CS arg,
-   SetScope setScope
-) {
+parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
    CS errmsg = NULL;
    
    // Copy the new string into allocated memory.
@@ -1024,10 +989,7 @@ tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
 //:set an option to a new value. Return NULL if OK, return an untranslated error message when 
 //something is wrong. "errb[errbuflen]" can be used to create the error message.
 private CS
-parseAndSet(
-   SetScope setScope,
-   OUT CS* arg
-) {
+parseAndSet(SetScope setScope, OUT CS* arg) {
    Option* o;
    CS errmsg = tryFindOptionFromCommand(OUT &o, OUT arg);
    if (errmsg)
@@ -1245,11 +1207,7 @@ matchString(
 
 // Expansion handler for `:set=` or `:set+=` when the option has a custom expansion handler.
 int
-optExpandForSet(
-   Expand   *xp,
-   RegMatch   *regmatch,
-   OUT ExpandMatch* matches
-){
+optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
    if (!expandOptionS || expandOptionS->expander) {
       //Not supposed to reach this. This function is only for options with
       //custom expansion callbacks.
@@ -1660,7 +1618,7 @@ resizeOrPlanResizingWindow() {
 }
 
 private CS
-setVisibleRows(OptionChange* cha) {
+setVisibleLines(OptionChange* cha) {
    if (updating_screen) {
       // Changing the window size is not allowed while updating the screen.
       return null;
@@ -2154,7 +2112,7 @@ printSingleOption(
 
 //Copy options from one portal to another. Used when portal splittin'
 void
-portCopyOptions(Portal *to, Portal *from) {
+portCopyOptions(Portal* to, Portal* from) {
    copyPortOpt(&to->o, &from->o);
    afterCopyPortOpt(to);
 }
@@ -2167,7 +2125,7 @@ afterCopyPortOpt(Portal* po) {
       po->leftCol = 0;
    else
       po->skipCol = 0;
-   briopt_check(NULL, po);
+   checkBreakIndent(NULL, po);
 }
 
 private CS
@@ -2480,11 +2438,11 @@ setFormatListPat(OptionChange* cha) {
 private CS
 setBreakat(OptionChange* cha) {
    for (Unt i = 0; i < 256; i++)
-      breakat_flags[i] = FALSE;
+      breakat_flags[i] = false;
 
    if (cha->newVal.string) {
       for (CS p = cha->newVal.string; *p != ZERO; p++)
-         breakat_flags[*p] = TRUE;
+         breakat_flags[*p] = true;
    } 
    updateStringRef(cha);
 
@@ -2938,7 +2896,7 @@ private CS
 setIsopt(OptionChange* cha) {
    //'isident', 'iskeyword' or 'isfname' option: refill g_chartab[]
    //If the new option is invalid, use old value.
-   if (init_chartab() == FAIL) {
+   if (bookInitCharsForKeywordsForCurbook() == FAIL) {
       return e_invalid_argument;   // error in value
    }
    updateStringRef(cha);
@@ -3045,7 +3003,7 @@ parse_status_rulerformat(OptionChange* cha) {
       // set ru_wid if 'ruf' starts with "%99("
       if (*++s == '-')   // ignore a '-'
          s++;
-      wid = getdigits(&s);
+      wid = parseLong(&s);
       if (wid && *s == '(' && (errmsg = check_stl_option(new)) == NULL)
          ru_wid = wid;
       else {
@@ -3418,28 +3376,27 @@ expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(backupCopyValues));
 }
 
-// Note: Keep this in sync with briopt_check()
+// Note: Keep this in sync with checkBreakIndent()
 private CS brioptValues[] = {SMAP((CS), "shift:", "min:", "sbr", "list:", "column:")};
 
 //Check "briopt" as @breakindentopt and update the members of "po".
 //This is called when @breakindentopt is changed and when a portal is initialized.
 //Return FAIL for failure, OK otherwise.
 private int
-briopt_check(
+checkBreakIndent(
    CS briopt,  // when NULL: use "po->o.breakIndent"
    Portal* po       // when NULL: only check "briopt"
 ){
-   CS p;
    int bri_shift = 0;
    long bri_min = 20;
    int bri_sbr = FALSE;
    int bri_list = 0;
    int bri_vcol = 0;
 
-   if (briopt)
-      p = briopt;
-   else
-      p = po->o.breakIndentOpt;
+   CS p = briopt ? briopt : po->o.breakIndentOpt;
+   if (!p) {
+      return OK;
+   }
 
    while (*p != ZERO) {
       // Note: Keep this in sync with p_briopt_values
@@ -3447,19 +3404,19 @@ briopt_check(
           && ((p[6] == '-' && EE_ISDIGIT(p[7])) || EE_ISDIGIT(p[6]))
       ) {
          p += 6;
-         bri_shift = getdigits(&p);
+         bri_shift = parseLong(&p);
       } ei (STRNCMP(p, brioptValues[1], 4) == 0 && EE_ISDIGIT(p[4])) {
          p += 4;
-         bri_min = getdigits(&p);
+         bri_min = parseLong(&p);
       } ei (STRNCMP(p, brioptValues[2], 3) == 0) {
          p += 3;
          bri_sbr = TRUE;
       } ei (STRNCMP(p, brioptValues[3], 5) == 0) {
          p += 5;
-         bri_list = getdigits(&p);
+         bri_list = parseLong(&p);
       } ei (STRNCMP(p, brioptValues[4], 7) == 0) {
          p += 7;
-         bri_vcol = getdigits(&p);
+         bri_vcol = parseLong(&p);
       }
       if (*p != ',' && *p != ZERO)
           return FAIL;
@@ -3484,7 +3441,7 @@ private CS
 setBreakindentOpt(OptionChange* cha) {
    OptionRef ref = cha->ref;
 
-   if (briopt_check(*ref.string, ref.string == &curPor->o.breakIndentOpt ? curPor : NULL
+   if (checkBreakIndent(*ref.string, ref.string == &curPor->o.breakIndentOpt ? curPor : NULL
        ) == FAIL
    )
       return e_invalid_argument;
@@ -3662,7 +3619,18 @@ private CS setStringImpl(
 //{{{other general functions
 
 private Unt
-calcGlobalStringsLength() {
+calcDefaultStringValuesLen(Arr(Option) opts, Unt count) {
+   Unt totalLen = 0;
+   for (Option* o = opts; o < opts + count; o++) {
+      if (o->defaultValue.tag == OPTION_STRING && (o->defaultValue.string)) {
+         totalLen += (STRLEN(o->defaultValue.string) + 1); // +1 for the ZERO
+      }
+   }
+   return totalLen;
+}
+
+private Unt
+calcGlobalStringValuesLen() {
    Unt totalLen = 0;
    Option* o UNUSED;
    FOR_GLOBAL(o) {
@@ -3688,7 +3656,7 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
 //String defaults -> a global buffer
 private void
 copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
-   Unt totalLen = calcGlobalStringsLength(opts, count);
+   Unt totalLen = calcDefaultStringValuesLen(opts, count);
    Unt newCap = calcNewBufferCap(totalLen);
    *bui = sbuf(newCap);
    
@@ -3701,6 +3669,11 @@ copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
       ) {
          Unt len = STRLEN(o->defaultValue.string) + 1; // +1 for the ZERO
          memcpy(wr, o->defaultValue.string, len);
+         if ((o->flags & P_GLOBAL) > 0) {
+            *(o->c.reference.string) = wr;
+         } else {
+            o->c.local.val.string = wr;
+         }
          wr += len;
       }
    }
@@ -3767,7 +3740,7 @@ updateStringRef(OptionChange* cha) {
       cha->buf->len += newLen;
    } else {
       if (cha->buf == &globalStringOptionsG) {
-         Unt totalLen = calcGlobalStringsLength() + newLen - oldLen;
+         Unt totalLen = calcGlobalStringValuesLen() + newLen - oldLen;
          Unt newCap = calcNewBufferCap(totalLen);
          Sbuf buf = sbuf(newCap);
          
@@ -3836,10 +3809,11 @@ updateNumRef(OptionChange* cha) {
 //After setting various option values: recompute variables that depend on option values.
 private void
 didset_options(void) {
-   // initialize the table for @iskeyword et.al.
-   (void)init_chartab();
-   // initialize the table for @breakat.
-   setBreakat(NULL);
+   //initialize the table for @iskeyword et.al.
+   (void)bookInitCharsForKeywordsForCurbook();
+   //zero out the table for @breakat.
+   for (Unt i = 0; i < 256; i++)
+      breakat_flags[i] = false;
    afterCopyPortOpt(curPor);
 }
 
@@ -4584,14 +4558,14 @@ optSetStringOptionDirectInBook(
    unblock_autocmds();
 }
 
-private Byte *set_opt_callback_orig_option = NULL;
+private CS set_opt_callback_orig_option = NULL;
 private Byte *((*set_opt_callback_func)(Expand *, int));
 
 //Callback used by optionCompletionExpand to also include the original value as the first item.
 private CS
 optionCompletionExpand_cb(Expand *xp, int idx) {
    if (idx == 0) {
-      if (set_opt_callback_orig_option != NULL)
+      if (set_opt_callback_orig_option)
          return set_opt_callback_orig_option;
       else
          return Em; // empty strings are ignored
@@ -4601,11 +4575,7 @@ optionCompletionExpand_cb(Expand *xp, int idx) {
 
 //Expand an option with a callback that iterates through a list of possible names using an index.
 private int
-optionCompletionExpand(
-   OUT ExpandMatch* matches,
-   OptExpand* args,
-   CS ((*func)(Expand *, int))
-) {
+optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int))) {
    set_opt_callback_orig_option = args->includeOrigVal ? args->origValue.string : NULL;
    set_opt_callback_func = func;
 
@@ -4641,9 +4611,9 @@ get_eventignore_name(Expand *xp, int idx) {
 //When the @spelllang option is set, source the spell/LANG.vim file in @runtimepath
 private void
 do_spelllang_source(void) {
-   Byte   fname[200];
-   Byte   *p;
-   Byte   *q = curPor->ownSyntax->spellLang;
+   Byte fname[200];
+   CS p;
+   CS q = curPor->ownSyntax->spellLang;
 
    // Skip the first name if it is "cjk".
    if (STRNCMP(q, "cjk,", 4) == 0)
@@ -4822,9 +4792,9 @@ init_locale(void) {
 
 //":language":  Set the language (locale).
 void
-c_language(Invocation *invo) {
+c_language(Invocation* invo) {
    char   *loc;
-   Byte   *name;
+   CS name;
    int      what = LC_ALL;
    CS whatstr = Em;
 # ifdef LC_MESSAGES
@@ -4963,7 +4933,7 @@ free_locales(void) {
 
 //Function given to expandGeneric() to obtain the possible arguments of the ":language" command.
 CS
-get_lang_arg(Expand *xp UNUSED, int idx) {
+get_lang_arg(Expand* xp UNUSED, int idx) {
    switch (idx) {
    case 0: return S"messages";
    case 1: return S"ctype";
@@ -4977,7 +4947,7 @@ get_lang_arg(Expand *xp UNUSED, int idx) {
 
 //Function given to expandGeneric() to obtain the available locales.
 CS
-get_locales(Expand *xp UNUSED, int idx) {
+get_locales(Expand* xp UNUSED, int idx) {
    init_locales();
    return locales ? locales[idx] : null;
 }

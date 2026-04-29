@@ -2479,7 +2479,7 @@ parse_sign_cmd_args(
 
     // first arg could be placed sign id
     if (EE_ISDIGIT(*arg)) {
-        *signid = getdigits(&arg);
+        *signid = parseLong(&arg);
         if (!SPACE_OR_TAB(*arg) && *arg != ZERO) {
             *signid = -1;
             arg = arg1;
@@ -2530,7 +2530,7 @@ parse_sign_cmd_args(
         } ei (STRNCMP(arg, "buffer=", 7) == 0) {
             arg += 7;
             filename = arg;
-            *book = bookFindFileByBookNr((int)getdigits(&arg));
+            *book = bookFindFileByBookNr((int)parseLong(&arg));
 
             if (*skipwhite(arg) != ZERO)
                 showErrFmtMsg(_(e_trailing_characters_str), arg);

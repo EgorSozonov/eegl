@@ -18,16 +18,16 @@
 #include "eegl.h"
 #include <sys/stat.h> // for stat
 
-private int text_prop_type_valid(Book* book, TextProp *prop);
+private int text_prop_type_valid(Book* book, TextProp* prop);
 //{{{builtins. Book related builtin functions
 
 //Mark references in functions of books.
 Boole
 setRefInBooks(int copyID) {
    Boole abort = false;
-   Book   *bp;
+   Book* bp;
    FOR_ALL_BOOKS(bp) {
-      Listener *lnr;
+      Listener* lnr;
 
       for (lnr = bp->listener; !abort && lnr; lnr = lnr->lr_next)
          abort = abort || memSetRefInCallback(&lnr->lr_callback, copyID);
@@ -51,19 +51,17 @@ setRefInBooks(int copyID) {
    return false;
 }
 
-Book *
+Book*
 bookFindByName(CS name, Boole curtab_only) {
-   Book* book = bookFindFileByBookNr(
+   return bookFindFileByBookNr(
       booklistFindPattern(name, name + STRLEN(name), true, false, curtab_only)
    );
-
-   return book;
 }
 
 // Find a book by number or exact name.
-Book *
-findBook(Var *avar){
-   Book   *book = NULL;
+Book*
+findBook(Var* avar){
+   Book* book = NULL;
 
    if (avar->tag == VAR_NUMBER)
       book = bookFindFileByBookNr((int)avar->number);
@@ -88,10 +86,10 @@ private void
 findPortalIntoCurBook(void) {
    //The portInfos list should have the portals that recently showed the book, going over this is
    //faster than going over all the portals. Do check the book is still there.
-   PortInfo *wip;
-   FOR_ALL_BOOK_PORTINFOS(curBook, wip) {
-      if (wip->portal && wip->portal->book == curBook) {
-         curPor = wip->portal;
+   PortInfo* poInfo;
+   FOR_ALL_BOOK_PORTINFOS(curBook, poInfo) {
+      if (poInfo->portal && poInfo->portal->book == curBook) {
+         curPor = poInfo->portal;
          break;
       }
    }
@@ -282,7 +280,7 @@ setOrAppendLines(Arr(Var) argvars, Var *returnVar, Boole append) {
    if (!book)
       returnVar->number = FAIL;
    else {
-      LineNr lnum = tv_get_lnum_buf(&argvars[1], book);
+      LineNr lnum = daGetLnumFromBookOrVar(&argvars[1], book);
       if (anyEmsgG == anyEmsgG_before)
          updateLinesFromVars(book, lnum, append, argvars + 2, returnVar);
    }
@@ -396,11 +394,11 @@ f_deletebufline(Var *argvars, Var *returnVar) {
    if (!book)
       return;
 
-   LineNr first = tv_get_lnum_buf(&argvars[1], book);
+   LineNr first = daGetLnumFromBookOrVar(&argvars[1], book);
    if (anyEmsgG > anyEmsgG_before)
       return;
    if (argvars[2].tag != VAR_UNKNOWN)
-      last = tv_get_lnum_buf(&argvars[2], book);
+      last = daGetLnumFromBookOrVar(&argvars[2], book);
    else
       last = first;
 
@@ -600,23 +598,23 @@ getLinesIntoVar(
    }
 }
 
-//"retlist" TRUE: "getbufline()" function
+//"retlist" TRUE: "getBookLineIntoVar()" function
 //"retlist" FALSE: "getbufoneline()" function
 private void
-getbufline(Var *argvars, Var *returnVar, int retlist) {
+getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist) {
    LineNr   lnum = 1;
    LineNr   end = 1;
    int      anyEmsgG_before = anyEmsgG;
 
    Book* book = daGetBookFromArg(&argvars[0]);
    if (book) {
-      lnum = tv_get_lnum_buf(&argvars[1], book);
+      lnum = daGetLnumFromBookOrVar(&argvars[1], book);
       if (anyEmsgG > anyEmsgG_before)
          return;
       if (argvars[2].tag == VAR_UNKNOWN)
          end = lnum;
       else
-         end = tv_get_lnum_buf(&argvars[2], book);
+         end = daGetLnumFromBookOrVar(&argvars[2], book);
     }
 
     getLinesIntoVar(book, lnum, end, retlist, returnVar);
@@ -624,12 +622,12 @@ getbufline(Var *argvars, Var *returnVar, int retlist) {
 
 void
 f_getbufline(Var *argvars, Var *returnVar) {
-   getbufline(argvars, returnVar, TRUE);
+   getBookLineIntoVar(argvars, returnVar, TRUE);
 }
 
 void
 f_getbufoneline(Var *argvars, Var *returnVar) {
-   getbufline(argvars, returnVar, FALSE);
+   getBookLineIntoVar(argvars, returnVar, FALSE);
 }
 
 //"getline(lnum, [end])" function
@@ -666,7 +664,7 @@ f_setline(Var *argvars, Var *returnVar) {
 //}}}
 //{{{charset
 
-private int parse_isopt(CS var, Book* book, Boole only_check);
+private int parseAnIsOption(CS var, Book* book, Boole only_check);
 private int win_nolbr_chartabsize(CharTableSize *cts, int *headp);
 
 private int    chartab_initialized = FALSE;
@@ -677,7 +675,7 @@ private int    chartab_initialized = FALSE;
 #define RESET_CHARTAB(book, c) (book)->charsForKeywords[(unsigned)(c) >> 3] &= ~(1 << ((c) & 0x7))
 #define GET_CHARTAB(book, c) ((book)->charsForKeywords[(unsigned)(c) >> 3] & (1 << ((c) & 0x7)))
 
-// table used below, see init_chartab() for an explanation
+// table used below, see bookInitCharsForKeywordsForCurbook() for an explanation
 private Byte g_chartab[256];
 
 // Flags for g_chartab[].
@@ -707,15 +705,12 @@ private int inPortalBorder(Portal *po, ColNr vcol);
 //
 //Return FAIL if @iskeyword, @isident, @isfname or @isprint option has an error, OK otherwise.
 int
-init_chartab(void) {
-   return curBook ? bufInitCharsForKeywords(curBook, true) : OK;
+bookInitCharsForKeywordsForCurbook(void) {
+   return curBook ? bookInitCharsForKeywords(curBook, true) : OK;
 }
 
 int
-bufInitCharsForKeywords(Book* book, Boole global) { // FALSE => only set book->charsForKeywords[]
-   CS p;
-   int      i;
-
+bookInitCharsForKeywords(Book* book, Boole global) { // FALSE => only set book->charsForKeywords[]
    if (global) {
       //Set the default size for printable characters:
       //From <Space> to '~' is 1 (printable), others are 2 (not printable).
@@ -745,15 +740,16 @@ bufInitCharsForKeywords(Book* book, Boole global) { // FALSE => only set book->c
    CLEAR_FIELD(book->charsForKeywords);
 
    // Walk through the 'isident', 'iskeyword', 'isfname' and 'isprint' options.
-   for (i = global ? 0 : 3; i < 3; ++i) {
+   for (int i = global ? 0 : 3; i < 3; ++i) {
+      CS p;
       if (i == 0)
          p = p_isi;      // first round: 'isident'
       ei (i == 1)
          p = p_isf;      // third round: 'isfname'
       else   // i == 2
          p = book->o.isKeyword;   // fourth round: 'iskeyword'
-
-      if (parse_isopt(p, book, false) == FAIL)
+         
+      if (p && parseAnIsOption(p, book, false) == FAIL)
          return FAIL;
    }
 
@@ -771,54 +767,44 @@ eeIsPrintable_strict(int c) {
    return (c >= 0x100 || (c > 0 && (g_chartab[c] & CT_PRINT_CHAR)));
 }
 
-
-//Check the format for the option settings 'iskeyword', 'isident', 'isfname' or 'isprint'.
-//Return FAIL if has an error, OK otherwise.
-int
-check_isopt(CS var) {
-   return parse_isopt(var, NULL, true);
-}
-
+//Parse an "is" option: @iskeyword, @isident, @isfname, @isprint. Return OK/FAIL.
 private int
-parse_isopt(
+parseAnIsOption(
    CS var,
    Book* book,
-   Boole   only_check)   // FALSE: refill g_chartab[]
-{
-   Byte   *p = var;
-   int      c;
-   int      c2;
-   int      tilde;
-   int      do_isalpha;
-   int      trail_comma;
+   Boole   only_check   // FALSE: refill g_chartab[]
+){
+   CS p = var;
+   long c;
+   int tilde;
 
-   // Parses the 'isident', 'iskeyword', 'isfname' and 'isprint' options.
-   // Each option is a list of characters, character numbers or ranges,
-   // separated by commas, e.g.: "200-210,x,#-178,-"
-   while (*p) {
+   //Parse the 'isident', 'iskeyword', 'isfname' and 'isprint' options. Each option is a list of 
+   //characters, character numbers or ranges, separated by commas, e.g.: "200-210,x,#-178,-"
+   while (*p != ZERO) {
       tilde = FALSE;
-      do_isalpha = FALSE;
+      Boole do_isalpha = false;
       if (*p == '^' && p[1] != ZERO) {
          tilde = TRUE;
          ++p;
       }
       if (EE_ISDIGIT(*p))
-         c = getdigits(&p);
+         c = parseLong(&p);
       else
-         c = mb_ptr2char_adv(&p);
-      c2 = -1;
+         c = inpAdvanceMultibyte(&p);
+         
+      Unt c2 = UNT;
       if (*p == '-' && p[1] != ZERO) {
          ++p;
          if (EE_ISDIGIT(*p))
-            c2 = getdigits(&p);
+            c2 = parseLong(&p);
          else
-            c2 = mb_ptr2char_adv(&p);
+            c2 = inpAdvanceMultibyte(&p);
          c2 = *p++;
       }
-      if (c <= 0 || c >= 256 || (c2 < c && c2 != -1) || c2 >= 256 || !(*p == ZERO || *p == ','))
+      if (c <= 0 || c >= 256 || (c2 < c && c2 != UNT) || c2 >= 256 || !(*p == ZERO || *p == ','))
          return FAIL;
 
-      trail_comma = *p == ',';
+      Boole trail_comma = *p == ',';
       p = skip_to_option_part(p);
       if (trail_comma && *p == ZERO)
          // Trailing comma is not allowed.
@@ -827,12 +813,12 @@ parse_isopt(
       if (only_check)
          continue;
 
-      if (c2 == -1) {   // not a range
+      if (c2 == UNT) {   // not a range
          //A single '@' (not "@-@"):
          //Decide on letters being ID/printable/keyword chars with
          //standard function isalpha(). This takes care of locale for single-byte characters).
          if (c == '@') {
-            do_isalpha = TRUE;
+            do_isalpha = true;
             c = 1;
             c2 = 255;
          } else
@@ -964,7 +950,7 @@ ptr2cells(CS p) {
 
 //Return the number of characters 'c' will take on the screen, taking into account the size of a tab
 //Use a define to make it fast, this is used very often!!! Also see getvcol() below.
-# define RET_WIN_BUF_CHARTABSIZE(po, book, p, col) \
+# define RET_PORT_BOOK_CHARSIZE(po, book, p, col) \
    if (*(p) == TAB && (!(po)->o.list || listCharsG.tab1)) { \
       int ts; \
       ts = (book)->o.shiftWidth; \
@@ -974,12 +960,12 @@ ptr2cells(CS p) {
 
 int
 chartabsize(CS p, ColNr col) {
-   RET_WIN_BUF_CHARTABSIZE(curPor, curBook, p, col)
+   RET_PORT_BOOK_CHARSIZE(curPor, curBook, p, col)
 }
 
 int
 win_chartabsize(Portal *po, CS p, ColNr col) {
-   RET_WIN_BUF_CHARTABSIZE(po, po->book, p, col)
+   RET_PORT_BOOK_CHARSIZE(po, po->book, p, col)
 }
 
 // Return the number of characters the string "s" will take on the screen, taking into account the 
@@ -993,10 +979,9 @@ linetabsize_str(CS s) {
 int
 linetabsize_col(int startcol, CS s) {
    CharTableSize cts;
-   Long vcol;
 
-   init_chartabsize_arg(&cts, curPor, 0, startcol, s, s);
-   vcol = cts.cts_vcol;
+   bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, startcol, s, s);
+   Long vcol = cts.cts_vcol;
 
    while (*cts.cts_ptr != ZERO) {
       vcol += lbr_chartabsize_adv(&cts);
@@ -1015,8 +1000,7 @@ linetabsize_col(int startcol, CS s) {
 Unt
 drawLineOnScreentabsize(Portal* po, LineNr lnum, CS line, ColNr len) {
    CharTableSize cts;
-
-   init_chartabsize_arg(&cts, po, lnum, 0, line, line);
+   bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
    drawLineOnScreentabsize_cts(&cts, len);
    clear_chartabsize_arg(&cts);
    return (Unt)cts.cts_vcol;
@@ -1043,7 +1027,7 @@ linetabsize_no_outer(Portal *po, LineNr lnum) {
    CharTableSize cts;
    CS line = memGetLine(po->book, lnum, FALSE);
 
-   init_chartabsize_arg(&cts, po, lnum, 0, line, line);
+   bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
 
    if (cts.cts_text_prop_count) {
       int write_idx = 0;
@@ -1158,11 +1142,11 @@ eeIsPrintable(int c) {
 //"line" is the start of the line, "ptr" is the first relevant character.
 //When "lnum" is zero do not use text properties that insert text.
 void
-init_chartabsize_arg(
-   OUT CharTableSize   *cts,
-   Portal      *po,
-   LineNr   lnum,
-   ColNr      col,
+bookInitCharsForKeywordsSizeArg(
+   OUT CharTableSize* cts,
+   Portal* po,
+   LineNr lnum,
+   ColNr col,
    CS line,
    CS ptr
 ) {
@@ -1193,11 +1177,9 @@ init_chartabsize_arg(
              EE_CLEAR(cts->cts_text_props);
              cts->cts_text_prop_count = 0;
          } else {
-            int       *text_prop_idxs;
-
             // Need to sort the array to get any truncation right. Do the sorting in the second
             // part of the array, then move the sorted props to the first part of the array.
-            text_prop_idxs = ALLOC_MULT(int, count);
+            Arr(int) text_prop_idxs = ALLOC_MULT(int, count);
             for (int i = 0; i < count; ++i)
                text_prop_idxs[i] = i + count;
             sort_text_props(curBook, cts->cts_text_props, text_prop_idxs, count);
@@ -1228,7 +1210,7 @@ lbr_chartabsize(CharTableSize *cts) {
    ) {
       if (curPor->o.wrap)
          return win_nolbr_chartabsize(cts, NULL);
-      RET_WIN_BUF_CHARTABSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
+      RET_PORT_BOOK_CHARSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
    }
    return win_lbr_chartabsize(cts, NULL);
 }
@@ -1255,10 +1237,7 @@ lbr_chartabsize_adv(CharTableSize *cts) {
 //
 //Warning: "*headp" may not be set if it's 0, init to 0 before calling.
 int
-win_lbr_chartabsize(
-   CharTableSize   *cts,
-   int      *headp UNUSED
-){
+win_lbr_chartabsize(CharTableSize* cts, int* headp){
    Portal   *po = cts->cts_win;
    CS line = cts->cts_line; // start of the line
    CS s = cts->cts_ptr;
@@ -1276,7 +1255,7 @@ win_lbr_chartabsize(
    ) {
       if (po->o.wrap)
          return win_nolbr_chartabsize(cts, headp);
-      RET_WIN_BUF_CHARTABSIZE(po, po->book, s, vcol)
+      RET_PORT_BOOK_CHARSIZE(po, po->book, s, vcol)
    }
 
    int has_lcs_eol = po->o.list && listCharsG.eol != ZERO;
@@ -1291,37 +1270,38 @@ win_lbr_chartabsize(
    int is_doublewidth = size == 2 && utf8CharLens[*s] > 1;
 
    if (cts->cts_has_prop_with_text) {
-      int       tab_size = size;
-      int       charlen = *s == ZERO ? 1 : utfCharLen(s);
-      int       i;
-      int       col = (int)(s - line);
+      int tab_size = size;
+      int charlen = *s == ZERO ? 1 : utfCharLen(s);
+      int i;
+      int col = (int)(s - line);
       ArrayList    *gap = &po->book->textPropText;
 
-      // The "$" for 'list' mode will go between the EOL and
-      // the text prop, account for that.
+      // The "$" for 'list' mode will go between the EOL and the text prop, account for that.
       if (has_lcs_eol) {
-          ++vcol;
-          --size;
+         ++vcol;
+         --size;
       }
 
       for (i = 0; i < cts->cts_text_prop_count; ++i) {
-          TextProp   *tp = cts->cts_text_props + i;
-          int      col_off = normalPortalColumnOffset(po);
+         TextProp* tp = cts->cts_text_props + i;
+         int col_off = normalPortalColumnOffset(po);
 
-          // Watch out for the text being deleted.  "cts_text_props" is a
-          // copy, the text prop may actually have been removed from the line.
-          if (tp->id < 0
-             && ((tp->col - 1 >= col && tp->col - 1 < col + charlen)
-                || (tp->col == MAXCOL
-               && ((tp->flags & TEXT_PROP_ALIGN_ABOVE)
-               ? col == 0
-               : s[0] == ZERO && cts->cts_with_trailing)))
-             && -tp->id - 1 < gap->len
+         //Watch out for the text being deleted.  "cts_text_props" is a
+         //copy, the text prop may actually have been removed from the line.
+         if (tp->id < 0
+               && ((tp->col - 1 >= col && tp->col - 1 < col + charlen)
+                     || (tp->col == MAXCOL 
+                           && ((tp->flags & TEXT_PROP_ALIGN_ABOVE) 
+                              ? col == 0 
+                              : (s[0] == ZERO && cts->cts_with_trailing))
+                        )
+                  )
+               && -tp->id - 1 < gap->len
          ) {
-            Byte *p = ((Byte **)gap->c)[-tp->id - 1];
+            CS p = ((Byte **)gap->c)[-tp->id - 1];
 
             if (p) {
-               int   cells;
+               int cells;
 
                if (tp->col == MAXCOL) {
                   int n_extra = (int)STRLEN(p);
@@ -1346,8 +1326,8 @@ win_lbr_chartabsize(
                   size += tab_size;
                }
                if (tp->col == MAXCOL 
-                     && (tp->flags & (TEXT_PROP_ALIGN_ABOVE | TEXT_PROP_ALIGN_BELOW)))
-                  // count extra line for property above/below
+                     && (tp->flags & (TEXT_PROP_ALIGN_ABOVE | TEXT_PROP_ALIGN_BELOW))
+               )  // count extra line for property above/below
                   ++cts->cts_prop_lines;
             }
          }
@@ -1371,12 +1351,12 @@ win_lbr_chartabsize(
    CS sbr = no_sbr ? Em : p_sbr;
    // When "size" is 0, no new screen line is started.
    if (size > 0 && po->o.wrap && (*sbr != ZERO || po->o.breakIndent)) {
-      int   col_off_prev = normalPortalColumnOffset(po);
-      int   width2 = po->width - col_off_prev;
-      ColNr   wcol = vcol + col_off_prev;
+      int col_off_prev = normalPortalColumnOffset(po);
+      int width2 = po->width - col_off_prev;
+      ColNr wcol = vcol + col_off_prev;
       wcol -= po->virtColFirstChar;
-      ColNr   max_head_vcol = cts->cts_max_head_vcol;
-      int   added = 0;
+      ColNr max_head_vcol = cts->cts_max_head_vcol;
+      int added = 0;
 
       // cells taken by 'showbreak'/'breakindent' before current char
       int   head_prev = 0;
@@ -1419,7 +1399,7 @@ win_lbr_chartabsize(
             int width = width2 - head_mid;
 
             if (width <= 0)
-                width = 1;
+               width = 1;
             // Divide "size - prev_rem" by "width", rounding up.
             int cnt = (size - prev_rem + width - 1) / width;
             added += cnt * head_mid;
@@ -1450,8 +1430,8 @@ win_lbr_chartabsize(
    if (po->o.lineBreak && po->o.wrap && po->width != 0
        && EE_ISBREAK((int)s[0]) && !EE_ISBREAK((int)s[1])
    ){
-      Byte   *t = cts->cts_line;
-      while (EE_ISBREAK((int)t[0]))
+      CS t = cts->cts_line;
+      while (EE_ISBREAK((Unt)t[0]))
          t++;
       // 'linebreak' is only needed when not in leading whitespace.
       need_lbr = s >= t;
@@ -1496,8 +1476,8 @@ win_lbr_chartabsize(
 //Only uses "cts_win", "cts_ptr" and "cts_vcol" from "cts".
 private int
 win_nolbr_chartabsize(
-   CharTableSize   *cts,
-   int      *headp
+   CharTableSize* cts,
+   int* headp
 ){
    Portal   *po = cts->cts_win;
    Byte   *s = cts->cts_ptr;
@@ -1543,32 +1523,31 @@ inPortalBorder(Portal *po, ColNr vcol) {
 //This is used very often, keep it fast!
 void
 getvcol(
-   Portal   *po,
-   Pos   *pos,
-   ColNr   *start,
-   ColNr   *cursor,
-   ColNr   *end)
-{
-   ColNr   vcol;
-   Byte   *ptr;      // points to current char
-   Byte   *line;      // start of the line
-   int      incr;
-   int      head;
-   int      ts = po->book->o.shiftWidth;
-   int      c;
+   Portal* po,
+   Pos* pos,
+   ColNr* start,
+   ColNr* cursor,
+   ColNr* end
+) {
+   int incr;
+   int head;
+   int ts = po->book->o.shiftWidth;
    CharTableSize cts;
    int      on_ZERO = FALSE;
 
-   vcol = 0;
-   line = ptr = memGetLine(po->book, pos->lnum, FALSE);
+   ColNr vcol = 0;
+   CS ptr = memGetLine(po->book, pos->lnum, FALSE);  // points to current char
+   CS line = ptr;  // start of the line
 
-   init_chartabsize_arg(&cts, po, pos->lnum, 0, line, line);
+   bookInitCharsForKeywordsSizeArg(&cts, po, pos->lnum, 0, line, line);
    cts.cts_max_head_vcol = -1;
 
    //This function is used very often, do some speed optimizations.
    //When 'list', 'linebreak', 'showbreak' and 'breakindent' are not set
    //and there are no text properties with "text" use a simple loop.
    //Also use this when 'list' is set but tabs take their normal size.
+   
+   Unt c;
    if ((!po->o.list || listCharsG.tab1 != ZERO)
        && !po->o.lineBreak && *p_sbr == ZERO && !po->o.breakIndent
        && !cts.cts_has_prop_with_text
@@ -1668,9 +1647,9 @@ getvcol(
 
 // Get virtual cursor column in the current portal, pretending 'list' is off.
 ColNr
-getvcol_nolist(Pos *posp) {
-   int      list_save = curPor->o.list;
-   ColNr   vcol;
+getvcol_nolist(Pos* posp) {
+   int   list_save = curPor->o.list;
+   ColNr vcol;
 
    curPor->o.list = FALSE;
    if (posp->coladd)
@@ -1684,12 +1663,12 @@ getvcol_nolist(Pos *posp) {
 // Get virtual column in virtual mode.
 void
 bookGetVirtualColInVirtualMode(
-   Portal   *po,
-   Pos   *pos,
-   OUT ColNr   *start,
-   OUT ColNr   *cursor,
-   OUT ColNr   *end)
-{
+   Portal* po,
+   Pos* pos,
+   OUT ColNr* start,
+   OUT ColNr* cursor,
+   OUT ColNr* end
+) {
    ColNr   col;
    ColNr   coladd;
    ColNr   endadd;
@@ -1727,12 +1706,12 @@ bookGetVirtualColInVirtualMode(
 //Get the leftmost and rightmost virtual column of pos1 and pos2. Used for Visual block mode.
 void
 getvcols(
-   Portal   *po,
-   Pos   *pos1,
-   Pos   *pos2,
-   ColNr   *left,
-   ColNr   *right)
-{
+   Portal* po,
+   Pos* pos1,
+   Pos* pos2,
+   ColNr* left,
+   ColNr* right
+) {
    ColNr   from1, from2, to1, to2;
 
    if (LT_POSP(pos1, pos2)) {
@@ -1860,13 +1839,13 @@ readBook(
        line_count, (LineNr)0, (LineNr)MAXLNUM, invo,
        flags | READ_BOOK);
    if (retval == OK) {
-   // Delete the binary lines.
-   while (--line_count >= 0)
-       ml_delete((LineNr)1);
+      // Delete the binary lines.
+      while (--line_count >= 0)
+         ml_delete((LineNr)1);
    } else {
       // Delete the converted lines.
       while (curBook->mem.lineCount > line_count)
-          ml_delete(line_count);
+         ml_delete(line_count);
    }
    // Put the cursor on the first line.
    curPor->cursor.lnum = 1;
@@ -1888,9 +1867,8 @@ bookEnsureLoaded(Book* book) {
    if (book->mem.mfile)
       return;
 
+   // Make sure there is a portal into the book. Otherwise skip it.
    AutocommSave   aco;
-
-   // Make sure there is a portal into the book.  If not then skip it.
    auCommPrepareBook(&aco, book);
    if (curBook == book) {
       if (swap_exists_action != SEA_READONLY)
@@ -1904,8 +1882,8 @@ bookEnsureLoaded(Book* book) {
 Unt
 bookOpenFromInvo(
    Boole read_stdin,     //read file from stdin
-   Invocation   *invo, //for forced 'ff' or NULL
-   Unt flags       //extra flags for readfile()
+   Invocation* invo, //for forced 'ff' or NULL
+   Unt flags        //extra flags for readfile()
 ){
    int      retval = OK;
    BookRef   oldCurBook;
@@ -2003,7 +1981,7 @@ bookOpenFromInvo(
 
    // if first time loading this book, init charTable[]
    if ((curBook->flags & BF_NEVERLOADED) != 0) {
-      (void)bufInitCharsForKeywords(curBook, false);
+      (void)bookInitCharsForKeywords(curBook, false);
    }
 
    // Set/reset the Changed flag first, autocmds may change the book.
@@ -2065,20 +2043,19 @@ bookOpenFromInvo(
 // Store "book" in "bookRef" and set the free count.
 void
 bookStoreInRef(OUT BookRef *bookRef, Book* book){
-    bookRef->c = book;
-    bookRef->fnum = book == NULL ? 0 : book->fiNum;
-    bookRef->freeCount = freeCallCountS;
+   bookRef->c = book;
+   bookRef->fnum = book == NULL ? 0 : book->fiNum;
+   bookRef->freeCount = freeCallCountS;
 }
 
 //Return TRUE if "bookRef->c" points to the same book as when bookStoreInRef() was called and it 
 //is a valid book. Only goes through the book list if freeCallCountS changed.
 //Also checks if fiNum is still the same, a :bwipe followed by :new might get
 //the same allocated memory, but it's a different book.
-int
-bookRefValid(BookRef *bookRef){
+Boole
+bookRefValid(BookRef* bookRef){
    return bookRef->freeCount == freeCallCountS
-      ? TRUE : bookIsValid(bookRef->c)
-                 && bookRef->fnum == bookRef->c->fiNum;
+      ? TRUE : (bookIsValid(bookRef->c) && bookRef->fnum == bookRef->c->fiNum);
 }
 
 //Return TRUE if "book" points to a valid book (in the book list).
@@ -2086,7 +2063,7 @@ bookRefValid(BookRef *bookRef){
 Boole
 bookIsValid(Book* book){
    // Assume that we more often have a recent book, start with the last one.
-   Book   *bp;
+   Book* bp;
    FOR_ALL_BOOKS_FROM_LAST(bp) {
       if (bp == book)
          return true;
@@ -2109,7 +2086,7 @@ addBookToHashtable(Book* book){
 
 private void
 removeBookFromHashtable(Book* book) {
-   EeSetItem *hi = hash_find(&buf_hashtab, book->key);
+   EeSetItem* hi = hash_find(&buf_hashtab, book->key);
 
    if (!HASHITEM_EMPTY(hi))
       hash_remove(&buf_hashtab, hi, S"close book");
@@ -2123,7 +2100,7 @@ canUnloadBook(Book* book) {
    Boole canUnload = !book->locked;
 
    if (canUnload && updating_screen) {
-      Portal   *po;
+      Portal* po;
       FOR_ALL_PORTALS(po)
          if (po->book == book) {
             canUnload = false;
@@ -2157,20 +2134,20 @@ canUnloadBook(Book* book) {
 //Return TRUE when we got to the end and countPortals was decremented.
 int
 closeBook(
-   Portal   *port,      // if not NULL, set lastCursor
+   Portal* port,      // if not NULL, set lastCursor
    Book* book,
-   int      action,
-   int      abort_if_last,
-   int      ignore_abort
+   int action,
+   int abort_if_last,
+   int ignore_abort
 ){
-   int      nPortals;
-   BookRef   bookRef;
-   int      isCurPor = (curPor && curPor->book == book);
-   Portal   *theCurPor = curPor;
-   Tab   *theCurtab = curtab;
-   int      unload_buf = (action != 0);
-   int      wipe_buf = (action == DOBOOK_WIPE || action == DOBOOK_WIPE_REUSE);
-   int      del_buf = (action == DOBOOK_DEL || wipe_buf);
+   int nPortals;
+   BookRef bookRef;
+   Boole isCurPor = (curPor && curPor->book == book);
+   Portal* theCurPor = curPor;
+   Tab* theCurtab = curtab;
+   int unload_buf = (action != 0);
+   int wipe_buf = (action == DOBOOK_WIPE || action == DOBOOK_WIPE_REUSE);
+   int del_buf = (action == DOBOOK_DEL || wipe_buf);
 
    CHECK_CURBOOK;
 
@@ -2213,17 +2190,17 @@ closeBook(
       CHECK_CURBOOK;
     }
 
-   // Disallow deleting the book when it is locked (already being closed or
-   // halfway a command that relies on it). Unloading is allowed.
+   //Disallow deleting the book when it is locked (already being closed or
+   //halfway a command that relies on it). Unloading is allowed.
    if ((del_buf || wipe_buf) && !canUnloadBook(book))
       return FALSE;
 
-   // check no autocommands closed the portal
+   //check no autocommands closed the portal
    if (port && doesPortalExistInAnyTab(port)) {
-      // Set lastCursor when closing the last portal into the book.
-      // Remember the last cursor position and portal options of the book.
-      // This used to be only for the current portal, but then options like
-      // @foldmethod may be lost with a ":only" command.
+      //Set lastCursor when closing the last portal into the book.
+      //Remember the last cursor position and portal options of the book.
+      //This used to be only for the current portal, but then options like
+      //@foldmethod may be lost with a ":only" command.
       if (book->countPortals == 1)
          set_last_cursor(port);
       bookSetPosInPort(book, port,
@@ -2236,39 +2213,39 @@ closeBook(
 
    // When the book is no longer in a portal, trigger BufWinLeave
    if (book->countPortals == 1) {
-   ++book->locked;
-   ++book->lockedSplit;
-   if (apply_autocmds(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book)
-      && !bookRefValid(&bookRef)
-   ) {
-      // Autocommands deleted the book.
-aucmd_abort:
-      emsg(_(e_autocommands_caused_command_to_abort));
-      return FALSE;
-   }
-   --book->locked;
-   --book->lockedSplit;
-   if (abort_if_last && onePortal())
-       // Autocommands made this the only portal.
-       goto aucmd_abort;
-
-   // When the book becomes hidden, but is not unloaded, trigger BufHidden
-   if (!unload_buf) {
       ++book->locked;
       ++book->lockedSplit;
-      if (apply_autocmds(EVENT_BUFHIDDEN, book->currFileName, book->currFileName, false, book)
-             && !bookRefValid(&bookRef))
+      if (apply_autocmds(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book)
+         && !bookRefValid(&bookRef)
+      ) {
          // Autocommands deleted the book.
-         goto aucmd_abort;
+   aucmd_abort:
+         emsg(_(e_autocommands_caused_command_to_abort));
+         return FALSE;
+      }
       --book->locked;
       --book->lockedSplit;
       if (abort_if_last && onePortal())
-         // Autocommands made this the only portal.
-         goto aucmd_abort;
-   }
-   // autocmds may abort script processing
-   if (!ignore_abort && aborting())
-      return FALSE;
+          // Autocommands made this the only portal.
+          goto aucmd_abort;
+
+      // When the book becomes hidden, but is not unloaded, trigger BufHidden
+      if (!unload_buf) {
+         ++book->locked;
+         ++book->lockedSplit;
+         if (apply_autocmds(EVENT_BUFHIDDEN, book->currFileName, book->currFileName, false, book)
+                && !bookRefValid(&bookRef))
+            // Autocommands deleted the book.
+            goto aucmd_abort;
+         --book->locked;
+         --book->lockedSplit;
+         if (abort_if_last && onePortal())
+            // Autocommands made this the only portal.
+            goto aucmd_abort;
+      }
+      // autocmds may abort script processing
+      if (!ignore_abort && aborting())
+         return FALSE;
    }
 
    // If the book was in curPor and the portal has changed, go back to that
@@ -2334,8 +2311,8 @@ aucmd_abort:
    if (doesPortalExistInAnyTab(port) && port->book == book)
       port->book = NULL;  // make sure we don't use the book now
 
-   // Autocommands may have opened or closed portals into this book.
-   // Decrement the count for the close we do here.
+   //Autocommands may have opened or closed portals into this book.
+   //Decrement the count for the close we do here.
    if (book->countPortals > 0)
       --book->countPortals;
 
@@ -2385,7 +2362,7 @@ aucmd_abort:
       if (del_buf)
           book->o.bookListed = false;
    }
-   // NOTE: at this point "curBook" may be invalid!
+   //NOTE: at this point "curBook" may be invalid!
    return TRUE;
 }
 
@@ -2410,9 +2387,9 @@ buf_clear_file(Book* book){
 void
 bookFreeAll(Book* book, Unt flags){
    Boole isCurBook = (book == curBook);
-   int isCurPor = (curPor && curPor->book == book);
-   Portal   *theCurPor = curPor;
-   Tab   *theCurtab = curtab;
+   Boole isCurPor = (curPor && curPor->book == book);
+   Portal* theCurPor = curPor;
+   Tab* theCurtab = curtab;
 
    // Make sure the book isn't closed by autocommands.
    ++book->locked;
@@ -2533,9 +2510,9 @@ init_changedtick(Book* book){
 private void
 clearPortInfo(Book* book){
    while (book->portInfos) {
-      PortInfo* wip = book->portInfos;
-      book->portInfos = wip->next;
-      free_wininfo(wip);
+      PortInfo* poInfo = book->portInfos;
+      book->portInfos = poInfo->next;
+      free_wininfo(poInfo);
    }
 }
 
@@ -2565,12 +2542,12 @@ freeAttachedData(Book* book, int free_options) {     // free options as well
 
 // Free one PortInfo.
 void
-free_wininfo(PortInfo *wip) {
-   if (wip->isOptChanged) {
-      optClearPortOptions(&wip->opt);
-      deleteFoldRecurse(&wip->folds);
+free_wininfo(PortInfo *poInfo) {
+   if (poInfo->isOptChanged) {
+      optClearPortOptions(&poInfo->opt);
+      deleteFoldRecurse(&poInfo->folds);
    }
-   eeglFree(wip);
+   eeglFree(poInfo);
 }
 
 // Go to another book. Handles the result of the ATTENTION dialog.
@@ -3090,7 +3067,7 @@ do_bufdel(
                   break;
                arg = p;
             } else
-               bnr = getdigits(&arg);
+               bnr = parseLong(&arg);
          }
       }
       if (!gotInterruptG && do_current && bookDo(command, DOBOOK_FIRST,
@@ -3657,7 +3634,6 @@ booklistFindByNameExpandingLinks(CS fname) {
 Book*
 booklistFindName(CS fullFName){
    FileStat   st;
-
    if (stat((char *)fullFName, &st) < 0)
       st.st_dev = (Device)-1;
    return booklistFindName_stat(fullFName, &st);
@@ -3695,11 +3671,10 @@ sameFileInBook(Book* book, CS fullFName, FileStat* stp) {
 
 // Find file in book list by name, but pass the stat structure to avoid getting it twice for 
 // the same file. Return NULL if not found.
-private Book *
-booklistFindName_stat(Arr(Byte) fullFName, FileStat   *stp) {
-   Book   *book;
-
+private Book*
+booklistFindName_stat(CS fullFName, FileStat* stp) {
    // Start at the last book, expect to find a match sooner.
+   Book* book;
    FOR_ALL_BOOKS_FROM_LAST(book) {
       if ((book->flags & BF_DUMMY) == 0 && sameFileInBook(book, fullFName, stp))
          return book;
@@ -3720,11 +3695,7 @@ booklistFindPattern(
    Book* book;
    int      match = -1;
    int      find_listed;
-   Byte   *pat;
-   Byte   *patend;
-   int      attempt;
-   Byte   *p;
-   int      toggledollar;
+   CS p;
 
    // "%" is current file, "%%" or "#" is alternate file
    if ((pattern_end == pattern + 1 && (*pattern == '%' || *pattern == '#'))) {
@@ -3743,15 +3714,15 @@ booklistFindPattern(
    //attempt == 3: with '^' at start and '$' at end (only full match)
    //Repeat this for finding an unlisted book if there was no matching listed book.
    else {
-      pat = file_pat_to_reg_pat(pattern, pattern_end, NULL);
-      patend = pat + STRLEN(pat) - 1;
-      toggledollar = (patend > pat && *patend == '$');
+      CS pat = file_pat_to_reg_pat(pattern, pattern_end, NULL);
+      CS patend = pat + STRLEN(pat) - 1;
+      Boole toggledollar = (patend > pat && *patend == '$');
 
       // First try finding a listed book.  If not found and "unlisted" is TRUE, try finding an 
       // unlisted one.
       find_listed = TRUE;
       for (;;) {
-         for (attempt = 0; attempt <= 3; ++attempt) {
+         for (int attempt = 0; attempt <= 3; ++attempt) {
             RegMatch   regmatch;
 
             // may add '^' and '$'
@@ -3829,7 +3800,7 @@ bufExpandBufnames(
    OUT ExpandMatch* matches
 ){
    Book* book;
-   Byte* p;
+   CS p;
    CS patSaved = NULL;
    LBufMatch* bufMatches = createLBufMatch(2, matches->a);
    Fuzzy fuzzy = {};
@@ -3926,7 +3897,7 @@ bufExpandBufnames(
 
 // Check for a match on the file name for book "book" with regprog "prog".
 private CS
-checkFilenameMatch(RegMatch   *rmp, Book   *book) {
+checkFilenameMatch(RegMatch* rmp, Book* book) {
    // First try the short file name, then the long file name.
    CS match = fname_match(rmp, book->shortFileName);
    if (match == NULL && rmp->regprog)
@@ -4005,65 +3976,64 @@ bookSetPosInPort(
    ColNr   col,
    Boole      copy_options)
 {
-   PortInfo   *wip;
+   PortInfo   *poInfo;
 
-   FOR_ALL_BOOK_PORTINFOS(book, wip) {
-      if (wip->portal == port)
+   FOR_ALL_BOOK_PORTINFOS(book, poInfo) {
+      if (poInfo->portal == port)
          break;
    } 
-   if (!wip) {
+   if (!poInfo) {
       // allocate a new entry
-      wip = ALLOC_CLEAR_ONE(PortInfo);
-      wip->portal = port;
+      poInfo = ALLOC_CLEAR_ONE(PortInfo);
+      poInfo->portal = port;
       if (lnum == 0)      // set lnum even when it's 0
          lnum = 1;
    } else {
       // remove the entry from the list
-      if (wip->prev)
-         wip->prev->next = wip->next;
+      if (poInfo->prev)
+         poInfo->prev->next = poInfo->next;
       else
-         book->portInfos = wip->next;
-      if (wip->next)
-         wip->next->prev = wip->prev;
-      if (copy_options && wip->isOptChanged) {
-         optClearPortOptions(&wip->opt);
-         deleteFoldRecurse(&wip->folds);
+         book->portInfos = poInfo->next;
+      if (poInfo->next)
+         poInfo->next->prev = poInfo->prev;
+      if (copy_options && poInfo->isOptChanged) {
+         optClearPortOptions(&poInfo->opt);
+         deleteFoldRecurse(&poInfo->folds);
       }
    }
    if (lnum != 0) {
-      wip->wi_fpos.lnum = lnum;
-      wip->wi_fpos.col = col;
+      poInfo->wi_fpos.lnum = lnum;
+      poInfo->wi_fpos.col = col;
    }
    if (port)
-      wip->wi_changelistidx = port->changeListInd;
+      poInfo->wi_changelistidx = port->changeListInd;
    if (copy_options && port) {
       // Save the portal-specific option values.
-      copyPortOpt(&wip->opt, &port->o);
-      wip->foldManual = port->foldManual;
-      cloneFoldArrayList(&port->folds, &wip->folds);
-      wip->isOptChanged = true;
+      copyPortOpt(&poInfo->opt, &port->o);
+      poInfo->foldManual = port->foldManual;
+      cloneFoldArrayList(&port->folds, &poInfo->folds);
+      poInfo->isOptChanged = true;
    }
 
    // insert the entry in front of the list
-   wip->next = book->portInfos;
-   book->portInfos = wip;
-   wip->prev = NULL;
-   if (wip->next)
-      wip->next->prev = wip;
+   poInfo->next = book->portInfos;
+   book->portInfos = poInfo;
+   poInfo->prev = NULL;
+   if (poInfo->next)
+      poInfo->next->prev = poInfo;
 }
 
-// Return TRUE when "wip" has 'diff' set and the diff is only for another tab.  
+// Return TRUE when "poInfo" has 'diff' set and the diff is only for another tab.  
 // That's because a diff is local to a tab.
 private int
-wininfo_other_tab_diff(PortInfo *wip){
-   Portal   *po;
-
-   if (!wip->opt.diff)
+wininfo_other_tab_diff(PortInfo* poInfo){
+   if (!poInfo->opt.diff)
       return FALSE;
 
+   Portal* po;
    FOR_ALL_PORTALS(po) {
       // return FALSE when it's a portal into current tab, thus the book was in diff mode here
-      if (wip->portal == po)
+      if (poInfo->portal == po)
          return FALSE;
    } 
    return TRUE;
@@ -4074,68 +4044,66 @@ wininfo_other_tab_diff(PortInfo *wip){
 // When "need_options" is TRUE skip entries where isOptChanged is false.
 // When "skipDiffBook" is TRUE avoid portals with 'diff' set that is in another tab.
 // Return NULL when there isn't any info.
-private PortInfo *
+private PortInfo*
 find_wininfo(
-   Book   *book,
-   int      need_options,
+   Book* book,
+   int need_options,
    Boole skipDiffBook
 ){
-   PortInfo   *wip;
-
-   FOR_ALL_BOOK_PORTINFOS(book, wip) {
-      if (wip->portal == curPor
-            && (!skipDiffBook || !wininfo_other_tab_diff(wip))
-            && (!need_options || wip->isOptChanged)
+   PortInfo   *poInfo;
+   FOR_ALL_BOOK_PORTINFOS(book, poInfo) {
+      if (poInfo->portal == curPor
+            && (!skipDiffBook || !wininfo_other_tab_diff(poInfo))
+            && (!need_options || poInfo->isOptChanged)
       )
          break;
    } 
 
-   if (wip)
-      return wip;
+   if (poInfo)
+      return poInfo;
 
-   // If no wininfo for curPor, use the first in the list (that doesn't have
-   // 'diff' set and is in another tab).
-   // If "need_options" is TRUE skip entries that don't have options set,
-   // unless the portal is editing "book", so we can copy from the portal itself.
+   //If no wininfo for curPor, use the first in the list (that doesn't have
+   //'diff' set and is in another tab).
+   //If "need_options" is TRUE skip entries that don't have options set,
+   //unless the portal is editing "book", so we can copy from the portal itself.
    if (skipDiffBook) {
-      FOR_ALL_BOOK_PORTINFOS(book, wip)
-         if (!wininfo_other_tab_diff(wip)
-             && (!need_options || wip->isOptChanged || (wip->portal && wip->portal->book == book))
+      FOR_ALL_BOOK_PORTINFOS(book, poInfo)
+         if (!wininfo_other_tab_diff(poInfo)
+             && (!need_options || poInfo->isOptChanged || (poInfo->portal && poInfo->portal->book == book))
          )
             break;
    } else
-      wip = book->portInfos;
-   return wip;
+      poInfo = book->portInfos;
+   return poInfo;
 }
 
-// Reset the local portal options to the values last used in this portal.
-// If the book wasn't used in this portal before, use the values from
-// the most recently used portal. If the values were never set, use the
-// global values for the portal.
+//Reset the local portal options to the values last used in this portal. If the book wasn't used 
+//in this portal before, use the values from the most recently used portal. If the values were 
+//never set, use the global values for the portal.
 void
 get_winopts(Book* book) {
    optClearPortOptions(&curPor->o);
    clearFolding(curPor);
 
-   PortInfo* wip = find_wininfo(book, TRUE, TRUE);
-   if (wip && wip->portal && wip->portal != curPor && wip->portal->book == book) {
+   PortInfo* poInfo = find_wininfo(book, TRUE, TRUE);
+   if (poInfo && poInfo->portal && poInfo->portal != curPor && poInfo->portal->book == book) {
       // The book is currently displayed in the portal: use the actual
       // option values instead of the saved (possibly outdated) values.
-      Portal *po = wip->portal;
+      Portal *po = poInfo->portal;
 
       copyPortOpt(&curPor->o, &po->o);
       curPor->foldManual = po->foldManual;
       curPor->foldNeedsRecomputation = true;
       cloneFoldArrayList(&po->folds, &curPor->folds);
-   } ei (wip && wip->isOptChanged) {
+   } ei (poInfo && poInfo->isOptChanged) {
       // the book was displayed in the current portal earlier
-      copyPortOpt(&curPor->o, &wip->opt);
-      curPor->foldManual = wip->foldManual;
+      copyPortOpt(&curPor->o, &poInfo->opt);
+      curPor->foldManual = poInfo->foldManual;
       curPor->foldNeedsRecomputation = true;
-      cloneFoldArrayList(&wip->folds, &curPor->folds);
+      cloneFoldArrayList(&poInfo->folds, &curPor->folds);
    }
-   if (wip)
-      curPor->changeListInd = wip->wi_changelistidx;
+   if (poInfo)
+      curPor->changeListInd = poInfo->wi_changelistidx;
 
    // Set 'foldlevel' to 'foldlevelstart' if it's not negative.
    if (foldLevelStart >= 0)
@@ -4148,23 +4116,22 @@ get_winopts(Book* book) {
 Pos *
 bookFindFpos(Book* book){
    static Pos no_position = {1, 0, 0};
-   PortInfo* wip = find_wininfo(book, FALSE, FALSE);
-   return wip ? &(wip->wi_fpos) : &no_position;
+   PortInfo* poInfo = find_wininfo(book, FALSE, FALSE);
+   return poInfo ? &(poInfo->wi_fpos) : &no_position;
 }
 
 // List all known file names (for :files and :books command).
 void
-bookListFiles(Invocation *invo) {
-   Book   *book = firstBook;
-   int      len;
-   int      i;
-   int      ro_char;
-   int      changed_char;
-   int      job_running;
-   int      job_none_open;
+bookListFiles(Invocation* invo) {
+   Book* book = firstBook;
+   int i;
+   int ro_char;
+   int changed_char;
+   int job_running;
+   int job_none_open;
 
-   ArrayList   buflist;
-   Book** booklistData = NULL, **p;
+   ArrayList buflist;
+   Book** booklistData = NULL;
 
    if (firstOccurrence(invo->arg, 't')) {
       ga_init2(&buflist, sizeof(Book *), 50);
@@ -4178,8 +4145,9 @@ bookListFiles(Invocation *invo) {
       booklistData = (Book **)buflist.c;
       book = *booklistData;
    }
-   p = booklistData;
+   Book** p = booklistData;
 
+   int len;
    for (; book && !gotInterruptG; book = booklistData
        ? (++p < booklistData + buflist.len ? *p : NULL)
        : book->next
@@ -4266,7 +4234,7 @@ bookListFiles(Invocation *invo) {
 //Used by insert_reg() and cmdline_paste() for '#' register. Return FAIL if not found, or OK.
 int
 bookGetFnameByFileId(
-   int      fnum,
+   int fnum,
    OUT CS* fname,
    OUT LineNr* lnum
 ){
@@ -4288,7 +4256,7 @@ setfname(
    Book* book,
    CS ffname_arg,
    CS sfname_arg,
-   int      message   // give message when book already exists
+   int message   // give message when book already exists
 ){
    CS fullFName = ffname_arg;
    CS sfname = sfname_arg;
@@ -4415,7 +4383,7 @@ setaltfname(
 // Get alternate file name for current portal.
 // Return NULL if there isn't any, and give error message if requested.
 CS
-getaltfname(int      errmsg) {      // give error message
+getaltfname(int errmsg) {      // give error message
    CS fname;
    LineNr dummy;
    if (bookGetFnameByFileId(0, OUT &fname, OUT &dummy) == FAIL) {
@@ -4457,10 +4425,7 @@ buf_setino(Book* book) {
 
 // Return TRUE if dev/ino in book "book" matches with "stp".
 private int
-areSameInode(
-   Book* book,
-   FileStat* stp
-){
+areSameInode(Book* book, FileStat* stp){
    return (book->isDevNumValid && stp->st_dev == book->devNum && stp->st_ino == book->inode);
 }
 
@@ -4487,8 +4452,8 @@ fileinfo(
          name = curBook->currFileName;
       else
          name = curBook->fullFileName;
-      home_replace(shorthelp ? curBook : NULL, name, (CS)buf + bufLen, 
-            IOSIZE - (int)bufLen, TRUE
+      home_replace(
+         shorthelp ? curBook : NULL, name, (CS)buf + bufLen, IOSIZE - (int)bufLen, TRUE
       );
       bufLen += STRLEN(buf + bufLen);
    }
@@ -4551,7 +4516,7 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 
 // Used for building in the status line.
 typedef struct {
-   Byte   *stl_start;
+   CS stl_start;
    int      stl_minwid;
    int      stl_maxwid;
    enum {
@@ -4585,7 +4550,7 @@ int
 renderStatusLine(
    Portal* po,
    CS out,      // string book to write into != NameBuff
-   Unt   outlen,      // length of out[]
+   Unt outlen,      // length of out[]
    CS fmt,
    CS oname,      // option name corresponding to "fmt"
    int opt_scope,   // scope for "oname"
@@ -4597,8 +4562,8 @@ renderStatusLine(
    LineNr   lnum;
    ColNr   len;
    Unt   outputlen;   // length of out[] used (excluding the ZERO)
-   Byte* p;
-   Byte* s;
+   CS p;
+   CS s;
    int byteval;
    int save_VIsual_active;
    int empty_line;
@@ -4608,7 +4573,7 @@ renderStatusLine(
    int prevchar_isitem;
    int itemisflag;
    int fillable;
-   Byte   *str;
+   CS str;
    long   num;
    int      width;
    int      itemcnt;
@@ -4753,14 +4718,12 @@ renderStatusLine(
          continue;
       }
       if (*s == ')') {
-         Byte  *t;
-
          s++;
          if (groupdepth < 1)
             continue;
          groupdepth--;
 
-         t = stl_items[stl_groupitem[groupdepth]].stl_start;
+         CS t = stl_items[stl_groupitem[groupdepth]].stl_start;
          *p = ZERO;
          l = eeglStrSize(t);
          if (curitem > stl_groupitem[groupdepth] + 1 
@@ -4790,8 +4753,7 @@ renderStatusLine(
                   // do not use the hiliting from the removed group
                   if (stl_items[n].StatusTag == Highlight)
                       stl_items[n].StatusTag = Empty;
-                  // adjust the start position of TabPage to the next
-                  // item position
+                  // adjust the start position of TabPage to the next item position
                   if (stl_items[n].StatusTag == TabPage)
                       stl_items[n].stl_start = p;
                }
@@ -4857,7 +4819,7 @@ renderStatusLine(
          l = -1;
       }
       if (EE_ISDIGIT(*s)) {
-         minwid = (int)getdigits(&s);
+         minwid = (int)parseLong(&s);
          if (minwid < 0)   // overflow
             minwid = 0;
       }
@@ -4872,8 +4834,7 @@ renderStatusLine(
       if (*s == STL_TABPAGENR || *s == STL_TABCLOSENR) {
          if (*s == STL_TABCLOSENR) {
             if (minwid == 0) {
-               // %X ends the close label, go back to the previously
-               // define tab label nr.
+               // %X ends the close label, go back to the previously define tab label nr.
                for (n = curitem - 1; n >= 0; --n) {
                   if (stl_items[n].StatusTag == TabPage && stl_items[n].stl_minwid >= 0) {
                       minwid = stl_items[n].stl_minwid;
@@ -4894,7 +4855,7 @@ renderStatusLine(
       if (*s == '.') {
          s++;
          if (EE_ISDIGIT(*s)) {
-            maxwid = (int)getdigits(&s);
+            maxwid = (int)parseLong(&s);
          if (maxwid <= 0)   // overflow
              maxwid = 50;
          }
@@ -5436,11 +5397,7 @@ renderStatusLine(
 // Get relative cursor position in portal into "buf[]", in the localized
 // percentage form like %99, 99%; using "Top", "Bot" or "All" when appropriate.
 int
-get_rel_pos(
-   Portal* po,
-   CS buf,
-   int buflen
-){
+get_rel_pos(Portal* po, CS buf, int buflen){
    long   above; // number of lines above portal
    long   below; // number of lines below portal
 
@@ -5471,9 +5428,9 @@ get_rel_pos(
 // characters
 private int
 append_arg_number(
-   Portal   *po,
+   Portal* po,
    CS buf,
-   Unt   buflen,
+   Unt buflen,
    Boole add_file   // Add "file" before the arg number
 ){
    if (ARGCOUNT <= 1)      // nothing to do
@@ -5507,7 +5464,7 @@ fname_expand(CS* fullFName, CS* sfname){
 
 // Open a portal for a number of books.
 void
-c_bookAll(Invocation *invo) {
+c_bookAll(Invocation* invo) {
    Book* book;
    Portal *po, *wpnext;
    int split_ret = OK;
@@ -5755,12 +5712,12 @@ bt_dontwrite_msg(Book* book) {
 CS
 bookSpName(Book* book) {
    if (isLocationListBook(book)) {
-   // Differentiate between the quickfix and location list books using
-   // the book number stored in the global quickfix stack.
-   if (book->fiNum == qf_stack_get_bufnr())
-       return (CS)_(msg_qflist);
-   else
-       return (CS)_(msg_loclist);
+      // Differentiate between the quickfix and location list books using
+      // the book number stored in the global quickfix stack.
+      if (book->fiNum == qf_stack_get_bufnr())
+          return (CS)_(msg_qflist);
+      else
+          return (CS)_(msg_loclist);
    }
 
    // There is no _file_ when 'buftype' is "nofile", shortFileName
@@ -7178,18 +7135,18 @@ check_arglist_locked(void) {
 
 // Clear an argument list: free all file names and reset it to zero entries.
 void
-alist_clear(ErArgList *al) {
-    if (check_arglist_locked() == FAIL)
-   return;
-    while (--al->al_ga.len >= 0)
-   eeglFree(AARGLIST(al)[al->al_ga.len].fname);
-    ga_clear(&al->al_ga);
+alist_clear(ErArgList* al) {
+   if (check_arglist_locked() == FAIL)
+      return;
+   while (--al->al_ga.len >= 0)
+      eeglFree(AARGLIST(al)[al->al_ga.len].fname);
+   ga_clear(&al->al_ga);
 }
 
 // Init an argument list.
 void
 alist_init(ErArgList *al) {
-    ga_init2(&al->al_ga, sizeof(ArgFileEntry), 5);
+   ga_init2(&al->al_ga, sizeof(ArgFileEntry), 5);
 }
 
 // Remove a reference from an argument list.
@@ -7528,7 +7485,7 @@ editing_arg_idx(Portal *port) {
 
 // Check if portal "port" is editing the argListInd file in its argument list.
 void
-check_arg_idx(Portal *port) {
+check_arg_idx(Portal* port) {
    if (WARGCOUNT(port) > 1 && !editing_arg_idx(port)) {
       // We are not editing the current entry in the argument list.
       // Set "arg_had_last" if we are editing the last one.
@@ -7617,7 +7574,7 @@ c_args(Invocation* invo) {
 
 // ":previous", ":sprevious", ":Next" and ":sNext".
 void
-c_previous(Invocation *invo){
+c_previous(Invocation* invo){
    // If past the last one already, go to the last one.
    if (curPor->argListInd - (int)invo->line2 >= ARGCOUNT)
       do_argfile(invo, ARGCOUNT - 1);
@@ -7627,19 +7584,19 @@ c_previous(Invocation *invo){
 
 // ":rewind", ":first", ":sfirst" and ":srewind".
 void
-c_rewind(Invocation *invo){
+c_rewind(Invocation* invo){
    do_argfile(invo, 0);
 }
 
 // ":last" and ":slast".
 void
-c_last(Invocation *invo){
+c_last(Invocation* invo){
    do_argfile(invo, ARGCOUNT - 1);
 }
 
 // ":argument" and ":sargument".
 void
-c_argument(Invocation *invo){
+c_argument(Invocation* invo){
    int      i;
    if (invo->addr_count > 0)
       i = invo->line2 - 1;
@@ -7650,7 +7607,7 @@ c_argument(Invocation *invo){
 
 // Edit file "argn" of the argument lists.
 void
-do_argfile(Invocation *invo, int argn){
+do_argfile(Invocation* invo, int argn){
    Byte   *p;
    int      old_arg_idx = curPor->argListInd;
    Boole isSplitCommand = *invo->comm == 's';
@@ -7713,7 +7670,7 @@ do_argfile(Invocation *invo, int argn){
 
 // ":next", and commands that behave like it.
 void
-c_next(Invocation *invo){
+c_next(Invocation* invo){
    // check for changed book now, if this fails the argument list is not redefined.
    int i;
    if (*invo->arg != ZERO) {    // redefine file list
@@ -7727,7 +7684,7 @@ c_next(Invocation *invo){
 
 // ":argdedupe"
 void
-c_argdedupe(Invocation *invo UNUSED){
+c_argdedupe(Invocation* invo UNUSED){
    for (int i = 0; i < ARGCOUNT; ++i) {
       // Expand each argument to a full path to catch different paths leading to the same file
       CS firstFullname = FullName_save(ARGLIST[i].fname, FALSE);
@@ -7761,7 +7718,7 @@ c_argdedupe(Invocation *invo UNUSED){
 }
 
 void
-c_argedit(Invocation *invo) {
+c_argedit(Invocation* invo) {
    int i = invo->addr_count ? (int)invo->line2 : curPor->argListInd + 1;
    // Whether curBook will be reused, curBook->fullFileName will be set.
    Boole isReusable = isCurBookReusable();
@@ -7779,14 +7736,14 @@ c_argedit(Invocation *invo) {
 }
 
 void
-c_argadd(Invocation *invo) {
+c_argadd(Invocation* invo) {
    do_arglist(invo->arg, AL_ADD,
           invo->addr_count > 0 ? (int)invo->line2 : curPor->argListInd + 1,
           false);
 }
 
 void
-c_argdelete(Invocation *invo) {
+c_argdelete(Invocation* invo) {
    int      i;
    int      n;
 
@@ -8135,7 +8092,7 @@ openAllArgs(
 
 // ":all" and ":sall". Also used for ":tab drop file ..." after setting the argument list.
 void
-c_all(Invocation *invo) {
+c_all(Invocation* invo) {
    if (invo->addr_count == 0)
       invo->line2 = 9999;
    openAllArgs((int)invo->line2, invo->forceit, invo->id == C_drop);
@@ -8934,11 +8891,11 @@ text_prop_compare(const void *s0, const void *s1) {
 //of text props "props" for book "book".
 void
 sort_text_props(
-   Book       *book,
-   TextProp  *props,
-   int       *idxs,
-   int       count)
-{
+   Book* book,
+   TextProp* props,
+   int* idxs,
+   int count
+) {
    text_prop_compare_buf = book;
    text_prop_compare_props = props;
    qsort((void *)idxs, (Unt)count, sizeof(int), text_prop_compare);
@@ -8952,8 +8909,8 @@ find_visible_prop(
    int       type_id,
    int       id,
    TextProp  *prop,
-   LineNr    *found_lnum)
-{
+   LineNr    *found_lnum
+) {
    // return when "type_id" no longer exists
    if (text_prop_type_by_id(wp->book, type_id) == NULL)
       return FAIL;
@@ -8979,13 +8936,9 @@ find_visible_prop(
 //Any existing text properties are dropped. Only work for the current book.
 private void
 set_text_props(LineNr lnum, Byte *props, int len) {
-   Byte  *text;
-   Byte  *newtext;
-   int       textlen;
-
-   text = ml_get(lnum);
-   textlen = ml_get_len(lnum) + 1;
-   newtext = alloc(textlen + len);
+   CS text = ml_get(lnum);
+   int textlen = ml_get_len(lnum) + 1;
+   CS newtext = alloc(textlen + len);
    mch_memmove(newtext, text, textlen);
    if (len > 0)
       mch_memmove(newtext + textlen, props, len);
@@ -8999,12 +8952,10 @@ set_text_props(LineNr lnum, Byte *props, int len) {
 //Add "text_props" with "text_prop_count" text properties to line "lnum".
 void
 add_text_props(LineNr lnum, TextProp *text_props, int text_prop_count) {
-   Byte  *text;
-   Byte  *newtext;
    int       proplen = text_prop_count * (int)sizeof(TextProp);
 
-   text = ml_get(lnum);
-   newtext = alloc(curBook->mem.lineLen + proplen);
+   CS text = ml_get(lnum);
+   CS newtext = alloc(curBook->mem.lineLen + proplen);
    mch_memmove(newtext, text, curBook->mem.lineLen);
    mch_memmove(newtext + curBook->mem.lineLen, text_props, proplen);
    if ((curBook->mem.flags & ML_LINE_DIRTY) != 0)
@@ -9023,8 +8974,8 @@ compare_pt(void const * s0, void const* s1) {
    return tp0->id == tp1->id ? 0 : tp0->id < tp1->id ? -1 : 1;
 }
 
-private PropType *
-find_type_by_id(EeSet *ht, PropType ***array, int id) {
+private PropType*
+find_type_by_id(EeSet* ht, PropType*** array, int id) {
    if (!ht || ht->count == 0)
       return NULL;
 
@@ -9065,7 +9016,7 @@ find_type_by_id(EeSet *ht, PropType ***array, int id) {
 
 // Fill 'dict' with text properties in 'prop'.
 private void
-prop_fill_dict(Bag *dict, TextProp *prop, Book* book) {
+prop_fill_dict(Bag* dict, TextProp* prop, Book* book) {
    PropType *pt;
    int buflocal = TRUE;
    int virtualtext_prop = prop->id < 0;
@@ -10180,8 +10131,8 @@ prepend_joined_props(
    LineNr    lnum,
    int       last_line,
    long       col,
-   int       removed)
-{
+   int       removed
+) {
    CS props;
    int proplen = get_text_props(OUT &props, curBook, lnum, false);
    for (int i = proplen; i-- > 0; ) {

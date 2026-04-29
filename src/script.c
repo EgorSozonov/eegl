@@ -1827,7 +1827,7 @@ scriautoload(CS name, int reload) {      // load script again when already loade
    // If the name starts with "<SNR>123_" then "123" is the script ID.
    if (name[0] == K_SPECIAL && name[1] == KS_EXTRA && name[2] == KE_SNR) {
       p = name + 3;
-      ret_sid = (int)getdigits(&p);
+      ret_sid = (int)parseLong(&p);
       if (*p == '_' && SCRIPT_ID_VALID(ret_sid)) {
          may_load_script(ret_sid, &ret);
          return ret;
@@ -2501,7 +2501,7 @@ dbg_parsearg(CS arg, ArrayList* gap){ // either &dbg_breakp or &prof_ga
    if (here)
       bp->dbg_lnum = curPor->cursor.lnum;
    ei ( EE_ISDIGIT(*p)) {
-      bp->dbg_lnum = getdigits(&p);
+      bp->dbg_lnum = parseLong(&p);
       p = skipwhite(p);
    } else
       bp->dbg_lnum = 0;
@@ -11441,7 +11441,7 @@ uc_scan_attr(
                 return FAIL;
             }
 
-            *def = getdigits(&p);
+            *def = parseLong(&p);
             *argFlags |= ZERO_LINE_OK;
 
             if (p != val + vallen || vallen == 0) {
@@ -11464,7 +11464,7 @@ uc_scan_attr(
             if (*def >= 0)
                goto two_count;
 
-            *def = getdigits(&p);
+            *def = parseLong(&p);
 
             if (p != val + vallen)
                 goto invalid_count;
@@ -15330,7 +15330,7 @@ save_function_name(
 
    if (STRNCMP(p, "<lambda>", 8) == 0) {
       p += 8;
-      (void)getdigits(&p);
+      (void)parseLong(&p);
       saved = copySubstr(*name, p - *name);
       CLEAR_POINTER(fudi);
    } else

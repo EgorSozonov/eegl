@@ -7,9 +7,11 @@
 #include <termios.h>       // seems to be required for some Linux
 #include <termcap.h>
 
+typedef struct termios TermIos;
+
 //{{{forward declarations
 
-private int may_adjust_key_for_ctrl(int modifiers, int key);
+private int may_adjust_key_for_ctrl(int modifiers, Unt key);
 
 //}}}
 //{{{terminal state:
@@ -91,26 +93,26 @@ private int bg_g = 255;
 private int bg_b = 255;
 
 // Request background color report:
-private TermRequest rbg_status = TERMREQUEST_INIT;
+private TermRequest backgroundColorRequestS = TERMREQUEST_INIT;
 
 // Request cursor blinking mode report:
-private TermRequest rbm_status = TERMREQUEST_INIT;
+private TermRequest cursorBlinkingRequestS = TERMREQUEST_INIT;
 
 // Request cursor style report:
-private TermRequest rcs_status = TERMREQUEST_INIT;
+private TermRequest cursorStyleRequestS = TERMREQUEST_INIT;
 
 // Request window's position report:
-private TermRequest winpos_status = TERMREQUEST_INIT;
+private TermRequest winPositionRequestS = TERMREQUEST_INIT;
 
 private TermRequest *all_termrequests[] = {
    &crv_status,
    &u7_status,
    &xcc_status,
    &rfg_status,
-   &rbg_status,
-   &rbm_status,
-   &rcs_status,
-   &winpos_status
+   &backgroundColorRequestS,
+   &cursorBlinkingRequestS,
+   &cursorStyleRequestS,
+   &winPositionRequestS
 };
 
 // The t_8u code may default to a value but get reset when the term response is
@@ -873,7 +875,7 @@ private int did_request_winpos = 0;
 
 // Try getting the Eegl window position from the terminal. Return OK or FAIL.
 int
-term_get_winpos(int *x, int *y, Long timeout) {
+term_get_winpos(int* x, int* y, Long timeout) {
    int count = 0;
    int prev_winpos_x = winpos_x;
    int prev_winpos_y = winpos_y;
@@ -883,7 +885,7 @@ term_get_winpos(int *x, int *y, Long timeout) {
    winpos_x = -1;
    winpos_y = -1;
    ++did_request_winpos;
-   termrequest_sent(&winpos_status);
+   termrequest_sent(&winPositionRequestS);
    OUT_STR(termCodeS[KS_CGP]);
    out_flush();
 
@@ -1631,11 +1633,11 @@ may_req_bg_color(void) {
       }
 
       //Only request background if t_RB is set.
-      if (rbg_status.tr_progress == STATUS_GET && termCodeS[KS_RBG] != Em) {
+      if (backgroundColorRequestS.tr_progress == STATUS_GET && termCodeS[KS_RBG] != Em) {
           MAY_WANT_TO_LOG_THIS;
           LOG_TR1("Sending BG request");
           out_str(termCodeS[KS_RBG]);
-          termrequest_sent(&rbg_status);
+          termrequest_sent(&backgroundColorRequestS);
           didit = TRUE;
       }
 
@@ -1749,8 +1751,8 @@ term_cursor_color(CS color) {
 
 int
 blink_state_is_inverted(void) {
-   return rbm_status.tr_progress == STATUS_GOT
-      && rcs_status.tr_progress == STATUS_GOT
+   return cursorBlinkingRequestS.tr_progress == STATUS_GOT
+      && cursorStyleRequestS.tr_progress == STATUS_GOT
       && initial_cursor_blink != initial_cursor_shape_blink;
 }
 
@@ -2278,7 +2280,7 @@ handle_version_response(int first, int *arg, int argc) {
       //279 (otherwise it returns 0x18).
       //Only when getting the cursor style was detected to work.
       //Not for Terminal.app, it can't handle t_RS, it echoes the characters to the screen.
-      if (rcs_status.tr_progress == STATUS_GET
+      if (cursorStyleRequestS.tr_progress == STATUS_GET
          && term_props[TPR_CURSOR_STYLE].tpr_status == TPR_YES
          && termCodeS[KS_CSH] != Em
          && termCodeS[KS_CRS] != Em)
@@ -2286,21 +2288,21 @@ handle_version_response(int first, int *arg, int argc) {
           MAY_WANT_TO_LOG_THIS;
           LOG_TR1("Sending cursor style request");
           out_str(termCodeS[KS_CRS]);
-          termrequest_sent(&rcs_status);
+          termrequest_sent(&cursorStyleRequestS);
           need_flush = TRUE;
       }
 
       //Only request the cursor blink mode if t_RC set. Not
       //for Gnome terminal, it can't handle t_RC, it
       //echoes the characters to the screen. Only when getting the cursor style was detected to work.
-      if (rbm_status.tr_progress == STATUS_GET
+      if (cursorBlinkingRequestS.tr_progress == STATUS_GET
          && term_props[TPR_CURSOR_BLINK].tpr_status == TPR_YES
          && termCodeS[KS_CRC] != Em)
       {
           MAY_WANT_TO_LOG_THIS;
           LOG_TR1("Sending cursor blink mode request");
           out_str(termCodeS[KS_CRC]);
-          termrequest_sent(&rbm_status);
+          termrequest_sent(&cursorBlinkingRequestS);
           need_flush = TRUE;
       }
 
@@ -2333,8 +2335,8 @@ put_key_modifiers_in_typeBufG(
    int   offset,
    CS buffer,
    int   bufsize,
-   int   *bufLen)
-{
+   int* bufLen
+) {
    //Some keys need adjustment when the Ctrl modifier is used.
    Unt key = may_adjust_key_for_ctrl(modifiers_arg, key_arg);
 
@@ -2591,7 +2593,7 @@ handleControlSequenceIntroducer(
     // {lead}?12;2$y       not set
     //
     // {lead} can be <Esc>[ or CSI
-    ei (rbm_status.tr_progress == STATUS_SENT
+    ei (cursorBlinkingRequestS.tr_progress == STATUS_SENT
        && first == '?'
        && ap == argp + 6
        && arg[0] == 12
@@ -2599,7 +2601,7 @@ handleControlSequenceIntroducer(
        && trail == 'y'
    ){
       initial_cursor_blink = (arg[1] == '1');
-      rbm_status.tr_progress = STATUS_GOT;
+      cursorBlinkingRequestS.tr_progress = STATUS_GOT;
       LOG_TRN("Received cursor blinking mode response: %s", tp);
       key_name[0] = (int)KS_EXTRA;
       key_name[1] = (int)KE_IGNORE;
@@ -2633,7 +2635,7 @@ handleControlSequenceIntroducer(
       *slen = csi_len;
 
       if (--did_request_winpos <= 0)
-          winpos_status.tr_progress = STATUS_GOT;
+          winPositionRequestS.tr_progress = STATUS_GOT;
    }
 
    // Key with modifier:
@@ -2702,7 +2704,7 @@ handle_osc(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
                Boole newThemeLite = (3 * '6' < *tp_r + *tp_g + *tp_b);
 
                LOG_TRN("Received RBG response: %s", tp);
-               rbg_status.tr_progress = STATUS_GOT;
+               backgroundColorRequestS.tr_progress = STATUS_GOT;
                bg_r = rval;
                bg_g = gval;
                bg_b = bval;
@@ -2800,7 +2802,7 @@ handle_dcs(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
             initial_cursor_shape = (number + 1) / 2;
             //The blink flag is actually inverted, compared to the value set with termCodeS[KS_SH].
             initial_cursor_shape_blink = (number & 1) ? FALSE : TRUE;
-            rcs_status.tr_progress = STATUS_GOT;
+            cursorStyleRequestS.tr_progress = STATUS_GOT;
             LOG_TRN("Received cursor shape response: %s", tp);
 
             key_name[0] = (int)KS_EXTRA;
@@ -2968,7 +2970,7 @@ check_termcode(
                     //If not then it can't be a DEC_MOUSE code.
                     for (;;) {
                         ++count;
-                        (void)getdigits(&nr);
+                        (void)parseLong(&nr);
                         if (nr >= readPos + len)
                            return -1;   // partial sequence
                         if (*nr != ';')
@@ -3097,7 +3099,7 @@ check_termcode(
          }
          //Check for key code response from xterm, starting with <Esc>P or DCS
          //It would only be needed with this condition:
-         //       (check_for_codes || rcs_status.tr_progress == STATUS_SENT)
+         //       (check_for_codes || cursorStyleRequestS.tr_progress == STATUS_SENT)
          //Now this is always done so that DCS codes don't mess up things.
          ei ((readPos[0] == ESC && len >= 2 && readPos[1] == 'P') || readPos[0] == DCS) {
             if (handle_dcs(readPos, argp, len, keyName, &slen) == FAIL)
@@ -3182,8 +3184,8 @@ term_get_fg_color(Byte *r, Byte *g, Byte *b) {
 
 //Get the text background color, if known.
 void
-term_get_bg_color(Byte *r, Byte *g, Byte *b) {
-   if (rbg_status.tr_progress != STATUS_GOT)
+term_get_bg_color(Byte* r, Byte* g, Byte* b) {
+   if (backgroundColorRequestS.tr_progress != STATUS_GOT)
       return;
 
    *r = bg_r;
@@ -3215,18 +3217,14 @@ get_stty(void) {
 }
 
 private int
-mch_tcgetattr(int fd, void *term){
-   if (fd < 0)
-      return -1;
-
-   int retval = tcgetattr(fd, (struct termios *)term);
-   return retval;
+mch_tcgetattr(int fd, TermIos* term){
+   return (fd < 0) ? -1 : tcgetattr(fd, term);
 }
 
 //Obtain the characters that Backspace and Enter produce on "fd". Return OK or FAIL.
 int
-get_tty_info(int fd, TtyInfo *info) {
-   struct termios keys;
+get_tty_info(int fd, TtyInfo* info) {
+   TermIos keys;
 
    if (mch_tcgetattr(fd, &keys) != -1) {
       info->backspace = keys.c_cc[VERASE];
@@ -3248,8 +3246,8 @@ void
 mch_termSetMode(TermInputMode tmode) {
    static int first = TRUE;
 
-   static struct termios told;
-   struct termios tnew;
+   static TermIos told;
+   TermIos tnew;
 
    if (first) {
       first = FALSE;
@@ -3305,7 +3303,6 @@ check_mouse_termcode(void) {
    mch_setmouse(FALSE);
    setmouse();
 }
-
 
 //}}}
 //{{{modifier key tables
@@ -3428,10 +3425,10 @@ private Byte modifier_keys_table[] = {
 //{{{codes and special chars
 
 typedef struct {
-   int      enabled;       // is this entry available (TRUE/FALSE)?
-   int      key;          // special key code or ascii value
-   Text   name;          // name of key
-   int      is_alt;          // is an alternative name
+   Boole enabled;       // is this entry available?
+   int key;          // special key code or ascii value
+   Text name;          // name of key
+   int is_alt;          // is an alternative name
 } KeyNameEntry;
 
 #define STRING_INIT(s) \
@@ -3603,20 +3600,18 @@ get_key_name(int i) {
 }
 
 
-//Replace any terminal code strings in from[] with the equivalent internal
-//Eegl representation. This is used for the "from" and "to" part of a
-//mapping, and the "to" part of a menu command.
-//Any strings like "<C-UP>" are also replaced.
-//K_SPECIAL by itself is replaced by K_SPECIAL KS_SPECIAL KE_FILLER.
+//Replace any terminal code strings in from[] with the equivalent internal Eegl representation. 
+//This is used for the "from" and "to" part of a mapping, and the "to" part of a menu command.
+//Any strings like "<C-UP>" are also replaced. K_SPECIAL by itself is replaced by K_SPECIAL 
+//KS_SPECIAL KE_FILLER.
 //
-//The replacement is done in result[] and finally copied into allocated
-//memory. If this all works well *bufP is set to the allocated memory and a
-//pointer to it is returned. If something fails *bufP is set to NULL and from is returned.
+//The replacement is done in result[] and finally copied into allocated memory. If this all works 
+//well *bufP is set to the allocated memory and a pointer to it is returned. If something fails 
+//*bufP is set to NULL and from is returned.
 //
-//CTRL-V characters are removed.  When "flags" has REPTERM_FROM_PART, a
-//trailing CTRL-V is included, otherwise it is removed (for ":map xx ^V", maps
-//xx to nothing).  When 'cpoptions' does not contain 'B', a backslash can be
-//used instead of a CTRL-V.
+//CTRL-V characters are removed.  When "flags" has REPTERM_FROM_PART, a trailing CTRL-V is included,
+//otherwise it is removed (for ":map xx ^V", maps xx to nothing).  When 'cpoptions' does not 
+//contain 'B', a backslash can be used instead of a CTRL-V.
 //
 //Flags:
 //  REPTERM_FROM_PART   see above
@@ -3627,10 +3622,10 @@ get_key_name(int i) {
 //"didSimplify" is set when some <C-H> or <A-x> code was simplified, unless it is NULL.
 CS
 replace_termcodes(
-   CS   from,
+   CS from,
    CS* bufP,
    ScriptId sid_arg UNUSED,   // script ID to use for <SID>, or 0 to use scriptPosG
-   int      flags,
+   Unt flags,
    OUT Boole* didSimplify,
    Boole recognizeRawKeycodes
 ){
@@ -3970,10 +3965,7 @@ get_special_key_name(Unt c, int modifiers) {
 
    //When not a known special key, and not a printable character, try to extract modifiers.
    if (c > 0 && mb_char2len(c) == 1) {
-      if (table_idx < 0
-               && (!eeIsPrintable(c) || (c & 0x7f) == ' ')
-               && (c & 0x80)
-      ) {
+      if (table_idx < 0 && (!eeIsPrintable(c) || (c & 0x7f) == ' ') && (c & 0x80)) {
          c &= 0x7f;
          modifiers |= MOD_MASK_ALT;
          // try again, to find the un-alted key in the special key table
@@ -4036,27 +4028,22 @@ int
 get_special_key_code(CS name) {
    // If it's <t_xx> we get the code for xx from the termcap
    if (name[0] == 'z' && name[1] == 'z' && name[2] != ZERO && name[3] != ZERO) {
-      Byte  string[3];
-
-   string[0] = name[2];
-   string[1] = name[3];
-   string[2] = ZERO;
-   if (add_termcap_entry(string, FALSE) == OK)
-      return TERMCAP2KEY(name[2], name[3]);
+      Byte  string[3] = {name[2], name[3], ZERO};
+      if (add_termcap_entry(string, FALSE) == OK)
+         return TERMCAP2KEY(name[2], name[3]);
    } else {
       KeyNameEntry target;
-      KeyNameEntry   *entry;
-
-      target.enabled = TRUE;
+      target.enabled = true;
       target.key = 0;
       target.name = (Text){.c = name, .len = 0};
 
-      entry = (KeyNameEntry *)bsearch(
+      KeyNameEntry* entry = (KeyNameEntry *)bsearch(
           &target,
           &keyNamesTable,
           ARRAY_LENGTH(keyNamesTable),
           sizeof(keyNamesTable[0]),
-          keyNameEntryComparer);
+          keyNameEntryComparer
+      );
       if (entry && entry->enabled) {
          Unt key = (Unt)entry->key;
          // Both TAB and K_TAB have name "Tab", and it's unspecified which
@@ -4072,7 +4059,6 @@ get_special_key_code(CS name) {
 int
 show_one_termcode(CS name, CS code, int printit) {
    int len;
-
    if (name[0] > '~') {
       IObuff[0] = ' ';
       IObuff[1] = ' ';
@@ -4143,7 +4129,7 @@ req_more_codes_from_term(void) {
 
    // Send the codes out right away.
    if (xt_index_out != old_idx)
-   out_flush();
+      out_flush();
 }
 
 // Decode key code response from xterm:
@@ -4429,9 +4415,9 @@ nameToModMask(Byte c) {
 //"srcp" is advanced to after the <> name. returns 0 if there is no match.
 int
 find_special_key(
-   OUT Byte   **srcp,
-   OUT int      *modp,
-   int      flags,      // FSK_ values
+   OUT Byte** srcp,
+   OUT Unt* modp,
+   Unt flags,      // FSK_ values
    OUT Boole* didSimplify // found <C-H> or <A-x>
 ){
    CS end_of_name;
@@ -4563,7 +4549,7 @@ find_special_key(
 //Also, unless no_reduce_keys is set then <C-H> and <C-h> mean the same thing, use "H".
 //Return the possibly adjusted key.
 private int
-may_adjust_key_for_ctrl(int modifiers, int key) {
+may_adjust_key_for_ctrl(int modifiers, Unt key) {
    if ((modifiers & MOD_MASK_CTRL) == 0)
       return key;
 
@@ -4615,9 +4601,10 @@ may_remove_shift_modifier(Unt modifiers, Unt key) {
 //Try to find key "c" in the special key table. Return the index when found, -1 when not found.
 int
 find_special_key_in_table(int c) {
-   for (int i = 0; i < (int)ARRAY_LENGTH(keyNamesTable); i++)
+   for (int i = 0; i < (int)ARRAY_LENGTH(keyNamesTable); i++) {
       if (c == keyNamesTable[i].key && !keyNamesTable[i].is_alt)
           return keyNamesTable[i].enabled ? i : -1;
+   } 
 
    return -1;
 }
@@ -4627,14 +4614,14 @@ find_special_key_in_table(int c) {
 //When "escape_ks" is TRUE escape K_SPECIAL bytes in the character.
 //The sequence is not ZERO terminated. This is how characters in a string are encoded.
 int
-special_to_buf(Unt key, int modifiers, int escape_ks, OUT CS dst) {
+special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst) {
    int dlen = 0;
 
    //Put the appropriate modifier in a string
    if (modifiers != 0) {
       dst[dlen++] = K_SPECIAL;
       dst[dlen++] = KS_MODIFIER;
-      dst[dlen++] = modifiers;
+      dst[dlen++] = (Byte)modifiers;
    }
 
    if (IS_SPECIAL(key)) {
@@ -4655,13 +4642,13 @@ special_to_buf(Unt key, int modifiers, int escape_ks, OUT CS dst) {
 //"dst[]" must be big enough to hold the result (up to six characters)!
 int
 trans_special(
-   OUT Byte   **srcp,
-   Byte   *dst,
-   int      flags,      // FSK_ values
-   int      escape_ks,   // escape K_SPECIAL bytes in the character
+   OUT Byte** srcp,
+   CS dst,
+   Unt flags,      // FSK_ values
+   int escape_ks,   // escape K_SPECIAL bytes in the character
    OUT Boole* didSimplify  // FSK_SIMPLIFY and found <C-H> or <A-x>
 ){
-   int modifiers = 0;
+   Unt modifiers = 0;
 
    Unt key = find_special_key(OUT srcp, OUT &modifiers, flags, OUT didSimplify);
    if (key == 0)

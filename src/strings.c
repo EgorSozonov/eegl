@@ -22,7 +22,7 @@ void
 trans_characters(CS buf, int bufsize) {
    int      len;      // length of string needing translation
    int      room;      // room in buffer after string
-   Byte* trs;      // translated character
+   CS trs;      // translated character
    int      trs_len;   // length of trs[]
 
    len = (int)STRLEN(buf);
@@ -30,7 +30,7 @@ trans_characters(CS buf, int bufsize) {
    while (*buf != 0) {
       // Assume a multi-byte character doesn't need translation.
       if ((trs_len = utfCharLen(buf)) > 1)
-          len -= trs_len;
+         len -= trs_len;
       else {
          trs = transchar_byte(*buf);
          trs_len = (int)STRLEN(trs);
@@ -50,7 +50,6 @@ trans_characters(CS buf, int bufsize) {
 // Translate a string into allocated memory, replacing special chars with printable chars.
 CS
 sanitizeStr(CS s) {
-   Byte   *res;
    int      l, c;
    Byte   hexbuf[11];
 
@@ -75,7 +74,7 @@ sanitizeStr(CS s) {
             len += 4;   // illegal byte sequence
       }
    }
-   res = alloc(len + 1);
+   CS res = alloc(len + 1);
    *res = ZERO;
    p = s;
    while (*p != ZERO) {
@@ -148,7 +147,7 @@ str_foldcase(
                }
             }
             if (olen != nlen) {
-               if (buf == NULL) {
+               if (!buf) {
                   STRMOVE(buf + i + nlen, buf + i + olen);
                   len += nlen - olen;
                } else {
@@ -156,8 +155,8 @@ str_foldcase(
                   ga.len += nlen - olen;
                }
             }
-          }
-          (void)mb_char2bytes(lc, STR_PTR(i));
+         }
+         (void)mb_char2bytes(lc, STR_PTR(i));
       }
       // skip to next multi-byte char
       i += utfCharLen(STR_PTR(i));
@@ -196,7 +195,7 @@ eeglStrNsize(CS s, int len) {
    int size = 0;
 
    while (*s != ZERO && --len >= 0) {
-      int       l = utfCharLen(s);
+      int l = utfCharLen(s);
 
       size += ptr2cells(s);
       s += l;
@@ -217,11 +216,8 @@ eeglStrSize(CS s) {
 //Assume characters above 0x100 are valid (multi-byte).
 //Explicitly interpret ']' as a wildcard character as mch_has_wildcard("]") returns false.
 int
-eeIsFnameChar_or_wc(int c) {
-   Byte buf[2];
-
-   buf[0] = (Byte)c;
-   buf[1] = ZERO;
+eeIsFnameChar_or_wc(Unt c) {
+   Byte buf[2] = {(Byte)c, ZERO};
    return eeIsFnameChar(c) || c == ']' || mch_has_wildcard(buf);
 }
 
@@ -237,7 +233,7 @@ skipwhite(CS q) {
 // Skip over ' '
 CS
 skipSpace(CS q) {
-   Byte   *p = q;
+   CS p = q;
 
    while (*p == ' ')
       ++p;
@@ -268,7 +264,7 @@ getwhitecols(CS p) {
 // skip over digits
 CS
 skipdigits(CS q) {
-   Byte   *p = q;
+   CS p = q;
 
    while (EE_ISDIGIT(*p))   // skip to next non-digit
       ++p;
@@ -342,7 +338,7 @@ eeIsDigit(int c) {
 //Variant of isxdigit() that can handle characters > 0x100. We don't use isxdigit() here, because 
 //on some systems it also considers superscript 1 to be a digit.
 int
-eeIsXDigit(int c) {
+eeIsXDigit(Unt c) {
    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
@@ -358,7 +354,7 @@ eeIsLower(Unt c) {
 }
 
 int
-eeIsUpper(int c) {
+eeIsUpper(Unt c) {
    if (c <= '@')
       return FALSE;
    if (c >= 0x80) {
@@ -373,7 +369,7 @@ eeglIsAlfa(int c) {
 }
 
 int
-eeglToUpper(int c) {
+eeglToUpper(Unt c) {
    if (c <= '@')
       return c;
    if (c >= 0x80) {
@@ -385,7 +381,7 @@ eeglToUpper(int c) {
 }
 
 int
-eeglToLower(int c) {
+eeglToLower(Unt c) {
    if (c <= '@')
       return c;
    if (c >= 0x80) {
@@ -428,7 +424,7 @@ skipToLastSpace(CS p) {
 
 // Get a number from a string and skip over it.
 long
-getdigits(OUT CS* pp) {
+parseLong(OUT CS* pp) {
    CS p = *pp;
    long retval = atol((char *)p);
    if (*p == '-')      // skip negative sign
@@ -440,7 +436,7 @@ getdigits(OUT CS* pp) {
 
 // Get a number from a string and skip over it. Allow for embedded single quotes.
 long
-getdigits_quoted(OUT CS* pp) {
+parseLong_quoted(OUT CS* pp) {
    CS str = *pp;
    long   retval = 0;
 
@@ -564,7 +560,7 @@ readLongNumber(
             un = 16 * un + (ULong)hex2nr(*ptr);
          else {
             un = UVARNUM_MAX;
-            if (overflow != NULL)
+            if (overflow)
                 *overflow = TRUE;
          }
          ++ptr;
@@ -791,7 +787,6 @@ toStringChunky(ChunkyString* chunky) {
 //}}}
 //{{{basic string manipulation
 
-
 Text
 mbText(NULLABLE CS b) {
    return b ? (Text){b, STRLEN(b)} : (Text){Em, 0};
@@ -930,14 +925,12 @@ copyStrEscapedA(CS string, CS escChars, Arena* a) {
 //If "a" is non-null, allocation is within it, otherwise it's separate allocations
 CS
 copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
-   Byte   *p;
-   Byte   *p2;
-   unsigned   length;
-   int      l;
+   int l;
 
    // First count the number of backslashes required.
    // Then allocate the memory and insert them.
-   length = 1;            // count the trailing ZERO
+   Unt length = 1;            // count the trailing ZERO
+   CS p;
    for (p = string; *p; p++) {
       if ((l = utfCharLen(p)) > 1) {
          length += l;      // count a multibyte char
@@ -949,7 +942,7 @@ copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
       ++length;         // count an ordinary char
    }
    CS escaped_string = a ? allocateArray(length, Byte, a) : alloc(length);
-   p2 = escaped_string;
+   CS p2 = escaped_string;
    for (p = string; *p; p++) {
       if ((l = utfCharLen(p)) > 1) {
          mch_memmove(p2, p, (Unt)l);
@@ -1001,7 +994,7 @@ splitBySpace(CS inp) {
    split.cap = 2;
    
    int prevInd = -1;
-   Byte* p;
+   CS p;
    for (p = inp; *p != ZERO; p++) {
       if (*p == ' ') {
          int lenPiece = p - inp - prevInd - 1;
@@ -1087,7 +1080,7 @@ copyStr_shellescape(CS string, int do_special, int do_newline) {
    }
 
    // add terminating quote and finish with a ZERO
-       *d++ = '\'';
+      *d++ = '\'';
    *d = ZERO;
 
     return escaped_string;
@@ -1148,8 +1141,8 @@ strup_save(CS orig) {
       }
       int uc = utf_toupper(c);
 
-      // Reallocate string when byte count changes.  This is rare,
-      // thus it's OK to do another malloc()/free().
+      //Reallocate string when byte count changes. This is rare,
+      //thus it's OK to do another malloc()/free().
       Unt newl = mb_char2len(uc);
       if (newl != l) {
          CS s = alloc(STRLEN(res) + 1 + newl - l);
@@ -1166,7 +1159,7 @@ strup_save(CS orig) {
    return res;
 }
 
-// Skip from starting quote to ending quote, including skipping escaped quotes
+//Skip from starting quote to ending quote, including skipping escaped quotes
 Text
 skipQuoted(Text s) {
    CS const sentinel = s.c + s.len;
@@ -1179,7 +1172,7 @@ skipQuoted(Text s) {
    return (Text){sentinel, 0};
 }
 
-// Skip from starting apostrofe to ending apostrofe, including skipping escaped quotes
+//Skip from starting apostrofe to ending apostrofe, including skipping escaped quotes
 Text
 skipSingleQuoted(Text s) {
    CS const sentinel = s.c + s.len;
@@ -1208,8 +1201,8 @@ strlow_save(CS orig) {
       }
       int lc = utf_tolower(c);
 
-      // Reallocate string when byte count changes.  This is rare,
-      // thus it's OK to do another malloc()/free().
+      //Reallocate string when byte count changes. This is rare,
+      //thus it's OK to do another malloc()/free().
       Unt newl = mb_char2len(lc);
       if (newl != l) {
          CS s = alloc(STRLEN(res) + 1 + newl - l);
@@ -1315,13 +1308,10 @@ firstByteOccurrence(CS string, Byte b) {
 //strings with characters above 128 correctly. It also doesn't return a
 //pointer to the ZERO at the end of the string.
 CS
-eeStrbyte(CS string, int c) {
-   Byte   *p = string;
-
-   while (*p != ZERO) {
+eeStrbyte(CS string, Unt c) {
+   for (CS p = string; *p != ZERO; p++) {
       if (*p == c)
-          return p;
-      ++p;
+         return p;
    }
    return NULL;
 }
@@ -1333,12 +1323,9 @@ eeStrbyte(CS string, int c) {
 CS
 lastOccurrence(CS string, int c) {
    CS retval = NULL;
-   CS p = string;
-
-   while (*p) {
+   for (CS p = string; *p != ZERO; MB_PTR_ADV(p)) {
       if (*p == c)
-          retval = p;
-      MB_PTR_ADV(p);
+         retval = p;
    }
    return retval;
 }
@@ -1354,7 +1341,7 @@ CS
 eeStrpbrk(CS s, CS charset) {
    while (*s) {
       if (firstOccurrence(charset, *s) != NULL)
-          return s;
+         return s;
       MB_PTR_ADV(s);
    }
    return NULL;
@@ -1377,7 +1364,7 @@ sortStrings(Arr(CS) files, int count) {
 int
 has_non_ascii(CS s) {
    if (s) {
-      for (Byte* p = s; *p != ZERO; ++p) {
+      for (CS p = s; *p != ZERO; ++p) {
          if (*p >= 128)
             return TRUE;
       } 
@@ -1407,7 +1394,7 @@ reverse_text(CS s) {
    Unt len = STRLEN(s);
    CS rev = alloc(len + 1);
 
-   for (Unt s_i = 0, rev_i = len; s_i < len; ++s_i)     {
+   for (Unt s_i = 0, rev_i = len; s_i < len; ++s_i) {
       int mb_len = utfCharLen(s + s_i);
       rev_i -= mb_len;
       mch_memmove(rev + rev_i, s + s_i, mb_len);
@@ -1505,8 +1492,8 @@ string_filter_map(
    CS str,
    FilterMap filtermap,
    Var* expr,
-   Var* returnVar)
-{
+   Var* returnVar
+) {
    CS p;
    Var   tv;
    ArrayList   ga;
@@ -1566,11 +1553,11 @@ string_reduce(Var* argvars, Var* expr, Var* returnVar) {
 
    if (argvars[2].tag == VAR_UNKNOWN) {
       if (*p == ZERO) {
-          showErrFmtMsg(_(e_reduce_of_an_empty_str_with_no_initial_value), "String");
-          return;
+         showErrFmtMsg(_(e_reduce_of_an_empty_str_with_no_initial_value), "String");
+         return;
       }
       if (copy_first_char_to_tv(p, returnVar) == FAIL)
-          return;
+         return;
       p += STRLEN(returnVar->string);
    } ei (check_for_string_arg(argvars, 2) == FAIL)
       return;
@@ -1580,7 +1567,7 @@ string_reduce(Var* argvars, Var* expr, Var* returnVar) {
    for ( ; *p != ZERO; p += len) {
       argv[0] = *returnVar;
       if (copy_first_char_to_tv(p, &argv[1]) == FAIL)
-          break;
+         break;
       len = (int)STRLEN(argv[1].string);
 
       r = eval_expr_typval(expr, TRUE, argv, 2, returnVar);
@@ -1599,7 +1586,7 @@ byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
 
    CS str = convertVarToStringSingleUse(&argvars[0]);
    Long idx = varGetNumberChk(argvars + 1, NULL);
-   if (str == NULL || idx < 0)
+   if (!str || idx < 0)
       return;
 
    Long   utf16idx = FALSE;
@@ -1607,7 +1594,7 @@ byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
       Boole error = false;
       utf16idx = varGetNumberChk(argvars + 2, OUT &error);
       if (error)
-          return;
+         return;
       if (utf16idx < 0 || utf16idx > 1) {
          showErrFmtMsg(_(e_using_number_as_bool_nr), utf16idx);
          return;
@@ -1676,7 +1663,7 @@ f_charidx(Var* argvars, Var* returnVar) {
       ptr2len = utfCharLen;
 
    Unt len = 0;
-   for (Byte* p = str; utf16idx ? idx >= 0 : p <= str + idx; len++) {
+   for (CS p = str; utf16idx ? idx >= 0 : p <= str + idx; len++) {
       if (*p == ZERO) {
          // If the index is exactly the number of bytes or utf-16 code units
          // in the string then return the length of the string in characters.
@@ -1703,7 +1690,7 @@ blob_from_string(CS str, Blob* blob) {
    Unt len = STRLEN(str);
 
    for (Unt i = 0; i < len; i++) {
-      int   ch = str[i];
+      int ch = str[i];
 
       if (str[i] == NL)
          // Translate newlines in the string to ZERO character
@@ -1845,7 +1832,7 @@ f_str2nr(Var* argvars, Var* returnVar) {
 }
 
 void
-f_strgetchar(Var *argvars, Var *returnVar) {
+f_strgetchar(Var* argvars, Var* returnVar) {
    Boole error = false;
    int      byteidx = 0;
    returnVar->number = -1;
@@ -1917,11 +1904,11 @@ strchar_common(Var *argvars, Var *returnVar, int skipcc) {
    CS s = tv_get_string(&argvars[0]);
    Long      len = 0;
    
-   Unt (*func_mb_ptr2char_adv)(OUT CS* pp);
-   func_mb_ptr2char_adv = skipcc ? mb_ptr2char_adv : mb_cptr2char_adv;
+   Unt (*func_inpAdvanceMultibyte)(OUT CS* pp);
+   func_inpAdvanceMultibyte = skipcc ? inpAdvanceMultibyte : mb_cptr2char_adv;
    
    while (*s != ZERO) {
-      func_mb_ptr2char_adv(&s);
+      func_inpAdvanceMultibyte(&s);
       ++len;
    }
    returnVar->number = len;
@@ -2283,9 +2270,9 @@ private CS e_printf = e_insufficient_arguments_for_printf;
 
 //Get number argument from "idxp" entry in "tvs".  First entry is 1. Skip the entry.
 private Long
-tv_nr(Var *tvs, OUT int *idxp) {
-   int      idx = *idxp - 1;
-   Long   n = 0;
+tv_nr(Var* tvs, OUT int* idxp) {
+   int idx = *idxp - 1;
+   Long n = 0;
    Boole err = false;
 
    if (tvs[idx].tag == VAR_UNKNOWN)
@@ -2324,7 +2311,7 @@ tv_str(Var* tvs, int* idxp, Byte** tofree) {
 
 //Get float argument from "idxp" entry in "tvs".  First entry is 1.
 private double
-tv_float(Var *tvs, int *idxp) {
+tv_float(Var* tvs, int* idxp) {
    int      idx = *idxp - 1;
    double   f = 0;
 
@@ -2346,10 +2333,10 @@ tv_float(Var *tvs, int *idxp) {
 //"-inf", "inf", "+inf", " inf", "-INF", "INF", "+INF" or " INF".
 private CS
 infinity_str(
-      Unt positive,
-      char fmt_spec,
-      int force_sign,
-      int space_for_positive
+   Unt positive,
+   char fmt_spec,
+   int force_sign,
+   int space_for_positive
 ) {
    static CS table[] = {SMAP((CS),
       "-inf", "inf", "+inf", " inf",
@@ -2424,7 +2411,6 @@ eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
 int
 eeSnprintf0(CS str, Unt str_m, const char *fmt, ...) {
    va_list   ap;
-
    va_start(ap, fmt);
    int str_l = eeVsnprintf(str, str_m, fmt, ap);
    va_end(ap);
@@ -2440,7 +2426,6 @@ eeSnprintf0(CS str, Unt str_m, const char *fmt, ...) {
 Unt
 eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...) {
    va_list ap;
-
    va_start(ap, fmt);
    int str_l = eeVsnprintf(str, str_m, fmt, ap);
    va_end(ap);
@@ -2522,14 +2507,12 @@ format_typeof(CS type) {
    case 'o':
    case 'x': case 'X':
    case 'p': {
-       // NOTE: the u, b, o, x, X and p conversion specifiers
-       // imply the value is unsigned;  d implies a signed
-       // value
+      // NOTE: the u, b, o, x, X and p conversion specifiers
+      // imply the value is unsigned;  d implies a signed value
 
-       // 0 if numeric argument is zero (or if pointer is
-       // NULL for 'p'), +1 if greater than zero (or nonzero
-       // for unsigned arguments), -1 if negative (unsigned
-       // argument is never negative)
+      // 0 if numeric argument is zero (or if pointer is
+      // NULL for 'p'), +1 if greater than zero (or nonzero
+      // for unsigned arguments), -1 if negative (unsigned argument is never negative)
 
       if (fmt_spec == 'p')
          return TYPE_POINTER;
@@ -2577,49 +2560,27 @@ format_typeof(CS type) {
 private CS
 format_typename(CS type) {
    switch (format_typeof(type)) {
-   case TYPE_INT:
-       return _("int");
-
-   case TYPE_LONGINT:
-       return _("long int");
-
-   case TYPE_LONGLONGINT:
-       return _("long long int");
-
-   case TYPE_UNSIGNEDINT:
-       return _("unsigned int");
-
-   case TYPE_UNSIGNEDLONGINT:
-       return _("unsigned long int");
-
-   case TYPE_UNSIGNEDLONGLONGINT:
-       return _("unsigned long long int");
-
-   case TYPE_POINTER:
-       return _("pointer");
-
-   case TYPE_PERCENT:
-       return _("percent");
-
-   case TYPE_CHAR:
-       return _("char");
-
-   case TYPE_STRING:
-       return _("string");
-
-   case TYPE_FLOAT:
-       return _("float");
+   case TYPE_INT: return _("int");
+   case TYPE_LONGINT: return _("long int");
+   case TYPE_LONGLONGINT: return _("long long int");
+   case TYPE_UNSIGNEDINT: return _("unsigned int");
+   case TYPE_UNSIGNEDLONGINT: return _("unsigned long int");
+   case TYPE_UNSIGNEDLONGLONGINT: return _("unsigned long long int");
+   case TYPE_POINTER: return _("pointer");
+   case TYPE_PERCENT: return _("percent");
+   case TYPE_CHAR: return _("char");
+   case TYPE_STRING: return _("string");
+   case TYPE_FLOAT: return _("float");
+   default: return _("unknown");
    }
-
-   return _("unknown");
 }
 
 private int
 adjust_types(
-    Byte*** ap_types,
-    int arg,
-    int* num_posarg,
-    CS type
+   OUT Byte*** ap_types,
+   int arg,
+   int* num_posarg,
+   CS type
 ) {
    if (*ap_types == NULL || *num_posarg < arg) {
       int       idx;
@@ -2692,44 +2653,44 @@ format_overflow_error(CS pstart) {
 
 private int
 get_unsigned_int(
-    Byte* pstart,
-    Byte** p,
-    unsigned int *uj,
-    int overflow_err
+   CS pstart,
+   OUT Byte** p,
+   unsigned int *uj,
+   int overflow_err
 ) {
-    *uj = **p - '0';
-    ++*p;
-
-    while (EE_ISDIGIT((int)(**p)) && *uj < MAX_ALLOWED_STRING_WIDTH) {
-   *uj = 10 * *uj + (unsigned int)(**p - '0');
+   *uj = **p - '0';
    ++*p;
-    }
 
-    if (*uj > MAX_ALLOWED_STRING_WIDTH) {
-   if (overflow_err) {
-       format_overflow_error(pstart);
-       return FAIL;
-   } else
-       *uj = MAX_ALLOWED_STRING_WIDTH;
-    }
+   while (EE_ISDIGIT((int)(**p)) && *uj < MAX_ALLOWED_STRING_WIDTH) {
+      *uj = 10 * *uj + (unsigned int)(**p - '0');
+      (*p)++;
+   }
 
-    return OK;
+   if (*uj > MAX_ALLOWED_STRING_WIDTH) {
+      if (overflow_err) {
+          format_overflow_error(pstart);
+          return FAIL;
+      } else
+          *uj = MAX_ALLOWED_STRING_WIDTH;
+   }
+
+   return OK;
 }
 
 
 private int
 parse_fmt_types(
-    Byte*** ap_types,
-    int      *num_posarg,
-    Byte* fmt,
-    Var   *tvs UNUSED
+   Byte*** ap_types,
+   int* num_posarg,
+   CS fmt,
+   Var* tvs UNUSED
 ) {
-    Byte* p = fmt;
-    CS arg = NULL;
+   Byte* p = fmt;
+   CS arg = NULL;
 
-    int      any_pos = 0;
-    int      any_arg = 0;
-    int      arg_idx;
+   int      any_pos = 0;
+   int      any_arg = 0;
+   int      arg_idx;
 
 #define CHECK_POS_ARG do { \
     if (any_pos && any_arg) \
@@ -2775,7 +2736,7 @@ parse_fmt_types(
             // Positional argument
             unsigned int uj;
 
-            if (get_unsigned_int(pstart, &p, &uj, tvs != NULL) == FAIL)
+            if (get_unsigned_int(pstart, OUT &p, &uj, tvs != NULL) == FAIL)
                 goto error;
 
             pos_arg = uj;
@@ -2807,87 +2768,87 @@ parse_fmt_types(
             p++;
 
             if (EE_ISDIGIT((int)(*p))) {
-                // Positional argument field width
-                unsigned int uj;
+               // Positional argument field width
+               unsigned int uj;
 
-                if (get_unsigned_int(arg + 1, &p, &uj, tvs != NULL) == FAIL)
-               goto error;
+               if (get_unsigned_int(arg + 1, OUT &p, &uj, tvs != NULL) == FAIL)
+                  goto error;
 
-                if (*p != '$') {
-               showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-               goto error;
-                } else {
-               ++p;
-               any_pos = 1;
-               CHECK_POS_ARG;
+               if (*p != '$') {
+                  showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+                  goto error;
+               } else {
+                  ++p;
+                  any_pos = 1;
+                  CHECK_POS_ARG;
 
-               if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
-                   goto error;
-                }
+                  if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
+                      goto error;
+               }
             } else {
-                any_arg = 1;
-                CHECK_POS_ARG;
+               any_arg = 1;
+               CHECK_POS_ARG;
             }
-          } ei (EE_ISDIGIT((int)(*p))) {
-         // Unt could be wider than unsigned int; make sure we treat
-         // argument like common implementations do
-         CS digstart = p;
-         unsigned int uj;
-
-         if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
-             goto error;
-
-         if (*p == '$') {
-             showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-             goto error;
-         }
-          }
-
-          // parse precision
-          if (*p == '.') {
-         p++;
-
-         if (*(arg = p) == '*') {
-             p++;
-
-             if (EE_ISDIGIT((int)(*p))) {
-            // Parse precision
+         } ei (EE_ISDIGIT((int)(*p))) {
+            // Unt could be wider than unsigned int; make sure we treat
+            // argument like common implementations do
+            CS digstart = p;
             unsigned int uj;
 
-            if (get_unsigned_int(arg + 1, &p, &uj, tvs != NULL) == FAIL)
-                goto error;
+            if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
+               goto error;
 
             if (*p == '$') {
-                any_pos = 1;
-                CHECK_POS_ARG;
-
-                ++p;
-
-                if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
+               showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
                goto error;
-            } else {
-                showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-                goto error;
             }
-             } else {
-            any_arg = 1;
-            CHECK_POS_ARG;
-             }
-         } ei (EE_ISDIGIT((int)(*p))) {
-             // Unt could be wider than unsigned int; make sure we
-             // treat argument like common implementations do
-             CS digstart = p;
-             unsigned int uj;
-
-             if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
-            goto error;
-
-             if (*p == '$') {
-            showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-            goto error;
-             }
          }
-          }
+
+         // parse precision
+         if (*p == '.') {
+            p++;
+
+            if (*(arg = p) == '*') {
+               p++;
+
+               if (EE_ISDIGIT((int)(*p))) {
+                  // Parse precision
+                  unsigned int uj;
+
+                  if (get_unsigned_int(arg + 1, OUT &p, &uj, tvs != NULL) == FAIL)
+                      goto error;
+
+                  if (*p == '$') {
+                      any_pos = 1;
+                      CHECK_POS_ARG;
+
+                      ++p;
+
+                      if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
+                     goto error;
+                  } else {
+                      showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+                      goto error;
+                  }
+               } else {
+                  any_arg = 1;
+                  CHECK_POS_ARG;
+               }
+            } ei (EE_ISDIGIT((int)(*p))) {
+               // Unt could be wider than unsigned int; make sure we
+               // treat argument like common implementations do
+               CS digstart = p;
+               unsigned int uj;
+
+               if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
+                  goto error;
+
+               if (*p == '$') {
+                  showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+                  goto error;
+               }
+            }
+         }
 
          if (pos_arg != -1) {
             any_pos = 1;
@@ -2901,11 +2862,11 @@ parse_fmt_types(
             length_modifier = *p;
             p++;
             if (length_modifier == 'l' && *p == 'l') {
-                // double l = __int64 / Long
-                // length_modifier = 'L';
-                p++;
+               // double l = __int64 / Long
+               // length_modifier = 'L';
+               p++;
             }
-          }
+         }
 
          switch (*p) {
          // Check for known format specifiers. % is special!
@@ -2934,44 +2895,43 @@ parse_fmt_types(
             if (pos_arg != -1) {
             if (adjust_types(ap_types, pos_arg, num_posarg, ptype) == FAIL)
                 goto error;
-             } else {
-            any_arg = 1;
-            CHECK_POS_ARG;
-             }
-             break;
+            } else {
+               any_arg = 1;
+               CHECK_POS_ARG;
+            }
+            break;
 
          default:
-             if (pos_arg != -1) {
-            showErrFmtMsg(_( e_cannot_mix_positional_and_non_positional_str), fmt);
-            goto error;
-             }
-          }
+            if (pos_arg != -1) {
+               showErrFmtMsg(_( e_cannot_mix_positional_and_non_positional_str), fmt);
+               goto error;
+            }
+         }
 
-          if (*p != ZERO)
-         p++;     // step over the just processed conversion specifier
+         if (*p != ZERO)
+            p++;     // step over the just processed conversion specifier
       }
-    }
-
-    for (arg_idx = 0; arg_idx < *num_posarg; ++arg_idx) {
-   if ((*ap_types)[arg_idx] == NULL) {
-       showErrFmtMsg(_(e_fmt_arg_nr_unused_str), arg_idx + 1, fmt);
-       goto error;
    }
 
-   if (tvs != NULL && tvs[arg_idx].tag == VAR_UNKNOWN)
-   {
-       showErrFmtMsg(_(e_positional_nr_out_of_bounds_str), arg_idx + 1, fmt);
-       goto error;
-   }
-    }
+   for (arg_idx = 0; arg_idx < *num_posarg; ++arg_idx) {
+      if ((*ap_types)[arg_idx] == NULL) {
+         showErrFmtMsg(_(e_fmt_arg_nr_unused_str), arg_idx + 1, fmt);
+         goto error;
+      }
 
-    return OK;
+      if (tvs && tvs[arg_idx].tag == VAR_UNKNOWN) {
+         showErrFmtMsg(_(e_positional_nr_out_of_bounds_str), arg_idx + 1, fmt);
+         goto error;
+      }
+   }
+
+   return OK;
 
 error:
-    eeglFree((Byte**)*ap_types);
-    *ap_types = NULL;
-    *num_posarg = 0;
-    return FAIL;
+   eeglFree((Byte**)*ap_types);
+   *ap_types = NULL;
+   *num_posarg = 0;
+   return FAIL;
 }
 
 private void
@@ -2983,22 +2943,22 @@ skip_to_arg(
     int      *arg_cur,
     CS fmt
 ) {
-    int      arg_min = 0;
+   int      arg_min = 0;
 
-    if (*arg_cur + 1 == *arg_idx) {
-   ++*arg_cur;
-   ++*arg_idx;
-   return;
-    }
+   if (*arg_cur + 1 == *arg_idx) {
+      ++*arg_cur;
+      ++*arg_idx;
+      return;
+   }
 
-    if (*arg_cur >= *arg_idx) {
-   // Reset ap to ap_start and skip arg_idx - 1 types
-   va_end(*ap);
-   va_copy(*ap, ap_start);
-    } else {
-   // Skip over any we should skip
-   arg_min = *arg_cur;
-    }
+   if (*arg_cur >= *arg_idx) {
+      // Reset ap to ap_start and skip arg_idx - 1 types
+      va_end(*ap);
+      va_copy(*ap, ap_start);
+   } else {
+      // Skip over any we should skip
+      arg_min = *arg_cur;
+   }
 
    for (*arg_cur = arg_min; *arg_cur < *arg_idx - 1; ++*arg_cur) {
       if (ap_types == NULL || ap_types[*arg_cur] == NULL) {
@@ -3058,9 +3018,8 @@ skip_to_arg(
       }
     }
 
-    // Because we know that after we return from this call,
-    // a va_arg() call is made, we can pre-emptively
-    // increment the current argument index.
+    //Because we know that after we return from this call, a va_arg() call is made, we can 
+    //pre-emptively increment the current argument index.
     ++*arg_cur;
     ++*arg_idx;
 
@@ -3070,10 +3029,10 @@ skip_to_arg(
 int
 eeVarPrintf0(
    CS str,
-   Unt   str_m,
+   Unt str_m,
    char const* fmt,
-   va_list   ap_start,
-   Var   *tvs
+   va_list ap_start,
+   Var* tvs
 ) {
    Unt   str_l = 0; // number of formatted characters. That is, the number of characters that 
                     // would have been written to the string buf if it were large enough.
@@ -3091,7 +3050,7 @@ eeVarPrintf0(
    va_copy(ap, ap_start);
 
    if (!p)
-      p = E;
+      p = Em;
    while (*p != ZERO) {
       if (*p != '%') {
          CS q = STRCHR(p + 1, '%');
@@ -3161,7 +3120,7 @@ eeVarPrintf0(
             CS digstart = p;
             unsigned int uj;
 
-            if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
+            if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
                goto error;
 
             pos_arg = uj;
@@ -3196,7 +3155,7 @@ eeVarPrintf0(
                // Positional argument field width
                unsigned int uj;
 
-               if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
+               if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
                   goto error;
 
                arg_idx = uj;
@@ -3230,7 +3189,7 @@ eeVarPrintf0(
             CS digstart = p;
             unsigned int uj;
 
-            if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
+            if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
                goto error;
 
             min_field_width = uj;
@@ -3247,7 +3206,7 @@ eeVarPrintf0(
                CS digstart = p;
                unsigned int uj;
 
-               if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
+               if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
                   goto error;
 
                precision = uj;
@@ -3261,7 +3220,7 @@ eeVarPrintf0(
                   // positional argument
                   unsigned int uj;
 
-                  if (get_unsigned_int(digstart, &p, &uj, tvs != NULL) == FAIL)
+                  if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
                      goto error;
 
                   arg_idx = uj;
@@ -3403,34 +3362,31 @@ eeVarPrintf0(
          case 'o':
          case 'x': case 'X':
          case 'p': {
-            // NOTE: the u, b, o, x, X and p conversion specifiers
-            // imply the value is unsigned;  d implies a signed
-            // value
+            //NOTE: the u, b, o, x, X and p conversion specifiers
+            //imply the value is unsigned;  d implies a signed value
 
-            // 0 if numeric argument is zero (or if pointer is
-            // NULL for 'p'), +1 if greater than zero (or nonzero
-            // for unsigned arguments), -1 if negative (unsigned
-            // argument is never negative)
+            //0 if numeric argument is zero (or if pointer is NULL for 'p'), +1 if greater than 
+            //zero (or nonzero for unsigned arguments), -1 if negative (unsigned argument is 
+            //never negative)
             int arg_sign = 0;
 
-            // only set for length modifier h, or for no length
-            // modifiers
+            //only set for length modifier h, or for no length modifiers
             int int_arg = 0;
             Unt uint_arg = 0;
 
-            // only set for length modifier l
+            //only set for length modifier l
             long int long_arg = 0;
             unsigned long int ulong_arg = 0;
 
-            // only set for length modifier ll
+            //only set for length modifier ll
             Long llong_arg = 0;
             ULong ullong_arg = 0;
 
-            // only set for b conversion
+            //only set for b conversion
             ULong bin_arg = 0;
 
-            // pointer argument value -only defined for p conversion
-             void *ptr_arg = NULL;
+            //pointer argument value -only defined for p conversion
+            void *ptr_arg = NULL;
 
             if (fmt_spec == 'p') {
                length_modifier = '\0';
@@ -3611,31 +3567,28 @@ eeVarPrintf0(
                   }
                }
 
-               // include the optional minus sign and possible "0x" in the region before the zero padding
-               // insertion point
-               if (zero_padding_insertion_ind < str_arg_l
-                  && tmp[zero_padding_insertion_ind] == '-')
-                   zero_padding_insertion_ind++;
+               // include the optional minus sign and possible "0x" in the region before the zero 
+               // padding insertion point
+               if (zero_padding_insertion_ind < str_arg_l && tmp[zero_padding_insertion_ind] == '-')
+                  zero_padding_insertion_ind++;
                if (zero_padding_insertion_ind + 1 < str_arg_l
-                  && tmp[zero_padding_insertion_ind]   == '0'
-                  && (tmp[zero_padding_insertion_ind + 1] == 'x'
-                   || tmp[zero_padding_insertion_ind + 1] == 'X'))
-                   zero_padding_insertion_ind += 2;
+                     && tmp[zero_padding_insertion_ind]   == '0'
+                     && (tmp[zero_padding_insertion_ind + 1] == 'x'
+                         || tmp[zero_padding_insertion_ind + 1] == 'X')
+               )
+                  zero_padding_insertion_ind += 2;
             }
 
-            {
             Unt num_of_digits = str_arg_l - zero_padding_insertion_ind;
 
             // zero padding to specified precision?
             if (num_of_digits < precision)
                 number_of_zeros_to_pad = precision - num_of_digits;
-            }
              // zero padding to specified minimal field width?
             if (!justify_left && zero_padding) {
-               int n = (int)(min_field_width - (str_arg_l
-                            + number_of_zeros_to_pad));
+               int n = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
                if (n > 0)
-                   number_of_zeros_to_pad += n;
+                  number_of_zeros_to_pad += n;
             }
             break;
          }
@@ -3647,19 +3600,17 @@ eeVarPrintf0(
          case 'g':
          case 'G': {
             // Floating point.
-            double   f;
-            double   abs_f;
             Byte format[40];
             int      l;
             int      remove_trailing_zeroes = FALSE;
 
-            f = tvs != NULL 
+            double f = tvs
                ? tv_float(tvs, &arg_idx) 
                : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
                   va_arg(ap, double)
                  );
 
-            abs_f = f < 0 ? -f : f;
+            double abs_f = f < 0 ? -f : f;
 
             if (fmt_spec == 'g' || fmt_spec == 'G') {
                // Would be nice to use %g directly, but it prints
@@ -3678,12 +3629,11 @@ eeVarPrintf0(
 # else
                 abs_f > 1.0e307
 # endif
-                )
-            {
-            // Avoid a buffer overflow
-            STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
-            str_arg_l = STRLEN(tmp);
-            zero_padding = 0;
+            ) {
+               // Avoid a buffer overflow
+               STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
+               str_arg_l = STRLEN(tmp);
+               zero_padding = 0;
             } else {
                if (isnan(f)) {
                   // Not a number: nan or NAN
@@ -3752,50 +3702,42 @@ eeVarPrintf0(
                      }
                   } 
                } else {
-                   char *tp;
-
-                   // Be consistent: some printf("%e") use 1.0e+12
-                   // and some 1.0e+012.  Remove one zero in the last
-                   // case.
-                   tp = (char *)firstOccurrence((CS)tmp,
-                         fmt_spec == 'e' ? 'e' : 'E');
-                   if (tp != NULL && (tp[1] == '+' || tp[1] == '-')
+                  // Be consistent: some printf("%e") use 1.0e+12
+                  // and some 1.0e+012.  Remove one zero in the last case.
+                  CS tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
+                  if (tp != NULL && (tp[1] == '+' || tp[1] == '-')
                        && tp[2] == '0'
                        && eeIsDigit(tp[3])
-                       && eeIsDigit(tp[4]))
-                   {
-                  STRMOVE(tp + 2, tp + 3);
-                  --str_arg_l;
-                   }
+                       && eeIsDigit(tp[4])
+                  ) {
+                     STRMOVE(tp + 2, tp + 3);
+                     --str_arg_l;
+                  }
                }
-             }
-             if (zero_padding && min_field_width > str_arg_l
-                        && (tmp[0] == '-' || force_sign))
-             {
-            // padding 0's should be inserted after the sign
-            number_of_zeros_to_pad = min_field_width - str_arg_l;
-            zero_padding_insertion_ind = 1;
-             }
-             str_arg = tmp;
-             break;
+            }
+            if (zero_padding && min_field_width > str_arg_l && (tmp[0] == '-' || force_sign)) {
+               // padding 0's should be inserted after the sign
+               number_of_zeros_to_pad = min_field_width - str_arg_l;
+               zero_padding_insertion_ind = 1;
+            }
+            str_arg = tmp;
+            break;
          }
 
-          default:
-         // unrecognized conversion specifier, keep format string
-         // as-is
-         zero_padding = 0;  // turn zero padding off for non-numeric
-                  // conversion
-         justify_left = 1;
-         min_field_width = 0;          // reset flags
+         default:
+            // unrecognized conversion specifier, keep format string as-is
+            zero_padding = 0;  // turn zero padding off for non-numeric conversion
+            justify_left = 1;
+            min_field_width = 0;          // reset flags
 
-         // discard the unrecognized conversion, just keep *
-         // the unrecognized conversion character
-         str_arg = p;
-         str_arg_l = 0;
-         if (*p != ZERO)
-             str_arg_l++;  // include invalid conversion specifier
-                 // unchanged if not at end-of-string
-         break;
+            // discard the unrecognized conversion, just keep *
+            // the unrecognized conversion character
+            str_arg = p;
+            str_arg_l = 0;
+            if (*p != ZERO)
+                str_arg_l++;  // include invalid conversion specifier
+                    // unchanged if not at end-of-string
+            break;
          }
 
          if (*p != ZERO)
@@ -3818,15 +3760,14 @@ eeVarPrintf0(
             }
          }
 
-          // zero padding as requested by the precision or by the minimal
-         // field width for numeric conversions required?
+         //zero padding as requested by the precision or by the minimal
+         //field width for numeric conversions required?
          if (number_of_zeros_to_pad == 0) {
-            // will not copy first part of numeric right now, *
-            // force it to be copied later in its entirety
+            //will not copy first part of numeric right now, *
+            //force it to be copied later in its entirety
             zero_padding_insertion_ind = 0;
          } else {
-            // insert first part of numerics (sign or '0x') before zero
-            // padding
+            // insert first part of numerics (sign or '0x') before zero padding
             int zn = (int)zero_padding_insertion_ind;
 
             if (zn > 0) {
@@ -3837,8 +3778,7 @@ eeVarPrintf0(
                str_l += zn;
             }
 
-            // insert zero padding as requested by the precision or min
-            // field width
+            // insert zero padding as requested by the precision or min field width
             zn = (int)number_of_zeros_to_pad;
             if (zn > 0) {
                if (str_l < str_m) {
@@ -3857,10 +3797,10 @@ eeVarPrintf0(
          if (sn > 0) {
             if (str_l < str_m) {
                Unt avail = str_m - str_l;
-
-               mch_memmove(str + str_l,
-                  str_arg + zero_padding_insertion_ind,
-                  (Unt)sn > avail ? avail : (Unt)sn);
+               mch_memmove(
+                  str + str_l, str_arg + zero_padding_insertion_ind, 
+                  (Unt)sn > avail ? avail : (Unt)sn
+               );
             }
             str_l += sn;
          }
@@ -4029,13 +3969,13 @@ private int has_match(CS needle, CS haystack);
 
 typedef struct {
    int      idx;      // used for stable sort
-   ListItem   *item;
-   int      score;
-   List   *lmatchpos;
-   Byte   *pat;
-   Byte   *itemstr;
-   int      itemstr_allocated;
-   int      startpos;
+   ListItem* item;
+   int score;
+   List* lmatchpos;
+   CS pat;
+   CS itemstr;
+   int itemstr_allocated;
+   int startpos;
 } FuzzyItem;
 
 void
@@ -4058,12 +3998,11 @@ int
 fuzzy_match(
    CS str,
    CS pat_arg,
-   int      matchseq,
-   int      *outScore,
-   Unt   *matches,
-   int      maxMatches
+   int matchseq,
+   int* outScore,
+   Arr(Unt) matches,
+   int maxMatches
 ) {
-   Byte   *p;
    int complete = FALSE;
    int score = 0;
    int numMatches = 0;
@@ -4073,47 +4012,47 @@ fuzzy_match(
 
    CS save_pat = copyStr(pat_arg);
    CS pat = save_pat;
-   p = pat;
+   CS p = pat;
 
-    // Try matching each word in 'pat_arg' in 'str'
+   // Try matching each word in 'pat_arg' in 'str'
    while (true) {
       if (matchseq)
-          complete = TRUE;
-      else {
-          // Extract one word from the pattern (separated by space)
-          p = skipwhite(p);
-          if (*p == ZERO)
-         break;
-          pat = p;
-          while (*p != ZERO && !SPACE_OR_TAB(mb_ptr2char(p))) {
-             MB_PTR_ADV(p);
-          }
-          if (*p == ZERO)      // processed all the words
          complete = TRUE;
-          *p = ZERO;
+      else {
+         // Extract one word from the pattern (separated by space)
+         p = skipwhite(p);
+         if (*p == ZERO)
+            break;
+         pat = p;
+         while (*p != ZERO && !SPACE_OR_TAB(mb_ptr2char(p))) {
+            MB_PTR_ADV(p);
+         }
+         if (*p == ZERO)      // processed all the words
+            complete = TRUE;
+         *p = ZERO;
       }
 
       score = FUZZY_SCORE_NONE;
       if (has_match(pat, str)) {
-          fzy_score = match_positions(pat, str, matches + numMatches);
-          score = (fzy_score == SCORE_MIN) ? INT_MIN + 1
-         : (fzy_score == SCORE_MAX) ? INT_MAX
-         : (fzy_score < 0) ? (int)ceil(fzy_score * SCORE_SCALE - 0.5)
-         : (int)floor(fzy_score * SCORE_SCALE + 0.5);
+         fzy_score = match_positions(pat, str, matches + numMatches);
+         score = (fzy_score == SCORE_MIN) ? INT_MIN + 1
+            : (fzy_score == SCORE_MAX) ? INT_MAX
+            : (fzy_score < 0) ? (int)ceil(fzy_score * SCORE_SCALE - 0.5)
+            : (int)floor(fzy_score * SCORE_SCALE + 0.5);
       }
 
       if (score == FUZZY_SCORE_NONE) {
-          numMatches = 0;
-          *outScore = FUZZY_SCORE_NONE;
-          break;
+         numMatches = 0;
+         *outScore = FUZZY_SCORE_NONE;
+         break;
       }
 
       if (score > 0 && *outScore > INT_MAX - score)
-          *outScore = INT_MAX;
+         *outScore = INT_MAX;
       ei (score < 0 && *outScore < INT_MIN + 1 - score)
-          *outScore = INT_MIN + 1;
+         *outScore = INT_MIN + 1;
       else
-          *outScore += score;
+         *outScore += score;
 
       numMatches += MB_CHARLEN(pat);
 
@@ -4132,12 +4071,12 @@ fuzzy_match(
 //For items with same score, retain the order using the index (stable sort)
 private int
 fuzzy_match_item_compare(const void *s1, const void *s2) {
-   int      v1 = ((FuzzyItem *)s1)->score;
-   int      v2 = ((FuzzyItem *)s2)->score;
+   int v1 = ((FuzzyItem *)s1)->score;
+   int v2 = ((FuzzyItem *)s2)->score;
 
    if (v1 == v2) {
       int exact_match1 = FALSE, exact_match2 = FALSE;
-      Byte *pat = ((FuzzyItem *)s1)->pat;
+      CS pat = ((FuzzyItem *)s1)->pat;
       int patlen = (int)STRLEN(pat);
       int startpos = ((FuzzyItem *)s1)->startpos;
       exact_match1 = (startpos >= 0) && STRNCMP(pat,
@@ -4147,11 +4086,11 @@ fuzzy_match_item_compare(const void *s1, const void *s2) {
          ((FuzzyItem *)s2)->itemstr + startpos, patlen) == 0;
 
       if (exact_match1 == exact_match2) {
-          int idx1 = ((FuzzyItem *)s1)->idx;
-          int idx2 = ((FuzzyItem *)s2)->idx;
-          return idx1 == idx2 ? 0 : idx1 > idx2 ? 1 : -1;
+         int idx1 = ((FuzzyItem *)s1)->idx;
+         int idx2 = ((FuzzyItem *)s2)->idx;
+         return idx1 == idx2 ? 0 : idx1 > idx2 ? 1 : -1;
       } ei (exact_match2)
-          return 1;
+         return 1;
       return -1;
    } else
       return v1 > v2 ? -1 : 1;
@@ -4166,32 +4105,30 @@ fuzzy_match_item_compare(const void *s1, const void *s2) {
 //If 'retmatchpos' is TRUE, then return a list of positions where 'str' matches for each item.
 private void
 fuzzy_match_in_list(
-   List   *l,
-   Byte   *str,
-   int      matchseq,
-   Byte   *key,
-   Callback   *item_cb,
-   int      retmatchpos,
-   List   *fmatchlist,
-   long   max_matches)
-{
-   long       len;
-   FuzzyItem       *items;
-   ListItem       *li;
-   long       match_count = 0;
-   Unt       matches[FUZZY_MATCH_MAX_LEN];
+   List* l,
+   CS str,
+   int matchseq,
+   CS key,
+   Callback* item_cb,
+   int retmatchpos,
+   List* fmatchlist,
+   long max_matches
+) {
+   long match_count = 0;
+   Unt matches[FUZZY_MATCH_MAX_LEN];
 
-   len = list_len(l);
+   long len = list_len(l);
    if (len == 0)
       return;
    if (max_matches > 0 && len > max_matches)
       len = max_matches;
 
-   items = ALLOC_CLEAR_MULT(FuzzyItem, len);
+   Arr(FuzzyItem) items = ALLOC_CLEAR_MULT(FuzzyItem, len);
    if (items == NULL)
       return;
 
    // For all the string items in items, get the fuzzy matching score
+   ListItem* li;
    FOR_ALL_LIST_ITEMS(l, li) {
       int      score;
       Byte      *itemstr;
@@ -4331,9 +4268,9 @@ done:
 //Do fuzzy matching. Returns the list of matched strings in 'returnVar'.
 //If 'retmatchpos' is TRUE, also returns the matching character positions.
 private void
-do_fuzzymatch(Var *argvars, Var *returnVar, int retmatchpos) {
+do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
    Callback   cb;
-   Byte   *key = NULL;
+   CS key = NULL;
    int      matchseq = FALSE;
    long   max_matches = 0;
 
@@ -4459,8 +4396,8 @@ fuzzy_match_func_compare(const void *s1, const void *s2) {
    int      v2 = ((FuzzyMatch *)s2)->score;
    int      idx1 = ((FuzzyMatch *)s1)->idx;
    int      idx2 = ((FuzzyMatch *)s2)->idx;
-   Byte   *str1 = ((FuzzyMatch *)s1)->str;
-   Byte   *str2 = ((FuzzyMatch *)s2)->str;
+   CS str1 = ((FuzzyMatch *)s1)->str;
+   CS str2 = ((FuzzyMatch *)s2)->str;
 
    if (*str1 != '<' && *str2 == '<')
       return -1;
@@ -4547,7 +4484,7 @@ find_word_end(CS ptr) {
 // Find the end of the line, omitting CR and NL at the end. Returns a pointer to just after the line.
 CS
 find_line_end(CS ptr) {
-   Byte *s = ptr + STRLEN(ptr);
+   CS s = ptr + STRLEN(ptr);
    while (s > ptr && (s[-1] == ENTER || s[-1] == NL))
       --s;
    return s;
@@ -4566,20 +4503,20 @@ find_line_end(CS ptr) {
 int
 fuzzyMatchStr_in_line(
    Byte   **ptr,
-   Byte   *pat,
-   int      *len,
-   Pos   *current_pos,
-   int      *score)
+   CS pat,
+   int* len,
+   Pos* current_pos,
+   int* score)
 {
-   Byte   *str = *ptr;
-   Byte   *strBegin = str;
-   Byte   *end = NULL;
-   Byte   *start = NULL;
-   int      found = FALSE;
-   char   save_end;
-   Byte   *line_end = NULL;
+   CS str = *ptr;
+   CS strBegin = str;
+   CS end = NULL;
+   CS start = NULL;
+   int found = FALSE;
+   Byte save_end;
+   CS line_end = NULL;
 
-   if (str == NULL || pat == NULL)
+   if (!str || !pat)
       return found;
    line_end = find_line_end(str);
 
@@ -4694,7 +4631,7 @@ search_for_fuzzy_match(
                looped_around = TRUE;
             } else
                break;
-          }
+         }
       } else {
          if (--current_pos.lnum < 1) {
             if (wrapSearchG) {
@@ -4702,7 +4639,6 @@ search_for_fuzzy_match(
                looped_around = TRUE;
             } else
                break;
-
          }
       }
       current_pos.col = 0;
@@ -4796,11 +4732,11 @@ has_match(Byte *needle, Byte *haystack) {
 }
 
 typedef struct match_struct {
-    int needle_len;
-    int haystack_len;
-    int lower_needle[MATCH_MAX_LEN];     // stores codepoints
-    int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
-    double match_bonus[MATCH_MAX_LEN];
+   int needle_len;
+   int haystack_len;
+   int lower_needle[MATCH_MAX_LEN];     // stores codepoints
+   int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
+   double match_bonus[MATCH_MAX_LEN];
 } match_struct;
 
 #define IS_WORD_SEP(c) ((c) == '-' || (c) == '_' || (c) == ' ')
@@ -4823,9 +4759,9 @@ compute_bonus_codepoint(Unt last_c, Unt c) {
 }
 
 private void
-setup_match_struct(match_struct *match, Byte *needle, Byte *haystack) {
+setup_match_struct(match_struct *match, CS needle, CS haystack) {
    int i = 0;
-   Byte *p = needle;
+   CS p = needle;
    while (*p != ZERO && i < MATCH_MAX_LEN) {
       Unt c = mb_ptr2char(p);
       match->lower_needle[i++] = MB_TOLOWER(c);
@@ -4848,9 +4784,9 @@ setup_match_struct(match_struct *match, Byte *needle, Byte *haystack) {
 }
 
 private inline void
-match_row(const match_struct *match, int row, double *curr_D,
-   double *curr_M, const double *last_D, const double *last_M)
-{
+match_row(match_struct const* match, int row, double* curr_D,
+   double* curr_M, double const* last_D, double const* last_M
+) {
    int n = match->needle_len;
    int m = match->haystack_len;
    int i = row;
@@ -5167,7 +5103,7 @@ private int   did_add_space = FALSE;   // auto_format() added an extra space und
 #define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
 
 //Return TRUE if format option 'x' is in effect. Take care of no formatting when 'paste' is set.
-int
+Boole
 has_format_option(int x) {
    return (firstOccurrence(curBook->o.formatOptions, x) != NULL);
 }
@@ -5187,23 +5123,23 @@ internal_format(
    int      second_indent,
    int      flags,
    int      format_only,
-   Unt      c) // character to be inserted (can be ZERO)
-{
-   int      cc;
-   int      skip_pos;
-   int      save_char = ZERO;
-   int      haveto_redraw = FALSE;
-   int      fo_ins_blank = has_format_option(FO_INS_BLANK);
-   int      fo_multibyte = has_format_option(FO_MBYTE_BREAK);
-   int      fo_rigor_tw  = has_format_option(FO_RIGOROUS_TW);
-   int      fo_white_par = has_format_option(FO_WHITE_PAR);
-   int      first_line = TRUE;
+   Unt      c // character to be inserted (can be ZERO)
+){
+   int cc;
+   int skip_pos;
+   int save_char = ZERO;
+   int haveto_redraw = FALSE;
+   int fo_ins_blank = has_format_option(FO_INS_BLANK);
+   int fo_multibyte = has_format_option(FO_MBYTE_BREAK);
+   int fo_rigor_tw  = has_format_option(FO_RIGOROUS_TW);
+   int fo_white_par = has_format_option(FO_WHITE_PAR);
+   int first_line = TRUE;
    ColNr   leader_len;
-   int      no_leader = FALSE;
-   int      doComments = (flags & INSCHAR_DO_COM);
-   int      safe_tw = trim_to_int(8 * (Long)textwidth);
-   int      has_lbr = curPor->o.lineBreak;
-   int      has_bri = curPor->o.breakIndent;
+   int no_leader = FALSE;
+   int doComments = (flags & INSCHAR_DO_COM);
+   int safe_tw = trim_to_int(8 * (Long)textwidth);
+   int has_lbr = curPor->o.lineBreak;
+   int has_bri = curPor->o.breakIndent;
 
    // make sure win_lbr_chartabsize() counts correctly
    curPor->o.lineBreak = FALSE;
@@ -5358,7 +5294,7 @@ internal_format(
                curPor->cursor.col = col;
             }
 
-           if (curPor->cursor.col == 0)
+            if (curPor->cursor.col == 0)
                break;
 
             ncc = cc;
@@ -5395,8 +5331,7 @@ internal_format(
                      break;
                   }
 
-                  //Neither cc nor ncc is ZERO if we are here, so
-                  //it's safe to inc_cursor.
+                  //Neither cc nor ncc is ZERO if we are here, so it's safe to inc_cursor.
                   col = curPor->cursor.col;
 
                   inc_cursor();
@@ -5516,10 +5451,10 @@ internal_format(
 private int
 fmt_check_par(
    LineNr   lnum,
-   int* leader_len,
-   Byte** leader_flags,
-   int doComments)
-{
+   OUT int* leader_len,
+   OUT CS* leader_flags,
+   int doComments
+) {
    CS flags = NULL;
 
    CS ptr = ml_get(lnum);
@@ -5532,7 +5467,7 @@ fmt_check_par(
           ++flags;
    }
 
-    return (*skipwhite(ptr + *leader_len) == ZERO
+   return (*skipwhite(ptr + *leader_len) == ZERO
        || (*leader_len > 0 && *flags == COM_END)
        || startPS(lnum, ZERO, FALSE));
 }
@@ -5540,7 +5475,7 @@ fmt_check_par(
 //Return TRUE if line "lnum" ends in a white character.
 private int
 ends_in_white(LineNr lnum) {
-   Byte   *s = ml_get(lnum);
+   CS s = ml_get(lnum);
    if (*s == ZERO)
       return FALSE;
    Unt l = ml_get_len(lnum) - 1;
@@ -5559,7 +5494,6 @@ same_leader(
    CS leader2_flags
 ){
    int       idx1 = 0, idx2 = 0;
-   Byte  *line1;
 
    if (leader1_len == 0)
       return (leader2_len == 0);
@@ -5570,9 +5504,7 @@ same_leader(
    // If first leader has 's' flag, the lines can only be joined if there is
    // some text after it and the second line has the 'm' flag.
    if (leader1_flags != NULL) {
-      Byte   *p;
-
-      for (p = leader1_flags; *p && *p != ':'; ++p) {
+      for (CS p = leader1_flags; *p && *p != ':'; ++p) {
          if (*p == COM_FIRST)
             return (leader2_len == 0);
          if (*p == COM_END)
@@ -5590,26 +5522,23 @@ same_leader(
       }
    }
 
-    // Get current line and next line, compare the leaders.
-    // The first line has to be saved, only one line can be locked at a time.
-    line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
-   if (line1 != NULL) {
-      Byte  *line2;
-
-      for (idx1 = 0; SPACE_OR_TAB(line1[idx1]); ++idx1)
-         {} 
-      line2 = ml_get(lnum + 1);
-      for (idx2 = 0; idx2 < leader2_len; ++idx2) {
-         if (!SPACE_OR_TAB(line2[idx2])) {
-            if (line1[idx1++] != line2[idx2])
-               break;
-         } else {
-            while (SPACE_OR_TAB(line1[idx1]))
-              ++idx1;
-         } 
-      }
-      eeglFree(line1);
+   // Get current line and next line, compare the leaders.
+   // The first line has to be saved, only one line can be locked at a time.
+   CS line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
+   for (idx1 = 0; SPACE_OR_TAB(line1[idx1]); ++idx1)
+      {} 
+      
+   CS line2 = ml_get(lnum + 1);
+   for (idx2 = 0; idx2 < leader2_len; ++idx2) {
+      if (!SPACE_OR_TAB(line2[idx2])) {
+         if (line1[idx1++] != line2[idx2])
+            break;
+      } else {
+         while (SPACE_OR_TAB(line1[idx1]))
+           ++idx1;
+      } 
    }
+   eeglFree(line1);
    return (idx2 == leader2_len && idx1 == leader1_len);
 }
 
@@ -5617,11 +5546,11 @@ same_leader(
 //previous line is in the same paragraph.  Used for auto-formatting.
 private int
 paragraph_start(LineNr lnum) {
-   int      leader_len = 0;      // leader len of current line
-   Byte   *leader_flags = NULL;   // flags for leader of current line
-   int      next_leader_len;   // leader len of next line
-   Byte   *next_leader_flags;   // flags for leader of next line
-   int      doComments;      // format comments
+   int leader_len = 0;      // leader len of current line
+   CS leader_flags = NULL;   // flags for leader of current line
+   int next_leader_len;   // leader len of next line
+   CS next_leader_flags;   // flags for leader of next line
+   int doComments;      // format comments
 
    if (lnum <= 1)
       return TRUE;      // start of the file
@@ -5632,9 +5561,9 @@ paragraph_start(LineNr lnum) {
 
    doComments = has_format_option(FO_Q_COMS);
    if (  // after non-paragraph line
-         fmt_check_par(lnum - 1, &leader_len, &leader_flags, doComments)
+         fmt_check_par(lnum - 1, OUT &leader_len, OUT &leader_flags, doComments)
          // "lnum" is not a paragraph line
-         || fmt_check_par(lnum, &next_leader_len, &next_leader_flags, doComments)
+         || fmt_check_par(lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments)
          // missing trailing space in previous line.
          || (has_format_option(FO_WHITE_PAR) && !ends_in_white(lnum - 1))
          // numbered item starts in "lnum".
@@ -5666,29 +5595,25 @@ auto_format(
    // may remove added space
    check_auto_format(FALSE);
 
-   // Don't format in Insert mode when the cursor is on a trailing blank, the
-   // user might insert normal text next.  Also skip formatting when "1" is
-   // in 'formatoptions' and there is a single character before the cursor.
-   // Otherwise the line would be broken and when typing another non-white
-   // next they are not joined back together.
+   //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
+   //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single 
+   //character before the cursor. Otherwise the line would be broken and when typing another 
+   //non-white next they are not joined back together.
    int wasatend = (pos.col == ml_get_curline_len());
    if (*old != ZERO && !trailblank && wasatend) {
-      int cc;
-
       dec_cursor();
-      cc = gchar_cursor();
-      if (!WHITECHAR(cc) && curPor->cursor.col > 0
-                    && has_format_option(FO_ONE_LETTER))
-          dec_cursor();
+      int cc = gchar_cursor();
+      if (!WHITECHAR(cc) && curPor->cursor.col > 0 && has_format_option(FO_ONE_LETTER))
+         dec_cursor();
       cc = gchar_cursor();
       if (WHITECHAR(cc)) {
-          curPor->cursor = pos;
-          return;
+         curPor->cursor = pos;
+         return;
       }
       curPor->cursor = pos;
    }
 
-   //With the 'c' flag in 'formatoptions' and 't' missing: only format comments.
+   //With the 'c' flag in @formatoptions and 't' missing: only format comments.
    if (has_format_option(FO_WRAP_COMS) && !has_format_option(FO_WRAP)
             && get_leader_len(old, NULL, FALSE, TRUE) == 0)
       return;
@@ -5699,14 +5624,14 @@ auto_format(
       --curPor->cursor.lnum;
    if (u_save_cursor() == FAIL)
        return;
-    }
+   }
 
-    //Do the formatting and restore the cursor position.  "saved_cursor" will
-    //be adjusted for the text formatting.
-    saved_cursor = pos;
-    format_lines((LineNr)-1, FALSE);
-    curPor->cursor = saved_cursor;
-    saved_cursor.lnum = 0;
+   //Do the formatting and restore the cursor position.  "saved_cursor" will
+   //be adjusted for the text formatting.
+   saved_cursor = pos;
+   format_lines((LineNr)-1, FALSE);
+   curPor->cursor = saved_cursor;
+   saved_cursor.lnum = 0;
 
    if (curPor->cursor.lnum > curBook->mem.lineCount) {
       // "cannot happen"
@@ -5715,16 +5640,14 @@ auto_format(
    } else
       check_cursor_col();
 
-   // Insert mode: If the cursor is now after the end of the line while it
-   // previously wasn't, the line was broken.  Because of the rule above we
-   // need to add a space when 'w' is in 'formatoptions' to keep a paragraph formatted.
+   //Insert mode: If the cursor is now after the end of the line while it
+   //previously wasn't, the line was broken.  Because of the rule above we
+   //need to add a space when 'w' is in 'formatoptions' to keep a paragraph formatted.
    if (!wasatend && has_format_option(FO_WHITE_PAR)) {
-      Byte   *new = ml_get_curline();
+      CS new = ml_get_curline();
       ColNr   len = ml_get_curline_len();
       if (curPor->cursor.col == len) {
-         Byte *pnew = copySubstr(new, len + 2);
-         if (pnew == NULL)
-            return;
+         CS pnew = copySubstr(new, len + 2);
          pnew[len] = ' ';
          pnew[len + 1] = ZERO;
          ml_replace(curPor->cursor.lnum, pnew, FALSE);
@@ -5742,21 +5665,20 @@ auto_format(
 //delete it now.  The space must be under the cursor, just after the insert position.
 void
 check_auto_format(int      end_insert){      // TRUE when ending Insert mode
-   int      c = ' ';
-   int      cc;
 
    if (!did_add_space)
       return;
 
-   cc = gchar_cursor();
+   Unt c = ' ';
+   Unt cc = gchar_cursor();
    if (!WHITECHAR(cc))
       // Somehow the space was removed already.
       did_add_space = FALSE;
    else {
       if (!end_insert) {
-          inc_cursor();
-          c = gchar_cursor();
-          dec_cursor();
+         inc_cursor();
+         c = gchar_cursor();
+         dec_cursor();
       }
       if (c != ZERO) {
          // The space is no longer at the end of the line, delete it.
@@ -5798,10 +5720,10 @@ comp_textwidth(int      ff) {  // force formatting (for "gq" command)
 //Implementation of the format operator 'gq'.
 void
 op_format(
-   Operator   *oper,
-   int      keep_cursor      // keep cursor on same text char
+   Operator* oper,
+   int keep_cursor      // keep cursor on same text char
 ){
-   long   old_line_count = curBook->mem.lineCount;
+   long old_line_count = curBook->mem.lineCount;
 
    //Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
    curPor->cursor = oper->cursor_start;
@@ -5835,8 +5757,8 @@ op_format(
    msgmore(old_line_count);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-   // put '] mark on the end of the formatted area
-   curBook->opEnd = curPor->cursor;
+      // put '] mark on the end of the formatted area
+      curBook->opEnd = curPor->cursor;
 
    if (keep_cursor) {
       curPor->cursor = saved_cursor;
@@ -5847,16 +5769,15 @@ op_format(
    }
 
    if (oper->is_VIsual) {
-      Portal   *wp;
-
-      FOR_ALL_PORTALS(wp) {
-         if (wp->prevVisualEnd != 0) {
+      Portal* po;
+      FOR_ALL_PORTALS(po) {
+         if (po->prevVisualEnd != 0) {
             // When lines have been inserted or deleted, adjust the end of
             // the Visual area to be redrawn.
-            if (wp->prevVisualEnd > wp->oldVisualLnum)
-               wp->prevVisualEnd += old_line_count;
+            if (po->prevVisualEnd > po->oldVisualLnum)
+               po->prevVisualEnd += old_line_count;
             else
-               wp->oldVisualLnum += old_line_count;
+               po->oldVisualLnum += old_line_count;
          }
       }
    }
@@ -5876,7 +5797,6 @@ op_formatexpr(Operator *oper) {
 
 int
 fex_format(LineNr lnum, long count, int c) {  // character to be inserted
-   int r;
    ScriptPos   save_sctx = scriptPosG;
 
    // Set v:lnum to the first line number and v:count to the number of lines.
@@ -5890,7 +5810,7 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
    scriptPosG = curBook->o.scriptLocs[PORT_foldExpr];
 
    // Evaluate the function.
-   r = (int)eval_to_number(fex, TRUE);
+   int r = (int)eval_to_number(fex, TRUE);
 
    set_EeglVar_string(VV_CHAR, NULL, -1);
    eeglFree(fex);
@@ -5905,48 +5825,46 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
 void
 format_lines(
    LineNr   line_count,
-   int      avoid_fex)      // don't use 'formatexpr'
+   int avoid_fex)      // don't use 'formatexpr'
 {
-   int      max_len;
-   int      is_not_par;      // current line not part of parag.
-   int      next_is_not_par;   // next line not part of paragraph
-   int      is_end_par;      // at end of paragraph
-   int      prev_is_end_par = FALSE;// prev. line not part of parag.
-   int      next_is_start_par = FALSE;
-   int      leader_len = 0;      // leader len of current line
-   int      next_leader_len;   // leader len of next line
-   Byte   *leader_flags = NULL;   // flags for leader of current line
-   Byte   *next_leader_flags = NULL; // flags for leader of next line
-   int      doCommentsList = 0;   // format comments with 'n' or '2'
-   int      advance = TRUE;
-   int      second_indent = -1;   // indent for second line (comment aware)
-   int      do_second_indent;
-   int      do_number_indent;
-   int      do_trail_white;
-   int      first_par_line = TRUE;
-   int      smd_save;
-   long   count;
-   int      need_set_indent = TRUE;   // set indent of next paragraph
-   LineNr   first_line = curPor->cursor.lnum;
-   int      force_format = FALSE;
-   int      old_State = stateG;
+   int is_not_par;      // current line not part of parag.
+   int next_is_not_par;   // next line not part of paragraph
+   int is_end_par;      // at end of paragraph
+   int prev_is_end_par = FALSE;// prev. line not part of parag.
+   int next_is_start_par = FALSE;
+   int leader_len = 0;      // leader len of current line
+   int next_leader_len;   // leader len of next line
+   CS leader_flags = NULL;   // flags for leader of current line
+   CS next_leader_flags = NULL; // flags for leader of next line
+   int doCommentsList = 0;   // format comments with 'n' or '2'
+   int advance = TRUE;
+   int second_indent = -1;   // indent for second line (comment aware)
+   int first_par_line = TRUE;
+   int smd_save;
+   long count;
+   int need_set_indent = TRUE;   // set indent of next paragraph
+   LineNr first_line = curPor->cursor.lnum;
+   int force_format = FALSE;
+   int old_State = stateG;
 
    // length of a line to force formatting: 3 * 'tw'
-   max_len = comp_textwidth(TRUE) * 3;
+   int max_len = comp_textwidth(TRUE) * 3;
 
    // check for 'q', '2', 'n' and 'w' in 'formatoptions'
-   int doComments = has_format_option(FO_Q_COMS); // format comments?
-   do_second_indent = has_format_option(FO_Q_SECOND);
-   do_number_indent = has_format_option(FO_Q_NUMBER);
-   do_trail_white = has_format_option(FO_WHITE_PAR);
+   Boole doComments = has_format_option(FO_Q_COMS); // format comments?
+   Boole do_second_indent = has_format_option(FO_Q_SECOND);
+   Boole do_number_indent = has_format_option(FO_Q_NUMBER);
+   Boole do_trail_white = has_format_option(FO_WHITE_PAR);
 
    // Get info about the previous and current line.
    if (curPor->cursor.lnum > 1)
-      is_not_par = fmt_check_par(curPor->cursor.lnum - 1 , &leader_len, &leader_flags, doComments);
+      is_not_par = fmt_check_par(
+            curPor->cursor.lnum - 1 , OUT &leader_len, OUT &leader_flags, doComments
+      );
    else
       is_not_par = TRUE;
    next_is_not_par = fmt_check_par(
-         curPor->cursor.lnum , &next_leader_len, &next_leader_flags, doComments
+         curPor->cursor.lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments
    );
    is_end_par = (is_not_par || next_is_not_par);
    if (!is_end_par && do_trail_white)
@@ -5956,21 +5874,22 @@ format_lines(
    for (count = line_count; count != 0 && !gotInterruptG; --count) {
       // Advance to next paragraph.
       if (advance) {
-          curPor->cursor.lnum++;
-          prev_is_end_par = is_end_par;
-          is_not_par = next_is_not_par;
-          leader_len = next_leader_len;
-          leader_flags = next_leader_flags;
+         curPor->cursor.lnum++;
+         prev_is_end_par = is_end_par;
+         is_not_par = next_is_not_par;
+         leader_len = next_leader_len;
+         leader_flags = next_leader_flags;
       }
 
       // The last line to be formatted.
       if (count == 1 || curPor->cursor.lnum == curBook->mem.lineCount) {
-          next_is_not_par = TRUE;
-          next_leader_len = 0;
-          next_leader_flags = NULL;
+         next_is_not_par = TRUE;
+         next_leader_len = 0;
+         next_leader_flags = NULL;
       } else {
-         next_is_not_par = 
-            fmt_check_par(curPor->cursor.lnum + 1, &next_leader_len, &next_leader_flags, doComments);
+         next_is_not_par = fmt_check_par(
+               curPor->cursor.lnum + 1, OUT &next_leader_len, OUT &next_leader_flags, doComments
+         );
          if (do_number_indent)
             next_is_start_par = (get_number_indent(curPor->cursor.lnum + 1) > 0);
       }
@@ -6025,8 +5944,8 @@ format_lines(
             is_end_par = TRUE;
          }
 
-         // If we have got to the end of a paragraph, or the line is
-         // getting long, format it.
+         //If we have got to the end of a paragraph, or the line is
+         //getting long, format it.
          if (is_end_par || force_format) {
             if (need_set_indent) {
                int      indent = 0; // amount of indent needed
@@ -6131,13 +6050,11 @@ hexDigit(int c) {
 
 UiColor
 decode_hex_color(Text hex) {
-   UiColor color;
-
    if (hex.c[0] != '#' || hex.len != 7)
       return INVALCOLOR;
 
    //Name is in "#rrggbb" format
-   color = RGB(((hexDigit(hex.c[1]) << 4) + hexDigit(hex.c[2])),
+   UiColor color = RGB(((hexDigit(hex.c[1]) << 4) + hexDigit(hex.c[2])),
       ((hexDigit(hex.c[3]) << 4) + hexDigit(hex.c[4])),
       ((hexDigit(hex.c[5]) << 4) + hexDigit(hex.c[6])));
    if (color > 0xffffff)
@@ -6472,7 +6389,7 @@ huntype(
                if (!hextype && (++p >= cols))
                   // skip the rest of the line as garbage
                   c = skip_to_eol(fpi, c);
-            } else if (n1 < 0 && n2 < 0 && n3 < 0)
+            } ei (n1 < 0 && n2 < 0 && n3 < 0)
              // already stumbled into garbage, skip line, wait and see
              c = skip_to_eol(fpi, c);
       } else { // HEX_BITS
@@ -6585,11 +6502,11 @@ get_color_char(int e) {
    if (e > 31 && e < 127)
       return COLOR_GREEN;
 
-   else if (e == 9 || e == 10 || e == 13)
+   ei (e == 9 || e == 10 || e == 13)
       return COLOR_YELLOW;
-   else if (e == 0)
+   ei (e == 0)
       return COLOR_WHITE;
-   else if (e == 255)
+   ei (e == 255)
       return COLOR_BLUE;
    else
       return COLOR_RED;
@@ -6639,33 +6556,33 @@ xxdMain(int argc, char *argv[]) {
    while (argc >= 2) {
       pp = argv[1] + (!STRNCMP(argv[1], "--", 2) && argv[1][2]);
       if (!STRNCMP(pp, "-a", 2)) autoskip = 1 - autoskip;
-      else if (!STRNCMP(pp, "-b", 2)) hextype |= HEX_BITS;
-      else if (!STRNCMP(pp, "-e", 2)) hextype |= HEX_LITTLEENDIAN;
-      else if (!STRNCMP(pp, "-u", 2)) hexx = hexxa + 16;
-      else if (!STRNCMP(pp, "-p", 2)) hextype |= HEX_POSTSCRIPT;
-      else if (!STRNCMP(pp, "-i", 2)) hextype |= HEX_CINCLUDE;
-      else if (!STRNCMP(pp, "-C", 2)) capitalize = 1;
-      else if (!STRNCMP(pp, "-d", 2)) decimal_offset = 1;
-      else if (!STRNCMP(pp, "-r", 2)) revert++;
-      else if (!STRNCMP(pp, "-v", 2)
+      ei (!STRNCMP(pp, "-b", 2)) hextype |= HEX_BITS;
+      ei (!STRNCMP(pp, "-e", 2)) hextype |= HEX_LITTLEENDIAN;
+      ei (!STRNCMP(pp, "-u", 2)) hexx = hexxa + 16;
+      ei (!STRNCMP(pp, "-p", 2)) hextype |= HEX_POSTSCRIPT;
+      ei (!STRNCMP(pp, "-i", 2)) hextype |= HEX_CINCLUDE;
+      ei (!STRNCMP(pp, "-C", 2)) capitalize = 1;
+      ei (!STRNCMP(pp, "-d", 2)) decimal_offset = 1;
+      ei (!STRNCMP(pp, "-r", 2)) revert++;
+      ei (!STRNCMP(pp, "-v", 2)
    ) {
       fprintf(stderr, "%s%s\n", version, osver);
       exit(0);
-   } else if (!STRNCMP(pp, "-c", 2)) {
-     if (pp[2] && !STRNCMP("apitalize", pp + 2, 9))
-       capitalize = 1;
-     else if (pp[2] && STRNCMP("ols", pp + 2, 3)) {
+   } ei (!STRNCMP(pp, "-c", 2)) {
+      if (pp[2] && !STRNCMP("apitalize", pp + 2, 9))
+         capitalize = 1;
+      ei (pp[2] && STRNCMP("ols", pp + 2, 3)) {
          colsgiven = 1;
          cols = (int)strtol(pp + 2, NULL, 0);
-       } else {
+      } else {
          if (!argv[2])
-      exit_with_usage();
+            exit_with_usage();
          colsgiven = 1;
          cols = (int)strtol(argv[2], NULL, 0);
          argv++;
          argc--;
-       }
-   } else if (!STRNCMP(pp, "-g", 2)) {
+      }
+   } ei (!STRNCMP(pp, "-g", 2)) {
      if (pp[2] && STRNCMP("roup", pp + 2, 4))
        octspergrp = (int)strtol(pp + 2, NULL, 0);
      else {
@@ -6675,7 +6592,7 @@ xxdMain(int argc, char *argv[]) {
          argv++;
          argc--;
        }
-   } else if (!STRNCMP(pp, "-o", 2)) {
+   } ei (!STRNCMP(pp, "-o", 2)) {
      int reloffset = 0;
      int negoffset = 0;
      if (pp[2] && STRNCMP("ffset", pp + 2, 5))
@@ -6697,7 +6614,7 @@ xxdMain(int argc, char *argv[]) {
          argv++;
          argc--;
        }
-   } else if (!STRNCMP(pp, "-s", 2)) {
+   } ei (!STRNCMP(pp, "-s", 2)) {
      relseek = 0;
      negseek = 0;
      if (pp[2] && STRNCMP("kip", pp+2, 3) && STRNCMP("eek", pp+2, 3)) {
@@ -6717,7 +6634,7 @@ xxdMain(int argc, char *argv[]) {
          argv++;
          argc--;
       }
-   } else if (!STRNCMP(pp, "-l", 2)) {
+   } ei (!STRNCMP(pp, "-l", 2)) {
      if (pp[2] && STRNCMP("en", pp + 2, 2))
        length = strtol(pp + 2, (char **)NULL, 0);
      else {
@@ -6727,7 +6644,7 @@ xxdMain(int argc, char *argv[]) {
          argv++;
          argc--;
        }
-   } else if (!STRNCMP(pp, "-n", 2)) {
+   } ei (!STRNCMP(pp, "-n", 2)) {
      if (pp[2] && STRNCMP("ame", pp + 2, 3))
        varname = pp + 2;
      else {
@@ -6737,7 +6654,7 @@ xxdMain(int argc, char *argv[]) {
          argv++;
          argc--;
        }
-   } else if (!STRNCMP(pp, "-R", 2)) {
+   } ei (!STRNCMP(pp, "-R", 2)) {
      char *pw = pp + 2;
      if (!pw[0]) {
          pw = argv[2];
@@ -6750,18 +6667,18 @@ xxdMain(int argc, char *argv[]) {
          (void)enable_color();
          color = 1;
        }
-     else if (!STRNCMP(pw, "never", 5))
+     ei (!STRNCMP(pw, "never", 5))
        color = 0;
-     else if (!STRNCMP(pw, "auto", 4))
+     ei (!STRNCMP(pw, "auto", 4))
        color = enable_color();
      else
        exit_with_usage();
-   } else if (!strcmp(argv[1], "--")) {  // end of options
+   } ei (!strcmp(argv[1], "--")) {  // end of options
      argv++;
      argc--;
      break;
    }
-      else if (pp[0] == '-' && pp[1])   /* unknown option */
+      ei (pp[0] == '-' && pp[1])   /* unknown option */
    exit_with_usage();
       else
    break;            /* not an option */
@@ -6809,7 +6726,7 @@ xxdMain(int argc, char *argv[]) {
 
   if (octspergrp < 1 || octspergrp > cols)
     octspergrp = cols;
-  else if (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
+  ei (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
     error_exit(1, "number of octets per group must be a power of 2 with -e.");
 
   if (argc > 3)
@@ -6887,9 +6804,9 @@ xxdMain(int argc, char *argv[]) {
       p = 0;
       while ((length < 0 || p < length) && (c = getc_or_die(fp)) != EOF) {
         if (hextype & HEX_BITS) {
-           if (p == 0)
-              fputs_or_die("  ", fpo);
-            else if (p % cols == 0)
+            if (p == 0)
+               fputs_or_die("  ", fpo);
+            ei (p % cols == 0)
                fputs_or_die(",\n  ", fpo);
             else
                fputs_or_die(", ", fpo);

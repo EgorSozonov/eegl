@@ -5610,7 +5610,7 @@ int
 plines_win_nofold(Portal *wp, LineNr lnum) {
    CS s = memGetLine(wp->book, lnum, false);
    CharTableSize cts;
-   init_chartabsize_arg(OUT &cts, wp, lnum, 0, s, s);
+   bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, s, s);
    if (*s == ZERO && !cts.cts_has_prop_with_text)
       return 1; // be quick for an empty line
    drawLineOnScreentabsize_cts(&cts, (ColNr)MAXCOL);
@@ -5678,7 +5678,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
    CS line = memGetLine(wp->book, lnum, false);
 
    CharTableSize cts;
-   init_chartabsize_arg(OUT &cts, wp, lnum, 0, line, line);
+   bookInitCharsForKeywordsSizeArg(OUT &cts, wp, lnum, 0, line, line);
    while (*cts.cts_ptr != ZERO && --column >= 0) {
       cts.cts_vcol += win_lbr_chartabsize(&cts, NULL);
       MB_PTR_ADV(cts.cts_ptr);
@@ -8660,7 +8660,7 @@ parse_popup_option(Portal *po, Boole is_preview) {
       if (!p)
          p = e + STRLEN(e);
       Byte* dig = e + 1;
-      x = getdigits(&dig);
+      x = parseLong(&dig);
 
       // Note: Keep this in sync with p_popup_option_values.
       if (STRNCMP(s, "height:", 7) == 0) {

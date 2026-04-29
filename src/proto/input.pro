@@ -70,7 +70,7 @@ int mb_ptr2cells_len(Byte *p, int size);
 int mb_string2cells(Byte *p, int len);
 int mb_off2cells(unsigned off, unsigned max_off);
 Unt mb_ptr2char(Byte const *p);
-Unt mb_ptr2char_adv(Byte **pp);
+Unt inpAdvanceMultibyte(Byte **pp);
 Unt mb_cptr2char_adv(CS *pp);
 int utf_composinglike(CS p1, CS p2);
 int utfc_ptr2char(CS p, int *pcc);

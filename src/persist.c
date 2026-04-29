@@ -1907,7 +1907,7 @@ barline_parse(Vir *virp, Byte *text, ArrayList *values) {
             //     |<{text2}",{value}
             // Length includes the quotes.
             ++p;
-            len = getdigits(&p);
+            len = parseLong(&p);
             buf = alloc((int)(len + 1));
             p = buf;
             for (todo = len; todo > 0; todo -= n) {
@@ -1947,7 +1947,7 @@ barline_parse(Vir *virp, Byte *text, ArrayList *values) {
 
       if (SAFE_isdigit(*p)) {
           value->btag = BVAL_NR;
-          value->bv_nr = getdigits(&p);
+          value->bv_nr = parseLong(&p);
           ++values->len;
       } ei (*p == '"') {
          int       len = 0;
@@ -2051,7 +2051,7 @@ read_eeglinfo_varlist(Vir *virp, int writing) {
             if (type == VAR_STRING || type == VAR_BAG || type == VAR_LIST || type == VAR_BLOB)
                tv.string = eeglinfo_readstring(virp, (int)(tab - virp->vir_line + 1));
             ei (type == VAR_FLOAT)
-               (void)string2float(tab + 1, &tv.floatt, FALSE);
+               (void)string2float(tab + 1, OUT &tv.floatt, false);
             else {
                tv.number = atol((char *)tab + 1);
                if (type == VAR_SPECIAL && (tv.number == VVAL_FALSE || tv.number == VVAL_TRUE))
@@ -2228,7 +2228,7 @@ read_eeglinfo_search_pattern(Vir *virp, int force) {
       if (lp[4] == 'E')
           off_end = SEARCH_END;
       lp += 5;
-      off = getdigits(&lp);
+      off = parseLong(&lp);
    }
    if (lp[0] == '~') {     // use this pattern for last-used pattern
       setlast = TRUE;
@@ -2383,7 +2383,7 @@ read_eeglinfo_register(Vir *virp, int force) {
          new_type = MLINE;
       // get the block width; if it's missing we get a zero, which is OK
       str = skipwhite(skiptowhite(str));
-      new_width = getdigits(&str);
+      new_width = parseLong(&str);
    }
 
    while (!(eof = eeglinfo_readline(virp))
@@ -3101,9 +3101,9 @@ read_eeglinfo_filemark(Vir *virp, int force) {
          fm = &namedfm_p[*str - 'A'];
       if (fm != NULL && (fm->fmark.mark.lnum == 0 || force)) {
          str = skipwhite(str + 1);
-         fm->fmark.mark.lnum = getdigits(&str);
+         fm->fmark.mark.lnum = parseLong(&str);
          str = skipwhite(str);
-         fm->fmark.mark.col = getdigits(&str);
+         fm->fmark.mark.col = parseLong(&str);
          fm->fmark.mark.coladd = 0;
          fm->fmark.fnum = 0;
          str = skipwhite(str);
@@ -3280,7 +3280,7 @@ read_eeglinfo_barline(Vir *virp, int force, int writing) {
          ga_copy_string(&virp->vir_barlines, virp->vir_line);
    } else {
       ga_init2(&values, sizeof(BVal), 20);
-      bartype = getdigits(&p);
+      bartype = parseLong(&p);
       switch (bartype) {
       case BARTYPE_VERSION:
          read_next = barline_parse(virp, p, &values);

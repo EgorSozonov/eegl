@@ -4335,7 +4335,7 @@ syn_cmd_iskeyword(Invocation *invo, int syncing UNUSED) {
          CS save_isk = curBook->o.isKeyword;
          curBook->o.isKeyword = copyStr(arg);
 
-         bufInitCharsForKeywords(curBook, FALSE);
+         bookInitCharsForKeywords(curBook, FALSE);
          mch_memmove(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
          mch_memmove(curBook->charsForKeywords, save_chartab, (Unt)32);
          curPor->book->o.isKeyword = null;
@@ -6066,7 +6066,7 @@ getSyntPattern(Byte *arg, SyntaxPattern *ci, OUT Boole* hadEol) {
             ci->sp_off_flags |= (1 << idx);
             if (idx == SPO_LC_OFF) {      // lc=99
                end += 3;
-               *p = getdigits(&end);
+               *p = parseLong(&end);
 
                // "lc=" offset automatically sets "ms=" offset
                if (!(ci->sp_off_flags & (1 << SPO_MS_OFF))) {
@@ -6077,10 +6077,10 @@ getSyntPattern(Byte *arg, SyntaxPattern *ci, OUT Boole* hadEol) {
                end += 4;
                if (*end == '+') {
                   ++end;
-                  *p = getdigits(&end);      // positive offset
+                  *p = parseLong(&end);      // positive offset
                } ei (*end == '-') {
                   ++end;
-                  *p = -getdigits(&end);      // negative offset
+                  *p = -parseLong(&end);      // negative offset
                }
             }
             if (*end != ',')
@@ -6146,7 +6146,7 @@ syn_cmd_sync(Invocation *invo, int syncing UNUSED) {
             illegal = TRUE;
             break;
          }
-         n = getdigits(&arg_end);
+         n = parseLong(&arg_end);
          if (!invo->skip) {
             if (key[4] == 'B')
                curPor->ownSyntax->syncLinebreaks = n;

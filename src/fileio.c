@@ -4307,7 +4307,7 @@ grab_file_name(long count, LineNr *file_lnum) {
       if (file_lnum != NULL && ptr[len] == ':' && SAFE_isdigit(ptr[len + 1])) {
           Byte *p = ptr + len + 1;
 
-          *file_lnum = getdigits(&p);
+          *file_lnum = parseLong(&p);
       }
       return find_file_name_in_path(ptr, len, options, count, curBook->fullFileName);
    }
@@ -4419,7 +4419,7 @@ file_name_in_line(
             ++p;          // skip the separator
          p = skipwhite(p);
          if (SAFE_isdigit(*p))
-            *file_lnum = (int)getdigits(&p);
+            *file_lnum = (int)parseLong(&p);
       }
    }
 

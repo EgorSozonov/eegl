@@ -6817,7 +6817,7 @@ EXTERN int  wild_menu_showing INIT(= 0);
 #define WM_SHOWN     1      // wildmenu showing
 #define WM_SCROLLED  2      // wildmenu showing with scroll
 
-EXTERN char   breakat_flags[256];   // which characters are in 'breakat'
+EXTERN Boole breakat_flags[256];   // which characters are in 'breakat'
 
 // These are in main.c, call initLongVersion() before use.
 extern CS Version;

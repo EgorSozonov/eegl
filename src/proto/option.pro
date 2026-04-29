@@ -1,6 +1,5 @@
 /* src/option.c */
 void optSetStringDefault(CS name, CS val);
-void set_number_default(CS name, long val);
 void optFreeAllOptions(void);
 void optionInit1(void);
 CS optSetByName(CS name, OptionValue newVal, SetScope setScope);

@@ -1482,7 +1482,7 @@ openLine(
                if (*p == COM_RIGHT || *p == COM_LEFT)
                   c = *p++;
                ei (EE_ISDIGIT(*p) || *p == '-')
-                  off = getdigits(&p);
+                  off = parseLong(&p);
                else
                   ++p;
             }
@@ -2087,7 +2087,7 @@ shift_block(Operator *oper, int amount) {
       }
 
       // TODO: is passing bd.textstart for start of the line OK?
-      init_chartabsize_arg(
+      bookInitCharsForKeywordsSizeArg(
          &cts, curPor, curPor->cursor.lnum, bd.start_vcol, bd.textstart, bd.textstart
       );
       for ( ; SPACE_OR_TAB(*cts.cts_ptr); ) {
@@ -2150,7 +2150,7 @@ shift_block(Operator *oper, int amount) {
       // The character's column is in "bd.start_vcol".
       non_white_col = bd.start_vcol;
 
-      init_chartabsize_arg(&cts, curPor, curPor->cursor.lnum,
+      bookInitCharsForKeywordsSizeArg(&cts, curPor, curPor->cursor.lnum,
                   non_white_col, bd.textstart, non_white);
       while (SPACE_OR_TAB(*cts.cts_ptr)) {
          incr = lbr_chartabsize_adv(&cts);
@@ -2176,7 +2176,7 @@ shift_block(Operator *oper, int amount) {
       // preceding the block. We have to subtract its width to obtain its column number.
       if (bd.startspaces)
           verbatim_copy_width -= bd.start_char_vcols;
-      init_chartabsize_arg(&cts, curPor, 0, verbatim_copy_width, bd.textstart, verbatim_copy_end);
+      bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, verbatim_copy_width, bd.textstart, verbatim_copy_end);
       while (cts.cts_vcol < destination_col) {
          incr = lbr_chartabsize(&cts);
          if (cts.cts_vcol + incr > destination_col)
@@ -3745,7 +3745,7 @@ block_prep(
 
    CS line = ml_get(lnum);
    CS prev_pstart = line;
-   init_chartabsize_arg(&cts, curPor, lnum, bdp->start_vcol, line, line);
+   bookInitCharsForKeywordsSizeArg(&cts, curPor, lnum, bdp->start_vcol, line, line);
    while (cts.cts_vcol < oper->start_vcol && *cts.cts_ptr != ZERO) {
    // Count a tab for what it's worth (if list mode not on)
    incr = lbr_chartabsize(&cts);
@@ -3794,7 +3794,7 @@ block_prep(
             }
          }
       } else {
-         init_chartabsize_arg(&cts, curPor, lnum, bdp->end_vcol, line, pend);
+         bookInitCharsForKeywordsSizeArg(&cts, curPor, lnum, bdp->end_vcol, line, pend);
          prev_pend = pend;
          while (cts.cts_vcol <= oper->end_vcol && *cts.cts_ptr != ZERO) {
             // count a tab for what it's worth (if list mode not on)
@@ -6469,7 +6469,7 @@ coladvance2(
          }
       }
 
-      init_chartabsize_arg(&cts, curPor, pos->lnum, 0, line, line);
+      bookInitCharsForKeywordsSizeArg(&cts, curPor, pos->lnum, 0, line, line);
       while (cts.cts_vcol <= wcol && *cts.cts_ptr != ZERO) {
          int at_start = cts.cts_ptr == cts.cts_line;
          // Count a tab for what it's worth (if list mode not on)
@@ -7244,7 +7244,7 @@ opChangeIndent(
       // Advance the cursor until we reach the right screen column.
       last_vcol = 0;
       CS ptr = ml_get_curline();
-      init_chartabsize_arg(&cts, curPor, 0, 0, ptr, ptr);
+      bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, 0, ptr, ptr);
       while (cts.cts_vcol <= (int)curPor->virtCol) {
          last_vcol = cts.cts_vcol;
          if (cts.cts_vcol > 0)
@@ -7354,7 +7354,7 @@ c_retab(Invocation *eap) {
               showErrFmtMsg(_(e_invalid_argument_str), ptr);
           return;
        }
-       new_ts = getdigits(&ptr);
+       new_ts = parseLong(&ptr);
        if (new_ts < 0 || new_ts > TABSIZE_MAX) {
            showErrFmtMsg(_(e_invalid_argument_str), eap->arg);
            return;

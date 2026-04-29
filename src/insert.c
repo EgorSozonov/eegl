@@ -2997,7 +2997,7 @@ ins_tab(void) {
       getvcol(curPor, &fpos, &vcol, NULL, NULL);
       getvcol(curPor, cursor, &want_vcol, NULL, NULL);
 
-      init_chartabsize_arg(&cts, curPor, 0, vcol, tab, tab);
+      bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, vcol, tab, tab);
 
       // Use as many TABs as possible.  Beware of 'breakindent', 'showbreak'
       // and 'linebreak' adding extra virtual columns.
@@ -3025,7 +3025,7 @@ ins_tab(void) {
          int repl_off = 0;
 
          // Skip over the spaces we need.
-         init_chartabsize_arg(&cts, curPor, 0, vcol, ptr, ptr);
+         bookInitCharsForKeywordsSizeArg(&cts, curPor, 0, vcol, ptr, ptr);
          while (cts.cts_vcol < want_vcol && *cts.cts_ptr == ' ') {
             cts.cts_vcol += lbr_chartabsize(&cts);
             ++cts.cts_ptr;
@@ -3109,7 +3109,7 @@ ins_copychar(LineNr lnum) {
    validate_virtcol();
    line = ml_get(lnum);
    prev_ptr = line;
-   init_chartabsize_arg(&cts, curPor, lnum, 0, line, line);
+   bookInitCharsForKeywordsSizeArg(&cts, curPor, lnum, 0, line, line);
    while (cts.cts_vcol < curPor->virtCol && *cts.cts_ptr != ZERO) {
       prev_ptr = cts.cts_ptr;
       cts.cts_vcol += lbr_chartabsize_adv(&cts);
@@ -3702,13 +3702,13 @@ ins_compl_infercase_gettext(
 
    CS p = str;
    for (i = 0; i < char_len; ++i) {
-      wideChars[i] = mb_ptr2char_adv(&p);
+      wideChars[i] = inpAdvanceMultibyte(&p);
    }
 
    // Rule 1: Were any chars converted to lower?
    p = compl_orig_text.c;
    for (i = 0; i < min_len; ++i) {
-      c = mb_ptr2char_adv(&p);
+      c = inpAdvanceMultibyte(&p);
       if (MB_ISLOWER(c)) {
          has_lower = TRUE;
          if (MB_ISUPPER(wideChars[i])) {
@@ -3725,7 +3725,7 @@ ins_compl_infercase_gettext(
    if (!has_lower) {
       p = compl_orig_text.c;
       for (i = 0; i < min_len; ++i) {
-         c = mb_ptr2char_adv(&p);
+         c = inpAdvanceMultibyte(&p);
          if (was_letter && MB_ISUPPER(c) && MB_ISLOWER(wideChars[i])) {
             // Rule 2 is satisfied.
             for (i = compl_char_len; i < char_len; ++i)
@@ -3739,7 +3739,7 @@ ins_compl_infercase_gettext(
    // Copy the original case of the part we typed.
    p = compl_orig_text.c;
    for (i = 0; i < min_len; ++i) {
-      c = mb_ptr2char_adv(&p);
+      c = inpAdvanceMultibyte(&p);
       if (MB_ISLOWER(c))
           wideChars[i] = MB_TOLOWER(wideChars[i]);
       ei (MB_ISUPPER(c))
