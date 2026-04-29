@@ -766,15 +766,15 @@ evalStringLiteral(Byte **arg, OUT Var *returnVar, Boole evaluate, Boole interpol
          //A "\<x>" form occupies at least 4 characters, and produces up
          //to 9 characters (6 for the char and 3 for a modifier): reserve space for 5 extra.
          if (*p == '<') {
-            int modifiers = 0;
-            int flags = FSK_KEYCODE | FSK_IN_STRING;
+            Unt modifiers = 0;
+            Unt flags = FSK_KEYCODE | FSK_IN_STRING;
 
             extra += 5;
 
             // Skip to the '>' to avoid using '{' inside for string interpolation.
             if (p[1] != '*')
                flags |= FSK_SIMPLIFY;
-            if (find_special_key(&p, &modifiers, flags, NULL) != 0)
+            if (termFindSpecialKey(&p, &modifiers, flags, NULL) != 0)
                --p;  // leave "p" on the ">"
          }
       } ei (interpolate && (*p == '{' || *p == '}')) {

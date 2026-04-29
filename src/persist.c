@@ -1140,7 +1140,7 @@ get_eeglinfo_parameter(int type) {
 private CS
 eeglinfo_filename(CS file) {
    if (!file || *file == ZERO) {
-      if (*p_eeglinfofile != ZERO)
+      if (p_eeglinfofile)
          file = p_eeglinfofile;
       ei ((file = find_eeglinfo_parameter('n')) == NULL || *file == ZERO) {
 #ifdef EEGLINFO_FILE2
@@ -2006,7 +2006,7 @@ write_eeglinfo_version(FILE *fp_out) {
 private int
 no_eeglinfo(void) {
    // "vim -i NONE" does not read or write a eeglinfo file
-   return STRCMP(p_eeglinfofile, "NONE") == 0;
+   return !p_eeglinfofile || STRCMP(p_eeglinfofile, "NONE") == 0;
 }
 
 //Report an error for reading a eeglinfo file.

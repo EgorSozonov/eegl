@@ -1,6 +1,6 @@
 /* src/ui.c */
 void init_job_options(JobOptions *opt);
-Book *term_start(Var *argvar, Byte **argv, JobOptions *opt, int flags);
+Book *term_start(Var *argvar, Byte **argv, JobOptions *opt, Unt flags);
 void c_terminal(Invocation *invo);
 int expand_terminal_opt(Byte *pat, Expand *xp, RegMatch *rmp, ExpandMatch *matches);
 int term_write_session(FILE *fd, Portal *po, EeSet *terminal_bufs);
@@ -73,7 +73,7 @@ int realWaitForChar(int fd, long msec, int *check_for_gpm, int *interrupted);
 int mch_input_isatty(void);
 void uiInit(void);
 void ui_write(CS s, int len, int console);
-void ui_inBytendo(Byte *s, int len);
+void ui_inBytendo(CS s, int len);
 int ui_inchar(CS buf, int maxlen, long wtime, int tb_change_cnt);
 int inchar_loop(CS buf, int maxlen, long wtime, int tb_change_cnt, int (*wait_func)(long wtime, int *interrupted, int ignore_input), int (*resize_func)(int check_only));
 int waitForChar(long msec, int *interrupted, int ignore_input);
@@ -89,8 +89,8 @@ int eeIsInputBufEmpty(void);
 int eeglFree_in_input_buf(void);
 CS get_input_buf(void);
 void set_input_buf(CS p, Boole overwrite);
-void add_to_input_buf(Byte *s, int len);
-void add_to_input_buf_csi(Byte *str, int len);
+void add_to_input_buf(CS s, int len);
+void add_to_input_buf_csi(CS str, int len);
 void trash_input_buf(void);
 int read_from_input_buf(CS buf, long maxlen);
 void fill_input_buf(Boole exit_on_error);

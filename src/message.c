@@ -1166,7 +1166,7 @@ ignore_error(Arr(Byte const) msg) {
 private int
 emsgImpl(CS s) {
    char      flags;
-   Byte   *p;
+   CS p;
    int      r;
    int      ignore = FALSE;
    int      severe;
@@ -1176,8 +1176,6 @@ emsgImpl(CS s) {
       // don't call msg() if it results in a dialog
       return msg_use_printf() ? FALSE : msg(s);
    
-   __bp();
-
    ++called_emsg;
 
    // If "emsg_severe" is TRUE: When an error exception is to be thrown,
@@ -1287,8 +1285,6 @@ showErrFmtMsg0(char const* s, ...) {
    if (emsg_not_now())
       return TRUE;
 
-
-   __bp();
    if (!IObuff)
       // Very early in initialisation and already something wrong, just
       // give the raw message so the user at least gets a hint.
@@ -1310,7 +1306,6 @@ internalErrMsg(CS s) {
    if (emsg_not_now())
       return;
 
-   __bp();
    // Give a generic error which is translated.  The error itself may not be
    // translated, it almost never shows.
    emsgImpl(_(e_internal_error_please_report_a_bug));
@@ -1753,7 +1748,7 @@ wait_return(Boole redraw) {
    msg_check();
 
    // When switching screens, we need to output an extra newline on exit.
-   if (swapping_screen() && !termcap_active)
+   if (termIsScreenBeingSwapped() && !termcap_active)
       newline_on_exit = TRUE;
 
    need_wait_return = FALSE;
@@ -1777,15 +1772,14 @@ wait_return(Boole redraw) {
 // Write the hit-return prompt.
 private void
 hit_return_msg(void) {
-   int      save_p_more = p_more;
+   Boole save_p_more = p_more;
 
-   p_more = FALSE;   // don't want to see this message when scrolling back
+   p_more = false;   // don't want to see this message when scrolling back
    if (msg_didout)   // start on a new line
       msg_putchar('\n');
    if (gotInterruptG)
       msg_puts(_("Interrupt: "));
 
-__bp();
    msgPutsDeco(_("Press ENTER or type command to continue"), getDecoFlags(HLF_R));
    if (!msg_use_printf())
       msg_clr_eos();
@@ -2285,7 +2279,6 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
    // outputting something without scrolling Not needed when only using CR to move the cursor.
    if (msg_scrolled != 0 && !msg_scrolled_ign && STRCMP(str, "\r") != 0)
       need_wait_return = TRUE;
-   __bp(); 
    msg_didany = TRUE;      // remember that something was outputted
 
    //If there is no valid screen, use fprintf so we can see error messages.
@@ -2587,7 +2580,7 @@ int
 msg_use_printf(void){
     return (!msg_check_screen()
        || !termcap_active
-       || (swapping_screen() && !termcap_active)
+       || (termIsScreenBeingSwapped() && !termcap_active)
           );
 }
 

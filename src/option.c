@@ -484,15 +484,10 @@ parseCursorShape(CS input) {
 // Initialize the options, part two: After getting visibleRowsG and visibleColsG and setting 'term'
 void
 optionInit1(void) {
-   //'scroll' defaults to half the portal height. The stored default is zero,
-   //which results in the actual value computed from the portal height.
+   //'scroll' defaults to half the portal height. Need to calculate and set it now
    Option* scroll = findOption(S"scroll");
-   if ((scroll->flags & P_WAS_SET) == 0)
-      setDefault(scroll, SET_LOCAL);
+   curPor->scroll = curPor->height/2 + 1;
    computeColumnsForRulerAndCommand();
-
-   cursorNormalG = parseCursorShape(cursorNormalStr);
-   cursorInsertG = parseCursorShape(cursorInsertStr);
 }
 
 //When @helplang is still at its default value, set it to "lang". Only the first two characters 
@@ -2072,7 +2067,6 @@ optChangeAndReportError(
 private int
 find_key_option(CS arg_arg, Boole has_lt) {
    int key = 0;
-   int modifiers;
    CS arg = arg_arg;
 
    //Don't use get_special_key_code() for t_XX, we don't want it to call add_termcap_entry().
@@ -2081,10 +2075,12 @@ find_key_option(CS arg_arg, Boole has_lt) {
          key = TERMCAP2KEY(arg[2], arg[3]);
    } ei (has_lt) {
       --arg;             // put arg at the '<'
-      modifiers = 0;
-      key = find_special_key(&arg, &modifiers, FSK_KEYCODE | FSK_KEEP_X_KEY | FSK_SIMPLIFY, NULL);
-      if (modifiers)          // can't handle modifiers here
-          key = 0;
+      Unt modifiers = 0;
+      key = termFindSpecialKey(
+            OUT &arg, OUT &modifiers, FSK_KEYCODE | FSK_KEEP_X_KEY | FSK_SIMPLIFY, NULL
+      );
+      if (modifiers != 0)          // can't handle modifiers here
+         key = 0;
    }
    return key;
 }
@@ -2344,7 +2340,7 @@ private int
 wildcharUseKeyname(OptionRef ref, long* wcp) {
    if (ref.tag == OPTION_NUM && (ref.num == &p_wc || ref.num == &p_wcm)) {
       *wcp = *ref.num;
-   if (IS_SPECIAL(*wcp) || find_special_key_in_table((int)*wcp) >= 0)
+   if (IS_SPECIAL(*wcp) || termFindSpecialKey_in_table((int)*wcp) >= 0)
       return TRUE;
    }
    return FALSE;

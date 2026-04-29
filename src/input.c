@@ -610,7 +610,7 @@ restoreRedobuff(SaveRedo *save_redo) {
 
 // Append "s" to the redo buffer. K_SPECIAL and CSI should already have been escaped.
 void
-AppendToRedobuff(Byte *s) {
+AppendToRedobuff(CS s) {
    if (!block_redo)
       add_buff(&redobuff, s, -1L);
 }
@@ -655,7 +655,7 @@ AppendToRedobuffLit(CS str, int len) {      // "len" = length of "str" or -1 for
 // Append "s" to the redo buffer, leaving 3-byte special key codes unmodified
 // and escaping other K_SPECIAL and CSI bytes.
 void
-AppendToRedobuffSpec(Byte *s) {
+AppendToRedobuffSpec(CS s) {
    if (block_redo)
       return;
 
@@ -736,9 +736,9 @@ stuffnumReadbuff(long n) {
 // Stuff a string into the typeahead buffer, such that edit() will insert it
 // literally ("literally" TRUE) or interpret is as typed characters.
 void
-stuffescaped(Byte *arg, int literally) {
+stuffescaped(CS arg, int literally) {
     int      c;
-    Byte   *start;
+    CS start;
 
     while (*arg != ZERO) {
        // Stuff a sequence of normal ASCII characters, that's fast.  Also
@@ -766,12 +766,12 @@ stuffescaped(Byte *arg, int literally) {
 // If old is TRUE, use old_redobuff instead of redobuff.
 private int
 read_redo(int init, int old_redo) {
-   static TextChunk   *bp;
-   static Byte   *p;
-   Unt         c;
-   int         n;
-   Byte      buf[MB_MAXBYTES + 1];
-   int         i;
+   static TextChunk* bp;
+   static CS p;
+   Unt c;
+   int n;
+   Byte buf[MB_MAXBYTES + 1];
+   int i;
 
    if (init) {
       if (old_redo)
@@ -3085,9 +3085,9 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
 // Fix typed characters for use by vgetc() and check_termcode(). "buf[]" must have room to triple 
 // the number of bytes! Return the new length.
 int
-fix_input_buffer(OUT Byte *buf, int len) {
+fix_input_buffer(OUT CS buf, int len) {
    int      i;
-   Byte   *p = buf;
+   CS p = buf;
 
    //Two characters are special: ZERO and K_SPECIAL.
    //When compiled With the GUI CSI is also special.
@@ -3322,9 +3322,9 @@ reset_last_used_map(MapBlock* mp) {
 
 #include <wchar.h>
 
-private int dbcs_ptr2len(Byte *p);
-int mb_ptr2cells_len(Byte *p, int size);
-private int dbcs_head_off(Byte *base, Byte *p);
+private int dbcs_ptr2len(CS p);
+int mb_ptr2cells_len(CS p, int size);
+private int dbcs_head_off(CS base, Byte *p);
 
 // Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
 // UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
@@ -3775,7 +3775,7 @@ mb_char2cells(int c) {
 }
 
 int
-mb_ptr2cells(Byte* p) {
+mb_ptr2cells(CS p) {
    // Need to convert to a character number.
    if (*p >= 0x80) {
       int c = mb_ptr2char(p);
@@ -3791,7 +3791,7 @@ mb_ptr2cells(Byte* p) {
 }
 
 int
-mb_ptr2cells_len(Byte *p, int size) {
+mb_ptr2cells_len(CS p, int size) {
    // Need to convert to a wide character.
    if (size > 0 && *p >= 0x80) {
       if (utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p])
@@ -3811,7 +3811,7 @@ mb_ptr2cells_len(Byte *p, int size) {
 //Return the number of cells occupied by string "p".
 //Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
 int
-mb_string2cells(Byte *p, int len) {
+mb_string2cells(CS p, int len) {
    int clen = 0;
 
    for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
@@ -3912,8 +3912,8 @@ utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
 //Get character at **pp and advance *pp to the next character.
 //Note: composing characters are skipped!
 Unt
-inpAdvanceMultibyte(Byte **pp) {
-    int c = mb_ptr2char(*pp);
+inpAdvanceMultibyte(OUT CS* pp) {
+    Unt c = mb_ptr2char(*pp);
     *pp += utfCharLen(*pp);
     return c;
 }
@@ -4163,7 +4163,7 @@ mb_char2len(Unt c) {
 
 // Convert Unicode character "c" to UTF-8 string in "buf[]". Returns the number of bytes.
 int
-mb_char2bytes(Unt c, Byte *buf) {
+mb_char2bytes(Unt c, CS buf) {
    if (c < 0x80)   { // 7 bits
       buf[0] = c;
       return 1;
@@ -5480,7 +5480,7 @@ utf_allow_break(Unt cc, Unt ncc) {
 
 // Copy a character from "*fp" to "*tp" and advance the pointers.
 void
-mb_copy_char(Byte **fp, Byte **tp) {
+mb_copy_char(OUT CS* fp, OUT CS* tp) {
    int l = utfCharLen(*fp);
 
    mch_memmove(*tp, *fp, (Unt)l);
@@ -5627,12 +5627,12 @@ mb_prevptr(CS line, CS p) {   // start of the string
 //Return the character length of "str". Each multi-byte character (with
 //following composing characters) counts as one.
 int
-mb_charlen(Byte *str) {
-   CS p = str;
-   if (p == NULL)
+mb_charlen(CS str) {
+   if (!str)
       return 0;
 
    int count;
+   CS p = str;
    for (count = 0; *p != ZERO; count++)
       p += utfCharLen(p);
 
@@ -5642,8 +5642,8 @@ mb_charlen(Byte *str) {
 // Like mb_charlen() but for a string with specified length.
 int
 mb_charlen_len(CS str, int len) {
-   Byte   *p = str;
-   int      count;
+   CS p = str;
+   int count;
 
    for (count = 0; *p != ZERO && p < str + len; count++)
       p += utfCharLen(p);
@@ -5656,11 +5656,11 @@ mb_charlen_len(CS str, int len) {
 //Return the un-escaped string if it is a multi-byte character, and advance
 //"pp" to just after the bytes that formed it. Return NULL if no multi-byte char was found.
 CS
-mb_unescape(Byte **pp) {
+mb_unescape(OUT CS* pp) {
    static Byte   buf[6];
    int         n;
    int         m = 0;
-   Byte      *str = *pp;
+   CS str = *pp;
 
    // Must translate K_SPECIAL KS_SPECIAL KE_FILLER to K_SPECIAL and CSI
    // KS_EXTRA KE_CSI to CSI.
@@ -5892,7 +5892,7 @@ do_mouse(
    Unt      which_button;   // MOUSE_LEFT, _MIDDLE or _RIGHT
    Boole is_click = false; // If FALSE it's a drag or release event
    Boole is_drag = false;  // If TRUE it's a drag event
-   int      jump_flags = 0;   // flags for jump_to_mouse()
+   Unt jump_flags = 0;   // flags for jump_to_mouse()
    Pos   start_visual;
    int      moved;      // Has cursor moved?
    int      in_status_line;   // mouse in status line
@@ -6185,8 +6185,7 @@ do_mouse(
       jump_flags |= MOUSE_RELEASED;
 
    // JUMP!
-   jump_flags = jump_to_mouse(jump_flags,
-        oper == NULL ? NULL : &(oper->inclusive), which_button);
+   jump_flags = jump_to_mouse(jump_flags, oper ? OUT &(oper->inclusive) : null, which_button);
 
    moved = (jump_flags & CURSOR_MOVED);
    in_status_line = (jump_flags & IN_STATUS_LINE);
@@ -6380,8 +6379,8 @@ do_mouse(
       }
       // A double click selects a word or a block.
       if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {
-         Pos   *pos = NULL;
-         int      gc;
+         Pos* pos = NULL;
+         int gc;
 
          if (is_click) {
             //If the character under the cursor (skipping white space) is
@@ -6437,12 +6436,10 @@ do_mouse(
 
 void
 ins_mouse(int c) {
-   Pos   tpos;
-   Portal   *old_curPor = curPor;
-
-   tpos = curPor->cursor;
+   Portal* old_curPor = curPor;
+   Pos tpos = curPor->cursor;
    if (do_mouse(NULL, c, BACKWARD, 1L, 0)) {
-      Portal   *new_curPor = curPor;
+      Portal* new_curPor = curPor;
 
       if (curPor != old_curPor && portalIsValid(old_curPor)) {
          //Mouse took us to another portal. We need to go back to the
@@ -6476,7 +6473,7 @@ ins_mouse(int c) {
 //"curPor" may have been changed to the portal that should be scrolled and
 //differ from the portal that actually has focus.
 private void
-do_mousescroll(ActionArg *cap) {
+do_mousescroll(ActionArg* cap) {
    int shift_or_ctrl = modMaskG & (MOD_MASK_SHIFT | MOD_MASK_CTRL);
 
    if (term_use_loop())
@@ -6587,11 +6584,10 @@ ins_mousescroll(int dir) {
       ins_compl_show_pum();
    }
 
-    if (!EQUAL_POS(curPor->cursor, orig_cursor))
-    {
-   start_arrow(&orig_cursor);
-   set_can_cindent(TRUE);
-    }
+   if (!EQUAL_POS(curPor->cursor, orig_cursor)) {
+      start_arrow(&orig_cursor);
+      set_can_cindent(TRUE);
+   }
 }
 
 //TRUE if "c" is a mouse key.
@@ -6696,30 +6692,21 @@ get_pseudo_mouse_code(
 private int has_mouse_termcode = 0;
 
 void
-set_mouse_termcode(
-    int      n,   // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
-    Byte   *s)
-{
-    Byte   name[2];
-
-    name[0] = n;
-    name[1] = KE_FILLER;
-    add_termcode(name, s, FALSE);
-    if (n == KS_SGR_MOUSE)
-   has_mouse_termcode |= HMT_SGR;
-    ei (n == KS_SGR_MOUSE_RELEASE)
-   has_mouse_termcode |= HMT_SGR_REL;
-    else
-   has_mouse_termcode |= HMT_NORMAL;
+set_mouse_termcode(Unt n, CS s) {
+   Byte name[2] = {n, KE_FILLER};
+   add_termcode(name, s, FALSE);
+   if (n == KS_SGR_MOUSE)
+      has_mouse_termcode |= HMT_SGR;
+   ei (n == KS_SGR_MOUSE_RELEASE)
+      has_mouse_termcode |= HMT_SGR_REL;
+   else
+      has_mouse_termcode |= HMT_NORMAL;
 }
 
 void
-del_mouse_termcode(int      n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
-    Byte   name[2];
-
-    name[0] = n;
-    name[1] = KE_FILLER;
-    del_termcode(name);
+del_mouse_termcode(Unt n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
+   Byte name[2] = {n, KE_FILLER};
+   del_termcode(name);
    if (n == KS_SGR_MOUSE)
       has_mouse_termcode &= ~HMT_SGR;
    ei (n == KS_SGR_MOUSE_RELEASE)
@@ -6773,11 +6760,11 @@ mouseResetDragPortal(void) {
 //If flags has MOUSE_DID_MOVE, nothing is done if the mouse didn't move since the last call.
 //
 //If flags has MOUSE_SETPOS, nothing is done, only the current position is remembered.
-int
+Unt
 jump_to_mouse(
-   int      flags,
-   int      *inclusive,   // used for inclusive operator, can be NULL
-   int      which_button   // MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
+   Unt flags,
+   OUT Boole* inclusive,   // used for inclusive operator, can be NULL
+   Unt which_button   // MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE
 ){
    static int   on_status_line = 0;   // #lines below bottom of portal
    static int   on_sep_line = 0;   // on separator right of portal
@@ -7068,9 +7055,8 @@ retnomove:
    ) {
       int off = lineOffsetG[prevRow] + prevCol;
 
-      // Only use screenColsG[] after the portal was redrawn.  Mainly matters
-      // for tests, a user would not click before redrawing.
-      // Do not use when 'virtualedit' is active.
+      //Only use screenColsG[] after the portal was redrawn. Mainly matters for tests, a user 
+      //would not click before redrawing. Do not use when 'virtualedit' is active.
       if (curPor->redrawType <= UPD_VALID_NO_UPDATE)
           col_from_screen = screenColsG[off];
       // Remember the character under the mouse, it might be a '-' or '+' in the fold column.
@@ -7104,7 +7090,7 @@ retnomove:
    curPor->setCursWant = FALSE;   // May still have been TRUE
    if (coladvance(col) == FAIL) {  // Mouse click beyond end of line
       if (inclusive)
-          *inclusive = TRUE;
+         *inclusive = TRUE;
       isMouseRightOfEolS = true;
    } ei (inclusive != NULL)
       *inclusive = FALSE;
@@ -7144,7 +7130,7 @@ do_mousescroll_horiz(Ulong leftcol) {
 //Normal and Visual modes implementation for scrolling in direction
 //"cap->arg", which is one of the MSCR_ values.
 void
-nv_mousescroll(ActionArg *cap) {
+nv_mousescroll(ActionArg* cap) {
    Portal   *old_curPor = curPor;
 
    if (mouseRowG >=0 && mouseColG >= 0) {
@@ -7192,10 +7178,7 @@ reset_held_button(void) {
 //Check if typeBufG 'tp' contains a terminal mouse code and returns the
 //modifiers found in typeBufG in 'modifiers'.
 int
-check_termcode_mouse(
-   CS key_name,
-   OUT Unt* modifiers
-){
+check_termcode_mouse(CS key_name, OUT Unt* modifiers){
    Unt mouse_code = 0;
    int is_click, is_drag;
    int is_release, release_is_ambiguous;
@@ -7222,7 +7205,7 @@ check_termcode_mouse(
       //(can happen when you hold down two buttons and then let them go, or
       //click in the menu bar, but not on a menu, and drag into the text).
       if ((mouse_code & MOUSE_DRAG) == MOUSE_DRAG)
-          is_drag = TRUE;
+         is_drag = TRUE;
       current_button = held_button;
    } else {
       if (wheel_code == 0) { 
@@ -7274,8 +7257,8 @@ check_termcode_mouse(
    ei (orig_num_clicks == 4)
       *modifiers |= MOD_MASK_4CLICK;
 
-   // Work out our pseudo mouse event. Note that MOUSE_RELEASE gets added,
-   // then it's not mouse up/down.
+   //Work out our pseudo mouse event. Note that MOUSE_RELEASE gets added,
+   //then it's not mouse up/down.
    key_name[0] = KS_EXTRA;
    if (wheel_code != 0 && (!is_release || release_is_ambiguous)) {
       if (wheel_code & MOUSE_CTRL)
@@ -7471,12 +7454,11 @@ mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED) {
 
 // Convert a virtual (screen) column to a character column. The first column is zero.
 int
-vcol2col(Portal *po, LineNr lnum, int vcol, ColNr *coladdp) {
-    Byte       *line;
-    CharTableSize   cts;
+vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
+   CharTableSize   cts;
 
    // try to advance to the specified column
-   line = memGetLine(po->book, lnum, FALSE);
+   CS line = memGetLine(po->book, lnum, FALSE);
    bookInitCharsForKeywordsSizeArg(&cts, po, lnum, 0, line, line);
    while (cts.cts_vcol < vcol && *cts.cts_ptr != ZERO) {
       int size = win_lbr_chartabsize(&cts, NULL);

@@ -102,7 +102,7 @@ private void scroll_cursor_top(int min_scroll, int always);
 
 private void openFoldRecurse(LineNr lnum);
 private void closeFoldRecurse(LineNr lnum);
-private int foldMoveTo(int      updown, int      dir, long   count);
+private int foldMoveTo(Boole      updown, Unt      dir, long   count);
 private int getDeepestNesting(void);
 private void foldAdjustCursor(void);
 
@@ -227,9 +227,9 @@ findsent(int dir, long count) {
       }
    }
 
-    setpcmark();
-    curPor->cursor = pos;
-    return OK;
+   setpcmark();
+   curPor->cursor = pos;
+   return OK;
 }
 
 // Find the next paragraph or section in direction 'dir'.
@@ -239,21 +239,20 @@ findsent(int dir, long count) {
 // If 'both' is TRUE also stop at '}'.
 // Return TRUE if the next paragraph or section was found.
 int
-findpar(
-   int      *pincl,       // Return: TRUE if last char is to be included
-   int      dir,
-   long   count,
-   int      what,
-   int      both
+normFindNextParagraf(
+   OUT Boole* pincl,       // Return: TRUE if last char is to be included
+   int dir,
+   long count,
+   int what,
+   int both
 ){
-   LineNr   curr;
    int      did_skip;   // TRUE after separating lines have been skipped
    int      first;       // TRUE on first line
    LineNr   fold_first;   // first line of a closed fold
    LineNr   fold_last;   // last line of a closed fold
    int      fold_skipped;   // TRUE if a closed fold was skipped this iteration
 
-   curr = curPor->cursor.lnum;
+   LineNr curr = curPor->cursor.lnum;
 
    while (count--) {
       did_skip = FALSE;
@@ -304,7 +303,7 @@ findpar(
 // If 'both' is TRUE also stop at '}'
 int
 startPS(LineNr lnum, int para, int both) {
-   Byte* s = ml_get(lnum);
+   CS s = ml_get(lnum);
    return (*s == para || *s == '\f' || (both && *s == '}'));
 }
 
@@ -442,12 +441,7 @@ bck_word(long count, int bigword, int stop) {
 // If stop is TRUE and we are already on the end of a word, move one less.
 // If empty is TRUE stop on an empty line.
 int
-end_word(
-   long   count,
-   int      bigword,
-   int      stop,
-   int      empty)
-{
+end_word(long count, int bigword, int stop, int      empty) {
    int      sclass;       // starting class
 
    curPor->cursor.coladd = 0;
@@ -564,10 +558,7 @@ find_first_blank(Pos *posp) {
 
 // Skip count/2 sentences and count/2 separating white spaces.
 private void
-findsent_forward(
-   long    count,
-   int       at_start_sent)   // cursor is at start of sentence
-{
+findsent_forward(long count, int at_start_sent) {  // cursor is at start of sentence
    while (count--) {
       findsent(FORWARD, 1L);
       if (at_start_sent)
@@ -702,15 +693,13 @@ current_word(
 // When Visual active, extend it by one or more sentences.
 int
 current_sent(Operator *oper, long count, int include) {
-   Pos   start_pos;
-   Pos   pos;
    int      start_blank;
    int      c;
    int      at_start_sent;
    long   ncount;
 
-   start_pos = curPor->cursor;
-   pos = start_pos;
+   Pos start_pos = curPor->cursor;
+   Pos pos = start_pos;
    findsent(FORWARD, 1L);   // Find start of next sentence.
 
    // When the Visual area is bigger than one character: Extend it.
@@ -842,33 +831,31 @@ extend:
 // parentheses/braces/etc.
 private int
 current_block(
-   Operator   *oper,
-   long   count,
-   int      include,   // TRUE == include white space
-   Unt      what,      // '(', '{', etc.
-   Unt      other      // ')', '}', etc.
+   Operator* oper,
+   long count,
+   int include,   // TRUE == include white space
+   Unt what,      // '(', '{', etc.
+   Unt other      // ')', '}', etc.
 ){
-   Pos   old_pos;
-   Pos   *pos = NULL;
-   Pos   start_pos;
-   Pos   *end_pos;
-   Pos   old_start, old_end;
-   int      sol = FALSE;      // '{' at start of line
+   Pos* pos = NULL;
+   Pos start_pos;
+   Pos* end_pos;
+   int sol = FALSE;      // '{' at start of line
 
-   old_pos = curPor->cursor;
-   old_end = curPor->cursor;      // remember where we started
-   old_start = old_end;
+   Pos old_pos = curPor->cursor;
+   Pos old_end = curPor->cursor;      // remember where we started
+   Pos old_start = old_end;
 
    // If we start on '(', '{', ')', '}', etc., use the whole block inclusive.
    if (!VIsual_active || EQUAL_POS(VIsual, curPor->cursor)) {
-   setpcmark();
-   if (what == '{')      // ignore indent
-       while (inindent(1))
-      if (inc_cursor() != 0)
-          break;
-   if (gchar_cursor() == what)
-       // cursor on '(' or '{', move cursor just after it
-       ++curPor->cursor.col;
+      setpcmark();
+      if (what == '{')      // ignore indent
+          while (inindent(1))
+         if (inc_cursor() != 0)
+             break;
+      if (gchar_cursor() == what)
+          // cursor on '(' or '{', move cursor just after it
+          ++curPor->cursor.col;
    } ei (LT_POS(VIsual, curPor->cursor)) {
       old_start = VIsual;
       curPor->cursor = VIsual;       // cursor at low end of Visual
@@ -971,12 +958,11 @@ current_block(
 // Return TRUE if the cursor is on a "<aaa>" tag.  Ignore "<aaa/>".
 // When "end_tag" is TRUE return TRUE if the cursor is on "</aaa>".
 private int
-in_html_tag(int      end_tag) {
-   Byte   *line = ml_get_curline();
-   Byte   *p;
+in_html_tag(int end_tag) {
+   CS line = ml_get_curline();
+   CS p;
    int      c;
    int      lc = ZERO;
-   Pos   pos;
 
    for (p = line + curPor->cursor.col; p > line; ) {
       if (*p == '<')   // find '<' under/before cursor
@@ -988,6 +974,7 @@ in_html_tag(int      end_tag) {
    if (*p != '<')
       return FALSE;
 
+   Pos   pos;
    pos.lnum = curPor->cursor.lnum;
    pos.col = (ColNr)(p - line);
 
@@ -1015,10 +1002,10 @@ in_html_tag(int      end_tag) {
 // Find tag block under the cursor, cursor at end.
 int
 current_tagblock(
-   Operator   *oper,
+   Operator* oper,
    long   count_arg,
-   int      include)   // TRUE == include white space
-{
+   int include   // TRUE == include white space
+){
    long   count = count_arg;
    long   n;
    Pos   old_pos;
@@ -1192,7 +1179,6 @@ current_par(
    int      include,   // TRUE == include white space
    int      type)      // 'p' for paragraph, 'S' for section
 {
-   LineNr   start_lnum;
    LineNr   end_lnum;
    int      white_in_front;
    int      dir;
@@ -1206,7 +1192,7 @@ current_par(
    if (type == 'S')       // not implemented yet
       return FAIL;
 
-   start_lnum = curPor->cursor.lnum;
+   LineNr start_lnum = curPor->cursor.lnum;
 
    // When visual area is more than one line: extend it.
    if (VIsual_active && start_lnum != VIsual.lnum) {
@@ -1274,16 +1260,14 @@ current_par(
       --i;
    while (i--) {
       if (end_lnum == curBook->mem.lineCount)
-          return FAIL;
+         return FAIL;
 
       if (!include)
-          do_white = linewhite(end_lnum + 1);
+         do_white = linewhite(end_lnum + 1);
 
       if (include || !do_white) {
           ++end_lnum;
-          /*
-           * skip to end of paragraph
-           */
+          //skip to end of paragraph
           while (end_lnum < curBook->mem.lineCount
              && !linewhite(end_lnum + 1)
              && !startPS(end_lnum + 1, 0, 0))
@@ -1291,7 +1275,7 @@ current_par(
       }
 
       if (i == 0 && white_in_front && include)
-          break;
+         break;
 
       //skip to end of white lines after paragraph
       if (include || do_white) {
@@ -1304,7 +1288,7 @@ current_par(
    //the start (unless that has been done already).
    if (!white_in_front && !linewhite(end_lnum) && include) {
       while (start_lnum > 1 && linewhite(start_lnum - 1))
-          --start_lnum;
+         --start_lnum;
    } 
 
    if (VIsual_active) {
@@ -1340,10 +1324,8 @@ find_next_quote(
    int  quotechar,
    Boole escapeWithBackslash   // does backslash escape the quote character?
 ){
-   int      c;
-
    for (;;) {
-      c = line[col];
+      int c = line[col];
       if (c == ZERO)
           return -1;
       ei (escapeWithBackslash && c == '\\') {
@@ -1386,12 +1368,12 @@ find_prev_quote(
 // Find quote under the cursor, cursor at end. Return TRUE if found, else FALSE.
 int
 current_quote(
-   Operator   *oper,
-   long   count,
-   int      include,   // TRUE == include quote char
-   int      quotechar)   // Quote character
-{
-   Byte   *line = ml_get_curline();
+   Operator* oper,
+   long count,
+   int include,   // TRUE == include quote char
+   int quotechar   // Quote character
+){
+   CS line = ml_get_curline();
    int      col_end;
    int      col_start = curPor->cursor.col;
    int      inclusive = FALSE;
@@ -1789,14 +1771,14 @@ findAction(int actionChar) {
 
 // If currently editing a cmdline or text is locked: beep and give an error message, return TRUE.
 private int
-checkTextLocked(Operator *oper) {
+checkTextLocked(Operator* oper) {
    if (!text_locked())
-   return FALSE;
+      return FALSE;
 
-   if (oper != NULL)
-   clearopbeep(oper);
-    text_locked_msg();
-    return TRUE;
+   if (oper)
+      clearopbeep(oper);
+   text_locked_msg();
+   return TRUE;
 }
 
 // If text is locked, "curBookLock" or "allBookLock" is set:
@@ -1817,12 +1799,12 @@ check_text_or_curbuf_locked(Operator *oper) {
 // Handle the count before a normal command and set aArg->count0.
 private int
 normalCmdGetCount(
-   ActionArg   *aArg,
-   Unt      c,
-   int      toplevel UNUSED,
-   int      set_prevcount UNUSED,
-   int      *ctrl_w,
-   int      *need_flushbuf UNUSED
+   ActionArg* aArg,
+   Unt c,
+   int toplevel,
+   int set_prevcount UNUSED,
+   int* ctrl_w,
+   int* need_flushbuf UNUSED
 ) {
 getcount:
    // Handle a count before a command and compute ca.count0.
@@ -1880,35 +1862,32 @@ getcount:
        aArg->oper->prev_opcount = aArg->opcount;
        aArg->oper->prev_count0 = aArg->count0;
    } ei (aArg->opcount != 0) {
-       // If we're in the middle of an operator (including after entering a
-       // yank buffer with '"') AND we had a count before the operator, then
-       // that count overrides the current value of ca.count0.
-       // What this means effectively, is that actions like "3dw" get turned
-       // into "d3w" which makes things fall into place pretty neatly.
-       // If you give a count before AND after the operator, they are
-       // multiplied.
-       if (aArg->count0) {
-	   if (aArg->opcount >= 999999999L / aArg->count0)
-	      aArg->count0 = 999999999L;
-	   else
-	      aArg->count0 *= aArg->opcount;
-       } else
-	   aArg->count0 = aArg->opcount;
+      // If we're in the middle of an operator (including after entering a
+      // yank buffer with '"') AND we had a count before the operator, then
+      // that count overrides the current value of ca.count0.
+      // What this means effectively, is that actions like "3dw" get turned
+      // into "d3w" which makes things fall into place pretty neatly.
+      // If you give a count before AND after the operator, they are multiplied.
+      if (aArg->count0) {
+         if (aArg->opcount >= 999999999L / aArg->count0)
+            aArg->count0 = 999999999L;
+         else
+            aArg->count0 *= aArg->opcount;
+      } else
+         aArg->count0 = aArg->opcount;
    }
 
-    // Always remember the count.  It will be set to zero (on the next call,
-    // above) when there is no pending operator.
-    // When called from main(), save the count for use by the "count" built-in
-    // variable.
-    aArg->opcount = aArg->count0;
-    aArg->count1 = (aArg->count0 == 0 ? 1 : aArg->count0);
+   // Always remember the count.  It will be set to zero (on the next call,
+   // above) when there is no pending operator.
+   // When called from main(), save the count for use by the "count" built-in variable.
+   aArg->opcount = aArg->count0;
+   aArg->count1 = (aArg->count0 == 0 ? 1 : aArg->count0);
 
-    // Only set v:count when called from main() and not a stuffed action.
-    // Do set it for redo.
+   // Only set v:count when called from main() and not a stuffed action. Do set it for redo.
    if (toplevel && readbuf1_empty())
        set_vcount(aArg->count0, aArg->count1, set_prevcount);
 
-    return c;
+   return c;
 }
 
 // Return TRUE if the normal action (aArg) needs a second character.
@@ -2406,13 +2385,11 @@ check_visual_highlight(void) {
 private void
 callYankDoAutocmd(int regname) {
    Operator   oper;
-   YankReg   *reg;
-
    clear_oparg(&oper);
    oper.regname = regname;
    oper.opTy = OP_YANK;
    oper.is_VIsual = TRUE;
-   reg = get_register(regname, TRUE);
+   YankReg* reg = get_register(regname, TRUE);
    yank_do_autocmd(&oper, reg);
    free_register(reg);
 }
@@ -2489,12 +2466,7 @@ restore_visual_mode(void) {
 //"dir" is FORWARD or BACKWARD, the direction of searching. "*colp" is in/decremented if 
 //"ptr[-dir]" should also be included. "bnp" points to a counter for square brackets.
 private int
-checkIsBalloonItem(
-   Byte   *ptr,
-   int      *colp,
-   int      *bnp,
-   int      dir
-){
+checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir){
    // Accept everything inside [].
    if ((*ptr == ']' && dir == BACKWARD) || (*ptr == '[' && dir == FORWARD))
       ++*bnp;
@@ -2550,9 +2522,8 @@ find_ident_at_pos(
    ColNr   startcol,
    Byte   **text,
    int      *textcol,   // column where "text" starts, can be NULL
-   int      find_type)
-{
-   Byte   *ptr;
+   int      find_type
+) {
    int      col = 0;   // init to shut up GCC
    int      i;
    int      this_class = 0;
@@ -2562,7 +2533,7 @@ find_ident_at_pos(
 
    // if i == 0: try to find an identifier
    // if i == 1: try to find any non-white text
-   ptr = memGetLine(wp->book, lnum, FALSE);
+   CS ptr = memGetLine(wp->book, lnum, FALSE);
    for (i = (find_type & FIND_IDENT) ? 0 : 1;   i < 2; ++i) {
       /*
        * 1. skip to start of identifier/text
@@ -2648,8 +2619,7 @@ find_ident_at_pos(
 // Prepare for redo of a normal action.
 private void
 prepareForRedo(ActionArg* aArg) {
-   prep_redo(aArg->oper->regname, aArg->count0,
-                 ZERO, aArg->cmdchar, ZERO, ZERO, aArg->nchar);
+   prep_redo(aArg->oper->regname, aArg->count0, ZERO, aArg->cmdchar, ZERO, ZERO, aArg->nchar);
 }
 
 // Prepare for redo of any action.
@@ -2801,11 +2771,12 @@ clear_showcmd(void) {
       } ei (VIsual_mode == 'V' || VIsual.lnum != curPor->cursor.lnum)
          sprintf((char *)showcmd_buf, "%ld", lines);
       else {
-         Byte  *s, *e;
          int       l;
          int       bytes = 0;
          int       chars = 0;
 
+         CS s;
+         CS e;
          if (cursor_bot) {
             s = ml_get_pos(&VIsual);
             e = ml_get_cursor();
@@ -2847,7 +2818,7 @@ clear_showcmd(void) {
 // Return TRUE if output has been written (and setcursor() has been called).
 int
 add_to_showcmd(Unt c) {
-   Byte   *p;
+   CS p;
    int      old_len;
    int      extra_len;
    int      overflow;
@@ -2936,7 +2907,7 @@ pop_showcmd(void) {
 
 private void
 display_showcmd(void) {
-   int       len = eeglStrSize(showcmd_buf);
+   int len = eeglStrSize(showcmd_buf);
 
    showcmd_is_clear = (len == 0);
    cursor_off();
@@ -3094,45 +3065,43 @@ isIdent(CS line, int offset) {
    return incomment == false && instring == 0;
 }
 
-// Search for variable declaration of "ptr[len]".
-// When "locally" is TRUE in the current function ("gd"), otherwise in the
-// current file ("gD").
-// When "thisblock" is TRUE check the {} block scope. Return FAIL when not found.
+//Search for variable declaration of "ptr[len]".
+//When "locally" is TRUE in the current function ("gd"), otherwise in the
+//current file ("gD").
+//When "thisblock" is TRUE check the {} block scope. Return FAIL when not found.
 int
 find_decl(
-   Byte   *ptr,
-   int      len,
-   int      locally,
-   int      thisblock,
-   int      flags_arg   // flags passed to searchit()
+   CS ptr,
+   int len,
+   int locally,
+   int thisblock,
+   Unt flags_arg   // flags passed to searchit()
 ){
-   Byte   *pat;
-   Unt   patlen;
-   Pos   old_pos;
-   Pos   par_pos;
-   Pos   found_pos;
-   int      t;
-   int      save_p_scs;
-   int      retval = OK;
-   int      incll;
-   int      searchflags = flags_arg;
+   Pos old_pos;
+   Pos par_pos;
+   Pos found_pos;
+   int t;
+   int save_p_scs;
+   int retval = OK;
+   int searchflags = flags_arg;
 
-   pat = alloc(len + 7);
+   CS pat = alloc(len + 7);
 
    // Put "\V" before the pattern to avoid that the special meaning of "."
    // and "~" causes trouble.
-   patlen = eeSnprintf(pat, len + 7, eeIsWordPtr(ptr) ? "\\V\\<%.*s\\>" : "\\V%.*s", len, ptr);
+   Unt patlen = eeSnprintf(pat, len + 7, eeIsWordPtr(ptr) ? "\\V\\<%.*s\\>" : "\\V%.*s", len, ptr);
 
    old_pos = curPor->cursor;
    save_p_scs = p_scs;
    wrapSearchG = false;   // don't wrap around end of file now
    p_scs = FALSE;   // don't switch ignorecase off now
 
-   // With "gD" go to line 1.
-   // With "gd" Search back for the start of the current function, then go
-   // back until a blank line.  If this fails go to line 1.
-   if (!locally || !findpar(&incll, BACKWARD, 1L, '{', FALSE)) {
-      setpcmark();         // Set in findpar() otherwise
+   //With "gD" go to line 1.
+   //With "gd" Search back for the start of the current function, then go
+   //back until a blank line.  If this fails go to line 1.
+   Boole incll;
+   if (!locally || !normFindNextParagraf(OUT &incll, BACKWARD, 1L, '{', FALSE)) {
+      setpcmark();         // Set in normFindNextParagraf() otherwise
       curPor->cursor.lnum = 1;
       par_pos = curPor->cursor;
    } else {
@@ -3266,12 +3235,12 @@ get_visual_text(
 // Return 0 for failure, 1 for found, 2 for found and line offset added.
 private int
 normal_search(
-   ActionArg   *aArg,
+   ActionArg* aArg,
    int dir,
    CS pat,
    Unt patlen,
    int opt,      // extra flags for do_search()
-   int *wrapped)
+   int* wrapped)
 {
    int      i;
    SearchitArg sia;
@@ -3365,10 +3334,10 @@ set_cursor_for_append_to_line(void) {
 // Invoke edit() and take care of "restart_edit" and the return value.
 private void
 invokeEdit(
-   ActionArg   *aArg,
-   int      repl,      // "r" action
-   int      cmd,
-   int      startln
+   ActionArg* aArg,
+   int repl,      // "r" action
+   int cmd,
+   int startln
 ){
    int      restart_edit_save = 0;
 
@@ -3995,7 +3964,7 @@ nv_zet(ActionArg* aArg) {
 
    case 'j':   // "zj" move to next fold downwards
    case 'k':   // "zk" move to next fold upwards
-      if (foldMoveTo(TRUE, nchar == 'j' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
+      if (foldMoveTo(true, nchar == 'j' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
          clearopbeep(aArg->oper);
       break;
 
@@ -4987,10 +4956,12 @@ nv_brackets(ActionArg* aArg) {
       curPor->setCursWant = TRUE;
       // Imitate strange Vi behaviour: When using "]]" with an operator
       // we also stop at '}'.
-      if (!findpar(&aArg->oper->inclusive, aArg->arg, aArg->count1, flag,
-            (aArg->oper->opTy != OP_NOP
-                     && aArg->arg == FORWARD && flag == '{')))
-          clearopbeep(aArg->oper);
+      if (!normFindNextParagraf(
+            OUT &aArg->oper->inclusive, aArg->arg, aArg->count1, flag, 
+            (aArg->oper->opTy != OP_NOP && aArg->arg == FORWARD && flag == '{')
+           )
+      )
+         clearopbeep(aArg->oper);
       else    {
          if (aArg->oper->opTy == OP_NOP)
              beginline(BL_WHITE | BL_FIX);
@@ -5026,7 +4997,7 @@ nv_brackets(ActionArg* aArg) {
    }
     // "[z" and "]z": move to start or end of open fold.
     ei (aArg->nchar == 'z') {
-      if (foldMoveTo(FALSE, aArg->cmdchar == ']' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
+      if (foldMoveTo(false, aArg->cmdchar == ']' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
          clearopbeep(aArg->oper);
    }
 
@@ -5125,7 +5096,7 @@ nv_findpar(ActionArg* aArg) {
    aArg->oper->inclusive = FALSE;
    aArg->oper->use_reg_one = TRUE;
    curPor->setCursWant = TRUE;
-   if (!findpar(&aArg->oper->inclusive, aArg->arg, aArg->count1, ZERO, FALSE)) {
+   if (!normFindNextParagraf(OUT &aArg->oper->inclusive, aArg->arg, aArg->count1, ZERO, FALSE)) {
       clearopbeep(aArg->oper);
       return;
    }
@@ -11935,12 +11906,12 @@ getFolds(LineNr lnum, OUT LineNr *firstp, OUT LineNr *lastp) {
 int
 getFoldsPortal(
    Portal* po,
-   LineNr   lnum,
-   LineNr   *firstp,
-   LineNr   *lastp,
+   LineNr lnum,
+   LineNr* firstp,
+   LineNr* lastp,
    int      cache,      // when TRUE: use cached values of portal
-   OUT FoldInfo* infop)      // where to store fold info
-{
+   OUT FoldInfo* infop      // where to store fold info
+){
    Boole      had_folded = false;
    LineNr   first = 0;
    LineNr   last = 0;
@@ -12062,7 +12033,7 @@ lineFolded(Portal *po, LineNr lnum) {
 //Returns number of folded lines from "lnum", or 0 if line is not folded.
 //When "infop" is not NULL, fills *infop with the fold level info.
 long
-foldedCount(Portal *po, LineNr lnum, OUT FoldInfo *infop) {
+foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop) {
    LineNr   last;
 
    if (getFoldsPortal(po, lnum, NULL, OUT &last, FALSE, infop))
@@ -12090,8 +12061,8 @@ opFoldRange(
    LineNr   last,
    int      opening,   // TRUE to open, FALSE to close
    int      recurse,   // TRUE to do it recursively
-   int      had_visual)   // TRUE when Visual selection used
-{
+   int      had_visual   // TRUE when Visual selection used
+){
    int      done = DONE_NOTHING;   // avoid error messages
    LineNr   lnum;
    LineNr   lnum_next;
@@ -12142,17 +12113,14 @@ foldOpenCursor(void) {
 }
 
 private void
-newFoldLevelForPortal(Portal *wp) {
-   Fold   *fp;
-   int      i;
-
+newFoldLevelForPortal(Portal* wp) {
    checkupdate(wp);
    if (wp->foldManual) {
       // Set all flags for the first level of folds to FD_LEVEL.  Following
       // manual open/close will then change the flags to FD_OPEN or
       // FD_CLOSED for those folds that don't use 'foldlevel'.
-      fp = (Fold *)wp->folds.c;
-      for (i = 0; i < wp->folds.len; ++i)
+      Fold* fp = (Fold *)wp->folds.c;
+      for (int i = 0; i < wp->folds.len; ++i)
          fp[i].fd_flags = FD_LEVEL;
       wp->foldManual = false;
    }
@@ -12187,12 +12155,11 @@ foldCheckClose(void) {
 }
 
 private int
-checkCloseRec(ArrayList *gap, LineNr lnum, int level) {
-   Fold   *fp;
-   int      retval = FALSE;
-   int      i;
+checkCloseRec(ArrayList* gap, LineNr lnum, int level) {
+   int retval = FALSE;
+   int i;
 
-   fp = (Fold *)gap->c;
+   Fold* fp = (Fold *)gap->c;
    for (i = 0; i < gap->len; ++i) {
       // Only manually opened folds may need to be closed.
       if (fp[i].fd_flags == FD_OPEN) {
@@ -12222,16 +12189,16 @@ foldManualAllowed(int create) {
 //Create a fold from line "start" to line "end" (inclusive) in the current portal.
 void
 foldCreate(LineNr start, LineNr end) {
-   Fold   *fp;
-   ArrayList   *gap;
-   ArrayList   fold_ga;
-   int      i, j;
-   int      cont;
-   Boole      use_level = false;
-   int      closed = FALSE;
-   int      level = 0;
-   LineNr   start_rel = start;
-   LineNr   end_rel = end;
+   Fold* fp;
+   ArrayList* gap;
+   ArrayList fold_ga;
+   int i, j;
+   int cont;
+   Boole use_level = false;
+   int closed = FALSE;
+   int level = 0;
+   LineNr start_rel = start;
+   LineNr end_rel = end;
 
    if (start > end) {
       // reverse the range
@@ -12270,8 +12237,7 @@ foldCreate(LineNr start, LineNr end) {
                closed = TRUE;
             ++level;
           } else {
-             // This fold and new fold overlap: Insert here and move some
-             // folds inside the new fold.
+             // This fold and new fold overlap: Insert here and move some folds inside the new fold
              break;
           }
       }
@@ -12345,8 +12311,8 @@ deleteFold(
    LineNr   start,
    LineNr   end,
    int      recursive,
-   int      had_visual)   // TRUE when Visual selection used
-{
+   int      had_visual   // TRUE when Visual selection used
+){
    ArrayList   *gap;
    Fold   *fp;
    ArrayList   *found_ga;
@@ -12475,13 +12441,9 @@ foldUpdateAll(Portal* po) {
 }
 
 //If "updown" is FALSE: Move to the start or end of the fold.
-//If "updown" is TRUE: move to fold at the same level.
+//If "updown" is TRUE: move to fold at the same level. dir = FORWARD or BACKWARD
 private int
-foldMoveTo(
-   int      updown,
-   int      dir,       // FORWARD or BACKWARD
-   long   count)
-{
+foldMoveTo(Boole updown, Unt dir,  long count) {
    long   n;
    int      retval = FAIL;
    LineNr   lnum_off;
@@ -12591,7 +12553,7 @@ foldMoveTo(
 
 //Init the fold info in a new portal.
 void
-foldInitWin(Portal *newPort) {
+normInitFoldForPortal(Portal* newPort) {
     ga_init2(&newPort->folds, sizeof(Fold), 10);
 }
 
@@ -12599,7 +12561,7 @@ foldInitWin(Portal *newPort) {
 //Only valid entries are considered (for entries where isValid is FALSE the
 //line number can be wrong). Return index of entry or -1 if not found.
 int
-find_wl_entry(Portal *po, LineNr lnum) {
+find_wl_entry(Portal* po, LineNr lnum) {
     for (int i = 0; i < po->validLines; ++i) {
        if (po->lines[i].isValid) {
           if (lnum < po->lines[i].bookLnum)
@@ -12614,11 +12576,10 @@ find_wl_entry(Portal *po, LineNr lnum) {
 //Adjust the Visual area to include any fold at the start or end completely.
 void
 foldAdjustVisual(void) {
-   Pos   *start, *end;
-
    if (!VIsual_active || !hasAnyFolding(curPor))
       return;
 
+   Pos   *start, *end;
    if (LTOREQ_POS(VIsual, curPor->cursor)) {
       start = &VIsual;
       end = &curPor->cursor;
@@ -12648,18 +12609,14 @@ foldAdjustCursor(void) {
 //Return FAIL if the operation cannot be completed, otherwise OK.
 void
 cloneFoldArrayList(ArrayList *from, ArrayList *to) {
-   int      i;
-   Fold   *from_p;
-   Fold   *to_p;
-
    ga_init2(to, from->ga_itemsize, from->ga_growsize);
    if (from->len == 0 || ga_grow(to, from->len) == FAIL)
       return;
 
-   from_p = (Fold *)from->c;
-   to_p = (Fold *)to->c;
+   Fold* from_p = (Fold *)from->c;
+   Fold* to_p = (Fold *)to->c;
 
-   for (i = 0; i < from->len; i++) {
+   for (int i = 0; i < from->len; i++) {
       to_p->fd_top = from_p->fd_top;
       to_p->fd_len = from_p->fd_len;
       to_p->fd_flags = from_p->fd_flags;
@@ -12678,11 +12635,10 @@ cloneFoldArrayList(ArrayList *from, ArrayList *to) {
 private int
 foldFind(ArrayList *gap, LineNr lnum, Fold **fpp) {
    LineNr   low, high;
-   int      i;
 
    if (gap->len == 0) {
-       *fpp = NULL;
-       return FALSE;
+      *fpp = NULL;
+      return FALSE;
    }
 
    //Perform a binary search.
@@ -12691,17 +12647,17 @@ foldFind(ArrayList *gap, LineNr lnum, Fold **fpp) {
    low = 0;
    high = gap->len - 1;
    while (low <= high) {
-      i = (low + high) / 2;
+      int i = (low + high) / 2;
       if (fp[i].fd_top > lnum)
-          // fold below lnum, adjust high
-          high = i - 1;
+         // fold below lnum, adjust high
+         high = i - 1;
       ei (fp[i].fd_top + fp[i].fd_len <= lnum)
-          // fold above lnum, adjust low
-          low = i + 1;
+         // fold above lnum, adjust low
+         low = i + 1;
       else {
-          // lnum is inside this fold
-          *fpp = fp + i;
-          return TRUE;
+         // lnum is inside this fold
+         *fpp = fp + i;
+         return TRUE;
       }
    }
    *fpp = fp + low;
@@ -12714,10 +12670,9 @@ foldLevelWin(Portal *wp, LineNr lnum) {
    Fold   *fp;
    LineNr   lnum_rel = lnum;
    int      level =  0;
-   ArrayList   *gap;
 
    // Recursively search for a fold that contains "lnum".
-   gap = &wp->folds;
+   ArrayList* gap = &wp->folds;
    for (;;) {
       if (!foldFind(gap, lnum_rel, &fp))
          break;
@@ -12771,8 +12726,8 @@ setManualFoldPort(
    LineNr   lnum,
    int      opening,    // TRUE when opening, FALSE when closing
    int      recurse,    // TRUE when closing/opening recursive
-   int      *donep)
-{
+   int* donep
+){
    Fold   *fp;
    Fold   *fp2;
    Fold   *found = NULL;
@@ -12791,54 +12746,54 @@ setManualFoldPort(
    gap = &wp->folds;
    for (;;) {
       if (!foldFind(gap, lnum, &fp)) {
-          // If there is a following fold, continue there next time.
-          if (fp != NULL && fp < (Fold *)gap->c + gap->len)
-             next = fp->fd_top + off;
-          break;
-       }
+         // If there is a following fold, continue there next time.
+         if (fp != NULL && fp < (Fold *)gap->c + gap->len)
+            next = fp->fd_top + off;
+         break;
+      }
 
-       // lnum is inside this fold
-       found_fold = TRUE;
+      // lnum is inside this fold
+      found_fold = TRUE;
 
-       // If there is a following fold, continue there next time.
-       if (fp + 1 < (Fold *)gap->c + gap->len)
-           next = fp[1].fd_top + off;
+      // If there is a following fold, continue there next time.
+      if (fp + 1 < (Fold *)gap->c + gap->len)
+         next = fp[1].fd_top + off;
 
-       // Change from level-dependent folding to manual.
-       if (use_level || fp->fd_flags == FD_LEVEL) {
-           use_level = TRUE;
-           if (level >= wp->o.foldLevel)
-              fp->fd_flags = FD_CLOSED;
-           else
-              fp->fd_flags = FD_OPEN;
-           fp2 = (Fold *)fp->fd_nested.c;
-           for (j = 0; j < fp->fd_nested.len; ++j)
-              fp2[j].fd_flags = FD_LEVEL;
-       }
+      // Change from level-dependent folding to manual.
+      if (use_level || fp->fd_flags == FD_LEVEL) {
+         use_level = TRUE;
+         if (level >= wp->o.foldLevel)
+            fp->fd_flags = FD_CLOSED;
+         else
+            fp->fd_flags = FD_OPEN;
+         fp2 = (Fold *)fp->fd_nested.c;
+         for (j = 0; j < fp->fd_nested.len; ++j)
+            fp2[j].fd_flags = FD_LEVEL;
+      }
 
-       // Simple case: Close recursively means closing the fold.
-       if (!opening && recurse) {
-           if (fp->fd_flags != FD_CLOSED) {
-              done |= DONE_ACTION;
-              fp->fd_flags = FD_CLOSED;
-           }
-       } ei (fp->fd_flags == FD_CLOSED) {
-           // When opening, open topmost closed fold.
-           if (opening) {
-          fp->fd_flags = FD_OPEN;
-          done |= DONE_ACTION;
-          if (recurse)
-              foldOpenNested(fp);
-          }
-          break;
-       }
+      // Simple case: Close recursively means closing the fold.
+      if (!opening && recurse) {
+         if (fp->fd_flags != FD_CLOSED) {
+            done |= DONE_ACTION;
+            fp->fd_flags = FD_CLOSED;
+         }
+      } ei (fp->fd_flags == FD_CLOSED) {
+         // When opening, open topmost closed fold.
+         if (opening) {
+            fp->fd_flags = FD_OPEN;
+            done |= DONE_ACTION;
+            if (recurse)
+               foldOpenNested(fp);
+         }
+         break;
+      }
 
-       // fold is open, check nested folds
-       found = fp;
-       gap = &fp->fd_nested;
-       lnum -= fp->fd_top;
-       off += fp->fd_top;
-       ++level;
+      // fold is open, check nested folds
+      found = fp;
+      gap = &fp->fd_nested;
+      lnum -= fp->fd_top;
+      off += fp->fd_top;
+      ++level;
    }
    if (found_fold) {
        // When closing and not recurse, close deepest open fold.
@@ -12863,10 +12818,11 @@ setManualFoldPort(
 //Also does this for other portals in diff mode when needed.
 private LineNr
 setManualFold(
-   LineNr   lnum,
-   int      opening,    // TRUE when opening, FALSE when closing
-   int      recurse,    // TRUE when closing/opening recursive
-   int      *donep) {
+   LineNr lnum,
+   int opening,    // TRUE when opening, FALSE when closing
+   int recurse,    // TRUE when closing/opening recursive
+   int* donep
+) {
    if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
       Portal       *wp;
       LineNr    dlnum;
@@ -12901,12 +12857,11 @@ foldOpenNested(Fold *fpr) {
 //When "recursive" is FALSE contained folds are moved one level up.
 private void
 deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
-   Fold   *fp;
    int      i;
    long   moved;
    Fold   *nfp;
 
-   fp = (Fold *)gap->c + idx;
+   Fold* fp = (Fold *)gap->c + idx;
    if (recursive || fp->fd_nested.len == 0) {
       // recursively delete the contained folds
       deleteFoldRecurse(&fp->fd_nested);
@@ -12945,9 +12900,7 @@ deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
 //Delete nested folds in a fold.
 void
 deleteFoldRecurse(ArrayList *gap) {
-    int      i;
-
-    for (i = 0; i < gap->len; ++i)
+    for (int i = 0; i < gap->len; ++i)
        deleteFoldRecurse(&(((Fold *)(gap->c))[i].fd_nested));
     ga_clear(gap);
 }
@@ -13037,25 +12990,25 @@ foldMarkAdjustRecurse(
                  --fp;
              } else
                  fp->fd_top += amount;
-          } else {
-             if (fp->fd_top < top) {
-                 // 2 or 3: need to correct nested folds too
-                 foldMarkAdjustRecurse(&fp->fd_nested, line1 - fp->fd_top,
+         } else {
+            if (fp->fd_top < top) {
+               // 2 or 3: need to correct nested folds too
+               foldMarkAdjustRecurse(&fp->fd_nested, line1 - fp->fd_top,
                      line2 - fp->fd_top, amount, amount_after);
-                 if (last <= line2) {
+               if (last <= line2) {
                     // 2. fold contains line1, line2 is below fold
                     if (amount == MAXLNUM)
-                        fp->fd_len = line1 - fp->fd_top;
+                       fp->fd_len = line1 - fp->fd_top;
                     else
-                        fp->fd_len += amount;
-                 } else {
+                       fp->fd_len += amount;
+               } else {
                     // 3. fold contains line1 and line2
                     fp->fd_len += amount_after;
-                 }
+               }
              } else {
-                 // 5. fold is below line1 and contains line2; need to
-                 // correct nested folds too
-                 if (amount == MAXLNUM) {
+               // 5. fold is below line1 and contains line2; need to
+               // correct nested folds too
+               if (amount == MAXLNUM) {
                     foldMarkAdjustRecurse(&fp->fd_nested,
                          0,
                          line2 - fp->fd_top,
@@ -13063,7 +13016,7 @@ foldMarkAdjustRecurse(
                          amount_after + (fp->fd_top - top));
                     fp->fd_len -= line2 - fp->fd_top + 1;
                     fp->fd_top = line1;
-                 } else {
+               } else {
                     foldMarkAdjustRecurse(&fp->fd_nested,
                          0,
                          line2 - fp->fd_top,
@@ -13071,9 +13024,9 @@ foldMarkAdjustRecurse(
                          amount_after - amount);
                     fp->fd_len += amount_after - amount;
                     fp->fd_top += amount;
-                 }
-             }
-          }
+               }
+            }
+         }
       }
    }
 }
@@ -13091,9 +13044,8 @@ getDeepestNestingRecurse(ArrayList *gap) {
    int      i;
    int      level;
    int      maxlevel = 0;
-   Fold   *fp;
 
-   fp = (Fold *)gap->c;
+   Fold* fp = (Fold *)gap->c;
    for (i = 0; i < gap->len; ++i) {
       level = getDeepestNestingRecurse(&fp[i].fd_nested) + 1;
       if (level > maxlevel)
@@ -13111,8 +13063,8 @@ check_closed(
    OUT Boole* use_levelp,       // TRUE: outer fold had FD_LEVEL
    int level,          // folding depth
    OUT Boole* maybe_smallp,       // TRUE: outer this had fd_small == MAYBE
-   LineNr   lnum_off)       // line number offset for fp->fd_top
-{
+   LineNr   lnum_off       // line number offset for fp->fd_top
+){
    Boole closed = false;
 
    // Check if this fold is closed.  If the flag is FD_LEVEL this
@@ -13124,7 +13076,7 @@ check_closed(
    } ei (fp->fd_flags == FD_CLOSED)
       closed = true;
 
-    // Small fold isn't closed anyway.
+   // Small fold isn't closed anyway.
    if (fp->fd_small == MAYBE)
        *maybe_smallp = TRUE;
    if (closed) {
@@ -13142,8 +13094,8 @@ private void
 checkSmall(
     Portal   *wp,
     Fold   *fp,
-    LineNr   lnum_off)   // offset for fp->fd_top
-{
+    LineNr   lnum_off   // offset for fp->fd_top
+){
    int      count;
    int      n;
 
@@ -13197,7 +13149,7 @@ foldCreateMarkers(LineNr start, LineNr end) {
 // Add "marker[markerlen]" in 'commentstring' to line "lnum".
 private void
 foldAddMarker(LineNr lnum, CS marker, int markerlen) {
-   Byte   *cms = curBook->o.commentString;
+   CS cms = curBook->o.commentString;
    CS p = STRSTR(curBook->o.commentString, "%s");
    int      line_is_comment = FALSE;
 
@@ -13243,16 +13195,14 @@ deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off
 //If the marker is not found, there is no error message. Could be a missing close-marker.
 private void
 foldDelMarker(LineNr lnum, CS marker, int markerlen) {
-   Byte   *p;
-   int      len;
-   Byte   *cms = curBook->o.commentString;
-   Byte   *cms2;
-
+   int len;
+   CS cms = curBook->o.commentString;
+   
    // end marker may be missing and fold extends below the last line
    if (lnum > curBook->mem.lineCount)
       return;
    CS line = ml_get(lnum);
-   for (p = line; *p != ZERO; ++p) {
+   for (CS p = line; *p != ZERO; ++p) {
       if (STRNCMP(p, marker, markerlen) == 0) {
          // Found the marker, include a digit if it's there.
          len = markerlen;
@@ -13260,7 +13210,7 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
             ++len;
          if (*cms != ZERO) {
             //Also delete 'commentstring' if it matches.
-            cms2 = (CS)strstr((char *)cms, "%s");
+            CS cms2 = (CS)strstr((char *)cms, "%s");
             if (cms2 != NULL && p - line >= cms2 - cms
                   && STRNCMP(p - (cms2 - cms), cms, cms2 - cms) == 0
                   && STRNCMP(p + len, cms2 + 2, STRLEN(cms2 + 2)) == 0
@@ -13286,10 +13236,10 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 //Otherwise the result is in allocated memory.
 CS
 get_foldtext(
-   Portal   *wp,
-   LineNr   lnum,
-   LineNr   lnume,
-   FoldInfo   *foldinfo,
+   Portal* wp,
+   LineNr lnum,
+   LineNr lnume,
+   FoldInfo* foldinfo,
    CS buffer
 ) {
    CS text = NULL;
@@ -13387,11 +13337,11 @@ get_foldtext(
 //Remove 'foldmarker' and 'commentstring' from "str" (in-place).
 private void
 foldtext_cleanup(CS str) {
-   Byte   *s;
-   Byte   *p;
-   int      len;
-   int      did1 = FALSE;
-   int      did2 = FALSE;
+   CS s;
+   CS p;
+   int len;
+   int did1 = FALSE;
+   int did2 = FALSE;
 
    // Ignore leading and trailing white space in 'commentstring'.
    CS cms_start = skipwhite(curBook->o.commentString);   // first part or the whole comment
@@ -13462,10 +13412,8 @@ typedef struct {
    LineNr   lnum_save;   // line nr used by foldUpdateIEMSRecurse()
    int      lvl;      // current level (-1 for undefined)
    int      lvl_next;   // level used for next line
-   int      start;      // number of folds that are forced to start at
-           // this line.
-   int      end;      // level of fold that is forced to end below
-           // this line
+   int      start;      // number of folds that are forced to start at this line.
+   int      end;      // level of fold that is forced to end below this line
    int      had_end;   // level of fold that is forced to end above
             // this line (copy of "end" of prev. line)
 } FoldLine;
@@ -13732,9 +13680,8 @@ foldUpdateIEMSRecurse(
             i = 0;
             fp2 = fp;
             if (lvl >= level) {
-               // Compute how deep the folds currently are, if it's deeper
-               // than "lvl" then some must be deleted, need to update
-               // at least one nested fold.
+               // Compute how deep the folds currently are, if it's deeper than "lvl" then some 
+               // must be deleted, need to update at least one nested fold.
                ll = flp->lnum - fp->fd_top;
                while (foldFind(&fp2->fd_nested, ll, &fp2)) {
                    ++i;
@@ -13766,9 +13713,9 @@ foldUpdateIEMSRecurse(
             // set concat to 1 if it's allowed to concatenate this fold
             // with a previous one that touches it.
             if (flp->start != 0 || flp->had_end <= MAX_LEVEL)
-                concat = 0;
+               concat = 0;
             else
-                concat = 1;
+               concat = 1;
 
             // Find an existing fold to re-use.  Preferably one that
             // includes startlnum, otherwise one that ends just before
@@ -13779,8 +13726,8 @@ foldUpdateIEMSRecurse(
                || foldFind(gap, firstlnum - concat, &fp)
                || (fp < ((Fold *)gap->c) + gap->len
                    && ((lvl < level && fp->fd_top < flp->lnum)
-                  || (lvl >= level && fp->fd_top <= flp->lnum_save)))))
-            {
+                  || (lvl >= level && fp->fd_top <= flp->lnum_save))))
+            ) {
                if (fp->fd_top + fp->fd_len + concat > firstlnum) {
                   // Use existing fold for the new fold.  If it starts
                   // before where we started looking, extend it.  If it
@@ -13863,8 +13810,7 @@ foldUpdateIEMSRecurse(
                   fold_changed = TRUE;
                }
             } else {
-                // Insert new fold.  Careful: c may be NULL and it
-               // may change!
+               // Insert new fold.  Careful: c may be NULL and it may change!
                if (gap->len == 0)
                   i = 0;
                else
@@ -13972,10 +13918,8 @@ foldUpdateIEMSRecurse(
       // running into the end of the buffer (deleted last line)
       fp->fd_len = linecount - fp->fd_top + 1;
 
-    // Delete contained folds from the end of the last one found until where
-    // we stopped looking.
-    foldRemove(&fp->fd_nested, startlnum2 - fp->fd_top,
-                    flp->lnum - 1 - fp->fd_top);
+   // Delete contained folds from the end of the last one found until where we stopped looking.
+   foldRemove(&fp->fd_nested, startlnum2 - fp->fd_top, flp->lnum - 1 - fp->fd_top);
 
    if (lvl < level) {
       // End of fold found, update the length when it got shorter.
@@ -13988,8 +13932,7 @@ foldUpdateIEMSRecurse(
                 bot = fp->fd_top + fp->fd_len - 1;
                 fp->fd_len = flp->lnum - fp->fd_top;
             } else {
-                // indent or expr method: split fold to create a new one
-                // below bot
+                // indent or expr method: split fold to create a new one below bot
                 i = (int)(fp - (Fold *)gap->c);
                 foldSplit(gap, i, flp->lnum, bot);
                 fp = (Fold *)gap->c + i;
@@ -14105,11 +14048,10 @@ foldSplit(
 //6: not changed
 private void
 foldRemove(ArrayList *gap, LineNr top, LineNr bot) {
-   Fold   *fp = NULL;
-
    if (bot < top)
       return;      // nothing to do
 
+   Fold   *fp = NULL;
    while (gap->len > 0) {
       // Find fold that includes top or a following one.
       if (foldFind(gap, top, &fp) && fp->fd_top < top) {
@@ -14469,15 +14411,13 @@ parseMarker(Portal *wp) {
 //Set flp->start when a start marker was found.
 private void
 foldlevelMarker(FoldLine *flp) {
-   Byte   *startmarker;
-   int      cstart;
-   int      cend;
-   int      start_lvl = flp->lvl;
-   Byte   *s;
+   int cstart;
+   int cend;
+   int start_lvl = flp->lvl;
    int      n;
 
    // cache a few values for speed
-   startmarker = flp->po->o.foldMarker;
+   CS startmarker = flp->po->o.foldMarker;
    cstart = *startmarker;
    ++startmarker;
    cend = *foldendmarker;
@@ -14486,26 +14426,26 @@ foldlevelMarker(FoldLine *flp) {
    flp->start = 0;
    flp->lvl_next = flp->lvl;
 
-   s = memGetLine(flp->po->book, flp->lnum + flp->off, FALSE);
-   while (*s) {
+   CS s = memGetLine(flp->po->book, flp->lnum + flp->off, FALSE);
+   while (*s != ZERO) {
       if (*s == cstart && STRNCMP(s + 1, startmarker, foldstartmarkerlen - 1) == 0) {
-          // found startmarker: set flp->lvl
-          s += foldstartmarkerlen;
-          if (EE_ISDIGIT(*s)) {
-         n = atoi((char *)s);
-         if (n > 0) {
-             flp->lvl = n;
-             flp->lvl_next = n;
-             if (n <= start_lvl)
-            flp->start = 1;
-             else
-            flp->start = n - start_lvl;
+         // found startmarker: set flp->lvl
+         s += foldstartmarkerlen;
+         if (EE_ISDIGIT(*s)) {
+            n = atoi((char *)s);
+            if (n > 0) {
+                flp->lvl = n;
+                flp->lvl_next = n;
+                if (n <= start_lvl)
+               flp->start = 1;
+                else
+               flp->start = n - start_lvl;
+            }
+         } else {
+            ++flp->lvl;
+            ++flp->lvl_next;
+            ++flp->start;
          }
-          } else {
-         ++flp->lvl;
-         ++flp->lvl_next;
-         ++flp->start;
-          }
       } ei (*s == cend && STRNCMP(s + 1, foldendmarker + 1, foldendmarkerlen - 1) == 0) {
          // found endmarker: set flp->lvl_next
          s += foldendmarkerlen;

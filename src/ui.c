@@ -7190,14 +7190,14 @@ term_close_buffer(Book* book, Book *old_curBook) {
 Book *
 term_start(
    Var    *argvar,
-   Byte       **argv,
-   JobOptions    *opt,
-   int       flags
+   Byte** argv,
+   JobOptions* opt,
+   Unt flags
 ){
    Invocation   splitInvo;
    Portal   *old_curPor = curPor;
    Book   *old_curbuf = NULL; int      res;
-   Book   *newbuf;
+   Book   *newBook;
    int      vertical = opt->vertical || (commModifierG.cmod_split & WSP_VERT);
    JobOptions   orig_opt;  // only partly filled
    Pos   save_cursor;
@@ -7422,7 +7422,7 @@ term_start(
    else
       res = term_and_job_init(term, argvar, argv, opt, &orig_opt);
 
-   newbuf = curBook;
+   newBook = curBook;
    if (res == OK) {
       // Get and remember the size we ended up with.  Update the pty.
       vterm_get_size(term->vterm, &term->rows, &term->cols);
@@ -7449,10 +7449,10 @@ term_start(
       return NULL;
     }
 
-   apply_autocmds(EVENT_TERMINALOPEN, NULL, NULL, false, newbuf);
+   apply_autocmds(EVENT_TERMINALOPEN, NULL, NULL, false, newBook);
    if (!opt->jo_hidden && !(flags & TERM_START_SYSTEM))
-      apply_autocmds(EVENT_TERMINALWINOPEN, NULL, NULL, false, newbuf);
-   return newbuf;
+      apply_autocmds(EVENT_TERMINALWINOPEN, NULL, NULL, false, newBook);
+   return newBook;
 }
 
 // ":terminal": open a terminal portal and execute a job in it.
@@ -12160,7 +12160,7 @@ private int ta_off;   // offset for next char to use when ta_str != NULL
 private int ta_len;   // length of ta_str when it's not NULL
 
 void
-ui_inBytendo(Byte *s, int len) {
+ui_inBytendo(CS s, int len) {
    int newlen = len;
    if (ta_str)
       newlen += ta_len - ta_off;
@@ -12656,7 +12656,7 @@ set_input_buf(CS p, Boole overwrite) {
 // Add the given bytes to the input buffer Special keys start with CSI. A real CSI must have 
 // been translated to CSI KS_EXTRA KE_CSI.  K_SPECIAL doesn't require translation.
 void
-add_to_input_buf(Byte *s, int len) {
+add_to_input_buf(CS s, int len) {
    if (inbufcount + len > INBUFLEN + MAX_KEY_CODE_LEN)
        return;       // Shouldn't ever happen!
 
@@ -12666,7 +12666,7 @@ add_to_input_buf(Byte *s, int len) {
 
 // Add "str[len]" to the input buffer while escaping CSI bytes.
 void
-add_to_input_buf_csi(Byte *str, int len) {
+add_to_input_buf_csi(CS str, int len) {
    Byte   buf[2];
 
    for (int i = 0; i < len; ++i) {
@@ -12706,7 +12706,7 @@ fill_input_buf(Boole exit_on_error) {
    int      len;
    int      try;
    static int   did_read_something = FALSE;
-   static Byte *rest = NULL;       // unconverted rest of previous read
+   static CS rest = NULL;       // unconverted rest of previous read
    static int   restlen = 0;
    int      unconverted;
 
@@ -12747,7 +12747,7 @@ fill_input_buf(Boole exit_on_error) {
    if (len > 0 || gotInterruptG)
       break;
    // If reading stdin results in an error, continue reading stderr.
-   // This helps when using "foo | xargs vim".
+   // This helps when using "foo | xargs eegl".
    if (!did_read_something && !isatty(read_cmd_fd) && read_cmd_fd == 0) {
        int m = cur_tmode;
 
@@ -12772,9 +12772,8 @@ fill_input_buf(Boole exit_on_error) {
       inbufcount = 1;
    } else {
       while (len > 0) {
-         // If a CTRL-C was typed, remove it from the buffer and set
-         // gotInterruptG.  Also recognize CTRL-C with modifyOtherKeys set, lower
-         // and upper case, in two forms.
+         // If a CTRL-C was typed, remove it from the buffer and set gotInterruptG. Also recognize 
+         // CTRL-C with modifyOtherKeys set, lower and upper case, in two forms.
          // If terminal key protocols are in use, we expect to receive
          // Ctrl_C as an escape sequence, ignore a raw Ctrl_C as this could be paste data.
          if (ctrl_c_interrupts

@@ -337,7 +337,7 @@ ignorecase(CS pat) {
 
 //As ignorecase() but pass the "ic" and "scs" flags.
 int
-ignorecase_opt(Byte *pat, int ic_in, int scs) {
+ignorecase_opt(CS pat, int ic_in, int scs) {
    int      ic = ic_in;
 
    if (ic && !no_smartcase && scs && !(ctrl_x_mode_not_default() && curBook->o.inferCase))
@@ -384,7 +384,7 @@ pat_has_uppercase(CS pat) {
    return FALSE;
 }
 
-Byte *
+CS
 last_csearch(void) {
    return lastc_bytes;
 }
@@ -435,11 +435,11 @@ reset_search_dir(void) {
 //Also set the saved search pattern, so that this works in an autocommand.
 void
 set_last_search_pat(
-   Byte   *s,
-   int      idx,
-   int      magic,
-   int      setlast)
-{
+   CS s,
+   int idx,
+   int magic,
+   int setlast
+) {
    eeglFree(prevSearchPatternsG[idx].pat);
    // An empty string means that nothing should be matched.
    if (*s == ZERO)
@@ -1277,14 +1277,14 @@ end_do_search:
 //Return OK for success, or FAIL if no line found.
 int
 search_for_exact_line(
-   Book   *book,
-   Pos   *pos,
-   int      dir,
-   Byte   *pat
+   Book* book,
+   Pos* pos,
+   int dir,
+   CS pat
 ) {
    LineNr   start = 0;
-   Byte   *ptr;
-   Byte   *p;
+   CS ptr;
+   CS p;
 
    if (book->mem.lineCount == 0)
       return FAIL;
@@ -1343,7 +1343,7 @@ searchc(ActionArg* cap, int t_cmd) {
          *lastc = c;
          set_csearch_direction(dir);
          set_csearch_until(t_cmd);
-         lastc_bytelen = (*mb_char2bytes)(c, lastc_bytes);
+         lastc_bytelen = mb_char2bytes(c, lastc_bytes);
          if (cap->ncharC1 != 0) {
             lastc_bytelen += mb_char2bytes(cap->ncharC1, lastc_bytes + lastc_bytelen);
             if (cap->ncharC2 != 0)

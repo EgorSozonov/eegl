@@ -714,7 +714,7 @@ mch_exit(int r) {
    //When t_ti is not empty but it doesn't cause swapping terminal pages, need to output a 
    //newline when msg_didout is set. But when t_ti does swap pages it should not go to the shell 
    //page. Do this before termStopTerminfo().
-   if (swapping_screen() && !newline_on_exit)
+   if (termIsScreenBeingSwapped() && !newline_on_exit)
       exit_scroll();
 
    // Stop termcap: May need to check for KS_CRV response, which requires RAW mode.
@@ -722,7 +722,7 @@ mch_exit(int r) {
 
    //A newline is only required after a message in the alternate screen.
    //This is set to TRUE by wait_return().
-   if (!swapping_screen() || newline_on_exit)
+   if (!termIsScreenBeingSwapped() || newline_on_exit)
       exit_scroll();
 
    //Cursor may have been switched off without calling starttermcap()
@@ -1155,8 +1155,8 @@ ml_open_files(void) {
 //If we are unable to find a file name, fName will be NULL
 //and the memfile will be in memory only (no recovery possible).
 void
-ml_open_file(Book *book) {
-   Arr(Byte) fname;
+ml_open_file(Book* book) {
+   CS fname;
 
    MemFile* mfp = book->mem.mfile;
    if (!mfp || mfp->fd >= 0 || !book->o.swapFile || (commModifierG.cmod_flags & CMOD_NOSWAPFILE))
@@ -1177,8 +1177,7 @@ ml_open_file(Book *book) {
       if (*dirp == ZERO)
          break;
       //There is a small chance that between choosing the swap file name and creating it, another
-      //Eegl creates the file. In that case the creation will fail and we will use another 
-      //directory.
+      //Eegl creates the file. In that case the creation will fail and we will use another directory
       fname = findSwapName(book, &dirp, NULL); // allocates fname
       if (dirp == NULL)
           break;  // out of memory
@@ -2049,23 +2048,21 @@ recover_names(
 //signs, to "dir". An unnamed book is handled as "" (<currentdir>/"")
 //The last character in "dir" must be an extra slash or backslash, it is removed.
 CS
-make_percent_swname(Byte *dir, Byte *dir_end, Byte *name) {
+make_percent_swname(CS dir, CS dir_end, CS name) {
    Byte *d = NULL;
 
-   CS f = FullName_save(name != NULL ? name : (CS)"", true);
+   CS f = FullName_save(name != NULL ? name : S"", true);
 
    CS s = alloc(STRLEN(f) + 1);
-   if (s) {
-      STRCPY(s, f);
-      for (d = s; *d != ZERO; MB_PTR_ADV(d)) {
-         if (*d == '/')
-            *d = '%';
-      } 
+   STRCPY(s, f);
+   for (d = s; *d != ZERO; MB_PTR_ADV(d)) {
+      if (*d == '/')
+         *d = '%';
+   } 
 
-      dir_end[-1] = ZERO;  // remove one trailing slash
-      d = concat_fnames(dir, s, TRUE);
-      eeglFree(s);
-   }
+   dir_end[-1] = ZERO;  // remove one trailing slash
+   d = concat_fnames(dir, s, TRUE);
+   eeglFree(s);
    eeglFree(f);
    return d;
 }
@@ -2077,9 +2074,8 @@ private int process_still_running;
 // This is used by the swapinfo() function.
 void
 get_b0_dict(CS fname, Bag *bag) {
-   int fd;
    Block0 b0;
-
+   int fd;
    if ((fd = open((char *)fname, O_RDONLY | O_EXTRA, 0)) >= 0) {
       if (read_eintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
          if (ml_check_b0_id(&b0) == FAIL)
@@ -2109,7 +2105,7 @@ get_b0_dict(CS fname, Bag *bag) {
 private Tyme
 swapfile_info(CS fname) {
    FileStat       st;
-   Byte       uname[B0_UNAME_SIZE];
+   Byte uname[B0_UNAME_SIZE];
 
    // print the swap file date
    if (stat((char *)fname, &st) != -1) {
@@ -2136,16 +2132,16 @@ swapfile_info(CS fname) {
          } else {
             msg_puts(_("         file name: "));
             if (b0.b0_fname[0] == ZERO)
-                msg_puts(_("[No Name]"));
+               msg_puts(_("[No Name]"));
             else
-                msg_outtrans(b0.b0_fname);
+               msg_outtrans(b0.b0_fname);
 
             msg_puts(_("\n          modified: "));
             msg_puts(b0.b0_dirty ? _("YES") : _("no"));
 
             if (*(b0.b0_uname) != ZERO) {
-                msg_puts(_("\n         user name: "));
-                msg_outtrans(b0.b0_uname);
+               msg_puts(_("\n         user name: "));
+               msg_outtrans(b0.b0_uname);
             }
 
             if (*(b0.b0_hname) != ZERO) {
@@ -2184,20 +2180,19 @@ swapfile_info(CS fname) {
 // Return TRUE if the swap file looks OK and there are no changes, thus it can be safely deleted.
 private int
 swapfile_unchanged(CS fname) {
-   FileStat       st;
-   int          fd;
-   Block0   b0;
-   int          ret = TRUE;
+   FileStat st;
+   int ret = TRUE;
 
    // must be able to stat the swap file
    if (stat((char *)fname, &st) == -1)
       return FALSE;
 
    // must be able to read the first block
-   fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
+   int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
    if (fd < 0)
       return FALSE;
-   if (read_eintr(fd, &b0, sizeof(b0)) != sizeof(b0)) {
+   Block0   b0;
+   if (read_eintr(fd, OUT &b0, sizeof(b0)) != sizeof(b0)) {
       close(fd);
       return FALSE;
    }
@@ -2235,10 +2230,7 @@ swapfile_unchanged(CS fname) {
 
 private int
 recoverFileNames(Byte **names, Byte *path, int prepend_dot) {
-   //  maybe short name, maybe not: Try both. Only use the short name if it is different.
-   Byte   *p;
    int      i;
-
    int num_names = 0;
 
    // May also add the file name with a dot prepended, for swap file in same dir as original file.
@@ -2253,6 +2245,8 @@ recoverFileNames(Byte **names, Byte *path, int prepend_dot) {
    names[num_names] = concat_fnames(path, (CS)".sw?", FALSE);
    if (names[num_names] == NULL)
       goto end;
+   //  maybe short name, maybe not: Try both. Only use the short name if it is different.
+   CS p;
    if (num_names >= 1)   {    // check if we have the same name twice
       p = names[num_names - 1];
       i = (int)STRLEN(names[num_names - 1]) - (int)STRLEN(names[num_names]);
@@ -2293,10 +2287,7 @@ ml_sync_all(int check_file, int check_char) {
    FileStat st;
 
    FOR_ALL_BOOKS(book) {
-      if (book->mem.mfile == NULL
-            || book->mem.mfile->fName == NULL
-            || book->mem.mfile->fd < 0
-      )
+      if (!book->mem.mfile || !book->mem.mfile->fName || book->mem.mfile->fd < 0)
          continue;             // no file
 
       flushLine(book); // flush buffered line
@@ -2462,11 +2453,7 @@ memGetBookLen(Book* book, LineNr lnum) {
 //Return a pointer to a line in a specific book
 //"willChange": if TRUE mark the book dirty (chars in the line are expected to change)
 CS
-memGetLine(
-   Book* book,
-   LineNr   lnum,
-   Boole  willChange // line will be changed
-){
+memGetLine(Book* book, LineNr   lnum, Boole  willChange) { // line will be changed
    BlockHeader* hdr;
    DataBlock   *block;
    static int   recursive = 0;
@@ -2559,9 +2546,9 @@ private void
 addTextPropsForAppend(
    Book* book,
    LineNr   lnum,
-   Arr(Byte)* lineContent,
-   int* len,
-   Byte   **tofree
+   OUT CS* lineContent,
+   OUT int* len,
+   OUT Byte** tofree
 ){
    int      round;
    int      newPropCount = 0;
@@ -2657,7 +2644,7 @@ insertLineText(
 
    if (curBook->hasTextprop && lnum > 0 && !(flags & (ML_APPEND_UNDO | ML_APPEND_NOPROP))) {
       // Add text properties that continue from the previous line.
-      addTextPropsForAppend(book, lnum, &newContent, &len, &tofree);
+      addTextPropsForAppend(book, lnum, OUT &newContent, OUT &len, OUT &tofree);
    }
 
    neededSpace = len + INDEX_SIZE;   // space needed for text + index
@@ -3080,7 +3067,7 @@ appendFlush(
 int
 ml_append(
    LineNr lnum, // append after this line (can be 0)
-   Arr(Byte) newContent, // text of the new line
+   CS newContent, // text of the new line
    ColNr len, // number of bytes to copy, or if 0 - will be replaced by strlen(newContent), 
    int   newfile // flag, see above
 ){
@@ -3098,10 +3085,10 @@ ml_append(
 int
 ml_append_flags(
    LineNr   lnum,      // append after this line (can be 0)
-   Arr(Byte) newContent,      // text of the new line
-   ColNr   len,      // length of new line, including ZERO, or 0
-   int      flags)      // ML_APPEND_ values
-{
+   CS newContent,      // text of the new line
+   ColNr   len,        // length of new line, including ZERO, or 0
+   Unt      flags      // ML_APPEND_ values
+){
    // When starting up, we might still need to create the memfile
    if (curBook->mem.mfile == NULL && bookOpenFromInvo(false, NULL, 0) == FAIL)
       return FAIL;
@@ -3117,8 +3104,8 @@ memAppendBook(
    LineNr lnum,  // append after this line (can be 0)
    CS line,      // text of the new line
    ColNr len,    // length of new line, including ZERO, or 0
-   int newfile)  // flag, see above
-{
+   int newfile  // flag, see above
+){
    if (book->mem.mfile == NULL)
       return FAIL;
    return appendFlush(book, lnum, line, len, newfile ? ML_APPEND_NEW : 0);
@@ -3133,7 +3120,7 @@ memAppendBook(
 //drawUpdateScreen(UPD_NOT_VALID) is used.
 //return FAIL for failure, OK otherwise
 int
-ml_replace(LineNr lnum, Byte *line, int copy) {
+ml_replace(LineNr lnum, CS line, int copy) {
    ColNr len = -1;
 
    if (line)
@@ -3220,22 +3207,22 @@ ml_replace_len(
 //"del_props[del_props_len]" are the properties of the deleted line.
 private void
 adjustTextPropsForDeletion(
-   Book       *book,
-   LineNr    lnum,
-   Byte       *del_props,
-   int       del_props_len,
-   int       above)
-{
+   Book* book,
+   LineNr lnum,
+   CS del_props,
+   int del_props_len,
+   int above
+) {
    int      did_get_line = FALSE;
    int      done_this;
    TextProp   prop_del;
    BlockHeader   *hdr;
    DataBlock* block;
-   int      idx;
-   int      line_start;
+   int idx;
+   int line_start;
    long   line_size;
-   int      this_props_len = 0;
-   Byte   *text;
+   int this_props_len = 0;
+   CS text;
    Unt   textlen;
    int      found;
 
@@ -3305,18 +3292,18 @@ adjustTextPropsForDeletion(
 // return FAIL for failure, OK otherwise
 private int
 deleteLine(Book* book, LineNr lnum, int flags) {
-   BlockHeader   *hdr;
-   DataBlock   *block;
-   PointerBlock   *pp;
-   InfoPtr   *ip;
-   int      count;       // number of entries in block
-   int      idx;
-   int      stack_idx;
-   long   line_size;
-   int      i;
-   int      ret = FAIL;
-   Byte   *textprop_save = NULL;
-   long   textprop_len = 0;
+   BlockHeader* hdr;
+   DataBlock* block;
+   PointerBlock* pp;
+   InfoPtr* ip;
+   int count;       // number of entries in block
+   int idx;
+   int stack_idx;
+   long line_size;
+   int i;
+   int ret = FAIL;
+   CS textprop_save = NULL;
+   long textprop_len = 0;
 
    if (lowest_marked && lowest_marked > lnum)
       lowest_marked--;
@@ -3360,11 +3347,10 @@ deleteLine(Book* book, LineNr lnum, int flags) {
    // if needed make a copy, so that we can update properties in preceding and following lines.
    if (book->hasTextprop) {
       Unt   textlen = STRLEN((CS)block + line_start) + 1;
-
-       textprop_len = line_size - (long)textlen;
-       if (!(flags & (ML_DEL_UNDO | ML_DEL_NOPROP)) && textprop_len > 0) {
-          textprop_save = eeMemsave((CS)block + line_start + textlen, textprop_len);
-       } 
+      textprop_len = line_size - (long)textlen;
+      if (!(flags & (ML_DEL_UNDO | ML_DEL_NOPROP)) && textprop_len > 0) {
+         textprop_save = eeMemsave((CS)block + line_start + textlen, textprop_len);
+      } 
     }
 
    //special case: If there is only one line in the data block it becomes empty. Then we have to 
@@ -3510,25 +3496,23 @@ ml_setmarked(LineNr lnum) {
 // find the first line with its DB_MARKED flag set
 LineNr
 ml_firstmarked(void) {
-   BlockHeader   *hdr;
-   LineNr   lnum;
-   int      i;
 
    if (curBook->mem.mfile == NULL)
       return (LineNr) 0;
 
    //The search starts with lowest_marked line. This is the last line where
    //a mark was found, adjusted by inserting/deleting lines.
-   for (lnum = lowest_marked; lnum <= curBook->mem.lineCount; ) {
+   for (LineNr lnum = lowest_marked; lnum <= curBook->mem.lineCount; ) {
       //Find the data block containing the line.
       //This also fills the stack with the blocks from the root to the data
       //block This also releases any locked block.
+      BlockHeader* hdr;
       if ((hdr = ml_find_line(curBook, lnum, ML_FIND)) == NULL)
          return (LineNr)0;          // give error message?
 
       DataBlock* block = (DataBlock *)(hdr->bh_data);
 
-      for (i = lnum - curBook->mem.lockedLow; lnum <= curBook->mem.lockedHigh; ++i, ++lnum) {
+      for (int i = lnum - curBook->mem.lockedLow; lnum <= curBook->mem.lockedHigh; ++i, ++lnum) {
          if ((block->c[i]) & DB_MARKED) {
             (block->c[i]) &= c_MASK;
             curBook->mem.flags |= ML_LOCKED_DIRTY;
@@ -3544,7 +3528,6 @@ ml_firstmarked(void) {
 // clear all DB_MARKED flags
 void
 ml_clearmarked(void) {
-
    if (curBook->mem.mfile == NULL)       // nothing to do
       return;
 
@@ -3575,8 +3558,8 @@ flushLine(Book *book) {
    BlockHeader   *hdr;
    DataBlock   *block;
    LineNr   lnum;
-   Byte   *new_line;
-   Byte   *old_line;
+   CS new_line;
+   CS old_line;
    ColNr   new_len;
    int      old_len;
    int      extra;
@@ -3593,7 +3576,7 @@ flushLine(Book *book) {
       // This code doesn't work recursively, but Netbeans may call back here
       // when obtaining the cursor position.
       if (entered)
-          return;
+         return;
       entered = TRUE;
 
       lnum = book->mem.ml_line_lnum;
@@ -5032,7 +5015,7 @@ mf_open(CS fname, Unt flags) {
 //
 // return value: FAIL if file could not be opened, OK otherwise
 int
-mf_open_file(MemFile *mfp, Byte *fname) {
+mf_open_file(MemFile* mfp, CS fname) {
    mf_do_open(mfp, fname, O_RDWR|O_CREAT|O_EXCL); // try to open the file
 
    if (mfp->fd < 0)

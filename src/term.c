@@ -37,7 +37,7 @@ private int may_adjust_key_for_ctrl(int modifiers, Unt key);
 private void gatherTermLeaders(void);
 private void req_more_codes_from_term(void);
 private void got_code_from_term(CS code, int len);
-private void check_for_codes_from_term(void);
+private void handleUnansweredRequests(void);
 private void del_termcode_idx(int idx);
 private Unt find_term_bykeys(CS src);
 private void accept_modifiers_for_function_keys(void);
@@ -1398,17 +1398,16 @@ termSetMode(TermInputMode tmode) {
    if (!fullScreenG)
       return;
 
-   //When returning after calling a shell cur_tmode is TMODE_UNKNOWN,
-   //set the terminal to raw mode, even though we think it already is,
-   //because the shell program may have reset the terminal mode.
-   //When we think the terminal is normal, don't try to set it to
-   //normal again, because that causes problems (logout!) on some machines.
+   //When returning after calling a shell cur_tmode is TMODE_UNKNOWN, set the terminal to raw mode,
+   //even though we think it already is, because the shell program may have reset the terminal 
+   //mode. When we think the terminal is normal, don't try to set it to normal again, because that 
+   //causes problems (logout!) on some machines.
    if (tmode != cur_tmode) {
       // May need to check for termCodeS[KS_CRV] response and recognizedCodeS, it
       // doesn't work in Cooked mode, an external program may get them.
       if (tmode != TMODE_RAW && termrequest_any_pending())
          (void)vpeekc_nomap();
-      check_for_codes_from_term();
+      handleUnansweredRequests();
       if (tmode != TMODE_RAW)
          mch_setmouse(FALSE);   // switch mouse off
 
@@ -1455,13 +1454,11 @@ starttermcap(void) {
    out_flush();
    termcap_active = TRUE;
    screen_start();         // don't know where cursor is now
-    {
    may_req_termresponse();
    //Immediately check for a response.  If t_Co changes, we don't
    //want to redraw with wrong colors first.
    if (crv_status.tr_progress == STATUS_SENT)
-       check_for_codes_from_term();
-   }
+       handleUnansweredRequests();
 }
 
 void
@@ -1483,7 +1480,7 @@ termStopTerminfo(void) {
 #endif
    }
    // Check for recognizedCodeS first, otherwise an external program may get them.
-   check_for_codes_from_term();
+   handleUnansweredRequests();
    MAY_WANT_TO_LOG_THIS;
 
    // Disable xterm's focus reporting mode if 'esckeys' is set.
@@ -1621,7 +1618,7 @@ check_terminal_behavior(void) {
 void
 may_req_bg_color(void) {
    if (can_get_termresponse() && starting == 0) {
-      int didit = FALSE;
+      Boole didit = false;
 
       //Only request foreground if t_RF is set.
       if (rfg_status.tr_progress == STATUS_GET && termCodeS[KS_RFG] != Em) {
@@ -1629,16 +1626,16 @@ may_req_bg_color(void) {
          LOG_TR1("Sending FG request");
          out_str(termCodeS[KS_RFG]);
          termrequest_sent(&rfg_status);
-         didit = TRUE;
+         didit = true;
       }
 
       //Only request background if t_RB is set.
       if (backgroundColorRequestS.tr_progress == STATUS_GET && termCodeS[KS_RBG] != Em) {
-          MAY_WANT_TO_LOG_THIS;
-          LOG_TR1("Sending BG request");
-          out_str(termCodeS[KS_RBG]);
-          termrequest_sent(&backgroundColorRequestS);
-          didit = TRUE;
+         MAY_WANT_TO_LOG_THIS;
+         LOG_TR1("Sending BG request");
+         out_str(termCodeS[KS_RBG]);
+         termrequest_sent(&backgroundColorRequestS);
+         didit = true;
       }
 
       if (didit) {
@@ -1649,10 +1646,9 @@ may_req_bg_color(void) {
    }
 }
 
-
 //Return TRUE when saving and restoring the screen.
 int
-swapping_screen(void) {
+termIsScreenBeingSwapped(void) {
    return (fullScreenG && termCodeS[KS_TI] != Em);
 }
 
@@ -1855,7 +1851,6 @@ adjust_modlen(int idx) {
 //"flags" can also be ATC_FROM_TERM for got_code_from_term().
 void
 add_termcode(CS name, CS string, Boole isAtcFromTerm) {
-
    if (!string || *string == ZERO) {
       del_termcode(name);
       return;
@@ -1875,7 +1870,7 @@ add_termcode(CS name, CS string, Boole isAtcFromTerm) {
       tc_max_len += 20;
       new_tc = ALLOC_MULT(struct termcode, tc_max_len);
       for (i = 0; i < tc_len; ++i)
-          new_tc[i] = recognizedCodeS[i];
+         new_tc[i] = recognizedCodeS[i];
       eeglFree(recognizedCodeS);
       recognizedCodeS = new_tc;
    }
@@ -1942,15 +1937,15 @@ accept_modifiers_for_function_keys(void) {
 
    for (int i = 0; i < tc_len; ++i) {
       if (!regmatch.regprog)
-          return;
+         return;
 
       // skip PasteStart and PasteEnd
       if (recognizedCodeS[i].name[0] == 'P'
          && (recognizedCodeS[i].name[1] == 'S' || recognizedCodeS[i].name[1] == 'E')
       )
-          continue;
+         continue;
 
-      Byte *s = recognizedCodeS[i].code;
+      CS s = recognizedCodeS[i].code;
       if (s && eeRegexec(&regmatch, s, (ColNr)0)) {
          Unt len = STRLEN(s);
          Byte *ns = alloc(len + 3);
@@ -3428,168 +3423,165 @@ typedef struct {
    Boole enabled;       // is this entry available?
    int key;          // special key code or ascii value
    Text name;          // name of key
-   int is_alt;          // is an alternative name
+   Boole is_alt;          // is an alternative name
 } KeyNameEntry;
 
-#define STRING_INIT(s) \
-    {(CS)(s), STRLEN_LITERAL(s)}
 private KeyNameEntry keyNamesTable[] = {
-// Must be sorted by the 'name.string' field in ascending order because it is used by bsearch()!
-   {TRUE, K_BS, STRING_INIT("BackSpace"), TRUE},
-   {TRUE, '|', STRING_INIT("Bar"), FALSE},
-   {TRUE, K_BS, STRING_INIT("BS"), FALSE},
-   {TRUE, '\\', STRING_INIT("Bslash"), FALSE},
-   {TRUE, K_COMMAND, STRING_INIT("Cmd"), FALSE},
-   {TRUE, ENTER, STRING_INIT("CR"), FALSE},
-   {TRUE, CSI, STRING_INIT("CSI"), FALSE},
-   {TRUE, K_CURSORHOLD, STRING_INIT("CursorHold"), FALSE},
-   { FALSE, K_DEC_MOUSE, STRING_INIT("DecMouse"), FALSE},
-   {TRUE, K_DEL, STRING_INIT("Del"), FALSE},
-   {TRUE, K_DEL, STRING_INIT("Delete"), TRUE},
-   {TRUE, K_DOWN, STRING_INIT("Down"), FALSE},
-   {TRUE, K_DROP, STRING_INIT("Drop"), FALSE},
-   {TRUE, K_END, STRING_INIT("End"), FALSE},
-   {TRUE, ENTER, STRING_INIT("Enter"), TRUE},
-   {TRUE, ESC, STRING_INIT("Esc"), FALSE},
+// Must be sorted by the 'name.c' field in ascending order because it is used by bsearch()!
+   {true, K_BS, tConst("BackSpace"), true},
+   {true, '|', tConst("Bar"), false},
+   {true, K_BS, tConst("BS"), false},
+   {true, '\\', tConst("Bslash"), false},
+   {true, K_COMMAND, tConst("Cmd"), false},
+   {true, ENTER, tConst("CR"), false},
+   {true, CSI, tConst("CSI"), false},
+   {true, K_CURSORHOLD, tConst("CursorHold"), false},
+   {false, K_DEC_MOUSE, tConst("DecMouse"), false},
+   {true, K_DEL, tConst("Del"), false},
+   {true, K_DEL, tConst("Delete"), true},
+   {true, K_DOWN, tConst("Down"), false},
+   {true, K_DROP, tConst("Drop"), false},
+   {true, K_END, tConst("End"), false},
+   {true, ENTER, tConst("Enter"), true},
+   {true, ESC, tConst("Esc"), false},
 
-   {TRUE, K_F1, STRING_INIT("F1"), FALSE},
-   {TRUE, K_F10, STRING_INIT("F10"), FALSE},
-   {TRUE, K_F11, STRING_INIT("F11"), FALSE},
-   {TRUE, K_F12, STRING_INIT("F12"), FALSE},
-   {TRUE, K_F13, STRING_INIT("F13"), FALSE},
-   {TRUE, K_F14, STRING_INIT("F14"), FALSE},
-   {TRUE, K_F15, STRING_INIT("F15"), FALSE},
-   {TRUE, K_F16, STRING_INIT("F16"), FALSE},
-   {TRUE, K_F17, STRING_INIT("F17"), FALSE},
-   {TRUE, K_F18, STRING_INIT("F18"), FALSE},
-   {TRUE, K_F19, STRING_INIT("F19"), FALSE},
+   {true, K_F1, tConst("F1"), false},
+   {true, K_F10, tConst("F10"), false},
+   {true, K_F11, tConst("F11"), false},
+   {true, K_F12, tConst("F12"), false},
+   {true, K_F13, tConst("F13"), false},
+   {true, K_F14, tConst("F14"), false},
+   {true, K_F15, tConst("F15"), false},
+   {true, K_F16, tConst("F16"), false},
+   {true, K_F17, tConst("F17"), false},
+   {true, K_F18, tConst("F18"), false},
+   {true, K_F19, tConst("F19"), false},
 
-   {TRUE, K_F2, STRING_INIT("F2"), FALSE},
-   {TRUE, K_F20, STRING_INIT("F20"), FALSE},
-   {TRUE, K_F21, STRING_INIT("F21"), FALSE},
-   {TRUE, K_F22, STRING_INIT("F22"), FALSE},
-   {TRUE, K_F23, STRING_INIT("F23"), FALSE},
-   {TRUE, K_F24, STRING_INIT("F24"), FALSE},
-   {TRUE, K_F25, STRING_INIT("F25"), FALSE},
-   {TRUE, K_F26, STRING_INIT("F26"), FALSE},
-   {TRUE, K_F27, STRING_INIT("F27"), FALSE},
-   {TRUE, K_F28, STRING_INIT("F28"), FALSE},
-   {TRUE, K_F29, STRING_INIT("F29"), FALSE},
+   {true, K_F2, tConst("F2"), false},
+   {true, K_F20, tConst("F20"), false},
+   {true, K_F21, tConst("F21"), false},
+   {true, K_F22, tConst("F22"), false},
+   {true, K_F23, tConst("F23"), false},
+   {true, K_F24, tConst("F24"), false},
+   {true, K_F25, tConst("F25"), false},
+   {true, K_F26, tConst("F26"), false},
+   {true, K_F27, tConst("F27"), false},
+   {true, K_F28, tConst("F28"), false},
+   {true, K_F29, tConst("F29"), false},
 
-   {TRUE, K_F3, STRING_INIT("F3"), FALSE},
-   {TRUE, K_F30, STRING_INIT("F30"), FALSE},
-   {TRUE, K_F31, STRING_INIT("F31"), FALSE},
-   {TRUE, K_F32, STRING_INIT("F32"), FALSE},
-   {TRUE, K_F33, STRING_INIT("F33"), FALSE},
-   {TRUE, K_F34, STRING_INIT("F34"), FALSE},
-   {TRUE, K_F35, STRING_INIT("F35"), FALSE},
-   {TRUE, K_F36, STRING_INIT("F36"), FALSE},
-   {TRUE, K_F37, STRING_INIT("F37"), FALSE},
+   {true, K_F3, tConst("F3"), false},
+   {true, K_F30, tConst("F30"), false},
+   {true, K_F31, tConst("F31"), false},
+   {true, K_F32, tConst("F32"), false},
+   {true, K_F33, tConst("F33"), false},
+   {true, K_F34, tConst("F34"), false},
+   {true, K_F35, tConst("F35"), false},
+   {true, K_F36, tConst("F36"), false},
+   {true, K_F37, tConst("F37"), false},
 
-   {TRUE, K_F4, STRING_INIT("F4"), FALSE},
-   {TRUE, K_F5, STRING_INIT("F5"), FALSE},
-   {TRUE, K_F6, STRING_INIT("F6"), FALSE},
-   {TRUE, K_F7, STRING_INIT("F7"), FALSE},
-   {TRUE, K_F8, STRING_INIT("F8"), FALSE},
-   {TRUE, K_F9, STRING_INIT("F9"), FALSE},
+   {true, K_F4, tConst("F4"), false},
+   {true, K_F5, tConst("F5"), false},
+   {true, K_F6, tConst("F6"), false},
+   {true, K_F7, tConst("F7"), false},
+   {true, K_F8, tConst("F8"), false},
+   {true, K_F9, tConst("F9"), false},
 
-   {TRUE, K_FOCUSGAINED, STRING_INIT("FocusGained"), FALSE},
-   {TRUE, K_FOCUSLOST, STRING_INIT("FocusLost"), FALSE},
-   {TRUE, K_HELP, STRING_INIT("Help"), FALSE},
-   {TRUE, K_HOME, STRING_INIT("Home"), FALSE},
-   {TRUE, K_IGNORE, STRING_INIT("Ignore"), FALSE},
-   {TRUE, K_INS, STRING_INIT("Ins"), TRUE},
-   {TRUE, K_INS, STRING_INIT("Insert"), FALSE},
-   { FALSE, K_JSBTERM_MOUSE, STRING_INIT("JsbMouse"), FALSE},
-   {TRUE, K_K0, STRING_INIT("k0"), FALSE},
-   {TRUE, K_K1, STRING_INIT("k1"), FALSE},
-   {TRUE, K_K2, STRING_INIT("k2"), FALSE},
-   {TRUE, K_K3, STRING_INIT("k3"), FALSE},
-   {TRUE, K_K4, STRING_INIT("k4"), FALSE},
-   {TRUE, K_K5, STRING_INIT("k5"), FALSE},
-   {TRUE, K_K6, STRING_INIT("k6"), FALSE},
-   {TRUE, K_K7, STRING_INIT("k7"), FALSE},
-   {TRUE, K_K8, STRING_INIT("k8"), FALSE},
-   {TRUE, K_K9, STRING_INIT("k9"), FALSE},
+   {true, K_FOCUSGAINED, tConst("FocusGained"), false},
+   {true, K_FOCUSLOST, tConst("FocusLost"), false},
+   {true, K_HELP, tConst("Help"), false},
+   {true, K_HOME, tConst("Home"), false},
+   {true, K_IGNORE, tConst("Ignore"), false},
+   {true, K_INS, tConst("Ins"), true},
+   {true, K_INS, tConst("Insert"), false},
+   { false, K_JSBTERM_MOUSE, tConst("JsbMouse"), false},
+   {true, K_K0, tConst("k0"), false},
+   {true, K_K1, tConst("k1"), false},
+   {true, K_K2, tConst("k2"), false},
+   {true, K_K3, tConst("k3"), false},
+   {true, K_K4, tConst("k4"), false},
+   {true, K_K5, tConst("k5"), false},
+   {true, K_K6, tConst("k6"), false},
+   {true, K_K7, tConst("k7"), false},
+   {true, K_K8, tConst("k8"), false},
+   {true, K_K9, tConst("k9"), false},
 
-   {TRUE, K_KDEL, STRING_INIT("kDel"), FALSE},
-   {TRUE, K_KDIVIDE, STRING_INIT("kDivide"), FALSE},
-   {TRUE, K_KEND, STRING_INIT("kEnd"), FALSE},
-   {TRUE, K_KENTER, STRING_INIT("kEnter"), FALSE},
-   {TRUE, K_KHOME, STRING_INIT("kHome"), FALSE},
-   {TRUE, K_KINS, STRING_INIT("kInsert"), FALSE},
-   {TRUE, K_KMINUS, STRING_INIT("kMinus"), FALSE},
-   {TRUE, K_KMULTIPLY, STRING_INIT("kMultiply"), FALSE},
-   {TRUE, K_KPAGEDOWN, STRING_INIT("kPageDown"), FALSE},
-   {TRUE, K_KPAGEUP, STRING_INIT("kPageUp"), FALSE},
-   {TRUE, K_KPLUS, STRING_INIT("kPlus"), FALSE},
-   {TRUE, K_KPOINT, STRING_INIT("kPoint"), FALSE},
-   {TRUE, K_LEFT, STRING_INIT("Left"), FALSE},
-   {TRUE, K_LEFTDRAG, STRING_INIT("LeftDrag"), FALSE},
-   {TRUE, K_LEFTMOUSE, STRING_INIT("LeftMouse"), FALSE},
-   {TRUE, K_LEFTMOUSE_NM, STRING_INIT("LeftMouseNM"), FALSE},
-   {TRUE, K_LEFTRELEASE, STRING_INIT("LeftRelease"), FALSE},
-   {TRUE, K_LEFTRELEASE_NM, STRING_INIT("LeftReleaseNM"), FALSE},
-   {TRUE, NL, STRING_INIT("LF"), TRUE},
-   {TRUE, NL, STRING_INIT("LineFeed"), TRUE},
-   {TRUE, '<', STRING_INIT("lt"), FALSE},
-   {TRUE, K_MIDDLEDRAG, STRING_INIT("MiddleDrag"), FALSE},
-   {TRUE, K_MIDDLEMOUSE, STRING_INIT("MiddleMouse"), FALSE},
-   {TRUE, K_MIDDLERELEASE, STRING_INIT("MiddleRelease"), FALSE},
-   {TRUE, K_MOUSE, STRING_INIT("Mouse"), FALSE},
-   {TRUE, K_MOUSEDOWN, STRING_INIT("MouseDown"), TRUE},
-   {TRUE, K_MOUSEMOVE, STRING_INIT("MouseMove"), FALSE},
-   {TRUE, K_MOUSEUP, STRING_INIT("MouseUp"), TRUE},
-   { FALSE, K_NETTERM_MOUSE, STRING_INIT("NetMouse"), FALSE},
-   {TRUE, NL, STRING_INIT("NewLine"), TRUE},
-   {TRUE, NL, STRING_INIT("NL"), FALSE},
-   {TRUE, K_ZERO, STRING_INIT("ZERO"), FALSE},
-   {TRUE, K_PAGEDOWN, STRING_INIT("PageDown"), FALSE},
-   {TRUE, K_PAGEUP, STRING_INIT("PageUp"), FALSE},
-   {TRUE, K_PE, STRING_INIT("PasteEnd"), FALSE},
-   {TRUE, K_PS, STRING_INIT("PasteStart"), FALSE},
-   {TRUE, K_PLUG, STRING_INIT("Plug"), FALSE},
-   {TRUE, ENTER, STRING_INIT("Return"), TRUE},
-   {TRUE, K_RIGHT, STRING_INIT("Right"), FALSE},
-   {TRUE, K_RIGHTDRAG, STRING_INIT("RightDrag"), FALSE},
-   {TRUE, K_RIGHTMOUSE, STRING_INIT("RightMouse"), FALSE},
-   {TRUE, K_RIGHTRELEASE, STRING_INIT("RightRelease"), FALSE},
-   {TRUE, K_SCRIPT_COMMAND, STRING_INIT("ScriptCmd"), FALSE},
-   {TRUE, K_MOUSEUP, STRING_INIT("ScrollWheelDown"), FALSE},
-   {TRUE, K_MOUSERIGHT, STRING_INIT("ScrollWheelLeft"), FALSE},
-   {TRUE, K_MOUSELEFT, STRING_INIT("ScrollWheelRight"), FALSE},
-   {TRUE, K_MOUSEDOWN, STRING_INIT("ScrollWheelUp"), FALSE},
-   {TRUE, K_SGR_MOUSE, STRING_INIT("SgrMouse"), FALSE},
-   {TRUE, K_SGR_MOUSERELEASE, STRING_INIT("SgrMouseRelease"), FALSE},
-   {TRUE, K_SNR, STRING_INIT("SNR"), FALSE},
-   {TRUE, ' ', STRING_INIT("Space"), FALSE},
-   {TRUE, TAB, STRING_INIT("Tab"), FALSE},
-   {TRUE, K_TAB, STRING_INIT("Tab"), FALSE},
-   {TRUE, K_UNDO, STRING_INIT("Undo"), FALSE},
-   {TRUE, K_UP, STRING_INIT("Up"), FALSE},
-   { FALSE, K_URXVT_MOUSE, STRING_INIT("UrxvtMouse"), FALSE},
-   {TRUE, K_X1DRAG, STRING_INIT("X1Drag"), FALSE},
-   {TRUE, K_X1MOUSE, STRING_INIT("X1Mouse"), FALSE},
-   {TRUE, K_X1RELEASE, STRING_INIT("X1Release"), FALSE},
-   {TRUE, K_X2DRAG, STRING_INIT("X2Drag"), FALSE},
-   {TRUE, K_X2MOUSE, STRING_INIT("X2Mouse"), FALSE},
-   {TRUE, K_X2RELEASE, STRING_INIT("X2Release"), FALSE},
-   {TRUE, K_CSI, STRING_INIT("xCSI"), FALSE},
-   {TRUE, K_XDOWN, STRING_INIT("xDown"), FALSE},
-   {TRUE, K_XEND, STRING_INIT("xEnd"), FALSE},
-   {TRUE, K_XF1, STRING_INIT("xF1"), FALSE},
-   {TRUE, K_XF2, STRING_INIT("xF2"), FALSE},
-   {TRUE, K_XF3, STRING_INIT("xF3"), FALSE},
-   {TRUE, K_XF4, STRING_INIT("xF4"), FALSE},
-   {TRUE, K_XHOME, STRING_INIT("xHome"), FALSE},
-   {TRUE, K_XLEFT, STRING_INIT("xLeft"), FALSE},
-   {TRUE, K_XRIGHT, STRING_INIT("xRight"), FALSE},
-   {TRUE, K_XUP, STRING_INIT("xUp"), FALSE},
-   {TRUE, K_ZEND, STRING_INIT("zEnd"), FALSE},
-   {TRUE, K_ZHOME, STRING_INIT("zHome"), FALSE}
+   {true, K_KDEL, tConst("kDel"), false},
+   {true, K_KDIVIDE, tConst("kDivide"), false},
+   {true, K_KEND, tConst("kEnd"), false},
+   {true, K_KENTER, tConst("kEnter"), false},
+   {true, K_KHOME, tConst("kHome"), false},
+   {true, K_KINS, tConst("kInsert"), false},
+   {true, K_KMINUS, tConst("kMinus"), false},
+   {true, K_KMULTIPLY, tConst("kMultiply"), false},
+   {true, K_KPAGEDOWN, tConst("kPageDown"), false},
+   {true, K_KPAGEUP, tConst("kPageUp"), false},
+   {true, K_KPLUS, tConst("kPlus"), false},
+   {true, K_KPOINT, tConst("kPoint"), false},
+   {true, K_LEFT, tConst("Left"), false},
+   {true, K_LEFTDRAG, tConst("LeftDrag"), false},
+   {true, K_LEFTMOUSE, tConst("LeftMouse"), false},
+   {true, K_LEFTMOUSE_NM, tConst("LeftMouseNM"), false},
+   {true, K_LEFTRELEASE, tConst("LeftRelease"), false},
+   {true, K_LEFTRELEASE_NM, tConst("LeftReleaseNM"), false},
+   {true, NL, tConst("LF"), true},
+   {true, NL, tConst("LineFeed"), true},
+   {true, '<', tConst("lt"), false},
+   {true, K_MIDDLEDRAG, tConst("MiddleDrag"), false},
+   {true, K_MIDDLEMOUSE, tConst("MiddleMouse"), false},
+   {true, K_MIDDLERELEASE, tConst("MiddleRelease"), false},
+   {true, K_MOUSE, tConst("Mouse"), false},
+   {true, K_MOUSEDOWN, tConst("MouseDown"), true},
+   {true, K_MOUSEMOVE, tConst("MouseMove"), false},
+   {true, K_MOUSEUP, tConst("MouseUp"), true},
+   { false, K_NETTERM_MOUSE, tConst("NetMouse"), false},
+   {true, NL, tConst("NewLine"), true},
+   {true, NL, tConst("NL"), false},
+   {true, K_ZERO, tConst("ZERO"), false},
+   {true, K_PAGEDOWN, tConst("PageDown"), false},
+   {true, K_PAGEUP, tConst("PageUp"), false},
+   {true, K_PE, tConst("PasteEnd"), false},
+   {true, K_PS, tConst("PasteStart"), false},
+   {true, K_PLUG, tConst("Plug"), false},
+   {true, ENTER, tConst("Return"), true},
+   {true, K_RIGHT, tConst("Right"), false},
+   {true, K_RIGHTDRAG, tConst("RightDrag"), false},
+   {true, K_RIGHTMOUSE, tConst("RightMouse"), false},
+   {true, K_RIGHTRELEASE, tConst("RightRelease"), false},
+   {true, K_SCRIPT_COMMAND, tConst("ScriptCmd"), false},
+   {true, K_MOUSEUP, tConst("ScrollWheelDown"), false},
+   {true, K_MOUSERIGHT, tConst("ScrollWheelLeft"), false},
+   {true, K_MOUSELEFT, tConst("ScrollWheelRight"), false},
+   {true, K_MOUSEDOWN, tConst("ScrollWheelUp"), false},
+   {true, K_SGR_MOUSE, tConst("SgrMouse"), false},
+   {true, K_SGR_MOUSERELEASE, tConst("SgrMouseRelease"), false},
+   {true, K_SNR, tConst("SNR"), false},
+   {true, ' ', tConst("Space"), false},
+   {true, TAB, tConst("Tab"), false},
+   {true, K_TAB, tConst("Tab"), false},
+   {true, K_UNDO, tConst("Undo"), false},
+   {true, K_UP, tConst("Up"), false},
+   { false, K_URXVT_MOUSE, tConst("UrxvtMouse"), false},
+   {true, K_X1DRAG, tConst("X1Drag"), false},
+   {true, K_X1MOUSE, tConst("X1Mouse"), false},
+   {true, K_X1RELEASE, tConst("X1Release"), false},
+   {true, K_X2DRAG, tConst("X2Drag"), false},
+   {true, K_X2MOUSE, tConst("X2Mouse"), false},
+   {true, K_X2RELEASE, tConst("X2Release"), false},
+   {true, K_CSI, tConst("xCSI"), false},
+   {true, K_XDOWN, tConst("xDown"), false},
+   {true, K_XEND, tConst("xEnd"), false},
+   {true, K_XF1, tConst("xF1"), false},
+   {true, K_XF2, tConst("xF2"), false},
+   {true, K_XF3, tConst("xF3"), false},
+   {true, K_XF4, tConst("xF4"), false},
+   {true, K_XHOME, tConst("xHome"), false},
+   {true, K_XLEFT, tConst("xLeft"), false},
+   {true, K_XRIGHT, tConst("xRight"), false},
+   {true, K_XUP, tConst("xUp"), false},
+   {true, K_ZEND, tConst("zEnd"), false},
+   {true, K_ZHOME, tConst("zHome"), false}
     // NOTE: When adding a long name update MAX_KEY_NAME_LEN.
 };
-#undef STRING_INIT
 
 CS
 get_key_name(int i) {
@@ -3682,7 +3674,7 @@ replace_termcodes(
                dlen += STRLEN(result + dlen);
                result[dlen++] = '_';
                continue;
-           }
+            }
          }
          int fsk_flags = FSK_KEYCODE
            | ((flags & REPTERM_NO_SIMPLIFY) ? 0 : FSK_SIMPLIFY)
@@ -3709,7 +3701,8 @@ replace_termcodes(
         }
      }
 
-     Byte   *p, *s, len;
+     CS p;
+     Byte len;
 
      //Replace <Leader> by the value of "mapleader".
      //Replace <LocalLeader> by the value of "maplocalleader".
@@ -3724,6 +3717,7 @@ replace_termcodes(
         len = 0;
         p = NULL;
      }
+     CS s;
      if (len != 0) {
         // Allow up to 8 * 6 characters for "mapleader".
         if (p == NULL || *p == ZERO || STRLEN(p) > 8 * 6)
@@ -3794,12 +3788,11 @@ simplify_key(Unt key, Unt *modifiers) {
    return key;
 }
 
-
-// Find a termcode with keys 'src' (must be ZERO terminated).
-// Return the index in recognizedCodeS[], or -1 if not found.
+//Find a termcode with keys 'src' (must be ZERO terminated).
+//Return the index in recognizedCodeS[], or -1 if not found.
 private Unt
 find_term_bykeys(CS src) {
-   int      slen = (int)STRLEN(src);
+   int slen = (int)STRLEN(src);
    for (int i = 0; i < tc_len; ++i) {
       if (slen == recognizedCodeS[i].len && STRNCMP(recognizedCodeS[i].code, src, (Unt)slen) == 0)
           return i;
@@ -3833,13 +3826,13 @@ gatherTermLeaders(void) {
 //This code looks a lot like showoptions(), but is different. "flags" can have OPT_ONECOLUMN.
 void
 show_termcodes(Unt flags) {
-   int      col;
-   int      item_count;
-   int      run;
-   int      row, rows;
-   int      cols;
-   int      i;
-   int      len;
+   int col;
+   int item_count;
+   int run;
+   int row, rows;
+   int cols;
+   int i;
+   int len;
 
 #define INC3 27       // try to make three columns
 #define INC2 40       // try to make two columns
@@ -3907,9 +3900,9 @@ show_termcodes(Unt flags) {
 //These characters are identified by eeIsNormalIdentifierChar().
 private int
 keyNameEntryComparer(void const* a, void const* b) {
-   Byte  *p1 = ((KeyNameEntry *)a)->name.c;
-   Byte  *p2 = ((KeyNameEntry *)b)->name.c;
-   int       result = 0;
+   CS p1 = ((KeyNameEntry *)a)->name.c;
+   CS p2 = ((KeyNameEntry *)b)->name.c;
+   int result = 0;
 
    if (p1 == p2)
       return 0;
@@ -3961,7 +3954,7 @@ get_special_key_name(Unt c, int modifiers) {
    }
 
    // try to find the key in the special key table
-   int table_idx = find_special_key_in_table(c);
+   int table_idx = termFindSpecialKey_in_table(c);
 
    //When not a known special key, and not a printable character, try to extract modifiers.
    if (c > 0 && mb_char2len(c) == 1) {
@@ -3969,7 +3962,7 @@ get_special_key_name(Unt c, int modifiers) {
          c &= 0x7f;
          modifiers |= MOD_MASK_ALT;
          // try again, to find the un-alted key in the special key table
-         table_idx = find_special_key_in_table(c);
+         table_idx = termFindSpecialKey_in_table(c);
       }
       if (table_idx < 0 && !eeIsPrintable(c) && c < ' ') {
          c += '@';
@@ -4028,7 +4021,7 @@ int
 get_special_key_code(CS name) {
    // If it's <t_xx> we get the code for xx from the termcap
    if (name[0] == 'z' && name[1] == 'z' && name[2] != ZERO && name[3] != ZERO) {
-      Byte  string[3] = {name[2], name[3], ZERO};
+      Byte string[3] = {name[2], name[3], ZERO};
       if (add_termcap_entry(string, FALSE) == OK)
          return TERMCAP2KEY(name[2], name[3]);
    } else {
@@ -4207,7 +4200,7 @@ got_code_from_term(CS code, int len) {
 //This is called before starting an external program or getting direct
 //keyboard input. We don't want responses to be sent to that program or handled as typed text.
 private void
-check_for_codes_from_term(void) {
+handleUnansweredRequests(void) {
    //If no codes requested or all are answered, no need to wait.
    if (xt_index_out == 0 || xt_index_out == xt_index_in)
       return;
@@ -4414,7 +4407,7 @@ nameToModMask(Byte c) {
 //Try translating a <> name at "(*srcp)[]", return the key and put modifiers in "modp".
 //"srcp" is advanced to after the <> name. returns 0 if there is no match.
 int
-find_special_key(
+termFindSpecialKey(
    OUT Byte** srcp,
    OUT Unt* modp,
    Unt flags,      // FSK_ values
@@ -4600,7 +4593,7 @@ may_remove_shift_modifier(Unt modifiers, Unt key) {
 
 //Try to find key "c" in the special key table. Return the index when found, -1 when not found.
 int
-find_special_key_in_table(int c) {
+termFindSpecialKey_in_table(int c) {
    for (int i = 0; i < (int)ARRAY_LENGTH(keyNamesTable); i++) {
       if (c == keyNamesTable[i].key && !keyNamesTable[i].is_alt)
           return keyNamesTable[i].enabled ? i : -1;
@@ -4650,7 +4643,7 @@ trans_special(
 ){
    Unt modifiers = 0;
 
-   Unt key = find_special_key(OUT srcp, OUT &modifiers, flags, OUT didSimplify);
+   Unt key = termFindSpecialKey(OUT srcp, OUT &modifiers, flags, OUT didSimplify);
    if (key == 0)
       return 0;
 

@@ -1260,7 +1260,7 @@ do_shell(
    } 
    // This windgoto is required for when the '\n' resulted in a "delete line
    // 1" command to the terminal.
-   if (!swapping_screen())
+   if (!termIsScreenBeingSwapped())
       windgoto(msgRowG, msgColG);
    cursor_on();
    
@@ -1270,7 +1270,7 @@ do_shell(
 
    //put the message cursor at the end of the screen, avoids wait_return()
    //to overwrite the text that the external command showed
-   if (!swapping_screen()) {
+   if (!termIsScreenBeingSwapped()) {
       msgRowG = visibleRowsG - 1;
       msgColG = 0;
    }

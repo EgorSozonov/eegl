@@ -2150,8 +2150,8 @@ EXTERN Unt p_fdo;        //@foldopen
 EXTERN CS p_fp;     // @formatprg
 EXTERN Boole  p_fs;      // @fsync
 EXTERN CS p_cpp;    // @completepopup
-EXTERN CS cursorNormalStr;   //@cursorNormal
-EXTERN CS cursorInsertStr;   //@cursorInsert
+EXTERN Byte cursorNormalG;   //@cursorNormal
+EXTERN Byte cursorInsertG;   //@cursorInsert
 EXTERN long   p_hh;      // @helpheight
 EXTERN CS p_hlg;    // @helplang
 EXTERN Boole   p_hls;     // @hlsearch
@@ -2162,13 +2162,14 @@ EXTERN CS p_imsf;   // @imstatusfunc
 EXTERN int   p_imcmdline;// @imcmdline
 EXTERN int   p_imdisable;// @imdisable
 EXTERN Boole   p_is;       // @incsearch
-EXTERN CS p_isf;    // @isfname
-EXTERN CS p_isi;    // @isident
-EXTERN CS p_ise;    // @isexpand
-EXTERN CS p_isk;    // @iskeyword
-EXTERN CS p_kp;     // @keywordprg
-EXTERN CS p_kpc;    // @keyprotocol
-EXTERN CS p_langmap;// @langmap
+EXTERN CS p_isf;    //@isfname
+EXTERN CS p_isi;    //@isident
+EXTERN CS p_ise;    //@isexpand
+EXTERN CS p_isk;    //@iskeyword
+EXTERN CS p_kp;     //@keywordprg
+EXTERN CS p_kpc;    //@keyprotocol
+EXTERN CS p_langmap;//@langmap
+EXTERN Boole liteThemeG; //@liteTheme
 
 // Characters from the @listchars option
 typedef struct {
@@ -5015,20 +5016,20 @@ typedef struct {
 struct Portal { //:Portal
    int      id;        // unique portal ID
    Book* book;   // book we are a portal into
-   Portal   *prev;     // link to previous portal
-   Portal   *next;     // link to next portal
+   Portal* prev;     // link to previous portal
+   Portal* next;     // link to next portal
    SyntaxBlock* ownSyntax;  // for :ownsyntax
-   int      locked;    // don't let autocommands close the portal
-   Frame   *frame;   // frame containing this portal
+   int locked;    // don't let autocommands close the portal
+   Frame* frame;   // frame containing this portal
    Pos   cursor;       // cursor position in book
-   ColNr   cursWant; // The column we'd like to be at. This is used to try to stay in the same 
+   ColNr cursWant; // The column we'd like to be at. This is used to try to stay in the same 
                        // column for up/down cursor motions.
-   Boole      setCursWant; // If set, then update w_curswant the next time through cursupdate() 
+   Boole setCursWant; // If set, then update w_curswant the next time through cursupdate() 
                            // to the current virtual column
-   LineNr   lastCursorLine;  // where last time 'cursorline' was drawn
+   LineNr lastCursorLine;  // where last time 'cursorline' was drawn
                 // the next seven are used to update the Visual highlighting
    Byte prevVisualMode;  // last known VIsual_mode
-   LineNr   prevVisualEnd;  // last known end of visual part
+   LineNr prevVisualEnd;  // last known end of visual part
    ColNr oldCursorFcol;  // first column for block visual part
    ColNr oldCursorLcol;  // last column for block visual part
    LineNr oldVisualLnum;  // last known start of visual part
@@ -5048,37 +5049,37 @@ struct Portal { //:Portal
    ColNr skipCol; //starting screen column for the first line in the portal; used when @wrap is 
                   //on; does not include win_col_off()
 
-   int      emptyRowCount;   // number of ~ rows in portal
-   int      fillerRowCount;  // number of filler rows at the end of the portal
+   int emptyRowCount;   // number of ~ rows in portal
+   int fillerRowCount;  // number of filler rows at the end of the portal
 
    // six fields that are only used when there is a WinScrolled autocommand
-   LineNr   lastTopline; // last known value for topLine
-   int      lastTopFill; // last known value for topfill
-   ColNr   lastLeftCol;  //last known value for w_leftcol
-   ColNr   lastSkipCol;  //last known value for w_skipcol
+   LineNr lastTopline; // last known value for topLine
+   int lastTopFill; // last known value for topfill
+   ColNr lastLeftCol;  //last known value for w_leftcol
+   ColNr lastSkipCol;  //last known value for w_skipcol
    Unt lastWidth;        //last known value for w_width
    Unt lastHeight;       //last known value for w_height
 
    // Layout of the portal in the window.
    // May need to add "msg_scrolled" to "portalRow" in rare situations.
-   int      portalRow;    //first row of portal in window
-   Unt      height;       //number of rows in portal, excluding status/command line(s)
-   int      prevPortRow;  //previous portrow used for 'splitkeep'
-   Unt      prevHeight;   //previous height used for 'splitkeep'
+   int portalRow;    //first row of portal in window
+   Unt height;       //number of rows in portal, excluding status/command line(s)
+   int prevPortRow;  //previous portrow used for 'splitkeep'
+   Unt prevHeight;   //previous height used for 'splitkeep'
    
    int scroll; // scroll height
 
-   int      statusHeight; //number of status lines (0 or 1)
-   int      portalCol;    //Leftmost column of portal in window
-   Unt      width;        //Width of portal, excluding separation.
-   int      vsepWidth;    //Number of separator columns (0 or 1).
+   int statusHeight; //number of status lines (0 or 1)
+   int portalCol;    //Leftmost column of portal in window
+   Unt width;        //Width of portal, excluding separation.
+   int vsepWidth;    //Number of separator columns (0 or 1).
 
-   PosSave   cursorSaved; // backup of cursor pos and topline
-   int      needFixCursor;//if TRUE cursor may be invalid
+   PosSave cursorSaved; // backup of cursor pos and topline
+   int needFixCursor;//if TRUE cursor may be invalid
 
    PortalPopup pup;
    Boole isPreview;   // is this the preview portal of the tab?
-   Unt  flags;        // WFLAG_ flags
+   Unt flags;        // WFLAG_ flags
 
 ///////////////////////////////////////////////////////////////////
 // === start of cached values ===
@@ -5140,8 +5141,8 @@ struct Portal { //:Portal
    int argListInd;       // current index in argument list (can be out of range!)
    Boole isNotValid;  // editing another file than w_arg_idx
 
-   Byte* localDir;       // absolute path of local directory or NULL
-   Byte* prevdir;       // previous directory
+   CS localDir;       // absolute path of local directory or NULL
+   CS prevdir;       // previous directory
 
    //Options local to a portal.
    //They are local because they influence the layout of the portal or depend on the portal layout.
@@ -5199,16 +5200,16 @@ typedef struct Operator {
    int regname;   // register to use for the operator
    int motion_type;   // type of the current cursor motion
    int motion_force;   // force motion type: 'v', 'V' or CTRL-V
-   int use_reg_one;   // TRUE if delete uses reg 1 even when not linewise
-   int inclusive;   // TRUE if char motion is inclusive (only valid when motion_type is MCHAR)
    int end_adjusted;   // backed up b_op_end one char (only used by do_format())
    Pos start;      // start of the operator
    Pos end;      // end of the operator
    Pos cursor_start;   // cursor position before motion for "gw"
    long line_count;   // number of lines from op_start to op_end (inclusive)
    int empty;      // op_start and op_end the same (only used by do_change())
-   int is_VIsual;   // operator on Visual area
-   int block_mode;   // current operator is Visual block mode
+   Boole use_reg_one;   // TRUE if delete uses reg 1 even when not linewise
+   Boole inclusive;   // TRUE if char motion is inclusive (only valid when motion_type is MCHAR)
+   Boole is_VIsual;   // operator on Visual area
+   Boole block_mode;   // current operator is Visual block mode
    ColNr start_vcol;   // start col for block mode operator
    ColNr end_vcol;   // end col for block mode operator
    long  prev_opcount;   // ca.opcount saved for K_CURSORHOLD
@@ -6368,9 +6369,6 @@ EXTERN int no_check_timestamps INIT(= 0);   // Don't check timestamps
 EXTERN Arr(Decoration) decorationsG; // The text decorations table used for drawing. See hilite.c
 EXTERN int countDecosG; // length of decorationsG
 
-EXTERN Boole liteThemeG INIT(= false); // if set, then "liteFg" etc in HiliteGroups will apply
-EXTERN Byte cursorNormalG INIT(= CURSOR_BLOCK);
-EXTERN Byte cursorInsertG INIT(= CURSOR_BEAM);
 
 // When TRUE skip calling terminal_loop() once.  Used when typing ':' at the more prompt
 EXTERN Boole skip_term_loop INIT(= false);
@@ -9848,7 +9846,7 @@ long elapsed(TimeVal* start_tv);
 #define REPTERM_SPECIAL     4
 #define REPTERM_NO_SIMPLIFY 8
 
-// Flags for find_special_key()
+// Flags for termFindSpecialKey()
 #define FSK_KEYCODE     0x01   // prefer key code, e.g. K_DEL instead of DEL
 #define FSK_KEEP_X_KEY  0x02   // don't translate xHome to Home key
 #define FSK_IN_STRING   0x04   // TRUE in string, double quote is escaped

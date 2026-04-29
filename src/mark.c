@@ -302,11 +302,9 @@ markGetBookFnum(
 
       pos = curPor->cursor;
       listcmd_busy = TRUE;       // avoid that '' is changed
-      if (findpar(&oa.inclusive,
-                   c == '}' ? FORWARD : BACKWARD, 1L, ZERO, FALSE))
-      {
-          pos_copy = curPor->cursor;
-          posp = &pos_copy;
+      if (normFindNextParagraf(&oa.inclusive, c == '}' ? FORWARD : BACKWARD, 1L, ZERO, FALSE)) {
+         pos_copy = curPor->cursor;
+         posp = &pos_copy;
       }
       curPor->cursor = pos;
       listcmd_busy = slcb;

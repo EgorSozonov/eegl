@@ -4532,7 +4532,7 @@ allocPortal(Portal *after, int hidden) {
    newPort->fraction = 0;
    newPort->prevFraction = -1;
 
-   foldInitWin(newPort);
+   normInitFoldForPortal(newPort);
    unblock_autocmds();
    newPort->nextMatchId = 1000;  // up to 1000 can be picked by the user
    return newPort;

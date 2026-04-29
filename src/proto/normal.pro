@@ -1,6 +1,6 @@
 /* src/normal.c */
 int findsent(int dir, long count);
-int findpar(int *pincl, int dir, long count, int what, int both);
+int normFindNextParagraf(Boole *pincl, int dir, long count, int what, int both);
 int startPS(LineNr lnum, int para, int both);
 int fwd_word(long count, int bigword, int eol);
 int bck_word(long count, int bigword, int stop);
@@ -39,7 +39,7 @@ void push_showcmd(void);
 void pop_showcmd(void);
 void normPostProcessScrollbind(int check);
 void check_scrollbind(LineNr topline_diff, long leftcol_diff);
-int find_decl(Byte *ptr, int len, int locally, int thisblock, int flags_arg);
+int find_decl(CS ptr, int len, int locally, int thisblock, Unt flags_arg);
 int get_visual_text(ActionArg *aArg, Byte **pp, int *lenp);
 void start_selection(void);
 int unadjust_for_sel_inner(Pos *pp);
@@ -145,7 +145,7 @@ void deleteFold(LineNr start, LineNr end, int recursive, int had_visual);
 void clearFolding(Portal *po);
 void foldUpdate(Portal *wp, LineNr top, LineNr bot);
 void foldUpdateAll(Portal *po);
-void foldInitWin(Portal *newPort);
+void normInitFoldForPortal(Portal *newPort);
 int find_wl_entry(Portal *po, LineNr lnum);
 void foldAdjustVisual(void);
 void cloneFoldArrayList(ArrayList *from, ArrayList *to);
