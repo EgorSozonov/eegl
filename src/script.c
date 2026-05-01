@@ -8572,7 +8572,7 @@ getCommandWorker(
       Portal   *wp;
 
       FOR_ALL_PORTALS(wp) {
-         if (*wp->o.statusLine != ZERO) {
+         if (wp->o.statusLine) {
             wp->statusLineNeedsRedraw = TRUE;
             found_one = TRUE;
          }
@@ -10286,7 +10286,7 @@ openCommPort(void) {
    commPortBookG = curBook;
 
    optChangeAndReportError(
-      S"buftype", (OptionValue){.tag = OPTION_STRING, .string = S"nofile"}, SET_LOCAL
+      S"booktype", (OptionValue){.tag = OPTION_STRING, .string = S"nofile"}, SET_LOCAL
    );
    curBook->o.modifiable = true;
    curPor->o.foldEnable = FALSE;
@@ -18299,8 +18299,8 @@ auCommPrepareBook(
 //Cleanup after executing autocommands for a (hidden) buffer.
 //Restore the portal as it was (if possible).
 void
-auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
-   int       dummy;
+auCommRestoreBook(AutocommSave* aco)  {    // structure holding saved values
+   Unt dummy;
    Portal* curPorSave;
 
    if (aco->use_autoCommPort_idx >= 0) {
@@ -18330,7 +18330,7 @@ auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
       if (aco->save_State & MODE_INSERT)
          stop_insert_mode = save_stop_insert_mode;
       // Remove the portal and frame from the tree of frames.
-      (void)portRemoveFrame(curPor, &dummy, NULL, NULL);
+      (void)portRemoveFrame(curPor, OUT &dummy, NULL, NULL);
       removePortal(curPor, NULL);
 
       // The portal is marked as unused, but it is not freed, it can be used again.
@@ -18338,7 +18338,7 @@ auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
       last_status(FALSE);       // may need to remove last status line
 
       if (!areTabAndPortalValid(curtab))
-         // no valid portal in current tab
+         //no valid portal in current tab
          closeTab(curtab);
 
       restore_snapshot(SNAP_AUCMD_IDX, FALSE);
@@ -18349,18 +18349,18 @@ auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
       if (curPorSave)
          curPor = curPorSave;
       else
-         // Hmm, original portal disappeared.  Just use the first one.
+         //Hmm, original portal disappeared. Just use the first one.
          curPor = firstPor;
       curBook = curPor->book;
-      // May need to restore insert mode for a prompt buffer.
+      //May need to restore insert mode for a prompt buffer.
       enteringPortal(curPor);
       if (bt_prompt(curBook))
          curBook->promptInsert = aco->save_prompt_insert;
       prevPor = portFindById(aco->save_prevPor_id);
       vars_clear(&acp->internalVars->hashTable);  // free all w: variables
       hash_init(&acp->internalVars->hashTable);   // re-use the hashtab
-      // If :lcd has been used in the autocommand portal, correct current
-      // directory before restoring localdir and globaldir.
+      //If :lcd has been used in the autocommand portal, correct current
+      //directory before restoring localdir and globaldir.
       if (acp->localDir)
          portFixCurrentDir();
       eeglFree(curtab->localdir);
@@ -18368,7 +18368,7 @@ auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
       eeglFree(globaldir);
       globaldir = aco->globaldir;
 
-      // the buffer contents may have changed
+      //the book contents may have changed
       VIsual_active = aco->save_VIsual_active;
       check_cursor();
       if (curPor->topLine > curBook->mem.lineCount) {
@@ -18376,12 +18376,12 @@ auCommRestoreBook(AutocommSave   *aco)  {    // structure holding saved values
          curPor->topFill = 0;
       }
    } else {
-      // Restore curPor. Use the portal ID, a portal may have been closed
-      // and the memory re-used for another one.
+      //Restore curPor. Use the portal ID, a portal may have been closed
+      //and the memory re-used for another one.
       curPorSave = portFindById(aco->save_curPor_id);
       if (curPorSave) {
-         // Restore the buffer which was previously edited by curPor, if
-         // it was changed, we are still the same portal and the buffer is valid.
+         //Restore the book which was previously edited by curPor, provided
+         //it was changed, we are still the same portal and the book is valid.
          if (curPor->id == aco->new_curPor_id
              && curBook != aco->newCurBook.c
              && bookRefValid(&aco->newCurBook)
@@ -18434,7 +18434,7 @@ auCommApplyWithInvo(
    CS fname_io,
    Boole force,
    Book* book,
-   Invocation   *invo
+   Invocation* invo
 ) {
    return applyAutocommGroup(event, fname, fname_io, force, AUGROUP_ALL, book, invo);
 }
@@ -18470,7 +18470,7 @@ has_cursorhold(void) {
 // Return TRUE if the CursorHold event can be triggered.
 int
 trigger_cursorhold(void) {
-   int      state;
+   int state;
 
    if (!did_cursorhold
        && has_cursorhold()
@@ -18547,12 +18547,12 @@ applyAutocommGroup(
    AutoPat   *ap;
    ScriptPos   save_scriptPosG;
    FnCallEntry funccal_entry;
-   Byte   *save_cmdarg;
+   CS save_cmdarg;
    long   save_cmdbang;
-   static int   filechangeshell_busy = FALSE;
-   int      did_save_redobuff = FALSE;
-   SaveRedo   save_redo;
-   int      save_KeyTyped = KeyTyped;
+   static Boole filechangeshell_busy = false;
+   int did_save_redobuff = FALSE;
+   SaveRedo save_redo;
+   int save_KeyTyped = KeyTyped;
    ESTACK_CHECK_DECLARATION;
 
    // Quickly return if there are no autocommands for this event or autocommands are blocked.
@@ -18626,7 +18626,7 @@ applyAutocommGroup(
             || event == EVENT_MODECHANGED
             || event == EVENT_TERMRESPONSEALL)
          autocmd_fname = NULL;
-      ei (fname != NULL && !endsComm(fname))
+      ei (fname && !endsComm(fname))
          autocmd_fname = fname;
       ei (book)
          autocmd_fname = book->fullFileName;
@@ -18794,7 +18794,7 @@ applyAutocommGroup(
    if (isRedrawingDisabledG > 0)
       --isRedrawingDisabledG;
    autocmd_busy = save_autocmd_busy;
-   filechangeshell_busy = FALSE;
+   filechangeshell_busy = false;
    autocmd_nested = save_autocmd_nested;
    eeglFree(SOURCING_NAME);
    ESTACK_CHECK_NOW;

@@ -9036,6 +9036,9 @@ set_callback(Callback *dest, Callback *src) {
 // Copy callback from "src" to "dest", incrementing the refcounts.
 void
 evCopyCallback(OUT Callback* dest, Callback* src) {
+   if (dest == src) {
+      return;
+   }
    dest->cb_partial = src->cb_partial;
    if (dest->cb_partial) {
       dest->name = src->name;
@@ -9050,7 +9053,9 @@ evCopyCallback(OUT Callback* dest, Callback* src) {
 
 // Unref/free "callback" returned by get_callback() or set_callback().
 void
-evFreeCallback(Callback *callback) {
+evFreeCallback(Callback* callback) {
+   if (!callback)
+      return;
    if (callback->cb_partial) {
       partial_unref(callback->cb_partial);
       callback->cb_partial = NULL;
@@ -11580,7 +11585,7 @@ f_getregion(Var *argvars, Var *returnVar) {
       } ei (p1.lnum < lnum && lnum < p2.lnum)
          akt = copyStr(ml_get(lnum));
       else {
-         charwise_block_prep(p1, p2, &bd, lnum, inclusive);
+         jugCharwiseBlockPrep(p1, p2, &bd, lnum, inclusive);
          akt = block_def2str(&bd);
       }
 
@@ -11670,7 +11675,7 @@ f_getregionpos(Var *argvars, Var *returnVar) {
          if (region_type == MBLOCK)
             block_prep(&oa, OUT &bd, lnum, false);
          else
-            charwise_block_prep(p1, p2, &bd, lnum, inclusive);
+            jugCharwiseBlockPrep(p1, p2, &bd, lnum, inclusive);
 
          if (bd.is_oneChar) { // selection entirely inside one char
             if (region_type == MBLOCK) {

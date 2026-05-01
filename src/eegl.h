@@ -681,7 +681,7 @@ typedef enum {
 //The do-while is just to ignore a ';' after the macro.
 # define LANGMAP_ADJUST(c, condition) \
    do { \
-   if (*p_langmap \
+   if (p_langmap \
       && (condition) \
       && (p_lrm || (!p_lrm && KeyTyped)) \
       && !KeyStuffed \
@@ -2085,7 +2085,7 @@ EXTERN CS p_bsk;      //@backupskip
 EXTERN long p_bdlay;       //@balloondelay
 EXTERN Boole p_bevalterm;  //@balloonevalterm
 EXTERN CS p_breakat;  //@breakat
-EXTERN CS p_bt;       //@buftype
+EXTERN CS p_bt;       //@booktype
 EXTERN Boole p_delcomb;    //@delcombine
 EXTERN long p_cwh;         //@cmdwinheight
 EXTERN long commlineHeightG;//@commheight
@@ -3048,8 +3048,8 @@ struct Invocation {
    CS*  commline;   // pointer to pointer of allocated cmdline
    CS commlineToFree; // free later
    long   argFlags;      // flags for the command
-   Bool skip;      // don't execute the command, only parse it
-   Bool forceit;   // TRUE if ! present
+   Boole skip;      // don't execute the command, only parse it
+   Boole forceit;   // TRUE if ! present
    int addr_count;   // the number of addresses given
    LineNr line1;      // the first line number
    LineNr line2;      // the second line number or count
@@ -3351,7 +3351,7 @@ typedef struct {
    ArrayList   al_ga;      // growarray with the array of file names
    int      al_refcount;   // number of windows using this arglist
    int      id;      // id of this arglist
-} ErArgList;
+} EeArgList;
 
 //For each argument remember the file name as it was given, and the book number that contains 
 //the expanded file name (required for when ":cd" is used).
@@ -4366,9 +4366,9 @@ typedef struct {
 // Structure used for listeners added with listener_add().
 typedef struct Listener Listener;
 struct Listener {
-   Listener   *lr_next;
-   int      lr_id;
-   Callback   lr_callback;
+   Listener* next;
+   int id;
+   Callback callback;
 };
 
 // Status of a job.  Order matters!
@@ -5137,7 +5137,7 @@ struct Portal { //:Portal
    Ruler ruler;
    int altFnum;       // alternate file (for # and CTRL-^)
 
-   ErArgList* argList;       // pointer to arglist for this window
+   EeArgList* argList;       // pointer to arglist for this window
    int argListInd;       // current index in argument list (can be out of range!)
    Boole isNotValid;  // editing another file than w_arg_idx
 
@@ -6474,14 +6474,14 @@ EXTERN Book* curBook INIT(= NULL);   // currently active book
 
 // List of files being edited (global argument list).  curPor->argList points
 // to this when the window is using the global argument list.
-EXTERN ErArgList   argListG;          // global argument list
-EXTERN int   max_alist_id INIT(= 0);       // the previous argument list id
-EXTERN int   arg_had_last INIT(= FALSE); // accessed last file in argListG
+EXTERN EeArgList argListG;          // global argument list
+EXTERN int max_alist_id INIT(= 0);       // the previous argument list id
+EXTERN int arg_had_last INIT(= FALSE); // accessed last file in argListG
 
-EXTERN int   ru_wid;      // 'rulerfmt' width of ruler when non-zero
-EXTERN int   sc_col;      // column for shown command
+EXTERN int ru_wid;      // 'rulerfmt' width of ruler when non-zero
+EXTERN int sc_col;      // column for shown command
 
-EXTERN DIR   *eeTempDir_dpG INIT(= NULL); // File descriptor of temp dir
+EXTERN DIR* eeTempDir_dpG INIT(= NULL); // File descriptor of temp dir
 EXTERN CS eeTempDirG INIT(= NULL); // Name of Eegl's own temp dir. Ends with a slash.
 
 // When starting or exiting some things are done differently (e.g. screen updating).
@@ -6502,28 +6502,28 @@ EXTERN Boole   entered_free_all_mem INIT(= false); // TRUE when in or after free
 EXTERN volatile sig_atomic_t fullScreenG INIT(= FALSE);
             // TRUE when doing full-screen output otherwise only writing some messages
 
-EXTERN int   textlock INIT(= 0);
+EXTERN int textlock INIT(= 0);
             // non-zero when changing text and jumping to
             // another window or editing another book is not allowed
 
-EXTERN int   curBookLock INIT(= 0);
+EXTERN int curBookLock INIT(= 0);
             // non-zero when the current book can't be changed.  Used for FileChangedRO.
-EXTERN int   allBookLock INIT(= 0);
+EXTERN int allBookLock INIT(= 0);
             // non-zero when no book name can be changed, no book can be deleted and current 
             // directory can't be changed. Used for SwapExists et al.
 
 EXTERN Boole silentModeG INIT(= false); // set to TRUE when "-s" commandline argument used for ex
 
-EXTERN Pos   VIsual;      // start position of active Visual selection
-EXTERN Boole   VIsual_active INIT(= false);
+EXTERN Pos VIsual;      // start position of active Visual selection
+EXTERN Boole VIsual_active INIT(= false);
             // whether Visual mode is active
-EXTERN Boole  VIsual_select_exclu_adj INIT(= false);
+EXTERN Boole VIsual_select_exclu_adj INIT(= false);
             // whether incremented cursor during exclusive selection
-EXTERN int   VIsual_reselect;
+EXTERN int VIsual_reselect;
             // whether to restart the selection after a
             // Select mode mapping or menu
 
-EXTERN Unt   VIsual_mode INIT(= 'v'); // type of Visual mode
+EXTERN Unt VIsual_mode INIT(= 'v'); // type of Visual mode
 
 EXTERN Boole isRedoVisualBusy INIT(= false); // TRUE when redoing Visual
 
@@ -6540,11 +6540,11 @@ EXTERN Pos   where_paste_started;
 // <RETURN> or <ESC> is typed. It is set when an auto-indent is done, and
 // reset when any other editing is done on the line. If an <ESC> or <RETURN>
 // is received, and didAindentG is TRUE, the line is truncated.
-EXTERN Bool     didAindentG INIT(= false);
+EXTERN Bool didAindentG INIT(= false);
 
 // Column of first char after autoindent.  0 when no autoindent done.  Used
 // when 'backspace' is 0, to avoid backspacing over autoindent.
-EXTERN ColNr   ai_col INIT(= 0);
+EXTERN ColNr ai_col INIT(= 0);
 
 //This is a character which will end a start-middle-end comment when typed as
 //the first character on a new line. It is taken from the last character of

@@ -15,7 +15,7 @@ private int linelen(int *has_tab);
 private void 
 do_filter(LineNr line1, LineNr line2, Invocation* invo, CS cmd, Boole do_in, Boole do_out);
 private Boole isWritingForbidden(void);
-private int check_readonly(int *forceit, Book *book);
+private Boole check_readonly(Boole* forceit, Book* book);
 private void delbuf_msg(Byte *name);
 private int u_inssub(LineNr lnum);
 private Boole wasBookChangedNotTerm(Book *book);
@@ -1021,7 +1021,7 @@ do_filter(
    LineNr   linecount;
    LineNr   read_linecount;
    Pos   cursor_save;
-   Book   *old_curbuf = curBook;
+   Book* curBookSaved = curBook;
    int      shell_flags = 0;
    Pos   orig_start = curBook->opStart;
    Pos   orig_end = curBook->opEnd;
@@ -1092,7 +1092,7 @@ do_filter(
           (void)showErrFmtMsg(_(e_cant_create_file_str), itmp);
       goto filterend;
    }
-   if (curBook != old_curbuf)
+   if (curBook != curBookSaved)
       goto filterend;
 
    if (!do_out)
@@ -1153,7 +1153,7 @@ do_filter(
             }
             goto error;
          }
-         if (curBook != old_curbuf)
+         if (curBook != curBookSaved)
             goto filterend;
       }
 
@@ -1217,7 +1217,7 @@ error:
 filterend:
 
    commModifierG.cmod_flags = save_cmod_flags;
-   if (curBook != old_curbuf) {
+   if (curBook != curBookSaved) {
       --no_wait_return;
       emsg(_(e_filter_autocommands_must_not_change_current_buffer));
    } ei (commModifierG.cmod_flags & CMOD_LOCKMARKS) {
@@ -1649,7 +1649,8 @@ do_write(Invocation* invo) {
    //A file name is required. "nofile" and "nowrite" books cannot be written implicitly either.
    if (sameFile && (bt_dontwrite_msg(curBook) || check_fname() == FAIL
          || check_writable(curBook->fullFileName) == FAIL
-         || check_readonly(&invo->forceit, curBook)))
+         || check_readonly(&invo->forceit, curBook))
+   )
       goto theend;
 
    if (sameFile) {
@@ -1865,8 +1866,8 @@ isWritingForbidden(void) {
 // Check if a book is read-only (either 'modifiable' option is not set or file is
 // read-only). Ask for overruling in a dialog. Return TRUE and give an error
 // message when the book is readonly.
-private int
-check_readonly(int *forceit, Book *book) {
+private Boole
+check_readonly(Boole* forceit, Book* book) {
    FileStat   st;
 
    // Handle a file being readonly when the 'readonly' option is set or when
@@ -1891,19 +1892,18 @@ check_readonly(int *forceit, Book *book) {
 
          if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) == EE_YES) {
             // Set forceit, to force the writing of a readonly file
-            *forceit = TRUE;
-            return FALSE;
-         }
-          else
-         return TRUE;
+            *forceit = true;
+            return false;
+         } else
+            return true;
       } ei (!book->o.modifiable)
          emsg(_(e_readonly_option_is_set_add_bang_to_override));
       else
          showErrFmtMsg(_(e_str_is_read_only_add_bang_to_override), book->currFileName);
-      return TRUE;
+      return true;
    }
 
-   return FALSE;
+   return false;
 }
 
 //Try to abandon the current file and edit a new or existing file.
@@ -1924,12 +1924,12 @@ getfile(
    LineNr lnum,
    Boole forceit
 ) {
-   Byte   *fullFName = ffname_arg;
-   Byte   *sfname = sfname_arg;
+   CS fullFName = ffname_arg;
+   CS sfname = sfname_arg;
    int      retval;
-   Byte   *free_me = NULL;
+   CS free_me = NULL;
 
-   if (!check_can_set_curbuf_forceit(forceit))
+   if (!portCheckCanSetCurBookForceIt(forceit))
       return GETFILE_ERROR;
 
    if (text_locked())
@@ -2009,14 +2009,17 @@ startEditingFile(
    Unt flags,
    Portal* oldPort
 ) {
+   if (portErrorIfTermPopup())
+      return FAIL;
+      
    int oldbuf;           // TRUE if using existing book
    int auto_buf = FALSE; // TRUE if autocommands brought us into the book unexpectedly
-   Byte* new_name = NULL;
+   CS new_name = NULL;
    int did_set_swapcommand = FALSE;
    Book* book;
    BookRef bufref;
-   BookRef old_curbuf;
-   Byte* free_fname = NULL;
+   BookRef curBookSaved;
+   CS free_fname = NULL;
    int retval = FAIL;
    long n;
    Pos orig_pos;
@@ -2024,19 +2027,16 @@ startEditingFile(
    int newcol = -1;
    int solcol = -1;
    Pos* pos;
-   Byte* command = NULL;
+   CS command = NULL;
    Unt readfile_flags = 0;
    int did_inc_redrawing_disabled = FALSE;
    long* so_ptr = &curPor->o.scrollOff;
-
-   if (portErrorIfTermPopup())
-      return FAIL;
       
    Unt modifiable = flags & ECMD_MODIFIABLE; 
 
    if (invo)
       command = invo->higherOrderComm;
-   bookStoreInRef(OUT &old_curbuf, curBook);
+   bookStoreInRef(OUT &curBookSaved, curBook);
 
    Boole sameFile;      // TRUE if editing another file
    if (fnum != 0) {
@@ -2127,16 +2127,17 @@ startEditingFile(
             //Default the line number to zero to avoid that a wininfo item
             //is added for the current portal.
             LineNr tlnum = 0;
-            Book* newbuf;
 
-            if (command != NULL) {
+            if (command) {
                tlnum = atol((char *)command);
                if (tlnum <= 0)
                   tlnum = 1L;
             }
             //Add BLN_NOCURWIN to avoid a new wininfo items are associated
             //with the current portal.
-            newbuf = bookNew(fullFName, sfname, tlnum, modifiable | BLN_LISTED | BLN_NOCURWIN);
+            Book* newbuf = bookNew(
+               fullFName, sfname, tlnum, modifiable | BLN_LISTED | BLN_NOCURWIN
+            );
             if (newbuf) {
                if (flags & ECMD_ALTBUF)
                   curPor->altFnum = newbuf->fiNum;
@@ -2150,11 +2151,10 @@ startEditingFile(
             modifiable | BLN_CURBOOK | ((flags & ECMD_SET_HELP) ? 0 : BLN_LISTED)
          );
              
-
          // autocommands may change curPor and curBook
          if (oldPort)
             oldPort = curPor;
-         bookStoreInRef(OUT &old_curbuf, curBook);
+         bookStoreInRef(OUT &curBookSaved, curBook);
       }
       if (!book)
          goto theend;
@@ -2178,7 +2178,7 @@ startEditingFile(
          bookStoreInRef(OUT &bufref, book);
          (void)fiCheckBookTimestamp(book);
          // Check if autocommands made the book invalid or changed the current book.
-         if (!bookRefValid(&bufref) || curBook != old_curbuf.c)
+         if (!bookRefValid(&bufref) || curBook != curBookSaved.c)
             goto theend;
          if (aborting())       // autocmds may abort script processing
             goto theend;
@@ -2245,7 +2245,7 @@ startEditingFile(
             the_curPor->locked = TRUE;
             ++book->locked;
 
-            if (curBook == old_curbuf.c)
+            if (curBook == curBookSaved.c)
                optsCopyToBook(book, BCO_ENTER);
 
             // Close the link to the current buffer. This will set oldPort->buffer to NULL.
@@ -2441,7 +2441,7 @@ startEditingFile(
          curBook->flags &= ~BF_NO_SEA;
          if (swap_exists_action == SEA_QUIT)
             retval = FAIL;
-         handle_swap_exists(&old_curbuf);
+         handle_swap_exists(&curBookSaved);
       } else {
          apply_autocmds_retval(EVENT_BUFENTER, NULL, NULL, FALSE, curBook, &retval);
          if ((flags & ECMD_NOWINENTER) == 0)
@@ -2845,25 +2845,25 @@ c_z(Invocation* invo) {
 //}}}
 //{{{substitutions
 
-private Byte   *old_sub = NULL;   // previous substitute pattern
-private int   global_need_beginline;   // call beginline() after ":g"
+private CS prevSubstS = NULL;   // previous substitute pattern
+private Boole globalNeedBeginlineS = false;   // call beginline() after ":g"
 
 // Flags that are kept between calls to :substitute.
 typedef struct {
-   int   do_all;      // do multiple substitutions per line
-   int   do_ask;      // ask for confirmation
-   int   do_count;   // count only
-   int   do_error;   // if false, ignore errors
-   int   do_print;   // print last line with subs.
-   int   do_list;   // list last line with subs.
-   int   do_number;   // list last line with line nr
-   int   do_ic;      // ignore case flag
-} subflags_T;
+   int do_all;      // do multiple substitutions per line
+   int do_ask;      // ask for confirmation
+   int do_count;   // count only
+   int do_error;   // if false, ignore errors
+   int do_print;   // print last line with subs.
+   int do_list;   // list last line with subs.
+   int do_number;   // list last line with line nr
+   int do_ic;      // ignore case flag
+} SubstitutionState;
 
 // Skip over the "sub" part in :s/pat/sub/ where "delimiter" is the separating character.
-Byte *
-skip_substitute(Byte *start, int delimiter) {
-   Byte *p = start;
+CS
+skip_substitute(CS start, int delimiter) {
+   CS p = start;
 
    while (p[0]) {
       if (p[0] == delimiter) {    // end delimiter found
@@ -2899,39 +2899,37 @@ c_substitute(Invocation* invo) {
    LineNr   lnum;
    long   i = 0;
    RegMultilineMatch regmatch;
-   static subflags_T subflags = {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, 0};
-   subflags_T   subflags_save;
-   int      save_do_all;      // remember user specified 'g' flag
-   int      save_do_ask;      // remember user specified 'c' flag
-   Byte   *pat = NULL, *sub = NULL;   // init for GCC
-   Unt   patlen = 0;
-   int      delimiter;
-   int      sublen;
-   int      got_quit = FALSE;
-   int      got_match = FALSE;
-   int      which_pat;
-   Byte   *cmd;
-   Byte   *p;
-   int      save_State;
-   LineNr   first_line = 0;      // first changed line
-   LineNr   last_line= 0;      // below last changed line AFTER the change
-   LineNr   old_line_count = curBook->mem.lineCount;
-   LineNr   line2;
-   long   nmatch;         // number of lines in match
-   Byte   *sub_firstline;      // allocated copy of first sub line
-   int      endcolumn = FALSE;   // cursor in last column when done
-   Pos   old_cursor = curPor->cursor;
-   int      start_nsubs;
-   int      keeppatterns = commModifierG.cmod_flags & CMOD_KEEPPATTERNS;
-   int      save_ma = 0;
-   TextProp   *text_props = NULL;
+   static SubstitutionState subflags = {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, 0};
+   SubstitutionState subflags_save;
+   int save_do_all;      // remember user specified 'g' flag
+   int save_do_ask;      // remember user specified 'c' flag
+   CS pat = null;
+   CS sub = null;
+   Unt patlen = 0;
+   int delimiter;
+   int sublen;
+   int got_quit = FALSE;
+   int got_match = FALSE;
+   int which_pat;
+   CS p;
+   int  save_State;
+   LineNr first_line = 0;      // first changed line
+   LineNr last_line = 0;      // below last changed line AFTER the change
+   LineNr old_line_count = curBook->mem.lineCount;
+   LineNr line2;
+   long nmatch;         // number of lines in match
+   int endcolumn = FALSE;   // cursor in last column when done
+   Pos old_cursor = curPor->cursor;
+   int keeppatterns = commModifierG.cmod_flags & CMOD_KEEPPATTERNS;
+   int save_ma = 0;
+   TextProp* text_props = NULL;
 
-   cmd = invo->arg;
+   CS cmd = invo->arg;
    if (!global_busy) {
       sub_nsubs = 0;
       sub_nlines = 0;
    }
-   start_nsubs = sub_nsubs;
+   int start_nsubs = sub_nsubs;
 
    if (invo->id == C_tilde)
       which_pat = RE_LAST; // use last used regexp
@@ -2939,7 +2937,7 @@ c_substitute(Invocation* invo) {
       which_pat = RE_SUBST; // use last substitute regexp new pattern and substitution
       
    if ((invo->comm[0] == 's' || invo->comm[0] == 'S') && *cmd != ZERO && !SPACE_OR_TAB(*cmd)
-      && firstOccurrence((CS)"0123456789cegriIp|\"", *cmd) == NULL
+      && firstOccurrence(S"0123456789cegriIp|\"", *cmd) == NULL
    ) {
       // don't accept alphanumeric for separator
       if (check_regexp_delim(*cmd) == FAIL)
@@ -2956,14 +2954,14 @@ c_substitute(Invocation* invo) {
          }
          if (*cmd != '&')
             which_pat = RE_SEARCH;       // use last '/' pattern
-         pat = (CS)"";          // empty search pattern
+         pat = S"";          // empty search pattern
          patlen = 0;
          delimiter = *cmd++;          // remember delimiter character
       } else {     // find the end of the regexp
-          which_pat = RE_LAST;       // use last used regexp
-          delimiter = *cmd++;          // remember delimiter character
-          pat = cmd;             // remember start of search pat
-          cmd = skip_regexp_ex(cmd, delimiter, TRUE, &invo->arg, NULL, NULL);
+         which_pat = RE_LAST;       // use last used regexp
+         delimiter = *cmd++;          // remember delimiter character
+         pat = cmd;             // remember start of search pat
+         cmd = skip_regexp_ex(cmd, delimiter, TRUE, &invo->arg, NULL, NULL);
          if (cmd[0] == delimiter)       // end delimiter found
             *cmd++ = ZERO;          // replace it with a ZERO
          patlen = STRLEN(pat);
@@ -2977,34 +2975,32 @@ c_substitute(Invocation* invo) {
 
       if (!invo->skip) {
          if (!keeppatterns) {
-            eeglFree(old_sub);
-            old_sub = copyStr(sub);
+            eeglFree(prevSubstS);
+            prevSubstS = copyStr(sub);
          }
       }
    } ei (!invo->skip) {  // use previous pattern and substitution
-      if (old_sub == NULL) {  // there is no previous command
+      if (!prevSubstS) {  // there is no previous command
          emsg(_(e_no_previous_substitute_regular_expression));
          return;
       }
       pat = NULL;      // search_regcomp() will use previous pattern
       patlen = 0;
-      sub = copyStr(old_sub);
+      sub = copyStr(prevSubstS);
 
       //Vi compatibility quirk: repeating with ":s" keeps the cursor in the
       //last column after using "$".
       endcolumn = (curPor->cursWant == MAXCOL);
    }
 
-   // Recognize ":%s/\n//" and turn it into a join command, which is much more efficient.
-   // TODO: find a generic solution to make line-joining operations more
-   // efficient, avoid allocating a string that grows in size.
+   //Recognize ":%s/\n//" and turn it into a line join, which is much more efficient.
+   //TODO: find a generic solution to make line-joining operations more
+   //efficient, avoid allocating a string that grows in size.
    if (pat && STRCMP(pat, "\\n") == 0
        && *sub == ZERO
        && (*cmd == ZERO || (cmd[1] == ZERO && (*cmd == 'g' || *cmd == 'l'
                     || *cmd == 'p' || *cmd == '#'))))
     {
-      LineNr    joined_lines_count;
-
       if (invo->skip) {
           eeglFree(sub);
           return;
@@ -3017,13 +3013,13 @@ c_substitute(Invocation* invo) {
       ei (*cmd == 'p')
           invo->flags = EXFLAG_PRINT;
 
-      // The number of lines joined is the number of lines in the range plus
-      // one.  One less when the last line is included.
-      joined_lines_count = invo->line2 - invo->line1 + 1;
+      //The number of lines joined is the number of lines in the range plus
+      //one.  One less when the last line is included.
+      LineNr joined_lines_count = invo->line2 - invo->line1 + 1;
       if (invo->line2 < curBook->mem.lineCount)
          ++joined_lines_count;
       if (joined_lines_count > 1) {
-         (void)do_join(joined_lines_count, FALSE, TRUE, FALSE, TRUE);
+         (void)jugJoinLinesUnderCursor(joined_lines_count, FALSE, TRUE, FALSE, TRUE);
          sub_nsubs = joined_lines_count - 1;
          sub_nlines = 1;
          (void)do_sub_msg(FALSE);
@@ -3146,7 +3142,7 @@ c_substitute(Invocation* invo) {
       regmatch.rmm_ic = FALSE;
    }
 
-   sub_firstline = NULL;
+   CS sub_firstline = NULL;// allocated copy of first sub line
 
    // If the substitute pattern starts with "\=" then it's an expression.
    // Make a copy, a recursive function may free it.
@@ -3800,7 +3796,7 @@ outofmem:
          if (!do_sub_msg(subflags.do_count) && subflags.do_ask)
             msg(E);
       } else
-         global_need_beginline = TRUE;
+         globalNeedBeginlineS = true;
       if (subflags.do_print)
          print_line(curPor->cursor.lnum, subflags.do_list);
    } ei (!global_busy) {
@@ -3865,20 +3861,20 @@ do_sub_msg(int       count_only) {    // used 'n' flag for ":s"
 // Get the previous substitute pattern.
 Byte *
 get_old_sub(void) {
-   return old_sub;
+   return prevSubstS;
 }
 
 // Set the previous substitute pattern.  "val" must be allocated.
 void
 set_old_sub(Byte *val) {
-   eeglFree(old_sub);
-   old_sub = val;
+   eeglFree(prevSubstS);
+   prevSubstS = val;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
 void
 free_old_sub(void) {
-   eeglFree(old_sub);
+   eeglFree(prevSubstS);
 }
 #endif
 
@@ -4035,7 +4031,7 @@ global_exe(Byte *cmd) {
 
    sub_nsubs = 0;
    sub_nlines = 0;
-   global_need_beginline = FALSE;
+   globalNeedBeginlineS = false;
    global_busy = 1;
    old_lcount = curBook->mem.lineCount;
    while (!gotInterruptG && (lnum = ml_firstmarked()) != 0 && global_busy == 1) {
@@ -4044,7 +4040,7 @@ global_exe(Byte *cmd) {
    }
 
    global_busy = 0;
-   if (global_need_beginline)
+   if (globalNeedBeginlineS)
       beginline(BL_WHITE | BL_FIX);
    else
       check_cursor();   // cursor may be beyond the end of the line
@@ -4924,12 +4920,12 @@ check_fname(void) {
 int
 bookWrite_all(Book *book, int forceit) {
    int       retval;
-   Book   *old_curbuf = curBook;
+   Book   *curBookSaved = curBook;
 
    retval = (bookWrite(book, book->fullFileName, book->currFileName,
                (LineNr)1, book->mem.lineCount, NULL,
                     FALSE, forceit, TRUE, FALSE));
-   if (curBook != old_curbuf) {
+   if (curBook != curBookSaved) {
       msg_source(getDecoFlags(HLF_W));
       msg(_("Warning: Entered other buffer unexpectedly (check autocommands)"));
    }
@@ -9807,7 +9803,7 @@ c_resize(Invocation* invo) {
 // ":find [+command] <file>" command.
 void
 c_find(Invocation* invo) {
-   if (!check_can_set_curbuf_forceit(invo->forceit))
+   if (!portCheckCanSetCurBookForceIt(invo->forceit))
       return;
 
    CS fname = NULL;
@@ -9894,7 +9890,7 @@ c_edit(Invocation* invo) {
    if ( invo->id != C_badd
           && invo->id != C_balt
           // All other commands must obey 'portfixbuf' / ! rules
-          && (!isSameFile(0, fullFName) && !check_can_set_curbuf_forceit(invo->forceit))
+          && (!isSameFile(0, fullFName) && !portCheckCanSetCurBookForceIt(invo->forceit))
    )
       return;
       
@@ -10508,7 +10504,7 @@ c_join(Invocation* invo) {
       }
       ++invo->line2;
    }
-   (void)do_join(invo->line2 - invo->line1 + 1, !invo->forceit, TRUE, TRUE, TRUE);
+   (void)jugJoinLinesUnderCursor(invo->line2 - invo->line1 + 1, !invo->forceit, TRUE, TRUE, TRUE);
    beginline(BL_WHITE | BL_FIX);
    mayPrint(invo);
 }
@@ -10849,8 +10845,7 @@ update_topline_cursor(void) {
    update_curswant();
 }
 
-// Save the current stateG and go to Normal mode.
-// Return TRUE if the typeahead could be saved.
+//Save the current stateG and go to Normal mode. Return TRUE if the typeahead could be saved.
 int
 save_current_state(SaveState* sst) {
    sst->save_msg_scroll = msg_scroll;
@@ -10894,9 +10889,7 @@ restore_current_state(SaveState* sst) {
 void
 c_normal(Invocation* invo) {
    SaveState saveState;
-   Byte   *arg = NULL;
    int      l;
-   Byte   *p;
 
    if (ex_normal_lock > 0) {
       emsg(_(e_not_allowed_here));
@@ -10912,7 +10905,8 @@ c_normal(Invocation* invo) {
    int   len = 0;
 
    // Count the number of characters to be escaped.
-   for (p = invo->arg; *p != ZERO; ++p) {
+   CS arg = NULL;
+   for (CS p = invo->arg; *p != ZERO; ++p) {
       for (l = utfCharLen(p) - 1; l > 0; --l) {
          if (*++p == K_SPECIAL)     // trailbyte K_SPECIAL or CSI
             len += 2;
@@ -10921,7 +10915,7 @@ c_normal(Invocation* invo) {
    if (len > 0) {
       arg = alloc(STRLEN(invo->arg) + len + 1);
       len = 0;
-      for (p = invo->arg; *p != ZERO; ++p) {
+      for (CS p = invo->arg; *p != ZERO; ++p) {
          arg[len++] = *p;
          for (l = utfCharLen(p) - 1; l > 0; --l) {
             arg[len++] = *++p;
@@ -11062,7 +11056,7 @@ c_psearch(Invocation* invo) {
 void
 c_findpat(Invocation* invo) {
    int      whole = TRUE;
-   Byte   *p;
+   CS p;
    int      action;
 
    switch (commands[invo->id].name[2]) {
@@ -11096,7 +11090,7 @@ c_findpat(Invocation* invo) {
          *p++ = ZERO;
          p = skipwhite(p);
 
-          // Check for trailing illegal characters
+         // Check for trailing illegal characters
          if (!endsComm(invo->arg))
             invo->errmsg = ex_errmsg(e_trailing_characters_str, p);
          else
@@ -12383,8 +12377,8 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
       if (!undo_allowed())
           return FAIL;
 
-      // A change in a terminal book removes the highlighting.
-      term_change_in_curbuf();
+      //A change in a terminal book removes the hiliting.
+      uiBeforeLeavingTerminal();
 
       //Saving text for undo means we are going to make a change.  Give a
       //warning for a read-only file before making the change, so that the

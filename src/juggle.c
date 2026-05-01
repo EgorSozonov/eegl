@@ -218,15 +218,15 @@ f_listener_add(Var *argvars, Var *returnVar) {
       evFreeCallback(&callback);
       return;
    }
-   lnr->lr_next = buf->listener;
+   lnr->next = buf->listener;
    buf->listener = lnr;
 
-   set_callback(&lnr->lr_callback, &callback);
+   set_callback(&lnr->callback, &callback);
    if (callback.needsFreeing)
       eeglFree(callback.name);
 
-   lnr->lr_id = ++next_listener_id;
-   returnVar->number = lnr->lr_id;
+   lnr->id = ++next_listener_id;
+   returnVar->number = lnr->id;
 }
 
 void
@@ -245,10 +245,10 @@ f_listener_flush(Var *argvars, Var *returnVar UNUSED) {
 private void
 remove_listener(Book* book, Listener *lnr, Listener *prev) {
    if (prev)
-      prev->lr_next = lnr->lr_next;
+      prev->next = lnr->next;
    else
-      book->listener = lnr->lr_next;
-   evFreeCallback(&lnr->lr_callback);
+      book->listener = lnr->next;
+   evFreeCallback(&lnr->callback);
    eeglFree(lnr);
 }
 
@@ -263,11 +263,11 @@ f_listener_remove(Var *argvars, Var *returnVar) {
    FOR_ALL_BOOKS(book) {
       prev = NULL;
       for (lnr = book->listener; lnr != NULL; lnr = next) {
-         next = lnr->lr_next;
-         if (lnr->lr_id == id) {
+         next = lnr->next;
+         if (lnr->id == id) {
             if (textlock > 0) {
                // in invoke_listeners(), clear ID and delete later
-               lnr->lr_id = 0;
+               lnr->id = 0;
                return;
             }
             remove_listener(book, lnr, prev);
@@ -333,16 +333,16 @@ invoke_listeners(Book* book) {
    argv[4].list = book->recordedChanges;
    ++textlock;
 
-   for (lnr = book->listener; lnr != NULL; lnr = lnr->lr_next) {
-      call_callback(&lnr->lr_callback, -1, &returnVar, 5, argv);
+   for (lnr = book->listener; lnr != NULL; lnr = lnr->next) {
+      call_callback(&lnr->callback, -1, &returnVar, 5, argv);
       clearVar(&returnVar);
    }
 
    // If f_listener_remove() was called may have to remove a listener now.
    prev = NULL;
    for (lnr = book->listener; lnr != NULL; lnr = next) {
-      next = lnr->lr_next;
-      if (lnr->lr_id == 0)
+      next = lnr->next;
+      if (lnr->id == 0)
          remove_listener(book, lnr, prev);
       else
          prev = lnr;
@@ -361,13 +361,11 @@ invoke_listeners(Book* book) {
 
 //Remove all listeners associated with "book".
 void
-remove_listeners(Book *book) {
-   Listener   *lnr;
-   Listener   *next;
-
-   for (lnr = book->listener; lnr != NULL; lnr = next) {
-      next = lnr->lr_next;
-      evFreeCallback(&lnr->lr_callback);
+remove_listeners(Book* book) {
+   Listener* next;
+   for (Listener* lnr = book->listener; lnr != NULL; lnr = next) {
+      next = lnr->next;
+      evFreeCallback(&lnr->callback);
       eeglFree(lnr);
    }
    book->listener = NULL;
@@ -448,8 +446,7 @@ changed_common(
          }
       }
       curBook->changeList[curBook->changeListLen - 1] = curBook->lastChange;
-      // The current portal is always after the last change, so that "g,"
-      // takes you back to it.
+      //The current portal is always after the last change, so that "g," takes you back to it.
       curPor->changeListInd = curBook->changeListLen;
    }
 
@@ -484,16 +481,16 @@ changed_common(
             po->skipCol = 0;
          } 
 
-         // Check if a change in the book has invalidated the cached values for the cursor.
-         // Update the folds for this portal.  Can't postpone this, because
-         // a following operator might work on the whole fold: ">>dd".
+         //Check if a change in the book has invalidated the cached values for the cursor.
+         //Update the folds for this portal.  Can't postpone this, because
+         //a following operator might work on the whole fold: ">>dd".
          foldUpdate(po, lnum, last);
 
-         // The change may cause lines above or below the change to become
-         // included in a fold.  Set lnum/lnume to the first/last line that
-         // might be displayed differently.
-         // Set isCursorLineFolded here as an efficient way to update it when
-         // inserting lines just above a closed fold.
+         //The change may cause lines above or below the change to become
+         //included in a fold.  Set lnum/lnume to the first/last line that
+         //might be displayed differently.
+         //Set isCursorLineFolded here as an efficient way to update it when
+         //inserting lines just above a closed fold.
          i = getFoldsPortal(po, lnum, &lnum, NULL, FALSE, NULL);
          if (po->cursor.lnum == lnum) {
             po->isCursorLineFolded = i;
@@ -612,15 +609,13 @@ changed_bytes(LineNr lnum, ColNr col) {
 
    // Diff hiliting in other diff portals may need to be updated too.
    if (curPor->o.diff) {
-      Portal       *po;
-      LineNr    wlnum;
-
+      Portal* po;
       FOR_ALL_PORTALS(po) {
          if (po->o.diff && po != curPor) {
             redrawPortLater(po, UPD_VALID);
-            wlnum = diff_lnum_win(lnum, po);
-            if (wlnum > 0)
-               changedOneline(po->book, wlnum);
+            LineNr poLnum = diff_lnum_win(lnum, po);
+            if (poLnum > 0)
+               changedOneline(po->book, poLnum);
          }
       } 
    }
@@ -672,23 +667,23 @@ deleted_lines_mark(LineNr lnum, long count) {
 //Consider also calling normInvalidateDisplayOfChangedBookLine().
 void
 changed_lines_buf(
-   Book   *book,
-   LineNr   lnum,       // first line with change
-   LineNr   lnume,       // line below last changed line
-   long   xtra)       // number of extra lines (negative when deleting)
-{
+   Book* book,
+   LineNr lnum,       // first line with change
+   LineNr lnume,       // line below last changed line
+   long xtra       // number of extra lines (negative when deleting)
+){
    if (book->needsRedraw) {
       // find the maximum area that must be redisplayed
       if (lnum < book->needsRedrawTop)
-          book->needsRedrawTop = lnum;
+         book->needsRedrawTop = lnum;
       if (lnum < book->needsRedrawBott) {
-          // adjust old bot position for xtra lines
-          book->needsRedrawBott += xtra;
-          if (book->needsRedrawBott < lnum)
-         book->needsRedrawBott = lnum;
+         // adjust old bot position for xtra lines
+         book->needsRedrawBott += xtra;
+         if (book->needsRedrawBott < lnum)
+            book->needsRedrawBott = lnum;
       }
       if (lnume + xtra > book->needsRedrawBott)
-          book->needsRedrawBott = lnume + xtra;
+         book->needsRedrawBott = lnume + xtra;
       book->lineCountDiff += xtra;
    } else {
       // set the area that must be redisplayed
@@ -710,25 +705,23 @@ changed_lines_buf(
 //Careful: may trigger autocommands that reload the book.
 void
 changed_lines(
-   LineNr   lnum,       // first line with change
-   ColNr   col,       // column in first line with change
-   LineNr   lnume,       // line below last changed line
-   long   xtra)       // number of extra lines (negative when deleting)
-{
+   LineNr lnum,    // first line with change
+   ColNr col,      // column in first line with change
+   LineNr lnume,   // line below last changed line
+   long xtra       // number of extra lines (negative when deleting)
+){
    changed_lines_buf(curBook, lnum, lnume, xtra);
 
    if (xtra == 0 && curPor->o.diff && !diff_internal()) {
       // When the number of lines doesn't change then mark_adjust() isn't
       // called and other diff books still need to be marked for displaying.
       Portal       *po;
-      LineNr    wlnum;
-
       FOR_ALL_PORTALS(po) {
          if (po->o.diff && po != curPor) {
             redrawPortLater(po, UPD_VALID);
-            wlnum = diff_lnum_win(lnum, po);
-            if (wlnum > 0)
-               changed_lines_buf(po->book, wlnum, lnume - lnum + wlnum, 0L);
+            LineNr poLnum = diff_lnum_win(lnum, po);
+            if (poLnum > 0)
+               changed_lines_buf(po->book, poLnum, lnume - lnum + poLnum, 0L);
          }
       } 
    }
@@ -850,7 +843,7 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
 //Caller must have prepared for undo.
 void
 ins_str(CS s, Unt slen) {
-   LineNr   lnum = curPor->cursor.lnum;
+   LineNr lnum = curPor->cursor.lnum;
 
    if (virtual_active() && curPor->cursor.coladd > 0)
       coladvance_force(getviscol());
@@ -907,7 +900,6 @@ del_bytes(
    Boole      fixpos_arg,
    int      use_delcombine UNUSED)       // 'delcombine' option applies
 {
-   Byte   *oldp, *newp;
    ColNr   oldlen;
    ColNr   newlen;
    LineNr   lnum = curPor->cursor.lnum;
@@ -916,7 +908,7 @@ del_bytes(
    long   movelen;
    int      fixpos = fixpos_arg;
 
-   oldp = ml_get(lnum);
+   CS oldp = ml_get(lnum);
    oldlen = (int)ml_get_len(lnum);
 
    // Can't do anything when the cursor is on the ZERO after the line.
@@ -971,6 +963,7 @@ del_bytes(
    // If the old line has been allocated the deletion can be done in the
    // existing line. Otherwise a new line has to be allocated
    alloc_newp = !ml_line_alloced();    // check if oldp was allocated
+   CS newp;
    if (!alloc_newp)
       newp = oldp;             // use same allocated memory
    else {                   // need to allocate a new line
@@ -983,8 +976,7 @@ del_bytes(
    else {
       // Also move any following text properties.
       if (oldlen + 1 < curBook->mem.lineLen)
-         mch_memmove(newp + newlen + 1, oldp + oldlen + 1,
-                   (Unt)curBook->mem.lineLen - oldlen - 1);
+         mch_memmove(newp + newlen + 1, oldp + oldlen + 1, (Unt)curBook->mem.lineLen - oldlen - 1);
       curBook->mem.lineLen -= count;
       curBook->mem.lineTextLen = 0;
    }
@@ -1030,7 +1022,7 @@ insertLine(
 int
 get_leader_len(
    CS line,
-   Byte   **flags,
+   Byte** flags,
    int      backward,
    int      include_space
 ) {
@@ -1243,11 +1235,10 @@ openLine(
       //   `if (condition) {`
       if (!shouldTruncateLine && do_si && *savedLine != ZERO 
             && (transferText == NULL || first_char != '{')) {
-         Byte  *ptr;
          Byte  last_char;
 
          old_cursor = curPor->cursor;
-         ptr = savedLine;
+         CS ptr = savedLine;
          if ((flags & OPENLINE_DO_COM) != 0) {
              lead_len = get_leader_len(ptr, NULL, FALSE, TRUE);
          } else {
@@ -1348,7 +1339,7 @@ openLine(
       int   lead_repl_len = 0;       // length of *lead_repl
       Byte   lead_middle[COM_MAX_LEN];   // middle-comment string
       Byte   lead_end[COM_MAX_LEN];       // end-comment string
-      Byte   *comment_end = NULL;       // where lead_end has been found
+      CS comment_end = NULL;       // where lead_end has been found
       int   extra_space = FALSE;       // append extra space
       int   current_flag;
       int   require_blank = FALSE;       // requires blank after middle
@@ -1415,9 +1406,8 @@ openLine(
             break;
          }
          if (*p == COM_END) {
-            // Doing "o" on the end of a comment does not insert leader.
-            // Remember where the end is, might want to use it to find the
-            // start (for C-comments).
+            //Doing "o" on the end of a comment does not insert leader. Remember where the end is,
+            //might want to use it to find the start (for C-comments).
             comment_end = skipwhite(savedLine);
             lead_len = 0;
             break;
@@ -1431,8 +1421,7 @@ openLine(
             ) {} 
             lead_repl_len = (int)(p - lead_repl);
 
-            // We can probably always add an extra space when doing "O" on
-            // the comment-end
+            // We can probably always add an extra space when doing "O" on the comment-end
             extra_space = TRUE;
 
             // Check whether we allow automatic ending of comments
@@ -1471,167 +1460,166 @@ openLine(
             for (int li = 0; li < comment_start; ++li) {
                if (!SPACE_OR_TAB(leader[li]))
                   leader[li] = ' ';
-         } 
+            } 
 
-         // Replace leader with lead_repl, right or left adjusted
-         if (lead_repl != NULL) {
-            int      c = 0;
-            int      off = 0;
+            // Replace leader with lead_repl, right or left adjusted
+            if (lead_repl != NULL) {
+               int      c = 0;
+               int      off = 0;
 
-            for (p = lead_flags; *p != ZERO && *p != ':'; ) {
-               if (*p == COM_RIGHT || *p == COM_LEFT)
-                  c = *p++;
-               ei (EE_ISDIGIT(*p) || *p == '-')
-                  off = parseLong(&p);
-               else
+               for (p = lead_flags; *p != ZERO && *p != ':'; ) {
+                  if (*p == COM_RIGHT || *p == COM_LEFT)
+                     c = *p++;
+                  ei (EE_ISDIGIT(*p) || *p == '-')
+                     off = parseLong(&p);
+                  else
+                     ++p;
+               }
+               if (c == COM_RIGHT) {   // right adjusted leader
+                  // find last non-white in the leader to line up with
+                  for (p = leader + lead_len - 1; p > leader && SPACE_OR_TAB(*p); --p)
+                      {} 
                   ++p;
-            }
-            if (c == COM_RIGHT) {   // right adjusted leader
-               // find last non-white in the leader to line up with
-               for (p = leader + lead_len - 1; p > leader && SPACE_OR_TAB(*p); --p)
-                   {} 
-               ++p;
 
-               // Compute the length of the replaced characters in
-               // screen characters, not bytes.
-               {
-                  int       repl_size = eeglStrNsize(lead_repl, lead_repl_len);
-                  int       old_size = 0;
-                  Byte  *endp = p;
+                  // Compute the length of the replaced characters in
+                  // screen characters, not bytes.
+                  {
+                     int       repl_size = eeglStrNsize(lead_repl, lead_repl_len);
+                     int       old_size = 0;
+                     Byte  *endp = p;
+                     int       l;
+
+                     while (old_size < repl_size && p > leader) {
+                        MB_PTR_BACK(leader, p);
+                        old_size += ptr2cells(p);
+                     }
+                     l = lead_repl_len - (int)(endp - p);
+                     if (l != 0)
+                        mch_memmove(endp + l, endp, (Unt)((leader + lead_len) - endp));
+                     lead_len += l;
+                  }
+                  mch_memmove(p, lead_repl, (Unt)lead_repl_len);
+                  if (p + lead_repl_len > leader + lead_len)
+                     p[lead_repl_len] = ZERO;
+
+                  // blank-out any other chars from the old leader.
+                  while (--p >= leader) {
+                     int l = mb_head_off(leader, p);
+
+                     if (l > 1) {
+                       p -= l;
+                       if (ptr2cells(p) > 1) {
+                          p[1] = ' ';
+                          --l;
+                       }
+                       mch_memmove(p + 1, p + l + 1, (Unt)((leader + lead_len) - (p + l + 1)));
+                       lead_len -= l;
+                       *p = ' ';
+                     } ei (!SPACE_OR_TAB(*p))
+                        *p = ' ';
+                  }
+               } else { // left adjusted leader
+                  p = skipwhite(leader);
+
+                  // Compute the length of the replaced characters in
+                  // screen characters, not bytes. Move the part that is
+                  // not to be overwritten.
+                   {
+                  int       repl_size = eeglStrNsize(lead_repl,
+                       lead_repl_len);
+                  int       i;
                   int       l;
 
-                  while (old_size < repl_size && p > leader) {
-                     MB_PTR_BACK(leader, p);
-                     old_size += ptr2cells(p);
+                  for (i = 0; i < lead_len && p[i] != ZERO; i += l) {
+                     l = utfCharLen(p + i);
+                     if (eeglStrNsize(p, i + l) > repl_size)
+                       break;
                   }
-                  l = lead_repl_len - (int)(endp - p);
-                  if (l != 0)
-                     mch_memmove(endp + l, endp, (Unt)((leader + lead_len) - endp));
-                  lead_len += l;
-               }
-               mch_memmove(p, lead_repl, (Unt)lead_repl_len);
-               if (p + lead_repl_len > leader + lead_len)
-                  p[lead_repl_len] = ZERO;
+                  if (i != lead_repl_len) {
+                     mch_memmove(
+                        p + lead_repl_len, p + i, (Unt)(lead_len - i - (p - leader))
+                     );
+                     lead_len += lead_repl_len - i;
+                  }
+                  }
+                  mch_memmove(p, lead_repl, (Unt)lead_repl_len);
 
-               // blank-out any other chars from the old leader.
-               while (--p >= leader) {
-                  int l = mb_head_off(leader, p);
+                  // Replace any remaining non-white chars in the old leader by spaces. 
+                  // Keep Tabs, the indent must remain the same.
+                  for (p += lead_repl_len; p < leader + lead_len; ++p) {
+                     if (!SPACE_OR_TAB(*p)) {
+                        // Don't put a space before a TAB.
+                        if (p + 1 < leader + lead_len && p[1] == TAB) {
+                           --lead_len;
+                           mch_memmove(p, p + 1, (leader + lead_len) - p);
+                       } else {
+                           int l = utfCharLen(p);
 
-                  if (l > 1) {
-                    p -= l;
-                    if (ptr2cells(p) > 1) {
-                       p[1] = ' ';
-                       --l;
-                    }
-                    mch_memmove(p + 1, p + l + 1, (Unt)((leader + lead_len) - (p + l + 1)));
-                    lead_len -= l;
-                    *p = ' ';
-                  } ei (!SPACE_OR_TAB(*p))
-                     *p = ' ';
-               }
-            } else { // left adjusted leader
-               p = skipwhite(leader);
-
-               // Compute the length of the replaced characters in
-               // screen characters, not bytes. Move the part that is
-               // not to be overwritten.
-                {
-               int       repl_size = eeglStrNsize(lead_repl,
-                    lead_repl_len);
-               int       i;
-               int       l;
-
-               for (i = 0; i < lead_len && p[i] != ZERO; i += l) {
-                  l = utfCharLen(p + i);
-                  if (eeglStrNsize(p, i + l) > repl_size)
-                    break;
-               }
-               if (i != lead_repl_len) {
-                  mch_memmove(
-                     p + lead_repl_len, p + i, (Unt)(lead_len - i - (p - leader))
-                  );
-                  lead_len += lead_repl_len - i;
-               }
-               }
-               mch_memmove(p, lead_repl, (Unt)lead_repl_len);
-
-               // Replace any remaining non-white chars in the old leader by spaces. 
-               // Keep Tabs, the indent must remain the same.
-               for (p += lead_repl_len; p < leader + lead_len; ++p) {
-                  if (!SPACE_OR_TAB(*p)) {
-                     // Don't put a space before a TAB.
-                     if (p + 1 < leader + lead_len && p[1] == TAB) {
-                        --lead_len;
-                        mch_memmove(p, p + 1, (leader + lead_len) - p);
-                    } else {
-                        int l = utfCharLen(p);
-
-                        if (l > 1) {
-                           if (ptr2cells(p) > 1) {
-                             // Replace a double-wide char with
-                             // two spaces
-                             --l;
-                             *p++ = ' ';
-                          }
-                          mch_memmove(p + 1, p + l, (leader + lead_len) - p);
-                          lead_len -= l - 1;
+                           if (l > 1) {
+                              if (ptr2cells(p) > 1) {
+                                // Replace a double-wide char with
+                                // two spaces
+                                --l;
+                                *p++ = ' ';
+                             }
+                             mch_memmove(p + 1, p + l, (leader + lead_len) - p);
+                             lead_len -= l - 1;
+                           }
+                           *p = ' ';
                         }
-                        *p = ' ';
                      }
-                  }
+                   }
+                   *p = ZERO;
                 }
-                *p = ZERO;
-             }
 
-             // Recompute the indent, it may have changed.
-             if (curBook->o.autoIndent || do_si)
-                newindent = get_indent_str(leader, (int)curBook->o.shiftWidth);
+                // Recompute the indent, it may have changed.
+                if (curBook->o.autoIndent || do_si)
+                   newindent = get_indent_str(leader, (int)curBook->o.shiftWidth);
 
-             // Add the indent offset
-             if (newindent + off < 0) {
-                off = -newindent;
-                newindent = 0;
-             } else {
-                newindent += off;
-             }
+                // Add the indent offset
+                if (newindent + off < 0) {
+                   off = -newindent;
+                   newindent = 0;
+                } else {
+                   newindent += off;
+                }
 
-             // Correct trailing spaces for the shift, so that alignment remains equal
-             while (off > 0 && lead_len > 0 && leader[lead_len - 1] == ' ') {
-               // Don't do it when there is a tab before the space
-               if (firstOccurrence(skipwhite(leader), '\t') != NULL)
-              break;
-               --lead_len;
-               --off;
-             }
+                // Correct trailing spaces for the shift, so that alignment remains equal
+                while (off > 0 && lead_len > 0 && leader[lead_len - 1] == ' ') {
+                  // Don't do it when there is a tab before the space
+                  if (firstOccurrence(skipwhite(leader), '\t') != NULL)
+                 break;
+                  --lead_len;
+                  --off;
+                }
 
-             // If the leader ends in white space, don't add an extra space
-             if (lead_len > 0 && SPACE_OR_TAB(leader[lead_len - 1]))
-                extra_space = FALSE;
-             leader[lead_len] = ZERO;
-         }
+                // If the leader ends in white space, don't add an extra space
+                if (lead_len > 0 && SPACE_OR_TAB(leader[lead_len - 1]))
+                   extra_space = FALSE;
+                leader[lead_len] = ZERO;
+            }
 
-         if (extra_space) {
-             leader[lead_len++] = ' ';
-             leader[lead_len] = ZERO;
-         }
+            if (extra_space) {
+                leader[lead_len++] = ' ';
+                leader[lead_len] = ZERO;
+            }
 
-         newcol = lead_len;
+            newcol = lead_len;
 
-         // if a new indent will be set below, remove the indent in the comment leader
-         if (newindent || didSindentG) {
-             while (lead_len && SPACE_OR_TAB(*leader)) {
-               --lead_len;
-               --newcol;
-               ++leader;
-             }
-         }
-
+            // if a new indent will be set below, remove the indent in the comment leader
+            if (newindent || didSindentG) {
+                while (lead_len && SPACE_OR_TAB(*leader)) {
+                  --lead_len;
+                  --newcol;
+                  ++leader;
+                }
+            }
          }
          didSindentG = can_si = false;
       } ei (comment_end != NULL) {
-         // We have finished a comment, so we don't use the leader. If this was a C-comment 
-         // and 'ai' or 'si' is set do a normal indent to align with the line containing the 
-         // start of the comment.
+         //We have finished a comment, so we don't use the leader. If this was a C-comment 
+         //and 'ai' or 'si' is set do a normal indent to align with the line containing the 
+         //start of the comment.
          if (comment_end[0] == '*' && comment_end[1] == '/' && (curBook->o.autoIndent || do_si)) {
             old_cursor = curPor->cursor;
             curPor->cursor.col = (ColNr)(comment_end - savedLine);
@@ -1645,7 +1633,7 @@ openLine(
    }
 
    // (stateG == MODE_INSERT)
-   if (transferText != NULL)     {
+   if (transferText)     {
       *transferText = saved_char;      // restore char that ZERO replaced
 
       // When 'ai' set or "flags" has OPENLINE_DELSPACES, skip to the first non-blank.
@@ -1661,7 +1649,7 @@ openLine(
       // columns for marks adjusted for removed columns
       fewerCols = (int)(transferText - savedLine);
    } else {
-      transferText = (CS)"";          // append empty line
+      transferText = S"";          // append empty line
    }
     
    // concatenate leader and transferText, if there is a leader
@@ -1716,7 +1704,6 @@ openLine(
      if (no_si)
           didSindentG = false;
    }
-
 
    curPor->cursor = old_cursor;
 
@@ -1828,11 +1815,11 @@ del_lines(long nlines,   int undo) {
 //}}}
 //{{{operators
 
-// implementation of various operators: op_shift, op_delete, op_tilde, op_change, op_yank, do_join
+// implementation of various operators: op_shift, op_delete, op_tilde, op_change, op_yank, jugJoinLinesUnderCursor
 
 private void shift_block(Operator *oper, int amount);
 private void   mb_adjust_opend(Operator *oper);
-private int   do_addsub(int opTy, Pos *pos, int length, LineNr Prenum1);
+private int   do_addsub(int opTy, Pos *pos, int length, LineNr prenum1);
 private void   pbyte(Pos lp, int c);
 #define PBYTE(lp, c) pbyte(lp, c)
 
@@ -2612,7 +2599,7 @@ op_delete(Operator* oper) {
           (void)del_bytes((long)n, !virtual_op,
                 oper->opTy == OP_DELETE && !oper->is_VIsual);
           curPor->cursor = curpos;   // restore curPor->cursor
-          (void)do_join(2, FALSE, FALSE, FALSE, FALSE);
+          (void)jugJoinLinesUnderCursor(2, FALSE, FALSE, FALSE, FALSE);
       }
       if (oper->opTy == OP_DELETE)
           auto_format(FALSE, TRUE);
@@ -3502,31 +3489,28 @@ skip_comment(
 //
 //return FAIL for failure, OK otherwise
 int
-do_join(
-   long    count,
-   int       insert_space,
-   int       save_undo,
-   int       use_formatoptions UNUSED,
-   int       setmark)
-{
-   Byte   *curr = NULL;
-   Byte      *curr_start = NULL;
-   Byte   *cend;
-   Byte   *newp;
-   Unt   newp_len;
-   Byte   *spaces;   // number of spaces inserted before a line
-   int      endcurr1 = ZERO;
-   int      endcurr2 = ZERO;
-   int      currsize = 0;   // size of the current line
-   int      sumsize = 0;   // size of the long new line
-   LineNr   t;
-   ColNr   col = 0;
-   int      ret = OK;
-   int      *comments = NULL;
+jugJoinLinesUnderCursor(
+   long count,
+   int insert_space,
+   int save_undo,
+   int use_formatoptions,
+   int setmark
+) {
+   CS curr = NULL;
+   CS curr_start = NULL;
+   CS cend;
+   int endcurr1 = ZERO;
+   int endcurr2 = ZERO;
+   int currsize = 0;   // size of the current line
+   int sumsize = 0;   // size of the long new line
+   LineNr t;
+   ColNr col = 0;
+   int ret = OK;
+   int* comments = NULL;
    int remove_comments = (use_formatoptions == TRUE) && has_format_option(FO_REMOVE_COMS);
-   int      prev_was_comment;
-   int      propcount = 0;   // number of props over all joined lines
-   int      props_remaining;
+   int prev_was_comment;
+   int propcount = 0;   // number of props over all joined lines
+   int props_remaining;
 
    if (save_undo && u_save((LineNr)(curPor->cursor.lnum - 1),
              (LineNr)(curPor->cursor.lnum + count)) == FAIL)
@@ -3535,7 +3519,7 @@ do_join(
    // Allocate an array to store the number of spaces inserted before each
    // line.  We will use it to pre-compute the length of the new line and the
    // proper placement of each original line in the new one.
-   spaces = lallocZeroed(count, TRUE);
+   CS spaces = lallocZeroed(count, TRUE);
    if (remove_comments) {
       comments = lallocZeroed(count * sizeof(int), TRUE);
       if (comments == NULL) {
@@ -3607,9 +3591,9 @@ do_join(
    col = sumsize - currsize - spaces[count - 1];
 
    // allocate the space for the new line
-   newp_len = sumsize + 1;
+   Unt newp_len = sumsize + 1;
    newp_len += propcount * sizeof(TextProp);
-   newp = alloc(newp_len);
+   CS newp = alloc(newp_len);
    cend = newp + sumsize;
    *cend = 0;
 
@@ -3719,14 +3703,14 @@ restore_lbr(int lbr_saved) {
 //- start/endspaces is the number of columns of the first/last yanked char that are to be yanked.
 void
 block_prep(
-   Operator      *oper,
-   OUT BlockDef   *bdp,
+   Operator* oper,
+   OUT BlockDef* bdp,
    LineNr lnum,
    Boole is_del
 ) {
    int incr = 0;
-   Byte   *pend;
-   Byte   *prev_pend;
+   CS pend;
+   CS prev_pend;
    CharTableSize cts;
       // Avoid a problem with unwanted linebreaks in block mode.
    int lbr_saved = reset_lbr();
@@ -3841,13 +3825,13 @@ block_prep(
 
 //Get block text from "start" to "end"
 void
-charwise_block_prep(
-   Pos      start,
-   Pos      end,
-   BlockDef   *bdp,
-   LineNr      lnum,
-   int         inclusive)
-{
+jugCharwiseBlockPrep(
+   Pos start,
+   Pos end,
+   BlockDef* bdp,
+   LineNr lnum,
+   int inclusive
+) {
    ColNr startcol = 0, endcol = MAXCOL;
    ColNr cs, ce;
    int   plen = ml_get_len(lnum);
@@ -3906,14 +3890,14 @@ charwise_block_prep(
 //Handle the add/subtract operator.
 void
 op_addsub(
-   Operator   *oper,
-   LineNr   Prenum1,       // Amount of add/subtract
-   int      g_cmd)          // was g<c-a>/g<c-x>
-{
-   Pos      pos;
-   BlockDef   bd;
-   int         change_cnt = 0;
-   LineNr      amount = Prenum1;
+   Operator* oper,
+   LineNr prenum1,       // Amount of add/subtract
+   int g_cmd          // was g<c-a>/g<c-x>
+){
+   Pos pos;
+   BlockDef bd;
+   int change_cnt = 0;
+   LineNr amount = prenum1;
 
    // do_addsub() might trigger re-evaluation of 'foldexpr' halfway, when the
    // book is not completely updated yet. Postpone updating folds until before
@@ -3975,7 +3959,7 @@ op_addsub(
          }
 
          if (g_cmd && one_change)
-            amount += Prenum1;
+            amount += prenum1;
       }
 
       disable_fold_update--;
@@ -3995,14 +3979,14 @@ op_addsub(
    }
 }
 
-//Add or subtract 'Prenum1' from a number in a line opTy is OP_ADD or OP_SUB
+//Add or subtract 'prenum1' from a number in a line opTy is OP_ADD or OP_SUB
 //Return TRUE if some character was changed.
 private int
 do_addsub(
-   int      opTy,
-   Pos   *pos,
-   int      length,
-   LineNr   Prenum1
+   int opTy,
+   Pos* pos,
+   int length,
+   LineNr prenum1
 ){
    int      col;
    int      pre;      // 'X'/'x': hex; 'B'/'b': bin
@@ -4096,21 +4080,21 @@ do_addsub(
    if (ASCII_ISALPHA(firstdigit)) {
       // decrement or increment alphabetic character
       if (opTy == OP_SUB) {
-         if (indexInLatinAlfabet(firstdigit) < Prenum1) {
+         if (indexInLatinAlfabet(firstdigit) < prenum1) {
             if (SAFE_isupper(firstdigit))
                firstdigit = 'A';
             else
                firstdigit = 'a';
          } else
-            firstdigit -= Prenum1;
+            firstdigit -= prenum1;
       } else {
-         if (26 - indexInLatinAlfabet(firstdigit) - 1 < Prenum1) {
+         if (26 - indexInLatinAlfabet(firstdigit) - 1 < prenum1) {
             if (SAFE_isupper(firstdigit))
                firstdigit = 'Z';
             else
                firstdigit = 'z';
           } else
-            firstdigit += Prenum1;
+            firstdigit += prenum1;
       }
       curPor->cursor.col = col;
       if (!didChange)
@@ -4153,9 +4137,9 @@ do_addsub(
       oldn = n;
       if (!overflow) { // if number is too big don't add/subtract
          if (subtract)
-            n -= (ULong)Prenum1;
+            n -= (ULong)prenum1;
          else
-            n += (ULong)Prenum1;
+            n += (ULong)prenum1;
       }
 
       // handle wraparound for decimal numbers
@@ -4330,26 +4314,26 @@ clear_oparg(Operator *oper) {
 //character count to account for the size of the EOL character.
 private Long
 line_count_info(
-    Byte   *line,
-    Long   *wc,
-    Long   *cc,
-    Long   limit,
-    int      eol_size
+    CS line,
+    Long* wc,
+    Long* cc,
+    Long limit,
+    int eol_size
 ) {
-   Long   i;
-   Long   words = 0;
-   Long   chars = 0;
-   int      is_word = 0;
+   Long i;
+   Long words = 0;
+   Long charCount = 0;
+   Boole is_word = false;
 
    for (i = 0; i < limit && line[i] != ZERO; ) {
       if (is_word) {
          if (isSpace(line[i])) {
             words++;
-            is_word = 0;
+            is_word = false;
          }
       } ei (!isSpace(line[i]))
-         is_word = 1;
-      ++chars;
+         is_word = true;
+      ++charCount;
       i += utfCharLen(line + i);
    }
 
@@ -4360,9 +4344,9 @@ line_count_info(
     // Add eol_size if the end of line was reached before hitting limit.
    if (i < limit && line[i] == ZERO) {
       i += eol_size;
-      chars += eol_size;
+      charCount += eol_size;
    }
-   *cc += chars;
+   *cc += charCount;
    return i;
 }
 
@@ -4371,23 +4355,23 @@ line_count_info(
 //the *_count_cursor variables store running totals for the selection.)
 //When "dict" is not NULL store the info there instead of showing it.
 void
-cursor_pos_info(Bag *dict) {
-   Byte   *p;
-   Byte   buf1[50];
-   Byte   buf2[40];
-   LineNr   lnum;
-   Long   byte_count = 0;
-   Long   byte_count_cursor = 0;
-   Long   char_count = 0;
-   Long   char_count_cursor = 0;
-   Long   word_count = 0;
-   Long   word_count_cursor = 0;
-   int      eol_size;
-   Long   last_check = 100000L;
-   long   line_count_selected = 0;
-   Pos   min_pos, max_pos;
-   Operator   oparg;
-   BlockDef   bd;
+cursor_pos_info(Bag* dict) {
+   CS p;
+   Byte buf1[50];
+   Byte buf2[40];
+   LineNr lnum;
+   Long byte_count = 0;
+   Long byte_count_cursor = 0;
+   Long char_count = 0;
+   Long char_count_cursor = 0;
+   Long word_count = 0;
+   Long word_count_cursor = 0;
+   int eol_size;
+   Long last_check = 100000L;
+   long line_count_selected = 0;
+   Pos  min_pos, max_pos;
+   Operator oparg;
+   BlockDef bd;
 
    // Compute the length of the file in characters.
    if (curBook->mem.flags & ML_EMPTY) {
@@ -4411,12 +4395,11 @@ cursor_pos_info(Bag *dict) {
             CS saved_sbr = p_sbr;
 
             // Make @showbreak empty for a moment to get the correct size.
-            p_sbr = Em;
+            p_sbr = null;
             oparg.is_VIsual = 1;
             oparg.block_mode = TRUE;
             oparg.opTy = OP_NOP;
-            getvcols(curPor, &min_pos, &max_pos,
-                       &oparg.start_vcol, &oparg.end_vcol);
+            getvcols(curPor, &min_pos, &max_pos, &oparg.start_vcol, &oparg.end_vcol);
             p_sbr = saved_sbr;
             if (curPor->cursWant == MAXCOL)
                 oparg.end_vcol = MAXCOL;
@@ -4441,8 +4424,8 @@ cursor_pos_info(Bag *dict) {
 
          // Do extra processing for VIsual mode.
          if (VIsual_active && lnum >= min_pos.lnum && lnum <= max_pos.lnum) {
-            Byte       *s = NULL;
-            long       len = 0L;
+            CS s = NULL;
+            long len = 0L;
 
             switch (VIsual_mode) {
             case Ctrl_V:
@@ -4457,11 +4440,11 @@ cursor_pos_info(Bag *dict) {
                len = MAXCOL;
                break;
             case 'v': {
-                ColNr start_col = (lnum == min_pos.lnum) ? min_pos.col : 0;
-                ColNr end_col = (lnum == max_pos.lnum) ? max_pos.col - start_col + 1 : MAXCOL;
+               ColNr start_col = (lnum == min_pos.lnum) ? min_pos.col : 0;
+               ColNr end_col = (lnum == max_pos.lnum) ? max_pos.col - start_col + 1 : MAXCOL;
 
-                s = ml_get(lnum) + start_col;
-                len = end_col;
+               s = ml_get(lnum) + start_col;
+               len = end_col;
             }
             break;
             }
@@ -4474,19 +4457,17 @@ cursor_pos_info(Bag *dict) {
          } else {
             // In non-visual mode, check for the line the cursor is on
             if (lnum == curPor->cursor.lnum) {
-                word_count_cursor += word_count;
-                char_count_cursor += char_count;
-                byte_count_cursor = byte_count +
-               line_count_info(ml_get(lnum),
-                  &word_count_cursor, &char_count_cursor,
-                  (Long)(curPor->cursor.col + 1),
-                  eol_size);
+               word_count_cursor += word_count;
+               char_count_cursor += char_count;
+               byte_count_cursor = byte_count +
+               line_count_info(
+                  ml_get(lnum), &word_count_cursor, &char_count_cursor, 
+                  (Long)(curPor->cursor.col + 1), eol_size
+               );
             }
          }
          // Add to the running totals
-         byte_count += line_count_info(ml_get(lnum), &word_count,
-                   &char_count, (Long)MAXCOL,
-                   eol_size);
+         byte_count += line_count_info(ml_get(lnum), &word_count, &char_count, (Long)MAXCOL, eol_size);
       }
 
       if (!dict) {
@@ -4577,7 +4558,7 @@ private void
 op_colon(Operator *oper) {
    stuffcharReadbuff(':');
    if (oper->is_VIsual)
-      stuffReadbuff((CS)"'<,'>");
+      stuffReadbuff(S"'<,'>");
    else {
       // Make the range look nice, so it can be repeated.
       if (oper->start.lnum == curPor->cursor.lnum)
@@ -4589,27 +4570,21 @@ op_colon(Operator *oper) {
       // on, it will be made the whole closed fold later.
       LineNr endOfStartFold = oper->start.lnum;
       (void)getFolds(oper->start.lnum, NULL, &endOfStartFold);
-      if (oper->end.lnum != oper->start.lnum
-         && oper->end.lnum != endOfStartFold
-         )
-      {
-          // Make it a range with the end line.
-          stuffcharReadbuff(',');
-          if (oper->end.lnum == curPor->cursor.lnum)
-         stuffcharReadbuff('.');
-          ei (oper->end.lnum == curBook->mem.lineCount)
-         stuffcharReadbuff('$');
-          ei (oper->start.lnum == curPor->cursor.lnum
-             // do not use ".+number" for a closed fold, it would count
-             // folded lines twice
+      if (oper->end.lnum != oper->start.lnum && oper->end.lnum != endOfStartFold) {
+         // Make it a range with the end line.
+         stuffcharReadbuff(',');
+         if (oper->end.lnum == curPor->cursor.lnum)
+            stuffcharReadbuff('.');
+         ei (oper->end.lnum == curBook->mem.lineCount)
+            stuffcharReadbuff('$');
+         ei (oper->start.lnum == curPor->cursor.lnum
+             // do not use ".+number" for a closed fold, it would count folded lines twice
              && !getFolds(oper->end.lnum, NULL, NULL)
-             )
-          {
-         stuffReadbuff((CS)".+");
-         stuffnumReadbuff((long)oper->line_count - 1);
-          }
-          else
-         stuffnumReadbuff((long)oper->end.lnum);
+         ) {
+            stuffReadbuff(S".+");
+            stuffnumReadbuff((long)oper->line_count - 1);
+         } else
+            stuffnumReadbuff((long)oper->end.lnum);
       }
    }
    if (oper->opTy != OP_COLON)
@@ -4651,21 +4626,17 @@ opsFreeOperatorFnOption(void) {
 
 // Mark the global 'operatorfunc' callback with "copyID" so that it is not garbage collected.
 int
-set_ref_in_opfunc(int copyID UNUSED) {
-   int abort = FALSE;
-
-   abort = memSetRefInCallback(&opfunc_cb, copyID);
-
-   return abort;
+set_ref_in_opfunc(int copyID) {
+   return memSetRefInCallback(&opfunc_cb, copyID);
 }
 
 //Handle the "g@" operator: call 'operatorfunc'.
 private void
 op_function(Operator *oper UNUSED) {
-   Var   argv[2];
-   Pos   orig_start = curBook->opStart;
-   Pos   orig_end = curBook->opEnd;
-   Var   returnVar;
+   Var argv[2];
+   Pos orig_start = curBook->opStart;
+   Pos orig_end = curBook->opEnd;
+   Var returnVar;
 
    if (*p_opfunc == ZERO)
       emsg(_(e_operatorfunc_is_empty));
@@ -5029,19 +5000,15 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             oper->motion_type = MLINE;
          else {
             oper->motion_type = MCHAR;
-            if (VIsual_mode != Ctrl_V && *ml_get_pos(&(oper->end)) == ZERO
-               && (!virtual_op))
-            {
-                oper->inclusive = FALSE;
-                //Try to include the newline, unless it's an operator that works on lines only.
-                if (!op_on_lines(oper->opTy)
-                   && oper->end.lnum < curBook->mem.lineCount)
-                {
+            if (VIsual_mode != Ctrl_V && *ml_get_pos(&(oper->end)) == ZERO && (!virtual_op)) {
+               oper->inclusive = FALSE;
+               //Try to include the newline, unless it's an operator that works on lines only.
+               if (!op_on_lines(oper->opTy) && oper->end.lnum < curBook->mem.lineCount) {
                   ++oper->end.lnum;
                   oper->end.col = 0;
                   oper->end.coladd = 0;
                   ++oper->line_count;
-                }
+               }
             }
          }
 
@@ -5079,14 +5046,13 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       // oper->empty is set when start and end are the same.  The inclusive
       // flag affects this too, unless yanking and the end is on a ZERO.
       oper->empty = (oper->motion_type == MCHAR
-             && (!oper->inclusive
-            || (oper->opTy == OP_YANK
-                && gchar_pos(&oper->end) == ZERO))
+             && (!oper->inclusive || (oper->opTy == OP_YANK && gchar_pos(&oper->end) == ZERO))
              && EQUAL_POS(oper->start, oper->end)
-             && !(virtual_op && oper->start.coladd != oper->end.coladd));
+             && !(virtual_op && oper->start.coladd != oper->end.coladd)
+      );
 
       //Force a redraw when operating on an empty Visual region, when
-      //'modifiable is off or creating a fold.
+      //@modifiable is off or creating a fold.
       if (oper->is_VIsual && (oper->empty || !curBook->o.modifiable || oper->opTy == OP_FOLD)) {
           restore_lbr(lbr_saved);
           drawCurBookLater(UPD_INVERTED);
@@ -5112,8 +5078,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          else {
             oper->end.col = ml_get_len(oper->end.lnum);
             if (oper->end.col) {
-                --oper->end.col;
-                oper->inclusive = TRUE;
+               --oper->end.col;
+               oper->inclusive = TRUE;
             }
          }
       } else
@@ -5133,7 +5099,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          if (curPor->cursor.lnum + oper->line_count - 1 > curBook->mem.lineCount)
             beep_flush();
          else {
-            (void)do_join(oper->line_count, oper->opTy == OP_JOIN, TRUE, TRUE, TRUE);
+            (void)jugJoinLinesUnderCursor(oper->line_count, oper->opTy == OP_JOIN, TRUE, TRUE, TRUE);
             auto_format(FALSE, TRUE);
          }
          break;
@@ -5344,6 +5310,8 @@ private Byte   tz_cache[64];
 
 #define FOR_ALL_TIMERS(t) \
     for ((t) = first_timer; (t) != NULL; (t) = (t)->next)
+    
+typedef struct tm Tm; 
 
 //Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
 //latter version preferred for reentrancy.
@@ -5352,10 +5320,10 @@ private Byte   tz_cache[64];
 //TZ has changed since the last run, and call tzset(3) to update the global timezone variables if 
 //it has.  This is because the POSIX standard doesn't require localtime_r(3) implementations to do 
 //that as it does with localtime(3), and we don't want to call tzset(3) every time.
-private struct tm *
+private Tm *
 eeLocaltime(
    Tyme const* timep,      // timestamp for local representation
-   struct tm* result UNUSED   // pointer to caller return buffer
+   OUT Tm* result // pointer to caller return buffer
 ){
    CS tz = mch_getenv(S"TZ");      // pointer for TZ environment var
    if (tz == NULL)
@@ -5380,8 +5348,8 @@ eeTime(void) {
 CS
 get_ctime(Tyme thetime, int add_newline) {
    static Byte buf[100];  // hopefully enough for every language
-   struct tm   tmval;
-   struct tm* curtime = eeLocaltime(&thetime, &tmval);
+   Tm tmval;
+   Tm* curtime = eeLocaltime(&thetime, &tmval);
    if (!curtime)
       copySubstrToAllocation(buf, (Text){_("(Invalid)"), sizeof(buf) - 2});
    else {
@@ -5480,24 +5448,23 @@ f_reltimestr(Var *argvars UNUSED, Var *returnVar) {
 //"strftime({format}[, {time}])" function
 void
 f_strftime(Var *argvars, Var *returnVar) {
-   struct tm   tmval;
-   struct tm   *curtime;
-   Tyme   seconds;
+   Tm tmval;
+   Tyme seconds;
 
    returnVar->tag = VAR_STRING;
 
-   Byte* arg = tv_get_string(&argvars[0]);
+   CS arg = tv_get_string(&argvars[0]);
    if (argvars[1].tag == VAR_UNKNOWN)
       seconds = time(NULL);
    else
       seconds = (Tyme)tv_get_number(&argvars[1]);
-   curtime = eeLocaltime(&seconds, &tmval);
+   Tm* curtime = eeLocaltime(&seconds, &tmval);
    if (!curtime) {
       returnVar->string = copyStr((CS)_("(Invalid)"));
       return;
    }
 
-   Byte       result_buf[256];
+   Byte result_buf[256];
 
    if (!arg || STRFTIME(result_buf, sizeof(result_buf), arg, curtime) == 0)
       result_buf[0] = ZERO;
@@ -5507,8 +5474,8 @@ f_strftime(Var *argvars, Var *returnVar) {
 
 // "strptime({format}, {timestring})" function
 void
-f_strptime(Var *argvars, Var *returnVar) {
-   struct tm   tmval;
+f_strptime(Var* argvars, Var* returnVar) {
+   Tm tmval;
 
    CLEAR_FIELD(tmval);
    tmval.tm_isdst = -1;
@@ -5522,21 +5489,20 @@ f_strptime(Var *argvars, Var *returnVar) {
       returnVar->number = 0;
 }
 
-private Timer   *first_timer = NULL;
-private long   last_timer_id = 0;
+private Timer* first_timer = NULL;
+private long last_timer_id = 0;
 
 //Return time left, in "msec", until "due".  Negative if past "due".
 long
 proftime_time_left(ProfTime *due, ProfTime *now) {
    if (now->tv_sec > due->tv_sec)
       return 0;
-   return (due->tv_sec - now->tv_sec) * 1000 
-      + (due->tv_fsec - now->tv_fsec) / (TV_FSEC_SEC / 1000);
+   return (due->tv_sec - now->tv_sec)*1000 + (due->tv_fsec - now->tv_fsec) / (TV_FSEC_SEC / 1000);
 }
 
 //Insert a timer into the list of timers.
 private void
-insert_timer(Timer *timer) {
+insert_timer(Timer* timer) {
    timer->next = first_timer;
    timer->prev = NULL;
    if (first_timer != NULL)
@@ -5547,17 +5513,17 @@ insert_timer(Timer *timer) {
 
 //Take a timer out of the list of timers.
 private void
-remove_timer(Timer *timer) {
-   if (timer->prev == NULL)
+remove_timer(Timer* timer) {
+   if (!timer->prev)
       first_timer = timer->next;
    else
       timer->prev->next = timer->next;
-   if (timer->next != NULL)
+   if (timer->next)
       timer->next->prev = timer->prev;
 }
 
 private void
-free_timer(Timer *timer) {
+free_timer(Timer* timer) {
    evFreeCallback(&timer->callback);
    eeglFree(timer);
 }
@@ -6054,8 +6020,8 @@ time_to_bytes(Tyme the_time, CS buf) {
 // Put timestamp "tt" in "buf[buflen]" in a nice format.
 void
 add_time(CS buf, Unt buflen, Tyme tt) {
-   struct tm   tmval;
-   struct tm   *curtime;
+   Tm tmval;
+   Tm* curtime;
    Unt   n;
 
    if (eeTime() - tt >= 100) {
@@ -6071,9 +6037,7 @@ add_time(CS buf, Unt buflen, Tyme tt) {
    } else {
       long seconds = (long)(eeTime() - tt);
 
-      eeSnprintf(buf, buflen,
-         NGETTEXT("%ld second ago", "%ld seconds ago", seconds),
-         seconds);
+      eeSnprintf(buf, buflen, NGETTEXT("%ld second ago", "%ld seconds ago", seconds), seconds);
    }
 }
 
@@ -6180,8 +6144,8 @@ elapsed(DWORD start_tick) {
 # if defined(PROF_NSEC) || defined(PROTO)
 // Implement timeout with timer_create() and timer_settime().
 private volatile sig_atomic_t timeout_flag = FALSE;
-private timer_t           timer_id;
-private int           timer_created = FALSE;
+private timer_t timer_id;
+private int timer_created = FALSE;
 
 // Callback for when the timer expires.
 private void
@@ -6997,7 +6961,7 @@ getBreakindentForPort(Portal* po, CS line) {
       bri += preList;
 
    // indent minus the length of the showbreak string
-   if (po->breakIndent.showBreak)
+   if (po->breakIndent.showBreak && p_sbr)
       bri -= eeglStrSize(p_sbr);
 
    // never indent past left portal margin

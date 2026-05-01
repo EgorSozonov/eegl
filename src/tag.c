@@ -215,7 +215,7 @@ do_tag(
       return FALSE;
    }
 
-   if (postponed_split == 0 && !check_can_set_curbuf_forceit(forceit))
+   if (postponed_split == 0 && !portCheckCanSetCurBookForceIt(forceit))
       return FALSE;
 
    if (type == DT_HELP) {
@@ -2567,7 +2567,7 @@ jumpto_tag(
    Byte   *full_fname = NULL;
    int      old_KeyTyped = KeyTyped;    // getting the file may reset it
 
-   if (postponed_split == 0 && !check_can_set_curbuf_forceit(forceit))
+   if (postponed_split == 0 && !portCheckCanSetCurBookForceIt(forceit))
       return FAIL;
 
    //Make a copy of the line, it can become invalid when an autocommand calls back here recursively
@@ -2651,7 +2651,7 @@ jumpto_tag(
       Book* existingBook = booklistFindByNameExpandingLinks(fname);
 
       if (existingBook) {
-         // If @switchbuf is set, jump to the portal containing "book".
+         // If @switchbook is set, jump to the portal containing "book".
          if (switchBufGotoPortalIntoBuf(existingBook) != NULL)
             // We've switched to the book, the usual loading of the file must be skipped.
             getfile_result = GETFILE_SAME_FILE;

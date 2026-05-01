@@ -341,7 +341,7 @@ OPTION("backupcopy", backupCopy, Unt, BKC_AUTO, P_ONECOMMA|P_NODUP,
 OPTION("balloonexpr", balloonExpr, CS, null, 0, &setOptexpr, null)
 OPTION("binary", binary, Boole, false, P_RSTAT, &optSetBinary, NULL)
 OPTION("booklisted", bookListed, Boole, false, 0, &setBookListed, NULL)
-OPTION("buftype", kind, Byte, BOOK_NORMAL, 0, &setBufType, &expand_set_buftype)
+OPTION("booktype", kind, Byte, BOOK_NORMAL, 0, &setBufType, &expand_set_buftype)
 OPTION("cinscopedecls", cppScopeKeywords, CS, "public,protected,private", 
       P_ONECOMMA|P_NODUP, null, null)
 OPTION("cinwords", indentKeywords, CS, "if,else,while,do,for,switch", 

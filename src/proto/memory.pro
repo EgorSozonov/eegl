@@ -87,6 +87,6 @@ int setRefInSet(EeSet *eeset, int copyID, ListStack **list_stack);
 int set_ref_in_dict(Bag *b, int copyID);
 int set_ref_in_list(List *ll, int copyID);
 int set_ref_in_list_items(List *l, int copyID, HtStack **ht_stack);
-int memSetRefInCallback(Callback *cb, int copyID);
+Boole memSetRefInCallback(Callback *cb, int copyID);
 int set_ref_in_item(Var *tv, int copyID, HtStack **ht_stack, ListStack **list_stack);
 /* eegl: set ft=c : */

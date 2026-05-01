@@ -7168,9 +7168,9 @@ term_flush_messages(void) {
    parse_queued_messages();
 }
 
-// Close a terminal buffer (and its portal).  Used when creating the terminal fails.
+// Close a terminal book (and its portal). Used when creating the terminal fails.
 private void
-term_close_buffer(Book* book, Book *old_curBook) {
+closeFailedTerminalBook(Book* book, Book *old_curBook) {
    free_terminal(book);
    if (old_curBook) {
       --curBook->countPortals;
@@ -7184,20 +7184,20 @@ term_close_buffer(Book* book, Book *old_curBook) {
    bookDo(DOBOOK_WIPE, DOBOOK_FIRST, FORWARD, book->fiNum, TRUE);
 }
 
-// Start a terminal portal and return its buffer. Use either "argvar" or "argv", the other must be 
-// NULL. When "flags" has TERM_START_NOJOB only create the buffer, term and open the portal.
-// Return NULL when failed.
-Book *
+//Start a terminal portal and return its buffer. Use either "argvar" or "argv", the other must be 
+//NULL. When "flags" has TERM_START_NOJOB only create the buffer, term and open the portal.
+//Return NULL when failed.
+Book*
 term_start(
-   Var    *argvar,
+   Var* argvar,
    Byte** argv,
    JobOptions* opt,
    Unt flags
 ){
-   Invocation   splitInvo;
-   Portal   *old_curPor = curPor;
-   Book   *old_curbuf = NULL; int      res;
-   Book   *newBook;
+   Invocation splitInvo;
+   Portal* old_curPor = curPor;
+   Book* curBookSaved = NULL; 
+   Book* newBook;
    int      vertical = opt->vertical || (commModifierG.cmod_split & WSP_VERT);
    JobOptions   orig_opt;  // only partly filled
    Pos   save_cursor;
@@ -7233,7 +7233,7 @@ term_start(
    if (opt->curPor) {
       // Create a new buffer in the current portal.
       if (startEditingFile(
-              0, NULL, NULL, &splitInvo, ECMD_ONE,
+              0, NULL, NULL, OUT &splitInvo, ECMD_ONE,
               ECMD_HIDE + ((flags & TERM_START_FORCEIT) ? ECMD_FORCEIT : 0), curPor
           ) == FAIL) {
          eeglFree(term);
@@ -7247,14 +7247,14 @@ term_start(
           eeglFree(term);
           return NULL;
       }
-      old_curbuf = curBook;
+      curBookSaved = curBook;
       --curBook->countPortals;
       curBook = book;
       save_cursor = curPor->cursor;
       curPor->book = book;
       ++curBook->countPortals;
    } else {
-      // Open a new portal or tab.
+      //Open a new portal or tab.
       splitInvo.id = C_new;
       splitInvo.comm = S"new";
       splitInvo.arg = Em;
@@ -7308,12 +7308,12 @@ term_start(
    } else {
       int   i;
       Unt   len;
-      Byte   *cmd, *p;
+      CS cmd;
 
       if (argvar->tag == VAR_STRING) {
          cmd = argvar->string;
-         if (cmd == NULL)
-            cmd = (CS)"";
+         if (!cmd)
+            cmd = S"";
          ei (STRCMP(cmd, "NONE") == 0)
             cmd = S"pty";
       } ei (argvar->tag != VAR_LIST
@@ -7323,9 +7323,9 @@ term_start(
          cmd = Em;
 
       len = STRLEN(cmd) + 10;
-      p = alloc(len);
+      CS p = alloc(len);
 
-      for (i = 0; p != NULL; ++i) {
+      for (i = 0; p; ++i) {
          //Prepend a ! to the command name to avoid the buffer name equals
          //the executable, otherwise ":w!" would overwrite it.
          if (i == 0)
@@ -7351,7 +7351,7 @@ term_start(
    if (opt->jo_eof_chars)
       term->tl_eof_chars = copyStr(opt->jo_eof_chars);
 
-   optSetByName(S"buftype", optEnum(BOOK_TERMINAL), SET_LOCAL);
+   optSetByName(S"booktype", optEnum(BOOK_TERMINAL), SET_LOCAL);
    //Avoid that @buftype is reset when this buffer is entered.
    curBook->o.initialized = true;
 
@@ -7394,12 +7394,12 @@ term_start(
    }
 
    if (opt->jo_term_kill) {
-      Byte *p = skiptowhite(opt->jo_term_kill);
+      CS p = skiptowhite(opt->jo_term_kill);
       term->tl_kill = copySubstr(opt->jo_term_kill, p - opt->jo_term_kill);
    }
 
    if (opt->jo_term_api) {
-      Byte *p = skiptowhite(opt->jo_term_api);
+      CS p = skiptowhite(opt->jo_term_api);
       term->tl_api = copySubstr(opt->jo_term_api, p - opt->jo_term_api);
    } else
       term->tl_api = copyStr(S"Tapi_");
@@ -7409,15 +7409,13 @@ term_start(
 
    // Save the user-defined palette, it is only used in GUI (or 'tgc' is on).
    if (opt->set1 & JO2_ANSI_COLORS) {
-       term->palette = ALLOC_MULT(Ulong, 16);
-       memcpy(term->palette, opt->jo_ansi_colors, sizeof(Ulong) * 16);
+      term->palette = ALLOC_MULT(Ulong, 16);
+      memcpy(term->palette, opt->jo_ansi_colors, sizeof(Ulong) * 16);
    }
 
    // System dependent: setup the vterm and maybe start the job in it.
-   if (argv == NULL
-        && argvar->tag == VAR_STRING
-        && argvar->string != NULL
-        && STRCMP(argvar->string, "NONE") == 0)
+   int res;
+   if (!argv && argvar->tag == VAR_STRING && argvar->string && STRCMP(argvar->string, "NONE") == 0)
       res = create_pty_only(term, opt);
    else
       res = term_and_job_init(term, argvar, argv, opt, &orig_opt);
@@ -7432,9 +7430,9 @@ term_start(
       //a deadlock if the job is waiting for Eegl to read.
       channel_set_nonblock(term->job->jv_channel, PART_IN);
 
-      if (old_curbuf != NULL) {
+      if (curBookSaved) {
          --curBook->countPortals;
-         curBook = old_curbuf;
+         curBook = curBookSaved;
          curPor->book = curBook;
          curPor->cursor = save_cursor;
          ++curBook->countPortals;
@@ -7445,9 +7443,9 @@ term_start(
          typebuf_was_filled = TRUE;
       }
    } else {
-      term_close_buffer(curBook, old_curbuf);
+      closeFailedTerminalBook(curBook, curBookSaved);
       return NULL;
-    }
+   }
 
    apply_autocmds(EVENT_TERMINALOPEN, NULL, NULL, false, newBook);
    if (!opt->jo_hidden && !(flags & TERM_START_SYSTEM))
@@ -9839,25 +9837,24 @@ term_is_finished(Book* book) {
 //are in Terminal-Normal mode, thus we show the buffer contents.
 int
 term_shobuffer(Book* book) {
-   Terminal *term = book->term;
+   Terminal* term = book->term;
 
-   return term != NULL && (term->vterm == NULL || term->isNormalMode);
+   return term && (term->vterm == NULL || term->isNormalMode);
 }
 
-//The current buffer is going to be changed.  If there is terminal highlighting remove it now.
+//The current book is going to be changed. If there is terminal hiliting, remove it now.
 void
-term_change_in_curbuf(void) {
-    Terminal *term = curBook->term;
+uiBeforeLeavingTerminal(void) {
+   Terminal* term = curBook->term;
 
    if (!term_is_finished(curBook) || term->tl_scrollback.len <= 0)
-   return;
+      return;
 
-    free_scrollback(term);
-    drawBookLater(term->book, UPD_NOT_VALID);
+   free_scrollback(term);
+   drawBookLater(term->book, UPD_NOT_VALID);
 
-    // The buffer is now like a normal buffer, it cannot be easily
-    // abandoned when changed.
-    optChangeStringOptionDirect(S"buftype", BOOK_NORMAL, OPT_LOCAL, 0);
+   //The book is now like a normal book, it cannot be easily abandoned when changed.
+   optChangeStringOptionDirect(S"booktype", BOOK_NORMAL, OPT_LOCAL, 0);
 }
 
 //Get the screen decoration for a position in the buffer. Use a negative "col" to get the 

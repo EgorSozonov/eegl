@@ -1999,7 +1999,7 @@ barline_parse(Vir *virp, Byte *text, ArrayList *values) {
 }
 
 private void
-write_eeglinfo_version(FILE *fp_out) {
+write_eeglinfo_version(FILE* fp_out) {
    fprintf(fp_out, "# Eeglinfo version\n|%d,%d\n\n", BARTYPE_VERSION, EEGLINFO_VERSION);
 }
 

@@ -1010,7 +1010,7 @@ op_yank(Operator *opArg, int deleting, int mess) {
       case MCHAR: {
             int tmp;
 
-            charwise_block_prep(opArg->start, opArg->end, &bd, lnum, opArg->inclusive);
+            jugCharwiseBlockPrep(opArg->start, opArg->end, &bd, lnum, opArg->inclusive);
 
             // make sure bd.textlen is not longer than the text
             tmp = (int)STRLEN(bd.textstart);

@@ -205,8 +205,8 @@ eeglStrNsize(CS s, int len) {
    return size;
 }
 
-// Return the number of character cells string "s" will take on the screen,
-// counting TABs as two characters: "^I".
+//Return the number of character cells string "s" will take on the screen,
+//counting TABs as two characters: "^I".
 int
 eeglStrSize(CS s) {
    return eeglStrNsize(s, (int)MAXCOL);
@@ -6019,7 +6019,7 @@ format_lines(
                }
             }
             curPor->cursor.lnum--;
-            if (do_join(2, TRUE, FALSE, FALSE, FALSE) == FAIL) {
+            if (jugJoinLinesUnderCursor(2, TRUE, FALSE, FALSE, FALSE) == FAIL) {
                beep_flush();
                break;
             }

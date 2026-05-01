@@ -27,10 +27,8 @@ setRefInBooks(int copyID) {
    Boole abort = false;
    Book* bp;
    FOR_ALL_BOOKS(bp) {
-      Listener* lnr;
-
-      for (lnr = bp->listener; !abort && lnr; lnr = lnr->lr_next)
-         abort = abort || memSetRefInCallback(&lnr->lr_callback, copyID);
+      for (Listener* lnr = bp->listener; !abort && lnr; lnr = lnr->next)
+         abort = abort || memSetRefInCallback(&lnr->callback, copyID);
       if (abort)
          return TRUE;
          
@@ -68,8 +66,8 @@ findBook(Var* avar){
    ei (avar->tag == VAR_STRING && avar->string) {
       book = booklistFindByNameExpandingLinks(avar->string);
       if (!book) {
-         // No full path name match, try a match with a URL or a "nofile"
-         // book, these don't use the full path.
+         //No full path name match, try a match with a URL or a "nofile"
+         //book, these don't use the full path.
          FOR_ALL_BOOKS(book) {
             if (book->currFileName
                   && (path_with_url(book->currFileName) || bt_nofilename(book))
@@ -96,10 +94,10 @@ findPortalIntoCurBook(void) {
 }
 
 typedef struct {
-   Portal   *curPorSave;
-   AutocommSave   autocommSave;
-   Boole      usingAco;
-   int      visualActiveSaved;
+   Portal* curPorSave;
+   AutocommSave autocommSave;
+   Boole usingAco;
+   int visualActiveSaved;
 } ChangeOtherBook;
 
 //Used before making a change in "book", which is not the current one: Make
@@ -121,17 +119,17 @@ prepareChangeInOtherBook(ChangeOtherBook *cob, Book* book) {
    findPortalIntoCurBook();  // simplest: find existing portal into "book"
 
    if (curPor->book != book) {
-      // No existing portal into this book. It is dangerous to have
-      // curPor->book differ from "curBook", use the autocmd portal.
+      //No existing portal into this book. It is dangerous to have
+      //curPor->book differ from "curBook", use the autocmd portal.
       curBook = curPor->book;
       auCommPrepareBook(&cob->autocommSave, book);
       if (curBook == book)
-          cob->usingAco = true;
+         cob->usingAco = true;
    }
 }
 
 private void
-restoreChangeInOtherBook(ChangeOtherBook *cob) {
+restoreChangeInOtherBook(ChangeOtherBook* cob) {
    if (cob->usingAco) {
       auCommRestoreBook(&cob->autocommSave);
    } else {
@@ -145,17 +143,17 @@ restoreChangeInOtherBook(ChangeOtherBook *cob) {
 private void
 updateLinesFromVars(
    Book* book,
-   LineNr    lnum_arg,
+   LineNr lnum_arg,
    Bool append,
    Arr(Var) lines,
-   Var    *returnVar)
+   Var* returnVar)
 {
    LineNr    lnum = lnum_arg + (append ? 1 : 0);
    CS line = NULL;
    List* l = NULL;
    ListItem* li = NULL;
    long   added = 0;
-   LineNr   append_lnum;
+   LineNr   appendLnum;
 
    // When using the current book mfile will be set if needed.  Useful when
    // setline() is used on startup.  For other books the book must be loaded.
@@ -173,17 +171,17 @@ updateLinesFromVars(
 
    if (append)
       // appendbufline() uses the line number below which we insert
-      append_lnum = lnum - 1;
+      appendLnum = lnum - 1;
    else
       // setbufline() uses the line number above which we insert, we only
       // append if it's below the last line
-      append_lnum = curBook->mem.lineCount;
+      appendLnum = curBook->mem.lineCount;
 
    if (lines->tag == VAR_LIST) {
       l = lines->list;
-      if (l == NULL || list_len(l) == 0) {
-          // not appending anything always succeeds
-          goto done;
+      if (!l || list_len(l) == 0) {
+         // not appending anything always succeeds
+         goto done;
       }
       CHECK_LIST_MATERIALIZE(l);
       li = l->first;
@@ -213,20 +211,20 @@ updateLinesFromVars(
       }
 
       if (!append && lnum <= curBook->mem.lineCount) {
-          // Existing line, replace it. Removes any existing text properties.
-          if (u_savesub(lnum) == OK && ml_replace_len(
-               lnum, line, (ColNr)STRLEN(line) + 1, TRUE, TRUE) == OK)
-          {
-         changed_bytes(lnum, 0);
-         if (isCurBook && lnum == curPor->cursor.lnum)
-             check_cursor_col();
-         returnVar->number = OK;
-          }
+         // Existing line, replace it. Removes any existing text properties.
+         if (u_savesub(lnum) == OK && ml_replace_len(
+               lnum, line, (ColNr)STRLEN(line) + 1, TRUE, TRUE) == OK
+         ) {
+            changed_bytes(lnum, 0);
+            if (isCurBook && lnum == curPor->cursor.lnum)
+               check_cursor_col();
+            returnVar->number = OK;
+         }
       } ei (added > 0 || u_save(lnum - 1, lnum) == OK) {
-          // append the line
-          ++added;
-          if (ml_append(lnum - 1, line, (ColNr)0, FALSE) == OK)
-         returnVar->number = OK;
+         // append the line
+         ++added;
+         if (ml_append(lnum - 1, line, (ColNr)0, FALSE) == OK)
+            returnVar->number = OK;
       }
 
       if (!l)         // only one string argument
@@ -239,22 +237,23 @@ updateLinesFromVars(
       Portal       *po;
       Tab   *t;
 
-      appended_lines_mark(append_lnum, added);
+      appended_lines_mark(appendLnum, added);
 
       // Only adjust the cursor for books other than the current, unless it
       // is the current portal.  For curBook and other portals it has been
       // done in mark_adjust_internal().
-      FOR_ALL_TAB_PORTALS(t, po)
-          if (po->book == book
-             && (po->book != curBook || po == curPor)
-             && po->cursor.lnum > append_lnum)
-         po->cursor.lnum += added;
+      FOR_ALL_TAB_PORTALS(t, po) {
+         if (po->book == book
+                && (po->book != curBook || po == curPor)
+                && po->cursor.lnum > appendLnum)
+            po->cursor.lnum += added;
+      } 
       check_cursor_col();
 
-      // Only update the portal view if book matches curBook, otherwise
-      // the computations will be wrong.
+      //Only update the portal view if book matches curBook, otherwise
+      //the computations will be wrong.
       if (curPor->book == curBook)
-          update_topline();
+         update_topline();
    }
 
 done:
@@ -265,23 +264,23 @@ done:
 // "append(lnum, string/list)" function
 void
 f_append(Var *argvars, Var *returnVar) {
-   int      anyEmsgG_before = anyEmsgG;
+   int      anyEmsgSaved = anyEmsgG;
    LineNr lnum = tv_get_lnum(&argvars[0]);
-   if (anyEmsgG == anyEmsgG_before)
+   if (anyEmsgG == anyEmsgSaved)
       updateLinesFromVars(curBook, lnum, true, argvars + 1, returnVar);
 }
 
 // Set or append lines to a book.
 private void
 setOrAppendLines(Arr(Var) argvars, Var *returnVar, Boole append) {
-   int anyEmsgG_before = anyEmsgG;
+   int anyEmsgSaved = anyEmsgG;
 
    Book* book = daGetBook(&argvars[0], false);
    if (!book)
       returnVar->number = FAIL;
    else {
       LineNr lnum = daGetLnumFromBookOrVar(&argvars[1], book);
-      if (anyEmsgG == anyEmsgG_before)
+      if (anyEmsgG == anyEmsgSaved)
          updateLinesFromVars(book, lnum, append, argvars + 2, returnVar);
    }
 }
@@ -386,7 +385,7 @@ f_deletebufline(Var *argvars, Var *returnVar) {
    long   count;
    Tab   *tp;
    Portal   *po;
-   int      anyEmsgG_before = anyEmsgG;
+   int      anyEmsgSaved = anyEmsgG;
 
    returnVar->number = 1;   // FAIL by default
 
@@ -395,7 +394,7 @@ f_deletebufline(Var *argvars, Var *returnVar) {
       return;
 
    LineNr first = daGetLnumFromBookOrVar(&argvars[1], book);
-   if (anyEmsgG > anyEmsgG_before)
+   if (anyEmsgG > anyEmsgSaved)
       return;
    if (argvars[2].tag != VAR_UNKNOWN)
       last = daGetLnumFromBookOrVar(&argvars[2], book);
@@ -604,12 +603,12 @@ private void
 getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist) {
    LineNr   lnum = 1;
    LineNr   end = 1;
-   int      anyEmsgG_before = anyEmsgG;
+   int      anyEmsgSaved = anyEmsgG;
 
    Book* book = daGetBookFromArg(&argvars[0]);
    if (book) {
       lnum = daGetLnumFromBookOrVar(&argvars[1], book);
-      if (anyEmsgG > anyEmsgG_before)
+      if (anyEmsgG > anyEmsgSaved)
          return;
       if (argvars[2].tag == VAR_UNKNOWN)
          end = lnum;
@@ -654,10 +653,10 @@ f_setbufline(Var *argvars, Var *returnVar) {
 
 void
 f_setline(Var *argvars, Var *returnVar) {
-   int      anyEmsgG_before = anyEmsgG;
+   int      anyEmsgSaved = anyEmsgG;
 
    LineNr lnum = tv_get_lnum(&argvars[0]);
-   if (anyEmsgG == anyEmsgG_before)
+   if (anyEmsgG == anyEmsgSaved)
       updateLinesFromVars(curBook, lnum, false, argvars + 1, returnVar);
 }
 
@@ -1203,7 +1202,7 @@ clear_chartabsize_arg(OUT CharTableSize* cts) {
 
 // Like chartabsize(), but also check for line breaks on the screen and text properties that insert
 int
-lbr_chartabsize(CharTableSize *cts) {
+lbr_chartabsize(CharTableSize* cts) {
    if (!curPor->o.lineBreak && !p_sbr && !curPor->o.breakIndent && !cts->cts_has_prop_with_text) {
       if (curPor->o.wrap)
          return win_nolbr_chartabsize(cts, NULL);
@@ -2516,7 +2515,7 @@ private void
 freeAttachedData(Book* book, int free_options) {     // free options as well
    if (free_options) {
       clearPortInfo(book);      // including portal-local options
-      bookFreeOptions(book);
+      optFreeBookCallbacks(book);
       ga_clear(&book->syntax.b_langp);
    }
    {
@@ -2787,7 +2786,7 @@ runBookCommand(
    if ((flags & DOBOOK_NOPOPUP) && bt_popup(book) && !bt_terminal(book))
       return OK;
    if (action == DOBOOK_GOTO && book != curBook) {
-      if (!check_can_set_curbuf_forceit((flags & DOBOOK_FORCEIT) != 0))
+      if (!portCheckCanSetCurBookForceIt((flags & DOBOOK_FORCEIT) != 0))
          // disallow navigating to another book when 'portfixbuf' is applied
          return FAIL;
       if (book->lockedSplit) {
@@ -2964,7 +2963,7 @@ runBookCommand(
 
    // make "book" the current book
    if (action == DOBOOK_SPLIT) {     // split portal first
-      // If 'switchbuf' is set jump to the portal containing "book".
+      // If 'switchbook' is set jump to the portal containing "book".
       if (switchBufGotoPortalIntoBuf(book) != NULL)
          return OK;
 
@@ -3180,8 +3179,8 @@ enterBook(Book* book){
 #if defined(EXITFREE)
        && !entered_free_all_mem
 #endif
-       )
-   end_visual_mode();
+   )
+      end_visual_mode();
 
    //Get the book in the current portal.
    curPor->book = book;
@@ -3307,8 +3306,8 @@ bookNew(
    LineNr lnum,      // preferred cursor line
    Unt flags
 ) {                    // BLN_ defines
-   Byte   *fullFName = ffname_arg;
-   Byte   *sfname = sfname_arg;
+   CS fullFName = ffname_arg;
+   CS sfname = sfname_arg;
    FileStat   st;
 
    if (top_file_num == 1)
@@ -3334,7 +3333,6 @@ bookNew(
 
       if ((flags & BLN_LISTED) && !book->o.bookListed) {
          BookRef bookRef;
-
          book->o.bookListed = true;
          bookStoreInRef(OUT &bookRef, book);
          if (!(flags & BLN_DUMMY)) {
@@ -3351,7 +3349,7 @@ bookNew(
    //This is the ONLY place where a new book structure is allocated!
    //(A spell file book is allocated in spell.c, but that's not a normal book)
    book = NULL;
-   if ((flags & BLN_CURBOOK) && isCurBookReusable()) {
+   if ((flags & BLN_CURBOOK) != 0 && isCurBookReusable()) {
       BookRef bookRef;
       book = curBook;
       
@@ -3372,7 +3370,7 @@ bookNew(
       
       // init b: variables
       book->bVars = allocBag_id(aid_newbuf_bvars);
-      if (book->bVars == NULL) {
+      if (!book->bVars) {
          eeglFree(fullFName);
          eeglFree(book);
          return NULL;
@@ -3456,7 +3454,7 @@ bookNew(
       addBookToHashtable(book);
 
       // Always copy the options from the current book.
-      book->o.modifiable = (flags & BLN_MODIFIABLE);
+      book->o.modifiable = flags & BLN_MODIFIABLE;
       optsCopyToBook(book, BCO_ALWAYS);
    }
 
@@ -3502,33 +3500,20 @@ bookNew(
    return book;
 }
 
-//Free the memory for the options of a book.
-void
-bookFreeOptions(Book* book){
-   book->o.isKeyword = null;
-   evFreeCallback(book->o.completeFn);
-   evFreeCallback(book->o.omniFn);
-   book->o.thesaurus = null;
-   evFreeCallback(book->o.thesaurusFn);
-   evFreeCallback(book->o.completeFn);
-   evFreeCallback(book->o.tagFn);
-   evFreeCallback(book->o.findFn);
-}
-
 //Get alternate file "n".
 //Set linenr to "lnum" or altfpos.lnum if "lnum" == 0.
 //  Also set cursor column to altfpos.col if 'startofline' is not set.
 //if (options & GETF_SETMARK) call setpcmark()
 //if (options & GETF_ALT) we are jumping to an alternate file.
-//if (options & GETF_SWITCH) respect 'switchbuf' settings when jumping
+//if (options & GETF_SWITCH) respect 'switchbook' settings when jumping
 //
 //Return FAIL for failure, OK for success.
 int
 booklistGetFile(
-   int      n,
+   int n,
    LineNr   lnum,
-   int      options,
-   int      forceit
+   int options,
+   int forceit
 ){
    Portal   *po = NULL;
    Pos   *fpos;
@@ -3558,11 +3543,11 @@ booklistGetFile(
    } else
       col = 0;
 
-   if (options & GETF_SWITCH) {
-      // If @switchbuf is set, jump to the portal containing "book".
+   if ((options & GETF_SWITCH) != 0) {
+      // If @switchbook is set, jump to the portal containing "book".
       po = switchBufGotoPortalIntoBuf(book);
 
-      //If @switchbuf contains "split", "vsplit" or "newtab" and the
+      //If @switchbook contains "split", "vsplit" or "newtab" and the
       //current book isn't empty: open new tab or portal
       if (!po && (p_swb & (SWB_VSPLIT | SWB_SPLIT | SWB_NEWTAB)) != 0 && !BUFEMPTY()) {
          if ((p_swb & SWB_NEWTAB) != 0)
@@ -3613,9 +3598,7 @@ getLastKnownLineNumber(void) {
 Book *
 booklistFindByNameExpandingLinks(CS fname) {
    // First make the name into a full path name
-   CS fullFName = FullName_save(fname,
-       TRUE       // force expansion, get rid of symbolic links
-   );
+   CS fullFName = FullName_save(fname, TRUE);      // force expansion, get rid of symbolic links
    Book* book = NULL;
    if (fullFName) {
       book = booklistFindName(fullFName);
@@ -3628,7 +3611,7 @@ booklistFindByNameExpandingLinks(CS fname) {
 //Skip dummy books. Return NULL if not found.
 Book*
 booklistFindName(CS fullFName){
-   FileStat   st;
+   FileStat st;
    if (stat((char *)fullFName, &st) < 0)
       st.st_dev = (Device)-1;
    return booklistFindName_stat(fullFName, &st);
@@ -3642,7 +3625,7 @@ sameFileInBook(Book* book, CS fullFName, FileStat* stp) {
    if (fnamecmp(fullFName, book->fullFileName) == 0)
       return true;
 
-   FileStat       st;
+   FileStat st;
    // If no FileStat given, get it now
    if (stp == NULL) {
       if (!book->isDevNumValid || stat((char *)fullFName, &st) < 0)
@@ -3739,12 +3722,12 @@ booklistFindPattern(
                       && checkFilenameMatch(&regmatch, book) != NULL) {
                   if (curtab_only) {
                      // Ignore the match if the book is not open in the current tab.
-                     Portal   *po;
+                     Portal* po;
                      FOR_ALL_PORTALS(po) {
                         if (po->book == book)
                            break;
                      } 
-                     if (po == NULL)
+                     if (!po)
                         continue;
                   }
                   if (match >= 0) {     // already found a match
@@ -3794,14 +3777,13 @@ bufExpandBufnames(
    Unt options,
    OUT ExpandMatch* matches
 ){
-   Book* book;
    CS p;
    CS patSaved = NULL;
    LBufMatch* bufMatches = createLBufMatch(2, matches->a);
    Fuzzy fuzzy = {};
    fuzzy.a = matches->a;
-   RegMatch   regmatch;
-   int      score = 0;
+   RegMatch regmatch;
+   int score = 0;
    Boole to_free = false;
 
    if ((options & BOOK_DIFF_FILTER) != 0 && !curPor->o.diff)
@@ -3825,6 +3807,7 @@ bufExpandBufnames(
       regmatch.regprog = compileRegexp(patSaved, RE_MAGIC);
    }
 
+   Book* book;
    FOR_ALL_BOOKS(book) {
       if (!book->o.bookListed)
          continue;
@@ -3905,23 +3888,21 @@ checkFilenameMatch(RegMatch* rmp, Book* book) {
 //Note that rmp->regprog may become NULL when switching regexp engine.
 //Return "name" when there is a match, NULL when not.
 private CS
-fname_match(RegMatch   *rmp, Byte   *name){
-   Byte   *match = NULL;
-   Byte   *p;
-
+fname_match(RegMatch* rmp, CS name){
    // extra check for valid arguments
-   if (name == NULL || rmp->regprog == NULL)
+   if (!name || !rmp->regprog)
       return NULL;
 
    // Ignore case when 'fileignorecase' or the argument is set.
    rmp->rm_ic = FALSE;
+   CS match = null;
    if (eeRegexec(rmp, name, (ColNr)0))
       match = name;
    ei (rmp->regprog) {
       // Replace $(HOME) with '~' and try matching again.
-      p = home_replace_save(NULL, name);
+      CS p = home_replace_save(NULL, name);
       if (p && eeRegexec(rmp, p, (ColNr)0))
-          match = name;
+         match = name;
       eeglFree(p);
     }
 
@@ -3931,7 +3912,7 @@ fname_match(RegMatch   *rmp, Byte   *name){
 // Find a file in the book list by book number.
 Book*
 bookFindFileByBookNr(int nr){
-   Byte   key[EE_SIZEOF_INT * 2 + 1];
+   Byte key[EE_SIZEOF_INT * 2 + 1];
 
    if (nr == 0)
       nr = curPor->altFnum;
@@ -3965,13 +3946,13 @@ bookGetNameByBookNr(
 //When "lnum" is 0 only do the options.
 void
 bookSetPosInPort(
-   Book   *book,
-   Portal   *port,      // may be NULL when using :badd
-   LineNr   lnum,
-   ColNr   col,
-   Boole      copy_options)
-{
-   PortInfo   *poInfo;
+   Book* book,
+   Portal* port,      // may be NULL when using :badd
+   LineNr lnum,
+   ColNr col,
+   Boole copy_options
+) {
+   PortInfo* poInfo;
 
    FOR_ALL_BOOK_PORTINFOS(book, poInfo) {
       if (poInfo->portal == port)
@@ -4034,18 +4015,14 @@ wininfo_other_tab_diff(PortInfo* poInfo){
    return TRUE;
 }
 
-// Find info for the current portal in book "book".
-// If not found, return the info for the most recently used portal.
-// When "need_options" is TRUE skip entries where isOptChanged is false.
-// When "skipDiffBook" is TRUE avoid portals with 'diff' set that is in another tab.
-// Return NULL when there isn't any info.
+//Find info for the current portal in book "book".
+//If not found, return the info for the most recently used portal.
+//When "need_options" is TRUE skip entries where isOptChanged is false.
+//When "skipDiffBook" is TRUE avoid portals with 'diff' set that is in another tab.
+//Return NULL when there isn't any info.
 private PortInfo*
-find_wininfo(
-   Book* book,
-   int need_options,
-   Boole skipDiffBook
-){
-   PortInfo   *poInfo;
+find_wininfo(Book* book, int need_options, Boole skipDiffBook){
+   PortInfo* poInfo;
    FOR_ALL_BOOK_PORTINFOS(book, poInfo) {
       if (poInfo->portal == curPor
             && (!skipDiffBook || !wininfo_other_tab_diff(poInfo))
@@ -4255,7 +4232,7 @@ setfname(
 ){
    CS fullFName = ffname_arg;
    CS sfname = sfname_arg;
-   Book   *obook = NULL;
+   Book* obook = NULL;
    FileStat   st;
 
    if (fullFName == NULL || *fullFName == ZERO) {
@@ -4300,13 +4277,13 @@ setfname(
          closeBook(NULL, obook, DOBOOK_WIPE, FALSE, FALSE);
       }
       sfname = copyStr(sfname);
-      if (fullFName == NULL || sfname == NULL) {
+      if (!fullFName || !sfname) {
          eeglFree(sfname);
          eeglFree(fullFName);
          return FAIL;
       }
       if (book->shortFileName != book->fullFileName)
-          eeglFree(book->shortFileName);
+         eeglFree(book->shortFileName);
       eeglFree(book->fullFileName);
       book->fullFileName = fullFName;
       book->shortFileName = sfname;
@@ -4586,13 +4563,12 @@ renderStatusLine(
    StatusLineHilite *sp;
    int save_redraw_not_allowed = redraw_not_allowed;
    int save_KeyTyped = KeyTyped;
-       // TODO: find out why using called_emsg_before makes tests fail, does it
-       // matter?
-       // int   called_emsg_before = called_emsg;
-   int      anyEmsgG_before = anyEmsgG;
+   // TODO: find out why using called_emsg_before makes tests fail, does it matter?
+   // int   called_emsg_before = called_emsg;
+   int      anyEmsgSaved = anyEmsgG;
 
-    // When inside drawUpdateScreen() we do not want redrawing a statusline,
-    // ruler, title, etc. to trigger another redraw, it may cause an endless loop.
+   // When inside drawUpdateScreen() we do not want redrawing a statusline,
+   // ruler, title, etc. to trigger another redraw, it may cause an endless loop.
    if (updating_screen)
       redraw_not_allowed = TRUE;
 
@@ -5379,11 +5355,11 @@ renderStatusLine(
    redraw_not_allowed = save_redraw_not_allowed;
    KeyTyped = save_KeyTyped;
 
-   // Check for an error.  If there is one the display will be messed up and
-   // might loop redrawing.  Avoid that by making the corresponding option empty.
-   // TODO: find out why using called_emsg_before makes tests fail, does it matter?
-   // if (called_emsg > called_emsg_before)
-   if (anyEmsgG > anyEmsgG_before)
+   //Check for an error.  If there is one the display will be messed up and
+   //might loop redrawing.  Avoid that by making the corresponding option empty.
+   //TODO: find out why using called_emsg_before makes tests fail, does it matter?
+   //if (called_emsg > called_emsg_before)
+   if (anyEmsgG > anyEmsgSaved)
       optChangeStringOptionDirect(oname, Em, opt_scope, SID_ERROR);
 
    return width;
@@ -5518,10 +5494,10 @@ c_bookAll(Invocation* invo) {
       gotoTab(tNext, TRUE, TRUE);
     }
 
-   // Go through the book list.  When a book doesn't have a portal yet,
-   // open one.  Otherwise move the portal to the right position.
-   // Watch out for autocommands that delete books or portals!
-   // Don't execute Win/Buf Enter/Leave autocommands here.
+   //Go through the book list.  When a book doesn't have a portal yet,
+   //open one.  Otherwise move the portal to the right position.
+   //Watch out for autocommands that delete books or portals!
+   //Don't execute Win/Buf Enter/Leave autocommands here.
    ++autocmd_no_enter;
    enterPortal(lastPor, FALSE);
    ++autocmd_no_leave;
@@ -5547,8 +5523,8 @@ c_bookAll(Invocation* invo) {
             portMoveAfter(po, curPor);
       }
 
-      if (po == NULL && split_ret == OK) {
-         BookRef   bookRef;
+      if (!po && split_ret == OK) {
+         BookRef bookRef;
 
          bookStoreInRef(OUT &bookRef, book);
 
@@ -5572,8 +5548,8 @@ c_bookAll(Invocation* invo) {
          if (swap_exists_action == SEA_QUIT) {
             Cleanup   cs;
 
-            // Reset the error/interrupt/exception state here so that
-            // aborting() returns FALSE when closing a portal.
+            //Reset the error/interrupt/exception state here so that
+            //aborting() returns FALSE when closing a portal.
             enter_cleanup(&cs);
 
             // User selected Quit at ATTENTION prompt; close this portal.
@@ -5595,10 +5571,10 @@ c_bookAll(Invocation* invo) {
          (void)vgetc();   // only break the file loading, not the rest
          break;
       }
-      // Autocommands deleted the book or aborted script processing!!!
+      //Autocommands deleted the book or aborted script processing!!!
       if (aborting())
          break;
-      // When ":tab" was used open a new tab for a new portal repeatedly.
+      //When ":tab" was used open a new tab for a new portal repeatedly.
       if (had_tab > 0)
          commModifierG.cmod_tab = 9999;
    }
@@ -5736,7 +5712,7 @@ bookSpName(Book* book) {
    return NULL;
 }
 
-// Get "book->currFileName", use "[No Name]" if it is NULL.
+//Get "book->currFileName", use "[No Name]" if it is NULL.
 CS
 bookGetFname(Book* book) {
    if (book->currFileName == NULL)
@@ -5744,7 +5720,7 @@ bookGetFname(Book* book) {
    return book->currFileName;
 }
 
-// Set 'buflisted' for curBook to "on" and trigger autocommands if it changed.
+//Set 'buflisted' for curBook to "on" and trigger autocommands if it changed.
 void
 bookSetBooklisted(Boole on) {
    if (on == curBook->o.bookListed)
@@ -5756,8 +5732,8 @@ bookSetBooklisted(Boole on) {
       apply_autocmds(EVENT_BUFDELETE, NULL, NULL, false, curBook);
 }
 
-// Read the file for "book" again and check if the contents changed.
-// Return TRUE if it changed or this could not be checked.
+//Read the file for "book" again and check if the contents changed.
+//Return TRUE if it changed or this could not be checked.
 int
 buf_contents_changed(Book* book){
    Boole differ = true;
@@ -5851,9 +5827,9 @@ printMsgWithWrap(CS s) {
 //with NULL. The entry with index "current" is inclosed in [].
 void
 listInColumns(Arr(CS) items, int size, int current, Boole useHilite) {
-   Unt      cur_row = 1;
+   Unt cur_row = 1;
    Unt itemCount = 0;
-   int      width = 0;
+   int width = 0;
 
    // Find the length of the longest item, use that + 1 as the column width.
    for (int i = 0; size < 0 ? items[i] != NULL : i < size; ++i) {
@@ -7130,7 +7106,7 @@ check_arglist_locked(void) {
 
 // Clear an argument list: free all file names and reset it to zero entries.
 void
-alist_clear(ErArgList* al) {
+alist_clear(EeArgList* al) {
    if (check_arglist_locked() == FAIL)
       return;
    while (--al->al_ga.len >= 0)
@@ -7140,7 +7116,7 @@ alist_clear(ErArgList* al) {
 
 // Init an argument list.
 void
-alist_init(ErArgList *al) {
+alist_init(EeArgList *al) {
    ga_init2(&al->al_ga, sizeof(ArgFileEntry), 5);
 }
 
@@ -7148,7 +7124,7 @@ alist_init(ErArgList *al) {
 // Ignored when the argument list is the global one.
 // If the argument list is no longer used by any portal, free it.
 void
-alist_unlink(ErArgList *al) {
+alist_unlink(EeArgList *al) {
    if (al != &argListG && --al->al_refcount <= 0) {
       alist_clear(al);
       eeglFree(al);
@@ -7158,7 +7134,7 @@ alist_unlink(ErArgList *al) {
 // Create a new argument list and use it for the current portal.
 void
 alist_new(void) {
-   curPor->argList = ALLOC_ONE(ErArgList);
+   curPor->argList = ALLOC_ONE(EeArgList);
    if (curPor->argList == NULL) {
       curPor->argList = &argListG;
       ++argListG.al_refcount;
@@ -7174,7 +7150,7 @@ alist_new(void) {
 // Takes over the allocated files[] and the allocated fnames in it.
 private void
 alist_set(
-   ErArgList* al,
+   EeArgList* al,
    Boole useCurBook,
    Arr(int) fnum_list,
    Unt fnum_len,
@@ -7217,7 +7193,7 @@ alist_set(
 // May trigger Buf* autocommands
 void
 arglistIngest(
-    ErArgList   *al,
+    EeArgList* al,
     CS fname,
     int set_fnum   // 1: set book number; 2: re-use curBook
 ){
@@ -7622,7 +7598,7 @@ do_argfile(Invocation* invo, int argn){
 
    if (!isSplitCommand
           && (&ARGLIST[argn])->fnum != curBook->fiNum
-          && !check_can_set_curbuf_forceit(invo->forceit))
+          && !portCheckCanSetCurBookForceIt(invo->forceit))
       return;
 
    setpcmark();
@@ -7802,7 +7778,7 @@ alist_name(ArgFileEntry *afe) {
 
 // State used by the :all command to open all the files in the argument list in separate portals
 typedef struct {
-   ErArgList* alist;      // argument list to be used
+   EeArgList* alist;      // argument list to be used
    int   had_tab;
    int   keep_tabs;
    int   forceit;
@@ -8979,12 +8955,11 @@ find_type_by_id(EeSet* ht, PropType*** array, int id) {
    // Make the lookup faster by creating an array with pointers to
    // hashtable entries, sorted on id.
    if (*array == NULL) {
-      long       todo;
       EeSetItem  *hi;
       int       i = 0;
 
       *array = ALLOC_MULT(PropType *, ht->count);
-      todo = (long)ht->count;
+      long todo = (long)ht->count;
       FOR_ALL_HASHTAB_ITEMS(ht, hi, todo) {
          if (!HASHITEM_EMPTY(hi)) {
             (*array)[i++] = HI2PT(hi);

@@ -2411,7 +2411,7 @@ ins_del(void) {
       return;
    if (gchar_cursor() == ZERO) {     // delete newline
       temp = curPor->cursor.col;
-      if (do_join(2, FALSE, TRUE, FALSE, FALSE) == FAIL) {
+      if (jugJoinLinesUnderCursor(2, FALSE, TRUE, FALSE, FALSE) == FAIL) {
       } else {
          curPor->cursor.col = temp;
       }
@@ -2520,7 +2520,7 @@ ins_bs(
             curBook->mem.flags |= ML_LINE_DIRTY;
          }
       }
-      (void)do_join(2, FALSE, FALSE, FALSE, FALSE);
+      (void)jugJoinLinesUnderCursor(2, FALSE, FALSE, FALSE, FALSE);
       if (temp == ZERO && gchar_cursor() != ZERO)
          inc_cursor();
 
@@ -4645,7 +4645,6 @@ ins_compl_dictionaries(
    CS dict = dict_start;
    CS ptr;
    RegMatch   regmatch;
-   int save_p_scs;
    Unt dir = compl_direction;
 
    if (*dict == ZERO) {
@@ -4655,8 +4654,8 @@ ins_compl_dictionaries(
    CS buf = alloc(LSIZE);
    regmatch.regprog = NULL;   // so that we can goto theend
 
-   // If 'infercase' is set, don't use 'smartcase' here
-   save_p_scs = p_scs;
+   // If @infercase is set, don't use 'smartcase' here
+   Boole smartCaseSaved = p_scs;
    if (curBook->o.inferCase)
       p_scs = FALSE;
 
@@ -4714,7 +4713,7 @@ ins_compl_dictionaries(
    deleteArena(files.a);
 
 theend:
-   p_scs = save_p_scs;
+   p_scs = smartCaseSaved;
    eeRegFree(regmatch.regprog);
    eeglFree(buf);
 }
@@ -5716,16 +5715,14 @@ get_insert_callback(int type) {
 //Callback function "cb" is set if triggered by a function in the 'cpt' option; otherwise, it's null
 private void
 expand_by_function(int type, CS base, Callback *cb) {
-   List      *matchlist = NULL;
-   Bag   *matchdict = NULL;
-   Var   args[3];
-   Byte   *funcname;
-   Var   returnVar;
+   List* matchlist = NULL;
+   Bag* matchdict = NULL;
+   Var args[3];
    int save_State = stateG;
    int is_cfntion = (cb != NULL);
 
    if (!is_cfntion) {
-      funcname = get_complete_funcname(type);
+      CS funcname = get_complete_funcname(type);
       if (*funcname == ZERO)
          return;
       cb = get_insert_callback(type);
@@ -5735,18 +5732,18 @@ expand_by_function(int type, CS base, Callback *cb) {
    args[0].tag = VAR_NUMBER;
    args[0].number = 0;
    args[1].tag = VAR_STRING;
-   args[1].string = base != NULL ? base : (CS)"";
+   args[1].string = base  ? base : (CS)"";
    args[2].tag = VAR_UNKNOWN;
 
    Pos pos = curPor->cursor;
-   // Lock the text to avoid weird things from happening.  Also disallow
-   // switching to another window, it should not be needed and may end up in
-   // Insert mode in another buffer.
+   //Lock the text to avoid weird things from happening. Also disallow switching to another portal, 
+   //it should not be needed and may end up in Insert mode in a different book.
    ++textlock;
 
-   int retval = call_callback(cb, 0, &returnVar, 2, args);
+   Var returnVar;
+   int retval = call_callback(cb, 0, OUT &returnVar, 2, args);
 
-   // Call a function, which returns a list or dict.
+   // Call a function which returns a list or dict.
    if (retval == OK) {
       switch (returnVar.tag) {
       case VAR_LIST:
@@ -5757,10 +5754,10 @@ expand_by_function(int type, CS base, Callback *cb) {
          break;
       case VAR_SPECIAL:
          if (returnVar.number == VVAL_NONE)
-             compl_opt_suppress_empty = TRUE;
+            compl_opt_suppress_empty = TRUE;
          // FALLTHROUGH
       default:
-         // TODO: Give error message?
+         emsg(_(e_list_or_number_required));
          clearVar(&returnVar);
          break;
       }
@@ -6789,27 +6786,26 @@ ins_compl_get_next_word_or_line(
 //"st->set_match_pos" is TRUE, then set the "st->first_match_pos" and "st->last_match_pos".
 //Return OK if a new next match is found, otherwise returns FAIL.
 private Unt
-get_next_default_completion(InsertionCompletionNext *st, Pos *start_pos) {
+get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
    Unt      found_new_match = FAIL;
-   int      save_p_scs;
    int      looped_around = FALSE;
-   Byte   *ptr = NULL;
+   CS ptr = NULL;
    int      len = 0;
    int      in_fuzzy_collect = (cfc_has_mode() && compl_length > 0)
       || ((curBook->o.completeOpt & COT_FUZZY) && compl_autocomplete);
-   Byte   *leader = ins_compl_leader();
+   CS leader = ins_compl_leader();
    int      score = FUZZY_SCORE_NONE;
-   int      in_curbuf = st->scannedBook == curBook;
+   Boole inCurBook = st->scannedBook == curBook;
 
    // If 'infercase' is set, don't use 'smartcase' here
-   save_p_scs = p_scs;
+   Boole smartCaseSaved = p_scs;
    if (st->scannedBook->o.inferCase)
       p_scs = FALSE;
 
    //Buffers other than curBook are scanned from the beginning or the end but never from the 
    //middle, thus setting nowrapscan in this buffer is a good idea, on the other hand, we always set
    //wrapscan for curBook to avoid missing matches -- Acevedo,Webb
-   if (!in_curbuf)
+   if (!inCurBook)
       wrapSearchG = false;
    ei (*st->e_cpt == '.')
       wrapSearchG = true;
@@ -6868,7 +6864,7 @@ get_next_default_completion(InsertionCompletionNext *st, Pos *start_pos) {
          break;
 
       // when ADDING, the text before the cursor matches, skip it
-      if (compl_status_adding() && in_curbuf
+      if (compl_status_adding() && inCurBook
             && start_pos->lnum == st->cur_match_pos->lnum
             && start_pos->col  == st->cur_match_pos->col)
          continue;
@@ -6878,14 +6874,14 @@ get_next_default_completion(InsertionCompletionNext *st, Pos *start_pos) {
       if (!ptr || (ins_compl_has_preinsert() && STRCMP(ptr, compl_pattern.c) == 0))
          continue;
 
-      if (is_nearest_active() && in_curbuf) {
+      if (is_nearest_active() && inCurBook) {
          score = st->cur_match_pos->lnum - curPor->cursor.lnum;
          if (score < 0)
             score = -score;
       }
 
       if (ins_compl_add_infercase(ptr, len, p_ic,
-            in_curbuf ? NULL : st->scannedBook->shortFileName,
+            inCurBook ? NULL : st->scannedBook->shortFileName,
             0, cont_s_ipos, score) != NOTDONE)
       {
          if (in_fuzzy_collect && score == compl_first_match->next->cp_score)
@@ -6894,7 +6890,7 @@ get_next_default_completion(InsertionCompletionNext *st, Pos *start_pos) {
          break;
       }
    }
-   p_scs = save_p_scs;
+   p_scs = smartCaseSaved;
    wrapSearchG = true;
 
    return found_new_match;
@@ -7412,8 +7408,8 @@ ins_compl_delete(void) {
       curPor->cursor.col = orig_col;
       eeglFree(remaining.c);
    }
-   // TODO: is this sufficient for redrawing?  Redrawing everything causes
-   // flicker, thus we can't do that.
+   //TODO: is this sufficient for redrawing?  Redrawing everything causes
+   //flicker, thus we can't do that.
    changed_cline_bef_curs();
    // clear v:completed_item
    set_EeglVar_dict(VV_COMPLETED_ITEM, allocBag_lock(VAR_FIXED));

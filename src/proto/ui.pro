@@ -32,7 +32,7 @@ void termUpdatePortal(Portal *po);
 void termDidUpdatePortal(Portal *po);
 int term_is_finished(Book *book);
 int term_shobuffer(Book *book);
-void term_change_in_curbuf(void);
+void uiBeforeLeavingTerminal(void);
 Decoration termGetDeco(Portal *po, LineNr lnum, int col);
 void termResetPortcolor(Portal *po);
 void termUpdatePortcolor(Portal *po);

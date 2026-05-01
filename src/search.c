@@ -4622,7 +4622,7 @@ cleanup_help_tags(OUT ExpandMatch* matches) {
 void
 prepare_help_buffer(void) {
    curBook->kind = BOOK_HELP;
-   optSetByName(S"buftype", optEnum(BOOK_HELP), SET_LOCAL);
+   optSetByName(S"booktype", optEnum(BOOK_HELP), SET_LOCAL);
 
    //Always set these options after jumping to a help tag, because the
    //user may have an autocommand that gets in the way.

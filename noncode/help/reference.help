@@ -4701,7 +4701,7 @@ This option does not apply to |ins-completion|. See @completeopt for that.
 
 @@portcolor              Portal. String. Default = ""
    
-Hilite group name to use for this window instead of the Normal color |hl-Normal|.
+Hilite group name to use for this portal instead of the Normal color |hl-Normal|.
 
 
 @@portfixbuf             Portal. Boolean. Default = off

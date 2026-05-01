@@ -23,7 +23,7 @@ int startEditingFile(int fnum, CS fullFName, CS sfname, Invocation *invo, LineNr
 void c_append(Invocation *invo);
 void c_change(Invocation *invo);
 void c_z(Invocation *invo);
-Byte *skip_substitute(Byte *start, int delimiter);
+CS skip_substitute(CS start, int delimiter);
 void c_substitute(Invocation *invo);
 int do_sub_msg(int count_only);
 Byte *get_old_sub(void);

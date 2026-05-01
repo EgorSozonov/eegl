@@ -636,23 +636,23 @@ setCallback(Callback *cbp, Callback *callback) {
 // Prepare book "book" for writing channel output to.
 private void
 prepare_buffer(Book* book) {
-   Book *save_curbuf = curBook;
+   Book *curBookSaved = curBook;
 
    optsCopyToBook(book, BCO_ENTER);
    curBook = book;
-   optChangeAndReportError(S"buftype", optStr("nofile"), SET_LOCAL);
+   optChangeAndReportError(S"booktype", optStr("nofile"), SET_LOCAL);
    optChangeAndReportError(S"bufhidden", optStr("hide"), SET_LOCAL);
    if (curBook->mem.mfile == NULL)
       ml_open(curBook);
-   curBook = save_curbuf;
+   curBook = curBookSaved;
 }
 
 // Find a buffer matching "name" or create a new one.
 // Return NULL if there is something very wrong (error already reported).
 private Book*
 chaFindBook(CS name, int err, int msg) {
-   Book *book = NULL;
-   Book *save_curbuf = curBook;
+   Book* book = NULL;
+   Book* curBookSaved = curBook;
 
    if (name && *name != ZERO) {
       book = booklistFindName(name);
@@ -665,7 +665,7 @@ chaFindBook(CS name, int err, int msg) {
 
    book = bookNew(name == NULL || *name == ZERO ? NULL : name,
        NULL, (LineNr)0, BLN_LISTED | BLN_NEW);
-   if (book == NULL)
+   if (!book)
       return NULL;
    prepare_buffer(book);
 
@@ -675,16 +675,15 @@ chaFindBook(CS name, int err, int msg) {
           : "Reading from channel output..."), TRUE);
    } 
    changed_bytes(1, 0);
-   curBook = save_curbuf;
+   curBook = curBookSaved;
 
    return book;
 }
 
 // Set various properties from an "opt" argument.
 private void
-channel_set_options(Channel* channel, JobOptions *opt) {
+channel_set_options(Channel* channel, JobOptions* opt) {
    ChannelFdKind   part;
-
    if (opt->set & JO_MODE) {
       for (part = PART_SOCK; part < PART_COUNT; ++part)
           channel->fds[part].ch_mode = opt->mode;
@@ -768,9 +767,9 @@ channel_set_options(Channel* channel, JobOptions *opt) {
 
       // writing err to a buffer. Default mode is NL.
       if (!(opt->set & JO_ERR_MODE))
-          channel->fds[PART_ERR].ch_mode = CH_MODE_NL;
+         channel->fds[PART_ERR].ch_mode = CH_MODE_NL;
       if (opt->ioMode[PART_ERR] == JIO_OUT)
-          book = channel->fds[PART_OUT].bookref.c;
+         book = channel->fds[PART_OUT].bookref.c;
       ei (opt->set & JO_ERR_BUF) {
          book = bookFindFileByBookNr(opt->ioText[PART_ERR]);
          if (!book)
@@ -989,7 +988,7 @@ channel_set_req_callback(
 }
 
 private void
-write_buf_line(Book* book, LineNr lnum, Channel *channel) {
+write_buf_line(Book* book, LineNr lnum, Channel* channel) {
    CS line = memGetLine(book, lnum, FALSE);
    int len = memGetBookLen(book, lnum);
    int       i;
@@ -1121,23 +1120,23 @@ chaFreeBook(Book* book) {
 
 // Write any lines waiting to be written to "channel".
 private void
-channel_write_input(Channel *channel) {
-   ChannelFd   *in_part = &channel->fds[PART_IN];
+channel_write_input(Channel* channel) {
+   ChannelFd* in_part = &channel->fds[PART_IN];
 
    if (in_part->ch_writeque.next)
       channel_send(channel, PART_IN, (CS)"", 0, "channel_write_input");
    ei (in_part->bookref.c != NULL) {
       if (in_part->ch_buf_append)
-          channel_write_new_lines(in_part->bookref.c);
+         channel_write_new_lines(in_part->bookref.c);
       else
-          channel_write_in(channel);
+         channel_write_in(channel);
     }
 }
 
 // Write any lines waiting to be written to a channel.
 void
 channel_write_any_lines(void) {
-   Channel   *channel;
+   Channel* channel;
    FOR_ALL_CHANNELS(channel) {
       channel_write_input(channel);
    } 
@@ -1145,9 +1144,9 @@ channel_write_any_lines(void) {
 
 // Write appended lines above the last one in "book" to the channel.
 void
-channel_write_new_lines(Book *book) {
-   Channel   *channel;
-   int      found_one = FALSE;
+channel_write_new_lines(Book* book) {
+   Channel* channel;
+   int found_one = FALSE;
 
    // There could be more than one channel for the buffer, loop over all of them.
    FOR_ALL_CHANNELS(channel) {

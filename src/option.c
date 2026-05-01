@@ -485,7 +485,6 @@ parseCursorShape(CS input) {
 void
 optionInit1(void) {
    //'scroll' defaults to half the portal height. Need to calculate and set it now
-   Option* scroll = findOption(S"scroll");
    curPor->scroll = curPor->height/2 + 1;
    computeColumnsForRulerAndCommand();
 }
@@ -1270,7 +1269,7 @@ calcNewBufferCap(Unt oldSize) {
    }
 }
 
-//An option that accepts a list of flags is changed. eg. @viewoptions, @switchbuf etc
+//An option that accepts a list of flags is changed. eg. @viewoptions, @switchbook etc
 //Check an option that can be a range of string values. Empty is always OK.
 private CS
 readOptionFlags(OptionChange* cha, Arr(CS) validValues, OUT Unt *flagp) {
@@ -3676,6 +3675,7 @@ copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
    bui->len = wr - bui->c;
 }
 
+//Invoked by code in defoption.h
 private void
 copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha) {
    if (*old && old != cha->ref.string) {
@@ -3721,7 +3721,6 @@ updateStringRef(OptionChange* cha) {
 #include "defoption.h"
 #undef OPTIONS_DEF_BOOK
 #undef COPY_STRINGS_TO_BOOK
-
       } else {
       
 #define COPY_STRINGS_TO_PORTAL
@@ -4358,14 +4357,17 @@ private void
 copyGlobalToBookImpl(OUT Book* book) {
    Unt totalLen = calcLocalStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
-   Sbuf buf UNUSED = sbuf(newCap);
+   //Sbuf buf UNUSED = sbuf(newCap);
    BookLocal* t = &book->o;
+   t->stringOptions = sbuf(newCap);
 
 #define COPY_GLOBAL_TO_BOOK
 #define OPTIONS_DEF_BOOK
 #include "defoption.h"
 #undef OPTIONS_DEF_BOOK
 #undef COPY_GLOBAL_TO_BOOK
+
+   _bp(true);
 
    for (Unt i = 0; i < OPTION_BOOK_COUNT; i++) {
       t->scriptLocs[i] = OPTIONS_BOOK[i].scriptPos;
@@ -4376,6 +4378,17 @@ copyGlobalToBookImpl(OUT Book* book) {
    inSetTagCbForBook(book);
 }
 
+//Free the memory for the callback options of a book.
+void
+optFreeBookCallbacks(Book* book){
+   evFreeCallback(book->o.completeFn);
+   evFreeCallback(book->o.omniFn);
+   evFreeCallback(book->o.thesaurusFn);
+   evFreeCallback(book->o.completeFn);
+   evFreeCallback(book->o.tagFn);
+   evFreeCallback(book->o.findFn);
+}
+
 //Copy global option values to local options for one book.
 //Used when creating a new buffer and sometimes when entering a book.
 //flags:
@@ -4384,9 +4397,9 @@ copyGlobalToBookImpl(OUT Book* book) {
 void
 optsCopyToBook(OUT Book* book, Unt flags) {
    Boole shouldCopy = !book->o.initialized && (flags & BCO_ENTER) != 0;
-   if (shouldCopy || (flags & BCO_ALWAYS) == 0) {
+   if (shouldCopy || (flags & BCO_ALWAYS) != 0) {
       // Always free the allocated callbacks.
-      bookFreeOptions(book);
+      optFreeBookCallbacks(book);
       copyGlobalToBookImpl(OUT book);
    }
    

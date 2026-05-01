@@ -2162,7 +2162,7 @@ normalAction(
   // Set v:count here, when called from main() and not a stuffed command, so that v:count can be
   // used in an expression mapping  when there is no count. Do set it for redo.
   if (toplevel && readbuf1_empty())
-       setVCountPrevCount(&cmdArg, &set_prevcount);
+      setVCountPrevCount(&cmdArg, &set_prevcount);
 
    // Get the command character from the user.
    c = safe_vgetc();
@@ -2764,7 +2764,7 @@ clear_showcmd(void) {
          CS saved_sbr = p_sbr;
 
          // Make 'sbr' empty for a moment to get the correct size.
-         p_sbr = Em;
+         p_sbr = null;
          getvcols(curPor, &curPor->cursor, &VIsual, &leftcol, &rightcol);
          p_sbr = saved_sbr;
          sprintf((char *)showcmd_buf, "%ldx%ld", lines, (long)(rightcol - leftcol + 1));
@@ -3558,10 +3558,10 @@ nv_screengo(Operator *oper, Unt dir, long dist) {
       // screenline or move two screenlines.
       validate_virtcol();
       virtcol = curPor->virtCol;
-      if (virtcol > (ColNr)width1 && *p_sbr != ZERO)
+      if (virtcol > (ColNr)width1 && p_sbr)
           virtcol -= eeglStrSize(p_sbr);
 
-      c = (*mb_ptr2char)(ml_get_cursor());
+      c = mb_ptr2char(ml_get_cursor());
       if (dir == FORWARD && virtcol < curPor->cursWant
          && (curPor->cursWant <= (ColNr)width1)
          && !eeIsPrintable(c) && c > 255)
@@ -4648,7 +4648,7 @@ nv_gotofile(ActionArg* aArg) {
    if (portErrorIfTermPopup())
       return;
 
-   if (!check_can_set_curbuf_disabled())
+   if (!portCheckCanSetCurBookDisabled())
       return;
 
    CS ptr = grab_file_name(aArg->count1, &lnum);
@@ -6674,7 +6674,7 @@ nvJoin(ActionArg* aArg) {
    }
 
    prep_redo(aArg->oper->regname, aArg->count0, ZERO, aArg->cmdchar, ZERO, ZERO, aArg->nchar);
-   (void)do_join(aArg->count0, aArg->nchar == ZERO, TRUE, TRUE, TRUE);
+   (void)jugJoinLinesUnderCursor(aArg->count0, aArg->nchar == ZERO, TRUE, TRUE, TRUE);
 }
 
 // "P", "gP", "p" and "gp" actions.
@@ -7112,12 +7112,12 @@ redraw_for_cursorcolumn(Portal *po) {
 //Return the number of columns of overlap with buffer text, excluding the extra padding on the 
 //ledge.
 int
-sms_marker_overlap(Portal *po, int extra2) {
+sms_marker_overlap(Portal* po, int extra2) {
    if (extra2 == -1)
       extra2 = normalPortalColumnOffset(po);
    // There is no marker overlap when in showbreak mode, thus no need to
    // account for it.  See wlv_screen_line().
-   if (*p_sbr != ZERO)
+   if (p_sbr)
       return 0;
    // Overlap when 'list' and @listchars "precedes" are set is 1.
    if (po->o.list && listCharsG.prec)

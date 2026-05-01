@@ -5992,15 +5992,14 @@ garbage_collect(int testing) {
    // We advance by two because we add one for items referenced through previous_funccal.
    copyID = get_copyID();
 
-   // * 1. Go through all accessible variables and mark all lists and dicts with copyID.
+   //1. Go through all accessible variables and mark all lists and dicts with copyID.
 
-   // Don't free variables in the previous_funccal list unless they are only
-   // referenced through previous_funccal.  This must be first, because if
-   // the item is referenced elsewhere the funccal must not be freed.
-   abort = abort || set_ref_in_previous_funccal(copyID);
-
-   //script-local variables
-   abort = abort || garbage_collect_scriptvars(copyID);
+   //Don't free variables in the previous_funccal list unless they are only
+   //referenced through previous_funccal.  This must be first, because if
+   //the item is referenced elsewhere the funccal must not be freed.
+   abort = abort || set_ref_in_previous_funccal(copyID)
+                 //script-local variables
+                 || garbage_collect_scriptvars(copyID);
 
    //book-local variables
    FOR_ALL_BOOKS(book) {
@@ -6039,7 +6038,8 @@ garbage_collect(int testing) {
           || set_ref_in_loopvars(copyID);
 
     // v: vars
-    abort = abort || garbageCollectEeglVars(copyID)
+    abort = abort 
+          || garbageCollectEeglVars(copyID)
           // callbacks in books
           || setRefInBooks(copyID)
           // @completefunc, @omnifunc and @thesaurusfunc callbacks
@@ -6210,9 +6210,9 @@ set_ref_in_list_items(List      *l, int copyID, HtStack** ht_stack) {
 }
 
 // Mark the partial in callback 'cb' with "copyID".
-int
-memSetRefInCallback(Callback *cb, int copyID) {
-   if (cb->name == NULL || *cb->name == ZERO || cb->cb_partial == NULL)
+Boole
+memSetRefInCallback(Callback* cb, int copyID) {
+   if (!cb || !cb->name || *cb->name == ZERO || cb->cb_partial == NULL)
       return FALSE;
 
    Var tv;
@@ -6222,12 +6222,12 @@ memSetRefInCallback(Callback *cb, int copyID) {
 }
 
 // Mark the dict "dd" with "copyID". Also see set_ref_in_item().
-private int
+private Boole
 set_ref_in_item_dict(
    Bag* bag,
-   int         copyID,
-   HtStack      **ht_stack,
-   ListStack   **list_stack
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
 ){
    if (!bag || bag->copyId == copyID)
       return FALSE;
@@ -6246,19 +6246,19 @@ set_ref_in_item_dict(
 }
 
 // Mark the list "ll" with "copyID". Also see set_ref_in_item().
-private int
+private Boole
 set_ref_in_item_list(
-   List      *ll,
-   int         copyID,
-   HtStack      **ht_stack,
-   ListStack   **list_stack
+   OUT List* ll,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
 ) {
    if (!ll || ll->copyId == copyID)
       return FALSE;
 
    // Didn't see this list yet.
    ll->copyId = copyID;
-   if (list_stack == NULL)
+   if (!list_stack)
       return set_ref_in_list_items(ll, copyID, ht_stack);
 
    ListStack *newitem = ALLOC_ONE(ListStack);
@@ -6273,7 +6273,7 @@ set_ref_in_item_list(
 }
 
 // Mark the partial "pt" with "copyID". Also see set_ref_in_item().
-private int
+private Boole
 set_ref_in_item_partial(
    PartiallyApplied* pt,
    int copyID,
@@ -6281,11 +6281,11 @@ set_ref_in_item_partial(
    ListStack** list_stack
 ) {
    if (!pt)
-      return FALSE;
+      return false;
 
    int abort = set_ref_in_func(pt->name, pt->fn, copyID);
 
-   if (pt->self != NULL) {
+   if (pt->self) {
       Var dtv;
       dtv.tag = VAR_BAG;
       dtv.bag = pt->self;
@@ -6294,20 +6294,19 @@ set_ref_in_item_partial(
 
 
    for (int i = 0; i < pt->argc; ++i)
-      abort = abort || set_ref_in_item(&pt->argv[i], copyID,
-         ht_stack, list_stack);
+      abort = abort || set_ref_in_item(&pt->argv[i], copyID, ht_stack, list_stack);
    // pt_loopvars is handled in set_ref_in_loopvars()
 
    return abort;
 }
 
 // Mark the job "pt" with "copyID". Also see set_ref_in_item().
-private int
+private Boole
 set_ref_in_item_job(
    Job* job,
-   int         copyID,
-   HtStack      **ht_stack,
-   ListStack   **list_stack
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
 ) {
    Var    dtv;
 
@@ -6326,21 +6325,21 @@ set_ref_in_item_job(
       set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
    }
 
-   return FALSE;
+   return false;
 }
 
 // Mark the channel "ch" with "copyID". Also see set_ref_in_item().
-private int
+private Boole
 set_ref_in_item_channel(
-   Channel      *ch,
-   int         copyID,
-   HtStack      **ht_stack,
-   ListStack   **list_stack
+   Channel* ch,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
 ) {
    Var    dtv;
 
    if (ch == NULL || ch->copyId == copyID)
-      return FALSE;
+      return false;
 
    ch->copyId = copyID;
    for (ChannelFdKind part = PART_SOCK; part < PART_COUNT; ++part) {
@@ -6369,7 +6368,7 @@ set_ref_in_item_channel(
       set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
    }
 
-   return FALSE;
+   return false;
 }
 
 // Mark all lists, dicts and other container types referenced through Var "tv" with "copyID".
@@ -6379,12 +6378,12 @@ set_ref_in_item_channel(
 // Return TRUE if setting references failed somehow.
 int
 set_ref_in_item(
-   Var       *tv,
-   int          copyID,
-   HtStack       **ht_stack,
-   ListStack    **list_stack
+   Var* tv,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
 ){
-   int abort = FALSE;
+   Boole abort = false;
 
    switch (tv->tag) {
    case VAR_BAG:
