@@ -1847,7 +1847,7 @@ readBook(
 
    if (read_stdin) {
       //Set or reset 'modified' before executing autocommands, so that it can be changed there.
-      if (!BUFEMPTY())
+      if (!CURBOOK_EMPTY())
          changed();
       ei (retval == OK)
          unchanged(curBook, TRUE);
@@ -3282,7 +3282,7 @@ isCurBookReusable(void) {
    return (curBook
       && !curBook->fullFileName
       && curBook->countPortals <= 1
-      && (!curBook->mem.mfile || BUFEMPTY())
+      && (!curBook->mem.mfile || CURBOOK_EMPTY())
       && !isLocationListBook(curBook)
       && !doWasCurBookChanged()
    );
@@ -3549,7 +3549,7 @@ booklistGetFile(
 
       //If @switchbook contains "split", "vsplit" or "newtab" and the
       //current book isn't empty: open new tab or portal
-      if (!po && (p_swb & (SWB_VSPLIT | SWB_SPLIT | SWB_NEWTAB)) != 0 && !BUFEMPTY()) {
+      if (!po && (p_swb & (SWB_VSPLIT | SWB_SPLIT | SWB_NEWTAB)) != 0 && !CURBOOK_EMPTY()) {
          if ((p_swb & SWB_NEWTAB) != 0)
             tabNew();
          ei (splitPortal(0, (p_swb & SWB_VSPLIT) ? WSP_VERT : 0) == FAIL)
@@ -7902,7 +7902,7 @@ openPortalsIntoFiles(ArgAllState *aall, int count) {
 
    // ":tab drop file" should re-use an empty portal to avoid "--remote-tab"
    // leaving an empty tab when executed locally.
-   if (aall->keep_tabs && BUFEMPTY() && curBook->countPortals == 1
+   if (aall->keep_tabs && CURBOOK_EMPTY() && curBook->countPortals == 1
              && curBook->fullFileName == NULL && !curBook->wasModified
    ) {
       aall->use_firstPor = TRUE;

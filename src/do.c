@@ -14182,7 +14182,7 @@ u_undoredo(int undo) {
 
    curhead->uh_entry = newlist;
    curhead->uh_flags = new_flags;
-   if ((old_flags & UH_EMPTYBUF) && BUFEMPTY())
+   if ((old_flags & UH_EMPTYBUF) && CURBOOK_EMPTY())
       curBook->mem.flags |= ML_EMPTY;
    if (old_flags & UH_CHANGED)
       changed();

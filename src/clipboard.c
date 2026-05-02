@@ -1372,7 +1372,7 @@ do_put(
       if (dir == FORWARD)
           ++lnum;
       //In an empty buffer the empty line is going to be replaced, include it in the saved lines.
-      if ((BUFEMPTY() ? u_save(0, 2) : u_save(lnum - 1, lnum)) == FAIL)
+      if ((CURBOOK_EMPTY() ? u_save(0, 2) : u_save(lnum - 1, lnum)) == FAIL)
           goto end;
       if (dir == FORWARD)
           curPor->cursor.lnum = lnum - 1;
@@ -3866,9 +3866,8 @@ may_set_selection(void){
 //Adjust the register name pointed to with "rp" for the clipboard being
 //used always and the clipboard being available.
 void
-adjust_clip_reg(int *rp){
-   //If no reg. specified, and "unnamed" or "unnamedplus" is in 'clipboard',
-   //use '*' or '+' reg, respectively. "unnamedplus" prevails.
+adjust_clip_reg(OUT int* rp){
+   //If no reg. specified, use '*' or '+' reg, respectively. "unnamedplus" prevails.
    if (*rp == 0) {
       *rp = (clipboard.available) ? '+' : '*';
    }

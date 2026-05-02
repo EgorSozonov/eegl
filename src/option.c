@@ -483,7 +483,7 @@ parseCursorShape(CS input) {
 
 // Initialize the options, part two: After getting visibleRowsG and visibleColsG and setting 'term'
 void
-optionInit1(void) {
+optInit1(void) {
    //'scroll' defaults to half the portal height. Need to calculate and set it now
    curPor->scroll = curPor->height/2 + 1;
    computeColumnsForRulerAndCommand();
@@ -3812,49 +3812,37 @@ didset_options(void) {
    afterCopyPortOpt(curPor);
 }
 
-//Expand environment variables and things like "~" for the defaults. If 
-//expandEnvVarsInStringOption() returns non-NULL, the variable is expanded. This can only happen 
-//for non-indirect options. Also set the default to the expanded value, so ":set" doesn't list them.
-private void
-set_init_doExpandEnv(void) {
-   CS p;
-
-   FOR_GLOBAL(o) {
-      if (o->defaultValue.tag != OPTION_STRING) {
-         continue;
-      }
-      p = expandEnvVarsInStringOption(o, NULL);
+private void 
+expandEnvVarsInDefault(Option* o) {
+   if (o->defaultValue.tag == OPTION_STRING) {
+      CS p = expandEnvVarsInStringOption(o, NULL);
       if (p) {
          *(o->c.reference.string) = p;
          o->defaultValue.string = p;
       }
    }
+}
+
+//Expand environment variables and things like "~" for the defaults. If 
+//expandEnvVarsInStringOption() returns non-NULL, the variable is expanded. This can only happen 
+//for non-indirect options. Also set the default to the expanded value, so ":set" doesn't list them.
+private void
+expandEnvVarsInDefaults(void) {
+   FOR_GLOBAL(o) {
+      expandEnvVarsInDefault(o);
+   }
    FOR_PORTAL(o) {
-      if (o->defaultValue.tag != OPTION_STRING) {
-         continue;
-      }
-      p = expandEnvVarsInStringOption(o, NULL);
-      if (p) {
-         o->c.local.val.string = p;
-         o->defaultValue.string = p;
-      }
+      expandEnvVarsInDefault(o);
    }
    FOR_BOOK(o) {
-      if (o->defaultValue.tag != OPTION_STRING) {
-         continue;
-      }
-      p = expandEnvVarsInStringOption(o, NULL);
-      if (p) {
-         o->c.local.val.string = p;
-         o->defaultValue.string = p;
-      }
+      expandEnvVarsInDefault(o);
    }
 }
 
 //Initialize the options, first part.
 //Called only once from main(), just after creating the first book.
 void
-optionInit0() {
+optInit0() {
    langmap_init();
    
    Option* o UNUSED;
@@ -3880,13 +3868,17 @@ optionInit0() {
       set_init_clean_rtp();
 #endif
 
-   curBook->o.initialized = true;
+   //curBook->o.initialized = true;
 
    //Must be before expandEnvVarsInStringOption(), because that one needs eeIsIdentifierChar()
    didset_options();
+   
+   //zero out the table for @breakat.
+   for (Unt i = 0; i < 256; i++)
+      breakat_flags[i] = false;
 
    //Expand environment variables and things like "~" for the defaults.
-   set_init_doExpandEnv();
+   expandEnvVarsInDefaults();
 
    //Set the default for @helplang.
    set_helplang_default(get_mess_lang());
@@ -4105,6 +4097,7 @@ setDefaultValuesForAllOptions(SetScope setScope) {
    FOR_ALL_TAB_PORTALS(t, port) {
       portComputeScroll(port);
    } 
+   _bp(true);
 }
 
 //Set all portal-local and buffer-local options to the Eegl default.
@@ -4355,6 +4348,7 @@ getRefInScope(Option* o, SetScope setScope) {
 //Copy all book options from global to a specific book
 private void
 copyGlobalToBookImpl(OUT Book* book) {
+   _bp(true); 
    Unt totalLen = calcLocalStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
    //Sbuf buf UNUSED = sbuf(newCap);
@@ -4367,11 +4361,10 @@ copyGlobalToBookImpl(OUT Book* book) {
 #undef OPTIONS_DEF_BOOK
 #undef COPY_GLOBAL_TO_BOOK
 
-   _bp(true);
-
    for (Unt i = 0; i < OPTION_BOOK_COUNT; i++) {
       t->scriptLocs[i] = OPTIONS_BOOK[i].scriptPos;
    }
+   
    
    inSetCustomCompletionCbForBook(book);
    inSetOmniCbForBook(book);

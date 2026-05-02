@@ -278,10 +278,7 @@ appendDigitInt(int *value, int digit) {
 
 //Get a number from the user. When "mouse_used" is not NULL allow using the mouse.
 int
-get_number(
-   int       colon,         // allow colon to abort
-   int       *mouse_used)
-{
+get_number(Boole allowColonToUpdate, int* mouse_used) {
    int   n = 0;
    Unt   c;
    int typed = 0;
@@ -314,7 +311,7 @@ get_number(
          *mouse_used = TRUE;
          n = mouseRowG + 1;
          break;
-      } ei (n == 0 && c == ':' && colon) {
+      } ei (n == 0 && c == ':' && allowColonToUpdate) {
          stuffcharReadbuff(':');
          commlineRowG = msgRowG;
          skip_redraw = TRUE;       // skip redraw once
@@ -336,9 +333,9 @@ get_number(
 // K_SPECIAL and CSI should have been escaped already.
 private void
 add_buff(
-   TextHeader   *buf,
-   Byte      *s,
-   long      slen
+   TextHeader* buf,
+   CS s,
+   long slen
 ) {  // length of "s" or -1
    if (slen < 0)
       slen = (long)STRLEN(s);
@@ -400,7 +397,7 @@ deleteBufferTail(TextHeader *buf, int slen) {
 // Add number "n" to buffer "buf".
 private void
 addNumToBuf(TextHeader *buf, long n) {
-   Byte   number[32];
+   Byte number[32];
 
    int numberlen = eeSnprintf(number, sizeof(number), "%ld", n);
    add_buff(buf, number, (long)numberlen);
@@ -446,24 +443,19 @@ private TextHeader readbuf2 = {{NULL, 0, {ZERO}}, NULL, 0, 0, FALSE};
 // No translation is done K_SPECIAL and CSI are escaped.
 private int
 read_readbuffers(int advance) {
-   int c;
-
-   c = read_readbuf(&readbuf1, advance);
+   Unt c = read_readbuf(&readbuf1, advance);
    if (c == ZERO)
       c = read_readbuf(&readbuf2, advance);
    return c;
 }
 
 private int
-read_readbuf(TextHeader *buf, int advance) {
-   Byte   c;
-   TextChunk   *curr;
-
+read_readbuf(TextHeader* buf, int advance) {
    if (buf->first.next == NULL)  // buffer is empty
       return ZERO;
 
-   curr = buf->first.next;
-   c = curr->b_str[buf->bh_index];
+   TextChunk* curr = buf->first.next;
+   Byte c = curr->b_str[buf->bh_index];
 
    if (advance) {
       if (curr->b_str[++buf->bh_index] == ZERO) {
@@ -580,17 +572,15 @@ CancelRedo(void) {
 // Save redobuff and old_redobuff to save_redobuff and save_old_redobuff.
 // Used before executing autocommands and user functions.
 void
-saveRedobuff(SaveRedo *save_redo) {
-   Byte   *s;
-   Unt   slen;
-
+saveRedobuff(SaveRedo* save_redo) {
    save_redo->sr_redobuff = redobuff;
    redobuff.first.next = NULL;
    save_redo->sr_old_redobuff = old_redobuff;
    old_redobuff.first.next = NULL;
 
    // Make a copy, so that ":normal ." in a function works.
-   s = get_buffcont(&save_redo->sr_redobuff, FALSE, &slen);
+   Unt slen;
+   CS s = get_buffcont(&save_redo->sr_redobuff, FALSE, &slen);
    if (s == NULL)
       return;
 
@@ -601,7 +591,7 @@ saveRedobuff(SaveRedo *save_redo) {
 // Restore redobuff and old_redobuff from save_redobuff and save_old_redobuff.
 // Used after executing autocommands and user functions.
 void
-restoreRedobuff(SaveRedo *save_redo) {
+restoreRedobuff(SaveRedo* save_redo) {
    freeBuffer(&redobuff);
    redobuff = save_redo->sr_redobuff;
    freeBuffer(&old_redobuff);
@@ -679,7 +669,7 @@ AppendCharToRedobuff(Unt c) {
 
 // Append a number to the redo buffer.
 void
-AppendNumberToRedobuff(long n) {
+inpAppendNumberToRedoBuff(long n) {
    if (!block_redo)
       addNumToBuf(&redobuff, n);
 }
@@ -832,13 +822,11 @@ copy_redo(int old_redo) {
 // return FAIL for failure, OK otherwise
 int
 start_redo(long count, int old_redo) {
-   Unt       c;
-
    // init the pointers; return if nothing to redo
    if (read_redo(TRUE, old_redo) == FAIL)
       return FAIL;
 
-   c = read_redo(FALSE, old_redo);
+   Unt c = read_redo(FALSE, old_redo);
 
    if (c == K_SID) {
       // Copy the <SID>{sid}; sequence
@@ -926,7 +914,7 @@ stop_redo_ins(void) {
 //alloc() cannot be used here: In out-of-memory situations it would be impossible to type anything.
 private void
 initTypebuf(void) {
-    if (typeBufG.c != NULL)
+    if (typeBufG.c)
        return;
 
     typeBufG.c = typeBufG_init;
@@ -1033,30 +1021,30 @@ insertIntoTypebuf(
       typeBufG.noremap = s2;
 
       typeBufG.currPos = newoff;
-    }
-    typeBufG.validLen += addlen;
+   }
+   typeBufG.validLen += addlen;
 
-    // If noremap == REMAP_SCRIPT: do remap script-local mappings.
-    if (noremap == REMAP_SCRIPT)
-       val = RM_SCRIPT;
-    ei (noremap == REMAP_SKIP)
-       val = RM_ABBR;
-    else
-       val = RM_NONE;
+   // If noremap == REMAP_SCRIPT: do remap script-local mappings.
+   if (noremap == REMAP_SCRIPT)
+      val = RM_SCRIPT;
+   ei (noremap == REMAP_SKIP)
+      val = RM_ABBR;
+   else
+      val = RM_NONE;
 
-    //Adjust typeBufG.noremap[] for the new characters:
-    //If noremap == REMAP_NONE or REMAP_SCRIPT: new characters are (sometimes) not remappable
-    //If noremap == REMAP_YES: all the new characters are mappable
-    //If noremap  > 0: "noremap" characters are not remappable, the rest mappable
-    if (noremap == REMAP_SKIP)
-       nrm = 1;
-    ei (noremap >= UNT_NEG)
-       nrm = addlen;
-    else
-       nrm = noremap;
-    for (i = 0; i < addlen; ++i) {
-       typeBufG.noremap[typeBufG.currPos + i + offset] = (--nrm >= 0) ? val : RM_YES;
-    }
+   //Adjust typeBufG.noremap[] for the new characters:
+   //If noremap == REMAP_NONE or REMAP_SCRIPT: new characters are (sometimes) not remappable
+   //If noremap == REMAP_YES: all the new characters are mappable
+   //If noremap  > 0: "noremap" characters are not remappable, the rest mappable
+   if (noremap == REMAP_SKIP)
+      nrm = 1;
+   ei (noremap >= UNT_NEG)
+      nrm = addlen;
+   else
+      nrm = noremap;
+   for (i = 0; i < addlen; ++i) {
+      typeBufG.noremap[typeBufG.currPos + i + offset] = (--nrm >= 0) ? val : RM_YES;
+   }
 
    // mappedLen and tb_silent only remember the length of mapped and/or
    // silent mappings at the start of the buffer, assuming that a mapped
@@ -1093,7 +1081,7 @@ ins_char_typebuf(int c, int modifiers){
 //Or "typeBufG.currPos" may have been changed and we would overwrite characters
 //that was just added.
 int
-typebuf_changed(int   tb_change_cnt){   // old value of typeBufG.tb_change_cnt
+typebuf_changed(int tb_change_cnt){   // old value of typeBufG.tb_change_cnt
    return (tb_change_cnt != 0 && (typeBufG.tb_change_cnt != tb_change_cnt || typebuf_was_filled));
 }
 
@@ -1113,7 +1101,7 @@ typebuf_maplen(void) {
 // remove "len" characters from typeBufG.c[typeBufG.currPos + offset]
 void
 del_typebuf(int len, int offset) {
-   int       i;
+   int i;
 
    if (len == 0)
       return;      // nothing to do
@@ -1165,11 +1153,11 @@ del_typebuf(int len, int offset) {
          typeBufG.tb_no_abbr_cnt -= len;
    }
 
-    // Reset the flag that text received from a client or from feedkeys()
-    // was inserted in the typeahead buffer.
-    typebuf_was_filled = FALSE;
-    if (++typeBufG.tb_change_cnt == 0)
-   typeBufG.tb_change_cnt = 1;
+   // Reset the flag that text received from a client or from feedkeys()
+   // was inserted in the typeahead buffer.
+   typebuf_was_filled = FALSE;
+   if (++typeBufG.tb_change_cnt == 0)
+      typeBufG.tb_change_cnt = 1;
 }
 
 // stateG for adding bytes to a recording or 'showcmd'.
@@ -1179,16 +1167,16 @@ typedef struct {
    Unt   buflen;
    unsigned   pending_special;
    unsigned   pending_mbyte;
-} gotchars_state_T;
+} GotCharsState;
 
 // Add a single byte to a recording or 'showcmd'.
 // Return TRUE if a full key has been received, FALSE otherwise.
 private int
-gotchars_add_byte(gotchars_state_T *state, Byte byte) {
-   Unt      c = state->buf[state->buflen++] = byte;
-   int      retval = FALSE;
-   int      in_special = state->pending_special > 0;
-   int      in_mbyte = state->pending_mbyte > 0;
+gotchars_add_byte(GotCharsState *state, Byte byte) {
+   Unt c = state->buf[state->buflen++] = byte;
+   int retval = FALSE;
+   int in_special = state->pending_special > 0;
+   int in_mbyte = state->pending_mbyte > 0;
 
    if (in_special)
       state->pending_special--;
@@ -1209,8 +1197,7 @@ gotchars_add_byte(gotchars_state_T *state, Byte byte) {
             goto ret_false;
          c = TO_SPECIAL(state->prev_c, c);
          if (c == K_FOCUSGAINED || c == K_FOCUSLOST)
-            // Drop K_FOCUSGAINED and K_FOCUSLOST, they are not useful
-            // in a recording.
+            // Drop K_FOCUSGAINED and K_FOCUSLOST, they are not useful in a recording.
             state->buflen = 0;
       }
       // When receiving a multibyte character, store it until we have all
@@ -1230,11 +1217,11 @@ ret_false:
 
 // Write typed characters to script file. If recording is on put the character in the record buffer
 private void
-gotchars(Byte *chars, int len) {
-    Byte      *s = chars;
-    Unt      i;
-    int         todo = len;
-    static gotchars_state_T state;
+gotchars(CS chars, int len) {
+    CS s = chars;
+    Unt i;
+    int todo = len;
+    static GotCharsState state;
 
     while (todo-- > 0) {
       if (!gotchars_add_byte(&state, *s++))
@@ -1289,9 +1276,8 @@ ungetchars(int len) {
 // - When no_u_sync is non-zero.
 private void
 maySyncUndo(void) {
-    if ((!(stateG & (MODE_INSERT | MODE_COMMLINE)) || arrow_used)
-                      && scriptin[curscript] == NULL)
-   u_sync(FALSE);
+   if ((!(stateG & (MODE_INSERT | MODE_COMMLINE)) || arrow_used) && scriptin[curscript] == NULL)
+      u_sync(FALSE);
 }
 
 // Make "typeBufG" empty and allocate new buffers.
@@ -1374,7 +1360,7 @@ save_typeahead(TypeaheadSave *tp) {
 // The allocated memory is freed, can only be called once!
 // When "overwrite" is FALSE input typed later is kept.
 void
-restore_typeahead(TypeaheadSave *tp, Boole overwrite) {
+restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
     if (tp->typebuf_valid) {
        free_typeBufG();
        typeBufG = tp->save_typebuf;
@@ -1490,9 +1476,9 @@ before_blocking(void) {
 // characters reaches 'updatecount' and 'updatecount' is non-zero.
 private void
 updateScript(int c) {
-    static int       count = 0;
+    static int count = 0;
 
-    if (c && scriptout)
+    if (c != 0 && scriptout)
        putc(c, scriptout);
     if (c == 0 || (++count >= 200)) {
         ml_sync_all(c == 0, TRUE);
@@ -1507,7 +1493,7 @@ updateScript(int c) {
 // Convert "c_arg" plus "modifiers" to merge the effect of modifyOtherKeys into
 // the character.  Also for when the Kitty key protocol is used.
 Unt
-mergeModifierKey(Unt cArg, Unt *modifiers) {
+mergeModifierKey(Unt cArg, Unt* modifiers) {
     Unt c = cArg;
 
     // CTRL only uses the lower 5 bits of the character.
@@ -1545,10 +1531,9 @@ mergeModifierKey(Unt cArg, Unt *modifiers) {
 // Call add_to_showcmd() if a full key has been received.
 private void
 addByteToShowcmd(Byte byte) {
-   static gotchars_state_T state;
-   Byte   *ptr;
-   int      modifiers = 0;
-   int      c = ZERO;
+   static GotCharsState state;
+   int modifiers = 0;
+   int c = ZERO;
 
    if (!p_sc || msg_silent != 0)
       return;
@@ -1559,16 +1544,15 @@ addByteToShowcmd(Byte byte) {
    state.buf[state.buflen] = ZERO;
    state.buflen = 0;
 
-   ptr = state.buf;
+   CS ptr = state.buf;
    if (ptr[0] == K_SPECIAL && ptr[1] == KS_MODIFIER && ptr[2] != ZERO) {
       modifiers = ptr[2];
       ptr += 3;
    }
 
    if (*ptr != ZERO) {
-      Byte      *mb_ptr = mb_unescape(&ptr);
-
-      c = mb_ptr != NULL ? mb_ptr2char(mb_ptr) : *ptr++;
+      CS mb_ptr = mb_unescape(&ptr);
+      c = mb_ptr ? mb_ptr2char(mb_ptr) : *ptr++;
       if (c <= 0x7f) {
          // Merge modifiers into the key to make the result more readable.
          Unt modifiersAfter = modifiers;
@@ -1584,9 +1568,9 @@ addByteToShowcmd(Byte byte) {
    // TODO: is there a more readable and yet compact representation of
    // modifiers and special keys?
    if (modifiers != 0) {
-       add_to_showcmd(K_SPECIAL);
-       add_to_showcmd(KS_MODIFIER);
-       add_to_showcmd(modifiers);
+      add_to_showcmd(K_SPECIAL);
+      add_to_showcmd(KS_MODIFIER);
+      add_to_showcmd(modifiers);
    }
    if (c != ZERO)
       add_to_showcmd(c);
@@ -1606,8 +1590,8 @@ addByteToShowcmd(Byte byte) {
 Unt
 vgetc(void) {
    Unt c, c2;
-   Unt      n;
-   Byte   buf[MB_MAXBYTES + 1];
+   Unt n;
+   Byte buf[MB_MAXBYTES + 1];
 
    // Do garbage collection when garbagecollect() was called previously and
    // we are now at the toplevel.
@@ -1859,30 +1843,27 @@ vpeekc_any(void) {
 // Return TRUE if a character is available, FALSE otherwise.
 int
 char_avail(void) {
-    int       retval;
-
     // When test_override("char_avail", 1) was called pretend there is no
     // typeahead.
     if (disable_char_avail_for_testing)
        { return FALSE; }
     ++no_mapping;
-    retval = vpeekc();
+    int retval = vpeekc();
     --no_mapping;
     return (retval != ZERO);
 }
 
 // "getchar()" and "getcharstr()" functions
 private void
-getcharCommon(Var *argvars, Var *returnVar, int allow_number) {
-   Long      n = 0;
-   int         called_emsg_start = called_emsg;
+getcharCommon(Arr(Var) argvars, Var* returnVar, int allow_number) {
+   Long n = 0;
+   int  called_emsg_start = called_emsg;
    Boole error = false;
    Boole simplify = true;
-   Byte      cursor_flag = 'm';
+   Byte cursor_flag = 'm';
 
    if (argvars[0].tag != VAR_UNKNOWN && argvars[1].tag == VAR_BAG) {
-      Bag      *d = argvars[1].bag;
-      Byte      *cursor_str;
+      Bag* d = argvars[1].bag;
 
       if (allow_number)
          allow_number = bagGetBool(d, tConst("number"), true);
@@ -1891,7 +1872,7 @@ getcharCommon(Var *argvars, Var *returnVar, int allow_number) {
 
       simplify = bagGetBool(d, tConst("simplify"), true);
 
-      cursor_str = bagGetString(d, tConst("cursor"), FALSE);
+      CS cursor_str = bagGetString(d, tConst("cursor"), FALSE);
       if (cursor_str != NULL) {
          if (STRCMP(cursor_str, "hide") != 0
                && STRCMP(cursor_str, "keep") != 0
@@ -1920,7 +1901,7 @@ getcharCommon(Var *argvars, Var *returnVar, int allow_number) {
     if (!simplify)
        ++no_reduce_keys;
     for (;;) {
-       if (argvars[0].tag == VAR_UNKNOWN
+      if (argvars[0].tag == VAR_UNKNOWN
            || (argvars[0].tag == VAR_NUMBER && argvars[0].number == -1))
          // getchar(): blocking wait.
          n = plainVgetcNopaste();
@@ -1935,89 +1916,89 @@ getcharCommon(Var *argvars, Var *returnVar, int allow_number) {
          // Note that vpeekc_any() returns K_SPECIAL for K_IGNORE.
          n = safe_vgetc();
 
-       if (n == K_IGNORE || n == K_MOUSEMOVE || n == K_VER_SCROLLBAR || n == K_HOR_SCROLLBAR)
-     continue;
-       break;
-    }
-    --no_mapping;
-    --allow_keys;
-    if (!simplify)
-       --no_reduce_keys;
+      if (n == K_IGNORE || n == K_MOUSEMOVE || n == K_VER_SCROLLBAR || n == K_HOR_SCROLLBAR)
+         continue;
+      break;
+   }
+   --no_mapping;
+   --allow_keys;
+   if (!simplify)
+      --no_reduce_keys;
 
-    if (cursor_flag == 'h')
-       cursor_unsleep();
+   if (cursor_flag == 'h')
+      cursor_unsleep();
 
-    set_EeglVar_nr(VV_MOUSE_WIN, 0);
-    set_EeglVar_nr(VV_MOUSE_WINID, 0);
-    set_EeglVar_nr(VV_MOUSE_LNUM, 0);
-    set_EeglVar_nr(VV_MOUSE_COL, 0);
+   set_EeglVar_nr(VV_MOUSE_WIN, 0);
+   set_EeglVar_nr(VV_MOUSE_WINID, 0);
+   set_EeglVar_nr(VV_MOUSE_LNUM, 0);
+   set_EeglVar_nr(VV_MOUSE_COL, 0);
 
-    if (n != 0 && (!allow_number || IS_SPECIAL(n) || modMaskG != 0)) {
-       Byte      temp[10];   // modifier: 3, mbyte-char: 6, ZERO: 1
-       int      i = 0;
+   if (n != 0 && (!allow_number || IS_SPECIAL(n) || modMaskG != 0)) {
+      Byte      temp[10];   // modifier: 3, mbyte-char: 6, ZERO: 1
+      int      i = 0;
 
-       // Turn a special key into three bytes, plus modifier.
-       if (modMaskG != 0) {
-            temp[i++] = K_SPECIAL;
-            temp[i++] = KS_MODIFIER;
-            temp[i++] = modMaskG;
-       }
-       if (IS_SPECIAL(n)) {
-          temp[i++] = K_SPECIAL;
-          temp[i++] = K_SECOND(n);
-          temp[i++] = K_THIRD(n);
-       } else
-          i += mb_char2bytes(n, temp + i);
+      // Turn a special key into three bytes, plus modifier.
+      if (modMaskG != 0) {
+           temp[i++] = K_SPECIAL;
+           temp[i++] = KS_MODIFIER;
+           temp[i++] = modMaskG;
+      }
+      if (IS_SPECIAL(n)) {
+         temp[i++] = K_SPECIAL;
+         temp[i++] = K_SECOND(n);
+         temp[i++] = K_THIRD(n);
+      } else
+         i += mb_char2bytes(n, temp + i);
 
-       temp[i] = ZERO;
-       returnVar->tag = VAR_STRING;
-       returnVar->string = copySubstr(temp, i);
+      temp[i] = ZERO;
+      returnVar->tag = VAR_STRING;
+      returnVar->string = copySubstr(temp, i);
 
-       if (is_mouse_key(n)) {
-            int row = mouseRowG;
-            int col = mouseColG;
-            Portal* port;
-            LineNr   lnum;
-            Portal* wp;
-            int      winnr = 1;
+      if (is_mouse_key(n)) {
+         int row = mouseRowG;
+         int col = mouseColG;
+         Portal* port;
+         LineNr   lnum;
+         Portal* wp;
+         int      winnr = 1;
 
-            if (row >= 0 && col >= 0) {
-               // Find the portal at the mouse coordinates and compute the text position.
-               port = mouseFindPortal(OUT &row, OUT &col, FIND_POPUP);
-               if (!port)
-                  return;
-               (void)mouse_comp_pos(port, OUT &row, OUT &col, &lnum, NULL);
-               if (PORTAL_IS_POPUP(port)) {
-                  winnr = 0;
-          } else {
-        for (wp = firstPor; wp != port && wp; wp = wp->next) {
-           ++winnr;
-                  }
-          } 
-               set_EeglVar_nr(VV_MOUSE_WIN, winnr);
-               set_EeglVar_nr(VV_MOUSE_WINID, port->id);
-               set_EeglVar_nr(VV_MOUSE_LNUM, lnum);
-               set_EeglVar_nr(VV_MOUSE_COL, col + 1);
-            }
-       }
-    } ei (!allow_number)
+         if (row >= 0 && col >= 0) {
+            // Find the portal at the mouse coordinates and compute the text position.
+            port = mouseFindPortal(OUT &row, OUT &col, FIND_POPUP);
+            if (!port)
+               return;
+            (void)mouse_comp_pos(port, OUT &row, OUT &col, &lnum, NULL);
+            if (PORTAL_IS_POPUP(port)) {
+               winnr = 0;
+             } else {
+              for (wp = firstPor; wp != port && wp; wp = wp->next) {
+                 ++winnr;
+              }
+            } 
+            set_EeglVar_nr(VV_MOUSE_WIN, winnr);
+            set_EeglVar_nr(VV_MOUSE_WINID, port->id);
+            set_EeglVar_nr(VV_MOUSE_LNUM, lnum);
+            set_EeglVar_nr(VV_MOUSE_COL, col + 1);
+         }
+      }
+   } ei (!allow_number)
        returnVar->tag = VAR_STRING;
     else
        returnVar->number = n;
 }
 
 void
-f_getchar(Var *argvars, Var *returnVar) {
+f_getchar(Arr(Var) argvars, Var* returnVar) {
    getcharCommon(argvars, returnVar, TRUE);
 }
 
 void
-f_getcharstr(Var *argvars, Var *returnVar) {
+f_getcharstr(Arr(Var) argvars, Var* returnVar) {
    getcharCommon(argvars, returnVar, FALSE);
 }
 
 void
-f_getcharmod(Var *argvars UNUSED, Var *returnVar) {
+f_getcharmod(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->number = modMaskG;
 }
 
@@ -2027,10 +2008,10 @@ f_getcharmod(Var *argvars UNUSED, Var *returnVar) {
 // These functions can call arbitrary Vim script and should only be called when it is safe
 void
 parse_queued_messages(void) {
-   int       old_curPor_id;
-   int       old_curbuf_fnum;
-   int       i;
-   int       save_may_garbage_collect = may_garbage_collect;
+   int old_curPor_id;
+   int old_curbuf_fnum;
+   int i;
+   int save_may_garbage_collect = may_garbage_collect;
    static int entered = 0;
    int       was_safe = get_was_safe_state();
 
@@ -2109,8 +2090,8 @@ typedef enum {
 // in Insert mode completion.  This includes the form with a CTRL modifier.
 private int
 atAnInsertCompletionKey(void) {
-   Byte  *p = typeBufG.c + typeBufG.currPos;
-   int       c = *p;
+   CS p = typeBufG.c + typeBufG.currPos;
+   int c = *p;
 
    if (typeBufG.validLen > 3
        && (c == K_SPECIAL || c == CSI)  // CSI is used by the GUI
@@ -2127,7 +2108,7 @@ atAnInsertCompletionKey(void) {
 private int
 checkSimplifyModifier(int const maxOffset) {
    int      offset;
-   Byte* input;
+   CS input;
 
    for (offset = 0; offset < maxOffset; ++offset) {
       if (offset + 3 >= typeBufG.validLen)
@@ -3126,9 +3107,9 @@ input_available(void) {
 // Function passed to doCommand() to get the command after a <Cmd> key from typeahead.
 private CS
 getCommandNameCb(
-   Unt      promptc UNUSED,
+   Unt promptc UNUSED,
    void* cookie UNUSED,
-   int      indent UNUSED,
+   int indent UNUSED,
    GetlineAlgo   do_concat UNUSED
 ) {
    ArrayList   line_ga;
@@ -3215,8 +3196,8 @@ getCommandNameCb(
 void
 may_add_last_used_map_to_redobuff(void) {
    Byte  buf[3 + 20];
-   int       buflen;
-   int       sid = -1;
+   int buflen;
+   int sid = -1;
 
    if (last_used_map != NULL)
       { sid = last_used_map->scriptCtx.sid; }
@@ -3294,25 +3275,23 @@ reset_last_used_map(MapBlock* mp) {
 //text manipulation, buffers, etc.  Conversion has to be done when characters
 //in another encoding are received or send:
 //
-//           clipboard
-//          ^
-//          | (2)
-//          V
+//                 clipboard
+//                       ^
+//                       | (2)
+//                       V
 //                +---------------+
-//           (1)  |         | (3)
-// keyboard ----->|    core      |-----> display
-//                |         |
+//           (1)  |               | (3)
+// keyboard ----->|     core      |-----> display
+//                |               |
 //                +---------------+
-//          ^
-//          | (4)
-//          V
-//        file
+//                       ^
+//                       | (4)
+//                       V
+//                     file
 //
 //(1) Typed characters arrive in the current locale.
 //
 //The eeglinfo file is a special case: Only text is converted, not file names.
-//Vim scripts may contain an ":encoding" command.  This has an effect for
-//some commands, like ":menutrans"
 
 #define WINBYTE BYTE
 
@@ -3949,8 +3928,8 @@ utfc_ptr2char(
    CS p,
    int* pcc   // return: composing chars, last one is 0
 ){
-   int      cc;
-   int      i = 0;
+   int cc;
+   int i = 0;
 
    Unt c = mb_ptr2char(p);
    int len = utf_ptr2len(p);
@@ -4065,7 +4044,7 @@ utf_ptr2len_len(Byte const* p, int size) {
       m = len;
    for (Unt i = 1; i < m; ++i) {
       if ((p[i] & 0xc0) != 0x80)
-          return 1;
+         return 1;
    } 
    return len;
 }
@@ -4117,20 +4096,16 @@ utfCharLen_len(Byte const* p, int size) {
    if ((len == 1 && p[0] >= 0x80) || len > size)
       return 1;
 
-   /*
-    * Check for composing characters.  We can handle only the first six, but
-    * skip all of them (otherwise the cursor would get stuck).
-    */
+   //Check for composing characters.  We can handle only the first six, but
+   //skip all of them (otherwise the cursor would get stuck).
    while (len < size) {
       int   len_next_char;
 
       if (p[len] < 0x80)
          break;
 
-      /*
-       * Next character length should not go beyond size to ensure that
-       * UTF_COMPOSINGLIKE(...) does not read beyond size.
-       */
+      //Next character length should not go beyond size to ensure that
+      //UTF_COMPOSINGLIKE(...) does not read beyond size.
       len_next_char = utf_ptr2len_len(p + len, size - len);
       if (len_next_char > size - len)
          break;
@@ -4579,7 +4554,7 @@ utf_iscomposing(Unt c) {
 //Return TRUE for characters that can be displayed in a normal way.
 //Only for characters of 0x100 and above!
 int
-utf_printable(int c) {
+utf_printable(Unt c) {
    // Sorted list of non-overlapping intervals.
    // 0xd800-0xdfff is reserved for UTF-16, actually illegal.
    static struct interval nonprint[] = {
@@ -4754,7 +4729,7 @@ utf_class(int c) {
 }
 
 int
-utf_class_buf(int c, Book* book) {
+utf_class_buf(Unt c, Book* book) {
    // sorted list of non-overlapping intervals
    static struct clinterval {
       unsigned int first;
@@ -4867,7 +4842,7 @@ utf_class_buf(int c, Book* book) {
 }
 
 int
-utf_ambiguous_width(int c) {
+utf_ambiguous_width(Unt c) {
     return c >= 0x80 && (intable(ambiguous, sizeof(ambiguous), c)
        || intable(emoji_all, sizeof(emoji_all), c));
 }
@@ -5170,12 +5145,7 @@ utf_isupper(Unt a) {
 }
 
 private int
-utf_strnicmp(
-   CS s1,
-   CS s2,
-   Unt n1,
-   Unt n2
-){
+utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2){
    Unt c1, c2;
    int cdiff;
    Byte buffer[6];
@@ -5258,7 +5228,7 @@ caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
 //"g8": show bytes of the UTF-8 char under the cursor.
 void
 show_utf8(void) {
-   int      rlen = 0;
+   int rlen = 0;
 
    // Get the byte length of the char under the cursor, including composing
    // characters.
@@ -5308,9 +5278,9 @@ dbcs_head_off(Byte *base, Byte *p) {
 //characters.  "base" must be the start of the string, which must be ZERO terminated.
 int
 mb_head_off(CS base, CS p) {
-   Byte   *q;
-   Byte   *s;
-   int      len;
+   CS q;
+   CS s;
+   int len;
 
    if (*p < 0x80)      // be quick for ASCII
       return 0;
@@ -5320,21 +5290,21 @@ mb_head_off(CS base, CS p) {
    for (q = p; ; --q) {
       // Move s to the last byte of this char.
       for (s = q; (s[1] & 0xc0) == 0x80; ++s)
-          ;
+         {}
       // Move q to the first byte of this char.
       while (q > base && (*q & 0xc0) == 0x80)
-          --q;
+         --q;
       // Check for illegal sequence. Do allow an illegal byte after where we started.
       len = utf8LenTable[*q];
       if (len != (int)(s - q + 1) && len != (int)(p - q + 1))
-          return 0;
+         return 0;
 
       if (q <= base)
-          break;
+         break;
 
       Unt c = mb_ptr2char(q);
       if (utf_iscomposing(c))
-          continue;
+         continue;
 
       break;
    }
@@ -5537,8 +5507,8 @@ mb_tail_off(CS base, CS p) {
 void
 utf_find_illegal(void) {
    Pos   pos = curPor->cursor;
-   Byte   *p;
-   Byte   *tofree = NULL;
+   CS p;
+   CS tofree = NULL;
 
    curPor->cursor.coladd = 0;
    for (;;) {
@@ -5571,7 +5541,7 @@ theend:
 //ZERO. Otherwise stop at "end".
 int
 utf_valid_string(CS s, CS end) {
-   Byte   *p = s;
+   CS p = s;
 
    while (end == NULL ? *p != ZERO : p < end) {
       int l = utf8LenTable_zero[*p];
@@ -5598,7 +5568,7 @@ mb_adjust_cursor(void) {
 //If it points to a tail byte it's moved backwards to the head byte.
 void
 mb_adjustpos(Book* book, Pos *lp) {
-   Byte   *p;
+   CS p;
 
    if (lp->col > 0 || lp->coladd > 1) {
       p = memGetLine(book, lp->lnum, FALSE);
@@ -5658,8 +5628,8 @@ mb_charlen_len(CS str, int len) {
 CS
 mb_unescape(OUT CS* pp) {
    static Byte   buf[6];
-   int         n;
-   int         m = 0;
+   int n;
+   int m = 0;
    CS str = *pp;
 
    // Must translate K_SPECIAL KS_SPECIAL KE_FILLER to K_SPECIAL and CSI
@@ -5714,7 +5684,7 @@ mb_fix_col(Unt col, Unt row) {
 #include <langinfo.h>
 
 void
-f_charclass(Var *argvars, Var *returnVar UNUSED) {
+f_charclass(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
       return;
    returnVar->number = mb_get_class(argvars[0].string);
@@ -7475,7 +7445,7 @@ vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
 }
 
 void
-f_getmousepos(Var *argvars UNUSED, Var *returnVar) {
+f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
    Long winid = 0;
    Long winrow = 0;
    Long wincol = 0;

@@ -9226,13 +9226,13 @@ getcmdline_prompt(
 }
 
 //}}}
-//{{{cmdline aux
+//{{{Commline aux
 
 //Read the 'wildmode' option, fill wim_flags[].
 int
 check_opt_wim(void) {
   Byte   new_wim_flags[4];
-  Byte   *p;
+  CS p;
   int      i;
   int      idx = 0;
 
@@ -10206,11 +10206,11 @@ get_list_range(Byte **str, int *num1, int *num2) {
 private Unt
 openCommPort(void) {
    Portal      *wp;
-   int         i;
+   int i;
    
    Portal* oldPort = curPor;
-   int         save_restart_edit = restart_edit;
-   int         save_State = stateG;
+   int save_restart_edit = restart_edit;
+   int save_State = stateG;
 
    // Can't do this when text or buffer is locked.
    // Can't do this recursively. Can't do it when typing a password.
@@ -10361,7 +10361,7 @@ openCommPort(void) {
    isRedrawingDisabledG = 0;
 
    // Call the main loop until <CR> or CTRL-C is typed.
-   mainLoop(TRUE);
+   mainLoop(true);
 
    isRedrawingDisabledG = save_isRedrawingDisabledG;
 
@@ -12346,14 +12346,14 @@ func_tbl_get(void) {
 // If "evalarg" is not NULL use it to check for an already declared name.
 // If "invo" is not NULL use it to check for an already declared name.
 // Return a pointer to after the type. When something is wrong, return "arg".
-private Byte *
+private CS
 one_function_arg(
-   Byte       *arg,
-   ArrayList    *newargs,
-   int       skip
+   CS arg,
+   ArrayList* newargs,
+   int skip
 ) {
-   Byte   *p = arg;
-   Byte   *arg_copy = NULL;
+   CS p = arg;
+   CS arg_copy = NULL;
 
    while (ASCII_ISALNUM(*p) || *p == '_')
       ++p;
@@ -15956,11 +15956,11 @@ invoke_funccall_defer(FnCall *fc) {
 // Called when exiting: call all defer functions.
 void
 invoke_all_defer(void) {
-   for (FnCall *fc = currentCallS; fc != NULL; fc = fc->fc_caller)
+   for (FnCall* fc = currentCallS; fc != NULL; fc = fc->fc_caller)
       invoke_funccall_defer(fc);
 
-   for (FnCallEntry *fce = funccal_stack; fce != NULL; fce = fce->next) {
-      for (FnCall *fc = fce->top_funccal; fc != NULL; fc = fc->fc_caller)
+   for (FnCallEntry* fce = funccal_stack; fce != NULL; fce = fce->next) {
+      for (FnCall* fc = fce->top_funccal; fc != NULL; fc = fc->fc_caller)
           invoke_funccall_defer(fc);
    } 
 }
@@ -15968,11 +15968,11 @@ invoke_all_defer(void) {
 //":1,25call func(arg1, arg2)"   function call.
 //":defer func(arg1, arg2)"    deferred function call.
 void
-c_call(Invocation *invo) {
-   Byte   *arg = invo->arg;
-   Byte   *startarg;
-   Byte   *name;
-   Byte   *tofree;
+c_call(Invocation* invo) {
+   CS arg = invo->arg;
+   CS startarg;
+   CS name;
+   CS tofree;
    int      failed = FALSE;
    FuncDict   fudi;
    UserFunc   *ufunc = NULL;
@@ -16006,7 +16006,7 @@ c_call(Invocation *invo) {
    if (tofree == NULL)
       return;
 
-   // Increase refcount on dictionary, it could get deleted when evaluating the arguments
+   //Increase refcount on dictionary, it could get deleted when evaluating the arguments
    if (fudi.bag)
       ++fudi.bag->refcount;
 
@@ -16041,8 +16041,8 @@ c_call(Invocation *invo) {
       failed = callInner(invo, name, &arg, startarg, &funcexe, &evalarg);
    }
 
-   // When inside :try we need to check for following "| catch" or "| endtry".
-   // Not when there was an error, but do check if an exception was thrown.
+   //When inside :try we need to check for following "| catch" or "| endtry".
+   //Not when there was an error, but do check if an exception was thrown.
    if ((!aborting() || did_throw) && (!failed || invo->cstack->tryLevel > 0)) {
       // Check for trailing illegal characters and a following command.
       arg = skipwhite(arg);
@@ -16069,10 +16069,10 @@ end:
 //FALSE when the return gets pending.
 int
 do_return(
-   Invocation   *invo,
-   int      reanimate,
-   int      is_cmd,
-   void   *returnVar
+   Invocation* invo,
+   int reanimate,
+   int is_cmd,
+   void* returnVar
 ){
    if (reanimate) // Undo the return.
       currentCallS->fc_returned = FALSE;
@@ -16091,10 +16091,9 @@ do_return(
           // argument if present or is NULL else.
           cstack->pend.csp_rv[idx] = returnVar;
       else {
-          // When undoing a return in order to make it pending, get the stored
-          // return returnVar.
-          if (reanimate)
-         returnVar = currentCallS->fc_returnVar;
+         // When undoing a return in order to make it pending, get the stored return returnVar.
+         if (reanimate)
+            returnVar = currentCallS->fc_returnVar;
 
          if (returnVar) {
             // Store the value of the pending return.
@@ -16116,9 +16115,9 @@ do_return(
    } else {
       currentCallS->fc_returned = TRUE;
 
-      // If the return is carried out now, store the return value.  For
-      // a return immediately after reanimation, the value is already there.
-      if (!reanimate && returnVar != NULL) {
+      //If the return is carried out now, store the return value.  For
+      //a return immediately after reanimation, the value is already there.
+      if (!reanimate && returnVar) {
          clearVar(currentCallS->fc_returnVar);
          *currentCallS->fc_returnVar = *(Var *)returnVar;
          if (!is_cmd)
@@ -16138,17 +16137,17 @@ discard_pending_return(void *returnVar) {
 //Generate a return command for producing the value of "returnVar".  The result
 //is an allocated string.  Used by report_pending() for verbose messages.
 CS
-get_return_cmd(void *returnVar) {
-   Byte   *s = NULL;
-   Byte   *tofree = NULL;
-   Byte   numbuf[NUMBUFLEN];
-   Unt   slen = 0;
-   Unt   IObufflen;
+get_return_cmd(void* returnVar) {
+   CS s = NULL;
+   CS tofree = NULL;
+   Byte numbuf[NUMBUFLEN];
+   Unt slen = 0;
+   Unt IObufflen;
 
    if (returnVar)
       s = echo_string((Var *)returnVar, &tofree, numbuf, 0);
    if (s == NULL)
-      s = (CS)"";
+      s = S"";
    else
       slen = STRLEN(s);
 
@@ -16167,14 +16166,14 @@ get_return_cmd(void *returnVar) {
 //Return allocated string, or NULL for end of function.
 CS
 get_func_line(
-   Unt       c UNUSED,
+   Unt c UNUSED,
    void* cookie,
    int indent UNUSED,
-   GetlineAlgo options UNUSED)
-{
+   GetlineAlgo options UNUSED
+) {
    FnCall   *fcp = (FnCall *)cookie;
    UserFunc   *fp = fcp->fn;
-   Byte   *retval;
+   CS retval;
    ArrayList   *gap;  // growarray with function lines
 
    // If breakpoints have been added/deleted need to check for it.

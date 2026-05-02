@@ -3848,7 +3848,7 @@ c_diffgetput(Invocation* invo) {
                end_skip = 0;
          }
 
-         buf_empty = BUFEMPTY();
+         buf_empty = CURBOOK_EMPTY();
          added = 0;
          for (i = 0; i < count; ++i) {
             // remember deleting the last line of the book

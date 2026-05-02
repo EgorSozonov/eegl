@@ -1598,7 +1598,7 @@ get_v_event(SaveVEvent *sve) {
 }
 
 void
-restore_v_event(Bag* v_event, SaveVEvent *sve) {
+restore_v_event(Bag* v_event, SaveVEvent* sve) {
    dict_free_contents(v_event);
    if (sve->sve_did_save)
       v_event->hashTable = sve->sve_hashtab;
@@ -1681,7 +1681,6 @@ get_mode(CS buf) {
 
    buf[i] = ZERO;
 }
-
 
 //Fire a ModeChanged autocmd event if appropriate.
 void
@@ -2106,11 +2105,7 @@ waitForMsg(void) {
 
 // Execute an action in Normal mode.
 void
-normalAction(
-   Operator* oper,
-   int toplevel UNUSED
-) { // TRUE when called from main()
-
+normalAction(Operator* oper, Boole toplevel) { // TRUE when called from main()
    ActionArg   cmdArg;         // command arguments
    Unt      c;
    int      ctrl_w = FALSE;      // got CTRL-W command
@@ -2238,8 +2233,7 @@ normalAction(
 
    // Flush the showcmd characters onto the screen so we can see them while
    // the command is being executed.  Only do this when the shown command was
-   // actually displayed, otherwise this will slow down a lot when executing
-   // mappings.
+   // actually displayed, otherwise this will slow down a lot when executing mappings.
    if (need_flushbuf)
        out_flush();
    if (cmdArg.cmdchar != K_IGNORE) {
@@ -2313,9 +2307,8 @@ normal_end:
    }
    // Redraw the cursor with another shape, if we were in Operator-pending
    // mode or did a replace action.
-   if (prev_finish_op || cmdArg.cmdchar == 'r'
-                 || (cmdArg.cmdchar == 'g' && cmdArg.nchar == 'r')) {
-       ui_cursor_shape();      // may show different cursor shape
+   if (prev_finish_op || cmdArg.cmdchar == 'r' || (cmdArg.cmdchar == 'g' && cmdArg.nchar == 'r')) {
+      ui_cursor_shape();      // may show different cursor shape
    }
 
    if (oper->opTy == OP_NOP && oper->regname == 0 && cmdArg.cmdchar != K_CURSORHOLD)
@@ -2517,12 +2510,12 @@ find_ident_under_cursor(OUT Byte **text, int find_type) {
 // However: Uses @iskeyword from the current portal.
 int
 find_ident_at_pos(
-   Portal   *wp,
-   LineNr   lnum,
-   ColNr   startcol,
-   Byte   **text,
-   int      *textcol,   // column where "text" starts, can be NULL
-   int      find_type
+   Portal* wp,
+   LineNr lnum,
+   ColNr startcol,
+   Byte** text,
+   int* textcol,   // column where "text" starts, can be NULL
+   int find_type
 ) {
    int      col = 0;   // init to shut up GCC
    int      i;
@@ -2552,10 +2545,8 @@ find_ident_at_pos(
       // When starting on a ']' count it, so that we include the '['.
       bn = ptr[col] == ']';
 
-   /*
-    * 2. Back up to start of identifier/text.
-    */
-       // Remember class of character under cursor.
+      // 2. Back up to start of identifier/text.
+      // Remember class of character under cursor.
       if ((find_type & FIND_EVAL) && ptr[col] == ']')
          this_class = mb_get_class((CS)"a");
       else
@@ -2592,10 +2583,10 @@ find_ident_at_pos(
       }
       return 0;
    }
-    ptr += col;
-    *text = ptr;
+   ptr += col;
+   *text = ptr;
    if (textcol != NULL)
-   *textcol = col;
+      *textcol = col;
 
    //3. Find the end if the identifier/text.
    bn = 0;
@@ -2626,13 +2617,13 @@ prepareForRedo(ActionArg* aArg) {
 // Note that only the last argument can be a multi-byte char.
 void
 prep_redo(
-   int       regname,
-   long    num,
-   int       cmd1,
-   int       cmd2,
-   int       cmd3,
-   int       cmd4,
-   int       cmd5
+   int regname,
+   long num,
+   int cmd1,
+   int cmd2,
+   int cmd3,
+   int cmd4,
+   int cmd5
 ){
    prep_redo_num2(regname, num, cmd1, cmd2, 0L, cmd3, cmd4, cmd5);
 }
@@ -2660,13 +2651,13 @@ prep_redo_num2(
       AppendCharToRedobuff(regname);
    }
    if (num1 != 0)
-      AppendNumberToRedobuff(num1);
+      inpAppendNumberToRedoBuff(num1);
    if (cmd1 != ZERO)
       AppendCharToRedobuff(cmd1);
    if (cmd2 != ZERO)
       AppendCharToRedobuff(cmd2);
    if (num2 != 0)
-      AppendNumberToRedobuff(num2);
+      inpAppendNumberToRedoBuff(num2);
    if (cmd3 != ZERO)
       AppendCharToRedobuff(cmd3);
    if (cmd4 != ZERO)
@@ -2677,7 +2668,7 @@ prep_redo_num2(
 
 // Check for operator active and clear it.
 private int
-checkclearop(Operator *oper) {
+checkclearop(Operator* oper) {
    if (oper->opTy == OP_NOP)
       return FALSE;
    clearopbeep(oper);
@@ -2686,7 +2677,7 @@ checkclearop(Operator *oper) {
 
 // Check for operator or Visual active.  Clear active operator.
 private int
-checkclearopq(Operator *oper) {
+checkclearopq(Operator* oper) {
    if (oper->opTy == OP_NOP && !VIsual_active)
       return FALSE;
    clearopbeep(oper);
@@ -2934,27 +2925,26 @@ display_showcmd(void) {
 // scrolled.  Called from normal_cmd() and edit().
 void
 normPostProcessScrollbind(int check) {
-   static Portal   *old_curPor = NULL;
-   static LineNr   old_topline = 0;
-   static int      old_topfill = 0;
-   static Book   *old_buf = NULL;
-   static ColNr   old_leftcol = 0;
+   static Portal* old_curPor = NULL;
+   static LineNr old_topline = 0;
+   static int old_topfill = 0;
+   static Book* old_buf = NULL;
+   static ColNr old_leftcol = 0;
 
    if (check && curPor->o.scrollBind) {
       // If the ":syncbind" command was just used, don't scroll, only reset the values.
       if (did_syncbind)
           did_syncbind = FALSE;
       ei (curPor == old_curPor) {
-          //Synchronize other portals, as necessary according to
-          //@scrollbind. Don't do this after an ":edit" command, except when @diff is set.
-          if ((curPor->book == old_buf || curPor->o.diff)
-        && (curPor->topLine != old_topline
-           || curPor->topFill != old_topfill
-           || curPor->leftCol != old_leftcol))
-          {
-         check_scrollbind(curPor->topLine - old_topline,
-            (long)(curPor->leftCol - old_leftcol));
-          }
+         //Synchronize other portals, as necessary according to
+         //@scrollbind. Don't do this after an ":edit" command, except when @diff is set.
+         if ((curPor->book == old_buf || curPor->o.diff)
+           && (curPor->topLine != old_topline
+              || curPor->topFill != old_topfill
+              || curPor->leftCol != old_leftcol)
+         ) {
+            check_scrollbind(curPor->topLine - old_topline, (long)(curPor->leftCol - old_leftcol));
+         }
       } ei ((p_sbo & SCR_JUMP) != 0) {// jump flag set in @scrollopt
           //When switching between portals, make sure that the relative vertical offset is valid 
           //for the new portal. The relative offset is invalid whenever another @scrollbind portal
@@ -3198,10 +3188,10 @@ find_decl(
 // Get visually selected text, within one line only. Return FAIL if more than one line selected.
 int
 get_visual_text(
-   ActionArg   *aArg,
-   Byte   **pp,       // return: start of selected text
-   int      *lenp)       // return: length of selected text
-{
+   ActionArg* aArg,
+   OUT CS* pp,       // return: start of selected text
+   OUT int* lenp       // return: length of selected text
+){
    if (VIsual.lnum != curPor->cursor.lnum) {
       if (aArg)
          clearopbeep(aArg->oper);
@@ -3240,8 +3230,8 @@ normal_search(
    CS pat,
    Unt patlen,
    int opt,      // extra flags for do_search()
-   int* wrapped)
-{
+   int* wrapped
+) {
    int      i;
    SearchitArg sia;
    Pos   prev_cursor = curPor->cursor;
@@ -3426,13 +3416,9 @@ nvPage(ActionArg* aArg) {
 
 // Implementation of "gd" and "gD" action.
 private void
-nv_gd(
-   Operator   *oper,
-   int      nchar,
-   int      thisblock)   // 1 for "1gd" and "1gD"
-{
-   int      len;
-   Byte   *ptr;
+nv_gd(Operator* oper, int nchar, int      thisblock) {  // 1 for "1gd" and "1gD"
+   int len;
+   CS ptr;
 
    if ((len = find_ident_under_cursor(OUT &ptr, FIND_IDENT)) == 0
        || find_decl(ptr, len, nchar == 'd', thisblock, SEARCH_START) == FAIL
@@ -3454,22 +3440,18 @@ nv_gd(
 //
 // Return OK if able to move cursor, FAIL otherwise.
 int
-nv_screengo(Operator *oper, Unt dir, long dist) {
+nv_screengo(Operator* oper, Unt dir, long dist) {
    int      linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
-
    int      retval = OK;
    int      atend = FALSE;
    int      n;
-   int      col_off1;   // margin offset for first screen line
-   int      width1;      // text width for first screen line
-   int      width2;      // text width for wrapped screen line
 
    oper->motion_type = MCHAR;
    oper->inclusive = (curPor->cursWant == MAXCOL);
 
-   col_off1 = curPor_col_off();
-   width1 = curPor->width - col_off1;
-   width2 = curPor->width - col_off1;
+   int col_off1 = curPor_col_off(); //margin offset for first screen line
+   int width1 = curPor->width - col_off1; //text width for first screen line
+   int width2 = curPor->width - col_off1; //text width for wrapped screen line
    if (width2 == 0)
       width2 = 1; // avoid divide by zero
 
@@ -3499,7 +3481,7 @@ nv_screengo(Operator *oper, Unt dir, long dist) {
          if (dir == BACKWARD)    {
             if ((long)curPor->cursWant >= width1
                 && !getFolds(curPor->cursor.lnum, NULL, NULL)
-                )
+            )
                // Move back within the line. This can give a negative value
                // for cursWant if width1 < width2 (with cpoptions+=n),
                // which will get clipped to column 0.
@@ -3529,50 +3511,48 @@ nv_screengo(Operator *oper, Unt dir, long dist) {
                if (curPor->cursor.lnum >= curPor->book->mem.lineCount) {
                    retval = FAIL;
                    break;
-            }
-            cursor_down_inner(curPor, 1);
-            curPor->cursWant %= width2;
+               }
+               cursor_down_inner(curPor, 1);
+               curPor->cursWant %= width2;
 
-            // Check if the cursor has moved below the number display when width1 < width2 
-            // (with cpoptions+=n). Subtract width2 to get a negative value for cursWant, which 
-            // will get clipped to column 0.
-            if (curPor->cursWant >= width1)
-                curPor->cursWant -= width2;
-            linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
+               //Check if the cursor has moved below the number display when width1 < width2 
+               //(with cpoptions+=n). Subtract width2 to get a negative value for cursWant, which 
+               //will get clipped to column 0.
+               if (curPor->cursWant >= width1)
+                   curPor->cursWant -= width2;
+               linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
             }
          }
       }
    }
 
    if (virtual_active() && atend)
-   coladvance(MAXCOL);
-    else
-   coladvance(curPor->cursWant);
+      coladvance(MAXCOL);
+   else
+      coladvance(curPor->cursWant);
 
    if (curPor->cursor.col > 0 && curPor->o.wrap) {
-      ColNr virtcol;
-      int   c;
-
-      // Check for landing on a character that got split at the end of the
-      // last line.  We want to advance a screenline, not end up in the same
-      // screenline or move two screenlines.
+      //Check for landing on a character that got split at the end of the
+      //last line. We want to advance a screenline, not end up in the same
+      //screenline or move two screenlines.
       validate_virtcol();
-      virtcol = curPor->virtCol;
+      ColNr virtcol = curPor->virtCol;
       if (virtcol > (ColNr)width1 && p_sbr)
           virtcol -= eeglStrSize(p_sbr);
 
-      c = mb_ptr2char(ml_get_cursor());
+      Unt c = mb_ptr2char(ml_get_cursor());
       if (dir == FORWARD && virtcol < curPor->cursWant
          && (curPor->cursWant <= (ColNr)width1)
-         && !eeIsPrintable(c) && c > 255)
-          oneright();
+         && !eeIsPrintable(c) && c > 255
+      )
+         oneright();
 
       if (virtcol > curPor->cursWant
          && (curPor->cursWant < (ColNr)width1
              ? (curPor->cursWant > (ColNr)width1 / 2)
-             : ((curPor->cursWant - width1) % width2
-                           > (ColNr)width2 / 2)))
-          --curPor->cursor.col;
+             : ((curPor->cursWant - width1) % width2 > (ColNr)width2 / 2))
+      )
+         --curPor->cursor.col;
    }
 
    if (atend)
@@ -3586,12 +3566,12 @@ nv_screengo(Operator *oper, Unt dir, long dist) {
 void
 nv_scroll_line(ActionArg* aArg) {
    if (!checkclearop(aArg->oper))
-   scroll_redraw(aArg->arg, aArg->count1);
+      scroll_redraw(aArg->arg, aArg->count1);
 }
 
 // For overflow detection, add a digit safely to a long value.
 private int
-appendDigitLong(long *value, int digit) {
+appendDigitLong(long* value, int digit) {
    long x = *value;
    if (x > ((LONG_MAX - (long)digit) / 10))
       return FAIL;
@@ -3685,12 +3665,12 @@ nv_zet(ActionArg* aArg) {
    // "z+", "z<CR>" and "zt": put cursor at top of screen
    case '+':
       if (aArg->count0 == 0) {
-          // No count given: put cursor at the line below screen
-          validate_botline();   // make sure bottomLine is valid
-          if (curPor->bottomLine > curBook->mem.lineCount)
-         curPor->cursor.lnum = curBook->mem.lineCount;
-          else
-         curPor->cursor.lnum = curPor->bottomLine;
+         // No count given: put cursor at the line below screen
+         validate_botline();   // make sure bottomLine is valid
+         if (curPor->bottomLine > curBook->mem.lineCount)
+            curPor->cursor.lnum = curBook->mem.lineCount;
+         else
+            curPor->cursor.lnum = curPor->bottomLine;
       }
       // FALLTHROUGH
    case NL:
@@ -3705,63 +3685,63 @@ nv_zet(ActionArg* aArg) {
       set_fraction(curPor);
       break;
 
-      // "z." and "zz": put cursor in middle of screen
-    case '.':   beginline(BL_WHITE | BL_FIX);
+   // "z." and "zz": put cursor in middle of screen
+   case '.':   beginline(BL_WHITE | BL_FIX);
       // FALLTHROUGH
 
-    case 'z':   scroll_cursor_halfway(TRUE, FALSE);
+   case 'z':   scroll_cursor_halfway(TRUE, FALSE);
       redraw_later(UPD_VALID);
       set_fraction(curPor);
       break;
 
-      // "z^", "z-" and "zb": put cursor at bottom of screen
-    case '^':   // Strange Vi behavior: <count>z^ finds line at top of portal
+   // "z^", "z-" and "zb": put cursor at bottom of screen
+   case '^':   // Strange Vi behavior: <count>z^ finds line at top of portal
       // when <count> is at bottom of portal, and puts that one at bottom of portal.
       if (aArg->count0 != 0) {
-          scroll_cursor_bot(0, TRUE);
-          curPor->cursor.lnum = curPor->topLine;
+         scroll_cursor_bot(0, TRUE);
+         curPor->cursor.lnum = curPor->topLine;
       }
       ei (curPor->topLine == 1)
-          curPor->cursor.lnum = 1;
+         curPor->cursor.lnum = 1;
       else
-          curPor->cursor.lnum = curPor->topLine - 1;
-      // FALLTHROUGH
-    case '-':
+         curPor->cursor.lnum = curPor->topLine - 1;
+   // FALLTHROUGH
+   case '-':
       beginline(BL_WHITE | BL_FIX);
       // FALLTHROUGH
 
-    case 'b':   scroll_cursor_bot(0, TRUE);
+   case 'b':   scroll_cursor_bot(0, TRUE);
       redraw_later(UPD_VALID);
       set_fraction(curPor);
       break;
 
-      // "zH" - scroll screen right half-page
-    case 'H':
+   // "zH" - scroll screen right half-page
+   case 'H':
       aArg->count1 *= curPor->width / 2;
       // FALLTHROUGH
 
-      // "zh" - scroll screen to the right
-    case 'h':
-    case K_LEFT:
+   // "zh" - scroll screen to the right
+   case 'h':
+   case K_LEFT:
       if (!curPor->o.wrap)
           (void)set_leftcol((ColNr)aArg->count1 > curPor->leftCol
                 ? 0 : curPor->leftCol - (ColNr)aArg->count1);
       break;
 
-      // "zL" - scroll portal left half-page
-    case 'L':   aArg->count1 *= curPor->width / 2;
+   // "zL" - scroll portal left half-page
+   case 'L':   aArg->count1 *= curPor->width / 2;
       // FALLTHROUGH
 
-      // "zl" - scroll portal to the left if not wrapping
-    case 'l':
-    case K_RIGHT:
+   // "zl" - scroll portal to the left if not wrapping
+   case 'l':
+   case K_RIGHT:
       if (!curPor->o.wrap)
-          (void)set_leftcol(curPor->leftCol + (ColNr)aArg->count1);
+         (void)set_leftcol(curPor->leftCol + (ColNr)aArg->count1);
       break;
 
-      // "zs" - scroll screen, cursor at the start
-    case 's':   
-       if (!curPor->o.wrap)       {
+   // "zs" - scroll screen, cursor at the start
+   case 's':   
+      if (!curPor->o.wrap)       {
          if (getFolds(curPor->cursor.lnum, NULL, NULL))
             col = 0;   // like the cursor is in col 0
          else
@@ -3783,7 +3763,7 @@ nv_zet(ActionArg* aArg) {
          if (getFolds(curPor->cursor.lnum, NULL, NULL))
             col = 0;   // like the cursor is in col 0
          else
-             getvcol(curPor, &curPor->cursor, NULL, NULL, &col);
+            getvcol(curPor, &curPor->cursor, NULL, NULL, &col);
          n = curPor->width - curPor_col_off();
          if ((long)col + siso < n)
             col = 0;
@@ -3799,8 +3779,8 @@ nv_zet(ActionArg* aArg) {
       // "zp", "zP" in block mode put without adding trailing spaces
     case 'P':
     case 'p':  
-       nv_put(aArg);
-       break;
+      nv_put(aArg);
+      break;
       // "zy" Yank without trailing spaces
     case 'y':  nv_operator(aArg);
           break;
@@ -3831,12 +3811,11 @@ nv_zet(ActionArg* aArg) {
          if (VIsual_active)
             nv_operator(aArg);
          else
-         deleteFold(curPor->cursor.lnum,
-              curPor->cursor.lnum, nchar == 'D', FALSE);
+            deleteFold(curPor->cursor.lnum, curPor->cursor.lnum, nchar == 'D', FALSE);
       }
       break;
 
-      // "zE": erase all folds
+   // "zE": erase all folds
    case 'E':   
       if (curPor->o.foldMethod == FOLD_MARKER)
          deleteFold((LineNr)1, curBook->mem.lineCount, TRUE, FALSE);
@@ -3844,20 +3823,21 @@ nv_zet(ActionArg* aArg) {
          emsg(_(e_cannot_erase_folds_with_current_foldmethod));
       break;
 
-      // "zn": fold none: reset @foldenable
-    case 'n':   curPor->o.foldEnable = FALSE;
+   // "zn": fold none: reset @foldenable
+   case 'n':   
+      curPor->o.foldEnable = FALSE;
       break;
 
-      // "zN": fold Normal: set @foldenable
-    case 'N':   curPor->o.foldEnable = TRUE;
+   // "zN": fold Normal: set @foldenable
+   case 'N':   curPor->o.foldEnable = TRUE;
       break;
 
-      // "zi": invert folding: toggle @foldenable
-    case 'i':   curPor->o.foldEnable = !curPor->o.foldEnable;
+   // "zi": invert folding: toggle @foldenable
+   case 'i':   curPor->o.foldEnable = !curPor->o.foldEnable;
       break;
 
-      // "za": open closed fold or close open fold at cursor
-    case 'a':   
+   // "za": open closed fold or close open fold at cursor
+   case 'a':   
       if (getFolds(curPor->cursor.lnum, NULL, NULL))
          openFold(curPor->cursor.lnum, aArg->count1);
       else {
@@ -3867,7 +3847,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       // "zA": open fold at cursor recursively
-    case 'A':   
+   case 'A':   
       if (getFolds(curPor->cursor.lnum, NULL, NULL))
          openFoldRecurse(curPor->cursor.lnum);
       else {
@@ -3885,7 +3865,7 @@ nv_zet(ActionArg* aArg) {
       break;
 
       // "zO": open fold recursively
-    case 'O':   
+   case 'O':   
       if (VIsual_active)
          nv_operator(aArg);
       else
@@ -3923,15 +3903,15 @@ nv_zet(ActionArg* aArg) {
       foldOpenCursor();
       break;
 
-      // "zX": undo manual opens/closes, re-apply 'foldlevel'
-    case 'X':   
+   // "zX": undo manual opens/closes, re-apply 'foldlevel'
+   case 'X':   
       curPor->o.foldEnable = true;
       curPor->foldNeedsRecomputation = true;   // recompute folds
       old_fdl = -1;         // force an update
       break;
 
-      // "zm": fold more
-    case 'm':  
+   // "zm": fold more
+   case 'm':  
       if (curPor->o.foldLevel > 0) {
           curPor->o.foldLevel -= aArg->count1;
           if (curPor->o.foldLevel < 0)
@@ -3941,14 +3921,14 @@ nv_zet(ActionArg* aArg) {
       curPor->o.foldEnable = TRUE;
       break;
 
-      // "zM": close all folds
-    case 'M':   curPor->o.foldLevel = 0;
+   // "zM": close all folds
+   case 'M':   curPor->o.foldLevel = 0;
       old_fdl = -1;      // force an update
       curPor->o.foldEnable = TRUE;
       break;
 
       // "zr": reduce folding
-    case 'r':   {
+   case 'r':   {
          curPor->o.foldLevel += aArg->count1;
          int d = getDeepestNesting();
 
@@ -3995,7 +3975,7 @@ nv_zet(ActionArg* aArg) {
 // Handle a ":" action.
 private void
 nv_colon(ActionArg* aArg) {
-   int   isCmdkey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
+   Boole isCmdkey = aArg->cmdchar == K_COMMAND || aArg->cmdchar == K_SCRIPT_COMMAND;
 
    if (VIsual_active && !isCmdkey) {
       nv_operator(aArg);
@@ -4018,7 +3998,6 @@ nv_colon(ActionArg* aArg) {
    // When typing, don't type below an old message
    if (KeyTyped)
       compute_cmdrow();
-
 
    // get a command line and execute it
    int flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
@@ -4049,7 +4028,7 @@ nv_ctrlg(ActionArg* aArg) {
    } ei (!checkclearop(aArg->oper)) {
        // print full name if count given or :cd used
        fileinfo((int)aArg->count0, FALSE, TRUE);
-  } 
+   } 
 }
 
 // Handle CTRL-H <Backspace> action.
@@ -4075,9 +4054,7 @@ nv_clear(ActionArg* aArg) {
    redraw_later(UPD_CLEAR);
 }
 
-/*
- * CTRL-O: In Select mode: switch to Visual mode for one action. Otherwise: Go to older pcmark.
- */
+//CTRL-O: In Select mode: switch to Visual mode for one action. Otherwise: Go to older pcmark.
 private void
 nv_ctrlo(ActionArg* aArg) {
    aArg->count1 = -aArg->count1;
@@ -4128,17 +4105,17 @@ do_nv_ident(int c1, int c2) {
 // 'K' normal-mode command. Get the command to lookup the keyword under the cursor.
 private int
 nv_K_getcmd(
-   ActionArg   *aArg,
-   Byte      *kp,
-   int      kp_help,
-   int      kp_ex,
-   Byte      **ptr_arg,
-   int      n,
+   ActionArg* aArg,
+   CS kp,
+   int kp_help,
+   int kp_ex,
+   Byte** ptr_arg,
+   int n,
    CS buffer,
-   Unt      bufsize,
-   Unt      *buflen
+   Unt bufsize,
+   Unt* buflen
 ) {
-   Byte   *ptr = *ptr_arg;
+   CS ptr = *ptr_arg;
    int      isman;
    int      isman_s;
 
@@ -4161,8 +4138,8 @@ nv_K_getcmd(
    // An external command will probably use an argument starting
    // with "-" as an option.  To avoid trouble we skip the "-".
    while (*ptr == '-' && n > 0) {
-       ++ptr;
-       --n;
+      ++ptr;
+      --n;
    }
    if (n == 0) {
       // found dashes only
@@ -4172,8 +4149,7 @@ nv_K_getcmd(
       return 0;
    }
 
-   // When a count is given, turn it into a range.  Is this
-   // really what we want?
+   //When a count is given, turn it into a range.  Is this really what we want?
    isman = (STRCMP(kp, "man") == 0);
    isman_s = (STRCMP(kp, "man -s") == 0);
    if (aArg->count0 != 0 && !(isman || isman_s))
@@ -4201,19 +4177,19 @@ nv_K_getcmd(
 private void
 nv_ident(ActionArg* aArg) {
    Byte   *ptr = NULL;
-   Byte   *buffer;
+   CS buffer;
    Unt   bufsize;
    Unt   buflen;
-   Byte   *newbuf;
-   Byte   *p;
-   Byte   *kp;      // value of 'keywordprg'
-   int      kp_help;   // 'keywordprg' is ":he"
-   int      kp_ex;      // 'keywordprg' starts with ":"
-   int      n = 0;      // init for GCC
-   int      cmdchar;
-   int      g_cmd;      // "g" command
-   int      tag_cmd = FALSE;
-   Byte   *aux_ptr;
+   CS newbuf;
+   CS p;
+   CS kp;      // value of 'keywordprg'
+   int kp_help;   // 'keywordprg' is ":he"
+   int kp_ex;      // 'keywordprg' starts with ":"
+   int n = 0;      // init for GCC
+   int cmdchar;
+   int g_cmd;      // "g" command
+   int tag_cmd = FALSE;
+   CS aux_ptr;
 
    if (aArg->cmdchar == 'g') {   // "g*", "g#", "g]" and "gCTRL-]"
       cmdchar = aArg->nchar;
@@ -4228,7 +4204,7 @@ nv_ident(ActionArg* aArg) {
 
    // The "]", "CTRL-]" and "K" commands accept an argument in Visual mode.
    if (cmdchar == ']' || cmdchar == Ctrl_RSB || cmdchar == 'K') {
-      if (VIsual_active && get_visual_text(aArg, &ptr, &n) == FAIL)
+      if (VIsual_active && get_visual_text(aArg, OUT &ptr, OUT &n) == FAIL)
           return;
       if (checkclearopq(aArg->oper))
           return;
@@ -4242,8 +4218,8 @@ nv_ident(ActionArg* aArg) {
       return;
    }
 
-   // Allocate buffer to put the command in.  Inserting backslashes can
-   // double the length of the word. curBook->o.keywordProg could be added and some numbers.
+   //Allocate buffer to put the command in. Inserting backslashes can
+   //double the length of the word. curBook->o.keywordProg could be added and some numbers.
    kp = curBook->o.keywordProg;
    kp_help = (*kp == ZERO || STRCMP(kp, ":he") == 0 || STRCMP(kp, ":help") == 0);
    if (kp_help && *skipwhite(ptr) == ZERO) {
@@ -4779,7 +4755,7 @@ nv_csearch(ActionArg* aArg) {
 // "[m" or "]m" search for prev/next start of (Java) method.
 // "[M" or "]M" search for prev/next end of (Java) method.
 private void
-nv_bracket_block(ActionArg* aArg, Pos *old_pos) {
+nv_bracket_block(ActionArg* aArg, Pos* old_pos) {
    Pos   new_pos = {0, 0, 0};
    Pos   *pos = NULL;       // init for GCC
    Pos   prev_pos;
@@ -4837,11 +4813,11 @@ nv_bracket_block(ActionArg* aArg, Pos *old_pos) {
       while (n > 0) {
          for (;;) {
             if ((findc == '{' ? dec_cursor() : inc_cursor()) < 0) {
-                // if not found anything, that's an error
-                if (pos == NULL)
-               clearopbeep(aArg->oper);
-                n = 0;
-                break;
+               // if not found anything, that's an error
+               if (pos == NULL)
+                  clearopbeep(aArg->oper);
+               n = 0;
+               break;
             }
             c = gchar_cursor();
             if (c == '{' || c == '}') {
@@ -4888,13 +4864,12 @@ private void
 nv_brackets(ActionArg* aArg) {
    Pos   prev_pos;
    Pos   *pos = NULL;       // init for GCC
-   Pos   old_pos;       // cursor position before command
-   int      flag;
-   long   n;
+   Unt flag;
+   long n;
 
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = FALSE;
-   old_pos = curPor->cursor;
+   Pos old_pos = curPor->cursor; // cursor position before command
    curPor->cursor.coladd = 0;    // TODO: don't do this for an error.
 
    // "[f" or "]f" : Edit file under the cursor (same as "gf")
@@ -4914,39 +4889,42 @@ nv_brackets(ActionArg* aArg) {
       int   len;
 
       if ((len = find_ident_under_cursor(&ptr, FIND_IDENT)) == 0)
-          clearop(aArg->oper);
+         clearop(aArg->oper);
       else {
-          // Make a copy, if the line was changed it will be freed.
-          ptr = copySubstr(ptr, len);
-          if (ptr == NULL)
-         return;
+         // Make a copy, if the line was changed it will be freed.
+         ptr = copySubstr(ptr, len);
+         if (ptr == NULL)
+            return;
 
-          find_pattern_in_path(ptr, 0, len, TRUE,
-         aArg->count0 == 0 ? !SAFE_isupper(aArg->nchar) : FALSE,
-         ((aArg->nchar & 0xf) == ('d' & 0xf)) ?  FIND_DEFINE : FIND_ANY,
-         aArg->count1,
-         SAFE_isupper(aArg->nchar) ? ACTION_SHOW_ALL :
-                SAFE_islower(aArg->nchar) ? ACTION_SHOW : ACTION_GOTO,
-         aArg->cmdchar == ']' ? curPor->cursor.lnum + 1 : (LineNr)1,
-         (LineNr)MAXLNUM,
-         FALSE, FALSE);
-          eeglFree(ptr);
-          curPor->setCursWant = TRUE;
+         find_pattern_in_path(
+            ptr, 0, len, TRUE,
+            aArg->count0 == 0 ? !SAFE_isupper(aArg->nchar) : FALSE,
+            ((aArg->nchar & 0xf) == ('d' & 0xf)) ?  FIND_DEFINE : FIND_ANY,
+            aArg->count1,
+            SAFE_isupper(aArg->nchar) ? ACTION_SHOW_ALL :
+                   SAFE_islower(aArg->nchar) ? ACTION_SHOW : ACTION_GOTO,
+            aArg->cmdchar == ']' ? curPor->cursor.lnum + 1 : (LineNr)1,
+            (LineNr)MAXLNUM,
+            FALSE, FALSE
+         );
+         eeglFree(ptr);
+         curPor->setCursWant = TRUE;
       }
    } else
 
-    // "[{", "[(", "]}" or "])": go to Nth unclosed '{', '(', '}' or ')'
-    // "[#", "]#": go to start/end of Nth innermost #if..#endif construct.
-    // "[/", "[*", "]/", "]*": go to Nth comment start/end.
-    // "[m" or "]m" search for prev/next start of (Java) method.
-    // "[M" or "]M" search for prev/next end of (Java) method.
+   // "[{", "[(", "]}" or "])": go to Nth unclosed '{', '(', '}' or ')'
+   // "[#", "]#": go to start/end of Nth innermost #if..#endif construct.
+   // "[/", "[*", "]/", "]*": go to Nth comment start/end.
+   // "[m" or "]m" search for prev/next start of (Java) method.
+   // "[M" or "]M" search for prev/next end of (Java) method.
    if (  (aArg->cmdchar == '['
       && firstOccurrence((CS)"{(*/#mM", aArg->nchar) != NULL)
        || (aArg->cmdchar == ']'
-      && firstOccurrence((CS)"})*/#mM", aArg->nchar) != NULL))
-   nv_bracket_block(aArg, &old_pos);
+      && firstOccurrence((CS)"})*/#mM", aArg->nchar) != NULL)
+   )
+      nv_bracket_block(aArg, &old_pos);
 
-    // "[[", "[]", "]]" and "][": move to start or end of function
+   // "[[", "[]", "]]" and "][": move to start or end of function
    ei (aArg->nchar == '[' || aArg->nchar == ']') {
       if (aArg->nchar == aArg->cmdchar)          // "]]" or "[["
          flag = '{';
@@ -4988,21 +4966,21 @@ nv_brackets(ActionArg* aArg) {
           pos = &prev_pos;
       nv_cursormark(aArg, aArg->nchar == '\'', pos);
    }
-    // [ or ] followed by a middle mouse click: put selected text with
-    // indent adjustment.  Any other button just does as usual.
-    ei (aArg->nchar >= K_RIGHTRELEASE && aArg->nchar <= K_LEFTMOUSE)     {
-   (void)do_mouse(aArg->oper, aArg->nchar,
-             (aArg->cmdchar == ']') ? FORWARD : BACKWARD,
-             aArg->count1, PUT_FIXINDENT);
+   // [ or ] followed by a middle mouse click: put selected text with
+   // indent adjustment.  Any other button just does as usual.
+   ei (aArg->nchar >= K_RIGHTRELEASE && aArg->nchar <= K_LEFTMOUSE)     {
+      (void)do_mouse(aArg->oper, aArg->nchar,
+                (aArg->cmdchar == ']') ? FORWARD : BACKWARD,
+                aArg->count1, PUT_FIXINDENT);
    }
-    // "[z" and "]z": move to start or end of open fold.
-    ei (aArg->nchar == 'z') {
+   // "[z" and "]z": move to start or end of open fold.
+   ei (aArg->nchar == 'z') {
       if (foldMoveTo(false, aArg->cmdchar == ']' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
          clearopbeep(aArg->oper);
    }
 
    // "[c" and "]c": move to next or previous diff-change.
-   ei (aArg->nchar == 'c')     {
+   ei (aArg->nchar == 'c') {
       if (diff_move_to(aArg->cmdchar == ']' ? FORWARD : BACKWARD, aArg->count1) == FAIL)
          clearopbeep(aArg->oper);
    }
@@ -5014,7 +4992,6 @@ nv_brackets(ActionArg* aArg) {
 // Handle Normal mode "%" command.
 private void
 nv_percent(ActionArg* aArg) {
-   Pos   *pos;
    LineNr   lnum = curPor->cursor.lnum;
 
    aArg->oper->inclusive = TRUE;
@@ -5041,6 +5018,7 @@ nv_percent(ActionArg* aArg) {
    } else {         // "%" : go to matching paren
       aArg->oper->motion_type = MCHAR;
       aArg->oper->use_reg_one = TRUE;
+      Pos* pos;
       if ((pos = findmatch(aArg->oper, ZERO)) == NULL)
          clearopbeep(aArg->oper);
       else {
@@ -5053,8 +5031,9 @@ nv_percent(ActionArg* aArg) {
    if (aArg->oper->opTy == OP_NOP
        && lnum != curPor->cursor.lnum
        && (p_fdo & FDO_PERCENT)
-       && KeyTyped)
-       foldOpenCursor();
+       && KeyTyped
+   )
+      foldOpenCursor();
 }
 
 // Handle "(" and ")" commands. aArg->arg is BACKWARD for "(" and FORWARD for ")".
@@ -5122,11 +5101,11 @@ nv_undo(ActionArg* aArg) {
 private void
 nv_kundo(ActionArg* aArg) {
    if (checkclearopq(aArg->oper))
-   return;
+      return;
 
    if (bt_prompt(curBook)) {
-       clearopbeep(aArg->oper);
-       return;
+      clearopbeep(aArg->oper);
+      return;
    }
    u_undo((int)aArg->count1);
    curPor->setCursWant = TRUE;
@@ -5191,15 +5170,16 @@ nv_replace(ActionArg* aArg) {
 
    // Abort if not enough characters to replace.
    if ((Unt)ml_get_cursor_len() < (unsigned)aArg->count1
-          || (mb_charlen(ml_get_cursor()) < aArg->count1)) {
+          || (mb_charlen(ml_get_cursor()) < aArg->count1)
+   ) {
       clearopbeep(aArg->oper);
       return;
    }
 
-   // Replacing with a TAB is done by edit() when it is complicated because
-   // @expandtab' is set. CTRL-V TAB inserts a literal TAB.
-   // Other characters are done below to avoid problems with things like
-   // CTRL-V 048 (for edit() this would be R CTRL-V 0 ESC).
+   //Replacing with a TAB is done by edit() when it is complicated because
+   //@expandtab' is set. CTRL-V TAB inserts a literal TAB.
+   //Other characters are done below to avoid problems with things like
+   //CTRL-V 048 (for edit() this would be R CTRL-V 0 ESC).
    if (had_ctrl_v != Ctrl_V && aArg->nchar == '\t' && curBook->o.expandTab) {
       stuffnumReadbuff(aArg->count1);
       stuffcharReadbuff('R');
@@ -5208,15 +5188,15 @@ nv_replace(ActionArg* aArg) {
       return;
    }
 
-   // save line for undo
+   //save line for undo
    if (u_save_cursor() == FAIL)
       return;
 
    if (had_ctrl_v != Ctrl_V && (aArg->nchar == '\r' || aArg->nchar == '\n')) {
-      // Replace character(s) by a single newline. Strange vi behaviour: Only one newline is 
-      // inserted. Delete the characters here.
-      // Insert the newline with an insert command, takes care of autoindent. 
-      // The insert command depends on being on the last character of a line or not.
+      //Replace character(s) by a single newline. Strange vi behaviour: Only one newline is 
+      //inserted. Delete the characters here.
+      //Insert the newline with an insert command, takes care of autoindent. 
+      //The insert command depends on being on the last character of a line or not.
       (void)del_chars(aArg->count1, FALSE);   // delete the characters
       stuffcharReadbuff('\r');
       stuffcharReadbuff(ESC);
@@ -5233,8 +5213,8 @@ nv_replace(ActionArg* aArg) {
       if (aArg->ncharC2 != 0)
          AppendCharToRedobuff(aArg->ncharC2);
 
-      // This is slow, but it handles replacing a single-byte with a multi-byte and the other 
-      // way around. Also handles adding composing characters for utf-8.
+      //This is slow, but it handles replacing a single-byte with a multi-byte and the other 
+      //way around. Also handles adding composing characters for utf-8.
       for (n = aArg->count1; n > 0; --n) {
          if (aArg->nchar == Ctrl_E || aArg->nchar == Ctrl_Y) {
             int c = ins_copychar(curPor->cursor.lnum + (aArg->nchar == Ctrl_Y ? -1 : 1));
@@ -5342,9 +5322,9 @@ nv_optrans(ActionArg* aArg) {
 // "'" and "`" commands.  Also for "g'" and "g`". aArg->arg is TRUE for "'" and "g'".
 private void
 nv_gomark(ActionArg* aArg) {
-   int      c;
-   Pos   old_cursor = curPor->cursor;
-   int      old_KeyTyped = KeyTyped;    // getting file may reset it
+   int c;
+   Pos old_cursor = curPor->cursor;
+   int old_KeyTyped = KeyTyped;    // getting file may reset it
 
    if (aArg->cmdchar == 'g')
       c = aArg->extra_char;
@@ -5355,9 +5335,8 @@ nv_gomark(ActionArg* aArg) {
       if (aArg->arg) {
           check_cursor_lnum();
           beginline(BL_WHITE | BL_FIX);
-      }
-      else
-          check_cursor();
+      } else
+         check_cursor();
    } else
       nv_cursormark(aArg, aArg->arg, pos);
 
@@ -5418,13 +5397,13 @@ nv_pcmark(ActionArg* aArg) {
 private void
 nv_regname(ActionArg* aArg) {
    if (checkclearop(aArg->oper))
-   return;
+      return;
    if (aArg->nchar == '=')
-   aArg->nchar = get_expr_register();
+      aArg->nchar = get_expr_register();
    if (aArg->nchar != ZERO && valid_yank_reg(aArg->nchar, FALSE)) {
-       aArg->oper->regname = aArg->nchar;
-       aArg->opcount = aArg->count0;   // remember count before '"'
-       set_reg_var(aArg->oper->regname);
+      aArg->oper->regname = aArg->nchar;
+      aArg->opcount = aArg->count0;   // remember count before '"'
+      set_reg_var(aArg->oper->regname);
    } else
       clearopbeep(aArg->oper);
 }
@@ -5500,9 +5479,9 @@ nv_visual(ActionArg* aArg) {
          if (aArg->count0 > 0 && --aArg->count1 > 0) {
             // With a count select that many characters or lines.
             if (VIsual_mode == 'v' || VIsual_mode == Ctrl_V)
-                nv_right(aArg);
+               nv_right(aArg);
             ei (VIsual_mode == 'V')
-                nv_down(aArg);
+               nv_down(aArg);
           }
       }
    }
@@ -5533,7 +5512,6 @@ nv_suspend(ActionArg* aArg) {
 // current Visual area.
 private void
 nv_gv_cmd(ActionArg* aArg UNUSED) {
-   Pos   tpos;
    int      i;
 
    if (curBook->visual.vi_start.lnum == 0
@@ -5545,6 +5523,7 @@ nv_gv_cmd(ActionArg* aArg UNUSED) {
    }
 
    // set cursor to the start of the Visual area, tpos to the end
+   Pos tpos;
    if (VIsual_active) {
       i = VIsual_mode;
       VIsual_mode = curBook->visual.vi_mode;
@@ -5664,12 +5643,12 @@ gUnderscoreAction(ActionArg* aArg) {
 private void
 nvGDollarAction(ActionArg* aArg) {
    Operator* oper = aArg->oper;
-   int      i;
-   int      col_off = curPor_col_off();
-   int      flag = FALSE;
+   int i;
+   int col_off = curPor_col_off();
+   Boole flag = false;
 
    if (aArg->nchar == K_END || aArg->nchar == K_KEND)
-      flag = TRUE;
+      flag = true;
 
    oper->motion_type = MCHAR;
    oper->inclusive = TRUE;
@@ -6208,7 +6187,7 @@ private void
 nv_wordcmd(ActionArg* aArg) {
    int      n;
    int      word_end;
-   int      flag = FALSE;
+   Boole flag = false;
    Pos   startpos = curPor->cursor;
 
     // Set inclusive for the "E" and "e" command.
@@ -6226,7 +6205,7 @@ nv_wordcmd(ActionArg* aArg) {
          } else {
             aArg->oper->inclusive = TRUE;
             word_end = TRUE;
-            flag = TRUE;
+            flag = true;
          }
       }
    }
@@ -6518,7 +6497,7 @@ nv_cursorhold(ActionArg* aArg) {
 
 // "a" or "i" while an operator is pending or in Visual mode: object motion.
 private void
-nv_object(ActionArg   *aArg) {
+nv_object(ActionArg* aArg) {
    int      flag;
    int      include;
    Byte   *mps_save;
@@ -6834,27 +6813,23 @@ n_swapchar(ActionArg* aArg) {
       did_change |= swapchar(aArg->oper->opTy, &curPor->cursor);
       inc_cursor();
       if (gchar_cursor() == ZERO) {
-          if (firstOccurrence(p_ww, '~') != NULL
-             && curPor->cursor.lnum < curBook->mem.lineCount)
-          {
-         ++curPor->cursor.lnum;
-         curPor->cursor.col = 0;
-         if (n > 1) {
-             if (u_savesub(curPor->cursor.lnum) == FAIL)
+         if (firstOccurrence(p_ww, '~') != NULL && curPor->cursor.lnum < curBook->mem.lineCount) {
+            ++curPor->cursor.lnum;
+            curPor->cursor.col = 0;
+            if (n > 1) {
+               if (u_savesub(curPor->cursor.lnum) == FAIL)
+                  break;
+               u_clearline();
+            }
+         } else
             break;
-             u_clearline();
-         }
-          }
-          else
-         break;
       }
    }
 
    check_cursor();
    curPor->setCursWant = TRUE;
    if (did_change) {
-      changed_lines(startpos.lnum, startpos.col, curPor->cursor.lnum + 1,
-                                0L);
+      changed_lines(startpos.lnum, startpos.col, curPor->cursor.lnum + 1, 0L);
       curBook->opStart = startpos;
       curBook->opEnd = curPor->cursor;
       if (curBook->opEnd.col > 0)
@@ -6883,10 +6858,10 @@ nOpenAction(ActionArg* aArg) {
         ) == OK
         && insertLine(aArg->cmdchar == 'O' ? BACKWARD : FORWARD) == OK
    ) {
-         if (curPor->o.cursorLine) {
-             // force redraw of cursorline
-             curPor->cacheState &= ~VALID_CROW;
-         }
+      if (curPor->o.cursorLine) {
+         // force redraw of cursorline
+         curPor->cacheState &= ~VALID_CROW;
+      }
    }
 }
 
@@ -6930,10 +6905,10 @@ n_start_visual_mode(int c) {
 // Handle actions that are operators in Visual mode.
 private void
 v_visop(ActionArg* aArg) {
-    static Byte trans[] = "YyDdCcxdXdAAIIrr";
+   static Byte trans[] = "YyDdCcxdXdAAIIrr";
 
-    // Uppercase means linewise, except in block mode, then "D" deletes till
-    // the end of the line, and "C" replaces till EOL
+   // Uppercase means linewise, except in block mode, then "D" deletes till
+   // the end of the line, and "C" replaces till EOL
    if (SAFE_isupper(aArg->cmdchar)) {
       if (VIsual_mode != Ctrl_V) {
          VIsual_mode_orig = VIsual_mode;
@@ -6949,8 +6924,8 @@ v_visop(ActionArg* aArg) {
 // 'O': same, but in block mode exchange left and right corners.
 private void
 v_swap_corners(int cmdchar) {
-    Pos   old_cursor;
-    ColNr   left, right;
+   Pos   old_cursor;
+   ColNr   left, right;
 
    if (cmdchar == 'O' && VIsual_mode == Ctrl_V) {
       old_cursor = curPor->cursor;
@@ -6994,9 +6969,9 @@ private int check_top_offset(void);
 private void curs_rows(Portal *po);
 
 typedef struct {
-   LineNr       lnum;   // line number
-   int          fill;   // filler lines
-   int          height;   // height of added line
+   LineNr lnum; // line number
+   int fill;    // filler lines
+   int height;  // height of added line
 } LineOffset;
 
 private void topline_back(LineOffset *lp);
@@ -7006,20 +6981,20 @@ private void botline_forw(LineOffset *lp);
 int
 adjust_plines_for_skipcol(Portal *po) {
    if (po->skipCol == 0)
-   return 0;
+      return 0;
 
-    int width = po->width - normalPortalColumnOffset(po);
-    int w2 = width;
+   int width = po->width - normalPortalColumnOffset(po);
+   int w2 = width;
    if (po->skipCol >= width && w2 > 0)
-   return (po->skipCol - width) / w2 + 1;
+      return (po->skipCol - width) / w2 + 1;
 
-    return 0;
+   return 0;
 }
 
 // Return how many lines "lnum" will take on the screen, taking into account
 // whether it is the first line, whether skipCol is non-zero and limiting to the portal height.
 private int
-plines_correct_topline(Portal *po, LineNr lnum, int limit_winheight) {
+plines_correct_topline(Portal* po, LineNr lnum, int limit_winheight) {
    int n;
    if (lnum == po->topLine)
       n = plines_win_nofill(po, lnum, FALSE) + po->topFill;
@@ -7034,7 +7009,7 @@ plines_correct_topline(Portal *po, LineNr lnum, int limit_winheight) {
 
 // Compute po->bottomLine for the current po->topLine.  Can be called after po->topLine changed.
 private void
-comp_botline(Portal *po) {
+comp_botline(Portal* po) {
    int      n;
    LineNr   lnum;
    int      done;
@@ -7082,19 +7057,19 @@ comp_botline(Portal *po) {
 
 // Redraw when cursorLineRow changes and 'relativenumber' or 'cursorline' is set.
 private void
-redraw_for_cursorline(Portal *po) {
+redraw_for_cursorline(Portal* po) {
    if ((po->o.relativeNumber || po->o.cursorLine )
        && (po->cacheState & VALID_CROW) == 0
-       && !pum_visible())
-    {
-   // drawLineOnScreen() will redraw the number column and cursorline only.
-   redrawPortLater(po, UPD_VALID);
+       && !pum_visible()
+   ) {
+      // drawLineOnScreen() will redraw the number column and cursorline only.
+      redrawPortLater(po, UPD_VALID);
    }
 }
 
 // Redraw when virtCol changes and 'cursorcolumn' is set or 'cursorlineopt' contains "screenline".
 private void
-redraw_for_cursorcolumn(Portal *po) {
+redraw_for_cursorcolumn(Portal* po) {
    if ((po->cacheState & VALID_VIRTCOL) == 0 && !pum_visible()) {
       // When 'cursorcolumn' is set need to redraw with UPD_SOME_VALID.
       if (po->o.cursorColumn)
@@ -7115,8 +7090,8 @@ int
 sms_marker_overlap(Portal* po, int extra2) {
    if (extra2 == -1)
       extra2 = normalPortalColumnOffset(po);
-   // There is no marker overlap when in showbreak mode, thus no need to
-   // account for it.  See wlv_screen_line().
+   //There is no marker overlap when in showbreak mode, thus no need to
+   //account for it. See wlv_screen_line().
    if (p_sbr)
       return 0;
    // Overlap when 'list' and @listchars "precedes" are set is 1.
@@ -7130,7 +7105,6 @@ sms_marker_overlap(Portal* po, int extra2) {
 private int
 skipcol_from_plines(Portal *po, int plines_off) {
    int width1 = po->width - normalPortalColumnOffset(po);
-
    int skipcol = 0;
    if (plines_off > 0)
       skipcol += width1;
@@ -7199,7 +7173,7 @@ update_topline(void) {
    int old_topfill = curPor->topFill;
 
    // If the book is empty, always set topline to 1.
-   if (BUFEMPTY()) {     // special case - file is empty
+   if (CURBOOK_EMPTY()) {     // special case - file is empty
       if (curPor->topLine != 1)
           redraw_later(UPD_NOT_VALID);
       curPor->topLine = 1;
@@ -7384,7 +7358,7 @@ check_top_offset(void) {
       if (n < so)
           return TRUE;
    }
-    return FALSE;
+   return FALSE;
 }
 
 // Update cursWant.
@@ -7406,16 +7380,17 @@ update_curswant(void) {
 void
 check_cursor_moved(Portal *po) {
    if (po->cursor.lnum != po->lastKnownCursor.lnum) {
-      po->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL
-                     |VALID_CHEIGHT|VALID_CROW|VALID_TOPLINE
-                     |VALID_BOTLINE|VALID_BOTLINE_AP);
+      po->cacheState &= ~(
+         VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CHEIGHT|VALID_CROW|VALID_TOPLINE
+               |VALID_BOTLINE|VALID_BOTLINE_AP
+      );
       po->lastKnownCursor = po->cursor;
       po->lastKnownLeftCol = po->leftCol;
       po->lastKnownSkipCol = po->skipCol;
    } ei (po->skipCol != po->lastKnownSkipCol) {
-      po->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL
-                     |VALID_CHEIGHT|VALID_CROW
-                     |VALID_BOTLINE|VALID_BOTLINE_AP);
+      po->cacheState &= ~(
+         VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CHEIGHT|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP
+      );
       po->lastKnownCursor = po->cursor;
       po->lastKnownLeftCol = po->leftCol;
       po->lastKnownSkipCol = po->skipCol;
@@ -7468,7 +7443,7 @@ didChangePortalSettingAll(void) {
 
 // Set po->topLine to a certain number.
 void
-set_topline(Portal *po, LineNr lnum) {
+set_topline(Portal* po, LineNr lnum) {
    LineNr prev_topline = po->topLine;
 
    // go to first of folded lines
@@ -7542,7 +7517,7 @@ validate_botline(void) {
 void
 validate_botline_win(Portal *po) {
    if (!(po->cacheState & VALID_BOTLINE))
-   comp_botline(po);
+      comp_botline(po);
 }
 
 // Mark curPor->bottomLine as invalid (because of some change in the book).
@@ -7580,21 +7555,17 @@ validate_cursor(void) {
 
 // Compute po->cursorLineRow and po->cursorLineHeight, based on the current value of po->topLine.
 private void
-curs_rows(Portal *po) {
-   LineNr   lnum;
-   int      i;
-   int      all_invalid;
-   Boole      valid;
+curs_rows(Portal* po) {
    long   fold_count;
 
    // Check if po->lines[].height is invalid
-   all_invalid = (!redrawing()
+   int all_invalid = (!redrawing()
         || po->validLines == 0
         || po->lines[0].bookLnum > po->topLine);
-   i = 0;
+   int i = 0;
    po->cursorLineRow = 0;
-   for (lnum = po->topLine; lnum < po->cursor.lnum; ++i) {
-      valid = FALSE;
+   for (LineNr lnum = po->topLine; lnum < po->cursor.lnum; ++i) {
+      Boole valid = false;
       if (!all_invalid && i < po->validLines) {
          if (po->lines[i].bookLnum < lnum || !po->lines[i].isValid)
             continue;      // skip changed or deleted lines
@@ -7604,7 +7575,7 @@ curs_rows(Portal *po) {
             if (!po->book->needsRedraw
                || po->lines[i].lastBookLnum < po->cursor.lnum
                || po->book->needsRedrawTop > po->lines[i].lastBookLnum + 1)
-            valid = TRUE;
+            valid = true;
          } ei (po->lines[i].bookLnum > lnum)
             --i;         // hold at inserted lines
       }
@@ -7663,7 +7634,7 @@ validate_virtcol(void) {
 
 // Validate po->virtCol only.
 void
-validate_virtcol_win(Portal *po) {
+validate_virtcol_win(Portal* po) {
    check_cursor_moved(po);
 
    if (po->cacheState & VALID_VIRTCOL)
@@ -7694,34 +7665,31 @@ validate_cheight(void) {
 // Validate cursorCol and virtCol only.
 void
 validate_cursor_col(void) {
-   ColNr off;
-   ColNr col;
-   int     width;
-
    validate_virtcol();
 
    if (curPor->cacheState & VALID_WCOL)
       return;
 
-    col = curPor->virtCol;
-    off = curPor_col_off();
-    col += off;
-    width = curPor->width - off;
+   ColNr col = curPor->virtCol;
+   ColNr off = curPor_col_off();
+   col += off;
+   int width = curPor->width - off;
 
-    // long line wrapping, adjust curPor->cursorRow
+   // long line wrapping, adjust curPor->cursorRow
    if (curPor->o.wrap
        && col >= (ColNr)curPor->width
-       && width > 0)
-   // use same formula as what is used in curs_columns()
-   col -= ((col - curPor->width) / width + 1) * width;
+       && width > 0
+   )
+      // use same formula as what is used in curs_columns()
+      col -= ((col - curPor->width) / width + 1) * width;
    if (col > (int)curPor->leftCol)
-   col -= curPor->leftCol;
-    else
-   col = 0;
-    curPor->cursorCol = col;
+      col -= curPor->leftCol;
+   else
+      col = 0;
+   curPor->cursorCol = col;
 
-    curPor->cacheState |= VALID_WCOL;
-    curPor->flags &= ~WFLAG_WCOL_OFF_ADDED;
+   curPor->cacheState |= VALID_WCOL;
+   curPor->flags &= ~WFLAG_WCOL_OFF_ADDED;
 }
 
 // Compute offset of a portal, occupied by absolute or relative line number,
@@ -7740,21 +7708,20 @@ curPor_col_off(void) {
 // Compute curPor->cursorCol and curPor->virtCol.
 // Also update curPor->cursorRow and curPor->cursorLineRow. Also update curPor->leftCol.
 void
-curs_columns( int may_scroll) { // when TRUE, may scroll horizontally
-   int      diff;
-   int      extra;      // offset for first screen line
-   int      off_left, off_right;
-   int      n;
-   int      p_lines;
-   int      width1;      // text width for first screen line
-   int      width2 = 0;   // text width for second and later screen line
-   int      neleftCol;
-   ColNr   startcol;
-   ColNr   endcol;
-   ColNr   prev_skipcol;
-   long   so = curPor->o.scrollOff;
-   long   siso = get_sidescrolloff_value();
-   int      did_sub_skipcol = FALSE;
+curs_columns(int may_scroll) { // when TRUE, may scroll horizontally
+   int diff;
+   int off_left, off_right;
+   int n;
+   int p_lines;
+   int width1;      // text width for first screen line
+   int width2 = 0;   // text width for second and later screen line
+   int neleftCol;
+   ColNr startcol;
+   ColNr endcol;
+   ColNr prev_skipcol;
+   long so = curPor->o.scrollOff;
+   long siso = get_sidescrolloff_value();
+   int did_sub_skipcol = FALSE;
 
    // First make sure that topLine is valid (after moving the cursor).
    update_topline();
@@ -7773,7 +7740,7 @@ curs_columns( int may_scroll) { // when TRUE, may scroll horizontally
    else
       bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, &startcol, &(curPor->virtCol), &endcol);
 
-   extra = curPor_col_off();
+   int extra = curPor_col_off();  // offset for first screen line
    curPor->cursorCol = curPor->virtCol + extra;
    endcol += extra;
 
@@ -7983,13 +7950,13 @@ curs_columns( int may_scroll) { // when TRUE, may scroll horizontally
 // The resulting values are one-based, 0 when character is not visible.
 void
 textpos2screenpos(
-   Portal   *po,
-   Pos   *pos,
-   int   *rowp,   // screen row
-   int   *scolp,   // start screen column
-   int   *ccolp,   // cursor screen column
-   int   *ecolp)   // end screen column
-{
+   Portal* po,
+   Pos* pos,
+   int* rowp,   // screen row
+   int* scolp,   // start screen column
+   int* ccolp,   // cursor screen column
+   int* ecolp   // end screen column
+){
    ColNr   scol = 0, ccol = 0, ecol = 0;
    int      row = 0;
    ColNr   coloff = 0;
@@ -7998,9 +7965,7 @@ textpos2screenpos(
       ColNr       col;
       int       width;
       LineNr    lnum = pos->lnum;
-      int       is_folded;
-
-      is_folded = getFoldsPortal(po, lnum, &lnum, NULL, TRUE, NULL);
+      int is_folded = getFoldsPortal(po, lnum, &lnum, NULL, TRUE, NULL);
       row = plines_m_win(po, po->topLine, lnum - 1, INT_MAX);
       // "row" should be the screen line where line "lnum" begins, which can
       // be negative if "lnum" is "topLine" and "skipCol" is non-zero.
@@ -8047,7 +8012,7 @@ textpos2screenpos(
 
 // "screenpos({winid}, {lnum}, {col})" function
 void
-f_screenpos(Var *argvars UNUSED, Var *returnVar) {
+f_screenpos(Var* argvars UNUSED, Var* returnVar) {
    Pos   pos;
    int      row = 0;
    int      scol = 0, ccol = 0, ecol = 0;
@@ -8079,10 +8044,10 @@ f_screenpos(Var *argvars UNUSED, Var *returnVar) {
 // Convert a virtual (screen) column to a character column.  The first column
 // is one.  For a multibyte character, the column number of the first byte is returned.
 private int
-virtcol2col(Portal *po, LineNr lnum, int vcol) {
+virtcol2col(Portal* po, LineNr lnum, int vcol) {
    int      offset = vcol2col(po, lnum, vcol - 1, NULL);
-   Byte   *line = memGetLine(po->book, lnum, FALSE);
-   Byte   *p = line + offset;
+   CS line = memGetLine(po->book, lnum, FALSE);
+   CS p = line + offset;
 
    if (*p == ZERO) {
       if (p == line)  // empty line
@@ -8095,7 +8060,7 @@ virtcol2col(Portal *po, LineNr lnum, int vcol) {
 
 // "virtcol2col({winid}, {lnum}, {col})" function
 void
-f_virtcol2col(Var *argvars UNUSED, Var *returnVar) {
+f_virtcol2col(Var *argvars UNUSED, Var* returnVar) {
    returnVar->number = -1;
 
    if (check_for_number_arg(argvars, 0) == FAIL
@@ -8126,12 +8091,12 @@ private void cursor_correct_sms(void) {
          || curPor->cursor.lnum != curPor->topLine)
       return;
 
-   long    scrollOff = curPor->o.scrollOff;
-   int       width1 = curPor->width - curPor_col_off();
-   int       so_cols = scrollOff == 0 ? 0 : (scrollOff * width1);
-   int       space_cols = (curPor->height - 1) * width1;
-   int       overlap, top, bot;
-   int       size = scrollOff == 0 ? 0 : linetabsize_eol(curPor, curPor->topLine);
+   long scrollOff = curPor->o.scrollOff;
+   int width1 = curPor->width - curPor_col_off();
+   int so_cols = scrollOff == 0 ? 0 : (scrollOff * width1);
+   int space_cols = (curPor->height - 1) * width1;
+   int overlap, top, bot;
+   int size = scrollOff == 0 ? 0 : linetabsize_eol(curPor, curPor->topLine);
 
    if (curPor->topLine == 1 && curPor->skipCol == 0)
       so_cols = 0;               // Ignore 'scrolloff' at top of book.
@@ -8191,10 +8156,10 @@ private void cursor_correct_sms(void) {
 // Scroll "count" lines up or down, and redraw.
 void
 scroll_redraw(int up, long count) {
-   LineNr   prev_topline = curPor->topLine;
-   int      prev_skipcol = curPor->skipCol;
-   int      prev_topfill = curPor->topFill;
-   LineNr   prev_lnum = curPor->cursor.lnum;
+   LineNr prev_topline = curPor->topLine;
+   int prev_skipcol = curPor->skipCol;
+   int prev_topfill = curPor->topFill;
+   LineNr prev_lnum = curPor->cursor.lnum;
    if (up) {
       scrollup(count, TRUE);
    } else {
@@ -8237,10 +8202,7 @@ scroll_redraw(int up, long count) {
 
 // Scroll the current portal down by "line_count" logical lines.  "CTRL-Y"
 void
-scrolldown(
-   long   line_count,
-   int      byfold UNUSED)   // TRUE: count a closed fold as one line
-{
+scrolldown(long line_count, int byfold) {  // TRUE: count a closed fold as one line
    long   done = 0;   // total # of physical lines done
    int      wrow;
    int      moved = FALSE;
@@ -8263,44 +8225,44 @@ scrolldown(
           ++curPor->topFill;
           ++done;
       } else {
-          // break when at the very top
-          if (curPor->topLine == 1 && (!doSmoothly || curPor->skipCol < width1))
-         break;
-          if (doSmoothly && curPor->skipCol >= width1) {
-         // scroll a screen line down
-         if (curPor->skipCol >= 2*width1)
-             curPor->skipCol -= width1;
-         else
-             curPor->skipCol -= width1;
-         redraw_later(UPD_NOT_VALID);
-         ++done;
-          } else {
-         // scroll a text line down
-         --curPor->topLine;
-         curPor->skipCol = 0;
-         curPor->topFill = 0;
-         // A sequence of folded lines only counts for one logical line
-         if (getFolds(curPor->topLine, &first, NULL)) {
-             ++done;
-             if (!byfold)
-            todo -= curPor->topLine - first - 1;
-             curPor->bottomLine -= curPor->topLine - first;
-             curPor->topLine = first;
-         } ei (doSmoothly) {
-             int size = linetabsize_eol(curPor, curPor->topLine);
-             if (size > width1) {
-            curPor->skipCol = width1;
-            size -= width1;
+         // break when at the very top
+         if (curPor->topLine == 1 && (!doSmoothly || curPor->skipCol < width1))
+            break;
+         if (doSmoothly && curPor->skipCol >= width1) {
+            // scroll a screen line down
+            if (curPor->skipCol >= 2*width1)
+                curPor->skipCol -= width1;
+            else
+                curPor->skipCol -= width1;
             redraw_later(UPD_NOT_VALID);
-             }
-             while (size > width1) {
-            curPor->skipCol += width1;
-            size -= width1;
-             }
-             ++done;
-         } else
-             done += PLINES_NOFILL(curPor->topLine);
-          }
+            ++done;
+         } else {
+            // scroll a text line down
+            --curPor->topLine;
+            curPor->skipCol = 0;
+            curPor->topFill = 0;
+            // A sequence of folded lines only counts for one logical line
+            if (getFolds(curPor->topLine, &first, NULL)) {
+               ++done;
+               if (!byfold)
+                  todo -= curPor->topLine - first - 1;
+               curPor->bottomLine -= curPor->topLine - first;
+               curPor->topLine = first;
+            } ei (doSmoothly) {
+               int size = linetabsize_eol(curPor, curPor->topLine);
+               if (size > width1) {
+                  curPor->skipCol = width1;
+                  size -= width1;
+                  redraw_later(UPD_NOT_VALID);
+               }
+               while (size > width1) {
+                  curPor->skipCol += width1;
+                  size -= width1;
+               }
+               ++done;
+            } else
+               done += PLINES_NOFILL(curPor->topLine);
+         }
       }
       --curPor->bottomLine;      // approximate bottomLine
       invalidate_botline();
@@ -8345,69 +8307,67 @@ scrolldown(
 
 // Scroll the current portal up by "line_count" logical lines.  "CTRL-E"
 void
-scrollup(
-    long   line_count,
-    int      byfold UNUSED)   // TRUE: count a closed fold as one line
-{
-    int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
+scrollup(long line_count, int byfold) {  // TRUE: count a closed fold as one line
+   int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
 
    if (doSmoothly
        || (byfold && hasAnyFolding(curPor))
-       || (curPor->o.diff && !curPor->o.wrap)) {
-   int       width1 = curPor->width - curPor_col_off();
-   int       size = 0;
-   ColNr       prev_skipcol = curPor->skipCol;
+       || (curPor->o.diff && !curPor->o.wrap)
+   ) {
+      int       width1 = curPor->width - curPor_col_off();
+      int       size = 0;
+      ColNr       prev_skipcol = curPor->skipCol;
 
-   if (doSmoothly)
-       size = linetabsize_eol(curPor, curPor->topLine);
+      if (doSmoothly)
+          size = linetabsize_eol(curPor, curPor->topLine);
 
-   // diff mode: first consume "topfill"
-   // 'smoothscroll': increase "skipCol" until it goes over the end of
-   // the line, then advance to the next line.
-   // folding: count each sequence of folded lines as one logical line.
-   for (int todo = line_count; todo > 0; --todo) {
-      if (curPor->topFill > 0)
-         --curPor->topFill;
-      else {
-         LineNr lnum = curPor->topLine;
+      // diff mode: first consume "topfill"
+      // 'smoothscroll': increase "skipCol" until it goes over the end of
+      // the line, then advance to the next line.
+      // folding: count each sequence of folded lines as one logical line.
+      for (int todo = line_count; todo > 0; --todo) {
+         if (curPor->topFill > 0)
+            --curPor->topFill;
+         else {
+            LineNr lnum = curPor->topLine;
 
-         if (byfold)
-            // for a closed fold: go to the last line in the fold
-            (void)getFolds(lnum, NULL, &lnum);
-         if (lnum == curPor->topLine && doSmoothly) {
-            // 'smoothscroll': increase "skipCol" until it goes over
-            // the end of the line, then advance to the next line.
-            curPor->skipCol += width1;
-            if (curPor->skipCol >= size) {
-               if (lnum == curBook->mem.lineCount) {
-                  // at the last screen line, can't scroll further
-                  curPor->skipCol -= width1;
-                  break;
+            if (byfold)
+               // for a closed fold: go to the last line in the fold
+               (void)getFolds(lnum, NULL, &lnum);
+            if (lnum == curPor->topLine && doSmoothly) {
+               // 'smoothscroll': increase "skipCol" until it goes over
+               // the end of the line, then advance to the next line.
+               curPor->skipCol += width1;
+               if (curPor->skipCol >= size) {
+                  if (lnum == curBook->mem.lineCount) {
+                     // at the last screen line, can't scroll further
+                     curPor->skipCol -= width1;
+                     break;
+                  }
+                  ++lnum;
                }
-               ++lnum;
+            } else {
+                if (lnum >= curBook->mem.lineCount)
+               break;
+                ++lnum;
             }
-         } else {
-             if (lnum >= curBook->mem.lineCount)
-            break;
-             ++lnum;
-         }
 
-         if (lnum > curPor->topLine) {
-             // approximate bottomLine
-             curPor->bottomLine += lnum - curPor->topLine;
-             curPor->topLine = lnum;
-             curPor->topFill = diff_check_fill(curPor, lnum);
-             curPor->skipCol = 0;
-             if (todo > 1 && doSmoothly)
-            size = linetabsize_eol(curPor, curPor->topLine);
+            if (lnum > curPor->topLine) {
+                // approximate bottomLine
+                curPor->bottomLine += lnum - curPor->topLine;
+                curPor->topLine = lnum;
+                curPor->topFill = diff_check_fill(curPor, lnum);
+                curPor->skipCol = 0;
+                if (todo > 1 && doSmoothly)
+               size = linetabsize_eol(curPor, curPor->topLine);
+            }
          }
       }
-   }
 
-   if (prev_skipcol > 0 || curPor->skipCol > 0)
-       // need to redraw more, because height of the (new) topline may
-       // now be invalid
-       redraw_later(UPD_NOT_VALID);
+      if (prev_skipcol > 0 || curPor->skipCol > 0)
+          // need to redraw more, because height of the (new) topline may
+          // now be invalid
+          redraw_later(UPD_NOT_VALID);
    } else {
       curPor->topLine += line_count;
       curPor->bottomLine += line_count;   // approximate bottomLine
@@ -8438,7 +8398,8 @@ void
 adjust_skipcol(void) {
    if (!curPor->o.wrap
          || !curPor->o.smoothScroll
-         || curPor->cursor.lnum != curPor->topLine)
+         || curPor->cursor.lnum != curPor->topLine
+   )
       return;
 
    int width1 = curPor->width - curPor_col_off();
@@ -8455,16 +8416,16 @@ adjust_skipcol(void) {
    if (curPor->cursorLineHeight == curPor->height
        // cursorLineHeight may be capped at w_height, check there aren't
        // actually more lines.
-       && plines_win(curPor, curPor->cursor.lnum, FALSE) <= (int)curPor->height)
-    {
-   // the line just fits in the portal, don't scroll
-   reset_skipcol();
-   return;
+       && plines_win(curPor, curPor->cursor.lnum, FALSE) <= (int)curPor->height
+   ) {
+      // the line just fits in the portal, don't scroll
+      reset_skipcol();
+      return;
    }
 
-    validate_virtcol();
-    overlap = sms_marker_overlap(curPor, curPor->width - width1);
-    while (curPor->skipCol > 0 && curPor->virtCol < curPor->skipCol + overlap + scrolloff_cols) {
+   validate_virtcol();
+   overlap = sms_marker_overlap(curPor, curPor->width - width1);
+   while (curPor->skipCol > 0 && curPor->virtCol < curPor->skipCol + overlap + scrolloff_cols) {
       // scroll a screen line down
       if (curPor->skipCol >= width1 + width1)
          curPor->skipCol -= width1;
@@ -8512,7 +8473,7 @@ adjust_skipcol(void) {
 
 // Don't end up with too many filler lines in the portal.
 void
-check_topfill( Portal   *po, int      down) {  // when TRUE scroll down when not enough space
+check_topfill(Portal* po, int down) {  // when TRUE scroll down when not enough space
    if (po->topFill <= 0)
       return;
 
@@ -8532,8 +8493,8 @@ check_topfill( Portal   *po, int      down) {  // when TRUE scroll down when not
 // Scroll the screen one line down, but don't do it if it would move the cursor off the screen.
 void
 scrolldown_clamp(void) {
-   int      end_row;
-   int      can_fill = (curPor->topFill < diff_check_fill(curPor, curPor->topLine));
+   int end_row;
+   int can_fill = (curPor->topFill < diff_check_fill(curPor, curPor->topLine));
 
    if (curPor->topLine <= 1 && !can_fill)
       return;
@@ -8599,10 +8560,7 @@ scrollup_clamp(void) {
 // a (wrapped) text line.  Uses and sets "lp->fill". Return the height of the added line in 
 // "lp->height". Lines above the first one are incredibly high: MAXCOL.
 private void
-topline_back_winheight(
-   LineOffset   *lp,
-   int      winheight)   // when TRUE limit to portal height
-{
+topline_back_winheight(LineOffset* lp, int winheight) {  //when TRUE, limit to portal height
    if (lp->fill < diff_check_fill(curPor, lp->lnum)) {
       // Add a filler line.
       ++lp->fill;
@@ -8631,7 +8589,7 @@ topline_back(LineOffset *lp) {
 //Uses and sets "lp->fill". Return the height of the added line in "lp->height". Lines below the 
 //last one are incredibly high.
 private void
-botline_forw(LineOffset *lp) {
+botline_forw(LineOffset* lp) {
    if (lp->fill < diff_check_fill(curPor, lp->lnum + 1)) {
       // Add a filler line.
       ++lp->fill;
@@ -8675,9 +8633,9 @@ scroll_cursor_top(int min_scroll, int always) {
    if (curPor->cursor.lnum < curPor->topLine)
       scrolled = used;
 
-   LineNr   top;      // just above displayed lines
-   LineNr   bot;      // just below displayed lines
-   if (getFolds(curPor->cursor.lnum, &top, &bot)) {
+   LineNr   top;      //just above displayed lines
+   LineNr   bot;      //just below displayed lines
+   if (getFolds(curPor->cursor.lnum, OUT &top, OUT &bot)) {
       --top;
       ++bot;
    } else {
@@ -8762,20 +8720,20 @@ scroll_cursor_top(int min_scroll, int always) {
 // Set emptyRowCount and fillerRowCount for portal "po", having used up "used"
 // screen lines for text lines.
 void
-set_empty_rows(Portal *po, int used) {
+set_empty_rows(Portal* po, int used) {
    po->fillerRowCount = 0;
    if (used == 0)
       po->emptyRowCount = 0;   // single line that doesn't fit
    else {
       po->emptyRowCount = po->height - used;
       if (po->bottomLine <= po->book->mem.lineCount) {
-          po->fillerRowCount = diff_check_fill(po, po->bottomLine);
-          if (po->emptyRowCount > po->fillerRowCount)
-         po->emptyRowCount -= po->fillerRowCount;
-          else {
-         po->fillerRowCount = po->emptyRowCount;
-         po->emptyRowCount = 0;
-          }
+         po->fillerRowCount = diff_check_fill(po, po->bottomLine);
+         if (po->emptyRowCount > po->fillerRowCount)
+            po->emptyRowCount -= po->fillerRowCount;
+         else {
+            po->fillerRowCount = po->emptyRowCount;
+            po->emptyRowCount = 0;
+         }
       }
    }
 }
@@ -8966,10 +8924,8 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
          line_count = 9999;
    }
 
-    /*
-     * Scroll up if the cursor is off the bottom of the screen a bit.
-     * Otherwise put it at 1/2 of the screen.
-     */
+   //Scroll up if the cursor is off the bottom of the screen a bit.
+   //Otherwise put it at 1/2 of the screen.
    if (line_count >= curPor->height && line_count > min_scroll)
       scroll_cursor_halfway(FALSE, TRUE);
    ei (line_count > 0) {
@@ -8998,23 +8954,22 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
 void
 scroll_cursor_halfway(int atend, int prefer_above) {
    int above = 0;
-   LineNr topline;
    ColNr skipcol = 0;
    int topfill = 0;
    int below = 0;
-   int used;
-   LineOffset loff;
-   LineOffset boff;
    LineNr   old_topline = curPor->topLine;
 
    // if the width changed this needs to be updated first
    may_update_popup_position();
-   loff.lnum = boff.lnum = curPor->cursor.lnum;
+   LineOffset loff;
+   LineOffset boff;
+   loff.lnum = curPor->cursor.lnum;
+   boff.lnum = curPor->cursor.lnum;
    (void)getFolds(loff.lnum, OUT &loff.lnum, OUT &boff.lnum);
-   used = plines_nofill(loff.lnum);
+   int used = plines_nofill(loff.lnum);
    loff.fill = 0;
    boff.fill = 0;
-   topline = loff.lnum;
+   LineNr topline = loff.lnum;
 
    int want_height;
    int doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
@@ -9336,8 +9291,8 @@ pagescroll(int dir, long count, int half) {
       if (dir == FORWARD
              && (curPor->topLine + curPor->height + count > buflen
                         || hasAnyFolding(curPor)
-         ))
-      {
+         )
+      ) {
          int n = plines_correct_topline(curPor, curPor->topLine, FALSE);
          if (n - count < curPor->height && curPor->topLine < buflen)
             n += plines_m_win(curPor, curPor->topLine + 1, buflen, curPor->height + count);
@@ -9400,7 +9355,7 @@ pagescroll(int dir, long count, int half) {
 
 void
 do_check_cursorbind(void) {
-   static Portal   *prev_curPor = NULL;
+   static Portal* prev_curPor = NULL;
    static Pos   prev_cursor = {0, 0, 0};
 
    if (curPor == prev_curPor && EQUAL_POS(curPor->cursor, prev_cursor))
@@ -9474,7 +9429,7 @@ do_check_cursorbind(void) {
 private MapBlock* first_abbr = NULL; // first entry in abbrlist
 
 // Each mapping is put in one of the 256 hash lists, to speed up finding it.
-private MapBlock   *(mappingTable[256]);
+private MapBlock* (mappingTable[256]);
 private int      mappingTable_valid = FALSE;
 
 // When non-zero then no mappings can be added or removed. Prevents mappings
@@ -9700,14 +9655,14 @@ addToMap(
 //List mappings. When "haskey" is FALSE all mappings, otherwise mappings that match "keys[keys_len]"
 private void
 listMappings(
-   int   keyround,
-   int   abbrev,
-   int   haskey,
-   Byte   *keys,
-   int   keys_len,
-   int   mode,
-   int   *did_local)
-{
+   int keyround,
+   int abbrev,
+   int haskey,
+   CS keys,
+   int keys_len,
+   int mode,
+   int* did_local
+) {
    // Prevent mappings to be cleared while at the more prompt.
    ++map_locked;
 
@@ -9807,29 +9762,20 @@ listMappings(
 //    4 for out of mem
 //    5 for entry not unique
 int
-do_map(
-   int      maptype,
-   Arr(Byte) arg,
-   int      mode,
-   int      abbrev      // not a mapping but an abbreviation
-){
-   Arr(Byte) keys;
-   MapBlock*  foundMapping;
+do_map(int maptype, CS arg, Unt mode, int abbrev){ // not a mapping but an abbreviation
+   CS keys;
+   MapBlock* foundMapping;
    MapBlock** mpp;
    MapBlock* mp_result[2] = {NULL, NULL};
-   Byte* p;
-   int      n;
-   int      len = 0;   // init for GCC
-   int      hasarg;
-   int      haskey;
-   int      do_print;
-   int      keyround;
+   int n;
+   int len = 0;   // init for GCC
+   int hasarg;
+   int haskey;
+   int do_print;
    CS keysBuffer = NULL;
    CS alt_keysBuffer = NULL;
    CS arg_buf = NULL;
    int      retval = 0;
-   MapBlock** abbr_table;
-   MapBlock** map_table;
    Boole unique = false;
    Boole nowait = false;
    Boole silent = false;
@@ -9839,8 +9785,8 @@ do_map(
    int      unmap_lhs_only = FALSE;
    Arr(Byte) orig_rhs;
    keys = arg;
-   map_table = mappingTable;
-   abbr_table = &first_abbr;
+   MapBlock** map_table = mappingTable;
+   MapBlock** abbr_table = &first_abbr;
 
    if (maptype == MAPTYPE_UNMAP_LHS) {
       unmap_lhs_only = TRUE;
@@ -9908,7 +9854,7 @@ do_map(
    // Find end of keys and skip CTRL-Vs (and backslashes) in it.
    // Accept backslash like CTRL-V
    // with :unmap white space is included in the keys, no argument possible.
-   p = keys;
+   CS p = keys;
    while (*p && (maptype == MAPTYPE_UNMAP || !SPACE_OR_TAB(*p))) {
       if ((p[0] == Ctrl_V) && p[1] != ZERO) {
          ++p;      // skip CTRL-V or backslash
@@ -9963,7 +9909,7 @@ do_map(
    }
 
    // The following is done twice if we have two versions of keys: "alt_keysBuffer" is not NULL
-   for (keyround = 1; keyround <= 2; ++keyround) {
+   for (int keyround = 1; keyround <= 2; ++keyround) {
       int did_it = FALSE;
       int did_local = FALSE;
       int keyroundIs1AndDidSimplify = keyround == 1 && didSimplify;
@@ -10110,8 +10056,8 @@ do_map(
                            mpp = &(foundMapping->next);
                            continue;
                         }
-                        // In keyround for simplified keys, don't unmap a mapping without 
-                        // simplified flag
+                        //In keyround for simplified keys, don't unmap a mapping without 
+                        //simplified flag
                         if (keyroundIs1AndDidSimplify && !foundMapping->simplified)
                            { break; }
                         // We reset the indicated mode bits. If nothing
@@ -10235,7 +10181,7 @@ theend:
 
 // Get the mapping mode from the command name.
 private int
-getMapMode(Byte **cmdp, int forceit) {
+getMapMode(CS* cmdp, Boole forceit) {
    int      mode;
 
    CS p = *cmdp;
@@ -10270,7 +10216,7 @@ getMapMode(Byte **cmdp, int forceit) {
 //Clear all mappings (":mapclear") or abbreviations (":abclear").
 //"abbr" should be FALSE for mappings, TRUE for abbreviations.
 private void
-mapClear(CS cmdp, CS arg, int forceit, int abbr) {
+mapClear(CS cmdp, CS arg, Boole forceit, int abbr) {
    int local = (STRCMP(arg, "<book>") == 0);
    if (!local && *arg != ZERO) {
       emsg(_(e_invalid_argument));
@@ -10473,7 +10419,7 @@ translateMapping(CS str) {
 //Work out what to complete when doing command line completion of mapping or abbreviation names.
 CS
 set_context_in_map_cmd(
-   Expand   *xp,
+   Expand* xp,
    CS cmd,
    CS arg,
    Boole forceit,   // TRUE if '!' given
@@ -10537,8 +10483,8 @@ set_context_in_map_cmd(
 //Return OK if matches found, FAIL otherwise.
 int
 expandMappings(
-   Byte   *pat,
-   RegMatch   *regmatch,
+   CS pat,
+   RegMatch* regmatch,
    OUT ExpandMatch* matches
 ) {
    MapBlock   *mp;
@@ -10866,7 +10812,6 @@ copyStr_escape_csi(CS p) {
    //Need a buffer to hold up to 3 times as much. 4 in case of an illegal utf-8 byte:
    //0xc0 -> 0xc3 0x80 -> 0xc3 K_SPECIAL KS_SPECIAL KE_FILLER
    CS res = alloc(STRLEN(p) * 4 + 1);
-
    CS d = res;
    for (CS s = p; *s != ZERO; ) {
       if ((s[0] == K_SPECIAL) && s[1] != ZERO && s[2] != ZERO) {
@@ -10908,10 +10853,10 @@ eeUnescapeCsi(CS p) {
 //Write map commands for the current mappings to an .exrc file.
 //Return FAIL on error, OK otherwise.
 int
-makemap(FILE   *fd, NULLABLE Book* book) {     // the book for local mappings or NULL
-   MapBlock   *mp;
-   Byte   c1, c2, c3;
-   Byte   *p;
+makemap(FILE* fd, NULLABLE Book* book) {     // the book for local mappings or NULL
+   MapBlock* mp;
+   Byte c1, c2, c3;
+   CS p;
    char   *cmd;
    int      abbr;
    int      hash;
@@ -11035,10 +10980,10 @@ makemap(FILE   *fd, NULLABLE Book* book) {     // the book for local mappings or
 //write escape string to file. "what": 0 for :map lhs, 1 for :map rhs, 2 for :set
 //return FAIL for failure, OK otherwise
 int
-put_escstr(FILE *fd, CS strstart, int what) {
-   Byte   *str = strstart;
+put_escstr(FILE* fd, CS strstart, int what) {
+   CS str = strstart;
    Unt      c;
-   int      modifiers;
+   int modifiers;
 
    // :map xx <Nop>
    if (*str == ZERO && what == 1) {
@@ -11048,54 +10993,50 @@ put_escstr(FILE *fd, CS strstart, int what) {
    }
 
    for ( ; *str != ZERO; ++str) {
-        Byte   *p;
-
-        // Check for a multi-byte character, which may contain escaped
-        // K_SPECIAL and CSI bytes
-        p = mb_unescape(&str);
-        if (p != NULL) {
+         // Check for a multi-byte character, which may contain escaped K_SPECIAL and CSI bytes
+         CS p = mb_unescape(&str);
+         if (p) {
             while (*p != ZERO) {
                if (fputc(*p++, fd) < 0)
                   return FAIL;
             }
             --str;
             continue;
-        }
+         }
 
-        c = *str;
-        // Special key codes have to be translated to be able to make sense
-        // when they are read back.
-        if (c == K_SPECIAL && what != 2) {
+         c = *str;
+         //Special key codes have to be translated to be able to make sense when they are read back.
+         if (c == K_SPECIAL && what != 2) {
             modifiers = 0;
             if (str[1] == KS_MODIFIER) {
-                 modifiers = str[2];
-                 str += 3;
+               modifiers = str[2];
+               str += 3;
 
-                 // Modifiers can be applied too to multi-byte characters.
-                 p = mb_unescape(&str);
+               // Modifiers can be applied too to multi-byte characters.
+               p = mb_unescape(&str);
 
-                 if (p == NULL) {
-                     c = *str;
-                 } else {
-                     // retrieve codepoint (character number) from unescaped string
-                     c = (*mb_ptr2char)(p);
-                     --str;
-                 }
+               if (p == NULL) {
+                  c = *str;
+               } else {
+                  // retrieve codepoint (character number) from unescaped string
+                  c = (*mb_ptr2char)(p);
+                  --str;
+               }
             }
-           if (c == K_SPECIAL) {
-              c = TO_SPECIAL(str[1], str[2]);
-              str += 2;
-           }
-           if (IS_SPECIAL(c) || modifiers) {  // special key
-              if (fputs((char *)get_special_key_name(c, modifiers), fd) < 0)
-                 return FAIL;
-              continue;
-           }
-        }
+            if (c == K_SPECIAL) {
+               c = TO_SPECIAL(str[1], str[2]);
+               str += 2;
+            }
+            if (IS_SPECIAL(c) || modifiers) {  // special key
+               if (fputs((char *)get_special_key_name(c, modifiers), fd) < 0)
+                  return FAIL;
+               continue;
+            }
+         }
 
-        // A '\n' in a map command should be written as <NL>.
-        // A '\n' in a set command should be written as \^V^J.
-        if (c == NL) {
+         // A '\n' in a map command should be written as <NL>.
+         // A '\n' in a set command should be written as \^V^J.
+         if (c == NL) {
            if (what == 2) {
                if (fprintf(fd, "\\\026\n") < 0)
                   return FAIL;
@@ -11123,11 +11064,11 @@ put_escstr(FILE *fd, CS strstart, int what) {
            || (what == 1 && str == strstart && c == ' ')
            || (what != 2 && c == '<')
         ){
-            if (putc(Ctrl_V, fd) < 0)
-               return FAIL;
+           if (putc(Ctrl_V, fd) < 0)
+              return FAIL;
         }
         if (putc(c, fd) < 0)
-            return FAIL;
+           return FAIL;
    }
    return OK;
 }
@@ -11191,7 +11132,7 @@ check_map_keycodes(void) {
           }
       }
       if (bp == NULL)
-          break;
+         break;
    }
    ESTACK_CHECK_NOW;
    estack_pop();
@@ -11211,7 +11152,7 @@ norCheckMapping(
 ){
    int      hash;
    MapBlock   *mp;
-   Byte   *s;
+   CS s;
 
    validateMappingTable();
 
@@ -11261,14 +11202,14 @@ norCheckMapping(
 
 // "hasmapto()" function
 void
-f_hasmapto(Var *argvars, Var *returnVar) {
-   Byte   *mode;
-   Byte   buffer[NUMBUFLEN];
-   int      abbr = FALSE;
+f_hasmapto(Var* argvars, Var* returnVar) {
+   CS mode;
+   Byte buffer[NUMBUFLEN];
+   int  abbr = FALSE;
 
    CS name = tv_get_string(&argvars[0]);
    if (argvars[1].tag == VAR_UNKNOWN)
-      mode = (CS)"nvo";
+      mode = S"nvo";
    else {
       mode = tv_get_string_buf(&argvars[1], buffer);
       if (argvars[2].tag != VAR_UNKNOWN)
@@ -11284,11 +11225,11 @@ f_hasmapto(Var *argvars, Var *returnVar) {
 // Fill in the empty dictionary with items as defined by maparg builtin.
 private void
 mapblock2dict(
-   MapBlock  *mp,
+   MapBlock* mp,
    Bag* bag,
-   Byte       *lhsrawalt,       // may be NULL
-   int       bookLocal,   // false if not buffer local mapping
-   int       abbr       // true if abbreviation
+   NULLABLE CS lhsrawalt,
+   int bookLocal,   // false if not buffer local mapping
+   int abbr       // true if abbreviation
 ){
    CS lhs = str2special_save(mp->lhs, TRUE, FALSE);
    CS mapmode = mapModeToChars(mp->mode);
@@ -11317,7 +11258,7 @@ mapblock2dict(
 }
 
 private void
-getMapArg(Var *argvars, Var *returnVar, int exact) {
+getMapArg(Var* argvars, Var* returnVar, int exact) {
    // return empty string for failure
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
@@ -11326,9 +11267,9 @@ getMapArg(Var *argvars, Var *returnVar, int exact) {
    if (*keys == ZERO)
       return;
 
-   Byte   buffer[NUMBUFLEN];
+   Byte buffer[NUMBUFLEN];
    Unt flags = REPTERM_FROM_PART | REPTERM_DO_LT;
-   Byte   *which;
+   Byte* which;
    Boole abbr = false;
    int get_dict = FALSE;
    if (argvars[1].tag != VAR_UNKNOWN) {
@@ -11362,7 +11303,7 @@ getMapArg(Var *argvars, Var *returnVar, int exact) {
 
    if (!get_dict) {
       // Return a string.
-      if (rhs != NULL) {
+      if (rhs) {
          if (*rhs == ZERO)
             returnVar->string = copyStr(S"<Nop>");
          else
@@ -11383,10 +11324,10 @@ getMapArg(Var *argvars, Var *returnVar, int exact) {
 }
 
 void
-f_maplist(Var *argvars UNUSED, Var *returnVar) {
+f_maplist(Var* argvars UNUSED, Var* returnVar) {
    Bag* d;
-   MapBlock   *mp;
-   int const flags = REPTERM_FROM_PART | REPTERM_DO_LT;
+   MapBlock* mp;
+   Unt const flags = REPTERM_FROM_PART | REPTERM_DO_LT;
    int abbr = FALSE;
 
    if (argvars[0].tag != VAR_UNKNOWN)
@@ -11434,12 +11375,12 @@ f_maplist(Var *argvars UNUSED, Var *returnVar) {
 }
 
 void
-f_maparg(Var *argvars, Var *returnVar) {
+f_maparg(Var* argvars, Var* returnVar) {
    getMapArg(argvars, returnVar, TRUE);
 }
 
 void
-f_mapcheck(Var *argvars, Var *returnVar) {
+f_mapcheck(Var *argvars, Var* returnVar) {
    getMapArg(argvars, returnVar, FALSE);
 }
 
@@ -11447,13 +11388,13 @@ f_mapcheck(Var *argvars, Var *returnVar) {
 //It may contain multiple characters, eg "nox", or "!", or ' '. Return 0 if there is an error
 private int
 getMapModeString(CS mode_string, int abbr) {
-   Byte   *p = mode_string;
-   int      mode = 0;
-   int      tmode;
-   int      modec;
-   const int   MASK_V = MODE_VISUAL;
-   const int   MASK_MAP = MODE_VISUAL | MODE_NORMAL | MODE_OP_PENDING;
-   const int   MASK_BANG = MODE_INSERT | MODE_COMMLINE;
+   CS p = mode_string;
+   int mode = 0;
+   int tmode;
+   int modec;
+   const int MASK_V = MODE_VISUAL;
+   const int MASK_MAP = MODE_VISUAL | MODE_NORMAL | MODE_OP_PENDING;
+   const int MASK_BANG = MODE_INSERT | MODE_COMMLINE;
 
    if (*p == ZERO)
       p = S" ";   // compatibility
@@ -11489,18 +11430,15 @@ getMapModeString(CS mode_string, int abbr) {
 
 // "mapset()" function
 void
-f_mapset(Var *argvars, Var *returnVar UNUSED) {
-   Byte   *which;
-   Byte   buffer[NUMBUFLEN];
-   int      is_abbr;
+f_mapset(Var *argvars, Var* returnVar UNUSED) {
+   CS which;
+   Byte buffer[NUMBUFLEN];
+   int is_abbr;
    Bag* bag;
-   ScriptId   sid;
-   LineNr   lnum;
-   MapBlock   **map_table = mappingTable;
-   MapBlock  **abbr_table = &first_abbr;
-   int      nowait;
-   Byte   *arg;
-   MapBlock   *mp_result[2] = {NULL, NULL};
+   MapBlock** map_table = mappingTable;
+   MapBlock** abbr_table = &first_abbr;
+   CS arg;
+   MapBlock* mp_result[2] = {NULL, NULL};
    // If first arg is a dict, then that's the only arg permitted.
    Boole bagOnly = argvars[0].tag == VAR_BAG;
 
@@ -11544,10 +11482,10 @@ f_mapset(Var *argvars, Var *returnVar UNUSED) {
       noremap = REMAP_SCRIPT;
    int expr = bagGetNumber(bag, tConst("expr")) != 0;
    int silent = bagGetNumber(bag, tConst("silent")) != 0;
-   sid = bagGetNumber(bag,tConst("sid"));
-   lnum = bagGetNumber(bag, tConst("lnum"));
+   ScriptId sid = bagGetNumber(bag,tConst("sid"));
+   LineNr lnum = bagGetNumber(bag, tConst("lnum"));
    int isBook = bagGetNumber(bag, tConst("buffer"));
-   nowait = bagGetNumber(bag, tConst("nowait")) != 0;
+   int nowait = bagGetNumber(bag, tConst("nowait")) != 0;
    // mode from the dict is not used
 
    CS arg_buf = NULL;
@@ -11611,8 +11549,8 @@ add_map(CS map, int mode, int nore) {
 //
 //Use arraylist for 'langmap' chars >= 256
 typedef struct {
-   int       from;
-   int     to;
+   int from;
+   int to;
 } LangmapEntry;
 
 private ArrayList langmapTable;
@@ -11622,8 +11560,8 @@ private ArrayList langmapTable;
 private void
 setEntry(int from, int to) {
    LangmapEntry *entries = (LangmapEntry *)(langmapTable.c);
-   int          a = 0;
-   int          b = langmapTable.len;
+   int a = 0;
+   int b = langmapTable.len;
 
    // Do a binary search for an existing entry.
    while (a != b) {
@@ -11635,9 +11573,9 @@ setEntry(int from, int to) {
          return;
       }
       if (d < 0)
-          a = i + 1;
+         a = i + 1;
       else
-          b = i;
+         b = i;
    }
 
    if (ga_grow(&langmapTable, 1) == FAIL)
@@ -11682,7 +11620,7 @@ langmap_init(void) {
 // Called when langmap option is set; the language map can be changed at any time!
 CS
 setLangmap(OptionChange *args UNUSED) {
-   Byte  *p2;
+   CS p2;
 
    for (CS p = p_langmap; p[0] != ZERO; ) {
       for (p2 = p; p2[0] != ZERO && p2[0] != ',' && p2[0] != ';'; MB_PTR_ADV(p2)) {
@@ -11757,8 +11695,8 @@ setLangmap(OptionChange *args UNUSED) {
 }
 
 private void
-mappingImpl(Invocation *invo, Boole isabbrev) {
-   Arr(Byte) cmdp = invo->comm;
+mappingImpl(Invocation* invo, Boole isabbrev) {
+   CS cmdp = invo->comm;
    int mode = getMapMode(&cmdp, invo->forceit || isabbrev);
 
    switch (do_map(
@@ -11776,31 +11714,31 @@ mappingImpl(Invocation *invo, Boole isabbrev) {
 
 // ":abbreviate" and friends.
 void
-c_abbreviate(Invocation *invo) {
+c_abbreviate(Invocation* invo) {
    mappingImpl(invo, true);   // almost the same as mapping
 }
 
 // ":map" and friends.
 void
-c_map(Invocation *invo) {
+c_map(Invocation* invo) {
    mappingImpl(invo, false);
 }
 
 // ":unmap" and friends.
 void
-c_unmap(Invocation *invo) {
+c_unmap(Invocation* invo) {
    mappingImpl(invo, false);
 }
 
 // ":mapclear" and friends.
 void
-c_mapclear(Invocation *invo) {
+c_mapclear(Invocation* invo) {
    mapClear(invo->comm, invo->arg, invo->forceit, FALSE);
 }
 
 // ":abclear" and friends.
 void
-c_abclear(Invocation *invo) {
+c_abclear(Invocation* invo) {
    mapClear(invo->comm, invo->arg, TRUE, TRUE);
 }
 
@@ -11813,11 +11751,11 @@ c_abclear(Invocation *invo) {
 //Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
 //The info stored in both growarrays is the same: An array of Fold.
 typedef struct {
-   LineNr   fd_top;      // first line of fold; for nested fold relative to parent
-   LineNr   fd_len;      // number of lines in the fold
-   ArrayList   fd_nested;   // array of nested folds
-   char   fd_flags;   // see below
-   char   fd_small;   // TRUE, FALSE or MAYBE: is fold line count above 1; MAYBE
+   LineNr   fd_top;  // first line of fold; for nested fold relative to parent
+   LineNr   fd_len;  // number of lines in the fold
+   ArrayList   fd_nested; // array of nested folds
+   char   fd_flags;  // see below
+   char   fd_small;  // TRUE, FALSE or MAYBE: is fold line count above 1; MAYBE
                      // applies to nested folds too
 } Fold;
 
@@ -11881,7 +11819,7 @@ private int foldendmarkerlen;
 
 //Copy that folding state from portal "wp_from" to portal "wp_to".
 void
-copyFoldingState(Portal *wp_from, Portal *wp_to) {
+copyFoldingState(Portal* wp_from, Portal* wp_to) {
    wp_to->foldManual = wp_from->foldManual;
    wp_to->foldNeedsRecomputation = wp_from->foldNeedsRecomputation;
    cloneFoldArrayList(&wp_from->folds, &wp_to->folds);
@@ -11889,7 +11827,7 @@ copyFoldingState(Portal *wp_from, Portal *wp_to) {
 
 //Return TRUE if there may be folded lines in portal "po".
 int
-hasAnyFolding(Portal *po) {
+hasAnyFolding(Portal* po) {
    //very simple now, but can become more complex later
    return po->o.foldEnable;
 }
@@ -11916,11 +11854,11 @@ getFoldsPortal(
    LineNr   first = 0;
    LineNr   last = 0;
    LineNr   lnum_rel = lnum;
-   int      x;
-   Fold   *fp;
-   int      level = 0;
-   Boole      use_level = false;
-   Boole      maybe_small = false;
+   int x;
+   Fold* fp;
+   int  level = 0;
+   Boole use_level = false;
+   Boole maybe_small = false;
    ArrayList   *gap;
    int      low_level = 0;
 
@@ -12034,7 +11972,7 @@ lineFolded(Portal *po, LineNr lnum) {
 //When "infop" is not NULL, fills *infop with the fold level info.
 long
 foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop) {
-   LineNr   last;
+   LineNr last;
 
    if (getFoldsPortal(po, lnum, NULL, OUT &last, FALSE, infop))
       return (long)(last - lnum + 1);
@@ -12057,31 +11995,29 @@ closeFoldRecurse(LineNr lnum) {
 //Used for "zo", "zO", "zc" and "zC" in Visual mode.
 void
 opFoldRange(
-   LineNr   first,
-   LineNr   last,
-   int      opening,   // TRUE to open, FALSE to close
-   int      recurse,   // TRUE to do it recursively
-   int      had_visual   // TRUE when Visual selection used
+   LineNr first,
+   LineNr last,
+   int opening,   // TRUE to open, FALSE to close
+   int recurse,   // TRUE to do it recursively
+   int had_visual   // TRUE when Visual selection used
 ){
-   int      done = DONE_NOTHING;   // avoid error messages
-   LineNr   lnum;
-   LineNr   lnum_next;
-
-   for (lnum = first; lnum <= last; lnum = lnum_next + 1) {
+   int done = DONE_NOTHING;   // avoid error messages
+   LineNr lnum_next;
+   for (LineNr lnum = first; lnum <= last; lnum = lnum_next + 1) {
       lnum_next = lnum;
       // Opening one level only: next fold to open is after the one going to be opened.
       if (opening && !recurse)
-          (void)getFolds(lnum, NULL, &lnum_next);
+         (void)getFolds(lnum, NULL, &lnum_next);
       (void)setManualFold(lnum, opening, recurse, &done);
       // Closing one level only: next line to close a fold is after just closed fold.
       if (!opening && !recurse)
-          (void)getFolds(lnum, NULL, &lnum_next);
+         (void)getFolds(lnum, NULL, &lnum_next);
    }
    if (done == DONE_NOTHING)
-       emsg(_(e_no_fold_found));
-    // Force a redraw to remove the Visual highlighting.
+      emsg(_(e_no_fold_found));
+   // Force a redraw to remove the Visual highlighting.
    if (had_visual)
-       drawCurBookLater(UPD_INVERTED);
+      drawCurBookLater(UPD_INVERTED);
 }
 
 //Open fold for current portal at line "lnum". Repeat "count" times.
@@ -12104,10 +12040,10 @@ foldOpenCursor(void) {
    checkupdate(curPor);
    if (hasAnyFolding(curPor)) {
       for (;;) {
-          done = DONE_NOTHING;
-          (void)setManualFold(curPor->cursor.lnum, TRUE, FALSE, &done);
-          if (!(done & DONE_ACTION))
-             break;
+         done = DONE_NOTHING;
+         (void)setManualFold(curPor->cursor.lnum, TRUE, FALSE, &done);
+         if (!(done & DONE_ACTION))
+            break;
       }
    } 
 }
@@ -12131,7 +12067,6 @@ newFoldLevelForPortal(Portal* wp) {
 void
 newFoldLevel(void) {
    newFoldLevelForPortal(curPor);
-
    if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
       Portal* wp;
       // Set the same foldlevel in other portals in diff mode.
@@ -12147,7 +12082,7 @@ newFoldLevel(void) {
 //Apply @foldlevel to all folds that don't contain the cursor.
 void
 foldCheckClose(void) {
-   // @foldclose can only be "all" right now
+   //@foldclose can only be "all" right now
    checkupdate(curPor);
    if (checkCloseRec(&curPor->folds, curPor->cursor.lnum,
       (int)curPor->o.foldLevel))
@@ -12189,7 +12124,6 @@ foldManualAllowed(int create) {
 //Create a fold from line "start" to line "end" (inclusive) in the current portal.
 void
 foldCreate(LineNr start, LineNr end) {
-   Fold* fp;
    ArrayList* gap;
    ArrayList fold_ga;
    int i, j;
@@ -12218,6 +12152,7 @@ foldCreate(LineNr start, LineNr end) {
 
    // Find the place to insert the new fold.
    gap = &curPor->folds;
+   Fold* fp;
    if (gap->len == 0) {
       i = 0;
    } else {
@@ -12236,10 +12171,10 @@ foldCreate(LineNr start, LineNr end) {
             } ei (fp->fd_flags == FD_CLOSED)
                closed = TRUE;
             ++level;
-          } else {
-             // This fold and new fold overlap: Insert here and move some folds inside the new fold
-             break;
-          }
+         } else {
+            // This fold and new fold overlap: Insert here and move some folds inside the new fold
+            break;
+         }
       }
       if (gap->len == 0)
          i = 0;
@@ -12260,13 +12195,12 @@ foldCreate(LineNr start, LineNr end) {
       } 
    }
    if (cont > 0 && ga_grow(&fold_ga, cont) == OK) {
-      // If the first fold starts before the new fold, let the new fold
-      // start there.  Otherwise the existing fold would change.
+      //If the first fold starts before the new fold, let the new fold
+      //start there.  Otherwise the existing fold would change.
       if (start_rel > fp->fd_top)
          start_rel = fp->fd_top;
 
-      // When last contained fold isn't completely contained, adjust end
-      // of new fold.
+      //When last contained fold isn't completely contained, adjust end of new fold.
       if (end_rel < fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1)
           end_rel = fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1;
       // Move contained folds to inside new fold.
@@ -12274,10 +12208,9 @@ foldCreate(LineNr start, LineNr end) {
       fold_ga.len += cont;
       i += cont;
 
-      // Adjust line numbers in contained folds to be relative to the
-      // new fold.
+      // Adjust line numbers in contained folds to be relative to the new fold.
       for (j = 0; j < cont; ++j)
-          ((Fold *)fold_ga.c)[j].fd_top -= start_rel;
+         ((Fold *)fold_ga.c)[j].fd_top -= start_rel;
    }
    // Move remaining entries to after the new fold.
    if (i < gap->len)
@@ -12307,12 +12240,7 @@ foldCreate(LineNr start, LineNr end) {
 //When "end" is not 0, delete all folds from "start" to "end".
 //When "recursive" is TRUE delete recursively.
 void
-deleteFold(
-   LineNr   start,
-   LineNr   end,
-   int      recursive,
-   int      had_visual   // TRUE when Visual selection used
-){
+deleteFold(LineNr start, LineNr end, int recursive, int had_visual){ //is Visual selection used?
    ArrayList   *gap;
    Fold   *fp;
    ArrayList   *found_ga;
@@ -12375,8 +12303,7 @@ deleteFold(
       // Force a redraw to remove the Visual highlighting.
       if (had_visual)
          drawCurBookLater(UPD_INVERTED);
-   }
-   else
+   } else
       // Deleting markers may make cursor column invalid.
       check_cursor_col();
 
@@ -12396,7 +12323,7 @@ clearFolding(Portal* po) {
 //calling foldMarkAdjust().
 //The changes in lines from top to bot (inclusive).
 void
-foldUpdate(Portal *wp, LineNr top, LineNr bot) {
+foldUpdate(Portal* wp, LineNr top, LineNr bot) {
    Fold   *fp;
 
    if (disable_fold_update > 0)
@@ -12445,16 +12372,16 @@ foldUpdateAll(Portal* po) {
 private int
 foldMoveTo(Boole updown, Unt dir,  long count) {
    long   n;
-   int      retval = FAIL;
-   LineNr   lnum_off;
-   LineNr   lnum_found;
-   LineNr   lnum;
-   Boole      use_level;
-   Boole      maybe_small;
-   ArrayList   *gap;
-   Fold   *fp;
-   int      level;
-   int      last;
+   int retval = FAIL;
+   LineNr lnum_off;
+   LineNr lnum_found;
+   LineNr lnum;
+   Boole use_level;
+   Boole maybe_small;
+   ArrayList* gap;
+   Fold* fp;
+   int level;
+   int last;
 
    checkupdate(curPor);
 
@@ -12533,10 +12460,10 @@ foldMoveTo(Boole updown, Unt dir,  long count) {
          if (last)
             break;
 
-          // Check nested folds (if any).
-          gap = &fp->fd_nested;
-          lnum_off += fp->fd_top;
-          ++level;
+         // Check nested folds (if any).
+         gap = &fp->fd_nested;
+         lnum_off += fp->fd_top;
+         ++level;
       }
       if (lnum_found != curPor->cursor.lnum) {
          if (retval == FAIL)
@@ -12554,7 +12481,7 @@ foldMoveTo(Boole updown, Unt dir,  long count) {
 //Init the fold info in a new portal.
 void
 normInitFoldForPortal(Portal* newPort) {
-    ga_init2(&newPort->folds, sizeof(Fold), 10);
+   ga_init2(&newPort->folds, sizeof(Fold), 10);
 }
 
 //Find an entry in the po->lines[] array for buffer line "lnum".
@@ -12601,14 +12528,14 @@ foldAdjustVisual(void) {
 //Move the cursor to the first line of a closed fold.
 private void
 foldAdjustCursor(void) {
-    (void)getFolds(curPor->cursor.lnum, &curPor->cursor.lnum, NULL);
+   (void)getFolds(curPor->cursor.lnum, &curPor->cursor.lnum, NULL);
 }
 
 // Internal functions for "Fold"
 //Will "clone" (i.e deep copy) a ArrayList of folds.
 //Return FAIL if the operation cannot be completed, otherwise OK.
 void
-cloneFoldArrayList(ArrayList *from, ArrayList *to) {
+cloneFoldArrayList(ArrayList* from, ArrayList* to) {
    ga_init2(to, from->ga_itemsize, from->ga_growsize);
    if (from->len == 0 || ga_grow(to, from->len) == FAIL)
       return;
@@ -12633,9 +12560,7 @@ cloneFoldArrayList(ArrayList *from, ArrayList *to) {
 //the first fold below it (careful: it can be beyond the end of the array!).
 //Return FALSE when there is no fold that contains "lnum".
 private int
-foldFind(ArrayList *gap, LineNr lnum, Fold **fpp) {
-   LineNr   low, high;
-
+foldFind(ArrayList* gap, LineNr lnum, Fold **fpp) {
    if (gap->len == 0) {
       *fpp = NULL;
       return FALSE;
@@ -12644,18 +12569,18 @@ foldFind(ArrayList *gap, LineNr lnum, Fold **fpp) {
    //Perform a binary search.
    //"low" is lowest index of possible match. "high" is highest index of possible match.
    Fold* fp = (Fold *)gap->c;
-   low = 0;
-   high = gap->len - 1;
+   LineNr low = 0;
+   LineNr high = gap->len - 1;
    while (low <= high) {
       int i = (low + high) / 2;
       if (fp[i].fd_top > lnum)
-         // fold below lnum, adjust high
+         //fold below lnum, adjust high
          high = i - 1;
       ei (fp[i].fd_top + fp[i].fd_len <= lnum)
-         // fold above lnum, adjust low
+         //fold above lnum, adjust low
          low = i + 1;
       else {
-         // lnum is inside this fold
+         //lnum is inside this fold
          *fpp = fp + i;
          return TRUE;
       }
@@ -12688,7 +12613,7 @@ foldLevelWin(Portal *wp, LineNr lnum) {
 // checkupdate()
 //Check if the folds in portal "wp" are invalid and update them if needed.
 private void
-checkupdate(Portal *wp) {
+checkupdate(Portal* wp) {
    if (!wp->foldNeedsRecomputation)
       return;
 
@@ -12735,7 +12660,6 @@ setManualFoldPort(
    int      level = 0;
    int      use_level = FALSE;
    int      found_fold = FALSE;
-   ArrayList   *gap;
    LineNr   next = MAXLNUM;
    LineNr   off = 0;
    int      done = 0;
@@ -12743,7 +12667,7 @@ setManualFoldPort(
    checkupdate(wp);
 
    //Find the fold, open or close it.
-   gap = &wp->folds;
+   ArrayList* gap = &wp->folds;
    for (;;) {
       if (!foldFind(gap, lnum, &fp)) {
          // If there is a following fold, continue there next time.
@@ -12796,20 +12720,20 @@ setManualFoldPort(
       ++level;
    }
    if (found_fold) {
-       // When closing and not recurse, close deepest open fold.
-       if (!opening && found != NULL) {
-           found->fd_flags = FD_CLOSED;
-           done |= DONE_ACTION;
-       }
-       wp->foldManual = true;
-       if (done & DONE_ACTION) 
-           didChangePortalSetting(wp);
-       done |= DONE_FOLD;
+      // When closing and not recurse, close deepest open fold.
+      if (!opening && found != NULL) {
+         found->fd_flags = FD_CLOSED;
+         done |= DONE_ACTION;
+      }
+      wp->foldManual = true;
+      if (done & DONE_ACTION) 
+         didChangePortalSetting(wp);
+      done |= DONE_FOLD;
    } ei (donep == NULL && wp == curPor)
-       emsg(_(e_no_fold_found));
+      emsg(_(e_no_fold_found));
 
-   if (donep != NULL)
-       *donep |= done;
+   if (donep)
+      *donep |= done;
 
     return next;
 }
@@ -12842,11 +12766,9 @@ setManualFold(
 
 //Open all nested folds in fold "fpr" recursively.
 private void
-foldOpenNested(Fold *fpr) {
-   int      i;
-
+foldOpenNested(Fold* fpr) {
    Fold* fp = (Fold *)fpr->fd_nested.c;
-   for (i = 0; i < fpr->fd_nested.len; ++i) {
+   for (int i = 0; i < fpr->fd_nested.len; ++i) {
       foldOpenNested(&fp[i]);
       fp[i].fd_flags = FD_OPEN;
    }
@@ -12881,9 +12803,9 @@ deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
        for (i = 0; i < moved; ++i) {
           nfp[i].fd_top += fp->fd_top;
           if (fp->fd_flags == FD_LEVEL)
-              nfp[i].fd_flags = FD_LEVEL;
+             nfp[i].fd_flags = FD_LEVEL;
           if (fp->fd_small == MAYBE)
-              nfp[i].fd_small = MAYBE;
+             nfp[i].fd_small = MAYBE;
        }
 
        // move the existing folds down to make room
@@ -12915,8 +12837,8 @@ foldMarkAdjust(
     LineNr   line1,
     LineNr   line2,
     long   amount,
-    long   amount_after)
-{
+    long   amount_after
+) {
    // If deleting marks from line1 to line2, but not deleting all those
    // lines, set line2 so that only deleted lines have their folds removed.
    if (amount == MAXLNUM && line2 >= line1 && line2 - line1 >= -amount_after)
@@ -13040,14 +12962,12 @@ getDeepestNesting(void) {
 }
 
 private int
-getDeepestNestingRecurse(ArrayList *gap) {
-   int      i;
-   int      level;
-   int      maxlevel = 0;
+getDeepestNestingRecurse(ArrayList* gap) {
+   int maxlevel = 0;
 
    Fold* fp = (Fold *)gap->c;
-   for (i = 0; i < gap->len; ++i) {
-      level = getDeepestNestingRecurse(&fp[i].fd_nested) + 1;
+   for (int i = 0; i < gap->len; ++i) {
+      int level = getDeepestNestingRecurse(&fp[i].fd_nested) + 1;
       if (level > maxlevel)
           maxlevel = level;
    }
@@ -13058,8 +12978,8 @@ getDeepestNestingRecurse(ArrayList *gap) {
 //Check if a fold is closed and update the info needed to check nested folds.
 private Boole
 check_closed(
-   Portal   *po,
-   Fold   *fp,
+   Portal* po,
+   Fold* fp,
    OUT Boole* use_levelp,       // TRUE: outer fold had FD_LEVEL
    int level,          // folding depth
    OUT Boole* maybe_smallp,       // TRUE: outer this had fd_small == MAYBE
@@ -13091,13 +13011,9 @@ check_closed(
 
 //Update fd_small field of fold "fp".
 private void
-checkSmall(
-    Portal   *wp,
-    Fold   *fp,
-    LineNr   lnum_off   // offset for fp->fd_top
-){
-   int      count;
-   int      n;
+checkSmall(Portal* po, Fold* fp, LineNr lnum_off){   // offset for fp->fd_top
+   int count;
+   int n;
 
    if (fp->fd_small != MAYBE)
       return;
@@ -13110,7 +13026,7 @@ checkSmall(
    else {
       count = 0;
       for (n = 0; n < fp->fd_len; ++n) {
-          count += plines_win_nofold(wp, fp->fd_top + lnum_off + n);
+          count += plines_win_nofold(po, fp->fd_top + lnum_off + n);
           if (count > 1) {
              fp->fd_small = FALSE;
              return;
@@ -13122,7 +13038,7 @@ checkSmall(
 
 //Set small flags in "gap" to MAYBE.
 private void
-setSmallMaybe(ArrayList *gap) {
+setSmallMaybe(ArrayList* gap) {
    Fold* fp = (Fold *)gap->c;
    for (int i = 0; i < gap->len; ++i)
       fp[i].fd_small = MAYBE;
@@ -13178,8 +13094,7 @@ foldAddMarker(LineNr lnum, CS marker, int markerlen) {
 
 //Delete the markers for a fold, causing it to be deleted.
 private void
-deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off
-) {  // offset for fp->fd_top
+deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off) {  // offset for fp->fd_top
 
    if (recursive) {
       for (int i = 0; i < fp->fd_nested.len; ++i) {
@@ -13407,14 +13322,14 @@ foldtext_cleanup(CS str) {
 // Define "FoldLine", passed to get fold level for a line.
 typedef struct {
    Portal* po;
-   LineNr   lnum;      // current line number
-   LineNr   off;      // offset between lnum and real line number
-   LineNr   lnum_save;   // line nr used by foldUpdateIEMSRecurse()
-   int      lvl;      // current level (-1 for undefined)
-   int      lvl_next;   // level used for next line
-   int      start;      // number of folds that are forced to start at this line.
-   int      end;      // level of fold that is forced to end below this line
-   int      had_end;   // level of fold that is forced to end above
+   LineNr lnum;      // current line number
+   LineNr off;      // offset between lnum and real line number
+   LineNr lnum_save;   // line nr used by foldUpdateIEMSRecurse()
+   int lvl;      // current level (-1 for undefined)
+   int lvl_next;   // level used for next line
+   int start;      // number of folds that are forced to start at this line.
+   int end;      // level of fold that is forced to end below this line
+   int had_end;   // level of fold that is forced to end above
             // this line (copy of "end" of prev. line)
 } FoldLine;
 
@@ -13624,8 +13539,8 @@ foldUpdateIEMSRecurse(
    FoldLine   *flp,
    void   (*getlevel)(FoldLine *),
    LineNr   bot,
-   int      topflags)   // flags used by containing fold
-{
+   int      topflags   // flags used by containing fold
+){
    LineNr   ll;
    Fold   *fp = NULL;
    Fold   *fp2;
@@ -13669,32 +13584,32 @@ foldUpdateIEMSRecurse(
       if (flp->lnum > firstlnum && (level > lvl - flp->start || level >= flp->had_end))
          lvl = 0;
 
-      if (flp->lnum > bot && !finish && fp != NULL) {
-            // For "marker" and "syntax" methods:
-            // - If a change caused a nested fold to be removed, we need to
-            //   delete it and continue at least until where it ended.
-            // - If a change caused a nested fold to be created, or this fold
-            //   to continue below its original end, need to finish this fold.
-            if (getlevel != foldlevelMarker && getlevel != foldlevelExpr)
-               break;
-            i = 0;
-            fp2 = fp;
-            if (lvl >= level) {
-               // Compute how deep the folds currently are, if it's deeper than "lvl" then some 
-               // must be deleted, need to update at least one nested fold.
-               ll = flp->lnum - fp->fd_top;
-               while (foldFind(&fp2->fd_nested, ll, &fp2)) {
-                   ++i;
-                   ll -= fp2->fd_top;
-               }
+      if (flp->lnum > bot && !finish && fp) {
+         // For "marker" and "syntax" methods:
+         // - If a change caused a nested fold to be removed, we need to
+         //   delete it and continue at least until where it ended.
+         // - If a change caused a nested fold to be created, or this fold
+         //   to continue below its original end, need to finish this fold.
+         if (getlevel != foldlevelMarker && getlevel != foldlevelExpr)
+            break;
+         i = 0;
+         fp2 = fp;
+         if (lvl >= level) {
+            // Compute how deep the folds currently are, if it's deeper than "lvl" then some 
+            // must be deleted, need to update at least one nested fold.
+            ll = flp->lnum - fp->fd_top;
+            while (foldFind(&fp2->fd_nested, ll, &fp2)) {
+                ++i;
+                ll -= fp2->fd_top;
             }
-            if (lvl < level + i) {
-               (void)foldFind(&fp->fd_nested, flp->lnum - fp->fd_top, &fp2);
-               if (fp2 != NULL)
-                  bot = fp2->fd_top + fp2->fd_len - 1 + fp->fd_top;
-            } ei (fp->fd_top + fp->fd_len <= flp->lnum && lvl >= level)
+         }
+         if (lvl < level + i) {
+            (void)foldFind(&fp->fd_nested, flp->lnum - fp->fd_top, &fp2);
+            if (fp2)
+               bot = fp2->fd_top + fp2->fd_len - 1 + fp->fd_top;
+         } ei (fp->fd_top + fp->fd_len <= flp->lnum && lvl >= level)
             finish = TRUE;
-             else
+         else
             break;
       }
 
@@ -13978,10 +13893,10 @@ foldUpdateIEMSRecurse(
 
 //Insert a new fold in "gap" at position "i". Return OK for success, FAIL for failure.
 private int
-foldInsert(ArrayList *gap, int i) {
+foldInsert(ArrayList* gap, int i) {
    if (ga_grow(gap, 1) == FAIL)
       return FAIL;
-   Fold* fp = (Fold *)gap->c + i;
+   Fold* fp = (Fold*)gap->c + i;
    if (gap->len > 0 && i < gap->len)
       mch_memmove(fp + 1, fp, sizeof(Fold) * (gap->len - i));
    ++gap->len;
@@ -13993,12 +13908,7 @@ foldInsert(ArrayList *gap, int i) {
 //"bot" in two pieces, one ending above "top" and the other starting below "bot".
 //The caller must first have taken care of any nested folds from "top" to "bot"!
 private void
-foldSplit(
-   ArrayList* gap,
-   int      i,
-   LineNr   top,
-   LineNr   bot
-){
+foldSplit(ArrayList* gap, int i, LineNr top, LineNr bot){
    // The fold continues below bot, need to split it.
    if (foldInsert(gap, i + 1) == FAIL)
       return;
@@ -14091,7 +14001,7 @@ foldRemove(ArrayList *gap, LineNr top, LineNr bot) {
 }
 
 private void
-foldReverseOrder(ArrayList *gap, LineNr start_arg, LineNr end_arg) {
+foldReverseOrder(ArrayList* gap, LineNr start_arg, LineNr end_arg) {
    Fold *left, *right;
    Fold tmp;
    LineNr start = start_arg;
@@ -14135,10 +14045,10 @@ foldReverseOrder(ArrayList *gap, LineNr start_arg, LineNr end_arg) {
 //9. shifted up
 //10. not changed
 private void
-truncate_fold(Fold *fp, LineNr end) {
-    end += 1;
-    foldRemove(&fp->fd_nested, end - fp->fd_top, MAXLNUM);
-    fp->fd_len = end - fp->fd_top;
+truncate_fold(Fold* fp, LineNr end) {
+   end += 1;
+   foldRemove(&fp->fd_nested, end - fp->fd_top, MAXLNUM);
+   fp->fd_len = end - fp->fd_top;
 }
 
 #define fold_end(fp) ((fp)->fd_top + (fp)->fd_len - 1)
@@ -14146,7 +14056,7 @@ truncate_fold(Fold *fp, LineNr end) {
 #define fold_index(fp, gap) ((Unt)((fp) - ((Fold *)(gap)->c)))
 
 void
-foldMoveRange(ArrayList *gap, LineNr line1, LineNr line2, LineNr dest) {
+foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest) {
    Fold *fp;
    LineNr range_len = line2 - line1 + 1;
    LineNr move_len = dest - line2;
@@ -14201,10 +14111,10 @@ foldMoveRange(ArrayList *gap, LineNr line1, LineNr line2, LineNr dest) {
       return;
    }
 
-    // Case 5 or 6
-    // changes rely on whether there are folds between the end of
-    // this fold and "dest".
-    move_start = fold_index(fp, gap);
+   // Case 5 or 6
+   // changes rely on whether there are folds between the end of
+   // this fold and "dest".
+   move_start = fold_index(fp, gap);
 
    for (; valid_fold(fp, gap) && fp->fd_top <= dest; fp++) {
       if (fp->fd_top <= line2) {
@@ -14227,7 +14137,7 @@ foldMoveRange(ArrayList *gap, LineNr line1, LineNr line2, LineNr dest) {
       fp->fd_top -= range_len;
    }
 
-    dest_index = fold_index(fp, gap);
+   dest_index = fold_index(fp, gap);
 
    //All folds are now correct, but not necessarily in the correct order.  We
    //must swap folds in the range [move_end, dest_index) with those in the
@@ -14477,7 +14387,7 @@ private int put_fold_open_close(FILE *fd, Fold *fp, LineNr off);
 //Write commands to "fd" to restore the manual folds in portal "wp".
 //Return FAIL if writing fails.
 int
-put_folds(FILE *fd, Portal *wp) {
+put_folds(FILE* fd, Portal* wp) {
    // If some folds are manually opened/closed, need to restore that.
    if (wp->foldManual)
       return put_foldopen_recurse(fd, wp, &wp->folds, (LineNr)0);
@@ -14488,12 +14398,7 @@ put_folds(FILE *fd, Portal *wp) {
 // Write commands to "fd" to open and close manually opened/closed folds. 
 // Return FAIL when writing failed.
 private int
-put_foldopen_recurse(
-   FILE   *fd,
-   Portal   *wp,
-   ArrayList   *gap,
-   LineNr   off
-) {
+put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off) {
    Fold* fp = (Fold *)gap->c;
    for (int i = 0; i < gap->len; i++, fp++) {
       if (fp->fd_flags == FD_LEVEL) {
@@ -14505,7 +14410,7 @@ put_foldopen_recurse(
                   || put_eol(fd) == FAIL
                   || put_line(fd, S"sil! normal! zo") == FAIL)
                return FAIL;
-            if (put_foldopen_recurse(fd, wp, &fp->fd_nested, off + fp->fd_top) == FAIL)
+            if (put_foldopen_recurse(fd, po, &fp->fd_nested, off + fp->fd_top) == FAIL)
                return FAIL;
             // close the parent when needed
             if (fp->fd_flags == FD_CLOSED && put_fold_open_close(fd, fp, off) == FAIL)
@@ -14513,9 +14418,9 @@ put_foldopen_recurse(
       } else {
          // Open or close the leaf according to the portal foldlevel.
          // Do not close a leaf that is already closed, as it will close the parent.
-         int level = foldLevelWin(wp, off + fp->fd_top);
-         if (((fp->fd_flags == FD_CLOSED && wp->o.foldLevel >= level)
-               || (fp->fd_flags != FD_CLOSED && wp->o.foldLevel < level)
+         int level = foldLevelWin(po, off + fp->fd_top);
+         if (((fp->fd_flags == FD_CLOSED && po->o.foldLevel >= level)
+               || (fp->fd_flags != FD_CLOSED && po->o.foldLevel < level)
              ) 
              && put_fold_open_close(fd, fp, off) == FAIL
          )
@@ -14560,25 +14465,24 @@ foldclosed_both(Var* argvars, Var* returnVar, int end) {
 }
 
 void
-f_foldclosed(Var *argvars, Var *returnVar) {
+f_foldclosed(Var *argvars, Var* returnVar) {
    foldclosed_both(argvars, returnVar, FALSE);
 }
 
 void
-f_foldclosedend(Var *argvars, Var *returnVar) {
+f_foldclosedend(Var *argvars, Var* returnVar) {
    foldclosed_both(argvars, returnVar, TRUE);
 }
 
-// "foldlevel()" function
 void
-f_foldlevel(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_foldlevel(Var *argvars UNUSED, Var* returnVar) {
    LineNr lnum = tv_get_lnum(argvars);
    if (lnum >= 1 && lnum <= curBook->mem.lineCount)
       returnVar->number = getFoldLevel(lnum);
 }
 
 void
-f_foldtext(Var *argvars UNUSED, Var *returnVar) {
+f_foldtext(Var *argvars UNUSED, Var* returnVar) {
    LineNr   lnum;
    Byte   *s;
    Byte   *r;
@@ -14627,7 +14531,7 @@ f_foldtext(Var *argvars UNUSED, Var *returnVar) {
 
 //"foldtextresult(lnum)" function
 void
-f_foldtextresult(Var *argvars UNUSED, Var *returnVar) {
+f_foldtextresult(Var *argvars UNUSED, Var* returnVar) {
    Byte   buffer[FOLD_TEXT_LEN];
    FoldInfo  foldinfo;
    int      fold_count;

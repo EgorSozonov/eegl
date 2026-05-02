@@ -489,9 +489,8 @@ typedef enum {
 // LINEEMPTY() - return TRUE if the line is empty
 #define LINEEMPTY(p) (*ml_get(p) == ZERO)
 
-// BUFEMPTY() - return TRUE if the current book is empty
-
-#define BUFEMPTY() (curBook->mem.lineCount == 1 && *ml_get((LineNr)1) == ZERO)
+// return TRUE if the current book is empty
+#define CURBOOK_EMPTY() (curBook->mem.lineCount == 1 && *ml_get((LineNr)1) == ZERO)
 
 //{{{static maps
 

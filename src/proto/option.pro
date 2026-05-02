@@ -1,7 +1,7 @@
 /* src/option.c */
 void optSetStringDefault(CS name, CS val);
 void optFreeAllOptions(void);
-void optionInit1(void);
+void optInit1(void);
 CS optSetByName(CS name, OptionValue newVal, SetScope setScope);
 Unt stringToChar(CS arg, Boole multi_byte);
 ScriptPos *optGetScriptPos(CS name);
@@ -27,7 +27,7 @@ int optSetCallback(Callback *cb, CS new);
 CS setShowTabpanel(OptionChange *cha);
 void initPortalOptions(PortLocal *o);
 void updateStringRef(OptionChange *cha);
-void optionInit0(void);
+void optInit0(void);
 int writeOptionsAsSet(FILE *fd);
 void optSetLocalOptionsToDefault(Portal *wp, Boole doBook);
 void c_get(Invocation *invo);

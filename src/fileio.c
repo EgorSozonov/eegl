@@ -7145,7 +7145,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    //to delete the current book contents. But if reading the file fails we should keep
    //the old contents. Can't use memory only, the file might be too big. Use a hidden book to 
    //move the book contents to.
-   if (BUFEMPTY() || saved == FAIL)
+   if (CURBOOK_EMPTY() || saved == FAIL)
       savebuf = NULL;
    else {
       // Allocate a book without putting it in the book list.
@@ -7182,7 +7182,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
             showErrFmtMsg(_(e_could_not_reload_str), book->currFileName);
          if (savebuf != NULL && bookRefValid(&bufref) && book == curBook) {
             //Put the text back from the save book. First delete any lines that readfile() added.
-            while (!BUFEMPTY()) {
+            while (!CURBOOK_EMPTY()) {
                if (ml_delete(book->mem.lineCount) == FAIL)
                   break;
             } 

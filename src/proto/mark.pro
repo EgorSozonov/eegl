@@ -9,7 +9,7 @@ Pos *movechangelist(int count);
 Pos *markGetBook(Book *book, int c, int changefile);
 Pos *getmark(int c, int changefile);
 Pos *markGetBookFnum(Book *book, int c, int changefile, int *fnum);
-Pos *getnextmark(Pos *startpos, int dir, int begin_line);
+Pos *getnextmark(Pos *startpos, Unt dir, int begin_line);
 void fmarks_check_names(Book *book);
 int check_mark(Pos *pos);
 void clrallmarks(Book *book);

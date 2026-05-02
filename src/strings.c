@@ -810,7 +810,7 @@ eq_Text_CString(Text a, CS b) {
 Boole
 eq_CString_CString(CS a, CS b) {
    Unt len = STRLEN(a);
-   return len == STRLEN(b) && memcmp(a, b, len + 1);
+   return len == STRLEN(b) && memcmp(a, b, len + 1) == 0;
 }
 
 //Move input text forward to some position within it.
