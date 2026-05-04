@@ -1966,7 +1966,7 @@ recover_names(
          FileStat       st;
          Byte       *swapname;
 
-         swapname = modname(fname_res, (CS)".swp", TRUE);
+         swapname = fiAppendFileExtension(fname_res, (CS)".swp", TRUE);
          if (swapname) {
             if (stat((char *)swapname, &st) != -1) {   // It exists!
                files.c = ALLOC_ONE(CS);
@@ -2235,7 +2235,7 @@ recoverFileNames(Byte **names, Byte *path, int prepend_dot) {
 
    // May also add the file name with a dot prepended, for swap file in same dir as original file.
    if (prepend_dot) {
-      names[num_names] = modname(path, (CS)".sw?", TRUE);
+      names[num_names] = fiAppendFileExtension(path, (CS)".sw?", TRUE);
       if (names[num_names] == NULL)
          goto end;
       ++num_names;
@@ -3973,7 +3973,7 @@ resolve_symlink(CS fname, OUT CS builder) {
 // memory or NULL.
 CS
 makeswapname(CS fname, CS ffname UNUSED, CS dir_name) {
-   Byte   *r;
+   CS r;
    CS fname_res = fname;
    Byte fnameBuilder[MAXPATHL];
 
@@ -3989,20 +3989,18 @@ makeswapname(CS fname, CS ffname UNUSED, CS dir_name) {
       // Ends with '//', Use Full path
       r = NULL;
       if ((s = make_percent_swname(dir_name, s, fname_res)) != NULL) {
-         r = modname(s, (CS)".swp", FALSE);
+         r = fiAppendFileExtension(s, (CS)".swp", FALSE);
          eeglFree(s);
       }
       return r;
    }
 
-   r = buf_modname(
-       fname_res,
-       (CS)
-       ".swp",
+   r = fiAppendFileExtension(
+       fname_res, S".swp",
        // Prepend a '.' to the swap file name for the current directory.
        dir_name[0] == '.' && dir_name[1] == ZERO
    );
-   if (r == NULL)       // out of memory
+   if (!r)       // out of memory
       return NULL;
 
    s = get_file_in_dir(r, dir_name);
@@ -4020,12 +4018,9 @@ makeswapname(CS fname, CS ffname UNUSED, CS dir_name) {
 //
 //The return value is an allocated string and can be NULL.
 CS
-get_file_in_dir(
-   CS fname,
-   CS dname   // don't use "dirname", it is a global for Alpha
-){
-   Byte   *t;
-   Byte   *retval;
+get_file_in_dir(CS fname, CS dname ){  // don't use "dirname", it is a global for Alpha
+   CS t;
+   CS retval;
 
    CS tail = gettail(fname);
 
@@ -4103,7 +4098,7 @@ typedef enum {
 
 //Trigger the SwapExists autocommands. Return a value for equivalent to do_dialog().
 private SeaChoice 
-do_swapexists(Book* book, Byte *fname) {
+do_swapexists(Book* book, CS fname) {
    set_EeglVar_string(VV_SWAPNAME, fname, -1);
    set_EeglVar_string(VV_SWAPCHOICE, NULL, -1);
 
@@ -4134,13 +4129,13 @@ do_swapexists(Book* book, Byte *fname) {
 //
 //Note: If BASENAMELEN is not correct, you will get error messages for not being able to open the 
 //swap or undo file. Note: May trigger SwapExists autocmd, pointers may change!
-private Byte *
+private CS
 findSwapName(
    Book* book,
-   Byte   **dirp,      // pointer to list of directories
-   CS old_fname)   // don't give warning for this file name
-{
-   Byte   *fname;
+   Byte** dirp,      // pointer to list of directories
+   CS old_fname   // don't give warning for this file name
+){
+   CS fname;
    int      n;
    CS buf_fname = book->currFileName;
 
@@ -4468,8 +4463,8 @@ charToLong(Byte *s) {
 //Set the flags in the first block of the swap file: file is modified or not: book->wasModified
 void
 ml_setflags(Book* book) {
-   BlockHeader   *hdr;
-   Block0   *b0p;
+   BlockHeader* hdr;
+   Block0* b0p;
 
    if (!book->mem.mfile)
       return;
@@ -4495,14 +4490,14 @@ ml_setflags(Book* book) {
 private void
 updateChunk(
    Book* book,
-   LineNr   line,
-   long   len,
-   int      updtype
+   LineNr line,
+   long len,
+   int updtype
 ){
-   static Book   *ml_upd_lastbuf = NULL;
-   static LineNr   ml_upd_lastline;
-   static LineNr   ml_upd_lastcurline;
-   static int      ml_upd_lastcurix;
+   static Book* ml_upd_lastbuf = NULL;
+   static LineNr ml_upd_lastline;
+   static LineNr ml_upd_lastcurline;
+   static int ml_upd_lastcurix;
 
    LineNr      curline = ml_upd_lastcurline;
    int         curix = ml_upd_lastcurix;
@@ -4574,7 +4569,6 @@ updateChunk(
          int idx;
          int end_idx;
          int textEnd;
-         int linecnt;
 
          mch_memmove(book->mem.ml_chunksize + curix + 1,
             book->mem.ml_chunksize + curix,
@@ -4583,7 +4577,7 @@ updateChunk(
          );
          // Compute length of first half of lines in the split chunk
          size = 0;
-         linecnt = 0;
+         int linecnt = 0;
          while (curline < book->mem.lineCount && linecnt < MLCS_MINL) {
             if ((hdr = ml_find_line(book, curline, ML_FIND)) == NULL) {
                book->mem.ml_usedchunks = -1;
@@ -4898,7 +4892,7 @@ private int mf_read(MemFile *, BlockHeader *);
 private int mf_write(MemFile *, BlockHeader *);
 private int mf_write_block(MemFile *mfp, BlockHeader *hp, FileSize offset, unsigned size);
 private int mf_trans_add(MemFile *, BlockHeader *);
-private void mf_do_open(MemFile *, Byte *, int);
+private void mf_do_open(MemFile *, CS, Unt);
 private void mf_hash_init(MfHashTable *);
 private void mf_hash_free(MfHashTable *);
 private void mf_hash_free_all(MfHashTable *);
@@ -4986,12 +4980,10 @@ mf_open(CS fname, Unt flags) {
    mfp->mf_neg_count = 0;
    mfp->pagesInFile = mfp->mf_blocknr_max;
 
-    /*
-     * Compute maximum number of pages ('maxmem' is in Kbyte):
-     *   'mammem' * 1Kbyte / page-size-in-bytes.
-     * Avoid overflow by first reducing page size as much as possible.
-     */
-    {
+   //Compute maximum number of pages ('maxmem' is in Kbyte):
+   //  'mammem' * 1Kbyte / page-size-in-bytes.
+   //Avoid overflow by first reducing page size as much as possible.
+   {
    int       shift = 10;
    unsigned    page_size = mfp->pageSize;
 
@@ -5007,12 +4999,10 @@ mf_open(CS fname, Unt flags) {
    return mfp;
 }
 
-// Open a file for an existing memfile.  Used when updatecount set from 0 to some value.
-// If the file already exists, this fails.
-// "fname" is the name of file to use (NULL means no file at all)
-// Note: "fname" must have been allocated, it is not copied!  If opening the
-// file fails, "fname" is freed.
-//
+// Open a file for an existing memfile. Used when updatecount set from 0 to some value. If the 
+// file already exists, this fails. "fname" is the name of file to use (NULL means no file at all)
+// Note: "fname" must have been allocated, it is not copied!  If opening the file fails, "fname" 
+// is freed.
 // return value: FAIL if file could not be opened, OK otherwise
 int
 mf_open_file(MemFile* mfp, CS fname) {
@@ -5052,21 +5042,15 @@ mf_close(MemFile* mfp, int del_file) {
 
 // Close the swap file for a memfile.  Used when 'swapfile' is reset.
 void
-mf_close_file(
-   Book* book,
-   int      getlines)   // get all lines into memory?
-{
-   MemFile   *mfp;
-   LineNr   lnum;
-
-   mfp = book->mem.mfile;
+mf_close_file(Book* book, int getlines) {  // get all lines into memory?
+   MemFile* mfp = book->mem.mfile;
    if (!mfp || mfp->fd < 0)      // nothing to close
       return;
 
    if (getlines) {
       // get all blocks in memory by accessing all lines (clumsy!)
       dontReleaseBlocksS = TRUE;
-      for (lnum = 1; lnum <= book->mem.lineCount; ++lnum)
+      for (LineNr lnum = 1; lnum <= book->mem.lineCount; ++lnum)
          (void)memGetLine(book, lnum, false);
       dontReleaseBlocksS = FALSE;
       // TODO: should check if all blocks are really in core
@@ -5086,7 +5070,7 @@ mf_close_file(
 // Set new size for a memfile.  Used when block 0 of a swapfile has been read
 // and the size it indicates differs from what was guessed.
 void
-mf_new_page_size(MemFile *mfp, unsigned new_size) {
+mf_new_page_size(MemFile* mfp, unsigned new_size) {
    // Correct the memory used for block 0 to the new size, because it will be
    // freed with that size later on.
    total_mem_used += new_size - mfp->pageSize;
@@ -5096,19 +5080,17 @@ mf_new_page_size(MemFile *mfp, unsigned new_size) {
 // get a new block
 //   negative: TRUE if negative block number desired (data block)
 BlockHeader *
-mf_new(MemFile *mfp, int negative, int page_count) {
-   BlockHeader   *hp;   // new BlockHeader
-   BlockHeader   *freep;   // first block in free list
-   Byte   *p;
-
-   // If we reached the maximum size for the used memory blocks, release one
+mf_new(MemFile* mfp, int negative, int page_count) {
+   CS p;
+   
+   // new BlockHeader. If we reached the maximum size for the used memory blocks, release one
    // If a BlockHeader is returned, use it and adjust the page_count if necessary.
-   hp = mf_release(mfp, page_count);
+   BlockHeader* hp = mf_release(mfp, page_count);
 
-   // Decide on the number to use:
-   // If there is a free block, use its number.
-   // Otherwise use mf_block_min for a negative number, mf_block_max for a positive number.
-   freep = mfp->freeFirst;
+   //First block in free list. Decide on the number to use:
+   //If there is a free block, use its number.
+   //Otherwise use mf_block_min for a negative number, mf_block_max for a positive number.
+   BlockHeader* freep = mfp->freeFirst;
    if (!negative && freep != NULL && freep->pageCount >= page_count) {
       // If the block in the free list has more pages, take only the number
       // of pages needed and allocate a new BlockHeader with data
@@ -5161,7 +5143,7 @@ mf_new(MemFile *mfp, int negative, int page_count) {
 // Get existing block "nr" with "page_count" pages.
 // Note: The caller should first check a negative nr with mf_trans_del()
 BlockHeader *
-mf_get(MemFile *mfp, BlockId nr, int page_count) {
+mf_get(MemFile* mfp, BlockId nr, int page_count) {
    if (nr >= mfp->mf_blocknr_max || nr <= mfp->mf_blocknr_min)
       return NULL;
 
@@ -5207,13 +5189,8 @@ mf_get(MemFile *mfp, BlockId nr, int page_count) {
 //
 //  no return value, function cannot fail
 void
-mf_put(
-   MemFile   *mfp,
-   BlockHeader   *hp,
-   int      dirty,
-   int      infile)
-{
-   int flags = hp->bh_flags;
+mf_put(MemFile* mfp, BlockHeader* hp, int dirty, int infile) {
+   Unt flags = hp->bh_flags;
 
    if ((flags & BH_LOCKED) == 0)
       internalErrMsg(e_block_was_not_locked);
@@ -5230,7 +5207,7 @@ mf_put(
 
 // block *hp is no longer in used, may put it in the free list of memfile *mfp
 void
-mf_free(MemFile *mfp, BlockHeader *hp) {
+mf_free(MemFile* mfp, BlockHeader* hp) {
    eeglFree(hp->bh_data);   // free the memory
    mf_rem_hash(mfp, hp);   // get *hp out of the hash list
    mf_rem_used(mfp, hp);   // get *hp out of the used list
@@ -5249,10 +5226,8 @@ mf_free(MemFile *mfp, BlockHeader *hp) {
 //
 //Return FAIL for failure, OK otherwise
 int
-mf_sync(MemFile *mfp, int flags) {
-   int      status;
-   BlockHeader   *hp;
-   int      gotInterruptG_save = gotInterruptG;
+mf_sync(MemFile* mfp, Unt flags) {
+   int gotInterruptG_save = gotInterruptG;
 
    if (mfp->fd < 0) {
       // there is no file, nothing to do
@@ -5266,7 +5241,8 @@ mf_sync(MemFile *mfp, int flags) {
    //sync from last to first (may reduce the probability of an inconsistent
    //file) If a write fails, it is very likely caused by a full filesystem.
    //Then we only try to write blocks within the existing file. If that also fails then we give up.
-   status = OK;
+   int status = OK;
+   BlockHeader* hp;
    for (hp = mfp->usedLast; hp != NULL; hp = hp->bh_prev) {
       if (((flags & MFS_ALL) || hp->bh_bnum >= 0)
          && (hp->bh_flags & BH_DIRTY)
@@ -5312,7 +5288,7 @@ mf_sync(MemFile *mfp, int flags) {
 // For all blocks in memory file *mfp that have a positive block number set the dirty flag. These 
 // are blocks that need to be written to a newly created swapfile.
 void
-mf_set_dirty(MemFile *mfp) {
+mf_set_dirty(MemFile* mfp) {
    for (BlockHeader* hp = mfp->usedLast; hp != NULL; hp = hp->bh_prev) {
       if (hp->bh_bnum > 0)
          hp->bh_flags |= BH_DIRTY;
@@ -5322,7 +5298,7 @@ mf_set_dirty(MemFile *mfp) {
 
 // insert block *hp in front of hashlist of memfile *mfp
 private void
-mf_ins_hash(MemFile *mfp, BlockHeader *hp) {
+mf_ins_hash(MemFile* mfp, BlockHeader* hp) {
    mf_hash_add_item(&mfp->mf_hash, (MfHashItem *)hp);
 }
 
@@ -5512,17 +5488,13 @@ mf_rem_free(MemFile *mfp) {
 
 // Read a block from disk. Return FAIL for failure, OK otherwise
 private int
-mf_read(MemFile *mfp, BlockHeader *hp) {
-   FileSize   offset;
-   unsigned   page_size;
-   unsigned   size;
-
+mf_read(MemFile* mfp, BlockHeader* hp) {
    if (mfp->fd < 0)       // there is no file, can't read
       return FAIL;
 
-   page_size = mfp->pageSize;
-   offset = (FileSize)page_size * hp->bh_bnum;
-   size = page_size * hp->pageCount;
+   Unt page_size = mfp->pageSize;
+   FileSize offset = (FileSize)page_size * hp->bh_bnum;
+   Unt size = page_size * hp->pageCount;
    if (lseek(mfp->fd, offset, SEEK_SET) != offset) {
       PERROR(_(e_seek_error_in_swap_file_read));
       return FAIL;
@@ -5618,14 +5590,9 @@ mf_write(MemFile *mfp, BlockHeader *hp) {
 // Write block "hp" with data size "size" to file "mfp->fd".
 // Take care of encryption. Return FAIL or OK.
 private int
-mf_write_block(
-   MemFile   *mfp,
-   BlockHeader   *hp,
-   FileSize   offset UNUSED,
-   unsigned   size)
-{
-   Byte   *data = hp->bh_data;
-   int      result = OK;
+mf_write_block(MemFile* mfp, BlockHeader* hp, FileSize offset UNUSED, unsigned size) {
+   Byte* data = hp->bh_data;
+   int result = OK;
 
    if ((unsigned)write_eintr(mfp->fd, data, size) != size)
       result = FAIL;
@@ -5688,7 +5655,7 @@ mf_trans_add(MemFile *mfp, BlockHeader *hp) {
 // Lookup a translation from the trans lists and delete the entry.
 // Return the positive new number when found, the old number when not found
 BlockId
-mf_trans_del(MemFile *mfp, BlockId old_nr) {
+mf_trans_del(MemFile* mfp, BlockId old_nr) {
    NR_TRANS* np = (NR_TRANS *)mf_hash_find(&mfp->mf_trans, old_nr);
 
    if (np == NULL)      // not found
@@ -5709,7 +5676,7 @@ mf_trans_del(MemFile *mfp, BlockId old_nr) {
 // Only called when creating or renaming the swapfile.   Either way it's a new
 // name so we must work out the full path name.
 void
-mf_set_ffname(MemFile *mfp) {
+mf_set_ffname(MemFile* mfp) {
    mfp->fullFName = FullName_save(mfp->fName, FALSE);
 }
 
@@ -5726,18 +5693,14 @@ mf_fullname(MemFile *mfp) {
 
 // TRUE if there are any translations pending for 'mfp'
 int
-mf_need_trans(MemFile *mfp) {
+mf_need_trans(MemFile* mfp) {
    return (mfp->fName != NULL && mfp->mf_neg_count > 0);
 }
 
 // Open a swap file for a memfile.
 // The "fname" must be in allocated memory, and is consumed (also when an error occurs).
 private void
-mf_do_open(
-   MemFile   *mfp,
-   Byte   *fname,
-   int      flags)      // flags for open()
-{
+mf_do_open(MemFile* mfp, CS fname, Unt flags) {      // flags for open()
    FileStat   sb;
 
    mfp->fName = fname;
@@ -5782,7 +5745,7 @@ mf_do_open(
 
 //Initialize an empty hash table.
 private void
-mf_hash_init(MfHashTable *mht) {
+mf_hash_init(MfHashTable*  mht) {
    CLEAR_POINTER(mht);
    mht->mht_buckets = mht->mht_small_buckets;
    mht->mask = MHT_INIT_SIZE - 1;
@@ -5798,7 +5761,7 @@ mf_hash_free(MfHashTable *mht) {
 
 // Free the array of a hash table and all the items it contains.
 private void
-mf_hash_free_all(MfHashTable *mht) {
+mf_hash_free_all(MfHashTable* mht) {
    MfHashItem   *mhi;
    MfHashItem   *next;
 
@@ -5824,7 +5787,7 @@ mf_hash_find(MfHashTable *mht, BlockId key) {
 
 // Add item "mhi" to hashtable "mht". "mhi" must not be NULL.
 private void
-mf_hash_add_item(MfHashTable *mht, MfHashItem *mhi) {
+mf_hash_add_item(MfHashTable* mht, MfHashItem* mhi) {
    Ulong idx = mhi->key & mht->mask;
    mhi->next = mht->mht_buckets[idx];
    mhi->prev = NULL;
@@ -6074,7 +6037,6 @@ garbage_collect(int testing) {
 // Free lists, dictionaries, channels and jobs that are no longer referenced.
 private int
 free_unref_items(int copyID) {
-   int      did_free = FALSE;
 
    // Let all "free" functions know that we are here.  This means no
    // dictionaries, lists, channels or jobs are to be freed, because we will do that here.
@@ -6084,7 +6046,7 @@ free_unref_items(int copyID) {
    // themselves yet, so that it is possible to decrement refcount counters
 
    // Go through the list of dicts and free items without this copyID.
-   did_free |= dict_free_nonref(copyID);
+   int did_free = dict_free_nonref(copyID);
 
    // Go through the list of lists and free items without this copyID.
    did_free |= list_free_nonref(copyID);
@@ -6182,7 +6144,7 @@ set_ref_in_list(List *ll, int copyID) {
 //
 //Return TRUE if setting references failed somehow.
 int
-set_ref_in_list_items(List      *l, int copyID, HtStack** ht_stack) {
+set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
    ListItem    *li;
    int       abort = FALSE;
    List    *cur_l;

@@ -74,7 +74,7 @@ BlockHeader *mf_new(MemFile *mfp, int negative, int page_count);
 BlockHeader *mf_get(MemFile *mfp, BlockId nr, int page_count);
 void mf_put(MemFile *mfp, BlockHeader *hp, int dirty, int infile);
 void mf_free(MemFile *mfp, BlockHeader *hp);
-int mf_sync(MemFile *mfp, int flags);
+int mf_sync(MemFile *mfp, Unt flags);
 void mf_set_dirty(MemFile *mfp);
 int mf_release_all(void);
 BlockId mf_trans_del(MemFile *mfp, BlockId old_nr);

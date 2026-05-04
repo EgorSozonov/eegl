@@ -1849,7 +1849,7 @@ letImpl(
             showErrFmtMsg(_(e_key_not_present_in_dictionary_str), lval->newKey);
             return false;
          }
-         if (dict_wrong_func_name(lval->var->bag, returnVar, lval->newKey))
+         if (dictWrongFuncName(lval->var->bag, returnVar, lval->newKey))
             return false;
 
          // Need to add an item to the Dictionary.
@@ -1891,7 +1891,7 @@ evalLetVarSimple(CS name, Var* newValue) {
 
 // Handle "blob1 += blob2". Return OK or FAIL.
 private int
-tv_op_blob(Var *tv1, Var *tv2, CS op) {
+tv_op_blob(Var* tv1, Var* tv2, CS op) {
    if (*op != '+' || tv2->tag != VAR_BLOB)
       return FAIL;
 
@@ -1917,7 +1917,7 @@ tv_op_blob(Var *tv1, Var *tv2, CS op) {
 
 // Handle "list1 += list2". Return OK or FAIL.
 private int
-tv_op_list(Var *tv1, Var *tv2, CS op) {
+tv_op_list(Var* tv1, Var* tv2, CS op) {
    if (*op != '+' || tv2->tag != VAR_LIST)
       return FAIL;
 
@@ -1937,7 +1937,7 @@ tv_op_list(Var *tv1, Var *tv2, CS op) {
 // Handle number operations: nr += nr , nr -= nr , nr *=nr , nr /= nr , nr %= nr
 // Return OK or FAIL.
 private int
-tv_op_number(Var *tv1, Var *tv2, CS op) {
+tv_op_number(Var* tv1, Var* tv2, CS op) {
    Long   n;
    Boole failed = false;
 
@@ -1974,7 +1974,7 @@ tv_op_number(Var *tv1, Var *tv2, CS op) {
 
 // Handle "str1 .= str2" Return OK or FAIL.
 private int
-tv_op_string(Var *tv1, Var *tv2, CS op UNUSED) {
+tv_op_string(Var* tv1, Var* tv2, CS op UNUSED) {
    Byte numbuf[NUMBUFLEN];
 
    if (tv2->tag == VAR_FLOAT)
@@ -2005,7 +2005,7 @@ tv_op_nr_or_string(Var *tv1, Var *tv2, CS op) {
 
 // Handle "f1 += f2", "f1 -= f2", "f1 *= f2", "f1 /= f2". Return OK or FAIL.
 private int
-tv_op_float(Var *tv1, Var *tv2, CS op) {
+tv_op_float(Var* tv1, Var* tv2, CS op) {
    double f;
 
    if (*op == '%' || *op == '.'
@@ -2083,10 +2083,10 @@ tv_op(Var *tv1, Var *tv2, CS op) {
 
 // Info used by a ":for" loop.
 struct ForInfo {
-   int      endsWithSemicolon;   // TRUE if ending in '; var]'
-   int      fi_varcount;   // nr of variables in [] or zero
-   int      fi_break_count;   // nr of line breaks encountered
-   ListWatch   fi_lw;      // keep an eye on the item used.
+   int endsWithSemicolon;   // TRUE if ending in '; var]'
+   int fi_varcount;   // nr of variables in [] or zero
+   int fi_break_count;   // nr of line breaks encountered
+   ListWatch fi_lw;      // keep an eye on the item used.
    List* fi_list;   // list being used
    int fi_bi;      // index of blob
    Blob* fi_blob;   // blob being used
@@ -2101,12 +2101,7 @@ struct ForInfo {
 //Set "*errp" to TRUE for an error, FALSE otherwise;
 //Return a pointer that holds the info.  Null when there is an error.
 void*
-eval_for_line(
-   CS   arg,
-   OUT Boole* errp,
-   Invocation   *invo,
-   EvalCtx   *evalarg
-) {
+eval_for_line(CS arg, OUT Boole* errp, Invocation   *invo, EvalCtx   *evalarg) {
    Var   tv;
    List   *l;
    Boole skip = !(evalarg->eval_flags & EVAL_EVALUATE);
@@ -6250,8 +6245,7 @@ c_let(Invocation* invo) {
       return;
    }
 
-   EvalCtx   evalarg;
-   int len = 1;
+   EvalCtx evalarg;
 
    CLEAR_FIELD(returnVar);
 
@@ -6260,10 +6254,8 @@ c_let(Invocation* invo) {
    if (*expr != '=') {
       if (firstOccurrence((CS)"+-*/%.", *expr) != NULL) {
          op[0] = *expr;   // +=, -=, *=, /=, %= or .=
-         ++len;
          if (expr[0] == '.' && expr[1] == '.') { // ..=
             ++expr;
-            ++len;
          }
       }
       expr += 2;
@@ -6308,7 +6300,6 @@ letVars(
 ) {
    CS arg = arg_start;
    int i;
-   int var_idx = 0;
    ListItem   *item = NULL;
    Var ltv;
 
@@ -6349,7 +6340,6 @@ letVars(
 
    while (*arg != ']') {
       arg = skipwhite(arg + 1);
-      ++var_idx;
       arg = letOne( arg, &item->c, true, flags | ASSIGN_UNPACK, (CS)",;]", op);
       item = item->next;
       if (!arg)
@@ -6374,7 +6364,6 @@ letVars(
          ltv.list = l;
          l->refcount = 1;
 
-         ++var_idx;
          arg = letOne(skipwhite(arg + 1), &ltv, false, flags | ASSIGN_UNPACK, S"]", op);
          clearVar(&ltv);
          if (arg == NULL)
@@ -11102,8 +11091,8 @@ private void
 f_getcellpixels(Var* argvars UNUSED, Var* returnVar) {
    allocReturnList(returnVar);
 
-   struct cellsize cs;
-   mch_calc_cell_size(&cs);
+   CellSize cs;
+   mch_calc_cell_size(OUT &cs);
 
    // failed get pixel size.
    if (cs.cs_xpixel == -1)
@@ -11230,7 +11219,7 @@ f_getenv(Var* argvars, Var* returnVar) {
    int mustfree = FALSE;
 
    CS p = eeglGetEnv(tv_get_string(&argvars[0]));
-   if (p == NULL) {
+   if (!p) {
       returnVar->tag = VAR_SPECIAL;
       returnVar->number = VVAL_NULL;
       return;
@@ -14879,7 +14868,7 @@ f_xor(Arr(Var) argvars, Var* returnVar) {
 //}}}
 //{{{exceptions & messages
 
-private CS get_end_emsg(CondStack *cstack);
+private CS get_end_emsg(CondStack* cstack);
 
 //Exception handling terms:
 //
@@ -14951,7 +14940,7 @@ aborting(void) {
 void
 update_force_abort(void) {
    if (cause_abort)
-   force_abort = TRUE;
+      force_abort = TRUE;
 }
 
 //Return TRUE if a command with a subcommand resulting in "retcode" should abort the script 
@@ -14979,27 +14968,23 @@ aborted_in_try(void) {
 //used as the exception value.  The "severe" flag can be set to TRUE, if a later but severer 
 //message should be used instead.
 int
-cause_errthrow(Byte   *mesg, int severe, int* ignore) {
-   MsgList   *elem;
-   MsgList   **plist;
+cause_errthrow(CS mesg, int severe, int* ignore) {
+   MsgList* elem;
+   MsgList** plist;
 
-    /*
-     * Do nothing when displaying the interrupt message or reporting an
-     * uncaught exception (which has already been discarded then) at the top
-     * level.  Also when no exception can be thrown. The message will be displayed by emsg().
-     */
+   //Do nothing when displaying the interrupt message or reporting an
+   //uncaught exception (which has already been discarded then) at the top
+   //level.  Also when no exception can be thrown. The message will be displayed by emsg().
    if (suppress_errthrow)
       return FALSE;
 
-    /*
-     * If emsg() has not been called previously, temporarily reset
-     * "force_abort" until the throw point for error messages has been
-     * reached.  This ensures that aborting() returns the same value for all
-     * errors that appear in the same command.  This means particularly that
-     * for parsing errors during expression evaluation emsg() will be called
-     * multiply, even when the expression is evaluated from a finally clause
-     * that was activated due to an aborting error, interrupt, or exception.
-     */
+   //If emsg() has not been called previously, temporarily reset
+   //"force_abort" until the throw point for error messages has been
+   //reached.  This ensures that aborting() returns the same value for all
+   //errors that appear in the same command.  This means particularly that
+   //for parsing errors during expression evaluation emsg() will be called
+   //multiply, even when the expression is evaluated from a finally clause
+   //that was activated due to an aborting error, interrupt, or exception.
    if (!anyEmsgG) {
       cause_abort = force_abort;
       force_abort = FALSE;
@@ -15013,13 +14998,10 @@ cause_errthrow(Byte   *mesg, int severe, int* ignore) {
    if (((trylevel == 0 && !cause_abort) || emsg_silent) && !did_throw)
       return FALSE;
 
-    /*
-     * Ignore an interrupt message when inside a try conditional or when an
-     * exception is being thrown or when an error in a try conditional or
-     * throw has been detected previously.  This is important in order that an
-     * interrupt exception is catchable by the innermost try conditional and
-     * not replaced by an interrupt message error exception.
-     */
+   //Ignore an interrupt message when inside a try conditional or when an exception is being 
+   //thrown or when an error in a try conditional or throw has been detected previously. 
+   //This is important in order that an interrupt exception is catchable by the innermost try 
+   //conditional and not replaced by an interrupt message error exception.
    if (mesg == (CS)_(e_interrupted)) {
       *ignore = TRUE;
       return TRUE;
@@ -15035,11 +15017,11 @@ cause_errthrow(Byte   *mesg, int severe, int* ignore) {
    //exception currently being thrown to prevent it from being caught. Just
    //execute finally clauses and terminate.
    if (did_throw) {
-      // When discarding an interrupt exception, reset gotInterruptG to prevent the
-      // same interrupt being converted to an exception again and discarding
-      // the error exception we are about to throw here.
+      //When discarding an interrupt exception, reset gotInterruptG to prevent the
+      //same interrupt being converted to an exception again and discarding
+      //the error exception we are about to throw here.
       if (current_exception->type == ET_INTERRUPT)
-          gotInterruptG = FALSE;
+         gotInterruptG = FALSE;
       discard_current_exception();
    }
 
@@ -15093,12 +15075,10 @@ cause_errthrow(Byte   *mesg, int severe, int* ignore) {
 
 // Free a "msg_list" and the messages it contains.
 private void
-free_msglist(MsgList *l) {
-   MsgList  *messages, *next;
-
-   messages = l;
+free_msglist(MsgList* l) {
+   MsgList* messages = l;
    while (messages) {
-      next = messages->next;
+      MsgList* next = messages->next;
       eeglFree(messages->msg);
       eeglFree(messages->sfile);
       eeglFree(messages);
@@ -15157,35 +15137,27 @@ do_intthrow(CondStack *cstack) {
    } else
 #endif
     {
-   /*
-    * Throw an interrupt exception, so that everything will be aborted
-    * (except for executing finally clauses), until the interrupt exception
-    * is caught; if still uncaught at the top level, the script processing
-    * will be terminated then.  -  If an interrupt exception is already being thrown, do nothing.
-    *
-    */
+   //Throw an interrupt exception, so that everything will be aborted
+   //(except for executing finally clauses), until the interrupt exception
+   //is caught; if still uncaught at the top level, the script processing
+   //will be terminated then.  -  If an interrupt exception is already being thrown, do nothing.
    if (did_throw) {
-       if (current_exception->type == ET_INTERRUPT)
-      return FALSE;
+      if (current_exception->type == ET_INTERRUPT)
+         return FALSE;
 
-       // An interrupt exception replaces any user or error exception.
-       discard_current_exception();
+      // An interrupt exception replaces any user or error exception.
+      discard_current_exception();
    }
    if (throw_exception("Eegl:Interrupt", ET_INTERRUPT, NULL) != FAIL)
        do_throw(cstack);
-    }
+   }
 
-    return TRUE;
+   return TRUE;
 }
 
 //Get an exception message that is to be stored in current_exception->value.
 CS
-get_exception_string(
-void   *value,
-   ExceptionKind type,
-   Byte   *cmdname,
-   int      *should_free)
-{
+get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_free) {
    CS ret;
    CS mesg;
    int      cmdlen;
@@ -15249,7 +15221,6 @@ void   *value,
 //message list in case of an error exception.
 int
 throw_exception(void *value, ExceptionKind type, CS commName) {
-   Exception   *excp;
    int      should_free;
 
    //Disallow faking Interrupt or error exceptions as user exceptions.  They
@@ -15265,9 +15236,7 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
       }
    }
 
-   excp = ALLOC_ONE(Exception);
-   if (excp == NULL)
-      goto nomem;
+   Exception* excp = ALLOC_ONE(Exception);
 
    if (type == ET_ERROR)
       // Store the original message and prefix the exception value with
@@ -15499,19 +15468,19 @@ exception_state_clear(void) {
 //{{{report
 
 // Flags specifying the message displayed by report_pending.
-#define RP_MAKE      0
+#define RP_MAKE     0
 #define RP_RESUME   1
-#define RP_DISCARD   2
+#define RP_DISCARD  2
 
 //Report information about something pending in a finally clause if required by the 'verbose' 
 //option or when debugging.  "action" tells whether something is made pending or something 
 //pending is resumed or discarded. "pending" tells what is pending. "value" specifies the return 
 //value for a pending ":return" or the exception value for a pending exception.
 private void
-report_pending(int action, int pending, void *value) {
+report_pending(int action, int pending, void* value) {
    CS mesg;
    CS s;
-   int      save_msg_silent;
+   int save_msg_silent;
 
    switch (action) {
    case RP_MAKE:
@@ -15915,8 +15884,8 @@ c_while(Invocation* invo) {
 //":continue"
 void
 c_continue(Invocation* invo) {
-   int      idx;
-   CondStack   *cstack = invo->cstack;
+   int idx;
+   CondStack* cstack = invo->cstack;
 
    if (cstack->loopLevel <= 0 || cstack->ind < 0)
       invo->errmsg = _(e_continue_without_while_or_for);
@@ -15941,7 +15910,7 @@ c_continue(Invocation* invo) {
 //":break"
 void
 c_break(Invocation* invo) {
-   CondStack   *cstack = invo->cstack;
+   CondStack* cstack = invo->cstack;
 
    if (cstack->loopLevel <= 0 || cstack->ind < 0)
       invo->errmsg = _(e_break_without_while_or_for);

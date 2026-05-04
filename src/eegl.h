@@ -5628,10 +5628,10 @@ typedef struct {
 } Kv;
 
 // Defined as signed, to return -1 on error
-struct cellsize {
+typedef struct {
    int cs_xpixel;
    int cs_ypixel;
-};
+} CellSize;
 
 #ifdef FEAT_WAYLAND
 

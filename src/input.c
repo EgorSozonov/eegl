@@ -1407,12 +1407,11 @@ openscript(CS name, Boole directly) {
    //":argdo" or in a loop. Also when another command follows. This means the display won't be 
    //updated. Don't do this always, "make test" would fail.
    if (directly) {
-      Operator   oper;
-      int   oldcurscript;
-      int   save_State = stateG;
-      int   save_restart_edit = restart_edit;
-      int   save_finish_op = finish_op;
-      int   save_msg_scroll = msg_scroll;
+      Operator oper;
+      int save_State = stateG;
+      int save_restart_edit = restart_edit;
+      int save_finish_op = finish_op;
+      int save_msg_scroll = msg_scroll;
 
       stateG = MODE_NORMAL;
       msg_scroll = FALSE;   // no msg scrolling in Normal mode
@@ -1420,7 +1419,7 @@ openscript(CS name, Boole directly) {
       clear_oparg(&oper);
       finish_op = FALSE;
 
-      oldcurscript = curscript;
+      int oldcurscript = curscript;
       do {
          update_topline_cursor();   // update cursor position and topline
          normalAction(&oper, FALSE);   // execute one action
@@ -1786,7 +1785,6 @@ safe_vgetc(void) {
 private int
 plainVgetcNopaste(void) {
    Unt c;
-
    do {
       c = safe_vgetc();
    } while (c == K_IGNORE || c == K_VER_SCROLLBAR || c == K_HOR_SCROLLBAR || c == K_MOUSEMOVE);
@@ -1797,7 +1795,6 @@ plainVgetcNopaste(void) {
 Unt
 plain_vgetc(void) {
    Unt c = plainVgetcNopaste();
-
    if (c == K_PS) {
       //Only handle the first pasted character. Drop the rest, since we
       //don't know what to do with it.
@@ -1855,7 +1852,7 @@ char_avail(void) {
 
 // "getchar()" and "getcharstr()" functions
 private void
-getcharCommon(Arr(Var) argvars, Var* returnVar, int allow_number) {
+getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
    Long n = 0;
    int  called_emsg_start = called_emsg;
    Boole error = false;
@@ -1934,8 +1931,8 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, int allow_number) {
    set_EeglVar_nr(VV_MOUSE_COL, 0);
 
    if (n != 0 && (!allow_number || IS_SPECIAL(n) || modMaskG != 0)) {
-      Byte      temp[10];   // modifier: 3, mbyte-char: 6, ZERO: 1
-      int      i = 0;
+      Byte temp[10];   // modifier: 3, mbyte-char: 6, ZERO: 1
+      int i = 0;
 
       // Turn a special key into three bytes, plus modifier.
       if (modMaskG != 0) {
@@ -1971,9 +1968,9 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, int allow_number) {
             if (PORTAL_IS_POPUP(port)) {
                winnr = 0;
              } else {
-              for (wp = firstPor; wp != port && wp; wp = wp->next) {
-                 ++winnr;
-              }
+               for (wp = firstPor; wp != port && wp; wp = wp->next) {
+                  ++winnr;
+               }
             } 
             set_EeglVar_nr(VV_MOUSE_WIN, winnr);
             set_EeglVar_nr(VV_MOUSE_WINID, port->id);
@@ -1989,12 +1986,12 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, int allow_number) {
 
 void
 f_getchar(Arr(Var) argvars, Var* returnVar) {
-   getcharCommon(argvars, returnVar, TRUE);
+   getcharCommon(argvars, returnVar, true);
 }
 
 void
 f_getcharstr(Arr(Var) argvars, Var* returnVar) {
-   getcharCommon(argvars, returnVar, FALSE);
+   getcharCommon(argvars, returnVar, false);
 }
 
 void
@@ -2039,28 +2036,28 @@ parse_queued_messages(void) {
    // Loop when a job ended, but don't keep looping forever.
    for (i = 0; i < MAX_REPEAT_PARSE; ++i) {
 
-   // Write any buffer lines still to be written.
-   channel_write_any_lines();
+      // Write any buffer lines still to be written.
+      channel_write_any_lines();
 
-   // Process the messages queued on channels.
-   channel_parse_messages();
+      // Process the messages queued on channels.
+      channel_parse_messages();
 # if defined(FEAT_X11)
-   // Process the queued clientserver messages.
-   server_parse_messages();
+      // Process the queued clientserver messages.
+      server_parse_messages();
 # endif
-   // Check if any jobs have ended.  If so, repeat the above to handle
-   // changes, e.g. stdin may have been closed.
-   if (job_check_ended())
-       continue;
-   free_unused_terminals();
+      // Check if any jobs have ended.  If so, repeat the above to handle
+      // changes, e.g. stdin may have been closed.
+      if (job_check_ended())
+          continue;
+      free_unused_terminals();
 
 #ifdef SIGUSR1
-   if (got_sigusr1) {
-       apply_autocmds(EVENT_SIGUSR1, NULL, NULL, false, curBook);
-       got_sigusr1 = FALSE;
-   }
+      if (got_sigusr1) {
+          apply_autocmds(EVENT_SIGUSR1, NULL, NULL, false, curBook);
+          got_sigusr1 = FALSE;
+      }
 #endif
-   break;
+      break;
    }
 
     // When not nested we'll go back to waiting for a typed character.  If it
@@ -2173,9 +2170,7 @@ typedef struct {
 // The longest full match is remembered in this var. A full match is only accepted if there
 // is no partial match, so "aa" and "aaa" can both be mapped to different commands.
 private MatchFinding
-searchForPartialMappings(
-   int foundKeylen, int timedout, Boole isAbstractPlugMapping
-) {
+searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapping) {
    MatchFinding fin = {};
    
    int localState = get_real_state();
@@ -2352,11 +2347,7 @@ nextIter:
 // - When there is no match yet, return mrNoMatch, need to get more typeahead.
 // - On failure (out of memory) return mrFail.
 private MapResult
-handleMapping(
-    OUT int* foundKeylen,
-    int timedout,
-    OUT int* mapdepth
-) {
+handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
    int      i;
    int      isAbstractPlugMapping = FALSE; // is this an abstract <plug> mapping?
    
@@ -2643,8 +2634,7 @@ vGetOrPeek(Boole advance) {
    int old_wcol, old_wrow;
    int wait_tb_len;
 
-   //This function doesn't work very well when called recursively. This may happen though, 
-   //because of:
+   //This function doesn't work very well when called recursively. This may happen though, due to:
    //1. The call to add_to_showcmd().   char_avail() is then used to check if there is a 
    //character available, which calls this function. In that case we must return ZERO, to 
    //indicate no character is available.
@@ -2981,10 +2971,10 @@ vGetOrPeek(Boole advance) {
 //  Return the number of obtained characters, or -1 when end of input script reached.
 private int
 ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
-   int      len = 0;        // init for GCC
-   int      retesc = FALSE; // return ESC when we got an interrupt
-   int      scriptChar;
-   int      tb_change_cnt = typeBufG.tb_change_cnt;
+   int len = 0;
+   int retesc = FALSE; // return ESC when we got an interrupt
+   int scriptChar;
+   int tb_change_cnt = typeBufG.tb_change_cnt;
    if (wait_time == -1L || wait_time > 100L) { // flush output before waiting
        cursor_on();
        out_flush();
@@ -3052,8 +3042,8 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
       return 0;
    }
 
-   // Note the change in the typeahead buffer, this matters for when
-   // vGetOrPeek() is called recursively, e.g. using getchar(1) in a timer function.
+   //Note the change in the typeahead buffer, this matters for when
+   //vGetOrPeek() is called recursively, e.g. using getchar(1) in a timer function.
    if (len > 0 && ++typeBufG.tb_change_cnt == 0)
       typeBufG.tb_change_cnt = 1;
 
@@ -3892,9 +3882,9 @@ utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
 //Note: composing characters are skipped!
 Unt
 inpAdvanceMultibyte(OUT CS* pp) {
-    Unt c = mb_ptr2char(*pp);
-    *pp += utfCharLen(*pp);
-    return c;
+   Unt c = mb_ptr2char(*pp);
+   *pp += utfCharLen(*pp);
+   return c;
 }
 
 //Get character at **pp and advance *pp to the next character.
@@ -3924,10 +3914,7 @@ utf_composinglike(CS p1, CS p2) {
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters.
 int
-utfc_ptr2char(
-   CS p,
-   int* pcc   // return: composing chars, last one is 0
-){
+utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
    int cc;
    int i = 0;
 
@@ -3958,7 +3945,7 @@ utfc_ptr2char(
 int
 utfc_ptr2char_len(
     CS p,
-    int* pcc,   // return: composing chars, last one is 0
+    OUT int* pcc,   // return: composing chars, last one is 0
     int maxlen
 ) {
    int      cc;
@@ -4099,7 +4086,7 @@ utfCharLen_len(Byte const* p, int size) {
    //Check for composing characters.  We can handle only the first six, but
    //skip all of them (otherwise the cursor would get stuck).
    while (len < size) {
-      int   len_next_char;
+      int len_next_char;
 
       if (p[len] < 0x80)
          break;
@@ -5076,13 +5063,8 @@ private ConvertStruct foldCase[] = {
 //Return the converted equivalent of "a", which is a UCS-4 character.  Use
 //the given conversion "table".  Uses binary search on "table".
 private Unt
-utf_convert(
-   Unt         a,
-   ConvertStruct table[],
-   int         tableSize)
-{
+utf_convert(Unt a, ConvertStruct table[], int tableSize) {
    int entries = tableSize / sizeof(ConvertStruct);
-
    int start = 0;
    int end = entries;
    while (start < end) {
@@ -5260,7 +5242,7 @@ show_utf8(void) {
 }
 
 private int
-dbcs_head_off(Byte *base, Byte *p) {
+dbcs_head_off(CS base, CS p) {
    // It can't be a trailing byte when not using DBCS, at the start of the
    // string or the previous byte can't start a double-byte.
    if (p <= base || utf8CharLens[p[-1]] == 1 || *p == ZERO)
@@ -5755,7 +5737,7 @@ time_diff_ms(TimeVal *t1, TimeVal *t2) {
 //2: normal word character
 //>2: multi-byte word character.
 private int
-get_mouse_class(Byte *p) {
+get_mouse_class(CS p) {
    if (utf8CharLens[p[0]] > 1)
       return mb_get_class(p);
 
@@ -5777,11 +5759,11 @@ get_mouse_class(Byte *p) {
 
 //Move "pos" back to the start of the word it's in.
 private void
-find_start_of_word(Pos *pos) {
+find_start_of_word(Pos*pos) {
    CS line = ml_get(pos->lnum);
    int cclass = get_mouse_class(line + pos->col);
 
-   int      col;
+   int col;
    while (pos->col > 0) {
       col = pos->col - 1;
       col -= (*mb_head_off)(line, line + col);
@@ -5794,8 +5776,8 @@ find_start_of_word(Pos *pos) {
 //Move "pos" forward to the end of the word it's in.
 //When 'selection' is "exclusive", the position is just after the word.
 private void
-find_end_of_word(Pos *pos) {
-   int      col;
+find_end_of_word(Pos* pos) {
+   int col;
 
    CS line = ml_get(pos->lnum);
    int cclass = get_mouse_class(line + pos->col);
@@ -5990,18 +5972,18 @@ do_mouse(
           // before the mouse pointer position.
           // In Select mode replace the highlighted text with the clipboard.
          if (VIsual_active) {
-             stuffcharReadbuff('y');
-             stuffcharReadbuff(K_MIDDLEMOUSE);
+            stuffcharReadbuff('y');
+            stuffcharReadbuff(K_MIDDLEMOUSE);
             do_always = TRUE;   // ignore 'mouse' setting next time
             return FALSE;
          }
          // The rest is below jump_to_mouse()
       } ei ((stateG & MODE_INSERT) == 0)
-          return FALSE;
+         return FALSE;
 
-      // Middle click in insert mode doesn't move the mouse, just insert the contents of a register.
-      // '.' register is special, can't insert that with do_put().
-      // Also paste at the cursor if the current mode isn't in 'mouse' (only happens for the GUI).
+      //Middle click in insert mode doesn't move the mouse, just insert the contents of a register.
+      //'.' register is special, can't insert that with do_put().
+      //Also paste at the cursor if the current mode isn't in 'mouse' (only happens for the GUI).
       if ((stateG & MODE_INSERT) != 0) {
          if (regname == '.')
             insert_reg(regname, TRUE);
@@ -6058,13 +6040,8 @@ do_mouse(
                   end_visual_mode_keep_button();
             }
          } else {
-            Tab   *t;
-
             // Close the current or specified tab
-            if (c1 == CLOSING_TAB)
-               t = curtab;
-            else
-               t = getTab(c1 - CLOSING_TAB);
+            Tab* t = (c1 == CLOSING_TAB) ? curtab : getTab(c1 - CLOSING_TAB);
             if (t == curtab) {
                if (firstTabG->next != NULL)
                   tabClose();
@@ -6593,25 +6570,25 @@ private struct mousetable {
    Boole is_click;      // Is it a mouse button click event?
    Boole is_drag;      // Is it a mouse drag event?
 } mouse_table[] = {
-   {(int)KE_LEFTMOUSE,      MOUSE_LEFT,   TRUE,   FALSE},
+   {(int)KE_LEFTMOUSE,     MOUSE_LEFT,   TRUE,   FALSE},
    {(int)KE_LEFTDRAG,      MOUSE_LEFT,   FALSE,   TRUE},
-   {(int)KE_LEFTRELEASE,   MOUSE_LEFT,   FALSE,   FALSE},
-   {(int)KE_MIDDLEMOUSE,   MOUSE_MIDDLE,   TRUE,   FALSE},
-   {(int)KE_MIDDLEDRAG,   MOUSE_MIDDLE,   FALSE,   TRUE},
-   {(int)KE_MIDDLERELEASE,   MOUSE_MIDDLE,   FALSE,   FALSE},
-   {(int)KE_RIGHTMOUSE,   MOUSE_RIGHT,   TRUE,   FALSE},
-   {(int)KE_RIGHTDRAG,      MOUSE_RIGHT,   FALSE,   TRUE},
-   {(int)KE_RIGHTRELEASE,   MOUSE_RIGHT,   FALSE,   FALSE},
-   {(int)KE_X1MOUSE,      MOUSE_X1,   TRUE,   FALSE},
-   {(int)KE_X1DRAG,      MOUSE_X1,   FALSE,   TRUE},
-   {(int)KE_X1RELEASE,      MOUSE_X1,   FALSE,   FALSE},
-   {(int)KE_X2MOUSE,      MOUSE_X2,   TRUE,   FALSE},
-   {(int)KE_X2DRAG,      MOUSE_X2,   FALSE,   TRUE},
-   {(int)KE_X2RELEASE,      MOUSE_X2,   FALSE,   FALSE},
+   {(int)KE_LEFTRELEASE,   MOUSE_LEFT,   FALSE,  FALSE},
+   {(int)KE_MIDDLEMOUSE,   MOUSE_MIDDLE, TRUE,   FALSE},
+   {(int)KE_MIDDLEDRAG,    MOUSE_MIDDLE, FALSE,   TRUE},
+   {(int)KE_MIDDLERELEASE, MOUSE_MIDDLE, FALSE,  FALSE},
+   {(int)KE_RIGHTMOUSE,    MOUSE_RIGHT,  TRUE,   FALSE},
+   {(int)KE_RIGHTDRAG,     MOUSE_RIGHT,  FALSE,   TRUE},
+   {(int)KE_RIGHTRELEASE,  MOUSE_RIGHT,  FALSE,  FALSE},
+   {(int)KE_X1MOUSE,       MOUSE_X1,     TRUE,   FALSE},
+   {(int)KE_X1DRAG,        MOUSE_X1,     FALSE,   TRUE},
+   {(int)KE_X1RELEASE,     MOUSE_X1,     FALSE,  FALSE},
+   {(int)KE_X2MOUSE,       MOUSE_X2,     TRUE,   FALSE},
+   {(int)KE_X2DRAG,        MOUSE_X2,     FALSE,   TRUE},
+   {(int)KE_X2RELEASE,     MOUSE_X2,     FALSE,  FALSE},
    // DRAG without CLICK
-   {(int)KE_MOUSEMOVE,      MOUSE_RELEASE,   FALSE,   TRUE},
+   {(int)KE_MOUSEMOVE,     MOUSE_RELEASE,   FALSE,   TRUE},
    // RELEASE without CLICK
-   {(int)KE_IGNORE,      MOUSE_RELEASE,   FALSE,   FALSE},
+   {(int)KE_IGNORE,        MOUSE_RELEASE,   FALSE,   FALSE},
    {0,            0,      0,   0},
 };
 
@@ -6632,19 +6609,14 @@ get_mouse_button(Unt code, OUT Boole* is_click, OUT Boole* is_drag) {
 //Return the appropriate pseudo mouse event token (KE_LEFTMOUSE etc) based on the given information 
 //about which mouse button is down, and whether the mouse was clicked, dragged or released.
 private int
-get_pseudo_mouse_code(
-   Unt button,   // eg MOUSE_LEFT
-   Boole is_click,
-   Boole is_drag)
-{
-   int       i;
-
-   for (i = 0; mouse_table[i].pseudo_code; i++) {
+get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag) {
+                     // eg MOUSE_LEFT
+   for (int i = 0; mouse_table[i].pseudo_code; i++) {
       if (button == mouse_table[i].button
           && is_click == mouse_table[i].is_click
-          && is_drag == mouse_table[i].is_drag)
-      {
-          return mouse_table[i].pseudo_code;
+          && is_drag == mouse_table[i].is_drag
+      ) {
+         return mouse_table[i].pseudo_code;
       }
    }
    return (int)KE_IGNORE;       // not recognized, ignore it
@@ -6744,14 +6716,13 @@ jump_to_mouse(
    static int   prevCol = -1;
    static int   did_drag = FALSE;   // drag was noticed
 
-   Portal   *po, *old_curPor;
-   Pos   old_cursor;
-   Unt      count;
-   Boole      first;
+   Portal* po;
+   Unt count;
+   Boole first;
    int row = mouseRowG;
    int col = mouseColG;
-   ColNr   col_from_screen = -1;
-   Unt      mouse_char = ' ';
+   ColNr col_from_screen = -1;
+   Unt mouse_char = ' ';
 
    isMouseBelowBottomLineS = false;
    isMouseRightOfEolS = false;
@@ -6804,8 +6775,8 @@ retnomove:
    if (flags & MOUSE_SETPOS)
       goto retnomove;            // ugly goto...
 
-   old_curPor = curPor;
-   old_cursor = curPor->cursor;
+   Portal* old_curPor = curPor;
+   Pos old_cursor = curPor->cursor;
 
    if (!(flags & MOUSE_FOCUS)) {
       if (row >= 0 || col >= 0) // check if it makes sense
@@ -6885,13 +6856,13 @@ retnomove:
          return IN_OTHER_WIN;
       }
       if (popup_is_popup(curPor) && curBook->term != NULL)
-          //terminal in popup portal: don't jump to another portal
-          return IN_OTHER_WIN;
+         //terminal in popup portal: don't jump to another portal
+         return IN_OTHER_WIN;
       //Only change portal focus when not clicking on or dragging the
       //status line.  Do change focus when releasing the mouse button
       //(MOUSE_FOCUS was set above if we dragged first).
       if (dragPortalS == NULL || (flags & MOUSE_RELEASED))
-          enterPortal(po, TRUE);      // can make po invalid!
+         enterPortal(po, TRUE);      // can make po invalid!
 
       if (curPor != old_curPor) {
          // set topline, to be able to check for double click ourselves
@@ -7101,7 +7072,7 @@ do_mousescroll_horiz(Ulong leftcol) {
 //"cap->arg", which is one of the MSCR_ values.
 void
 nv_mousescroll(ActionArg* cap) {
-   Portal   *old_curPor = curPor;
+   Portal* old_curPor = curPor;
 
    if (mouseRowG >=0 && mouseColG >= 0) {
       // Find the portal at the mouse pointer coordinates.
@@ -7132,11 +7103,11 @@ nv_mousescroll(ActionArg* cap) {
 
 // Mouse clicks and drags.
 void
-nv_mouse(ActionArg *cap) {
+nv_mouse(ActionArg* cap) {
    (void)do_mouse(cap->oper, cap->cmdchar, BACKWARD, cap->count1, 0);
 }
 
-private int   held_button = MOUSE_RELEASE;
+private int held_button = MOUSE_RELEASE;
 
 void
 reset_held_button(void) {
@@ -7270,15 +7241,15 @@ mouse_comp_pos(
    Portal* port,
    OUT int* rowp,
    OUT int* colp,
-   LineNr   *lnump,
-   int      *plines_cache
+   LineNr* lnump,
+   int* plines_cache
 ){
-   int      col = *colp;
-   int      row = *rowp;
-   LineNr   lnum;
-   int      retval = FALSE;
-   int      off;
-   int      count;
+   int col = *colp;
+   int row = *rowp;
+   LineNr lnum;
+   int retval = FALSE;
+   int off;
+   int count;
 
    lnum = port->topLine;
 
@@ -7290,47 +7261,45 @@ mouse_comp_pos(
       if (plines_cache != NULL && cache_idx < visibleRowsG && plines_cache[cache_idx] > 0)
           count = plines_cache[cache_idx];
       else {
-          // Don't include filler lines in "count"
-          if (port->o.diff
+         // Don't include filler lines in "count"
+         if (port->o.diff
              && !getFoldsPortal(port, lnum, NULL, NULL, TRUE, NULL)
-             )
-          {
-         if (lnum == port->topLine)
-             row -= port->topFill;
-         else
-             row -= diff_check_fill(port, lnum);
-         count = plines_win_nofill(port, lnum, FALSE);
-          }
-          else
-         count = plines_win(port, lnum, FALSE);
-          if (plines_cache != NULL && cache_idx < visibleRowsG)
-         plines_cache[cache_idx] = count;
+         ) {
+            if (lnum == port->topLine)
+               row -= port->topFill;
+            else
+               row -= diff_check_fill(port, lnum);
+            count = plines_win_nofill(port, lnum, FALSE);
+         } else
+            count = plines_win(port, lnum, FALSE);
+         if (plines_cache != NULL && cache_idx < visibleRowsG)
+            plines_cache[cache_idx] = count;
       }
 
       if (port->skipCol > 0 && lnum == port->topLine) {
-          int width1 = port->width - normalPortalColumnOffset(port);
+         int width1 = port->width - normalPortalColumnOffset(port);
 
-          if (width1 > 0) {
-         int skip_lines = 0;
+         if (width1 > 0) {
+            int skip_lines = 0;
 
-         // Adjust for 'smoothscroll' clipping the top screen lines.
-         // A similar formula is used in curs_columns().
-         if (port->skipCol > width1)
-             skip_lines = (port->skipCol - width1)
-                      / width1 + 1;
-         ei (port->skipCol > 0)
-             skip_lines = 1;
+            // Adjust for 'smoothscroll' clipping the top screen lines.
+            // A similar formula is used in curs_columns().
+            if (port->skipCol > width1)
+                skip_lines = (port->skipCol - width1)
+                         / width1 + 1;
+            ei (port->skipCol > 0)
+                skip_lines = 1;
 
-         count -= skip_lines;
-          }
+            count -= skip_lines;
+         }
       }
 
       if (count > row)
-          break;   // Position is in this book line.
+         break;   // Position is in this book line.
       (void)getFoldsPortal(port, lnum, NULL, &lnum, TRUE, NULL);
       if (lnum == port->book->mem.lineCount) {
-          retval = TRUE;
-          break;      // past end of file
+         retval = TRUE;
+         break;      // past end of file
       }
       row -= count;
       ++lnum;
@@ -7368,7 +7337,6 @@ mouse_comp_pos(
 Portal*
 mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED) {
    Portal   *po;
-
    Portal   *pwp = NULL;
 
    if (popup != IGNORE_POPUP) {
@@ -7449,9 +7417,9 @@ f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
    Long winid = 0;
    Long winrow = 0;
    Long wincol = 0;
-   LineNr   lnum = 0;
+   LineNr lnum = 0;
    Long column = 0;
-   ColNr   coladd = 0;
+   ColNr coladd = 0;
 
    allocReturnDict(returnVar);
    Bag* d = returnVar->bag;
@@ -7497,8 +7465,8 @@ f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
 // Set mouse clicks on or off and possible enable mouse movement events.
 void
 mch_setmouse(Boole on){
-   static int   bevalterm_ison = FALSE;
-   int      xterm_mouse_vers;
+   static int bevalterm_ison = FALSE;
+   int xterm_mouse_vers;
 
 #if defined(FEAT_X11)
    if (!on)
@@ -7512,7 +7480,6 @@ mch_setmouse(Boole on){
       return;
 
    xterm_mouse_vers = 4; // SGR mouse
-
 
    if (termCodeS[KS_CXM] != NULL && *termCodeS[KS_CXM] != ZERO) {
       term_enable_mouse(on);

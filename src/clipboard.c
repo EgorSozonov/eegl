@@ -2689,7 +2689,7 @@ clip_invert_rectangle(
    int col_arg,
    int height_arg,
    int width_arg,
-   int invert
+   Boole invert
 ) {
    int row = row_arg;
    int col = col_arg;
@@ -2727,15 +2727,13 @@ clip_invert_area(
    int      col1,
    int      row2,
    int      col2,
-   int      how)
-{
-   int      invert = FALSE;
-   int      max_col;
-
-   max_col = cbd->max_col - 1;
+   int      how
+) {
+   Boole invert = false;
+   int max_col = cbd->max_col - 1;
 
    if (how == CLIP_SET)
-      invert = TRUE;
+      invert = true;
 
    // Swap the from and to positions so the from is always before
    if (clip_compare_pos(row1, col1, row2, col2) > 0) {
@@ -2748,7 +2746,7 @@ clip_invert_area(
       row2   = tmp_row;
       col2   = tmp_col;
    } ei (how == CLIP_TOGGLE)
-      invert = TRUE;
+      invert = true;
 
    // If all on the same line, do it the easy way
    if (row1 == row2) {

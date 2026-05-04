@@ -4132,17 +4132,12 @@ optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
 // ":get". Print the value of an option
 void
 c_get(Invocation *invo) {
-   Unt flags = 0;
    SetScope scope;
    if (invo->id == C_set) {
-      flags = OPT_LOCAL;
       scope = SET_LOCAL;
    } ei (invo->id == C_setglobal) {
-      flags = OPT_GLOBAL;
       scope = SET_GLOBAL; 
    } 
-   if (invo->forceit)
-      flags |= OPT_ONECOLUMN;
       
    CS arg = invo->arg;
    Boole didShow = false;   // already showed one value

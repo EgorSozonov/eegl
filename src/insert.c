@@ -8777,7 +8777,7 @@ setOmnifunc(OptionChange* cha) {
 }
 
 //Parse @complete option and initialize F{func} callbacks. Free any existing callbacks and 
-//allocates new ones. Only F{func} entries are processed; others are ignored.
+//allocate new ones. Only F{func} entries are processed; others are ignored.
 Unt
 setCompletionCallbacks(OptionChange *cha) {
    Byte  buf[LSIZE];
@@ -8787,10 +8787,8 @@ setCompletionCallbacks(OptionChange *cha) {
 
    evFreeCallback(curBook->o.completeFn);
 
-
    curBook->o.completeFn = ALLOC_CLEAR_MULT(Callback, 1);
 
-   int idx = 0;
    for (CS p = curBook->o.complete; *p != ZERO; ) {
       while (*p == ',' || *p == ' ')
          p++; // Skip delimiters
@@ -8805,7 +8803,6 @@ setCompletionCallbacks(OptionChange *cha) {
             if (optSetCallback(OUT curBook->o.completeFn, buf + 1) != OK)
                curBook->o.completeFn->name = NULL;
          }
-         idx++;
       }
    }
 

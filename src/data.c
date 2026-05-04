@@ -7,7 +7,7 @@
 
 //{{{forward declarations
 
-private int check_for_string_or_list_or_blob_arg(Var *args, int idx);
+private int check_for_string_or_list_or_blob_arg(Arr(Var) args, int idx);
 private void dict_free(Bag *d);
 
 //}}}
@@ -225,8 +225,8 @@ list_add_watch(List *l, ListWatch *lw) {
 
 // Remove a watcher from a list. No warning when it isn't found...
 void
-list_rem_watch(List *l, ListWatch *lwrem) {
-   ListWatch   *lw;
+list_rem_watch(List* l, ListWatch* lwrem) {
+   ListWatch* lw;
    ListWatch** lwp = &l->watcher;
    FOR_ALL_WATCHERS(l, lw) {
       if (lw == lwrem) {
@@ -239,9 +239,8 @@ list_rem_watch(List *l, ListWatch *lwrem) {
 
 // Just before removing an item from a list: advance watchers to the next item.
 private void
-list_fix_watch(List *l, ListItem *item) {
+list_fix_watch(List* l, ListItem* item) {
    ListWatch   *lw;
-
    FOR_ALL_WATCHERS(l, lw) {
       if (lw->c == item)
           lw->c = item->next;
@@ -251,8 +250,8 @@ list_fix_watch(List *l, ListItem *item) {
 
 // Prepend the list to the list of lists for garbage collection.
 private void
-registerForGc(List *l) {
-   if (first_list != NULL)
+registerForGc(List* l) {
+   if (first_list)
       first_list->usedPrev = l;
    l->usedPrev = NULL;
    l->usedNext = first_list;
@@ -312,7 +311,7 @@ list_alloc_with_items(int count) {
 // The contents of "tv" is moved into the list item. Each item must be set exactly once.
 void
 list_set_item(List *l, int idx, Var *tv) {
-   ListItem   *li = (ListItem *)(l + 1) + idx;
+   ListItem* li = (ListItem *)(l + 1) + idx;
    li->c = *tv;
 }
 
@@ -369,10 +368,9 @@ list_free_contents(List *l) {
 // a watcher (used in a for loop), these are not referenced anywhere.
 int
 list_free_nonref(int copyID) {
-   List   *ll;
-   int      did_free = FALSE;
+   int did_free = FALSE;
 
-   for (ll = first_list; ll != NULL; ll = ll->usedNext) {
+   for (List* ll = first_list; ll != NULL; ll = ll->usedNext) {
       if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
           // Free the List and ordinary items it contains, but don't recurse
           // into Lists and Dictionaries, they will be in the list of dicts or list of lists.
@@ -384,7 +382,7 @@ list_free_nonref(int copyID) {
 }
 
 private void
-list_free_list(List  *l) {
+list_free_list(List* l) {
    // Remove the list from the list of lists for garbage collection.
    if (l->usedPrev == NULL)
       first_list = l->usedNext;
@@ -412,7 +410,7 @@ list_free_items(int copyID) {
 }
 
 void
-list_free(List *l) {
+list_free(List* l) {
    if (in_free_unref_items)
       return;
 
@@ -438,34 +436,29 @@ list_free_item(List *l, ListItem *item) {
 // Free a list item, unless it was allocated together with the list itself.
 // Also clears the value.  Does not notify watchers.
 void
-listitem_free(List *l, ListItem *item) {
+listitem_free(List* l, ListItem* item) {
     clearVar(&item->c);
     list_free_item(l, item);
 }
 
 // Remove a list item from a List and free it.  Also clears the value.
 void
-listitem_remove(List *l, ListItem *item) {
+listitem_remove(List* l, ListItem* item) {
     list_remove(l, item, item);
     listitem_free(l, item);
 }
 
 // Get the number of items in a list.
 long
-list_len(List *l) {
-   if (l == NULL)
-   return 0L;
-    return l->len;
+list_len(List* l) {
+   if (!l)
+      return 0L;
+   return l->len;
 }
 
 // Return TRUE when two lists have exactly the same values.
 int
-list_equal(
-   List   *l1,
-   List   *l2,
-   int      ic)   // ignore case for strings
-{
-   ListItem   *item1, *item2;
+list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
 
    if (l1 == l2)
       return TRUE;
@@ -480,6 +473,8 @@ list_equal(
    CHECK_LIST_MATERIALIZE(l1);
    CHECK_LIST_MATERIALIZE(l2);
 
+   ListItem* item1;
+   ListItem* item2;
    for (item1 = l1->first, item2 = l2->first;
         item1 != NULL && item2 != NULL;
         item1 = item1->next, item2 = item2->next
@@ -493,11 +488,11 @@ list_equal(
 // Locate item with index "n" in list "l" and return it. A negative index is counted from the end;
 // -1 is the last item. Return NULL when "n" is out of range.
 ListItem *
-list_find(List *l, long n) {
-   ListItem   *item;
+list_find(List* l, long n) {
+   ListItem* item;
    long   idx;
 
-   if (l == NULL)
+   if (!l)
       return NULL;
 
    // Negative index is relative to the end.
@@ -561,9 +556,7 @@ list_find(List *l, long n) {
 
 // Get list item "l[idx]" as a number.
 long
-list_find_nr(List   *l, long   idx, OUT Boole* errorp) {  // set to TRUE when something wrong
-   ListItem   *li;
-
+list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to TRUE when something wrong
    if (l && l->first == &range_list_item) {
       long       n = idx;
 
@@ -581,7 +574,7 @@ list_find_nr(List   *l, long   idx, OUT Boole* errorp) {  // set to TRUE when so
       return l->lv_u.nonmat.start + n * l->lv_u.nonmat.stride;
    }
 
-   li = list_find(l, idx);
+   ListItem* li = list_find(l, idx);
    if (!li) {
       if (errorp)
          *errorp = true;
@@ -635,7 +628,7 @@ list_idx_of_item(List *l, ListItem *item) {
 
 // Append item "item" to the end of list "l".
 void
-list_append(List *l, ListItem *item) {
+list_append(List* l, ListItem* item) {
    CHECK_LIST_MATERIALIZE(l);
    if (l->lv_u.mat.last == NULL) {
       // empty list
@@ -653,7 +646,7 @@ list_append(List *l, ListItem *item) {
 // Append Var "tv" to the end of list "l". "tv" is copied. 
 // Return FAIL when out of memory or the tag is wrong.
 int
-list_append_tv(List *l, Var* newVal) {
+list_append_tv(List* l, Var* newVal) {
    ListItem* newItem = listitem_alloc();
       
    copy_tv(OUT &newItem->c, newVal);
@@ -664,8 +657,8 @@ list_append_tv(List *l, Var* newVal) {
 // Append Var "tv" to the end of list "l". "tv" is moved. 
 // Return FAIL when out of memory or the tag is wrong.
 private int
-list_append_tv_move(List *l, Var *tv) {
-   ListItem   *li = listitem_alloc();
+list_append_tv_move(List* l, Var* tv) {
+   ListItem* li = listitem_alloc();
       
    li->c = *tv;
    list_append(l, li);
@@ -771,13 +764,7 @@ check_range_index_one(List *l, long *n1, int quiet) {
 // If "n1" or "n2" is negative it is changed to the positive index.
 // "li1" is the item for item "n1". Return OK or FAIL.
 int
-check_range_index_two(
-   List       *l,
-   long       *n1,
-   ListItem  *li1,
-   long       *n2,
-   int       quiet)
-{
+check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
    if (*n2 < 0) {
       ListItem   *ni = list_find(l, *n2);
 
@@ -808,62 +795,61 @@ check_range_index_two(
 // "varname" is used for error messages. Return OK or FAIL.
 int
 list_assign_range(
-   List       *dest,
-   List       *src,
-   long       idx1_arg,
-   long       idx2,
-   int       empty_idx2,
-   Byte       *op,
-   Text varname)
-{
-   ListItem   *src_li;
-   ListItem   *dest_li;
+   List* dest,
+   List* src,
+   long idx1_arg,
+   long idx2,
+   int empty_idx2,
+   CS op,
+   Text varname
+) {
    long   idx1 = idx1_arg;
    ListItem   *first_li = list_find_index(dest, &idx1);
    long   idx;
 
    // Check whether any of the list items is locked before making any changes.
    idx = idx1;
-   dest_li = first_li;
-   for (src_li = src->first; src_li != NULL && dest_li != NULL; ) {
-      if (value_check_lock(dest_li->c.lock, varname, FALSE))
+   ListItem* destItem = first_li;
+   for (ListItem* srcItem = src->first; srcItem != NULL && destItem != NULL; ) {
+      if (value_check_lock(destItem->c.lock, varname, FALSE))
          return FAIL;
-      src_li = src_li->next;
-      if (src_li == NULL || (!empty_idx2 && idx2 == idx))
+      srcItem = srcItem->next;
+      if (srcItem == NULL || (!empty_idx2 && idx2 == idx))
          break;
-      dest_li = dest_li->next;
+      destItem = destItem->next;
       ++idx;
    }
 
    // Assign the List values to the list items.
    idx = idx1;
-   dest_li = first_li;
-   for (src_li = src->first; src_li != NULL; ) {
+   ListItem* srcItem;
+   destItem = first_li;
+   for (srcItem = src->first; srcItem; ) {
       if (op != NULL && *op != '=')
-         tv_op(&dest_li->c, &src_li->c, op);
+         tv_op(&destItem->c, &srcItem->c, op);
       else {
-         clearVar(&dest_li->c);
-         copy_tv(OUT &dest_li->c, &src_li->c);
+         clearVar(&destItem->c);
+         copy_tv(OUT &destItem->c, &srcItem->c);
       }
-      src_li = src_li->next;
-      if (src_li == NULL || (!empty_idx2 && idx2 == idx))
+      srcItem = srcItem->next;
+      if (srcItem == NULL || (!empty_idx2 && idx2 == idx))
          break;
-      if (dest_li->next == NULL) {
+      if (destItem->next == NULL) {
          // Need to add an empty item.
          if (list_append_number(dest, 0) == FAIL) {
-            src_li = NULL;
+            srcItem = NULL;
             break;
          }
       }
-      dest_li = dest_li->next;
+      destItem = destItem->next;
       ++idx;
    }
-   if (src_li != NULL) {
+   if (srcItem != NULL) {
       emsg(_(e_list_value_has_more_items_than_targets));
       return FAIL;
    }
    if (empty_idx2
-          ? (dest_li != NULL && dest_li->next != NULL)
+          ? (destItem != NULL && destItem->next != NULL)
           : idx != idx2) {
       emsg(_(e_list_value_does_not_have_enough_items));
       return FAIL;
@@ -875,17 +861,13 @@ list_assign_range(
 // When "first" is NULL use the first item.
 // It does nothing if "maxdepth" is 0. Return FAIL when out of memory.
 private void
-list_flatten(List *list, ListItem *first, long maxitems, long maxdepth) {
-   ListItem   *item;
-   int      done = 0;
+list_flatten(List* list, ListItem* first, long maxitems, long maxdepth) {
+   int done = 0;
 
    if (maxdepth == 0)
       return;
    CHECK_LIST_MATERIALIZE(list);
-   if (first == NULL)
-      item = list->first;
-   else
-      item = first;
+   ListItem* item = first ? first : list->first; 
 
    while (item != NULL && done < maxitems) {
       ListItem   *next = item->next;
@@ -979,9 +961,7 @@ f_flattennew(Arr(Var) argvars, Var* returnVar) {
 // "items(list)" function Caller must have already checked that argvars[0] is a List.
 void
 list2items(Arr(Var) argvars, Var* returnVar) {
-   List   *l = argvars[0].list;
-   ListItem   *li;
-   Long   idx;
+   List* l = argvars[0].list;
 
    allocReturnList(returnVar);
    if (!l)
@@ -989,6 +969,8 @@ list2items(Arr(Var) argvars, Var* returnVar) {
 
    // TODO: would be more efficient to not materialize the argument
    CHECK_LIST_MATERIALIZE(l);
+   ListItem* li;
+   Long idx;
    for (idx = 0, li = l->first; li; li = li->next, ++idx) {
       List* l2 = list_alloc();
 
@@ -1086,14 +1068,14 @@ list_slice(List *ol, long n1, long n2) {
 
 int
 list_slice_or_index(
-   List   *list,
-   int      range,
-   Long   n1_arg,
-   Long   n2_arg,
-   int      exclusive,
-   Var   *returnVar,
-   int      verbose)
-{
+   List* list,
+   int range,
+   Long n1_arg,
+   Long n2_arg,
+   int exclusive,
+   Var* returnVar,
+   int verbose
+) {
    long   len = list_len(list);
    Long   n1 = n1_arg;
    Long   n2 = n2_arg;
@@ -1141,14 +1123,12 @@ list_slice_or_index(
 // See item_copy() for "top" and "copyID". Return NULL when out of memory.
 List *
 list_copy(List *orig, int deep, int top, int copyID) {
-   List   *copy;
-   ListItem   *item;
    ListItem   *ni;
 
    if (!orig)
       return NULL;
 
-   copy = list_alloc();
+   List* copy = list_alloc();
 
    if (orig->ty == NULL || top || deep)
       copy->ty = NULL;
@@ -1161,6 +1141,7 @@ list_copy(List *orig, int deep, int top, int copyID) {
       orig->copyList = copy;
    }
    CHECK_LIST_MATERIALIZE(orig);
+   ListItem* item;
    for (item = orig->first; item != NULL && !gotInterruptG; item = item->next) {
       ni = listitem_alloc();
       if (deep) {
@@ -1173,7 +1154,7 @@ list_copy(List *orig, int deep, int top, int copyID) {
       list_append(copy, ni);
    }
    ++copy->refcount;
-   if (item != NULL) {
+   if (item) {
      list_unref(copy);
      copy = NULL;
    }
@@ -1185,8 +1166,8 @@ list_copy(List *orig, int deep, int top, int copyID) {
 //Do not free the listitem or the value!
 //This used to be called list_remove, but that conflicts with a Sun header file.
 void
-list_remove(List *l, ListItem *item, ListItem *item2) {
-   ListItem   *ip;
+list_remove(List* l, ListItem* item, ListItem* item2) {
+   ListItem* ip;
 
    CHECK_LIST_MATERIALIZE(l);
 
@@ -1211,7 +1192,7 @@ list_remove(List *l, ListItem *item, ListItem *item2) {
 
 // Return an allocated string with the string representation of a list. May return NULL.
 CS
-list2string(Var *tv, int copyID, int restore_copyID) {
+list2string(Var* tv, int copyID, int restore_copyID) {
    if (tv->list == NULL)
       return NULL;
    ArrayList   ga;
@@ -1228,7 +1209,7 @@ list2string(Var *tv, int copyID, int restore_copyID) {
 }
 
 typedef struct join_S {
-   Byte   *s;
+   CS s;
    Byte   *tofree;
 } Join;
 
@@ -1310,24 +1291,21 @@ list_join(
     Byte   *sep,
     int      echo_style,
     int      restore_copyID,
-    int      copyID)
-{
-    ArrayList   join_ga;
-    int      retval;
-    Join   *p;
-    int      i;
+    int      copyID
+) {
+   ArrayList   join_ga;
 
    if (l->len < 1)
       return OK; // nothing to do
    ga_init2(&join_ga, sizeof(Join), l->len);
-   retval = list_join_inner(gap, l, sep, echo_style, restore_copyID, copyID, &join_ga);
+   int retval = list_join_inner(gap, l, sep, echo_style, restore_copyID, copyID, &join_ga);
 
    if (join_ga.c == NULL)
       return retval;
 
    // Dispose each item in join_ga.
-   p = (Join *)join_ga.c;
-   for (i = 0; i < join_ga.len; ++i) {
+   Join* p = (Join *)join_ga.c;
+   for (int i = 0; i < join_ga.len; ++i) {
       eeglFree(p->tofree);
       ++p;
    }
@@ -1339,7 +1317,6 @@ list_join(
 void
 f_join(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
-   Byte   *sep;
 
    returnVar->tag = VAR_STRING;
 
@@ -1350,19 +1327,15 @@ f_join(Arr(Var) argvars, Var* returnVar) {
    if ((argvars[0].tag == VAR_LIST && argvars[0].list == NULL))
       return;
 
-   if (argvars[1].tag == VAR_UNKNOWN)
-      sep = (CS)" ";
-   else
-      sep = convertVarToStringSingleUse(&argvars[1]);
+   CS sep = (argvars[1].tag == VAR_UNKNOWN) ? S" " : convertVarToStringSingleUse(&argvars[1]);
 
    if (sep != NULL) {
       ga_init2(&ga, sizeof(char), 80);
       list_join(&ga, argvars[0].list, sep, TRUE, FALSE, 0);
       ga_append(&ga, ZERO);
       returnVar->string = (CS)ga.c;
-   }
-    else
-   returnVar->string = NULL;
+   } else
+      returnVar->string = NULL;
 }
 
 // Allocate a variable for a List and fill it from "*arg".
@@ -1434,7 +1407,7 @@ failret:
 
 // Write "list" of strings to file "fd".
 int
-write_list(FILE *fd, List *list, int binary) {
+write_list(FILE* fd, List* list, int binary) {
    ListItem   *li;
    int      c;
    int      ret = OK;
@@ -1443,23 +1416,23 @@ write_list(FILE *fd, List *list, int binary) {
    CHECK_LIST_MATERIALIZE(list);
    FOR_ALL_LIST_ITEMS(list, li) {
       for (s = tv_get_string(&li->c); *s != ZERO; ++s) {
-          if (*s == '\n')
-         c = putc(ZERO, fd);
-          else
-         c = putc(*s, fd);
-          if (c == EOF) {
-         ret = FAIL;
-         break;
-          }
+         if (*s == '\n')
+            c = putc(ZERO, fd);
+         else
+            c = putc(*s, fd);
+         if (c == EOF) {
+            ret = FAIL;
+            break;
+         }
       }
       if (!binary || li->next != NULL)
-          if (putc('\n', fd) == EOF) {
-         ret = FAIL;
-         break;
-          }
+         if (putc('\n', fd) == EOF) {
+            ret = FAIL;
+            break;
+         }
       if (ret == FAIL) {
-          emsg(_(e_error_while_writing));
-          break;
+         emsg(_(e_error_while_writing));
+         break;
       }
    }
    return ret;
@@ -1468,8 +1441,8 @@ write_list(FILE *fd, List *list, int binary) {
 // Initialize a static list with 10 items.
 void
 init_static_list(StaticList10 *sl) {
-   List  *l = &sl->list;
-   int       i;
+   List* l = &sl->list;
+   int i;
 
    CLEAR_POINTER(sl);
    l->first = &sl->items[0];
@@ -1525,7 +1498,7 @@ f_list2str(Arr(Var) argvars, Var* returnVar) {
 // remove the range of items from argvars[1] to argvars[2] (inclusive).
 private void
 listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
-   List   *l;
+   List* l;
    ListItem   *item, *item2;
    ListItem   *li;
    Boole error = false;
@@ -1696,11 +1669,7 @@ item_compare(const void *s1, const void *s2) {
 
 private int
 item_compare2(const void *s1, const void *s2) {
-   SortItem  *si1, *si2;
-   int      res;
-   Var   returnVar;
    Var   argv[3];
-   Byte   *func_name;
    PartiallyApplied   *partial = sortinfo->item_compare_partial;
    FnExe   funcexe;
    int      anyEmsgG_before = anyEmsgG;
@@ -1709,25 +1678,23 @@ item_compare2(const void *s1, const void *s2) {
    if (sortinfo->item_compare_func_err)
       return 0;
 
-   si1 = (SortItem *)s1;
-   si2 = (SortItem *)s2;
+   SortItem* si1 = (SortItem *)s1;
+   SortItem* si2 = (SortItem *)s2;
 
-   if (!partial)
-      func_name = sortinfo->item_compare_func;
-   else
-      func_name = partial_name(partial);
+   CS funcName = (!partial) ? sortinfo->item_compare_func : partial_name(partial);
 
    // Copy the values.  This is needed to be able to set lock to VAR_FIXED
    // in the copy without changing the original list items.
    copy_tv(OUT &argv[0], &si1->item->c);
    copy_tv(OUT &argv[1], &si2->item->c);
 
+   Var returnVar;
    returnVar.tag = VAR_UNKNOWN;      // clearVar() uses this
    CLEAR_FIELD(funcexe);
    funcexe.fe_evaluate = TRUE;
    funcexe.fe_partial = partial;
    funcexe.fe_selfdict = sortinfo->item_compare_selfdict;
-   res = call_func(func_name, -1, &returnVar, 2, argv, &funcexe);
+   int res = call_func(funcName, -1, &returnVar, 2, argv, &funcexe);
    clearVar(&argv[0]);
    clearVar(&argv[1]);
 
@@ -2014,16 +1981,16 @@ theend:
 private void
 list_filter_map(
    List* l,
-   FilterMap   filtermap,
+   FilterMap filtermap,
    CS arg_errmsg,
-   Var   *expr,
-   Var   *returnVar
+   Var* expr,
+   Var* returnVar
 ) {
-   int      prev_lock;
-   List   *l_ret = NULL;
-   int      idx = 0;
-   int      rem;
-   ListItem   *li, *nli;
+   List* l_ret = NULL;
+   int idx = 0;
+   int rem;
+   ListItem* li;
+   ListItem* nli;
    Var   newtv;
 
    if (filtermap == FILTERMAP_MAPNEW) {
@@ -2033,7 +2000,7 @@ list_filter_map(
    if (!l || (filtermap == FILTERMAP_FILTER && value_check_lock(l->lock, mbText(arg_errmsg), true)))
       return;
 
-   prev_lock = l->lock;
+   int prev_lock = l->lock;
 
    if (filtermap == FILTERMAP_MAPNEW) {
       allocReturnList(returnVar);
@@ -2046,9 +2013,9 @@ list_filter_map(
       l->lock = VAR_LOCKED;
 
    if (l->first == &range_list_item) {
-      Long   val = l->lv_u.nonmat.start;
-      int      len = l->len;
-      int      stride = l->lv_u.nonmat.stride;
+      Long val = l->lv_u.nonmat.start;
+      int len = l->len;
+      int stride = l->lv_u.nonmat.stride;
 
       // List from range(): loop over the numbers
       // NOTE: foreach() returns the range_list_item
@@ -2060,7 +2027,7 @@ list_filter_map(
       }
 
       for (idx = 0; idx < len; ++idx) {
-         Var tv = (Var){.tag = VAR_NUMBER, .lock = 0, .number = 0};
+         Var tv = (Var){.tag = VAR_NUMBER, .lock = 0, .number = val};
 
          set_EeglVar_nr(VV_KEY, idx);
          if (filter_map_one(&tv, expr, filtermap, &newtv, &rem) == FAIL)
@@ -2117,7 +2084,7 @@ list_filter_map(
 // Implementation of map(), filter() and foreach().
 private void
 filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
-    CS func_name = (CS)(
+    CS funcName = (CS)(
           filtermap == FILTERMAP_MAP 
              ? "map()"
              : filtermap == FILTERMAP_MAPNEW 
@@ -2151,7 +2118,7 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
          msg = e_argument_of_str_must_be_list_tuple_string_dictionary_or_blob;
       else
          msg = e_argument_of_str_must_be_list_string_dictionary_or_blob;
-      showErrFmtMsg(_(msg), func_name);
+      showErrFmtMsg(_(msg), funcName);
       return;
    }
 
@@ -2344,7 +2311,7 @@ list_extend_func(
 // "extend()" or "extendnew()" function.  "is_new" is TRUE for extendnew().
 private void
 extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
-   CS func_name = (CS)( is_new ? "extendnew()" : "extend()");
+   CS funcName = (CS)( is_new ? "extendnew()" : "extend()");
 
    if (argvars[0].tag == VAR_LIST && argvars[1].tag == VAR_LIST) {
       // Check that extend() does not change the type of the list if it was declared.
@@ -2353,7 +2320,7 @@ extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
       // Check that extend() does not change the type of the dict if it was declared.
       bagExtend_func(argvars, arg_errmsg, is_new, returnVar);
    } else
-      showErrFmtMsg(_(e_argument_of_str_must_be_list_or_dictionary), func_name);
+      showErrFmtMsg(_(e_argument_of_str_must_be_list_or_dictionary), funcName);
 }
 
 // "extend(list, list [, idx])" function. "extend(dict, dict [, action])" function
@@ -2554,18 +2521,18 @@ list_reduce(
 //"reduce(string, { accumulator, element -> value } [, initial])"
 void
 f_reduce(Arr(Var) argvars, Var* returnVar) {
-   Byte   *func_name;
+   CS funcName;
 
    if (check_for_string_or_list_or_blob_arg(argvars, 0) == FAIL)
       return;
 
    if (argvars[1].tag == VAR_FUNC)
-      func_name = argvars[1].string;
+      funcName = argvars[1].string;
    ei (argvars[1].tag == VAR_PARTIAL)
-      func_name = partial_name(argvars[1].partial);
+      funcName = partial_name(argvars[1].partial);
    else
-      func_name = tv_get_string(&argvars[1]);
-   if (func_name == NULL || *func_name == ZERO) {
+      funcName = tv_get_string(&argvars[1]);
+   if (funcName == NULL || *funcName == ZERO) {
       emsg(_(e_missing_function_argument));
       return;
    }
@@ -2883,7 +2850,7 @@ hash_create(void) {
 
 // Initialize an empty hash table.
 void
-hash_init(EeSet *ht) {
+hash_init(EeSet* ht) {
    // This zeroes all "ht_" entries and all the "hi_key" in "smallArray".
    CLEAR_POINTER(ht);
    ht->array = ht->smallArray;
@@ -2892,7 +2859,7 @@ hash_init(EeSet *ht) {
 
 // If "ht->flags" has HTFLAGS_FROZEN then give an error message using "command" and return TRUE.
 int
-check_hashtab_frozen(EeSet *ht, CS command) {
+check_hashtab_frozen(EeSet* ht, CS command) {
    if ((ht->flags & HTFLAGS_FROZEN) == 0)
       return FALSE;
 
@@ -2903,7 +2870,7 @@ check_hashtab_frozen(EeSet *ht, CS command) {
 // Free the array of a hash table.  Does not free the items it contains!
 // If "ht" is not freed then you should call hash_init() next!
 void
-hash_clear(EeSet *ht) {
+hash_clear(EeSet* ht) {
    if (ht->array != ht->smallArray)
       eeglFree(ht->array);
 }
@@ -2912,7 +2879,7 @@ hash_clear(EeSet *ht) {
 // "off" is the offset from the start of the allocate memory to the location of the key (it's 
 // always positive).
 void
-hash_clear_all(EeSet *ht, int off) {
+hash_clear_all(EeSet* ht, int off) {
    EeSetItem   *hi;
 
    long todo = (long)ht->count;
@@ -2936,7 +2903,7 @@ hash_find(EeSet* ht, Text key) {
 
 // Like hash_find(), but caller computes "hash".
 EeSetItem *
-hash_lookup(EeSet *ht, Text key, Hash hash) {
+hash_lookup(EeSet* ht, Text key, Hash hash) {
    Hash   perturb;
 
 #ifdef HT_DEBUG
@@ -3051,7 +3018,7 @@ hash_set(EeSetItem *hi, Byte *key) {
 //"command" is used for the error message when the hashtab if frozen.
 //The caller must take care of freeing the item itself.
 int
-hash_remove(EeSet *ht, EeSetItem *hi, CS command) {
+hash_remove(EeSet* ht, EeSetItem* hi, CS command) {
    if (check_hashtab_frozen(ht, command))
       return FAIL;
    --ht->count;
@@ -3080,7 +3047,7 @@ hash_lock_size(EeSet *ht, int size) {
 // Unlock a hashtable: allow array changes again. Table will be resized (shrink) when necessary.
 // This must balance a call to hash_lock().
 void
-hash_unlock(EeSet *ht) {
+hash_unlock(EeSet* ht) {
    --ht->ht_locked;
    (void)hash_may_resize(ht, 0);
 }
@@ -3088,10 +3055,7 @@ hash_unlock(EeSet *ht) {
 // Shrink a hashtable when there is too much empty space. Grow a hashtable when there is not 
 // enough empty space. Return OK or FAIL (overflow on size).
 private int
-hash_may_resize(
-   EeSet* ht,
-   int      minitems)      // minimal number of items
-{
+hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
    EeSetItem temparray[HT_INIT_SIZE];
    EeSetItem *oldarray, *newarray;
    EeSetItem *olditem, *newitem;
@@ -3472,15 +3436,10 @@ sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
 // Return hex digest of "buf[buf_len]" in a static array.
 // if "salt" is not NULL also do "salt[salt_len]".
 CS
-sha256_bytes(
-   CS buf,
-   int buf_len,
-   CS salt,
-   int salt_len)
-{
-   Byte        sha256sum[32];
+sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
+   Byte  sha256sum[32];
    static Byte    hexit[65];
-   int           j;
+   int j;
    ContextSha256 ctx;
 
    sha256_self_test();
@@ -3498,21 +3457,17 @@ sha256_bytes(
 
 // Return sha256(buf) as 64 hex chars in static array.
 CS
-sha256_key(
-   CS buf,
-   CS salt,
-   int salt_len
-){
+sha256_key(CS buf, CS salt, int salt_len){
    // No passwd means don't encrypt
-   if (buf == NULL || *buf == ZERO)
-      return (CS)"";
+   if (!buf || *buf == ZERO)
+      return S"";
 
    return sha256_bytes(buf, (int)STRLEN(buf), salt, salt_len);
 }
 
 // These are the standard FIPS-180-2 test vectors
 
-private char *sha_self_test_msg[] = {
+private char* sha_self_test_msg[] = {
     "abc",
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
     NULL
@@ -3580,32 +3535,26 @@ get_some_time(void) {
 
 // Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.
 void
-sha2_seed(
-   CS header,
-   int    header_len,
-   CS salt,
-   int    salt_len)
-{
-   int           i;
-   static Byte    random_data[1000];
-   Byte        sha256sum[32];
+sha2_seed(CS header, int header_len, CS salt, int salt_len) {
+   static Byte random_data[1000];
+   Byte sha256sum[32];
    ContextSha256 ctx;
 
    srand(get_some_time());
 
-   for (i = 0; i < (int)sizeof(random_data) - 1; i++)
+   for (int i = 0; i < (int)sizeof(random_data) - 1; i++)
       random_data[i] = (Byte)((get_some_time() ^ rand()) & 0xff);
    sha256_start(&ctx);
    sha256_update(&ctx, (CS)random_data, sizeof(random_data));
    sha256_finish(&ctx, sha256sum);
 
    // put first block into header.
-   for (i = 0; i < header_len; i++)
+   for (int i = 0; i < header_len; i++)
       header[i] = sha256sum[i % sizeof(sha256sum)];
 
    // put remaining block into salt.
    if (salt) {
-      for (i = 0; i < salt_len; i++)
+      for (int i = 0; i < salt_len; i++)
           salt[i] = sha256sum[(i + header_len) % sizeof(sha256sum)];
    }
 }
@@ -3630,7 +3579,7 @@ mergesort_list(
    if (!head || !get_next(head))
       return head;
 
-    // Count length
+   // Count length
    int       n = 0;
    void*   curr = head;
    while (curr) {
@@ -3645,25 +3594,25 @@ mergesort_list(
       curr = head;
 
       while (curr) {
-          // Split two runs
-          void    *left = curr;
-          void    *right = left;
-          int       i;
-          for (i = 0; i < size && right; ++i)
-         right = get_next(right);
+         // Split two runs
+         void* left = curr;
+         void* right = left;
+         int       i;
+         for (i = 0; i < size && right; ++i)
+            right = get_next(right);
 
-          void    *next = right;
-          for (i = 0; i < size && next; ++i)
-         next = get_next(next);
+         void* next = right;
+         for (i = 0; i < size && next; ++i)
+            next = get_next(next);
 
-          // Break links
-          void    *l_end = right ? get_prev(right) : NULL;
-          if (l_end)
-         set_next(l_end, NULL);
-          if (right)
-         set_prev(right, NULL);
+         // Break links
+         void* l_end = right ? get_prev(right) : NULL;
+         if (l_end)
+            set_next(l_end, NULL);
+         if (right)
+            set_prev(right, NULL);
 
-         void    *r_end = next ? get_prev(next) : NULL;
+         void* r_end = next ? get_prev(next) : NULL;
          if (r_end)
             set_next(r_end, NULL);
          if (next)
@@ -3795,7 +3744,7 @@ allocStringVar(CS s) {
 
 //Free the memory for a variable type-value.
 void
-freeVar(Var *varp) {
+freeVar(Var* varp) {
    if (!varp)
       return;
 
@@ -3838,7 +3787,7 @@ freeVar(Var *varp) {
 
 //Free the memory for a variable value and set the value to NULL or 0.
 void
-clearVar(Var *varp) {
+clearVar(Var* varp) {
    if (varp == NULL)
    return;
 
@@ -3891,7 +3840,7 @@ clearVar(Var *varp) {
 
 //Set the value of a variable to NULL without freeing items.
 void
-initVarToNull(OUT Var *varp) {
+initVarToNull(OUT Var* varp) {
    if (varp)
       CLEAR_POINTER(varp);
 }
@@ -3954,7 +3903,7 @@ convertToBoolOrNumber(
 //incompatible types, return 0. varGetNumberChk() is similar to tv_get_number(), but informs the
 //caller of incompatible types: set *denote to TRUE if "denote" is not NULL or return -1 otherwise.
 Long
-tv_get_number(Var *varp) {
+tv_get_number(Var* varp) {
    return varGetNumberChk(varp, null);   // return 0L on error
 }
 
@@ -3965,12 +3914,12 @@ varGetNumberChk(Var* varp, OUT Boole* denote) {
 
 //Get the boolean value of "varp". This is like varGetNumberChk(),
 Boole
-tv_get_bool(Var *varp) {
+tv_get_bool(Var* varp) {
    return convertToBoolOrNumber(varp, NULL);
 }
 
 private double
-convertToDouble(Var *varp, OUT Boole* error) {
+convertToDouble(Var* varp, OUT Boole* error) {
    switch (varp->tag) {
    case VAR_NUMBER:
        return (double)(varp->number);
@@ -4018,23 +3967,23 @@ convertToDouble(Var *varp, OUT Boole* error) {
 }
 
 double
-tv_get_float(Var *varp) {
+tv_get_float(Var* varp) {
     return convertToDouble(varp, NULL);
 }
 
 // Give an error and return FAIL unless "args[idx]" is unknown
 int
-check_for_unknown_arg(Var *args, int idx) {
+check_for_unknown_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_UNKNOWN) {
-   showErrFmtMsg(_(e_too_many_arguments), idx + 1);
-   return FAIL;
-    }
-    return OK;
+      showErrFmtMsg(_(e_too_many_arguments), idx + 1);
+      return FAIL;
+   }
+   return OK;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a string.
 int
-check_for_string_arg(Var *args, int idx) {
+check_for_string_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_STRING) {
       showErrFmtMsg(_(e_string_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4044,7 +3993,7 @@ check_for_string_arg(Var *args, int idx) {
 
 // Give an error and return FAIL unless "args[idx]" is a non-empty string.
 int
-check_for_nonempty_string_arg(Var *args, int idx) {
+check_for_nonempty_string_arg(Var* args, int idx) {
    if (check_for_string_arg(args, idx) == FAIL)
       return FAIL;
    if (args[idx].string == NULL || *args[idx].string == ZERO) {
@@ -4054,17 +4003,15 @@ check_for_nonempty_string_arg(Var *args, int idx) {
    return OK;
 }
 
-/*
- * Check for an optional string argument at 'idx'
- */
+//Check for an optional string argument at 'idx'
 int
-check_for_opt_string_arg(Var *args, int idx) {
+check_for_opt_string_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN || check_for_string_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a number.
 int
-check_for_number_arg(Var *args, int idx) {
+check_for_number_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_NUMBER) {
       showErrFmtMsg(_(e_number_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4074,14 +4021,13 @@ check_for_number_arg(Var *args, int idx) {
 
 //Check for an optional number argument at 'idx'
 int
-check_for_opt_number_arg(Var *args, int idx) {
-   return (args[idx].tag == VAR_UNKNOWN
-       || check_for_number_arg(args, idx) != FAIL) ? OK : FAIL;
+check_for_opt_number_arg(Var* args, int idx) {
+   return (args[idx].tag == VAR_UNKNOWN || check_for_number_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a float or a number.
 int
-check_for_float_or_nr_arg(Var *args, int idx) {
+check_for_float_or_nr_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_FLOAT && args[idx].tag != VAR_NUMBER) {
       showErrFmtMsg(_(e_float_or_number_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4091,7 +4037,7 @@ check_for_float_or_nr_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a bool.
 int
-check_for_bool_arg(Var *args, int idx) {
+check_for_bool_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_BOOL
        && !(args[idx].tag == VAR_NUMBER
          && (args[idx].number == 0 || args[idx].number == 1))
@@ -4114,7 +4060,7 @@ checkVarsForBoolOrNumber(Arr(Var) args, int idx) {
 
 //Check for an optional bool argument at 'idx'. Return FAIL if the type is wrong.
 int
-check_for_opt_bool_arg(Var *args, int idx) {
+check_for_opt_bool_arg(Var* args, int idx) {
    if (args[idx].tag == VAR_UNKNOWN)
       return OK;
    return check_for_bool_arg(args, idx);
@@ -4122,7 +4068,7 @@ check_for_opt_bool_arg(Var *args, int idx) {
 
 //Check for an optional bool or number argument at 'idx'. Return FAIL if the type is wrong.
 int
-check_for_opt_bool_or_number_arg(Var *args, int idx) {
+check_for_opt_bool_or_number_arg(Var* args, int idx) {
    if (args[idx].tag == VAR_UNKNOWN)
       return OK;
    return checkVarsForBoolOrNumber(args, idx);
@@ -4130,7 +4076,7 @@ check_for_opt_bool_or_number_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a blob.
 int
-check_for_blob_arg(Var *args, int idx) {
+check_for_blob_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_blob_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4150,7 +4096,7 @@ confirmVarIsList(Var* arg, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a non-NULL list.
 int
-confirmVarIsNonnullList(Var *args, int idx) {
+confirmVarIsNonnullList(Var* args, int idx) {
    if (confirmVarIsList(args, idx) == FAIL)
       return FAIL;
 
@@ -4163,7 +4109,7 @@ confirmVarIsNonnullList(Var *args, int idx) {
 
 //Check for an optional list argument at 'idx'
 int
-confirmVarIsOptionalList(Var *args, int idx) {
+confirmVarIsOptionalList(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || confirmVarIsList(args, idx) != FAIL) ? OK : FAIL;
 }
@@ -4200,14 +4146,14 @@ check_for_oself_arg(Arr(Var) args, int idx) {
 
 // Check for an optional non-NULL dict argument at 'idx'
 int
-check_for_opt_nonnull_dict_arg(Var *args, int idx) {
+check_for_opt_nonnull_dict_arg(Var* args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_nonnull_dict_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a channel or a job.
 int
-check_for_chan_or_job_arg(Var *args, int idx) {
+check_for_chan_or_job_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_CHANNEL && args[idx].tag != VAR_JOB) {
       showErrFmtMsg(_(e_chan_or_job_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4217,14 +4163,14 @@ check_for_chan_or_job_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is an optional channel or a job.
 int
-check_for_opt_chan_or_job_arg(Var *args, int idx) {
+check_for_opt_chan_or_job_arg(Var* args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_chan_or_job_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a job.
 int
-check_for_job_arg(Var *args, int idx) {
+check_for_job_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_JOB) {
       showErrFmtMsg(_(e_job_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4234,14 +4180,14 @@ check_for_job_arg(Var *args, int idx) {
 
 // Check for an optional job argument at 'idx'.
 int
-check_for_opt_job_arg(Var *args, int idx) {
+check_for_opt_job_arg(Arr(Var) args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_job_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a string or a number.
 int
-check_for_string_or_number_arg(Var *args, int idx) {
+check_for_string_or_number_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_NUMBER) {
       showErrFmtMsg(_(e_string_or_number_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4251,7 +4197,7 @@ check_for_string_or_number_arg(Var *args, int idx) {
 
 //Check for an optional string or number argument at 'idx'.
 int
-check_for_opt_string_or_number_arg(Var *args, int idx) {
+check_for_opt_string_or_number_arg(Var* args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_string_or_number_arg(args, idx) != FAIL) ? OK : FAIL;
 }
@@ -4259,13 +4205,13 @@ check_for_opt_string_or_number_arg(Var *args, int idx) {
 //Give an error and return FAIL unless "args[idx]" is a buffer number.
 //Book number can be a number or a string.
 int
-check_for_buffer_arg(Var *args, int idx) {
+check_for_buffer_arg(Var* args, int idx) {
    return check_for_string_or_number_arg(args, idx);
 }
 
 //Check for an optional buffer argument at 'idx'
 int
-check_for_opt_buffer_arg(Var *args, int idx) {
+check_for_opt_buffer_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_buffer_arg(args, idx) != FAIL) ? OK : FAIL;
 }
@@ -4273,20 +4219,20 @@ check_for_opt_buffer_arg(Var *args, int idx) {
 //Give an error and return FAIL unless "args[idx]" is a line number.
 //Line number can be a number or a string.
 int
-check_for_lnum_arg(Var *args, int idx) {
+check_for_lnum_arg(Arr(Var) args, int idx) {
    return check_for_string_or_number_arg(args, idx);
 }
 
 //Check for an optional line number argument at 'idx'
 int
-check_for_opt_lnum_arg(Var *args, int idx) {
+check_for_opt_lnum_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_lnum_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string or a blob.
 int
-check_for_string_or_blob_arg(Var *args, int idx) {
+check_for_string_or_blob_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_string_or_blob_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4296,7 +4242,7 @@ check_for_string_or_blob_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a string or a list.
 int
-check_for_string_or_list_arg(Var *args, int idx) {
+check_for_string_or_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_LIST) {
       showErrFmtMsg(_(e_string_or_list_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4306,7 +4252,7 @@ check_for_string_or_list_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a string, a list or a blob.
 private int
-check_for_string_or_list_or_blob_arg(Var *args, int idx) {
+check_for_string_or_list_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_LIST && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_string_list_tuple_or_blob_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4316,14 +4262,14 @@ check_for_string_or_list_or_blob_arg(Var *args, int idx) {
 
 //Check for an optional string or list argument at 'idx'
 int
-check_for_opt_string_or_list_arg(Var *args, int idx) {
+check_for_opt_string_or_list_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_string_or_list_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string or a dict.
 int
-check_for_string_or_dict_arg(Var *args, int idx) {
+check_for_string_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_BAG) {
    showErrFmtMsg(_(e_string_or_dict_required_for_argument_nr), idx + 1);
    return FAIL;
@@ -4333,7 +4279,7 @@ check_for_string_or_dict_arg(Var *args, int idx) {
 
 // Give an error and return FAIL unless "args[idx]" is a string or a number or a list.
 int
-check_for_string_or_number_or_list_arg(Var *args, int idx) {
+check_for_string_or_number_or_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_NUMBER
        && args[idx].tag != VAR_LIST) {
@@ -4345,14 +4291,14 @@ check_for_string_or_number_or_list_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is an optional string or number or a list
 int
-check_for_opt_string_or_number_or_list_arg(Var *args, int idx) {
+check_for_opt_string_or_number_or_list_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_string_or_number_or_list_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string, a number, a list or a blob
 int
-check_for_repeat_func_arg(Var *args, int idx) {
+check_for_repeat_func_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_NUMBER
        && args[idx].tag != VAR_LIST
@@ -4366,7 +4312,7 @@ check_for_repeat_func_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a string, a list or a dict.
 int
-check_for_string_list_or_dict_arg(Var *args, int idx) {
+check_for_string_list_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_LIST
        && args[idx].tag != VAR_BAG
@@ -4379,7 +4325,7 @@ check_for_string_list_or_dict_arg(Var *args, int idx) {
 
 // Give an error and return FAIL unless "args[idx]" is a string or a function reference.
 int
-check_for_string_or_func_arg(Var *args, int idx) {
+check_for_string_or_func_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_PARTIAL
        && args[idx].tag != VAR_FUNC
        && args[idx].tag != VAR_STRING)
@@ -4392,7 +4338,7 @@ check_for_string_or_func_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a list or a blob.
 int
-check_for_list_or_blob_arg(Var *args, int idx) {
+check_for_list_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_list_or_blob_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4402,7 +4348,7 @@ check_for_list_or_blob_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a list.
 int
-check_for_list_arg(Var *args, int idx) {
+check_for_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST) {
       showErrFmtMsg(_(e_list_or_tuple_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4412,7 +4358,7 @@ check_for_list_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a list or a blob.
 int
-check_for_list_or_or_blob_arg(Var *args, int idx) {
+check_for_list_or_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_list_or_tuple_or_blob_required_for_argument_nr), idx + 1);
       return FAIL;
@@ -4422,7 +4368,7 @@ check_for_list_or_or_blob_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a list or a dict
 int
-check_for_list_or_dict_arg(Var *args, int idx) {
+check_for_list_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST
        && args[idx].tag != VAR_BAG)
     {
@@ -4434,7 +4380,7 @@ check_for_list_or_dict_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a list or dict or a blob.
 int
-check_for_list_or_dict_or_blob_arg(Var *args, int idx) {
+check_for_list_or_dict_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST
        && args[idx].tag != VAR_BAG
        && args[idx].tag != VAR_BLOB)
@@ -4447,7 +4393,7 @@ check_for_list_or_dict_or_blob_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a list, a dict, a blob or a string
 int
-check_for_list_dict_blob_or_string_arg(Var *args, int idx) {
+check_for_list_dict_blob_or_string_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST
        && args[idx].tag != VAR_BAG
        && args[idx].tag != VAR_BLOB
@@ -4461,7 +4407,7 @@ check_for_list_dict_blob_or_string_arg(Var *args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is an optional buffer number or a dict.
 int
-check_for_opt_buffer_or_dict_arg(Var *args, int idx) {
+check_for_opt_buffer_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_UNKNOWN
        && args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_NUMBER
@@ -4482,14 +4428,14 @@ check_for_opt_buffer_or_dict_arg(Var *args, int idx) {
 //Never returns NULL;
 //convertVarToStringSingleUse() and convertVarToString() are similar, but return NULL on error.
 CS
-tv_get_string(Var *varp) {
+tv_get_string(Var* varp) {
    static Byte mybuf[NUMBUFLEN];
    return tv_get_string_buf(varp, mybuf);
 }
 
 //Like tv_get_string() but don't allow number to string conversion for Vim9.
 CS
-tv_get_string_strict(Var *varp) {
+tv_get_string_strict(Var* varp) {
    static Byte   mybuf[NUMBUFLEN];
    Byte* res =  convertVarToString_strict(varp, mybuf, FALSE);
 
@@ -4497,25 +4443,25 @@ tv_get_string_strict(Var *varp) {
 }
 
 CS
-tv_get_string_buf(Var *varp, CS buf) {
+tv_get_string_buf(Var* varp, CS buf) {
     CS res = convertVarToString(varp, buf);
     return res ? res : Em;
 }
 
 //Careful: This uses a single, static buffer. YOU CAN ONLY USE IT ONCE!
 CS
-convertVarToStringSingleUse(Var *varp) {
+convertVarToStringSingleUse(Var* varp) {
    static Byte   mybuf[NUMBUFLEN];
    return convertVarToString(varp, mybuf);
 }
 
 CS
-convertVarToString(Var *varp, CS buf) {
+convertVarToString(Var* varp, CS buf) {
    return convertVarToString_strict(varp, buf, FALSE);
 }
 
 CS
-convertVarToString_strict(Var *varp, CS buf, int strict) {
+convertVarToString_strict(Var* varp, CS buf, int strict) {
    switch (varp->tag) {
    case VAR_NUMBER:
       if (strict) {
@@ -4594,7 +4540,7 @@ tv_stringify(Var* varp, CS buf) {
 //Return TRUE if typeval "tv" and its value are set to be locked (immutable).
 //Also give an error message, using "name" or _("name") when use_gettext is TRUE.
 int
-tv_check_lock(Var *tv, Text name, Boole use_gettext) {
+tv_check_lock(Var* tv, Text name, Boole use_gettext) {
    int   lock = 0;
 
    switch (tv->tag) {
@@ -4621,7 +4567,7 @@ tv_check_lock(Var *tv, Text name, Boole use_gettext) {
 //count. Does not make a copy of a list, blob or dict but copies the reference!
 //It is OK for "from" and "to" to point to the same item. This is used to make a copy later.
 void
-copy_tv(OUT Var* to, Var *from) {
+copy_tv(OUT Var* to, Var* from) {
    to->tag = from->tag;
    to->lock = 0;
    switch (from->tag) {
@@ -4900,12 +4846,7 @@ typval_compare_null(Var *tv1, Var *tv2) {
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
 int
-typval_compare_blob(
-   Var    *tv1,
-   Var    *tv2,
-   ExprType  type,
-   int       *res
-) {
+typval_compare_blob(Var* tv1, Var* tv2, ExprType type, int* res) {
    int       val = 0;
 
    if (type == EXPR_IS || type == EXPR_ISNOT) {
@@ -4933,14 +4874,13 @@ typval_compare_blob(
 //Return FAIL and give an error message when the comparison can't be done.
 int
 typval_compare_dict(
-   Var    *tv1,
-   Var    *tv2,
+   Var* tv1,
+   Var* tv2,
    ExprType  type,
-   int       ic,
-   int       *res
+   int ic,
+   int* res
 ) {
-   int       val;
-
+   int val;
    if (type == EXPR_IS || type == EXPR_ISNOT) {
       val = (tv1->tag == tv2->tag && tv1->bag == tv2->bag);
       if (type == EXPR_ISNOT)
@@ -4965,13 +4905,13 @@ typval_compare_dict(
 //Return FAIL and give an error message when the comparison can't be done.
 int
 typval_compare_func(
-   Var    *tv1,
-   Var    *tv2,
-   ExprType  type,
-   int       ic,
-   int       *res
+   Var* tv1,
+   Var* tv2,
+   ExprType type,
+   int ic,
+   int* res
 ) {
-   int       val = 0;
+   int val = 0;
 
    if (type != EXPR_EQUAL && type != EXPR_NEQUAL && type != EXPR_IS && type != EXPR_ISNOT) {
       emsg(_(e_invalid_operation_for_funcrefs));
@@ -5002,19 +4942,18 @@ typval_compare_func(
 //Return FAIL and give an error message when the comparison can't be done.
 int
 typval_compare_string(
-   Var    *tv1,
-   Var    *tv2,
-   ExprType  type,
+   Var* tv1,
+   Var* tv2,
+   ExprType type,
    Boole ignoreCase,
-   int       *res
+   int* res
 ) {
-   int      i = 0;
-   int      val = FALSE;
-   Byte   *s1, *s2;
-   Byte   buf1[NUMBUFLEN], buf2[NUMBUFLEN];
+   int i = 0;
+   int val = FALSE;
+   Byte buf1[NUMBUFLEN], buf2[NUMBUFLEN];
 
-   s1 = tv_get_string_buf(tv1, buf1);
-   s2 = tv_get_string_buf(tv2, buf2);
+   CS s1 = tv_get_string_buf(tv1, buf1);
+   CS s2 = tv_get_string_buf(tv2, buf2);
    if (type != EXPR_MATCH && type != EXPR_NOMATCH)
       i = ignoreCase ? caseInsensitiveCompareMaxCol(s1, s2) : STRCMP(s1, s2);
    switch (type) {
@@ -5048,9 +4987,9 @@ typval_compare_string(
 //When "quotes" is TRUE add quotes to a string. Return an allocated string.
 CS
 typval_tostring(Var *arg, int quotes) {
-   Byte   *tofree;
-   Byte   numbuf[NUMBUFLEN];
-   Byte   *ret = NULL;
+   CS tofree;
+   Byte numbuf[NUMBUFLEN];
+   CS ret = NULL;
 
    if (!arg)
       return copyStr((CS)"(does not exist)");
@@ -5080,28 +5019,23 @@ tv_islocked(Var *tv) {
 
 private int
 func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
-   Byte   *s1, *s2;
-   Bag   *d1, *d2;
-   int      a1, a2;
    int      i;
-
    // empty and NULL function name considered the same
-   s1 = tv1->tag == VAR_FUNC ? tv1->string : partial_name(tv1->partial);
-   if (s1 != NULL && *s1 == ZERO)
+   CS s1 = tv1->tag == VAR_FUNC ? tv1->string : partial_name(tv1->partial);
+   if (s1 && *s1 == ZERO)
       s1 = NULL;
-   s2 = tv2->tag == VAR_FUNC ? tv2->string
-                  : partial_name(tv2->partial);
-   if (s2 != NULL && *s2 == ZERO)
-   s2 = NULL;
-   if (s1 == NULL || s2 == NULL) {
+   CS s2 = tv2->tag == VAR_FUNC ? tv2->string : partial_name(tv2->partial);
+   if (s2 && *s2 == ZERO)
+      s2 = NULL;
+   if (!s1 || !s2) {
       if (s1 != s2)
           return FALSE;
    } ei (STRCMP(s1, s2) != 0)
       return FALSE;
 
    // empty dict and NULL dict is different
-   d1 = tv1->tag == VAR_FUNC ? NULL : tv1->partial->self;
-   d2 = tv2->tag == VAR_FUNC ? NULL : tv2->partial->self;
+   Bag* d1 = tv1->tag == VAR_FUNC ? NULL : tv1->partial->self;
+   Bag* d2 = tv2->tag == VAR_FUNC ? NULL : tv2->partial->self;
    if (!d1 || !d2) {
       if (d1 != d2)
          return FALSE;
@@ -5109,8 +5043,8 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
       return FALSE;
 
    // empty list and no list considered the same
-   a1 = tv1->tag == VAR_FUNC ? 0 : tv1->partial->argc;
-   a2 = tv2->tag == VAR_FUNC ? 0 : tv2->partial->argc;
+   int a1 = tv1->tag == VAR_FUNC ? 0 : tv1->partial->argc;
+   int a2 = tv2->tag == VAR_FUNC ? 0 : tv2->partial->argc;
    if (a1 != a2)
       return FALSE;
    for (i = 0; i < a1; ++i) {
@@ -5125,7 +5059,7 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
 //Compares the items just like "==" would compare them, but strings and
 //numbers are different.  Floats and numbers are also different.
 int
-tv_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
+tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
    Byte   buf1[NUMBUFLEN], buf2[NUMBUFLEN];
    Byte   *s1, *s2;
    static int  recursive_cnt = 0;       // catch recursive loops
@@ -5215,7 +5149,7 @@ tv_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
 //Return OK or FAIL.
 int
 eval_option(
-   Byte   **arg,
+   Byte** arg,
    Var* returnVar,   // when NULL, only check if option exists
    int evaluate
 ) {
@@ -5261,12 +5195,7 @@ eval_option(
 
 //Allocate a variable for a number constant. Also deals with "0z" for blob. Return OK or FAIL.
 int
-eval_number(
-   Byte       **arg,
-   Var    *returnVar,
-   int       evaluate,
-   int       want_string
-) {
+eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
    int get_float = FALSE;
 
    // We accept a float when the format matches
@@ -5374,7 +5303,7 @@ tv2string(
 //If the environment variable was not set, silently assume it is empty.
 //Return FAIL if the name is invalid.
 int
-eval_env_var(Byte **arg, Var* returnVar, int evaluate) {
+eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
    Byte   *string = NULL;
    int      cc;
    int      mustfree = FALSE;
@@ -5443,7 +5372,7 @@ daGetLnumFromBookOrVar(Var* argvars, Book* book) {
 
 //Get book by number or pattern.
 Book *
-daGetBook(Var *tv, Boole curtab_only) {
+daGetBook(Var* tv, Boole curtab_only) {
    CS name = tv->string;
 
    if (tv->tag == VAR_NUMBER)
@@ -5466,7 +5395,7 @@ daGetBook(Var *tv, Boole curtab_only) {
 
 //Like daGetBook() but give an error message is the type is wrong.
 Book *
-daGetBookFromArg(Var *tv) {
+daGetBookFromArg(Var* tv) {
    ++emsg_off;
    Book* book = daGetBook(tv, FALSE);
    --emsg_off;
@@ -5523,7 +5452,7 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
 }
 
 ExprType
-get_compare_type(CS p, int *len, int *type_is) {
+get_compare_type(CS p, int* len, int* type_is) {
    ExprType   type = EXPR_UNKNOWN;
    int      i;
 
@@ -5574,34 +5503,34 @@ get_compare_type(CS p, int *len, int *type_is) {
 //list, etc.  Mostly like what JavaScript does, except that empty list and
 //empty dictionary are FALSE.
 int
-tv2bool(Var *tv) {
+tv2bool(Var* tv) {
    switch (tv->tag) {
    case VAR_NUMBER:
-       return tv->number != 0;
+      return tv->number != 0;
    case VAR_FLOAT:
-       return tv->floatt != 0.0;
+      return tv->floatt != 0.0;
    case VAR_PARTIAL:
-       return tv->partial != NULL;
+      return tv->partial != NULL;
    case VAR_FUNC:
    case VAR_STRING:
-       return tv->string != NULL && *tv->string != ZERO;
+      return tv->string != NULL && *tv->string != ZERO;
    case VAR_LIST:
-       return tv->list != NULL && tv->list->len > 0;
+      return tv->list != NULL && tv->list->len > 0;
    case VAR_BAG:
-       return tv->bag != NULL && tv->bag->hashTable.count > 0;
+      return tv->bag != NULL && tv->bag->hashTable.count > 0;
    case VAR_BOOL:
    case VAR_SPECIAL:
-       return tv->number == VVAL_TRUE ? TRUE : FALSE;
+      return tv->number == VVAL_TRUE ? TRUE : FALSE;
    case VAR_JOB:
-       return tv->job != NULL;
+      return tv->job != NULL;
    case VAR_CHANNEL:
-       return tv->channel != NULL;
+      return tv->channel != NULL;
    case VAR_BLOB:
-       return tv->blob != NULL && tv->blob->c.len > 0;
+      return tv->blob != NULL && tv->blob->c.len > 0;
    case VAR_UNKNOWN:
    case VAR_ANY:
    case VAR_VOID:
-       break;
+      break;
    }
    return FALSE;
 }
@@ -5725,8 +5654,8 @@ textOfItem(EeSetItem* si) {
 
 // Add item "item" to Bag "b". Return FAIL when wrong bag or when key already exists.
 int
-bagAdd(Bag *b, DictItem *item) {
-   if (dict_wrong_func_name(b, &item->c, textOfDi(item)))
+bagAdd(Bag* b, DictItem* item) {
+   if (dictWrongFuncName(b, &item->c, textOfDi(item)))
       return FAIL;
    return hash_add(&b->hashTable, textOfDi(item), S"add to dictionary");
 }
@@ -5767,10 +5696,8 @@ bagAddString(Bag* d, CS key, CS str) {
 // Return FAIL when out of memory and when key already exists.
 int
 bagAddString_len(Bag *d, CS key, CS str, int len) {
-   DictItem   *item;
-   Byte   *val = NULL;
-
-   item = dictitem_alloc(mbText(key));
+   CS val = NULL;
+   DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_STRING;
    if (str) {
       if (len == -1)
@@ -5788,7 +5715,7 @@ bagAddString_len(Bag *d, CS key, CS str, int len) {
 
 // Add a list entry to dictionary "d". Return FAIL when out of memory and when key already exists.
 int
-bagAddList(Bag *d, CS key, List *list) {
+bagAddList(Bag* d, CS key, List* list) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_LIST;
    item->c.list = list;
@@ -5842,7 +5769,7 @@ bagAddFn(Bag* d, CS key, UserFunc* fp) {
 // If "var" is not a Bag or an empty Bag then there will be nothing to iterate over, no error 
 // is given. NOTE: The dictionary must not change until iterating is finished!
 void
-bagIterateStart(Var *var, DictIterator *iter) {
+bagIterateStart(Var* var, DictIterator* iter) {
    if (var->tag != VAR_BAG || var->bag == NULL)
       iter->dit_todo = 0;
    else {
@@ -5857,7 +5784,7 @@ bagIterateStart(Var *var, DictIterator *iter) {
 //Return a pointer to the key. "*tv_result" is set to point to the value for that key.
 //If there are no more items, NULL is returned.
 CS
-bagIterateNext(DictIterator *iter, Var **tv_result) {
+bagIterateNext(DictIterator* iter, Var** tv_result) {
    if (iter->dit_todo == 0)
       return NULL;
 
@@ -5940,7 +5867,7 @@ bagGetVar(Bag *d, Text key, Var* returnVar) {
 //a shared buffer is used, can only be used once! Return NULL if the entry doesn't exist or out 
 //of memory.
 CS
-bagGetString(Bag *d, Text key, Boole save) {
+bagGetString(Bag* d, Text key, Boole save) {
    DictItem* di = bagFind(d, key);
    if (!di)
       return NULL;
@@ -5990,7 +5917,7 @@ bagGetBool(Bag *d, Text key, Boole def) {
 
 //Return an allocated string with the string representation of a Dictionary. May return NULL.
 CS
-bagToString(Var *tv, int copyID, int restore_copyID) {
+bagToString(Var* tv, int copyID, int restore_copyID) {
    ArrayList   ga;
    Boole first = true;
    Byte numbuf[NUMBUFLEN];
@@ -6218,7 +6145,7 @@ dictitem_copy(DictItem* org) {
 // When "action" is "force" then a duplicate key is overwritten.
 // When "action" is "move" then move items instead of copying.
 // Otherwise duplicate keys are ignored ("action" is "keep").
-// "func_name" is used for reporting where an error occurred.
+// "funcName" is used for reporting where an error occurred.
 void
 bagExtend(Bag* d1, Bag* d2, CS action) {
    DictItem* di1;
@@ -6264,7 +6191,7 @@ bagExtend(Bag* d1, Bag* d2, CS action) {
                   || var_check_ro(di1->flags, arg_errmsg, true))
                break;
             // Disallow replacing a builtin function.
-            if (dict_wrong_func_name(d1, &HI2DI(hi2)->c, textOfItem(hi2)))
+            if (dictWrongFuncName(d1, &HI2DI(hi2)->c, textOfItem(hi2)))
                break;
             clearVar(&di1->c);
             copy_tv(OUT &di1->c, &HI2DI(hi2)->c);
@@ -6287,7 +6214,7 @@ int
 bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
    EeSetItem   *hi;
    DictItem   *item2;
-   int      todo;
+   int todo;
 
    if (d1 == d2)
       return TRUE;
@@ -6336,12 +6263,7 @@ bagCount(Bag* d, Var* needle, int ic) {
 // extend() a Bag. Append Bag argvars[1] to Bag argvars[0] and return the
 // resulting Bag in "returnVar".  "is_new" is TRUE for extendnew().
 void
-bagExtend_func(
-   Var* argvars,
-   CS arg_errmsg,
-   int is_new,
-   Var* returnVar
-) {
+bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
    int   i;
 
    Bag* d1 = argvars[0].bag;
@@ -6515,7 +6437,6 @@ bagToList(Arr(Var) argvars, Var* returnVar, dict2List what) {
    DictItem   *di;
    EeSetItem   *hi;
    ListItem   *li;
-   int      todo;
 
    allocReturnList(returnVar);
 
@@ -6530,7 +6451,7 @@ bagToList(Arr(Var) argvars, Var* returnVar, dict2List what) {
       // NULL dict behaves like an empty dict
       return;
 
-   todo = (int)d->hashTable.count;
+   int todo = (int)d->hashTable.count;
    FOR_ALL_HASHTAB_ITEMS(&d->hashTable, hi, todo) {
       if (HASHITEM_EMPTY(hi)) {
          continue;
@@ -6614,7 +6535,7 @@ f_has_key(Arr(Var) argvars, Var* returnVar) {
 //characters are included. "exclusive" is TRUE for slice().
 //Return NULL when the result is empty.
 CS
-string_slice(Byte *str, Long first, Long last, int exclusive) {
+string_slice(CS str, Long first, Long last, int exclusive) {
    if (!str)
       return NULL;
    Unt slen = STRLEN(str);
@@ -6703,7 +6624,7 @@ dict_free_dict(Bag *d) {
 
 
 private void
-dict_free(Bag *d) {
+dict_free(Bag* d) {
   if (!in_free_unref_items) {
       dict_free_contents(d);
       dict_free_dict(d);
@@ -6746,7 +6667,7 @@ dictitem_alloc(Text value) {
 //Remove item "item" from Bag "bag" and free it.
 //"command" is used for the error message when the hashtab if frozen.
 void
-dictitem_remove(Bag *bag, DictItem *item, CS command) {
+dictitem_remove(Bag* bag, DictItem* item, CS command) {
    EeSetItem* hi = hash_find(&bag->hashTable, (Text){.c = item->key, .len = item->len});
    if (HASHITEM_EMPTY(hi))
       internal_error(S"dictitem_remove()");
@@ -6773,7 +6694,6 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
    Bag* copy = allocBag();
       
    DictItem   *di;
-   EeSetItem   *hi;
 
    if (copyID != 0) {
       orig->copyId = copyID;
@@ -6782,7 +6702,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
    copy->ty = (orig->ty == NULL || top || deep) ? null : alloc_type(orig->ty);
 
    int todo = (int)orig->hashTable.count;
-   for (hi = orig->hashTable.array; todo > 0 && !gotInterruptG; ++hi) {
+   for (EeSetItem* hi = orig->hashTable.array; todo > 0 && !gotInterruptG; ++hi) {
       if (!HASHITEM_EMPTY(hi)) {
           --todo;
 
@@ -6813,7 +6733,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
 // Check for adding a function to g: or or l:.
 // If the name is wrong give an error message and return TRUE.
 int
-dict_wrong_func_name(Bag* b, Var* tv, Text name) {
+dictWrongFuncName(Bag* b, Var* tv, Text name) {
    return (b == get_globvar_dict() || &b->hashTable == get_funccal_local_ht())
        && (tv->tag == VAR_FUNC || tv->tag == VAR_PARTIAL)
        && var_wrong_func_name(name, TRUE);
@@ -6843,7 +6763,7 @@ json_encode_gap(ArrayList* gap, Var* val, int options) {
 //Encode "val" into a JSON format string. The result is in allocated memory.
 //The result is empty when encoding fails. "options" can contain JSON_NO_NONE and JSON_NL.
 CS
-json_encode(Var *val, int options) {
+json_encode(Var* val, int options) {
    ArrayList ga;
 
    // Store bytes in the growarray.
@@ -6857,7 +6777,7 @@ json_encode(Var *val, int options) {
 //"options" can contain JSON_NO_NONE and JSON_NL.
 //Return NULL when out of memory.
 CS
-json_encode_nr_expr(int nr, Var *val, int options) {
+json_encode_nr_expr(int nr, Var* val, int options) {
    Var   listtv;
    Var   nrtv;
    ArrayList   ga;
@@ -6881,15 +6801,15 @@ json_encode_nr_expr(int nr, Var *val, int options) {
 
 //Encode "val" into a JSON format string prefixed by the LSP HTTP header. NULL when out of memory.
 CS
-json_encode_lsp_msg(Var *val) {
+json_encode_lsp_msg(Var* val) {
    ArrayList   ga;
-   ArrayList   lspga;
 
    ga_init2(&ga, 1, 4000);
    if (json_encode_gap(&ga, val, 0) == FAIL)
       return NULL;
    ga_append(&ga, ZERO);
 
+   ArrayList lspga;
    ga_init2(&lspga, 1, 4000);
    // Header according to LSP specification.
    eeSnprintf(IObuff, IOSIZE, (CS)"Content-Length: %u\r\n\r\n", ga.len - 1);
@@ -6915,7 +6835,7 @@ private const char ascii_needs_escape[128] = {
 private void
 write_string(ArrayList* gap, CS str) {
    CS res = str;
-   Unt      c;
+   Unt c;
 
    if (!res) {
       ga_concat(gap, (CS)"\"\"");
@@ -6926,7 +6846,7 @@ write_string(ArrayList* gap, CS str) {
    // `from` is the beginning of a sequence of bytes we can directly copy from
    // the input string, avoiding the overhead associated to decoding/encoding them.
    CS from = res;
-   Byte   numbuf[NUMBUFLEN];
+   Byte numbuf[NUMBUFLEN];
    while ((c = *res) != ZERO) {
       // always use utf-8 encoding, ignore 'encoding'
       if (c < 0x80) {
@@ -6992,10 +6912,10 @@ private int
 json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
    Byte   numbuf[NUMBUFLEN];
    CS res;
-   Blob   *b;
-   List   *l;
-   Bag   *d;
-   int      i;
+   Blob* b;
+   List* l;
+   Bag* d;
+   int i;
 
    switch (val->tag) {
    case VAR_BOOL:
@@ -7160,8 +7080,8 @@ json_skip_white(JsReader* reader) {
 private int
 json_decode_string(JsReader* reader, Var* res, int quote) {
    ArrayList    ga;
-   int      len;
-   Unt      c;
+   int len;
+   Unt c;
    Long   nr;
 
    if (res)
@@ -7705,7 +7625,7 @@ json_find_end(JsReader* reader) {
 
 void
 f_json_decode(Arr(Var) argvars, Var* returnVar) {
-   JsReader   reader;
+   JsReader reader;
    reader.js_buf = tv_get_string(argvars);
    reader.js_fill = NULL;
    reader.js_used = 0;
@@ -7727,34 +7647,29 @@ f_json_encode(Arr(Var) argvars, Var* returnVar) {
 // this always uses a decimal point.
 // Return the length of the text that was consumed.
 int
-string2float(
-   CS text,
-   OUT double* value,       // result stored here
-   Boole skip_quotes
-) {
+string2float(CS text, OUT double* value, Boole skip_quotes) {
    CS s = text;
-   double   f;
+   double f;
 
    // MS-Portals does not deal with "inf" and "nan" properly.
    if (STRNICMP(text, "inf", 3) == 0) {
       *value = INFINITY;
       return 3;
     }
-    if (STRNICMP(text, "-inf", 4) == 0) {
-   *value = -INFINITY;
-   return 4;
-    }
-    if (STRNICMP(text, "nan", 3) == 0) {
-   *value = NAN;
-   return 3;
-    }
+   if (STRNICMP(text, "-inf", 4) == 0) {
+      *value = -INFINITY;
+      return 4;
+   }
+   if (STRNICMP(text, "nan", 3) == 0) {
+      *value = NAN;
+      return 3;
+   }
    if (skip_quotes && firstOccurrence((CS)s, '\'') != NULL) {
-      Byte       buf[100];
-      Byte       *p;
-      int       quotes = 0;
+      Byte buf[100];
+      int  quotes = 0;
 
       copySubstrToAllocation(buf, (Text){s, 99});
-      for (p = buf; ; p = skipdigits(p)) {
+      for (CS p = buf; ; p = skipdigits(p)) {
          // remove single quotes between digits, not in the exponent
          if (*p == '\'') {
             ++quotes;
@@ -8084,22 +7999,22 @@ f_sinh(Arr(Var) argvars, Var* returnVar) {
 // Prepare "gap" for an assert error and add the sourcing position.
 private void
 prepare_assert_error(ArrayList *gap) {
-    char    buf[NUMBUFLEN];
-    Byte  *sname = estack_sfile(ESTACK_NONE);
+   char    buf[NUMBUFLEN];
+   Byte  *sname = estack_sfile(ESTACK_NONE);
 
-    ga_init2(gap, 1, 100);
-    if (sname != NULL) {
-   ga_concat(gap, sname);
-   if (SOURCING_LNUM > 0)
-       ga_concat(gap, (CS)" ");
-    }
-    if (SOURCING_LNUM > 0) {
-   sprintf(buf, "line %ld", (long)SOURCING_LNUM);
-   ga_concat(gap, (CS)buf);
-    }
-    if (sname != NULL || SOURCING_LNUM > 0)
-   ga_concat(gap, (CS)": ");
-    eeglFree(sname);
+   ga_init2(gap, 1, 100);
+   if (sname != NULL) {
+      ga_concat(gap, sname);
+      if (SOURCING_LNUM > 0)
+          ga_concat(gap, (CS)" ");
+   }
+   if (SOURCING_LNUM > 0) {
+      sprintf(buf, "line %ld", (long)SOURCING_LNUM);
+      ga_concat(gap, (CS)buf);
+   }
+   if (sname != NULL || SOURCING_LNUM > 0)
+      ga_concat(gap, (CS)": ");
+   eeglFree(sname);
 }
 
 //Append "p[clen]" to "gap", escaping unprintable characters.
@@ -8113,9 +8028,9 @@ ga_concat_esc(ArrayList *gap, Byte *p, int clen) {
       buf[clen] = ZERO;
       ga_concat(gap, buf);
       return;
-    }
+   }
 
-    switch (*p) {
+   switch (*p) {
    case BS: ga_concat(gap, (CS)"\\b"); break;
    case ESC: ga_concat(gap, (CS)"\\e"); break;
    case FF: ga_concat(gap, (CS)"\\f"); break;
@@ -8124,14 +8039,13 @@ ga_concat_esc(ArrayList *gap, Byte *p, int clen) {
    case ENTER: ga_concat(gap, (CS)"\\r"); break;
    case '\\': ga_concat(gap, (CS)"\\\\"); break;
    default:
-         if (*p < ' ' || *p == 0x7f) {
-             eeSnprintf(buf, NUMBUFLEN, "\\x%02x", *p);
-             ga_concat(gap, buf);
-         }
-         else
-             ga_append(gap, *p);
-         break;
-    }
+      if (*p < ' ' || *p == 0x7f) {
+         eeSnprintf(buf, NUMBUFLEN, "\\x%02x", *p);
+         ga_concat(gap, buf);
+      } else
+         ga_append(gap, *p);
+      break;
+   }
 }
 
 //Append "str" to "gap", escaping unprintable characters.
@@ -8193,88 +8107,87 @@ fill_assert_error(
 
    if (opt_msg_tv->tag != VAR_UNKNOWN
        && !(opt_msg_tv->tag == VAR_STRING
-      && (opt_msg_tv->string == NULL
-          || *opt_msg_tv->string == ZERO)))
-    {
-   ga_concat(gap, echo_string(opt_msg_tv, &tofree, numbuf, 0));
-   eeglFree(tofree);
-   ga_concat(gap, (CS)": ");
-    }
-
-    if (assKind == ASSERT_MATCH || assKind == ASSERT_NOTMATCH)
-   ga_concat(gap, (CS)"Pattern ");
-    ei (assKind == ASSERT_NOTEQUAL)
-   ga_concat(gap, (CS)"Expected not equal to ");
-    else
-   ga_concat(gap, (CS)"Expected ");
-    if (exp_str == NULL) {
-   // When comparing dictionaries, drop the items that are equal, so that
-   // it's a lot easier to see what differs.
-   if (assKind != ASSERT_NOTEQUAL
-      && exp_tv->tag == VAR_BAG && got_tv->tag == VAR_BAG
-      && exp_tv->bag != NULL && got_tv->bag != NULL)
-   {
-      Bag   *exp_d = exp_tv->bag;
-      Bag   *got_d = got_tv->bag;
-      EeSetItem   *hi;
-      DictItem   *item2;
-      int      todo;
-
-      did_copy = TRUE;
-      exp_tv->bag = allocBag();
-      got_tv->bag = allocBag();
-
-      todo = (int)exp_d->hashTable.count;
-      FOR_ALL_HASHTAB_ITEMS(&exp_d->hashTable, hi, todo) {
-         if (!HASHITEM_EMPTY(hi)) {
-            item2 = bagFind(got_d, textOfItem(hi));
-            if (!item2 || !tv_equal(&HI2DI(hi)->c, &item2->c, FALSE)) {
-               // item of exp_d not present in got_d or values differ.
-               bagAddVar(exp_tv->bag, hi->hi_key, &HI2DI(hi)->c);
-               if (item2)
-                  bagAddVar(got_tv->bag, hi->hi_key, &item2->c);
-            } else
-               ++omitted;
-            --todo;
-         }
-      }
-
-      // Add items only present in got_d.
-      todo = (int)got_d->hashTable.count;
-      FOR_ALL_HASHTAB_ITEMS(&got_d->hashTable, hi, todo) {
-         if (!HASHITEM_EMPTY(hi)) {
-            item2 = bagFind(exp_d, textOfItem(hi));
-            if (item2 == NULL)
-               // item of got_d not present in exp_d
-               bagAddVar(got_tv->bag, hi->hi_key, &HI2DI(hi)->c);
-            --todo;
-         }
-      }
+         && (opt_msg_tv->string == NULL || *opt_msg_tv->string == ZERO))
+   ) {
+      ga_concat(gap, echo_string(opt_msg_tv, &tofree, numbuf, 0));
+      eeglFree(tofree);
+      ga_concat(gap, (CS)": ");
    }
 
-   ga_concat_shorten_esc(gap, tv2string(exp_tv, &tofree, numbuf, 0));
-   eeglFree(tofree);
-    } else {
-   if (assKind == ASSERT_FAILS)
-       ga_concat(gap, (CS)"'");
-   ga_concat_shorten_esc(gap, exp_str);
-   if (assKind == ASSERT_FAILS)
-       ga_concat(gap, (CS)"'");
+   if (assKind == ASSERT_MATCH || assKind == ASSERT_NOTMATCH)
+      ga_concat(gap, (CS)"Pattern ");
+   ei (assKind == ASSERT_NOTEQUAL)
+      ga_concat(gap, (CS)"Expected not equal to ");
+   else
+      ga_concat(gap, (CS)"Expected ");
+   if (exp_str == NULL) {
+      // When comparing dictionaries, drop the items that are equal, so that
+      // it's a lot easier to see what differs.
+      if (assKind != ASSERT_NOTEQUAL
+         && exp_tv->tag == VAR_BAG && got_tv->tag == VAR_BAG
+         && exp_tv->bag != NULL && got_tv->bag != NULL)
+      {
+         Bag   *exp_d = exp_tv->bag;
+         Bag   *got_d = got_tv->bag;
+         EeSetItem   *hi;
+         DictItem   *item2;
+         int      todo;
+
+         did_copy = TRUE;
+         exp_tv->bag = allocBag();
+         got_tv->bag = allocBag();
+
+         todo = (int)exp_d->hashTable.count;
+         FOR_ALL_HASHTAB_ITEMS(&exp_d->hashTable, hi, todo) {
+            if (!HASHITEM_EMPTY(hi)) {
+               item2 = bagFind(got_d, textOfItem(hi));
+               if (!item2 || !tv_equal(&HI2DI(hi)->c, &item2->c, FALSE)) {
+                  // item of exp_d not present in got_d or values differ.
+                  bagAddVar(exp_tv->bag, hi->hi_key, &HI2DI(hi)->c);
+                  if (item2)
+                     bagAddVar(got_tv->bag, hi->hi_key, &item2->c);
+               } else
+                  ++omitted;
+               --todo;
+            }
+         }
+
+         // Add items only present in got_d.
+         todo = (int)got_d->hashTable.count;
+         FOR_ALL_HASHTAB_ITEMS(&got_d->hashTable, hi, todo) {
+            if (!HASHITEM_EMPTY(hi)) {
+               item2 = bagFind(exp_d, textOfItem(hi));
+               if (item2 == NULL)
+                  // item of got_d not present in exp_d
+                  bagAddVar(got_tv->bag, hi->hi_key, &HI2DI(hi)->c);
+               --todo;
+            }
+         }
+      }
+
+      ga_concat_shorten_esc(gap, tv2string(exp_tv, &tofree, numbuf, 0));
+      eeglFree(tofree);
+   } else {
+      if (assKind == ASSERT_FAILS)
+          ga_concat(gap, (CS)"'");
+      ga_concat_shorten_esc(gap, exp_str);
+      if (assKind == ASSERT_FAILS)
+          ga_concat(gap, (CS)"'");
    }
    if (assKind != ASSERT_NOTEQUAL) {
       if (assKind == ASSERT_MATCH)
-          ga_concat(gap, (CS)" does not match ");
+         ga_concat(gap, (CS)" does not match ");
       ei (assKind == ASSERT_NOTMATCH)
-          ga_concat(gap, (CS)" does match ");
+         ga_concat(gap, (CS)" does match ");
       else
-          ga_concat(gap, (CS)" but got ");
+         ga_concat(gap, (CS)" but got ");
       ga_concat_shorten_esc(gap, tv2string(got_tv, &tofree, numbuf, 0));
       eeglFree(tofree);
 
       if (omitted != 0) {
-          Byte buf[100];
-          eeSnprintf(buf, 100, " - %d equal item%s omitted", omitted, omitted == 1 ? "" : "s");
-          ga_concat(gap, (CS)buf);
+         Byte buf[100];
+         eeSnprintf(buf, 100, " - %d equal item%s omitted", omitted, omitted == 1 ? "" : "s");
+         ga_concat(gap, (CS)buf);
       }
    }
 
@@ -8324,8 +8237,8 @@ assert_bool(Arr(Var) argvars, int isTrue) {
       return 0;
    if (argvars[0].tag != VAR_NUMBER
        || (varGetNumberChk(argvars, OUT &error) == 0) == isTrue
-       || error)
-    {
+       || error
+   ) {
       prepare_assert_error(&ga);
       fill_assert_error(&ga, &argvars[1],
          (CS)(isTrue ? "True" : "False"),
@@ -8339,8 +8252,8 @@ assert_bool(Arr(Var) argvars, int isTrue) {
 
 private void
 assert_append_cmd_or_arg(ArrayList *gap, Arr(Var) argvars, Byte *cmd) {
-   Byte   *tofree;
-   Byte   numbuf[NUMBUFLEN];
+   Byte* tofree;
+   Byte numbuf[NUMBUFLEN];
 
    if (argvars[1].tag != VAR_UNKNOWN && argvars[2].tag != VAR_UNKNOWN) {
       ga_concat(gap, echo_string(&argvars[2], &tofree, numbuf, 0));
@@ -8357,10 +8270,10 @@ f_assert_equal(Arr(Var) argvars, Var* returnVar) {
 
 private int
 assert_equalfile(Arr(Var) argvars) {
-   Byte   buf1[NUMBUFLEN];
-   Byte   buf2[NUMBUFLEN];
-   Byte   *fname1 = convertVarToString(&argvars[0], buf1);
-   Byte   *fname2 = convertVarToString(&argvars[1], buf2);
+   Byte buf1[NUMBUFLEN];
+   Byte buf2[NUMBUFLEN];
+   CS fname1 = convertVarToString(&argvars[0], buf1);
+   CS fname2 = convertVarToString(&argvars[1], buf2);
 
    if (!fname1 || !fname2)
       return 0;
@@ -8397,55 +8310,54 @@ assert_equalfile(Arr(Var) argvars) {
                line2[lineidx] = c2;
                ++lineidx;
                if (c1 != c2) {
-               eeSnprintf(IObuff, IOSIZE,
-                         "difference at byte %ld, line %ld", count, linecount);
-               break;
-                }
+                  eeSnprintf(IObuff, IOSIZE, "difference at byte %ld, line %ld", count, linecount);
+                  break;
+               }
             }
             ++count;
             if (c1 == NL) {
-                ++linecount;
-                lineidx = 0;
+               ++linecount;
+               lineidx = 0;
             } ei (lineidx + 2 == (int)sizeof(line1)) {
-                mch_memmove(line1, line1 + 100, lineidx - 100);
-                mch_memmove(line2, line2 + 100, lineidx - 100);
-                lineidx -= 100;
+               mch_memmove(line1, line1 + 100, lineidx - 100);
+               mch_memmove(line2, line2 + 100, lineidx - 100);
+               lineidx -= 100;
             }
-          }
-          fclose(fd1);
-          fclose(fd2);
+         }
+         fclose(fd1);
+         fclose(fd2);
       }
     }
 
-    if (IObuff[0] != ZERO) {
-   ArrayList   ga;
-   prepare_assert_error(&ga);
-   if (argvars[2].tag != VAR_UNKNOWN) {
-       Byte   numbuf[NUMBUFLEN];
-       Byte   *tofree;
+   if (IObuff[0] != ZERO) {
+      ArrayList   ga;
+      prepare_assert_error(&ga);
+      if (argvars[2].tag != VAR_UNKNOWN) {
+          Byte   numbuf[NUMBUFLEN];
+          Byte   *tofree;
 
-       ga_concat(&ga, echo_string(&argvars[2], &tofree, numbuf, 0));
-       eeglFree(tofree);
-       ga_concat(&ga, (CS)": ");
-   }
-   ga_concat(&ga, IObuff);
-   if (lineidx > 0) {
-      line1[lineidx] = ZERO;
-      line2[lineidx] = ZERO;
-      ga_concat(&ga, (CS)" after \"");
-      ga_concat(&ga, (CS)line1);
-      if (STRCMP(line1, line2) != 0) {
-         ga_concat(&ga, (CS)"\" vs \"");
-         ga_concat(&ga, (CS)line2);
+          ga_concat(&ga, echo_string(&argvars[2], &tofree, numbuf, 0));
+          eeglFree(tofree);
+          ga_concat(&ga, (CS)": ");
       }
-      ga_concat(&ga, (CS)"\"");
+      ga_concat(&ga, IObuff);
+      if (lineidx > 0) {
+         line1[lineidx] = ZERO;
+         line2[lineidx] = ZERO;
+         ga_concat(&ga, (CS)" after \"");
+         ga_concat(&ga, (CS)line1);
+         if (STRCMP(line1, line2) != 0) {
+            ga_concat(&ga, (CS)"\" vs \"");
+            ga_concat(&ga, (CS)line2);
+         }
+         ga_concat(&ga, (CS)"\"");
+      }
+      assert_error(&ga);
+      ga_clear(&ga);
+      return 1;
    }
-   assert_error(&ga);
-   ga_clear(&ga);
-   return 1;
-    }
 
-    return 0;
+   return 0;
 }
 
 //"assert_equalfile(fname-one, fname-two[, msg])" function
@@ -8506,7 +8418,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
    in_assert_fails = TRUE;
    ++no_wait_return;
 
-   Byte *cmd = convertVarToStringSingleUse(&argvars[0]);
+   CS cmd = convertVarToStringSingleUse(&argvars[0]);
    executeCommLine(cmd);
 
    // reset here for any errors reported below
@@ -8530,8 +8442,8 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
                             : emsg_assert_fails_msg;
 
       if (argvars[1].tag == VAR_STRING) {
-          expected = convertVarToString(&argvars[1], buf);
-          error_found = expected == NULL || strstr((char *)actual, (char *)expected) == NULL;
+         expected = convertVarToString(&argvars[1], buf);
+         error_found = expected == NULL || strstr((char *)actual, (char *)expected) == NULL;
       } ei (argvars[1].tag == VAR_LIST) {
          List   *list = argvars[1].list;
          Var   *tv;
@@ -8572,11 +8484,11 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
          } ei (argvars[3].number >= 0 && argvars[3].number != emsg_assert_fails_lnum) {
             error_found = TRUE;
             error_found_index = 3;
-          }
+         }
          if (!error_found && argvars[4].tag != VAR_UNKNOWN) {
             if (argvars[4].tag != VAR_STRING) {
-                wrong_arg_msg = e_assert_fails_fifth_argument;
-                goto theend;
+               wrong_arg_msg = e_assert_fails_fifth_argument;
+               goto theend;
             } ei (argvars[4].string 
                   && !pattern_match(argvars[4].string, emsg_assert_fails_context, FALSE)
             ) {
@@ -8648,17 +8560,17 @@ assert_inrange(Arr(Var) argvars) {
       double factual = tv_get_float(&argvars[2]);
 
       if (factual < flower || factual > fupper) {
-          prepare_assert_error(&ga);
-          eeSnprintf(expected_str, 200, "range %g - %g,", flower, fupper);
-          fill_assert_error(&ga, &argvars[3], expected_str, NULL, &argvars[2], ASSERT_OTHER);
-          assert_error(&ga);
-          ga_clear(&ga);
-          return 1;
+         prepare_assert_error(&ga);
+         eeSnprintf(expected_str, 200, "range %g - %g,", flower, fupper);
+         fill_assert_error(&ga, &argvars[3], expected_str, NULL, &argvars[2], ASSERT_OTHER);
+         assert_error(&ga);
+         ga_clear(&ga);
+         return 1;
       }
    } else {
-      Long   lower = varGetNumberChk(&argvars[0], OUT &error);
-      Long   upper = varGetNumberChk(&argvars[1], OUT &error);
-      Long   actual = varGetNumberChk(&argvars[2], OUT &error);
+      Long lower = varGetNumberChk(&argvars[0], OUT &error);
+      Long upper = varGetNumberChk(&argvars[1], OUT &error);
+      Long actual = varGetNumberChk(&argvars[2], OUT &error);
 
       if (error)
          return 0;
@@ -8883,13 +8795,13 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
          retval = argvars[0].blob->refcount - 1;
       break;
    case VAR_LIST:
-       if (argvars[0].list != NULL)
-      retval = argvars[0].list->refcount - 1;
-       break;
+      if (argvars[0].list != NULL)
+         retval = argvars[0].list->refcount - 1;
+      break;
    case VAR_BAG:
-       if (argvars[0].bag != NULL)
-      retval = argvars[0].bag->refcount - 1;
-       break;
+      if (argvars[0].bag != NULL)
+         retval = argvars[0].bag->refcount - 1;
+      break;
    }
 
    returnVar->tag = VAR_NUMBER;
@@ -9037,17 +8949,17 @@ check_can_index(Var* var, int evaluate, int verbose) {
 // Alternatively, "key" is not NULL, then key[keylen] is the dict index.
 int
 eval_index_inner(
-   Var    *returnVar,
-   int       is_range,
-   Var    *var1,
-   Var    *var2,
-   int       exclusive,
-   Byte       *key,
-   int       keylen,
-   int       verbose)
-{
-   Long       n1, n2 = 0;
-   long       len;
+   Var* returnVar,
+   int is_range,
+   Var* var1,
+   Var* var2,
+   int exclusive,
+   CS key,
+   int keylen,
+   int verbose
+) {
+   Long n1, n2 = 0;
+   long len;
 
    n1 = 0;
    if (var1 && returnVar->tag != VAR_BAG)
@@ -9078,7 +8990,7 @@ eval_index_inner(
    case VAR_CHANNEL:
    case VAR_NUMBER:
    case VAR_STRING: {
-      Byte   *s = tv_get_string(returnVar);
+      CS s = tv_get_string(returnVar);
 
       len = (long)STRLEN(s);
       if (exclusive) {
@@ -9527,7 +9439,7 @@ blob_add(Arr(Var) argvars, Var* returnVar) {
 
 // "remove({blob}, {idx} [, {end}])" function
 void
-blob_remove(Arr(Var) argvars, Var* returnVar, Byte *arg_errmsg) {
+blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    Blob   *b = argvars[0].blob;
    Blob   *newblob;
    Boole error = false;
@@ -9707,11 +9619,7 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
 // Implementation of reduce() for Blob "argvars[0]" using the function "expr"
 // starting with the optional initial value "argvars[2]" and return the result in "returnVar".
 void
-blob_reduce(
-   Var   *argvars,
-   Var   *expr,
-   Var   *returnVar)
-{
+blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
    Blob   *b = argvars[0].blob;
    int      called_emsg_start = called_emsg;
    int      r;
@@ -9752,7 +9660,7 @@ blob_reduce(
 }
 
 void
-blob_reverse(Blob *b, Var* returnVar) {
+blob_reverse(Blob* b, Var* returnVar) {
    int   i, len = blob_len(b);
 
    for (i = 0; i < len / 2; i++) {

@@ -24,8 +24,8 @@
 //the screen contents is drawn.
 //
 //When the job ends the text is put in a buffer.  Redrawing then happens from that buffer, 
-//decorations come from the scrollback buffer tl_scrollback.
-//When the buffer is changed it is turned into a normal buffer, the decorations in tl_scrollback 
+//decorations come from the scrollback buffer scrollback.
+//When the buffer is changed it is turned into a normal buffer, the decorations in scrollback 
 //are no longer used.
 
 #include "eegl.h"
@@ -6917,10 +6917,10 @@ typedef struct {
 } CellDeco;
 
 typedef struct sb_line_S {
-   Unt      cols;   // can differ per line
-   CellDeco   *sb_cells;   // allocated
-   CellDeco   sb_fillDeco;   // for short line
-   Byte   *sb_text;   // for tl_scrollback_postponed
+   Unt cols;   // can differ per line
+   Arr(CellDeco) sb_cells;   // allocated
+   CellDeco sb_fillDeco;   // for short line
+   CS sb_text;   // for scrollbackPostponed
 } ScrollbackLine;
 
 // typedef Terminal in eegl.h@@structs
@@ -6940,11 +6940,11 @@ struct Terminal {
    int isChannelRecentlyClosed; // still need to handle tl_finish
 
    int tl_finish;
-#define TL_FINISH_UNSET       ZERO
-#define TL_FINISH_CLOSE       'c'   // ++close or :terminal without argument
+#define TL_FINISH_UNSET   ZERO
+#define TL_FINISH_CLOSE     'c'   // ++close or :terminal without argument
 #define TL_FINISH_NOCLOSE   'n'   // ++noclose
-#define TL_FINISH_OPEN       'o'   // ++open
-   CS tl_opencmd;
+#define TL_FINISH_OPEN      'o'   // ++open
+   CS openComm;
    CS tl_eof_chars;
    CS tl_api;   // prefix for terminal API function
 
@@ -6961,33 +6961,33 @@ struct Terminal {
    CS tl_status_text; // NULL or allocated
 
    // Range of screen rows to update.  Zero based.
-   int      dirtyRowStart; // MAX_ROW if nothing dirty
-   int      dirtyRowEnd;   // row below last one to update
-   Boole      dirtySnapshot;  // text updated after making snapshot
-   int      tl_timer_set;
-   ProfTime   tl_timer_due;
-   Unt      postponedScroll;   // to be scrolled up
+   int dirtyRowStart; // MAX_ROW if nothing dirty
+   int dirtyRowEnd;   // row below last one to update
+   Boole dirtySnapshot;  // text updated after making snapshot
+   Boole timerSet;
+   ProfTime timerDue;
+   Unt postponedScroll;   // to be scrolled up
 
-   ArrayList   tl_scrollback;
-   int      tl_scrollback_scrolled;
-   ArrayList   tl_scrollback_postponed;
+   ArrayList scrollback;
+   int scrollbackScrolled;
+   ArrayList scrollbackPostponed;
 
-   CS tl_highlight_name; // replaces "Terminal"; allocated
+   CS hiliteName; // replaces "Terminal"; allocated
 
-   CellDeco   cellDeco;
+   CellDeco cellDeco;
 
-   LineNr   tl_top_diff_rows;   // rows of top diff file or zero
-   LineNr   tl_bot_diff_rows;   // rows of bottom diff file
+   LineNr topDiffRows;   // rows of top diff file or zero
+   LineNr bottDiffRows;   // rows of bottom diff file
 
    VTermPos   cursorPos;
-   int      tl_cursor_visible;
-   int      tl_cursor_blink;
-   int      tl_cursor_shape;  // 1: block, 2: underline, 3: bar
+   int tl_cursor_visible;
+   int tl_cursor_blink;
+   int tl_cursor_shape;  // 1: block, 2: underline, 3: bar
    Byte* tl_cursor_color; // NULL or allocated
 
    Ulong* palette; // array of 16 colors specified by term_start, can be NULL
-   int      tl_using_altscreen;
-   ArrayList   oscBuilder;       // incomplete OSC string
+   int tl_using_altscreen;
+   ArrayList oscBuilder;       // incomplete OSC string
 };
 
 #define TMODE_ONCE 1       // CTRL-\ CTRL-N used
@@ -7224,8 +7224,8 @@ term_start(
    term->tl_cursor_visible = TRUE;
    term->tl_cursor_shape = VTERM_PROP_CURSORSHAPE_BLOCK;
    term->tl_finish = opt->jo_term_finish;
-   ga_init2(&term->tl_scrollback, sizeof(ScrollbackLine), 300);
-   ga_init2(&term->tl_scrollback_postponed, sizeof(ScrollbackLine), 300);
+   ga_init2(&term->scrollback, sizeof(ScrollbackLine), 300);
+   ga_init2(&term->scrollbackPostponed, sizeof(ScrollbackLine), 300);
    ga_init2(&term->oscBuilder, sizeof(char), 300);
 
    setpcmark();
@@ -7346,7 +7346,7 @@ term_start(
    apply_autocmds(EVENT_BUFFILEPOST, NULL, NULL, false, curBook);
 
    if (opt->jo_term_opencmd)
-      term->tl_opencmd = copyStr(opt->jo_term_opencmd);
+      term->openComm = copyStr(opt->jo_term_opencmd);
 
    if (opt->jo_eof_chars)
       term->tl_eof_chars = copyStr(opt->jo_eof_chars);
@@ -7405,7 +7405,7 @@ term_start(
       term->tl_api = copyStr(S"Tapi_");
 
    if (opt->set1 & JO2_TERM_HIGHLIGHT)
-      term->tl_highlight_name = copyStr(opt->jo_term_highlight);
+      term->hiliteName = copyStr(opt->jo_term_highlight);
 
    // Save the user-defined palette, it is only used in GUI (or 'tgc' is on).
    if (opt->set1 & JO2_ANSI_COLORS) {
@@ -7707,12 +7707,12 @@ private void
 free_scrollback(Terminal *term) {
     int i;
 
-   for (i = 0; i < term->tl_scrollback.len; ++i)
-      eeglFree(((ScrollbackLine *)term->tl_scrollback.c + i)->sb_cells);
-   ga_clear(&term->tl_scrollback);
-   for (i = 0; i < term->tl_scrollback_postponed.len; ++i)
-      eeglFree(((ScrollbackLine *)term->tl_scrollback_postponed.c + i)->sb_cells);
-   ga_clear(&term->tl_scrollback_postponed);
+   for (i = 0; i < term->scrollback.len; ++i)
+      eeglFree(((ScrollbackLine *)term->scrollback.c + i)->sb_cells);
+   ga_clear(&term->scrollback);
+   for (i = 0; i < term->scrollbackPostponed.len; ++i)
+      eeglFree(((ScrollbackLine *)term->scrollbackPostponed.c + i)->sb_cells);
+   ga_clear(&term->scrollbackPostponed);
 }
 
 
@@ -7772,10 +7772,10 @@ free_unused_terminals(void) {
       eeglFree(term->command);
       eeglFree(term->tl_kill);
       eeglFree(term->tl_status_text);
-      eeglFree(term->tl_opencmd);
+      eeglFree(term->openComm);
       eeglFree(term->tl_eof_chars);
       eeglFree(term->tl_arg0_cmd);
-      eeglFree(term->tl_highlight_name);
+      eeglFree(term->hiliteName);
       eeglFree(term->tl_cursor_color);
       eeglFree(term->palette);
       eeglFree(term);
@@ -8292,15 +8292,15 @@ equal_celattr(CellDeco *a, CellDeco *b) {
 // line at this position.  Otherwise at the end.
 private int
 add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum){
-   if (ga_grow(&term->tl_scrollback, 1) == FAIL)
+   if (ga_grow(&term->scrollback, 1) == FAIL)
       return FALSE;
 
-   ScrollbackLine *line = (ScrollbackLine *)term->tl_scrollback.c + term->tl_scrollback.len;
+   ScrollbackLine *line = (ScrollbackLine *)term->scrollback.c + term->scrollback.len;
 
    if (lnum > 0) {
       int i;
 
-      for (i = 0; i < term->tl_scrollback.len - lnum; ++i) {
+      for (i = 0; i < term->scrollback.len - lnum; ++i) {
          *line = *(line - 1);
          --line;
       }
@@ -8308,7 +8308,7 @@ add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum){
    line->cols = 0;
    line->sb_cells = NULL;
    line->sb_fillDeco = *fillDeco;
-   ++term->tl_scrollback.len;
+   ++term->scrollback.len;
    return OK;
 }
 
@@ -8320,8 +8320,8 @@ cleanup_scrollback(Terminal *term) {
    ArrayList   *gap;
 
    curBook = term->book;
-   gap = &term->tl_scrollback;
-   while (curBook->mem.lineCount > term->tl_scrollback_scrolled && gap->len > 0) {
+   gap = &term->scrollback;
+   while (curBook->mem.lineCount > term->scrollbackScrolled && gap->len > 0) {
       ml_delete(curBook->mem.lineCount);
       line = (ScrollbackLine *)gap->c + gap->len - 1;
       eeglFree(line->sb_cells);
@@ -8374,10 +8374,10 @@ update_snapshot(Terminal *term) {
             p = NULL;
          else
             p = ALLOC_MULT(CellDeco, len);
-         if ((p || len == 0) && ga_grow(&term->tl_scrollback, 1) == OK) {
+         if ((p || len == 0) && ga_grow(&term->scrollback, 1) == OK) {
             ArrayList    ga;
             int       width;
-            ScrollbackLine *line = (ScrollbackLine *)term->tl_scrollback.c + term->tl_scrollback.len;
+            ScrollbackLine *line = (ScrollbackLine *)term->scrollback.c + term->scrollback.len;
 
             ga_init2(&ga, 1, 100);
             for (pos.col = 0; pos.col < len; pos.col += width) {
@@ -8408,7 +8408,7 @@ update_snapshot(Terminal *term) {
             line->sb_cells = p;
             line->sb_fillDeco = newFillDeco;
             fillDeco = newFillDeco;
-            ++term->tl_scrollback.len;
+            ++term->scrollback.len;
 
             if (ga_grow(&ga, 1) == FAIL)
                add_scrollback_line_to_buffer(term, (CS)"", 0);
@@ -8423,8 +8423,8 @@ update_snapshot(Terminal *term) {
    }
 
    // Add trailing empty lines.
-   for (pos.row = term->tl_scrollback.len;
-        pos.row < term->tl_scrollback_scrolled + term->cursorPos.row;
+   for (pos.row = term->scrollback.len;
+        pos.row < term->scrollbackScrolled + term->cursorPos.row;
         ++pos.row
    ) {
       if (add_empty_scrollback(term, &fillDeco, 0) == OK)
@@ -8432,7 +8432,7 @@ update_snapshot(Terminal *term) {
    }
 
    term->dirtySnapshot = false;
-   term->tl_timer_set = FALSE;
+   term->timerSet = false;
 }
 
 // Loop over all portals in the current tab, and also curPor, which is not
@@ -8462,7 +8462,7 @@ may_move_terminal_to_buffer(Terminal *term, int redraw) {
       return;
 
    // Update the snapshot only if something changes or the buffer does not have all the lines.
-   if (term->dirtySnapshot || term->book->mem.lineCount <= term->tl_scrollback_scrolled) {
+   if (term->dirtySnapshot || term->book->mem.lineCount <= term->scrollbackScrolled) {
       update_snapshot(term);
    } 
 
@@ -8496,15 +8496,15 @@ may_move_terminal_to_buffer(Terminal *term, int redraw) {
 // Return the time until the next timer will expire.
 int
 term_check_timers(int next_due_arg, ProfTime *now) {
-   Terminal  *term;
+   Terminal* term;
    int       next_due = next_due_arg;
 
    FOR_ALL_TERMS(term) {
-      if (term->tl_timer_set && !term->isNormalMode) {
-         long    this_due = proftime_time_left(&term->tl_timer_due, now);
+      if (term->timerSet && !term->isNormalMode) {
+         long    this_due = proftime_time_left(&term->timerDue, now);
 
          if (this_due <= 1) {
-            term->tl_timer_set = FALSE;
+            term->timerSet = false;
             may_move_terminal_to_buffer(term, FALSE);
          } ei (next_due == -1 || next_due > this_due)
             next_due = this_due;
@@ -8545,7 +8545,7 @@ term_enter_normal_mode(void) {
    may_move_terminal_to_buffer(term, TRUE);
 
    // Move the portal cursor to the position of the cursor in the terminal.
-   curPor->cursor.lnum = term->tl_scrollback_scrolled
+   curPor->cursor.lnum = term->scrollbackScrolled
                     + term->cursorPos.row + 1;
    check_cursor();
    if (coladvance(term->cursorPos.col) == FAIL)
@@ -8553,7 +8553,7 @@ term_enter_normal_mode(void) {
    curPor->setCursWant = true;
 
    // Display the same lines as in the terminal.
-   curPor->topLine = term->tl_scrollback_scrolled + 1;
+   curPor->topLine = term->scrollbackScrolled + 1;
 }
 
 // Return TRUE if the current portal contains a terminal and we are in Terminal-Normal mode.
@@ -8787,8 +8787,8 @@ term_get_highlight_id(Terminal *term, Portal *po) {
 
    if (po && *po->o.hiliteGroupName != ZERO)
       name = po->o.hiliteGroupName;
-   ei (term->tl_highlight_name != NULL)
-      name = term->tl_highlight_name;
+   ei (term->hiliteName != NULL)
+      name = term->hiliteName;
    else
       name = S"Terminal";
 
@@ -9134,12 +9134,12 @@ cellToDecoration(
 }
 
 private void
-set_dirty_snapshot(Terminal *term) {
+set_dirty_snapshot(Terminal* term) {
    term->dirtySnapshot = true;
    if (!term->isNormalMode) {
       // Update the snapshot after 100 msec of not getting updates.
-      profile_setlimit(100L, &term->tl_timer_due);
-      term->tl_timer_set = TRUE;
+      profile_setlimit(100L, &term->timerDue);
+      term->timerSet = true;
    }
 }
 
@@ -9331,7 +9331,7 @@ handle_resize(int rows, int cols, void *user) {
 }
 
 // If the number of lines that are stored goes over 'termwinscroll' then delete the first 10%.
-// "scrollback" points to tl_scrollback or tl_scrollback_postponed.
+// "scrollback" points to scrollback or scrollbackPostponed.
 // "update_buffer" is TRUE when the buffer should be updated.
 private void
 limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
@@ -9354,7 +9354,7 @@ limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
       Portal *curPor_save = curPor;
       Portal *po = NULL;
 
-      term->tl_scrollback_scrolled -= todo;
+      term->scrollbackScrolled -= todo;
 
       FOR_ALL_PORTALS(po) {
          if (po->book == term->book) {
@@ -9377,12 +9377,12 @@ handle_pushline(int cols, const VTermScreenCell *cells, void *user) {
    if (term->isNormalMode) {
       //In Terminal-Normal mode the user interacts with the buffer, thus we
       //must not change it. Postpone adding the scrollback lines.
-      scrollback = &term->tl_scrollback_postponed;
+      scrollback = &term->scrollbackPostponed;
       update_buffer = FALSE;
    } else {
       //First remove the lines that were appended before, the pushed line goes above it.
       cleanup_scrollback(term);
-      scrollback = &term->tl_scrollback;
+      scrollback = &term->scrollback;
       update_buffer = TRUE;
    }
 
@@ -9445,36 +9445,36 @@ handle_pushline(int cols, const VTermScreenCell *cells, void *user) {
    line->sb_fillDeco = fillDeco;
    if (update_buffer) {
       line->sb_text = NULL;
-      ++term->tl_scrollback_scrolled;
+      ++term->scrollbackScrolled;
       ga_clear(&ga);  // free the text
    } else {
       line->sb_text = text;
-      ga_init(&ga);  // text is kept in tl_scrollback_postponed
+      ga_init(&ga);  // text is kept in scrollbackPostponed
    }
    ++scrollback->len;
    return 0; // ignored
 }
 
 //Called when leaving Terminal-Normal mode: deal with any scrollback that was
-//received and stored in tl_scrollback_postponed.
+//received and stored in scrollbackPostponed.
 private void
 handle_postponed_scrollback(Terminal *term) {
 
-   if (term->tl_scrollback_postponed.len == 0)
+   if (term->scrollbackPostponed.len == 0)
       return;
    lo("Moving postponed scrollback to scrollback");
 
    // First remove the lines that were appended before, the pushed lines go above it.
    cleanup_scrollback(term);
 
-   for (int i = 0; i < term->tl_scrollback_postponed.len; ++i) {
+   for (int i = 0; i < term->scrollbackPostponed.len; ++i) {
       Byte      *text;
       ScrollbackLine   *pp_line;
       ScrollbackLine   *line;
 
-      if (ga_grow(&term->tl_scrollback, 1) == FAIL)
+      if (ga_grow(&term->scrollback, 1) == FAIL)
          break;
-      pp_line = (ScrollbackLine *)term->tl_scrollback_postponed.c + i;
+      pp_line = (ScrollbackLine *)term->scrollbackPostponed.c + i;
 
       text = pp_line->sb_text;
       if (text == NULL)
@@ -9482,18 +9482,18 @@ handle_postponed_scrollback(Terminal *term) {
       add_scrollback_line_to_buffer(term, text, (int)STRLEN(text));
       eeglFree(pp_line->sb_text);
 
-      line = (ScrollbackLine *)term->tl_scrollback.c
-                      + term->tl_scrollback.len;
+      line = (ScrollbackLine *)term->scrollback.c
+                      + term->scrollback.len;
       line->cols = pp_line->cols;
       line->sb_cells = pp_line->sb_cells;
       line->sb_fillDeco = pp_line->sb_fillDeco;
       line->sb_text = NULL;
-      ++term->tl_scrollback_scrolled;
-      ++term->tl_scrollback.len;
+      ++term->scrollbackScrolled;
+      ++term->scrollback.len;
    }
 
-   ga_clear(&term->tl_scrollback_postponed);
-   limit_scrollback(term, &term->tl_scrollback, TRUE);
+   ga_clear(&term->scrollbackPostponed);
+   limit_scrollback(term, &term->scrollback, TRUE);
 }
 
 // Called when the terminal wants to ring the system bell.
@@ -9517,7 +9517,7 @@ private VTermScreenCallbacks screen_callbacks = {
 //Do the work after the channel of a terminal was closed. Must be called only when updating_screen
 //is FALSE. Returns TRUE when a buffer was closed (list of terminals may have changed).
 private int
-term_after_channel_closed(Terminal *term) {
+term_after_channel_closed(Terminal* term) {
     // Unless in Terminal-Normal mode: clear the vterm.
    if (!term->isNormalMode) {
       int   fnum = term->book->fiNum;
@@ -9525,13 +9525,13 @@ term_after_channel_closed(Terminal *term) {
       cleanup_vterm(term);
 
       if (term->tl_finish == TL_FINISH_CLOSE) {
-         AutocommSave   aco;
-         int      do_set_locked = term->book->countPortals == 0;
-         Portal   *pwin = NULL;
+         AutocommSave aco;
+         int do_set_locked = term->book->countPortals == 0;
+         Portal* po = NULL;
 
          // If this was a terminal in a popup portal, go back to the previous portal.
          if (popup_is_popup(curPor) && curBook == term->book) {
-            pwin = curPor;
+            po = curPor;
             if (portalIsValid(prevPor))
                 enterPortal(prevPor, FALSE);
          } else
@@ -9558,19 +9558,17 @@ term_after_channel_closed(Terminal *term) {
                 curPor->locked = FALSE;
             auCommRestoreBook(&aco);
          }
-          if (pwin != NULL)
-         popup_close_with_retval(pwin, 0);
-          return TRUE;
+         if (po)
+            popup_close_with_retval(po, 0);
+         return TRUE;
       }
       if (term->tl_finish == TL_FINISH_OPEN && term->book->countPortals == 0) {
-         char    *cmd = term->tl_opencmd == NULL
-               ? "botright sbuf %d"
-               : (char *)term->tl_opencmd;
-         Unt  len = strlen(cmd) + 50;
+         CS comm = term->openComm ? term->openComm : S"botright sbuf %d";
+         Unt len = STRLEN(comm) + 50;
          CS buf = alloc(len);
 
          lo("terminal job finished, opening portal");
-         eeSnprintf(buf, len, cmd, fnum);
+         eeSnprintf(buf, len, comm, fnum);
          executeCommLine(buf);
          eeglFree(buf);
       } else
@@ -9588,20 +9586,18 @@ may_close_term_popup(void) {
    if (!popup_is_popup(curPor) || !curBook->term || term_job_running_not_none(curBook->term))
       return FAIL;
 
-   Portal *pwin = curPor;
+   Portal* po = curPor;
 
    if (portalIsValid(prevPor))
       enterPortal(prevPor, FALSE);
-   popup_close_with_retval(pwin, 0);
-    return OK;
+   popup_close_with_retval(po, 0);
+   return OK;
 }
 
 // Called when a channel is going to be closed, before invoking the close callback.
 void
-term_channel_closing(Channel *ch) {
-   Terminal *term;
-
-   for (term = first_term; term != NULL; term = term->next) {
+term_channel_closing(Channel* ch) {
+   for (Terminal* term = first_term; term != NULL; term = term->next) {
       if (term->job == ch->job && !term->isChannelClosed)
           term->isChannelClosing = TRUE;
    } 
@@ -9609,10 +9605,10 @@ term_channel_closing(Channel *ch) {
 
 // Called when a channel has been closed. If this was a terminal portal's chan, then finish it up
 void
-term_channel_closed(Channel *ch) {
-   Terminal *term;
-   Terminal *next_term;
-   int       did_one = FALSE;
+term_channel_closed(Channel* ch) {
+   Terminal* term;
+   Terminal* next_term;
+   int did_one = FALSE;
 
    for (term = first_term; term != NULL; term = next_term) {
       next_term = term->next;
@@ -9651,7 +9647,7 @@ term_channel_closed(Channel *ch) {
 //To be called after resetting updating_screen: handle any terminal where the channel was closed.
 void
 term_check_channel_closed_recently(void) {
-   Terminal *next_term;
+   Terminal* next_term;
 
    for (Terminal* term = first_term; term != NULL; term = next_term) {
       next_term = term->next;
@@ -9667,11 +9663,11 @@ term_check_channel_closed_recently(void) {
 //Fill one screen line from a line of the terminal. Advances "pos" to past the last column.
 private void
 term_line2screenline(
-   Terminal      *term,
-   Portal      *po,
-   VTermScreen   *screen,
-   VTermPos   *pos,
-   Unt      max_col
+   Terminal* term,
+   Portal* po,
+   VTermScreen* screen,
+   VTermPos* pos,
+   Unt max_col
 ) {
    int off = screen_get_current_line_off();
 
@@ -9721,14 +9717,14 @@ term_line2screenline(
 //Return TRUE if portal "po" is to be redrawn with term_update_window().
 //Return FALSE when there is no terminal running in this portal or it is in Terminal-Normal mode.
 int
-termDoUpdatePortal(Portal *po) {
-   Terminal   *term = po->book->term;
+termDoUpdatePortal(Portal* po) {
+   Terminal* term = po->book->term;
    return term != NULL && term->vterm != NULL && !term->isNormalMode;
 }
 
 // Called to update a portal that contains an active terminal.
 void
-termUpdatePortal(Portal *po) {
+termUpdatePortal(Portal* po) {
    Terminal* term = po->book->term;
    VTerm   *vterm;
    VTermScreen *screen;
@@ -9818,7 +9814,7 @@ termUpdatePortal(Portal *po) {
 //Called after updating all portals: may reset dirty rows.
 void
 termDidUpdatePortal(Portal* po) {
-   Terminal   *term = po->book->term;
+   Terminal* term = po->book->term;
 
    if (!term || !term->vterm || term->isNormalMode || po->redrawType != 0)
       return;
@@ -9847,7 +9843,7 @@ void
 uiBeforeLeavingTerminal(void) {
    Terminal* term = curBook->term;
 
-   if (!term_is_finished(curBook) || term->tl_scrollback.len <= 0)
+   if (!term_is_finished(curBook) || term->scrollback.len <= 0)
       return;
 
    free_scrollback(term);
@@ -9866,10 +9862,10 @@ termGetDeco(Portal* po, LineNr lnum, int col) {
    ScrollbackLine* line;
    CellDeco* cellattr;
 
-   if (lnum > term->tl_scrollback.len)
+   if (lnum > term->scrollback.len)
       cellattr = &term->cellDeco;
    else {
-      line = (ScrollbackLine *)term->tl_scrollback.c + lnum - 1;
+      line = (ScrollbackLine *)term->scrollback.c + lnum - 1;
       if (col < 0 || (Unt)col >= line->cols)
          cellattr = &line->sb_fillDeco;
       else
@@ -9892,7 +9888,7 @@ cterm_color2vterm(int nr, VTermColor *rgb) {
 
 //Initialize vterm color from the synID. Return TRUE if color is set to "fg" and "bg", or FALSE
 private int
-get_vterm_color_from_synid(int id, VTermColor *fg, VTermColor *bg) {
+get_vterm_color_from_synid(int id, VTermColor* fg, VTermColor* bg) {
    UiColor fgRgb = INVALCOLOR;
    UiColor bgRgb = INVALCOLOR;
 
@@ -9928,7 +9924,7 @@ termResetPortcolor(Portal *po) {
 
 //Cache the color of 'portcolor'.
 void
-termUpdatePortcolor(Portal *po) {
+termUpdatePortcolor(Portal* po) {
    int id = 0;
 
    if (*po->o.hiliteGroupName != ZERO)
@@ -9941,7 +9937,7 @@ termUpdatePortcolor(Portal *po) {
 //Called when any hilite group is changed
 void
 termUpdatePortColorAll(void) {
-   int       did_curPor = FALSE;
+   int did_curPor = FALSE;
 
    Portal* po = null;
    while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor))
@@ -9950,15 +9946,14 @@ termUpdatePortColorAll(void) {
 
 //Initialize term->cellDeco from the environment.
 private void
-init_default_colors(Terminal *term) {
-   VTermColor       *fg, *bg;
-   int          fgval, bgval;
-   int          id;
+init_default_colors(Terminal* term) {
+   int fgval, bgval;
+   int id;
 
    CLEAR_FIELD(term->cellDeco.flags);
    term->cellDeco.width = 1;
-   fg = &term->cellDeco.fg;
-   bg = &term->cellDeco.bg;
+   VTermColor* fg = &term->cellDeco.fg;
+   VTermColor* bg = &term->cellDeco.bg;
 
    // Vterm uses a default black background. Set it to white when 'liteTheme' is set
    if (liteThemeG) {
@@ -9992,13 +9987,12 @@ init_default_colors(Terminal *term) {
 
 //Set the 16 ANSI colors from array of RGB values
 private void
-set_vterm_palette(VTerm *vterm, Ulong *rgb) {
-   int      index = 0;
-   VTermState   *state = vterm_obtain_state(vterm);
+set_vterm_palette(VTerm* vterm, Ulong* rgb) {
+   int index = 0;
+   VTermState* state = vterm_obtain_state(vterm);
 
    for (; index < 16; index++) {
       VTermColor   color;
-
       color.type = VTERM_COLOR_RGB;
       color.red = (unsigned)(rgb[index] >> 16);
       color.green = (unsigned)(rgb[index] >> 8) & 255;
@@ -10010,7 +10004,7 @@ set_vterm_palette(VTerm *vterm, Ulong *rgb) {
 
 //Set the ANSI color palette from a list of colors
 private int
-set_ansi_colors_list(VTerm *vterm, List *list) {
+set_ansi_colors_list(VTerm* vterm, List* list) {
    int      n = 0;
    Ulong   rgb[16];
 
@@ -10053,7 +10047,7 @@ init_vterm_ansi_colors(VTerm *vterm) {
 //Handles a "drop" command from the job in the terminal. "item" is the file name, 
 //"item->next" may have options.
 private void
-handle_drop_command(ListItem *item) {
+handle_drop_command(ListItem* item) {
    CS fname = tv_get_string(&item->c);
    ListItem   *opt_item = item->next;
    Portal   *po;
@@ -10101,24 +10095,23 @@ handle_drop_command(ListItem *item) {
 
 //Return TRUE if "func" starts with "pat" and "pat" isn't empty.
 private int
-is_permitted_term_api(Byte *func, Byte *pat) {
+is_permitted_term_api(CS func, CS pat) {
    return pat != NULL && *pat != ZERO && STRNICMP(func, pat, STRLEN(pat)) == 0;
 }
 
 //Handles a function call from the job running in a terminal.
 //"item" is the function name, "item->next" has the arguments.
 private void
-handle_call_command(Terminal *term, Channel *channel, ListItem *item) {
-   Byte   *func;
-   Var   argvars[2];
-   Var   returnVar;
-   FnExe   funcexe;
+handle_call_command(Terminal* term, Channel* channel, ListItem* item) {
+   Var argvars[2];
+   Var returnVar;
+   FnExe funcexe;
 
    if (item->next == NULL) {
       ch_log(channel, "Missing function arguments for call");
       return;
    }
-   func = tv_get_string(&item->c);
+   CS func = tv_get_string(&item->c);
 
    if (!is_permitted_term_api(func, term->tl_api)) {
       ch_log(channel, "Unpermitted function: %s", func);
@@ -10145,7 +10138,7 @@ handle_call_command(Terminal *term, Channel *channel, ListItem *item) {
 // can assume all bytes are valid UTF-8 bytes. Thus we don't need to deal with invalid UTF-8
 // encoding bytes like 0xfe, 0xff.
 private Unt
-url_decode(const char *src, const Unt len, Byte *dst) {
+url_decode(const char *src, const Unt len, CS dst) {
    Unt i = 0, j = 0;
 
    while (i < len) {
@@ -10168,10 +10161,10 @@ url_decode(const char *src, const Unt len, Byte *dst) {
 //The OSC 7 sequence has the format of "\033]7;file://HOSTNAME/CURRENT/DIR\033\\"
 //and what VTerm provides via VTermStringFragment is "file://HOSTNAME/CURRENT/DIR"
 private void
-sync_shell_dir(ArrayList *gap) {
+sync_shell_dir(ArrayList* gap) {
    int       offset = 7;  // len of "file://" is 7
    char      *pos = (char *)gap->c + offset;
-   Byte    *new_dir;
+   CS new_dir;
 
    // remove HOSTNAME to get PWD
    for (; offset < (int)gap->len && *pos != '/'; ++offset, ++pos ) 
@@ -10191,11 +10184,11 @@ sync_shell_dir(ArrayList *gap) {
 // Called by libvterm when it cannot recognize an OSC sequence. We recognize a terminal API command
 private int
 parse_osc(int command, VTermStringFragment frag, void *user) {
-   Terminal   *term = (Terminal *)user;
-   JsReader   reader;
+   Terminal* term = (Terminal *)user;
+   JsReader reader;
    Var   tv;
-   Channel   *channel = term->job == NULL ? NULL : term->job->jv_channel;
-   ArrayList   *gap = &term->oscBuilder;
+   Channel* channel = term->job == NULL ? NULL : term->job->jv_channel;
+   ArrayList* gap = &term->oscBuilder;
 
    // We recognize only OSC 5 1 ; {command} and OSC 7 ; {command}
    if (command != 51 && (command != 7 || !p_asd))
@@ -10228,21 +10221,21 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
       if (!item)
          ch_log(channel, "Missing command");
       else {
-         Byte   *cmd = tv_get_string(&item->c);
+         CS comm = tv_get_string(&item->c);
 
          // Make sure an invoked command doesn't delete the buffer (and the
          // terminal) under our fingers.
          ++term->book->locked;
 
          item = item->next;
-         if (item == NULL)
-         ch_log(channel, "Missing argument for %s", cmd);
-          ei (STRCMP(cmd, "drop") == 0)
-         handle_drop_command(item);
-          ei (STRCMP(cmd, "call") == 0)
-         handle_call_command(term, channel, item);
-          else
-         ch_log(channel, "Invalid command received: %s", cmd);
+         if (!item)
+            ch_log(channel, "Missing argument for %s", comm);
+         ei (STRCMP(comm, "drop") == 0)
+            handle_drop_command(item);
+         ei (STRCMP(comm, "call") == 0)
+            handle_call_command(term, channel, item);
+         else
+            ch_log(channel, "Invalid command received: %s", comm);
           --term->book->locked;
       }
    } else
@@ -10259,10 +10252,10 @@ private int
 parse_csi(
    CS leader UNUSED,
    const long  args[],
-   int       argcount,
+   int argcount,
    CS intermed UNUSED,
-   Byte       command,
-   void       *user
+   Byte command,
+   void* user
 ){
    Terminal   *term = (Terminal *)user;
    int      len;
@@ -10306,7 +10299,7 @@ private VTermStateFallbacks state_fallbacks = {
 
 // Use Eegl's allocation functions for vterm so profiling works.
 private void *
-vterm_malloc(Unt size, void *data UNUSED) {
+vterm_malloc(Unt size, void* data UNUSED) {
    // make sure that the length is not zero
    return allocZeroed(size == 0 ? 1L : size);
 }
@@ -10323,7 +10316,7 @@ private VTermAllocatorFunctions vterm_allocator = {
 
 // Create a new vterm and initialize it. Return FAIL when out of memory.
 private int
-create_vterm(Terminal *term, int rows, int cols) {
+create_vterm(Terminal* term, int rows, int cols) {
    VTermValue       value;
 
    VTerm* vterm = vterm_new_with_allocator(rows, cols, &vterm_allocator, NULL);
@@ -10366,7 +10359,7 @@ create_vterm(Terminal *term, int rows, int cols) {
 
 // Reset the terminal palette to its default value.
 private void
-term_reset_palette(VTerm *vterm) {
+term_reset_palette(VTerm* vterm) {
    VTermState   *state = vterm_obtain_state(vterm);
 
    for (int index = 0; index < 16; index++) {
@@ -10381,7 +10374,7 @@ term_reset_palette(VTerm *vterm) {
 }
 
 private void
-term_update_palette(Terminal *term) {
+term_update_palette(Terminal* term) {
    if (term->palette || findVar(S"g:terminal_ansi_colors", true) != NULL
    ) {
       if (term->palette != NULL)
@@ -10407,7 +10400,7 @@ term_update_palette_all(void) {
 // Called when option 'liteTheme' was set, or when any hilite is changed.
 void
 term_update_colors_all(void) {
-   Terminal *term;
+   Terminal* term;
 
    FOR_ALL_TERMS(term) {
       if (term->vterm == NULL)
@@ -10449,7 +10442,7 @@ term_get_status_text(Terminal *term) {
 
 // Clear the cached value of the status text.
 void
-term_clear_status_text(Terminal *term) {
+term_clear_status_text(Terminal* term) {
    EE_CLEAR(term->tl_status_text);
 }
 
@@ -10485,7 +10478,7 @@ term_get_buf(Var* argvars, CS where) {
 }
 
 private void
-clear_cell(VTermScreenCell *cell) {
+clear_cell(VTermScreenCell* cell) {
    CLEAR_FIELD(*cell);
    cell->fg.type = VTERM_COLOR_INVALID | VTERM_COLOR_DEFAULT_FG;
    cell->bg.type = VTERM_COLOR_INVALID | VTERM_COLOR_DEFAULT_BG;
@@ -10527,7 +10520,7 @@ dump_term_color(FILE *fd, VTermColor *color) {
 // Repeating the previous screen cell:
 //    @{count}
 void
-f_term_dumpwrite(Var *argvars, Var *returnVar UNUSED) {
+f_term_dumpwrite(Var * argvars, Var* returnVar UNUSED) {
    Unt max_height = 0;
    Unt max_width = 0;
    FileStat   st;
@@ -10707,7 +10700,7 @@ read_dump_file(FILE *fd, VTermPos *cursor_pos) {
    CellDeco       empty_cell;
    Terminal       *term = curBook->term;
    int          max_cells = 0;
-   int          start_row = term->tl_scrollback.len;
+   int          start_row = term->scrollback.len;
 
    ga_init2(&ga_text, 1, 90);
    ga_init2(&ga_cell, sizeof(CellDeco), 90);
@@ -10727,15 +10720,15 @@ read_dump_file(FILE *fd, VTermPos *cursor_pos) {
          // End of a line: append it to the buffer.
          if (ga_text.c == NULL)
             dump_is_corrupt(&ga_text);
-         if (ga_grow(&term->tl_scrollback, 1) == OK) {
-            ScrollbackLine   *line = (ScrollbackLine *)term->tl_scrollback.c + term->tl_scrollback.len;
+         if (ga_grow(&term->scrollback, 1) == OK) {
+            ScrollbackLine   *line = (ScrollbackLine *)term->scrollback.c + term->scrollback.len;
 
             if (max_cells < ga_cell.len)
                 max_cells = ga_cell.len;
             line->cols = ga_cell.len;
             line->sb_cells = ga_cell.c;
             line->sb_fillDeco = term->cellDeco;
-            ++term->tl_scrollback.len;
+            ++term->scrollback.len;
             ga_init(&ga_cell);
 
             ga_append(&ga_text, ZERO);
@@ -10751,7 +10744,7 @@ read_dump_file(FILE *fd, VTermPos *cursor_pos) {
          if (c == '>') {
             if (cursor_pos->row != UNT)
                dump_is_corrupt(&ga_text);   // duplicate cursor
-            cursor_pos->row = term->tl_scrollback.len - start_row;
+            cursor_pos->row = term->scrollback.len - start_row;
             cursor_pos->col = ga_cell.len;
          }
 
@@ -10936,7 +10929,7 @@ get_separator(int text_width, CS fname) {
 
 // Common for "term_dumpdiff()" and "term_dumpload()".
 private void
-term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
+term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    JobOptions   opt;
    Book   *book = NULL;
    Byte   buf1[NUMBUFLEN];
@@ -11032,7 +11025,7 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
    if (!do_diff)
       goto theend;
 
-   term->tl_top_diff_rows = curBook->mem.lineCount;
+   term->topDiffRows = curBook->mem.lineCount;
 
    CS textline = get_separator(width, fname1);
    if (textline == NULL)
@@ -11058,9 +11051,9 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
       width = width2;
       textline[width] = ZERO;
    }
-   term->tl_bot_diff_rows = curBook->mem.lineCount - bot_lnum;
+   term->bottDiffRows = curBook->mem.lineCount - bot_lnum;
 
-   for (lnum = 1; lnum <= term->tl_top_diff_rows; ++lnum) {
+   for (lnum = 1; lnum <= term->topDiffRows; ++lnum) {
       if (lnum + bot_lnum > curBook->mem.lineCount) {
          // bottom part has fewer rows, fill with "-"
          for (Unt i = 0; i < width; ++i)
@@ -11070,7 +11063,7 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
          CS p1;
          CS p2;
          Unt col;
-         ScrollbackLine   *sb_line = (ScrollbackLine *)term->tl_scrollback.c;
+         ScrollbackLine   *sb_line = (ScrollbackLine *)term->scrollback.c;
          CellDeco *cellattr1 = (sb_line + lnum - 1)->sb_cells;
          CellDeco *cellattr2 = (sb_line + lnum + bot_lnum - 1) ->sb_cells;
 
@@ -11129,8 +11122,8 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
 
          eeglFree(line1);
       }
-      if (add_empty_scrollback(term, &term->cellDeco, term->tl_top_diff_rows) == OK)
-         ml_append(term->tl_top_diff_rows + lnum, textline, 0, FALSE);
+      if (add_empty_scrollback(term, &term->cellDeco, term->topDiffRows) == OK)
+         ml_append(term->topDiffRows + lnum, textline, 0, FALSE);
       ++bot_lnum;
    }
 
@@ -11138,8 +11131,8 @@ term_load_dump(Var *argvars, Var *returnVar, int do_diff) {
       // bottom part has more rows, fill with "+"
       for (Unt i = 0; i < width; ++i)
          textline[i] = '+';
-      if (add_empty_scrollback(term, &term->cellDeco, term->tl_top_diff_rows) == OK)
-         ml_append(term->tl_top_diff_rows + lnum, textline, 0, FALSE);
+      if (add_empty_scrollback(term, &term->cellDeco, term->topDiffRows) == OK)
+         ml_append(term->topDiffRows + lnum, textline, 0, FALSE);
       ++lnum;
       ++bot_lnum;
    }
@@ -11172,15 +11165,15 @@ term_swap_diff(void) {
 
    if (term == NULL
        || !term_is_finished(curBook)
-       || term->tl_top_diff_rows == 0
-       || term->tl_scrollback.len == 0)
+       || term->topDiffRows == 0
+       || term->scrollback.len == 0)
    return FAIL;
 
    line_count = curBook->mem.lineCount;
-   top_rows = term->tl_top_diff_rows;
-   bot_rows = term->tl_bot_diff_rows;
+   top_rows = term->topDiffRows;
+   bot_rows = term->bottDiffRows;
    bot_start = line_count - bot_rows;
-   sb_line = (ScrollbackLine *)term->tl_scrollback.c;
+   sb_line = (ScrollbackLine *)term->scrollback.c;
 
    // move lines from top to above the bottom part
    for (lnum = 1; lnum <= top_rows; ++lnum) {
@@ -11220,17 +11213,17 @@ term_swap_diff(void) {
           *(sb_line + bot_start + lnum) = temp;
       }
    } else {
-      Unt      size = sizeof(ScrollbackLine) * term->tl_scrollback.len;
+      Unt      size = sizeof(ScrollbackLine) * term->scrollback.len;
       ScrollbackLine* temp = alloc(size);
 
       // need to copy cell properties into temp memory
       if (temp) {
-         mch_memmove(temp, term->tl_scrollback.c, size);
-         mch_memmove(term->tl_scrollback.c, temp + bot_start, sizeof(ScrollbackLine) * bot_rows);
-         mch_memmove((ScrollbackLine *)term->tl_scrollback.c + bot_rows,
+         mch_memmove(temp, term->scrollback.c, size);
+         mch_memmove(term->scrollback.c, temp + bot_start, sizeof(ScrollbackLine) * bot_rows);
+         mch_memmove((ScrollbackLine *)term->scrollback.c + bot_rows,
              temp + top_rows,
              sizeof(ScrollbackLine) * (line_count - top_rows - bot_rows));
-         mch_memmove((ScrollbackLine *)term->tl_scrollback.c + line_count - top_rows,
+         mch_memmove((ScrollbackLine *)term->scrollback.c + line_count - top_rows,
              temp,
              sizeof(ScrollbackLine) * top_rows
          );
@@ -11238,8 +11231,8 @@ term_swap_diff(void) {
       }
    }
 
-   term->tl_top_diff_rows = bot_rows;
-   term->tl_bot_diff_rows = top_rows;
+   term->topDiffRows = bot_rows;
+   term->bottDiffRows = top_rows;
 
    drawUpdateScreen(UPD_NOT_VALID);
    return OK;
@@ -11247,13 +11240,13 @@ term_swap_diff(void) {
 
 // "term_dumpdiff(filename, filename, options)" function
 void
-f_term_dumpdiff(Var *argvars, Var *returnVar) {
+f_term_dumpdiff(Arr(Var) argvars, Var* returnVar) {
    term_load_dump(argvars, returnVar, TRUE);
 }
 
 // "term_dumpload(filename, options)" function
 void
-f_term_dumpload(Var *argvars, Var *returnVar) {
+f_term_dumpload(Arr(Var) argvars, Var* returnVar) {
    term_load_dump(argvars, returnVar, FALSE);
 }
 
@@ -11292,7 +11285,7 @@ f_term_getcursor(Var* argvars, Var* returnVar) {
 
 // "term_getjob(book)" function
 void
-f_term_getjob(Var *argvars, Var *returnVar) {
+f_term_getjob(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getjob()");
    if (book == NULL) {
       returnVar->tag = VAR_SPECIAL;
@@ -11315,7 +11308,7 @@ get_row_number(Var *tv, Terminal *term) {
 
 // "term_getline(book, row)" function
 void
-f_term_getline(Var *argvars, Var *returnVar) {
+f_term_getline(Arr(Var) argvars, Var* returnVar) {
    Terminal       *term;
    int          row;
 
@@ -11328,7 +11321,7 @@ f_term_getline(Var *argvars, Var *returnVar) {
    row = get_row_number(&argvars[1], term);
 
    if (term->vterm == NULL) {
-      LineNr lnum = row + term->tl_scrollback_scrolled + 1;
+      LineNr lnum = row + term->scrollbackScrolled + 1;
 
       // vterm is finished, get the text from the book
       if (lnum > 0 && lnum <= book->mem.lineCount)
@@ -11357,16 +11350,16 @@ f_term_getline(Var *argvars, Var *returnVar) {
 
 // "term_getscrolled(book)" function
 void
-f_term_getscrolled(Var *argvars, Var *returnVar) {
+f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getscrolled()");
    if (book == NULL)
       return;
-   returnVar->number = book->term->tl_scrollback_scrolled;
+   returnVar->number = book->term->scrollbackScrolled;
 }
 
 // "term_getsize(book)" function
 void
-f_term_getsize(Var *argvars, Var *returnVar) {
+f_term_getsize(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getsize()");
    if (!book)
       return;
@@ -11379,7 +11372,7 @@ f_term_getsize(Var *argvars, Var *returnVar) {
 
 // "term_setsize(book, rows, cols)" function
 void
-f_term_setsize(Var *argvars, Var *returnVar UNUSED) {
+f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
    Terminal   *term;
    Long rows, cols;
 
@@ -11405,7 +11398,7 @@ f_term_setsize(Var *argvars, Var *returnVar UNUSED) {
 
 // "term_getstatus(book)" function
 void
-f_term_getstatus(Var *argvars, Var *returnVar) {
+f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
    Terminal   *term;
    Byte   val[100];
 
@@ -11427,7 +11420,7 @@ f_term_getstatus(Var *argvars, Var *returnVar) {
 
 // "term_gettitle(book)" function
 void
-f_term_gettitle(Var *argvars, Var *returnVar) {
+f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
 
    returnVar->tag = VAR_STRING;
 
@@ -11441,7 +11434,7 @@ f_term_gettitle(Var *argvars, Var *returnVar) {
 
 // "term_gettty(book)" function
 void
-f_term_gettty(Var *argvars, Var *returnVar) {
+f_term_gettty(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_gettty()");
    if (!book)
       return;
@@ -11471,7 +11464,7 @@ f_term_gettty(Var *argvars, Var *returnVar) {
 
 // "term_list()" function
 void
-f_term_list(Var *argvars UNUSED, Var *returnVar) {
+f_term_list(Arr(Var) argvars UNUSED, Var* returnVar) {
    if (first_term == NULL)
       return;
 
@@ -11486,7 +11479,7 @@ f_term_list(Var *argvars UNUSED, Var *returnVar) {
 
 // "term_scrape(book, row)" function
 void
-f_term_scrape(Var *argvars, Var *returnVar) {
+f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    VTermScreen       *screen = NULL;
    VTermPos       pos;
    List       *l;
@@ -11512,12 +11505,12 @@ f_term_scrape(Var *argvars, Var *returnVar) {
       p = NULL;
       line = NULL;
     } else {
-      LineNr   lnum = pos.row + term->tl_scrollback_scrolled;
+      LineNr   lnum = pos.row + term->scrollbackScrolled;
 
-      if (lnum < 0 || lnum >= term->tl_scrollback.len)
+      if (lnum < 0 || lnum >= term->scrollback.len)
           return;
       p = memGetLine(book, lnum + 1, FALSE);
-      line = (ScrollbackLine *)term->tl_scrollback.c + lnum;
+      line = (ScrollbackLine *)term->scrollback.c + lnum;
    }
 
    for (pos.col = 0; pos.col < term->cols; ) {
@@ -11583,7 +11576,7 @@ f_term_scrape(Var *argvars, Var *returnVar) {
 
 // "term_sendkeys(book, keys)" function
 void
-f_term_sendkeys(Var *argvars, Var *returnVar UNUSED) {
+f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_sendkeys()");
    if (!book)
       return;
@@ -11611,7 +11604,7 @@ f_term_sendkeys(Var *argvars, Var *returnVar UNUSED) {
 
 // "term_getansicolors(book)" function
 void
-f_term_getansicolors(Var *argvars, Var *returnVar) {
+f_term_getansicolors(Arr(Var) argvars, Var* returnVar) {
    VTermState   *state;
    VTermColor  color;
    Byte   hexbuf[10];
@@ -11639,7 +11632,7 @@ f_term_getansicolors(Var *argvars, Var *returnVar) {
 
 // "term_setansicolors(book, list)" function
 void
-f_term_setansicolors(Var *argvars, Var *returnVar UNUSED) {
+f_term_setansicolors(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book   *book;
    Terminal   *term;
    ListItem   *li;
@@ -11685,7 +11678,7 @@ f_term_setansicolors(Var *argvars, Var *returnVar UNUSED) {
 
 // "term_setapi(book, api)" function
 void
-f_term_setapi(Var *argvars, Var *returnVar UNUSED) {
+f_term_setapi(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_setapi()");
    if (!book)
       return;
@@ -11697,19 +11690,19 @@ f_term_setapi(Var *argvars, Var *returnVar UNUSED) {
 
 // "term_setrestore(book, command)" function
 void
-f_term_setrestore(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_term_setrestore(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_setrestore()");
    if (!book)
       return;
    Terminal* term = book->term;
    eeglFree(term->command);
-   Byte* cmd = convertVarToStringSingleUse(&argvars[1]);
-   term->command = cmd ? copyStr(cmd) : null;
+   CS comm = convertVarToStringSingleUse(&argvars[1]);
+   term->command = comm ? copyStr(comm) : null;
 }
 
 // "term_setkill(book, how)" function
 void
-f_term_setkill(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_term_setkill(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_setkill()");
    if (!book)
       return;
@@ -11721,7 +11714,7 @@ f_term_setkill(Var *argvars UNUSED, Var *returnVar UNUSED) {
 
 // "term_start(command, options)" function
 void
-f_term_start(Var *argvars, Var *returnVar) {
+f_term_start(Arr(Var) argvars, Var* returnVar) {
    JobOptions   opt;
 
    init_job_options(OUT &opt);
@@ -11744,7 +11737,7 @@ f_term_start(Var *argvars, Var *returnVar) {
 }
 
 void
-f_term_wait(Var *argvars, Var *returnVar UNUSED) {
+f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_wait()");
    if (!book)
       return;
@@ -11794,8 +11787,8 @@ f_term_wait(Var *argvars, Var *returnVar UNUSED) {
 // Called when a channel has sent all the lines to a terminal.
 // Send a CTRL-D to mark the end of the text.
 void
-term_send_eof(Channel *ch) {
-   Terminal   *term;
+term_send_eof(Channel* ch) {
+   Terminal* term;
    FOR_ALL_TERMS(term) {
       if (term->job == ch->job) {
          if (term->tl_eof_chars != NULL) {
@@ -11811,12 +11804,12 @@ term_send_eof(Channel *ch) {
 // Store the pointers in "term". When "argv" is not NULL then "argvar" is not used. OK or FAIL.
 private int
 term_and_job_init(
-	Terminal	    *term,
+	Terminal* term,
 	Var* argvar,
 	Byte** argv,
-	JobOptions    *opt,
-	JobOptions    *orig_opt UNUSED)
-{
+	JobOptions* opt,
+	JobOptions* orig_opt UNUSED
+) {
    term->tl_arg0_cmd = NULL;
 
    if (create_vterm(term, term->rows, term->cols) == FAIL)
@@ -11838,7 +11831,7 @@ term_and_job_init(
 }
 
 private int
-create_pty_only(Terminal *term, JobOptions *opt) {
+create_pty_only(Terminal* term, JobOptions* opt) {
    if (create_vterm(term, term->rows, term->cols) == FAIL)
       return FAIL;
 
@@ -11855,7 +11848,7 @@ create_pty_only(Terminal *term, JobOptions *opt) {
 
 // Free the terminal emulator part of "term".
 private void
-term_free_vterm(Terminal *term) {
+term_free_vterm(Terminal* term) {
    if (term->vterm)
       vterm_free(term->vterm);
    term->vterm = NULL;
@@ -11863,7 +11856,7 @@ term_free_vterm(Terminal *term) {
 
 // Report the size to the terminal.
 private void
-term_report_winsize(Terminal *term, int rows, int cols) {
+term_report_winsize(Terminal* term, int rows, int cols) {
    // Use an ioctl() to report the new portal size to the job.
    if (!term->job || term->job->jv_channel == NULL)
       return;
@@ -11883,7 +11876,7 @@ term_report_winsize(Terminal *term, int rows, int cols) {
 
 #if defined(PROTO)
 Job*
-term_getjob(Terminal *term) {
+term_getjob(Terminal* term) {
    return term ? term->job : NULL;
 }
 #endif
@@ -11908,7 +11901,6 @@ prepare_to_exit(void) {
 //functions, such as allocating memory.
 void
 preserve_exit(void) {
-
    prepare_to_exit();
 
    // Setting this will prevent free() calls.  That avoids calling free()
@@ -11948,7 +11940,7 @@ preserve_exit(void) {
 //"interrupted" (if not NULL) is set to TRUE when no character is available
 //but something else needs to be done.
 int
-realWaitForChar(int fd, long msec, int *check_for_gpm UNUSED, int *interrupted) {
+realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) {
    int      ret;
    int      result;
    static int   busy = FALSE;
@@ -11967,9 +11959,9 @@ realWaitForChar(int fd, long msec, int *check_for_gpm UNUSED, int *interrupted) 
       return 0;
 
    for (;;) {
-      int      finished = TRUE; // default is to 'loop' just once
-      TimeVal  tv;
-      TimeVal   *tvp;
+      int finished = TRUE; // default is to 'loop' just once
+      TimeVal tv;
+      TimeVal* tvp;
       // These are static because they can take 8 Kbyte each and cause the
       // signal stack to run out with -O3.
       static fd_set   rfds, wfds, efds;
@@ -12006,13 +11998,12 @@ realWaitForChar(int fd, long msec, int *check_for_gpm UNUSED, int *interrupted) 
 # ifdef FEAT_X11
       may_restore_x11_clipboard();
       if (isXtermShellDefined()) {
-          FD_SET(ConnectionNumber(xterm_dpy), &rfds);
-          if (maxfd < ConnectionNumber(xterm_dpy))
-         maxfd = ConnectionNumber(xterm_dpy);
+         FD_SET(ConnectionNumber(xterm_dpy), &rfds);
+         if (maxfd < ConnectionNumber(xterm_dpy))
+            maxfd = ConnectionNumber(xterm_dpy);
 
-          // An event may have already been read but not handled. In
-          // particularly, XFlush may cause this.
-          xterm_update();
+         //An event may have already been read but not handled. In particular, XFlush may cause this
+         xterm_update();
       }
 # endif
       maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &tvp);
@@ -12045,9 +12036,9 @@ realWaitForChar(int fd, long msec, int *check_for_gpm UNUSED, int *interrupted) 
 # endif
 
 # ifdef FEAT_WAYLAND
-      // Technically we should first call wl_display_prepare_read() before
-      // polling the fd, then read and dispatch after we poll. However that is
-      // only needed for multi threaded environments to prevent deadlocks so we are fine.
+      //Technically we should first call wl_display_prepare_read() before
+      //polling the fd, then read and dispatch after we poll. However that is
+      //only needed for multi threaded environments to prevent deadlocks so we are fine.
       if (ret > 0 && FD_ISSET(wayland_display_fd, &rfds))
           wayland_client_update();
 # endif
@@ -12055,7 +12046,7 @@ realWaitForChar(int fd, long msec, int *check_for_gpm UNUSED, int *interrupted) 
 # ifdef FEAT_X11
       if (ret > 0 && isXtermShellDefined() && FD_ISSET(ConnectionNumber(xterm_dpy), &rfds)){
          xterm_update();         // Maybe we should hand out clipboard
-         // continue looping when we only got the X event and the input buffer is empty
+         //continue looping when we only got the X event and the input buffer is empty
          if (--ret == 0 && !input_available()) {
             // Try again
             finished = FALSE;
@@ -12150,9 +12141,8 @@ ui_write(CS s, int len, int console UNUSED) {
 }
 
 // When executing an external program, there may be some typed characters that
-// are not consumed by it.  Give them back to ui_inchar() and they are stored
-// here for the next call.
-private Byte *ta_str = NULL;
+// are not consumed by it. Give them back to ui_inchar() and they are stored here for the next call.
+private CS ta_str = NULL;
 private int ta_off;   // offset for next char to use when ta_str != NULL
 private int ta_len;   // length of ta_str when it's not NULL
 
@@ -12196,9 +12186,9 @@ resize_func(int check_only) {
 private int
 mch_inchar(
    OUT CS buf,
-   int         maxlen,
-   long        wtime,       // don't use "time", MIPS cannot handle it
-   int      tb_change_cnt
+   int maxlen,
+   long wtime,       // don't use "time", MIPS cannot handle it
+   int tb_change_cnt
 ) {
    return inchar_loop(OUT buf, maxlen, wtime, tb_change_cnt, waitForChar, resize_func);
 }
@@ -12215,9 +12205,9 @@ mch_inchar(
 int
 ui_inchar(
    OUT CS buf,
-   int      maxlen,
-   long     wtime,       // don't use "time", MIPS cannot handle it
-   int      tb_change_cnt
+   int maxlen,
+   long wtime,       // don't use "time", MIPS cannot handle it
+   int tb_change_cnt
 ){
    int      retval = 0;
 
@@ -12273,7 +12263,6 @@ ui_inchar(
 
    retval = mch_inchar(OUT buf, maxlen, wtime, tb_change_cnt);
 
-
    if (wtime == -1 || wtime > 100L) {
       // block SIGHUP et al.
       (void)eeHandleSignal(SIGNAL_BLOCK);
@@ -12283,30 +12272,30 @@ ui_inchar(
    return retval;
 }
 
-// Common code for mch_inchar() and gui_inchar(): Wait for a while or indefinitely until 
-// characters are available, dealing with timers and messages on channels.
-// "buf" may be NULL if the available characters are not to be returned, only check if they are 
-// available.
-// Return the number of characters that are available.
-// If "wtime" == 0 do not wait for characters.
-// If "wtime" == n wait a short time for characters.
-// If "wtime" == -1 wait forever for characters.
+//Common code for mch_inchar() and gui_inchar(): Wait for a while or indefinitely until 
+//characters are available, dealing with timers and messages on channels.
+//"buf" may be NULL if the available characters are not to be returned, only check if they are 
+//available.
+//Return the number of characters that are available.
+//If "wtime" == 0 do not wait for characters.
+//If "wtime" == n wait a short time for characters.
+//If "wtime" == -1 wait forever for characters.
 int
 inchar_loop(
    OUT CS buf,
-   int      maxlen,
-   long   wtime,       // don't use "time", MIPS cannot handle it
-   int      tb_change_cnt,
-   int      (*wait_func)(long wtime, int *interrupted, int ignore_input),
-   int      (*resize_func)(int check_only)
+   int maxlen,
+   long wtime,       // don't use "time", MIPS cannot handle it
+   int tb_change_cnt,
+   int (*wait_func)(long wtime, int *interrupted, int ignore_input),
+   int (*resize_func)(int check_only)
 ){
-   int      len;
-   int      interrupted = FALSE;
-   int      did_call_wait_func = FALSE;
-   int      did_start_blocking = FALSE;
-   long   wait_time;
-   long   elapsed_time = 0;
-   Elapsed   start_tv;
+   int len;
+   int interrupted = FALSE;
+   int did_call_wait_func = FALSE;
+   int did_start_blocking = FALSE;
+   long wait_time;
+   long elapsed_time = 0;
+   Elapsed start_tv;
 
    ELAPSED_INIT(start_tv);
 
@@ -12349,7 +12338,6 @@ inchar_loop(
                // Put K_CURSORHOLD in the input buffer or return it.
                if (!buf) {
                   Byte ibuf[3];
-
                   ibuf[0] = CSI;
                   ibuf[1] = KS_EXTRA;
                   ibuf[2] = (int)KE_CURSORHOLD;
@@ -12367,7 +12355,7 @@ inchar_loop(
             before_blocking();
             continue;
          }
-       }
+      }
 
       if (wait_time < 0 || wait_time > 100L) {
          // Checking if a job ended requires polling. Do this at least every 100 msec.
@@ -12470,7 +12458,6 @@ ui_wait_for_chars_or_timer(
 //for "ignore_input" see WaitForCharOr().
 //"interrupted" (if not NULL) is set to TRUE when no character is available
 //but something else needs to be done.
-//When a GUI is being used, this will never get called -- webb
 private int
 waitForCharOrMouse(long msec, int *interrupted, int ignore_input) {
    if (!ignore_input && input_available())       // something in inbuf[]
@@ -12505,8 +12492,8 @@ ui_char_avail(void) {
    return mch_char_avail();
 }
 
-// Delay for the given number of milliseconds. If ignoreinput is FALSE then we
-// cancel the delay if a key is hit.
+//Delay for the given number of milliseconds. If ignoreinput is FALSE then we
+//cancel the delay if a key is hit.
 void
 ui_delay(long msec_arg, int ignoreinput) {
    long msec = msec_arg;
@@ -12550,8 +12537,8 @@ ui_breakcheck(void) {
 // This is useful to read input on channels.
 void
 ui_breakcheck_force(Boole force) {
-   static int   recursive = FALSE;
-   int      save_updating_screen = updating_screen;
+   static int recursive = FALSE;
+   int save_updating_screen = updating_screen;
 
    // We could be called recursively if stderr is redirected, calling
    // fill_input_buf() calls termSetMode() when stdin isn't a tty.  termSetMode()
@@ -12588,8 +12575,8 @@ ui_breakcheck_force(Boole force) {
 // remains.
 # define INBUFLEN 4096
 
-private Byte   inbuf[INBUFLEN + MAX_KEY_CODE_LEN];
-private int   inbufcount = 0;       // number of chars in inbuf[]
+private Byte inbuf[INBUFLEN + MAX_KEY_CODE_LEN];
+private int inbufcount = 0;       // number of chars in inbuf[]
 
 // eeIsInputBufFull(), eeIsInputBufEmpty(), add_to_input_buf(), and
 // trash_input_buf() are functions for manipulating the input buffer.  These
@@ -12664,7 +12651,7 @@ add_to_input_buf(CS s, int len) {
 // Add "str[len]" to the input buffer while escaping CSI bytes.
 void
 add_to_input_buf_csi(CS str, int len) {
-   Byte   buf[2];
+   Byte buf[2];
 
    for (int i = 0; i < len; ++i) {
       add_to_input_buf(str + i, 1);
@@ -12680,7 +12667,7 @@ add_to_input_buf_csi(CS str, int len) {
 // Remove everything from the input buffer.  Called when ^C is found.
 void
 trash_input_buf(void) {
-    inbufcount = 0;
+   inbufcount = 0;
 }
 
 // Read as much data from the input buffer as possible up to maxlen, and store it in buf.
@@ -12700,8 +12687,7 @@ read_from_input_buf(CS buf, long maxlen) {
 
 void
 fill_input_buf(Boole exit_on_error) {
-   int      len;
-   int      try;
+   int try;
    static int   did_read_something = FALSE;
    static CS rest = NULL;       // unconverted rest of previous read
    static int   restlen = 0;
@@ -12731,33 +12717,32 @@ fill_input_buf(Boole exit_on_error) {
    } else
       unconverted = 0;
 
-   len = 0;  
+   int len = 0;  
    for (try = 0; try < 100; ++try)  {
       Unt readlen = (Unt)(INBUFLEN - inbufcount);
       len = read(read_cmd_fd, (char *)inbuf + inbufcount, readlen);
-      if (len > 0) { {
+      if (len > 0) {
          inbuf[inbufcount + len] = ZERO;
          lo("raw key input: \"%s\" len %d", inbuf, len);
       } 
-   }
 
-   if (len > 0 || gotInterruptG)
-      break;
-   // If reading stdin results in an error, continue reading stderr.
-   // This helps when using "foo | xargs eegl".
-   if (!did_read_something && !isatty(read_cmd_fd) && read_cmd_fd == 0) {
-       int m = cur_tmode;
+      if (len > 0 || gotInterruptG)
+         break;
+      // If reading stdin results in an error, continue reading stderr.
+      // This helps when using "foo | xargs eegl".
+      if (!did_read_something && !isatty(read_cmd_fd) && read_cmd_fd == 0) {
+          int m = cur_tmode;
 
-       // We probably set the wrong file descriptor to raw mode.  Switch
-       // back to cooked mode, use another descriptor and set the mode to what it was.
-       termSetMode(TMODE_COOK);
-       // Use stderr for stdin, also works for shell commands.
-       close(0);
-       (void)dup(2);
-       termSetMode(m);
-   }
-   if (!exit_on_error)
-      return;
+          // We probably set the wrong file descriptor to raw mode.  Switch
+          // back to cooked mode, use another descriptor and set the mode to what it was.
+          termSetMode(TMODE_COOK);
+          // Use stderr for stdin, also works for shell commands.
+          close(0);
+          (void)dup(2);
+          termSetMode(m);
+      }
+      if (!exit_on_error)
+         return;
    }
    if (len <= 0 && !gotInterruptG)
       read_error_exit();
@@ -12830,7 +12815,7 @@ check_row(Unt row) {
 // Return length of line "lnum" in screen cells for horizontal scrolling.
 long
 scroll_line_len(LineNr lnum) {
-   Byte   *p = ml_get(lnum);
+   CS p = ml_get(lnum);
    ColNr   col = 0;
 
    if (*p != ZERO) {
@@ -12859,14 +12844,12 @@ ui_find_longest_lnum(void) {
        && curPor->bottomLine > curPor->cursor.lnum
        && curPor->bottomLine <= curBook->mem.lineCount + 1
    ) {
-      LineNr    lnum;
-      long       n;
-      long       max = 0;
+      long n;
+      long max = 0;
 
       // Use maximum of all visible lines.  Remember the lnum of the
-      // longest line, closest to the cursor line.  Used when scrolling
-      // below.
-      for (lnum = curPor->topLine; lnum < curPor->bottomLine; ++lnum) {
+      // longest line, closest to the cursor line.  Used when scrolling below.
+      for (LineNr lnum = curPor->topLine; lnum < curPor->bottomLine; ++lnum) {
          n = scroll_line_len(lnum);
          if (n > max) {
             max = n;
@@ -12884,9 +12867,9 @@ ui_find_longest_lnum(void) {
 
 // Called when focus changed. 
 void
-ui_focus_change(int      in_focus) {  // TRUE if focus gained.
+ui_focus_change(int in_focus) {  // TRUE if focus gained.
    static time_t   last_time = (time_t)0;
-   int         need_redraw = FALSE;
+   int need_redraw = FALSE;
 
    //When activated: Check if any file was modified outside of Eegl. Only do this when not done 
    //within the last two seconds (could get several events in a row).
@@ -12920,7 +12903,7 @@ mch_report_winsize(int fd, int rows, int cols) {
    ws.ws_row = rows;
 
    // calculate and set tty pixel size
-   struct cellsize cs;
+   CellSize cs;
    mch_calc_cell_size(&cs);
 
    if (cs.cs_xpixel == -1) {
@@ -12959,7 +12942,7 @@ mch_set_shellsize(void) {
 
 // Try to get the current terminal cell size. On failure, returns -1x-1
 void
-mch_calc_cell_size(struct cellsize *cs_out) {
+mch_calc_cell_size(CellSize* cs_out) {
    // get current tty size.
    struct winsize ws;
    int fd = 1;
@@ -12995,14 +12978,14 @@ int
 mch_get_shellsize(void) {
    long   rows = 0;
    long   columns = 0;
-   Byte   *p;
+   CS p;
 
    // 1. try using an ioctl. It is the most accurate method.
    // Try using TIOCGWINSZ first, some systems that have it also define
    // TIOCGSIZE but don't have a struct ttysize.
 # ifdef TIOCGWINSZ
-    {
-   struct winsize   ws;
+   {
+   struct winsize ws;
    int fd = 1;
 
    // When stdout is not a tty, use stdin for the ioctl().

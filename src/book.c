@@ -6456,7 +6456,7 @@ bookWrite(
             if (after_pathsep(copybuf, p) && p[-1] == p[-2])
                // Ends with '//', use full path
                if ((p = make_percent_swname(copybuf, p, fname)) != NULL) {
-                  backup = modname(p, backup_ext, FALSE);
+                  backup = fiAppendFileExtension(p, backup_ext, FALSE);
                   eeglFree(p);
                }
             rootname = get_file_in_dir(fname, copybuf);
@@ -6467,7 +6467,7 @@ bookWrite(
 
             // Make the backup file name.
             if (!backup)
-               backup = buf_modname(rootname, backup_ext, FALSE);
+               backup = fiAppendFileExtension(rootname, backup_ext, FALSE);
             if (!backup) {
                eeglFree(rootname);
                some_error = TRUE;      // out of memory
@@ -6476,7 +6476,7 @@ bookWrite(
 
             // Check if backup file already exists.
             if (stat((char *)backup, &stNew) >= 0) {
-               // Check if backup file is same as original file. May happen when modname() gave 
+               // Check if backup file is same as original file. May happen when fiAppendFileExtension() gave 
                // the same file back. E.g. silly link, or file name-length reached. If we 
                // don't check here, we either ruin the file when copying or erase it after 
                // writing. jw.
@@ -6584,7 +6584,7 @@ endOfName:
             if (after_pathsep(IObuff, p) && p[-1] == p[-2]) {
                // path ends with '//', use full path
                if ((p = make_percent_swname(IObuff, p, fname)) != NULL) {
-                  backup = modname(p, backup_ext, FALSE);
+                  backup = fiAppendFileExtension(p, backup_ext, FALSE);
                   eeglFree(p);
                }
             } 
@@ -6593,7 +6593,7 @@ endOfName:
                if (rootname == NULL)
                   backup = NULL;
                else {
-                  backup = buf_modname(rootname, backup_ext, FALSE);
+                  backup = fiAppendFileExtension(rootname, backup_ext, FALSE);
                   eeglFree(rootname);
                }
             }
@@ -8562,7 +8562,7 @@ prop_add_common(
    ColNr startCol,
    Bag* dict,
    Book* defaultBook,
-   Var    *dictArg
+   Var* dictArg
 ){
    Book* book = defaultBook;
    int      id = 0;

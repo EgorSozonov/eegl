@@ -106,12 +106,12 @@ toScreenDeco(Unt hiId) {
 private void
 drawEndPortal(
    Portal* po,
-   int      c1,
-   int      c2,
-   int      draw_margin,
-   int      row,
-   int      endrow,
-   Unt   hl
+   int c1,
+   int c2,
+   int draw_margin,
+   int row,
+   int endrow,
+   Unt hl
 ){
    int n = 0;
    Decoration deco = toScreenDeco(hl);
@@ -239,7 +239,7 @@ screen_line(
    int endcol,
    int clear_width,
    ColNr last_vcol,
-   int flags UNUSED
+   Unt flags
 ){
    unsigned off_from;
    unsigned off_to;
@@ -320,9 +320,9 @@ screen_line(
          if (charCells == 2)
             screenLinesG[off_to + 1] = screenLinesG[off_from + 1];
 
-         // The bold trick makes a single column of pixels appear in the next character. When a 
-         // bold character is removed, the next character should be redrawn too. This happens 
-         // for some xterms.
+         //The bold trick makes a single column of pixels appear in the next character. When a 
+         //bold character is removed, the next character should be redrawn too. This happens 
+         //for some xterms.
          if ( term_is_xterm) {
             char deco = getDecoFlags(screenDecosG[off_to].hiId);
             if (deco & HL_BOLD)
@@ -450,7 +450,7 @@ get_keymap_str(
 
    Book* old_curbuf = curBook;
    Portal* old_curPor = curPor;
-   Byte   to_evaluate[] = "b:keymap_name";
+   Byte to_evaluate[] = "b:keymap_name";
 
    curBook = po->book;
    curPor = po;
@@ -631,10 +631,8 @@ screen_getbytes(int row, int col, Byte *bytes, OUT char* decoFlags) {
 // Return TRUE if composing characters for screen posn "off" differs from
 // composing characters in "characterCombiner". Only to be used when screenLinesUCG[off] != 0.
 private int
-screen_comp_differs(int off, int *characterCombiner) {
-   int       i;
-
-   for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+screen_comp_differs(int off, int* characterCombiner) {
+   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
       if (screenLinesCG[i][off] != (Unt)characterCombiner[i])
          return TRUE;
       if (characterCombiner[i] == 0)
@@ -958,13 +956,7 @@ screen_char(unsigned off, int row, int col) {
 // Draw a rectangle of the screen, inverted when "invert" is TRUE.
 // This uses the contents of screenLinesG[] and doesn't change it.
 void
-screen_draw_rectangle(
-   int row,
-   int col,
-   int height,
-   int width,
-   int invert
-) {
+screen_draw_rectangle(int row, int col, int height, int width, Boole invert) {
    if (!screenLinesG)
       return;
 
@@ -991,14 +983,14 @@ redraw_block(int row, int end, Portal* po) {
 
    clip_may_clear_selection(row, end - 1);
 
-   if (po == NULL) {
+   if (!po) {
       col = firstPor->portalCol;
       width = topframeG->width;
    } else {
       col = po->portalCol;
       width = po->width;
    }
-   screen_draw_rectangle(row, col, end - row, width, FALSE);
+   screen_draw_rectangle(row, col, end - row, width, false);
 }
 
 private void
@@ -1543,8 +1535,8 @@ line_was_clobbered(int screen_lnum) {
 // Copy part of a Screenline for vertically split portal "po".
 private void
 linecopy(int to, int from, Portal* po) {
-   unsigned   off_to = lineOffsetG[to] + po->portalCol;
-   unsigned   off_from = lineOffsetG[from] + po->portalCol;
+   unsigned off_to = lineOffsetG[to] + po->portalCol;
+   unsigned off_from = lineOffsetG[from] + po->portalCol;
 
    mch_memmove(screenLinesG + off_to, screenLinesG + off_from, po->width * sizeof(Byte));
 
@@ -1592,16 +1584,16 @@ windgoto(int row, int col) {
   int cost;
   int wouldbe_col;
   int noinvcurs;
-  Byte* bs;
+  CS bs;
   int goto_cost;
 
 #define GOTO_COST   7   // assume a term_windgoto() takes about 7 chars
 #define HIGHL_COST  5   // assume unhilite takes 5 chars
 
-#define PLAN_LE       1
-#define PLAN_CR       2
-#define PLAN_NL       3
-#define PLAN_WRITE  4
+#define PLAN_LE    1
+#define PLAN_CR    2
+#define PLAN_NL    3
+#define PLAN_WRITE 4
    // Can't use screenLinesG unless initialized
    if (!screenLinesG)
       return;
@@ -1792,9 +1784,8 @@ insertLinesIntoPortal(
    int      row,
    int      line_count,
    int      invalid,
-   int      mayclear)
-{
-
+   int      mayclear
+) {
    if (invalid)
       po->validLines = 0;
 
@@ -3509,7 +3500,7 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
 // Redraw the status line according to 'statusline' and take care of any errors encountered.
 private void
 redraw_custom_statusline(Portal* po) {
-   static int       entered = FALSE;
+   static int entered = FALSE;
 
    // When called recursively return.  This can happen when the statusline
    // contains an expression that triggers a redraw.
@@ -3564,7 +3555,7 @@ text_to_screenline(Portal* po, CS text, int col) {
    int idx = off + col;
 
    // Store multibyte characters in screenLinesG[] et al. correctly.
-   for (Byte* p = text; *p != ZERO; ) {
+   for (CS p = text; *p != ZERO; ) {
       int cells = mb_ptr2cells(p);
       int c_len = utfCharLen(p);
       if (col + cells > (int)po->width)
@@ -3604,11 +3595,9 @@ copyTextWithDecos(int off, CS builder, int len, char flags) {
 //difference between line number and cursor position. Only look for lines that
 //can be visible, folded lines don't count.
 private LineNr
-get_cursor_rel_lnum(
-   Portal   *po,
-   LineNr   lnum)  { // line number to get the result for
-   LineNr   cursor = po->cursor.lnum;
-   LineNr   retval = 0;
+get_cursor_rel_lnum(Portal* po, LineNr lnum)  { // line number to get the result for
+   LineNr cursor = po->cursor.lnum;
+   LineNr retval = 0;
 
    if (hasAnyFolding(po)) {
       if (lnum > cursor) {
@@ -3639,11 +3628,11 @@ get_cursor_rel_lnum(
 // Display one folded line.
 private void
 fold_line(
-   Portal   *po,
-   long   fold_count,
-   FoldInfo   *foldinfo,
-   LineNr   lnum,
-   int      row
+   Portal* po,
+   long fold_count,
+   FoldInfo* foldinfo,
+   LineNr lnum,
+   int row
 ){
    Byte   builder[1];
    Pos *top, *bot;
@@ -3849,7 +3838,7 @@ updatePortal(Portal* po) {
    int bot_start = 999;//first row of the bot area that needs
                        // updating. 999 when no bot area updating
    int scrolled_down = FALSE; //TRUE when scrolled down when topLine got smaller a bit
-   int      top_to_mod = FALSE;    // redraw above mod_top
+   int top_to_mod = FALSE;    // redraw above mod_top
 
    int row;      // current portal row to display
    LineNr lnum;      // current buffer lnum to display
@@ -3859,20 +3848,20 @@ updatePortal(Portal* po) {
    int eof = FALSE;   // if TRUE, we hit the end of the file
    int didline = FALSE; // if TRUE, we finished the last line
    int i;
-   long   j;
+   long j;
    static int   recursive = FALSE;   // being called recursively
-   LineNr   old_botline = po->bottomLine;
-   long   fold_count;
+   LineNr old_botline = po->bottomLine;
+   long fold_count;
    // remember what happened to the previous line, to know if
    // check_visual_highlight() can be used
 # define DID_NONE 1   // didn't update a line
 # define DID_LINE 2   // updated a normal line
 # define DID_FOLD 3   // updated a folded line
-   int      did_update = DID_NONE;
-   LineNr   syntax_last_parsed = 0;      // last parsed text line
-   LineNr   mod_top = 0;
-   LineNr   mod_bot = 0;
-   int      save_gotInterruptG;
+   int did_update = DID_NONE;
+   LineNr syntax_last_parsed = 0;      // last parsed text line
+   LineNr mod_top = 0;
+   LineNr mod_bot = 0;
+   int save_gotInterruptG;
 
    // This needs to be done only for the first portal when drawUpdateScreen() is called.
    if (!didUpdateOnePortal) {
@@ -3983,8 +3972,6 @@ updatePortal(Portal* po) {
       }
 
       if (mod_top != 0 && hasAnyFolding(po)) {
-         LineNr   lnumt, lnumb;
-
          // A change in a line can cause lines above it to become folded or unfolded. Find the top 
          // most buffer line that may be affected. If the line was previously folded and displayed,
          // get the first line of that fold. If the line is folded now, get the first folded line.
@@ -3993,8 +3980,8 @@ updatePortal(Portal* po) {
          // Find last valid lines[] entry above mod_top. Set lnumt to the line below it. If there 
          // is no valid entry, use topLine. Find the first valid lines[] entry below mod_bot. Set 
          // lnumb to this line. If there is no valid entry, use MAXLNUM.
-         lnumt = po->topLine;
-         lnumb = MAXLNUM;
+         LineNr lnumt = po->topLine;
+         LineNr lnumb = MAXLNUM;
          for (i = 0; i < po->validLines; ++i) {
             if (!po->lines[i].isValid) {
                continue;
@@ -4222,8 +4209,8 @@ updatePortal(Portal* po) {
 
     // check if we are updating or removing the inverted part
    if ((VIsual_active && book == curPor->book)
-       || (po->prevVisualEnd != 0 && type != UPD_NOT_VALID))
-    {
+       || (po->prevVisualEnd != 0 && type != UPD_NOT_VALID)
+   ) {
       LineNr    from, to;
 
       if (VIsual_active) {
@@ -4731,13 +4718,13 @@ updatePortal(Portal* po) {
    po->topFillOld = po->topFill;
    po->bottFillOld = po->bottFill;
 
-   // There is a trick with bottomLine. If we invalidate it on each change that might modify it, 
-   // this will cause a lot of expensive calls to plines() in update_topline() each time. 
-   // Therefore the value of bottomLine is often approximated, and this value is used to
-   // compute the value of topLine. If the value of bottomLine was wrong, check that the value of 
-   // topLine is correct (cursor is on the visible part of the text).  If it's not, we need to 
-   // redraw again. Mostly this just means scrolling up a few lines, so it doesn't look too bad.
-   // Only do this for the current portal (where changes are relevant).
+   //There is a trick with bottomLine. If we invalidate it on each change that might modify it, 
+   //this will cause a lot of expensive calls to plines() in update_topline() each time. 
+   //Therefore the value of bottomLine is often approximated, and this value is used to
+   //compute the value of topLine. If the value of bottomLine was wrong, check that the value of 
+   //topLine is correct (cursor is on the visible part of the text).  If it's not, we need to 
+   //redraw again. Mostly this just means scrolling up a few lines, so it doesn't look too bad.
+   //Only do this for the current portal (where changes are relevant).
    po->cacheState |= VALID_BOTLINE;
    if (po == curPor && po->bottomLine != old_botline && !recursive) {
       Portal   *wwp;
@@ -4951,7 +4938,6 @@ redraw_later_clear(void) {
 void
 redraw_all_later(int type) {
    Portal* po;
-
    FOR_ALL_PORTALS(po)
       redrawPortLater(po, type);
    // This may be needed when switching tabs.
@@ -5041,7 +5027,7 @@ drawAllStatusLinesOfCurBookLater(void) {
 // Redraw all status lines that need to be redrawn.
 void
 redraw_statuslines(void) {
-   Portal   *po;
+   Portal* po;
    FOR_ALL_PORTALS(po) {
       if (po->statusLineNeedsRedraw)
          redrawPortalStatusLine(po, FALSE);
@@ -5074,7 +5060,7 @@ redrawAllStatusLinesInFrame(Frame *fr) {
 //Note that when also inserting/deleting lines redrawTop and redrawBott
 //may become invalid and the whole portal will have to be redrawn.
 void
-drawPortLineLater(Portal   *po, LineNr   lnum) {
+drawPortLineLater(Portal* po, LineNr lnum) {
    redrawPortRangeLater(po, lnum, lnum);
 }
 
@@ -5446,14 +5432,14 @@ textprop_size_after_trunc(
    int   space = (flags & (TEXT_PROP_ALIGN_BELOW | TEXT_PROP_ALIGN_ABOVE))
                    ? (int)po->width - normalPortalColumnOffset(po) : added;
    int strsize = 0;
-   Byte *p;
 
    // if the remaining size is too small and 'wrap' is set we wrap anyway and use the next line
    if (space < PROP_TEXT_MIN_CELLS && po->o.wrap)
       space += po->width;
    if (flags & (TEXT_PROP_ALIGN_BELOW | TEXT_PROP_ALIGN_ABOVE))
       space -= padding;
-
+      
+   CS p;
    for (p = text; *p != ZERO; p += utfCharLen(p)) {
       int clen = ptr2cells(p);
 
@@ -5472,12 +5458,12 @@ textprop_size_after_trunc(
 // of screen cells used. Otherwise returns TRUE when drawing continues on the next line.
 int
 text_prop_position(
-   Portal       *po,
-   TextProp  *t,
-   int       vcol,       // current text column
-   int       scr_col,       // current screen column
-   int       *countExtraBytes,       // nr of bytes for virtual text
-   Byte       **extraBytes,       // virtual text
+   Portal* po,
+   TextProp* t,
+   int vcol,       // current text column
+   int scr_col,       // current screen column
+   int* countExtraBytes,       // nr of bytes for virtual text
+   Byte** extraBytes,       // virtual text
    OUT int* numDecoCells,       // decoration cells, NULL if not used
    int* toSkipBeforeDeco,   // cells to skip deco, NULL if not used
    int do_skip       // skip_cells is not zero
@@ -5492,7 +5478,7 @@ text_prop_position(
    int before = room;   // spaces before the text
    int after = 0;      // spaces after the text
    int n_used = *countExtraBytes;
-   Byte  *l = NULL;
+   CS l = NULL;
    int strsize = eeglStrSize(*extraBytes);
    int cells = wrap 
       ? strsize 
@@ -5565,9 +5551,9 @@ text_prop_position(
          }
          if (numDecoCells) {
             if (n_used < *countExtraBytes && po->o.wrap) {
-               Byte *lp = l + off - 1;
+               CS lp = l + off - 1;
 
-               Byte   buf[MB_MAXBYTES + 1];
+               Byte buf[MB_MAXBYTES + 1];
                CS cp = buf;
 
                // change the last character to '…', converted to the current 'encoding'
@@ -5646,16 +5632,9 @@ wlv_screen_line(Portal* po, DrawCtx* m, int clear_end) {
 // right of the portal.
 private void
 finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
-   long   v;
-   int      wcol;
-
    // Hilite 'cursorcolumn' past end of the line.
-   if (po->o.wrap)
-      v = m->startrow == 0 ? po->skipCol : 0;
-   else
-      v = po->leftCol;
-
-   wcol = m->col;
+   long v = (po->o.wrap) ? (m->startrow == 0 ? po->skipCol : 0) : po->leftCol;
+   int wcol = m->col;
    // check if line ends before left margin
    if (m->vcol < v + wcol - normalPortalColumnOffset(po))
       m->vcol = v + wcol - normalPortalColumnOffset(po);
@@ -5663,11 +5642,10 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
 
    if ((po->o.cursorColumn
           && (int)po->virtCol >= VCOL_HLC - m->eol_hl_off
-          && (int)po->virtCol <
-          (long)po->width * (m->row - m->startrow + 1) + v
+          && (int)po->virtCol < (long)po->width * (m->row - m->startrow + 1) + v
           && m->lnum != po->cursor.lnum)
-      || m->lineDeco.hiId != SHORT
-      || m->portalDeco.flags != 0
+       || m->lineDeco.hiId != SHORT
+       || m->portalDeco.flags != 0
    ) {
       int rightmost_vcol = 0;
 
@@ -5902,8 +5880,8 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
       if (listCharsG.eol == sc->listCharEndOfLine
           && ((sc->areaDeco.hiId != SHORT && m->vcol == m->fromcol
                    && (VIsual_mode != Ctrl_V
-                     || c->lnum == VIsual.lnum
-                     || c->lnum == curPor->cursor.lnum)
+                        || c->lnum == VIsual.lnum
+                        || c->lnum == curPor->cursor.lnum)
                    && currSymb == ZERO)
                // hilite 'hlsearch' match at end of line
                || (prevcol_hl_flag
@@ -7335,7 +7313,8 @@ drawLineOnScreen(
 
       // handle Visual active in this portal
       if (VIsual_active && port->book == curPor->book) {
-         Pos   *top, *bot;
+         Pos* top;
+         Pos* bot;
          if (LTOREQ_POS(curPor->cursor, VIsual)) {
             // Visual is after curPor->cursor
             top = &curPor->cursor;

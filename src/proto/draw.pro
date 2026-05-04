@@ -2,7 +2,7 @@
 Decoration getPortcolorDeco(Portal *po);
 int screen_get_current_line_off(void);
 void resetActiveDeco(void);
-void screen_line(int row, int coloff, int endcol, int clear_width, ColNr last_vcol, int flags);
+void screen_line(int row, int coloff, int endcol, int clear_width, ColNr last_vcol, Unt flags);
 int stl_connected(Portal *po);
 int get_keymap_str(Portal *po, CS fmt, CS buf, int len);
 void screen_putchar(int c, Unt row, Unt col, char decoFlags);
@@ -14,7 +14,7 @@ void end_search_hl(void);
 void drawStopHilite(void);
 void reset_cterm_colors(void);
 void screen_char(unsigned off, int row, int col);
-void screen_draw_rectangle(int row, int col, int height, int width, int invert);
+void screen_draw_rectangle(int row, int col, int height, int width, Boole invert);
 void fillRowsWithTwoChars(Unt start_row, Unt end_row, Unt start_col, Unt end_col, int c1, int c2, char decoFlags);
 void check_for_delay(int check_msg_scroll);
 int screen_valid(int doclear);

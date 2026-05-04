@@ -224,12 +224,12 @@ private int  check_for_codes = FALSE;         // check for key code response
 // specific request.  Besides this there are:
 // t_colors - number of colors supported
 typedef struct {
-   CS tpr_name;
-   int     tpr_set_by_termresponse;
-   int     tpr_status;
+   CS name;
+   int setByTermResponse;
+   int status;
 } TermProp;
 
-// Values for tpr_status.
+// Values for status.
 #define TPR_UNKNOWN     'u'
 #define TPR_YES         'y'
 #define TPR_NO          'n'
@@ -254,20 +254,20 @@ private TermProp term_props[TPR_COUNT];
 // When "all" is FALSE only set those that are detected from the version response.
 void
 init_term_props(int all) {
-   term_props[TPR_CURSOR_STYLE].tpr_name = S"cursor_style";
-   term_props[TPR_CURSOR_STYLE].tpr_set_by_termresponse = FALSE;
-   term_props[TPR_CURSOR_BLINK].tpr_name = S"cursor_blink_mode";
-   term_props[TPR_CURSOR_BLINK].tpr_set_by_termresponse = FALSE;
-   term_props[TPR_UNDERLINE_RGB].tpr_name = S"underline_rgb";
-   term_props[TPR_UNDERLINE_RGB].tpr_set_by_termresponse = TRUE;
-   term_props[TPR_MOUSE].tpr_name = S"mouse";
-   term_props[TPR_MOUSE].tpr_set_by_termresponse = TRUE;
-   term_props[TPR_KITTY].tpr_name = S"kitty";
-   term_props[TPR_KITTY].tpr_set_by_termresponse = FALSE;
+   term_props[TPR_CURSOR_STYLE].name = S"cursor_style";
+   term_props[TPR_CURSOR_STYLE].setByTermResponse = FALSE;
+   term_props[TPR_CURSOR_BLINK].name = S"cursor_blink_mode";
+   term_props[TPR_CURSOR_BLINK].setByTermResponse = FALSE;
+   term_props[TPR_UNDERLINE_RGB].name = S"underline_rgb";
+   term_props[TPR_UNDERLINE_RGB].setByTermResponse = TRUE;
+   term_props[TPR_MOUSE].name = S"mouse";
+   term_props[TPR_MOUSE].setByTermResponse = TRUE;
+   term_props[TPR_KITTY].name = S"kitty";
+   term_props[TPR_KITTY].setByTermResponse = FALSE;
 
    for (int i = 0; i < TPR_COUNT; ++i) {
-      if (all || term_props[i].tpr_set_by_termresponse)
-         term_props[i].tpr_status = TPR_UNKNOWN;
+      if (all || term_props[i].setByTermResponse)
+         term_props[i].status = TPR_UNKNOWN;
    }
 }
 
@@ -275,8 +275,8 @@ void
 f_terminalprops(Var *argvars UNUSED, Var *returnVar) {
    allocReturnDict(returnVar);
    for (Unt i = 0; i < TPR_COUNT; ++i) {
-      Byte value[2] = { term_props[i].tpr_status, ZERO };
-      bagAddString(returnVar->bag, term_props[i].tpr_name, value);
+      Byte value[2] = { term_props[i].status, ZERO };
+      bagAddString(returnVar->bag, term_props[i].name, value);
    }
 }
 
@@ -327,7 +327,7 @@ private CS key_names[] = {SMAP((CS),
 //"invoke_tgetent()" must have been called before.
 //If "*height" or "*width" are nonzero then use the "li" and "col" entries to get their value.
 private void
-get_term_entries(OUT int *height, OUT int *width) {
+get_term_entries(OUT int* height, OUT int* width) {
    static struct {
       CS name;  // capability name
       Unt dest;      // index in termCodeS[]
@@ -418,8 +418,6 @@ set_termname(CS termName) {
    int termcap_cleared = FALSE;
    int width = 0, height = 0;
    CS errorMsg = NULL;
-   Byte* bs_p;
-   Byte* del_p;
 
    // In silect mode (ex -s) we don't use the 'term' option.
    if (silentModeG)
@@ -474,8 +472,8 @@ set_termname(CS termName) {
    //The copyStr'd strings are probably lost forever, well it's only two
    //bytes.  Don't do this when the GUI is active, it uses "t_kb" and "t_kD" directly.
    {
-   bs_p = find_termcode(S"kb");
-   del_p = find_termcode(S"kD");
+   CS bs_p = find_termcode(S"kb");
+   CS del_p = find_termcode(S"kD");
    if (bs_p == NULL || *bs_p == ZERO)
        add_termcode(S"kb", (bs_p = (CS)CTRL_H_STR), false);
    if ((del_p == NULL || *del_p == ZERO) && (bs_p == NULL || *bs_p != DEL))
@@ -622,10 +620,10 @@ eeTgetstr(CS s, Byte **pp) {
 //Errors while getting the entries are ignored.
 void
 getlinecol(
-   Arr(long) cp,   // pointer to columns
-   Arr(long) rp)   // pointer to rows
-{
-   Byte   tbuf[TBUFSZ];
+   Arr(long) cp,  // columns
+   Arr(long) rp   // rows
+){
+   Byte tbuf[TBUFSZ];
 
    if (termCodeS[KS_NAME] == Em
          || *termCodeS[KS_NAME] == ZERO
@@ -685,7 +683,7 @@ termInitTerminfo(CS name) {
       termCodeS[i] = Em;
    }
 
-   Byte* termName = name;
+   CS termName = name;
    if (termName && *termName == ZERO)
       termName = null;       // empty name is equal to no name
 
@@ -931,7 +929,7 @@ term_font(int n) {
 private void
 term_color(CS s, int n) {
    Byte buffer[20];
-   int      i = *s == CSI ? 1 : 2;
+   int i = *s == CSI ? 1 : 2;
    // index in s[] just after <Esc>[ or CSI
 
    // Special handling of 16 colors, because termcap can't handle it
@@ -1122,7 +1120,7 @@ add_long_to_buf(Ulong val, CS dst) {
 //Puts result in val, and returns the number of bytes read from buf
 //(between sizeof(Ulong) and 2 * sizeof(Ulong)), or -1 if not enough bytes were present.
 private int
-get_long_from_buf(CS buffer, Ulong *val) {
+get_long_from_buf(CS buffer, Ulong* val) {
    Byte  bytes[sizeof(Ulong)];
 
    *val = 0;
@@ -1781,7 +1779,7 @@ term_cursor_shape(int shape, int blink) {
 //Also set the vertical scroll region for a vertically split window. Always the full width of the
 //portal, excluding the vertical separator.
 void
-scroll_region_set(Portal *wp, int off) {
+scroll_region_set(Portal* wp, int off) {
    OUT_STR(TGOTO( termCodeS[KS_CS], wp->portalRow + wp->height - 1, wp->portalRow + off));
    if (termCodeS[KS_CSV] != Em && wp->width != visibleColsG)
       OUT_STR(TGOTO(termCodeS[KS_CSV], wp->portalCol + wp->width - 1, wp->portalCol));
@@ -1810,7 +1808,7 @@ private struct termcode {
 private int  tc_max_len = 0; // number of entries that recognizedCodeS[] can hold
 private int  tc_len = 0;       // current number of entries in recognizedCodeS[]
 
-private int termcode_star(Byte *code, int len);
+private int endsInStar(Text code);
 
 void
 clear_termcodes(void) {
@@ -1834,7 +1832,7 @@ clear_termcodes(void) {
 private void
 adjust_modlen(int idx) {
    recognizedCodeS[idx].modlen = 0;
-   int j = termcode_star(recognizedCodeS[idx].code, recognizedCodeS[idx].len);
+   int j = endsInStar((Text){recognizedCodeS[idx].code, recognizedCodeS[idx].len});
    if (j <= 0)
       return;
 
@@ -1887,7 +1885,7 @@ add_termcode(CS name, CS string, Boole isAtcFromTerm) {
          // Exact match: May replace old code.
          if (recognizedCodeS[i].name[1] == name[1]) {
             if (isAtcFromTerm == ATC_FROM_TERM
-                 && (j = termcode_star(recognizedCodeS[i].code, recognizedCodeS[i].len)) > 0
+                 && (j = endsInStar((Text){recognizedCodeS[i].code, recognizedCodeS[i].len})) > 0
             ) {
                //Don't replace ESC[123;*X or ESC O*X with another when
                //invoked from got_code_from_term().
@@ -1964,13 +1962,10 @@ accept_modifiers_for_function_keys(void) {
 //Check termcode "code[len]" for ending in ;*X or *X. The "X" can be any character.
 //Return 0 if not found, 2 for ;*X and 1 for *X.
 private int
-termcode_star(Byte *code, int len) {
+endsInStar(Text code) {
    // Shortest is <M-O>*X.  With ; shortest is <CSI>@;*X
-   if (len >= 3 && code[len - 2] == '*') {
-      if (len >= 5 && code[len - 3] == ';')
-         return 2;
-      else
-         return 1;
+   if (code.len >= 3 && code.c[code.len - 2] == '*') {
+      return (code.len >= 5 && code.c[code.len - 3] == ';') ? 2 : 1;
    }
    return 0;
 }
@@ -1998,7 +1993,7 @@ get_termcode_len(int idx) {
 }
 
 void
-del_termcode(Byte *name) {
+del_termcode(CS name) {
    if (!recognizedCodeS)   // nothing there yet
       return;
 
@@ -2030,15 +2025,15 @@ private int orig_topfill = 0;
 
 //Set orig_topline.  Used when jumping to another window, so that a double click still works.
 void
-set_mouse_topline(Portal *wp) {
-   orig_topline = wp->topLine;
-   orig_topfill = wp->topFill;
+set_mouse_topline(Portal* po) {
+   orig_topline = po->topLine;
+   orig_topfill = po->topFill;
 }
 
 // TRUE if the top line and top fill of window 'wp' matches the saved topline and topfill.
 int
-is_mouse_topline(Portal *wp) {
-   return orig_topline == wp->topLine && orig_topfill == wp->topFill;
+is_mouse_topline(Portal* po) {
+   return orig_topline == po->topLine && orig_topfill == po->topFill;
 }
 
 //If "buffer" is NULL put "string[new_slen]" in typeBufG; "bufLen" is not used.
@@ -2046,12 +2041,12 @@ is_mouse_topline(Portal *wp) {
 //Remove "slen" bytes. Return FAIL for error.
 int
 termPutStrIntoTypebuf(
-   int   offset,
-   int   slen,
+   int offset,
+   int slen,
    CS string,
-   int   new_slen,
+   int new_slen,
    CS buffer,
-   int   bufsize,
+   int bufsize,
    OUT int* bufLen
 ){
    int extra = new_slen - slen;
@@ -2104,7 +2099,7 @@ decode_modifiers(int n) {
 }
 
 private int
-modifiers2keycode(Unt modifiers, Unt *key, CS string) {
+modifiers2keycode(Unt modifiers, Unt* key, CS string) {
    int new_slen = 0;
 
    if (modifiers == 0)
@@ -2123,7 +2118,7 @@ modifiers2keycode(Unt modifiers, Unt *key, CS string) {
 
 // Handle a cursor position report.
 private void
-handle_u7_response(int *arg, Byte *tp UNUSED, int csi_len UNUSED) {
+handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED) {
    if (arg[0] == 2 && arg[1] >= 2) {
       LOG_TRN("Received U7 status: %s", tp);
       u7_status.tr_progress = STATUS_GOT;
@@ -2136,15 +2131,15 @@ handle_u7_response(int *arg, Byte *tp UNUSED, int csi_len UNUSED) {
       //If the cursor is on the first column then the terminal can handle
       //the request for cursor style and blinking.
       int value = arg[1] == 1 ? TPR_YES : TPR_NO;
-      term_props[TPR_CURSOR_STYLE].tpr_status = value;
-      term_props[TPR_CURSOR_BLINK].tpr_status = value;
+      term_props[TPR_CURSOR_STYLE].status = value;
+      term_props[TPR_CURSOR_BLINK].status = value;
    }
 }
 
 //Handle a response to termCodeS[KS_CRV]: {lead}{first}{x};{vers};{y}c
 //Xterm and alike use '>' for {first}. Rxvt sends "{lead}?1;2c".
 private void
-handle_version_response(int first, int *arg, int argc) {
+handle_version_response(int first, int* arg, int argc) {
    //The xterm version.  It is set to zero when it can't be an actual xterm version.
    int version = arg[1];
 
@@ -2168,41 +2163,41 @@ handle_version_response(int first, int *arg, int argc) {
       // mintty 2.9.5 sends 77;20905;0c. (77 is ASCII 'M' for mintty.)
       if (arg[0] == 77) {
          // mintty can do SGR mouse reporting
-         term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
       }
 
       // libvterm sends 0;100;0
       // Konsole sends 0;115;0 and works the same way
       if ((version == 100 || version == 115) && arg[0] == 0 && arg[2] == 0) {
          // Libvterm can handle SGR mouse reporting.
-         term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
       }
 
       if (version == 95) {
          //Mac Terminal.app sends 1;95;0
          if (arg[0] == 1 && arg[2] == 0) {
-            term_props[TPR_UNDERLINE_RGB].tpr_status = TPR_YES;
-            term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+            term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
+            term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
          }
          //iTerm2 sends 0;95;0
          ei (arg[0] == 0 && arg[2] == 0) {
             // iTerm2 can do SGR mouse reporting
-            term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+            term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
          }
          // old iTerm2 sends 0;95;
          ei (arg[0] == 0 && arg[2] == -1)
-            term_props[TPR_UNDERLINE_RGB].tpr_status = TPR_YES;
+            term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
       }
 
       //screen sends 83;40500;0 83 is 'S' in ASCII.
       if (arg[0] == 83) {
          //screen supports SGR mouse codes since 4.7.0
-         term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
       }
 
       //If no recognized terminal has set mouse behavior, assume xterm.
-      if (term_props[TPR_MOUSE].tpr_status == TPR_UNKNOWN) {
-         term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+      if (term_props[TPR_MOUSE].status == TPR_UNKNOWN) {
+         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
       }
 
       //Detect terminals that set $TERM to something like
@@ -2215,30 +2210,30 @@ handle_version_response(int first, int *arg, int argc) {
       //Assuming any version number over 2500 is not an
       //xterm (without the limit for rxvt and screen).
       if (arg[1] >= 2500)
-          term_props[TPR_UNDERLINE_RGB].tpr_status = TPR_YES;
+          term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
 
       ei (version == 136 && arg[2] == 0) {
-         term_props[TPR_UNDERLINE_RGB].tpr_status = TPR_YES;
+         term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
 
          // PuTTY sends 0;136;0
          if (arg[0] == 0) {
             // supports sgr-like mouse reporting.
-            term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+            term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
          }
          // vandyke SecureCRT sends 1;136;0
       }
 
       //Konsole sends 0;115;0 - but t_u8 does not actually work, therefore commented out.
       //ei (version == 115 && arg[0] == 0 && arg[2] == 0)
-      //    term_props[TPR_UNDERLINE_RGB].tpr_status = TPR_YES;
+      //    term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
 
       //Kitty up to 9.x sends 1;400{version};{secondary-version}
       if (arg[0] == 1 && arg[1] >= 4000 && arg[1] <= 4009) {
-          term_props[TPR_KITTY].tpr_status = TPR_YES;
-          term_props[TPR_KITTY].tpr_set_by_termresponse = TRUE;
+          term_props[TPR_KITTY].status = TPR_YES;
+          term_props[TPR_KITTY].setByTermResponse = TRUE;
 
           //Kitty can handle SGR mouse reporting.
-          term_props[TPR_MOUSE].tpr_status = TPR_MOUSE_SGR;
+          term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
       }
 
       //GNU screen sends 83;30600;0, 83;40500;0, etc.
@@ -2246,20 +2241,20 @@ handle_version_response(int first, int *arg, int argc) {
       //on 3.6.  DCS string has a special meaning to GNU screen, but xterm
       //compatibility checking does not detect GNU screen.
       if (arg[0] == 83 && arg[1] >= 30600) {
-          term_props[TPR_CURSOR_STYLE].tpr_status = TPR_NO;
-          term_props[TPR_CURSOR_BLINK].tpr_status = TPR_NO;
+          term_props[TPR_CURSOR_STYLE].status = TPR_NO;
+          term_props[TPR_CURSOR_BLINK].status = TPR_NO;
       }
 
       //Xterm first responded to this request at patch level
       //95, so assume anything below 95 is not xterm and hopefully supports
       //the underline RGB color sequence.
       if (version < 95)
-          term_props[TPR_UNDERLINE_RGB].tpr_status = TPR_YES;
+          term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
 
       //Getting the cursor style is only supported properly by xterm since
       //version 279 (otherwise it returns 0x18).
       if (version < 279)
-          term_props[TPR_CURSOR_STYLE].tpr_status = TPR_NO;
+          term_props[TPR_CURSOR_STYLE].status = TPR_NO;
 
       //Take action on the detected properties.
 
@@ -2276,7 +2271,7 @@ handle_version_response(int first, int *arg, int argc) {
       //Only when getting the cursor style was detected to work.
       //Not for Terminal.app, it can't handle t_RS, it echoes the characters to the screen.
       if (cursorStyleRequestS.tr_progress == STATUS_GET
-         && term_props[TPR_CURSOR_STYLE].tpr_status == TPR_YES
+         && term_props[TPR_CURSOR_STYLE].status == TPR_YES
          && termCodeS[KS_CSH] != Em
          && termCodeS[KS_CRS] != Em)
       {
@@ -2291,7 +2286,7 @@ handle_version_response(int first, int *arg, int argc) {
       //for Gnome terminal, it can't handle t_RC, it
       //echoes the characters to the screen. Only when getting the cursor style was detected to work.
       if (cursorBlinkingRequestS.tr_progress == STATUS_GET
-         && term_props[TPR_CURSOR_BLINK].tpr_status == TPR_YES
+         && term_props[TPR_CURSOR_BLINK].status == TPR_YES
          && termCodeS[KS_CRC] != Em)
       {
           MAY_WANT_TO_LOG_THIS;
@@ -2323,13 +2318,13 @@ add_key_to_buf(Unt key, CS buffer) {
 
 // Shared between handle_key_with_modifier() and handle_csi_function_key().
 private int
-put_key_modifiers_in_typeBufG(
-   Unt   key_arg,
-   Unt   modifiers_arg,
-   int   csi_len,
-   int   offset,
+put_key_modifiers_in_typeBuf(
+   Unt key_arg,
+   Unt modifiers_arg,
+   int csi_len,
+   int offset,
    CS buffer,
-   int   bufsize,
+   int bufsize,
    int* bufLen
 ) {
    //Some keys need adjustment when the Ctrl modifier is used.
@@ -2378,7 +2373,7 @@ handle_key_with_modifier(
    if (key == ESC)
       key = K_ESC;
 
-   return put_key_modifiers_in_typeBufG(
+   return put_key_modifiers_in_typeBuf(
          key, modifiers, csi_len, offset, buffer, bufsize, bufLen
    );
 }
@@ -2448,7 +2443,7 @@ handle_csi_function_key(
 
    int key = TERMCAP2KEY(key_name[0], key_name[1]);
    int modifiers = argc == 2 ? decode_modifiers(arg[1]) : 0;
-   put_key_modifiers_in_typeBufG(key, modifiers, csi_len, offset, buffer, bufsize, bufLen);
+   put_key_modifiers_in_typeBuf(key, modifiers, csi_len, offset, buffer, bufsize, bufLen);
    return csi_len;
 }
 
@@ -2476,14 +2471,14 @@ handle_csi_function_key(
 private int
 handleControlSequenceIntroducer(
    CS tp,
-   int   len,
+   int len,
    CS argp,
-   int   offset,
+   int offset,
    CS buffer,
-   int   bufsize,
-   int   *bufLen,
-   Byte   *key_name,
-   int   *slen
+   int bufsize,
+   int* bufLen,
+   CS key_name,
+   int* slen
 ){
    int      first = -1;  // optional char right after {lead}
    int      trail;        // char that ends CSI sequence
@@ -2529,12 +2524,10 @@ handleControlSequenceIntroducer(
 
       //mrxvt has been reported to have "+" in the version. Assume
       //the escape sequence ends with a letter or one of "{|}~".
-      while (ap < tp + len
-         && !(*ap >= '{' && *ap <= '~')
-         && !ASCII_ISALPHA(*ap))
-          ++ap;
+      while (ap < tp + len && !(*ap >= '{' && *ap <= '~') && !ASCII_ISALPHA(*ap))
+         ++ap;
       if (ap >= tp + len)
-          return -1;
+         return -1;
       trail = *ap;
    }
 
@@ -2642,8 +2635,7 @@ handleControlSequenceIntroducer(
       return len + handle_key_with_modifier(arg, trail, csi_len, offset, buffer, bufsize, bufLen);
    }
 
-   // Key without modifier (Kitty sends this for Esc):
-   //   {lead}{key}u
+   // Key without modifier (Kitty sends this for Esc): {lead}{key}u
    ei (argc == 1 && trail == 'u') {
       return len + handle_key_without_modifier(arg, csi_len, offset, buffer, bufsize, bufLen);
    }
@@ -2668,9 +2660,7 @@ handle_osc(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
    int      i;
 
    int j = 1 + (tp[0] == ESC);
-   if (len >= j + 3 && (argp[0] != '1'
-              || (argp[1] != '1' && argp[1] != '0')
-              || argp[2] != ';'))
+   if (len >= j + 3 && (argp[0] != '1' || (argp[1] != '1' && argp[1] != '0') || argp[2] != ';'))
       i = 0; // no match
    else {
       for (i = j; i < len; ++i) {
@@ -2753,7 +2743,7 @@ handle_osc(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
 //
 // Consume any code that starts with "{lead}.+r" or "{lead}.$r".
 private int
-handle_dcs(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
+handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
    int i;
 
    LOG_TRN("Received DCS response: %s", (char*)tp);
@@ -2853,12 +2843,7 @@ handle_x_keys(Unt key) {
 //When "buffer" is not NULL, buffer[bufsize] is used instead of typeBufG.tb_buf[].
 //"bufLen" is then the length of the string in buffer[] and is updated for inserts and deletes.
 int
-check_termcode(
-   int      max_offset,
-   CS buffer,
-   int      bufsize,
-   OUT int* bufLen
-){
+check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
    CS readPos;
    int slen = 0;
    int modslen;
@@ -3168,7 +3153,7 @@ check_termcode(
 
 //Get the text foreground color, if known.
 void
-term_get_fg_color(Byte *r, Byte *g, Byte *b) {
+term_get_fg_color(Byte* r, Byte* g, Byte* b) {
    if (rfg_status.tr_progress != STATUS_GOT)
       return;
 
@@ -3195,7 +3180,7 @@ term_get_bg_color(Byte* r, Byte* g, Byte* b) {
 //really annoyed if their erase key starts doing forward deletes for no reason. (Eric Fischer)
 void
 get_stty(void) {
-   TtyInfo   info;
+   TtyInfo info;
    if (get_tty_info(read_cmd_fd, OUT &info) != OK)
       return;
 
@@ -3765,7 +3750,7 @@ replace_termcodes(
 
 //Check if there is a special key code for "key" that includes the modifiers specified.
 Unt
-simplify_key(Unt key, Unt *modifiers) {
+simplify_key(Unt key, Unt* modifiers) {
    if (!(*modifiers & (MOD_MASK_SHIFT | MOD_MASK_CTRL)))
       return key;
 
@@ -4280,7 +4265,7 @@ ansi_color2rgb(int nr, OUT Byte *r, OUT Byte *g, OUT Byte *b, OUT Byte *ansi_idx
 }
 
 void
-cterm_color2rgb(int nr, Byte *r, Byte *g, Byte *b, Byte *ansi_idx) {
+cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx) {
    int idx;
 
    if (nr < 16) {

@@ -11,7 +11,7 @@
 
 //{{{forward declarations
 
-private int mch_expand_wildcards(int num_pat, Arr(CS) pat, int flags, OUT ExpandMatch*);
+private int mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch*);
 private int eeCopyfile(CS from, CS to);
 private int readdir_core(ArrayList* gap, int withattr UNUSED, int sort);
 private void uniquefy_paths(OUT ExpandMatch* matches, CS pattern, CS path_option);
@@ -27,6 +27,7 @@ private CS findFileInPathImpl(
 );
 private int expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags);
 private Boole recursivelyDeleteDir(CS name);
+private int mch_FullName(CS fname, OUT CS buf, int len, Boole force);
 
 //}}}
 //{{{file paths: dealing with file names and paths.
@@ -242,18 +243,17 @@ repeat:
        && (src[*usedlen + 1] == 's'
       || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
    ) {
-      Byte       *str;
-      Byte       *pat;
-      Byte       *sub;
-      int       sep;
-      Byte       *flags;
-      int       didit = FALSE;
+      CS str;
+      CS pat;
+      CS sub;
+      int sep;
+      int didit = FALSE;
 
-      flags = (CS)"";
+      CS flags = S"";
       s = src + *usedlen + 2;
       if (src[*usedlen + 1] == 'g') {
-          flags = (CS)"g";
-          ++s;
+         flags = (CS)"g";
+         ++s;
       }
 
       sep = *s++;
@@ -396,8 +396,8 @@ file_is_readable(CS fname){
 
 //"chdir(dir)" function
 void
-f_chdir(Var *argvars, Var *returnVar) {
-   CdScopeKind   scope = CDSCOPE_GLOBAL;
+f_chdir(Var* argvars, Var* returnVar) {
+   CdScopeKind scope = CDSCOPE_GLOBAL;
 
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
@@ -435,7 +435,7 @@ f_chdir(Var *argvars, Var *returnVar) {
 }
 
 void
-f_delete(Var *argvars, Var *returnVar) {
+f_delete(Var* argvars, Var* returnVar) {
    Byte   nbuf[NUMBUFLEN];
 
    returnVar->number = -1;
@@ -467,13 +467,13 @@ f_delete(Var *argvars, Var *returnVar) {
 
 // "executable()" function
 void
-f_executable(Var *argvars, Var *returnVar) {
+f_executable(Var *argvars, Var* returnVar) {
    // Check in $PATH and also check directly if there is a directory name.
    returnVar->number = mch_can_exe(tv_get_string(&argvars[0]), NULL, TRUE);
 }
 
 void
-f_exepath(Var *argvars, Var *returnVar) {
+f_exepath(Var *argvars, Var* returnVar) {
    CS p = NULL;
    (void)mch_can_exe(tv_get_string(&argvars[0]), OUT &p, TRUE);
    returnVar->tag = VAR_STRING;
@@ -482,13 +482,13 @@ f_exepath(Var *argvars, Var *returnVar) {
 
 // "filereadable()" function
 void
-f_filereadable(Var *argvars, Var *returnVar) {
+f_filereadable(Var *argvars, Var* returnVar) {
    returnVar->number = file_is_readable(tv_get_string(&argvars[0]));
 }
 
 //Return 0 for not writable, 1 for writable file, 2 for a dir which we have rights to write into.
 void
-f_filewritable(Var *argvars, Var *returnVar) {
+f_filewritable(Var *argvars, Var* returnVar) {
    returnVar->number = filewritable(tv_get_string(&argvars[0]));
 }
 
@@ -560,19 +560,19 @@ findfilendir(
 
 //"finddir({fname}[, {path}[, {count}]])" function
 void
-f_finddir(Var *argvars, Var *returnVar){
+f_finddir(Var *argvars, Var* returnVar){
    findfilendir(argvars, returnVar, FINDFILE_DIR);
 }
 
 //"findfile({fname}[, {path}[, {count}]])" function
 void
-f_findfile(Var *argvars, Var *returnVar){
+f_findfile(Var *argvars, Var* returnVar){
    findfilendir(argvars, returnVar, FINDFILE_FILE);
 }
 
 // "fnamemodify({fname}, {mods})" function
 void
-f_fnamemodify(Var *argvars, Var *returnVar) {
+f_fnamemodify(Var *argvars, Var* returnVar) {
    Byte   *fname;
    Byte   *mods;
    Unt   usedlen = 0;
@@ -610,7 +610,7 @@ f_fnamemodify(Var *argvars, Var *returnVar) {
 //directory of the specified tab.  Otherwise return the directory of the specified portal in the 
 //specified tab. If the portal or the tab doesn't exist then return NULL.
 void
-f_getcwd(Var *argvars, Var *returnVar) {
+f_getcwd(Var *argvars, Var* returnVar) {
    Portal   *wp = NULL;
    Tab   *tp = NULL;
    int      global = FALSE;
@@ -653,7 +653,7 @@ getfpermst(FileStat *st, CS perm){
 
 //"getfperm({fname})" function
 void
-f_getfperm(Var *argvars, Var *returnVar) {
+f_getfperm(Var *argvars, Var* returnVar) {
    Byte   *fname;
    FileStat   st;
    Byte   *perm = NULL;
@@ -670,7 +670,7 @@ f_getfperm(Var *argvars, Var *returnVar) {
 
 //"getfsize({fname})" function
 void
-f_getfsize(Var *argvars, Var *returnVar) {
+f_getfsize(Var *argvars, Var* returnVar) {
    Byte   *fname;
    FileStat   st;
 
@@ -691,7 +691,7 @@ f_getfsize(Var *argvars, Var *returnVar) {
 
 // "getftime({fname})" function
 void
-f_getftime(Var *argvars, Var *returnVar) {
+f_getftime(Var *argvars, Var* returnVar) {
    Byte   *fname;
    FileStat   st;
 
@@ -728,7 +728,7 @@ getftypest(FileStat *st){
 
 // "getftype({fname})" function
 void
-f_getftype(Var *argvars, Var *returnVar) {
+f_getftype(Var *argvars, Var* returnVar) {
    Byte   *fname;
    FileStat   st;
    Byte   *type = NULL;
@@ -743,7 +743,7 @@ f_getftype(Var *argvars, Var *returnVar) {
 
 // "glob()" function
 void
-f_glob(Var *argvars, Var *returnVar) {
+f_glob(Var *argvars, Var* returnVar) {
    int options = WILD_SILENT|WILD_USE_NL;
    Expand expand = {};
    Boole error = false;
@@ -783,7 +783,7 @@ f_glob(Var *argvars, Var *returnVar) {
 }
 
 void
-f_glob2regpat(Var *argvars, Var *returnVar) {
+f_glob2regpat(Var *argvars, Var* returnVar) {
    Byte   buf[NUMBUFLEN];
    Byte   *pat;
 
@@ -793,7 +793,7 @@ f_glob2regpat(Var *argvars, Var *returnVar) {
 }
 
 void
-f_globpath(Var *argvars, Var *returnVar) {
+f_globpath(Var *argvars, Var* returnVar) {
    Unt flags = WILD_IGNORE_COMPLETESLASH;
    Byte buf1[NUMBUFLEN];
    Boole error = false;
@@ -831,13 +831,13 @@ f_globpath(Var *argvars, Var *returnVar) {
 
 // "isdirectory()" function
 void
-f_isdirectory(Var *argvars, Var *returnVar) {
+f_isdirectory(Var *argvars, Var* returnVar) {
    returnVar->number = mch_isdir(tv_get_string(&argvars[0]));
 }
 
 // "isabsolutepath()" function
 void
-f_isabsolutepath(Var *argvars, Var *returnVar) {
+f_isabsolutepath(Var *argvars, Var* returnVar) {
    returnVar->number = mch_isFullName(tv_get_string_strict(&argvars[0]));
 }
 
@@ -866,7 +866,7 @@ mkdir_recurse(CS dir, int prot, Byte **created) {
 }
 
 void
-f_mkdir(Var *argvars, Var *returnVar) {
+f_mkdir(Var *argvars, Var* returnVar) {
    Byte   buf[NUMBUFLEN];
    int prot = 0755;
    int defer = FALSE;
@@ -928,7 +928,7 @@ f_mkdir(Var *argvars, Var *returnVar) {
 
 // "pathshorten()" function
 void
-f_pathshorten(Var *argvars, Var *returnVar) {
+f_pathshorten(Var *argvars, Var* returnVar) {
    Byte   *p;
    int      trim_len = 1;
 
@@ -979,7 +979,7 @@ readdirex_dict_arg(Var *argvars, int *cmp) {
 }
 
 void
-f_readdir(Var *argvars, Var *returnVar) {
+f_readdir(Var *argvars, Var* returnVar) {
    int      ret;
    Byte   *p;
    ArrayList   ga;
@@ -1003,7 +1003,7 @@ f_readdir(Var *argvars, Var *returnVar) {
 }
 
 void
-f_readdirex(Var *argvars, Var *returnVar) {
+f_readdirex(Var *argvars, Var* returnVar) {
    int      ret;
    ArrayList   ga;
    int      i;
@@ -1027,7 +1027,7 @@ f_readdirex(Var *argvars, Var *returnVar) {
 }
 
 private void
-read_file_or_blob(Var *argvars, Var *returnVar, int always_blob) {
+read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
    int      binary = FALSE;
    int      blob = always_blob;
    int      failed = FALSE;
@@ -1237,7 +1237,7 @@ f_readfile(Var* argvars, Var* returnVar) {
 }
 
 void
-f_resolve(Var *argvars, Var *returnVar) {
+f_resolve(Var *argvars, Var* returnVar) {
    Byte   *p;
 
    p = tv_get_string(&argvars[0]);
@@ -1389,7 +1389,7 @@ fail:
 }
 
 void
-f_tempname(Var *argvars UNUSED, Var *returnVar) {
+f_tempname(Var *argvars UNUSED, Var* returnVar) {
    static int   x = 'A';
 
    returnVar->tag = VAR_STRING;
@@ -1408,7 +1408,7 @@ f_tempname(Var *argvars UNUSED, Var *returnVar) {
 }
 
 void
-f_writefile(Var *argvars, Var *returnVar){
+f_writefile(Var *argvars, Var* returnVar){
    int      binary = FALSE;
    int      append = FALSE;
    int      defer = FALSE;
@@ -1505,21 +1505,21 @@ f_writefile(Var *argvars, Var *returnVar){
 
 // "browse(save, title, initdir, default)" function
 void
-f_browse(Var *argvars UNUSED, Var *returnVar){
+f_browse(Var *argvars UNUSED, Var* returnVar){
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
 }
 
 // "browsedir(title, initdir)" function
 void
-f_browsedir(Var *argvars UNUSED, Var *returnVar){
+f_browsedir(Var *argvars UNUSED, Var* returnVar){
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
 }
 
 // "filecopy()" function
 void
-f_filecopy(Var *argvars, Var *returnVar){
+f_filecopy(Var *argvars, Var* returnVar){
    FileStat   st;
 
    returnVar->number = FALSE;
@@ -1635,31 +1635,24 @@ home_replace(
 //Like home_replace, store the replaced string in allocated memory.
 //When something fails, src is returned.
 CS
-home_replace_save(
-   Book* book,   // when not NULL, check for help files
-   CS src   // input file name
-){
+home_replace_save(Book* book, CS inputFname){
    int len = 3;         // space for "~/" and trailing ZERO
-   if (src)      // just in case
-      len += STRLEN(src);
+   if (inputFname)      // just in case
+      len += STRLEN(inputFname);
    CS dst = alloc(len);
-   home_replace(book, src, OUT dst, len, TRUE);
+   home_replace(book, inputFname, OUT dst, len, TRUE);
    return dst;
 }
 
 //Like home_replace, store the replaced string in allocated memory.
 //When something fails, src is returned.
 CS
-homeReplaceA(
-   Book* book,   // when not NULL, check for help files
-   CS src,   // input file name
-   Arena* a
-){
+homeReplaceA(Book* book, CS inputFname, Arena* a){
    int len = 3;         // space for "~/" and trailing ZERO
-   if (src)      // just in case
-      len += STRLEN(src);
+   if (inputFname)      // just in case
+      len += STRLEN(inputFname);
    CS dst = allocateArray(len, Byte, a);
-   home_replace(book, src, OUT dst, len, TRUE);
+   home_replace(book, inputFname, OUT dst, len, TRUE);
    return dst;
 }
 
@@ -1728,7 +1721,7 @@ gettail(CS fname){
 //Get pointer to tail of "fname", including path separators.  Putting a ZERO here leaves the 
 //directory name.  Takes care of "c:/" and "//". Always return a valid pointer.
 CS
-gettail_sep(Byte *fname){
+gettail_sep(CS fname){
    CS p = get_past_head(fname);   // don't remove the '/' from "c:/file"
    CS t = gettail(fname);
    while (t > p && after_pathsep(fname, t))
@@ -1808,7 +1801,7 @@ FullName_save(CS fname, int force) { // force expansion, even when it already lo
 
 // return TRUE if "fname" exists.
 int
-eeFexists(Byte *fname){
+eeFexists(CS fname){
    FileStat st;
 
    if (stat((char *)fname, &st))
@@ -1829,8 +1822,8 @@ expand_wildcards_eval(
    CS exp_pat = *pattern;
    CS   ignoredMsg;
    Unt   usedlen;
-   int      is_cur_alt_file = *exp_pat == '%' || *exp_pat == '#';
-   int      star_follows = FALSE;
+   int is_cur_alt_file = *exp_pat == '%' || *exp_pat == '#';
+   int star_follows = FALSE;
 
    if (is_cur_alt_file || *exp_pat == '<') {
       ++emsg_off;
@@ -1867,9 +1860,9 @@ expand_wildcards_eval(
 //Return OK or FAIL. When FAIL then "num_files" won't be set.
 int
 expand_wildcards(
-   int         num_pat, // number of input patterns
-   Arr(CS) pat,    // array of input patterns
-   Unt         flags,   // EW_DIR, etc.
+   int num_pat, // number of input patterns
+   Arr(CS) pat, // array of input patterns
+   Unt flags,   // EW_DIR, etc.
    OUT ExpandMatch* files
 ){
    int retval = gen_expand_wildcards(num_pat, pat, flags, OUT files);
@@ -1921,7 +1914,7 @@ expand_wildcards(
 
 // Return TRUE if "fname" matches with an entry in 'suffixes'.
 int
-match_suffix(Byte *fname){
+match_suffix(CS fname){
    int      fnamelen, setsuflen;
 #define MAXSUFLEN 30       // maximum length of a file suffix
    Byte   suf_buf[MAXSUFLEN];
@@ -1950,7 +1943,7 @@ match_suffix(Byte *fname){
 
 //Return TRUE if we can expand this backtick thing here.
 private int
-eeBacktick(Byte *p) {
+eeBacktick(CS p) {
    return (*p == '`' && *(p + 1) != ZERO && *(p + STRLEN(p) - 1) == '`');
 }
 
@@ -1958,11 +1951,7 @@ eeBacktick(Byte *p) {
 //Currently only works when pat[] starts and ends with a `.
 //Return number of file names found, -1 if an error is encountered.
 private int
-expand_backtick(
-   OUT ExpandMatch* matches,
-   CS pat,
-   Unt flags   // EW_* flags
-){
+expand_backtick(OUT ExpandMatch* matches, CS pat, Unt flags) {  // EW_* flags
    int cnt = 0;
 
    // Create the command: lop off the backticks.
@@ -2017,8 +2006,6 @@ unix_expandpath(
    Unt flags,     // EW_* flags
    int didstar
 ) {
-   Byte   *path_end;
-   Byte   *p, *s, *e;
    int      start_len = fileList->len;
    RegMatch regmatch;
    int starts_with_dot;
@@ -2027,7 +2014,7 @@ unix_expandpath(
    int starstar = FALSE;
    static int stardepth = 0;       // depth for "**" expansion
 
-   DIR      *dirp;
+   DIR* dirp;
    struct dirent *dp;
 
    // Expanding "**" may take a long time, check for CTRL-C.
@@ -2043,10 +2030,10 @@ unix_expandpath(
 
    // Find the first part in the path name that contains a wildcard. When EW_ICASE is set every 
    // letter is considered to be a wildcard. Copy it into "temp", including preceding characters.
-   p = temp;
-   s = temp;
-   e = NULL;
-   path_end = path;
+   CS p = temp;
+   CS s = temp;
+   CS e = NULL;
+   CS path_end = path;
    while (*path_end != ZERO) {
       //May ignore a wildcard that has a backslash before it; it will be removed by 
       //rem_backslash() or file_pat_to_reg_pat() below.
@@ -2157,11 +2144,11 @@ unix_expandpath(
             } else {
                FileStat  sb;
 
-               // no more wildcards, check if there is a match, remove backslashes for the 
-               // remaining components only
+               //no more wildcards, check if there is a match, remove backslashes for the 
+               //remaining components only
                if (*path_end != ZERO)
                   backslash_halve(temp + len + 1);
-               // add existing file or symbolic link
+               //add existing file or symbolic link
                if ((flags & EW_ALLLINKS) ? lstat((char *)temp, &sb) >= 0 : mch_getperm(temp) >= 0) {
                   addFile(OUT fileList, temp, flags);
                }
@@ -2280,7 +2267,7 @@ LIST_TY(DirPtr)
 
 // Return TRUE if "p" contains what looks like an environment variable. Allowing for escaping.
 private int
-hasEnvVar(Byte *p) {
+hasEnvVar(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
          ++p;
@@ -2295,7 +2282,7 @@ hasEnvVar(Byte *p) {
 // Return TRUE if "p" contains a special wildcard character, one that Eegl cannot expand, 
 // requires using a shell.
 private int
-has_special_wildchar(Byte *p){
+has_special_wildchar(CS p){
    for ( ; *p; MB_PTR_ADV(p)) {
       // Disallow line break characters.
       if (*p == '\r' || *p == '\n')
@@ -2400,7 +2387,7 @@ gen_expand_wildcards(
       }
 
       if (add_pat == -1 || (add_pat == 0 && (flags & EW_NOTFOUND))) {
-         Byte   *t = backslash_halve_save(p);
+         CS t = backslash_halve_save(p);
 
          // When EW_NOTFOUND is used, always add files and dirs. Makes "vim /" work.
          if (flags & EW_NOTFOUND)
@@ -2442,11 +2429,7 @@ gen_expand_wildcards(
 //EW_ADDSLASH   add slash after directory name
 //EW_ALLLINKS   add symlink also when the referred file does not exist
 void
-addFile(
-   OUT ExpandMatch* matches,
-   CS fName,
-   Unt      flags
-){
+addFile(OUT ExpandMatch* matches, CS fName, Unt flags){
    FileStat   sb;
 
    //if the file/dir/link doesn't exist, may not add it
@@ -2481,8 +2464,8 @@ addFile(
 //Return value like strcmp(p, q), but consider path separators.
 int
 pathcmp(const char *p, const char *q, int maxlen) {
-   int      i, j;
-   int      c1, c2;
+   int i, j;
+   int c1, c2;
    const char   *s = NULL;
 
    for (i = 0, j = 0; maxlen < 0 || (i < maxlen && j < maxlen);) {
@@ -2540,20 +2523,14 @@ eeIsAbsName(CS name){
 
 //Get absolute file name into buffer "buf[len]". return FAIL for failure, OK otherwise
 int
-eeFullFileName(
-   CS fname,
-   OUT CS buf,
-   int      len,
-   int      force       // force expansion even when already absolute
-){
+eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion even if absolute
    int      retval = OK;
-   int      url;
 
    *buf = ZERO;
    if (!fname)
       return FAIL;
 
-   url = path_with_url(fname);
+   int url = path_with_url(fname);
    if (!url)
       retval = mch_FullName(fname, buf, len, force);
    if (url || retval == FAIL) {
@@ -2575,18 +2552,13 @@ mch_dirname(CS buf, int len) {
 }
 
 //Get absolute file name into "buf[len]". return FAIL for failure, OK for success
-int
-mch_FullName(
-   CS fname,
-   OUT CS buf,
-   int      len,
-   int      force
-) {     // also expand when already absolute path
+private int
+mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand when already absolute path
    int      buflen = 0;
    int      fd = -1;
    static int   dont_fchdir = FALSE;   // TRUE when fchdir() doesn't work
    Byte   olddir[MAXPATHL];
-   Byte   *p;
+   CS p;
    int      retval = OK;
 
    // Expand it if forced or not an absolute path.
@@ -2648,15 +2620,15 @@ mch_FullName(
           *buf = ZERO;
       }
       if (p != NULL) {
-          int   l;
+         int   l;
 
-          if (fd >= 0) {
-         if (p_verbose >= 5) {
-             verbose_enter();
-             msg(S"fchdir() to previous dir");
-             verbose_leave();
-         }
-         l = fchdir(fd);
+         if (fd >= 0) {
+            if (p_verbose >= 5) {
+                verbose_enter();
+                msg(S"fchdir() to previous dir");
+                verbose_leave();
+            }
+            l = fchdir(fd);
          } else
             l = mch_chdir((char *)olddir);
          if (l != 0)
@@ -2690,7 +2662,7 @@ mch_FullName(
 
 // TRUE if "fname" does not depend on the current directory.
 int
-mch_isFullName(Byte *fname) {
+mch_isFullName(CS fname) {
    return (*fname == '/' || *fname == '~');
 }
 
@@ -2780,15 +2752,14 @@ typedef struct Visited {
 //the third search we can use the visited list of the first search. For the
 //second search we must start from a empty visited list.
 //The struct ff_visited_list_hdr is used to manage a linked list of already visited lists.
-typedef struct ff_visited_list_hdr {
-    struct ff_visited_list_hdr   *ffvl_next;
+declStruct(VisitedList);
+struct VisitedList {
+   VisitedList* next;
 
-    // the filename the attached visited list is for
-    Byte         *ffvl_filename;
-
-    Visited      *ffvl_visited_list;
-
-} VisitedList;
+   // the filename the attached visited list is for
+   CS filename;
+   Visited* ffvl_visited_list;
+};
 
 
 //'**' can be expanded to several directory levels.
@@ -3737,10 +3708,10 @@ findfileFreeVisitedList(FileSearchCtx* search_ctx_arg) {
 private void
 findfileFreeVisitedList_list(VisitedList **list_headp) {
    while (*list_headp != NULL) {
-      VisitedList* vp = (*list_headp)->ffvl_next;
+      VisitedList* vp = (*list_headp)->next;
       ff_free_visited_list((*list_headp)->ffvl_visited_list);
 
-      eeglFree((*list_headp)->ffvl_filename);
+      eeglFree((*list_headp)->filename);
       eeglFree(*list_headp);
       *list_headp = vp;
    }
@@ -3748,10 +3719,10 @@ findfileFreeVisitedList_list(VisitedList **list_headp) {
 }
 
 private void
-ff_free_visited_list(Visited *vl) {
+ff_free_visited_list(Visited* vl) {
    Visited *vp;
 
-   while (vl != NULL) {
+   while (vl) {
       vp = vl->next;
       eeglFree(vl->wildcardPath);
       eeglFree(vl);
@@ -3769,7 +3740,7 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
    if (*listHead) {
       retptr = *listHead;
       while (retptr) {
-          if (fnamecmp(filename.c, retptr->ffvl_filename) == 0) {
+          if (fnamecmp(filename.c, retptr->filename) == 0) {
 #ifdef FF_VERBOSE
             if (p_verbose >= 5) {
                verbose_enter_scroll();
@@ -3781,7 +3752,7 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
 #endif
             return retptr;
          }
-         retptr = retptr->ffvl_next;
+         retptr = retptr->next;
       }
    }
 
@@ -3799,8 +3770,8 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
    retptr = ALLOC_ONE(VisitedList);
 
    retptr->ffvl_visited_list = NULL;
-   retptr->ffvl_filename = copySubstr(filename.c, filename.len);
-   retptr->ffvl_next = *listHead;
+   retptr->filename = copySubstr(filename.c, filename.len);
+   retptr->next = *listHead;
    *listHead = retptr;
 
    return retptr;
@@ -3814,7 +3785,7 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
 // - the only differences are in the counters behind a '**', so
 //   '**\20' is equal to '**\24'
 private int
-ff_wc_equal(Byte *s1, Byte *s2) {
+ff_wc_equal(CS s1, CS s2) {
    int      i, j;
    int      c1 = ZERO;
    int      c2 = ZERO;
@@ -3849,12 +3820,7 @@ ff_wc_equal(Byte *s1, Byte *s2) {
 //TODO: What to do on memory allocation problems?
 //   -> return TRUE - Better the file is found several times instead of never.
 private int
-checkFirstTimeVisit(
-   Visited** visited_list,
-   Text fname,
-   Byte      *wc_path,
-   Unt      wc_pathlen)
-{
+checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathlen) {
    FileStat      st;
    int         url = FALSE;
 
@@ -3967,7 +3933,7 @@ ff_push(FileSearchCtx *search_ctx, DirSearchStack *stack_ptr) {
 
 //Pop a dir from the directory stack. Return NULL if stack is empty.
 private DirSearchStack *
-ff_pop(FileSearchCtx *search_ctx) {
+ff_pop(FileSearchCtx* search_ctx) {
 
    DirSearchStack* sptr = search_ctx->stack;
    if (search_ctx->stack)
@@ -3989,8 +3955,8 @@ ff_free_stack_element(DirSearchStack* stack) {
 
 //Clear the search context, but NOT the visited list.
 private void
-ff_clear(FileSearchCtx *search_ctx) {
-   DirSearchStack   *sptr;
+ff_clear(FileSearchCtx* search_ctx) {
+   DirSearchStack* sptr;
 
    // clear up stack
    while ((sptr = ff_pop(search_ctx)) != NULL)
@@ -4016,7 +3982,7 @@ ff_clear(FileSearchCtx *search_ctx) {
 
 // check if the given path is in the stopdirs returns TRUE if yes else FALSE
 private int
-ff_path_in_stoplist(Byte *path, int path_len, Arr(Text) stopdirs_v) {
+ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
    int      i = 0;
 
    // eat up trailing path separators, except the first
@@ -4065,8 +4031,8 @@ findFileInPath(
    Boole first,      // use count'th matching file name
    CS rel_fname,   // file name searching relative to
    OUT Byte** file_to_find,   // modified copy of file name
-   OUT FileSearchCtx** search_ctx)   // state of the search
-{
+   OUT FileSearchCtx** search_ctx   // state of the search
+){
    return findFileInPathImpl(fname, options, first,
        curBook->o.path,
        FINDFILE_BOTH, rel_fname, curBook->o.suffixesAdd,
@@ -4342,13 +4308,12 @@ file_name_in_line(
    Byte   *rel_fname,   // file we are searching relative to
    LineNr   *file_lnum)   // line number after the file name
 {
-   Byte   *ptr;
-   int      len;
-   int      in_type = TRUE;
-   int      is_url = FALSE;
+   int len;
+   int in_type = TRUE;
+   int is_url = FALSE;
 
    //search forward for what could be the start of a file name
-   ptr = line + col;
+   CS ptr = line + col;
    while (*ptr != ZERO && !eeIsFnameChar(*ptr))
       MB_PTR_ADV(ptr);
    if (*ptr == ZERO)   {   // nothing found
@@ -4551,7 +4516,7 @@ find_previous_pathsep(Byte *path, Byte **psep) {
 //Return TRUE if "maybe_unique" is unique wrt other_paths in "matches".
 //"maybe_unique" is the end portion of "matches->c[i]".
 private Boole
-is_unique(CS maybe_unique, ExpandMatch *matches, Unt i) {
+is_unique(CS maybe_unique, ExpandMatch* matches, Unt i) {
    int       candidate_len = (int)STRLEN(maybe_unique);
    int       other_path_len;
 
@@ -4578,13 +4543,10 @@ is_unique(CS maybe_unique, ExpandMatch *matches, Unt i) {
 //TODO: handle upward search (;) and path limiter (**N) notations by
 //expanding each into their equivalent path(s).
 private void
-expand_path_option(
-   CS curdir,
-   CS path_option,   // path or cdpath
-   OUT ExpandMatch* files
-) {
+expand_path_option(CS curdir, CS path_option, OUT ExpandMatch* files) {
+                              // path or cdpath
    Byte buf[MAXPATHL];
-   Byte   *p;
+   CS p;
    Unt   curdirlen = 0;
    while (*path_option != ZERO) {
       Unt buflen = copy_option_part(&path_option, buf, MAXPATHL, " ,");
@@ -4638,9 +4600,9 @@ expand_path_option(
 //  fname: /foo/bar/baz/quux.txt
 //return:       ^this
 private CS
-get_path_cutoff(Byte *fname, OUT ExpandMatch* matches) {
-   int       maxlen = 0;
-   Byte  *cutoff = NULL;
+get_path_cutoff(CS fname, OUT ExpandMatch* matches) {
+   int maxlen = 0;
+   CS cutoff = NULL;
 
    for (Unt i = 0; i < matches->len; i++) {
       int j = 0;
@@ -4799,11 +4761,7 @@ uniquefy_paths(
 //Call fiGlobpath() with @path values for the given pattern and store the result in "matches".
 //Return the total number of matches.
 private int
-expand_in_path(
-   OUT ExpandMatch* matches,
-   CS pattern,
-   Unt flags      // EW_* flags
-){
+expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags) {      // EW_* flags
    Unt gloflags = 0;
    CS path_option = curBook->o.path;
 
@@ -4836,8 +4794,9 @@ expand_in_path(
 Unt
 simplify_filename(CS filename) {
    int      components = 0;
-   Byte   *tail, *start;
-   Byte   *p_end;             // point to ZERO at end of string "p"
+   CS start;
+   CS tail;
+   CS p_end;             // point to ZERO at end of string "p"
    int      stripping_disabled = FALSE;
    int      relative = TRUE;
 
@@ -4862,8 +4821,8 @@ simplify_filename(CS filename) {
       // At this point "p" is pointing to the char following a single "/"
       // or "p" is at the "start" of the (absolute or relative) path name.
       if (*p == '/') {
-          mch_memmove(p, p + 1, (Unt)(p_end - (p + 1)) + 1); // remove duplicate "/"
-          --p_end;
+         mch_memmove(p, p + 1, (Unt)(p_end - (p + 1)) + 1); // remove duplicate "/"
+         --p_end;
       } ei (p[0] == '.' && (p[1] == '/' || p[1] == ZERO)) {
          if (p == start && relative)
          p += 1 + (p[1] != ZERO);   // keep single "." or leading "./"
@@ -4894,63 +4853,60 @@ simplify_filename(CS filename) {
 
             // Don't strip for an erroneous file name.
             if (!stripping_disabled) {
-                // If the preceding component does not exist in the file
-                // system, we strip it.  On Unix, we don't accept a symbolic
-                // link that refers to a non-existent file.
-                saved_char = p[-1];
-                p[-1] = ZERO;
-                if (lstat((char *)filename, &st) < 0)
-                   do_strip = TRUE;
-                p[-1] = saved_char;
+               // If the preceding component does not exist in the file
+               // system, we strip it.  On Unix, we don't accept a symbolic
+               // link that refers to a non-existent file.
+               saved_char = p[-1];
+               p[-1] = ZERO;
+               if (lstat((char *)filename, &st) < 0)
+                  do_strip = TRUE;
+               p[-1] = saved_char;
 
-                --p;
-                // Skip back to after previous '/'.
-                while (p > start && !after_pathsep(start, p))
-               MB_PTR_BACK(start, p);
+               --p;
+               // Skip back to after previous '/'.
+               while (p > start && !after_pathsep(start, p))
+                  MB_PTR_BACK(start, p);
 
-                if (!do_strip) {
-               // If the component exists in the file system, check
-               // that stripping it won't change the meaning of the
-               // file name.  First get information about the
-               // unstripped file name.  This may fail if the component
-               // to strip is not a searchable directory (but a regular
-               // file, for instance), since the trailing "/.." cannot
-               // be applied then.  We don't strip it then since we
-               // don't want to replace an erroneous file name by
-               // a valid one, and we disable stripping of later
-               // components.
-               saved_char = *tail;
-               *tail = ZERO;
-               if (stat((char *)filename, &st) >= 0)
-                   do_strip = TRUE;
-               else
-                   stripping_disabled = TRUE;
-               *tail = saved_char;
-               if (do_strip) {
-                   FileStat   new_st;
+               if (!do_strip) {
+                  // If the component exists in the file system, check
+                  // that stripping it won't change the meaning of the
+                  // file name.  First get information about the
+                  // unstripped file name.  This may fail if the component
+                  // to strip is not a searchable directory (but a regular
+                  // file, for instance), since the trailing "/.." cannot
+                  // be applied then.  We don't strip it then since we
+                  // don't want to replace an erroneous file name by
+                  // a valid one, and we disable stripping of later components.
+                  saved_char = *tail;
+                  *tail = ZERO;
+                  if (stat((char *)filename, &st) >= 0)
+                      do_strip = TRUE;
+                  else
+                      stripping_disabled = TRUE;
+                  *tail = saved_char;
+                  if (do_strip) {
+                     FileStat   new_st;
 
-                   // On Unix, the check for the unstripped file name
-                   // above works also for a symbolic link pointing to
-                   // a searchable directory.  But then the parent of
-                   // the directory pointed to by the link must be the
-                   // same as the stripped file name.  (The latter
-                   // exists in the file system since it is the
-                   // component's parent directory.)
-                   if (p == start && relative)
-                  (void)stat(".", &new_st);
-                   else {
-                  saved_char = *p;
-                  *p = ZERO;
-                  (void)stat((char *)filename, &new_st);
-                  *p = saved_char;
+                     //The check for the unstripped file name above works also for a 
+                     //symbolic link pointing to a searchable directory. But then the parent of
+                     //the directory pointed to by the link must be the same as the stripped file 
+                     //name. (The latter exists in the file system since it is the component's 
+                     //parent directory.)
+                     if (p == start && relative)
+                        (void)stat(".", &new_st);
+                     else {
+                        saved_char = *p;
+                        *p = ZERO;
+                        (void)stat((char *)filename, &new_st);
+                        *p = saved_char;
+                     }
+
+                     if (new_st.st_ino != st.st_ino || new_st.st_dev != st.st_dev) {
+                        do_strip = FALSE;
+                        //We don't disable stripping of later
+                        //components since the unstripped path name is still valid.
+                     }
                   }
-
-                  if (new_st.st_ino != st.st_ino || new_st.st_dev != st.st_dev) {
-                     do_strip = FALSE;
-                     // We don't disable stripping of later
-                     // components since the unstripped path name is still valid.
-                  }
-               }
                }
             }
 
@@ -4960,10 +4916,10 @@ simplify_filename(CS filename) {
                 p = tail;
                 components = 0;
             } else {
-               // Strip previous component. If the result would get empty and there is no 
-               // trailing path separator, leave a single "." instead.  If we are at the end of 
-               // the file name and there is no trailing path separator and a preceding
-               // component is left after stripping, strip its trailing path separator as well.
+               //Strip previous component. If the result would get empty and there is no 
+               //trailing path separator, leave a single "." instead.  If we are at the end of 
+               //the file name and there is no trailing path separator and a preceding
+               //component is left after stripping, strip its trailing path separator as well.
                if (p == start && relative && tail[-1] == '.') {
                   *p++ = '.';
                   *p = ZERO;
@@ -4999,7 +4955,7 @@ simplify_filename(CS filename) {
 
 //Return TRUE if the string "p" contains a wildcard that mch_expandpath() can expand.
 int
-mch_has_exp_wildcard(Byte *p) {
+mch_has_exp_wildcard(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
          ++p;
@@ -5024,7 +4980,7 @@ mch_has_wildcard(CS p){
 }
 
 private int
-have_wildcard(int num, Byte **file){
+have_wildcard(int num, Arr(CS) file){
    for (int i = 0; i < num; i++) {
       if (mch_has_wildcard(file[i]))
           return 1;
@@ -5049,7 +5005,7 @@ save_patterns(int num_pat, Arr(CS) pat, OUT ExpandMatch* files) {
 
 
 void
-f_simplify(Var *argvars, Var *returnVar) {
+f_simplify(Var* argvars, Var* returnVar) {
    Byte* p = tv_get_string_strict(&argvars[0]);
    returnVar->string = copyStr(p);
    simplify_filename(returnVar->string);   // simplify in place
@@ -5062,9 +5018,7 @@ f_simplify(Var *argvars, Var *returnVar) {
 //- Add the temp file name.
 //- Add the file name patterns.
 private Text
-buildShellCommandForWildcardExpansion(
-      CS tempname, int num_pat, Arr(CS) pat, Unt flags
-) {
+buildShellCommandForWildcardExpansion( CS tempname, int num_pat, Arr(CS) pat, Unt flags) {
 #define STRING_INIT(s) \
       {(CS)(s), STRLEN_LITERAL(s)}
             // vimglob() function to define for Posix shell
@@ -5143,12 +5097,8 @@ buildShellCommandForWildcardExpansion(
 //num_file is pointer to number of matched file names
 //file is pointer to array of pointers to matched file names
 private int
-mch_expand_wildcards(
-   int num_pat,
-   Arr(CS) pat,
-   int flags,   // EW_* flags
-   OUT ExpandMatch* matches
-){
+mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* matches){
+                                               //EW_* flags
    lo("mch_expand_wc"); 
 
    //If there are no wildcards, just copy the names to allocated memory.
@@ -5208,12 +5158,8 @@ mch_expand_wildcards(
    long llen = ftell(fd);         // get size of temp file
    fseek(fd, 0L, SEEK_SET);
    
-   CS buf;
-   if (llen < 0)
-      // just in case ftell() would fail
-      buf = NULL;
-   else
-      buf = alloc(llen + 1);
+   // just in case ftell() would fail
+   CS buf = (llen < 0) ? null : alloc(llen + 1);
    Unt len = llen;
    int readLen = FREAD(buf, 1, len, fd);
    fclose(fd);
@@ -5385,7 +5331,7 @@ filemess(
 
     // Avoid an over-long translation to cause trouble.
    if (*s != ZERO)
-   STRNCPY(IObuff + len, s, 99);
+      STRNCPY(IObuff + len, s, 99);
 
    //For the first message may have to start a new line. For further ones overwrite the previous 
    //one, reset msg_scroll before calling filemess().
@@ -5438,16 +5384,16 @@ readfile(
    LineNr   lines_to_skip,
    LineNr   lines_to_read,
    Invocation* invo,         // can be NULL!
-   Unt      flags
+   Unt flags
 ){
-   int      retval = FAIL;   // jump to "theend" instead of returning
-   int      fd = 0;
-   int      newfile = (flags & READ_NEW);
-   int      filtering = (flags & READ_FILTER);
-   int      read_stdin = (flags & READ_STDIN);
-   int      read_buffer = (flags & READ_BOOK);
-   int      read_fifo = (flags & READ_FIFO);
-   int      set_options = newfile || read_buffer || (invo && invo->read_edit);
+   int retval = FAIL;   // jump to "theend" instead of returning
+   int fd = 0;
+   int newfile = (flags & READ_NEW);
+   int filtering = (flags & READ_FILTER);
+   int read_stdin = (flags & READ_STDIN);
+   int read_buffer = (flags & READ_BOOK);
+   int read_fifo = (flags & READ_FIFO);
+   int set_options = newfile || read_buffer || (invo && invo->read_edit);
    LineNr   read_buf_lnum = 1;   // next line to read from curBook
    ColNr   read_buf_col = 0;   // next char to read from this line
    Byte   c;
@@ -5462,7 +5408,6 @@ readfile(
    Byte   *p;
    FileSize   filesize = 0;
    int      skip_read = FALSE;
-   FileSize       filesize_count = 0;     // counter
    ContextSha256 sha_ctx;
    int      read_undo_file = FALSE;
    int      split = 0;      // number of split lines
@@ -5473,24 +5418,20 @@ readfile(
    int      perm = 0;
    int      swap_mode = -1;      // protection bits for swap file
    FileStat   st;
-   LineNr   skip_count = 0;
-   LineNr   read_count = 0;
-   int      msg_save = msg_scroll;
-   LineNr   read_no_eol_lnum = 0;   // non-zero lnum when last line of
+   LineNr skip_count = 0;
+   LineNr read_count = 0;
+   int msg_save = msg_scroll;
+   LineNr read_no_eol_lnum = 0;   // non-zero lnum when last line of
                // last read was missing the eol
-   int      file_rewind = FALSE;
-   LineNr   illegal_byte = 0;   // line nr with illegal byte
-   int      bad_char_behavior = BAD_REPLACE; // BAD_KEEP, BAD_DROP or character to replace with
-   int      converted = FALSE;   // TRUE if conversion done
-   int      notconverted = FALSE;   // TRUE if conversion wanted but it wasn't possible
-   Pos   orig_start;
-   Book   *old_curbuf;
-   Byte   *old_fullFileName;
-   Byte   *old_currFileName;
-   int      using_fullFileName;
-   int      using_currFileName;
+   int file_rewind = FALSE;
+   LineNr illegal_byte = 0;   // line nr with illegal byte
+   int bad_char_behavior = BAD_REPLACE; // BAD_KEEP, BAD_DROP or character to replace with
+   int converted = FALSE;   // TRUE if conversion done
+   int notconverted = FALSE;   // TRUE if conversion wanted but it wasn't possible
+   Pos  orig_start;
+   Book* old_curbuf;
    static CS msg_is_a_directory = S"is a directory";
-   Unt   fnamelen = 0;
+   Unt fnamelen = 0;
 
    curBook->auDidFileType = FALSE; // reset before triggering any autocommands
    curBook->noEolLnum = 0;   // in case it was set by the previous read
@@ -5500,11 +5441,11 @@ readfile(
    // executing nasty autocommands.  Also check if "fname" and "sfname"
    // point to one of these values.
    old_curbuf = curBook;
-   old_fullFileName = curBook->fullFileName;
-   old_currFileName = curBook->currFileName;
-   using_fullFileName = (fname == curBook->fullFileName)
+   CS old_fullFileName = curBook->fullFileName;
+   CS old_currFileName = curBook->currFileName;
+   int using_fullFileName = (fname == curBook->fullFileName)
                      || (sfname == curBook->fullFileName);
-   using_currFileName = (fname == curBook->currFileName) || (sfname == curBook->currFileName);
+   int using_currFileName = (fname == curBook->currFileName) || (sfname == curBook->currFileName);
 
    // After reading a file the cursor line changes but we don't want to display the line.
    ex_no_reprint = TRUE;
@@ -5561,7 +5502,7 @@ readfile(
    else
       msg_scroll = TRUE;   // don't overwrite previous file message
 
-   if (fname != NULL && *fname != ZERO) {
+   if (fname && *fname != ZERO) {
       fnamelen = STRLEN(fname);
 
       // If the name is too long we might crash further on, quit here.
@@ -5708,8 +5649,8 @@ readfile(
       goto theend;
     } //}}}
 
-   // Only set the 'ro' flag for readonly files the first time they are
-   // loaded. Help files always get readonly mode
+   //Only set the 'ro' flag for readonly files the first time they are
+   //loaded. Help files always get readonly mode
    if ((check_readonly && file_readonly) || curBook->kind == BOOK_HELP) {
       curBook->o.modifiable = false;
    } 
@@ -5735,7 +5676,7 @@ readfile(
             close(fd);
          goto theend;
       }
-      // Set swap file protection bits after creating it.
+      //Set swap file protection bits after creating it.
       if (swap_mode > 0 && curBook->mem.mfile != NULL && curBook->mem.mfile->fName != NULL) {
          Byte *swap_fname = curBook->mem.mfile->fName;
 
@@ -5772,8 +5713,8 @@ readfile(
    curBook->opStart.col = 0;
 
    if (!read_buffer) {
-      int   m = msg_scroll;
-      int   n = msg_scrolled;
+      int m = msg_scroll;
+      int n = msg_scrolled;
 
       //The file must be closed again, autocommands may want to change the file before reading it
       if (!read_stdin)
@@ -5839,7 +5780,7 @@ readfile(
    linecnt = curBook->mem.lineCount;
 
    // "++bad=" argument.
-   if (invo != NULL && invo->bad_char != 0) {
+   if (invo && invo->bad_char != 0) {
       bad_char_behavior = invo->bad_char;
       if (set_options)
          curBook->badChar = invo->bad_char;
@@ -5866,7 +5807,6 @@ readfile(
    if (!skip_read) {
       linerest = 0;
       filesize = 0;
-      filesize_count = 0;
       skip_count = lines_to_skip;
       read_count = lines_to_read;
       read_undo_file = (newfile && (flags & READ_KEEP_UNDO) == 0
@@ -5909,12 +5849,12 @@ readfile(
                   break;
             }
             if (!nebuffer) {
-                do_outofmem_msg((Ulong)(size * 2 + linerest + 1));
-                error = TRUE;
-                break;
+               do_outofmem_msg((Ulong)(size * 2 + linerest + 1));
+               error = TRUE;
+               break;
             }
             if (linerest)   // copy characters from the previous buffer
-                mch_memmove(nebuffer, ptr - linerest, (Unt)linerest);
+               mch_memmove(nebuffer, ptr - linerest, (Unt)linerest);
             eeglFree(buffer);
             buffer = nebuffer;
             ptr = buffer + linerest;
@@ -5950,9 +5890,9 @@ readfile(
                      // to ZERO to reverse the effect done below.
                      for (ni = 0; ni < n; ++ni) {
                         if (p[ni] == NL)
-                            ptr[tlen++] = ZERO;
+                           ptr[tlen++] = ZERO;
                         else
-                            ptr[tlen++] = p[ni];
+                           ptr[tlen++] = p[ni];
                      }
                      ptr[tlen++] = NL;
                      read_buf_col = 0;
@@ -5967,7 +5907,6 @@ readfile(
                long read_size = size;
                size = read_eintr(fd, ptr, read_size);
                // Did we reach end of file?
-               filesize_count += size;
             }
 
             if (size < 0) {          // read error
@@ -6218,13 +6157,12 @@ afterRecovery:
             //EVENT_FILETYPE was not triggered but the book already has a
             //filetype. Trigger EVENT_FILETYPE using the existing filetype.
             apply_autocmds(EVENT_FILETYPE, curBook->fileType, curBook->currFileName, TRUE, curBook);
-      }
-      else
+      } else
          auCommApplyWithInvo(EVENT_FILEREADPOST, sfname, sfname, FALSE, NULL, invo);
       if (msg_scrolled == n)
-          msg_scroll = m;
+         msg_scroll = m;
       if (aborting())       // autocmds may abort script processing
-          goto theend;
+         goto theend;
    }
 
    if (!(recoveryModeG && error))
@@ -6243,10 +6181,10 @@ theend:
 
 // Read blob from file "fd". Caller has allocated a blob in "returnVar". Return OK or FAIL.
 int
-read_blob(FILE *fd, Var *returnVar, FileSize offset, FileSize size_arg) {
-   Blob   *blob = returnVar->blob;
+read_blob(FILE *fd, Var* returnVar, FileSize offset, FileSize size_arg) {
+   Blob* blob = returnVar->blob;
    struct stat   st;
-   int      whence;
+   int whence;
    FileSize   size = size_arg;
 
    if (fstat(fileno(fd), &st) < 0)
@@ -6285,7 +6223,7 @@ read_blob(FILE *fd, Var *returnVar, FileSize offset, FileSize size_arg) {
 
 // Write "blob" to file "fd". Return OK or FAIL.
 int
-write_blob(FILE *fd, Blob *blob) {
+write_blob(FILE* fd, Blob* blob) {
    if (fwrite(blob->c.c, 1, blob->c.len, fd) < (Unt)blob->c.len) {
       emsg(_(e_error_while_writing));
       return FAIL;
@@ -6423,7 +6361,7 @@ msg_add_eol(void){
 }
 
 int
-time_differs(FileStat *st, long mtime, long mtime_ns UNUSED){
+time_differs(FileStat* st, long mtime, long mtime_ns UNUSED){
    return
 #ifdef ST_MTIM_NSEC
    (long)st->ST_MTIM_NSEC != mtime_ns ||
@@ -6452,8 +6390,8 @@ shorten_fname1(CS full_path){
 //Try to find a shortname by comparing the fullname with the current directory.
 //Return NULL if not shorter name possible, pointer into "full_path" otherwise.
 CS
-shorten_fname(Byte *full_path, Byte *dir_name){
-   Byte   *p;
+shorten_fname(CS full_path, CS dir_name){
+   CS p;
 
    if (full_path == NULL)
       return NULL;
@@ -6496,11 +6434,11 @@ shorten_buf_fname(Book* book, CS dirname, int force) {
 
 // Shorten filenames for all books.
 void
-shorten_fnames(int force){
+shorten_fnames(Boole force){
    Byte   dirname[MAXPATHL];
-   Book* book;
 
    mch_dirname(dirname, MAXPATHL);
+   Book* book;
    FOR_ALL_BOOKS(book) {
       shorten_buf_fname(book, dirname, force);
 
@@ -6519,21 +6457,11 @@ shorten_fnames(int force){
 //dot, 3 characters otherwise. Space for the returned name is allocated, must be freed later.
 //Return NULL when out of memory.
 CS
-modname(
-   CS fname,
-   CS ext,
-   int prepend_dot)   // may prepend a '.' to file name
-{
-   return buf_modname(fname, ext, prepend_dot);
-}
-
-// may prepend a '.' to file name
-CS
-buf_modname(Byte* fname, Byte* ext, int prepend_dot) {  
-   Byte   *retval;
-   Byte   *s;
-   Byte   *e;
-   Byte   *ptr;
+fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '.' to file name
+   CS retval;
+   CS s;
+   CS e;
+   CS ptr;
    int      fnamelen;
 
    int extlen = (int)STRLEN(ext);
@@ -7945,12 +7873,12 @@ errret:
 }
 
 void
-f_system(Var *argvars, Var *returnVar) {
+f_system(Var *argvars, Var* returnVar) {
    get_cmd_output_as_returnVar(argvars, returnVar, FALSE);
 }
 
 void
-f_systemlist(Var *argvars, Var *returnVar) {
+f_systemlist(Var *argvars, Var* returnVar) {
    get_cmd_output_as_returnVar(argvars, returnVar, TRUE);
 }
 

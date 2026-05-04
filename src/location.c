@@ -10,7 +10,7 @@
 typedef struct DirStack DirStack; 
 struct DirStack {
    DirStack* next;
-   Arr(Byte) dirname;
+   CS dirname;
 };
 
 
@@ -169,12 +169,12 @@ private int addEntry(
       Byte *mesg, long lnum, long end_lnum, int col, int end_col, int vis_col, 
       Byte *pattern, int nr, int type, Var *user_data, Boole valid
 );
-private void   freeAList(LocationList *ll);
-private Byte   *createMsg(int, int);
-private int   getBufNrForPath(LocationList *ll, Byte *, Byte *);
+private void freeAList(LocationList *ll);
+private CS createMsg(int, int);
+private int   getBookNrForPath(LocationList *ll, Byte *, Byte *);
 private Arr(Byte) pushDir(Byte *, DirStack **, int is_file_stack);
-private Byte   *popDir(DirStack **);
-private Byte   *guessFilepath(LocationList *ll, Byte *);
+private CS popDir(DirStack **);
+private CS guessFilepath(LocationList *ll, Byte *);
 private void jumpToNewPortal(LocationStack *stack, Unt dir, int errornr, Boole forceit, Boole newPort
 );
 private void   formatText(ArrayList *gap, Byte *text);
@@ -293,7 +293,7 @@ private CS
 convertErrorFormatToRegex(
    CS efmpat,
    CS regpat,
-   ErrorFormatInfo   *efminfo,
+   ErrorFormatInfo* efminfo,
    int idx,
    int round
 ){
@@ -400,61 +400,59 @@ efm_analyze_prefix(Byte *efmp, ErrorFormatInfo *efminfo){
 //information about the 'erroformat' pattern is returned in "fmt_ptr". Return OK or FAIL.
 private int
 ErrorFormatInfoo_regpat(
-   Byte   *efm,
-   int   len,
-   ErrorFormatInfo   *fmt_ptr,
-   Byte   *regpat
+   CS efm,
+   int len,
+   ErrorFormatInfo* fmt_ptr,
+   CS regpat
 ){
-   Byte   *ptr;
    Byte   *efmp;
-   int      round;
    Unt      idx = 0;
 
    // Build a regexp pattern for a 'errorformat' option part
-   ptr = regpat;
+   CS ptr = regpat;
    *ptr++ = '^';
-   round = 0;
+   int round = 0;
    for (efmp = efm; efmp < efm + len; ++efmp) {
-   if (*efmp == '%') {
-      ++efmp;
-      for (idx = 0; idx < FMT_PATTERNS; ++idx) {
-         if (FORMAT_PATTERNS[idx].convchar == *efmp)
-            break;
-      } 
-      if (idx < FMT_PATTERNS) {
-         ptr = convertErrorFormatToRegex(efmp, ptr, fmt_ptr, idx, round);
+      if (*efmp == '%') {
+         ++efmp;
+         for (idx = 0; idx < FMT_PATTERNS; ++idx) {
+            if (FORMAT_PATTERNS[idx].convchar == *efmp)
+               break;
+         } 
+         if (idx < FMT_PATTERNS) {
+            ptr = convertErrorFormatToRegex(efmp, ptr, fmt_ptr, idx, round);
+            if (ptr == NULL)
+                return FAIL;
+            round++;
+         } ei (*efmp == '*') {
+         ++efmp;
+         ptr = scanf_fmt_to_regpat(&efmp, efm, len, ptr);
          if (ptr == NULL)
              return FAIL;
-         round++;
-      } ei (*efmp == '*') {
-      ++efmp;
-      ptr = scanf_fmt_to_regpat(&efmp, efm, len, ptr);
-      if (ptr == NULL)
-          return FAIL;
-      } ei (firstOccurrence((CS)"%\\.^$~[", *efmp) != NULL)
-         *ptr++ = *efmp;      // regexp magic characters
-      ei (*efmp == '#')
-         *ptr++ = '*';
-      ei (*efmp == '>')
-         fmt_ptr->conthere = TRUE;
-      ei (efmp == efm + 1) {     // analyse prefix
-         // prefix is allowed only at the beginning of the errorformat
-         // option part
-         efmp = efm_analyze_prefix(efmp, fmt_ptr);
-         if (efmp == NULL)
-             return FAIL;
-      } else {
-         showErrFmtMsg(_(e_invalid_chr_in_format_string), *efmp);
-         return FAIL;
+         } ei (firstOccurrence((CS)"%\\.^$~[", *efmp) != NULL)
+            *ptr++ = *efmp;      // regexp magic characters
+         ei (*efmp == '#')
+            *ptr++ = '*';
+         ei (*efmp == '>')
+            fmt_ptr->conthere = TRUE;
+         ei (efmp == efm + 1) {     // analyse prefix
+            // prefix is allowed only at the beginning of the errorformat
+            // option part
+            efmp = efm_analyze_prefix(efmp, fmt_ptr);
+            if (efmp == NULL)
+                return FAIL;
+         } else {
+            showErrFmtMsg(_(e_invalid_chr_in_format_string), *efmp);
+            return FAIL;
+         }
+      } else {        // copy normal character
+         if (*efmp == '\\' && efmp + 1 < efm + len)
+            ++efmp;
+         ei (firstOccurrence((CS)".*^$~[", *efmp) != NULL)
+            *ptr++ = '\\';   // escape regexp atoms
+         if (*efmp)
+            *ptr++ = *efmp;
       }
-   } else {        // copy normal character
-      if (*efmp == '\\' && efmp + 1 < efm + len)
-         ++efmp;
-      ei (firstOccurrence((CS)".*^$~[", *efmp) != NULL)
-         *ptr++ = '\\';   // escape regexp atoms
-      if (*efmp)
-         *ptr++ = *efmp;
-   }
    }
    *ptr++ = '$';
    *ptr = ZERO;
@@ -464,10 +462,8 @@ ErrorFormatInfoo_regpat(
 
 // Free the 'errorformat' information list
 private void
-free_efm_list(ErrorFormatInfo **efm_first){
-   ErrorFormatInfo *efm_ptr;
-
-   for (efm_ptr = *efm_first; efm_ptr != NULL; efm_ptr = *efm_first) {
+free_efm_list(ErrorFormatInfo** efm_first){
+   for (ErrorFormatInfo* efm_ptr = *efm_first; efm_ptr; efm_ptr = *efm_first) {
       *efm_first = efm_ptr->next;
       eeRegFree(efm_ptr->prog);
       eeglFree(efm_ptr);
@@ -478,7 +474,7 @@ free_efm_list(ErrorFormatInfo **efm_first){
 //Compute the size of the buffer used to convert a 'errorformat' pattern into
 //a regular expression pattern.
 private int
-efm_regpat_bufsz(Byte *efm){
+efm_regpat_bufsz(CS efm){
    int sz = (FMT_PATTERNS * 3) + ((int)STRLEN(efm) << 2);
    for (int i = FMT_PATTERNS; i > 0; )
       sz += (int)STRLEN(FORMAT_PATTERNS[--i].pattern);
@@ -490,32 +486,32 @@ efm_regpat_bufsz(Byte *efm){
 //Return the length of a 'errorformat' option part (separated by ",").
 private int
 efm_option_part_len(Byte *efm){
-    int len;
+   int len;
 
-    for (len = 0; efm[len] != ZERO && efm[len] != ','; ++len)
-   if (efm[len] == '\\' && efm[len + 1] != ZERO)
-       ++len;
+   for (len = 0; efm[len] != ZERO && efm[len] != ','; ++len) {
+      if (efm[len] == '\\' && efm[len + 1] != ZERO)
+          ++len;
+   } 
 
-    return len;
+   return len;
 }
 
 //Parse the 'errorformat' option. Multiple parts in the 'errorformat' option
 //are parsed and converted to regular expressions. Returns information about
 //the parsed 'errorformat' option.
 private ErrorFormatInfo *
-parse_efm_option(Byte *efm){
-   ErrorFormatInfo   *fmt_ptr = NULL;
-   ErrorFormatInfo   *fmtFirst = NULL;
-   ErrorFormatInfo   *fmt_last = NULL;
-   Byte   *fmtstr = NULL;
-   int      len;
-   int      sz;
+parse_efm_option(CS efm){
+   ErrorFormatInfo* fmt_ptr = NULL;
+   ErrorFormatInfo* fmtFirst = NULL;
+   ErrorFormatInfo* fmt_last = NULL;
+   CS fmtstr = NULL;
+   int len;
 
    // Each part of the format string is copied and modified from errorformat
    // to regex prog.  Only a few % characters are allowed.
 
    // Get some space to modify the format string into.
-   sz = efm_regpat_bufsz(efm);
+   int sz = efm_regpat_bufsz(efm);
    if ((fmtstr = alloc_id(sz, aid_ll_efm_fmtstr)) == NULL)
       goto parse_efm_error;
 
@@ -573,9 +569,8 @@ typedef enum {
    SOURCE_LIST // reading location from a Var containing a list of strings
 } SourceKind;
 
-
 typedef struct { // SOURCE_FILENAME
-   Arr(Byte) c;
+   CS c;
 } FileNameSource;
 
 typedef struct { // SOURCE_FILE
@@ -771,8 +766,7 @@ nextFileLine(LocationState *state) {
 
       while (discard) {
          // The current line is longer than LINE_MAXLEN, continue
-         // reading but discard everything until EOL or EOF is
-         // reached.
+         // reading but discard everything until EOL or EOF is reached.
          if (fgets((char *)IObuff, IOSIZE, state->source.File.c) == NULL
                 || (int)STRLEN(IObuff) < IOSIZE - 1
                 || IObuff[IOSIZE - 2] == '\n') {
@@ -899,7 +893,7 @@ qf_parse_fmt_l(RegMatch* rmp, int midx, Fields* fields) {
 //Parse the match for end line number ('%e') pattern in regmatch.
 //Return the matched value in "fields->end_lnum".
 private int
-qf_parse_fmt_e(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_e(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    fields->end_lnum = atol((char *)rmp->startp[midx]);
@@ -909,7 +903,7 @@ qf_parse_fmt_e(RegMatch *rmp, int midx, Fields* fields) {
 //Parse the match for column number ('%c') pattern in regmatch.
 //Return the matched value in "fields->col".
 private int
-qf_parse_fmt_c(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_c(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    fields->col = (int)atol((char *)rmp->startp[midx]);
@@ -919,7 +913,7 @@ qf_parse_fmt_c(RegMatch *rmp, int midx, Fields* fields) {
 //Parse the match for end column number ('%k') pattern in regmatch.
 //Return the matched value in "fields->end_col".
 private int
-qf_parse_fmt_k(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_k(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    fields->end_col = (int)atol((char *)rmp->startp[midx]);
@@ -929,7 +923,7 @@ qf_parse_fmt_k(RegMatch *rmp, int midx, Fields* fields) {
 //Parse the match for error type ('%t') pattern in regmatch.
 //Return the matched value in "fields->type".
 private int
-qf_parse_fmt_t(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_t(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    fields->type = *rmp->startp[midx];
@@ -938,12 +932,10 @@ qf_parse_fmt_t(RegMatch *rmp, int midx, Fields* fields) {
 
 //Copy a non-error line into the error string. Return the matched line in "fields->errmsg".
 private int
-copy_nonerror_line(Byte *linebuf, int linelen, Fields* fields) {
-   Byte   *p;
-
+copy_nonerror_line(CS linebuf, int linelen, Fields* fields) {
    if (linelen >= fields->errmsglen) {
       // linelen + null terminator
-      p = eeRealloc(fields->errmsg, linelen + 1);
+      CS p = eeRealloc(fields->errmsg, linelen + 1);
       fields->errmsg = p;
       fields->errmsglen = linelen + 1;
    }
@@ -956,7 +948,7 @@ copy_nonerror_line(Byte *linebuf, int linelen, Fields* fields) {
 //Parse the match for error message ('%m') pattern in regmatch.
 //Return the matched value in "fields->errmsg".
 private int
-qf_parse_fmt_m(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_m(RegMatch* rmp, int midx, Fields* fields) {
    CS p;
 
    if (rmp->startp[midx] == NULL || rmp->endp[midx] == NULL)
@@ -975,7 +967,7 @@ qf_parse_fmt_m(RegMatch *rmp, int midx, Fields* fields) {
 //Parse the match for rest of a single-line file message ('%r') pattern.
 //Return the matched value in "tail".
 private int
-qf_parse_fmt_r(RegMatch *rmp, int midx, Byte **tail) {
+qf_parse_fmt_r(RegMatch* rmp, int midx, OUT CS* tail) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    *tail = rmp->startp[midx];
@@ -1004,7 +996,7 @@ qf_parse_fmt_p(RegMatch* rmp, int midx, Fields* fields) {
 //Parse the match for the virtual column number ('%v') pattern in regmatch.
 //Return the matched value in "fields->col".
 private int
-qf_parse_fmt_v(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_v(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    fields->col = (int)atol((char *)rmp->startp[midx]);
@@ -1015,7 +1007,7 @@ qf_parse_fmt_v(RegMatch *rmp, int midx, Fields* fields) {
 //Parse the match for the search text ('%s') pattern in regmatch.
 //Return the matched value in "fields->pattern".
 private int
-qf_parse_fmt_s(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_s(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL || rmp->endp[midx] == NULL)
       return QF_FAIL;
    int len = (int)(rmp->endp[midx] - rmp->startp[midx]);
@@ -1032,7 +1024,7 @@ qf_parse_fmt_s(RegMatch *rmp, int midx, Fields* fields) {
 //Parse the match for the module ('%o') pattern in regmatch.
 //Return the matched value in "fields->module".
 private int
-qf_parse_fmt_o(RegMatch *rmp, int midx, Fields* fields) {
+qf_parse_fmt_o(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL || rmp->endp[midx] == NULL)
       return QF_FAIL;
    int len = (int)(rmp->endp[midx] - rmp->startp[midx]);
@@ -1069,31 +1061,27 @@ private int (*parseFormats[FMT_PATTERNS])(RegMatch *, int, Fields *) = {
 //failure, returns QF_FAIL or QF_NOMEM.
 private int
 parseErrorFormatMatch(
-   Arr(Byte) linebuf,
+   CS linebuf,
    int linelen,
    ErrorFormatInfo* fmt_ptr,
    RegMatch* regmatch,
    Fields* fields,
-   int      qf_multiline,
-   int      qf_multiscan,
-   Byte** tail
+   int qf_multiline,
+   int qf_multiscan,
+   OUT CS* tail
 ){
-   int      idx = fmt_ptr->prefix;
-   int      i;
-   int      midx;
-   int      status;
+   int idx = fmt_ptr->prefix;
+   int midx;
+   int status;
 
    if ((idx == 'C' || idx == 'Z') && !qf_multiline)
       return QF_FAIL;
-   if (firstOccurrence((CS)"EWIN", idx) != NULL)
-      fields->type = idx;
-   else
-      fields->type = 0;
+   fields->type = (firstOccurrence((CS)"EWIN", idx) != NULL) ? idx : 0;
 
    // Extract error message data from matched line.
    // We check for an actual submatch, because "\[" and "\]" in
    // the 'errorformat' may cause the wrong submatch to be used.
-   for (i = 0; i < FMT_PATTERNS; i++) {
+   for (int i = 0; i < FMT_PATTERNS; i++) {
       status = QF_OK;
       midx = (int)fmt_ptr->addr[i];
       if (i == 0 && midx > 0)            // %f
@@ -1112,7 +1100,7 @@ parseErrorFormatMatch(
          return status;
    }
 
-    return QF_OK;
+   return QF_OK;
 }
 
 //Parse an error line in 'linebuf' using a single error format string in
@@ -1121,14 +1109,14 @@ parseErrorFormatMatch(
 //successfully copied. Otherwise returns QF_FAIL or QF_NOMEM.
 private int
 qf_parse_get_fields(
-   Byte      *linebuf,
-   int      linelen,
-   ErrorFormatInfo      *fmt_ptr,
-   Fields   *fields,
-   int      qf_multiline,
-   int      qf_multiscan,
-   Byte      **tail)
-{
+   CS linebuf,
+   int linelen,
+   ErrorFormatInfo* fmt_ptr,
+   Fields* fields,
+   int qf_multiline,
+   int qf_multiscan,
+   OUT CS* tail
+) {
    RegMatch   regmatch;
    int      status = QF_FAIL;
 
@@ -1187,29 +1175,29 @@ private int
 parse_file_pfx(
    int idx,
    Fields* fields,
-   LocationList *ll,
-   Byte *tail)
-{
-    fields->valid = FALSE;
+   LocationList* ll,
+   CS tail
+) {
+   fields->valid = FALSE;
    if (*fields->namebuf == ZERO || mch_getperm(fields->namebuf) >= 0) {
-   if (*fields->namebuf && idx == 'P')
-     ll->currFName = pushDir(fields->namebuf, &ll->fileStack, TRUE);
-   ei (idx == 'Q')
-     ll->currFName = popDir(&ll->fileStack);
-   *fields->namebuf = ZERO;
-   if (tail && *tail) {
-       STRMOVE(IObuff, skipwhite(tail));
-       ll->qf_multiscan = TRUE;
-       return QF_MULTISCAN;
+      if (*fields->namebuf && idx == 'P')
+        ll->currFName = pushDir(fields->namebuf, &ll->fileStack, TRUE);
+      ei (idx == 'Q')
+        ll->currFName = popDir(&ll->fileStack);
+      *fields->namebuf = ZERO;
+      if (tail && *tail) {
+          STRMOVE(IObuff, skipwhite(tail));
+          ll->qf_multiscan = TRUE;
+          return QF_MULTISCAN;
+      }
    }
-    }
 
-    return QF_OK;
+   return QF_OK;
 }
 
 // Parse a non-error line (a line which doesn't match any of the error format in 'efm').
 private int
-qf_parse_line_nomatch(Byte *linebuf, int linelen, Fields* fields) {
+qf_parse_line_nomatch(CS linebuf, int linelen, Fields* fields) {
    fields->namebuf[0] = ZERO;   // no match found, remove file name
    fields->lnum = 0;      // don't jump to this line
    fields->valid = FALSE;
@@ -1226,16 +1214,14 @@ qf_parse_multiline_pfx(
 ) {
    CS ptr;
    if (!ll->qf_multiignore) {
-      LocLine *qfprev = ll->last;
-
-      if (qfprev == NULL)
+      LocLine* qfprev = ll->last;
+      if (!qfprev)
           return QF_FAIL;
-      int         len;
+          
+      int len;
       if (*fields->errmsg && !ll->qf_multiignore) {
          len = (int)STRLEN(qfprev->text);
          ptr = alloc_id(len + STRLEN(fields->errmsg) + 2, aid_ll_multiline_pfx);
-         if (ptr == NULL)
-            return QF_FAIL;
          STRCPY(ptr, qfprev->text);
          eeglFree(qfprev->text);
          qfprev->text = ptr;
@@ -1259,7 +1245,7 @@ qf_parse_multiline_pfx(
       if (!qfprev->endCol)
           qfprev->endCol = fields->end_col;
       if (!qfprev->fNum)
-          qfprev->fNum = getBufNrForPath(ll,
+          qfprev->fNum = getBookNrForPath(ll,
              ll->dir,
              *fields->namebuf || ll->dir != NULL
              ? fields->namebuf
@@ -1282,15 +1268,15 @@ qf_parse_line(
    ErrorFormatInfo* fmtFirst,
    Fields* fields
 ){
-   ErrorFormatInfo      *fmt_ptr;
-   int         idx = 0;
+   ErrorFormatInfo* fmt_ptr;
+   int idx = 0;
    CS tail = NULL;
    int status;
 
 restofline:
-    // If there was no %> item start at the first pattern
+   // If there was no %> item start at the first pattern
    if (fmt_start == NULL)
-   fmt_ptr = fmtFirst;
+      fmt_ptr = fmtFirst;
    else {
       // Otherwise start from the last used pattern
       fmt_ptr = fmt_start;
@@ -1299,14 +1285,14 @@ restofline:
 
    // Try to match each part of 'errorformat' until we find a complete match or no match.
    fields->valid = TRUE;
-   for ( ; fmt_ptr != NULL; fmt_ptr = fmt_ptr->next) {
+   for ( ; fmt_ptr; fmt_ptr = fmt_ptr->next) {
       idx = fmt_ptr->prefix;
       status = qf_parse_get_fields(linebuf, linelen, fmt_ptr, fields,
-               ll->qf_multiline, ll->qf_multiscan, &tail);
+               ll->qf_multiline, ll->qf_multiscan, OUT &tail);
       if (status == QF_NOMEM)
-          return status;
+         return status;
       if (status == QF_OK)
-          break;
+         break;
    }
    ll->qf_multiscan = FALSE;
 
@@ -1327,21 +1313,21 @@ restofline:
    } ei (fmt_ptr != NULL) {
       // honor %> item
       if (fmt_ptr->conthere)
-          fmt_start = fmt_ptr;
+         fmt_start = fmt_ptr;
 
       if (firstOccurrence((CS)"AEWIN", idx) != NULL) {
-          ll->qf_multiline = TRUE;   // start of a multi-line message
-          ll->qf_multiignore = FALSE;// reset continuation
+         ll->qf_multiline = TRUE;   // start of a multi-line message
+         ll->qf_multiignore = FALSE;// reset continuation
       } ei (firstOccurrence((CS)"CZ", idx) != NULL) {
                   // continuation of multi-line msg
-          status = qf_parse_multiline_pfx(idx, ll, fields);
-          if (status != QF_OK)
-         return status;
+         status = qf_parse_multiline_pfx(idx, ll, fields);
+         if (status != QF_OK)
+            return status;
       } ei (firstOccurrence((CS)"OPQ", idx) != NULL) {
                   // global file names
-          status = parse_file_pfx(idx, fields, ll, tail);
-          if (status == QF_MULTISCAN)
-         goto restofline;
+         status = parse_file_pfx(idx, fields, ll, tail);
+         if (status == QF_MULTISCAN)
+            goto restofline;
       }
       if (fmt_ptr->flags == '-') {  // generally exclude this line
          if (ll->qf_multiline)
@@ -1355,24 +1341,24 @@ restofline:
 }
 
 private int
-isStackEmpty(LocationStack *stack) {
+isStackEmpty(LocationStack* stack) {
    return stack == NULL || stack->listcount <= 0;
 }
 
 private int
-isEmpty(LocationList *ll) {
+isEmpty(LocationList* ll) {
    return ll == NULL || ll->count <= 0;
 }
 
 // Returns TRUE if the specified location list is not empty and has valid entries.
 private int
-listHasValidEntries(LocationList *ll) {
+listHasValidEntries(LocationList* ll) {
     return !isEmpty(ll) && !ll->noValidEntries;
 }
 
 // Return a pointer to a list in the specified quickfix stack
 private LocationList *
-getList(LocationStack *stack, int idx) {
+getList(LocationStack* stack, int idx) {
     return stack->lists + idx;
 }
 
@@ -1393,7 +1379,7 @@ llAllocateFields(Fields *pfields){
 
 //Free the fields used for parsing lines and populating a quickfix list.
 private void
-freeAList_fields(Fields *pfields) {
+freeAList_fields(Fields* pfields) {
    eeglFree(pfields->namebuf);
    eeglFree(pfields->module);
    eeglFree(pfields->errmsg);
@@ -1431,22 +1417,14 @@ cleanupState(LocationState *locState) {
    default: break; 
    }
    
-
    eeglFree(locState->growbuf);
 }
 
 //Process the next line from a file/book/list/string and add it to the location list 'll'.
 private int
-processNextLine(
-   LocationList* ll,
-   ErrorFormatInfo* fmtFirst,
-   LocationState* state,
-   Fields* fields
-){
-   int status;
-
+processNextLine(LocationList* ll, ErrorFormatInfo* fmtFirst, LocationState* state, Fields* fields){
    // Get the next line from a file/book/list/string
-   status = getNextLine(state);
+   int status = getNextLine(state);
    if (status != QF_OK)
       return status;
 
@@ -1623,9 +1601,8 @@ llInitFromFile(
 
 // Set the title of the specified location list. Frees the previous title. Prepends ':' to the title
 private void
-storeTitle(LocationList *ll, Arr(Byte) title) {
+storeTitle(LocationList* ll, CS title) {
    EE_CLEAR(ll->title);
-
    if (title == NULL)
       return;
 
@@ -1649,7 +1626,7 @@ copyCommandTitle(CS cmd) {
 
 // Return a pointer to the current list in the specified location stack
 private LocationList *
-getCurrent(LocationStack *stack) {
+getCurrent(LocationStack* stack) {
    return getList(stack, stack->currList);
 }
 
@@ -1657,7 +1634,7 @@ getCurrent(LocationStack *stack) {
 //pointed to the same list, unless it is deleted, if so then use the newest created list instead. 
 //listcount will be set correctly. The above will only happen if <adjust> is TRUE.
 private void
-pop(LocationStack *stack, int adjust) {
+pop(LocationStack* stack, int adjust) {
    freeAList(&stack->lists[0]);
    for (Unt i = 1; i < (Unt)stack->listcount; ++i)
       stack->lists[i - 1] = stack->lists[i];
@@ -1695,12 +1672,11 @@ push(LocationList newList, LocationStack* stack) {
 //Prepare for adding a new location list. If the current list is in the middle of the stack, then 
 //all the following lists are smashed and then the new list is added.
 private void
-newLocList(LocationStack *stack, Arr(Byte) title) {
-   LocationList   *ll;
+newLocList(LocationStack* stack, CS title) {
+   LocationList* ll;
 
-   // If the current entry is not the last entry, delete entries beyond
-   // the current entry.  This makes it possible to browse in a tree-like
-   // way with ":grep".
+   //If the current entry is not the last entry, delete entries beyond
+   //the current entry. This makes it possible to browse in a tree-like way with ":grep".
    while (stack->listcount > stack->currList + 1)
       freeAList(&stack->lists[--stack->listcount]);
 
@@ -1720,10 +1696,8 @@ newLocList(LocationStack *stack, Arr(Byte) title) {
 
 //Queue location list stack delete request.
 private void
-locstack_queue_delreq(LocationStack *stack) {
+locstack_queue_delreq(LocationStack* stack) {
    DeletionList* q = ALLOC_ONE(DeletionList);
-   if (q == NULL)
-      return;
 
    q->stack = stack;
    q->next = deletionListG;
@@ -1745,7 +1719,7 @@ wipeLlBook(LocationStack* stack) {
       return;
 
    Book* llBook = bookFindFileByBookNr(stack->bufNum);
-   if (llBook != NULL && llBook->countPortals == 0) {
+   if (llBook && llBook->countPortals == 0) {
       int buf_was_null = FALSE;
       // can happen when curPor is going to be closed e.g. curPor->book
       // was already closed in closePortal(), and we are now closing the
@@ -1774,7 +1748,7 @@ freeAList_list_stack_items(LocationStack *stack) {
 
 //Free a LocationStack struct completely
 private void
-freeAList_lists(LocationStack *stack) {
+freeAList_lists(LocationStack* stack) {
    freeAList_list_stack_items(stack);
 
    eeglFree(stack->lists);
@@ -1783,16 +1757,13 @@ freeAList_lists(LocationStack *stack) {
 
 // Free a location list stack
 private void
-ll_free_all(LocationStack **pqi) {
-   LocationStack   *stack;
-
-   stack = *pqi;
-   if (stack == NULL)
+ll_free_all(LocationStack** pqi) {
+   LocationStack* stack = *pqi;
+   if (!stack)
       return;
    *pqi = NULL;   // Remove reference to this list
 
-    // If the location list is still in use, then queue the delete request
-    // to be processed later.
+   // If the location list is still in use, then queue the delete request to be processed later.
    if (qfBusynessG > 0) {
       locstack_queue_delreq(stack);
       return;
@@ -1881,8 +1852,7 @@ addEntry(
    Book* book;
    LocLine* lline;
    LocLine** lastp;   // pointer to last or NULL
-   Byte   *fullname = NULL;
-   Byte   *p = NULL;
+   CS p = NULL;
 
    if ((lline = ALLOC_ONE_ID(LocLine, aid_ll_line)) == NULL)
       return QF_FAIL;
@@ -1890,13 +1860,13 @@ addEntry(
       book = bookFindFileByBookNr(bufnum);
 
       lline->fNum = bufnum;
-      if (book != NULL)
+      if (book)
          book->hasLocationEntry = true;
    } else {
-      lline->fNum = getBufNrForPath(ll, dir, fname);
+      lline->fNum = getBookNrForPath(ll, dir, fname);
       book = bookFindFileByBookNr(lline->fNum);
    }
-   fullname = FullName_save(fname, true);
+   CS fullname = FullName_save(fname, true);
    lline->fName = NULL;
    if (book && book->fullFileName && fullname) {
       if (fnamecmp(fullname, book->fullFileName) != 0) {
@@ -2003,7 +1973,6 @@ identifyStackByInvo(Invocation* invo) {
    return identifyStackByLetter(*(invo->arg));
 }
 
-
 // Get the location list stack to use for the specified Command.
 private LocationStack *
 getStackForCommand(Invocation* invo, int print_emsg) {
@@ -2103,12 +2072,12 @@ getStackForCommand(Invocation* invo, int print_emsg) {
 //   return OK;
 //}
 
-// Get buffer number for file "directory/fname". Also sets the hasLocationEntry flag.
+// Get book number for file "directory/fname". Also sets the hasLocationEntry flag.
 private int
-getBufNrForPath(LocationList *ll, Byte *directory, Byte *fname) {
-   Byte   *ptr = NULL;
+getBookNrForPath(LocationList* ll, CS directory, CS fname) {
+   CS ptr = NULL;
    Book* book;
-   Byte   *bufname;
+   CS bufname;
 
    if (fname == NULL || *fname == ZERO)      // no file name
       return 0;
@@ -2153,12 +2122,11 @@ getBufNrForPath(LocationList *ll, Byte *directory, Byte *fname) {
 
 // Push dirbuf onto the directory stack and return pointer to actual dir or NULL on error.
 private CS
-pushDir(CS dirbuf, DirStack **stackptr, int is_file_stack) {
-   DirStack* ds_new;
+pushDir(CS dirbuf, DirStack** stackptr, int is_file_stack) {
    DirStack* ds_ptr;
 
    // allocate new stack element and hook it in
-   ds_new = ALLOC_ONE_ID(DirStack, aid_ll_dirstack);
+   DirStack* ds_new = ALLOC_ONE_ID(DirStack, aid_ll_dirstack);
    if (ds_new == NULL)
       return NULL;
 
@@ -2211,7 +2179,7 @@ pushDir(CS dirbuf, DirStack **stackptr, int is_file_stack) {
 }
 
 //pop dirbuf from the directory stack and return previous directory or NULL if stack is empty
-private Byte *
+private CS
 popDir(DirStack **stackptr) {
    DirStack  *ds_ptr;
 
@@ -2232,8 +2200,8 @@ popDir(DirStack **stackptr) {
 
 // clean up directory stack
 private void
-qf_clean_dir_stack(DirStack **stackptr) {
-   DirStack  *ds_ptr;
+qf_clean_dir_stack(DirStack** stackptr) {
+   DirStack* ds_ptr;
 
    while ((ds_ptr = *stackptr) != NULL) {
       *stackptr = (*stackptr)->next;
@@ -2259,18 +2227,14 @@ qf_clean_dir_stack(DirStack **stackptr) {
 //    x.c:9: Error
 //Then pushDir thinks we are in ./aa/bb, but we are in ./bb.
 //guessFilepath will return NULL.
-private Byte *
-guessFilepath(LocationList *ll, Byte *filename) {
-   DirStack     *ds_ptr;
-   DirStack     *ds_tmp;
-   Byte         *fullname;
-
+private CS
+guessFilepath(LocationList* ll, CS filename) {
    // no dirs on the stack - there's nothing we can do
    if (ll->dirStack == NULL)
       return NULL;
 
-   ds_ptr = ll->dirStack->next;
-   fullname = NULL;
+   DirStack* ds_ptr = ll->dirStack->next;
+   CS fullname = NULL;
    while (ds_ptr) {
       eeglFree(fullname);
       fullname = concat_fnames(ds_ptr->dirname, filename, TRUE);
@@ -2286,6 +2250,7 @@ guessFilepath(LocationList *ll, Byte *filename) {
    eeglFree(fullname);
 
    // clean up all dirs we already left
+   DirStack* ds_tmp;
    while (ll->dirStack->next != ds_ptr) {
       ds_tmp = ll->dirStack->next;
       ll->dirStack->next = ll->dirStack->next->next;
@@ -2315,9 +2280,8 @@ isIdValid(LocationStack* st, Unt id){
 //whether an entry is still present in the list. Similar to location list.
 private int
 isEntryPresent(LocationList *ll, LocLine *curr) {
-   LocLine   *lline;
-   int      i;
-
+   LocLine* lline;
+   int i;
    // Search for the entry in the current list
    FOR_ALL_LL_ITEMS(ll, lline, i) {
       if (lline == curr)
@@ -2333,17 +2297,9 @@ isEntryPresent(LocationList *ll, LocLine *curr) {
 //Get the next valid entry in the current location list. Start search from the current entry. 
 //Return NULL on failure.
 private LocLine *
-getNextValidEntry(
-   LocationList   *ll,
-   LocLine   *curr,
-   int      *currentIdx,
-   int      dir)
-{
-   int idx;
-   int old_fNum;
-
-   idx = *currentIdx;
-   old_fNum = curr->fNum;
+getNextValidEntry(LocationList* ll, LocLine* curr, int* currentIdx, Unt dir) {
+   int idx = *currentIdx;
+   int old_fNum = curr->fNum;
 
    do {
       if (idx == ll->count || curr->next == NULL)
@@ -2380,16 +2336,11 @@ getPrevValidEntry(LocationList* ll, LocLine* curr, int* currentIdx, Unt dir) {
 //  dir == FORWARD or FORWARD_FILE: next valid entry
 //  dir == BACKWARD or BACKWARD_FILE: previous valid entry
 private LocLine *
-get_nth_valid_entry(
-   LocationList   *ll,
-   int      errornr,
-   Unt      dir,
-   int      *new_qfidx
-){
-   LocLine      *curr = ll->curr;
-   int         ind = ll->currentIdx;
-   LocLine      *prev_curr;
-   int         prev_index;
+get_nth_valid_entry(LocationList* ll, int errornr, Unt dir, int* new_qfidx){
+   LocLine* curr = ll->curr;
+   int ind = ll->currentIdx;
+   LocLine* prev_curr;
+   int prev_index;
    CS err = e_no_more_items;
 
    while (errornr--) {
@@ -2420,16 +2371,16 @@ get_nth_valid_entry(
 //list 'll'. Return a pointer to the new entry and the index in 'new_qfidx'
 private LocLine *
 getNthEntry(LocationList* ll, int errornr, int* new_qfidx) {
-   LocLine   *curr = ll->curr;
-   int      ind = ll->currentIdx;
+   LocLine* curr = ll->curr;
+   int ind = ll->currentIdx;
 
    // New error number is less than the current error number
-   while (errornr < ind && ind > 1 && curr->prev != NULL) {
+   while (errornr < ind && ind > 1 && curr->prev) {
       --ind;
       curr = curr->prev;
    }
    // New error number is greater than the current error number
-   while (errornr > ind && ind < ll->count && curr->next != NULL) {
+   while (errornr > ind && ind < ll->count && curr->next) {
       ++ind;
       curr = curr->next;
    }
@@ -2443,12 +2394,7 @@ getNthEntry(LocationList* ll, int errornr, int* new_qfidx) {
 //(FORWARD/BACKWARD/FORWARD_FILE/BACKWARD_FILE).
 //Return a pointer to the entry and the index the new entry is stored at, 'new_qfidx'.
 private LocLine *
-getEntry(
-   LocationList* ll,
-   int      errornr,
-   Unt      dir,
-   OUT int* new_qfidx
-){
+getEntry(LocationList* ll, int errornr, Unt dir, OUT int* new_qfidx){
    LocLine   *curr = ll->curr;
    int      qfidx = ll->currentIdx;
 
@@ -2464,11 +2410,10 @@ getEntry(
 //Find a portal displaying a Vim help file in the current tab.
 private Portal *
 findHelpPortal(void) {
-   Portal *wp;
-
-   FOR_ALL_PORTALS(wp) {
-      if (bookIsHelp(wp->book))
-          return wp;
+   Portal* po;
+   FOR_ALL_PORTALS(po) {
+      if (bookIsHelp(po->book))
+          return po;
    } 
 
    return NULL;
@@ -2513,10 +2458,10 @@ jumpToHelpPortal(int newPort, int *openedPortal) {
 // Find a portal into a normal book in the current tab.
 private Portal *
 findPortalIntoLocList_with_normal_buf(void) {
-   Portal   *wp;
-   FOR_ALL_PORTALS(wp) {
-      if (bt_normal(wp->book))
-         return wp;
+   Portal* po;
+   FOR_ALL_PORTALS(po) {
+      if (bt_normal(po->book))
+         return po;
    } 
 
    return NULL;
@@ -2526,12 +2471,12 @@ findPortalIntoLocList_with_normal_buf(void) {
 //if successfully jumped to the portal. Otherwise returns FALSE.
 private int
 qf_goto_tabwin_with_file(int fnum) {
-   Tab   *t;
-   Portal   *wp;
+   Tab* t;
+   Portal* po;
 
-   FOR_ALL_TAB_PORTALS(t, wp) {
-      if (wp->book->fiNum == fnum) {
-          goto_tab_port(t, wp);
+   FOR_ALL_TAB_PORTALS(t, po) {
+      if (po->book->fiNum == fnum) {
+          goto_tab_port(t, po);
           return TRUE;
       }
    } 
@@ -2542,9 +2487,9 @@ qf_goto_tabwin_with_file(int fnum) {
 //Create a new portal to show a file above the location portal. Called when
 //only the location portal is present.
 private int
-open_new_file_port(LocationStack *ll_ref) {
+open_new_file_port(LocationStack* llRef) {
    int flags = WSP_ABOVE;
-   if (ll_ref)
+   if (llRef)
       flags |= WSP_NEWLOC;
    if (splitPortal(0, flags) == FAIL)
       return FAIL;      // not enough room for portal
@@ -2626,15 +2571,13 @@ gotoPortalIntoQflFile(int fNum) {
 private int
 jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
    Portal* usable_wp = NULL;
-   int      usablePort = FALSE;
-   LocationStack   *ll_ref = NULL;
+   int usablePort = FALSE;
 
    // If opening a new portal, then don't use the location list referred by
    // the current portal. Otherwise two windows will refer to the same location list.
-   if (!newPort)
-      ll_ref = curPor->locationStackRef;
+   LocationStack* llRef = newPort ? null : curPor->locationStackRef;
 
-   if (ll_ref) {
+   if (llRef) {
       //Find a non-LL portal with this location list
       usable_wp = NULL;
       if (usable_wp)
@@ -2654,7 +2597,7 @@ jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
 
    // If there is only one portal and it is a location portal, create a new one above it
    if ((ONLY_ONE_PORTAL && isLocationListBook(curBook)) || !usablePort || newPort) {
-      if (open_new_file_port(ll_ref) != OK)
+      if (open_new_file_port(llRef) != OK)
          return FAIL;
       *openedPortal = TRUE;   // close it when fail
    } else {
@@ -2710,20 +2653,20 @@ jumpAndEditBook(
          if (curPor->o.portFixBuf) {
             // Split the window, which will be 'noportfixbuf', and set curPor to that
             if (splitPortal(0, 0) == OK)
-                *openedPortal = TRUE;
+               *openedPortal = TRUE;
 
             if (curPor->o.portFixBuf) {
-                // Autocommands set 'portfixbuf' or sent us to another window
-                // with it set, or we failed to split the window. Give up,
-                // but don't return immediately, as they may have messed with the list.
-                emsg(_(e_portfixbuf_cannot_go_to_buffer));
-                retval = FAIL;
+               // Autocommands set 'portfixbuf' or sent us to another window
+               // with it set, or we failed to split the window. Give up,
+               // but don't return immediately, as they may have messed with the list.
+               emsg(_(e_portfixbuf_cannot_go_to_buffer));
+               retval = FAIL;
             }
-          }
+         }
       }
 
       if (retval == OK) {
-          retval = booklistGetFile(fnum, (LineNr)1, GETF_SETMARK | GETF_SWITCH, forceit);
+         retval = booklistGetFile(fnum, (LineNr)1, GETF_SETMARK | GETF_SWITCH, forceit);
       }
    }
 
@@ -2754,12 +2697,7 @@ jumpAndEditBook(
 
 // Go to an entry in the current file using either line/column number or a search pattern.
 private void
-jumpToEntry(
-   LineNr   lNum,
-   int      col,
-   Byte      visCol,
-   Byte      *pattern
-){
+jumpToEntry(LineNr lNum, int col, Byte visCol, CS pattern){
    LineNr i;
 
    if (pattern == NULL) {
@@ -2800,7 +2738,6 @@ printMsg(
    Book* oldCurBook,
    LineNr old_lnum
 ) {
-   LineNr      i;
    ArrayList* gap = getTempList();
 
    // Update the screen before showing the message, unless the screen scrolled up.
@@ -2817,7 +2754,7 @@ printMsg(
 
    //Output the message. Overwrite to avoid scrolling when the 'O'
    //flag is present in 'shortmess'; But when not jumping, print the whole message.
-   i = msg_scroll;
+   LineNr i = msg_scroll;
    if (curBook == oldCurBook && curPor->cursor.lnum == old_lnum)
       msg_scroll = TRUE;
    ei (!msg_scrolled && shortmess(SHM_OVERALL))
@@ -2834,13 +2771,8 @@ printMsg(
 //a file is not associated with the entry. Return QF_ABORT if the location list was modified
 //by an autocmd.
 private int
-jumpOrOpenPortal(
-   LocationStack* stack,
-   LocLine* curr,
-   int newPort,
-   int* openedPortal
-){
-   LocationList   *ll = getCurrent(stack);
+jumpOrOpenPortal(LocationStack* stack, LocLine* curr, int newPort, int* openedPortal){
+   LocationList* ll = getCurrent(stack);
    int      old_changedtick = ll->changedTick;
    int      old_currList = stack->currList;
 
@@ -2848,6 +2780,7 @@ jumpOrOpenPortal(
    if (curr->kind == 1 && (!bookIsHelp(curPor->book) || commModifierG.cmod_tab != 0)
        && jumpToHelpPortal(newPort, openedPortal) == FAIL)
           return FAIL;
+          
    if (old_currList != stack->currList
        || old_changedtick != ll->changedTick
        || !isEntryPresent(ll, curr)
@@ -2886,7 +2819,7 @@ jumpToBuffer(
    LocLine* curr,
    int forceit,
    int prevPortId,
-   int *openedPortal,
+   int* openedPortal,
    int openfold,
    int print_message
 ) {
@@ -2925,12 +2858,7 @@ getLocationStack(int ind) {
 
 // Jump to an entry and try to use an existing portal.
 void
-llJump(
-   LocationStack* stack,
-   Unt dir,
-   int errornr,
-   Boole forceit
-){
+llJump(LocationStack* stack, Unt dir, int errornr, Boole forceit){
    jumpToNewPortal(stack, dir, errornr, forceit, false);
 }
 
@@ -3043,10 +2971,10 @@ private Decoration lineDeco;
 //Used by ":mlist/:llist" commands.
 //'cursel' will be set to TRUE for the currently selected entry in the list.
 private void
-displayListEntry(LocLine *lline, int ind, int cursel) {
-   Book   *book;
-   int      filter_entry;
-   ArrayList   *gap;
+displayListEntry(LocLine* lline, int ind, int cursel) {
+   Book* book;
+   int filter_entry;
+   ArrayList* gap;
 
    CS fname = NULL;
    if (lline->moduleName != NULL && *lline->moduleName != ZERO)
@@ -3086,9 +3014,11 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
 
    if (lline->lNum != 0)
       msgPutsDeco(S":", separatorDeco.flags);
+      
    gap = getTempList();
    if (lline->lNum != 0)
       addRangeInformationToArrayList(gap, lline);
+      
    ga_concat(gap, createMsg(lline->kind, lline->errNum));
    ga_append(gap, ZERO);
    msgPutsDeco((CS)gap->c, lineDeco.flags);
@@ -3115,7 +3045,6 @@ displayListEntry(LocLine *lline, int ind, int cursel) {
 // ":llist": list all locations
 void
 c_list(Invocation* invo) {
-   LocLine   *lline;
    int      i;
    int      idx1 = 1;
    int      idx2 = -1;
@@ -3168,6 +3097,8 @@ c_list(Invocation* invo) {
 
    if (ll->noValidEntries)
       all = TRUE;
+      
+   LocLine* lline;
    FOR_ALL_LL_ITEMS(ll, lline, i) {
       if ((lline->isValid || all) && idx1 <= i && i <= idx2)
          displayListEntry(lline, i, i == ll->currentIdx);
@@ -3179,8 +3110,8 @@ c_list(Invocation* invo) {
 
 //Remove newlines and leading whitespace from an error message. Add the result to the list "gap"
 private void
-formatText(ArrayList *gap, Byte *text) {
-   Byte* p = text;
+formatText(ArrayList *gap, CS text) {
+   CS p = text;
    while (*p != ZERO) {
       if (*p == '\n') {
          ga_append(gap, ' ');
@@ -3196,9 +3127,9 @@ formatText(ArrayList *gap, Byte *text) {
 //Add the range information from the lnum, col, end_lnum, and end_col values
 //of a location entry to the grow array "gap".
 private void
-addRangeInformationToArrayList(ArrayList *gap, LocLine *lline) {
+addRangeInformationToArrayList(ArrayList* gap, LocLine* lline) {
    CS builder = IObuff;
-   int      bufsize = IOSIZE;
+   int bufsize = IOSIZE;
 
    eeSnprintf(builder, bufsize, "%ld", lline->lNum);
    int len = (int)STRLEN(builder);
@@ -3221,9 +3152,9 @@ addRangeInformationToArrayList(ArrayList *gap, LocLine *lline) {
 
 // Display information (list number, list size and the title) about a location list.
 private void
-qf_msg(LocationStack *stack, int which, CS lead) {
+qf_msg(LocationStack* stack, int which, CS lead) {
     CS title = stack->lists[which].title;
-    int    count = stack->lists[which].count;
+    int count = stack->lists[which].count;
     Byte builder[IOSIZE];
 
     eeSnprintf(
@@ -3254,16 +3185,12 @@ qf_msg(LocationStack *stack, int which, CS lead) {
 //":lnewer [count]": Down in the location list stack.
 void
 c_llAge(Invocation* invo) {
-   LocationStack   *stack;
-   int      count;
+   LocationStack* stack;
 
    if ((stack = getStackForCommand(invo, TRUE)) == NULL)
       return;
 
-   if (invo->addr_count != 0)
-      count = invo->line2;
-   else
-      count = 1;
+   int count = (invo->addr_count != 0) ? invo->line2 : 1;
    while (count--) {
       if (invo->id == C_lolder) {
          if (stack->currList == 0) {
@@ -3317,7 +3244,7 @@ qf_history(Invocation* invo) {
 //Free all the entries in the error list "idx". Note that other information
 //associated with the list like context and title are not freed.
 private void
-freeItems(LocationList *ll) {
+freeItems(LocationList* ll) {
    LocLine* lline;
    LocLine* nextLine;
    int      stop = FALSE;
@@ -3344,24 +3271,24 @@ freeItems(LocationList *ll) {
       --ll->count;
    }
 
-    ll->currentIdx = 0;
-    ll->first = NULL;
-    ll->last = NULL;
-    ll->curr = NULL;
-    ll->noValidEntries = TRUE;
+   ll->currentIdx = 0;
+   ll->first = NULL;
+   ll->last = NULL;
+   ll->curr = NULL;
+   ll->noValidEntries = TRUE;
 
-    qf_clean_dir_stack(&ll->dirStack);
-    ll->dir = NULL;
-    qf_clean_dir_stack(&ll->fileStack);
-    ll->currFName = NULL;
-    ll->qf_multiline = FALSE;
-    ll->qf_multiignore = FALSE;
-    ll->qf_multiscan = FALSE;
+   qf_clean_dir_stack(&ll->dirStack);
+   ll->dir = NULL;
+   qf_clean_dir_stack(&ll->fileStack);
+   ll->currFName = NULL;
+   ll->qf_multiline = FALSE;
+   ll->qf_multiignore = FALSE;
+   ll->qf_multiscan = FALSE;
 }
 
 // Free location list "idx". Frees all the entries, associated context information and the title.
 private void
-freeAList(LocationList *ll) {
+freeAList(LocationList* ll) {
    freeItems(ll);
 
    EE_CLEAR(ll->title);
@@ -3430,22 +3357,22 @@ llAdjustEntries(
 // 0         n      " error n"
 // other     n      " c n"
 // 1         x      ""   :helpgrep
-private Byte *
+private CS
 createMsg(int c, int nr) {
    static Byte   builder[20];
    static Byte   cc[3];
-   Byte      *p;
-
+   
+   CS p;
    if (c == 'W' || c == 'w')
-      p = (CS)" warning";
+      p = S" warning";
    ei (c == 'I' || c == 'i')
-      p = (CS)" info";
+      p = S" info";
    ei (c == 'N' || c == 'n')
-      p = (CS)" note";
+      p = S" note";
    ei (c == 'E' || c == 'e' || (c == 0 && nr > 0))
-      p = (CS)" error";
+      p = S" error";
    ei (c == 0 || c == 1)
-      p = (CS)"";
+      p = S"";
    else {
       cc[0] = ' ';
       cc[1] = c;
@@ -3491,28 +3418,24 @@ llViewLocation(int split) {
 //":lwindow": open the location list portal if we have locations to display, close it if not.
 void
 c_cPortal(Invocation* invo) {
-   LocationStack   *stack;
-   LocationList   *ll;
-   Portal   *win;
-
+   LocationStack* stack;
    if ((stack = getStackForCommand(invo, TRUE)) == NULL)
       return;
 
-   ll = getCurrent(stack);
+   LocationList* ll = getCurrent(stack);
 
    // Look for an existing location portal.
-   win = findPortalIntoLocList(stack);
+   Portal* po = findPortalIntoLocList(stack);
 
-    // If a location portal is open but we have no errors to display,
-    // close the window.  If a location portal is not open, then open
-    // it if we have errors; otherwise, leave it closed.
+   //If a location portal is open but we have no errors to display, close the portal. If a 
+   //location portal is not open, then open it if we have errors; otherwise, leave it closed.
    if (isStackEmpty(stack)
        || ll->noValidEntries
        || isEmpty(ll)
    ) {
-      if (win != NULL)
+     if (po)
          c_lClose(invo);
-   } ei (win == NULL)
+   } ei (!po)
       c_lOpen(invo);
 }
 
@@ -3531,7 +3454,7 @@ c_lClose(Invocation* invo) {
 
 // Set "w:quickfix_title" if "stack" has a title.
 private void
-setTitleVar(LocationList *ll) {
+setTitleVar(LocationList* ll) {
    if (ll->title != NULL)
       set_internal_string_var((CS)"w:quickfix_title", ll->title);
 }
@@ -3539,7 +3462,7 @@ setTitleVar(LocationList *ll) {
 // Go to a location list portal (if present).
 // Return OK if the window is found, FAIL otherwise.
 private int
-gotoLocationPortal(LocationStack *stack, int resize, int sz, int vertsplit) {
+gotoLocationPortal(LocationStack* stack, int resize, int sz, int vertsplit) {
    Portal* port = findPortalIntoLocList(stack);
    if (!port)
       return FAIL;
@@ -3691,7 +3614,6 @@ c_lOpen(Invocation* invo) {
 private void
 gotoLine(Portal* po, LineNr lnum) {
    Portal* old_curPor = curPor;
-
    curPor = po;
    curBook = po->book;
    curPor->cursor.lnum = lnum;
@@ -3728,11 +3650,8 @@ llCurrentEntry(Portal* po) {
 // Update the cursor position in the location portal to the current error.
 // Return TRUE if there is a location portal.
 private Boole
-updatePortalPos(
-   LocationStack* stack,
-   int      old_currentIdx   // previous currentIdx or zero
-){
-   int      currentIdx = getCurrent(stack)->currentIdx;
+updatePortalPos(LocationStack* stack, int      old_currentIdx) {   // previous currentIdx or zero
+   int currentIdx = getCurrent(stack)->currentIdx;
 
    // Put the cursor on the current error in the location portal, so that it's viewable.
    Portal* port = findPortalIntoLocList(stack);
@@ -3754,7 +3673,7 @@ updatePortalPos(
 
 // Check whether the given portal is displaying the specified location stack.
 private Boole
-isLocListPortal(Portal *port, LocationStack *stack) {
+isLocListPortal(Portal* port, LocationStack* stack) {
    // A portal displaying the location buffer will have the locationStackRef field set to NULL.
    // A portal displaying a location list buffer will have the locationStackRef
    // pointing to the location list.
@@ -3770,7 +3689,6 @@ isLocListPortal(Portal *port, LocationStack *stack) {
 private Portal *
 findPortalIntoLocList(LocationStack* stack) {
    Portal* port;
-
    FOR_ALL_PORTALS(port) {
       if (isLocListPortal(port, stack))
          return port;
@@ -3801,7 +3719,7 @@ findLlBook(LocationStack* stack) {
 
 // Process the 'quickfixtextfunc' option value. Returns OK or FAIL.
 CS
-did_set_quickfixtextfunc(OptionChange* args UNUSED) {
+did_set_quickfixtextfunc(OptionChange* cha UNUSED) {
    if (optSetCallback(OUT &locationTextFnS, p_qftf) == FAIL)
       return e_invalid_argument;
 
@@ -3810,11 +3728,11 @@ did_set_quickfixtextfunc(OptionChange* args UNUSED) {
 
 // Update the w:quickfix_title variable in the location list portal in all the tabs.
 private void
-updateTitleVar(LocationStack *stack) {
+updateTitleVar(LocationStack* stack) {
    LocationList* ll = getCurrent(stack);
    Tab* t;
    Portal* port;
-   Portal*savedPor = curPor;
+   Portal* savedPor = curPor;
 
    FOR_ALL_TAB_PORTALS(t, port) {
       if (isLocListPortal(port, stack)) {
@@ -3827,15 +3745,14 @@ updateTitleVar(LocationStack *stack) {
 
 // Find the location book. If it exists, update the contents.
 private void
-updateBook(LocationStack *stack, LocLine *oldLast) {
-   AutocommSave   aco;
+updateBook(LocationStack* stack, LocLine* oldLast) {
    // Check if a book for the location list exists. Update it.
    Book* book = findLlBook(stack);
    if (!book)
       return;
 
-   LineNr   old_line_count = book->mem.lineCount;
-   int      getLlPortalId = 0;
+   LineNr old_line_count = book->mem.lineCount;
+   int getLlPortalId = 0;
 
    Portal* port = findPortalIntoLocList(stack);
    if (!port)
@@ -3847,6 +3764,7 @@ updateBook(LocationStack *stack, LocLine *oldLast) {
    incrementLlBusyness();
 
    int doFill = TRUE;
+   AutocommSave aco;
    if (oldLast == NULL) {
       // set curPor/curBook to book and save a few things
       auCommPrepareBook(&aco, book);
@@ -3861,10 +3779,10 @@ updateBook(LocationStack *stack, LocLine *oldLast) {
       ++CHANGEDTICK(book);
 
       if (oldLast == NULL) {
-          (void)updatePortalPos(stack, 0);
+         (void)updatePortalPos(stack, 0);
 
-          // restore curPor/curBook and a few other things
-          auCommRestoreBook(&aco);
+         // restore curPor/curBook and a few other things
+         auCommRestoreBook(&aco);
       }
    }
 
@@ -3897,10 +3815,10 @@ addLine(
       ga_concat(gap, qftf_str);
    } else {
       if (lline->moduleName != NULL)
-          ga_concat(gap, lline->moduleName);
+         ga_concat(gap, lline->moduleName);
       ei (lline->fNum != 0
-         && (errBook = bookFindFileByBookNr(lline->fNum)) != NULL
-         && errBook->currFileName != NULL
+            && (errBook = bookFindFileByBookNr(lline->fNum)) != NULL
+            && errBook->currFileName
       ){
          if (lline->kind == 1)   // :helpgrep
             ga_concat(gap, gettail(errBook->currFileName));
@@ -3960,9 +3878,9 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
    if (ll->textFn.name != NULL)
       cb = &ll->textFn;
    if (cb->name != NULL) {
-      Var   args[1];
-      Bag      *d;
-      Var   returnVar;
+      Var args[1];
+      Bag* d;
+      Var returnVar;
 
       // create the dict argument
       if ((d = allocBag_lock(VAR_FIXED)) == NULL) {
@@ -3997,7 +3915,7 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
 // NULL then "book" must equal "curBook"! Because ml_delete() is used and autocommands will be run.
 private void
 fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPortalId) {
-   LineNr   lnum;
+   LineNr lnum;
    LocLine* lline;
    int keyTypedSave = KeyTyped;
    List* locList = NULL;
@@ -4179,19 +4097,19 @@ getGrepAutocommand(CommIndex id) {
 // @makeef contains "##". Return NULL for error.
 private Arr(Byte)
 buildErrorFileName(void) {
-   Byte   *p;
-   Byte   *name;
    static int   start = -1;
    static int   off = 0;
    FileStat   sb;
 
+   CS name;
    if (*p_mef == ZERO) {
       name = eeTempName('e', FALSE);
-      if (name == NULL)
+      if (!name)
          emsg(_(e_cant_get_temp_file_name));
       return name;
    }
 
+   CS p;
    for (p = p_mef; *p; ++p) {
       if (p[0] == '#' && p[1] == '#')
          break;
@@ -4227,9 +4145,7 @@ buildErrorFileName(void) {
 // using 'shellquote' and append 'shellpipe'. Echo the fully formed command.
 private CS
 buildFullShellCommand(CS makecmd, CS fname) {
-   unsigned   len;
-   
-   len = STRLEN(makecmd) + 1;
+   Unt len = STRLEN(makecmd) + 1;
    if (*p_sp != ZERO)
       len += (unsigned)STRLEN(p_sp) + (unsigned)STRLEN(fname) + 3;
    CS cmd = alloc_id(len, aid_ll_makecmd);
@@ -4291,7 +4207,6 @@ void
 c_elgrep(Invocation* invo) {
    VimGrepArgs args;
    LocationList* ll;
-   Unt idSave;
    CS target_dir = NULL;
 
    if (!portCheckCanSetCurBookForceIt(invo->forceit))
@@ -4336,7 +4251,7 @@ c_elgrep(Invocation* invo) {
 
    // Remember the current location list identifier, so that we can check for
    // autocommands changing the current list.
-   idSave = getCurrent(stack)->id;
+   Unt idSave = getCurrent(stack)->id;
 
    if (auName != NULL)
       apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
@@ -4433,7 +4348,7 @@ c_grep(Invocation* invo) {
 
 // Initialize the location list for the in-progress "make" command
 void initInProgressLl() {
-   if (makeInProgressS != NULL) {
+   if (makeInProgressS) {
       list_free(makeInProgressS);
    }
    
@@ -4547,7 +4462,7 @@ llGetValidSize(Invocation* invo){
       }
    }
 
-    return sz;
+   return sz;
 }
 
 //Return the current index of the location list. Return 0 if there is an error.
@@ -4600,7 +4515,7 @@ llGetCurrValidIndex(Invocation* invo) {
 //For :ldo returns the 'n'th valid error entry.
 //For :lfdo returns the 'n'th valid file entry.
 private int
-nthValidEntry(LocationList *ll, int n, int fdo){
+nthValidEntry(LocationList* ll, int n, int fdo){
    int      i, eidx;
    int      prev_fnum = 0;
 
@@ -4614,9 +4529,9 @@ nthValidEntry(LocationList *ll, int n, int fdo){
    if (lline->isValid) {
       if (fdo) {
          if (lline->fNum > 0 && lline->fNum != prev_fnum) {
-             // Count the number of files
-             eidx++;
-             prev_fnum = lline->fNum;
+            // Count the number of files
+            eidx++;
+            prev_fnum = lline->fNum;
          }
       } else
          eidx++;
@@ -4711,7 +4626,7 @@ c_lNext(Invocation* invo) {
 //The index of the entry is stored in 'errornr'.
 //Return NULL if an entry is not found.
 private LocLine *
-findFirstEntryInBuf(LocationList *ll, int bnr, int *errornr){
+findFirstEntryInBuf(LocationList* ll, int bnr, int* errornr){
    LocLine* lline = NULL;
    int idx = 0;
 
@@ -4728,9 +4643,9 @@ findFirstEntryInBuf(LocationList *ll, int bnr, int *errornr){
 //with the error number for the first entry. Assumes the entries are sorted in
 //the location list by line number.
 private LocLine *
-qf_find_first_entry_on_line(LocLine *entry, int *errornr) {
+qf_find_first_entry_on_line(LocLine* entry, int* errornr) {
     while (!gotInterruptG
-          && entry->prev != NULL
+          && entry->prev
           && entry->fNum == entry->prev->fNum
           && entry->lNum == entry->prev->lNum) {
       entry = entry->prev;
@@ -4744,7 +4659,7 @@ qf_find_first_entry_on_line(LocLine *entry, int *errornr) {
 //with the error number for the last entry. Assumes the entries are sorted in
 //the location list by line number.
 private LocLine *
-qf_find_last_entry_on_line(LocLine *entry, int *errornr){
+qf_find_last_entry_on_line(LocLine* entry, int* errornr){
    while (!gotInterruptG && entry->next
           && entry->fNum == entry->next->fNum
           && entry->lNum == entry->next->lNum
@@ -4760,7 +4675,7 @@ qf_find_last_entry_on_line(LocLine *entry, int *errornr){
 //  after the given line (linewise is TRUE)
 //  or after the line and column.
 private int
-isEntryAfterPos(LocLine *lline, Pos *pos, int linewise){
+isEntryAfterPos(LocLine* lline, Pos* pos, int linewise){
    if (linewise)
       return lline->lNum > pos->lnum;
    else
@@ -4780,7 +4695,7 @@ qf_entry_before_pos(LocLine *lline, Pos *pos, int linewise){
 //Return TRUE if the specified location entry is on or after the given line (linewise is TRUE)
 //or on or after the line and column.
 private int
-qf_entry_on_or_after_pos(LocLine *lline, Pos *pos, int linewise){
+qf_entry_on_or_after_pos(LocLine* lline, Pos* pos, int linewise){
    if (linewise)
       return lline->lNum >= pos->lnum;
    else
@@ -4790,7 +4705,7 @@ qf_entry_on_or_after_pos(LocLine *lline, Pos *pos, int linewise){
 //Return TRUE if the specified location entry is
 //on or before the given line (linewise is TRUE) or on or before the line and column.
 private int
-isEntryOnOrBeforePos(LocLine *lline, Pos *pos, int linewise) {
+isEntryOnOrBeforePos(LocLine* lline, Pos* pos, int linewise) {
    if (linewise)
       return lline->lNum <= pos->lnum;
    else
@@ -4843,7 +4758,7 @@ findEntryAfterPos(
 // Return NULL if an entry is not found before 'pos'.
 private LocLine *
 findEntryBeforePos(
-   int      bnr,
+   int bnr,
    Pos* pos,
    int linewise,
    LocLine* lline,
@@ -4925,14 +4840,14 @@ private void
 getNthEntryAbove(LocLine *entry, int n, int linewise, int *errornr){
    while (n-- > 0 && !gotInterruptG) {
       if (entry->prev == NULL || entry->prev->fNum != entry->fNum)
-          break;
+         break;
 
       entry = entry->prev;
       --*errornr;
 
       // If multiple entries are on the same line, then use the first entry
       if (linewise)
-          entry = qf_find_first_entry_on_line(entry, errornr);
+         entry = qf_find_first_entry_on_line(entry, errornr);
    }
 }
 
@@ -5015,11 +4930,11 @@ c_lBelow(Invocation* invo) {
 }
 
 // Return the autocmd name for the :mfile Commands
-private Byte *
+private CS
 cfile_get_auname(CommIndex id){
    switch (id) {
-   case C_lfile:       return (CS)"lfile";
-   case C_laddfile:  return (CS)"laddfile";
+   case C_lfile:       return S"lfile";
+   case C_laddfile:  return S"laddfile";
    default:       return NULL;
    }
 }
@@ -5084,7 +4999,7 @@ vgr_get_auname(CommIndex id) {
 
 // Initialize the regmatch used by vimgrep for pattern "s".
 private void
-vgr_init_regmatch(RegMultilineMatch *regmatch, Byte *s) {
+vgr_init_regmatch(RegMultilineMatch* regmatch, CS s) {
    // Get the search pattern: either white-separated or enclosed in //
    regmatch->regprog = NULL;
 
@@ -5154,11 +5069,11 @@ vgr_isIdValid(LocationStack* stack, Unt listId, CS title){
 //Search for a pattern in all the lines in a buffer and add the matching lines to a location list.
 private int
 vgr_match_buflines(
-   LocationList   *ll,
+   LocationList* ll,
    CS fname,
    Book* book,
    CS spat,
-   RegMultilineMatch *regmatch,
+   RegMultilineMatch* regmatch,
    long* tomatch,
    int duplicate_name,
    int flags
@@ -5775,19 +5690,19 @@ exportLocList(
 
 // Flags used by getqflist()/getloclist() to determine which fields to return.
 enum {
-   QF_GETLIST_NONE   = 0x0,
+   QF_GETLIST_NONE    = 0x0,
    QF_GETLIST_TITLE   = 0x1,
    QF_GETLIST_ITEMS   = 0x2,
-   QF_GETLIST_NR   = 0x4,
+   QF_GETLIST_NR      = 0x4,
    QF_GETLIST_WINID   = 0x8,
-   QF_GETLIST_CONTEXT   = 0x10,
-   QF_GETLIST_ID   = 0x20,
-   QF_GETLIST_IDX   = 0x40,
-   QF_GETLIST_SIZE   = 0x80,
-   QF_GETLIST_TICK   = 0x100,
-   QF_GETLIST_QFBUFNR   = 0x200,
-   QF_GETLIST_QFTF   = 0x400,
-   QF_GETLIST_ALL   = 0x800,
+   QF_GETLIST_CONTEXT = 0x10,
+   QF_GETLIST_ID      = 0x20,
+   QF_GETLIST_IDX     = 0x40,
+   QF_GETLIST_SIZE    = 0x80,
+   QF_GETLIST_TICK    = 0x100,
+   QF_GETLIST_QFBUFNR = 0x200,
+   QF_GETLIST_QFTF    = 0x400,
+   QF_GETLIST_ALL     = 0x800
 };
 
 //Parse text from 'di' and return the location list items.
@@ -5836,7 +5751,7 @@ getList_from_lines(Bag* specifics, DictItem* di, OUT Bag* retBag) {
 
 //Return the location list portal identifier in the current tab.
 private int
-getLlPortalId(LocationStack *stack) {
+getLlPortalId(LocationStack* stack) {
    // The location portal can be opened even if the location list is not set
    // using ":mopen". This is not true for location lists.
    if (!stack)
@@ -5848,10 +5763,10 @@ getLlPortalId(LocationStack *stack) {
 //Return the number of the book displayed in the location list portal. If there is no book 
 //associated with the list or the book is wiped out, then returns 0.
 private int
-qf_getprop_qfbufnr(LocationStack *stack, Bag *retBag) {
+qf_getprop_qfbufnr(LocationStack* stack, Bag* retBag) {
    int   bufnum = 0;
 
-   if (stack != NULL && bookFindFileByBookNr(stack->bufNum) != NULL)
+   if (stack && bookFindFileByBookNr(stack->bufNum) != NULL)
       bufnum = stack->bufNum;
 
    return bagAddNumber(retBag, S"qfbufnr", bufnum);
@@ -5910,7 +5825,7 @@ importKeysFromDict(Bag* specifics) {
 //If 'id' is zero then return the location list index specified by 'nr'.
 //Return -1, if location list is not present or if the stack is empty.
 private int
-qf_getprop_qfidx(LocationStack *stack, Bag *specifics) {
+qf_getprop_qfidx(LocationStack* stack, Bag* specifics) {
    DictItem   *di;
 
    int ind = stack->currList;   // default is the current list
@@ -5947,7 +5862,7 @@ qf_getprop_qfidx(LocationStack *stack, Bag *specifics) {
 
 // Return default values for location list properties in retBag.
 private int
-getPropertyDefaults(LocationStack *stack, Unt flags, OUT Bag *retBag) {
+getPropertyDefaults(LocationStack* stack, Unt flags, OUT Bag* retBag) {
    int      status = OK;
 
    if (flags & QF_GETLIST_TITLE)
@@ -5973,21 +5888,21 @@ getPropertyDefaults(LocationStack *stack, Unt flags, OUT Bag *retBag) {
    if ((status == OK) && (flags & QF_GETLIST_QFBUFNR))
       status = qf_getprop_qfbufnr(stack, retBag);
    if ((status == OK) && (flags & QF_GETLIST_QFTF))
-      status = bagAddString(retBag, S"quickfixtextfunc", (CS)"");
+      status = bagAddString(retBag, S"quickfixtextfunc", S"");
 
    return status;
 }
 
 // Return the location list title as 'title' in retBag
 private int
-qf_getprop_title(LocationList *ll, Bag *retBag) {
+qf_getprop_title(LocationList* ll, Bag* retBag) {
    return bagAddString(retBag, S"title", ll->title);
 }
 
 //Return the location list items/entries as 'items' in retBag.
 //If eidx is not 0, then return the item at the specified index.
 private int
-exportToDict(LocationStack *stack, int ind, int eidx, OUT Bag *retBag) {
+exportToDict(LocationStack* stack, int ind, int eidx, OUT Bag* retBag) {
    int      status = OK;
    List   *l = list_alloc();
    (void)exportLocList(stack, ind, eidx, l);
@@ -5998,12 +5913,11 @@ exportToDict(LocationStack *stack, int ind, int eidx, OUT Bag *retBag) {
 
 // Return the location list context (if any) as 'context' in retBag.
 private int
-exportContext(LocationList *ll, OUT Bag *retBag) {
-   int      status;
-   DictItem   *di;
+exportContext(LocationList* ll, OUT Bag* retBag) {
+   int status;
 
    if (ll->qf_ctx != NULL) {
-      di = dictitem_alloc(tConst("context"));
+      DictItem* di = dictitem_alloc(tConst("context"));
       copy_tv(OUT &di->c, ll->qf_ctx);
       status = bagAdd(retBag, di);
       if (status == FAIL)
@@ -6017,7 +5931,7 @@ exportContext(LocationList *ll, OUT Bag *retBag) {
 //Return the current location list index as 'idx' in retBag.
 //If a specific entry index (eidx) is supplied, then use that.
 private int
-qf_getprop_idx(LocationList *ll, int eidx, Bag *retBag) {
+qf_getprop_idx(LocationList* ll, int eidx, Bag* retBag) {
    if (eidx == 0) {
       eidx = ll->currentIdx;
       if (isEmpty(ll))
@@ -6029,9 +5943,8 @@ qf_getprop_idx(LocationList *ll, int eidx, Bag *retBag) {
 
 // Return the 'quickfixtextfunc' function of a location list
 private int
-qf_getprop_qftf(LocationList *ll, Bag *retBag) {
-    int status;
-
+qf_getprop_qftf(LocationList* ll, Bag* retBag) {
+   int status;
    if (ll->textFn.name) {
       Var   tv;
       putCallback(OUT &tv, &ll->textFn);
@@ -6047,10 +5960,10 @@ qf_getprop_qftf(LocationList *ll, Bag *retBag) {
 // return. If 'list_idx' is -1, then current list is used. Otherwise the specified list is used.
 private int
 getProperties(LocationStack* stack, Bag* specifics, OUT Bag* retBag) {
-   int      status = OK;
-   int      ind = INVALID_LL_IND;
-   int      eidx = 0;
-   DictItem   *di;
+   int status = OK;
+   int ind = INVALID_LL_IND;
+   int eidx = 0;
+   DictItem* di;
 
    if ((di = bagFind(specifics, tConst("lines"))) != NULL)
       return getList_from_lines(specifics, di, OUT retBag);
@@ -6103,12 +6016,7 @@ getProperties(LocationStack* stack, Bag* specifics, OUT Bag* retBag) {
 // Add a new location entry to list at 'ind' in the stack 'stack' from the
 // items in the dict 'd'. If it is a valid error entry, then set 'valid_entry' to TRUE.
 private int
-addEntry_from_dict(
-   LocationList* ll,
-   Bag* d,
-   int first_entry,
-   int* valid_entry
-){
+addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry){
    static int   did_bufnr_emsg;
 
    if (first_entry)
@@ -6244,8 +6152,6 @@ addEntries(
    CS title,
    LocListAction action
 ){
-   LocationList   *ll = getList(stack, ind);
-   ListItem   *li;
    Bag   *d;
    LocLine   *oldLast = NULL;
    int      retval = OK;
@@ -6256,6 +6162,7 @@ addEntries(
    int prev_fnum = 0;
    int prev_lnum = 0;
    int prev_col = 0;
+   LocationList* ll = getList(stack, ind);
    if (ll->curr) {
       prev_fnum = ll->curr->fNum;
       prev_lnum = ll->curr->lNum;
@@ -6291,6 +6198,7 @@ addEntries(
    LocLine *entry_to_select = NULL;
    int entry_to_select_index = 0;
 
+   ListItem* li;
    FOR_ALL_LIST_ITEMS(list, li) {
       if (li->c.tag != VAR_BAG)
          continue; // Skip non-dict items
@@ -6339,9 +6247,9 @@ addEntries(
 // Get the location list index from 'nr' or 'id'
 private int
 qf_setprop_get_qfidx(
-   LocationStack   *stack,
-   Bag      *specifics,
-   LocListAction      action,
+   LocationStack* stack,
+   Bag* specifics,
+   LocListAction action,
    OUT Boole* newlist
 ){
    DictItem   *di;
@@ -6388,8 +6296,8 @@ qf_setprop_get_qfidx(
 }
 
 private int
-setTitle(LocationStack *stack, int ind, Bag *specifics, DictItem *di) {
-   LocationList   *ll = getList(stack, ind);
+setTitle(LocationStack* stack, int ind, Bag* specifics, DictItem* di) {
+   LocationList* ll = getList(stack, ind);
 
    if (di->c.tag != VAR_STRING)
       return FAIL;
@@ -6404,7 +6312,7 @@ setTitle(LocationStack *stack, int ind, Bag *specifics, DictItem *di) {
 
 // Set location list items/entries.
 private int
-setItems(LocationStack *stack, int ind, DictItem *di, LocListAction action) {
+setItems(LocationStack* stack, int ind, DictItem* di, LocListAction action) {
    if (di->c.tag != VAR_LIST)
       return FAIL;
 
@@ -6425,8 +6333,8 @@ setLinesFromList(
    LocListAction action
 ){
    CS errorformat = curBook->o.errorFormat;
-   DictItem   *efm_di;
-   int      retval = FAIL;
+   DictItem* efm_di;
+   int retval = FAIL;
 
    // Use the user supplied errorformat settings (if present)
    if ((efm_di = bagFind(specifics, tConst("efm"))) != NULL) {
@@ -6450,7 +6358,7 @@ setLinesFromList(
 
 // Set location list context.
 private int
-setContext(LocationList *ll, DictItem *di) {
+setContext(LocationList* ll, DictItem* di) {
    freeVar(ll->qf_ctx);
    Var* ctx =  allocVar();
    if (ctx)
@@ -6515,14 +6423,9 @@ setTextFn(LocationList *ll, DictItem *di) {
 // Set location list properties (title, items, context). Also used to add items from parsing a list
 // of lines. Used by the setqflist() and setloclist() Vim script functions.
 private int
-setProperties(LocationStack *stack, Bag *specifics, LocListAction action, Byte *title) {
-   DictItem   *di;
+setProperties(LocationStack *stack, Bag *specifics, LocListAction action, CS title) {
    int      retval = FAIL;
-   Boole      newlist = false;
-   LocationList   *ll;
-
-   if (action == LL_ACTION_NEW || isStackEmpty(stack))
-      newlist = TRUE;
+   Boole newlist = (action == LL_ACTION_NEW || isStackEmpty(stack));
 
    int ind = qf_setprop_get_qfidx(stack, specifics, action, OUT &newlist);
    if (ind == INVALID_LL_IND)   // List not found
@@ -6534,7 +6437,8 @@ setProperties(LocationStack *stack, Bag *specifics, LocListAction action, Byte *
       ind = stack->currList;
    }
 
-   ll = getList(stack, ind);
+   LocationList* ll = getList(stack, ind);
+   DictItem   *di;
    if ((di = bagFind(specifics, tConst("title"))) != NULL)
       retval = setTitle(stack, ind, specifics, di);
    if ((di = bagFind(specifics, tConst("items"))) != NULL)
@@ -6579,7 +6483,7 @@ setLocationList(
    List* newContent,
    LocListAction action,
    CS title,
-   Bag   *specific
+   Bag* specific
 ) {
    if (stack == NULL)
       return FAIL;
@@ -6686,12 +6590,7 @@ getAutocmdNameForCbuffer(CommIndex id) {
 // Process and validate the arguments passed to the :mbook, :maddbook,
 // :lbook, :laddbook commands.
 private int
-processCbookArgs(
-   Invocation* invo,
-   Book** bufp,
-   LineNr* line1,
-   LineNr* line2
-){
+processCbookArgs(Invocation* invo, OUT Book** outBook, LineNr* line1, LineNr* line2){
    Book* book = NULL;
 
    if (*invo->arg == ZERO)
@@ -6722,7 +6621,7 @@ processCbookArgs(
 
    *line1 = invo->line1;
    *line2 = invo->line2;
-   *bufp = book;
+   *outBook = book;
 
    return OK;
 }
@@ -6750,7 +6649,7 @@ c_lbook(Invocation* invo) {
    // Must come after autocommands.
    stack = locationStacksS + LOC_LIST_GREP;
 
-   if (processCbookArgs(invo, &book, &line1, &line2) == FAIL)
+   if (processCbookArgs(invo, OUT &book, &line1, &line2) == FAIL)
       return;
 
    CS title = copyCommandTitle(*invo->commline);
@@ -6778,10 +6677,10 @@ c_lbook(Invocation* invo) {
    // changing the current list.
    idSave = getCurrent(stack)->id;
    if (auName) {
-      Book *curbuf_old = curBook;
+      Book* curBookSaved = curBook;
 
       apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
-      if (curBook != curbuf_old)
+      if (curBook != curBookSaved)
          // Autocommands changed book, don't jump now, "stack" may be invalid.
          res = 0;
    }
@@ -6932,12 +6831,7 @@ searchInFile(
 
 // Search for a pattern in all the help files in the doc directory under the given directory.
 private void
-searchFilesInDir(
-   LocationList *ll,
-   CS dirname,
-   OUT RegMatch* p_regmatch,
-   CS lang
-) {
+searchFilesInDir(LocationList* ll, CS dirname, OUT RegMatch* p_regmatch, CS lang) {
    ExpandMatch files = {};
    files.a = createArena();
 
@@ -6965,7 +6859,6 @@ searchFilesInDir(
 // ":helpgrep {pattern}"
 void
 c_helpgrep(Invocation* invo) {
-   CS lang = NULL;
    int updated = FALSE;
 
    CS auName = S"helpgrep";
@@ -6980,7 +6873,7 @@ c_helpgrep(Invocation* invo) {
    incrementLlBusyness();
 
    // Check for a specified language
-   lang = check_help_lang(invo->arg);
+   CS lang = check_help_lang(invo->arg);
    RegMatch regmatch;
    regmatch.regprog = compileRegexp(invo->arg, RE_MAGIC + RE_STRING);
    regmatch.rm_ic = FALSE;
@@ -7043,7 +6936,7 @@ f_getloclist(Arr(Var) argvars, OUT Var* returnVar) {
       getProperties(st, NULL, returnVar->bag);
    } ei (specifics->tag == VAR_BAG) {
       Bag* specificss = specifics->bag;
-      if (specificss != NULL) {
+      if (specificss) {
          allocReturnDict(returnVar);
          getProperties(st, specificss, returnVar->bag);
       } else {
@@ -7110,8 +7003,7 @@ setLocationListInternal(
       ++recursive;
       if (newContent 
             && action != LL_ACTION_INVALID && isDictValid
-            && setLocationList(stack, newContent, action, (CS)":setloclist()", specific) 
-               == OK
+            && setLocationList(stack, newContent, action, (CS)":setloclist()", specific) == OK
       )
          returnVar->number = 0;
       --recursive;
@@ -7119,7 +7011,7 @@ setLocationListInternal(
 }
 
 void
-f_setloclist(Var *argvars, Var *returnVar){
+f_setloclist(Var* argvars, Var* returnVar){
    returnVar->number = -1;
    LocationStack* st= identifyStack(argvars);
    if (st)

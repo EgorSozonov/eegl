@@ -19,12 +19,12 @@ private void equalizeHeightRec(
    Portal* next_curPor, int current, Frame *topfr, int dir, int col, int row, int width, int height
 );
 private void triggerPortalNewPre(void);
-private void triggerPortalClosed(Portal *port);
-private Portal *freePortalMem(Portal *port, Unt* dirp, Tab *t);
-private Frame *getAltFrame(Portal *port, Tab *t);
+private void triggerPortalClosed(Portal* port);
+private Portal *freePortalMem(Portal* port, Unt* dirp, Tab *t);
+private Frame *getAltFrame(Portal* port, Tab *t);
 private Tab *altTab(void);
 private Portal* frameToPort(Frame* fr);
-private int frameHasPortal(Frame *fr, Portal *po);
+private int frameHasPortal(Frame *fr, Portal* po);
 private void frame_new_height(Frame *topfrp, int height, int topfirst, int wfh, int set_ch);
 private int frame_fixed_height(Frame *fr);
 private int frame_fixed_width(Frame *fr);
@@ -32,20 +32,20 @@ private void frame_add_statusline(Frame *fr);
 private void frameNewWidth(Frame *topfrp, int width, int leftfirst, int wfw);
 private void frame_add_vsep(Frame *fr);
 private int frame_minwidth(Frame *topfrp, Portal *next_curPor);
-private void frame_fix_width(Portal *po);
+private void frame_fix_width(Portal* po);
 private int allocateFirstPortal(Portal *oldPortal);
-private void neframe(Portal *po);
+private void neframe(Portal* po);
 private Tab *alloc_tab(void);
 private int leaveTab(Book *newCurBook, int trigger_leave_autocmds);
 private void enterTab(
       Tab *t, Book *oldCurBook, int trigger_enter_autocmds, int trigger_leave_autocmds
 );
-private void frame_fix_height(Portal *po);
+private void frame_fix_height(Portal* po);
 private Unt frame_minheight(Frame *topfrp, Portal *next_curPor);
 private int mayOpenTab(void);
-private int enterPortalWorker(Portal *po, int flags);
-private void freePortal(Portal *po, Tab *t);
-private void append(Portal *after, Portal *po);
+private int enterPortalWorker(Portal* po, int flags);
+private void freePortal(Portal* po, Tab *t);
+private void append(Portal *after, Portal* po);
 private void frame_append(Frame *after, Frame *fr);
 private void frame_insert(Frame *before, Frame *fr);
 private void frame_remove(Frame *fr);
@@ -54,7 +54,7 @@ private void gotoPortal_hor(int left, long count);
 private void frame_add_height(Frame *fr, int n);
 private void last_status_rec(Frame *fr, int statusline);
 private void frame_flatten(Frame *fr);
-private void restoreFrame(Portal *po, int dir, Frame *unflat_altfr);
+private void restoreFrame(Portal* po, int dir, Frame *unflat_altfr);
 
 private int make_snapshot_rec(Frame *fr, Frame **fr1);
 private void clearSnapshot(Tab *t, int idx);
@@ -63,8 +63,8 @@ private int check_snapshot_rec(Frame *sn, Frame *fr);
 private Portal *restore_snapshot_rec(Frame *sn, Frame *fr);
 private Portal *get_snapshot_curPor(int idx);
 
-private void portalNewWidth(Portal *po, int newWidth);
-private void portalNewHeight(Portal *po, int newHeight);
+private void portalNewWidth(Portal* po, int newWidth);
+private void portalNewHeight(Portal* po, int newHeight);
 
 private int frame_check_height(Frame *topfrp, int height);
 private int frame_check_width(Frame *topfrp, int width);
@@ -72,7 +72,7 @@ private int frame_check_width(Frame *topfrp, int width);
 private Portal* allocPortal(Portal *after, int hidden);
 
 private int popup_closePortal(Portal* port);
-private void pum_position_info_popup(Portal *po);
+private void pum_position_info_popup(Portal* po);
 
 //}}}
 //{{{portals
@@ -827,8 +827,8 @@ splitPortal_ins(
    int      flags,
    Portal* newPort,
    int dir,
-   Frame* to_flatten)
-{
+   Frame* to_flatten
+) {
    Portal* po = newPort;
    Portal* oldPortal;
    int      new_size = size;
@@ -1317,7 +1317,7 @@ initg_some(Portal *newp, Portal *oldp) {
 
 // Return TRUE if "port" is a global popup or a popup in the current tab
 int
-portalValidPopup(Portal *port) {
+portalValidPopup(Portal* port) {
    Portal   *po;
    FOR_ALL_POPUPPORTS(po) {
       if (po == port)
@@ -1366,7 +1366,7 @@ portFindById(int id) {
 
 // Check if "port" is a pointer to an existing portal in any tab
 int
-doesPortalExistInAnyTab(Portal *port) {
+doesPortalExistInAnyTab(Portal* port) {
    if (!port)
       return FALSE;
    Portal   *po;
@@ -1398,9 +1398,8 @@ portCount(void) {
 // Must be called when there is just one portal, filling the whole screen (excluding the command
 // line).
 int
-makePortals(int count, int      vertical) {
-   int      maxcount;
-
+makePortals(int count, int vertical) {
+   int maxcount;
    if (vertical) {
       // Each portal needs at least MIN_PORTAL_WIDTH lines and a separator column.
       maxcount = (curPor->width + curPor->vsepWidth - (p_wiw - MIN_PORTAL_WIDTH)) 
@@ -1452,7 +1451,7 @@ exchangePortal(long prenum) {
    Frame* fr;
    Frame* fr2;
    Portal* po;
-   Portal* wp2;
+   Portal* po1;
    int temp;
 
    if (portErrorIfPopup(true))
@@ -1482,13 +1481,13 @@ exchangePortal(long prenum) {
       return;
    po = fr->port;
 
-   //1. remove curPor from the list. Remember after which portal it was in wp2
+   //1. remove curPor from the list. Remember after which portal it was in po1
    //2. insert curPor before po in the list
-   //if po != wp2
+   //if po != po1
    //   3. remove po from the list
-   //   4. insert po after wp2
+   //   4. insert po after po1
    //5. exchange the status line height and vsep width.
-   wp2 = curPor->prev;
+   po1 = curPor->prev;
    fr2 = curPor->frame->prev;
    if (po->prev != curPor) {
       removePortal(curPor, NULL);
@@ -1496,10 +1495,10 @@ exchangePortal(long prenum) {
       append(po->prev, curPor);
       frame_insert(fr, curPor->frame);
    }
-   if (po != wp2) {
+   if (po != po1) {
       removePortal(po, NULL);
       frame_remove(po->frame);
-      append(wp2, po);
+      append(po1, po);
       if (fr2 == NULL)
          frame_insert(po->frame->parent->child, po->frame);
       else
@@ -1532,10 +1531,10 @@ exchangePortal(long prenum) {
 //        if upwards FALSE the first portal becomes the second one
 private void
 rotatePortals(int upwards, int count) {
-   Portal   *wp1;
-   Portal   *wp2;
-   Frame   *fr;
-   int      n;
+   Portal* po0;
+   Portal* po1;
+   Frame* fr;
+   int n;
 
    if (ONLY_ONE_PORTAL) {     // nothing to do
       beep_flush();
@@ -1554,42 +1553,42 @@ rotatePortals(int upwards, int count) {
       if (upwards) {     // first portal becomes last portal
          // remove first portal/frame from the list
          fr = curPor->frame->parent->child;
-         wp1 = fr->port;
-         removePortal(wp1, NULL);
+         po0 = fr->port;
+         removePortal(po0, NULL);
          frame_remove(fr);
 
          // find last frame and append removed portal/frame after it
          for ( ; fr->next != NULL; fr = fr->next)
             {}
-         append(fr->port, wp1);
-         frame_append(fr, wp1->frame);
+         append(fr->port, po0);
+         frame_append(fr, po0->frame);
 
-         wp2 = fr->port;      // previously last portal
+         po1 = fr->port;      // previously last portal
       } else  {       // last portal becomes first portal
          // find last portal/frame in the list and remove it
          for (fr = curPor->frame; fr->next != NULL; fr = fr->next)
             {} 
-         wp1 = fr->port;
-         wp2 = wp1->prev;          // will become last portal
-         removePortal(wp1, NULL);
+         po0 = fr->port;
+         po1 = po0->prev;          // will become last portal
+         removePortal(po0, NULL);
          frame_remove(fr);
 
          // append the removed portal/frame before the first in the list
-         append(fr->parent->child->port->prev, wp1);
+         append(fr->parent->child->port->prev, po0);
          frame_insert(fr->parent->child, fr);
       }
 
       // exchange status height and vsep width of old and new last portal
-      n = wp2->statusHeight;
-      wp2->statusHeight = wp1->statusHeight;
-      wp1->statusHeight = n;
-      frame_fix_height(wp1);
-      frame_fix_height(wp2);
-      n = wp2->vsepWidth;
-      wp2->vsepWidth = wp1->vsepWidth;
-      wp1->vsepWidth = n;
-      frame_fix_width(wp1);
-      frame_fix_width(wp2);
+      n = po1->statusHeight;
+      po1->statusHeight = po0->statusHeight;
+      po0->statusHeight = n;
+      frame_fix_height(po0);
+      frame_fix_height(po1);
+      n = po1->vsepWidth;
+      po1->vsepWidth = po0->vsepWidth;
+      po0->vsepWidth = n;
+      frame_fix_width(po0);
+      frame_fix_width(po1);
 
       // recompute portalRow and portalCol for all portals
       computePosPortal();
@@ -2532,7 +2531,7 @@ checkWhichPortalsResized(
    int tot_leftcol = 0;
    int tot_skipcol = 0;
 
-   Portal *po;
+   Portal* po;
    FOR_ALL_PORTALS(po) {
       int ignore_scroll = event_ignored(EVENT_PORTSCROLLED, po->o.eventIgnorePort);
       int size_changed = !event_ignored(EVENT_WINRESIZED, po->o.eventIgnorePort)
@@ -3093,7 +3092,7 @@ frameToPort(Frame *fr) {
 
 // Return TRUE if frame "fr" contains portal "po".
 private int
-frameHasPortal(Frame *fr, Portal *po) {
+frameHasPortal(Frame *fr, Portal* po) {
    if (fr->layout == FR_LEAF)
       return fr->port == po;
 
@@ -3395,13 +3394,13 @@ frame_add_vsep(Frame* fr) {
 
 //Set frame width from the portal it contains.
 private void
-frame_fix_width(Portal *po) {
+frame_fix_width(Portal* po) {
    po->frame->width = po->width + po->vsepWidth;
 }
 
 //Set frame height from the portal it contains.
 private void
-frame_fix_height(Portal *po) {
+frame_fix_height(Portal* po) {
    po->frame->height = VISIBLE_HEIGHT(po) + po->statusHeight;
 }
 
@@ -3620,7 +3619,7 @@ allocateFirstPortal(Portal* oldPortal) {
 
 // Create a frame for portal "po".
 private void
-neframe(Portal *po) {
+neframe(Portal* po) {
     Frame *fr = ALLOC_CLEAR_ONE(Frame);
 
     po->frame = fr;
@@ -4065,7 +4064,7 @@ goto_tabpage_lastused(void) {
 
 // Enter portal "po" in tab "t".
 void
-goto_tab_port(Tab *t, Portal *po) {
+goto_tab_port(Tab *t, Portal* po) {
    gotoTab(t, TRUE, TRUE);
    if (curtab == t && portalIsValid(po)) {
        enterPortal(po, TRUE);
@@ -4124,7 +4123,7 @@ moveTab(Unt nr) {
  // When jumping to another portal on the same buffer, adjust its cursor position to keep the same 
  // Visual area.
 void
-gotoPortal(Portal *po) {
+gotoPortal(Portal* po) {
    if (portErrorIfPopup(true))
       return;
    if (popup_is_popup(po)) {
@@ -4154,7 +4153,7 @@ gotoPortal(Portal *po) {
 //  count - nth neighbor portal
 //Return the specified portal if the neighbor is not found.
 private Portal *
-vertNeighbor(Tab *t, Portal *po, int up, long count) {
+vertNeighbor(Tab *t, Portal* po, int up, long count) {
    if (popup_is_popup(po))
       // popups don't have neighbors.
       return NULL;
@@ -4280,7 +4279,7 @@ gotoPortal_hor(
 
 //Make portal "po" the current portal
 void
-enterPortal(Portal *po, int undo_sync) {
+enterPortal(Portal* po, int undo_sync) {
    (void)enterPortalWorker(
        po, 
       (undo_sync ? WEE_UNDO_SYNC : 0) | WEE_TRIGGER_ENTER_AUTOCMDS | WEE_TRIGGER_LEAVE_AUTOCMDS
@@ -4325,7 +4324,7 @@ portFixCurrentDir(void) {
 //curPor has just been closed and isn't valid.
 //Return TRUE when dont_parse_messages was decremented.
 private int
-enterPortalWorker(Portal *po, int flags) {
+enterPortalWorker(Portal* po, int flags) {
    int      isOtherBook = FALSE;
    int      curPor_invalid = (flags & WEE_CURWIN_INVALID);
    int      did_decrement = FALSE;
@@ -4598,7 +4597,7 @@ freePortal(Portal* po, Tab* t) { // tab "po" is in, NULL for current
 
 // Return TRUE if "po" is not in the list of portals: the autocmd portals or a popup
 int
-portUnlisted(Portal *po) {
+portUnlisted(Portal* po) {
    return is_autoCommPort(po) || PORTAL_IS_POPUP(po);
 }
 
@@ -4621,7 +4620,7 @@ portFreePopup(Portal* port) {
 
 // Append portal "po" in the portal list after "after".
 private void
-append(Portal *after, Portal *po) {
+append(Portal *after, Portal* po) {
    Portal   *before;
 
    if (after == NULL)       // after NULL is in front of the first
@@ -4694,14 +4693,14 @@ frame_remove(Frame *fr) {
 
 // Allocate lines[] for portal "po". Return FAIL for failure, OK for success.
 void
-allocLinesPortal(Portal *po) {
+allocLinesPortal(Portal* po) {
    po->validLines = 0;
    po->lines = ALLOC_CLEAR_MULT(PortLine, visibleRowsG);
 }
 
 // free lsize arrays for a portal
 void
-freePortalLsizes(Portal *po) {
+freePortalLsizes(Portal* po) {
    // TODO: why would po be NULL here?
    if (po)
       EE_CLEAR(po->lines);
@@ -5022,7 +5021,7 @@ frame_setheight(Frame *curfrp, int height) {
 }
 
 void
-portSetWidth(int width, Portal *po) {
+portSetWidth(int width, Portal* po) {
    // Always keep current portal at least one column wide
    if (po == curPor) {
       if (width < MIN_PORTAL_WIDTH)
@@ -5341,7 +5340,7 @@ portDragVsepLine(Portal *dragwin, int offset) {
 // Set po->fraction for the current cursorRow and height.
 // Has no effect when the portal is less than two lines.
 void
-set_fraction(Portal *po) {
+set_fraction(Portal* po) {
    if (po->height > 1)
       // When cursor is in the first line the percentage is computed as if
       // it's halfway that line.  Thus with two lines it is 25%, with three
@@ -5677,7 +5676,7 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
 //}}}
 
 void
-scroll_to_fraction(Portal *po, int prevHeight) {
+scroll_to_fraction(Portal* po, int prevHeight) {
    LineNr   lnum;
    int      sline, line_size;
    int      height = po->height;
@@ -5763,7 +5762,7 @@ scroll_to_fraction(Portal *po, int prevHeight) {
 
 // Set the width of a portal
 private void
-portalNewWidth(Portal *po, int width) {
+portalNewWidth(Portal* po, int width) {
    // Should we give an error if width < 0?
    po->width = width < 0 ? 0 : width;
    po->validLines = 0;
@@ -5778,7 +5777,7 @@ portalNewWidth(Portal *po, int width) {
 }
 
 void
-portComputeScroll(Portal *po) {
+portComputeScroll(Portal* po) {
    po->scroll = ((Unt)po->height >> 1);
    if (po->scroll == 0)
       po->scroll = 1;
@@ -6150,7 +6149,7 @@ check_snapshot_rec(Frame *sn, Frame *fr) {
 private Portal *
 restore_snapshot_rec(Frame *sn, Frame *fr) {
    Portal   *po = NULL;
-   Portal   *wp2;
+   Portal   *po1;
 
    fr->height = sn->height;
    fr->width = sn->width;
@@ -6160,14 +6159,14 @@ restore_snapshot_rec(Frame *sn, Frame *fr) {
       po = sn->port;
    }
    if (sn->next) {
-      wp2 = restore_snapshot_rec(sn->next, fr->next);
-      if (wp2)
-         po = wp2;
+      po1 = restore_snapshot_rec(sn->next, fr->next);
+      if (po1)
+         po = po1;
    }
    if (sn->child) {
-      wp2 = restore_snapshot_rec(sn->child, fr->child);
-      if (wp2 != NULL)
-          po = wp2;
+      po1 = restore_snapshot_rec(sn->child, fr->child);
+      if (po1)
+         po = po1;
    }
    return po;
 }
@@ -6192,8 +6191,8 @@ frame_check_height(Frame *topfrp, int height) {
 
 // Return TRUE if "topfrp" and its children are at the right width.
 private int
-frame_check_width(Frame *topfrp, int width) {
-   Frame *fr;
+frame_check_width(Frame* topfrp, int width) {
+   Frame* fr;
 
    if (topfrp->width != (Unt)width)
       return FALSE;
@@ -6227,7 +6226,7 @@ getLastPortId(void) {
 
 // Don't let autocommands close the given portal
 int
-portalLocked(Portal *po) {
+portalLocked(Portal* po) {
    return po->locked;
 }
 
@@ -6235,7 +6234,7 @@ portalLocked(Portal *po) {
 //{{{evaluations for portals
 
 private int
-getPortalId(Var *argvars) {
+getPortalId(Var* argvars) {
    if (argvars[0].tag == VAR_UNKNOWN)
       return curPor->id;
    int portId = tv_get_number(&argvars[0]);
@@ -6268,12 +6267,12 @@ getPortalId(Var *argvars) {
 }
 
 private void
-portIdToTabPort(Var *argvars, List *list) {
-   Portal   *po;
-   Tab   *t;
-   int      portId = 1;
-   int      tabnr = 1;
-   int      id = tv_get_number(&argvars[0]);
+portIdToTabPort(Var* argvars, List* list) {
+   Portal* po;
+   Tab* t;
+   int portId = 1;
+   int tabnr = 1;
+   int id = tv_get_number(&argvars[0]);
 
    FOR_ALL_TABS(t) {
       FOR_ALL_PORTALS_IN_TAB(t, po) {
@@ -6297,16 +6296,16 @@ getPortalById(int id) {
    return getPortAndTab(id, NULL);
 }
 
-// Return the portal and tab pointer of portal "id". Returns NULL when not found.
+// Return the portal and tab pointer of portal "id". Return NULL when not found.
 Portal *
-getPortAndTab(int id, OUT Tab **tpp) {
-   Portal   *po;
-   Tab   *t;
+getPortAndTab(int id, OUT Tab** result) {
+   Portal* po;
+   Tab* t;
 
    FOR_ALL_TAB_PORTALS(t, po) {
       if (po->id == id) {
-         if (tpp)
-            *tpp = t;
+         if (result)
+            *result = t;
          return po;
       }
    } 
@@ -6315,16 +6314,16 @@ getPortAndTab(int id, OUT Tab **tpp) {
    FOR_ALL_TABS(t) {
       FOR_ALL_POPUPPORTS_IN_TAB(t, po) {
          if (po->id == id) {
-            if (tpp != NULL)
-               *tpp = t;
+            if (result)
+               *result = t;
             return po;
          }
       } 
    } 
    FOR_ALL_POPUPPORTS(po) {
       if (po->id == id) {
-         if (tpp != NULL)
-            *tpp = curtab;  // any tabpage would do
+         if (result)
+            *result = curtab;  // any tabpage would do
          return po;
       }
    } 
@@ -6333,11 +6332,11 @@ getPortAndTab(int id, OUT Tab **tpp) {
 }
 
 private int
-getPortById(Var *argvars) {
-   Portal   *po;
-   int       nr = 1;
-   int       id = tv_get_number(&argvars[0]);
+getPortById(Var* argvars) {
+   int nr = 1;
+   int id = tv_get_number(&argvars[0]);
 
+   Portal* po;
    FOR_ALL_PORTALS(po) {
       if (po->id == id)
           return nr;
@@ -6350,8 +6349,8 @@ getPortById(Var *argvars) {
 // Return current portal if "vp" is number zero. Return NULL if not found.
 Portal *
 portFindByNr(Var* vp, Tab* t) {  // NULL for current tab
-   Portal   *po;
-   int      nr = (int)varGetNumberChk(vp, NULL);
+   Portal* po;
+   int nr = (int)varGetNumberChk(vp, NULL);
 
    if (nr < 0)
       return NULL;
@@ -6390,18 +6389,18 @@ portFindByNrOrId(Var *vp) {
    return portFindByNr(vp, NULL);
 }
 
-// Find portal specified by "wvp" in tabpage "tvp". Return the tab in 'ptp'
+// Find portal specified by "po" in tab "tvp". Return the tab in 'ptp'
 Portal *
 find_tabwin(
-    Var   *wvp,   // VAR_UNKNOWN for current portal
-    Var   *tvp,   // VAR_UNKNOWN for current tab
-    Tab   **ptp)
-{
+    Var* needle,   // VAR_UNKNOWN for current portal
+    Var* tvp,   // VAR_UNKNOWN for current tab
+    Tab** ptp
+) {
    Portal   *po = NULL;
    Tab   *t = NULL;
    long   n;
 
-   if (wvp->tag != VAR_UNKNOWN) {
+   if (needle->tag != VAR_UNKNOWN) {
       if (tvp->tag != VAR_UNKNOWN) {
          n = (long)tv_get_number(tvp);
          if (n >= 0)
@@ -6410,8 +6409,8 @@ find_tabwin(
          t = curtab;
 
       if (t) {
-         po = portFindByNr(wvp, t);
-         if (po == NULL && wvp->tag == VAR_NUMBER && wvp->number != -1)
+         po = portFindByNr(needle, t);
+         if (po == NULL && needle->tag == VAR_NUMBER && needle->number != -1)
             // A portal with the specified number is not found
             t = NULL;
       }
@@ -6428,7 +6427,7 @@ find_tabwin(
 
 // Get the layout of the given tab for winlayout() and add it to "l".
 private void
-get_framelayout(Frame *fr, List *l, int outer) {
+get_framelayout(Frame* fr, List* l, int outer) {
    if (!fr)
       return;
       
@@ -6469,25 +6468,24 @@ get_framelayout(Frame *fr, List *l, int outer) {
 
 // Common code for tabpagewinnr() and winnr().
 private int
-getPortalIdInTab(Tab *t, Var *argvar) {
+getPortalIdInTab(Tab* t, Var* argvar) {
    int      nr = 1;
-   Portal   *po;
-   Byte   *arg;
+   Portal* po;
 
-   Portal* twin = (t == curtab) ? curPor : t->curPor;
+   Portal* tPort = (t == curtab) ? curPor : t->curPor;
    if (argvar->tag != VAR_UNKNOWN) {
       int   invalid_arg = FALSE;
 
-      arg = convertVarToStringSingleUse(argvar);
+      CS arg = convertVarToStringSingleUse(argvar);
       if (!arg)
          nr = 0;      // type error; errmsg already given
       ei (STRCMP(arg, "$") == 0)
-         twin = (t == curtab) ? lastPor : t->lastPor;
+         tPort = (t == curtab) ? lastPor : t->lastPor;
       ei (STRCMP(arg, "#") == 0) {
-         twin = (t == curtab) ? prevPor : t->prevPor;
+         tPort = (t == curtab) ? prevPor : t->prevPor;
       } else {
          long   count;
-         Byte   *endp;
+         CS endp;
 
          // Extract the portal count (if specified). e.g. winnr('3j')
          count = strtol((char *)arg, (char **)&endp, 10);
@@ -6495,19 +6493,19 @@ getPortalIdInTab(Tab *t, Var *argvar) {
             count = 1;   // if count is not specified, default to 1
          if (endp && *endp != '\0') {
             if (STRCMP(endp, "j") == 0)
-               twin = vertNeighbor(t, twin, FALSE, count);
+               tPort = vertNeighbor(t, tPort, FALSE, count);
             ei (STRCMP(endp, "k") == 0)
-               twin = vertNeighbor(t, twin, TRUE, count);
+               tPort = vertNeighbor(t, tPort, TRUE, count);
             ei (STRCMP(endp, "h") == 0)
-               twin = portHorizNeighbor(t, twin, TRUE, count);
+               tPort = portHorizNeighbor(t, tPort, TRUE, count);
             ei (STRCMP(endp, "l") == 0)
-               twin = portHorizNeighbor(t, twin, FALSE, count);
+               tPort = portHorizNeighbor(t, tPort, FALSE, count);
             else
                invalid_arg = TRUE;
          } else
             invalid_arg = TRUE;
       }
-      if (!twin)
+      if (!tPort)
          nr = 0;
 
       if (invalid_arg) {
@@ -6519,7 +6517,7 @@ getPortalIdInTab(Tab *t, Var *argvar) {
    if (nr <= 0)
       return 0;
 
-   for (po = (t == curtab) ? firstPor : t->firstPor; po != twin; po = po->next) {
+   for (po = (t == curtab) ? firstPor : t->firstPor; po != tPort; po = po->next) {
       if (!po) {
          // didn't find it in this tabpage
          nr = 0;
@@ -6532,7 +6530,7 @@ getPortalIdInTab(Tab *t, Var *argvar) {
 
 // Return information about a portal as a dictionary.
 private Bag *
-get_win_info(Portal *po, short tpnr, short winnr) {
+get_win_info(Portal* po, short tpnr, short winnr) {
    Bag* bag = allocBag();
 
    // make sure bottomLine is valid
@@ -6580,7 +6578,7 @@ getTabInfo(Tab *t, int tp_idx) {
 }
 
 void
-f_gettabinfo(Var *argvars, Var *returnVar) {
+f_gettabinfo(Arr(Var) argvars, Var* returnVar) {
    Tab   *t, *tparg = NULL;
    int      tpnr = 0;
 
@@ -6607,7 +6605,7 @@ f_gettabinfo(Var *argvars, Var *returnVar) {
 }
 
 void
-f_getwininfo(Var *argvars, Var *returnVar) {
+f_getwininfo(Arr(Var) argvars, Var* returnVar) {
    Tab   *t;
    Portal   *po = NULL, *wparg = NULL;
    Bag   *d;
@@ -6655,7 +6653,7 @@ f_getwininfo(Var *argvars, Var *returnVar) {
 
 // "getwinpos({timeout})" function
 void
-f_getwinpos(Var *argvars UNUSED, Var *returnVar) {
+f_getwinpos(Arr(Var) argvars UNUSED, Var* returnVar) {
    int x = -1;
    int y = -1;
 
@@ -6673,7 +6671,7 @@ f_getwinpos(Var *argvars UNUSED, Var *returnVar) {
 
 
 void
-f_getwinposx(Var *argvars UNUSED, Var *returnVar) {
+f_getwinposx(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->number = -1;
    int       x, y;
 
@@ -6682,7 +6680,7 @@ f_getwinposx(Var *argvars UNUSED, Var *returnVar) {
 }
 
 void
-f_getwinposy(Var *argvars UNUSED, OUT Var *returnVar) {
+f_getwinposy(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
    returnVar->number = -1;
    int       x, y;
    if (uiGetPortPos(&x, &y, 100) == OK)
@@ -6690,7 +6688,7 @@ f_getwinposy(Var *argvars UNUSED, OUT Var *returnVar) {
 }
 
 void
-f_tabpagenr(Var *argvars UNUSED, Var *returnVar) {
+f_tabpagenr(Arr(Var) argvars UNUSED, Var* returnVar) {
    int      nr = 1;
    Byte   *arg;
 
@@ -6711,13 +6709,13 @@ f_tabpagenr(Var *argvars UNUSED, Var *returnVar) {
 }
 
 void
-f_tabpagewinnr(Var *argvars UNUSED, Var *returnVar) {
+f_tabpagewinnr(Arr(Var) argvars UNUSED, Var* returnVar) {
    Tab* t = getTab((int)tv_get_number(&argvars[0]));
    returnVar->number = t ? getPortalIdInTab(t, &argvars[1]) : 0;
 }
 
 void
-f_win_execute(Var *argvars, Var *returnVar) {
+f_win_execute(Arr(Var) argvars, Var* returnVar) {
    int      id;
    Tab   *t;
    Portal   *po;
@@ -6765,7 +6763,7 @@ f_win_execute(Var *argvars, Var *returnVar) {
 }
 
 void
-f_win_findbuf(Var *argvars, Var* returnVar) {
+f_win_findbuf(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
    
    int bufnr = tv_get_number(&argvars[0]);
@@ -6779,12 +6777,12 @@ f_win_findbuf(Var *argvars, Var* returnVar) {
 }
 
 void
-f_win_getid(Var *argvars, Var *returnVar) {
+f_win_getid(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = getPortalId(argvars);
 }
 
 void
-f_gotoPortalid(Var *argvars, Var *returnVar) {
+f_gotoPortalid(Arr(Var) argvars, Var* returnVar) {
    int id = tv_get_number(&argvars[0]);
    if (curPor->id == id) {
       // Nothing to do.
@@ -6813,18 +6811,18 @@ f_gotoPortalid(Var *argvars, Var *returnVar) {
 }
 
 void
-f_win_id2tabwin(Var *argvars, Var *returnVar) {
+f_win_id2tabwin(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
    portIdToTabPort(argvars, returnVar->list);
 }
 
 void
-f_win_id2win(Var *argvars, Var *returnVar) {
+f_win_id2win(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = getPortById(argvars);
 }
 
 void
-f_win_move_separator(Var *argvars, Var *returnVar) {
+f_win_move_separator(Arr(Var) argvars, Var* returnVar) {
    int      offset;
 
    returnVar->number = FALSE;
@@ -6843,7 +6841,7 @@ f_win_move_separator(Var *argvars, Var *returnVar) {
 }
 
 void
-f_win_move_statusline(Var *argvars, Var *returnVar) {
+f_win_move_statusline(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = FALSE;
 
    Portal* po = portFindByNrOrId(&argvars[0]);
@@ -6860,7 +6858,7 @@ f_win_move_statusline(Var *argvars, Var *returnVar) {
 }
 
 void
-f_win_screenpos(Var *argvars, Var *returnVar) {
+f_win_screenpos(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
    Portal* po = portFindByNrOrId(&argvars[0]);
    list_append_number(returnVar->list, po == NULL ? 0 : po->portalRow + 1);
@@ -6868,7 +6866,7 @@ f_win_screenpos(Var *argvars, Var *returnVar) {
 }
 
 void
-f_splitPortalmove(Var *argvars, Var *returnVar) {
+f_splitPortalmove(Arr(Var) argvars, Var* returnVar) {
    Portal   *po, *targetPort;
    Portal* oldPort = curPor;
    int     flags = 0, size = 0;
@@ -6920,7 +6918,7 @@ f_splitPortalmove(Var *argvars, Var *returnVar) {
 
 // "win_gettype(nr)" function
 void
-f_win_gettype(Var *argvars, Var *returnVar) {
+f_win_gettype(Arr(Var) argvars, Var* returnVar) {
    Portal   *po = curPor;
 
    returnVar->tag = VAR_STRING;
@@ -6947,7 +6945,7 @@ f_win_gettype(Var *argvars, Var *returnVar) {
 }
 
 void
-f_getcmdwintype(Var *argvars UNUSED, Var *returnVar) {
+f_getcmdwintype(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
    returnVar->string = alloc(2);
@@ -6958,26 +6956,26 @@ f_getcmdwintype(Var *argvars UNUSED, Var *returnVar) {
 
 // "winbufnr(nr)" function
 void
-f_winbufnr(Var *argvars, Var *returnVar) {
+f_winbufnr(Arr(Var) argvars, Var* returnVar) {
    Portal* po = portFindByNrOrId(&argvars[0]);
    returnVar->number = po ? po->book->fiNum : -1;
 }
 
 void
-f_wincol(Var *argvars UNUSED, Var *returnVar) {
+f_wincol(Arr(Var) argvars UNUSED, Var* returnVar) {
    validate_cursor();
    returnVar->number = curPor->cursorCol + 1;
 }
 
 // "winheight(nr)" function
 void
-f_winheight(Var *argvars, Var *returnVar) {
+f_winheight(Arr(Var) argvars, Var* returnVar) {
    Portal* po = portFindByNrOrId(&argvars[0]);
    returnVar->number = po ? (Long)po->height : -1;
 }
 
 void
-f_winlayout(Var *argvars, Var *returnVar) {
+f_winlayout(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
    Tab   *t;
@@ -6992,19 +6990,19 @@ f_winlayout(Var *argvars, Var *returnVar) {
 }
 
 void
-f_winline(Var *argvars UNUSED, Var *returnVar) {
+f_winline(Arr(Var) argvars UNUSED, Var* returnVar) {
    validate_cursor();
    returnVar->number = curPor->cursorRow + 1;
 }
 
 void
-f_winnr(Var *argvars UNUSED, Var *returnVar) {
+f_winnr(Arr(Var) argvars UNUSED, Var* returnVar) {
    int nr = getPortalIdInTab(curtab, &argvars[0]);
    returnVar->number = nr;
 }
 
 void
-f_winrestcmd(Var *argvars UNUSED, Var *returnVar) {
+f_winrestcmd(Arr(Var) argvars UNUSED, Var* returnVar) {
    Portal   *po;
    Byte   buf[50];
 
@@ -7029,7 +7027,7 @@ f_winrestcmd(Var *argvars UNUSED, Var *returnVar) {
 }
 
 void
-f_winrestview(Var *argvars, Var *returnVar UNUSED) {
+f_winrestview(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_nonnull_dict_arg(argvars, 0) == FAIL)
       return;
 
@@ -7067,7 +7065,7 @@ f_winrestview(Var *argvars, Var *returnVar UNUSED) {
 }
 
 void
-f_winsaveview(Var *argvars UNUSED, Var *returnVar) {
+f_winsaveview(Arr(Var) argvars UNUSED, Var* returnVar) {
    allocReturnDict(returnVar);
       
    Bag* dict = returnVar->bag;
@@ -7085,7 +7083,7 @@ f_winsaveview(Var *argvars UNUSED, Var *returnVar) {
 
 // "winwidth(nr)" function
 void
-f_winwidth(Var *argvars, Var *returnVar) {
+f_winwidth(Arr(Var) argvars, Var* returnVar) {
    Portal* po = portFindByNrOrId(&argvars[0]);
    returnVar->number = po ? (Long)po->width : -1;
 }
@@ -7217,24 +7215,23 @@ private int  message_win_time = 3000;
 // when the message portal is drawn.  This might be after pressing Enter at the hit-enter prompt.
 private int    start_message_win_timer = FALSE;
 
-private void mayStartMessagePortalTimer(Portal *po);
+private void mayStartMessagePortalTimer(Portal* po);
 
 private int popup_on_cmdline = FALSE;
 
-private void adjustPosition(Portal *po);
+private void adjustPosition(Portal* po);
 
 //Get option value for "key", which is "line" or "col". Handle "cursor+N" and "cursor-N".
 //Return MAXCOL if the entry is not present.
 private int
 popup_options_one(Bag *dict, CS key) {
-   Byte   *s;
-   Byte   *endp;
-   int      n = 0;
-
    DictItem* di = bagFind(dict, mbText(key));
    if (!di)
       return MAXCOL;
 
+   CS s;
+   CS endp;
+   int n = 0;
    CS val = tv_get_string(&di->c);
    if (STRNCMP(val, "cursor", 6) != 0)
       return bagGetNumber_check(dict, mbText(key));
@@ -7263,7 +7260,7 @@ popup_options_one(Bag *dict, CS key) {
 }
 
 private int 
-set_padding_border(Bag *dict, int *array, CS name, int max_val) {
+set_padding_border(Bag* dict, int* array, CS name, int max_val) {
    DictItem* di = bagFind(dict, mbText(name));
    if (!di)
       return OK;
@@ -7294,7 +7291,7 @@ set_padding_border(Bag *dict, int *array, CS name, int max_val) {
 
 // Used when popup options contain "moved": set default moved values.
 private void
-set_moved_values(Portal *po) {
+set_moved_values(Portal* po) {
    po->pup.curPor = curPor;
    po->pup.lnum = curPor->cursor.lnum;
    po->pup.minCol = curPor->cursor.col;
@@ -7303,8 +7300,8 @@ set_moved_values(Portal *po) {
 
 // Used when popup options contain "moved" with "word" or "WORD"
 private void
-set_moved_columns(Portal *po, int flags) {
-   Byte   *ptr;
+set_moved_columns(Portal* po, int flags) {
+   CS ptr;
    int len = find_ident_under_cursor(&ptr, flags | FIND_NOERROR);
 
    if (len <= 0)
@@ -7316,7 +7313,7 @@ set_moved_columns(Portal *po, int flags) {
 
 //Used when popup options contain "mousemoved": set default moved values.
 private void
-set_mousemoved_values(Portal *po) {
+set_mousemoved_values(Portal* po) {
    po->pup.mouseRow = mouseRowG;
    po->pup.mouseMinCol = mouseColG;
    po->pup.mouseMaxCol = mouseColG;
@@ -7328,7 +7325,7 @@ update_popup_uses_mouse_move(void) {
    if (!popup_visible)
       return;
 
-   Portal *po;
+   Portal* po;
    FOR_ALL_POPUPPORTS(po) {
       if (po->pup.mouseRow != 0) {
          popup_uses_mouse_move = TRUE;
@@ -7345,13 +7342,12 @@ update_popup_uses_mouse_move(void) {
 
 //Used when popup options contain "moved" with "word" or "WORD".
 private void
-set_mousemoved_columns(Portal *po, int flags) {
-   Portal   *textwp;
-   Byte   *text;
-   int      col;
-   Pos   pos;
+set_mousemoved_columns(Portal* po, Unt flags) {
+   Portal* textwp;
+   CS text;
+   int col;
+   Pos pos;
    ColNr   mcol;
-
    
    if (find_word_under_cursor(mouseRowG, mouseColG, TRUE, flags,
               &textwp, &pos.lnum, &text, NULL, &col) != OK)
@@ -7371,7 +7367,7 @@ set_mousemoved_columns(Portal *po, int flags) {
 
 // TRUE if "row"/"col" is on the border of the popup. The values are relative to the top-left corner
 int
-popup_on_border(Portal *po, int row, int col) {
+popup_on_border(Portal* po, int row, int col) {
    return (row == 0 && po->pup.border[0] > 0)
        || (row == popup_height(po) - 1 && po->pup.border[2] > 0)
        || (col == 0 && po->pup.border[3] > 0)
@@ -7382,7 +7378,7 @@ popup_on_border(Portal *po, int row, int col) {
 //POPCLOSE_BUTTON. The values are relative to the top-left corner. Caller should check the left 
 //mouse button was clicked. Return TRUE if the popup was closed.
 int
-popup_close_if_on_X(Portal *po, int row, int col) {
+popup_close_if_on_X(Portal* po, int row, int col) {
    if (po->pup.close == POPCLOSE_BUTTON && row == 0 && col == popup_width(po) - 1) {
       popup_close_for_mouse_click(po);
       return TRUE;
@@ -7399,7 +7395,7 @@ private int drag_on_resize_handle;
 
 // Mouse down on border of popup portal: start dragging it. Uses mouseCol and mouseRow.
 void
-popup_start_drag(Portal *po, int row, int col) {
+popup_start_drag(Portal* po, int row, int col) {
    drag_start_row = mouseRowG;
    drag_start_col = mouseColG;
    if (po->pup.wantLine <= 0)
@@ -7431,7 +7427,7 @@ popup_start_drag(Portal *po, int row, int col) {
 
 // Mouse moved while dragging a popup portal: adjust the portal popup position or resize.
 void
-popup_drag(Portal *po) {
+popup_drag(Portal* po) {
    // The popup may be closed before dragging stops.
    if (!portalValidPopup(po))
       return;
@@ -7482,7 +7478,7 @@ popup_drag(Portal *po) {
 
 // Set pup.firstLine to match the current "po->topLine".
 void
-popup_set_firstline(Portal *po) {
+popup_set_firstline(Portal* po) {
    Unt height = po->height;
 
    po->pup.firstLine = po->topLine;
@@ -7497,7 +7493,7 @@ popup_set_firstline(Portal *po) {
 
 // TRUE if the position is in the popup portal scrollbar.
 int
-popup_is_in_scrollbar(Portal *po, int row, int col) {
+popup_is_in_scrollbar(Portal* po, int row, int col) {
    return po->pup.hasScrollbar
       && row >= po->pup.border[0]
       && row < popup_height(po) - po->pup.border[2]
@@ -7507,7 +7503,7 @@ popup_is_in_scrollbar(Portal *po, int row, int col) {
 
 // Handle a click in a popup portal, if it is in the scrollbar.
 void
-popup_handle_scrollbar_click(Portal *po, int row, int col) {
+popup_handle_scrollbar_click(Portal* po, int row, int col) {
    if (!popup_is_in_scrollbar(po, row, col))
       return;
 
@@ -7542,7 +7538,7 @@ popup_handle_scrollbar_click(Portal *po, int row, int col) {
 // Add a timer to "po" with "time" (milliseconds).
 // If "close" is true use popup_close(), otherwise popup_hide().
 private void
-addTimeout(Portal *po, int time, int close) {
+addTimeout(Portal* po, int time, int close) {
    Byte cbbuf[50];
 
    eeSnprintf(cbbuf, sizeof(cbbuf),
@@ -7580,7 +7576,7 @@ get_pos_entry(Bag *d, int give_error) {
 
 // Shared between createPopup() and f_popup_move().
 private void
-applyMoveParams(Portal *po, Bag* params) {
+applyMoveParams(Portal* po, Bag* params) {
    int      nr;
    Boole boolVal;
    DictItem   *di;
@@ -7637,10 +7633,10 @@ applyMoveParams(Portal *po, Bag* params) {
 
 // Handle "moved" and "mousemoved" arguments.
 private void
-handle_moved_argument(Portal *po, DictItem *di, int mousemoved) {
+handle_moved_argument(Portal* po, DictItem* di, int mousemoved) {
    if (di->c.tag == VAR_STRING && di->c.string != NULL) {
-      Byte  *s = di->c.string;
-      int   flags = 0;
+      CS s = di->c.string;
+      Unt   flags = 0;
 
       if (STRCMP(s, "word") == 0)
           flags = FIND_IDENT | FIND_STRING;
@@ -7694,7 +7690,7 @@ handle_moved_argument(Portal *po, DictItem *di, int mousemoved) {
 }
 
 private void
-check_highlight(Bag *dict, CS name, Byte **pval) {
+check_highlight(Bag* dict, CS name, Byte** pval) {
    DictItem* di = bagFind(dict, mbText(name));
    if (!di)
       return;
@@ -7710,7 +7706,7 @@ check_highlight(Bag *dict, CS name, Byte **pval) {
 
 // Scroll to show the line with the cursor.
 private void
-scrollToCurrent(Portal *po) {
+scrollToCurrent(Portal* po) {
    if (po->cursor.lnum < po->topLine)
       po->topLine = po->cursor.lnum;
    ei (po->cursor.lnum >= po->bottomLine && (po->cacheState & VALID_BOTLINE)) {
@@ -7733,7 +7729,7 @@ scrollToCurrent(Portal *po) {
 //Get the sign group name for portal "po". Return a pointer to a static buffer, overwritten on the 
 //next call.
 private CS
-popup_get_sign_name(Portal *po) {
+popup_get_sign_name(Portal* po) {
    static Byte buf[30];
 
    eeSnprintf(buf, sizeof(buf), "popup-%d", po->id);
@@ -7742,7 +7738,7 @@ popup_get_sign_name(Portal *po) {
 
 //Highlight the line with the cursor. Also scroll the text to put the cursor line in view.
 private void
-highlightCurrentLine(Portal *po) {
+highlightCurrentLine(Portal* po) {
    int       sign_id = 0;
    Byte  *sign_name = popup_get_sign_name(po);
 
@@ -8009,7 +8005,7 @@ apply_general_options(Portal* po, Bag* dict) {
 //Go through the params in "dict" and apply them to popup portal "po".
 //"create" is TRUE when creating a new popup portal.
 private int
-applyParams(Portal *po, Bag* params, int create) {
+applyParams(Portal* po, Bag* params, int create) {
    applyMoveParams(po, params);
 
    if (create) {
@@ -8043,7 +8039,7 @@ applyParams(Portal *po, Bag* params, int create) {
 
 // Add lines to the popup from a list of strings.
 private void
-add_popup_strings(Book* book, List *l) {
+add_popup_strings(Book* book, List* l) {
    ListItem  *li;
    LineNr    lnum = 0;
    Byte   *p;
@@ -8107,7 +8103,7 @@ add_popup_dicts(Book* book, List *l) {
 
 // Get the padding plus border at the top, adjusted to 1 if there is a title.
 int
-popup_top_extra(Portal *po) {
+popup_top_extra(Portal* po) {
    int   extra = po->pup.border[0] + po->pup.padding[0];
 
    if (extra == 0 && po->pup.title != NULL && *po->pup.title != ZERO)
@@ -8117,19 +8113,19 @@ popup_top_extra(Portal *po) {
 
 // Get the padding plus border at the left.
 int
-popup_left_extra(Portal *po) {
+popup_left_extra(Portal* po) {
    return po->pup.border[3] + po->pup.padding[3];
 }
 
 // Return the height of popup portal "po", including border and padding.
 int
-popup_height(Portal *po) {
+popup_height(Portal* po) {
    return po->height + popup_top_extra(po) + po->pup.padding[2] + po->pup.border[2];
 }
 
 // Return the width of popup portal "po", including border, padding and scrollbar.
 int
-popup_width(Portal *po) {
+popup_width(Portal* po) {
    // leftCol is how many columns of the core are left of the screen
    // pup.rightOff is how many columns of the core are right of the screen
    return po->width + po->leftCol + popup_extra_width(po) + po->pup.rightOff;
@@ -8137,7 +8133,7 @@ popup_width(Portal *po) {
 
 // Return the extra width of popup portal "po": border, padding and scrollbar.
 int
-popup_extra_width(Portal *po) {
+popup_extra_width(Portal* po) {
    return po->pup.padding[3] + po->pup.border[3]
        + po->pup.padding[1] + po->pup.border[1]
        + po->pup.hasScrollbar;
@@ -8145,7 +8141,7 @@ popup_extra_width(Portal *po) {
 
 // Adjust the position and size of the popup to fit on the screen.
 private void
-adjustPosition(Portal *po) {
+adjustPosition(Portal* po) {
    LineNr   lnum;
    int      wrapped = 0;
    int      maxwidth;
@@ -8610,7 +8606,7 @@ setBookText(Book* book, Var text) {
 //Parse the 'previewpopup' or 'completepopup' option and apply the values to
 //portal "po" if it is not NULL. Return FAIL if the parsing fails.
 private int
-parse_popup_option(Portal *po, Boole is_preview) {
+parse_popup_option(Portal* po, Boole is_preview) {
    if (is_preview)
       return FAIL;
    CS p = p_cpp;
@@ -8693,21 +8689,21 @@ parse_popup_option(Portal *po, Boole is_preview) {
 //Parse the 'previewpopup' option and apply the values to portal "po" if it is not NULL.
 //Return FAIL if the parsing fails.
 int
-parse_previewpopup(Portal *po) {
+parse_previewpopup(Portal* po) {
    return parse_popup_option(po, TRUE);
 }
 
 // Parse the 'completepopup' option and apply the values to portal "po" if it is not NULL.
 // Return FAIL if the parsing fails.
 int
-parse_completepopup(Portal *po) {
+parse_completepopup(Portal* po) {
    return parse_popup_option(po, FALSE);
 }
 
 // Set pup.wantLine and pup.wantCol for the cursor position in the current portal.
 // Keep at least "width" columns from the right of the screen.
 void
-popup_set_wantpos_cursor(Portal *po, int width, Bag *d) {
+popup_set_wantpos_cursor(Portal* po, int width, Bag *d) {
    PopupPosition ppt = POPPOS_NONE;
 
    if (d != NULL)
@@ -8737,7 +8733,7 @@ popup_set_wantpos_cursor(Portal *po, int width, Bag *d) {
 //Set pup.wantLine and pup.wantCol for the a given screen position.
 //Caller must take care of running into the portal border.
 void
-popup_set_wantpos_rowcol(Portal *po, int row, int col) {
+popup_set_wantpos_rowcol(Portal* po, int row, int col) {
    po->pup.wantLine = row;
    po->pup.wantCol = col;
    adjustPosition(po);
@@ -8745,7 +8741,7 @@ popup_set_wantpos_rowcol(Portal *po, int row, int col) {
 
 //Add a border and left&right padding.
 private void
-add_border_left_right_padding(Portal *po) {
+add_border_left_right_padding(Portal* po) {
    for (int i = 0; i < 4; ++i) {
       po->pup.border[i] = 1;
       po->pup.padding[i] = (i & 1) ? 1 : 0;
@@ -8782,7 +8778,7 @@ popup_redraw_all(void) {
 
 //Set the color for a notification portal
 private void
-updateNotificationColor(Portal *po, PopupKind type) {
+updateNotificationColor(Portal* po, PopupKind type) {
    Arr(char) hiname = type == POPUP_MESSAGE_WIN ? "InfoMsg" : "PopupNotification";
    optSetStringOptionDirectInPort(po, S"portcolor", (CS)hiname, OPT_LOCAL, 0);
 }
@@ -8808,12 +8804,12 @@ initPopupBook(Book* book) {
 // If it's a string, then a new book is created and filled with that string.
 Portal*
 createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) {
-   Portal   *po;
+   Portal* po;
    Tab* tab = NULL;
-   int      tabnr = 0;
+   int tabnr = 0;
    Book* book = NULL;
    Bag* params = NULL;
-   int      i;
+   int i;
 
    if (argvars) {
       // Check that arguments look OK.
@@ -9059,7 +9055,7 @@ createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) {
 
 //popup_clear()
 void
-f_popup_clear(Var *argvars, Var *returnVar UNUSED) {
+f_popup_clear(Arr(Var) argvars, Var* returnVar UNUSED) {
    int force = FALSE;
 
    if (argvars[0].tag != VAR_UNKNOWN)
@@ -9069,26 +9065,26 @@ f_popup_clear(Var *argvars, Var *returnVar UNUSED) {
 
 //createPopup({text}, {options})
 void
-f_createPopup(Var *argvars, OUT Var *returnVar) {
+f_createPopup(Arr(Var) argvars, OUT Var* returnVar) {
    createPopup(argvars, returnVar, POPUP_NORMAL);
 }
 
 //popup_atcursor({text}, {options})
 void
-f_popup_atcursor(Var *argvars, OUT Var *returnVar) {
+f_popup_atcursor(Arr(Var) argvars, OUT Var* returnVar) {
    createPopup(argvars, OUT returnVar, POPUP_ATCURSOR);
 }
 
 //popup_beval({text}, {options})
 void
-f_popup_beval(Var *argvars, OUT Var *returnVar) {
+f_popup_beval(Arr(Var) argvars, OUT Var* returnVar) {
    createPopup(argvars, OUT returnVar, POPUP_BEVAL);
 }
 
 //Invoke the close callback for portal "po" with value "result".
 //Careful: The callback may make "po" invalid!
 private void
-invokeCallback(Portal *po, Var *result) {
+invokeCallback(Portal* po, Var *result) {
    Var   returnVar;
    Var   argv[3];
 
@@ -9115,7 +9111,7 @@ invokeCallback(Portal *po, Var *result) {
 //Make "prevPor" the current portal, unless it's equal to "po".
 //Otherwise make "firstPor" the current portal.
 private void
-back_to_prevPor(Portal *po) {
+back_to_prevPor(Portal* po) {
    if (portalIsValid(prevPor) && po != prevPor)
       enterPortal(prevPor, FALSE);
    else
@@ -9125,7 +9121,7 @@ back_to_prevPor(Portal *po) {
 //Close popup "po" and invoke any close callback for it.
 //Careful: callback function might have freed the popup portal already
 private void
-popup_close_and_callback(Portal *po, Var *arg) {
+popup_close_and_callback(Portal* po, Var *arg) {
    if (!portalIsValid(po))
       return;
 
@@ -9174,7 +9170,7 @@ popup_close_and_callback(Portal *po, Var *arg) {
 }
 
 void
-popup_close_with_retval(Portal *po, int retval) {
+popup_close_with_retval(Portal* po, int retval) {
    Var res;
 
    res.tag = VAR_NUMBER;
@@ -9184,12 +9180,12 @@ popup_close_with_retval(Portal *po, int retval) {
 
 //Close popup "po" because of a mouse click.
 void
-popup_close_for_mouse_click(Portal *po) {
+popup_close_for_mouse_click(Portal* po) {
    popup_close_with_retval(po, -2);
 }
 
 private void
-check_mouse_moved(Portal *po, Portal *mouse_wp) {
+check_mouse_moved(Portal* po, Portal *mouse_wp) {
    // Close the popup when all if these are true:
    // - the mouse is not on this popup
    // - "mousemoved" was used
@@ -9228,7 +9224,7 @@ popup_handle_mouse_moved(void) {
 
 // In a filter: check if the typed key is a mouse event that is used for dragging the popup.
 private void
-filter_handle_drag(Portal *po, int c, Var *returnVar) {
+filter_handle_drag(Portal* po, int c, Var* returnVar) {
    int   row = mouseRowG;
    int   col = mouseColG;
 
@@ -9242,7 +9238,7 @@ filter_handle_drag(Portal *po, int c, Var *returnVar) {
 
 // popup_filter_menu({id}, {key})
 void
-f_popup_filter_menu(Var *argvars, Var *returnVar) {
+f_popup_filter_menu(Arr(Var) argvars, Var* returnVar) {
    int id = tv_get_number(&argvars[0]);
    Portal* po = getPortalById(id);
    // If the popup has been closed, do not consume the key.
@@ -9296,7 +9292,7 @@ f_popup_filter_menu(Var *argvars, Var *returnVar) {
 
 // popup_filter_yesno({id}, {key})
 void
-f_popup_filter_yesno(Var *argvars, Var *returnVar) {
+f_popup_filter_yesno(Arr(Var) argvars, Var* returnVar) {
    int      id;
    Portal   *po;
    Byte   *key;
@@ -9337,19 +9333,19 @@ f_popup_filter_yesno(Var *argvars, Var *returnVar) {
 
 // popup_dialog({text}, {options})
 void
-f_popup_dialog(Var *argvars, Var *returnVar) {
+f_popup_dialog(Arr(Var) argvars, Var* returnVar) {
    createPopup(argvars, returnVar, POPUP_DIALOG);
 }
 
 // popup_menu({text}, {options})
 void
-f_popup_menu(Var *argvars, Var *returnVar) {
+f_popup_menu(Arr(Var) argvars, Var* returnVar) {
    createPopup(argvars, returnVar, POPUP_MENU);
 }
 
 // popup_notification({text}, {options})
 void
-f_popup_notification(Var *argvars, Var *returnVar) {
+f_popup_notification(Arr(Var) argvars, Var* returnVar) {
    createPopup(argvars, returnVar, POPUP_NOTIFICATION);
 }
 
@@ -9358,7 +9354,7 @@ f_popup_notification(Var *argvars, Var *returnVar) {
 //If the portal is not a popup portal, and error message is given.
 private Portal *
 findPopupPortal(int id) {
-   Portal *po = getPortalById(id);
+   Portal* po = getPortalById(id);
 
    if (po && !PORTAL_IS_POPUP(po)) {
       showErrFmtMsg(_(e_window_nr_is_not_popup_portal), id);
@@ -9369,7 +9365,7 @@ findPopupPortal(int id) {
 
 // popup_close({id})
 void
-f_popup_close(Var *argvars, Var *returnVar UNUSED) {
+f_popup_close(Arr(Var) argvars, Var* returnVar UNUSED) {
    int      id;
    Portal   *po;
 
@@ -9384,7 +9380,7 @@ f_popup_close(Var *argvars, Var *returnVar UNUSED) {
 }
 
 void
-popup_hide(Portal *po) {
+popup_hide(Portal* po) {
    if (portErrorIfTermPopup() || (po->pup.flags & POPF_HIDDEN) != 0)
       return;
 
@@ -9398,7 +9394,7 @@ popup_hide(Portal *po) {
 
 // popup_hide({id})
 void
-f_popup_hide(Var *argvars, Var *returnVar UNUSED) {
+f_popup_hide(Arr(Var) argvars, Var* returnVar UNUSED) {
    int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (!po)
@@ -9409,7 +9405,7 @@ f_popup_hide(Var *argvars, Var *returnVar UNUSED) {
 }
 
 void
-popup_show(Portal *po) {
+popup_show(Portal* po) {
    if ((po->pup.flags & POPF_HIDDEN) == 0)
       return;
 
@@ -9420,7 +9416,7 @@ popup_show(Portal *po) {
 
 //popup_show({id})
 void
-f_popup_show(Var *argvars, Var *returnVar UNUSED) {
+f_popup_show(Arr(Var) argvars, Var* returnVar UNUSED) {
    int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (!po)
@@ -9434,7 +9430,7 @@ f_popup_show(Var *argvars, Var *returnVar UNUSED) {
 
 //popup_settext({id}, {text})
 void
-f_popup_settext(Var *argvars, Var *returnVar UNUSED) {
+f_popup_settext(Arr(Var) argvars, Var* returnVar UNUSED) {
    int id = (int)tv_get_number(&argvars[0]);
    Portal* po = findPopupPortal(id);
    if (!po || check_for_string_or_list_arg(argvars, 1) == FAIL)
@@ -9447,7 +9443,7 @@ f_popup_settext(Var *argvars, Var *returnVar UNUSED) {
 
 //popup_setbuf({id}, {bufnr})
 void
-f_popup_setbuf(Var *argvars, Var *returnVar UNUSED) {
+f_popup_setbuf(Arr(Var) argvars, Var* returnVar UNUSED) {
    returnVar->tag = VAR_BOOL;
    returnVar->number = VVAL_FALSE;
 
@@ -9482,7 +9478,7 @@ f_popup_setbuf(Var *argvars, Var *returnVar UNUSED) {
 }
 
 private void
-popup_free(Portal *po) {
+popup_free(Portal* po) {
    sign_undefine_by_name(popup_get_sign_name(po), false);
    po->book->locked = FALSE;
    if (po->portalRow + popup_height(po) >= (int)commlineRowG)
@@ -9589,7 +9585,7 @@ close_all_popups(int force) {
 
 // popup_move({id}, {options})
 void
-f_popup_move(Var *argvars, Var *returnVar UNUSED) {
+f_popup_move(Arr(Var) argvars, Var* returnVar UNUSED) {
    int      id;
 
    id = (int)tv_get_number(argvars);
@@ -9610,7 +9606,7 @@ f_popup_move(Var *argvars, Var *returnVar UNUSED) {
 
 // popup_setoptions({id}, {options})
 void
-f_popup_setoptions(Var *argvars, Var *returnVar UNUSED) {
+f_popup_setoptions(Arr(Var) argvars, Var* returnVar UNUSED) {
    int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (!po)
@@ -9630,7 +9626,7 @@ f_popup_setoptions(Var *argvars, Var *returnVar UNUSED) {
 
 // popup_getpos({id})
 void
-f_popup_getpos(Var *argvars, Var *returnVar) {
+f_popup_getpos(Arr(Var) argvars, Var* returnVar) {
    allocReturnDict(returnVar);
 
    int id = (int)tv_get_number(argvars);
@@ -9667,7 +9663,7 @@ f_popup_getpos(Var *argvars, Var *returnVar) {
 
 // popup_list()
 void
-f_popup_list(Var *argvars UNUSED, OUT Var *returnVar) {
+f_popup_list(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
    allocReturnList(returnVar);
       
    Portal   *po;
@@ -9683,7 +9679,7 @@ f_popup_list(Var *argvars UNUSED, OUT Var *returnVar) {
 
 // popup_locate({row}, {col})
 void
-f_popup_locate(Var *argvars, Var *returnVar) {
+f_popup_locate(Arr(Var) argvars, Var* returnVar) {
    int row = tv_get_number(&argvars[0]) - 1;
    int col = tv_get_number(&argvars[1]) - 1;
    Portal* po = mouseFindPortal(&row, &col, FIND_POPUP);
@@ -9707,7 +9703,7 @@ get_padding_border(Bag *dict, int *array, CS name) {
 
 // For popup_getoptions(): add a "borderhighlight" entry to "dict".
 private void
-get_borderhighlight(Bag *dict, Portal *po) {
+get_borderhighlight(Bag* dict, Portal* po) {
    int       i;
    for (i = 0; i < 4; ++i) {
       if (po->pup.borderHilite[i] != NULL)
@@ -9724,7 +9720,7 @@ get_borderhighlight(Bag *dict, Portal *po) {
 
 // For popup_getoptions(): add a "borderchars" entry to "dict".
 private void
-get_borderchars(Bag *bag, Portal *po) {
+get_borderchars(Bag *bag, Portal* po) {
    Byte  buf[NUMBUFLEN];
    
    int       i;
@@ -9745,7 +9741,7 @@ get_borderchars(Bag *bag, Portal *po) {
 
 //For popup_getoptions(): add a "moved" and "mousemoved" entry to "dict".
 private void
-get_moved_list(Bag *bag, Portal *po) {
+get_moved_list(Bag* bag, Portal* po) {
    List* list = list_alloc();
    bagAddList(bag, S"moved", list);
    list_append_number(list, po->pup.lnum);
@@ -9761,7 +9757,7 @@ get_moved_list(Bag *bag, Portal *po) {
 
 //popup_getoptions({id})
 void
-f_popup_getoptions(Var *argvars, OUT Var *returnVar) {
+f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
    allocReturnDict(returnVar);
 
    int id = (int)tv_get_number(argvars);
@@ -9807,7 +9803,6 @@ f_popup_getoptions(Var *argvars, OUT Var *returnVar) {
    Tab* t;
    FOR_ALL_TABS(t) {
       Portal *twp;
-
       FOR_ALL_POPUPPORTS_IN_TAB(t, twp) {
          if (twp->id == id)
             break;
@@ -9865,7 +9860,7 @@ portErrorIfTermPopup(void) {
 //POPUP_HANDLED_1.  This won't work with recursive calls though.
 void
 popup_reset_handled(int handled_flag) {
-   Portal *po;
+   Portal* po;
 
    FOR_ALL_POPUPPORTS(po) {
       po->pup.handled &= ~handled_flag;
@@ -9880,12 +9875,10 @@ popup_reset_handled(int handled_flag) {
 // otherwise the popup with the highest zindex.
 Portal *
 find_next_popup(int lowest, int handled_flag) {
-   Portal   *po;
-   Portal   *found_wp;
-   int       found_zindex;
+   Portal* po;
 
-   found_zindex = lowest ? INT_MAX : 0;
-   found_wp = NULL;
+   int found_zindex = lowest ? INT_MAX : 0;
+   Portal* found_wp = NULL;
    FOR_ALL_POPUPPORTS(po) {
       if ((po->pup.handled & handled_flag) == 0
          && (po->pup.flags & POPF_HIDDEN) == 0
@@ -9914,7 +9907,7 @@ find_next_popup(int lowest, int handled_flag) {
 //for modifiers. Return the return value of the filter or -1 for CTRL-C in the current portal.
 //Careful: The filter may make "po" invalid!
 private int
-invoke_popup_filter(Portal *po, int c) {
+invoke_popup_filter(Portal* po, int c) {
    int      res;
    Var   returnVar;
    Var   argv[3];
@@ -10048,7 +10041,6 @@ popup_do_filter(Unt c) {
 int
 popup_no_mapping(void) {
    Portal   *po;
-
    for (int round = 1; round <= 2; ++round) {
       for (po = round == 1 ? firstPopupPortG : curtab->firstPopupPort; po; po = po->next) {
          if (po->pup.filterCb.name != NULL 
@@ -10063,7 +10055,7 @@ popup_no_mapping(void) {
 // When the cursor moved: check if any popup needs to be closed if the cursor moved far enough
 void
 popup_check_cursor_pos(void) {
-   Portal *po;
+   Portal* po;
 
    popup_reset_handled(POPUP_HANDLED_3);
    while ((po = find_next_popup(TRUE, POPUP_HANDLED_3)) != NULL) {
@@ -10079,9 +10071,9 @@ popup_check_cursor_pos(void) {
 
 // Update "maskCells".
 private void
-popup_update_mask(Portal *po, int width, int height) {
-   ListItem   *lio, *li;
-   Byte   *cells;
+popup_update_mask(Portal* po, int width, int height) {
+   ListItem* lio;
+   ListItem* li;
    int      row, col;
 
    if (po->pup.mask == NULL || width == 0 || height == 0) {
@@ -10096,7 +10088,7 @@ popup_update_mask(Portal *po, int width, int height) {
    po->pup.maskCells = allocZeroed((Unt)width * height);
    if (po->pup.maskCells == NULL)
       return;
-   cells = po->pup.maskCells;
+   Arr(Byte) cells = po->pup.maskCells;
 
    FOR_ALL_LIST_ITEMS(po->pup.mask, lio) {
       int cols, cole;
@@ -10136,7 +10128,7 @@ popup_update_mask(Portal *po, int width, int height) {
 //Return TRUE if "col" / "line" matches with an entry in pup.mask.
 //"col" and "line" are screen coordinates.
 private int
-popupMaskGed(Portal *po, int width, int height, int screencol, int screenline) {
+popupMaskGed(Portal* po, int width, int height, int screencol, int screenline) {
    int col = screencol - po->portalCol + po->pup.leftOff;
    int line = screenline - po->portalRow;
 
@@ -10147,7 +10139,7 @@ popupMaskGed(Portal *po, int width, int height, int screencol, int screenline) {
 
 //Set flags in popupTransparencyG[] for portal "po" to "val".
 private void
-update_popupTransparencyG(Portal *po, int val) {
+update_popupTransparencyG(Portal* po, int val) {
    if (po->pup.mask == NULL)
       return;
 
@@ -10197,7 +10189,7 @@ update_popupTransparencyG(Portal *po, int val) {
 //and it is now visible, then  unhide the popup. We don't check if visible popups become hidden, 
 //that is done in adjustPosition(). Return TRUE if the popup became unhidden.
 private int
-check_popup_unhidden(Portal *po) {
+check_popup_unhidden(Portal* po) {
    if (po->pup.propType > 0 && portalIsValid(po->pup.propPort)) {
       TextProp  prop;
       LineNr    lnum;
@@ -10219,7 +10211,7 @@ check_popup_unhidden(Portal *po) {
 //That is when the book in the popup was changed, or the popup is following a textprop and the 
 //referenced book was changed. Or when the cursor line changed and "cursorline" is set.
 private inline int
-popup_need_position_adjust(Portal *po) {
+popup_need_position_adjust(Portal* po) {
    if (po->pup.lastChangedTick != CHANGEDTICK(po->book))
       return TRUE;
    if (portalIsValid(po->pup.propPort)
@@ -10400,7 +10392,7 @@ get_spaces(int len) {
 //Update popup portals.  They are drawn on top of normal portals.
 //"win_update" is called for each popup portal, lowest zindex first.
 void
-update_popups(void (*win_update)(Portal *po)) {
+update_popups(void (*win_update)(Portal* po)) {
    Portal   *po;
    int top_off;
    int left_extra;
@@ -10710,7 +10702,7 @@ update_popups(void (*win_update)(Portal *po)) {
 
 // Mark references in callbacks of one popup portal.
 private int
-set_ref_in_one_popup(Portal *po, int copyID) {
+set_ref_in_one_popup(Portal* po, int copyID) {
    int      abort = FALSE;
    Var   tv;
 
@@ -10733,11 +10725,11 @@ int
 set_ref_in_popups(int copyID) {
    int      abort = FALSE;
    Portal   *po;
-   Tab   *tab;
 
    for (po = firstPopupPortG; !abort && po; po = po->next)
       abort = abort || set_ref_in_one_popup(po, copyID);
 
+   Tab* tab;
    FOR_ALL_TABS(tab) {
       for (po = tab->firstPopupPort; !abort && po; po = po->next)
           abort = abort || set_ref_in_one_popup(po, copyID);
@@ -10748,7 +10740,7 @@ set_ref_in_popups(int copyID) {
 }
 
 int
-popup_is_popup(Portal *po) {
+popup_is_popup(Portal* po) {
    return po->pup.flags != 0;
 }
 
@@ -10761,7 +10753,7 @@ popupFindPreviewPortal(void) {
 // Find an existing popup used as the info portal, in the current tab. Return NULL if not found.
 Portal *
 popupFindInfoPortal(void) {
-   Portal *po;
+   Portal* po;
 
    // info portal popup is always local to tab
    FOR_ALL_POPUPPORTS_IN_TAB(curtab, po) {
@@ -10772,18 +10764,18 @@ popupFindInfoPortal(void) {
 }
 
 void
-f_popup_findecho(Var *argvars UNUSED, OUT Var *returnVar) {
+f_popup_findecho(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
    returnVar->number = messagePort == NULL ? 0 : messagePort->id;
 }
 
 void
-f_popup_findinfo(Var *argvars UNUSED, OUT Var *returnVar) {
+f_popup_findinfo(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
    Portal   *po = popupFindInfoPortal();
    returnVar->number = po == NULL ? 0 : po->id;
 }
 
 void
-f_popup_findpreview(Var *argvars UNUSED, OUT Var *returnVar) {
+f_popup_findpreview(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
    Portal* po = popupFindPreviewPortal();
 
    returnVar->number = po == NULL ? 0 : po->id;
@@ -10822,7 +10814,7 @@ portalCreatePreviewPortal(int info) {
 // Close any preview popup.
 void
 popup_close_preview(void) {
-   Portal *po = popupFindPreviewPortal();
+   Portal* po = popupFindPreviewPortal();
    if (po)
       popup_close_with_retval(po, -1);
 }
@@ -10830,7 +10822,7 @@ popup_close_preview(void) {
 // Hide the info popup.
 private void
 popup_hide_info(void) {
-   Portal *po = popupFindInfoPortal();
+   Portal* po = popupFindInfoPortal();
    if (po) {
       popup_on_cmdline = po->pup.flags & POPF_ON_CMDLINE;
       popup_hide(po);
@@ -10840,7 +10832,7 @@ popup_hide_info(void) {
 // Close any info popup.
 void
 popup_close_info(void) {
-   Portal *po = popupFindInfoPortal();
+   Portal* po = popupFindInfoPortal();
    if (po)
       popup_close_with_retval(po, -1);
 }
@@ -10898,7 +10890,7 @@ popup_show_messagePort(void) {
 }
 
 private void
-mayStartMessagePortalTimer(Portal *po) {
+mayStartMessagePortalTimer(Portal* po) {
    if (po == messagePort && start_message_win_timer) {
       if (messagePort->pup.timer != NULL) {
          messagePort->pup.timer->tr_interval = message_win_time;
@@ -10977,7 +10969,7 @@ popup_closePortal(Portal* port) {
 
 // Set the title of the popup portal to the file name.
 void
-setPopupTitle(Portal *po) {
+setPopupTitle(Portal* po) {
    if (po->book->currFileName == NULL)
       return;
 
@@ -10996,7 +10988,7 @@ setPopupTitle(Portal *po) {
 // If there is a preview popup, update the title. Used after changing directory.
 void
 popup_update_preview_title(void) {
-   Portal *port = popupFindPreviewPortal();
+   Portal* port = popupFindPreviewPortal();
    if (port)
       setPopupTitle(port);
 }
@@ -11387,11 +11379,11 @@ computeTextDeco(Byte* text, Short hiId, Decoration userDeco) {
 // Display text on the popup menu with specific decorations
 private void
 pum_drawText_withDecos(
-   int      row,
-   int      col,
-   int      cells UNUSED,
-   Byte   *text,
-   int      textlen,
+   int row,
+   int col,
+   int cells UNUSED,
+   CS text,
+   int textlen,
    Arr(Decoration) decos)
 {
    int      col_start = col;
@@ -11451,7 +11443,7 @@ displayText(
    int next_isempty,
    int selected)
 {
-   Byte  *st_end = NULL;
+   CS st_end = NULL;
    int over_cell = 0;
    int pad = next_isempty ? 0 : 2;
    int truncated = FALSE;
@@ -11526,8 +11518,8 @@ drawMenuItem(
    int next_isempty
 ){
    int item_type = order[j];
-   Byte* s = NULL;
-   Byte* p = pum_get_item(idx, item_type);
+   CS s = NULL;
+   CS p = pum_get_item(idx, item_type);
    int width = 0; // item width
    int w;         // char width
    int selected = idx == selectedItemInd;
@@ -11547,7 +11539,7 @@ drawMenuItem(
 
       if (saved != ZERO)
          *p = ZERO;
-      Byte* sanitizedText = sanitizeStr(s);
+      CS sanitizedText = sanitizeStr(s);
       if (saved != ZERO)
          *p = saved;
 
@@ -11577,12 +11569,7 @@ drawMenuItem(
 
 // Draw the scrollbar for the popup menu.
 private void
-pum_draw_scrollbar(
-   int row,
-   int i,
-   int thumb_pos,
-   int thumb_height
-){
+pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height){
    if (pum_scrollbar <= 0)
       return;
    char deco = (i >= thumb_pos && i < thumb_pos + thumb_height) ?
@@ -11710,7 +11697,7 @@ pum_redraw(void) {
 
 // Position the info popup relative to the popup menu item.
 private void
-pum_position_info_popup(Portal *po) {
+pum_position_info_popup(Portal* po) {
    int col = pum_col + pum_width + pum_scrollbar + 1;
    int row = pum_row;
    int botpos = POPPOS_BOTLEFT;
@@ -11946,7 +11933,7 @@ pum_set_selected(int n, int repeat UNUSED) {
                   curPor_save->statusLineNeedsRedraw = save_redr_status;
 
                   if (!resized && portalIsValid(curPor_save)) {
-                     Portal *po = curPor;
+                     Portal* po = curPor;
                      ++no_u_sync;
                      enterPortal(curPor_save, TRUE);
                      --no_u_sync;
@@ -12256,7 +12243,7 @@ ui_remove_balloon(void) {
 
 // Terminal version of a balloon, uses the popup menu code.
 void
-ui_post_balloon(CS mesg, List *list) {
+ui_post_balloon(CS mesg, List* list) {
    ui_remove_balloon();
 
    if (!mesg && !list) {
@@ -12309,13 +12296,13 @@ ui_may_remove_balloon(void) {
 //Return FAIL if not found, no text at the mouse position.
 int
 find_word_under_cursor(
-   int       mouserow,
-   int       mousecol,
-   int       getword,
-   int       flags,   // flags for find_ident_at_pos()
+   int mouserow,
+   int mousecol,
+   int getword,
+   Unt flags,   // flags for find_ident_at_pos()
    Portal** winp,   // may be NULL
    LineNr* lnump,   // may be NULL
-   Byte** textp,
+   OUT CS* textp,
    int* colp,   // column where mouse hovers, can be NULL
    int* startcolp // column where text starts, can be NULL
 ){
@@ -12408,13 +12395,13 @@ find_word_under_cursor(
 //memory. OK or FAIL.
 int
 get_beval_info(
-   BalloonEval   *beval,
-   int      getword,
-   Portal      **winp,
-   LineNr   *lnump,
-   Byte      **textp,
-   int      *colp)
-{
+   BalloonEval* beval,
+   int getword,
+   Portal**winp,
+   LineNr* lnump,
+   OUT CS* textp,
+   int* colp
+) {
    int row = mouseRowG;
    int col = mouseColG;
    if (row < 0 || col < 0)
@@ -12434,7 +12421,7 @@ get_beval_info(
 
 // Show a balloon with "mesg" or "list". Hide the balloon when both are NULL.
 void
-post_balloon(BalloonEval *beval UNUSED, CS mesg, List *list UNUSED) {
+post_balloon(BalloonEval* beval UNUSED, CS mesg, List* list) {
    ui_post_balloon(mesg, list);
 }
 
@@ -12454,10 +12441,9 @@ bexpr_eval(
    Portal* po,
    LineNr lnum,
    int col,
-   CS text)
-{
-   Portal   *cw;
-   long   winnr = 0;
+   CS text
+) {
+   long   portNr = 0;
    Book   *save_curbuf;
    static Byte  *result = NULL;
    Unt   len;
@@ -12465,11 +12451,11 @@ bexpr_eval(
    ScriptPos   save_sctx = scriptPosG;
 
    // Convert portal pointer to number.
-   for (cw = firstPor; cw != po; cw = cw->next)
-       ++winnr;
+   for (Portal* pitm = firstPor; pitm != po; pitm = pitm->next)
+       ++portNr;
 
    set_EeglVar_nr(VV_BEVAL_BUFNR, (long)po->book->fiNum);
-   set_EeglVar_nr(VV_BEVAL_WINNR, winnr);
+   set_EeglVar_nr(VV_BEVAL_WINNR, portNr);
    set_EeglVar_nr(VV_BEVAL_WINID, po->id);
    set_EeglVar_nr(VV_BEVAL_LNUM, (long)lnum);
    set_EeglVar_nr(VV_BEVAL_COL, (long)(col + 1));
@@ -12517,12 +12503,12 @@ bexpr_eval(
 
 // Common code, invoked when the cursor is resting for a moment.
 void
-general_beval_cb(BalloonEval *beval, int state UNUSED) {
+general_beval_cb(BalloonEval* beval, int state UNUSED) {
    Portal   *po;
    int      col;
    LineNr   lnum;
-   Byte   *text;
-   Byte   *bexpr;
+   CS text;
+   CS bexpr;
    static Boole recursive = false;
 
    // Don't do anything when 'ballooneval' is off, messages scrolled the

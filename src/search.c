@@ -915,15 +915,15 @@ first_submatch(RegMultilineMatch *rp) {
 //Return 0 for failure, 1 for found, 2 for found and line offset added.
 int
 do_search(
-   Operator       *oap,   // can be NULL
-   int          dirc,   // '/' or '?'
-   int          search_delim, // the delimiter for the search, e.g. '%' in s%regex%replacement%
+   Operator* oap,   // can be NULL
+   int dirc,   // '/' or '?'
+   int search_delim, // the delimiter for the search, e.g. '%' in s%regex%replacement%
    CS pat,
    Unt patlen,
-   long       count,
+   long count,
    int options,
-   SearchitArg  *sia)   // optional arguments or NULL
-{
+   SearchitArg* sia   // optional arguments or NULL
+){
    CS  searchstr;
    Unt searchstrlen;
    SearchOffset       old_off;
@@ -938,7 +938,6 @@ do_search(
    Unt       msgbuflen = 0;
    int          has_offset = FALSE;
 
-   int searchcmdlen = 0;
 
    //Save the values for when (options & SEARCH_KEEP) is used.
    //(there is no "if ()" around this because gcc wants them initialized)
@@ -1005,7 +1004,6 @@ do_search(
          if (strcopy != ps) {
             Unt len = STRLEN(strcopy);
             // made a copy of "pat" to change "\?" to "?"
-            searchcmdlen += (int)(patlen - len);
             pat = strcopy;
             patlen = len;
             searchstr = strcopy;
@@ -1041,9 +1039,6 @@ do_search(
             while (EE_ISDIGIT(*p))       // skip number
                ++p;
           }
-
-          // compute length of search command for doGetCommandAddress()
-          searchcmdlen += (int)(p - pat);
 
           patlen -= p - pat;
           pat = p;             // put pat after search command
@@ -2978,7 +2973,7 @@ getPrevSearchOrSubstPattern(void) {
 
 // "searchcount()" function
 void
-f_searchcount(Var *argvars, Var *returnVar) {
+f_searchcount(Var *argvars, Var* returnVar) {
    Pos pos = curPor->cursor;
    CS pattern = NULL;
    int         maxcount = p_msc;
@@ -3247,7 +3242,7 @@ fail:
 //Delete match with ID 'id' in the match list of portal 'wp'.
 //Print error messages if 'perr' is TRUE.
 private int
-match_delete(Portal *wp, int id, int perr) {
+match_delete(Portal* wp, int id, int perr) {
    MatchItem   *cur = wp->firstMatch;
    MatchItem   *prev = cur;
    int      rtype = UPD_SOME_VALID;
@@ -3284,7 +3279,7 @@ match_delete(Portal *wp, int id, int perr) {
 
 // Delete all matches in the match list of portal 'wp'.
 void
-clear_matches(Portal *wp) {
+clear_matches(Portal* wp) {
    while (wp->firstMatch) {
       MatchItem* m = wp->firstMatch->next;
       eeRegFree(wp->firstMatch->match.regprog);
@@ -3332,11 +3327,11 @@ init_search_hl(Portal *wp, Match *search_hl) {
 private int
 next_search_hl_pos(
    OUT Match* match,   // points to a match
-   LineNr       lnum,
+   LineNr lnum,
    MatchItem* matchItem,   // match item with positions
-   ColNr       mincol)   // minimal column for a match
-{
-   int       found = -1;
+   ColNr mincol   // minimal column for a match
+){
+   int found = -1;
    for (int i = matchItem->currPos; i < matchItem->posLen; i++) {
       lPosNoVirt   *pos = &matchItem->pos[i];
 
@@ -3359,10 +3354,8 @@ next_search_hl_pos(
     }
    matchItem->currPos = 0;
    if (found >= 0) {
-      ColNr start = matchItem->pos[found].col == 0
-                    ? 0 : matchItem->pos[found].col - 1;
-      ColNr end = matchItem->pos[found].col == 0
-                ? MAXCOL : start + matchItem->pos[found].len;
+      ColNr start = matchItem->pos[found].col == 0 ? 0 : matchItem->pos[found].col - 1;
+      ColNr end = matchItem->pos[found].col == 0 ? MAXCOL : start + matchItem->pos[found].len;
 
       match->lnum = lnum;
       match->rm.startpos[0].lnum = 0;
@@ -3480,7 +3473,7 @@ next_search_hl(
 
 // Advance to the match in portal "wp" line "lnum" or past it.
 void
-prepare_search_hl(Portal *wp, Match *search_hl, LineNr lnum) {
+prepare_search_hl(Portal* wp, Match* search_hl, LineNr lnum) {
    Match   *match;      // points to search_hl or a match
    Boole pos_inprogress;   // marks that position match search is in progress
    int      n;
@@ -3626,8 +3619,8 @@ update_search_hl(
    Match* search_hl,
    int didLineDecorations,
    int lcs_eol_one,
-   OUT Boole* onLastCol)
-{
+   OUT Boole* onLastCol
+) {
    Match* match;          // points to search_hl or a match
    Boole pos_inprogress;       // marks that position match search is in progress
    Short      searchHiId = 0;
@@ -3722,7 +3715,7 @@ update_search_hl(
 }
 
 int
-get_prevcol_hl_flag(Portal *wp, Match *search_hl, long curcol) {
+get_prevcol_hl_flag(Portal* wp, Match* search_hl, long curcol) {
    long   prevcol = curcol;
    int      prevcol_hl_flag = FALSE;
    MatchItem *cur;         // points to the match list
@@ -3779,7 +3772,7 @@ get_search_match_hl(Portal* wp, Match* search_hl, long col, OUT Short* charHiId)
 }
 
 private int
-matchadd_dict_arg(Var *tv, OUT Portal** port) {
+matchadd_dict_arg(Var* tv, OUT Portal** port) {
    DictItem *di;
 
    if (tv->tag != VAR_BAG) {
@@ -3801,14 +3794,14 @@ matchadd_dict_arg(Var *tv, OUT Portal** port) {
 }
 
 void
-f_clearmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_clearmatches(Var* argvars UNUSED, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (port)
       clear_matches(port);
 }
 
 void
-f_getmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_getmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (!port)
       return;
@@ -3849,7 +3842,7 @@ f_getmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 void
-f_setmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_setmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
    List   *l;
    ListItem   *li;
    Bag   *d;
@@ -3932,7 +3925,7 @@ f_setmatches(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 void
-f_matchadd(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_matchadd(Var *argvars UNUSED, Var* returnVar UNUSED) {
    Byte buf[NUMBUFLEN];
    int prio = 10;   // default priority
    int id = -1;
@@ -3966,7 +3959,7 @@ f_matchadd(Var *argvars UNUSED, Var *returnVar UNUSED) {
 
 // "matchaddpos()" function
 void
-f_matchaddpos(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_matchaddpos(Var *argvars UNUSED, Var* returnVar UNUSED) {
    Byte buf[NUMBUFLEN];
    int prio = 10;
    int id = -1;
@@ -4008,7 +4001,7 @@ f_matchaddpos(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 void
-f_matcharg(Var* argvars, Var *returnVar) {
+f_matcharg(Var* argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
    MatchItem *m;
@@ -4026,7 +4019,7 @@ f_matcharg(Var* argvars, Var *returnVar) {
 }
 
 void
-f_matchdelete(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 1);
    if (port == NULL)
       returnVar->number = -1;
@@ -5018,7 +5011,7 @@ generateHelpTagsForDir(
 
 // Generate tags in one help directory, taking care of translations.
 private void
-do_helptags(Byte *dirname, int add_help_tags, int ignore_writeerr) {
+do_helptags(CS dirname, int add_help_tags, int ignore_writeerr) {
    int      len;
    int      j;
    ArrayList   ga;
@@ -5089,7 +5082,7 @@ do_helptags(Byte *dirname, int add_help_tags, int ignore_writeerr) {
 }
 
 private void
-helptagsCb(CS fname, void *cookie) {
+helptagsCb(CS fname, void* cookie) {
    do_helptags(fname, *(int *)cookie, TRUE);
 }
 
