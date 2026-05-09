@@ -1933,7 +1933,7 @@ recover_names(
                // Ends with '//', Use Full path for swap name
                tail = make_percent_swname(dir_name, p, fname_res);
             } else {
-               tail = gettail(fname_res);
+               tail = fiGetShortFiName(fname_res);
                tail = concat_fnames(dir_name, tail, TRUE);
             }
             if (tail == NULL)
@@ -2017,7 +2017,7 @@ recover_names(
                // print the swap file name
                msg_outnum((long)++files.len);
                msg_puts(S".    ");
-               msg_puts(gettail(files.c[i]));
+               msg_puts(fiGetShortFiName(files.c[i]));
                msg_putchar('\n');
                (void)swapfile_info(files.c[i]);
             }
@@ -3957,7 +3957,7 @@ resolve_symlink(CS fname, OUT CS builder) {
       else {
          Byte *tail;
 
-         tail = gettail(tmp);
+         tail = fiGetShortFiName(tmp);
          if (STRLEN(tail) + STRLEN(builder) >= MAXPATHL)
             return FAIL;
          STRCPY(tail, builder);
@@ -4022,7 +4022,7 @@ get_file_in_dir(CS fname, CS dname ){  // don't use "dirname", it is a global fo
    CS t;
    CS retval;
 
-   CS tail = gettail(fname);
+   CS tail = fiGetShortFiName(fname);
 
    if (dname[0] == '.' && dname[1] == ZERO)
       retval = copyStr(fname);
@@ -4186,7 +4186,7 @@ findSwapName(
                // If the swapfile has the same directory as the
                // buffer don't compare the directory names, they can have a different mountpoint.
                if (b0.b0_flags & B0_SAME_DIR) {
-                  if (fnamecmp(gettail(book->fullFileName), gettail(b0.b0_fname)) != 0
+                  if (fnamecmp(fiGetShortFiName(book->fullFileName), fiGetShortFiName(b0.b0_fname)) != 0
                       || !same_directory(fname, book->fullFileName)
                   ) {
                      // Symlinks may point to the same file even

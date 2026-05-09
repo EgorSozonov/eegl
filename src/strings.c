@@ -5034,7 +5034,7 @@ same_directory(CS f1, CS f2) {
    (void)eeFullFileName(f1, ffname, MAXPATHL, FALSE);
    CS t1 = gettail_sep(ffname);
    CS t2 = gettail_sep(f2);
-   return (t1 - ffname == t2 - f2 && pathcmp((char *)ffname, (char *)f2, (int)(t1 - ffname)) == 0);
+   return (t1 - ffname == t2 - f2 && pathcmp(ffname, f2, (int)(t1 - ffname)) == 0);
 }
 
 
@@ -5052,9 +5052,9 @@ remove_tail(CS p, CS pend, CS name) {
    return pend;
 }
 
-// TRUE if "p" points to just after a path separator.
-// Take care of multi-byte characters. "b" must point to the start of the file name
-int
+//TRUE if "p" points to just after a path separator.
+//Take care of multi-byte characters.
+Boole
 after_pathsep(CS fileName, CS afterSep) {
    return afterSep > fileName && afterSep[-1] == '/' && mb_head_off(fileName, afterSep - 1) == 0;
 }

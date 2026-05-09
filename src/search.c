@@ -4688,7 +4688,7 @@ searchFixHelpBook(void) {
 
    //In the "help.txt" and "help.abx" file, add the locally added help
    //files. This uses the very first line in the help file.
-   CS fname = gettail(curBook->currFileName);
+   CS fname = fiGetShortFiName(curBook->currFileName);
    if (fnamecmp(fname, "help.txt") == 0
       || (fnamencmp(fname, "help.", 5) == 0
           && ASCII_ISALPHA(fname[5])
@@ -4721,7 +4721,7 @@ searchFixHelpBook(void) {
 
             for (i1 = 0; i1 < files.len; ++i1) {
                f1 = files.c[i1];
-               t1 = gettail(f1);
+               t1 = fiGetShortFiName(f1);
                e1 = lastOccurrence(t1, '.');
                if (e1 == NULL)
                   continue;
@@ -4735,7 +4735,7 @@ searchFixHelpBook(void) {
                   f2 = files.c[i2];
                   if (f2 == NULL)
                      continue;
-                  t2 = gettail(f2);
+                  t2 = fiGetShortFiName(f2);
                   e2 = lastOccurrence(t2, '.');
                   if (e2 == NULL)
                      continue;

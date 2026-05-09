@@ -2986,7 +2986,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
          else
             fname = lline->fName;
          if (lline->kind == 1)   // :helpgrep
-            fname = gettail(fname);
+            fname = fiGetShortFiName(fname);
       }
       if (fname == NULL)
          sprintf((char *)IObuff, "%2d", ind);
@@ -3821,7 +3821,7 @@ addLine(
             && errBook->currFileName
       ){
          if (lline->kind == 1)   // :helpgrep
-            ga_concat(gap, gettail(errBook->currFileName));
+            ga_concat(gap, fiGetShortFiName(errBook->currFileName));
          else {
             // Shorten the file name if not done already.
             // For optimization, do this only for the first entry in a buffer.

@@ -28,6 +28,7 @@ private CS findFileInPathImpl(
 private int expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags);
 private Boole recursivelyDeleteDir(CS name);
 private int mch_FullName(CS fname, OUT CS buf, int len, Boole force);
+private CS skipInitialSlashes(CS path);
 
 //}}}
 //{{{file paths: dealing with file names and paths.
@@ -174,7 +175,7 @@ repeat:
       }
    }
 
-   CS tail = gettail(*fnamep);
+   CS tail = fiGetShortFiName(*fnamep);
    *fnamelen = STRLEN(*fnamep);
 
    // ":h" - head, remove "/file_name", can be repeated
@@ -182,7 +183,7 @@ repeat:
    while (src[*usedlen] == ':' && src[*usedlen + 1] == 'h') {
       valid |= VALID_HEAD;
       *usedlen += 2;
-      s = get_past_head(*fnamep);
+      s = skipInitialSlashes(*fnamep);
       while (tail > s && after_pathsep(s, tail))
           MB_PTR_BACK(*fnamep, tail);
       *fnamelen = tail - *fnamep;
@@ -319,7 +320,7 @@ shorten_dir_len(CS str, int trim_len) {
    int skip = FALSE;
    int dirchunk_len = 0;
 
-   CS tail = gettail(str);
+   CS tail = fiGetShortFiName(str);
    CS d = str;
    for (CS s = str; ; ++s) {
       if (s >= tail) {        // copy the whole tail
@@ -845,11 +846,11 @@ f_isabsolutepath(Var *argvars, Var* returnVar) {
 //Set "created" to the full name of the first created directory. It will be
 //NULL until that happens. Return OK or FAIL.
 private int
-mkdir_recurse(CS dir, int prot, Byte **created) {
+mkdir_recurse(CS dir, Unt prot, Byte** created) {
    int r = FAIL;
    // Get end of directory name in "dir". We're done when it's "/" or "c:/".
    CS p = gettail_sep(dir);
-   if (p <= get_past_head(dir))
+   if (p <= skipInitialSlashes(dir))
       return OK;
 
    // If the directory exists we're done.  Otherwise: create it.
@@ -866,9 +867,9 @@ mkdir_recurse(CS dir, int prot, Byte **created) {
 }
 
 void
-f_mkdir(Var *argvars, Var* returnVar) {
+f_mkdir(Var* argvars, Var* returnVar) {
    Byte   buf[NUMBUFLEN];
-   int prot = 0755;
+   Unt prot = 7*64 + 5*8 + 5;
    int defer = FALSE;
    int defer_recurse = FALSE;
    CS created = NULL;
@@ -879,14 +880,14 @@ f_mkdir(Var *argvars, Var* returnVar) {
    if (*dir == ZERO)
       return;
 
-   if (*gettail(dir) == ZERO)
+   if (*fiGetShortFiName(dir) == ZERO)
       // remove trailing slashes
       *gettail_sep(dir) = ZERO;
 
    if (argvars[1].tag != VAR_UNKNOWN) {
       if (argvars[2].tag != VAR_UNKNOWN) {
-         prot = (int)varGetNumberChk(argvars + 2, NULL);
-         if (prot == -1)
+         prot = (Unt)varGetNumberChk(argvars + 2, NULL);
+         if (prot == UNT)
             return;
       }
       CS arg2 = tv_get_string(&argvars[1]);
@@ -1306,17 +1307,17 @@ f_resolve(Var *argvars, Var* returnVar) {
             q[-1] = ZERO;
          }
 
-         q = gettail(p);
+         q = fiGetShortFiName(p);
          if (q > p && *q == ZERO) {
              // Ignore trailing path separator.
              p[q - p - 1] = ZERO;
-             q = gettail(p);
+             q = fiGetShortFiName(p);
          }
          if (q > p && !mch_isFullName(buf)) {
             // symlink is relative to directory of argument
             cpy = alloc(STRLEN(p) + STRLEN(buf) + 1);
             STRCPY(cpy, p);
-            STRCPY(gettail(cpy), buf);
+            STRCPY(fiGetShortFiName(cpy), buf);
             eeglFree(p);
             p = cpy;
          } else {
@@ -1558,7 +1559,7 @@ home_replace(
 
    //If the file is a help file, remove the path completely.
    if (book && book->kind == BOOK_HELP) {
-      eeSnprintf(dst, dstlen, "%s", gettail(src));
+      eeSnprintf(dst, dstlen, "%s", fiGetShortFiName(src));
       return;
    }
 
@@ -1703,27 +1704,26 @@ fullpathcmp(
 //Get the tail of a path: the file name. When the path ends in a path separator the tail is the 
 //ZERO after it. Fail safe: never return NULL.
 CS
-gettail(CS fname){
+fiGetShortFiName(CS fname){
    if (!fname)
       return Em;
       
-   CS p1;
-   CS p2;
-
-   for (p1 = p2 = get_past_head(fname); *p2; ) {  // find last part of path
-      if (*p2 == '/')
-         p1 = p2 + 1;
-      MB_PTR_ADV(p2);
+   CS afterSlash;
+   CS p;
+   for (afterSlash = skipInitialSlashes(fname), p = afterSlash; *p != ZERO; MB_PTR_ADV(p)) {
+      if (*p == '/')
+         afterSlash = p + 1;
    }
-   return p1;
+   return afterSlash;
 }
 
-//Get pointer to tail of "fname", including path separators.  Putting a ZERO here leaves the 
-//directory name.  Takes care of "c:/" and "//". Always return a valid pointer.
+//Get pointer to tail of "fname", including path separators.
+//Take care of "//". Always return a valid pointer.
+// "/etc/a" -> "/a", "/etc" -> "/etc"
 CS
 gettail_sep(CS fname){
-   CS p = get_past_head(fname);   // don't remove the '/' from "c:/file"
-   CS t = gettail(fname);
+   CS p = skipInitialSlashes(fname);   // don't remove the '/' from "c:/file"
+   CS t = fiGetShortFiName(fname);
    while (t > p && after_pathsep(fname, t))
       --t;
    return t;
@@ -1739,9 +1739,9 @@ getnextcomp(CS fname){
    return fname;
 }
 
-//Get a pointer to one character past the head of a path name. I.e.: after "/"
-CS
-get_past_head(CS path){
+//Get a pointer to one character past the initial slashes of a path name
+private CS
+skipInitialSlashes(CS path){
    CS retval = path;
    for (; *retval == '/'; ++retval)
       ++retval;
@@ -1751,7 +1751,7 @@ get_past_head(CS path){
 
 //Return TRUE if the directory of "fname" exists, FALSE otherwise.
 //Also return TRUE if there is no directory name. "fname" must be writable!.
-int
+private int
 dir_of_file_exists(CS fname){
    CS p = gettail_sep(fname);
    if (p == fname)
@@ -1778,7 +1778,7 @@ concat_fnames(CS fname1, CS fname2, int sep){
 
 //Add a path separator to a file name, unless it already ends in a path separator.
 void
-add_pathsep(Byte *p){
+add_pathsep(CS p){
    if (*p != ZERO && !after_pathsep(p, p + STRLEN(p)))
       STRCAT(p, "/");
 }
@@ -1915,16 +1915,15 @@ expand_wildcards(
 // Return TRUE if "fname" matches with an entry in 'suffixes'.
 int
 match_suffix(CS fname){
-   int      fnamelen, setsuflen;
 #define MAXSUFLEN 30       // maximum length of a file suffix
-   Byte   suf_buf[MAXSUFLEN];
+   Byte suf_buf[MAXSUFLEN];
 
-   fnamelen = (int)STRLEN(fname);
-   setsuflen = 0;
+   int fnamelen = (int)STRLEN(fname);
+   int setsuflen = 0;
    for (CS setsuf = p_su; *setsuf != ZERO; ) {
       setsuflen = copy_option_part(&setsuf, suf_buf, MAXSUFLEN, ".,");
       if (setsuflen == 0) {
-         Byte *tail = gettail(fname);
+         Byte *tail = fiGetShortFiName(fname);
 
          // empty entry: match name without a '.'
          if (firstOccurrence(tail, '.') == NULL) {
@@ -1991,8 +1990,8 @@ expand_backtick(OUT ExpandMatch* matches, CS pat, Unt flags) {  // EW_* flags
 
 // Wildcard expansion code.
 private int
-pstrcmp(const void *a, const void *b) {
-    return (pathcmp(*(char **)a, *(char **)b, -1));
+pstrcmp(const void* a, const void* b) {
+   return (pathcmp(*(CS*)a, *(CS*)b, -1));
 }
 
 //Recursively expand one path component into all matching files and/or directories. Adds matches 
@@ -2006,7 +2005,7 @@ unix_expandpath(
    Unt flags,     // EW_* flags
    int didstar
 ) {
-   int      start_len = fileList->len;
+   int start_len = fileList->len;
    RegMatch regmatch;
    int starts_with_dot;
    int matches;
@@ -2175,11 +2174,7 @@ unix_expandpath(
 //"path" has backslashes before chars that are not to be expanded.
 //Returns the number of matches found.
 private int
-mch_expandpath(
-   OUT ExpandMatch* matches,
-   CS path,
-   Unt flags      // EW_* flags
-){
+mch_expandpath(OUT ExpandMatch* matches, CS path, Unt flags){
    return unix_expandpath(OUT matches, path, 0, flags, FALSE);
 }
 
@@ -2315,14 +2310,14 @@ has_special_wildchar(CS p){
 //matches, "file" to the array of matches.
 int
 gen_expand_wildcards(
-   int      num_pat,   // number of input patterns
+   int num_pat,   // number of input patterns
    Arr(CS) pat,   // array of input patterns
-   Unt      flags,      // EW_* flags
+   Unt flags,      // EW_* flags
    OUT ExpandMatch* matches
 ){
    ArrayList ga;
    CS p;
-   static int recursive = FALSE;
+   static Boole recursive = false;
    int         retval = OK;
    int         did_expand_in_path = FALSE;
    CS path_option = curBook->o.path;
@@ -2341,7 +2336,7 @@ gen_expand_wildcards(
          return mch_expand_wildcards(num_pat, pat, flags, OUT matches);
    }
 
-   recursive = TRUE;
+   recursive = true;
 
    for (int i = 0; i < num_pat && !gotInterruptG; ++i) {
       int add_pat = -1;
@@ -2363,7 +2358,7 @@ gen_expand_wildcards(
                eeglFree(p);
                ga_clear_strings(&ga);
                i = mch_expand_wildcards(num_pat, pat, flags|EW_KEEPDOLLAR, OUT matches);
-               recursive = FALSE;
+               recursive = false;
                return i;
             }
          }
@@ -2377,9 +2372,9 @@ gen_expand_wildcards(
                && !(p[0] == '.' && (p[1] == '/' || (p[1] == '.' && p[2] == '/')))
             ){
                // :find completion where 'path' is used. Recursiveness is OK here.
-               recursive = FALSE;
+               recursive = false;
                add_pat = expand_in_path(OUT matches, p, flags);
-               recursive = TRUE;
+               recursive = true;
                did_expand_in_path = TRUE;
             } else
                add_pat = mch_expandpath(OUT matches, p, flags);
@@ -2412,12 +2407,12 @@ gen_expand_wildcards(
    if (matches->len == 0) {
       matches->c[0] = _("no matches");
       if ((flags & EW_EMPTYOK) == 0) {
-         recursive = FALSE;
+         recursive = false;
          return FAIL;
       } 
    } 
 
-   recursive = FALSE;
+   recursive = false;
    return retval;
 }
 
@@ -2463,10 +2458,10 @@ addFile(OUT ExpandMatch* matches, CS fName, Unt flags){
 //Compare path "p[]" to "q[]". If "maxlen" >= 0 compare "p[maxlen]" to "q[maxlen]"
 //Return value like strcmp(p, q), but consider path separators.
 int
-pathcmp(const char *p, const char *q, int maxlen) {
+pathcmp(CS p, CS q, int maxlen) {
    int i, j;
    int c1, c2;
-   const char   *s = NULL;
+   const CS s = NULL;
 
    for (i = 0, j = 0; maxlen < 0 || (i < maxlen && j < maxlen);) {
       c1 = mb_ptr2char((CS)p + i);
@@ -2936,7 +2931,7 @@ eeFindFile_init(
 
    //Store information on starting dir now if path is relative. If absolute, we do that later
    if (path[0] == '.' && (path[1] == '/' || path[1] == ZERO) && rel_fname != NULL) {
-      int   len = (int)(gettail(rel_fname) - rel_fname);
+      int   len = (int)(fiGetShortFiName(rel_fname) - rel_fname);
 
       if (!eeIsAbsName(rel_fname) && len + 1 < MAXPATHL) {
          // Make the start dir an absolute path name.
@@ -3121,7 +3116,7 @@ eeFindFile_init(
             add_sep ? "/" : "");
        }
    } else {
-      Byte *p = gettail(search_ctx->fixPath.c);
+      Byte *p = fiGetShortFiName(search_ctx->fixPath.c);
       int    len = (int)search_ctx->fixPath.len;
 
       if (p > search_ctx->fixPath.c) {
@@ -3220,9 +3215,9 @@ eeChdirfile(CS fname, char *trigger_autocmd) {
     copySubstrToAllocation(new_dir, (Text){fname, MAXPATHL - 1});
     *gettail_sep(new_dir) = ZERO;
 
-    if (pathcmp((char *)old_dir, (char *)new_dir, -1) == 0)
-   // nothing to do
-   return OK;
+   if (pathcmp(old_dir, new_dir, -1) == 0)
+      // nothing to do
+      return OK;
 
    if (trigger_autocmd != NULL)
       trigger_DirChangedPre((CS)trigger_autocmd, new_dir);
@@ -4171,7 +4166,7 @@ findFileInPathImpl(
                   NameBuff,
                   MAXPATHL,
                   "%.*s%s",
-                  (int)(gettail(rel_fname) - rel_fname),
+                  (int)(fiGetShortFiName(rel_fname) - rel_fname),
                   rel_fname,
                   *file_to_find
                );
@@ -4471,26 +4466,24 @@ find_file_name_in_path(
 
 //Return the end of the directory name, on the first path separator:
 //"/path/file", "/path/dir/", "/path//dir", "/file"
-//    ^          ^        ^         ^
+//      ^             ^             ^        ^
 private CS
-gettail_dir(CS fname) {
+getLastSlash(CS fname) {
    CS dir_end = fname;
-   Byte   *next_dir_end = fname;
-   int      look_for_sep = TRUE;
-   Byte   *p;
+   CS next_dir_end = fname;
+   Boole look_for_sep = true;
 
-   for (p = fname; *p != ZERO; ) {
+   for (CS p = fname; *p != ZERO; MB_PTR_ADV(p)) {
       if (*p == '/') {
          if (look_for_sep) {
             next_dir_end = p;
-            look_for_sep = FALSE;
+            look_for_sep = false;
          }
       } else {
          if (!look_for_sep)
             dir_end = next_dir_end;
-         look_for_sep = TRUE;
+         look_for_sep = true;
       }
-      MB_PTR_ADV(p);
    }
    return dir_end;
 }
@@ -4498,7 +4491,7 @@ gettail_dir(CS fname) {
 //Move "*psep" back to the previous path separator in "path".
 //Return FAIL is "*psep" ends up at the beginning of "path".
 private int
-find_previous_pathsep(Byte *path, Byte **psep) {
+find_previous_pathsep(CS path, Byte** psep) {
    // skip the current separator
    if (*psep > path && **psep == '/')
       --*psep;
@@ -4506,7 +4499,7 @@ find_previous_pathsep(Byte *path, Byte **psep) {
    // find the previous separator
    while (*psep > path) {
       if (**psep == '/')
-          return OK;
+         return OK;
       MB_PTR_BACK(path, *psep);
    }
 
@@ -4517,14 +4510,13 @@ find_previous_pathsep(Byte *path, Byte **psep) {
 //"maybe_unique" is the end portion of "matches->c[i]".
 private Boole
 is_unique(CS maybe_unique, ExpandMatch* matches, Unt i) {
-   int       candidate_len = (int)STRLEN(maybe_unique);
-   int       other_path_len;
+   int candidate_len = (int)STRLEN(maybe_unique);
 
    for (Unt j = 0; j < matches->len; j++) {
       if (j == i)
          continue;  // don't compare it with itself
 
-      other_path_len = (int)STRLEN(matches->c[j]);
+      int other_path_len = (int)STRLEN(matches->c[j]);
       if (other_path_len < candidate_len)
          continue;  // it's different when it's shorter
 
@@ -4558,7 +4550,7 @@ expand_path_option(CS curdir, CS path_option, OUT ExpandMatch* files) {
          // "/path/file"  + "./subdir" -> "/path/subdir"
          if (curBook->fullFileName == NULL)
             continue;
-         p = gettail(curBook->fullFileName);
+         p = fiGetShortFiName(curBook->fullFileName);
          Unt plen = (Unt)(p - curBook->fullFileName);
          if (plen + buflen >= MAXPATHL)
             continue;
@@ -4664,7 +4656,7 @@ uniquefy_paths(
 
    for (Unt i = 0; i < matches->len && !gotInterruptG; i++) {
       CS path = fnames[i];
-      CS dir_end = gettail_dir(path);
+      CS dir_end = getLastSlash(path);
 
       len = (int)STRLEN(path);
       if (fnamencmp(curdir, path, dir_end - path) == 0 && curdir[dir_end - path] == ZERO)
@@ -4720,9 +4712,7 @@ uniquefy_paths(
    // Shorten filenames in /in/current/directory/{filename}
    for (Unt i = 0; i < matches->len && !gotInterruptG; i++) {
       Unt   rel_pathsize;
-      Byte   *rel_path;
       CS path = in_curdir[i];
-
       if (!path)
          continue;
 
@@ -4737,7 +4727,7 @@ uniquefy_paths(
       }
 
       rel_pathsize = 2 + STRLEN(short_name) + 1;
-      rel_path = alloc(rel_pathsize);
+      CS rel_path = alloc(rel_pathsize);
 
       eeSnprintf(rel_path, rel_pathsize, ".%s%s", "/", short_name);
 
@@ -4794,11 +4784,9 @@ expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags) {      // EW_* f
 Unt
 simplify_filename(CS filename) {
    int      components = 0;
-   CS start;
    CS tail;
-   CS p_end;             // point to ZERO at end of string "p"
-   int      stripping_disabled = FALSE;
-   int      relative = TRUE;
+   Boole stripping_disabled = false;
+   int relative = TRUE;
 
    CS p = filename;
 
@@ -4808,8 +4796,8 @@ simplify_filename(CS filename) {
          ++p;
       while (*p == '/');
    }
-   start = p;       // remember start after "c:/" or "/" or "///"
-   p_end = p + STRLEN(p);
+   CS start = p;       // remember start after "c:/" or "/" or "///"
+   CS p_end = p + STRLEN(p); // point to ZERO at end of string "p"
    // Posix says that "//path" is unchanged but "///path" is "/path".
    if (start > filename + 2) {
       mch_memmove(filename + 1, p, (Unt)(p_end - p) + 1);       // +1 for ZERO
@@ -4853,9 +4841,9 @@ simplify_filename(CS filename) {
 
             // Don't strip for an erroneous file name.
             if (!stripping_disabled) {
-               // If the preceding component does not exist in the file
-               // system, we strip it.  On Unix, we don't accept a symbolic
-               // link that refers to a non-existent file.
+               //If the preceding component does not exist in the file
+               //system, we strip it.  On Unix, we don't accept a symbolic
+               //link that refers to a non-existent file.
                saved_char = p[-1];
                p[-1] = ZERO;
                if (lstat((char *)filename, &st) < 0)
@@ -4882,7 +4870,7 @@ simplify_filename(CS filename) {
                   if (stat((char *)filename, &st) >= 0)
                       do_strip = TRUE;
                   else
-                      stripping_disabled = TRUE;
+                      stripping_disabled = true;
                   *tail = saved_char;
                   if (do_strip) {
                      FileStat   new_st;
@@ -5309,14 +5297,9 @@ mch_chdir(char *path) {
 }
 
 void
-filemess(
-   Book* book,
-   CS name,
-   CS s,
-   int attr
-){
-   int      msg_scroll_save;
-   int      prevMsgCol = msgColG;
+filemess(Book* book, CS name, CS s, int attr){
+   int msg_scroll_save;
+   int prevMsgCol = msgColG;
 
    if (msg_silent != 0)
       return;
@@ -5329,7 +5312,7 @@ filemess(
       IObuff[len] = ZERO;
    }
 
-    // Avoid an over-long translation to cause trouble.
+   // Avoid an over-long translation to cause trouble.
    if (*s != ZERO)
       STRNCPY(IObuff + len, s, 99);
 
@@ -5345,7 +5328,7 @@ filemess(
       msg_putchar('\r');  // overwrite any previous message.
    msg_scroll = msg_scroll_save;
    msg_scrolled_ign = TRUE;
-   // may truncate the message to avoid a hit-return prompt
+   //may truncate the message to avoid a hit-return prompt
    msgOuttransDeco(msg_may_trunc(FALSE, IObuff), attr);
    msg_clr_eos();
    out_flush();
@@ -5380,9 +5363,9 @@ int
 readfile(
    CS fname,
    CS sfname,
-   LineNr   from,
-   LineNr   lines_to_skip,
-   LineNr   lines_to_read,
+   LineNr from,
+   LineNr lines_to_skip,
+   LineNr lines_to_read,
    Invocation* invo,         // can be NULL!
    Unt flags
 ){
@@ -5590,7 +5573,7 @@ readfile(
    
    if (read_stdin) {
    } ei (!read_buffer) {
-      if ( !(perm & 0222) || mch_access((char *)fname, W_OK))
+      if ( !(perm & 0222) || mch_access(fname, W_OK))
          file_readonly = true;
       fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
    }
@@ -6181,9 +6164,9 @@ theend:
 
 // Read blob from file "fd". Caller has allocated a blob in "returnVar". Return OK or FAIL.
 int
-read_blob(FILE *fd, Var* returnVar, FileSize offset, FileSize size_arg) {
+read_blob(FILE* fd, Var* returnVar, FileSize offset, FileSize size_arg) {
    Blob* blob = returnVar->blob;
-   struct stat   st;
+   struct stat st;
    int whence;
    FileSize   size = size_arg;
 
@@ -6250,7 +6233,7 @@ is_dev_fd_file(CS fname) {
 //Fill "*invo" to force the 'binary' option to be equal to the book "book". 
 //Used for calling readfile(). Return OK or FAIL.
 int
-prep_exarg(Invocation *invo, Book* book){
+prep_exarg(Invocation* invo, Book* book){
    invo->comm = alloc(15);
    invo->bad_char = book->badChar;
    invo->force_bin = book->o.binary ? FORCE_BIN : FORCE_NOBIN;
@@ -6278,9 +6261,9 @@ set_file_options(Invocation* invo) {
 int
 check_file_readonly(
    CS fname,      // full path to file
-   int      perm // known permissions on file
+   Unt      perm  // known permissions on file
 ){
-   return ( (perm & 0222) == 0 || mch_access((char *)fname, W_OK));
+   return ( (perm & 0222) == 0 || mch_access(fname, W_OK));
 }
 
 //Call fsync() with Mac-specific exception. Return fsync() result: zero for success.
@@ -6507,7 +6490,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '
    //Append the extension. ext can start with '.' and cannot exceed 3 more characters.
    STRCPY(s, ext);
    //Prepend the dot.
-   if (prepend_dot && *(e = gettail(retval)) != '.') {
+   if (prepend_dot && *(e = fiGetShortFiName(retval)) != '.') {
       mch_memmove(e + 1, e, (Unt)(((fnamelen + extlen) - (e - retval)) + 1));   // +1 for ZERO
       *e = '.';
    }
@@ -6591,7 +6574,7 @@ eeRename(Byte *from, Byte *to){
          return -1;
       STRCPY(tempname, from);
       for (n = 123; n < 99999; ++n) {
-         sprintf((char *)gettail((CS)tempname), "%d", n);
+         sprintf((char *)fiGetShortFiName((CS)tempname), "%d", n);
          if (stat(tempname, &st) < 0) {
             if (mch_rename((char *)from, tempname) == 0) {
                if (mch_rename(tempname, (char *)to) == 0)
@@ -7353,7 +7336,7 @@ eeDelTempDir(void) {
 
    eeClosetempdir();
    // remove the trailing path separator
-   gettail(eeTempDirG)[-1] = ZERO;
+   fiGetShortFiName(eeTempDirG)[-1] = ZERO;
    recursivelyDeleteDir(eeTempDirG);
    EE_CLEAR(eeTempDirG);
 }
@@ -7483,21 +7466,17 @@ match_file_pat(
 //patterns, like 'wildignore'. "sfname" is the short file name or NULL, "ffname" the long file name
 int
 match_file_list(CS list, CS sfname, CS ffname){
-   Byte   buf[MAXPATHL];
-   CS tail;
-   CS regpat;
-   Byte   allow_dirs;
-   int      match;
-   Byte   *p;
+   Byte buf[MAXPATHL];
+   Byte allow_dirs;
 
-   tail = gettail(sfname);
+   CS tail = fiGetShortFiName(sfname);
 
    // try all patterns in 'wildignore'
-   p = list;
+   CS p = list;
    while (*p) {
       copy_option_part(&p, buf, MAXPATHL, ",");
-      regpat = file_pat_to_reg_pat(buf, NULL, OUT &allow_dirs);
-      match = match_file_pat(regpat, NULL, ffname, sfname, tail, (int)allow_dirs);
+      CS regpat = file_pat_to_reg_pat(buf, NULL, OUT &allow_dirs);
+      int match = match_file_pat(regpat, NULL, ffname, sfname, tail, (int)allow_dirs);
       eeglFree(regpat);
       if (match)
          return TRUE;
@@ -7516,16 +7495,14 @@ file_pat_to_reg_pat(
    OUT Byte* allow_dirs   // Result passed back out in here
 ){
    int      size = 2; // '^' at start, '$' at end
-   Byte   *endp;
-   Byte   *reg_pat;
-   Byte   *p;
+   CS p;
    int      i;
    int      nested = 0;
    int      add_dollar = TRUE;
 
-   if (allow_dirs != NULL)
+   if (allow_dirs)
       *allow_dirs = FALSE;
-   if (pat_end == NULL)
+   if (!pat_end)
       pat_end = pat + STRLEN(pat);
 
    for (p = pat; p < pat_end; p++) {
@@ -7543,7 +7520,7 @@ file_pat_to_reg_pat(
          break;
       }
    }
-   reg_pat = alloc(size + 1);
+   CS reg_pat = alloc(size + 1);
 
    i = 0;
 
@@ -7552,7 +7529,7 @@ file_pat_to_reg_pat(
          pat++;
    } else
       reg_pat[i++] = '^';
-   endp = pat_end - 1;
+   CS endp = pat_end - 1;
    if (endp >= pat && *endp == '*') {
       while (endp - pat > 0 && *endp == '*')
          endp--;
@@ -7685,12 +7662,12 @@ CS
 get_cmd_output(
    CS cmd,
    CS infile,   // optional input file name
-   int      flags,      // can be SHELL_SILENT
+   Unt flags,      // can be SHELL_SILENT
    OUT int* ret_len
 ) {
-   Byte   *tempname;
-   int      len;
-   int      i = 0;
+   CS tempname;
+   int len;
+   int i = 0;
    FILE   *fd;
 
    // get a name for the temp file
@@ -7749,7 +7726,7 @@ done:
 
 
 private void
-get_cmd_output_as_returnVar(Var   *argvars, OUT Var* returnVar, int retlist) {
+get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
    Byte   *res = NULL;
    Byte   *p;
    Byte   *infile = NULL;
@@ -7825,9 +7802,9 @@ get_cmd_output_as_returnVar(Var   *argvars, OUT Var* returnVar, int retlist) {
    if (retlist) {
       int      len;
       ListItem   *li;
-      Byte      *s = NULL;
-      Byte      *start;
-      Byte      *end;
+      CS s = NULL;
+      CS start;
+      CS end;
       int      i;
 
       res = get_cmd_output(tv_get_string(&argvars[0]), infile, flags, OUT &len);
@@ -7866,19 +7843,19 @@ errret:
       mch_remove(infile);
       eeglFree(infile);
    }
-   if (res != NULL)
+   if (res)
       eeglFree(res);
-   if (list != NULL)
+   if (list)
       list_free(list);
 }
 
 void
-f_system(Var *argvars, Var* returnVar) {
+f_system(Var* argvars, Var* returnVar) {
    get_cmd_output_as_returnVar(argvars, returnVar, FALSE);
 }
 
 void
-f_systemlist(Var *argvars, Var* returnVar) {
+f_systemlist(Var* argvars, Var* returnVar) {
    get_cmd_output_as_returnVar(argvars, returnVar, TRUE);
 }
 
@@ -7890,7 +7867,7 @@ int
 filewritable(CS fname) {
    int retval = 0;
    int perm = mch_getperm(fname);
-   if ((perm & 0222) && mch_access((char *)fname, W_OK) == 0) {
+   if ((perm & 0222) && mch_access(fname, W_OK) == 0) {
       ++retval;
       if (mch_isdir(fname))
          ++retval;
@@ -7901,7 +7878,7 @@ filewritable(CS fname) {
 
 // Read 2 bytes from "fd" and turn them into an int, MSB first. Return -1 when encountering EOF.
 int
-get2c(FILE *fd) {
+get2c(FILE* fd) {
    int n = getc(fd);
    if (n == EOF) return -1;
       int c = getc(fd);
@@ -7911,7 +7888,7 @@ get2c(FILE *fd) {
 
 // Read 3 bytes from "fd" and turn them into an int, MSB first. Returns -1 when encountering EOF.
 int
-get3c(FILE *fd) {
+get3c(FILE* fd) {
    int n = getc(fd);
    if (n == EOF) return -1;
    int c = getc(fd);
@@ -7924,7 +7901,7 @@ get3c(FILE *fd) {
 
 // Read 4 bytes from "fd" and turn them into an int, MSB first. Returns -1 when encountering EOF.
 int
-get4c(FILE *fd) {
+get4c(FILE* fd) {
    // Use unsigned rather than int otherwise result is undefined when left-shift sets the 
    // most-significant bit
 
@@ -7946,7 +7923,7 @@ get4c(FILE *fd) {
 // Read a string of length "cnt" from "fd" into allocated memory.
 // Return NULL when unable to read that many bytes.
 CS
-read_string(FILE *fd, int cnt) {
+read_string(FILE* fd, int cnt) {
    CS str = alloc(cnt + 1);
 
    // Read the string. Quit when running into the EOF.
@@ -8042,18 +8019,6 @@ mch_copy_sec(CS from_file, CS to_file) {
    freecon(from_context);
 }
 #endif // HAVE_SELINUX
-
-
-#if defined(HAVE_APPARMOR)
-
-#include <apparmor.h>
-
-//Copy security info from "from_file" to "to_file".
-void
-mch_copy_sec(char_u *from_file, char_u *to_file) {
-}
-
-#endif // HAVE_APPARMOR
 
 // Get file permissions for 'name'. Return -1 when it doesn't exist.
 long
@@ -8151,12 +8116,12 @@ mch_fsetperm(int fd, long perm) {
 
 // 1 if "name" is an executable file, 0 if not or it doesn't exist.
 private int
-executable_file(Byte *name) {
+executable_file(CS name) {
    struct stat   st;
 
    if (stat((char *)name, &st))
       return 0;
-   return S_ISREG(st.st_mode) && mch_access((char *)name, X_OK) == 0;
+   return S_ISREG(st.st_mode) && mch_access(name, X_OK) == 0;
 }
 
 //Return TRUE if "name" can be found in $PATH and executed, FALSE if not.
@@ -8166,16 +8131,16 @@ int
 mch_can_exe(CS name, Arr(CS) path, int use_path) {
    Unt   bufsize;
    Unt   buflen;
-   Byte   *p, *e;
+   Byte  *e;
    Byte   *p_end;
    Unt   elen;
    int      retval;
 
    //When "use_path" is false and if it's an absolute or relative path, don't need to use $PATH.
-   if (!use_path || gettail(name) != name) {
+   if (!use_path || fiGetShortFiName(name) != name) {
       // There must be a path separator, files in the current directory
       // can't be executed.
-      if ((use_path || gettail(name) != name) && executable_file(name)) {
+      if ((use_path || fiGetShortFiName(name) != name) && executable_file(name)) {
          if (path) {
             if (name[0] != '/')
                *path = FullName_save(name, TRUE);
@@ -8187,7 +8152,7 @@ mch_can_exe(CS name, Arr(CS) path, int use_path) {
       return FALSE;
    }
 
-   p = (CS)getenv("PATH");
+   CS p = (CS)getenv("PATH");
    if (p == NULL || *p == ZERO)
       return -1;
    p_end = p + STRLEN(p);

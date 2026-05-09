@@ -697,8 +697,7 @@ typedef enum {
 //it work fast.  Only works for single byte characters!
 #define EE_ISBREAK(c) ((c) < 256 && breakat_flags[(Byte)(c)])
 
-//On the Mac open() has only two arguments.
-#define mch_access(n, p)   access((n), (p))
+#define mch_access(n, p)   access((char*)(n), (p))
 
 #define E (Byte*)""
 

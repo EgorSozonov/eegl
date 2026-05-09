@@ -791,14 +791,14 @@ toPrintf(CS str, int maxlen) {
             longestLineS.c[n] = ZERO;
             n++; 
             if (info_message)   // informative message, not an error
-               mch_msg((char *)longestLineS.c);
+               mch_msg(longestLineS.c);
             else
-               mch_errmsg((char *)longestLineS.c);
+               mch_errmsg(longestLineS.c);
          } else {
             if (info_message)   // informative message, not an error
-               mch_msg("\r\n");
+               mch_msg(S"\r\n");
             else
-               mch_errmsg("\r\n");
+               mch_errmsg(S"\r\n");
          }
          bbb = aaa + 1;
       }
@@ -812,9 +812,9 @@ skipped:
 
    if (bbb && *bbb != ZERO && !isSilent) {
       if (info_message)
-         mch_msg((char *)bbb);
+         mch_msg(bbb);
       else
-         mch_errmsg((char *)bbb);
+         mch_errmsg(bbb);
    }
 
    msg_didout = TRUE;       // assume that line is not empty
@@ -2578,10 +2578,10 @@ t_puts(
 //different) or we just don't know where the cursor is.
 int
 msg_use_printf(void){
-    return (!msg_check_screen()
+   return (!msg_check_screen()
        || !termcap_active
        || (termIsScreenBeingSwapped() && !termcap_active)
-          );
+   );
 }
 
 #if defined(USE_MCH_ERRMSG) || defined(PROTO)
@@ -2597,7 +2597,7 @@ msg_use_printf(void){
 //be used, collect error messages until the TUI has started and they can be displayed in a message 
 //box.
 void
-mch_errmsg(Arr(char) errMsg) {
+mch_errmsg(CS errMsg) {
    // Use stderr if it's a tty. When not going to start the GUI also use stderr.
    if (isatty(2)) {
       fprintf(stderr, "%s", errMsg);
@@ -2631,7 +2631,7 @@ mch_errmsg(Arr(char) errMsg) {
 // Give a message. To be used when the screen hasn't been initialized yet. When there is no tty, 
 // collect messages until the GUI has started and they can be displayed in a message box.
 void
-mch_msg(char *str) {
+mch_msg(CS str) {
    // Use stdout if we have a tty.  This allows "eegl -h | more" and uses mch_errmsg() when started 
    // from the desktop. When not going to start the GUI also use stdout.
    // On Mac, when started from Finder, stderr is the console.

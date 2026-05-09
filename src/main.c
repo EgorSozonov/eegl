@@ -1260,7 +1260,7 @@ private void
 parseCommandName(MainParams *params) {
    CS initstr;
 
-   initstr = gettail((CS)params->argv[0]);
+   initstr = fiGetShortFiName((CS)params->argv[0]);
 
    set_EeglVar_string(VV_PROGNAME, initstr, -1);
    set_progpath((CS)params->argv[0]);
@@ -1636,7 +1636,7 @@ scripterror:
             && !mch_isdir(alist_name(&GARGLIST[0]))
          ) {
             Arr(Byte) concattedFnames = 
-               concat_fnames(text, gettail(alist_name(&GARGLIST[0])), TRUE);
+               concat_fnames(text, fiGetShortFiName(alist_name(&GARGLIST[0])), TRUE);
             if (concattedFnames != NULL) {
                eeglFree(text);
                text = concattedFnames;
@@ -2141,18 +2141,18 @@ __bp() { // breakpoints for debugger
 private void
 set_progpath(CS argv0) {
    CS val = argv0;
-   Byte   buf[MAXPATHL + 1];
-   char   linkBuf[MAXPATHL + 1];
-   Long len = readlink("/proc/self/exe", linkBuf, MAXPATHL);
+   Byte buf[MAXPATHL + 1];
+   Byte linkBuf[MAXPATHL + 1];
+   Long len = readlink("/proc/self/exe", OUT linkBuf, MAXPATHL);
    if (len > 0) {
       linkBuf[len] = ZERO;
-      val = (CS)linkBuf;
+      val = linkBuf;
    }
 
-   if (!mch_isFullName(val)) {
-      if (gettail(val) != val && eeFullFileName(val, buf, MAXPATHL, TRUE) != FAIL)
-         val = buf;
-   }
+   if (!mch_isFullName(val) 
+         && fiGetShortFiName(val) != val && eeFullFileName(val, OUT buf, MAXPATHL, true) != FAIL
+   )
+      val = buf;
 
    set_EeglVar_string(VV_PROGPATH, val, -1);
 }

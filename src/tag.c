@@ -2303,7 +2303,7 @@ get_tagfname(
             return FAIL;
          ++tnp->tn_hf_idx;
          STRCPY(buf, MAIN_HELPFILE);
-         STRCPY(gettail(buf), "tags");
+         STRCPY(fiGetShortFiName(buf), "tags");
          simplify_filename(buf);
 
          for (i = 0; i < tag_fnames.len; ++i) {
@@ -2348,7 +2348,7 @@ get_tagfname(
 
          r_ptr = eeFindFile_stopdir(buf);
          // move the filename one char forward and truncate the filepath with a ZERO
-         CS filename = gettail(buf);
+         CS filename = fiGetShortFiName(buf);
          if (r_ptr) {
             STRMOVE(r_ptr + 1, r_ptr);
             ++r_ptr;
@@ -2837,7 +2837,7 @@ expand_tag_fname(CS fname, CS tag_fname, int expand) {
          fname = expanded_fname;
    }
 
-   if (!eeIsAbsName(fname) && (p = gettail(tag_fname)) != tag_fname) {
+   if (!eeIsAbsName(fname) && (p = fiGetShortFiName(tag_fname)) != tag_fname) {
       retval = alloc(MAXPATHL);
       STRCPY(retval, tag_fname);
       copySubstrToAllocation(
@@ -4953,7 +4953,7 @@ cs_resolve_file(int i, CS name) {
    ei (p_csre && csinfo[i].fname != NULL) {
       // If 'cscoperelative' is set and ppath is not set, use cscope.out path in path resolution.
       copySubstrToAllocation(
-            csdir, (Text){csinfo[i].fname, gettail(csinfo[i].fname) - csinfo[i].fname}
+            csdir, (Text){csinfo[i].fname, fiGetShortFiName(csinfo[i].fname) - csinfo[i].fname}
       );
       len += STRLEN(csdir);
    }

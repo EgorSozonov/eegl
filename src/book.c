@@ -4878,7 +4878,7 @@ renderStatusLine(
          if (opt != STL_FILENAME)
             str = NameBuff;
          else
-            str = gettail(NameBuff);
+            str = fiGetShortFiName(NameBuff);
          break;
       }
 
@@ -6364,7 +6364,7 @@ bookWrite(
             STRCPY(IObuff, fname);
             fd = -1;
             for (i = 4913; ; i += 123) {
-               sprintf((char *)gettail(IObuff), "%d", i);
+               sprintf((char *)fiGetShortFiName(IObuff), "%d", i);
                if (lstat((char *)IObuff, &st) < 0) {
                   fd = open((char *)IObuff, O_CREAT|O_WRONLY|O_EXCL|O_NOFOLLOW, perm);
                   if (fd < 0 && errno == EEXIST)

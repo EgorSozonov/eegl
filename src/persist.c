@@ -3578,8 +3578,8 @@ write_eeglinfo(CS file, int forceit) {
 
          // Try a series of names. Change one character, just before the extension. 
          CS wp = tempname + STRLEN(tempname) - 5;
-         if (wp < gettail(tempname))       // empty file name?
-            wp = gettail(tempname);
+         if (wp < fiGetShortFiName(tempname))       // empty file name?
+            wp = fiGetShortFiName(tempname);
          for (;;) {
             // Check if tempfile already exists.  Never overwrite an existing file!
             if (stat((char *)tempname, &st_new) == 0) {

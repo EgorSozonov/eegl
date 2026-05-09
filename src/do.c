@@ -10181,7 +10181,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
       doExpandEnv(OUT filenameBuilder, S"$HOME");
       new_dir = NameBuff;
    }
-   dir_differs = pdir == NULL || pathcmp((char *)pdir, (char *)new_dir, -1) != 0;
+   dir_differs = pdir == NULL || pathcmp(pdir, new_dir, -1) != 0;
    if (dir_differs) {
       if (scope == CDSCOPE_WINDOW)
          acmd_fname = (CS)"window";
@@ -11547,7 +11547,7 @@ evalVars(
       resultlen = STRLEN(result);   // length of new string
       if (src[*usedlen] == '<') {  // remove the file name extension
          ++*usedlen;
-         if ((s = lastOccurrence(result, '.')) != NULL && s >= gettail(result))
+         if ((s = lastOccurrence(result, '.')) != NULL && s >= fiGetShortFiName(result))
             resultlen = s - result;
       } ei (!skip_mod) {
          valid |= modify_fname(src, tilde_file, usedlen, &result, &resultbuf, &resultlen);
@@ -12697,7 +12697,7 @@ u_get_undo_file_name(CS buf_ffname, int reading) {
          undo_file_name = copySubstr(ffname, ffnamelen + 5);
          if (undo_file_name == NULL)
             break;
-         p = gettail(undo_file_name);
+         p = fiGetShortFiName(undo_file_name);
          plen = (Unt)(ffnamelen - (p - undo_file_name));
          // Use same directory as the ffname, "dir/name" -> "dir/.name.un~"
          mch_memmove(p + 1, p, plen + 1);

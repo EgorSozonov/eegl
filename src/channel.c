@@ -5085,7 +5085,7 @@ set_default_child_environment(int is_terminal) {
 //{{{job runnin' and controllin'
 
 #define FOR_ALL_JOBS(job) \
-    for ((job) = first_job; (job) != NULL; (job) = (job)->jv_next)
+    for ((job) = firstJobS; (job) != NULL; (job) = (job)->jv_next)
     
     
 private void
@@ -5982,7 +5982,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                 break;
             opt->currentWorkingDir = convertVarToString(item, opt->cwdText);
             if (opt->currentWorkingDir == NULL || !mch_isdir(opt->currentWorkingDir)
-                  || mch_access((char *)opt->currentWorkingDir, X_OK) != 0
+                  || mch_access(opt->currentWorkingDir, X_OK) != 0
             ){
                 showErrFmtMsg(_(e_invalid_value_for_argument_str), "cwd");
                 return FAIL;
@@ -6053,10 +6053,10 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
    return OK;
 }
 
-private Job *first_job = NULL;
+private Job* firstJobS = NULL;
 
 private void
-job_free_contents(Job *job) {
+job_free_contents(Job* job) {
    int      i;
 
    ch_log(job->jv_channel, "Freeing job");
@@ -6084,23 +6084,23 @@ job_free_contents(Job *job) {
 
 // Remove "job" from the list of jobs.
 private void
-job_unlink(Job *job) {
+job_unlink(Job* job) {
    if (job->jv_next != NULL)
       job->jv_next->jv_prev = job->jv_prev;
    if (job->jv_prev == NULL)
-      first_job = job->jv_next;
+      firstJobS = job->jv_next;
    else
       job->jv_prev->jv_next = job->jv_next;
 }
 
 private void
-job_free_job(Job *job) {
+job_free_job(Job* job) {
    job_unlink(job);
    eeglFree(job);
 }
 
 private void
-job_free(Job *job) {
+job_free(Job* job) {
    if (in_free_unref_items)
       return;
 
@@ -6108,11 +6108,11 @@ job_free(Job *job) {
    job_free_job(job);
 }
 
-private Job *jobs_to_free = NULL;
+private Arr(Job) jobs_to_free = NULL;
 
 // Put "job" on a list to be freed later, when it's no longer referenced.
 private void
-job_free_later(Job *job) {
+job_free_later(Job* job) {
    job_unlink(job);
    job->jv_next = jobs_to_free;
    jobs_to_free = job;
@@ -6120,9 +6120,9 @@ job_free_later(Job *job) {
 
 private void
 free_jobs_to_free_later(void) {
-   Job *job;
+   Job* job;
 
-   while (jobs_to_free != NULL) {
+   while (jobs_to_free) {
       job = jobs_to_free;
       jobs_to_free = job->jv_next;
       job_free_contents(job);
@@ -6133,8 +6133,8 @@ free_jobs_to_free_later(void) {
 #if defined(EXITFREE) || defined(PROTO)
 void
 job_free_all(void) {
-   while (first_job != NULL)
-      job_free(first_job);
+   while (firstJobS)
+      job_free(firstJobS);
    free_jobs_to_free_later();
 
    free_unused_terminals();
@@ -6235,11 +6235,10 @@ job_cleanup(Job* job) {
 // Mark references in jobs that are still useful.
 int
 set_ref_in_job(int copyID) {
-   int      abort = FALSE;
-   Job   *job;
+   int abort = FALSE;
    Var tv;
 
-   for (job = first_job; !abort && job != NULL; job = job->jv_next) {
+   for (Job* job = firstJobS; !abort && job != NULL; job = job->jv_next) {
       if (job_still_useful(job)) {
          tv.tag = VAR_JOB;
          tv.job = job;
@@ -6294,7 +6293,7 @@ void
 free_unused_jobs(int copyID, int mask) {
    Job* job_next;
 
-   for (Job* job = first_job; job; job = job_next) {
+   for (Job* job = firstJobS; job; job = job_next) {
       job_next = job->jv_next;
       if ((job->jv_copyID & mask) != (copyID & mask) && !job_still_useful(job)) {
           // Free the job struct itself.
@@ -6310,11 +6309,11 @@ job_alloc(void) {
    job->jv_refcount = 1;
    job->jv_stoponexit = copyStr((CS)"term");
 
-   if (first_job) {
-      first_job->jv_prev = job;
-      job->jv_next = first_job;
+   if (firstJobS) {
+      firstJobS->jv_prev = job;
+      job->jv_next = firstJobS;
    }
-   first_job = job;
+   firstJobS = job;
    return job;
 }
 
@@ -6370,19 +6369,19 @@ has_pending_job(void) {
 // Called once in a while: check if any jobs that seem useful have ended. TRUE if a job did end.
 int
 job_check_ended(void) {
-   int      i;
-   int      did_end = FALSE;
+   int did_end = FALSE;
 
    // be quick if there are no jobs to check
-   if (first_job == NULL)
+   if (firstJobS == NULL)
       return did_end;
 
-   for (i = 0; i < MAX_CHECK_ENDED; ++i) {
+   for (int i = 0; i < MAX_CHECK_ENDED; ++i) {
       // NOTE: mch_detect_ended_job() must only return a job of which the
       // status was just set to JOB_ENDED.
-      Job   *job = mch_detect_ended_job(first_job);
-      if (job == NULL)
+      Job* job = mch_detect_ended_job(firstJobS);
+      if (!job)
          break;
+         
       did_end = TRUE;
       job_cleanup(job); // may add "job" to jobs_to_free
    }
@@ -6401,13 +6400,7 @@ job_check_ended(void) {
 // When "argv_arg" is NULL then "argvars" is used. The returned job has a refcount of one.
 // Return NULL when out of memory.
 Job*
-startJob(
-   Var* argvars,
-   Byte** argv_arg UNUSED,
-   JobOptions* opt_arg,
-   Job** term_job)
-{
-   Job* job;
+startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job) {
    CS cmd = NULL;
    Byte   **argv = NULL;
    int      argc = 0;
@@ -6416,12 +6409,12 @@ startJob(
    JobOptions   opt;
    ChannelFdKind   part;
 
-   job = job_alloc();
+   Job* job = job_alloc();
 
    job->jv_status = JOB_FAILED;
    ga_init2(&ga, sizeof(char*), 20);
 
-   if (opt_arg != NULL)
+   if (opt_arg)
       opt = *opt_arg;
    else {
       // Default mode is NL.
@@ -6480,7 +6473,7 @@ startJob(
 
    job_set_options(job, &opt);
 
-   if (argv_arg != NULL) {
+   if (argv_arg) {
       // Make a copy of argv_arg for job->jv_argv.
       for (i = 0; argv_arg[i] != NULL; i++)
          argc++;
@@ -6488,8 +6481,7 @@ startJob(
       for (i = 0; i < argc; i++)
          argv[i] = copyStr((CS)argv_arg[i]);
       argv[argc] = NULL;
-   } else
-   if (argvars[0].tag == VAR_STRING) {
+   } ei (argvars[0].tag == VAR_STRING) {
       // Command is a string.
       cmd = argvars[0].string;
       if (cmd == NULL || *skipwhite(cmd) == ZERO) {
@@ -6554,7 +6546,7 @@ theend:
 // Get the status of "job" and invoke the exit callback when needed.
 // The returned string is not allocated.
 CS
-job_status(Job *job) {
+job_status(Job* job) {
    CS result;
 
    if (job->jv_status >= JOB_ENDED)
@@ -6827,10 +6819,10 @@ job_info(Job* job, Bag* bag) {
 }
 
 private void
-job_info_all(List *l) {
-   Job   *job;
-   Var   tv;
+job_info_all(List* l) {
+   Var tv;
 
+   Job* job;
    FOR_ALL_JOBS(job) {
       tv.tag = VAR_JOB;
       tv.job = job;
@@ -6913,22 +6905,15 @@ job_to_string_buf(OUT CS builder, Var* varp) {
    eeSnprintf(builder, NUMBUFLEN, "process %ld %s", (long)job->jv_pid, status);
 }
 
-
 //}}}
 //{{{command-line arguments
 
 //Parse "cmd" and return the result in "argvp" which is an allocated array of pointers, the last 
 //one is NULL. The "shellName" and "shcf_tofree" must be later freed by the caller.
 int
-unix_build_argv(
-   Arr(Byte) cmd,
-   Byte*** argvp,
-   CS extraArg,
-   Arr(Byte)* shcf_tofree
-) {
+unix_build_argv(CS cmd, Byte*** argvp, CS extraArg, CS* shcf_tofree) {
    Byte   **argv = NULL;
    int      argc;
-
 
    mch_parse_cmd(S"bash", TRUE, &argv, &argc);
    *argvp = argv;
@@ -7074,7 +7059,7 @@ ch_log_active(void) {
 }
 
 private void
-logLead(CS what, Channel *ch, ChannelFdKind part) {
+logLead(CS what, Channel* ch, ChannelFdKind part) {
    if (!log_fd)
       return;
 
@@ -7181,7 +7166,7 @@ private CS serverMakeName(CS arg, CS cmd);
 //Replace termcodes such as <CR> and insert as key presses if there is room.
 void
 server_to_input_buf(CS str) {
-   Byte      *ptr = NULL;
+   CS ptr = NULL;
 
    str = replace_termcodes(str, OUT &ptr, 0, REPTERM_DO_LT, NULL, true);
 
@@ -7270,12 +7255,12 @@ sendToLocalEm(CS cmd, int asExpr, Byte **result) {
 
 // Code for the X command server
 
-private CS build_drop_cmd(int filec, char **filev, int tabs, int sendReply);
+private CS build_drop_cmd(int filec, char** filev, int tabs, int sendReply);
 
 // Do the client-server stuff, unless "--servername ''" was used.
 void
-exec_on_server(MainParams *params) {
-   if (params->serverName_arg != NULL && *params->serverName_arg == ZERO)
+exec_on_server(MainParams* params) {
+   if (params->serverName_arg && *params->serverName_arg == ZERO)
       return;
 
    //When a command server argument was found, execute it. This may exit Eegl if successful. 
@@ -7291,7 +7276,7 @@ exec_on_server(MainParams *params) {
 
 // Prepare for running as an Eegl server.
 void
-prepare_server(MainParams *params) {
+prepare_server(MainParams* params) {
 # if defined(FEAT_X11)
    // Register for remote command execution with :serversend and --remote unless there was a -X 
    // or a --servername '' on the command line.
@@ -7309,19 +7294,14 @@ prepare_server(MainParams *params) {
 
    // Execute command ourselves if we're here because the send failed (or
    // else we would have exited above).
-   if (params->serverStr != NULL) {
+   if (params->serverStr) {
       server_to_input_buf(params->serverStr);
    }
 }
 
 private void
-cmdsrv_main(
-   int* argc,
-   char** argv,
-   Byte* serverName_arg,
-   Byte** serverStr
-){
-   Byte   *res;
+cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
+   CS res;
    int      i;
    int      ret;
    int      didone = FALSE;
@@ -7452,21 +7432,19 @@ cmdsrv_main(
             mainerr_arg_missing((CS)argv[i]);
          if (xterm_dpy == NULL)
             mch_errmsg(_("No display: Send expression failed.\n"));
-         ei (serverSendToEegl(xterm_dpy, sname, (CS)argv[i + 1],
-                         &res, NULL, 1, 0, 1, FALSE) < 0)
-          {
-         if (res != NULL && *res != ZERO) {
-             // Output error from remote
-             mch_errmsg((char *)res);
-             EE_CLEAR(res);
-         }
-         mch_errmsg(_(": Send expression failed.\n"));
+         ei (serverSendToEegl(xterm_dpy, sname, (CS)argv[i + 1], &res, NULL, 1, 0, 1, FALSE) < 0) {
+            if (res && *res != ZERO) {
+                // Output error from remote
+                mch_errmsg(res);
+                EE_CLEAR(res);
+            }
+            mch_errmsg(_(": Send expression failed.\n"));
          }
       } ei (caseInsensitiveCompare(argv[i], "--serverlist") == 0) {
          if (xterm_dpy != NULL)
             res = serverGetEeglNames(xterm_dpy);
          if (anyEmsgG)
-            mch_errmsg("\n");
+            mch_errmsg(S"\n");
       }
       ei (caseInsensitiveCompare(argv[i], "--servername") == 0) {
          // Already processed. Take it out of the command line
@@ -7478,7 +7456,7 @@ cmdsrv_main(
          continue;
       }
       didone = TRUE;
-      if (res != NULL && *res != ZERO) {
+      if (res && *res != ZERO) {
          mch_msg((char *)res);
          if (res[STRLEN(res) - 1] != '\n')
             mch_msg("\n");
@@ -7602,7 +7580,7 @@ serverMakeName(CS arg, CS cmd) {
    if (arg && *arg != ZERO)
       p = copyStr_up(arg);
    else {
-      p = copyStr_up(gettail((CS)cmd));
+      p = copyStr_up(fiGetShortFiName((CS)cmd));
       // Remove .exe or .bat from the name.
       if (p && firstOccurrence(p, '.') != NULL)
          *firstOccurrence(p, '.') = ZERO;

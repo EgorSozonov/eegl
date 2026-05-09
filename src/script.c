@@ -863,7 +863,7 @@ expandPackAddDir(CS pat, OUT ExpandMatch* matches) {
 
    for (Unt i = 0; i < matches->len; ++i) {
       match = matches->c[i];
-      s = gettail(match);
+      s = fiGetShortFiName(match);
       e = s + STRLEN(s);
       mch_memmove(match, s, e - s + 1);
    }
@@ -3888,7 +3888,7 @@ showmatches(Expand *xp, int wildmenu, int noselect){
    return EXPAND_OK;
 }
 
-//gettail() version for showmatches() and redrawPortalStatusLine_matches():
+//fiGetShortFiName() version for showmatches() and redrawPortalStatusLine_matches():
 //Return the tail of file name path "s", ignoring a trailing "/".
 private CS
 showmatches_gettail(CS s) {
@@ -3918,7 +3918,7 @@ expand_showtail(Expand *xp) {
           && xp->context != EXPAND_DIRECTORIES)
       return FALSE;
 
-   CS end = gettail(xp->input.c);
+   CS end = fiGetShortFiName(xp->input.c);
    if (end == xp->input.c)      // there is no path separator
       return FALSE;
 
@@ -4023,7 +4023,7 @@ addstar(Text fname, Unt context) {  // EXPAND_FILES etc.
       // $ could be anywhere in the tail.
       // ` could be anywhere in the file name.
       // When the name ends in '$' don't add a star, remove the '$'.
-      tail = gettail(retval);
+      tail = fiGetShortFiName(retval);
       ends_in_star = (fname.len > 0 && retval[fname.len - 1] == '*');
       for (int i = fname.len - 2; i >= 0; --i) {
          if (retval[i] != '\\')
@@ -18704,7 +18704,7 @@ applyAutocommGroup(
    if (event == EVENT_FILETYPE)
       curBook->didFiletype = TRUE;
 
-   tail = gettail(fname);
+   tail = fiGetShortFiName(fname);
 
    // Find first autocommand that matches
    CLEAR_FIELD(patcmd);
@@ -19012,7 +19012,7 @@ getnextac(Unt c UNUSED, void* cookie, int indent UNUSED, GetlineAlgo options UNU
 int
 has_autocmd(AutoEvent event, CS sfname, Book* book) {
    AutoPat* ap;
-   CS tail = gettail(sfname);
+   CS tail = fiGetShortFiName(sfname);
    int retval = FALSE;
 
    CS fname = FullName_save(sfname, FALSE);

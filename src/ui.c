@@ -7550,7 +7550,7 @@ c_terminal(Invocation* invo) {
    }
 
    if (opt_shell) {
-      Byte   **argv = NULL;
+      Byte** argv = NULL;
       CS tofree2 = NULL;
 
       // :term ++shell command
@@ -7569,8 +7569,8 @@ theend:
    eeglFree(opt.jo_eof_chars);
 }
 
-private Byte *
-get_terminaloname(Expand *xp UNUSED, int idx) {
+private CS
+get_terminaloname(Expand* xp UNUSED, int idx) {
    // Note: Keep this in sync with c_terminal.
    static char *(p_termopt_values[]) = {
       "close",
@@ -7613,12 +7613,7 @@ get_termkill_name(Expand *xp UNUSED, int idx) {
 
 // Command-line expansion for :terminal [options]
 int
-expand_terminal_opt(
-   Byte       *pat,
-   Expand    *xp,
-   RegMatch  *rmp,
-   OUT ExpandMatch* matches
-) {
+expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches) {
    if (xp->input.c > xp->fullInput && *(xp->input.c - 1) == '=') {
       Byte *(*cb)(Expand *, int) = NULL;
 
@@ -7652,7 +7647,7 @@ expand_terminal_opt(
 //Write a :terminal command to the session file to restore the terminal in portal "po".
 //Return FAIL if writing fails.
 int
-term_write_session(FILE *fd, Portal *po, EeSet* terminal_bufs){
+term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
    const int   bufnr = po->book->fiNum;
    Terminal   *term = po->book->term;
 
@@ -7698,13 +7693,13 @@ term_write_session(FILE *fd, Portal *po, EeSet* terminal_bufs){
 // Return TRUE if "buf" has a terminal that should be restored.
 int
 term_should_restore(Book* book) {
-   Terminal   *term = book->term;
-   return term != NULL && (term->command == NULL || STRCMP(term->command, "NONE") != 0);
+   Terminal* term = book->term;
+   return term && (term->command == NULL || STRCMP(term->command, "NONE") != 0);
 }
 
 // Free the scrollback buffer for "term".
 private void
-free_scrollback(Terminal *term) {
+free_scrollback(Terminal* term) {
     int i;
 
    for (i = 0; i < term->scrollback.len; ++i)
@@ -7717,7 +7712,7 @@ free_scrollback(Terminal *term) {
 
 
 // Terminals that need to be freed soon.
-private Terminal   *terminals_to_free = NULL;
+private Terminal* terminals_to_free = NULL;
 
 // Free a terminal and everything it refers to. Kills the job if there is one.
 // Called when wiping out a buffer. The actual terminal structure is freed later in 
@@ -7758,8 +7753,8 @@ free_terminal(Book* book) {
 
 void
 free_unused_terminals(void) {
-   while (terminals_to_free != NULL) {
-      Terminal       *term = terminals_to_free;
+   while (terminals_to_free) {
+      Terminal* term = terminals_to_free;
 
       terminals_to_free = term->next;
 
@@ -10904,7 +10899,7 @@ get_separator(int text_width, CS fname) {
       width = MAX(text_width, fname_size + 8);
    } ei (fname_size > width - 8) {
       // full name doesn't fit, use only the tail
-      p = gettail(fname);
+      p = fiGetShortFiName(fname);
       fname_size = eeglStrSize(p);
    }
    // skip characters until the name fits
