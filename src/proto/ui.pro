@@ -2,7 +2,7 @@
 void init_job_options(JobOptions *opt);
 Book *term_start(Var *argvar, Byte **argv, JobOptions *opt, Unt flags);
 void c_terminal(Invocation *invo);
-int expand_terminal_opt(Byte *pat, Expand *xp, RegMatch *rmp, ExpandMatch *matches);
+int expand_terminal_opt(CS pat, Expand *xp, RegMatch *rmp, ExpandMatch *matches);
 int term_write_session(FILE *fd, Portal *po, EeSet *terminal_bufs);
 int term_should_restore(Book *book);
 void free_terminal(Book *book);

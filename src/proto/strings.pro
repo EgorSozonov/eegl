@@ -131,7 +131,7 @@ CS encodeBase64(void const *binaryData_, int inputLen);
 ArrayList decodeBase64(Byte const *base64, int inputLen);
 int same_directory(CS f1, CS f2);
 CS remove_tail(CS p, CS pend, CS name);
-int after_pathsep(CS fileName, CS afterSep);
+Boole after_pathsep(CS fileName, CS afterSep);
 int path_is_url(CS p);
 int path_with_url(CS fname);
 Boole has_format_option(int x);

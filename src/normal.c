@@ -1001,25 +1001,19 @@ in_html_tag(int end_tag) {
 
 // Find tag block under the cursor, cursor at end.
 int
-current_tagblock(
-   Operator* oper,
-   long   count_arg,
-   int include   // TRUE == include white space
-){
-   long   count = count_arg;
-   long   n;
-   Pos   old_pos;
-   Pos   start_pos;
-   Pos   end_pos;
-   Pos   old_start, old_end;
-   Byte   *spat, *epat;
-   Byte   *p;
-   Byte   *cp;
-   int      len;
-   int      r;
-   int      do_include = include;
-   int      retval = FAIL;
-   int      is_inclusive = TRUE;
+current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace){
+   long count = count_arg;
+   long n;
+   Pos old_pos;
+   Pos start_pos;
+   Pos end_pos;
+   Pos old_start, old_end;
+   CS cp;
+   int len;
+   int r;
+   int do_include = includeWhiteSpace;
+   int retval = FAIL;
+   int is_inclusive = TRUE;
 
    wrapSearchG = false;
 
@@ -1075,7 +1069,7 @@ again:
 
    // Search for matching "</aaa>".  First isolate the "aaa".
    inc_cursor();
-   p = ml_get_cursor();
+   CS p = ml_get_cursor();
    for (cp = p; *cp != ZERO && *cp != '>' && !SPACE_OR_TAB(*cp); MB_PTR_ADV(cp))
       ;
    len = (int)(cp - p);
@@ -1083,8 +1077,8 @@ again:
       curPor->cursor = old_pos;
       goto theend;
    }
-   spat = alloc(len + 39);
-   epat = alloc(len + 9);
+   CS spat = alloc(len + 39);
+   CS epat = alloc(len + 9);
    sprintf((char *)spat, "<%.*s\\>\\%%(\\_s\\_[^>]\\{-}\\_[^/]>\\|\\_s\\?>\\)\\c", len, p);
    sprintf((char *)epat, "</%.*s>\\c", len, p);
 
@@ -1177,8 +1171,8 @@ current_par(
    Operator   *oper,
    long   count,
    int      include,   // TRUE == include white space
-   int      type)      // 'p' for paragraph, 'S' for section
-{
+   int      type      // 'p' for paragraph, 'S' for section
+){
    LineNr   end_lnum;
    int      white_in_front;
    int      dir;
@@ -1344,9 +1338,9 @@ find_next_quote(
 // Return the found column or zero.
 private int
 find_prev_quote(
-   Byte   *line,
-   int      col_start,
-   int      quotechar,
+   CS line,
+   int col_start,
+   int quotechar,
    Boole escapeWithBackslash   // does backslash escape the quote character?
 ){
    while (col_start > 0) {
@@ -1687,8 +1681,8 @@ void
 may_trigger_modechanged(void) {
    Bag* v_event;
    SaveVEvent  save_v_event;
-   Byte       curr_mode[MODE_MAX_LENGTH];
-   Byte       pattern_buf[2 * MODE_MAX_LENGTH];
+   Byte curr_mode[MODE_MAX_LENGTH];
+   Byte pattern_buf[2 * MODE_MAX_LENGTH];
 
    // Skip this when gotInterruptG is set, the autocommand will not be executed.
    // Better trigger it next time.
@@ -2076,9 +2070,7 @@ waitForMsg(void) {
 
    // If need to redraw, and there is a "msgAfterRedrawG", redraw before the delay
    if (must_redraw && msgAfterRedrawG != NULL && !emsg_on_display) {
-      Byte   *kmsg;
-
-      kmsg = msgAfterRedrawG;
+      CS kmsg = msgAfterRedrawG;
       msgAfterRedrawG = NULL;
       // Showmode() will clear msgAfterRedrawG, but we want to use it anyway. First update topLine
       setcursor();
@@ -2513,24 +2505,22 @@ find_ident_at_pos(
    Portal* wp,
    LineNr lnum,
    ColNr startcol,
-   Byte** text,
+   OUT CS* text,
    int* textcol,   // column where "text" starts, can be NULL
    int find_type
 ) {
-   int      col = 0;   // init to shut up GCC
-   int      i;
-   int      this_class = 0;
-   int      prev_class;
-   int      prevcol;
-   int      bn = 0;      // bracket nesting
+   int col = 0;   // init to shut up GCC
+   int i;
+   int this_class = 0;
+   int prev_class;
+   int prevcol;
+   int bn = 0;      // bracket nesting
 
    // if i == 0: try to find an identifier
    // if i == 1: try to find any non-white text
    CS ptr = memGetLine(wp->book, lnum, FALSE);
    for (i = (find_type & FIND_IDENT) ? 0 : 1;   i < 2; ++i) {
-      /*
-       * 1. skip to start of identifier/text
-       */
+      // 1. skip to start of identifier/text
       col = startcol;
       while (ptr[col] != ZERO) {
          // Stop at a ']' to evaluate "a[x]".
@@ -2724,9 +2714,9 @@ may_clear_cmdline(void) {
 
 // Routines for displaying a partly typed command
 
-private Byte   old_showcmd_buf[SHOWCMD_BUFLEN];  // For push_showcmd()
-private int   showcmd_is_clear = TRUE;
-private int   showcmd_visual = FALSE;
+private Byte old_showcmd_buf[SHOWCMD_BUFLEN];  // For push_showcmd()
+private int showcmd_is_clear = TRUE;
+private int showcmd_visual = FALSE;
 
 private void display_showcmd(void);
 
@@ -2810,11 +2800,11 @@ clear_showcmd(void) {
 int
 add_to_showcmd(Unt c) {
    CS p;
-   int      old_len;
-   int      extra_len;
-   int      overflow;
-   int      i;
-   Byte   mbyte_buf[MB_MAXBYTES];
+   int old_len;
+   int extra_len;
+   int overflow;
+   int i;
+   Byte mbyte_buf[MB_MAXBYTES];
    static Unt ignore[] = {
       K_IGNORE, K_PS,
       K_LEFTMOUSE, K_LEFTDRAG, K_LEFTRELEASE, K_MOUSEMOVE,
@@ -4176,7 +4166,7 @@ nv_K_getcmd(
 //  g  ']'   :tselect for current identifier
 private void
 nv_ident(ActionArg* aArg) {
-   Byte   *ptr = NULL;
+   CS ptr = NULL;
    CS buffer;
    Unt   bufsize;
    Unt   buflen;
@@ -4885,7 +4875,7 @@ nv_brackets(ActionArg* aArg) {
     // identifier     "]i"  "[i"   "]I"  "[I"   "]^I"  "[^I"
     // define         "]d"  "[d"   "]D"  "[D"   "]^D"  "[^D"
    if (firstOccurrence((CS)"iI\011dD\004", aArg->nchar) != NULL) {
-      Byte   *ptr;
+      CS ptr;
       int   len;
 
       if ((len = find_ident_under_cursor(&ptr, FIND_IDENT)) == 0)
@@ -4893,8 +4883,6 @@ nv_brackets(ActionArg* aArg) {
       else {
          // Make a copy, if the line was changed it will be freed.
          ptr = copySubstr(ptr, len);
-         if (ptr == NULL)
-            return;
 
          find_pattern_in_path(
             ptr, 0, len, TRUE,
@@ -5617,8 +5605,6 @@ nv_g_home_m_cmd(ActionArg* aArg) {
 // "g_": to the last non-blank character in the line or <count> lines downward.
 private void
 gUnderscoreAction(ActionArg* aArg) {
-   Byte  *ptr;
-
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = TRUE;
    curPor->cursWant = MAXCOL;
@@ -5627,7 +5613,7 @@ gUnderscoreAction(ActionArg* aArg) {
       return;
    }
 
-   ptr = ml_get_curline();
+   CS ptr = ml_get_curline();
 
    // In Visual mode we may end up after the line.
    if (curPor->cursor.col > 0 && ptr[curPor->cursor.col] == ZERO)
@@ -6108,7 +6094,7 @@ nv_operator(ActionArg* aArg) {
 // Set v:operator to the characters for "optype".
 private void
 set_op_var(int optype) {
-    Byte   opchars[3];
+   Byte opchars[3];
 
    if (optype == OP_NOP)
        set_EeglVar_string(VV_OP, NULL, 0);
@@ -6499,13 +6485,13 @@ nv_cursorhold(ActionArg* aArg) {
 private void
 nv_object(ActionArg* aArg) {
    int      flag;
-   int      include;
-   Byte   *mps_save;
+   Boole include;
+   CS mps_save;
 
    if (aArg->cmdchar == 'i')
-      include = FALSE;    // "ix" = inner object: exclude white space
+      include = false;    // "ix" = inner object: exclude white space
    else
-      include = TRUE;       // "ax" = an object: include white space
+      include = true;       // "ax" = an object: include white space
 
    // Make sure (), [], {} and <> are in 'matchpairs'
    mps_save = curBook->o.matchPairs;
@@ -6513,10 +6499,10 @@ nv_object(ActionArg* aArg) {
 
    switch (aArg->nchar) {
    case 'w': // "aw" = a word
-      flag = current_word(aArg->oper, aArg->count1, include, FALSE);
+      flag = current_word(aArg->oper, aArg->count1, include, false);
       break;
    case 'W': // "aW" = a WORD
-      flag = current_word(aArg->oper, aArg->count1, include, TRUE);
+      flag = current_word(aArg->oper, aArg->count1, include, true);
       break;
    case 'b': // "ab" = a braces block
    case '(':
@@ -9528,8 +9514,7 @@ mapModeToChars(int mode) {
 //Output a line for one mapping.
 private void
 showMap(MapBlock* mp, int local) {      // TRUE for book-local map
-   int      len = 1;
-   Byte   *mapchars;
+   int len = 1;
 
    if (message_filtered(mp->lhs) && message_filtered(mp->rhs))
       return;
@@ -9544,7 +9529,7 @@ showMap(MapBlock* mp, int local) {      // TRUE for book-local map
           { goto theend; }
    }
 
-   mapchars = mapModeToChars(mp->mode);
+   CS mapchars = mapModeToChars(mp->mode);
    if (mapchars) {
       msg_puts(mapchars);
       len = (int)STRLEN(mapchars);
@@ -9783,7 +9768,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ // not a mapping but an abbre
    Boole expr = false;
    Boole didSimplify = false;
    int      unmap_lhs_only = FALSE;
-   Arr(Byte) orig_rhs;
+   CS orig_rhs;
    keys = arg;
    MapBlock** map_table = mappingTable;
    MapBlock** abbr_table = &first_abbr;
@@ -10489,7 +10474,7 @@ expandMappings(
 ) {
    MapBlock   *mp;
    int hash;
-   Byte   *p;
+   CS p;
    int i;
    int score = 0;
 
@@ -10619,8 +10604,8 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
    int      len;
    int      scol;      // starting column of the abbr.
    int      j;
-   Byte   *s;
-   Byte   tb[MB_MAXBYTES + 4];
+   CS s;
+   Byte tb[MB_MAXBYTES + 4];
    MapBlock   *mp;
    MapBlock   *mp2;
    int      clen = 0;   // length in characters
@@ -10673,7 +10658,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
       }
       for ( ; mp; mp->next == NULL ? (mp = mp2, mp2 = NULL) : (mp = mp->next)) {
           int      qlen = mp->keylen;
-          Byte   *q = mp->lhs;
+          CS q = mp->lhs;
           int      match;
 
           if (eeStrbyte(mp->lhs, K_SPECIAL) != NULL) {
@@ -10718,7 +10703,6 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
                if (c < ABBR_OFF && (c < ' ' || c > '~'))
                   tb[j++] = Ctrl_V;   // special char needs CTRL-V
                int   newlen;
-               Byte   *escaped;
 
                // if ABBR_OFF has been added, remove it here
                if (c >= ABBR_OFF)
@@ -10726,7 +10710,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
                newlen = (*mb_char2bytes)(c, tb + j);
                tb[j + newlen] = ZERO;
                // Need to escape K_SPECIAL.
-               escaped = copyStr_escape_csi(tb + j);
+               CS escaped = copyStr_escape_csi(tb + j);
                newlen = (int)STRLEN(escaped);
                mch_memmove(tb + j, escaped, newlen);
                j += newlen;
@@ -10835,7 +10819,8 @@ copyStr_escape_csi(CS p) {
 //Work in-place.
 void
 eeUnescapeCsi(CS p) {
-   Byte   *s = p, *d = p;
+   CS s = p;
+   CS d = p;
 
    while (*s != ZERO) {
       if (s[0] == K_SPECIAL && s[1] == KS_SPECIAL && s[2] == KE_FILLER) {
@@ -11077,11 +11062,11 @@ put_escstr(FILE* fd, CS strstart, int what) {
 void
 check_map_keycodes(void) {
    MapBlock   *mp;
-   Byte   *p;
-   int      i;
-   Byte   buffer[3];
-   int      abbr;
-   int      hash;
+   CS p;
+   int i;
+   Byte buffer[3];
+   int abbr;
+   int hash;
    Book   *bp;
    ESTACK_CHECK_DECLARATION;
 
@@ -11269,7 +11254,7 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
 
    Byte buffer[NUMBUFLEN];
    Unt flags = REPTERM_FROM_PART | REPTERM_DO_LT;
-   Byte* which;
+   CS which;
    Boole abbr = false;
    int get_dict = FALSE;
    if (argvars[1].tag != VAR_UNKNOWN) {
@@ -13173,9 +13158,9 @@ get_foldtext(
        anyEmsgG = FALSE;
 
    if (*wp->o.foldText != ZERO) {
-       Byte   dashes[MAX_LEVEL + 2];
-       int   level;
-       Byte   *p;
+       Byte dashes[MAX_LEVEL + 2];
+       int level;
+       CS p;
 
        // Set "v:foldstart" and "v:foldend".
        set_EeglVar_nr(VV_FOLDSTART, lnum);
@@ -14484,8 +14469,8 @@ f_foldlevel(Var *argvars UNUSED, Var* returnVar) {
 void
 f_foldtext(Var *argvars UNUSED, Var* returnVar) {
    LineNr   lnum;
-   Byte   *s;
-   Byte   *r;
+   CS s;
+   CS r;
    int      len;
    CS txt;
    long   count;
@@ -14532,7 +14517,7 @@ f_foldtext(Var *argvars UNUSED, Var* returnVar) {
 //"foldtextresult(lnum)" function
 void
 f_foldtextresult(Var *argvars UNUSED, Var* returnVar) {
-   Byte   buffer[FOLD_TEXT_LEN];
+   Byte buffer[FOLD_TEXT_LEN];
    FoldInfo  foldinfo;
    int      fold_count;
    static int   entered = FALSE;

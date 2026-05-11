@@ -163,7 +163,7 @@ c_version(Invocation* invo) {
 }
 
 
-private void do_intro_line(int row, Byte *mesg, int add_version);
+private void do_intro_line(int row, CS mesg, int add_version);
 private void intro_message(int colon);
 
 // Show the intro message when not editing a file.
@@ -299,7 +299,7 @@ c_intro(Invocation* invo UNUSED){
 #define EDIT_QF     4       // start in quickfix mode
 
 private void mainerr(Unt, CS);
-private void earlyArgScan(MainParams *params);
+private void earlyArgScan(MainParams* params);
 private void init0(void);
 private void init1(OUT MainParams*);
 private int eeglMain1(void);
@@ -315,7 +315,7 @@ private void executePreCommands(MainParams *params);
 private void exeCommands(MainParams *params);
 private void sourceStartupScripts(MainParams *params);
 private void check_swap_exists_action(void);
-private void set_progpath(Byte *argv0);
+private void set_progpath(CS argv0);
 #endif
 
 // Different types of error messages.
@@ -1288,7 +1288,7 @@ scanCommandLineArgs(MainParams *params) {
    int      had_minmin = FALSE;   // found "--" argument
    int      want_argument;      // option argument with argument
    int      c;
-   Arr(Byte)  text = NULL;
+   CS text = NULL;
 
    --argc;
    ++argv;
@@ -1635,9 +1635,9 @@ scripterror:
             && GARGCOUNT > 0 
             && !mch_isdir(alist_name(&GARGLIST[0]))
          ) {
-            Arr(Byte) concattedFnames = 
+            CS concattedFnames = 
                concat_fnames(text, fiGetShortFiName(alist_name(&GARGLIST[0])), TRUE);
-            if (concattedFnames != NULL) {
+            if (concattedFnames) {
                eeglFree(text);
                text = concattedFnames;
             }
@@ -2143,7 +2143,7 @@ set_progpath(CS argv0) {
    CS val = argv0;
    Byte buf[MAXPATHL + 1];
    Byte linkBuf[MAXPATHL + 1];
-   Long len = readlink("/proc/self/exe", OUT linkBuf, MAXPATHL);
+   Long len = readlink("/proc/self/exe", OUT (char*)linkBuf, MAXPATHL);
    if (len > 0) {
       linkBuf[len] = ZERO;
       val = linkBuf;

@@ -42,14 +42,14 @@ X_LIBS		= -lXt -lX11
 WAYLAND_LIBS    = -lwayland-client
 WAYLAND_SRC	=        libs/wayland/wlr-data-control-unstable-v1.c       libs/wayland/ext-data-control-v1.c \
         libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c       src/wayland.c
-WAYLAND_OBJ	=        _build/wlr-data-control-unstable-v1.o _build/ext-data-control-v1.o \
-        _build/xdg-shell.o _build/primary-selection-unstable-v1.o _build/wayland.o
+WAYLAND_OBJ	=        .b/wlr-data-control-unstable-v1.o .b/ext-data-control-v1.o \
+        .b/xdg-shell.o .b/primary-selection-unstable-v1.o .b/wayland.o
 WAYLAND_FLAGS    = 
 
 
 
 CHANNEL_SRC	= channel.c
-CHANNEL_OBJ	= _build/channel.o
+CHANNEL_OBJ	= .b/channel.o
 TERM_TEST	= test_libvterm
 
 
@@ -363,17 +363,17 @@ X_LIBS		= -lXt -lX11
 WAYLAND_LIBS    = -lwayland-client
 WAYLAND_SRC	=        libs/wayland/wlr-data-control-unstable-v1.c       libs/wayland/ext-data-control-v1.c \
         libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c       src/wayland.c
-WAYLAND_OBJ	=        _build/wlr-data-control-unstable-v1.o _build/ext-data-control-v1.o \
-        _build/xdg-shell.o _build/primary-selection-unstable-v1.o _build/wayland.o
+WAYLAND_OBJ	=        .b/wlr-data-control-unstable-v1.o .b/ext-data-control-v1.o \
+        .b/xdg-shell.o .b/primary-selection-unstable-v1.o .b/wayland.o
 WAYLAND_FLAGS    = 
 
 XDIFF_OBJS_USED	= $(XDIFF_OBJS)
 
 
 CHANNEL_SRC	= channel.c
-CHANNEL_OBJ	= _build/channel.o
+CHANNEL_OBJ	= .b/channel.o
 TERM_SRC	= libvterm/src/encoding.c libvterm/src/keyboard.c libvterm/src/mouse.c libvterm/src/parser.c libvterm/src/pen.c libvterm/src/creen.c libvterm/src/state.c libvterm/src/unicode.c libvterm/src/vterm.c
-TERM_OBJ	= _build/vterm_encoding.o _build/vterm_keyboard.o _build/vterm_mouse.o _build/vterm_parser.o _build/vterm_pen.o _build/vterm_screen.o _build/vterm_state.o _build/vterm_unicode.o _build/vterm_vterm.o
+TERM_OBJ	= .b/vterm_encoding.o .b/vterm_keyboard.o .b/vterm_mouse.o .b/vterm_parser.o .b/vterm_pen.o .b/vterm_screen.o .b/vterm_state.o .b/vterm_unicode.o .b/vterm_vterm.o
 TERM_TEST	= test_libvterm
 
 
@@ -680,16 +680,16 @@ LINT_OPTIONS = -beprxzF
 # coverage information. (provided by Yegappan Lakshmanan)
 # 1. make clean, run configure and build Eegl as usual.
 # 2. Generate the baseline code coverage information:
-#	$ lcov -c -i -b . -d objects -o _build/coverage_base.info
+#	$ lcov -c -i -b . -d objects -o .b/coverage_base.info
 # 3. Run "make test" to run the unit tests.  The code coverage information will
 #    be generated in the src/objects directory.
 # 4. Generate the code coverage information from the tests:
-#	$ lcov -c -b . -d _build/ -o _build/coverage_test.info
+#	$ lcov -c -b . -d .b/ -o .b/coverage_test.info
 # 5. Combine the baseline and test code coverage data:
-#	$ lcov -a _build/coverage_base.info -a objects/coverage_test.info -o objects/coverage_total.info
+#	$ lcov -a .b/coverage_base.info -a objects/coverage_test.info -o objects/coverage_total.info
 # 6. Process the test coverage data and generate a report in html:
-#	$ genhtml _build/coverage_total.info -o objects
-# 7. Open the _build/index.html file in a web browser to view the coverage
+#	$ genhtml .b/coverage_total.info -o objects
+# 7. Open the .b/index.html file in a web browser to view the coverage
 #    information.
 #
 # LDFLAGS=--coverage
@@ -1184,72 +1184,72 @@ LINT_SRC = $(BASIC_SRC) $(CHANNEL_SRC)
 #LINT_SRC = $(BASIC_SRC)
 
 OBJ_COMMON = \
-	_build/book.o \
-	_build/clipboard.o \
-	_build/data.o \
-	_build/diff.o \
-	_build/do.o \
-	_build/draw.o \
-	_build/eval.o \
-	_build/fileio.o \
-	_build/hilite.o \
-	_build/input.o \
-	_build/insert.o \
-	_build/juggle.o \
-	_build/location.o \
-	_build/mark.o \
-	_build/normal.o \
-	_build/option.o \
-	_build/persist.o \
-	_build/portal.o \
-	_build/regexp.o \
-	_build/script.o \
-	_build/search.o \
-	_build/tag.o \
-	_build/term.o \
-	_build/ui.o \
-	_build/window.o \
+	.b/book.o \
+	.b/clipboard.o \
+	.b/data.o \
+	.b/diff.o \
+	.b/do.o \
+	.b/draw.o \
+	.b/eval.o \
+	.b/fileio.o \
+	.b/hilite.o \
+	.b/input.o \
+	.b/insert.o \
+	.b/juggle.o \
+	.b/location.o \
+	.b/mark.o \
+	.b/normal.o \
+	.b/option.o \
+	.b/persist.o \
+	.b/portal.o \
+	.b/regexp.o \
+	.b/script.o \
+	.b/search.o \
+	.b/tag.o \
+	.b/term.o \
+	.b/ui.o \
+	.b/window.o \
 	$(OS_EXTRA_OBJ) \
 	$(CHANNEL_OBJ)
 
 # The files included by tests are not in OBJ_COMMON.
 OBJ_MAIN = \
-	_build/strings.o \
-	_build/main.o \
-	_build/memory.o \
-	_build/message.o
+	.b/strings.o \
+	.b/main.o \
+	.b/memory.o \
+	.b/message.o
 
 OBJ = $(OBJ_COMMON) $(OBJ_MAIN)
 
 OBJ_JSON_TEST = \
-	_build/strings.o \
-	_build/memory.o \
-	_build/message.o \
-	_build/json_test.o
+	.b/strings.o \
+	.b/memory.o \
+	.b/message.o \
+	.b/json_test.o
 
 JSON_TEST_OBJ = $(OBJ_COMMON) $(OBJ_JSON_TEST)
 
 OBJ_KWORD_TEST = \
-	_build/strings.o \
-	_build/memory.o \
-	_build/message.o \
-	_build/kword_test.o
+	.b/strings.o \
+	.b/memory.o \
+	.b/message.o \
+	.b/kword_test.o
 
 KWORD_TEST_OBJ = $(OBJ_COMMON) $(OBJ_KWORD_TEST)
 
 OBJ_MEMFILE_TEST = \
-	_build/strings.o \
-	_build/strings.o \
-	_build/message.o \
-	_build/memfile_test.o
+	.b/strings.o \
+	.b/strings.o \
+	.b/message.o \
+	.b/memfile_test.o
 
 MEMFILE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MEMFILE_TEST)
 
 OBJ_MESSAGE_TEST = \
-	_build/strings.o \
-	_build/strings.o \
-	_build/memory.o \
-	_build/message_test.o
+	.b/strings.o \
+	.b/strings.o \
+	.b/memory.o \
+	.b/message_test.o
 
 MESSAGE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MESSAGE_TEST)
 
@@ -1309,10 +1309,10 @@ tools: $(TOOLS)
 # tables. This only needs to be run when command has been added or changed.
 # If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
-	$(CC) -I$(srcdir) $(INDICES_FLAGS) src/indices/indexGenerator.c -o _build/indexGenerator
-	_build/indexGenerator actions
-	_build/indexGenerator commands
-	_build/indexGenerator options
+	$(CC) -I$(srcdir) $(INDICES_FLAGS) src/indices/indexGenerator.c -o .b/indexGenerator
+	.b/indexGenerator actions
+	.b/indexGenerator commands
+	.b/indexGenerator options
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
@@ -2073,8 +2073,8 @@ uninstall_runtime:
 # We support common typing mistakes for Juergen! :-)
 clean celan: testclean
 	-rm -f *.o core $(EEGLTARGET).core $(EEGLTARGET) vim
-	-rm _build/*
-	-rm _build/os/*
+	-rm .b/*
+	-rm .b/os/*
 	-rm -f conftest* *~ auto/link.sed
 	-rm -f tests/opt_test.vim
 	-rm -f $(UNITTEST_TARGETS)
@@ -2173,7 +2173,7 @@ mdepend:
 	sed -e '/\#\#\# Dependencies/q' < Makefile > tmp_make
 	@for i in $(ALL_SRC) ; do \
 	  echo "$$i" ; \
-	  echo `echo "$$i" | sed -e 's/[^ ]*\.c$$/_build\/\1.o/'`": $$i" `\
+	  echo `echo "$$i" | sed -e 's/[^ ]*\.c$$/.b\/\1.o/'`": $$i" `\
 	    $(CPP) $$i |\
 	    grep '^# .*"\./.*\.h"' |\
 	    sort -t'"' -u +1 -2 |\
@@ -2188,7 +2188,7 @@ depend:
 	sed -e '/\#\#\# Dependencies/q' < Makefile > tmp_make
 	-for i in $(ALL_LOCAL_SRC); do echo $$i; \
 		$(CPP_DEPEND) $$i | \
-		sed -e 's+^\([^ ]*\.o\)+_build/\1+' >> tmp_make; done
+		sed -e 's+^\([^ ]*\.o\)+.b/\1+' >> tmp_make; done
 	mv tmp_make Makefile
 
 # Run lint.  Clean up the *.ln files that are sometimes left behind.
@@ -2215,49 +2215,49 @@ os/.c.o:
 # that are not taken care of by "make depend".
 VIM_H_DEPENDENCIES = eegl.h termdefs.h commands.h
 
-# All the object files are put in the "_build" directory.  Since not all make
+# All the object files are put in the ".b" directory.  Since not all make
 # commands understand putting object files in another directory, it must be
 # specified for each file separately.
 
-_build: _build/.dirstamp
+.b: .b/.dirstamp
 
-_build/.dirstamp:
-	mkdir -p _build
-	mkdir -p _build/os
-	touch _build/.dirstamp
+.b/.dirstamp:
+	mkdir -p .b
+	mkdir -p .b/os
+	touch .b/.dirstamp
 
 # All object files depend on the objects directory, so that parallel make
 # works.  Can't depend on the directory itself, its timestamp changes all the time.
-$(ALL_OBJ): _build/.dirstamp
+$(ALL_OBJ): .b/.dirstamp
 
-_build/%.o: src/%.c
+.b/%.o: src/%.c
 	$(CCC) -o $@ $<
 
-_build/diff.o: src/diff.c
+.b/diff.o: src/diff.c
 	$(CCC) -o $@ $<
 
-_build/option.o: src/option.c
+.b/option.o: src/option.c
 	$(CCC_NF) $(ALL_FLAGS) -o $@ $<
 
-_build/regexp.o: src/regexp.c
+.b/regexp.o: src/regexp.c
 	$(CCC) -o $@ $<
 
-_build/ui.o: src/ui.c
+.b/ui.o: src/ui.c
 	$(CCC) -o $@ $<
 
-_build/window.o: src/window.c
+.b/window.o: src/window.c
 	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
 
-_build/wlr-data-control-unstable-v1.o: libs/wayland/wlr-data-control-unstable-v1.c
+.b/wlr-data-control-unstable-v1.o: libs/wayland/wlr-data-control-unstable-v1.c
 	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
 
-_build/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
+.b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 	$(CCC) $(WAYLAND_FLAGS) -o $@ $< 
 
-_build/xdg-shell.o: libs/wayland/xdg-shell.c
+.b/xdg-shell.o: libs/wayland/xdg-shell.c
 	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
 
-_build/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
+.b/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
 	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
 
 
@@ -2271,83 +2271,83 @@ Makefile:
 ###############################################################################
 ### (automatically generated by 'make depend')
 ### Dependencies:
-_build/book.o: src/book.c src/eegl.h \
+.b/book.o: src/book.c src/eegl.h \
  src/generic.h src/commands.h
-_build/channel.o: src/channel.c src/eegl.h \
+.b/channel.o: src/channel.c src/eegl.h \
  src/generic.h src/commands.h
-_build/clipboard.o: src/clipboard.c src/eegl.h \
+.b/clipboard.o: src/clipboard.c src/eegl.h \
  src/generic.h src/commands.h
-_build/data.o: src/data.c src/eegl.h \
+.b/data.o: src/data.c src/eegl.h \
  src/generic.h src/commands.h
-_build/diff.o: src/diff.c src/eegl.h src/generic.h src/commands.h
-_build/do.o: src/do.c src/eegl.h \
+.b/diff.o: src/diff.c src/eegl.h src/generic.h src/commands.h
+.b/do.o: src/do.c src/eegl.h \
  src/generic.h src/commands.h
-_build/draw.o: src/draw.c src/eegl.h \
+.b/draw.o: src/draw.c src/eegl.h \
  src/generic.h src/commands.h
-_build/eval.o: src/eval.c src/eegl.h \
+.b/eval.o: src/eval.c src/eegl.h \
  src/generic.h src/commands.h
-_build/fileio.o: src/fileio.c src/eegl.h \
+.b/fileio.o: src/fileio.c src/eegl.h \
  src/generic.h src/commands.h
-_build/input.o: src/input.c src/eegl.h \
+.b/input.o: src/input.c src/eegl.h \
  src/generic.h src/commands.h
-_build/hilite.o: src/hilite.c src/eegl.h \
+.b/hilite.o: src/hilite.c src/eegl.h \
  src/generic.h src/commands.h
-_build/insert.o: src/insert.c src/eegl.h \
+.b/insert.o: src/insert.c src/eegl.h \
  src/generic.h src/commands.h
-_build/juggle.o: src/juggle.c src/eegl.h \
+.b/juggle.o: src/juggle.c src/eegl.h \
  src/generic.h src/commands.h
-_build/location.o: src/location.c src/eegl.h \
+.b/location.o: src/location.c src/eegl.h \
  src/generic.h src/commands.h
-_build/main.o: src/main.c src/eegl.h \
+.b/main.o: src/main.c src/eegl.h \
  src/generic.h src/commands.h
-_build/mark.o: src/mark.c src/eegl.h \
+.b/mark.o: src/mark.c src/eegl.h \
  src/generic.h src/commands.h
-_build/memory.o: src/memory.c src/eegl.h \
+.b/memory.o: src/memory.c src/eegl.h \
  src/generic.h src/commands.h
-_build/message.o: src/message.c src/eegl.h \
+.b/message.o: src/message.c src/eegl.h \
  src/generic.h src/commands.h
-_build/normal.o: src/normal.c src/eegl.h \
+.b/normal.o: src/normal.c src/eegl.h \
  src/generic.h src/commands.h src/actions.h src/indices/actions.h
-_build/option.o: src/option.c src/eegl.h \
+.b/option.o: src/option.c src/eegl.h \
  src/generic.h src/commands.h
-_build/portal.o: src/portal.c src/eegl.h \
+.b/portal.o: src/portal.c src/eegl.h \
  src/generic.h src/commands.h
-_build/regexp.o: src/regexp.c src/eegl.h \
+.b/regexp.o: src/regexp.c src/eegl.h \
  src/generic.h src/commands.h
-_build/script.o: src/script.c src/eegl.h \
+.b/script.o: src/script.c src/eegl.h \
  src/generic.h src/commands.h
-_build/search.o: src/search.c src/eegl.h \
+.b/search.o: src/search.c src/eegl.h \
  src/generic.h src/commands.h
-_build/persist.o: src/persist.c src/eegl.h \
+.b/persist.o: src/persist.c src/eegl.h \
  src/generic.h src/commands.h
-_build/strings.o: src/strings.c src/eegl.h \
+.b/strings.o: src/strings.c src/eegl.h \
  src/generic.h src/commands.h
-_build/syntax.o: src/syntax.c src/eegl.h \
+.b/syntax.o: src/syntax.c src/eegl.h \
  src/generic.h src/commands.h
-_build/tag.o: src/tag.c src/eegl.h \
+.b/tag.o: src/tag.c src/eegl.h \
  src/generic.h src/commands.h
-_build/term.o: src/term.c src/eegl.h \
+.b/term.o: src/term.c src/eegl.h \
  src/generic.h src/commands.h
-_build/ui.o: src/ui.c src/eegl.h \
+.b/ui.o: src/ui.c src/eegl.h \
  src/generic.h src/commands.h
-_build/ui.o: src/ui.c src/eegl.h \
+.b/ui.o: src/ui.c src/eegl.h \
  src/generic.h src/commands.h
-_build/json_test.o: src/json_test.c src/main.c src/eegl.h \
+.b/json_test.o: src/json_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/strings.c
-_build/kword_test.o: src/kword_test.c src/main.c src/eegl.h \
+.b/kword_test.o: src/kword_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/strings.c
-_build/memfile_test.o: src/memfile_test.c src/main.c src/eegl.h \
+.b/memfile_test.o: src/memfile_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/memory.c
-_build/message_test.o: src/message_test.c src/main.c src/eegl.h \
+.b/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/message.c
-_build/channel.o: src/channel.c src/eegl.h \
+.b/channel.o: src/channel.c src/eegl.h \
  src/generic.h src/commands.h
-_build/wlr-data-control-unstable-v1.o: \
+.b/wlr-data-control-unstable-v1.o: \
  libs/wayland/wlr-data-control-unstable-v1.c
-_build/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
-_build/xdg-shell.o: libs/wayland/xdg-shell.c
-_build/primary-selection-unstable-v1.o: \
+.b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
+.b/xdg-shell.o: libs/wayland/xdg-shell.c
+.b/primary-selection-unstable-v1.o: \
  libs/wayland/primary-selection-unstable-v1.c
-_build/window.o: src/window.c src/eegl.h \
+.b/window.o: src/window.c src/eegl.h \
  src/generic.h src/commands.h
  

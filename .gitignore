@@ -1,4 +1,4 @@
-_build/*
+.b/*
 bin/*
 # Unixen: object and executable files.
 *.swn

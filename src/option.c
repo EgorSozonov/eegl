@@ -484,6 +484,7 @@ parseCursorShape(CS input) {
 // Initialize the options, part two: After getting visibleRowsG and visibleColsG and setting 'term'
 void
 optInit1(void) {
+   didset_options();
    //'scroll' defaults to half the portal height. Need to calculate and set it now
    curPor->scroll = curPor->height/2 + 1;
    computeColumnsForRulerAndCommand();
@@ -3870,13 +3871,7 @@ optInit0() {
 
    //curBook->o.initialized = true;
 
-   //Must be before expandEnvVarsInStringOption(), because that one needs eeIsIdentifierChar()
-   didset_options();
    
-   //zero out the table for @breakat.
-   for (Unt i = 0; i < 256; i++)
-      breakat_flags[i] = false;
-
    //Expand environment variables and things like "~" for the defaults.
    expandEnvVarsInDefaults();
 
@@ -4097,7 +4092,6 @@ setDefaultValuesForAllOptions(SetScope setScope) {
    FOR_ALL_TAB_PORTALS(t, port) {
       portComputeScroll(port);
    } 
-   _bp(true);
 }
 
 //Set all portal-local and buffer-local options to the Eegl default.
@@ -4343,7 +4337,6 @@ getRefInScope(Option* o, SetScope setScope) {
 //Copy all book options from global to a specific book
 private void
 copyGlobalToBookImpl(OUT Book* book) {
-   _bp(true); 
    Unt totalLen = calcLocalStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
    //Sbuf buf UNUSED = sbuf(newCap);

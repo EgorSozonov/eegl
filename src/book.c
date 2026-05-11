@@ -8328,7 +8328,7 @@ addProp(OUT Book* book, Prop prop) {
    int      proplen;
    Byte* newprops;
    Unt textlen;
-   Byte* newtext;
+   CS newtext;
    int i;
    TextProp tmpProp;
    NULLABLE Arr(Byte) text = prop.text;
@@ -8567,7 +8567,6 @@ prop_add_common(
    Book* book = defaultBook;
    int      id = 0;
    CS text = NULL;
-   Unt flags = 0;
 
    if (!dict || !bagHasKey(dict, tConst("type"))) {
       emsg(_(e_missing_property_type_name));
@@ -8640,11 +8639,11 @@ prop_add_common(
             goto theend;
          }
          if (STRCMP(p, "right") == 0)
-            flags |= TEXT_PROP_ALIGN_RIGHT;
+            prop.textFlags |= TEXT_PROP_ALIGN_RIGHT;
          ei (STRCMP(p, "above") == 0)
-            flags |= TEXT_PROP_ALIGN_ABOVE;
+            prop.textFlags |= TEXT_PROP_ALIGN_ABOVE;
          ei (STRCMP(p, "below") == 0)
-            flags |= TEXT_PROP_ALIGN_BELOW;
+            prop.textFlags |= TEXT_PROP_ALIGN_BELOW;
          ei (STRCMP(p, "after") != 0) {
             showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "text_align", p);
             goto theend;
@@ -8664,7 +8663,7 @@ prop_add_common(
          if (!p)
             goto theend;
          if (STRCMP(p, "wrap") == 0)
-            flags |= TEXT_PROP_WRAP;
+            prop.textFlags |= TEXT_PROP_WRAP;
          ei (STRCMP(p, "truncate") != 0) {
             showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "text_wrap", p);
             goto theend;
