@@ -6839,7 +6839,7 @@ check_char_class(int class, int c) {
          return OK;
       break;
    case CHAR_CLASS_PRINT:
-      if (eeIsPrintable(c))
+      if (bookIsCharPrintable(c))
          return OK;
       break;
    case CHAR_CLASS_PUNCT:
@@ -8122,12 +8122,12 @@ match(
          break;
 
       case PRINT:   //  \p
-         result = eeIsPrintable(mb_ptr2char(exe.input));
+         result = bookIsCharPrintable(mb_ptr2char(exe.input));
          ADD_STATE_IF_MATCH(t->state);
          break;
 
       case SPRINT:   //  \P
-         result = !EE_ISDIGIT(curc) && eeIsPrintable(mb_ptr2char(exe.input));
+         result = !EE_ISDIGIT(curc) && bookIsCharPrintable(mb_ptr2char(exe.input));
          ADD_STATE_IF_MATCH(t->state);
          break;
 

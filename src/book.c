@@ -333,7 +333,7 @@ f_bufname(Var *argvars, Var *returnVar) {
 void
 f_bufnr(Var *argvars, Var *returnVar) {
    Boole error = false;
-   Byte   *name;
+   CS name;
 
    Book* book = (argvars[0].tag == VAR_UNKNOWN) ? curBook : daGetBookFromArg(&argvars[0]);
 
@@ -568,7 +568,7 @@ getLinesIntoVar(
    int      retlist,
    OUT Var   *returnVar
 ) {
-   Byte   *p;
+   CS p;
 
    if (retlist) {
       allocReturnList(returnVar);
@@ -666,7 +666,7 @@ f_setline(Var *argvars, Var *returnVar) {
 private int parseAnIsOption(CS var, Book* book, Boole only_check);
 private int win_nolbr_chartabsize(CharTableSize *cts, int *headp);
 
-private int    chartab_initialized = FALSE;
+private Boole chartab_initialized = false;
 
 // charsForKeywords[] is an array of 32 bytes, each bit representing one of the
 // characters 0-255.
@@ -688,7 +688,7 @@ private int inPortalBorder(Portal *po, ColNr vcol);
 //Fill g_chartab[]. Also fill curBook->charsForKeywords[] with flags for keyword
 //characters for current book.
 //
-//Depends on the option settings 'iskeyword', 'isident', 'isfname', and 'isprint'.
+//Depend on the option settings 'iskeyword', 'isident', 'isfname', and 'isprint'.
 //
 //- For UTF-8 index with the character (when first byte is up to 0x80 it is
 //  the same as the character, if the first byte is 0x80 and above it depends on further bytes).
@@ -703,43 +703,13 @@ private int inPortalBorder(Portal *po, ColNr vcol);
 //- CT_ID_CHAR bit is set when the character can be in an identifier.
 //
 //Return FAIL if @iskeyword, @isident, @isfname or @isprint option has an error, OK otherwise.
-int
-bookInitCharsForKeywordsForCurbook(void) {
-   return curBook ? bookInitCharsForKeywords(curBook, true) : OK;
-}
-
-int
-bookInitCharsForKeywords(Book* book, Boole global) { // FALSE => only set book->charsForKeywords[]
-   if (global) {
-      //Set the default size for printable characters:
-      //From <Space> to '~' is 1 (printable), others are 2 (not printable).
-      //This also inits all 'isident' and 'isfname' flags to FALSE.
-      Unt c = 0;
-      while (c < ' ')
-         g_chartab[c++] = 2;
-      while (c <= '~')
-         g_chartab[c++] = 1 + CT_PRINT_CHAR;
-      while (c < 256) {
-         // UTF-8: bytes 0xa0 - 0xff are printable (latin1)
-         if (c >= 0xa0)
-            g_chartab[c++] = CT_PRINT_CHAR + 1;
-       else
-         // the rest is unprintable by default
-         g_chartab[c++] = 2;
-      }
-
-      // Assume that every multi-byte char is a filename character.
-      for (c = 1; c < 256; ++c) {
-         if (c >= 0xa0)
-            g_chartab[c] |= CT_FNAME_CHAR;
-      } 
-   }
-
+private int
+bookInitCharsForKeywords(Book* book) {
    //Init word char flags all to FALSE
    CLEAR_FIELD(book->charsForKeywords);
 
    // Walk through the 'isident', 'iskeyword', 'isfname' and 'isprint' options.
-   for (int i = global ? 0 : 3; i < 3; ++i) {
+   for (int i = 0; i < 3; ++i) {
       CS p;
       if (i == 0)
          p = p_isi;      // first round: 'isident'
@@ -752,15 +722,45 @@ bookInitCharsForKeywords(Book* book, Boole global) { // FALSE => only set book->
          return FAIL;
    }
 
-   chartab_initialized = TRUE;
+   chartab_initialized = true;
    return OK;
 }
 
+int
+bookInitCharsForKeywordsForCurbook(void) {
+   return curBook ? bookInitCharsForKeywords(curBook) : OK;
+}
 
-//Strict version of eeIsPrintable(c), don't return TRUE if "c" is the head byte of a double-byte 
+void
+bookInitGlobalCharsForKeywords() {
+   //Set the default size for printable characters:
+   //From <Space> to '~' is 1 (printable), others are 2 (not printable).
+   //This also inits all 'isident' and 'isfname' flags to FALSE.
+   Unt c = 0;
+   while (c < ' ')
+      g_chartab[c++] = 2;
+   while (c <= '~')
+      g_chartab[c++] = 1 + CT_PRINT_CHAR;
+   while (c < 256) {
+      // UTF-8: bytes 0xa0 - 0xff are printable (latin1)
+      if (c >= 0xa0)
+         g_chartab[c++] = CT_PRINT_CHAR + 1;
+    else
+      // the rest is unprintable by default
+      g_chartab[c++] = 2;
+   }
+
+   // Assume that every multi-byte char is a filename character.
+   for (c = 1; c < 256; ++c) {
+      if (c >= 0xa0)
+         g_chartab[c] |= CT_FNAME_CHAR;
+   } 
+}
+
+//Strict version of bookIsCharPrintable(c), don't return TRUE if "c" is the head byte of a double-byte 
 //character
 int
-eeIsPrintable_strict(int c) {
+bookIsCharPrintable_strict(int c) {
    if (c >= 0x100)
       return utf_printable(c);
    return (c >= 0x100 || (c > 0 && (g_chartab[c] & CT_PRINT_CHAR)));
@@ -768,11 +768,7 @@ eeIsPrintable_strict(int c) {
 
 //Parse an "is" option: @iskeyword, @isident, @isfname, @isprint. Return OK/FAIL.
 private int
-parseAnIsOption(
-   CS var,
-   Book* book,
-   Boole   only_check   // FALSE: refill g_chartab[]
-){
+parseAnIsOption(CS var, Book* book, Boole only_check) {  // FALSE: refill g_chartab[]
    CS p = var;
    long c;
    int tilde;
@@ -872,7 +868,7 @@ transchar_buf(Unt c) {
       c = K_SECOND(c);
    }
 
-   if ((!chartab_initialized && ((c >= ' ' && c <= '~'))) || (c < 256 && eeIsPrintable_strict(c))) {
+   if ((!chartab_initialized && ((c >= ' ' && c <= '~'))) || (c < 256 && bookIsCharPrintable_strict(c))) {
       // printable character
       translateScratch[i] = c;
       translateScratch[i + 1] = ZERO;
@@ -1123,18 +1119,18 @@ eeIsFnameChar(Unt c) {
 
 //Return TRUE if 'c' is a valid file-name character, including characters left
 //out of 'isfname' to make "gf" work, such as comma, space, '@', etc.
-int
-eeIsFnameCharForGf(int c) {
+Boole
+eeIsFnameCharForGf(Unt c) {
    return eeIsFnameChar(c) || c == ',' || c == ' ' || c == '@';
 }
 
 //Return TRUE if 'c' is a printable character.
 //Assume characters above 0x100 are printable (multi-byte), except for Unicode.
-int
-eeIsPrintable(int c) {
-   if (c >= 0x100)
+Boole
+bookIsCharPrintable(Unt c) {
+   if (c > 0xFF)
       return utf_printable(c);
-   return (c >= 0x100 || (c > 0 && (g_chartab[c] & CT_PRINT_CHAR)));
+   return (c > 0 && (g_chartab[c] & CT_PRINT_CHAR) != 0);
 }
 
 //Prepare the structure passed to chartabsize functions.
@@ -1469,14 +1465,11 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 //check for a double-byte character that doesn't fit at the end of the screen line.
 //Only uses "cts_win", "cts_ptr" and "cts_vcol" from "cts".
 private int
-win_nolbr_chartabsize(
-   CharTableSize* cts,
-   int* headp
-){
-   Portal   *po = cts->cts_win;
-   Byte   *s = cts->cts_ptr;
-   ColNr   col = cts->cts_vcol;
-   int      n;
+win_nolbr_chartabsize(CharTableSize* cts, int* headp){
+   Portal* po = cts->cts_win;
+   CS s = cts->cts_ptr;
+   ColNr col = cts->cts_vcol;
+   int n;
 
    if (*s == TAB && (!po->o.list || listCharsG.tab1)) {
       n = po->book->o.shiftWidth;
@@ -1573,7 +1566,7 @@ getvcol(
             }
          }
 
-         Byte *next_ptr = ptr + utfCharLen(ptr);
+         CS next_ptr = ptr + utfCharLen(ptr);
          if (next_ptr - line > pos->col) // character at pos->col
             break;
 
@@ -1597,7 +1590,7 @@ getvcol(
             // do not count the virtual text above for cursWant
             po->virtColFirstChar = cts.cts_first_char;
 
-         Byte *next_ptr = cts.cts_ptr + utfCharLen(cts.cts_ptr);
+         CS next_ptr = cts.cts_ptr + utfCharLen(cts.cts_ptr);
          if (next_ptr - line > pos->col) // character at pos->col
             break;
 
@@ -1678,7 +1671,7 @@ bookGetVirtualColInVirtualMode(
       if (pos->col < memGetBookLen(po->book, pos->lnum)) {
          Unt c = mb_ptr2char(ptr + pos->col);
 
-         if (c != TAB && eeIsPrintable(c)) {
+         if (c != TAB && bookIsCharPrintable(c)) {
             endadd = (ColNr)(char2cells(c) - 1);
             if (coladd > endadd)   // past end of line
                endadd = 0;
@@ -1739,9 +1732,9 @@ getvcols(
 
 private void   enterBook(Book* book);
 private void   getLastKnownLineNumber(void);
-private Byte   *checkFilenameMatch(RegMatch *rmp, Book* book);
-private Byte   *fname_match(RegMatch *rmp, Byte *name);
-private Book   *booklistFindName_stat(Byte *fullFName, FileStat *st);
+private CS checkFilenameMatch(RegMatch *rmp, Book* book);
+private CS fname_match(RegMatch *rmp, Byte *name);
+private Book* booklistFindName_stat(CS fullFName, FileStat *st);
 private int   areSameInode(Book* book, FileStat *stp);
 private int   append_arg_number(Portal *po, CS buf, Unt buflen, Boole add_file);
 private void   freeBook(Book *);
@@ -1773,7 +1766,7 @@ trigger_undo_ftplugin(Book* book, Portal* port) {
    book->locked++;
    port->locked = TRUE;
    // b:undo_ftplugin may be set, undo it
-   executeCommLine((Byte*)"if exists('b:undo_ftplugin') | :legacy :exe \
+   executeCommLine(S"if exists('b:undo_ftplugin') | :legacy :exe \
        b:undo_ftplugin | endif");
    book->locked--;
    port->locked = FALSE;
@@ -1971,11 +1964,6 @@ bookOpenFromInvo(
    // Can now sync this book in ml_sync_all().
    if (curBook->mem.mfile && curBook->mem.mfile->mf_dirty == MF_DIRTY_YES_NOSYNC) {
       curBook->mem.mfile->mf_dirty = MF_DIRTY_YES;
-   }
-
-   // if first time loading this book, init charTable[]
-   if ((curBook->flags & BF_NEVERLOADED) != 0) {
-      (void)bookInitCharsForKeywords(curBook, false);
    }
 
    // Set/reset the Changed flag first, autocmds may change the book.
@@ -3021,7 +3009,7 @@ do_bufdel(
    int      deleted = 0;   // number of books deleted
    CS errormsg = NULL; // return value
    int      bnr;      // book number
-   Byte   *p;
+   CS p;
 
    if (addr_count == 0) {
       (void)bookDo(command, DOBOOK_CURRENT, FORWARD, 0, forceit);
@@ -4559,7 +4547,7 @@ renderStatusLine(
    Byte   opt;
 #define TMPLEN 70
    Byte   buf_tmp[TMPLEN];
-   Byte   *usefmt = fmt;
+   CS usefmt = fmt;
    StatusLineHilite *sp;
    int save_redraw_not_allowed = redraw_not_allowed;
    int save_KeyTyped = KeyTyped;
@@ -4941,9 +4929,9 @@ renderStatusLine(
             Unt str_length = strlen((const char *)str);
             Unt fmt_length = strlen((const char *)s);
             Unt new_fmt_len = parsed_usefmt + str_length + fmt_length + 3;
-            Byte *new_fmt = (CS)alloc(new_fmt_len * sizeof(Byte));
+            CS new_fmt = (CS)alloc(new_fmt_len * sizeof(Byte));
 
-            Byte *new_fmt_p = new_fmt;
+            CS new_fmt_p = new_fmt;
 
             new_fmt_p = (CS)memcpy(new_fmt_p, usefmt, parsed_usefmt) + parsed_usefmt;
             new_fmt_p = (CS)memcpy(new_fmt_p , str, str_length) + str_length;
@@ -5103,7 +5091,7 @@ renderStatusLine(
          break;
 
       case STL_HIGHLIGHT: {
-         Byte  *t = s;
+         CS t = s;
 
          while (*s != '#' && *s != ZERO)
             ++s;
@@ -5122,7 +5110,7 @@ renderStatusLine(
       stl_items[curitem].stl_start = p;
       stl_items[curitem].StatusTag = Normal;
       if (str && *str) {
-         Byte  *t = str;
+         CS t = str;
 
          if (itemisflag) {
             if ((t[0] && t[1])
@@ -5163,8 +5151,8 @@ renderStatusLine(
          for (; l < minwid && p + 1 < out + outlen; l++)
             MB_CHAR2BYTES(fillchar, p);
       } ei (num >= 0) {
-         int       nbase = (base == 'D' ? 10 : (base == 'O' ? 8 : 16));
-         Byte  nstr[20];
+         int nbase = (base == 'D' ? 10 : (base == 'O' ? 8 : 16));
+         Byte nstr[20];
          CS t = nstr;
 
          if (p + 20 >= out + outlen)
@@ -5307,8 +5295,8 @@ renderStatusLine(
          for (l = 0; l < num_separators; l++) {
             int dislocation = (l == (num_separators - 1)) ? final_spaces : standard_spaces;
             dislocation *= MB_CHAR2LEN(fillchar);
-            Byte *start = stl_items[stl_separator_locations[l]].stl_start;
-            Byte *seploc = start + dislocation;
+            CS start = stl_items[stl_separator_locations[l]].stl_start;
+            CS seploc = start + dislocation;
             STRMOVE(seploc, start);
             for (s = start; s < seploc;)
                MB_CHAR2BYTES(fillchar, s);
@@ -5911,7 +5899,7 @@ bookCompare(const void* s0, const void* s1) {
 // Structure to pass arguments from bookWrite() to writeBytes().
 typedef struct {
    int      fd;      // file descriptor
-   Byte   *bw_buf;   // book with data to be written
+   CS bw_buf;   // buffer with data to be written
    int      bw_len;      // length of data
    Book   *tgt;   // book being written
    int      bw_first;   // first write call
@@ -5922,7 +5910,7 @@ typedef struct {
 //Return FAIL for failure, OK otherwise.
 private int
 writeBytes(BwInfo* ip) {
-   Byte   *buf = ip->bw_buf;   // data to write
+   CS buf = ip->bw_buf;   // data to write
    int      len = ip->bw_len;   // length of data
 
    if (ip->fd < 0)
@@ -6000,17 +5988,17 @@ bookWrite(
    int filtering
 ) {
    int fd;
-   Byte *backup = NULL;
+   CS backup = NULL;
    int  backup_copy = FALSE; // copy the original file?
-   Byte *s;
-   Byte *ptr;
+   CS s;
+   CS ptr;
    Byte c;
    int len;
    LineNr lnum;
    long nchars;
-   Byte       *errmsg = NULL;
+   CS errmsg = NULL;
    int          errmsg_allocated = FALSE;
-   Byte *errnum = NULL;
+   CS errnum = NULL;
    CS buffer;
    Byte smallbuf[SMALLBUFSIZE];
    CS backup_ext;
@@ -6567,15 +6555,14 @@ endOfName:
          }
          errmsg = NULL;
       } else {
-         Byte   *dirp;
-         Byte   *p;
-         Byte   *rootname;
+         CS p;
+         CS rootname;
 
          // Make a backup by renaming the original file.
 
          // Form the backup file name - change path/fo.o.h to
          // path/fo.o.h.bak Try all directories in 'backupdir', first one that works is used.
-         dirp = p_bdir;
+         CS dirp = p_bdir;
          while (*dirp) {
             // Isolate one directory name and make the backup file name.
             (void)copy_option_part(&dirp, IObuff, IOSIZE, ",");
@@ -7038,7 +7025,7 @@ nofail:
 
    // When writing the whole file and 'undofile' is set, also write the undo file.
    if (retval == OK && write_undo_file) {
-      Byte       hash[UNDO_HASH_SIZE];
+      Byte hash[UNDO_HASH_SIZE];
 
       sha256_finish(&sha_ctx, hash);
       u_write_undo(NULL, FALSE, book, hash);
@@ -7338,10 +7325,10 @@ alist_add_list(
 private void
 arglist_del_files(ArrayList *alist_ga) {
    RegMatch   regmatch;
-   int      didone;
-   int      i;
-   Byte   *p;
-   int      match;
+   int didone;
+   int i;
+   CS p;
+   int match;
 
    // Delete the items: use each item as a regexp and find a match in the argument list.
    regmatch.rm_ic = FALSE;   // ignore case when 'fileignorecase' is set
@@ -7510,7 +7497,7 @@ c_args(Invocation* invo) {
       if (ARGCOUNT <= 0)
          return;      // empty argument list
 
-      Byte** items = ALLOC_MULT(Byte *, ARGCOUNT);
+      Arr(CS) items = ALLOC_MULT(CS, ARGCOUNT);
 
       // Overwrite the command, for a short list there is no scrolling
       // required and no wait_return().
@@ -7579,7 +7566,7 @@ c_argument(Invocation* invo){
 // Edit file "argn" of the argument lists.
 void
 do_argfile(Invocation* invo, int argn){
-   Byte   *p;
+   CS p;
    int      old_arg_idx = curPor->argListInd;
    Boole isSplitCommand = *invo->comm == 's';
 
@@ -7784,7 +7771,7 @@ typedef struct {
    int   forceit;
 
    int      use_firstPor;   // use first portal for arglist
-   Byte   *opened;   // Array of weight for which args are open:
+   Arr(Byte) opened;   // Array of weight for which args are open:
            //  0: not opened
            //  1: opened in other tab
            //  2: opened in curtab
@@ -8310,7 +8297,7 @@ f_prop_add(Var *argvars, Var *returnVar) {
 typedef struct {
    CS tyName;
    int      id;
-   NULLABLE Arr(Byte) text; // if non-empty, the text to display above or before the line
+   NULLABLE CS text; // if non-empty, the text to display above or before the line
    int      textPaddingLeft;
    int      textFlags;
    LineNr   startLnum;
@@ -8326,12 +8313,12 @@ private int
 addProp(OUT Book* book, Prop prop) {
    LineNr   lnum;
    int      proplen;
-   Byte* newprops;
+   CS newprops;
    Unt textlen;
    CS newtext;
    int i;
    TextProp tmpProp;
-   NULLABLE Arr(Byte) text = prop.text;
+   NULLABLE CS text = prop.text;
    int res = FAIL;
 
    PropType* type = lookup_prop_type(mbText(prop.tyName), book);
@@ -8354,7 +8341,7 @@ addProp(OUT Book* book, Prop prop) {
 
    if (prop.text) {
       ArrayList* gap = &book->textPropText;
-      Byte* p;
+      CS p;
 
       // double check we got the right ID
       if (-prop.id - 1 != gap->len)
@@ -8905,7 +8892,7 @@ find_visible_prop(
 //If "len" is zero text properties are removed, "props" is not used.
 //Any existing text properties are dropped. Only work for the current book.
 private void
-set_text_props(LineNr lnum, Byte *props, int len) {
+set_text_props(LineNr lnum, CS props, int len) {
    CS text = ml_get(lnum);
    int textlen = ml_get_len(lnum) + 1;
    CS newtext = alloc(textlen + len);
@@ -9019,7 +9006,7 @@ prop_fill_dict(Bag* dict, TextProp* prop, Book* book) {
       bagAddString(dict, S"text", text);
 
       // text_align
-      Byte       *text_align = NULL;
+      CS text_align = NULL;
       if (prop->flags & TEXT_PROP_ALIGN_RIGHT)
           text_align = S"right";
       ei (prop->flags & TEXT_PROP_ALIGN_ABOVE)
@@ -9078,11 +9065,8 @@ f_prop_clear(Var *argvars, Var *returnVar UNUSED) {
       if ((Unt)book->mem.lineLen > len) {
          did_clear = TRUE;
          if (!(book->mem.flags & ML_LINE_DIRTY)) {
-            Byte *newtext = copyStr(text);
+            CS newtext = copyStr(text);
 
-            // need to allocate the line now
-            if (newtext == NULL)
-               return;
             book->mem.cachedLine = newtext;
             book->mem.flags |= ML_LINE_DIRTY;
          }
@@ -9118,7 +9102,7 @@ f_prop_find(Var *argvars, Var *returnVar) {
       return;
 
    if (argvars[1].tag != VAR_UNKNOWN) {
-      Byte      *dir_s = tv_get_string(&argvars[1]);
+      CS dir_s = tv_get_string(&argvars[1]);
 
       if (*dir_s == 'b')
          dir = BACKWARD;
@@ -9176,7 +9160,7 @@ f_prop_find(Var *argvars, Var *returnVar) {
    allocReturnDict(returnVar);
 
    while (1) {
-      Byte   *text = memGetLine(book, lnum, FALSE);
+      CS text = memGetLine(book, lnum, FALSE);
       Unt   textlen = memGetBookLen(book, lnum) + 1;
       int   count = (int)((book->mem.lineLen - textlen) / sizeof(TextProp));
       int       i;
@@ -9550,7 +9534,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
          unsigned      idx;
 
          for (idx = 0; idx < (book->mem.lineLen - len) / sizeof(TextProp); ++idx) {
-            Byte *cur_prop = book->mem.cachedLine + len + idx * sizeof(TextProp);
+            CS cur_prop = book->mem.cachedLine + len + idx * sizeof(TextProp);
             Unt   taillen;
             int matches_id = 0;
             int matchty = 0;
@@ -9568,7 +9552,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
             if (both ? matches_id && matchty : matches_id || matchty) {
                if (!(book->mem.flags & ML_LINE_DIRTY)) {
                   // need to allocate the line to be able to change it
-                  Byte *newptr = alloc(book->mem.lineLen);
+                  CS newptr = alloc(book->mem.lineLen);
                   mch_memmove(newptr, book->mem.cachedLine, book->mem.lineLen);
                   book->mem.cachedLine = newptr;
                   book->mem.flags |= ML_LINE_DIRTY;
@@ -9626,7 +9610,7 @@ cleanup_prop_remove:
 //Common for f_prop_type_add() and f_prop_type_change().
 private void
 prop_type_set(Var *argvars, int add) {
-   Byte   *name;
+   CS name;
    Book   *book = NULL;
    DictItem  *di;
    name = tv_get_string(&argvars[0]);
@@ -9993,7 +9977,7 @@ adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags) {
    if (dirty) {
       ColNr newlen = (int)textlen + wi * (ColNr)sizeof(TextProp);
       if ((curBook->mem.flags & ML_LINE_DIRTY) == 0) {
-         Byte *p = eeMemsave(curBook->mem.cachedLine, newlen);
+         CS p = eeMemsave(curBook->mem.cachedLine, newlen);
          curBook->mem.cachedLine = p;
       }
       curBook->mem.flags |= ML_LINE_DIRTY;

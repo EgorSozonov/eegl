@@ -61,7 +61,7 @@ typedef struct {
 } HiKey;
 
 private Text
-keyName(HiKey kv, Arr(Byte) s) {
+keyName(HiKey kv, CS s) {
    return (Text){.c = s + kv.start, .len = kv.end - kv.start};
 }
 
@@ -88,12 +88,12 @@ private void set_normal_colors(void);
 //}}}
 
 private Text
-keyOf(HiKeyValue kv, Arr(Byte) s) {
+keyOf(HiKeyValue kv, CS s) {
    return (Text){.c = s + kv.start, .len = kv.keyEnd - kv.start};
 }
 
 private Text
-valueOf(HiKeyValue kv, Arr(Byte) s) {
+valueOf(HiKeyValue kv, CS s) {
    return (Text){.c = s + kv.keyEnd + 1, .len = kv.end - kv.keyEnd - 1};
 }
 
@@ -600,7 +600,7 @@ static Byte colorsText[] = "snow#fffafaghostWhite#f8f8ffwhiteSmoke#f5f5f5"
 //}}}
 
 private Boole
-parseSingleColor(OUT UiColor* color, Byte* p) {
+parseSingleColor(OUT UiColor* color, CS p) {
    *color = decodeHexColorLengthGuaranteed(p);
    return *color != INVALCOLOR;
 }
@@ -611,7 +611,7 @@ private void
 initializeColors() {
    int countColors = 0;
    int textLen = 0;
-   for (Byte* p = colorsText; *p != ZERO; p++) {
+   for (CS p = colorsText; *p != ZERO; p++) {
       textLen++;
       if (*p == '#') {
          countColors++;
@@ -622,7 +622,7 @@ initializeColors() {
    colorNamesContainer = allocateArray(textLen - 6*countColors, Byte, a);
    
    int startName = 0;
-   Byte* names = colorNamesContainer;
+   CS names = colorNamesContainer;
    int colorInd = 0;
    for (int i = 0; i < textLen;) {
       if (colorsText[i] == '#') {
@@ -647,7 +647,7 @@ initializeColors() {
    deleteArena(aTmp);
 }
 
-// Store group names from @hiliteGroupStrings into @hiNames. Initialize names of hilite groups
+// Store group names from hiliteGroupStrings into hiNames. Initialize names of hilite groups
 private void
 initializeGroups(void) {
    Int count = 0;
@@ -671,7 +671,8 @@ initializeGroups(void) {
       
       for (Short j = 0; j < nameLen; j++) {
          Byte byte = groupString[j];
-         if (!eeIsPrintable(byte)) {
+         if (!bookIsCharPrintable(byte)) {
+            _bp(true);
             emsg(_(e_unprintable_character_in_group_name));
             return;
          } ei (!ASCII_ISALNUM(byte) && byte != '_' && byte != '.') {
@@ -1042,12 +1043,12 @@ writeToDecoration(HiliteGroup* restrict g) {
 // After the call, keys and kvs are terminated by structs with start = SHORT.
 // In case of parse error, keys[0].start = SHORT - 1.
 private void 
-parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], Arr(Byte) line) {
+parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line) {
    int posEquals = -1; // set when "=" is encountered
    int posStart = 0;
    int indKeys = 0;
    int indKvs = 0;
-   Byte* p = skipSpace(line);
+   CS p = skipSpace(line);
    for (;;) {
       if (*p == ZERO || *p == ' ') {
          if (posEquals != -1) {
@@ -1466,7 +1467,7 @@ parseColorNames(OUT HiliteGroup* g){
 //   int expand_hi_synid;       // ID for hilite group being completed
 //   int expand_hi_equal_col; // column where the '=' is
 //   int expand_hi_include_orig;       // whether to fill the existing current value or not
-//   Arr(Byte) expandCurrValue;   // the existing current value
+//   CS expandCurrValue;   // the existing current value
 //   DictIterator expand_colornames_iter;   // iterator for looping through v:colornames
 //} HiExpand;
 //private HiExpand hiExpandS = {};
@@ -1513,7 +1514,7 @@ getHiliteGroupNameAsCString(Expand *xp, int id) {
 // Command-line expansion for :hi {group-name} <args>...
 int
 expandHiliteGroup(
-   Arr(Byte) pattern,
+   CS pattern,
    Expand* xp,
    RegMatch* rmp,
    OUT ExpandMatch* matches
@@ -1746,8 +1747,8 @@ struct KeyEntry {
    KeyEntry   *next;   // next entry with identical "keyword[]"
    SyntaxInfo syntax;   // struct passed to in_id_list()
    Short* next_list;   // ID list for next match (if non-zero)
-   int flags;
-   Byte   keyword[1];   // actually longer
+   Unt flags;
+   Byte keyword[1];   // actually longer
 };
 
 // different types of offsets that are possible
@@ -1786,11 +1787,11 @@ typedef struct syn_pattern {
    int sp_sync_idx;      // sync item index (syncing only)
    int sp_line_id;      // ID of last line where tried
    int sp_startcol;      // next match in sp_line_id line
-   Short   *sp_containsHiId;      // cont. group IDs, if non-zero
-   Short   *sp_next_list;      // next group IDs, if non-zero
+   Short* sp_containsHiId;      // cont. group IDs, if non-zero
+   Short* sp_next_list;      // next group IDs, if non-zero
    SyntaxInfo syntax;      // struct passed to in_id_list()
-   Byte   *pattern;      // regexp to match, pattern
-   RegProg   *prog;      // regexp to match, program
+   CS pattern;      // regexp to match, pattern
+   RegProg* prog;      // regexp to match, program
 } SyntaxPattern;
 
 // The sp_off_flags are computed like this:
@@ -1823,8 +1824,8 @@ private int current_flags = 0;
 private int current_seqnr = 0;
 
 typedef struct syn_cluster_S {
-   Arr(Byte) name;      // syntax cluster name
-   Arr(Byte) nameUpper; // uppercase of name
+   CS name;      // syntax cluster name
+   CS nameUpper; // uppercase of name
    Arr(Short) hiIds;    // IDs in this syntax cluster
 } SynCluster;
 
@@ -1852,7 +1853,7 @@ typedef struct syn_cluster_S {
 // Annoying Hack(TM):  ":syn include" needs this pointer to pass to
 // expand_filename().  Most of the other syntax commands don't need it, so
 // instead of passing it to them, we stow it here.
-private Byte **synCommline;
+private Byte** synCommline;
 
 // Another Annoying Hack(TM):  To prevent rules from other ":syn include"'d files from leaking 
 // into ALLBUT lists, we assign a unique ID to the rules in each ":syn include"'d file.
@@ -1990,31 +1991,31 @@ private void limit_pos(PosNoVirt *pos, PosNoVirt *limit);
 private void limit_pos_zero(PosNoVirt *pos, PosNoVirt *limit);
 private void syn_add_end_off(PosNoVirt *result, RegMultilineMatch *regmatch, SyntaxPattern *spp, int idx, int extra);
 private void syn_add_start_off(PosNoVirt *result, RegMultilineMatch *regmatch, SyntaxPattern *spp, int idx, int extra);
-private Byte *syn_getcurline(void);
+private CS syn_getcurline(void);
 private ColNr syn_getcurline_len(void);
 private int syn_regexec(RegMultilineMatch *rmp, LineNr lnum, ColNr col, syn_Time *st);
 private Short check_keyword_id(
-      Byte *line, int startcol, int *endcol, long *flags, Short **next_list, StateItem *currStateItem,
+      CS line, int startcol, int *endcol, long *flags, Short **next_list, StateItem *currStateItem,
       int *ccharp
 );
 private void syn_remove_pattern(SyntaxBlock *block, int idx);
 private void syn_clear_pattern(SyntaxBlock *block, int i);
 private void syn_clear_cluster(SyntaxBlock *block, int i);
 private void syn_clear_one(Short id, int syncing);
-private void callScriptForSubcommand(Invocation *invo, char *name);
+private void callScriptForSubcommand(Invocation* invo, char *name);
 private void syn_lines_msg(void);
 private void syn_match_msg(void);
 private void syn_list_one(int id, int syncing, int link_only);
 private void syn_list_cluster(int id);
-private void put_id_list(Byte *name, Short *list, int deco);
+private void put_id_list(CS name, Short *list, int deco);
 private void put_pattern(CS s, int c, SyntaxPattern *spp, int deco);
 private int syn_list_keywords(int id, EeSet *ht, int did_header, int deco);
 private void syn_clear_keyword(int id, EeSet *ht);
 private void clearKeywordTable(EeSet *ht);
-private int syn_check_cluster(Byte *pp, int len);
-private int addCluster(Byte *name);
+private int syn_check_cluster(CS pp, int len);
+private int addCluster(CS name);
 private void init_syn_patterns(void);
-private Byte *getSyntPattern(Byte *arg, SyntaxPattern *ci, OUT Boole* hadEol);
+private CS getSyntPattern(CS arg, SyntaxPattern *ci, OUT Boole* hadEol);
 private int get_id_list(Byte **arg, int keylen, OUT Short **list, int skip);
 private void syn_combine_list(Short **clstr1, Short **clstr2, int list_op);
 
@@ -2250,8 +2251,7 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
 
       // Skip lines that end in a backslash.
       for ( ; start_lnum > 1; --start_lnum) {
-         Byte   *l = ml_get(start_lnum - 1);
-
+         CS l = ml_get(start_lnum - 1);
          if (*l == ZERO || *(l + ml_get_len(start_lnum - 1) - 1) != '\\')
             break;
       }
@@ -2429,8 +2429,7 @@ restoreKeywordChars(CS chartab) {
 private int
 syn_match_linecont(LineNr lnum) {
    RegMultilineMatch regmatch;
-   int r;
-   Byte   bookKeywordChars[32];  // chartab array for syn iskeyword
+   Byte bookKeywordChars[32];  // chartab array for syn iskeyword
 
    if (synBlockS->lineContinProg == NULL)
       return FALSE;
@@ -2439,7 +2438,7 @@ syn_match_linecont(LineNr lnum) {
    save_chartab(bookKeywordChars);
    regmatch.rmm_ic = synBlockS->lineContinIgnoreCase;
    regmatch.regprog = synBlockS->lineContinProg;
-   r = syn_regexec(&regmatch, lnum, (ColNr)0,
+   int r = syn_regexec(&regmatch, lnum, (ColNr)0,
       IF_SYN_TIME(&synBlockS->b_syn_linecont_time));
    synBlockS->lineContinProg = regmatch.regprog;
    restoreKeywordChars(bookKeywordChars);
@@ -3114,8 +3113,8 @@ getCurrentDeco(
    PosNoVirt   pos;
    int      lc_col;
    RegExternalMatch *cur_extmatch = NULL;
-   Byte   bookKeywordChars[32];  // chartab array for syn iskyeyword
-   Arr(Byte) line; // current line.  NOTE: becomes invalid after looking for a pattern match!
+   Byte bookKeywordChars[32];  // chartab array for syn iskyeyword
+   CS line; // current line.  NOTE: becomes invalid after looking for a pattern match!
 
    // variables for zero-width matches that have a "nextgroup" argument
    int      keep_next_list;
@@ -4036,8 +4035,8 @@ syn_add_end_off(
 {
    int      col;
    int      off;
-   Byte   *base;
-   Byte   *p;
+   CS base;
+   CS p;
 
    if (spp->sp_off_flags & (1 << idx)) {
       result->lnum = regmatch->startpos[0].lnum;
@@ -4079,8 +4078,8 @@ syn_add_start_off(
 ){
    int      col;
    int      off;
-   Byte   *base;
-   Byte   *p;
+   CS base;
+   CS p;
 
    if (spp->sp_off_flags & (1 << (idx + SPO_COUNT))) {
       result->lnum = regmatch->endpos[0].lnum;
@@ -4160,18 +4159,18 @@ syn_regexec(
 // start at startcol. Return its ID if found, 0 otherwise.
 private Short
 check_keyword_id(
-   Byte   *line,
-   int      startcol,   // position in line to check for keyword
-   int      *endcolp,   // return: character after found keyword
+   CS line,
+   int startcol,   // position in line to check for keyword
+   int* endcolp,   // return: character after found keyword
    long* flagsp,   // return: flags of matching keyword
-   Short   **next_listp,   // return: next_list of matching keyword
-   StateItem   *currStateItem,   // item at the top of the stack
-   int      *ccharp UNUSED   // conceal substitution char
+   Short** next_listp,   // return: next_list of matching keyword
+   StateItem* currStateItem,   // item at the top of the stack
+   int* ccharp UNUSED   // conceal substitution char
 ){
-   Byte   *kwp;
-   int      round;
-   int      kwlen;
-   Byte   keyword[MAXKEYWLEN + 1]; // assume max. keyword len is 80
+   CS kwp;
+   int round;
+   int kwlen;
+   Byte keyword[MAXKEYWLEN + 1]; // assume max. keyword len is 80
    EeSet   *ht;
    EeSetItem   *hi;
 
@@ -4223,8 +4222,8 @@ check_keyword_id(
 
 // Handle ":syntax case" command.
 private void
-caseSubcommand(Invocation *invo, int syncing UNUSED) {
-   Byte   *arg = invo->arg;
+caseSubcommand(Invocation* invo, int syncing UNUSED) {
+   CS arg = invo->arg;
 
    invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
@@ -4246,8 +4245,8 @@ caseSubcommand(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax foldlevel" command.
 private void
-syn_cmd_foldlevel(Invocation *invo, int syncing UNUSED) {
-   Byte *arg = invo->arg;
+syn_cmd_foldlevel(Invocation* invo, int syncing UNUSED) {
+   CS arg = invo->arg;
 
    invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
@@ -4280,14 +4279,14 @@ syn_cmd_foldlevel(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax spell" command.
 private void
-syn_cmd_spell(Invocation *invo, int syncing UNUSED) {
-   Byte   *arg = invo->arg;
+syn_cmd_spell(Invocation* invo, int syncing UNUSED) {
+   CS arg = invo->arg;
 
    invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
-   Byte* next = skiptowhite(arg);
+   CS next = skiptowhite(arg);
    if (*arg == ZERO) {
    if (curPor->ownSyntax->synSpell == SYNSPL_TOP)
        msg((CS)"syntax spell toplevel");
@@ -4312,8 +4311,8 @@ syn_cmd_spell(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax iskeyword" command.
 private void
-syn_cmd_iskeyword(Invocation *invo, int syncing UNUSED) {
-   Byte   save_chartab[32];
+syn_cmd_iskeyword(Invocation* invo, int syncing UNUSED) {
+   Byte save_chartab[32];
 
    if (invo->skip)
       return;
@@ -4335,7 +4334,6 @@ syn_cmd_iskeyword(Invocation *invo, int syncing UNUSED) {
          CS save_isk = curBook->o.isKeyword;
          curBook->o.isKeyword = copyStr(arg);
 
-         bookInitCharsForKeywords(curBook, FALSE);
          mch_memmove(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
          mch_memmove(curBook->charsForKeywords, save_chartab, (Unt)32);
          curPor->book->o.isKeyword = null;
@@ -4457,7 +4455,7 @@ syn_clear_cluster(SyntaxBlock *block, int i) {
 
 // Handle ":syntax clear" command.
 private void
-clearSubcommand(Invocation *invo, int syncing) {
+clearSubcommand(Invocation* invo, int syncing) {
    CS arg = invo->arg;
    CS arg_end;
 
@@ -4510,8 +4508,6 @@ clearSubcommand(Invocation *invo, int syncing) {
 // Clear one syntax group for the current buffer.
 private void
 syn_clear_one(Short hiId, int syncing) {
-   SyntaxPattern* spp;
-
    // Clear keywords only when not ":syn sync clear group-name"
    if (!syncing) {
       (void)syn_clear_keyword(hiId, &curPor->ownSyntax->keywords);
@@ -4520,7 +4516,7 @@ syn_clear_one(Short hiId, int syncing) {
 
    // clear the patterns for "id"
    for (int idx = curPor->ownSyntax->syntaxPatterns.len; --idx >= 0; ) {
-      spp = &(SYN_ITEMS(curPor->ownSyntax)[idx]);
+      SyntaxPattern* spp = &(SYN_ITEMS(curPor->ownSyntax)[idx]);
       if (spp->syntax.hiId != hiId || spp->syncing != syncing)
          continue;
       syn_remove_pattern(curPor->ownSyntax, idx);
@@ -4530,7 +4526,7 @@ syn_clear_one(Short hiId, int syncing) {
 //":syntax off" command. Clear all autocommands for the Syntax event, unlet "b:currentSyntax"
 //on all buffers, and unlet "syntax_on" and "syntax_manual" vars.
 private void
-offSubcommand(Invocation *invo UNUSED, int syncing UNUSED) {
+offSubcommand(Invocation* invo UNUSED, int syncing UNUSED) {
    autoEventImpl(
       EVENT_SYNTAX, null, 
       (AutoCommCreation){
@@ -4547,7 +4543,7 @@ offSubcommand(Invocation *invo UNUSED, int syncing UNUSED) {
 
 // ":syntax on" command. Remove all autocommands for the syntax event, then turn syntax hiliting on
 private void
-theOnSubcommand(Invocation *invo, int syncing UNUSED) {
+theOnSubcommand(Invocation* invo, int syncing UNUSED) {
    offSubcommand(invo, false);
    
    Var tv = (Var){.tag = VAR_BOOL, .number = VVAL_TRUE}; 
@@ -4558,7 +4554,7 @@ theOnSubcommand(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax enable" command.
 private void
-syn_cmd_enable(Invocation *invo, int syncing UNUSED) {
+syn_cmd_enable(Invocation* invo, int syncing UNUSED) {
    set_internal_string_var((CS)"g:syntaxCmd", (CS)"enable");
    callScriptForSubcommand(invo, "syntax");
    unletImpl(S"g:syntaxCmd", true);
@@ -4566,7 +4562,7 @@ syn_cmd_enable(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax reset" command. It actually resets highlighting, not syntax.
 private void
-syn_cmd_reset(Invocation *invo, int syncing UNUSED) {
+syn_cmd_reset(Invocation* invo, int syncing UNUSED) {
    set_nextcmd(invo, invo->arg);
    if (!invo->skip) {
       set_internal_string_var((CS)"g:syntaxCmd", (CS)"reset");
@@ -4577,13 +4573,13 @@ syn_cmd_reset(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax manual" command.
 private void
-syn_cmd_manual(Invocation *invo, int syncing UNUSED) {
+syn_cmd_manual(Invocation* invo, int syncing UNUSED) {
    callScriptForSubcommand(invo, "manual");
 }
 
 private void
-callScriptForSubcommand(Invocation *invo, char *name) {
-   Byte   buf[100];
+callScriptForSubcommand(Invocation* invo, char *name) {
+   Byte buf[100];
 
    set_nextcmd(invo, invo->arg);
    if (!invo->skip) {
@@ -4595,10 +4591,10 @@ callScriptForSubcommand(Invocation *invo, char *name) {
 
 // The ":syntax [list]" command: list current syntax words.
 private void
-syn_cmd_list(Invocation   *invo, int      syncing)  {     // when TRUE: list syncing items
-   Byte   *arg = invo->arg;
+syn_cmd_list(Invocation* invo, int syncing)  {     // when TRUE: list syncing items
+   CS arg = invo->arg;
    Short      id;
-   Byte   *arg_end;
+   CS arg_end;
 
    invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
@@ -4714,7 +4710,7 @@ syn_list_one(
 ){
    int idx;
    int did_header = FALSE;
-   SyntaxPattern   *spp;
+   SyntaxPattern* spp;
    static Kv namelist1[] = {
       KEYVALUE_ENTRY(HL_DISPLAY, "display"),
       KEYVALUE_ENTRY(HL_CONTAINED, "contained"),
@@ -4836,7 +4832,7 @@ syn_list_cluster(int id) {
 }
 
 private void
-put_id_list(Byte *name, Short *list, int deco) {
+put_id_list(CS name, Short *list, int deco) {
    Short      *p;
 
    msgPutsDeco(name, deco);
@@ -4928,20 +4924,20 @@ put_pattern(CS s, int c, SyntaxPattern   *spp, int deco) {
 //Return TRUE if the header has been printed.
 private int
 syn_list_keywords(
-   int      id,
-   EeSet   *ht,
-   int      did_header,      // header has already been printed
-   int      deco)
-{
-   int      outlen;
-   EeSetItem   *hi;
-   KeyEntry   *kp;
-   int      prev_contained = 0;
-   Short   *prev_next_list = NULL;
-   Short   *prev_containedInHiId = NULL;
-   int      prev_skipnl = 0;
-   int      prev_skipwhite = 0;
-   int      prev_skipempty = 0;
+   int id,
+   EeSet* ht,
+   int did_header,      // header has already been printed
+   int deco
+) {
+   int outlen;
+   EeSetItem* hi;
+   KeyEntry* kp;
+   Unt prev_contained = 0;
+   Short* prev_next_list = NULL;
+   Short* prev_containedInHiId = NULL;
+   Unt prev_skipnl = 0;
+   Unt prev_skipwhite = 0;
+   Unt prev_skipempty = 0;
 
    // Unfortunately, this list of keywords is not sorted on alphabet but on hash value...
    int todo = (int)ht->count;
@@ -5073,20 +5069,20 @@ clearKeywordTable(EeSet *ht) {
 // Add a keyword to the list of keywords.
 private void
 add_keyword(
-   Byte   *name,       // name of keyword
-   Unt   namelen,    // length of keyword (excluding the ZERO)
-   int      id,       // group ID for this keyword
-   int      flags,       // flags for this keyword
-   Short   *containedInHiId, // containedin for this keyword
-   Short   *next_list // nextgroup for this keyword
+   CS name,       // name of keyword
+   Unt namelen,    // length of keyword (excluding the ZERO)
+   int id,       // group ID for this keyword
+   Unt flags,       // flags for this keyword
+   Short* containedInHiId, // containedin for this keyword
+   Short* next_list // nextgroup for this keyword
 ) {
    KeyEntry   *kp;
    EeSet   *ht;
    EeSetItem   *hi;
-   Byte   *name_ic;
+   CS name_ic;
    Unt   name_iclen;
    Ulong   hash;
-   Byte   name_folded[MAXKEYWLEN + 1];
+   Byte name_folded[MAXKEYWLEN + 1];
 
    if (curPor->ownSyntax->b_syn_ic) {
       name_ic = str_foldcase(name, (int)namelen, name_folded, MAXKEYWLEN + 1);
@@ -5133,7 +5129,7 @@ get_group_name(
    OUT CS* name_end)   // pointer to end of the name
 {
    *name_end = skiptowhite(arg);
-   Byte* rest = skipwhite(*name_end);
+   CS rest = skipwhite(*name_end);
 
    // Check if there are enough arguments.  The first argument may be a
    // pattern, where '|' is allowed, so only check for ZERO.
@@ -5146,14 +5142,15 @@ get_group_name(
 //collect all options in between other arguments.
 //Return a pointer to the next argument (which isn't an option).
 //Return NULL for any error;
-private Byte *
+private CS
 get_syn_options(
-   Byte       *start,      // next argument to be checked
-   SynOptArg   *opt,      // various things
-   int          skip      // TRUE if skipping over command
+   CS start,      // next argument to be checked
+   SynOptArg* opt,      // various things
+   int skip      // TRUE if skipping over command
 ) {
-   Byte   *arg = start;
-   Byte   *gname_start, *gname;
+   CS arg = start;
+   CS gname_start;
+   CS gname;
    int      len;
    int      i;
    static struct flag {
@@ -5298,11 +5295,11 @@ syn_incl_toplevel(int id, int *flagsp) {
 
 // Handle ":syntax include [@{group-name}] filename" command.
 private void
-syn_cmd_include(Invocation *invo, int syncing UNUSED) {
-   Byte   *arg = invo->arg;
+syn_cmd_include(Invocation* invo, int syncing UNUSED) {
+   CS arg = invo->arg;
    int      sgl_id = 1;
-   Byte   *group_name_end;
-   Byte   *rest;
+   CS group_name_end;
+   CS rest;
    CS errorMsg = NULL;
    int      prev_toplvl_grp;
    int      prev_syn_inc_tag;
@@ -5359,7 +5356,7 @@ syn_cmd_include(Invocation *invo, int syncing UNUSED) {
 
 // Handle ":syntax keyword {group-name} [{option}] keyword .." command.
 private void
-syn_cmd_keyword(Invocation *invo, int syncing UNUSED) {
+syn_cmd_keyword(Invocation* invo, int syncing UNUSED) {
    CS arg = invo->arg;
    CS group_name_end;
    Short hiId;
@@ -5554,12 +5551,12 @@ syn_cmd_region(
    Invocation   *invo,
    int      syncing       // TRUE for ":syntax sync region .."
 ){
-   Byte      *arg = invo->arg;
-   Byte      *group_name_end;
-   Byte      *rest;         // next arg, NULL on error
-   Byte      *key_end;
-   Byte      *key = NULL;
-   Byte      *p;
+   CS arg = invo->arg;
+   CS group_name_end;
+   CS rest;         // next arg, NULL on error
+   CS key_end;
+   CS key = NULL;
+   CS p;
    int         item;
 #define ITEM_START      0
 #define ITEM_SKIP       1
@@ -5947,7 +5944,7 @@ addCluster(CS name) {
 //Handle ":syntax cluster {cluster-name} [contains={groupname},..]
 //     [add={groupname},..] [remove={groupname},..]".
 private void
-syn_cmd_cluster(Invocation *invo, int syncing UNUSED) {
+syn_cmd_cluster(Invocation* invo, int syncing UNUSED) {
    CS arg = invo->arg;
    CS group_name_end;
    CS rest;
@@ -6019,8 +6016,8 @@ init_syn_patterns(void) {
 //Get one pattern for a ":syntax match" or ":syntax region" command.
 //Store the pattern and program in a SyntaxPattern.
 //Returns a pointer to the next argument, or NULL in case of an error.
-private Arr(Byte)
-getSyntPattern(Byte *arg, SyntaxPattern *ci, OUT Boole* hadEol) {
+private CS
+getSyntPattern(CS arg, SyntaxPattern *ci, OUT Boole* hadEol) {
    int      *p;
    int      idx;
 
@@ -6099,11 +6096,11 @@ getSyntPattern(Byte *arg, SyntaxPattern *ci, OUT Boole* hadEol) {
 
 // Handle ":syntax sync .." command.
 private void
-syn_cmd_sync(Invocation *invo, int syncing UNUSED) {
-    Byte   *arg_start = invo->arg;
-    Byte   *arg_end;
-    Byte   *key = NULL;
-    Byte   *next_arg;
+syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
+    CS arg_start = invo->arg;
+    CS arg_end;
+    CS key = NULL;
+    CS next_arg;
     int      illegal = FALSE;
     int      finished = FALSE;
     long   n;
@@ -6232,13 +6229,13 @@ get_id_list(
    OUT Arr(Short)* list, // where to store the resulting list. (if not NULL, has no effect)
    int      skip
 ) {
-   Byte   *p = NULL;
-   Byte   *end;
+   CS p = NULL;
+   CS end;
    int      round;
    int      count;
    int      total_count = 0;
    Arr(Short) retval = NULL;
-   Byte   *name;
+   CS name;
    RegMatch   regmatch;
    Short      id;
    int      i;
@@ -6519,10 +6516,10 @@ private Subcommand subcommands[] = { SMAP1((CS),
 //":syntax". Search the subcommands[] table for the subcommand name, and call a
 //syntax_subcommand() function to do the rest.
 void
-c_syntax(Invocation *invo) {
-   Byte   *arg = invo->arg;
-   Byte   *subcmd_end;
-   Byte   *subcmd_name;
+c_syntax(Invocation* invo) {
+   CS arg = invo->arg;
+   CS subcmd_end;
+   CS subcmd_name;
    int      i;
 
    synCommline = invo->commline;
@@ -6553,9 +6550,9 @@ c_syntax(Invocation *invo) {
 }
 
 void
-c_ownsyntax(Invocation *invo) {
-   Byte   *old_value;
-   Byte   *new_value;
+c_ownsyntax(Invocation* invo) {
+   CS old_value;
+   CS new_value;
 
    if (curPor->ownSyntax == &curPor->book->syntax) {
       curPor->ownSyntax = ALLOC_ONE(SyntaxBlock);
@@ -6664,8 +6661,8 @@ set_context_in_syntax_cmd(Expand *xp, CS arg) {
 }
 
 // Function given to expandGeneric() to obtain the list syntax names for expansion.
-Byte *
-get_syntax_name(Expand *xp, int idx) {
+CS
+get_syntax_name(Expand* xp, int idx) {
    switch (expand_what) {
    case EXP_SUBCMD:
       if (idx < 0 || idx >= (int)ARRAY_LENGTH(subcommands))

@@ -744,6 +744,7 @@ private void
 init0(void) {
    estack_init();
    cmdline_init();
+   bookInitGlobalCharsForKeywords();
 
    CS errMsg = inputInitCharLens();
    if (errMsg) {

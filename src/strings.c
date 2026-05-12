@@ -60,7 +60,7 @@ sanitizeStr(CS s) {
       if ((l = utfCharLen(p)) > 1) {
          c = mb_ptr2char(p);
          p += l;
-         if (eeIsPrintable(c))
+         if (bookIsCharPrintable(c))
             len += l;
          else {
            transchar_hex(hexbuf, c);
@@ -80,7 +80,7 @@ sanitizeStr(CS s) {
    while (*p != ZERO) {
       if ((l = utfCharLen(p)) > 1) {
          c = mb_ptr2char(p);
-         if (eeIsPrintable(c))
+         if (bookIsCharPrintable(c))
             STRNCAT(res, p, l);   // append printable multi-byte char
          else
             transchar_hex(res + STRLEN(res), c);

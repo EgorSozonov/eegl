@@ -398,7 +398,7 @@ msgOuttransLenDeco(Text slice, char flags) {
       mb_l = utfCharLen_len(str, len + 1);
       if (mb_l > 1) {
          c = (*mb_ptr2char)(str);
-         if (eeIsPrintable(c))
+         if (bookIsCharPrintable(c))
             // printable multi-byte char: count the cells.
             retval += mb_ptr2cells(str);
          else {

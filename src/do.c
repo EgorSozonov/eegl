@@ -48,7 +48,7 @@ do_ascii(Invocation* invo UNUSED){
          c = ZERO;
       else
          cval = c;
-      if (eeIsPrintable_strict(c) && (c < ' ' || c > '~')) {
+      if (bookIsCharPrintable_strict(c) && (c < ' ' || c > '~')) {
          transchar_nonprint(buf3, c);
          eeSnprintf(buf1, sizeof(buf1), "  <%s>", (char *)buf3);
       } else

@@ -1349,7 +1349,7 @@ insertchar0(
    int      flags,         // INSCHAR_FORMAT, etc.
    int      second_indent      // indent for second line if >= 0
 ){
-   Byte   *p;
+   CS p;
    int force_format = flags & INSCHAR_FORMAT;
 
    int textwidth = comp_textwidth(force_format);
@@ -1385,12 +1385,11 @@ insertchar0(
                  + char2cells(c != ZERO ? c : gchar_cursor());
 
       if (*curBook->o.formatExpr != ZERO && (flags & INSCHAR_NO_FEX) == 0
-         && (force_format || virtcol > (ColNr)textwidth))
-      {
-          do_internal = (fex_format(curPor->cursor.lnum, 1L, c) != 0);
-          // It may be required to save for undo again, e.g. when setline()
-          // was called.
-          needUndoS = true;
+         && (force_format || virtcol > (ColNr)textwidth)
+      ) {
+         do_internal = (fex_format(curPor->cursor.lnum, 1L, c) != 0);
+         // It may be required to save for undo again, e.g. when setline() was called.
+         needUndoS = true;
       }
       if (do_internal)
          internal_format(textwidth, second_indent, flags, c == ZERO, c);
@@ -1402,13 +1401,12 @@ insertchar0(
    // Check whether this character should end a comment.
    if (didAindentG && c == end_comment_pending) {
       CS line;
-      Byte   lead_end[COM_MAX_LEN];       // end-comment string
-      int   middle_len, end_len;
-      int   i;
+      Byte lead_end[COM_MAX_LEN];       // end-comment string
+      int middle_len, end_len;
 
       //Need to remove existing (middle) comment leader and insert end
       //comment leader.  First, check what comment leader we can find.
-      i = get_leader_len(line = ml_get_curline(), &p, FALSE, TRUE);
+      int i = get_leader_len(line = ml_get_curline(), &p, FALSE, TRUE);
       if (i > 0 && firstOccurrence(p, COM_MIDDLE) != NULL) {  // Just checking
          // Skip middle-comment string
          while (*p && p[-1] != ':')   // find end of middle flags
@@ -1502,7 +1500,7 @@ insertchar0(
    } else {
       int cc;
 
-      if ((cc = (*mb_char2len)(c)) > 1) {
+      if ((cc = mb_char2len(c)) > 1) {
          Byte buf[MB_MAXBYTES + 1];
          mb_char2bytes(c, buf);
          buf[cc] = ZERO;
@@ -1521,7 +1519,7 @@ insertchar0(
 //Put a character in the redo buffer, for when just after a CTRL-V.
 private void
 redo_literal(int c) {
-   Byte   buf[10];
+   Byte buf[10];
 
    // Only digits need special treatment.  Translate them into a string of three digits.
    if (EE_ISDIGIT(c)) {
@@ -1740,7 +1738,7 @@ free_last_insert(void) {
 //and CSI.  Handle multi-byte characters. Return a pointer to after the added bytes.
 CS
 add_char2buf(Unt c, CS s) {
-   Byte   temp[MB_MAXBYTES + 1];
+   Byte temp[MB_MAXBYTES + 1];
 
    int len = mb_char2bytes(c, temp);
    for (int i = 0; i < len; ++i) {
@@ -1797,7 +1795,7 @@ oneright(void) {
       // Adjust for multi-wide char (excluding TAB)
       CS ptr = ml_get_cursor();
       coladvance(getviscol() + ((*ptr != TAB
-                    && eeIsPrintable((*mb_ptr2char)(ptr)))
+                    && bookIsCharPrintable((*mb_ptr2char)(ptr)))
              ? ptr2cells(ptr) : 1));
       curPor->setCursWant = TRUE;
       // Return OK if the cursor moved, FAIL otherwise (at window edge).
@@ -1843,7 +1841,7 @@ oneleft(void) {
       if (curPor->cursor.coladd == 1) {
          // Adjust for multi-wide char (not a TAB)
          CS ptr = ml_get_cursor();
-         if (*ptr != TAB && eeIsPrintable((*mb_ptr2char)(ptr)) && ptr2cells(ptr) > 1)
+         if (*ptr != TAB && bookIsCharPrintable((*mb_ptr2char)(ptr)) && ptr2cells(ptr) > 1)
             curPor->cursor.coladd = 0;
       }
 
@@ -1968,10 +1966,10 @@ int
 stuff_inserted(
    int       c,      // Command character to be inserted
    long    count,   // Repeat this many times
-   int       no_esc)   // Don't add an ESC at the end
-{
-   Text   insert;            // text to be inserted
-   Byte   last = ' ';
+   int       no_esc   // Don't add an ESC at the end
+){
+   Text insert;            // text to be inserted
+   Byte last = ' ';
 
    insert = get_last_insert();
    if (insert.c == NULL) {
@@ -1985,7 +1983,7 @@ stuff_inserted(
 
    if (insert.len > 0) {
       // look for the last ESC in 'insert'
-      for (Byte* p = insert.c + insert.len - 1; p >= insert.c; --p) {
+      for (CS p = insert.c + insert.len - 1; p >= insert.c; --p) {
          if (*p == ESC) {
             insert.len = (Unt)(p - insert.c);
             break;
@@ -1994,7 +1992,7 @@ stuff_inserted(
    }
 
    if (insert.len > 0) {
-      Byte   *p = insert.c + insert.len - 1;
+      CS p = insert.c + insert.len - 1;
 
       // when the last char is either "0" or "^" it will be quoted if no ESC
       // comes after it OR if it will insert more than once and "ptr" starts with ^D.   -- Acevedo
@@ -2324,21 +2322,20 @@ ins_start_select(int c) {
    case K_KPAGEDOWN:
       if (!(modMaskG & MOD_MASK_SHIFT))
          break;
-       // FALLTHROUGH
+      // FALLTHROUGH
    case K_S_LEFT:
    case K_S_RIGHT:
    case K_S_UP:
    case K_S_DOWN:
    case K_S_END:
    case K_S_HOME:
-      // Start selection right away, the cursor can move with CTRL-O when
-      // beyond the end of the line.
+      //Start selection right away, the cursor can move with CTRL-O when beyond the end of the line
       start_selection();
 
       // Execute the key in (insert) Select mode.
       stuffcharReadbuff(Ctrl_O);
       if (modMaskG) {
-         Byte       buf[4] = {K_SPECIAL, KS_MODIFIER, modMaskG, ZERO};
+         Byte buf[4] = {K_SPECIAL, KS_MODIFIER, modMaskG, ZERO};
          stuffReadbuffLen(buf, 3L);
       }
       stuffcharReadbuff(c);
@@ -2524,10 +2521,10 @@ ins_bs(int c, int mode, int* inserted_space_p) {
       ) {
          ColNr   vcol = 0;
          ColNr   want_vcol;
-         Byte   *line;
-         Byte   *ptr;
-         Byte   *cursor_ptr;
-         Byte   *space_ptr;
+         CS line;
+         CS ptr;
+         CS cursor_ptr;
+         CS space_ptr;
          ColNr   space_vcol = 0;
          int      prev_space = FALSE;
          ColNr   want_col;
@@ -2649,12 +2646,12 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 //When "drop" is TRUE then consume the text and drop it.
 int
 bracketed_paste(PasteMode mode, int drop, ArrayList *gap) {
-   Unt      c;
-   Byte   buf[NUMBUFLEN + MB_MAXBYTES];
-   int      idx = 0;
-   Byte   *end = find_termcode((CS)"PE");
-   int      ret_char = -1;
-   int      save_allow_keys = allow_keys;
+   Unt c;
+   Byte buf[NUMBUFLEN + MB_MAXBYTES];
+   int idx = 0;
+   CS end = find_termcode((CS)"PE");
+   int ret_char = -1;
+   int save_allow_keys = allow_keys;
 
    // If the end code is too long we can't detect it, read everything.
    if (end && STRLEN(end) >= NUMBUFLEN)
@@ -2944,16 +2941,15 @@ ins_tab(void) {
 
    //When 'expandtab' not set: Replace spaces by TABs where possible.
    if (!curBook->o.expandTab) {
-      Byte      *ptr;
-      Pos      *cursor;
-      ColNr      want_vcol, vcol;
-      int      change_col = -1;
-      int      save_list = curPor->o.list;
-      Byte      *tab = (CS)"\t";
+      Pos* cursor;
+      ColNr want_vcol, vcol;
+      int change_col = -1;
+      int save_list = curPor->o.list;
+      CS tab = S"\t";
       CharTableSize   cts;
 
       //Get the current line.
-      ptr = ml_get_cursor();
+      CS ptr = ml_get_cursor();
       cursor = &curPor->cursor;
 
       // When 'L' is not in 'cpoptions' a tab always takes up 'ts' spaces.
@@ -3382,7 +3378,7 @@ private Arr(PopupItem) displayedCompletionsS = NULL;
 private int displayedCompletionsSsize;
 
 private Unt addMatchToList(
-   CS str, int len, CS fname, Byte **cptext, Var *user_data, Unt cdir, Unt flags, 
+   CS str, int len, CS fname, CS* cptext, Var *user_data, Unt cdir, Unt flags, 
    Boole adup, Arr(Decoration) userDecos, int score
 );
 private void ins_compl_longest_match(InsertCompletion *match);
@@ -3636,11 +3632,11 @@ ins_compl_accept_char(int c) {
    case CTRL_X_OMNI:
       // Command line and Omni completion can work with just about any
       // printable character, but do stop at white space.
-      return eeIsPrintable(c) && !SPACE_OR_TAB(c);
+      return bookIsCharPrintable(c) && !SPACE_OR_TAB(c);
 
    case CTRL_X_WHOLE_LINE:
       // For while line completion a space can be part of the line.
-      return eeIsPrintable(c);
+      return bookIsCharPrintable(c);
    }
    return eeIsWordc(c);
 }
@@ -3764,12 +3760,12 @@ ins_compl_add_infercase(
    int score)
 {
    CS str = str_arg;
-   Byte   *p;
+   CS p;
    int char_len;      // count multi-byte characters
    int compl_char_len;
    int min_len;
    Unt flags = 0;
-   Byte   *tofree = NULL;
+   CS tofree = NULL;
 
    if (p_ic && curBook->o.inferCase && len > 0) {
       // Infer case of completed part. Find actual length of completion.
@@ -4034,7 +4030,8 @@ ins_compl_lnum_in_range(LineNr lnum) {
 // Reduce the longest common string for match "match".
 private void
 ins_compl_longest_match(InsertCompletion* match) {
-   Byte   *p, *s;
+   CS p;
+   CS s;
    int      c1, c2;
    int      had_match;
 
@@ -5068,8 +5065,8 @@ ins_compl_addleader(int c) {
       return;
       
    int cc;
-   if ((cc = (*mb_char2len)(c)) > 1) {
-      Byte   buf[MB_MAXBYTES + 1];
+   if ((cc = mb_char2len(c)) > 1) {
+      Byte buf[MB_MAXBYTES + 1];
 
       mb_char2bytes(c, buf);
       buf[cc] = ZERO;
@@ -5753,7 +5750,7 @@ getUserDecoration(CS hlname) {
 //When "fast" is TRUE use fast_breakcheck() instead of ui_breakcheck().
 private int
 ins_compl_add_tv(Var* tv, Unt dir, int fast) {
-   Byte   *word;
+   CS word;
    int      dup = FALSE;
    int      empty = FALSE;
    int      flags = fast ? CP_FAST : 0;
@@ -5794,7 +5791,7 @@ ins_compl_add_tv(Var* tv, Unt dir, int fast) {
       word = convertVarToStringSingleUse(tv);
       CLEAR_FIELD(cptext);
    }
-   if (word == NULL || (!empty && *word == ZERO)) {
+   if (!word || (!empty && *word == ZERO)) {
       clearVar(&user_data);
       return FAIL;
    }
@@ -6023,8 +6020,8 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
          eeRegFree(regmatch.regprog);
       }
    } else {
-      Byte       *p = ise;
-      Byte       *p_space = NULL;
+      CS p = ise;
+      CS p_space = NULL;
 
       cur_end = before_cursor + (int)STRLEN(before_cursor);
 
@@ -6237,7 +6234,7 @@ thesaurus_func_complete(int type) {
 // Check if 'cpt' list index can be advanced to the next completion source.
 private int
 may_advance_cpt_index(CS cpt) {
-   Byte  *p = cpt;
+   CS p = cpt;
 
    if (cpt_sources_index == -1)
       return FALSE;
@@ -7051,16 +7048,15 @@ strip_caret_numbers_in_place(CS str) {
 // Call functions specified in the 'cpt' option with findstart=1, and retrieve the startcol.
 private int
 prepare_cpt_compl_funcs(void) {
-   Byte   *p;
-   Callback   *cb = NULL;
-   int      idx = 0;
-   int      startcol;
+   Callback* cb = NULL;
+   int idx = 0;
+   int startcol;
 
    // Make a copy of 'cpt' in case the buffer gets wiped out
    CS cpt = copyStr(curBook->o.complete);
    strip_caret_numbers_in_place(cpt);
 
-   for (p = cpt; *p;) {
+   for (CS p = cpt; *p;) {
       while (*p == ',' || *p == ' ') // Skip delimiters
           p++;
       if (*p == ZERO)
@@ -7083,9 +7079,9 @@ prepare_cpt_compl_funcs(void) {
       idx++;
    }
 
-    eeglFree(cpt);
-    return OK;
-    return FAIL;
+   eeglFree(cpt);
+   return OK;
+   return FAIL;
 }
 
 // Start the timer for the current completion source.
@@ -7941,7 +7937,7 @@ private int
 get_filename_compl_info(CS line, int startcol, ColNr curs_col) {
    // Go back to just before the first filename character.
    if (startcol > 0) {
-      Byte   *p = line + startcol;
+      CS p = line + startcol;
 
       MB_PTR_BACK(line, p);
       while (p > line && eeIsFnameChar(mb_ptr2char(p)))
@@ -8303,13 +8299,13 @@ ins_compl_show_statusmsg(void) {
          edit_submode_highl = 0;
          compl_curr_match->cp_number = 1;
       } else {
-         // Update completion sequence number when needed.
+         //Update completion sequence number when needed.
          if (compl_curr_match->cp_number == -1)
             ins_compl_update_sequence_numbers();
-         // The match should always have a sequence number now, this is just a safety check.
+         //The match should always have a sequence number now, this is just a safety check.
          if (compl_curr_match->cp_number != -1) {
-            // Space for 10 text chars. + 2x10-digit no.s = 31.
-            // Translations may need more than twice that.
+            //Space for 10 text chars. + 2x10-digit no.s = 31.
+            //Translations may need more than twice that.
             static Byte match_ref[81];
 
             if (compl_matches > 0)
@@ -8437,7 +8433,7 @@ ins_complete(Unt c, Boole enable_pum) {
 // Return TRUE if the given character 'c' can be used to trigger autocompletion.
 private Boole
 ins_compl_setup_autocompl(Unt c) {
-   if (eeIsPrintable(c)) {
+   if (bookIsCharPrintable(c)) {
       compl_autocomplete = true;
       return true;
    }
@@ -8542,7 +8538,7 @@ setup_cpt_sources(void) {
       if (*p) { // If not end of string, count this segment
          slen = copy_option_part(&p, buf, LSIZE, ","); // Advance p
          if (slen > 0) {
-            Byte   *caret = firstOccurrence(buf, '^');
+            CS caret = firstOccurrence(buf, '^');
             if (caret)
                cpt_sources_array[idx].maxMatches = atoi((char *)caret + 1);
          }
@@ -8780,11 +8776,10 @@ setOmnifunc(OptionChange* cha) {
 //allocate new ones. Only F{func} entries are processed; others are ignored.
 Unt
 setCompletionCallbacks(OptionChange *cha) {
-   Byte  buf[LSIZE];
-
    if (!curBook)
       return FAIL;
 
+   Byte buf[LSIZE];
    evFreeCallback(curBook->o.completeFn);
 
    curBook->o.completeFn = ALLOC_CLEAR_MULT(Callback, 1);

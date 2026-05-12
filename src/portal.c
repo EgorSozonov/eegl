@@ -4290,20 +4290,15 @@ enterPortal(Portal* po, int undo_sync) {
 void
 portFixCurrentDir(void) {
    if (curPor->localDir || curtab->localdir) {
-      Byte   *dirname;
-
       // Portal or tab has a local directory: Save current directory as
       // global directory (unless that was done already) and change to the local directory
       if (globaldir == NULL) {
-         Byte   cwd[MAXPATHL];
+         Byte cwd[MAXPATHL];
 
          if (mch_dirname(cwd, MAXPATHL) == OK)
             globaldir = copyStr(cwd);
       }
-      if (curPor->localDir != NULL)
-         dirname = curPor->localDir;
-      else
-         dirname = curtab->localdir;
+      CS dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
 
       if (mch_chdir((char *)dirname) == 0) {
          last_chdir_reason = NULL;
@@ -6690,7 +6685,7 @@ f_getwinposy(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
 void
 f_tabpagenr(Arr(Var) argvars UNUSED, Var* returnVar) {
    int      nr = 1;
-   Byte   *arg;
+   CS arg;
 
    if (argvars[0].tag != VAR_UNKNOWN) {
       arg = convertVarToStringSingleUse(&argvars[0]);
@@ -6716,23 +6711,21 @@ f_tabpagewinnr(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 void
 f_win_execute(Arr(Var) argvars, Var* returnVar) {
-   int      id;
    Tab   *t;
-   Portal   *po;
    SwitchPort   switchPort;
 
    // Return an empty string if something fails.
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
-   id = (int)tv_get_number(argvars);
-   po = getPortAndTab(id, &t);
+   int id = (int)tv_get_number(argvars);
+   Portal* po = getPortAndTab(id, &t);
    if (!po || !t)
       return;
 
-   Pos   curpos = po->cursor;
-   Byte   cwd[MAXPATHL];
-   int   cwd_status = FAIL;
+   Pos curpos = po->cursor;
+   Byte cwd[MAXPATHL];
+   int cwd_status = FAIL;
 
    // Getting and setting directory can be slow on some systems, only do
    // this when the current or target portal/tab have a local directory or 'acd' is set.
@@ -7003,8 +6996,8 @@ f_winnr(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 void
 f_winrestcmd(Arr(Var) argvars UNUSED, Var* returnVar) {
-   Portal   *po;
-   Byte   buf[50];
+   Portal* po;
+   Byte buf[50];
 
    ArrayList   ga;
    ga_init2(&ga, sizeof(char), 70);
@@ -7559,7 +7552,7 @@ addTimeout(Portal* po, int time, int close) {
 
 private PopupPosition
 get_pos_entry(Bag *d, int give_error) {
-   Byte  *str = bagGetString(d, tConst("pos"), FALSE);
+   CS str = bagGetString(d, tConst("pos"), FALSE);
 
    if (!str)
       return POPPOS_NONE;
@@ -7604,7 +7597,7 @@ applyMoveParams(Portal* po, Bag* params) {
    if (ppt != POPPOS_NONE)
       po->pup.pos = ppt;
 
-   Byte* str = bagGetString(params, tConst("textprop"), FALSE);
+   CS str = bagGetString(params, tConst("textprop"), FALSE);
    if (str) {
       po->pup.propType = 0;
       if (*str != ZERO) {
@@ -7690,7 +7683,7 @@ handle_moved_argument(Portal* po, DictItem* di, int mousemoved) {
 }
 
 private void
-check_highlight(Bag* dict, CS name, Byte** pval) {
+check_highlight(Bag* dict, CS name, OUT CS* pval) {
    DictItem* di = bagFind(dict, mbText(name));
    if (!di)
       return;
@@ -7698,7 +7691,7 @@ check_highlight(Bag* dict, CS name, Byte** pval) {
    if (di->c.tag != VAR_STRING)
       showErrFmtMsg(_(e_invalid_value_for_argument_str), name);
    else {
-      Byte* str = tv_get_string(&di->c);
+      CS str = tv_get_string(&di->c);
       if (*str != ZERO)
          *pval = copyStr(str);
    }
@@ -7740,7 +7733,7 @@ popup_get_sign_name(Portal* po) {
 private void
 highlightCurrentLine(Portal* po) {
    int       sign_id = 0;
-   Byte  *sign_name = popup_get_sign_name(po);
+   CS sign_name = popup_get_sign_name(po);
 
    markDeleteSigns(po->book, (CS)"PopUpMenu");
 
@@ -7815,7 +7808,7 @@ apply_general_options(Portal* po, Bag* dict) {
       int ok = TRUE;
 
       if (di->c.tag == VAR_STRING && di->c.string != NULL) {
-         Byte  *s = di->c.string;
+         CS s = di->c.string;
          if (STRCMP(s, "none") == 0)
             po->pup.close = POPCLOSE_NONE;
          ei (STRCMP(s, "button") == 0)
@@ -8042,11 +8035,9 @@ private void
 add_popup_strings(Book* book, List* l) {
    ListItem  *li;
    LineNr    lnum = 0;
-   Byte   *p;
-
    FOR_ALL_LIST_ITEMS(l, li) {
       if (li->c.tag == VAR_STRING) {
-         p = li->c.string;
+         CS p = li->c.string;
          memAppendBook(book, lnum++, p == NULL ? Em : p, (ColNr)0, TRUE);
       }
    }
@@ -8055,11 +8046,11 @@ add_popup_strings(Book* book, List* l) {
 // Add lines to the popup from a list of dictionaries.
 private void
 add_popup_dicts(Book* book, List *l) {
-   ListItem  *li;
-   ListItem  *pli;
+   ListItem* li;
+   ListItem* pli;
    LineNr    lnum = 0;
-   Byte   *p;
-   Bag   *dict;
+   CS p;
+   Bag* dict;
 
    // first add the text lines
    FOR_ALL_LIST_ITEMS(l, li) {
@@ -8615,17 +8606,17 @@ parse_popup_option(Portal* po, Boole is_preview) {
       po->pup.flags &= ~POPF_INFO_MENU;
 
    for ( ; *p != ZERO; p += (*p == ',' ? 1 : 0)) {
-      Byte* s = p;
+      CS s = p;
       int x;
 
-      Byte* e = firstOccurrence(p, ':');
+      CS e = firstOccurrence(p, ':');
       if (!e || e[1] == ZERO)
          return FAIL;
 
       p = firstOccurrence(e, ',');
       if (!p)
          p = e + STRLEN(e);
-      Byte* dig = e + 1;
+      CS dig = e + 1;
       x = parseLong(&dig);
 
       // Note: Keep this in sync with p_popup_option_values.
@@ -8656,10 +8647,10 @@ parse_popup_option(Portal* po, Boole is_preview) {
          }
       } ei (STRNCMP(s, "border:", 7) == 0) {
           // Note: Keep this in sync with p_popup_option_border_values.
-          Byte   *arg = s + 7;
-          int      on = STRNCMP(arg, "on", 2) == 0 && arg + 2 == p;
-          int      off = STRNCMP(arg, "off", 3) == 0 && arg + 3 == p;
-          int      i;
+          CS arg = s + 7;
+          int on = STRNCMP(arg, "on", 2) == 0 && arg + 2 == p;
+          int off = STRNCMP(arg, "off", 3) == 0 && arg + 3 == p;
+          int i;
 
          if (!on && !off)
             return FAIL;
@@ -8672,7 +8663,7 @@ parse_popup_option(Portal* po, Boole is_preview) {
          }
       } ei (STRNCMP(s, "align:", 6) == 0) {
          // Note: Keep this in sync with p_popup_option_align_values.
-         Byte   *arg = s + 6;
+         CS arg = s + 6;
          int      item = STRNCMP(arg, "item", 4) == 0 && arg + 4 == p;
          int      menu = STRNCMP(arg, "menu", 4) == 0 && arg + 4 == p;
 
@@ -9293,21 +9284,14 @@ f_popup_filter_menu(Arr(Var) argvars, Var* returnVar) {
 // popup_filter_yesno({id}, {key})
 void
 f_popup_filter_yesno(Arr(Var) argvars, Var* returnVar) {
-   int      id;
-   Portal   *po;
-   Byte   *key;
-   Var   res;
-   int      c;
-
-
-   id = tv_get_number(&argvars[0]);
-   po = getPortalById(id);
-   key = tv_get_string(&argvars[1]);
+   int id = tv_get_number(&argvars[0]);
+   Portal* po = getPortalById(id);
+   CS key = tv_get_string(&argvars[1]);
    // If the popup has been closed don't consume the key.
    if (!po)
       return;
 
-   c = *key;
+   int c = *key;
    if (c == ENTER && need_wait_return)
       return;
    if (c == K_SPECIAL && key[1] != ZERO)
@@ -9317,6 +9301,7 @@ f_popup_filter_yesno(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_BOOL;
    returnVar->number = VVAL_TRUE;
 
+   Var res;
    if (c == 'y' || c == 'Y')
       res.number = 1;
    ei (c == 'n' || c == 'N' || c == 'x' || c == 'X' || c == ESC)
@@ -9689,7 +9674,7 @@ f_popup_locate(Arr(Var) argvars, Var* returnVar) {
 
 //For popup_getoptions(): add a "border" or "padding" entry to "dict".
 private void
-get_padding_border(Bag *dict, int *array, CS name) {
+get_padding_border(Bag* dict, int* array, CS name) {
    if (array[0] == 0 && array[1] == 0 && array[2] == 0 && array[3] == 0)
       return;
 
@@ -9720,10 +9705,10 @@ get_borderhighlight(Bag* dict, Portal* po) {
 
 // For popup_getoptions(): add a "borderchars" entry to "dict".
 private void
-get_borderchars(Bag *bag, Portal* po) {
-   Byte  buf[NUMBUFLEN];
+get_borderchars(Bag* bag, Portal* po) {
+   Byte buf[NUMBUFLEN];
    
-   int       i;
+   int i;
    for (i = 0; i < 8; ++i) {
       if (po->pup.borderChar[i] != 0)
          break;
@@ -10973,7 +10958,7 @@ setPopupTitle(Portal* po) {
    if (po->book->currFileName == NULL)
       return;
 
-   Byte   dirname[MAXPATHL];
+   Byte dirname[MAXPATHL];
 
    mch_dirname(dirname, MAXPATHL);
    shorten_buf_fname(po->book, dirname, FALSE);
@@ -11306,14 +11291,14 @@ pum_under_menu(int row, int col, int only_redrawing) {
 // Computes decorations of text on the popup menu.
 // Return decorations for every cell, or NULL if all decorations are the same.
 private Arr(Decoration)
-computeTextDeco(Byte* text, Short hiId, Decoration userDeco) {
+computeTextDeco(CS text, Short hiId, Decoration userDeco) {
    if (*text == ZERO || (hiId != HLF_PSI && hiId != HLF_PNI)
           || (getDecoFlags(HLF_PMSI) == getDecoFlags(HLF_PSI)
               && getDecoFlags(HLF_PMNI) == getDecoFlags(HLF_PNI)))
       return NULL;
 
    Boole isSelect = hiId == HLF_PSI;
-   Byte* leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
+   CS leader = (stateG & MODE_COMMLINE) ? cmdline_compl_pattern() : ins_compl_leader();
    if (!leader || *leader == ZERO)
       return NULL;
 
@@ -11331,9 +11316,9 @@ computeTextDeco(Byte* text, Short hiId, Decoration userDeco) {
 
    Decoration newDeco;
    int cellIdx = 0;
-   int      matchedLen = -1;
-   Unt   char_pos = 0;
-   Byte   *ptr = text;
+   int matchedLen = -1;
+   Unt char_pos = 0;
+   CS ptr = text;
    while (*ptr != ZERO) {
       newDeco = decorationsG[hiId];
 
@@ -11386,9 +11371,9 @@ pum_drawText_withDecos(
    int textlen,
    Arr(Decoration) decos)
 {
-   int      col_start = col;
-   Byte   *ptr = text;
-   int      char_len;
+   int col_start = col;
+   CS ptr = text;
+   int char_len;
    // Render text with proper decorations
    while (*ptr != ZERO && ptr < text + textlen) {
       char_len = utfCharLen(ptr);
@@ -11434,7 +11419,7 @@ private int
 displayText(
    int row,
    int col,
-   Arr(Byte) text,
+   CS text,
    char decoFlags,
    Arr(Decoration) decos,
    int width,        // width already calculated in outer loop
@@ -11587,7 +11572,7 @@ pum_redraw(void) {
    Decoration deco;
    int i, j;
    int idx;
-   Byte* p = NULL;
+   CS p = NULL;
    int totwidth;
    int thumb_pos = 0;
    int thumb_height = 1;
@@ -11848,10 +11833,10 @@ pum_set_selected(int n, int repeat UNUSED) {
                );
             }
             if (res == OK) {
-               Byte   *p, *e;
+               CS e;
                LineNr   lnum = 0;
 
-               for (p = displayedItemsS[selectedItemInd].pum_info; *p != ZERO; ) {
+               for (CS p = displayedItemsS[selectedItemInd].pum_info; *p != ZERO; ) {
                   e = firstOccurrence(p, '\n');
                   if (!e) {
                      ml_append(lnum++, p, 0, FALSE);
@@ -12099,11 +12084,11 @@ private Unt balloonArraySizeS;
 # define BALLOON_MIN_HEIGHT 10
 
 typedef struct {
-   Byte   *start;
-   int      bytelen;
-   int      cells;
-   int      indent;
-} balpart_T;
+   CS start;
+   int bytelen;
+   int cells;
+   int indent;
+} BalPart;
 
 //Split a string into parts to display in the balloon. Aimed at output from gdb. Attempt to split 
 //at white space, preserve quoted strings and make a struct look good. Resulting array is stored 
@@ -12111,7 +12096,7 @@ typedef struct {
 Unt
 balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
    ArrayList   ga;
-   balpart_T   *item;
+   BalPart   *item;
    int quoted = FALSE;
    int indent = 0;
    int max_cells = 0;
@@ -12119,13 +12104,13 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
    int long_item_count = 0;
    int split_long_items = FALSE;
 
-   ga_init2(&ga, sizeof(balpart_T), 20);
+   ga_init2(&ga, sizeof(BalPart), 20);
    CS p = mesg;
 
    while (*p != ZERO) {
       if (ga_grow(&ga, 1) == FAIL)
          goto failed;
-      item = ((balpart_T *)ga.c) + ga.len;
+      item = ((BalPart *)ga.c) + ga.len;
       item->start = p;
       item->indent = indent;
       item->cells = indent * 2;
@@ -12186,7 +12171,7 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
       int   ind;
       int   cells;
 
-      item = ((balpart_T *)ga.c) + item_idx;
+      item = ((BalPart *)ga.c) + item_idx;
       if (item->bytelen == 0)
          (*array)[line++].pum_text = copyStr((CS)"");
       else {
@@ -12444,8 +12429,8 @@ bexpr_eval(
    CS text
 ) {
    long   portNr = 0;
-   Book   *save_curbuf;
-   static Byte  *result = NULL;
+   Book* curBookSaved;
+   static CS result = NULL;
    Unt   len;
 
    ScriptPos   save_sctx = scriptPosG;
@@ -12464,9 +12449,9 @@ bexpr_eval(
 
    //Temporarily change the curBook, so that we can determine whether
    //the book-local balloonexpr option was set insecurely.
-   save_curbuf = curBook;
+   curBookSaved = curBook;
    curBook = po->book;
-   curBook = save_curbuf;
+   curBook = curBookSaved;
    ++textlock;
 
    if (bexpr == curBook->o.balloonExpr) {

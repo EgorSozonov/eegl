@@ -8697,7 +8697,7 @@ getCommandWorker(
       if (end_wildmenu) {
          if (cmdline_pum_active()) {
             skip_pum_redraw = skip_pum_redraw && !key_is_wc
-                && (eeIsPrintable(c)
+                && (bookIsCharPrintable(c)
                   || c == K_BS || c == Ctrl_H || c == K_DEL
                   || c == K_KDEL || c == Ctrl_W || c == Ctrl_U);
             cmdline_pum_remove(&commInfo, skip_pum_redraw);

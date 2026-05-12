@@ -6825,7 +6825,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
          if ((multibLength == 1 && currSymb >= 0x80)
              || (multibLength >= 1 && sc.mb_c == 0)
-             || (multibLength > 1 && (!eeIsPrintable(sc.mb_c)))
+             || (multibLength > 1 && (!bookIsCharPrintable(sc.mb_c)))
          ) {
             // Illegal UTF-8 byte: display as <xx>.
             // Non-BMP character : display as ? or fullwidth ?.
@@ -7001,7 +7001,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          }
 
          // Handling of non-printable characters.
-         if (!eeIsPrintable(currSymb)) {
+         if (!bookIsCharPrintable(currSymb)) {
             // when getting a character from the file, we may have to
             // turn it into something else on the way to putting it into "screenLinesG".
             if (currSymb == TAB && (!port->o.list || listCharsG.tab1)) {

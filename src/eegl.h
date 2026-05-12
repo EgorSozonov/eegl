@@ -2125,7 +2125,6 @@ EXTERN Boole p_csverbose;//@cscopeverbose
 EXTERN CS p_debug;  //@debug
 EXTERN CS p_dip;    //@diffopt
 EXTERN CS p_dex;    //@diffexpr
-EXTERN CS p_dir;    //@directory
 EXTERN CS p_ead;    //@eadirection
 EXTERN Boole p_ea;       //@equalalways
 EXTERN CS globOpt;  //@errorfile

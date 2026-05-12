@@ -9,6 +9,8 @@
 #include <sys/sysinfo.h>
 #include <sys/stat.h> // for stat, fstat
 
+#define SWAP_DIR S"~/.local/state/eegl/"
+
 //{{{allocations
 //{{{ Arena
 
@@ -1090,7 +1092,7 @@ ml_setname(Book *book) {
    }
 
    // Try all directories in the 'directory' option.
-   CS dirp = p_dir;
+   CS dirp = SWAP_DIR;
    for (;;) {
       if (*dirp == ZERO)       // tried all directories, fail
          break;
@@ -1172,7 +1174,7 @@ ml_open_file(Book* book) {
    }
 
    // Try all directories in @directory
-   CS dirp = p_dir;
+   CS dirp = SWAP_DIR;
    for (;;) {
       if (*dirp == ZERO)
          break;
@@ -1200,7 +1202,7 @@ ml_open_file(Book* book) {
       }
    }
 
-   if (*p_dir != ZERO && !mfp->fName) {
+   if (!mfp->fName) {
       need_wait_return = TRUE;   // call wait_return() later
       ++no_wait_return;
       (void)showErrFmtMsg(_(e_unable_to_open_swap_file_for_str_recovery_impossible),
@@ -1902,8 +1904,8 @@ recover_names(
 
    //Do the loop for every directory in 'directory'.
    //First allocate some memory to put the directory name in.
-   dir_name = alloc(STRLEN(p_dir) + 1);
-   dirp = p_dir;
+   dir_name = alloc(sizeof(SWAP_DIR));
+   dirp = SWAP_DIR;
    while (dir_name && *dirp) {
       //Isolate a directory name from *dirp and put it into dir_name (we know
       //it is large enough, so use 31000 for length). Advance dirp to next directory name.

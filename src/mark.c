@@ -2012,7 +2012,7 @@ sign_define_init_text(Sign *sp, Byte *text) {
 
    // Count cells and check for non-printable chars
    for (s = text; s < endp; s += utfCharLen(s)) {
-      if (!eeIsPrintable((*mb_ptr2char)(s)))
+      if (!bookIsCharPrintable((*mb_ptr2char)(s)))
          break;
       cells += (*mb_ptr2cells)(s);
    }

@@ -1230,7 +1230,7 @@ qf_parse_multiline_pfx(
       }
       if (qfprev->errNum == -1)
           qfprev->errNum = fields->enr;
-      if (eeIsPrintable(fields->type) && !qfprev->kind)
+      if (bookIsCharPrintable(fields->type) && !qfprev->kind)
           // only printable chars allowed
           qfprev->kind = fields->type;
 
@@ -1898,7 +1898,7 @@ addEntry(
    else 
       lline->moduleName = copyStr(module);
    lline->errNum = nr;
-   if (type != 1 && !eeIsPrintable(type)) // only printable chars allowed
+   if (type != 1 && !bookIsCharPrintable(type)) // only printable chars allowed
       type = 0;
    lline->kind = type;
    lline->isValid = valid;

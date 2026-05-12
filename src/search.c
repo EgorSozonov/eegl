@@ -4611,7 +4611,7 @@ cleanup_help_tags(OUT ExpandMatch* matches) {
    } 
 }
 
-// Called when starting to edit a buffer for a help file.
+// Called when starting to edit a book for a help file.
 void
 prepare_help_buffer(void) {
    curBook->kind = BOOK_HELP;
@@ -4623,11 +4623,9 @@ prepare_help_buffer(void) {
 
    //Accept all ASCII chars for keywords, except ' ', '*', '"', '|', and
    //latin1 word characters (for translated help files).
-   //Only set it when needed, bookInitCharsForKeywords() is some work.
    CS p = S"!-~,^*,^|,^\",192-255";
    if (STRCMP(curBook->o.isKeyword, p) != 0) {
       optChangeStringOptionDirect(S"iskeyword", p, OPT_LOCAL, 0);
-      (void)bookInitCharsForKeywords(curBook, FALSE);
    }
 
    curBook->o.shiftWidth = 3;      // tab size is 8

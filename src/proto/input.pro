@@ -86,7 +86,7 @@ Unt mb_char2len(Unt c);
 int mb_char2bytes(Unt c, CS buf);
 int utf_iscomposing_uint(Unt c);
 Boole utf_iscomposing(Unt c);
-int utf_printable(Unt c);
+Boole utf_printable(Unt c);
 int utf_class(int c);
 int utf_class_buf(Unt c, Book *book);
 int utf_ambiguous_width(Unt c);

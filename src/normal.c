@@ -2493,7 +2493,7 @@ checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir){
 // If text is found, a pointer to the text is put in "*text".  This
 // points into the current buffer line and is not always ZERO terminated.
 int
-find_ident_under_cursor(OUT Byte **text, int find_type) {
+find_ident_under_cursor(OUT CS* text, int find_type) {
     return find_ident_at_pos(curPor, curPor->cursor.lnum,
             curPor->cursor.col, text, NULL, find_type);
 }
@@ -2832,7 +2832,7 @@ add_to_showcmd(Unt c) {
       } 
    }
 
-   if (c <= 0x7f || !eeIsPrintable(c)) {
+   if (c <= 0x7f || !bookIsCharPrintable(c)) {
       p = transchar(c);
       if (*p == ' ')
           STRCPY(p, "<20>");
@@ -3533,7 +3533,7 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
       Unt c = mb_ptr2char(ml_get_cursor());
       if (dir == FORWARD && virtcol < curPor->cursWant
          && (curPor->cursWant <= (ColNr)width1)
-         && !eeIsPrintable(c) && c > 255
+         && !bookIsCharPrintable(c) && c > 255
       )
          oneright();
 
@@ -9579,9 +9579,9 @@ private MapBlock *
 addToMap(
    MapBlock** map_table,
    MapBlock** abbr_table,
-   Arr(Byte) keys,
-   Arr(Byte) rhs,
-   Arr(Byte) orig_rhs,
+   CS keys,
+   CS rhs,
+   CS orig_rhs,
    Unt noremap,
    int nowait,
    int silent,
@@ -10601,9 +10601,9 @@ expandMappings(
 //return TRUE if there is an abbreviation, FALSE if not
 Boole
 check_abbr(Unt c, CS ptr, int col, int mincol) {
-   int      len;
-   int      scol;      // starting column of the abbr.
-   int      j;
+   int len;
+   int scol;      // starting column of the abbr.
+   int j;
    CS s;
    Byte tb[MB_MAXBYTES + 4];
    MapBlock   *mp;
@@ -13209,7 +13209,7 @@ get_foldtext(
             int   len;
 
             if ((len = utfCharLen(p)) > 1) {
-               if (!eeIsPrintable((*mb_ptr2char)(p)))
+               if (!bookIsCharPrintable((*mb_ptr2char)(p)))
                   break;
                p += len - 1;
             } ei (*p == TAB)
@@ -14172,13 +14172,13 @@ foldMerge(Fold *fp1, ArrayList *gap, Fold *fp2) {
 //Low-level function to get the foldlevel for the "indent" method. Don't use any caching.
 //Return a level of -1 if the foldlevel depends on surrounding lines.
 private void
-foldlevelIndent(FoldLine *flp) {
-   LineNr   lnum = flp->lnum + flp->off;
+foldlevelIndent(FoldLine* flp) {
+   LineNr lnum = flp->lnum + flp->off;
    Book* book = flp->po->book;
    CS s = skipwhite(memGetLine(book, lnum, FALSE));
 
-   // empty line or lines starting with a character in 'foldignore': level
-   // depends on surrounding lines
+   //empty line or lines starting with a character in 'foldignore': level
+   //depends on surrounding lines
    if (*s == ZERO || firstOccurrence(flp->po->o.foldIgnore, *s) != NULL) {
       // first and last line can't be undefined, use level 0
       if (lnum == 1 || lnum == book->mem.lineCount)
@@ -14194,7 +14194,7 @@ foldlevelIndent(FoldLine *flp) {
 
 //Low level function to get the foldlevel for the "diff" method. Doesn't use any caching.
 private void
-foldlevelDiff(FoldLine *flp) {
+foldlevelDiff(FoldLine* flp) {
    if (diff_infold(flp->po, flp->lnum + flp->off))
       flp->lvl = 1;
    else

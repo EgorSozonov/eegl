@@ -3736,7 +3736,7 @@ mb_char2cells(int c) {
          return 2;
    }
    // Characters below 0x100 are influenced by 'isprint' option
-   ei (c >= 0x80 && !eeIsPrintable(c))
+   ei (c >= 0x80 && !bookIsCharPrintable(c))
       return 4;      // unprintable, displays <xx>
 
 
@@ -4540,7 +4540,7 @@ utf_iscomposing(Unt c) {
 
 //Return TRUE for characters that can be displayed in a normal way.
 //Only for characters of 0x100 and above!
-int
+Boole
 utf_printable(Unt c) {
    // Sorted list of non-overlapping intervals.
    // 0xd800-0xdfff is reserved for UTF-16, actually illegal.
@@ -5561,7 +5561,7 @@ mb_adjustpos(Book* book, Pos *lp) {
       // double-wide character.
       if (lp->coladd == 1
          && p[lp->col] != TAB
-         && eeIsPrintable(mb_ptr2char(p + lp->col))
+         && bookIsCharPrintable(mb_ptr2char(p + lp->col))
          && ptr2cells(p + lp->col) > 1)
           lp->coladd = 0;
     }

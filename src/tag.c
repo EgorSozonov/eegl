@@ -4747,7 +4747,7 @@ cs_read_prompt(int i) {
    for (;;) {
       while ((ch = getc(csinfo[i].fr_fp)) != EOF && ch != CSCOPE_PROMPT[0]) {
          // if there is room and char is printable
-         if (bufpos < maxlen - 1 && eeIsPrintable(ch)) {
+         if (bufpos < maxlen - 1 && bookIsCharPrintable(ch)) {
             if (!buf) // lazy buffer allocation
                buf = alloc(maxlen);
             // append character to the message

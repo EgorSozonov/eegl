@@ -3943,13 +3943,13 @@ get_special_key_name(Unt c, int modifiers) {
 
    //When not a known special key, and not a printable character, try to extract modifiers.
    if (c > 0 && mb_char2len(c) == 1) {
-      if (table_idx < 0 && (!eeIsPrintable(c) || (c & 0x7f) == ' ') && (c & 0x80)) {
+      if (table_idx < 0 && (!bookIsCharPrintable(c) || (c & 0x7f) == ' ') && (c & 0x80)) {
          c &= 0x7f;
          modifiers |= MOD_MASK_ALT;
          // try again, to find the un-alted key in the special key table
          table_idx = termFindSpecialKey_in_table(c);
       }
-      if (table_idx < 0 && !eeIsPrintable(c) && c < ' ') {
+      if (table_idx < 0 && !bookIsCharPrintable(c) && c < ' ') {
          c += '@';
          modifiers |= MOD_MASK_CTRL;
       }
@@ -3973,7 +3973,7 @@ get_special_key_name(Unt c, int modifiers) {
       // Not a special key, only modifiers, output directly
       else {
          len = mb_char2len(c);
-         if (len == 1 && eeIsPrintable(c))
+         if (len == 1 && bookIsCharPrintable(c))
             string[idx++] = c;
          ei (len > 1)
             idx += mb_char2bytes(c, string + idx);
