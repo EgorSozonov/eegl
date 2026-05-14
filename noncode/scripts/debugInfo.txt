@@ -1,0 +1,5 @@
+TMP=$(mktemp /tmp/eeglXXXXXX)
+dwp -o $TMP -v .b/book.dwo .b/channel.dwo .b/clipboard.dwo .b/data.dwo .b/diff.dwo .b/do.dwo .b/draw.dwo .b/eval.dwo .b/fileio.dwo .b/hilite.dwo .b/input.dwo .b/insert.dwo .b/juggle.dwo .b/location.dwo .b/main.dwo .b/mark.dwo .b/memory.dwo .b/message.dwo .b/normal.dwo .b/option.dwo .b/persist.dwo .b/portal.dwo .b/regexp.dwo .b/script.dwo .b/search.dwo .b/strings.dwo .b/tag.dwo .b/term.dwo .b/ui.dwo .b/window.dwo
+objcopy --compress-debug-sections=zlib $TMP bin/eegl.dwp
+/usr/bin/rm $TMP
+

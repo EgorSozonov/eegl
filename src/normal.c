@@ -14179,7 +14179,8 @@ foldlevelIndent(FoldLine* flp) {
 
    //empty line or lines starting with a character in 'foldignore': level
    //depends on surrounding lines
-   if (*s == ZERO || firstOccurrence(flp->po->o.foldIgnore, *s) != NULL) {
+   if (*s == ZERO || (flp->po->o.foldIgnore && firstOccurrence(flp->po->o.foldIgnore, *s) != NULL)
+   ) {
       // first and last line can't be undefined, use level 0
       if (lnum == 1 || lnum == book->mem.lineCount)
          flp->lvl = 0;

@@ -337,7 +337,7 @@ VIEWNAME	= view
 
 CC		= gcc
 DEFS		= -DHAVE_CONFIG_H
-CFLAGS	= --std=c17  -gdwarf-5 -gsplit-dwarf -Wall -Wextra -Wfatal-errors -O0 \
+CFLAGS	= --std=c17 -gdwarf-5 -gsplit-dwarf -Wall -Wextra -Wfatal-errors -O0 \
               -Wno-cpp -Werror=return-type -D_REENTRANT -Werror=pointer-compare \
               -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -fno-pie
         
@@ -1316,8 +1316,7 @@ indices: src/commands.h src/actions.h
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
-CCC_NF = $(CC) -c -I$(srcdir)
-CCC = $(CCC_NF) $(ALL_FLAGS)
+COMPILE = $(CC) -c -I$(srcdir) $(ALL_FLAGS)
 CClink = $(CC)
 
 # Link the target for normal use or debugging.
@@ -2204,10 +2203,10 @@ lintinstall:
 ###########################################################################
 
 .c.o:
-	$(CCC) $<
+	$(COMPILE) $<
 
 os/.c.o:
-	$(CCC) $<
+	$(COMPILE) $<
 
 
 
@@ -2231,37 +2230,34 @@ VIM_H_DEPENDENCIES = eegl.h termdefs.h commands.h
 $(ALL_OBJ): .b/.dirstamp
 
 .b/%.o: src/%.c
-	$(CCC) -o $@ $<
+	$(COMPILE) -o $@ $<
 
 .b/diff.o: src/diff.c
-	$(CCC) -o $@ $<
+	$(COMPILE) -o $@ $<
 
 .b/option.o: src/option.c
-	$(CCC_NF) $(ALL_FLAGS) -o $@ $<
+	$(COMPILE) -o $@ $<
 
 .b/regexp.o: src/regexp.c
-	$(CCC) -o $@ $<
+	$(COMPILE) -o $@ $<
 
 .b/ui.o: src/ui.c
-	$(CCC) -o $@ $<
+	$(COMPILE) -o $@ $<
 
 .b/window.o: src/window.c
-	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
+	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 .b/wlr-data-control-unstable-v1.o: libs/wayland/wlr-data-control-unstable-v1.c
-	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
+	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 .b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
-	$(CCC) $(WAYLAND_FLAGS) -o $@ $< 
+	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
 
 .b/xdg-shell.o: libs/wayland/xdg-shell.c
-	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
+	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 .b/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
-	$(CCC) $(WAYLAND_FLAGS) -o $@ $<
-
-
-CCCDIFF = $(CCC_NF) $(ALL_FLAGS)
+	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 
 Makefile:

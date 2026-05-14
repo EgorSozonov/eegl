@@ -41,7 +41,7 @@ private int redrawingForCallbackS INIT(= 0);
 //The screen_*() functions write to the screen and handle updating screenLinesG[].
 
 // One screen line to be displayed.  Points into screenLinesG.
-private Byte* currScreenLineS = null;
+private CS currScreenLineS = null;
 
 // The decorations that are actually active for writing to the screen.
 private Decoration activeDecoS = EMPTY_DECO;
@@ -647,7 +647,7 @@ screen_comp_differs(int off, int* characterCombiner) {
 //Note: if screenLinesG[], row and/or col is invalid, nothing is done.
 void
 drawText(
-   Arr(Byte) text,
+   CS text,
    Unt row,
    Unt col,
    char decoFlags
@@ -2406,11 +2406,11 @@ redrawRuler(Portal* po, int always, int ignore_pum) {
       int   width;
       ColNr   virtcol;
 #define RULER_BUF_LEN 70
-      Byte   buffer[RULER_BUF_LEN];
-      int   bufferlen;
-      Byte   rel_pos[RULER_BUF_LEN];
-      int   rel_poslen;
-      int   this_ru_col;
+      Byte buffer[RULER_BUF_LEN];
+      int bufferlen;
+      Byte rel_pos[RULER_BUF_LEN];
+      int rel_poslen;
+      int this_ru_col;
 
       cursor_off();
       Decoration deco;

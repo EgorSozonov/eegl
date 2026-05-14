@@ -131,19 +131,19 @@ private long next_listener_id = 0;
 //change. If above then flush changes and invoke listeners.
 private void
 checkRecordedChanges(
-   Book      *buf,
-   LineNr   lnum,
-   LineNr   lnume,
-   long      xtra
+   Book* book,
+   LineNr lnum,
+   LineNr lnume,
+   long xtra
 ) {
-   if (buf->recordedChanges == NULL || xtra == 0)
+   if (book->recordedChanges == NULL || xtra == 0)
       return;
 
    ListItem *li;
    LineNr    prev_lnum;
    LineNr    prev_lnume;
 
-   FOR_ALL_LIST_ITEMS(buf->recordedChanges, li) {
+   FOR_ALL_LIST_ITEMS(book->recordedChanges, li) {
       prev_lnum = (LineNr)bagGetNumber( li->c.bag, tConst("lnum"));
       prev_lnume = (LineNr)bagGetNumber( li->c.bag, tConst("end"));
       if (prev_lnum >= lnum || prev_lnum > lnume || prev_lnume >= lnum) {
@@ -196,18 +196,17 @@ trim_to_int(Long x) {
 
 //listener_add() function
 void
-f_listener_add(Var *argvars, Var *returnVar) {
-   Callback   callback;
-   Listener   *lnr;
-   Book   *buf = curBook;
+f_listener_add(Arr(Var) argVars, OUT Var* returnVar) {
+   Listener* lnr;
+   Book* book = curBook;
 
-   callback = get_callback(&argvars[0]);
+   Callback callback = get_callback(&argVars[0]);
    if (callback.name == NULL)
       return;
 
-   if (argvars[1].tag != VAR_UNKNOWN) {
-      buf = evGetBookArg(&argvars[1]);
-      if (buf == NULL) {
+   if (argVars[1].tag != VAR_UNKNOWN) {
+      book = evGetBookArg(&argVars[1]);
+      if (book) {
           evFreeCallback(&callback);
           return;
       }
@@ -218,8 +217,8 @@ f_listener_add(Var *argvars, Var *returnVar) {
       evFreeCallback(&callback);
       return;
    }
-   lnr->next = buf->listener;
-   buf->listener = lnr;
+   lnr->next = book->listener;
+   book->listener = lnr;
 
    set_callback(&lnr->callback, &callback);
    if (callback.needsFreeing)
@@ -230,15 +229,15 @@ f_listener_add(Var *argvars, Var *returnVar) {
 }
 
 void
-f_listener_flush(Var *argvars, Var *returnVar UNUSED) {
-   Book   *buf = curBook;
+f_listener_flush(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+   Book* book = curBook;
 
-   if (argvars[0].tag != VAR_UNKNOWN) {
-      buf = evGetBookArg(&argvars[0]);
-      if (buf == NULL)
+   if (argVars[0].tag != VAR_UNKNOWN) {
+      book = evGetBookArg(&argVars[0]);
+      if (book == NULL)
          return;
    }
-    invoke_listeners(buf);
+   invoke_listeners(book);
 }
 
 
@@ -253,13 +252,13 @@ remove_listener(Book* book, Listener *lnr, Listener *prev) {
 }
 
 void
-f_listener_remove(Var *argvars, Var *returnVar) {
-   Listener   *lnr;
-   Listener   *next;
-   Listener   *prev;
-   Book   *book;
+f_listener_remove(Arr(Var) argVars, OUT Var* returnVar) {
+   Listener* lnr;
+   Listener* next;
+   Listener* prev;
+   Book* book;
 
-   int id = tv_get_number(argvars);
+   int id = tv_get_number(argVars);
    FOR_ALL_BOOKS(book) {
       prev = NULL;
       for (lnr = book->listener; lnr != NULL; lnr = next) {
@@ -276,7 +275,7 @@ f_listener_remove(Var *argvars, Var *returnVar) {
          }
          prev = lnr;
       }
-    }
+   }
 }
 
 //Called before inserting a line above "lnum"/"lnum3" or deleting line "lnum" to "lnume".
@@ -1023,21 +1022,21 @@ int
 get_leader_len(
    CS line,
    Byte** flags,
-   int      backward,
-   int      include_space
+   int backward,
+   int include_space
 ) {
-   int      i, j;
-   int      result;
-   int      got_com = FALSE;
-   int      found_one;
+   int j;
+   int got_com = FALSE;
+   int found_one;
    Byte   part_buf[COM_MAX_LEN];   // buffer for one option part
-   Byte   *string;      // pointer to comment string
-   Byte   *list;
+   CS string;      // pointer to comment string
+   CS list;
    int      middle_match_len = 0;
-   Byte   *preList;
-   Byte   *saved_flags = NULL;
+   CS preList;
+   CS saved_flags = NULL;
 
-   result = i = 0;
+   int i = 0;
+   int result = 0;
    while (SPACE_OR_TAB(line[i]))    // leading white space is ignored
       ++i;
 
@@ -1168,28 +1167,28 @@ openLine(
    CS savedLine;      // copy of the original line
    CS nextLine = NULL;   // copy of the next line
    CS transferText = NULL;   // what goes to next line
-   int      transferLen = 0;   // length of transferText string
-   int      fewerCols = 0;      // fewer columns for mark in new line
-   int      fewerColsOff = 0;   // columns to skip for mark and textprop adjustment
-   Pos   old_cursor;      // old cursor position
-   int      newcol = 0;      // new cursor column
-   int      newindent = 0;      // auto-indent of the new line
-   int      n;
-   int      shouldTruncateLine = FALSE;
-   int      retval = FAIL;      // return value
-   int      lead_len;      // length of comment leader
-   int      comment_start = 0;   // start index of the comment leader
+   int transferLen = 0;   // length of transferText string
+   int fewerCols = 0;      // fewer columns for mark in new line
+   int fewerColsOff = 0;   // columns to skip for mark and textprop adjustment
+   Pos old_cursor;      // old cursor position
+   int newcol = 0;      // new cursor column
+   int newindent = 0;      // auto-indent of the new line
+   int n;
+   int shouldTruncateLine = FALSE;
+   int retval = FAIL;      // return value
+   int lead_len;      // length of comment leader
+   int comment_start = 0;   // start index of the comment leader
    CS lead_flags;   // position in 'comments' for comment leader
    CS leader = NULL;      // copy of comment leader
    CS allocated = NULL;   // allocated memory
    CS p;
    int      saved_char = ZERO;   // init for GCC
-   Pos   *pos;
-   int      do_si = may_do_si();
-   int      no_si = FALSE;      // reset didSindentG afterwards
-   int      first_char = ZERO;   // init for GCC
-   int      didAppend;      // appended a new line
-   int      at_eol;         // cursor after last character
+   Pos* pos;
+   int do_si = may_do_si();
+   int no_si = FALSE;      // reset didSindentG afterwards
+   int first_char = ZERO;   // init for GCC
+   int didAppend;      // appended a new line
+   int at_eol;         // cursor after last character
 
    //make a copy of the current line so we can mess with it
    savedLine = copySubstr(ml_get_curline(), ml_get_curline_len());
@@ -1281,7 +1280,7 @@ openLine(
                   }
                }
             }
-          } else { // Not a comment line
+         } else { // Not a comment line
             //Find last non-blank in line
             p = ptr + STRLEN(ptr) - 1;
             while (p > ptr && SPACE_OR_TAB(*p))
@@ -1313,8 +1312,8 @@ openLine(
             if (last_char == '{') {
                didSindentG = true;   // do indent
                no_si = TRUE;   // don't delete it when '{' typed
-            //Look for "if" and the like, use 'cinwords'.
-            //Don't do this if the previous line ended in ';' or '}'.
+               //Look for "if" and the like, use 'cinwords'.
+               //Don't do this if the previous line ended in ';' or '}'.
             } ei (last_char != ';' && last_char != '}' && cin_is_cinword(ptr)) {
                 didSindentG = true;
             }
@@ -1335,15 +1334,15 @@ openLine(
    } else
       lead_len = 0;
    if (lead_len > 0) {
-      Byte   *lead_repl = NULL;       // replaces comment leader
-      int   lead_repl_len = 0;       // length of *lead_repl
-      Byte   lead_middle[COM_MAX_LEN];   // middle-comment string
-      Byte   lead_end[COM_MAX_LEN];       // end-comment string
+      CS lead_repl = NULL;       // replaces comment leader
+      int lead_repl_len = 0;       // length of *lead_repl
+      Byte lead_middle[COM_MAX_LEN];   // middle-comment string
+      Byte lead_end[COM_MAX_LEN];       // end-comment string
       CS comment_end = NULL;       // where lead_end has been found
-      int   extra_space = FALSE;       // append extra space
-      int   current_flag;
-      int   require_blank = FALSE;       // requires blank after middle
-      Byte   *p2;
+      int extra_space = FALSE;       // append extra space
+      int current_flag;
+      int require_blank = FALSE;       // requires blank after middle
+      CS p2;
 
       // If the comment leader has the start, middle or end flag, it may not
       // be used or may be replaced with the middle leader.
@@ -1507,14 +1506,14 @@ openLine(
                      int l = mb_head_off(leader, p);
 
                      if (l > 1) {
-                       p -= l;
-                       if (ptr2cells(p) > 1) {
-                          p[1] = ' ';
-                          --l;
-                       }
-                       mch_memmove(p + 1, p + l + 1, (Unt)((leader + lead_len) - (p + l + 1)));
-                       lead_len -= l;
-                       *p = ' ';
+                        p -= l;
+                        if (ptr2cells(p) > 1) {
+                           p[1] = ' ';
+                           --l;
+                        }
+                        mch_memmove(p + 1, p + l + 1, (Unt)((leader + lead_len) - (p + l + 1)));
+                        lead_len -= l;
+                        *p = ' ';
                      } ei (!SPACE_OR_TAB(*p))
                         *p = ' ';
                   }
@@ -1522,9 +1521,8 @@ openLine(
                   p = skipwhite(leader);
 
                   // Compute the length of the replaced characters in
-                  // screen characters, not bytes. Move the part that is
-                  // not to be overwritten.
-                   {
+                  // screen characters, not bytes. Move the part that is not to be overwritten.
+                  {
                   int       repl_size = eeglStrNsize(lead_repl,
                        lead_repl_len);
                   int       i;
@@ -1533,7 +1531,7 @@ openLine(
                   for (i = 0; i < lead_len && p[i] != ZERO; i += l) {
                      l = utfCharLen(p + i);
                      if (eeglStrNsize(p, i + l) > repl_size)
-                       break;
+                        break;
                   }
                   if (i != lead_repl_len) {
                      mch_memmove(
@@ -1586,11 +1584,11 @@ openLine(
 
                 // Correct trailing spaces for the shift, so that alignment remains equal
                 while (off > 0 && lead_len > 0 && leader[lead_len - 1] == ' ') {
-                  // Don't do it when there is a tab before the space
-                  if (firstOccurrence(skipwhite(leader), '\t') != NULL)
-                 break;
-                  --lead_len;
-                  --off;
+                   // Don't do it when there is a tab before the space
+                   if (firstOccurrence(skipwhite(leader), '\t') != NULL)
+                      break;
+                    --lead_len;
+                    --off;
                 }
 
                 // If the leader ends in white space, don't add an extra space
@@ -1600,23 +1598,23 @@ openLine(
             }
 
             if (extra_space) {
-                leader[lead_len++] = ' ';
-                leader[lead_len] = ZERO;
+               leader[lead_len++] = ' ';
+               leader[lead_len] = ZERO;
             }
 
             newcol = lead_len;
 
             // if a new indent will be set below, remove the indent in the comment leader
             if (newindent || didSindentG) {
-                while (lead_len && SPACE_OR_TAB(*leader)) {
+               while (lead_len && SPACE_OR_TAB(*leader)) {
                   --lead_len;
                   --newcol;
                   ++leader;
-                }
+               }
             }
          }
          didSindentG = can_si = false;
-      } ei (comment_end != NULL) {
+      } ei (comment_end) {
          //We have finished a comment, so we don't use the leader. If this was a C-comment 
          //and 'ai' or 'si' is set do a normal indent to align with the line containing the 
          //start of the comment.
@@ -1775,7 +1773,7 @@ truncate_line(int fixpos) {
    if (fixpos && curPor->cursor.col > 0)
       --curPor->cursor.col;
 
-    return OK;
+   return OK;
 }
 
 //Delete "nlines" lines at the cursor. Saves the lines for undo first if "undo" is TRUE.
@@ -5370,7 +5368,7 @@ get_ctime(Tyme thetime, int add_newline) {
 
 // "localtime()" function
 void
-f_localtime(Var *argvars UNUSED, Var *returnVar) {
+f_localtime(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
    returnVar->number = (Long)time(NULL);
 }
 
@@ -5391,23 +5389,23 @@ list2proftime(Var *arg, ProfTime *tm) {
 
 // "reltime()" function
 void
-f_reltime(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
    ProfTime   res;
    ProfTime   start;
 
    allocReturnList(returnVar);
 
-   if (argvars[0].tag == VAR_UNKNOWN) {
+   if (argVars[0].tag == VAR_UNKNOWN) {
       // No arguments: get current time.
       profile_start(&res);
-   } ei (argvars[1].tag == VAR_UNKNOWN) {
-      if (list2proftime(&argvars[0], &res) == FAIL) {
+   } ei (argVars[1].tag == VAR_UNKNOWN) {
+      if (list2proftime(&argVars[0], &res) == FAIL) {
          return;
       }
       profile_end(&res);
    } else {
       // Two arguments: compute the difference.
-      if (list2proftime(&argvars[0], &start) == FAIL || list2proftime(&argvars[1], &res) == FAIL) {
+      if (list2proftime(&argVars[0], &start) == FAIL || list2proftime(&argVars[1], &res) == FAIL) {
          return;
       }
       profile_sub(&res, &start);
@@ -5420,23 +5418,23 @@ f_reltime(Var *argvars UNUSED, Var *returnVar UNUSED) {
 }
 
 void
-f_reltimefloat(Var *argvars UNUSED, Var *returnVar) {
+f_reltimefloat(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
    ProfTime   tm;
 
    returnVar->tag = VAR_FLOAT;
    returnVar->floatt = 0;
 
-   if (list2proftime(&argvars[0], &tm) == OK)
+   if (list2proftime(&argVars[0], &tm) == OK)
       returnVar->floatt = profile_float(&tm);
 }
 
 void
-f_reltimestr(Var *argvars UNUSED, Var *returnVar) {
+f_reltimestr(Arr(Var) argVars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
    ProfTime   tm;
-   if (list2proftime(&argvars[0], &tm) == OK) {
+   if (list2proftime(&argVars[0], &tm) == OK) {
       static Byte buf[50];
       long usec = tm.tv_fsec / (TV_FSEC_SEC / 1000000);
       eeSnprintf(buf, sizeof(buf), "%3ld.%06ld", (long)tm.tv_sec, usec);
@@ -5447,17 +5445,17 @@ f_reltimestr(Var *argvars UNUSED, Var *returnVar) {
 
 //"strftime({format}[, {time}])" function
 void
-f_strftime(Var *argvars, Var *returnVar) {
+f_strftime(Arr(Var) argVars, OUT Var* returnVar) {
    Tm tmval;
    Tyme seconds;
 
    returnVar->tag = VAR_STRING;
 
-   CS arg = tv_get_string(&argvars[0]);
-   if (argvars[1].tag == VAR_UNKNOWN)
+   CS arg = tv_get_string(&argVars[0]);
+   if (argVars[1].tag == VAR_UNKNOWN)
       seconds = time(NULL);
    else
-      seconds = (Tyme)tv_get_number(&argvars[1]);
+      seconds = (Tyme)tv_get_number(&argVars[1]);
    Tm* curtime = eeLocaltime(&seconds, &tmval);
    if (!curtime) {
       returnVar->string = copyStr((CS)_("(Invalid)"));
@@ -5474,13 +5472,13 @@ f_strftime(Var *argvars, Var *returnVar) {
 
 // "strptime({format}, {timestring})" function
 void
-f_strptime(Var* argvars, Var* returnVar) {
+f_strptime(Var* argVars, Var* returnVar) {
    Tm tmval;
 
    CLEAR_FIELD(tmval);
    tmval.tm_isdst = -1;
-   Byte* fmt = tv_get_string(&argvars[0]);
-   Byte* str = tv_get_string(&argvars[1]);
+   Byte* fmt = tv_get_string(&argVars[0]);
+   Byte* str = tv_get_string(&argVars[1]);
 
    if (!fmt
           || strptime((char *)str, (char *)fmt, &tmval) == NULL
@@ -5737,7 +5735,7 @@ stop_all_timers(void) {
 }
 
 private void
-add_timer_info(Var *returnVar, Timer *timer) {
+add_timer_info(OUT Var* returnVar, Timer *timer) {
    List   *list = returnVar->list;
    Bag   *dict = allocBag();
    long   remaining;
@@ -5765,7 +5763,7 @@ add_timer_info(Var *returnVar, Timer *timer) {
 }
 
 private void
-add_timer_info_all(Var *returnVar) {
+add_timer_info_all(OUT Var* returnVar) {
    Timer *timer;
 
    FOR_ALL_TIMERS(timer) {
@@ -5820,16 +5818,16 @@ timer_free_all(void) {
 
 // "timer_info([timer])" function
 void
-f_timer_info(Var *argvars, Var *returnVar) {
+f_timer_info(Arr(Var) argVars, OUT Var* returnVar) {
    Timer *timer = NULL;
 
    allocReturnList(returnVar);
 
-   if (check_for_opt_number_arg(argvars, 0) == FAIL)
+   if (check_for_opt_number_arg(argVars, 0) == FAIL)
       return;
 
-   if (argvars[0].tag != VAR_UNKNOWN) {
-      timer = find_timer((int)tv_get_number(&argvars[0]));
+   if (argVars[0].tag != VAR_UNKNOWN) {
+      timer = find_timer((int)tv_get_number(&argVars[0]));
       if (timer != NULL)
          add_timer_info(returnVar, timer);
    } else
@@ -5838,40 +5836,38 @@ f_timer_info(Var *argvars, Var *returnVar) {
 
 // "timer_pause(timer, paused)" function
 void
-f_timer_pause(Var *argvars, Var *returnVar UNUSED) {
-   Timer   *timer = NULL;
-
-   if (argvars[0].tag != VAR_NUMBER) {
+f_timer_pause(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+   if (argVars[0].tag != VAR_NUMBER) {
       emsg(_(e_number_expected));
       return;
    }
 
-   int paused = (int)tv_get_bool(&argvars[1]);
+   int paused = (int)tv_get_bool(&argVars[1]);
 
-   timer = find_timer((int)tv_get_number(&argvars[0]));
+   Timer* timer = find_timer((int)tv_get_number(&argVars[0]));
    if (timer != NULL)
       timer->tr_paused = paused;
 }
 
 // "timer_start(time, callback [, options])" function
 void
-f_timer_start(Var *argvars, Var *returnVar) {
+f_timer_start(Arr(Var) argVars, OUT Var* returnVar) {
    int repeat = 0;
-   Bag   *dict;
+   Bag* dict;
 
    returnVar->number = -1;
 
-   long msec = (long)tv_get_number(&argvars[0]);
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
+   long msec = (long)tv_get_number(&argVars[0]);
+   if (argVars[2].tag != VAR_UNKNOWN) {
+      if (check_for_nonnull_dict_arg(argVars, 2) == FAIL)
          return;
 
-      dict = argvars[2].bag;
+      dict = argVars[2].bag;
       if (bagHasKey(dict, tConst("repeat")))
          repeat = bagGetNumber(dict, tConst("repeat"));
    }
 
-   Callback callback = get_callback(&argvars[1]);
+   Callback callback = get_callback(&argVars[1]);
    if (!callback.name)
       return;
 
@@ -5888,18 +5884,18 @@ f_timer_start(Var *argvars, Var *returnVar) {
 
 // "timer_stop(timer)" function
 void
-f_timer_stop(Var *argvars, Var *returnVar UNUSED) {
-   if (check_for_number_arg(argvars, 0) == FAIL)
+f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+   if (check_for_number_arg(argVars, 0) == FAIL)
       return;
 
-   Timer* timer = find_timer((int)tv_get_number(&argvars[0]));
+   Timer* timer = find_timer((int)tv_get_number(&argVars[0]));
    if (timer)
       stop_timer(timer);
 }
 
 // "timer_stopall()" function
 void
-f_timer_stopall(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_timer_stopall(Arr(Var) argVars UNUSED, OUT Var* returnVar UNUSED) {
    stop_all_timers();
 }
 
@@ -7069,16 +7065,16 @@ preprocs_left(void) {
 // TRUE if the conditions are OK for smart indenting.
 int
 may_do_si(void) {
-   return curBook->o.smartIndent && *curBook->o.indentExpr == ZERO;
+   return curBook->o.smartIndent && !curBook->o.indentExpr;
 }
 
 // Try to do some very smart auto-indenting. Used when inserting a "normal" character.
 void
 ins_try_si(int c) {
    Pos   *pos, old_pos;
-   Byte   *ptr;
-   int      i;
-   int      temp;
+   CS ptr;
+   int i;
+   int temp;
 
    // do some very smart indenting when entering '{' or '}'
    if (((didSindentG || can_si_back) && c == '{') || (can_si && c == '}' && inindent(0))) {
@@ -7150,25 +7146,22 @@ opChangeIndent(
    int round,
    Boole call_changed_bytes // call changed_bytes()
 ){
-   int vcol;
    int last_vcol;
-   int insstart_less;      // reduction for insertStartG.col
    int i;
-   int save_p_list;
 
    // for the following tricks we don't want list mode
-   save_p_list = curPor->o.list;
+   int save_p_list = curPor->o.list;
    curPor->o.list = FALSE;
    ignore_text_props = TRUE;
    ColNr vc = getvcol_nolist(&curPor->cursor);
-   vcol = vc;
+   int vcol = vc;
 
    // determine offset from first non-blank
    int necursor_col = curPor->cursor.col;
    beginline(BL_WHITE);
    necursor_col -= curPor->cursor.col;
 
-   insstart_less = curPor->cursor.col;
+   int insstart_less = curPor->cursor.col; // reduction for insertStartG.col
 
    // If the cursor is in the indent, compute how many screen columns the
    // cursor is to the left of the first non-blank.
@@ -7179,7 +7172,7 @@ opChangeIndent(
    if (type == INDENT_SET)
       (void)set_indent(amount, call_changed_bytes ? SIN_CHANGED : 0);
    else {
-      int   save_State = stateG;
+      int save_State = stateG;
       shift_line(type == INDENT_DEC, round, 1, call_changed_bytes);
       stateG = save_State;
    }
@@ -7194,7 +7187,7 @@ opChangeIndent(
    if (necursor_col >= 0) {
       // When changing the indent while the cursor is touching it, reset insertStartG_col to 0.
       if (necursor_col == 0)
-          insstart_less = MAXCOL;
+         insstart_less = MAXCOL;
       necursor_col += curPor->cursor.col;
    } ei (!(stateG & MODE_INSERT))
       necursor_col = curPor->cursor.col;
@@ -7493,21 +7486,21 @@ fixthisline(int (*get_the_indent)(void)) {
 
 
 // TRUE if current book has expression-based indenting.
-int
-opsIsIndentationExpressionBased(void) {
-   return *curBook->o.indentExpr != ZERO;
+Boole
+jugIsIndentationExpressionBased(void) {
+   return curBook->o.indentExpr != null;
 }
 
 // Fix indent for 'expr' indentation
 void
 fix_indent(void) {
-   if (opsIsIndentationExpressionBased())
+   if (jugIsIndentationExpressionBased())
       do_expr_indent();
 }
 
 void
-f_indent(Var *argvars, Var *returnVar) {
-   LineNr lnum = tv_get_lnum(argvars);
+f_indent(Arr(Var) argVars, OUT Var* returnVar) {
+   LineNr lnum = tv_get_lnum(argVars);
    if (lnum >= 1 && lnum <= curBook->mem.lineCount)
       returnVar->number = get_indent_lnum(lnum);
    else {
@@ -7518,14 +7511,13 @@ f_indent(Var *argvars, Var *returnVar) {
 // TRUE if the string "line" starts with a word from @cinwords
 private Boole
 cin_is_cinword(CS line) {
-   Byte   *cinw;
    Boole  retval = false;
 
    int cinw_len = (int)STRLEN(curBook->o.indentKeywords) + 1;
    CS cinw_buf = alloc(cinw_len);
 
    line = skipwhite(line);
-   for (cinw = curBook->o.indentKeywords; *cinw; ) {
+   for (CS cinw = curBook->o.indentKeywords; *cinw; ) {
       int len = copy_option_part(&cinw, cinw_buf, cinw_len, ",");
       if (STRNCMP(line, cinw_buf, len) == 0 && (!eeIsWordc(line[len]) || !eeIsWordc(line[len - 1]))
       ) {

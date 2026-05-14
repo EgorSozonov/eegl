@@ -7,7 +7,7 @@ int stl_connected(Portal *po);
 int get_keymap_str(Portal *po, CS fmt, CS buf, int len);
 void screen_putchar(int c, Unt row, Unt col, char decoFlags);
 void screen_getbytes(int row, int col, Byte *bytes, char *decoFlags);
-void drawText(Byte *text, Unt row, Unt col, char decoFlags);
+void drawText(CS text, Unt row, Unt col, char decoFlags);
 void drawTextLen(CS text, int textlen, Unt row, int col, char flagsArg);
 void start_search_hl(void);
 void end_search_hl(void);

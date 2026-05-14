@@ -25,7 +25,7 @@ void end_visual_mode_keep_button(void);
 void reset_VIsual_and_resel(void);
 void reset_VIsual(void);
 void restore_visual_mode(void);
-int find_ident_under_cursor(Byte **text, int find_type);
+int find_ident_under_cursor(CS *text, int find_type);
 int find_ident_at_pos(Portal *wp, LineNr lnum, ColNr startcol, CS *text, int *textcol, int find_type);
 void prep_redo(int regname, long num, int cmd1, int cmd2, int cmd3, int cmd4, int cmd5);
 void prep_redo_num2(int regname, long num1, int cmd1, int cmd2, long num2, int cmd3, int cmd4, int cmd5);

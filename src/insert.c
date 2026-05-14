@@ -1460,7 +1460,7 @@ insertchar0(
        // Skip typeahead if test_override("char_avail", 1) was called.
        && !disable_char_avail_for_testing
        && vpeekc() != ZERO
-       && !opsIsIndentationExpressionBased()
+       && !jugIsIndentationExpressionBased()
    ) {
 #define INPUT_BUFLEN 100
       Byte buf[INPUT_BUFLEN + 1];
@@ -2501,7 +2501,7 @@ ins_bs(int c, int mode, int* inserted_space_p) {
    } else {
       //Delete character(s) before the cursor.
       mincol = 0; // keep indent
-      if (mode == BACKSPACE_LINE && (curBook->o.autoIndent || opsIsIndentationExpressionBased())) {
+      if (mode == BACKSPACE_LINE && (curBook->o.autoIndent || jugIsIndentationExpressionBased())) {
          save_col = curPor->cursor.col;
          beginline(BL_WHITE);
          if (curPor->cursor.col < save_col) {
@@ -5310,7 +5310,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
       ins_compl_fixRedoBufForLeader(ptr);
    }
 
-   Boole want_cindent = (can_cindent && opsIsIndentationExpressionBased());
+   Boole want_cindent = (can_cindent && jugIsIndentationExpressionBased());
 
    // When completing whole lines: fix indent for 'cindent'.
    // Otherwise, break line if it's too long.
