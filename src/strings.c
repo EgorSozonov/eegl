@@ -829,7 +829,18 @@ findWordStart(CS ptr) {
    return ptr;
 }
 
+//"asdf,bcjk"  => "asdf,bcjk"
+// ^                   ^
+CS
+skipToComma(CS s) {
+   for (; *s != ZERO && *s != ','; s++)
+      {}
+   return s;
+}
+
 //Skip to next part of an option argument: Skip space and comma.
+//"asdf,  bcjk"  => "asdf,  bcjk"
+//     ^                    ^
 CS
 skip_to_option_part(CS p) {
    if (*p == ',')
@@ -5082,10 +5093,10 @@ private int   did_add_space = FALSE;   // auto_format() added an extra space und
 
 #define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
 
-//Return TRUE if format option 'x' is in effect. Take care of no formatting when 'paste' is set.
+//Return TRUE if format option 'x' is in effect.
 Boole
 has_format_option(int x) {
-   return (firstOccurrence(curBook->o.formatOptions, x) != NULL);
+   return curBook->o.formatOptions && firstOccurrence(curBook->o.formatOptions, x) != NULL;
 }
 
 //Write a character at the current cursor position. It is directly written into the block.
@@ -5933,7 +5944,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                   indent = get_indent();
                else {
                  if (jugIsIndentationExpressionBased()) {
-                     indent = *curBook->o.indentExpr != ZERO ? get_expr_indent() : get_indent();
+                     indent = curBook->o.indentExpr ? get_expr_indent() : get_indent();
                  } else
                      indent = get_indent();
                }

@@ -7193,11 +7193,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                }
                if (m->portalDeco.hiId != SHORT) {
                   m->charDeco = m->portalDeco;
-                  if (port->cursorLineFlags && c->lnum == port->cursor.lnum ) {
-                     if (!m->cul_screenline
-                            || (m->vcol >= c->left_curline_col && m->vcol <= c->right_curline_col))
-                        m->charDeco = combineDecorations( m->charDeco, getFullDecoration(HLF_CUL));
-                  } ei (m->lineDeco.hiId != SHORT)
+                  if (m->lineDeco.hiId != SHORT)
                      m->charDeco = combineDecorations(m->charDeco, m->lineDeco);
                }
             }

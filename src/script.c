@@ -1090,6 +1090,7 @@ scriptRunFileInternal(
       if (fname_not_fixed == NULL)
          goto theend;
       fname_exp = FullName_save(fname_not_fixed, true);
+      _bp(true);
       if (mch_isdir(fname_exp)) {
          smsg(_("Cannot source a directory: \"%s\""), fname);
          goto theend;

@@ -1067,14 +1067,6 @@ See |C-indenting|. When you don't like the way @cindent works, try the @smartind
 option or @indentexpr. This option is not used when @paste is set.
 
 
-@@cinscopedecls          Book. String. Default = "public,protected,private"
-   
-Keywords that are interpreted as a C++ scope declaration by |cino-g|.
-Useful e.g. for working with the Qt framework that defines additional
-scope declarations "signals", "public slots" and "private slots": 
-      set cinscopedecls+=signals,public\ slots,private\ slots
-
-
 @@cinwords               Book. String. Default = "if,else,while,do,for,switch"
    
 These keywords start an extra indent in the next line when @smartindent is set. 
@@ -1935,7 +1927,7 @@ An expression which is used to specify the text displayed for a closed fold. The
 to the script where @foldexpr was set, script-local items can be accessed. See |fold-foldtext| 
 for the usage.
 
-It is not allowed to change text or jump to another window while
+It is not allowed to change text or jump to another portal while
 evaluating @foldtext |textlock|.
 
 
@@ -2373,14 +2365,6 @@ Normally this option would be set to call a function:
 Error messages will be suppressed, unless the @debug option contains "msg". See |indent-expression|.
 
 It is not allowed to change text or jump to another window while evaluating @indentexpr |textlock|.
-
-
-@@indentkeys             Book. String  Default = "0{,0},0),0],:,0#,!^F,o,O,e"
-   
-A list of keys that, when typed in Insert mode, cause reindenting of
-the current line.  Only happens if @indentexpr isn't empty.
-The format is identical to @cinkeys, see |indentkeys-format|.
-See |C-indenting| and |indent-expression|.
 
 
 @@infercase              Book. Boolean. Default = off

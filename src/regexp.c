@@ -2618,7 +2618,7 @@ regcomp_start( Byte   *expr, int      flags) {      // see eeRegcomp()
 
 // Initialize internal variables before NFA compilation. Return OK on success, FAIL otherwise
 private int
-compile_start( Byte   *expr, int      flags) {      // see compileRegexp()
+compile_start(CS expr, Unt flags) {      // see compileRegexp()
    Unt   postfix_size;
    int      nstate_max;
 
@@ -8908,7 +8908,7 @@ theend:
 // Compile a regular expression into internal code for the NFA matcher.
 // Return the program in allocated space. Returns NULL for an error.
 private RegProg *
-compile(Byte *expr, int flags) {
+compile(CS expr, int flags) {
    if (!expr)
       return NULL;
 
@@ -9105,8 +9105,8 @@ matchManyLines(
 // Compile a regular expression into internal code. Returns the program in allocated memory.
 // Use eeRegFree() to free the memory. Returns NULL for an error.
 RegProg *
-compileRegexp(Arr(Byte) expr_arg, int flags) {
-   Arr(Byte) expr = expr_arg;
+compileRegexp(CS expr_arg, Unt flags) {
+   CS expr = expr_arg;
 
 #ifdef DEBUG
    regengine.expr = expr;
@@ -9116,7 +9116,7 @@ compileRegexp(Arr(Byte) expr_arg, int flags) {
 
    RegProg* prog = compile(expr, flags);
 
-   if (prog != NULL) {
+   if (prog) {
       // Store the info needed to call regcomp() again when the engine turns out to be very slow 
       // when executing it.
       prog->flags  = flags;

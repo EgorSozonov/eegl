@@ -920,7 +920,7 @@ edit(Unt commChar, int startln, long count){
       case Ctrl_P:   // Do previous/next pattern completion
       case Ctrl_N:
          //if @complete is empty then plain ^P is no longer special, but it is under other ^X modes
-         if (*curBook->o.complete == ZERO
+         if (!curBook->o.complete
                 && (ctrl_x_mode_normal() || ctrl_x_mode_whole_line())
                 && !compl_status_local()
          )
@@ -3172,19 +3172,19 @@ private Callback customCompleteFnS;
 #define CTRL_X_SCROLL            2
 #define CTRL_X_WHOLE_LINE        3
 #define CTRL_X_FILES             4
-#define CTRL_X_TAGS (5 + CTRL_X_WANT_IDENT)
-#define CTRL_X_PATH_PATTERNS   (6 + CTRL_X_WANT_IDENT)
-#define CTRL_X_PATH_DEFINES   (7 + CTRL_X_WANT_IDENT)
-#define CTRL_X_FINISHED      8
-#define CTRL_X_DICTIONARY   (9 + CTRL_X_WANT_IDENT)
-#define CTRL_X_THESAURUS   (10 + CTRL_X_WANT_IDENT)
-#define CTRL_X_CMDLINE      11
-#define CTRL_X_FUNCTION   12
-#define CTRL_X_OMNI      13
-#define CTRL_X_LOCAL_MSG   15   // only used in "ctrl_x_msgs"
-#define CTRL_X_EVAL      16   // for builtin function complete()
-#define CTRL_X_CMDLINE_CTRL_X   17   // CTRL-X typed in CTRL_X_CMDLINE
-#define CTRL_X_REGISTER   18   // complete words from registers
+#define CTRL_X_TAGS             (5 + CTRL_X_WANT_IDENT)
+#define CTRL_X_PATH_PATTERNS    (6 + CTRL_X_WANT_IDENT)
+#define CTRL_X_PATH_DEFINES     (7 + CTRL_X_WANT_IDENT)
+#define CTRL_X_FINISHED          8
+#define CTRL_X_DICTIONARY       (9 + CTRL_X_WANT_IDENT)
+#define CTRL_X_THESAURUS        (10 + CTRL_X_WANT_IDENT)
+#define CTRL_X_CMDLINE          11
+#define CTRL_X_FUNCTION         12
+#define CTRL_X_OMNI             13
+#define CTRL_X_LOCAL_MSG        15   //only used in "ctrl_x_msgs"
+#define CTRL_X_EVAL             16   //for builtin function complete()
+#define CTRL_X_CMDLINE_CTRL_X   17   //CTRL-X typed in CTRL_X_CMDLINE
+#define CTRL_X_REGISTER         18   //complete words from registers
 
 #define CTRL_X_MSG(i) ctrl_x_msgs[(i) & ~CTRL_X_WANT_IDENT]
 
@@ -5997,7 +5997,7 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
    if (!before_cursor)
       return;
 
-   if (!ise || *ise == ZERO) {
+   if (!ise) {
       regmatch.regprog = compileRegexp((CS)"\\k\\+$", RE_MAGIC);
       if (regmatch.regprog) {
          if (eeRegexec_nl(&regmatch, before_cursor, (ColNr)0)) {
@@ -7112,7 +7112,7 @@ advance_cpt_sources_index_safe(void) {
 //where we stopped searching before. This may return before finding all the matches.
 //Return the total number of matches or -1 if still unknown -- Acevedo
 private int
-ins_compl_get_exp(Pos *ini) {
+ins_compl_get_exp(Pos* ini) {
    static InsertionCompletionNext   st;
    static int             st_cleared = FALSE;
    int match_count;
@@ -7895,7 +7895,7 @@ get_normal_compl_info(CS line, int startcol, ColNr curs_col) {
    }
 
    // Call functions in 'complete' with 'findstart=1'
-   if (ctrl_x_mode_normal() && !(compl_cont_status & CONT_LOCAL)) {
+   if (ctrl_x_mode_normal() && !(compl_cont_status & CONT_LOCAL) && curBook->o.complete) {
       // ^N completion, not complete() or ^X^N
       if (setup_cpt_sources() == FAIL || prepare_cpt_compl_funcs() == FAIL)
           return FAIL;
@@ -8216,13 +8216,9 @@ ins_compl_start(void) {
          edit_submode_pre = (CS)_(" Adding");
       if (ctrl_x_mode_line_or_eval()) {
          // Insert a new line, keep indentation but ignore 'comments'.
-         CS old = curBook->o.comments;
-
-         curBook->o.comments = (CS)"";
          compl_startpos.lnum = curPor->cursor.lnum;
          compl_startpos.col = compl_col;
          ins_eol('\r');
-         curBook->o.comments = old;
          compl_length = 0;
          compl_col = curPor->cursor.col;
          compl_lnum = curPor->cursor.lnum;

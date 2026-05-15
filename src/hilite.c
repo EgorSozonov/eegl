@@ -2412,7 +2412,7 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
 
 private void
 save_chartab(CS chartab) {
-   if (synBookS->o.isKeyword == Em)
+   if (!synBookS->o.isKeyword)
       return;
 
    mch_memmove(chartab, synBookS->charsForKeywords, (Unt)32);
@@ -2421,7 +2421,7 @@ save_chartab(CS chartab) {
 
 private void
 restoreKeywordChars(CS chartab) {
-   if (synBookS->o.isKeyword != Em)
+   if (synBookS->o.isKeyword)
       mch_memmove(synBookS->charsForKeywords, chartab, (Unt)32);
 }
 
@@ -2434,7 +2434,7 @@ syn_match_linecont(LineNr lnum) {
    if (synBlockS->lineContinProg == NULL)
       return FALSE;
 
-   // use syntax iskeyword option
+   // use syntax @iskeyword option
    save_chartab(bookKeywordChars);
    regmatch.rmm_ic = synBlockS->lineContinIgnoreCase;
    regmatch.regprog = synBlockS->lineContinProg;

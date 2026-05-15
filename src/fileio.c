@@ -4275,12 +4275,12 @@ grab_file_name(long count, LineNr *file_lnum) {
 //NULL is returned if the file name or file is not found.
 //
 //options:
-//FNAME_MESS       give error messages
-//FNAME_EXP       expand to path
-//FNAME_HYP       check for hypertext link
-//FNAME_INCL       apply "includeexpr"
+//FNAME_MESS   give error messages
+//FNAME_EXP    expand to path
+//FNAME_HYP    check for hypertext link
+//FNAME_INCL   apply @includeexpr
 CS
-file_name_at_cursor(int options, long count, LineNr *file_lnum) {
+file_name_at_cursor(int options, long count, LineNr* file_lnum) {
     return file_name_in_line(ml_get_curline(),
             curPor->cursor.col, options, count, curBook->fullFileName,
             file_lnum);
@@ -4318,7 +4318,7 @@ file_name_in_line(
       ei (eeIsFnameChar(ptr[-1]) || ((options & FNAME_HYP) && path_is_url(ptr - 1)))
          --ptr;
       else
-          break;
+         break;
    }
 
    //Search forward for the last char of the file name.
@@ -4380,6 +4380,10 @@ file_name_in_line(
 
 private CS
 eval_includeexpr(CS ptr, int len) {
+   if (!curBook->o.includeExpr) {
+      return null;
+   }
+   
    ScriptPos save_sctx = scriptPosG;
 
    set_EeglVar_string(VV_FNAME, ptr, len);
@@ -4399,14 +4403,14 @@ find_file_name_in_path(
    int len,
    Unt options,
    long count,
-   CS rel_fname)   // file we are searching relative to
-{
+   CS rel_fname   // file we are searching relative to
+){
    if (len == 0)
       return Em;
 
    CS file_name;
    CS tofree = NULL;
-   if ((options & FNAME_INCL) && *curBook->o.includeExpr != ZERO) {
+   if ((options & FNAME_INCL) && curBook->o.includeExpr) {
       tofree = eval_includeexpr(ptr, len);
       if (tofree) {
           ptr = tofree;
@@ -4422,7 +4426,7 @@ find_file_name_in_path(
                  true, rel_fname, OUT &file_to_find, OUT &searchCtx);
 
       //If the file could not be found normally, try applying @includeexpr (unless done already).
-      if (!file_name && !(options & FNAME_INCL) && *curBook->o.includeExpr != ZERO) {
+      if (!file_name && !(options & FNAME_INCL) && curBook->o.includeExpr) {
          tofree = eval_includeexpr(ptr, len);
          if (tofree) {
             ptr = tofree;

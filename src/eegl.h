@@ -331,7 +331,7 @@ typedef Byte Byte;
 //This list contains the defines for the machine dependent escape sequences that the editor needs 
 //to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
 
-// Index of the terminfo codes in the terminalCommandsS array.
+// Index of the terminfo codes
 #define KS_NAME   0 // name of this terminal entry
 #define KS_CE     1 // clear to end of line
 #define KS_AL     2 // add new blank line
@@ -381,49 +381,48 @@ typedef Byte Byte;
 #define KS_CTE   46 // end of "raw" mode
 #define KS_BC    47 // backspace character (cursor left)
 #define KS_CCS   48 // cur is relative to scroll region
-#define KS_CCO   49 // number of colors
-#define KS_CSF   50 // set foreground color
-#define KS_CSB   51 // set background color
-#define KS_XS    52 // standout not erased by overwriting (hpterm)
-#define KS_XN    53 // newline glitch
-#define KS_MB    54 // blink mode
-#define KS_CAF   55 // set foreground color (ANSI)
-#define KS_CAB   56 // set background color (ANSI)
-#define KS_CAU   57 // set underline color (ANSI)
-#define KS_LE    58 // cursor left (mostly backspace)
-#define KS_ND    59 // cursor right
-#define KS_CIS   60 // set icon text start
-#define KS_CIE   61 // set icon text end
-#define KS_CSC   62 // set cursor color start
-#define KS_CEC   63 // set cursor color end
-#define KS_TS    64 // set portal title start (to status line)
-#define KS_FS    65 // set portal title end (from status line)
-#define KS_CWP   66 // set portal position in pixels
-#define KS_CGP   67 // get portal position
-#define KS_CWS   68 // set portal size in characters
-#define KS_CRV   69 // request version string
-#define KS_CXM   70 // enable/disable mouse reporting
-#define KS_RFG   71 // request foreground color
-#define KS_RBG   72 // request background color
-#define KS_CSI   73 // start insert mode (bar cursor)
-#define KS_CEI   74 // end insert mode (block cursor)
-#define KS_CSR   75 // start replace mode (underline cursor)
-#define KS_CSV   76 // scroll region vertical
-#define KS_OP    77 // original color pair
-#define KS_U7    78 // request cursor position
-#define KS_8F    79 // set foreground color (RGB)
-#define KS_8B    80 // set background color (RGB)
-#define KS_8U    81 // set underline color (RGB)
-#define KS_CBE   82 // enable bracketed paste mode
-#define KS_CBD   83 // disable bracketed paste mode
-#define KS_CST   84 // save portal title
-#define KS_CRT   85 // restore window title
-#define KS_SSI   86 // save icon text
-#define KS_SRI   87 // restore icon text
-#define KS_FD    88 // disable focus event tracking
-#define KS_FE    89 // enable focus event tracking
-#define KS_CF    90 // set terminal alternate font
-#define KS_XON   91 // terminal uses xon/xoff handshaking
+#define KS_CSF   49 // set foreground color
+#define KS_CSB   50 // set background color
+#define KS_XS    51 // standout not erased by overwriting (hpterm)
+#define KS_XN    52 // newline glitch
+#define KS_MB    53 // blink mode
+#define KS_CAF   54 // set foreground color (ANSI)
+#define KS_CAB   55 // set background color (ANSI)
+#define KS_CAU   56 // set underline color (ANSI)
+#define KS_LE    57 // cursor left (mostly backspace)
+#define KS_ND    58 // cursor right
+#define KS_CIS   59 // set icon text start
+#define KS_CIE   60 // set icon text end
+#define KS_CSC   61 // set cursor color start
+#define KS_CEC   62 // set cursor color end
+#define KS_TS    63 // set portal title start (to status line)
+#define KS_FS    64 // set portal title end (from status line)
+#define KS_CWP   65 // set portal position in pixels
+#define KS_CGP   66 // get portal position
+#define KS_CWS   67 // set portal size in characters
+#define KS_CRV   68 // request version string
+#define KS_CXM   69 // enable/disable mouse reporting
+#define KS_RFG   70 // request foreground color
+#define KS_RBG   71 // request background color
+#define KS_CSI   72 // start insert mode (bar cursor)
+#define KS_CEI   73 // end insert mode (block cursor)
+#define KS_CSR   74 // start replace mode (underline cursor)
+#define KS_CSV   75 // scroll region vertical
+#define KS_OP    76 // original color pair
+#define KS_U7    77 // request cursor position
+#define KS_8F    78 // set foreground color (RGB)
+#define KS_8B    79 // set background color (RGB)
+#define KS_8U    80 // set underline color (RGB)
+#define KS_CBE   81 // enable bracketed paste mode
+#define KS_CBD   82 // disable bracketed paste mode
+#define KS_CST   83 // save portal title
+#define KS_CRT   84 // restore window title
+#define KS_SSI   85 // save icon text
+#define KS_SRI   86 // restore icon text
+#define KS_FD    87 // disable focus event tracking
+#define KS_FE    88 // enable focus event tracking
+#define KS_CF    89 // set terminal alternate font
+#define KS_XON   90 // terminal uses xon/xoff handshaking
 
 #define KS_LAST  KS_XON
 
@@ -5145,11 +5144,6 @@ struct Portal { //:Portal
    //They are local because they influence the layout of the portal or depend on the portal layout.
    PortLocal o;
 
-   // A few options have local flags for P_INSECURE.
-   Unt statuslineFlags;  // flags for @statusline
-   Unt foldExprFlags;    // flags for @foldexpr
-   Unt foldTextFlags;    // flags for @foldtext
-   Byte cursorLineFlags;   // flags for cursorline hiliting
    BreakIndent breakIndent;
    long scbindPos;
    DictItem wVar;          // variable for "w:" Dictionary

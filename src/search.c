@@ -19,7 +19,7 @@ typedef struct searchstat {
 
 private void set_vv_searchforward(void);
 private int first_submatch(RegMultilineMatch* rp);
-private CS get_line_and_copy(LineNr lnum, Byte *buf);
+private CS get_line_and_copy(LineNr lnum, CS buf);
 private void show_pat_in_path(CS, int, int, int, FILE *, LineNr *, long);
 private void save_incsearch_state(void);
 private void restore_incsearch_state(void);
@@ -349,7 +349,7 @@ ignorecase_opt(CS pat, int ic_in, int scs) {
 // Return TRUE if pattern "pat" has an uppercase character.
 int
 pat_has_uppercase(CS pat) {
-   Byte *p = pat;
+   CS p = pat;
    Magic magic_val = MAGIC_ON;
 
    // get the magicness of the pattern
@@ -527,21 +527,21 @@ searchit(
    LineNr   lnum;      // no init to shut up Apollo cc
    ColNr   col;
    RegMultilineMatch   regmatch;
-   Byte   *ptr;
+   CS ptr;
    ColNr   matchcol;
    PosNoVirt   endpos;
    PosNoVirt   matchpos;
-   int      loop;
+   int loop;
    Pos   start_pos;
-   int      at_first_line;
-   int      extra_col;
-   int      start_char_len;
-   int      match_ok;
-   long   nmatched;
-   int      submatch = 0;
-   int      first_match = TRUE;
-   int      called_emsg_before = called_emsg;
-   int      break_loop = FALSE;
+   int at_first_line;
+   int extra_col;
+   int start_char_len;
+   int match_ok;
+   long nmatched;
+   int submatch = 0;
+   int first_match = TRUE;
+   int called_emsg_before = called_emsg;
+   int break_loop = FALSE;
    LineNr   stop_lnum = 0;   // stop after this line number when != 0
    int      unused_timeout_flag = FALSE;
    int      *timed_out = &unused_timeout_flag;  // set when timed out.
@@ -928,16 +928,15 @@ do_search(
    Unt searchstrlen;
    SearchOffset       old_off;
    int          retval;   // Return value
-   Byte       *p;
+   CS p;
    long       c;
-   Byte       *dircp;
-   Byte       *strcopy = NULL;
-   Byte       *ps;
-   int          show_search_stats;
-   Byte       *msgbuf = NULL;
-   Unt       msgbuflen = 0;
-   int          has_offset = FALSE;
-
+   CS dircp;
+   CS strcopy = NULL;
+   CS ps;
+   int show_search_stats;
+   CS msgbuf = NULL;
+   Unt msgbuflen = 0;
+   int has_offset = FALSE;
 
    //Save the values for when (options & SEARCH_KEEP) is used.
    //(there is no "if ()" around this because gcc wants them initialized)
@@ -1046,10 +1045,10 @@ do_search(
 
       show_search_stats = FALSE;
       if ((options & SEARCH_ECHO) && messaging() && !msg_silent && (!cmd_silent)) {
-         Byte   off_buf[40];
-         Unt   off_len = 0;
-         Unt   plen;
-         Unt   msgbufsize;
+         Byte off_buf[40];
+         Unt off_len = 0;
+         Unt plen;
+         Unt msgbufsize;
 
          // Compute msgRowG early.
          msg_start();
@@ -1104,9 +1103,9 @@ do_search(
          // do not fill the msgbuf buffer, if cmd_silent is set, leave it
          // empty for the search_stat feature.
          if (!cmd_silent) {
-             Byte   *trunc;
+            CS trunc;
 
-             msgbuf[0] = dirc;
+            msgbuf[0] = dirc;
 
             if (utf_iscomposing(mb_ptr2char(p))) {
                // Use a space to draw the composing char on.
@@ -1437,12 +1436,12 @@ check_prevcol(
 //Raw string start is found at linep[startpos.col - 1].
 //Return TRUE if the matching end can be found between startpos and endpos.
 private int
-find_rawstring_end(Byte *linep, Pos *startpos, Pos *endpos) {
-   Byte   *p;
-   Byte   *delim_copy;
-   Unt   delim_len;
+find_rawstring_end(CS linep, Pos* startpos, Pos* endpos) {
+   CS p;
+   CS delim_copy;
+   Unt delim_len;
    LineNr   lnum;
-   int      found = FALSE;
+   int found = FALSE;
 
    for (p = linep + startpos->col + 1; *p && *p != '('; ++p)
       {} 
@@ -1451,7 +1450,7 @@ find_rawstring_end(Byte *linep, Pos *startpos, Pos *endpos) {
    if (!delim_copy)
       return FALSE;
    for (lnum = startpos->lnum; lnum <= endpos->lnum; ++lnum) {
-      Byte *line = ml_get(lnum);
+      CS line = ml_get(lnum);
 
       for (p = line + (lnum == startpos->lnum ? startpos->col + 1 : 0); *p; ++p) {
          if (lnum == endpos->lnum && (ColNr)(p - line) >= endpos->col)
@@ -1474,16 +1473,14 @@ find_rawstring_end(Byte *linep, Pos *startpos, Pos *endpos) {
 //When "switchit" is TRUE swap the direction.
 private void
 find_mps_values(
-   OUT Unt       *initc,
-   OUT Unt       *findc,
+   OUT Unt* initc,
+   OUT Unt* findc,
    OUT int* backwards,
-   int       switchit
+   int switchit
 ) {
-   Byte   *ptr;
-
-   ptr = curBook->o.matchPairs;
+   CS ptr = curBook->o.matchPairs;
    while (*ptr != ZERO) {
-      Byte *prev;
+      CS prev;
 
       if (mb_ptr2char(ptr) == *initc) {
          if (switchit) {
@@ -1546,8 +1543,8 @@ findmatchlimit(
    int      backwards = FALSE;   // init for gcc
    int      raw_string = FALSE;   // search for raw string
    int      inquote = FALSE;   // TRUE when inside quotes
-   Byte   *linep;         // pointer to current line
-   Byte   *ptr;
+   CS linep;         // pointer to current line
+   CS ptr;
    int      do_quotes;      // check for quotes in current line
    int      at_start;      // do_quotes value at start position
    int      hash_dir = 0;      // Direction searched for # things
@@ -1995,18 +1992,18 @@ check_linecomment(CS line) {
 //"direction" is FORWARD or BACKWARD. Return TRUE, FALSE or -1 for failure.
 private int
 is_zero_width(
-   Byte   *pattern,
-   Unt   patternlen,
-   int      move,
-   Pos   *cur,
-   int      direction)
+   CS pattern,
+   Unt patternlen,
+   int move,
+   Pos* cur,
+   int direction)
 {
    RegMultilineMatch   regmatch;
-   int      nmatched = 0;
-   int      result = -1;
-   Pos   pos;
-   int      called_emsg_before = called_emsg;
-   int      flag = 0;
+   int nmatched = 0;
+   int result = -1;
+   Pos pos;
+   int called_emsg_before = called_emsg;
+   int flag = 0;
 
    if (pattern == NULL) {
       pattern = prevSearchPatternsG[last_idx].pat;
@@ -2177,7 +2174,7 @@ current_search(
 // return TRUE if line 'lnum' is empty or has white chars only.
 int
 linewhite(LineNr lnum) {
-   Byte* p = skipwhite(ml_get(lnum));
+   CS p = skipwhite(ml_get(lnum));
    return (*p == ZERO);
 }
 
@@ -2256,7 +2253,7 @@ update_search_stat(
    static int       incomplete = 0;
    static int       last_maxcount = 0;
    static int       chgtick = 0;
-   static Byte   *lastpat = NULL;
+   static CS lastpat = NULL;
    static Unt   lastpatlen = 0;
    static Book    *lbuf = NULL;
    ProfTime  start;
@@ -2387,8 +2384,8 @@ find_pattern_in_path(
    int      depth_displayed;   // For type==CHECK_PATH
    int      old_files;
    int      already_searched;
-   Byte   *line;
-   Byte   *p;
+   CS line;
+   CS p;
    Byte   save_char;
    int      define_matched;
    RegMatch   regmatch;
@@ -2398,9 +2395,9 @@ find_pattern_in_path(
    int      did_show = FALSE;
    Boole      found = false;
    int      i;
-   Byte   *already = NULL;
-   Byte   *startp = NULL;
-   Byte   *inc_opt = NULL;
+   CS already = NULL;
+   CS startp = NULL;
+   CS inc_opt = NULL;
    Portal   *curPor_save = NULL;
 
    regmatch.regprog = NULL;
@@ -2424,15 +2421,15 @@ find_pattern_in_path(
           goto fpip_end;
    }
    inc_opt = curBook->o.includer;
-   if (*inc_opt != ZERO) {
+   if (inc_opt) {
       incl_regmatch.regprog = compileRegexp(inc_opt, RE_MAGIC);
       if (incl_regmatch.regprog == NULL)
          goto fpip_end;
       incl_regmatch.rm_ic = FALSE;   // don't ignore case in incl. pat.
    }
-   if (type == FIND_DEFINE && (*curBook->o.definer != ZERO)) {
+   if (type == FIND_DEFINE && curBook->o.definer) {
       def_regmatch.regprog = compileRegexp(curBook->o.definer, RE_MAGIC);
-      if (def_regmatch.regprog == NULL)
+      if (!def_regmatch.regprog)
          goto fpip_end;
       def_regmatch.rm_ic = FALSE;   // don't ignore case in define pat.
    }
@@ -3671,7 +3668,7 @@ update_search_hl(
 
                if (match->startcol == match->endcol) {
                   // highlight empty match, try again after it
-                  Byte *p = *line + match->endcol;
+                  CS p = *line + match->endcol;
 
                   if (*p == ZERO)
                      // consistent with non-mbyte
@@ -3816,12 +3813,11 @@ f_getmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
          for (int i = 0; i < cur->posLen; ++i) {
             lPosNoVirt   *llpos;
             Byte buf[30];  // use 30 to avoid compiler warning
-            List   *l;
 
             llpos = &cur->pos[i];
             if (llpos->lnum == 0)
                break;
-            l = list_alloc();
+            List* l = list_alloc();
             list_append_number(l, (Long)llpos->lnum);
             if (llpos->col > 0) {
                list_append_number(l, (Long)llpos->col);
@@ -3882,7 +3878,7 @@ f_setmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
          int      i = 0;
          Byte   buf[30];  // use 30 to avoid compiler warning
          DictItem  *di;
-         Byte   *group;
+         CS group;
          int      priority;
          int      id;
 
@@ -4624,7 +4620,7 @@ prepare_help_buffer(void) {
    //Accept all ASCII chars for keywords, except ' ', '*', '"', '|', and
    //latin1 word characters (for translated help files).
    CS p = S"!-~,^*,^|,^\",192-255";
-   if (STRCMP(curBook->o.isKeyword, p) != 0) {
+   if (curBook->o.isKeyword && STRCMP(curBook->o.isKeyword, p) != 0) {
       optChangeStringOptionDirect(S"iskeyword", p, OPT_LOCAL, 0);
    }
 
@@ -4703,8 +4699,8 @@ searchFixHelpBook(void) {
          ExpandMatch files = {};
          files.a = createArena();
          FILE   *fd;
-         Byte   *s;
-         Byte   *cp;
+         CS s;
+         CS cp;
 
          // Find all "doc/ *.help" files in this directory.
          STRCAT(NameBuff, "*.??[help]");
@@ -4809,8 +4805,9 @@ generateHelpTagsForDir(
    int ignore_writeerr  //ignore write error
 ){
    ArrayList   ga;
-   Byte   *p1, *p2;
-   Byte* s;
+   CS p1;
+   CS p2;
+   CS s;
    int i;
    int utf8 = MAYBE;
    int this_utf8;

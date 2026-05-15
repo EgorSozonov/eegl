@@ -1012,26 +1012,24 @@ insertLine(
    return OK;
 }
 
-//get_leader_len() returns the length in bytes of the prefix of the given
-//string which introduces a comment.  If this string is not a comment then 0 is returned.
-//When "flags" is not NULL, it is set to point to the flags of the recognized
-//comment leader.
+//get_leader_len() returns the length in bytes of the prefix of the given string which introduces 
+//a comment. If this string is not a comment then 0 is returned. When "flags" is not NULL, it is 
+//set to point to the flags of the recognized comment leader.
 //"backward" must be true for the "O" command.
 //If "include_space" is set, include trailing whitespace while calculating the length.
 int
-get_leader_len(
-   CS line,
-   Byte** flags,
-   int backward,
-   int include_space
-) {
+get_leader_len(CS line, Byte** flags, int backward, int include_space) {
+   if (!curBook->o.comments) {
+      return 0;
+   }
+   
    int j;
    int got_com = FALSE;
-   int found_one;
+   Boole foundOne;
    Byte   part_buf[COM_MAX_LEN];   // buffer for one option part
    CS string;      // pointer to comment string
    CS list;
-   int      middle_match_len = 0;
+   int middle_match_len = 0;
    CS preList;
    CS saved_flags = NULL;
 
@@ -1043,8 +1041,8 @@ get_leader_len(
    //Repeat to match several nested comment strings.
    while (line[i] != ZERO) {
       //scan through the 'comments' option for a match
-      found_one = FALSE;
-      for (list = curBook->o.comments; *list; ) {
+      foundOne = false;
+      for (list = curBook->o.comments; *list != ZERO; ) {
          // Get one option part into part_buf[].  Advance "list" to next
          // one.  Put "string" at start of string.
          if (!got_com && flags)
@@ -1106,7 +1104,7 @@ get_leader_len(
 
          if (middle_match_len == 0)
             i += j;
-         found_one = TRUE;
+         foundOne = true;
          break;
       }
 
@@ -1115,11 +1113,11 @@ get_leader_len(
          if (!got_com && flags != NULL)
             *flags = saved_flags;
          i += middle_match_len;
-         found_one = TRUE;
+         foundOne = true;
       }
 
       // No match found, stop scanning.
-      if (!found_one)
+      if (!foundOne)
          break;
 
       result = i;
@@ -1129,12 +1127,12 @@ get_leader_len(
          ++i;
 
       if (include_space)
-          result = i;
+         result = i;
 
       // If this comment doesn't nest, stop here.
       got_com = TRUE;
       if (firstOccurrence(part_buf, COM_NEST) == NULL)
-          break;
+         break;
    }
    return result;
 }
@@ -3299,21 +3297,24 @@ adjust_cursor_eol(void) {
 //recognized comment leader.
 private int
 get_last_leader_offset(CS line, Byte **flags) {
-   int      result = -1;
-   int      i, j;
-   int      lower_check_bound = 0;
-   CS   string;
-   Byte   *com_leader;
-   Byte   *com_flags;
-   Byte   *list;
-   int      found_one;
-   Byte   part_buf[COM_MAX_LEN];   // buffer for one option part
+   if (!curBook->o.comments) {
+      return -1;
+   }
+   int result = -1;
+   int i, j;
+   int lower_check_bound = 0;
+   CS string;
+   CS com_leader;
+   CS com_flags;
+   CS list;
+   Boole foundOne;
+   Byte part_buf[COM_MAX_LEN];   // buffer for one option part
 
    // Repeat to match several nested comment strings.
    i = (int)STRLEN(line);
    while (--i >= lower_check_bound) {
-      // scan through the 'comments' option for a match
-      found_one = FALSE;
+      // scan through the @comments option for a match
+      foundOne = false;
       for (list = curBook->o.comments; *list; ) {
          CS flags_save = list;
 
@@ -3334,25 +3335,24 @@ get_last_leader_offset(CS line, Byte **flags) {
                 continue;
             while (SPACE_OR_TAB(*string))
                 ++string;
-          }
-          for (j = 0; string[j] != ZERO && string[j] == line[i + j]; ++j)
-         /* do nothing */;
-          if (string[j] != ZERO)
-         continue;
+         }
+         for (j = 0; string[j] != ZERO && string[j] == line[i + j]; ++j)
+            {}
+         if (string[j] != ZERO)
+            continue;
 
-          /*
-           * When 'b' flag used, there must be white space or an
-           * end-of-line after the string in the line.
-           */
-          if (firstOccurrence(part_buf, COM_BLANK) != NULL
-             && !SPACE_OR_TAB(line[i + j]) && line[i + j] != ZERO)
-         continue;
+         //When 'b' flag used, there must be white space or an
+         //end-of-line after the string in the line.
+         if (firstOccurrence(part_buf, COM_BLANK) != NULL
+             && !SPACE_OR_TAB(line[i + j]) && line[i + j] != ZERO
+         )
+            continue;
 
          if (firstOccurrence(part_buf, COM_MIDDLE) != NULL) {
-            // For a middlepart comment, only consider it to match if everything before the 
-            // current position in the line is whitespace.  Otherwise we would think we are 
-            // inside a comment if the middle part appears somewhere in the middle
-            // of the line. E.g. for C the "*" appears often.
+            //For a middlepart comment, only consider it to match if everything before the 
+            //current position in the line is whitespace.  Otherwise we would think we are 
+            //inside a comment if the middle part appears somewhere in the middle
+            //of the line. E.g. for C the "*" appears often.
             for (j = 0; SPACE_OR_TAB(line[j]) && j <= i; j++)
                 ;
             if (j < i)
@@ -3360,7 +3360,7 @@ get_last_leader_offset(CS line, Byte **flags) {
          }
 
          //We have found a match, stop searching.
-         found_one = TRUE;
+         foundOne = true;
 
          if (flags != 0)
             *flags = flags_save;
@@ -3369,9 +3369,9 @@ get_last_leader_offset(CS line, Byte **flags) {
          break;
       }
 
-      if (found_one) {
-         Byte  part_buf2[COM_MAX_LEN];   // buffer for one option part
-         int     len1, len2, off;
+      if (foundOne) {
+         Byte part_buf2[COM_MAX_LEN];   // buffer for one option part
+         int len1, len2, off;
 
          result = i;
          //If this comment nests, continue searching.
@@ -6848,7 +6848,7 @@ get_number_indent(LineNr lnum) {
       lead_len = get_leader_len(ml_get(lnum), NULL, FALSE, TRUE);
 
    regmatch.regprog = compileRegexp(curBook->o.formatListPattern, RE_MAGIC);
-   if (regmatch.regprog != NULL) {
+   if (regmatch.regprog) {
       regmatch.rm_ic = FALSE;
       // eeRegexec() expects a pointer to a line.  This lets us
       // start matching for the flp beyond any comment leader...
@@ -6900,7 +6900,7 @@ getBreakindentForPort(Portal* po, CS line) {
        || preListopt != po->breakIndent.list
        || prev_no_ts != no_ts
        || !prev_flp
-       || STRCMP(prev_flp, po->book->o.formatListPattern) != 0
+       || (po->book->o.formatListPattern && STRCMP(prev_flp, po->book->o.formatListPattern) != 0)
        || !prev_line
        || STRCMP(prev_line, line) != 0
    ) {
@@ -6915,7 +6915,7 @@ getBreakindentForPort(Portal* po, CS line) {
       preList = 0;
       prev_no_ts = no_ts;
       eeglFree(prev_flp);
-      prev_flp = copyStr(po->book->o.formatListPattern);
+      prev_flp = po->book->o.formatListPattern ? copyStr(po->book->o.formatListPattern) : null;
       // add additional indent for numbered lists
       if (po->breakIndent.list != 0 && po->breakIndent.vcol == 0) {
          RegMatch regmatch;
@@ -7511,22 +7511,18 @@ f_indent(Arr(Var) argVars, OUT Var* returnVar) {
 // TRUE if the string "line" starts with a word from @cinwords
 private Boole
 cin_is_cinword(CS line) {
-   Boole  retval = false;
-
-   int cinw_len = (int)STRLEN(curBook->o.indentKeywords) + 1;
-   CS cinw_buf = alloc(cinw_len);
+   if (!curBook->o.indentKeywords)
+      return false;
 
    line = skipwhite(line);
-   for (CS cinw = curBook->o.indentKeywords; *cinw; ) {
-      int len = copy_option_part(&cinw, cinw_buf, cinw_len, ",");
-      if (STRNCMP(line, cinw_buf, len) == 0 && (!eeIsWordc(line[len]) || !eeIsWordc(line[len - 1]))
-      ) {
-           retval = true;
-           break;
-       }
+   CS p = curBook->o.indentKeywords;
+   for (CS comma = skipToComma(p); *p != ZERO; p = comma + 1, comma = skipToComma(p)) {
+      int len = comma - p;
+      if (STRNCMP(line, p, len) == 0 && !eeIsWordc(line[len])) {
+         return true;
+      }
    }
-   eeglFree(cinw_buf);
-   return retval;
+   return false;
 }
 
 //Skip to the end of a "string" literal and a 'c' character.

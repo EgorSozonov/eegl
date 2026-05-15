@@ -7108,7 +7108,7 @@ set_term_and_win_size(Terminal *term, JobOptions *opt) {
          portSetWidth(term->cols, curPor);
 
       //Set 'winsize' now to avoid a resize at the next redraw.
-      if (!minsize && *curPor->o.termWinSize != ZERO) {
+      if (!minsize && curPor->o.termWinSize) {
          Byte buf[100];
 
          eeSnprintf(buf, 100, "%dx%d", term->rows, term->cols);
@@ -8777,12 +8777,12 @@ terminal_is_active(void) {
 
 // Return the hilite group ID for the terminal and the portal.
 private int
-term_get_highlight_id(Terminal *term, Portal *po) {
+term_get_highlight_id(Terminal* term, Portal* po) {
    CS name;
 
-   if (po && *po->o.hiliteGroupName != ZERO)
+   if (po && po->o.hiliteGroupName)
       name = po->o.hiliteGroupName;
-   ei (term->hiliteName != NULL)
+   ei (term->hiliteName)
       name = term->hiliteName;
    else
       name = S"Terminal";
@@ -8918,7 +8918,7 @@ terminal_loop(int blocking) {
    // curBook->term instead of a stored reference.
    in_terminal_loop = curBook->term;
 
-   if (*curPor->o.termWinKey != ZERO) {
+   if (curPor->o.termWinKey) {
       termwinkey = stringToChar(curPor->o.termWinKey, TRUE);
 
       if (termwinkey == Ctrl_W)
@@ -9104,7 +9104,7 @@ cellToDecoration(
    int is_default_bg = VTERM_COLOR_IS_DEFAULT_BG(bg);
 
    if (is_default_fg || is_default_bg) {
-      if (po && *po->o.hiliteGroupName != ZERO) {
+      if (po && po->o.hiliteGroupName) {
          if (is_default_fg)
             fg = &po->termHiliteGroupName.fg;
          if (is_default_bg)
@@ -9922,10 +9922,11 @@ void
 termUpdatePortcolor(Portal* po) {
    int id = 0;
 
-   if (*po->o.hiliteGroupName != ZERO)
+   if (po->o.hiliteGroupName)
       id = hiliteGroupByName(mbText(po->o.hiliteGroupName));
-   if (id == 0 || !get_vterm_color_from_synid(id, &po->termHiliteGroupName.fg,
-                        &po->termHiliteGroupName.bg))
+   if (id == 0 
+         || !get_vterm_color_from_synid(id, &po->termHiliteGroupName.fg, &po->termHiliteGroupName.bg)
+   )
       termResetPortcolor(po);
 }
 

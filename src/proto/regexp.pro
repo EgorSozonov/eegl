@@ -15,7 +15,7 @@ Byte *reg_submatch(int no);
 List *reg_submatch_list(int no);
 void save_timeout_for_debugging(void);
 void restore_timeout_for_debugging(void);
-RegProg *compileRegexp(Byte *expr_arg, int flags);
+RegProg *compileRegexp(CS expr_arg, Unt flags);
 Boole regexContainsEol(RegProg *prog);
 void eeRegFree(RegProg *prog);
 void free_regexp_stuff(void);

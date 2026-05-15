@@ -295,20 +295,6 @@ applyBuiltinCapability(Arr(TinfoEntry) entries, int len) {
    }
 }
 
-// Set number of colors. Store it as a number in t_colors.
-// Store it as a string in termCodeS[KS_CCO] (using nr_colors[]).
-private void
-set_color_count(int nr) {
-   Byte   nr_colors[20];      // string for number of colors
-
-   t_colors = nr;
-   if (t_colors > 1)
-      sprintf((char *)nr_colors, "%d", t_colors);
-   else
-      *nr_colors = ZERO;
-   optChangeStringOptionDirect(S"t_Co", nr_colors, 0, 0);
-}
-
 private CS key_names[] = {SMAP((CS),
    //Do those ones first, both may cause a screen redraw.
    "Co",
@@ -396,11 +382,6 @@ get_term_entries(OUT int* height, OUT int* width) {
       *height = tgetnum("li");
    if (*width == 0)
       *width = tgetnum("co");
-
-   // Get number of colors (if not done already).
-   if (termCodeS[KS_CCO] == Em) {
-      set_color_count(tgetnum("Co"));
-   }
 
    BC = tgetstr("bc", (char**)&tp);
    UP = tgetstr("up", (char**)&tp);
@@ -1092,15 +1073,6 @@ ttest(int pairs) {
       }
    }
    needToGatherTermLeaders = TRUE;
-
-   //Set t_colors to the value of $COLORS or t_Co.
-   t_colors = ATOI(termCodeS[KS_CCO]);
-   CS env_colors = mch_getenv(S"COLORS");
-   if (env_colors && SAFE_isdigit(*env_colors)) {
-      int colors = atoi((char *)env_colors);
-      if (colors != t_colors)
-         set_color_count(colors);
-   }
 }
 
 #if defined(PROTO)

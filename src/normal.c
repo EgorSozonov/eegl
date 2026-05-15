@@ -3807,7 +3807,7 @@ nv_zet(ActionArg* aArg) {
 
    // "zE": erase all folds
    case 'E':   
-      if (curPor->o.foldMethod == FOLD_MARKER)
+      if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker)
          deleteFold((LineNr)1, curBook->mem.lineCount, TRUE, FALSE);
       else
          emsg(_(e_cannot_erase_folds_with_current_foldmethod));
@@ -11773,8 +11773,8 @@ private void foldCreateMarkers(LineNr start, LineNr end);
 private void foldAddMarker(LineNr lnum, CS marker, int markerlen);
 private void deleteFoldMarkers(Fold *fp, int recursive, LineNr lnum_off);
 private void foldDelMarker(LineNr lnum, CS marker, int markerlen);
-private void foldUpdateIEMS(Portal *wp, LineNr top, LineNr bot);
-private void parseMarker(Portal *wp);
+private void foldUpdateIEMS(Portal*, LineNr, LineNr);
+private void parseMarker(Portal*);
 
 //While updating the folds lines between invalid_top and invalid_bot have an
 //undefined fold level. Only used for the portal currently being updated.
@@ -12097,7 +12097,7 @@ checkCloseRec(ArrayList* gap, LineNr lnum, int level) {
 //Give an error message and return FALSE if not.
 int
 foldManualAllowed(int create) {
-   if (curPor->o.foldMethod == FOLD_MARKER)
+   if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker)
       return TRUE;
    if (create)
       emsg(_(e_cannot_create_fold_with_current_foldmethod));
@@ -12128,7 +12128,7 @@ foldCreate(LineNr start, LineNr end) {
    }
 
    // When @foldmethod is "marker", add markers, which creates the folds.
-   if (curPor->o.foldMethod == FOLD_MARKER) {
+   if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker) {
       foldCreateMarkers(start, end);
       return;
    }
@@ -12275,7 +12275,7 @@ deleteFold(LineNr start, LineNr end, int recursive, int had_visual){ //is Visual
          if (last_lnum < lnum)
              last_lnum = lnum;
          if (!did_one)
-             parseMarker(curPor);
+            parseMarker(curPor);
          deleteFoldMarkers(found_fp, recursive, found_off);
          did_one = TRUE;
 
@@ -13051,6 +13051,8 @@ foldCreateMarkers(LineNr start, LineNr end) {
 private void
 foldAddMarker(LineNr lnum, CS marker, int markerlen) {
    CS cms = curBook->o.commentString;
+   if (!cms)
+      return;
    CS p = STRSTR(curBook->o.commentString, "%s");
    int      line_is_comment = FALSE;
 
@@ -13064,7 +13066,8 @@ foldAddMarker(LineNr lnum, CS marker, int markerlen) {
    // Check if the line ends with an unclosed comment
    (void)skip_comment(line, FALSE, FALSE, &line_is_comment);
    CS newline = alloc(line_len + markerlen + STRLEN(cms) + 1);
-   STRCPY(newline, line);
+   STRCPY(OUT newline, line);
+   
    // Append the marker to the end of the line
    if (!p || line_is_comment)
       copySubstrToAllocation(newline + line_len, (Text){marker, markerlen});
@@ -13108,10 +13111,10 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
          len = markerlen;
          if (EE_ISDIGIT(p[len]))
             ++len;
-         if (*cms != ZERO) {
+         if (cms) {
             //Also delete 'commentstring' if it matches.
-            CS cms2 = (CS)strstr((char *)cms, "%s");
-            if (cms2 != NULL && p - line >= cms2 - cms
+            CS cms2 = (CS)STRSTR(cms, "%s");
+            if (cms2 && p - line >= cms2 - cms
                   && STRNCMP(p - (cms2 - cms), cms, cms2 - cms) == 0
                   && STRNCMP(p + len, cms2 + 2, STRLEN(cms2 + 2)) == 0
             ) {
@@ -13157,7 +13160,7 @@ get_foldtext(
        // a previous error should not abort evaluating 'foldexpr'
        anyEmsgG = FALSE;
 
-   if (*wp->o.foldText != ZERO) {
+   if (wp->o.foldText) {
        Byte dashes[MAX_LEVEL + 2];
        int level;
        CS p;
@@ -13242,28 +13245,35 @@ foldtext_cleanup(CS str) {
    int len;
    int did1 = FALSE;
    int did2 = FALSE;
-
+   CS cmsStart = null;   // first part or the whole comment
+   CS cmsEnd = null;  // last part of the comment or NULL
+   int cms_slen = 0; // length of cmsStart
+   int cms_elen = 0;   // length of cmsEnd
    // Ignore leading and trailing white space in 'commentstring'.
-   CS cms_start = skipwhite(curBook->o.commentString);   // first part or the whole comment
-   int cms_slen = (int)STRLEN(cms_start); // length of cms_start
-   while (cms_slen > 0 && SPACE_OR_TAB(cms_start[cms_slen - 1]))
-      --cms_slen;
-
-   // locate "%s" in 'commentstring', use the part before and after it.
-   CS cms_end = (CS)strstr((char *)cms_start, "%s");  // last part of the comment or NULL
-   int cms_elen = 0;   // length of cms_end
-   if (cms_end) {
-      cms_elen = cms_slen - (int)(cms_end - cms_start);
-      cms_slen = (int)(cms_end - cms_start);
-
-      // exclude white space before "%s"
-      while (cms_slen > 0 && SPACE_OR_TAB(cms_start[cms_slen - 1]))
+   if (curBook->o.commentString) {
+      cmsStart = skipwhite(curBook->o.commentString);   // first part or the whole comment
+      cms_slen = (int)STRLEN(cmsStart);
+      while (cms_slen > 0 && SPACE_OR_TAB(cmsStart[cms_slen - 1]))
          --cms_slen;
 
-      // skip "%s" and white space after it
-      s = skipwhite(cms_end + 2);
-      cms_elen -= (int)(s - cms_end);
-      cms_end = s;
+      // locate "%s" in 'commentstring', use the part before and after it.
+      CS cmsEnd = (CS)STRSTR(cmsStart, "%s");  // last part of the comment or NULL
+      if (cmsEnd) {
+         cms_elen = cms_slen - (int)(cmsEnd - cmsStart);
+         cms_slen = (int)(cmsEnd - cmsStart);
+
+         // exclude white space before "%s"
+         while (cms_slen > 0 && SPACE_OR_TAB(cmsStart[cms_slen - 1]))
+            --cms_slen;
+
+         // skip "%s" and white space after it
+         s = skipwhite(cmsEnd + 2);
+         cms_elen -= (int)(s - cmsEnd);
+         cmsEnd = s;
+      }
+   } 
+   if (!curPor->o.foldMarker) {
+      return;
    }
    parseMarker(curPor);
 
@@ -13277,18 +13287,18 @@ foldtext_cleanup(CS str) {
          if (EE_ISDIGIT(s[len]))
             ++len;
 
-         // May remove 'commentstring' start.  Useful when it's a double
-         // quote and we already removed a double quote.
+         //May remove @commentstring start.  Useful when it's a double
+         //quote and we already removed a double quote.
          for (p = s; p > str && SPACE_OR_TAB(p[-1]); --p) {}
-         if (p >= str + cms_slen && STRNCMP(p - cms_slen, cms_start, cms_slen) == 0) {
+         if (p >= str + cms_slen && cmsStart && STRNCMP(p - cms_slen, cmsStart, cms_slen) == 0) {
             len += (int)(s - p) + cms_slen;
             s = p - cms_slen;
          }
-      } ei (cms_end) {
-          if (!did1 && cms_slen > 0 && STRNCMP(s, cms_start, cms_slen) == 0) {
+      } ei (cmsEnd) {
+          if (!did1 && cms_slen > 0 && STRNCMP(s, cmsStart, cms_slen) == 0) {
              len = cms_slen;
              did1 = TRUE;
-          } ei (!did2 && cms_elen > 0 && STRNCMP(s, cms_end, cms_elen) == 0) {
+          } ei (!did2 && cms_elen > 0 && STRNCMP(s, cmsEnd, cms_elen) == 0) {
              len = cms_elen;
              did2 = TRUE;
           }
@@ -13385,7 +13395,7 @@ foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
    invalid_top = top;
    invalid_bot = bot;
 
-   if (po->o.foldMethod == FOLD_MARKER) {
+   if (po->o.foldMethod == FOLD_MARKER && po->o.foldMarker) {
       getlevel = foldlevelMarker;
 
       // Init marker variables to speed up foldlevelMarker().
@@ -14294,9 +14304,9 @@ foldlevelExpr(FoldLine *flp) {
 //Parse 'foldmarker' and set "foldendmarker", "foldstartmarkerlen" and "foldendmarkerlen".
 //Rely on the option value to have been checked for correctness already.
 private void
-parseMarker(Portal *wp) {
-   foldendmarker = firstOccurrence(wp->o.foldMarker, ',');
-   foldstartmarkerlen = (int)(foldendmarker++ - wp->o.foldMarker);
+parseMarker(Portal* po) {
+   foldendmarker = firstOccurrence(po->o.foldMarker, ',');
+   foldstartmarkerlen = (int)(foldendmarker++ - po->o.foldMarker);
    foldendmarkerlen = (int)STRLEN(foldendmarker);
 }
 
