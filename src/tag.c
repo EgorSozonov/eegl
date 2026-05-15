@@ -1335,8 +1335,8 @@ findtags_in_help_init(FindTags *st) {
          && curBook->currFileName[i - 4] == '.'
          && STRNICMP(curBook->currFileName + i - 3, st->help_lang, 2) == 0)
       st->help_pri = 0;
-   else {
-      // search for the language in 'helplang'
+   ei (p_hlg) {
+      // search for the language in @helplang
       st->help_pri = 1;
       CS s;
       for (s = p_hlg; *s != ZERO; ++s) {
@@ -2320,7 +2320,8 @@ get_tagfname(
    if (first) {
       // Init. We make a copy of 'tags', because autocommands may change
       // the value without notifying us.
-      tnp->tn_tags = copyStr(curBook->o.tags);
+      if (curBook->o.tags)
+         tnp->tn_tags = copyStr(curBook->o.tags);
       tnp->tn_np = tnp->tn_tags;
    }
 

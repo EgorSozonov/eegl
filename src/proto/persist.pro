@@ -4,7 +4,6 @@ int match_user(CS name);
 void free_homedir(void);
 void free_users(void);
 int get_user_name(CS builder, int len);
-void c_loadview(Invocation *invo);
 int write_session_file(CS filename);
 void c_mkrc(Invocation *invo);
 int put_eol(FILE *fd);

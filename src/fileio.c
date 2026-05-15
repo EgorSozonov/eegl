@@ -22,7 +22,7 @@ find_directory_in_path(
    OUT Byte** file_to_find, OUT FileSearchCtx** searchCtx
 );
 private CS findFileInPathImpl(
-   Text fName, Unt options, Boole first, CS path_option, Unt find_what, CS rel_fname,
+   Text fName, Unt options, Boole first, NULLABLE CS path_option, Unt find_what, CS rel_fname,
    CS suffixes, OUT Byte** file_to_find, OUT FileSearchCtx** search_ctx_arg
 );
 private int expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags);
@@ -495,11 +495,7 @@ f_filewritable(Var *argvars, Var* returnVar) {
 }
 
 private void
-findfilendir(
-   Var   *argvars,
-   Var   *returnVar,
-   int      find_what
-){
+findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
    CS fname;
    CS fresult = NULL;
    CS path = curBook->o.path;
@@ -519,7 +515,7 @@ findfilendir(
       if (!p)
          error = TRUE;
       else {
-         if (*p != ZERO)
+         if (!p)
             path = p;
 
          if (argvars[2].tag != VAR_UNKNOWN)
@@ -541,7 +537,7 @@ findfilendir(
             0, first, path,
             find_what,
             curBook->fullFileName,
-            find_what == FINDFILE_DIR ? Em : curBook->o.suffixesAdd,
+            find_what == FINDFILE_DIR || !curBook->o.suffixesAdd? Em : curBook->o.suffixesAdd,
             OUT &file_to_find, 
             OUT &searchCtx
          );
@@ -1867,7 +1863,7 @@ expand_wildcards(
       return retval;
 
    // Remove names that match 'wildignore'.
-   if (*p_wig) {
+   if (p_wig) {
       // check all files in files->c
       for (int i = 0; i < (int)files->len; ++i) {
          CS ffname = FullName_save(files->c[i], FALSE);
@@ -1908,8 +1904,11 @@ expand_wildcards(
 }
 
 // Return TRUE if "fname" matches with an entry in 'suffixes'.
-int
+Boole
 match_suffix(CS fname){
+   if (!p_su)
+      return false;
+      
 #define MAXSUFLEN 30       // maximum length of a file suffix
    Byte suf_buf[MAXSUFLEN];
 
@@ -2313,8 +2312,8 @@ gen_expand_wildcards(
    ArrayList ga;
    CS p;
    static Boole recursive = false;
-   int         retval = OK;
-   int         did_expand_in_path = FALSE;
+   int retval = OK;
+   int did_expand_in_path = FALSE;
    CS path_option = curBook->o.path;
 
    //doExpandEnv() is called to expand things like "~user". If this fails,
@@ -2770,7 +2769,7 @@ struct VisitedList {
 //  maxRecursion:   how many levels of dirs to search downwards
 //  stopDirs:   array of stop directories for upward search
 //  whatToFind:   FINDFILE_BOTH, FINDFILE_DIR or FINDFILE_FILE
-//  tagFile:   searching for tags file, don't use 'suffixesadd'
+//  tagFile:   searching for tags file, don't use @suffixesadd
 typedef struct FileSearchCtx {
    DirSearchStack* stack;
    VisitedList* visitedList;
@@ -3508,9 +3507,9 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                       goto fail;
                   }
 
-                  //Try without extra suffix and then with suffixes from 'suffixesadd'.
+                  //Try without extra suffix and then with suffixes from @suffixesadd.
                   len = filePath.len;
-                  if (searchCtx->tagFile)
+                  if (searchCtx->tagFile || !curBook->o.suffixesAdd)
                      suf = Em;
                   else
                      suf = curBook->o.suffixesAdd;
@@ -4021,10 +4020,10 @@ findFileInPath(
    OUT Byte** file_to_find,   // modified copy of file name
    OUT FileSearchCtx** searchCtx   // state of the search
 ){
-   return findFileInPathImpl(fname, options, first,
-       curBook->o.path,
-       FINDFILE_BOTH, rel_fname, curBook->o.suffixesAdd,
-       OUT file_to_find, OUT searchCtx
+   return findFileInPathImpl(
+         fname, options, first, curBook->o.path, FINDFILE_BOTH, rel_fname, 
+         curBook->o.suffixesAdd ? curBook->o.suffixesAdd : S"",
+         OUT file_to_find, OUT searchCtx
    );
 }
 
@@ -4079,7 +4078,7 @@ findFileInPathImpl(
    Text fName,
    Unt options,
    Boole first,      // use count'th matching file name
-   CS path_option,   // path or cdpath
+   NULLABLE CS path_option,   // path or cdpath
    Unt find_what,   // FINDFILE_FILE, _DIR or _BOTH
    CS rel_fname,   // file name we are looking relative to.
    CS suffixes,   // list of suffixes, 'suffixesadd' option
@@ -4190,10 +4189,10 @@ findFileInPathImpl(
       //When "first" is set, first setup to the start of the option.
       //Otherwise continue to find the next match.
       if (first == TRUE) {
-          // findfileFreeVisitedList can handle a possible NULL pointer
-          findfileFreeVisitedList(*searchCtx);
-          dir = path_option;
-          did_findfile_init = FALSE;
+         // findfileFreeVisitedList can handle a possible NULL pointer
+         findfileFreeVisitedList(*searchCtx);
+         dir = path_option;
+         did_findfile_init = FALSE;
       }
 
       for (;;) {
@@ -4531,11 +4530,14 @@ is_unique(CS maybe_unique, ExpandMatch* matches, Unt i) {
 //TODO: handle upward search (;) and path limiter (**N) notations by
 //expanding each into their equivalent path(s).
 private void
-expand_path_option(CS curdir, CS path_option, OUT ExpandMatch* files) {
+expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
                               // path or cdpath
+   if (!path_option)
+      return;
+      
    Byte buf[MAXPATHL];
    CS p;
-   Unt   curdirlen = 0;
+   Unt curdirlen = 0;
    while (*path_option != ZERO) {
       Unt buflen = copy_option_part(&path_option, buf, MAXPATHL, " ,");
 
@@ -4707,7 +4709,7 @@ uniquefy_paths(
 
    // Shorten filenames in /in/current/directory/{filename}
    for (Unt i = 0; i < matches->len && !gotInterruptG; i++) {
-      Unt   rel_pathsize;
+      Unt rel_pathsize;
       CS path = in_curdir[i];
       if (!path)
          continue;

@@ -15,7 +15,7 @@ void c_lClose(Invocation *invo);
 void c_lOpen(Invocation *invo);
 void c_lBottom(Invocation *invo);
 LineNr llCurrentEntry(Portal *po);
-CS did_set_quickfixtextfunc(OptionChange *cha);
+CS setQuickfixtextfunc(OptionChange *cha);
 int grepIsActuallyInternal(CommIndex id);
 void c_elgrep(Invocation *invo);
 void c_grep(Invocation *invo);

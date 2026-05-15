@@ -5776,6 +5776,9 @@ eval_patch(CS origfile, CS diffFile, CS outfile) {
       scriptPosG = *ctx;
 
    // errors are ignored
+   if (!p_pex)
+      return;
+
    Var* tv = evalExprInternal(p_pex, NULL, TRUE);
    freeVar(tv);
 
@@ -15273,13 +15276,13 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
    else
        verbose_enter();
    ++no_wait_return;
-   if (debug_break_level > 0 || *p_vfile == ZERO)
+   if (debug_break_level > 0 || !p_vfile)
        msg_scroll = TRUE;       // always scroll up, don't overwrite
 
    smsg(_("Exception thrown: %s"), excp->value);
    msg_puts(S"\n");   // don't overwrite this either
 
-   if (debug_break_level > 0 || *p_vfile == ZERO)
+   if (debug_break_level > 0 || !p_vfile)
        commlineRowG = msgRowG;
    --no_wait_return;
    if (debug_break_level > 0)
@@ -15322,14 +15325,14 @@ discard_exception(Exception *excp, int was_finished) {
       else
           verbose_enter();
       ++no_wait_return;
-      if (debug_break_level > 0 || *p_vfile == ZERO)
+      if (debug_break_level > 0 || !p_vfile)
           msg_scroll = TRUE;       // always scroll up, don't overwrite
       smsg(was_finished
              ? _("Exception finished: %s")
              : _("Exception discarded: %s"),
          excp->value);
       msg_puts(S"\n");   // don't overwrite this either
-      if (debug_break_level > 0 || *p_vfile == ZERO)
+      if (debug_break_level > 0 || !p_vfile)
           commlineRowG = msgRowG;
       --no_wait_return;
       if (debug_break_level > 0)
@@ -15383,13 +15386,13 @@ catch_exception(Exception *excp) {
       else
          verbose_enter();
       ++no_wait_return;
-      if (debug_break_level > 0 || *p_vfile == ZERO)
+      if (debug_break_level > 0 || !p_vfile)
          msg_scroll = TRUE;       // always scroll up, don't overwrite
 
       smsg(_("Exception caught: %s"), excp->value);
       msg_puts(S"\n");   // don't overwrite this either
 
-      if (debug_break_level > 0 || *p_vfile == ZERO)
+      if (debug_break_level > 0 || !p_vfile)
          commlineRowG = msgRowG;
       --no_wait_return;
       if (debug_break_level > 0)

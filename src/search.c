@@ -1478,6 +1478,9 @@ find_mps_values(
    OUT int* backwards,
    int switchit
 ) {
+   if (!curBook->o.matchPairs)
+      return;
+      
    CS ptr = curBook->o.matchPairs;
    while (*ptr != ZERO) {
       CS prev;
@@ -1497,12 +1500,12 @@ find_mps_values(
       ptr += utfCharLen(ptr) + 1;
       if (mb_ptr2char(ptr) == *initc) {
          if (switchit) {
-             *findc = *initc;
-             *initc = mb_ptr2char(prev);
-             *backwards = FALSE;
+            *findc = *initc;
+            *initc = mb_ptr2char(prev);
+            *backwards = FALSE;
          } else {
-             *findc = mb_ptr2char(prev);
-             *backwards = TRUE;
+            *findc = mb_ptr2char(prev);
+            *backwards = TRUE;
          }
          return;
       }
@@ -1531,35 +1534,33 @@ find_mps_values(
 //"oap" is only used to set oap->motion_type for a linewise motion, it can be NULL
 Pos*
 findmatchlimit(
-   Operator   *oap,
-   Unt      initc,
-   int      flags,
-   int      maxtravel
+   Operator* oap,
+   Unt initc,
+   int flags,
+   int maxtravel
 ) {
-   static Pos pos;         // current search position
-   Unt      findc = 0;      // matching brace
-   Unt      c;
-   int      count = 0;      // cumulative number of braces
-   int      backwards = FALSE;   // init for gcc
-   int      raw_string = FALSE;   // search for raw string
-   int      inquote = FALSE;   // TRUE when inside quotes
-   CS linep;         // pointer to current line
+   Unt findc = 0;      // matching brace
+   Unt c;
+   int count = 0;      // cumulative number of braces
+   int backwards = FALSE;   // init for gcc
+   int raw_string = FALSE;   // search for raw string
+   int inquote = FALSE;   // TRUE when inside quotes
    CS ptr;
-   int      do_quotes;      // check for quotes in current line
-   int      at_start;      // do_quotes value at start position
-   int      hash_dir = 0;      // Direction searched for # things
-   int      comment_dir = 0;   // Direction searched for comments
-   Pos   match_pos;      // Where last slash-star was found
-   int      start_in_quotes;   // start position is in quotes
-   int      traveled = 0;      // how far we've searched so far
-   int      ignore_cend = FALSE;    // ignore comment end
-   int      match_escaped = 0;   // search for escaped match
-   int      dir;         // Direction to search
-   int      comment_col = MAXCOL;   // start of / / comment
-
-   pos = curPor->cursor;
+   int do_quotes;      // check for quotes in current line
+   int at_start;      // do_quotes value at start position
+   int hash_dir = 0;      // Direction searched for # things
+   int comment_dir = 0;   // Direction searched for comments
+   Pos match_pos;      // Where last slash-star was found
+   int start_in_quotes;   // start position is in quotes
+   int traveled = 0;      // how far we've searched so far
+   int ignore_cend = FALSE;    // ignore comment end
+   int match_escaped = 0;   // search for escaped match
+   int dir;         // Direction to search
+   int comment_col = MAXCOL;   // start of / / comment
+   static Pos pos;
+   pos = curPor->cursor;         // current search position
    pos.coladd = 0;
-   linep = ml_get(pos.lnum);
+   CS linep = ml_get(pos.lnum);// pointer to current line
 
    // Direction to search when initc is '/', '*' or '#'
    if (flags & FM_BACKWARD)
@@ -1591,8 +1592,7 @@ findmatchlimit(
       if (initc == '#') {
          hash_dir = dir;
       } else {
-         //initc was not given, must look for something to match under
-         //or near the cursor.
+         //initc was not given, must look for something to match under or near the cursor.
          //Only check for special things when 'cpo' doesn't have '%'.
          // Are we before or at #if, #else etc.?
          ptr = skipwhite(linep);
@@ -1625,10 +1625,8 @@ findmatchlimit(
             }
          }
 
-         /*
-          * If we are not on a comment or the # at the start of a line, then
-          * look for brace anywhere on this line after the cursor.
-          */
+         //If we are not on a comment or the # at the start of a line, then
+         //look for brace anywhere on this line after the cursor.
          if (!hash_dir && !comment_dir) {
             //Find the brace under or after the cursor.
             //If beyond the end of the line, use the last character in the line.
@@ -1731,7 +1729,7 @@ findmatchlimit(
          // char to match is inside of comment, don't search outside
          if (pos.col == 0) {      // at start of line, go to prev. one
             if (pos.lnum == 1)   // start of file
-                break;
+               break;
             --pos.lnum;
 
             if (maxtravel > 0 && ++traveled > maxtravel)
@@ -1972,9 +1970,9 @@ int
 check_linecomment(CS line) {
    CS p = line;
    while ((p = firstOccurrence(p, '/')) != NULL) {
-      // Accept a double /, unless it's preceded with * and followed by
-      // *, because * / / * is an end and start of a C comment.  Only
-      // accept the position if it is not inside a string.
+      //Accept a double /, unless it's preceded with * and followed by
+      //*, because * / / * is an end and start of a C comment.  Only
+      //accept the position if it is not inside a string.
       if (p[1] == '/' && (p == line || p[-1] != '*' || p[2] != '*')
                 && !is_pos_in_string(line, (ColNr)(p - line))
       )
@@ -1996,8 +1994,8 @@ is_zero_width(
    Unt patternlen,
    int move,
    Pos* cur,
-   int direction)
-{
+   int direction
+) {
    RegMultilineMatch   regmatch;
    int nmatched = 0;
    int result = -1;
@@ -2027,56 +2025,50 @@ is_zero_width(
    }
 
    if (searchit(curPor, curBook, &pos, NULL, direction, pattern, patternlen, 1,
-              SEARCH_KEEP + flag, RE_SEARCH, NULL) != FAIL)
-    {
-   // Zero-width pattern should match somewhere, then we can check if
-   // start and end are in the same position.
-   do {
-       regmatch.startpos[0].col++;
-       nmatched = eeRegexec_multi(&regmatch, curPor, curBook,
-                pos.lnum, regmatch.startpos[0].col, NULL);
-       if (nmatched != 0)
-      break;
-   } while (regmatch.regprog != NULL
-      && direction == FORWARD ? regmatch.startpos[0].col < pos.col
-                  : regmatch.startpos[0].col > pos.col);
+              SEARCH_KEEP + flag, RE_SEARCH, NULL) != FAIL
+   ) {
+      // Zero-width pattern should match somewhere, then we can check if
+      // start and end are in the same position.
+      do {
+          regmatch.startpos[0].col++;
+          nmatched = eeRegexec_multi(&regmatch, curPor, curBook,
+                   pos.lnum, regmatch.startpos[0].col, NULL);
+          if (nmatched != 0)
+         break;
+      } while (regmatch.regprog != NULL
+         && direction == FORWARD ? regmatch.startpos[0].col < pos.col
+                     : regmatch.startpos[0].col > pos.col);
 
-   if (called_emsg == called_emsg_before) {
-       result = (nmatched != 0
-      && regmatch.startpos[0].lnum == regmatch.endpos[0].lnum
-      && regmatch.startpos[0].col == regmatch.endpos[0].col);
+      if (called_emsg == called_emsg_before) {
+          result = (nmatched != 0
+         && regmatch.startpos[0].lnum == regmatch.endpos[0].lnum
+         && regmatch.startpos[0].col == regmatch.endpos[0].col);
+      }
    }
-    }
 
-    eeRegFree(regmatch.regprog);
-    return result;
+   eeRegFree(regmatch.regprog);
+   return result;
 }
-
 
 //Find next search match under cursor, cursor at end.
 //Used while an operator is pending, and in Visual mode.
 int
-current_search(
-   long   count,
-   int      forward)   // TRUE for forward, FALSE for backward
-{
-   Pos   start_pos;   // start position of the pattern match
-   Pos   end_pos;   // end position of the pattern match
-   Pos   orig_pos;   // position of the cursor at beginning
-   Pos   pos;      // position after the pattern
-   int      i;
-   int      dir;
-   int      result;      // result of various function calls
-   int      flags = 0;
+current_search(long   count, Boole forward) {  // TRUE for forward, FALSE for backward
+   Pos start_pos;   // start position of the pattern match
+   Pos end_pos;   // end position of the pattern match
+   Pos pos;      // position after the pattern
+   int i;
+   int dir;
+   int result;      // result of various function calls
+   int flags = 0;
    Pos   save_VIsual = VIsual;
-   int      zero_width;
-   int      skip_first_backward;
+   int zero_width;
 
    // When searching forward and the cursor is at the start of the Visual
    // area, skip the first search backward, otherwise it doesn't move.
-   skip_first_backward = forward && VIsual_active && LT_POS(curPor->cursor, VIsual);
+   int skip_first_backward = forward && VIsual_active && LT_POS(curPor->cursor, VIsual);
 
-   orig_pos = pos = curPor->cursor;
+   Pos orig_pos = pos = curPor->cursor;   //position of the cursor at beginning
    if (VIsual_active) {
       if (forward)
          incl(&pos);
@@ -2103,7 +2095,7 @@ current_search(
 
       flags = 0;
       if (!dir && !zero_width)
-          flags = SEARCH_END;
+         flags = SEARCH_END;
       end_pos = pos;
 
       // wrapping should not occur in the first round
@@ -4568,7 +4560,7 @@ cleanup_help_tags(OUT ExpandMatch* matches) {
    buf[3] = ZERO;
    CS p = buf;
 
-   if (p_hlg[0] != ZERO && (p_hlg[0] != 'e' || p_hlg[1] != 'n')) {
+   if (p_hlg && (p_hlg[0] != 'e' || p_hlg[1] != 'n')) {
       *p++ = '@';
       *p++ = p_hlg[0];
       *p++ = p_hlg[1];

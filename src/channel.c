@@ -1812,7 +1812,7 @@ channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv) {
       int   do_emsg_silent;
 
       ch_log(channel, "Executing command '%s'", (char *)arg);
-      do_emsg_silent = !checkforcmd(&p, "echoerr", 5);
+      do_emsg_silent = !checkforcmd(&p, S"echoerr", 5);
       if (do_emsg_silent)
           ++emsg_silent;
       executeCommLine(arg);
@@ -6912,24 +6912,21 @@ job_to_string_buf(OUT CS builder, Var* varp) {
 //one is NULL. The "shellName" and "shcf_tofree" must be later freed by the caller.
 int
 unix_build_argv(CS cmd, Byte*** argvp, CS extraArg, CS* shcf_tofree) {
-   Byte   **argv = NULL;
-   int      argc;
+   Byte** argv = NULL;
+   int argc;
 
    mch_parse_cmd(S"bash", TRUE, &argv, &argc);
    *argvp = argv;
 
    if (cmd) {
-      Byte   *s;
-      Byte   *p;
-
       if (extraArg)
          argv[argc++] = extraArg;
 
-      // Break 'shellcmdflag' into white separated parts. This doesn't
-      // handle quoted strings, they are very unlikely to appear.
-      *shcf_tofree = alloc(STRLEN(p_shcf) + 1);
-      s = *shcf_tofree;
-      p = p_shcf;
+      //Break @shellcmdflag into space-separated parts. This doesn't
+      //handle quoted strings, they are very unlikely to appear.
+      *shcf_tofree = alloc((p_shcf ? STRLEN(p_shcf) : 0) + 1);
+      CS s = *shcf_tofree;
+      CS p = p_shcf;
       while (*p != ZERO) {
          argv[argc++] = s;
          while (*p && *p != ' ' && *p != TAB)
@@ -6948,15 +6945,14 @@ unix_build_argv(CS cmd, Byte*** argvp, CS extraArg, CS* shcf_tofree) {
 //"argc" entries and room for 4 more.
 private void
 mch_parse_cmd(CS cmd, int use_shcf, Byte*** argv, int *argc) {
-   Byte   *p, *d;
-   int      inquote;
+   CS d;
 
    //Do this loop twice:
    //1: find number of arguments
    //2: separate them and build argv[]
    for (int i = 1; i <= 2; ++i) {
-      p = skipwhite(cmd);
-      inquote = FALSE;
+      CS p = skipwhite(cmd);
+      Boole inquote = false;
       *argc = 0;
       while (*p != ZERO) {
          if (i == 2)
@@ -6987,7 +6983,7 @@ mch_parse_cmd(CS cmd, int use_shcf, Byte*** argv, int *argc) {
          p = skipwhite(p + 1);
       }
       if (*argv == NULL) {
-         if (use_shcf) {
+         if (use_shcf && p_shcf) {
             // Account for possible multiple args in p_shcf.
             p = p_shcf;
             for (;;) {

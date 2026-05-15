@@ -13062,7 +13062,6 @@ private void do_by_tplmode(Unt tplmode, Unt col_start, Unt col_end,
 #define ALIGN_LEFT  0
 #define ALIGN_RIGHT 1
 
-private CS ONAME = S"tabpanel";
 private int opt_scope = OPT_LOCAL;
 private int tabPanelAlignS = ALIGN_LEFT;
 private int tpl_columns = 20;
@@ -13081,13 +13080,16 @@ typedef struct {
 } Tabpanel;
 
 int
-tabpanelopt_changed(void) {
-   Byte   *p;
+uiValidateTabpanelopt(CS new) {
+   if (!new) {
+      return OK;
+   } 
+   
    int      new_align = ALIGN_LEFT;
    int      new_columns = 20;
    int      new_is_vert = FALSE;
 
-   p = p_tplo;
+   CS p = new;
    while (*p != ZERO) {
       if (STRNCMP(p, "align:", 6) == 0) {
          p += 6;
@@ -13112,7 +13114,6 @@ tabpanelopt_changed(void) {
       if (*p == ',')
          ++p;
    }
-
    tabPanelAlignS = new_align;
    tpl_columns = new_columns;
    tpl_is_vert = new_is_vert;
@@ -13155,7 +13156,7 @@ draw_tabpanel(void) {
    if (maxwidth == 0)
       return;
 
-   // Reset gotInterruptG to avoid renderStatusLine() isn't evaluted.
+   // Reset gotInterruptG to avoid bookRenderStatusLine() isn't evaluted.
    gotInterruptG = FALSE;
 
    if (tpl_is_vert) {
@@ -13360,8 +13361,8 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    // might change the option value and free the memory.
    CS p = copyStr(tapa->user_defined);
 
-   renderStatusLine(tapa->currPort, buf, sizeof(buf),
-      p, ONAME, opt_scope,
+   bookRenderStatusLine(tapa->currPort, buf, sizeof(buf),
+      p, STATLINE_TABPANEL, opt_scope,
       TPL_FILLCHAR, tapa->col_end - tapa->col_start, OUT &hilites, OUT &labels
    );
 
@@ -13392,21 +13393,15 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
 
 private CS
 startsWithPercentAndBang(Tabpanel* tapa) {
+   if (!p_tpl)
+      return NULL;
+      
    CS usefmt = p_tpl;
    int anyEmsgG_before = anyEmsgG;
 
-   if (!usefmt)
-      return NULL;
-
-   int len = (int)STRLEN(usefmt);
-
-   if (len == 0)
-      return NULL;
-
-
    // When the format starts with "%!" then evaluate it as an expression and
    // use the result as the actual format string.
-   if (len > 1 && usefmt[0] == '%' && usefmt[1] == '!') {
+   if (usefmt[0] == '%' && usefmt[1] == '!') {
       Var tv = {};
       tv.tag = VAR_NUMBER;
       tv.number = tapa->currPort->id;
@@ -13420,7 +13415,7 @@ startsWithPercentAndBang(Tabpanel* tapa) {
 
       if (anyEmsgG > anyEmsgG_before) {
          usefmt = NULL;
-         optChangeStringOptionDirect(ONAME, Em, opt_scope, SID_ERROR);
+         optChangeStringOptionDirect(S"tabpanel", Em, opt_scope, SID_ERROR);
       }
    }
 
@@ -13514,8 +13509,8 @@ do_by_tplmode(
             tapa.prow = &row;
             tapa.pcol = &col;
             drawTabpanelUserdefined(tplmode, &tapa);
-            // p_tpl could have been freed in renderStatusLine()
-            if (p_tpl == NULL || *p_tpl == ZERO) {
+            // p_tpl could have been freed in bookRenderStatusLine()
+            if (!p_tpl) {
                 usefmt = NULL;
                 break;
             }

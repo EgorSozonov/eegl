@@ -1378,13 +1378,13 @@ insertchar0(
                || insertStartG_blank_vcol <= (ColNr)textwidth
                 )))))
    ) {
-      // Format with 'formatexpr' when it's set.  Use internal formatting
-      // when 'formatexpr' isn't set or it returns non-zero.
-      int     do_internal = TRUE;
+      // Format with @formatexpr when it's set.  Use internal formatting
+      // when @formatexpr isn't set or it returns non-zero.
+      Boole do_internal = true;
       ColNr virtcol = get_nolist_virtcol()
                  + char2cells(c != ZERO ? c : gchar_cursor());
 
-      if (*curBook->o.formatExpr != ZERO && (flags & INSCHAR_NO_FEX) == 0
+      if (curBook->o.formatExpr && (flags & INSCHAR_NO_FEX) == 0
          && (force_format || virtcol > (ColNr)textwidth)
       ) {
          do_internal = (fex_format(curPor->cursor.lnum, 1L, c) != 0);
@@ -1456,7 +1456,7 @@ insertchar0(
    //because the InsertCharPre autocommand could change the input buffer.
 
    if (!ISSPECIAL(c)
-       && ((*mb_char2len)(c) == 1)
+       && (mb_char2len(c) == 1)
        // Skip typeahead if test_override("char_avail", 1) was called.
        && !disable_char_avail_for_testing
        && vpeekc() != ZERO
@@ -1469,7 +1469,7 @@ insertchar0(
       buf[0] = c;
       int i = 1;
       if (textwidth > 0)
-          virtcol = get_nolist_virtcol();
+         virtcol = get_nolist_virtcol();
       //Stop the string when:
       //- no more chars available
       //- finding a special character (command key)
@@ -1605,11 +1605,11 @@ stop_arrow(void) {
 //we already jumped to another portal/book.
 private void
 stop_insert(
-   Pos   *end_insert_pos,
-   int      esc,         // called by ins_esc()
-   int      nomove       // <c-\><c-o>, don't move cursor
+   Pos* end_insert_pos,
+   int esc,         // called by ins_esc()
+   int nomove       // <c-\><c-o>, don't move cursor
 ){
-   int      cc;
+   int cc;
    stop_redo_ins();
 
    //Save the inserted text for later redo with ^@ and CTRL-A.
@@ -2735,7 +2735,7 @@ ins_left(void) {
    }
 
    // if 'whichwrap' set for cursor in insert mode may go to previous line
-   ei (firstOccurrence(p_ww, '[') != NULL && curPor->cursor.lnum > 1) {
+   ei (p_ww && firstOccurrence(p_ww, '[') != NULL && curPor->cursor.lnum > 1) {
       // always break undo when moving upwards/downwards, else undo may break
       start_arrow(&tpos);
       --(curPor->cursor.lnum);
@@ -2804,7 +2804,7 @@ ins_right(void) {
       }
    }
    // if 'whichwrap' set for cursor in insert mode, may move the cursor to the next line
-   ei (firstOccurrence(p_ww, ']') != NULL && curPor->cursor.lnum < curBook->mem.lineCount) {
+   ei (p_ww && firstOccurrence(p_ww, ']') != NULL && curPor->cursor.lnum < curBook->mem.lineCount) {
        start_arrow(&curPor->cursor);
        curPor->setCursWant = TRUE;
        ++curPor->cursor.lnum;
@@ -3526,9 +3526,7 @@ compl_shows_dir_backward(void) {
 // Return TRUE if the 'dictionary' or 'thesaurus' option can be used.
 private int
 has_compl_option(int dict_opt) {
-   if (dict_opt ? (*curBook->o.dictionary == ZERO)
-       : (*curBook->o.thesaurus == ZERO && !curBook->o.thesaurusFn)
-   ) {
+   if (dict_opt ? (!curBook->o.dictionary) : (!curBook->o.thesaurus && !curBook->o.thesaurusFn)) {
       ctrl_x_mode = CTRL_X_NORMAL;
       edit_submode = NULL;
       msgDeco(dict_opt ? _("'dictionary' option is empty")
@@ -4596,19 +4594,18 @@ ins_compl_leader_len(void) {
 //dictionary files "dict_start" to the list of completions.
 private void
 ins_compl_dictionaries(
-   CS dict_start,
+   NULLABLE CS dict_start,
    CS pat,
    Unt flags,      // DICT_FIRST and/or DICT_EXACT
    int thesaurus   // Thesaurus completion
 ){
+   if (!dict_start)
+      return;
+      
    CS dict = dict_start;
    CS ptr;
    RegMatch   regmatch;
    Unt dir = compl_direction;
-
-   if (*dict == ZERO) {
-      return;
-   }
 
    CS buf = alloc(LSIZE);
    regmatch.regprog = NULL;   // so that we can goto theend

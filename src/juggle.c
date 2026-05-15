@@ -11,7 +11,7 @@
 
 private int coladvance2(Pos *pos, int addspaces, int finetune, ColNr wcol);
 private void fixthisline(int (*get_the_indent)(void));
-private int get_indent_str(Byte* ptr, int ts);
+private int get_indent_str(CS ptr, int ts);
 private Boole cin_is_cinword(CS line);
 
 //}}}
@@ -3667,29 +3667,6 @@ theend:
    return ret;
 }
 
-//Reset @linebreak and take care of side effects.
-//Return the previous value, to be passed to restore_lbr().
-private int
-reset_lbr(void) {
-   if (!curPor->o.lineBreak)
-      return FALSE;
-   // changing 'linebreak' may require virtCol to be updated
-   curPor->o.lineBreak = FALSE;
-   curPor->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL);
-   return TRUE;
-}
-
-//Restore 'linebreak' and take care of side effects.
-private void
-restore_lbr(int lbr_saved) {
-   if (curPor->o.lineBreak || !lbr_saved)
-      return;
-
-   // changing 'linebreak' may require virtCol to be updated
-   curPor->o.lineBreak = TRUE;
-   curPor->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL);
-}
-
 //prepare a few things for block mode yank/delete/tilde
 //
 //for delete:
@@ -3711,7 +3688,6 @@ block_prep(
    CS prev_pend;
    CharTableSize cts;
       // Avoid a problem with unwanted linebreaks in block mode.
-   int lbr_saved = reset_lbr();
 
    bdp->startspaces = 0;
    bdp->endspaces = 0;
@@ -3818,7 +3794,6 @@ block_prep(
    }
    bdp->textcol = (ColNr) (pstart - line);
    bdp->textstart = pstart;
-   restore_lbr(lbr_saved);
 }
 
 //Get block text from "start" to "end"
@@ -4536,7 +4511,7 @@ cursor_pos_info(Bag* dict) {
       if (!dict) {
           // Don't shorten this message, the user asked for it.
           p = p_shm;
-          p_shm = E;
+          p_shm = S"";
           msg(IObuff);
           p_shm = p;
       }
@@ -4591,12 +4566,12 @@ op_colon(Operator *oper) {
       stuffReadbuff(S"indent");
       stuffReadbuff(S"\n");
    } ei (oper->opTy == OP_FORMAT) {
-      if (*curBook->o.formatProg != ZERO)
+      if (curBook->o.formatProg)
          stuffReadbuff(curBook->o.formatProg);
-      ei (*p_fp != ZERO)
+      ei (p_fp)
          stuffReadbuff(p_fp);
       else
-         stuffReadbuff((CS)"fmt");
+         stuffReadbuff(S"fmt");
       stuffReadbuff((CS)"\n']");
    }
 
@@ -4636,7 +4611,7 @@ op_function(Operator *oper UNUSED) {
    Pos orig_end = curBook->opEnd;
    Var returnVar;
 
-   if (*p_opfunc == ZERO)
+   if (!p_opfunc)
       emsg(_(e_operatorfunc_is_empty));
    else {
       // Set '[ and '] marks to text to be operated on.
@@ -4678,11 +4653,7 @@ op_function(Operator *oper UNUSED) {
 
 //Calculate start/end virtual columns for operating in block mode.
 private void
-get_op_vcol(
-   Operator   *oper,
-   ColNr   redo_VIsual_vcol,
-   int      initial)    // when TRUE adjust position for 'selectmode'
-{
+get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust position for selectmode
    ColNr       start, end;
 
    if (VIsual_mode != Ctrl_V || (!initial && oper->end.col < (int)curPor->width))
@@ -4699,49 +4670,48 @@ get_op_vcol(
       bookGetVirtualColInVirtualMode(curPor, &(oper->end), &start, NULL, &end);
 
       if (start < oper->start_vcol)
-          oper->start_vcol = start;
+         oper->start_vcol = start;
       if (end > oper->end_vcol) {
          oper->end_vcol = end;
       }
    }
 
-    // if '$' was used, get oper->end_vcol from longest line
+   // if '$' was used, get oper->end_vcol from longest line
    if (curPor->cursWant == MAXCOL) {
-   curPor->cursor.col = MAXCOL;
-   oper->end_vcol = 0;
-   for (
-         curPor->cursor.lnum = oper->start.lnum; 
-         curPor->cursor.lnum <= oper->end.lnum; 
-         ++curPor->cursor.lnum
-   ) {
-       bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, NULL, NULL, &end);
-       if (end > oper->end_vcol)
-      oper->end_vcol = end;
-   }
+      curPor->cursor.col = MAXCOL;
+      oper->end_vcol = 0;
+      for (
+            curPor->cursor.lnum = oper->start.lnum; 
+            curPor->cursor.lnum <= oper->end.lnum; 
+            ++curPor->cursor.lnum
+      ) {
+         bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, NULL, NULL, &end);
+         if (end > oper->end_vcol)
+            oper->end_vcol = end;
+      }
    } ei (isRedoVisualBusy)
       oper->end_vcol = oper->start_vcol + redo_VIsual_vcol - 1;
    // Correct oper->end.col and oper->start.col to be the
    // upper-left and lower-right corner of the block area.
    //
-   // (Actually, this does convert column positions into character
-   // positions)
+   // (Actually, this does convert column positions into character positions)
    curPor->cursor.lnum = oper->end.lnum;
    coladvance(oper->end_vcol);
    oper->end = curPor->cursor;
 
-    curPor->cursor = oper->start;
-    coladvance(oper->start_vcol);
-    oper->start = curPor->cursor;
+   curPor->cursor = oper->start;
+   coladvance(oper->start_vcol);
+   oper->start = curPor->cursor;
 }
 
 // Information for redoing the previous Visual selection.
 typedef struct {
-   int      rv_mode;   // 'v', 'V', or Ctrl-V
-   LineNr   rv_line_count;   // number of lines
-   ColNr   rv_vcol;   // number of cols or end column
-   long   rv_count;   // count for Visual operator
-   int      rv_arg;      // extra argument
-} redo_VIsual_T;
+   int mode;   // 'v', 'V', or Ctrl-V
+   LineNr lineCount;   // number of lines
+   ColNr vcol;   // number of cols or end column
+   long count;   // count for Visual operator
+   int extraArg;      // extra argument
+} RedoVisual;
 
 private int
 is_ex_cmdchar(ActionArg* cap) {
@@ -4752,13 +4722,12 @@ is_ex_cmdchar(ActionArg* cap) {
 //"clipbYank" is true when yanking text for the clipboard.
 void
 visualOperator(ActionArg* cap, int old_col, int clipbYank) {
-   Operator   *oper = cap->oper;
+   Operator* oper = cap->oper;
    Pos old_cursor;
    int restart_edit_save;
-   int lbr_saved = curPor->o.lineBreak;
 
    //The visual area is remembered for redo
-   static redo_VIsual_T   redo_VIsual = {ZERO, 0, 0, 0,0};
+   static RedoVisual redo_VIsual = {ZERO, 0, 0, 0,0};
 
    //Yank the visual area into the GUI selection register before we operate
    //on it and lose it forever.
@@ -4778,7 +4747,6 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    //If an operation is pending, handle it...
    if ((finish_op || VIsual_active) && oper->opTy != OP_NOP) {
       //Avoid a problem with unwanted linebreaks in block mode.
-      (void)reset_lbr();
       oper->is_VIsual = VIsual_active;
       if (oper->motion_force == 'V')
           oper->motion_type = MLINE;
@@ -4792,21 +4760,20 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             oper->inclusive = !oper->inclusive;
          oper->motion_type = MCHAR;
       } ei (oper->motion_force == Ctrl_V) {
-          // Change line- or characterwise motion into Visual block mode.
-          if (!VIsual_active) {
+         // Change line- or characterwise motion into Visual block mode.
+         if (!VIsual_active) {
             VIsual_active = TRUE;
             VIsual = oper->start;
-          }
-          VIsual_mode = Ctrl_V;
-          VIsual_reselect = FALSE;
+         }
+         VIsual_mode = Ctrl_V;
+         VIsual_reselect = FALSE;
       }
 
       //Only redo yank when 'y' flag is in 'cpoptions'. Never redo "zf" (define fold).
       if (oper->opTy != OP_YANK
          && ((!VIsual_active || oper->motion_force)
              //Also redo Operator-pending Visual mode mappings
-             || (VIsual_active
-                && is_ex_cmdchar(cap) && oper->opTy != OP_COLON))
+             || (VIsual_active && is_ex_cmdchar(cap) && oper->opTy != OP_COLON))
          && cap->cmdchar != 'D'
          && oper->opTy != OP_FOLD
          && oper->opTy != OP_FOLDOPEN
@@ -4841,27 +4808,27 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 
       if (isRedoVisualBusy) {
          // Redo of an operation on a Visual area. Use the same size from
-         // redo_VIsual.rv_line_count and redo_VIsual.rv_vcol.
+         // redo_VIsual.lineCount and redo_VIsual.vcol.
          oper->start = curPor->cursor;
-         curPor->cursor.lnum += redo_VIsual.rv_line_count - 1;
+         curPor->cursor.lnum += redo_VIsual.lineCount - 1;
          if (curPor->cursor.lnum > curBook->mem.lineCount)
             curPor->cursor.lnum = curBook->mem.lineCount;
-         VIsual_mode = redo_VIsual.rv_mode;
-         if (redo_VIsual.rv_vcol == MAXCOL || VIsual_mode == 'v') {
+         VIsual_mode = redo_VIsual.mode;
+         if (redo_VIsual.vcol == MAXCOL || VIsual_mode == 'v') {
             if (VIsual_mode == 'v') {
-               if (redo_VIsual.rv_line_count <= 1) {
+               if (redo_VIsual.lineCount <= 1) {
                   validate_virtcol();
-                  curPor->cursWant = curPor->virtCol + redo_VIsual.rv_vcol - 1;
+                  curPor->cursWant = curPor->virtCol + redo_VIsual.vcol - 1;
                } else
-                  curPor->cursWant = redo_VIsual.rv_vcol;
+                  curPor->cursWant = redo_VIsual.vcol;
             } else {
                curPor->cursWant = MAXCOL;
             }
             coladvance(curPor->cursWant);
          }
-         cap->count0 = redo_VIsual.rv_count;
-         if (redo_VIsual.rv_count != 0)
-            cap->count1 = redo_VIsual.rv_count;
+         cap->count0 = redo_VIsual.count;
+         if (redo_VIsual.count != 0)
+            cap->count1 = redo_VIsual.count;
          else
             cap->count1 = 1;
       } ei (VIsual_active) {
@@ -4885,22 +4852,21 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       // Set oper->start to the first position of the operated text, oper->end
       // to the end of the operated text. cursor is equal to oper->start.
       if (LT_POS(oper->start, curPor->cursor)) {
-          // Include folded lines completely.
-          if (!VIsual_active) {
-         if (getFolds(oper->start.lnum, &oper->start.lnum, NULL))
-             oper->start.col = 0;
-         if ((curPor->cursor.col > 0 || oper->inclusive
-                       || oper->motion_type == MLINE)
-            && getFolds(curPor->cursor.lnum, NULL,
-                           &curPor->cursor.lnum))
-             curPor->cursor.col = ml_get_curline_len();
-          }
-          oper->end = curPor->cursor;
-          curPor->cursor = oper->start;
+         // Include folded lines completely.
+         if (!VIsual_active) {
+            if (getFolds(oper->start.lnum, &oper->start.lnum, NULL))
+               oper->start.col = 0;
+            if ((curPor->cursor.col > 0 || oper->inclusive || oper->motion_type == MLINE)
+                  && getFolds(curPor->cursor.lnum, NULL, &curPor->cursor.lnum)
+            )
+               curPor->cursor.col = ml_get_curline_len();
+         }
+         oper->end = curPor->cursor;
+         curPor->cursor = oper->start;
 
-          // virtCol may have been updated; if the cursor goes back to its
-          // previous position virtCol becomes invalid and isn't updated automatically.
-          curPor->cacheState &= ~VALID_VIRTCOL;
+         // virtCol may have been updated; if the cursor goes back to its
+         // previous position virtCol becomes invalid and isn't updated automatically.
+         curPor->cacheState &= ~VALID_VIRTCOL;
       } else {
          // Include folded lines completely.
          if (!VIsual_active && oper->motion_type == MLINE) {
@@ -4909,8 +4875,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             if (getFolds(oper->start.lnum, NULL, &oper->start.lnum))
                oper->start.col = ml_get_len(oper->start.lnum);
          }
-          oper->end = oper->start;
-          oper->start = curPor->cursor;
+         oper->end = oper->start;
+         oper->start = curPor->cursor;
       }
 
       // Just in case lines were deleted that make the position invalid.
@@ -4921,11 +4887,10 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       virtual_op = virtual_active();
 
       if (VIsual_active || isRedoVisualBusy) {
-         get_op_vcol(oper, redo_VIsual.rv_vcol, TRUE);
+         get_op_vcol(oper, redo_VIsual.vcol, TRUE);
 
          if (!isRedoVisualBusy && !clipbYank) {
-            // Prepare to reselect and redo Visual: this is based on the
-            // size of the Visual text
+            // Prepare to reselect and redo Visual: this is based on the size of the Visual text
             resel_VIsual_mode = VIsual_mode;
             if (curPor->cursWant == MAXCOL)
                 resel_VIsual_vcol = MAXCOL;
@@ -4981,11 +4946,11 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
                   prep_redo(oper->regname, 0L, ZERO, 'v', opchar, extra_opchar, nchar);
             }
             if (!isRedoVisualBusy) {
-               redo_VIsual.rv_mode = resel_VIsual_mode;
-               redo_VIsual.rv_vcol = resel_VIsual_vcol;
-               redo_VIsual.rv_line_count = resel_VIsual_line_count;
-               redo_VIsual.rv_count = cap->count0;
-               redo_VIsual.rv_arg = cap->arg;
+               redo_VIsual.mode = resel_VIsual_mode;
+               redo_VIsual.vcol = resel_VIsual_vcol;
+               redo_VIsual.lineCount = resel_VIsual_line_count;
+               redo_VIsual.count = cap->count0;
+               redo_VIsual.extraArg = cap->arg;
             }
          }
 
@@ -5012,9 +4977,9 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 
          isRedoVisualBusy = FALSE;
 
-         // Switch Visual off now, so screen updating does not show inverted text when the screen 
-         // is redrawn. With OP_YANK and sometimes with OP_COLON and OP_FILTER there is
-         // no screen redraw, so it is done here to remove the inverted part.
+         //Switch Visual off now, so screen updating does not show inverted text when the screen 
+         //is redrawn. With OP_YANK and sometimes with OP_COLON and OP_FILTER there is
+         //no screen redraw, so it is done here to remove the inverted part.
          if (!clipbYank) {
             VIsual_active = FALSE;
             setmouse();
@@ -5026,9 +4991,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
                    || oper->opTy == OP_FILTER)
                && oper->motion_force == ZERO
             ){
-                // make sure redrawing is correct
-                restore_lbr(lbr_saved);
-                drawCurBookLater(UPD_INVERTED);
+               drawCurBookLater(UPD_INVERTED);
             }
          }
       }
@@ -5041,8 +5004,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       }
       curPor->setCursWant = true;
 
-      // oper->empty is set when start and end are the same.  The inclusive
-      // flag affects this too, unless yanking and the end is on a ZERO.
+      //oper->empty is set when start and end are the same.  The inclusive
+      //flag affects this too, unless yanking and the end is on a ZERO.
       oper->empty = (oper->motion_type == MCHAR
              && (!oper->inclusive || (oper->opTy == OP_YANK && gchar_pos(&oper->end) == ZERO))
              && EQUAL_POS(oper->start, oper->end)
@@ -5052,7 +5015,6 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       //Force a redraw when operating on an empty Visual region, when
       //@modifiable is off or creating a fold.
       if (oper->is_VIsual && (oper->empty || !curBook->o.modifiable || oper->opTy == OP_FOLD)) {
-          restore_lbr(lbr_saved);
           drawCurBookLater(UPD_INVERTED);
       }
 
@@ -5066,8 +5028,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          && oper->end.col == 0
          && (!oper->is_VIsual)
          && !oper->block_mode
-         && oper->line_count > 1)
-      {
+         && oper->line_count > 1
+      ) {
          oper->end_adjusted = TRUE;       // remember that we did this
          --oper->line_count;
          --oper->end.lnum;
@@ -5111,7 +5073,6 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          break;
 
       case OP_YANK:
-          restore_lbr(lbr_saved);
           oper->excludeTrailingWhitespace = cap->cmdchar == 'z';
           (void)op_yank(oper, FALSE, !clipbYank);
           check_cursor_col();
@@ -5127,8 +5088,6 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          else
             restart_edit_save = 0;
          restart_edit = 0;
-         //Restore linebreak, so that when the user edits it looks as before.
-         restore_lbr(lbr_saved);
          //trigger TextChangedI
          curBook->lastChangeTickInsert = CHANGEDTICK(curBook);
 
@@ -5161,10 +5120,10 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
           break;
 
       case OP_FORMAT:
-         if (*curBook->o.formatExpr != ZERO)
+         if (curBook->o.formatExpr)
             op_formatexpr(oper);   // use expression
          else {
-            if (*p_fp != ZERO || *curBook->o.formatProg != ZERO)
+            if (p_fp || curBook->o.formatProg)
                op_colon(oper);      // use external command
             else
                op_format(oper, FALSE);   // use internal function
@@ -5175,10 +5134,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          break;
 
       case OP_FUNCTION: {
-         redo_VIsual_T   save_redo_VIsual = redo_VIsual;
+         RedoVisual save_redo_VIsual = redo_VIsual;
 
-         // Restore linebreak, so that when the user edits it looks as before.
-         restore_lbr(lbr_saved);
          // call 'operatorfunc'
          op_function(oper);
 
@@ -5196,14 +5153,10 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          // Visual mode.  But do this only once.
          restart_edit_save = restart_edit;
          restart_edit = 0;
-         // Restore linebreak, so that when the user edits it looks as before.
-         restore_lbr(lbr_saved);
          // trigger TextChangedI
          curBook->lastChangeTickInsert = CHANGEDTICK(curBook);
 
          op_insert(oper, cap->count1);
-         // Reset linebreak, so that formatting works correctly.
-         (void)reset_lbr();
 
          // TODO: when inserting in several lines, should format all the lines.
          auto_format(FALSE, TRUE);
@@ -5216,8 +5169,6 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 
       case OP_REPLACE:
          VIsual_reselect = FALSE;   // don't reselect now
-         // Restore linebreak, so that when the user edits it looks as before.
-         restore_lbr(lbr_saved);
          op_replace(oper, cap->nchar);
          break;
 
@@ -5248,8 +5199,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       case OP_ADD:
       case OP_SUB:
          VIsual_active = TRUE;
-         restore_lbr(lbr_saved);
-         op_addsub(oper, cap->count1, redo_VIsual.rv_arg);
+         op_addsub(oper, cap->count1, redo_VIsual.extraArg);
          VIsual_active = FALSE;
          check_cursor_col();
          break;
@@ -5261,8 +5211,8 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          // if 'sol' not set, go back to old column for some commands
          if (!p_sol && oper->motion_type == MLINE && !oper->end_adjusted
              && (oper->opTy == OP_LSHIFT || oper->opTy == OP_RSHIFT
-                     || oper->opTy == OP_DELETE)) {
-             (void)reset_lbr();
+                     || oper->opTy == OP_DELETE)
+         ) {
              coladvance(curPor->cursWant = old_col);
          }
       } else {
@@ -5272,7 +5222,6 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       clearop(oper);
       motion_force = ZERO;
     }
-    restore_lbr(lbr_saved);
 }
 
 // put byte 'c' at position 'lp', but
@@ -7456,7 +7405,7 @@ get_expr_indent(void) {
    stateG = save_State;
 
    // Reset did_throw, unless 'debug' has "throw" and inside a try/catch.
-   if (did_throw && (firstOccurrence(p_debug, 't') == NULL || trylevel == 0)) {
+   if (did_throw && ((p_debug && firstOccurrence(p_debug, 't') == NULL) || trylevel == 0)) {
       handle_did_throw();
       did_throw = FALSE;
    }

@@ -30,7 +30,7 @@ int searchc(ActionArg *cap, int t_cmd);
 Pos *findmatch(Operator *oap, int initc);
 Pos *findmatchlimit(Operator *oap, Unt initc, int flags, int maxtravel);
 int check_linecomment(CS line);
-int current_search(long count, int forward);
+int current_search(long count, Boole forward);
 int linewhite(LineNr lnum);
 void find_pattern_in_path(CS ptr, int dir, int len, int whole, int skip_comments, int type, long count, int action, LineNr start_lnum, LineNr end_lnum, int forceit, int silent);
 SearchPattern *getPrevSearchPattern(int idx);

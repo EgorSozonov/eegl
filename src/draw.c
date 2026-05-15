@@ -492,7 +492,6 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // TRUE or FALSE
    int len;
    CS stl;
    CS p;
-   CS oname;
    int opt_scope = 0;
    StatusLineHilite* hilites;
    StatusLineHilite* labels;
@@ -511,10 +510,10 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // TRUE or FALSE
    Unt fillchar = statusLineNextChar(OUT &deco, po);
    int in_status_line = po->statusHeight != 0;
    int maxwidth = in_status_line ? po->width : visibleColsG;
-
+   Byte oname;
    if (draw_ruler) {
       stl = p_ruf ? p_ruf : Em;
-      oname = S"rulerformat";
+      oname = STATLINE_RULERFORMAT;
       // advance past any leading group spec - implicit in rulerColS
       if (*stl == '%') {
          if (*++stl == '-')
@@ -524,7 +523,7 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // TRUE or FALSE
                stl++;
          } 
          if (*stl++ != '(')
-             stl = p_ruf;
+            stl = p_ruf;
       }
       col = rulerColS - (visibleColsG - maxwidth);
       if (col < (maxwidth + 1) / 2)
@@ -537,7 +536,7 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // TRUE or FALSE
          deco = EMPTY_DECO;
       }
    } else {
-      oname = S"statusline";
+      oname = STATLINE_STATUSLINE;
       stl = po->o.statusLine;
       opt_scope = OPT_LOCAL;
    }
@@ -557,8 +556,8 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // TRUE or FALSE
    // Make a copy, because the statusline may include a function call that
    // might change the option value and free the memory.
    stl = copyStr(stl);
-   width = renderStatusLine(
-      ewp, builder, sizeof(builder), (stl == NULL) ? (CS)"" : stl, oname, opt_scope,
+   width = bookRenderStatusLine(
+      ewp, builder, sizeof(builder), stl ? stl : S"", oname, opt_scope,
       fillchar, maxwidth, OUT &hilites, OUT &labels
    );
    eeglFree(stl);
@@ -2731,7 +2730,7 @@ computeColumnsForRulerAndCommand(void) {
    // no last status line, adjust sc_col
    if (!last_has_status)
       sc_col = rulerColS;
-   if (p_sc && *p_sloc == 'l') {
+   if (p_sloc == SHOW_COMM_LAST) {
       sc_col += SHOWCMD_COLS;
       if (last_has_status)       // no need for separating space
           ++sc_col;
@@ -3475,7 +3474,7 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
       redrawRuler(po, TRUE, ignore_pum);
 
       // Draw the 'showcmd' information if 'showcmdloc' == "statusline".
-      if (p_sc && *p_sloc == 's') {
+      if (p_sloc == SHOW_COMM_STATUSLINE) {
           n = this_ru_col - plen - 2;          // perform the calculation here so we only do it once
           int   width = MIN(10, n);
 
@@ -5366,8 +5365,7 @@ breakIndent(Portal* po, DrawCtx* m) {
          if (m->fromcol >= m->vcol && m->fromcol < m->vcol + m->countExtraBytes)
             m->fromcol = m->vcol + m->countExtraBytes;
 
-         // Correct end of hilited area for 'breakindent',
-         // required when 'linebreak' is also set.
+         // Correct end of hilited area for 'breakindent'
          if (m->tocol == m->vcol)
             m->tocol += m->countExtraBytes;
       }
@@ -5404,8 +5402,7 @@ showbreakAndFiller(Portal* po, DrawCtx* m) {
       if (m->fromcol >= m->vcol && m->fromcol < m->vcol_sbr)
           m->fromcol = m->vcol_sbr;
 
-      // Correct end of hilited area for @showbreak,
-      // required when 'linebreak' is also set.
+      // Correct end of hilited area for @showbreak
       if (m->tocol == m->vcol)
           m->tocol = m->vcol_sbr;
       // combine @showbreak with @portcolor
@@ -6786,7 +6783,6 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
          //Get a character from the line itself.
          currSymb = *m->ptr;
-         Unt c0 = currSymb;
          if (currSymb == ZERO) {
             //text is finished, may display a "below" virtual text
             didLine = true;
@@ -6809,7 +6805,6 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             //is displayed normally, except a ZERO.
             if (sc.mb_c < 0x80) {
                currSymb = sc.mb_c;
-               c0 = sc.mb_c;
             }
             sc.mb_utf8 = true;
 
@@ -6883,45 +6878,6 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   m->charDeco = combineDecorations(m->charDeco, m->spellDeco);
                else
                   m->charDeco = combineDecorations(m->spellDeco, m->charDeco);
-            }
-            // we don't want linebreak to apply for lines that start with leading spaces, followed 
-            // by long letters (since it would add a break at the beginning of a line and this 
-            // might be unexpected)
-            // So only allow to linebreak, once we have found chars not in 'breakat' in the line.
-            if ( port->o.lineBreak && !m->needLinebreak && c != ZERO &&
-               !EE_ISBREAK((int)*m->ptr))
-                m->needLinebreak = true;
-            // Found last space before word: check for line break.
-            if (port->o.lineBreak && c0 == currSymb && m->needLinebreak
-                    && EE_ISBREAK(currSymb) && !EE_ISBREAK((int)*m->ptr)
-            ){
-               int mb_off = mb_head_off(m->line, m->ptr - 1);
-               CS p = m->ptr - (mb_off + 1);
-               CharTableSize cts;
-
-               bookInitCharsForKeywordsSizeArg(OUT &cts, port, c->lnum, m->vcol - c->vcolFirstChar, m->line, p);
-               // do not want virtual text counted here
-               cts.cts_has_prop_with_text = FALSE;
-               m->countExtraBytes = win_lbr_chartabsize(&cts, NULL) - 1;
-               clear_chartabsize_arg(&cts);
-
-               if (onLastCol && currSymb != TAB)
-                  // Do not continue search/match hiliting over the line break, but for TABs the 
-                  // hiliting should include the complete width of the character
-                  m->searchHiId = 0;
-
-               if (currSymb == TAB && m->countExtraBytes + m->col > (int)port->width)
-                  m->countExtraBytes = 
-                     (int)port->book->o.shiftWidth - m->vcol % (int)port->book->o.shiftWidth - 1;
-
-               m->c_extra = mb_off > 0 ? MB_FILLER_CHAR : ' ';
-               m->c_final = ZERO;
-               if (m->countExtraBytes > 0 && currSymb != TAB)
-                  inLineBreak = true;
-               if (SPACE_OR_TAB(currSymb)) {
-                  if (!port->o.list)
-                     currSymb = ' ';
-               }
             }
             if (port->o.list) {
                m->inMultispace = currSymb == ' ' 
@@ -7016,57 +6972,13 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                tab_len = (int)port->book->o.shiftWidth - vcol_adjusted 
                   % (int)port->book->o.shiftWidth - 1;
 
-               if (!port->o.lineBreak || !port->o.list) {
-                  // tab amount depends on current column
-                  m->countExtraBytes = tab_len;
-               } else {
-                  Byte   *p;
-                  int   len;
-                  int   i;
-                  int   saved_nextra = m->countExtraBytes;
-
-                  if (tab_len > 0) {
-                     // If m->countExtraBytes > 0, it gives the number of chars
-                     // to use for a tab, else we need to calculate the
-                     // width for a tab.
-                     int tab2_len = mb_char2len(listCharsG.tab2);
-                     len = tab_len * tab2_len;
-                     if (listCharsG.tab3)
-                        len += mb_char2len(listCharsG.tab3) - tab2_len;
-                     if (m->countExtraBytes > 0)
-                        len += m->countExtraBytes - tab_len;
-                     currSymb = listCharsG.tab1;
-                     p = alloc(len + 1);
-                     memset(p, ' ', len);
-                     p[len] = ZERO;
-                     eeglFree(m->p_extra_free);
-                     m->p_extra_free = p;
-                     for (i = 0; i < tab_len; i++) {
-                        int lcs = listCharsG.tab2;
-
-                        if (*p == ZERO) {
-                           tab_len = i;
-                           break;
-                        }
-
-                        // if tab3 is given, use it for the last char
-                        if (listCharsG.tab3 && i == tab_len - 1)
-                           lcs = listCharsG.tab3;
-                        p += mb_char2bytes(lcs, p);
-                        m->countExtraBytes += mb_char2len(lcs) - (saved_nextra > 0 ? 1 : 0);
-                     }
-                     m->extraBytes = m->p_extra_free;
-                  }
-               }
+               m->countExtraBytes = tab_len;
                sc.mb_utf8 = false;   // don't draw as UTF-8
                if (port->o.list) {
                   currSymb = (m->countExtraBytes == 0 && listCharsG.tab3)
                               ? listCharsG.tab3
                               : listCharsG.tab1;
-                  if (port->o.lineBreak && m->extraBytes && *m->extraBytes != ZERO)
-                     m->c_extra = ZERO; // using extraBytes from above
-                  else
-                     m->c_extra = listCharsG.tab2;
+                  m->c_extra = listCharsG.tab2;
                   m->c_final = listCharsG.tab3;
                   sc.numDecoCells = tab_len + 1;
                   m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
@@ -7126,18 +7038,8 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   m->countExtraBytes = byte2cells(currSymb) - 1;
                m->c_extra = ZERO;
                m->c_final = ZERO;
-               if (port->o.lineBreak) {
-                  currSymb = *m->extraBytes;
-                  CS p = alloc(m->countExtraBytes + 1);
-                  memset(p, ' ', m->countExtraBytes);
-                  STRNCPY(p, m->extraBytes + 1, STRLEN(m->extraBytes) - 1);
-                  p[m->countExtraBytes] = ZERO;
-                  eeglFree(m->p_extra_free);
-                  m->p_extra_free = m->extraBytes = p;
-               } else {
-                  m->countExtraBytes = byte2cells(currSymb) - 1;
-                  currSymb = *m->extraBytes++;
-               }
+               m->countExtraBytes = byte2cells(currSymb) - 1;
+               currSymb = *m->extraBytes++;
                if (!sc.decoPriority) {
                   sc.numDecoCells = m->countExtraBytes + 1;
                   m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
@@ -7277,7 +7179,6 @@ drawLineOnScreen(
    if (drawingOnlyNumberCol == 0) { // normal line, with content
       //To speed up the loop below, set hasExtraHiliting when there is linebreak,
       //trailing white space and/or syntax processing to be done.
-      c.hasExtraHiliting = port->o.lineBreak;
       if (syntax_present(port) && !port->ownSyntax->b_syn_error
 # ifdef SYN_TIME_LIMIT
          && !port->ownSyntax->redrawTime
@@ -7536,13 +7437,6 @@ drawLineOnScreen(
    }
 
    c.vcolFirstChar = 0;
-   if (port->o.lineBreak && drawingOnlyNumberCol == 0) {
-      CharTableSize cts;
-      bookInitCharsForKeywordsSizeArg(OUT &cts, port, lnum, 0, m.line, m.line);
-      (void)win_lbr_chartabsize(&cts, NULL);
-      c.vcolFirstChar = cts.cts_first_char;
-      clear_chartabsize_arg(&cts);
-   }
 
    //'nowrap' or 'wrap' and a single line that doesn't fit: Advance to the
    //first character to be displayed.

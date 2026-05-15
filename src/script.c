@@ -2858,11 +2858,6 @@ private Byte *commlineSaved = NULL;
 
 #define SHOW_MATCH(m) (showtail ? showmatches_gettail(matches->c[m]) : matches->c[m])
 
-// flags for the 'wildoptions' option. Each defined char must be unique over all values.
-#define WOP_FUZZY     'z'
-#define WOP_TAGFILE   'g'
-#define WOP_PUM       'p'
-#define WOP_EXACTTEXT 'x'
 
 // Return TRUE if fuzzy completion is supported for a given commline completion context.
 private int
@@ -2894,14 +2889,14 @@ commlineFuzzyCompletionSupported(Expand *xp) {
       break;
    }
 
-   return firstOccurrence(p_wop, WOP_FUZZY) != NULL;
+   return (p_wop & WILDOPT_FUZZY) != 0;
 }
 
 //Return TRUE if fuzzy completion for commline completion is enabled and 'fuzzystr' is not empty.
 //If search pattern is empty, then don't use fuzzy matching.
 Boole
 scrIsCommlineFuzzyCompletable(CS fuzzystr) {
-   return firstOccurrence(p_wop, WOP_FUZZY) != NULL && *fuzzystr != ZERO;
+   return (p_wop & WILDOPT_FUZZY) != 0 && *fuzzystr != ZERO;
 }
 
 // sort function for the completion matches. <SNR> functions should be sorted to the end.
@@ -3817,7 +3812,7 @@ showmatches(Expand *xp, int wildmenu, int noselect){
       showtail = cmd_showtail;
    }
 
-   if (wildmenu && firstOccurrence(p_wop, WOP_PUM) != NULL)
+   if (wildmenu && (p_wop & WILDOPT_PUM) != 0)
       // cmdline completion popup menu (with wildoptions=pum)
       return createCommlinePum(ccline, xp, showtail && !noselect, OUT &matches);
 
@@ -4723,7 +4718,7 @@ setContextByCommandName(
    case C_tjump:
    case C_stjump:
    case C_ptjump:
-      if (firstOccurrence(p_wop, WOP_TAGFILE) != NULL)
+      if ((p_wop & WILDOPT_TAGFILE) != 0)
          xp->context = EXPAND_TAGS_LISTFILES;
       else
          xp->context = EXPAND_TAGS;
@@ -6322,8 +6317,8 @@ copy_substring_from_pos(Pos *start, Pos *end, Byte **match, Pos *match_end) {
    Byte   *line, *start_line, *end_line;
    int      segment_len;
    LineNr   lnum;
-   ArrayList   ga;
-   int      exacttext = firstOccurrence(p_wop, WOP_EXACTTEXT) != NULL;
+   ArrayList ga;
+   int exacttext = (p_wop & WILDOPT_EXACT) != 0;
 
    if (start->lnum > end->lnum || (start->lnum == end->lnum && start->col >= end->col))
       return FAIL; // invalid range
@@ -6462,15 +6457,15 @@ expandPatternInBook(
    Unt dir,          // direction: FORWARD or BACKWARD
    OUT ExpandMatch* matches
 ){
-   Pos   cur_match_pos, prev_match_pos, end_match_pos, word_end_pos;
-   int      found_new_match;
-   int      looped_around = FALSE;
-   int      pat_len;
-   int      has_range = FALSE;
-   int      compl_started = FALSE;
-   int      search_flags;
+   Pos cur_match_pos, prev_match_pos, end_match_pos, word_end_pos;
+   int found_new_match;
+   int looped_around = FALSE;
+   int pat_len;
+   int has_range = FALSE;
+   int compl_started = FALSE;
+   int search_flags;
    Byte   *match, *full_match;
-   int      exacttext = firstOccurrence(p_wop, WOP_EXACTTEXT) != NULL;
+   Boole  exacttext = (p_wop & WILDOPT_EXACT) != 0;
 
    has_range = search_first_line != 0;
 
@@ -9236,6 +9231,8 @@ check_opt_wim(void) {
   CS p;
   int      i;
   int      idx = 0;
+  if (!p_wim)
+     return OK;
 
   for (i = 0; i < 4; ++i)
      new_wim_flags[i] = 0;
@@ -12685,10 +12682,10 @@ skip_arrow(
 //Check if "*comm" points to a function command and if so advance "*comm" and return TRUE.
 //Otherwise return FALSE; Do not consider "function(" to be a command.
 private int
-isFunctionComm(Byte **comm) {
-   Byte *p = *comm;
+isFunctionComm(CS* comm) {
+   CS p = *comm;
 
-   if (checkforcmd(&p, "function", 2)) {
+   if (checkforcmd(&p, S"function", 2)) {
       if (*p == '(')
          return FALSE;
       *comm = p;
@@ -12840,7 +12837,7 @@ get_function_body(
             {}
 
          // Check for "endfunction". When a ":" follows, it must be a dict key; "enddef: value,"
-         if (checkforcmd(&p, "endfunction", 4) && *p != ':') {
+         if (checkforcmd(&p, S"endfunction", 4) && *p != ':') {
             if (nesting-- == 0) {
                Byte *nextComm = NULL;
 
@@ -12917,8 +12914,8 @@ get_function_body(
 
                   // check for line starting with "au" for :autocmd or
                   // "com" for :command, these can use a {} block
-                  is_block = checkforcmd_noparen(&s, "autocmd", 2)
-                           || checkforcmd_noparen(&s, "command", 3);
+                  is_block = checkforcmd_noparen(&s, S"autocmd", 2)
+                           || checkforcmd_noparen(&s, S"command", 3);
                }
 
                if (is_block) {
@@ -12934,9 +12931,9 @@ get_function_body(
 
          // Check for ":append", ":change", ":insert".  Not for :def.
          CS tp = p = skip_range(p, FALSE, NULL);
-         if ((checkforcmd(&p, "append", 1)
-                || checkforcmd(&p, "change", 1)
-                || checkforcmd(&p, "insert", 1))
+         if ((checkforcmd(&p, S"append", 1)
+                || checkforcmd(&p, S"change", 1)
+                || checkforcmd(&p, S"insert", 1))
                 && (*p == '!' || *p == '|' || IS_WHITE_NL_OR_ZERO(*p)))
             skip_until = copySubstr((CS)".", 1);
          else
@@ -12948,10 +12945,10 @@ get_function_body(
             //       and "lines =<< [trim] EOF" for Vim9
             // Where "comm" can be "let", "var", "final" or "const".
             arg = p;
-            if (checkforcmd(&arg, "let", 2)
-               || checkforcmd(&arg, "var", 3)
-               || checkforcmd(&arg, "final", 5)
-               || checkforcmd(&arg, "const", 5)
+            if (checkforcmd(&arg, S"let", 2)
+               || checkforcmd(&arg, S"var", 3)
+               || checkforcmd(&arg, S"final", 5)
+               || checkforcmd(&arg, S"const", 5)
             ) {
                int      var_count = 0;
                int      semicolon = 0;
@@ -17658,9 +17655,13 @@ find_end_event(CS arg, Boole have_group) {      // TRUE when group name was foun
 }
 
 // Return TRUE if "event" is included in 'eventignore(win)'.
-int
-event_ignored(AutoEvent event, CS evIgn) {
-   int ignored = FALSE;
+Boole
+event_ignored(AutoEvent event, NULLABLE CS evIgn) {
+   if (!evIgn)
+      return false;
+      
+   int ignored = false;
+   
    while (*evIgn != ZERO) {
       int unignore = *evIgn == '-';
       evIgn += unignore;
@@ -17669,9 +17670,9 @@ event_ignored(AutoEvent event, CS evIgn) {
          evIgn += 3 + (evIgn[3] == ',');
       } ei (event_name2nr(evIgn, &evIgn) == event) {
          if (unignore)
-            return FALSE;
+            return false;
          else
-            ignored = TRUE;
+            ignored = true;
       }
    }
 
@@ -17698,16 +17699,16 @@ check_ei(CS evIgn) {
 }
 
 
-//Add "what" to 'eventignore' to skip loading syntax highlighting for every buffer loaded into 
-//the portal. "what" must start with a comma. Returns the old value of 'eventignore' in allocated 
+//Add "what" to @eventignore to skip loading syntax hiliting for every book shown in 
+//the portal. "what" must start with a comma. Return the old value of 'eventignore' in allocated 
 //memory.
 CS
 au_event_disable(CS what) {
-   Unt p_ei_len = STRLEN(p_ei);
-   CS save_ei = copySubstr(p_ei, p_ei_len);
+   Unt p_ei_len = p_ei ? STRLEN(p_ei) : 0;
+   CS save_ei = p_ei ? copySubstr(p_ei, p_ei_len) : null;
    CS new_ei = copySubstr(p_ei, p_ei_len + STRLEN(what));
 
-   if (*what == ',' && *p_ei == ZERO)
+   if (*what == ',' && !p_ei)
       STRCPY(new_ei, what + 1);
    else
       STRCPY(new_ei + p_ei_len, what);
@@ -18276,7 +18277,6 @@ auCommPrepareBook(
 //Restore the portal as it was (if possible).
 void
 auCommRestoreBook(AutocommSave* aco)  {    // structure holding saved values
-   Unt dummy;
    Portal* curPorSave;
 
    if (aco->use_autoCommPort_idx >= 0) {
@@ -18306,6 +18306,7 @@ auCommRestoreBook(AutocommSave* aco)  {    // structure holding saved values
       if (aco->save_State & MODE_INSERT)
          stop_insert_mode = save_stop_insert_mode;
       // Remove the portal and frame from the tree of frames.
+      Byte dummy;
       (void)portRemoveFrame(curPor, OUT &dummy, NULL, NULL);
       removePortal(curPor, NULL);
 
@@ -18550,7 +18551,7 @@ applyAutocommGroup(
                   || event == EVENT_FILECHANGEDSHELLPOST))
       goto BYPASS_AU;
 
-   //Ignore events in 'eventignore'.
+   //Ignore events in @eventignore.
    if (event_ignored(event, p_ei))
       goto BYPASS_AU;
 

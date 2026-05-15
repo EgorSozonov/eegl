@@ -17,7 +17,7 @@ int diff_check_with_linestatus(Portal *po, LineNr lnum, LineDiffStatus *linestat
 int diff_check_fill(Portal *po, LineNr lnum);
 void diff_set_topline(Portal *fromPort, Portal *toPort);
 int diffanchors_changed(CS newVal, Boole buflocal);
-int diffopt_changed(void);
+int diffopt_changed(CS newVal);
 int diffopt_horizontal(void);
 int diffopt_hiddenoff(void);
 int diffopt_closeoff(void);

@@ -35,7 +35,7 @@ void internal_error_no_abort(CS where);
 void emsg_invreg(int name);
 void emsg_namelen(CS msg, CS name, int len);
 int delete_first_msg(void);
-int messagesopt_changed(void);
+int messagesopt_changed(CS new);
 void c_messages(Invocation *invo);
 void wait_return(Boole redraw);
 void set_keep_msg(Byte *s, char flags);

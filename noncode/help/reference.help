@@ -951,12 +951,6 @@ there was one in the original file (normally Eegl appends an <EOL> to
 the last line if there is none; this would make the file longer). See the @endofline option.
 
 
-@@breakat                Global. String. Default = "\t!@*-+;:,./?"
-   
-This option lets you choose which characters might cause a line
-break if @linebreak is on. Characters must be from ASCII.
-
-
 @@breakindent            Portal. Boolean. Default = off
    
 Every wrapped line will continue visually indented (same amount of
@@ -1216,7 +1210,7 @@ can identify the longest common string among the best fuzzy matches
 and insert it automatically.
 
 
-@@completeitemalign      Global. String. Default = "abbr,kind,menu"
+@@completeitemalign      Global. Flags. Default = "abbr,kind,menu"
    
 A comma-separated list of strings that controls the alignment and
 display order of items in the popup menu during Insert mode
@@ -1304,7 +1298,7 @@ This option does not apply to |cmdline-completion|. See @wildoptions for that.
 
 When @completeopt contains "popup" then this option is used for the
 properties of the info popup when it is created.  If an info popup
-portal already exists, it is closed, so that the option value is
+portal already exists, it is closed, and the option value will be
 applied when it is created again.
 You can also use |popup_findinfo()| and then set properties for an
 existing info popup with |popup_setoptions()|.  See |complete-popup|.
@@ -1603,7 +1597,7 @@ Examples:
       :set diffopt-=internal  " do NOT use the internal diff parser
 
 
-@@eadirection            Global. String. Default = "both"
+@@eadirection            Global. Enumerated. Default = "both"
    
 Tells when the @equalalways option applies:
       ver   vertically, width of portals is not affected
@@ -2140,10 +2134,8 @@ about including spaces and backslashes.
 
 When on, the library function fsync() will be called after writing a file. This will flush a 
 file to disk, ensuring that it is safely written even on filesystems which do metadata-only 
-journaling. This will force the harddrive to spin up on Linux systems running in laptop
-mode, so it may be undesirable in some situations.  Be warned that turning this off increases 
-the chances of data loss after a crash. On systems without an fsync() implementation, this 
-variable is always off. Also see @swapsync for controlling fsync() on swap files.
+journaling. Be warned that turning this off increases 
+the chances of data loss after a crash. Also see @swapsync for controlling fsync() on swap files.
 @fsync also applies to |writefile()| (unless a flag is used to
 overrule it) and when writing undo files (see |undo-persistence|).
 
@@ -2547,17 +2539,6 @@ typed.  To force an update, use |:redraw|.
 This may occasionally cause display errors.  It is only meant to be set
 temporarily when performing an operation where redrawing may cause
 flickering or cause a slowdown.
-
-
-@@linebreak              Portal. Boolean. Default = off
-
-If on, Eegl will wrap long lines at a character in @breakat rather than at the last character that 
-fits on the screen. Unlike @wrapmargin and @textwidth, this does not insert <EOL>s in the file,
-it only affects the way the file is displayed, not its contents. If @breakindent is set, line is 
-visually indented. Then, the value of @showbreak is used to put in front of wrapped lines. This 
-option is not used when the @wrap option is off.
-Note that <Tab> characters after an <EOL> are mostly not displayed with the right amount of white 
-space.
 
 
 @@lines                  Global. Numeric. Default =  24 or terminal height
@@ -3126,11 +3107,8 @@ even when "ver" isn't there.
 
 @@shellcmdflag           Global. String. Default: "-c";
    
-Flag passed to the shell to execute "!" and ":!" commands; e.g.,
-"bash.exe -c ls", "powershell.exe -Command dir", or "cmd.exe /c dir".
-For MS-Windows, the default is set according to the value of @shell,
-to reduce the need to set this option by the user.
-On Unix it can have more than one flag.  Each white space separated
+Flag passed to the shell to execute "!" and ":!" commands; e.g., "bash.exe -c ls".
+It can consist of more than one flag.  Each white space separated
 part is passed as an argument to the shell command.
 See |option-backslash| about including spaces and backslashes.
 
@@ -3142,14 +3120,11 @@ error file. See also |:make_makeprg|.  See |option-backslash| about
 including spaces and backslashes.
 The name of the temporary file can be represented by "%s" if necessary
 (the file name is appended automatically if no %s appears in the value of this option).
-For the Amiga the default is ">". The default is ">%s 2>&1".  The output is 
+The default is ">%s 2>&1".  The output is 
 directly saved in a file and not echoed to the screen.
-For Unix the default is "| tee".  The stdout of the compiler is saved
-in a file and echoed to the screen.  If the @shell option is "csh" or
-"tcsh" after initializations, the default becomes "|& tee".  If the
-@shell option is "sh", "ksh", "mksh", "pdksh", "zsh", "zsh-beta",
-"bash", "fish", "ash" or "dash" the default becomes "2>&1| tee".  This
-means that stderr is also included.  Before using the @shell option a
+The default is "| tee".  The stdout of the compiler is saved
+in a file and echoed to the screen. This
+means that stderr is also included. Before using the @shell option a
 path is removed, thus "/bin/sh" uses "sh".
 The initialization of this option is done after reading the ".vimrc"
 and the other initializations, so that when the @shell option is set
@@ -3300,19 +3275,18 @@ set and you want no value in the current window use NONE:
    :set showbreak=NONE
 
 
-@@showcmdloc             Global. String. Default = "last"
+@@showcmdloc             Global. Enum. Default = "last"
 
 This option can be used to display the (partially) entered command in
 another location.  Possible values are:
 
   last         Last line of the screen (default).
-  statusline   Status line of the current window.
-  tabline      First line of the screen if @showtabline is enabled.
+  statusline   Status line of the current portal.
   
-Setting this option to "statusline" or "tabline" means that these will
+Setting this option to "statusline" means that it will
 be redrawn whenever the command changes, which can be on every key pressed.
-The %S @statusline item can be used in @statusline or @tabline to
-place the text.  Without a custom @statusline or @tabline it will be
+The %S @statusline item can be used in @statusline to
+place the text.  Without a custom @statusline it will be
 displayed in a convenient location.
 
 
@@ -3837,18 +3811,14 @@ This option is used together with @bufhidden and @buftype to
 specify special kinds of books.   See |special-books|.
 
 
-@@swapsync               Global. String. Default = off
+@@swapsync               Global. Boolean. Default = off
    
-When this option is "fsync", a swap file is synced to disk after
-writing to it.  This takes some time, especially on busy unix systems.
-When this option is empty parts of the swap file may be in memory and
-not written to disk.  When the system crashes you may lose more work.
+When this option is on, a swap file is synced to disk after
+writing to it. This takes some time. When this option is empty, parts of the swap file may be in 
+memory and not written to disk. When the system crashes you may lose more work.
 On Unix the system does a sync now and then without Eegl asking for it,
-so the disadvantage of setting this option off is small.  On some
-systems the swap file will not be written at all.  For a unix system
-setting it to "sync" will use the sync() call instead of the default
-fsync(), which may work better on some systems.
-The @fsync option is used for the actual file.
+so the disadvantage of setting this option off is small.  On some systems the swap file will not 
+be written at all. The @fsync option is used for the main file.
 
 
 @@switchbook             Global. Flags. Default = off
@@ -4312,12 +4282,6 @@ The difference with |:redir| is that verbose messages are not
 displayed when @verbosefile is set.
 
 
-@@viewdir                Global. String. Default = "$HOME/.local/state/eegl/view"
-   
-Name of the directory where to store files for |:mkview|.
-For $XDG_CONFIG_HOME see |xdg-base-dir|.
-
-
 @@eeglinfo               Global. String. Default = '100,<50,s10,h
    
 When non-empty, the eeglinfo file is read upon startup and written
@@ -4392,9 +4356,8 @@ CHAR   VALUE   ~
       given here with @eeglinfo.  Environment variables are
       expanded when opening the file, not when setting the option.
                      *eeglinfo-r*
-   r   Removable media.  The argument is a string (up to the next
-      ',').  This parameter can be given several times.  Each
-      specifies the start of a path for which no marks will be
+   r   Removable media.  The argument is a string (up to the next ',').  This parameter 
+      can be given several times.  Each specifies the start of a path for which no marks will be
       stored.  This is to avoid removable media.  You can
       also use it for temp files, e.g., for Unix: "r/tmp".  Case is
       ignored.  Maximum length of each @r argument is 50
@@ -4645,7 +4608,7 @@ Second press: cycle full matches >
 More info here: |cmdline-completion|.
 
 
-@@wildoptions            Global. String. Default = ""
+@@wildoptions            Global. Flags. Default = "pum"
    
 A list of words that change how |cmdline-completion| is done.
 

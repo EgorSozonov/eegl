@@ -822,7 +822,7 @@ skipped:
 
 private Boole
 isVerboseFileDefined() {
-   return p_vfile && *p_vfile != ZERO;
+   return p_vfile != null;
 }
 
 //}}}
@@ -1130,8 +1130,10 @@ msg_source(char flags) {
 //If "emsg_skip" is set: never do error messages.
 private int
 emsg_not_now(void) {
-   if ((emsg_off > 0 && firstOccurrence(p_debug, 'm') == NULL && firstOccurrence(p_debug, 't') == NULL)
-       || emsg_skip > 0
+   if ((emsg_off > 0 
+            && (!p_debug 
+               || (firstOccurrence(p_debug, 'm') == NULL && firstOccurrence(p_debug, 't') == NULL))
+       ) || emsg_skip > 0
    )
       return TRUE;
    return FALSE;
@@ -1454,12 +1456,15 @@ check_msg_hist(void) {
 
 
 int
-messagesopt_changed(void) {
+messagesopt_changed(CS new) {
+   if (!new)
+      return OK;
+
    int messages_flags_new = 0;
    int messages_wait_new = 0;
    int messages_history_new = 0;
 
-   Byte* p = p_mopt;
+   CS p = new;
    while (*p != ZERO) {
       if (STRNCMP(p, MESSAGES_OPT_HIT_ENTER,
            STRLEN_LITERAL(MESSAGES_OPT_HIT_ENTER)) == 0)
@@ -1493,7 +1498,7 @@ messagesopt_changed(void) {
       return FAIL;
 
    // "history" must be set
-   if (!(messages_flags_new & MESSAGES_HISTORY))
+   if ((messages_flags_new & MESSAGES_HISTORY) == 0)
       return FAIL;
 
    if (messages_history_new < 0 || messages_history_new > 10000)
@@ -2893,7 +2898,7 @@ verbose_stop(void) {
 // Open the file 'verbosefile'. Return FAIL or OK.
 int
 verbose_open(void) {
-   if (verbose_fd == NULL && !verbose_did_open && isVerboseFileDefined()) {
+   if (verbose_fd == NULL && !verbose_did_open && isVerboseFileDefined() && p_vfile) {
       // Only give the error message once.
       verbose_did_open = TRUE;
 

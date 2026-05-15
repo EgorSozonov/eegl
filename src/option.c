@@ -2430,21 +2430,6 @@ setFormatListPat(OptionChange* cha) {
    return null; 
 }
 
-// The @breakat option is changed.
-private CS
-setBreakat(OptionChange* cha) {
-   for (Unt i = 0; i < 256; i++)
-      breakat_flags[i] = false;
-
-   if (cha->newVal.string) {
-      for (CS p = cha->newVal.string; *p != ZERO; p++)
-         breakat_flags[*p] = true;
-   } 
-   updateStringRef(cha);
-
-   return NULL;
-}
-
 private CS (p_cfc_values[]) = {SMAP((CS), "keyword", "files", "whole_line")};
 private CS
 setCompletefuzzycollect(OptionChange* cha) {
@@ -2457,13 +2442,17 @@ expandCompletefuzzycollect(OptExpand* args, OUT ExpandMatch *matches) {
 }
 
 private CS
-did_set_completeitemalign(OptionChange* cha UNUSED) {
-   Byte   *p = p_cia;
-   unsigned   new_cia_flags = 0;
-   int      seen[3] = { FALSE, FALSE, FALSE };
-   int      count = 0;
+did_set_completeitemalign(OptionChange* cha) {
+   if (!cha->newVal.string) {
+      p_cia = 0;
+      return null;
+   } 
+   
+   Unt newCia = 0;
+   int seen[3] = { FALSE, FALSE, FALSE };
+   int count = 0;
    Byte   buffer[10];
-
+   CS p = cha->newVal.string;
    while (*p) {
       copy_option_part(&p, buffer, sizeof(buffer), ",");
       if (count >= 3)
@@ -2472,28 +2461,28 @@ did_set_completeitemalign(OptionChange* cha UNUSED) {
       if (STRCMP(buffer, "abbr") == 0) {
          if (seen[CPT_ABBR])
             return e_invalid_argument;
-         new_cia_flags = new_cia_flags * 10 + CPT_ABBR;
+         newCia = newCia * 10 + CPT_ABBR;
          seen[CPT_ABBR] = TRUE;
          count++;
       } ei (STRCMP(buffer, "kind") == 0) {
          if (seen[CPT_KIND])
             return e_invalid_argument;
-         new_cia_flags = new_cia_flags * 10 + CPT_KIND;
+         newCia = newCia * 10 + CPT_KIND;
          seen[CPT_KIND] = TRUE;
          count++;
       } ei (STRCMP(buffer, "menu") == 0) {
          if (seen[CPT_MENU])
             return e_invalid_argument;
-         new_cia_flags = new_cia_flags * 10 + CPT_MENU;
+         newCia = newCia * 10 + CPT_MENU;
          seen[CPT_MENU] = TRUE;
          count++;
       } else
          return e_invalid_argument;
    }
-   if (new_cia_flags == 0 || count != 3)
+   if (newCia == 0 || count != 3)
       return e_invalid_argument;
       
-   cia_flags = new_cia_flags;
+   p_cia = newCia;
    return NULL;
 }
 
@@ -2527,8 +2516,8 @@ did_set_diffanchors(OptionChange* cha) {
 }
 
 private CS
-setDiffopt(OptionChange* cha UNUSED) {
-   if (diffopt_changed() == FAIL)
+setDiffopt(OptionChange* cha) {
+   if (diffopt_changed(cha->newVal.string) == FAIL)
       return e_invalid_argument;
    return NULL;
 }
@@ -2553,14 +2542,14 @@ expandDiffopt(OptExpand* args, OUT ExpandMatch* matches) {
 
    if (xp->input.c > args->setArg && *(xp->input.c - 1) == ':') {
       // Within "algorithm:", we have a subgroup of possible options.
-      int algo_len = (int)STRLEN("algorithm:");
+      int algo_len = sizeof("algorithm:") - 1;
       if (xp->input.c - args->setArg >= algo_len 
             && STRNCMP(xp->input.c - algo_len, "algorithm:", algo_len) == 0
       ) {
          return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_dip_algorithm_values));
       }
       // Within "inline:", we have a subgroup of possible options.
-      int inline_len = (int)STRLEN("inline:");
+      int inline_len = sizeof("inline:") - 1;
       if (xp->input.c - args->setArg >= inline_len &&
          STRNCMP(xp->input.c - inline_len, "inline:", inline_len) == 0
       ) {
@@ -2636,20 +2625,24 @@ expand_set_formatoptions(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 private CS
-did_set_helplang(OptionChange* cha UNUSED) {
-   CS errmsg = NULL;
-
+did_set_helplang(OptionChange* cha) {
+   CS new = cha->newVal.string;
+   if (!new) {
+      p_hlg = null;
+      return null;
+   }
+   
    // Check for "", "ab", "ab,cd", etc.
-   for (Byte *s = p_hlg; *s != ZERO; s += 3) {
+   for (Byte *s = new; *s != ZERO; s += 3) {
       if (s[1] == ZERO || ((s[2] != ',' || s[3] == ZERO) && s[2] != ZERO)) {
-         errmsg = e_invalid_argument;
-         break;
+         return e_invalid_argument;
       }
       if (s[2] == ZERO)
          break;
    }
 
-   return errmsg;
+   p_hlg = new;
+   return null;
 }
 
 //One of the '*expr' options is changed: @balloonexpr, @diffexpr, @foldexpr, @foldtext, 
@@ -2667,10 +2660,14 @@ setOptexpr(OptionChange* cha) {
 }
 
 private CS (p_ead_values[]) = {SMAP((CS), "both", "ver", "hor")};
- 
 private CS
 setEadirection(OptionChange* cha) {
-   return validateAndSetListOfStrings(OUT cha, p_ead_values);
+   Byte v = parseEnumValue(cha->newVal.string, p_ead_values);
+   if (v == 255)
+      return e_invalid_argument;
+
+   p_ead = v;
+   return NULL;
 }
 
 private int
@@ -2690,7 +2687,7 @@ did_set_eventignore(OptionChange* cha) {
 private CS
 did_set_verbosefile(OptionChange* cha UNUSED) {
    verbose_stop();
-   if (*p_vfile != ZERO && verbose_open() == FAIL)
+   if (p_vfile && verbose_open() == FAIL)
       return e_invalid_argument;
 
    return NULL;
@@ -2698,12 +2695,17 @@ did_set_verbosefile(OptionChange* cha UNUSED) {
 
 private CS
 setEeglinfo(OptionChange* cha) {
-   Byte   *s;
+   CS new = cha->newVal.string;
+   if (!new) {
+      p_eeglinfo = null;
+      return null;
+   }
+   
    CS errmsg = NULL;
 
-   for (s = p_eeglinfo; *s;) {
+   for (CS s = new; *s != ZERO;) {
       // Check it's a valid character
-      if (firstOccurrence((CS)"!\"%'/:<@cfhnrs", *s) == NULL) {
+      if (firstOccurrence(S"!\"%'/:<@cfhnrs", *s) == NULL) {
          errmsg = illegal_char(OUT &cha->errb, *s);
          break;
       }
@@ -2744,8 +2746,12 @@ setEeglinfo(OptionChange* cha) {
          break;
       }
    }
-   if (*p_eeglinfo && errmsg == NULL && get_eeglinfo_parameter('\'') < 0)
+   //The ' must be included if new value is non-zero
+   if (new[0] != ZERO && !errmsg && get_eeglinfo_parameter('\'') < 0)
       errmsg = e_must_specify_a_value;
+      
+   if (!errmsg) 
+      p_eeglinfo = new;
 
    return errmsg;
 }
@@ -2779,12 +2785,12 @@ expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches) {
 
 private CS(p_wop_values[]) = {SMAP((CS), "fuzzy", "tagfile", "pum", "exacttext")};
 private CS
-did_set_wildoptions(OptionChange* cha) {
+setWildoptions(OptionChange* cha) {
    return validateAndSetListOfStrings(OUT cha, p_wop_values);
 }
 
 private int
-expand_set_wildoptions(OptExpand* args, OUT ExpandMatch* matches) {
+expandWildoptions(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_wop_values));
 }
 
@@ -2925,7 +2931,7 @@ private CS (p_mopt_values[]) = {SMAP((CS), "hit-enter", "wait:", "history:")};
 
 private CS
 did_set_messagesopt(OptionChange* cha) {
-   if (messagesopt_changed() == FAIL)
+   if (messagesopt_changed(cha->newVal.string) == FAIL)
       return e_invalid_argument;
    updateStringRef(cha);
 
@@ -3027,10 +3033,10 @@ setRulerFormat(OptionChange* cha) {
 }
 
 private CS
-did_set_tabpanelopt(OptionChange* cha UNUSED) {
-   if (tabpanelopt_changed() == FAIL)
+did_set_tabpanelopt(OptionChange* cha) {
+   if (uiValidateTabpanelopt(cha->newVal.string) == FAIL)
       return e_invalid_argument;
-
+   updateStringRef(cha);
    return NULL;
 }
 
@@ -3118,11 +3124,11 @@ private CS p_sloc_values[] = {S"last", S"statusline"};
 
 private CS
 did_set_showcmdloc(OptionChange* cha) {
-   CS errmsg = validateAndSetListOfStrings(OUT cha, p_sloc_values);
-   if (!errmsg)
-      computeColumnsForRulerAndCommand();
-
-   return errmsg;
+   Byte v = parseEnumValue(cha->newVal.string, p_sloc_values);
+   if (v == 255)
+      return e_invalid_argument;
+   *(cha->ref.enume) = v;
+   return null;
 }
 
 private int
@@ -3133,18 +3139,6 @@ expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches) {
 private CS
 did_set_statusline(OptionChange* cha) {
    return parse_status_rulerformat(cha);
-}
-
-private CS p_sws_values[] = {S"fsync", S"sync"};
-
-private CS
-did_set_swapsync(OptionChange* cha) {
-   return validateAndSetListOfStrings(OUT cha, p_sws_values);
-}
-
-private int
-expand_set_swapsync(OptExpand* args, OUT ExpandMatch* matches) {
-   return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_sws_values));
 }
 
 private CS(p_swb_values[]) = {SMAP((CS), 
@@ -4020,8 +4014,6 @@ put_setbool(
 //           curPor.  Local values are also written when at the
 //           default value, because an autocommand may have set them when doing ":edit file" 
 //           and the user has set them back at the default or fresh value.
-//           When "local_only" is TRUE, don't write fresh
-//           values, only local values (for ":mkview").
 //(fresh value = value used for a new buffer or portal for a local option).
 //
 //Return FAIL on error, OK otherwise.
@@ -4628,14 +4620,15 @@ do_spelllang_source(void) {
 //restore_shm_value() exactly the same number of times.
 void
 save_clear_shm_value(void) {
-   if (STRLEN(p_shm) >= SHM_LEN) {
+   if (p_shm && STRLEN(p_shm) >= SHM_LEN) {
       internalErrMsg(e_internal_error_shortmess_too_long);
       return;
    }
 
    if (++set_shm_recursive == 1) {
-      STRCPY(shm_buf, p_shm);
-      optChangeAndReportError(S"shortmess", optStr(Em), SET_LOCAL);
+      if (p_shm)
+         STRCPY(shm_buf, p_shm);
+      optChangeAndReportError(S"shortmess", optStr(null), SET_LOCAL);
    }
 }
 

@@ -1534,7 +1534,7 @@ addByteToShowcmd(Byte byte) {
    int modifiers = 0;
    int c = ZERO;
 
-   if (!p_sc || msg_silent != 0)
+   if (msg_silent != 0)
       return;
 
    if (!gotchars_add_byte(&state, byte))

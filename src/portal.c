@@ -16,11 +16,11 @@ private void frame_setwidth(Frame *curfrp, int width);
 private void exchangePortal(long);
 private void rotatePortals(int, int);
 private void equalizeHeightRec(
-   Portal* next_curPor, int current, Frame *topfr, int dir, int col, int row, int width, int height
+   Portal* next_curPor, int current, Frame *topfr, Byte dir, int col, int row, int width, int height
 );
 private void triggerPortalNewPre(void);
 private void triggerPortalClosed(Portal* port);
-private Portal *freePortalMem(Portal* port, Unt* dirp, Tab *t);
+private Portal *freePortalMem(Portal* port, Byte* dirp, Tab *t);
 private Frame *getAltFrame(Portal* port, Tab *t);
 private Tab *altTab(void);
 private Portal* frameToPort(Frame* fr);
@@ -54,7 +54,7 @@ private void gotoPortal_hor(int left, long count);
 private void frame_add_height(Frame *fr, int n);
 private void last_status_rec(Frame *fr, int statusline);
 private void frame_flatten(Frame *fr);
-private void restoreFrame(Portal* po, int dir, Frame *unflat_altfr);
+private void restoreFrame(Portal* po, Byte dir, Frame *unflat_altfr);
 
 private int make_snapshot_rec(Frame *fr, Frame **fr1);
 private void clearSnapshot(Tab *t, int idx);
@@ -465,8 +465,10 @@ newPortal:
 
 // make all portals the same width and/or height
     case '=': {
-          int mod = commModifierG.cmod_split & (WSP_VERT | WSP_HOR);
-          portEqualizeHeight(NULL, FALSE, mod == WSP_VERT ? 'v' : mod == WSP_HOR ? 'h' : 'b');
+         int mod = commModifierG.cmod_split & (WSP_VERT | WSP_HOR);
+         portEqualizeHeight(
+            NULL, FALSE, mod == WSP_VERT ? EAD_VERTICAL : mod == WSP_HOR ? EAD_HORIZONTAL : EAD_BOTH
+         );
       }
       break;
 
@@ -925,7 +927,7 @@ splitPortal_ins(
 
       // Only make all portals the same width if one of them (except oldPortal)
       // is wider than one of the split portals.
-      if (!do_equal && p_ea && size == 0 && *p_ead != 'v' && oldPortal->frame->parent != NULL) {
+      if (!do_equal && p_ea && size == 0 && p_ead != EAD_VERTICAL && oldPortal->frame->parent) {
          fr = oldPortal->frame->parent->child;
          while (fr) {
             if (fr->port != oldPortal && fr->port
@@ -1006,9 +1008,7 @@ splitPortal_ins(
 
       // Only make all portals the same height if one of them (except oldPortal)
       // is higher than one of the split portals.
-      if (!do_equal && p_ea && size == 0 && *p_ead != 'h'
-         && oldPortal->frame->parent != NULL)
-      {
+      if (!do_equal && p_ea && size == 0 && p_ead != EAD_HORIZONTAL && oldPortal->frame->parent) {
          fr = oldPortal->frame->parent->child;
          while (fr) {
             if (fr->port != oldPortal && fr->port != NULL
@@ -1226,8 +1226,14 @@ splitPortal_ins(
    }
 
    // equalize the portal sizes.
-   if (do_equal || dir != 0)
-      portEqualizeHeight(po, TRUE, (flags & WSP_VERT) ? (dir == 'v' ? 'b' : 'h') : dir == 'h' ? 'b' : 'v');
+   if (do_equal || dir != 0) {
+      portEqualizeHeight(
+            po, TRUE, 
+            (flags & WSP_VERT) != 0
+               ? (dir == EAD_VERTICAL ? EAD_BOTH : EAD_HORIZONTAL) 
+               : dir == EAD_HORIZONTAL ? EAD_BOTH : EAD_VERTICAL
+      );
+   } 
 
    // Don't change the portal height/width to 'winheight' / 'winwidth' if a size was given.
    if (flags & WSP_VERT) {
@@ -1612,7 +1618,7 @@ splitPortalmove(Portal* po, int size, Unt flags) {
    // Remove the portal and frame from the tree of frames.  Don't flatten any
    // frames yet so we can restore things if splitPortal_ins fails.
    Frame* unflat_altfr;
-   Unt dir;
+   Byte dir;
    portRemoveFrame(po, OUT &dir, NULL, OUT &unflat_altfr);
    removePortal(po, NULL);
    last_status(FALSE);       // may need to remove last status line
@@ -1634,7 +1640,7 @@ splitPortalmove(Portal* po, int size, Unt flags) {
       if (p_ea) {
           // Equalize portals.  Note that splitPortal_ins autocommands may have
           // made a portal other than "po" current.
-          portEqualizeHeight(curPor, curPor == po, 'v');
+          portEqualizeHeight(curPor, curPor == po, EAD_VERTICAL);
       }
    }
    return OK;
@@ -1699,11 +1705,12 @@ portMoveAfter(Portal* port0, Portal* port1) {
 void
 portEqualizeHeight(
    Portal* next_curPor,   // pointer to current portal to be or NULL
-   int      current,   // do only frame with current portal
-   Unt      dir   // 'v' for vertically, 'h' for horizontally, 'b' for both, 0 for using p_ead
+   int current,   // do only frame with current portal
+   Byte dir   // EAD_* constants, or 0 for using p_ead
 ){
-   if (dir == 0)
-      dir = *p_ead;
+   if (dir == 0) {
+      dir = p_ead;
+   }
    equalizeHeightRec(
       next_curPor ? next_curPor : curPor, 
       current, topframeG, dir, firstPor->portalCol, 0, topframeG->width, topframeG->height
@@ -1718,7 +1725,7 @@ equalizeHeightRec(
    Portal* next_curPor,   // pointer to current portal to be or NULL
    int current,   // do only frame with current portal
    Frame* topfr,      // frame to set size off
-   int dir,      // 'v', 'h' or 'b', see portEqualizeHeight()
+   Byte dir,      // EAD_* constants, see portEqualizeHeight()
    int col,      // horizontal position for frame
    int row,      // vertical position for frame
    int width,      // new width of frame
@@ -1750,7 +1757,7 @@ equalizeHeightRec(
       topfr->width = width;
       topfr->height = height;
 
-      if (dir != 'v') {        // equalize frame widths
+      if (dir != EAD_VERTICAL) {        // equalize frame widths
          // Compute the maximum number of portals horizontally in this frame.
          n = frame_minwidth(topfr, NOPORT);
          // add one for the rightmost portal, it doesn't have a separator
@@ -1797,14 +1804,13 @@ equalizeHeightRec(
                if (!has_next_curPor)
                   next_curPor_size = 0;
                ei (totalPortCount > 1
-                   && (room + (totalPortCount - 2))
-                          / (totalPortCount - 1) > p_wiw)
-                {
-               // Can make all portals wider than 'winwidth', spread the room equally.
-               next_curPor_size = (room + p_wiw
-                         + (totalPortCount - 1) * MIN_PORTAL_WIDTH
-                         + (totalPortCount - 1)) / totalPortCount;
-               room -= next_curPor_size - p_wiw;
+                   && (room + (totalPortCount - 2)) / (totalPortCount - 1) > p_wiw
+               ) {
+                  // Can make all portals wider than 'winwidth', spread the room equally.
+                  next_curPor_size = (room + p_wiw
+                            + (totalPortCount - 1) * MIN_PORTAL_WIDTH
+                            + (totalPortCount - 1)) / totalPortCount;
+                  room -= next_curPor_size - p_wiw;
                } else
                   next_curPor_size = p_wiw;
             }
@@ -1819,7 +1825,7 @@ equalizeHeightRec(
          if (fr->next == NULL)
             // last frame gets all that remains (avoid roundoff error)
             new_size = width;
-         ei (dir == 'v')
+         ei (dir == EAD_VERTICAL)
             new_size = fr->width;
          ei (frame_fixed_width(fr)) {
             new_size = fr->newWidth;
@@ -1852,9 +1858,10 @@ equalizeHeightRec(
 
          // Skip frame that is full width when splitting or closing a portal, unless equalizing all 
          // frames
-         if (!current || dir != 'v' || topfr->parent != NULL
+         if (!current || dir != EAD_VERTICAL || topfr->parent
              || (new_size != (int)fr->width)
-             || frameHasPortal(fr, next_curPor))
+             || frameHasPortal(fr, next_curPor)
+          )
             equalizeHeightRec(next_curPor, current, fr, dir, col, row, new_size, height);
          col += new_size;
          width -= new_size;
@@ -1864,7 +1871,7 @@ equalizeHeightRec(
       topfr->width = width;
       topfr->height = height;
 
-      if (dir != 'h') {        // equalize frame heights
+      if (dir != EAD_HORIZONTAL) {        // equalize frame heights
          // Compute maximum number of portals vertically in this frame.
          n = frame_minheight(topfr, NOPORT);
          // add one for the bottom portal if it doesn't have a statusline
@@ -1893,7 +1900,7 @@ equalizeHeightRec(
                   room += p_wh - MIN_PORTAL_HEIGHT;
                   next_curPor_size = 0;
                   if (new_size < p_wh)
-                      new_size = p_wh;
+                     new_size = p_wh;
                } else
                // These portals don't use up room.
                totalPortCount -= (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_HEIGHT + 1);
@@ -1927,7 +1934,7 @@ equalizeHeightRec(
          if (fr->next == NULL)
             // last frame gets all that remains (avoid roundoff error)
             new_size = height;
-         ei (dir == 'h')
+         ei (dir == EAD_HORIZONTAL)
             new_size = fr->height;
          ei (frame_fixed_height(fr)) {
             new_size = fr->newHeight;
@@ -1956,9 +1963,10 @@ equalizeHeightRec(
             new_size += n;
          }
          // Skip full-width frame when splitting or closing a portal, unless equalizing all frames
-         if (!current || dir != 'h' || topfr->parent != NULL
+         if (!current || dir != EAD_HORIZONTAL || topfr->parent != NULL
                 || (new_size != (int)fr->height)
-                || frameHasPortal(fr, next_curPor))
+                || frameHasPortal(fr, next_curPor)
+         )
             equalizeHeightRec(next_curPor, current, fr, dir, col, row, width, new_size);
          row += new_size;
          height -= new_size;
@@ -2034,7 +2042,7 @@ curPor_init(void) {
 // Close all portals into book "buf".
 void
 closePortalsInto(Book* book, Boole keep_curPor)  {     // don't close "curPor"
-   Portal   *po;
+   Portal* po;
    Unt count = indexOfTab(NULL);
 
    ++isRedrawingDisabledG;
@@ -2201,14 +2209,14 @@ closePortal(Portal* port, int free_buf) {
       return FAIL;
    }
 
-   // When closing the last portal in a tab first go to another tab 
-   // and then close the portal and the tab to avoid that curPor and
-   // curtab are invalid while we are freeing memory.
+   //When closing the last portal in a tab first go to another tab 
+   //and then close the portal and the tab to avoid that curPor and
+   //curtab are invalid while we are freeing memory.
    if (closeLastPortalInTab(port, free_buf, prev_curtab))
       return FAIL;
 
-   // When closing the help portal, try restoring a snapshot after closing
-   // the portal.  Otherwise clear the snapshot, it's now invalid.
+   //When closing the help portal, try restoring a snapshot after closing
+   //the portal.  Otherwise clear the snapshot, it's now invalid.
    if (bookIsHelp(port->book))
       isHelpPortal = true;
    else
@@ -2287,7 +2295,7 @@ closePortal(Portal* port, int free_buf) {
    ++dont_parse_messages;
 
    // Free the memory used for the portal and get the portal that received the screen space.
-   Unt dir;
+   Byte dir;
    po = freePortalMem(port, OUT &dir, NULL);
 
    if (isHelpPortal) {
@@ -2306,7 +2314,7 @@ closePortal(Portal* port, int free_buf) {
          //If the cursor goes to the preview or the quickfix portal, try
          //finding another portal to go to.
          for (;;) {
-            if (po->next == NULL)
+            if (!po->next)
                po = firstPor;
             else
                po = po->next;
@@ -2331,7 +2339,7 @@ closePortal(Portal* port, int free_buf) {
    //height of a portal
    last_status(FALSE);
 
-   if (p_ea && (*p_ead == 'b' || *p_ead == dir))
+   if (p_ea && (p_ead == EAD_BOTH || p_ead == dir))
       // If the frame of the closed portal contains the new current portal,
       // only resize that frame.  Otherwise resize all portals.
       portEqualizeHeight(curPor, curPor->frame->parent == portFrame, dir);
@@ -2759,7 +2767,7 @@ closePortal_othertab(Portal* port, int free_buf, Tab *t) {
    }
 
    // Free the memory used for the portal.
-   Unt dir;
+   Byte dir;
    freePortalMem(port, OUT &dir, t);
 
    if (free_tp)
@@ -2770,7 +2778,7 @@ closePortal_othertab(Portal* port, int free_buf, Tab *t) {
 private Portal *
 freePortalMem(
    Portal* port,
-   OUT Unt* dirp,      // set to 'v' or 'h' for direction if 'ea'
+   OUT Byte* dirp,      // set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
    Tab* t      // tab "port" is in, NULL for current
 ){
    Tab* portTab = t == NULL ? curtab : t;
@@ -2820,10 +2828,10 @@ portFreeAll(void) {
 Portal *
 portRemoveFrame(
    Portal* port,
-   OUT Unt* dirp,      // set to 'v' or 'h' for direction if 'ea'
+   OUT Byte* dirp,  // set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
    Tab* t,      // tab "port" is in, NULL for current
    OUT Frame** unflat_altfr // if not NULL, set to pointer of frame that got the space, and it 
-                           // is not flattened
+                            // is not flattened
 ){
    Frame* fr;
    Frame* frp3;
@@ -2872,9 +2880,8 @@ portRemoveFrame(
          }
          }
       }
-      frame_new_height(fr2, fr2->height + frp_close->height,
-                fr2 == frp_close->next, FALSE, FALSE);
-      *dirp = 'v';
+      frame_new_height(fr2, fr2->height + frp_close->height, fr2 == frp_close->next, FALSE, FALSE);
+      *dirp = EAD_VERTICAL;
    } else {
       // When 'portfixwidth' is set, try to find another frame in the column
       // (as close to the closed frame as possible) to distribute the width to.
@@ -2901,7 +2908,7 @@ portRemoveFrame(
          }
       }
       frameNewWidth(fr2, fr2->width + frp_close->width, fr2 == frp_close->next, FALSE);
-      *dirp = 'h';
+      *dirp = EAD_HORIZONTAL;
    }
 
    // If the altframe wasn't adjacent and left/above, resizing it will have
@@ -2968,8 +2975,9 @@ frame_flatten(Frame* fr) {
 //Undo changes from a prior call to portRemoveFrame, also restoring lost vertical separators and 
 //statuslines, and changed portal positions for portals within "unflat_altfr".
 //Caller must ensure no other changes were made to the layout or portal sizes!
+// dir is one of the EAD_* constants
 private void
-restoreFrame(Portal* po, int dir, Frame* unflat_altfr) {
+restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr) {
    Frame* fr = po->frame;
 
    // Put "po"'s frame back where it was.
@@ -2988,11 +2996,11 @@ restoreFrame(Portal* po, int dir, Frame* unflat_altfr) {
 
    // Restore the lost room that was redistributed to the altframe.  Also
    // adjusts portal sizes to fit restored statuslines/separators, if needed.
-   if (dir == 'v') {
+   if (dir == EAD_VERTICAL) {
       frame_new_height(
          unflat_altfr, unflat_altfr->height - fr->height, unflat_altfr == fr->next, FALSE, FALSE
       );
-   } ei (dir == 'h') {
+   } ei (dir == EAD_HORIZONTAL) {
       frameNewWidth(
          unflat_altfr, unflat_altfr->width - fr->width, unflat_altfr == fr->next, FALSE
       );
@@ -4728,7 +4736,7 @@ shell_new_rows(void) {
 #if 0
    // Disabled: don't want making the screen smaller make a portal larger.
    if (p_ea)
-   portEqualizeHeight(curPor, FALSE, 'v');
+   portEqualizeHeight(curPor, FALSE, EAD_VERTICAL);
 #endif
 }
 
@@ -4758,7 +4766,7 @@ shell_new_columns(void) {
 #if 0
     // Disabled: don't want making the screen smaller make a portal larger.
    if (p_ea)
-   portEqualizeHeight(curPor, FALSE, 'h');
+   portEqualizeHeight(curPor, FALSE, EAD_HORIZONTAL);
 #endif
 }
 
@@ -8600,6 +8608,9 @@ private int
 parse_popup_option(Portal* po, Boole is_preview) {
    if (is_preview)
       return FAIL;
+   if (!p_cpp)
+      return OK;
+      
    CS p = p_cpp;
 
    if (po)
@@ -11384,11 +11395,11 @@ pum_drawText_withDecos(
 }
 
 private inline void
-pum_align_order(int *order) {
-    int is_default = cia_flags == 0;
-    order[0] = is_default ? CPT_ABBR : cia_flags / 100;
-    order[1] = is_default ? CPT_KIND : (cia_flags / 10) % 10;
-    order[2] = is_default ? CPT_MENU : cia_flags % 10;
+pum_align_order(int* order) {
+   int is_default = p_cia == 0;
+   order[0] = is_default ? CPT_ABBR : p_cia / 100;
+   order[1] = is_default ? CPT_KIND : (p_cia / 10) % 10;
+   order[2] = is_default ? CPT_MENU : p_cia % 10;
 }
 
 private inline CS

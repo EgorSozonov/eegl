@@ -576,7 +576,7 @@ private Boole needUpdateS = false; // c_diffupdate needs to be called
 #define DIFF_INLINE_SIMPLE   0x4000  // inline highlight with simple algorithm
 #define DIFF_INLINE_CHAR     0x8000  // inline highlight with character diff
 #define DIFF_INLINE_WORD    0x10000 // inline highlight with word diff
-#define DIFF_ANCHOR         0x20000   // use 'diffanchors' to anchor the diff
+#define DIFF_ANCHOR         0x20000   // use @diffanchors to anchor the diff
 #define ALL_WHITE_DIFF (DIFF_IWHITE | DIFF_IWHITEALL | DIFF_IWHITEEOL)
 #define ALL_INLINE (DIFF_INLINE_NONE | DIFF_INLINE_SIMPLE | DIFF_INLINE_CHAR | DIFF_INLINE_WORD)
 #define ALL_INLINE_DIFF (DIFF_INLINE_CHAR | DIFF_INLINE_WORD)
@@ -1423,7 +1423,7 @@ theend:
 //Note that if the internal diff failed for one of the books, the external diff will be used anyway.
 int
 diff_internal(void) {
-   return (diff_flags & DIFF_INTERNAL) != 0 && *p_dex == ZERO;
+   return (diff_flags & DIFF_INTERNAL) != 0 && !p_dex;
 }
 
 //Return TRUE if the internal diff failed for one of the diff books.
@@ -1544,8 +1544,8 @@ check_external_diff(DiffIo *diffio) {
          mch_remove(diffio->orig.externalFname);
       }
 
-      // When using 'diffexpr' break here.
-      if (*p_dex != ZERO)
+      // When using @diffexpr, break here.
+      if (p_dex)
          break;
 
       // If we checked if "-a" works already, break here.
@@ -1614,7 +1614,7 @@ diff_file(DiffIo* dio) {
    CS tmp_new = dio->new.externalFname;
    CS tmp_diff = dio->dio_diff.dout_fname;
 
-   if (*p_dex != ZERO) {
+   if (p_dex) {
       // Use 'diffexpr' to generate the diff file.
       eval_diff(tmp_orig, tmp_new, tmp_diff);
       return OK;
@@ -1623,7 +1623,7 @@ diff_file(DiffIo* dio) {
       if (dio->dio_internal)
          return diff_file_internal(dio);
 
-   len = STRLEN(tmp_orig) + STRLEN(tmp_new) + STRLEN(tmp_diff) + STRLEN(p_srr) + 27;
+   len = STRLEN(tmp_orig) + STRLEN(tmp_new) + STRLEN(tmp_diff) + (p_srr ? STRLEN(p_srr) : 0) + 27;
    cmd = alloc(len);
 
    // We don't want $DIFF_OPTIONS to get in the way.
@@ -1642,7 +1642,7 @@ diff_file(DiffIo* dio) {
        (diff_flags & DIFF_IBLANK) ? "-B " : "",
        (diff_flags & DIFF_ICASE) ? "-i " : "",
        tmp_orig, tmp_new);
-    append_redir(cmd, (int)len, p_srr, tmp_diff);
+    doAppendRedir(cmd, (int)len, p_srr, tmp_diff);
     block_autocmds();   // avoid ShellCmdPost stuff
     (void)call_shell(cmd, null, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
     unblock_autocmds();
@@ -1693,9 +1693,9 @@ c_diffpatch(Invocation* invo) {
       shorten_fnames(TRUE);
    }
 
-   if (*p_pex != ZERO) {
+   if (p_pex) {
       // Use 'patchexpr' to generate the new file.
-      eval_patch(tmp_orig, fullname != NULL ? fullname : invo->arg, tmp_new);
+      eval_patch(tmp_orig, fullname ? fullname : invo->arg, tmp_new);
    } else {
       // Build the patch command and execute it.  Ignore errors.  Switch to
       // cooked mode to allow the user to respond to prompts.
@@ -2713,21 +2713,22 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
    (void)getFoldsPortal(toPort, toPort->topLine, &toPort->topLine, NULL, TRUE, NULL);
 }
 
-//Parse the diff anchors. If "check_only" is set, will only make sure the syntax is correct.
 private int
 parse_diffanchors(
-   CS diffAnchors,
-   Boole check_only,
+   NULLABLE CS diffAnchors,
+   Boole check_only, //will only make sure the syntax is correct.
    Book* book,
    LineNr* anchors,
    OUT Unt* countAnchors
 ) {
+   if (!diffAnchors)
+      return OK;
    CS dia = diffAnchors;
 
    Book* origCurBook = curBook;
-   Portal *orig_curPor = curPor;
+   Portal* orig_curPor = curPor;
 
-   Portal *bookPort = NULL;
+   Portal* bookPort = NULL;
    if (check_only)
       bookPort = curPor;
    else {
@@ -2737,7 +2738,7 @@ parse_diffanchors(
          if (bookPort->book == book && bookPort->o.diff)
             break;
       } 
-      if (!bookPort && *dia != ZERO) {
+      if (!bookPort && dia) {
          //The book is hidden. Currently this is not supported due to the edge cases of needing
          //to decide if an address is portal-specific or not. We could add more checks in the 
          //future so we can detect whether an address relies on curPor to make this more fleixble.
@@ -2802,18 +2803,21 @@ diffanchors_changed(CS newVal, Boole buflocal) {
    return diffResult;
 }
 
-// This is called when 'diffopt' is changed.
+// This is called when @diffopt is changed.
 int
-diffopt_changed(void) {
-   int      diff_context_new = 6;
-   int      linematch_lines_new = 0;
-   Unt      diff_flags_new = 0;
-   long   diff_algorithm_new = 0;
-   long   diff_indent_heuristic = 0;
+diffopt_changed(CS newVal) {
+   int diff_context_new = 6;
+   int linematch_lines_new = 0;
+   Unt diff_flags_new = 0;
+   long diff_algorithm_new = 0;
+   long diff_indent_heuristic = 0;
+   if (!newVal)
+      goto finishedParsing;
+      
+   CS p = newVal;
    Tab* t;
-   CS p = p_dip;
    while (*p != ZERO) {
-      // Note: Keep this in sync with p_dip_values
+      // Note: Keep this in sync with option.c:p_dip_values
       if (STRNCMP(p, "filler", 6) == 0) {
          p += 6;
          diff_flags_new |= DIFF_FILLER;
@@ -2911,6 +2915,7 @@ diffopt_changed(void) {
       if (*p == ',')
           ++p;
    }
+finishedParsing: 
 
    diff_algorithm_new |= diff_indent_heuristic;
 
@@ -2935,7 +2940,7 @@ diffopt_changed(void) {
    // recompute the scroll binding with the new option value, may
    // remove or add filler lines
    check_scrollbind((LineNr)0, 0L);
-
+   p_dip = newVal;
    return OK;
 }
 
@@ -2961,15 +2966,15 @@ diffopt_closeoff(void) {
 //mode without waiting for global diff update later.
 void
 diff_update_line(LineNr lnum) {
-   DiffBlock   *dp;
-
-   if (!(diff_flags & ALL_INLINE_DIFF))
+   if ((diff_flags & ALL_INLINE_DIFF) == 0)
       // We only care if we are doing inline-diff where we cache the diff results
       return;
 
    Unt idx = bookIndex(curBook);
    if (idx == UNT)
       return;
+      
+   DiffBlock* dp;
    FOR_ALL_DIFFBLOCKS_IN_TAB(curtab, dp) {
       if (lnum <= dp->lnum[idx] + dp->count[idx])
           break;
@@ -2987,12 +2992,7 @@ private DifflineChange simple_diffline_change; // used for simple inline diff al
 // Parse a diffline struct and return the [start,end] byte offsets
 // Return TRUE if this change was added, no other book has it.
 int
-diff_change_parse(
-   DiffLine* diffline,
-   DifflineChange *change,
-   int *change_start,
-   int *change_end
-) {
+diff_change_parse(DiffLine* diffline, DifflineChange* change, int* change_start, int* change_end) {
    if (change->dc_start_lnum_off[diffline->bufidx] < diffline->lineoff)
       *change_start = 0;
    else
@@ -3003,15 +3003,15 @@ diff_change_parse(
       *change_end = change->dc_end[diffline->bufidx];
 
    if (change == &simple_diffline_change) {
-      // This is what we returned from simple inline diff. We always consider
-      // the range to be changed, rather than added for now.
+      //This is what we returned from simple inline diff. We always consider
+      //the range to be changed, rather than added for now.
       return FALSE;
    }
 
-   // Find out whether this is an addition. Note that for multi book diff,
-   // to tell whether lines are additions we check whether all the other diff
-   // lines are identical (in diff_check_with_linestatus). If so, we mark them
-   // as add. We don't do that for inline diff here for simplicity.
+   //Find out whether this is an addition. Note that for multi book diff,
+   //to tell whether lines are additions we check whether all the other diff
+   //lines are identical (in diff_check_with_linestatus). If so, we mark them
+   //as add. We don't do that for inline diff here for simplicity.
    for (int i = 0; i < DB_COUNT; i++) {
       if (i == diffline->bufidx)
          continue;
@@ -3025,7 +3025,7 @@ diff_change_parse(
 }
 
 //Find the difference within a changed line and return [startp,endp] byte
-//positions.  Performs a simple algorithm by finding a single range in the middle.
+//positions. Perform a simple algorithm by finding a single range in the middle.
 //
 //If diffopt has DIFF_INLINE_NONE set, then this will only calculate the return
 //value (added or changed), but startp/endp will not be calculated.
@@ -3042,19 +3042,20 @@ diff_find_change_simple(
 ){
    CS line_org;
    CS line_new;
-   int      i;
-   int      si_org, si_new;
-   int      ei_org, ei_new;
-   int      off;
-   int      added = TRUE;
-   Byte   *p1, *p2;
-   int      l;
+   int i;
+   int si_org, si_new;
+   int ei_org, ei_new;
+   int off;
+   int added = TRUE;
+   CS p1;
+   CS p2;
+   int l;
 
    if (diff_flags & DIFF_INLINE_NONE) {
-      // We only care about the return value, not the actual string comparisons.
+      //We only care about the return value, not the actual string comparisons.
       line_org = NULL;
    } else {
-      // Make a copy of the line, the next ml_get() will invalidate it.
+      //Make a copy of the line, the next ml_get() will invalidate it.
       line_org = copyStr(memGetLine(po->book, lnum, FALSE));
    }
 
@@ -3071,7 +3072,7 @@ diff_find_change_simple(
 
          line_new = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, FALSE);
 
-         // Search for start of difference
+         //Search for start of difference
          si_org = si_new = 0;
          while (line_org[si_org] != ZERO) {
             if (((diff_flags & DIFF_IWHITE)
@@ -3091,8 +3092,8 @@ diff_find_change_simple(
             }
          }
           
-         // Move back to first byte of character in both lines (may
-         // have "nn^" in line_org and "n^ in line_new).
+         //Move back to first byte of character in both lines (may
+         //have "nn^" in line_org and "n^ in line_new).
          si_org -= (*mb_head_off)(line_org, line_org + si_org);
          si_new -= (*mb_head_off)(line_new, line_new + si_new);
          if (*startp > si_org)
@@ -3151,8 +3152,8 @@ typedef struct {
 //These are done by heuristics and can be further tuned.
 private void
 diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int idx1) {
-   // Perform multiple passes so that newly merged blocks will now be long
-   // enough which may cause other previously unmerged gaps to be merged as well.
+   //Perform multiple passes so that newly merged blocks will now be long
+   //enough which may cause other previously unmerged gaps to be merged as well.
    int pass = 1;
    do {
       int has_unmerged_gaps = FALSE;
@@ -3188,8 +3189,7 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
                // Merge current block with the next one. Don't advance the
                // pointer so we try the same merged block against the next one.
                for (int i = 0; i < DB_COUNT; i++) {
-                  dp->count[i] = dp->df_next->lnum[i]
-                      + dp->df_next->count[i] - dp->lnum[i];
+                  dp->count[i] = dp->df_next->lnum[i] + dp->df_next->count[i] - dp->lnum[i];
                }
                DiffBlock *dp_next = dp->df_next;
                dp->df_next = dp_next->df_next;
@@ -3212,14 +3212,14 @@ diff_refine_inline_char_highlight(DiffBlock *dp_orig, ArrayList *linemap, int id
 //stored in dp instead of returned by the function.
 private void
 diff_find_change_inline_diff( DiffBlock   *dp) {
-   DiffIo   dio;
-   ArrayList   linemap[DB_COUNT];
-   ArrayList   file1_str;
-   ArrayList   file2_str;
-   int      file1_idx = -1;
+   ArrayList linemap[DB_COUNT];
+   ArrayList file1_str;
+   ArrayList file2_str;
+   int file1_idx = -1;
 
-   long   save_diff_algorithm = diff_algorithm;
+   long save_diff_algorithm = diff_algorithm;
 
+   DiffIo dio;
    CLEAR_FIELD(dio);
    ga_init2(&dio.dio_diff.dout_ga, sizeof(char *), 1000);
 
@@ -3283,7 +3283,7 @@ diff_find_change_inline_diff( DiffBlock   *dp) {
          int eol_linemap_len = -1;
          int eol_numlines = -1;
 
-         Byte *s;
+         CS s;
          for (s = curline; *s != ZERO;) {
             int new_in_keyword = FALSE;
             if (diff_flags & DIFF_INLINE_WORD) {
@@ -4479,13 +4479,13 @@ f_diff(Var* argvars, Var* returnVar) {
    list_to_diffin(orig_list, &dio.orig, diff_flags & DIFF_ICASE);
    list_to_diffin(new_list, &dio.new, diff_flags & DIFF_ICASE);
 
-   //If 'diffexpr' is set, then the internal diff is not used.  Set
-   //'diffexpr' to an empty string temporarily.
+   //If @diffexpr is set, then the internal diff is not used.  Set
+   //@diffexpr to an empty string temporarily.
    int restore_diffexpr = FALSE;
-   Byte cc = *p_dex;
-   if (*p_dex != ZERO) {
+   CS p_dexSaved = p_dex;
+   if (p_dex) {
       restore_diffexpr = TRUE;
-      *p_dex = ZERO;
+      p_dex = null;
    }
 
    //Compute the diff
@@ -4493,7 +4493,7 @@ f_diff(Var* argvars, Var* returnVar) {
 
    //restore @diffexpr
    if (restore_diffexpr)
-      *p_dex = cc;
+      p_dex = p_dexSaved;
 
    if (diff_status == FAIL)
       goto done;

@@ -49,7 +49,7 @@ CS FullName_save(CS fname, int force);
 int eeFexists(CS fname);
 int expand_wildcards_eval(CS *pattern, Unt flags, ExpandMatch *files);
 int expand_wildcards(int num_pat, CS *pat, Unt flags, ExpandMatch *files);
-int match_suffix(CS fname);
+Boole match_suffix(CS fname);
 int gen_expand_wildcards(int num_pat, CS *pat, Unt flags, ExpandMatch *matches);
 void addFile(ExpandMatch *matches, CS fName, Unt flags);
 int pathcmp(CS p, CS q, int maxlen);

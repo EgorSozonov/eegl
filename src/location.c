@@ -1501,7 +1501,7 @@ initWorker(
    }
 
    // Use the local value of 'errorformat' if it's set.
-   if (source.tag == SOURCE_BOOK && source.Book.c->o.errorFormat != ZERO)
+   if (source.tag == SOURCE_BOOK && source.Book.c->o.errorFormat)
       efm = source.Book.c->o.errorFormat;
    else
       efm = errorformat;
@@ -1577,7 +1577,7 @@ initEnd:
 // Initialize or create a new location list in a stack and update its "change" tick
 private int
 initAndUpdateTick(
-   Source source, OUT LocationStack* stack, CS errorFormat, Boole startNewList, CS title
+   Source source, OUT LocationStack* stack, NULLABLE CS errorFormat, Boole startNewList, CS title
 ) {
    int res = initWorker(source, stack, stack->currList, errorFormat, startNewList, title);
    if (res >= 0)
@@ -1591,8 +1591,8 @@ int
 llInitFromFile(
    OUT LocationStack* st,
    CS errorFName,
-   CS errorformat,
-   Boole       newlist,      // TRUE: start a new error list
+   NULLABLE CS errorformat,
+   Boole newlist,      // TRUE: start a new error list
    CS title
 ) {
    Source source = (Source){.tag = SOURCE_FILENAME, .FileName = {.c = errorFName}};
@@ -3719,9 +3719,11 @@ findLlBook(LocationStack* stack) {
 
 // Process the 'quickfixtextfunc' option value. Returns OK or FAIL.
 CS
-did_set_quickfixtextfunc(OptionChange* cha UNUSED) {
-   if (optSetCallback(OUT &locationTextFnS, p_qftf) == FAIL)
+setQuickfixtextfunc(OptionChange* cha) {
+   CS new = cha->newVal.string;
+   if (optSetCallback(OUT &locationTextFnS, new) == FAIL)
       return e_invalid_argument;
+   p_qftf = new; 
 
    return NULL;
 }
@@ -4079,11 +4081,12 @@ jumpToFirstEntry(LocationStack* stack, Unt idSave, Boole forceit) {
 // Return TRUE when using ":vimgrep" for ":grep".
 int
 grepIsActuallyInternal(CommIndex id) {
-   return (id == C_grep || id == C_grepadd) && STRCMP("internal", curBook->o.grepProg) == 0;
+   return (id == C_grep || id == C_grepadd) 
+      && curBook->o.grepProg && eq(S"internal", curBook->o.grepProg);
 }
 
 // Return the grep autocmd name.
-private Byte *
+private NULLABLE CS
 getGrepAutocommand(CommIndex id) {
    switch (id) {
    case C_grep:       return (CS)"grep";
@@ -4102,7 +4105,7 @@ buildErrorFileName(void) {
    FileStat   sb;
 
    CS name;
-   if (*p_mef == ZERO) {
+   if (!p_mef) {
       name = eeTempName('e', FALSE);
       if (!name)
          emsg(_(e_cant_get_temp_file_name));
@@ -4110,7 +4113,7 @@ buildErrorFileName(void) {
    }
 
    CS p;
-   for (p = p_mef; *p; ++p) {
+   for (p = p_mef; *p != ZERO; ++p) {
       if (p[0] == '#' && p[1] == '#')
          break;
    } 
@@ -4146,14 +4149,14 @@ buildErrorFileName(void) {
 private CS
 buildFullShellCommand(CS makecmd, CS fname) {
    Unt len = STRLEN(makecmd) + 1;
-   if (*p_sp != ZERO)
+   if (p_sp)
       len += (unsigned)STRLEN(p_sp) + (unsigned)STRLEN(fname) + 3;
    CS cmd = alloc_id(len, aid_ll_makecmd);
    SPRINTF(cmd, "%s", (char *)makecmd);
 
-   // If 'shellpipe' empty: don't redirect to 'errorfile'.
-   if (*p_sp != ZERO)
-      append_redir(cmd, len, p_sp, fname);
+   // If @shellpipe empty: don't redirect to 'errorfile'.
+   if (p_sp)
+      doAppendRedir(cmd, len, p_sp, fname);
 
    // Display the fully formed command.  Output a newline if there's something
    // else than the :make command that was typed (in which case the cursor is in column 0).
@@ -4318,7 +4321,7 @@ c_grep(Invocation* invo) {
    }
 
    // let the shell know if we are redirecting output or not
-   do_shell(comm, *p_sp != ZERO ? SHELL_DOOUT : 0);
+   do_shell(comm, p_sp ? SHELL_DOOUT : 0);
    do_shell(comm, SHELL_DOOUT);
 
    incrementLlBusyness();
@@ -4943,16 +4946,18 @@ cfile_get_auname(CommIndex id){
 void
 c_lFile(Invocation* invo) {
    Unt   idSave = 0;      // init for gcc
-   int      res;
 
    CS auName = cfile_get_auname(invo->id);
-   if (auName && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, NULL, false, curBook)) {
-      if (aborting())
-         return;
-   }
+   if (auName && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, NULL, false, curBook)
+       && aborting()
+   )
+      return;
 
    if (*invo->arg != ZERO)
       optChangeStringOptionDirect(S"errorfile", invo->arg, 0, 0);
+   if (!p_ef) {
+      return;
+   }
    
    LocationStack* stack = identifyStackByInvo(invo);
    if (stack == NULL) {
@@ -4965,7 +4970,7 @@ c_lFile(Invocation* invo) {
    // :mfile always creates a new location list and may jump to the first entry.
    // :maddfile adds to an existing location list. If there is no
    // location list then a new list is created.
-   res = llInitFromFile(
+   int res = llInitFromFile(
       stack, p_ef, curBook->o.errorFormat, (invo->id != C_laddfile), 
       copyCommandTitle(*invo->commline)
    );

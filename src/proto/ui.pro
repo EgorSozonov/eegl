@@ -106,7 +106,7 @@ int mch_report_winsize(int fd, int rows, int cols);
 void mch_set_shellsize(void);
 void mch_calc_cell_size(CellSize *cs_out);
 int mch_get_shellsize(void);
-int tabpanelopt_changed(void);
+int uiValidateTabpanelopt(CS new);
 int tabpanel_width(void);
 int tabpanel_leftcol(void);
 void draw_tabpanel(void);

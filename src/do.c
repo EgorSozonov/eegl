@@ -1111,7 +1111,7 @@ do_filter(
    //stderr output of external command. Clear the screen later.
    //If do_in is FALSE, this could be something like ":r !cat", which may
    //also mess up the screen, clear it later.
-   if (!do_out || STRCMP(p_srr, ">") == 0 || !do_in)
+   if (!do_out || (p_srr && STRCMP(p_srr, ">") == 0) || !do_in)
       redraw_later_clear();
 
    if (do_out) {
@@ -1348,7 +1348,7 @@ make_filter_cmd(
       len += (Ulong)STRLEN(inputFName) + 9;   // " { < " + " } "
    }
    if (outputFName)
-      len += (Ulong)STRLEN(outputFName) + (Ulong)STRLEN(p_srr) + 2; // "  "
+      len += (Ulong)STRLEN(outputFName) + (Ulong)(p_srr ? STRLEN(p_srr) : 0) + 2; // "  "
 
    CS stringBuild = alloc(len);
 
@@ -1364,22 +1364,19 @@ make_filter_cmd(
    }
     
    if (outputFName)
-      append_redir(stringBuild, (int)len, p_srr, outputFName);
+      doAppendRedir(stringBuild, (int)len, p_srr, outputFName);
 
    return stringBuild;
 }
 
 //Append output redirection for file "fname" to the end of string buffer "buf[buflen]"
-//Works with the 'shellredir' and 'shellpipe' options.
-//The caller should make sure that there is enough room:
+//Works with the @shellredir and @shellpipe options.
+//The caller must make sure that there is enough room:
 //  STRLEN(opt) + STRLEN(fname) + 3
 void
-append_redir(
-   CS buf,
-   int buflen,
-   CS opt,
-   CS fname)
-{
+doAppendRedir(CS buf, int buflen, NULLABLE CS opt, CS fname) {
+   if (!opt)
+      return;
    CS p;
 
    CS end = buf + STRLEN(buf);
@@ -1402,13 +1399,13 @@ append_redir(
 //not ^?   ^?
 void
 do_fixdel(Invocation* invo UNUSED) {
-    CS p = find_termcode((CS)"kb");
-    add_termcode((CS)"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, FALSE);
+    CS p = find_termcode(S"kb");
+    add_termcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, FALSE);
 }
 
 private void
 print_line_no_prefix(LineNr lnum, int list) {
-   Byte   numbuf[30];
+   Byte numbuf[30];
    eeSnprintf(numbuf, sizeof(numbuf), "%*ld ", number_width(curPor), (long)lnum);
    msgPutsDeco(numbuf, getDecoFlags(HLF_N));   // Highlight line nrs
    msg_prt_line(ml_get(lnum), list);
@@ -1521,7 +1518,7 @@ c_write(Invocation* invo) {
 }
 
 private int
-check_writable(Byte *fname) {
+check_writable(CS fname) {
    if (mch_nodetype(fname) == NODE_OTHER) {
       showErrFmtMsg(_(e_str_is_not_file_or_writable_device), fname);
       return FAIL;
@@ -1558,7 +1555,7 @@ check_overwrite(
             return FAIL;
          }
          if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
-            Byte   buff[DIALOG_MSG_SIZE];
+            Byte buff[DIALOG_MSG_SIZE];
             dialog_msg(buff, _("Overwrite existing file \"%s\"?"), fname);
             if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES)
                 return FAIL;
@@ -1571,17 +1568,16 @@ check_overwrite(
 
       // For ":w! filename" check that no swap file exists for "filename".
       if (other && !emsg_silent) {
-         Byte   *swapname;
 
          // We only try the first entry in 'directory', without checking if it's writable. 
          // If the "." directory is not writable, the write will probably fail anyway.
          // Use 'shortname' of the current book, since there is no book for the written file.
             
-         swapname = makeswapname(fname, fullFName, S"~/.local/state/");
+         CS swapname = makeswapname(fname, fullFName, S"~/.local/state/");
          int r = eeFexists(swapname);
          if (r) {
             if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
-               Byte   buff[DIALOG_MSG_SIZE];
+               Byte buff[DIALOG_MSG_SIZE];
                dialog_msg(buff, _("Swap file \"%s\" exists, overwrite anyway?"), swapname);
                if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES) {
                   eeglFree(swapname);
@@ -1609,7 +1605,7 @@ check_overwrite(
 //Return FAIL for failure, OK otherwise.
 int
 do_write(Invocation* invo) {
-   Byte   *fname = NULL;      // init to shut up gcc
+   CS fname = NULL;      // init to shut up gcc
    int      retval = FAIL;
    CS free_fname = NULL;
    Book   *altBook = NULL;
@@ -1753,8 +1749,8 @@ copy_option_part(
    int      maxlen,
    char   *sep_chars
 ){
-   int       len = 0;
-   Byte  *p = *option;
+   int len = 0;
+   CS p = *option;
 
    // skip '.' at start of option part, for 'suffixes'
    if (*p == '.') {
@@ -1879,7 +1875,7 @@ check_readonly(Boole* forceit, Book* book) {
                && check_file_readonly(book->fullFileName, 0777)))
    ) {
       if ((p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) && book->currFileName) {
-         Byte   buff[DIALOG_MSG_SIZE];
+         Byte buff[DIALOG_MSG_SIZE];
 
          if (!book->o.modifiable)
             dialog_msg(buff, _("'readonly' option is set for \"%s\".\nDo you wish to write anyway?"),
@@ -2452,7 +2448,7 @@ startEditingFile(
       // If autocommands change the cursor position or topline, we should
       // keep it.  Also when it moves within a line. But not when it moves to the first non-blank.
       if (!EQUAL_POS(curPor->cursor, orig_pos)) {
-         Byte *text = ml_get_curline();
+         CS text = ml_get_curline();
 
          if (curPor->cursor.lnum != orig_pos.lnum
               || curPor->cursor.col != (int)(skipwhite(text) - text)) {
@@ -2550,7 +2546,7 @@ theend:
 }
 
 private void
-delbuf_msg(Byte *name) {
+delbuf_msg(CS name) {
    showErrFmtMsg(_(e_autocommands_unexpectedly_deleted_new_buffer_str), name == NULL ? (CS)"" : name);
    eeglFree(name);
    auNewCurBookG.c = NULL;
@@ -2562,13 +2558,13 @@ private int append_indent = 0;       // autoindent for first line
 // ":insert" and ":append", also used by ":change"
 void
 c_append(Invocation* invo) {
-   Byte   *theline;
-   int      did_undo = FALSE;
-   LineNr   lnum = invo->line2;
-   int      indent = 0;
-   Byte   *p;
-   int      vcol;
-   int      empty = (curBook->mem.flags & ML_EMPTY);
+   CS theline;
+   int did_undo = FALSE;
+   LineNr lnum = invo->line2;
+   int indent = 0;
+   CS p;
+   int vcol;
+   int empty = (curBook->mem.flags & ML_EMPTY);
 
    // the ! flag toggles autoindent
    if (invo->forceit)
@@ -2725,9 +2721,8 @@ c_change(Invocation* invo) {
 // "z" family of commands
 void
 c_z(Invocation* invo) {
-   Byte   *x;
    long   bigness;
-   Byte   *kind;
+   CS kind;
    int      minus = 0;
    LineNr   start, end, curs, i;
    int      j;
@@ -2743,7 +2738,7 @@ c_z(Invocation* invo) {
    if (bigness < 1)
       bigness = 1;
 
-   x = invo->arg;
+   CS x = invo->arg;
    kind = x;
    if (*kind == '-' || *kind == '+' || *kind == '=' || *kind == '^' || *kind == '.')
       ++x;
@@ -3091,7 +3086,7 @@ c_substitute(Invocation* invo) {
          eeglFree(sub);
          return;
       } ei (i >= INT_MAX) {
-         Byte   buf[20];
+         Byte buf[20];
          eeSnprintf(buf, sizeof(buf), "%ld", i);
          showErrFmtMsg(_(e_val_too_large), buf);
          eeglFree(sub);
@@ -3169,9 +3164,10 @@ c_substitute(Invocation* invo) {
          ColNr   copycol;
          ColNr   matchcol;
          ColNr   prev_matchcol = MAXCOL;
-         Byte   *new_end, *new_start = NULL;
+         CS new_end;
+         CS new_start = null;
          unsigned   new_start_len = 0;
-         Byte   *p1;
+         CS p1;
          int      did_sub = FALSE;
          int      lastone;
          int      len, copy_len, needed_len;
@@ -3318,9 +3314,9 @@ c_substitute(Invocation* invo) {
 
                // Loop until 'y', 'n', 'q', CTRL-E or CTRL-Y typed.
                while (subflags.do_ask) {
-                  Byte *orig_line = NULL;
-                  int    len_change = 0;
-                  int      save_p_lz = p_lz;
+                  CS orig_line = NULL;
+                  int len_change = 0;
+                  int save_p_lz = p_lz;
                   int save_p_fen = curPor->o.foldEnable;
 
                   curPor->o.foldEnable = FALSE;
@@ -3337,7 +3333,7 @@ c_substitute(Invocation* invo) {
                      // Temporarily replace the line and change it back afterwards.
                      orig_line = copySubstr(ml_get(lnum), ml_get_len(lnum));
                      if (orig_line) {
-                        Byte *new_line = concat_str(new_start, sub_firstline + copycol);
+                        CS new_line = concat_str(new_start, sub_firstline + copycol);
 
                         if (new_line == NULL)
                            EE_CLEAR(orig_line);
@@ -3859,14 +3855,14 @@ do_sub_msg(int       count_only) {    // used 'n' flag for ":s"
 }
 
 // Get the previous substitute pattern.
-Byte *
+CS
 get_old_sub(void) {
    return prevSubstS;
 }
 
 // Set the previous substitute pattern.  "val" must be allocated.
 void
-set_old_sub(Byte *val) {
+set_old_sub(CS val) {
    eeglFree(prevSubstS);
    prevSubstS = val;
 }
@@ -3882,7 +3878,7 @@ free_old_sub(void) {
 //{{{global
 
 private void
-global_exe_one(Byte *cmd, LineNr lnum) {
+global_exe_one(CS cmd, LineNr lnum) {
    curPor->cursor.lnum = lnum;
    curPor->cursor.col = 0;
    if (*cmd == ZERO || *cmd == '\n')
@@ -3906,18 +3902,18 @@ global_exe_one(Byte *cmd, LineNr lnum) {
 // This is required because after deleting lines we do not know where to search for the next match.
 void
 c_global(Invocation* invo) {
-   LineNr   lnum;      // line number according to old situation
-   int      ndone = 0;
-   int      type;      // first char of cmd: 'v' or 'g'
-   Byte   *cmd;      // command argument
+   LineNr lnum;      // line number according to old situation
+   int ndone = 0;
+   int type;      // first char of cmd: 'v' or 'g'
+   CS cmd;      // command argument
 
    Byte   delim;      // delimiter, normally '/'
-   Byte   *pat;
-   Unt   patlen;
-   Byte   *used_pat;
+   CS pat;
+   Unt patlen;
+   CS used_pat;
    RegMultilineMatch   regmatch;
-   int      match;
-   int      which_pat;
+   int match;
+   int which_pat;
 
    // When nesting the command works on one line.  This allows for
    // ":g/found/v/notfound/command".
@@ -4016,7 +4012,7 @@ c_global(Invocation* invo) {
 
 // Execute "cmd" on lines marked with ml_setmarked().
 void
-global_exe(Byte *cmd) {
+global_exe(CS cmd) {
    LineNr old_lcount;   // mem.lineCount before the command
    Book    *old_buf = curBook;   // remember what buffer we started in
    LineNr lnum;      // line number according to old situation
@@ -4325,7 +4321,7 @@ c_oldfiles(Invocation* invo UNUSED) {
          nr = prompt_for_number(FALSE);
       msg_starthere();
       if (nr > 0) {
-         Byte *p = list_find_str(get_EeglVar_list(VV_OLDFILES), (long)nr);
+         CS p = list_find_str(get_EeglVar_list(VV_OLDFILES), (long)nr);
 
          if (p) {
             p = expand_env_save(p);
@@ -4365,7 +4361,7 @@ c_listDo(Invocation* invo) {
       }
    }
 
-   Byte   *save_ei = NULL;
+   CS save_ei = NULL;
 
    if (invo->id != C_windo && invo->id != C_tabdo) {
       // Don't do syntax HL autocommands. Skipping the syntax file is a great speed improvement.
@@ -4536,8 +4532,8 @@ c_listDo(Invocation* invo) {
 // ":compiler[!] {name}"
 void
 c_compiler(Invocation* invo) {
-   Byte   *old_cur_comp = NULL;
-   Byte   *p;
+   CS old_cur_comp = NULL;
+   CS p;
 
    if (*invo->arg == ZERO) {
       // List all compiler scripts.
@@ -4701,9 +4697,9 @@ check_changed(Book *book, int flags) {
 // Ask the user what to do when abandoning a changed buffer. Must check 'write' option first!
 void
 dialog_changed(Book   *book, int      checkall) {  // may abandon all changed buffers
-   Byte   buff[DIALOG_MSG_SIZE];
-   int      ret;
-   Book   *buf2;
+   Byte buff[DIALOG_MSG_SIZE];
+   int ret;
+   Book* buf2;
    Invocation invo;
 
    dialog_msg(buff, _("Save changes to \"%s\"?"), book->currFileName);
@@ -4939,10 +4935,10 @@ private int   quitmore = 0;
 private int   ex_pressedreturn = FALSE;
 
 private CS doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
-private void   append_command(Byte *cmd);
+private void   append_command(CS cmd);
 
 private void   do_exbuffer(Invocation* invo);
-private Byte   *getargcmd(Byte **);
+private CS getargcmd(Byte **);
 private int   getargopt(Invocation* invo);
 
 private LineNr default_address(Invocation* invo);
@@ -4952,9 +4948,9 @@ private void   get_flags(Invocation* invo);
 private void   ex_script_ni(Invocation* invo);
 private CS invalid_range(Invocation* invo);
 private void   correct_range(Invocation* invo);
-private Arr(Byte) replaceMakeProgramName(Invocation* invo, OUT Byte *p, Byte **commline);
-private Byte* repl_commline(
-      Invocation* invo, Byte *src, Unt srclen, Byte *repl, Byte **commline
+private CS replaceMakeProgramName(Invocation* invo, OUT CS p, Byte **commline);
+private CS repl_commline(
+      Invocation* invo, CS src, Unt srclen, CS repl, Byte **commline
 );
 private void   prepare_preview_window(void);
 private void   back_to_current_window(Portal *curPor_save);
@@ -4985,7 +4981,7 @@ private void   close_redir(void);
 #undef DO_DECLARE_COMMANDS
 #include "indices/commands.h"
 
-private Byte dollar_command[2] = {'$', 0};
+private Byte dollar_command[2] = {'$', ZERO};
 
 
 // Struct for storing a line inside a while/for loop
@@ -5007,7 +5003,7 @@ typedef struct {
 } LoopCookie;
 
 private CS get_loop_line(Unt c, void *cookie, int indent, GetlineAlgo options);
-private int   store_loop_line(ArrayList *gap, Byte *line);
+private int   store_loop_line(ArrayList *gap, CS line);
 private void   free_commlines(ArrayList *gap);
 
 // Struct to save a few things while debugging.  Used in doCommand() only.
@@ -5063,7 +5059,7 @@ restore_DebugStuff(DebugStuff* dsp) {
 // fnum is a buffer number. 0 == current buffer, 1-or-more must be a valid buffer ID.
 // fullFName is a full path to where a buffer lives on-disk or would live on-disk.
 private Boole
-isSameFile(int fnum, Byte *fullFName) {
+isSameFile(int fnum, CS fullFName) {
    if (fnum != 0) {
       if (fnum == curBook->fiNum)
          return true;
@@ -5090,7 +5086,7 @@ isSameFile(int fnum, Byte *fullFName) {
 // Print the executed command for when 'verbose' is set.
 // When "lnum" is 0 only print the command.
 private void
-msg_verbose_cmd(LineNr lnum, Byte *cmd) {
+msg_verbose_cmd(LineNr lnum, CS cmd) {
    ++no_wait_return;
    verbose_enter_scroll();
 
@@ -5107,14 +5103,14 @@ msg_verbose_cmd(LineNr lnum, Byte *cmd) {
 
 // Execute a simple command line.  Used for translated commands like "*".
 int
-executeCommLine(Byte *cmd) {
+executeCommLine(CS cmd) {
    return doCommand(cmd, NULL, NULL, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
 }
 
 // Execute the "+cmd" argument of "edit +cmd fname" and the like.
 // This allows for using a range without ":" in Vim9 script.
 private int
-do_cmd_argument(Arr(Byte) cmd) {
+do_cmd_argument(CS cmd) {
    return doCommand(cmd, NULL, NULL, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
 }
 
@@ -5179,16 +5175,15 @@ handle_did_throw(void) {
 //Obtain a line when inside a ":while" or ":for" loop.
 private CS
 get_loop_line(Unt c, void* cookie, int indent, GetlineAlgo options) {
-   LoopCookie   *cp = (LoopCookie *)cookie;
-   LoopComm      *wp;
-   Byte      *line;
+   LoopCookie* cp = (LoopCookie *)cookie;
+   CS line;
 
    if (cp->current_line + 1 >= cp->lines_gap->len) {
       if (cp->repeating)
           return NULL;   // trying to read past ":endwhile"/":endfor"
 
       // First time inside the ":while"/":for": get line normally.
-      if (cp->lc_getline == NULL)
+      if (!cp->lc_getline)
          line = getCommline(c, 0L, indent, 0);
       else
          line = (cp->lc_getline)(c, cp->cookie, indent, options);
@@ -5200,14 +5195,14 @@ get_loop_line(Unt c, void* cookie, int indent, GetlineAlgo options) {
 
    KeyTyped = FALSE;
    ++cp->current_line;
-   wp = (LoopComm *)(cp->lines_gap->c) + cp->current_line;
+   LoopComm* wp = (LoopComm *)(cp->lines_gap->c) + cp->current_line;
    SOURCING_LNUM = wp->lnum;
    return copyStr(wp->line);
 }
 
 // Store a line in "gap" so that a ":while" loop can execute it again.
 private int
-store_loop_line(ArrayList *gap, Byte *line) {
+store_loop_line(ArrayList *gap, CS line) {
    if (ga_grow(gap, 1) == FAIL)
       return FAIL;
    ((LoopComm *)(gap->c))[gap->len].line = copyStr(line);
@@ -5385,7 +5380,7 @@ doCommand(
    void* cookie,      // argument for fgetline()
    Unt flags
 ){
-   Byte   *commlineCopy = NULL;   // copy of cmd line
+   CS commlineCopy = NULL;   // copy of cmd line
    int      used_getline = FALSE;   // used "fgetline" to obtain command
    static int   recursive = 0;      // recursive depth
    int      msg_didout_before_start = 0;
@@ -5396,7 +5391,7 @@ doCommand(
    ArrayList   lines_ga;      // keep lines for ":while"/":for"
    int      current_line = 0;   // active line in lines_ga
    int      current_line_before = 0;
-   Byte   *fname = NULL;      // function or script name
+   CS fname = NULL;      // function or script name
    LineNr   *breakpoint = NULL;   // ptr to breakpoint field in cookie
    int      *dbg_tick = NULL;   // ptr to dbg_tick field in cookie
    DebugStuff debug_saved;   // saved things for debug mode
@@ -5487,7 +5482,7 @@ doCommand(
    //- when inside an ":if", ":while" or ":for"
    //- for multiple commands on one line, separated with '|'
    //- when repeating until there are no more lines (for ":source")
-   Arr(Byte) nextCommline = commline;
+   CS nextCommline = commline;
    do {
       isGetlineAFn = getline_equal(fgetline, cookie, get_func_line);
 
@@ -5943,7 +5938,7 @@ doCommand(
 //Note: "fgetline" can be NULL.
 //
 //This function may be called recursively!
-private Byte *
+private CS
 doOneCommand(
    OUT CS* commline,
    int flags,
@@ -5952,17 +5947,17 @@ doOneCommand(
    void* cookie      // argument for fgetline()
 ){
 
-   Byte   *p;
+   CS p;
    LineNr   lnum;
    long   n;
    CS   errorMsg = null;
-   Byte   *after_modifier = NULL;
+   CS after_modifier = NULL;
    Invocation   invo;         // command arguments
    CommandModifier  saveCommModifier;
    int      save_reg_executing = reg_executing;
    int      save_pending_end_reg_executing = pending_end_reg_executing;
    int      ni;         // set when Not Implemented
-   Byte   *cmd;
+   CS cmd;
    int      may_have_range;
    int      did_set_expr_line = FALSE;
    int      sourcing = flags & DOCMD_VERBOSE;
@@ -6636,12 +6631,11 @@ ex_range_without_command(Invocation* invo) {
 private int
 checkforcmd_opt(
    Byte   **pp,      // start of command
-   char   *cmd,      // name of command
-   int      len,      // required length
-   int      noparen)
-{
-   int      i;
-
+   CS cmd,      // name of command
+   int len,      // required length
+   int noparen
+) {
+   int i;
    for (i = 0; cmd[i] != ZERO; ++i) {
       if (((CS)cmd)[i] != (*pp)[i])
          break;
@@ -6659,7 +6653,7 @@ checkforcmd_opt(
 int
 checkforcmd(
    Byte** pp,      // start of command
-   Arr(char) cmd,      // name of command
+   CS cmd,      // name of command
    int      len
 ) {      // required length
    return checkforcmd_opt(pp, cmd, len, FALSE);
@@ -6670,8 +6664,8 @@ checkforcmd(
 int
 checkforcmd_noparen(
     Byte   **pp,      // start of command
-    char   *cmd,      // name of command
-    int      len      // required length
+    CS cmd,      // name of command
+    int len      // required length
 ){
    return checkforcmd_opt(pp, cmd, len, TRUE);
 }
@@ -6696,7 +6690,7 @@ parse_command_modifiers(
    int skip_only
 ){
    CS orig_cmd = invo->comm;
-   Byte* cmd_start = NULL;
+   CS cmd_start = NULL;
    int use_plus_cmd = FALSE;
    int has_visual_range = FALSE;
 
@@ -6743,55 +6737,55 @@ parse_command_modifiers(
       switch (*p) {
       // When adding an entry, also modify modeInfoTable[].
       case 'a':   
-         if (!checkforcmd_noparen(&invo->comm, "aboveleft", 3))
+         if (!checkforcmd_noparen(&invo->comm, S"aboveleft", 3))
            break;
         cmod->cmod_split |= WSP_ABOVE;
         continue;
 
       case 'b':
-         if (checkforcmd_noparen(&invo->comm, "belowright", 3)) {
+         if (checkforcmd_noparen(&invo->comm, S"belowright", 3)) {
             cmod->cmod_split |= WSP_BELOW;
             continue;
          }
-         if (checkforcmd_opt(&invo->comm, "browse", 3, TRUE)) {
+         if (checkforcmd_opt(&invo->comm, S"browse", 3, TRUE)) {
             cmod->cmod_flags |= CMOD_BROWSE;
             continue;
          }
-         if (!checkforcmd_noparen(&invo->comm, "botright", 2))
+         if (!checkforcmd_noparen(&invo->comm, S"botright", 2))
             break;
          cmod->cmod_split |= WSP_BOT;
          continue;
 
       case 'c':   
-        if (!checkforcmd_opt(&invo->comm, "confirm", 4, TRUE))
+        if (!checkforcmd_opt(&invo->comm, S"confirm", 4, TRUE))
            break;
         cmod->cmod_flags |= CMOD_CONFIRM;
         continue;
 
       case 'k':   
-        if (checkforcmd_noparen(&invo->comm, "keepmarks", 3)) {
+        if (checkforcmd_noparen(&invo->comm, S"keepmarks", 3)) {
            cmod->cmod_flags |= CMOD_KEEPMARKS;
            continue;
         }
-        if (checkforcmd_noparen(&invo->comm, "keepalt", 5)) {
+        if (checkforcmd_noparen(&invo->comm, S"keepalt", 5)) {
            cmod->cmod_flags |= CMOD_KEEPALT;
            continue;
         }
-        if (checkforcmd_noparen(&invo->comm, "keeppatterns", 5)) {
+        if (checkforcmd_noparen(&invo->comm, S"keeppatterns", 5)) {
            cmod->cmod_flags |= CMOD_KEEPPATTERNS;
            continue;
         }
-        if (!checkforcmd_noparen(&invo->comm, "keepjumps", 5))
+        if (!checkforcmd_noparen(&invo->comm, S"keepjumps", 5))
            break;
         cmod->cmod_flags |= CMOD_KEEPJUMPS;
         continue;
 
       case 'f': {   // only accept ":filter {pat} cmd"
-         Byte  *reg_pat;
-         Byte  *nulp = NULL;
+         CS reg_pat;
+         CS nulp = NULL;
          int       c = 0;
 
-         if (!checkforcmd_noparen(&p, "filter", 4)
+         if (!checkforcmd_noparen(&p, S"filter", 4)
             || *p == ZERO
             || endsComm(p)
          )
@@ -6823,12 +6817,12 @@ parse_command_modifiers(
       }
 
       case 'h':   
-         if (checkforcmd_noparen(&invo->comm, "horizontal", 3)) {
+         if (checkforcmd_noparen(&invo->comm, S"horizontal", 3)) {
             cmod->cmod_split |= WSP_HOR;
             continue;
          }
          // ":hide" and ":hide | cmd" are not modifiers
-         if (p != invo->comm || !checkforcmd_noparen(&p, "hide", 3)
+         if (p != invo->comm || !checkforcmd_noparen(&p, S"hide", 3)
                      || *p == ZERO || endsComm(p))
             break;
          invo->comm = p;
@@ -6836,34 +6830,34 @@ parse_command_modifiers(
          continue;
 
       case 'l':   
-         if (checkforcmd_noparen(&invo->comm, "lockmarks", 3)) {
+         if (checkforcmd_noparen(&invo->comm, S"lockmarks", 3)) {
             cmod->cmod_flags |= CMOD_LOCKMARKS;
             continue;
          }
 
-        if (!checkforcmd_noparen(&invo->comm, "leftabove", 5))
+        if (!checkforcmd_noparen(&invo->comm, S"leftabove", 5))
            break;
         cmod->cmod_split |= WSP_ABOVE;
         continue;
 
       case 'n':   
-        if (checkforcmd_noparen(&invo->comm, "noautocmd", 3)) {
+        if (checkforcmd_noparen(&invo->comm, S"noautocmd", 3)) {
            cmod->cmod_flags |= CMOD_NOAUTOCMD;
            continue;
         }
-        if (!checkforcmd_noparen(&invo->comm, "noswapfile", 3))
+        if (!checkforcmd_noparen(&invo->comm, S"noswapfile", 3))
            break;
         cmod->cmod_flags |= CMOD_NOSWAPFILE;
         continue;
 
       case 'r':   
-        if (!checkforcmd_noparen(&invo->comm, "rightbelow", 6))
+        if (!checkforcmd_noparen(&invo->comm, S"rightbelow", 6))
            break;
         cmod->cmod_split |= WSP_BELOW;
         continue;
 
       case 's':   
-        if (!checkforcmd_noparen(&invo->comm, "silent", 3))
+        if (!checkforcmd_noparen(&invo->comm, S"silent", 3))
             break;
         cmod->cmod_flags |= CMOD_SILENT;
         if (*invo->comm == '!' && !SPACE_OR_TAB(invo->comm[-1])) {
@@ -6874,7 +6868,7 @@ parse_command_modifiers(
         continue;
 
       case 't':   
-         if (checkforcmd_noparen(&p, "tab", 3)) {
+         if (checkforcmd_noparen(&p, S"tab", 3)) {
             if (!skip_only) {
                long tabnr = doGetCommandAddress(invo, &invo->comm,
                         ADDR_TABS, invo->skip,
@@ -6892,23 +6886,23 @@ parse_command_modifiers(
             invo->comm = p;
             continue;
          }
-         if (!checkforcmd_noparen(&invo->comm, "topleft", 2))
+         if (!checkforcmd_noparen(&invo->comm, S"topleft", 2))
             break;
          cmod->cmod_split |= WSP_TOP;
          continue;
 
       case 'u':   
-         if (!checkforcmd_noparen(&invo->comm, "unsilent", 3))
+         if (!checkforcmd_noparen(&invo->comm, S"unsilent", 3))
             break;
          cmod->cmod_flags |= CMOD_UNSILENT;
          continue;
 
       case 'v':   
-         if (checkforcmd_noparen(&invo->comm, "vertical", 4)) {
+         if (checkforcmd_noparen(&invo->comm, S"vertical", 4)) {
             cmod->cmod_split |= WSP_VERT;
             continue;
          }
-         if (!checkforcmd_noparen(&p, "verbose", 4))
+         if (!checkforcmd_noparen(&p, S"verbose", 4))
             break;
          if (eeIsDigit(*invo->comm)) {
             // zero means not set, one is verbose == 0, etc.
@@ -6952,9 +6946,9 @@ parse_command_modifiers(
    return OK;
 }
 
-//Apply the command modifiers.  Saves current state in "commModifierG", call undoCommModifier() later.
+//Apply the command modifiers. Save current state into commModifierG, call undoCommModifier() later
 void
-applyCommModifiers(CommandModifier *cmod) {
+applyCommModifiers(CommandModifier* cmod) {
    if (cmod->cmod_verbose > 0) {
       if (cmod->cmod_verbose_save == 0)
           cmod->cmod_verbose_save = p_verbose + 1;
@@ -6976,9 +6970,9 @@ applyCommModifiers(CommandModifier *cmod) {
    }
 
    if ((cmod->cmod_flags & CMOD_NOAUTOCMD) && cmod->cmod_save_ei == NULL) {
-      // Set 'eventignore' to "all".
+      // Set @eventignore to "all".
       // First save the existing option value for restoring it later.
-      cmod->cmod_save_ei = copyStr(p_ei);
+      cmod->cmod_save_ei = p_ei ? copyStr(p_ei) : null;
       optChangeStringOptionDirect(S"eventignore", S"all", 0, SID_NONE);
    }
 }
@@ -7166,10 +7160,10 @@ theend:
 //Append "cmd" to the error message in IObuff.
 //Take care of limiting the length and handling 0xa0, which would be invisible otherwise.
 private void
-append_command(Byte *cmd) {
+append_command(CS cmd) {
    Unt  len = STRLEN(IObuff);
-   Byte  *s = cmd;
-   Byte  *d;
+   CS s = cmd;
+   CS d;
 
    if (len > IOSIZE - 100) {
       // Not enough space, truncate and put in "...".
@@ -7215,7 +7209,7 @@ skip_option_env_lead(CS start) {
 //      but :sre[wind] is another command, as are :scr[iptnames],
 //      :scs[cope], :sim[alt], :sig[ns] and :sil[ent].
 private int
-oneLetterCommand(Byte *p, OUT CommIndex *idx) {
+oneLetterCommand(CS p, OUT CommIndex *idx) {
    if (p[0] == 'k'  && (p[1] != 'e' || (p[1] == 'e' && p[2] != 'e'))) {
       *idx = C_k;
       return TRUE;
@@ -7249,7 +7243,7 @@ number_method(CS cmd) {
 //"let".  Sets invo->id to the command while returning "invo->comm".
 //
 //Return NULL for an ambiguous user command.
-Arr(Byte)
+CS
 findCommand(
    Invocation* invo,
    int   *full UNUSED,
@@ -7260,7 +7254,7 @@ findCommand(
 
    CS p = invo->comm;
    if (lookup) {
-      Byte *pskip = skip_option_env_lead(invo->comm);
+      CS pskip = skip_option_env_lead(invo->comm);
 
       if (firstOccurrence((CS)"{('[\"@&$", *p) != NULL
             || ((p = to_name_const_end(pskip)) > invo->comm && *p != ZERO)
@@ -7347,8 +7341,6 @@ findCommand(
          // If "[...]" has a line break "p" still points at the left bracket and it
          // can't be an assignment.
          if (*invo->comm == '[') {
-            Byte       *eq;
-
             p = to_name_const_end(invo->comm);
             if (p == invo->comm && *p == '[') {
                int count = 0;
@@ -7356,7 +7348,7 @@ findCommand(
 
                p = skip_var_list(invo->comm, &count, &semicolon, TRUE);
             }
-            eq = p;
+            CS eq = p;
             if (eq) {
                 eq = skipwhite(eq);
                if (firstOccurrence((CS)"+-*/%.", *eq) != NULL) {
@@ -7380,7 +7372,7 @@ findCommand(
 
       // "g:", "s:" and "l:" are always assumed to be a variable, thus start
       // an expression. A global/substitute/list command needs to use a longer name.
-      if (firstOccurrence((CS)"gsl", *p) != NULL && p[1] == ':') {
+      if (firstOccurrence(S"gsl", *p) != NULL && p[1] == ':') {
           invo->id = C_eval;
           return invo->comm;
       }
@@ -7409,8 +7401,7 @@ findCommand(
       if (p == invo->comm && firstOccurrence((CS)"@*!=><&~#}", *p) != NULL)
          ++p;
       len = (int)(p - invo->comm);
-      // The "d" command can directly be followed by 'l' or 'p' flag, when
-      // not in Vim9 script.
+      // The "d" command can directly be followed by 'l' or 'p' flag
       if (*invo->comm == 'd' && (p[-1] == 'l' || p[-1] == 'p')) {
           // Check for ":dl", ":dell", etc. to ":deletel": that's
           // :delete with the 'l' flag.  Same for 'p'.
@@ -7537,7 +7528,7 @@ modifier_len(CS cmd) {
 //Return 2 if there is an exact match.
 //Return 3 if there is an ambiguous match.
 int
-cmd_exists(Byte *name) {
+cmd_exists(CS name) {
    int full = FALSE;
 
    // Check command modifiers.
@@ -7600,7 +7591,7 @@ theend:
 }
 
 CommIndex
-commandGetInd(Byte *cmd, int len) {
+commandGetInd(CS cmd, int len) {
    CommIndex idx;
    if (!oneLetterCommand(cmd, OUT &idx)) {
       for (idx = (CommIndex)0; (int)idx < (int)COUNT_COMMANDS; idx = (CommIndex)((int)idx + 1)) {
@@ -7749,13 +7740,12 @@ doGetCommandAddress(
    int      c;
    int      i;
    long   n;
-   Byte   *cmd;
    Pos   pos;
    Pos   *fp;
    LineNr   lnum;
    Book   *book;
 
-   cmd = skipwhite(*ptr);
+   CS cmd = skipwhite(*ptr);
    lnum = MAXLNUM;
    do {
       switch (*cmd) {
@@ -8233,9 +8223,9 @@ correct_range(Invocation* invo) {
 
 //For a ":vimgrep" or ":vimgrepadd" command return a pointer past the
 //pattern.  Otherwise return invo->arg.
-private Byte *
+private CS
 skip_grep_pat(Invocation* invo) {
-   Byte   *p = invo->arg;
+   CS p = invo->arg;
 
    if (*p != ZERO && (invo->id == C_vimgrep
          || invo->id == C_vimgrepadd
@@ -8248,21 +8238,18 @@ skip_grep_pat(Invocation* invo) {
    return p;
 }
 
-//For the ":make" and ":grep" commands insert the 'makeprg'/'grepprg' option
-//in the command line, so that things like % get expanded.
-private Arr(Byte)
-replaceMakeProgramName(Invocation* invo, OUT Arr(Byte) p, OUT Arr(Byte)* commline) {
-   Arr(Byte) programName;
-   Byte* pos;
-   Byte* ptr;
-   int      len;
-   int      i;
+//For the ":make" and ":grep" commands insert the @makeprog/@grepprog option
+//into the command line, so that things like % get expanded.
+private CS
+replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline) {
+   CS programName;
+   CS pos;
+   CS ptr;
+   int len;
+   int i;
 
    // Don't do it when ":vimgrep" is used for ":grep".
-   if ((invo->id == C_make
-           || invo->id == C_grep
-           || invo->id == C_grepadd
-       )
+   if ((invo->id == C_make || invo->id == C_grep || invo->id == C_grepadd)
           && !grepIsActuallyInternal(invo->id)
    ) {
       if (invo->id == C_grep || invo->id == C_grepadd) {
@@ -8270,13 +8257,16 @@ replaceMakeProgramName(Invocation* invo, OUT Arr(Byte) p, OUT Arr(Byte)* commlin
       } else {
          programName = curBook->o.makeProg;
       }
+      if (!programName)
+         return p;
+         
       p = skipwhite(p);
 
-      Arr(Byte) newCommline;
-      if ((pos = (CS)strstr((char *)programName, "$*")) != NULL) {
+      CS newCommline;
+      if ((pos = (CS)STRSTR(programName, "$*")) != NULL) {
          // replace $* by given arguments
          i = 1;
-         while ((pos = (CS)strstr((char *)pos + 2, "$*")) != NULL)
+         while ((pos = (CS)STRSTR(pos + 2, "$*")) != NULL)
             ++i;
          len = (int)STRLEN(p);
          newCommline = alloc(STRLEN(programName) + (Unt)i * (len - 2) + 1);
@@ -8311,25 +8301,19 @@ replaceMakeProgramName(Invocation* invo, OUT Arr(Byte) p, OUT Arr(Byte)* commlin
 //Expand file name in a command argument. When an error is detected, "errorMsg" is set to a 
 //non-NULL pointer. Return FAIL for failure, OK otherwise.
 int
-expand_filename(
-   Invocation* invo,
-   Byte** commline,
-   OUT CS* errorMsg
-){
-   int      has_wildcards;   // need to expand wildcards
-   Byte   *repl;
-   Unt   srclen;
-   Byte   *p;
-   int      n;
-   int      escaped;
+expand_filename(Invocation* invo, Byte** commline, OUT CS* errorMsg){
+   CS repl;
+   Unt srclen;
+   int n;
+   int escaped;
 
    // Skip a regexp pattern for ":vimgrep[add] pat file..."
-   p = skip_grep_pat(invo);
+   CS p = skip_grep_pat(invo);
 
    //Decide to expand wildcards *before* replacing '%', '#', etc.  If
    //the file name contains a wildcard it should not cause expanding.
    //(it will be expanded anyway if there is a wildcard before replacing).
-   has_wildcards = mch_has_wildcard(p);
+   int has_wildcards = mch_has_wildcard(p);// need to expand wildcards
    while (*p != ZERO) {
       // Skip over `=expr`, wildcards in it are not expanded.
       if (p[0] == '`' && p[1] == '=') {
@@ -8358,16 +8342,15 @@ expand_filename(
          continue;
       }
 
-      // Wildcards won't be expanded below, the replacement is taken
-      // literally.  But do expand "~/file", "~user/file" and "$HOME/file".
+      //Wildcards won't be expanded below, the replacement is taken
+      //literally. But do expand "~/file", "~user/file" and "$HOME/file".
       if (firstOccurrence(repl, '$') != NULL || firstOccurrence(repl, '~') != NULL) {
          CS l = repl;
          repl = expand_env_save(repl);
          eeglFree(l);
       }
 
-      // Need to escape white space et al. with a backslash.
-      // Don't do this for:
+      // Need to escape white space et al. with a backslash. Don't do this for:
       // - replacement that already has been escaped: "##"
       // - shell commands (may have to use quotes instead).
       if (!invo->usefilter
@@ -8378,7 +8361,7 @@ expand_filename(
          && invo->id != C_make
          && invo->id != C_terminal
       ) {
-         Byte   *l;
+         CS l;
 # define ESCAPE_CHARS escape_chars
 
          for (l = repl; *l; ++l) {
@@ -8393,9 +8376,9 @@ expand_filename(
 
       // For a shell command a '!' must be escaped.
       if ((invo->usefilter || invo->id == C_bang || invo->id == C_terminal)
-                && eeStrpbrk(repl, (CS)"!") != NULL
+                && eeStrpbrk(repl, S"!") != NULL
       ) {
-         CS l = copyStr_escaped(repl, (CS)"!");
+         CS l = copyStr_escaped(repl, S"!");
          eeglFree(repl);
          repl = l;
       }
@@ -8460,23 +8443,19 @@ expand_filename(
 //Replace part of the command line, keeping invo->comm, invo->arg and invo->nextComm correct.
 //"src" points to the part that is to be replaced, of length "srclen". "repl" is the replacement 
 //string. Return a pointer to the character after the replaced string, or null for failure.
-private Byte *
+private CS
 repl_commline(
-   Invocation  *invo,
-   Byte   *src,
-   Unt   srclen,
-   Byte   *repl,
-   Byte   **commline)
-{
-   Unt   repllen;
-   Unt   taillen;
-   Unt   i;
-
+   Invocation* invo,
+   CS src,
+   Unt srclen,
+   CS repl,
+   Byte** commline
+) {
    //The new command line is build in newCommline[]. First allocate it.
    //Careful: a "+cmd" argument may have been ZERO terminated.
-   repllen = STRLEN(repl);
-   taillen = STRLEN(src + srclen);
-   i = (src - *commline) + repllen + taillen + 3;
+   Unt repllen = STRLEN(repl);
+   Unt taillen = STRLEN(src + srclen);
+   Unt i = (src - *commline) + repllen + taillen + 3;
    if (invo->nextComm)
       i += STRLEN(invo->nextComm);   // add space for next command
    CS newCommline = alloc(i);
@@ -8554,10 +8533,10 @@ separateNextCommand(Invocation* invo, int keep_backslash) {
 }
 
 // get + command from ex argument
-private Byte *
+private CS
 getargcmd(Byte **argp) {
-   Byte *arg = *argp;
-   Byte *command = NULL;
+   CS arg = *argp;
+   CS command = NULL;
 
    if (*arg == '+') {      // +[command]
       ++arg;
@@ -8577,11 +8556,8 @@ getargcmd(Byte **argp) {
 }
 
 //Find end of "+command" argument.  Skip over "\ " and "\\".
-Byte *
-skip_cmd_arg(
-   Byte *p,
-   int      rembs   // TRUE to halve the number of backslashes
-){
+CS
+skip_cmd_arg(CS p, int rembs) {   // TRUE to halve the number of backslashes
    while (*p && !isSpace(*p)) {
       if (*p == '\\' && p[1] != ZERO) {
          if (rembs)
@@ -8595,7 +8571,7 @@ skip_cmd_arg(
 }
 
 int
-get_bad_opt(Byte *p, Invocation* invo) {
+get_bad_opt(CS p, Invocation* invo) {
    if (caseInsensitiveCompare(p, "keep") == 0)
       invo->bad_char = BAD_KEEP;
    ei (caseInsensitiveCompare(p, "drop") == 0)
@@ -8608,25 +8584,25 @@ get_bad_opt(Byte *p, Invocation* invo) {
 }
 
 // Function given to expandGeneric() to obtain the list of bad= names.
-private Byte *
+private CS
 get_bad_name(Expand *xp UNUSED, int idx) {
    // Note: Keep this in sync with getargopt.
-   static char *(p_bad_values[]) = {
-      "?",
-      "keep",
-      "drop",
+   static CS p_bad_values[] = {
+      S"?",
+      S"keep",
+      S"drop",
    };
 
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(p_bad_values))
       return NULL;
 
-   return (Byte*)p_bad_values[idx];
+   return p_bad_values[idx];
 }
 
 // Get "++opt=arg" argument. Return FAIL or OK.
 private int
 getargopt(Invocation* invo) {
-   Byte   *arg = invo->arg + 2;
+   CS arg = invo->arg + 2;
    int      *pp = NULL;
    int      bad_char_idx;
    // Note: Keep this in sync with get_argoname.
@@ -8638,7 +8614,7 @@ getargopt(Invocation* invo) {
           invo->force_bin = FORCE_NOBIN;
       } else
          invo->force_bin = FORCE_BIN;
-      if (!checkforcmd(&arg, "binary", 3))
+      if (!checkforcmd(&arg, S"binary", 3))
          return FAIL;
       invo->arg = skipwhite(arg);
       return OK;
@@ -8673,21 +8649,21 @@ getargopt(Invocation* invo) {
 }
 
 // Function given to expandGeneric() to obtain the list of ++opt names.
-private Byte *
-get_argoname(Expand *xp UNUSED, int idx) {
+private CS
+get_argoname(Expand* xp UNUSED, int idx) {
    // Note: Keep this in sync with getargopt.
-   static char *(p_opt_values[]) = {
+   static CS p_opt_values[] = {SMAP((CS),
       "encoding=",
       "binary",
       "nobinary",
       "bad=",
-      "edit",
-   };
+      "edit"
+   )};
 
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(p_opt_values))
       return NULL;
 
-   return (Byte*)p_opt_values[idx];
+   return p_opt_values[idx];
 }
 
 // Command-line expansion for ++opt=name.
@@ -8849,7 +8825,7 @@ endsComm(CS c) {
 
 //Return the next command, after the first '|' or '\n'. NULL if not found.
 CS
-find_nextcmd(Byte *p) {
+find_nextcmd(CS p) {
    while (*p != '|' && *p != '\n') {
       if (*p == ZERO)
          return NULL;
@@ -9101,52 +9077,52 @@ getTabRelatedArg(Invocation* invo) {
    int unaccept_arg0 = (invo->id == C_tabmove) ? 0 : 1;
 
    if (invo->arg && *invo->arg != ZERO) {
-   Byte *p = invo->arg;
-   Byte *p_save;
-   int    relative = 0; // argument +N/-N means: go to N places to the
-              // right/left relative to the current position.
+      CS p = invo->arg;
+      CS p_save;
+      int    relative = 0; // argument +N/-N means: go to N places to the
+                 // right/left relative to the current position.
 
-   if (*p == '-') {
-       relative = -1;
-       p++;
-   } ei (*p == '+') {
-       relative = 1;
-       p++;
-   }
+      if (*p == '-') {
+          relative = -1;
+          p++;
+      } ei (*p == '+') {
+          relative = 1;
+          p++;
+      }
 
-   p_save = p;
-   tabId = parseLong(&p);
+      p_save = p;
+      tabId = parseLong(&p);
 
-   if (relative == 0) {
-       if (STRCMP(p, "$") == 0)
-      tabId = LAST_TAB_NR;
-       ei (STRCMP(p, "#") == 0)
-      if (isTabValid(lastUsedTabG))
-          tabId = indexOfTab(lastUsedTabG);
-      else {
-         invo->errmsg = ex_errmsg(e_invalid_value_for_argument_str, invo->arg);
-         tabId = 0;
-         goto theend;
+      if (relative == 0) {
+          if (STRCMP(p, "$") == 0)
+         tabId = LAST_TAB_NR;
+          ei (STRCMP(p, "#") == 0)
+         if (isTabValid(lastUsedTabG))
+             tabId = indexOfTab(lastUsedTabG);
+         else {
+            invo->errmsg = ex_errmsg(e_invalid_value_for_argument_str, invo->arg);
+            tabId = 0;
+            goto theend;
+         }
+         ei (p == p_save || *p_save == '-' || *p != ZERO || tabId > LAST_TAB_NR) {
+            // No numbers as argument.
+            invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
+            goto theend;
+         }
+      } else {
+         if (*p_save == ZERO)
+            tabId = 1;
+         ei (p == p_save || *p_save == '-' || *p != ZERO || tabId == 0) {
+            // No numbers as argument.
+            invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
+            goto theend;
+         }
+         tabId = tabId * relative + indexOfTab(curtab);
+         if (!unaccept_arg0 && relative == -1)
+            --tabId;
       }
-      ei (p == p_save || *p_save == '-' || *p != ZERO || tabId > LAST_TAB_NR) {
-         // No numbers as argument.
-         invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
-         goto theend;
-      }
-   } else {
-      if (*p_save == ZERO)
-         tabId = 1;
-      ei (p == p_save || *p_save == '-' || *p != ZERO || tabId == 0) {
-         // No numbers as argument.
-         invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
-         goto theend;
-      }
-      tabId = tabId * relative + indexOfTab(curtab);
-      if (!unaccept_arg0 && relative == -1)
-         --tabId;
-   }
-   if (tabId < unaccept_arg0 || tabId > LAST_TAB_NR)
-       invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
+      if (tabId < unaccept_arg0 || tabId > LAST_TAB_NR)
+          invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
     }
    ei (invo->addr_count > 0) {
       if (unaccept_arg0 && invo->line2 == 0) {
@@ -9155,7 +9131,7 @@ getTabRelatedArg(Invocation* invo) {
       } else {
          tabId = invo->line2;
          if (!unaccept_arg0) {
-            Byte *cmdp = invo->comm;
+            CS cmdp = invo->comm;
 
             while (--cmdp > *invo->commline
                && (SPACE_OR_TAB(*cmdp) || EE_ISDIGIT(*cmdp)))
@@ -9503,9 +9479,9 @@ expand_findfunc(CS pat, OUT ExpandMatch* matches) {
 //Use 'findfunc' to find file 'findarg'. The 'count' argument is used to find the n'th matching file
 private CS
 findFnFindFile(CS findarg, int findarg_len, int count) {
-   List   *fname_list;
-   Byte   *ret_fname = NULL;
-   int      fname_count;
+   List* fname_list;
+   CS ret_fname = NULL;
+   int fname_count;
 
    Byte cc = findarg[findarg_len];
    findarg[findarg_len] = ZERO;
@@ -9686,8 +9662,8 @@ c_tabnext(Invocation* invo) {
    case C_tabprevious:
    case C_tabNext:
       if (invo->arg && *invo->arg != ZERO) {
-         Byte *p = invo->arg;
-         Byte *p_save = p;
+         CS p = invo->arg;
+         CS p_save = p;
 
          tabId = parseLong(&p);
          if (p == p_save || *p_save == '-' || *p != ZERO || tabId == 0) {
@@ -9849,7 +9825,7 @@ c_find(Invocation* invo) {
 void
 c_open(Invocation* invo) {
    RegMatch   regmatch;
-   Byte   *p;
+   CS p;
 
    curPor->cursor.lnum = invo->line2;
    beginline(BL_SOL | BL_FIX);
@@ -9860,9 +9836,8 @@ c_open(Invocation* invo) {
       *p = ZERO;
       regmatch.regprog = compileRegexp(invo->arg, RE_MAGIC);
       if (regmatch.regprog) {
-         // make a copy of the line, when searching for a mark it might be
-         // flushed
-         Byte *line = copyStr(ml_get_curline());
+         //make a copy of the line, when searching for a mark it might be flushed
+         CS line = copyStr(ml_get_curline());
 
          regmatch.rm_ic = p_ic;
          if (eeRegexec(&regmatch, line, (ColNr)0))
@@ -9884,7 +9859,7 @@ c_open(Invocation* invo) {
 // ":edit", ":badd", ":balt", ":visual".
 void
 c_edit(Invocation* invo) {
-   Arr(Byte) fullFName = invo->id == C_enew ? NULL : invo->arg;
+   CS fullFName = invo->id == C_enew ? NULL : invo->arg;
 
    // Exclude commands which keep the portal's current book
    if ( invo->id != C_badd
@@ -9897,7 +9872,7 @@ c_edit(Invocation* invo) {
    if (invo->id == C_edit && STRCHR(invo->arg, ' ') != NULL) { //:e a.txt b.txt
       ArrayList names = splitBySpace(invo->arg);
       for (int i = 0; i < names.len; i++) {
-         Arr(Byte) name = ((Arr(Arr(Byte)))names.c)[i];
+         CS name = ((Arr(CS))names.c)[i];
          Invocation oneNameArg = *invo;
          oneNameArg.arg = name;
          do_exedit(&oneNameArg, NULL);
@@ -10078,7 +10053,7 @@ c_read(Invocation* invo) {
    }
 }
 
-private Byte   *prev_dir = NULL;
+private CS prev_dir = NULL;
 
 #if defined(EXITFREE) || defined(PROTO)
 void
@@ -10089,7 +10064,7 @@ free_cd_dir(void) {
 #endif
 
 // Get the previous directory for the given chdir scope.
-private Byte *
+private CS
 get_prevdir(CdScopeKind scope) {
    if (scope == CDSCOPE_WINDOW)
       return curPor->prevdir;
@@ -10108,7 +10083,7 @@ post_chdir(CdScopeKind scope) {
       EE_CLEAR(curtab->localdir);
    EE_CLEAR(curPor->localDir);
    if (scope != CDSCOPE_GLOBAL) {
-      Byte   *pdir = get_prevdir(scope);
+      CS pdir = get_prevdir(scope);
 
       // If still in the global directory, need to remember current
       // directory as the global directory.
@@ -10133,7 +10108,7 @@ post_chdir(CdScopeKind scope) {
 
 // Trigger DirChangedPre for "acmd_fname" with directory "new_dir".
 void
-trigger_DirChangedPre(Byte *acmd_fname, Byte *new_dir) {
+trigger_DirChangedPre(CS acmd_fname, CS new_dir) {
    Bag       *v_event;
    SaveVEvent  save_v_event;
 
@@ -10152,9 +10127,9 @@ trigger_DirChangedPre(Byte *acmd_fname, Byte *new_dir) {
 //Return TRUE if the directory is successfully changed.
 int
 changedir_func(CS new_dir, CdScopeKind scope){
-   Byte   *pdir = NULL;
+   CS pdir = NULL;
    int      dir_differs;
-   Byte   *acmd_fname = NULL;
+   CS acmd_fname = NULL;
    Byte   **pp;
    Byte   *tofree;
 
@@ -10333,7 +10308,7 @@ do_sleep(long msec, int hide_cursor) {
 void
 c_wincmd(Invocation* invo) {
    int      xchar = ZERO;
-   Byte   *p;
+   CS p;
 
    if (*invo->arg == 'g' || *invo->arg == Ctrl_G) {
       // CTRL-W g and CTRL-W CTRL-G  have an extra command character
@@ -10364,8 +10339,8 @@ c_wincmd(Invocation* invo) {
 void
 c_portPos(Invocation* invo) {
    int      x, y;
-   Byte   *arg = invo->arg;
-   Byte   *p;
+   CS arg = invo->arg;
+   CS p;
 
    if (*arg == ZERO) {
        emsg(_(e_obtaining_window_position_not_implemented_for_this_platform));
@@ -10582,7 +10557,7 @@ c_later(Invocation* invo) {
    long   count = 0;
    int      sec = FALSE;
    int      file = FALSE;
-   Byte   *p = invo->arg;
+   CS p = invo->arg;
 
    if (*p == ZERO)
       count = 1;
@@ -10606,9 +10581,9 @@ c_later(Invocation* invo) {
 // ":redir": start/stop redirection.
 void
 c_redir(Invocation* invo) {
-   char   *mode;
-   CS  fname;
-   Byte   *arg = invo->arg;
+   CS mode;
+   CS fname;
+   CS arg = invo->arg;
 
    if (redir_execute) {
       emsg(_(e_cannot_use_redir_inside_execute));
@@ -10622,9 +10597,9 @@ c_redir(Invocation* invo) {
          ++arg;
          if (*arg == '>') {
             ++arg;
-            mode = "a";
+            mode = S"a";
          } else
-            mode = "w";
+            mode = S"w";
          arg = skipwhite(arg);
 
          close_redir();
@@ -10634,7 +10609,7 @@ c_redir(Invocation* invo) {
          if (!fname)
             return;
 
-         redir_fd = open_exfile(fname, invo->forceit, mode);
+         redir_fd = doOpenCommandsFile(fname, invo->forceit, mode);
          eeglFree(fname);
       } ei (*arg == '@') {
           // redirect to a register a-z (resp. A-Z for appending)
@@ -10792,11 +10767,11 @@ eeMkdir_emsg(CS name, int prot UNUSED) {
 
 //Open a file for writing for a command, with some checks. Return file descriptor, NULL on failure
 FILE *
-open_exfile(
-    Byte   *fname,
-    int      forceit,
-    char   *mode)       // "w" for create new file or "a" for append
-{
+doOpenCommandsFile(
+    CS fname,
+    int forceit,
+    CS mode       // "w" for create new file or "a" for append
+){
    FILE   *fd;
 
    // with Unix it is possible to open a directory
@@ -10804,12 +10779,12 @@ open_exfile(
       showErrFmtMsg(_(e_str_is_directory), fname);
       return NULL;
    }
-   if (!forceit && *mode != 'a' && eeFexists(fname)) {
+   if (!forceit && mode[0] != 'a' && eeFexists(fname)) {
       showErrFmtMsg(_(e_str_exists_add_bang_to_override), fname);
       return NULL;
    }
 
-   if ((fd = fopen((char *)fname, mode)) == NULL)
+   if ((fd = FOPEN(fname, mode)) == NULL)
       showErrFmtMsg(_(e_cannot_open_str_for_writing_2), fname);
 
    return fd;
@@ -11000,7 +10975,7 @@ c_stopinsert(Invocation* invo UNUSED) {
 
 // Execute normal mode command "cmd". "remap" can be REMAP_NONE or REMAP_YES.
 void
-exec_normal_cmd(Byte *cmd, int remap, int silent) {
+exec_normal_cmd(CS cmd, int remap, int silent) {
    // Stuff the argument into the typeahead buffer.
    insertIntoTypebuf(cmd, remap, 0, TRUE, silent);
    exec_normal(FALSE, FALSE, FALSE);
@@ -11105,7 +11080,7 @@ c_findpat(Invocation* invo) {
 }
 
 private void
-tagCmd(Invocation* invo, Byte *name) {
+tagCmd(Invocation* invo, CS name) {
    int      cmd;
 
    switch (name[1]) {
@@ -11240,7 +11215,7 @@ enum {
 // If found return one of the SPEC_ values and set "*usedlen" to the length of
 // the variable.  Otherwise return -1 and "*usedlen" is unchanged.
 int
-find_commline_var(Byte *src, Unt *usedlen) {
+find_commline_var(CS src, Unt *usedlen) {
    // must be sorted by the 'value' field because it is used by bsearch()!
    static Kv spec_str_tab[] = {
       KEYVALUE_ENTRY(SPEC_SID, "SID>"),       // script ID: <SNR>123_
@@ -11318,15 +11293,15 @@ evalVars(
    OUT LineNr* lnump,      // line number for :e command, or NULL
    OUT CS* errorMsg,   // pointer to error message
    CS src,      // pointer into commandline
-   Byte* srcstart,   // beginning of valid memory for src
+   CS srcstart,   // beginning of valid memory for src
    Unt* usedlen,   // characters after src that are used
    int* escaped,   // return value has escaped white space (can be NULL)
    int empty_is_error   // empty result is considered an error
 ){
    int      i;
-   Byte   *s;
-   Byte   *result;
-   Byte   *resultbuf = NULL;
+   CS s;
+   CS result;
+   CS resultbuf = NULL;
    Unt   resultlen;
    Book   *book;
    int      valid = VALID_HEAD + VALID_PATH;    // assume valid result
@@ -11853,8 +11828,10 @@ expand_env_save_opt(CS src, Boole one) {
 Unt
 doExpandEnv(
    OUT Text dst, // where to put the result
-   CS src  // input string e.g. "$HOME/eegl.hlp"
+   NULLABLE CS src  // input string e.g. "$HOME/eegl.hlp"
 ){
+   if (!src)
+      return 0;
    return doExpandEnvVarsWithEscaped(OUT dst, src, false, false, NULL);
 }
 
@@ -12666,19 +12643,19 @@ u_compute_hash(CS hash) {
 //Return NULL when there is no place to write or no file to read.
 private CS
 u_get_undo_file_name(CS buf_ffname, int reading) {
-   Byte   *dirp;
    Byte   dir_name[IOSIZE + 1];
-   Byte   *munged_name = NULL;
-   Byte   *undo_file_name = NULL;
-   int      dir_len;
-   Byte   *p;
-   Unt   plen;
-   FileStat   st;
-   CS ffname = buf_ffname;
-   Unt   ffnamelen;
-
-   if (!ffname)
+   if (!buf_ffname)
       return NULL;
+      
+   CS munged_name = NULL;
+   CS undo_file_name = NULL;
+   int dir_len;
+   CS p;
+   Unt plen;
+   FileStat st;
+   CS ffname = buf_ffname;
+   if (!p_udir)
+      goto finishedParsing;
 
    Byte fname_buf[MAXPATHL];
    // Expand symlink in the file name, so that we put the undo file with the
@@ -12686,10 +12663,11 @@ u_get_undo_file_name(CS buf_ffname, int reading) {
    if (resolve_symlink(ffname, fname_buf) == OK)
       ffname = fname_buf;
 
-   ffnamelen = STRLEN(ffname);
-   // Loop over 'undodir'.  When reading find the first file that exists.
-   // When not reading use the first directory that exists or ".".
-   dirp = p_udir;
+   Unt ffnamelen = STRLEN(ffname);
+   
+   //Loop over @undodir.  When reading find the first file that exists.
+   //When not reading use the first directory that exists or ".".
+   CS dirp = p_udir;
    while (*dirp != ZERO) {
       dir_len = copy_option_part(&dirp, OUT dir_name, IOSIZE, ",");
       if (dir_len == 1 && dir_name[0] == '.') {
@@ -12724,7 +12702,7 @@ u_get_undo_file_name(CS buf_ffname, int reading) {
          break;
       EE_CLEAR(undo_file_name);
     }
-
+finishedParsing:
     eeglFree(munged_name);
     return undo_file_name;
 }

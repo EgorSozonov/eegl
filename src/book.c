@@ -1199,7 +1199,7 @@ clear_chartabsize_arg(OUT CharTableSize* cts) {
 // Like chartabsize(), but also check for line breaks on the screen and text properties that insert
 int
 lbr_chartabsize(CharTableSize* cts) {
-   if (!curPor->o.lineBreak && !p_sbr && !curPor->o.breakIndent && !cts->cts_has_prop_with_text) {
+   if (!p_sbr && !curPor->o.breakIndent && !cts->cts_has_prop_with_text) {
       if (curPor->o.wrap)
          return win_nolbr_chartabsize(cts, NULL);
       RET_PORT_BOOK_CHARSIZE(curPor, curBook, cts->cts_ptr, cts->cts_vcol)
@@ -1241,8 +1241,8 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
    cts->cts_cur_text_width = 0;
    cts->cts_first_char = 0;
 
-   // No 'linebreak', 'showbreak', 'breakindent' and text properties that insert text: finish quickly
-   if (!po->o.lineBreak && !po->o.breakIndent && !p_sbr && !cts->cts_has_prop_with_text) {
+   // No @showbreak, @breakindent and text properties that insert text: finish quickly
+   if (!po->o.breakIndent && !p_sbr && !cts->cts_has_prop_with_text) {
       if (po->o.wrap)
          return win_nolbr_chartabsize(cts, headp);
       RET_PORT_BOOK_CHARSIZE(po, po->book, s, vcol)
@@ -1250,7 +1250,7 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
 
    int has_lcs_eol = po->o.list && listCharsG.eol != ZERO;
 
-   //First get the normal size, without 'linebreak' or text properties
+   //First get the normal size, without text properties
    int size = win_chartabsize(po, s, vcol);
    if (*s == ZERO) {
       // 1 cell for EOL list char (if present), as opposed to the two cell ^@
@@ -1416,16 +1416,6 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
       *headp = head;
 
    Boole need_lbr = false;
-   // If 'linebreak' set check at a blank before a non-blank if the line needs a break here.
-   if (po->o.lineBreak && po->o.wrap && po->width != 0
-       && EE_ISBREAK((int)s[0]) && !EE_ISBREAK((int)s[1])
-   ){
-      CS t = cts->cts_line;
-      while (EE_ISBREAK((Unt)t[0]))
-         t++;
-      // 'linebreak' is only needed when not in leading whitespace.
-      need_lbr = s >= t;
-   }
    if (need_lbr) {
       // Count all characters from first non-blank after a blank up to next non-blank after a blank.
       int numberextra = normalPortalColumnOffset(po);
@@ -1536,7 +1526,7 @@ getvcol(
    
    Unt c;
    if ((!po->o.list || listCharsG.tab1 != ZERO)
-       && !po->o.lineBreak && !p_sbr && !po->o.breakIndent
+       && !p_sbr && !po->o.breakIndent
        && !cts.cts_has_prop_with_text
    ) {
       for (;;) {
@@ -4507,12 +4497,12 @@ private int      *stl_separator_locations = NULL;
 // If maxwidth is not zero, the string will be filled at any middle marker
 // or truncated if too long, fillchar is used for all whitespace.
 int
-renderStatusLine(
+bookRenderStatusLine(
    Portal* po,
    CS out,      // string book to write into != NameBuff
    Unt outlen,      // length of out[]
    CS fmt,
-   CS oname,      // option name corresponding to "fmt"
+   Byte oname,      // one of STATLINE_* constants
    int opt_scope,   // scope for "oname"
    int fillchar,
    int maxwidth,
@@ -4987,7 +4977,7 @@ renderStatusLine(
          break;
 
       case STL_SHOWCMD:
-         if (p_sc && STRCMP(oname, p_sloc) == 0)
+         if (p_sloc == oname)
             str = showcmd_buf;
          break;
 
@@ -5347,8 +5337,14 @@ renderStatusLine(
    //might loop redrawing.  Avoid that by making the corresponding option empty.
    //TODO: find out why using called_emsg_before makes tests fail, does it matter?
    //if (called_emsg > called_emsg_before)
-   if (anyEmsgG > anyEmsgSaved)
-      optChangeStringOptionDirect(oname, Em, opt_scope, SID_ERROR);
+   if (anyEmsgG > anyEmsgSaved) {
+      CS optionName = oname == STATLINE_TABPANEL 
+         ? S"tabpanel"
+         : (oname == STATLINE_STATUSLINE)
+            ? S"statusline"
+            : S"rulerformat";
+      optChangeStringOptionDirect(optionName, S"", opt_scope, SID_ERROR);
+   } 
 
    return width;
 }
@@ -6308,7 +6304,7 @@ bookWrite(
    }
 
    // If 'backupskip' is not empty, don't make a backup for some files.
-   Boole dobackup = !(*p_bsk != ZERO && match_file_list(p_bsk, sfname, fullFName));
+   Boole dobackup = !(p_bsk && match_file_list(p_bsk, sfname, fullFName));
 
    // Save the value of gotInterruptG and reset it.  We don't want a previous
    // interruption cancel writing, only hitting CTRL-C while writing should abort it.
@@ -6400,17 +6396,13 @@ bookWrite(
       }
 
       // make sure we have a valid backup extension to use
-      if (*p_bex == ZERO)
-         backup_ext = S".bak";
-      else
-         backup_ext = p_bex;
+      backup_ext = p_bex ? p_bex : S".bak";
 
       if (backup_copy && (fd = open((char *)fname, O_RDONLY | O_EXTRA, 0)) >= 0) {
          int bfd;
          CS po;
          int some_error = FALSE;
          FileStat stNew;
-         CS dirp;
          CS rootname;
          CS p;
          mode_t umask_save;
@@ -6431,7 +6423,10 @@ bookWrite(
          //
          // For these reasons, the existing writable file must be truncated
          // and reused. Creation of a backup COPY will be attempted.
-         dirp = p_bdir;
+         if (!p_bdir)
+            goto nobackup;
+            
+         CS dirp = p_bdir;
          while (*dirp) {
             stNew.st_ino = 0;
             stNew.st_dev = 0;
@@ -6441,12 +6436,13 @@ bookWrite(
             (void)copy_option_part(&dirp, copybuf, WRITEBUFSIZE, ",");
 
             p = copybuf + STRLEN(copybuf);
-            if (after_pathsep(copybuf, p) && p[-1] == p[-2])
-               // Ends with '//', use full path
-               if ((p = make_percent_swname(copybuf, p, fname)) != NULL) {
-                  backup = fiAppendFileExtension(p, backup_ext, FALSE);
-                  eeglFree(p);
-               }
+            if (after_pathsep(copybuf, p) && p[-1] == p[-2]
+                  // Ends with '//', use full path
+                  && (p = make_percent_swname(copybuf, p, fname)) != NULL
+            ) {
+               backup = fiAppendFileExtension(p, backup_ext, FALSE);
+               eeglFree(p);
+            }
             rootname = get_file_in_dir(fname, copybuf);
             if (rootname == NULL) {
                some_error = TRUE;       // out of memory
@@ -6464,17 +6460,17 @@ bookWrite(
 
             // Check if backup file already exists.
             if (stat((char *)backup, &stNew) >= 0) {
-               // Check if backup file is same as original file. May happen when fiAppendFileExtension() gave 
-               // the same file back. E.g. silly link, or file name-length reached. If we 
-               // don't check here, we either ruin the file when copying or erase it after 
-               // writing. jw.
+               //Check if backup file is same as original file. May happen when 
+               //fiAppendFileExtension() gave the same file back. E.g. silly link, or file 
+               //name-length reached. If we don't check here, we either ruin the file when copying 
+               //or erase it after writing. jw.
                if (stNew.st_dev == stOld.st_dev && stNew.st_ino == stOld.st_ino) {
                   EE_CLEAR(backup);   // no backup file to delete
                   goto endOfName;
                }
 
-               // If we are not going to keep the backup file, don't delete an existing one, 
-               // try to use another name. Change one character, just before the extension.
+               //If we are not going to keep the backup file, don't delete an existing one, 
+               //try to use another name. Change one character, just before the extension.
                if (!p_bk) {
                   po = backup + STRLEN(backup) - 1 - STRLEN(backup_ext);
                   if (po < backup)   // empty file name ???
@@ -6492,21 +6488,21 @@ endOfName:
 
             // Try to create the backup file
             if (backup) {
-               // remove old backup, if present
+               //remove old backup, if present
                mch_remove(backup);
-               // Open with O_EXCL to avoid the file being created while
-               // we were sleeping (symlink hacker attack?). Reset umask
-               // if possible to avoid mch_setperm() below.
+               //Open with O_EXCL to avoid the file being created while
+               //we were sleeping (symlink hacker attack?). Reset umask
+               //if possible to avoid mch_setperm() below.
                umask_save = umask(0);
                bfd = open((char *)backup, O_WRONLY|O_CREAT|O_EXTRA|O_EXCL|O_NOFOLLOW, perm & 0777);
                (void)umask(umask_save);
                if (bfd < 0)
                   EE_CLEAR(backup);
                else {
-                  // Set file protection same as original file, but strip s-bit. Only needed 
-                  // if umask() wasn't used above. Try to set the group of the backup same as the
-                  // original file. If this fails, set the protection bits for the group same as 
-                  // the protection bits for others.
+                  //Set file protection same as original file, but strip s-bit. Only needed 
+                  //if umask() wasn't used above. Try to set the group of the backup same as the
+                  //original file. If this fails, set the protection bits for the group same as 
+                  //the protection bits for others.
                   if (stNew.st_gid != stOld.st_gid && fchown(bfd, (uid_t)-1, stOld.st_gid) != 0)
                       mch_setperm(backup, (perm & 0707) | ((perm & 07) << 3));
 #if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
@@ -6542,6 +6538,7 @@ endOfName:
                }
             }
          }
+         
       nobackup:
          close(fd);      // ignore errors for closing read file
          eeglFree(copybuf);
@@ -6562,6 +6559,9 @@ endOfName:
 
          // Form the backup file name - change path/fo.o.h to
          // path/fo.o.h.bak Try all directories in 'backupdir', first one that works is used.
+         if (!p_bdir)
+            goto finishedParsing;
+            
          CS dirp = p_bdir;
          while (*dirp) {
             // Isolate one directory name and make the backup file name.
@@ -6612,6 +6612,7 @@ endOfName:
                EE_CLEAR(backup);   // don't do the rename below
             }
          }
+      finishedParsing: 
          if (backup == NULL && !forceit) {
             errmsg = (CS)_(e_cant_make_backup_file_add_bang_to_write_anyway);
             goto fail;

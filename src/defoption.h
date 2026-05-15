@@ -124,7 +124,6 @@ OPTION("backupskip",  p_bsk, CS,  "/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*", P_ONECOMMA|
    null, null)
 OPTION("balloondelay", p_bdlay, long, 600, 0, null, null)
 OPTION("balloonevalterm", p_bevalterm, Boole, true, P_NO_MKRC, &did_set_balloonevalterm, null) 
-OPTION("breakat", p_breakat, CS, " \t!@*-+;:,./?", P_RALL|P_FLAGLIST, &setBreakat, NULL)
 OPTION("cdpath", p_cdpath, CS, ",,", P_EXPAND_DIR|P_EXPAND_3_BS|P_COMMA|P_NODUP, 
       null, null)
 OPTION("commheight", commlineHeightG, long, 1, P_RALL, &setCommHeight, null)
@@ -132,7 +131,7 @@ OPTION("commportheight", p_cwh, long, 7, 0, &setStrictlyPositive, null)
 OPTION("columns", visibleColsG, long, 100, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleCols, null)
 OPTION("completefuzzycollect", p_cfc, CS, null, P_ONECOMMA|P_NODUP, 
    &setCompletefuzzycollect, &expandCompletefuzzycollect)
-OPTION("completeitemalign", p_cia, CS, "abbr,kind,menu", P_ONECOMMA|P_NODUP,
+OPTION("completeitemalign", p_cia, Unt, CPT_ABBR|CPT_KIND|CPT_MENU, P_ONECOMMA|P_NODUP,
    &did_set_completeitemalign, NULL)
 OPTION("completepopup", p_cpp, CS, null, P_COMMA|P_NODUP|P_COLON, 
    &did_set_completepopup, &expand_set_popupoption)
@@ -151,7 +150,7 @@ OPTION("delcombine", p_delcomb, Boole, false, 0, null, null)
 OPTION("diffexpr", p_dex, CS, null, P_CURSWANT, &setOptexpr, null)
 OPTION("diffopt",  p_dip, CS, "internal,filler,closeoff,inline:simple", 
    P_REDRAW_PORT|P_ONECOMMA|P_COLON|P_NODUP, &setDiffopt, &expandDiffopt)
-OPTION("eadirection", p_ead, CS, "both", 0, &setEadirection, &expandEadirection)
+OPTION("eadirection", p_ead, Byte, EAD_BOTH, 0, &setEadirection, &expandEadirection)
 OPTION("eeglinfo", p_eeglinfo, CS, "'100,<50,s10,h", P_ONECOMMA|P_NODUP, 
       &setEeglinfo, NULL)
 OPTION("eeglinfofile", p_eeglinfofile, CS, null, P_EXPAND|P_ONECOMMA|P_NODUP, 
@@ -197,7 +196,7 @@ OPTION("pumheight", p_ph, long, 0, 0, null, null)
 OPTION("pummaxwidth", p_pmw, long, 0, 0, null, null) 
 OPTION("pumwidth", p_pw, long, 15, 0, null, null)
 OPTION("quickfixtextfunc", p_qftf, CS, null, P_FUNC,
-      &did_set_quickfixtextfunc, NULL)
+      &setQuickfixtextfunc, NULL)
 OPTION("redrawtime", p_rdt, long, 2000, 0, null, null) 
 OPTION("rulerformat", p_ruf, CS, null, P_RSTAT, &setRulerFormat, NULL)
 OPTION("scrolljump", p_sj, long, 1, 0, &setScrollJump, null) 
@@ -209,7 +208,7 @@ OPTION("shellredir", p_srr, CS, ">%s 2>&1", 0, null, null)
 OPTION("shelltemp", p_stmp, Boole, true, 0, null, null)
 OPTION("shortmess", p_shm, CS, "filnxtToO", P_FLAGLIST, 
       &did_set_shortmess, &expand_set_shortmess)
-OPTION("showcmdloc", p_sloc, CS, "last", P_RSTAT, &did_set_showcmdloc, &expand_set_showcmdloc)
+OPTION("showcmdloc", p_sloc, Byte, SHOW_COMM_LAST, P_RSTAT, &did_set_showcmdloc, &expand_set_showcmdloc)
 OPTION("showfulltag", p_sft, Boole, false, 0, null, null)
 OPTION("showmode", p_smd, Boole, true, 0, null, null)
 OPTION("showtabpanel", p_stpl, Boole, true, P_RALL, &setShowTabpanel, NULL)
@@ -219,8 +218,7 @@ OPTION("splitbelow", p_sb, Boole, false, 0, null, null)
 OPTION("splitright", p_spr, Boole, false, 0, null, null) 
 OPTION("startofline", p_sol, Boole, false, 0, null, null) 
 OPTION("suffixes", p_su, CS, ".bak,~,.o,.h,.info,.swp,.obj", P_ONECOMMA|P_NODUP, null, null) 
-OPTION("swapsync", p_sws, CS, null, 0, &
-      did_set_swapsync, &expand_set_swapsync)
+OPTION("swapsync", p_sws, Boole, false, 0, null, null)
 OPTION("switchbook", p_swb, Unt, 0, P_ONECOMMA|P_NODUP, &setSwitchbook, &expand_set_switchbook)
 OPTION("tabclose", p_tcl, Byte, 0, P_ONECOMMA|P_NODUP, &setTabClose, &expand_set_tabclose)
 OPTION("tabpanel",  p_tpl, CS, null, P_RALL, null, null) 
@@ -240,7 +238,6 @@ OPTION("undoreload", p_ur, long, 10000, 0, null, null)
 OPTION("updatetime", p_ut, long, 2000, 0, &setNonNegative, null)
 OPTION("verbose", p_verbose, long, 0, 0, null, null)
 OPTION("verbosefile", p_vfile, CS, null, P_EXPAND, &did_set_verbosefile, NULL)
-OPTION("viewdir", p_vdir, CS, "$HOME/.local/state/eegl/view", P_EXPAND_DIR, null, null)
 OPTION("whichwrap", p_ww, CS, "b,s", P_ONECOMMA|P_FLAGLIST, 
    &did_set_whichwrap, &expand_set_whichwrap)
 OPTION("wildchar", p_wc, long, (long)TAB, 0, &did_set_wildchar, NULL)
@@ -250,8 +247,8 @@ OPTION("wildignorecase", p_wic, Boole, false, 0, null, null)
 OPTION("wildmenu", p_wmnu, Boole, false, 0, null, null)
 OPTION("wildmode", p_wim, CS, "full", P_ONECOMMA|P_NODUP|P_COLON, 
    &did_set_wildmode, &expand_set_wildmode)
-OPTION("wildoptions", p_wop, CS, "pum", P_ONECOMMA|P_NODUP, 
-   &did_set_wildoptions, &expand_set_wildoptions)
+OPTION("wildoptions", p_wop, Unt, WILDOPT_PUM, P_ONECOMMA|P_NODUP, 
+   &setWildoptions, &expandWildoptions)
 OPTION("winheight", p_wh, long, 0, 0, &setWinHeight, NULL)
 OPTION("winwidth", p_wiw, long, 20, 0, &did_set_winwidth, NULL)
 OPTION("writedelay", p_wd, long, 0, 0, null, null)

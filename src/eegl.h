@@ -2056,6 +2056,11 @@ typedef int Socket;
 #define STL_TABCLOSENR   'X'      // tab close nr
 #define STL_ALL          (S"fFtcvVlLknoObBrRhHmYyWwMqpPaNS{#")
 
+//Kinds of status lines
+#define STATLINE_TABPANEL    1
+#define STATLINE_STATUSLINE  2
+#define STATLINE_RULERFORMAT 3
+
 // flags used for parsed @wildmode
 #define WIM_FULL        0x01
 #define WIM_LONGEST     0x02
@@ -2081,7 +2086,6 @@ EXTERN unsigned bo_flags;
 EXTERN CS p_bsk;      //@backupskip
 EXTERN long p_bdlay;       //@balloondelay
 EXTERN Boole p_bevalterm;  //@balloonevalterm
-EXTERN CS p_breakat;  //@breakat
 EXTERN CS p_bt;       //@booktype
 EXTERN Boole p_delcomb;    //@delcombine
 EXTERN long p_cwh;         //@cmdwinheight
@@ -2090,8 +2094,7 @@ EXTERN CS p_cpt;      //@complete
 EXTERN Boole p_confirm;    //@confirm
 EXTERN CS p_cfc;      //@completefuzzycollect
 EXTERN unsigned cfc_flags; //flags from @completefuzzycollect
-EXTERN CS p_cia;      //@completeitemalign
-EXTERN Unt cia_flags;      //order flags of @completeitemalign
+EXTERN Unt p_cia;      //@completeitemalign
 EXTERN Unt cot_flags;      //flags from @completeopt
 EXTERN Boole p_ac;         //@autocomplete
 EXTERN long p_acl;         //@autocompletedelay
@@ -2124,7 +2127,11 @@ EXTERN Boole p_csverbose;//@cscopeverbose
 EXTERN CS p_debug;  //@debug
 EXTERN CS p_dip;    //@diffopt
 EXTERN CS p_dex;    //@diffexpr
-EXTERN CS p_ead;    //@eadirection
+EXTERN Byte p_ead;    //@eadirection
+#define EAD_VERTICAL   1 // must be >0
+#define EAD_HORIZONTAL 2
+#define EAD_BOTH       3
+
 EXTERN Boole p_ea;       //@equalalways
 EXTERN CS globOpt;  //@errorfile
 EXTERN int   p_eof;      //@endoffile
@@ -2241,8 +2248,10 @@ EXTERN CS p_srr;  //@shellredir
 EXTERN Boole p_stmp;   //@shelltemp
 EXTERN CS p_shm;  //@shortmess
 EXTERN CS p_sbr;  //@showbreak
-EXTERN int   p_sc;     //@showcmd
-EXTERN CS p_sloc; //@showcmdloc
+EXTERN Byte p_sloc; //@showcmdloc
+#define SHOW_COMM_LAST       1 //last screnline
+#define SHOW_COMM_STATUSLINE 2 //portal statusline
+
 EXTERN Boole p_sft;      //@showfulltag
 EXTERN Boole p_smd;      //@showmode
 EXTERN long  p_ss;     //@sidescroll
@@ -2253,7 +2262,7 @@ EXTERN Boole p_spr;      //@splitright
 EXTERN Boole p_sb;       //@splitbelow
 EXTERN Boole p_sol;      //@startofline
 EXTERN CS p_su;   //@suffixes
-EXTERN CS p_sws;  //@swapsync
+EXTERN Boole p_sws;  //@swapsync
 EXTERN Unt p_swb;      //@switchbuf
 // Keep in sync with option.c:p_swb_values
 #define SWB_USEOPEN    0x001
@@ -2291,16 +2300,21 @@ EXTERN long   p_ur;      //@undoreload
 EXTERN long   p_ut;      //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
-EXTERN CS p_vdir;   //@viewdir
 EXTERN long p_verbose; //@verbose
 
 #ifdef IN_OPTION_C
-CS p_vfile = E; // used before options are initialized
+CS p_vfile = S""; // used before options are initialized
 #else
 extern CS p_vfile;   // @verbosefile
 #endif
 
-EXTERN CS p_wop;   //@wildoptions
+EXTERN Unt p_wop;   //@wildoptions
+//Sync with option.c:p_wop_values
+#define WILDOPT_EXACT   1
+#define WILDOPT_FUZZY   2
+#define WILDOPT_PUM     4
+#define WILDOPT_TAGFILE 8
+
 EXTERN CS p_wig;   //@wildignore
 EXTERN CS p_ww;    //@whichwrap
 EXTERN long p_wc;       //@wildchar

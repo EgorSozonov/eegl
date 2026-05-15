@@ -172,7 +172,8 @@ maybe_intro_message(void) {
    if (CURBOOK_EMPTY()
           && curBook->currFileName == NULL
           && firstPor->next == NULL
-          && firstOccurrence(p_shm, SHM_INTRO) == NULL)
+          && (p_shm || firstOccurrence(p_shm, SHM_INTRO) == NULL)
+   )
       intro_message(FALSE);
 }
 
@@ -536,7 +537,7 @@ eeglMain1(void) {
 
    //Read in registers, history etc, but not marks, from the eeglinfo file.
    //This is where v:oldfiles gets filled.
-   if (*p_eeglinfo != ZERO) {
+   if (p_eeglinfo) {
       read_eeglinfo(NULL, EIF_WANT_INFO | EIF_GET_OLDFILES);
       TIME_MSG("reading eeglinfo");
    }
@@ -1166,7 +1167,7 @@ exitEegl(int exitval) {
 #ifdef EXITFREE
        entered_free_all_mem == FALSE &&
 #endif
-         *p_eeglinfo != ZERO
+         p_eeglinfo
    )
       // Write out the registers, history, marks etc, to the eeglinfo file
       write_eeglinfo(NULL, false);
@@ -1850,7 +1851,7 @@ editBuffers(MainParams* params, CS cwd) {        // current working dir
             if (i == 1) {
                Byte buf[100];
 
-               p_shm_save = copyStr(p_shm);
+               p_shm_save = p_shm ? copyStr(p_shm) : null;
                eeSnprintf(buf, 100, "F%s", p_shm);
                optChangeAndReportError(S"shortmess", optStr(buf), SET_GLOBAL);
             }
@@ -1918,7 +1919,7 @@ editBuffers(MainParams* params, CS cwd) {        // current working dir
    --autocmd_no_leave;
    TIME_MSG("editing files in windows");
    if (params->portalCount > 1 && params->portalLayout != WIN_TABS)
-      portEqualizeHeight(curPor, FALSE, 'b');   // adjust heights
+      portEqualizeHeight(curPor, FALSE, EAD_BOTH);   // adjust heights
 }
 
 // Execute the commands from --comm arguments "comms[cnt]".

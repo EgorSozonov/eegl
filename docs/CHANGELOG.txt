@@ -163,7 +163,7 @@
 [-] p_smc (max col for syntax coloring, fixed at 256)
 [-] p_cdh (cd home, no effect on Unix)
 [-] p_wiv (weirdinvert, some legacy thing)
-[-] p_sc (fixed at "true", this just means commands being typed are shown at bottom line)
+[-] p_sc (showcmd, fixed at "true", this just means commands being typed are shown at bottom line)
 [-] p_cb (clipboard)
 [-] p_sn (short, MSDOS-style file names)
 [-] p_sta (smarttab), p_ts (tab stop), p_sts (softtabstop)
@@ -241,6 +241,7 @@
 [-] Portal.futureBufOpts
 [-] P_SECURE, was_set_insecurely for options (complexity for not real gain). Sandbox too
 [-] :mkview, p_vop (weird saving of just one portal, and the @viewoptions)
+[ ] p_vdir (@viewdir for mkview)
 [-] p_sop (sessionoptions, always on)
 [-] p_km (keymodel, Windows compatibility selections, fixed at fully ON)
 [-] p_lpl (loadplugins, superfluous)
@@ -249,6 +250,7 @@
 [-] p_ar (autoread, always on)
 [-] @cinsscopedecls (cppScopeKeywords,  "public,protected,private" - were used in CIndent only)
 [-] @indentkeys (were used in CIndent only)
+[-] @linebreak, @breakat (superfluous line breaking)
 [ ] @lines, @columns - no longer options but regular fields of Portal with setters ??
 [-] @filetype, @syntax (shouldn't be an option)
 [-] @previewport - shouldn't be an option, just a single portal per tab

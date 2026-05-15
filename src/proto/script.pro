@@ -268,7 +268,7 @@ void do_augroup(CS arg, Boole del_group);
 void autocmd_init(void);
 void free_all_autocmds(void);
 int is_autoCommPort(Portal *port);
-int event_ignored(AutoEvent event, CS evIgn);
+Boole event_ignored(AutoEvent event, CS evIgn);
 int check_ei(CS evIgn);
 CS au_event_disable(CS what);
 void au_event_restore(CS old_ei);

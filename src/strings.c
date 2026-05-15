@@ -5129,11 +5129,9 @@ internal_format(
    int no_leader = FALSE;
    int doComments = (flags & INSCHAR_DO_COM);
    int safe_tw = trim_to_int(8 * (Long)textwidth);
-   int has_lbr = curPor->o.lineBreak;
    int has_bri = curPor->o.breakIndent;
 
    // make sure win_lbr_chartabsize() counts correctly
-   curPor->o.lineBreak = FALSE;
    curPor->o.breakIndent = FALSE;
 
    // When 'ai' is off we don't want a space under the cursor to be
@@ -5426,7 +5424,6 @@ internal_format(
    if (save_char != ZERO)      // put back space after cursor
       pchar_cursor(save_char);
 
-   curPor->o.lineBreak = has_lbr;
    curPor->o.breakIndent = has_bri;
    if (!format_only && haveto_redraw) {
       update_topline();
@@ -5440,12 +5437,7 @@ internal_format(
 //previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
 private int
-fmt_check_par(
-   LineNr   lnum,
-   OUT int* leader_len,
-   OUT CS* leader_flags,
-   int doComments
-) {
+fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
    CS flags = NULL;
 
    CS ptr = ml_get(lnum);

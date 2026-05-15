@@ -344,8 +344,7 @@ put_view(
    int      f;
    int      did_next = FALSE;
 
-   // Always restore cursor position for ":mksession".  For ":mkview" only
-   // when 'viewoptions' contains "cursor".
+   // Always restore cursor position for ":mksession".
    Boole do_cursor = true;
 
    // Local argument list.
@@ -434,7 +433,7 @@ put_view(
       return FAIL;
 
    //Local options. Need to go to the portal temporarily.
-   //Store only local values when using ":mkview" and when ":mksession" is
+   //Store only local values when ":mksession" is
    //used and 'sessionoptions' doesn't include "options".
    //Some folding options are always stored when "folds" is included,
    //otherwise the folds would not be restored correctly.
@@ -819,7 +818,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
       goto fail;
 
    // Restore 'shortmess'.
-   if (fprintf(fd, "set shortmess=%s", p_shm) < 0 || put_eol(fd) == FAIL)
+   if (fprintf(fd, "set shortmess=%s", p_shm ? p_shm : S"null") < 0 || put_eol(fd) == FAIL)
       goto fail;
 
    if (restore_height_width // Restore 'winminheight' and 'winminwidth'.
@@ -840,60 +839,6 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
 fail:
    hash_clear_all(&terminal_bufs, 0);
    return ret;
-}
-
-// Get the name of the view file for the current book.
-private CS
-get_view_file(int c) {
-   int      len = 0;
-   Byte   *p, *s;
-   Byte   *retval;
-
-   if (curBook->fullFileName == NULL) {
-      emsg(_(e_no_file_name));
-      return NULL;
-   }
-   CS sname = home_replace_save(NULL, curBook->fullFileName);
-
-   // We want a file name without separators, because we're not going to make a directory.
-   // "normal" path separator   -> "=+"
-   // "="         -> "=="
-   // ":" path separator   -> "=-"
-   for (p = sname; *p; ++p) {
-      if (*p == '=' || *p == '/')
-          ++len;
-   } 
-   retval = alloc(STRLEN(sname) + len + STRLEN(p_vdir) + 9);
-   STRCPY(retval, p_vdir);
-   add_pathsep(retval);
-   s = retval + STRLEN(retval);
-   for (p = sname; *p; ++p) {
-      if (*p == '=') {
-         *s++ = '=';
-         *s++ = '=';
-      } ei (*p == '/') {
-         *s++ = '=';
-          *s++ = '+';
-      } else
-         *s++ = *p;
-   }
-   *s++ = '=';
-   *s++ = c;
-   STRCPY(s, ".vim");
-
-   eeglFree(sname);
-   return retval;
-}
-
-//":loadview [nr]"
-void
-c_loadview(Invocation *invo) {
-   CS fname = get_view_file(*invo->arg);
-   if (!fname)
-      return;
-
-   (void)scriptRunFile(fname, NULL);
-   eeglFree(fname);
 }
 
 # if (defined(EXPERIMENTAL_GUI_CMD)) || defined(PROTO)
@@ -925,7 +870,7 @@ write_session_file(CS filename) {
    //the user's own sessions.  FIXME: It's probably less hackish to add
    //a "stealth" flag to 'sessionoptions' -- gotta ask Bram.
    if (!failed) {
-      FILE* fd = open_exfile(filename, TRUE, APPENDBIN);
+      FILE* fd = doOpenCommandsFile(filename, TRUE, APPENDBIN);
       failed = (fd == NULL
              || put_line(fd, S"let v:this_session = Save_VV_this_session") == FAIL
              || put_line(fd, S"unlet Save_VV_this_session") == FAIL);
@@ -963,13 +908,7 @@ c_mkrc(Invocation   *invo) {
    ei (invo->id == C_mksession)
       fname = (CS)SESSION_FILE;
 
-#if defined(eeMkdir)
-   // When using 'viewdir' may have to create the directory.
-   if (using_vdir && !mch_isdir(p_vdir))
-      eeMkdir_emsg(p_vdir, 0755);
-#endif
-
-   FILE* fd = open_exfile(fname, invo->forceit, WRITEBIN);
+   FILE* fd = doOpenCommandsFile(fname, invo->forceit, (CS)WRITEBIN);
    if (!fd) {
       goto theEnd;
    }
@@ -1106,10 +1045,12 @@ typedef struct {
 private int  eeglinfo_errcnt;
 
 //Find the parameter represented by the given character (eg ''', ':', '"', or
-//'/') in the 'eeglinfo' option and return a pointer to the string after it.
+//'/') in the @eeglinfo option and return a pointer to the string after it.
 //Return NULL if the parameter is not specified in the string.
 private CS
 find_eeglinfo_parameter(int type) {
+   if (!p_eeglinfo)
+      return null;
    for (CS p = p_eeglinfo; *p; ++p) {
       if (*p == type)
          return p + 1;
@@ -1348,20 +1289,22 @@ readEeglinfoBookList(Vir* virp, int      writing) {
    return eeglinfo_readline(virp);
 }
 
-// Return TRUE if "name" is on removable media (depending on 'eeglinfo').
-private int
+// Return TRUE if "name" is on removable media (depending on @eeglinfo).
+private Boole
 removable(CS name) {
+   if (!p_eeglinfo)
+      return false;
+      
    Byte  part[51];
-   int retval = FALSE;
+   Boole retval = false;
    Unt  n;
-
    name = home_replace_save(NULL, name);
    for (CS p = p_eeglinfo; *p; ) {
       copy_option_part(&p, part, 51, ", ");
       if (part[0] == 'r') {
          n = STRLEN(part + 1);
          if (MB_STRNICMP(part + 1, name, n) == 0) {
-            retval = TRUE;
+            retval = true;
             break;
          }
       }

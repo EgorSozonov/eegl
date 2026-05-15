@@ -4213,8 +4213,8 @@ findSwapName(
          // give the ATTENTION message when there is an old swap file
          // for the current file, and the buffer was not recovered.
          if (differ == FALSE && !(curBook->flags & BF_RECOVERED)
-            && firstOccurrence(p_shm, SHM_ATTENTION) == NULL)
-         {
+            && (!p_shm || firstOccurrence(p_shm, SHM_ATTENTION) == NULL)
+         ) {
             SeaChoice choice = SEA_CHOICE_NONE;
             FileStat    st;
 #ifdef HAVE_PROCESS_STILL_RUNNING
@@ -5274,13 +5274,8 @@ mf_sync(MemFile* mfp, Unt flags) {
    if (hp == NULL || status == FAIL)
       mfp->mf_dirty = MF_DIRTY_NO;
 
-   if ((flags & MFS_FLUSH) && *p_sws != ZERO) {
-      if (STRCMP(p_sws, "fsync") == 0) {
-         if (eeFsync(mfp->fd))
-            status = FAIL;
-      } else
-         sync();
-   }
+   if ((flags & MFS_FLUSH) && p_sws && eeFsync(mfp->fd) != 0)
+      status = FAIL;
 
    gotInterruptG |= gotInterruptG_save;
 
