@@ -1968,10 +1968,9 @@ stuff_inserted(
    long    count,   // Repeat this many times
    int       no_esc   // Don't add an ESC at the end
 ){
-   Text insert;            // text to be inserted
    Byte last = ' ';
 
-   insert = get_last_insert();
+   Text insert = get_last_insert();// text to be inserted
    if (insert.c == NULL) {
       emsg(_(e_no_inserted_text_yet));
       return FAIL;
@@ -4160,10 +4159,6 @@ pum_wanted(void) {
    // @completeopt must contain "menu" or "menuone"
    if ((curBook->o.completeOpt & COT_ANY_MENU) == 0 && !compl_autocomplete)
       return FALSE;
-
-   // The display looks bad on a B&W display.
-   if (t_colors < 8)
-      return FALSE;
    return TRUE;
 }
 
@@ -4171,12 +4166,11 @@ pum_wanted(void) {
 //One if 'completopt' contains "menuone".
 private int
 pum_enough_matches(void) {
-   InsertCompletion     *compl;
-   int      i = 0;
+   int i = 0;
 
    // Don't display the popup menu if there are no matches or there is only
    // one (ignoring the original text).
-   compl = compl_first_match;
+   InsertCompletion* compl = compl_first_match;
    do {
       if (compl == NULL || (!match_at_original_text(compl) && ++i == 2))
           break;

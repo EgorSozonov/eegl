@@ -612,7 +612,7 @@ screen_putchar(int c, Unt row, Unt col, char decoFlags) {
 //have a size of "MB_MAXBYTES + 1".
 //If "deco" is not NULL, return the character's decoration flags into "*deco".
 void
-screen_getbytes(int row, int col, Byte *bytes, OUT char* decoFlags) {
+screen_getbytes(int row, int col, Byte* bytes, OUT char* decoFlags) {
    // safety check
    if (!screenLinesG || row >= screenLinesRowsG || col >= screenLinesColsG)
       return;
@@ -1561,7 +1561,7 @@ linecopy(int to, int from, Portal* po) {
 int
 can_clear(CS p) {
     return (*p != ZERO 
-             && (t_colors <= 1 || (defaultBgColorG == INVALCOLOR) || *termCodeS[KS_UT] != ZERO)
+             && ((defaultBgColorG == INVALCOLOR) || *termCodeS[KS_UT] != ZERO)
              && !(p == termCodeS[KS_CE] && popup_visible)
     );
 }

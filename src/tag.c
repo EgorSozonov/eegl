@@ -2628,7 +2628,7 @@ jumpto_tag(
       //If we are reusing a portal, we may change dir when
       //entering it (autocommands) so turn the tag filename into a fullpath
       if (!curPor->isPreview) {
-         full_fname = FullName_save(fname, FALSE);
+         full_fname = fiExpandAndCopy(fname, FALSE);
          fname = full_fname;
 
          //Make the preview window the current window. Open a preview window when needed.
@@ -3180,13 +3180,13 @@ tagstack_push_item(
 //Add a list of items to the tag stack in the specified window
 private void
 tagstack_push_items(Portal* wp, List* l) {
-   ListItem   *li;
-   DictItem   *di;
+   DictItem* di;
    Bag* itemdict;
    Pos   mark;
    int      fnum;
 
    // Add one entry at a time to the tag stack
+   ListItem* li;
    FOR_ALL_LIST_ITEMS(l, li) {
       if (li->c.tag != VAR_BAG || li->c.bag == NULL)
          continue;            // Skip non-dict items
@@ -3237,7 +3237,7 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
    }
 
    List* l = NULL;
-   DictItem   *di;
+   DictItem* di;
    if ((di = bagFind(d, tConst("items"))) != NULL) {
       if (di->c.tag != VAR_LIST) {
          emsg(_(e_list_required));
@@ -3273,36 +3273,34 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 //{{{Cscope integration
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
+#include <sys/stat.h> // for fstat, stat, S_ISDIR
 
-#define CSCOPE_SUCCESS      0
-#define CSCOPE_FAILURE      -1
+#define CSCOPE_SUCCESS 0
+#define CSCOPE_FAILURE -1
 
-#define   CSCOPE_DBFILE      "cscope.out"
-#define   CSCOPE_PROMPT      ">> "
+#define CSCOPE_DBFILE "cscope.out"
+#define CSCOPE_PROMPT ">> "
 
 // See ":help cscope-find" for the possible queries.
 
 typedef struct {
    CS name;
-   int     (*func)(Invocation* invo);
+   int (*func)(Invocation* invo);
    CS help;
    CS usage;
-   int       cansplit;      // if supports splitting window
+   int cansplit;      // if supports splitting window
 } CScopeCommand;
 
 typedef struct csi {
-   CS fname;   // cscope db name
-   CS ppath;   // path to prepend (the -P option)
-   CS flags;   // additional cscope flags/options (e.g, -p2)
-   pid_t       pid;   // PID of the connected cscope process.
-   dev_t       st_dev;   // ID of dev containing cscope db
-   ino_t       st_ino;   // inode number of cscope db
+   CS fname;     //cscope db name
+   CS ppath;     //path to prepend (the -P option)
+   CS flags;     //additional cscope flags/options (e.g, -p2)
+   pid_t pid;    //PID of the connected cscope process.
+   dev_t st_dev; //ID of dev containing cscope db
+   ino_t st_ino; //inode number of cscope db
 
-   FILE *       fr_fp;   // from cscope: FILE.
-   FILE *       to_fp;   // to cscope: FILE.
+   FILE* fr_fp;  //from cscope: FILE.
+   FILE* to_fp;  //to cscope: FILE.
 } CscopeInfo;
 
 typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
@@ -3314,35 +3312,34 @@ typedef enum {
    Print
 } Mcmd;
 
-private int       cs_add(Invocation* invo);
-private int       cs_add_common(CS, CS, CS);
-private int       cs_check_for_connections(void);
-private int       cs_check_for_tags(void);
-private int       cs_cnt_connections(void);
-private int       cs_create_connection(int i);
-private void       cs_file_results(FILE *, int *);
-private void       cs_fill_results(CS, int , int *, Byte ***, Byte ***, int *);
-private int       cs_find(Invocation* invo);
-private int       cs_find_common(CS opt, CS pat, Boole, Boole, Boole, CS commline);
-private int       cs_help(Invocation* invo);
-private int       cs_insert_filelist(CS, CS, CS, FileStat *);
-private int       cs_kill(Invocation* invo);
-private void       cs_kill_execute(int, CS);
-private CScopeCommand *    cs_lookup_cmd(Invocation* invo);
-private CS       cs_make_eegl_style_matches(CS, CS, CS, CS);
-private CS        cs_manage_matches(Arr(CS), Arr(CS), int, Mcmd);
-private void       cs_print_tags_priv(Arr(CS), Arr(CS), int);
-private int       cs_read_prompt(int);
-private void       cs_release_csp(int, int freefnpp);
-private int       cs_reset(Invocation* invo);
+private int cs_add(Invocation* invo);
+private int cs_add_common(CS, CS, CS);
+private int cs_check_for_connections(void);
+private int cs_check_for_tags(void);
+private int cs_cnt_connections(void);
+private int cs_create_connection(int i);
+private void cs_file_results(FILE *, int *);
+private void cs_fill_results(CS, int , int *, Byte ***, Byte ***, int *);
+private int cs_find(Invocation* invo);
+private int cs_find_common(CS opt, CS pat, Boole, Boole, Boole, CS commline);
+private int cs_help(Invocation* invo);
+private int cs_insert_filelist(CS, CS, CS, FileStat *);
+private int cs_kill(Invocation* invo);
+private void cs_kill_execute(int, CS);
+private CScopeCommand* cs_lookup_cmd(Invocation* invo);
+private CS cs_make_eegl_style_matches(CS, CS, CS, CS);
+private CS cs_manage_matches(Arr(CS), Arr(CS), int, Mcmd);
+private void cs_print_tags_priv(Arr(CS), Arr(CS), int);
+private int cs_read_prompt(int);
+private void cs_release_csp(int, int freefnpp);
+private int cs_reset(Invocation* invo);
 private CS cs_resolve_file(int, CS );
-private int       cs_show(Invocation* invo);
+private int cs_show(Invocation* invo);
 
+private CscopeInfo* csinfo = NULL;
+private int csinfo_size = 0;   // number of items allocated in csinfo[]
 
-private CscopeInfo*   csinfo = NULL;
-private int       csinfo_size = 0;   // number of items allocated in csinfo[]
-
-private int       eap_arg_len;    // length of invo->arg, set in cs_lookup_cmd()
+private int eap_arg_len;    // length of invo->arg, set in cs_lookup_cmd()
 private CScopeCommand       cs_cmds[] = {
    { S"add",   cs_add,
      S"Add a new database",    S"add file|dir [pre-path] [flags]", 0 },
@@ -3365,10 +3362,10 @@ cs_usage_msg(csid_e x) {
 }
 
 private enum {
-   EXP_CSCOPE_SUBCMD,   // expand ":cscope" sub-commands
-   EXP_SCSCOPE_SUBCMD,   // expand ":scscope" sub-commands
-   EXP_CSCOPE_FIND,   // expand ":cscope find" arguments
-   EXP_CSCOPE_KILL   // expand ":cscope kill" arguments
+   EXP_CSCOPE_SUBCMD,  //expand ":cscope" sub-commands
+   EXP_SCSCOPE_SUBCMD, //expand ":scscope" sub-commands
+   EXP_CSCOPE_FIND,    //expand ":cscope find" arguments
+   EXP_CSCOPE_KILL     //expand ":cscope kill" arguments
 } expand_what;
 
 //Function given to expandGeneric() to obtain the cscope command expansion.
@@ -3469,10 +3466,10 @@ do_cscope_general(Invocation* invo, int make_split) { // whether to split window
       postponed_split_tab = commModifierG.cmod_tab;
    }
 
-    cmdp->func(invo);
+   cmdp->func(invo);
 
-    postponed_split_flags = 0;
-    postponed_split_tab = 0;
+   postponed_split_flags = 0;
+   postponed_split_tab = 0;
 }
 
 //Implementation of ":cscope" and ":lcscope"
@@ -3595,12 +3592,10 @@ cs_print_tags(void) {
 //     Note: All string comparisons are case sensitive!
 private int
 cs_connection(int num, CS dbpath, CS ppath) {
-   int i;
-
    if (num < 0 || num > 4 || (num > 0 && !dbpath))
       return FALSE;
 
-   for (i = 0; i < csinfo_size; i++) {
+   for (int i = 0; i < csinfo_size; i++) {
       if (!csinfo[i].fname)
          continue;
 
@@ -3642,12 +3637,13 @@ cs_connection(int num, CS dbpath, CS ppath) {
 //to the cscope connection list.
 private int
 cs_add(Invocation* invo UNUSED) {
-   Byte *fname, *ppath, *flags = NULL;
-
+   CS flags = NULL;
+   CS fname;
    if ((fname = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
       cs_usage_msg(Add);
       return CSCOPE_FAILURE;
    }
+   CS ppath;
    if ((ppath = (CS)strtok((char *)NULL, (const char *)" ")) != NULL)
       flags = (CS)strtok((char *)NULL, (const char *)" ");
 
@@ -3668,11 +3664,11 @@ cs_add_common(
    CS flags
 ) {
    FileStat   statbuf;
-   int      ret;
+   int ret;
    CS fname2 = NULL;
    CS ppath = NULL;
-   int      i;
-   Unt   usedlen = 0;
+   int i;
+   Unt usedlen = 0;
 
    // get the filename (arg1), expand it, and try to stat it
    CS fname = alloc(MAXPATHL + 1);
@@ -3771,10 +3767,8 @@ cs_check_for_tags(void) {
 // Count the number of cscope connections.
 private int
 cs_cnt_connections(void) {
-   int i;
    int cnt = 0;
-
-   for (i = 0; i < csinfo_size; i++) {
+   for (int i = 0; i < csinfo_size; i++) {
       if (csinfo[i].fname != NULL)
           cnt++;
    } 
@@ -3843,7 +3837,6 @@ private CS
 cs_create_cmd(CS csoption, CS pattern) {
    CS cmd;
    short search;
-   CS pat;
 
    switch (csoption[0]) {
    case '0' : case 's' :
@@ -3881,7 +3874,7 @@ cs_create_cmd(CS csoption, CS pattern) {
 
    // Skip white space before the pattern, except for text and pattern search,
    // they may want to use the leading white space.
-   pat = pattern;
+   CS pat = pattern;
    if (search != 4 && search != 6) {
       while SPACE_OR_TAB(*pat)
          ++pat;

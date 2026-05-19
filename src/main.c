@@ -2151,7 +2151,7 @@ set_progpath(CS argv0) {
       val = linkBuf;
    }
 
-   if (!mch_isFullName(val) 
+   if (fiIsRelative(val) 
          && fiGetShortFiName(val) != val && eeFullFileName(val, OUT buf, MAXPATHL, true) != FAIL
    )
       val = buf;

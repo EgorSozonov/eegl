@@ -5,7 +5,8 @@
 
 #include "eegl.h"
 #include <float.h>
-#include <sys/stat.h> // for stat
+int stat(const char* restrict path, struct stat* restrict buf);
+int mkdir(const char* pathname, mode_t mode);
 
 private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 
@@ -509,15 +510,15 @@ c_uniq(Invocation* invo) {
    LineNr   lnum;
    long   maxlen = 0;
    LineNr   count = invo->line2 - invo->line1 + 1;
-   Byte   *p;
-   Byte   *s;
-   Byte   save_c = 0;      // temporary character storage
-   int      keep_only_unique = FALSE;
-   int      keep_only_not_unique = invo->forceit ? TRUE : FALSE;
-   long   deleted = 0;
-   ColNr   start_col;
-   ColNr   end_col;
-   int      change_occurred = FALSE; // Book contents changed.
+   CS p;
+   CS s;
+   Byte save_c = 0;      // temporary character storage
+   int keep_only_unique = FALSE;
+   int keep_only_not_unique = invo->forceit ? TRUE : FALSE;
+   long deleted = 0;
+   ColNr start_col;
+   ColNr end_col;
+   int change_occurred = FALSE; // Book contents changed.
 
    // Uniq one line is really quick!
    if (count <= 1)
@@ -694,12 +695,12 @@ uniqend:
 // return FAIL for failure, OK otherwise
 int
 do_move(LineNr line1, LineNr line2, LineNr dest) {
-   Byte   *str;
-   LineNr   l;
-   LineNr   extra;       // Num lines added before line1
-   LineNr   num_lines;  // Num lines moved
-   LineNr   last_line;  // Last line in file after adding new text
-   Tab   *t;
+   CS str;
+   LineNr l;
+   LineNr extra;       // Num lines added before line1
+   LineNr num_lines;  // Num lines moved
+   LineNr last_line;  // Last line in file after adding new text
+   Tab* t;
 
    if (dest >= line1 && dest < line2) {
       emsg(_(e_cannot_move_range_of_lines_into_itself));
@@ -812,7 +813,7 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
 // ":copy"
 private void
 doCopy(LineNr line1, LineNr line2, LineNr n) {
-   Byte   *p;
+   CS p;
 
    LineNr count = line2 - line1 + 1;
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
@@ -859,7 +860,7 @@ doCopy(LineNr line1, LineNr line2, LineNr n) {
     msgmore((long)count);
 }
 
-private Byte   *prevcmd = NULL;   // the previous command
+private CS prevcmd = NULL;   // the previous command
 
 #if defined(EXITFREE) || defined(PROTO)
 void
@@ -889,13 +890,13 @@ do_bang(
    Boole do_in,
    Boole do_out
 ) {
-   Byte      *arg = invo->arg;   // command
+   CS arg = invo->arg;   // command
    LineNr      line1 = invo->line1;   // start of range
    LineNr      line2 = invo->line2;   // end of range
-   Byte      *newcmd = NULL;      // the new command
+   CS newcmd = NULL;      // the new command
    Boole free_newcmd = false;    // need to free() newcmd
-   Byte      *t;
-   Byte      *p;
+   CS t;
+   CS p;
    int         len;
    int         scroll_save = msg_scroll;
 
@@ -1014,10 +1015,10 @@ do_filter(
    Invocation* invo,      // for forced 'ff' and 'fenc'
    CS cmd,
    Boole do_in,
-   Boole do_out)
-{
-   Byte   *itmp = NULL;
-   Byte   *otmp = NULL;
+   Boole do_out
+) {
+   CS itmp = NULL;
+   CS otmp = NULL;
    LineNr   linecount;
    LineNr   read_linecount;
    Pos   cursor_save;
@@ -1088,8 +1089,8 @@ do_filter(
       msg_putchar('\n');      // keep message from bookWrite()
       --no_wait_return;
       if (!aborting())
-          // will call wait_return()
-          (void)showErrFmtMsg(_(e_cant_create_file_str), itmp);
+         // will call wait_return()
+         (void)showErrFmtMsg(_(e_cant_create_file_str), itmp);
       goto filterend;
    }
    if (curBook != curBookSaved)
@@ -1160,25 +1161,24 @@ do_filter(
       read_linecount = curBook->mem.lineCount - read_linecount;
 
       if (shell_flags & SHELL_READ) {
-          curBook->opStart.lnum = line2 + 1;
-          curBook->opEnd.lnum = curPor->cursor.lnum;
-          appended_lines_mark(line2, read_linecount);
+         curBook->opStart.lnum = line2 + 1;
+         curBook->opEnd.lnum = curPor->cursor.lnum;
+         appended_lines_mark(line2, read_linecount);
       }
 
       if (do_in) {
          if (read_linecount >= linecount)
-             // move all marks from old lines to new lines
-             mark_adjust(line1, line2, linecount, 0L);
+            // move all marks from old lines to new lines
+            mark_adjust(line1, line2, linecount, 0L);
          ei (save_cmod_flags & CMOD_LOCKMARKS) {
-             // Move marks from the lines below the new lines down by the number of lines lost.
-             // Move marks from the lines that will be deleted to the new lines and below.
-             mark_adjust(line2 + 1, (LineNr)MAXLNUM,
-                         linecount - read_linecount, 0L);
-             mark_adjust(line1, line2, linecount, 0L);
+            // Move marks from the lines below the new lines down by the number of lines lost.
+            // Move marks from the lines that will be deleted to the new lines and below.
+            mark_adjust(line2 + 1, (LineNr)MAXLNUM, linecount - read_linecount, 0L);
+            mark_adjust(line1, line2, linecount, 0L);
          } else {
-             // move marks from old lines to new lines, delete marks that are in deleted lines
-             mark_adjust(line1, line1 + read_linecount - 1, linecount, 0L);
-             mark_adjust(line1 + read_linecount, line2, MAXLNUM, 0L);
+            // move marks from old lines to new lines, delete marks that are in deleted lines
+            mark_adjust(line1, line1 + read_linecount - 1, linecount, 0L);
+            mark_adjust(line1 + read_linecount, line2, MAXLNUM, 0L);
          }
 
          //Put cursor on first filtered line for ":range!cmd".
@@ -1187,8 +1187,7 @@ do_filter(
          del_lines(linecount, TRUE);
          curBook->opStart.lnum -= linecount;   // adjust '[
          curBook->opEnd.lnum -= linecount;      // adjust ']
-         write_lnum_adjust(-linecount);      // adjust last line
-                       // for next write
+         write_lnum_adjust(-linecount);      // adjust last line for next write
          foldUpdate(curPor, curBook->opStart.lnum, curBook->opEnd.lnum);
       } else {
          //Put cursor on last new line for ":r !cmd".
@@ -1235,11 +1234,8 @@ filterend:
 
 //Call a shell to execute a command. When "cmd" is NULL, start an interactive shell.
 void
-do_shell(
-   CS cmd,
-   Unt      flags   // may be SHELL_DOOUT when output is redirected
-){
-   int      keep_termcap = !termcap_active;
+do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
+   int keep_termcap = !termcap_active;
 
    //For autocommands we want to get the output on the current screen, to avoid having to type 
    //return below.
@@ -1624,7 +1620,7 @@ do_write(Invocation* invo) {
       sameFile = true;
    } else {
       fname = fullFName;
-      free_fname = FullName_save(fullFName, true);
+      free_fname = fiExpandAndCopy(fullFName, true);
       //When out-of-memory, keep unexpanded file name, because we MUST be
       //able to write the file in this situation.
       if (free_fname)
@@ -2056,7 +2052,7 @@ startEditingFile(
             fullFName = curBook->fullFileName;
             sfname = curBook->currFileName;
          }
-         free_fname = FullName_save(fullFName, true); // may expand to full path name
+         free_fname = fiExpandAndCopy(fullFName, true); // may expand to full path name
          if (free_fname)
             fullFName = free_fname;
          sameFile = fNameMatchesCurBook(fullFName);
@@ -10604,7 +10600,7 @@ c_redir(Invocation* invo) {
 
          close_redir();
 
-         // Expand environment variables and "~/".
+         //Expand environment variables and "~/".
          fname = expand_env_save(arg);
          if (!fname)
             return;
@@ -10767,12 +10763,8 @@ eeMkdir_emsg(CS name, int prot UNUSED) {
 
 //Open a file for writing for a command, with some checks. Return file descriptor, NULL on failure
 FILE *
-doOpenCommandsFile(
-    CS fname,
-    int forceit,
-    CS mode       // "w" for create new file or "a" for append
-){
-   FILE   *fd;
+doOpenCommandsFile(CS fname, int forceit, CS mode) { //"w" for create new file or "a" for append
+   FILE* fd;
 
    // with Unix it is possible to open a directory
    if (mch_isdir(fname)) {
@@ -11429,7 +11421,7 @@ evalVars(
             // Still need to turn the fname into a full path.  It is
             // postponed to avoid a delay when <afile> is not used.
             autocmd_fname_full = TRUE;
-            result = FullName_save(autocmd_fname, FALSE);
+            result = fiExpandAndCopy(autocmd_fname, FALSE);
             eeglFree(autocmd_fname);
             autocmd_fname = result;
          }
@@ -13140,82 +13132,70 @@ u_write_undo(
 
    // If the undo file already exists, verify that it actually is an undo file, and delete it.
    if (mch_getperm(file_name) >= 0) {
-   if (name == NULL || !forceit) {
-       // Check we can read it and it's an undo file.
-       fd = open((char *)file_name, O_RDONLY|O_EXTRA, 0);
-       if (fd < 0) {
-      if (name != NULL || p_verbose > 0) {
-          if (name == NULL)
-         verbose_enter();
-          smsg(
-            _("Will not overwrite with undo file, cannot read: %s"),
-                           file_name);
-          if (name == NULL)
-         verbose_leave();
-      }
-      goto theend;
-       } else {
-      Byte   mbuf[UF_START_MAGIC_LEN];
-      int   len;
+      if (!name || !forceit) {
+         // Check we can read it and it's an undo file.
+         fd = open((char *)file_name, O_RDONLY|O_EXTRA, 0);
+         if (fd < 0) {
+            if (p_verbose > 0)
+               verbose_enter();
+            if (name || p_verbose > 0)
+               smsg( _("Will not overwrite with undo file, cannot read: %s"), file_name);
+            if (p_verbose > 0)
+               verbose_enter();
+            goto theend;
+         } else {
+            Byte   mbuf[UF_START_MAGIC_LEN];
+            int   len;
 
-      len = read_eintr(fd, mbuf, UF_START_MAGIC_LEN);
-      close(fd);
-      if (len < UF_START_MAGIC_LEN || memcmp(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0) {
-          if (name != NULL || p_verbose > 0) {
-         if (name == NULL)
-             verbose_enter();
-         smsg(
-         _("Will not overwrite, this is not an undo file: %s"), file_name);
-         if (name == NULL)
-             verbose_leave();
-          }
-          goto theend;
+            len = read_eintr(fd, mbuf, UF_START_MAGIC_LEN);
+            close(fd);
+            if (len < UF_START_MAGIC_LEN || memcmp(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0) {
+               if (p_verbose > 0)
+                  verbose_enter();
+               if (name || p_verbose > 0)
+                  smsg(_("Will not overwrite, this is not an undo file: %s"), file_name);
+               if (p_verbose > 0)
+                  verbose_leave();
+               goto theend;
+            }
+         }
       }
-       }
+      mch_remove(file_name);
    }
-   mch_remove(file_name);
-    }
 
-    // If there is no undo information at all, quit here after deleting any
-    // existing undo file.
-    if (book->undo.countHeaders == 0 && book->undo.line.ul_line == NULL) {
-   if (p_verbose > 0)
-       verb_msg(_("Skipping undo file write, nothing to undo"));
-   goto theend;
-    }
+   //If there is no undo information at all, quit here after deleting any
+   //existing undo file.
+   if (book->undo.countHeaders == 0 && book->undo.line.ul_line == NULL) {
+      if (p_verbose > 0)
+         verb_msg(_("Skipping undo file write, nothing to undo"));
+      goto theend;
+   }
 
-    fd = open((char *)file_name, O_CREAT|O_EXTRA|O_WRONLY|O_EXCL|O_NOFOLLOW, perm);
-    if (fd < 0) {
-   showErrFmtMsg(_(e_cannot_open_undo_file_for_writing_str), file_name);
-   goto theend;
-    }
-    (void)mch_setperm(file_name, perm);
-    if (p_verbose > 0) {
-   verbose_enter();
-   smsg(_("Writing undo file: %s"), file_name);
-   verbose_leave();
-    }
+   fd = open((char *)file_name, O_CREAT|O_EXTRA|O_WRONLY|O_EXCL|O_NOFOLLOW, perm);
+   if (fd < 0) {
+      showErrFmtMsg(_(e_cannot_open_undo_file_for_writing_str), file_name);
+      goto theend;
+   }
+   (void)mch_setperm(file_name, perm);
+   if (p_verbose > 0) {
+      verbose_enter();
+      smsg(_("Writing undo file: %s"), file_name);
+      verbose_leave();
+   }
 
 #ifdef U_DEBUG
-    // Check there is no problem in undo info before writing.
+    //Check there is no problem in undo info before writing.
     u_check(FALSE);
 #endif
 
-    /*
-     * Try to set the group of the undo file same as the original file. If
-     * this fails, set the protection bits for the group same as the
-     * protection bits for others.
-     */
+    //Try to set the group of the undo file same as the original file. If
+    //this fails, set the protection bits for the group same as the protection bits for others.
     if (st_old_valid
        && stat((char *)file_name, &st_new) >= 0
        && st_new.st_gid != st_old.st_gid
        && fchown(fd, (uid_t)-1, st_old.st_gid) != 0
        )
    mch_setperm(file_name, (perm & 0707) | ((perm & 07) << 3));
-# if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
-   if (book->fullFileName != NULL)
-      mch_copy_sec(book->fullFileName, file_name);
-# endif
 
    fp = fdopen(fd, "w");
    if (!fp) {
@@ -14802,7 +14782,7 @@ f_undofile(Var *argvars, Var *returnVar) {
       // If there is no file name there will be no undo file.
       returnVar->string = NULL;
    } else {
-      CS ffname = FullName_save(fname, TRUE);
+      CS ffname = fiExpandAndCopy(fname, TRUE);
 
       if (ffname)
          returnVar->string = u_get_undo_file_name(ffname, FALSE);

@@ -4,7 +4,6 @@
 //## term.c: terminal and pseudo-teletype functions
 
 #include "eegl.h"
-#include <termios.h>       // seems to be required for some Linux
 #include <termcap.h>
 
 typedef struct termios TermIos;
@@ -222,7 +221,6 @@ private int  check_for_codes = FALSE;         // check for key code response
 // Structure and table to store terminal features that can be detected by
 // querying the terminal.  Either by inspecting the termresponse or a more
 // specific request.  Besides this there are:
-// t_colors - number of colors supported
 typedef struct {
    CS name;
    int setByTermResponse;
@@ -299,12 +297,10 @@ private CS key_names[] = {SMAP((CS),
    //Do those ones first, both may cause a screen redraw.
    "Co",
    //disabled, because it switches termguicolors, but that is noticeable and confuses users "RGB",
-   "ku", "kd", "kr", "kl",
-   "#2", "#4", "%i", "*7",
+   "ku", "kd", "kr", "kl", "#2", "#4", "%i", "*7",
    "k1", "k2", "k3", "k4", "k5", "k6"
    ), SMAP((CS),
-   "k7", "k8", "k9", "k;", "F1", "F2",
-   "%1", "&8", "kb", "kI", "kD", "kh"
+   "k7", "k8", "k9", "k;", "F1", "F2", "%1", "&8", "kb", "kI", "kD", "kh"
    ), SMAP((CS),
    "@7", "kP", "kN", "K1", "K3", "K4", "K5", "kB", "PS", "PE"
 )};
@@ -315,8 +311,8 @@ private CS key_names[] = {SMAP((CS),
 private void
 get_term_entries(OUT int* height, OUT int* width) {
    static struct {
-      CS name;  // capability name
-      Unt dest;      // index in termCodeS[]
+      CS name;  //capability name
+      Unt dest; //index in termCodeS[]
    } entryNames[] = { SMAP1((CS),
       "ce", KS_CE,  "al", KS_AL,  "AL", KS_CAL, "dl", KS_DL,  "DL", KS_CDL,  "cs", KS_CS,
       "cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "mb", KS_MB,   "me", KS_ME, 
@@ -474,7 +470,7 @@ set_termname(CS termName) {
           ++p;
    }
 
-   // For Unix, set the 'ttymouse' option to the type of mouse to be used.
+   // Set the 'ttymouse' option to the type of mouse to be used.
    // The termcode for the mouse is added as a side effect in option.c.
    {
    CS p = Em;
@@ -686,9 +682,9 @@ termInitTerminfo(CS name) {
 #define OUT_SIZE   2047
 
 // add one to allow mch_write() to append a ZERO
-private Byte      out_buf[OUT_SIZE + 1];
+private Byte out_buf[OUT_SIZE + 1];
 
-private int      out_pos = 0;   // number of chars in out_buf
+private int out_pos = 0;   // number of chars in out_buf
 
 // Since the maximum number of SGR parameters shown as a normal value range is
 // 16, the escape sequence length can be 4 * 16 + lead + tail.
@@ -767,17 +763,17 @@ out_str(CS s) {
    if (!s || *s == ZERO)
       return;
 
-   // avoid terminal strings being split up
+   //avoid terminal strings being split up
    if (out_pos > OUT_SIZE - MAX_ESC_SEQ_LEN)
       out_flush();
    tputs((char *)s, 1, TPUTSFUNCAST out_char_nf);
 
-   // For testing we write one string at a time.
+   //For testing we write one string at a time.
    if (p_wd)
       out_flush();
 }
 
-// cursor positioning using termcap parser. (jw)
+//cursor positioning using termcap parser. (jw)
 void
 term_windgoto(int row, int col) {
    OUT_STR(TGOTO(termCodeS[KS_CM], col, row));
@@ -824,7 +820,7 @@ can_get_termresponse(void) {
 
 // Set "status" to STATUS_SENT.
 private void
-termrequest_sent(TermRequest *status) {
+termrequest_sent(TermRequest* status) {
    status->tr_progress = STATUS_SENT;
    status->tr_start = time(NULL);
 }
@@ -916,12 +912,10 @@ term_color(CS s, int n) {
    // Special handling of 16 colors, because termcap can't handle it
    // Also accept "\e[3%dm", it is sometimes used.
    // Also accept CSI instead of <Esc>[
-   if (n >= 8 && t_colors >= 16
-         && ((s[0] == ESC && s[1] == '[')
-           || (s[0] == CSI && (i = 1) == 1))
+   if (n >= 8
+         && ((s[0] == ESC && s[1] == '[') || (s[0] == CSI && (i = 1) == 1))
          && s[i] != ZERO
-         && (STRCMP(s + i + 1, "%p1%dm") == 0
-           || STRCMP(s + i + 1, "%dm") == 0)
+         && (STRCMP(s + i + 1, "%p1%dm") == 0 || STRCMP(s + i + 1, "%dm") == 0)
          && (s[i] == '3' || s[i] == '4')
    ) {
       CS format = S"%s%s%%p1%%dm";
@@ -4643,26 +4637,12 @@ trans_special(
 
 #include <signal.h>
 
-#ifdef HAVE_SYS_IOCTL_H
-# include <sys/ioctl.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
 #include <termios.h>
-
-#include <sys/ioctl.h>
 
 #ifdef ISC
 # include <sys/tty.h>
 # include <sys/sioctl.h>
 # include <sys/pty.h>
-#endif
-
-#ifdef sgi
-# include <sys/sysmacros.h>
 #endif
 
 // if no PTYRANGE[01] is in the config file, we pick a default
@@ -4685,17 +4665,9 @@ int grantpt(int);
 int posix_openpt(int flags);
 
 private void
-initmaster(int f UNUSED) {
-#ifdef POSIX
-    tcflush(f, TCIOFLUSH);
-#else
-# ifdef TIOCFLUSH
-    (void)ioctl(f, TIOCFLUSH, (char *) 0);
-# endif
-#endif
-#ifdef LOCKPTY
-    (void)ioctl(f, TIOCEXCL, (char *) 0);
-#endif
+initmaster(int f) {
+   tcflush(f, TCIOFLUSH);
+   (void)ioctl(f, TIOCEXCL, (char *) 0); // lock the pty device
 }
 
 //This causes a hang on some systems, but is required for a properly working

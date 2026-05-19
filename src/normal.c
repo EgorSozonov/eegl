@@ -4601,7 +4601,7 @@ nv_down(ActionArg* aArg) {
 // Grab the file name under the cursor and edit it.
 private void
 nv_gotofile(ActionArg* aArg) {
-   LineNr   lnum = -1;
+   LineNr lnum = -1;
 
    if (check_text_or_curbuf_locked(aArg->oper))
       return;
@@ -4612,7 +4612,7 @@ nv_gotofile(ActionArg* aArg) {
    if (!portCheckCanSetCurBookDisabled())
       return;
 
-   CS ptr = grab_file_name(aArg->count1, &lnum);
+   CS ptr = grab_file_name(aArg->count1, OUT &lnum);
 
    if (ptr) {
       setpcmark();

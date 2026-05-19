@@ -23,9 +23,9 @@ ga_clear(ArrayList* gap) {
 // Clear a growing array that contains a list of strings.
 void
 ga_clear_strings(ArrayList* gap) {
-   int      i;
+   int i;
 
-   if (gap->c != NULL) {
+   if (gap->c) {
       for (i = 0; i < gap->len; ++i)
          eeglFree(((Byte **)(gap->c))[i]);
    } 
@@ -83,9 +83,8 @@ ga_grow_id(ArrayList *gap, int n, AllocId id UNUSED) {
 
 int
 ga_grow_inner(ArrayList* gap, int n) {
-   Unt   old_len;
-   Unt   new_len;
-   Byte   *pp;
+   Unt old_len;
+   Unt new_len;
 
    if (n < gap->ga_growsize)
       n = gap->ga_growsize;
@@ -97,7 +96,7 @@ ga_grow_inner(ArrayList* gap, int n) {
       n = gap->len / 2;
 
    new_len = (Unt)gap->ga_itemsize * (gap->len + n);
-   pp = eeRealloc(gap->c, new_len);
+   CS pp = eeRealloc(gap->c, new_len);
    old_len = (Unt)gap->ga_itemsize * gap->cap;
    memset(pp + old_len, 0, new_len - old_len);
    gap->cap = gap->len + n;
@@ -986,7 +985,7 @@ list2items(Arr(Var) argvars, Var* returnVar) {
 // "items(string)" function. Precond: Caller must have already checked that argvars[0] is a String.
 void
 string2items(Arr(Var) argvars, Var* returnVar) {
-   Byte   *p = argvars[0].string;
+   CS p = argvars[0].string;
    allocReturnList(returnVar);
    if (!p)  // null string behaves like an empty string
       return;
@@ -1210,28 +1209,28 @@ list2string(Var* tv, int copyID, int restore_copyID) {
 
 typedef struct join_S {
    CS s;
-   Byte   *tofree;
+   Byte* tofree;
 } Join;
 
 private int
 list_join_inner(
-    ArrayList   *gap,      // to store the result in
-    List   *l,
-    Byte   *sep,
-    int      echo_style,
-    int      restore_copyID,
-    int      copyID,
-    ArrayList   *join_gap)   // to keep each list item string
+    ArrayList* gap,      // to store the result in
+    List* l,
+    CS sep,
+    int echo_style,
+    int restore_copyID,
+    int copyID,
+    ArrayList* join_gap)   // to keep each list item string
 {
-    int      i;
-    Join   *p;
-    int      len;
-    int      sumlen = 0;
-    int      first = TRUE;
-    Byte   *tofree;
-    Byte   numbuf[NUMBUFLEN];
+    int i;
+    Join* p;
+    int len;
+    int sumlen = 0;
+    int first = TRUE;
+    Byte* tofree;
+    Byte numbuf[NUMBUFLEN];
     ListItem   *item;
-    Byte   *s;
+    CS s;
 
    // Stringify each item in the list.
    CHECK_LIST_MATERIALIZE(l);
@@ -1286,12 +1285,12 @@ list_join_inner(
 // Return FAIL or OK.
 int
 list_join(
-    ArrayList   *gap,
-    List   *l,
-    Byte   *sep,
-    int      echo_style,
-    int      restore_copyID,
-    int      copyID
+    ArrayList* gap,
+    List* l,
+    CS sep,
+    int echo_style,
+    int restore_copyID,
+    int copyID
 ) {
    ArrayList   join_ga;
 
@@ -1409,9 +1408,9 @@ failret:
 int
 write_list(FILE* fd, List* list, int binary) {
    ListItem   *li;
-   int      c;
-   int      ret = OK;
-   Byte   *s;
+   int c;
+   int ret = OK;
+   CS s;
 
    CHECK_LIST_MATERIALIZE(list);
    FOR_ALL_LIST_ITEMS(list, li) {
@@ -1599,16 +1598,16 @@ private SortInfo* sortinfo = NULL;
 // Comparer for f_sort() and f_uniq() below.
 private int
 item_compare(const void *s1, const void *s2) {
-   SortItem  *si1, *si2;
    Var   *tv1, *tv2;
-   Byte   *p1, *p2;
+   CS p1;
+   CS p2;
    Byte   *tofree1 = NULL, *tofree2 = NULL;
    int      res;
    Byte   numbuf1[NUMBUFLEN];
    Byte   numbuf2[NUMBUFLEN];
 
-   si1 = (SortItem *)s1;
-   si2 = (SortItem *)s2;
+   SortItem* si1 = (SortItem *)s1;
+   SortItem* si2 = (SortItem *)s2;
    tv1 = &si1->item->c;
    tv2 = &si2->item->c;
 
@@ -2326,14 +2325,14 @@ extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
 // "extend(list, list [, idx])" function. "extend(dict, dict [, action])" function
 void
 f_extend(Arr(Var) argvars, Var* returnVar) {
-   Byte      *errmsg = (CS)N_("extend() argument");
+   CS errmsg = (CS)N_("extend() argument");
    extend(argvars, returnVar, errmsg, FALSE);
 }
 
 // "extendnew(list, list [, idx])" function. "extendnew(dict, dict [, action])" function
 void
 f_extendnew(Arr(Var) argvars, Var* returnVar) {
-   Byte* errmsg = (CS)N_("extendnew() argument");
+   CS errmsg = (CS)N_("extendnew() argument");
    extend(argvars, returnVar, errmsg, TRUE);
 }
 
@@ -3482,14 +3481,14 @@ private char *sha_self_test_vector[] = {
 // Perform a test on the SHA256 algorithm. Return FAIL or OK.
 int
 sha256_self_test(void) {
-   int           i, j;
-   char        output[65];
+   int i, j;
+   char output[65];
    ContextSha256 ctx;
-   Byte        buf[1000];
-   Byte        sha256sum[32];
-   static int        failures = 0;
-   Byte        *hexit;
-   static int        sha256_self_tested = 0;
+   Byte buf[1000];
+   Byte sha256sum[32];
+   static int failures = 0;
+   Byte* hexit;
+   static int sha256_self_tested = 0;
 
    if (sha256_self_tested > 0)
       return failures > 0 ? FAIL : OK;
@@ -3548,14 +3547,14 @@ sha2_seed(CS header, int header_len, CS salt, int salt_len) {
    sha256_update(&ctx, (CS)random_data, sizeof(random_data));
    sha256_finish(&ctx, sha256sum);
 
-   // put first block into header.
+   //put first block into header.
    for (int i = 0; i < header_len; i++)
       header[i] = sha256sum[i % sizeof(sha256sum)];
 
-   // put remaining block into salt.
+   //put remaining block into salt.
    if (salt) {
       for (int i = 0; i < salt_len; i++)
-          salt[i] = sha256sum[(i + header_len) % sizeof(sha256sum)];
+         salt[i] = sha256sum[(i + header_len) % sizeof(sha256sum)];
    }
 }
 
@@ -4436,8 +4435,8 @@ tv_get_string(Var* varp) {
 //Like tv_get_string() but don't allow number to string conversion for Vim9.
 CS
 tv_get_string_strict(Var* varp) {
-   static Byte   mybuf[NUMBUFLEN];
-   Byte* res =  convertVarToString_strict(varp, mybuf, FALSE);
+   static Byte mybuf[NUMBUFLEN];
+   CS res =  convertVarToString_strict(varp, mybuf, FALSE);
 
    return res != NULL ? res : (CS)"";
 }
@@ -4451,7 +4450,7 @@ tv_get_string_buf(Var* varp, CS buf) {
 //Careful: This uses a single, static buffer. YOU CAN ONLY USE IT ONCE!
 CS
 convertVarToStringSingleUse(Var* varp) {
-   static Byte   mybuf[NUMBUFLEN];
+   static Byte mybuf[NUMBUFLEN];
    return convertVarToString(varp, mybuf);
 }
 
@@ -4516,7 +4515,7 @@ convertVarToString_strict(Var* varp, CS buf, int strict) {
 }
 
 // Turn a var into a string. Similar to tv_get_string_buf() but uses string() on Bag, List, etc.
-Arr(Byte)
+CS
 tv_stringify(Var* varp, CS buf) {
    if (varp->tag == VAR_LIST
        || varp->tag == VAR_BAG
@@ -5060,8 +5059,9 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
 //numbers are different.  Floats and numbers are also different.
 int
 tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
-   Byte   buf1[NUMBUFLEN], buf2[NUMBUFLEN];
-   Byte   *s1, *s2;
+   Byte buf1[NUMBUFLEN], buf2[NUMBUFLEN];
+   CS s1;
+   CS s2;
    static int  recursive_cnt = 0;       // catch recursive loops
    int      r;
    static int   tv_equal_recurse_limit;
@@ -5203,7 +5203,7 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
    // strict to avoid backwards compatibility problems.
    // The leading digit can be omitted.
    // Don't look for a float after the "." operator, so that ":let vers = 1.2.3" doesn't fail.
-   Byte   *p;
+   CS p;
    if (**arg == '.')
       p = *arg;
    else {
@@ -5239,8 +5239,8 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
           returnVar->floatt = f;
       }
    } ei (**arg == '0' && ((*arg)[1] == 'z' || (*arg)[1] == 'Z')) {
-      Byte  *bp;
-      Blob  *blob = NULL;
+      CS  bp;
+      Blob* blob = NULL;
 
       // Blob constant: 0z0123456789abcdef
       if (evaluate)
@@ -5259,14 +5259,14 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
          if (bp[2] == '.' && eeIsXDigit(bp[3]))
             ++bp;
       }
-      if (blob != NULL)
+      if (blob)
           returnVar_blob_set(returnVar, blob);
       *arg = bp;
    } else {
-      Long   n;
 
       // decimal or hex number
       int len;
+      Long n;
       readLongNumber(
          *arg, NULL, OUT &len, STR2NR_ALL + STR2NR_QUOTE, OUT &n, NULL, 0, true, NULL
       );
@@ -5292,7 +5292,7 @@ CS
 tv2string(
    Var* tv,
    Byte** tofree,
-   Byte* numbuf,
+   CS numbuf,
    int copyID)
 {
    return echo_string_core(tv, tofree, numbuf, copyID, FALSE, TRUE, FALSE);
@@ -5304,16 +5304,16 @@ tv2string(
 //Return FAIL if the name is invalid.
 int
 eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
-   Byte   *string = NULL;
-   int      cc;
-   int      mustfree = FALSE;
+   CS string = NULL;
+   int cc;
+   int mustfree = FALSE;
 
    ++*arg;
    CS name = *arg;
    int len = readEnvNameAndGetItsLen(arg);
    if (evaluate) {
       if (len == 0)
-          return FAIL; // invalid empty name
+         return FAIL; // invalid empty name
 
       cc = name[len];
       name[len] = ZERO;
@@ -5349,7 +5349,7 @@ tv_get_lnum(Arr(Var) argvars) {
 
    LineNr lnum = (LineNr)varGetNumberChk(&argvars[0], NULL);
    if (lnum <= 0 && anyEmsgG_before == anyEmsgG && argvars[0].tag != VAR_NUMBER) {
-      int   fnum;
+      int fnum;
       // no valid number, try using arg like line()
       Pos* fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);
       if (fp)
@@ -5365,7 +5365,8 @@ daGetLnumFromBookOrVar(Var* argvars, Book* book) {
           && argvars[0].string != NULL
           && argvars[0].string[0] == '$'
           && argvars[0].string[1] == ZERO
-          && book)
+          && book
+   )
       return book->mem.lineCount;
    return (LineNr)varGetNumberChk(&argvars[0], NULL);
 }
@@ -5379,7 +5380,7 @@ daGetBook(Var* tv, Boole curtab_only) {
       return bookFindFileByBookNr((int)tv->number);
    if (tv->tag != VAR_STRING)
       return NULL;
-   if (name == NULL || *name == ZERO)
+   if (!name || *name == ZERO)
       return curBook;
    if (name[0] == '$' && name[1] == ZERO)
       return lastBook;
@@ -5487,11 +5488,11 @@ get_compare_type(CS p, int* len, int* type_is) {
       if (p[1] == 's') {
          // "is" and "isnot"; but not a prefix of a name
          if (p[2] == 'n' && p[3] == 'o' && p[4] == 't')
-             *len = 5;
+            *len = 5;
          i = p[*len];
          if (!SAFE_isalnum(i) && i != '_') {
-             type = *len == 2 ? EXPR_IS : EXPR_ISNOT;
-             *type_is = TRUE;
+            type = *len == 2 ? EXPR_IS : EXPR_ISNOT;
+            *type_is = TRUE;
          }
       }
       break;
@@ -5513,11 +5514,11 @@ tv2bool(Var* tv) {
       return tv->partial != NULL;
    case VAR_FUNC:
    case VAR_STRING:
-      return tv->string != NULL && *tv->string != ZERO;
+      return tv->string && *tv->string != ZERO;
    case VAR_LIST:
-      return tv->list != NULL && tv->list->len > 0;
+      return tv->list && tv->list->len > 0;
    case VAR_BAG:
-      return tv->bag != NULL && tv->bag->hashTable.count > 0;
+      return tv->bag && tv->bag->hashTable.count > 0;
    case VAR_BOOL:
    case VAR_SPECIAL:
       return tv->number == VVAL_TRUE ? TRUE : FALSE;
@@ -5526,7 +5527,7 @@ tv2bool(Var* tv) {
    case VAR_CHANNEL:
       return tv->channel != NULL;
    case VAR_BLOB:
-      return tv->blob != NULL && tv->blob->c.len > 0;
+      return tv->blob && tv->blob->c.len > 0;
    case VAR_UNKNOWN:
    case VAR_ANY:
    case VAR_VOID:
@@ -5922,7 +5923,7 @@ bagToString(Var* tv, int copyID, int restore_copyID) {
    Boole first = true;
    Byte numbuf[NUMBUFLEN];
    EeSetItem   *hi;
-   Byte* s;
+   CS s;
    Bag* b;
 
    if ((b = tv->bag) == NULL)
@@ -6001,9 +6002,9 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
    Var   tvkey;
    Var   tv;
    DictItem   *item;
-   Byte   *curly_expr = skipwhite(*arg + 1);
-   Byte   buf[NUMBUFLEN];
-   int      had_comma;
+   CS curly_expr = skipwhite(*arg + 1);
+   Byte buf[NUMBUFLEN];
+   int had_comma;
 
    // First check if it's not a curly-braces expression: {expr}. Must do this without evaluating, 
    // otherwise a function may be called twice. Unfortunately this means we need to call eval1() 
@@ -6910,7 +6911,7 @@ write_string(ArrayList* gap, CS str) {
 //Encode "val" into "gap". Return FAIL or OK.
 private int
 json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
-   Byte   numbuf[NUMBUFLEN];
+   Byte numbuf[NUMBUFLEN];
    CS res;
    Blob* b;
    List* l;
@@ -7119,15 +7120,15 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
             if (reader->js_fill != NULL && (int)(reader->js_end - p) < NUMBUFLEN) {
                reader->js_used = (int)(p - reader->js_buf);
                if (reader->js_fill(reader)) {
-                   p = reader->js_buf + reader->js_used;
-                   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+                  p = reader->js_buf + reader->js_used;
+                  reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
                }
             }
             nr = 0;
             len = 0;
             readLongNumber(p + 2, NULL, &len, STR2NR_HEX + STR2NR_FORCE, &nr, NULL, 4, true, NULL);
             if (len == 0) {
-               if (res != NULL)
+               if (res)
                   ga_clear(&ga);
                return FAIL;
             }
@@ -7153,7 +7154,7 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
                }
             }
             if (res) {
-               Byte   buf[NUMBUFLEN];
+               Byte buf[NUMBUFLEN];
 
                buf[mb_char2bytes((int)nr, buf)] = ZERO;
                ga_concat(&ga, buf);
@@ -7166,7 +7167,7 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
          }
          if (c > 0) {
             p += 2;
-            if (res != NULL)
+            if (res)
                ga_append(&ga, c);
          }
       } else {
@@ -7179,9 +7180,9 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
             mch_memmove((Byte *)ga.c + ga.len, p, (Unt)len);
             ga.len += len;
          }
-          p += len;
-     }
-  }
+         p += len;
+      }
+   }
 
    reader->js_used = (int)(p - reader->js_buf);
    if (*p == quote) {
@@ -8000,7 +8001,7 @@ f_sinh(Arr(Var) argvars, Var* returnVar) {
 private void
 prepare_assert_error(ArrayList *gap) {
    char    buf[NUMBUFLEN];
-   Byte  *sname = estack_sfile(ESTACK_NONE);
+   CS sname = estack_sfile(ESTACK_NONE);
 
    ga_init2(gap, 1, 100);
    if (sname != NULL) {
@@ -8020,7 +8021,7 @@ prepare_assert_error(ArrayList *gap) {
 //Append "p[clen]" to "gap", escaping unprintable characters.
 //Change NL to \n, CR to \r, etc.
 private void
-ga_concat_esc(ArrayList *gap, Byte *p, int clen) {
+ga_concat_esc(ArrayList *gap, CS p, int clen) {
    Byte  buf[NUMBUFLEN];
 
    if (clen > 1) {
@@ -8051,7 +8052,7 @@ ga_concat_esc(ArrayList *gap, Byte *p, int clen) {
 //Append "str" to "gap", escaping unprintable characters.
 //Changes NL to \n, CR to \r, etc.
 private void
-ga_concat_shorten_esc(ArrayList *gap, Byte *str) {
+ga_concat_shorten_esc(ArrayList *gap, CS str) {
    CS p;
    CS s;
    Unt c;
@@ -8093,13 +8094,13 @@ private void
 fill_assert_error(
    ArrayList   *gap,
    Var   *opt_msg_tv,
-   Byte      *exp_str,
-   Var   *exp_tv_arg,
-   Var   *got_tv_arg,
+   CS exp_str,
+   Var* exp_tv_arg,
+   Var* got_tv_arg,
    AssertKind assKind
 ) {
    Byte   numbuf[NUMBUFLEN];
-   Byte   *tofree;
+   Byte* tofree;
    Var   *exp_tv = exp_tv_arg;
    Var   *got_tv = got_tv_arg;
    int      did_copy = FALSE;
@@ -8213,8 +8214,8 @@ assert_equal_common(Arr(Var) argvars, AssertKind assKind) {
 private int
 assert_match_common(Arr(Var) argvars, AssertKind assKind) {
    ArrayList   ga;
-   Byte   buf1[NUMBUFLEN];
-   Byte   buf2[NUMBUFLEN];
+   Byte buf1[NUMBUFLEN];
+   Byte buf2[NUMBUFLEN];
    CS pat = convertVarToString(&argvars[0], buf1);
    CS text = convertVarToString(&argvars[1], buf2);
    if (pat && text && pattern_match(pat, text, FALSE) != (assKind == ASSERT_MATCH)) {
@@ -8251,11 +8252,11 @@ assert_bool(Arr(Var) argvars, int isTrue) {
 }
 
 private void
-assert_append_cmd_or_arg(ArrayList *gap, Arr(Var) argvars, Byte *cmd) {
-   Byte* tofree;
+assert_append_cmd_or_arg(ArrayList *gap, Arr(Var) argvars, CS cmd) {
    Byte numbuf[NUMBUFLEN];
 
    if (argvars[1].tag != VAR_UNKNOWN && argvars[2].tag != VAR_UNKNOWN) {
+      Byte* tofree;
       ga_concat(gap, echo_string(&argvars[2], &tofree, numbuf, 0));
       eeglFree(tofree);
    } else
@@ -8333,8 +8334,8 @@ assert_equalfile(Arr(Var) argvars) {
       ArrayList   ga;
       prepare_assert_error(&ga);
       if (argvars[2].tag != VAR_UNKNOWN) {
-          Byte   numbuf[NUMBUFLEN];
-          Byte   *tofree;
+          Byte numbuf[NUMBUFLEN];
+          Byte* tofree;
 
           ga_concat(&ga, echo_string(&argvars[2], &tofree, numbuf, 0));
           eeglFree(tofree);
@@ -8401,7 +8402,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
    int      save_trylevel = trylevel;
    int      called_emsg_before = called_emsg;
    CS wrong_arg_msg = NULL;
-   Byte   *tofree = NULL;
+   Byte* tofree = NULL;
 
    if (check_for_string_or_number_arg(argvars, 0) == FAIL
        || check_for_opt_string_or_list_arg(argvars, 1) == FAIL
@@ -8433,13 +8434,12 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
       ga_clear(&ga);
       returnVar->number = 1;
    } ei (argvars[1].tag != VAR_UNKNOWN) {
-      Byte   buf[NUMBUFLEN];
-      Byte   *expected;
-      Byte   *expected_str = NULL;
+      Byte buf[NUMBUFLEN];
+      CS expected;
+      CS expected_str = NULL;
       int   error_found = FALSE;
       int   error_found_index = 1;
-      Byte   *actual = emsg_assert_fails_msg == NULL ? (CS)"[unknown]"
-                            : emsg_assert_fails_msg;
+      CS actual = emsg_assert_fails_msg  ? emsg_assert_fails_msg : S"[unknown]";
 
       if (argvars[1].tag == VAR_STRING) {
          expected = convertVarToString(&argvars[1], buf);
@@ -8691,7 +8691,7 @@ f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
 //"test_override({name}, {val})" function
 void
 f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
-   Byte *name = Em;
+   CS name = Em;
    static int save_starting = -1;
 
    if (check_for_string_arg(argvars, 0) == FAIL || check_for_number_arg(argvars, 1) == FAIL)
@@ -9264,7 +9264,7 @@ string2blob(CS str) {
    if (!blob)
       return NULL;
       
-   Byte  *s = str;
+   CS s = str;
    if (s[0] != '0' || (s[1] != 'z' && s[1] != 'Z'))
       goto failed;
    s += 2;
@@ -9440,22 +9440,18 @@ blob_add(Arr(Var) argvars, Var* returnVar) {
 // "remove({blob}, {idx} [, {end}])" function
 void
 blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
-   Blob   *b = argvars[0].blob;
-   Blob   *newblob;
+   Blob* b = argvars[0].blob;
    Boole error = false;
-   long   idx;
-   long   end;
-   int      len;
-   Byte   *p;
+   CS p;
 
    if (b && value_check_lock(b->lock, mbText(arg_errmsg), TRUE))
       return;
 
-   idx = (long)varGetNumberChk(&argvars[1], &error);
+   long idx = (long)varGetNumberChk(&argvars[1], &error);
    if (error)
       return;
 
-   len = blob_len(b);
+   int len = blob_len(b);
 
    if (idx < 0)
       // count from the end
@@ -9474,7 +9470,7 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    }
 
    // Remove range of items, return blob with values.
-   end = (long)varGetNumberChk(&argvars[2], &error);
+   long end = (long)varGetNumberChk(&argvars[2], &error);
    if (error)
       return;
    if (end < 0)
@@ -9484,7 +9480,7 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
       showErrFmtMsg(_(e_blob_index_out_of_range_nr), end);
       return;
    }
-   newblob = blob_alloc();
+   Blob* newblob = blob_alloc();
    if (newblob == NULL)
       return;
    newblob->c.len = end - idx + 1;
@@ -9507,20 +9503,20 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
 //number in Blob "blob_arg" and return the result in "returnVar".
 void
 blob_filter_map(
-   Blob      *blob_arg,
-   FilterMap   filtermap,
-   Var   *expr,
-   Byte      *arg_errmsg,
-   Var   *returnVar)
-{
+   Blob* blob_arg,
+   FilterMap filtermap,
+   Var* expr,
+   CS arg_errmsg,
+   Var* returnVar
+) {
    Blob   *b = blob_arg;
    int      i;
    Var   tv;
    Long   val;
    Blob   *b_ret;
-   int      idx = 0;
-   int      rem;
-   Var   newtv;
+   int idx = 0;
+   int rem;
+   Var newtv;
 
    if (filtermap == FILTERMAP_MAPNEW) {
       returnVar->tag = VAR_BLOB;
@@ -9560,7 +9556,7 @@ blob_filter_map(
             if (newtv.number != val)
                blob_set(b_ret, i, newtv.number);
          } ei (rem) {
-            Byte *p = (CS)blob_arg->c.c;
+            CS p = (CS)blob_arg->c.c;
             mch_memmove(p + i, p + i + 1, (Unt)b->c.len - i - 1);
             --b->c.len;
             --i;
@@ -9579,7 +9575,7 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    long   before = 0;
    Boole error = false;
    int      val, len;
-   Byte   *p;
+   CS p;
 
    if (!b) {
       return;
@@ -9592,10 +9588,10 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    if (argvars[2].tag != VAR_UNKNOWN) {
       before = (long)varGetNumberChk(&argvars[2], &error);
       if (error)
-          return;      // type error; errmsg already given
+         return;      // type error; errmsg already given
       if (before < 0 || before > len) {
-          showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[2]));
-          return;
+         showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[2]));
+         return;
       }
    }
     val = varGetNumberChk(&argvars[1], &error);
@@ -9620,12 +9616,12 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
 // starting with the optional initial value "argvars[2]" and return the result in "returnVar".
 void
 blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
-   Blob   *b = argvars[0].blob;
-   int      called_emsg_start = called_emsg;
-   int      r;
-   Var   initial;
-   Var   argv[3];
-   int   i;
+   Blob* b = argvars[0].blob;
+   int called_emsg_start = called_emsg;
+   int r;
+   Var initial;
+   Var argv[3];
+   int i;
 
    if (argvars[2].tag == VAR_UNKNOWN) {
       if (b == NULL || b->c.len == 0) {
@@ -9643,27 +9639,27 @@ blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
    }
 
    copy_tv(OUT returnVar, &initial);
-   if (b == NULL)
+   if (!b)
       return;
 
    for ( ; i < b->c.len; i++) {
-   argv[0] = *returnVar;
-   argv[1].tag = VAR_NUMBER;
-   argv[1].number = blob_get(b, i);
+      argv[0] = *returnVar;
+      argv[1].tag = VAR_NUMBER;
+      argv[1].number = blob_get(b, i);
 
-   r = eval_expr_typval(expr, TRUE, argv, 2, returnVar);
+      r = eval_expr_typval(expr, TRUE, argv, 2, returnVar);
 
-   clearVar(&argv[0]);
-   if (r == FAIL || called_emsg != called_emsg_start)
-       return;
+      clearVar(&argv[0]);
+      if (r == FAIL || called_emsg != called_emsg_start)
+          return;
    }
 }
 
 void
 blob_reverse(Blob* b, Var* returnVar) {
-   int   i, len = blob_len(b);
+   int len = blob_len(b);
 
-   for (i = 0; i < len / 2; i++) {
+   for (int i = 0; i < len / 2; i++) {
       int tmp = blob_get(b, i);
 
       blob_set(b, i, blob_get(b, len - i - 1));
@@ -9687,10 +9683,9 @@ f_blob2list(Arr(Var) argvars, Var* returnVar) {
 
 void
 f_list2blob(Arr(Var) argvars, Var* returnVar) {
-   ListItem   *li;
-
    if (returnVar_blob_alloc(returnVar) == FAIL)
       return;
+      
    Blob* blob = returnVar->blob;
 
    if (confirmVarIsList(argvars, 0) == FAIL)
@@ -9701,6 +9696,8 @@ f_list2blob(Arr(Var) argvars, Var* returnVar) {
       return;
 
    CHECK_LIST_MATERIALIZE(l);
+   
+   ListItem* li;
    FOR_ALL_LIST_ITEMS(l, li) {
       Boole error = false;
       Long n = varGetNumberChk(&li->c, &error);

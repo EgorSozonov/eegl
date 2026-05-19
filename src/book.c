@@ -3576,7 +3576,7 @@ getLastKnownLineNumber(void) {
 Book *
 booklistFindByNameExpandingLinks(CS fname) {
    // First make the name into a full path name
-   CS fullFName = FullName_save(fname, TRUE);      // force expansion, get rid of symbolic links
+   CS fullFName = fiExpandAndCopy(fname, TRUE);      // force expansion, get rid of symbolic links
    Book* book = NULL;
    if (fullFName) {
       book = booklistFindName(fullFName);
@@ -5414,7 +5414,7 @@ fname_expand(CS* fullFName, CS* sfname){
       return;
    if (*sfname == NULL)       // no short file name given, use fullFName
       *sfname = *fullFName;
-   *fullFName = FullName_save(*fullFName, true);   // expand to full path
+   *fullFName = fiExpandAndCopy(*fullFName, true);   // expand to full path
 }
 
 // Open a portal for a number of books.
@@ -6505,9 +6505,6 @@ endOfName:
                   //the protection bits for others.
                   if (stNew.st_gid != stOld.st_gid && fchown(bfd, (uid_t)-1, stOld.st_gid) != 0)
                       mch_setperm(backup, (perm & 0707) | ((perm & 07) << 3));
-#if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
-                  mch_copy_sec(fname, backup);
-#endif
                   mch_copy_xattr(fname, backup);
 
                   // copy the file.
@@ -6530,9 +6527,6 @@ endOfName:
                   if (writeInfo.bw_len < 0)
                      errmsg = (CS)_(e_cant_read_file_for_backup_add_bang_to_write_anyway);
                   set_file_time(backup, stOld.st_atime, stOld.st_mtime);
-#if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
-                  mch_copy_sec(fname, backup);
-#endif
                   mch_copy_xattr(fname, backup);
                   break;
                }
@@ -6829,9 +6823,6 @@ endOfName:
 
    //Probably need to set the security context.
    if (!backup_copy) {
-# if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
-       mch_copy_sec(backup, wfname);
-# endif
        mch_copy_xattr(backup, wfname);
    }
 
@@ -7599,7 +7590,7 @@ do_argfile(Invocation* invo, int argn){
    } else {
       // if 'hidden' set, only check for changed file when re-editing the same book
       Boole sameFile = false;
-      p = FullName_save(alist_name(&ARGLIST[argn]), true);
+      p = fiExpandAndCopy(alist_name(&ARGLIST[argn]), true);
       sameFile = fNameMatchesCurBook(p);
       eeglFree(p);
       if (sameFile
@@ -7646,12 +7637,12 @@ void
 c_argdedupe(Invocation* invo UNUSED){
    for (int i = 0; i < ARGCOUNT; ++i) {
       // Expand each argument to a full path to catch different paths leading to the same file
-      CS firstFullname = FullName_save(ARGLIST[i].fname, FALSE);
+      CS firstFullname = fiExpandAndCopy(ARGLIST[i].fname, FALSE);
       if (!firstFullname)
           return;
 
       for (int j = i + 1; j < ARGCOUNT; ++j) {
-         CS secondFullname = FullName_save(ARGLIST[j].fname, FALSE);
+         CS secondFullname = fiExpandAndCopy(ARGLIST[j].fname, FALSE);
          if (secondFullname == NULL)
             break;  // out of memory
          int areNamesDuplicate = fnamecmp(firstFullname, secondFullname) == 0;

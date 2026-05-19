@@ -9,8 +9,7 @@
 //- Let 'diffexpr' do the work, using files.
 
 #include "eegl.h"
-
-#include <sys/stat.h> // for stat
+int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 
 struct DiffBlock {
    DiffBlock* df_next;
@@ -1672,7 +1671,7 @@ c_diffpatch(Invocation* invo) {
       goto theend;
 
    // Get the absolute path of the patchfile, changing directory below.
-   CS fullname = FullName_save(invo->arg, FALSE);
+   CS fullname = fiExpandAndCopy(invo->arg, FALSE);
    CS esc_name = copyStr_shellescape(
           fullname != NULL ? fullname : invo->arg, TRUE, TRUE
    );
@@ -4535,13 +4534,6 @@ done:
 }
 
 //{{{xdiff (git diff algorithms)
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <limits.h>
 
 // XdEmitConf.flags
 #define XDL_EMIT_FUNCNAMES (1 << 0)

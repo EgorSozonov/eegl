@@ -388,7 +388,7 @@ check_script_symlink(int sid) {
 
    // If fname is a symbolic link, create an script_item for the real file.
 
-   CS real_fname = FullName_save(si->sn_name, true);
+   CS real_fname = fiExpandAndCopy(si->sn_name, true);
    if (real_fname != NULL && STRCMP(real_fname, si->sn_name) != 0) {
       int real_sid = find_script_by_name(real_fname);
       int error2 = OK;
@@ -611,7 +611,7 @@ private int
 load_pack_plugin(Byte *fname) {
    static CS plugpat = (CS)"%s/plugin/**/*.vim";
    static CS ftpat = (CS)"%s/ftdetect/*.vim";
-   CS ffname = FullName_save(fname, true);
+   CS ffname = fiExpandAndCopy(fname, true);
    int retval = FAIL;
 
    int len = (int)STRLEN(ffname) + (int)STRLEN(ftpat);
@@ -1075,7 +1075,7 @@ scriptRunFileInternal(
    FnCallEntry funccalp_entry;
    int save_debug_break_level = debug_break_level;
    int sid = -1;
-   ScriptItem       *si = NULL;
+   ScriptItem* si = NULL;
    int save_estack_compiling = estack_compiling;
    ESTACK_CHECK_DECLARATION;
 
@@ -1089,8 +1089,8 @@ scriptRunFileInternal(
       fname_not_fixed = expand_env_save(fname);
       if (fname_not_fixed == NULL)
          goto theend;
-      fname_exp = FullName_save(fname_not_fixed, true);
       _bp(true);
+      fname_exp = fiExpandAndCopy(fname_not_fixed, true);
       if (mch_isdir(fname_exp)) {
          smsg(_("Cannot source a directory: \"%s\""), fname);
          goto theend;
@@ -1162,23 +1162,23 @@ scriptRunFileInternal(
    if (time_fd)
       time_push(&tv_rel, &tv_start);
 
-   // "legacy" does not apply to commands in the script
+   //"legacy" does not apply to commands in the script
    stickyCommandModifiersG = 0;
 
    save_scriptPosG = scriptPosG;
    scriptPosG.lineNr = 0;
 
-   // Don't use local function variables, if called from a function.
-   // Also starts profiling timer for nested script.
+   //Don't use local function variables, if called from a function.
+   //Also starts profiling timer for nested script.
    save_funccal(&funccalp_entry);
 
-   // Reset "KeyTyped" to avoid some commands thinking they are invoked
-   // interactively.  E.g. defining a function would output indent.
+   //Reset "KeyTyped" to avoid some commands thinking they are invoked
+   //interactively.  E.g. defining a function would output indent.
    int save_KeyTyped = KeyTyped;
    KeyTyped = FALSE;
 
-   // Check if this script was sourced before to find its SID.
-   // Always use a new sequence number.
+   //Check if this script was sourced before to find its SID.
+   //Always use a new sequence number.
    scriptPosG.seq = ++last_current_SID_seq;
    if (sid > 0) {
       int      todo;
@@ -2429,20 +2429,20 @@ dbg_check_skipped(Invocation* invo) {
 }
 
 //The list of breakpoints: dbg_breakp. This is an arraylist of structs.
-struct debuggy {
-   int      dbg_nr;      // breakpoint number
-   int      dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
+typedef struct {
+   int dbg_nr;      // breakpoint number
+   int dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
    CS dbg_name;   // function, expression or file name
-   RegProg   *dbg_prog;   // regexp program
-   LineNr   dbg_lnum;   // line number in function or file
-   int      dbg_forceit;   // ! used
-   Var    *dbg_val;       // last result of watchexpression
-   int      dbg_level;      // stored nested level for expr
-};
+   RegProg* dbg_prog;   // regexp program
+   LineNr dbg_lnum;   // line number in function or file
+   int dbg_forceit;   // ! used
+   Var* dbg_val;       // last result of watchexpression
+   int dbg_level;      // stored nested level for expr
+} Debuggy;
 
-private ArrayList dbg_breakp = {0, 0, sizeof(struct debuggy), 4, NULL};
-#define BREAKP(idx)      (((struct debuggy *)dbg_breakp.c)[idx])
-#define DEBUGGY(gap, idx)   (((struct debuggy *)gap->c)[idx])
+private ArrayList dbg_breakp = {0, 0, sizeof(Debuggy), 4, NULL};
+#define BREAKP(idx)      (((Debuggy *)dbg_breakp.c)[idx])
+#define DEBUGGY(gap, idx)   (((Debuggy *)gap->c)[idx])
 private int last_breakp = 0;   // nr of last defined breakpoint
 private int has_expr_breakpoint = FALSE;
 
@@ -2455,7 +2455,7 @@ private LineNr debuggy_find(int file,Byte *fname, LineNr after, ArrayList *gap, 
 
 //Evaluate the "bp->dbg_name" expression and return the result. Disable error messages.
 private Var *
-eval_expr_no_emsg(struct debuggy *bp) {
+eval_expr_no_emsg(Debuggy *bp) {
    // Disable error messages, a bad expression would make Eegl unusable.
    ++emsg_off;
    Var* tv = eval_expr(bp->dbg_name, NULL);
@@ -2471,7 +2471,7 @@ private int
 dbg_parsearg(CS arg, ArrayList* gap){ // either &dbg_breakp or &prof_ga
    Byte   *p = arg;
    Byte   *q;
-   struct debuggy *bp;
+   Debuggy *bp;
    int      here = FALSE;
 
    if (ga_grow(gap, 1) == FAIL)
@@ -2535,7 +2535,7 @@ dbg_parsearg(CS arg, ArrayList* gap){ // either &dbg_breakp or &prof_ga
       if (p == NULL)
          return FAIL;
       if (*p != '*') {
-         bp->dbg_name = FullName_save(p, true);
+         bp->dbg_name = fiExpandAndCopy(p, true);
          eeglFree(p);
       } else
          bp->dbg_name = p;
@@ -2549,11 +2549,9 @@ dbg_parsearg(CS arg, ArrayList* gap){ // either &dbg_breakp or &prof_ga
 //":breakadd".  Also used for ":profile".
 void
 c_breakadd(Invocation* invo) {
-   struct debuggy *bp;
-   Byte   *pat;
-   ArrayList   *gap;
+   Debuggy *bp;
 
-   gap = &dbg_breakp;
+   ArrayList* gap = &dbg_breakp;
 
    if (dbg_parsearg(invo->arg, gap) != OK)
       return;
@@ -2562,7 +2560,7 @@ c_breakadd(Invocation* invo) {
     bp->dbg_forceit = invo->forceit;
 
    if (bp->dbg_type != DBG_EXPR) {
-      pat = file_pat_to_reg_pat(bp->dbg_name, NULL, NULL);
+      CS pat = file_pat_to_reg_pat(bp->dbg_name, NULL, NULL);
       bp->dbg_prog = compileRegexp(pat, RE_MAGIC + RE_STRING);
       eeglFree(pat);
       if (pat == NULL || bp->dbg_prog == NULL)
@@ -2570,10 +2568,8 @@ c_breakadd(Invocation* invo) {
       else {
          if (bp->dbg_lnum == 0)   // default line number is 1
             bp->dbg_lnum = 1;
-         {
          DEBUGGY(gap, gap->len).dbg_nr = ++last_breakp;
          ++debug_tick;
-         }
          ++gap->len;
          PROF_CLEAR_CACHE(gap);
       }
@@ -2615,24 +2611,24 @@ debug_has_expr_breakpoint(void) {
 // ":breakdel" and ":profdel".
 void
 c_breakdel(Invocation* invo) {
-   struct debuggy *bp, *bpi;
+   Debuggy *bp, *bpi;
    int      nr;
    int      todel = -1;
    int      del_all = FALSE;
    int      i;
    LineNr   best_lnum = 0;
-   ArrayList   *gap;
 
-    gap = &dbg_breakp;
+   ArrayList* gap = &dbg_breakp;
 
    if (eeIsDigit(*invo->arg)) {
-   // ":breakdel {nr}"
-   nr = atol((char *)invo->arg);
-   for (i = 0; i < gap->len; ++i)
-      if (DEBUGGY(gap, i).dbg_nr == nr) {
-         todel = i;
-         break;
-      }
+      // ":breakdel {nr}"
+      nr = atol((char *)invo->arg);
+      for (i = 0; i < gap->len; ++i) {
+         if (DEBUGGY(gap, i).dbg_nr == nr) {
+            todel = i;
+            break;
+         }
+      } 
    } ei (*invo->arg == '*') {
       todel = 0;
       del_all = TRUE;
@@ -2668,7 +2664,7 @@ c_breakdel(Invocation* invo) {
       if (todel < gap->len)
           mch_memmove(
              &DEBUGGY(gap, todel), &DEBUGGY(gap, todel + 1), 
-             (gap->len - todel) * sizeof(struct debuggy)
+             (gap->len - todel) * sizeof(Debuggy)
          );
        ++debug_tick;
       if (!del_all)
@@ -2686,7 +2682,7 @@ c_breakdel(Invocation* invo) {
 // ":breaklist".
 void
 c_breaklist(Invocation* invo UNUSED) {
-   struct debuggy *bp;
+   Debuggy *bp;
    if (dbg_breakp.len == 0) {
       msg(_("No breakpoints defined"));
       return;
@@ -2730,11 +2726,11 @@ debuggy_find(
    ArrayList   *gap,       // either &dbg_breakp or &prof_ga
    int      *fp)       // if not NULL: return forceit
 {
-   struct debuggy *bp;
+   Debuggy *bp;
    LineNr   lnum = 0;
-   Byte   *name = NULL;
-   Byte   *short_name = fname;
-   int      prev_gotInterruptG;
+   CS name = NULL;
+   CS short_name = fname;
+   int prev_gotInterruptG;
 
    // Return quickly when there are no breakpoints.
    if (gap->len == 0)
@@ -5748,10 +5744,10 @@ expandShellCommand(
       path = S".";
    else {
       //For an absolute name we don't use $PATH.
-      if (!mch_isFullName(pat))
+      if (fiIsRelative(pat))
          path = eeglGetEnv(S"PATH");
       if (!path)
-         path = Em;
+         path = S"";
    }
 
    //Go over all directories in $PATH. Expand matches in that directory and
@@ -18613,7 +18609,7 @@ applyAutocommGroup(
       autocmd_fname = fname_io;
    if (autocmd_fname)
       autocmd_fname = copyStr(autocmd_fname);
-   autocmd_fname_full = FALSE; // call FullName_save() later
+   autocmd_fname_full = FALSE; // call fiExpandAndCopy() later
 
    //Set the buffer number to be used for <abuf>.
    if (book == NULL)
@@ -18668,7 +18664,7 @@ applyAutocommGroup(
          fname = copyStr(fname);
          autocmd_fname_full = TRUE; // don't expand it later
       } else
-         fname = FullName_save(fname, FALSE);
+         fname = fiExpandAndCopy(fname, FALSE);
    }
 
    //Set the name to be used for <amatch>.
@@ -19017,7 +19013,7 @@ has_autocmd(AutoEvent event, CS sfname, Book* book) {
    CS tail = fiGetShortFiName(sfname);
    int retval = FALSE;
 
-   CS fname = FullName_save(sfname, FALSE);
+   CS fname = fiExpandAndCopy(sfname, FALSE);
    if (!fname)
       return FALSE;
 

@@ -7,7 +7,7 @@ int term_write_session(FILE *fd, Portal *po, EeSet *terminal_bufs);
 int term_should_restore(Book *book);
 void free_terminal(Book *book);
 void free_unused_terminals(void);
-void write_to_term(Book *book, Byte *msg, Channel *channel);
+void write_to_term(Book *book, CS msg, Channel *channel);
 int term_job_running(Terminal *term);
 int term_job_running_not_none(Terminal *term);
 int term_none_open(Terminal *term);

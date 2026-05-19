@@ -5,9 +5,10 @@
 
 #include "eegl.h"
 // for shm_open:
-# include <sys/mman.h>
-# include <sys/stat.h>
-# include <fcntl.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+int fstat(int fd, struct stat* statbuf); //from sys/stat.h
+int stat(const char* restrict path, struct stat* restrict buf);
 
 //{{{X11
 

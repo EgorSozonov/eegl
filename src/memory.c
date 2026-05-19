@@ -7,9 +7,24 @@
 
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
-#include <sys/stat.h> // for stat, fstat
+int fstat(int fd, struct stat* statbuf); // from sys/stat.h
+int stat(const char* restrict path, struct stat* restrict buf);
+int lstat(const char* restrict, struct stat* restrict);
 
 #define SWAP_DIR S"~/.local/state/eegl/"
+
+
+//when a block with a negative number is flushed to the file, it gets
+//a positive number. Because the reference to the block is still the negative
+//number, we remember the translation to the new positive number in the
+//double linked trans lists. The structure is the same as the hash lists.
+typedef struct {
+   MfHashItem nt_hashitem;      // header for hash table and key
+#define nt_old_bnum nt_hashitem.key   // old, negative, number
+
+   BlockId   nt_new_bnum;      // new, positive, number
+} NrTranslation;
+
 
 //{{{allocations
 //{{{ Arena
@@ -955,7 +970,7 @@ private BlockHeader *ml_find_line(Book *, LineNr, int);
 private int ml_add_stack(Book *);
 private void fixBlockStack(Book *, int);
 private int b0_magic_wrong(Block0 *);
-private int compareFnameWithInode(Byte *, Byte *, long);
+private int compareFnameWithInode(CS, CS, long);
 private void longToChar(long, Byte *);
 private long charToLong(CS);
 private void updateChunk(Book *book, long line, long len, int updtype);
@@ -1078,8 +1093,8 @@ error:
 //Prepare encryption for "book" for the current key and method.
 //ml_setname() is called when the file name of "book" has been changed. It may rename the swap file.
 void
-ml_setname(Book *book) {
-   int      success = FALSE;
+ml_setname(Book* book) {
+   int success = FALSE;
    CS fname;
 
    MemFile* mfp = book->mem.mfile;
@@ -1091,7 +1106,7 @@ ml_setname(Book *book) {
       return;
    }
 
-   // Try all directories in the 'directory' option.
+   // Try all directories in the @directory option.
    CS dirp = SWAP_DIR;
    for (;;) {
       if (*dirp == ZERO)       // tried all directories, fail
@@ -1257,7 +1272,7 @@ ml_close_all(int del_file) {
 // Close all memfiles for not modified books. Only use just before exiting!
 void
 ml_close_notmod(void) {
-   Book   *book;
+   Book* book;
    FOR_ALL_BOOKS(book) {
       if (!doWasBookChanged(book))
          ml_close(book, TRUE);    // close all not-modified books
@@ -1266,13 +1281,13 @@ ml_close_notmod(void) {
 
 // Update the timestamp in the .swp file. Used when the file has been written.
 void
-ml_timestamp(Book *book) {
+ml_timestamp(Book* book) {
    updateBlock0(book, UB_FNAME);
 }
 
 // Return FAIL when the ID of "b0p" is wrong.
 private int
-ml_check_b0_id(Block0 *b0p) {
+ml_check_b0_id(Block0* b0p) {
    if (b0p->b0_id[0] != BLOCK0_ID0
        || (b0p->b0_id[1] != BLOCK0_ID1
          && b0p->b0_id[1] != BLOCK0_ID1_C0
@@ -1363,7 +1378,7 @@ set_b0_fname(Block0 *b0p, Book *book) {
 // swapfile for "book" are in the same directory.
 // This is fail safe: if we are not sure the directories are equal the flag is not set.
 private void
-set_b0_dir_flag(Block0 *b0p, Book *book) {
+set_b0_dir_flag(Block0* b0p, Book* book) {
    if (same_directory(book->mem.mfile->fName, book->fullFileName))
       b0p->b0_flags |= B0_SAME_DIR;
    else
@@ -1396,8 +1411,8 @@ swapfile_process_running(Block0 *b0p, Byte *swap_fname UNUSED) {
 // If "checkext" is TRUE, check the extension and detect whether it is a swap file.
 void
 ml_recover(int checkext) {
-   Book   *book = NULL;
-   MemFile   *mfp = NULL;
+   Book* book = NULL;
+   MemFile* mfp = NULL ;
    Byte   *fname;
    Byte   *fname_used = NULL;
    BlockHeader   *hdr = NULL;
@@ -1414,7 +1429,6 @@ ml_recover(int checkext) {
    Byte   *p;
    int      i;
    long   error;
-   int      cannot_open;
    LineNr   lineCount;
    int      has_error;
    int      idx;
@@ -1434,7 +1448,7 @@ ml_recover(int checkext) {
    //Otherwise a search is done to find the swap file(s).
    fname = curBook->currFileName;
    if (fname == NULL)          // When there is no file name
-      fname = (CS)"";
+      fname = S"";
    len = (int)STRLEN(fname);
    if (checkext && len >= 4 && STRNICMP(fname + len - 4, ".s", 2) == 0
       && firstOccurrence((CS)"abcdefghijklmnopqrstuvw", TOLOWER_ASC(fname[len - 2])) != NULL
@@ -1614,10 +1628,7 @@ ml_recover(int checkext) {
    book->mem.ml_stack = NULL;
    book->mem.ml_stack_size = 0;   // no stack yet
 
-   if (curBook->fullFileName == NULL)
-      cannot_open = TRUE;
-   else
-      cannot_open = FALSE;
+   Boole cannotOpen = (curBook->fullFileName == NULL);
 
    serious_error = FALSE;
    for ( ; !gotInterruptG; line_breakcheck()) {
@@ -1664,17 +1675,17 @@ ml_recover(int checkext) {
                if (pp->c[idx].blockId < 0) {
                   // Data block with negative block number. Try to read lines from the original file.
                   // This is slow, but it works.
-                  if (!cannot_open) {
+                  if (!cannotOpen) {
                      lineCount = pp->c[idx].lineCount;
                      if (readfile(
                                 curBook->fullFileName, NULL, lnum, pp->c[idx].oldLnum - 1, lineCount, 
                                 NULL, 0
                            ) != OK)
-                        cannot_open = TRUE;
+                        cannotOpen = true;
                      else
                         lnum += lineCount;
                   }
-                  if (cannot_open) {
+                  if (cannotOpen) {
                       ++error;
                       ml_append(lnum++, (CS)_("???LINES MISSING"), (ColNr)0, TRUE);
                   }
@@ -1730,11 +1741,11 @@ ml_recover(int checkext) {
                // If wrong, use the count in the data block.
                if (lineCount != block->countLines) {
                   ml_append(lnum++, 
-                  (CS)_("??? from here until ???END" " lines may have been inserted/deleted"),
-                               (ColNr)0, TRUE
-               );
-               ++error;
-               has_error = TRUE;
+                     (CS)_("??? from here until ???END" " lines may have been inserted/deleted"),
+                     (ColNr)0, TRUE
+                  );
+                  ++error;
+                  has_error = TRUE;
                }
 
                int did_questions = FALSE;
@@ -1938,7 +1949,7 @@ recover_names(
                tail = fiGetShortFiName(fname_res);
                tail = concat_fnames(dir_name, tail, TRUE);
             }
-            if (tail == NULL)
+            if (!tail)
                num_names = 0;
             else {
                num_names = recoverFileNames(names, tail, FALSE);
@@ -1956,19 +1967,18 @@ recover_names(
          }
       }
       if (num_names == 0)
-          num_files = 0;
-      ei (expand_wildcards(num_names, names, EW_NOTENV|EW_KEEPALL|EW_FILE|EW_SILENT, OUT &files) 
-            == FAIL)
+         num_files = 0;
+      ei (expand_wildcards(num_names, names, EW_NOTENV|EW_KEEPALL|EW_FILE|EW_SILENT, OUT &files
+          ) == FAIL
+      )
          num_files = 0;
 
       //When no swap file found, wildcard expansion might have failed (e.g.
       //not able to execute the shell).
       //Try finding a swap file by simply adding ".swp" to the file name.
       if (*dirp == ZERO && files.len + num_files == 0 && fname != NULL) {
-         FileStat       st;
-         Byte       *swapname;
-
-         swapname = fiAppendFileExtension(fname_res, (CS)".swp", TRUE);
+         FileStat st;
+         CS swapname = fiAppendFileExtension(fname_res, S".swp", TRUE);
          if (swapname) {
             if (stat((char *)swapname, &st) != -1) {   // It exists!
                files.c = ALLOC_ONE(CS);
@@ -2000,7 +2010,7 @@ recover_names(
          files.len += num_files;
          if (nr <= (int)files.len)  {
             *fname_out = copyStr(files.c[nr - 1 + num_files - files.len]);
-            dirp = Em;          // stop searching
+            dirp = S"";          // stop searching
          }
       } ei (do_list) {
          if (dir_name[0] == '.' && dir_name[1] == ZERO) {
@@ -2053,7 +2063,7 @@ CS
 make_percent_swname(CS dir, CS dir_end, CS name) {
    Byte *d = NULL;
 
-   CS f = FullName_save(name != NULL ? name : S"", true);
+   CS f = fiExpandAndCopy(name != NULL ? name : S"", true);
 
    CS s = alloc(STRLEN(f) + 1);
    STRCPY(s, f);
@@ -3951,15 +3961,13 @@ resolve_symlink(CS fname, OUT CS builder) {
       }
       builder[ret] = ZERO;
 
-      // Check whether the symlink is relative or absolute.
-      // If it's relative, build a new path based on the directory
-      // portion of the filename (if any) and the path the symlink points to.
-      if (mch_isFullName(builder))
-          STRCPY(tmp, builder);
+      //Check whether the symlink is relative.
+      //If it's relative, build a new path based on the directory
+      //portion of the filename (if any) and the path the symlink points to.
+      if (fiIsRelative(builder))
+         STRCPY(tmp, builder);
       else {
-         Byte *tail;
-
-         tail = fiGetShortFiName(tmp);
+         CS tail = fiGetShortFiName(tmp);
          if (STRLEN(tail) + STRLEN(builder) >= MAXPATHL)
             return FAIL;
          STRCPY(tail, builder);
@@ -3971,22 +3979,22 @@ resolve_symlink(CS fname, OUT CS builder) {
    return eeFullFileName(tmp, builder, MAXPATHL, TRUE);
 }
 
-// Make swap file name out of the file name and a directory name. Return pointer to allocated 
-// memory or NULL.
+//Make swap file name out of the file name and a directory name. Return pointer to allocated 
+//memory or NULL.
 CS
 makeswapname(CS fname, CS ffname UNUSED, CS dir_name) {
-   CS r;
    CS fname_res = fname;
    Byte fnameBuilder[MAXPATHL];
 
-   // Expand symlink in the file name, so that we put the swap file with the
-   // actual file instead of with the symlink.
+   //Expand symlink in the file name, so that we put the swap file with the
+   //actual file instead of with the symlink.
    if (resolve_symlink(fname, fnameBuilder) == OK)
       fname_res = fnameBuilder;
 
    int len = (int)STRLEN(dir_name);
 
    CS s = dir_name + len;
+   CS r;
    if (after_pathsep(dir_name, s) && len > 1 && s[-1] == s[-2]) {
       // Ends with '//', Use Full path
       r = NULL;
@@ -4030,18 +4038,18 @@ get_file_in_dir(CS fname, CS dname ){  // don't use "dirname", it is a global fo
       retval = copyStr(fname);
    ei (dname[0] == '.' && dname[1] == '/') {
       if (tail == fname)       // no path before file name
-          retval = concat_fnames(dname + 2, tail, TRUE);
+         retval = concat_fnames(dname + 2, tail, TRUE);
       else {
-          int save_char = *tail;
-          *tail = ZERO;
-          t = concat_fnames(fname, dname + 2, TRUE);
-          *tail = save_char;
-          if (t == NULL)       // out of memory
-         retval = NULL;
-          else {
-         retval = concat_fnames(t, tail, TRUE);
-         eeglFree(t);
-          }
+         int save_char = *tail;
+         *tail = ZERO;
+         t = concat_fnames(fname, dname + 2, TRUE);
+         *tail = save_char;
+         if (t == NULL)       // out of memory
+            retval = NULL;
+         else {
+            retval = concat_fnames(t, tail, TRUE);
+            eeglFree(t);
+         }
       }
    } else
       retval = concat_fnames(dname, tail, TRUE);
@@ -4052,15 +4060,14 @@ get_file_in_dir(CS fname, CS dname ){  // don't use "dirname", it is a global fo
 // Print the ATTENTION message: info about an existing swap file.
 private void
 attention_message(Book* book, CS swapName) {
-   FileStat   st;
-   Tyme   swap_mtime;
+   FileStat st;
 
    ++no_wait_return;
    (void)emsg(_(e_attention));
    msg_puts(_("\nFound a swap file by the name \""));
    msg_home_replace(swapName);
    msg_puts(S"\"\n");
-   swap_mtime = swapfile_info(swapName);
+   Tyme swap_mtime = swapfile_info(swapName);
    msg_puts(_("While opening file \""));
    msg_outtrans(book->currFileName);
    msg_puts(S"\"\n");
@@ -4104,8 +4111,8 @@ do_swapexists(Book* book, CS fname) {
    set_EeglVar_string(VV_SWAPNAME, fname, -1);
    set_EeglVar_string(VV_SWAPCHOICE, NULL, -1);
 
-   // Trigger SwapExists autocommands with <afile> set to the file being
-   // edited.  Disallow changing directory here.
+   //Trigger SwapExists autocommands with <afile> set to the file being
+   //edited.  Disallow changing directory here.
    ++allBookLock;
    apply_autocmds(EVENT_SWAPEXISTS, book->currFileName, NULL, false, NULL);
    --allBookLock;
@@ -4132,24 +4139,20 @@ do_swapexists(Book* book, CS fname) {
 //Note: If BASENAMELEN is not correct, you will get error messages for not being able to open the 
 //swap or undo file. Note: May trigger SwapExists autocmd, pointers may change!
 private CS
-findSwapName(
-   Book* book,
-   Byte** dirp,      // pointer to list of directories
-   CS old_fname   // don't give warning for this file name
-){
+findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning for this file name
    CS fname;
-   int      n;
+   int n;
    CS buf_fname = book->currFileName;
 
-   //Isolate a directory name from *dirp and put it in dir_name. First allocate some memory to 
+   //Isolate a directory name from *dirs and put it in dir_name. First allocate some memory to 
    //put the directory name in. we try different names until we find one that does not exist yet
-   CS dir_name = alloc(STRLEN(*dirp) + 1);
+   CS dir_name = alloc(STRLEN(*dirs) + 1);
    if (!dir_name) {
-      *dirp = NULL;
+      *dirs = NULL;
       fname = NULL;
       goto endOfName;
    } else {
-      (void)copy_option_part(dirp, dir_name, 31000, ",");
+      (void)copy_option_part(dirs, dir_name, 31000, ",");
       fname = makeswapname(buf_fname, book->fullFileName, dir_name);
    } 
 
@@ -4402,13 +4405,11 @@ compareFnameWithInode(
    CS fname_s,       // file name from swap file
    long ino_block0
 ){
-   FileStat   st;
-   ino_t   ino_c = 0;       // ino of current file
-   ino_t   ino_s;          // ino of file from swap file
+   FileStat st;
+   ino_t ino_c = 0;       // ino of current file
+   ino_t ino_s;          // ino of file from swap file
    Byte buf_c[MAXPATHL];    // full path of fname_c
    Byte buf_s[MAXPATHL];    // full path of fname_s
-   int      retval_c;       // flag: buf_c valid
-   int      retval_s;       // flag: buf_s valid
 
    if (stat((char *)fname_c, &st) == 0)
       ino_c = (ino_t)st.st_ino;
@@ -4425,8 +4426,8 @@ compareFnameWithInode(
       return (ino_c != ino_s);
 
    //One of the inode numbers is unknown, try a forced eeFullFileName() and compare the file names
-   retval_c = eeFullFileName(fname_c, buf_c, MAXPATHL, TRUE);
-   retval_s = eeFullFileName(fname_s, buf_s, MAXPATHL, TRUE);
+   int retval_c = eeFullFileName(fname_c, buf_c, MAXPATHL, TRUE); //flag: buf_c valid
+   int retval_s = eeFullFileName(fname_s, buf_s, MAXPATHL, TRUE); //flag: buf_s valid
    if (retval_c == OK && retval_s == OK)
       return STRCMP(buf_c, buf_s) != 0;
 
@@ -4439,7 +4440,7 @@ compareFnameWithInode(
 
 //Move a long integer into a four byte character array. Used for machine independency in block zero
 private void
-longToChar(long n, Byte *s) {
+longToChar(long n, CS s) {
    s[0] = (Byte)(n & 0xff);
    n = (unsigned)n >> 8;
    s[1] = (Byte)(n & 0xff);
@@ -4450,7 +4451,7 @@ longToChar(long n, Byte *s) {
 }
 
 private long
-charToLong(Byte *s) {
+charToLong(CS s) {
    long retval = s[3];
    retval <<= 8;
    retval |= s[2];
@@ -4490,24 +4491,19 @@ ml_setflags(Book* book) {
 //ML_CHNK_DELLINE: Subtract len from parent chunk, possibly deleting it
 //ML_CHNK_UPDLINE: Add len to parent chunk, as a signed entity.
 private void
-updateChunk(
-   Book* book,
-   LineNr line,
-   long len,
-   int updtype
-){
+updateChunk(Book* book, LineNr line, long len, int updtype){
    static Book* ml_upd_lastbuf = NULL;
    static LineNr ml_upd_lastline;
    static LineNr ml_upd_lastcurline;
    static int ml_upd_lastcurix;
 
-   LineNr      curline = ml_upd_lastcurline;
-   int         curix = ml_upd_lastcurix;
-   long      size;
-   MemChunkSize      *curchnk;
-   int         rest;
-   BlockHeader      *hdr;
-   DataBlock      *block;
+   LineNr curline = ml_upd_lastcurline;
+   int curix = ml_upd_lastcurix;
+   long size;
+   MemChunkSize* curchnk;
+   int rest;
+   BlockHeader* hdr;
+   DataBlock* block;
 
    if (book->mem.ml_usedchunks == -1 || len == 0)
       return;
@@ -4531,7 +4527,7 @@ updateChunk(
    if (book != ml_upd_lastbuf || line != ml_upd_lastline + 1 || updtype != ML_CHNK_ADDLINE) {
       for (curline = 1, curix = 0;
            curix < book->mem.ml_usedchunks - 1
-           && line >= curline + book->mem.ml_chunksize[curix].mlcs_numlines;
+              && line >= curline + book->mem.ml_chunksize[curix].mlcs_numlines;
            curix++
       ) {
          curline += book->mem.ml_chunksize[curix].mlcs_numlines;
@@ -4553,12 +4549,12 @@ updateChunk(
 
       // May resize here so we don't have to do it in both cases below
       if (book->mem.ml_usedchunks + 1 >= book->mem.ml_numchunks) {
-         MemChunkSize *t_chunksize = book->mem.ml_chunksize;
+         MemChunkSize* t_chunksize = book->mem.ml_chunksize;
 
          book->mem.ml_numchunks = book->mem.ml_numchunks * 3 / 2;
          book->mem.ml_chunksize = eeRealloc(book->mem.ml_chunksize,
                 sizeof(MemChunkSize) * book->mem.ml_numchunks);
-         if (book->mem.ml_chunksize == NULL) {
+         if (!book->mem.ml_chunksize) {
             // Hmmmm, Give up on offset for this buffer
             eeglFree(t_chunksize);
             book->mem.ml_usedchunks = -1;
@@ -4593,16 +4589,16 @@ updateChunk(
             // compute index of last line to use in this MEMLINE
             rest = count - idx;
             if (linecnt + rest > MLCS_MINL) {
-                end_idx = idx + MLCS_MINL - linecnt - 1;
-                linecnt = MLCS_MINL;
+               end_idx = idx + MLCS_MINL - linecnt - 1;
+               linecnt = MLCS_MINL;
             } else {
-                end_idx = count - 1;
-                linecnt += rest;
+               end_idx = count - 1;
+               linecnt += rest;
             }
             if (book->hasTextprop) {
 
-               // We cannot use the text pointers to get the text length,
-               // the text prop info would also be counted.  Go over the lines.
+               //We cannot use the text pointers to get the text length,
+               //the text prop info would also be counted.  Go over the lines.
                for (int i = end_idx; i < idx; ++i)
                   size += (int)STRLEN((CS)block + (block->c[i] & c_MASK)) + 1;
             } else {
@@ -4654,10 +4650,10 @@ updateChunk(
       curchnk->mlcs_numlines--;
       ml_upd_lastbuf = NULL;   // Force recalc of curix & curline
       if (curix < book->mem.ml_usedchunks - 1
-         && curchnk->mlcs_numlines + curchnk[1].mlcs_numlines <= MLCS_MINL)
-      {
-          curix++;
-          curchnk = book->mem.ml_chunksize + curix;
+         && curchnk->mlcs_numlines + curchnk[1].mlcs_numlines <= MLCS_MINL
+      ) {
+         curix++;
+         curchnk = book->mem.ml_chunksize + curix;
       } ei (curix == 0 && curchnk->mlcs_numlines <= 0) {
          book->mem.ml_usedchunks--;
          mch_memmove(
@@ -4693,18 +4689,14 @@ updateChunk(
 //Find offset of line if "lnum" > 0. Return -1 if information is not available
 long
 ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
-   LineNr   curline;
-   int      curix;
-   long   size;
-   BlockHeader   *hdr;
+   BlockHeader* hdr;
    DataBlock* block;
-   int      count;      // number of entries in block
-   int      idx;
-   int      start_idx;
-   int      textEnd;
-   long   offset;
-   int      len;
-   int      extra = 0;
+   int count;      // number of entries in block
+   int idx;
+   int start_idx;
+   int textEnd;
+   int len;
+   int extra = 0;
 
    // take care of cached line first
    flushLine(curBook);
@@ -4712,20 +4704,18 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
    if (book->mem.ml_usedchunks == -1 || book->mem.ml_chunksize == NULL || lnum < 0)
       return -1;
 
-   if (offp == NULL)
-      offset = 0;
-   else
-      offset = *offp;
+   long offset = offp ? *offp : 0;
    if (lnum == 0 && offset <= 0)
       return 1;   // Not a "find offset" and offset 0 _must_ be in line 1
    //Find the last chunk before the one containing our line. Last chunk is
    //special because it will never qualify.
-   curline = 1;
-   curix = size = 0;
+   LineNr curline = 1;
+   long size = 0;
+   int curix = 0;
    while (curix < book->mem.ml_usedchunks - 1
        && ((lnum != 0
-        && lnum >= curline + book->mem.ml_chunksize[curix].mlcs_numlines)
-      || (offset != 0 && offset > size + book->mem.ml_chunksize[curix].mlcs_totalsize))
+           && lnum >= curline + book->mem.ml_chunksize[curix].mlcs_numlines)
+            || (offset != 0 && offset > size + book->mem.ml_chunksize[curix].mlcs_totalsize))
    ) {
       curline += book->mem.ml_chunksize[curix].mlcs_numlines;
       size += book->mem.ml_chunksize[curix].mlcs_totalsize;
@@ -4739,7 +4729,8 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
          return -1;
       block = (DataBlock *)(hdr->bh_data);
       count = (long)(book->mem.lockedHigh) - (long)(book->mem.lockedLow) + 1;
-      start_idx = idx = curline - book->mem.lockedLow;
+      idx = curline - book->mem.lockedLow;
+      start_idx = idx;
       if (idx == 0)  // first line in block, text at the end
          textEnd = block->endByte;
       else
@@ -4781,7 +4772,7 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
          // cannot use the c pointer, need to get the actual text lengths.
          len = 0;
          for (int i = start_idx; i <= idx; ++i) {
-            Byte *p = (CS)block + ((block->c[i]) & c_MASK);
+            CS p = (CS)block + ((block->c[i]) & c_MASK);
             len += (int)STRLEN(p) + 1;
          }
       } else {
@@ -5027,7 +5018,7 @@ mf_close(MemFile* mfp, int del_file) {
    if (del_file && mfp->fName != NULL)
       mch_remove(mfp->fName); // free entries in used list
       
-   BlockHeader *nextp;
+   BlockHeader* nextp;
    for (BlockHeader* hp = mfp->usedFirst; hp != NULL; hp = nextp) {
       total_mem_used -= (Ulong)hp->pageCount * mfp->pageSize;
       nextp = hp->bh_next;
@@ -5308,7 +5299,7 @@ mf_rem_hash(MemFile *mfp, BlockHeader *hp) {
 // look in hash lists of memfile *mfp for block header with number 'nr'
 private BlockHeader *
 mf_find_hash(MemFile *mfp, BlockId nr) {
-    return (BlockHeader *)mf_hash_find(&mfp->mf_hash, nr);
+   return (BlockHeader *)mf_hash_find(&mfp->mf_hash, nr);
 }
 
 // insert block *hp in front of used list of memfile *mfp
@@ -5413,8 +5404,8 @@ mf_release(MemFile *mfp, int page_count) {
 int
 mf_release_all(void){
    Book* book;
-   MemFile   *mfp;
-   BlockHeader   *hp;
+   MemFile* mfp;
+   BlockHeader* hp;
    int retval = FALSE;
 
    FOR_ALL_BOOKS(book) {
@@ -5446,8 +5437,8 @@ mf_release_all(void){
 
 // Allocate a block header and a block of memory for it.
 private BlockHeader *
-mf_alloc_bhdr(MemFile *mfp, int page_count) {
-   BlockHeader   *hp;
+mf_alloc_bhdr(MemFile* mfp, int page_count) {
+   BlockHeader* hp;
 
    if ((hp = ALLOC_ONE(BlockHeader)) == NULL)
       return NULL;
@@ -5462,14 +5453,14 @@ mf_alloc_bhdr(MemFile *mfp, int page_count) {
 
 // Free a block header and the block of memory for it.
 private void
-mf_free_bhdr(BlockHeader *hp) {
+mf_free_bhdr(BlockHeader* hp) {
    eeglFree(hp->bh_data);
    eeglFree(hp);
 }
 
 // Insert entry *hp in the free list.
 private void
-mf_ins_free(MemFile *mfp, BlockHeader *hp) {
+mf_ins_free(MemFile* mfp, BlockHeader* hp) {
    hp->bh_next = mfp->freeFirst;
    mfp->freeFirst = hp;
 }
@@ -5477,7 +5468,7 @@ mf_ins_free(MemFile *mfp, BlockHeader *hp) {
 // remove the first entry from the free list and return a pointer to it
 // Note: caller must check that mfp->freeFirst is not NULL!
 private BlockHeader *
-mf_rem_free(MemFile *mfp) {
+mf_rem_free(MemFile* mfp) {
    BlockHeader* hp = mfp->freeFirst;
    mfp->freeFirst = hp->bh_next;
    return hp;
@@ -5507,12 +5498,11 @@ mf_read(MemFile* mfp, BlockHeader* hp) {
 // write a block to disk. Return FAIL for failure, OK otherwise
 private int
 mf_write(MemFile *mfp, BlockHeader *hp) {
-   FileSize   offset;       // offset in the file
-   BlockId   nr;       // block nr which is being written
-   BlockHeader   *hp2;
-   unsigned   page_size;  // number of bytes in a page
-   unsigned   page_count; // number of pages written
-   unsigned   size;       // number of bytes written
+   FileSize offset;       // offset in the file
+   BlockId nr;       // block nr which is being written
+   BlockHeader* hp2;
+   Unt page_count; // number of pages written
+   Unt size;       // number of bytes written
 
    if (mfp->fd < 0 && !mfp->mf_reopen)
       // there is no file and there was no file, can't write
@@ -5521,7 +5511,7 @@ mf_write(MemFile *mfp, BlockHeader *hp) {
    if (hp->bh_bnum < 0 && mf_trans_add(mfp, hp) == FAIL) // must assign file block number
       return FAIL;
 
-   page_size = mfp->pageSize;
+   Unt page_size = mfp->pageSize; //bytes in a page
 
    // We don't want gaps in the file. Write the blocks in front of *hp to extend the file.
    // If block 'pagesInFile' is not in the hash list, it has been
@@ -5588,7 +5578,7 @@ mf_write(MemFile *mfp, BlockHeader *hp) {
 // Take care of encryption. Return FAIL or OK.
 private int
 mf_write_block(MemFile* mfp, BlockHeader* hp, FileSize offset UNUSED, unsigned size) {
-   Byte* data = hp->bh_data;
+   Arr(Byte) data = hp->bh_data;
    int result = OK;
 
    if ((unsigned)write_eintr(mfp->fd, data, size) != size)
@@ -5604,23 +5594,20 @@ mf_write_block(MemFile* mfp, BlockHeader* hp, FileSize offset UNUSED, unsigned s
 // Return FAIL for failure, OK otherwise
 private int
 mf_trans_add(MemFile *mfp, BlockHeader *hp) {
-   BlockHeader   *freep;
-   BlockId   new_bnum;
-   NR_TRANS   *np;
-   int      page_count;
+   BlockId new_bnum;
+   int page_count;
 
    if (hp->bh_bnum >= 0)          // it's already positive
       return OK;
 
-   if ((np = ALLOC_ONE(NR_TRANS)) == NULL)
-      return FAIL;
+   NrTranslation* np = ALLOC_ONE(NrTranslation);
 
    //Get a new number for the block.
    //If the first item in the free list has sufficient pages, use its number
    //Otherwise use mf_blocknr_max.
-   freep = mfp->freeFirst;
+   BlockHeader* freep = mfp->freeFirst;
    page_count = hp->pageCount;
-   if (freep != NULL && freep->pageCount >= page_count) {
+   if (freep && freep->pageCount >= page_count) {
       new_bnum = freep->bh_bnum;
       // If the page count of the free block was larger, reduce it.
       // If the page count matches, remove the block from the free list
@@ -5653,7 +5640,7 @@ mf_trans_add(MemFile *mfp, BlockHeader *hp) {
 // Return the positive new number when found, the old number when not found
 BlockId
 mf_trans_del(MemFile* mfp, BlockId old_nr) {
-   NR_TRANS* np = (NR_TRANS *)mf_hash_find(&mfp->mf_trans, old_nr);
+   NrTranslation* np = (NrTranslation *)mf_hash_find(&mfp->mf_trans, old_nr);
 
    if (np == NULL)      // not found
       return old_nr;
@@ -5674,7 +5661,7 @@ mf_trans_del(MemFile* mfp, BlockId old_nr) {
 // name so we must work out the full path name.
 void
 mf_set_ffname(MemFile* mfp) {
-   mfp->fullFName = FullName_save(mfp->fName, FALSE);
+   mfp->fullFName = fiExpandAndCopy(mfp->fName, FALSE);
 }
 
 // Make the name of the file used for the memfile a full path. Used before doing a :cd
@@ -5726,9 +5713,6 @@ mf_do_open(MemFile* mfp, CS fname, Unt flags) {      // flags for open()
       int fdflags = fcntl(mfp->fd, F_GETFD);
       if (fdflags >= 0 && (fdflags & FD_CLOEXEC) == 0)
           (void)fcntl(mfp->fd, F_SETFD, fdflags | FD_CLOEXEC);
-#if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
-      mch_copy_sec(fname, mfp->fName);
-#endif
    }
 }
 

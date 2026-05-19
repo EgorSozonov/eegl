@@ -5053,21 +5053,21 @@ mch_get_host_name(CS s, int len) {
 // Set the environment for a child process.
 private void
 set_child_environment(
-   long   rows,
-   long   columns,
-   char   *term,
-   int   is_terminal UNUSED)
-{
+   long rows,
+   long columns,
+   CS term,
+   int is_terminal UNUSED
+) {
    char   envbuf[50];
 
-   setenv("TERM", term, 1);
+   setenv("TERM", (char*)term, 1);
    sprintf((char *)envbuf, "%ld", rows);
    setenv("ROWS", (char *)envbuf, 1);
    sprintf((char *)envbuf, "%ld", rows);
    setenv("LINES", (char *)envbuf, 1);
    sprintf((char *)envbuf, "%ld", columns);
    setenv("COLUMNS", (char *)envbuf, 1);
-   sprintf((char *)envbuf, "%d", t_colors);
+   sprintf((char *)envbuf, "%d", 256);
    setenv("COLORS", (char *)envbuf, 1);
    if (is_terminal) {
       sprintf((char *)envbuf, "%ld",  (long)get_EeglVar_nr(VV_VERSION));
@@ -5078,7 +5078,7 @@ set_child_environment(
 
 private void
 set_default_child_environment(int is_terminal) {
-   set_child_environment(visibleRowsG, visibleColsG, "dumb", is_terminal);
+   set_child_environment(visibleRowsG, visibleColsG, S"dumb", is_terminal);
 }
 
 //}}}
@@ -5192,41 +5192,35 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       UNBLOCK_SIGNALS(&curset);
 
       if (ch_log_active())
-          // close the log file in the child
-          ch_logfile((CS)"", (CS)"");
+         // close the log file in the child
+         ch_logfile(S"", S"");
 
-      // Create our own process group, so that the child and all its
-      // children can be kill()ed.  Don't do this when using pipes,
-      // because stdin is not a tty, we would lose /dev/tty.
+      //Create our own process group, so that the child and all its
+      //children can be kill()ed.  Don't do this when using pipes,
+      //because stdin is not a tty, we would lose /dev/tty.
       (void)setsid();
 
       if (options->jo_term_rows > 0) {
-         char *term = (char *)termCodeS[KS_NAME];
+         CS term = termCodeS[KS_NAME];
 
-         // Use 'term' or $TERM if it starts with "xterm", otherwise fall
-         // back to "xterm" or "xterm-color".
-         if (term == NULL || *term == ZERO || STRNCMP(term, "xterm", 5) != 0) {
-            if (t_colors >= 256)
-               // TODO: should we check this name is supported?
-               term = "xterm-256color";
-            ei (t_colors > 16)
-               term = "xterm-color";
-            else
-               term = "xterm";
+         //Use 'term' or $TERM if it starts with "xterm", otherwise fall
+         //back to "xterm" or "xterm-color".
+         if (!term || *term == ZERO || STRNCMP(term, "xterm", 5) != 0) {
+            term = S"xterm-256color";
          }
          set_child_environment(
-             (long)options->jo_term_rows,
-             (long)options->jo_term_cols,
-             term,
-             is_terminal
+            (long)options->jo_term_rows,
+            (long)options->jo_term_cols,
+            term,
+            is_terminal
          );
       } else
           set_default_child_environment(is_terminal);
 
       if (options->env != NULL) {
-         Bag   *dict = options->env;
+         Bag* dict = options->env;
          EeSetItem* hi;
-         int      todo = (int)dict->hashTable.count;
+         int todo = (int)dict->hashTable.count;
 
          FOR_ALL_HASHTAB_ITEMS(&dict->hashTable, hi, todo) {
             if (!HASHITEM_EMPTY(hi)) {
@@ -5239,7 +5233,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       }
 
       if (use_null_for_in || use_null_for_out || use_null_for_err) {
-          null_fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
+         null_fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
          if (null_fd < 0) {
             perror("opening /dev/null failed");
             _exit(OPEN_NULL_FAILED);
@@ -5247,22 +5241,22 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       }
 
       if (pty_slave_fd >= 0) {
-          // push stream discipline modules
-          setup_slavepty(pty_slave_fd);
+         // push stream discipline modules
+         setup_slavepty(pty_slave_fd);
 #  ifdef TIOCSCTTY
-          // Try to become controlling tty (probably doesn't work, unless run by root)
-          ioctl(pty_slave_fd, TIOCSCTTY, (char *)NULL);
+         // Try to become controlling tty (probably doesn't work, unless run by root)
+         ioctl(pty_slave_fd, TIOCSCTTY, (char *)NULL);
 #  endif
       }
 
       // set up stdin for the child
       close(0);
       if (use_null_for_in && null_fd >= 0)
-          (void)dup(null_fd);
+         (void)dup(null_fd);
       ei (fd_in[0] < 0)
-          (void)dup(pty_slave_fd);
+         (void)dup(pty_slave_fd);
       else
-          (void)dup(fd_in[0]);
+         (void)dup(fd_in[0]);
 
       // set up stderr for the child
       close(2);
@@ -5314,8 +5308,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (stderr_works)
           perror("executing job failed");
 # ifdef EXITFREE
-      // calling free_all_mem() here causes problems. Ignore valgrind
-      // reporting possibly leaked memory.
+      //calling free_all_mem() here causes problems. Ignore valgrind
+      //reporting possibly leaked memory.
 # endif
       _exit(EXEC_FAILED);       // exec failed, return failure code
    }
@@ -5342,10 +5336,10 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       int err_fd = INVALID_FD;
 
       if (!(use_file_for_in || use_null_for_in))
-          in_fd = fd_in[1] >= 0 ? fd_in[1] : pty_master_fd;
+         in_fd = fd_in[1] >= 0 ? fd_in[1] : pty_master_fd;
 
       if (!(use_file_for_out || use_null_for_out))
-          out_fd = fd_out[0] >= 0 ? fd_out[0] : pty_master_fd;
+         out_fd = fd_out[0] >= 0 ? fd_out[0] : pty_master_fd;
 
       // When using pty_master_fd only set it for stdout, do not duplicate
       // it for stderr, it only needs to be read once.
@@ -5408,8 +5402,7 @@ mch_job_status(Job* job) {
 
       // process must have exited
       if (job->jv_status < JOB_ENDED)
-          ch_log(job->jv_channel, "Job no longer exists: %s",
-                           strerror(waitpid_errno));
+         ch_log(job->jv_channel, "Job no longer exists: %s", strerror(waitpid_errno));
       goto return_dead;
    }
    if (wait_pid == 0)
@@ -5440,7 +5433,7 @@ return_dead:
 //Send a (deadly) signal to "job". Return FAIL if "how" is not a valid name.
 int
 mch_signal_job(Job* job, CS how) {
-   int       sig = -1;
+   int sig = -1;
 
    if (*how == ZERO || STRCMP(how, "term") == 0)
       sig = SIGTERM;
@@ -5474,19 +5467,17 @@ mch_signal_job(Job* job, CS how) {
 private Job *
 mch_detect_ended_job(Job* job_list) {
    int      status = -1;
-   pid_t   wait_pid = 0;
 
    // Do not do this when waiting for a shell command to finish, we would get
    // the exit value here (and discard it), the exit value obtained there would then be wrong.
    if (dontCheckJobEndedS > 0)
       return NULL;
 
-   wait_pid = waitpid(-1, &status, WNOHANG);
+   pid_t wait_pid = waitpid(-1, &status, WNOHANG);
    if (wait_pid <= 0)
       // no process ended
       return NULL;
-  for (Job* job = job_list; job != NULL; job = job->jv_next) {
-     lo("ccc checking jobs");
+   for (Job* job = job_list; job; job = job->jv_next) {
       if (job->jv_pid == wait_pid) {
          if (WIFEXITED(status))
             // LINTED avoid "bitwise operation on signed value"
@@ -5506,8 +5497,8 @@ mch_detect_ended_job(Job* job_list) {
 }
 
 private int
-handle_mode(Var *item, JobOptions *opt, ChannelMode *modep, int jo) {
-   Byte   *val = tv_get_string(item);
+handle_mode(Var* item, JobOptions* opt, ChannelMode* modep, int jo) {
+   CS val = tv_get_string(item);
    opt->set |= jo;
    if (STRCMP(val, "nl") == 0)
       *modep = CH_MODE_NL;
@@ -5525,7 +5516,7 @@ handle_mode(Var *item, JobOptions *opt, ChannelMode *modep, int jo) {
 }
 
 private int
-handle_io(Var* item, ChannelFdKind part, JobOptions *opt) {
+handle_io(Var* item, ChannelFdKind part, JobOptions* opt) {
    CS val = tv_get_string(item);
 
    opt->set |= JO_OUT_IO << (part - PART_OUT);
@@ -5548,9 +5539,9 @@ handle_io(Var* item, ChannelFdKind part, JobOptions *opt) {
 
 private void
 unref_job_callback(Callback *cb) {
-   if (cb->cb_partial != NULL)
+   if (cb->cb_partial)
       partial_unref(cb->cb_partial);
-   ei (cb->name != NULL) {
+   ei (cb->name) {
       func_unref(cb->name);
    if (cb->needsFreeing)
       eeglFree(cb->name);
@@ -5566,7 +5557,7 @@ free_job_options(JobOptions* opt) {
    unref_job_callback(&opt->closeCb);
    unref_job_callback(&opt->exitCb);
 
-   if (opt->env != NULL)
+   if (opt->env)
       bagUnref(opt->env);
 }
 
@@ -5590,7 +5581,7 @@ mch_clear_job(Job* job) {
 int
 get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
    Var   *item;
-   Byte   *val;
+   CS val;
    EeSetItem* hi;
    ChannelFdKind part;
 
@@ -5906,9 +5897,8 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             }
             opt->jo_tty_type = p[0];
          } ei (STRCMP(hi->hi_key, "ansi_colors") == 0) {
-            int      n = 0;
-            ListItem   *li;
-            Ulong      rgb[16];
+            int n = 0;
+            Ulong rgb[16];
 
             if (!(supported2 & JO2_ANSI_COLORS))
                 break;
@@ -5921,7 +5911,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
 
-            li = item->list->first;
+            ListItem* li = item->list->first;
             for (; li != NULL && n < 16; li = li->next, n++) {
                int      called_emsg_before = called_emsg;
 
@@ -5940,7 +5930,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                rgb[n] = GUI_MCH_GET_RGB(color);
             }
 
-            if (n != 16 || li != NULL) {
+            if (n != 16 || li) {
                showErrFmtMsg(_(e_invalid_value_for_argument_str), "ansi_colors");
                return FAIL;
             }
@@ -5976,16 +5966,16 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             opt->set1 |= JO2_ENV;
             opt->env = item->bag;
             if (opt->env != NULL)
-                ++opt->env->refcount;
+               ++opt->env->refcount;
          } ei (STRCMP(hi->hi_key, "cwd") == 0) {
             if (!(supported2 & JO2_CWD))
-                break;
+               break;
             opt->currentWorkingDir = convertVarToString(item, opt->cwdText);
             if (opt->currentWorkingDir == NULL || !mch_isdir(opt->currentWorkingDir)
                   || mch_access(opt->currentWorkingDir, X_OK) != 0
             ){
-                showErrFmtMsg(_(e_invalid_value_for_argument_str), "cwd");
-                return FAIL;
+               showErrFmtMsg(_(e_invalid_value_for_argument_str), "cwd");
+               return FAIL;
             }
             opt->set1 |= JO2_CWD;
          } ei (STRCMP(hi->hi_key, "waittime") == 0) {
@@ -5995,12 +5985,12 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             opt->jo_waittime = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "timeout") == 0) {
             if (!(supported & JO_TIMEOUT))
-                break;
+               break;
             opt->set |= JO_TIMEOUT;
             opt->jo_timeout = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "out_timeout") == 0) {
             if (!(supported & JO_OUT_TIMEOUT))
-                break;
+               break;
             opt->set |= JO_OUT_TIMEOUT;
             opt->jo_out_timeout = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "err_timeout") == 0) {
@@ -6010,7 +6000,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             opt->jo_err_timeout = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "part") == 0) {
             if (!(supported & JO_PART))
-                break;
+               break;
             opt->set |= JO_PART;
             val = tv_get_string(item);
             if (STRCMP(val, "err") == 0)
@@ -6028,21 +6018,21 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             opt->id = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "stoponexit") == 0) {
             if (!(supported & JO_STOPONEXIT))
-                break;
+               break;
             opt->set |= JO_STOPONEXIT;
             opt->jo_stoponexit = convertVarToString(item, opt->jo_stoponexit_buf);
             if (opt->jo_stoponexit == NULL) {
-                showErrFmtMsg(_(e_invalid_value_for_argument_str), "stoponexit");
-                return FAIL;
+               showErrFmtMsg(_(e_invalid_value_for_argument_str), "stoponexit");
+               return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "block_write") == 0) {
             if (!(supported & JO_BLOCK_WRITE))
-                break;
+               break;
             opt->set |= JO_BLOCK_WRITE;
             opt->jo_block_write = tv_get_number(item);
          } else
             break;
-          --todo;
+         --todo;
       }
    } 
    if (todo > 0) {
@@ -6057,7 +6047,7 @@ private Job* firstJobS = NULL;
 
 private void
 job_free_contents(Job* job) {
-   int      i;
+   int i;
 
    ch_log(job->jv_channel, "Freeing job");
    if (job->jv_channel) {
@@ -6075,7 +6065,7 @@ job_free_contents(Job* job) {
    eeglFree(job->jv_stoponexit);
    eeglFree(job->jv_termsig);
    evFreeCallback(&job->jv_exit_cb);
-   if (job->jv_argv != NULL) {
+   if (job->jv_argv) {
       for (i = 0; job->jv_argv[i] != NULL; i++)
           eeglFree(job->jv_argv[i]);
       eeglFree(job->jv_argv);
@@ -6143,7 +6133,7 @@ job_free_all(void) {
 
 // TRUE if we need to check if the process of "job" has ended.
 private int
-job_need_end_check(Job *job) {
+job_need_end_check(Job* job) {
    return job->jv_status == JOB_STARTED && (job->jv_stoponexit || job->jv_exit_cb.name);
 }
 
@@ -6155,7 +6145,7 @@ job_channel_still_useful(Job* job) {
 
 // TRUE if the channel of "job" is closeable.
 private int
-job_channel_can_close(Job *job) {
+job_channel_can_close(Job* job) {
    return job->jv_channel != NULL && channel_can_close(job->jv_channel);
 }
 
@@ -6163,7 +6153,7 @@ job_channel_can_close(Job *job) {
 // it has not ended yet and there is a "stoponexit" flag, an exit callback
 // or when the associated channel will do something with the job output.
 private int
-job_still_useful(Job *job) {
+job_still_useful(Job* job) {
     return job_need_end_check(job) || job_channel_still_useful(job);
 }
 
@@ -6197,13 +6187,13 @@ job_cleanup(Job* job) {
    job->jv_status = JOB_FINISHED;
 
    // When only channel-in is kept open, close explicitly.
-   if (job->jv_channel != NULL)
+   if (job->jv_channel)
       ch_close_part(job->jv_channel, PART_IN);
 
-   if (job->nativeCb != NULL) { // call the native callback first
+   if (job->nativeCb) { // call the native callback first
       (*job->nativeCb)();
    }
-   if (job->jv_exit_cb.name != NULL) { // call the script callback
+   if (job->jv_exit_cb.name) { // call the script callback
       Var argv[3];
       Var returnVar;
 
@@ -6220,15 +6210,15 @@ job_cleanup(Job* job) {
       channel_need_redraw = TRUE;
    }
 
-   if (job->jv_channel != NULL && job->jv_channel->ch_anonymous_pipe)
+   if (job->jv_channel && job->jv_channel->ch_anonymous_pipe)
       job->jv_channel->isBeingKilled = TRUE;
 
-   // Do not free the job in case the close callback of the associated channel
-   // isn't invoked yet and may get information by job_info().
+   //Do not free the job in case the close callback of the associated channel
+   //isn't invoked yet and may get information by job_info().
    if (job->jv_refcount == 0 && !job_channel_still_useful(job))
-      // The job was already unreferenced and the associated channel was
-      // detached, now that it ended it can be freed. However, a caller might
-      // still use it, thus free it a bit later.
+      //The job was already unreferenced and the associated channel was
+      //detached, now that it ended it can be freed. However, a caller might
+      //still use it, thus free it a bit later.
       job_free_later(job);
 }
 
@@ -6251,11 +6241,10 @@ set_ref_in_job(int copyID) {
 // Dereference "job".  Note that after this "job" may have been freed.
 void
 job_unref(Job* job) {
-   if (job == NULL || --job->jv_refcount > 0)
+   if (!job || --job->jv_refcount > 0)
       return;
 
-   //Do not free the job if there is a channel where the close callback
-   //may get the job info.
+   //Do not free the job if there is a channel where the close callback may get the job info.
    if (job_channel_still_useful(job))
       return;
 
@@ -6296,8 +6285,8 @@ free_unused_jobs(int copyID, int mask) {
    for (Job* job = firstJobS; job; job = job_next) {
       job_next = job->jv_next;
       if ((job->jv_copyID & mask) != (copyID & mask) && !job_still_useful(job)) {
-          // Free the job struct itself.
-          job_free_job(job);
+         // Free the job struct itself.
+         job_free_job(job);
       }
    }
 }
@@ -6318,28 +6307,28 @@ job_alloc(void) {
 }
 
 void
-job_set_options(Job *job, JobOptions *opt) {
+job_set_options(Job* job, JobOptions* opt) {
    if (opt->set & JO_STOPONEXIT) {
-   eeglFree(job->jv_stoponexit);
-   if (opt->jo_stoponexit == NULL || *opt->jo_stoponexit == ZERO)
-       job->jv_stoponexit = NULL;
-   else
-       job->jv_stoponexit = copyStr(opt->jo_stoponexit);
+      eeglFree(job->jv_stoponexit);
+      if (opt->jo_stoponexit == NULL || *opt->jo_stoponexit == ZERO)
+         job->jv_stoponexit = NULL;
+      else
+         job->jv_stoponexit = copyStr(opt->jo_stoponexit);
    }
    if (opt->set & JO_EXIT_CB) {
       evFreeCallback(&job->jv_exit_cb);
       if (opt->exitCb.name == NULL || *opt->exitCb.name == ZERO) {
-          job->jv_exit_cb.name = NULL;
-          job->jv_exit_cb.cb_partial = NULL;
+         job->jv_exit_cb.name = NULL;
+         job->jv_exit_cb.cb_partial = NULL;
       } else
-          evCopyCallback(&job->jv_exit_cb, &opt->exitCb);
+         evCopyCallback(&job->jv_exit_cb, &opt->exitCb);
    }
 }
 
 // Called when Eegl is exiting: kill all jobs that have the "stoponexit" flag.
 void
 job_stop_on_exit(void) {
-   Job   *job;
+   Job* job;
 
    FOR_ALL_JOBS(job) {
       if (job->jv_status == JOB_STARTED && job->jv_stoponexit != NULL)
@@ -6351,7 +6340,7 @@ job_stop_on_exit(void) {
 // which means job_check_ended() should be called more often.
 int
 has_pending_job(void) {
-   Job       *job;
+   Job* job;
 
    FOR_ALL_JOBS(job) {
       //Only should check if the channel has been closed, if the channel is
@@ -6359,7 +6348,7 @@ has_pending_job(void) {
       if ((job->jv_status == JOB_STARTED && !job_channel_still_useful(job))
              || (job->jv_status == JOB_FINISHED && job_channel_can_close(job))
       )
-          return TRUE;
+         return TRUE;
    }
    return FALSE;
 }
@@ -6372,7 +6361,7 @@ job_check_ended(void) {
    int did_end = FALSE;
 
    // be quick if there are no jobs to check
-   if (firstJobS == NULL)
+   if (!firstJobS)
       return did_end;
 
    for (int i = 0; i < MAX_CHECK_ENDED; ++i) {
@@ -6402,9 +6391,9 @@ job_check_ended(void) {
 Job*
 startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job) {
    CS cmd = NULL;
-   Byte   **argv = NULL;
-   int      argc = 0;
-   int      i;
+   Byte** argv = NULL;
+   int argc = 0;
+   int i;
    ArrayList   ga;
    JobOptions   opt;
    ChannelFdKind   part;
@@ -6490,18 +6479,15 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
       }
 
       build_argv_from_string(cmd, &argv, &argc);
-   } ei (argvars[0].tag != VAR_LIST
-       || argvars[0].list == NULL
-       || argvars[0].list->len < 1
-   ){
+   } ei (argvars[0].tag != VAR_LIST || argvars[0].list == NULL || argvars[0].list->len < 1){
       emsg(_(e_invalid_argument));
       goto theend;
    } else {
-      List *l = argvars[0].list;
+      List* l = argvars[0].list;
       if (build_argv_from_list(l, &argv, &argc) == FAIL)
          goto theend;
 
-      // Empty command is invalid.
+      //Empty command is invalid.
       if (argc == 0 || *skipwhite((CS)argv[0]) == ZERO) {
          emsg(_(e_invalid_argument));
          goto theend;
@@ -6509,14 +6495,14 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
    }
 
    job->nativeCb = opt_arg->finishNativeCb;
-   // Save the command used to start the job.
+   //Save the command used to start the job.
    job->jv_argv = argv;
 
-   if (term_job != NULL)
+   if (term_job)
       *term_job = job;
 
    if (ch_log_active()) {
-      ArrayList    ga;
+      ArrayList ga;
 
       ga_init2(&ga, sizeof(char), 200);
       for (i = 0; i < argc; ++i) {
@@ -6543,8 +6529,8 @@ theend:
    return job;
 }
 
-// Get the status of "job" and invoke the exit callback when needed.
-// The returned string is not allocated.
+//Get the status of "job" and invoke the exit callback when needed.
+//The returned string is not allocated.
 CS
 job_status(Job* job) {
    CS result;
@@ -6574,7 +6560,7 @@ job_stop(Job* job, Arr(Var) argvars, CS type) {
       arg = Em;
    else {
       arg = convertVarToStringSingleUse(&argvars[1]);
-      if (arg == NULL) {
+      if (!arg) {
          emsg(_(e_invalid_argument));
          return 0;
       }
@@ -6591,18 +6577,17 @@ job_stop(Job* job, Arr(Var) argvars, CS type) {
    if (mch_signal_job(job, arg) == FAIL)
       return 0;
 
-   // Assume that only "kill" will kill the job.
+   //Assume that only "kill" will kill the job.
    if (job->jv_channel != NULL && STRCMP(arg, "kill") == 0)
       job->jv_channel->isBeingKilled = TRUE;
 
-   // We don't try freeing the job, obviously the caller still has a
-   // reference to it.
+   //We don't try freeing the job, obviously the caller still has a reference to it.
    return 1;
 }
 
 void
 invoke_prompt_callback(void) {
-   Var   argv[2];
+   Var argv[2];
    LineNr lnum = curBook->mem.lineCount;
 
    //Add a new line for the prompt before invoking the callback, so that
@@ -7358,7 +7343,7 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
             }
          }
       } else
-          argtype = ARGTYPE_OTHER;
+         argtype = ARGTYPE_OTHER;
 
       if (argtype != ARGTYPE_OTHER) {
          if (i == *argc - 1)
@@ -7367,13 +7352,14 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
             *serverStr = (CS)argv[i + 1];
             i++;
          } else {
-            *serverStr = build_drop_cmd(*argc - i - 1, argv + i + 1,
-                       tabs, argtype == ARGTYPE_EDIT_WAIT);
+            *serverStr = build_drop_cmd(
+                  *argc - i - 1, argv + i + 1, tabs, argtype == ARGTYPE_EDIT_WAIT
+            );
             if (*serverStr == NULL) {
-                // Probably out of memory, exit.
-                didone = TRUE;
-                exiterr = 1;
-                break;
+               // Probably out of memory, exit.
+               didone = TRUE;
+               exiterr = 1;
+               break;
             }
             Argc = i;
          }
@@ -7402,7 +7388,7 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
          //file. Also detect that the server no longer runs.
          if (argtype == ARGTYPE_EDIT_WAIT) {
             int   numFiles = *argc - i - 1;
-            Byte  *done = alloc(numFiles);
+            Arr(Byte) done = alloc(numFiles);
 
             if (numFiles > 0 && argv[i + 1][0] == '+')
                // Skip "+cmd" argument, don't wait for it to be edited.
@@ -7411,9 +7397,9 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
             // Wait for all files to unload in remote
             memset(done, 0, numFiles);
             while (memchr(done, 0, numFiles) != NULL) {
-               Byte  *p;
+               CS p;
                int       j;
-               if (serverReadReply(xterm_dpy, srv, &p, TRUE, -1) < 0)
+               if (serverReadReply(xterm_dpy, srv, OUT &p, TRUE, -1) < 0)
                   break;
                j = atoi((char *)p);
                eeglFree(p);
@@ -7437,7 +7423,7 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
             mch_errmsg(_(": Send expression failed.\n"));
          }
       } ei (caseInsensitiveCompare(argv[i], "--serverlist") == 0) {
-         if (xterm_dpy != NULL)
+         if (xterm_dpy)
             res = serverGetEeglNames(xterm_dpy);
          if (anyEmsgG)
             mch_errmsg(S"\n");
@@ -7473,16 +7459,14 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
 // Build a ":drop" command to send to a Eegl server.
 private CS
 build_drop_cmd(
-   int      filec,
-   char   **filev,
-   int      tabs,      // Use ":tab drop" instead of ":drop".
-   int      sendReply)
-{
+   int filec,
+   char** filev,
+   int tabs,      // Use ":tab drop" instead of ":drop".
+   int sendReply
+) {
    ArrayList   ga;
-   int      i;
-   Byte   *inicmd = NULL;
-   Byte   *p;
-   Byte   *cdp;
+   CS inicmd = NULL;
+   CS p;
    // reset wildignore temporarily
    char const *wig[] = { "<CR><C-\\><C-N>:let g:_wig=&wig|set wig=",
       "<C-\\><C-N>:let &wig=g:_wig|unlet g:_wig<CR>"};
@@ -7501,7 +7485,7 @@ build_drop_cmd(
    if (mch_dirname(cwd, MAXPATHL) != OK) {
       return NULL;
    }
-   cdp = copyStr_escaped_ext(cwd, PATH_ESC_CHARS, '\\', true, null);
+   CS cdp = copyStr_escaped_ext(cwd, PATH_ESC_CHARS, '\\', true, null);
       
    ga_init2(&ga, 1, 100);
    ga_concat(&ga, (CS)"<C-\\><C-N>:cd ");
@@ -7513,7 +7497,7 @@ build_drop_cmd(
    if (tabs)
       ga_concat(&ga, S"tab ");
    ga_concat(&ga, S"drop");
-   for (i = 0; i < filec; i++) {
+   for (int i = 0; i < filec; i++) {
       //The shell has already expanded the wildcards, don't want to
       //do it again in the Eegl server.
       p = copyStr_escaped((CS)filev[i], PATH_ESC_CHARS);
@@ -7610,7 +7594,7 @@ private void
 remote_common(Arr(Var) argvars, Var* returnVar, int expr) {
    CS r = NULL;
    Byte builder[NUMBUFLEN];
-   int      timeout = 0;
+   int timeout = 0;
    Window w;
 
 # ifdef FEAT_X11
@@ -7711,8 +7695,8 @@ f_remote_read(Arr(Var) argvars UNUSED, Var* returnVar) {
          || serverReadReply(X_DISPLAY, serverStrToWin(serverid), &r, FALSE, timeout) < 0)
          emsg(_(e_unable_to_read_server_reply));
    }
-    returnVar->tag = VAR_STRING;
-    returnVar->string = r;
+   returnVar->tag = VAR_STRING;
+   returnVar->string = r;
 }
 
 // "remote_send()" function

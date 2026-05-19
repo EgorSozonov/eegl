@@ -5050,20 +5050,14 @@ after_pathsep(CS fileName, CS afterSep) {
    return afterSep > fileName && afterSep[-1] == '/' && mb_head_off(fileName, afterSep - 1) == 0;
 }
 
-//Check if the "://" of a URL is at the pointer, return URL_SLASH.
-//Also check for ":\\", which MS Internet Explorer accepts, return URL_BACKSLASH.
-int
+//Check if the "://" of a URL is at the pointer.
+Boole
 path_is_url(CS p) {
-   if (STRNCMP(p, "://", (Unt)3) == 0)
-      return URL_SLASH;
-   ei (STRNCMP(p, ":\\\\", (Unt)3) == 0)
-      return URL_BACKSLASH;
-   return 0;
+   return (STRNCMP(p, "://", (Unt)3) == 0);
 }
 
-//Check if "fname" starts with "name://" or "name:\\".
-//Return URL_SLASH for "name://", URL_BACKSLASH for "name:\\". Return 0 otherwise.
-int
+//Check if "fname" starts with "name://".
+Boole
 path_with_url(CS fname) {
    CS p;
 
@@ -5072,7 +5066,7 @@ path_with_url(CS fname) {
 
    // first character must be alpha
    if (!ASCII_ISALPHA(*fname))
-      return 0;
+      return false;
 
    // check body: alpha or dash
    for (p = fname + 1; (ASCII_ISALPHA(*p) || (*p == '-')); ++p)
@@ -5080,9 +5074,9 @@ path_with_url(CS fname) {
 
    // check last char is not a dash
    if (p[-1] == '-')
-      return 0;
+      return false;
 
-   // "://" or ":\\" must follow
+   // "://" must follow
    return path_is_url(p);
 }
 
@@ -6095,17 +6089,8 @@ isValidForFirstCharDictKey(int c) {
 //}}}
 //{{{xxd (hex dumping of binary data)
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <limits.h>
-
-
-char version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
-char osver[] = "";
+Byte version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
+Byte osver[] = "";
 
 #define BIN_READ(dummy)  "r"
 #define BIN_WRITE(dummy) "w"

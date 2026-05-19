@@ -4,8 +4,10 @@
 //## fileio.c: read from and write to a file
 
 #include "eegl.h"
-#include <sys/xattr.h>
-#include <sys/stat.h> // for stat, fstat
+#include <sys/stat.h> // for stat, fstat etc
+ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
+ssize_t getxattr(const char*, const char*, void*, size_t);
+int setxattr(const char*, const char*, const void*, size_t, int);
 
 #define SHELL_SPECIAL (CS)"\t \"&'$;<>()\\|"
 
@@ -27,7 +29,6 @@ private CS findFileInPathImpl(
 );
 private int expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags);
 private Boole recursivelyDeleteDir(CS name);
-private int mch_FullName(CS fname, OUT CS buf, int len, Boole force);
 private CS skipInitialSlashes(CS path);
 
 //}}}
@@ -48,8 +49,8 @@ private CS skipInitialSlashes(CS path);
 int
 modify_fname(
    CS src,      // string with modifiers
-   int      tilde_file,   // "~" is a file name, not $HOME
-   Unt   *usedlen,   // characters after src that are used
+   int tilde_file,   // "~" is a file name, not $HOME
+   Unt* usedlen,   // characters after src that are used
    OUT CS* fnamep,   // file name so far
    OUT CS* bufp,      // buffer for allocated file name or NULL
    Unt* fnamelen   // length of fnamep
@@ -91,9 +92,9 @@ repeat:
             break;
       }
 
-      // FullName_save() is slow, don't use it when not needed.
+      // fiExpandAndCopy() is slow, don't use it when not needed.
       if (*p != ZERO || !eeIsAbsName(*fnamep)) {
-         *fnamep = FullName_save(*fnamep, *p != ZERO);
+         *fnamep = fiExpandAndCopy(*fnamep, *p != ZERO);
          eeglFree(*bufp);   // free any allocated file name
          *bufp = *fnamep;
          if (*fnamep == NULL)
@@ -102,13 +103,13 @@ repeat:
 
       // Append a path separator to a directory.
       if (mch_isdir(*fnamep)) {
-          // Make room for one or two extra characters.
-          *fnamep = copySubstr(*fnamep, STRLEN(*fnamep) + 2);
-          eeglFree(*bufp);   // free any allocated file name
-          *bufp = *fnamep;
-          if (*fnamep == NULL)
-         return -1;
-          add_pathsep(*fnamep);
+         // Make room for one or two extra characters.
+         *fnamep = copySubstr(*fnamep, STRLEN(*fnamep) + 2);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == null)
+            return -1;
+         add_pathsep(*fnamep);
       }
    }
 
@@ -127,7 +128,7 @@ repeat:
          if (**fnamep == '~')
             p = pbuf = expand_env_save(*fnamep);
          else
-            p = pbuf = FullName_save(*fnamep, FALSE);
+            p = pbuf = fiExpandAndCopy(*fnamep, FALSE);
       } else
          p = *fnamep;
 
@@ -833,7 +834,7 @@ f_isdirectory(Var *argvars, Var* returnVar) {
 // "isabsolutepath()" function
 void
 f_isabsolutepath(Var *argvars, Var* returnVar) {
-   returnVar->number = mch_isFullName(tv_get_string_strict(&argvars[0]));
+   returnVar->number = fiIsRelative(tv_get_string_strict(&argvars[0])) ? 0 : 1;
 }
 
 //Create the directory in which "dir" is located, and higher levels when needed.
@@ -854,7 +855,7 @@ mkdir_recurse(CS dir, Unt prot, Byte** created) {
    ei (mkdir_recurse(updir, prot, created) == OK) {
       r = eeMkdir_emsg(updir, prot);
       if (r == OK && created != NULL && *created == NULL)
-         *created = FullName_save(updir, FALSE);
+         *created = fiExpandAndCopy(updir, FALSE);
    }
    eeglFree(updir);
    return r;
@@ -904,7 +905,7 @@ f_mkdir(Var* argvars, Var* returnVar) {
     // Handle "D" and "R": deferred deletion of the created directory.
    if (returnVar->number == OK
             && created == NULL && (defer || defer_recurse))
-   created = FullName_save(dir, FALSE);
+   created = fiExpandAndCopy(dir, FALSE);
    if (created != NULL) {
       Var tv[2];
 
@@ -1303,7 +1304,7 @@ f_resolve(Var *argvars, Var* returnVar) {
              p[q - p - 1] = ZERO;
              q = fiGetShortFiName(p);
          }
-         if (q > p && !mch_isFullName(buf)) {
+         if (q > p && fiIsRelative(buf)) {
             // symlink is relative to directory of argument
             cpy = alloc(STRLEN(p) + STRLEN(buf) + 1);
             STRCPY(cpy, p);
@@ -1467,7 +1468,7 @@ f_writefile(Var *argvars, Var* returnVar){
 
          tv.tag = VAR_STRING;
          tv.lock = 0;
-         tv.string = FullName_save(fname, FALSE);
+         tv.string = fiExpandAndCopy(fname, FALSE);
          if (tv.string == NULL || add_defer((CS)"delete", 1, &tv) == FAIL) {
             ret = -1;
             fclose(fd);
@@ -1775,9 +1776,8 @@ add_pathsep(CS p){
 }
 
 //If fname is not a full path, make it one. Return pointer to copied, allocated memory.
-//Return null if fname is null
 CS
-FullName_save(CS fname, int force) { // force expansion, even when it already looks full
+fiExpandAndCopy(NULLABLE CS fname, int force) { // force expansion, even when it already looks full
    if (!fname)
       return NULL;
 
@@ -1866,7 +1866,7 @@ expand_wildcards(
    if (p_wig) {
       // check all files in files->c
       for (int i = 0; i < (int)files->len; ++i) {
-         CS ffname = FullName_save(files->c[i], FALSE);
+         CS ffname = fiExpandAndCopy(files->c[i], FALSE);
          if (match_file_list(p_wig, files->c[i], ffname)) {
             // remove this matching file from the list
             eeglFree(files->c[i]);
@@ -2362,7 +2362,7 @@ gen_expand_wildcards(
          //pattern. Otherwise: Add the file name if it exists or when EW_NOTFOUND is given.
          if (mch_has_exp_wildcard(p) || (flags & EW_ICASE)) {
             if ((flags & (EW_PATH | EW_CDPATH))
-               && !mch_isFullName(p)
+               && fiIsRelative(p)
                && !(p[0] == '.' && (p[1] == '/' || (p[1] == '.' && p[2] == '/')))
             ){
                // :find completion where 'path' is used. Recursiveness is OK here.
@@ -2487,57 +2487,27 @@ pathcmp(CS p, CS q, int maxlen) {
       i += utfCharLen((CS)p + i);
       j += utfCharLen((CS)q + j);
    }
-   if (s == NULL)   // "i" or "j" ran into "maxlen"
+   if (s == NULL) //"i" or "j" ran into "maxlen"
       return 0;
 
    c1 = mb_ptr2char((CS)s + i);
    c2 = mb_ptr2char((CS)s + i + utfCharLen((CS)s + i));
-   // ignore a trailing slash, but not "//" or ":/"
+   //ignore a trailing slash, but not "//" or ":/"
    if (c2 == ZERO
        && i > 0
        && !after_pathsep((CS)s, (CS)s + i)
        && c1 == '/'
    )
-      return 0;   // match with trailing slash
+      return 0;   //match with trailing slash
    if (s == q)
-      return -1;       // no match
+      return -1;  //no match
    return 1;
 }
 
 //TRUE if "name" is a full (absolute) path name or URL.
 int
 eeIsAbsName(CS name){
-   return (path_with_url(name) != 0 || mch_isFullName(name));
-}
-
-//Get absolute file name into buffer "buf[len]". return FAIL for failure, OK otherwise
-int
-eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion even if absolute
-   int      retval = OK;
-
-   *buf = ZERO;
-   if (!fname)
-      return FAIL;
-
-   int url = path_with_url(fname);
-   if (!url)
-      retval = mch_FullName(fname, buf, len, force);
-   if (url || retval == FAIL) {
-      // something failed; use the file name (truncate when too long)
-      copySubstrToAllocation(OUT buf, (Text){fname, len - 1});
-   }
-   return retval;
-}
-
-//Get name of current directory into buffer "buf" of length "len" bytes.
-//"len" must be at least PATH_MAX. Return OK for success, FAIL for failure.
-int
-mch_dirname(CS buf, int len) {
-   if (getcwd((char *)buf, len) == NULL) {
-      STRCPY(buf, strerror(errno));
-      return FAIL;
-   }
-   return OK;
+   return (path_with_url(name) != 0 || !fiIsRelative(name));
 }
 
 //Get absolute file name into "buf[len]". return FAIL for failure, OK for success
@@ -2545,54 +2515,53 @@ private int
 mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand when already absolute path
    int buflen = 0;
    int fd = -1;
-   static int   dont_fchdir = FALSE;   // TRUE when fchdir() doesn't work
+   static int dont_fchdir = FALSE;   // TRUE when fchdir() doesn't work
    Byte olddir[MAXPATHL];
    CS p;
    int retval = OK;
 
-   // Expand it if forced or not an absolute path.
-   // Do not do it for "/file", the result is always "/".
-   if ((force || !mch_isFullName(fname)) && ((p = lastOccurrence(fname, '/')) == NULL || p != fname)) {
-      if (p == NULL && STRCMP(fname, "..") == 0)
-          // Handle ".." without path separators.
-          p = fname + 2;
+   //Expand it if forced or not an absolute path.
+   //Do not do it for "/file", the result is always "/".
+   if ((force || fiIsRelative(fname)) && ((p = lastOccurrence(fname, '/')) == NULL || p != fname)) {
+      if (!p && eq(fname, S".."))
+         // Handle ".." without path separators.
+         p = fname + 2;
       //If the file name has a path, change to that directory for a moment, and then get the 
       //directory (and get back to where we were).
       //This will get the correct path name with "../" things.
       if (p) {
-         if (STRCMP(p, "/..") == 0)
-            // For "/path/dir/.." include the "/..".
+         if (eq(p, S"/.."))
+            //For "/path/dir/.." include the "/..".
             p += 3;
 
-         // Use fchdir() if possible, it's said to be faster and more reliable.  
+         //Use fchdir() if possible, it's said to be faster and more reliable.  
          if (!dont_fchdir) {
             fd = open(".", O_RDONLY | O_EXTRA, 0);
             if (fd >= 0 && fchdir(fd) < 0) {
-                close(fd);
-                fd = -1;
-                dont_fchdir = TRUE;       // don't try again
+               close(fd);
+               fd = -1;
+               dont_fchdir = TRUE;       // don't try again
             }
          }
 
-         // Only change directory when we are sure we can return to where
-         // we are now.  After doing "su" chdir(".") might not work.
-         if ( fd < 0 &&
-            (mch_dirname(olddir, MAXPATHL) == FAIL || mch_chdir((char *)olddir) != 0)
+         //Only change directory when we are sure we can return to where
+         //we are now. After doing "su" chdir(".") might not work.
+         if (fd < 0 
+               && (mch_dirname(olddir, MAXPATHL) == FAIL || mch_chdir((char *)olddir) != 0)
          ){
             p = NULL;   // can't get current dir: don't chdir
             retval = FAIL;
          } else {
-            // The directory is copied into buf[], to be able to remove
-            // the file name without changing it (could be a string in read-only memory)
+            //The directory is copied into buf[], to be able to remove
+            //the file name without changing it (could be a string in read-only memory)
             if (p - fname >= len)
-                retval = FAIL;
+               retval = FAIL;
             else {
                copySubstrToAllocation(buf, (Text){fname, p - fname});
                if (mch_chdir((char *)buf)) {
-                  // Path does not exist (yet).  For a full path fail,
-                  // will use the path as-is.  For a relative path use
-                  // the current directory and append the file name.
-                  if (mch_isFullName(fname))
+                  //Path does not exist (yet). For a full path fail, will use the path as-is. 
+                  //For a relative path use the current directory and append the file name.
+                  if (!fiIsRelative(fname))
                      retval = FAIL;
                   else
                      p = NULL;
@@ -2605,17 +2574,16 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
          }
       }
       if (mch_dirname(buf, len) == FAIL) {
-          retval = FAIL;
-          *buf = ZERO;
+         retval = FAIL;
+         *buf = ZERO;
       }
-      if (p != NULL) {
-         int   l;
-
+      if (p) {
+         int l;
          if (fd >= 0) {
             if (p_verbose >= 5) {
-                verbose_enter();
-                msg(S"fchdir() to previous dir");
-                verbose_leave();
+               verbose_enter();
+               msg(S"fchdir() to previous dir");
+               verbose_leave();
             }
             l = fchdir(fd);
          } else
@@ -2649,10 +2617,38 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
    return OK;
 }
 
-// TRUE if "fname" does not depend on the current directory.
+
+//Get absolute file name into buffer "buf[len]". Urls are copied as is, otherwise env vars expanded
+//Return OK/FAIL
 int
-mch_isFullName(CS fname) {
-   return (*fname == '/' || *fname == '~');
+eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion even if absolute
+   *buf = ZERO;
+
+   int retval = OK;
+   Boole url = path_with_url(fname); //is it of the "asdf://..." form?
+   if (!url)
+      retval = mch_FullName(fname, OUT buf, len, force);
+   if (url || retval == FAIL) {
+      // something failed; use the file name (truncate when too long)
+      copySubstrToAllocation(OUT buf, (Text){fname, len - 1});
+   }
+   return retval;
+}
+
+//Get name of current directory into buffer "buf" of length "len" bytes.
+//"len" must be at least PATH_MAX. Return OK for success, FAIL for failure.
+int
+mch_dirname(CS buf, int len) {
+   if (getcwd((char *)buf, len) == NULL) {
+      STRCPY(buf, strerror(errno));
+      return FAIL;
+   }
+   return OK;
+}
+
+Boole
+fiIsRelative(CS fname) {
+   return (*fname != '/' && *fname != '~');
 }
 
 //}}}
@@ -2931,7 +2927,7 @@ eeFindFile_init(
          copySubstrToAllocation(fileExpansionS.c, (Text){rel_fname, len});
          fileExpansionS.len = len;
 
-         searchCtx->startDir.c = FullName_save(fileExpansionS.c, FALSE);
+         searchCtx->startDir.c = fiExpandAndCopy(fileExpansionS.c, FALSE);
          if (searchCtx->startDir.c == NULL)
             goto error_return;
          searchCtx->startDir.len = STRLEN(searchCtx->startDir.c);
@@ -2985,7 +2981,7 @@ eeFindFile_init(
             fileExpansionS.len = len;
 
             tmp = &searchCtx->stopDirs[dircount - 1];
-            tmp->c = FullName_save(fileExpansionS.c, FALSE);
+            tmp->c = fiExpandAndCopy(fileExpansionS.c, FALSE);
             tmp->len = tmp->c ? STRLEN(tmp->c) : 0;
          } else {
             tmp = &searchCtx->stopDirs[dircount - 1];
@@ -3516,63 +3512,65 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                   for (;;) {
                       // if file exists and we didn't already find it
                       if ((path_with_url(filePath.c)
-                       || (mch_getperm(filePath.c) >= 0
-                           && (searchCtx->whatToFind == FINDFILE_BOTH
-                          || ((searchCtx->whatToFind == FINDFILE_DIR)
-                              == mch_isdir(filePath.c)))))
+                          || (mch_getperm(filePath.c) >= 0
+                              && (searchCtx->whatToFind == FINDFILE_BOTH
+                                   || ((searchCtx->whatToFind == FINDFILE_DIR)
+                                       == mch_isdir(filePath.c))
+                                 )
+                              )
+                          )
 #ifndef FF_VERBOSE
                          && (checkFirstTimeVisit(
                             &searchCtx->visitedList ->ffvl_visited_list,
                             filePath,
-                            (CS)"", 0) == OK)
+                            S"", 0) == OK)
 #endif
-                         )
-                      {
+                     ) {
 #ifdef FF_VERBOSE
-                     if (checkFirstTimeVisit(
-                            &searchCtx->visitedList
-                                 ->ffvl_visited_list,
-                              filePath,
-                              (CS)"", 0) == FAIL)
-                     {
-                         if (p_verbose >= 5) {
-                        verbose_enter_scroll();
-                        smsg("Already: %s", filePath.c);
-                        // don't overwrite this either
-                        msg_puts("\n");
-                        verbose_leave_scroll();
-                         }
-                         continue;
-                     }
-#endif
-
-                     // push dir to examine rest of subdirs later
-                     stackp->ffs_filearray_cur = i + 1;
-                     ff_push(searchCtx, stackp);
-
-                     if (!path_with_url(filePath.c))
-                         filePath.len = simplify_filename(filePath.c);
-
-                     if (mch_dirname(fileExpansionS.c, MAXPATHL) == OK) {
-                        fileExpansionS.len = STRLEN(fileExpansionS.c);
-                        CS p = shorten_fname(filePath.c, fileExpansionS.c);
-                        if (p) {
-                           mch_memmove(filePath.c, p,
-                               (Unt)((filePath.c + filePath.len) - p) + 1);  // +1 for ZERO
-                           filePath.len -= (p - filePath.c);
+                        if (checkFirstTimeVisit(
+                               &searchCtx->visitedList->ffvl_visited_list,
+                                 filePath,
+                                 (CS)"", 0
+                            ) == FAIL
+                        ) {
+                           if (p_verbose >= 5) {
+                              verbose_enter_scroll();
+                              smsg("Already: %s", filePath.c);
+                              // don't overwrite this either
+                              msg_puts("\n");
+                              verbose_leave_scroll();
+                           }
+                           continue;
                         }
-                     }
-#ifdef FF_VERBOSE
-                     if (p_verbose >= 5) {
-                         verbose_enter_scroll();
-                         smsg("HIT: %s", filePath.c);
-                         // don't overwrite this either
-                         msg_puts("\n");
-                         verbose_leave_scroll();
-                     }
 #endif
-                     return filePath.c;
-                      }
+
+                        // push dir to examine rest of subdirs later
+                        stackp->ffs_filearray_cur = i + 1;
+                        ff_push(searchCtx, stackp);
+
+                        if (!path_with_url(filePath.c))
+                           filePath.len = simplify_filename(filePath.c);
+
+                        if (mch_dirname(fileExpansionS.c, MAXPATHL) == OK) {
+                           fileExpansionS.len = STRLEN(fileExpansionS.c);
+                           CS p = shorten_fname(filePath.c, fileExpansionS.c);
+                           if (p) {
+                              mch_memmove(filePath.c, p,
+                                  (Unt)((filePath.c + filePath.len) - p) + 1);  // +1 for ZERO
+                              filePath.len -= (p - filePath.c);
+                           }
+                        }
+#ifdef FF_VERBOSE
+                        if (p_verbose >= 5) {
+                           verbose_enter_scroll();
+                           smsg("HIT: %s", filePath.c);
+                           // don't overwrite this either
+                           msg_puts("\n");
+                           verbose_leave_scroll();
+                        }
+#endif
+                        return filePath.c;
+                     }
 
                      // Not found or found already, try next suffix.
                      if (*suf == ZERO)
@@ -3605,7 +3603,6 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
          //if wildcards contains '**' we have to descent till we reach the
          //leaves of the directory tree.
          if (STRNCMP(stackp->wildcardPathPart.c, "**", 2) == 0) {
-
             for (Unt i = stackp->ffs_filearray_cur; i < stackp->files.len; ++i) {
                if (fnamecmp(stackp->files.c[i], stackp->fixedPathPart.c) == 0)
                   continue; // don't repush same directory
@@ -3707,10 +3704,8 @@ findfileFreeVisitedList_list(VisitedList **list_headp) {
 
 private void
 ff_free_visited_list(Visited* vl) {
-   Visited *vp;
-
    while (vl) {
-      vp = vl->next;
+      Visited* vp = vl->next;
       eeglFree(vl->wildcardPath);
       eeglFree(vl);
       vl = vp;
@@ -3774,10 +3769,10 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
 private int
 ff_wc_equal(CS s1, CS s2) {
    int      i, j;
-   int      c1 = ZERO;
-   int      c2 = ZERO;
-   int      prev1 = ZERO;
-   int      prev2 = ZERO;
+   Unt c1 = ZERO;
+   Unt c2 = ZERO;
+   int prev1 = ZERO;
+   int prev2 = ZERO;
 
    if (s1 == s2)
       return TRUE;
@@ -3796,8 +3791,8 @@ ff_wc_equal(CS s1, CS s2) {
 
       i += utfCharLen(s1 + i);
       j += utfCharLen(s2 + j);
-    }
-    return s1[i] == s2[j];
+   }
+   return s1[i] == s2[j];
 }
 
 //maintain the list of already visited files and dirs
@@ -3808,8 +3803,8 @@ ff_wc_equal(CS s1, CS s2) {
 //   -> return TRUE - Better the file is found several times instead of never.
 private int
 checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathlen) {
-   FileStat      st;
-   int         url = FALSE;
+   FileStat st;
+   int url = FALSE;
 
    // For a URL we only compare the name, otherwise we compare the
    // device/inode (unix) or the full path name (not Unix).
@@ -3874,8 +3869,7 @@ ff_create_stack_element(
    int level,
    Boole star_star_empty
 ) {
-   DirSearchStack   *new;
-
+   DirSearchStack* new;
    new = ALLOC_ONE(DirSearchStack);
    new->ffs_prev      = NULL;
    new->files = (ExpandMatch){.c = null, .len = 0};
@@ -3980,14 +3974,15 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
    if (path_len == 0)
       return TRUE;
 
-    for (i = 0; stopdirs_v[i].c != NULL; i++)
-   // match for parent directory. So '/home' also matches
-   // '/home/rks'. Check for '/' in stopdirs_v[i], else
-   // '/home/r' would also match '/home/rks'
-   if (fnamencmp(stopdirs_v[i].c, path, path_len) == 0
-      && ((int)stopdirs_v[i].len <= path_len
-          || stopdirs_v[i].c[path_len] == '/'))
-       return TRUE;
+   for (i = 0; stopdirs_v[i].c != NULL; i++) {
+      // match for parent directory. So '/home' also matches
+      // '/home/rks'. Check for '/' in stopdirs_v[i], else
+      // '/home/r' would also match '/home/rks'
+      if (fnamencmp(stopdirs_v[i].c, path, path_len) == 0
+         && ((int)stopdirs_v[i].len <= path_len
+             || stopdirs_v[i].c[path_len] == '/'))
+          return TRUE;
+   } 
 
    return FALSE;
 }
@@ -4047,8 +4042,8 @@ find_directory_in_path(
    Unt options,
    CS rel_fname,   // file name searching relative to
    OUT Byte** file_to_find,   // in/out: modified copy of file name
-   OUT FileSearchCtx** searchCtx)   // in/out: state of the search
-{
+   OUT FileSearchCtx** searchCtx   // in/out: state of the search
+){
    return findFileInPathImpl(
          fName, options, true, p_cdpath, FINDFILE_DIR, rel_fname, Em, OUT file_to_find, OUT searchCtx
    );
@@ -4152,8 +4147,8 @@ findFileInPathImpl(
                && rel_to_curdir
                && (options & FNAME_REL)
                && rel_fname != NULL
-               && rel_fnamelen + l < MAXPATHL)
-            {
+               && rel_fnamelen + l < MAXPATHL
+            ) {
                l = eeSnprintf(
                   NameBuff,
                   MAXPATHL,
@@ -4182,7 +4177,7 @@ findFileInPathImpl(
                   break;
                NameBufflen = l + copy_option_part(&suffix, NameBuff + l, MAXPATHL - l, ",");
             }
-          }
+         }
       }
    } else {
       //Loop over all paths in the 'path' or 'cdpath' option.
@@ -4248,11 +4243,11 @@ theend:
 //If Visual mode is active, use the selected text if it's in one line.
 //Return the name in allocated memory, NULL for failure.
 CS
-grab_file_name(long count, LineNr *file_lnum) {
+grab_file_name(long count, OUT LineNr* file_lnum) {
    Unt options = FNAME_MESS|FNAME_EXP|FNAME_REL|FNAME_UNESC;
 
    if (VIsual_active) {
-      int   len;
+      int len;
       CS ptr;
       if (get_visual_text(NULL, OUT &ptr, OUT &len) == FAIL)
          return NULL;
@@ -4264,7 +4259,7 @@ grab_file_name(long count, LineNr *file_lnum) {
       }
       return find_file_name_in_path(ptr, len, options, count, curBook->fullFileName);
    }
-   return file_name_at_cursor(options | FNAME_HYP, count, file_lnum);
+   return file_name_at_cursor(options | FNAME_HYP, count, OUT file_lnum);
 }
 
 //Return the file name under or after the cursor.
@@ -4279,10 +4274,10 @@ grab_file_name(long count, LineNr *file_lnum) {
 //FNAME_HYP    check for hypertext link
 //FNAME_INCL   apply @includeexpr
 CS
-file_name_at_cursor(int options, long count, LineNr* file_lnum) {
+file_name_at_cursor(int options, long count, OUT LineNr* file_lnum) {
     return file_name_in_line(ml_get_curline(),
             curPor->cursor.col, options, count, curBook->fullFileName,
-            file_lnum);
+            OUT file_lnum);
 }
 
 //Return the name of the file under or after ptr[col]. Otherwise like file_name_at_cursor().
@@ -4293,8 +4288,8 @@ file_name_in_line(
    int options,
    long count,
    CS rel_fname,   // file we are searching relative to
-   LineNr   *file_lnum)   // line number after the file name
-{
+   OUT LineNr* file_lnum   // line number after the file name
+){
    int len;
    int in_type = TRUE;
    int is_url = FALSE;
@@ -4306,7 +4301,7 @@ file_name_in_line(
    if (*ptr == ZERO)   {   // nothing found
       if (options & FNAME_MESS)
           emsg(_(e_no_file_name_under_cursor));
-      return E;
+      return S"";
    }
 
    //Search backward for first char of the file name.
@@ -4567,7 +4562,7 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
       } ei (path_with_url(buf))
          // URL can't be used here
          continue;
-      ei (!mch_isFullName(buf)) {
+      ei (fiIsRelative(buf)) {
          // Expand relative path to their full path equivalent
          if (curdirlen == 0)
             curdirlen = STRLEN(curdir);
@@ -4618,11 +4613,7 @@ get_path_cutoff(CS fname, OUT ExpandMatch* matches) {
 //respect to each other while conserving the part that matches the pattern. Beware, this is at 
 //least O(n^2) wrt "matches->len".
 private void
-uniquefy_paths(
-   OUT ExpandMatch* matches,
-   CS pattern,
-   CS path_option   // path or cdpath
-){
+uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // path or cdpath
    Arr(CS) fnames = matches->c;
    int sort_again = FALSE;
    RegMatch regmatch;
@@ -4691,7 +4682,7 @@ uniquefy_paths(
          }
       }
 
-      if (mch_isFullName(path)) {
+      if (!fiIsRelative(path)) {
          //Last resort: shorten relative to curdir if possible. 'possible' means:
          //1. It is under the current directory.
          //2. The result is actually shorter than the original.
@@ -4986,7 +4977,6 @@ save_patterns(int num_pat, Arr(CS) pat, OUT ExpandMatch* files) {
    return OK;
 }
 
-
 void
 f_simplify(Var* argvars, Var* returnVar) {
    CS p = tv_get_string_strict(&argvars[0]);
@@ -5275,9 +5265,6 @@ fiGlobpath(
 
 //}}}
 //{{{reading files
-
-#include <pwd.h>
-#include <grp.h>
 
 private int readdirex_sort;
 
@@ -5811,7 +5798,7 @@ readfile(
          // read more than 1 Mbyte at a time, so we can be interrupted.
          size = 0x10000L + linerest;
          if (size > 0x100000L)
-             size = 0x100000L;
+            size = 0x100000L;
 #endif
       }
 
@@ -5844,9 +5831,8 @@ readfile(
                   size = 0;
                else {
                   int   n, ni;
-                  long   tlen;
 
-                  tlen = 0;
+                  long tlen = 0;
                   for (;;) {
                      p = ml_get(read_buf_lnum) + read_buf_col;
                      n = ml_get_len(read_buf_lnum) - read_buf_col;
@@ -6254,10 +6240,7 @@ set_file_options(Invocation* invo) {
 
 // Return TRUE if a file appears to be read-only from the file permissions.
 int
-check_file_readonly(
-   CS fname,      // full path to file
-   Unt      perm  // known permissions on file
-){
+check_file_readonly(CS fname, Unt perm) {  // known permissions on file
    return ( (perm & 0222) == 0 || mch_access(fname, W_OK));
 }
 
@@ -6396,7 +6379,7 @@ shorten_buf_fname(Book* book, CS dirname, int force) {
    if (book->currFileName
        && !bt_nofilename(book)
        && !path_with_url(book->currFileName)
-       && (force || book->shortFileName == NULL || mch_isFullName(book->shortFileName))
+       && (force || book->shortFileName == NULL || !fiIsRelative(book->shortFileName))
    ) {
       if (book->shortFileName != book->fullFileName)
          EE_CLEAR(book->shortFileName);
@@ -6610,20 +6593,15 @@ eeRename(CS from, CS to){
 //Create the new file with same permissions as the original. Return FAIL for failure, OK for success
 private int
 eeCopyfile(CS from, CS to){
-   int fd_in;
-   int fd_out;
-   int n;
    CS errmsg = NULL;
-
-   int      len;
-   FileStat   st;
    Byte linkbuf[MAXPATHL + 1];
 
+   FileStat st;
    int ret = lstat((char *)from, &st);
    if (ret >= 0 && S_ISLNK(st.st_mode)) {
       ret = -1;
 
-      len = readlink((char *)from, (char*)linkbuf, MAXPATHL);
+      int len = readlink((char *)from, (char*)linkbuf, MAXPATHL);
       if (len > 0) {
          linkbuf[len] = ZERO;
 
@@ -6635,20 +6613,20 @@ eeCopyfile(CS from, CS to){
    }
 
    long perm = mch_getperm(from);
-   fd_in = open((char *)from, O_RDONLY|O_EXTRA, 0);
+   int fd_in = open((char *)from, O_RDONLY|O_EXTRA, 0);
    if (fd_in == -1) {
       return FAIL;
    }
 
    // Create the new file with same permissions as the original.
-   fd_out = open((char *)to, O_CREAT|O_EXCL|O_WRONLY|O_EXTRA|O_NOFOLLOW, (int)perm);
+   int fd_out = open((char *)to, O_CREAT|O_EXCL|O_WRONLY|O_EXTRA|O_NOFOLLOW, (int)perm);
    if (fd_out == -1) {
       close(fd_in);
       return FAIL;
    }
 
    CS buf = alloc(WRITEBUFSIZE);
-
+   int n;
    while ((n = read_eintr(fd_in, buf, WRITEBUFSIZE)) > 0) {
       if (write_eintr(fd_out, buf, n) != n) {
          errmsg = _(e_error_writing_to_str);
@@ -6664,9 +6642,6 @@ eeCopyfile(CS from, CS to){
       errmsg = _(e_error_reading_str);
       to = from;
    }
-#if defined(HAVE_SELINUX) || defined(HAVE_APPARMOR)
-   mch_copy_sec(from, to);
-#endif
    if (errmsg) {
       showErrFmtMsg(errmsg, to);
       return FAIL;
@@ -7355,8 +7330,8 @@ eeSettempdir(CS tempdir){
 
 //eeTempName(): Return a unique name that can be used for a temp file.
 //
-//The temp file is NOT guaranteed to be created. If "keep" is FALSE it is
-//guaranteed to NOT be created.
+//The temp file is NOT guaranteed to be created. If "keep" is FALSE it is guaranteed to NOT be 
+//created.
 //
 //The returned pointer is to allocated memory.
 //The returned pointer is NULL if no valid name was found.
@@ -7372,8 +7347,8 @@ eeTempName(
 #endif
 
 
-   static char   *(tempdirs[]) = {TEMPDIRNAMES};
-   int      i;
+   static CS tempdirs[] = {SMAP((CS), TEMPDIRNAMES)};
+   int i;
 
    //This will create a directory for private use by this instance of Eegl. This is done once, and 
    //the same directory is used for all temp files. This method avoids security problems because 
@@ -7382,14 +7357,14 @@ eeTempName(
    if (!eeTempDirG) {
       // Try the entries in TEMPDIRNAMES to create the temp directory.
       for (i = 0; i < (int)ARRAY_LENGTH(tempdirs); ++i) {
-         // Expand $TMP, leave room for "/v1100000/999999999".
-         // Skip the directory check if the expansion fails.
+         //Expand $TMP, leave room for "/v1100000/999999999".
+         //Skip the directory check if the expansion fails.
          Unt itmplen = doExpandEnv(OUT (Text){itmp, TEMPNAMELEN - 20}, (CS)tempdirs[i]);
          if (itmp[0] != '$' && mch_isdir(itmp)) {
-         // directory exists
+         //directory exists
          if (!after_pathsep(itmp, itmp + itmplen)) {
-             itmp[itmplen] = '/';
-             itmplen++;
+            itmp[itmplen] = '/';
+            itmplen++;
          }
 
          //Make sure the umask doesn't remove the executable bit.
@@ -7408,8 +7383,8 @@ eeTempName(
    }
 
    if (eeTempDirG) {
-      // There is no need to check if the file exists, because we own the directory and nobody 
-      // else creates a file in it.
+      //There is no need to check if the file exists, because we own the directory and nobody 
+      //else creates a file in it.
       int itmplen = eeSnprintf(itmp, sizeof(itmp), "%s%ld", eeTempDirG, temp_count++);
       return copySubstr(itmp, (Unt)itmplen);
    }
@@ -7427,7 +7402,7 @@ match_file_pat(
    CS fname,         // full path of file name
    CS sfname,      // short file name or NULL
    CS tail,         // tail of path
-   int allow_dirs      // allow matching with dir
+   Boole allow_dirs      // allow matching with dir
 ){
    int      result = FALSE;
    RegMatch   regmatch;
@@ -7462,7 +7437,7 @@ match_file_pat(
 int
 match_file_list(CS list, CS sfname, CS ffname){
    Byte buf[MAXPATHL];
-   Byte allow_dirs;
+   Boole allow_dirs;
 
    CS tail = fiGetShortFiName(sfname);
 
@@ -7471,7 +7446,7 @@ match_file_list(CS list, CS sfname, CS ffname){
    while (*p) {
       copy_option_part(&p, buf, MAXPATHL, ",");
       CS regpat = file_pat_to_reg_pat(buf, NULL, OUT &allow_dirs);
-      int match = match_file_pat(regpat, NULL, ffname, sfname, tail, (int)allow_dirs);
+      int match = match_file_pat(regpat, NULL, ffname, sfname, tail, allow_dirs);
       eeglFree(regpat);
       if (match)
          return TRUE;
@@ -7487,16 +7462,16 @@ CS
 file_pat_to_reg_pat(
    CS pat,
    CS pat_end,   // first char after pattern or NULL
-   OUT Byte* allow_dirs   // Result passed back out in here
+   OUT Boole* allow_dirs   // Result passed back out in here
 ){
-   int      size = 2; // '^' at start, '$' at end
+   int size = 2; // '^' at start, '$' at end
    CS p;
-   int      i;
-   int      nested = 0;
-   int      add_dollar = TRUE;
+   int i;
+   int nested = 0;
+   int add_dollar = TRUE;
 
    if (allow_dirs)
-      *allow_dirs = FALSE;
+      *allow_dirs = false;
    if (!pat_end)
       pat_end = pat + STRLEN(pat);
 
@@ -7568,8 +7543,8 @@ file_pat_to_reg_pat(
                reg_pat[i++] = '{';
                p += 2;
             } else {
-               if (allow_dirs != NULL && *p == '/')
-                  *allow_dirs = TRUE;
+               if (allow_dirs && *p == '/')
+                  *allow_dirs = true;
                reg_pat[i++] = '\\';
                reg_pat[i++] = *p;
             }
@@ -7593,7 +7568,7 @@ file_pat_to_reg_pat(
          break;
       default:
          if (allow_dirs && *p == '/')
-            *allow_dirs = TRUE;
+            *allow_dirs = true;
          reg_pat[i++] = *p;
          break;
       }
@@ -7963,58 +7938,6 @@ call_shell(CS cmd, NULLABLE CS extraArg, int opt) {
 //}}}
 //{{{security interaction
 
-#if defined(HAVE_SELINUX)
-
-# include <selinux/selinux.h>
-static int selinux_enabled = -1;
-
-//Copy security info from "from_file" to "to_file".
-void
-mch_copy_sec(CS from_file, CS to_file) {
-   if (!from_file)
-      return;
-
-   if (selinux_enabled == -1)
-      selinux_enabled = is_selinux_enabled();
-
-   if (selinux_enabled <= 0)
-      return;
-
-   //Use "char *" instead of "security_context_t" to avoid a deprecation warning.
-   char *from_context = NULL;
-   char *to_context = NULL;
-
-   if (getfilecon((char *)from_file, &from_context) < 0) {
-      //If the filesystem doesn't support extended attributes,
-      //the original had no special security context and the
-      //target cannot have one either.
-      if (errno == EOPNOTSUPP)
-          return;
-
-      msg_puts(_("\nCould not get security context for "));
-      msg_outtrans(from_file);
-      msg_putchar('\n');
-      return;
-   }
-   if (getfilecon((char *)to_file, &to_context) < 0) {
-      msg_puts(_("\nCould not get security context for "));
-      msg_outtrans(to_file);
-      msg_putchar('\n');
-      freecon (from_context);
-      return ;
-   }
-   if (strcmp(from_context, to_context) != 0) {
-      if (setfilecon((char *)to_file, from_context) < 0) {
-         msg_puts(_("\nCould not set security context for "));
-         msg_outtrans(to_file);
-         msg_putchar('\n');
-      }
-   }
-   freecon(to_context);
-   freecon(from_context);
-}
-#endif // HAVE_SELINUX
-
 // Get file permissions for 'name'. Return -1 when it doesn't exist.
 long
 mch_getperm(CS name) {
@@ -8035,14 +7958,12 @@ mch_setperm(CS name, long perm) {
 // Copy extended attributes from_file to to_file
 void
 mch_copy_xattr(CS from_file, CS to_file) {
-   Long   tsize;
+   if (!from_file)
+      return;
+      
    Long   keylen, vallen, max_vallen = 0;
-   CS key;
    CS val = NULL;
    CS errmsg = NULL;
-
-   if (from_file == NULL)
-      return;
 
    // get the length of the extended attributes
    Long size = listxattr((char *)from_file, NULL, 0);
@@ -8051,12 +7972,12 @@ mch_copy_xattr(CS from_file, CS to_file) {
       return;
    CS xattr_buf = alloc(size);
    size = listxattr((char *)from_file, (char *)xattr_buf, size);
-   tsize = size;
+   Long tsize = size;
 
    errno = 0;
 
    for (int round = 0; round < 2; round++) {
-      key = xattr_buf;
+      CS key = xattr_buf;
       if (round == 1)
           size = tsize;
 
@@ -8138,7 +8059,7 @@ mch_can_exe(CS name, Arr(CS) path, int use_path) {
       if ((use_path || fiGetShortFiName(name) != name) && executable_file(name)) {
          if (path) {
             if (name[0] != '/')
-               *path = FullName_save(name, TRUE);
+               *path = fiExpandAndCopy(name, TRUE);
             else
                *path = copyStr(name);
          }
@@ -8173,7 +8094,7 @@ mch_can_exe(CS name, Arr(CS) path, int use_path) {
       retval = executable_file(buf);
       if (retval == 1) {
          if (path) {
-            *path = buf[0] == '/' ? copySubstr(buf, buflen) : FullName_save(buf, TRUE);
+            *path = buf[0] == '/' ? copySubstr(buf, buflen) : fiExpandAndCopy(buf, TRUE);
          }
          break;
       }

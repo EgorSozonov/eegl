@@ -4,8 +4,9 @@
 //## location.c: functions for location lists (searches, errors from compilation, help greps etc)
 
 #include "eegl.h"
-#include <sys/stat.h> // for stat
-
+int fstat(int fd, struct stat* statbuf);
+int stat(const char* restrict path, struct stat* restrict buf);
+int lstat(const char* restrict, struct stat* restrict);
 
 typedef struct DirStack DirStack; 
 struct DirStack {
@@ -13,11 +14,9 @@ struct DirStack {
    CS dirname;
 };
 
-
 #define FORWARD_FILE    3
 #define BACKWARD_FILE   7
 #define STACK_CAPACITY 20
-
 
 // For each error the next struct is allocated and linked in a list.
 typedef struct LocLine LocLine;
@@ -1866,7 +1865,7 @@ addEntry(
       lline->fNum = getBookNrForPath(ll, dir, fname);
       book = bookFindFileByBookNr(lline->fNum);
    }
-   CS fullname = FullName_save(fname, true);
+   CS fullname = fiExpandAndCopy(fname, true);
    lline->fName = NULL;
    if (book && book->fullFileName && fullname) {
       if (fnamecmp(fullname, book->fullFileName) != 0) {
@@ -3828,7 +3827,7 @@ addLine(
             // Shorten the file name if not done already.
             // For optimization, do this only for the first entry in a buffer.
             if (firstBookLine 
-                  && (errBook->shortFileName == NULL || mch_isFullName(errBook->shortFileName))
+                  && (errBook->shortFileName == NULL || !fiIsRelative(errBook->shortFileName))
             ){
                if (*dirname == ZERO)
                   mch_dirname(dirname, MAXPATHL);

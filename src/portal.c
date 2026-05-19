@@ -537,7 +537,7 @@ portGotoFile:
       if (check_text_or_curbuf_locked(NULL))
          break;
 
-      ptr = grab_file_name(prenum1, &lnum);
+      ptr = grab_file_name(prenum1, OUT &lnum);
       if (ptr) {
           Tab* oldtab = curtab;
           Portal* oldPortal = curPor;

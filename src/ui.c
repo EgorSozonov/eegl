@@ -30,8 +30,8 @@
 
 #include "eegl.h"
 #include <stdarg.h>
-#include <sys/stat.h> // for stat, fstat
-
+int fstat(int fd, struct stat* statbuf); //from sys/stat.h
+int stat(const char* restrict path, struct stat* restrict buf);
 
 # define XT_TRACE_DELAY   50   // delay for xterm tracing
 
@@ -2556,11 +2556,6 @@ vterm_state_set_palette_color(VTermState *state, int index, const VTermColor *co
 //}
 
 private void 
-vterm_state_set_bold_highbright(VTermState *state, int bold_is_highbright) {
-  state->bold_is_highbright = bold_is_highbright;
-}
-
-private void 
 vterm_state_setpen(VTermState *state, const long args[], int argcount) {
   // SGR - ECMA-48 8.3.117
 
@@ -4215,7 +4210,7 @@ do_csi(VTerm *vt, char command) {
 }
 
 private void 
-do_escape(VTerm *vt, Byte command) {
+do_escape(VTerm* vt, Byte command) {
    Byte seq[INTERMED_MAX + 1];
 
    Unt len = vt->parser.intermedlen;
@@ -6461,7 +6456,7 @@ request_status_string(VTermState *state, VTermStringFragment frag) {
 }
 
 static int
-on_dcs(Byte* command, Unt commandlen, VTermStringFragment frag, void *user) {
+on_dcs(CS command, Unt commandlen, VTermStringFragment frag, void *user) {
    VTermState *state = user;
 
    if (commandlen == 2 && strneq((char*)command, "$q", 2)) {
@@ -7020,8 +7015,8 @@ private int term_backspace_char = BS;
 
 // Store the last set and the desired cursor properties, so that we only update
 // them when needed.  Doing it unnecessary may result in flicker.
-private Byte   *last_set_cursor_color = NULL;
-private Byte   *desired_cursor_color = NULL;
+private CS last_set_cursor_color = NULL;
+private CS desired_cursor_color = NULL;
 private int   last_set_cursor_shape = -1;
 private int   desired_cursor_shape = -1;
 private int   last_set_cursor_blink = -1;
@@ -7043,9 +7038,9 @@ cursor_color_copy(OUT CS* to_color, CS from_color) {
    *to_color = (from_color == NULL) ? NULL : copyStr(from_color);
 }
 
-private Byte *
-cursor_color_get(Byte *color) {
-   return (color == NULL) ? (CS)"" : color;
+private CS
+cursor_color_get(CS color) {
+   return color ? color : S"";
 }
 
 
@@ -7198,9 +7193,9 @@ term_start(
    Portal* old_curPor = curPor;
    Book* curBookSaved = NULL; 
    Book* newBook;
-   int      vertical = opt->vertical || (commModifierG.cmod_split & WSP_VERT);
-   JobOptions   orig_opt;  // only partly filled
-   Pos   save_cursor;
+   int vertical = opt->vertical || (commModifierG.cmod_split & WSP_VERT);
+   JobOptions orig_opt;  // only partly filled
+   Pos save_cursor;
 
    if (commPortTypeG != 0) {
       emsg(_(e_cannot_open_terminal_from_command_line_window));
@@ -7589,11 +7584,11 @@ get_terminaloname(Expand* xp UNUSED, int idx) {
    };
 
    if (idx < (int)ARRAY_LENGTH(p_termopt_values))
-      return (Byte*)p_termopt_values[idx];
+      return (CS)p_termopt_values[idx];
    return NULL;
 }
 
-private Byte *
+private CS
 get_termkill_name(Expand *xp UNUSED, int idx) {
    // These are platform-specific values used for job_stop(). They are defined
    // in each platform's mch_signal_job(). Just use a unified auto-complete list for simplicity.
@@ -7618,8 +7613,7 @@ expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches)
       Byte *(*cb)(Expand *, int) = NULL;
 
       CS name_end = xp->input.c - 1;
-      if (name_end - xp->fullInput >= 4
-         && STRNCMP(name_end - 4, "kill", 4) == 0)
+      if (name_end - xp->fullInput >= 4 && STRNCMP(name_end - 4, "kill", 4) == 0)
           cb = get_termkill_name;
 
       if (cb) {
@@ -7652,9 +7646,8 @@ term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
    Terminal   *term = po->book->term;
 
    if (terminal_bufs && po->book->countPortals > 1) {
-      // There are multiple views into this terminal buffer. We don't want to
-      // create the terminal multiple times. If it's the first time, create,
-      // otherwise link to the first buffer.
+      //There are multiple views into this terminal buffer. We don't want to create the terminal 
+      //multiple times. If it's the first time, create, otherwise link to the first buffer.
       Byte id_as_str[NUMBUFLEN];
 
       eeSnprintf(id_as_str, sizeof(id_as_str), "%d", bufnr);
@@ -7796,7 +7789,7 @@ get_tty_part(Terminal *term UNUSED) {
 // Read any vterm output and send it on the channel.
 private void
 term_forward_output(Terminal *term) {
-   VTerm *vterm = term->vterm;
+   VTerm* vterm = term->vterm;
    Byte buf[KEY_BUF_LEN];
    Unt curlen = vterm_output_read(vterm, buf, KEY_BUF_LEN);
 
@@ -7806,16 +7799,16 @@ term_forward_output(Terminal *term) {
 
 // Write job output "msg[len]" to the vterm.
 private void
-term_write_job_output(Terminal *term, Byte *msg_arg, Unt len_arg) {
-   Byte   *msg = msg_arg;
-   Unt   len = len_arg;
-   VTerm   *vterm = term->vterm;
-   Unt   prevlen = vterm_output_get_buffer_current(vterm);
-   Unt   limit = p_twsl * term->cols * 3;
+term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
+   CS msg = msg_arg;
+   Unt len = len_arg;
+   VTerm* vterm = term->vterm;
+   Unt prevlen = vterm_output_get_buffer_current(vterm);
+   Unt limit = p_twsl * term->cols * 3;
 
    // Limit the length to @termwinscroll * cols * 3 bytes.  Keep the text at the end.
    if (len > limit) {
-      Byte *p = msg + len - limit;
+      CS p = msg + len - limit;
 
       p -= mb_head_off(msg, p);
       len -= p - msg;
@@ -7866,9 +7859,9 @@ update_cursor(Terminal *term, int redraw) {
 
 // Invoked when "msg" output from a job was received.  Write it to the terminal of "buffer"
 void
-write_to_term(Book *book, Byte *msg, Channel* channel) {
+write_to_term(Book *book, CS msg, Channel* channel) {
    Unt   len = STRLEN(msg);
-   Terminal   *term = book->term;
+   Terminal* term = book->term;
 
 
    if (term->vterm == NULL) {
@@ -8199,11 +8192,10 @@ term_none_open(Terminal *term) {
 // kill it. Return FAIL if the user selects otherwise.
 int
 term_confirm_stop(Book* book) {
-   Byte   buff[DIALOG_MSG_SIZE];
-   int   ret;
+   Byte buff[DIALOG_MSG_SIZE];
 
    dialog_msg(buff, _("Kill job in \"%s\"?"), bookGetFname(book));
-   ret = eeDialog_yesno(EE_QUESTION, NULL, buff, 1);
+   int ret = eeDialog_yesno(EE_QUESTION, NULL, buff, 1);
    if (ret == EE_YES)
       return OK;
    else
@@ -8643,9 +8635,9 @@ private int   mouse_was_outside = FALSE;
 // Normal mode. OK when the key was dropped or sent to the terminal.
 int
 send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
-   Byte   msg[KEY_BUF_LEN];
-   Unt   len;
-   int      dragging_outside = FALSE;
+   Byte msg[KEY_BUF_LEN];
+   Unt len;
+   int dragging_outside = FALSE;
 
    // Catch keys that need to be handled as in Normal mode.
    switch (c) {
@@ -8759,7 +8751,7 @@ term_paste_register(Unt prev_c) {
 
    type = get_reg_type(c, &reglen);
    FOR_ALL_LIST_ITEMS(l, item) {
-      Byte *s = tv_get_string(&item->c);
+      CS s = tv_get_string(&item->c);
       channel_send(curBook->term->job->jv_channel, PART_IN, s, (int)STRLEN(s), NULL);
 
       if (item->next || type == MLINE)
@@ -9220,13 +9212,9 @@ handle_movecursor(
 }
 
 private int
-handle_settermprop(
-   VTermProp prop,
-   VTermValue *value,
-   void *user)
-{
-   Terminal   *term = (Terminal *)user;
-   Byte   *strval = NULL;
+handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
+   Terminal* term = (Terminal *)user;
+   CS strval = NULL;
 
    switch (prop) {
    case VTERM_PROP_TITLE:
@@ -9386,12 +9374,12 @@ handle_pushline(int cols, const VTermScreenCell *cells, void *user) {
    if (ga_grow(scrollback, 1) == FAIL)
       return 0;
 
-   CellDeco   *p = NULL;
-   int      len = 0;
-   int      i;
-   int      c;
-   int      col;
-   Byte      *text;
+   CellDeco* p = NULL;
+   int len = 0;
+   int i;
+   int c;
+   int col;
+   CS text;
    ScrollbackLine   *line;
    ArrayList   ga;
    CellDeco   fillDeco = term->cellDeco;
@@ -9463,22 +9451,19 @@ handle_postponed_scrollback(Terminal *term) {
    cleanup_scrollback(term);
 
    for (int i = 0; i < term->scrollbackPostponed.len; ++i) {
-      Byte      *text;
-      ScrollbackLine   *pp_line;
-      ScrollbackLine   *line;
+      ScrollbackLine* pp_line;
 
       if (ga_grow(&term->scrollback, 1) == FAIL)
          break;
       pp_line = (ScrollbackLine *)term->scrollbackPostponed.c + i;
 
-      text = pp_line->sb_text;
+      CS text = pp_line->sb_text;
       if (text == NULL)
           text = (CS)"";
       add_scrollback_line_to_buffer(term, text, (int)STRLEN(text));
       eeglFree(pp_line->sb_text);
 
-      line = (ScrollbackLine *)term->scrollback.c
-                      + term->scrollback.len;
+      ScrollbackLine* line = (ScrollbackLine *)term->scrollback.c + term->scrollback.len;
       line->cols = pp_line->cols;
       line->sb_cells = pp_line->sb_cells;
       line->sb_fillDeco = pp_line->sb_fillDeco;
@@ -10045,11 +10030,11 @@ init_vterm_ansi_colors(VTerm *vterm) {
 private void
 handle_drop_command(ListItem* item) {
    CS fname = tv_get_string(&item->c);
-   ListItem   *opt_item = item->next;
-   Portal   *po;
-   Tab   *tp;
+   ListItem* opt_item = item->next;
+   Portal* po;
+   Tab* tp;
    Invocation   invo;
-   Byte   *tofree = NULL;
+   Byte* tofree = NULL;
 
    int bufnr = bookOpen(fname, BLN_LISTED | BLN_NOOPT);
    FOR_ALL_TAB_PORTALS(tp, po) {
@@ -10063,11 +10048,10 @@ handle_drop_command(ListItem* item) {
    CLEAR_FIELD(invo);
 
    if (opt_item && opt_item->c.tag == VAR_BAG && opt_item->c.bag != NULL) {
-      Bag *dict = opt_item->c.bag;
-      Byte *p;
-      p = bagGetString(dict, tConst("bad"), false);
+      Bag* dict = opt_item->c.bag;
+      CS p = bagGetString(dict, tConst("bad"), false);
       if (p)
-          get_bad_opt(p, &invo);
+         get_bad_opt(p, &invo);
 
       if (bagHasKey(dict, tConst("bin")))
           invo.force_bin = FORCE_BIN;
@@ -10277,7 +10261,7 @@ parse_csi(
        y += po->portalRow * 10;
    }
 
-   Byte   buf[100];
+   Byte buf[100];
    len = eeSnprintf(buf, 100, "\x1b[3;%d;%dt", x, y);
    channel_send(term->job->jv_channel, get_tty_part(term), buf, len, NULL);
    return 1;
@@ -10333,19 +10317,15 @@ create_vterm(Terminal* term, int rows, int cols) {
    init_default_colors(term);
 
    vterm_state_set_default_colors(state, &term->cellDeco.fg, &term->cellDeco.bg);
-   if (t_colors < 16)
-      // Less than 16 colors: assume that bold means using a bright color for the foreground color
-      vterm_state_set_bold_highbright(vterm_obtain_state(vterm), 1);
 
-   // Required to initialize most things.
+   //Required to initialize most things.
    vterm_screen_reset(screen, 1); // hard reset
 
-   // Allow using alternate screen.
+   //Allow using alternate screen.
    vterm_screen_enable_altscreen(screen, 1);
 
-   // Do not use a blinking cursor.  In an xterm this causes the
-   // cursor to blink if it's blinking in the xterm.
-   // For Portals we respect the system wide setting.
+   //Do not use a blinking cursor. In an xterm this causes the cursor to blink if it's blinking in 
+   //the xterm. For Portals we respect the system wide setting.
    value.boolean = 0;
    vterm_state_set_termprop(state, VTERM_PROP_CURSORBLINK, &value);
    vterm_state_set_unrecognized_fallbacks(state, &state_fallbacks, term);
@@ -10356,10 +10336,10 @@ create_vterm(Terminal* term, int rows, int cols) {
 // Reset the terminal palette to its default value.
 private void
 term_reset_palette(VTerm* vterm) {
-   VTermState   *state = vterm_obtain_state(vterm);
+   VTermState* state = vterm_obtain_state(vterm);
 
    for (int index = 0; index < 16; index++) {
-      VTermColor   color;
+      VTermColor color;
       color.type = VTERM_COLOR_INDEXED;
       ansi_color2rgb(index, OUT &color.red, OUT &color.green, OUT &color.blue, OUT &color.index);
       // The first valid index starts at 1.
@@ -10410,8 +10390,8 @@ term_update_colors_all(void) {
 
 // Return the text to show for the book name and status.
 CS
-term_get_status_text(Terminal *term) {
-   if (term->tl_status_text != NULL)
+term_get_status_text(Terminal* term) {
+   if (term->tl_status_text)
       return term->tl_status_text;
 
    CS txt;
@@ -10448,7 +10428,7 @@ set_ref_in_term(int copyID) {
    int      abort = FALSE;
 
    for (Terminal* term = first_term; !abort && term; term = term->next) {
-      if (term->job != NULL) {
+      if (term->job) {
          Var tv;
          tv.tag = VAR_JOB;
          tv.job = term->job;
@@ -10516,7 +10496,7 @@ dump_term_color(FILE *fd, VTermColor *color) {
 // Repeating the previous screen cell:
 //    @{count}
 void
-f_term_dumpwrite(Var * argvars, Var* returnVar UNUSED) {
+f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
    Unt max_height = 0;
    Unt max_width = 0;
    FileStat   st;
@@ -10612,8 +10592,8 @@ f_term_dumpwrite(Var * argvars, Var* returnVar UNUSED) {
             if (cell.chars[0] == ZERO)
                fputs(" ", fd);
             else {
-               Byte   charbuf[10];
-               int      len;
+               Byte charbuf[10];
+               int len;
 
                for (i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i] != ZERO; ++i) {
                   len = mb_char2bytes(cell.chars[i], charbuf);
@@ -10690,7 +10670,7 @@ private Unt
 read_dump_file(FILE *fd, VTermPos *cursor_pos) {
    ArrayList       ga_text;
    ArrayList       ga_cell;
-   Byte       *prev_char = NULL;
+   Byte* prev_char = NULL;
    char decoFlags = 0;
    CellDeco       cell;
    CellDeco       empty_cell;
@@ -10927,20 +10907,19 @@ get_separator(int text_width, CS fname) {
 private void
 term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    JobOptions   opt;
-   Book   *book = NULL;
-   Byte   buf1[NUMBUFLEN];
-   Byte   buf2[NUMBUFLEN];
-   Byte   *fname1;
-   Byte   *fname2 = NULL;
-   Byte   *fname_tofree = NULL;
-   FILE   *fd1;
-   FILE   *fd2 = NULL;
+   Book* book = NULL;
+   Byte buf1[NUMBUFLEN];
+   Byte buf2[NUMBUFLEN];
+   CS fname2 = NULL;
+   CS fname_tofree = NULL;
+   FILE* fd1;
+   FILE* fd2 = NULL;
 
    // First open the files.  If this fails bail out.
-   fname1 = convertVarToString(&argvars[0], buf1);
+   CS fname1 = convertVarToString(&argvars[0], buf1);
    if (do_diff)
       fname2 = convertVarToString(&argvars[1], buf2);
-   if (fname1 == NULL || (do_diff && fname2 == NULL)) {
+   if (fname1 == NULL || (do_diff && !fname2)) {
       emsg(_(e_invalid_argument));
       return;
    }
@@ -11024,7 +11003,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    term->topDiffRows = curBook->mem.lineCount;
 
    CS textline = get_separator(width, fname1);
-   if (textline == NULL)
+   if (!textline)
       goto theend;
    if (add_empty_scrollback(term, &term->cellDeco, 0) == OK)
       ml_append(curBook->mem.lineCount, textline, 0, FALSE);
@@ -11042,7 +11021,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    if (width2 > width) {
       eeglFree(textline);
       textline = alloc(width2 + 1);
-      if (textline == NULL)
+      if (!textline)
          goto theend;
       width = width2;
       textline[width] = ZERO;
@@ -11059,9 +11038,9 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
          CS p1;
          CS p2;
          Unt col;
-         ScrollbackLine   *sb_line = (ScrollbackLine *)term->scrollback.c;
-         CellDeco *cellattr1 = (sb_line + lnum - 1)->sb_cells;
-         CellDeco *cellattr2 = (sb_line + lnum + bot_lnum - 1) ->sb_cells;
+         ScrollbackLine* sb_line = (ScrollbackLine *)term->scrollback.c;
+         CellDeco* cellattr1 = (sb_line + lnum - 1)->sb_cells;
+         CellDeco* cellattr2 = (sb_line + lnum + bot_lnum - 1) ->sb_cells;
 
          // Make a copy, getting the second line will invalidate it.
          CS line1 = copyStr(ml_get(lnum));
@@ -11150,20 +11129,17 @@ theend:
 // Return FAIL when this is not possible.
 int
 term_swap_diff(void) {
-   Terminal   *term = curBook->term;
-   LineNr   line_count;
-   LineNr   top_rows;
-   LineNr   bot_rows;
-   LineNr   bot_start;
-   LineNr   lnum;
-   Byte   *p;
-   ScrollbackLine   *sb_line;
+   Terminal* term = curBook->term;
+   LineNr line_count;
+   LineNr top_rows;
+   LineNr bot_rows;
+   LineNr bot_start;
+   LineNr lnum;
+   CS p;
+   ScrollbackLine* sb_line;
 
-   if (term == NULL
-       || !term_is_finished(curBook)
-       || term->topDiffRows == 0
-       || term->scrollback.len == 0)
-   return FAIL;
+   if (!term || !term_is_finished(curBook) || term->topDiffRows == 0 || term->scrollback.len == 0)
+      return FAIL;
 
    line_count = curBook->mem.lineCount;
    top_rows = term->topDiffRows;
@@ -11305,13 +11281,13 @@ get_row_number(Var *tv, Terminal *term) {
 // "term_getline(book, row)" function
 void
 f_term_getline(Arr(Var) argvars, Var* returnVar) {
-   Terminal       *term;
-   int          row;
+   Terminal* term;
+   int row;
 
    returnVar->tag = VAR_STRING;
 
    Book* book = term_get_buf(argvars, S"term_getline()");
-   if (book == NULL)
+   if (!book)
       return;
    term = book->term;
    row = get_row_number(&argvars[1], term);
@@ -11323,17 +11299,13 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
       if (lnum > 0 && lnum <= book->mem.lineCount)
          returnVar->string = copyStr(memGetLine(book, lnum, FALSE));
    } else {
-      VTermScreen   *screen = vterm_obtain_screen(term->vterm);
-      VTermRect   rect;
-      int      len;
-      Byte      *p;
+      VTermScreen* screen = vterm_obtain_screen(term->vterm);
+      VTermRect rect;
 
       if (row < 0 || (Unt)row >= term->rows)
           return;
-      len = term->cols * MB_MAXBYTES + 1;
-      p = alloc(len);
-      if (p == NULL)
-          return;
+      int len = term->cols * MB_MAXBYTES + 1;
+      CS p = alloc(len);
       returnVar->string = p;
 
       rect.start_col = 0;
@@ -11348,7 +11320,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
 void
 f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getscrolled()");
-   if (book == NULL)
+   if (!book)
       return;
    returnVar->number = book->term->scrollbackScrolled;
 }
@@ -11369,7 +11341,7 @@ f_term_getsize(Arr(Var) argvars, Var* returnVar) {
 // "term_setsize(book, rows, cols)" function
 void
 f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
-   Terminal   *term;
+   Terminal* term;
    Long rows, cols;
 
    Book* book = term_get_buf(argvars, S"term_setsize()");
@@ -11377,7 +11349,7 @@ f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
       emsg(_(e_not_terminal_buffer));
       return;
    }
-   if (book->term->vterm == NULL)
+   if (!book->term->vterm)
       return;
    term = book->term;
    rows = tv_get_number(&argvars[1]);
@@ -11395,13 +11367,13 @@ f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
 // "term_getstatus(book)" function
 void
 f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
-   Terminal   *term;
-   Byte   val[100];
+   Terminal* term;
+   Byte val[100];
 
    returnVar->tag = VAR_STRING;
 
    Book* book = term_get_buf(argvars, S"term_getstatus()");
-   if (book == NULL)
+   if (!book)
       return;
    term = book->term;
 
@@ -11480,7 +11452,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    VTermPos       pos;
    List       *l;
    Terminal       *term;
-   Byte       *p;
+   CS p;
    ScrollbackLine       *line;
 
    allocReturnList(returnVar);
@@ -11514,14 +11486,14 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
       int      width;
       VTermScreenCellAttrs attrs;
       VTermColor   fg, bg;
-      Byte      rgb[8];
-      Byte      mbs[MB_MAXBYTES * VTERM_MAX_CHARS_PER_CELL + 1];
-      int      off = 0;
-      int      i;
+      Byte rgb[8];
+      Byte mbs[MB_MAXBYTES * VTERM_MAX_CHARS_PER_CELL + 1];
+      int off = 0;
+      int i;
 
-      if (screen == NULL) {
+      if (!screen) {
          CellDeco* cellattr;
-         int      len;
+         int len;
 
          // vterm has finished, get the cell from scrollback
          if (pos.col >= line->cols)
@@ -11601,11 +11573,11 @@ f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
 // "term_getansicolors(book)" function
 void
 f_term_getansicolors(Arr(Var) argvars, Var* returnVar) {
-   VTermState   *state;
-   VTermColor  color;
-   Byte   hexbuf[10];
-   int      index;
-   List   *list;
+   VTermState* state;
+   VTermColor color;
+   Byte hexbuf[10];
+   int index;
+   List* list;
 
    allocReturnList(returnVar);
 
@@ -11680,7 +11652,7 @@ f_term_setapi(Arr(Var) argvars, Var* returnVar UNUSED) {
       return;
    Terminal* term = book->term;
    eeglFree(term->tl_api);
-   Byte* api = convertVarToStringSingleUse(&argvars[1]);
+   CS api = convertVarToStringSingleUse(&argvars[1]);
    term->tl_api = api ? copyStr(api) : null;
 }
 
@@ -11704,7 +11676,7 @@ f_term_setkill(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
       return;
    Terminal* term = book->term;
    eeglFree(term->tl_kill);
-   Byte* how = convertVarToStringSingleUse(&argvars[1]);
+   CS how = convertVarToStringSingleUse(&argvars[1]);
    term->tl_kill = how ? copyStr(how) : null;
 }
 
@@ -13305,7 +13277,7 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    int modified;
    Unt countPortals;
    Unt len = 0;
-   Byte   buf[2] = { ZERO, ZERO };
+   Byte buf[2] = { ZERO, ZERO };
 
    modified = FALSE;
    for (countPortals = 0; tapa->po; tapa->po = tapa->po->next, ++countPortals) {
@@ -13347,11 +13319,11 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
 private void
 drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    int      p_crb_save;
-   Byte   buf[IOSIZE];
-   StatusLineHilite *hilites;
-   StatusLineHilite *labels;
+   Byte buf[IOSIZE];
+   StatusLineHilite* hilites;
+   StatusLineHilite* labels;
    char currDecoFlags;
-   int      n;
+   int n;
 
    //Temporarily reset 'cursorbind', we don't want a side effect from moving the cursor away & back
    p_crb_save = tapa->currPort->o.cursorBind;
@@ -13476,9 +13448,9 @@ do_by_tplmode(
 
       CS usefmt = startsWithPercentAndBang(&tapa);
       if (usefmt) {
-         Byte   buf[IOSIZE];
+         Byte buf[IOSIZE];
          CS p = usefmt;
-         Unt   i = 0;
+         Unt i = 0;
 
          while (p[i] != ZERO) {
             while (p[i] == '\n' || p[i] == '\r') {
@@ -13511,8 +13483,8 @@ do_by_tplmode(
             drawTabpanelUserdefined(tplmode, &tapa);
             // p_tpl could have been freed in bookRenderStatusLine()
             if (!p_tpl) {
-                usefmt = NULL;
-                break;
+               usefmt = NULL;
+               break;
             }
 
             p += i;

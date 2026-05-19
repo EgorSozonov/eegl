@@ -2852,19 +2852,6 @@ struct BlockHeader {
    char   bh_flags;       // BH_DIRTY or BH_LOCKED
 };
 
-//when a block with a negative number is flushed to the file, it gets
-//a positive number. Because the reference to the block is still the negative
-//number, we remember the translation to the new positive number in the
-//double linked trans lists. The structure is the same as the hash lists.
-typedef struct nr_trans NR_TRANS;
-
-struct nr_trans {
-   MfHashItem nt_hashitem;      // header for hash table and key
-#define nt_old_bnum nt_hashitem.key   // old, negative, number
-
-   BlockId   nt_new_bnum;      // new, positive, number
-};
-
 declStruct(TextChunk);
 declStruct(TextHeader);
 
@@ -6348,7 +6335,6 @@ EXTERN Boole   did_source_packages INIT(= false);
 EXTERN Byte hash_removed;
 
 EXTERN int   scroll_region INIT(= FALSE); // term supports scroll region
-EXTERN int   t_colors INIT(= 0);       // int value of T_CCO
 
 // Flags to indicate an additional string for hilite name completion.
 EXTERN int hiComplIncludeNoneG INIT(= 0);   // when 1 include "None"
@@ -9788,13 +9774,6 @@ EXTERN Byte e_options_are_frozen[]
 #define FNE_CHECK_START   2   //check name starts with valid character
 
 // stat macros
-#ifndef S_ISDIR
-# ifdef S_IFDIR
-#  define S_ISDIR(m)   (((m) & S_IFMT) == S_IFDIR)
-# else
-#  define S_ISDIR(m)   0
-# endif
-#endif
 #ifndef S_ISREG
 # ifdef S_IFREG
 #  define S_ISREG(m)   (((m) & S_IFMT) == S_IFREG)

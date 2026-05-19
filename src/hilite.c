@@ -5326,7 +5326,7 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
    // Everything that's left, up to the next command, should be the filename to include.
    invo->argFlags |= (commandFlagExpandWildcards() | commandFlagNoSpacesInExtra());
    separateNextCommand(invo, FALSE);
-   if (*invo->arg == '<' || *invo->arg == '$' || mch_isFullName(invo->arg)) {
+   if (*invo->arg == '<' || *invo->arg == '$' || !fiIsRelative(invo->arg)) {
       //For an absolute path, "$EEGL/..." or "<sfile>.." we ":source" the
       //file.  Need to expand the file name first.  In other cases ":runtime!" is used.
       source = TRUE;

@@ -4,7 +4,7 @@
 //## persist.c: session related functions. Saving and restoring IDE state to files
 
 #include "eegl.h"
-#include <sys/stat.h> // for stat, fstat
+#include <sys/stat.h> // for stat, fstat, S_ISDIR
 
 //{{{users
 
@@ -138,7 +138,7 @@ typedef enum {
    VAR_FLAVOR_EEGLINFO      // all uppercase
 } VarFlavor;
 
-private int did_lcd;   // whether ":lcd" was produced for a session
+private Boole did_lcd;   // whether ":lcd" was produced for a session
 
 //Write a file name to the session file.
 //Takes care of the "slash" option in 'sessionoptions' and escapes special characters.
@@ -172,12 +172,7 @@ ses_fname(FILE* fd, Book* book, int add_eol) {
 
 // Write an argument list to the session file. Return FAIL if writing fails.
 private int
-ses_arglist(
-   FILE   *fd,
-   CS cmd,
-   ArrayList   *gap,
-   int      fullname   // TRUE: use full path name
-) {
+ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // TRUE: use full path name
    if (FPUTS(cmd, fd) < 0 || put_eol(fd) == FAIL)
       return FAIL;
    if (put_line(fd, S"%argdel") == FAIL)
@@ -189,10 +184,10 @@ ses_arglist(
          continue;
       }
       
-      Byte builder[MAXPATHL];
+      Byte buf[MAXPATHL];
       if (fullname) {
-          (void)eeFullFileName(s, builder, MAXPATHL, FALSE);
-          s = builder;
+         (void)eeFullFileName(s, buf, MAXPATHL, FALSE);
+         s = buf;
       }
       if (fputs("$argadd ", fd) < 0 
             || ses_put_fname(fd, s) == FAIL 
@@ -501,7 +496,7 @@ put_view(
             || ses_put_fname(fd, wp->localDir) == FAIL
             || put_eol(fd) == FAIL)
          return FAIL;
-      did_lcd = TRUE;
+      did_lcd = true;
    }
 
    return OK;
@@ -763,11 +758,12 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
       // Do this before the windows, so that the window-local directory can
       // override the tab-local directory.
       if (tp->localdir != NULL) {
-          if (fputs("tcd ", fd) < 0
+         if (fputs("tcd ", fd) < 0
               || ses_put_fname(fd, tp->localdir) == FAIL
-              || put_eol(fd) == FAIL)
-         goto fail;
-          did_lcd = TRUE;
+              || put_eol(fd) == FAIL
+         )
+            goto fail;
+         did_lcd = true;
       }
 
       // Restore the view of the window (options, file, cursor, etc.).
@@ -889,22 +885,22 @@ write_session_file(CS filename) {
 
 // ":mkvimrc",  and ":mksession".
 void
-c_mkrc(Invocation   *invo) {
-   int      failed = FALSE;
-   Byte   *fname;
-   int      using_vdir = FALSE;   // using 'viewdir'?
-   Byte   *viewFile = NULL;
+c_mkrc(Invocation* invo) {
+   int failed = FALSE;
+   int using_vdir = FALSE;   // using 'viewdir'?
+   CS viewFile = NULL;
 
    Boole sessionFile = (invo->id == C_mksession);
 
    // Use the short file name until ":lcd" is used.  We also don't use the
    // short file name when 'acd' is set, that is checked later.
    did_lcd = FALSE;
-
+   
+   CS fname;
    if (*invo->arg != ZERO)
       fname = invo->arg;
    ei (invo->id == C_mkvimrc)
-      fname = (CS)"~/.config/eegl/init.vim";
+      fname = S"~/.config/eegl/init.vim";
    ei (invo->id == C_mksession)
       fname = (CS)SESSION_FILE;
 
@@ -964,7 +960,7 @@ c_mkrc(Invocation   *invo) {
          failed = TRUE;
       if (invo->id == C_mksession) {
          if (put_line(fd, S"unlet SessionLoad") == FAIL)
-             failed = TRUE;
+            failed = TRUE;
       }
    }
    if (put_line(fd, S"\" vim: set ft=vim :") == FAIL)
@@ -1020,10 +1016,10 @@ put_line(FILE *fd, CS s) {
 
 // Structure used for reading from the eeglinfo file.
 typedef struct {
-   Byte   *vir_line;   // text of the current line
-   FILE   *vir_fd;   // file descriptor
-   int      vir_version;   // eeglinfo version detected or -1
-   ArrayList   vir_barlines;   // lines starting with |
+   CS line;   // text of the current line
+   FILE* vir_fd;   // file descriptor
+   int vir_version;   // eeglinfo version detected or -1
+   ArrayList vir_barlines;   // lines starting with |
 } Vir;
 
 typedef enum {
@@ -1201,29 +1197,29 @@ barline_writestring(FILE *fd, CS s, int remaining_start) {
 //
 //Return the string in allocated memory (NULL when out of memory).
 private CS
-eeglinfo_readstring(Vir* virp, int      off) {          // offset for virp->vir_line
-   Byte   *retval = NULL;
-   Byte   *s, *d;
+eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
+   CS retval = NULL;
+   CS s;
    long   len;
 
-   if (virp->vir_line[off] == Ctrl_V && eeIsDigit(virp->vir_line[off + 1])) {
-      len = atol((char *)virp->vir_line + off + 1);
+   if (virp->line[off] == Ctrl_V && eeIsDigit(virp->line[off + 1])) {
+      len = atol((char *)virp->line + off + 1);
       if (len > 0 && len < 1000000)
          retval = lalloc(len, TRUE);
       else {
          // Invalid length, line too long?  Skip next line.
-         (void)eeFgets(virp->vir_line, 10, virp->vir_fd);
+         (void)eeFgets(virp->line, 10, virp->vir_fd);
          return NULL;
       }
       (void)eeFgets(retval, (int)len, virp->vir_fd);
       s = retval + 1;       // Skip the leading '<'
    } else {
-      retval = copyStr(virp->vir_line + off);
+      retval = copyStr(virp->line + off);
       s = retval;
    }
 
    // Change CTRL-V CTRL-V to CTRL-V and CTRL-V n to \n in-place.
-   d = retval;
+   CS d = retval;
    while (*s != ZERO && *s != '\n') {
       if (s[0] == Ctrl_V && s[1] != ZERO) {
          if (s[1] == 'n')
@@ -1241,7 +1237,7 @@ eeglinfo_readstring(Vir* virp, int      off) {          // offset for virp->vir_
 // Read a line from the eeglinfo file. Return TRUE for end-of-file;
 private int
 eeglinfo_readline(Vir* virp) {
-   return eeFgets(virp->vir_line, LSIZE, virp->vir_fd);
+   return eeFgets(virp->line, LSIZE, virp->vir_fd);
 }
 
 private int
@@ -1249,8 +1245,8 @@ readEeglinfoBookList(Vir* virp, int      writing) {
    CS tab;
    LineNr   lnum;
    ColNr   col;
-   Book   *book;
-   Byte   *sfname;
+   Book* book;
+   CS sfname;
 
    // Handle long line and escaped characters.
    CS xline = eeglinfo_readstring(virp, 1);
@@ -1295,7 +1291,7 @@ removable(CS name) {
    if (!p_eeglinfo)
       return false;
       
-   Byte  part[51];
+   Byte part[51];
    Boole retval = false;
    Unt  n;
    name = home_replace_save(NULL, name);
@@ -1378,27 +1374,24 @@ hist_type2char(int type, int use_question) {      // use '?' instead of '/'
 //This allocates history arrays to store the read history lines.
 private void
 prepare_eeglinfo_history(int asklen, int writing) {
-   int       i;
-   int       num;
-   int       type;
-   int       len;
-
    init_history();
    int hislen = getHistLen();
    eeglinfo_add_at_front = (asklen != 0 && !writing);
    if (asklen > hislen)
       asklen = hislen;
 
-   for (type = 0; type < HIST_COUNT; ++type) {
+   for (int type = 0; type < HIST_COUNT; ++type) {
       HistoryEntry *histentry = get_histentry(type);
 
       //Count the number of empty spaces in the history list.  Entries read from eeglinfo previously
       //are also considered empty. If there are more spaces available than we request, then fill 
       //them up.
+      int num;
+      int i;
       for (i = 0, num = 0; i < hislen; i++)
          if (histentry[i].hisstr == NULL || histentry[i].eeglinfo)
             num++;
-      len = asklen;
+      int len = asklen;
       if (num > len)
          len = num;
       if (len <= 0)
@@ -1415,7 +1408,7 @@ prepare_eeglinfo_history(int asklen, int writing) {
 //Accept a line from the eeglinfo, store it in the history array when it's new.
 private int
 read_eeglinfo_history(Vir* virp, int writing) {
-   int type = hist_char2type(virp->vir_line[0]);
+   int type = hist_char2type(virp->line[0]);
    if (eeglinfo_hisidx[type] >= eeglinfo_hislen[type])
       goto done;
 
@@ -1460,7 +1453,7 @@ done:
 //Accept a new style history line from the eeglinfo, store it in the history array when it's new.
 private void
 handle_eeglinfo_history(ArrayList* values, int writing) {
-   BVal   *vp = (BVal *)values->c;
+   BVal* vp = (BVal *)values->c;
 
    // Check the format:
    // |{bartype},{histtype},{timestamp},{separator},"text"
@@ -1489,8 +1482,8 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
    if (in_history(type, val, eeglinfo_add_at_front, sep, writing))
       return;
 
-   Ulong   len;
-   Byte   *p;
+   Ulong len;
+   CS p;
    
    // If lines were written by an older Eegl, we need to avoid getting duplicates. See if the 
    // entry already exists.
@@ -1527,11 +1520,11 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
 //Concatenate history lines from eeglinfo after the lines typed in this Eegl.
 private void
 concat_history(int type) {
-   int      i;
-   int      hislen = getHistLen();
+   int i;
+   int hislen = getHistLen();
    HistoryEntry *histentry = get_histentry(type);
-   int      *hisidx = get_hisidx(type);
-   int      *hisnum = get_hisnum(type);
+   int* hisidx = get_hisidx(type);
+   int* hisnum = get_hisnum(type);
 
    int idx = *hisidx + eeglinfo_hisidx[type];
    if (idx >= hislen)
@@ -1559,7 +1552,7 @@ concat_history(int type) {
       histentry[idx].eeglinfo = TRUE;
       histentry[idx].time_set = eeglinfo_history[type][i].time_set;
       if (--idx < 0)
-          idx = hislen - 1;
+         idx = hislen - 1;
    }
    idx += 1;
    idx %= hislen;
@@ -1571,8 +1564,8 @@ concat_history(int type) {
 
 private int
 sort_hist(const void *s1, const void *s2) {
-   HistoryEntry *p1 = *(HistoryEntry **)s1;
-   HistoryEntry *p2 = *(HistoryEntry **)s2;
+   HistoryEntry* p1 = *(HistoryEntry **)s1;
+   HistoryEntry* p2 = *(HistoryEntry **)s2;
 
    if (p1->time_set < p2->time_set) return -1;
    if (p1->time_set > p2->time_set) return 1;
@@ -1582,18 +1575,15 @@ sort_hist(const void *s1, const void *s2) {
 //Merge history lines from eeglinfo and lines typed in this Eegl based on the timestamp;
 private void
 merge_history(int type) {
-   int      max_len;
    HistoryEntry **tot_hist;
    HistoryEntry *new_hist;
-   int      i;
-   int      len;
-   int      hislen = getHistLen();
+   int hislen = getHistLen();
    HistoryEntry *histentry = get_histentry(type);
-   int      *hisidx = get_hisidx(type);
-   int      *hisnum = get_hisnum(type);
+   int* hisidx = get_hisidx(type);
+   int* hisnum = get_hisnum(type);
 
    // Make one long list with all entries.
-   max_len = hislen + eeglinfo_hisidx[type];
+   int max_len = hislen + eeglinfo_hisidx[type];
    tot_hist = ALLOC_MULT(HistoryEntry *, max_len);
    new_hist = ALLOC_MULT(HistoryEntry, hislen);
    if (tot_hist == NULL || new_hist == NULL) {
@@ -1601,9 +1591,10 @@ merge_history(int type) {
       eeglFree(new_hist);
       return;
    }
+   int i;
    for (i = 0; i < eeglinfo_hisidx[type]; i++)
       tot_hist[i] = &eeglinfo_history[type][i];
-   len = i;
+   int len = i;
    for (i = 0; i < hislen; i++) {
       if (histentry[i].hisstr != NULL)
          tot_hist[len++] = &histentry[i];
@@ -1642,7 +1633,7 @@ merge_history(int type) {
 // Finish reading history lines from eeglinfo.  Not used when writing eeglinfo.
 private void
 finish_eeglinfo_history(Vir *virp) {
-   int   type;
+   int type;
    int merge = virp->vir_version >= EEGLINFO_VERSION_WITH_HISTORY;
 
    for (type = 0; type < HIST_COUNT; ++type) {
@@ -1665,14 +1656,13 @@ finish_eeglinfo_history(Vir *virp) {
 //When "merge" is FALSE just write all history lines.  Used for ":weeglinfo!".
 private void
 write_eeglinfo_history(FILE *fp, int merge) {
-   int       i;
-   int       type;
-   int       num_saved;
-   int     round;
-   int       hislen;
+   int i;
+   int type;
+   int num_saved;
+   int round;
 
    init_history();
-   hislen = getHistLen();
+   int hislen = getHistLen();
    if (hislen == 0)
       return;
    for (type = 0; type < HIST_COUNT; ++type) {
@@ -1697,21 +1687,21 @@ write_eeglinfo_history(FILE *fp, int merge) {
       // round 1: history of typed commands.
       // round 2: history from recently read eeglinfo.
       for (round = 1; round <= 2; ++round) {
-          if (round == 1)
-         // start at newest entry, somewhere in the list
-         i = *hisidx;
-          ei (eeglinfo_hisidx[type] > 0)
-         // start at newest entry, first in the list
-         i = 0;
-          else
-         // empty list
-         i = -1;
+         if (round == 1)
+            // start at newest entry, somewhere in the list
+            i = *hisidx;
+         ei (eeglinfo_hisidx[type] > 0)
+            // start at newest entry, first in the list
+            i = 0;
+         else
+            // empty list
+            i = -1;
          if (i >= 0) {
             while (num_saved > 0 && !(round == 2 && i >= eeglinfo_hisidx[type])) {
-               Byte  *p;
-               Unt  plen;
-               time_t  timestamp;
-               int       c = ZERO;
+               CS p;
+               Unt plen;
+               Tyme timestamp;
+               int c = ZERO;
 
                if (round == 1) {
                   p = histentry[i].hisstr;
@@ -1821,7 +1811,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
 
       if (*p == '>') {
          // Need to read a continuation line.  Put strings in allocated
-         // memory, because virp->vir_line is overwritten.
+         // memory, because virp->line is overwritten.
          if (!allocated) {
             for (i = 0; i < values->len; ++i) {
                BVal  *vp = (BVal *)(values->c) + i;
@@ -1851,22 +1841,22 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
             p = buf;
             for (todo = len; todo > 0; todo -= n) {
                eof = eeglinfo_readline(virp);
-               if (eof || virp->vir_line[0] != '|' || virp->vir_line[1] != '<') {
+               if (eof || virp->line[0] != '|' || virp->line[1] != '<') {
                   // File was truncated or garbled. Read another line if this one starts with '|'.
                   eeglFree(buf);
-                  return eof || virp->vir_line[0] == '|';
+                  return eof || virp->line[0] == '|';
                }
                // Get length of text, excluding |< and NL chars.
-               n = STRLEN(virp->vir_line);
-               while (n > 0 && (virp->vir_line[n - 1] == NL || virp->vir_line[n - 1] == ENTER))
+               n = STRLEN(virp->line);
+               while (n > 0 && (virp->line[n - 1] == NL || virp->line[n - 1] == ENTER))
                   --n;
                n -= 2;
                if (n > todo) {
                   // more values follow after the string
-                  nextp = virp->vir_line + 2 + todo;
+                  nextp = virp->line + 2 + todo;
                   n = todo;
                }
-                mch_memmove(p, virp->vir_line + 2, n);
+                mch_memmove(p, virp->line + 2, n);
                 p += n;
             }
             *p = ZERO;
@@ -1876,11 +1866,11 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
             //     |{bartype},{lots of values},>
             //     |<{value},{value}
             eof = eeglinfo_readline(virp);
-            if (eof || virp->vir_line[0] != '|' || virp->vir_line[1] != '<')
+            if (eof || virp->line[0] != '|' || virp->line[1] != '<')
                // File was truncated or garbled. Read another line if
                // this one starts with '|'.
-               return eof || virp->vir_line[0] == '|';
-            p = virp->vir_line + 2;
+               return eof || virp->line[0] == '|';
+            p = virp->line + 2;
          }
       }
 
@@ -1914,7 +1904,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          value->bv_tofree = NULL;
 
          // Need to copy in allocated memory if the string wasn't allocated
-         // above and we did allocate before, thus vir_line may change.
+         // above and we did allocate before, thus line may change.
          if (s != buf && allocated && !converted)
             s = copySubstr(s, len);
          value->bv_string = s;
@@ -1971,7 +1961,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
    FnCallEntry funccal_entry;
 
    if (!writing && (find_eeglinfo_parameter('!') != NULL)) {
-      CS tab = firstOccurrence(virp->vir_line + 1, '\t');
+      CS tab = firstOccurrence(virp->line + 1, '\t');
       if (tab) {
          *tab++ = '\0';   // isolate the variable name
          switch (*tab) {
@@ -1987,7 +1977,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
          if (tab) {
             tv.tag = type;
             if (type == VAR_STRING || type == VAR_BAG || type == VAR_LIST || type == VAR_BLOB)
-               tv.string = eeglinfo_readstring(virp, (int)(tab - virp->vir_line + 1));
+               tv.string = eeglinfo_readstring(virp, (int)(tab - virp->line + 1));
             ei (type == VAR_FLOAT)
                (void)string2float(tab + 1, OUT &tv.floatt, false);
             else {
@@ -2021,7 +2011,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
 
             // when in a function use global variables
             save_funccal(&funccal_entry);
-            set_var(mbText(virp->vir_line + 1), &tv, FALSE);
+            set_var(mbText(virp->line + 1), &tv, FALSE);
             restore_funccal();
 
             if (tv.tag == VAR_STRING)
@@ -2155,7 +2145,7 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    // <off>: decimal, offset
    // <last>: '~' last used pattern
    // <which>: '/' search pat, '&' subst. pat
-   CS lp = virp->vir_line;
+   CS lp = virp->line;
    if (lp[0] == '~' && (lp[1] == 'm' || lp[1] == 'M')) {  // new line type
       if (lp[1] == 'M')      // magic on
           magic = TRUE;
@@ -2183,7 +2173,7 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    if (idx >= 0) {
       spat = getPrevSearchPattern(idx);
       if (force || spat->pat == NULL) {
-         val = eeglinfo_readstring(virp, (int)(lp - virp->vir_line + 1));
+         val = eeglinfo_readstring(virp, (int)(lp - virp->line + 1));
          if (val) {
             set_last_search_pat(val, idx, magic, setlast);
             eeglFree(val);
@@ -2275,7 +2265,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
    YankReg   *y_current_p;
 
    // We only get here (hopefully) if line[0] == '"'
-   CS str = virp->vir_line + 1;
+   CS str = virp->line + 1;
 
    // If the line starts with "" this is the y_previous register.
    if (*str == '"') {
@@ -2284,7 +2274,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
    }
 
    if (!ASCII_ISALNUM(*str) && *str != '-') {
-      if (eeglinfo_error(S"E577: ", _(e_illegal_register_name), virp->vir_line))
+      if (eeglinfo_error(S"E577: ", _(e_illegal_register_name), virp->line))
           return TRUE;   // too many errors, pretend end-of-file
       do_it = FALSE;
    }
@@ -2322,7 +2312,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
    }
 
    while (!(eof = eeglinfo_readline(virp))
-          && (virp->vir_line[0] == TAB || virp->vir_line[0] == '<')
+          && (virp->line[0] == TAB || virp->line[0] == '<')
    ) {
       if (do_it) {
          if (size == limit) {
@@ -2805,7 +2795,7 @@ copy_eeglinfo_marks(
    int eof,
    int flags
 ){
-   CS line = virp->vir_line;
+   CS line = virp->line;
    Book* book;
    int      num_marked_files;
    int      load_marks;
@@ -2847,7 +2837,7 @@ copy_eeglinfo_marks(
       // Handle long line and translate escaped characters.
       // Find file name, set str to start. Ignore leading and trailing white space.
       str = skipwhite(line + 1);
-      str = eeglinfo_readstring(virp, (int)(str - virp->vir_line));
+      str = eeglinfo_readstring(virp, (int)(str - virp->line));
       if (str == NULL)
           continue;
       p = str + STRLEN(str);
@@ -3011,10 +3001,10 @@ read_eeglinfo_filemark(Vir *virp, int force) {
 
    // We only get here if line[0] == '\'' or '-'.
    // Illegal mark names are ignored (for future expansion).
-   CS str = virp->vir_line + 1;
+   CS str = virp->line + 1;
    if (*str <= 127
-       && ((*virp->vir_line == '\'' && (EE_ISDIGIT(*str) || SAFE_isupper(*str)))
-        || (*virp->vir_line == '-' && *str == '\''))
+       && ((*virp->line == '\'' && (EE_ISDIGIT(*str) || SAFE_isupper(*str)))
+        || (*virp->line == '-' && *str == '\''))
    ){
       if (*str == '\'') {
          // If the jumplist isn't full insert fmark as oldest entry
@@ -3042,11 +3032,11 @@ read_eeglinfo_filemark(Vir *virp, int force) {
          fm->fmark.fnum = 0;
          str = skipwhite(str);
          eeglFree(fm->fname);
-         fm->fname = eeglinfo_readstring(virp, (int)(str - virp->vir_line));
+         fm->fname = eeglinfo_readstring(virp, (int)(str - virp->line));
          fm->time_set = 0;
       }
    }
-   return eeFgets(virp->vir_line, LSIZE, virp->vir_fd);
+   return eeFgets(virp->line, LSIZE, virp->vir_fd);
 }
 
 // Prepare for reading eeglinfo marks when writing eeglinfo later.
@@ -3193,7 +3183,7 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
 
 private int
 read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
-   CS p = virp->vir_line + 1;
+   CS p = virp->line + 1;
    int      bartype;
    ArrayList   values;
    BVal   *vp;
@@ -3211,7 +3201,7 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
    if (*p == '<') {
       // Continuation line of an unrecognized item.
       if (writing)
-         ga_copy_string(&virp->vir_barlines, virp->vir_line);
+         ga_copy_string(&virp->vir_barlines, virp->line);
    } else {
       ga_init2(&values, sizeof(BVal), 20);
       bartype = parseLong(&p);
@@ -3241,7 +3231,7 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
       default:
          // copy unrecognized line (for future use)
          if (writing)
-            ga_copy_string(&virp->vir_barlines, virp->vir_line);
+            ga_copy_string(&virp->vir_barlines, virp->line);
       }
       for (i = 0; i < values.len; ++i) {
          vp = (BVal *)values.c + i;
@@ -3267,8 +3257,8 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
    prepare_eeglinfo_history(forceit ? 9999 : 0, writing);
 
    int eof = eeglinfo_readline(virp);
-   while (!eof && virp->vir_line[0] != '>') {
-      switch (virp->vir_line[0]) {
+   while (!eof && virp->line[0] != '>') {
+      switch (virp->line[0]) {
       // Characters reserved for future expansion, ignored now
       case '+': // "+40 /path/dir file", for running vim without args
       case '^': // to be defined
@@ -3296,7 +3286,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
          else
             do {
                eof = eeglinfo_readline(virp);
-            } while (!eof && (virp->vir_line[0] == TAB || virp->vir_line[0] == '<'));
+            } while (!eof && (virp->line[0] == TAB || virp->line[0] == '<'));
          break;
       case '/':       // Search string
       case '&':       // Substitute search string
@@ -3325,7 +3315,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
             eof = eeglinfo_readline(virp);
          break;
       default:
-         if (eeglinfo_error(S"E575: ", _(e_illegal_starting_char), virp->vir_line))
+         if (eeglinfo_error(S"E575: ", _(e_illegal_starting_char), virp->line))
             eof = TRUE;
          else
             eof = eeglinfo_readline(virp);
@@ -3353,7 +3343,7 @@ do_eeglinfo(FILE *fp_in, FILE *fp_out, Unt flags) {
    ArrayList   buflist;
 
    Vir  vir;
-   vir.vir_line = alloc(LSIZE);
+   vir.line = alloc(LSIZE);
    vir.vir_fd = fp_in;
    ga_init2(&vir.vir_barlines, sizeof(CS), 100);
    vir.vir_version = -1;
@@ -3371,7 +3361,7 @@ do_eeglinfo(FILE *fp_in, FILE *fp_out, Unt flags) {
          merge = TRUE;
       } ei (flags != 0)
          // Skip info, find start of marks
-         while (!(eof = eeglinfo_readline(&vir)) && vir.vir_line[0] != '>')
+         while (!(eof = eeglinfo_readline(&vir)) && vir.line[0] != '>')
             {}
 
       do_copy_marks = (flags & (EIF_WANT_MARKS | EIF_ONLY_CURBOOK | EIF_GET_OLDFILES | EIF_FORCEIT));
@@ -3405,7 +3395,7 @@ do_eeglinfo(FILE *fp_in, FILE *fp_out, Unt flags) {
          ga_clear(&buflist);
    }
 
-   eeglFree(vir.vir_line);
+   eeglFree(vir.line);
    ga_clear_strings(&vir.vir_barlines);
 }
 
