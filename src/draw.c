@@ -1419,7 +1419,7 @@ retry:
    // Do not apply autocommands more than 3 times to avoid an endless loop
    // in case applying autocommands always changes visibleRowsG or visibleColsG.
    if (starting == 0 && ++retry_count <= 3) {
-      apply_autocmds(EVENT_EEGLRESIZED, NULL, NULL, FALSE, curBook);
+      applyAutocomms(EVENT_EEGLRESIZED, NULL, NULL, FALSE, curBook);
       // In rare cases, autocommands may have altered visibleRowsG or visibleColsG,
       // jump back to check if we need to allocate the screen again.
       goto retry;

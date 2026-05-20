@@ -54,7 +54,6 @@ void clip_scroll_selection(int rows);
 void clip_copy_modeless_selection(int both);
 void open_app_context(void);
 void x11_setup_atoms(Display *dpy);
-void x11_setup_selection(Widget w);
 void clip_x11_request_selection(Widget myShell, Display *dpy, ClipBoard *cbd);
 void clip_x11_lose_selection(Widget myShell, ClipBoard *cbd);
 int clip_x11_own_selection(Widget myShell, ClipBoard *cbd);

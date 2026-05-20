@@ -2053,7 +2053,7 @@ parse_queued_messages(void) {
 
 #ifdef SIGUSR1
       if (got_sigusr1) {
-          apply_autocmds(EVENT_SIGUSR1, NULL, NULL, false, curBook);
+          applyAutocomms(EVENT_SIGUSR1, NULL, NULL, false, curBook);
           got_sigusr1 = FALSE;
       }
 #endif

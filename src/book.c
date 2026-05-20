@@ -1986,7 +1986,7 @@ bookOpenFromInvo(
       curPor->topLine = 1;
       curPor->topFill = 0;
    }
-   apply_autocmds_retval(EVENT_BUFENTER, NULL, NULL, FALSE, curBook, &retval);
+   applyAutocommsRetval(EVENT_BUFENTER, NULL, NULL, FALSE, curBook, &retval);
 
    if (retval != OK)
       return retval;
@@ -2002,7 +2002,7 @@ bookOpenFromInvo(
          curBook->flags &= ~(BF_CHECK_RO | BF_NEVERLOADED);
 
          if ((flags & READ_NOWINENTER) == 0)
-            apply_autocmds_retval(EVENT_BUFWINENTER, NULL, NULL, FALSE, curBook, &retval);
+            applyAutocommsRetval(EVENT_BUFWINENTER, NULL, NULL, FALSE, curBook, &retval);
 
          // restore curPor/curBook and a few other things
          auCommRestoreBook(&aco);
@@ -2187,7 +2187,7 @@ closeBook(
    if (book->countPortals == 1) {
       ++book->locked;
       ++book->lockedSplit;
-      if (apply_autocmds(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book)
+      if (applyAutocomms(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book)
          && !bookRefValid(&bookRef)
       ) {
          // Autocommands deleted the book.
@@ -2205,7 +2205,7 @@ closeBook(
       if (!unload_buf) {
          ++book->locked;
          ++book->lockedSplit;
-         if (apply_autocmds(EVENT_BUFHIDDEN, book->currFileName, book->currFileName, false, book)
+         if (applyAutocomms(EVENT_BUFHIDDEN, book->currFileName, book->currFileName, false, book)
                 && !bookRefValid(&bookRef))
             // Autocommands deleted the book.
             goto aucmd_abort;
@@ -2369,19 +2369,19 @@ bookFreeAll(Book* book, Unt flags){
    BookRef   bookRef;
    bookStoreInRef(OUT &bookRef, book);
    if (book->mem.mfile) {
-      if (apply_autocmds(EVENT_BUFUNLOAD, book->currFileName, book->currFileName,
+      if (applyAutocomms(EVENT_BUFUNLOAD, book->currFileName, book->currFileName,
                              false, book) && !bookRefValid(&bookRef))
          // autocommands deleted the book
          return;
    }
    if ((flags & BFA_DEL) && book->o.bookListed) {
-      if (apply_autocmds(EVENT_BUFDELETE, book->currFileName, book->currFileName, false, book)
+      if (applyAutocomms(EVENT_BUFDELETE, book->currFileName, book->currFileName, false, book)
             && !bookRefValid(&bookRef))
         // autocommands deleted the book
         return;
     }
    if (flags & BFA_WIPE) {
-      if (apply_autocmds(EVENT_BUFWIPEOUT, book->currFileName, book->currFileName, false, book)
+      if (applyAutocomms(EVENT_BUFWIPEOUT, book->currFileName, book->currFileName, false, book)
             && !bookRefValid(&bookRef))
           // autocommands deleted the book
           return;
@@ -3092,14 +3092,14 @@ bookSetCurBook(Book* book, int action) {
    // Don't restart Select mode after switching to another book.
    VIsual_reselect = FALSE;
 
-   // closePortalsInto() or apply_autocmds() may change curBook and wipe out "book"
+   // closePortalsInto() or applyAutocomms() may change curBook and wipe out "book"
    Book* prevbuf = curBook;
    bookStoreInRef(OUT &prevbufref, prevbuf);
    bookStoreInRef(OUT &newbufref, book);
 
    // Autocommands may delete the current book and/or the book we want to
    // go to.  In those cases don't close the book.
-   if (!apply_autocmds(EVENT_BUFLEAVE, NULL, NULL, false, curBook)
+   if (!applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook)
        || (bookRefValid(&prevbufref)
             && bookRefValid(&newbufref)
             && !aborting()
@@ -3206,8 +3206,8 @@ enterBook(Book* book){
 
       curPor->topLine = 1;
       curPor->topFill = 0;
-      apply_autocmds(EVENT_BUFENTER, NULL, NULL, false, curBook);
-      apply_autocmds(EVENT_BUFWINENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_BUFWINENTER, NULL, NULL, false, curBook);
     }
 
    //If autocommands did not change the cursor position, restore cursor lnum
@@ -3314,7 +3314,7 @@ bookNew(
          book->o.bookListed = true;
          bookStoreInRef(OUT &bookRef, book);
          if (!(flags & BLN_DUMMY)) {
-            if (apply_autocmds(EVENT_BUFADD, NULL, NULL, false, book) && !bookRefValid(&bookRef))
+            if (applyAutocomms(EVENT_BUFADD, NULL, NULL, false, book) && !bookRefValid(&bookRef))
                return NULL;
          }
       }
@@ -3465,10 +3465,10 @@ bookNew(
       // Tricky: these autocommands may change the book list. They could also split the portal
       // with re-using the one empty book. This may result in unexpectedly losing the empty book
       bookStoreInRef(OUT &bookRef, book);
-      if (apply_autocmds(EVENT_BUFNEW, NULL, NULL, false, book) && !bookRefValid(&bookRef))
+      if (applyAutocomms(EVENT_BUFNEW, NULL, NULL, false, book) && !bookRefValid(&bookRef))
          return NULL;
       if (flags & BLN_LISTED) {
-         if (apply_autocmds(EVENT_BUFADD, NULL, NULL, false, book) && !bookRefValid(&bookRef))
+         if (applyAutocomms(EVENT_BUFADD, NULL, NULL, false, book) && !bookRefValid(&bookRef))
             return NULL;
       }
       if (aborting())      // autocmds may abort script processing
@@ -5711,9 +5711,9 @@ bookSetBooklisted(Boole on) {
       return;
    curBook->o.bookListed = on;
    if (on)
-      apply_autocmds(EVENT_BUFADD, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_BUFADD, NULL, NULL, false, curBook);
    else
-      apply_autocmds(EVENT_BUFDELETE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_BUFDELETE, NULL, NULL, false, curBook);
 }
 
 //Read the file for "book" again and check if the contents changed.

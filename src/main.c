@@ -629,7 +629,7 @@ eeglMain1(void) {
    // clear v:swapcommand
    set_EeglVar_string(VV_SWAPCOMMAND, NULL, -1);
 
-   apply_autocmds(EVENT_BUFENTER, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    TIME_MSG("BufEnter autocommands");
    setpcmark();
 
@@ -706,7 +706,7 @@ eeglMain1(void) {
    may_req_bg_color();
 
    set_EeglVar_nr(VV_EE_DID_ENTER, 1L);
-   apply_autocmds(EVENT_EEGLENTER, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_EEGLENTER, NULL, NULL, false, curBook);
    TIME_MSG("EeglEnter autocommands");
 
    //Adjust default register name for "unnamed" in 'clipboard'. Can only be
@@ -861,7 +861,7 @@ may_trigger_safestate(int safe) {
       // Only log when the state changes, otherwise it happens at nearly every key stroke.
       lo(is_safe ? "SafeState: Start triggering" : "SafeState: Stop triggering");
    if (is_safe)
-      apply_autocmds(EVENT_SAFESTATE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_SAFESTATE, NULL, NULL, false, curBook);
    wasSafeS = is_safe;
 }
 
@@ -898,7 +898,7 @@ may_trigger_safestateagain(void) {
          lo("SafeState: back to waiting, triggering SafeStateAgain");
          did_repeated_msg = did | REPEATED_MSG_SAFESTATE;
       }
-      apply_autocmds(EVENT_SAFESTATEAGAIN, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_SAFESTATEAGAIN, NULL, NULL, false, curBook);
    } else
       lo("SafeState: back to waiting, not triggering SafeStateAgain");
 }
@@ -1129,7 +1129,7 @@ exitEegl(int exitval) {
                BookRef bookRef;
 
                bookStoreInRef(OUT &bookRef, book);
-               apply_autocmds(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book);
+               applyAutocomms(EVENT_BUFWINLEAVE, book->currFileName, book->currFileName, false, book);
                if (bookRefValid(&bookRef))
                   CHANGEDTICK(book) = -1;  // note we did it already
 
@@ -1146,7 +1146,7 @@ exitEegl(int exitval) {
          if (book->mem.mfile) {
             BookRef bookRef;
             bookStoreInRef(OUT &bookRef, book);
-            apply_autocmds(EVENT_BUFUNLOAD, book->currFileName, book->currFileName, false, book);
+            applyAutocomms(EVENT_BUFUNLOAD, book->currFileName, book->currFileName, false, book);
             if (!bookRefValid(&bookRef))
                // autocmd deleted the book
                break;
@@ -1158,7 +1158,7 @@ exitEegl(int exitval) {
          unblock_autocmds();
          ++unblock;
       }
-      apply_autocmds(EVENT_EEGLLEAVEPRE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_EEGLLEAVEPRE, NULL, NULL, false, curBook);
       if (unblock)
          block_autocmds();
    }
@@ -1180,7 +1180,7 @@ exitEegl(int exitval) {
           unblock_autocmds();
           ++unblock;
       }
-      apply_autocmds(EVENT_EEGLLEAVE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_EEGLLEAVE, NULL, NULL, false, curBook);
       if (unblock)
          block_autocmds();
    }
@@ -1234,8 +1234,8 @@ earlyArgScan(MainParams *params UNUSED) {
           mch_exit(2);
       }
 
-   }
 #endif
+   }
 }
 
 #ifndef NO_EEGL_MAIN

@@ -6567,7 +6567,7 @@ c_ownsyntax(Invocation* invo) {
       old_value = copyStr(old_value);
 
    //Apply the "syntax" autocommand event, this finds and loads the syntax file.
-   apply_autocmds(EVENT_SYNTAX, invo->arg, curBook->currFileName, TRUE, curBook);
+   applyAutocomms(EVENT_SYNTAX, invo->arg, curBook->currFileName, TRUE, curBook);
 
    //move value of b:currentSyntax to w:currentSyntax
    new_value = get_var_value(BUFF_SYN_VAR);

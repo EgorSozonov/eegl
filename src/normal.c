@@ -1701,7 +1701,7 @@ may_trigger_modechanged(void) {
    // concatenate modes in format "old_mode:new_mode"
    eeSnprintf(pattern_buf, sizeof(pattern_buf), "%s:%s", last_mode, curr_mode);
 
-   apply_autocmds(EVENT_MODECHANGED, pattern_buf, NULL, FALSE, curBook);
+   applyAutocomms(EVENT_MODECHANGED, pattern_buf, NULL, FALSE, curBook);
    STRCPY(last_mode, curr_mode);
 
    restore_v_event(v_event, &save_v_event);
@@ -6460,7 +6460,7 @@ nv_drop(ActionArg* aArg UNUSED) {
 // input buffer.  "did_cursorhold" is set to avoid retriggering.
 private void
 nv_cursorhold(ActionArg* aArg) {
-   apply_autocmds(EVENT_CURSORHOLD, NULL, NULL, FALSE, curBook);
+   applyAutocomms(EVENT_CURSORHOLD, NULL, NULL, FALSE, curBook);
    did_cursorhold = TRUE;
    aArg->retval |= CA_COMMAND_BUSY;   // don't call edit() now
 }

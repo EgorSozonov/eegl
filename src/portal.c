@@ -2084,7 +2084,7 @@ closePortalsInto(Book* book, Boole keep_curPor)  {     // don't close "curPor"
       --isRedrawingDisabledG;
 
    if (count != indexOfTab(NULL))
-      apply_autocmds(EVENT_TABCLOSED, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
 }
 
 //Return TRUE if the current portal is the only portal that exists (ignoring "autoCommPortG[]").
@@ -2131,13 +2131,13 @@ closeLastPortalInTab(Portal* port, int free_buf, Tab* prev_curtab) {
       closePortal_othertab(port, free_buf, prev_curtab);
    enteringPortal(curPor);
    // Since gotoTab above did not trigger *Enter autocommands, do that now.
-   apply_autocmds(EVENT_TABCLOSED, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_TABCLOSED, NULL, NULL, false, curBook);
    if (p_stpl)
       shell_new_columns();
-   apply_autocmds(EVENT_PORTENTER, NULL, NULL, false, curBook);
-   apply_autocmds(EVENT_TABENTER, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
    if (oldCurBook != curBook)
-      apply_autocmds(EVENT_BUFENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    return TRUE;
 }
 
@@ -2237,7 +2237,7 @@ closePortal(Portal* port, int free_buf) {
          if (!portalIsValid(port))
             return FAIL;
          port->locked = TRUE;
-         apply_autocmds(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
+         applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
          if (!portalIsValid(port))
             return FAIL;
          port->locked = FALSE;
@@ -2245,7 +2245,7 @@ closePortal(Portal* port, int free_buf) {
             return FAIL;
       }
       port->locked = TRUE;
-      apply_autocmds(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
       if (!portalIsValid(port))
           return FAIL;
       port->locked = FALSE;
@@ -2355,7 +2355,7 @@ closePortal(Portal* port, int free_buf) {
          );
          if (isOtherBook)
              // careful: after this po and port may be invalid!
-             apply_autocmds(EVENT_BUFENTER, NULL, NULL, false, curBook);
+             applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    }
 
    --split_disallowed;
@@ -2386,7 +2386,7 @@ closePortal(Portal* port, int free_buf) {
 private void
 triggerPortalNewPre(void) {
    portalLayout_lock();
-   apply_autocmds(EVENT_PORTNEWPRE, NULL, NULL, false, NULL);
+   applyAutocomms(EVENT_PORTNEWPRE, NULL, NULL, false, NULL);
    portalLayout_unlock();
 }
 
@@ -2399,7 +2399,7 @@ triggerPortalClosed(Portal* port) {
       return;
    recursive = true;
    eeSnprintf(portId, sizeof(portId), "%d", port->id);
-   apply_autocmds(EVENT_WINCLOSED, portId, portId, false, port->book);
+   applyAutocomms(EVENT_WINCLOSED, portId, portId, false, port->book);
    recursive = false;
 }
 
@@ -2428,7 +2428,7 @@ trigger_tabclosedpre(Tab* t, int directly) {
    }
    recursive = true;
    portalLayout_lock();
-   apply_autocmds(EVENT_TABCLOSEDPRE, NULL, NULL, false, NULL);
+   applyAutocomms(EVENT_TABCLOSEDPRE, NULL, NULL, false, NULL);
    portalLayout_unlock();
    recursive = false;
    // tabpage may have been modified or deleted by autocmds
@@ -2667,7 +2667,7 @@ may_trigger_win_scrolled_resized(void) {
          bagSetItemsRo(v_event);
          Byte portId[NUMBUFLEN];
          eeSnprintf(portId, sizeof(portId), "%d", firstResizedPort->id);
-         apply_autocmds(EVENT_WINRESIZED, portId, portId, false, firstResizedPort->book);
+         applyAutocomms(EVENT_WINRESIZED, portId, portId, false, firstResizedPort->book);
       }
       restore_v_event(v_event, &save_v_event);
    }
@@ -2682,7 +2682,7 @@ may_trigger_win_scrolled_resized(void) {
       bagUnref(scroll_dict);
       Byte portId[NUMBUFLEN];
       eeSnprintf(portId, sizeof(portId), "%d", firstScrollPort->id);
-      apply_autocmds(EVENT_PORTSCROLLED, portId, portId, false, firstScrollPort->book);
+      applyAutocomms(EVENT_PORTSCROLLED, portId, portId, false, firstScrollPort->book);
       restore_v_event(v_event, &save_v_event);
    }
 
@@ -3753,10 +3753,10 @@ portNewTab(int after) {
       if (prev_columns != COLUMNS_WITHOUT_TPL())
           shell_new_columns();
       redraw_all_later(UPD_NOT_VALID);
-      apply_autocmds(EVENT_PORTNEW, NULL, NULL, false, curBook);
-      apply_autocmds(EVENT_PORTENTER, NULL, NULL, false, curBook);
-      apply_autocmds(EVENT_TABNEW, NULL, NULL, false, curBook);
-      apply_autocmds(EVENT_TABENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_TABNEW, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
       return OK;
    }
 
@@ -3891,14 +3891,14 @@ leaveTab(
    reset_VIsual_and_resel();   // stop Visual mode
    if (trigger_leave_autocmds) {
    if (newCurBook != curBook) {
-      apply_autocmds(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
       if (curtab != t)
          return FAIL;
    }
-   apply_autocmds(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
    if (curtab != t)
       return FAIL;
-   apply_autocmds(EVENT_TABLEAVE, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_TABLEAVE, NULL, NULL, false, curBook);
    if (curtab != t)
       return FAIL;
    }
@@ -3977,9 +3977,9 @@ enterTab(
    // Apply autocommands after updating the display, when 'rows' and
    // 'columns' have been set correctly.
    if (trigger_enter_autocmds) {
-      apply_autocmds(EVENT_TABENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_TABENTER, NULL, NULL, false, curBook);
       if (oldCurBuf != curBook)
-          apply_autocmds(EVENT_BUFENTER, NULL, NULL, false, curBook);
+          applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    }
 
    redraw_all_later(UPD_NOT_VALID);
@@ -4341,12 +4341,12 @@ enterPortalWorker(Portal* po, int flags) {
    if (curPor_invalid == 0 && (flags & WEE_TRIGGER_LEAVE_AUTOCMDS)) {
       //Be careful: If autocommands delete the portal, return now.
       if (po->book != curBook) {
-         apply_autocmds(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
+         applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
          isOtherBook = TRUE;
          if (!portalIsValid(po))
             return FALSE;
       }
-      apply_autocmds(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_PORTLEAVE, NULL, NULL, false, curBook);
       if (!portalIsValid(po))
          return FALSE;
       // autocomms may abort script processing
@@ -4385,11 +4385,11 @@ enterPortalWorker(Portal* po, int flags) {
    enteringPortal(curPor);
    // Careful: autocommands may close the portal and make "po" invalid
    if (flags & WEE_TRIGGER_NEW_AUTOCMDS)
-      apply_autocmds(EVENT_PORTNEW, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
    if (flags & WEE_TRIGGER_ENTER_AUTOCMDS) {
-      apply_autocmds(EVENT_PORTENTER, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
       if (isOtherBook)
-         apply_autocmds(EVENT_BUFENTER, NULL, NULL, false, curBook);
+         applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    }
 
    curPor->statusLineNeedsRedraw = true;

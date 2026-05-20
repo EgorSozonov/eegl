@@ -628,7 +628,9 @@ C(C_xall,      "xall",      do_wqall, BANG|TRLBAR, ADDR_NONE),
 C(C_xmap,      "xmap", c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_xmapclear,   "xmapclear",   c_mapclear, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_xnoremap,   "xnoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
+#ifdef FEAT_X11
 C(C_xrestore,   "xrestore",   c_xrestore, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
+#endif
 C(C_xunmap,   "xunmap", c_unmap, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_yank, "yank", c_operators, RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 C(C_z, "z",      c_z, RANGE|WHOLEFOLD|BANG|EXTRA|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),

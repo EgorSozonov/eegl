@@ -180,7 +180,7 @@ edit(Unt commChar, int startln, long count){
          ptr = (CS)"i";
       set_EeglVar_string(VV_INSERTMODE, ptr, 1);
       set_EeglVar_string(VV_CHAR, NULL, -1);  // clear v:char
-      ins_apply_autocmds(EVENT_INSERTENTER);
+      ins_applyAutocomms(EVENT_INSERTENTER);
 
 
       //Make sure the cursor didn't move. Do call check_cursor_col() in case the text was modified.
@@ -576,7 +576,7 @@ edit(Unt commChar, int startln, long count){
             // that the autocommands won't be executed. When mapped gotInterruptG
             // is not set, but let's keep the behavior the same.
             if (commChar != 'r' && commChar != 'v' && c != Ctrl_C)
-                ins_apply_autocmds(EVENT_INSERTLEAVE);
+                ins_applyAutocomms(EVENT_INSERTLEAVE);
             did_cursorhold = FALSE;
 
             if (!char_avail() && curBook->lastChangeTickInsert == CHANGEDTICK(curBook))
@@ -756,7 +756,7 @@ edit(Unt commChar, int startln, long count){
          break;
 
       case K_CURSORHOLD:   // Didn't type something for a while.
-         ins_apply_autocmds(EVENT_CURSORHOLDI);
+         ins_applyAutocomms(EVENT_CURSORHOLDI);
          did_cursorhold = TRUE;
          // If CTRL-G U was used apply it to the next typed key.
          if (dont_sync_undo == TRUE)
@@ -2259,7 +2259,7 @@ ins_esc(long* count, int commChar, int nomove) {      // don't move cursor
    }
 
    if (commChar != 'r' && commChar != 'v') 
-      ins_apply_autocmds(EVENT_INSERTLEAVEPRE);
+      ins_applyAutocomms(EVENT_INSERTLEAVEPRE);
 
    // When an autoindent was removed, curswant stays after the indent
    if (restart_edit == ZERO && (ColNr)temp == curPor->cursor.col)
@@ -3137,9 +3137,9 @@ set_can_cindent(int val) {
 
 // Trigger "event" and take care of fixing undo.
 int
-ins_apply_autocmds(AutoEvent event) {
+ins_applyAutocomms(AutoEvent event) {
    Long   tick = CHANGEDTICK(curBook);
-   int r = apply_autocmds(event, NULL, NULL, false, curBook);
+   int r = applyAutocomms(event, NULL, NULL, false, curBook);
 
    // If u_savesub() was called then we are not prepared to start a new line. Call u_save() with no
    // contents to fix that. Except when leaving Insert mode.
@@ -4219,7 +4219,7 @@ trigger_complete_changed_event(int cur) {
 
    recursive = true;
    textlock++;
-   apply_autocmds(EVENT_COMPLETECHANGED, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_COMPLETECHANGED, NULL, NULL, false, curBook);
    textlock--;
    recursive = false;
 
@@ -5273,7 +5273,7 @@ trigger_complete_done_event(int mode, CS word) {
    (void)bagAddString(v_event, S"complete_type", modeStr ? modeStr : Em);
 
    bagSetItemsRo(v_event);
-   ins_apply_autocmds(EVENT_COMPLETEDONE);
+   ins_applyAutocomms(EVENT_COMPLETEDONE);
 
    restore_v_event(v_event, &save_v_event);
 }
@@ -5366,7 +5366,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
    //act upon the completion before clearing the info, and restore
    //ctrl_x_mode, so that complete_info() can be used.
    ctrl_x_mode = prev_mode;
-   ins_apply_autocmds(EVENT_COMPLETEDONEPRE);
+   ins_applyAutocomms(EVENT_COMPLETEDONEPRE);
 
    ins_compl_free();
    compl_started = FALSE;

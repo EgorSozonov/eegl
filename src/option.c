@@ -1659,7 +1659,7 @@ setBookListed(OptionChange* cha) {
    // when @buflisted changes, trigger autocommands
    updateBoolRef(cha);
    if (cha->oldVal.boole != curBook->o.bookListed) {
-      apply_autocmds(
+      applyAutocomms(
          curBook->o.bookListed ? EVENT_BUFADD : EVENT_BUFDELETE, NULL, NULL, TRUE, curBook
       );
    } 

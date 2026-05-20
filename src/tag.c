@@ -4037,7 +4037,7 @@ cs_find_common(
 ) {
    int i;
 
-   if (apply_autocmds(EVENT_QUICKFIXCMDPRE, S"cscope", curBook->currFileName, TRUE, curBook)
+   if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"cscope", curBook->currFileName, TRUE, curBook)
       && aborting()
    ){
       return FALSE;
@@ -4107,7 +4107,7 @@ cs_find_common(
                postponed_split = 0;
             }
 
-            apply_autocmds(
+            applyAutocomms(
                EVENT_QUICKFIXCMDPOST, (CS)"cscope", curBook->currFileName, TRUE, curBook
             );
             if (use_ll) {

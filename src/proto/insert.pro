@@ -26,7 +26,7 @@ int bracketed_paste(PasteMode mode, int drop, ArrayList *gap);
 int ins_copychar(LineNr lnum);
 ColNr get_nolist_virtcol(void);
 void set_can_cindent(int val);
-int ins_apply_autocmds(AutoEvent event);
+int ins_applyAutocomms(AutoEvent event);
 int ctrl_x_mode_whole_line(void);
 int ctrl_x_mode_not_default(void);
 int ctrl_x_mode_not_defined_yet(void);

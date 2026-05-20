@@ -7140,6 +7140,7 @@ f_ch_logfile(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 //}}}
 //{{{client-server (running in headless mode)
+#ifdef FEAT_X11
 
 private void cmdsrv_main(int *argc, char **argv, CS serverName_arg, Byte **serverStr);
 private CS serverMakeName(CS arg, CS cmd);
@@ -7302,11 +7303,10 @@ cmdsrv_main(int* argc, char** argv, CS serverName_arg, Byte** serverStr){
 
    setup_term_clip();
 # else
-   ???
 # endif
 
    CS sname = serverMakeName(serverName_arg, (CS)argv[0]);
-   if (sname == NULL)
+   if (!sname)
       return;
 
    // Execute the command server related arguments and remove them
@@ -7755,5 +7755,7 @@ f_serverlist(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = r;
 }
+
+#endif
 
 //}}}

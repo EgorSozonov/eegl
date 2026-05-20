@@ -4018,8 +4018,8 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
       curBook->o.modifiable = false;
 
       curBook->keepFiletype = TRUE;   // don't detect 'filetype'
-      apply_autocmds(EVENT_BUFREADPOST, S"quickfix", NULL, false, curBook);
-      apply_autocmds(EVENT_BUFWINENTER, S"quickfix", NULL, false, curBook);
+      applyAutocomms(EVENT_BUFREADPOST, S"quickfix", NULL, false, curBook);
+      applyAutocomms(EVENT_BUFWINENTER, S"quickfix", NULL, false, curBook);
       curBook->keepFiletype = FALSE;
       --curBookLock;
 
@@ -4216,7 +4216,7 @@ c_elgrep(Invocation* invo) {
 
    CS auName = vgr_get_auname(invo->id);
    if (auName
-         && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
+         && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
          && aborting()
    ) {
       return;
@@ -4256,7 +4256,7 @@ c_elgrep(Invocation* invo) {
    Unt idSave = getCurrent(stack)->id;
 
    if (auName != NULL)
-      apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
+      applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
    // The QuickFixCmdPost autocmd may free the location list. Check the list is still valid.
    if (!isIdValid(stack, idSave) || restoreList(stack, idSave) == FAIL) {
       decrementLlBusyness();
@@ -4301,7 +4301,7 @@ c_grep(Invocation* invo) {
 
    CS auName = getGrepAutocommand(invo->id);
    if (auName
-            && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
+            && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
             && aborting()
    ) {
       return;
@@ -4337,7 +4337,7 @@ c_grep(Invocation* invo) {
    // check for autocommands changing the current list.
    Unt llIdSaved = getCurrent(stack)->id;
    if (auName)
-      apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
+      applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
    if (res > 0 && !invo->forceit && isIdValid(stack, llIdSaved))
       // display the first error
       jumpToFirstEntry(stack, llIdSaved, FALSE);
@@ -4389,7 +4389,7 @@ makeFinished() {
       source, OUT locationStacksS + LOC_LIST_MAKE, curBook->o.errorFormat, true, S"make"
    );
    
-   if (apply_autocmds(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
+   if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
          && aborting()) {
       return;
    }
@@ -4408,7 +4408,7 @@ makeFinished() {
 
 void
 c_make(Invocation* invo UNUSED) {
-   if (apply_autocmds(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
+   if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
          && aborting()
    ) {
       return;
@@ -4947,7 +4947,7 @@ c_lFile(Invocation* invo) {
    Unt   idSave = 0;      // init for gcc
 
    CS auName = cfile_get_auname(invo->id);
-   if (auName && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, NULL, false, curBook)
+   if (auName && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, NULL, false, curBook)
        && aborting()
    )
       return;
@@ -4978,7 +4978,7 @@ c_lFile(Invocation* invo) {
       updateChangedTick(getCurrent(stack));
    idSave = getCurrent(stack)->id;
    if (auName != NULL)
-      apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, NULL, false, curBook);
+      applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, NULL, false, curBook);
 
    // Jump to the first error for a new list and if autocmds didn't free the list
    if (res > 0 && (invo->id == C_lfile) && isIdValid(stack, idSave))
@@ -5352,7 +5352,7 @@ elckGrepFiles(
                AutocommSave   aco;
                auCommPrepareBook(&aco, book);
                if (curBook == book) {
-                  apply_autocmds(EVENT_FILETYPE, book->fileType, book->currFileName, true, book);
+                  applyAutocomms(EVENT_FILETYPE, book->fileType, book->currFileName, true, book);
                   auCommRestoreBook(&aco);
                }
             }
@@ -5378,7 +5378,7 @@ c_vimgrep(Invocation* invo) {
 
    CS auName = vgr_get_auname(invo->id);
    if (auName
-         && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
+         && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
          && aborting()
    )
       return;
@@ -5417,7 +5417,7 @@ c_vimgrep(Invocation* invo) {
    Unt idSave = getCurrent(stack)->id;
 
    if (auName)
-      apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
+      applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
    // The QuickFixCmdPost autocmd may free the location list. Check the list
    // is still valid.
    if (!isIdValid(stack, idSave) || restoreList(stack, idSave) == FAIL) {
@@ -6644,7 +6644,7 @@ c_lbook(Invocation* invo) {
 
    CS auName = getAutocmdNameForCbuffer(invo->id);
    if (auName
-         && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
+         && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
          && aborting()
    ) {
       return;
@@ -6683,7 +6683,7 @@ c_lbook(Invocation* invo) {
    if (auName) {
       Book* curBookSaved = curBook;
 
-      apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
+      applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
       if (curBook != curBookSaved)
          // Autocommands changed book, don't jump now, "stack" may be invalid.
          res = 0;
@@ -6713,7 +6713,7 @@ trigger_cexpr_autocmd(int id) {
    CS auName = cexpr_get_auname(id);
 
    if (auName
-         && apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
+         && applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
    ) {
       if (aborting())
          return FAIL;
@@ -6746,7 +6746,7 @@ cexpr_core(Invocation* invo, Var *tv) {
       // check for autocommands changing the current list.
       Unt idSave = getCurrent(stack)->id;
       if (auName)
-          apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
+          applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
 
       // Jump to the first error for a new list and if autocmds didn't free the list.
       if (res > 0 && (invo->id == C_lexpr) && isIdValid(stack, idSave))
@@ -6867,7 +6867,7 @@ c_helpgrep(Invocation* invo) {
 
    CS auName = S"helpgrep";
    
-   if (apply_autocmds(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
+   if (applyAutocomms(EVENT_QUICKFIXCMDPRE, auName, curBook->currFileName, true, curBook)
          && aborting()) {
       return;
    }
@@ -6902,7 +6902,7 @@ c_helpgrep(Invocation* invo) {
       updateBook(stack, NULL);
 
    if (auName) {
-      apply_autocmds(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
+      applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
       // When adding a location list to an existing location list stack,
       // if the autocmd made the stack invalid, then just return.
       decrementLlBusyness();

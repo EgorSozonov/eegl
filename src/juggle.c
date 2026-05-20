@@ -33,7 +33,7 @@ change_warning(int col) {
       return;
 
    ++curBookLock;
-   apply_autocmds(EVENT_FILECHANGEDRO, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_FILECHANGEDRO, NULL, NULL, false, curBook);
    --curBookLock;
    if (curBook->o.modifiable)
       return;

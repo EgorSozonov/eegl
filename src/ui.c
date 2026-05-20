@@ -7292,7 +7292,7 @@ term_start(
    term->next = first_term;
    first_term = term;
 
-   apply_autocmds(EVENT_BUFFILEPRE, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_BUFFILEPRE, NULL, NULL, false, curBook);
 
    if (opt->jo_term_name != NULL) {
       eeglFree(curBook->fullFileName);
@@ -7338,7 +7338,7 @@ term_start(
    curBook->shortFileName = copyStr(curBook->fullFileName);
    curBook->currFileName = curBook->fullFileName;
 
-   apply_autocmds(EVENT_BUFFILEPOST, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_BUFFILEPOST, NULL, NULL, false, curBook);
 
    if (opt->jo_term_opencmd)
       term->openComm = copyStr(opt->jo_term_opencmd);
@@ -7442,9 +7442,9 @@ term_start(
       return NULL;
    }
 
-   apply_autocmds(EVENT_TERMINALOPEN, NULL, NULL, false, newBook);
+   applyAutocomms(EVENT_TERMINALOPEN, NULL, NULL, false, newBook);
    if (!opt->jo_hidden && !(flags & TERM_START_SYSTEM))
-      apply_autocmds(EVENT_TERMINALWINOPEN, NULL, NULL, false, newBook);
+      applyAutocomms(EVENT_TERMINALWINOPEN, NULL, NULL, false, newBook);
    return newBook;
 }
 
@@ -12029,8 +12029,10 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       if (finished || msec == 0)
          break;
 
+#ifdef FEAT_X11
       if (server_waiting())
          break;
+#endif 
 
       // We're going to loop around again, find out for how long
       if (msec > 0) {
@@ -12362,7 +12364,9 @@ inchar_loop(
       elapsed_time += wait_time;
 
       if ((resize_func && resize_func(TRUE))
+#ifdef FEAT_X11 
             || server_waiting()
+#endif 
             || interrupted
             || wait_time > 0
             || (wtime < 0 && !did_start_blocking)
@@ -12849,7 +12853,7 @@ ui_focus_change(int in_focus) {  // TRUE if focus gained.
    term_focus_change(in_focus);
 
    // Fire the focus gained/lost autocommand.
-   need_redraw |= apply_autocmds(in_focus ? EVENT_FOCUSGAINED
+   need_redraw |= applyAutocomms(in_focus ? EVENT_FOCUSGAINED
             : EVENT_FOCUSLOST, NULL, NULL, false, curBook);
 
    if (need_redraw)

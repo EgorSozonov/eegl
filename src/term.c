@@ -527,7 +527,7 @@ set_termname(CS termName) {
             if (curBook->mem.mfile) {
                auCommPrepareBook(&aco, buf);
                if (curBook == buf) {
-                  apply_autocmds(EVENT_TERMCHANGED, NULL, NULL, false, curBook);
+                  applyAutocomms(EVENT_TERMCHANGED, NULL, NULL, false, curBook);
                   // restore curPor/curBook and a few other things
                   auCommRestoreBook(&aco);
                }
@@ -2536,8 +2536,8 @@ handleControlSequenceIntroducer(
 
       *slen = csi_len;
       set_EeglVar_string(VV_TERMRESPONSE, tp, *slen);
-      apply_autocmds(EVENT_TERMRESPONSE, NULL, NULL, false, curBook);
-      apply_autocmds(EVENT_TERMRESPONSEALL, (CS)"version", NULL, false, curBook);
+      applyAutocomms(EVENT_TERMRESPONSE, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_TERMRESPONSEALL, (CS)"version", NULL, false, curBook);
       key_name[0] = (int)KS_EXTRA;
       key_name[1] = (int)KE_IGNORE;
    }
@@ -2561,7 +2561,7 @@ handleControlSequenceIntroducer(
       key_name[1] = (int)KE_IGNORE;
       *slen = csi_len;
       set_EeglVar_string(VV_TERMBLINKRESP, tp, *slen);
-      apply_autocmds(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, false, curBook);
+      applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, false, curBook);
    }
    // Kitty keyboard protocol status response: CSI ? flags u
    ei (first == '?' && argc == 1 && trail == 'u') {
@@ -2679,7 +2679,7 @@ handle_osc(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
          key_name[1] = (int)KE_IGNORE;
          *slen = i + 1 + (tp[i] == ESC);
          set_EeglVar_string(isBg ? VV_TERMRBGRESP : VV_TERMRFGRESP, tp, *slen);
-         apply_autocmds(EVENT_TERMRESPONSEALL,
+         applyAutocomms(EVENT_TERMRESPONSEALL,
                 isBg ? S"background" : S"foreground", NULL, false, curBook);
          break;
       }
@@ -2760,7 +2760,7 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
             key_name[1] = (int)KE_IGNORE;
             *slen = i + 1;
             set_EeglVar_string(VV_TERMSTYLERESP, tp, *slen);
-            apply_autocmds(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, false, curBook);
+            applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, false, curBook);
             break;
          }
       }

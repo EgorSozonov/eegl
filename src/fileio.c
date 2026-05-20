@@ -73,7 +73,7 @@ repeat:
 
       // Expand "~/path" for all systems and "~user/path" for Unix
       if ((*fnamep)[0] == '~' && !(tilde_file && (*fnamep)[1] == ZERO)) {
-         *fnamep = expand_env_save(*fnamep);
+         *fnamep = doExpandEnvInMultiplePaths(*fnamep);
          eeglFree(*bufp);   // free any allocated file name
          *bufp = *fnamep;
          if (*fnamep == NULL)
@@ -126,7 +126,7 @@ repeat:
       // Need full path first (use doExpandEnv() to remove a "~/")
       if (!has_fullname && !has_homerelative) {
          if (**fnamep == '~')
-            p = pbuf = expand_env_save(*fnamep);
+            p = pbuf = doExpandEnvInMultiplePaths(*fnamep);
          else
             p = pbuf = fiExpandAndCopy(*fnamep, FALSE);
       } else
@@ -2343,7 +2343,7 @@ gen_expand_wildcards(
       } else {
          // First expand environment variables, "~/" and "~user/".
          if ((hasEnvVar(p) && !(flags & EW_NOTENV)) || *p == '~') {
-            p = expand_env_save_opt(p, TRUE);
+            p = doExpandEnvInFilePaths(p, TRUE);
             if (p == NULL)
                p = pat[i];
             //If doExpandEnv() can't expand an environment variable, use the shell to do that. 
@@ -3215,7 +3215,7 @@ eeChdirfile(CS fname, char *trigger_autocmd) {
       return FAIL;
 
    if (trigger_autocmd != NULL)
-      apply_autocmds(EVENT_DIRCHANGED, (CS)trigger_autocmd, new_dir, FALSE, curBook);
+      applyAutocomms(EVENT_DIRCHANGED, (CS)trigger_autocmd, new_dir, FALSE, curBook);
    return OK;
 }
 
@@ -6120,7 +6120,7 @@ afterRecovery:
          if (!curBook->auDidFileType && *curBook->fileType != ZERO)
             //EVENT_FILETYPE was not triggered but the book already has a
             //filetype. Trigger EVENT_FILETYPE using the existing filetype.
-            apply_autocmds(EVENT_FILETYPE, curBook->fileType, curBook->currFileName, TRUE, curBook);
+            applyAutocomms(EVENT_FILETYPE, curBook->fileType, curBook->currFileName, TRUE, curBook);
       } else
          auCommApplyWithInvo(EVENT_FILEREADPOST, sfname, sfname, FALSE, NULL, invo);
       if (msg_scrolled == n)
@@ -6259,8 +6259,8 @@ set_rw_fname(CS fname, CS sfname){
 
    // It's like the unnamed book is deleted....
    if (curBook->o.bookListed)
-      apply_autocmds(EVENT_BUFDELETE, NULL, NULL, FALSE, curBook);
-   apply_autocmds(EVENT_BUFWIPEOUT, NULL, NULL, FALSE, curBook);
+      applyAutocomms(EVENT_BUFDELETE, NULL, NULL, FALSE, curBook);
+   applyAutocomms(EVENT_BUFWIPEOUT, NULL, NULL, FALSE, curBook);
    if (aborting())       // autocmds may abort script processing
       return FAIL;
    if (curBook != book) {
@@ -6273,9 +6273,9 @@ set_rw_fname(CS fname, CS sfname){
       curBook->flags |= BF_NOTEDITED;
 
    // ....and a new named one is created
-   apply_autocmds(EVENT_BUFNEW, NULL, NULL, FALSE, curBook);
+   applyAutocomms(EVENT_BUFNEW, NULL, NULL, FALSE, curBook);
    if (curBook->o.bookListed)
-      apply_autocmds(EVENT_BUFADD, NULL, NULL, FALSE, curBook);
+      applyAutocomms(EVENT_BUFADD, NULL, NULL, FALSE, curBook);
    if (aborting())       // autocmds may abort script processing
       return FAIL;
 
@@ -6843,7 +6843,7 @@ fiCheckBookTimestamp(
          set_EeglVar_string(VV_FCS_REASON, reason, (int)reasonlen);
          set_EeglVar_string(VV_FCS_CHOICE, Em, 0);
          ++allBookLock;
-         n = apply_autocmds(
+         n = applyAutocomms(
                EVENT_FILECHANGEDSHELL, book->currFileName, book->currFileName, FALSE, book
          );
          --allBookLock;
@@ -6971,7 +6971,7 @@ fiCheckBookTimestamp(
 
    // Trigger FileChangedShell when the file was changed in any way.
    if (bookRefValid(&bufref) && retval != 0) {
-      (void)apply_autocmds(
+      (void)applyAutocomms(
             EVENT_FILECHANGEDSHELLPOST, book->currFileName, book->currFileName, FALSE, book
       );
    } 

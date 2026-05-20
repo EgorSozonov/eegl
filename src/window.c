@@ -1145,7 +1145,7 @@ server_parse_message(
          Byte   winstr[30];
 
          sprintf((char *)winstr, "0x%x", (unsigned int)win);
-         apply_autocmds(EVENT_REMOTEREPLY, winstr, str, TRUE, curBook);
+         applyAutocomms(EVENT_REMOTEREPLY, winstr, str, TRUE, curBook);
       } else {
          //Didn't recognize this thing. Just skip through the next null character and try again.
          //Even if we get an 'r'(eply) we will throw it away as we never specify (and thus expect) 
@@ -1674,7 +1674,7 @@ typedef struct {
    int         height;
    int         stride;
    int         size;
-} vwl_buffer_store_T;
+} BufferStore;
 
 typedef struct {
 void          *user_data;
@@ -1786,7 +1786,7 @@ typedef struct {
    vwl_clipboard_selection_T   regular;
    vwl_clipboard_selection_T   primary;
 
-   vwl_buffer_store_T      *fs_buffer;
+   BufferStore      *fs_buffer;
 } vwl_clipboard_T;
 
 #endif // FEAT_WAYLAND
@@ -1829,12 +1829,12 @@ private void   vwl_xdg_surface_listener_configure(void *data,
 
 private void   vwl_bs_buffer_listener_release(void *data,
           struct wl_buffer *buffer);
-private void   vwl_destroy_buffer_store(vwl_buffer_store_T *store);
-private vwl_buffer_store_T *vwl_init_buffer_store(int width, int height);
+private void   vwl_destroy_buffer_store(BufferStore *store);
+private BufferStore *vwl_init_buffer_store(int width, int height);
 
 private void   vwl_destroy_fs_surface(vwl_fs_surface_T *store);
 private int   vwl_init_fs_surface(vwl_seat_T *seat,
-          vwl_buffer_store_T *buffer_store,
+          BufferStore *buffer_store,
           void (*on_focus)(void *, uint32_t), void *user_data);
 
 private void   vwl_fs_keyboard_listener_enter(void *data,
@@ -2138,19 +2138,19 @@ vwl_display_dispatch_any(vwl_display_T *display) {
 private void
 vwl_log_handler(const char *fmt, va_list args) {
    // 512 bytes should be big enough
-   CS builder = alloc(512);
+   CS buf = alloc(512);
    CS prefix = _("wayland protocol error -> ");
    Unt len = STRLEN(prefix);
-   copySubstrToAllocation((Byte*)builder, (Byte*)prefix, len);
-   eeVsnprintf(builder + len, 4096 - len, fmt, args);
+   copySubstrToAllocation(buf, (Text){prefix, len});
+   eeVsnprintf(buf + len, 4096 - len, fmt, args);
 
    // Remove newline that libwayland puts
-   builder[STRLEN(buf) - 1] = ZERO;
+   buf[STRLEN(buf) - 1] = ZERO;
 
-   lo("%s", builder);
-   emsg(builder);
+   lo("%s", buf);
+   emsg(buf);
 
-   eeglFree(builder);
+   eeglFree(buf);
 }
 
 //Connect to the display with name; passing NULL will use libwayland's way of
@@ -2336,10 +2336,8 @@ void         **object_member;
 // global will just be ignored on the compositor side.
 private void
 vwl_registry_listener_global_remove(
-   void          *data,
-   struct wl_registry  *registry,
-   uint32_t       name UNUSED)
-{
+      void* data UNUSED, struct wl_registry* registry UNUSED, uint32_t name UNUSED
+) {
 }
 
 // Add a new seat given its proxy to the global grow array
@@ -2502,18 +2500,14 @@ vwl_xdg_surface_listener_configure(
 
 // Called when compositor isn't using the buffer anymore, we can reuse it again.
 private void
-vwl_bs_buffer_listener_release(
-   void          *data,
-   struct wl_buffer    *buffer UNUSED)
-{
-   vwl_buffer_store_T *store = data;
-
+vwl_bs_buffer_listener_release(void* data, struct wl_buffer* buffer UNUSED) {
+   BufferStore* store = data;
    store->available = TRUE;
 }
 
 // Destroy a buffer store structure.
 private void
-vwl_destroy_buffer_store(vwl_buffer_store_T *store) {
+vwl_destroy_buffer_store(BufferStore* store) {
    if (store->buffer != NULL)
       wl_buffer_destroy(store->buffer);
    if (store->pool != NULL)
@@ -2557,14 +2551,12 @@ mch_create_anon_file(void) {
 
 
 // Initialize a buffer and its backing memory pool.
-private vwl_buffer_store_T *
+private BufferStore *
 vwl_init_buffer_store(int width, int height) {
-   int         fd, r;
-
    if (vwl_gobjects.wl_shm == NULL)
       return NULL;
 
-   vwl_buffer_store_T store = alloc(sizeof(*store));
+   BufferStore* store = alloc(sizeof(BufferStore));
 
    store->available = FALSE;
 
@@ -2573,12 +2565,12 @@ vwl_init_buffer_store(int width, int height) {
    store->stride = store->width * 4;
    store->size = store->stride * store->height;
 
-   fd = mch_create_anon_file();
-   r = ftruncate(fd, store->size);
+   int fd = mch_create_anon_file();
+   int r = ftruncate(fd, store->size);
 
    if (r == -1) {
       if (fd >= 0)
-          close(fd);
+         close(fd);
       return NULL;
    }
 
@@ -2628,9 +2620,9 @@ vwl_destroy_fs_surface(vwl_fs_surface_T *store) {
 private int
 vwl_init_fs_surface(
    vwl_seat_T       *seat,
-   vwl_buffer_store_T  *buffer_store,
-   void          (*on_focus)(void *, uint32_t),
-   void          *user_data
+   BufferStore* buffer_store,
+   void (*on_focus)(void *, uint32_t),
+   void *user_data
 ) {
    vwl_fs_surface_T *store;
 

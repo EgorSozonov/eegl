@@ -1489,7 +1489,7 @@ theend:
    // are diffs now, which means they got updated.
    if (curtab->first_diff || curtab->first_diff) {
       diff_redraw(TRUE);
-      apply_autocmds(EVENT_DIFFUPDATED, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_DIFFUPDATED, NULL, NULL, false, curBook);
    }
 }
 
@@ -3966,7 +3966,7 @@ theend:
    else {
       // Also need to redraw the other books.
       diff_redraw(FALSE);
-      apply_autocmds(EVENT_DIFFUPDATED, NULL, NULL, false, curBook);
+      applyAutocomms(EVENT_DIFFUPDATED, NULL, NULL, false, curBook);
    }
 }
 

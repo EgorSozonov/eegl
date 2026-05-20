@@ -28,15 +28,15 @@ private ScriptPos* acp_scriptCtx(AutoPatComm* acp);
 typedef struct {
    FILE* fp;      // opened file for sourcing
    CS nextline;   // if not NULL: line that was read ahead
-   LineNr   sourcing_lnum;   // line number of the source file
-   int      finished;   // ":finish" used
-   Boole      source_from_buf;// TRUE if sourcing from current buffer
-   int      buf_lnum;   // line number in the current buffer
-   ArrayList   buflines;   // lines in the current buffer
-   LineNr   breakpoint;   // next line with breakpoint or zero
+   LineNr sourcing_lnum;   // line number of the source file
+   Boole finished;   // ":finish" used
+   Boole sourceFromCurBook;
+   int buf_lnum;   // line number in the current buffer
+   ArrayList buflines;   // lines in the current buffer
+   LineNr breakpoint;   // next line with breakpoint or zero
    CS fname;      // name of sourced file
-   int      dbg_tick;   // debug_tick when breakpoint was set
-   int      level;      // top nesting level of sourced file
+   int dbg_tick;   // debug_tick when breakpoint was set
+   int level;      // top nesting level of sourced file
 } SourceCookie;
 
 // The names of packages that once were loaded are remembered.
@@ -981,20 +981,18 @@ fopen_noinh_readbin(CS filename) {
    return fdopen(fd_tmp, READBIN);
 }
 
-//Initialization for sourcing lines from the current buffer. Reads all the
-//lines from the buffer and stores it in the cookie grow array.
+//Initialization for sourcing lines from the current book. Read all the
+//lines from the book and store them in the cookie arraylist.
 //Return a pointer to the name ":source buffer=<n>" on success and NULL on failure.
-private Byte *
-scriptRunFile_buffer_init(SourceCookie *sp, Invocation* invo) {
-   LineNr   curr_lnum;
-   Byte   *line = NULL;
-   Byte   *fname;
-
-   if (curBook == NULL)
+private CS
+initCurBookForSourcing(OUT SourceCookie* sp, Invocation* invo) {
+   if (!curBook)
       return NULL;
 
+   LineNr   curr_lnum;
+   CS fname;
    // Use ":source buffer=<num>" as the script name
-   if (curBook->fullFileName != NULL)
+   if (curBook->fullFileName)
       fname = copyStr(curBook->fullFileName);
    else {
       eeSnprintf(IObuff, IOSIZE, ":source buffer=%d", curBook->fiNum);
@@ -1004,15 +1002,14 @@ scriptRunFile_buffer_init(SourceCookie *sp, Invocation* invo) {
    ga_init2(&sp->buflines, sizeof(CS), 100);
 
    // Copy the lines from the buffer into a grow array
+   CS line = null;
    for (curr_lnum = invo->line1; curr_lnum <= invo->line2; curr_lnum++) {
       line = copyStr(ml_get(curr_lnum));
-      if (line == NULL)
-         goto errret;
       if (ga_add_string(&sp->buflines, line) == FAIL)
          goto errret;
    }
    sp->buf_lnum = 0;
-   sp->source_from_buf = TRUE;
+   sp->sourceFromCurBook = TRUE;
    // When sourcing a range of lines from a buffer, use buffer line number.
    sp->sourcing_lnum = invo->line1 - 1;
 
@@ -1062,7 +1059,7 @@ scriptRunFileInternal(
    Invocation* invo,
    Boole      clearvars
 ){
-   SourceCookie       cookie;
+   SourceCookie cookie;
    CS fname_not_fixed = NULL;
    CS fname_exp = NULL;
    CS firstline = NULL;
@@ -1074,7 +1071,6 @@ scriptRunFileInternal(
    int trigger_source_post = FALSE;
    FnCallEntry funccalp_entry;
    int save_debug_break_level = debug_break_level;
-   int sid = -1;
    ScriptItem* si = NULL;
    int save_estack_compiling = estack_compiling;
    ESTACK_CHECK_DECLARATION;
@@ -1082,12 +1078,12 @@ scriptRunFileInternal(
    CLEAR_FIELD(cookie);
    if (!fname) {
       // sourcing lines from a buffer
-      fname_exp = scriptRunFile_buffer_init(&cookie, invo);
-      if (fname_exp == NULL)
+      fname_exp = initCurBookForSourcing(OUT &cookie, invo);
+      if (!fname_exp)
          return FAIL;
    } else {
-      fname_not_fixed = expand_env_save(fname);
-      if (fname_not_fixed == NULL)
+      fname_not_fixed = doExpandEnvInMultiplePaths(fname);
+      if (!fname_not_fixed)
          goto theend;
       _bp(true);
       fname_exp = fiExpandAndCopy(fname_not_fixed, true);
@@ -1099,7 +1095,7 @@ scriptRunFileInternal(
    estack_compiling = FALSE;
 
    // See if we loaded this script before.
-   sid = find_script_by_name(fname_exp);
+   int sid = find_script_by_name(fname_exp);
    if (sid > 0 && ret_sid && SCRIPT_ITEM(sid)->sn_state != SN_STATE_NOT_LOADED){
       // Already loaded and no need to load again, return here.
       *ret_sid = sid;
@@ -1109,19 +1105,19 @@ scriptRunFileInternal(
 
    // Apply SourceCmd autocommands, they should get the file and source it.
    if (has_autocmd(EVENT_SOURCECMD, fname_exp, NULL)
-       && apply_autocmds(EVENT_SOURCECMD, fname_exp, fname_exp, FALSE, curBook)
+       && applyAutocomms(EVENT_SOURCECMD, fname_exp, fname_exp, FALSE, curBook)
    ) {
       retval = aborting() ? FAIL : OK;
       if (retval == OK)
          // Apply SourcePost autocommands.
-         apply_autocmds(EVENT_SOURCEPOST, fname_exp, fname_exp, FALSE, curBook);
+         applyAutocomms(EVENT_SOURCEPOST, fname_exp, fname_exp, FALSE, curBook);
       goto theend;
    }
 
    // Apply SourcePre autocommands, they may get the file.
-   apply_autocmds(EVENT_SOURCEPRE, fname_exp, fname_exp, FALSE, curBook);
+   applyAutocomms(EVENT_SOURCEPRE, fname_exp, fname_exp, FALSE, curBook);
 
-   if (!cookie.source_from_buf) {
+   if (!cookie.sourceFromCurBook) {
 #ifdef USE_FOPEN_NOINH
       cookie.fp = fopen_noinh_readbin(fname_exp);
 #else
@@ -1129,7 +1125,7 @@ scriptRunFileInternal(
 #endif
    }
 
-   if (cookie.fp == NULL && !cookie.source_from_buf) {
+   if (cookie.fp == NULL && !cookie.sourceFromCurBook) {
       if (p_verbose > 0) {
          verbose_enter();
          if (SOURCING_NAME == NULL)
@@ -1269,13 +1265,13 @@ almosttheend:
 
    if (cookie.fp != NULL)
       fclose(cookie.fp);
-   if (cookie.source_from_buf)
+   if (cookie.sourceFromCurBook)
       ga_clear_strings(&cookie.buflines);
    eeglFree(cookie.nextline);
    eeglFree(firstline);
 
    if (trigger_source_post)
-      apply_autocmds(EVENT_SOURCEPOST, fname_exp, fname_exp, FALSE, curBook);
+      applyAutocomms(EVENT_SOURCEPOST, fname_exp, fname_exp, FALSE, curBook);
 
 theend:
    if (sid > 0 && ret_sid && fname_not_fixed && fname_exp) {
@@ -1523,7 +1519,7 @@ get_one_sourceline(SourceCookie *sp) {
       // make room to read at least 120 (more) characters
       if (ga_grow(&ga, 120) == FAIL)
           break;
-      if (sp->source_from_buf) {
+      if (sp->sourceFromCurBook) {
          if (sp->buf_lnum >= sp->buflines.len)
             break;          // all the lines are processed
          ga_concat(&ga, ((Byte **)sp->buflines.c)[sp->buf_lnum]);
@@ -1588,7 +1584,7 @@ getsourceline(
    Boole do_bar_cont = options == GETLINE_CONCAT_CONTBAR;
 
    // If breakpoints have been added/deleted need to check for it.
-   if ((sp->dbg_tick < debug_tick) && !sp->source_from_buf) {
+   if ((sp->dbg_tick < debug_tick) && !sp->sourceFromCurBook) {
       sp->breakpoint = dbg_find_breakpoint(TRUE, sp->fname, SOURCING_LNUM);
       sp->dbg_tick = debug_tick;
    }
@@ -1598,7 +1594,7 @@ getsourceline(
 
    //Get current line. If there is a read-ahead line, use it, otherwise get
    //one now. "fp" is NULL if actually using a string.
-   if (sp->finished || (!sp->source_from_buf && sp->fp == NULL))
+   if (sp->finished || (!sp->sourceFromCurBook && sp->fp == NULL))
       line = NULL;
    ei (!sp->nextline)
       line = get_one_sourceline(sp);
@@ -1670,7 +1666,7 @@ getsourceline(
    }
 
    // Did we encounter a breakpoint?
-   if (!sp->source_from_buf && sp->breakpoint != 0 && sp->breakpoint <= SOURCING_LNUM) {
+   if (!sp->sourceFromCurBook && sp->breakpoint != 0 && sp->breakpoint <= SOURCING_LNUM) {
       dbg_breakpoint(sp->fname, SOURCING_LNUM);
       // Find next breakpoint.
       sp->breakpoint = dbg_find_breakpoint(TRUE, sp->fname, SOURCING_LNUM);
@@ -1701,7 +1697,7 @@ c_finish(Invocation* invo) {
 void
 do_finish(Invocation* invo, int reanimate) {
    if (reanimate)
-      ((SourceCookie *)getline_cookie(invo->ea_getline, invo->cookie))->finished = FALSE;
+      ((SourceCookie *)getline_cookie(invo->ea_getline, invo->cookie))->finished = false;
 
     // Cleanup (and inactivate) conditionals, but stop when a try conditional
     // not in its finally clause (which then is to be executed next) is found.
@@ -1712,7 +1708,7 @@ do_finish(Invocation* invo, int reanimate) {
       invo->cstack->pending[idx] = CSTP_FINISH;
       report_make_pending(CSTP_FINISH, NULL);
    } else
-      ((SourceCookie *)getline_cookie(invo->ea_getline, invo->cookie))->finished = TRUE;
+      ((SourceCookie *)getline_cookie(invo->ea_getline, invo->cookie))->finished = true;
 }
 
 
@@ -2527,10 +2523,10 @@ dbg_parsearg(CS arg, ArrayList* gap){ // either &dbg_breakp or &prof_ga
    } else {
       // Expand the file name in the same way as scriptRunFile().  This means
       // doing it twice, so that $DIR/file gets expanded when $DIR is "~/dir".
-      q = expand_env_save(p);
+      q = doExpandEnvInMultiplePaths(p);
       if (!q)
           return FAIL;
-      p = expand_env_save(q);
+      p = doExpandEnvInMultiplePaths(q);
       eeglFree(q);
       if (p == NULL)
          return FAIL;
@@ -3747,7 +3743,7 @@ showmatches_oneline(
             // Expansion was done before and special characters
             // were escaped, need to halve backslashes.  Also
             // $HOME has been replaced with ~/.
-            exp_path = expand_env_save_opt(matches->c[j], TRUE);
+            exp_path = doExpandEnvInFilePaths(matches->c[j], TRUE);
             path = exp_path != NULL ? exp_path : matches->c[j];
             halved_slash = backslash_halve_save(path);
             isdir = mch_isdir(halved_slash != NULL ? halved_slash : matches->c[j]);
@@ -7248,7 +7244,7 @@ trigger_cmd_autocmd(int typechar, int evt) {
 
    typestr[0] = typechar;
    typestr[1] = ZERO;
-   apply_autocmds(evt, typestr, typestr, FALSE, curBook);
+   applyAutocomms(evt, typestr, typestr, FALSE, curBook);
 }
 
 // Abandon the command line.
@@ -14816,7 +14812,7 @@ call_func(
 
          // Trigger FuncUndefined event, may load the function.
          if (!fp
-             && apply_autocmds(EVENT_FUNCUNDEFINED, rfname, rfname, TRUE, NULL)
+             && applyAutocomms(EVENT_FUNCUNDEFINED, rfname, rfname, TRUE, NULL)
              && !aborting()
          ) {
             // executed an autocommand, search for the function again
@@ -17059,7 +17055,7 @@ struct AutoPat {
    int patlen;      // strlen() of pat
    int buflocal_nr;   // !=0 for buffer-local AutoPat
    Byte allow_dirs;      // Pattern may match whole path
-   Byte last;      // last pattern for apply_autocmds()
+   Byte last;      // last pattern for applyAutocomms()
 };
 
 //
@@ -17783,7 +17779,7 @@ do_autocmd(Invocation* invo, CS arg_in, int forceit) {
 
       //Expand environment variables in the pattern.
       if (firstOccurrence(pat, '$') != NULL || firstOccurrence(pat, '~') != NULL) {
-         envpat = expand_env_save(pat);
+         envpat = doExpandEnvInMultiplePaths(pat);
          if (envpat)
             pat = envpat;
       }
@@ -18389,7 +18385,7 @@ private int   autocmd_nested = FALSE;
 
 // Execute autocommands for "event" and file name "fname". Return TRUE if any commands were executed
 int
-apply_autocmds(
+applyAutocomms(
    AutoEvent   event,
    CS fname,       // NULL or empty means use actual file name
    CS fname_io,  // fname to use for <afile> on cmdline
@@ -18399,7 +18395,7 @@ apply_autocmds(
    return applyAutocommGroup(event, fname, fname_io, force, AUGROUP_ALL, book, NULL);
 }
 
-// Like apply_autocmds(), but with extra "invo" argument.  This takes care of setting v:filearg.
+// Like applyAutocomms(), but with extra "invo" argument.  This takes care of setting v:filearg.
 int
 auCommApplyWithInvo(
    AutoEvent event,
@@ -18412,11 +18408,11 @@ auCommApplyWithInvo(
    return applyAutocommGroup(event, fname, fname_io, force, AUGROUP_ALL, book, invo);
 }
 
-// Like apply_autocmds(), but handles the caller's retval.  If the script processing is being 
+// Like applyAutocomms(), but handles the caller's retval.  If the script processing is being 
 // aborted or if retval is FAIL when inside a try conditional, no autocommands are executed.  If 
 // otherwise the autocommands cause the script to be aborted, retval is set to FAIL.
 int
-apply_autocmds_retval(
+applyAutocommsRetval(
    AutoEvent   event,
    CS fname,      // NULL or empty means use actual file name
    CS fname_io,   // fname to use for <afile> on cmdline
@@ -18443,15 +18439,13 @@ has_cursorhold(void) {
 // Return TRUE if the CursorHold event can be triggered.
 int
 trigger_cursorhold(void) {
-   int state;
-
    if (!did_cursorhold
        && has_cursorhold()
        && reg_recording == 0
        && typeBufG.validLen == 0
        && !ins_compl_active())
     {
-      state = get_real_state();
+      int state = get_real_state();
       if (state == MODE_NORMAL_BUSY || (state & MODE_INSERT) != 0)
          return TRUE;
    }
@@ -18497,13 +18491,13 @@ has_modechanged(void) {
 // Execute autocommands for "event" and file name "fname". Return TRUE if any commands were executed
 private int
 applyAutocommGroup(
-   AutoEvent   event,
+   AutoEvent event,
    CS fname,        // NULL or empty means use actual file name
-   CS fname_io,   // fname to use for <afile> on cmdline, NULL means use fname
-   Boole force,        // when TRUE, ignore autocmd_busy
-   Unt group,        // group ID, or AUGROUP_ALL
-   Book* book,        // book for <abuf>
-   Invocation   *invo UNUSED // command arguments
+   CS fname_io,     // fname to use for <afile> on cmdline, NULL means use fname
+   Boole force,     // when TRUE, ignore autocmd_busy
+   Unt group,       // group ID, or AUGROUP_ALL
+   Book* book,      // book for <abuf>
+   Invocation* invo // command arguments
 ){
    CS sfname = NULL;   // short file name
    CS tail;
@@ -18860,23 +18854,23 @@ unblock_autocmds(void) {
    // command during startup (vimdiff).
    if (autocommsBlockedS == 0) {
       if (get_EeglVar_str(VV_TERMRESPONSE) != old_termresponse) {
-          apply_autocmds(EVENT_TERMRESPONSE, NULL, NULL, FALSE, curBook);
-          apply_autocmds(EVENT_TERMRESPONSEALL, S"version", NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSE, NULL, NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSEALL, S"version", NULL, FALSE, curBook);
       }
       if (get_EeglVar_str(VV_TERMU7RESP) != old_termu7resp) {
-          apply_autocmds(EVENT_TERMRESPONSEALL, S"ambiguouswidth", NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSEALL, S"ambiguouswidth", NULL, FALSE, curBook);
       }
       if (get_EeglVar_str(VV_TERMBLINKRESP) != old_termblinkresp) {
-          apply_autocmds(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorblink", NULL, FALSE, curBook);
       }
       if (get_EeglVar_str(VV_TERMRBGRESP) != old_termrbgresp) {
-          apply_autocmds(EVENT_TERMRESPONSEALL, S"background", NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSEALL, S"background", NULL, FALSE, curBook);
       }
       if (get_EeglVar_str(VV_TERMRFGRESP) != old_termrfgresp) {
-          apply_autocmds(EVENT_TERMRESPONSEALL, S"foreground", NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSEALL, S"foreground", NULL, FALSE, curBook);
       }
       if (get_EeglVar_str(VV_TERMSTYLERESP) != old_termstyleresp) {
-          apply_autocmds(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, FALSE, curBook);
+          applyAutocomms(EVENT_TERMRESPONSEALL, S"cursorshape", NULL, FALSE, curBook);
       }
    }
 }

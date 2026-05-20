@@ -980,7 +980,7 @@ theEnd:
 
    eeglFree(viewFile);
 
-   apply_autocmds(EVENT_SESSIONWRITEPOST, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_SESSIONWRITEPOST, NULL, NULL, false, curBook);
 }
 
 //Write end-of-line character(s) for ":mkexrc", ":mkvimrc" and ":mksession".

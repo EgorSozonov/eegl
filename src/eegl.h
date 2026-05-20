@@ -94,8 +94,8 @@ typedef struct timeval TimeVal;
 // user ID of root is usually zero, but not for everybody
 #define ROOT_UID 0
 
-// +x11 is only enabled when it's both available and wanted.
 #define FEAT_X11
+//#define FEAT_WAYLAND
 
 // Can limit syntax hilite time to 'redrawtime'.
 #define SYN_TIME_LIMIT 1
@@ -2326,7 +2326,7 @@ EXTERN long p_wh;       //@winheight
 EXTERN long p_wiw;      //@winwidth
 #ifdef FEAT_WAYLAND
 EXTERN CS p_wse;   //@wlseat
-EXTERN int p_wst;       //@wlsteal
+EXTERN Boole p_wst;       //@wlsteal
 EXTERN long p_wtm;      //@wltimeoutlen
 #endif
 EXTERN int p_wa;        //@writeany
@@ -6859,10 +6859,10 @@ EXTERN int   typebuf_was_filled INIT(= FALSE); // received text from client or f
 EXTERN Byte   *serverName INIT(= NULL);   // name of the server
 #ifdef FEAT_X11
 EXTERN Window commWindow INIT(= None);
-EXTERN Window clientWindow INIT(= None);
 EXTERN Atom commProperty INIT(= None);
 EXTERN Arr(Byte) serverDelayedStartName INIT(= NULL);
 #endif
+EXTERN Window clientWindow INIT(= None);
 
 EXTERN int   term_is_xterm INIT(= FALSE);   // xterm-like 'term'
 

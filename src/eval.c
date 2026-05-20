@@ -10553,7 +10553,7 @@ f_exists(Var* argvars, Var* returnVar) {
          n = TRUE;
       else {
          // try expanding things like $EEGL and ${HOME}
-         p = expand_env_save(p);
+         p = doExpandEnvInMultiplePaths(p);
          if (p && *p != '$')
             n = TRUE;
          eeglFree(p);

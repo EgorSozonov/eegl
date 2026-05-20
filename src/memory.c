@@ -1864,8 +1864,8 @@ theend:
    if (serious_error && called_from_main)
       ml_close(curBook, TRUE);
    else {
-      apply_autocmds(EVENT_BUFREADPOST, NULL, curBook->currFileName, false, curBook);
-      apply_autocmds(EVENT_BUFWINENTER, NULL, curBook->currFileName, false, curBook);
+      applyAutocomms(EVENT_BUFREADPOST, NULL, curBook->currFileName, false, curBook);
+      applyAutocomms(EVENT_BUFWINENTER, NULL, curBook->currFileName, false, curBook);
    }
 }
 
@@ -4114,7 +4114,7 @@ do_swapexists(Book* book, CS fname) {
    //Trigger SwapExists autocommands with <afile> set to the file being
    //edited.  Disallow changing directory here.
    ++allBookLock;
-   apply_autocmds(EVENT_SWAPEXISTS, book->currFileName, NULL, false, NULL);
+   applyAutocomms(EVENT_SWAPEXISTS, book->currFileName, NULL, false, NULL);
    --allBookLock;
 
    set_EeglVar_string(VV_SWAPNAME, NULL, -1);

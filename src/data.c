@@ -5327,7 +5327,7 @@ eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
             eeglFree(string);
 
          // next try expanding things like $EEGL and ${HOME}
-         string = expand_env_save(name - 1);
+         string = doExpandEnvInMultiplePaths(name - 1);
          if (string != NULL && *string == '$')
             EE_CLEAR(string);
       }

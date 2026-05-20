@@ -871,7 +871,7 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
 
    recursive = TRUE;
    textlock++;
-   apply_autocmds(EVENT_TEXTYANKPOST, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_TEXTYANKPOST, NULL, NULL, false, curBook);
    textlock--;
    recursive = FALSE;
 
@@ -3880,7 +3880,7 @@ adjust_clip_reg(OUT int* rp){
 //Read data from a file descriptor and write it to the given clipboard.
 private void
 clip_wl_receive_data(ClipBoard *cbd, const char *mime_type, int fd) {
-   Byte   *start, *final, *enc;
+   Byte   *start, *final;
    ArrayList   buf;
    int      motion_type = MAUTO;
    Long   r = 0;
