@@ -9149,16 +9149,6 @@ free_regexp_stuff(void) {
 }
 #endif
 
-#if defined(FEAT_X11) || defined(PROTO)
-
-// Return whether "prog" is currently being executed.
-Boole
-regprog_in_use(RegProg *prog) {
-   return prog->re_in_use;
-}
-
-#endif
-
 // Match a regexp against a string.
 // "rmp->regprog" must be a compiled regexp as returned by compileRegexp().
 // Note: "rmp->regprog" may be freed and changed.
@@ -9173,7 +9163,6 @@ eeRegexec_string(
    ColNr   col,    // column to start looking for match
    int      nl
 ){
-   int      result;
    Execution   exeSaved;
    int      isBusyS_save = isBusyS;
 
@@ -9194,7 +9183,7 @@ eeRegexec_string(
    exe.reg_startpos = NULL;
    exe.reg_endpos = NULL;
 
-   result = parseBranchexec_nl(rmp, line, col, nl);
+   int result = parseBranchexec_nl(rmp, line, col, nl);
    rmp->regprog->re_in_use = false;
 
    isBusyS = isBusyS_save;
@@ -9206,18 +9195,11 @@ eeRegexec_string(
 
 // Note: "*prog" may be freed and changed. Return TRUE if there is a match, FALSE if not.
 Boole
-eeRegexec_prog(
-   OUT RegProg** prog,
-   Boole ignore_case,
-   CS line,
-   ColNr   col
-){
-   int      r;
-   RegMatch   regmatch;
-
+eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
+   RegMatch regmatch;
    regmatch.regprog = *prog;
    regmatch.rm_ic = ignore_case;
-   r = eeRegexec_string(&regmatch, line, col, FALSE);
+   int r = eeRegexec_string(&regmatch, line, col, FALSE);
    *prog = regmatch.regprog;
    return r;
 }
@@ -9246,9 +9228,9 @@ eeRegexec_multi(
    RegMultilineMatch *rmp,
    Portal* port, // portal in which to search or NULL
    Book* book,  // book in which to search
-   LineNr   lnum, // nr of line to start looking for match
-   ColNr   col,   // column to start looking for match
-   int      *timed_out // flag is set when timeout limit reached
+   LineNr lnum, // nr of line to start looking for match
+   ColNr col,   // column to start looking for match
+   int* timed_out // flag is set when timeout limit reached
 ){
    int      result;
    Execution   exeSaved;

@@ -7261,10 +7261,6 @@ drawLineOnScreen(
          if (m.fromcol >= 0) {
             c.areaHiliting = true;
             c.visualDeco = getFullDecoration(HLF_V);
-#if defined(FEAT_X11)
-            if ((clipboard.available && !clipboard.owned))
-               c.visualDeco = getFullDecoration(HLF_VNC);
-#endif
          }
       }
       // handle @incsearch and ":s///c" hiliting

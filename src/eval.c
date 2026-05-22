@@ -9356,14 +9356,6 @@ private BuiltinFn globalFunctions[] = {
    {S"reltime",      0, 2, FEARG_1,       &f_reltime},
    {S"reltimefloat",   1, 1, FEARG_1,        &f_reltimefloat},
    {S"reltimestr",   1, 1, FEARG_1,          &f_reltimestr},
-#ifdef FEAT_X11 
-   {S"remote_expr",   2, 4, FEARG_1,         &f_remote_expr},
-   {S"remote_foreground", 1, 1, FEARG_1,       &f_remote_foreground},
-   {S"remote_peek",   1, 2, FEARG_1,           &f_remote_peek},
-   {S"remote_read",   1, 2, FEARG_1,           &f_remote_read},
-   {S"remote_send",   2, 3, FEARG_1,           &f_remote_send},
-   {S"remote_startserver", 1, 1, FEARG_1,        &f_remote_startserver},
-#endif 
    {S"remove",      2, 3, FEARG_1,            &f_remove},
    {S"rename",      2, 2, FEARG_1,         &f_rename},
    {S"repeat",      2, 2, FEARG_1,            &f_repeat},
@@ -9383,10 +9375,6 @@ private BuiltinFn globalFunctions[] = {
    {S"searchpair",   3, 7, 0,          &f_searchpair},
    {S"searchpairpos",   3, 7, 0,      &f_searchpairpos},
    {S"searchpos",   1, 5, FEARG_1,     &f_searchpos},
-#ifdef FEAT_X11 
-   {S"server2client",   2, 2, FEARG_1,     &f_server2client},
-   {S"serverlist",   0, 0, 0,          &f_serverlist},
-#endif 
    {S"setbufline",   3, 3, FEARG_3,     &f_setbufline},
    {S"setbufvar",   3, 3, FEARG_3,         &f_setbufvar},
    {S"setcharpos",   2, 2, FEARG_2,        &f_setcharpos},
@@ -11963,18 +11951,10 @@ f_has(Arr(Var) argvars, Var* returnVar) {
       0
       },
    {"wayland",
-#ifdef FEAT_WAYLAND
       1
-#else
-      0
-#endif
       },
    {"wayland_clipboard",
-#ifdef FEAT_WAYLAND
       1
-#else
-      0
-#endif
       },
    {"wildignore", 1},
    {"wildmenu", 1},
@@ -11984,18 +11964,10 @@ f_has(Arr(Var) argvars, Var* returnVar) {
       },
    {"xim", 0 },
    {"xfontset",
-#ifdef HAVE_X11
-      1
-#else
       0
-#endif
       },
    {"xterm_clipboard",
-#ifdef FEAT_X11
-      1
-#else
       0
-#endif
       },
    {"xterm_save",
 #ifdef FEAT_XTERM_SAVE
@@ -12005,11 +11977,7 @@ f_has(Arr(Var) argvars, Var* returnVar) {
 #endif
       },
    {"X11",
-#if defined(FEAT_X11)
-      1
-#else
       0
-#endif
       },
    {NULL, 0}
    };

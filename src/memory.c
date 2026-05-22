@@ -548,10 +548,6 @@ free_all_mem(void) {
    ResetRedobuff();
    ResetRedobuff();
 
-# if defined(FEAT_X11)
-   eeglFree(serverDelayedStartName);
-# endif
-
    // hilite info
    freeHilites();
 
@@ -670,30 +666,7 @@ mch_total_mem(int special UNUSED) {
 
 void
 mch_free_mem(void){
-# if defined(FEAT_X11)
-   if (clipboard.owned)
-      clip_lose_selection(&clipboard);
-# endif
-# if defined(FEAT_X11)
-   if (xterm_Shell != (Widget)0)
-      XtDestroyWidget(xterm_Shell);
-#  ifndef LESSTIF_VERSION
-   // Lesstif crashes here, lose some memory
-   if (xterm_dpy)
-      XtCloseDisplay(xterm_dpy);
-   if (app_context != (XtAppContext)NULL) {
-      XtDestroyApplicationContext(app_context);
-#   ifdef FEAT_X11
-      x11DisplayG = NULL; // freed by XtDestroyApplicationContext()
-#   endif
-   }
-#  endif
-# endif
-# if defined(FEAT_X11)
-   if (x11DisplayG != NULL && x11DisplayG != xterm_dpy)
-   XCloseDisplay(x11DisplayG);
-# endif
-    EE_CLEAR(signal_stack);
+   EE_CLEAR(signal_stack);
 }
 #endif
 

@@ -7,22 +7,6 @@
 
 #include "eegl.h"
 
-#ifdef FEAT_X11
-
-# ifdef USE_GCOV_FLUSH
-#  if (defined(__GNUC__) \
-       && ((__GNUC__ == 11 && __GNUC_MINOR__ >= 1) || (__GNUC__ >= 12))) \
-         || (defined(__clang__) && (__clang_major__ >= 12))
-extern void __gcov_dump(void);
-extern void __gcov_reset(void);
-#define __gcov_flush() do { __gcov_dump(); __gcov_reset(); } while (0)
-#  else
-extern void __gcov_flush(void);
-#  endif
-# endif
-
-#endif
-
 //{{{the intro screen and version info about the current build
 
 // Vim originated from Stevie version 3.6 (Fish disk 217) by GRWalter (Fred)
@@ -39,25 +23,10 @@ private Byte longVersion[] = EEGL_VERSION_LONG_DATE __DATE__ " " __TIME__ ")";
 private char *(features[]) = {
    "+mouse_sgr",
        // only interesting on Unix systems
-#ifdef FEAT_WAYLAND
    "+wayland",
-#else
-   "-wayland",
-#endif
-#ifdef FEAT_X11
-   "+X11",
-#else
    "-X11",
-#endif
    "+xattr",
-#ifdef FEAT_X11
-   "+xfontset",
-#else
    "-xfontset",
-#endif
-#ifdef FEAT_X11
-   "+xterm_clipboard",
-#endif
 #ifdef FEAT_XTERM_SAVE
    "+xterm_save",
 #else
@@ -392,14 +361,7 @@ main(int argc, char** argv) {
    // Various initializations #1 shared with tests.
    init1(OUT &params);
 
-#ifdef FEAT_X11
-   // Do the client-server stuff, unless "--servername ''" was used.
-   // This may exit Eegl if the command was sent to the server.
-   exec_on_server(OUT &params);
-#endif 
-
-   //Figure out the way to work from the command name argv[0].
-   //"eegldiff" starts diff mode, etc.
+   //Figure out the way to work from the command name argv[0]. "eegldiff" starts diff mode, etc.
    parseCommandName(OUT &params);
 
    // Process command line arguments. File names are put into the global argument list "argListG"
@@ -486,29 +448,6 @@ main(int argc, char** argv) {
 #endif // NO_EEGL_MAIN
 #endif // PROTO
 
-#if defined(FEAT_X11)
-// Restore the state after a fatal X error.
-private void
-xRestoreState(void) {
-   stateG = MODE_NORMAL;
-   VIsual_active = FALSE;
-   gotInterruptG = TRUE;
-   need_wait_return = FALSE;
-   global_busy = FALSE;
-   skip_redraw = FALSE;
-   isRedrawingDisabledG = 0;
-   no_wait_return = 0;
-   vgetcBusyG = 0;
-   emsg_skip = 0;
-   emsg_off = 0;
-   setmouse();
-   termSetMode(TMODE_RAW);
-   starttermcap();
-   scroll_start();
-   redraw_later_clear();
-}
-#endif
-
 // It is defined when NO_EEGL_MAIN is defined, but then it's empty.
 private int
 eeglMain1(void) {
@@ -567,25 +506,12 @@ eeglMain1(void) {
    no_wait_return = FALSE;
    msg_scroll = FALSE;
 
-#ifdef FEAT_X11
-    // Start using the X clipboard
-    {
-   setup_term_clip();
-   TIME_MSG("setup x11 clipboard");
-    }
-
-   // Prepare for being a Eegl server.
-   prepare_server(&params);
-#endif
-
-#ifdef FEAT_WAYLAND
    if (wayland_init_client(wayland_display_name) == OK) {
       TIME_MSG("connected to Wayland display");
 
       if (wayland_cb_init((char*)p_wse) == OK)
          TIME_MSG("setup Wayland clipboard");
    }
-#endif
    //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may 
    //change things that the writing end of the pipe doesn't like, e.g., in case stdin and stderr
    //are the same terminal: "cat | eegl -". Using autocommands here may cause trouble...
@@ -668,26 +594,9 @@ eeglMain1(void) {
          exitEegl(1);
    }
 
-#ifdef FEAT_X11
-   // Temporarily set x_jump_env to here in case there is an X11 IO error,
-   // because x_jump_env is only actually set in mainLoop(), before
-   // exeCommands(). May not be the best solution since commands passed via
-   // the command line can be very broad like sourcing a file, in which case
-   // an X IO error results in the command being partially done. In theory we
-   // could use SETJMP in RealWaitForChar(), but the stack frame for that may
-   // possibly exit and then LONGJMP is called on it.
-   int jump_result = SETJMP(x_jump_env);
-
-   if (jump_result == 0) {
-#endif
       // Execute any "+", "-c" and "-S" arguments.
       if (params.n_commands > 0)
          exeCommands(&params);
-#if defined(FEAT_X11)
-   } else
-      // Restore state and continue just like what mainLoop() does.
-      xRestoreState();
-#endif
 
    // Must come before the may_req_ calls.
    starting = 0;
@@ -919,14 +828,6 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
    Operator oper;      // operator arguments
    Operator* operPrev = currOperatorG; //operator arguments
    currOperatorG = &oper;
-
-#if defined(FEAT_X11)
-   //Setup to catch a terminating error from the X server. Just ignore it, restore the state and 
-   //continue. This might not always work properly, but at least we hopefully don't exit 
-   //unexpectedly when the X server exits while Eegl is running in a console.
-   if (!inCommPort && SETJMP(x_jump_env))
-      xRestoreState();
-#endif
 
    clear_oparg(OUT &oper);
    while (!inCommPort || commPortResultG == 0) {
@@ -1218,25 +1119,6 @@ earlyArgScan(MainParams *params UNUSED) {
    for (i = 1; i < argc; i++) {
       if (STRCMP(argv[i], "--") == 0)
           break;
-# ifdef FEAT_X11
-      ei (caseInsensitiveCompare(argv[i], "-display") == 0 ) {
-          if (i == argc - 1)
-         mainerr_arg_missing((CS)argv[i]);
-          xterm_display = argv[++i];
-      } ei (caseInsensitiveCompare(argv[i], "--servername") == 0) {
-          if (i == argc - 1)
-         mainerr_arg_missing((CS)argv[i]);
-          params->serverName_arg = (CS)argv[++i];
-      } ei (caseInsensitiveCompare(argv[i], "--serverlist") == 0)
-          params->serverArg = TRUE;
-      ei (STRNICMP(argv[i], "--remote", 8) == 0) {
-          params->serverArg = TRUE;
-      } ei (strncmp(argv[i], "-nb", (Unt)3) == 0) {
-          mch_errmsg(_("'-nb' cannot be used: not enabled at compile time\n"));
-          mch_exit(2);
-      }
-
-#endif
    }
 }
 
@@ -1482,15 +1364,8 @@ scanCommandLineArgs(MainParams *params) {
             want_argument = TRUE;
             break;
 
-         case 'X':      // "-X"  don't connect to X server
-#if defined(FEAT_X11)
-            x_no_connect = TRUE;
-#endif
-            break;
          case 'Y':      // "-Y" don't connect to Wayland compositor
-#if defined(FEAT_WAYLAND)
             wayland_no_connect = TRUE;
-#endif
             break;
 
          case 'c':      // "-c{command}" or "-c {command}" execute command
@@ -2098,12 +1973,7 @@ usage(void) {
    main_msg(_("-s <scriptin>\tRead Normal mode commands from file <scriptin>"));
    main_msg(_("-w <scriptout>\tAppend all typed commands to file <scriptout>"));
    main_msg(_("-W <scriptout>\tWrite all typed commands to file <scriptout>"));
-#if defined(FEAT_X11)
-   main_msg(_("-X\t\t\tDo not connect to X server"));
-#endif
-#if defined(FEAT_WAYLAND)
    main_msg(_("-Y\t\t\tDo not connect to Wayland compositor"));
-#endif
    main_msg(_("--remote <files>\tEdit <files> in a Eegl server if possible"));
    main_msg(_("--remote-silent <files>  Same, don't complain if there is no server"));
    main_msg(_("--remote-wait <files>  As --remote but wait for files to have been edited"));

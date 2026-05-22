@@ -4926,19 +4926,19 @@ bookWrite_all(Book *book, int forceit) {
 //}}}
 //{{{command array
 
-private int   quitmore = 0;
-private int   ex_pressedreturn = FALSE;
+private int quitmore = 0;
+private int ex_pressedreturn = FALSE;
 
 private CS doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
-private void   append_command(CS cmd);
+private void append_command(CS cmd);
 
-private void   do_exbuffer(Invocation* invo);
+private void do_exbuffer(Invocation* invo);
 private CS getargcmd(OUT CS*);
-private int   getargopt(Invocation* invo);
+private int getargopt(Invocation* invo);
 
 private LineNr default_address(Invocation* invo);
 private void address_default_all(Invocation* invo);
-private void   get_flags(Invocation* invo);
+private void get_flags(Invocation* invo);
 #define HAVE_EX_SCRIPT_NI
 private void   ex_script_ni(Invocation* invo);
 private CS invalid_range(Invocation* invo);
@@ -4952,7 +4952,6 @@ private void   back_to_current_window(Portal *curPor_save);
 # define ex_syntime      c_ni
 # define ex_loadkeymap   c_ni
 private void   close_redir(void);
-#define ex_loadview      c_ni
 #define ex_diffoff       c_ni
 #define ex_diffpatch     c_ni
 #define ex_diffgetput    c_ni
@@ -4962,13 +4961,6 @@ private void   close_redir(void);
 
 
 #define ex_profile       c_ni
-#define ex_terminal      c_ni
-#if !defined(FEAT_X11)
-#define ex_xrestore      c_ni
-#endif
-#if !defined(FEAT_WAYLAND)
-#define ex_wlrestore     c_ni
-#endif
 
 // Declare the full commands table[].
 #define DO_DECLARE_COMMANDS

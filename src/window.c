@@ -10,1622 +10,12 @@
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 
-//{{{X11
 
-#ifdef FEAT_X11
-
-#include <X11/Intrinsic.h>
-#include <X11/Xatom.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/Intrinsic.h>
-#include <X11/Shell.h>
-#include <X11/StringDefs.h>
-private Widget xterm_Shell = (Widget)0;
-
-//This file provides procedures that implement the command server
-//functionality of Eegl when in contact with an X11 server.
-//
-//Adapted from TCL/TK's send command  in tkSend.c of the tk 3.6 distribution.
-//Adapted for use in Eegl by Flemming Madsen. Protocol changed to that of tk 4
-
-//Copyright (c) 1989-1993 The Regents of the University of California.
-//All rights reserved.
-//
-//Permission is hereby granted, without written agreement and without
-//license or royalty fees, to use, copy, modify, and distribute this
-//software and its documentation for any purpose, provided that the
-//above copyright notice and the following two paragraphs appear in
-//all copies of this software.
-//
-//IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
-//DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
-//OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
-//CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-//THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
-//INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-//AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
-//ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
-//PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-
-
-//When a result is being awaited from a sent command, one of the following structures is present 
-//on a list of all outstanding sent commands.  The information in the structure is used to
-//process the result when it arrives. You're probably wondering how there could ever be multiple 
-//outstanding sent commands. This could happen if Eegl instances invoke each other recursively.
-//It's unlikely, but possible.
-
-typedef struct PendingCommand {
-   int       serial;   // Serial number expected in result.
-   int       code;   // Result Code. 0 is OK
-   Byte  *result;   // String result for command (malloc'ed). NULL means command still pending.
-   struct PendingCommand *nextPtr;
-         // Next in list of all outstanding commands. NULL means end of list.
-} PendingCommand;
-
-private PendingCommand *pendingCommands = NULL; // List of all commands currently being waited for.
-
-//The information below is used for communication between processes
-//during "send" commands.  Each process keeps a private window, never
-//even mapped, with one property, "Comm".  When a command is sent to
-//an interpreter, the command is appended to the comm property of the
-//communication window associated with the interp's process.  Similarly,
-//when a result is returned from a sent command, it is also appended
-//to the comm property.
-//
-//Each command and each result takes the form of ASCII text.  For a
-//command, the text consists of a ZERO character followed by several
-//ZERO-terminated ASCII strings.  The first string consists of a
-//single letter:
-//"c" for an expression
-//"k" for keystrokes
-//"r" for reply
-//"n" for notification.
-//Subsequent strings have the form "option value" where the following options
-//are supported:
-//
-//-r commWindow serial
-//
-//  This option means that a response should be sent to the window
-//  whose X identifier is "commWindow" (in hex), and the response should
-//  be identified with the serial number given by "serial" (in decimal).
-//  If this option isn't specified then the send is asynchronous and
-//  no response is sent.
-//
-//-n name
-//  "Name" gives the name of the application for which the command is
-//  intended.  This option must be present.
-//
-//-E encoding
-//  Encoding name used for the text.  This is the 'encoding' of the
-//  sender.  The receiver may want to do conversion to his 'encoding'.
-//
-//-s script
-//  "Script" is the script to be executed.  This option must be
-//  present.  Taken as a series of keystrokes in a "k" command where
-//  <Key>'s are expanded
-//
-//The options may appear in any order.  The -n and -s options must be
-//present, but -r may be omitted for asynchronous RPCs.  For compatibility
-//with future releases that may add new features, there may be additional
-//options present;  as long as they start with a "-" character, they will
-//be ignored.
-//
-//A result also consists of a zero character followed by several null-
-//terminated ASCII strings.  The first string consists of the single
-//letter "r".  Subsequent strings have the form "option value" where
-//the following options are supported:
-//
-//-s serial
-//  Identifies the command for which this is the result.  It is the
-//  same as the "serial" field from the -s option in the command.  This
-//  option must be present.
-//
-//-r result
-//  "Result" is the result string for the script, which may be either
-//  a result or an error message.  If this field is omitted then it
-//  defaults to an empty string.
-//
-//-c code
-//  0: for OK. This is the default.
-//  1: for error: Result is the last error
-//
-//-i errorInfo
-//-e errorCode
-//  Not applicable for Eegl
-//
-//Options may appear in any order, and only the -s option must be
-//present.  As with commands, there may be additional options besides
-//these;  unknown options are ignored.
-
-//Maximum size property that can be read at one time by this module:
-
-#define MAX_PROP_WORDS 100000
-
-struct ServerReply {
-   Window  id;
-   ArrayList strings;
-};
-private ArrayList serverReply = { 0, 0, 0, 0, 0 };
-enum ServerReplyOp { SROP_Find, SROP_Add, SROP_Delete };
-
-typedef int (*EndCond)(void *);
-
-struct x_cmdqueue {
-   Byte      *propInfo;
-   Ulong      len;
-   struct x_cmdqueue   *next;
-   struct x_cmdqueue   *prev;
-};
-
-typedef struct x_cmdqueue x_queue_T;
-
-// dummy node, header for circular queue
-private x_queue_T head = {NULL, 0, NULL, NULL};
-
-//Forward declarations for procedures defined later in this file:
-
-private Window   lookupName(Display *dpy, CS name, int delete, Byte **loose);
-private int   SendInit(Display *dpy);
-private int   DoRegisterName(Display *dpy, CS name);
-private void   DeleteAnyLingerer(Display *dpy, Window w);
-private int   GetRegProp(Display *dpy, Byte **regPropp, Ulong *numItemsp, int domsg);
-private int   WaitForPend(void *p);
-private int   WindowValid(Display *dpy, Window w);
-private void   ServerWait(Display *dpy, Window w, EndCond endCond, void *endData, int localLoop, int seconds);
-private int   AppendPropCarefully(Display *display, Window window, Atom property, CS value, int length);
-private int   x_error_check(Display *dpy, XErrorEvent *error_event);
-private int   IsSerialName(CS name);
-private void   save_in_queue(CS buf, Ulong len);
-private void   server_parse_message(Display *dpy, CS propInfo, Ulong numItems);
-
-// Private variables for the "server" functionality
-private Atom   registryProperty = None;
-private Atom   eeglProperty = None;
-private int   got_x_error = FALSE;
-
-private Byte   *empty_prop = (CS)"";   // empty GetRegProp() result
-
-//Associate an ASCII name with Eegl. Try real hard to get a unique one. Return FAIL or OK.
-int
-serverRegisterName(
-   Display   *dpy,      // display to register with
-   Byte   *name)      // the name that will be used as a base
-{
-   Byte   *p = NULL;
-
-   int res = DoRegisterName(dpy, name);
-   if (res >= 0)
-      return OK;
-
-   int i = 1;
-   do {
-      if (res < -1 || i >= 1000) {
-         msgDeco(_("Unable to register a command server name"), getDecoFlags(HLF_W));
-         return FAIL;
-      }
-      if (!p)
-         p = alloc(STRLEN(name) + 10);
-      sprintf((char *)p, "%s%d", name, i++);
-      res = DoRegisterName(dpy, p);
-   } while (res < 0);
-   eeglFree(p);
-
-   return OK;
-}
-
-private int
-DoRegisterName(Display *dpy, CS name) {
-   Window   w;
-   XErrorHandler old_handler;
-#define MAX_NAME_LENGTH 100
-   Byte   propInfo[MAX_NAME_LENGTH + 20];
-
-   if (commProperty == None && SendInit(dpy) < 0)
-      return -2;
-
-   //Make sure the name is unique, and append info about it to
-   //the registry property.  It's important to lock the server
-   //here to prevent conflicting changes to the registry property.
-   //WARNING: Do not step through this while debugging, it will hangup the X server!
-   XGrabServer(dpy);
-   w = lookupName(dpy, name, FALSE, NULL);
-   if (w != (Window)0) {
-      Status      status;
-      int      dummyInt;
-      unsigned int   dummyUns;
-      Window      dummyWin;
-
-      //The name is currently registered. See if the commPortal associated with the name exists. 
-      //If not, or if the commPortal is *our* commWindow, then just unregister the old name (this
-      //could happen if an application dies without cleaning up the registry).
-      old_handler = XSetErrorHandler(x_error_check);
-      status = XGetGeometry(dpy, w, &dummyWin, &dummyInt, &dummyInt,
-                 &dummyUns, &dummyUns, &dummyUns, &dummyUns);
-      (void)XSetErrorHandler(old_handler);
-      if (status != Success && w != commWindow) {
-         XUngrabServer(dpy);
-         XFlush(dpy);
-         return -1;
-      }
-      (void)lookupName(dpy, name, /*delete=*/TRUE, NULL);
-   }
-   sprintf((char *)propInfo, "%x %.*s", (Unt)commWindow, MAX_NAME_LENGTH, name);
-   old_handler = XSetErrorHandler(x_error_check);
-   got_x_error = FALSE;
-   XChangeProperty(dpy, RootWindow(dpy, 0), registryProperty, XA_STRING, 8,
-          PropModeAppend, propInfo, STRLEN(propInfo) + 1);
-   XUngrabServer(dpy);
-   XSync(dpy, False);
-   (void)XSetErrorHandler(old_handler);
-
-   if (!got_x_error) {
-      set_EeglVar_string(VV_SEND_SERVER, name, -1);
-      serverName = copyStr(name);
-      return 0;
-   }
-   return -2;
-}
-
-//Send to an instance of Eegl via the X display. Return 0 for OK, negative for an error.
-int
-serverSendToEegl(
-   Display   *dpy,         // Where to send.
-   Byte   *name,         // Where to send.
-   Byte   *cmd,         // What to send.
-   Byte   **result,      // Result of eval'ed expression
-   Window   *server,      // Actual ID of receiving app
-   Boole   asExpr,         // Interpret as keystrokes or expr ?
-   int      timeout,      // seconds to wait or zero
-   Boole   localLoop,      // Throw away everything but result
-   int      silent)         // don't complain about no server
-{
-   Window       w;
-   Byte       *property;
-   int          length;
-   int          res;
-   static int       serial = 0;   // Running count of sent commands.
-            // Used to give each command a different serial number.
-   PendingCommand  pending;
-   Byte       *loosename = NULL;
-
-   if (result)
-      *result = NULL;
-   if (name == NULL || *name == ZERO)
-      name = (CS)"EEGL";    // use a default name
-
-   if (commProperty == None && dpy != NULL && SendInit(dpy) < 0)
-      return -1;
-
-   lo("serverSendToEegl(%s, %s)", name, cmd);
-
-   // Execute locally if no display or target is ourselves
-   if (dpy == NULL || (serverName != NULL && caseInsensitiveCompare(name, serverName) == 0))
-      return sendToLocalEm(cmd, asExpr, result);
-
-   //Bind the server name to a communication window.
-   //
-   //Find any survivor with a serialno attached to the name if the
-   //original registrant of the wanted name is no longer present.
-   //
-   //Delete any lingering names from dead editors.
-   while (TRUE) {
-      w = lookupName(dpy, name, FALSE, &loosename);
-      // Check that the window is hot
-      if (w != None) {
-         if (!WindowValid(dpy, w)) {
-            lookupName(dpy, loosename ? loosename : name, /*DELETE=*/TRUE, NULL);
-            eeglFree(loosename);
-            continue;
-         }
-      }
-      break;
-    }
-   if (w == None) {
-      if (!silent)
-          showErrFmtMsg(_(e_no_registered_server_named_str), name);
-      return -1;
-   } ei (loosename != NULL)
-      name = loosename;
-   if (server)
-      *server = w;
-
-   //Send the command to target interpreter by appending it to the comm portal in the 
-   //communication portal. Length must be computed exactly!
-   length = STRLEN(name) + STRLEN(cmd) + 14;
-   property = alloc(length + 30);
-
-   sprintf((char *)property, "%c%c%c-n %s%c-E %c-s %s",
-            0, asExpr ? 'c' : 'k', 0, name, 0, 0, cmd);
-   if (name == loosename)
-      eeglFree(loosename);
-   // Add a back reference to our comm window
-   serial++;
-   sprintf((char *)property + length, "%c-r %x %d", 0, (Unt)commWindow, serial);
-   // Add length of what "-r %x %d" resulted in, skipping the ZERO.
-   length += STRLEN(property + length + 1) + 1;
-
-   res = AppendPropCarefully(dpy, w, commProperty, property, length + 1);
-   eeglFree(property);
-   if (res < 0) {
-      emsg(_(e_failed_to_send_command_to_destination_program));
-      return -1;
-   }
-
-   if (!asExpr) // There is no answer for this - Keys are sent async
-      return 0;
-
-   //Register the fact that we're waiting for a command to complete (this is needed by 
-   //SendEventProc and by AppendErrorProc to pass back the command's results).
-   pending.serial = serial;
-   pending.code = 0;
-   pending.result = NULL;
-   pending.nextPtr = pendingCommands;
-   pendingCommands = &pending;
-
-   ServerWait(dpy, w, WaitForPend, &pending, localLoop, timeout > 0 ? timeout : 600);
-
-   // Unregister the information about the pending command and return the result.
-   if (pendingCommands == &pending)
-      pendingCommands = pending.nextPtr;
-   else {
-      PendingCommand *pcPtr;
-
-      for (pcPtr = pendingCommands; pcPtr != NULL; pcPtr = pcPtr->nextPtr)
-         if (pcPtr->nextPtr == &pending) {
-            pcPtr->nextPtr = pending.nextPtr;
-            break;
-         }
-   }
-
-   lo("serverSendToEegl() result: %s", pending.result == NULL ? "NULL" : (char *)pending.result);
-   if (result)
-      *result = pending.result;
-   else
-      eeglFree(pending.result);
-
-   return pending.code == 0 ? 0 : -1;
-}
-
-private int
-WaitForPend(void *p) {
-   PendingCommand *pending = (PendingCommand *) p;
-   return pending->result != NULL;
-}
-
-//Return TRUE if window "w" exists and has a "Eegl" property on it.
-private int
-WindowValid(Display *dpy, Window w) {
-   XErrorHandler   old_handler;
-   Atom       *plist;
-   int          numProp;
-   int          i;
-
-   old_handler = XSetErrorHandler(x_error_check);
-   got_x_error = 0;
-   plist = XListProperties(dpy, w, &numProp);
-   XSync(dpy, False);
-   XSetErrorHandler(old_handler);
-   if (plist == NULL || got_x_error)
-      return FALSE;
-
-   for (i = 0; i < numProp; i++) {
-      if (plist[i] == eeglProperty) {
-          XFree(plist);
-          return TRUE;
-      }
-   } 
-   XFree(plist);
-   return FALSE;
-}
-
-// Enter a loop processing X events & polling chars until we see a result
-private void
-ServerWait(
-   Display   *dpy,
-   Window   w,
-   EndCond   endCond,
-   void   *endData,
-   int      localLoop,
-   int      seconds)
-{
-   Tyme       start;
-   Tyme       now;
-   XEvent       event;
-
-#define UI_MSEC_DELAY 53
-#define SEND_MSEC_POLL 500
-   fd_set       fds;
-   FD_ZERO(&fds);
-   FD_SET(ConnectionNumber(dpy), &fds);
-
-   time(&start);
-   while (TRUE) {
-      while (XCheckWindowEvent(dpy, commWindow, PropertyChangeMask, &event))
-          serverEventProc(dpy, &event, 1);
-      server_parse_messages();
-
-      if (endCond(endData) != 0)
-          break;
-      if (!WindowValid(dpy, w))
-          break;
-      time(&now);
-      if (seconds >= 0 && (now - start) >= seconds)
-          break;
-
-      check_due_timer();
-
-      // Just look out for the answer without calling back into Eegl
-      if (localLoop) {
-         TimeVal  tv;
-
-         // Set the time every call, select() may change it to the remaining time.
-         tv.tv_sec = 0;
-         tv.tv_usec =  SEND_MSEC_POLL * 1000;
-         if (select(FD_SETSIZE, &fds, NULL, NULL, &tv) < 0)
-            break;
-      } else {
-         if (gotInterruptG)
-            break;
-         ui_delay((long)UI_MSEC_DELAY, TRUE);
-         ui_breakcheck();
-      }
-   }
-}
-
-
-//Fetch a list of all the Eegl instance names currently registered for the display.
-//
-//Return a newline separated list in allocated memory or NULL.
-CS
-serverGetEeglNames(Display *dpy) {
-   Byte   *regProp;
-   Byte   *entry;
-   Ulong   numItems;
-   Unt   w;
-   ArrayList   ga;
-
-   if (registryProperty == None && SendInit(dpy) < 0)
-      return NULL;
-
-   //Read the registry property.
-   if (GetRegProp(dpy, &regProp, &numItems, TRUE) == FAIL)
-      return NULL;
-
-   //Scan all of the names out of the property.
-   ga_init2(&ga, 1, 100);
-   for (CS p = regProp; (Ulong)(p - regProp) < numItems; p++) {
-      entry = p;
-      while (*p != 0 && !SAFE_isspace(*p))
-         p++;
-      if (*p != 0) {
-         w = None;
-         sscanf((char *)entry, "%x", &w);
-         if (WindowValid(dpy, (Window)w)) {
-            ga_concat(&ga, p + 1);
-            ga_concat(&ga, (CS)"\n");
-         }
-         while (*p != 0)
-            p++;
-      }
-   }
-   if (regProp != empty_prop)
-      XFree(regProp);
-   ga_append(&ga, ZERO);
-   return ga.c;
-}
-
-/////////////////////////////////////////////////////////////
-// Reply stuff
-
-private struct ServerReply *
-ServerReplyFind(Window w, enum ServerReplyOp op) {
-   struct ServerReply *p;
-   struct ServerReply e;
-   int      i;
-
-   p = (struct ServerReply *) serverReply.c;
-   for (i = 0; i < serverReply.len; i++, p++) {
-      if (p->id == w)
-          break;
-   } 
-   if (i >= serverReply.len)
-      p = NULL;
-
-   if (p == NULL && op == SROP_Add) {
-      if (serverReply.ga_growsize == 0)
-          ga_init2(&serverReply, sizeof(struct ServerReply), 1);
-      if (ga_grow(&serverReply, 1) == OK) {
-          p = ((struct ServerReply *) serverReply.c) + serverReply.len;
-          e.id = w;
-          ga_init2(&e.strings, 1, 100);
-          mch_memmove(p, &e, sizeof(e));
-          serverReply.len++;
-      }
-   } ei (p != NULL && op == SROP_Delete) {
-      ga_clear(&p->strings);
-      mch_memmove(p, p + 1, (serverReply.len - i - 1) * sizeof(*p));
-      serverReply.len--;
-   }
-
-   return p;
-}
-
-//Convert string to windowid. Issue an error if the id is invalid.
-Window
-serverStrToWin(CS str) {
-   unsigned  id = None;
-   sscanf((char *)str, "0x%x", &id);
-   if (id == None)
-      showErrFmtMsg(_(e_invalid_server_id_used_str), str);
-   return (Window)id;
-}
-
-//Send a reply string (notification) to client with id "name". Return -1 if the window is invalid
-int
-serverSendReply(Byte *name, Byte *str) {
-   Byte   *property;
-   int      res;
-   Display   *dpy = X_DISPLAY;
-   Window   win = serverStrToWin(name);
-
-   if (commProperty == None && SendInit(dpy) < 0)
-      return -2;
-   if (!WindowValid(dpy, win))
-      return -1;
-
-   int length = STRLEN(str) + 14;
-   property = alloc(length + 30);
-
-   sprintf((char *)property, "%cn%c-E %c-n %s%c-w %x", 0, 0, 0, str, 0, (unsigned int)commWindow);
-   // Add length of what "%x" resulted in.
-   length += STRLEN(property + length);
-   res = AppendPropCarefully(dpy, win, commProperty, property, length + 1);
-   eeglFree(property);
-
-   return res;
-}
-
-private int
-WaitForReply(void *p) {
-   Window  *w = (Window *) p;
-   return ServerReplyFind(*w, SROP_Find) != NULL;
-}
-
-//Wait for replies from id (win)
-//When "timeout" is non-zero wait up to this many seconds.
-//Return 0 and the allocated string in "*str" when a reply is available.
-//Return -1 if the window becomes invalid while waiting.
-int
-serverReadReply(
-   Display   *dpy,
-   Window   win,
-   Byte   **str,
-   int      localLoop,
-   int      timeout)
-{
-   int      len;
-   Byte   *s;
-   struct   ServerReply *p;
-
-   ServerWait(dpy, win, WaitForReply, &win, localLoop, timeout > 0 ? timeout : -1);
-
-   if ((p = ServerReplyFind(win, SROP_Find)) != NULL && p->strings.len > 0) {
-      *str = copyStr(p->strings.c);
-      len = STRLEN(*str) + 1;
-      if (len < p->strings.len) {
-          s = (CS) p->strings.c;
-          mch_memmove(s, s + len, p->strings.len - len);
-          p->strings.len -= len;
-      } else {
-          // Last string read.  Remove from list
-          ga_clear(&p->strings);
-          ServerReplyFind(win, SROP_Delete);
-      }
-      return 0;
-    }
-    return -1;
-}
-
-//Check for replies from id (win).
-//Return TRUE and a non-malloc'ed string if there is.  Else return FALSE.
-int
-serverPeekReply(Display *dpy, Window win, Byte **str) {
-   struct ServerReply *p;
-
-   if ((p = ServerReplyFind(win, SROP_Find)) != NULL && p->strings.len > 0) {
-      if (str)
-         *str = p->strings.c;
-      return 1;
-   }
-   if (!WindowValid(dpy, win))
-      return -1;
-   return 0;
-}
-
-
-//Initialize the communication channels for sending commands and receiving results.
-private int
-SendInit(Display *dpy) {
-   XErrorHandler old_handler;
-
-   //Create the window used for communication, and set up an event handler for it.
-   old_handler = XSetErrorHandler(&x_error_check);
-   got_x_error = FALSE;
-
-   if (commProperty == None)
-      commProperty = XInternAtom(dpy, "Comm", False);
-   if (eeglProperty == None)
-      eeglProperty = XInternAtom(dpy, "Eegl", False);
-   if (registryProperty == None)
-      registryProperty = XInternAtom(dpy, "EeglRegistry", False);
-
-   if (commWindow == None) {
-      commWindow = XCreateSimpleWindow(dpy, XDefaultRootWindow(dpy),
-               getpid(), 0, 10, 10, 0,
-               WhitePixel(dpy, DefaultScreen(dpy)),
-               WhitePixel(dpy, DefaultScreen(dpy)));
-      XSelectInput(dpy, commWindow, PropertyChangeMask);
-      // WARNING: Do not step through this while debugging, it will hangup the X server!
-      XGrabServer(dpy);
-      DeleteAnyLingerer(dpy, commWindow);
-      XUngrabServer(dpy);
-   }
-
-   // Make window recognizable as an Eegl window
-   XChangeProperty(dpy, commWindow, eeglProperty, XA_STRING,
-          8, PropModeReplace, (CS)EEGL_VERSION_SHORT,
-         (int)STRLEN(EEGL_VERSION_SHORT) + 1);
-
-   XSync(dpy, False);
-   (void)XSetErrorHandler(old_handler);
-
-   return got_x_error ? -1 : 0;
-}
-
-//Given a server name, see if the name exists in the registry for a particular display.
-//
-//If the given name is registered, return the ID of the window associated
-//with the name. If the name isn't registered, then return 0.
-//
-//Side effects:
-//  If the registry property is improperly formed, then it is deleted.
-//  If "delete" is non-zero, then if the named server is found it is
-//  removed from the registry property.
-private Window
-lookupName(
-    Display   *dpy,      // Display whose registry to check.
-    CS name,      // Name of a server.
-    int delete,   // If non-zero, delete info about name.
-    Byte** loose    // Do another search matching -999 if not found
-                    // Return result here if a match is found
-){
-    Byte   *regProp, *entry;
-    Byte   *p;
-    Ulong   numItems;
-    Unt   returnValue;
-
-   //Read the registry property.
-   if (GetRegProp(dpy, &regProp, &numItems, FALSE) == FAIL)
-      return 0;
-
-   //Scan the property for the desired name.
-   returnValue = (Unt)None;
-   entry = NULL;   // Not needed, but eliminates compiler warning.
-   for (p = regProp; (Ulong)(p - regProp) < numItems; ) {
-      entry = p;
-      while (*p != 0 && !SAFE_isspace(*p))
-         p++;
-      if (*p != 0 && caseInsensitiveCompare(name, p + 1) == 0) {
-         sscanf((char *)entry, "%x", &returnValue);
-         break;
-      }
-      while (*p != 0)
-         p++;
-      p++;
-   }
-
-   if (loose != NULL && returnValue == (Unt)None && !IsSerialName(name)) {
-      for (p = regProp; (Ulong)(p - regProp) < numItems; ) {
-         entry = p;
-         while (*p != 0 && !SAFE_isspace(*p))
-            p++;
-         if (*p != 0 && IsSerialName(p + 1) && STRNICMP(name, p + 1, STRLEN(name)) == 0) {
-            sscanf((char *)entry, "%x", &returnValue);
-            *loose = copyStr(p + 1);
-            break;
-         }
-         while (*p != 0)
-            p++;
-         p++;
-      }
-   }
-
-   //Delete the property, if that is desired (copy down the
-   //remainder of the registry property to overlay the deleted info, then rewrite the property).
-   if (delete && returnValue != (Unt)None) {
-      int count;
-
-      while (*p != 0)
-         p++;
-      p++;
-      count = numItems - (p - regProp);
-      if (count > 0)
-         mch_memmove(entry, p, count);
-      XChangeProperty(dpy, RootWindow(dpy, 0), registryProperty, XA_STRING,
-           8, PropModeReplace, regProp,
-           (int)(numItems - (p - entry)));
-      XSync(dpy, False);
-   }
-
-   if (regProp != empty_prop)
-      XFree(regProp);
-   return (Window)returnValue;
-}
-
-//Delete any lingering occurrence of window id.  We promise that any
-//occurrence is not ours since it is not yet put into the registry (by us)
-//
-//This is necessary in the following scenario:
-//1. There is an old windowid for an exited Eegl in the registry
-//2. We get that id for our commWindow but only want to send, not register.
-//3. The window will mistakenly be regarded valid because of own commWindow
-private void
-DeleteAnyLingerer(
-   Display   *dpy,   // Display whose registry to check.
-   Window   win)   // Window to remove
-{
-   Byte   *regProp, *entry = NULL;
-   Byte   *p;
-   Ulong   numItems;
-   Unt   wwin;
-
-   //Read the registry property.
-   if (GetRegProp(dpy, &regProp, &numItems, FALSE) == FAIL) return;
-
-   // Scan the property for the window id.
-   for (p = regProp; (Ulong)(p - regProp) < numItems; ) {
-      if (*p != 0) {
-         sscanf((char *)p, "%x", &wwin);
-         if ((Window)wwin == win) {
-               int lastHalf;
-
-            // Copy down the remainder to delete entry
-            entry = p;
-            while (*p != 0)
-               p++;
-            p++;
-            lastHalf = numItems - (p - regProp);
-            if (lastHalf > 0)
-               mch_memmove(entry, p, lastHalf);
-            numItems = (entry - regProp) + lastHalf;
-            p = entry;
-            continue;
-         }
-      }
-      while (*p != 0)
-         p++;
-      p++;
-   }
-
-   if (entry) {
-      XChangeProperty(dpy, RootWindow(dpy, 0), registryProperty,
-            XA_STRING, 8, PropModeReplace, regProp,
-            (int)(p - regProp));
-      XSync(dpy, False);
-   }
-
-   if (regProp != empty_prop)
-      XFree(regProp);
-}
-
-//Read the registry property.  Delete it when it's formatted wrong.
-//Return the property in "regPropp".  "empty_prop" is used when it doesn't exist yet.
-//Return OK when successful.
-private int
-GetRegProp(
-   Display   *dpy,
-   Byte   **regPropp,
-   Ulong   *numItemsp,
-   int      domsg)      // When TRUE give error message.
-{
-   int      result, actualFormat;
-   Ulong   bytesAfter;
-   Atom   actualType;
-   XErrorHandler old_handler;
-
-   *regPropp = NULL;
-   old_handler = XSetErrorHandler(&x_error_check);
-   got_x_error = FALSE;
-
-   result = XGetWindowProperty(dpy, RootWindow(dpy, 0), registryProperty, 0L,
-            (long)MAX_PROP_WORDS, False,
-            XA_STRING, &actualType,
-            &actualFormat, numItemsp, &bytesAfter,
-            regPropp);
-
-   XSync(dpy, FALSE);
-   (void)XSetErrorHandler(old_handler);
-   if (got_x_error)
-      return FAIL;
-
-   if (actualType == None) {
-      // No prop yet. Logically equal to the empty list
-      *numItemsp = 0;
-      *regPropp = empty_prop;
-      return OK;
-   }
-
-   // If the property is improperly formed, then delete it.
-   if (result != Success || actualFormat != 8 || actualType != XA_STRING) {
-      if (*regPropp != NULL)
-         XFree(*regPropp);
-      XDeleteProperty(dpy, RootWindow(dpy, 0), registryProperty);
-      if (domsg)
-         emsg(_(e_eegl_instance_registry_property_is_badly_formed_deleted));
-      return FAIL;
-   }
-   return OK;
-}
-
-
-//This procedure is invoked by the various X event loops throughout Eegls when a property changes 
-//on the communication window.  This procedure reads the property and enqueues command requests 
-//and responses. If immediate is true, it runs the event immediately instead of enqueuing it. 
-//Immediate can cause unintended behavior and should only be used for code that blocks for a 
-//response.
-void
-serverEventProc(
-   Display   *dpy,
-   XEvent   *eventPtr,   // Information about event.
-   int      immediate)   // Run event immediately. Should mostly be 0.
-{
-   Byte   *propInfo;
-   int      result, actualFormat;
-   Ulong   numItems, bytesAfter;
-   Atom   actualType;
-
-   if (eventPtr 
-      && (eventPtr->xproperty.atom != commProperty 
-         || eventPtr->xproperty.state != PropertyNewValue)
-   )
-      return;
-
-   //Read the comm property and delete it.
-   propInfo = NULL;
-   result = XGetWindowProperty(dpy, commWindow, commProperty, 0L,
-            (long)MAX_PROP_WORDS, True,
-            XA_STRING, &actualType,
-            &actualFormat, &numItems, &bytesAfter,
-            &propInfo);
-
-   // If the property doesn't exist or is improperly formed then ignore it.
-   if (result != Success || actualType != XA_STRING || actualFormat != 8) {
-      if (propInfo != NULL)
-          XFree(propInfo);
-      return;
-   }
-   if (immediate)
-      server_parse_message(dpy, propInfo, numItems);
-   else
-      save_in_queue(propInfo, numItems);
-}
-
-// Save X clientserver commands in a queue so that they can be called when Eegl is idle.
-private void
-save_in_queue(Byte *propInfo, Ulong len) {
-   x_queue_T* node = ALLOC_ONE(x_queue_T);
-   node->propInfo = propInfo;
-   node->len = len;
-
-   if (head.next == NULL)  { // initialize circular queue
-      head.next = &head;
-      head.prev = &head;
-   }
-
-   // insert node at tail of queue
-   node->next = &head;
-   node->prev = head.prev;
-   head.prev->next = node;
-   head.prev = node;
-}
-
-//Parses queued clientserver messages.
-void
-server_parse_messages(void) {
-   x_queue_T   *node;
-
-   if (!X_DISPLAY)
-      return; // cannot happen?
-   while (head.next != NULL && head.next != &head) {
-      node = head.next;
-      head.next = node->next;
-      node->next->prev = node->prev;
-      server_parse_message(X_DISPLAY, node->propInfo, node->len);
-      eeglFree(node);
-   }
-}
-
-//Returns a non-zero value if there are clientserver messages waiting int the queue.
-int
-server_waiting(void) {
-   return head.next != NULL && head.next != &head;
-}
-
-//Prases a single clientserver message. A single message may contain multiple commands.
-//"propInfo" will be freed.
-private void
-server_parse_message(
-   Display   *dpy,
-   Byte   *propInfo, // A string containing 0 or more X commands
-   Ulong   numItems)  // The size of propInfo in bytes.
-{
-   Byte   *p;
-   int      code;
-
-   lo("server_parse_message() numItems: %ld", numItems);
-
-   // Several commands and results could arrive in the property at
-   // one time;  each iteration through the outer loop handles a single command or result.
-   for (p = propInfo; (Ulong)(p - propInfo) < numItems; ) {
-      // Ignore leading NULs; each command or result starts with a
-      // ZERO so that no matter how badly formed a preceding command
-      // is, we'll be able to tell that a new command/result is starting.
-      if (*p == 0) {
-          p++;
-          continue;
-      }
-
-      if ((*p == 'c' || *p == 'k') && p[1] == 0) {
-         Window   resWindow;
-         Byte   *name, *script, *serial, *end;
-         Boole   asKeys = *p == 'k';
-
-         // This is an incoming command from some other application.
-         // Iterate over all of its options.  Stop when we reach
-         // the end of the property or something that doesn't look like an option.
-         p += 2;
-         name = NULL;
-         resWindow = None;
-         serial = (CS)"";
-         script = NULL;
-         while ((Ulong)(p - propInfo) < numItems && *p == '-') {
-            lo("server_parse_message() item: %c, %s", p[-2], p);
-            switch (p[1]) {
-             case 'r':
-               end = skipwhite(p + 2);
-               resWindow = 0;
-               while (eeIsXDigit(*end)) {
-                   resWindow = 16 * resWindow + (Ulong)hex2nr(*end);
-                   ++end;
-               }
-               if (end == p + 2 || *end != ' ')
-                   resWindow = None;
-               else {
-                   p = serial = end + 1;
-                   clientWindow = resWindow; // Remember in global
-               }
-               break;
-            case 'n':
-               if (p[2] == ' ')
-                   name = p + 3;
-               break;
-            case 's':
-               if (p[2] == ' ')
-                   script = p + 3;
-               break;
-            case 'E':
-               break;
-            }
-            while (*p != 0)
-                p++;
-            p++;
-         }
-
-         if (script == NULL || name == NULL)
-            continue;
-
-         if (serverName != NULL && caseInsensitiveCompare(name, serverName) == 0) {
-            if (asKeys)
-               server_to_input_buf(script);
-            else {
-               Byte      *res;
-               res = eval_client_expr_to_string(script);
-               if (resWindow != None) {
-                  ArrayList    reply;
-
-                  // Initialize the result property.
-                  ga_init2(&reply, 1, 100);
-                  (void)ga_grow(&reply, 50);
-                  sprintf(reply.c, "%cr%c-E %c-s %s%c-r ", 0, 0, 0, serial, 0);
-                  reply.len = 14 + STRLEN(serial);
-
-                  // Evaluate the expression and return the result.
-                  if (res)
-                     ga_concat(&reply, res);
-                  else {
-                     ga_concat(&reply, (CS)_(e_invalid_expression_received));
-                     ga_append(&reply, 0);
-                     ga_concat(&reply, (CS)"-c 1");
-                  }
-                  ga_append(&reply, ZERO);
-                  (void)AppendPropCarefully(dpy, resWindow, commProperty, reply.c, reply.len);
-                  ga_clear(&reply);
-               }
-               eeglFree(res);
-            }
-         }
-      } ei (*p == 'r' && p[1] == 0) {
-         int          serial, gotSerial;
-         Byte       *res;
-         PendingCommand  *pcPtr;
-
-         // This is a reply to some command that we sent out.  Iterate
-         // over all of its options.  Stop when we reach the end of the
-         // property or something that doesn't look like an option.
-         p += 2;
-         gotSerial = 0;
-         res = (CS)"";
-         code = 0;
-         while ((Ulong)(p - propInfo) < numItems && *p == '-') {
-         switch (p[1]) {
-         case 'r':
-            if (p[2] == ' ')
-               res = p + 3;
-            break;
-         case 'E':
-            break;
-         case 's':
-            if (sscanf((char *)p + 2, " %d", &serial) == 1)
-               gotSerial = 1;
-            break;
-         case 'c':
-            if (sscanf((char *)p + 2, " %d", &code) != 1)
-               code = 0;
-            break;
-         }
-         while (*p != 0)
-             p++;
-         p++;
-         }
-
-         if (!gotSerial)
-            continue;
-
-         // Give the result information to anyone who's waiting for it.
-         for (pcPtr = pendingCommands; pcPtr != NULL; pcPtr = pcPtr->nextPtr) {
-            if (serial != pcPtr->serial || pcPtr->result != NULL)
-                continue;
-
-            pcPtr->code = code;
-            res = copyStr(res);
-            pcPtr->result = res;
-            break;
-         }
-      } ei (*p == 'n' && p[1] == 0) {
-         Window   win = 0;
-         unsigned int u;
-         int      gotWindow;
-         Byte   *str;
-         struct   ServerReply *r;
-
-         //This is a (n)otification. Sent with serverreply_send in Vimscript. 
-         //Execute any autocommand and save it for later retrieval
-         p += 2;
-         gotWindow = 0;
-         str = (CS)"";
-         while ((Ulong)(p - propInfo) < numItems && *p == '-') {
-            switch (p[1]) {
-            case 'n':
-               if (p[2] == ' ')
-                  str = p + 3;
-               break;
-            case 'E':
-               break;
-            case 'w':
-               if (sscanf((char *)p + 2, " %x", &u) == 1) {
-                  win = u;
-                  gotWindow = 1;
-               }
-               break;
-            }
-            while (*p != 0)
-               p++;
-            p++;
-         }
-
-         if (!gotWindow)
-            continue;
-         if ((r = ServerReplyFind(win, SROP_Add)) != NULL) {
-            ga_concat(&(r->strings), str);
-            ga_append(&(r->strings), ZERO);
-         }
-         Byte   winstr[30];
-
-         sprintf((char *)winstr, "0x%x", (unsigned int)win);
-         applyAutocomms(EVENT_REMOTEREPLY, winstr, str, TRUE, curBook);
-      } else {
-         //Didn't recognize this thing. Just skip through the next null character and try again.
-         //Even if we get an 'r'(eply) we will throw it away as we never specify (and thus expect) 
-         //one
-         while (*p != 0)
-            p++;
-         p++;
-      }
-    }
-    XFree(propInfo);
-}
-
-// Append a given property to a given window, but set up an X error handler so that if the append 
-// fails this procedure can return an error code rather than having Xlib panic. Return: 0 for OK, 
-// -1 for error
-private int
-AppendPropCarefully(
-   Display* dpy,    // Display on which to operate.
-   Window window,   // Window whose property is to be modified.
-   Atom property,   // Name of property.
-   CS value,     // Characters  to append to property.
-   int length   // How much to append
-){
-   XErrorHandler old_handler;
-
-   old_handler = XSetErrorHandler(&x_error_check);
-   got_x_error = FALSE;
-   XChangeProperty(dpy, window, property, XA_STRING, 8, PropModeAppend, value, length);
-   XSync(dpy, False);
-   (void) XSetErrorHandler(old_handler);
-   return got_x_error ? -1 : 0;
-}
-
-
-// Another X Error handler, just used to check for errors.
-private int
-x_error_check(Display *dpy UNUSED, XErrorEvent *error_event UNUSED) {
-   got_x_error = TRUE;
-   return 0;
-}
-
-// Check if "str" looks like it had a serial number appended.
-// Actually just checks if the name ends in a digit.
-private int
-IsSerialName(Byte *str) {
-   int len = STRLEN(str);
-
-   return (len > 1 && eeIsDigit(str[len - 1]));
-}
-
-# if defined(ELAPSED_TIMEVAL)
-
-//Give a message about the elapsed time for opening the X window.
-private void
-xopen_message(long elapsed_msec) {
-   smsg(_("Opening the X display took %ld msec"), elapsed_msec);
-}
-# endif
-
-//A few functions shared by X11 title and clipboard code.
-
-//X Error handler, otherwise X just exits!  (very rude) -- webb
-//private int
-//x_error_handler(Display *dpy, XErrorEvent *error_event) {
-//   XGetErrorText(dpy, error_event->error_code, (char *)IObuff, IOSIZE);
-//   STRCAT(IObuff, _("\nEegl: Got X error\n"));
-//
-//   // In the GUI we cannot print a message and continue, because no X calls
-//   // are allowed here (causes my system to hang).  Silently continuing seems
-//   // like the best alternative.  Do preserve files, in case we crash.
-//   ml_sync_all(FALSE, FALSE);
-//
-//   msg((char *)IObuff);
-//   return 0;      // NOTREACHED
-//}
-
-// Return TRUE when connection to the X server is desired.
-private int
-x_connect_to_server(void) {
-   // No point in connecting if we are exiting or dying.
-   if (exiting || v_dying)
-      return FALSE;
-
-   if (x_force_connect)
-      return TRUE;
-   if (x_no_connect)
-      return FALSE;
-   return TRUE;
-}
-
-# ifdef USING_SETJMP
-// An X IO Error handler, used to catch error while opening the display.
-private int
-x_IOerror_check(Display *dpy UNUSED){
-   // This function should not return, it causes exit().  Longjump instead.
-   LONGJMP(lc_jump_env, 1);
-}
-#endif
-
-// An X IO Error handler, used to catch terminal errors.
-static int xterm_dpy_retry_count = 0;
-
-private int
-x_IOerror_handler(Display *dpy UNUSED) {
-   xterm_dpy = NULL;
-   xterm_dpy_retry_count = 5;  // Try reconnecting five times
-   x11WindowG = 0;
-   x11DisplayG = NULL;
-   xterm_Shell = (Widget)0;
-
-   // This function should not return, it causes exit().  Longjump instead.
-   LONGJMP(x_jump_env, 1);
-}
-
-//If the X11 connection was lost try to restore it.
-//Help when the X11 server was stopped and restarted while Eegl was inactive (e.g. through tmux).
-void
-may_restore_x11_clipboard(void) {
-   // No point in restoring the connecting if we are exiting or dying.
-   if (!exiting && !v_dying && xterm_dpy_retry_count > 0) {
-      --xterm_dpy_retry_count;
-
-# ifndef LESSTIF_VERSION
-      // This has been reported to avoid Eegl getting stuck.
-      if (app_context != (XtAppContext)NULL) {
-         XtDestroyApplicationContext(app_context);
-         app_context = (XtAppContext)NULL;
-         x11DisplayG = NULL; // freed by XtDestroyApplicationContext()
-      }
-# endif
-
-      setup_term_clip();
-   }
-}
-
-void
-c_xrestore(Invocation *invo){
-   Unt  arglen;
-
-   if (invo->arg != NULL && (arglen = STRLEN(invo->arg)) > 0) {
-      if (xterm_display_allocated)
-          eeglFree(xterm_display);
-      xterm_display = (char *)copySubstr(invo->arg, arglen);
-      xterm_display_allocated = TRUE;
-   }
-   smsg(_("restoring X11 display %s"), xterm_display == NULL
-          ? (char *)mch_getenv((CS)"DISPLAY") : xterm_display);
-
-   clear_xterm_clip();
-   x11WindowG = 0;
-   xterm_dpy_retry_count = 5;  // Try reconnecting five times
-   may_restore_x11_clipboard();
-}
-
-//Test if "dpy" and x11WindowG are valid by getting the window title.
-//I don't actually want it yet, so there may be a simpler call to use, but
-//this will cause the error handler x_error_check() to be called if anything
-//is wrong, such as the window pointer being invalid (as can happen when the
-//user changes his DISPLAY, but not his WINDOWID) -- webb
-private int
-test_x11WindowG(Display *dpy) {
-   int         (*old_handler)(Display*, XErrorEvent*);
-   XTextProperty   text_prop;
-
-   old_handler = XSetErrorHandler(x_error_check);
-   got_x_error = FALSE;
-   if (XGetWMName(dpy, x11WindowG, &text_prop))
-      XFree((void *)text_prop.value);
-   XSync(dpy, False);
-   (void)XSetErrorHandler(old_handler);
-
-   if (p_verbose > 0 && got_x_error)
-      verb_msg(_("Testing the X display failed"));
-
-   return (got_x_error ? FAIL : OK);
-}
-
-#endif
-
-
-#if defined(FEAT_X11) || defined(PROTO)
-
-private int   xterm_trace = -1;   // default: disabled
-private int   xterm_button;
-
-Boole
-isXtermShellDefined() {
-   return xterm_Shell != (Widget)0;
-}
-
-// Setup a dummy window for X selections in a terminal.
-void
-setup_term_clip(void){
-   int      z = 0;
-   char   *strp = "";
-   Widget   AppShell;
-
-   if (!x_connect_to_server())
-      return;
-
-   open_app_context();
-   if (app_context && xterm_Shell == (Widget)0) {
-      int (*oldhandler)(Display*, XErrorEvent*);
-# if defined(USING_SETJMP)
-      int (*oldIOhandler)(Display*);
-# endif
-      Elapsed start_tv;
-
-      if (p_verbose > 0)
-          ELAPSED_INIT(start_tv);
-
-      // Ignore X errors while opening the display
-      oldhandler = XSetErrorHandler(x_error_check);
-
-# if defined(USING_SETJMP)
-      // Ignore X IO errors while opening the display
-      oldIOhandler = XSetIOErrorHandler(x_IOerror_check);
-      mch_startjmp();
-      if (SETJMP(lc_jump_env) != 0) {
-         mch_didjmp();
-         xterm_dpy = NULL;
-      } else
-# endif
-      {
-         xterm_dpy = XtOpenDisplay(app_context, xterm_display,
-             "eegl_xterm", "Eegl_xterm", NULL, 0, &z, &strp);
-         if (xterm_dpy != NULL)
-            xterm_dpy_retry_count = 0;
-# if defined(USING_SETJMP)
-          mch_endjmp();
-# endif
-      }
-
-# if defined(USING_SETJMP)
-      // Now handle X IO errors normally.
-      (void)XSetIOErrorHandler(oldIOhandler);
-# endif
-      // Now handle X errors normally.
-      (void)XSetErrorHandler(oldhandler);
-
-      if (xterm_dpy == NULL) {
-         if (p_verbose > 0)
-            verb_msg(_("Opening the X display failed"));
-         return;
-      }
-
-      // Catch terminating error of the X server connection.
-      (void)XSetIOErrorHandler(x_IOerror_handler);
-
-      if (p_verbose > 0) {
-         verbose_enter();
-         xopen_message(ELAPSED_FUNC(start_tv));
-         verbose_leave();
-      }
-
-      // Create a Shell to make converters work.
-      AppShell = XtVaAppCreateShell("eegl_xterm", "eegl_xterm",
-         applicationShellWidgetClass, xterm_dpy,
-         NULL);
-      if (AppShell == (Widget)0)
-          return;
-      xterm_Shell = XtVaCreatePopupShell("EEGL",
-         topLevelShellWidgetClass, AppShell,
-         XtNmappedWhenManaged, 0,
-         XtNwidth, 1,
-         XtNheight, 1,
-         NULL);
-      if (xterm_Shell == (Widget)0)
-         return;
-
-      x11_setup_atoms(xterm_dpy);
-      x11_setup_selection(xterm_Shell);
-      if (x11DisplayG == NULL)
-         x11DisplayG = xterm_dpy;
-
-      XtRealizeWidget(xterm_Shell);
-      XSync(xterm_dpy, False);
-      xterm_update();
-   }
-   if (isXtermShellDefined()) {
-      clip_init(TRUE);
-      if (x11WindowG == 0 && (strp = getenv("WINDOWID")) != NULL)
-         x11WindowG = (Window)atol(strp);
-      // Check if $WINDOWID is valid.
-      if (test_x11WindowG(xterm_dpy) == FAIL)
-         x11WindowG = 0;
-      if (x11WindowG != 0)
-         xterm_trace = 0;
-   }
-}
-
-//Query the xterm pointer and generate mouse termcodes if necessary.
-//return TRUE if dragging is active, else FALSE
-private int
-do_xterm_trace(void) {
-   Window      root, child;
-   int         root_x, root_y;
-   int         win_x, win_y;
-   int         row, col;
-   Unt      mask_return;
-   Byte      buf[50];
-   Byte      *strp;
-   long      got_hints;
-   static Byte   *mouse_code = NULL;
-   static Unt   mouse_codelen = 0;
-   static Byte   mouse_name[2] = {KS_MOUSE, KE_FILLER};
-   static int      prev_row = 0, prev_col = 0;
-   static XSizeHints   xterm_hints;
-
-   if (xterm_trace <= 0)
-      return FALSE;
-
-   if (xterm_trace == 1) {
-      // Get the hints just before tracking starts.  The font size might
-      // have changed recently.
-      if (!XGetWMNormalHints(xterm_dpy, x11WindowG, &xterm_hints, &got_hints)
-         || !(got_hints & PResizeInc)
-         || xterm_hints.width_inc <= 1
-         || xterm_hints.height_inc <= 1)
-      {
-          xterm_trace = -1;  // Not enough data -- disable tracing
-          return FALSE;
-      }
-
-      // Rely on the same mouse code for the duration of this
-      mouse_code = find_termcode(mouse_name);
-      if (mouse_code != NULL)
-          mouse_codelen = STRLEN(mouse_code);
-      prev_row = mouseRowG;
-      prev_col = mouseColG;
-      xterm_trace = 2;
-
-      // Find the offset of the chars, there might be a scrollbar on the
-      // left of the window and/or a menu on the top (eterm etc.)
-      XQueryPointer(xterm_dpy, x11WindowG, &root, &child, &root_x, &root_y,
-               &win_x, &win_y, &mask_return);
-      xterm_hints.y = win_y - (xterm_hints.height_inc * mouseRowG)
-                  - (xterm_hints.height_inc / 2);
-      if (xterm_hints.y <= xterm_hints.height_inc / 2)
-          xterm_hints.y = 2;
-      xterm_hints.x = win_x - (xterm_hints.width_inc * mouseColG)
-                  - (xterm_hints.width_inc / 2);
-      if (xterm_hints.x <= xterm_hints.width_inc / 2)
-          xterm_hints.x = 2;
-      return TRUE;
-   }
-
-   if (mouse_code == NULL || mouse_codelen > 45) {
-      xterm_trace = 0;
-      return FALSE;
-   }
-
-   XQueryPointer(xterm_dpy, x11WindowG, &root, &child, &root_x, &root_y,
-        &win_x, &win_y, &mask_return);
-
-   row = check_row((win_y - xterm_hints.y) / xterm_hints.height_inc);
-   col = check_col((win_x - xterm_hints.x) / xterm_hints.width_inc);
-   if (row == prev_row && col == prev_col)
-      return TRUE;
-
-   STRCPY(buf, mouse_code);
-   strp = buf + mouse_codelen;
-   *strp++ = (xterm_button | MOUSE_DRAG) & ~0x20;
-   *strp++ = (Byte)(col + ' ' + 1);
-   *strp++ = (Byte)(row + ' ' + 1);
-   *strp = ZERO;
-   add_to_input_buf(buf, strp - buf);
-
-   prev_row = row;
-   prev_col = col;
-   return TRUE;
-}
-
-void
-start_xterm_trace(int button) {
-   if (x11WindowG == 0 || xterm_trace < 0 || xterm_Shell == (Widget)0)
-      return;
-   xterm_trace = 1;
-   xterm_button = button;
-   do_xterm_trace();
-}
-
-void
-stop_xterm_trace(void) {
-   if (xterm_trace < 0)
-      return;
-   xterm_trace = 0;
-}
-
-# if defined(FEAT_X11) || defined(PROTO)
-// Destroy the display, window and app_context.  Required for GTK.
-void
-clear_xterm_clip(void){
-   if (isXtermShellDefined()) {
-      XtDestroyWidget(xterm_Shell);
-      xterm_Shell = (Widget)0;
-   }
-   if (xterm_dpy) {
-      if (x11DisplayG == xterm_dpy)
-         x11DisplayG = NULL;
-      xterm_dpy = NULL;
-   }
-}
-# endif
-
-//Catch up with GUI or X events.
-void
-clip_update(void) {
-   if (isXtermShellDefined())
-      xterm_update();
-}
-
-//Catch up with any queued X events.  This may put keyboard input into the
-//input buffer, call resize call-backs, trigger timers etc.  If there is
-//nothing in the X event queue (& no timers pending), then we return immediately.
-void
-xterm_update(void) {
-   XEvent event;
-
-   for (;;) {
-      XtInputMask mask = XtAppPending(app_context);
-
-      if (mask == 0 || eeIsInputBufFull())
-          break;
-
-      if (mask & XtIMXEvent) {
-         // There is an event to process.
-         XtAppNextEvent(app_context, &event);
-         {
-         XPropertyEvent *e = (XPropertyEvent *)&event;
-
-         if (e->type == PropertyNotify && e->window == commWindow
-            && e->atom == commProperty && e->state == PropertyNewValue)
-             serverEventProc(xterm_dpy, &event, 0);
-         }
-         XtDispatchEvent(&event);
-      } else {
-         // There is something else than an event to process.
-         XtAppProcessEvent(app_context, mask);
-      }
-   }
-}
-
-int
-clip_xterm_own_selection(ClipBoard *cbd) {
-   if (isXtermShellDefined())
-      return clip_x11_own_selection(xterm_Shell, cbd);
-   return FAIL;
-}
-
-void
-clip_xterm_lose_selection(ClipBoard *cbd) {
-   if (isXtermShellDefined())
-      clip_x11_lose_selection(xterm_Shell, cbd);
-}
-
-void
-clip_xterm_request_selection(ClipBoard *cbd) {
-   if (isXtermShellDefined())
-      clip_x11_request_selection(xterm_Shell, xterm_dpy, cbd);
-}
-
-void
-clip_xterm_set_selection(ClipBoard *cbd) {
-   clip_x11_set_selection(cbd);
-}
-#endif
-
-//}}}
-//{{{Wayland
-
-#ifdef FEAT_WAYLAND
 
 #include <wayland-client.h>
-
-#ifdef FEAT_WAYLAND
 #include "../libs/wayland/ext-data-control-v1.h"
 #include "../libs/wayland/xdg-shell.h"
 #include "../libs/wayland/primary-selection-unstable-v1.h"
-#endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
 typedef struct {
@@ -1636,7 +26,6 @@ typedef struct {
 
 // Global objects
 typedef struct {
-#ifdef FEAT_WAYLAND
    // Data control protocols
    struct ext_data_control_manager_v1* ext_data_control_manager_v1;
    struct wl_data_device_manager* wl_data_device_manager;
@@ -1644,7 +33,6 @@ typedef struct {
    struct wl_compositor* wl_compositor;
    struct xdg_wm_base* xdg_wm_base;
    struct zwp_primary_selection_device_manager_v1* zwp_primary_selection_device_manager_v1;
-#endif
 } vwl_global_objects_T;
 
 // Struct wrapper for Wayland display and registry
@@ -1657,31 +45,29 @@ typedef struct {
    } registry;
 } vwl_display_T;
 
-#ifdef FEAT_WAYLAND
-
 typedef struct {
-   struct wl_shm_pool   *pool;
-   int         fd;
+   struct wl_shm_pool* pool;
+   int fd;
 
-   struct wl_buffer   *buffer;
-   int         available;
+   struct wl_buffer* buffer;
+   int available;
 
-   int         width;
-   int         height;
-   int         stride;
-   int         size;
+   int width;
+   int height;
+   int stride;
+   int size;
 } BufferStore;
 
 typedef struct {
 void          *user_data;
 void          (*on_focus)(void *data, uint32_t serial);
 
-   struct wl_surface       *surface;
-   struct wl_keyboard       *keyboard;
+   struct wl_surface* surface;
+   struct wl_keyboard* keyboard;
 
    struct {
-      struct xdg_surface  *surface;
-      struct xdg_toplevel *toplevel;
+      struct xdg_surface* surface;
+      struct xdg_toplevel* toplevel;
    } shell;
 
    int got_focus;
@@ -1784,7 +170,6 @@ typedef struct {
    BufferStore      *fs_buffer;
 } vwl_clipboard_T;
 
-#endif // FEAT_WAYLAND
 
 private int   vwl_display_flush(vwl_display_T *display);
 private void   vwl_callback_done(void *data, struct wl_callback *callback,
@@ -1793,8 +178,8 @@ private int   vwl_display_roundtrip(vwl_display_T *display);
 private int   vwl_display_dispatch(vwl_display_T *display);
 private int vwl_display_dispatch_any(vwl_display_T *display);
 
-private void   vwl_log_handler(const char *fmt, va_list args);
-private int   vwl_connect_display(const char *display);
+private void   vwl_log_handler(char const* fmt, va_list args); // it MUST be "char"
+private int   vwl_connect_display(CS display);
 private void   vwl_disconnect_display(void);
 
 private void vwl_xdg_wm_base_listener_ping(void *data, struct xdg_wm_base *base, uint32_t serial);
@@ -1815,8 +200,6 @@ private void   vwl_destroy_seat(vwl_seat_T *seat);
 
 private vwl_seat_T       *vwl_get_seat(const char *label);
 private struct wl_keyboard   *vwl_seat_get_keyboard(vwl_seat_T *seat);
-
-#ifdef FEAT_WAYLAND
 
 private int   vwl_focus_stealing_available(void);
 private void   vwl_xdg_surface_listener_configure(void *data,
@@ -1901,7 +284,7 @@ private void   vwl_data_source_listener_cancelled(vwl_data_source_T *source);
 
 private void   vwl_on_focus_set_selection(void *data, uint32_t serial);
 
-private void   wayland_set_display(const char *display);
+private void   wayland_set_display(CS display);
 
 private vwl_data_device_Listener   vwl_data_device_listener = {
     .data_offer       = vwl_data_device_listener_data_offer,
@@ -1939,7 +322,6 @@ private struct wl_keyboard_listener  vwl_fs_keyboard_listener = {
     .repeat_info    = vwl_fs_keyboard_listener_repeat_info
 };
 
-#endif // FEAT_WAYLAND
 
 private struct wl_callback_listener  vwl_callback_listener = {
     .done       = vwl_callback_done
@@ -1959,7 +341,6 @@ private vwl_display_T          vwl_display;
 private vwl_global_objects_T       vwl_gobjects;
 private ArrayList             vwl_seats;
 
-#ifdef FEAT_WAYLAND
 // Make sure to sync this with vwl_cb_uninit since it memsets this to zero
 private vwl_clipboard_T   vwl_clipboard = {
     .regular.selection = WAYLAND_SELECTION_REGULAR,
@@ -1969,7 +350,6 @@ private vwl_clipboard_T   vwl_clipboard = {
 // Only really used for debugging/testing purposes in order to force focus
 // stealing even when a data control protocol is available.
 private int force_fs  = FALSE;
-#endif
 
 //Like wl_display_flush but always writes all the data in the buffer to the
 //display fd. Returns FAIL on failure and OK on success.
@@ -2129,9 +509,9 @@ vwl_display_dispatch_any(vwl_display_T *display) {
    return wl_display_dispatch_pending(display->proxy);
 }
 
-// Redirect libwayland logging to use ch_log + emsg instead.
+// Redirect libwayland logging to use ch_log + emsg instead. It must be "char const*"
 private void
-vwl_log_handler(const char *fmt, va_list args) {
+vwl_log_handler(char const* fmt, va_list args) {
    // 512 bytes should be big enough
    CS buf = alloc(512);
    CS prefix = _("wayland protocol error -> ");
@@ -2152,7 +532,7 @@ vwl_log_handler(const char *fmt, va_list args) {
 //getting the display. Additionally get the registry object but will not
 //starting listening. Returns OK on sucess and FAIL on failure.
 private int
-vwl_connect_display(const char *display) {
+vwl_connect_display(CS display) {
    if (wayland_no_connect)
       return FAIL;
 
@@ -2163,7 +543,7 @@ vwl_connect_display(const char *display) {
    // Must set log handler before we connect display in order to work.
    wl_log_set_handler_client(vwl_log_handler);
 
-   vwl_display.proxy = wl_display_connect(display);
+   vwl_display.proxy = wl_display_connect((char*)display);
 
    if (vwl_display.proxy == NULL)
       return FAIL;
@@ -2281,27 +661,19 @@ vwl_registry_listener_global(
    if (STRCMP(interface, wl_seat_interface.name) == 0) {
       chosen_interface = &wl_seat_interface;
       min_version = 2;
-   }
-#ifdef FEAT_WAYLAND
-
-   ei (STRCMP(interface, ext_data_control_manager_v1_interface.name) == 0)
+   } ei (STRCMP(interface, ext_data_control_manager_v1_interface.name) == 0)
       SET_GOBJECT(ext_data_control_manager_v1, 1);
 
    ei (STRCMP(interface, wl_data_device_manager_interface.name) == 0)
       SET_GOBJECT(wl_data_device_manager, 1);
-
    ei (STRCMP(interface, wl_shm_interface.name) == 0)
       SET_GOBJECT(wl_shm, 1);
-
    ei (STRCMP(interface, wl_compositor_interface.name) == 0)
       SET_GOBJECT(wl_compositor, 2);
-
    ei (STRCMP(interface, xdg_wm_base_interface.name) == 0)
       SET_GOBJECT(xdg_wm_base, 1);
-
    ei (STRCMP(interface, zwp_primary_selection_device_manager_v1_interface.name) == 0)
       SET_GOBJECT(zwp_primary_selection_device_manager_v1, 1);
-#endif
 
    if (chosen_interface == NULL || version < min_version)
       return;
@@ -2414,7 +786,7 @@ vwl_seat_get_keyboard(vwl_seat_T *seat) {
 // as needed. If display is NULL then the $WAYLAND_DISPLAY environment variable
 // will be used (handled by libwayland). Returns FAIL on failure and OK on success
 int
-wayland_init_client(const char *display) {
+wayland_init_client(CS display) {
    wayland_set_display(display);
 
    if (vwl_connect_display(display) == FAIL || vwl_listen_to_registry() == FAIL)
@@ -2425,19 +797,17 @@ wayland_init_client(const char *display) {
    return OK;
 fail:
    // Set v:wayland_display to empty string (but not wayland_display_name)
-   wayland_set_display("");
+   wayland_set_display(S"");
    return FAIL;
 }
 
 // Disconnect Wayland client and free up all resources used.
 void
 wayland_uninit_client(void) {
-#ifdef FEAT_WAYLAND
     wayland_cb_uninit();
-#endif
     vwl_disconnect_display();
 
-    wayland_set_display("");
+    wayland_set_display(S"");
 }
 
 // TRUE if Wayland display connection is valid and ready.
@@ -2463,7 +833,6 @@ wayland_client_update(void) {
    return vwl_display_dispatch_any(&vwl_display) == -1 ? FAIL : OK;
 }
 
-#ifdef FEAT_WAYLAND
 
 // If globals required for focus stealing method is available.
 private int
@@ -3615,7 +1984,6 @@ wayland_cb_reload(void) {
    return OK;
 }
 
-#endif // FEAT_WAYLAND
 
 private int wayland_ct_restore_count = 0;
 
@@ -3629,7 +1997,7 @@ wayland_may_restore_connection(void) {
 
    // No point in restoring the connection if we are exiting or dying.
    if (exiting || v_dying || wayland_ct_restore_count <= 0) {
-      wayland_set_display("");
+      wayland_set_display(S"");
       return FAIL;
    }
 
@@ -3642,31 +2010,22 @@ wayland_may_restore_connection(void) {
 // Disconnect then reconnect Wayland connection
 void
 c_wlrestore(Invocation *invo) {
-   char *display;
-
-   if (invo->arg == NULL || STRLEN(invo->arg) == 0)
-      // Use current display name if none given
-      display = wayland_display_name;
-   else
-      display = (char*)invo->arg;
+   CS display = (!invo->arg || STRLEN(invo->arg) == 0) ? wayland_display_name : invo-> arg;
 
    // Return early if shebang is not passed, we are still connected, and if not
    // changing to a new Wayland display.
    if (!invo->forceit && wayland_client_is_connected(TRUE) &&
-       (display == wayland_display_name ||
-        (wayland_display_name != NULL &&
-         STRCMP(wayland_display_name, display) == 0)))
-   return;
+       (display == wayland_display_name 
+           || (wayland_display_name && STRCMP(wayland_display_name, display) == 0))
+   )
+      return;
 
-#ifdef FEAT_WAYLAND
    // Lose any selections we own
    if (clipboard.owned)
       clip_lose_selection(&clipboard);
-#endif
-
 
    if (display)
-      display = (char*)copyStr((Byte*)display);
+      display = copyStr((Byte*)display);
 
    wayland_uninit_client();
 
@@ -3676,9 +2035,7 @@ c_wlrestore(Invocation *invo) {
    if (wayland_init_client(display) == OK) {
       smsg(_("restoring Wayland display %s"), wayland_display_name);
 
-#ifdef FEAT_WAYLAND
       wayland_cb_init((char*)p_wse);
-#endif
    } else
       msg(_("failed restoring, lost connection to Wayland display"));
 
@@ -3689,27 +2046,24 @@ c_wlrestore(Invocation *invo) {
 // string, unless NULL is passed. If NULL is passed then v:wayland_display is
 // set to $WAYLAND_DISPLAY, but wayland_display_name is set to NULL.
 private void
-wayland_set_display(const char *display) {
+wayland_set_display(CS display) {
    if (!display)
-      display = (char*)mch_getenv((Byte*)"WAYLAND_DISPLAY");
+      display = mch_getenv((Byte*)"WAYLAND_DISPLAY");
    ei (display == wayland_display_name)
       // Don't want to be freeing vwl_display_strname then trying to copy it after.
       goto exit;
 
-   if (display == NULL)
+   if (!display)
       // $WAYLAND_DISPLAY is not set
-      display = "";
+      display = S"";
 
    // Leave unchanged if display is empty (but not NULL)
    if (STRCMP(display, "") != 0) {
       eeglFree(wayland_display_name);
-      wayland_display_name = (char*)copyStr((Byte*)display);
+      wayland_display_name = copyStr((Byte*)display);
    }
 
 exit:
    set_EeglVar_string(VV_WAYLAND_DISPLAY, (Byte*)display, -1);
 }
 
-#endif // FEAT_WAYLAND
-
-//}}}

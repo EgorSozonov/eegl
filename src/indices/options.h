@@ -1,6 +1,6 @@
 //Automatically generated code by the script src/indices/indexGenerator.c
 typedef struct {CS name; Unt index;} NameIndex;
-static NameIndex const NAME_INDICES[202] = {
+static NameIndex const NAME_INDICES[205] = {
 {(Byte*)"autocomplete", 0},
 {(Byte*)"autocompletedelay", 1},
 {(Byte*)"autoindent", 131072},
@@ -200,6 +200,9 @@ static NameIndex const NAME_INDICES[202] = {
 {(Byte*)"wildoptions", 113},
 {(Byte*)"winheight", 114},
 {(Byte*)"winwidth", 115},
+{(Byte*)"wlseat", 122},
+{(Byte*)"wlsteal", 123},
+{(Byte*)"wltimeoutlen", 124},
 {(Byte*)"wrap", 65560},
 {(Byte*)"wrapmargin", 131107},
 {(Byte*)"writedelay", 116},
@@ -229,10 +232,10 @@ static int const FIRST_LETTER_INDICES[27] = {
 182,
 187,
 189,
-202,
-202,
-202,
-202,
+205,
+205,
+205,
+205,
 };
 
-#define OPTION_COUNT 202
+#define OPTION_COUNT 205

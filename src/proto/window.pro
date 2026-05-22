@@ -1,16 +1,5 @@
 /* src/window.c */
-Boole isXtermShellDefined(void);
-void setup_term_clip(void);
-void start_xterm_trace(int button);
-void stop_xterm_trace(void);
-void clear_xterm_clip(void);
-void clip_update(void);
-void xterm_update(void);
-int clip_xterm_own_selection(ClipBoard *cbd);
-void clip_xterm_lose_selection(ClipBoard *cbd);
-void clip_xterm_request_selection(ClipBoard *cbd);
-void clip_xterm_set_selection(ClipBoard *cbd);
-int wayland_init_client(const char *display);
+int wayland_init_client(CS display);
 void wayland_uninit_client(void);
 int wayland_client_is_connected(int quiet);
 int wayland_client_update(void);

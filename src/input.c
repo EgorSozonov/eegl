@@ -2041,10 +2041,6 @@ parse_queued_messages(void) {
 
       // Process the messages queued on channels.
       channel_parse_messages();
-# if defined(FEAT_X11)
-      // Process the queued clientserver messages.
-      server_parse_messages();
-# endif
       // Check if any jobs have ended.  If so, repeat the above to handle
       // changes, e.g. stdin may have been closed.
       if (job_check_ended())
@@ -7466,13 +7462,6 @@ void
 mch_setmouse(Boole on){
    static int bevalterm_ison = FALSE;
    int xterm_mouse_vers;
-
-#if defined(FEAT_X11)
-   if (!on)
-      // Make sure not tracing mouse movements. Important when a button-down
-      // was received but no release yet.
-      stop_xterm_trace();
-#endif
 
    if (on == mouse_ison && p_bevalterm == bevalterm_ison)
       // return quickly if nothing to do

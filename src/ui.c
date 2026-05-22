@@ -11953,27 +11953,13 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       FD_SET(fd, &efds);
       maxfd = fd;
 
-# ifdef FEAT_WAYLAND
-
       if (wayland_may_restore_connection()) {
-          FD_SET(wayland_display_fd, &rfds);
+         FD_SET(wayland_display_fd, &rfds);
 
-          if (maxfd < wayland_display_fd)
-         maxfd = wayland_display_fd;
+         if (maxfd < wayland_display_fd)
+            maxfd = wayland_display_fd;
       }
-# endif
 
-# ifdef FEAT_X11
-      may_restore_x11_clipboard();
-      if (isXtermShellDefined()) {
-         FD_SET(ConnectionNumber(xterm_dpy), &rfds);
-         if (maxfd < ConnectionNumber(xterm_dpy))
-            maxfd = ConnectionNumber(xterm_dpy);
-
-         //An event may have already been read but not handled. In particular, XFlush may cause this
-         xterm_update();
-      }
-# endif
       maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &tvp);
       if (interrupted != NULL)
          *interrupted = FALSE;
@@ -12003,24 +11989,12 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       }
 # endif
 
-# ifdef FEAT_WAYLAND
       //Technically we should first call wl_display_prepare_read() before
       //polling the fd, then read and dispatch after we poll. However that is
       //only needed for multi threaded environments to prevent deadlocks so we are fine.
       if (ret > 0 && FD_ISSET(wayland_display_fd, &rfds))
           wayland_client_update();
-# endif
 
-# ifdef FEAT_X11
-      if (ret > 0 && isXtermShellDefined() && FD_ISSET(ConnectionNumber(xterm_dpy), &rfds)){
-         xterm_update();         // Maybe we should hand out clipboard
-         //continue looping when we only got the X event and the input buffer is empty
-         if (--ret == 0 && !input_available()) {
-            // Try again
-            finished = FALSE;
-         }
-      }
-# endif
       // also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)
          (void)channel_select_check(ret, &rfds, &wfds);
@@ -12028,11 +12002,6 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
 
       if (finished || msec == 0)
          break;
-
-#ifdef FEAT_X11
-      if (server_waiting())
-         break;
-#endif 
 
       // We're going to loop around again, find out for how long
       if (msec > 0) {
@@ -12062,10 +12031,6 @@ mch_write(CS s, int len) {
 //lose_clipboard(void){
 //   if (clipboard.owned) {
 //      clip_lose_selection(&clipboard);
-//#ifdef FEAT_X11
-//      if (x11DisplayG)
-//         XFlush(x11DisplayG);
-//#endif
 //   }
 //}
 
@@ -12364,9 +12329,6 @@ inchar_loop(
       elapsed_time += wait_time;
 
       if ((resize_func && resize_func(TRUE))
-#ifdef FEAT_X11 
-            || server_waiting()
-#endif 
             || interrupted
             || wait_time > 0
             || (wtime < 0 && !did_start_blocking)

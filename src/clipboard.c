@@ -14,7 +14,6 @@
 //    36 = delete register '-'
 //    37 = Selection register '*'.
 //    38 = Clipboard register '+'.
-//                                 or FEAT_WAYLAND defined
 private YankReg   y_regs[NUM_REGISTERS];
 
 private YankReg   *y_current;       // ptr to current yankreg
@@ -2443,10 +2442,8 @@ write_reg_contents_ex(
 
 //{{{wayland
 
-#if defined(FEAT_WAYLAND)
-// Mime types we support sending and receiving
-// Mimes with a lower index in the array are prioritized first when we are
-// receiving data.
+//Mime types we support sending and receiving
+//Mimes with a lower index in the array are prioritized first when we are receiving data.
 private const char *supported_mimes[] = {
     EE_ATOM_NAME,
     "text/plain;charset=utf-8",
@@ -2464,7 +2461,6 @@ private void clip_wl_lose_selection(ClipBoard *cbd);
 private void clip_wl_set_selection(ClipBoard *cbd);
 private void clip_wl_selection_cancelled(WaylandSelection selection);
 
-#endif
 
 //}}}
 
@@ -2533,11 +2529,7 @@ clip_update_selection(ClipBoard *clip){
 
 private int
 clip_gen_own_selection(ClipBoard *cbd){
-#ifdef FEAT_WAYLAND
    return clip_wl_own_selection(cbd);
-#else
-   return clip_xterm_own_selection(cbd);
-#endif
 }
 
 void
@@ -2564,18 +2556,11 @@ clip_own_selection(ClipBoard *cbd){
 
 private void
 clip_gen_lose_selection(ClipBoard *cbd) {
-#ifdef FEAT_WAYLAND
    clip_wl_lose_selection(cbd);
-#else
-   clip_xterm_lose_selection(cbd);
-#endif
 }
 
 void
-clip_lose_selection(ClipBoard *cbd) {
-#ifdef FEAT_X11
-   int       was_owned = cbd->owned;
-#endif
+clip_lose_selection(ClipBoard* cbd) {
    int     visual_selection = FALSE;
 
    if (cbd == &clipboard)
@@ -2586,22 +2571,6 @@ clip_lose_selection(ClipBoard *cbd) {
    if (visual_selection)
       clip_clear_selection(cbd);
    clip_gen_lose_selection(cbd);
-#ifdef FEAT_X11
-   if (visual_selection) {
-      // May have to show a different kind of hiliting for the selected area. There is no specific 
-      // redraw command for this, just redraw all portals into the current book.
-      if (was_owned
-         && (get_real_state() == MODE_VISUAL)
-         && getDecoFlags(HLF_V) != getDecoFlags(HLF_VNC)
-         && !exiting)
-      {
-          update_curbuf(UPD_INVERTED_ALL);
-          setcursor();
-          cursor_on();
-          out_flush();
-      }
-   }
-#endif
 }
 
 private void
@@ -3254,25 +3223,16 @@ clip_copy_modeless_selection(int both UNUSED) {
    if (add_newline_flag)
       *bufp++ = NL;
 
-    // First cleanup any old selection and become the owner.
-    clip_free_selection(&clipboard);
-    clip_own_selection(&clipboard);
+   // First cleanup any old selection and become the owner.
+   clip_free_selection(&clipboard);
+   clip_own_selection(&clipboard);
 
-    // Yank the text into the '*' register.
-    clip_yank_selection(MCHAR, buffer, (long)(bufp - buffer), &clipboard);
+   // Yank the text into the '*' register.
+   clip_yank_selection(MCHAR, buffer, (long)(bufp - buffer), &clipboard);
 
-    // Make the register contents available to the outside world.
-    clip_gen_set_selection(&clipboard);
+   // Make the register contents available to the outside world.
+   clip_gen_set_selection(&clipboard);
 
-#ifdef FEAT_X11
-   if (both) {
-      // Do the same for the '+' register.
-      clip_free_selection(&clipboard);
-      clip_own_selection(&clipboard);
-      clip_yank_selection(MCHAR, buffer, (long)(bufp - buffer), &clipboard);
-      clip_gen_set_selection(&clipboard);
-   }
-#endif
    eeglFree(buffer);
 }
 
@@ -3286,416 +3246,13 @@ clip_gen_set_selection(ClipBoard *cbd){
           return;
       }
    }
-#ifdef FEAT_WAYLAND
    clip_wl_set_selection(cbd);
-#else
-   clip_xterm_set_selection(cbd);
-#endif
 }
 
 private void
 clip_gen_request_selection(ClipBoard *cbd){
-#ifdef FEAT_WAYLAND
    clip_wl_request_selection(cbd);
-#else
-   clip_xterm_request_selection(cbd);
-#endif
 }
-
-// Stuff for the X clipboard
-#if defined(FEAT_X11) || defined(PROTO)
-# include <X11/Xatom.h>
-# include <X11/Intrinsic.h>
-
-//Open the application context (if it hasn't been opened yet).
-//Used for the xterm clipboard.
-void
-open_app_context(void) {
-   if (app_context == NULL) {
-      XtToolkitInitialize();
-      app_context = XtCreateApplicationContext();
-   }
-}
-
-private Atom   eeglAtom;   // Eegl's own special selection format
-private Atom   utf8_atom;
-private Atom   compound_text_atom;
-private Atom   text_atom;
-private Atom   targets_atom;
-private Atom   timestamp_atom;   // Used to get a timestamp
-
-void
-x11_setup_atoms(Display *dpy) {
-   eeglAtom           = XInternAtom(dpy, EE_ATOM_NAME,   False);
-   utf8_atom          = XInternAtom(dpy, "UTF8_STRING",   False);
-   compound_text_atom = XInternAtom(dpy, "COMPOUND_TEXT", False);
-   text_atom          = XInternAtom(dpy, "TEXT",      False);
-   targets_atom       = XInternAtom(dpy, "TARGETS",      False);
-   clipboard.sel_atom = XA_PRIMARY;
-   clipboard.sel_atom = XInternAtom(dpy, "CLIPBOARD",      False);
-   timestamp_atom     = XInternAtom(dpy, "TIMESTAMP",      False);
-}
-
-//X Selection stuff, for cutting and pasting text to other portals.
-
-private Boolean
-clip_x11_convert_selection_cb(
-    Widget   w UNUSED,
-    Atom   *sel_atom,
-    Atom   *target,
-    Atom   *type,
-    XtPointer   *value,
-    Ulong   *length,
-    int      *format)
-{
-   static Byte   *save_result = NULL;
-   static Ulong   save_length = 0;
-   Byte       *string;
-   int          motion_type;
-   ClipBoard    *cbd;
-   int          i;
-
-   if (*sel_atom == clipboard.sel_atom)
-      cbd = &clipboard;
-   else
-      cbd = &clipboard;
-
-   if (!cbd->owned)
-      return False;       // Shouldn't ever happen
-
-   // requestor wants to know what target types we support
-   if (*target == targets_atom) {
-      static Atom array[7];
-
-      *value = (XtPointer)array;
-      i = 0;
-      array[i++] = targets_atom;
-      array[i++] = eeglAtom;
-      array[i++] = utf8_atom;
-      array[i++] = XA_STRING;
-      array[i++] = text_atom;
-      array[i++] = compound_text_atom;
-
-      *type = XA_ATOM;
-      // This used to be: *format = sizeof(Atom) * 8; but that caused
-      // crashes on 64 bit machines. (Peter Derr)
-      *format = 32;
-      *length = i;
-      return True;
-    }
-
-   if ( *target != XA_STRING
-         && (*target != utf8_atom)
-         && *target != eeglAtom
-         && *target != text_atom
-         && *target != compound_text_atom
-   )
-      return False;
-
-   clip_get_selection(cbd);
-   motion_type = clip_convert_selection(&string, length, cbd);
-   if (motion_type < 0)
-      return False;
-
-   // For our own format, the first byte contains the motion type
-   if (*target == eeglAtom)
-      (*length)++;
-
-
-   if (save_length < *length || save_length / 2 >= *length)
-      *value = XtRealloc((char *)save_result, (Cardinal)*length + 1);
-   else
-      *value = save_result;
-   save_result = (CS)*value;
-   save_length = *length;
-
-   if (*target == XA_STRING || (*target == utf8_atom)) {
-      mch_memmove(save_result, string, (Unt)(*length));
-      *type = *target;
-   } ei (*target == compound_text_atom || *target == text_atom) {
-      XTextProperty   text_prop;
-      char      *string_nt = (char *)save_result;
-      int      conv_result;
-
-      // create ZERO terminated string which XmbTextListToTextProperty wants
-      mch_memmove(string_nt, string, (Unt)*length);
-      string_nt[*length] = ZERO;
-      conv_result = XmbTextListToTextProperty(X_DISPLAY, &string_nt,
-                     1, XCompoundTextStyle, &text_prop);
-      if (conv_result != Success) {
-          eeglFree(string);
-          return False;
-      }
-      *value = (XtPointer)(text_prop.value);   //    from plain text
-      *length = text_prop.nitems;
-      *type = compound_text_atom;
-      XtFree((char *)save_result);
-      save_result = (CS)*value;
-      save_length = *length;
-   } else {
-      save_result[0] = motion_type;
-      mch_memmove(save_result + 1, string, (Unt)(*length - 1));
-      *type = eeglAtom;
-   }
-   *format = 8;       // 8 bits per char
-   eeglFree(string);
-   return True;
-}
-
-private void
-clip_x11_lose_ownership_cb(Widget w UNUSED, Atom *sel_atom) {
-   if (*sel_atom == clipboard.sel_atom)
-      clip_lose_selection(&clipboard);
-   else
-      clip_lose_selection(&clipboard);
-}
-
-private void
-clip_x11_notify_cb(Widget w UNUSED, Atom *sel_atom UNUSED, Atom *target UNUSED) {
-   // To prevent automatically freeing the selection value.
-}
-
-// Property callback to get a timestamp for XtOwnSelection.
-# if defined(FEAT_X11)
-private void
-clip_x11_timestamp_cb(
-   Widget   w,
-   XtPointer   n UNUSED,
-   XEvent   *event,
-   Boolean   *cont UNUSED
-) {
-   Atom       actual_type;
-   int          format;
-   unsigned  long  nitems, bytes_after;
-   unsigned char   *prop=NULL;
-   XPropertyEvent  *xproperty=&event->xproperty;
-
-   // Must be a property notify, state can't be Delete (True), has to be
-   // one of the supported selection types.
-   if (event->type != PropertyNotify || xproperty->state
-          || (xproperty->atom != clipboard.sel_atom && xproperty->atom != clipboard.sel_atom))
-      return;
-
-   if (XGetWindowProperty(xproperty->display, xproperty->window,
-     xproperty->atom, 0, 0, False, timestamp_atom, &actual_type, &format,
-                  &nitems, &bytes_after, &prop))
-      return;
-
-   if (prop)
-      XFree(prop);
-
-   // Make sure the property type is "TIMESTAMP" and it's 32 bits.
-   if (actual_type != timestamp_atom || format != 32)
-      return;
-
-   // Get the selection, using the event timestamp.
-   if (XtOwnSelection(w, xproperty->atom, xproperty->time,
-       clip_x11_convert_selection_cb, clip_x11_lose_ownership_cb,
-       clip_x11_notify_cb) == OK
-   ) {
-   // Set the "owned" flag now, there may have been a call to lose_ownership_cb in between.
-   if (xproperty->atom == clipboard.sel_atom)
-       clipboard.owned = TRUE;
-   else
-       clipboard.owned = TRUE;
-    }
-}
-
-void
-x11_setup_selection(Widget w){
-    XtAddEventHandler(w, PropertyChangeMask, False,
-       /*(XtEventHandler)*/clip_x11_timestamp_cb, (XtPointer)NULL);
-}
-# endif
-
-private void
-clip_x11_request_selection_cb(
-   Widget   w UNUSED,
-   XtPointer   success,
-   Atom   *sel_atom,
-   Atom   *type,
-   XtPointer   value,
-   Ulong   *length,
-   int      *format)
-{
-   int      motion_type = MAUTO;
-   Ulong   len;
-   Byte   *p;
-   char   **text_list = NULL;
-   ClipBoard   *cbd;
-   Byte   *tmpbuf = NULL;
-
-   if (*sel_atom == clipboard.sel_atom)
-      cbd = &clipboard;
-   else
-      cbd = &clipboard;
-
-   if (value == NULL || *length == 0) {
-      clip_free_selection(cbd);   // nothing received, clear register
-      *(int *)success = FALSE;
-      return;
-   }
-   p = (CS)value;
-   len = *length;
-   if (*type == eeglAtom) {
-      motion_type = *p++;
-      len--;
-   } ei (*type == compound_text_atom || *type == utf8_atom) {
-      XTextProperty   text_prop;
-      int      n_text = 0;
-      int      status;
-
-      text_prop.value = (unsigned char *)value;
-      text_prop.encoding = *type;
-      text_prop.format = *format;
-      text_prop.nitems = len;
-      status = XmbTextPropertyToTextList(X_DISPLAY, &text_prop, &text_list, &n_text);
-      if (status != Success || n_text < 1) {
-         *(int *)success = FALSE;
-         return;
-      }
-      p = (CS)text_list[0];
-      len = STRLEN(p);
-    }
-    clip_yank_selection(motion_type, p, (long)len, cbd);
-
-   if (text_list != NULL)
-   XFreeStringList(text_list);
-    eeglFree(tmpbuf);
-    XtFree((char *)value);
-    *(int *)success = TRUE;
-}
-
-void
-clip_x11_request_selection(
-   Widget   myShell,
-   Display   *dpy,
-   ClipBoard   *cbd)
-{
-   XEvent   event;
-   Atom   type;
-   static int   success;
-   int      i;
-   Tyme   start_time;
-   int      timed_out = FALSE;
-
-   for (i = 1; i < 6; i++) {
-      switch (i) {
-      case 1:  type = eeglAtom;      break;
-      case 2:  type = utf8_atom;      break;
-      case 3:  type = compound_text_atom; break;
-      case 4:  type = text_atom;      break;
-      default: type = XA_STRING;
-      }
-      success = MAYBE;
-      XtGetSelectionValue(myShell, cbd->sel_atom, type,
-          clip_x11_request_selection_cb, (XtPointer)&success, CurrentTime);
-
-      // Make sure the request for the selection goes out before waiting for
-      // a response.
-      XFlush(dpy);
-
-      /*
-       * Wait for result of selection request, otherwise if we type more
-       * characters, then they will appear before the one that requested the
-       * paste!  Don't worry, we will catch up with any other events later.
-       */
-      start_time = time(NULL);
-      while (success == MAYBE) {
-         if (XCheckTypedEvent(dpy, PropertyNotify, &event)
-             || XCheckTypedEvent(dpy, SelectionNotify, &event)
-             || XCheckTypedEvent(dpy, SelectionRequest, &event))
-          {
-         // This is where clip_x11_request_selection_cb() should be
-         // called.  It may actually happen a bit later, so we loop
-         // until "success" changes.
-         // We may get a SelectionRequest here and if we don't handle
-         // it we hang.  KDE klipper does this, for example.
-         // We need to handle a PropertyNotify for large selections.
-         XtDispatchEvent(&event);
-         continue;
-          }
-
-         // Time out after 2 to 3 seconds to avoid that we hang when the
-         // other process doesn't respond.  Note that the SelectionNotify
-         // event may still come later when the selection owner comes back
-         // to life and the text gets inserted unexpectedly.  Don't know
-         // why that happens or how to avoid that :-(.
-         if (time(NULL) > start_time + 2) {
-            timed_out = TRUE;
-            break;
-         }
-
-         // Do we need this?  Probably not.
-         XSync(dpy, False);
-
-          // Wait for 1 msec to avoid that we eat up all CPU time.
-          ui_delay(1L, TRUE);
-      }
-
-      if (success == TRUE)
-          return;
-
-      // don't do a retry with another type after timing out, otherwise we
-      // hang for 15 seconds.
-      if (timed_out)
-          break;
-   }
-
-   // Final fallback position - use the X CUT_BUFFER0 store
-   yank_cut_buffer0(dpy, cbd);
-}
-
-void
-clip_x11_lose_selection(Widget myShell, ClipBoard *cbd) {
-   XtDisownSelection(myShell, cbd->sel_atom, XtLastTimestampProcessed(XtDisplay(myShell)));
-}
-
-int
-clip_x11_own_selection(Widget myShell, ClipBoard *cbd){
-   // When using the GUI we have proper timestamps, use the one of the last
-   // event.  When in the console we don't get events (the terminal gets
-   // them), Get the time by a zero-length append, clip_x11_timestamp_cb will
-   // be called with the current timestamp.
-   if (!XChangeProperty(XtDisplay(myShell), XtWindow(myShell),
-         cbd->sel_atom, timestamp_atom, 32, PropModeAppend, NULL, 0))
-      return FAIL;
-   // Flush is required in a terminal as nothing else is doing it.
-   XFlush(XtDisplay(myShell));
-   return OK;
-}
-
-//Send the current selection to the clipboard.  Do nothing for X because we
-//will fill in the selection only when requested by another app.
-void
-clip_x11_set_selection(ClipBoard *cbd UNUSED)
-{
-}
-
-#endif
-
-#if defined(FEAT_X11) || defined(PROTO)
-// Get the contents of the X CUT_BUFFER0 and put it in "cbd".
-void
-yank_cut_buffer0(Display *dpy, ClipBoard *cbd){
-   int      nbytes = 0;
-   CS buffer = (CS)XFetchBuffer(dpy, &nbytes, 0);
-
-   if (nbytes <= 0) {
-      return;
-   } 
-   int  done = FALSE;
-
-   if (!done)  // use the text without conversion
-      clip_yank_selection(MCHAR, buffer, (long)nbytes, cbd);
-   XFree((void *)buffer);
-   if (p_verbose > 0) {
-      verbose_enter();
-      verb_msg(_("Used CUT_BUFFER0 instead of empty selection"));
-      verbose_leave();
-   }
-}
-#endif
 
 //SELECTION / PRIMARY ('*')
 //
@@ -3713,8 +3270,8 @@ yank_cut_buffer0(Display *dpy, ClipBoard *cbd){
 //If not under X, it is synonymous with the selection register '*'.
 
 void
-clip_free_selection(ClipBoard *cbd) {
-   YankReg *y_ptr = get_y_current();
+clip_free_selection(ClipBoard* cbd) {
+   YankReg* y_ptr = get_y_current();
 
    if (cbd == &clipboard)
       set_y_current(get_y_register(PLUS_REGISTER));
@@ -3727,17 +3284,7 @@ clip_free_selection(ClipBoard *cbd) {
 
 //Get the selected text and put it in register '*' or '+'.
 void
-clip_get_selection(ClipBoard *cbd) {
-   YankReg   *old_y_previous, *old_y_current;
-   Pos   old_cursor;
-   Pos   old_visual;
-   int      old_visual_mode;
-   ColNr   old_curswant;
-   int      old_set_curswant;
-   Pos   old_op_start, old_op_end;
-   Operator   oa;
-   ActionArg   ca;
-
+clip_get_selection(ClipBoard* cbd) {
    if (cbd->owned) {
       if ((cbd == &clipboard
             && get_y_register(PLUS_REGISTER)->y_array != NULL)
@@ -3749,18 +3296,22 @@ clip_get_selection(ClipBoard *cbd) {
       block_autocmds();
 
       // Get the text between clipboard.start & clipboard.end
-      old_y_previous = get_y_previous();
-      old_y_current = get_y_current();
-      old_cursor = curPor->cursor;
-      old_curswant = curPor->cursWant;
-      old_set_curswant = curPor->setCursWant;
-      old_op_start = curBook->opStart;
-      old_op_end = curBook->opEnd;
-      old_visual = VIsual;
-      old_visual_mode = VIsual_mode;
+      YankReg* old_y_previous = get_y_previous();
+      YankReg* old_y_current = get_y_current();
+      Pos old_cursor = curPor->cursor;
+      ColNr old_curswant = curPor->cursWant;
+      int old_set_curswant = curPor->setCursWant;
+      Pos old_op_start = curBook->opStart;
+      Pos old_op_end = curBook->opEnd;
+      Pos old_visual = VIsual;
+      int old_visual_mode = VIsual_mode;
+      
+      Operator oa;
       clear_oparg(&oa);
       oa.regname = (cbd == &clipboard ? '+' : '*');
       oa.opTy = OP_YANK;
+      
+      ActionArg ca;
       CLEAR_FIELD(ca);
       ca.oper = &oa;
       ca.cmdchar = 'y';
@@ -3788,7 +3339,6 @@ clip_get_selection(ClipBoard *cbd) {
       clip_gen_request_selection(cbd);
    }
 }
-
 
 //Convert the '*'/'+' register into a selection string returned in *str with length *len.
 //Return the motion type, or -1 for failure.
@@ -3874,8 +3424,6 @@ adjust_clip_reg(OUT int* rp){
       *rp = 0;
    }
 }
-
-#if defined(FEAT_WAYLAND) || defined(PROTO)
 
 //Read data from a file descriptor and write it to the given clipboard.
 private void
@@ -4118,6 +3666,5 @@ private void
 clip_wl_set_selection(ClipBoard *cbd UNUSED) {
 }
 
-#endif // FEAT_WAYLAND
 
 //}}}

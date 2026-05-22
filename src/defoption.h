@@ -259,12 +259,9 @@ OPTION("fillchars", p_fcs, CS, "vert:|,fold: ,eob: ,lastline: ",
 OPTION("showbreak", p_sbr, CS, null, P_RALL, &did_set_showbreak, NULL)
 OPTION("undolevels", p_ul, long, 128, 0, &did_set_undolevels, NULL)
 OPTION("termwinscroll", p_twsl, long, 10000, P_RBUF, &did_set_termwinscroll, null)
-
-#ifdef FEAT_WAYLAND
 OPTION("wlseat", p_wse, CS, null, 0, &setWlseat, NULL)
 OPTION("wlsteal", p_wst, Boole, false, 0, &did_set_wlsteal, NULL)
 OPTION("wltimeoutlen", p_wtm, long, 500, 0, &did_set_wltimeoutlen, NULL)
-#endif
 
 #undef TYPEBASED_CS
 #undef TYPEBASED_Boole

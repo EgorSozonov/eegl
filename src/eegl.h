@@ -94,8 +94,6 @@ typedef struct timeval TimeVal;
 // user ID of root is usually zero, but not for everybody
 #define ROOT_UID 0
 
-//#define FEAT_X11
-#define FEAT_WAYLAND
 
 // Can limit syntax hilite time to 'redrawtime'.
 #define SYN_TIME_LIMIT 1
@@ -158,15 +156,6 @@ typedef void (*sighandler_T) SIGPROTOARG;
 
 #ifndef EE_DEFAULTS_FILE
 # define EE_DEFAULTS_FILE (CS)"$EEGLRUNTIME/defaults.vim"
-#endif
-
-#ifdef FEAT_X11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/Intrinsic.h>
-#include <X11/Shell.h>
-#include <X11/StringDefs.h>
 #endif
 
 #ifndef EEGLINFO_FILE
@@ -2324,11 +2313,9 @@ EXTERN CS p_wim;   //@wildmode
 EXTERN Boole p_wmnu;     //@wildmenu
 EXTERN long p_wh;       //@winheight
 EXTERN long p_wiw;      //@winwidth
-#ifdef FEAT_WAYLAND
 EXTERN CS p_wse;   //@wlseat
 EXTERN Boole p_wst;       //@wlsteal
 EXTERN long p_wtm;      //@wltimeoutlen
-#endif
 EXTERN int p_wa;        //@writeany
 EXTERN long p_wd;       //@writedelay
 
@@ -5456,12 +5443,8 @@ typedef enum {
 
 // Symbolic names for some registers.
 #define DELETION_REGISTER   36
-# define STAR_REGISTER      37
-#  if defined(FEAT_X11) || defined(FEAT_WAYLAND)
-#   define PLUS_REGISTER   38
-#  else
-#   define PLUS_REGISTER   STAR_REGISTER       // there is only one
-#  endif
+#define STAR_REGISTER      37
+#define PLUS_REGISTER   STAR_REGISTER       // there is only one
 #define TILDE_REGISTER      (PLUS_REGISTER + 1)
 
 #define NUM_REGISTERS      (TILDE_REGISTER + 1)
@@ -5626,9 +5609,6 @@ typedef struct {
    int cs_ypixel;
 } CellSize;
 
-#ifdef FEAT_WAYLAND
-
-// Wayland selections
 typedef enum {
    WAYLAND_SELECTION_NONE       = 0x0,
    WAYLAND_SELECTION_REGULAR    = 0x1,
@@ -5645,7 +5625,6 @@ typedef void (*wayland_cb_send_data_func_T)(
 // Callback when the selection is lost (data source object overwritten)
 typedef void (*wayland_cb_selection_cancelled_func_T)(WaylandSelection type);
 
-#endif // FEAT_WAYLAND
 //}}}
 //{{{spelling
 
@@ -5895,10 +5874,6 @@ typedef struct {
    Pos prev;      // Previous position
    Short state;   // Current selection state
    Short mode;    // Select by char, word, or line.
-
-# ifdef FEAT_X11
-   Atom sel_atom; // PRIMARY/CLIPBOARD selection ID
-# endif
 } ClipBoard;
 
 typedef struct stat FileStat;
@@ -5988,13 +5963,10 @@ typedef enum {
 //Don't include these while generating prototypes.  Prevents problems when files are missing.
 #if !defined(PROTO) && !defined(NOPROTO)
 
-//Machine-dependent routines.
-//avoid errors in function prototypes
-# ifndef FEAT_X11
-#  define Display int
-#  define Widget int
-#  define XImage int
-# endif
+//Machine-dependent routines. avoid errors in function prototypes
+//#define Display int
+//#define Widget int
+//#define XImage int
 
 #include "proto/book.pro"
 #include "proto/clipboard.pro"
@@ -6111,11 +6083,6 @@ EXTERN Bool wrapSearchG INIT(= true); // search wraps on file end
 EXTERN int screenLinesRowsG INIT(= 0);       // actual size of ScreenLines[]
 EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
 
-#ifdef FEAT_X11
-EXTERN Display* x11DisplayG INIT(= NULL);
-EXTERN Window x11WindowG INIT(= 0);
-#endif
-
 // When using Unicode characters the character in ScreenLinesUC[] contains the Unicode for 
 // the character at this position, or ZERO when the character in ScreenLines[] is to be 
 // used (ASCII char). The composing characters are to be drawn on top of the original character.
@@ -6231,12 +6198,6 @@ EXTERN int did_wait_return INIT(= FALSE); //wait_return() was used and nothing w
 EXTERN int quit_more INIT(= FALSE);    // 'q' hit at "--more--" msg
 EXTERN int newline_on_exit INIT(= FALSE);   // did msg in altern. screen
 EXTERN Unt extraInterruptCharG INIT(= 0);       // extra interrupt character
-
-#if defined(FEAT_X11)
-EXTERN int x_no_connect INIT(= FALSE); // don't connect to X server
-EXTERN int x_force_connect INIT(= FALSE); // Do connect to X server.
-                  // Overrules x_no_connect and "exclude" in 'clipboard'.
-#endif
 
 EXTERN int vgetcBusyG INIT(= 0);         // when inside vgetc() then > 0
 
@@ -6577,11 +6538,6 @@ EXTERN Pos   insertStartG;      // This is where the latest insert/append mode s
 // op_insert(), to detect correctly where inserting by the user started.
 EXTERN Pos   insertStartOrigG;
 
-#if defined(FEAT_X11)
-// argument to SETJMP() for handling X IO errors
-EXTERN JMP_BUF x_jump_env;
-#endif
-
 // These flags are set based upon 'fileencoding'.
 // The characters are internally stored as UTF-8 (to avoid trouble with ZERO)
 #define DBCS_JPN    932   // japan
@@ -6836,32 +6792,12 @@ EXTERN Byte no_lines_msg[]   INIT(= "--No lines in book--");
 EXTERN long   sub_nsubs;   // total number of substitutions
 EXTERN LineNr   sub_nlines;   // total number of lines changed
 
-#if !defined(NO_X11_INCLUDES)
 EXTERN BalloonEval   *balloonEval INIT(= NULL);
 EXTERN int      balloonEvalForTerm INIT(= FALSE);
-#endif
-
-#ifdef FEAT_X11
-// xterm display name
-EXTERN char   *xterm_display INIT(= NULL);
-
-// whether xterm_display was allocated, when FALSE it points into argv[]
-EXTERN int   xterm_display_allocated INIT(= FALSE);
-
-// xterm display pointer
-EXTERN Display   *xterm_dpy INIT(= NULL);
-EXTERN XtAppContext app_context INIT(= (XtAppContext)NULL);
-#endif
-
 
 EXTERN int   typebuf_was_filled INIT(= FALSE); // received text from client or from feedkeys()
 
-EXTERN Byte   *serverName INIT(= NULL);   // name of the server
-#ifdef FEAT_X11
-EXTERN Window commWindow INIT(= None);
-EXTERN Atom commProperty INIT(= None);
-EXTERN Arr(Byte) serverDelayedStartName INIT(= NULL);
-#endif
+EXTERN CS serverName INIT(= NULL);   // name of the server
 EXTERN Window clientWindow INIT(= None);
 
 EXTERN int   term_is_xterm INIT(= FALSE);   // xterm-like 'term'
@@ -6980,13 +6916,10 @@ EXTERN Byte showcmd_buf[SHOWCMD_BUFLEN];
 // If we've already warned about missing/unavailable clipboard
 EXTERN int did_warn_clipboard INIT(= FALSE);
 
-#ifdef FEAT_WAYLAND
-
 EXTERN int wayland_no_connect INIT(= FALSE); //Don't connect to Wayland compositor if TRUE
-EXTERN char *wayland_display_name INIT(= NULL); //Wayland display name (ex. wayland-0). Can be NULL
+EXTERN NULLABLE CS wayland_display_name INIT(= NULL); //Wayland display name (ex. wayland-0)
 EXTERN int wayland_display_fd; // Wayland display file descriptor; set by wayland_init_client()
 
-#endif
 
 //}}}
 //{{{:::errors. Error message declarations
@@ -7436,17 +7369,9 @@ EXTERN Byte e_mapping_already_exists_for_str[]
    INIT(= "E227: Mapping already exists for %s");
 EXTERN Byte e_makemap_illegal_mode[]
    INIT(= "E228: makemap: Illegal mode");
-# if defined(FEAT_X11)
-EXTERN Byte e_unknown_fontset_str[]
-   INIT(= "E234: Unknown fontset: %s");
-# endif
 
 EXTERN Byte e_invalid_sign_text_str[]
    INIT(= "E239: Invalid sign text: %s");
-#if defined(FEAT_X11)
-EXTERN Byte e_no_connection_to_x_server[]
-   INIT(= "E240: No connection to the X server");
-#endif
 EXTERN Byte e_unable_to_send_to_str[]
    INIT(= "E241: Unable to send to %s");
 EXTERN Byte e_cant_split_portal_while_closing_another[]
@@ -7459,10 +7384,6 @@ EXTERN Byte e_failed_to_send_command_to_destination_program[]
    INIT(= "E248: Failed to send command to the destination program");
 EXTERN Byte e_portal_layout_changed_unexpectedly[]
    INIT(= "E249: Portal layout changed unexpectedly");
-#ifdef FEAT_X11
-EXTERN Byte e_fonts_for_the_following_charsets_are_missing_in_fontset[]
-   INIT(= "E250: Fonts for the following charsets are missing in fontset %s:");
-#endif
 EXTERN Byte e_eegl_instance_registry_property_is_badly_formed_deleted[]
    INIT(= "E251: EEGL instance registry property is badly formed.  Deleted!");
 EXTERN Byte e_cannot_allocate_color_str[]
@@ -9606,10 +9527,8 @@ EXTERN Byte e_failed_resizing_quickfix_stack[]
    INIT(= "E1544: Failed resizing the quickfix/location list stack");
 EXTERN Byte e_cannot_switch_to_a_closing_buffer[]
    INIT(= "E1546: Cannot switch to a closing buffer");
-#ifdef FEAT_WAYLAND
 EXTERN Byte e_wayland_connection_unavailable[]
    INIT(= "E1548: Wayland connection is unavailable");
-#endif
 EXTERN Byte e_cannot_have_more_than_nr_diff_anchors[]
    INIT(= "E1549: Cannot have more than %d diff anchors");
 EXTERN Byte e_failed_to_find_all_diff_anchors[]
@@ -9873,15 +9792,6 @@ long elapsed(TimeVal* start_tv);
 #define UNT 4294967295       //2**32 - 1
 #define UNT_NEG 2147483648   //2**31, minimal "negative" number within the Unt type
 #define SHORT 65535          //2**16 - 1
-
-#ifdef FEAT_X11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/Intrinsic.h>
-#include <X11/Shell.h>
-#include <X11/StringDefs.h>
-#endif
 
 typedef struct dirent DirEntry;
 

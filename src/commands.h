@@ -616,9 +616,7 @@ C(C_while,   "while",   c_while, EXTRA|NOTRLCOM|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_wincmd,   "wincmd",   c_wincmd, NEEDARG|WORD1|RANGE|COMMPORT|LOCK_OK, ADDR_OTHER),
 C(C_windo,   "windo",   c_listDo, NEEDARG|EXTRA|NOTRLCOM|RANGE|DFLALL|EXPAND, ADDR_PORTALS),
 C(C_winpos, "winpos", c_portPos, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-#ifdef FEAT_WAYLAND 
 C(C_wlrestore,   "wlrestore",   c_wlrestore, EXTRA|TRLBAR|COMMPORT|LOCK_OK|BANG, ADDR_NONE),
-#endif 
 C(C_wnext,   "wnext",   c_wnext, RANGE|BANG|FILE1|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_wprevious,   "wprevious",   c_wnext, RANGE|BANG|FILE1|ARGOPT|TRLBAR, ADDR_OTHER),
 C(C_wq,  "wq", c_exit, RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR, ADDR_LINES),
@@ -628,9 +626,6 @@ C(C_xall,      "xall",      do_wqall, BANG|TRLBAR, ADDR_NONE),
 C(C_xmap,      "xmap", c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_xmapclear,   "xmapclear",   c_mapclear, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_xnoremap,   "xnoremap",   c_map, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
-#ifdef FEAT_X11
-C(C_xrestore,   "xrestore",   c_xrestore, EXTRA|TRLBAR|COMMPORT|LOCK_OK, ADDR_NONE),
-#endif
 C(C_xunmap,   "xunmap", c_unmap, EXTRA|TRLBAR|NOTRLCOM|CTRLV|COMMPORT|LOCK_OK, ADDR_NONE),
 C(C_yank, "yank", c_operators, RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),
 C(C_z, "z",      c_z, RANGE|WHOLEFOLD|BANG|EXTRA|FLAGS|TRLBAR|COMMPORT|LOCK_OK, ADDR_LINES),

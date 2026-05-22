@@ -1946,7 +1946,6 @@ did_set_winwidth(OptionChange* cha) {
    return null;
 }
 
-#ifdef FEAT_WAYLAND
 // Process the new @wlsteal option value.
 private CS
 did_set_wlsteal(OptionChange* cha) {
@@ -1964,7 +1963,6 @@ did_set_wltimeoutlen(OptionChange* cha) {
    updateNumRef(cha);
    return NULL;
 }
-#endif
 
 //Process the updated @wrap value.
 private CS
@@ -3080,7 +3078,6 @@ expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_scbopt_values));
 }
 
-#ifdef FEAT_WAYLAND
 private CS
 setWlseat(OptionChange* cha UNUSED) {
     //If there isn't any seat named 'wlseat', then let the Wayland clipboard be
@@ -3089,8 +3086,6 @@ setWlseat(OptionChange* cha UNUSED) {
 
    return NULL;
 }
-
-#endif
 
 private CS backupCopyValues[] = {SMAP((CS), 
    "yes", "auto", "no", "breaksymlink", "breakhardlink"
