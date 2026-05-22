@@ -3909,7 +3909,7 @@ typedef struct {
 } Imported;
 
 #define IMP_FLAGS_RELOAD   2   // script reloaded, OK to redefine
-#define IMP_FLAGS_AUTOLOAD   4   // script still needs to be loaded
+#define IMP_FLAGS_AUTOLOAD 4   // script still needs to be loaded
 
 // Info about an encountered script.
 // When sn_state has SN_STATE_NOT_LOADED, it has not been sourced yet.
@@ -3917,7 +3917,7 @@ typedef struct {
    CS sn_name;       // full path of script file
    int sn_script_seq;       // latest ScriptPos sc_seq value
 
-   //When non-zero the script ID of the actually sourced script. Used if a
+   //When non-zero, the script ID of the actually sourced script. Used if a
    //script is used by a name which has a symlink, we list both names, but
    //only the linked-to script is actually sourced.
    int sn_sourced_sid;
@@ -3939,42 +3939,42 @@ typedef struct {
    Boole sn_syml_checked;// flag: this has been checked for sym link
 } ScriptItem;
 
-#define SN_STATE_NEW      0   // newly loaded script, nothing done
-#define SN_STATE_NOT_LOADED   1   // script located but not loaded
+#define SN_STATE_NEW         0   // newly loaded script, nothing done
+#define SN_STATE_NOT_LOADED  1   // script located but not loaded
 #define SN_STATE_RELOAD      2   // script loaded before, nothing done
-#define SN_STATE_HAD_COMMAND   9   // a command was executed
+#define SN_STATE_HAD_COMMAND 9   // a command was executed
 
 // Struct passed through eval() functions.
 // See EVALARG_EVALUATE for a fixed value with eval_flags set to EVAL_EVALUATE.
 typedef struct {
-   int      eval_flags;       // EVAL_ flag values below
-   int      eval_break_count;   // nr of line breaks consumed
+   int eval_flags;       // EVAL_ flag values below
+   int eval_break_count;   // nr of line breaks consumed
 
    // copied from Invocation when "getline" is "getsourceline". Can be NULL.
    LineGetter eval_getline;
-   void   *eval_cookie;       // argument for eval_getline()
+   void* eval_cookie;       // argument for eval_getline()
 
    // used when executing commands from a script, NULL otherwise
-   CondStack   *eval_cstack;
+   CondStack* eval_cstack;
 
    // Used to collect lines while parsing them, so that they can be
    // concatenated later.  Used when "eval_ga.ga_itemsize" is not zero.
    // "eval_ga.c" is a list of pointers to lines.
    // "eval_freega" list pointers that need to be freed after concatenating.
-   ArrayList   eval_ga;
-   ArrayList   eval_freega;
+   ArrayList eval_ga;
+   ArrayList eval_freega;
 
    // pointer to the last line obtained with getsourceline()
-   Byte   *eval_tofree;
+   CS eval_tofree;
 
    // array with lines of an inline function
-   ArrayList   eval_tofree_ga;
+   ArrayList eval_tofree_ga;
 
    // set when "arg" points into the last entry of "eval_tofree_ga"
-   int      eval_using_cmdline;
+   int eval_using_cmdline;
 
    // pointer to the lines concatenated for a lambda.
-   Byte   *eval_tofree_lambda;
+   Byte* eval_tofree_lambda;
 } EvalCtx;
 
 // Flag for expression evaluation.

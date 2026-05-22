@@ -40,14 +40,12 @@ typedef struct {
 } SourceCookie;
 
 // The names of packages that once were loaded are remembered.
-private ArrayList      ga_loaded = {0, 0, sizeof(CS), 4, NULL};
+private ArrayList ga_loaded = {0, 0, sizeof(CS), 4, NULL};
 
 // last used sequence number for sourcing scripts (scriptPosG.seq)
 private int last_current_SID_seq = 0;
 
-private int scriptRunFileInternal(
-   CS fname, OUT int *ret_sid, Invocation* invo, Boole clearvars
-);
+private int scriptRunFileInternal( CS fname, OUT int *ret_sid, Invocation* invo, Boole clearvars);
 
 
 // Initialize the execution stack.
@@ -88,7 +86,7 @@ estack_push(CallFrame type, CS name, long lnum) {
 Estack*
 estack_push_ufunc(UserFunc *ufunc, long lnum) {
    Estack *entry = estack_push(ETYPE_UFUNC,
-       ufunc->uf_name_exp ? ufunc->uf_name_exp : ufunc->uf_name, lnum);
+      ufunc->uf_name_exp ? ufunc->uf_name_exp : ufunc->uf_name, lnum);
    if (entry)
       entry->info.ufunc = ufunc;
    return entry;
@@ -101,8 +99,8 @@ estack_top_is_ufunc(UserFunc *ufunc, long lnum) {
       return FALSE;
    Estack* entry = ((Estack *)exestack.c) + exestack.len - 1;
    return entry->ty == ETYPE_UFUNC
-   && STRCMP( entry->name, ufunc->uf_name_exp ? ufunc->uf_name_exp : ufunc->uf_name) == 0
-   && entry->lnum == lnum;
+      && STRCMP( entry->name, ufunc->uf_name_exp ? ufunc->uf_name_exp : ufunc->uf_name) == 0
+      && entry->lnum == lnum;
 }
 
 //Take an item off of the execution stack and return it.
@@ -119,10 +117,10 @@ estack_pop(void){
 //ESTACK_SCRIPT for <script>.
 CS
 estack_sfile(EstackArg which UNUSED){
-   ArrayList   ga;
-   Unt   len;
-   int      idx;
-   CallFrame   last_type = ETYPE_SCRIPT;
+   ArrayList ga;
+   Unt len;
+   int idx;
+   CallFrame last_type = ETYPE_SCRIPT;
 
    Estack* entry = ((Estack *)exestack.c) + exestack.len - 1;
    if (which == ESTACK_SFILE && entry->ty != ETYPE_UFUNC) {
@@ -198,11 +196,11 @@ estack_sfile(EstackArg which UNUSED){
 
 private void
 stacktrace_push_item(
-   List      *l,
-   UserFunc      *fp,
-   Byte      *event,
-   LineNr   lnum,
-   Byte      *filepath
+   List* l,
+   UserFunc* fp,
+   Byte* event,
+   LineNr lnum,
+   CS filepath
 ) {
    Bag* d = allocBag_lock(VAR_FIXED);
    if (d == NULL)
@@ -257,7 +255,7 @@ f_getstacktrace(Arr(Var) argvars UNUSED, Var* returnVar) {
 //"*argp" is advanced to after the [where] argument if it is found.
 private int
 get_runtime_cmd_flags(Byte **argp, Unt where_len) {
-   Byte *arg = *argp;
+   CS arg = *argp;
 
    if (where_len == 0)
       return 0;
@@ -335,10 +333,10 @@ find_script_by_name(Byte *name) {
 //Add a new scriptitem with all items initialized. When running out of memory "error" is set to 
 //FAIL. Return the script ID.
 private int
-get_new_scriptitem(int *error) {
-   static ScriptId   last_current_SID = 0;
-   int          sid = ++last_current_SID;
-   ScriptItem    *si = NULL;
+get_new_scriptitem(int* error) {
+   static ScriptId last_current_SID = 0;
+   int sid = ++last_current_SID;
+   ScriptItem* si = NULL;
 
    if (ga_grow(&script_items, (int)(sid - script_items.len)) == FAIL) {
       *error = FAIL;
@@ -366,11 +364,11 @@ get_new_scriptitem(int *error) {
 }
 
 int
-get_new_scriptitem_for_fname(int *error, Byte *fname) {
+get_new_scriptitem_for_fname(int* error, CS fname) {
    int sid = get_new_scriptitem(error);
 
    if (*error == OK) {
-      ScriptItem *si = SCRIPT_ITEM(sid);
+      ScriptItem* si = SCRIPT_ITEM(sid);
       si->sn_name = copyStr(fname);
       si->sn_state = SN_STATE_NOT_LOADED;
    }
@@ -887,7 +885,7 @@ cmd_source(Byte *fname, Invocation* invo) {
       return;
    }
 
-   if (invo != NULL && *fname == ZERO) {
+   if (invo && *fname == ZERO) {
       if (invo->forceit)
          // a file name is needed to source normal mode commands
          emsg(_(e_argument_required));
@@ -921,7 +919,7 @@ c_source(Invocation* invo) {
 void
 c_options(Invocation   *invo UNUSED) {
    Byte  buf[500];
-   int       multi_mods = 0;
+   int multi_mods = 0;
 
    buf[0] = ZERO;
    (void)add_win_cmd_modifiers(buf, &commModifierG, &multi_mods);
@@ -952,7 +950,7 @@ source_level(void *cookie) {
 
 //Return the readahead line. Note that the pointer may become invalid when
 //getting the next line, if it's concatenated with the next one.
-Byte *
+CS
 source_nextline(void *cookie) {
    return ((SourceCookie *)cookie)->nextline;
 }
@@ -1285,10 +1283,7 @@ theend:
 }
 
 int
-scriptRunFile(
-   CS fname,
-   OUT int* retSid
-){
+scriptRunFile(CS fname, OUT int* retSid){
    return scriptRunFileInternal(fname, OUT retSid, NULL, FALSE);
 }
 
@@ -13611,9 +13606,8 @@ find_func_even_dead(CS name, int flags) {
          return HI2UF(hi);
    }
 
-    // Find autoload function if this is an autoload script.
-    return find_func_with_prefix(name[0] == 's' && name[1] == ':'
-                   ? name + 2 : name, scriptPosG.sid);
+   // Find autoload function if this is an autoload script.
+   return find_func_with_prefix(name[0] == 's' && name[1] == ':' ? name + 2 : name, scriptPosG.sid);
 }
 
 //Find a function by name, return pointer to it in ufuncs.
