@@ -94,8 +94,8 @@ typedef struct timeval TimeVal;
 // user ID of root is usually zero, but not for everybody
 #define ROOT_UID 0
 
-#define FEAT_X11
-//#define FEAT_WAYLAND
+//#define FEAT_X11
+#define FEAT_WAYLAND
 
 // Can limit syntax hilite time to 'redrawtime'.
 #define SYN_TIME_LIMIT 1

@@ -106,17 +106,4 @@ void ch_logfile(CS fname, CS opt);
 int ch_log_active(void);
 void f_ch_log(Var *argvars, Var *returnVar);
 void f_ch_logfile(Var *argvars, Var *returnVar);
-void server_to_input_buf(CS str);
-CS eval_client_expr_to_string(CS expr);
-int sendToLocalEm(CS cmd, int asExpr, Byte **result);
-void exec_on_server(MainParams *params);
-void prepare_server(MainParams *params);
-void f_remote_expr(Var *argvars, Var *returnVar);
-void f_remote_foreground(Var *argvars, Var *returnVar);
-void f_remote_peek(Var *argvars, Var *returnVar);
-void f_remote_read(Var *argvars, Var *returnVar);
-void f_remote_send(Var *argvars, Var *returnVar);
-void f_remote_startserver(Var *argvars, Var *returnVar);
-void f_server2client(Var *argvars, Var *returnVar);
-void f_serverlist(Var *argvars, Var *returnVar);
 /* eegl: set ft=c : */

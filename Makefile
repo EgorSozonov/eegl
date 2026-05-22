@@ -39,11 +39,10 @@ X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
 X_LIBS		= -lXt -lX11
 
-WAYLAND_LIBS    = -lwayland-client
-WAYLAND_SRC	=        libs/wayland/wlr-data-control-unstable-v1.c       libs/wayland/ext-data-control-v1.c \
-        libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c       src/wayland.c
-WAYLAND_OBJ	=        .b/wlr-data-control-unstable-v1.o .b/ext-data-control-v1.o \
-        .b/xdg-shell.o .b/primary-selection-unstable-v1.o .b/wayland.o
+WAYLAND_LIBS = -lwayland-client
+WAYLAND_SRC	= libs/wayland/ext-data-control-v1.c \
+        libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c
+WAYLAND_OBJ	= .b/ext-data-control-v1.o .b/xdg-shell.o .b/primary-selection-unstable-v1.o
 WAYLAND_FLAGS    = 
 
 
@@ -52,18 +51,10 @@ CHANNEL_SRC	= channel.c
 CHANNEL_OBJ	= .b/channel.o
 TERM_TEST	= test_libvterm
 
-
-AWK		= gawk
-
-STRIP		= strip
-
-EXEEXT		= 
 CROSS_COMPILING = 
-
 COMPILEDBY	= 
 
 INSTALLVIMDIFF	= installvimdiff
-INSTALLGVIMDIFF	= installgvimdiff
 INSTALL_LANGS	= install-languages
 INSTALL_TOOL_LANGS	= install-tool-languages
 
@@ -100,9 +91,6 @@ MAKEMO		= yes
 MSGFMT		= msgfmt
 MSGFMTCMD	= OLD_PO_FILE_INPUT=yes msgfmt --no-convert -v
 MSGFMT_DESKTOP	= eegl.desktop
-
-### set if $SOURCE_DATE_EPOCH was set when running configure
-BUILD_DATE_MSG	= 
 
 
 # Make sure that "make first" will run "make all" once configure has done its
@@ -327,7 +315,6 @@ TAGS_FILES = *.c *.h
 # Change and use these defines if configure cannot find your Motif stuff.
 
 srcdir = src 
-EEGLNAME = eegl
 VIEWNAME = view
 
 #{{{what used to be auto/config.mk
@@ -361,13 +348,6 @@ X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
 X_LIBS		= -lXt -lX11
 
-WAYLAND_LIBS    = -lwayland-client
-WAYLAND_SRC	=        libs/wayland/wlr-data-control-unstable-v1.c       libs/wayland/ext-data-control-v1.c \
-        libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c       src/wayland.c
-WAYLAND_OBJ	=        .b/wlr-data-control-unstable-v1.o .b/ext-data-control-v1.o \
-        .b/xdg-shell.o .b/primary-selection-unstable-v1.o .b/wayland.o
-WAYLAND_FLAGS    = 
-
 XDIFF_OBJS_USED	= $(XDIFF_OBJS)
 
 
@@ -378,17 +358,11 @@ TERM_OBJ	= .b/vterm_encoding.o .b/vterm_keyboard.o .b/vterm_mouse.o .b/vterm_par
 TERM_TEST	= test_libvterm
 
 
-AWK		= gawk
-
-STRIP		= strip
-
-EXEEXT		= 
 CROSS_COMPILING = 
 
 COMPILEDBY	= 
 
 INSTALLVIMDIFF	= installvimdiff
-INSTALLGVIMDIFF	= installgvimdiff
 INSTALL_LANGS	= install-languages
 INSTALL_TOOL_LANGS	= install-tool-languages
 
@@ -412,25 +386,6 @@ datarootdir	= ${prefix}/share
 
 ### Prefix for location of data files
 DATADIR		= ${datarootdir}
-
-### Prefix for location of man pages
-MANDIR		= ${datarootdir}/man
-
-
-
-### Any OS dependent extra source and object file
-OS_EXTRA_SRC	= 
-OS_EXTRA_OBJ	= 
-
-### If the *.po files are to be translated to *.mo files.
-MAKEMO		= yes
-
-MSGFMT		= msgfmt
-MSGFMTCMD	= OLD_PO_FILE_INPUT=yes msgfmt --no-convert -v
-MSGFMT_DESKTOP	= gvim.desktop vim.desktop
-
-### set if $SOURCE_DATE_EPOCH was set when running configure
-BUILD_DATE_MSG	= 
 
 
 # Make sure that "make first" will run "make all" once configure has done its
@@ -734,9 +689,9 @@ SANITIZER_LIBS = $(SANITIZER_FLAGS)
 
 
 ### Names of the programs and targets  {{{1
-EEGLTARGET	= bin/$(EEGLNAME)$(EXEEXT)
+EEGLTARGET	= bin/eegl
 VIEWTARGET	= $(VIEWNAME)$(LNKEXT)
-EEGLDIFFNAME	= $(EEGLNAME)diff
+EEGLDIFFNAME	= eegldiff
 VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 
 ### Names of the tools that are also made  {{{1
@@ -1144,7 +1099,7 @@ BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
 
 
 SRC =	$(BASIC_SRC) \
-	#$(WAYLAND_SRC)
+	$(WAYLAND_SRC)
 
 EXTRA_SRC = src/channel.c \
 	    $(GRESOURCE_SRC)
@@ -1160,13 +1115,13 @@ libs/wayland/xdg-shell.h: libs/wayland/xdg-shell.c
 
 # Unittest files
 JSON_TEST_SRC = src/json_test.c
-JSON_TEST_TARGET = src/json_test$(EXEEXT)
+JSON_TEST_TARGET = src/json_test
 KWORD_TEST_SRC = src/kword_test.c
-KWORD_TEST_TARGET = src/kword_test$(EXEEXT)
+KWORD_TEST_TARGET = src/kword_test
 MEMFILE_TEST_SRC = src/memfile_test.c
-MEMFILE_TEST_TARGET = src/memfile_test$(EXEEXT)
+MEMFILE_TEST_TARGET = src/memfile_test
 MESSAGE_TEST_SRC = src/message_test.c
-MESSAGE_TEST_TARGET = src/message_test$(EXEEXT)
+MESSAGE_TEST_TARGET = src/message_test
 
 UNITTEST_SRC = $(JSON_TEST_SRC) $(KWORD_TEST_SRC) $(MEMFILE_TEST_SRC) $(MESSAGE_TEST_SRC)
 UNITTEST_TARGETS = $(JSON_TEST_TARGET) $(KWORD_TEST_TARGET) $(MEMFILE_TEST_TARGET) $(MESSAGE_TEST_TARGET)
@@ -1210,6 +1165,7 @@ OBJ_COMMON = \
 	.b/term.o \
 	.b/ui.o \
 	.b/window.o \
+   $(WAYLAND_OBJ) \
 	$(OS_EXTRA_OBJ) \
 	$(CHANNEL_OBJ)
 
@@ -1320,14 +1276,14 @@ indices: src/commands.h src/actions.h
 COMPILE = $(CC) -c -I$(srcdir) $(ALL_FLAGS)
 CClink = $(CC)
 
+# MAIN.
 # Link the target for normal use or debugging.
 # A shell script is used to try linking without unnecessary libraries.
 $(EEGLTARGET): $(OBJ)
-	@$(BUILD_DATE_MSG)
 	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
 		-o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)" \
 		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
-		PROG="$(EEGLNAME)" \
+		PROG="eegl" \
 		sh $(srcdir)/link.sh
 	@echo '                                 '
 	@echo '                    .^^~-.       '
@@ -1550,8 +1506,8 @@ installvim: installvimbin installtutorbin \
 #
 installvimbin: $(EEGLTARGET) $(DESTDIR)$(exec_prefix) $(DEST_BIN)
 	-if test -f $(DEST_BIN)/$(EEGLTARGET); then \
-	  mv -f $(DEST_BIN)/$(EEGLTARGET) $(DEST_BIN)/$(EEGLNAME).rm; \
-	  rm -f $(DEST_BIN)/$(EEGLNAME).rm; \
+	  mv -f $(DEST_BIN)/$(EEGLTARGET) $(DEST_BIN)/eegl.rm; \
+	  rm -f $(DEST_BIN)/eegl.rm; \
 	fi
 	$(INSTALL_PROG) $(EEGLTARGET) $(DEST_BIN)
 	strip $(DEST_BIN)/$(EEGLTARGET)
@@ -1562,7 +1518,7 @@ installvimbin: $(EEGLTARGET) $(DESTDIR)$(exec_prefix) $(DEST_BIN)
 # Long list of arguments for the shell script that installs the manual pages
 # for one language.
 INSTALLMANARGS = $(VIMLOC) $(SCRIPTLOC) $(VIMRCLOC) $(HELPSOURCE) $(MANMOD) \
-		$(EEGLNAME) $(EEGLDIFFNAME) $(EEEGLNAME)
+		eegl $(EEGLDIFFNAME) $(EEEGLNAME)
 
 # Install most of the runtime files
 installruntime: installrtbase installmacros installpack installtutor installspell
@@ -1702,8 +1658,8 @@ installpack: $(DEST_VIM) $(DEST_RT) $(DEST_PACK)
 
 # install the tutor files
 installtutorbin: $(DEST_BIN)
-	cp scripts/vimtutor $(DEST_BIN)/$(EEGLNAME)tutor
-	chmod $(SCRIPTMOD) $(DEST_BIN)/$(EEGLNAME)tutor
+	cp scripts/vimtutor $(DEST_BIN)/eegltutor
+	chmod $(SCRIPTMOD) $(DEST_BIN)/eegltutor
 
 
 installtutor: $(DEST_RT) $(DEST_TUTOR)/en $(DEST_TUTOR)/it $(DEST_TUTOR)/sr $(DEST_TUTOR)/ru
@@ -1718,14 +1674,6 @@ installtutor: $(DEST_RT) $(DEST_TUTOR)/en $(DEST_TUTOR)/it $(DEST_TUTOR)/sr $(DE
 	chmod $(DIRMOD) $(DEST_TUTOR)/it
 	chmod $(DIRMOD) $(DEST_TUTOR)/ru
 	chmod $(DIRMOD) $(DEST_TUTOR)/sr
-
-# Install the spell files, if they exist.  This assumes at least the English
-# spell file is there.
-installspell: $(DEST_VIM) $(DEST_RT) $(DEST_SPELL)
-	if test -f $(SPELLSOURCE)/en.latin1.spl; then \
-	  cp $(SPELLSOURCE)/*.spl $(SPELLSOURCE)/*.sug $(SPELLSOURCE)/*.vim $(DEST_SPELL); \
-	  chmod $(HELPMOD) $(DEST_SPELL)/*.spl $(DEST_SPELL)/*.sug $(DEST_SPELL)/*.vim; \
-	fi
 
 # install the runtime tools
 	cp -r $(TOOLSSOURCE)/* $(DEST_TOOLS)
@@ -1843,52 +1791,7 @@ install-languages: languages $(DEST_LANG) $(DEST_KMAP) $(DEST_RT)
 	  fi ; \
 	fi
 
-# Install the icons for KDE, if the directory exists and the icon doesn't.
-# Always when $(DESTDIR) is not empty.
-ICON48PATH = $(DESTDIR)$(DATADIR)/icons/hicolor/48x48/apps
-ICON32PATH = $(DESTDIR)$(DATADIR)/icons/locolor/32x32/apps
-ICON16PATH = $(DESTDIR)$(DATADIR)/icons/locolor/16x16/apps
-ICONTHEMEPATH = $(DATADIR)/icons/hicolor
-DESKTOPPATH = $(DESTDIR)$(DATADIR)/applications
-KDEPATH = $(HOME)/.kde/share/icons
-install-icons:
-	if test -n "$(DESTDIR)$(DATADIR)"; then \
-		mkdir -p $(ICON48PATH) $(ICON32PATH) \
-		$(ICON16PATH) $(DESKTOPPATH); \
-	fi
-
-	if test -d $(ICON48PATH) -a -w $(ICON48PATH) \
-		-a ! -f $(ICON48PATH)/gvim.png; then \
-	   cp $(SCRIPTSOURCE)/vim48x48.png $(ICON48PATH)/gvim.png; \
-	   if test -z "$(DESTDIR)" -a -x "$(GTK_UPDATE_ICON_CACHE)" \
-		   -a -w $(ICONTHEMEPATH) \
-		   -a -f $(ICONTHEMEPATH)/index.theme; then \
-		$(GTK_UPDATE_ICON_CACHE) -q $(ICONTHEMEPATH); \
-	   fi \
-	fi
-	if test -d $(ICON32PATH) -a -w $(ICON32PATH) \
-		-a ! -f $(ICON32PATH)/gvim.png; then \
-	   cp $(SCRIPTSOURCE)/vim32x32.png $(ICON32PATH)/gvim.png; \
-	fi
-	if test -d $(ICON16PATH) -a -w $(ICON16PATH) \
-		-a ! -f $(ICON16PATH)/gvim.png; then \
-	   cp $(SCRIPTSOURCE)/vim16x16.png $(ICON16PATH)/gvim.png; \
-	fi
-	if test -d $(DESKTOPPATH) -a -w $(DESKTOPPATH); then \
-	   if test -f po/vim.desktop -a -f po/gvim.desktop; then \
-		cp po/vim.desktop po/gvim.desktop \
-			$(DESKTOPPATH); \
-	   else \
-		cp $(SCRIPTSOURCE)/vim.desktop \
-			$(SCRIPTSOURCE)/gvim.desktop \
-			$(DESKTOPPATH); \
-	   fi; \
-	   if test -z "$(DESTDIR)" -a -x "$(UPDATE_DESKTOP_DATABASE)"; then \
-	      $(UPDATE_DESKTOP_DATABASE) -q $(DESKTOPPATH); \
-	   fi \
-	fi
-
-$(HELPSOURCE)/vim.1 $(MACROSOURCE) $(TOOLSSOURCE):
+$(HELPSOURCE)/eegl.1 $(MACROSOURCE) $(TOOLSSOURCE):
 	@echo Runtime files not found.
 	@echo You need to unpack the runtime archive before running "make install".
 	test -f error
@@ -1911,19 +1814,10 @@ $(DESTDIR)$(exec_prefix) $(DEST_BIN) \
 
 # Create links from various names to vim.  This is only done when the links
 # (or executables with the same name) don't exist yet.
-installlinks: $(GUI_TARGETS) \
-			$(DEST_BIN)/$(VIEWTARGET) \
+installlinks: $(DEST_BIN)/$(VIEWTARGET) \
 			$(DEST_BIN)/$(REEGLTARGET) \
 			$(DEST_BIN)/$(RVIEWTARGET) \
 			$(INSTALLVIMDIFF)
-
-installglinks: $(DEST_BIN)/$(GEEGLTARGET) \
-			$(DEST_BIN)/$(GVIEWTARGET) \
-			$(DEST_BIN)/$(RGEEGLTARGET) \
-			$(DEST_BIN)/$(RGVIEWTARGET) \
-			$(DEST_BIN)/$(EEEGLTARGET) \
-			$(DEST_BIN)/$(EVIEWTARGET) \
-			$(INSTALLGVIMDIFF)
 
 installvimdiff: $(DEST_BIN)/$(VIMDIFFTARGET)
 
@@ -1937,7 +1831,7 @@ $(DEST_BIN)/$(EEGLDIFFTARGET): $(DEST_BIN)
 # Create links for the manual pages with various names to Eegl. This is only
 # done when the links (or manpages with the same name) don't exist yet.
 
-INSTALLMLARGS = $(EEGLNAME) $(EEGLDIFFNAME) $(EEEGLNAME)
+INSTALLMLARGS = eegl $(EEGLDIFFNAME) $(EEEGLNAME)
 
 installmanlinks:
 	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
@@ -2248,9 +2142,6 @@ $(ALL_OBJ): .b/.dirstamp
 .b/window.o: src/window.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
-.b/wlr-data-control-unstable-v1.o: libs/wayland/wlr-data-control-unstable-v1.c
-	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
-
 .b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
 
@@ -2268,12 +2159,9 @@ Makefile:
 ###############################################################################
 ### (automatically generated by 'make depend')
 ### Dependencies:
-.b/book.o: src/book.c src/eegl.h \
- src/generic.h src/commands.h
-.b/channel.o: src/channel.c src/eegl.h \
- src/generic.h src/commands.h
-.b/clipboard.o: src/clipboard.c src/eegl.h \
- src/generic.h src/commands.h
+.b/book.o: src/book.c src/eegl.h src/generic.h
+.b/channel.o: src/channel.c src/eegl.h src/generic.h
+.b/clipboard.o: src/clipboard.c src/eegl.h src/generic.h
 .b/data.o: src/data.c src/eegl.h \
  src/generic.h src/commands.h
 .b/diff.o: src/diff.c src/eegl.h src/generic.h src/commands.h
@@ -2337,14 +2225,9 @@ Makefile:
  src/generic.h src/commands.h src/memory.c
 .b/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/message.c
-.b/channel.o: src/channel.c src/eegl.h \
- src/generic.h src/commands.h
-.b/wlr-data-control-unstable-v1.o: \
- libs/wayland/wlr-data-control-unstable-v1.c
+.b/channel.o: src/channel.c src/eegl.h src/generic.h 
+.b/window.o: src/window.c src/eegl.h src/generic.h src/commands.h
+ 
 .b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 .b/xdg-shell.o: libs/wayland/xdg-shell.c
-.b/primary-selection-unstable-v1.o: \
- libs/wayland/primary-selection-unstable-v1.c
-.b/window.o: src/window.c src/eegl.h \
- src/generic.h src/commands.h
- 
+.b/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c

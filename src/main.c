@@ -392,9 +392,11 @@ main(int argc, char** argv) {
    // Various initializations #1 shared with tests.
    init1(OUT &params);
 
+#ifdef FEAT_X11
    // Do the client-server stuff, unless "--servername ''" was used.
    // This may exit Eegl if the command was sent to the server.
    exec_on_server(OUT &params);
+#endif 
 
    //Figure out the way to work from the command name argv[0].
    //"eegldiff" starts diff mode, etc.
@@ -571,10 +573,10 @@ eeglMain1(void) {
    setup_term_clip();
    TIME_MSG("setup x11 clipboard");
     }
-#endif
 
    // Prepare for being a Eegl server.
    prepare_server(&params);
+#endif
 
 #ifdef FEAT_WAYLAND
    if (wayland_init_client(wayland_display_name) == OK) {
