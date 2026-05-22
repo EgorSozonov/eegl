@@ -1262,7 +1262,7 @@ clearHiliteWorker(Short hiId) {
 }
 
 // Set the normal foreground and background colors according to the "Normal"
-// hiliting group. For X11 also set "Menu", "Scrollbar", and "Tooltip" colors.
+// hiliting group.
 private void
 set_normal_colors(void) {
    parseColorNames(hilites);

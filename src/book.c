@@ -144,10 +144,10 @@ private void
 updateLinesFromVars(
    Book* book,
    LineNr lnum_arg,
-   Bool append,
+   Boole append,
    Arr(Var) lines,
-   Var* returnVar)
-{
+   Var* returnVar
+) {
    LineNr    lnum = lnum_arg + (append ? 1 : 0);
    CS line = NULL;
    List* l = NULL;

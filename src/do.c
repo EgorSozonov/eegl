@@ -11186,8 +11186,7 @@ enum {
    SPEC_ABUF,       // autocommand book number
    SPEC_AMATCH,    // autocommand match name
    SPEC_SFLNUM,    // script file line number
-   SPEC_SID,       // script ID: <SNR>123_
-   SPEC_CLIENT
+   SPEC_SID       // script ID: <SNR>123_
 };
 
 // Check "str" for starting with a special commline variable.
@@ -11204,7 +11203,6 @@ find_commline_var(CS src, Unt *usedlen) {
       KEYVALUE_ENTRY(SPEC_CCWORD, "cWORD>"),       // cursor WORD
       KEYVALUE_ENTRY(SPEC_CEXPR, "cexpr>"),       // expr under cursor
       KEYVALUE_ENTRY(SPEC_CFILE, "cfile>"),       // cursor path name
-      KEYVALUE_ENTRY(SPEC_CLIENT, "client>"),
       KEYVALUE_ENTRY(SPEC_CWORD, "cword>"),       // cursor word
       KEYVALUE_ENTRY(SPEC_SCRIPT, "script>"),       // script file name
       KEYVALUE_ENTRY(SPEC_SFILE, "sfile>"),       // ":so" file name
@@ -11481,15 +11479,10 @@ evalVars(
 
       case SPEC_SID:
          if (scriptPosG.sid <= 0) {
-             *errorMsg = _(e_using_sid_not_in_script_context);
-             return NULL;
+            *errorMsg = _(e_using_sid_not_in_script_context);
+            return NULL;
          }
          sprintf((char *)strbuf, "<SNR>%d_", scriptPosG.sid);
-         result = strbuf;
-         break;
-
-      case SPEC_CLIENT:   // Source of last submitted input
-         sprintf((char *)strbuf, PRINTF_HEX_ULONG, (Ulong)clientWindow);
          result = strbuf;
          break;
 

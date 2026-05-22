@@ -3281,15 +3281,11 @@ reset_last_used_map(MapBlock* mp) {
 
 #define WINBYTE BYTE
 
-#ifdef X_LOCALE
-# include <X11/Xlocale.h>
-#endif
-
 #include <wchar.h>
 
 private int dbcs_ptr2len(CS p);
 int mb_ptr2cells_len(CS p, int size);
-private int dbcs_head_off(CS base, Byte *p);
+private int dbcs_head_off(CS base, CS p);
 
 // Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
 // UTF-8 string. Bytes which are illegal when used as the first byte have a 1.

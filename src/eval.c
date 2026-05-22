@@ -7747,8 +7747,7 @@ findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload) {
    if (ret)
       return ret;
 
-   // and finally try
-   return findVar_autoload_prefix(name.c, 0, htp, NULL);
+   return null;
 }
 
 
@@ -7757,47 +7756,6 @@ findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload) {
 DictItem *
 findVar(CS name, Boole noAutoload) {
    return findVarAndSetHtable(mbText(name), null, noAutoload);
-}
-
-//Find variable "name" with sn_autoload_prefix.
-//Return a pointer to it if found, NULL if not found.
-//When "sid" > 0, use it otherwise use "scriptPosG.sid".
-//When "htp" is not NULL  set "htp" to the EeSet used.
-//When "namep" is not NULL set "namep" to the generated name, and
-//then the caller gets ownership and is responsible for freeing the name.
-DictItem *
-findVar_autoload_prefix(CS name, int sid, EeSet **htp, Byte **namep) {
-   EeSet* ht;
-   DictItem* ret = NULL;
-   // When using "vim9script autoload" script-local items are prefixed but can
-   // be used with s:name.
-   int check_sid = sid > 0 ? sid : scriptPosG.sid;
-   if (SCRIPT_ID_VALID(check_sid) && (name[0] == 's' && name[1] == ':')) {
-      ScriptItem *si = SCRIPT_ITEM(check_sid);
-
-      if (si->sn_autoload_prefix) {
-         CS base_name = (name[0] == 's' && name[1] == ':') ? name + 2 : name;
-         CS auto_name = concat_str(si->sn_autoload_prefix, base_name);
-
-         if (auto_name) {
-            int free_auto_name = TRUE;
-            ht = &globvarht;
-            ret = findVar_in_ht(ht, 'g', mbText(auto_name), TRUE);
-            if (ret) {
-               if (htp)
-                  *htp = ht;
-               if (namep) {
-                  free_auto_name = FALSE;
-                  *namep = auto_name;
-               }
-            }
-            if (free_auto_name)
-                eeglFree(auto_name);
-         }
-      }
-    }
-
-    return ret;
 }
 
 //Like findVar() but if the name starts with <SNR>99_ then look in the
@@ -7897,10 +7855,6 @@ lookup_scriptitem(Text name, int cmd) {
 
    EeSetItem* hi = hash_find(ht, text(p));
    int res = HASHITEM_EMPTY(hi) ? FAIL : OK;
-
-   // if not script-local, then perhaps autoload-exported
-   if (res == FAIL && findVar_autoload_prefix(p, 0, NULL, NULL) != NULL)
-      res = OK;
 
    if (p != buf)
       eeglFree(p);
@@ -8182,13 +8136,7 @@ setVarImpl(
    if (sid != 0) {
       varname = NULL;
       if (SCRIPT_ID_VALID(sid)) {
-         Byte   *auto_name = NULL;
-         if (findVar_autoload_prefix(name.c, sid, &ht, &auto_name) != NULL) {
-            var_in_autoload = true;
-            varname = auto_name;
-            name_tofree = varname;
-         } else
-            ht = &SCRIPT_VARS(sid);
+         ht = &SCRIPT_VARS(sid);
       }
       if (!varname)
          varname = name.c;

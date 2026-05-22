@@ -1,7 +1,7 @@
 //EEGL - the Extensible development Environment for GNU/Linux
 //Licensed under GPLv3, see the LICENSE file (c) Egor Sozonov
 
-//## window.c: functions for displaying the window in X11 or in Wayland
+//## window.c: functions for displaying the window in Wayland
 
 #include "eegl.h"
 // for shm_open:
@@ -10,8 +10,6 @@
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 
-
-
 #include <wayland-client.h>
 #include "../libs/wayland/ext-data-control-v1.h"
 #include "../libs/wayland/xdg-shell.h"
@@ -19,8 +17,8 @@ int stat(const char* restrict path, struct stat* restrict buf);
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
 typedef struct {
-   struct wl_seat  *proxy;
-   char       *label;      // Name of seat as text (e.g. seat0, seat1...).
+   struct wl_seat* proxy;
+   char* label;      // Name of seat as text (e.g. seat0, seat1...).
    uint32_t capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
 } vwl_seat_T;
 

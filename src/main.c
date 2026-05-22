@@ -24,7 +24,6 @@ private char *(features[]) = {
    "+mouse_sgr",
        // only interesting on Unix systems
    "+wayland",
-   "-X11",
    "+xattr",
    "-xfontset",
 #ifdef FEAT_XTERM_SAVE

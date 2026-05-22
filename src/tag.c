@@ -2859,7 +2859,7 @@ expand_tag_fname(CS fname, CS tag_fname, int expand) {
 //Return TRUE if tag for file "fname" if tag file "tag_fname" is for current file.
 private int
 test_for_current(CS fname, CS fname_end, CS tag_fname, CS buf_ffname) {
-   Bool retval = false;
+   Boole retval = false;
 
    if (buf_ffname) {   // if the buffer has a name
       Unt c = *fname_end;

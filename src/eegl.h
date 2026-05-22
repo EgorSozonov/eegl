@@ -250,12 +250,7 @@ typedef void (*sighandler_T) SIGPROTOARG;
 # define UNUSED __attribute__((unused))
 #endif
 
-
-#ifdef X_LOCALE
-# include <X11/Xlocale.h>
-#else
-# include <locale.h>
-#endif
+#include <locale.h>
 
 #define PATH_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<")
 #define SHELL_ESC_CHARS ((Byte *)" \t\n*?[{`$\\%#'\"|!<>();&")
@@ -2502,7 +2497,6 @@ typedef enum {
    OPTION_CALLBACK     // pointer to callback function
 } OptionValueTag;
 
-
 typedef struct {
    OptionValueTag tag;
    union {
@@ -2518,7 +2512,7 @@ typedef struct {
 #define getDefault(optField, optDef) _Generic((optField),\
    CS: optDef->defaultValue.string,\
    long: optDef->defaultValue.num,\
-   Bool: optDef->defaultValue.boole,\
+   Boole: optDef->defaultValue.boole,\
    Unt: optDef->defaultValue.flags,\
    Byte: optDef->defaultValue.enum\
 )
@@ -2571,8 +2565,6 @@ typedef struct {
    int freeCount;
 } BookRef;
 
-// This is here because gui.h needs the Pos and Portal, and Portal needs gui.h for scrollbar_T.
-#include <X11/Intrinsic.h>
 typedef Unt UiColor;
 #define INVALCOLOR ((UiColor)0x1ffffff)  // means "color for this hilite group was not set"
 
@@ -2627,7 +2619,6 @@ typedef struct foldinfo {
    int fi_low_level; // lowest fold level that starts in the same line
 } FoldInfo;
 
-
 typedef struct filemark {
    Pos   mark;      // cursor position
    int      fnum;      // file number
@@ -2643,12 +2634,11 @@ typedef struct xfilemark {
 // The taggy struct is used to store the information about a :tag command.
 typedef struct taggy {
    CS tagname;   // tag name
-   FileMark   fmark;    // cursor position BEFORE ":tag"
-   Unt      cur_match;  // match number
-   int      cur_fnum;   // book number used for cur_match
-   Byte   *user_data;   // used with tagfunc
+   FileMark fmark;    // cursor position BEFORE ":tag"
+   Unt cur_match;  // match number
+   int cur_fnum;   // book number used for cur_match
+   Arr(Byte) user_data;   // used with tagfunc
 } Taggy;
-
 
 #include "indices/optionCounts.h"
 
@@ -2674,7 +2664,7 @@ typedef struct {
 #undef OPTIONS_DEF_PORTAL
 #undef OPTIONS_FIELDS
 
-   Bool foldEnableSave;  // @foldenable saved for diff mode
+   Boole foldEnableSave;  // @foldenable saved for diff mode
    int foldLevelSaved;
    Byte foldMethodSaved;  // @foldmethod saved for diff mode
    int scrollBindSave;   // @scrollbind saved for diff mode
@@ -2698,8 +2688,8 @@ struct PortInfo {
    Portal* portal;   // pointer to portal that did set wi_fpos
    Pos wi_fpos;   // last cursor position in the file
    PortLocal opt;      // portal-local options
-   Bool isOptChanged;   // TRUE when wi_opt has useful values
-   Bool foldManual;   // copy of Portal.foldManual
+   Boole isOptChanged;   // TRUE when wi_opt has useful values
+   Boole foldManual;   // copy of Portal.foldManual
    ArrayList folds;   // clone of Portal.folds
    Unt wi_changelistidx; // copy of w_changelistidx
 };
@@ -2718,22 +2708,22 @@ typedef struct {
 // One line saved for undo.  After the ZERO terminated text there might be text
 // properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
 typedef struct {
-   Byte   *ul_line;   // text of the line
-   long   ul_len;      // length of the line including ZERO, plus text properties
-   ColNr   ul_textlen;   // length of the line excluding ZERO and any text properties
+   CS ul_line;   // text of the line
+   long ul_len;      // length of the line including ZERO, plus text properties
+   ColNr ul_textlen;   // length of the line excluding ZERO and any text properties
 } UndoLine;
 
 declStruct(UndoEntry);
 declStruct(UndoHeader);
 struct UndoEntry {
-   UndoEntry   *ue_next;   // pointer to next entry in list
-   LineNr   ue_top;      // number of line above undo block
-   LineNr   ue_bot;      // number of line below undo block
-   LineNr   ue_lcount;   // linecount when u_save called
-   UndoLine   *ue_array;   // array of lines in undo block
-   long   ue_size;   // number of lines in ue_array
+   UndoEntry* ue_next;   // pointer to next entry in list
+   LineNr ue_top;      // number of line above undo block
+   LineNr ue_bot;      // number of line below undo block
+   LineNr ue_lcount;   // linecount when u_save called
+   UndoLine* ue_array;   // array of lines in undo block
+   long ue_size;   // number of lines in ue_array
 #ifdef U_DEBUG
-   int      ue_magic;   // magic number to check allocation
+   int ue_magic;   // magic number to check allocation
 #endif
 };
 
@@ -2787,9 +2777,9 @@ struct UndoHeader {
 
 // things used in memfile.c
 
-typedef struct BlockHeader    BlockHeader;
-typedef struct MemFile       MemFile;
-typedef long          BlockId;
+typedef struct BlockHeader BlockHeader;
+typedef struct MemFile MemFile;
+typedef long BlockId;
 
 //MfHashTable is a chained hashtable with BlockId key and arbitrary structures as items. This is 
 //an intrusive data structure: we require that items begin with MfHashItem which contains the key 
@@ -2829,14 +2819,14 @@ struct BlockHeader {
    MfHashItem hashItem;      // header for hash table and key
 #define bh_bnum hashItem.key // block number, part of hashItem
 
-   BlockHeader   *bh_next;       // next block_hdr in free or used list
-   BlockHeader   *bh_prev;       // previous block_hdr in used list
-   Byte   *bh_data;       // pointer to memory (for used block)
-   int      pageCount;       // number of pages in this block
+   BlockHeader* bh_next;       // next block_hdr in free or used list
+   BlockHeader* bh_prev;       // previous block_hdr in used list
+   Arr(Byte) bh_data;       // pointer to memory (for used block)
+   int pageCount;       // number of pages in this block
 
 #define BH_DIRTY    1
 #define BH_LOCKED   2
-   char   bh_flags;       // BH_DIRTY or BH_LOCKED
+   Byte bh_flags;       // BH_DIRTY or BH_LOCKED
 };
 
 declStruct(TextChunk);
@@ -2845,17 +2835,17 @@ declStruct(TextHeader);
 // structure used to store one block of the stuff/redo/recording buffers
 struct TextChunk {
    TextChunk* next;   // pointer to next text chunk
-   Unt   b_strlen;   // length of b_str, excluding the ZERO
-   Byte   b_str[1];   // contents (actually longer)
+   Unt b_strlen;   // length of b_str, excluding the ZERO
+   Byte b_str[1];   // contents (actually longer)
 };
 
 // header used for the stuff buffer and the redo buffer
 struct TextHeader {
-   TextChunk   first;   // first (dummy) block of list
+   TextChunk first;   // first (dummy) block of list
    TextChunk* bh_curr;   // text chunk for appending
-   int      bh_index;   // index for reading
-   int      bh_space;   // space in bh_curr for appending
-   int      bh_create_newblock;   // create a new block?
+   int bh_index;   // index for reading
+   int bh_space;   // space in bh_curr for appending
+   int bh_create_newblock;   // create a new block?
 };
 
 typedef struct {
@@ -2990,7 +2980,7 @@ declStruct(ForInfo);
 
 typedef struct EMsgList EMsgList;
 struct EMsgList {
-   int      saved_emsg_silent;   // saved value of "emsg_silent"
+   int saved_emsg_silent;   // saved value of "emsg_silent"
    EMsgList* next;         // next element on the list
 };
 
@@ -3005,22 +2995,22 @@ typedef enum {
 typedef CS (*LineGetter)(Unt, void *, int, GetlineAlgo);
 
 typedef struct {
-   short   flags[CSTACK_LEN];   // CSF_ flags
-   char   pending[CSTACK_LEN];   // CSTP_: what's pending in ":finally"
+   short flags[CSTACK_LEN];   // CSF_ flags
+   char pending[CSTACK_LEN];   // CSTP_: what's pending in ":finally"
    union {
-      void   *csp_rv[CSTACK_LEN];   // return typeval for pending return
-      void   *csp_ex[CSTACK_LEN];   // exception for pending throw
-   }      pend;
+      void* csp_rv[CSTACK_LEN];   // return typeval for pending return
+      void* csp_ex[CSTACK_LEN];   // exception for pending throw
+   } pend;
    ForInfo* forInfo[CSTACK_LEN]; // info used by ":for"
    int cs_line[CSTACK_LEN];   // line nr of ":while"/":for" line
    int cs_block_id[CSTACK_LEN];    // block ID stack
    int cs_script_var_len[CSTACK_LEN];   // value of sn_var_vals.len
                   // when entering the block
-   int      ind;         // current entry, or -1 if none
-   int      loopLevel;      // nr of nested ":while"s and ":for"s
-   int      tryLevel;      // nr of nested ":try"s
-   EMsgList   *cs_emsg_silent_list;   // saved values of "emsg_silent"
-   char   loopFlags;      // the CSL_ flags
+   int ind;         // current entry, or -1 if none
+   int loopLevel;      // nr of nested ":while"s and ":for"s
+   int tryLevel;      // nr of nested ":try"s
+   EMsgList* cs_emsg_silent_list;   // saved values of "emsg_silent"
+   char loopFlags;      // the CSL_ flags
 } CondStack;
 
 // An invocation of a Command
@@ -3046,7 +3036,7 @@ struct Invocation {
    int amount;      // number of '>' or '<' for shift command
    int regname;   // register name (NUL if none)
    Unt force_bin;   // 0, FORCE_BIN or FORCE_NOBIN
-   Bool read_edit;   // ++edit argument
+   Boole read_edit;   // ++edit argument
    Unt bad_char;   // BAD_KEEP, BAD_DROP or replacement byte
    Unt useridx;   // user command index
    CS errmsg;   // returned error message
@@ -3125,31 +3115,31 @@ typedef struct {
 // Command modifiers ":vertical", ":browse", ":confirm" and ":hide" set a flag.
 // This needs to be saved for recursive commands, put them in a structure for easy manipulation.
 typedef struct {
-   Unt      cmod_flags;      // CMOD_ flags
+   Unt cmod_flags;      // CMOD_ flags
 #define CMOD_SILENT       0x0002   // ":silent"
-#define CMOD_ERRSILENT       0x0004   // ":silent!"
-#define CMOD_UNSILENT       0x0008   // ":unsilent"
-#define CMOD_NOAUTOCMD       0x0010   // ":noautocmd"
-#define CMOD_HIDE       0x0020   // ":hide"
+#define CMOD_ERRSILENT    0x0004   // ":silent!"
+#define CMOD_UNSILENT     0x0008   // ":unsilent"
+#define CMOD_NOAUTOCMD    0x0010   // ":noautocmd"
+#define CMOD_HIDE         0x0020   // ":hide"
 #define CMOD_BROWSE       0x0040   // ":browse" - invoke file dialog
-#define CMOD_CONFIRM       0x0080   // ":confirm" - invoke yes/no dialog
-#define CMOD_KEEPALT       0x0100   // ":keepalt"
-#define CMOD_KEEPMARKS       0x0200   // ":keepmarks"
-#define CMOD_KEEPJUMPS       0x0400   // ":keepjumps"
-#define CMOD_LOCKMARKS       0x0800   // ":lockmarks"
-#define CMOD_KEEPPATTERNS   0x1000   // ":keeppatterns"
-#define CMOD_NOSWAPFILE       0x2000   // ":noswapfile"
+#define CMOD_CONFIRM      0x0080   // ":confirm" - invoke yes/no dialog
+#define CMOD_KEEPALT      0x0100   // ":keepalt"
+#define CMOD_KEEPMARKS    0x0200   // ":keepmarks"
+#define CMOD_KEEPJUMPS    0x0400   // ":keepjumps"
+#define CMOD_LOCKMARKS    0x0800   // ":lockmarks"
+#define CMOD_KEEPPATTERNS 0x1000   // ":keeppatterns"
+#define CMOD_NOSWAPFILE   0x2000   // ":noswapfile"
 
-   int      cmod_split;      // flags for win_split()
-   int      cmod_tab;      // > 0 when ":tab" was used
+   int cmod_split;      // flags for win_split()
+   int cmod_tab;      // > 0 when ":tab" was used
    RegMatch   cmod_filter_regmatch;   // set by :filter /pat/
-   int      cmod_filter_force;   // set for :filter!
+   int cmod_filter_force;   // set for :filter!
 
-   int      cmod_verbose;      // 0 if not set, > 0 to set 'verbose' to cmod_verbose - 1
+   int cmod_verbose;      // 0 if not set, > 0 to set 'verbose' to cmod_verbose - 1
 
    // values for undo_cmdmod()
-   CS  cmod_save_ei;      // saved value of 'eventignore'
-   long   cmod_verbose_save;   // if 'verbose' was set: value of p_verbose plus one
+   CS cmod_save_ei;      // saved value of 'eventignore'
+   long cmod_verbose_save;   // if 'verbose' was set: value of p_verbose plus one
    int cmod_save_msg_silent;   // if non-zero: saved value of msg_silent + 1
    int cmod_save_msg_scroll;   // for restoring msg_scroll
    int cmod_did_esilent;   // incremented when emsg_silent is
@@ -3248,10 +3238,8 @@ typedef struct {
 //}}}
 //{{{text properties & signs
 
-/*
 //Structure defining text properties.  These stick with the text.
 //When stored in memline they are after the text, lineLen is larger than STRLEN(ml_line_ptr) + 1.
- */
 typedef struct TextProp {
    ColNr col;    // start column (one based, in bytes)
    ColNr len;    // length in bytes, when tp_id is negative used for left padding plus 1
@@ -3292,7 +3280,7 @@ typedef struct PropType {
 typedef struct signgroup_S {
    int sg_next_sign_id; //next sign id for this group
    Short sg_refcount;   //number of signs in this group
-   Bool isPopupOnly;    //is this group for popup portals only?
+   Boole isPopupOnly;    //is this group for popup portals only?
    Byte sg_name[1];     //sign group name, actually longer
 } SignGroup;
 
@@ -3662,8 +3650,8 @@ typedef enum {
 typedef struct {
    Text name; // variable name
    NULLABLE Var* returnVar;
-   Bool unlet;
-   Bool skip;
+   Boole unlet;
+   Boole skip;
    Unt flags;       // GLV_ values
    int fneFlag;
 } GetLval;
@@ -3880,16 +3868,16 @@ typedef struct {
 typedef struct SnAllVars SnAllVars;
 struct SnAllVars {
    SnAllVars* next;     // var with same name but different block
-   int      blockId;     // block ID where declared
-   int      indInVarVals; // index in sn_var_vals
+   int blockId;     // block ID where declared
+   int indInVarVals; // index in sn_var_vals
 
    //So long as the variable is valid (block it was defined in is still
    //active) "sav_di" is used.  It is set to NULL when leaving the block,
    //then sav_tv and sav_flags are used.
    DictItem *sav_di;      // dictitem with di_key and c
-   Var   sav_tv;      // type and value of the variable
-   Byte   sav_flags;   // DI_FLAGS_ flags (only used for variable)
-   Byte   sav_key[1];   // key (actually longer!)
+   Var sav_tv;      // type and value of the variable
+   Byte sav_flags;   // DI_FLAGS_ flags (only used for variable)
+   Byte sav_key[1];   // key (actually longer!)
 };
 
 // In the sn_all_vars hashtab item "hi_key" points to "sav_key" in a SnAllVars.
@@ -3910,14 +3898,14 @@ typedef struct {
    Arr(Byte) sv_name;   // points into "sn_all_vars" di_key
    Var* sv_tv;      // points into "sn_vars" or "sn_all_vars" c
    TypeSpec* sv_type;
-   int      sv_flags;   // SVFLAG_ values above
-   int      sv_const;   // 0, ASSIGN_CONST or ASSIGN_FINAL
+   int sv_flags;   // SVFLAG_ values above
+   int sv_const;   // 0, ASSIGN_CONST or ASSIGN_FINAL
 } Svar;
 
 typedef struct {
-   Byte   *imp_name;       // name imported as (allocated)
-   ScriptId   imp_sid;       // script ID of "from"
-   int      imp_flags;       // IMP_FLAGS_ values
+   CS imp_name;       // name imported as (allocated)
+   ScriptId imp_sid;       // script ID of "from"
+   int imp_flags;       // IMP_FLAGS_ values
 } Imported;
 
 #define IMP_FLAGS_RELOAD   2   // script reloaded, OK to redefine
@@ -3926,13 +3914,13 @@ typedef struct {
 // Info about an encountered script.
 // When sn_state has SN_STATE_NOT_LOADED, it has not been sourced yet.
 typedef struct {
-   Byte   *sn_name;       // full path of script file
-   int      sn_script_seq;       // latest ScriptPos sc_seq value
+   CS sn_name;       // full path of script file
+   int sn_script_seq;       // latest ScriptPos sc_seq value
 
-   // When non-zero the script ID of the actually sourced script. Used if a
-   // script is used by a name which has a symlink, we list both names, but
-   // only the linked-to script is actually sourced.
-   int      sn_sourced_sid;
+   //When non-zero the script ID of the actually sourced script. Used if a
+   //script is used by a name which has a symlink, we list both names, but
+   //only the linked-to script is actually sourced.
+   int sn_sourced_sid;
 
    // "sn_vars" stores the s: variables currently valid.  When leaving a block
    // variables local to that block are removed.
@@ -3940,22 +3928,15 @@ typedef struct {
 
    // Stores all the existing variables as a list of Svar, so
    // that they can be quickly found by index. Also stores the type.
-   ArrayList   sn_var_vals; // Arr(Svar)
+   ArrayList sn_var_vals; // Arr(Svar)
 
-   ArrayList   sn_imports;   // imported items, imported_T
-   ArrayList   sn_type_list;   // keeps types used by variables
-   int      sn_current_block_id; // ID for current block, 0 for outer
-   int      sn_last_block_id;  // Unique ID for each script block
+   ArrayList sn_imports;   // imported items, imported_T
+   ArrayList sn_type_list;   // keeps types used by variables
+   int sn_current_block_id; // ID for current block, 0 for outer
+   int sn_last_block_id;  // Unique ID for each script block
 
-   int      sn_state;   // SN_STATE_ values
-   char   sn_syml_checked;// flag: this has been checked for sym link
-
-   // for a Vim9 script under "rtp/autoload/" this is "dir#scriptname#"
-   Byte   *sn_autoload_prefix;
-
-   // TRUE for a script used with "import autoload './dirname/script.vim'"
-   // For "../autoload/script.vim" sn_autoload_prefix is also set.
-   int      sn_import_autoload;
+   int sn_state;   // SN_STATE_ values
+   Boole sn_syml_checked;// flag: this has been checked for sym link
 } ScriptItem;
 
 #define SN_STATE_NEW      0   // newly loaded script, nothing done
@@ -4015,7 +3996,7 @@ typedef struct {
    PartiallyApplied* fe_partial; //for "dict" and extra arguments
    Bag* fe_selfdict;  //Dictionary for "self"
    Var* fe_basetv;    //base for base->method()
-   Bool fe_found_var;  //if the function is not found then give an
+   Boole fe_found_var;  //if the function is not found then give an
                       //error that a variable is not callable.
 } FnExe;
 
@@ -4044,9 +4025,9 @@ struct PartiallyApplied {
 typedef struct {
    Unt group; // augroup id or AUGROUP_ALL
    NULLABLE CS commandBody; // the body of the new command, or null if we are not creating
-   Bool deleteExisting; // delete any existing autocommands?
-   Bool once;
-   Bool nested;
+   Boole deleteExisting; // delete any existing autocommands?
+   Boole once;
+   Boole nested;
 } AutoCommCreation;
 
 typedef struct AutoPatComm AutoPatComm;
@@ -4634,7 +4615,7 @@ typedef struct {
 #define B_IMODE_IM   2   //Input via input method
 #define B_IMODE_LAST 2
    
-   Bool initialized;   //set when all options were initialized
+   Boole initialized;   //set when all options were initialized
    ScriptPos scriptLocs[OPTION_BOOK_COUNT]; // script locations for all book-local options
    Sbuf stringOptions;      //Storage for all the string options
 } BookLocal;
@@ -4715,7 +4696,7 @@ struct Book { //:Book
    // the changelist contains old change positions
    Pos   changeList[JUMPLISTSIZE];
    Unt      changeListLen;   // number of active entries
-   Bool      newChange;      // set by u_savecommon()
+   Boole      newChange;      // set by u_savecommon()
 
    //Character table, only used in book.c for @iskeyword
    //32 bytes of 8 bits: 1 bit per character 0-255.
@@ -4754,7 +4735,7 @@ struct Book { //:Book
    Byte kind;         // BUF_ constants
    BookLocal o;
    
-   Bool hasLocationEntry;
+   Boole hasLocationEntry;
    LineNr noEolLnum; //non-zero lnum when last line of next binary
                      //write should not have an end-of-line
 
@@ -5103,7 +5084,7 @@ struct Portal { //:Portal
    Arr(PortLine) lines;
 
    ArrayList folds;  // array of nested folds
-   Bool foldManual; // when TRUE: some folds are opened/closed manually
+   Boole foldManual; // when TRUE: some folds are opened/closed manually
    Boole foldNeedsRecomputation; // when TRUE: folding needs to be recomputed
    int numberColWidth;      // width of 'number' and 'relativenumber' column being used
    TermCellColor termHiliteGroupName;    // cache for term color of a portal's "hiliteGroupName"
@@ -5115,7 +5096,7 @@ struct Portal { //:Portal
    int rowsToUpdate;    // number of portal lines to update when w_redr_type is UPD_REDRAW_TOP
    LineNr redrawTop;  // when != 0: first line needing redraw
    LineNr redrawBott;  // when != 0: last line needing redraw
-   Bool statusLineNeedsRedraw; // if TRUE status line must be redrawn
+   Boole statusLineNeedsRedraw; // if TRUE status line must be redrawn
 
    // remember what is shown in the ruler for this portal (if 'ruler' set)
    Ruler ruler;
@@ -5577,9 +5558,9 @@ typedef struct {
 
    //Option value was checked to be safe, no need to set P_INSECURE
    //Used for the @keymap, @filetype and @syntax options.
-   Bool wasValueChecked;
+   Boole wasValueChecked;
    //Option value changed.  Used for the @filetype and @syntax options.
-   Bool wasValueChanged;
+   Boole wasValueChanged;
    Sbuf* buf; // Buffer for all the string options
    ErrBuilder errb;
 } OptionChange;
@@ -6078,7 +6059,7 @@ EXTERN Arr(Decoration) screenDecosG INIT(= NULL);
 EXTERN Arr(ColNr) screenColsG INIT(= NULL);
 EXTERN Arr(Unt) lineOffsetG INIT(= NULL);
 EXTERN CS lineWrapsG INIT(= null);   // line wraps to next line
-EXTERN Bool wrapSearchG INIT(= true); // search wraps on file end
+EXTERN Boole wrapSearchG INIT(= true); // search wraps on file end
 
 EXTERN int screenLinesRowsG INIT(= 0);       // actual size of ScreenLines[]
 EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
@@ -6189,7 +6170,7 @@ EXTERN int called_emsg;          // always incremented by emsg()
 EXTERN int inEchoPortalG;          // executing ":echowindow"
 EXTERN int ex_exitval INIT(= 0);       // exit value for ex mode
 EXTERN int emsg_on_display INIT(= FALSE);   // there is an error message
-EXTERN Bool anyRegexEmsgG INIT(= false);  // did eeRegexec() call emsg()?
+EXTERN Boole anyRegexEmsgG INIT(= false);  // did eeRegexec() call emsg()?
 
 EXTERN int no_wait_return INIT(= 0);   // don't wait for return for now
 EXTERN int need_wait_return INIT(= 0); // need to wait for return later
@@ -6366,7 +6347,7 @@ EXTERN Boole redraw_not_allowed INIT(= false);
 //using invalid portals or books.
 EXTERN Boole dont_parse_messages INIT(= false);
 
-EXTERN ClipBoard clipboard;   // CLIPBOARD selection in X11/Wayland
+EXTERN ClipBoard clipboard;   // CLIPBOARD selection in Wayland
 
 //All regular portals are linked in a list. "firstpor" points to the first entry, "lastpor" to the 
 //last entry (can be the same as firstwin) and "curpor" to the currently active portal.
@@ -6492,7 +6473,7 @@ EXTERN Pos   where_paste_started;
 // <RETURN> or <ESC> is typed. It is set when an auto-indent is done, and
 // reset when any other editing is done on the line. If an <ESC> or <RETURN>
 // is received, and didAindentG is TRUE, the line is truncated.
-EXTERN Bool didAindentG INIT(= false);
+EXTERN Boole didAindentG INIT(= false);
 
 // Column of first char after autoindent.  0 when no autoindent done.  Used
 // when 'backspace' is 0, to avoid backspacing over autoindent.
@@ -6566,7 +6547,7 @@ EXTERN int stateG INIT(= MODE_NORMAL);
 EXTERN Boole debug_mode INIT(= false);
 
 EXTERN Operator* currOperatorG INIT(= NULL);
-EXTERN Bool finish_op INIT(= false);// TRUE while an operator is pending
+EXTERN Boole finish_op INIT(= false);// TRUE while an operator is pending
 EXTERN long opcount INIT(= 0);   // count for pending operator
 EXTERN int motion_force INIT(= 0); // motion force for pending operator
 
@@ -6635,7 +6616,7 @@ EXTERN Boole   cmd_silent INIT(= false); // don't echo the command line
 
 EXTERN Boole   in_assert_fails INIT(= false);   // assert_fails() active
 
-EXTERN Bool  swapEnabledG INIT(= true); //Swap files enabled
+EXTERN Boole  swapEnabledG INIT(= true); //Swap files enabled
 EXTERN int   swap_exists_action INIT(= SEA_NONE); // For dialog when swap file already exists.
 EXTERN Boole   swap_exists_did_quit INIT(= false); // Selected "quit" at the dialog.
 
@@ -6647,7 +6628,7 @@ EXTERN Byte msg_buf[MSG_BUF_LEN];   // small buffer for messages
 // When non-zero, postpone redrawing.
 EXTERN int   isRedrawingDisabledG INIT(= 0);
 
-EXTERN Bool recoveryModeG INIT(= false); // Set to TRUE for "-r" option
+EXTERN Boole recoveryModeG INIT(= false); // Set to TRUE for "-r" option
 
 // Typeahead buffer. Used for getting input from the keyboard
 EXTERN Typeahead typeBufG
@@ -6798,7 +6779,6 @@ EXTERN int      balloonEvalForTerm INIT(= FALSE);
 EXTERN int   typebuf_was_filled INIT(= FALSE); // received text from client or from feedkeys()
 
 EXTERN CS serverName INIT(= NULL);   // name of the server
-EXTERN Window clientWindow INIT(= None);
 
 EXTERN int   term_is_xterm INIT(= FALSE);   // xterm-like 'term'
 
@@ -8723,7 +8703,7 @@ EXTERN Byte e_const_requires_a_value[]
 EXTERN Byte e_type_or_initialization_required[]
    INIT(= "E1022: Type or initialization required");
 EXTERN Byte e_using_number_as_bool_nr[]
-   INIT(= "E1023: Using a Number as a Bool: %lld");
+   INIT(= "E1023: Using a Number as a Boole: %lld");
 EXTERN Byte e_using_number_as_string[]
    INIT(= "E1024: Using a Number as a String");
 EXTERN Byte e_using_rcurly_outside_if_block_scope[] //{
@@ -8929,12 +8909,12 @@ EXTERN Byte e_cannot_extend_null_dict[]
 EXTERN Byte e_cannot_extend_null_list[]
    INIT(= "E1134: Cannot extend a null list");
 EXTERN Byte e_using_string_as_bool_str[]
-   INIT(= "E1135: Using a String as a Bool: \"%s\"");
+   INIT(= "E1135: Using a String as a Boole: \"%s\"");
 EXTERN Byte e_cmd_mapping_must_end_with_cr_before_second_cmd[]
    INIT(= "E1136: <Cmd> mapping must end with <CR> before second <Cmd>");
 // E1137 unused
 EXTERN Byte e_using_bool_as_number[]
-   INIT(= "E1138: Using a Bool as a Number");
+   INIT(= "E1138: Using a Boole as a Number");
 EXTERN Byte e_missing_matching_bracket_after_dict_key[]
    INIT(= "E1139: Missing matching bracket after dict key");
 EXTERN Byte e_for_argument_must_be_sequence_of_lists_or_tuples[]
@@ -9062,7 +9042,7 @@ EXTERN Byte e_number_required_for_argument_nr[]
 EXTERN Byte e_list_required_for_argument_nr[]
    INIT(= "E1211: List required for argument %d");
 EXTERN Byte e_bool_required_for_argument_nr[]
-   INIT(= "E1212: Bool required for argument %d");
+   INIT(= "E1212: Boole required for argument %d");
 EXTERN Byte e_redefining_imported_item_str[]
    INIT(= "E1213: Redefining imported item \"%s\"");
 EXTERN Byte e_chan_or_job_required_for_argument_nr[]
@@ -9100,7 +9080,7 @@ EXTERN Byte e_exists_compiled_can_only_be_used_in_def_function[]
 EXTERN Byte e_legacy_must_be_followed_by_command[]
    INIT(= "E1234: legacy must be followed by a command");
 EXTERN Byte e_bool_or_number_required_for_argument_nr[]
-   INIT(= "E1235: Bool or Number required for argument %d");
+   INIT(= "E1235: Boole or Number required for argument %d");
 EXTERN Byte e_cannot_use_str_itself_it_is_imported[]
    INIT(= "E1236: Cannot use %s itself, it is imported");
 EXTERN Byte e_no_such_user_defined_command_in_current_buffer_str[]
@@ -9570,7 +9550,7 @@ EXTERN Byte e_illegal_combination_of_flags_str[]
 EXTERN Byte e_trying_to_set_option_to_wrong_type[]
    INIT(= "E1569: Trying to set option to wrong type");
 EXTERN Byte e_bool_required_after_equal[]
-   INIT(= "E1570: Bool required after =");
+   INIT(= "E1570: Boole required after =");
 EXTERN Byte e_enum_required_after_equal[]
    INIT(= "E1571: Enum required after =");
 EXTERN Byte e_flags_required_after_equal[]
@@ -9594,8 +9574,6 @@ EXTERN Byte e_options_are_frozen[]
 //MB_BYTE2LEN_CHECK() can be used to count a special key as one byte.
 //Don't call MB_BYTE2LEN(b) with b > 255!
 #define MB_BYTE2LEN_CHECK(b) (((b) > 255) ? 1 : utf8CharLens[b])
-
-#define X_DISPLAY   xterm_dpy
 
 // values for eeHandleSignal() that are not a signal
 #define SIGNAL_BLOCK   (-1)

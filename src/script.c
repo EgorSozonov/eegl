@@ -392,19 +392,12 @@ check_script_symlink(int sid) {
    if (real_fname != NULL && STRCMP(real_fname, si->sn_name) != 0) {
       int real_sid = find_script_by_name(real_fname);
       int error2 = OK;
-      int new_sid = FALSE;
       if (real_sid < 0) {
           real_sid = get_new_scriptitem_for_fname(&error2, real_fname);
-          new_sid = TRUE;
       }
       if (error2 == OK) {
          si = SCRIPT_ITEM(sid);
          si->sn_sourced_sid = real_sid;
-         if (new_sid) {
-            SCRIPT_ITEM(real_sid)->sn_import_autoload = si->sn_import_autoload;
-            if (si->sn_autoload_prefix != NULL)
-                SCRIPT_ITEM(real_sid)->sn_autoload_prefix = copyStr(si->sn_autoload_prefix);
-         }
       }
    }
    eeglFree(real_fname);
@@ -1368,7 +1361,6 @@ free_scriptnames(void) {
 
       eeglFree(si->sn_name);
       free_imports_and_script_vars(i);
-      eeglFree(si->sn_autoload_prefix);
       eeglFree(si);
    }
    ga_clear(&script_items);
@@ -1763,36 +1755,6 @@ get_autoload_prefix(ScriptItem *si) {
    // did not find ".vim" at the end
    eeglFree(prefix);
    return NULL;
-}
-
-//If in a Vim9 autoload script return "name" with the autoload prefix for the
-//script.  If successful the returned name is allocated. Otherwise it returns "name" unmodified.
-Byte *
-may_prefix_autoload(Byte *name) {
-   if (!SCRIPT_ID_VALID(scriptPosG.sid))
-      return name;
-
-   ScriptItem *si = SCRIPT_ITEM(scriptPosG.sid);
-
-   if (si->sn_autoload_prefix == NULL)
-      return name;
-
-   Byte  *basename = name;
-   Unt  len;
-
-   if (*name == K_SPECIAL) {
-      Byte *p = firstOccurrence(name, '_');
-
-      // skip over "<SNR>99_"
-      if (p)
-         basename = p + 1;
-   }
-
-   len = STRLEN(si->sn_autoload_prefix) + STRLEN(basename) + 2;
-   CS res = alloc(len);
-
-   eeSnprintf(res, len, "%s%s", si->sn_autoload_prefix, basename);
-   return res;
 }
 
 //Return the autoload script name for a function or variable name. Return NULL when out of memory.
@@ -13630,33 +13592,10 @@ func_name_with_sid(CS name, int sid, CS builder) {
 // Find the function "name" in script "sid" prefixing the autoload prefix.
 private UserFunc *
 find_func_with_prefix(Byte *name, int sid) {
-    EeSetItem* hi;
-    Byte buffer[MAX_FUNC_NAME_LEN];
-    ScriptItem* si;
-
    if (firstOccurrence(name, AUTOLOAD_CHAR) != NULL)
       return NULL;   // already has the prefix
    if (!SCRIPT_ID_VALID(sid))
       return NULL;   // not in a script
-   si = SCRIPT_ITEM(sid);
-   if (si->sn_autoload_prefix) {
-      Unt   len = STRLEN(si->sn_autoload_prefix) + STRLEN(name) + 1;
-      CS auto_name;
-      CS namep = name;
-
-      // An exported function in an autoload script is stored as "dir#path#name".
-      if (len < sizeof(buffer))
-          auto_name = buffer;
-      else
-          auto_name = alloc(len);
-      eeSnprintf(auto_name, len, "%s%s", si->sn_autoload_prefix, namep);
-      hi = hash_find(&userDefinedFnsS, text(auto_name));
-      if (auto_name != buffer)
-         eeglFree(auto_name);
-      if (!HASHITEM_EMPTY(hi))
-         return HI2UF(hi);
-   }
-
    return NULL;
 }
 
@@ -16778,20 +16717,6 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
       if (v && v->c.tag == VAR_FUNC)
          var_conflict = TRUE;
 
-      if (SCRIPT_ID_VALID(scriptPosG.sid)) {
-         ScriptItem *si = SCRIPT_ITEM(scriptPosG.sid);
-
-         if (si->sn_autoload_prefix) {
-            CS prefixed = may_prefix_autoload(name);
-
-            if (prefixed && prefixed != name) {
-               v = findVar(prefixed, true);
-               if (v)
-                  var_conflict = TRUE;
-               eeglFree(prefixed);
-            }
-         }
-      }
       if (var_conflict) {
          emsg_funcname(e_function_name_conflicts_with_variable_str, name);
          goto erret;
