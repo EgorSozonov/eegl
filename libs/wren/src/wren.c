@@ -1,67 +1,11 @@
-
-//{{{common
-
-// This header contains macros and defines used across the entire Wren
-// implementation. In particular, it contains "configuration" defines that
-// control how Wren works. Some of these are only used while hacking on Wren
-// itself.
-//
-// This header is *not* intended to be included by code outside of Wren itself.
-
-// Wren pervasively uses the C99 integer types (uint16_t, etc.) along with some
-// of the associated limit constants (UINT32_MAX, etc.). The constants are not
-// part of standard C++, so aren't included by default by C++ compilers when you
-// include <stdint> unless __STDC_LIMIT_MACROS is defined.
-#define __STDC_LIMIT_MACROS
-#include <stdint.h>
-
-#define private static
-#define OUT
-#define NULLABLE
-typedef uint32_t Unt;
-
-// These flags let you control some details of the interpreter's implementation.
-// Usually they trade-off a bit of portability for speed. They default to the
-// most efficient behavior.
-
-// Wren uses a NaN-tagged double for its core value
-// representation. Otherwise, it uses a larger more conventional struct. The
-// former is significantly faster and more compact. The latter is useful for
-// debugging and may be more portable.
-//
-
-// If true, the VM's interpreter loop uses computed gotos. See this for more:
-// http://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html
-// Enabling this speeds up the main dispatch loop a bit, but requires compiler
-// support.
-// see https://bullno1.com/blog/switched-goto for alternative
-// Defaults to true on supported compilers.
-#ifndef WREN_COMPUTED_GOTO
-  #if defined(_MSC_VER) && !defined(__clang__)
-    // No computed gotos in Visual Studio.
-    #define WREN_COMPUTED_GOTO 0
-  #else
-    #define WREN_COMPUTED_GOTO 1
-  #endif
-#endif
-
-// The VM includes a number of optional modules. You can choose to include
-// these or not. By default, they are all available. To disable one, set the
-// corresponding `WREN_OPT_<name>` define to `0`.
-#ifndef WREN_OPT_META
-  #define WREN_OPT_META 1
-#endif
-
-#ifndef WREN_OPT_RANDOM
-  #define WREN_OPT_RANDOM 1
-#endif
+#include "wren.h"
+//{{{debugging flags
 
 // These flags are useful for debugging and hacking on Wren itself. They are not
 // intended to be used for production code. They default to off.
 
 // Set this to true to stress test the GC. It will perform a collection before
-// every allocation. This is useful to ensure that memory is always correctly
-// reachable.
+// every allocation. This is useful to ensure that memory is always correctly reachable.
 #define WREN_DEBUG_GC_STRESS 0
 
 // Set this to true to log memory operations as they occur.
@@ -75,6 +19,49 @@ typedef uint32_t Unt;
 
 // Set this to trace each instruction as it's executed.
 #define WREN_DEBUG_TRACE_INSTRUCTIONS 0
+
+
+//}}}
+//{{{header definitions
+
+#include <stdbool.h>
+#include <string.h>
+#include <errno.h>
+
+//{{{common
+
+#define private static
+#define OUT
+#define NULLABLE
+typedef uint64_t Value;
+typedef uint64_t Ulong;
+
+
+//This header contains macros and defines used across the entire Wren
+//implementation. In particular, it contains "configuration" defines that
+//control how Wren works. Some of these are only used while hacking on Wren itself.
+//
+//This header is *not* intended to be included by code outside of Wren itself.
+
+//Wren pervasively uses the C99 integer types (uint16_t, etc.) along with some
+//of the associated limit constants (UINT32_MAX, etc.).
+
+//These flags let you control some details of the interpreter's implementation. Usually they 
+//trade-off a bit of portability for speed. They default to the most efficient behavior.
+
+//Wren uses a NaN-tagged double for its core value
+//representation. Otherwise, it uses a larger more conventional struct. The
+//former is significantly faster and more compact. The latter is useful for
+//debugging and may be more portable.
+
+//If true, the VM's interpreter loop uses computed gotos. See this for more:
+//http://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html
+//Enabling this speeds up the main dispatch loop a bit, but requires compiler support.
+//see https://bullno1.com/blog/switched-goto for alternative
+//Defaults to true on supported compilers.
+#ifndef WREN_COMPUTED_GOTO
+   #define WREN_COMPUTED_GOTO 1
+#endif
 
 // The maximum number of module-level variables that may be defined at one time.
 // This limitation comes from the 16 bits used for the arguments to
@@ -110,8 +97,7 @@ typedef uint32_t Unt;
 // The maximum number of fields a class can have, including inherited fields.
 // This is explicit in the bytecode since `CODE_CLASS` and `CODE_SUBCLASS` take
 // a single byte for the number of fields. Note that it's 255 and not 256
-// because creating a class takes the *number* of fields, not the *highest
-// field index*.
+// because creating a class takes the *number* of fields, not the *highest field index*.
 #define MAX_FIELDS 255
 
 // The maximum number of methods the vm can handle.
@@ -134,12 +120,6 @@ typedef uint32_t Unt;
 // Use the VM's allocator to free the previously allocated memory at [pointer].
 #define DEALLOCATE(vm, pointer) wrenReallocate(vm, pointer, 0, 0)
 
-// The Microsoft compiler does not support the "inline" modifier when compiling
-// as plain C.
-#if defined( _MSC_VER ) && !defined(__cplusplus)
-  #define inline _inline
-#endif
-
 // This is used to clearly mark flexible-sized arrays that appear at the end of
 // some dynamically-allocated structs, known as the "struct hack".
 #if __STDC_VERSION__ >= 199901L
@@ -156,15 +136,13 @@ typedef uint32_t Unt;
 // assertion fails, there is a bug in Wren.
 //
 // Assertions add significant overhead, so are only enabled in debug builds.
+#include <stdio.h>
 #ifdef DEBUG
 
-  #include <stdio.h>
 
   #define ASSERT(condition, message)                                           \
-      do                                                                       \
-      {                                                                        \
-        if (!(condition))                                                      \
-        {                                                                      \
+      do {                                                                     \
+        if (!(condition)) {                                                    \
           fprintf(stderr, "[%s:%d] Assert failed in %s(): %s\n",               \
               __FILE__, __LINE__, __func__, message);                          \
           abort();                                                             \
@@ -187,583 +165,1084 @@ typedef uint32_t Unt;
       } while (false)
 
 #else
-
   #define ASSERT(condition, message) do { } while (false)
-
-  // Tell the compiler that this part of the code will never be reached.
-  #if defined( _MSC_VER )
-    #define UNREACHABLE() __assume(0)
-  #elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
-    #define UNREACHABLE() __builtin_unreachable()
-  #else
-    #define UNREACHABLE()
-  #endif
+  #define UNREACHABLE() __builtin_unreachable()
 
 #endif
 
+// We need buffers of a few different types. To avoid lots of casting between
+// void* and back, we'll use the preprocessor as a poor man's generics and let
+// it generate a few type-specific ones.
+#define DECLARE_BUFFER(name, type)                                             \
+    typedef struct {                                                           \
+      type* data;                                                              \
+      int count;                                                               \
+      int capacity;                                                            \
+    } name##Buffer;                                                            \
+    void wren##name##BufferInit(name##Buffer* buffer);                         \
+    void wren##name##BufferClear(WrenVM* vm, name##Buffer* buffer);            \
+    void wren##name##BufferFill(WrenVM* vm, name##Buffer* buffer, type data, int count); \
+    void wren##name##BufferWrite(WrenVM* vm, name##Buffer* buffer, type data)
 
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdbool.h>
+// This should be used once for each type instantiation, somewhere in a .c file.
+#define DEFINE_BUFFER(name, type)                                              \
+    void wren##name##BufferInit(name##Buffer* buffer) {                        \
+      buffer->data = NULL;                                                     \
+      buffer->capacity = 0;                                                    \
+      buffer->count = 0;                                                       \
+    }                                                                          \
+                                                                               \
+    void wren##name##BufferClear(WrenVM* vm, name##Buffer* buffer) {           \
+      wrenReallocate(vm, buffer->data, 0, 0);                                  \
+      wren##name##BufferInit(buffer);                                          \
+    }                                                                          \
+                                                                               \
+    void wren##name##BufferFill(WrenVM* vm, name##Buffer* buffer, type data, int count) { \
+      if (buffer->capacity < buffer->count + count) {                          \
+        int capacity = wrenPowerOf2Ceil(buffer->count + count);                \
+        buffer->data = (type*)wrenReallocate(vm, buffer->data,                 \
+            buffer->capacity * sizeof(type), capacity * sizeof(type));         \
+        buffer->capacity = capacity;                                           \
+      }                                                                        \
+                                                                               \
+      for (int i = 0; i < count; i++) {                                        \
+        buffer->data[buffer->count++] = data;                                  \
+      }                                                                        \
+    }                                                                          \
+                                                                               \
+    void wren##name##BufferWrite(WrenVM* vm, name##Buffer* buffer, type data) { \
+      wren##name##BufferFill(vm, buffer, data, 1);                             \
+    }
 
-// The Wren semantic version number components.
-#define WREN_VERSION_MAJOR 0
-#define WREN_VERSION_MINOR 4
-#define WREN_VERSION_PATCH 0
 
-// A human-friendly string representation of the version.
-#define WREN_VERSION_STRING "0.4.0"
+//}}}
+//{{{main
 
-// A monotonically increasing numeric representation of the version number. Use
-// this if you want to do range checks over versions.
-#define WREN_VERSION_NUMBER (WREN_VERSION_MAJOR * 1000000 +                    \
-                             WREN_VERSION_MINOR * 1000 +                       \
-                             WREN_VERSION_PATCH)
+// The maximum number of temporary objects that can be made visible to the GC at one time.
+#define WREN_MAX_TEMP_ROOTS 8
 
-#ifndef WREN_API
-  #if defined(_MSC_VER) && defined(WREN_API_DLLEXPORT)
-    #define WREN_API __declspec( dllexport )
-  #else
-    #define WREN_API
-  #endif
-#endif //WREN_API
+private void* wrenReallocate(WrenVM* vm, void* memory, Ulong oldSize, Ulong newSize);
+private int wrenPowerOf2Ceil(int n);
 
-// A single virtual machine for executing Wren code.
+DECLARE_BUFFER(Value, Value);
+DECLARE_BUFFER(Byte, Byte);
+DECLARE_BUFFER(Int, int);
+
+DEFINE_BUFFER(Byte, Byte);
+DEFINE_BUFFER(Int, int);
+
+typedef struct ObjString ObjString;
+DECLARE_BUFFER(String, ObjString*);
+DEFINE_BUFFER(String, ObjString*);
+
+// Identifies which specific type a heap-allocated object is.
+typedef enum {
+   OBJ_CLASS,
+   OBJ_CLOSURE,
+   OBJ_FIBER,
+   OBJ_FN,
+   OBJ_FOREIGN,
+   OBJ_INSTANCE,
+   OBJ_LIST,
+   OBJ_MAP,
+   OBJ_MODULE,
+   OBJ_RANGE,
+   OBJ_STRING,
+   OBJ_UPVALUE
+} ObjType;
+
+typedef struct ObjClass ObjClass;
+
+// Base struct for all heap-allocated objects.
+typedef struct Obj Obj;
+struct Obj {
+   ObjType type;
+   Bool isDark;
+
+   // The object's class.
+   ObjClass* classObj;
+
+   // The next object in the linked list of all currently allocated objects.
+   Obj* next;
+};
+
+typedef enum {
+   #define OPCODE(name, _) CODE_##name,
+   #include "wrenOpcodes.h"
+   #undef OPCODE
+} Code;
+
+typedef struct {
+   Obj obj;
+   Byte data[FLEXIBLE_ARRAY];
+} ObjForeign;
+
+typedef struct {
+   Obj obj;
+   Value fields[FLEXIBLE_ARRAY];
+} ObjInstance;
+
+typedef struct {
+   Obj obj;
+ 
+   // The elements in the list.
+   ValueBuffer elements;
+} ObjList;
+
+typedef struct {
+   //The entry's key, or UNDEFINED_VAL if the entry is not in use.
+   Value key;
+
+   //The value associated with the key. If the key is UNDEFINED_VAL, this will
+   //be false to indicate an open available entry or true to indicate a
+   //tombstone -- an entry that was previously in use but was then deleted.
+   Value value;
+} MapEntry;
+
+// A hash table mapping keys to values.
 //
-// Wren has no global state, so all state stored by a running interpreter lives
-// here.
-typedef struct WrenVM WrenVM;
-
-// A handle to a Wren object.
+// We use something very simple: open addressing with linear probing. The hash
+// table is an array of entries. Each entry is a key-value pair. If the key is
+// the special UNDEFINED_VAL, it indicates no value is currently in that slot.
+// Otherwise, it's a valid key, and the value is the value associated with it.
 //
-// This lets code outside of the VM hold a persistent reference to an object.
-// After a handle is acquired, and until it is released, this ensures the
-// garbage collector will not reclaim the object it references.
-typedef struct WrenHandle WrenHandle;
-
-// A generic allocation function that handles all explicit memory management
-// used by Wren. It's used like so:
+// When entries are added, the array is dynamically scaled by GROW_FACTOR to
+// keep the number of filled slots under MAP_LOAD_PERCENT. Likewise, if the map
+// gets empty enough, it will be resized to a smaller array. When this happens,
+// all existing entries are rehashed and re-added to the new array.
 //
-// - To allocate new memory, [memory] is NULL and [newSize] is the desired
-//   size. It should return the allocated memory or NULL on failure.
+// When an entry is removed, its slot is replaced with a "tombstone". This is an
+// entry whose key is UNDEFINED_VAL and whose value is TRUE_VAL. When probing
+// for a key, we will continue past tombstones, because the desired key may be
+// found after them if the key that was removed was part of a prior collision.
+// When the array gets resized, all tombstones are discarded.
+typedef struct {
+   Obj obj;
+ 
+   // The number of entries allocated.
+   Unt capacity;
+ 
+   // The number of entries in the map.
+   Unt count;
+ 
+   // Pointer to a contiguous array of [capacity] entries.
+   MapEntry* entries;
+} ObjMap;
+
+
+// A handle to a value, basically just a linked list of extra GC roots.
 //
-// - To attempt to grow an existing allocation, [memory] is the memory, and
-//   [newSize] is the desired size. It should return [memory] if it was able to
-//   grow it in place, or a new pointer if it had to move it.
+// Note that even non-heap-allocated values can be stored here.
+struct WrenHandle {
+   Value value;
+
+   WrenHandle* prev;
+   WrenHandle* next;
+};
+
+// TODO: See if it's actually a perf improvement to have this in a separate
+// struct instead of in ObjFn.
+// Stores debugging information for a function used for things like stack traces.
+typedef struct {
+   //The name of the function. Heap allocated and owned by the FnDebug.
+   CS name;
+
+   //An array of line numbers. There is one element in this array for each
+   //bytecode in the function's bytecode array. The value of that element is
+   //the line in the source code that generated that instruction.
+   IntBuffer sourceLines;
+} FnDebug;
+
+// TODO: Change this to use a map.
+typedef StringBuffer SymbolTable;
+
+//A loaded module and the top-level variables it defines.
 //
-// - To shrink memory, [memory] and [newSize] are the same as above but it will
-//   always return [memory].
+//While this is an Obj and is managed by the GC, it never appears as a
+//first-class object in Wren.
+typedef struct {
+   Obj obj;
+
+   //The currently defined top-level variables.
+   ValueBuffer variables;
+
+   //Symbol table for the names of all module variables. Indexes here directly
+   //correspond to entries in [variables].
+   SymbolTable variableNames;
+
+   //The name of the module.
+   ObjString* name;
+} ObjModule;
+
+// A function object. It wraps and owns the bytecode and other debug information
+// for a callable chunk of code.
 //
-// - To free memory, [memory] will be the memory to free and [newSize] will be
-//   zero. It should return NULL.
-typedef void* (*WrenReallocateFn)(void* memory, size_t newSize, void* userData);
+// Function objects are not passed around and invoked directly. Instead, they
+// are always referenced by an [ObjClosure] which is the real first-class
+// representation of a function. This isn't strictly necessary if they function
+// has no upvalues, but lets the rest of the VM assume all called objects will
+// be closures.
+typedef struct {
+   Obj obj;
+   
+   ByteBuffer code;
+   ValueBuffer constants;
+   
+   // The module where this function was defined.
+   ObjModule* module;
 
-// A function callable from Wren code, but implemented in C.
-typedef void (*WrenForeignMethodFn)(WrenVM* vm);
+   // The maximum number of stack slots this function may use.
+   int maxSlots;
+   
+   // The number of upvalues this function closes over.
+   int numUpvalues;
+   
+   // The number of parameters this function expects. Used to ensure that .call
+   // handles a mismatch between number of parameters and arguments. This will
+   // only be set for fns, and not ObjFns that represent methods or scripts.
+   int arity;
+   FnDebug* debug;
+} ObjFn;
 
-// A finalizer function for freeing resources owned by an instance of a foreign
-// class. Unlike most foreign methods, finalizers do not have access to the VM
-// and should not interact with it since it's in the middle of a garbage
-// collection.
-typedef void (*WrenFinalizerFn)(void* data);
+typedef struct ObjUpvalue ObjUpvalue;
 
-// Gives the host a chance to canonicalize the imported module name,
-// potentially taking into account the (previously resolved) name of the module
-// that contains the import. Typically, this is used to implement relative
-// imports.
-typedef const char* (*WrenResolveModuleFn)(WrenVM* vm,
-    const char* importer, const char* name);
+// An instance of a first-class function and the environment it has closed over.
+// Unlike [ObjFn], this has captured the upvalues that the function accesses.
+typedef struct {
+   Obj obj;
 
-// Forward declare
-struct WrenLoadModuleResult;
+   // The function that this closure is an instance of.
+   ObjFn* fn;
 
-// Called after loadModuleFn is called for module [name]. The original returned result
-// is handed back to you in this callback, so that you can free memory if appropriate.
-typedef void (*WrenLoadModuleCompleteFn)(WrenVM* vm, const char* name, struct WrenLoadModuleResult result);
+   // The upvalues this function has closed over.
+   ObjUpvalue* upvalues[FLEXIBLE_ARRAY];
+} ObjClosure;
 
-// The result of a loadModuleFn call. 
-// [source] is the source code for the module, or NULL if the module is not found.
-// [onComplete] an optional callback that will be called once Wren is done with the result.
-typedef struct WrenLoadModuleResult
-{
-  const char* source;
-  WrenLoadModuleCompleteFn onComplete;
-  void* userData;
-} WrenLoadModuleResult;
+typedef struct {
+   //Pointer to the current (really next-to-be-executed) instruction in the function's bytecode.
+   Byte* ip;
+   
+   //The closure being executed.
+   ObjClosure* closure;
+   
+   //Pointer to the first stack slot used by this call frame. This will contain
+   //the receiver, followed by the function's parameters, then local variables and temporaries.
+   Value* stackStart;
+} CallFrame;
 
-// Loads and returns the source code for the module [name].
-typedef WrenLoadModuleResult (*WrenLoadModuleFn)(WrenVM* vm, const char* name);
+// Tracks how this fiber has been invoked, aside from the ways that can be
+// detected from the state of other fields in the fiber.
+typedef enum {
+   //The fiber is being run from another fiber using a call to `try()`.
+   FIBER_TRY,
+   
+   //The fiber was directly invoked by `runInterpreter()`. This means it's the
+   //initial fiber used by a call to `wrenCall()` or `wrenInterpret()`.
+   FIBER_ROOT,
+   
+   //The fiber is invoked some other way. If [caller] is `NULL` then the fiber
+   //was invoked using `call()`. If [numFrames] is zero, then the fiber has
+   //finished running and is done. If [numFrames] is one and that frame's `ip`
+   //points to the first byte of code, the fiber has not been started yet.
+   FIBER_OTHER
+} FiberState;
 
-// Returns a pointer to a foreign method on [className] in [module] with
-// [signature].
-typedef WrenForeignMethodFn (*WrenBindForeignMethodFn)(WrenVM* vm,
-    const char* module, const char* className, bool isStatic,
-    const char* signature);
+typedef struct sObjFiber {
+   Obj obj;
+   
+   //The stack of value slots. This is used for holding local variables and
+   //temporaries while the fiber is executing. It is heap-allocated and grown as needed.
+   Value* stack;
+   
+   //A pointer to one past the top-most value on the stack.
+   Value* stackTop;
+   
+   //The number of allocated slots in the stack array.
+   int stackCapacity;
+   
+   //The stack of call frames. This is a dynamic array that grows as needed but never shrinks.
+   CallFrame* frames;
+   
+   //The number of frames currently in use in [frames].
+   int numFrames;
+   
+   //The number of [frames] allocated.
+   int frameCapacity;
+   
+   //Pointer to the first node in the linked list of open upvalues that are
+   //pointing to values still on the stack. The head of the list will be the
+   //upvalue closest to the top of the stack, and then the list works downwards.
+   ObjUpvalue* openUpvalues;
+   
+   //The fiber that ran this one. If this fiber is yielded, control will resume
+   //to this one. May be `NULL`.
+   struct sObjFiber* caller;
+   
+   //If the fiber failed because of a runtime error, this will contain the
+   //error object. Otherwise, it will be null.
+   Value error;
+   
+   FiberState state;
+} ObjFiber;
 
-// Displays a string of text to the user.
-typedef void (*WrenWriteFn)(WrenVM* vm, const char* text);
+typedef struct Compiler Compiler;
 
-typedef enum
-{
-  // A syntax or resolution error detected at compile time.
-  WREN_ERROR_COMPILE,
+struct WrenVM {
+   ObjClass* boolClass;
+   ObjClass* classClass;
+   ObjClass* fiberClass;
+   ObjClass* fnClass;
+   ObjClass* listClass;
+   ObjClass* mapClass;
+   ObjClass* nullClass;
+   ObjClass* numClass;
+   ObjClass* objectClass;
+   ObjClass* rangeClass;
+   ObjClass* stringClass;
+ 
+   // The fiber that is currently running.
+   ObjFiber* fiber;
+ 
+   // The loaded modules. Each key is an ObjString (except for the main module,
+   // whose key is null) for the module's name and the value is the ObjModule for the module.
+   ObjMap* modules;
+   
+   // The most recently imported module. More specifically, the module whose
+   // code has most recently finished executing.
+   //
+   // Not treated like a GC root since the module is already in [modules].
+   ObjModule* lastModule;
+ 
+   // Memory management data:
+ 
+   // The number of bytes that are known to be currently allocated. Includes all
+   // memory that was proven live after the last GC, as well as any new bytes
+   // that were allocated since then. Does *not* include bytes for objects that
+   // were freed since the last GC.
+   Ulong bytesAllocated;
+ 
+   // The number of total allocated bytes that will trigger the next GC.
+   Ulong nextGC;
+ 
+   // The first object in the linked list of all currently allocated objects.
+   Obj* first;
+ 
+   // The "gray" set for the garbage collector. This is the stack of unprocessed
+   // objects while a garbage collection pass is in process.
+   Obj** gray;
+   int grayCount;
+   int grayCapacity;
+ 
+   // The list of temporary roots. This is for temporary or new objects that are
+   // not otherwise reachable but should not be collected.
+   //
+   // They are organized as a stack of pointers stored in this array. This
+   // implies that temporary roots need to have stack semantics: only the most
+   // recently pushed object can be released.
+   Obj* tempRoots[WREN_MAX_TEMP_ROOTS];
+ 
+   int numTempRoots;
+   
+   // Pointer to the first node in the linked list of active handles or NULL if
+   // there are none.
+   WrenHandle* handles;
+   
+   //Pointer to the bottom of the range of stack slots available for use from
+   //the C API. During a foreign method, this will be in the stack of the fiber
+   //that is executing a method.
+   //
+   //If not in a foreign method, this is initially NULL. If the user requests
+   //slots by calling wrenEnsureSlots(), a stack is created and this is initialized.
+   Value* apiStack;
+ 
+   WrenConfiguration config;
+   
+   //Compiler and debugger data:
+ 
+   //The compiler that is currently compiling code. This is used so that heap
+   //allocated objects used by the compiler can be found if a GC is kicked off
+   //in the middle of a compile.
+   Compiler* compiler;
+ 
+   // There is a single global symbol table for all method names on all classes.
+   // Method calls are dispatched directly by index in this table.
+   SymbolTable methodNames;
+};
 
-  // The error message for a runtime error.
-  WREN_ERROR_RUNTIME,
 
-  // One entry of a runtime error's stack trace.
-  WREN_ERROR_STACK_TRACE
-} WrenErrorType;
+// Creates a new [WrenHandle] for [value].
+WrenHandle* wrenMakeHandle(WrenVM* vm, Value value);
 
-// Reports an error to the user.
+// Compile [source] in the context of [module] and wrap in a fiber that can
+// execute it.
 //
-// An error detected during compile time is reported by calling this once with
-// [type] `WREN_ERROR_COMPILE`, the resolved name of the [module] and [line]
-// where the error occurs, and the compiler's error [message].
+// Returns NULL if a compile error occurred.
+ObjClosure* wrenCompileSource(WrenVM* vm, const char* module,
+                              const char* source, Bool isExpression,
+                              Bool printErrors);
+
+//Looks up a variable from a previously-loaded module.
 //
-// A runtime error is reported by calling this once with [type]
-// `WREN_ERROR_RUNTIME`, no [module] or [line], and the runtime error's
-// [message]. After that, a series of [type] `WREN_ERROR_STACK_TRACE` calls are
-// made for each line in the stack trace. Each of those has the resolved
-// [module] and [line] where the method or function is defined and [message] is
-// the name of the method or function.
-typedef void (*WrenErrorFn)(
-    WrenVM* vm, WrenErrorType type, const char* module, int line,
-    const char* message);
+//Aborts the current fiber if the module or variable could not be found.
+Value wrenGetModuleVariable(WrenVM* vm, Value moduleName, Value variableName);
 
-typedef struct
-{
-  // The callback invoked when the foreign object is created.
-  //
-  // This must be provided. Inside the body of this, it must call
-  // [wrenSetSlotNewForeign()] exactly once.
-  WrenForeignMethodFn allocate;
+// Returns the value of the module-level variable named [name] in the main
+// module.
+Value wrenFindVariable(WrenVM* vm, ObjModule* module, const char* name);
 
-  // The callback invoked when the garbage collector is about to collect a
-  // foreign object's memory.
-  //
-  // This may be `NULL` if the foreign class does not need to finalize.
-  WrenFinalizerFn finalize;
-} WrenForeignClassMethods;
-
-// Returns a pair of pointers to the foreign methods used to allocate and
-// finalize the data for instances of [className] in resolved [module].
-typedef WrenForeignClassMethods (*WrenBindForeignClassFn)(
-    WrenVM* vm, const char* module, const char* className);
-
-typedef struct
-{
-  // The callback Wren will use to allocate, reallocate, and deallocate memory.
-  //
-  // If `NULL`, defaults to a built-in function that uses `realloc` and `free`.
-  WrenReallocateFn reallocateFn;
-
-  // The callback Wren uses to resolve a module name.
-  //
-  // Some host applications may wish to support "relative" imports, where the
-  // meaning of an import string depends on the module that contains it. To
-  // support that without baking any policy into Wren itself, the VM gives the
-  // host a chance to resolve an import string.
-  //
-  // Before an import is loaded, it calls this, passing in the name of the
-  // module that contains the import and the import string. The host app can
-  // look at both of those and produce a new "canonical" string that uniquely
-  // identifies the module. This string is then used as the name of the module
-  // going forward. It is what is passed to [loadModuleFn], how duplicate
-  // imports of the same module are detected, and how the module is reported in
-  // stack traces.
-  //
-  // If you leave this function NULL, then the original import string is
-  // treated as the resolved string.
-  //
-  // If an import cannot be resolved by the embedder, it should return NULL and
-  // Wren will report that as a runtime error.
-  //
-  // Wren will take ownership of the string you return and free it for you, so
-  // it should be allocated using the same allocation function you provide
-  // above.
-  WrenResolveModuleFn resolveModuleFn;
-
-  // The callback Wren uses to load a module.
-  //
-  // Since Wren does not talk directly to the file system, it relies on the
-  // embedder to physically locate and read the source code for a module. The
-  // first time an import appears, Wren will call this and pass in the name of
-  // the module being imported. The method will return a result, which contains
-  // the source code for that module. Memory for the source is owned by the 
-  // host application, and can be freed using the onComplete callback.
-  //
-  // This will only be called once for any given module name. Wren caches the
-  // result internally so subsequent imports of the same module will use the
-  // previous source and not call this.
-  //
-  // If a module with the given name could not be found by the embedder, it
-  // should return NULL and Wren will report that as a runtime error.
-  WrenLoadModuleFn loadModuleFn;
-
-  // The callback Wren uses to find a foreign method and bind it to a class.
-  //
-  // When a foreign method is declared in a class, this will be called with the
-  // foreign method's module, class, and signature when the class body is
-  // executed. It should return a pointer to the foreign function that will be
-  // bound to that method.
-  //
-  // If the foreign function could not be found, this should return NULL and
-  // Wren will report it as runtime error.
-  WrenBindForeignMethodFn bindForeignMethodFn;
-
-  // The callback Wren uses to find a foreign class and get its foreign methods.
-  //
-  // When a foreign class is declared, this will be called with the class's
-  // module and name when the class body is executed. It should return the
-  // foreign functions uses to allocate and (optionally) finalize the bytes
-  // stored in the foreign object when an instance is created.
-  WrenBindForeignClassFn bindForeignClassFn;
-
-  // The callback Wren uses to display text when `System.print()` or the other
-  // related functions are called.
-  //
-  // If this is `NULL`, Wren discards any printed text.
-  WrenWriteFn writeFn;
-
-  // The callback Wren uses to report errors.
-  //
-  // When an error occurs, this will be called with the module name, line
-  // number, and an error message. If this is `NULL`, Wren doesn't report any
-  // errors.
-  WrenErrorFn errorFn;
-
-  // The number of bytes Wren will allocate before triggering the first garbage
-  // collection.
-  //
-  // If zero, defaults to 10MB.
-  size_t initialHeapSize;
-
-  // After a collection occurs, the threshold for the next collection is
-  // determined based on the number of bytes remaining in use. This allows Wren
-  // to shrink its memory usage automatically after reclaiming a large amount
-  // of memory.
-  //
-  // This can be used to ensure that the heap does not get too small, which can
-  // in turn lead to a large number of collections afterwards as the heap grows
-  // back to a usable size.
-  //
-  // If zero, defaults to 1MB.
-  size_t minHeapSize;
-
-  // Wren will resize the heap automatically as the number of bytes
-  // remaining in use after a collection changes. This number determines the
-  // amount of additional memory Wren will use after a collection, as a
-  // percentage of the current heap size.
-  //
-  // For example, say that this is 50. After a garbage collection, when there
-  // are 400 bytes of memory still in use, the next collection will be triggered
-  // after a total of 600 bytes are allocated (including the 400 already in
-  // use.)
-  //
-  // Setting this to a smaller number wastes less memory, but triggers more
-  // frequent garbage collections.
-  //
-  // If zero, defaults to 50.
-  int heapGrowthPercent;
-
-  // User-defined data associated with the VM.
-  void* userData;
-
-} WrenConfiguration;
-
-typedef enum
-{
-  WREN_RESULT_SUCCESS,
-  WREN_RESULT_COMPILE_ERROR,
-  WREN_RESULT_RUNTIME_ERROR
-} WrenInterpretResult;
-
-// The type of an object stored in a slot.
+// Adds a new implicitly declared top-level variable named [name] to [module]
+// based on a use site occurring on [line].
 //
-// This is not necessarily the object's *class*, but instead its low level
-// representation type.
-typedef enum
-{
-  WREN_TYPE_BOOL,
-  WREN_TYPE_NUM,
-  WREN_TYPE_FOREIGN,
-  WREN_TYPE_LIST,
-  WREN_TYPE_MAP,
-  WREN_TYPE_NULL,
-  WREN_TYPE_STRING,
+// Does not check to see if a variable with that name is already declared or
+// defined. Returns the symbol for the new variable or -2 if there are too many
+// variables defined.
+int wrenDeclareVariable(WrenVM* vm, ObjModule* module, const char* name,
+                        Ulong length, int line);
 
-  // The object is of a type that isn't accessible by the C API.
-  WREN_TYPE_UNKNOWN
-} WrenType;
-
-// Get the current wren version number.
+// Adds a new top-level variable named [name] to [module], and optionally
+// populates line with the line of the implicit first use (line can be NULL).
 //
-// Can be used to range checks over versions.
-WREN_API int wrenGetVersionNumber();
+// Returns the symbol for the new variable, -1 if a variable with the given name
+// is already defined, or -2 if there are too many variables defined.
+// Returns -3 if this is a top-level lowercase variable (localname) that was
+// used before being defined.
+int wrenDefineVariable(WrenVM* vm, ObjModule* module, const char* name,
+                       Ulong length, Value value, int* line);
 
-// Initializes [configuration] with all of its default values.
+// Marks [obj] as a GC root so that it doesn't get collected.
+private void pushRoot(WrenVM* vm, Obj* obj);
+
+// Removes the most recently pushed temporary root.
+private void popRoot(WrenVM* vm);
+
+
+//This module defines the built-in classes and their primitives methods that
+//are implemented directly in C code. Some languages try to implement as much
+//of the core module itself in the primary language instead of in the host language.
 //
-// Call this before setting the particular fields you care about.
-WREN_API void wrenInitConfiguration(WrenConfiguration* configuration);
-
-// Creates a new Wren virtual machine using the given [configuration]. Wren
-// will copy the configuration data, so the argument passed to this can be
-// freed after calling this. If [configuration] is `NULL`, uses a default
-// configuration.
-WREN_API WrenVM* wrenNewVM(WrenConfiguration* configuration);
-
-// Disposes of all resources is use by [vm], which was previously created by a
-// call to [wrenNewVM].
-WREN_API void wrenFreeVM(WrenVM* vm);
-
-// Immediately run the garbage collector to free unused memory.
-WREN_API void wrenCollectGarbage(WrenVM* vm);
-
-// Runs [source], a string of Wren source code in a new fiber in [vm] in the
-// context of resolved [module].
-WREN_API WrenInterpretResult wrenInterpret(WrenVM* vm, const char* module,
-                                  const char* source);
-
-// Creates a handle that can be used to invoke a method with [signature] on
-// using a receiver and arguments that are set up on the stack.
+//With Wren, we try to do as much of it in C as possible. Primitive methods
+//are always faster than code written in Wren, and it minimizes startup time
+//since we don't have to parse, compile, and execute Wren code.
 //
-// This handle can be used repeatedly to directly invoke that method from C
-// code using [wrenCall].
+//There is one limitation, though. Methods written in C cannot call Wren ones.
+//They can only be the top of the callstack, and immediately return. This
+//makes it difficult to have primitive methods that rely on polymorphic
+//behavior. For example, `System.print` should call `toString` on its argument,
+//including user-defined `toString` methods on user-defined classes.
+
+void wrenInitializeCore(WrenVM* vm);
+
+//}}}
+//{{{value
+
+//This defines the built-in types and their core representations in memory.
+//Since Wren is dynamically typed, any variable can hold a value of any type,
+//and the type can change at runtime. Implementing this efficiently is critical for performance.
 //
-// When you are done with this handle, it must be released using
-// [wrenReleaseHandle].
-WREN_API WrenHandle* wrenMakeCallHandle(WrenVM* vm, const char* signature);
-
-// Calls [method], using the receiver and arguments previously set up on the
-// stack.
+// The main type exposed by this is [Value]. A C variable of that type is a
+// storage location that can hold any Wren value. The stack, module variables,
+// and instance fields are all implemented in C as variables of type Value.
 //
-// [method] must have been created by a call to [wrenMakeCallHandle]. The
-// arguments to the method must be already on the stack. The receiver should be
-// in slot 0 with the remaining arguments following it, in order. It is an
-// error if the number of arguments provided does not match the method's
-// signature.
+// The built-in types for booleans, numbers, and null are unboxed: their value
+// is stored directly in the Value, and copying a Value copies the value. Other
+// types--classes, instances of classes, functions, lists, and strings--are all
+// reference types. They are stored on the heap and the Value just stores a
+// pointer to it. Copying the Value copies a reference to the same object. The
+// Wren implementation calls these "Obj", or objects, though to a user, all
+// values are objects.
 //
-// After this returns, you can access the return value from slot 0 on the stack.
-WREN_API WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method);
-
-// Releases the reference stored in [handle]. After calling this, [handle] can
-// no longer be used.
-WREN_API void wrenReleaseHandle(WrenVM* vm, WrenHandle* handle);
-
-// The following functions are intended to be called from foreign methods or
-// finalizers. The interface Wren provides to a foreign method is like a
-// register machine: you are given a numbered array of slots that values can be
-// read from and written to. Values always live in a slot (unless explicitly
-// captured using wrenGetSlotHandle(), which ensures the garbage collector can
-// find them.
+// There is also a special singleton value "undefined". It is used internally
+// but never appears as a real value to a user. It has two uses:
 //
-// When your foreign function is called, you are given one slot for the receiver
-// and each argument to the method. The receiver is in slot 0 and the arguments
-// are in increasingly numbered slots after that. You are free to read and
-// write to those slots as you want. If you want more slots to use as scratch
-// space, you can call wrenEnsureSlots() to add more.
+// - It is used to identify module variables that have been implicitly declared
+//   by use in a forward reference but not yet explicitly declared. These only
+//   exist during compilation and do not appear at runtime.
 //
-// When your function returns, every slot except slot zero is discarded and the
-// value in slot zero is used as the return value of the method. If you don't
-// store a return value in that slot yourself, it will retain its previous
-// value, the receiver.
+// - It is used to represent unused map entries in an ObjMap.
 //
-// While Wren is dynamically typed, C is not. This means the C interface has to
-// support the various types of primitive values a Wren variable can hold: bool,
-// double, string, etc. If we supported this for every operation in the C API,
-// there would be a combinatorial explosion of functions, like "get a
-// double-valued element from a list", "insert a string key and double value
-// into a map", etc.
+// There are two supported Value representations. The main one uses a technique
+// called "NaN tagging" (explained in detail below) to store a number, any of
+// the value types, or a pointer, all inside one double-precision floating
+// point number. A larger, slower, Value type that uses a struct to store these
+// is also supported, and is useful for debugging the VM.
+
+
+
+// These macros cast a Value to one of the specific object types. These do *not*
+// perform any validation, so must only be used after the Value has been
+// ensured to be the right type.
+#define AS_CLASS(value)     ((ObjClass*)AS_OBJ(value))     //ObjClass*
+#define AS_CLOSURE(value)   ((ObjClosure*)AS_OBJ(value))   //ObjClosure*
+#define AS_FIBER(v)         ((ObjFiber*)AS_OBJ(v))         //ObjFiber*
+#define AS_FN(value)        ((ObjFn*)AS_OBJ(value))        //ObjFn*
+#define AS_FOREIGN(v)       ((ObjForeign*)AS_OBJ(v))       //ObjForeign*
+#define AS_INSTANCE(value)  ((ObjInstance*)AS_OBJ(value))  //ObjInstance*
+#define AS_LIST(value)      ((ObjList*)AS_OBJ(value))      //ObjList*
+#define AS_MAP(value)       ((ObjMap*)AS_OBJ(value))       //ObjMap*
+#define AS_MODULE(value)    ((ObjModule*)AS_OBJ(value))    //ObjModule*
+#define AS_NUM(value)       (wrenValueToNum(value))        //double
+#define AS_RANGE(v)         ((ObjRange*)AS_OBJ(v))         //ObjRange*
+#define AS_STRING(v)        ((ObjString*)AS_OBJ(v))        //ObjString*
+#define AS_CSTRING(v)       (AS_STRING(v)->value)          //const char*
+
+//These macros promote a primitive C value to a full Wren Value. There are
+//more defined below that are specific to the Nan tagged or other representation.
+#define BOOL_VAL(boolean) ((boolean) ? TRUE_VAL : FALSE_VAL)    // boolean
+#define NUM_VAL(num) (numToValue(num))                      // double
+#define OBJ_VAL(obj) (objectToValue((Obj*)(obj)))           // Any Obj___*
+
+// These perform type tests on a Value, returning `true` if the Value is of the
+// given type.
+#define IS_BOOL(value) (wrenIsBool(value))                      // Bool
+#define IS_CLASS(value) (wrenIsObjType(value, OBJ_CLASS))       // ObjClass
+#define IS_CLOSURE(value) (wrenIsObjType(value, OBJ_CLOSURE))   // ObjClosure
+#define IS_FIBER(value) (wrenIsObjType(value, OBJ_FIBER))       // ObjFiber
+#define IS_FN(value) (wrenIsObjType(value, OBJ_FN))             // ObjFn
+#define IS_FOREIGN(value) (wrenIsObjType(value, OBJ_FOREIGN))   // ObjForeign
+#define IS_INSTANCE(value) (wrenIsObjType(value, OBJ_INSTANCE)) // ObjInstance
+#define IS_LIST(value) (wrenIsObjType(value, OBJ_LIST))         // ObjList
+#define IS_MAP(value) (wrenIsObjType(value, OBJ_MAP))           // ObjMap
+#define IS_RANGE(value) (wrenIsObjType(value, OBJ_RANGE))       // ObjRange
+#define IS_STRING(value) (wrenIsObjType(value, OBJ_STRING))     // ObjString
+
+// Creates a new string object from [text], which should be a bare C string
+// literal. This determines the length of the string automatically at compile
+// time based on the size of the character array (-1 for the terminating '\0').
+#define CONST_STRING(vm, text) wrenNewStringLength((vm), (text), sizeof(text) - 1)
+
+
+// A heap-allocated string object.
+struct ObjString {
+   Obj obj;
+
+   // Number of bytes in the string, not including the null terminator.
+   Unt length;
+
+   // The hash value of the string's contents.
+   Unt hash;
+
+   // Inline array of the string's bytes followed by a null terminator.
+   char value[FLEXIBLE_ARRAY];
+};
+
+// The dynamically allocated data structure for a variable that has been used
+// by a closure. Whenever a function accesses a variable declared in an
+// enclosing function, it will get to it through this.
 //
-// To avoid that, the only way to convert to and from a raw C value is by going
-// into and out of a slot. All other functions work with values already in a
-// slot. So, to add an element to a list, you put the list in one slot, and the
-// element in another. Then there is a single API function wrenInsertInList()
-// that takes the element out of that slot and puts it into the list.
+// An upvalue can be either "closed" or "open". An open upvalue points directly
+// to a [Value] that is still stored on the fiber's stack because the local
+// variable is still in scope in the function where it's declared.
 //
-// The goal of this API is to be easy to use while not compromising performance.
-// The latter means it does not do type or bounds checking at runtime except
-// using assertions which are generally removed from release builds. C is an
-// unsafe language, so it's up to you to be careful to use it correctly. In
-// return, you get a very fast FFI.
+// When that local variable goes out of scope, the upvalue pointing to it will
+// be closed. When that happens, the value gets copied off the stack into the
+// upvalue itself. That way, it can have a longer lifetime than the stack variable.
+struct ObjUpvalue {
+   //The object header. Note that upvalues have this because they are garbage
+   //collected, but they are not first class Wren objects.
+   Obj obj;
 
-// Returns the number of slots available to the current foreign method.
-WREN_API int wrenGetSlotCount(WrenVM* vm);
+   //Pointer to the variable this upvalue is referencing.
+   Value* value;
 
-// Ensures that the foreign method stack has at least [numSlots] available for
-// use, growing the stack if needed.
+   // If the upvalue is closed (i.e. the local variable it was pointing to has
+   // been popped off the stack) then the closed-over value will be hoisted out
+   // of the stack into here. [value] will then be changed to point to this.
+   Value closed;
+
+   //Open upvalues are stored in a linked list by the fiber. This points to the
+   //next upvalue in that list.
+   ObjUpvalue* next;
+};
+
+// The type of a primitive function.
 //
-// Does not shrink the stack if it has more than enough slots.
+// Primitives are similar to foreign functions, but have more direct access to
+// VM internals. It is passed the arguments in [args]. If it returns a value,
+// it places it in `args[0]` and returns `true`. If it causes a runtime error
+// or modifies the running fiber, it returns `false`.
+typedef Bool (*Primitive)(WrenVM* vm, Value* args);
+
+typedef enum {
+   //A primitive method implemented in C in the VM. Unlike foreign methods,
+   //this can directly manipulate the fiber's stack.
+   METHOD_PRIMITIVE,
+ 
+   //A primitive that handles .call on Fn.
+   METHOD_FUNCTION_CALL,
+ 
+   //A externally-defined C method.
+   METHOD_FOREIGN,
+ 
+   //A normal user-defined method.
+   METHOD_BLOCK,
+   
+   //No method for the given symbol.
+   METHOD_NONE
+} MethodType;
+
+typedef struct {
+   MethodType type;
+
+   // The method function itself. The [type] determines which field of the union is used.
+   union {
+      Primitive primitive;
+      WrenForeignMethodFn foreign;
+      ObjClosure* closure;
+   } as;
+} Method;
+
+DECLARE_BUFFER(Method, Method);
+
+struct ObjClass {
+   Obj obj;
+   ObjClass* superclass;
+ 
+   //The number of fields needed for an instance of this class, including all
+   //of its superclass fields.
+   int numFields;
+ 
+   // The table of methods that are defined in or inherited by this class.
+   // Methods are called by symbol, and the symbol directly maps to an index in
+   // this table. This makes method calls fast at the expense of empty cells in
+   // the list for methods the class doesn't support.
+   //
+   //You can think of it as a hash table that never has collisions but has a
+   //really low load factor. Since methods are pretty small (just a type and a
+   //pointer), this should be a worthwhile trade-off.
+   MethodBuffer methods;
+ 
+   //The name of the class.
+   ObjString* name;
+   
+   //The ClassAttribute for the class, if any
+   Value attributes;
+};
+
+typedef struct {
+  Obj obj;
+
+  //The beginning of the range.
+  double from;
+
+  //The end of the range. May be greater or less than [from].
+  double to;
+
+  //True if [to] is included in the range.
+  Bool isInclusive;
+} ObjRange;
+
+// Nan-tagging. An IEEE 754 double-precision float is a 64-bit value with bits laid out like:
 //
-// It is an error to call this from a finalizer.
-WREN_API void wrenEnsureSlots(WrenVM* vm, int numSlots);
-
-// Gets the type of the object in [slot].
-WREN_API WrenType wrenGetSlotType(WrenVM* vm, int slot);
-
-// Reads a boolean value from [slot].
+// 1 Sign bit
+// |11 Exponent bits
+// ||         |+------52 Mantissa (i.e. fraction) bits------------+
+// ||         ||                                                  |
+// S[Exponent-][Mantissa------------------------------------------]
 //
-// It is an error to call this if the slot does not contain a boolean value.
-WREN_API bool wrenGetSlotBool(WrenVM* vm, int slot);
-
-// Reads a byte array from [slot].
+// The details of how these are used to represent numbers aren't really
+// relevant here as long we don't interfere with them. The important bit is NaN.
 //
-// The memory for the returned string is owned by Wren. You can inspect it
-// while in your foreign method, but cannot keep a pointer to it after the
-// function returns, since the garbage collector may reclaim it.
+// An IEEE double can represent a few magical values like NaN ("not a number"),
+// Infinity, and -Infinity. A NaN is any value where all exponent bits are set:
 //
-// Returns a pointer to the first byte of the array and fill [length] with the
-// number of bytes in the array.
+//  v--NaN bits
+// -11111111111----------------------------------------------------
 //
-// It is an error to call this if the slot does not contain a string.
-WREN_API const char* wrenGetSlotBytes(WrenVM* vm, int slot, int* length);
-
-// Reads a number from [slot].
+// Here, "-" means "doesn't matter". Any bit sequence that matches the above is a NaN. With all of
+// those "-", it obvious there are a *lot* of different bit patterns that all mean the same thing.
+// NaN tagging takes advantage of this. We'll use those available bit patterns to represent things
+// other than numbers without giving up any valid numeric values.
 //
-// It is an error to call this if the slot does not contain a number.
-WREN_API double wrenGetSlotDouble(WrenVM* vm, int slot);
-
-// Reads a foreign object from [slot] and returns a pointer to the foreign data
-// stored with it.
+// NaN values come in two flavors: "signalling" and "quiet". The former are intended to halt 
+// execution, while the latter just flow through arithmetic operations silently. We want the latter.
+// Quiet NaNs are indicated by setting the highest mantissa bit:
 //
-// It is an error to call this if the slot does not contain an instance of a
-// foreign class.
-WREN_API void* wrenGetSlotForeign(WrenVM* vm, int slot);
-
-// Reads a string from [slot].
+//             v--Highest mantissa bit
+// -[NaN      ]1---------------------------------------------------
 //
-// The memory for the returned string is owned by Wren. You can inspect it
-// while in your foreign method, but cannot keep a pointer to it after the
-// function returns, since the garbage collector may reclaim it.
+//If all of the NaN bits are set, it's not a number. Otherwise, it is. That leaves all of the 
+//remaining bits available for us to play with. We stuff a few different kinds of things here: 
+//special singleton values like "true", "false", and "null", and pointers to objects allocated on 
+//the heap. We'll use the sign bit to distinguish singleton values from pointers. If
+//it's set, it's a pointer.
 //
-// It is an error to call this if the slot does not contain a string.
-WREN_API const char* wrenGetSlotString(WrenVM* vm, int slot);
-
-// Creates a handle for the value stored in [slot].
+// v--Pointer or singleton?
+// S[NaN      ]1---------------------------------------------------
 //
-// This will prevent the object that is referred to from being garbage collected
-// until the handle is released by calling [wrenReleaseHandle()].
-WREN_API WrenHandle* wrenGetSlotHandle(WrenVM* vm, int slot);
-
-// Stores the boolean [value] in [slot].
-WREN_API void wrenSetSlotBool(WrenVM* vm, int slot, bool value);
-
-// Stores the array [length] of [bytes] in [slot].
+//For singleton values, we just enumerate the different values. We'll use the
+//low bits of the mantissa for that, and only need a few:
 //
-// The bytes are copied to a new string within Wren's heap, so you can free
-// memory used by them after this is called.
-WREN_API void wrenSetSlotBytes(WrenVM* vm, int slot, const char* bytes, size_t length);
-
-// Stores the numeric [value] in [slot].
-WREN_API void wrenSetSlotDouble(WrenVM* vm, int slot, double value);
-
-// Creates a new instance of the foreign class stored in [classSlot] with [size]
-// bytes of raw storage and places the resulting object in [slot].
+//                                                 3 Type bits--v
+// 0[NaN      ]1------------------------------------------------[T]
 //
-// This does not invoke the foreign class's constructor on the new instance. If
-// you need that to happen, call the constructor from Wren, which will then
-// call the allocator foreign method. In there, call this to create the object
-// and then the constructor will be invoked when the allocator returns.
+//For pointers, we are left with 51 bits of mantissa to store an address. That's more than enough 
+//room for a 32-bit address. Even 64-bit machines only actually use 48 bits for addresses, so 
+//we've got plenty. We just stuff the address right into the mantissa.
 //
-// Returns a pointer to the foreign object's data.
-WREN_API void* wrenSetSlotNewForeign(WrenVM* vm, int slot, int classSlot, size_t size);
+//Ta-da, double precision numbers, pointers, and a bunch of singleton values, all stuffed into a 
+//single 64-bit sequence. Even better, we don't have to do any masking or work to extract number 
+//values: they are unmodified. This means math on numbers is fast.
 
-// Stores a new empty list in [slot].
-WREN_API void wrenSetSlotNewList(WrenVM* vm, int slot);
+// A mask that selects the sign bit.
+#define SIGN_BIT ((Ulong)1 << 63)
 
-// Stores a new empty map in [slot].
-WREN_API void wrenSetSlotNewMap(WrenVM* vm, int slot);
+// The bits that must be set to indicate a quiet NaN.
+#define QNAN ((Ulong)0x7ffc000000000000)
 
-// Stores null in [slot].
-WREN_API void wrenSetSlotNull(WrenVM* vm, int slot);
+// If the NaN bits are set, it's not a number.
+#define IS_NUM(value) (((value) & QNAN) != QNAN)
 
-// Stores the string [text] in [slot].
+// An object pointer is a NaN with a set sign bit.
+#define IS_OBJ(value) (((value) & (QNAN | SIGN_BIT)) == (QNAN | SIGN_BIT))
+
+#define IS_FALSE(value)     ((value) == FALSE_VAL)
+#define IS_NULL(value)      ((value) == NULL_VAL)
+#define IS_UNDEFINED(value) ((value) == UNDEFINED_VAL)
+
+// Masks out the tag bits used to identify the singleton value.
+#define MASK_TAG (7)
+
+// Tag values for the different singleton values.
+#define TAG_NAN       (0)
+#define TAG_NULL      (1)
+#define TAG_FALSE     (2)
+#define TAG_TRUE      (3)
+#define TAG_UNDEFINED (4)
+#define TAG_UNUSED2   (5)
+#define TAG_UNUSED3   (6)
+#define TAG_UNUSED4   (7)
+
+// Value -> 0 or 1.
+#define AS_BOOL(value) ((value) == TRUE_VAL)
+
+// Value -> Obj*.
+#define AS_OBJ(value) ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
+
+// Singleton values.
+#define NULL_VAL      ((Value)(Ulong)(QNAN | TAG_NULL))
+#define FALSE_VAL     ((Value)(Ulong)(QNAN | TAG_FALSE))
+#define TRUE_VAL      ((Value)(Ulong)(QNAN | TAG_TRUE))
+#define UNDEFINED_VAL ((Value)(Ulong)(QNAN | TAG_UNDEFINED))
+
+// Gets the singleton type tag for a Value (which must be a singleton).
+#define GET_TAG(value) ((int)((value) & MASK_TAG))
+
+// Creates a new "raw" class. It has no metaclass or superclass whatsoever.
+// This is only used for bootstrapping the initial Object and Class classes,
+// which are a little special.
+ObjClass* wrenNewSingleClass(WrenVM* vm, int numFields, ObjString* name);
+
+// Makes [superclass] the superclass of [subclass], and causes subclass to
+// inherit its methods. This should be called before any methods are defined
+// on subclass.
+void wrenBindSuperclass(WrenVM* vm, ObjClass* subclass, ObjClass* superclass);
+
+// Creates a new class object as well as its associated metaclass.
+ObjClass* wrenNewClass(WrenVM* vm, ObjClass* superclass, int numFields, ObjString* name);
+
+void wrenBindMethod(WrenVM* vm, ObjClass* classObj, int symbol, Method method);
+
+// Creates a new closure object that invokes [fn]. Allocates room for its
+// upvalues, but assumes outside code will populate it.
+ObjClosure* wrenNewClosure(WrenVM* vm, ObjFn* fn);
+
+// Creates a new fiber object that will invoke [closure].
+ObjFiber* wrenNewFiber(WrenVM* vm, ObjClosure* closure);
+
+
+// Ensures [fiber]'s stack has at least [needed] slots.
+void wrenEnsureStack(WrenVM* vm, ObjFiber* fiber, int needed);
+
+ObjForeign* wrenNewForeign(WrenVM* vm, ObjClass* classObj, Ulong size);
+
+// Creates a new empty function. Before being used, it must have code,
+// constants, etc. added to it.
+ObjFn* wrenNewFunction(WrenVM* vm, ObjModule* module, int maxSlots);
+
+void wrenFunctionBindName(WrenVM* vm, ObjFn* fn, const char* name, int length);
+
+// Creates a new instance of the given [classObj].
+Value wrenNewInstance(WrenVM* vm, ObjClass* classObj);
+
+// Creates a new list with [numElements] elements (which are left
+// uninitialized.)
+ObjList* wrenNewList(WrenVM* vm, Unt numElements);
+
+// Inserts [value] in [list] at [index], shifting down the other elements.
+void wrenListInsert(WrenVM* vm, ObjList* list, Value value, Unt index);
+
+// Removes and returns the item at [index] from [list].
+Value wrenListRemoveAt(WrenVM* vm, ObjList* list, Unt index);
+
+// Searches for [value] in [list], returns the index or -1 if not found.
+int wrenListIndexOf(WrenVM* vm, ObjList* list, Value value);
+
+// Creates a new empty map.
+private ObjMap* wrenNewMap(WrenVM* vm);
+
+private Value wrenMapGet(ObjMap* map, Value key);
+
+// Associates [key] with [value] in [map].
+void wrenMapSet(WrenVM* vm, ObjMap* map, Value key, Value value);
+
+void wrenMapClear(WrenVM* vm, ObjMap* map);
+
+// Removes [key] from [map], if present. Returns the value for the key if found
+// or `NULL_VAL` otherwise.
+Value wrenMapRemoveKey(WrenVM* vm, ObjMap* map, Value key);
+
+// Creates a new module.
+ObjModule* wrenNewModule(WrenVM* vm, ObjString* name);
+
+// Creates a new range from [from] to [to].
+private Value wrenNewRange(WrenVM* vm, double from, double to, Bool isInclusive);
+
+// Creates a new string object and copies [text] into it.
 //
-// The [text] is copied to a new string within Wren's heap, so you can free
-// memory used by it after this is called. The length is calculated using
-// [strlen()]. If the string may contain any null bytes in the middle, then you
-// should use [wrenSetSlotBytes()] instead.
-WREN_API void wrenSetSlotString(WrenVM* vm, int slot, const char* text);
+// [text] must be non-NULL.
+Value wrenNewString(WrenVM* vm, CS text);
 
-// Stores the value captured in [handle] in [slot].
+// Creates a new string object of [length] and copies [text] into it.
 //
-// This does not release the handle for the value.
-WREN_API void wrenSetSlotHandle(WrenVM* vm, int slot, WrenHandle* handle);
+// [text] may be NULL if [length] is zero.
+Value wrenNewStringLength(WrenVM* vm, CS text, Ulong length);
 
-// Returns the number of elements in the list stored in [slot].
-WREN_API int wrenGetListCount(WrenVM* vm, int slot);
+// Creates a new string object by taking a range of characters from [source].
+// The range starts at [start], contains [count] bytes, and increments by
+// [step].
+Value wrenNewStringFromRange(WrenVM* vm, ObjString* source, int start,
+                             Unt count, int step);
 
-// Reads element [index] from the list in [listSlot] and stores it in
-// [elementSlot].
-WREN_API void wrenGetListElement(WrenVM* vm, int listSlot, int index, int elementSlot);
+// Produces a string representation of [value].
+Value wrenNumToString(WrenVM* vm, double value);
 
-// Sets the value stored at [index] in the list at [listSlot], 
-// to the value from [elementSlot]. 
-WREN_API void wrenSetListElement(WrenVM* vm, int listSlot, int index, int elementSlot);
-
-// Takes the value stored at [elementSlot] and inserts it into the list stored
-// at [listSlot] at [index].
+// Creates a new formatted string from [format] and any additional arguments
+// used in the format string.
 //
-// As in Wren, negative indexes can be used to insert from the end. To append
-// an element, use `-1` for the index.
-WREN_API void wrenInsertInList(WrenVM* vm, int listSlot, int index, int elementSlot);
+// This is a very restricted flavor of formatting, intended only for internal
+// use by the VM. Two formatting characters are supported, each of which reads
+// the next argument as a certain type:
+//
+// $ - A C string.
+// @ - A Wren string object.
+Value wrenStringFormat(WrenVM* vm, const char* format, ...);
 
-// Returns the number of entries in the map stored in [slot].
-WREN_API int wrenGetMapCount(WrenVM* vm, int slot);
+// Creates a new string containing the UTF-8 encoding of [value].
+Value wrenStringFromCodePoint(WrenVM* vm, int value);
 
-// Returns true if the key in [keySlot] is found in the map placed in [mapSlot].
-WREN_API bool wrenGetMapContainsKey(WrenVM* vm, int mapSlot, int keySlot);
+// Creates a new string from the integer representation of a byte
+Value wrenStringFromByte(WrenVM* vm, Byte value);
 
-// Retrieves a value with the key in [keySlot] from the map in [mapSlot] and
-// stores it in [valueSlot].
-WREN_API void wrenGetMapValue(WrenVM* vm, int mapSlot, int keySlot, int valueSlot);
+//Creates a new string containing the code point in [string] starting at byte
+//[index]. If [index] points into the middle of a UTF-8 sequence, returns an empty string.
+Value wrenStringCodePointAt(WrenVM* vm, ObjString* string, Unt index);
 
-// Takes the value stored at [valueSlot] and inserts it into the map stored
-// at [mapSlot] with key [keySlot].
-WREN_API void wrenSetMapValue(WrenVM* vm, int mapSlot, int keySlot, int valueSlot);
+// Search for the first occurence of [needle] within [haystack] and returns its
+// zero-based offset. Returns `UINT32_MAX` if [haystack] does not contain
+// [needle].
+Unt wrenStringFind(ObjString* haystack, ObjString* needle,
+                        Unt startIndex);
 
-// Removes a value from the map in [mapSlot], with the key from [keySlot],
-// and place it in [removedValueSlot]. If not found, [removedValueSlot] is
-// set to null, the same behaviour as the Wren Map API.
-WREN_API void wrenRemoveMapValue(WrenVM* vm, int mapSlot, int keySlot,
-                        int removedValueSlot);
+// Creates a new open upvalue pointing to [value] on the stack.
+ObjUpvalue* wrenNewUpvalue(WrenVM* vm, Value* value);
 
-// Looks up the top level variable with [name] in resolved [module] and stores
-// it in [slot].
-WREN_API void wrenGetVariable(WrenVM* vm, const char* module, const char* name,
-                     int slot);
+// Mark [obj] as reachable and still in use. This should only be called
+// during the sweep phase of a garbage collection.
+void wrenGrayObj(WrenVM* vm, Obj* obj);
 
-// Looks up the top level variable with [name] in resolved [module], 
-// returns false if not found. The module must be imported at the time, 
-// use wrenHasModule to ensure that before calling.
-WREN_API bool wrenHasVariable(WrenVM* vm, const char* module, const char* name);
+// Mark [value] as reachable and still in use. This should only be called
+// during the sweep phase of a garbage collection.
+void wrenGrayValue(WrenVM* vm, Value value);
 
-// Returns true if [module] has been imported/resolved before, false if not.
-WREN_API bool wrenHasModule(WrenVM* vm, const char* module);
+// Mark the values in [buffer] as reachable and still in use. This should only
+// be called during the sweep phase of a garbage collection.
+void wrenGrayBuffer(WrenVM* vm, ValueBuffer* buffer);
 
-// Sets the current fiber to be aborted, and uses the value in [slot] as the
-// runtime error object.
-WREN_API void wrenAbortFiber(WrenVM* vm, int slot);
+// Processes every object in the gray stack until all reachable objects have
+// been marked. After that, all objects are either white (freeable) or black
+// (in use and fully traversed).
+void wrenBlackenObjects(WrenVM* vm);
 
-// Returns the user data associated with the WrenVM.
-WREN_API void* wrenGetUserData(WrenVM* vm);
+// Releases all memory owned by [obj], including [obj] itself.
+void wrenFreeObj(WrenVM* vm, Obj* obj);
 
-// Sets user data associated with the WrenVM.
-WREN_API void wrenSetUserData(WrenVM* vm, void* userData);
+// Returns the class of [value].
+//
+// Unlike wrenGetClassInline in wren_vm.h, this is not inlined. Inlining helps
+// performance (significantly) in some cases, but degrades it in others. The
+// ones used by the implementation were chosen to give the best results in the
+// benchmarks.
+ObjClass* wrenGetClass(WrenVM* vm, Value value);
 
+// Returns true if [a] and [b] are equivalent. Immutable values (null, bools,
+// numbers, ranges, and strings) are equal if they have the same data. All
+// other values are equal if they are identical objects.
+Bool wrenValuesEqual(Value a, Value b);
 
 
 //}}}
 //{{{utils
 
+// Reusable data structures and other utility functions.
+
+// Initializes the symbol table.
+void wrenSymbolTableInit(SymbolTable* symbols);
+
+// Adds name to the symbol table. Returns the index of it in the table. Will
+// use an existing symbol if already present.
+int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols,
+                          const char* name, Ulong length);
+
+// Looks up name in the symbol table. Returns its index if found or -1 if not.
+int wrenSymbolTableFind(const SymbolTable* symbols,
+                        const char* name, Ulong length);
+
+void wrenBlackenSymbolTable(WrenVM* vm, SymbolTable* symbolTable);
+
+// Returns the number of bytes needed to encode [value] in UTF-8.
+//
+// Returns 0 if [value] is too large to encode.
+int wrenUtf8EncodeNumBytes(int value);
+
+// Encodes value as a series of bytes in [bytes], which is assumed to be large
+// enough to hold the encoded result.
+//
+// Returns the number of written bytes.
+int wrenUtf8Encode(int value, Byte* bytes);
+
+// Decodes the UTF-8 sequence starting at [bytes] (which has max [length]),
+// returning the code point.
+//
+// Returns -1 if the bytes are not a valid UTF-8 sequence.
+int wrenUtf8Decode(const Byte* bytes, Unt length);
+
+// Returns the number of bytes in the UTF-8 sequence starting with [byte].
+//
+// If the character at that index is not the beginning of a UTF-8 sequence,
+// returns 0.
+int wrenUtf8DecodeNumBytes(Byte byte);
+
+
+// Validates that [value] is within `[0, count)`. Also allows
+// negative indices which map backwards from the end. Returns the valid positive
+// index value. If invalid, returns `UINT32_MAX`.
+Unt wrenValidateIndex(Unt count, int64_t value);
+
+//}}}
+//{{{primitive
+
+
+
+// Binds a primitive method named [name] (in Wren) implemented using C function
+// [fn] to `ObjClass` [cls].
+#define PRIMITIVE(cls, name, function)                                         \
+    do                                                                         \
+    {                                                                          \
+      int symbol = wrenSymbolTableEnsure(vm,                                   \
+          &vm->methodNames, name, strlen(name));                               \
+      Method method;                                                           \
+      method.type = METHOD_PRIMITIVE;                                          \
+      method.as.primitive = prim_##function;                                   \
+      wrenBindMethod(vm, cls, symbol, method);                                 \
+    } while (false)
+
+// Binds a primitive method named [name] (in Wren) implemented using C function
+// [fn] to `ObjClass` [cls], but as a FN call.
+#define FUNCTION_CALL(cls, name, function)                                     \
+    do                                                                         \
+    {                                                                          \
+      int symbol = wrenSymbolTableEnsure(vm,                                   \
+          &vm->methodNames, name, strlen(name));                               \
+      Method method;                                                           \
+      method.type = METHOD_FUNCTION_CALL;                                      \
+      method.as.primitive = prim_##function;                                   \
+      wrenBindMethod(vm, cls, symbol, method);                                 \
+    } while (false)
+
+// Defines a primitive method whose C function name is [name]. This abstracts
+// the actual type signature of a primitive function and makes it clear which C
+// functions are invoked as primitives.
+#define DEF_PRIMITIVE(name)                                                    \
+    static Bool prim_##name(WrenVM* vm, Value* args)
+
+#define RETURN_VAL(value)                                                      \
+    do                                                                         \
+    {                                                                          \
+      args[0] = value;                                                         \
+      return true;                                                             \
+    } while (false)
+
+#define RETURN_OBJ(obj)     RETURN_VAL(OBJ_VAL(obj))
+#define RETURN_BOOL(value)  RETURN_VAL(BOOL_VAL(value))
+#define RETURN_FALSE        RETURN_VAL(FALSE_VAL)
+#define RETURN_NULL         RETURN_VAL(NULL_VAL)
+#define RETURN_NUM(value)   RETURN_VAL(NUM_VAL(value))
+#define RETURN_TRUE         RETURN_VAL(TRUE_VAL)
+
+#define RETURN_ERROR(msg)                                                      \
+    do                                                                         \
+    {                                                                          \
+      vm->fiber->error = wrenNewStringLength(vm, msg, sizeof(msg) - 1);        \
+      return false;                                                            \
+    } while (false)
+
+#define RETURN_ERROR_FMT(...)                                                  \
+    do                                                                         \
+    {                                                                          \
+      vm->fiber->error = wrenStringFormat(vm, __VA_ARGS__);                    \
+      return false;                                                            \
+    } while (false)
+
+// Validates that the given [arg] is a function. Returns true if it is. If not,
+// reports an error and returns false.
+Bool validateFn(WrenVM* vm, Value arg, const char* argName);
+
+// Validates that the given [arg] is a Num. Returns true if it is. If not,
+// reports an error and returns false.
+Bool validateNum(WrenVM* vm, Value arg, const char* argName);
+
+// Validates that [value] is an integer. Returns true if it is. If not, reports
+// an error and returns false.
+Bool validateIntValue(WrenVM* vm, double value, const char* argName);
+
+// Validates that the given [arg] is an integer. Returns true if it is. If not,
+// reports an error and returns false.
+Bool validateInt(WrenVM* vm, Value arg, const char* argName);
+
+// Validates that [arg] is a valid object for use as a map key. Returns true if
+// it is. If not, reports an error and returns false.
+Bool validateKey(WrenVM* vm, Value arg);
+
+// Validates that the argument at [argIndex] is an integer within `[0, count)`.
+// Also allows negative indices which map backwards from the end. Returns the
+// valid positive index value. If invalid, reports an error and returns
+// `UINT32_MAX`.
+Unt validateIndex(WrenVM* vm, Value arg, Unt count, const char* argName);
+
+// Validates that the given [arg] is a String. Returns true if it is. If not,
+// reports an error and returns false.
+Bool validateString(WrenVM* vm, Value arg, const char* argName);
+
+// Given a [range] and the [length] of the object being operated on, determines
+// the series of elements that should be chosen from the underlying object.
+// Handles ranges that count backwards from the end as well as negative ranges.
+//
+// Returns the index from which the range should start or `UINT32_MAX` if the
+// range is invalid. After calling, [length] will be updated with the number of
+// elements in the resulting sequence. [step] will be direction that the range
+// is going: `1` if the range is increasing from the start index or `-1` if the
+// range is decreasing.
+Unt calculateRange(WrenVM* vm, ObjRange* range, Unt* length, int* step);
+
+//}}}
+//{{{math
+
 #include <math.h>
-#include <stdint.h>
 
 // A union to let us reinterpret a double as raw bits and back.
 typedef union {
-  uint64_t bits64;
-  uint32_t bits32[2];
+  Ulong bits64;
+  Unt bits32[2];
   double num;
 } WrenDoubleBits;
 
@@ -772,105 +1251,251 @@ typedef union {
 
 #define WREN_DOUBLE_NAN (wrenDoubleFromBits(WREN_DOUBLE_QNAN_POS_MIN_BITS))
 
-private double wrenDoubleFromBits(uint64_t bits) {
-  WrenDoubleBits data;
-  data.bits64 = bits;
-  return data.num;
+//}}}
+//{{{debugger
+
+// Prints the stack trace for the current fiber.
+//
+// Used when a fiber throws a runtime error which is not caught.
+private void wrenDebugPrintStackTrace(WrenVM* vm);
+
+// Prints a representation of the bytecode for [fn] at instruction [i].
+int wrenDumpInstruction(WrenVM* vm, ObjFn* fn, int i);
+
+// Prints the disassembled code for [fn] to stdout.
+void wrenDumpCode(WrenVM* vm, ObjFn* fn);
+
+// Prints the contents of the current stack for [fiber] to stdout.
+void wrenDumpStack(ObjFiber* fiber);
+
+
+//}}}
+//{{{compiler
+
+//This module defines the compiler for Wren. It takes a string of source code
+//and lexes, parses, and compiles it. Wren uses a single-pass compiler. It
+//does not build an actual AST during parsing and then consume that to
+//generate code. Instead, the parser directly emits bytecode.
+//
+//This forces a few restrictions on the grammar and semantics of the language.
+//Things like forward references and arbitrary lookahead are much harder. We
+//get a lot in return for that, though.
+//
+//The implementation is much simpler since we don't need to define a bunch of
+//AST data structures. More so, we don't have to deal with managing memory for
+//AST objects. The compiler does almost no dynamic allocation while running.
+//
+//Compilation is also faster since we don't create a bunch of temporary data
+//structures and destroy them after generating code.
+
+// The maximum number of local (i.e. not module level) variables that can be
+// declared in a single function, method, or chunk of top level code. This is
+// the maximum number of variables in scope at one time, and spans block scopes.
+//
+// Note that this limitation is also explicit in the bytecode. Since
+// `CODE_LOAD_LOCAL` and `CODE_STORE_LOCAL` use a single argument byte to
+// identify the local, only 256 can be in scope at one time.
+#define MAX_LOCALS 256
+
+// The maximum number of upvalues (i.e. variables from enclosing functions)
+// that a function can close over.
+#define MAX_UPVALUES 256
+
+private ObjFn* wrenCompile(
+      WrenVM* vm, ObjModule* module, CS source, Bool isExpression, Bool printErrors
+);
+
+// When a class is defined, its superclass is not known until runtime since
+// class definitions are just imperative statements. Most of the bytecode for a
+// a method doesn't care, but there are two places where it matters:
+//
+//   - To load or store a field, we need to know the index of the field in the
+//     instance's field array. We need to adjust this so that subclass fields
+//     are positioned after superclass fields, and we don't know this until the
+//     superclass is known.
+//
+//   - Superclass calls need to know which superclass to dispatch to.
+//
+// We could handle this dynamically, but that adds overhead. Instead, when a
+// method is bound, we walk the bytecode for the function and patch it up.
+private void wrenBindMethodCode(ObjClass* classObj, ObjFn* fn);
+
+// Reaches all of the heap-allocated objects in use by [compiler] (and all of
+// its parents) so that they are not collected by the GC.
+void wrenMarkCompiler(WrenVM* vm, Compiler* compiler);
+
+typedef struct Parser Parser;
+
+typedef struct {
+  //The name of the local variable. This points directly into the original source code string.
+  CS name;
+
+  int length; //The length of the local variable's name.
+
+  //The depth in the scope chain that this variable was declared at. Zero is
+  //the outermost scope--parameters for a method, or the first local block in
+  //top level code. One is the scope within that, etc.
+  int depth;
+  
+  Bool isUpvalue;//Whether this local variable is being used as an upvalue.
+} Local;
+
+// The different signature syntaxes for different kinds of methods.
+typedef enum {
+  //A name followed by a (possibly empty) parenthesized parameter list. Also used for binary opers
+  SIG_METHOD,
+  SIG_GETTER,// Just a name. Also used for unary operators.
+  SIG_SETTER,// A name followed by "=".
+  SIG_SUBSCRIPT,// A square bracketed parameter list.
+  SIG_SUBSCRIPT_SETTER,// A square bracketed parameter list followed by "=".
+  
+  // A constructor initializer function. This has a distinct signature to
+  // prevent it from being invoked directly outside of the constructor on the metaclass.
+  SIG_INITIALIZER
+} SignatureType;
+
+typedef struct {
+  CS name;
+  int length;
+  SignatureType type;
+  int arity;
+} Signature;
+
+typedef struct {
+  //True if this upvalue is capturing a local variable from the enclosing
+  //function. False if it's capturing an upvalue.
+  Bool isLocal;
+  int index; //The index of the local or upvalue being captured in the enclosing function.
+} CompilerUpvalue;
+
+// Bookkeeping information for compiling a class definition.
+typedef struct {
+  ObjString* name;// The name of the class.
+  ObjMap* classAttributes;// Attributes for the class itself
+  ObjMap* methodAttributes;// Attributes for methods in this class
+  SymbolTable fields;// Symbol table for the fields of the class.
+
+  // Symbols for the methods defined by the class. Used to detect duplicate method definitions.
+  IntBuffer methods;
+  IntBuffer staticMethods;
+  Bool isForeign;// True if the class being compiled is a foreign class.
+  Bool inStatic;// True if the current method being compiled is static.
+
+  // The signature of the method being compiled.
+  Signature* signature;
+} ClassInfo;
+
+// Bookkeeping information for the current loop being compiled.
+typedef struct sLoop {
+  int start;// Index of the instruction that the loop should jump back to.
+
+  //Index of the argument for the CODE_JUMP_IF instruction used to exit the
+  //loop. Stored so we can patch it once we know where the loop ends.
+  int exitJump;
+
+  int body; //Index of the first instruction of the body of the loop.
+
+  int scopeDepth; //Depth of the scope(s) that need to be exited if a break is hit inside the loop.
+
+  struct sLoop* enclosing;// The loop enclosing this one, or NULL if this is the outermost loop.
+} Loop;
+
+struct Compiler {
+   Parser* parser;
+ 
+   //The compiler for the function enclosing this one, or NULL if it's the top level.
+   Compiler* parent;
+ 
+   // The currently in scope local variables.
+   Local locals[MAX_LOCALS];
+ 
+   // The number of local variables currently in scope.
+   int numLocals;
+ 
+   // The upvalues that this function has captured from outer scopes. The count
+   // of them is stored in [numUpvalues].
+   CompilerUpvalue upvalues[MAX_UPVALUES];
+ 
+   // The current level of block scope nesting, where zero is no nesting. A -1
+   // here means top-level code is being compiled and there is no block scope
+   // in effect at all. Any variables declared will be module-level.
+   int scopeDepth;
+   
+   // The current number of slots (locals and temporaries) in use.
+   //
+   // We use this and maxSlots to track the maximum number of additional slots
+   // a function may need while executing. When the function is called, the
+   // fiber will check to ensure its stack has enough room to cover that worst
+   // case and grow the stack if needed.
+   //
+   // This value here doesn't include parameters to the function. Since those
+   // are already pushed onto the stack by the caller and tracked there, we
+   // don't need to double count them here.
+   int numSlots;
+ 
+   // The current innermost loop being compiled, or NULL if not in a loop.
+   Loop* loop;
+ 
+   // If this is a compiler for a method, keeps track of the class enclosing it.
+   ClassInfo* enclosingClass;
+   ObjFn* fn;// The function being compiled.
+   ObjMap* constants;// The constants for the function being compiled.
+   Bool isInitializer;// Whether or not the compiler is for a constructor initializer
+ 
+   //The number of attributes seen while parsing. We track this separately as compile time attributes
+   //are not stored, so we can't rely on attributes->count to enforce an error message when 
+   //attributes are used anywhere other than methods or classes.
+   int numAttributes;
+   
+   ObjMap* attributes;// Attributes for the next class or method.
+};
+
+//}}}
+//{{{meta
+
+#include "wren_opt_meta.wren.inc"
+
+//}}}
+
+//}}}
+//{{{utils
+
+private double wrenDoubleFromBits(Ulong bits) {
+   WrenDoubleBits data;
+   data.bits64 = bits;
+   return data.num;
 }
 
-private uint64_t wrenDoubleToBits(double num) {
+private Ulong wrenDoubleToBits(double num) {
   WrenDoubleBits data;
   data.num = num;
   return data.bits64;
 }
 
-// Reusable data structures and other utility functions.
-
-// Forward declare this here to break a cycle between wren_utils.h and
-// wren_value.h.
-typedef struct sObjString ObjString;
-
-// We need buffers of a few different types. To avoid lots of casting between
-// void* and back, we'll use the preprocessor as a poor man's generics and let
-// it generate a few type-specific ones.
-#define DECLARE_BUFFER(name, type)                                             \
-    typedef struct                                                             \
-    {                                                                          \
-      type* data;                                                              \
-      int count;                                                               \
-      int capacity;                                                            \
-    } name##Buffer;                                                            \
-    void wren##name##BufferInit(name##Buffer* buffer);                         \
-    void wren##name##BufferClear(WrenVM* vm, name##Buffer* buffer);            \
-    void wren##name##BufferFill(WrenVM* vm, name##Buffer* buffer, type data,   \
-                                int count);                                    \
-    void wren##name##BufferWrite(WrenVM* vm, name##Buffer* buffer, type data)
-
-// This should be used once for each type instantiation, somewhere in a .c file.
-#define DEFINE_BUFFER(name, type)                                              \
-    void wren##name##BufferInit(name##Buffer* buffer)                          \
-    {                                                                          \
-      buffer->data = NULL;                                                     \
-      buffer->capacity = 0;                                                    \
-      buffer->count = 0;                                                       \
-    }                                                                          \
-                                                                               \
-    void wren##name##BufferClear(WrenVM* vm, name##Buffer* buffer)             \
-    {                                                                          \
-      wrenReallocate(vm, buffer->data, 0, 0);                                  \
-      wren##name##BufferInit(buffer);                                          \
-    }                                                                          \
-                                                                               \
-    void wren##name##BufferFill(WrenVM* vm, name##Buffer* buffer, type data,   \
-                                int count)                                     \
-    {                                                                          \
-      if (buffer->capacity < buffer->count + count)                            \
-      {                                                                        \
-        int capacity = wrenPowerOf2Ceil(buffer->count + count);                \
-        buffer->data = (type*)wrenReallocate(vm, buffer->data,                 \
-            buffer->capacity * sizeof(type), capacity * sizeof(type));         \
-        buffer->capacity = capacity;                                           \
-      }                                                                        \
-                                                                               \
-      for (int i = 0; i < count; i++)                                          \
-      {                                                                        \
-        buffer->data[buffer->count++] = data;                                  \
-      }                                                                        \
-    }                                                                          \
-                                                                               \
-    void wren##name##BufferWrite(WrenVM* vm, name##Buffer* buffer, type data)  \
-    {                                                                          \
-      wren##name##BufferFill(vm, buffer, data, 1);                             \
-    }
-    
-
-DECLARE_BUFFER(Byte, uint8_t);
-DECLARE_BUFFER(Int, int);
-DECLARE_BUFFER(String, ObjString*);
-
-DEFINE_BUFFER(Byte, uint8_t);
-DEFINE_BUFFER(Int, int);
-DEFINE_BUFFER(String, ObjString*);
-
 void wrenSymbolTableInit(SymbolTable* symbols) {
   wrenStringBufferInit(symbols);
 }
 
-void wrenSymbolTableClear(WrenVM* vm, SymbolTable* symbols) {
+// Free all dynamically allocated memory used by the symbol table, but not the
+// SymbolTable itself.
+private void
+wrenSymbolTableClear(WrenVM* vm, SymbolTable* symbols) {
   wrenStringBufferClear(vm, symbols);
 }
 
-int wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, size_t length) {
+// Add name to the symbol table. Returns the index of it in the table.
+int 
+wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, Ulong length) {
   ObjString* symbol = AS_STRING(wrenNewStringLength(vm, name, length));
   
-  wrenPushRoot(vm, &symbol->obj);
+  pushRoot(vm, &symbol->obj);
   wrenStringBufferWrite(vm, symbols, symbol);
-  wrenPopRoot(vm);
+  popRoot(vm);
   
   return symbols->count - 1;
 }
 
-int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, size_t length) {
+int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, Ulong length) {
   // See if the symbol is already defined.
   int existing = wrenSymbolTableFind(symbols, name, length);
   if (existing != -1) return existing;
@@ -881,26 +1506,26 @@ int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, si
 
 
 // Returns true if [a] and [b] represent the same string.
-private bool
-wrenStringEqualsCString(const ObjString* a, const char* b, size_t length) {
+private Bool
+wrenStringEqualsCString(const ObjString* a, const char* b, Ulong length) {
   return a->length == length && memcmp(a->value, b, length) == 0;
 }
 
 // Returns true if [a] and [b] are strictly the same value. This is identity
 // for object values, and value equality for unboxed values.
-private bool wrenValuesSame(Value a, Value b) {
+private Bool wrenValuesSame(Value a, Value b) {
   // Value types have unique bit representations and we compare object types
   // by identity (i.e. pointer), so all we need to do is compare the bits.
   return a == b;
 }
 
-// Returns true if [value] is a bool. Do not call this directly, instead use
+// Returns true if [value] is a Bool. Do not call this directly, instead use
 // [IS_BOOL].
-private bool wrenIsBool(Value value) {
+private Bool wrenIsBool(Value value) {
   return value == TRUE_VAL || value == FALSE_VAL;
 }
 
-int wrenSymbolTableFind(const SymbolTable* symbols, const char* name, size_t length) {
+int wrenSymbolTableFind(const SymbolTable* symbols, const char* name, Ulong length) {
   // See if the symbol is already defined.
   // TODO: O(n). Do something better.
   for (int i = 0; i < symbols->count; i++) {
@@ -912,20 +1537,20 @@ int wrenSymbolTableFind(const SymbolTable* symbols, const char* name, size_t len
 
 // Returns true if [value] is an object of type [type]. Do not call this
 // directly, instead use the [IS___] macro for the type in question.
-private bool 
+private Bool 
 wrenIsObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
 
 // Converts the raw object pointer [obj] to a [Value].
 private Value 
-wrenObjectToValue(Obj* obj) {
+objectToValue(Obj* obj) {
   // The triple casting is necessary here to satisfy some compilers:
   // 1. (uintptr_t) Convert the pointer to a number of the right size.
-  // 2. (uint64_t)  Pad it up to 64 bits in 32-bit builds.
+  // 2. (Ulong)  Pad it up to 64 bits in 32-bit builds.
   // 3. Or in the bits to make a tagged Nan.
   // 4. Cast to a typedef'd value.
-  return (Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj));
+  return (Value)(SIGN_BIT | QNAN | (Ulong)(uintptr_t)(obj));
 }
 
 // Interprets [value] as a [double].
@@ -934,11 +1559,16 @@ private double wrenValueToNum(Value value) {
 }
 
 // Converts [num] to a [Value].
-private Value wrenNumToValue(double num) {
+private Value
+numToValue(double num) {
   return wrenDoubleToBits(num);
 }
 
-private bool wrenMapIsValidKey(Value arg) {
+// Validates that [arg] is a valid object for use as a map key. Returns true if
+// it is and returns false otherwise. Use validateKey usually, for a runtime error.
+// This separation exists to aid the API in surfacing errors to the developer as well.
+private Bool
+wrenMapIsValidKey(Value arg) {
   return IS_BOOL(arg)
       || IS_CLASS(arg)
       || IS_NULL(arg)
@@ -968,7 +1598,7 @@ int wrenUtf8EncodeNumBytes(int value)
   return 0;
 }
 
-int wrenUtf8Encode(int value, uint8_t* bytes) {
+int wrenUtf8Encode(int value, Byte* bytes) {
   if (value <= 0x7f) {
     // Single byte (i.e. fits in ASCII).
     *bytes = value & 0x7f;
@@ -1004,12 +1634,12 @@ int wrenUtf8Encode(int value, uint8_t* bytes) {
   return 0;
 }
 
-int wrenUtf8Decode(const uint8_t* bytes, uint32_t length) {
+int wrenUtf8Decode(const Byte* bytes, Unt length) {
   // Single byte (i.e. fits in ASCII).
   if (*bytes <= 0x7f) return *bytes;
 
   int value;
-  uint32_t remainingBytes;
+  Unt remainingBytes;
   if ((*bytes & 0xe0) == 0xc0) {
     // Two byte sequence: 110xxxxx 10xxxxxx.
     value = *bytes & 0x1f;
@@ -1045,210 +1675,126 @@ int wrenUtf8Decode(const uint8_t* bytes, uint32_t length) {
   return value;
 }
 
-int wrenUtf8DecodeNumBytes(uint8_t byte) {
-  // If the byte starts with 10xxxxx, it's the middle of a UTF-8 sequence, so
-  // don't count it at all.
-  if ((byte & 0xc0) == 0x80) return 0;
-  
-  // The first byte's high bits tell us how many bytes are in the UTF-8
-  // sequence.
-  if ((byte & 0xf8) == 0xf0) return 4;
-  if ((byte & 0xf0) == 0xe0) return 3;
-  if ((byte & 0xe0) == 0xc0) return 2;
-  return 1;
+int wrenUtf8DecodeNumBytes(Byte byte) {
+   //If the byte starts with 10xxxxx, it's the middle of a UTF-8 sequence, so don't count it at all.
+   if ((byte & 0xc0) == 0x80) return 0;
+   
+   // The first byte's high bits tell us how many bytes are in the UTF-8
+   // sequence.
+   if ((byte & 0xf8) == 0xf0) return 4;
+   if ((byte & 0xf0) == 0xe0) return 3;
+   if ((byte & 0xe0) == 0xc0) return 2;
+   return 1;
 }
 
-// From: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
-int wrenPowerOf2Ceil(int n) {
-  n--;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  n |= n >> 16;
-  n++;
-  
-  return n;
+//Return the smallest power of two that is equal to or greater than [n].
+//From: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
+private int
+wrenPowerOf2Ceil(int n) {
+   n--;
+   n |= n >> 1;
+   n |= n >> 2;
+   n |= n >> 4;
+   n |= n >> 8;
+   n |= n >> 16;
+   n++;
+   
+   return n;
 }
 
-uint32_t wrenValidateIndex(uint32_t count, int64_t value) {
-  // Negative indices count from the end.
+Unt wrenValidateIndex(Unt count, int64_t value) {
+  //Negative indices count from the end.
   if (value < 0) value = count + value;
 
-  // Check bounds.
-  if (value >= 0 && value < count) return (uint32_t)value;
+  //Check bounds.
+  if (value >= 0 && value < count) return (Unt)value;
 
   return UINT32_MAX;
-}
-
-
-private double wrenDoubleFromBits(uint64_t bits) {
-  WrenDoubleBits data;
-  data.bits64 = bits;
-  return data.num;
-}
-
-private uint64_t wrenDoubleToBits(double num) {
-  WrenDoubleBits data;
-  data.num = num;
-  return data.bits64;
 }
 
 //}}}
 //{{{compiler
 
-
-// Adds a new [CallFrame] to [fiber] invoking [closure] whose stack starts at [stackStart].
+//Add a new [CallFrame] to [fiber] invoking [closure] whose stack starts at [stackStart].
 private void
-wrenAppendCallFrame(WrenVM* vm, ObjFiber* fiber,
-                                       ObjClosure* closure, Value* stackStart)
-{
-  // The caller should have ensured we already have enough capacity.
-  ASSERT(fiber->frameCapacity > fiber->numFrames, "No memory for call frame.");
-  
-  CallFrame* frame = &fiber->frames[fiber->numFrames++];
-  frame->stackStart = stackStart;
-  frame->closure = closure;
-  frame->ip = closure->fn->code.data;
+wrenAppendCallFrame(WrenVM* vm, ObjFiber* fiber, ObjClosure* closure, Value* stackStart) {
+   // The caller should have ensured we already have enough capacity.
+   ASSERT(fiber->frameCapacity > fiber->numFrames, "No memory for call frame.");
+   
+   CallFrame* frame = &fiber->frames[fiber->numFrames++];
+   frame->stackStart = stackStart;
+   frame->closure = closure;
+   frame->ip = closure->fn->code.data;
 }
 
-private bool
+private Bool
 wrenHasError(const ObjFiber* fiber) {
-  return !IS_NULL(fiber->error);
+   return !IS_NULL(fiber->error);
 }
 
 
 // Pushes [closure] onto [fiber]'s callstack to invoke it. Expects [numArgs]
 // arguments (including the receiver) to be on the top of the stack already.
 private void wrenCallFunction(WrenVM* vm, ObjFiber* fiber, ObjClosure* closure, int numArgs) {
-  // Grow the call frame array if needed.
-  if (fiber->numFrames + 1 > fiber->frameCapacity) {
-    int max = fiber->frameCapacity * 2;
-    fiber->frames = (CallFrame*)wrenReallocate(vm, fiber->frames,
-        sizeof(CallFrame) * fiber->frameCapacity, sizeof(CallFrame) * max);
-    fiber->frameCapacity = max;
-  }
-  
-  // Grow the stack if needed.
-  int stackSize = (int)(fiber->stackTop - fiber->stack);
-  int needed = stackSize + closure->fn->maxSlots;
-  wrenEnsureStack(vm, fiber, needed);
-  
-  wrenAppendCallFrame(vm, fiber, closure, fiber->stackTop - numArgs);
+   // Grow the call frame array if needed.
+   if (fiber->numFrames + 1 > fiber->frameCapacity) {
+      int max = fiber->frameCapacity * 2;
+      fiber->frames = (CallFrame*)wrenReallocate(vm, fiber->frames,
+          sizeof(CallFrame) * fiber->frameCapacity, sizeof(CallFrame) * max);
+      fiber->frameCapacity = max;
+   }
+   
+   // Grow the stack if needed.
+   int stackSize = (int)(fiber->stackTop - fiber->stack);
+   int needed = stackSize + closure->fn->maxSlots;
+   wrenEnsureStack(vm, fiber, needed);
+   
+   wrenAppendCallFrame(vm, fiber, closure, fiber->stackTop - numArgs);
 }
-
-// Marks [obj] as a GC root so that it doesn't get collected.
-void wrenPushRoot(WrenVM* vm, Obj* obj);
-
-// Removes the most recently pushed temporary root.
-void wrenPopRoot(WrenVM* vm);
 
 // Returns the class of [value].
 //
 // Defined here instead of in wren_value.h because it's critical that this be
 // inlined. That means it must be defined in the header, but the wren_value.h
 // header doesn't have a full definitely of WrenVM yet.
-private ObjClass* wrenGetClassInline(WrenVM* vm, Value value) {
-  if (IS_NUM(value)) return vm->numClass;
-  if (IS_OBJ(value)) return AS_OBJ(value)->classObj;
-
-  switch (GET_TAG(value)) {
-    case TAG_FALSE:     return vm->boolClass; break;
-    case TAG_NAN:       return vm->numClass; break;
-    case TAG_NULL:      return vm->nullClass; break;
-    case TAG_TRUE:      return vm->boolClass; break;
-    case TAG_UNDEFINED: UNREACHABLE();
-  }
-
-  UNREACHABLE();
-  return NULL;
+private ObjClass* 
+wrenGetClassInline(WrenVM* vm, Value value) {
+   if (IS_NUM(value)) return vm->numClass;
+   if (IS_OBJ(value)) return AS_OBJ(value)->classObj;
+ 
+   switch (GET_TAG(value)) {
+     case TAG_FALSE:     return vm->boolClass; break;
+     case TAG_NAN:       return vm->numClass; break;
+     case TAG_NULL:      return vm->nullClass; break;
+     case TAG_TRUE:      return vm->boolClass; break;
+     case TAG_UNDEFINED: UNREACHABLE();
+   }
+ 
+   UNREACHABLE();
+   return NULL;
 }
 
 // Returns `true` if [name] is a local variable name (starts with a lowercase
 // letter).
-private bool wrenIsLocalName(const char* name) {
-  return name[0] >= 'a' && name[0] <= 'z';
+private Bool 
+isLocalName(const char* name) {
+   return name[0] >= 'a' && name[0] <= 'z';
 }
 
-private bool wrenIsFalsyValue(Value value) {
-  return IS_FALSE(value) || IS_NULL(value);
+private Bool 
+wrenIsFalsyValue(Value value) {
+   return IS_FALSE(value) || IS_NULL(value);
 }
-
-#endif
 
 #if WREN_DEBUG_DUMP_COMPILED_CODE
 #include "wren_debug.h"
 #endif
-
-
-typedef struct sCompiler Compiler;
-
-// This module defines the compiler for Wren. It takes a string of source code
-// and lexes, parses, and compiles it. Wren uses a single-pass compiler. It
-// does not build an actual AST during parsing and then consume that to
-// generate code. Instead, the parser directly emits bytecode.
-//
-// This forces a few restrictions on the grammar and semantics of the language.
-// Things like forward references and arbitrary lookahead are much harder. We
-// get a lot in return for that, though.
-//
-// The implementation is much simpler since we don't need to define a bunch of
-// AST data structures. More so, we don't have to deal with managing memory for
-// AST objects. The compiler does almost no dynamic allocation while running.
-//
-// Compilation is also faster since we don't create a bunch of temporary data
-// structures and destroy them after generating code.
-
-// Compiles [source], a string of Wren source code located in [module], to an
-// [ObjFn] that will execute that code when invoked. Returns `NULL` if the
-// source contains any syntax errors.
-//
-// If [isExpression] is `true`, [source] should be a single expression, and
-// this compiles it to a function that evaluates and returns that expression.
-// Otherwise, [source] should be a series of top level statements.
-//
-// If [printErrors] is `true`, any compile errors are output to stderr.
-// Otherwise, they are silently discarded.
-ObjFn* wrenCompile(WrenVM* vm, ObjModule* module, const char* source,
-                   bool isExpression, bool printErrors);
-
-// When a class is defined, its superclass is not known until runtime since
-// class definitions are just imperative statements. Most of the bytecode for a
-// a method doesn't care, but there are two places where it matters:
-//
-//   - To load or store a field, we need to know the index of the field in the
-//     instance's field array. We need to adjust this so that subclass fields
-//     are positioned after superclass fields, and we don't know this until the
-//     superclass is known.
-//
-//   - Superclass calls need to know which superclass to dispatch to.
-//
-// We could handle this dynamically, but that adds overhead. Instead, when a
-// method is bound, we walk the bytecode for the function and patch it up.
-void wrenBindMethodCode(ObjClass* classObj, ObjFn* fn);
-
-// Reaches all of the heap-allocated objects in use by [compiler] (and all of
-// its parents) so that they are not collected by the GC.
-void wrenMarkCompiler(WrenVM* vm, Compiler* compiler);
 
 //{{{types & basics
 
 //This is written in bottom-up order, so the tokenization comes first, then
 //parsing/code generation. This minimizes the number of explicit forward
 //declarations needed.
-
-// The maximum number of local (i.e. not module level) variables that can be
-// declared in a single function, method, or chunk of top level code. This is
-// the maximum number of variables in scope at one time, and spans block scopes.
-//
-// Note that this limitation is also explicit in the bytecode. Since
-// `CODE_LOAD_LOCAL` and `CODE_STORE_LOCAL` use a single argument byte to
-// identify the local, only 256 can be in scope at one time.
-#define MAX_LOCALS 256
-
-// The maximum number of upvalues (i.e. variables from enclosing functions)
-// that a function can close over.
-#define MAX_UPVALUES 256
 
 // The maximum number of distinct constants that a function can contain. This
 // value is explicit in the bytecode since `CODE_CONSTANT` only takes a single
@@ -1272,6 +1818,7 @@ void wrenMarkCompiler(WrenVM* vm, Compiler* compiler);
 // available in standard C++98.
 #define ERROR_MESSAGE_SIZE (80 + MAX_VARIABLE_NAME + 15)
 
+//Keep in sync with "rules" array 
 typedef enum {
   TOKEN_LEFT_PAREN,
   TOKEN_RIGHT_PAREN,
@@ -1286,6 +1833,7 @@ typedef enum {
   TOKEN_COMMA,
   TOKEN_STAR,
   TOKEN_SLASH,
+  TOKEN_BACKSLASH,
   TOKEN_PERCENT,
   TOKEN_HASH,
   TOKEN_PLUS,
@@ -1375,159 +1923,36 @@ typedef struct {
   Value value;
 } Token;
 
-typedef struct {
-  WrenVM* vm;
-
-  // The module being parsed.
-  ObjModule* module;
-
-  // The source code being parsed.
-  const char* source;
-
-  // The beginning of the currently-being-lexed token in [source].
-  const char* tokenStart;
-
-  // The current character being lexed in [source].
-  const char* currentChar;
-
-  // The 1-based line number of [currentChar].
-  int currentLine;
-
-  // The upcoming token.
-  Token next;
-
-  // The most recently lexed token.
-  Token current;
-
-  // The most recently consumed/advanced token.
-  Token previous;
-  
-  // Tracks the lexing state when tokenizing interpolated strings.
-  //
-  // Interpolated strings make the lexer not strictly regular: we don't know
-  // whether a ")" should be treated as a RIGHT_PAREN token or as ending an
-  // interpolated expression unless we know whether we are inside a string
-  // interpolation and how many unmatched "(" there are. This is particularly
-  // complex because interpolation can nest:
-  //
-  //     " %( " %( inner ) " ) "
-  //
-  // This tracks that state. The parser maintains a stack of ints, one for each
-  // level of current interpolation nesting. Each value is the number of
-  // unmatched "(" that are waiting to be closed.
-  int parens[MAX_INTERPOLATION_NESTING];
-  int numParens;
-
-  // Whether compile errors should be printed to stderr or discarded.
-  bool printErrors;
-
-  // If a syntax or compile error has occurred.
-  bool hasError;
-} Parser;
-
-typedef struct {
-  // The name of the local variable. This points directly into the original
-  // source code string.
-  const char* name;
-
-  // The length of the local variable's name.
-  int length;
-
-  // The depth in the scope chain that this variable was declared at. Zero is
-  // the outermost scope--parameters for a method, or the first local block in
-  // top level code. One is the scope within that, etc.
-  int depth;
-
-  // If this local variable is being used as an upvalue.
-  bool isUpvalue;
-} Local;
-
-typedef struct {
-  // True if this upvalue is capturing a local variable from the enclosing
-  // function. False if it's capturing an upvalue.
-  bool isLocal;
-
-  // The index of the local or upvalue being captured in the enclosing function.
-  int index;
-} CompilerUpvalue;
-
-// Bookkeeping information for the current loop being compiled.
-typedef struct sLoop {
-  // Index of the instruction that the loop should jump back to.
-  int start;
-
-  // Index of the argument for the CODE_JUMP_IF instruction used to exit the
-  // loop. Stored so we can patch it once we know where the loop ends.
-  int exitJump;
-
-  // Index of the first instruction of the body of the loop.
-  int body;
-
-  // Depth of the scope(s) that need to be exited if a break is hit inside the loop.
-  int scopeDepth;
-
-  // The loop enclosing this one, or NULL if this is the outermost loop.
-  struct sLoop* enclosing;
-} Loop;
-
-// The different signature syntaxes for different kinds of methods.
-typedef enum {
-  // A name followed by a (possibly empty) parenthesized parameter list. Also
-  // used for binary operators.
-  SIG_METHOD,
-  
-  // Just a name. Also used for unary operators.
-  SIG_GETTER,
-  
-  // A name followed by "=".
-  SIG_SETTER,
-  
-  // A square bracketed parameter list.
-  SIG_SUBSCRIPT,
-  
-  // A square bracketed parameter list followed by "=".
-  SIG_SUBSCRIPT_SETTER,
-  
-  // A constructor initializer function. This has a distinct signature to
-  // prevent it from being invoked directly outside of the constructor on the
-  // metaclass.
-  SIG_INITIALIZER
-} SignatureType;
-
-typedef struct {
-  const char* name;
-  int length;
-  SignatureType type;
-  int arity;
-} Signature;
-
-// Bookkeeping information for compiling a class definition.
-typedef struct {
-  // The name of the class.
-  ObjString* name;
-  
-  // Attributes for the class itself
-  ObjMap* classAttributes;
-  // Attributes for methods in this class
-  ObjMap* methodAttributes;
-
-  // Symbol table for the fields of the class.
-  SymbolTable fields;
-
-  // Symbols for the methods defined by the class. Used to detect duplicate
-  // method definitions.
-  IntBuffer methods;
-  IntBuffer staticMethods;
-
-  // True if the class being compiled is a foreign class.
-  bool isForeign;
-  
-  // True if the current method being compiled is static.
-  bool inStatic;
-
-  // The signature of the method being compiled.
-  Signature* signature;
-} ClassInfo;
+struct Parser{
+   WrenVM* vm;
+   ObjModule* module;// The module being parsed.
+   CS source; // The source code being parsed.
+   CS tokenStart; // The beginning of the currently-being-lexed token in [source].
+   CS currentChar; // The current character being lexed in [source].
+   int currentLine; // The 1-based line number of [currentChar].
+   Token next; //The upcoming token.
+   Token current; // The most recently lexed token.
+   Token previous; //The most recently consumed/advanced token.
+   
+   // Tracks the lexing state when tokenizing interpolated strings.
+   //
+   // Interpolated strings make the lexer not strictly regular: we don't know
+   // whether a ")" should be treated as a RIGHT_PAREN token or as ending an
+   // interpolated expression unless we know whether we are inside a string
+   // interpolation and how many unmatched "(" there are. This is particularly
+   // complex because interpolation can nest:
+   //
+   //     " %( " %( inner ) " ) "
+   //
+   // This tracks that state. The parser maintains a stack of ints, one for each
+   // level of current interpolation nesting. Each value is the number of
+   // unmatched "(" that are waiting to be closed.
+   int parens[MAX_INTERPOLATION_NESTING];
+   int numParens;
+ 
+   Bool printErrors;//Whether compile errors should be printed to stderr or discarded
+   Bool hasError;// If a syntax or compile error has occurred.
+};
 
 struct sCompiler {
   Parser* parser;
@@ -1575,7 +2000,7 @@ struct sCompiler {
   ObjMap* constants;
 
   // Whether or not the compiler is for a constructor initializer
-  bool isInitializer;
+  Bool isInitializer;
 
   // The number of attributes seen while parsing.
   // We track this separately as compile time attributes
@@ -1610,46 +2035,45 @@ typedef struct {
 } Variable;
 
 // Forward declarations
-static void disallowAttributes(Compiler* compiler);
-static void addToAttributeGroup(Compiler* compiler, Value group, Value key, Value value);
-static void emitClassAttributes(Compiler* compiler, ClassInfo* classInfo);
-static void copyAttributes(Compiler* compiler, ObjMap* into);
-static void copyMethodAttributes(Compiler* compiler, bool isForeign, 
-            bool isStatic, const char* fullSignature, int32_t length);
+private void disallowAttributes(Compiler* compiler);
+private void addToAttributeGroup(Compiler* compiler, Value group, Value key, Value value);
+private void emitClassAttributes(Compiler* compiler, ClassInfo* classInfo);
+private void copyAttributes(Compiler* compiler, ObjMap* into);
+private void copyMethodAttributes(Compiler* compiler, Bool isForeign, 
+            Bool isStatic, CS fullSignature, Int length);
 //}}}            
 //{{{init and utils 
 
 // The stack effect of each opcode. The index in the array is the opcode, and
 // the value is the stack effect of that instruction.
-static const int stackEffects[] = {
-  #define OPCODE(_, effect) effect,
-  #include "wrenOpcodes.h"
-  #undef OPCODE
+private const int stackEffects[] = {
+   #define OPCODE(_, effect) effect,
+   #include "wrenOpcodes.h"
+   #undef OPCODE
 };
 
-static void printError(Parser* parser, int line, const char* label,
-                       const char* format, va_list args)
-{
-  parser->hasError = true;
-  if (!parser->printErrors) return;
-
-  // Only report errors if there is a WrenErrorFn to handle them.
-  if (parser->vm->config.errorFn == NULL) return;
-
-  // Format the label and message.
-  char message[ERROR_MESSAGE_SIZE];
-  int length = sprintf(message, "%s: ", label);
-  length += vsprintf(message + length, format, args);
-  ASSERT(length < ERROR_MESSAGE_SIZE, "Error should not exceed buffer.");
-
-  ObjString* module = parser->module->name;
-  const char* module_name = module ? module->value : "<unknown>";
-
-  parser->vm->config.errorFn(parser->vm, WREN_ERROR_COMPILE, module_name, line, message);
+private void 
+printError(Parser* parser, int line, CS label, CS format, va_list args) {
+   parser->hasError = true;
+   if (!parser->printErrors) return;
+ 
+   // Only report errors if there is a WrenErrorFn to handle them.
+   if (parser->vm->config.errorFn == NULL) return;
+ 
+   // Format the label and message.
+   char message[ERROR_MESSAGE_SIZE];
+   int length = sprintf(message, "%s: ", label);
+   length += vsprintf(message + length, format, args);
+   ASSERT(length < ERROR_MESSAGE_SIZE, "Error should not exceed buffer.");
+ 
+   ObjString* module = parser->module->name;
+   const char* module_name = module ? module->value : "<unknown>";
+ 
+   parser->vm->config.errorFn(parser->vm, WREN_ERROR_COMPILE, module_name, line, message);
 }
 
 // Outputs a lexical error.
-static void lexError(Parser* parser, const char* format, ...) {
+private void lexError(Parser* parser, const char* format, ...) {
   va_list args;
   va_start(args, format);
   printError(parser, parser->currentLine, "Error", format, args);
@@ -1664,7 +2088,8 @@ static void lexError(Parser* parser, const char* format, ...) {
 // You'll note that most places that call error() continue to parse and compile
 // after that. That's so that we can try to find as many compilation errors in
 // one pass as possible instead of just bailing at the first one.
-static void error(Compiler* compiler, const char* format, ...) {
+private void 
+error(Compiler* compiler, CS format, ...) {
   Token* token = &compiler->parser->previous;
 
   // If the parse error was caused by an error token, the lexer has already
@@ -1692,7 +2117,7 @@ static void error(Compiler* compiler, const char* format, ...) {
 }
 
 // Adds [constant] to the constant pool and returns its index.
-static int addConstant(Compiler* compiler, Value constant) {
+private int addConstant(Compiler* compiler, Value constant) {
   if (compiler->parser->hasError) return -1;
   
   // See if we already have a constant for the value. If so, reuse it.
@@ -1703,10 +2128,10 @@ static int addConstant(Compiler* compiler, Value constant) {
   
   // It's a new constant.
   if (compiler->fn->constants.count < MAX_CONSTANTS) {
-    if (IS_OBJ(constant)) wrenPushRoot(compiler->parser->vm, AS_OBJ(constant));
+    if (IS_OBJ(constant)) pushRoot(compiler->parser->vm, AS_OBJ(constant));
     wrenValueBufferWrite(compiler->parser->vm, &compiler->fn->constants,
                          constant);
-    if (IS_OBJ(constant)) wrenPopRoot(compiler->parser->vm);
+    if (IS_OBJ(constant)) popRoot(compiler->parser->vm);
     
     if (compiler->constants == NULL) {
       compiler->constants = wrenNewMap(compiler->parser->vm);
@@ -1722,7 +2147,7 @@ static int addConstant(Compiler* compiler, Value constant) {
 }
 
 // Initializes [compiler].
-static void initCompiler(Compiler* compiler, Parser* parser, Compiler* parent, bool isMethod) {
+private void initCompiler(Compiler* compiler, Parser* parser, Compiler* parent, Bool isMethod) {
   compiler->parser = parser;
   compiler->parent = parent;
   compiler->loop = NULL;
@@ -1776,12 +2201,12 @@ static void initCompiler(Compiler* compiler, Parser* parser, Compiler* parent, b
 
 typedef struct {
   const char* identifier;
-  size_t      length;
+  Ulong      length;
   TokenType   tokenType;
 } Keyword;
 
 // The table of reserved words and their associated token types.
-static Keyword keywords[] = {
+private Keyword keywords[] = {
   {"break",     5, TOKEN_BREAK},
   {"continue",  8, TOKEN_CONTINUE},
   {"class",     5, TOKEN_CLASS},
@@ -1807,30 +2232,30 @@ static Keyword keywords[] = {
 };
 
 // Returns true if [c] is a valid (non-initial) identifier character.
-static bool isName(char c)
+private Bool isName(char c)
 {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
 // Returns true if [c] is a digit.
-static bool isDigit(char c) {
+private Bool isDigit(char c) {
   return c >= '0' && c <= '9';
 }
 
 // Returns the current character the parser is sitting on.
-static char peekChar(Parser* parser) {
+private char peekChar(Parser* parser) {
   return *parser->currentChar;
 }
 
 // Returns the character after the current character.
-static char peekNextChar(Parser* parser) {
+private char peekNextChar(Parser* parser) {
   // If we're at the end of the source, don't read past it.
   if (peekChar(parser) == '\0') return '\0';
   return *(parser->currentChar + 1);
 }
 
 // Advances the parser forward one character.
-static char nextChar(Parser* parser) {
+private char nextChar(Parser* parser) {
   char c = peekChar(parser);
   parser->currentChar++;
   if (c == '\n') parser->currentLine++;
@@ -1838,7 +2263,7 @@ static char nextChar(Parser* parser) {
 }
 
 // If the current character is [c], consumes it and returns `true`.
-static bool matchChar(Parser* parser, char c) {
+private Bool matchChar(Parser* parser, char c) {
   if (peekChar(parser) != c) return false;
   nextChar(parser);
   return true;
@@ -1846,7 +2271,7 @@ static bool matchChar(Parser* parser, char c) {
 
 // Sets the parser's current token to the given [type] and current character
 // range.
-static void makeToken(Parser* parser, TokenType type) {
+private void makeToken(Parser* parser, TokenType type) {
   parser->next.type = type;
   parser->next.start = parser->tokenStart;
   parser->next.length = (int)(parser->currentChar - parser->tokenStart);
@@ -1858,19 +2283,19 @@ static void makeToken(Parser* parser, TokenType type) {
 
 // If the current character is [c], then consumes it and makes a token of type
 // [two]. Otherwise makes a token of type [one].
-static void twoCharToken(Parser* parser, char c, TokenType two, TokenType one) {
+private void twoCharToken(Parser* parser, char c, TokenType two, TokenType one) {
   makeToken(parser, matchChar(parser, c) ? two : one);
 }
 
 // Skips the rest of the current line.
-static void skipLineComment(Parser* parser) {
+private void skipLineComment(Parser* parser) {
   while (peekChar(parser) != '\n' && peekChar(parser) != '\0') {
     nextChar(parser);
   }
 }
 
 // Skips the rest of a block comment.
-static void skipBlockComment(Parser* parser) {
+private void skipBlockComment(Parser* parser) {
   int nesting = 1;
   while (nesting > 0) {
     if (peekChar(parser) == '\0') {
@@ -1899,7 +2324,7 @@ static void skipBlockComment(Parser* parser) {
 
 // Reads the next character, which should be a hex digit (0-9, a-f, or A-F) and
 // returns its numeric value. If the character isn't a hex digit, returns -1.
-static int readHexDigit(Parser* parser) {
+private int readHexDigit(Parser* parser) {
   char c = nextChar(parser);
   if (c >= '0' && c <= '9') return c - '0';
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -1912,28 +2337,29 @@ static int readHexDigit(Parser* parser) {
 }
 
 // Parses the numeric value of the current token.
-static void makeNumber(Parser* parser, bool isHex) {
-  errno = 0;
-
-  if (isHex) {
-    parser->next.value = NUM_VAL((double)strtoll(parser->tokenStart, NULL, 16));
-  } else {
-    parser->next.value = NUM_VAL(strtod(parser->tokenStart, NULL));
-  }
-  
-  if (errno == ERANGE) {
-    lexError(parser, "Number literal was too large (%d).", sizeof(long int));
-    parser->next.value = NUM_VAL(0);
-  }
-  
-  // We don't check that the entire token is consumed after calling strtoll()
-  // or strtod() because we've already scanned it ourselves and know it's valid.
-
-  makeToken(parser, TOKEN_NUMBER);
+private void 
+makeNumber(Parser* parser, Bool isHex) {
+   errno = 0;
+ 
+   if (isHex) {
+     parser->next.value = NUM_VAL((double)strtoll(parser->tokenStart, NULL, 16));
+   } else {
+     parser->next.value = NUM_VAL(strtod(parser->tokenStart, NULL));
+   }
+   
+   if (errno == ERANGE) {
+     lexError(parser, "Number literal was too large (%d).", sizeof(long int));
+     parser->next.value = NUM_VAL(0);
+   }
+   
+   // We don't check that the entire token is consumed after calling strtoll()
+   // or strtod() because we've already scanned it ourselves and know it's valid.
+ 
+   makeToken(parser, TOKEN_NUMBER);
 }
 
 // Finishes lexing a hexadecimal number literal.
-static void readHexNumber(Parser* parser) {
+private void readHexNumber(Parser* parser) {
   // Skip past the `x` used to denote a hexadecimal literal.
   nextChar(parser);
 
@@ -1944,7 +2370,7 @@ static void readHexNumber(Parser* parser) {
 }
 
 // Finishes lexing a number literal.
-static void readNumber(Parser* parser) {
+private void readNumber(Parser* parser) {
   while (isDigit(peekChar(parser))) nextChar(parser);
 
   // See if it has a floating point. Make sure there is a digit after the "."
@@ -1972,7 +2398,7 @@ static void readNumber(Parser* parser) {
 }
 
 // Finishes lexing an identifier. Handles reserved words.
-static void readName(Parser* parser, TokenType type, char firstChar) {
+private void readName(Parser* parser, TokenType type, char firstChar) {
   ByteBuffer string;
   wrenByteBufferInit(&string);
   wrenByteBufferWrite(parser->vm, &string, firstChar);
@@ -1983,7 +2409,7 @@ static void readName(Parser* parser, TokenType type, char firstChar) {
   }
 
   // Update the type if it's a keyword.
-  size_t length = parser->currentChar - parser->tokenStart;
+  Ulong length = parser->currentChar - parser->tokenStart;
   for (int i = 0; keywords[i].identifier != NULL; i++) {
     if (length == keywords[i].length &&
         memcmp(parser->tokenStart, keywords[i].identifier, length) == 0)
@@ -2000,7 +2426,7 @@ static void readName(Parser* parser, TokenType type, char firstChar) {
 }
 
 // Reads [digits] hex digits in a string literal and returns their number value.
-static int readHexEscape(Parser* parser, int digits, const char* description) {
+private int readHexEscape(Parser* parser, int digits, const char* description) {
   int value = 0;
   for (int i = 0; i < digits; i++) {
     if (peekChar(parser) == '"' || peekChar(parser) == '\0') {
@@ -2025,7 +2451,7 @@ static int readHexEscape(Parser* parser, int digits, const char* description) {
 }
 
 // Reads a hex digit Unicode escape sequence in a string literal.
-static void readUnicodeEscape(Parser* parser, ByteBuffer* string, int length) {
+private void readUnicodeEscape(Parser* parser, ByteBuffer* string, int length) {
   int value = readHexEscape(parser, length, "Unicode");
   // Grow the buffer enough for the encoded result.
   int numBytes = wrenUtf8EncodeNumBytes(value);
@@ -2035,7 +2461,7 @@ static void readUnicodeEscape(Parser* parser, ByteBuffer* string, int length) {
   }
 }
 
-static void readRawString(Parser* parser) {
+private void readRawString(Parser* parser) {
   ByteBuffer string;
   wrenByteBufferInit(&string);
   TokenType type = TOKEN_STRING;
@@ -2065,13 +2491,13 @@ static void readRawString(Parser* parser) {
 
     if (c == '"' && c1 == '"' && c2 == '"') break;
     
-    bool isWhitespace = c == ' ' || c == '\t';
+    Bool isWhitespace = c == ' ' || c == '\t';
     skipEnd = c == '\n' || isWhitespace ? skipEnd : -1;
 
     // If we haven't seen a newline or other character yet, 
     // and still seeing whitespace, count the characters 
     // as skippable till we know otherwise
-    bool skippable = skipStart != -1 && isWhitespace && firstNewline == -1;
+    Bool skippable = skipStart != -1 && isWhitespace && firstNewline == -1;
     skipStart = skippable ? string.count + 1 : skipStart;
     
     // We've counted leading whitespace till we hit something else, 
@@ -2110,7 +2536,7 @@ static void readRawString(Parser* parser) {
 }
 
 // Finishes lexing a string literal.
-static void readString(Parser* parser) {
+private void readString(Parser* parser) {
   ByteBuffer string;
   TokenType type = TOKEN_STRING;
   wrenByteBufferInit(&string);
@@ -2160,7 +2586,7 @@ static void readString(Parser* parser) {
         case 'U':  readUnicodeEscape(parser, &string, 8); break;
         case 'v':  wrenByteBufferWrite(parser->vm, &string, '\v'); break;
         case 'x':
-          wrenByteBufferWrite(parser->vm, &string, (uint8_t)readHexEscape(parser, 2, "byte"));
+          wrenByteBufferWrite(parser->vm, &string, (Byte)readHexEscape(parser, 2, "byte"));
           break;
 
         default:
@@ -2180,21 +2606,21 @@ static void readString(Parser* parser) {
 }
 
 // Lex the next token and store it in [parser.next].
-static void nextToken(Parser* parser) {
-  parser->previous = parser->current;
-  parser->current = parser->next;
+private void nextToken(Parser* parser) {
+   parser->previous = parser->current;
+   parser->current = parser->next;
 
-  // If we are out of tokens, don't try to tokenize any more. We *do* still
-  // copy the TOKEN_EOF to previous so that code that expects it to be consumed
-  // will still work.
-  if (parser->next.type == TOKEN_EOF) return;
-  if (parser->current.type == TOKEN_EOF) return;
+   // If we are out of tokens, don't try to tokenize any more. We *do* still
+   // copy the TOKEN_EOF to previous so that code that expects it to be consumed
+   // will still work.
+   if (parser->next.type == TOKEN_EOF) return;
+   if (parser->current.type == TOKEN_EOF) return;
   
-  while (peekChar(parser) != '\0') {
-    parser->tokenStart = parser->currentChar;
+   while (peekChar(parser) != '\0') {
+      parser->tokenStart = parser->currentChar;
 
-    char c = nextChar(parser);
-    switch (c) {
+      char c = nextChar(parser);
+      switch (c) {
       case '(':
         // If we are inside an interpolated expression, count the unmatched "(".
         if (parser->numParens > 0) parser->parens[parser->numParens - 1]++;
@@ -2223,14 +2649,14 @@ static void nextToken(Parser* parser) {
       case '*': makeToken(parser, TOKEN_STAR); return;
       case '%': makeToken(parser, TOKEN_PERCENT); return;
       case '#': {
-        // Ignore shebang on the first line.
-        if (parser->currentLine == 1 && peekChar(parser) == '!' && peekNextChar(parser) == '/') {
-          skipLineComment(parser);
-          break;
-        }
-        // Otherwise we treat it as a token
-        makeToken(parser, TOKEN_HASH); 
-        return;
+         // Ignore shebang on the first line.
+         if (parser->currentLine == 1 && peekChar(parser) == '!' && peekNextChar(parser) == '/') {
+            skipLineComment(parser);
+            break;
+         }
+         // Otherwise we treat it as a token
+         makeToken(parser, TOKEN_HASH); 
+         return;
       }
       case '^': makeToken(parser, TOKEN_CARET); return;
       case '+': makeToken(parser, TOKEN_PLUS); return;
@@ -2239,40 +2665,41 @@ static void nextToken(Parser* parser) {
       case '?': makeToken(parser, TOKEN_QUESTION); return;
         
       case '|': twoCharToken(parser, '|', TOKEN_PIPEPIPE, TOKEN_PIPE); return;
+      case '\\': makeToken(parser, TOKEN_BACKSLASH); return;
       case '&': twoCharToken(parser, '&', TOKEN_AMPAMP, TOKEN_AMP); return;
       case '=': twoCharToken(parser, '=', TOKEN_EQEQ, TOKEN_EQ); return;
       case '!': twoCharToken(parser, '=', TOKEN_BANGEQ, TOKEN_BANG); return;
         
       case '.':
-        if (matchChar(parser, '.')) {
-          twoCharToken(parser, '.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
-          return;
-        }
+         if (matchChar(parser, '.')) {
+            twoCharToken(parser, '.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
+            return;
+         }
         
-        makeToken(parser, TOKEN_DOT);
-        return;
+         makeToken(parser, TOKEN_DOT);
+         return;
         
       case '/':
-        if (matchChar(parser, '/')) {
-          skipLineComment(parser);
-          break;
-        }
+         if (matchChar(parser, '/')) {
+            skipLineComment(parser);
+            break;
+         }
 
-        if (matchChar(parser, '*')) {
-          skipBlockComment(parser);
-          break;
-        }
+         if (matchChar(parser, '*')) {
+            skipBlockComment(parser);
+            break;
+         }
 
-        makeToken(parser, TOKEN_SLASH);
-        return;
+         makeToken(parser, TOKEN_SLASH);
+         return;
 
       case '<':
-        if (matchChar(parser, '<')) {
-          makeToken(parser, TOKEN_LTLT);
-        } else {
-          twoCharToken(parser, '=', TOKEN_LTEQ, TOKEN_LT);
-        }
-        return;
+         if (matchChar(parser, '<')) {
+            makeToken(parser, TOKEN_LTLT);
+         } else {
+            twoCharToken(parser, '=', TOKEN_LTEQ, TOKEN_LT);
+         }
+         return;
 
       case '>':
         if (matchChar(parser, '>')) {
@@ -2319,95 +2746,95 @@ static void nextToken(Parser* parser) {
       default:
         if (isName(c)) {
           readName(parser, TOKEN_NAME, c);
-        } else if (isDigit(c)) {
-          readNumber(parser);
-        } else {
-          if (c >= 32 && c <= 126) {
-            lexError(parser, "Invalid character '%c'.", c);
-          } else {
-            // Don't show non-ASCII values since we didn't UTF-8 decode the
-            // bytes. Since there are no non-ASCII byte values that are
-            // meaningful code units in Wren, the lexer works on raw bytes,
-            // even though the source code and console output are UTF-8.
-            lexError(parser, "Invalid byte 0x%x.", (uint8_t)c);
-          }
-          parser->next.type = TOKEN_ERROR;
-          parser->next.length = 0;
-        }
-        return;
-    }
-  }
+         } else if (isDigit(c)) {
+            readNumber(parser);
+         } else {
+            if (c >= 32 && c <= 126) {
+               lexError(parser, "Invalid character '%c'.", c);
+            } else {
+               //Don't show non-ASCII values since we didn't UTF-8 decode the bytes. Since there 
+               //are no non-ASCII byte values that are meaningful code units in Wren, the lexer 
+               //works on raw bytes, even though the source code and console output are UTF-8.
+               lexError(parser, "Invalid byte 0x%x.", (Byte)c);
+            }
+            parser->next.type = TOKEN_ERROR;
+            parser->next.length = 0;
+         }
+         return;
+      }
+   }
 
-  // If we get here, we're out of source, so just make EOF tokens.
-  parser->tokenStart = parser->currentChar;
-  makeToken(parser, TOKEN_EOF);
+   // If we get here, we're out of source, so just make EOF tokens.
+   parser->tokenStart = parser->currentChar;
+   makeToken(parser, TOKEN_EOF);
 }
 
 //}}}
 //{{{ Parsing ---------------------------------------------------------------------
 
-// Returns the type of the current token.
-static TokenType peek(Compiler* compiler) {
-  return compiler->parser->current.type;
+//Returns the type of the current token.
+private TokenType peek(Compiler* compiler) {
+   return compiler->parser->current.type;
 }
 
 // Returns the type of the current token.
-static TokenType peekNext(Compiler* compiler) {
-  return compiler->parser->next.type;
+private TokenType peekNext(Compiler* compiler) {
+   return compiler->parser->next.type;
 }
 
 // Consumes the current token if its type is [expected]. Returns true if a
 // token was consumed.
-static bool match(Compiler* compiler, TokenType expected) {
-  if (peek(compiler) != expected) return false;
+private Bool match(Compiler* compiler, TokenType expected) {
+   if (peek(compiler) != expected) return false;
 
-  nextToken(compiler->parser);
-  return true;
+   nextToken(compiler->parser);
+   return true;
 }
 
 // Consumes the current token. Emits an error if its type is not [expected].
-static void consume(Compiler* compiler, TokenType expected, const char* errorMessage) {
-  nextToken(compiler->parser);
-  if (compiler->parser->previous.type != expected) {
-    error(compiler, errorMessage);
+private void consume(Compiler* compiler, TokenType expected, const char* errorMessage) {
+   nextToken(compiler->parser);
+   if (compiler->parser->previous.type != expected) {
+      error(compiler, errorMessage);
 
-    // If the next token is the one we want, assume the current one is just a
-    // spurious error and discard it to minimize the number of cascaded errors.
-    if (compiler->parser->current.type == expected) nextToken(compiler->parser);
-  }
+      //If the next token is the one we want, assume the current one is just a
+      //spurious error and discard it to minimize the number of cascaded errors.
+      if (compiler->parser->current.type == expected) nextToken(compiler->parser);
+   }
 }
 
 // Matches one or more newlines. Returns true if at least one was found.
-static bool matchLine(Compiler* compiler) {
-  if (!match(compiler, TOKEN_LINE)) return false;
+private Bool matchLine(Compiler* compiler) {
+   if (!match(compiler, TOKEN_LINE)) return false;
 
-  while (match(compiler, TOKEN_LINE));
-  return true;
+   while (match(compiler, TOKEN_LINE))
+      {}
+   return true;
 }
 
 // Discards any newlines starting at the current token.
-static void ignoreNewlines(Compiler* compiler) {
+private void ignoreNewlines(Compiler* compiler) {
   matchLine(compiler);
 }
 
 // Consumes the current token. Emits an error if it is not a newline. Then
 // discards any duplicate newlines following it.
-static void consumeLine(Compiler* compiler, const char* errorMessage) {
-  consume(compiler, TOKEN_LINE, errorMessage);
-  ignoreNewlines(compiler);
+private void consumeLine(Compiler* compiler, const char* errorMessage) {
+   consume(compiler, TOKEN_LINE, errorMessage);
+   ignoreNewlines(compiler);
 }
 
-static void allowLineBeforeDot(Compiler* compiler) {
-  if (peek(compiler) == TOKEN_LINE && peekNext(compiler) == TOKEN_DOT) {
-    nextToken(compiler->parser);
-  }
+private void allowLineBeforeDot(Compiler* compiler) {
+   if (peek(compiler) == TOKEN_LINE && peekNext(compiler) == TOKEN_DOT) {
+      nextToken(compiler->parser);
+   }
 }
 
 // Variables and scopes --------------------------------------------------------
 
 // Emits one single-byte argument. Returns its index.
-static int emitByte(Compiler* compiler, int byte) {
-  wrenByteBufferWrite(compiler->parser->vm, &compiler->fn->code, (uint8_t)byte);
+private int emitByte(Compiler* compiler, int byte) {
+  wrenByteBufferWrite(compiler->parser->vm, &compiler->fn->code, (Byte)byte);
   
   // Assume the instruction is associated with the most recently consumed token.
   wrenIntBufferWrite(compiler->parser->vm, &compiler->fn->debug->sourceLines,
@@ -2417,7 +2844,7 @@ static int emitByte(Compiler* compiler, int byte) {
 }
 
 // Emits one bytecode instruction.
-static void emitOp(Compiler* compiler, Code instruction) {
+private void emitOp(Compiler* compiler, Code instruction) {
   emitByte(compiler, instruction);
   
   // Keep track of the stack's high water mark.
@@ -2428,21 +2855,21 @@ static void emitOp(Compiler* compiler, Code instruction) {
 }
 
 // Emits one 16-bit argument, which will be written big endian.
-static void emitShort(Compiler* compiler, int arg) {
+private void emitShort(Compiler* compiler, int arg) {
   emitByte(compiler, (arg >> 8) & 0xff);
   emitByte(compiler, arg & 0xff);
 }
 
 // Emits one bytecode instruction followed by a 8-bit argument. Returns the
 // index of the argument in the bytecode.
-static int emitByteArg(Compiler* compiler, Code instruction, int arg) {
+private int emitByteArg(Compiler* compiler, Code instruction, int arg) {
   emitOp(compiler, instruction);
   return emitByte(compiler, arg);
 }
 
 // Emits one bytecode instruction followed by a 16-bit argument, which will be
 // written big endian.
-static void emitShortArg(Compiler* compiler, Code instruction, int arg) {
+private void emitShortArg(Compiler* compiler, Code instruction, int arg) {
   emitOp(compiler, instruction);
   emitShort(compiler, arg);
 }
@@ -2450,7 +2877,7 @@ static void emitShortArg(Compiler* compiler, Code instruction, int arg) {
 // Emits [instruction] followed by a placeholder for a jump offset. The
 // placeholder can be patched by calling [jumpPatch]. Returns the index of the
 // placeholder.
-static int emitJump(Compiler* compiler, Code instruction) {
+private int emitJump(Compiler* compiler, Code instruction) {
   emitOp(compiler, instruction);
   emitByte(compiler, 0xff);
   return emitByte(compiler, 0xff) - 1;
@@ -2458,7 +2885,7 @@ static int emitJump(Compiler* compiler, Code instruction) {
 
 // Creates a new constant for the current value and emits the bytecode to load
 // it from the constant table.
-static void emitConstant(Compiler* compiler, Value value) {
+private void emitConstant(Compiler* compiler, Value value) {
   int constant = addConstant(compiler, value);
   
   // Compile the code to load the constant.
@@ -2467,7 +2894,7 @@ static void emitConstant(Compiler* compiler, Value value) {
 
 // Create a new local variable with [name]. Assumes the current scope is local
 // and the name is unique.
-static int addLocal(Compiler* compiler, const char* name, int length) {
+private int addLocal(Compiler* compiler, const char* name, int length) {
   Local* local = &compiler->locals[compiler->numLocals];
   local->name = name;
   local->length = length;
@@ -2479,7 +2906,7 @@ static int addLocal(Compiler* compiler, const char* name, int length) {
 // Declares a variable in the current scope whose name is the given token.
 //
 // If [token] is `NULL`, uses the previously consumed token. Returns its symbol.
-static int declareVariable(Compiler* compiler, Token* token) {
+private int declareVariable(Compiler* compiler, Token* token) {
   if (token == NULL) token = &compiler->parser->previous;
 
   if (token->length > MAX_VARIABLE_NAME) {
@@ -2532,13 +2959,13 @@ static int declareVariable(Compiler* compiler, Token* token) {
 
 // Parses a name token and declares a variable in the current scope with that
 // name. Returns its slot.
-static int declareNamedVariable(Compiler* compiler) {
+private int declareNamedVariable(Compiler* compiler) {
   consume(compiler, TOKEN_NAME, "Expect variable name.");
   return declareVariable(compiler, NULL);
 }
 
 // Stores a variable with the previously defined symbol in the current scope.
-static void defineVariable(Compiler* compiler, int symbol) {
+private void defineVariable(Compiler* compiler, int symbol) {
   // Store the variable. If it's a local, the result of the initializer is
   // in the correct slot on the stack already so we're done.
   if (compiler->scopeDepth >= 0) return;
@@ -2550,7 +2977,7 @@ static void defineVariable(Compiler* compiler, int symbol) {
 }
 
 // Starts a new local block scope.
-static void pushScope(Compiler* compiler) {
+private void pushScope(Compiler* compiler) {
   compiler->scopeDepth++;
 }
 
@@ -2561,7 +2988,7 @@ static void pushScope(Compiler* compiler) {
 // the break instruction.
 //
 // Returns the number of local variables that were eliminated.
-static int discardLocals(Compiler* compiler, int depth) {
+private int discardLocals(Compiler* compiler, int depth) {
   ASSERT(compiler->scopeDepth > -1, "Cannot exit top-level scope.");
 
   int local = compiler->numLocals - 1;
@@ -2586,7 +3013,7 @@ static int discardLocals(Compiler* compiler, int depth) {
 // Closes the last pushed block scope and discards any local variables declared
 // in that scope. This should only be called in a statement context where no
 // temporaries are still on the stack.
-static void popScope(Compiler* compiler) {
+private void popScope(Compiler* compiler) {
   int popped = discardLocals(compiler, compiler->scopeDepth);
   compiler->numLocals -= popped;
   compiler->numSlots -= popped;
@@ -2595,7 +3022,7 @@ static void popScope(Compiler* compiler) {
 
 // Attempts to look up the name in the local variables of [compiler]. If found,
 // returns its index, otherwise returns -1.
-static int resolveLocal(Compiler* compiler, const char* name, int length) {
+private int resolveLocal(Compiler* compiler, const char* name, int length) {
   // Look it up in the local scopes. Look in reverse order so that the most
   // nested variable is found first and shadows outer ones.
   for (int i = compiler->numLocals - 1; i >= 0; i--) {
@@ -2612,7 +3039,7 @@ static int resolveLocal(Compiler* compiler, const char* name, int length) {
 // Adds an upvalue to [compiler]'s function with the given properties. Does not
 // add one if an upvalue for that variable is already in the list. Returns the
 // index of the upvalue.
-static int addUpvalue(Compiler* compiler, bool isLocal, int index) {
+private int addUpvalue(Compiler* compiler, Bool isLocal, int index) {
   // Look for an existing one.
   for (int i = 0; i < compiler->fn->numUpvalues; i++) {
     CompilerUpvalue* upvalue = &compiler->upvalues[i];
@@ -2636,8 +3063,8 @@ static int addUpvalue(Compiler* compiler, bool isLocal, int index) {
 //
 // If it reaches a method boundary, this stops and returns -1 since methods do
 // not close over local variables.
-static int findUpvalue(Compiler* compiler, const char* name, int length)
-{
+private int 
+findUpvalue(Compiler* compiler, const char* name, int length) {
   // If we are at the top level, we didn't find it.
   if (compiler->parent == NULL) return -1;
   
@@ -2674,7 +3101,8 @@ static int findUpvalue(Compiler* compiler, const char* name, int length)
 // Returns the variable either in local scope, or the enclosing function's
 // upvalue list. Does not search the module scope. Returns a variable with
 // index -1 if not found.
-static Variable resolveNonmodule(Compiler* compiler, const char* name, int length) {
+private Variable 
+resolveNonmodule(Compiler* compiler, const char* name, int length) {
   // Look it up in the local scopes.
   Variable variable;
   variable.scope = SCOPE_LOCAL;
@@ -2690,7 +3118,8 @@ static Variable resolveNonmodule(Compiler* compiler, const char* name, int lengt
 // Look up [name] in the current scope to see what variable it refers to.
 // Returns the variable either in module scope, local scope, or the enclosing
 // function's upvalue list. Returns a variable with index -1 if not found.
-static Variable resolveName(Compiler* compiler, const char* name, int length) {
+private Variable 
+resolveName(Compiler* compiler, const char* name, int length) {
   Variable variable = resolveNonmodule(compiler, name, length);
   if (variable.index != -1) return variable;
 
@@ -2699,7 +3128,8 @@ static Variable resolveName(Compiler* compiler, const char* name, int length) {
   return variable;
 }
 
-static void loadLocal(Compiler* compiler, int slot) {
+private void 
+loadLocal(Compiler* compiler, int slot) {
   if (slot <= 8) {
     emitOp(compiler, (Code)(CODE_LOAD_LOCAL_0 + slot));
     return;
@@ -2711,7 +3141,8 @@ static void loadLocal(Compiler* compiler, int slot) {
 // Finishes [compiler], which is compiling a function, method, or chunk of top
 // level code. If there is a parent compiler, then this emits code in the
 // parent compiler to load the resulting function.
-static ObjFn* endCompiler(Compiler* compiler, const char* debugName, int debugNameLength) {
+private ObjFn* 
+endCompiler(Compiler* compiler, const char* debugName, int debugNameLength) {
   // If we hit an error, don't finish the function since it's borked anyway.
   if (compiler->parser->hasError) {
     compiler->parser->vm->compiler = compiler->parent;
@@ -2755,49 +3186,49 @@ static ObjFn* endCompiler(Compiler* compiler, const char* debugName, int debugNa
 // Grammar ---------------------------------------------------------------------
 
 typedef enum {
-  PREC_NONE,
-  PREC_LOWEST,
-  PREC_ASSIGNMENT,    // =
-  PREC_CONDITIONAL,   // ?:
-  PREC_LOGICAL_OR,    // ||
-  PREC_LOGICAL_AND,   // &&
-  PREC_EQUALITY,      // == !=
-  PREC_IS,            // is
-  PREC_COMPARISON,    // < > <= >=
-  PREC_BITWISE_OR,    // |
-  PREC_BITWISE_XOR,   // ^
-  PREC_BITWISE_AND,   // &
-  PREC_BITWISE_SHIFT, // << >>
-  PREC_RANGE,         // .. ...
-  PREC_TERM,          // + -
-  PREC_FACTOR,        // * / %
-  PREC_UNARY,         // unary - ! ~
-  PREC_CALL,          // . () []
-  PREC_PRIMARY
+   PREC_NONE,
+   PREC_LOWEST,
+   PREC_ASSIGNMENT,    // =
+   PREC_CONDITIONAL,   // ?:
+   PREC_LOGICAL_OR,    // ||
+   PREC_LOGICAL_AND,   // &&
+   PREC_EQUALITY,      // == !=
+   PREC_IS,            // is
+   PREC_COMPARISON,    // < > <= >=
+   PREC_BITWISE_OR,    // |
+   PREC_BITWISE_XOR,   // ^
+   PREC_BITWISE_AND,   // &
+   PREC_BITWISE_SHIFT, // << >>
+   PREC_RANGE,         // .. ...
+   PREC_TERM,          // + -
+   PREC_FACTOR,        // * / %
+   PREC_UNARY,         // unary - ! ~
+   PREC_CALL,          // . () []
+   PREC_PRIMARY
 } Precedence;
 
-typedef void (*GrammarFn)(Compiler*, bool canAssign);
+typedef void (*GrammarFn)(Compiler*, Bool canAssign);
 
 typedef void (*SignatureFn)(Compiler* compiler, Signature* signature);
 
 typedef struct {
-  GrammarFn prefix;
-  GrammarFn infix;
-  SignatureFn method;
-  Precedence precedence;
-  const char* name;
+   GrammarFn prefix;
+   GrammarFn infix;
+   SignatureFn method;
+   Precedence precedence;
+   CS name;
 } GrammarRule;
 
 // Forward declarations since the grammar is recursive.
-static GrammarRule* getRule(TokenType type);
-static void expression(Compiler* compiler);
-static void statement(Compiler* compiler);
-static void definition(Compiler* compiler);
-static void parsePrecedence(Compiler* compiler, Precedence precedence);
+private GrammarRule* getRule(TokenType type);
+private void expression(Compiler* compiler);
+private void statement(Compiler* compiler);
+private void definition(Compiler* compiler);
+private void parsePrecedence(Compiler* compiler, Precedence precedence);
 
 // Replaces the placeholder argument for a previous CODE_JUMP or CODE_JUMP_IF
 // instruction with an offset that jumps to the current end of bytecode.
-static void patchJump(Compiler* compiler, int offset) {
+private void patchJump(Compiler* compiler, int offset) {
   // -2 to adjust for the bytecode for the jump offset itself.
   int jump = compiler->fn->code.count - offset - 2;
   if (jump > MAX_JUMP) error(compiler, "Too much code to jump over.");
@@ -2811,7 +3242,8 @@ static void patchJump(Compiler* compiler, int offset) {
 // Returns true if it was a expression body, false if it was a statement body.
 // (More precisely, returns true if a value was left on the stack. An empty
 // block returns false.)
-static bool finishBlock(Compiler* compiler) {
+private Bool 
+finishBlock(Compiler* compiler) {
   // Empty blocks do nothing.
   if (match(compiler, TOKEN_RIGHT_BRACE)) return false;
 
@@ -2840,8 +3272,8 @@ static bool finishBlock(Compiler* compiler) {
 //
 // If [Compiler->isInitializer] is `true`, this is the body of a constructor
 // initializer. In that case, this adds the code to ensure it returns `this`.
-static void finishBody(Compiler* compiler) {
-  bool isExpressionBody = finishBlock(compiler);
+private void finishBody(Compiler* compiler) {
+  Bool isExpressionBody = finishBlock(compiler);
 
   if (compiler->isInitializer) {
     // If the initializer body evaluates to a value, discard it.
@@ -2859,7 +3291,7 @@ static void finishBody(Compiler* compiler) {
 
 // The VM can only handle a certain number of parameters, so check that we
 // haven't exceeded that and give a usable error.
-static void validateNumParameters(Compiler* compiler, int numArgs) {
+private void validateNumParameters(Compiler* compiler, int numArgs) {
   if (numArgs == MAX_PARAMETERS + 1) {
     // Only show an error at exactly max + 1 so that we can keep parsing the
     // parameters and minimize cascaded errors.
@@ -2870,7 +3302,7 @@ static void validateNumParameters(Compiler* compiler, int numArgs) {
 
 // Parses the rest of a comma-separated parameter list after the opening
 // delimeter. Updates `arity` in [signature] with the number of parameters.
-static void finishParameterList(Compiler* compiler, Signature* signature) {
+private void finishParameterList(Compiler* compiler, Signature* signature) {
   do {
     ignoreNewlines(compiler);
     validateNumParameters(compiler, ++signature->arity);
@@ -2881,7 +3313,7 @@ static void finishParameterList(Compiler* compiler, Signature* signature) {
 }
 
 // Gets the symbol for a method [name] with [length].
-static int methodSymbol(Compiler* compiler, const char* name, int length) {
+private int methodSymbol(Compiler* compiler, const char* name, int length) {
   int symbol = wrenSymbolTableEnsure(compiler->parser->vm,
       &compiler->parser->vm->methodNames, name, length);
 
@@ -2894,67 +3326,69 @@ static int methodSymbol(Compiler* compiler, const char* name, int length) {
 
 // Appends characters to [name] (and updates [length]) for [numParams] "_"
 // surrounded by [leftBracket] and [rightBracket].
-static void signatureParameterList(char name[MAX_METHOD_SIGNATURE], int* length,
-                                   int numParams, char leftBracket, char rightBracket)
-{
-  name[(*length)++] = leftBracket;
+private void 
+signatureParameterList(
+   char name[MAX_METHOD_SIGNATURE], int* length, int numParams, char leftBracket, char rightBracket
+) {
+   name[(*length)++] = leftBracket;
 
-  // This function may be called with too many parameters. When that happens,
-  // a compile error has already been reported, but we need to make sure we
-  // don't overflow the string too, hence the MAX_PARAMETERS check.
-  for (int i = 0; i < numParams && i < MAX_PARAMETERS; i++) {
-    if (i > 0) name[(*length)++] = ',';
-    name[(*length)++] = '_';
-  }
-  name[(*length)++] = rightBracket;
+   // This function may be called with too many parameters. When that happens,
+   // a compile error has already been reported, but we need to make sure we
+   // don't overflow the string too, hence the MAX_PARAMETERS check.
+   for (int i = 0; i < numParams && i < MAX_PARAMETERS; i++) {
+      if (i > 0) name[(*length)++] = ',';
+      name[(*length)++] = '_';
+   }
+   name[(*length)++] = rightBracket;
 }
 
 // Fills [name] with the stringified version of [signature] and updates
 // [length] to the resulting length.
-static void signatureToString(Signature* signature, char name[MAX_METHOD_SIGNATURE], int* length) {
+private void signatureToString(Signature* signature, char name[MAX_METHOD_SIGNATURE], int* length) {
   *length = 0;
 
   // Build the full name from the signature.
   memcpy(name + *length, signature->name, signature->length);
   *length += signature->length;
 
-  switch (signature->type) {
-    case SIG_METHOD:
-      signatureParameterList(name, length, signature->arity, '(', ')');
-      break;
+   switch (signature->type) {
+   case SIG_METHOD:
+     signatureParameterList(name, length, signature->arity, '(', ')');
+     break;
 
-    case SIG_GETTER:
-      // The signature is just the name.
-      break;
+   case SIG_GETTER:
+     // The signature is just the name.
+     break;
 
-    case SIG_SETTER:
-      name[(*length)++] = '=';
-      signatureParameterList(name, length, 1, '(', ')');
-      break;
+   case SIG_SETTER:
+     name[(*length)++] = '=';
+     signatureParameterList(name, length, 1, '(', ')');
+     break;
 
-    case SIG_SUBSCRIPT:
-      signatureParameterList(name, length, signature->arity, '[', ']');
-      break;
+   case SIG_SUBSCRIPT:
+     signatureParameterList(name, length, signature->arity, '[', ']');
+     break;
 
-    case SIG_SUBSCRIPT_SETTER:
-      signatureParameterList(name, length, signature->arity - 1, '[', ']');
-      name[(*length)++] = '=';
-      signatureParameterList(name, length, 1, '(', ')');
-      break;
-      
-    case SIG_INITIALIZER:
+   case SIG_SUBSCRIPT_SETTER:
+     signatureParameterList(name, length, signature->arity - 1, '[', ']');
+     name[(*length)++] = '=';
+     signatureParameterList(name, length, 1, '(', ')');
+     break;
+     
+   case SIG_INITIALIZER:
       memcpy(name, "init ", 5);
       memcpy(name + 5, signature->name, signature->length);
       *length = 5 + signature->length;
       signatureParameterList(name, length, signature->arity, '(', ')');
       break;
-  }
+   }
 
   name[*length] = '\0';
 }
 
 // Gets the symbol for a method with [signature].
-static int signatureSymbol(Compiler* compiler, Signature* signature) {
+private int 
+signatureSymbol(Compiler* compiler, Signature* signature) {
   // Build the full name from the signature.
   char name[MAX_METHOD_SIGNATURE];
   int length;
@@ -2964,7 +3398,8 @@ static int signatureSymbol(Compiler* compiler, Signature* signature) {
 }
 
 // Returns a signature with [type] whose name is from the last consumed token.
-static Signature signatureFromToken(Compiler* compiler, SignatureType type) {
+private Signature 
+signatureFromToken(Compiler* compiler, SignatureType type) {
   Signature signature;
   
   // Get the token for the method name.
@@ -2985,7 +3420,8 @@ static Signature signatureFromToken(Compiler* compiler, SignatureType type) {
 
 // Parses a comma-separated list of arguments. Modifies [signature] to include
 // the arity of the argument list.
-static void parseArgumentList(Compiler* compiler, Signature* signature) {
+private void 
+parseArgumentList(Compiler* compiler, Signature* signature) {
   do {
     ignoreNewlines(compiler);
     validateNumParameters(compiler, ++signature->arity);
@@ -2997,7 +3433,7 @@ static void parseArgumentList(Compiler* compiler, Signature* signature) {
 }
 
 // Compiles a method call with [signature] using [instruction].
-static void callSignature(Compiler* compiler, Code instruction, Signature* signature) {
+private void callSignature(Compiler* compiler, Code instruction, Signature* signature) {
   int symbol = signatureSymbol(compiler, signature);
   emitShortArg(compiler, (Code)(instruction + signature->arity), symbol);
 
@@ -3015,67 +3451,68 @@ static void callSignature(Compiler* compiler, Code instruction, Signature* signa
 }
 
 // Compiles a method call with [numArgs] for a method with [name] with [length].
-static void callMethod(Compiler* compiler, int numArgs, const char* name, int length) {
+private void 
+callMethod(Compiler* compiler, int numArgs, const char* name, int length) {
   int symbol = methodSymbol(compiler, name, length);
   emitShortArg(compiler, (Code)(CODE_CALL_0 + numArgs), symbol);
 }
 
 // Compiles an (optional) argument list for a method call with [methodSignature]
 // and then calls it.
-static void methodCall(Compiler* compiler, Code instruction, Signature* signature) {
+private void 
+methodCall(Compiler* compiler, Code instruction, Signature* signature) {
   // Make a new signature that contains the updated arity and type based on
   // the arguments we find.
   Signature called = { signature->name, signature->length, SIG_GETTER, 0 };
 
   // (a, b + c, d) Parse the argument list, if any.
   if (match(compiler, TOKEN_LEFT_PAREN)) {
-    called.type = SIG_METHOD;
+       called.type = SIG_METHOD;
 
-    // Allow new line before an empty argument list
-    ignoreNewlines(compiler);
+       // Allow new line before an empty argument list
+       ignoreNewlines(compiler);
 
-    // Allow empty an argument list.
-    if (peek(compiler) != TOKEN_RIGHT_PAREN) {
-      parseArgumentList(compiler, &called);
-    }
-    consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
-  }
+       // Allow empty an argument list.
+       if (peek(compiler) != TOKEN_RIGHT_PAREN) {
+         parseArgumentList(compiler, &called);
+       }
+      consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+   }
 
-  // Parse the block argument, if any.
-  if (match(compiler, TOKEN_LEFT_BRACE)) {
-    // Include the block argument in the arity.
-    called.type = SIG_METHOD;
-    called.arity++;
+   // Parse the block argument, if any.
+   if (match(compiler, TOKEN_LEFT_BRACE)) {
+      // Include the block argument in the arity.
+      called.type = SIG_METHOD;
+      called.arity++;
 
-    Compiler fnCompiler;
-    initCompiler(&fnCompiler, compiler->parser, compiler, false);
+      Compiler fnCompiler;
+      initCompiler(&fnCompiler, compiler->parser, compiler, false);
 
-    // Make a dummy signature to track the arity.
-    Signature fnSignature = { "", 0, SIG_METHOD, 0 };
-    
-    // |a b c| Parse the parameter list, if any.
-    if (match(compiler, TOKEN_PIPE)) {
-      finishParameterList(&fnCompiler, &fnSignature);
-      consume(compiler, TOKEN_PIPE, "Expect '|' after function parameters.");
-    }
+      // Make a dummy signature to track the arity.
+      Signature fnSignature = { "", 0, SIG_METHOD, 0 };
+       
+      // \a b c\ Parse the parameter list, if any.
+      if (match(compiler, TOKEN_BACKSLASH)) {
+         finishParameterList(&fnCompiler, &fnSignature);
+         consume(compiler, TOKEN_BACKSLASH, "Expect '\' after function parameters.");
+      }
 
-    fnCompiler.fn->arity = fnSignature.arity;
+      fnCompiler.fn->arity = fnSignature.arity;
 
-    finishBody(&fnCompiler);
+      finishBody(&fnCompiler);
 
-    // Name the function based on the method its passed to.
-    char blockName[MAX_METHOD_SIGNATURE + 15];
-    int blockLength;
-    signatureToString(&called, blockName, &blockLength);
-    memmove(blockName + blockLength, " block argument", 16);
+      // Name the function based on the method its passed to.
+      char blockName[MAX_METHOD_SIGNATURE + 15];
+      int blockLength;
+      signatureToString(&called, blockName, &blockLength);
+      memmove(blockName + blockLength, " block argument", 16);
 
-    endCompiler(&fnCompiler, blockName, blockLength + 15);
-  }
+      endCompiler(&fnCompiler, blockName, blockLength + 15);
+   }
 
-  // TODO: Allow Grace-style mixfix methods?
+   // TODO: Allow Grace-style mixfix methods?
 
-  // If this is a super() call for an initializer, make sure we got an actual
-  // argument list.
+   // If this is a super() call for an initializer, make sure we got an actual argument list.
    if (signature->type == SIG_INITIALIZER) {
       if (called.type != SIG_METHOD) {
          error(compiler, "A superclass constructor must have an argument list.");
@@ -3089,18 +3526,19 @@ static void methodCall(Compiler* compiler, Code instruction, Signature* signatur
 
 // Compiles a call whose name is the previously consumed token. This includes
 // getters, method calls with arguments, and setter calls.
-static void namedCall(Compiler* compiler, bool canAssign, Code instruction) {
+private void 
+namedCall(Compiler* compiler, Bool canAssign, Code instruction) {
    // Get the token for the method name.
    Signature signature = signatureFromToken(compiler, SIG_GETTER);
 
    if (canAssign && match(compiler, TOKEN_EQ)) {
       ignoreNewlines(compiler);
 
-      // Build the setter signature.
+      //Build the setter signature.
       signature.type = SIG_SETTER;
       signature.arity = 1;
 
-      // Compile the assigned value.
+      //Compile the assigned value.
       expression(compiler);
       callSignature(compiler, instruction, &signature);
    } else {
@@ -3110,43 +3548,45 @@ static void namedCall(Compiler* compiler, bool canAssign, Code instruction) {
 }
 
 // Emits the code to load [variable] onto the stack.
-static void loadVariable(Compiler* compiler, Variable variable) {
-  switch (variable.scope) {
-  case SCOPE_LOCAL:
-    loadLocal(compiler, variable.index);
-    break;
-  case SCOPE_UPVALUE:
-    emitByteArg(compiler, CODE_LOAD_UPVALUE, variable.index);
-    break;
-  case SCOPE_MODULE:
-    emitShortArg(compiler, CODE_LOAD_MODULE_VAR, variable.index);
-    break;
-  default:
-    UNREACHABLE();
-  }
+private void loadVariable(Compiler* compiler, Variable variable) {
+   switch (variable.scope) {
+   case SCOPE_LOCAL:
+      loadLocal(compiler, variable.index);
+      break;
+   case SCOPE_UPVALUE:
+      emitByteArg(compiler, CODE_LOAD_UPVALUE, variable.index);
+      break;
+   case SCOPE_MODULE:
+      emitShortArg(compiler, CODE_LOAD_MODULE_VAR, variable.index);
+      break;
+   default:
+      UNREACHABLE();
+   }
 }
 
 // Loads the receiver of the currently enclosing method. Correctly handles
 // functions defined inside methods.
-static void loadThis(Compiler* compiler) {
+private void 
+loadThis(Compiler* compiler) {
   loadVariable(compiler, resolveNonmodule(compiler, "this", 4));
 }
 
 // Pushes the value for a module-level variable implicitly imported from core.
-static void loadCoreVariable(Compiler* compiler, const char* name) {
+private void loadCoreVariable(Compiler* compiler, const char* name) {
   int symbol = wrenSymbolTableFind(&compiler->parser->module->variableNames, name, strlen(name));
   ASSERT(symbol != -1, "Should have already defined core name.");
   emitShortArg(compiler, CODE_LOAD_MODULE_VAR, symbol);
 }
 
 // A parenthesized expression.
-static void grouping(Compiler* compiler, bool canAssign) {
+private void grouping(Compiler* compiler, Bool canAssign) {
   expression(compiler);
   consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 // A list literal.
-static void list(Compiler* compiler, bool canAssign) {
+private void 
+list(Compiler* compiler, Bool canAssign) {
   // Instantiate a new list.
   loadCoreVariable(compiler, "List");
   callMethod(compiler, 0, "new()", 5);
@@ -3169,7 +3609,8 @@ static void list(Compiler* compiler, bool canAssign) {
 }
 
 // A map literal.
-static void map(Compiler* compiler, bool canAssign) {
+private void 
+map(Compiler* compiler, Bool canAssign) {
   // Instantiate a new map.
   loadCoreVariable(compiler, "Map");
   callMethod(compiler, 0, "new()", 5);
@@ -3198,7 +3639,8 @@ static void map(Compiler* compiler, bool canAssign) {
 }
 
 // Unary operators like `-foo`.
-static void unaryOp(Compiler* compiler, bool canAssign) {
+private void 
+unaryOp(Compiler* compiler, Bool canAssign) {
   GrammarRule* rule = getRule(compiler->parser->previous.type);
 
   ignoreNewlines(compiler);
@@ -3210,13 +3652,14 @@ static void unaryOp(Compiler* compiler, bool canAssign) {
   callMethod(compiler, 0, rule->name, 1);
 }
 
-static void boolean(Compiler* compiler, bool canAssign) {
+private void boolean(Compiler* compiler, Bool canAssign) {
   emitOp(compiler, compiler->parser->previous.type == TOKEN_FALSE ? CODE_FALSE : CODE_TRUE);
 }
 
 // Walks the compiler chain to find the compiler for the nearest class
 // enclosing this one. Returns NULL if not currently inside a class definition.
-static Compiler* getEnclosingClassCompiler(Compiler* compiler) {
+private Compiler*
+getEnclosingClassCompiler(Compiler* compiler) {
   while (compiler != NULL) {
     if (compiler->enclosingClass != NULL) return compiler;
     compiler = compiler->parent;
@@ -3227,12 +3670,14 @@ static Compiler* getEnclosingClassCompiler(Compiler* compiler) {
 
 // Walks the compiler chain to find the nearest class enclosing this one.
 // Returns NULL if not currently inside a class definition.
-static ClassInfo* getEnclosingClass(Compiler* compiler) {
+private ClassInfo*
+getEnclosingClass(Compiler* compiler) {
   compiler = getEnclosingClassCompiler(compiler);
   return compiler == NULL ? NULL : compiler->enclosingClass;
 }
 
-static void field(Compiler* compiler, bool canAssign) {
+private void 
+field(Compiler* compiler, Bool canAssign) {
   // Initialize it with a fake value so we can keep parsing and minimize the
   // number of cascaded errors.
   int field = MAX_FIELDS;
@@ -3257,7 +3702,7 @@ static void field(Compiler* compiler, bool canAssign) {
   }
 
   // If there's an "=" after a field name, it's an assignment.
-  bool isLoad = true;
+  Bool isLoad = true;
   if (canAssign && match(compiler, TOKEN_EQ)) {
     // Compile the right-hand side.
     expression(compiler);
@@ -3277,7 +3722,7 @@ static void field(Compiler* compiler, bool canAssign) {
 }
 
 // Compiles a read or assignment to [variable].
-static void bareName(Compiler* compiler, bool canAssign, Variable variable) {
+private void bareName(Compiler* compiler, Bool canAssign, Variable variable) {
   // If there's an "=" after a bare name, it's a variable assignment.
   if (canAssign && match(compiler, TOKEN_EQ)) {
     // Compile the right-hand side.
@@ -3306,7 +3751,7 @@ static void bareName(Compiler* compiler, bool canAssign, Variable variable) {
   allowLineBeforeDot(compiler);
 }
 
-static void staticField(Compiler* compiler, bool canAssign) {
+private void staticField(Compiler* compiler, Bool canAssign) {
   Compiler* classCompiler = getEnclosingClassCompiler(compiler);
   if (classCompiler == NULL) {
     error(compiler, "Cannot use a static field outside of a class definition.");
@@ -3334,7 +3779,7 @@ static void staticField(Compiler* compiler, bool canAssign) {
 }
 
 // Compiles a variable name or method call with an implicit receiver.
-static void name(Compiler* compiler, bool canAssign) {
+private void name(Compiler* compiler, Bool canAssign) {
   // Look for the name in the scope chain up to the nearest enclosing method.
   Token* token = &compiler->parser->previous;
 
@@ -3354,7 +3799,7 @@ static void name(Compiler* compiler, bool canAssign) {
 
   // If we're inside a method and the name is lowercase, treat it as a method
   // on this.
-  if (wrenIsLocalName(token->start) && getEnclosingClass(compiler) != NULL) {
+  if (isLocalName(token->start) && getEnclosingClass(compiler) != NULL) {
     loadThis(compiler);
     namedCall(compiler, canAssign, CODE_CALL_0);
     return;
@@ -3380,12 +3825,12 @@ static void name(Compiler* compiler, bool canAssign) {
   bareName(compiler, canAssign, variable);
 }
 
-static void null(Compiler* compiler, bool canAssign) {
+private void null(Compiler* compiler, Bool canAssign) {
   emitOp(compiler, CODE_NULL);
 }
 
 // A number or string literal.
-static void literal(Compiler* compiler, bool canAssign) {
+private void literal(Compiler* compiler, Bool canAssign) {
   emitConstant(compiler, compiler->parser->previous.value);
 }
 
@@ -3399,7 +3844,7 @@ static void literal(Compiler* compiler, bool canAssign) {
 // is compiled roughly like:
 //
 //     ["a ", b + c, " d"].join()
-static void stringInterpolation(Compiler* compiler, bool canAssign) {
+private void stringInterpolation(Compiler* compiler, Bool canAssign) {
   // Instantiate a new list.
   loadCoreVariable(compiler, "List");
   callMethod(compiler, 0, "new()", 5);
@@ -3426,7 +3871,7 @@ static void stringInterpolation(Compiler* compiler, bool canAssign) {
   callMethod(compiler, 0, "join()", 6);
 }
 
-static void super_(Compiler* compiler, bool canAssign) {
+private void super_(Compiler* compiler, Bool canAssign) {
   ClassInfo* enclosingClass = getEnclosingClass(compiler);
   if (enclosingClass == NULL) {
     error(compiler, "Cannot use 'super' outside of a method.");
@@ -3451,7 +3896,7 @@ static void super_(Compiler* compiler, bool canAssign) {
   }
 }
 
-static void this_(Compiler* compiler, bool canAssign) {
+private void this_(Compiler* compiler, Bool canAssign) {
   if (getEnclosingClass(compiler) == NULL) {
     error(compiler, "Cannot use 'this' outside of a method.");
     return;
@@ -3461,7 +3906,7 @@ static void this_(Compiler* compiler, bool canAssign) {
 }
 
 // Subscript or "array indexing" operator like `foo[bar]`.
-static void subscript(Compiler* compiler, bool canAssign) {
+private void subscript(Compiler* compiler, Bool canAssign) {
   Signature signature = { "", 0, SIG_SUBSCRIPT, 0 };
 
   // Parse the argument list.
@@ -3481,13 +3926,13 @@ static void subscript(Compiler* compiler, bool canAssign) {
   callSignature(compiler, CODE_CALL_0, &signature);
 }
 
-static void call(Compiler* compiler, bool canAssign) {
+private void call(Compiler* compiler, Bool canAssign) {
   ignoreNewlines(compiler);
   consume(compiler, TOKEN_NAME, "Expect method name after '.'.");
   namedCall(compiler, canAssign, CODE_CALL_0);
 }
 
-static void and_(Compiler* compiler, bool canAssign) {
+private void and_(Compiler* compiler, Bool canAssign) {
   ignoreNewlines(compiler);
 
   // Skip the right argument if the left is false.
@@ -3496,7 +3941,7 @@ static void and_(Compiler* compiler, bool canAssign) {
   patchJump(compiler, jump);
 }
 
-static void or_(Compiler* compiler, bool canAssign) {
+private void or_(Compiler* compiler, Bool canAssign) {
   ignoreNewlines(compiler);
 
   // Skip the right argument if the left is true.
@@ -3505,7 +3950,7 @@ static void or_(Compiler* compiler, bool canAssign) {
   patchJump(compiler, jump);
 }
 
-static void conditional(Compiler* compiler, bool canAssign) {
+private void conditional(Compiler* compiler, Bool canAssign) {
   // Ignore newline after '?'.
   ignoreNewlines(compiler);
 
@@ -3531,7 +3976,7 @@ static void conditional(Compiler* compiler, bool canAssign) {
   patchJump(compiler, elseJump);
 }
 
-void infixOp(Compiler* compiler, bool canAssign) {
+void infixOp(Compiler* compiler, Bool canAssign) {
   GrammarRule* rule = getRule(compiler->parser->previous.type);
 
   // An infix operator cannot end an expression.
@@ -3582,7 +4027,7 @@ void mixedSignature(Compiler* compiler, Signature* signature) {
 // Compiles an optional setter parameter in a method [signature].
 //
 // Returns `true` if it was a setter.
-static bool maybeSetter(Compiler* compiler, Signature* signature) {
+private Bool maybeSetter(Compiler* compiler, Signature* signature) {
   // See if it's a setter.
   if (!match(compiler, TOKEN_EQ)) return false;
 
@@ -3620,7 +4065,7 @@ void subscriptSignature(Compiler* compiler, Signature* signature) {
 
 // Parses an optional parenthesized parameter list. Updates `type` and `arity`
 // in [signature] to match what was parsed.
-static void parameterList(Compiler* compiler, Signature* signature) {
+private void parameterList(Compiler* compiler, Signature* signature) {
   // The parameter list is optional.
   if (!match(compiler, TOKEN_LEFT_PAREN)) return;
   
@@ -3681,6 +4126,7 @@ void constructorSignature(Compiler* compiler, Signature* signature) {
 #define PREFIX_OPERATOR(name)      { unaryOp, NULL, unarySignature, PREC_NONE, name }
 #define OPERATOR(name)             { unaryOp, infixOp, mixedSignature, PREC_TERM, name }
 
+//Keep in sync with TokenType
 GrammarRule rules[] = {
   /* TOKEN_LEFT_PAREN    */ PREFIX(grouping),
   /* TOKEN_RIGHT_PAREN   */ UNUSED,
@@ -3695,6 +4141,7 @@ GrammarRule rules[] = {
   /* TOKEN_COMMA         */ UNUSED,
   /* TOKEN_STAR          */ INFIX_OPERATOR(PREC_FACTOR, "*"),
   /* TOKEN_SLASH         */ INFIX_OPERATOR(PREC_FACTOR, "/"),
+  /* TOKEN_BACKSLASH     */ INFIX_OPERATOR(PREC_FACTOR, "\\"),
   /* TOKEN_PERCENT       */ INFIX_OPERATOR(PREC_FACTOR, "%"),
   /* TOKEN_HASH          */ UNUSED,
   /* TOKEN_PLUS          */ INFIX_OPERATOR(PREC_TERM, "+"),
@@ -3749,7 +4196,7 @@ GrammarRule rules[] = {
 };
 
 // Gets the [GrammarRule] associated with tokens of [type].
-static GrammarRule* getRule(TokenType type) {
+private GrammarRule* getRule(TokenType type) {
   return &rules[type];
 }
 
@@ -3770,7 +4217,7 @@ void parsePrecedence(Compiler* compiler, Precedence precedence) {
    //expressions that are valid lvalues -- names, subscripts, fields, etc. --
    //we pass in whether or not it appears in a context loose enough to allow
    //"=". If so, it will parse the "=" itself and handle it appropriately.
-   bool canAssign = precedence <= PREC_CONDITIONAL;
+   Bool canAssign = precedence <= PREC_CONDITIONAL;
    prefix(compiler, canAssign);
  
    while (precedence <= rules[compiler->parser->current.type].precedence) {
@@ -3787,7 +4234,7 @@ void expression(Compiler* compiler) {
 
 // Returns the number of bytes for the arguments to the instruction 
 // at [ip] in [fn]'s bytecode.
-static int getByteCountForArguments(const uint8_t* bytecode, const Value* constants, int ip) {
+private int getByteCountForArguments(const Byte* bytecode, const Value* constants, int ip) {
    Code instruction = (Code)bytecode[ip];
    switch (instruction) {
    case CODE_NULL:
@@ -3889,7 +4336,7 @@ static int getByteCountForArguments(const uint8_t* bytecode, const Value* consta
 
 // Marks the beginning of a loop. Keeps track of the current instruction so we
 // know what to loop back to at the end of the body.
-static void startLoop(Compiler* compiler, Loop* loop) {
+private void startLoop(Compiler* compiler, Loop* loop) {
   loop->enclosing = compiler->loop;
   loop->start = compiler->fn->code.count - 1;
   loop->scopeDepth = compiler->scopeDepth;
@@ -3899,20 +4346,20 @@ static void startLoop(Compiler* compiler, Loop* loop) {
 // Emits the [CODE_JUMP_IF] instruction used to test the loop condition and
 // potentially exit the loop. Keeps track of the instruction so we can patch it
 // later once we know where the end of the body is.
-static void testExitLoop(Compiler* compiler) {
+private void testExitLoop(Compiler* compiler) {
   compiler->loop->exitJump = emitJump(compiler, CODE_JUMP_IF);
 }
 
 // Compiles the body of the loop and tracks its extent so that contained "break"
 // statements can be handled correctly.
-static void loopBody(Compiler* compiler) {
+private void loopBody(Compiler* compiler) {
   compiler->loop->body = compiler->fn->code.count;
   statement(compiler);
 }
 
 // Ends the current innermost loop. Patches up all jumps and breaks now that
 // we know where the end of the loop is.
-static void endLoop(Compiler* compiler) {
+private void endLoop(Compiler* compiler) {
   // We don't check for overflow here since the forward jump over the loop body
   // will report an error for the same problem.
   int loopOffset = compiler->fn->code.count - compiler->loop->start + 2;
@@ -3938,7 +4385,7 @@ static void endLoop(Compiler* compiler) {
   compiler->loop = compiler->loop->enclosing;
 }
 
-static void forStatement(Compiler* compiler) {
+private void forStatement(Compiler* compiler) {
   // A for statement like:
   //
   //     for (i in sequence.expression) {
@@ -4034,7 +4481,7 @@ static void forStatement(Compiler* compiler) {
   popScope(compiler);
 }
 
-static void ifStatement(Compiler* compiler) {
+private void ifStatement(Compiler* compiler) {
   // Compile the condition.
   consume(compiler, TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression(compiler);
@@ -4061,7 +4508,7 @@ static void ifStatement(Compiler* compiler) {
   }
 }
 
-static void whileStatement(Compiler* compiler) {
+private void whileStatement(Compiler* compiler) {
   Loop loop;
   startLoop(compiler, &loop);
 
@@ -4163,7 +4610,7 @@ void statement(Compiler* compiler) {
 //     CODE_CALL      - Invoke the initializer on the new instance.
 //
 // This creates that method and calls the initializer with [initializerSymbol].
-static void createConstructor(Compiler* compiler, Signature* signature, int initializerSymbol) {
+private void createConstructor(Compiler* compiler, Signature* signature, int initializerSymbol) {
   Compiler methodCompiler;
   initCompiler(&methodCompiler, compiler->parser, compiler, true);
   
@@ -4183,8 +4630,8 @@ static void createConstructor(Compiler* compiler, Signature* signature, int init
 
 // Loads the enclosing class onto the stack and then binds the function already
 // on the stack as a method on that class.
-static void defineMethod(Compiler* compiler, Variable classVariable,
-                         bool isStatic, int methodSymbol)
+private void defineMethod(Compiler* compiler, Variable classVariable,
+                         Bool isStatic, int methodSymbol)
 {
   // Load the class. We have to do this for each method because we can't
   // keep the class on top of the stack. If there are static fields, they
@@ -4202,7 +4649,7 @@ static void defineMethod(Compiler* compiler, Variable classVariable,
 //
 // Reports an error if a method with that signature is already declared.
 // Returns the symbol for the method.
-static int declareMethod(Compiler* compiler, Signature* signature,
+private int declareMethod(Compiler* compiler, Signature* signature,
                          const char* name, int length)
 {
   int symbol = signatureSymbol(compiler, signature);
@@ -4224,7 +4671,7 @@ static int declareMethod(Compiler* compiler, Signature* signature,
   return symbol;
 }
 
-static Value consumeLiteral(Compiler* compiler, const char* message) {
+private Value consumeLiteral(Compiler* compiler, const char* message) {
   if(match(compiler, TOKEN_FALSE))  return FALSE_VAL;
   if(match(compiler, TOKEN_TRUE))   return TRUE_VAL;
   if(match(compiler, TOKEN_NUMBER)) return compiler->parser->previous.value;
@@ -4236,11 +4683,11 @@ static Value consumeLiteral(Compiler* compiler, const char* message) {
   return NULL_VAL;
 }
 
-static bool matchAttribute(Compiler* compiler) {
+private Bool matchAttribute(Compiler* compiler) {
 
   if(match(compiler, TOKEN_HASH)) {
     compiler->numAttributes++;
-    bool runtimeAccess = match(compiler, TOKEN_BANG);
+    Bool runtimeAccess = match(compiler, TOKEN_BANG);
     if(match(compiler, TOKEN_NAME)) {
       Value group = compiler->parser->previous.value;
       TokenType ahead = peek(compiler);
@@ -4290,17 +4737,17 @@ static bool matchAttribute(Compiler* compiler) {
 
 // Compiles a method definition inside a class body.
 //
-// Returns `true` if it compiled successfully, or `false` if the method couldn't
-// be parsed.
-static bool method(Compiler* compiler, Variable classVariable) {
+// Returns `true` if it compiled successfully, or `false` if the method couldn't be parsed.
+private Bool 
+method(Compiler* compiler, Variable classVariable) {
   // Parse any attributes before the method and store them
   if(matchAttribute(compiler)) {
     return method(compiler, classVariable);
   }
 
   // TODO: What about foreign constructors?
-  bool isForeign = match(compiler, TOKEN_FOREIGN);
-  bool isStatic = match(compiler, TOKEN_STATIC);
+  Bool isForeign = match(compiler, TOKEN_FOREIGN);
+  Bool isStatic = match(compiler, TOKEN_STATIC);
   compiler->enclosingClass->inStatic = isStatic;
     
   SignatureFn signatureFn = rules[compiler->parser->current.type].method;
@@ -4371,7 +4818,7 @@ static bool method(Compiler* compiler, Variable classVariable) {
 
 // Compiles a class definition. Assumes the "class" token has already been
 // consumed (along with a possibly preceding "foreign" token).
-static void classDefinition(Compiler* compiler, bool isForeign) {
+private void classDefinition(Compiler* compiler, Bool isForeign) {
   // Create a variable to store the class in.
   Variable classVariable;
   classVariable.scope = compiler->scopeDepth == -1 ? SCOPE_MODULE : SCOPE_LOCAL;
@@ -4452,7 +4899,7 @@ static void classDefinition(Compiler* compiler, bool isForeign) {
   // If any attributes are present, 
   // instantiate a ClassAttributes instance for the class
   // and send it over to CODE_END_CLASS
-  bool hasAttr = classInfo.classAttributes != NULL || 
+  Bool hasAttr = classInfo.classAttributes != NULL || 
                  classInfo.methodAttributes != NULL;
   if(hasAttr) {
     emitClassAttributes(compiler, &classInfo);
@@ -4466,7 +4913,7 @@ static void classDefinition(Compiler* compiler, bool isForeign) {
   // Update the class with the number of fields.
   if (!isForeign) {
     compiler->fn->code.data[numFieldsInstruction] =
-        (uint8_t)classInfo.fields.count;
+        (Byte)classInfo.fields.count;
   }
   
   // Clear symbol tables for tracking field and method names.
@@ -4491,7 +4938,7 @@ static void classDefinition(Compiler* compiler, bool isForeign) {
 // * Emit an IMPORT_VARIABLE instruction to load the variable's value from the
 //   other module.
 // * Compile the code to store that value in the variable in this scope.
-static void import(Compiler* compiler) {
+private void import(Compiler* compiler) {
   ignoreNewlines(compiler);
   consume(compiler, TOKEN_STRING, "Expect a string after 'import'.");
   int moduleConstant = addConstant(compiler, compiler->parser->previous.value);
@@ -4542,7 +4989,7 @@ static void import(Compiler* compiler) {
 }
 
 // Compiles a "var" variable definition statement.
-static void variableDefinition(Compiler* compiler) {
+private void variableDefinition(Compiler* compiler) {
   // Grab its name, but don't declare it yet. A (local) variable shouldn't be
   // in scope in its own initializer.
   consume(compiler, TOKEN_NAME, "Expect variable name.");
@@ -4591,9 +5038,25 @@ void definition(Compiler* compiler) {
   }
 }
 
-ObjFn* wrenCompile(WrenVM* vm, ObjModule* module, const char* source,
-                   bool isExpression, bool printErrors)
-{
+
+//Compiles [source], a string of Wren source code located in [module], to an
+//[ObjFn] that will execute that code when invoked. Returns `NULL` if the
+//source contains any syntax errors.
+//
+//If [isExpression] is `true`, [source] should be a single expression, and
+//this compiles it to a function that evaluates and returns that expression.
+//Otherwise, [source] should be a series of top level statements.
+//
+//If [printErrors] is `true`, any compile errors are output to stderr.
+//Otherwise, they are silently discarded.
+private ObjFn*
+wrenCompile(
+   WrenVM* vm, 
+   ObjModule* module, 
+   CS source,
+   Bool isExpression,
+   Bool printErrors
+) {
   // Skip the UTF-8 BOM if there is one.
   if (strncmp(source, "\xEF\xBB\xBF", 3) == 0) source += 3;
   
@@ -4665,7 +5128,8 @@ ObjFn* wrenCompile(WrenVM* vm, ObjModule* module, const char* source,
   return endCompiler(&compiler, "(script)", 8);
 }
 
-void wrenBindMethodCode(ObjClass* classObj, ObjFn* fn) {
+private void 
+wrenBindMethodCode(ObjClass* classObj, ObjFn* fn) {
   int ip = 0;
   for (;;) {
     Code instruction = (Code)fn->code.data[ip];
@@ -4753,7 +5217,7 @@ void wrenMarkCompiler(WrenVM* vm, Compiler* compiler) {
 
 // Throw an error if any attributes were found preceding, 
 // and clear the attributes so the error doesn't keep happening.
-static void disallowAttributes(Compiler* compiler) {
+private void disallowAttributes(Compiler* compiler) {
   if (compiler->numAttributes > 0) {
     error(compiler, "Attributes can only specified before a class or a method");
     wrenMapClear(compiler->parser->vm, compiler->attributes);
@@ -4762,12 +5226,12 @@ static void disallowAttributes(Compiler* compiler) {
 }
 
 // Add an attribute to a given group in the compiler attribues map
-static void addToAttributeGroup(Compiler* compiler, Value group, Value key, Value value) {
+private void addToAttributeGroup(Compiler* compiler, Value group, Value key, Value value) {
   WrenVM* vm = compiler->parser->vm;
 
-  if(IS_OBJ(group)) wrenPushRoot(vm, AS_OBJ(group));
-  if(IS_OBJ(key))   wrenPushRoot(vm, AS_OBJ(key));
-  if(IS_OBJ(value)) wrenPushRoot(vm, AS_OBJ(value));
+  if(IS_OBJ(group)) pushRoot(vm, AS_OBJ(group));
+  if(IS_OBJ(key))   pushRoot(vm, AS_OBJ(key));
+  if(IS_OBJ(value)) pushRoot(vm, AS_OBJ(value));
 
   Value groupMapValue = wrenMapGet(compiler->attributes, group);
   if(IS_UNDEFINED(groupMapValue)) {
@@ -4791,21 +5255,21 @@ static void addToAttributeGroup(Compiler* compiler, Value group, Value key, Valu
   ObjList* keyItems = AS_LIST(keyItemsValue);
   wrenValueBufferWrite(vm, &keyItems->elements, value);
 
-  if(IS_OBJ(group)) wrenPopRoot(vm);
-  if(IS_OBJ(key))   wrenPopRoot(vm);
-  if(IS_OBJ(value)) wrenPopRoot(vm);
+  if(IS_OBJ(group)) popRoot(vm);
+  if(IS_OBJ(key))   popRoot(vm);
+  if(IS_OBJ(value)) popRoot(vm);
 }
 
 
 // Emit the attributes in the give map onto the stack
-static void emitAttributes(Compiler* compiler, ObjMap* attributes) {
+private void emitAttributes(Compiler* compiler, ObjMap* attributes) {
   // Instantiate a new map for the attributes
   loadCoreVariable(compiler, "Map");
   callMethod(compiler, 0, "new()", 5);
 
   // The attributes are stored as group = { key:[value, value, ...] }
   // so our first level is the group map
-  for(uint32_t groupIdx = 0; groupIdx < attributes->capacity; groupIdx++) {
+  for(Unt groupIdx = 0; groupIdx < attributes->capacity; groupIdx++) {
     const MapEntry* groupEntry = &attributes->entries[groupIdx];
     if(IS_UNDEFINED(groupEntry->key)) continue;
     //group key
@@ -4816,7 +5280,7 @@ static void emitAttributes(Compiler* compiler, ObjMap* attributes) {
     callMethod(compiler, 0, "new()", 5);
 
     ObjMap* groupItems = AS_MAP(groupEntry->value);
-    for(uint32_t itemIdx = 0; itemIdx < groupItems->capacity; itemIdx++) {
+    for(Unt itemIdx = 0; itemIdx < groupItems->capacity; itemIdx++) {
       const MapEntry* itemEntry = &groupItems->entries[itemIdx];
       if(IS_UNDEFINED(itemEntry->key)) continue;
 
@@ -4826,8 +5290,8 @@ static void emitAttributes(Compiler* compiler, ObjMap* attributes) {
       callMethod(compiler, 0, "new()", 5);
       // Add the items to the key list
       ObjList* items = AS_LIST(itemEntry->value);
-      for(int itemIdx = 0; itemIdx < items->elements.count; ++itemIdx) {
-        emitConstant(compiler, items->elements.data[itemIdx]);
+      for(int e = 0; itemIdx < items->elements.count; ++e) {
+        emitConstant(compiler, items->elements.data[e]);
         callMethod(compiler, 1, "addCore_(_)", 11);
       }
       // Add the list to the map
@@ -4842,12 +5306,12 @@ static void emitAttributes(Compiler* compiler, ObjMap* attributes) {
 
 // Methods are stored as method <-> attributes, so we have to have 
 // an indirection to resolve for methods
-static void emitAttributeMethods(Compiler* compiler, ObjMap* attributes) {
+private void emitAttributeMethods(Compiler* compiler, ObjMap* attributes) {
     // Instantiate a new map for the attributes
   loadCoreVariable(compiler, "Map");
   callMethod(compiler, 0, "new()", 5);
 
-  for(uint32_t methodIdx = 0; methodIdx < attributes->capacity; methodIdx++) {
+  for(Unt methodIdx = 0; methodIdx < attributes->capacity; methodIdx++) {
     const MapEntry* methodEntry = &attributes->entries[methodIdx];
     if(IS_UNDEFINED(methodEntry->key)) continue;
     emitConstant(compiler, methodEntry->key);
@@ -4859,7 +5323,7 @@ static void emitAttributeMethods(Compiler* compiler, ObjMap* attributes) {
 
 
 // Emit the final ClassAttributes that exists at runtime
-static void emitClassAttributes(Compiler* compiler, ClassInfo* classInfo) {
+private void emitClassAttributes(Compiler* compiler, ClassInfo* classInfo) {
   loadCoreVariable(compiler, "ClassAttributes");
 
   classInfo->classAttributes 
@@ -4875,7 +5339,7 @@ static void emitClassAttributes(Compiler* compiler, ClassInfo* classInfo) {
 
 // Copy the current attributes stored in the compiler into a destination map
 // This also resets the counter, since the intent is to consume the attributes
-static void copyAttributes(Compiler* compiler, ObjMap* into) {
+private void copyAttributes(Compiler* compiler, ObjMap* into) {
   compiler->numAttributes = 0;
 
   if(compiler->attributes->count == 0) return;
@@ -4885,7 +5349,7 @@ static void copyAttributes(Compiler* compiler, ObjMap* into) {
   
   // Note we copy the actual values as is since we'll take ownership 
   // and clear the original map
-  for(uint32_t attrIdx = 0; attrIdx < compiler->attributes->capacity; attrIdx++) {
+  for(Unt attrIdx = 0; attrIdx < compiler->attributes->capacity; attrIdx++) {
     const MapEntry* attrEntry = &compiler->attributes->entries[attrIdx];
     if(IS_UNDEFINED(attrEntry->key)) continue;
     wrenMapSet(vm, into, attrEntry->key, attrEntry->value);
@@ -4897,391 +5361,51 @@ static void copyAttributes(Compiler* compiler, ObjMap* into) {
 // Copy the current attributes stored in the compiler into the method specific
 // attributes for the current enclosingClass.
 // This also resets the counter, since the intent is to consume the attributes
-static void copyMethodAttributes(Compiler* compiler, bool isForeign,
-            bool isStatic, const char* fullSignature, int32_t length
+private void copyMethodAttributes(
+      Compiler* compiler, 
+      Bool isForeign,
+      Bool isStatic, 
+      CS fullSignature, 
+      Int length
 ) {
-  compiler->numAttributes = 0;
-
-  if(compiler->attributes->count == 0) return;
-
-  WrenVM* vm = compiler->parser->vm;
-  
-  // Make a map for this method to copy into
-  ObjMap* methodAttr = wrenNewMap(vm);
-  wrenPushRoot(vm, (Obj*)methodAttr);
-  copyAttributes(compiler, methodAttr);
-
-  // Include 'foreign static ' in front as needed
-  int32_t fullLength = length;
-  if(isForeign) fullLength += 8;
-  if(isStatic) fullLength += 7;
-  char fullSignatureWithPrefix[MAX_METHOD_SIGNATURE + 8 + 7];
-  const char* foreignPrefix = isForeign ? "foreign " : "";
-  const char* staticPrefix = isStatic ? "static " : "";
-  sprintf(fullSignatureWithPrefix, "%s%s%.*s", foreignPrefix, staticPrefix, 
-                                               length, fullSignature);
-  fullSignatureWithPrefix[fullLength] = '\0';
-
-  if(compiler->enclosingClass->methodAttributes == NULL) {
-    compiler->enclosingClass->methodAttributes = wrenNewMap(vm);
-  }
-  
-  // Store the method attributes in the class map
-  Value key = wrenNewStringLength(vm, fullSignatureWithPrefix, fullLength);
-  wrenMapSet(vm, compiler->enclosingClass->methodAttributes, key, OBJ_VAL(methodAttr));
-
-  wrenPopRoot(vm);
+   compiler->numAttributes = 0;
+ 
+   if(compiler->attributes->count == 0) return;
+ 
+   WrenVM* vm = compiler->parser->vm;
+   
+   // Make a map for this method to copy into
+   ObjMap* methodAttr = wrenNewMap(vm);
+   pushRoot(vm, (Obj*)methodAttr);
+   copyAttributes(compiler, methodAttr);
+ 
+   // Include 'foreign static ' in front as needed
+   Int fullLength = length;
+   if(isForeign) fullLength += 8;
+   if(isStatic) fullLength += 7;
+   char fullSignatureWithPrefix[MAX_METHOD_SIGNATURE + 8 + 7];
+   const char* foreignPrefix = isForeign ? "foreign " : "";
+   const char* staticPrefix = isStatic ? "static " : "";
+   sprintf(fullSignatureWithPrefix, "%s%s%.*s", foreignPrefix, staticPrefix, 
+                                                length, fullSignature);
+   fullSignatureWithPrefix[fullLength] = '\0';
+ 
+   if(compiler->enclosingClass->methodAttributes == NULL) {
+     compiler->enclosingClass->methodAttributes = wrenNewMap(vm);
+   }
+   
+   // Store the method attributes in the class map
+   Value key = wrenNewStringLength(vm, fullSignatureWithPrefix, fullLength);
+   wrenMapSet(vm, compiler->enclosingClass->methodAttributes, key, OBJ_VAL(methodAttr));
+ 
+   popRoot(vm);
 }
 
 //}}}
 
-
-
 //}}}
 //{{{virtual machine
 
-// This defines the bytecode instructions used by the VM. It does so by invoking
-// an OPCODE() macro which is expected to be defined at the point that this is
-// included. (See: http://en.wikipedia.org/wiki/X_Macro for more.)
-//
-// The first argument is the name of the opcode. The second is its "stack
-// effect" -- the amount that the op code changes the size of the stack. A
-// stack effect of 1 means it pushes a value and the stack grows one larger.
-// -2 means it pops two values, etc.
-//
-// Note that the order of instructions here affects the order of the dispatch
-// table in the VM's interpreter loop. That in turn affects caching which
-// affects overall performance. Take care to run benchmarks if you change the
-// order here.
-
-// Load the constant at index [arg].
-OPCODE(CONSTANT, 1)
-
-// Push null onto the stack.
-OPCODE(NULL, 1)
-
-// Push false onto the stack.
-OPCODE(FALSE, 1)
-
-// Push true onto the stack.
-OPCODE(TRUE, 1)
-
-// Pushes the value in the given local slot.
-OPCODE(LOAD_LOCAL_0, 1)
-OPCODE(LOAD_LOCAL_1, 1)
-OPCODE(LOAD_LOCAL_2, 1)
-OPCODE(LOAD_LOCAL_3, 1)
-OPCODE(LOAD_LOCAL_4, 1)
-OPCODE(LOAD_LOCAL_5, 1)
-OPCODE(LOAD_LOCAL_6, 1)
-OPCODE(LOAD_LOCAL_7, 1)
-OPCODE(LOAD_LOCAL_8, 1)
-
-// Note: The compiler assumes the following _STORE instructions always
-// immediately follow their corresponding _LOAD ones.
-
-// Pushes the value in local slot [arg].
-OPCODE(LOAD_LOCAL, 1)
-
-// Stores the top of stack in local slot [arg]. Does not pop it.
-OPCODE(STORE_LOCAL, 0)
-
-// Pushes the value in upvalue [arg].
-OPCODE(LOAD_UPVALUE, 1)
-
-// Stores the top of stack in upvalue [arg]. Does not pop it.
-OPCODE(STORE_UPVALUE, 0)
-
-// Pushes the value of the top-level variable in slot [arg].
-OPCODE(LOAD_MODULE_VAR, 1)
-
-// Stores the top of stack in top-level variable slot [arg]. Does not pop it.
-OPCODE(STORE_MODULE_VAR, 0)
-
-// Pushes the value of the field in slot [arg] of the receiver of the current
-// function. This is used for regular field accesses on "this" directly in
-// methods. This instruction is faster than the more general CODE_LOAD_FIELD
-// instruction.
-OPCODE(LOAD_FIELD_THIS, 1)
-
-// Stores the top of the stack in field slot [arg] in the receiver of the
-// current value. Does not pop the value. This instruction is faster than the
-// more general CODE_LOAD_FIELD instruction.
-OPCODE(STORE_FIELD_THIS, 0)
-
-// Pops an instance and pushes the value of the field in slot [arg] of it.
-OPCODE(LOAD_FIELD, 0)
-
-// Pops an instance and stores the subsequent top of stack in field slot
-// [arg] in it. Does not pop the value.
-OPCODE(STORE_FIELD, -1)
-
-// Pop and discard the top of stack.
-OPCODE(POP, -1)
-
-// Invoke the method with symbol [arg]. The number indicates the number of
-// arguments (not including the receiver).
-OPCODE(CALL_0, 0)
-OPCODE(CALL_1, -1)
-OPCODE(CALL_2, -2)
-OPCODE(CALL_3, -3)
-OPCODE(CALL_4, -4)
-OPCODE(CALL_5, -5)
-OPCODE(CALL_6, -6)
-OPCODE(CALL_7, -7)
-OPCODE(CALL_8, -8)
-OPCODE(CALL_9, -9)
-OPCODE(CALL_10, -10)
-OPCODE(CALL_11, -11)
-OPCODE(CALL_12, -12)
-OPCODE(CALL_13, -13)
-OPCODE(CALL_14, -14)
-OPCODE(CALL_15, -15)
-OPCODE(CALL_16, -16)
-
-// Invoke a superclass method with symbol [arg]. The number indicates the
-// number of arguments (not including the receiver).
-OPCODE(SUPER_0, 0)
-OPCODE(SUPER_1, -1)
-OPCODE(SUPER_2, -2)
-OPCODE(SUPER_3, -3)
-OPCODE(SUPER_4, -4)
-OPCODE(SUPER_5, -5)
-OPCODE(SUPER_6, -6)
-OPCODE(SUPER_7, -7)
-OPCODE(SUPER_8, -8)
-OPCODE(SUPER_9, -9)
-OPCODE(SUPER_10, -10)
-OPCODE(SUPER_11, -11)
-OPCODE(SUPER_12, -12)
-OPCODE(SUPER_13, -13)
-OPCODE(SUPER_14, -14)
-OPCODE(SUPER_15, -15)
-OPCODE(SUPER_16, -16)
-
-// Jump the instruction pointer [arg] forward.
-OPCODE(JUMP, 0)
-
-// Jump the instruction pointer [arg] backward.
-OPCODE(LOOP, 0)
-
-// Pop and if not truthy then jump the instruction pointer [arg] forward.
-OPCODE(JUMP_IF, -1)
-
-// If the top of the stack is false, jump [arg] forward. Otherwise, pop and
-// continue.
-OPCODE(AND, -1)
-
-// If the top of the stack is non-false, jump [arg] forward. Otherwise, pop
-// and continue.
-OPCODE(OR, -1)
-
-// Close the upvalue for the local on the top of the stack, then pop it.
-OPCODE(CLOSE_UPVALUE, -1)
-
-// Exit from the current function and return the value on the top of the
-// stack.
-OPCODE(RETURN, 0)
-
-// Creates a closure for the function stored at [arg] in the constant table.
-//
-// Following the function argument is a number of arguments, two for each
-// upvalue. The first is true if the variable being captured is a local (as
-// opposed to an upvalue), and the second is the index of the local or
-// upvalue being captured.
-//
-// Pushes the created closure.
-OPCODE(CLOSURE, 1)
-
-// Creates a new instance of a class.
-//
-// Assumes the class object is in slot zero, and replaces it with the new
-// uninitialized instance of that class. This opcode is only emitted by the
-// compiler-generated constructor metaclass methods.
-OPCODE(CONSTRUCT, 0)
-
-// Creates a new instance of a foreign class.
-//
-// Assumes the class object is in slot zero, and replaces it with the new
-// uninitialized instance of that class. This opcode is only emitted by the
-// compiler-generated constructor metaclass methods.
-OPCODE(FOREIGN_CONSTRUCT, 0)
-
-// Creates a class. Top of stack is the superclass. Below that is a string for
-// the name of the class. Byte [arg] is the number of fields in the class.
-OPCODE(CLASS, -1)
-
-// Ends a class. 
-// Atm the stack contains the class and the ClassAttributes (or null).
-OPCODE(END_CLASS, -2)
-
-// Creates a foreign class. Top of stack is the superclass. Below that is a
-// string for the name of the class.
-OPCODE(FOREIGN_CLASS, -1)
-
-// Define a method for symbol [arg]. The class receiving the method is popped
-// off the stack, then the function defining the body is popped.
-//
-// If a foreign method is being defined, the "function" will be a string
-// identifying the foreign method. Otherwise, it will be a function or
-// closure.
-OPCODE(METHOD_INSTANCE, -2)
-
-// Define a method for symbol [arg]. The class whose metaclass will receive
-// the method is popped off the stack, then the function defining the body is popped.
-//
-// If a foreign method is being defined, the "function" will be a string
-// identifying the foreign method. Otherwise, it will be a function or
-// closure.
-OPCODE(METHOD_STATIC, -2)
-
-// This is executed at the end of the module's body. Pushes NULL onto the stack
-// as the "return value" of the import statement and stores the module as the
-// most recently imported one.
-OPCODE(END_MODULE, 1)
-
-// Import a module whose name is the string stored at [arg] in the constant
-// table.
-//
-// Pushes null onto the stack so that the fiber for the imported module can
-// replace that with a dummy value when it returns. (Fibers always return a
-// value when resuming a caller.)
-OPCODE(IMPORT_MODULE, 1)
-
-// Import a variable from the most recently imported module. The name of the
-// variable to import is at [arg] in the constant table. Pushes the loaded
-// variable's value.
-OPCODE(IMPORT_VARIABLE, 1)
-
-// This pseudo-instruction indicates the end of the bytecode. It should
-// always be preceded by a `CODE_RETURN`, so is never actually executed.
-OPCODE(END, 0)
-
-// The maximum number of temporary objects that can be made visible to the GC at one time.
-#define WREN_MAX_TEMP_ROOTS 8
-
-typedef enum {
-  #define OPCODE(name, _) CODE_##name,
-  #include "wrenOpcodes.h"
-  #undef OPCODE
-} Code;
-
-// A handle to a value, basically just a linked list of extra GC roots.
-//
-// Note that even non-heap-allocated values can be stored here.
-struct WrenHandle {
-  Value value;
-
-  WrenHandle* prev;
-  WrenHandle* next;
-};
-
-struct WrenVM {
-  ObjClass* boolClass;
-  ObjClass* classClass;
-  ObjClass* fiberClass;
-  ObjClass* fnClass;
-  ObjClass* listClass;
-  ObjClass* mapClass;
-  ObjClass* nullClass;
-  ObjClass* numClass;
-  ObjClass* objectClass;
-  ObjClass* rangeClass;
-  ObjClass* stringClass;
-
-  // The fiber that is currently running.
-  ObjFiber* fiber;
-
-  // The loaded modules. Each key is an ObjString (except for the main module,
-  // whose key is null) for the module's name and the value is the ObjModule
-  // for the module.
-  ObjMap* modules;
-  
-  // The most recently imported module. More specifically, the module whose
-  // code has most recently finished executing.
-  //
-  // Not treated like a GC root since the module is already in [modules].
-  ObjModule* lastModule;
-
-  // Memory management data:
-
-  // The number of bytes that are known to be currently allocated. Includes all
-  // memory that was proven live after the last GC, as well as any new bytes
-  // that were allocated since then. Does *not* include bytes for objects that
-  // were freed since the last GC.
-  size_t bytesAllocated;
-
-  // The number of total allocated bytes that will trigger the next GC.
-  size_t nextGC;
-
-  // The first object in the linked list of all currently allocated objects.
-  Obj* first;
-
-  // The "gray" set for the garbage collector. This is the stack of unprocessed
-  // objects while a garbage collection pass is in process.
-  Obj** gray;
-  int grayCount;
-  int grayCapacity;
-
-  // The list of temporary roots. This is for temporary or new objects that are
-  // not otherwise reachable but should not be collected.
-  //
-  // They are organized as a stack of pointers stored in this array. This
-  // implies that temporary roots need to have stack semantics: only the most
-  // recently pushed object can be released.
-  Obj* tempRoots[WREN_MAX_TEMP_ROOTS];
-
-  int numTempRoots;
-  
-  // Pointer to the first node in the linked list of active handles or NULL if
-  // there are none.
-  WrenHandle* handles;
-  
-  // Pointer to the bottom of the range of stack slots available for use from
-  // the C API. During a foreign method, this will be in the stack of the fiber
-  // that is executing a method.
-  //
-  // If not in a foreign method, this is initially NULL. If the user requests
-  // slots by calling wrenEnsureSlots(), a stack is created and this is
-  // initialized.
-  Value* apiStack;
-
-  WrenConfiguration config;
-  
-  // Compiler and debugger data:
-
-  // The compiler that is currently compiling code. This is used so that heap
-  // allocated objects used by the compiler can be found if a GC is kicked off
-  // in the middle of a compile.
-  Compiler* compiler;
-
-  // There is a single global symbol table for all method names on all classes.
-  // Method calls are dispatched directly by index in this table.
-  SymbolTable methodNames;
-};
-
-// A generic allocation function that handles all explicit memory management.
-// It's used like so:
-//
-// - To allocate new memory, [memory] is NULL and [oldSize] is zero. It should
-//   return the allocated memory or NULL on failure.
-//
-// - To attempt to grow an existing allocation, [memory] is the memory,
-//   [oldSize] is its previous size, and [newSize] is the desired size.
-//   It should return [memory] if it was able to grow it in place, or a new
-//   pointer if it had to move it.
-//
-// - To shrink memory, [memory], [oldSize], and [newSize] are the same as above
-//   but it will always return [memory].
-//
-// - To free memory, [memory] will be the memory to free and [newSize] and
-//   [oldSize] will be zero. It should return NULL.
-void* wrenReallocate(WrenVM* vm, void* memory, size_t oldSize, size_t newSize);
-
-// Invoke the finalizer for the foreign object referenced by [foreign].
-void wrenFinalizeForeign(WrenVM* vm, ObjForeign* foreign);
-
-// Creates a new [WrenHandle] for [value].
 WrenHandle* wrenMakeHandle(WrenVM* vm, Value value);
 
 // Compile [source] in the context of [module] and wrap in a fiber that can
@@ -5289,8 +5413,8 @@ WrenHandle* wrenMakeHandle(WrenVM* vm, Value value);
 //
 // Returns NULL if a compile error occurred.
 ObjClosure* wrenCompileSource(WrenVM* vm, const char* module,
-                              const char* source, bool isExpression,
-                              bool printErrors);
+                              const char* source, Bool isExpression,
+                              Bool printErrors);
 
 // Looks up a variable from a previously-loaded module.
 //
@@ -5308,7 +5432,7 @@ Value wrenFindVariable(WrenVM* vm, ObjModule* module, const char* name);
 // defined. Returns the symbol for the new variable or -2 if there are too many
 // variables defined.
 int wrenDeclareVariable(WrenVM* vm, ObjModule* module, const char* name,
-                        size_t length, int line);
+                        Ulong length, int line);
 
 // Adds a new top-level variable named [name] to [module], and optionally
 // populates line with the line of the implicit first use (line can be NULL).
@@ -5318,92 +5442,31 @@ int wrenDeclareVariable(WrenVM* vm, ObjModule* module, const char* name,
 // Returns -3 if this is a top-level lowercase variable (localname) that was
 // used before being defined.
 int wrenDefineVariable(WrenVM* vm, ObjModule* module, const char* name,
-                       size_t length, Value value, int* line);
+                       Ulong length, Value value, int* line);
 
-// Pushes [closure] onto [fiber]'s callstack to invoke it. Expects [numArgs]
-// arguments (including the receiver) to be on the top of the stack already.
-private void wrenCallFunction(WrenVM* vm, ObjFiber* fiber,
-                                    ObjClosure* closure, int numArgs)
-{
-  // Grow the call frame array if needed.
-  if (fiber->numFrames + 1 > fiber->frameCapacity) {
-    int max = fiber->frameCapacity * 2;
-    fiber->frames = (CallFrame*)wrenReallocate(vm, fiber->frames,
-        sizeof(CallFrame) * fiber->frameCapacity, sizeof(CallFrame) * max);
-    fiber->frameCapacity = max;
-  }
-  
-  // Grow the stack if needed.
-  int stackSize = (int)(fiber->stackTop - fiber->stack);
-  int needed = stackSize + closure->fn->maxSlots;
-  wrenEnsureStack(vm, fiber, needed);
-  
-  wrenAppendCallFrame(vm, fiber, closure, fiber->stackTop - numArgs);
-}
 
 // Marks [obj] as a GC root so that it doesn't get collected.
-void wrenPushRoot(WrenVM* vm, Obj* obj);
+private void pushRoot(WrenVM* vm, Obj* obj);
 
 // Removes the most recently pushed temporary root.
-void wrenPopRoot(WrenVM* vm);
+private void popRoot(WrenVM* vm);
 
-// Returns the class of [value].
-//
-// Defined here instead of in wren_value.h because it's critical that this be
-// inlined. That means it must be defined in the header, but the wren_value.h
-// header doesn't have a full definitely of WrenVM yet.
-private ObjClass* wrenGetClassInline(WrenVM* vm, Value value) {
-  if (IS_NUM(value)) return vm->numClass;
-  if (IS_OBJ(value)) return AS_OBJ(value)->classObj;
-
-  switch (GET_TAG(value)) {
-  case TAG_FALSE:     return vm->boolClass; break;
-  case TAG_NAN:       return vm->numClass; break;
-  case TAG_NULL:      return vm->nullClass; break;
-  case TAG_TRUE:      return vm->boolClass; break;
-  case TAG_UNDEFINED: UNREACHABLE();
-  }
-
-  UNREACHABLE();
-  return NULL;
-}
-
-// Returns `true` if [name] is a local variable name (starts with a lowercase letter).
-private bool wrenIsLocalName(const char* name) {
-  return name[0] >= 'a' && name[0] <= 'z';
-}
-
-private bool wrenIsFalsyValue(Value value) {
-  return IS_FALSE(value) || IS_NULL(value);
-}
-
-#if WREN_OPT_META
-  #include "wren_opt_meta.h"
-#endif
-#if WREN_OPT_RANDOM
-  #include "wren_opt_random.h"
-#endif
-
+#include <time.h>
 #if WREN_DEBUG_TRACE_MEMORY || WREN_DEBUG_TRACE_GC
-  #include <time.h>
   #include <stdio.h>
 #endif
 
-// The behavior of realloc() when the size is 0 is implementation defined. It
-// may return a non-NULL pointer which must not be dereferenced but nevertheless
-// should be freed. To prevent that, we avoid calling realloc() with a zero
-// size.
-static void* defaultReallocate(void* ptr, size_t newSize, void* _) {
+//The behavior of realloc() when the size is 0 is implementation defined. It
+//may return a non-NULL pointer which must not be dereferenced but nevertheless
+//should be freed. To prevent that, we avoid calling realloc() with a zero
+//size.
+private void* defaultReallocate(void* ptr, Ulong newSize, void* _) {
   if (newSize == 0) {
     free(ptr);
     return NULL;
   }
 
   return realloc(ptr, newSize);
-}
-
-int wrenGetVersionNumber() { 
-  return WREN_VERSION_NUMBER;
 }
 
 void wrenInitConfiguration(WrenConfiguration* config) {
@@ -5423,7 +5486,7 @@ void wrenInitConfiguration(WrenConfiguration* config) {
 WrenVM* wrenNewVM(WrenConfiguration* config) {
   WrenReallocateFn reallocate = defaultReallocate;
   void* userData = NULL;
-  if (config != NULL) {
+  if (config) {
     userData = config->userData;
     reallocate = config->reallocateFn ? config->reallocateFn : defaultReallocate;
   }
@@ -5456,7 +5519,8 @@ WrenVM* wrenNewVM(WrenConfiguration* config) {
   return vm;
 }
 
-void wrenFreeVM(WrenVM* vm) {
+void 
+wrenFreeVM(WrenVM* vm) {
   ASSERT(vm->methodNames.count > 0, "VM appears to have already been freed.");
   
   // Free all of the GC objects.
@@ -5480,11 +5544,12 @@ void wrenFreeVM(WrenVM* vm) {
   DEALLOCATE(vm, vm);
 }
 
-void wrenCollectGarbage(WrenVM* vm) {
+void 
+wrenCollectGarbage(WrenVM* vm) {
 #if WREN_DEBUG_TRACE_MEMORY || WREN_DEBUG_TRACE_GC
   printf("-- gc --\n");
 
-  size_t before = vm->bytesAllocated;
+  Ulong before = vm->bytesAllocated;
   double startTime = (double)clock() / CLOCKS_PER_SEC;
 #endif
 
@@ -5516,7 +5581,7 @@ void wrenCollectGarbage(WrenVM* vm) {
   }
 
   // Any object the compiler is using (if there is one).
-  if (vm->compiler != NULL) wrenMarkCompiler(vm, vm->compiler);
+  if (vm->compiler) wrenMarkCompiler(vm, vm->compiler);
 
   // Method names.
   wrenBlackenSymbolTable(vm, &vm->methodNames);
@@ -5548,7 +5613,7 @@ void wrenCollectGarbage(WrenVM* vm) {
 
 #if WREN_DEBUG_TRACE_MEMORY || WREN_DEBUG_TRACE_GC
   double elapsed = ((double)clock() / CLOCKS_PER_SEC) - startTime;
-  // Explicit cast because size_t has different sizes on 32-bit and 64-bit and
+  // Explicit cast because Ulong has different sizes on 32-bit and 64-bit and
   // we need a consistent type for the format string.
   printf("GC %lu before, %lu after (%lu collected), next at %lu. Took %.3fms.\n",
          (unsigned long)before,
@@ -5559,10 +5624,26 @@ void wrenCollectGarbage(WrenVM* vm) {
 #endif
 }
 
-void* wrenReallocate(WrenVM* vm, void* memory, size_t oldSize, size_t newSize)
-{
+// A generic allocation function that handles all explicit memory management.
+// It's used like so:
+//
+// - To allocate new memory, [memory] is NULL and [oldSize] is zero. It should
+//   return the allocated memory or NULL on failure.
+//
+// - To attempt to grow an existing allocation, [memory] is the memory,
+//   [oldSize] is its previous size, and [newSize] is the desired size.
+//   It should return [memory] if it was able to grow it in place, or a new
+//   pointer if it had to move it.
+//
+// - To shrink memory, [memory], [oldSize], and [newSize] are the same as above
+//   but it will always return [memory].
+//
+// - To free memory, [memory] will be the memory to free and [newSize] and
+//   [oldSize] will be zero. It should return NULL.
+private void* 
+wrenReallocate(WrenVM* vm, void* memory, Ulong oldSize, Ulong newSize) {
 #if WREN_DEBUG_TRACE_MEMORY
-  // Explicit cast because size_t has different sizes on 32-bit and 64-bit and
+  // Explicit cast because Ulong has different sizes on 32-bit and 64-bit and
   // we need a consistent type for the format string.
   printf("reallocate %p %lu -> %lu\n",
          memory, (unsigned long)oldSize, (unsigned long)newSize);
@@ -5575,8 +5656,7 @@ void* wrenReallocate(WrenVM* vm, void* memory, size_t oldSize, size_t newSize)
   vm->bytesAllocated += newSize - oldSize;
 
 #if WREN_DEBUG_GC_STRESS
-  // Since collecting calls this function to free things, make sure we don't
-  // recurse.
+  // Since collecting calls this function to free things, make sure we don't recurse.
   if (newSize > 0) wrenCollectGarbage(vm);
 #else
   if (newSize > 0 && vm->bytesAllocated > vm->nextGC) wrenCollectGarbage(vm);
@@ -5590,7 +5670,7 @@ void* wrenReallocate(WrenVM* vm, void* memory, size_t oldSize, size_t newSize)
 // ensure that multiple closures closing over the same variable actually see
 // the same variable.) Otherwise, it will create a new open upvalue and add it
 // the fiber's list of upvalues.
-static ObjUpvalue* captureUpvalue(WrenVM* vm, ObjFiber* fiber, Value* local) {
+private ObjUpvalue* captureUpvalue(WrenVM* vm, ObjFiber* fiber, Value* local) {
   // If there are no open upvalues at all, we must need a new one.
   if (fiber->openUpvalues == NULL) {
     fiber->openUpvalues = wrenNewUpvalue(vm, local);
@@ -5627,7 +5707,8 @@ static ObjUpvalue* captureUpvalue(WrenVM* vm, ObjFiber* fiber, Value* local) {
 
 // Closes any open upvalues that have been created for stack slots at [last]
 // and above.
-static void closeUpvalues(ObjFiber* fiber, Value* last) {
+private void 
+closeUpvalues(ObjFiber* fiber, Value* last) {
   while (fiber->openUpvalues != NULL && fiber->openUpvalues->value >= last) {
     ObjUpvalue* upvalue = fiber->openUpvalues;
 
@@ -5644,33 +5725,28 @@ static void closeUpvalues(ObjFiber* fiber, Value* last) {
 //
 // This will try the host's foreign method binder first. If that fails, it
 // falls back to handling the built-in modules.
-static WrenForeignMethodFn findForeignMethod(WrenVM* vm,
-                                             const char* moduleName,
-                                             const char* className,
-                                             bool isStatic,
-                                             const char* signature)
-{
-  WrenForeignMethodFn method = NULL;
-  
-  if (vm->config.bindForeignMethodFn != NULL) {
-    method = vm->config.bindForeignMethodFn(vm, moduleName, className, isStatic, signature);
-  }
-  
-  // If the host didn't provide it, see if it's an optional one.
-  if (method == NULL) {
-#if WREN_OPT_META
-    if (strcmp(moduleName, "meta") == 0) {
-      method = wrenMetaBindForeignMethod(vm, className, isStatic, signature);
-    }
-#endif
-#if WREN_OPT_RANDOM
-    if (strcmp(moduleName, "random") == 0) {
-      method = wrenRandomBindForeignMethod(vm, className, isStatic, signature);
-    }
-#endif
-  }
-
-  return method;
+private WrenForeignMethodFn 
+findForeignMethod(
+   WrenVM* vm,
+   CS moduleName,
+   CS className,
+   Bool isStatic,
+   CS signature
+) {
+   WrenForeignMethodFn methodd = NULL;
+   
+   if (vm->config.bindForeignMethodFn) {
+      methodd = vm->config.bindForeignMethodFn(vm, moduleName, className, isStatic, signature);
+   }
+   
+   // If the host didn't provide it, see if it's an optional one.
+   if (!methodd) {
+     if (strcmp(moduleName, "meta") == 0) {
+       methodd = wrenMetaBindForeignMethod(vm, className, isStatic, signature);
+     }
+   }
+ 
+   return methodd;
 }
 
 // Defines [methodValue] as a method on [classObj].
@@ -5680,7 +5756,7 @@ static WrenForeignMethodFn findForeignMethod(WrenVM* vm,
 //
 // Aborts the current fiber if the method is a foreign method that could not be
 // found.
-static void bindMethod(WrenVM* vm, int methodType, int symbol,
+private void bindMethod(WrenVM* vm, int methodType, int symbol,
                        ObjModule* module, ObjClass* classObj, Value methodValue)
 {
   const char* className = classObj->name->value;
@@ -5712,9 +5788,8 @@ static void bindMethod(WrenVM* vm, int methodType, int symbol,
   wrenBindMethod(vm, classObj, symbol, method);
 }
 
-static void callForeign(WrenVM* vm, ObjFiber* fiber,
-                        WrenForeignMethodFn foreign, int numArgs)
-{
+private void 
+callForeign(WrenVM* vm, ObjFiber* fiber, WrenForeignMethodFn foreign, int numArgs) {
   ASSERT(vm->apiStack == NULL, "Cannot already be in foreign call.");
   vm->apiStack = fiber->stackTop - numArgs;
 
@@ -5731,13 +5806,13 @@ static void callForeign(WrenVM* vm, ObjFiber* fiber,
 //
 // Walks the call chain of fibers, aborting each one until it hits a fiber that
 // handles the error. If none do, tells the VM to stop.
-static void runtimeError(WrenVM* vm) {
+private void runtimeError(WrenVM* vm) {
   ASSERT(wrenHasError(vm->fiber), "Should only call this after an error.");
 
   ObjFiber* current = vm->fiber;
   Value error = current->error;
   
-  while (current != NULL) {
+  while (current) {
     // Every fiber along the call chain gets aborted with the same error.
     current->error = error;
 
@@ -5763,8 +5838,7 @@ static void runtimeError(WrenVM* vm) {
 
 // Aborts the current fiber with an appropriate method not found error for a
 // method with [symbol] on [classObj].
-static void methodNotFound(WrenVM* vm, ObjClass* classObj, int symbol)
-{
+private void methodNotFound(WrenVM* vm, ObjClass* classObj, int symbol) {
   vm->fiber->error = wrenStringFormat(vm, "@ does not implement '$'.",
       OBJ_VAL(classObj->name), vm->methodNames.data[symbol]->value);
 }
@@ -5772,30 +5846,34 @@ static void methodNotFound(WrenVM* vm, ObjClass* classObj, int symbol)
 // Looks up the previously loaded module with [name].
 //
 // Returns `NULL` if no module with that name has been loaded.
-static ObjModule* getModule(WrenVM* vm, Value name) {
+private ObjModule* getModule(WrenVM* vm, Value name) {
   Value moduleValue = wrenMapGet(vm->modules, name);
   return !IS_UNDEFINED(moduleValue) ? AS_MODULE(moduleValue) : NULL;
 }
 
-static ObjClosure* compileInModule(WrenVM* vm, Value name, const char* source,
-                                   bool isExpression, bool printErrors)
-{
+private ObjClosure* 
+compileInModule(
+      WrenVM* vm, 
+      Value name, 
+      CS source,
+      Bool isExpression, 
+      Bool printErrors
+) {
   // See if the module has already been loaded.
   ObjModule* module = getModule(vm, name);
-  if (module == NULL)
-  {
+  if (module == NULL) {
     module = wrenNewModule(vm, AS_STRING(name));
 
     // It's possible for the wrenMapSet below to resize the modules map,
     // and trigger a GC while doing so. When this happens it will collect
     // the module we've just created. Once in the map it is safe.
-    wrenPushRoot(vm, (Obj*)module);
+    pushRoot(vm, (Obj*)module);
 
     // Store it in the VM's module registry so we don't load the same module
     // multiple times.
     wrenMapSet(vm, vm->modules, name, OBJ_VAL(module));
 
-    wrenPopRoot(vm);
+    popRoot(vm);
 
     // Implicitly import the core module.
     ObjModule* coreModule = getModule(vm, NULL_VAL);
@@ -5814,9 +5892,9 @@ static ObjClosure* compileInModule(WrenVM* vm, Value name, const char* source,
   }
 
   // Functions are always wrapped in closures.
-  wrenPushRoot(vm, (Obj*)fn);
+  pushRoot(vm, (Obj*)fn);
   ObjClosure* closure = wrenNewClosure(vm, fn);
-  wrenPopRoot(vm); // fn.
+  popRoot(vm); // fn.
 
   return closure;
 }
@@ -5828,7 +5906,8 @@ static ObjClosure* compileInModule(WrenVM* vm, Value name, const char* source,
 // the other limitations foreign classes have.
 //
 // If successful, returns `null`. Otherwise, returns a string for the runtime error message.
-static Value validateSuperclass(WrenVM* vm, Value name, Value superclassValue, int numFields) {
+private Value 
+validateSuperclass(WrenVM* vm, Value name, Value superclassValue, int numFields) {
   // Make sure the superclass is a class.
   if (!IS_CLASS(superclassValue)) {
     return wrenStringFormat(vm,
@@ -5841,22 +5920,22 @@ static Value validateSuperclass(WrenVM* vm, Value name, Value superclassValue, i
   // will fail horribly if it's actually an ObjInstance.
   ObjClass* superclass = AS_CLASS(superclassValue);
   if (superclass == vm->classClass 
-        || superclass == vm->fiberClass 
-        || superclass == vm->fnClass // Includes OBJ_CLOSURE.
+      || superclass == vm->fiberClass 
+      || superclass == vm->fnClass // Includes OBJ_CLOSURE.
       || superclass == vm->listClass
       || superclass == vm->mapClass
       || superclass == vm->rangeClass
       || superclass == vm->stringClass
       || superclass == vm->boolClass
       || superclass == vm->nullClass
-      || superclass == vm->numClass)
-  {
+      || superclass == vm->numClass
+   ) {
     return wrenStringFormat(vm,
         "Class '@' cannot inherit from built-in class '@'.",
         name, OBJ_VAL(superclass->name));
-  }
+   }
 
-  if (superclass->numFields == -1) {
+   if (superclass->numFields == -1) {
     return wrenStringFormat(vm,
         "Class '@' cannot inherit from foreign class '@'.",
         name, OBJ_VAL(superclass->name));
@@ -5877,7 +5956,8 @@ static Value validateSuperclass(WrenVM* vm, Value name, Value superclassValue, i
   return NULL_VAL;
 }
 
-static void bindForeignClass(WrenVM* vm, ObjClass* classObj, ObjModule* module) {
+private void 
+bindForeignClass(WrenVM* vm, ObjClass* classObj, ObjModule* module) {
   WrenForeignClassMethods methods;
   methods.allocate = NULL;
   methods.finalize = NULL;
@@ -5890,11 +5970,6 @@ static void bindForeignClass(WrenVM* vm, ObjClass* classObj, ObjModule* module) 
 
   // If the host didn't provide it, see if it's a built in optional module.
   if (methods.allocate == NULL && methods.finalize == NULL) {
-#if WREN_OPT_RANDOM
-    if (strcmp(module->name->value, "random") == 0) {
-      methods = wrenRandomBindForeignClass(vm, module->name->value, classObj->name->value);
-    }
-#endif
   }
   
   Method method;
@@ -5925,7 +6000,7 @@ static void bindForeignClass(WrenVM* vm, ObjClass* classObj, ObjModule* module) 
 // This process handles moving the attribute data for a class from
 // compile time to runtime, since it now has all the attributes associated
 // with a class, including for methods.
-static void endClass(WrenVM* vm) {
+private void endClass(WrenVM* vm) {
   // Pull the attributes and class off the stack
   Value attributes = vm->fiber->stackTop[-2];
   Value classValue = vm->fiber->stackTop[-1];
@@ -5944,7 +6019,8 @@ static void endClass(WrenVM* vm) {
 // stack will contain the new class.
 //
 // Aborts the current fiber if an error occurs.
-static void createClass(WrenVM* vm, int numFields, ObjModule* module) {
+private void 
+createClass(WrenVM* vm, int numFields, ObjModule* module) {
   // Pull the name and superclass off the stack.
   Value name = vm->fiber->stackTop[-2];
   Value superclass = vm->fiber->stackTop[-1];
@@ -5962,7 +6038,8 @@ static void createClass(WrenVM* vm, int numFields, ObjModule* module) {
   if (numFields == -1) bindForeignClass(vm, classObj, module);
 }
 
-static void createForeign(WrenVM* vm, ObjFiber* fiber, Value* stack) {
+private void 
+createForeign(WrenVM* vm, ObjFiber* fiber, Value* stack) {
   ObjClass* classObj = AS_CLASS(stack[0]);
   ASSERT(classObj->numFields == -1, "Class must be a foreign class.");
 
@@ -5983,7 +6060,9 @@ static void createForeign(WrenVM* vm, ObjFiber* fiber, Value* stack) {
   vm->apiStack = NULL;
 }
 
-void wrenFinalizeForeign(WrenVM* vm, ObjForeign* foreign) {
+// Invoke the finalizer for the foreign object referenced by [foreign].
+private void 
+wrenFinalizeForeign(WrenVM* vm, ObjForeign* foreign) {
   // TODO: Don't look up every time.
   int symbol = wrenSymbolTableFind(&vm->methodNames, "<finalize>", 10);
   ASSERT(symbol != -1, "Should have defined <finalize> symbol.");
@@ -6005,7 +6084,8 @@ void wrenFinalizeForeign(WrenVM* vm, ObjForeign* foreign) {
 }
 
 // Let the host resolve an imported module name if it wants to.
-static Value resolveModule(WrenVM* vm, Value name) {
+private Value 
+resolveModule(WrenVM* vm, Value name) {
   // If the host doesn't care to resolve, leave the name alone.
   if (vm->config.resolveModuleFn == NULL) return name;
 
@@ -6030,17 +6110,17 @@ static Value resolveModule(WrenVM* vm, Value name) {
   return name;
 }
 
-static Value importModule(WrenVM* vm, Value name) {
+private Value importModule(WrenVM* vm, Value name) {
   name = resolveModule(vm, name);
   
   // If the module is already loaded, we don't need to do anything.
   Value existing = wrenMapGet(vm->modules, name);
   if (!IS_UNDEFINED(existing)) return existing;
 
-  wrenPushRoot(vm, AS_OBJ(name));
+  pushRoot(vm, AS_OBJ(name));
 
   WrenLoadModuleResult result = {0};
-  const char* source = NULL;
+  CS source = NULL;
   
   // Let the host try to provide the module.
   if (vm->config.loadModuleFn != NULL) {
@@ -6051,17 +6131,12 @@ static Value importModule(WrenVM* vm, Value name) {
   if (result.source == NULL) {
     result.onComplete = NULL;
     ObjString* nameString = AS_STRING(name);
-#if WREN_OPT_META
     if (strcmp(nameString->value, "meta") == 0) result.source = wrenMetaSource();
-#endif
-#if WREN_OPT_RANDOM
-    if (strcmp(nameString->value, "random") == 0) result.source = wrenRandomSource();
-#endif
   }
   
   if (result.source == NULL) {
     vm->fiber->error = wrenStringFormat(vm, "Could not load module '@'.", name);
-    wrenPopRoot(vm); // name.
+    popRoot(vm); // name.
     return NULL_VAL;
   }
   
@@ -6072,21 +6147,21 @@ static Value importModule(WrenVM* vm, Value name) {
   
   if (moduleClosure == NULL) {
     vm->fiber->error = wrenStringFormat(vm, "Could not compile module '@'.", name);
-    wrenPopRoot(vm); // name.
+    popRoot(vm); // name.
     return NULL_VAL;
   }
 
-  wrenPopRoot(vm); // name.
+  popRoot(vm); // name.
 
   // Return the closure that executes the module.
   return OBJ_VAL(moduleClosure);
 }
 
-static Value getModuleVariable(WrenVM* vm, ObjModule* module,
+private Value getModuleVariable(WrenVM* vm, ObjModule* module,
                                Value variableName)
 {
   ObjString* variable = AS_STRING(variableName);
-  uint32_t variableEntry = wrenSymbolTableFind(&module->variableNames,
+  Unt variableEntry = wrenSymbolTableFind(&module->variableNames,
                                                variable->value,
                                                variable->length);
   
@@ -6101,7 +6176,7 @@ static Value getModuleVariable(WrenVM* vm, ObjModule* module,
   return NULL_VAL;
 }
 
-inline static bool checkArity(WrenVM* vm, Value value, int numArgs) {
+inline static Bool checkArity(WrenVM* vm, Value value, int numArgs) {
   ASSERT(IS_CLOSURE(value), "Receiver must be a closure.");
   ObjFn* fn = AS_CLOSURE(value)->fn;
 
@@ -6117,7 +6192,7 @@ inline static bool checkArity(WrenVM* vm, Value value, int numArgs) {
 
 // The main bytecode interpreter loop. This is where the magic happens. It is
 // also, as you can imagine, highly performance critical.
-static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
+private WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
 {
   // Remember the current fiber so we can find it if a GC happens.
   vm->fiber = fiber;
@@ -6128,7 +6203,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
   // a call frame has been pushed or popped gives a large speed boost.
   register CallFrame* frame;
   register Value* stackStart;
-  register uint8_t* ip;
+  register Byte* ip;
   register ObjFn* fn;
 
   // These macros are designed to only be invoked within this function.
@@ -6183,7 +6258,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
 
   #if WREN_COMPUTED_GOTO
 
-  static void* dispatchTable[] = {
+  private void* dispatchTable[] = {
     #define OPCODE(name, _) &&code_##name,
     #include "wrenOpcodes.h"
     #undef OPCODE
@@ -6234,7 +6309,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
 
     CASE_CODE(LOAD_FIELD_THIS):
     {
-      uint8_t field = READ_BYTE();
+      Byte field = READ_BYTE();
       Value receiver = stackStart[0];
       ASSERT(IS_INSTANCE(receiver), "Receiver should be instance.");
       ObjInstance* instance = AS_INSTANCE(receiver);
@@ -6391,8 +6466,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
       DISPATCH();
     }
 
-    CASE_CODE(STORE_UPVALUE):
-    {
+    CASE_CODE(STORE_UPVALUE): {
       ObjUpvalue** upvalues = frame->closure->upvalues;
       *upvalues[READ_BYTE()]->value = PEEK();
       DISPATCH();
@@ -6407,7 +6481,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
       DISPATCH();
 
     CASE_CODE(STORE_FIELD_THIS): {
-      uint8_t field = READ_BYTE();
+      Byte field = READ_BYTE();
       Value receiver = stackStart[0];
       ASSERT(IS_INSTANCE(receiver), "Receiver should be instance.");
       ObjInstance* instance = AS_INSTANCE(receiver);
@@ -6417,7 +6491,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
     }
 
     CASE_CODE(LOAD_FIELD): {
-      uint8_t field = READ_BYTE();
+      Byte field = READ_BYTE();
       Value receiver = POP();
       ASSERT(IS_INSTANCE(receiver), "Receiver should be instance.");
       ObjInstance* instance = AS_INSTANCE(receiver);
@@ -6427,7 +6501,7 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
     }
 
     CASE_CODE(STORE_FIELD): {
-      uint8_t field = READ_BYTE();
+      Byte field = READ_BYTE();
       Value receiver = POP();
       ASSERT(IS_INSTANCE(receiver), "Receiver should be instance.");
       ObjInstance* instance = AS_INSTANCE(receiver);
@@ -6550,8 +6624,8 @@ static WrenInterpretResult runInterpreter(WrenVM* vm, register ObjFiber* fiber)
 
       // Capture upvalues, if any.
       for (int i = 0; i < function->numUpvalues; i++) {
-        uint8_t isLocal = READ_BYTE();
-        uint8_t index = READ_BYTE();
+        Byte isLocal = READ_BYTE();
+        Byte index = READ_BYTE();
         if (isLocal) {
           // Make an new upvalue to close over the parent's local variable.
           closure->upvalues[i] = captureUpvalue(vm, fiber, frame->stackStart + index);
@@ -6682,7 +6756,7 @@ WrenHandle* wrenMakeCallHandle(WrenVM* vm, const char* signature) {
   WrenHandle* value = wrenMakeHandle(vm, OBJ_VAL(fn));
   value->value = OBJ_VAL(wrenNewClosure(vm, fn));
   
-  wrenByteBufferWrite(vm, &fn->code, (uint8_t)(CODE_CALL_0 + numParams));
+  wrenByteBufferWrite(vm, &fn->code, (Byte)(CODE_CALL_0 + numParams));
   wrenByteBufferWrite(vm, &fn->code, (method >> 8) & 0xff);
   wrenByteBufferWrite(vm, &fn->code, method & 0xff);
   wrenByteBufferWrite(vm, &fn->code, CODE_RETURN);
@@ -6725,14 +6799,16 @@ WrenInterpretResult wrenCall(WrenVM* vm, WrenHandle* method) {
   return result;
 }
 
-WrenHandle* wrenMakeHandle(WrenVM* vm, Value value) {
-  if (IS_OBJ(value)) wrenPushRoot(vm, AS_OBJ(value));
+//Create a new [WrenHandle] for [value].
+WrenHandle* 
+wrenMakeHandle(WrenVM* vm, Value value) {
+  if (IS_OBJ(value)) pushRoot(vm, AS_OBJ(value));
   
   // Make a handle for it.
   WrenHandle* handle = ALLOCATE(vm, WrenHandle);
   handle->value = value;
 
-  if (IS_OBJ(value)) wrenPopRoot(vm);
+  if (IS_OBJ(value)) popRoot(vm);
 
   // Add it to the front of the linked list of handles.
   if (vm->handles != NULL) vm->handles->prev = handle;
@@ -6765,27 +6841,27 @@ WrenInterpretResult wrenInterpret(WrenVM* vm, const char* module, const char* so
   ObjClosure* closure = wrenCompileSource(vm, module, source, false, true);
   if (closure == NULL) return WREN_RESULT_COMPILE_ERROR;
   
-  wrenPushRoot(vm, (Obj*)closure);
+  pushRoot(vm, (Obj*)closure);
   ObjFiber* fiber = wrenNewFiber(vm, closure);
-  wrenPopRoot(vm); // closure.
+  popRoot(vm); // closure.
   vm->apiStack = NULL;
 
   return runInterpreter(vm, fiber);
 }
 
 ObjClosure* wrenCompileSource(WrenVM* vm, const char* module, const char* source,
-                            bool isExpression, bool printErrors)
+                            Bool isExpression, Bool printErrors)
 {
   Value nameValue = NULL_VAL;
   if (module != NULL) {
     nameValue = wrenNewString(vm, module);
-    wrenPushRoot(vm, AS_OBJ(nameValue));
+    pushRoot(vm, AS_OBJ(nameValue));
   }
   
   ObjClosure* closure = compileInModule(vm, nameValue, source,
                                         isExpression, printErrors);
 
-  if (module != NULL) wrenPopRoot(vm); // nameValue.
+  if (module != NULL) popRoot(vm); // nameValue.
   return closure;
 }
 
@@ -6800,26 +6876,25 @@ Value wrenGetModuleVariable(WrenVM* vm, Value moduleName, Value variableName) {
 }
 
 Value wrenFindVariable(WrenVM* vm, ObjModule* module, const char* name) {
-  int symbol = wrenSymbolTableFind(&module->variableNames, name, strlen(name));
-  return module->variables.data[symbol];
+   int symbol = wrenSymbolTableFind(&module->variableNames, name, strlen(name));
+   return module->variables.data[symbol];
 }
 
-int wrenDeclareVariable(WrenVM* vm, ObjModule* module, const char* name, size_t length, int line) {
-  if (module->variables.count == MAX_MODULE_VARS) return -2;
-
-  // Implicitly defined variables get a "value" that is the line where the
-  // variable is first used. We'll use that later to report an error on the
-  // right line.
-  wrenValueBufferWrite(vm, &module->variables, NUM_VAL(line));
-  return wrenSymbolTableAdd(vm, &module->variableNames, name, length);
+int wrenDeclareVariable(WrenVM* vm, ObjModule* module, const char* name, Ulong length, int line) {
+   if (module->variables.count == MAX_MODULE_VARS) return -2;
+ 
+   //Implicitly defined variables get a "value" that is the line where the
+   //variable is first used. We'll use that later to report an error on the right line.
+   wrenValueBufferWrite(vm, &module->variables, NUM_VAL(line));
+   return wrenSymbolTableAdd(vm, &module->variableNames, name, length);
 }
 
-int wrenDefineVariable(WrenVM* vm, ObjModule* module, const char* name,
-                       size_t length, Value value, int* line)
-{
+int wrenDefineVariable(
+      WrenVM* vm, ObjModule* module, const char* name, Ulong length, Value value, int* line
+) {
   if (module->variables.count == MAX_MODULE_VARS) return -2;
 
-  if (IS_OBJ(value)) wrenPushRoot(vm, AS_OBJ(value));
+  if (IS_OBJ(value)) pushRoot(vm, AS_OBJ(value));
 
   // See if the variable is already explicitly or implicitly declared.
   int symbol = wrenSymbolTableFind(&module->variableNames, name, length);
@@ -6834,39 +6909,39 @@ int wrenDefineVariable(WrenVM* vm, ObjModule* module, const char* name,
     if(line) *line = (int)AS_NUM(module->variables.data[symbol]);
     module->variables.data[symbol] = value;
 
-	// If this was a localname we want to error if it was 
-	// referenced before this definition.
-	if (wrenIsLocalName(name)) symbol = -3;
+	// If this was a localname we want to error if it was referenced before this definition.
+	if (isLocalName(name)) symbol = -3;
   } else {
     // Already explicitly declared.
     symbol = -1;
   }
 
-  if (IS_OBJ(value)) wrenPopRoot(vm);
+  if (IS_OBJ(value)) popRoot(vm);
 
   return symbol;
 }
 
-// TODO: Inline?
-void wrenPushRoot(WrenVM* vm, Obj* obj) {
+private void 
+pushRoot(WrenVM* vm, Obj* obj) {
   ASSERT(obj != NULL, "Can't root NULL.");
   ASSERT(vm->numTempRoots < WREN_MAX_TEMP_ROOTS, "Too many temporary roots.");
 
   vm->tempRoots[vm->numTempRoots++] = obj;
 }
 
-void wrenPopRoot(WrenVM* vm) {
+private void 
+popRoot(WrenVM* vm) {
   ASSERT(vm->numTempRoots > 0, "No temporary roots to release.");
   vm->numTempRoots--;
 }
 
-int wrenGetSlotCount(WrenVM* vm) {
-  if (vm->apiStack == NULL) return 0;
-  
-  return (int)(vm->fiber->stackTop - vm->apiStack);
+int 
+wrenGetSlotCount(WrenVM* vm) {
+  return (vm->apiStack == NULL) ? 0 : (int)(vm->fiber->stackTop - vm->apiStack);
 }
 
-void wrenEnsureSlots(WrenVM* vm, int numSlots) {
+void 
+wrenEnsureSlots(WrenVM* vm, int numSlots) {
   // If we don't have a fiber accessible, create one for the API to use.
   if (vm->apiStack == NULL) {
     vm->fiber = wrenNewFiber(vm, NULL);
@@ -6884,13 +6959,15 @@ void wrenEnsureSlots(WrenVM* vm, int numSlots) {
 }
 
 // Ensures that [slot] is a valid index into the API's stack of slots.
-static void validateApiSlot(WrenVM* vm, int slot) {
+private void 
+validateApiSlot(WrenVM* vm, int slot) {
   ASSERT(slot >= 0, "Slot cannot be negative.");
   ASSERT(slot < wrenGetSlotCount(vm), "Not that many slots.");
 }
 
 // Gets the type of the object in [slot].
-WrenType wrenGetSlotType(WrenVM* vm, int slot) {
+WrenType 
+wrenGetSlotType(WrenVM* vm, int slot) {
   validateApiSlot(vm, slot);
   if (IS_BOOL(vm->apiStack[slot])) return WREN_TYPE_BOOL;
   if (IS_NUM(vm->apiStack[slot])) return WREN_TYPE_NUM;
@@ -6903,14 +6980,16 @@ WrenType wrenGetSlotType(WrenVM* vm, int slot) {
   return WREN_TYPE_UNKNOWN;
 }
 
-bool wrenGetSlotBool(WrenVM* vm, int slot) {
+Bool 
+wrenGetSlotBool(WrenVM* vm, int slot) {
   validateApiSlot(vm, slot);
-  ASSERT(IS_BOOL(vm->apiStack[slot]), "Slot must hold a bool.");
+  ASSERT(IS_BOOL(vm->apiStack[slot]), "Slot must hold a Bool.");
 
   return AS_BOOL(vm->apiStack[slot]);
 }
 
-const char* wrenGetSlotBytes(WrenVM* vm, int slot, int* length) {
+CS 
+wrenGetSlotBytes(WrenVM* vm, int slot, int* length) {
   validateApiSlot(vm, slot);
   ASSERT(IS_STRING(vm->apiStack[slot]), "Slot must hold a string.");
   
@@ -6919,52 +6998,61 @@ const char* wrenGetSlotBytes(WrenVM* vm, int slot, int* length) {
   return string->value;
 }
 
-double wrenGetSlotDouble(WrenVM* vm, int slot) {
+double 
+wrenGetSlotDouble(WrenVM* vm, int slot) {
   validateApiSlot(vm, slot);
   ASSERT(IS_NUM(vm->apiStack[slot]), "Slot must hold a number.");
 
   return AS_NUM(vm->apiStack[slot]);
 }
 
-void* wrenGetSlotForeign(WrenVM* vm, int slot) {
-  validateApiSlot(vm, slot);
-  ASSERT(IS_FOREIGN(vm->apiStack[slot]), "Slot must hold a foreign instance.");
+void* 
+wrenGetSlotForeign(WrenVM* vm, int slot) {
+   validateApiSlot(vm, slot);
+   ASSERT(IS_FOREIGN(vm->apiStack[slot]), "Slot must hold a foreign instance.");
 
-  return AS_FOREIGN(vm->apiStack[slot])->data;
+   return AS_FOREIGN(vm->apiStack[slot])->data;
 }
 
-const char* wrenGetSlotString(WrenVM* vm, int slot) {
-  validateApiSlot(vm, slot);
-  ASSERT(IS_STRING(vm->apiStack[slot]), "Slot must hold a string.");
+CS
+wrenGetSlotString(WrenVM* vm, int slot) {
+   validateApiSlot(vm, slot);
+   ASSERT(IS_STRING(vm->apiStack[slot]), "Slot must hold a string.");
 
-  return AS_CSTRING(vm->apiStack[slot]);
+   return AS_CSTRING(vm->apiStack[slot]);
 }
 
-WrenHandle* wrenGetSlotHandle(WrenVM* vm, int slot) {
-  validateApiSlot(vm, slot);
-  return wrenMakeHandle(vm, vm->apiStack[slot]);
+WrenHandle* 
+wrenGetSlotHandle(WrenVM* vm, int slot) {
+   validateApiSlot(vm, slot);
+   return wrenMakeHandle(vm, vm->apiStack[slot]);
 }
 
-// Stores [value] in [slot] in the foreign call stack.
-static void setSlot(WrenVM* vm, int slot, Value value) {
-  validateApiSlot(vm, slot);
-  vm->apiStack[slot] = value;
+//Store [value] in [slot] in the foreign call stack.
+private void 
+setSlot(WrenVM* vm, int slot, Value value) {
+   validateApiSlot(vm, slot);
+   vm->apiStack[slot] = value;
 }
 
-void wrenSetSlotBool(WrenVM* vm, int slot, bool value) {
-  setSlot(vm, slot, BOOL_VAL(value));
+void 
+wrenSetSlotBool(WrenVM* vm, int slot, Bool value) {
+   setSlot(vm, slot, BOOL_VAL(value));
 }
 
-void wrenSetSlotBytes(WrenVM* vm, int slot, const char* bytes, size_t length) {
-  ASSERT(bytes != NULL, "Byte array cannot be NULL.");
-  setSlot(vm, slot, wrenNewStringLength(vm, bytes, length));
+void 
+wrenSetSlotBytes(WrenVM* vm, int slot, const char* bytes, Ulong length) {
+   ASSERT(bytes != NULL, "Byte array cannot be NULL.");
+   setSlot(vm, slot, wrenNewStringLength(vm, bytes, length));
 }
 
-void wrenSetSlotDouble(WrenVM* vm, int slot, double value) {
-  setSlot(vm, slot, NUM_VAL(value));
+void 
+wrenSetSlotDouble(WrenVM* vm, int slot, double value) {
+    setSlot(vm, slot, NUM_VAL(value));
 }
 
-void* wrenSetSlotNewForeign(WrenVM* vm, int slot, int classSlot, size_t size) {
+void* 
+wrenSetSlotNewForeign(WrenVM* vm, int slot, int classSlot, Ulong size) {
   validateApiSlot(vm, slot);
   validateApiSlot(vm, classSlot);
   ASSERT(IS_CLASS(vm->apiStack[classSlot]), "Slot must hold a class.");
@@ -6979,116 +7067,146 @@ void* wrenSetSlotNewForeign(WrenVM* vm, int slot, int classSlot, size_t size) {
 }
 
 void wrenSetSlotNewList(WrenVM* vm, int slot) {
-  setSlot(vm, slot, OBJ_VAL(wrenNewList(vm, 0)));
+   setSlot(vm, slot, OBJ_VAL(wrenNewList(vm, 0)));
 }
 
 void wrenSetSlotNewMap(WrenVM* vm, int slot) {
-  setSlot(vm, slot, OBJ_VAL(wrenNewMap(vm)));
+   setSlot(vm, slot, OBJ_VAL(wrenNewMap(vm)));
 }
 
 void wrenSetSlotNull(WrenVM* vm, int slot) {
-  setSlot(vm, slot, NULL_VAL);
+   setSlot(vm, slot, NULL_VAL);
 }
 
-void wrenSetSlotString(WrenVM* vm, int slot, const char* text) {
-  ASSERT(text != NULL, "String cannot be NULL.");
+void wrenSetSlotString(WrenVM* vm, int slot, CS text) {
+   ASSERT(text != NULL, "String cannot be NULL.");
   
-  setSlot(vm, slot, wrenNewString(vm, text));
+   setSlot(vm, slot, wrenNewString(vm, text));
 }
 
 void wrenSetSlotHandle(WrenVM* vm, int slot, WrenHandle* handle) {
-  ASSERT(handle != NULL, "Handle cannot be NULL.");
+   ASSERT(handle != NULL, "Handle cannot be NULL.");
 
-  setSlot(vm, slot, handle->value);
+   setSlot(vm, slot, handle->value);
 }
 
 int wrenGetListCount(WrenVM* vm, int slot) {
-  validateApiSlot(vm, slot);
-  ASSERT(IS_LIST(vm->apiStack[slot]), "Slot must hold a list.");
-  
-  ValueBuffer elements = AS_LIST(vm->apiStack[slot])->elements;
-  return elements.count;
+   validateApiSlot(vm, slot);
+   ASSERT(IS_LIST(vm->apiStack[slot]), "Slot must hold a list.");
+   
+   ValueBuffer elements = AS_LIST(vm->apiStack[slot])->elements;
+   return elements.count;
 }
 
-void wrenGetListElement(WrenVM* vm, int listSlot, int index, int elementSlot)
-{
-  validateApiSlot(vm, listSlot);
-  validateApiSlot(vm, elementSlot);
-  ASSERT(IS_LIST(vm->apiStack[listSlot]), "Slot must hold a list.");
+void wrenGetListElement(WrenVM* vm, int listSlot, int index, int elementSlot) {
+   validateApiSlot(vm, listSlot);
+   validateApiSlot(vm, elementSlot);
+   ASSERT(IS_LIST(vm->apiStack[listSlot]), "Slot must hold a list.");
+ 
+   ValueBuffer elements = AS_LIST(vm->apiStack[listSlot])->elements;
 
-  ValueBuffer elements = AS_LIST(vm->apiStack[listSlot])->elements;
+   Unt usedIndex = wrenValidateIndex(elements.count, index);
+   ASSERT(usedIndex != UINT32_MAX, "Index out of bounds.");
 
-  uint32_t usedIndex = wrenValidateIndex(elements.count, index);
-  ASSERT(usedIndex != UINT32_MAX, "Index out of bounds.");
-
-  vm->apiStack[elementSlot] = elements.data[usedIndex];
+   vm->apiStack[elementSlot] = elements.data[usedIndex];
 }
 
 void wrenSetListElement(WrenVM* vm, int listSlot, int index, int elementSlot) {
-  validateApiSlot(vm, listSlot);
-  validateApiSlot(vm, elementSlot);
-  ASSERT(IS_LIST(vm->apiStack[listSlot]), "Slot must hold a list.");
-
-  ObjList* list = AS_LIST(vm->apiStack[listSlot]);
-
-  uint32_t usedIndex = wrenValidateIndex(list->elements.count, index);
-  ASSERT(usedIndex != UINT32_MAX, "Index out of bounds.");
-  
-  list->elements.data[usedIndex] = vm->apiStack[elementSlot];
+   validateApiSlot(vm, listSlot);
+   validateApiSlot(vm, elementSlot);
+   ASSERT(IS_LIST(vm->apiStack[listSlot]), "Slot must hold a list.");
+ 
+   ObjList* list = AS_LIST(vm->apiStack[listSlot]);
+ 
+   Unt usedIndex = wrenValidateIndex(list->elements.count, index);
+   ASSERT(usedIndex != UINT32_MAX, "Index out of bounds.");
+   
+   list->elements.data[usedIndex] = vm->apiStack[elementSlot];
 }
 
-void wrenInsertInList(WrenVM* vm, int listSlot, int index, int elementSlot) {
-  validateApiSlot(vm, listSlot);
-  validateApiSlot(vm, elementSlot);
-  ASSERT(IS_LIST(vm->apiStack[listSlot]), "Must insert into a list.");
-  
-  ObjList* list = AS_LIST(vm->apiStack[listSlot]);
-  
-  // Negative indices count from the end. 
-  // We don't use wrenValidateIndex here because insert allows 1 past the end.
-  if (index < 0) index = list->elements.count + 1 + index;
-  
-  ASSERT(index <= list->elements.count, "Index out of bounds.");
-  
-  wrenListInsert(vm, list, vm->apiStack[elementSlot], index);
+//{{{inserts into list
+
+void 
+wrenInsertIntoList(WrenVM* vm, int listSlot, int index, int elementSlot) {
+   validateApiSlot(vm, listSlot);
+   validateApiSlot(vm, elementSlot);
+   ASSERT(IS_LIST(vm->apiStack[listSlot]), "Must insert into a list.");
+   
+   ObjList* list = AS_LIST(vm->apiStack[listSlot]);
+   
+   // Negative indices count from the end. 
+   // We don't use wrenValidateIndex here because insert allows 1 past the end.
+   if (index < 0) index = list->elements.count + 1 + index;
+   
+   ASSERT(index <= list->elements.count, "Index out of bounds.");
+   
+   wrenListInsert(vm, list, vm->apiStack[elementSlot], index);
 }
+
+private void
+validateBeforeTypedInsertingIntoList(WrenVM* vm, int listSlot, int index) {
+   validateApiSlot(vm, listSlot);
+   ASSERT(IS_LIST(vm->apiStack[listSlot]), "Must insert into a list.");
+   
+   ObjList* list = AS_LIST(vm->apiStack[listSlot]);
+   
+   // Negative indices count from the end. 
+   // We don't use wrenValidateIndex here because insert allows 1 past the end.
+   if (index < 0) index = list->elements.count + 1 + index;
+   
+   ASSERT(index <= list->elements.count, "Index out of bounds.");
+}
+
+void wrenInsertBoolIntoList(WrenVM* vm, Bool v, int listSlot, int index) {
+   validateBeforeTypedInsertingIntoList(vm, listSlot, index);
+   wrenListInsert(vm, list, BOOL_VAL(v), index);
+}
+
+void wrenInsertStringIntoList(WrenVM* vm, Bool v, int listSlot, int index) {
+   validateBeforeTypedInsertingIntoList(vm, listSlot, index);
+   wrenListInsert(vm, list, wrenNewString(v), index);
+}
+
+//}}}
+
 
 int wrenGetMapCount(WrenVM* vm, int slot) {
-  validateApiSlot(vm, slot);
-  ASSERT(IS_MAP(vm->apiStack[slot]), "Slot must hold a map.");
+   validateApiSlot(vm, slot);
+   ASSERT(IS_MAP(vm->apiStack[slot]), "Slot must hold a map.");
 
-  ObjMap* map = AS_MAP(vm->apiStack[slot]);
-  return map->count;
+   ObjMap* map = AS_MAP(vm->apiStack[slot]);
+   return map->count;
 }
 
-bool wrenGetMapContainsKey(WrenVM* vm, int mapSlot, int keySlot) {
-  validateApiSlot(vm, mapSlot);
-  validateApiSlot(vm, keySlot);
-  ASSERT(IS_MAP(vm->apiStack[mapSlot]), "Slot must hold a map.");
-
-  Value key = vm->apiStack[keySlot];
-  ASSERT(wrenMapIsValidKey(key), "Key must be a value type");
-  if (!validateKey(vm, key)) return false;
-
-  ObjMap* map = AS_MAP(vm->apiStack[mapSlot]);
-  Value value = wrenMapGet(map, key);
-
-  return !IS_UNDEFINED(value);
+Bool 
+wrenGetMapContainsKey(WrenVM* vm, int mapSlot, int keySlot) {
+   validateApiSlot(vm, mapSlot);
+   validateApiSlot(vm, keySlot);
+   ASSERT(IS_MAP(vm->apiStack[mapSlot]), "Slot must hold a map.");
+ 
+   Value key = vm->apiStack[keySlot];
+   ASSERT(wrenMapIsValidKey(key), "Key must be a value type");
+   if (!validateKey(vm, key)) return false;
+ 
+   ObjMap* map = AS_MAP(vm->apiStack[mapSlot]);
+   Value value = wrenMapGet(map, key);
+ 
+   return !IS_UNDEFINED(value);
 }
 
 void wrenGetMapValue(WrenVM* vm, int mapSlot, int keySlot, int valueSlot) {
-  validateApiSlot(vm, mapSlot);
-  validateApiSlot(vm, keySlot);
-  validateApiSlot(vm, valueSlot);
-  ASSERT(IS_MAP(vm->apiStack[mapSlot]), "Slot must hold a map.");
-
-  ObjMap* map = AS_MAP(vm->apiStack[mapSlot]);
-  Value value = wrenMapGet(map, vm->apiStack[keySlot]);
-  if (IS_UNDEFINED(value)) {
-    value = NULL_VAL;
-  }
-
-  vm->apiStack[valueSlot] = value;
+   validateApiSlot(vm, mapSlot);
+   validateApiSlot(vm, keySlot);
+   validateApiSlot(vm, valueSlot);
+   ASSERT(IS_MAP(vm->apiStack[mapSlot]), "Slot must hold a map.");
+ 
+   ObjMap* map = AS_MAP(vm->apiStack[mapSlot]);
+   Value value = wrenMapGet(map, vm->apiStack[keySlot]);
+   if (IS_UNDEFINED(value)) {
+     value = NULL_VAL;
+   }
+ 
+   vm->apiStack[valueSlot] = value;
 }
 
 void wrenSetMapValue(WrenVM* vm, int mapSlot, int keySlot, int valueSlot) {
@@ -7111,18 +7229,18 @@ void wrenSetMapValue(WrenVM* vm, int mapSlot, int keySlot, int valueSlot) {
 }
 
 void wrenRemoveMapValue(WrenVM* vm, int mapSlot, int keySlot, int removedValueSlot) {
-  validateApiSlot(vm, mapSlot);
-  validateApiSlot(vm, keySlot);
-  ASSERT(IS_MAP(vm->apiStack[mapSlot]), "Slot must hold a map.");
-
-  Value key = vm->apiStack[keySlot];
-  if (!validateKey(vm, key)) {
-    return;
-  }
-
-  ObjMap* map = AS_MAP(vm->apiStack[mapSlot]);
-  Value removed = wrenMapRemoveKey(vm, map, key);
-  setSlot(vm, removedValueSlot, removed);
+   validateApiSlot(vm, mapSlot);
+   validateApiSlot(vm, keySlot);
+   ASSERT(IS_MAP(vm->apiStack[mapSlot]), "Slot must hold a map.");
+ 
+   Value key = vm->apiStack[keySlot];
+   if (!validateKey(vm, key)) {
+     return;
+   }
+ 
+   ObjMap* map = AS_MAP(vm->apiStack[mapSlot]);
+   Value removed = wrenMapRemoveKey(vm, map, key);
+   setSlot(vm, removedValueSlot, removed);
 }
 
 void wrenGetVariable(WrenVM* vm, const char* module, const char* name, int slot) {
@@ -7130,12 +7248,12 @@ void wrenGetVariable(WrenVM* vm, const char* module, const char* name, int slot)
   ASSERT(name != NULL, "Variable name cannot be NULL.");  
 
   Value moduleName = wrenStringFormat(vm, "$", module);
-  wrenPushRoot(vm, AS_OBJ(moduleName));
+  pushRoot(vm, AS_OBJ(moduleName));
   
   ObjModule* moduleObj = getModule(vm, moduleName);
   ASSERT(moduleObj != NULL, "Could not find module.");
   
-  wrenPopRoot(vm); // moduleName.
+  popRoot(vm); // moduleName.
 
   int variableSlot = wrenSymbolTableFind(&moduleObj->variableNames,
                                          name, strlen(name));
@@ -7144,18 +7262,18 @@ void wrenGetVariable(WrenVM* vm, const char* module, const char* name, int slot)
   setSlot(vm, slot, moduleObj->variables.data[variableSlot]);
 }
 
-bool wrenHasVariable(WrenVM* vm, const char* module, const char* name) {
+Bool wrenHasVariable(WrenVM* vm, const char* module, const char* name) {
   ASSERT(module != NULL, "Module cannot be NULL.");
   ASSERT(name != NULL, "Variable name cannot be NULL.");
 
   Value moduleName = wrenStringFormat(vm, "$", module);
-  wrenPushRoot(vm, AS_OBJ(moduleName));
+  pushRoot(vm, AS_OBJ(moduleName));
 
   //We don't use wrenHasModule since we want to use the module object.
   ObjModule* moduleObj = getModule(vm, moduleName);
   ASSERT(moduleObj != NULL, "Could not find module.");
 
-  wrenPopRoot(vm); // moduleName.
+  popRoot(vm); // moduleName.
 
   int variableSlot = wrenSymbolTableFind(&moduleObj->variableNames,
     name, strlen(name));
@@ -7163,15 +7281,15 @@ bool wrenHasVariable(WrenVM* vm, const char* module, const char* name) {
   return variableSlot != -1;
 }
 
-bool wrenHasModule(WrenVM* vm, const char* module) {
+Bool wrenHasModule(WrenVM* vm, const char* module) {
   ASSERT(module != NULL, "Module cannot be NULL.");
   
   Value moduleName = wrenStringFormat(vm, "$", module);
-  wrenPushRoot(vm, AS_OBJ(moduleName));
+  pushRoot(vm, AS_OBJ(moduleName));
 
   ObjModule* moduleObj = getModule(vm, moduleName);
   
-  wrenPopRoot(vm); // moduleName.
+  popRoot(vm); // moduleName.
 
   return moduleObj != NULL;
 }
@@ -7211,39 +7329,40 @@ wrenGetClassInline(WrenVM* vm, Value value) {
 //}}}
 //{{{debugger
 
-void wrenDebugPrintStackTrace(WrenVM* vm) {
-  // Bail if the host doesn't enable printing errors.
-  if (vm->config.errorFn == NULL) return;
+private void
+wrenDebugPrintStackTrace(WrenVM* vm) {
+   // Bail if the host doesn't enable printing errors.
+   if (vm->config.errorFn == NULL) return;
   
    ObjFiber* fiber = vm->fiber;
    if (IS_STRING(fiber->error)) {
-     vm->config.errorFn(vm, WREN_ERROR_RUNTIME, NULL, -1, AS_CSTRING(fiber->error));
+      vm->config.errorFn(vm, WREN_ERROR_RUNTIME, NULL, -1, AS_CSTRING(fiber->error));
    } else {
-     // TODO: Print something a little useful here. Maybe the name of the error's class?
-     vm->config.errorFn(vm, WREN_ERROR_RUNTIME, NULL, -1, "[error object]");
+      // TODO: Print something a little useful here. Maybe the name of the error's class?
+      vm->config.errorFn(vm, WREN_ERROR_RUNTIME, NULL, -1, "[error object]");
    }
 
    for (int i = fiber->numFrames - 1; i >= 0; i--) {
-    CallFrame* frame = &fiber->frames[i];
-    ObjFn* fn = frame->closure->fn;
+      CallFrame* frame = &fiber->frames[i];
+      ObjFn* fn = frame->closure->fn;
 
-    // Skip over stub functions for calling methods from the C API.
-    if (fn->module == NULL) continue;
-    
-    // The built-in core module has no name. We explicitly omit it from stack
-    // traces since we don't want to highlight to a user the implementation
-    // detail of what part of the core module is written in C and what is Wren.
-    if (fn->module->name == NULL) continue;
-    
-    // -1 because IP has advanced past the instruction that it just executed.
-    int line = fn->debug->sourceLines.data[frame->ip - fn->code.data - 1];
-    vm->config.errorFn(vm, WREN_ERROR_STACK_TRACE,
-                       fn->module->name->value, line,
-                       fn->debug->name);
-  }
+      // Skip over stub functions for calling methods from the C API.
+      if (fn->module == NULL) continue;
+      
+      // The built-in core module has no name. We explicitly omit it from stack
+      // traces since we don't want to highlight to a user the implementation
+      // detail of what part of the core module is written in C and what is Wren.
+      if (fn->module->name == NULL) continue;
+      
+      // -1 because IP has advanced past the instruction that it just executed.
+      int line = fn->debug->sourceLines.data[frame->ip - fn->code.data - 1];
+      vm->config.errorFn(
+            vm, WREN_ERROR_STACK_TRACE, fn->module->name->value, line, fn->debug->name
+      );
+   }
 }
 
-static void dumpObject(Obj* obj) {
+private void dumpObject(Obj* obj) {
   switch (obj->type) {
     case OBJ_CLASS:
       printf("[class %s %p]", ((ObjClass*)obj)->name->value, obj);
@@ -7263,7 +7382,13 @@ static void dumpObject(Obj* obj) {
   }
 }
 
-void wrenDumpValue(Value value) {
+
+// The "dump" functions are used for debugging Wren itself. Normal code paths
+// will not call them unless one of the various DEBUG_ flags is enabled.
+
+//Print a representation of [value] to stdout.
+private void
+wrenDumpValue(Value value) {
   if (IS_NUM(value)) {
     printf("%.14g", AS_NUM(value));
   } else if (IS_OBJ(value)) {
@@ -7279,9 +7404,9 @@ void wrenDumpValue(Value value) {
   }
 }
 
-static int dumpInstruction(WrenVM* vm, ObjFn* fn, int i, int* lastLine) {
+private int dumpInstruction(WrenVM* vm, ObjFn* fn, int i, int* lastLine) {
   int start = i;
-  uint8_t* bytecode = fn->code.data;
+  Byte* bytecode = fn->code.data;
   Code code = (Code)bytecode[i];
 
   int line = fn->debug->sourceLines.data[i];
@@ -7547,13 +7672,12 @@ wrenDumpStack(ObjFiber* fiber) {
 //{{{core
 
 #include <ctype.h>
-#include <errno.h>
 #include <float.h>
-#include <math.h>
-#include <string.h>
-#include <time.h>
 
-#include "wren_core.wren.inc"
+private Byte const coreModuleSource[] = {
+   #embed "wren_core.wren"
+   , ZERO
+};
 
 DEF_PRIMITIVE(bool_not) {
    RETURN_BOOL(!AS_BOOL(args[0]));
@@ -7613,8 +7737,8 @@ DEF_PRIMITIVE(fiber_abort) {
 //
 // [hasValue] is true if a value in [args] is being passed to the new fiber.
 // Otherwise, `null` is implicitly being passed.
-static bool runFiber(WrenVM* vm, ObjFiber* fiber, Value* args, bool isCall,
-                     bool hasValue, const char* verb)
+private Bool runFiber(WrenVM* vm, ObjFiber* fiber, Value* args, Bool isCall,
+                     Bool hasValue, const char* verb)
 {
 
   if (wrenHasError(fiber)) {
@@ -7765,7 +7889,7 @@ DEF_PRIMITIVE(fn_arity) {
   RETURN_NUM(AS_CLOSURE(args[0])->fn->arity);
 }
 
-static void call_fn(WrenVM* vm, Value* args, int numArgs)
+private void call_fn(WrenVM* vm, Value* args, int numArgs)
 {
   // +1 to include the function itself.
   wrenCallFunction(vm, vm->fiber, AS_CLOSURE(args[0]), numArgs + 1);
@@ -7805,10 +7929,10 @@ DEF_PRIMITIVE(list_filled) {
   if (!validateInt(vm, args[1], "Size")) return false;  
   if (AS_NUM(args[1]) < 0) RETURN_ERROR("Size cannot be negative.");
   
-  uint32_t size = (uint32_t)AS_NUM(args[1]);
+  Unt size = (Unt)AS_NUM(args[1]);
   ObjList* list = wrenNewList(vm, size);
   
-  for (uint32_t i = 0; i < size; i++) {
+  for (Unt i = 0; i < size; i++) {
     list->elements.data[i] = args[2];
   }
   
@@ -7847,7 +7971,7 @@ DEF_PRIMITIVE(list_insert) {
   ObjList* list = AS_LIST(args[0]);
 
   // count + 1 here so you can "insert" at the very end.
-  uint32_t index = validateIndex(vm, args[1], list->elements.count + 1,
+  Unt index = validateIndex(vm, args[1], list->elements.count + 1,
                                  "Index");
   if (index == UINT32_MAX) return false;
 
@@ -7876,7 +8000,7 @@ DEF_PRIMITIVE(list_iterate) {
 
 DEF_PRIMITIVE(list_iteratorValue) {
   ObjList* list = AS_LIST(args[0]);
-  uint32_t index = validateIndex(vm, args[1], list->elements.count, "Iterator");
+  Unt index = validateIndex(vm, args[1], list->elements.count, "Iterator");
   if (index == UINT32_MAX) return false;
 
   RETURN_VAL(list->elements.data[index]);
@@ -7884,7 +8008,7 @@ DEF_PRIMITIVE(list_iteratorValue) {
 
 DEF_PRIMITIVE(list_removeAt) {
   ObjList* list = AS_LIST(args[0]);
-  uint32_t index = validateIndex(vm, args[1], list->elements.count, "Index");
+  Unt index = validateIndex(vm, args[1], list->elements.count, "Index");
   if (index == UINT32_MAX) return false;
 
   RETURN_VAL(wrenListRemoveAt(vm, list, index));
@@ -7904,9 +8028,9 @@ DEF_PRIMITIVE(list_indexOf) {
 
 DEF_PRIMITIVE(list_swap) {
   ObjList* list = AS_LIST(args[0]);
-  uint32_t indexA = validateIndex(vm, args[1], list->elements.count, "Index 0");
+  Unt indexA = validateIndex(vm, args[1], list->elements.count, "Index 0");
   if (indexA == UINT32_MAX) return false;
-  uint32_t indexB = validateIndex(vm, args[2], list->elements.count, "Index 1");
+  Unt indexB = validateIndex(vm, args[2], list->elements.count, "Index 1");
   if (indexB == UINT32_MAX) return false;
 
   Value a = list->elements.data[indexA];
@@ -7920,7 +8044,7 @@ DEF_PRIMITIVE(list_subscript) {
   ObjList* list = AS_LIST(args[0]);
 
   if (IS_NUM(args[1])) {
-    uint32_t index = validateIndex(vm, args[1], list->elements.count, "Subscript");
+    Unt index = validateIndex(vm, args[1], list->elements.count, "Subscript");
     if (index == UINT32_MAX) return false;
 
     RETURN_VAL(list->elements.data[index]);
@@ -7931,12 +8055,12 @@ DEF_PRIMITIVE(list_subscript) {
   }
 
   int step;
-  uint32_t count = list->elements.count;
-  uint32_t start = calculateRange(vm, AS_RANGE(args[1]), &count, &step);
+  Unt count = list->elements.count;
+  Unt start = calculateRange(vm, AS_RANGE(args[1]), &count, &step);
   if (start == UINT32_MAX) return false;
 
   ObjList* result = wrenNewList(vm, count);
-  for (uint32_t i = 0; i < count; i++) {
+  for (Unt i = 0; i < count; i++) {
     result->elements.data[i] = list->elements.data[start + i * step];
   }
 
@@ -7945,7 +8069,7 @@ DEF_PRIMITIVE(list_subscript) {
 
 DEF_PRIMITIVE(list_subscriptSetter) {
   ObjList* list = AS_LIST(args[0]);
-  uint32_t index = validateIndex(vm, args[1], list->elements.count, "Subscript");
+  Unt index = validateIndex(vm, args[1], list->elements.count, "Subscript");
   if (index == UINT32_MAX) return false;
 
   list->elements.data[index] = args[2];
@@ -8006,14 +8130,14 @@ DEF_PRIMITIVE(map_iterate) {
   if (map->count == 0) RETURN_FALSE;
 
   // If we're starting the iteration, start at the first used entry.
-  uint32_t index = 0;
+  Unt index = 0;
 
   // Otherwise, start one past the last entry we stopped at.
   if (!IS_NULL(args[1])) {
     if (!validateInt(vm, args[1], "Iterator")) return false;
 
     if (AS_NUM(args[1]) < 0) RETURN_FALSE;
-    index = (uint32_t)AS_NUM(args[1]);
+    index = (Unt)AS_NUM(args[1]);
 
     if (index >= map->capacity) RETURN_FALSE;
 
@@ -8038,7 +8162,7 @@ DEF_PRIMITIVE(map_remove) {
 
 DEF_PRIMITIVE(map_keyIteratorValue) {
   ObjMap* map = AS_MAP(args[0]);
-  uint32_t index = validateIndex(vm, args[1], map->capacity, "Iterator");
+  Unt index = validateIndex(vm, args[1], map->capacity, "Iterator");
   if (index == UINT32_MAX) return false;
 
   MapEntry* entry = &map->entries[index];
@@ -8051,7 +8175,7 @@ DEF_PRIMITIVE(map_keyIteratorValue) {
 
 DEF_PRIMITIVE(map_valueIteratorValue) {
   ObjMap* map = AS_MAP(args[0]);
-  uint32_t index = validateIndex(vm, args[1], map->capacity, "Iterator");
+  Unt index = validateIndex(vm, args[1], map->capacity, "Iterator");
   if (index == UINT32_MAX) return false;
 
   MapEntry* entry = &map->entries[index];
@@ -8134,8 +8258,8 @@ DEF_NUM_INFIX(gte,      >=, BOOL)
     DEF_PRIMITIVE(num_bitwise##name)                                           \
     {                                                                          \
       if (!validateNum(vm, args[1], "Right operand")) return false;            \
-      uint32_t left = (uint32_t)AS_NUM(args[0]);                               \
-      uint32_t right = (uint32_t)AS_NUM(args[1]);                              \
+      Unt left = (Unt)AS_NUM(args[0]);                               \
+      Unt right = (Unt)AS_NUM(args[1]);                              \
       RETURN_NUM(left op right);                                               \
     }
 
@@ -8186,7 +8310,7 @@ DEF_PRIMITIVE(num_bangeq) {
 
 DEF_PRIMITIVE(num_bitwiseNot) {
   // Bitwise operators always work on 32-bit unsigned ints.
-  RETURN_NUM(~(uint32_t)AS_NUM(args[0]));
+  RETURN_NUM(~(Unt)AS_NUM(args[0]));
 }
 
 DEF_PRIMITIVE(num_dotDot) {
@@ -8239,28 +8363,28 @@ DEF_PRIMITIVE(num_clamp) {
 }
 
 DEF_PRIMITIVE(num_pow) {
-  if (!validateNum(vm, args[1], "Power value")) return false;
+   if (!validateNum(vm, args[1], "Power value")) return false;
 
-  RETURN_NUM(pow(AS_NUM(args[0]), AS_NUM(args[1])));
+   RETURN_NUM(pow(AS_NUM(args[0]), AS_NUM(args[1])));
 }
 
 DEF_PRIMITIVE(num_fraction) {
-  double unused;
-  RETURN_NUM(modf(AS_NUM(args[0]) , &unused));
+   double unused;
+   RETURN_NUM(modf(AS_NUM(args[0]) , &unused));
 }
 
 DEF_PRIMITIVE(num_isInfinity) {
-  RETURN_BOOL(isinf(AS_NUM(args[0])));
+   RETURN_BOOL(isinf(AS_NUM(args[0])));
 }
 
 DEF_PRIMITIVE(num_isInteger) {
-  double value = AS_NUM(args[0]);
-  if (isnan(value) || isinf(value)) RETURN_FALSE;
-  RETURN_BOOL(trunc(value) == value);
+   double value = AS_NUM(args[0]);
+   if (isnan(value) || isinf(value)) RETURN_FALSE;
+   RETURN_BOOL(trunc(value) == value);
 }
 
 DEF_PRIMITIVE(num_isNan) {
-  RETURN_BOOL(isnan(AS_NUM(args[0])));
+   RETURN_BOOL(isnan(AS_NUM(args[0])));
 }
 
 DEF_PRIMITIVE(num_sign) {
@@ -8347,7 +8471,7 @@ DEF_PRIMITIVE(range_max) {
 }
 
 DEF_PRIMITIVE(range_isInclusive) {
-  RETURN_BOOL(AS_RANGE(args[0])->isInclusive);
+   RETURN_BOOL(AS_RANGE(args[0])->isInclusive);
 }
 
 DEF_PRIMITIVE(range_iterate) {
@@ -8386,16 +8510,16 @@ DEF_PRIMITIVE(range_toString) {
   ObjRange* range = AS_RANGE(args[0]);
 
   Value from = wrenNumToString(vm, range->from);
-  wrenPushRoot(vm, AS_OBJ(from));
+  pushRoot(vm, AS_OBJ(from));
 
   Value to = wrenNumToString(vm, range->to);
-  wrenPushRoot(vm, AS_OBJ(to));
+  pushRoot(vm, AS_OBJ(to));
 
   Value result = wrenStringFormat(vm, "@$@", from,
                                   range->isInclusive ? ".." : "...", to);
 
-  wrenPopRoot(vm);
-  wrenPopRoot(vm);
+  popRoot(vm);
+  popRoot(vm);
   RETURN_VAL(result);
 }
 
@@ -8420,16 +8544,16 @@ DEF_PRIMITIVE(string_fromByte) {
   } else if (byte > 0xff) {
     RETURN_ERROR("Byte cannot be greater than 0xff.");
   }
-  RETURN_VAL(wrenStringFromByte(vm, (uint8_t) byte));
+  RETURN_VAL(wrenStringFromByte(vm, (Byte) byte));
 }
 
 DEF_PRIMITIVE(string_byteAt) {
   ObjString* string = AS_STRING(args[0]);
 
-  uint32_t index = validateIndex(vm, args[1], string->length, "Index");
+  Unt index = validateIndex(vm, args[1], string->length, "Index");
   if (index == UINT32_MAX) return false;
 
-  RETURN_NUM((uint8_t)string->value[index]);
+  RETURN_NUM((Byte)string->value[index]);
 }
 
 DEF_PRIMITIVE(string_byteCount) {
@@ -8439,24 +8563,24 @@ DEF_PRIMITIVE(string_byteCount) {
 DEF_PRIMITIVE(string_codePointAt) {
   ObjString* string = AS_STRING(args[0]);
 
-  uint32_t index = validateIndex(vm, args[1], string->length, "Index");
+  Unt index = validateIndex(vm, args[1], string->length, "Index");
   if (index == UINT32_MAX) return false;
 
   // If we are in the middle of a UTF-8 sequence, indicate that.
-  const uint8_t* bytes = (uint8_t*)string->value;
+  const Byte* bytes = (Byte*)string->value;
   if ((bytes[index] & 0xc0) == 0x80) RETURN_NUM(-1);
 
   // Decode the UTF-8 sequence.
-  RETURN_NUM(wrenUtf8Decode((uint8_t*)string->value + index, string->length - index));
+  RETURN_NUM(wrenUtf8Decode((Byte*)string->value + index, string->length - index));
 }
 
 DEF_PRIMITIVE(string_contains) {
-  if (!validateString(vm, args[1], "Argument")) return false;
-
-  ObjString* string = AS_STRING(args[0]);
-  ObjString* search = AS_STRING(args[1]);
-
-  RETURN_BOOL(wrenStringFind(string, search, 0) != UINT32_MAX);
+   if (!validateString(vm, args[1], "Argument")) return false;
+ 
+   ObjString* string = AS_STRING(args[0]);
+   ObjString* search = AS_STRING(args[1]);
+ 
+   RETURN_BOOL(wrenStringFind(string, search, 0) != UINT32_MAX);
 }
 
 DEF_PRIMITIVE(string_endsWith) {
@@ -8473,25 +8597,25 @@ DEF_PRIMITIVE(string_endsWith) {
 }
 
 DEF_PRIMITIVE(string_indexOf1) {
-  if (!validateString(vm, args[1], "Argument")) return false;
-
-  ObjString* string = AS_STRING(args[0]);
-  ObjString* search = AS_STRING(args[1]);
-
-  uint32_t index = wrenStringFind(string, search, 0);
-  RETURN_NUM(index == UINT32_MAX ? -1 : (int)index);
+   if (!validateString(vm, args[1], "Argument")) return false;
+ 
+   ObjString* string = AS_STRING(args[0]);
+   ObjString* search = AS_STRING(args[1]);
+ 
+   Unt index = wrenStringFind(string, search, 0);
+   RETURN_NUM(index == UINT32_MAX ? -1 : (int)index);
 }
 
 DEF_PRIMITIVE(string_indexOf2) {
-  if (!validateString(vm, args[1], "Argument")) return false;
-
-  ObjString* string = AS_STRING(args[0]);
-  ObjString* search = AS_STRING(args[1]);
-  uint32_t start = validateIndex(vm, args[2], string->length, "Start");
-  if (start == UINT32_MAX) return false;
-  
-  uint32_t index = wrenStringFind(string, search, start);
-  RETURN_NUM(index == UINT32_MAX ? -1 : (int)index);
+   if (!validateString(vm, args[1], "Argument")) return false;
+ 
+   ObjString* string = AS_STRING(args[0]);
+   ObjString* search = AS_STRING(args[1]);
+   Unt start = validateIndex(vm, args[2], string->length, "Start");
+   if (start == UINT32_MAX) return false;
+   
+   Unt index = wrenStringFind(string, search, start);
+   RETURN_NUM(index == UINT32_MAX ? -1 : (int)index);
 }
 
 DEF_PRIMITIVE(string_iterate) {
@@ -8506,7 +8630,7 @@ DEF_PRIMITIVE(string_iterate) {
   if (!validateInt(vm, args[1], "Iterator")) return false;
 
   if (AS_NUM(args[1]) < 0) RETURN_FALSE;
-  uint32_t index = (uint32_t)AS_NUM(args[1]);
+  Unt index = (Unt)AS_NUM(args[1]);
 
   // Advance to the beginning of the next UTF-8 sequence.
   do {
@@ -8529,7 +8653,7 @@ DEF_PRIMITIVE(string_iterateByte) {
   if (!validateInt(vm, args[1], "Iterator")) return false;
 
   if (AS_NUM(args[1]) < 0) RETURN_FALSE;
-  uint32_t index = (uint32_t)AS_NUM(args[1]);
+  Unt index = (Unt)AS_NUM(args[1]);
 
   // Advance to the next byte.
   index++;
@@ -8539,11 +8663,11 @@ DEF_PRIMITIVE(string_iterateByte) {
 }
 
 DEF_PRIMITIVE(string_iteratorValue) {
-  ObjString* string = AS_STRING(args[0]);
-  uint32_t index = validateIndex(vm, args[1], string->length, "Iterator");
-  if (index == UINT32_MAX) return false;
-
-  RETURN_VAL(wrenStringCodePointAt(vm, string, index));
+   ObjString* string = AS_STRING(args[0]);
+   Unt index = validateIndex(vm, args[1], string->length, "Iterator");
+   if (index == UINT32_MAX) return false;
+ 
+   RETURN_VAL(wrenStringCodePointAt(vm, string, index));
 }
 
 DEF_PRIMITIVE(string_startsWith) {
@@ -8578,7 +8702,7 @@ DEF_PRIMITIVE(string_subscript) {
   }
 
   int step;
-  uint32_t count = string->length;
+  Unt count = string->length;
   int start = calculateRange(vm, AS_RANGE(args[1]), &count, &step);
   if (start == -1) return false;
 
@@ -8607,25 +8731,25 @@ DEF_PRIMITIVE(system_writeString) {
 }
 
 // Creates either the Object or Class class in the core module with [name].
-static ObjClass* defineClass(WrenVM* vm, ObjModule* module, const char* name) {
+private ObjClass* defineClass(WrenVM* vm, ObjModule* module, const char* name) {
   ObjString* nameString = AS_STRING(wrenNewString(vm, name));
-  wrenPushRoot(vm, (Obj*)nameString);
+  pushRoot(vm, (Obj*)nameString);
 
   ObjClass* classObj = wrenNewSingleClass(vm, 0, nameString);
 
   wrenDefineVariable(vm, module, name, nameString->length, OBJ_VAL(classObj), NULL);
 
-  wrenPopRoot(vm);
+  popRoot(vm);
   return classObj;
 }
 
 void wrenInitializeCore(WrenVM* vm) {
   ObjModule* coreModule = wrenNewModule(vm, NULL);
-  wrenPushRoot(vm, (Obj*)coreModule);
+  pushRoot(vm, (Obj*)coreModule);
   
   // The core module's key is null in the module map.
   wrenMapSet(vm, vm->modules, NULL_VAL, OBJ_VAL(coreModule));
-  wrenPopRoot(vm); // coreModule.
+  popRoot(vm); // coreModule.
 
   // Define the root Object class. This has to be done a little specially
   // because it has no superclass.
@@ -8875,57 +8999,57 @@ void wrenInitializeCore(WrenVM* vm) {
 // Validates that [value] is an integer within `[0, count)`. Also allows
 // negative indices which map backwards from the end. Returns the valid positive
 // index value. If invalid, reports an error and returns `UINT32_MAX`.
-static uint32_t validateIndexValue(WrenVM* vm, uint32_t count, double value, const char* argName) {
+private Unt validateIndexValue(WrenVM* vm, Unt count, double value, const char* argName) {
   if (!validateIntValue(vm, value, argName)) return UINT32_MAX;
   
   // Negative indices count from the end.
   if (value < 0) value = count + value;
   
   // Check bounds.
-  if (value >= 0 && value < count) return (uint32_t)value;
+  if (value >= 0 && value < count) return (Unt)value;
   
   vm->fiber->error = wrenStringFormat(vm, "$ out of bounds.", argName);
   return UINT32_MAX;
 }
 
-bool validateFn(WrenVM* vm, Value arg, const char* argName) {
+Bool validateFn(WrenVM* vm, Value arg, const char* argName) {
   if (IS_CLOSURE(arg)) return true;
   RETURN_ERROR_FMT("$ must be a function.", argName);
 }
 
-bool validateNum(WrenVM* vm, Value arg, const char* argName) {
+Bool validateNum(WrenVM* vm, Value arg, const char* argName) {
   if (IS_NUM(arg)) return true;
   RETURN_ERROR_FMT("$ must be a number.", argName);
 }
 
-bool validateIntValue(WrenVM* vm, double value, const char* argName) {
+Bool validateIntValue(WrenVM* vm, double value, const char* argName) {
   if (trunc(value) == value) return true;
   RETURN_ERROR_FMT("$ must be an integer.", argName);
 }
 
-bool validateInt(WrenVM* vm, Value arg, const char* argName) {
+Bool validateInt(WrenVM* vm, Value arg, const char* argName) {
   // Make sure it's a number first.
   if (!validateNum(vm, arg, argName)) return false;
   return validateIntValue(vm, AS_NUM(arg), argName);
 }
 
-bool validateKey(WrenVM* vm, Value arg) {
+Bool validateKey(WrenVM* vm, Value arg) {
   if (wrenMapIsValidKey(arg)) return true;
 
   RETURN_ERROR("Key must be a value type.");
 }
 
-uint32_t validateIndex(WrenVM* vm, Value arg, uint32_t count, const char* argName) {
+Unt validateIndex(WrenVM* vm, Value arg, Unt count, const char* argName) {
   if (!validateNum(vm, arg, argName)) return UINT32_MAX;
   return validateIndexValue(vm, count, AS_NUM(arg), argName);
 }
 
-bool validateString(WrenVM* vm, Value arg, const char* argName) {
+Bool validateString(WrenVM* vm, Value arg, const char* argName) {
   if (IS_STRING(arg)) return true;
   RETURN_ERROR_FMT("$ must be a string.", argName);
 }
 
-uint32_t calculateRange(WrenVM* vm, ObjRange* range, uint32_t* length, int* step) {
+Unt calculateRange(WrenVM* vm, ObjRange* range, Unt* length, int* step) {
   *step = 0;
 
   // Edge case: an empty range is allowed at the end of a sequence. This way,
@@ -8936,7 +9060,7 @@ uint32_t calculateRange(WrenVM* vm, ObjRange* range, uint32_t* length, int* step
     return 0;
   }
 
-  uint32_t from = validateIndexValue(vm, *length, range->from, "Range start");
+  Unt from = validateIndexValue(vm, *length, range->from, "Range start");
   if (from == UINT32_MAX) return UINT32_MAX;
 
   // Bounds check the end manually to handle exclusive ranges.
@@ -8965,7 +9089,7 @@ uint32_t calculateRange(WrenVM* vm, ObjRange* range, uint32_t* length, int* step
     return UINT32_MAX;
   }
 
-  uint32_t to = (uint32_t)value;
+  Unt to = (Unt)value;
   *length = abs((int)(from - to)) + 1;
   *step = from < to ? 1 : -1;
   return from;
@@ -8995,7 +9119,7 @@ uint32_t calculateRange(WrenVM* vm, ObjRange* range, uint32_t* length, int* step
 DEFINE_BUFFER(Value, Value);
 DEFINE_BUFFER(Method, Method);
 
-static void initObj(WrenVM* vm, Obj* obj, ObjType type, ObjClass* classObj) {
+private void initObj(WrenVM* vm, Obj* obj, ObjType type, ObjClass* classObj) {
   obj->type = type;
   obj->isDark = false;
   obj->classObj = classObj;
@@ -9012,9 +9136,9 @@ ObjClass* wrenNewSingleClass(WrenVM* vm, int numFields, ObjString* name)
   classObj->name = name;
   classObj->attributes = NULL_VAL;
 
-  wrenPushRoot(vm, (Obj*)classObj);
+  pushRoot(vm, (Obj*)classObj);
   wrenMethodBufferInit(&classObj->methods);
-  wrenPopRoot(vm);
+  popRoot(vm);
 
   return classObj;
 }
@@ -9043,15 +9167,15 @@ void wrenBindSuperclass(WrenVM* vm, ObjClass* subclass, ObjClass* superclass)
 ObjClass* wrenNewClass(WrenVM* vm, ObjClass* superclass, int numFields, ObjString* name) {
   // Create the metaclass.
   Value metaclassName = wrenStringFormat(vm, "@ metaclass", OBJ_VAL(name));
-  wrenPushRoot(vm, AS_OBJ(metaclassName));
+  pushRoot(vm, AS_OBJ(metaclassName));
 
   ObjClass* metaclass = wrenNewSingleClass(vm, 0, AS_STRING(metaclassName));
   metaclass->obj.classObj = vm->classClass;
 
-  wrenPopRoot(vm);
+  popRoot(vm);
 
   // Make sure the metaclass isn't collected when we allocate the class.
-  wrenPushRoot(vm, (Obj*)metaclass);
+  pushRoot(vm, (Obj*)metaclass);
 
   // Metaclasses always inherit Class and do not parallel the non-metaclass
   // hierarchy.
@@ -9061,13 +9185,13 @@ ObjClass* wrenNewClass(WrenVM* vm, ObjClass* superclass, int numFields, ObjStrin
 
   // Make sure the class isn't collected while the inherited methods are being
   // bound.
-  wrenPushRoot(vm, (Obj*)classObj);
+  pushRoot(vm, (Obj*)classObj);
 
   classObj->obj.classObj = metaclass;
   wrenBindSuperclass(vm, classObj, superclass);
 
-  wrenPopRoot(vm);
-  wrenPopRoot(vm);
+  popRoot(vm);
+  popRoot(vm);
 
   return classObj;
 }
@@ -9102,9 +9226,7 @@ ObjFiber* wrenNewFiber(WrenVM* vm, ObjClosure* closure) {
   
   // Add one slot for the unused implicit receiver slot that the compiler
   // assumes all functions have.
-  int stackCapacity = closure == NULL
-      ? 1
-      : wrenPowerOf2Ceil(closure->fn->maxSlots + 1);
+  int stackCapacity = closure ? wrenPowerOf2Ceil(closure->fn->maxSlots + 1) : 1 ;
   Value* stack = ALLOCATE_ARRAY(vm, Value, stackCapacity);
   
   ObjFiber* fiber = ALLOCATE(vm, ObjFiber);
@@ -9135,8 +9257,7 @@ ObjFiber* wrenNewFiber(WrenVM* vm, ObjClosure* closure) {
   return fiber;
 }
 
-void wrenEnsureStack(WrenVM* vm, ObjFiber* fiber, int needed)
-{
+void wrenEnsureStack(WrenVM* vm, ObjFiber* fiber, int needed) {
   if (fiber->stackCapacity >= needed) return;
   
   int capacity = wrenPowerOf2Ceil(needed);
@@ -9152,26 +9273,20 @@ void wrenEnsureStack(WrenVM* vm, ObjFiber* fiber, int needed)
   // in the new stack. We have to be a little careful about how these are
   // calculated because pointer subtraction is only well-defined within a
   // single array, hence the slightly redundant-looking arithmetic below.
-  if (fiber->stack != oldStack)
-  {
+  if (fiber->stack != oldStack) {
     // Top of the stack.
-    if (vm->apiStack >= oldStack && vm->apiStack <= fiber->stackTop)
-    {
+    if (vm->apiStack >= oldStack && vm->apiStack <= fiber->stackTop) {
       vm->apiStack = fiber->stack + (vm->apiStack - oldStack);
     }
     
     // Stack pointer for each call frame.
-    for (int i = 0; i < fiber->numFrames; i++)
-    {
+    for (int i = 0; i < fiber->numFrames; i++) {
       CallFrame* frame = &fiber->frames[i];
       frame->stackStart = fiber->stack + (frame->stackStart - oldStack);
     }
     
     // Open upvalues.
-    for (ObjUpvalue* upvalue = fiber->openUpvalues;
-         upvalue != NULL;
-         upvalue = upvalue->next)
-    {
+    for (ObjUpvalue* upvalue = fiber->openUpvalues; upvalue; upvalue = upvalue->next) {
       upvalue->value = fiber->stack + (upvalue->value - oldStack);
     }
     
@@ -9179,88 +9294,79 @@ void wrenEnsureStack(WrenVM* vm, ObjFiber* fiber, int needed)
   }
 }
 
-ObjForeign* wrenNewForeign(WrenVM* vm, ObjClass* classObj, size_t size)
-{
-  ObjForeign* object = ALLOCATE_FLEX(vm, ObjForeign, uint8_t, size);
-  initObj(vm, &object->obj, OBJ_FOREIGN, classObj);
+ObjForeign* wrenNewForeign(WrenVM* vm, ObjClass* classObj, Ulong size) {
+   ObjForeign* object = ALLOCATE_FLEX(vm, ObjForeign, Byte, size);
+   initObj(vm, &object->obj, OBJ_FOREIGN, classObj);
 
-  // Zero out the bytes.
-  memset(object->data, 0, size);
-  return object;
+   // Zero out the bytes.
+   memset(object->data, 0, size);
+   return object;
 }
 
-ObjFn* wrenNewFunction(WrenVM* vm, ObjModule* module, int maxSlots)
-{
-  FnDebug* debug = ALLOCATE(vm, FnDebug);
-  debug->name = NULL;
-  wrenIntBufferInit(&debug->sourceLines);
+ObjFn* wrenNewFunction(WrenVM* vm, ObjModule* module, int maxSlots) {
+   FnDebug* debug = ALLOCATE(vm, FnDebug);
+   debug->name = NULL;
+   wrenIntBufferInit(&debug->sourceLines);
 
-  ObjFn* fn = ALLOCATE(vm, ObjFn);
-  initObj(vm, &fn->obj, OBJ_FN, vm->fnClass);
-  
-  wrenValueBufferInit(&fn->constants);
-  wrenByteBufferInit(&fn->code);
-  fn->module = module;
-  fn->maxSlots = maxSlots;
-  fn->numUpvalues = 0;
-  fn->arity = 0;
-  fn->debug = debug;
-  
-  return fn;
+   ObjFn* fn = ALLOCATE(vm, ObjFn);
+   initObj(vm, &fn->obj, OBJ_FN, vm->fnClass);
+   
+   wrenValueBufferInit(&fn->constants);
+   wrenByteBufferInit(&fn->code);
+   fn->module = module;
+   fn->maxSlots = maxSlots;
+   fn->numUpvalues = 0;
+   fn->arity = 0;
+   fn->debug = debug;
+   
+   return fn;
 }
 
-void wrenFunctionBindName(WrenVM* vm, ObjFn* fn, const char* name, int length)
-{
-  fn->debug->name = ALLOCATE_ARRAY(vm, char, length + 1);
-  memcpy(fn->debug->name, name, length);
-  fn->debug->name[length] = '\0';
+void 
+wrenFunctionBindName(WrenVM* vm, ObjFn* fn, const char* name, int length) {
+   fn->debug->name = ALLOCATE_ARRAY(vm, char, length + 1);
+   memcpy(fn->debug->name, name, length);
+   fn->debug->name[length] = '\0';
 }
 
-Value wrenNewInstance(WrenVM* vm, ObjClass* classObj)
-{
-  ObjInstance* instance = ALLOCATE_FLEX(vm, ObjInstance,
-                                        Value, classObj->numFields);
-  initObj(vm, &instance->obj, OBJ_INSTANCE, classObj);
-
-  // Initialize fields to null.
-  for (int i = 0; i < classObj->numFields; i++)
-  {
-    instance->fields[i] = NULL_VAL;
-  }
-
-  return OBJ_VAL(instance);
+Value wrenNewInstance(WrenVM* vm, ObjClass* classObj) {
+   ObjInstance* instance = ALLOCATE_FLEX(vm, ObjInstance, Value, classObj->numFields);
+   initObj(vm, &instance->obj, OBJ_INSTANCE, classObj);
+ 
+   // Initialize fields to null.
+   for (int i = 0; i < classObj->numFields; i++) {
+      instance->fields[i] = NULL_VAL;
+   }
+ 
+   return OBJ_VAL(instance);
 }
 
-ObjList* wrenNewList(WrenVM* vm, uint32_t numElements)
-{
-  // Allocate this before the list object in case it triggers a GC which would
-  // free the list.
-  Value* elements = NULL;
-  if (numElements > 0)
-  {
-    elements = ALLOCATE_ARRAY(vm, Value, numElements);
-  }
+ObjList* wrenNewList(WrenVM* vm, Unt numElements) {
+   // Allocate this before the list object in case it triggers a GC which would free the list.
+   Value* elements = NULL;
+   if (numElements > 0) {
+      elements = ALLOCATE_ARRAY(vm, Value, numElements);
+   }
 
-  ObjList* list = ALLOCATE(vm, ObjList);
-  initObj(vm, &list->obj, OBJ_LIST, vm->listClass);
-  list->elements.capacity = numElements;
-  list->elements.count = numElements;
-  list->elements.data = elements;
-  return list;
+   ObjList* list = ALLOCATE(vm, ObjList);
+   initObj(vm, &list->obj, OBJ_LIST, vm->listClass);
+   list->elements.capacity = numElements;
+   list->elements.count = numElements;
+   list->elements.data = elements;
+   return list;
 }
 
-void wrenListInsert(WrenVM* vm, ObjList* list, Value value, uint32_t index)
-{
-  if (IS_OBJ(value)) wrenPushRoot(vm, AS_OBJ(value));
+void 
+wrenListInsert(WrenVM* vm, ObjList* list, Value value, Unt index) {
+  if (IS_OBJ(value)) pushRoot(vm, AS_OBJ(value));
 
   // Add a slot at the end of the list.
   wrenValueBufferWrite(vm, &list->elements, NULL_VAL);
 
-  if (IS_OBJ(value)) wrenPopRoot(vm);
+  if (IS_OBJ(value)) popRoot(vm);
 
   // Shift the existing elements down.
-  for (uint32_t i = list->elements.count - 1; i > index; i--)
-  {
+  for (Unt i = list->elements.count - 1; i > index; i--) {
     list->elements.data[i] = list->elements.data[i - 1];
   }
 
@@ -9268,11 +9374,10 @@ void wrenListInsert(WrenVM* vm, ObjList* list, Value value, uint32_t index)
   list->elements.data[index] = value;
 }
 
-int wrenListIndexOf(WrenVM* vm, ObjList* list, Value value)
-{
+int 
+wrenListIndexOf(WrenVM* vm, ObjList* list, Value value) {
   int count = list->elements.count;
-  for (int i = 0; i < count; i++)
-  {
+  for (int i = 0; i < count; i++) {
     Value item = list->elements.data[i];
     if(wrenValuesEqual(item, value)) {
       return i;
@@ -9281,34 +9386,33 @@ int wrenListIndexOf(WrenVM* vm, ObjList* list, Value value)
   return -1;
 }
 
-Value wrenListRemoveAt(WrenVM* vm, ObjList* list, uint32_t index)
-{
+Value 
+wrenListRemoveAt(WrenVM* vm, ObjList* list, Unt index) {
   Value removed = list->elements.data[index];
 
-  if (IS_OBJ(removed)) wrenPushRoot(vm, AS_OBJ(removed));
+  if (IS_OBJ(removed)) pushRoot(vm, AS_OBJ(removed));
 
   // Shift items up.
-  for (int i = index; i < list->elements.count - 1; i++)
-  {
+  for (int i = index; i < list->elements.count - 1; i++) {
     list->elements.data[i] = list->elements.data[i + 1];
   }
 
   // If we have too much excess capacity, shrink it.
-  if (list->elements.capacity / GROW_FACTOR >= list->elements.count)
-  {
+  if (list->elements.capacity / GROW_FACTOR >= list->elements.count) {
     list->elements.data = (Value*)wrenReallocate(vm, list->elements.data,
         sizeof(Value) * list->elements.capacity,
         sizeof(Value) * (list->elements.capacity / GROW_FACTOR));
     list->elements.capacity /= GROW_FACTOR;
   }
 
-  if (IS_OBJ(removed)) wrenPopRoot(vm);
+  if (IS_OBJ(removed)) popRoot(vm);
 
   list->elements.count--;
   return removed;
 }
 
-ObjMap* wrenNewMap(WrenVM* vm) {
+private ObjMap*
+wrenNewMap(WrenVM* vm) {
   ObjMap* map = ALLOCATE(vm, ObjMap);
   initObj(vm, &map->obj, OBJ_MAP, vm->mapClass);
   map->capacity = 0;
@@ -9317,7 +9421,7 @@ ObjMap* wrenNewMap(WrenVM* vm) {
   return map;
 }
 
-private uint32_t hashBits(uint64_t hash) {
+private Unt hashBits(Ulong hash) {
   // From v8's ComputeLongHash() which in turn cites:
   // Thomas Wang, Integer Hash Functions.
   // http://www.concentric.net/~Ttwang/tech/inthash.htm
@@ -9327,48 +9431,48 @@ private uint32_t hashBits(uint64_t hash) {
   hash = hash ^ (hash >> 11);
   hash = hash + (hash << 6);
   hash = hash ^ (hash >> 22);
-  return (uint32_t)(hash & 0x3fffffff);
+  return (Unt)(hash & 0x3fffffff);
 }
 
 // Generates a hash code for [num].
-private uint32_t hashNumber(double num) {
+private Unt hashNumber(double num) {
   // Hash the raw bits of the value.
   return hashBits(wrenDoubleToBits(num));
 }
 
 // Generates a hash code for [object].
-static uint32_t hashObject(Obj* object) {
-  switch (object->type) {
-    case OBJ_CLASS:
-      // Classes just use their name.
-      return hashObject((Obj*)((ObjClass*)object)->name);
-      
-      // Allow bare (non-closure) functions so that we can use a map to find
-      // existing constants in a function's constant table. This is only used
-      // internally. Since user code never sees a non-closure function, they
-      // cannot use them as map keys.
-    case OBJ_FN: {
-      ObjFn* fn = (ObjFn*)object;
-      return hashNumber(fn->arity) ^ hashNumber(fn->code.count);
-    }
+private Unt hashObject(Obj* object) {
+   switch (object->type) {
+   case OBJ_CLASS:
+     // Classes just use their name.
+     return hashObject((Obj*)((ObjClass*)object)->name);
+     
+     // Allow bare (non-closure) functions so that we can use a map to find
+     // existing constants in a function's constant table. This is only used
+     // internally. Since user code never sees a non-closure function, they
+     // cannot use them as map keys.
+   case OBJ_FN: {
+     ObjFn* fn = (ObjFn*)object;
+     return hashNumber(fn->arity) ^ hashNumber(fn->code.count);
+   }
 
-    case OBJ_RANGE: {
-      ObjRange* range = (ObjRange*)object;
-      return hashNumber(range->from) ^ hashNumber(range->to);
-    }
+   case OBJ_RANGE: {
+     ObjRange* range = (ObjRange*)object;
+     return hashNumber(range->from) ^ hashNumber(range->to);
+   }
 
-    case OBJ_STRING:
-      return ((ObjString*)object)->hash;
+   case OBJ_STRING:
+     return ((ObjString*)object)->hash;
 
-    default:
-      ASSERT(false, "Only immutable objects can be hashed.");
-      return 0;
-  }
+   default:
+     ASSERT(false, "Only immutable objects can be hashed.");
+     return 0;
+   }
 }
 
 // Generates a hash code for [value], which must be one of the built-in
-// immutable types: null, bool, class, num, range, or string.
-static uint32_t hashValue(Value value) {
+// immutable types: null, Bool, class, num, range, or string.
+private Unt hashValue(Value value) {
   // TODO: We'll probably want to randomize this at some point.
 
   if (IS_OBJ(value)) return hashObject(AS_OBJ(value));
@@ -9382,63 +9486,62 @@ static uint32_t hashValue(Value value) {
 // If found, sets [result] to point to it and returns `true`. Otherwise,
 // returns `false` and points [result] to the entry where the key/value pair
 // should be inserted.
-static bool findEntry(MapEntry* entries, uint32_t capacity, Value key,
-                      MapEntry** result)
-{
-  // If there is no entry array (an empty map), we definitely won't find it.
-  if (capacity == 0) return false;
-  
-  // Figure out where to insert it in the table. Use open addressing and
-  // basic linear probing.
-  uint32_t startIndex = hashValue(key) % capacity;
-  uint32_t index = startIndex;
-  
-  // If we pass a tombstone and don't end up finding the key, its entry will
-  // be re-used for the insert.
-  MapEntry* tombstone = NULL;
-  
-  // Walk the probe sequence until we've tried every slot.
-  do {
-    MapEntry* entry = &entries[index];
-    
-    if (IS_UNDEFINED(entry->key)) {
-      //If we found an empty slot, the key is not in the table. If we found a
-      //slot that contains a deleted key, we have to keep looking.
-      if (IS_FALSE(entry->value)) {
-        //We found an empty slot, so we've reached the end of the probe
-        //sequence without finding the key. If we passed a tombstone, then
-        //that's where we should insert the item, otherwise, put it here at the end of the sequence.
-        *result = tombstone != NULL ? tombstone : entry;
-        return false;
-      } else {
-        // We found a tombstone. We need to keep looking in case the key is
-        // after it, but we'll use this entry as the insertion point if the
-        // key ends up not being found.
-        if (tombstone == NULL) tombstone = entry;
-      }
-    } else if (wrenValuesEqual(entry->key, key)) {
-      // We found the key.
-      *result = entry;
-      return true;
-    }
-    
-    // Try the next slot.
-    index = (index + 1) % capacity;
-  }
-  while (index != startIndex);
-  
-  // If we get here, the table is full of tombstones. Return the first one we
-  // found.
-  ASSERT(tombstone != NULL, "Map should have tombstones or empty entries.");
-  *result = tombstone;
-  return false;
+private Bool
+findEntry(MapEntry* entries, Unt capacity, Value key, MapEntry** result) {
+   // If there is no entry array (an empty map), we definitely won't find it.
+   if (capacity == 0) return false;
+   
+   // Figure out where to insert it in the table. Use open addressing and
+   // basic linear probing.
+   Unt startIndex = hashValue(key) % capacity;
+   Unt index = startIndex;
+   
+   // If we pass a tombstone and don't end up finding the key, its entry will
+   // be re-used for the insert.
+   MapEntry* tombstone = NULL;
+   
+   // Walk the probe sequence until we've tried every slot.
+   do {
+     MapEntry* entry = &entries[index];
+     
+     if (IS_UNDEFINED(entry->key)) {
+       //If we found an empty slot, the key is not in the table. If we found a
+       //slot that contains a deleted key, we have to keep looking.
+       if (IS_FALSE(entry->value)) {
+         //We found an empty slot, so we've reached the end of the probe
+         //sequence without finding the key. If we passed a tombstone, then
+         //that's where we should insert the item, otherwise, put it here at the end of the sequence.
+         *result = tombstone != NULL ? tombstone : entry;
+         return false;
+       } else {
+         // We found a tombstone. We need to keep looking in case the key is
+         // after it, but we'll use this entry as the insertion point if the
+         // key ends up not being found.
+         if (tombstone == NULL) tombstone = entry;
+       }
+     } else if (wrenValuesEqual(entry->key, key)) {
+       // We found the key.
+       *result = entry;
+       return true;
+     }
+     
+     // Try the next slot.
+     index = (index + 1) % capacity;
+   }
+   while (index != startIndex);
+   
+   // If we get here, the table is full of tombstones. Return the first one we
+   // found.
+   ASSERT(tombstone != NULL, "Map should have tombstones or empty entries.");
+   *result = tombstone;
+   return false;
 }
 
 // Inserts [key] and [value] in the array of [entries] with the given
 // [capacity].
 //
 // Returns `true` if this is the first time [key] was added to the map.
-static bool insertEntry(MapEntry* entries, uint32_t capacity, Value key, Value value) {
+private Bool insertEntry(MapEntry* entries, Unt capacity, Value key, Value value) {
   ASSERT(entries != NULL, "Should ensure capacity before inserting.");
   
   MapEntry* entry;
@@ -9454,11 +9557,11 @@ static bool insertEntry(MapEntry* entries, uint32_t capacity, Value key, Value v
 }
 
 // Updates [map]'s entry array to [capacity].
-static void resizeMap(WrenVM* vm, ObjMap* map, uint32_t capacity)
+private void resizeMap(WrenVM* vm, ObjMap* map, Unt capacity)
 {
   // Create the new empty hash table.
   MapEntry* entries = ALLOCATE_ARRAY(vm, MapEntry, capacity);
-  for (uint32_t i = 0; i < capacity; i++)
+  for (Unt i = 0; i < capacity; i++)
   {
     entries[i].key = UNDEFINED_VAL;
     entries[i].value = FALSE_VAL;
@@ -9466,7 +9569,7 @@ static void resizeMap(WrenVM* vm, ObjMap* map, uint32_t capacity)
 
   // Re-add the existing entries.
   if (map->capacity > 0) {
-    for (uint32_t i = 0; i < map->capacity; i++) {
+    for (Unt i = 0; i < map->capacity; i++) {
       MapEntry* entry = &map->entries[i];
       
       // Don't copy empty entries or tombstones.
@@ -9482,7 +9585,9 @@ static void resizeMap(WrenVM* vm, ObjMap* map, uint32_t capacity)
   map->capacity = capacity;
 }
 
-Value wrenMapGet(ObjMap* map, Value key) {
+//Look up [key] in [map]. If found, returns the value. Otherwise, returns `UNDEFINED_VAL`.
+private Value 
+wrenMapGet(ObjMap* map, Value key) {
   MapEntry* entry;
   if (findEntry(map->entries, map->capacity, key, &entry)) return entry->value;
 
@@ -9493,7 +9598,7 @@ void wrenMapSet(WrenVM* vm, ObjMap* map, Value key, Value value) {
   // If the map is getting too full, make room first.
   if (map->count + 1 > map->capacity * MAP_LOAD_PERCENT / 100) {
     // Figure out the new hash table size.
-    uint32_t capacity = map->capacity * GROW_FACTOR;
+    Unt capacity = map->capacity * GROW_FACTOR;
     if (capacity < MIN_CAPACITY) capacity = MIN_CAPACITY;
 
     resizeMap(vm, map, capacity);
@@ -9523,7 +9628,7 @@ Value wrenMapRemoveKey(WrenVM* vm, ObjMap* map, Value key) {
   entry->key = UNDEFINED_VAL;
   entry->value = TRUE_VAL;
 
-  if (IS_OBJ(value)) wrenPushRoot(vm, AS_OBJ(value));
+  if (IS_OBJ(value)) pushRoot(vm, AS_OBJ(value));
 
   map->count--;
 
@@ -9534,7 +9639,7 @@ Value wrenMapRemoveKey(WrenVM* vm, ObjMap* map, Value key) {
   else if (map->capacity > MIN_CAPACITY &&
            map->count < map->capacity / GROW_FACTOR * MAP_LOAD_PERCENT / 100)
   {
-    uint32_t capacity = map->capacity / GROW_FACTOR;
+    Unt capacity = map->capacity / GROW_FACTOR;
     if (capacity < MIN_CAPACITY) capacity = MIN_CAPACITY;
 
     // The map is getting empty, so shrink the entry array back down.
@@ -9542,28 +9647,29 @@ Value wrenMapRemoveKey(WrenVM* vm, ObjMap* map, Value key) {
     resizeMap(vm, map, capacity);
   }
 
-  if (IS_OBJ(value)) wrenPopRoot(vm);
+  if (IS_OBJ(value)) popRoot(vm);
   return value;
 }
 
 ObjModule* wrenNewModule(WrenVM* vm, ObjString* name) {
-  ObjModule* module = ALLOCATE(vm, ObjModule);
+   ObjModule* module = ALLOCATE(vm, ObjModule);
 
-  // Modules are never used as first-class objects, so don't need a class.
-  initObj(vm, (Obj*)module, OBJ_MODULE, NULL);
+   // Modules are never used as first-class objects, so don't need a class.
+   initObj(vm, (Obj*)module, OBJ_MODULE, NULL);
 
-  wrenPushRoot(vm, (Obj*)module);
+   pushRoot(vm, (Obj*)module);
 
-  wrenSymbolTableInit(&module->variableNames);
-  wrenValueBufferInit(&module->variables);
+   wrenSymbolTableInit(&module->variableNames);
+   wrenValueBufferInit(&module->variables);
 
-  module->name = name;
+   module->name = name;
 
-  wrenPopRoot(vm);
-  return module;
+   popRoot(vm);
+   return module;
 }
 
-Value wrenNewRange(WrenVM* vm, double from, double to, bool isInclusive) {
+private Value 
+wrenNewRange(WrenVM* vm, double from, double to, Bool isInclusive) {
   ObjRange* range = ALLOCATE(vm, ObjRange);
   initObj(vm, &range->obj, OBJ_RANGE, vm->rangeClass);
   range->from = from;
@@ -9576,26 +9682,26 @@ Value wrenNewRange(WrenVM* vm, double from, double to, bool isInclusive) {
 // Creates a new string object with a null-terminated buffer large enough to
 // hold a string of [length] but does not fill in the bytes.
 //
-// The caller is expected to fill in the buffer and then calculate the string's
-// hash.
-static ObjString* allocateString(WrenVM* vm, size_t length) {
-  ObjString* string = ALLOCATE_FLEX(vm, ObjString, char, length + 1);
-  initObj(vm, &string->obj, OBJ_STRING, vm->stringClass);
-  string->length = (int)length;
-  string->value[length] = '\0';
-
-  return string;
+// The caller is expected to fill in the buffer and then calculate the string's hash.
+private ObjString* 
+allocateString(WrenVM* vm, Ulong length) {
+   ObjString* string = ALLOCATE_FLEX(vm, ObjString, char, length + 1);
+   initObj(vm, &string->obj, OBJ_STRING, vm->stringClass);
+   string->length = (int)length;
+   string->value[length] = '\0';
+ 
+   return string;
 }
 
 // Calculates and stores the hash code for [string].
-static void hashString(ObjString* string) {
+private void hashString(ObjString* string) {
   // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
-  uint32_t hash = 2166136261u;
+  Unt hash = 2166136261u;
 
   // This is O(n) on the length of the string, but we only call this when a new
   // string is created. Since the creation is also O(n) (to copy/initialize all
   // the bytes), we allow this here.
-  for (uint32_t i = 0; i < string->length; i++) {
+  for (Unt i = 0; i < string->length; i++) {
     hash ^= string->value[i];
     hash *= 16777619;
   }
@@ -9603,11 +9709,11 @@ static void hashString(ObjString* string) {
   string->hash = hash;
 }
 
-Value wrenNewString(WrenVM* vm, const char* text) {
+Value wrenNewString(WrenVM* vm, CS text) {
   return wrenNewStringLength(vm, text, strlen(text));
 }
 
-Value wrenNewStringLength(WrenVM* vm, const char* text, size_t length) {
+Value wrenNewStringLength(WrenVM* vm, CS text, Ulong length) {
   // Allow NULL if the string is empty since byte buffers don't allocate any
   // characters for a zero-length string.
   ASSERT(length == 0 || text != NULL, "Unexpected NULL string.");
@@ -9622,18 +9728,18 @@ Value wrenNewStringLength(WrenVM* vm, const char* text, size_t length) {
 }
 
 
-Value wrenNewStringFromRange(WrenVM* vm, ObjString* source, int start, uint32_t count, int step) {
-  uint8_t* from = (uint8_t*)source->value;
+Value wrenNewStringFromRange(WrenVM* vm, ObjString* source, int start, Unt count, int step) {
+  Byte* from = (Byte*)source->value;
   int length = 0;
-  for (uint32_t i = 0; i < count; i++) {
+  for (Unt i = 0; i < count; i++) {
     length += wrenUtf8DecodeNumBytes(from[start + i * step]);
   }
 
   ObjString* result = allocateString(vm, length);
   result->value[length] = '\0';
 
-  uint8_t* to = (uint8_t*)result->value;
-  for (uint32_t i = 0; i < count; i++) {
+  Byte* to = (Byte*)result->value;
+  for (Unt i = 0; i < count; i++) {
     int index = start + i * step;
     int codePoint = wrenUtf8Decode(from + index, source->length - index);
 
@@ -9681,23 +9787,23 @@ Value wrenNumToString(WrenVM* vm, double value) {
 }
 
 Value wrenStringFromCodePoint(WrenVM* vm, int value) {
-  int length = wrenUtf8EncodeNumBytes(value);
-  ASSERT(length != 0, "Value out of range.");
-
-  ObjString* string = allocateString(vm, length);
-
-  wrenUtf8Encode(value, (uint8_t*)string->value);
-  hashString(string);
-
-  return OBJ_VAL(string);
+   int length = wrenUtf8EncodeNumBytes(value);
+   ASSERT(length != 0, "Value out of range.");
+ 
+   ObjString* string = allocateString(vm, length);
+ 
+   wrenUtf8Encode(value, (Byte*)string->value);
+   hashString(string);
+ 
+   return OBJ_VAL(string);
 }
 
-Value wrenStringFromByte(WrenVM *vm, uint8_t value) {
-  int length = 1;
-  ObjString* string = allocateString(vm, length);
-  string->value[0] = value;
-  hashString(string);
-  return OBJ_VAL(string);
+Value wrenStringFromByte(WrenVM *vm, Byte value) {
+   int length = 1;
+   ObjString* string = allocateString(vm, length);
+   string->value[0] = value;
+   hashString(string);
+   return OBJ_VAL(string);
 }
 
 Value wrenStringFormat(WrenVM* vm, const char* format, ...) {
@@ -9706,7 +9812,7 @@ Value wrenStringFormat(WrenVM* vm, const char* format, ...) {
   // Calculate the length of the result string. Do this up front so we can
   // create the final string with a single allocation.
   va_start(argList, format);
-  size_t totalLength = 0;
+  Ulong totalLength = 0;
   for (const char* c = format; *c != '\0'; c++) {
     switch (*c) {
       case '$':
@@ -9733,7 +9839,7 @@ Value wrenStringFormat(WrenVM* vm, const char* format, ...) {
     switch (*c) {
       case '$': {
         const char* string = va_arg(argList, const char*);
-        size_t length = strlen(string);
+        Ulong length = strlen(string);
         memcpy(start, string, length);
         start += length;
         break;
@@ -9758,79 +9864,79 @@ Value wrenStringFormat(WrenVM* vm, const char* format, ...) {
   return OBJ_VAL(result);
 }
 
-Value wrenStringCodePointAt(WrenVM* vm, ObjString* string, uint32_t index) {
-  ASSERT(index < string->length, "Index out of bounds.");
-
-  int codePoint = wrenUtf8Decode((uint8_t*)string->value + index, string->length - index);
-  if (codePoint == -1) {
-    // If it isn't a valid UTF-8 sequence, treat it as a single raw byte.
-    char bytes[2];
-    bytes[0] = string->value[index];
-    bytes[1] = '\0';
-    return wrenNewStringLength(vm, bytes, 1);
-  }
-
-  return wrenStringFromCodePoint(vm, codePoint);
+private Value 
+wrenStringCodePointAt(WrenVM* vm, ObjString* string, Unt index) {
+   ASSERT(index < string->length, "Index out of bounds.");
+ 
+   int codePoint = wrenUtf8Decode((Byte*)string->value + index, string->length - index);
+   if (codePoint == -1) {
+      // If it isn't a valid UTF-8 sequence, treat it as a single raw byte.
+      char bytes[2];
+      bytes[0] = string->value[index];
+      bytes[1] = '\0';
+      return wrenNewStringLength(vm, bytes, 1);
+   }
+ 
+   return wrenStringFromCodePoint(vm, codePoint);
 }
 
 // Uses the Boyer-Moore-Horspool string matching algorithm.
-uint32_t wrenStringFind(ObjString* haystack, ObjString* needle, uint32_t start) {
-  // Edge case: An empty needle is always found.
-  if (needle->length == 0) return start;
-
-  // If the needle goes past the haystack it won't be found.
-  if (start + needle->length > haystack->length) return UINT32_MAX;
-
-  // If the startIndex is too far it also won't be found.
-  if (start >= haystack->length) return UINT32_MAX;
-
-  // Pre-calculate the shift table. For each character (8-bit value), we
-  // determine how far the search window can be advanced if that character is
-  // the last character in the haystack where we are searching for the needle
-  // and the needle doesn't match there.
-  uint32_t shift[UINT8_MAX];
-  uint32_t needleEnd = needle->length - 1;
-
-  // By default, we assume the character is not the needle at all. In that case
-  // case, if a match fails on that character, we can advance one whole needle
-  // width since.
-  for (uint32_t index = 0; index < UINT8_MAX; index++) {
-    shift[index] = needle->length;
-  }
-
-  // Then, for every character in the needle, determine how far it is from the
-  // end. If a match fails on that character, we can advance the window such
-  // that it the last character in it lines up with the last place we could
-  // find it in the needle.
-  for (uint32_t index = 0; index < needleEnd; index++)
-  {
-    char c = needle->value[index];
-    shift[(uint8_t)c] = needleEnd - index;
-  }
-
-  // Slide the needle across the haystack, looking for the first match or
-  // stopping if the needle goes off the end.
-  char lastChar = needle->value[needleEnd];
-  uint32_t range = haystack->length - needle->length;
-
-  for (uint32_t index = start; index <= range; ) {
-    // Compare the last character in the haystack's window to the last character
-    // in the needle. If it matches, see if the whole needle matches.
-    char c = haystack->value[index + needleEnd];
-    if (lastChar == c && memcmp(haystack->value + index, needle->value, needleEnd) == 0) {
-      // Found a match.
-      return index;
-    }
-
-    // Otherwise, slide the needle forward.
-    index += shift[(uint8_t)c];
-  }
-
-  // Not found.
-  return UINT32_MAX;
+Unt
+wrenStringFind(ObjString* haystack, ObjString* needle, Unt start) {
+   // Edge case: An empty needle is always found.
+   if (needle->length == 0) return start;
+ 
+   // If the needle goes past the haystack it won't be found.
+   if (start + needle->length > haystack->length) return UINT32_MAX;
+ 
+   // If the startIndex is too far it also won't be found.
+   if (start >= haystack->length) return UINT32_MAX;
+ 
+   // Pre-calculate the shift table. For each character (8-bit value), we
+   // determine how far the search window can be advanced if that character is
+   // the last character in the haystack where we are searching for the needle
+   // and the needle doesn't match there.
+   Unt shift[UINT8_MAX];
+   Unt needleEnd = needle->length - 1;
+ 
+   //By default, we assume the character is not the needle at all. In that case
+   //case, if a match fails on that character, we can advance one whole needle width since.
+   for (Unt index = 0; index < UINT8_MAX; index++) {
+     shift[index] = needle->length;
+   }
+ 
+   //Then, for every character in the needle, determine how far it is from the end. If a match 
+   //fails on that character, we can advance the window such that it the last character in it 
+   //lines up with the last place we could find it in the needle.
+   for (Unt index = 0; index < needleEnd; index++) {
+      char c = needle->value[index];
+      shift[(Byte)c] = needleEnd - index;
+   }
+ 
+   // Slide the needle across the haystack, looking for the first match or
+   // stopping if the needle goes off the end.
+   char lastChar = needle->value[needleEnd];
+   Unt range = haystack->length - needle->length;
+ 
+   for (Unt index = start; index <= range; ) {
+     // Compare the last character in the haystack's window to the last character
+     // in the needle. If it matches, see if the whole needle matches.
+     char c = haystack->value[index + needleEnd];
+     if (lastChar == c && memcmp(haystack->value + index, needle->value, needleEnd) == 0) {
+       // Found a match.
+       return index;
+     }
+ 
+     // Otherwise, slide the needle forward.
+     index += shift[(Byte)c];
+   }
+ 
+   // Not found.
+   return UINT32_MAX;
 }
 
-ObjUpvalue* wrenNewUpvalue(WrenVM* vm, Value* value) {
+private ObjUpvalue* 
+wrenNewUpvalue(WrenVM* vm, Value* value) {
   ObjUpvalue* upvalue = ALLOCATE(vm, ObjUpvalue);
 
   // Upvalues are never used as first-class objects, so don't need a class.
@@ -9842,7 +9948,8 @@ ObjUpvalue* wrenNewUpvalue(WrenVM* vm, Value* value) {
   return upvalue;
 }
 
-void wrenGrayObj(WrenVM* vm, Obj* obj) {
+private void 
+wrenGrayObj(WrenVM* vm, Obj* obj) {
   if (obj == NULL) return;
 
   // Stop if the object is already darkened so we don't get stuck in a cycle.
@@ -9863,18 +9970,21 @@ void wrenGrayObj(WrenVM* vm, Obj* obj) {
   vm->gray[vm->grayCount++] = obj;
 }
 
-void wrenGrayValue(WrenVM* vm, Value value) {
+private void 
+wrenGrayValue(WrenVM* vm, Value value) {
   if (!IS_OBJ(value)) return;
   wrenGrayObj(vm, AS_OBJ(value));
 }
 
-void wrenGrayBuffer(WrenVM* vm, ValueBuffer* buffer) {
+private void 
+wrenGrayBuffer(WrenVM* vm, ValueBuffer* buffer) {
   for (int i = 0; i < buffer->count; i++) {
     wrenGrayValue(vm, buffer->data[i]);
   }
 }
 
-static void blackenClass(WrenVM* vm, ObjClass* classObj) {
+private void 
+blackenClass(WrenVM* vm, ObjClass* classObj) {
   // The metaclass.
   wrenGrayObj(vm, (Obj*)classObj->obj.classObj);
 
@@ -9897,7 +10007,8 @@ static void blackenClass(WrenVM* vm, ObjClass* classObj) {
   vm->bytesAllocated += classObj->methods.capacity * sizeof(Method);
 }
 
-static void blackenClosure(WrenVM* vm, ObjClosure* closure) {
+private void 
+blackenClosure(WrenVM* vm, ObjClosure* closure) {
   // Mark the function.
   wrenGrayObj(vm, (Obj*)closure->fn);
 
@@ -9911,53 +10022,53 @@ static void blackenClosure(WrenVM* vm, ObjClosure* closure) {
   vm->bytesAllocated += sizeof(ObjUpvalue*) * closure->fn->numUpvalues;
 }
 
-static void blackenFiber(WrenVM* vm, ObjFiber* fiber)
-{
-  // Stack functions.
-  for (int i = 0; i < fiber->numFrames; i++) {
-    wrenGrayObj(vm, (Obj*)fiber->frames[i].closure);
-  }
-
-  // Stack variables.
-  for (Value* slot = fiber->stack; slot < fiber->stackTop; slot++) {
-    wrenGrayValue(vm, *slot);
-  }
-
-  // Open upvalues.
-  ObjUpvalue* upvalue = fiber->openUpvalues;
-  while (upvalue) {
-    wrenGrayObj(vm, (Obj*)upvalue);
-    upvalue = upvalue->next;
-  }
-
-  // The caller.
-  wrenGrayObj(vm, (Obj*)fiber->caller);
-  wrenGrayValue(vm, fiber->error);
-
-  // Keep track of how much memory is still in use.
-  vm->bytesAllocated += sizeof(ObjFiber);
-  vm->bytesAllocated += fiber->frameCapacity * sizeof(CallFrame);
-  vm->bytesAllocated += fiber->stackCapacity * sizeof(Value);
+private void 
+blackenFiber(WrenVM* vm, ObjFiber* fiber) {
+   // Stack functions.
+   for (int i = 0; i < fiber->numFrames; i++) {
+     wrenGrayObj(vm, (Obj*)fiber->frames[i].closure);
+   }
+ 
+   // Stack variables.
+   for (Value* slot = fiber->stack; slot < fiber->stackTop; slot++) {
+     wrenGrayValue(vm, *slot);
+   }
+ 
+   // Open upvalues.
+   ObjUpvalue* upvalue = fiber->openUpvalues;
+   while (upvalue) {
+     wrenGrayObj(vm, (Obj*)upvalue);
+     upvalue = upvalue->next;
+   }
+ 
+   // The caller.
+   wrenGrayObj(vm, (Obj*)fiber->caller);
+   wrenGrayValue(vm, fiber->error);
+ 
+   // Keep track of how much memory is still in use.
+   vm->bytesAllocated += sizeof(ObjFiber);
+   vm->bytesAllocated += fiber->frameCapacity * sizeof(CallFrame);
+   vm->bytesAllocated += fiber->stackCapacity * sizeof(Value);
 }
 
-static void blackenFn(WrenVM* vm, ObjFn* fn) {
-  // Mark the constants.
-  wrenGrayBuffer(vm, &fn->constants);
-
-  // Mark the module it belongs to, in case it's been unloaded.
-  wrenGrayObj(vm, (Obj*)fn->module);
-
-  // Keep track of how much memory is still in use.
-  vm->bytesAllocated += sizeof(ObjFn);
-  vm->bytesAllocated += sizeof(uint8_t) * fn->code.capacity;
-  vm->bytesAllocated += sizeof(Value) * fn->constants.capacity;
-  
-  // The debug line number buffer.
-  vm->bytesAllocated += sizeof(int) * fn->code.capacity;
-  // TODO: What about the function name?
+private void blackenFn(WrenVM* vm, ObjFn* fn) {
+   // Mark the constants.
+   wrenGrayBuffer(vm, &fn->constants);
+ 
+   // Mark the module it belongs to, in case it's been unloaded.
+   wrenGrayObj(vm, (Obj*)fn->module);
+ 
+   // Keep track of how much memory is still in use.
+   vm->bytesAllocated += sizeof(ObjFn);
+   vm->bytesAllocated += sizeof(Byte) * fn->code.capacity;
+   vm->bytesAllocated += sizeof(Value) * fn->constants.capacity;
+   
+   // The debug line number buffer.
+   vm->bytesAllocated += sizeof(int) * fn->code.capacity;
+   // TODO: What about the function name?
 }
 
-static void blackenForeign(WrenVM* vm, ObjForeign* foreign) {
+private void blackenForeign(WrenVM* vm, ObjForeign* foreign) {
   // TODO: Keep track of how much memory the foreign object uses. We can store
   // this in each foreign object, but it will balloon the size. We may not want
   // that much overhead. One option would be to let the foreign class register
@@ -9965,20 +10076,21 @@ static void blackenForeign(WrenVM* vm, ObjForeign* foreign) {
   // always have to explicitly store it.
 }
 
-static void blackenInstance(WrenVM* vm, ObjInstance* instance) {
-  wrenGrayObj(vm, (Obj*)instance->obj.classObj);
-
-  // Mark the fields.
-  for (int i = 0; i < instance->obj.classObj->numFields; i++) {
-    wrenGrayValue(vm, instance->fields[i]);
-  }
-
-  // Keep track of how much memory is still in use.
-  vm->bytesAllocated += sizeof(ObjInstance);
-  vm->bytesAllocated += sizeof(Value) * instance->obj.classObj->numFields;
+private void blackenInstance(WrenVM* vm, ObjInstance* instance) {
+   wrenGrayObj(vm, (Obj*)instance->obj.classObj);
+ 
+   // Mark the fields.
+   for (int i = 0; i < instance->obj.classObj->numFields; i++) {
+      wrenGrayValue(vm, instance->fields[i]);
+   }
+ 
+   // Keep track of how much memory is still in use.
+   vm->bytesAllocated += sizeof(ObjInstance);
+   vm->bytesAllocated += sizeof(Value) * instance->obj.classObj->numFields;
 }
 
-static void blackenList(WrenVM* vm, ObjList* list) {
+private void 
+blackenList(WrenVM* vm, ObjList* list) {
   // Mark the elements.
   wrenGrayBuffer(vm, &list->elements);
 
@@ -9987,9 +10099,9 @@ static void blackenList(WrenVM* vm, ObjList* list) {
   vm->bytesAllocated += sizeof(Value) * list->elements.capacity;
 }
 
-static void blackenMap(WrenVM* vm, ObjMap* map) {
+private void blackenMap(WrenVM* vm, ObjMap* map) {
   // Mark the entries.
-  for (uint32_t i = 0; i < map->capacity; i++) {
+  for (Unt i = 0; i < map->capacity; i++) {
     MapEntry* entry = &map->entries[i];
     if (IS_UNDEFINED(entry->key)) continue;
 
@@ -10002,7 +10114,7 @@ static void blackenMap(WrenVM* vm, ObjMap* map) {
   vm->bytesAllocated += sizeof(MapEntry) * map->capacity;
 }
 
-static void blackenModule(WrenVM* vm, ObjModule* module) {
+private void blackenModule(WrenVM* vm, ObjModule* module) {
   // Top-level variables.
   for (int i = 0; i < module->variables.count; i++) {
     wrenGrayValue(vm, module->variables.data[i]);
@@ -10016,17 +10128,17 @@ static void blackenModule(WrenVM* vm, ObjModule* module) {
   vm->bytesAllocated += sizeof(ObjModule);
 }
 
-static void blackenRange(WrenVM* vm, ObjRange* range) {
+private void blackenRange(WrenVM* vm, ObjRange* range) {
   // Keep track of how much memory is still in use.
   vm->bytesAllocated += sizeof(ObjRange);
 }
 
-static void blackenString(WrenVM* vm, ObjString* string) {
+private void blackenString(WrenVM* vm, ObjString* string) {
   // Keep track of how much memory is still in use.
   vm->bytesAllocated += sizeof(ObjString) + string->length + 1;
 }
 
-static void blackenUpvalue(WrenVM* vm, ObjUpvalue* upvalue) {
+private void blackenUpvalue(WrenVM* vm, ObjUpvalue* upvalue) {
   // Mark the closed-over object (in case it is closed).
   wrenGrayValue(vm, upvalue->closed);
 
@@ -10034,28 +10146,29 @@ static void blackenUpvalue(WrenVM* vm, ObjUpvalue* upvalue) {
   vm->bytesAllocated += sizeof(ObjUpvalue);
 }
 
-static void blackenObject(WrenVM* vm, Obj* obj) {
+private void 
+blackenObject(WrenVM* vm, Obj* obj) {
 #if WREN_DEBUG_TRACE_MEMORY
-  printf("mark ");
-  wrenDumpValue(OBJ_VAL(obj));
-  printf(" @ %p\n", obj);
+   printf("mark ");
+   wrenDumpValue(OBJ_VAL(obj));
+   printf(" @ %p\n", obj);
 #endif
 
-  // Traverse the object's fields.
-  switch (obj->type) {
-  case OBJ_CLASS:    blackenClass(   vm, (ObjClass*)   obj); break;
-  case OBJ_CLOSURE:  blackenClosure( vm, (ObjClosure*) obj); break;
-  case OBJ_FIBER:    blackenFiber(   vm, (ObjFiber*)   obj); break;
-  case OBJ_FN:       blackenFn(      vm, (ObjFn*)      obj); break;
-  case OBJ_FOREIGN:  blackenForeign( vm, (ObjForeign*) obj); break;
-  case OBJ_INSTANCE: blackenInstance(vm, (ObjInstance*)obj); break;
-  case OBJ_LIST:     blackenList(    vm, (ObjList*)    obj); break;
-  case OBJ_MAP:      blackenMap(     vm, (ObjMap*)     obj); break;
-  case OBJ_MODULE:   blackenModule(  vm, (ObjModule*)  obj); break;
-  case OBJ_RANGE:    blackenRange(   vm, (ObjRange*)   obj); break;
-  case OBJ_STRING:   blackenString(  vm, (ObjString*)  obj); break;
-  case OBJ_UPVALUE:  blackenUpvalue( vm, (ObjUpvalue*) obj); break;
-  }
+   // Traverse the object's fields.
+   switch (obj->type) {
+   case OBJ_CLASS:    blackenClass(   vm, (ObjClass*)   obj); break;
+   case OBJ_CLOSURE:  blackenClosure( vm, (ObjClosure*) obj); break;
+   case OBJ_FIBER:    blackenFiber(   vm, (ObjFiber*)   obj); break;
+   case OBJ_FN:       blackenFn(      vm, (ObjFn*)      obj); break;
+   case OBJ_FOREIGN:  blackenForeign( vm, (ObjForeign*) obj); break;
+   case OBJ_INSTANCE: blackenInstance(vm, (ObjInstance*)obj); break;
+   case OBJ_LIST:     blackenList(    vm, (ObjList*)    obj); break;
+   case OBJ_MAP:      blackenMap(     vm, (ObjMap*)     obj); break;
+   case OBJ_MODULE:   blackenModule(  vm, (ObjModule*)  obj); break;
+   case OBJ_RANGE:    blackenRange(   vm, (ObjRange*)   obj); break;
+   case OBJ_STRING:   blackenString(  vm, (ObjString*)  obj); break;
+   case OBJ_UPVALUE:  blackenUpvalue( vm, (ObjUpvalue*) obj); break;
+   }
 }
 
 void wrenBlackenObjects(WrenVM* vm) {
@@ -10127,40 +10240,112 @@ ObjClass* wrenGetClass(WrenVM* vm, Value value) {
   return wrenGetClassInline(vm, value);
 }
 
-bool wrenValuesEqual(Value a, Value b) {
-  if (wrenValuesSame(a, b)) return true;
+Bool
+wrenValuesEqual(Value a, Value b) {
+   if (wrenValuesSame(a, b)) return true;
 
-  // If we get here, it's only possible for two heap-allocated immutable objects
-  // to be equal.
-  if (!IS_OBJ(a) || !IS_OBJ(b)) return false;
+   // If we get here, it's only possible for two heap-allocated immutable objects to be equal.
+   if (!IS_OBJ(a) || !IS_OBJ(b)) return false;
 
-  Obj* aObj = AS_OBJ(a);
-  Obj* bObj = AS_OBJ(b);
+   Obj* aObj = AS_OBJ(a);
+   Obj* bObj = AS_OBJ(b);
 
-  // Must be the same type.
-  if (aObj->type != bObj->type) return false;
+   // Must be the same type.
+   if (aObj->type != bObj->type) return false;
 
-  switch (aObj->type) {
-    case OBJ_RANGE: {
+   switch (aObj->type) {
+   case OBJ_RANGE: {
       ObjRange* aRange = (ObjRange*)aObj;
       ObjRange* bRange = (ObjRange*)bObj;
       return aRange->from == bRange->from &&
              aRange->to == bRange->to &&
              aRange->isInclusive == bRange->isInclusive;
-    }
+   }
 
-    case OBJ_STRING: {
+   case OBJ_STRING: {
       ObjString* aString = (ObjString*)aObj;
       ObjString* bString = (ObjString*)bObj;
       return aString->hash == bString->hash &&
       wrenStringEqualsCString(aString, bString->value, bString->length);
-    }
+   }
 
-    default:
-      // All other types are only equal if they are same, which they aren't if
-      // we get here.
+   default:
+      // All other types are only equal if they are same, which they aren't if we get here.
       return false;
-  }
+   }
+}
+
+//}}}
+//{{{meta
+
+void metaCompile(WrenVM* vm) {
+   CS source = wrenGetSlotString(vm, 1);
+   Bool isExpression = wrenGetSlotBool(vm, 2);
+   Bool printErrors = wrenGetSlotBool(vm, 3);
+
+   // TODO: Allow passing in module?
+   // Look up the module surrounding the callsite. This is brittle. The -2 walks
+   // up the callstack assuming that the meta module has one level of
+   // indirection before hitting the user's code. Any change to meta may require
+   // this constant to be tweaked.
+   ObjFiber* currentFiber = vm->fiber;
+   ObjFn* fn = currentFiber->frames[currentFiber->numFrames - 2].closure->fn;
+   ObjString* module = fn->module->name;
+
+   ObjClosure* closure = wrenCompileSource(vm, module->value, source, isExpression, printErrors);
+  
+   // Return the result. We can't use the public API for this since we have a bare ObjClosure*.
+   if (!closure) {
+      vm->apiStack[0] = NULL_VAL;
+   } else {
+      vm->apiStack[0] = OBJ_VAL(closure);
+   }
+}
+
+void metaGetModuleVariables(WrenVM* vm) {
+   wrenEnsureSlots(vm, 3);
+   
+   Value moduleValue = wrenMapGet(vm->modules, vm->apiStack[1]);
+   if (IS_UNDEFINED(moduleValue)) {
+      vm->apiStack[0] = NULL_VAL;
+      return;
+   }
+     
+   ObjModule* module = AS_MODULE(moduleValue);
+   ObjList* names = wrenNewList(vm, module->variableNames.count);
+   vm->apiStack[0] = OBJ_VAL(names);
+ 
+   //Initialize the elements to null in case a collection happens when we
+   //allocate the strings below.
+   for (int i = 0; i < names->elements.count; i++) {
+      names->elements.data[i] = NULL_VAL;
+   }
+   
+   for (int i = 0; i < names->elements.count; i++) {
+      names->elements.data[i] = OBJ_VAL(module->variableNames.data[i]);
+   }
+}
+
+CS wrenMetaSource() {
+   return metaModuleSource;
+}
+
+WrenForeignMethodFn 
+wrenMetaBindForeignMethod(WrenVM* vm, CS className, Bool isStatic, CS signature) {
+   // There is only one foreign method in the meta module.
+   ASSERT(strcmp(className, "Meta") == 0, "Should be in Meta class.");
+   ASSERT(isStatic, "Should be static.");
+   
+   if (strcmp(signature, "compile_(_,_,_)") == 0) {
+      return metaCompile;
+   }
+   
+   if (strcmp(signature, "getModuleVariables_(_)") == 0) {
+      return metaGetModuleVariables;
+   }
+   
+   ASSERT(false, "Unknown method.");
+   return NULL;
 }
 
 //}}}

@@ -11,8 +11,7 @@ static WrenVM* vm = NULL;
 //It is not a general purpose vm or REPL.
 //See wren-cli if you're looking for that.
 
-static WrenVM* initVM(bool isAPITest)
-{
+static WrenVM* initVM(bool isAPITest) {
   WrenConfiguration config;
   wrenInitConfiguration(&config);
 

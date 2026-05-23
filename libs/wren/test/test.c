@@ -2,8 +2,7 @@
 
 //path helpers
 
-  void ensureCapacity(Path* path, size_t capacity)
-  {
+  void ensureCapacity(Path* path, size_t capacity) {
     // Capacity always needs to be one greater than the actual length to have
     // room for the null byte, which is stored in the buffer, but not counted in
     // the length. A zero-character path still needs a one-character array to
@@ -20,8 +19,7 @@
     path->capacity = newCapacity;
   }
 
-  void appendSlice(Path* path, Slice slice)
-  {
+  void appendSlice(Path* path, Slice slice) {
     size_t length = slice.end - slice.start;
     ensureCapacity(path, path->length + length);
     memcpy(path->chars + path->length, slice.start, length);
@@ -29,60 +27,29 @@
     path->chars[path->length] = '\0';
   }
 
-  void pathAppendString(Path* path, const char* string)
-  {
+  void pathAppendString(Path* path, const char* string) {
     Slice slice;
     slice.start = string;
     slice.end = string + strlen(string);
     appendSlice(path, slice);
   }
 
-  inline static bool isSeparator(char c)
-  {
+  inline static bool isSeparator(char c) {
     // Slash is a separator on POSIX and Windows.
     if (c == '/') return true;
 
     // Backslash is only a separator on Windows.
-    #ifdef _WIN32
-      if (c == '\\') return true;
-    #endif
 
     return false;
   }
 
-  #ifdef _WIN32
-  inline static bool isDriveLetter(char c)
-  {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-  }
-  #endif
 
   // Gets the length of the prefix of [path] that defines its absolute root.
   //
-  // Returns 1 the leading "/". On Windows, also handles drive letters ("C:" or
-  // "C:\").
+  // Returns 1 the leading "/".
   //
   // If the path is not absolute, returns 0.
-  inline static size_t absolutePrefixLength(const char* path)
-  {
-    #ifdef _WIN32
-      // Drive letter.
-      if (isDriveLetter(path[0]) && path[1] == ':')
-      {
-        if (isSeparator(path[2]))
-        {
-          // Fully absolute path.
-          return 3;
-        } else {
-          // "Half-absolute" path like "C:", which is relative to the current
-          // working directory on drive. It's absolute for our purposes.
-          return 2;
-        }
-      }
-
-      // TODO: UNC paths.
-
-    #endif
+  inline static size_t absolutePrefixLength(const char* path) {
 
     // POSIX-style absolute path or absolute path in the current drive on Windows.
     if (isSeparator(path[0])) return 1;
@@ -91,14 +58,13 @@
     return 0;
   }
 
-  PathType pathType(const char* path)
-  {
-    if (absolutePrefixLength(path) > 0) return PATH_TYPE_ABSOLUTE;
+  PathType pathType(const char* path) {
+   if (absolutePrefixLength(path) > 0) return PATH_TYPE_ABSOLUTE;
 
-    // See if it must be relative.
-    if ((path[0] == '.' && isSeparator(path[1])) ||
-        (path[0] == '.' && path[1] == '.' && isSeparator(path[2])))
-    {
+   // See if it must be relative.
+   if ((path[0] == '.' && isSeparator(path[1])) 
+          || (path[0] == '.' && path[1] == '.' && isSeparator(path[2]))
+   ) {
       return PATH_TYPE_RELATIVE;
     }
 
@@ -144,24 +110,20 @@
     path->chars[0] = '\0';
   }
 
-  void pathRemoveExtension(Path* path)
-  {
-    for (size_t i = path->length - 1; i < path->length; i--)
-    {
+  void pathRemoveExtension(Path* path) {
+    for (size_t i = path->length - 1; i < path->length; i--) {
       // If we hit a path separator before finding the extension, then the last
       // component doesn't have one.
       if (isSeparator(path->chars[i])) return;
 
-      if (path->chars[i] == '.')
-      {
+      if (path->chars[i] == '.') {
         path->length = i;
         path->chars[path->length] = '\0';
       }
     }
   }
 
-  void pathAppendChar(Path* path, char c)
-  {
+  void pathAppendChar(Path* path, char c) {
     ensureCapacity(path, path->length + 1);
     path->chars[path->length++] = c;
     path->chars[path->length] = '\0';
@@ -177,8 +139,7 @@
     pathAppendString(path, string);
   }
 
-  void pathNormalize(Path* path)
-  {
+  void pathNormalize(Path* path) {
     // Split the path into components.
     Slice components[MAX_COMPONENTS];
     int numComponents = 0;
@@ -188,38 +149,25 @@
 
     // Split into parts and handle "." and "..".
     int leadingDoubles = 0;
-    for (;;)
-    {
-      if (*end == '\0' || isSeparator(*end))
-      {
+    for (;;) {
+      if (*end == '\0' || isSeparator(*end)) {
         // Add the current component.
-        if (start != end)
-        {
+        if (start != end) {
           size_t length = end - start;
-          if (length == 1 && start[0] == '.')
-          {
+          if (length == 1 && start[0] == '.') {
             // Skip "." components.
-          }
-          else if (length == 2 && start[0] == '.' && start[1] == '.')
-          {
+          } else if (length == 2 && start[0] == '.' && start[1] == '.') {
             // Walk out of directories on "..".
-            if (numComponents > 0)
-            {
+            if (numComponents > 0) {
               // Discard the previous component.
               numComponents--;
-            }
-            else
-            {
+            } else {
               // Can't back out any further, so preserve the "..".
               leadingDoubles++;
             }
-          }
-          else
-          {
-            if (numComponents >= MAX_COMPONENTS)
-            {
-              fprintf(stderr, "Path cannot have more than %d path components.\n",
-                MAX_COMPONENTS);
+          } else {
+            if (numComponents >= MAX_COMPONENTS) {
+              fprintf(stderr, "Path cannot have more than %d path components.\n", MAX_COMPONENTS);
               exit(1);
             }
 
@@ -246,34 +194,27 @@
 
     Path* result = pathNew("");
     size_t prefixLength = absolutePrefixLength(path->chars);
-    if (prefixLength > 0)
-    {
+    if (prefixLength > 0) {
       // It's an absolute path, so preserve the absolute prefix.
       Slice slice;
       slice.start = path->chars;
       slice.end = path->chars + prefixLength;
       appendSlice(result, slice);
-    }
-    else if (leadingDoubles > 0)
-    {
+    } else if (leadingDoubles > 0) {
       // Add any leading "..".
-      for (int i = 0; i < leadingDoubles; i++)
-      {
+      for (int i = 0; i < leadingDoubles; i++) {
         if (needsSeparator) pathAppendChar(result, '/');
         pathAppendString(result, "..");
         needsSeparator = true;
       }
-    }
-    else if (path->chars[0] == '.' && isSeparator(path->chars[1]))
-    {
+    } else if (path->chars[0] == '.' && isSeparator(path->chars[1])) {
       // Preserve a leading "./", since we use that to distinguish relative from
       // logical imports.
       pathAppendChar(result, '.');
       needsSeparator = true;
     }
 
-    for (int i = 0; i < numComponents; i++)
-    {
+    for (int i = 0; i < numComponents; i++) {
       if (needsSeparator) pathAppendChar(result, '/');
       appendSlice(result, components[i]);
       needsSeparator = true;
@@ -290,8 +231,7 @@
     free(result);
   }
 
-  char* pathToString(Path* path)
-  {
+  char* pathToString(Path* path) {
     char* string = (char*)malloc(path->length + 1);
     memcpy(string, path->chars, path->length);
     string[path->length] = '\0';
@@ -305,8 +245,7 @@
   //
   // Returns `NULL` if the path could not be found. Exits if it was found but
   // could not be read.
-  char* readFile(const char* path)
-  {
+  char* readFile(const char* path) {
     FILE* file = fopen(path, "rb");
     if (file == NULL) return NULL;
 
@@ -317,16 +256,14 @@
 
     // Allocate a buffer for it.
     char* buffer = (char*)malloc(fileSize + 1);
-    if (buffer == NULL)
-    {
+    if (buffer == NULL) {
       fprintf(stderr, "Could not read file \"%s\".\n", path);
       exit(WREN_EX_IOERR);
     }
 
     // Read the entire file.
     size_t bytesRead = fread(buffer, 1, fileSize, file);
-    if (bytesRead < fileSize)
-    {
+    if (bytesRead < fileSize) {
       fprintf(stderr, "Could not read file \"%s\".\n", path);
       exit(WREN_EX_IOERR);
     }
@@ -340,40 +277,36 @@
 
 //VM bindings
 
-  void vm_write(WrenVM* vm, const char* text)
-  {
+  void vm_write(WrenVM* vm, const char* text) {
     printf("%s", text);
   }
 
   void reportError(WrenVM* vm, WrenErrorType type, 
     const char* module, int line, const char* message)
   {
-    switch (type)
-    {
-      case WREN_ERROR_COMPILE:
-        fprintf(stderr, "[%s line %d] %s\n", module, line, message);
-        break;
+    switch (type) {
+    case WREN_ERROR_COMPILE:
+       fprintf(stderr, "[%s line %d] %s\n", module, line, message);
+       break;
 
-      case WREN_ERROR_RUNTIME:
-        fprintf(stderr, "%s\n", message);
-        break;
+    case WREN_ERROR_RUNTIME:
+       fprintf(stderr, "%s\n", message);
+       break;
 
-      case WREN_ERROR_STACK_TRACE:
-        fprintf(stderr, "[%s line %d] in %s\n", module, line, message);
-        break;
+    case WREN_ERROR_STACK_TRACE:
+       fprintf(stderr, "[%s line %d] in %s\n", module, line, message);
+       break;
     }
   }
 
-  void readModuleComplete(WrenVM* vm, const char* module, WrenLoadModuleResult result)
-  {
+  void readModuleComplete(WrenVM* vm, const char* module, WrenLoadModuleResult result) {
     if (result.source) {
       free((void*)result.source);
       result.source = NULL;
     }
   }
 
-  WrenLoadModuleResult readModule(WrenVM* vm, const char* module) 
-  {
+  WrenLoadModuleResult readModule(WrenVM* vm, const char* module) {
     //source may or may not be null
     WrenLoadModuleResult result = {0};
 
@@ -423,18 +356,15 @@
 
 //main helpers
 
-  bool isModuleAnAPITest(const char* module)
-  {
+  bool isModuleAnAPITest(const char* module) {
     if(strncmp(module, "test/api", 8) == 0) return true;
     if(strncmp(module, "test/benchmark", 14) == 0) return true;
     return false;
   }
 
-  WrenInterpretResult runFile(WrenVM* vm, const char* path)
-  {
+  WrenInterpretResult runFile(WrenVM* vm, const char* path) {
     char* source = readFile(path);
-    if (source == NULL)
-    {
+    if (source == NULL) {
       fprintf(stderr, "Could not find file \"%s\".\n", path);
       exit(WREN_EX_NOINPUT);
     }
@@ -442,8 +372,7 @@
     // If it looks like a relative path, make it explicitly relative so that we
     // can distinguish it from logical paths.
     Path* module = pathNew(path);
-    if (pathType(module->chars) == PATH_TYPE_SIMPLE)
-    {
+    if (pathType(module->chars) == PATH_TYPE_SIMPLE) {
       Path* relative = pathNew(".");
       pathJoin(relative, path);
 
@@ -461,17 +390,13 @@
     return result;
   }
 
-  int handle_args(int argc, const char* argv[]) 
-  {
-
-    if (argc < 2)
-    {
+  int handle_args(int argc, const char* argv[]) {
+    if (argc < 2) {
       printf("This is a Wren test runner.\nUsage: wren_test [file]\n");
       return WREN_EX_USAGE;
     }
 
-    if (argc == 2 && strcmp(argv[1], "--version") == 0)
-    {
+    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
       printf("wren_test is running on Wren version %s\n", WREN_VERSION_STRING);
       return 1;
     }

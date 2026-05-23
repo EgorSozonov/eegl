@@ -35,8 +35,7 @@ typedef struct {
 } Slice;
 
 // Categorizes what form a path is.
-typedef enum
-{
+typedef enum {
   // An absolute path, starting with "/" on POSIX systems, a drive letter on
   // Windows, etc.
   PATH_TYPE_ABSOLUTE,
@@ -49,8 +48,7 @@ typedef enum
 } PathType;
 
 
-typedef struct
-{
+typedef struct {
   // Dynamically allocated array of characters.
   char* chars;
 
