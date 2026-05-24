@@ -47,7 +47,7 @@ $(BIN):
 
 all:  ## Build the program
 / clear
-/ $(COMPILE) -c $(EXE) src/wren.c 
+/ $(COMPILE) -O0 -gdwarf-5 -o hw src/wren.c src/main.c -lm
 / @echo "Wren compiled successfully"
 
 

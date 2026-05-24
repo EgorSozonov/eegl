@@ -11,6 +11,7 @@ typedef unsigned char Byte;
 typedef unsigned char* CS; // ZERO-terminated byte arrays only
 typedef int32_t Int;
 typedef uint32_t Unt;
+typedef uint64_t Ulong;
 
 //A single virtual machine for executing Wren code.
 //
@@ -350,7 +351,7 @@ WrenType wrenGetSlotType(WrenVM* vm, int slot);
 // Reads a boolean value from [slot].
 //
 // It is an error to call this if the slot does not contain a boolean value.
-bool wrenGetSlotBool(WrenVM* vm, int slot);
+Bool wrenGetSlotBool(WrenVM* vm, int slot);
 
 // Reads a byte array from [slot].
 //
@@ -390,13 +391,13 @@ CS wrenGetSlotString(WrenVM* vm, int slot);
 WrenHandle* wrenGetSlotHandle(WrenVM* vm, int slot);
 
 // Stores the boolean [value] in [slot].
-void wrenSetSlotBool(WrenVM* vm, int slot, bool value);
+void wrenSetSlotBool(WrenVM* vm, int slot, Bool value);
 
 // Stores the array [length] of [bytes] in [slot].
 //
 // The bytes are copied to a new string within Wren's heap, so you can free
 // memory used by them after this is called.
-void wrenSetSlotBytes(WrenVM* vm, int slot, CS bytes, Unt length);
+void wrenSetSlotBytes(WrenVM* vm, int slot, CS bytes, Ulong length);
 
 // Stores the numeric [value] in [slot].
 void wrenSetSlotDouble(WrenVM* vm, int slot, double value);
@@ -410,7 +411,7 @@ void wrenSetSlotDouble(WrenVM* vm, int slot, double value);
 // and then the constructor will be invoked when the allocator returns.
 //
 // Returns a pointer to the foreign object's data.
-void* wrenSetSlotNewForeign(WrenVM* vm, int slot, int classSlot, Unt size);
+void* wrenSetSlotNewForeign(WrenVM* vm, int slot, int classSlot, Ulong size);
 
 // Stores a new empty list in [slot].
 void wrenSetSlotNewList(WrenVM* vm, int slot);
@@ -458,7 +459,7 @@ void wrenInsertStringIntoList(WrenVM* vm, CS v, int listSlot, int index);
 int wrenGetMapCount(WrenVM* vm, int slot);
 
 //Returns true if the key in [keySlot] is found in the map placed in [mapSlot].
-bool wrenGetMapContainsKey(WrenVM* vm, int mapSlot, int keySlot);
+Bool wrenGetMapContainsKey(WrenVM* vm, int mapSlot, int keySlot);
 
 // Retrieves a value with the key in [keySlot] from the map in [mapSlot] and
 // stores it in [valueSlot].
@@ -475,15 +476,15 @@ void wrenRemoveMapValue(WrenVM* vm, int mapSlot, int keySlot, int removedValueSl
 
 // Looks up the top level variable with [name] in resolved [module] and stores
 // it in [slot].
-void wrenGetVariable(WrenVM* vm, const char* module, CS name, int slot);
+void wrenGetVariable(WrenVM* vm, CS module, CS name, int slot);
 
 // Looks up the top level variable with [name] in resolved [module], 
 // returns false if not found. The module must be imported at the time, 
 // use wrenHasModule to ensure that before calling.
-bool wrenHasVariable(WrenVM* vm, const char* module, const char* name);
+Bool wrenHasVariable(WrenVM* vm, const char* module, const char* name);
 
 // Returns true if [module] has been imported/resolved before, false if not.
-bool wrenHasModule(WrenVM* vm, const char* module);
+Bool wrenHasModule(WrenVM* vm, const char* module);
 
 // Sets the current fiber to be aborted, and uses the value in [slot] as the
 // runtime error object.

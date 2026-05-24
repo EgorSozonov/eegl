@@ -323,7 +323,7 @@ class List is Sequence {
     return other
   }
 
-  sort() { sort {|low, high| low < high } }
+  sort() { sort {\low, high\ low < high } }
 
   sort(comparer) {
     if (!(comparer is Fn)) {
@@ -448,36 +448,38 @@ class System {
     return obj
   }
 
-  static printAll(sequence) {
-    for (object in sequence) writeObject_(object)
-    writeString_("\n")
-  }
+   static printAll(sequence) {
+      for (object in sequence) { 
+         writeObject_(object)
+      } 
+      writeString_("\n")
+   }
 
-  static write(obj) {
-    writeObject_(obj)
-    return obj
-  }
+   static write(obj) {
+      writeObject_(obj)
+      return obj
+   }
 
-  static writeAll(sequence) {
-    for (object in sequence) writeObject_(object)
-  }
+   static writeAll(sequence) {
+      for (object in sequence) writeObject_(object)
+   }
 
-  static writeObject_(obj) {
-    var string = obj.toString
-    if (string is String) {
-      writeString_(string)
-    } else {
-      writeString_("[invalid toString]")
-    }
-  }
+   static writeObject_(obj) {
+      var string = obj.toString
+      if (string is String) {
+         writeString_(string)
+      } else {
+         writeString_("[invalid toString]")
+      }
+   }
 }
 
 class ClassAttributes {
-  self { _attributes }
-  methods { _methods }
-  construct new(attributes, methods) {
-    _attributes = attributes
-    _methods = methods
-  }
-  toString { "attributes:%(_attributes) methods:%(_methods)" }
+   self { _attributes }
+   methods { _methods }
+   construct new(attributes, methods) {
+      _attributes = attributes
+      _methods = methods
+   }
+   toString { "attributes:%(_attributes) methods:%(_methods)" }
 }
