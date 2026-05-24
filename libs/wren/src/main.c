@@ -56,12 +56,27 @@ main(int argc, char** argv) {
    WrenInterpretResult result = wrenInterpret(vm, module, script);
 
    switch (result) {
-     case WREN_RESULT_COMPILE_ERROR:
-       { printf("Compile Error!\n"); } break;
-     case WREN_RESULT_RUNTIME_ERROR:
-       { printf("Runtime Error!\n"); } break;
-     case WREN_RESULT_SUCCESS:
-       { printf("Success!\n"); } break;
+   case WREN_RESULT_COMPILE_ERROR:
+     { printf("Compile Error!\n"); } break;
+   case WREN_RESULT_RUNTIME_ERROR:
+     { printf("Runtime Error!\n"); } break;
+   case WREN_RESULT_SUCCESS:
+     { printf("Success!\n"); } break;
+   }
+   
+   //Calling methods from C via handles
+   WrenHandle* hndl = wrenMakeCallHandle(vm, "meth/2");
+   wrenEnsureSlots(vm, 3);
+   wrenGetVariable(vm, "main", "Foo", 0);
+   wrenSetSlotDouble(vm, 1, 10.0);
+   wrenSetSlotDouble(vm, 2, 2.0);
+   
+   WrenInterpretResult res = wrenCall(vm, hndl);
+   if (res == WREN_RESULT_SUCCESS) {
+      double numericResult = wrenGetSlotDouble(vm, 0);
+      printf("%f\n", numericResult);
+   } else {
+      printf("some error\n");
    }
  
    wrenFreeVM(vm);

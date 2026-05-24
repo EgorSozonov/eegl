@@ -75,8 +75,7 @@ typedef struct WrenLoadModuleResult {
 // Loads and returns the source code for the module [name].
 typedef WrenLoadModuleResult (*WrenLoadModuleFn)(WrenVM* vm, CS name);
 
-// Returns a pointer to a foreign method on [className] in [module] with
-// [signature].
+// Returns a pointer to a foreign method on [className] in [module] with [signature].
 typedef WrenForeignMethodFn (*WrenBindForeignMethodFn)(
    WrenVM* vm, CS module, CS className, Bool isStatic, CS signature
 );
@@ -276,14 +275,11 @@ void wrenCollectGarbage(WrenVM* vm);
 // context of resolved [module].
 WrenInterpretResult wrenInterpret(WrenVM* vm, CS module, CS source);
 
-// Creates a handle that can be used to invoke a method with [signature] on
-// using a receiver and arguments that are set up on the stack.
-//
-// This handle can be used repeatedly to directly invoke that method from C
-// code using [wrenCall].
-//
-// When you are done with this handle, it must be released using
-// [wrenReleaseHandle].
+//Create a handle that can be used to invoke a method with [signature] on
+//using a receiver and arguments that are set up on the stack.
+//Signature should look like "method/3" where 3 is the number of method parameters
+//This handle can be used repeatedly to directly invoke that method from C code using [wrenCall].
+//When you are done with this handle, it must be released using [wrenReleaseHandle].
 WrenHandle* wrenMakeCallHandle(WrenVM* vm, CS signature);
 
 // Calls [method], using the receiver and arguments previously set up on the
@@ -481,10 +477,10 @@ void wrenGetVariable(WrenVM* vm, CS module, CS name, int slot);
 // Looks up the top level variable with [name] in resolved [module], 
 // returns false if not found. The module must be imported at the time, 
 // use wrenHasModule to ensure that before calling.
-Bool wrenHasVariable(WrenVM* vm, const char* module, const char* name);
+Bool wrenHasVariable(WrenVM* vm, CS module, CS name);
 
 // Returns true if [module] has been imported/resolved before, false if not.
-Bool wrenHasModule(WrenVM* vm, const char* module);
+Bool wrenHasModule(WrenVM* vm, CS module);
 
 // Sets the current fiber to be aborted, and uses the value in [slot] as the
 // runtime error object.

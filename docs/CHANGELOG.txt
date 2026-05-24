@@ -314,3 +314,10 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] saving deletes the file
 [+] C-f in commline opens wrong portal
 [ ] clipboard.c:get_reg_contents - can return a CString or a List, but no type tag. needs fixing
+
+
+   [[[Wren enhancements]]]
+   
+[+] "\a b c\" parameter lists instead of "|a b c|" 
+[+] "foo/3" signatures instead of "foo(_,_,_)" 
+
