@@ -583,7 +583,7 @@ free_all_mem(void) {
    clear_hl_tables();
 
    eeglFree(IObuff);
-   eeglFree(NameBuff);
+   eeglFree(nameBuffG);
    check_quickfix_busy();
    free_resub_eval_result();
    free_vbuf();
@@ -1297,7 +1297,7 @@ updateBlock0(Book *book, upd_block0_T what) {
 }
 
 //Write file name and timestamp into block 0 of a swap file. Also set book->modifiedTime.
-//Don't use NameBuff[]!!!
+//Don't use nameBuffG[]!!!
 private void
 set_b0_fname(Block0 *b0p, Book *book) {
 
@@ -1548,19 +1548,19 @@ ml_recover(int checkext) {
 
    // If .swp file name given directly, use name from swap file for book.
    if (directly) {
-      doExpandEnv(OUT filenameBuilder, b0p->b0_fname);
-      if (setfname(curBook, NameBuff, NULL, TRUE) == FAIL)
+      doExpandEnv(OUT nameBuffTextG, b0p->b0_fname);
+      if (setfname(curBook, nameBuffG, NULL, TRUE) == FAIL)
           goto theend;
    }
 
-   home_replace(NULL, mfp->fName, NameBuff, MAXPATHL, TRUE);
-   smsg(_("Using swap file \"%s\""), NameBuff);
+   home_replace(NULL, mfp->fName, nameBuffG, MAXPATHL, TRUE);
+   smsg(_("Using swap file \"%s\""), nameBuffG);
 
    if (bookSpName(curBook) != NULL)
-      copySubstrToAllocation(NameBuff, (Text){bookSpName(curBook), MAXPATHL - 1});
+      copySubstrToAllocation(nameBuffG, (Text){bookSpName(curBook), MAXPATHL - 1});
    else
-      home_replace(NULL, curBook->fullFileName, NameBuff, MAXPATHL, TRUE);
-   smsg(_("Original file \"%s\""), NameBuff);
+      home_replace(NULL, curBook->fullFileName, nameBuffG, MAXPATHL, TRUE);
+   smsg(_("Original file \"%s\""), nameBuffG);
    msg_putchar('\n');
 
    // check date of swap file and original file
@@ -2483,9 +2483,9 @@ errorret:
             // when the UI redraws part of the text.
             ++recursive;
             drawGetTranslatedBookName(book);
-            shorten_dir(NameBuff);
+            shorten_dir(nameBuffG);
             internalErrFmtMsg(
-               e_ml_get_cannot_find_line_nr_in_buffer_nr_str, lnum, book->fiNum, NameBuff
+               e_ml_get_cannot_find_line_nr_in_buffer_nr_str, lnum, book->fiNum, nameBuffG
             );
             --recursive;
          }
@@ -4169,17 +4169,17 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
                   ) {
                      // Symlinks may point to the same file even
                      // when the name differs, need to check the inode too.
-                     doExpandEnv(OUT filenameBuilder, b0.b0_fname);
+                     doExpandEnv(OUT nameBuffTextG, b0.b0_fname);
                      if (compareFnameWithInode(
-                           book->fullFileName, NameBuff, charToLong(b0.b0_ino)
+                           book->fullFileName, nameBuffG, charToLong(b0.b0_ino)
                         )
                      )
                         differ = TRUE;
                   }
                } else {
                   // The name in the swap file may be "~user/path/file".  Expand it first.
-                  doExpandEnv(OUT filenameBuilder, b0.b0_fname);
-                  if (compareFnameWithInode(book->fullFileName, NameBuff, charToLong(b0.b0_ino)))
+                  doExpandEnv(OUT nameBuffTextG, b0.b0_fname);
+                  if (compareFnameWithInode(book->fullFileName, nameBuffG, charToLong(b0.b0_ino)))
                      differ = TRUE;
                }
             }
@@ -5662,7 +5662,7 @@ mf_do_open(MemFile* mfp, CS fname, Unt flags) {      // flags for open()
 
    mfp->fName = fname;
 
-   // Get the full path name before the open fname cannot be NameBuff, because it must 
+   // Get the full path name before the open fname cannot be nameBuffG, because it must 
    // have been allocated.
    mf_set_ffname(mfp);
 

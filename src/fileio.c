@@ -366,10 +366,10 @@ init_homedir(void) {
    if (var) {
       //Change to the directory and get the actual path. This resolves links. Don't do it when 
       //we can't return.
-      if (mch_dirname(NameBuff, MAXPATHL) == OK && mch_chdir((char *)NameBuff) == 0) {
+      if (mch_dirname(nameBuffG, MAXPATHL) == OK && mch_chdir((char *)nameBuffG) == 0) {
          if (!mch_chdir((char *)var) && mch_dirname(IObuff, IOSIZE) == OK)
             var = IObuff;
-         if (mch_chdir((char *)NameBuff) != 0)
+         if (mch_chdir((char *)nameBuffG) != 0)
             emsg(_(e_cannot_go_back_to_previous_directory));
       }
       homedir = copyStr(var);
@@ -4005,7 +4005,7 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
 //options:
 //FNAME_MESS       give error message when not found
 //
-//Use NameBuff[]! Return an allocated string for the file name. NULL for error.
+//Use nameBuffG[]! Return an allocated string for the file name. NULL for error.
 CS
 findFileInPath(
    Text fname,
@@ -4035,7 +4035,7 @@ free_findfile(void){
 //FNAME_MESS       give error message when not found
 //FNAME_UNESC       unescape backslashes.
 //
-//Use NameBuff[]! Return an allocated string for the file name. NULL for error.
+//Use nameBuffG[]! Return an allocated string for the file name. NULL for error.
 private CS
 find_directory_in_path(
    Text fName,
@@ -4067,7 +4067,7 @@ find_directory_in_path(
 //options:
 //FNAME_MESS       give error message when not found
 //
-//Use NameBuff[]! Return an allocated string for the file name. NULL for error.
+//Use nameBuffG[]! Return an allocated string for the file name. NULL for error.
 private CS
 findFileInPathImpl(
    Text fName,
@@ -4091,16 +4091,16 @@ findFileInPathImpl(
       if (fName.len == 0)
          return NULL;
 
-      // copy file name into NameBuff, expanding environment variables
+      // copy file name into nameBuffG, expanding environment variables
       Byte save_char = fName.c[fName.len];
       fName.c[fName.len] = ZERO;
       file_to_findlen = doExpandEnvVarsWithEscaped(
-            OUT (Text){NameBuff, MAXPATHL}, fName.c, false, true, NULL
+            OUT (Text){nameBuffG, MAXPATHL}, fName.c, false, true, NULL
       );
       fName.c[fName.len] = save_char;
 
       eeglFree(*file_to_find);
-      *file_to_find = copySubstr(NameBuff, file_to_findlen);
+      *file_to_find = copySubstr(nameBuffG, file_to_findlen);
       if (options & FNAME_UNESC) {
          // Change all "\ " to " ".
          for (CS ptr = *file_to_find; *ptr != ZERO; ++ptr) {
@@ -4126,7 +4126,7 @@ findFileInPathImpl(
       //If this is not a first call, return NULL.  We already returned a filename on the first call.
       if (first == TRUE) {
          int      l;
-         int      NameBufflen;
+         int      nameBuffGlen;
          int      run;
          Unt   rel_fnamelen = 0;
          CS suffix;
@@ -4150,7 +4150,7 @@ findFileInPathImpl(
                && rel_fnamelen + l < MAXPATHL
             ) {
                l = eeSnprintf(
-                  NameBuff,
+                  nameBuffG,
                   MAXPATHL,
                   "%.*s%s",
                   (int)(fiGetShortFiName(rel_fname) - rel_fname),
@@ -4158,24 +4158,24 @@ findFileInPathImpl(
                   *file_to_find
                );
             } else {
-                STRCPY(NameBuff, *file_to_find);
+                STRCPY(nameBuffG, *file_to_find);
                 run = 2;
             }
 
             // When the file doesn't exist, try adding parts of @suffixesadd
-            NameBufflen = l;
+            nameBuffGlen = l;
             suffix = suffixes;
             for (;;) {
-               if (mch_getperm(NameBuff) >= 0
+               if (mch_getperm(nameBuffG) >= 0
                     && (find_what == FINDFILE_BOTH
-                   || ((find_what == FINDFILE_DIR) == mch_isdir(NameBuff)))
+                   || ((find_what == FINDFILE_DIR) == mch_isdir(nameBuffG)))
                ) {
-                  file_name = copySubstr(NameBuff, NameBufflen);
+                  file_name = copySubstr(nameBuffG, nameBuffGlen);
                   goto theend;
                }
                if (*suffix == ZERO)
                   break;
-               NameBufflen = l + copy_option_part(&suffix, NameBuff + l, MAXPATHL - l, ",");
+               nameBuffGlen = l + copy_option_part(&suffix, nameBuffG + l, MAXPATHL - l, ",");
             }
          }
       }
@@ -7252,11 +7252,11 @@ recursivelyDeleteDir(CS name){
       ArrayList    ga;
 
       if (readdir_core(&ga, FALSE, READDIR_SORT_NONE) == OK) {
-         int   len = eeSnprintf(NameBuff, MAXPATHL, "%s/", exp);
+         int   len = eeSnprintf(nameBuffG, MAXPATHL, "%s/", exp);
 
          for (int i = 0; i < ga.len; ++i) {
-            eeSnprintf(NameBuff + len, MAXPATHL - len, "%s", ((Byte **)ga.c)[i]);
-            if (!recursivelyDeleteDir(NameBuff))
+            eeSnprintf(nameBuffG + len, MAXPATHL - len, "%s", ((Byte **)ga.c)[i]);
+            if (!recursivelyDeleteDir(nameBuffG))
                 // Remember the failure but continue deleting any further entries.
                 result = false;
          }

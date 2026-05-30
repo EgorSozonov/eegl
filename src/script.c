@@ -1076,7 +1076,6 @@ scriptRunFileInternal(
       fname_not_fixed = doExpandEnvInMultiplePaths(fname);
       if (!fname_not_fixed)
          goto theend;
-      _bp(true);
       fname_exp = fiExpandAndCopy(fname_not_fixed, true);
       if (mch_isdir(fname_exp)) {
          smsg(_("Cannot source a directory: \"%s\""), fname);
@@ -1298,8 +1297,8 @@ c_scriptnames(Invocation* invo) {
          if (invo->addr_count > 0)
             invo->arg = SCRIPT_ITEM(invo->line2)->sn_name;
          else {
-            doExpandEnv(OUT filenameBuilder, invo->arg);
-            invo->arg = NameBuff;
+            doExpandEnv(OUT nameBuffTextG, invo->arg);
+            invo->arg = nameBuffG;
          }
          do_exedit(invo, NULL);
       }
@@ -1312,7 +1311,7 @@ c_scriptnames(Invocation* invo) {
       if (si->sn_name != NULL) {
          Byte sourced_buf[20];
 
-         home_replace(NULL, si->sn_name, NameBuff, MAXPATHL, TRUE);
+         home_replace(NULL, si->sn_name, nameBuffG, MAXPATHL, TRUE);
          if (si->sn_sourced_sid > 0)
             eeSnprintf(sourced_buf, 20, "->%d", si->sn_sourced_sid);
          else
@@ -1321,7 +1320,7 @@ c_scriptnames(Invocation* invo) {
              i,
              sourced_buf,
              si->sn_state == SN_STATE_NOT_LOADED ? " A" : "",
-             NameBuff);
+             nameBuffG);
          if (!message_filtered(IObuff)) {
             msg_putchar('\n');
             msg_outtrans(IObuff);
@@ -2644,13 +2643,13 @@ c_breaklist(Invocation* invo UNUSED) {
    for (int i = 0; i < dbg_breakp.len; ++i) {
       bp = &BREAKP(i);
       if (bp->dbg_type == DBG_FILE)
-         home_replace(NULL, bp->dbg_name, NameBuff, MAXPATHL, TRUE);
+         home_replace(NULL, bp->dbg_name, nameBuffG, MAXPATHL, TRUE);
       if (bp->dbg_type != DBG_EXPR)
          smsg(
             _("%3d  %s %s  line %ld"),
             bp->dbg_nr,
             bp->dbg_type == DBG_FUNC ? "func" : "file",
-            bp->dbg_type == DBG_FUNC ? bp->dbg_name : NameBuff,
+            bp->dbg_type == DBG_FUNC ? bp->dbg_name : nameBuffG,
             (long)bp->dbg_lnum
          );
       else
@@ -3713,8 +3712,8 @@ showmatches_oneline(
          if (showtail)
             p = SHOW_MATCH(j);
          else {
-            home_replace(NULL, matches->c[j], NameBuff, MAXPATHL, TRUE);
-            p = NameBuff;
+            home_replace(NULL, matches->c[j], nameBuffG, MAXPATHL, TRUE);
+            p = nameBuffG;
          }
       } else {
           isdir = FALSE;
@@ -3788,8 +3787,8 @@ showmatches(Expand *xp, int wildmenu, int noselect){
               || xp->context == EXPAND_SHELLCMD
               || xp->context == EXPAND_BUFFERS)
          ){
-            home_replace(NULL, matches.c[i], NameBuff, MAXPATHL, TRUE);
-            len = eeglStrSize(NameBuff);
+            home_replace(NULL, matches.c[i], nameBuffG, MAXPATHL, TRUE);
+            len = eeglStrSize(nameBuffG);
          } else
             len = eeglStrSize(showtail ? showmatches_gettail(matches.c[i]) : matches.c[i]);
          if (len > maxlen)
@@ -5243,8 +5242,8 @@ get_scriptnames_arg(Expand *xp UNUSED, int idx) {
       return NULL;
 
    si = SCRIPT_ITEM(idx + 1);
-   home_replace(NULL, si->sn_name, NameBuff, MAXPATHL, TRUE);
-   return NameBuff;
+   home_replace(NULL, si->sn_name, nameBuffG, MAXPATHL, TRUE);
+   return nameBuffG;
 }
 
 //Function given to expandGeneric() to obtain the possible arguments of the

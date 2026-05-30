@@ -5933,7 +5933,6 @@ doOneCommand(
    LineGetter fgetline,
    void* cookie      // argument for fgetline()
 ){
-
    CS p;
    LineNr   lnum;
    long   n;
@@ -6460,8 +6459,8 @@ doOneCommand(
    if ((invo.argFlags & XFILE) && expand_filename(&invo, OUT commline, OUT &errorMsg) == FAIL)
       goto doend;
 
-   //Accept buffer name.  Cannot be used at the same time with a buffer
-   //number.  Don't do this for a user command.
+   //Accept book name. Cannot be used at the same time with a book number. Don't do this for 
+   //a user command.
    if ((invo.argFlags & BUFNAME) && *invo.arg != ZERO && invo.addr_count == 0
           && !IS_USER_COMMAND(invo.id)) {
       //:bdelete, :bwipeout and :bunload take several arguments, separated
@@ -8394,10 +8393,10 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
                //present.
                if (firstOccurrence(invo->arg, '$') != NULL || firstOccurrence(invo->arg, '~') != NULL) {
                   doExpandEnvVarsWithEscaped(
-                        OUT (Text){NameBuff, MAXPATHL}, invo->arg, true, true, NULL
+                        OUT (Text){nameBuffG, MAXPATHL}, invo->arg, true, true, NULL
                   );
-                  has_wildcards = mch_has_wildcard(NameBuff);
-                  p = NameBuff;
+                  has_wildcards = mch_has_wildcard(nameBuffG);
+                  p = nameBuffG;
                }  else
                   p = NULL;
             } else { // n == 2
@@ -10074,11 +10073,11 @@ post_chdir(CdScopeKind scope) {
          globaldir = copyStr(pdir);
 
       // Remember this local directory for the portal.
-      if (mch_dirname(NameBuff, MAXPATHL) == OK) {
+      if (mch_dirname(nameBuffG, MAXPATHL) == OK) {
          if (scope == CDSCOPE_TABPAGE)
-            curtab->localdir = copyStr(NameBuff);
+            curtab->localdir = copyStr(nameBuffG);
          else
-            curPor->localDir = copyStr(NameBuff);
+            curPor->localDir = copyStr(nameBuffG);
       }
    } else {
       // We are now in the global directory, no need to remember its name.
@@ -10131,13 +10130,13 @@ changedir_func(CS new_dir, CdScopeKind scope){
    }
 
    // Save current directory for next ":cd -"
-   pdir = (mch_dirname(NameBuff, MAXPATHL) == OK) ? copyStr(NameBuff) : null;
+   pdir = (mch_dirname(nameBuffG, MAXPATHL) == OK) ? copyStr(nameBuffG) : null;
 
    // ":cd" means: go to home directory.
    if (*new_dir == ZERO) {
-      // use NameBuff for home directory name
-      doExpandEnv(OUT filenameBuilder, S"$HOME");
-      new_dir = NameBuff;
+      // use nameBuffG for home directory name
+      doExpandEnv(OUT nameBuffTextG, S"$HOME");
+      new_dir = nameBuffG;
    }
    dir_differs = pdir == NULL || pathcmp(pdir, new_dir, -1) != 0;
    if (dir_differs) {
@@ -10192,7 +10191,7 @@ c_cd(Invocation* invo) {
 // ":pwd".
 void
 c_pwd(Invocation* invo UNUSED) {
-   if (mch_dirname(NameBuff, MAXPATHL) == OK) {
+   if (mch_dirname(nameBuffG, MAXPATHL) == OK) {
       if (p_verbose > 0) {
          CS context = S"global";
 
@@ -10202,9 +10201,9 @@ c_pwd(Invocation* invo UNUSED) {
             context = S"window";
          ei (curtab->localdir)
             context = S"tabpage";
-         smsg("[%s] %s", context, (char *)NameBuff);
+         smsg("[%s] %s", context, (char *)nameBuffG);
       } else
-         msg(NameBuff);
+         msg(nameBuffG);
    } else
       emsg(_(e_directory_unknown));
 }
@@ -11896,7 +11895,6 @@ doExpandEnvVarsWithEscaped(
                // if var[] ends in a path separator and tail[] starts with it, skip a character
                if (after_pathsep(wr, wr + c) && *tail == '/')
                   ++tail;
-               wr += c;
                src = tail;
                copyChar = false;
             }

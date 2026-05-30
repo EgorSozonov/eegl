@@ -2663,15 +2663,15 @@ recording_mode(char flags) {
    msgPutsDeco(s, flags);
 }
 
-//Get buffer name for "book" into NameBuff[].
+//Get buffer name for "book" into nameBuffG[].
 //Take care of special book names and translate special characters.
 void
 drawGetTranslatedBookName(Book* book) {
    if (bookSpName(book))
-      copySubstrToAllocation(NameBuff, (Text){bookSpName(book), MAXPATHL - 1});
+      copySubstrToAllocation(nameBuffG, (Text){bookSpName(book), MAXPATHL - 1});
    else
-      home_replace(book, book->currFileName, NameBuff, MAXPATHL, TRUE);
-   trans_characters(NameBuff, MAXPATHL);
+      home_replace(book, book->currFileName, nameBuffG, MAXPATHL, TRUE);
+   trans_characters(nameBuffG, MAXPATHL);
 }
 
 // Get the character to use in a status line. Write its decorations into "*deco"
@@ -3417,7 +3417,7 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
       fillchar = statusLineNextChar(OUT &deco, po);
 
       drawGetTranslatedBookName(po->book);
-      CS p = NameBuff;
+      CS p = nameBuffG;
       int plen = (int)STRLEN(p);
 
       if ((bookIsHelp(po->book)
@@ -3465,10 +3465,10 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
       drawText(p, row, po->portalCol, deco.flags);
       fillRowsWithTwoChars(row, row + 1, plen + po->portalCol,
             this_ru_col + po->portalCol, fillchar, fillchar, deco.flags);
-      if ((nameBufflen = get_keymap_str(po, (CS)"<%s>", NameBuff, MAXPATHL)) > 0
+      if ((nameBufflen = get_keymap_str(po, (CS)"<%s>", nameBuffG, MAXPATHL)) > 0
             && (this_ru_col - plen) > (nameBufflen + 1))
          drawText(
-            NameBuff, row, (int)(this_ru_col - nameBufflen - 1 + po->portalCol), deco.flags
+            nameBuffG, row, (int)(this_ru_col - nameBufflen - 1 + po->portalCol), deco.flags
          );
 
       redrawRuler(po, TRUE, ignore_pum);

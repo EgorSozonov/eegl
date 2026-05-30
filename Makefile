@@ -14,19 +14,14 @@
 # The name of this file MUST be Makefile (note the uppercase 'M').
 #{{{ config
 
+GLIBC_LIBS = -lm -lattr
+LIBS	= $(GLIBC_LIBS) -ltinfo -lwayland-client
+
 VIEWNAME	= view
 
-CC		= gcc
 DEFS	= -DHAVE_CONFIG_H
-#CFLAGS = -gdwarf-5 -gsplit-dwarf -Winline -Wfatal-errors -Werror=pointer-integer-compare \
-#         -O0  -Werror=return-type -D_REENTRANT \
-#         -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -fno-pie
-#CFLAGS		= -O2  -D_REENTRANT  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
-CPPFLAGS	= 
-srcdir		= .
+srcdir = 
 
-LDFLAGS		= -L/usr/local/lib -Wl,--as-needed -no-pie
-LIBS		= -lm -ltinfo -lattr
 TAGPRG		= ctags
 
 CPP		= gcc -E
@@ -39,11 +34,10 @@ X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
 X_LIBS		= -lXt -lX11
 
-WAYLAND_LIBS = -lwayland-client
 WAYLAND_SRC	= libs/wayland/ext-data-control-v1.c \
         libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c
 WAYLAND_OBJ	= .b/ext-data-control-v1.o .b/xdg-shell.o .b/primary-selection-unstable-v1.o
-WAYLAND_FLAGS    = 
+WAYLAND_FLAGS  = 
 
 
 
@@ -304,42 +298,29 @@ MSGFMT_DESKTOP	= eegl.desktop
 # }}}
 
 
-#DO NOT CHANGE the next line, we need it for configure to find the compiler
-#instead of using the default from the "make" program.
-#Use a line further down to change the value for CC.
-CC=
-
 # Argument for running ctags.
 TAGS_FILES = *.c *.h
 
-# Change and use these defines if configure cannot find your Motif stuff.
-
-srcdir = src 
 VIEWNAME = view
 
 #{{{what used to be auto/config.mk
 
-EXNAME		= eegl
+EXNAME = eegl
 VIEWNAME	= view
 
-CC		= gcc
-DEFS		= -DHAVE_CONFIG_H
-CFLAGS	= --std=c17 -gdwarf-5 -Wall -Wextra -Wfatal-errors -O0 \
+CC ?= gcc
+DEFS = -DHAVE_CONFIG_H
+CFLAGS ?= --std=c17 -gdwarf-5 -Wall -Wextra -Wfatal-errors -O0 \
               -Wno-cpp -Werror=return-type -D_REENTRANT -Werror=pointer-compare \
               -fdebug-prefix-map=$(shell pwd)=. \
               -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -fno-pie
         
+LDFLAGS ?= -L/usr/local/lib -Wl,--as-needed -no-pie
+
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 #C_FLAGS		= -O2  -D_REENTRANT  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 CPPFLAGS	= 
-srcdir		= .
 
-LDFLAGS		= -L/usr/local/lib -Wl,--as-needed -no-pie
-LIBS		= -lm -ltinfo -lattr
-TAGPRG		= ctags
-
-CPP		= gcc -E
-CPP_MM	= M
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
 LINK_AS_NEEDED	= yes
 X_FLAGS	=  
@@ -550,24 +531,6 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 #CONF_OPT_AUTOSERVE = --enable-autoservername
 
 # COMPILER - Name of the compiler {{{1
-# The default from configure will mostly be fine, no need to change this, just
-# an example. If a compiler is defined here, configure will use it rather than
-# probing for one. It is dangerous to change this after configure was run.
-# Make will use your choice then -- but beware: Many things may change with
-# another compiler.  It is wise to run 'make reconfig' to start all over
-# again.
-#CC = cc
-CC = gcc
-#CC = clang
-
-# COMPILER FLAGS - change as you please. Either before running {{{1
-# configure or afterwards. For examples see below.
-# When using -g with some older versions of Linux you might get a
-# statically linked executable.
-# When not defined, configure will try to use -O2 for gcc and -O for others.
-#C_FLAGS = -g
-#C_FLAGS = -O
-
 
 # Often used for GCC: mixed optimizing, lot of optimizing, debugging
 #C_FLAGS = -g -O2 -fno-strength-reduce -Wall -Wshadow -Wmissing-prototypes
@@ -724,7 +687,7 @@ VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 
 ### DESTDIR	root of the installation tree.  This is prepended to the other
 #		directories.  This directory must exist.
-#DESTDIR  = ~/pkg/vim
+DESTDIR  ?= .
 
 ### Directory of the man pages
 MAN1DIR = /man1
@@ -808,8 +771,6 @@ SCRIPTLOC	= $(VIMRTLOC)
 
 ### Name of the defaults/evim/mswin file target.
 VIM_DEFAULTS_FILE = $(DESTDIR)$(SCRIPTLOC)/defaults.vim
-EVIM_FILE	= $(DESTDIR)$(SCRIPTLOC)/evim.vim
-MSWIN_FILE	= $(DESTDIR)$(SCRIPTLOC)/mswin.vim
 
 ### Name of the menu file target.
 SYS_MENU_FILE	= $(DESTDIR)$(SCRIPTLOC)/menu.vim
@@ -924,13 +885,6 @@ PRINTSOURCE = ../runtime/print
 # Where to look translated README and LICENSE files
 TRANSSOURCE = ../lang
 
-# If you are using Linux, you might want to use this to make vim the
-# default vi editor, it will create a link from vi to Eegl when doing
-# "make install".  An existing file will be overwritten!
-# When not using it, some make programs can't handle an undefined $(LINKIT).
-#LINKIT = ln -f -s $(DEST_BIN)/$(EEGLTARGET) $(DESTDIR)/usr/bin/vi
-LINKIT = @echo >/dev/null
-
 ###
 
 
@@ -938,7 +892,6 @@ LINKIT = @echo >/dev/null
 ### prototype headers are ignored due to -DPROTO, system
 ### headers #include <...> are ignored if we use the -MM option, as
 ### e.g. provided by gcc-cpp.
-### Need to change "-I /<path>" to "-isystem /<path>" for GCC 3.x.
 CPP_DEPEND = $(CC) -I$(srcdir) -M$(CPP_MM) \
 		`echo "$(DEPEND_FLAGS)" $(DEPEND_FLAGS_FILTER)`
 
@@ -968,7 +921,7 @@ PROTO_FLAGS = -d -E"$(CPP)" $(NO_ATTR)
 ##   no changes required below this line      ##
 ################################################
 
-SHELL = /bin/sh
+SHELL ?= /bin/bash
 
 .SUFFIXES:
 .SUFFIXES: .c .o .pro
@@ -997,8 +950,7 @@ ALL_LIBS = \
 	   $(EXTRA_LIBS) \
 	   $(PROFILE_LIBS) \
 	   $(SANITIZER_LIBS) \
-	   $(LEAK_LIBS) \
-	   $(WAYLAND_LIBS)
+	   $(LEAK_LIBS)
 
 # abbreviations
 DEST_BIN = $(DESTDIR)$(BINDIR)
@@ -1284,7 +1236,7 @@ $(EEGLTARGET): $(OBJ)
 		-o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)" \
 		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
 		PROG="eegl" \
-		sh $(srcdir)/link.sh
+		bash link.sh
 	@echo '                                 '
 	@echo '                    .^^~-.       '
 	@echo '                    / ,__`)      '
@@ -2117,7 +2069,6 @@ VIM_H_DEPENDENCIES = eegl.h termdefs.h commands.h
 
 .b/.dirstamp:
 	mkdir -p .b
-	mkdir -p .b/os
 	touch .b/.dirstamp
 
 # All object files depend on the objects directory, so that parallel make

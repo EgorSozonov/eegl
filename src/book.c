@@ -4131,10 +4131,10 @@ bookListFiles(Invocation* invo) {
          continue;
       CS name = bookSpName(book);
       if (name)
-         copySubstrToAllocation(OUT NameBuff, (Text){name, MAXPATHL - 1});
+         copySubstrToAllocation(OUT nameBuffG, (Text){name, MAXPATHL - 1});
       else
-         home_replace(book, book->currFileName, NameBuff, MAXPATHL, TRUE);
-      if (message_filtered(NameBuff))
+         home_replace(book, book->currFileName, nameBuffG, MAXPATHL, TRUE);
+      if (message_filtered(nameBuffG))
          continue;
 
       changed_char = (book->flags & BF_READERR) ? 'x' : (doWasBookChanged(book) ? '+' : ' ');
@@ -4158,7 +4158,7 @@ bookListFiles(Invocation* invo) {
          book->mem.mfile == NULL ? ' ' : (book->countPortals == 0 ? 'h' : 'a'),
          ro_char,
          changed_char,
-         NameBuff
+         nameBuffG
       );
 
       // put "line 999" in column 40 or after the file name
@@ -4499,7 +4499,7 @@ private int      *stl_separator_locations = NULL;
 int
 bookRenderStatusLine(
    Portal* po,
-   CS out,      // string book to write into != NameBuff
+   CS out,      // string book to write into != nameBuffG
    Unt outlen,      // length of out[]
    CS fmt,
    Byte oname,      // one of STATLINE_* constants
@@ -4847,16 +4847,16 @@ bookRenderStatusLine(
          fillable = FALSE;   // don't change ' ' to fillchar
          CS name = bookSpName(po->book);
          if (name)
-            copySubstrToAllocation(OUT NameBuff, (Text){name, MAXPATHL - 1});
+            copySubstrToAllocation(OUT nameBuffG, (Text){name, MAXPATHL - 1});
          else {
             CS t = (opt == STL_FULLPATH) ? po->book->fullFileName : po->book->currFileName;
-            home_replace(po->book, t, NameBuff, MAXPATHL, TRUE);
+            home_replace(po->book, t, nameBuffG, MAXPATHL, TRUE);
          }
-         trans_characters(NameBuff, MAXPATHL);
+         trans_characters(nameBuffG, MAXPATHL);
          if (opt != STL_FILENAME)
-            str = NameBuff;
+            str = nameBuffG;
          else
-            str = fiGetShortFiName(NameBuff);
+            str = fiGetShortFiName(nameBuffG);
          break;
       }
 
@@ -5071,12 +5071,13 @@ bookRenderStatusLine(
                (opt == STL_MODIFIED_ALT) + doWasBookChanged(po->book) * 2 
                 + (!po->book->o.modifiable) * 4
          ) {
-         case 2: str = S"[+]"; break;
+         case 2: str = S"(+)"; break;
          case 3: str = S",+"; break;
-         case 4: str = S"[-]"; break;
-         case 5: str = S",-"; break;
-         case 6: str = S"[+-]"; break;
-         case 7: str = S",+-"; break;
+         case 4: 
+         case 5: 
+         case 6: 
+         case 7: 
+            str = S"[-]"; break;
          }
          break;
 
@@ -5967,7 +5968,7 @@ new_file_message(void) {
 //When "reset_changed" is TRUE and "append" == FALSE and "start" == 1 and
 //"end" == curBook->mem.lineCount, reset curBook->wasModified.
 //
-//This function must NOT use NameBuff (because it's called by autowrite()).
+//This function must NOT use nameBuffG (because it's called by autowrite()).
 //
 //return FAIL for failure, OK otherwise
 int

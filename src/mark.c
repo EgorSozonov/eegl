@@ -409,17 +409,17 @@ fname2fnum(FileMarkExt* fm) {
    //First expand "~/" in the file name to the home directory.
    //Don't expand the whole name since it may contain other '~' chars.
    if (fm->fname[0] == '~' && (fm->fname[1] == '/')) {
-      Unt len = doExpandEnv(OUT filenameBuilder, S"~/");
-      copySubstrToAllocation(NameBuff + len, (Text){fm->fname + 2, MAXPATHL - len - 1});
+      Unt len = doExpandEnv(OUT nameBuffTextG, S"~/");
+      copySubstrToAllocation(nameBuffG + len, (Text){fm->fname + 2, MAXPATHL - len - 1});
    } else
-      copySubstrToAllocation(NameBuff, (Text){fm->fname, MAXPATHL - 1});
+      copySubstrToAllocation(nameBuffG, (Text){fm->fname, MAXPATHL - 1});
 
    // Try to shorten the file name.
    mch_dirname(IObuff, IOSIZE);
-   CS p = shorten_fname(NameBuff, IObuff);
+   CS p = shorten_fname(nameBuffG, IObuff);
 
    // bookNew() will call fmarks_check_names()
-   (void)bookNew(NameBuff, p, (LineNr)1, 0);
+   (void)bookNew(nameBuffG, p, (LineNr)1, 0);
 }
 
 //Check all file marks for a name that matches the file name in book. May replace the name with an 

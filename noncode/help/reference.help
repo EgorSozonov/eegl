@@ -598,46 +598,42 @@ When on, Eegl shows a completion menu as you type, similar to using
 
 @@autocompletedelay      Global. Numeric. Default = 0
 
-Delay in milliseconds before the autocomplete menu appears after
-typing. If you prefer it not to open too quickly, set this value
-slightly above your typing speed. See |ins-autocompletion|.
+Delay in milliseconds before the autocomplete menu appears after typing. If you prefer it not to 
+open too quickly, set this value slightly above your typing speed. See |ins-autocompletion|.
 
 
 @@autoindent             Book. Boolean. Default = off
 
-Copy indent from current line when starting a new line (typing <CR>
-in Insert mode or when using the "o" or "O" command).  If you do not
-type anything on the new line except <BS> or CTRL-D and then type
-<Esc>, CTRL-O or <CR>, the indent is deleted again.  Moving the cursor
-to another line has the same effect.
-When autoindent is on, formatting (with the "gq" command or when you
-reach @textwidth in Insert mode) uses the indentation of the first line.
-When @smartindent or @cindent is on the indent is changed in a different way.
+Copy indent from current line when starting a new line (typing <CR> in Insert mode or when using 
+the "o" or "O" command).  If you do not type anything on the new line except <BS> or CTRL-D and 
+then type <Esc>, CTRL-O or <CR>, the indent is deleted again.  Moving the cursor to another line 
+has the same effect. When autoindent is on, formatting (with the "gq" command or when you reach 
+@textwidth in Insert mode) uses the indentation of the first line. When @smartindent or @cindent 
+is on the indent is changed in a different way.
 
          
 @@autoshelldir           Global. Boolean. Default = off
    
-When on, Eegl will change the current working directory whenever you
-change the directory of the shell running in a terminal window. You
-need proper setting-up, so whenever the shell's pwd changes an OSC 7
-escape sequence will be emitted.  For example, on Linux, you can
-source /etc/profile.d/vte.sh in your shell profile if you use bash or
-zsh.  For bash this should work (put it in a bash init file):
+When on, Eegl will change the current working directory whenever you change the directory of the 
+shell running in a terminal window. You need proper setting-up, so whenever the shell's pwd 
+changes an OSC 7 escape sequence will be emitted.  For example, on Linux, you can source 
+/etc/profile.d/vte.sh in your shell profile if you use bash or zsh.  For bash this should work 
+(put it in a bash init file):
    
    if [[ -n "$VIM_TERMINAL" ]]; then
-       PROMPT_COMMAND='_vim_sync_PWD'
-       function _vim_sync_PWD() {
-      printf '\033]7;file://%s\033\\' "$PWD"
-       }
+      PROMPT_COMMAND='_vim_sync_PWD'
+      function _vim_sync_PWD() {
+         printf '\033]7;file://%s\033\\' "$PWD"
+      }
    fi
    
 Or, in a zsh init file:
    if [[ -n "$VIM_TERMINAL" ]]; then
-       autoload -Uz add-zsh-hook
-       add-zsh-hook -Uz chpwd _vim_sync_PWD
-       function _vim_sync_PWD() {
-      printf '\033]7;file://%s\033\\' "$PWD"
-       }
+      autoload -Uz add-zsh-hook
+      add-zsh-hook -Uz chpwd _vim_sync_PWD
+      function _vim_sync_PWD() {
+         printf '\033]7;file://%s\033\\' "$PWD"
+      }
    fi
       
 In a fish init file:
@@ -673,43 +669,6 @@ Like @autowrite, but also used for commands ":edit", ":enew", ":quit",
 ":qall", ":exit", ":xit", ":recover" and closing the Eegl window.
 Setting this option also implies that Eegl behaves like @autowrite has been set.
 
-
-@@liteTheme              Global. Boolean. Default = off.
-   
-When off, Eegl will try to use colors that look good on a dark background. When on, Eegl will try 
-to use colors that look good on a light background.
-Eegl tries to set the default value according to the terminal used.
-This will not always be correct.
-Setting this option does not change the background color, it tells Eegl what the background color 
-looks like.  For changing the background color, see |:hi-normal|.
-
-When @background is changed Eegl will adjust the default color groups
-for the new value.  But the colors used for syntax highlighting will not change.
-   *g:colors_name*
-When a color scheme is loaded (the "g:colors_name" variable is set) changing @background will 
-cause the color scheme to be reloaded. If the color scheme adjusts to the value of @background 
-this will work. However, if the color scheme sets @background itself the effect may
-be undone. First delete the "g:colors_name" variable when needed.
-
-The |:terminal| command and the |term_start()| function use the
-@background value to decide whether the terminal window will start
-with a white or black background.
-
-Normally this option would be set in the .vimrc file.  Possibly
-depending on the terminal name.  Example: 
-
-   :if &term == "pcterm"
-   :  set background=dark
-   :endif
-   
-When this option is set, the default settings for the highlight groups
-will change.  To use other settings, place ":highlight" commands AFTER
-the setting of the @background option.
-This option is also used in the "$VIMRUNTIME/syntax/syntax.vim" file
-to select the colors for syntax highlighting.  After changing this
-option, you must load syntax.vim again to see the result.  This can be
-done with ":syntax on".
-   
    
 @@backup                 Global. Boolean. Default = off
 
@@ -2224,12 +2183,10 @@ with the @h flag in @eeglinfo |eeglinfo-h|.
 
 @@ignorecase             Global. Boolean. Default = off
    
-   Ignore case in search patterns, |cmdline-completion|, when
-   searching in the tags file, non-|Eegl9| |expr-==| and for Insert-mode
-   completion |ins-completion|.
-   Also see @smartcase and @tagcase.
-   Can be overruled by using "\c" or "\C" in the pattern, see
-   |/ignorecase|.
+Ignore case in search patterns, |cmdline-completion|, when
+searching in the tags file and for Insert-mode completion |ins-completion|.
+Also see @smartcase and @tagcase.
+Can be overruled by using "\c" or "\C" in the pattern, see |/ignorecase|.
 
 
 @@include                Global. String. Default = "^\s*#\s*include"
@@ -2898,13 +2855,12 @@ This is a list of directories which will be searched when using the
 provided that the file being searched for has a relative path (not
 starting with "/", "./" or "../").  The directories in the @path
 option may be relative or absolute.
-- Use commas to separate directory names: >
+- Use commas to separate directory names: 
+
    :set path=.,/usr/local/include,/usr/include
-<   - Spaces can also be used to separate directory names (for backwards
-  compatibility with version 3.0).  To have a space in a directory
-  name, precede it with an extra backslash, and escape the space: >
-   :set path=.,/dir/with\\\ space
-<   - To include a comma in a directory name precede it with an extra
+   
+   
+   - To include a comma in a directory name precede it with an extra
   backslash: >
    :set path=.,/dir/with\\,comma
 <   - To search relative to the directory of the current file, use: >
@@ -3199,15 +3155,13 @@ It is a list of flags:
      n   use "[New]" instead of "[New File]"         *shm-n*
      r   use "[RO]" instead of "[readonly]"         *shm-r*
      w   use "[w]" instead of "written" for file write message   *shm-w*
-      and "[a]" instead of "appended" for ':w >> file' command
+         and "[a]" instead of "appended" for ':w >> file' command
      x   use "[dos]" instead of "[dos format]", "[unix]"      *shm-x*
-      instead of "[unix format]" and "[mac]" instead of "[mac
-      format]"
+         instead of "[unix format]" and "[mac]" instead of "[mac format]"
      a   all of the above abbreviations            *shm-a*
 
      o   overwrite message for writing a file with subsequent   *shm-o*
-         message for reading a file (useful for ":wn" or when
-         @autowrite on)
+         message for reading a file (useful for ":wn" or when @autowrite on)
      O   message for reading a file overwrites any previous   *shm-O*
          message;  also for quickfix message (e.g., ":cn")
      s   don't give "search hit BOTTOM, continuing at TOP" or   *shm-s*
@@ -4745,19 +4699,18 @@ waiting for a surface to gain focus, see |wayland-focus-steal|.
 
 @@wrap                   Portal. Boolean. Default = on
    
-This option changes how text is displayed.  It doesn't change the text
-in the book, see @textwidth for that.
-When on, lines longer than the width of the window will wrap and
-displaying continues on the next line.  When off lines will not wrap
-and only part of long lines will be displayed.  When the cursor is
-moved to a part that is not shown, the screen will scroll
-horizontally.
-The line will be broken in the middle of a word if necessary.  See
-@linebreak to get the break at a word boundary.
-To make scrolling horizontally a bit more useful, try this: >
+This option changes how text is displayed.  It doesn't change the text in the book, see @textwidth 
+for that. When on, lines longer than the width of the window will wrap and displaying continues on
+the next line.  When off lines will not wrap and only part of long lines will be displayed.  When 
+the cursor is moved to a part that is not shown, the screen will scroll horizontally.
+The line will be broken in the middle of a word if necessary.  See @linebreak to get the break at 
+a word boundary.
+To make scrolling horizontally a bit more useful, try this:
+
    :set sidescroll=5
    :set listchars+=precedes:<,extends:>
-<   See @sidescroll, @listchars and |wrap-off|.
+   
+   See @sidescroll, @listchars and |wrap-off|.
 This option can't be set @diff is on.
 
 

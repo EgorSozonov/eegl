@@ -22,10 +22,6 @@ typedef struct {
    NamedColor darkFg; // foreground color  if theme is dark
    NamedColor darkBg; // background color if theme is dark
    NamedColor darkUnder; // underline color if theme is dark
-   
-   NamedColor liteFg; // foreground color  if theme is lite
-   NamedColor liteBg; // background color if theme is lite
-   NamedColor liteUnder; // underline color if theme is lite
     
    int link;   // link to this hilite group ID
    int deflink;   // default link; restored in clearHiliteWorker()
@@ -39,9 +35,6 @@ typedef enum {
    BG,
    FG,
    SPEC,
-   LITEBG,
-   LITEFG,
-   LITE_UNDER,
    DECO,
    LINK,
    KEY_PARSE_ERROR
@@ -775,23 +768,23 @@ changeColor(OUT NamedColor* tgt, Text arg) {
 
 //Set the foreground color for the hilite group at 'id'. Return TRUE if the color is set
 private int
-setForeground(HiliteGroup* group, Text arg, Boole isLite){
-   return changeColor(isLite ? &(group->liteFg) : &(group->darkFg), arg);
+setForeground(HiliteGroup* group, Text arg){
+   return changeColor(&(group->darkFg), arg);
 }
 
 //Set the background color for the hilite group at 'id'. Returns TRUE if the color is set
 private int
-setBackground(HiliteGroup* group, Text arg, Boole isLite){
-   return changeColor(isLite ? &(group->liteBg) : &(group->darkBg), arg);
+setBackground(HiliteGroup* group, Text arg){
+   return changeColor(&(group->darkBg), arg);
 }
 
 //Set the underline/undercurl color for the hilite group at 'id'.
 //Return TRUE if the color is set.
 private int
-setUnderline(OUT HiliteGroup* group, Text arg, int init, Boole isLite) {
+setUnderline(OUT HiliteGroup* group, Text arg, int init) {
    if (init && (group->isLink))
       return FALSE;
-   return changeColor(isLite ? &(group->liteUnder) : &(group->darkUnder), arg);
+   return changeColor(&(group->darkUnder), arg);
 }
 
 //{{{printing hilite groups
@@ -825,12 +818,6 @@ printHilite(HiliteGroup* group) {
                           group->darkBg.name);
       printHiliteFieldNew(//group, S"under", 
                           group->darkUnder.name);
-      printHiliteFieldNew(//group, S"liteFg", 
-                          group->liteFg.name);
-      printHiliteFieldNew(//group, S"liteBg", 
-                          group->liteBg.name);
-      printHiliteFieldNew(//group, S"liteUnder", 
-                          group->liteUnder.name);
    } else {
       msg_outtrans((CS)"CLEARED");
    }
@@ -989,51 +976,19 @@ parseHiliteKey(Text key) {
       retVal = BG;
    } ei (sliceCmpToConst(key, "under")) {
       retVal = SPEC;
-   } ei (sliceCmpToConst(key, "liteFg")) {
-      retVal = LITEFG;
-   } ei (sliceCmpToConst(key, "liteBg")) {
-      retVal = LITEBG;
-   } ei (sliceCmpToConst(key, "liteUnder")) {
-      retVal = LITE_UNDER;
    } else {
       retVal = KEY_PARSE_ERROR;
    }
    return retVal;
 }
 
-// Copy colors into lite and dark partitions; put only the active colors into main partition
-private void
-copyLiteDarkColors(HiliteGroup* restrict g) {
-   if (g->liteFg.c != INVALCOLOR && g->darkFg.c == INVALCOLOR) {
-      g->darkFg = g->liteFg;
-   } ei (g->darkFg.c != INVALCOLOR && g->liteFg.c == INVALCOLOR) {
-      g->liteFg = g->darkFg;
-   }
-   if (g->liteBg.c != INVALCOLOR && g->darkBg.c == INVALCOLOR) {
-      g->darkBg = g->liteBg;
-   } ei (g->darkBg.c != INVALCOLOR && g->liteBg.c == INVALCOLOR) {
-      g->liteBg = g->darkBg;
-   }
-   if (g->liteUnder.c != INVALCOLOR && g->darkUnder.c == INVALCOLOR) {
-      g->darkUnder = g->liteUnder;
-   } ei (g->darkUnder.c != INVALCOLOR && g->liteUnder.c == INVALCOLOR) {
-      g->liteUnder = g->darkUnder;
-   }
-}
-
 // Write the info from a hilite group to the corresponding decoration in decorationsG
 private void
 writeToDecoration(HiliteGroup* restrict g) {
    Decoration deco;
-   if (liteThemeG) {
-      deco.fg = g->liteFg.c;
-      deco.bg = g->liteBg.c;
-      deco.under = g->liteUnder.c;
-   } else {
-      deco.fg = g->darkFg.c;
-      deco.bg = g->darkBg.c;
-      deco.under = g->darkUnder.c;
-   }
+   deco.fg = g->darkFg.c;
+   deco.bg = g->darkBg.c;
+   deco.under = g->darkUnder.c;
    deco.flags = g->flags;
    deco.hiId = g->hiId;
    decorationsG[g->hiId] = deco;
@@ -1160,32 +1115,17 @@ doHilite(
          break;
       }
       case FG: {
-         if (setForeground(OUT group, val, false))
+         if (setForeground(OUT group, val))
             didFieldChange = true;
          break; 
       } 
       case BG: {
-         if (setBackground(OUT group, val, false))
+         if (setBackground(OUT group, val))
             didFieldChange = true;
          break; 
       } 
       case SPEC: {
-         if (setUnderline(OUT group, val, init, false))
-            didFieldChange = true;
-         break; 
-      } 
-      case LITEFG: {
-         if (setForeground(OUT group, val, true))
-            didFieldChange = true;
-         break; 
-      } 
-      case LITEBG: {
-         if (setBackground(OUT group, val, true))
-            didFieldChange = true;
-         break; 
-      } 
-      case LITE_UNDER: {
-         if (setUnderline(OUT group, val, init, true))
+         if (setUnderline(OUT group, val, init))
             didFieldChange = true;
          break; 
       } 
@@ -1211,7 +1151,6 @@ doHilite(
       return;
    }
 breakTheLoop:
-   copyLiteDarkColors(group);
    writeToDecoration(group);
    // When hiliting has been given for a group, don't link it
    if (didFieldChange)
@@ -1252,9 +1191,6 @@ clearHiliteWorker(Short hiId) {
    g->darkFg = (NamedColor){.c = INVALCOLOR, .name = {}};
    g->darkBg = (NamedColor){.c = INVALCOLOR, .name = {}};
    g->darkUnder = (NamedColor){.c = INVALCOLOR, .name = {}};
-   g->liteFg = (NamedColor){.c = INVALCOLOR, .name = {}};
-   g->liteBg = (NamedColor){.c = INVALCOLOR, .name = {}};
-   g->liteUnder = (NamedColor){.c = INVALCOLOR, .name = {}};
    // Restore default link and context if they exist. Otherwise clears.
    g->link = SHORT;
    // Since we set the default link, set the location to where the default link was set.
@@ -1350,13 +1286,11 @@ hiliteColor(Short hiId, DecoColor which) {
       rgbString[10] = ZERO;
       return (Text){rgbString, 10};
    case FG_COLOR:
-      return copyText(liteThemeG ? (hilites[hiId].liteFg.name) : (hilites[hiId].darkFg.name));
+      return copyText(hilites[hiId].darkFg.name);
    case BG_COLOR:
-      return copyText(liteThemeG ? (hilites[hiId].liteBg.name) : (hilites[hiId].darkBg.name));
+      return copyText(hilites[hiId].darkBg.name);
    case UNDER_COLOR:
-      return copyText(liteThemeG 
-            ? (hilites[hiId].liteUnder.name) 
-            : (hilites[hiId].darkUnder.name));
+      return copyText(hilites[hiId].darkUnder.name);
    }
    return (Text){E, 0}; // unreachable
 }
@@ -1432,32 +1366,14 @@ resolveLinksByGroup(HiliteGroup* group) {
 
 private void
 parseColorNames(OUT HiliteGroup* g){
-   if (liteThemeG) {
-      if (g->liteFg.name.len > 0) {
-         g->liteFg = getColorByName(g->liteFg.name);
-      } ei (g->darkFg.name.len > 0) {
-         g->darkFg = getColorByName(g->darkFg.name);
-      }
-      if (g->liteBg.name.len > 0) {
-         g->liteBg = getColorByName(g->liteBg.name);
-      } ei (g->darkBg.name.len > 0) {
-         g->darkBg = getColorByName(g->darkBg.name);
-      }
-      if (g->liteUnder.name.len > 0) {
-         g->liteUnder = getColorByName(g->liteUnder.name);
-      } ei (g->darkUnder.name.len > 0) {
-         g->darkUnder = getColorByName(g->darkUnder.name);
-      }
-   } else {
-      if (g->darkFg.name.len > 0) {
-         g->darkFg = getColorByName(g->darkFg.name);
-      }
-      if (g->darkBg.name.len > 0) {
-         g->darkBg = getColorByName(g->darkBg.name);
-      }
-      if (g->darkUnder.name.len > 0) {
-         g->darkUnder = getColorByName(g->darkUnder.name);
-      }
+   if (g->darkFg.name.len > 0) {
+      g->darkFg = getColorByName(g->darkFg.name);
+   }
+   if (g->darkBg.name.len > 0) {
+      g->darkBg = getColorByName(g->darkBg.name);
+   }
+   if (g->darkUnder.name.len > 0) {
+      g->darkUnder = getColorByName(g->darkUnder.name);
    }
 }
 
@@ -1645,17 +1561,10 @@ getDecoFlags(Short hiId) {
 Decoration
 getFullDecoration(Unt hiId) {
    HiliteGroup* g = hilites + hiId;
-   if (liteThemeG) {
-      return (Decoration) {
-         .fg = g->liteFg.c, .bg = g->liteBg.c, .under = g->liteUnder.c, .flags = g->flags, 
-         .hiId = hiId
-      };
-   } else {
-      return (Decoration) {
-         .fg = g->darkFg.c, .bg = g->darkBg.c, .under = g->darkUnder.c, .flags = g->flags, 
-         .hiId = hiId
-      };
-   }
+   return (Decoration) {
+      .fg = g->darkFg.c, .bg = g->darkBg.c, .under = g->darkUnder.c, .flags = g->flags, 
+      .hiId = hiId
+   };
 }
 
 Boole

@@ -6717,14 +6717,13 @@ private void
 vterm_state_set_unrecognized_fallbacks(
       VTermState *state, const VTermStateFallbacks *fallbacks, void *user
 ) {
-  if (fallbacks) {
-    state->fallbacks = fallbacks;
-    state->fbdata = user;
-  }
-  else {
-    state->fallbacks = NULL;
-    state->fbdata = NULL;
-  }
+   if (fallbacks) {
+      state->fallbacks = fallbacks;
+      state->fbdata = user;
+   } else {
+      state->fallbacks = NULL;
+      state->fbdata = NULL;
+   }
 }
 
 private int
@@ -9937,13 +9936,8 @@ init_default_colors(Terminal* term) {
    VTermColor* bg = &term->cellDeco.bg;
 
    // Vterm uses a default black background. Set it to white when 'liteTheme' is set
-   if (liteThemeG) {
-      fgval = 0;
-      bgval = 255;
-   } else {
-      fgval = 255;
-      bgval = 0;
-   }
+   fgval = 255;
+   bgval = 0;
    fg->red = fg->green = fg->blue = fgval;
    bg->red = bg->green = bg->blue = bgval;
    fg->type = VTERM_COLOR_RGB | VTERM_COLOR_DEFAULT_FG;
@@ -10142,8 +10136,8 @@ url_decode(const char *src, const Unt len, CS dst) {
 //and what VTerm provides via VTermStringFragment is "file://HOSTNAME/CURRENT/DIR"
 private void
 sync_shell_dir(ArrayList* gap) {
-   int       offset = 7;  // len of "file://" is 7
-   char      *pos = (char *)gap->c + offset;
+   int offset = 7;  // len of "file://" is 7
+   char* pos = (char *)gap->c + offset;
    CS new_dir;
 
    // remove HOSTNAME to get PWD
@@ -10226,8 +10220,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
    return 1;
 }
 
-// Called by libvterm when it cannot recognize a CSI sequence. We recognize the portal position 
-// report.
+//Called when we cannot recognize a CSI sequence. We recognize the portal position report.
 private int
 parse_csi(
    CS leader UNUSED,
@@ -10237,11 +10230,11 @@ parse_csi(
    Byte command,
    void* user
 ){
-   Terminal   *term = (Terminal *)user;
-   int      len;
-   int      x = 0;
-   int      y = 0;
-   Portal   *po;
+   Terminal* term = (Terminal *)user;
+   int len;
+   int x = 0;
+   int y = 0;
+   Portal* po;
 
    // We recognize only CSI 13 t
    if (command != 't' || argcount != 1 || args[0] != 13)
@@ -13253,9 +13246,9 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
 
    if (modified || countPortals > 1) {
       if (countPortals > 1) {
-         eeSnprintf(NameBuff, MAXPATHL, "%d", countPortals);
-         len = (Unt)STRLEN(NameBuff);
-         drawTextLen_for_tabpanel(tplmode, NameBuff, len, getDecoFlags(HLF_T), tapa);
+         eeSnprintf(nameBuffG, MAXPATHL, "%d", countPortals);
+         len = (Unt)STRLEN(nameBuffG);
+         drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getDecoFlags(HLF_T), tapa);
       }
       if (modified) {
          buf[0] = '+';
@@ -13267,9 +13260,9 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    }
 
    drawGetTranslatedBookName(tapa->currPort->book);
-   shorten_dir(NameBuff);
-   len = (int)STRLEN(NameBuff);
-   drawTextLen_for_tabpanel(tplmode, NameBuff, len, 0, tapa);
+   shorten_dir(nameBuffG);
+   len = (int)STRLEN(nameBuffG);
+   drawTextLen_for_tabpanel(tplmode, nameBuffG, len, 0, tapa);
 
    // fill the tailing area of current row.
    if (*tapa->prow >= tapa->offsetrow && *tapa->prow < tapa->offsetrow + tapa->maxrow) {

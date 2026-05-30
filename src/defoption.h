@@ -168,7 +168,7 @@ OPTION("helpheight", p_hh, long, 20, 0, &setHelpHeight, NULL)
 OPTION("helplang", p_hlg, CS, null, P_ONECOMMA, &did_set_helplang, NULL)
 OPTION("history", p_hi, long, 200, 0, &setHistory, null)
 OPTION("hlsearch", p_hls, Boole, true, P_RALL|P_HLONLY, &did_set_hlsearch, NULL)
-OPTION("ignorecase", p_ic, Boole, false, 0, &did_set_ignorecase, null)
+OPTION("ignorecase", p_ic, Boole, true, 0, &did_set_ignorecase, null)
 OPTION("incsearch", p_is, Boole, false, 0, null, null)
 OPTION("isfname", p_isf, CS, "@,48-57,/,.,-,_,+,,,#,$,%,~,=", P_COMMA|P_NODUP, 
    &setIsopt, NULL)
@@ -177,7 +177,6 @@ OPTION("langmap", p_langmap, CS, null, P_ONECOMMA|P_NODUP, &setLangmap, NULL)
 OPTION("langremap", p_lrm, Boole, false, 0, null, NULL)
 OPTION("lazyredraw", p_lz, Boole, false, 0, null, null)
 OPTION("lines", visibleRowsG, long, 24, P_NODEFAULT|P_NO_MKRC|P_RCLR, &setVisibleLines, NULL)
-OPTION("liteTheme", liteThemeG, Boole, false, P_RCLR|P_HLONLY, &setLiteTheme, null)
 OPTION("makeef", p_mef, CS, "make.err", P_EXPAND, NULL, NULL)
 // open the location list when "make" is done
 OPTION("makeOpenWhenDone", makeOpenWhenDoneG, Boole, true, 0, null, null)
@@ -292,7 +291,6 @@ OPTION("foldtext", foldText, CS, "foldtext()", P_REDRAW_PORT,
    &setOptexpr, null)
 OPTION("foldmarker", foldMarker, CS, "{{{,}}}",  P_REDRAW_PORT|P_ONECOMMA|P_NODUP,
     &did_set_foldmarker, NULL)
-OPTION("linebreak", lineBreak, Boole, false, P_REDRAW_PORT, null, null)
 OPTION("list", list, Boole, false, P_REDRAW_PORT, null, null)
 OPTION("relativenumber", relativeNumber, Boole, true, P_REDRAW_PORT, null, null)
 OPTION("numberwidth", numberWidth, long, 4, P_REDRAW_PORT, &did_set_numberwidth, NULL)
@@ -325,9 +323,6 @@ OPTION("termwinsize", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsize
 #endif 
 
 #ifdef OPTIONS_DEF_BOOK 
-
-// used for @cinkeys and @indentkeys
-#define INDENTKEYS_DEFAULT "0{,0},0),0],:,0#,!^F,o,O,e"
 
 OPTION("autoindent", autoIndent, Boole, false, 0, null, null)
 OPTION("backupcopy", backupCopy, Unt, BKC_AUTO, P_ONECOMMA|P_NODUP, 
@@ -401,7 +396,6 @@ OPTION("undofile", undoFile, Boole, false, 0, &did_set_undofile, null)
 #undef TYPEBASED_Byte
 #undef TYPEBASED_Unt
 #undef TYPEBASED_CallbackPtr
-#undef INDENTKEYS_DEFAULT
 #undef OPTION
    
 #endif 

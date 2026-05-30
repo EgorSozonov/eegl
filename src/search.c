@@ -4695,8 +4695,8 @@ searchFixHelpBook(void) {
          CS cp;
 
          // Find all "doc/ *.help" files in this directory.
-         STRCAT(NameBuff, "*.??[help]");
-         if (gen_expand_wildcards(1, &NameBuff, EW_FILE|EW_SILENT, OUT &files) == OK
+         STRCAT(nameBuffG, "*.??[help]");
+         if (gen_expand_wildcards(1, &nameBuffG, EW_FILE|EW_SILENT, OUT &files) == OK
              && files.len > 0
          ){
             Unt i2;
@@ -4810,29 +4810,29 @@ generateHelpTagsForDir(
 
    // Find all *.txt files.
    int dirlen = (int)STRLEN(dir);
-   STRCPY(NameBuff, dir);
-   STRCAT(NameBuff, "/**/*");
-   STRCAT(NameBuff, ext);
+   STRCPY(nameBuffG, dir);
+   STRCAT(nameBuffG, "/**/*");
+   STRCAT(nameBuffG, ext);
    
    ExpandMatch files = {};
    files.a = createArena();
    
-   int res = gen_expand_wildcards(1, &NameBuff, EW_FILE|EW_SILENT, OUT &files);
+   int res = gen_expand_wildcards(1, &nameBuffG, EW_FILE|EW_SILENT, OUT &files);
    if (res == FAIL || files.len == 0) {
       if (!gotInterruptG)
-          showErrFmtMsg(_(e_no_match_str_1), NameBuff);
+          showErrFmtMsg(_(e_no_match_str_1), nameBuffG);
       deleteArena(files.a);
       return;
    }
 
    //Open the tags file for writing. Do this before scanning through all the files.
-   STRCPY(NameBuff, dir);
-   add_pathsep(NameBuff);
-   STRCAT(NameBuff, tagfname);
-   FILE* fd_tags = FOPEN(NameBuff, "w");
+   STRCPY(nameBuffG, dir);
+   add_pathsep(nameBuffG);
+   STRCAT(nameBuffG, tagfname);
+   FILE* fd_tags = FOPEN(nameBuffG, "w");
    if (!fd_tags) {
       if (!ignore_writeerr)
-         showErrFmtMsg(_(e_cannot_open_str_for_writing_1), NameBuff);
+         showErrFmtMsg(_(e_cannot_open_str_for_writing_1), nameBuffG);
       deleteArena(files.a);
       return;
    }
@@ -4954,10 +4954,10 @@ generateHelpTagsForDir(
          while (*p1 == *p2) {
             if (*p2 == '\t') {
                *p2 = ZERO;
-               eeSnprintf(NameBuff, MAXPATHL,
+               eeSnprintf(nameBuffG, MAXPATHL,
                   _(e_duplicate_tag_str_in_file_str_str),
                       ((Byte **)ga.c)[i], dir, p2 + 1);
-               emsg(NameBuff);
+               emsg(nameBuffG);
                *p2 = '\t';
                break;
             }
@@ -5008,13 +5008,13 @@ do_helptags(CS dirname, int add_help_tags, int ignore_writeerr) {
    ExpandMatch files = {};
 
    // Get a list of all files in the help directory and in subdirectories.
-   STRCPY(NameBuff, dirname);
-   add_pathsep(NameBuff);
-   STRCAT(NameBuff, "**");
-   if (gen_expand_wildcards(1, &NameBuff, EW_FILE|EW_SILENT, OUT &files) == FAIL
+   STRCPY(nameBuffG, dirname);
+   add_pathsep(nameBuffG);
+   STRCAT(nameBuffG, "**");
+   if (gen_expand_wildcards(1, &nameBuffG, EW_FILE|EW_SILENT, OUT &files) == FAIL
        || files.len == 0
    ) {
-      showErrFmtMsg(_(e_no_match_str_1), NameBuff);
+      showErrFmtMsg(_(e_no_match_str_1), nameBuffG);
       return;
    }
 

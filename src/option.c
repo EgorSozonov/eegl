@@ -411,10 +411,7 @@ set_init_default_cdpath(void) {
 
 //Set an option to its default value. Do not take care of side effects!
 private void
-setDefault(
-   Option* o,
-   SetScope setScope
-){
+setDefault(Option* o, SetScope setScope){
    OptionRef ref = getRefInScope(o, setScope);
    
    if (o->defaultValue.tag == OPTION_STRING) {
@@ -534,9 +531,9 @@ stropt_copy_value( CS arg) {
       int i;
 
       if (*arg == '\\' && arg[1] != ZERO)
-          ++arg;   // remove backslash
+         ++arg;   // remove backslash
       if ((i = utfCharLen(arg)) > 1) {
-         // copy multibyte char
+         //copy multibyte char
          mch_memmove(s, arg, (Unt)i);
          arg += i;
          s += i;
@@ -798,7 +795,6 @@ setNumericImpl(
    return errmsg;
 }
 
-
 //Set a numeric option. Return an untranslated error message or NULL.
 private CS
 parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope) {
@@ -808,7 +804,6 @@ parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope) {
    //Different ways to set a number option:
    //[-]0-9       set number
    //other       error
-   ++arg;
    if (*arg == '-' || EE_ISDIGIT(*arg)) {
       // Allow negative (for @undolevels) and hex numbers.
       int i; 
@@ -836,11 +831,11 @@ did_set_option(Option* o){
    o->flags |= P_WAS_SET;
 }
 
+//The only way to set an option to a new value
 private CS
 setImpl(Option* o, OptionValue newValue, SetScope setScope) {
    CS errmsg;
    OptionRef ref = getRefInScope(o, setScope);
-   
    switch (o->defaultValue.tag) {
    case OPTION_BOOLE:
       if (newValue.tag != OPTION_BOOLE) {
@@ -958,7 +953,6 @@ parseAndSetImpl(Option* o, CS arg, SetScope setScope) {
 
    //Expand environment variables and ~.
    newVal = expandEnvVarsInStringOption(o, newVal);
-   
    setFromString(OUT o, arg, newVal, setScope);
    return errmsg;
 }
@@ -967,7 +961,7 @@ private CS
 tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
    // find end of name
    int len = 0;
-   while (ASCII_ISALNUM((*arg)[len]) || (*arg)[len] == '_')
+   while (ASCII_ISALNUM((*arg)[len]))
       ++len;
    
    if (len == 0)
@@ -978,7 +972,8 @@ tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
    (*arg)[len] = ZERO;
    *o = findOption(*arg);
    (*arg)[len] = afterchar;
-   return null;
+   *arg += len;
+   return o ? null : e_option_not_supported;
 }
 
 //:set an option to a new value. Return NULL if OK, return an untranslated error message when 
@@ -986,19 +981,18 @@ tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
 private CS
 parseAndSet(SetScope setScope, OUT CS* arg) {
    Option* o;
+   _bp(true);
    CS errmsg = tryFindOptionFromCommand(OUT &o, OUT arg);
    if (errmsg)
       return errmsg;
 
-   int len = 0;
-   while (SPACE_OR_TAB((*arg)[len]))
-      ++len;
+   *arg = skipwhite(*arg);
 
-   Unt nextchar = (*arg)[len];   // next non-white char after option name
+   Unt nextchar = (*arg)[0];   // next non-white char after option name
    if (nextchar != '=') {
       return e_use_get_not_set_for_reading_options;
    }
-   len++; // consume `=`
+   *arg = skipwhite(*arg + 1); // consume `=`
    // Make sure the option value can be changed.
    if (frozenOptionsG && setScope == SET_GLOBAL)
       return e_options_are_frozen;
@@ -1032,34 +1026,35 @@ stringToChar(CS arg, Boole multi_byte) {
    return *arg;
 }
 
-//Expand environment variables for some string options. If "val" is NULL, expand the current value 
-//of the option. Return a fresh allocation, or "" when not expanded.
+//Expand environment variables for some string options. If "newVal" is NULL, expand the current 
+//value of the option. Return a fresh allocation if expanded, or "newVal".
 private CS
-expandEnvVarsInStringOption(Option* o, CS val) {
+expandEnvVarsInStringOption(Option* o, CS newVal) {
    //if option doesn't need expansion, nothing to do
    if ((o->flags & P_EXPAND) == 0)
-      return null;
+      return newVal;
 
    //If val is longer than MAXPATHL, no meaningful expansion can be done;
    //doExpandEnv() would truncate the string.
-   if (val && STRLEN(val) > MAXPATHL)
-      return null;
+   if (newVal && STRLEN(newVal) > MAXPATHL)
+      return newVal;
 
-   if (!val) {
+   if (!newVal) {
       if ((o->flags & (P_BOOK|P_PORTAL)) != 0) {
-         val = o->c.local.val.string;
+         newVal = o->c.local.val.string;
       } else {
-         val = *(o->c.reference.string);
+         newVal = *(o->c.reference.string);
       }
    }
       
-   if (!val)
+   if (!newVal)
       return null;
 
-   if (STRCMP(NameBuff, val) == 0)   // they are the same
-      return null;
+   doExpandEnvVarsWithEscaped(OUT nameBuffTextG, newVal, false, false, null);
+   if (eq(nameBuffG, newVal))   // they are the same
+      return newVal;
 
-   return copyStr(NameBuff);
+   return copyStr(nameBuffG);
 }
 
 //Get the script context of global option "name".
@@ -1220,7 +1215,7 @@ optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
    //Retrieve the existing value, but escape it as a reverse of setting it. We technically only 
    //need to do this when append or includeOrigVal is true.
    toString(expandOptionS, expandOptionScopeS);
-   CS var = NameBuff;
+   CS var = nameBuffG;
    CS buffer = escape_option_str_cmdline(var);
 
    cha.origValue = optStr(buffer);
@@ -1231,7 +1226,7 @@ optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
    return num_ret;
 }
 
-//Get the value for the numeric or string option in a nice format into NameBuff[].
+//Get the value for the numeric or string option in a nice format into nameBuffG[].
 private void
 toString(Option* o, SetScope scope) {
    OptionRef ref = getRefInScope(o, scope);
@@ -1239,16 +1234,16 @@ toString(Option* o, SetScope scope) {
       long wc = 0;
 
       if (wildcharUseKeyname(ref, &wc))
-         STRCPY(NameBuff, get_special_key_name((int)wc, 0));
+         STRCPY(nameBuffG, get_special_key_name((int)wc, 0));
       ei (wc != 0)
-         STRCPY(NameBuff, transchar((int)wc));
+         STRCPY(nameBuffG, transchar((int)wc));
       else
-         SPRINTF(NameBuff, "%ld", *ref.num);
+         SPRINTF(nameBuffG, "%ld", *ref.num);
    } else {   // P_STRING
       if ((o->flags & P_EXPAND) != 0)
-         home_replace(NULL, *ref.string, NameBuff, MAXPATHL, false);
+         home_replace(NULL, *ref.string, nameBuffG, MAXPATHL, false);
       else
-         copySubstrToAllocation(NameBuff, (Text){*ref.string, MAXPATHL - 1});
+         copySubstrToAllocation(nameBuffG, (Text){*ref.string, MAXPATHL - 1});
    }
 }
 
@@ -1458,9 +1453,9 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
    msg_puts(o->fullName);
    if (!(o->defaultValue.tag == OPTION_BOOLE)) {
       msg_putchar('=');
-      // put value string in NameBuff
+      // put value string in nameBuffG
       toString(o, setScope);
-      msg_outtrans(NameBuff);
+      msg_outtrans(nameBuffG);
    }
 
    silentModeG = save_silent;
@@ -2097,7 +2092,7 @@ printSingleOption(
          len = 1;      // a toggle option fits always
       else {
          toString(o, setScope);
-         len = (int)STRLEN(o->fullName) + eeglStrSize(NameBuff) + 1;
+         len = (int)STRLEN(o->fullName) + eeglStrSize(nameBuffG) + 1;
       }
       if ((len <= INC - GAP && run == 0) || (len > INC - GAP && run == 1))
          items[*item_count++] = o;
@@ -2320,9 +2315,9 @@ optExpandOldOption(OUT ExpandMatch* matches) {
    CS var = NULL;
 
    if (expandOptionS) {
-      // put string of option value in NameBuff
+      // put string of option value in nameBuffG
       toString(expandOptionS, expandOptionScopeS);
-      var = NameBuff;
+      var = nameBuffG;
    }
 
    CS buffer = escape_option_str_cmdline(var);
@@ -2939,14 +2934,6 @@ did_set_messagesopt(OptionChange* cha) {
 private int
 expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_mopt_values));
-}
-
-private CS
-setLiteTheme(OptionChange* cha UNUSED) {
-   liteThemeG = cha->newVal.boole;
-   initHilite(FALSE);
-   term_update_colors_all();
-   return NULL;
 }
 
 #if defined(PROTO)
@@ -3591,7 +3578,6 @@ private Option OPTIONS_BOOK[] = {
 
 private void optSetStringDefault_esc(CS name, CS val, Boole escape);
 private CS findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags);
-private CS expandEnvVarsInStringOption(Option* o, CS val);
 private int find_key_option(CS arg_arg, Boole has_lt);
 private void printOptions(ToPrint which);
 private OptionRef getRefInScope(Option *p, SetScope setScope);
@@ -4248,7 +4234,7 @@ findOption(CS arg) {
          Unt complexInd = NAME_INDICES[i].index;
          if (complexInd <= SHORT) {
             return (Option*)(OPTIONS_GLOBAL + complexInd);
-         } ei (complexInd <= 2*(SHORT + 1)) {
+         } ei (complexInd < 2*(SHORT + 1)) {
             return (Option*)(OPTIONS_PORTAL + complexInd - (SHORT + 1));
          } else {
             return (Option*)(OPTIONS_BOOK + complexInd - 2*(SHORT + 1));
@@ -4759,8 +4745,8 @@ init_locale(void) {
    // initialized yet, call eeglGetEnv() directly
    CS p = eeglGetEnv((CS)"EEGLRUNTIME");
    if (p && *p != ZERO) {
-      eeSnprintf(NameBuff, MAXPATHL, "%s/lang", p);
-      BINDTEXTDOMAIN(EEGLPACKAGE, NameBuff);
+      eeSnprintf(nameBuffG, MAXPATHL, "%s/lang", p);
+      BINDTEXTDOMAIN(EEGLPACKAGE, nameBuffG);
    }
    if (mustfree)
       eeglFree(p);

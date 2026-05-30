@@ -3992,11 +3992,8 @@ nv_colon(ActionArg* aArg) {
    // get a command line and execute it
    int flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
    
-   int   commResult;
-   if (isCmdkey)
-      commResult = do_cmdkey_command(aArg->cmdchar, flags);
-   else
-      commResult = doCommand(NULL, getexline, NULL, flags);
+   int commResult = (isCmdkey) 
+      ? do_cmdkey_command(aArg->cmdchar, flags) : doCommand(NULL, getexline, NULL, flags);
 
    if (commResult == FAIL) {
       // The command failed, do not execute the operator.

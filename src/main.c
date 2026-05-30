@@ -316,7 +316,7 @@ private CS start_dir = NULL;   // current working dir on startup
 
 int 
 main(int argc, char** argv) {
-   // Do any system-specific initialisations.  These can NOT use IObuff or NameBuff.  
+   // Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
    // Thus emsg2() cannot be called!
    mch_early_init();
 
@@ -667,7 +667,7 @@ init0(void) {
 
    //Allocate space for the generic buffers (needed for optInit0() and emsg()).
    IObuff = alloc(IOSIZE);
-   NameBuff = alloc(MAXPATHL);
+   nameBuffG = alloc(MAXPATHL);
    TIME_MSG("Allocated generic buffers");
 }
 

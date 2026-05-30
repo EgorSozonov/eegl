@@ -1392,9 +1392,9 @@ openscript(CS name, Boole directly) {
 
    if (scriptin[curscript] != NULL)   // already reading script
       ++curscript;
-   // use NameBuff for expanded name
-   doExpandEnv(OUT filenameBuilder, name);
-   if ((scriptin[curscript] = fopen((char *)NameBuff, READBIN)) == NULL) {
+   // use nameBuffG for expanded name
+   doExpandEnv(OUT nameBuffTextG, name);
+   if ((scriptin[curscript] = fopen((char *)nameBuffG, READBIN)) == NULL) {
       showErrFmtMsg(_(e_cant_open_file_str), name);
       if (curscript)
          --curscript;

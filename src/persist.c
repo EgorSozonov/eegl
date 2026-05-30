@@ -1083,8 +1083,8 @@ eeglinfo_filename(CS file) {
 #ifdef EEGLINFO_FILE2
          if (mch_getenv((CS)"HOME") == NULL) {
             // don't use $EEGL when not available.
-            doExpandEnv(OUT filenameBuilder, S"$EEGL");
-            if (STRCMP("$EEGL", NameBuff) != 0)  // $EEGL was expanded
+            doExpandEnv(OUT nameBuffTextG, S"$EEGL");
+            if (STRCMP("$EEGL", nameBuffG) != 0)  // $EEGL was expanded
                file = (CS)EEGLINFO_FILE2;
             else
                file = (CS)EEGLINFO_FILE;
@@ -1092,8 +1092,8 @@ eeglinfo_filename(CS file) {
 #endif
          file = (CS)EEGLINFO_FILE;
       }
-      Unt len = doExpandEnv(OUT filenameBuilder, file);
-      file = NameBuff;
+      Unt len = doExpandEnv(OUT nameBuffTextG, file);
+      file = nameBuffG;
 
       return copySubstr(file, len);
    }
@@ -1270,10 +1270,10 @@ readEeglinfoBookList(Vir* virp, int      writing) {
 
       // Expand "~/" in the file name at "line + 1" to a full path.
       // Then try shortening it by comparing with the current directory
-      doExpandEnv(OUT filenameBuilder, xline);
-      sfname = shorten_fname1(NameBuff);
+      doExpandEnv(OUT nameBuffTextG, xline);
+      sfname = shorten_fname1(nameBuffG);
 
-      book = bookNew(NameBuff, sfname, (LineNr)0, BLN_LISTED);
+      book = bookNew(nameBuffG, sfname, (LineNr)0, BLN_LISTED);
       if (book != NULL) {  // just in case...
          book->lastCursor.lnum = lnum;
          book->lastCursor.col = col;

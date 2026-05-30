@@ -164,7 +164,7 @@ typedef void (*sighandler_T) SIGPROTOARG;
 
 #define SYNTAX_FNAME   "$EEGLRUNTIME/ftype/%s.vim"
 
-#define DFLT_BDIR    ".,~/tmp,~/"    // default for 'backupdir'
+#define DFLT_BDIR    "$HOME/.local/state/eegl"    // default for 'backupdir'
 
 #define DFLT_DIR     ".,~/tmp,/var/tmp,/tmp" // default for 'directory'
 
@@ -858,7 +858,7 @@ typedef enum {
 #define RGB(r, g, b)   (((r)<<16) | ((g)<<8) | (b))
 #endif
 
-#define filenameBuilder (Text){NameBuff, MAXPATHL}
+#define nameBuffTextG (Text){nameBuffG, MAXPATHL}
 
 //}}}
 
@@ -2156,7 +2156,6 @@ EXTERN CS p_isk;    //@iskeyword
 EXTERN CS p_kp;     //@keywordprg
 EXTERN CS p_kpc;    //@keyprotocol
 EXTERN CS p_langmap;//@langmap
-EXTERN Boole liteThemeG; //@liteTheme
 
 // Characters from the @listchars option
 typedef struct {
@@ -6621,7 +6620,7 @@ EXTERN int   swap_exists_action INIT(= SEA_NONE); // For dialog when swap file a
 EXTERN Boole   swap_exists_did_quit INIT(= false); // Selected "quit" at the dialog.
 
 EXTERN CS IObuff;      // sprintf's are done in this buffer, size is IOSIZE
-EXTERN CS NameBuff;      // file names are expanded in this array, size is MAXPATHL
+EXTERN CS nameBuffG;      // file names are expanded in this array, size is MAXPATHL
 EXTERN Byte msg_buf[MSG_BUF_LEN];   // small buffer for messages
 
 
@@ -6763,6 +6762,7 @@ EXTERN int   km_startsel INIT(= FALSE);
 EXTERN int   commPortTypeG INIT(= 0);   // type of commline portal or 0
 EXTERN Unt   commPortResultG INIT(= 0); // result of commline portal or 0
 EXTERN Book* commPortBookG INIT(= NULL); // book of commline portal or NULL
+EXTERN Book* msgG INIT(= NULL); // book of messages
 EXTERN Portal* commPortPortG INIT(= NULL); // portal of commmline portal or NULL
 
 EXTERN Byte no_lines_msg[]   INIT(= "--No lines in book--");

@@ -2652,19 +2652,11 @@ handle_osc(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
             gval = hexhex2nr(tp_g);
             bval = hexhex2nr(tp_b);
             if (isBg) {
-               Boole newThemeLite = (3 * '6' < *tp_r + *tp_g + *tp_b);
-
                LOG_TRN("Received RBG response: %s", tp);
                backgroundColorRequestS.tr_progress = STATUS_GOT;
                bg_r = rval;
                bg_g = gval;
                bg_b = bval;
-               if (!optWasSet(S"liteTheme") && liteThemeG != newThemeLite) {
-                  // value differs, apply it
-                  optChangeAndReportError(S"liteTheme", optBoole(newThemeLite), SET_GLOBAL);
-                  reset_optWasSet(S"liteTheme");
-                  redraw_asap(UPD_CLEAR);
-               }
             } else {
                LOG_TRN("Received RFG response: %s", tp);
                rfg_status.tr_progress = STATUS_GOT;
