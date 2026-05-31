@@ -697,7 +697,7 @@ exit_scroll(void) {
 //Low-level resoure cleanup function
 void
 mch_exit(int r) {
-   exiting = TRUE;
+   isExitingG = true;
    {
    termSetMode(TMODE_COOK);
 
@@ -4188,9 +4188,7 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
 
          // give the ATTENTION message when there is an old swap file
          // for the current file, and the buffer was not recovered.
-         if (differ == FALSE && !(curBook->flags & BF_RECOVERED)
-            && (!p_shm || firstOccurrence(p_shm, SHM_ATTENTION) == NULL)
-         ) {
+         if (differ == FALSE && !(curBook->flags & BF_RECOVERED)) {
             SeaChoice choice = SEA_CHOICE_NONE;
             FileStat    st;
 #ifdef HAVE_PROCESS_STILL_RUNNING

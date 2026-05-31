@@ -1960,32 +1960,6 @@ typedef int Socket;
 #define FO_REMOVE_COMS  'j'   // remove comment leaders when joining lines
 #define FO_PERIOD_ABBR  'p'   // don't break a single space after a period
 
-// characters for @shortmess:
-#define SHM_RO      'r'      // readonly
-#define SHM_MOD     'm'      // modified
-#define SHM_FILE    'f'      // (file 1 of 2)
-#define SHM_LAST    'i'      // last line incomplete
-#define SHM_TEXT    'x'      // tx instead of textmode
-#define SHM_LINES   'l'      // "L" instead of "lines"
-#define SHM_NEW     'n'      // "[New]" instead of "[New file]"
-#define SHM_WRI     'w'      // "[w]" instead of "written"
-#define SHM_A "rmfixlnw"     // represented by 'a' flag
-#define SHM_WRITE   'W'      // don't use "written" at all
-#define SHM_TRUNC   't'      // truncate file messages
-#define SHM_TRUNCALL 'T'     // truncate all messages
-#define SHM_OVER    'o'      // overwrite file messages
-#define SHM_OVERALL 'O'      // overwrite more messages
-#define SHM_ATTENTION   'A'  // no ATTENTION messages
-#define SHM_INTRO   'I'      // intro messages
-#define SHM_COMPLETIONMENU  'c' // completion menu messages
-#define SHM_COMPLETIONSCAN  'C' // completion scanning messages
-#define SHM_RECORDING  'q'      // short recording message
-#define SHM_FILEINFO   'F'      // no file info messages
-#define SHM_SEARCHCOUNT  'S'    // no search stats: '[1/10]'
-#define SHM_POSIX       "AS"    // POSIX value
-#define SHM_ALL "rmfixlnwaWtToOsAIcCqFS" // all possible flags for 'shm'
-#define SHM_LEN      30      // max length of all flags together plus a ZERO
-
 // flags for @comments option
 #define COM_NEST     'n'   // comments strings nest
 #define COM_BLANK    'b'   // needs blank after string
@@ -2195,7 +2169,7 @@ EXTERN CS p_lcs;    // @listchars
 EXTERN ListChars listCharsG;     // @listchars characters
 EXTERN CS p_fcs;    //@fillchars
 EXTERN FillChars fillCharsG;     // @fillchars characters
-
+EXTERN Boole p_intro;  //@intro
 EXTERN Boole p_lrm;     // @langremap
 EXTERN Boole p_lz;       // @lazyredraw
 EXTERN Boole p_more;     // @more
@@ -2229,7 +2203,6 @@ EXTERN CS p_shcf; //@shellcmdflag
 EXTERN CS p_sp;   //@shellpipe
 EXTERN CS p_srr;  //@shellredir
 EXTERN Boole p_stmp;   //@shelltemp
-EXTERN CS p_shm;  //@shortmess
 EXTERN CS p_sbr;  //@showbreak
 EXTERN Byte p_sloc; //@showcmdloc
 #define SHOW_COMM_LAST       1 //last screnline
@@ -6146,7 +6119,7 @@ EXTERN int   msg_scrolled_ign INIT(= FALSE);
 EXTERN Arr(Byte) msgAfterRedrawG INIT(= NULL); // msg to be shown after redraw
 EXTERN int decoAfterRedrawG INIT(= 0);  // hilite deco for msgAfterRedrawG
 EXTERN int keep_msg_more INIT(= FALSE); // msgAfterRedrawG was set by msgmore()
-EXTERN int need_fileinfo INIT(= FALSE); // do fileinfo() after redraw
+EXTERN Boole needFileinfoG INIT(= false); // do fileinfo() after redraw
 EXTERN int msg_scroll INIT(= FALSE);    // msg_start() will scroll
 EXTERN int msg_didout INIT(= FALSE);    // msg_outstr() was used in line
 EXTERN int msg_didany INIT(= FALSE);    // msg_outstr() was used at all
@@ -6419,9 +6392,9 @@ EXTERN CS eeTempDirG INIT(= NULL); // Name of Eegl's own temp dir. Ends with a s
 // When starting or exiting some things are done differently (e.g. screen updating).
 EXTERN int   starting INIT(= NO_SCREEN);
             // first NO_SCREEN, then NO_BUFFERS and then set to 0 when starting up finished
-EXTERN int   exiting INIT(= FALSE); // TRUE when planning to exit Eegl. Might
-                                    // still keep on running if there is a changed book.
-EXTERN int   really_exiting INIT(= FALSE);
+EXTERN Boole isExitingG INIT(= false); //TRUE when planning to exit Eegl. Might
+                                    //still keep on running if there is a changed book.
+EXTERN Boole really_exiting INIT(= false);
             // TRUE when we are sure to exit, e.g., after a deadly signal
 EXTERN int   v_dying INIT(= 0); // internal value of v:dying
 EXTERN Boole stdout_isatty INIT(= true);   // is stdout a terminal?

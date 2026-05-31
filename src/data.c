@@ -8671,8 +8671,8 @@ f_test_getvalue(Arr(Var) argvars, Var* returnVar) {
 
    CS  name = tv_get_string(&argvars[0]);
 
-   if (STRCMP(name, (CS)"need_fileinfo") == 0)
-      returnVar->number = need_fileinfo;
+   if (STRCMP(name, (CS)"needFileinfoG") == 0)
+      returnVar->number = needFileinfoG;
    else
       showErrFmtMsg(_(e_invalid_argument_str), name);
 }

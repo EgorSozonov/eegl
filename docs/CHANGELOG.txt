@@ -254,6 +254,7 @@
 [ ] @lines, @columns - no longer options but regular fields of Portal with setters ??
 [-] @filetype, @syntax (shouldn't be an option)
 [-] @previewport - shouldn't be an option, just a single portal per tab
+[-] @shortmess - fixed at sane defaults
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany

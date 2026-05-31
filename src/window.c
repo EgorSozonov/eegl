@@ -1994,7 +1994,7 @@ wayland_may_restore_connection(void) {
       return OK;
 
    // No point in restoring the connection if we are exiting or dying.
-   if (exiting || v_dying || wayland_ct_restore_count <= 0) {
+   if (isExitingG || v_dying || wayland_ct_restore_count <= 0) {
       wayland_set_display(S"");
       return FAIL;
    }

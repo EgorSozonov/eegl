@@ -981,7 +981,6 @@ tryFindOptionFromCommand(OUT Option** o, OUT CS* arg) {
 private CS
 parseAndSet(SetScope setScope, OUT CS* arg) {
    Option* o;
-   _bp(true);
    CS errmsg = tryFindOptionFromCommand(OUT &o, OUT arg);
    if (errmsg)
       return errmsg;
@@ -1050,7 +1049,7 @@ expandEnvVarsInStringOption(Option* o, CS newVal) {
    if (!newVal)
       return null;
 
-   doExpandEnvVarsWithEscaped(OUT nameBuffTextG, newVal, false, false, null);
+   doExpandEnvVarsWithEscaped(OUT nameBuffTextG, newVal, false, null);
    if (eq(nameBuffG, newVal))   // they are the same
       return newVal;
 
@@ -2339,16 +2338,6 @@ wildcharUseKeyname(OptionRef ref, long* wcp) {
    return FALSE;
 }
 
-//Return TRUE if "x" is present in 'shortmess' option, or
-//'shortmess' contains 'a' and "x" is present in SHM_A.
-Boole
-shortmess(int x) {
-   return p_shm
-      && (   firstOccurrence(p_shm, x) != NULL
-         || (firstOccurrence(p_shm, 'a') != NULL && firstOccurrence((CS)SHM_A, x) != NULL)
-   );
-}
-
 //Reset the flag indicating option "name" was set.
 int
 reset_optWasSet(CS name) {
@@ -3077,16 +3066,6 @@ setWlseat(OptionChange* cha UNUSED) {
 private CS backupCopyValues[] = {SMAP((CS), 
    "yes", "auto", "no", "breaksymlink", "breakhardlink"
 )};
-
-private CS
-did_set_shortmess(OptionChange* cha) {
-   return did_set_option_listflag(*(cha->ref.string), (CS)SHM_ALL, OUT &cha->errb);
-}
-
-private int
-expand_set_shortmess(OptExpand* args, OUT ExpandMatch* matches) {
-   return expand_set_opt_listflag(OUT matches, args, (Byte*)SHM_ALL);
-}
 
 private CS
 did_set_showbreak(OptionChange* cha) {
@@ -3828,11 +3807,6 @@ optInit0() {
    FOR_PORTAL(o) {
       o->flags |= P_PORTAL;
    }
-   
-   // Use POSIX compatibility when $EE_POSIX is set.
-   if (mch_getenv(S"EE_POSIX") != NULL) {
-      optSetStringDefault(S"shortmess", (CS)SHM_POSIX);
-   }
 
    set_init_default_backupskip();
    set_init_default_cdpath();
@@ -4413,9 +4387,6 @@ optImmutableMode() {
 //}}}
 //{{{option strings: Functions related to string options
 
-private Byte shm_buf[SHM_LEN];
-private int set_shm_recursive = 0;
-
 private CS
 illegal_char_after_chr(OUT ErrBuilder* errb, int c) {
    if (!errb->c)
@@ -4591,34 +4562,6 @@ do_spelllang_source(void) {
    if (p > q) {
       eeSnprintf(fname, 200, "spell/%.*s.vim", (int)(p - q), q);
       source_runtime(fname, DIP_ALL);
-   }
-}
-
-//Save the actual shortmess Flags and clear them temporarily to avoid that
-//file messages overwrites any output from the following commands.
-//
-//Caller must make sure to first call save_clear_shm_value() and then
-//restore_shm_value() exactly the same number of times.
-void
-save_clear_shm_value(void) {
-   if (p_shm && STRLEN(p_shm) >= SHM_LEN) {
-      internalErrMsg(e_internal_error_shortmess_too_long);
-      return;
-   }
-
-   if (++set_shm_recursive == 1) {
-      if (p_shm)
-         STRCPY(shm_buf, p_shm);
-      optChangeAndReportError(S"shortmess", optStr(null), SET_LOCAL);
-   }
-}
-
-//Restore the shortmess Flags set from the save_clear_shm_value() function.
-void
-restore_shm_value(void) {
-   if (--set_shm_recursive == 0) {
-      optChangeAndReportError(S"shortmess", optStr(shm_buf), SET_LOCAL);
-      memset(shm_buf, 0, SHM_LEN);
    }
 }
 

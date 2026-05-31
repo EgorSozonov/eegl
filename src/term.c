@@ -1190,7 +1190,7 @@ shell_resized_check(void) {
    int old_Rows = visibleRowsG;
    int old_Columns = visibleColsG;
 
-   if (exiting)
+   if (isExitingG)
       return;
 
    (void)ui_get_shellsize();
@@ -1349,7 +1349,7 @@ out_str_t_BE(void) {
 //t_RK. This is postponed to avoid the response arriving in a shell command or after Eegl exits.
 void
 may_send_t_RK(void) {
-   if (send_t_RK && !work_pending() && !ex_normal_busy && !in_feedkeys && !exiting) {
+   if (send_t_RK && !work_pending() && !ex_normal_busy && !in_feedkeys && !isExitingG) {
       send_t_RK = FALSE;
       out_str(termCodeS[KS_CRK]);
       out_flush();
@@ -1439,7 +1439,7 @@ termStopTerminfo(void) {
       mch_delay(100L, 0);
 #ifdef TCIFLUSH
       // Discard data received but not read.
-      if (exiting)
+      if (isExitingG)
          tcflush(fileno(stdin), TCIFLUSH);
 #endif
    }
@@ -4045,7 +4045,7 @@ req_more_codes_from_term(void) {
    int old_idx = xt_index_out;
 
    //Don't do anything when going to exit.
-   if (exiting)
+   if (isExitingG)
       return;
 
    // Send up to 10 more requests out than we received.  Avoid sending too

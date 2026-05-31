@@ -2756,7 +2756,7 @@ printMsg(
    LineNr i = msg_scroll;
    if (curBook == oldCurBook && curPor->cursor.lnum == old_lnum)
       msg_scroll = TRUE;
-   ei (!msg_scrolled && shortmess(SHM_OVERALL))
+   ei (!msg_scrolled)
       msg_scroll = FALSE;
    msgAndKeep((CS)gap->c, 0, TRUE);
    msg_scroll = i;

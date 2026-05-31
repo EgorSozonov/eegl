@@ -1487,8 +1487,7 @@ c_file(Invocation* invo) {
    }
 
    // print file name if no argument or 'F' is not in 'shortmess'
-   if (*invo->arg == ZERO || !shortmess(SHM_FILEINFO))
-      fileinfo(FALSE, FALSE, invo->forceit);
+   fileinfo(FALSE, FALSE, invo->forceit);
 }
 
 // ":update".
@@ -1802,11 +1801,11 @@ do_wqall(Invocation* invo){
    if (invo->id == C_xall || invo->id == C_wqall) {
       if (before_quit_all(invo) == FAIL)
           return;
-      exiting = TRUE;
+      isExitingG = true;
    }
 
    FOR_ALL_BOOKS(book) {
-      if (exiting && term_job_running(book->term)) {
+      if (isExitingG && term_job_running(book->term)) {
           no_write_message_nobang(book);
           ++error;
       } ei (doWasBookChanged(book) && !bt_dontwrite(book)) {
@@ -1839,7 +1838,7 @@ do_wqall(Invocation* invo){
          invo->forceit = save_forceit;    // check_overwrite() may set it
       }
    }
-   if (exiting) {
+   if (isExitingG) {
       if (!error)
          exitEegl(0);
       not_exiting();
@@ -2500,7 +2499,7 @@ startEditingFile(
 
       // Obey the 'O' flag in 'cpoptions': overwrite any previous file
       // message.
-      if (shortmess(SHM_OVERALL) && !exiting && p_verbose == 0)
+      if (!isExitingG && p_verbose == 0)
          msg_scroll = FALSE;
       if (!msg_scroll)   // wait a bit when overwriting an error msg
          check_for_delay(FALSE);
@@ -2508,8 +2507,7 @@ startEditingFile(
       msg_scroll = msg_scroll_save;
       msg_scrolled_ign = TRUE;
 
-      if (!shortmess(SHM_FILEINFO))
-         fileinfo(FALSE, TRUE, FALSE);
+      fileinfo(FALSE, TRUE, FALSE);
 
       msg_scrolled_ign = FALSE;
     }
@@ -4413,11 +4411,7 @@ c_listDo(Invocation* invo) {
              break;
          // Don't call do_argfile() when already there, it will try reloading the file.
          if (curPor->argListInd != i || !editing_arg_idx(curPor)) {
-             // Clear @shortmess to avoid that the file message overwrites
-             // any output from the command.
-             save_clear_shm_value();
              do_argfile(invo, i);
-             restore_shm_value();
          }
          if (curPor->argListInd != i)
              break;
@@ -4464,11 +4458,7 @@ c_listDo(Invocation* invo) {
          if (!book)
             break;
 
-         // Go to the next book. Clear @shortmess to avoid that the file
-         // message overwrites any output from the command.
-         save_clear_shm_value();
          bookGoto(invo, DOBOOK_FIRST, FORWARD, next_fnum);
-         restore_shm_value();
 
          // If autocommands took us elsewhere, quit here.
          if (curBook->fiNum != next_fnum)
@@ -4843,7 +4833,7 @@ check_changed_any(
 
    // Get here if "book" cannot be abandoned.
    ret = TRUE;
-   exiting = FALSE;
+   isExitingG = FALSE;
    // When ":confirm" used, don't give an error message.
    if (!(p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM))) {
       // There must be a wait_return() for this message, bookDo()
@@ -8391,9 +8381,11 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
                //doExpandEnv() than with something else (e.g., calling a shell).
                //After expanding environment variables, check again if there are still wildcards 
                //present.
-               if (firstOccurrence(invo->arg, '$') != NULL || firstOccurrence(invo->arg, '~') != NULL) {
+               if (firstOccurrence(invo->arg, '$') != NULL 
+                     || firstOccurrence(invo->arg, '~') != NULL
+               ) {
                   doExpandEnvVarsWithEscaped(
-                        OUT (Text){nameBuffG, MAXPATHL}, invo->arg, true, true, NULL
+                        OUT (Text){nameBuffG, MAXPATHL}, invo->arg, true, NULL
                   );
                   has_wildcards = mch_has_wildcard(nameBuffG);
                   p = nameBuffG;
@@ -8863,7 +8855,7 @@ c_hilite(Invocation* invo) {
 // (because of an error). May need to restore the terminal mode.
 void
 not_exiting(void) {
-   exiting = FALSE;
+   isExitingG = FALSE;
    termSetMode(TMODE_RAW);
 }
 
@@ -8925,7 +8917,7 @@ c_quit(Invocation* invo) {
 
    // If there is only one relevant portal, we will exit.
    if (onlyOnePortal())
-      exiting = TRUE;
+      isExitingG = true;
    if (onlyOnePortal() && check_changed_any(invo->forceit, TRUE)) {
       not_exiting();
    } else {
@@ -8977,7 +8969,7 @@ void
 c_quit_all(Invocation* invo) {
    if (before_quit_all(invo) == FAIL)
       return;
-   exiting = TRUE;
+   isExitingG = true;
    if (invo->forceit || !check_changed_any(FALSE, FALSE))
       exitEegl(0);
    not_exiting();
@@ -9311,7 +9303,7 @@ c_exit(Invocation* invo) {
 
    // we plan to exit if there is only one relevant portal
    if (onlyOnePortal())
-      exiting = TRUE;
+      isExitingG = true;
 
    // Write the book for ":wq" or when it was changed.
    // Trigger QuitPre and ExitPre.
@@ -11692,7 +11684,7 @@ c_fold(Invocation* invo) {
 
 void
 c_foldopen(Invocation* invo) {
-    opFoldRange(invo->line1, invo->line2, invo->id == C_foldopen, invo->forceit, FALSE);
+   opFoldRange(invo->line1, invo->line2, invo->id == C_foldopen, invo->forceit, FALSE);
 }
 
 void
@@ -11739,19 +11731,19 @@ commandFlagExpandWildcards() {
 //return the 'y' or 'n'
 int
 ask_yesno(CS str, int direct) {
-   int       r = ' ';
-   int       save_State = stateG;
+   int r = ' ';
+   int save_State = stateG;
 
-   if (exiting)      // put terminal in raw mode for this question
+   if (isExitingG)      // put terminal in raw mode for this question
       termSetMode(TMODE_RAW);
    ++no_wait_return;
-   stateG = MODE_CONFIRM;   // mouse behaves like with :confirm
-   setmouse();         // disables mouse for xterm
+   stateG = MODE_CONFIRM; //mouse behaves like with :confirm
+   setmouse();            //disable mouse for xterm
    ++no_mapping;
-   ++allow_keys;      // no mapping here, but recognize keys
+   ++allow_keys;          // no mapping here, but recognize keys
 
    while (r != 'y' && r != 'n') {
-      // same highlighting as for wait_return()
+      //same hiliting as for wait_return()
       smsgDeco(getDecoFlags(HLF_R), "%s (y/n)?", str);
       if (direct)
          r = get_keystroke();
@@ -11788,7 +11780,7 @@ doExpandEnvInMultiplePaths(CS src) {
 CS
 doExpandEnvInFilePaths(CS src, Boole singleFileName) {
    CS p = alloc(MAXPATHL);
-   doExpandEnvVarsWithEscaped(OUT (Text){p, MAXPATHL}, src, false, singleFileName, NULL);
+   doExpandEnvVarsWithEscaped(OUT (Text){p, MAXPATHL}, src, singleFileName, NULL);
    return p;
 }
 
@@ -11803,7 +11795,7 @@ doExpandEnv(
 ){
    if (!src)
       return 0;
-   return doExpandEnvVarsWithEscaped(OUT dst, src, false, false, NULL);
+   return doExpandEnvVarsWithEscaped(OUT dst, src, false, NULL);
 }
 
 //Expand env vars. Return number of bytes written
@@ -11811,7 +11803,6 @@ Unt
 doExpandEnvVarsWithEscaped(
    OUT Text dst, // where to put the result. Length must be sufficient!
    CS srcArg,    // input string e.g. "$HOME/eegl.hlp"
-   Boole esc,    // escape spaces in expanded variables
    Boole one,    // "srcp" is one file name
    CS startstr   // start again after this (can be NULL)
 ) {
@@ -11875,16 +11866,6 @@ doExpandEnvVarsWithEscaped(
          } ei ( src[1] == ZERO || src[1] == '/' || firstOccurrence(S" ,\t\n", src[1]) != NULL) { // home directory
             var = homedir;
             tail = src + 1;
-         }
-
-         // If "var" contains white space, escape it with a backslash.
-         // Required for ":e ~/tt" when $HOME includes a space.
-         if (esc && var && eeStrpbrk(var, S" \t") != NULL) {
-            CS p = copyStr_escaped(var, S" \t");
-            if (mustfree)
-               eeglFree(var);
-            var = p;
-            mustfree = true;
          }
 
          if (var && *var != ZERO) {

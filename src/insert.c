@@ -4735,10 +4735,10 @@ filterFromFiles(
 
    for (Unt i = 0; i < files.len && !gotInterruptG && !ins_compl_interrupted(); i++) {
       fp = FOPEN(files.c[i], "r");  // open dictionary file
-      if (flags != DICT_EXACT && !shortmess(SHM_COMPLETIONSCAN) && !compl_autocomplete) {
+      if (flags != DICT_EXACT && !compl_autocomplete) {
          msg_hist_off = TRUE;   // reset in msgTruncDeco()
          eeSnprintf(IObuff, IOSIZE, _("Scanning dictionary: %s"), files.c[i]);
-         (void)msgTruncDeco(IObuff, TRUE, getDecoFlags(HLF_R));
+         (void)msgTruncDeco(IObuff, getDecoFlags(HLF_R));
       }
 
       if (!fp)
@@ -5371,8 +5371,7 @@ ins_compl_stop(Unt c, int prev_mode, int retval) {
    ins_compl_free();
    compl_started = FALSE;
    compl_matches = 0;
-   if (!shortmess(SHM_COMPLETIONMENU))
-      msgClearCommline();   // necessary for "noshowmode"
+   msgClearCommline();   // necessary for "noshowmode"
    ctrl_x_mode = CTRL_X_NORMAL;
    compl_enter_selects = FALSE;
    if (edit_submode != NULL) {
@@ -6331,7 +6330,7 @@ process_next_cpt_value(
          st->dict = st->scannedBook->currFileName;
          st->dict_f = DICT_EXACT;
       }
-      if (!shortmess(SHM_COMPLETIONSCAN) && !compl_autocomplete) {
+      if (!compl_autocomplete) {
          msg_hist_off = TRUE;   // reset in msgTruncDeco()
          eeSnprintf(IObuff, IOSIZE, _("Scanning: %s"),
              st->scannedBook->currFileName == NULL
@@ -6339,7 +6338,7 @@ process_next_cpt_value(
             : st->scannedBook->shortFileName == NULL
                 ? st->scannedBook->currFileName
                 : st->scannedBook->shortFileName);
-         (void)msgTruncDeco(IObuff, TRUE, getDecoFlags(HLF_R));
+         (void)msgTruncDeco(IObuff, getDecoFlags(HLF_R));
       }
    } ei (*st->e_cpt == ZERO)
       status = INS_COMPL_CPT_END;
@@ -6367,10 +6366,10 @@ process_next_cpt_value(
             insertCompletionType = CTRL_X_PATH_DEFINES;
          ei (*st->e_cpt == ']' || *st->e_cpt == 't') {
             insertCompletionType = CTRL_X_TAGS;
-            if (!shortmess(SHM_COMPLETIONSCAN) && !compl_autocomplete) {
+            if (!compl_autocomplete) {
                 msg_hist_off = TRUE;   // reset in msgTruncDeco()
                 eeSnprintf(IObuff, IOSIZE, _("Scanning tags."));
-                (void)msgTruncDeco(IObuff, TRUE, getDecoFlags(HLF_R));
+                (void)msgTruncDeco(IObuff, getDecoFlags(HLF_R));
             }
          } else
             insertCompletionType = UNT;
@@ -8063,8 +8062,7 @@ get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol) {
          return FAIL;
       ctrl_x_mode = CTRL_X_NORMAL;
       edit_submode = NULL;
-      if (!shortmess(SHM_COMPLETIONMENU))
-          msgClearCommline();
+      msgClearCommline();
       return FAIL;
    }
 
@@ -8203,8 +8201,7 @@ ins_compl_start(void) {
       line = ml_get(curPor->cursor.lnum);
 
    if (compl_status_adding()) {
-      if (!shortmess(SHM_COMPLETIONMENU))
-         edit_submode_pre = (CS)_(" Adding");
+      edit_submode_pre = (CS)_(" Adding");
       if (ctrl_x_mode_line_or_eval()) {
          // Insert a new line, keep indentation but ignore 'comments'.
          compl_startpos.lnum = curPor->cursor.lnum;
@@ -8222,7 +8219,7 @@ ins_compl_start(void) {
       compl_startpos.col = compl_col;
    }
 
-   if (!shortmess(SHM_COMPLETIONMENU) && !compl_autocomplete) {
+   if (!compl_autocomplete) {
       if (compl_cont_status & CONT_LOCAL)
          edit_submode = (CS)_(ctrl_x_msgs[CTRL_X_LOCAL_MSG]);
       else
@@ -8252,7 +8249,7 @@ ins_compl_start(void) {
 
    // showmode might reset the internal line pointers, so it must be called before 
    // line = ml_get(), or when this address is no longer needed.  -- Acevedo.
-   if (!shortmess(SHM_COMPLETIONMENU) && !compl_autocomplete) {
+   if (!compl_autocomplete) {
       edit_submode_extra = (CS)_("-- Searching...");
       edit_submode_highl = 0;
       showmode();
@@ -8313,16 +8310,14 @@ ins_compl_show_statusmsg(void) {
    // Show a message about what (completion) mode we're in.
    if (!compl_opt_suppress_empty) {
       showmode();
-      if (!shortmess(SHM_COMPLETIONMENU)) {
-         if (edit_submode_extra) {
-            if (!p_smd) {
-               msg_hist_off = TRUE;
-               msgDeco(edit_submode_extra, getDecoFlags(edit_submode_highl));
-               msg_hist_off = FALSE;
-            }
-         } else
-            msgClearCommline();   // necessary for "noshowmode"
-      }
+      if (edit_submode_extra) {
+         if (!p_smd) {
+            msg_hist_off = TRUE;
+            msgDeco(edit_submode_extra, getDecoFlags(edit_submode_highl));
+            msg_hist_off = FALSE;
+         }
+      } else
+         msgClearCommline();   // necessary for "noshowmode"
    }
 }
 
@@ -8387,7 +8382,7 @@ ins_complete(Unt c, Boole enable_pum) {
    else
       compl_cont_status &= ~CONT_S_IPOS;
 
-   if (!shortmess(SHM_COMPLETIONMENU) && !compl_autocomplete)
+   if (!compl_autocomplete)
       ins_compl_show_statusmsg();
 
    // Wait for the autocompletion delay to expire

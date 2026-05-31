@@ -195,7 +195,7 @@ int ask_yesno(CS str, int direct);
 CS doExpandEnvInMultiplePaths(CS src);
 CS doExpandEnvInFilePaths(CS src, Boole singleFileName);
 Unt doExpandEnv(Text dst, CS src);
-Unt doExpandEnvVarsWithEscaped(Text dst, CS srcArg, Boole esc, Boole one, CS startstr);
+Unt doExpandEnvVarsWithEscaped(Text dst, CS srcArg, Boole one, CS startstr);
 CS eeglGetEnv(CS name);
 void eeUnsetenv(CS var);
 void eeSetenv_ext(CS name, CS val);

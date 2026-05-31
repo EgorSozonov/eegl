@@ -113,7 +113,7 @@ msg_strtrunc(CS s, int force) {      // always truncate
    CS buf = null;
 
    // May truncate message to avoid a hit-return prompt
-   if ((!msg_scroll && !need_wait_return && shortmess(SHM_TRUNCALL) && msg_silent == 0) || force) {
+   if ((!msg_scroll && !need_wait_return && msg_silent == 0) || force) {
       int len = eeglStrSize(s);
       int room;
       if (msg_scrolled != 0 || inEchoPortalG)
@@ -228,7 +228,7 @@ msg_start(void) {
 
    if (!msg_silent) {
       EE_CLEAR(msgAfterRedrawG);
-      need_fileinfo = FALSE;
+      needFileinfoG = FALSE;
    }
 
    if (need_clr_eos) {
@@ -900,7 +900,7 @@ msgAndKeep(
              < (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + sc_col)
       set_keep_msg(s, 0);
 
-   need_fileinfo = FALSE;
+   needFileinfoG = FALSE;
 
    eeglFree(builder);
    --entered;
@@ -988,15 +988,15 @@ other_sourcing_name(void) {
    return FALSE;
 }
 
-//Like msg(), but truncate to a single line if p_shm contains 't', or when "force" is TRUE. This 
+//Like msg(), but truncate to a single line if "force" is TRUE. This 
 //truncates in another way as for normal messages. Careful: The string may be changed by 
 //msg_may_trunc()! Returns a pointer to the printed message, if wait_return() not called.
 CS
-msgTruncDeco(CS s, int force, char flags) {
+msgTruncDeco(CS s, char flags) {
    // Add message to history before truncating
    addMsgHistory((CS)s, -1, flags);
 
-   CS ts = msg_may_trunc(force, s);
+   CS ts = msg_may_trunc(s);
 
    msg_hist_off = TRUE;
    int n = msgDeco(ts, flags);
@@ -1011,15 +1011,13 @@ msgTruncDeco(CS s, int force, char flags) {
 //Return a pointer to where the truncated message starts.
 //Note: May change the message by replacing a character with '<'.
 CS
-msg_may_trunc(int force, CS s) {
+msg_may_trunc(CS s) {
    int      n;
    int      room;
 
    // If @commheight' is zero or something unexpected happened "room" may be negative.
    room = (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + sc_col - 1;
-   if (room > 0 && (force || (shortmess(SHM_TRUNC)))
-       && (n = (int)STRLEN(s) - room) > 0
-   ){
+   if (room > 0 && (n = (int)STRLEN(s) - room) > 0){
       int   size = eeglStrSize(s);
 
       // There may be room anyway when there are multibyte chars.
@@ -2294,7 +2292,7 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
    else
       toDisplay((CS)str, maxlen, flags, FALSE);
 
-   need_fileinfo = FALSE;
+   needFileinfoG = FALSE;
 }
 
 // values for "where"
@@ -2760,10 +2758,10 @@ msgClearCommline(void) {
 // return TRUE if wait_return() not called.
 int
 msg_end(void) {
-   // If the string is larger than the portal, or the ruler option is set and we run into it, we 
-   // have to redraw the portal. Do not do this if we are abandoning the file or editing the 
-   // command line.
-   if (!exiting && need_wait_return && !(stateG & MODE_COMMLINE)) {
+   //If the string is larger than the portal, or the ruler option is set and we run into it, we 
+   //have to redraw the portal. Do not do this if we are abandoning the file or editing the 
+   //command line.
+   if (!isExitingG && need_wait_return && !(stateG & MODE_COMMLINE)) {
       wait_return(FALSE);
       return FALSE;
    }

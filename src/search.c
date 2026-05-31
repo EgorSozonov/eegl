@@ -933,7 +933,7 @@ do_search(
    CS dircp;
    CS strcopy = NULL;
    CS ps;
-   int show_search_stats;
+   Boole showSearchStats;
    CS msgbuf = NULL;
    Unt msgbuflen = 0;
    int has_offset = FALSE;
@@ -1043,7 +1043,7 @@ do_search(
           pat = p;             // put pat after search command
       }
 
-      show_search_stats = FALSE;
+      showSearchStats = false;
       if ((options & SEARCH_ECHO) && messaging() && !msg_silent && (!cmd_silent)) {
          Byte off_buf[40];
          Unt off_len = 0;
@@ -1132,8 +1132,7 @@ do_search(
              msg_nowait = TRUE;       // don't wait for this message
          }
 
-         if (!shortmess(SHM_SEARCHCOUNT))
-             show_search_stats = TRUE;
+         showSearchStats = true;
       }
 
       //If there is a character offset, subtract it from the current
@@ -1219,14 +1218,15 @@ do_search(
       }
 
       // Show [1/15] if 'S' is not in 'shortmess'.
-      if (show_search_stats)
-           cmdline_search_stat(dirc, &pos, &curPor->cursor,
-               show_top_bot_msg, msgbuf, msgbuflen,
-               (count != 1 || has_offset
+      if (showSearchStats) {
+         cmdline_search_stat(
+            dirc, &pos, &curPor->cursor, show_top_bot_msg, msgbuf, msgbuflen,
+            (count != 1 || has_offset
                 || (!(p_fdo & FDO_SEARCH) && getFolds(curPor->cursor.lnum, NULL, NULL))
-               ),
-               p_msc,
-               SEARCH_STAT_DEF_TIMEOUT);
+            ),
+            p_msc, SEARCH_STAT_DEF_TIMEOUT
+         );
+      } 
 
       //The search command can be followed by a ';' to do another search.
       //For example: "/pat/;/foo/+3;?bar"
@@ -2579,10 +2579,10 @@ find_pattern_in_path(
                files[depth].name = curr_fname = new_fname;
                files[depth].lnum = 0;
                files[depth].matched = FALSE;
-               if (action == ACTION_EXPAND && !shortmess(SHM_COMPLETIONSCAN) && !silent) {
+               if (action == ACTION_EXPAND && !silent) {
                   msg_hist_off = TRUE;   // reset in msgTruncDeco()
                   eeSnprintf(IObuff, IOSIZE, _("Scanning included file: %s"), new_fname);
-                  msgTruncDeco(IObuff, TRUE, getDecoFlags(HLF_R));
+                  msgTruncDeco(IObuff, getDecoFlags(HLF_R));
                } ei (p_verbose >= 5) {
                   verbose_enter();
                   smsg(_("Searching included file %s"), (char *)new_fname);
@@ -2971,9 +2971,6 @@ f_searchcount(Var *argvars, Var* returnVar) {
    SearchFileStat   stat;
 
    allocReturnDict(returnVar);
-
-   if (shortmess(SHM_SEARCHCOUNT))   // 'shortmess' contains 'S' flag
-      recompute = TRUE;
 
    if (argvars[0].tag != VAR_UNKNOWN) {
       ListItem   *li;

@@ -4095,7 +4095,7 @@ findFileInPathImpl(
       Byte save_char = fName.c[fName.len];
       fName.c[fName.len] = ZERO;
       file_to_findlen = doExpandEnvVarsWithEscaped(
-            OUT (Text){nameBuffG, MAXPATHL}, fName.c, false, true, NULL
+            OUT (Text){nameBuffG, MAXPATHL}, fName.c, true, NULL
       );
       fName.c[fName.len] = save_char;
 
@@ -5301,7 +5301,7 @@ filemess(Book* book, CS name, CS s, int attr){
    //For the first message may have to start a new line. For further ones overwrite the previous 
    //one, reset msg_scroll before calling filemess().
    msg_scroll_save = msg_scroll;
-   if (shortmess(SHM_OVERALL) && !exiting && p_verbose == 0)
+   if (!isExitingG && p_verbose == 0)
       msg_scroll = FALSE;
    if (!msg_scroll)   // wait a bit when overwriting an error msg
       check_for_delay(FALSE);
@@ -5311,7 +5311,7 @@ filemess(Book* book, CS name, CS s, int attr){
    msg_scroll = msg_scroll_save;
    msg_scrolled_ign = TRUE;
    //may truncate the message to avoid a hit-return prompt
-   msgOuttransDeco(msg_may_trunc(FALSE, IObuff), attr);
+   msgOuttransDeco(msg_may_trunc(IObuff), attr);
    msg_clr_eos();
    out_flush();
    msg_scrolled_ign = FALSE;
@@ -5416,7 +5416,7 @@ readfile(
    ex_no_reprint = TRUE;
 
    // don't display the file info for another buffer now
-   need_fileinfo = FALSE;
+   needFileinfoG = FALSE;
 
    //For Unix: Use the short file name whenever possible.
    //Avoids problems with networks and when directory names are changed.
@@ -5462,7 +5462,7 @@ readfile(
       }
    }
 
-   if ((shortmess(SHM_OVER) || curBook->kind == BOOK_HELP) && p_verbose == 0)
+   if (p_verbose == 0)
       msg_scroll = FALSE;   // overwrite previous file message
    else
       msg_scroll = TRUE;   // don't overwrite previous file message
@@ -6050,7 +6050,7 @@ failed:
       {
       if (msgColG > 0)
          msg_putchar('\r');  // overwrite previous message
-      p = (CS)msgTruncDeco(IObuff, FALSE, 0);
+      p = (CS)msgTruncDeco(IObuff, 0);
       }
       if (read_stdin || read_buffer || restart_edit != 0
           || (msg_scrolled != 0 && !need_wait_return))
@@ -6302,23 +6302,16 @@ msg_add_fname(Book* book, CS fname){
 void
 msg_add_lines(int insert_space, long lnum, FileSize nchars) {
    int  len = (int)STRLEN(IObuff);
-
-   if (shortmess(SHM_LINES)) {
-      eeSnprintf(IObuff + len, IOSIZE - (Unt)len,
-         // l10n: L as in line, B as in byte
-         _("%s%ldL, %ldB"), insert_space ? " " : "", lnum, (Long)nchars);
-   } else {
-      len += eeSnprintf(IObuff + len, IOSIZE - (Unt)len,
-         NGETTEXT("%s%ld line, ", "%s%ld lines, ", lnum), insert_space ? " " : "", lnum);
-      eeSnprintf(IObuff + len, IOSIZE - (Unt)len,
-         NGETTEXT("%ld byte", "%ld bytes", nchars), (Long)nchars);
-   }
+   eeSnprintf(
+      IObuff + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "", 
+      lnum, (Long)nchars
+   );
 }
 
 //Append message for missing line separator to IObuff.
 void
 msg_add_eol(void){
-   STRCAT(IObuff, shortmess(SHM_LAST) ? _("[noeol]") : _("[Incomplete last line]"));
+   STRCAT(IObuff, _("[Incomplete last line]"));
 }
 
 int
@@ -7051,9 +7044,6 @@ buf_reload(Book* book, int orig_mode, int reload_options){
 
       curBook->flags |= BF_CHECK_RO;   // check for RO again
       curBook->keepFiletype = TRUE;   // don't detect 'filetype'
-
-      if (shortmess(SHM_FILEINFO))
-         msg_silent = 1;
 
       if (readfile(book->fullFileName, book->currFileName, (LineNr)0,
          (LineNr)0,

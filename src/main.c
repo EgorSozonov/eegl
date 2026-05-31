@@ -140,7 +140,7 @@ maybe_intro_message(void) {
    if (CURBOOK_EMPTY()
           && curBook->currFileName == NULL
           && firstPor->next == NULL
-          && (p_shm || firstOccurrence(p_shm, SHM_INTRO) == NULL)
+          && p_intro
    )
       intro_message(FALSE);
 }
@@ -934,9 +934,9 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
             msg_hist_off = FALSE;
             eeglFree(p);
          }
-         if (need_fileinfo) {     // show file info after redraw
+         if (needFileinfoG) {     // show file info after redraw
             fileinfo(FALSE, TRUE, FALSE);
-            need_fileinfo = FALSE;
+            needFileinfoG = FALSE;
          }
 
          emsg_on_display = FALSE;   // can delete error message now
@@ -998,7 +998,7 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
 // to exit here, no way to abort it.
 void
 exitEegl(int exitval) {
-   exiting = TRUE;
+   isExitingG = true;
    lo("Exiting...");
 
    set_EeglVar_type(VV_EXITING, VAR_NUMBER);
@@ -1694,7 +1694,6 @@ editBuffers(MainParams* params, CS cwd) {        // current working dir
    int      arg_idx;      // index in argument list
    int      i;
    int      advance = TRUE;
-   CS p_shm_save = NULL;
 
    //Don't execute Win/Buf Enter/Leave autocommands here
    ++autocmd_no_enter;
@@ -1722,15 +1721,6 @@ editBuffers(MainParams* params, CS cwd) {        // current working dir
             if (curtab->next == NULL)   // just checking
                break;
             gotoTabById(0);
-            // Temporarily reset @shortmess to not print fileinfo when loading the other buffers.
-            // This would overwrite the already existing fileinfo for the first tab.
-            if (i == 1) {
-               Byte buf[100];
-
-               p_shm_save = p_shm ? copyStr(p_shm) : null;
-               eeSnprintf(buf, 100, "F%s", p_shm);
-               optChangeAndReportError(S"shortmess", optStr(buf), SET_GLOBAL);
-            }
          } else {
             if (!curPor->next)   // just checking
                break;
@@ -1769,11 +1759,6 @@ editBuffers(MainParams* params, CS cwd) {        // current working dir
          (void)vgetc();   // only break the file loading, not the rest
          break;
       }
-   }
-
-   if (p_shm_save) {
-      optChangeAndReportError(S"shortmess", optStr(p_shm_save), SET_GLOBAL);
-      eeglFree(p_shm_save);
    }
 
    if (params->portalLayout == WIN_TABS)
@@ -1871,7 +1856,7 @@ sourceStartupScripts(MainParams* params) {
    } ei (!silentModeG) {
       //Get system wide defaults, if the file name is defined.
       (void)scriptRunFile(INIT_FILE, NULL);
-      (void)scriptRunFile(FILETYPES_FILE, NULL);
+      //(void)scriptRunFile(FILETYPES_FILE, NULL);
    }
    TIME_MSG(S"sourcing init.vim file(s)");
 }

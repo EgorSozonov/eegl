@@ -3420,7 +3420,7 @@ nv_gd(Operator* oper, int nchar, int      thisblock) {  // 1 for "1gd" and "1gD"
    if ((p_fdo & FDO_SEARCH) && KeyTyped && oper->opTy == OP_NOP)
       foldOpenCursor();
    // clear any search statistics
-   if (messaging() && !msg_silent && !shortmess(SHM_SEARCHCOUNT))
+   if (messaging() && !msg_silent)
       mustClearCommlineG = TRUE;
 }
 

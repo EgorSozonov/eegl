@@ -120,7 +120,6 @@ CS v_throwpoint(CS oldval);
 CS set_cmdarg(Invocation *invo, CS oldarg);
 int eval_variable_import(CS name, Var *returnVar);
 DictItem *findVar(CS name, Boole noAutoload);
-DictItem *findVar_autoload_prefix(CS name, int sid, EeSet **htp, Byte **namep);
 DictItem *findVar_also_in_script(CS name, EeSet **htp, Boole no_autoload);
 DictItem *findVar_in_ht(EeSet *ht, VarLevel level, Text varname, Boole no_autoload);
 EeSet *get_script_local_ht(void);

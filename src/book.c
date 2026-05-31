@@ -1726,7 +1726,7 @@ private CS checkFilenameMatch(RegMatch *rmp, Book* book);
 private CS fname_match(RegMatch *rmp, Byte *name);
 private Book* booklistFindName_stat(CS fullFName, FileStat *st);
 private int   areSameInode(Book* book, FileStat *stp);
-private int   append_arg_number(Portal *po, CS buf, Unt buflen, Boole add_file);
+private int   append_arg_number(Portal *po, CS buf, Unt buflen);
 private void   freeBook(Book *);
 private void   freeAttachedData(Book* book, int free_options);
 private int   bt_nofileread(Book* book);
@@ -1920,8 +1920,6 @@ bookOpenFromInvo(
          read_fifo = TRUE;
       if (read_fifo)
          curBook->o.binary = true;
-      if (shortmess(SHM_FILEINFO))
-         msg_silent = 1;
       retval = readfile(
          curBook->fullFileName, curBook->currFileName,
          (LineNr)0, (LineNr)0, (LineNr)MAXLNUM, invo,
@@ -2598,8 +2596,6 @@ handle_swap_exists(BookRef *oldCurBook) {
       if (book) {
          int old_msg_silent = msg_silent;
 
-         if (shortmess(SHM_FILEINFO))
-            msg_silent = 1;  // prevent fileinfo message
          enterBook(book);
          // restore msg_silent, so that the command line will be shown
          msg_silent = old_msg_silent;
@@ -2655,7 +2651,7 @@ emptyCurBook(
    if (book != curBook && bookRefValid(&bookRef) && book->countPortals == 0)
       closeBook(NULL, book, action, FALSE, FALSE);
    if (!close_others)
-      need_fileinfo = FALSE;
+      needFileinfoG = false;
    return retval;
 }
 
@@ -3198,8 +3194,8 @@ enterBook(Book* book){
 
       bookOpenFromInvo(false, NULL, 0);
    } else {
-      if (!msg_silent && !shortmess(SHM_FILEINFO))
-         need_fileinfo = TRUE;   // display file info after redraw
+      if (!msg_silent)
+         needFileinfoG = true;   // display file info after redraw
 
       // check if file changed
       (void)fiCheckBookTimestamp(curBook);
@@ -4412,7 +4408,7 @@ fileinfo(
       buf + bufLen,
       IOSIZE - bufLen,
       "\"%s%s%s%s%s%s",
-      doWasCurBookChanged() ? (shortmess(SHM_MOD) ? (CS)" [+]" : _(" [Modified]")) : S" ",
+      doWasCurBookChanged() ? (S" (+)") : S" ",
       (curBook->flags & BF_NOTEDITED) && !bt_dontwrite(curBook) ? _("[Not edited]") : Em,
       (curBook->flags & BF_NEW) && !bt_dontwrite(curBook) ? new_file_message() : Em,
       (curBook->flags & BF_READERR) ? _("[Read errors]") : E, 
@@ -4435,7 +4431,7 @@ fileinfo(
       );
    } 
 
-   (void)append_arg_number(curPor, buf + bufLen, IOSIZE - bufLen, !shortmess(SHM_FILE));
+   (void)append_arg_number(curPor, buf + bufLen, IOSIZE - bufLen);
 
    if (dont_truncate) {
       // Temporarily set msg_scroll to avoid the message being truncated.
@@ -4446,7 +4442,7 @@ fileinfo(
       msg(buf);
       msg_scroll = n;
    } else {
-      CS p = msgTruncDeco(buf, FALSE, 0);
+      CS p = msgTruncDeco(buf, 0);
       if (restart_edit != 0 || (msg_scrolled && !need_wait_return))
           // Need to repeat the message after redrawing when:
           // - When restart_edit is set (otherwise there will be a delay before redrawing).
@@ -4984,7 +4980,7 @@ bookRenderStatusLine(
       case STL_ARGLISTSTAT:
          fillable = FALSE;
          buf_tmp[0] = ZERO;
-         if (append_arg_number(po, buf_tmp, sizeof(buf_tmp), false) > 0)
+         if (append_arg_number(po, buf_tmp, sizeof(buf_tmp)) > 0)
             str = buf_tmp;
          break;
 
@@ -5383,23 +5379,11 @@ get_rel_pos(Portal* po, CS buf, int buflen){
 // Append (file 2 of 8) to "buf[]", if editing more than one file. Return the number of appended 
 // characters
 private int
-append_arg_number(
-   Portal* po,
-   CS buf,
-   Unt buflen,
-   Boole add_file   // Add "file" before the arg number
-){
+append_arg_number(Portal* po, CS buf, Unt buflen){
    if (ARGCOUNT <= 1)      // nothing to do
       return 0;
-
-   CS msg;
-   switch ((po->isNotValid ? 1 : 0) + (add_file ? 2 : 0)) {
-   case 0: msg = _(" (%d of %d)"); break;
-   case 1: msg = _(" ((%d) of %d)"); break;
-   case 2: msg = _(" (file %d of %d)"); break;
-   case 3: msg = _(" (file (%d) of %d)"); break;
-   }
-
+   
+   CS msg = po->isNotValid ? _(" (%d of %d)") : _(" ((%d) of %d)");
    return (int)eeSnprintfSafelen(buf, buflen, msg, po->argListInd + 1, ARGCOUNT);
 }
 
@@ -5954,7 +5938,7 @@ set_file_time(
 
 CS
 new_file_message(void) {
-   return shortmess(SHM_NEW) ? _("[New]") : _("[New File]");
+   return _("(New)");
 }
 
 //bookWrite() - write to file "fname" lines "start" through "end"
@@ -6070,7 +6054,7 @@ bookWrite(
    else
       overwriting = FALSE;
 
-   if (exiting)
+   if (isExitingG)
       termSetMode(TMODE_COOK);       // when exiting allow typeahead now
 
    ++no_wait_return;          // don't wait for return yet
@@ -6241,10 +6225,7 @@ bookWrite(
       book->opEnd = orig_end;
    }
 
-   if (shortmess(SHM_OVER) && !exiting)
-      msg_scroll = FALSE;       // overwrite previous file message
-   else
-      msg_scroll = TRUE;       // don't overwrite previous file message
+   msg_scroll = isExitingG; // overwrite previous file message?
    if (!filtering)
       filemess(book, fname, Em, 0);   // show that we are busy
    msg_scroll = FALSE;          // always overwrite the file message now
@@ -6624,7 +6605,7 @@ endOfName:
    // we crash in the middle of writing. Therefore the file is preserved now.
    // This makes all block numbers positive so that recovery does not need the original file.
    // Don't do this if there is a backup file and we are exiting.
-   if (reset_changed && !newfile && overwriting && !(exiting && backup)) {
+   if (reset_changed && !newfile && overwriting && !(isExitingG && backup)) {
       ml_preserve(book, FALSE);
       if (gotInterruptG) {
          errmsg = (CS)_(e_interrupted);
@@ -6928,14 +6909,12 @@ endOfName:
          c = TRUE;
       }
       msg_add_lines(c, (long)lnum, nchars);   // add line/char count
-      if (!shortmess(SHM_WRITE)) {
-         if (append)
-            STRCAT(IObuff, shortmess(SHM_WRI) ? _(" [a]") : _(" appended"));
-         else
-            STRCAT(IObuff, shortmess(SHM_WRI) ? _(" [w]") : _(" written"));
-      }
+      if (append)
+         STRCAT(IObuff, _(" appended"));
+      else
+         STRCAT(IObuff, _(" written"));
 
-      set_keep_msg(msgTruncDeco(IObuff, FALSE, 0), 0);
+      set_keep_msg(msgTruncDeco(IObuff, 0), 0);
    }
 
    //When written everything correctly: reset 'modified'.  Unless not

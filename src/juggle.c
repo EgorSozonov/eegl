@@ -4509,11 +4509,7 @@ cursor_pos_info(Bag* dict) {
       }
 
       if (!dict) {
-          // Don't shorten this message, the user asked for it.
-          p = p_shm;
-          p_shm = S"";
           msg(IObuff);
-          p_shm = p;
       }
    }
    if (dict) {
@@ -5256,7 +5252,7 @@ beep_flush(void) {
 private Byte   tz_cache[64];
 
 #define FOR_ALL_TIMERS(t) \
-    for ((t) = first_timer; (t) != NULL; (t) = (t)->next)
+    for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
     
 typedef struct tm Tm; 
 
@@ -5436,8 +5432,8 @@ f_strptime(Var* argVars, Var* returnVar) {
       returnVar->number = 0;
 }
 
-private Timer* first_timer = NULL;
-private long last_timer_id = 0;
+private Timer* firstTimerS = NULL;
+private long lastTimerIdS = 0;
 
 //Return time left, in "msec", until "due".  Negative if past "due".
 long
@@ -5450,11 +5446,11 @@ proftime_time_left(ProfTime *due, ProfTime *now) {
 //Insert a timer into the list of timers.
 private void
 insert_timer(Timer* timer) {
-   timer->next = first_timer;
+   timer->next = firstTimerS;
    timer->prev = NULL;
-   if (first_timer != NULL)
-      first_timer->prev = timer;
-   first_timer = timer;
+   if (firstTimerS != NULL)
+      firstTimerS->prev = timer;
+   firstTimerS = timer;
    did_add_timer = TRUE;
 }
 
@@ -5462,7 +5458,7 @@ insert_timer(Timer* timer) {
 private void
 remove_timer(Timer* timer) {
    if (!timer->prev)
-      first_timer = timer->next;
+      firstTimerS = timer->next;
    else
       timer->prev->next = timer->next;
    if (timer->next)
@@ -5479,12 +5475,12 @@ free_timer(Timer* timer) {
 Timer*
 create_timer(long msec, int repeat) {
    Timer* timer = ALLOC_CLEAR_ONE(Timer);
-   long   prev_id = last_timer_id;
+   long   prev_id = lastTimerIdS;
 
-   if (++last_timer_id <= prev_id)
+   if (++lastTimerIdS <= prev_id)
       // Overflow!  Might cause duplicates...
-      last_timer_id = 0;
-   timer->id = last_timer_id;
+      lastTimerIdS = 0;
+   timer->id = lastTimerIdS;
    insert_timer(timer);
    if (repeat != 0)
       timer->tr_repeat = repeat - 1;
@@ -5527,21 +5523,20 @@ timer_callback(Timer *timer) {
 // Return -1 if there are no pending timers.
 long
 check_due_timer(void) {
-   Timer   *timer;
-   Timer   *timer_next;
-   long   this_due;
-   long   next_due = -1;
-   ProfTime   now;
-   int      did_one = FALSE;
-   int      need_drawUpdateScreen = FALSE;
-   long   current_id = last_timer_id;
+   Timer* timer_next;
+   long this_due;
+   long next_due = -1;
+   ProfTime now;
+   Boole did_one = false;
+   Boole need_drawUpdateScreen = false;
+   long current_id = lastTimerIdS;
 
    // Don't run any timers while exiting, dealing with an error or at the debug prompt.
-   if (exiting || aborting() || debug_mode)
+   if (isExitingG || aborting() || debug_mode)
       return next_due;
 
    profile_start(&now);
-   for (timer = first_timer; timer != NULL && !gotInterruptG; timer = timer_next) {
+   for (Timer* timer = firstTimerS; timer != NULL && !gotInterruptG; timer = timer_next) {
       timer_next = timer->next;
 
       if (timer->id == -1 || timer->tr_firing || timer->tr_paused)
@@ -5581,7 +5576,7 @@ check_due_timer(void) {
 
          // Restore stuff.
          timer_next = timer->next;
-         did_one = TRUE;
+         did_one = true;
          timer_busy = save_timer_busy;
          vgetcBusyG = save_vgetcBusyG;
          if (uncaught_emsg > prev_uncaught_emsg)
@@ -5591,7 +5586,7 @@ check_due_timer(void) {
          exception_state_restore(&estate);
          restoreEeglVars(&vvsave);
          if (must_redraw != 0)
-            need_drawUpdateScreen = TRUE;
+            need_drawUpdateScreen = true;
          must_redraw = must_redraw > save_must_redraw ? must_redraw : save_must_redraw;
          set_pressedreturn(save_ex_pressedreturn);
          may_garbage_collect = save_may_garbage_collect;
@@ -5620,7 +5615,7 @@ check_due_timer(void) {
    }
 
    if (did_one)
-      redraw_after_callback(need_drawUpdateScreen, FALSE);
+      redraw_after_callback(need_drawUpdateScreen, false);
 
    if (bevalexpr_due_set) {
       this_due = proftime_time_left(&bevalexpr_due, &now);
@@ -5641,7 +5636,7 @@ check_due_timer(void) {
    // Some terminal portals may need their book updated.
    next_due = term_check_timers(next_due, &now);
 
-   return current_id != last_timer_id ? 1 : next_due;
+   return current_id != lastTimerIdS ? 1 : next_due;
 }
 
 // Find a timer by ID.  Returns NULL if not found;
@@ -5677,7 +5672,7 @@ stop_all_timers(void) {
    Timer *timer;
    Timer *timer_next;
 
-   for (timer = first_timer; timer != NULL; timer = timer_next) {
+   for (timer = firstTimerS; timer != NULL; timer = timer_next) {
       timer_next = timer->next;
       stop_timer(timer);
    }
@@ -5727,7 +5722,7 @@ set_ref_in_timer(int copyID) {
    int abort = FALSE;
    Var   tv;
 
-   for (Timer* timer = first_timer; !abort && timer; timer = timer->next) {
+   for (Timer* timer = firstTimerS; !abort && timer; timer = timer->next) {
       if (timer->callback.cb_partial) {
          tv.tag = VAR_PARTIAL;
          tv.partial = timer->callback.cb_partial;
@@ -5757,8 +5752,8 @@ timer_valid(Timer *timer) {
 # if defined(EXITFREE) || defined(PROTO)
 void
 timer_free_all(void) {
-   while (first_timer != NULL) {
-      Timer *timer = first_timer;
+   while (firstTimerS != NULL) {
+      Timer *timer = firstTimerS;
       remove_timer(timer);
       free_timer(timer);
    }

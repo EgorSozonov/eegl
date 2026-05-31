@@ -2326,6 +2326,11 @@ text has an uppercase letter, and there is a letter before it, the completed par
 With @noinfercase the match is used as-is.
 
 
+@@intro                  Global. Boolean. Default = on
+   
+Print the greeting message on startup. 
+
+
 @@isexpand               Book. String. Default = ".|->|/*"
    
 Defines characters and patterns for completion in insert mode. Used by the |complete_match()| 
@@ -3140,70 +3145,6 @@ Number of columns that make up one level of (auto)indentation.  Used
 by @cindent, |<<|, |>>|, etc.
 If set to 0, Eegl uses the current @tabstop value.  Use |shiftwidth()|
 to obtain the effective value in scripts.
-   
-
-@@shortmess              Global. String. Default = "filnxtToO"
-   
-This option helps to avoid all the |hit-enter| prompts caused by file
-messages, for example with CTRL-G, and to avoid some other messages.
-It is a list of flags:
-    flag   meaning when present   ~
-     f   use "(3 of 5)" instead of "(file 3 of 5)"      *shm-f*
-     i   use "[noeol]" instead of "[Incomplete last line]"   *shm-i*
-     l   use "999L, 888B" instead of "999 lines, 888 bytes"   *shm-l*
-     m   use "[+]" instead of "[Modified]"         *shm-m*
-     n   use "[New]" instead of "[New File]"         *shm-n*
-     r   use "[RO]" instead of "[readonly]"         *shm-r*
-     w   use "[w]" instead of "written" for file write message   *shm-w*
-         and "[a]" instead of "appended" for ':w >> file' command
-     x   use "[dos]" instead of "[dos format]", "[unix]"      *shm-x*
-         instead of "[unix format]" and "[mac]" instead of "[mac format]"
-     a   all of the above abbreviations            *shm-a*
-
-     o   overwrite message for writing a file with subsequent   *shm-o*
-         message for reading a file (useful for ":wn" or when @autowrite on)
-     O   message for reading a file overwrites any previous   *shm-O*
-         message;  also for quickfix message (e.g., ":cn")
-     s   don't give "search hit BOTTOM, continuing at TOP" or   *shm-s*
-         "search hit TOP, continuing at BOTTOM" messages; when using
-         the search count do not show "W" before the count message
-         (see |shm-S| below)
-     t   truncate file message at the start if it is too long   *shm-t*
-         to fit on the command-line, "<" will appear in the left most
-         column; ignored in Ex mode
-     T   truncate other messages in the middle if they are too   *shm-T*
-         long to fit on the command line; "..." will appear in the
-         middle; ignored in Ex mode
-     W   don't give "written" or "[w]" when writing a file   *shm-W*
-     A   don't give the "ATTENTION" message when an existing   *shm-A*
-         swap file is found
-     I   don't give the intro message when starting Eegl,      *shm-I*
-         see |:intro|
-     c   don't give |ins-completion-menu| messages; for      *shm-c*
-         example, "-- XXX completion (YYY)", "match 1 of 2", "The only
-         match", "Pattern not found", "Back at original", etc.
-     C   don't give messages while scanning for ins-completion   *shm-C*
-         items, for instance "scanning tags"
-     q   use "recording" instead of "recording @a"      *shm-q*
-     F   don't give the file info when editing a file, like   *shm-F*
-         `:silent` was used for the command; note that this also
-         affects messages from autocommands and @autoread reloading
-     S   do not show search count message when searching, e.g.   *shm-S*
-         "[1/5]". When the "S" flag is not present (e.g. search count
-         is shown), the "search hit BOTTOM, continuing at TOP" and
-         "search hit TOP, continuing at BOTTOM" messages are only
-         indicated by a "W" (Mnemonic: Wrapped) letter before the
-         search count statistics.  The maximum limit can be set with
-         the @maxsearchcount option.
-
-This gives you the opportunity to avoid that a change between books
-requires you to hit <Enter>, but still gives as useful a message as
-possible for the space available.  To get the whole message that you
-would have got with @shm empty, use ":file!"
-Useful values:
-       shm=   No abbreviation of message.
-       shm=a   Abbreviation, but no loss of information.
-       shm=at   Abbreviation, and truncate message when necessary.
 
 
 @@showbreak              Global. String. Default = ""

@@ -2530,7 +2530,7 @@ showmode(void) {
       if (do_mode) {
          msgPutsDeco((CS)"--", flags);
          // CTRL-X in Insert mode
-         if (edit_submode && !shortmess(SHM_COMPLETIONMENU)) {
+         if (edit_submode) {
             //These messages can get long, avoid a wrap in a narrow
             //portal. Prefer showing edit_submode_extra.
             length = (visibleRowsG - msgRowG) * visibleColsG - 3;
@@ -2654,9 +2654,6 @@ clearmode(void) {
 private void
 recording_mode(char flags) {
    msgPutsDeco(_("recording"), flags);
-   if (shortmess(SHM_RECORDING))
-      return;
-
    Byte s[4];
 
    SPRINTF(s, " @%c", reg_recording);
@@ -4771,7 +4768,7 @@ redraw_asap(int type) {
    redraw_later(type);
    if (msg_scrolled
           || (stateG != MODE_NORMAL && stateG != MODE_NORMAL_BUSY)
-          || exiting)
+          || isExitingG)
       return ret;
 
    // Allocate space to save the text displayed in the command line area.
@@ -4916,7 +4913,7 @@ redraw_later(int type) {
 
 void
 redrawPortLater(Portal* po, int type) {
-   if (!exiting && !redraw_not_allowed && po->redrawType < type) {
+   if (!isExitingG && !redraw_not_allowed && po->redrawType < type) {
       po->redrawType = type;
       if (type >= UPD_NOT_VALID)
           po->validLines = 0;

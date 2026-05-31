@@ -5383,7 +5383,7 @@ portalNewHeight(Portal* po, int height) {
 
    // There is no point in adjusting the scroll position when exiting.  Some
    // values might be invalid.
-   if (!exiting) {
+   if (!isExitingG) {
       po->skipCol = 0;
       scroll_to_fraction(po, prevHeight);
    }

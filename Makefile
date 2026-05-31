@@ -313,9 +313,9 @@ DEFS = -DHAVE_CONFIG_H
 CFLAGS ?= --std=c17 -gdwarf-5 -Wall -Wextra -Wfatal-errors -O0 \
               -Wno-cpp -Werror=return-type -D_REENTRANT -Werror=pointer-compare \
               -fdebug-prefix-map=$(shell pwd)=. \
-              -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -fno-pie
+              -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
         
-LDFLAGS ?= -L/usr/local/lib -Wl,--as-needed -no-pie
+LDFLAGS ?= -L/usr/local/lib -Wl,--as-needed
 
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 #C_FLAGS		= -O2  -D_REENTRANT  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1

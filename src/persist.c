@@ -813,10 +813,6 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    if (fprintf(fd, "set winheight=%ld winwidth=%ld", p_wh, p_wiw) < 0 || put_eol(fd) == FAIL)
       goto fail;
 
-   // Restore 'shortmess'.
-   if (fprintf(fd, "set shortmess=%s", p_shm ? p_shm : S"null") < 0 || put_eol(fd) == FAIL)
-      goto fail;
-
    if (restore_height_width // Restore 'winminheight' and 'winminwidth'.
        && (put_line(fd, S"let &winminheight = s:save_winminheight") == FAIL
          || put_line(fd, S"let &winminwidth = s:save_winminwidth") == FAIL)
