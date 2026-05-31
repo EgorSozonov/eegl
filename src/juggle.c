@@ -77,13 +77,13 @@ changed(void) {
 
       // Create a swap file if that is wanted.
       // Don't do this for "nofile" and "nowrite" book types.
-      if (curBook->maySwap && !bt_dontwrite(curBook)) {
+      if (curBook->maySwap && curBook->currFileName && !bookDontWrite(curBook)) {
          int save_need_wait_return = need_wait_return;
 
          need_wait_return = FALSE;
-         ml_open_file(curBook);
+         memOpenSwapFile(curBook);
 
-         // The ml_open_file() can cause an ATTENTION message.
+         // The memOpenSwapFile() can cause an ATTENTION message.
          // Wait two seconds, to make sure the user reads this unexpected
          // message.  Since we could be anywhere, call wait_return() now,
          // and don't let the emsg() set msg_scroll.
@@ -1048,7 +1048,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
          if (!got_com && flags)
             *flags = list;       // remember where flags started
          preList = list;
-         (void)copy_option_part(&list, part_buf, COM_MAX_LEN, ",");
+         (void)doCutPathFromListOfPaths(&list, part_buf, COM_MAX_LEN, ",");
          string = firstOccurrence(part_buf, ':');
          if (string == NULL)       // missing ':', ignore this part
             continue;
@@ -1353,7 +1353,7 @@ openLine(
             current_flag = *p;
             if (*p == COM_START) {
                 // find start of middle part
-                (void)copy_option_part(&p, lead_middle, COM_MAX_LEN, ",");
+                (void)doCutPathFromListOfPaths(&p, lead_middle, COM_MAX_LEN, ",");
                 require_blank = FALSE;
             }
 
@@ -1363,7 +1363,7 @@ openLine(
                   require_blank = TRUE;
                ++p;
             }
-            (void)copy_option_part(&p, lead_middle, COM_MAX_LEN, ",");
+            (void)doCutPathFromListOfPaths(&p, lead_middle, COM_MAX_LEN, ",");
 
             while (*p && p[-1] != ':') {// find end of end flags
                // Check whether we allow automatic ending of comments
@@ -1371,7 +1371,7 @@ openLine(
                   end_comment_pending = UNT; // means we want to set it
                ++p;
             }
-            n = copy_option_part(&p, lead_end, COM_MAX_LEN, ",");
+            n = doCutPathFromListOfPaths(&p, lead_end, COM_MAX_LEN, ",");
 
             if (end_comment_pending == UNT)   // we can set it now
                end_comment_pending = lead_end[n - 1];
@@ -3320,7 +3320,7 @@ get_last_leader_offset(CS line, Byte **flags) {
 
          //Get one option part into part_buf[].  Advance list to next one.
          //put string at start of string.
-         (void)copy_option_part(&list, part_buf, COM_MAX_LEN, ",");
+         (void)doCutPathFromListOfPaths(&list, part_buf, COM_MAX_LEN, ",");
          string = firstOccurrence(part_buf, ':');
          if (!string)   // If everything is fine, this cannot actually happen.
             continue;
@@ -3392,7 +3392,7 @@ get_last_leader_offset(CS line, Byte **flags) {
          for (list = curBook->o.comments; *list; ) {
             CS flags_save = list;
 
-            (void)copy_option_part(&list, part_buf2, COM_MAX_LEN, ",");
+            (void)doCutPathFromListOfPaths(&list, part_buf2, COM_MAX_LEN, ",");
             if (flags_save == com_flags)
                continue;
             string = firstOccurrence(part_buf2, ':');

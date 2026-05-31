@@ -11,7 +11,6 @@ int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
 
-#define SWAP_DIR S"~/.local/state/eegl/"
 
 
 //when a block with a negative number is flushed to the file, it gets
@@ -721,7 +720,7 @@ mch_exit(int r) {
       cursor_on();
    }
    out_flush();
-   ml_close_all(TRUE);      // remove all memfiles
+   ml_close_all(true);      // remove all memfiles
 
 #ifdef USE_GCOV_FLUSH
     // Flush coverage info before possibly being killed by a deadly signal.
@@ -788,7 +787,7 @@ struct InfoPtr {
 // are to be loaded into memory.
 static int   dontReleaseBlocksS = FALSE;
 
-typedef struct Block0      Block0;      // contents of the first block
+typedef struct Block0 Block0;      // contents of the first block
 typedef struct PointerBlock   PointerBlock; // contents of a pointer block
 typedef struct DataBlock   DataBlock;    // contents of a data block
 typedef struct PtrEntry   PtrEntry;         // block/line-count pair
@@ -934,8 +933,7 @@ private void updateBlock0(Book *book, upd_block0_T what);
 private void set_b0_fname(Block0 *, Book *book);
 private void set_b0_dir_flag(Block0 *b0p, Book *book);
 private Tyme swapfile_info(CS);
-private int recoverFileNames(Byte **, Byte *, int prepend_dot);
-private Byte *findSwapName(Book *, Byte **, Byte *);
+private CS findSwapName(Book *, CS);
 private void flushLine(Book *);
 private BlockHeader* newDataBlock(MemFile *, int, int);
 private BlockHeader *ml_new_ptr(MemFile *);
@@ -1004,22 +1002,20 @@ ml_open(Book *book) {
    STRNCPY(b0p->b0_version + 4, Version, 6);
    longToChar((long)mfp->pageSize, b0p->b0_page_size);
 
-   if (book->kind != BOOK_SPELL) {
-      b0p->b0_dirty = book->wasModified ? B0_DIRTY : 0;
-      b0p->b0_flags = 0;
-      set_b0_fname(b0p, book);
-      (void)get_user_name(b0p->b0_uname, B0_UNAME_SIZE);
-      b0p->b0_uname[B0_UNAME_SIZE - 1] = ZERO;
-      mch_get_host_name(b0p->b0_hname, B0_HNAME_SIZE);
-      b0p->b0_hname[B0_HNAME_SIZE - 1] = ZERO;
-      longToChar(mch_get_pid(), b0p->b0_pid);
-   }
+   b0p->b0_dirty = book->wasModified ? B0_DIRTY : 0;
+   b0p->b0_flags = 0;
+   set_b0_fname(b0p, book);
+   (void)get_user_name(b0p->b0_uname, B0_UNAME_SIZE);
+   b0p->b0_uname[B0_UNAME_SIZE - 1] = ZERO;
+   mch_get_host_name(b0p->b0_hname, B0_HNAME_SIZE);
+   b0p->b0_hname[B0_HNAME_SIZE - 1] = ZERO;
+   longToChar(mch_get_pid(), b0p->b0_pid);
 
    //Always sync block number 0 to disk, so we can check the file name in
    //the swap file in findSwapName(). Don't do this for a help files or a spell book though.
    //Only works when there's a swapfile, otherwise it's done when the file is created.
    mf_put(mfp, hdr, TRUE, FALSE);
-   if (book->kind != BOOK_HELP && book->kind != BOOK_SPELL)
+   if (book->kind != BOOK_HELP)
       (void)mf_sync(mfp, 0);
 
    //Fill in root pointer block and write page 1.
@@ -1068,52 +1064,33 @@ error:
 void
 ml_setname(Book* book) {
    int success = FALSE;
-   CS fname;
-
    MemFile* mfp = book->mem.mfile;
    if (mfp->fd < 0)   {    // there is no swap file yet
       //When 'updatecount' is 0 and 'noswapfile' there is no swap file.
       //For help files we will make one now.
       if (swapEnabledG && (commModifierG.cmod_flags & CMOD_NOSWAPFILE) == 0)
-          ml_open_file(book);       // create a swap file
+         memOpenSwapFile(book);       // create a swap file
       return;
    }
 
-   // Try all directories in the @directory option.
-   CS dirp = SWAP_DIR;
-   for (;;) {
-      if (*dirp == ZERO)       // tried all directories, fail
-         break;
-      fname = findSwapName(book, &dirp, mfp->fName); // alloc's fname
-      if (dirp == NULL)       // out of memory
-         break;
-      if (fname == NULL)       // no file name found for this dir
-         continue;
-
-      // if the file name is the same we don't have to do anything
-      if (fnamecmp(fname, mfp->fName) == 0) {
-         eeglFree(fname);
-         success = TRUE;
-         break;
-      }
-      // need to close the swap file before renaming
-      if (mfp->fd >= 0) {
-         close(mfp->fd);
-         mfp->fd = -1;
-      }
-
-      // try to rename the swap file
-      if (eeRename(mfp->fName, fname) == 0) {
-         success = TRUE;
-         eeglFree(mfp->fName);
-         mfp->fName = fname;
-         eeglFree(mfp->fullFName);
-         mf_set_ffname(mfp);
-         updateBlock0(book, UB_SAME_DIR);
-         break;
-      }
-      eeglFree(fname);       // this fname didn't work, try another
+   CS swapName = findSwapName(book, mfp->fName); // alloc's fname
+   
+   //If swap name is open, need to close it before renaming
+   if (mfp->fd >= 0) {
+      close(mfp->fd);
+      mfp->fd = -1;
    }
+
+   //try to rename the swap file
+   if (eeRename(mfp->fName, swapName) == 0) {
+      success = TRUE;
+      eeglFree(mfp->fName);
+      mfp->fName = swapName;
+      eeglFree(mfp->fullFName);
+      mf_set_ffname(mfp);
+      updateBlock0(book, UB_SAME_DIR);
+   }
+   eeglFree(swapName);       // this fname didn't work, try another
 
    if (mfp->fd == -1) {    // need to (re)open the swap file
       mfp->fd = open((char *)mfp->fName, O_RDWR | O_EXTRA, 0);
@@ -1133,11 +1110,11 @@ ml_setname(Book* book) {
 //Open a file for the memfile for all books that are not readonly or have been modified.
 //Used when 'updatecount' changes from zero to non-zero.
 void
-ml_open_files(void) {
-   Book   *book;
+memOpenSwapFiles(void) {
+   Book* book;
    FOR_ALL_BOOKS(book) {
       if (book->o.modifiable || book->wasModified)
-         ml_open_file(book);
+         memOpenSwapFile(book);
    } 
 }
 
@@ -1145,51 +1122,35 @@ ml_open_files(void) {
 //If we are unable to find a file name, fName will be NULL
 //and the memfile will be in memory only (no recovery possible).
 void
-ml_open_file(Book* book) {
-   CS fname;
-
+memOpenSwapFile(Book* book) {
    MemFile* mfp = book->mem.mfile;
-   if (!mfp || mfp->fd >= 0 || !book->o.swapFile || (commModifierG.cmod_flags & CMOD_NOSWAPFILE))
+   if (!mfp || mfp->fd >= 0 || !book->o.swapFile 
+         || (commModifierG.cmod_flags & CMOD_NOSWAPFILE) != 0
+   )
       return;      // nothing to do
+      
+   
+   _bp(true);
+   //There is a small chance that between choosing the swap file name and creating it, another
+   //Eegl creates the file. In that case the creation will fail and we will use another directory
+   CS fname = findSwapName(book, NULL); // allocates fname
+   if (mf_open_file(mfp, fname) == OK) {// consumes fname!
+      // don't sync yet in ml_sync_all()
+      mfp->mf_dirty = MF_DIRTY_YES_NOSYNC;
+      updateBlock0(book, UB_SAME_DIR);
 
-   // For a spell book use a temp file name.
-   if (book->kind == BOOK_SPELL) {
-      fname = eeTempName('s', FALSE);
-      if (fname)
-         (void)mf_open_file(mfp, fname);   // consumes fname!
-      book->maySwap = FALSE;
-      return;
-   }
-
-   // Try all directories in @directory
-   CS dirp = SWAP_DIR;
-   for (;;) {
-      if (*dirp == ZERO)
-         break;
-      //There is a small chance that between choosing the swap file name and creating it, another
-      //Eegl creates the file. In that case the creation will fail and we will use another directory
-      fname = findSwapName(book, &dirp, NULL); // allocates fname
-      if (dirp == NULL)
-          break;  // out of memory
-      if (fname == NULL)
-          continue;
-      if (mf_open_file(mfp, fname) == OK) {// consumes fname!
-         // don't sync yet in ml_sync_all()
-         mfp->mf_dirty = MF_DIRTY_YES_NOSYNC;
-         updateBlock0(book, UB_SAME_DIR);
-
-         // Flush block zero, so others can read it
-         if (mf_sync(mfp, MFS_ZERO) == OK) {
-            // Mark all blocks that should be in the swapfile as dirty. Needed for when the 
-            // 'swapfile' option was reset, so that the swap file was deleted, and then on again.
-            mf_set_dirty(mfp);
-            break;
-          }
-          // Writing block 0 failed: close the file and try another dir
-          mf_close_file(book, FALSE);
+      //Flush block zero, so others can read it
+      if (mf_sync(mfp, MFS_ZERO) == OK) {
+         //Mark all blocks that should be in the swapfile as dirty. Needed for when the 
+         //@swapfile was reset, so that the swap file was deleted, and then on again.
+         mf_set_dirty(mfp);
+         goto success;
       }
+      // Writing block 0 failed: close the file and try another dir
+      mf_close_file(book, FALSE);
    }
 
+success:
    if (!mfp->fName) {
       need_wait_return = TRUE;   // call wait_return() later
       ++no_wait_return;
@@ -1200,7 +1161,7 @@ ml_open_file(Book* book) {
    }
 
    // don't try to open a swap file again
-   book->maySwap = FALSE;
+   book->maySwap = false;
 }
 
 //If still need to create a swap file, and starting to edit a not-readonly
@@ -1210,15 +1171,16 @@ check_need_swap(int newfile)  {    // reading file into new book
    int old_msg_silent = msg_silent; // might be reset by an E325 message
 
    if (curBook->maySwap && (curBook->o.modifiable || !newfile))
-      ml_open_file(curBook);
+      memOpenSwapFile(curBook);
    msg_silent = old_msg_silent;
 }
 
 // Close memline for book. If 'del_file' is TRUE, delete the swap file
 void
-ml_close(Book *book, int del_file) {
+ml_close(Book* book, Boole del_file) {
    if (book->mem.mfile == NULL)      // not open
       return;
+      
    mf_close(book->mem.mfile, del_file);   // close the .swp file
    if (book->mem.ml_line_lnum != 0 && (book->mem.flags & ML_LINE_DIRTY))
       eeglFree(book->mem.cachedLine);
@@ -1234,8 +1196,8 @@ ml_close(Book *book, int del_file) {
 // When 'del_file' is TRUE, delete the memfiles.
 // But don't delete files that were ":preserve"d when we are POSIX compatible.
 void
-ml_close_all(int del_file) {
-   Book   *book;
+ml_close_all(Boole del_file) {
+   Book* book;
    FOR_ALL_BOOKS(book) {
       ml_close(book, del_file);
    } 
@@ -1248,7 +1210,7 @@ ml_close_notmod(void) {
    Book* book;
    FOR_ALL_BOOKS(book) {
       if (!doWasBookChanged(book))
-         ml_close(book, TRUE);    // close all not-modified books
+         ml_close(book, true);    // close all not-modified books
    } 
 }
 
@@ -1361,17 +1323,16 @@ set_b0_dir_flag(Block0* b0p, Book* book) {
 
 #include <sys/sysinfo.h>
 
-// Return TRUE if the process with number "b0p->b0_pid" is still running.
-// "swap_fname" is the name of the swap file, if it's from before a reboot then
-// the result is FALSE;
+//Return TRUE if the process with number "b0p->b0_pid" is still running. "swap_fname" is the name 
+//of the swap file, if it's from before a reboot then the result is FALSE.
 private int
-swapfile_process_running(Block0 *b0p, Byte *swap_fname UNUSED) {
-   FileStat       st;
-   struct sysinfo  sinfo;
+swapfile_process_running(Block0 *b0p, CS swap_fname) {
+   FileStat st;
+   struct sysinfo sinfo;
 
    //If the system rebooted after when the swap file was written then the
    //process can't be running now.
-   if (stat((char *)swap_fname, &st) != -1
+   if (STAT(swap_fname, &st) != -1
           && sysinfo(&sinfo) == 0
           && st.st_mtime 
              < time(NULL) - (overrideSysinfoUptimeG >= 0 ? overrideSysinfoUptimeG : sinfo.uptime)
@@ -1386,54 +1347,44 @@ void
 ml_recover(int checkext) {
    Book* book = NULL;
    MemFile* mfp = NULL ;
-   Byte   *fname;
-   Byte   *fname_used = NULL;
-   BlockHeader   *hdr = NULL;
-   Block0   *b0p;
-   PointerBlock   *pp;
-   DataBlock   *block;
-   InfoPtr   *ip;
-   BlockId   bnum;
-   int      pageCount;
-   FileStat   org_stat, swp_stat;
-   int      len;
-   int      directly;
-   LineNr   lnum;
-   Byte   *p;
-   int      i;
-   long   error;
-   LineNr   lineCount;
-   int      has_error;
-   int      idx;
-   int      top;
-   int      txt_start;
-   FileSize   size;
-   int      called_from_main;
-   int      serious_error = TRUE;
-   long   mtime;
-   int      orig_file_status = NOTDONE;
+   CS fname_used = NULL;
+   BlockHeader* hdr = NULL;
+   Block0* b0p;
+   PointerBlock* pp;
+   DataBlock* block;
+   InfoPtr* ip;
+   FileStat org_stat, swp_stat;
+   int len;
+   Boole directly;
+   int i;
+   int has_error;
+   int top;
+   int txt_start;
+   FileSize size;
+   Boole serious_error = true;
+   int orig_file_status = NOTDONE;
 
    recoveryModeG = true;
-   called_from_main = (curBook->mem.mfile == NULL);
+   Boole called_from_main = (curBook->mem.mfile == NULL);
    char deco = getDecoFlags(HLF_E);
 
    //If the file name ends in ".s[a-w][a-z]" we assume this is the swap file.
    //Otherwise a search is done to find the swap file(s).
-   fname = curBook->currFileName;
-   if (fname == NULL)          // When there is no file name
+   CS fname = curBook->currFileName;
+   if (!fname)          // When there is no file name
       fname = S"";
    len = (int)STRLEN(fname);
    if (checkext && len >= 4 && STRNICMP(fname + len - 4, ".s", 2) == 0
       && firstOccurrence((CS)"abcdefghijklmnopqrstuvw", TOLOWER_ASC(fname[len - 2])) != NULL
       && ASCII_ISALPHA(fname[len - 1])
    ) {
-      directly = TRUE;
+      directly = true;
       fname_used = copyStr(fname); // make a copy for mf_open()
    } else {
-      directly = FALSE;
+      directly = false;
 
       // count the number of matching swap files
-      len = recover_names(fname, FALSE, NULL, 0, NULL);
+      len = memRecoverSwapNames(fname, false, NULL, 0, NULL);
       if (len == 0) {  // no swap files found
          showErrFmtMsg(_(e_no_swap_file_found_for_str), fname);
          goto theend;
@@ -1442,7 +1393,7 @@ ml_recover(int checkext) {
          i = 1;
       else {    // several swap files found, choose
          // list the names of the swap files
-         (void)recover_names(fname, TRUE, NULL, 0, NULL);
+         (void)memRecoverSwapNames(fname, true, NULL, 0, NULL);
          msg_putchar('\n');
          msg_puts(_("Enter number of swap file to use (0 to quit): "));
          i = get_number(FALSE, NULL);
@@ -1450,7 +1401,7 @@ ml_recover(int checkext) {
             goto theend;
       }
       // get the swap file name that will be used
-      (void)recover_names(fname, FALSE, NULL, i, &fname_used);
+      (void)memRecoverSwapNames(fname, false, NULL, i, &fname_used);
    }
    if (!fname_used)
       goto theend;         // out of memory
@@ -1472,7 +1423,7 @@ ml_recover(int checkext) {
    book->mem.flags = 0;
 
    // open the memfile from the old swap file
-   p = copyStr(fname_used); // save "fname_used" for the message:
+   CS p = copyStr(fname_used); // save "fname_used" for the message:
              // mf_open() will consume "fname_used"!
    mfp = mf_open(fname_used, O_RDONLY);
    fname_used = p;
@@ -1564,7 +1515,7 @@ ml_recover(int checkext) {
    msg_putchar('\n');
 
    // check date of swap file and original file
-   mtime = charToLong(b0p->b0_mtime);
+   long mtime = charToLong(b0p->b0_mtime);
    if (curBook->fullFileName != NULL
           && stat((char *)curBook->fullFileName, &org_stat) != -1
           && ((stat((char *)mfp->fName, &swp_stat) != -1
@@ -1591,19 +1542,19 @@ ml_recover(int checkext) {
 
    unchanged(curBook, TRUE);
 
-   bnum = 1;      // start with block 1
-   pageCount = 1;   // which is 1 page
-   lnum = 0;      // append after line 0 in curBook
-   lineCount = 0;
-   idx = 0;      // start with first index in block 1
-   error = 0;
+   BlockId bnum = 1;      // start with block 1
+   int pageCount = 1;   // which is 1 page
+   LineNr lnum = 0;      // append after line 0 in curBook
+   LineNr lineCount = 0;
+   int idx = 0;      // start with first index in block 1
+   long error = 0;
    book->mem.ml_stack_top = 0;
    book->mem.ml_stack = NULL;
    book->mem.ml_stack_size = 0;   // no stack yet
 
    Boole cannotOpen = (curBook->fullFileName == NULL);
 
-   serious_error = FALSE;
+   serious_error = false;
    for ( ; !gotInterruptG; line_breakcheck()) {
       if (hdr)
          mf_put(mfp, hdr, FALSE, FALSE);   // release previous block
@@ -1835,224 +1786,13 @@ theend:
       eeglFree(book);
    }
    if (serious_error && called_from_main)
-      ml_close(curBook, TRUE);
+      ml_close(curBook, true);
    else {
       applyAutocomms(EVENT_BUFREADPOST, NULL, curBook->currFileName, false, curBook);
       applyAutocomms(EVENT_BUFWINENTER, NULL, curBook->currFileName, false, curBook);
    }
 }
 
-// Find the names of swap files in current directory and the directory given
-// with the 'directory' option.
-//
-// Used to:
-// - list the swap files for "eegl -r"
-// - count the number of swap files when recovering
-// - list the swap files when recovering
-// - list the swap files for swapfilelist()
-// - find the name of the n'th swap file when recovering
-int
-recover_names(
-   CS fname,      // base for swap file name
-   int do_list,   // when TRUE, list the swap file names
-   List* ret_list, // when not NULL add file names to it
-   int nr,      // when non-zero, return nr'th swap file name
-   OUT CS* fname_out   // result when "nr" > 0
-){
-   int num_names;
-   CS names[6];
-   CS tail;
-   CS p;
-   int num_files;
-   ExpandMatch files = {};
-   files.a = createArena();
-   CS dirp;
-   CS dir_name;
-   CS fname_res = NULL;
-   Byte fnameBuilder[MAXPATHL];
-
-   if (fname) {
-      //Expand symlink in the file name, because the swap file is created
-      //with the actual file instead of with the symlink.
-      if (resolve_symlink(fname, fnameBuilder) == OK)
-         fname_res = fnameBuilder;
-      else
-         fname_res = fname;
-   }
-
-   if (do_list) {
-      //use msg() to start the scrolling properly
-      msg(_("Swap files found:"));
-      msg_putchar('\n');
-   }
-
-   //Do the loop for every directory in 'directory'.
-   //First allocate some memory to put the directory name in.
-   dir_name = alloc(sizeof(SWAP_DIR));
-   dirp = SWAP_DIR;
-   while (dir_name && *dirp) {
-      //Isolate a directory name from *dirp and put it into dir_name (we know
-      //it is large enough, so use 31000 for length). Advance dirp to next directory name.
-      (void)copy_option_part(&dirp, dir_name, 31000, ",");
-
-      if (dir_name[0] == '.' && dir_name[1] == ZERO) { //check current dir
-         if (fname == NULL) {
-            names[0] = copyStr((CS)"*.sw?");
-            //Names starting with a dot are special.
-            names[1] = copyStr((CS)".*.sw?");
-            names[2] = copyStr((CS)".sw?");
-            num_names = 3;
-         } else
-            num_names = recoverFileNames(names, fname_res, TRUE);
-      } else { //check directory dir_name
-         if (!fname) {
-            names[0] = concat_fnames(dir_name, (CS)"*.sw?", TRUE);
-            //Names starting with a dot are special.
-            names[1] = concat_fnames(dir_name, (CS)".*.sw?", TRUE);
-            names[2] = concat_fnames(dir_name, (CS)".sw?", TRUE);
-            num_names = 3;
-         } else {
-            int   len = (int)STRLEN(dir_name);
-
-            p = dir_name + len;
-            if (after_pathsep(dir_name, p) && len > 1 && p[-1] == p[-2]) {
-               // Ends with '//', Use Full path for swap name
-               tail = make_percent_swname(dir_name, p, fname_res);
-            } else {
-               tail = fiGetShortFiName(fname_res);
-               tail = concat_fnames(dir_name, tail, TRUE);
-            }
-            if (!tail)
-               num_names = 0;
-            else {
-               num_names = recoverFileNames(names, tail, FALSE);
-               eeglFree(tail);
-            }
-         }
-      }
-
-      // check for out-of-memory
-      for (int i = 0; i < num_names; ++i) {
-         if (names[i] == NULL) {
-            for (i = 0; i < num_names; ++i)
-               eeglFree(names[i]);
-            num_names = 0;
-         }
-      }
-      if (num_names == 0)
-         num_files = 0;
-      ei (expand_wildcards(num_names, names, EW_NOTENV|EW_KEEPALL|EW_FILE|EW_SILENT, OUT &files
-          ) == FAIL
-      )
-         num_files = 0;
-
-      //When no swap file found, wildcard expansion might have failed (e.g.
-      //not able to execute the shell).
-      //Try finding a swap file by simply adding ".swp" to the file name.
-      if (*dirp == ZERO && files.len + num_files == 0 && fname != NULL) {
-         FileStat st;
-         CS swapname = fiAppendFileExtension(fname_res, S".swp", TRUE);
-         if (swapname) {
-            if (stat((char *)swapname, &st) != -1) {   // It exists!
-               files.c = ALLOC_ONE(CS);
-               if (files.c) { 
-                  files.c[0] = swapname;
-                  swapname = NULL;
-                  num_files = 1;
-               }
-            }
-            eeglFree(swapname);
-         }
-      }
-
-      //Remove swapfile name of the current book, it must be ignored.
-      //But keep it for swapfilelist().
-      if (curBook->mem.mfile && (p = curBook->mem.mfile->fName) != NULL && !ret_list) {
-         for (int i = 0; i < num_files; ++i) {
-            // Do not expand wildcards
-            if (fullpathcmp(p, files.c[i], TRUE, FALSE) & FPC_SAME) {
-               files.len--;
-               if (files.len > 0) {
-                  for ( ; i < (int)files.len; ++i)
-                      files.c[i] = files.c[i + 1];
-               } 
-            }
-         }
-      }
-      if (nr > 0) {
-         files.len += num_files;
-         if (nr <= (int)files.len)  {
-            *fname_out = copyStr(files.c[nr - 1 + num_files - files.len]);
-            dirp = S"";          // stop searching
-         }
-      } ei (do_list) {
-         if (dir_name[0] == '.' && dir_name[1] == ZERO) {
-            if (!fname)
-               msg_puts(_("   In current directory:\n"));
-            else
-               msg_puts(_("   Using specified name:\n"));
-         } else {
-            msg_puts(_("   In directory "));
-            msg_home_replace(dir_name);
-            msg_puts(S":\n");
-         }
-
-         if (num_files) {
-            for (int i = 0; i < num_files; ++i) {
-               // print the swap file name
-               msg_outnum((long)++files.len);
-               msg_puts(S".    ");
-               msg_puts(fiGetShortFiName(files.c[i]));
-               msg_putchar('\n');
-               (void)swapfile_info(files.c[i]);
-            }
-         } else
-            msg_puts(_("      -- none --\n"));
-         out_flush();
-     } ei (ret_list != NULL) {
-         for (int i = 0; i < num_files; ++i) {
-            Byte *name = concat_fnames(dir_name, files.c[i], TRUE);
-            if (name) {
-               list_append_string(ret_list, name, -1);
-               eeglFree(name);
-            }
-         }
-      } else
-         files.len += num_files;
-
-      for (int i = 0; i < num_names; ++i)
-          eeglFree(names[i]);
-      deleteArena(files.a);
-   }
-   eeglFree(dir_name);
-   return files.len;
-}
-
-//Need _very_ long file names.
-//Append the full path to name with path separators made into percent
-//signs, to "dir". An unnamed book is handled as "" (<currentdir>/"")
-//The last character in "dir" must be an extra slash or backslash, it is removed.
-CS
-make_percent_swname(CS dir, CS dir_end, CS name) {
-   Byte *d = NULL;
-
-   CS f = fiExpandAndCopy(name != NULL ? name : S"", true);
-
-   CS s = alloc(STRLEN(f) + 1);
-   STRCPY(s, f);
-   for (d = s; *d != ZERO; MB_PTR_ADV(d)) {
-      if (*d == '/')
-         *d = '%';
-   } 
-
-   dir_end[-1] = ZERO;  // remove one trailing slash
-   d = concat_fnames(dir, s, TRUE);
-   eeglFree(s);
-   eeglFree(f);
-   return d;
-}
-
-#define HAVE_PROCESS_STILL_RUNNING
 private int process_still_running;
 
 // Return information found in swapfile "fname" in dictionary "d".
@@ -2084,82 +1824,6 @@ get_b0_dict(CS fname, Bag *bag) {
       close(fd);
    } else
       bagAddString(bag, S"error", (CS)"Cannot open file");
-}
-
-// Give information about an existing swap file. Return timestamp (0 when unknown).
-private Tyme
-swapfile_info(CS fname) {
-   FileStat       st;
-   Byte uname[B0_UNAME_SIZE];
-
-   // print the swap file date
-   if (stat((char *)fname, &st) != -1) {
-      // print name of owner of the file
-      if (mch_get_uname(st.st_uid, uname, B0_UNAME_SIZE) == OK) {
-         msg_puts(_("          owned by: "));
-         msg_outtrans(uname);
-         msg_puts(_("   dated: "));
-      } else
-         msg_puts(_("             dated: "));
-      msg_puts(get_ctime(st.st_mtime, TRUE));
-   } else
-      st.st_mtime = 0;
-
-   // print the original file name
-   int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
-   Block0   b0;
-   if (fd >= 0) {
-      if (read_eintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
-         if (STRNCMP(b0.b0_version, "EEGL 3.0", 7) == 0) {
-            msg_puts(_("         [from Eegl version 3.0]"));
-         } ei (ml_check_b0_id(&b0) == FAIL) {
-            msg_puts(_("         [does not look like an Eegl swap file]"));
-         } else {
-            msg_puts(_("         file name: "));
-            if (b0.b0_fname[0] == ZERO)
-               msg_puts(_("[No Name]"));
-            else
-               msg_outtrans(b0.b0_fname);
-
-            msg_puts(_("\n          modified: "));
-            msg_puts(b0.b0_dirty ? _("YES") : _("no"));
-
-            if (*(b0.b0_uname) != ZERO) {
-               msg_puts(_("\n         user name: "));
-               msg_outtrans(b0.b0_uname);
-            }
-
-            if (*(b0.b0_hname) != ZERO) {
-               if (*(b0.b0_uname) != ZERO)
-                  msg_puts(_("   host name: "));
-               else
-                  msg_puts(_("\n         host name: "));
-               msg_outtrans(b0.b0_hname);
-            }
-
-            if (charToLong(b0.b0_pid) != 0L) {
-               msg_puts(_("\n        process ID: "));
-               msg_outnum(charToLong(b0.b0_pid));
-               if (swapfile_process_running(&b0, fname)) {
-                  msg_puts(_(" (STILL RUNNING)"));
-#ifdef HAVE_PROCESS_STILL_RUNNING
-                  process_still_running = TRUE;
-#endif
-               }
-            }
-
-            if (b0_magic_wrong(&b0)) {
-               msg_puts(_("\n         [not usable on this computer]"));
-            }
-         }
-      } else
-          msg_puts(_("         [cannot be read]"));
-      close(fd);
-   } else
-      msg_puts(_("         [cannot be opened]"));
-   msg_putchar('\n');
-
-   return st.st_mtime;
 }
 
 // Return TRUE if the swap file looks OK and there are no changes, thus it can be safely deleted.
@@ -2211,54 +1875,6 @@ swapfile_unchanged(CS fname) {
    // We do not check the user, it should be irrelevant for whether the swap file is still useful
    close(fd);
    return ret;
-}
-
-private int
-recoverFileNames(Byte **names, Byte *path, int prepend_dot) {
-   int      i;
-   int num_names = 0;
-
-   // May also add the file name with a dot prepended, for swap file in same dir as original file.
-   if (prepend_dot) {
-      names[num_names] = fiAppendFileExtension(path, (CS)".sw?", TRUE);
-      if (names[num_names] == NULL)
-         goto end;
-      ++num_names;
-   }
-
-   // Form the normal swap file name pattern by appending ".sw?".
-   names[num_names] = concat_fnames(path, (CS)".sw?", FALSE);
-   if (names[num_names] == NULL)
-      goto end;
-   //  maybe short name, maybe not: Try both. Only use the short name if it is different.
-   CS p;
-   if (num_names >= 1)   {    // check if we have the same name twice
-      p = names[num_names - 1];
-      i = (int)STRLEN(names[num_names - 1]) - (int)STRLEN(names[num_names]);
-      if (i > 0)
-         p += i;       // file name has been expanded to full path
-
-      if (STRCMP(p, names[num_names]) != 0)
-         ++num_names;
-      else
-         eeglFree(names[num_names]);
-   } else
-      ++num_names;
-
-   if (names[num_names] == NULL)
-      goto end;
-
-   p = names[num_names];
-   i = STRLEN(names[num_names]) - STRLEN(names[num_names - 1]);
-   if (i > 0)
-      p += i;      // file name has been expanded to full path
-   if (STRCMP(names[num_names - 1], p) == 0)
-      eeglFree(names[num_names]);
-   else
-      ++num_names;
-
-end:
-    return num_names;
 }
 
 // sync all memlines
@@ -3952,45 +3568,6 @@ resolve_symlink(CS fname, OUT CS builder) {
    return eeFullFileName(tmp, builder, MAXPATHL, TRUE);
 }
 
-//Make swap file name out of the file name and a directory name. Return pointer to allocated 
-//memory or NULL.
-CS
-makeswapname(CS fname, CS ffname UNUSED, CS dir_name) {
-   CS fname_res = fname;
-   Byte fnameBuilder[MAXPATHL];
-
-   //Expand symlink in the file name, so that we put the swap file with the
-   //actual file instead of with the symlink.
-   if (resolve_symlink(fname, fnameBuilder) == OK)
-      fname_res = fnameBuilder;
-
-   int len = (int)STRLEN(dir_name);
-
-   CS s = dir_name + len;
-   CS r;
-   if (after_pathsep(dir_name, s) && len > 1 && s[-1] == s[-2]) {
-      // Ends with '//', Use Full path
-      r = NULL;
-      if ((s = make_percent_swname(dir_name, s, fname_res)) != NULL) {
-         r = fiAppendFileExtension(s, (CS)".swp", FALSE);
-         eeglFree(s);
-      }
-      return r;
-   }
-
-   r = fiAppendFileExtension(
-       fname_res, S".swp",
-       // Prepend a '.' to the swap file name for the current directory.
-       dir_name[0] == '.' && dir_name[1] == ZERO
-   );
-   if (!r)       // out of memory
-      return NULL;
-
-   s = get_file_in_dir(r, dir_name);
-   eeglFree(r);
-   return s;
-}
-
 //Get file name to use for swap file or backup file.
 //Use the name of the edited file "fname" and an entry in the 'dir' or 'bdir' option "dname".
 //- If "dname" is ".", return "fname" (swap file in dir of file).
@@ -4106,28 +3683,16 @@ do_swapexists(Book* book, CS fname) {
 
 //Find out what name to use for the swap file for book 'book'.
 //
-//Several names are tried to find one that does not exist Returns the name in allocated memory or 
-//NULL. When out of memory "dirp" is set to NULL.
+//Return the name in allocated memory or NULL. When out of memory, "dirp" is set to NULL.
 //
 //Note: If BASENAMELEN is not correct, you will get error messages for not being able to open the 
 //swap or undo file. Note: May trigger SwapExists autocmd, pointers may change!
 private CS
-findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning for this file name
-   CS fname;
+findSwapName(Book* book, CS old_fname) {   // don't give warning for this file name
    int n;
    CS buf_fname = book->currFileName;
 
-   //Isolate a directory name from *dirs and put it in dir_name. First allocate some memory to 
-   //put the directory name in. we try different names until we find one that does not exist yet
-   CS dir_name = alloc(STRLEN(*dirs) + 1);
-   if (!dir_name) {
-      *dirs = NULL;
-      fname = NULL;
-      goto endOfName;
-   } else {
-      (void)copy_option_part(dirs, dir_name, 31000, ",");
-      fname = makeswapname(buf_fname, book->fullFileName, dir_name);
-   } 
+   CS fname = memBuildSwapName(book->fullFileName);
 
    if ((n = (int)STRLEN(fname)) == 0) {// sanity check
       EE_CLEAR(fname);
@@ -4135,10 +3700,9 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
    }
    //check if the swapfile already exists
    if (mch_getperm(fname) < 0) {// it does not exist
-      FileStat   sb;
-
       //Extra security check: When a swap file is a symbolic link, this
       //is most likely a symlink attack.
+      FileStat sb;
       if (lstat((char *)fname, &sb) < 0)
          goto endOfName;
    }
@@ -4151,9 +3715,7 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
    if (fname[n - 2] == 'w' && fname[n - 1] == 'p') {// first try
       //Give an error message, unless recovering, no file name, we are viewing a help file or 
       //when the path of the file is different (happens when all .swp files are in one directory)
-      if (!recoveryModeG && buf_fname && book->kind != BOOK_SPELL
-            && !(book->flags & (BF_DUMMY | BF_NO_SEA))
-      ){
+      if (!recoveryModeG && buf_fname && !(book->flags & (BF_DUMMY | BF_NO_SEA))){
          Block0   b0;
          int      differ = FALSE;
 
@@ -4191,9 +3753,7 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
          if (differ == FALSE && !(curBook->flags & BF_RECOVERED)) {
             SeaChoice choice = SEA_CHOICE_NONE;
             FileStat    st;
-#ifdef HAVE_PROCESS_STILL_RUNNING
             process_still_running = FALSE;
-#endif
             // It's safe to delete the swap file if all these are true:
             // - the edited file exists
             // - the swap file has no changes and looks OK
@@ -4241,20 +3801,16 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
                      EE_WARNING,
                      (CS)_("EEGL - ATTENTION"),
                      name == NULL ?  (CS)_("Swap file already exists!") : name,
-# ifdef HAVE_PROCESS_STILL_RUNNING
                      process_still_running
                      ? (CS)_("&Open Read-Only\n&Edit anyway\n&Recover\n&Quit\n&Abort") :
-# endif
                      (CS)_(
                         "&Open Read-Only\n&Edit anyway\n&Recover\n&Delete it\n&Quit\n&Abort"), 1, 
                         NULL, FALSE
                      );
 
-# ifdef HAVE_PROCESS_STILL_RUNNING
                if (process_still_running && dialog_result >= 4)
                   // compensate for missing "Delete it" button
                   dialog_result++;
-# endif
                choice = dialog_result;
                eeglFree(name);
 
@@ -4313,18 +3869,16 @@ findSwapName(Book* book, Arr(CS) dirs, CS old_fname) {   // don't give warning f
    }
    --fname[n - 1];         // ".swo", ".swn", etc.
 endOfName:
-   eeglFree(dir_name);
    return fname;
 }
 
 private int
-b0_magic_wrong(Block0 *b0p) {
+b0_magic_wrong(Block0* b0p) {
     return (b0p->b0_magic_long != (long)B0_MAGIC_LONG
        || b0p->b0_magic_int != (int)B0_MAGIC_INT
        || b0p->b0_magic_short != (short)B0_MAGIC_SHORT
        || b0p->b0_magic_char != B0_MAGIC_CHAR);
 }
-
 
 //Compare current file name with file name from swap file.
 //Try to use inode numbers when possible.
@@ -4371,41 +3925,33 @@ b0_magic_wrong(Block0 *b0p) {
 //Note that when the ino_t is 64 bits, only the last 32 will be used.  This
 //can't be changed without making the block 0 incompatible with 32 bit versions.
 private int
-compareFnameWithInode(
-   CS fname_c,       // current file name
-   CS fname_s,       // file name from swap file
-   long ino_block0
-){
+compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0){
    FileStat st;
-   ino_t ino_c = 0;       // ino of current file
-   ino_t ino_s;          // ino of file from swap file
-   Byte buf_c[MAXPATHL];    // full path of fname_c
-   Byte buf_s[MAXPATHL];    // full path of fname_s
+   ino_t ino_c = 0;      //ino of current file
+   Byte buf_c[MAXPATHL]; //full path of fname_c
+   Byte buf_s[MAXPATHL]; //full path of nameFromSwap
 
    if (stat((char *)fname_c, &st) == 0)
       ino_c = (ino_t)st.st_ino;
 
    //First we try to get the inode from the file name, because the inode in
    //the swap file may be outdated.  If that fails (e.g. this path is not
-   //valid on this machine), use the inode from block 0.
-   if (stat((char *)fname_s, &st) == 0)
-      ino_s = (ino_t)st.st_ino;
-   else
-      ino_s = (ino_t)ino_block0;
+   //valid on this machine), use the inode from block 0. ino of file from swap file
+   ino_t ino_s = ((stat((char *)nameFromSwap, &st) == 0) ? (ino_t)st.st_ino : (ino_t)ino_block0);
 
    if (ino_c && ino_s)
       return (ino_c != ino_s);
 
    //One of the inode numbers is unknown, try a forced eeFullFileName() and compare the file names
    int retval_c = eeFullFileName(fname_c, buf_c, MAXPATHL, TRUE); //flag: buf_c valid
-   int retval_s = eeFullFileName(fname_s, buf_s, MAXPATHL, TRUE); //flag: buf_s valid
+   int retval_s = eeFullFileName(nameFromSwap, buf_s, MAXPATHL, TRUE); //flag: buf_s valid
    if (retval_c == OK && retval_s == OK)
       return STRCMP(buf_c, buf_s) != 0;
 
    //Can't compare inodes or file names, guess that the files are different, unless both appear 
    //not to exist at all, then compare with the file name in the swap file.
    if (ino_s == 0 && ino_c == 0 && retval_c == FAIL && retval_s == FAIL)
-      return STRCMP(fname_c, fname_s) != 0;
+      return STRCMP(fname_c, nameFromSwap) != 0;
    return TRUE;
 }
 
@@ -4444,11 +3990,11 @@ ml_setflags(Book* book) {
       return;
    for (hdr = book->mem.mfile->usedLast; hdr != NULL; hdr = hdr->bh_prev) {
       if (hdr->bh_bnum == 0) {
-          b0p = (Block0 *)(hdr->bh_data);
-          b0p->b0_dirty = book->wasModified ? B0_DIRTY : 0;
-          hdr->bh_flags |= BH_DIRTY;
-          mf_sync(book->mem.mfile, MFS_ZERO);
-          break;
+         b0p = (Block0 *)(hdr->bh_data);
+         b0p->b0_dirty = book->wasModified ? B0_DIRTY : 0;
+         hdr->bh_flags |= BH_DIRTY;
+         mf_sync(book->mem.mfile, MFS_ZERO);
+         break;
       }
    }
 }
@@ -4776,7 +4322,81 @@ ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
    return size;
 }
 
-// Go to byte in buffer with offset 'cnt'.
+// Give information about an existing swap file. Return timestamp (0 when unknown).
+private Tyme
+swapfile_info(CS fname) {
+   FileStat       st;
+   Byte uname[B0_UNAME_SIZE];
+
+   // print the swap file date
+   if (stat((char *)fname, &st) != -1) {
+      // print name of owner of the file
+      if (mch_get_uname(st.st_uid, uname, B0_UNAME_SIZE) == OK) {
+         msg_puts(_("          owned by: "));
+         msg_outtrans(uname);
+         msg_puts(_("   dated: "));
+      } else
+         msg_puts(_("             dated: "));
+      msg_puts(get_ctime(st.st_mtime, TRUE));
+   } else
+      st.st_mtime = 0;
+
+   // print the original file name
+   int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
+   Block0   b0;
+   if (fd >= 0) {
+      if (read_eintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
+         if (STRNCMP(b0.b0_version, "EEGL 3.0", 7) == 0) {
+            msg_puts(_("         [from Eegl version 3.0]"));
+         } ei (ml_check_b0_id(&b0) == FAIL) {
+            msg_puts(_("         [does not look like an Eegl swap file]"));
+         } else {
+            msg_puts(_("         file name: "));
+            if (b0.b0_fname[0] == ZERO)
+               msg_puts(_("[No Name]"));
+            else
+               msg_outtrans(b0.b0_fname);
+
+            msg_puts(_("\n          modified: "));
+            msg_puts(b0.b0_dirty ? _("YES") : _("no"));
+
+            if (*(b0.b0_uname) != ZERO) {
+               msg_puts(_("\n         user name: "));
+               msg_outtrans(b0.b0_uname);
+            }
+
+            if (*(b0.b0_hname) != ZERO) {
+               if (*(b0.b0_uname) != ZERO)
+                  msg_puts(_("   host name: "));
+               else
+                  msg_puts(_("\n         host name: "));
+               msg_outtrans(b0.b0_hname);
+            }
+
+            if (charToLong(b0.b0_pid) != 0L) {
+               msg_puts(_("\n        process ID: "));
+               msg_outnum(charToLong(b0.b0_pid));
+               if (swapfile_process_running(&b0, fname)) {
+                  msg_puts(_(" (STILL RUNNING)"));
+                  process_still_running = TRUE;
+               }
+            }
+
+            if (b0_magic_wrong(&b0)) {
+               msg_puts(_("\n         [not usable on this computer]"));
+            }
+         }
+      } else
+          msg_puts(_("         [cannot be read]"));
+      close(fd);
+   } else
+      msg_puts(_("         [cannot be opened]"));
+   msg_putchar('\n');
+
+   return st.st_mtime;
+}
+
+// Go to byte in book with offset 'cnt'.
 void
 goto_byte(long cnt) {
    long   boff = cnt;
@@ -4800,6 +4420,292 @@ goto_byte(long cnt) {
 
    // Make sure the cursor is on the first byte of a multi-byte char.
    mb_adjust_cursor();
+}
+
+//Need _very_ long file names.
+//Append the full path to name with path separators made into percent
+//signs, to "dir". An unnamed book is handled as "" (<currentdir>/"")
+//The last character in "dir" must be an extra slash or backslash, it is removed.
+CS
+make_percent_swname(CS dir, CS dir_end, CS name) {
+   CS d = NULL;
+   CS f = fiExpandAndCopy(name ? name : S"", true);
+   CS s = alloc(STRLEN(f) + 1);
+   STRCPY(s, f);
+   for (d = s; *d != ZERO; MB_PTR_ADV(d)) {
+      if (*d == '/')
+         *d = '%';
+   } 
+
+   dir_end[-1] = ZERO;  // remove one trailing slash
+   d = concat_fnames(dir, s, TRUE);
+   eeglFree(s);
+   eeglFree(f);
+   return d;
+}
+
+//Make swap file name out of the file name and a directory name. Return pointer to allocated 
+//memory or NULL.
+CS
+memBuildSwapName(CS fname) {
+   CS fname_res = fname;
+   Byte fnameBuilder[MAXPATHL];
+
+   //Expand symlink in the file name, so that we put the swap file with the
+   //actual file instead of with the symlink.
+   if (resolve_symlink(fname, fnameBuilder) == OK)
+      fname_res = fnameBuilder;
+
+   CS s = swapDirG.c + swapDirG.len;
+   if (after_pathsep(swapDirG.c, s) && s[-1] == s[-2]) {
+      // Ends with '//', Use Full path
+      CS r = NULL;
+      if ((s = make_percent_swname(swapDirG.c, s, fname_res)) != NULL) {
+         r = fiAppendFileExtension(s, S".swp", FALSE);
+         eeglFree(s);
+      }
+      return r;
+   }
+
+   CS r = fiAppendFileExtension(fname_res, S".swp", false);
+   if (!r)       // out of memory
+      return NULL;
+
+   s = get_file_in_dir(r, swapDirG.c);
+   eeglFree(r);
+   return s;
+}
+
+private int
+recoverFileNames(Byte **names, Byte *path, int prepend_dot) {
+   int i;
+   int num_names = 0;
+
+   // May also add the file name with a dot prepended, for swap file in same dir as original file.
+   if (prepend_dot) {
+      names[num_names] = fiAppendFileExtension(path, (CS)".sw?", TRUE);
+      if (names[num_names] == NULL)
+         goto end;
+      ++num_names;
+   }
+
+   // Form the normal swap file name pattern by appending ".sw?".
+   names[num_names] = concat_fnames(path, (CS)".sw?", FALSE);
+   if (names[num_names] == NULL)
+      goto end;
+   //  maybe short name, maybe not: Try both. Only use the short name if it is different.
+   CS p;
+   if (num_names >= 1)   {    // check if we have the same name twice
+      p = names[num_names - 1];
+      i = (int)STRLEN(names[num_names - 1]) - (int)STRLEN(names[num_names]);
+      if (i > 0)
+         p += i;       // file name has been expanded to full path
+
+      if (STRCMP(p, names[num_names]) != 0)
+         ++num_names;
+      else
+         eeglFree(names[num_names]);
+   } else
+      ++num_names;
+
+   if (names[num_names] == NULL)
+      goto end;
+
+   p = names[num_names];
+   i = STRLEN(names[num_names]) - STRLEN(names[num_names - 1]);
+   if (i > 0)
+      p += i;      // file name has been expanded to full path
+   if (STRCMP(names[num_names - 1], p) == 0)
+      eeglFree(names[num_names]);
+   else
+      ++num_names;
+
+end:
+    return num_names;
+}
+
+//Find the names of swap files in current directory and the directory given
+//with the 'directory' option.
+//
+//Used to:
+//- list the swap files for "eegl -r"
+//- count the number of swap files when recovering
+//- list the swap files when recovering
+//- list the swap files for swapfilelist()
+//- find the name of the n'th swap file when recovering
+int
+memRecoverSwapNames(
+   CS fname,         //book filename
+   Boole do_list,    //when TRUE, list the swap file names
+   List* ret_list,   //when not NULL add file names to it
+   int nr,           //when non-zero, return nr'th swap file name
+   OUT CS* fname_out //result when "nr" > 0
+){
+   int num_names;
+   CS names[6];
+   CS tail;
+   CS p;
+   int num_files;
+   ExpandMatch files = {};
+   files.a = createArena();
+   CS dirp;
+   CS fname_res = NULL;
+   Byte fnameBuilder[MAXPATHL];
+
+   if (fname) {
+      //Expand symlink in the file name, because the swap file is created
+      //with the actual file instead of with the symlink.
+      if (resolve_symlink(fname, fnameBuilder) == OK)
+         fname_res = fnameBuilder;
+      else
+         fname_res = fname;
+   }
+
+   if (do_list) {
+      //use msg() to start the scrolling properly
+      msg(_("Swap files found:"));
+      msg_putchar('\n');
+   }
+
+   //Do the loop for every directory in 'directory'.
+   //First allocate some memory to put the directory name in.
+   CS dir_name = alloc(sizeof(SWAP_DIR));
+   dirp = SWAP_DIR;
+   while (dir_name && *dirp) {
+      //Isolate a directory name from *dirp and put it into dir_name (we know
+      //it is large enough, so use 31000 for length). Advance dirp to next directory name.
+      (void)doCutPathFromListOfPaths(OUT &dirp, dir_name, 31000, S",");
+
+      if (dir_name[0] == '.' && dir_name[1] == ZERO) { //check current dir
+         if (!fname) {
+            names[0] = copyStr(S"*.sw?");
+            //Names starting with a dot are special.
+            names[1] = copyStr(S".*.sw?");
+            names[2] = copyStr(S".sw?");
+            num_names = 3;
+         } else
+            num_names = recoverFileNames(names, fname_res, TRUE);
+      } else { //check directory dir_name
+         if (!fname) {
+            names[0] = concat_fnames(dir_name, S"*.sw?", TRUE);
+            //Names starting with a dot are special.
+            names[1] = concat_fnames(dir_name, S".*.sw?", TRUE);
+            names[2] = concat_fnames(dir_name, S".sw?", TRUE);
+            num_names = 3;
+         } else {
+            int len = (int)STRLEN(dir_name);
+
+            p = dir_name + len;
+            if (after_pathsep(dir_name, p) && len > 1 && p[-1] == p[-2]) {
+               // Ends with '//', Use Full path for swap name
+               tail = make_percent_swname(dir_name, p, fname_res);
+            } else {
+               tail = fiGetShortFiName(fname_res);
+               tail = concat_fnames(dir_name, tail, TRUE);
+            }
+            if (!tail)
+               num_names = 0;
+            else {
+               num_names = recoverFileNames(names, tail, FALSE);
+               eeglFree(tail);
+            }
+         }
+      }
+
+      // check for out-of-memory
+      for (int i = 0; i < num_names; ++i) {
+         if (names[i] == NULL) {
+            for (i = 0; i < num_names; ++i)
+               eeglFree(names[i]);
+            num_names = 0;
+         }
+      }
+      if (num_names == 0)
+         num_files = 0;
+      ei (expand_wildcards(num_names, names, EW_NOTENV|EW_KEEPALL|EW_FILE|EW_SILENT, OUT &files
+          ) == FAIL
+      )
+         num_files = 0;
+
+      //When no swap file found, wildcard expansion might have failed (e.g. not able to execute 
+      //the shell). Try finding a swap file by simply adding ".swp" to the file name.
+      if (*dirp == ZERO && files.len + num_files == 0 && fname != NULL) {
+         FileStat st;
+         CS swapname = fiAppendFileExtension(fname_res, S".swp", TRUE);
+         if (swapname) {
+            if (stat((char *)swapname, &st) != -1) {   // It exists!
+               files.c = ALLOC_ONE(CS);
+               if (files.c) { 
+                  files.c[0] = swapname;
+                  swapname = NULL;
+                  num_files = 1;
+               }
+            }
+            eeglFree(swapname);
+         }
+      }
+
+      //Remove swapfile name of the current book, it must be ignored.
+      //But keep it for swapfilelist().
+      if (curBook->mem.mfile && (p = curBook->mem.mfile->fName) != NULL && !ret_list) {
+         for (int i = 0; i < num_files; ++i) {
+            // Do not expand wildcards
+            if (fullpathcmp(p, files.c[i], TRUE, FALSE) & FPC_SAME) {
+               files.len--;
+               if (files.len > 0) {
+                  for ( ; i < (int)files.len; ++i)
+                      files.c[i] = files.c[i + 1];
+               } 
+            }
+         }
+      }
+      if (nr > 0) {
+         files.len += num_files;
+         if (nr <= (int)files.len)  {
+            *fname_out = copyStr(files.c[nr - 1 + num_files - files.len]);
+            dirp = S"";          // stop searching
+         }
+      } ei (do_list) {
+         if (dir_name[0] == '.' && dir_name[1] == ZERO) {
+            if (!fname)
+               msg_puts(_("   In current directory:\n"));
+            else
+               msg_puts(_("   Using specified name:\n"));
+         } else {
+            msg_puts(_("   In directory "));
+            msg_home_replace(dir_name);
+            msg_puts(S":\n");
+         }
+
+         if (num_files) {
+            for (int i = 0; i < num_files; ++i) {
+               // print the swap file name
+               msg_outnum((long)++files.len);
+               msg_puts(S".    ");
+               msg_puts(fiGetShortFiName(files.c[i]));
+               msg_putchar('\n');
+               (void)swapfile_info(files.c[i]);
+            }
+         } else
+            msg_puts(_("      -- none --\n"));
+         out_flush();
+     } ei (ret_list) {
+         for (int i = 0; i < num_files; ++i) {
+            CS name = concat_fnames(dir_name, files.c[i], TRUE);
+            if (name) {
+               list_append_string(ret_list, name, -1);
+               eeglFree(name);
+            }
+         }
+      } else
+         files.len += num_files;
+
+      for (int i = 0; i < num_names; ++i)
+         eeglFree(names[i]);
+      deleteArena(files.a);
+   }
+   eeglFree(dir_name);
+   return files.len;
 }
 
 //}}}
@@ -4844,26 +4750,26 @@ private Ulong   total_mem_used = 0;   // total memory used for memfiles
 
 private void mf_ins_hash(MemFile *, BlockHeader *);
 private void mf_rem_hash(MemFile *, BlockHeader *);
-private BlockHeader *mf_find_hash(MemFile *, BlockId);
+private BlockHeader* mf_find_hash(MemFile *, BlockId);
 private void mf_ins_used(MemFile *, BlockHeader *);
 private void mf_rem_used(MemFile *, BlockHeader *);
-private BlockHeader *mf_release(MemFile *, int);
-private BlockHeader *mf_alloc_bhdr(MemFile *, int);
+private BlockHeader* mf_release(MemFile *, int);
+private BlockHeader* mf_alloc_bhdr(MemFile *, int);
 private void mf_free_bhdr(BlockHeader *);
 private void mf_ins_free(MemFile *, BlockHeader *);
-private BlockHeader *mf_rem_free(MemFile *);
-private int mf_read(MemFile *, BlockHeader *);
-private int mf_write(MemFile *, BlockHeader *);
-private int mf_write_block(MemFile *mfp, BlockHeader *hp, FileSize offset, unsigned size);
-private int mf_trans_add(MemFile *, BlockHeader *);
-private void mf_do_open(MemFile *, CS, Unt);
-private void mf_hash_init(MfHashTable *);
-private void mf_hash_free(MfHashTable *);
-private void mf_hash_free_all(MfHashTable *);
-private MfHashItem *mf_hash_find(MfHashTable *, BlockId);
-private void mf_hash_add_item(MfHashTable *, MfHashItem *);
-private void mf_hash_rem_item(MfHashTable *, MfHashItem *);
-private int mf_hash_grow(MfHashTable *);
+private BlockHeader* mf_rem_free(MemFile *);
+private int mf_read(MemFile*, BlockHeader *);
+private int mf_write(MemFile*, BlockHeader *);
+private int mf_write_block(MemFile* mfp, BlockHeader *hp, FileSize offset, unsigned size);
+private int mf_trans_add(MemFile*, BlockHeader *);
+private void mf_do_open(MemFile*, CS, Unt);
+private void mf_hash_init(MfHashTable*);
+private void mf_hash_free(MfHashTable*);
+private void mf_hash_free_all(MfHashTable*);
+private MfHashItem *mf_hash_find(MfHashTable*, BlockId);
+private void mf_hash_add_item(MfHashTable*, MfHashItem*);
+private void mf_hash_rem_item(MfHashTable*, MfHashItem*);
+private int mf_hash_grow(MfHashTable*);
 
 // The functions for using a memfile:
 //
@@ -4990,12 +4896,12 @@ mf_close(MemFile* mfp, int del_file) {
       mch_remove(mfp->fName); // free entries in used list
       
    BlockHeader* nextp;
-   for (BlockHeader* hp = mfp->usedFirst; hp != NULL; hp = nextp) {
+   for (BlockHeader* hp = mfp->usedFirst; hp; hp = nextp) {
       total_mem_used -= (Ulong)hp->pageCount * mfp->pageSize;
       nextp = hp->bh_next;
       mf_free_bhdr(hp);
    }
-   while (mfp->freeFirst != NULL)       // free entries in free list
+   while (mfp->freeFirst)       // free entries in free list
       eeglFree(mf_rem_free(mfp));
    mf_hash_free(&mfp->mf_hash);
    mf_hash_free_all(&mfp->mf_trans);       // free hashtable and its items
@@ -5065,12 +4971,12 @@ mf_new(MemFile* mfp, int negative, int page_count) {
       // If the number of pages matches and mf_release() returned a BlockHeader,
       // just use the number and free the BlockHeader from the free list
       if (freep->pageCount > page_count) {
-         if (hp == NULL && (hp = mf_alloc_bhdr(mfp, page_count)) == NULL)
+         if (!hp && (hp = mf_alloc_bhdr(mfp, page_count)) == NULL)
             return NULL;
          hp->bh_bnum = freep->bh_bnum;
          freep->bh_bnum += page_count;
          freep->pageCount -= page_count;
-      } ei (hp == NULL) {      // need to allocate memory for this block
+      } ei (!hp) {      // need to allocate memory for this block
          if ((p = alloc((Unt)mfp->pageSize * page_count)) == NULL)
             return NULL;
          hp = mf_rem_free(mfp);
@@ -5082,13 +4988,13 @@ mf_new(MemFile* mfp, int negative, int page_count) {
       }
    } else {  // get a new number
       if (!hp && (hp = mf_alloc_bhdr(mfp, page_count)) == NULL)
-          return NULL;
+         return NULL;
       if (negative) {
-          hp->bh_bnum = mfp->mf_blocknr_min--;
-          mfp->mf_neg_count++;
+         hp->bh_bnum = mfp->mf_blocknr_min--;
+         mfp->mf_neg_count++;
       } else {
-          hp->bh_bnum = mfp->mf_blocknr_max;
-          mfp->mf_blocknr_max += page_count;
+         hp->bh_bnum = mfp->mf_blocknr_max;
+         mfp->mf_blocknr_max += page_count;
       }
    }
    hp->bh_flags = BH_LOCKED | BH_DIRTY;   // new block is always dirty
@@ -5115,17 +5021,17 @@ mf_get(MemFile* mfp, BlockId nr, int page_count) {
    BlockHeader* hp = mf_find_hash(mfp, nr);
    if (!hp) {  // not in the hash list
       if (nr < 0 || nr >= mfp->pagesInFile)   // can't be in the file
-          return NULL;
+         return NULL;
 
       // could check here if the block is in the free list
 
       //Check if we need to flush an existing block.
       //If so, use that block. If not, allocate a new block.
       hp = mf_release(mfp, page_count);
-      if (hp == NULL && page_count > 0)
-          hp = mf_alloc_bhdr(mfp, page_count);
-      if (hp == NULL)
-          return NULL;
+      if (!hp && page_count > 0)
+         hp = mf_alloc_bhdr(mfp, page_count);
+      if (!hp)
+         return NULL;
 
       hp->bh_bnum = nr;
       hp->bh_flags = 0;
@@ -5211,13 +5117,13 @@ mf_sync(MemFile* mfp, Unt flags) {
       if (((flags & MFS_ALL) || hp->bh_bnum >= 0)
          && (hp->bh_flags & BH_DIRTY)
          && (status == OK || (hp->bh_bnum >= 0
-             && hp->bh_bnum < mfp->pagesInFile)))
-      {
+             && hp->bh_bnum < mfp->pagesInFile))
+      ) {
          if ((flags & MFS_ZERO) && hp->bh_bnum != 0)
             continue;
          if (mf_write(mfp, hp) == FAIL) {
             if (status == FAIL)   // double error: quit syncing
-                break;
+               break;
             status = FAIL;
          }
          if (flags & MFS_STOP) {
@@ -5233,10 +5139,10 @@ mf_sync(MemFile* mfp, Unt flags) {
 
    //If the whole list is flushed, the memfile is not dirty anymore.
    //In case of an error this flag is also set, to avoid trying all the time.
-   if (hp == NULL || status == FAIL)
+   if (!hp || status == FAIL)
       mfp->mf_dirty = MF_DIRTY_NO;
 
-   if ((flags & MFS_FLUSH) && p_sws && eeFsync(mfp->fd) != 0)
+   if ((flags & MFS_FLUSH) != 0 && p_sws && eeFsync(mfp->fd) != 0)
       status = FAIL;
 
    gotInterruptG |= gotInterruptG_save;
@@ -5248,7 +5154,7 @@ mf_sync(MemFile* mfp, Unt flags) {
 // are blocks that need to be written to a newly created swapfile.
 void
 mf_set_dirty(MemFile* mfp) {
-   for (BlockHeader* hp = mfp->usedLast; hp != NULL; hp = hp->bh_prev) {
+   for (BlockHeader* hp = mfp->usedLast; hp; hp = hp->bh_prev) {
       if (hp->bh_bnum > 0)
          hp->bh_flags |= BH_DIRTY;
    } 
@@ -5263,19 +5169,19 @@ mf_ins_hash(MemFile* mfp, BlockHeader* hp) {
 
 // remove block *hp from hashlist of memfile list *mfp
 private void
-mf_rem_hash(MemFile *mfp, BlockHeader *hp) {
+mf_rem_hash(MemFile* mfp, BlockHeader* hp) {
    mf_hash_rem_item(&mfp->mf_hash, (MfHashItem *)hp);
 }
 
 // look in hash lists of memfile *mfp for block header with number 'nr'
 private BlockHeader *
-mf_find_hash(MemFile *mfp, BlockId nr) {
+mf_find_hash(MemFile* mfp, BlockId nr) {
    return (BlockHeader *)mf_hash_find(&mfp->mf_hash, nr);
 }
 
 // insert block *hp in front of used list of memfile *mfp
 private void
-mf_ins_used(MemFile *mfp, BlockHeader *hp) {
+mf_ins_used(MemFile* mfp, BlockHeader* hp) {
    hp->bh_next = mfp->usedFirst;
    mfp->usedFirst = hp;
    hp->bh_prev = NULL;
@@ -5289,7 +5195,7 @@ mf_ins_used(MemFile *mfp, BlockHeader *hp) {
 
 // remove block *hp from used list of memfile *mfp
 private void
-mf_rem_used(MemFile *mfp, BlockHeader *hp) {
+mf_rem_used(MemFile* mfp, BlockHeader* hp) {
    if (hp->bh_next == NULL)       // last block in used list
       mfp->usedLast = hp->bh_prev;
    else
@@ -5308,7 +5214,7 @@ mf_rem_used(MemFile *mfp, BlockHeader *hp) {
 // sure the page_count is right.
 // Return NULL if no block is released.
 private BlockHeader *
-mf_release(MemFile *mfp, int page_count) {
+mf_release(MemFile* mfp, int page_count) {
 
    // don't release while in mf_close_file()
    if (dontReleaseBlocksS)
@@ -5327,7 +5233,7 @@ mf_release(MemFile *mfp, int page_count) {
             break;
       } 
       if (book && book->maySwap)
-         ml_open_file(book);
+         memOpenSwapFile(book);
    }
 
    //don't release a block if
@@ -5340,7 +5246,7 @@ mf_release(MemFile *mfp, int page_count) {
       return NULL;
 
    BlockHeader* hp;
-   for (hp = mfp->usedLast; hp != NULL; hp = hp->bh_prev) {
+   for (hp = mfp->usedLast; hp; hp = hp->bh_prev) {
       if (!(hp->bh_flags & BH_LOCKED))
           break;
    } 
@@ -5384,7 +5290,7 @@ mf_release_all(void){
       if (mfp) {
          // If no swap file yet, may open one
          if (mfp->fd < 0 && book->maySwap)
-            ml_open_file(book);
+            memOpenSwapFile(book);
 
          // only if there is a swapfile
          if (mfp->fd >= 0) {
@@ -5468,7 +5374,7 @@ mf_read(MemFile* mfp, BlockHeader* hp) {
 
 // write a block to disk. Return FAIL for failure, OK otherwise
 private int
-mf_write(MemFile *mfp, BlockHeader *hp) {
+mf_write(MemFile* mfp, BlockHeader* hp) {
    FileSize offset;       // offset in the file
    BlockId nr;       // block nr which is being written
    BlockHeader* hp2;
@@ -5564,7 +5470,7 @@ mf_write_block(MemFile* mfp, BlockHeader* hp, FileSize offset UNUSED, unsigned s
 // Make block number for *hp positive and add it to the translation list
 // Return FAIL for failure, OK otherwise
 private int
-mf_trans_add(MemFile *mfp, BlockHeader *hp) {
+mf_trans_add(MemFile* mfp, BlockHeader* hp) {
    BlockId new_bnum;
    int page_count;
 
@@ -5594,17 +5500,17 @@ mf_trans_add(MemFile *mfp, BlockHeader *hp) {
       mfp->mf_blocknr_max += page_count;
    }
 
-    np->nt_old_bnum = hp->bh_bnum;       // adjust number
-    np->nt_new_bnum = new_bnum;
+   np->nt_old_bnum = hp->bh_bnum;       // adjust number
+   np->nt_new_bnum = new_bnum;
 
-    mf_rem_hash(mfp, hp);          // remove from old hash list
-    hp->bh_bnum = new_bnum;
-    mf_ins_hash(mfp, hp);          // insert in new hash list
+   mf_rem_hash(mfp, hp);          // remove from old hash list
+   hp->bh_bnum = new_bnum;
+   mf_ins_hash(mfp, hp);          // insert in new hash list
 
-    // Insert "np" into "mf_trans" hashtable with key "np->nt_old_bnum"
-    mf_hash_add_item(&mfp->mf_trans, (MfHashItem *)np);
+   // Insert "np" into "mf_trans" hashtable with key "np->nt_old_bnum"
+   mf_hash_add_item(&mfp->mf_trans, (MfHashItem *)np);
 
-    return OK;
+   return OK;
 }
 
 // Lookup a translation from the trans lists and delete the entry.
@@ -5613,7 +5519,7 @@ BlockId
 mf_trans_del(MemFile* mfp, BlockId old_nr) {
    NrTranslation* np = (NrTranslation *)mf_hash_find(&mfp->mf_trans, old_nr);
 
-   if (np == NULL)      // not found
+   if (!np)      // not found
       return old_nr;
 
    mfp->mf_neg_count--;
@@ -5637,8 +5543,8 @@ mf_set_ffname(MemFile* mfp) {
 
 // Make the name of the file used for the memfile a full path. Used before doing a :cd
 void
-mf_fullname(MemFile *mfp) {
-   if (mfp == NULL || mfp->fName == NULL || mfp->fullFName == NULL)
+mf_fullname(MemFile* mfp) {
+   if (!mfp || !mfp->fName || !mfp->fullFName)
       return;
 
    eeglFree(mfp->fName);
@@ -5649,14 +5555,13 @@ mf_fullname(MemFile *mfp) {
 // TRUE if there are any translations pending for 'mfp'
 int
 mf_need_trans(MemFile* mfp) {
-   return (mfp->fName != NULL && mfp->mf_neg_count > 0);
+   return (mfp->fName && mfp->mf_neg_count > 0);
 }
 
 // Open a swap file for a memfile.
 // The "fname" must be in allocated memory, and is consumed (also when an error occurs).
 private void
 mf_do_open(MemFile* mfp, CS fname, Unt flags) {      // flags for open()
-   FileStat   sb;
 
    mfp->fName = fname;
 
@@ -5664,8 +5569,9 @@ mf_do_open(MemFile* mfp, CS fname, Unt flags) {      // flags for open()
    // have been allocated.
    mf_set_ffname(mfp);
 
-   // Extra security check: When creating a swap file it really shouldn't
-   // exist yet.  If there is a symbolic link, this is most likely an attack.
+   //Extra security check: When creating a swap file it really shouldn't
+   //exist yet. If there is a symbolic link, this is most likely an attack.
+   FileStat sb;
    if ((flags & O_CREAT) && lstat((char *)mfp->fName, &sb) >= 0) {
       mfp->fd = -1;
       emsg(_(e_swap_file_already_exists_symlink_attack));

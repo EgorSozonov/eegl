@@ -450,7 +450,7 @@ doInPath(
    while (*p != ZERO && ((flags & DIP_ALL) || !did_one)) {
 
       // Copy the path from 'runtimepath' to builder[].
-      copy_option_part(&p, builder, MAXPATHL, ",");
+      doCutPathFromListOfPaths(&p, builder, MAXPATHL, ",");
       Unt buflen = STRLEN(builder);
 
       // Skip after or non-after directories.
@@ -474,7 +474,7 @@ doInPath(
          CS np = name;
          while (*np != ZERO && ((flags & DIP_ALL) || !did_one)) {
             // Append the pattern from "name" to builder[].
-            copy_option_part(&np, tail, (int)(MAXPATHL - (tail - builder)), "\t ");
+            doCutPathFromListOfPaths(&np, tail, (int)(MAXPATHL - (tail - builder)), "\t ");
 
             if (p_verbose > 10) {
                verbose_enter();
@@ -4793,11 +4793,6 @@ setContextByCommandName(
 
    case C_ownsyntax:
       xp->context = EXPAND_OWNSYNTAX;
-      xp->input = mbText(arg);
-      break;
-
-   case C_setfiletype:
-      xp->context = EXPAND_FILETYPE;
       xp->input = mbText(arg);
       break;
 
@@ -10254,9 +10249,6 @@ openCommPort(void) {
          // Make S-Tab work like CTRL-P in command-line completion
          add_map(S"<book> <S-Tab> <C-P>", MODE_INSERT, TRUE);
       }
-      optChangeAndReportError(
-         S"filetype", (OptionValue){.tag = OPTION_STRING, .string = S"vim"}, SET_LOCAL
-      );
    }
    --curBookLock;
 

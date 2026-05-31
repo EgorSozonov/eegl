@@ -6,7 +6,7 @@ void edit_unputchar(void);
 void truncate_spaces(CS line, Unt len);
 void backspace_until_column(int col);
 int get_literal(int noReduceKeys);
-void insertchar0(Unt c, int flags, int second_indent);
+void insertchar0(Unt c, Unt flags, int second_indent);
 void start_arrow(Pos *end_insert_pos);
 int stop_arrow(void);
 void set_last_insert(Unt c);

@@ -4008,16 +4008,12 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
    // correct cursor position
    check_lnums(TRUE);
 
-   if (oldLast == NULL) {
-      // Set the 'filetype' to "qf" each time after filling the book.
+   if (!oldLast) {
+      // Set the book kind to "location" each time after filling the book.
       // This resembles reading a file into a book, it's more logical when using autocommands.
-      ++curBookLock;
-      optChangeAndReportError(
-         S"filetype", (OptionValue){.tag = OPTION_STRING, .string = S"qf"}, SET_LOCAL
-      );
-      curBook->o.modifiable = false;
-
+      curBook->kind = BOOK_LOCATION;
       curBook->keepFiletype = TRUE;   // don't detect 'filetype'
+      ++curBookLock;
       applyAutocomms(EVENT_BUFREADPOST, S"quickfix", NULL, false, curBook);
       applyAutocomms(EVENT_BUFWINENTER, S"quickfix", NULL, false, curBook);
       curBook->keepFiletype = FALSE;
@@ -4033,7 +4029,7 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
 
 // For every change made to the location list, update the changed tick.
 private void
-updateChangedTick(LocationList *ll) {
+updateChangedTick(LocationList* ll) {
    ll->changedTick++;
 }
 // Return the location list number with the given identifier. Returns -1 if list is not found.

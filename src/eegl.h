@@ -2038,24 +2038,24 @@ EXTERN Boole p_bk;      // @backup
 #define BKC_NO            0x004
 #define BKC_BREAKSYMLINK  0x008
 #define BKC_BREAKHARDLINK 0x010
-EXTERN CS p_bdir;     //@backupdir
-EXTERN CS p_bex;      //@backupext
+EXTERN CS p_bdir;       //@backupdir
+EXTERN CS p_bex;        //@backupext
 EXTERN unsigned bo_flags;
-EXTERN CS p_bsk;      //@backupskip
-EXTERN long p_bdlay;       //@balloondelay
-EXTERN Boole p_bevalterm;  //@balloonevalterm
-EXTERN CS p_bt;       //@booktype
-EXTERN Boole p_delcomb;    //@delcombine
-EXTERN long p_cwh;         //@cmdwinheight
+EXTERN CS p_bsk;        //@backupskip
+EXTERN long p_bdlay;    //@balloondelay
+EXTERN Boole p_bevalterm; //@balloonevalterm
+EXTERN CS p_bt;         //@booktype
+EXTERN Boole p_delcomb; //@delcombine
+EXTERN long p_cwh;      //@cmdwinheight
 EXTERN long commlineHeightG;//@commheight
-EXTERN CS p_cpt;      //@complete
-EXTERN Boole p_confirm;    //@confirm
-EXTERN CS p_cfc;      //@completefuzzycollect
+EXTERN CS p_cpt;        //@complete
+EXTERN Boole p_confirm; //@confirm
+EXTERN CS p_cfc;        //@completefuzzycollect
 EXTERN unsigned cfc_flags; //flags from @completefuzzycollect
-EXTERN Unt p_cia;      //@completeitemalign
-EXTERN Unt cot_flags;      //flags from @completeopt
-EXTERN Boole p_ac;         //@autocomplete
-EXTERN long p_acl;         //@autocompletedelay
+EXTERN Unt p_cia;       //@completeitemalign
+EXTERN Unt cot_flags;   //flags from @completeopt
+EXTERN Boole p_ac;      //@autocomplete
+EXTERN long p_acl;      //@autocompletedelay
 
 // Keep in sync with option.c:p_cot_values
 #define COT_MENU        0x001
@@ -2208,15 +2208,15 @@ EXTERN Byte p_sloc; //@showcmdloc
 #define SHOW_COMM_LAST       1 //last screnline
 #define SHOW_COMM_STATUSLINE 2 //portal statusline
 
-EXTERN Boole p_sft;      //@showfulltag
-EXTERN Boole p_smd;      //@showmode
+EXTERN Boole p_sft;    //@showfulltag
+EXTERN Boole p_smd;    //@showmode
 EXTERN long  p_ss;     //@sidescroll
-EXTERN Boole p_scs;      //@smartcase
-EXTERN Boole p_swf;      //@swapfile
-EXTERN CS p_sps;  //@spellsuggest
-EXTERN Boole p_spr;      //@splitright
-EXTERN Boole p_sb;       //@splitbelow
-EXTERN Boole p_sol;      //@startofline
+EXTERN Boole p_scs;    //@smartcase
+EXTERN Boole p_swf;    //@swapfile
+EXTERN CS p_sps;       //@spellsuggest
+EXTERN Boole p_spr;    //@splitright
+EXTERN Boole p_sb;     //@splitbelow
+EXTERN Boole p_sol;    //@startofline
 EXTERN CS p_su;   //@suffixes
 EXTERN Boole p_sws;  //@swapsync
 EXTERN Unt p_swb;      //@switchbuf
@@ -4521,7 +4521,6 @@ typedef struct {
 #define BOOK_ACWRITE  6
 #define BOOK_PROMPT   7
 #define BOOK_POPUP    8
-#define BOOK_SPELL    9 // spell book - used for spell info, never displayed and no filename
 
 // Must be in sync with p_buftype_values
 #define p_buftypeValuesLen 10
@@ -4608,7 +4607,7 @@ struct Book { //:Book
 
    int countPortals;   // nr of portals open into this book
 
-   int flags;   // various BF_ flags
+   Unt flags;   // various BF_ flags
    int locked;   // Book is being closed or referenced, don't let autocommands wipe it out
    int lockedSplit;  // Book is being closed, don't allow opening more portals into it
 
@@ -4633,18 +4632,18 @@ struct Book { //:Book
                            // changedTick.c.number; incremented for each change, also for undo
 #define CHANGEDTICK(buf) ((buf)->changedTick.c.number)
 
-   Long   lastChangeTick;   // b:changedtick when TextChanged was last triggered.
-   Long   lastChangeTickPum; // b:changedtick for TextChangedP
-   Long   lastChangeTickInsert;   // b:changedtick for TextChangedI
+   Long lastChangeTick;   // b:changedtick when TextChanged was last triggered.
+   Long lastChangeTickPum; // b:changedtick for TextChangedP
+   Long lastChangeTickInsert;   // b:changedtick for TextChangedI
 
    Boole isBeingSaved;   // Set to TRUE if we are in the middle of saving the book.
 
    // Changes to a book require updating of the display.  To minimize the
    // work, remember changes made and update everything at once.
-   int      needsRedraw;   // TRUE when there are changes since the last time the display was updated
-   LineNr   needsRedrawTop;   // topmost lnum that was changed
-   LineNr   needsRedrawBott;   // lnum below last changed line, AFTER the change
-   long   lineCountDiff;  // number of extra book lines inserted; negative when lines were deleted
+   int needsRedraw;   // TRUE when there are changes since the last time the display was updated
+   LineNr needsRedrawTop;   // topmost lnum that was changed
+   LineNr needsRedrawBott;   // lnum below last changed line, AFTER the change
+   long lineCountDiff;  // number of extra book lines inserted; negative when lines were deleted
 
    PortInfo* portInfos;   // list of last used info for each window
 
@@ -4656,7 +4655,7 @@ struct Book { //:Book
    int origMode;   // mode of original file
    Tyme lastUsed;   // time when the book was last used; used for eeglinfo
 
-   Pos   namedMarks[NMARKS]; // current named marks (mark.c)
+   Pos namedMarks[NMARKS]; // current named marks (mark.c)
    CS fileType;
 
    // These variables are set when VIsual_active becomes FALSE
@@ -4666,9 +4665,9 @@ struct Book { //:Book
    Pos lastChange;   // position of last change: '. mark
 
    // the changelist contains old change positions
-   Pos   changeList[JUMPLISTSIZE];
-   Unt      changeListLen;   // number of active entries
-   Boole      newChange;      // set by u_savecommon()
+   Pos changeList[JUMPLISTSIZE];
+   Unt changeListLen;   // number of active entries
+   Boole newChange;      // set by u_savecommon()
 
    //Character table, only used in book.c for @iskeyword
    //32 bytes of 8 bits: 1 bit per character 0-255.
@@ -4704,7 +4703,7 @@ struct Book { //:Book
 
    int scanned;       // ^N/^P have scanned this book
 
-   Byte kind;         // BUF_ constants
+   Byte kind;         // BOOK_ constants
    BookLocal o;
    
    Boole hasLocationEntry;
@@ -4719,14 +4718,14 @@ struct Book { //:Book
    Bag* bVars;      //internal variables, local to book
 
    Listener* listener;
-   List   *recordedChanges;
-   int      hasTextprop;   // TRUE when text props were added
-   EeSet   *propTypes;   // text property types local to book
+   List* recordedChanges;
+   int hasTextprop;   // TRUE when text props were added
+   EeSet* propTypes;   // text property types local to book
    PropType** propArray;   // entries of b_proptypes sorted on tp_id
    ArrayList   textPropText; // stores text for props, index by (-id - 1)
 
-   // When a book is created, it starts without a swap file.  b_may_swap is then set to indicate
-   // that a swap file may be opened later.  It is reset if a swap file could not be opened.
+   //When a book is created, it starts without a swap file.  b_may_swap is then set to indicate
+   //that a swap file may be opened later.  It is reset if a swap file could not be opened.
    int maySwap;
    int didWarnReadonly; // Set to 1 if user has been warned on first change of a read-only file
 
@@ -4735,18 +4734,18 @@ struct Book { //:Book
    Callback promptInterrupt;   // set by prompt_setinterrupt()
    int promptInsert;   // value for restart_edit when entering a prompt book portal.
 
-   SyntaxBlock   syntax;      // Info related to syntax highlighting.  w_s
+   SyntaxBlock syntax;      // Info related to syntax highlighting.  w_s
             // normally points to this, but some portals may use a different SyntaxBlock.
 
    SignEntry* signList;      // list of placed signs
 
-   int      writeToChannel; // TRUE when appended lines are written to a channel.
+   int writeToChannel; // TRUE when appended lines are written to a channel.
 
-   int      mappedCtrlC; // modes where CTRL-C is mapped
+   int mappedCtrlC; // modes where CTRL-C is mapped
    CS syntaxName;
 
    Terminal* term;   // When not NULL this book is for a terminal portal.
-   int      diffFailed;   // internal diff failed for this book
+   int diffFailed;   // internal diff failed for this book
 }; // Book
 
 //}}}
@@ -6018,14 +6017,14 @@ EXTERN long visibleRowsG         // nr of rows in the screen
 ;
 EXTERN long   visibleColsG INIT(= 80);   // nr of columns in the screen
 
-// The characters that are currently on the screen are kept in ScreenLinesG[].
-// It is a single block of characters, the size of the screen plus one line.
-// The decorations for those characters are kept in ScreenDecosG[].
-// The virtual column in the line is kept in ScreenCols[].
+//The characters that are currently on the screen are kept in ScreenLinesG[].
+//It is a single block of characters, the size of the screen plus one line.
+//The decorations for those characters are kept in ScreenDecosG[].
+//The virtual column in the line is kept in ScreenCols[].
 //
-// "LineOffset[n]" is the offset from ScreenLines[] for the start of line 'n'.
-// The same value is used for ScreenLinesUC[], ScreenDecosG[] and ScreenCols[].
-// Note: before the screen is initialized and when out of memory these can be null.
+//"LineOffset[n]" is the offset from ScreenLines[] for the start of line 'n'.
+//The same value is used for ScreenLinesUC[], ScreenDecosG[] and ScreenCols[].
+//Note: before the screen is initialized and when out of memory these can be null.
 EXTERN CS screenLinesG INIT(= null);
 EXTERN Arr(Decoration) screenDecosG INIT(= NULL);
 EXTERN Arr(ColNr) screenColsG INIT(= NULL);
@@ -6036,13 +6035,13 @@ EXTERN Boole wrapSearchG INIT(= true); // search wraps on file end
 EXTERN int screenLinesRowsG INIT(= 0);       // actual size of ScreenLines[]
 EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
 
-// When using Unicode characters the character in ScreenLinesUC[] contains the Unicode for 
-// the character at this position, or ZERO when the character in ScreenLines[] is to be 
-// used (ASCII char). The composing characters are to be drawn on top of the original character.
-// ScreenLinesC[0][off] is only to be used when ScreenLinesUC[off] != 0.
+//When using Unicode characters the character in ScreenLinesUC[] contains the Unicode for 
+//the character at this position, or ZERO when the character in ScreenLines[] is to be 
+//used (ASCII char). The composing characters are to be drawn on top of the original character.
+//ScreenLinesC[0][off] is only to be used when ScreenLinesUC[off] != 0.
 EXTERN Arr(Unt) screenLinesUCG INIT(= NULL);   // decoded UTF-8 characters
 
-// How many Unicode symbols to combine max
+//How many Unicode symbols to combine max
 #define MAX_COMBINED_SYMBOLS 6
 
 EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
@@ -6589,6 +6588,7 @@ EXTERN Boole   cmd_silent INIT(= false); // don't echo the command line
 EXTERN Boole   in_assert_fails INIT(= false);   // assert_fails() active
 
 EXTERN Boole  swapEnabledG INIT(= true); //Swap files enabled
+EXTERN Text swapDirG; //Directory for swap files
 EXTERN int   swap_exists_action INIT(= SEA_NONE); // For dialog when swap file already exists.
 EXTERN Boole   swap_exists_did_quit INIT(= false); // Selected "quit" at the dialog.
 

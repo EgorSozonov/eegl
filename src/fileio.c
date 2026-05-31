@@ -10,6 +10,7 @@ ssize_t getxattr(const char*, const char*, void*, size_t);
 int setxattr(const char*, const char*, const void*, size_t, int);
 
 #define SHELL_SPECIAL (CS)"\t \"&'$;<>()\\|"
+#define SWAP_DIR S"~/.local/state/"
 
 //{{{forward declarations
 
@@ -1915,7 +1916,7 @@ match_suffix(CS fname){
    int fnamelen = (int)STRLEN(fname);
    int setsuflen = 0;
    for (CS setsuf = p_su; *setsuf != ZERO; ) {
-      setsuflen = copy_option_part(&setsuf, suf_buf, MAXSUFLEN, ".,");
+      setsuflen = doCutPathFromListOfPaths(&setsuf, suf_buf, MAXSUFLEN, ".,");
       if (setsuflen == 0) {
          CS tail = fiGetShortFiName(fname);
 
@@ -3576,7 +3577,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                      if (*suf == ZERO)
                         break;
                      filePath.len = len 
-                        + copy_option_part(&suf, filePath.c + len, (int)(MAXPATHL - len), ",");
+                        + doCutPathFromListOfPaths(&suf, filePath.c + len, (int)(MAXPATHL - len), ",");
                   }
                }
             } else {
@@ -4175,7 +4176,7 @@ findFileInPathImpl(
                }
                if (*suffix == ZERO)
                   break;
-               nameBuffGlen = l + copy_option_part(&suffix, nameBuffG + l, MAXPATHL - l, ",");
+               nameBuffGlen = l + doCutPathFromListOfPaths(&suffix, nameBuffG + l, MAXPATHL - l, ",");
             }
          }
       }
@@ -4208,7 +4209,7 @@ findFileInPathImpl(
             Byte buf[MAXPATHL];
             // copy next path
             buf[0] = ZERO;
-            copy_option_part(&dir, buf, MAXPATHL, " ,");
+            doCutPathFromListOfPaths(&dir, buf, MAXPATHL, " ,");
 
             // get the stopdir string
             CS r_ptr = eeFindFile_stopdir(buf);
@@ -4534,7 +4535,7 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
    CS p;
    Unt curdirlen = 0;
    while (*path_option != ZERO) {
-      Unt buflen = copy_option_part(&path_option, buf, MAXPATHL, " ,");
+      Unt buflen = doCutPathFromListOfPaths(&path_option, buf, MAXPATHL, " ,");
 
       if (buf[0] == '.' && (buf[1] == ZERO || buf[1] == '/')) {
 
@@ -5242,7 +5243,7 @@ fiGlobpath(
    // Loop over all entries in {path}.
    while (*path != ZERO) {
       // Copy one item of the path to buf[] and concatenate the file name.
-      pathlen = (Unt)copy_option_part(&path, buf, MAXPATHL, ",");
+      pathlen = (Unt)doCutPathFromListOfPaths(&path, buf, MAXPATHL, ",");
       Unt seplen = (*buf != ZERO && !after_pathsep(buf, buf + pathlen)) ? 1 : 0;
 
       if (pathlen + seplen + filelen + 1 <= MAXPATHL) {
@@ -5575,7 +5576,7 @@ readfile(
                // Create a swap file now, so that other Eegls are warned
                // that we are editing this file.  Don't do this for a
                // "nofile" or "nowrite" book type.
-               if (!bt_dontwrite(curBook)) {
+               if (!bookDontWrite(curBook)) {
                   check_need_swap(newfile);
                   // SwapExists autocommand may mess things up
                   if (curBook != old_curbuf
@@ -5631,7 +5632,7 @@ readfile(
 
    // Create a swap file now, so that other Eegls are warned that we are editing this file.
    // Don't do this for a "nofile" or "nowrite" buffer type.
-   if (!bt_dontwrite(curBook)) {
+   if (!bookDontWrite(curBook)) {
       check_need_swap(newfile);
       if (!read_stdin && (curBook != old_curbuf
             || (using_fullFileName && (old_fullFileName != curBook->fullFileName))
@@ -6117,7 +6118,7 @@ afterRecovery:
       ei (newfile || (read_buffer && sfname != NULL)) {
          auCommApplyWithInvo(EVENT_BUFREADPOST, NULL, sfname,
                           FALSE, curBook, invo);
-         if (!curBook->auDidFileType && *curBook->fileType != ZERO)
+         if (!curBook->auDidFileType && curBook->fileType)
             //EVENT_FILETYPE was not triggered but the book already has a
             //filetype. Trigger EVENT_FILETYPE using the existing filetype.
             applyAutocomms(EVENT_FILETYPE, curBook->fileType, curBook->currFileName, TRUE, curBook);
@@ -6280,7 +6281,7 @@ set_rw_fname(CS fname, CS sfname){
       return FAIL;
 
    // Do filetype detection now if 'filetype' is empty.
-   if (*curBook->fileType == ZERO) {
+   if (!curBook->fileType) {
       if (auGroupExists(S"filetypedetect"))
           (void)do_doautocmd(S"filetypedetect BufRead", FALSE, NULL);
    }
@@ -7434,7 +7435,7 @@ match_file_list(CS list, CS sfname, CS ffname){
    // try all patterns in 'wildignore'
    CS p = list;
    while (*p) {
-      copy_option_part(&p, buf, MAXPATHL, ",");
+      doCutPathFromListOfPaths(&p, buf, MAXPATHL, ",");
       CS regpat = file_pat_to_reg_pat(buf, NULL, OUT &allow_dirs);
       int match = match_file_pat(regpat, NULL, ffname, sfname, tail, allow_dirs);
       eeglFree(regpat);
@@ -7817,6 +7818,17 @@ f_system(Var* argvars, Var* returnVar) {
 void
 f_systemlist(Var* argvars, Var* returnVar) {
    get_cmd_output_as_returnVar(argvars, returnVar, TRUE);
+}
+
+//Expand envs and program name to determine the swapfile dir, e.g. "/home/usern/.local/state/eegl/"
+//Return a fresh allocation
+Text
+fiInitSwapDir(CS progName) {
+   Unt swapLen = doExpandEnvVarsWithEscaped(OUT nameBuffTextG, SWAP_DIR, true, null); 
+   int progNameLen = STRLEN(progName);
+   memcpy(nameBuffTextG.c + swapLen, progName, progNameLen);
+   nameBuffTextG.c[swapLen + progNameLen] = ZERO;
+   return copyText(nameBuffTextG);
 }
 
 //}}}

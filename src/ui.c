@@ -11885,7 +11885,7 @@ preserve_exit(void) {
       }
    }
 
-   ml_close_all(FALSE);       // close all memfiles, without deleting
+   ml_close_all(false);       // close all memfiles, without deleting
 
    OUT_STR("Eegl: Finished.\r\n");
 

@@ -4287,11 +4287,11 @@ nv_ident(ActionArg* aArg) {
       eeglFree(p);
    } else {
       if (cmdchar == '*')
-          aux_ptr = (CS)("/.*~[^$\\");
+         aux_ptr = S"/.*~[^$\\";
       ei (cmdchar == '#')
-          aux_ptr = (CS)("/?.*~[^$\\");
+         aux_ptr = S"/?.*~[^$\\";
       ei (tag_cmd) {
-         if (STRCMP(curBook->fileType, "help") == 0)
+         if (curBook->kind == BOOK_HELP)
             // ":help" handles unescaped argument
             aux_ptr = Em;
          else

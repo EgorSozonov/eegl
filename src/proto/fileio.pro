@@ -114,6 +114,7 @@ long write_eintr(int fd, void *buf, Unt bufsize);
 CS get_cmd_output(CS cmd, CS infile, Unt flags, int *ret_len);
 void f_system(Var *argvars, Var *returnVar);
 void f_systemlist(Var *argvars, Var *returnVar);
+Text fiInitSwapDir(CS progName);
 int filewritable(CS fname);
 int get2c(FILE *fd);
 int get3c(FILE *fd);

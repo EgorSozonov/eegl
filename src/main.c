@@ -460,9 +460,8 @@ eeglMain1(void) {
    }
 
    //Recovery mode without a file name: List swap files.
-   //This uses the 'dir' option, therefore it must be after the initializations.
    if (recoveryModeG && params.fname == NULL) {
-      recover_names(NULL, TRUE, NULL, 0, NULL);
+      memRecoverSwapNames(NULL, true, NULL, 0, NULL);
       mch_exit(0);
    }
 
@@ -673,20 +672,21 @@ init0(void) {
 
 // Initialization #1 shared by main() and some tests.
 private void
-init1(OUT MainParams* paramp) {
+init1(OUT MainParams* params) {
    //Setup to use the current locale (for ctype() and many other things).
    //NOTE: Translated messages with encodings other than latin1 will not work until 
    //optInit0() has been called!
    init_locale();
    TIME_MSG("locale set");
+   
+   swapDirG = fiInitSwapDir((CS)params->argv[0]);
 
    // Do a first scan of the arguments in "argv[]":
    //   -display or --display
    //   --server...
    //   --socketid
    //   --windowid
-   earlyArgScan(paramp);
-
+   earlyArgScan(params);
 
    clip_init(FALSE);      // Initialise clipboard stuff
    TIME_MSG("clipboard setup");
@@ -716,7 +716,7 @@ init1(OUT MainParams* paramp) {
    set_lang_var();
 
    // set v:argv
-   set_argv_var(paramp->argv, paramp->argc);
+   set_argv_var(params->argv, params->argc);
 
    init_signs();
    
@@ -1661,9 +1661,8 @@ createPortals(MainParams *params) {
                   anyEmsgG = FALSE;   // avoid hit-enter prompt
                   exitEegl(1);
                }
-               // We can't close the window, it would disturb what
-               // happens next.  Clear the file name and set the arg
-               // index to -1 to delete it later.
+               //We can't close the window, it would disturb what happens next. Clear the file 
+               //name and set the arg index to -1 to delete it later.
                setfname(curBook, NULL, NULL, FALSE);
                curPor->argListInd = -1;
                swap_exists_action = SEA_NONE;

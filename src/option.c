@@ -1229,20 +1229,27 @@ optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
 private void
 toString(Option* o, SetScope scope) {
    OptionRef ref = getRefInScope(o, scope);
-   if (ref.tag == OPTION_NUM) {
+   if (ref.tag != OPTION_NUM || ref.tag == OPTION_FLAGS || ref.tag == OPTION_ENUM) {
       long wc = 0;
-
       if (wildcharUseKeyname(ref, &wc))
          STRCPY(nameBuffG, get_special_key_name((int)wc, 0));
       ei (wc != 0)
          STRCPY(nameBuffG, transchar((int)wc));
       else
          SPRINTF(nameBuffG, "%ld", *ref.num);
-   } else {   // P_STRING
-      if ((o->flags & P_EXPAND) != 0)
-         home_replace(NULL, *ref.string, nameBuffG, MAXPATHL, false);
-      else
-         copySubstrToAllocation(nameBuffG, (Text){*ref.string, MAXPATHL - 1});
+   } ei (ref.tag == OPTION_BOOLE) {
+      if (*ref.boole) {
+         STRCPY(nameBuffG, S"true");
+      } else {
+         STRCPY(nameBuffG, S"false");
+      }
+   } ei (ref.tag == OPTION_STRING) {   // P_STRING
+      if (*ref.string != null) {
+         if ((o->flags & P_EXPAND) != 0)
+            home_replace(NULL, *ref.string, nameBuffG, MAXPATHL, false);
+         else
+            copySubstrToAllocation(nameBuffG, (Text){*ref.string, MAXPATHL - 1});
+      }
    }
 }
 
@@ -1808,9 +1815,9 @@ did_set_swapfile(OptionChange* cha) {
    updateStringRef(cha);
    //when @swapfile is set, create swapfile, when reset remove swapfile
    if (curBook->o.swapFile && swapEnabledG)
-      ml_open_file(curBook);      // create the swap file
+      memOpenSwapFile(curBook);      // create the swap file
    else
-      // no need to reset curBook->maySwap, ml_open_file() will check buf->o.swapFile
+      // no need to reset curBook->maySwap, memOpenSwapFile() will check buf->o.swapFile
       mf_close_file(curBook, TRUE);   // remove the swap file
    return NULL;
 }
@@ -2436,7 +2443,7 @@ did_set_completeitemalign(OptionChange* cha) {
    Byte   buffer[10];
    CS p = cha->newVal.string;
    while (*p) {
-      copy_option_part(&p, buffer, sizeof(buffer), ",");
+      doCutPathFromListOfPaths(&p, buffer, sizeof(buffer), S",");
       if (count >= 3)
           return e_invalid_argument;
 
@@ -3902,7 +3909,7 @@ put_setstring(
             // the option, :set rtp+=value
             if (fprintf(fd, "%s %s+=", cmd, name) < 0)
                goto fail;
-            (void)copy_option_part(&p, part, size,  ",");
+            (void)doCutPathFromListOfPaths(&p, part, size,  ",");
             if (put_escstr(fd, part, 2) == FAIL || put_eol(fd) == FAIL)
                goto fail;
          }
@@ -4400,17 +4407,9 @@ illegal_char_after_chr(OUT ErrBuilder* errb, int c) {
 //When "set_sid" is 0, set the scriptID to scriptPosG.sid. 
 //When "set_sid" is SID_NONE don't set the scriptID. Otherwise set the scriptID to "set_sid".
 private void
-changeStringOptionDirectImpl(
-   Option* o,
-   CS val,
-   SetScope scope,
-   ScriptId setSid
-) {
+changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid) {
    OptionRef ref = getRefInScope(o, scope);
    if (val) {
-      if ((o->flags & (P_BOOK|P_PORTAL)) != 0)  {
-      
-      }
       *ref.string = copyStr(val);
    } else {
       *ref.string = null;

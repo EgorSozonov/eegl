@@ -5043,7 +5043,7 @@ remove_tail(CS p, CS pend, CS name) {
    return pend;
 }
 
-//TRUE if "p" points to just after a path separator.
+//TRUE if "afterSep" points to just after a path separator.
 //Take care of multi-byte characters.
 Boole
 after_pathsep(CS fileName, CS afterSep) {

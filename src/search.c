@@ -4635,9 +4635,7 @@ searchFixHelpBook(void) {
    // Set filetype to "help" if still needed.
    if (STRCMP(curBook->fileType, "help") != 0) {
       ++curBookLock;
-      optChangeAndReportError(
-         S"filetype", (OptionValue){.tag = OPTION_STRING, .string = S"help"}, SET_LOCAL
-      );
+      curBook->kind = BOOK_HELP;
       --curBookLock;
    }
 

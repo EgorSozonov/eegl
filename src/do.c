@@ -1568,7 +1568,7 @@ check_overwrite(
          // If the "." directory is not writable, the write will probably fail anyway.
          // Use 'shortname' of the current book, since there is no book for the written file.
             
-         CS swapname = makeswapname(fname, fullFName, S"~/.local/state/");
+         CS swapname = memBuildSwapName(fullFName);
          int r = eeFexists(swapname);
          if (r) {
             if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
@@ -1601,10 +1601,10 @@ check_overwrite(
 int
 do_write(Invocation* invo) {
    CS fname = NULL;      // init to shut up gcc
-   int      retval = FAIL;
+   int retval = FAIL;
    CS free_fname = NULL;
-   Book   *altBook = NULL;
-   int      name_was_missing;
+   Book* altBook = NULL;
+   int name_was_missing;
 
    if (isWritingForbidden())      // check 'write' option
       return FAIL;
@@ -1631,14 +1631,14 @@ do_write(Invocation* invo) {
    if (!sameFile) {
       altBook = setaltfname(fullFName, fname, (LineNr)1);
       if (altBook && altBook->mem.mfile) {
-          // Overwriting a file that is loaded in another book is not a good idea.
-          emsg(_(e_file_is_loaded_in_another_buffer));
-          goto theend;
+         // Overwriting a file that is loaded in another book is not a good idea.
+         emsg(_(e_file_is_loaded_in_another_buffer));
+         goto theend;
       }
    }
 
    //A file name is required. "nofile" and "nowrite" books cannot be written implicitly either.
-   if (sameFile && (bt_dontwrite_msg(curBook) || check_fname() == FAIL
+   if (sameFile && (bookDontWrite_msg(curBook) || check_fname() == FAIL
          || check_writable(curBook->fullFileName) == FAIL
          || check_readonly(&invo->forceit, curBook))
    )
@@ -1666,7 +1666,7 @@ do_write(Invocation* invo) {
 
    if (check_overwrite(invo, curBook, fname, fullFName, !sameFile) == OK) {
       if (invo->id == C_saveas && altBook) {
-         Book   *was_curbuf = curBook;
+         Book* was_curbuf = curBook;
 
          applyAutocomms(EVENT_BUFFILEPRE, NULL, NULL, false, curBook);
          applyAutocomms(EVENT_BUFFILEPRE, NULL, NULL, false, altBook);
@@ -1702,7 +1702,7 @@ do_write(Invocation* invo) {
          }
 
          //If 'filetype' was empty try detecting it now.
-         if (*curBook->fileType == ZERO) {
+         if (!curBook->fileType) {
             if (auGroupExists(S"filetypedetect"))
                 (void)do_doautocmd(S"filetypedetect BufRead", true, NULL);
          }
@@ -1727,29 +1727,24 @@ do_write(Invocation* invo) {
       // Change directories when the 'acd' option is set and the file name got changed or set.
       if (invo->id == C_saveas || name_was_missing)
           DO_AUTOCHDIR;
-    }
+   }
 
 theend:
-    eeglFree(free_fname);
-    return retval;
+   eeglFree(free_fname);
+   return retval;
 }
 
 //Isolate one part of a string option where parts are separated with "sep_chars".
-//The part is copied into "builder[maxlen]". "*option" is advanced to the next part.
+//The part is copied into "buf[maxlen]". "*option" is advanced to the next part.
 //The length is returned.
 int
-copy_option_part(
-   Arr(CS) option,
-   OUT CS builder,
-   int      maxlen,
-   char   *sep_chars
-){
+doCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
    int len = 0;
    CS p = *option;
 
    // skip '.' at start of option part, for 'suffixes'
    if (*p == '.') {
-      builder[len] = *p;
+      buf[len] = *p;
       len++;
       p++;
    } 
@@ -1758,12 +1753,12 @@ copy_option_part(
       if (p[0] == '\\' && firstOccurrence((CS)sep_chars, p[1]) != NULL)
          ++p;
       if (len < maxlen - 1) {
-         builder[len] = *p;
+         buf[len] = *p;
          len++;
       } 
       ++p;
    }
-   builder[len] = ZERO;
+   buf[len] = ZERO;
 
    if (*p != ZERO && *p != ',')   // skip non-standard separator
       ++p;
@@ -1808,7 +1803,7 @@ do_wqall(Invocation* invo){
       if (isExitingG && term_job_running(book->term)) {
           no_write_message_nobang(book);
           ++error;
-      } ei (doWasBookChanged(book) && !bt_dontwrite(book)) {
+      } ei (doWasBookChanged(book) && !bookDontWrite(book)) {
          //Check if there is a reason the book cannot be written:
          //1. if the book is not modifiable
          //2. if there is no file name (even after browsing)
@@ -4595,7 +4590,7 @@ int
 autowrite(Book *book, int forceit) {
    if (!(p_aw || p_awa) || book->o.modifiable
         // never autowrite a "nofile" or "nowrite" book
-        || bt_dontwrite(book)
+        || bookDontWrite(book)
         || (!forceit && !book->o.modifiable) || book->fullFileName == NULL)
       return FAIL;
    BookRef   bufref;
@@ -4617,7 +4612,7 @@ doFlushAllBooks(void) {
    if (!(p_aw || p_awa))
       return;
    FOR_ALL_BOOKS(book) {
-      if (doWasBookChanged(book) && book->o.modifiable && !bt_dontwrite(book)) {
+      if (doWasBookChanged(book) && book->o.modifiable && !bookDontWrite(book)) {
          BookRef   bufref;
 
          bookStoreInRef(OUT &bufref, book);
@@ -4724,7 +4719,7 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
       FOR_ALL_BOOKS(buf2) {
          if (doWasBookChanged(buf2)
              && buf2->fullFileName
-             && !bt_dontwrite(buf2)
+             && !bookDontWrite(buf2)
              && buf2->o.modifiable
          ) {
             BookRef bufref;
@@ -11646,23 +11641,6 @@ c_filetype(Invocation* invo) {
       showErrFmtMsg(_(e_invalid_argument_str), arg);
 }
 
-// ":setfiletype [FALLBACK] {name}"
-void
-c_setfiletype(Invocation* invo) {
-   if (curBook->didFiletype)
-      return;
-
-   CS arg = invo->arg;
-   if (STRNCMP(arg, "FALLBACK ", 9) == 0)
-      arg += 9;
-
-   optChangeAndReportError(
-      S"filetype", (OptionValue){.tag = OPTION_STRING, .string = arg}, SET_LOCAL
-   );
-   if (arg != invo->arg)
-      curBook->didFiletype = FALSE;
-}
-
 void
 setHlsearch(Boole flag) {
    hiliteSearchG = flag;
@@ -11939,9 +11917,9 @@ eeSetenv(CS name, CS val) {
    //When setting $EEGLRUNTIME adjust the directory to find message
    //translations to $EEGLRUNTIME/lang.
    if (*val != ZERO && caseInsensitiveCompare(name, "EEGLRUNTIME") == 0) {
-      CS builder = concat_str(val, (CS)"/lang");
-      BINDTEXTDOMAIN(EEGLPACKAGE, builder);
-      eeglFree(builder);
+      CS buf = concat_str(val, (CS)"/lang");
+      BINDTEXTDOMAIN(EEGLPACKAGE, buf);
+      eeglFree(buf);
    }
 }
 
@@ -12611,7 +12589,7 @@ u_get_undo_file_name(CS buf_ffname, int reading) {
    //When not reading use the first directory that exists or ".".
    CS dirp = p_udir;
    while (*dirp != ZERO) {
-      dir_len = copy_option_part(&dirp, OUT dir_name, IOSIZE, ",");
+      dir_len = doCutPathFromListOfPaths(&dirp, OUT dir_name, IOSIZE, ",");
       if (dir_len == 1 && dir_name[0] == '.') {
          // Use same directory as the ffname, "dir/name" -> "dir/.name.un~"
          undo_file_name = copySubstr(ffname, ffnamelen + 5);
@@ -14644,7 +14622,7 @@ private Boole
 wasBookChangedNotTerm(Book* book) {
    // In a "prompt" book we do respect 'modified', so that we can control
    // closing the portal by setting or resetting that option.
-   return (!bt_dontwrite(book) || bt_prompt(book)) && book->wasModified;
+   return (!bookDontWrite(book) || bt_prompt(book)) && book->wasModified;
 }
 
 int

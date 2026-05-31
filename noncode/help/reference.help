@@ -117,9 +117,11 @@ and the following arguments will be ignored.
 
                      *:set-verbose*
 When @verbose is non-zero, displaying an option value will also tell where it
-was last set.  Example: >
+was last set.  Example:
+
    :verbose set shiftwidth cindent?
-<  shiftwidth=4 ~
+   
+  shiftwidth=4 ~
   cindent ~
      Last set from /usr/local/share/vim/vim60/ftplugin/c.vim line 30 ~
 This is only done when specific option values are requested, not for ":verbose
@@ -139,7 +141,6 @@ A few special texts:
    Last set from error handler ~
       Option was cleared when evaluating it resulted in an error.
 
-{not available when compiled without the |+eval| feature}
 
 
 

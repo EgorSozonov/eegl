@@ -15,7 +15,7 @@ void c_file(Invocation *invo);
 void c_update(Invocation *invo);
 void c_write(Invocation *invo);
 int do_write(Invocation *invo);
-int copy_option_part(CS *option, CS builder, int maxlen, char *sep_chars);
+int doCutPathFromListOfPaths(CS *option, CS buf, int maxlen, CS sep_chars);
 void c_wnext(Invocation *invo);
 void do_wqall(Invocation *invo);
 int getfile(int fnum, CS ffname_arg, CS sfname_arg, int setpm, LineNr lnum, Boole forceit);
@@ -181,7 +181,6 @@ CS evalVars(LineNr *lnump, CS *errorMsg, CS src, CS srcstart, Unt *usedlen, int 
 CS expand_sfile(CS arg);
 void dialog_msg(CS buff, CS format, CS fname);
 void c_filetype(Invocation *invo);
-void c_setfiletype(Invocation *invo);
 void setHlsearch(Boole flag);
 void c_nohlsearch(Invocation *invo);
 void c_fold(Invocation *invo);

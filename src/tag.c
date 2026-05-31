@@ -2345,7 +2345,7 @@ get_tagfname(
 
          //Copy next file name into buf.
          buf[0] = ZERO;
-         (void)copy_option_part(&tnp->tn_np, buf, MAXPATHL - 1, " ,");
+         (void)doCutPathFromListOfPaths(&tnp->tn_np, buf, MAXPATHL - 1, S" ,");
 
          r_ptr = eeFindFile_stopdir(buf);
          // move the filename one char forward and truncate the filepath with a ZERO

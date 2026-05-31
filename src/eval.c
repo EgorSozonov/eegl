@@ -14487,7 +14487,7 @@ f_substitute(Arr(Var) argvars, Var* returnVar) {
 private void
 f_swapfilelist(Arr(Var) argvars UNUSED, Var* returnVar) {
    allocReturnList(returnVar);
-   recover_names(NULL, FALSE, returnVar->list, 0, NULL);
+   memRecoverSwapNames(NULL, false, returnVar->list, 0, NULL);
 }
 
 // "swapinfo(swap_filename)" function

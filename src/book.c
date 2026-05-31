@@ -2419,7 +2419,7 @@ bookFreeAll(Book* book, Unt flags){
          clearFolding(port);
    } 
 
-   ml_close(book, TRUE);       // close and delete the memline/memfile
+   ml_close(book, true);       // close and delete the memline/memfile
    book->mem.lineCount = 0;    // no lines in book
    if ((flags & BFA_KEEP_UNDO) == 0)
       // free the memory allocated for undo and reset all undo information
@@ -3189,8 +3189,8 @@ enterBook(Book* book){
    if (curBook->mem.mfile == NULL) {  // need to load the file
       //If there is no filetype, allow for detecting one.  Esp. useful for ":ball" used in an 
       //autocommand. If there already is a filetype we might prefer to keep it.
-      if (*curBook->fileType == ZERO)
-         curBook->didFiletype = FALSE;
+      if (!curBook->fileType)
+         curBook->didFiletype = false;
 
       bookOpenFromInvo(false, NULL, 0);
    } else {
@@ -4409,8 +4409,8 @@ fileinfo(
       IOSIZE - bufLen,
       "\"%s%s%s%s%s%s",
       doWasCurBookChanged() ? (S" (+)") : S" ",
-      (curBook->flags & BF_NOTEDITED) && !bt_dontwrite(curBook) ? _("[Not edited]") : Em,
-      (curBook->flags & BF_NEW) && !bt_dontwrite(curBook) ? new_file_message() : Em,
+      (curBook->flags & BF_NOTEDITED) && !bookDontWrite(curBook) ? _("[Not edited]") : Em,
+      (curBook->flags & BF_NEW) && !bookDontWrite(curBook) ? new_file_message() : Em,
       (curBook->flags & BF_READERR) ? _("[Read errors]") : E, 
       curBook->o.modifiable ? Em : S"[-]",
       (doWasCurBookChanged() || (curBook->flags & BF_WRITE_MASK) || !curBook->o.modifiable) ? S" " : Em
@@ -5031,7 +5031,7 @@ bookRenderStatusLine(
          break;
 
       case STL_FILETYPE:
-         if (*po->book->fileType != ZERO && STRLEN(po->book->fileType) < TMPLEN - 3) {
+         if (po->book->fileType && STRLEN(po->book->fileType) < TMPLEN - 3) {
             eeSnprintf(buf_tmp, sizeof(buf_tmp), "[%s]", po->book->fileType);
             str = buf_tmp;
          }
@@ -5039,7 +5039,7 @@ bookRenderStatusLine(
 
       case STL_FILETYPE_ALT:
          itemisflag = TRUE;
-         if (*po->book->fileType != ZERO && STRLEN(po->book->fileType) < TMPLEN - 2) {
+         if (po->book->fileType && STRLEN(po->book->fileType) < TMPLEN - 2) {
             eeSnprintf(buf_tmp, sizeof(buf_tmp), ",%s", po->book->fileType);
             for (CS t = buf_tmp; *t != 0; t++)
                *t = TOUPPER_LOC(*t);
@@ -5629,8 +5629,8 @@ bt_nofile(Book* book) {
 }
 
 // Return TRUE if "book" is a "nowrite", "nofile", "terminal", "prompt", or "popup" book.
-int
-bt_dontwrite(Book* book) {
+Boole
+bookDontWrite(Book* book) {
     return book && (book->kind == BOOK_NOWRITE
        || book->kind == BOOK_NOFILE
        || book->kind == BOOK_TERMINAL
@@ -5640,8 +5640,8 @@ bt_dontwrite(Book* book) {
 }
 
 int
-bt_dontwrite_msg(Book* book) {
-   if (bt_dontwrite(book)) {
+bookDontWrite_msg(Book* book) {
+   if (bookDontWrite(book)) {
       emsg(_(e_cannot_write_buftype_option_is_set));
       return TRUE;
    }
@@ -6415,7 +6415,7 @@ bookWrite(
             stNew.st_gid = 0;
 
             // Isolate one directory name, using an entry in 'bdir'.
-            (void)copy_option_part(&dirp, copybuf, WRITEBUFSIZE, ",");
+            (void)doCutPathFromListOfPaths(&dirp, copybuf, WRITEBUFSIZE, S",");
 
             p = copybuf + STRLEN(copybuf);
             if (after_pathsep(copybuf, p) && p[-1] == p[-2]
@@ -6541,7 +6541,7 @@ endOfName:
          CS dirp = p_bdir;
          while (*dirp) {
             // Isolate one directory name and make the backup file name.
-            (void)copy_option_part(&dirp, IObuff, IOSIZE, ",");
+            (void)doCutPathFromListOfPaths(&dirp, IObuff, IOSIZE, S",");
 
             p = IObuff + STRLEN(IObuff);
             if (after_pathsep(IObuff, p) && p[-1] == p[-2]) {
