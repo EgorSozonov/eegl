@@ -197,7 +197,7 @@ typedef void (*sighandler_T) SIGPROTOARG;
 #ifndef PROTO
 #define mch_rename(src, dst) rename(src, dst)
 #define mch_getenv(x) (CS)getenv((char *)(x))
-#define mch_setenv(name, val, x) setenv(name, val, x)
+#define mch_setenv(name, val, x) setenv((char *)name, (char *)val, x)
 #endif
 
 #include <string.h>
@@ -1319,6 +1319,11 @@ LIST_TY(Unt)
 #define DOBOOK_WIPE       4   // delete specified book(s) really
 #define DOBOOK_WIPE_REUSE 5   // like DOBUF_WIPE and keep number for reuse
 
+// Values for flags argument of bookDo()
+#define DOBOOK_FORCEIT   1   // :cmd!
+#define DOBOOK_NOPOPUP   2   // skip popup portal books
+#define DOBOOK_SKIPHELP  4   // skip or keep help books depending on kind of the starting book
+
 // Values for start argument for bookDo()
 #define DOBOOK_CURRENT 0   // "count" book from current book
 #define DOBOOK_FIRST   1   // "count" book from first book
@@ -2250,7 +2255,6 @@ EXTERN Boole p_ttimeout; //@ttimeout
 EXTERN long   p_ttm;     //@ttimeoutlen
 EXTERN long   p_ttyscroll; //@ttyscroll
 EXTERN unsigned ttym_flags;
-EXTERN CS p_udir;   //@undodir
 EXTERN long   p_ul;      //@undolevels
 EXTERN long   p_ur;      //@undoreload
 EXTERN long   p_ut;      //@updatetime
@@ -4615,9 +4619,10 @@ struct Book { //:Book
    //shortFileName is the name as the user typed it (or NULL).
    //currFileName is the same as shortFileName, unless ":cd" has been done,
    //     then it is the same as fullFileName (NULL for no name).
-   CS fullFileName;   // full path file name, allocated
-   CS shortFileName;  // short file name, allocated, may be equal to full name
-   CS currFileName;   // current file name, points to short or full file name
+   CS fullFileName;  //full path file name, allocated
+   CS shortFileName; //short file name, allocated, may be equal to full name
+   CS currFileName;  //current file name, points to short or full file name
+   CS swapName;      //file name of the swap (temporary copy)
 
    int isDevNumValid; // TRUE when b_dev has a valid number
    dev_t devNum;      // device number
@@ -9532,6 +9537,10 @@ EXTERN Byte e_setter_required_for_enum_or_flag_option[]
    INIT(= "E1573: Enumeration, flags and callback options require a setter function!");
 EXTERN Byte e_options_are_frozen[]
    INIT(= "E1574: Options are frozen and cannot be changed!");
+EXTERN Byte e_symlink_dereference_error[]
+   INIT(= "E1575: Symlink derefence error");
+EXTERN Byte e_symlink_dereference_buffer_overflow[]
+   INIT(= "E1576: Buffer overflow during symlink derefence");
    
 //}}}
 

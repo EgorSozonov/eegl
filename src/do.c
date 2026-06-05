@@ -16,7 +16,7 @@ private int linelen(int *has_tab);
 private void 
 do_filter(LineNr line1, LineNr line2, Invocation* invo, CS cmd, Boole do_in, Boole do_out);
 private Boole isWritingForbidden(void);
-private Boole check_readonly(Boole* forceit, Book* book);
+private Boole check_readonly(OUT Boole* forceit, Book* book);
 private void delbuf_msg(CS name);
 private int u_inssub(LineNr lnum);
 private Boole wasBookChangedNotTerm(Book *book);
@@ -1563,12 +1563,7 @@ check_overwrite(
 
       // For ":w! filename" check that no swap file exists for "filename".
       if (other && !emsg_silent) {
-
-         // We only try the first entry in 'directory', without checking if it's writable. 
-         // If the "." directory is not writable, the write will probably fail anyway.
-         // Use 'shortname' of the current book, since there is no book for the written file.
-            
-         CS swapname = memBuildSwapName(fullFName);
+         CS swapname = fiBuildSwapOrUndoFname(fullFName, false);
          int r = eeFexists(swapname);
          if (r) {
             if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
@@ -1640,7 +1635,7 @@ do_write(Invocation* invo) {
    //A file name is required. "nofile" and "nowrite" books cannot be written implicitly either.
    if (sameFile && (bookDontWrite_msg(curBook) || check_fname() == FAIL
          || check_writable(curBook->fullFileName) == FAIL
-         || check_readonly(&invo->forceit, curBook))
+         || check_readonly(OUT &invo->forceit, curBook))
    )
       goto theend;
 
@@ -1789,9 +1784,8 @@ c_wnext(Invocation* invo){
 // ":wall", ":wqall" and ":xall": Write all changed files (and exit).
 void
 do_wqall(Invocation* invo){
-   Book   *book;
-   int      error = 0;
-   int      save_forceit = invo->forceit;
+   int error = 0;
+   int save_forceit = invo->forceit;
 
    if (invo->id == C_xall || invo->id == C_wqall) {
       if (before_quit_all(invo) == FAIL)
@@ -1799,6 +1793,7 @@ do_wqall(Invocation* invo){
       isExitingG = true;
    }
 
+   Book* book;
    FOR_ALL_BOOKS(book) {
       if (isExitingG && term_job_running(book->term)) {
           no_write_message_nobang(book);
@@ -1816,7 +1811,7 @@ do_wqall(Invocation* invo){
          if (book->fullFileName == NULL) {
             showErrFmtMsg(_(e_no_file_name_for_buffer_nr), (long)book->fiNum);
             ++error;
-         } ei (check_readonly(&invo->forceit, book)
+         } ei (check_readonly(OUT &invo->forceit, book)
              || check_overwrite(invo, book, book->currFileName, book->fullFileName, false) == FAIL
          ) {
             ++error;
@@ -1853,7 +1848,7 @@ isWritingForbidden(void) {
 // read-only). Ask for overruling in a dialog. Return TRUE and give an error
 // message when the book is readonly.
 private Boole
-check_readonly(Boole* forceit, Book* book) {
+check_readonly(OUT Boole* forceit, Book* book) {
    FileStat   st;
 
    // Handle a file being readonly when the 'readonly' option is set or when
@@ -1877,7 +1872,7 @@ check_readonly(Boole* forceit, Book* book) {
          } 
 
          if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) == EE_YES) {
-            // Set forceit, to force the writing of a readonly file
+            //Set forceit, to force the writing of a readonly file
             *forceit = true;
             return false;
          } else
@@ -1987,7 +1982,7 @@ getfile(
 //return FAIL for failure, OK otherwise
 int
 startEditingFile(
-   int      fnum,
+   int fnum,
    CS fullFName,
    CS sfname,
    Invocation* invo,         // can be NULL!
@@ -2317,18 +2312,18 @@ startEditingFile(
    if (aborting())       // autocmds may abort script processing
       goto theend;
 
-    // Since we are starting to edit a file, consider the filetype to be
-    // unset.  Helps for when an autocommand changes files and expects syntax
-    // highlighting to work in the other file.
-    curBook->didFiletype = FALSE;
+   //Since we are starting to edit a file, consider the filetype to be
+   //unset.  Helps for when an autocommand changes files and expects syntax
+   //highlighting to work in the other file.
+   curBook->didFiletype = FALSE;
 
    //sameFile   oldbuf
-   // true   FALSE       re-edit same file, buffer is re-used
-   // true   TRUE       re-edit same file, nothing changes
-   // false   FALSE       start editing new file, new buffer
+   // true    FALSE      re-edit same file, buffer is re-used
+   // true    TRUE       re-edit same file, nothing changes
+   // false   FALSE      start editing new file, new buffer
    // false   TRUE       start editing in existing buffer (nothing to do)
-   if (sameFile && !oldbuf) {     // re-use the buffer
-      set_last_cursor(curPor);   // may set lastCursor
+   if (sameFile && !oldbuf) {    //re-use the buffer
+      set_last_cursor(curPor);   //may set lastCursor
       if (newlnum == ECMD_LAST || newlnum == ECMD_LASTL) {
          newlnum = curPor->cursor.lnum;
          solcol = curPor->cursor.col;
@@ -2396,9 +2391,8 @@ startEditingFile(
       // It's possible that all lines in the buffer changed.  Need to update
       // automatic folding for all windows where it's used.
       {
-         Portal       *port;
-         Tab       *t;
-
+         Portal* port;
+         Tab* t;
          FOR_ALL_TAB_PORTALS(t, port) {
             if (port->book == curBook)
                foldUpdateAll(port);
@@ -2490,7 +2484,7 @@ startEditingFile(
 
    //Did not read the file, need to show some info about the file. Do this after setting the cursor
    if (oldbuf && !auto_buf) {
-      int   msg_scroll_save = msg_scroll;
+      int msg_scroll_save = msg_scroll;
 
       // Obey the 'O' flag in 'cpoptions': overwrite any previous file
       // message.
@@ -2518,7 +2512,7 @@ startEditingFile(
    if (!skip_redraw) {
       n = *so_ptr;
       if (topline == 0 && !command)
-          *so_ptr = 9999;      // force cursor halfway the portal
+         *so_ptr = 9999;      // force cursor halfway the portal
       update_topline();
       curPor->scbindPos = curPor->topLine;
       *so_ptr = n;
@@ -2585,7 +2579,7 @@ c_append(Invocation* invo) {
             indent = get_indent_lnum(lnum);
       }
       if (*invo->arg == '|') {
-         // Get the text after the trailing bar.
+         //Get the text after the trailing bar.
          theline = copyStr(invo->arg + 1);
          *invo->arg = ZERO;
       } ei (invo->ea_getline == NULL) {
@@ -2593,7 +2587,7 @@ c_append(Invocation* invo) {
          if (invo->nextComm == NULL)
             break;
          p = firstOccurrence(invo->nextComm, NL);
-         if (p == NULL)
+         if (!p)
             p = invo->nextComm + STRLEN(invo->nextComm);
          theline = copySubstr(invo->nextComm, p - invo->nextComm);
          if (*p != ZERO)
@@ -2660,10 +2654,10 @@ c_append(Invocation* invo) {
    if (invo->forceit)
       curBook->o.autoIndent = !curBook->o.autoIndent;
 
-   // "start" is set to invo->line2+1 unless that position is invalid (when
-   // invo->line2 pointed to the end of the buffer and nothing was appended)
-   // "end" is set to lnum when something has been appended, otherwise
-   // it is the same as "start"  -- Acevedo
+   //"start" is set to invo->line2+1 unless that position is invalid (when
+   //invo->line2 pointed to the end of the buffer and nothing was appended)
+   //"end" is set to lnum when something has been appended, otherwise
+   //it is the same as "start"  -- Acevedo
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       curBook->opStart.lnum = (invo->line2 < curBook->mem.lineCount) ?
           invo->line2 + 1 : curBook->mem.lineCount;
@@ -2687,11 +2681,11 @@ c_change(Invocation* invo) {
    if (invo->line2 >= invo->line1 && u_save(invo->line1 - 1, invo->line2 + 1) == FAIL)
       return;
 
-   // the ! flag toggles autoindent
+   //the ! flag toggles autoindent
    if (invo->forceit ? !curBook->o.autoIndent : curBook->o.autoIndent)
       append_indent = get_indent_lnum(invo->line1);
 
-   LineNr   lnum;
+   LineNr lnum;
    for (lnum = invo->line2; lnum >= invo->line1; --lnum) {
       if (curBook->mem.flags & ML_EMPTY)       // nothing to delete
          break;
@@ -2710,12 +2704,12 @@ c_change(Invocation* invo) {
 // "z" family of commands
 void
 c_z(Invocation* invo) {
-   long   bigness;
+   long bigness;
    CS kind;
-   int      minus = 0;
-   LineNr   start, end, curs, i;
-   int      j;
-   LineNr   lnum = invo->line2;
+   int minus = 0;
+   LineNr start, end, curs, i;
+   int j;
+   LineNr lnum = invo->line2;
 
    // Vi compatible: ":z!" uses display height, without a count uses 'scroll'
    if (invo->forceit)
@@ -2759,26 +2753,26 @@ c_z(Invocation* invo) {
 
    switch (*kind) {
    case '-':
-       start = lnum - bigness * (LineNr)(x - kind) + 1;
-       end = start + bigness - 1;
-       curs = end;
-       break;
+      start = lnum - bigness * (LineNr)(x - kind) + 1;
+      end = start + bigness - 1;
+      curs = end;
+      break;
    case '=':
-       start = lnum - (bigness + 1) / 2 + 1;
-       end = lnum + (bigness + 1) / 2 - 1;
-       curs = lnum;
-       minus = 1;
-       break;
+      start = lnum - (bigness + 1) / 2 + 1;
+      end = lnum + (bigness + 1) / 2 - 1;
+      curs = lnum;
+      minus = 1;
+      break;
    case '^':
-       start = lnum - bigness * 2;
-       end = lnum - bigness;
-       curs = lnum - bigness;
-       break;
+      start = lnum - bigness * 2;
+      end = lnum - bigness;
+      curs = lnum - bigness;
+      break;
    case '.':
-       start = lnum - (bigness + 1) / 2 + 1;
-       end = lnum + (bigness + 1) / 2 - 1;
-       curs = end;
-       break;
+      start = lnum - (bigness + 1) / 2 + 1;
+      end = lnum + (bigness + 1) / 2 - 1;
+      curs = end;
+      break;
    default:  // '+'
       start = lnum;
       if (*kind == '+')
@@ -2834,14 +2828,14 @@ private Boole globalNeedBeginlineS = false;   // call beginline() after ":g"
 
 // Flags that are kept between calls to :substitute.
 typedef struct {
-   int do_all;      // do multiple substitutions per line
-   int do_ask;      // ask for confirmation
-   int do_count;   // count only
-   int do_error;   // if false, ignore errors
-   int do_print;   // print last line with subs.
-   int do_list;   // list last line with subs.
-   int do_number;   // list last line with line nr
-   int do_ic;      // ignore case flag
+   Boole do_all;    // do multiple substitutions per line
+   Boole do_ask;    // ask for confirmation
+   Boole do_count;  // count only
+   Boole do_error;  // if false, ignore errors
+   Boole do_print;  // print last line with subs.
+   Boole do_list;   // list last line with subs.
+   Boole do_number; // list last line with line nr
+   Boole do_ic;     // ignore case flag
 } SubstitutionState;
 
 // Skip over the "sub" part in :s/pat/sub/ where "delimiter" is the separating character.
@@ -2880,8 +2874,8 @@ check_regexp_delim(int c) {
 // The & repeats previous substitute command
 void
 c_substitute(Invocation* invo) {
-   LineNr   lnum;
-   long   i = 0;
+   LineNr lnum;
+   long i = 0;
    RegMultilineMatch regmatch;
    static SubstitutionState subflags = {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, 0};
    SubstitutionState subflags_save;
@@ -3157,16 +3151,16 @@ c_substitute(Invocation* invo) {
          CS new_start = null;
          unsigned   new_start_len = 0;
          CS p1;
-         int      did_sub = FALSE;
-         int      lastone;
-         int      len, copy_len, needed_len;
+         int did_sub = FALSE;
+         int lastone;
+         int len, copy_len, needed_len;
          long   nmatch_tl = 0;   // nr of lines matched below lnum
-         int      do_again;   // do it again after joining lines
-         int      skip_match = FALSE;
+         int do_again;   // do it again after joining lines
+         int skip_match = FALSE;
          LineNr   sub_firstlnum;   // nr of first sub line
-         int      apc_flags = APC_SAVE_FOR_UNDO | APC_SUBSTITUTE;
-         ColNr   total_added =  0;
-         int      text_prop_count = 0;
+         int apc_flags = APC_SAVE_FOR_UNDO | APC_SUBSTITUTE;
+         ColNr total_added =  0;
+         int text_prop_count = 0;
 
          // The new text is build up step by step, to avoid too much
          // copying.  There are these pieces:
@@ -9003,7 +8997,7 @@ private Callback findFnCb;
 // ":pclose": Close any preview portal.
 void
 c_pclose(Invocation* invo UNUSED) {
-   Portal   *port;
+   Portal* port;
 
    // First close any normal portal.
    FOR_ALL_PORTALS(port) {
@@ -9019,7 +9013,7 @@ c_pclose(Invocation* invo UNUSED) {
 
 // Close portal "port" and take care of handling closing the last portal into a modified book.
 private void
-closePortalInternal(Portal* port, Tab   *t) {     // NULL or the tab "port" is in
+closePortalInternal(Portal* port, Tab* t) {     // NULL or the tab "port" is in
    // Never close the autocommand portal.
    if (is_autoCommPort(port)) {
       emsg(_(e_cannot_close_autocmd_or_popup_portal));
@@ -9052,28 +9046,28 @@ getTabRelatedArg(Invocation* invo) {
                  // right/left relative to the current position.
 
       if (*p == '-') {
-          relative = -1;
-          p++;
+         relative = -1;
+         p++;
       } ei (*p == '+') {
-          relative = 1;
-          p++;
+         relative = 1;
+         p++;
       }
 
       p_save = p;
       tabId = parseLong(&p);
 
       if (relative == 0) {
-          if (STRCMP(p, "$") == 0)
-         tabId = LAST_TAB_NR;
-          ei (STRCMP(p, "#") == 0)
-         if (isTabValid(lastUsedTabG))
-             tabId = indexOfTab(lastUsedTabG);
-         else {
-            invo->errmsg = ex_errmsg(e_invalid_value_for_argument_str, invo->arg);
-            tabId = 0;
-            goto theend;
-         }
-         ei (p == p_save || *p_save == '-' || *p != ZERO || tabId > LAST_TAB_NR) {
+         if (STRCMP(p, "$") == 0)
+            tabId = LAST_TAB_NR;
+         ei (STRCMP(p, "#") == 0) {
+            if (isTabValid(lastUsedTabG))
+               tabId = indexOfTab(lastUsedTabG);
+            else {
+               invo->errmsg = ex_errmsg(e_invalid_value_for_argument_str, invo->arg);
+               tabId = 0;
+               goto theend;
+            }
+         } ei (p == p_save || *p_save == '-' || *p != ZERO || tabId > LAST_TAB_NR) {
             // No numbers as argument.
             invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
             goto theend;
@@ -9091,7 +9085,7 @@ getTabRelatedArg(Invocation* invo) {
             --tabId;
       }
       if (tabId < unaccept_arg0 || tabId > LAST_TAB_NR)
-          invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
+         invo->errmsg = ex_errmsg(e_invalid_argument_str, invo->arg);
     }
    ei (invo->addr_count > 0) {
       if (unaccept_arg0 && invo->line2 == 0) {
@@ -9115,26 +9109,25 @@ getTabRelatedArg(Invocation* invo) {
    } else {
       switch (invo->id) {
       case C_tabnext:
-          tabId = indexOfTab(curtab) + 1;
-          if (tabId > LAST_TAB_NR)
-         tabId = 1;
-          break;
+         tabId = indexOfTab(curtab) + 1;
+         if (tabId > LAST_TAB_NR)
+            tabId = 1;
+         break;
       case C_tabmove:
-          tabId = LAST_TAB_NR;
-          break;
+         tabId = LAST_TAB_NR;
+         break;
       default:
-          tabId = indexOfTab(curtab);
+         tabId = indexOfTab(curtab);
       }
-    }
+   }
 
 theend:
-    return tabId;
+   return tabId;
 }
 
 //":tabclose": close current tab, unless it is the last one. ":tabclose N": close tab N.
 void
 c_tabclose(Invocation* invo) {
-
    if (commPortTypeG != 0) {
       commPortResultG = K_IGNORE;
       return;
@@ -9248,10 +9241,10 @@ c_only(Invocation* invo) {
       Portal   *po;
       int   wnr = invo->line2;
       for (po = firstPor; --wnr > 0; ) {
-          if (po->next == NULL)
-         break;
-          else
-         po = po->next;
+         if (po->next == NULL)
+            break;
+         else
+            po = po->next;
       }
       gotoPortal(po);
    }
@@ -9269,16 +9262,16 @@ c_hide(Invocation* invo UNUSED) {
    if (invo->addr_count == 0)
    closePortal(curPor, FALSE);   // don't free book
     else {
-      int   winnr = 0;
-      Portal   *po;
+      int winnr = 0;
+      Portal* po;
 
       FOR_ALL_PORTALS(po) {
-          winnr++;
-          if (winnr == invo->line2)
-         break;
+         winnr++;
+         if (winnr == invo->line2)
+            break;
       }
       if (!po)
-          po = lastPor;
+         po = lastPor;
       closePortal(po, FALSE);
    }
 }
@@ -9367,7 +9360,7 @@ c_recover(Invocation* invo) {
               | CCGD_EXCMD)
           && (*invo->arg == ZERO || setfname(curBook, invo->arg, NULL, TRUE) == OK)
    )
-      ml_recover(TRUE);
+      ml_recover(true);
    recoveryModeG = false;
 }
 
@@ -9376,7 +9369,6 @@ void
 c_wrongmodifier(Invocation* invo) {
    invo->errmsg = ex_errmsg(e_invalid_command_str, invo->comm);
 }
-
 
 // Call 'findfunc' to obtain a list of file names.
 private List *
@@ -9390,9 +9382,8 @@ call_findfunc(CS pat, int cmdcomplete) {
    args[1].number = cmdcomplete;
    args[2].tag = VAR_UNKNOWN;
 
-   // Lock the text to prevent weird things from happening.  Also disallow
-   // switching to another portal, it should not be needed and may end up in
-   // Insert mode in another book.
+   //Lock the text to prevent weird things from happening. Also disallow switching to another 
+   //portal, it should not be needed and may end up in Insert mode in another book.
    ++textlock;
 
    ScriptPos* ctx = optGetScriptPos(S"findfunc");
@@ -9661,7 +9652,6 @@ c_tabnext(Invocation* invo) {
    }
 }
 
-// :tabmove command
 void
 c_tabmove(Invocation* invo) {
    int tabId = getTabRelatedArg(invo);
@@ -9672,8 +9662,8 @@ c_tabmove(Invocation* invo) {
 // :tabs command: List tabs and their contents.
 void
 c_tabs(Invocation* invo UNUSED) {
-   Portal   *po;
-   int      tabcount = 1;
+   Portal* po;
+   int tabcount = 1;
 
    msg_start();
    msg_scroll = TRUE;
@@ -11785,7 +11775,7 @@ doExpandEnvVarsWithEscaped(
    CS startstr   // start again after this (can be NULL)
 ) {
    CS tail;
-   int      c;
+   int c;
    CS var;
    Boole copyChar;
    Boole mustfree;   // var was allocated, need to free it later
@@ -11913,7 +11903,7 @@ eeSetenv_ext(CS name, CS val) {
 //Our portable version of setenv.
 void
 eeSetenv(CS name, CS val) {
-   mch_setenv((char *)name, (char *)val, 1);
+   mch_setenv(name, val, 1);
    //When setting $EEGLRUNTIME adjust the directory to find message
    //translations to $EEGLRUNTIME/lang.
    if (*val != ZERO && caseInsensitiveCompare(name, "EEGLRUNTIME") == 0) {
@@ -11935,7 +11925,7 @@ eeSetenv(CS name, CS val) {
 # define BREAKCHECK_SKIP 1000
 #endif
 
-private int   breakcheck_count = 0;
+private int breakcheck_count = 0;
 
 void
 line_breakcheck(void) {
@@ -12050,8 +12040,8 @@ private void u_unch_branch(UndoHeader *uhp);
 private UndoEntry *u_get_headentry(void);
 private void u_getbot(void);
 private void u_doit(int count);
-private void u_undoredo(int undo);
-private void u_undo_end(int did_undo, int absolute);
+private void u_undoredo(Boole undo);
+private void u_undo_end(Boole did_undo, Boole absolute);
 private void u_freeheader(Book *book, UndoHeader *uhp, UndoHeader **uhpp);
 private void freeBranch(Book *book, UndoHeader *uhp, UndoHeader **uhpp);
 private void u_freeentries(Book *book, UndoHeader *uhp, UndoHeader **uhpp);
@@ -12557,79 +12547,9 @@ u_compute_hash(CS hash) {
    sha256_finish(&ctx, hash);
 }
 
-//Return an allocated string of the full path of the target undofile.
-//When "reading" is TRUE find the file to read, go over all directories in 'undodir'.
-//When "reading" is FALSE use the first name where the directory exists.
-//Return NULL when there is no place to write or no file to read.
-private CS
-u_get_undo_file_name(CS buf_ffname, int reading) {
-   Byte dir_name[IOSIZE + 1];
-   if (!buf_ffname)
-      return NULL;
-      
-   CS munged_name = NULL;
-   CS undo_file_name = NULL;
-   int dir_len;
-   CS p;
-   Unt plen;
-   FileStat st;
-   CS ffname = buf_ffname;
-   if (!p_udir)
-      goto finishedParsing;
-
-   Byte fname_buf[MAXPATHL];
-   // Expand symlink in the file name, so that we put the undo file with the
-   // actual file instead of with the symlink.
-   if (resolve_symlink(ffname, fname_buf) == OK)
-      ffname = fname_buf;
-
-   Unt ffnamelen = STRLEN(ffname);
-   
-   //Loop over @undodir.  When reading find the first file that exists.
-   //When not reading use the first directory that exists or ".".
-   CS dirp = p_udir;
-   while (*dirp != ZERO) {
-      dir_len = doCutPathFromListOfPaths(&dirp, OUT dir_name, IOSIZE, ",");
-      if (dir_len == 1 && dir_name[0] == '.') {
-         // Use same directory as the ffname, "dir/name" -> "dir/.name.un~"
-         undo_file_name = copySubstr(ffname, ffnamelen + 5);
-         if (undo_file_name == NULL)
-            break;
-         p = fiGetShortFiName(undo_file_name);
-         plen = (Unt)(ffnamelen - (p - undo_file_name));
-         // Use same directory as the ffname, "dir/name" -> "dir/.name.un~"
-         mch_memmove(p + 1, p, plen + 1);
-         *p = '.';
-         STRCPY(p + plen + 1, ".un~");
-      } else {
-         dir_name[dir_len] = ZERO;
-         if (mch_isdir(dir_name)) {
-            if (munged_name == NULL) {
-               munged_name = copySubstr(ffname, ffnamelen);
-               if (munged_name == NULL)
-                  return NULL;
-               for (p = munged_name; *p != ZERO; MB_PTR_ADV(p)) {
-                  if (*p == '/')
-                     *p = '%';
-               } 
-            }
-            undo_file_name = concat_fnames(dir_name, munged_name, TRUE);
-         }
-      }
-
-      // When reading check if the file exists.
-      if (undo_file_name != NULL && (!reading || stat((char *)undo_file_name, &st) >= 0))
-         break;
-      EE_CLEAR(undo_file_name);
-    }
-finishedParsing:
-    eeglFree(munged_name);
-    return undo_file_name;
-}
-
 private void
 corruption_error(char *mesg, CS file_name) {
-    showErrFmtMsg(_(e_corrupted_undo_file_str_str), mesg, file_name);
+   showErrFmtMsg(_(e_corrupted_undo_file_str_str), mesg, file_name);
 }
 
 private void
@@ -12657,8 +12577,8 @@ writeToUndoFile(BufInfo* bi, Arr(Byte) ptr, Unt len) {
 private int
 undo_write_bytes(BufInfo* bi, Ulong nr, int len) {
    Byte  buf[8];
-   int       i;
-   int       bufi = 0;
+   int i;
+   int bufi = 0;
 
    for (i = len - 1; i >= 0; --i)
       buf[bufi++] = (Byte)(nr >> (i * 8));
@@ -12670,7 +12590,7 @@ undo_write_bytes(BufInfo* bi, Ulong nr, int len) {
 //pointers when reading.
 private void
 put_header_ptr(BufInfo *bi, UndoHeader *uhp) {
-    undo_write_bytes(bi, (Ulong)(uhp != NULL ? uhp->uh_seq : 0), 4);
+   undo_write_bytes(bi, (Ulong)(uhp != NULL ? uhp->uh_seq : 0), 4);
 }
 
 private int
@@ -12805,7 +12725,7 @@ serialize_uhp(BufInfo* bi, UndoHeader* uhp) {
    for (UndoEntry* uep = uhp->uh_entry; uep != NULL; uep = uep->ue_next) {
       undo_write_bytes(bi, (Ulong)UF_ENTRY_MAGIC, 2);
       if (serialize_uep(bi, uep) == FAIL)
-          return FAIL;
+         return FAIL;
    }
    undo_write_bytes(bi, (Ulong)UF_ENTRY_END_MAGIC, 2);
    return OK;
@@ -12854,10 +12774,10 @@ unserialize_uhp(BufInfo* bi, CS file_name) {
           break;
       what = undo_read_byte(bi);
       switch (what) {
-          case UHP_SAVE_NR:
+      case UHP_SAVE_NR:
          uhp->uh_save_nr = undo_read_4c(bi);
          break;
-          default:
+      default:
          // field not supported, skip
          while (--len >= 0)
              (void)undo_read_byte(bi);
@@ -12869,12 +12789,12 @@ unserialize_uhp(BufInfo* bi, CS file_name) {
    while ((c = undo_read_2c(bi)) == UF_ENTRY_MAGIC) {
       error = FALSE;
       UndoEntry* uep = unserialize_uep(bi, &error, file_name);
-      if (last_uep == NULL)
-         uhp->uh_entry = uep;
-      else
+      if (last_uep)
          last_uep->ue_next = uep;
+      else
+         uhp->uh_entry = uep;
       last_uep = uep;
-      if (uep == NULL || error) {
+      if (!uep || error) {
           u_free_uhp(uhp);
           return NULL;
       }
@@ -12995,36 +12915,27 @@ unserialize_visualinfo(BufInfo *bi, VisualInfo *info) {
 //Write the undo tree into an undo file.
 //When "name" is not NULL, use it as the name of the undo file.
 //Otherwise use book->fullFileName to generate the undo file name.
-//"book" must never be null, book->fullFileName is used to obtain the original file
-//permissions.
+//"book" must never be null, book->fullFileName is used to obtain the original file permissions.
 //"forceit" is TRUE for ":wundo!", FALSE otherwise.
 //"hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
 void
-u_write_undo(
-   Byte   *name,
-   int      forceit,
-   Book   *book,
-   Byte   *hash)
-{
-   UndoHeader   *uhp;
-   Byte   *file_name;
+u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
+   UndoHeader* uhp;
+   CS file_name;
    int      mark;
 #ifdef U_DEBUG
-   int      headers_written = 0;
+   int headers_written = 0;
 #endif
-   int      fd;
-   FILE   *fp = NULL;
-   int      perm;
-   int      write_ok = FALSE;
-   int      st_old_valid = FALSE;
-   FileStat   st_old;
-   FileStat   st_new;
-   BufInfo   bi;
-
+   int fd;
+   int write_ok = FALSE;
+   int st_old_valid = FALSE;
+   FileStat st_old;
+   FileStat st_new;
+   BufInfo bi;
    CLEAR_FIELD(bi);
 
    if (!name) {
-      file_name = u_get_undo_file_name(book->fullFileName, FALSE);
+      file_name = fiBuildSwapOrUndoFname(book->fullFileName, FALSE);
       if (file_name == NULL) {
          if (p_verbose > 0) {
             verbose_enter();
@@ -13039,9 +12950,9 @@ u_write_undo(
    //Decide about the permission to use for the undo file.  If the book
    //has a name use the permission of the original file.  Otherwise only
    //allow the user to access the undo file.
-   perm = 0600;
+   Unt perm = 0600;
    if (book->fullFileName) {
-      if (stat((char *)book->fullFileName, &st_old) >= 0) {
+      if (stat((char *)book->fullFileName, OUT &st_old) >= 0) {
           perm = st_old.st_mode;
           st_old_valid = TRUE;
       }
@@ -13064,11 +12975,10 @@ u_write_undo(
                verbose_enter();
             goto theend;
          } else {
-            Byte   mbuf[UF_START_MAGIC_LEN];
-            int   len;
-
-            len = read_eintr(fd, mbuf, UF_START_MAGIC_LEN);
+            Byte mbuf[UF_START_MAGIC_LEN];
+            int len = read_eintr(fd, mbuf, UF_START_MAGIC_LEN);
             close(fd);
+            
             if (len < UF_START_MAGIC_LEN || memcmp(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0) {
                if (p_verbose > 0)
                   verbose_enter();
@@ -13111,13 +13021,13 @@ u_write_undo(
     //Try to set the group of the undo file same as the original file. If
     //this fails, set the protection bits for the group same as the protection bits for others.
     if (st_old_valid
-       && stat((char *)file_name, &st_new) >= 0
+       && STAT(file_name, OUT &st_new) >= 0
        && st_new.st_gid != st_old.st_gid
        && fchown(fd, (uid_t)-1, st_old.st_gid) != 0
-       )
-   mch_setperm(file_name, (perm & 0707) | ((perm & 07) << 3));
+    )
+      mch_setperm(file_name, (perm & 0707) | ((perm & 07) << 3));
 
-   fp = fdopen(fd, "w");
+   FILE* fp = fdopen(fd, "w");
    if (!fp) {
       showErrFmtMsg(_(e_cannot_open_undo_file_for_writing_str), file_name);
       close(fd);
@@ -13139,12 +13049,12 @@ u_write_undo(
    while (uhp) {
       // Serialize current UHP if we haven't seen it
       if (uhp->uh_walk != mark) {
-          uhp->uh_walk = mark;
+         uhp->uh_walk = mark;
 #ifdef U_DEBUG
-          ++headers_written;
+         ++headers_written;
 #endif
-          if (serialize_uhp(&bi, uhp) == FAIL)
-         goto write_error;
+         if (serialize_uhp(&bi, uhp) == FAIL)
+            goto write_error;
       }
 
       // Now walk through the tree - algorithm from undo_time().
@@ -13184,7 +13094,7 @@ theend:
 }
 
 //Load the undo tree from an undo file.
-//If "name" is not NULL use it as the undo file name.  This also means being
+//If "name" is not NULL use it as the undo file name. This also means being
 //a bit more verbose.
 //Otherwise use curBook->fullFileName to generate the undo file name.
 //"hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
@@ -13214,7 +13124,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    line_ptr.ul_line = NULL;
 
    if (!name) {
-      file_name = u_get_undo_file_name(curBook->fullFileName, TRUE);
+      file_name = fiBuildSwapOrUndoFname(curBook->fullFileName, true);
       if (!file_name)
           return;
 
@@ -13232,7 +13142,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
          }
          return;
       }
-    } else
+   } else
       file_name = name;
 
    if (p_verbose > 0) {
@@ -13486,11 +13396,11 @@ u_redo(int count) {
 //Undo or redo, depending on 'undo_undoes', 'count' times.
 private void
 u_doit(int startcount) {
-   int count = startcount;
 
    if (!undo_allowed())
        return;
 
+   int count = startcount;
    u_newcount = 0;
    u_oldcount = 0;
    if (curBook->mem.flags & ML_EMPTY)
@@ -13503,10 +13413,10 @@ u_doit(int startcount) {
 
          if (undo_undoes) {
             if (curBook->undo.currHead == NULL) { // first undo
-                curBook->undo.currHead = curBook->undo.newHead;
+               curBook->undo.currHead = curBook->undo.newHead;
             } ei (p_ul > 0) {// multi level undo
-                // get next undo
-                curBook->undo.currHead = curBook->undo.currHead->next.ptr;
+               // get next undo
+               curBook->undo.currHead = curBook->undo.currHead->next.ptr;
             }
             // nothing to undo
             if (curBook->undo.countHeaders == 0 || curBook->undo.currHead == NULL) {
@@ -13519,8 +13429,7 @@ u_doit(int startcount) {
                }
                break;
             }
-
-            u_undoredo(TRUE);
+            u_undoredo(true);
          } else {
              if (curBook->undo.currHead == NULL || p_ul <= 0) {
                 beep_flush();   // nothing to redo
@@ -13531,7 +13440,7 @@ u_doit(int startcount) {
                 break;
              }
 
-             u_undoredo(FALSE);
+             u_undoredo(false);
 
              // Advance for next redo. Set "newhead" when at the end of the redoable changes.
              if (curBook->undo.currHead->prev.ptr == NULL)
@@ -13539,7 +13448,7 @@ u_doit(int startcount) {
              curBook->undo.currHead = curBook->undo.currHead->prev.ptr;
          }
     }
-    u_undo_end(undo_undoes, FALSE);
+    u_undo_end(undo_undoes, false);
 }
 
 //Undo or redo over the timeline.
@@ -13686,10 +13595,10 @@ undo_time(long step, int sec, int file, int absolute) {
                      : val - target <= target - closest)
                       : (closest > target
                      ? target - val <= closest - target
-                     : target - val <= target - closest))))
-            {
-                closest = val;
-                closest_seq = uhp->uh_seq;
+                     : target - val <= target - closest)))
+            ) {
+               closest = val;
+               closest_seq = uhp->uh_seq;
             }
          }
 
@@ -13712,26 +13621,24 @@ undo_time(long step, int sec, int file, int absolute) {
          )
             uhp = uhp->altNext.ptr;
 
-          // go up in the tree if we haven't been there and we are at the
-          // start of alternate branches
-          ei (uhp->next.ptr != NULL && uhp->altPrev.ptr == NULL
+         //go up in the tree if we haven't been there and we are at the
+         //start of alternate branches
+         ei (uhp->next.ptr && !uhp->altPrev.ptr
              && uhp->next.ptr->uh_walk != nomark
-             && uhp->next.ptr->uh_walk != mark)
-          {
-         // If still at the start we don't go through this change.
-         if (uhp == curBook->undo.currHead)
-             uhp->uh_walk = nomark;
-         uhp = uhp->next.ptr;
-          }
-
-          else {
-         // need to backtrack; mark this node as useless
-         uhp->uh_walk = nomark;
-         if (uhp->altPrev.ptr != NULL)
-             uhp = uhp->altPrev.ptr;
-         else
-             uhp = uhp->next.ptr;
-          }
+             && uhp->next.ptr->uh_walk != mark
+         ) {
+            // If still at the start we don't go through this change.
+            if (uhp == curBook->undo.currHead)
+               uhp->uh_walk = nomark;
+            uhp = uhp->next.ptr;
+         } else {
+            // need to backtrack; mark this node as useless
+            uhp->uh_walk = nomark;
+            if (uhp->altPrev.ptr != NULL)
+               uhp = uhp->altPrev.ptr;
+            else
+               uhp = uhp->next.ptr;
+         }
       }
 
       if (uhp)    // found it
@@ -13754,7 +13661,7 @@ undo_time(long step, int sec, int file, int absolute) {
       dosec = FALSE;
       dofile = FALSE;
       if (step < 0)
-          above = TRUE;   // stop above the header
+         above = TRUE;   // stop above the header
    }
 
 target_zero:
@@ -13776,7 +13683,7 @@ target_zero:
       if (!uhp || (target > 0 && uhp->uh_walk != mark) || (uhp->uh_seq == target && !above))
          break;
       curBook->undo.currHead = uhp;
-      u_undoredo(TRUE);
+      u_undoredo(true);
       if (target > 0)
          uhp->uh_walk = nomark;   // don't go back down here
    }
@@ -13823,14 +13730,13 @@ target_zero:
          if (uhp->uh_walk != mark)
             break;       // must have reached the target
 
-         // Stop when going backwards in time and didn't find the exact
-         // header we were looking for.
+         //Stop when going backwards in time and didn't find the exact header we were looking for.
          if (uhp->uh_seq == target && above) {
             curBook->undo.seqCurr = target - 1;
             break;
          }
 
-         u_undoredo(FALSE);
+         u_undoredo(false);
 
          // Advance "curhead" to below the header we last used.  If it
          // becomes NULL then we need to set "newhead" to this leaf.
@@ -13862,23 +13768,22 @@ theEnd:
 //
 //When "undo" is TRUE we go up in the tree, when FALSE we go down.
 private void
-u_undoredo(int undo) {
-   UndoLine   *newarray = NULL;
-   LineNr   oldsize;
-   LineNr   newsize;
-   LineNr   top, bot;
-   LineNr   lnum;
-   LineNr   newlnum = MAXLNUM;
-   Pos   new_curpos = curPor->cursor;
-   long   i;
-   UndoEntry   *uep, *nuep;
-   UndoEntry   *newlist = NULL;
-   int      old_flags;
-   int      new_flags;
-   Pos   namedm[NMARKS];
+u_undoredo(Boole undo) {
+   UndoLine* newarray = NULL;
+   LineNr oldsize;
+   LineNr newsize;
+   LineNr top, bot;
+   LineNr lnum;
+   LineNr newlnum = MAXLNUM;
+   Pos new_curpos = curPor->cursor;
+   long i;
+   UndoEntry *newlist = NULL;
+   int old_flags;
+   int new_flags;
+   Pos namedm[NMARKS];
    VisualInfo visualinfo;
-   int      empty_buffer;          // buffer became empty
-   UndoHeader   *curhead = curBook->undo.currHead;
+   int empty_buffer;          // buffer became empty
+   UndoHeader* curhead = curBook->undo.currHead;
 
    // Don't want autocommands using the undo structures here, they are invalid till the end.
    block_autocmds();
@@ -13886,20 +13791,21 @@ u_undoredo(int undo) {
 #ifdef U_DEBUG
    u_check(FALSE);
 #endif
-    old_flags = curhead->uh_flags;
-    new_flags = (curBook->wasModified ? UH_CHANGED : 0) +
-          ((curBook->mem.flags & ML_EMPTY) ? UH_EMPTYBUF : 0);
-    setpcmark();
+   old_flags = curhead->uh_flags;
+   new_flags = (curBook->wasModified ? UH_CHANGED : 0) +
+         ((curBook->mem.flags & ML_EMPTY) ? UH_EMPTYBUF : 0);
+   setpcmark();
 
-    //save marks before undo/redo
-    mch_memmove(namedm, curBook->namedMarks, sizeof(Pos) * NMARKS);
-    visualinfo = curBook->visual;
-    curBook->opStart.lnum = curBook->mem.lineCount;
-    curBook->opStart.col = 0;
-    curBook->opEnd.lnum = 0;
-    curBook->opEnd.col = 0;
+   //save marks before undo/redo
+   mch_memmove(namedm, curBook->namedMarks, sizeof(Pos) * NMARKS);
+   visualinfo = curBook->visual;
+   curBook->opStart.lnum = curBook->mem.lineCount;
+   curBook->opStart.col = 0;
+   curBook->opEnd.lnum = 0;
+   curBook->opEnd.col = 0;
 
-   for (uep = curhead->uh_entry; uep != NULL; uep = nuep) {
+   UndoEntry *nuep;
+   for (UndoEntry* uep = curhead->uh_entry; uep != NULL; uep = nuep) {
       top = uep->ue_top;
       bot = uep->ue_bot;
       if (bot == 0)
@@ -13954,8 +13860,8 @@ u_undoredo(int undo) {
             // what can we do when we run out of memory?
             if (u_save_line(&newarray[i], lnum) == FAIL)
                do_outofmem_msg((Ulong)0);
-            // remember we deleted the last line in the buffer, and a
-            // dummy empty line will be inserted
+            //remember we deleted the last line in the buffer, and a
+            //dummy empty line will be inserted
             if (curBook->mem.lineCount == 1)
                empty_buffer = TRUE;
             ml_delete_flags(lnum, ML_DEL_UNDO);
@@ -13970,8 +13876,8 @@ u_undoredo(int undo) {
       //Insert the lines in u_array between top and bot.
       if (newsize) {
          for (lnum = top, i = 0; i < newsize; ++i, ++lnum) {
-            // If the file is empty, there is an empty line 1 that we
-            // should get rid of, by replacing it with the new line.
+            //If the file is empty, there is an empty line 1 that we
+            //should get rid of, by replacing it with the new line.
             if (empty_buffer && lnum == 0)
                 ml_replace_len((LineNr)1, uep->ue_array[i].ul_line,
                        uep->ue_array[i].ul_len, TRUE, TRUE);
@@ -13985,12 +13891,11 @@ u_undoredo(int undo) {
 
       // adjust marks
       if (oldsize != newsize) {
-          mark_adjust(top + 1, top + oldsize, (long)MAXLNUM,
-                         (long)newsize - (long)oldsize);
-          if (curBook->opStart.lnum > top + oldsize)
-         curBook->opStart.lnum += newsize - oldsize;
-          if (curBook->opEnd.lnum > top + oldsize)
-         curBook->opEnd.lnum += newsize - oldsize;
+         mark_adjust(top + 1, top + oldsize, (long)MAXLNUM, (long)newsize - (long)oldsize);
+         if (curBook->opStart.lnum > top + oldsize)
+            curBook->opStart.lnum += newsize - oldsize;
+         if (curBook->opEnd.lnum > top + oldsize)
+            curBook->opEnd.lnum += newsize - oldsize;
       }
       if (oldsize > 0 || newsize > 0) {
          changed_lines(top + 1, 0, bot, newsize - oldsize);
@@ -13998,12 +13903,12 @@ u_undoredo(int undo) {
 
       // Set the '[ mark.
       if (top + 1 < curBook->opStart.lnum)
-          curBook->opStart.lnum = top + 1;
+         curBook->opStart.lnum = top + 1;
       // Set the '] mark.
       if (newsize == 0 && top + 1 > curBook->opEnd.lnum)
-          curBook->opEnd.lnum = top + 1;
+         curBook->opEnd.lnum = top + 1;
       ei (top + newsize > curBook->opEnd.lnum)
-          curBook->opEnd.lnum = top + newsize;
+         curBook->opEnd.lnum = top + newsize;
 
       u_newcount += newsize;
       u_oldcount += oldsize;
@@ -14039,11 +13944,11 @@ u_undoredo(int undo) {
    //restore marks from before undo/redo
    for (i = 0; i < NMARKS; ++i) {
       if (curhead->uh_namedm[i].lnum != 0)
-          curBook->namedMarks[i] = curhead->uh_namedm[i];
+         curBook->namedMarks[i] = curhead->uh_namedm[i];
       if (namedm[i].lnum != 0)
-          curhead->uh_namedm[i] = namedm[i];
+         curhead->uh_namedm[i] = namedm[i];
       else
-          curhead->uh_namedm[i].lnum = 0;
+         curhead->uh_namedm[i].lnum = 0;
    }
    if (curhead->uh_visual.vi_start.lnum != 0) {
       curBook->visual = curhead->uh_visual;
@@ -14078,8 +13983,8 @@ u_undoredo(int undo) {
    // Remember where we are for "g-" and ":earlier 10s".
    curBook->undo.seqCurr = curhead->uh_seq;
    if (undo) {
-      // We are below the previous undo.  However, to make ":earlier 1s"
-      // work we compute this as being just above the just undone change.
+      //We are below the previous undo.  However, to make ":earlier 1s"
+      //work we compute this as being just above the just undone change.
       if (curhead->next.ptr != NULL)
          curBook->undo.seqCurr = curhead->next.ptr->uh_seq;
       else
@@ -14089,18 +13994,18 @@ u_undoredo(int undo) {
    // Remember where we are for ":earlier 1f" and ":later 1f".
    if (curhead->uh_save_nr != 0) {
       if (undo)
-          curBook->undo.saveNrCurr = curhead->uh_save_nr - 1;
+         curBook->undo.saveNrCurr = curhead->uh_save_nr - 1;
       else
-          curBook->undo.saveNrCurr = curhead->uh_save_nr;
-    }
+         curBook->undo.saveNrCurr = curhead->uh_save_nr;
+   }
 
-    // The timestamp can be the same for multiple changes, just use the one of
-    // the undone/redone change.
-    curBook->undo.timeCurr = curhead->uh_time;
+   //The timestamp can be the same for multiple changes, just use the one of
+   //the undone/redone change.
+   curBook->undo.timeCurr = curhead->uh_time;
 
-    unblock_autocmds();
+   unblock_autocmds();
 #ifdef U_DEBUG
-    u_check(FALSE);
+   u_check(FALSE);
 #endif
 }
 
@@ -14108,9 +14013,9 @@ u_undoredo(int undo) {
 //of changes (this may be incorrect in some cases, but it's better than nothing).
 private void
 u_undo_end(
-   int      did_undo,   // just did an undo
-   int      absolute)   // used ":undo N"
-{
+   Boole did_undo,  // just did an undo
+   Boole absolute   // used ":undo N"
+){
    CS msgstr;
    UndoHeader   *uhp;
    Byte msgbuf[80];
@@ -14145,16 +14050,16 @@ u_undo_end(
    if (curBook->undo.currHead != NULL) {
    // For ":undo N" we prefer a "after #N" message.
    if (absolute && curBook->undo.currHead->next.ptr != NULL) {
-       uhp = curBook->undo.currHead->next.ptr;
-       did_undo = FALSE;
+      uhp = curBook->undo.currHead->next.ptr;
+      did_undo = FALSE;
    } ei (did_undo)
       uhp = curBook->undo.currHead;
    else
-       uhp = curBook->undo.currHead->next.ptr;
+      uhp = curBook->undo.currHead->next.ptr;
    } else
       uhp = curBook->undo.newHead;
 
-   if (uhp == NULL)
+   if (!uhp)
       *msgbuf = ZERO;
    else
       add_time(msgbuf, sizeof(msgbuf), uhp->uh_time);
@@ -14303,7 +14208,7 @@ c_undojoin(Invocation* invo UNUSED) {
 //Called after writing or reloading the file and setting wasModified to false.
 //Now an undo means that the buffer is modified.
 void
-u_unchanged(Book *book) {
+u_unchanged(Book* book) {
    u_unch_branch(book->undo.oldHead);
    book->didWarnReadonly = false;
 }
@@ -14343,7 +14248,7 @@ u_find_first_changed(void) {
 
 //Increase the write count, store it in the last undo header, what would be used for "u".
 void
-u_update_save_nr(Book *book) {
+u_update_save_nr(Book* book) {
    ++book->undo.saveNrLast;
    book->undo.saveNrCurr = book->undo.saveNrLast;
    UndoHeader* uhp = book->undo.currHead;
@@ -14353,7 +14258,7 @@ u_update_save_nr(Book *book) {
 }
 
 private void
-u_unch_branch(UndoHeader *uhp) {
+u_unch_branch(UndoHeader* uhp) {
    for (UndoHeader* uh = uhp; uh != NULL; uh = uh->prev.ptr) {
       uh->uh_flags |= UH_CHANGED;
       if (uh->altNext.ptr != NULL)
@@ -14374,8 +14279,6 @@ u_get_headentry(void) {
 //u_getbot(): compute the line number of the previous u_save It is called only when synced is FALSE
 private void
 u_getbot(void) {
-   LineNr   extra;
-
    UndoEntry* uep = u_get_headentry();   // check for corrupt undo list
    if (!uep)
       return;
@@ -14385,7 +14288,7 @@ u_getbot(void) {
       //the new ue_bot is computed from the number of lines that has been
       //inserted (0 - deleted) since calling u_save. This is equal to the
       //old line count subtracted from the current line count.
-      extra = curBook->mem.lineCount - uep->ue_lcount;
+      LineNr extra = curBook->mem.lineCount - uep->ue_lcount;
       uep->ue_bot = uep->ue_top + uep->ue_size + 1 + extra;
       if (uep->ue_bot < 1 || uep->ue_bot > curBook->mem.lineCount) {
           internalErrMsg(e_undo_line_missing);
@@ -14402,11 +14305,11 @@ u_getbot(void) {
 //Free one header "uhp" and its entry list and adjust the pointers.
 private void
 u_freeheader(
-   Book       *book,
-   UndoHeader       *uhp,
-   UndoHeader       **uhpp)   // if not NULL reset when freeing this header
+   Book* book,
+   UndoHeader* uhp,
+   UndoHeader** uhpp)   // if not NULL reset when freeing this header
 {
-   UndoHeader       *uhap;
+   UndoHeader* uhap;
 
    // When there is an alternate redo list free that branch completely,
    // because we can never go there.
@@ -14435,14 +14338,11 @@ u_freeheader(
 //Free an alternate branch and any following alternate branches.
 private void
 freeBranch(
-   Book       *book,
-   UndoHeader       *uhp,
-   UndoHeader       **uhpp)   // if not NULL reset when freeing this header
-{
-   UndoHeader       *tofree, *next;
-
-   // If this is the top branch we may need to use u_freeheader() to update
-   // all the pointers.
+   Book* book,
+   UndoHeader* uhp,
+   UndoHeader** uhpp   // if not NULL reset when freeing this header
+){
+   // If this is the top branch we may need to use u_freeheader() to update all the pointers.
    if (uhp == book->undo.oldHead) {
       while (book->undo.oldHead)
          u_freeheader(book, book->undo.oldHead, uhpp);
@@ -14452,7 +14352,8 @@ freeBranch(
    if (uhp->altPrev.ptr)
       uhp->altPrev.ptr->altNext.ptr = NULL;
 
-   next = uhp;
+   UndoHeader* next = uhp;
+   UndoHeader* tofree;
    while (next) {
       tofree = next;
       if (tofree->altNext.ptr)
@@ -14518,7 +14419,7 @@ invalidateUndoBuffer(Book *book) {
 
 //Free all allocated memory blocks for the 'book'.
 private void
-u_blockfree(Book *book) {
+u_blockfree(Book* book) {
    while (book->undo.oldHead)
       u_freeheader(book, book->undo.oldHead, NULL);
    eeglFree(book->undo.line.ul_line);
@@ -14526,7 +14427,7 @@ u_blockfree(Book *book) {
 
 //Free all allocated memory blocks for the 'book'. and invalidate the undo buffer
 void
-invalidateUndoBufferAndFreeBlocks(Book *book) {
+invalidateUndoBufferAndFreeBlocks(Book* book) {
    u_blockfree(book);
    invalidateUndoBuffer(book);
 }
@@ -14600,7 +14501,7 @@ u_undoline(void) {
 //considered to always be unchanged. Also considers a buffer changed when a terminal portal 
 //contains a running job.
 Boole
-doWasBookChanged(Book *book) {
+doWasBookChanged(Book* book) {
    if (term_job_running_not_none(book->term))
       return true;
    return wasBookChangedNotTerm(book);
@@ -14632,7 +14533,7 @@ doWasCurBookChanged(void) {
 
 //For undotree(): Append the list of undo blocks at "first_uhp" to "list". Recursive.
 private void
-evalTree(Book *book, UndoHeader *first_uhp, List *list) {
+evalTree(Book* book, UndoHeader* first_uhp, List* list) {
    UndoHeader  *uhp = first_uhp;
    Bag   *dict;
 
@@ -14663,7 +14564,7 @@ evalTree(Book *book, UndoHeader *first_uhp, List *list) {
 
 //"undofile(name)" function
 void
-f_undofile(Var *argvars, Var *returnVar) {
+f_undofile(Var* argvars, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    CS fname = tv_get_string(&argvars[0]);
 
@@ -14671,10 +14572,10 @@ f_undofile(Var *argvars, Var *returnVar) {
       // If there is no file name there will be no undo file.
       returnVar->string = NULL;
    } else {
-      CS ffname = fiExpandAndCopy(fname, TRUE);
+      CS ffname = fiExpandAndCopy(fname, true);
 
       if (ffname)
-         returnVar->string = u_get_undo_file_name(ffname, FALSE);
+         returnVar->string = fiBuildSwapOrUndoFname(ffname, false);
       eeglFree(ffname);
    }
 }
@@ -14685,7 +14586,7 @@ u_undofile_reset_and_delete(Book* book) {
    if (!book->o.undoFile)
       return;
 
-   CS file_name = u_get_undo_file_name(book->fullFileName, TRUE);
+   CS file_name = fiBuildSwapOrUndoFname(book->fullFileName, true);
    if (file_name) {
       mch_remove(file_name);
       eeglFree(file_name);
@@ -14698,10 +14599,10 @@ u_undofile_reset_and_delete(Book* book) {
 
 //"undotree(expr)" function
 void
-f_undotree(Var *argvars, Var *returnVar) {
+f_undotree(Var* argvars, Var* returnVar) {
    allocReturnDict(returnVar);
 
-   Var   *tv = &argvars[0];
+   Var* tv = &argvars[0];
    Book* book = tv->tag == VAR_UNKNOWN ? curBook : evGetBookArg(tv);
    if (!book)
       return;

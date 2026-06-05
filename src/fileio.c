@@ -1759,10 +1759,10 @@ dir_of_file_exists(CS fname){
 //Concatenate file names fname1 and fname2 into allocated memory.
 //Only add a '/' or '\\' when 'sep' is TRUE and it is necessary.
 CS
-concat_fnames(CS fname1, CS fname2, int sep){
-   CS dest = alloc(STRLEN(fname1) + STRLEN(fname2) + 3);
+concat_fnames(CS fname1, CS fname2, Boole sep){
+   CS dest = alloc(STRLEN(fname1) + STRLEN(fname2) + 2);
 
-   STRCPY(dest, fname1);
+   STRCPY(OUT dest, fname1);
    if (sep)
       add_pathsep(dest);
    STRCAT(dest, fname2);
@@ -1916,7 +1916,7 @@ match_suffix(CS fname){
    int fnamelen = (int)STRLEN(fname);
    int setsuflen = 0;
    for (CS setsuf = p_su; *setsuf != ZERO; ) {
-      setsuflen = doCutPathFromListOfPaths(&setsuf, suf_buf, MAXSUFLEN, ".,");
+      setsuflen = doCutPathFromListOfPaths(OUT &setsuf, OUT suf_buf, MAXSUFLEN, S".,");
       if (setsuflen == 0) {
          CS tail = fiGetShortFiName(fname);
 
@@ -3576,8 +3576,9 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                      // Not found or found already, try next suffix.
                      if (*suf == ZERO)
                         break;
-                     filePath.len = len 
-                        + doCutPathFromListOfPaths(&suf, filePath.c + len, (int)(MAXPATHL - len), ",");
+                     filePath.len = len + doCutPathFromListOfPaths(
+                           OUT &suf, OUT filePath.c + len, (int)(MAXPATHL - len), S","
+                     );
                   }
                }
             } else {
@@ -4176,7 +4177,9 @@ findFileInPathImpl(
                }
                if (*suffix == ZERO)
                   break;
-               nameBuffGlen = l + doCutPathFromListOfPaths(&suffix, nameBuffG + l, MAXPATHL - l, ",");
+               nameBuffGlen = l + doCutPathFromListOfPaths(
+                     OUT &suffix, OUT nameBuffG + l, MAXPATHL - l, S","
+               );
             }
          }
       }
@@ -4209,7 +4212,7 @@ findFileInPathImpl(
             Byte buf[MAXPATHL];
             // copy next path
             buf[0] = ZERO;
-            doCutPathFromListOfPaths(&dir, buf, MAXPATHL, " ,");
+            doCutPathFromListOfPaths(OUT &dir, OUT buf, MAXPATHL, S" ,");
 
             // get the stopdir string
             CS r_ptr = eeFindFile_stopdir(buf);
@@ -4535,7 +4538,7 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
    CS p;
    Unt curdirlen = 0;
    while (*path_option != ZERO) {
-      Unt buflen = doCutPathFromListOfPaths(&path_option, buf, MAXPATHL, " ,");
+      Unt buflen = doCutPathFromListOfPaths(OUT &path_option, OUT buf, MAXPATHL, S" ,");
 
       if (buf[0] == '.' && (buf[1] == ZERO || buf[1] == '/')) {
 
@@ -5243,7 +5246,7 @@ fiGlobpath(
    // Loop over all entries in {path}.
    while (*path != ZERO) {
       // Copy one item of the path to buf[] and concatenate the file name.
-      pathlen = (Unt)doCutPathFromListOfPaths(&path, buf, MAXPATHL, ",");
+      pathlen = (Unt)doCutPathFromListOfPaths(OUT &path, OUT buf, MAXPATHL, S",");
       Unt seplen = (*buf != ZERO && !after_pathsep(buf, buf + pathlen)) ? 1 : 0;
 
       if (pathlen + seplen + filelen + 1 <= MAXPATHL) {
@@ -7435,7 +7438,7 @@ match_file_list(CS list, CS sfname, CS ffname){
    // try all patterns in 'wildignore'
    CS p = list;
    while (*p) {
-      doCutPathFromListOfPaths(&p, buf, MAXPATHL, ",");
+      doCutPathFromListOfPaths(OUT &p, OUT buf, MAXPATHL, S",");
       CS regpat = file_pat_to_reg_pat(buf, NULL, OUT &allow_dirs);
       int match = match_file_pat(regpat, NULL, ffname, sfname, tail, allow_dirs);
       eeglFree(regpat);
@@ -8102,12 +8105,87 @@ mch_can_exe(CS name, Arr(CS) path, int use_path) {
       }
 
       if (*e != ':')
-          break;
+         break;
       p = e + 1;
    }
 
    eeglFree(buf);
    return retval;
+}
+
+//Resolve a file name if it's a symlink, otherwise it's unchanged.
+//If it worked, return OK and the resolved link in "result". Otherwise return FAIL.
+private int
+resolveSymlink(OUT Text* result, Unt cap) {
+   Byte linkBuf[MAXPATHL];
+   Text src = *result;
+   Text tgt = (Text){linkBuf, cap};
+   Text tmp;
+
+   // Limit symlink depth to 16, catch recursive loops.
+   for (Unt i = 0; i < 16; i++) {
+      int linkTargetLen = readlink((char *)src.c, OUT (char *)tgt.c, cap);
+      if (linkTargetLen < 0) {
+         if (errno == EINVAL) { // file exists and is not a symbolic link
+            if (src.c != result->c) {
+               memcpy(OUT result->c, src.c, src.len + 1);
+            }
+            result->len = src.len;
+            return OK;
+         } else {
+            showErrFmtMsg(_(e_symlink_dereference_error), src.c);
+            return FAIL;
+         }
+      } else {
+         tgt.c[linkTargetLen] = ZERO;
+         if ((Unt)linkTargetLen == cap) {
+            showErrFmtMsg(_(e_symlink_dereference_buffer_overflow), tgt.c);
+            return FAIL;
+         }
+         tmp = src;
+         src = tgt;
+         tgt = tmp;
+      }
+   }
+   
+   showErrFmtMsg(_(e_symlink_loop_for_str), src.c);
+   return FAIL;
+}
+
+//Make swap file name out of the file name. Return pointer to allocated memory or NULL.
+CS
+fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
+   _bp(true);
+
+   Byte fnameBuf[MAXPATHL];
+   memcpy(OUT fnameBuf, swapDirG.c, swapDirG.len);
+   Unt variableLen = STRLEN(fname);
+   memcpy(OUT fnameBuf + swapDirG.len, fname, variableLen + 1);
+
+   //Expand symlink in the file name, so that we put the swap file with the
+   //actual file instead of with the symlink.
+   Text variablePart = (Text){.c = fnameBuf + swapDirG.len, .len = variableLen};
+   if (resolveSymlink(OUT &variablePart, (Unt)(MAXPATHL - swapDirG.len - 1)) == FAIL) {
+      return null;
+   }
+
+   Unt const totalLen = swapDirG.len + variableLen;
+   for (Unt i = swapDirG.len; i < totalLen; i++) {
+      if (fnameBuf[i] == '/') {
+         fnameBuf[i] = '%';
+      }
+   } 
+   
+   int extLen = isUndo ? 5 : 4;
+   CS r = malloc(totalLen + extLen + 1);
+   memcpy(OUT r, fnameBuf, totalLen);
+   if (isUndo) {
+      memcpy(OUT r + totalLen, ".undo", extLen);
+   } else {
+      memcpy(OUT r + totalLen, ".swp", extLen);
+   }
+   r[totalLen + extLen] = ZERO;
+   return r;
 }
 
 //}}}

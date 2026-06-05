@@ -1713,10 +1713,6 @@ getvcols(
 
 // Determines how deeply nested %{} blocks will be evaluated in statusline.
 # define MAX_STL_EVAL_DEPTH 100
-// Values for flags argument of bookDo()
-#define DOBOOK_FORCEIT   1   // :cmd!
-#define DOBOOK_NOPOPUP   2   // skip popup portal books
-#define DOBOOK_SKIPHELP  4   // skip or keep help books depending on kind of the starting book
 
 //{{{forward declarations
 
@@ -1731,7 +1727,6 @@ private void   freeBook(Book *);
 private void   freeAttachedData(Book* book, int free_options);
 private int   bt_nofileread(Book* book);
 private void   no_write_message_buf(Book* book);
-private int   runBookCommand(int action, int start, int dir, int count, int flags);
 private void clearPropTypes(Book* book);
 
 //}}}
@@ -2545,7 +2540,7 @@ bookGoto(Invocation* invo, int start, int dir, int count){
 
    if (swap_exists_action == SEA_NONE)
       swap_exists_action = SEA_DIALOG;
-   (void)runBookCommand(
+   (void)bookDo(
       *invo->comm == 's' ? DOBOOK_SPLIT : DOBOOK_GOTO, start, dir, count,
       (invo->forceit ? DOBOOK_FORCEIT : 0) | (skipHelpAndQuickfix ? DOBOOK_SKIPHELP : 0)
    );
@@ -2612,7 +2607,7 @@ handle_swap_exists(BookRef *oldCurBook) {
 
       // User selected Recover at ATTENTION prompt.
       msg_scroll = TRUE;
-      ml_recover(FALSE);
+      ml_recover(false);
       msg_puts(S"\n");   // don't overwrite the last message
       commlineRowG = msgRowG;
 
@@ -2629,8 +2624,8 @@ emptyCurBook(
    int close_others,
    int forceit,
    int action) {
-   int       retval;
-   Book   *book = curBook;
+   int retval;
+   Book* book = curBook;
    BookRef bookRef;
 
    if (action == DOBOOK_UNLOAD) {
@@ -2670,16 +2665,15 @@ emptyCurBook(
 //start == DOBOOK_MOD       go to "count" modified book from current book
 //
 //Return FAIL or OK.
-private int
-runBookCommand(
-   int      action,
-   int      start,
-   int      dir,      // FORWARD or BACKWARD
-   int      count,      // book number or number of books
-   int      flags      // DOBOOK_FORCEIT etc.
+int
+bookDo(
+   Unt action,
+   Unt start,
+   Unt dir,      // FORWARD or BACKWARD
+   int count,      // book number
+   Unt flags   // DOBOOK_FORCEIT when using !, etc
 ){
-   Book   *book;
-   Book   *bp;
+   Book* book;
    int unload = (action == DOBOOK_UNLOAD || action == DOBOOK_DEL
             || action == DOBOOK_WIPE || action == DOBOOK_WIPE_REUSE);
    switch (start) {
@@ -2691,9 +2685,7 @@ runBookCommand(
    if (start == DOBOOK_MOD) {      // find next modified book
       while (count-- > 0) {
          do {
-            book = book->next;
-            if (book == NULL)
-               book = firstBook;
+            book = book->next ? book->next : firstBook;
          }
          while (book != curBook && !doWasBookChanged(book));
       }
@@ -2703,11 +2695,11 @@ runBookCommand(
       }
    } ei (start == DOBOOK_FIRST && count) { // find specified book number
       while (book && book->fiNum != count)
-          book = book->next;
+         book = book->next;
    } else {
       int helpOnly = (flags & DOBOOK_SKIPHELP) != 0 && book->kind == BOOK_HELP;
 
-      bp = NULL;
+      Book* bp = NULL;
       while (count > 0 
             || (bp != book && !unload && !(helpOnly ? book->kind == BOOK_HELP : book->o.bookListed))
       ) {
@@ -2779,7 +2771,7 @@ runBookCommand(
 
    // delete "book" from memory and/or the list
    if (unload) {
-      int   forward;
+      int forward;
       BookRef bookRef;
 
       if (!canUnloadBook(book))
@@ -2790,7 +2782,7 @@ runBookCommand(
       // When unloading or deleting a book that's already unloaded and
       // unlisted: fail silently.
       if (action != DOBOOK_WIPE && action != DOBOOK_WIPE_REUSE
-                  && book->mem.mfile == NULL && !book->o.bookListed)
+                  && !book->mem.mfile && !book->o.bookListed)
           return FAIL;
 
       if ((flags & DOBOOK_FORCEIT) == 0 && doWasBookChanged(book)) {
@@ -2817,20 +2809,21 @@ runBookCommand(
       if (book == curBook && VIsual_active)
          end_visual_mode();
 
-      // If deleting the last (listed) book, make it empty.
-      // The last (listed) book cannot be unloaded.
+      //If deleting the last (listed) book, make it empty. The last (listed) book cannot be unloaded
+      Book* bp;
       FOR_ALL_BOOKS(bp) {
          if (bp->o.bookListed && bp != book)
             break;
       } 
-      if (bp == NULL && book == curBook)
+      if (!bp && book == curBook)
          return emptyCurBook(TRUE, (flags & DOBOOK_FORCEIT), action);
 
       // If the deleted book is the current one, close the current portal (unless it's the only 
       // portal). Repeat this so long as we end up in a portal with this book.
       while (book == curBook
             && !(portalLocked(curPor) || curPor->book->locked > 0)
-            && (!ONLY_ONE_PORTAL || firstTabG->next)) {
+            && (!ONLY_ONE_PORTAL || firstTabG->next)
+      ) {
          if (closePortal(curPor, FALSE) == FAIL)
             break;
       }
@@ -2868,8 +2861,8 @@ runBookCommand(
                   book = NULL;
                ei (book->mem.mfile == NULL) {
                   // skip unloaded book, but may keep it for later
-                  if (bp == NULL)
-                      bp = book;
+                  if (!bp)
+                     bp = book;
                   book = NULL;
                }
             }
@@ -2961,17 +2954,6 @@ runBookCommand(
    return OK;
 }
 
-int
-bookDo(
-   int      action,
-   int      start,
-   int      dir,      // FORWARD or BACKWARD
-   int      count,      // book number
-   int      forceit)   // TRUE when using !
-{
-   return runBookCommand(action, start, dir, count, forceit ? DOBOOK_FORCEIT : 0);
-}
-
 //do_bufdel() - delete or unload book(s)
 //
 //addr_count == 0: ":bdel" - delete current book
@@ -2989,12 +2971,12 @@ do_bufdel(
    int addr_count,
    int start_bnr,   // first book number in a range
    int end_bnr,   // book nr or last book nr in a range
-   int forceit
+   Boole forceit
 ) {
-   int      do_current = 0;   // delete current book?
-   int      deleted = 0;   // number of books deleted
+   int do_current = 0;   // delete current book?
+   int deleted = 0;   // number of books deleted
    CS errormsg = NULL; // return value
-   int      bnr;      // book number
+   int bnr;      // book number
    CS p;
 
    if (addr_count == 0) {
@@ -3005,17 +2987,17 @@ do_bufdel(
             return ex_errmsg(e_trailing_characters_str, arg);
          bnr = start_bnr;
       } else   // addr_count == 1
-          bnr = end_bnr;
+         bnr = end_bnr;
 
       for ( ;!gotInterruptG; ui_breakcheck()) {
-         // Delete the current book last, otherwise when the
-         // current book is deleted, the next book becomes
-         // the current one and will be loaded, which may then
-         // also be deleted, etc.
+         //Delete the current book last, otherwise when the current book is deleted, the next 
+         //book becomes the current one and will be loaded, which may then also be deleted, etc.
          if (bnr == curBook->fiNum)
             do_current = bnr;
-         ei (runBookCommand(command, DOBOOK_FIRST, FORWARD, bnr,
-            DOBOOK_NOPOPUP | (forceit ? DOBOOK_FORCEIT : 0)) == OK)
+         ei (bookDo(
+               command, DOBOOK_FIRST, FORWARD, bnr, DOBOOK_NOPOPUP | (forceit ? DOBOOK_FORCEIT : 0)
+            ) == OK
+         )
          ++deleted;
 
          // find next book number to delete/unload
@@ -3489,9 +3471,9 @@ booklistGetFile(
    int options,
    int forceit
 ){
-   Portal   *po = NULL;
-   Pos   *fpos;
-   ColNr   col;
+   Portal* po = NULL;
+   Pos* fpos;
+   ColNr col;
 
    Book* book = bookFindFileByBookNr(n);
    if (!book) {
@@ -3645,8 +3627,8 @@ booklistFindPattern(
    int curtab_only  // find books in current tab only
 ){
    Book* book;
-   int      match = -1;
-   int      find_listed;
+   int match = -1;
+   int find_listed;
    CS p;
 
    // "%" is current file, "%%" or "#" is alternate file
@@ -3828,8 +3810,8 @@ bufExpandBufnames(
    }
 
    if (doFuzzy) {
-       if (defuzz(OUT matches, fuzzy, false) == FAIL)
-          return FAIL;
+      if (defuzz(OUT matches, fuzzy, false) == FAIL)
+         return FAIL;
    } else {  
       if (bufMatches->len > 1)
          qsort(bufMatches->c, bufMatches->len, sizeof(BufMatch), bookCompare);
@@ -3852,7 +3834,7 @@ private CS
 checkFilenameMatch(RegMatch* rmp, Book* book) {
    // First try the short file name, then the long file name.
    CS match = fname_match(rmp, book->shortFileName);
-   if (match == NULL && rmp->regprog)
+   if (!match && rmp->regprog)
       match = fname_match(rmp, book->fullFileName);
 
    return match;
@@ -3903,11 +3885,7 @@ bookFindFileByBookNr(int nr){
 //home_replace() is used to shorten the file name (used for marks).
 //Return a pointer to allocated memory, of NULL when failed.
 CS
-bookGetNameByBookNr(
-   int      n,
-   int      fullname,
-   int      helptail   // for help books return tail only
-){
+bookGetNameByBookNr(int n, int fullname, Boole helptail) {   //for help books, return tail only
    Book* book = bookFindFileByBookNr(n);
    if (!book)
       return NULL;
@@ -4160,7 +4138,7 @@ bookListFiles(Invocation* invo) {
       // put "line 999" in column 40 or after the file name
       i = 40 - eeglStrSize(IObuff);
       do
-          IObuff[len++] = ' ';
+         IObuff[len++] = ' ';
       while (--i > 0 && len < IOSIZE - 18);
       if (firstOccurrence(invo->arg, 't') && book->lastUsed)
          add_time(IObuff + len, (Unt)(IOSIZE - len), book->lastUsed);
@@ -4179,11 +4157,7 @@ bookListFiles(Invocation* invo) {
 //Get file name and line number for file 'fnum'. Used by DoOneCmd() for translating '%' and '#'.
 //Used by insert_reg() and cmdline_paste() for '#' register. Return FAIL if not found, or OK.
 int
-bookGetFnameByFileId(
-   int fnum,
-   OUT CS* fname,
-   OUT LineNr* lnum
-){
+bookGetFnameByFileId(int fnum, OUT CS* fname, OUT LineNr* lnum){
    Book* book = bookFindFileByBookNr(fnum);
    if (!book || book->currFileName == NULL)
       return FAIL;
@@ -4198,12 +4172,7 @@ bookGetFnameByFileId(
 //The file name with the full path is also remembered, for when :cd is used.
 //Return FAIL for failure (file name already in use by other book) OK otherwise.
 int
-setfname(
-   Book* book,
-   CS ffname_arg,
-   CS sfname_arg,
-   int message   // give message when book already exists
-){
+setfname(Book* book, CS ffname_arg, CS sfname_arg, Boole message) {   // give message when book already exists
    CS fullFName = ffname_arg;
    CS sfname = sfname_arg;
    Book* obook = NULL;
@@ -4218,8 +4187,8 @@ setfname(
       EE_CLEAR(book->fullFileName);
       st.st_dev = (Device)-1;
    } else {
-      fname_expand(&fullFName, &sfname); // will allocate fullFName
-      if (fullFName == NULL)          // out of memory
+      fname_expand(OUT &fullFName, &sfname); // will allocate fullFName
+      if (!fullFName)          // out of memory
          return FAIL;
 
       //If the file name is already used in another book:
@@ -4314,11 +4283,7 @@ bookHandleNameChange(Book* book) {
 //
 //Used by do_one_cmd(), do_write() and startEditingFile(). Return the book.
 Book *
-setaltfname(
-   CS fullFName,
-   CS sfname,
-   LineNr lnum
-){
+setaltfname(CS fullFName, CS sfname, LineNr lnum){
    // Create a book.  'buflisted' is not set if it's a new book
    Book* book = bookNew(fullFName, sfname, lnum, 0);
    if (book && (commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
@@ -4378,11 +4343,11 @@ areSameInode(Book* book, FileStat* stp){
 // Print info about the current book.
 void
 fileinfo(
-   int fullname,       // when true, print full path; whan > 1, include book number
+   Boole fullname,       // when true, print full path; whan > 1, include book number
    Boole shorthelp,
-   Boole   dont_truncate
+   Boole dont_truncate
 ){
-   Unt   bufLen = 0;
+   Unt bufLen = 0;
    CS buf = alloc(IOSIZE);
 
    if (fullname > 1)       // 2 CTRL-G: include book number
@@ -4463,8 +4428,8 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 // Used for building in the status line.
 typedef struct {
    CS stl_start;
-   int      stl_minwid;
-   int      stl_maxwid;
+   int stl_minwid;
+   int stl_maxwid;
    enum {
       Normal,
       Empty,
@@ -4476,12 +4441,12 @@ typedef struct {
    } StatusTag;
 } StatusItem;
 
-private Unt      countStatusItems = 20; // Initial value, grows as needed.
+private Unt countStatusItems = 20; // Initial value, grows as needed.
 private Arr(StatusItem) stl_items = NULL;
 private int* stl_groupitem = NULL;
 private StatusLineHilite* statusHilitesS = NULL;
 private StatusLineHilite* stl_tabtab = NULL;
-private int      *stl_separator_locations = NULL;
+private int* stl_separator_locations = NULL;
 
 // Build a string from the status line items in "fmt".
 // Return length of string in screen cells.
@@ -5350,8 +5315,8 @@ bookRenderStatusLine(
 // percentage form like %99, 99%; using "Top", "Bot" or "All" when appropriate.
 int
 get_rel_pos(Portal* po, CS buf, int buflen){
-   long   above; // number of lines above portal
-   long   below; // number of lines below portal
+   long above; // number of lines above portal
+   long below; // number of lines below portal
 
    if (buflen < 3) // need at least 3 chars for writing
       return 0;
@@ -5941,6 +5906,44 @@ new_file_message(void) {
    return _("(New)");
 }
 
+//Get file name to use for backup file.
+//Use the name of the edited file "fname" and an entry in the 'dir' or 'bdir' option "dname".
+//- If "dname" is ".", return "fname" (backup file in same dir).
+//- If "dname" starts with "./", insert "dname" in "fname" (swap file relative to dir of file).
+//- Otherwise, prepend "dname" to the tail of "fname" (swap file in specific dir).
+//
+//The return value is an allocated string and can be NULL.
+private CS
+determineBackupFilename(CS fname, CS dname){
+   CS t;
+   CS retval;
+
+   CS tail = fiGetShortFiName(fname);
+
+   if (dname[0] == '.' && dname[1] == ZERO)
+      retval = copyStr(fname);
+   ei (dname[0] == '.' && dname[1] == '/') {
+      if (tail == fname)       // no path before file name
+         retval = concat_fnames(dname + 2, tail, TRUE);
+      else {
+         int save_char = *tail;
+         *tail = ZERO;
+         t = concat_fnames(fname, dname + 2, TRUE);
+         *tail = save_char;
+         if (t == NULL)       // out of memory
+            retval = NULL;
+         else {
+            retval = concat_fnames(t, tail, TRUE);
+            eeglFree(t);
+         }
+      }
+   } else
+      retval = concat_fnames(dname, tail, TRUE);
+
+   return retval;
+}
+
+
 //bookWrite() - write to file "fname" lines "start" through "end"
 //
 //We do our own buffering here because fwrite() is so slow.
@@ -6395,38 +6398,38 @@ bookWrite(
             goto nobackup;
          }
 
-         // Try to make the backup in each directory in the 'bdir' option.
+         //Try to make the backup in each directory in the 'bdir' option.
          //
-         // We may have a writable file, that cannot be recreated with a simple 
-         // open(..., O_CREAT, ) e.g:
-         //  - the directory is not writable,
-         //  - the file may be a symbolic link,
-         //  - the file may belong to another user/group, etc.
+         //We may have a writable file that cannot be recreated with a simple open(..., O_CREAT, )
+         //e.g:
+         // - the directory is not writable,
+         // - the file may be a symbolic link,
+         // - the file may belong to another user/group, etc.
          //
-         // For these reasons, the existing writable file must be truncated
-         // and reused. Creation of a backup COPY will be attempted.
+         //For these reasons, the existing writable file must be truncated
+         //and reused. Creation of a backup COPY will be attempted.
          if (!p_bdir)
             goto nobackup;
             
-         CS dirp = p_bdir;
-         while (*dirp) {
+         CS backupDirRemainder = p_bdir; //@backupdir
+         while (*backupDirRemainder != ZERO) {
             stNew.st_ino = 0;
             stNew.st_dev = 0;
             stNew.st_gid = 0;
 
             // Isolate one directory name, using an entry in 'bdir'.
-            (void)doCutPathFromListOfPaths(&dirp, copybuf, WRITEBUFSIZE, S",");
+            (void)doCutPathFromListOfPaths(OUT &backupDirRemainder, OUT copybuf, WRITEBUFSIZE, S",");
 
             p = copybuf + STRLEN(copybuf);
             if (after_pathsep(copybuf, p) && p[-1] == p[-2]
                   // Ends with '//', use full path
-                  && (p = make_percent_swname(copybuf, p, fname)) != NULL
+                  && (p = memMakePercentSwapName(copybuf, p, fname)) != NULL
             ) {
                backup = fiAppendFileExtension(p, backup_ext, FALSE);
                eeglFree(p);
             }
-            rootname = get_file_in_dir(fname, copybuf);
-            if (rootname == NULL) {
+            rootname = determineBackupFilename(fname, copybuf);
+            if (!rootname) {
                some_error = TRUE;       // out of memory
                goto nobackup;
             }
@@ -6529,33 +6532,30 @@ endOfName:
          errmsg = NULL;
       } else {
          CS p;
-         CS rootname;
 
-         // Make a backup by renaming the original file.
+         //Make a backup by renaming the original file.
 
-         // Form the backup file name - change path/fo.o.h to
-         // path/fo.o.h.bak Try all directories in 'backupdir', first one that works is used.
+         //Form the backup file name - change path/fo.o.h to
+         //path/fo.o.h.bak Try all directories in 'backupdir', first one that works is used.
          if (!p_bdir)
             goto finishedParsing;
             
-         CS dirp = p_bdir;
-         while (*dirp) {
-            // Isolate one directory name and make the backup file name.
-            (void)doCutPathFromListOfPaths(&dirp, IObuff, IOSIZE, S",");
+         CS backupDirRemainder = p_bdir;
+         while (*backupDirRemainder) {
+            //Isolate one directory name and make the backup file name.
+            (void)doCutPathFromListOfPaths(&backupDirRemainder, IObuff, IOSIZE, S",");
 
             p = IObuff + STRLEN(IObuff);
             if (after_pathsep(IObuff, p) && p[-1] == p[-2]) {
-               // path ends with '//', use full path
-               if ((p = make_percent_swname(IObuff, p, fname)) != NULL) {
+               //path ends with '//', use full path
+               if ((p = memMakePercentSwapName(IObuff, p, fname)) != NULL) {
                   backup = fiAppendFileExtension(p, backup_ext, FALSE);
                   eeglFree(p);
                }
             } 
-            if (backup == NULL) {
-               rootname = get_file_in_dir(fname, IObuff);
-               if (rootname == NULL)
-                  backup = NULL;
-               else {
+            if (!backup) {
+               CS rootname = determineBackupFilename(fname, IObuff);
+               if (rootname) {
                   backup = fiAppendFileExtension(rootname, backup_ext, FALSE);
                   eeglFree(rootname);
                }

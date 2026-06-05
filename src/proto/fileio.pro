@@ -43,7 +43,7 @@ int fullpathcmp(CS s1, CS s2, int checkname, int expandenv);
 CS fiGetShortFiName(CS fname);
 CS gettail_sep(CS fname);
 CS getnextcomp(CS fname);
-CS concat_fnames(CS fname1, CS fname2, int sep);
+CS concat_fnames(CS fname1, CS fname2, Boole sep);
 void add_pathsep(CS p);
 CS fiExpandAndCopy(CS fname, int force);
 int eeFexists(CS fname);
@@ -126,4 +126,5 @@ int mch_setperm(CS name, long perm);
 void mch_copy_xattr(CS from_file, CS to_file);
 int mch_fsetperm(int fd, long perm);
 int mch_can_exe(CS name, CS *path, int use_path);
+CS fiBuildSwapOrUndoFname(CS fname, Boole isBackup);
 /* eegl: set ft=c : */

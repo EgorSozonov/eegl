@@ -1,11 +1,23 @@
-# Makefile for Eegl on Unix and Unix-like systems
-#
-# This Makefile is loosely based on the GNU Makefile conventions found in standards.info.
+CC ?= gcc
+INTERNAL_CFLAGS = --std=c17 -gdwarf-5 -pthread -Wp,-D_FORTIFY_SOURCE=2 -fno-plt \
+      -fstack-clash-protection -fno-stack-protector -fno-semantic-interposition \
+      -fdebug-prefix-map=$(shell pwd)=.
+
+# The debug flags
+CFLAGS ?=  $(INTERNAL_FLAGS) -Wall -Wextra -Wfatal-errors -O0 \
+              -Wno-cpp -Werror=return-type -Werror=pointer-compare \
+# The release flags
+RELEASE_CFLAGS = $(INTERNAL_CFLAGS) -O2
+
+LDFLAGS ?= -L/usr/lib -Wl,-z,relro,-z,now 
+
+LIBS	= -lm -ltinfo -lwayland-client
+
 #
 # Compiling Eegl, summary:
 #
-#	3. make
-#	5. make install
+#	make
+#	doas make install
 #
 # Compiling Eegl, details:
 #
@@ -14,8 +26,6 @@
 # The name of this file MUST be Makefile (note the uppercase 'M').
 #{{{ config
 
-GLIBC_LIBS = -lm -lattr
-LIBS	= $(GLIBC_LIBS) -ltinfo -lwayland-client
 
 VIEWNAME	= view
 
@@ -27,7 +37,6 @@ TAGPRG		= ctags
 CPP		= gcc -E
 CPP_MM		= M
 DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
-LINK_AS_NEEDED	= yes
 X_FLAGS	=  
 X_LIBS_DIR	=  
 X_PRE_LIBS	=  -lSM -lICE -lXpm
@@ -115,7 +124,7 @@ MSGFMT_DESKTOP	= eegl.desktop
 #	  even though you have gpm libraries and includes.
 #	- Uncomment the line with --disable-sysmouse to disable sysmouse
 #	  support even though you have /dev/sysmouse and includes.
-#	- Uncomment one of the lines with CFLAGS and/or CC if you have
+#	- Edit the INTERLAL_CFLAGS and/or RELEASE_CFLAGS and/or CC if you have
 #	  something very special or want to tune the optimizer.
 #	- Search for the name of your system to see if it needs anything special.
 #	- A few versions of make use '.include "file"' instead of 'include
@@ -251,53 +260,6 @@ MSGFMT_DESKTOP	= eegl.desktop
 #ESIX V4.2	      cc	     +X11		6.0  (a) Reinhard Wobst
 # }}}
 
-# (*)  Remarks: {{{
-#
-# (1)  Uncomment line below for shlicc2
-# (2)  HPUX with compile problems or wrong digraphs, uncomment line below
-# (3)  Infomagic Motif needs GUI_LIB_LOC and GUI_INC_LOC set, see below.
-#      And add "-lXpm" to MOTIF_LIBS2.
-# (4)  For cc the optimizer must be disabled (use CFLAGS= after running
-#      configure) (symptom: ":set termcap" output looks weird).
-# (5)  Compiler may need extra argument, see below.
-# (6)  See below for a few lines to uncomment
-# (7)  See below for lines which enable the use of clcc
-# (8)  Needs some EXTRA_LIBS, search for Unisys below
-# (9)  Needs an extra compiler flag to compile gui_at_sb.c, see below.
-# (A)  May need EXTRA_LIBS, see below
-# (B)  Can't compile GUI because there is no waitpid()...  Disable GUI below.
-# (C)  Force the use of curses instead of termcap, see below.
-# (D)  Uncomment lines below for QNX
-# (E)  You might want to use termlib instead of termcap, see below.
-# (F)  See below for instructions.
-# (G)  Using ncurses version 4.2 has reported to cause a crash.  Use the
-#      Sun curses library instead.
-# (H)  See line for EXTRA_LIBS below.
-# (I)  SINIX-N 5.42 and 5.43 need some EXTRA_LIBS.  Also for Reliant-Unix.
-# (J)  If you get undefined symbols, see below for a solution.
-# (K)  See lines to uncomment below for machines with 64 bit pointers.
-# (M)  gcc version cygnus-2.0.1 does NOT work (symptom: "dl" deletes two
-#      characters instead of one).
-# (N)  SCO with decmouse.
-# (O)  LynxOS needs EXTRA_LIBS, see below.
-# (P)  For SuperUX 6.2 on NEC SX-4 see a few lines below to uncomment.
-# (Q)  For UNIXSVR 4.2MP on NEC UP4800 see below for lines to uncomment.
-# (R)  For Solaris 2.5 (or 2.5.1) with gcc > 2.5.6, uncomment line below.
-# (U)  Must uncomment CONF_OPT_PYTHON option below to disable Python
-#      detection, since the configure script runs into an error when it
-#      detects Python (probably because of the bash shell).
-# (V)  See lines to uncomment below.
-# (Y)  See line with c89 below
-# (Z)  See lines with cc or c89 below
-# (a)  See line with EXTRA_LIBS below.
-# (b)  When using gcc with the Solaris linker, make sure you don't use GNU
-#      strip, otherwise the binary may not run: "Cannot find ELF".
-# (c)  Add -lfloss to EXTRA_LIBS, see below.
-# (x)  When you get warnings for precompiled header files, run
-#      "sudo fixPrecomps".  Also see CONF_OPT_DARWIN below.
-# }}}
-
-
 # Argument for running ctags.
 TAGS_FILES = *.c *.h
 
@@ -308,21 +270,11 @@ VIEWNAME = view
 EXNAME = eegl
 VIEWNAME	= view
 
-CC ?= gcc
 DEFS = -DHAVE_CONFIG_H
-CFLAGS ?= --std=c17 -gdwarf-5 -Wall -Wextra -Wfatal-errors -O0 \
-              -Wno-cpp -Werror=return-type -D_REENTRANT -Werror=pointer-compare \
-              -fdebug-prefix-map=$(shell pwd)=. \
-              -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
-        
-LDFLAGS ?= -L/usr/local/lib -Wl,--as-needed
-
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
-#C_FLAGS		= -O2  -D_REENTRANT  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 CPPFLAGS	= 
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
-LINK_AS_NEEDED	= yes
 X_FLAGS	=  
 X_LIBS_DIR	=  
 X_PRE_LIBS	=  -lSM -lICE -lXpm
@@ -550,20 +502,16 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 #C_FLAGS = -g -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wunused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 #C_FLAGS = -g -O2 -Wall -Wextra -Wshadow -Wmissing-prototypes -Wpedantic -Wunreachable-code -Wno-cast-function-type -Wunused-result -Wno-deprecated-declarations -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
 
-# EFENCE - Electric-Fence malloc debugging: catches memory accesses beyond
-# allocated memory (and makes every malloc()/free() very slow).
-# Electric Fence is free (search ftp sites).
-# You may want to set the EF_PROTECT_BELOW environment variable to check the
+#EFENCE - Electric-Fence malloc debugging: catches memory accesses beyond
+#allocated memory (and makes every malloc()/free() very slow).
+#Electric Fence is free (search ftp sites).
+#You may want to set the EF_PROTECT_BELOW environment variable to check the
 # other side of allocated memory.
-# On FreeBSD you might need to enlarge the number of mmaps allowed.  Do this
-# as root: sysctl -w vm.max_proc_mmap=30000
 #EXTRA_LIBS = /usr/local/lib/libefence.a
 
 # Autoconf binary.
 AUTOCONF ?= autoconf
 
-# PURIFY - remove the # to use the "purify" program (hoi Nia++!)
-#PURIFY = purify
 
 # VALGRIND - remove the # to use valgrind for memory leaks and access errors.
 #	     Used for the unittest targets.
@@ -921,7 +869,7 @@ PROTO_FLAGS = -d -E"$(CPP)" $(NO_ATTR)
 ##   no changes required below this line      ##
 ################################################
 
-SHELL ?= /bin/bash
+SHELL = /usr/bin/bash
 
 .SUFFIXES:
 .SUFFIXES: .c .o .pro
@@ -1050,8 +998,7 @@ BASIC_SRC_NO_DIR = \
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
 
 
-SRC =	$(BASIC_SRC) \
-	$(WAYLAND_SRC)
+SRC =	$(BASIC_SRC) $(WAYLAND_SRC)
 
 EXTRA_SRC = src/channel.c \
 	    $(GRESOURCE_SRC)
@@ -1232,17 +1179,18 @@ CClink = $(CC)
 # Link the target for normal use or debugging.
 # A shell script is used to try linking without unnecessary libraries.
 $(EEGLTARGET): $(OBJ)
-	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
-		-o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
-		PROG="eegl" \
-		bash link.sh
+	#@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	#	-o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)" \
+	#	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
+	#	PROG="eegl" \
+	#	bash link.sh
+	$(CClink) $(LDFLAGS) -o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)
 	@echo '                                 '
 	@echo '                    .^^~-.       '
 	@echo '                    / ,__`)      '
 	@echo "                   |   \o/|'--.  "
-	@echo "    BUILD SUCCESS!  \     /   ,\ "
-	@echo "                     \    '---./ "
+	@echo "    BUILD SUCCESS!  \     /___ \ "
+	@echo "                     \    '---\/ "
 	@echo '                    /     \      '
 	@echo '                   / ,  ,  \     '
 	@echo "                   \`-'--'--'    "
@@ -1369,16 +1317,6 @@ run_memfile_test: $(MEMFILE_TEST_TARGET)
 run_message_test: $(MESSAGE_TEST_TARGET)
 	$(VALGRIND) ./$(MESSAGE_TEST_TARGET) || exit 1; echo $* passed;
 
-# Run the libvterm tests.
-# This works only on GNU make, not on BSD make.
-# Libtool requires "gcc".
-test_libvterm:
-	@if $(MAKE) --version 2>/dev/null | grep -qs "GNU Make"; then \
-	  if test -x "/usr/bin/gcc"; then \
-	    cd libvterm; $(MAKE) -f Makefile test CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)"; \
-	  fi \
-	fi
-
 # Run individual OLD style test.
 # These do not depend on the executable, compile it when needed.
 $(SCRIPTS_TINY):
@@ -1409,30 +1347,30 @@ testclean:
 # Unittests
 # It's build just like Eegl to satisfy all dependencies.
 $(JSON_TEST_TARGET): $(JSON_TEST_OBJ)
-	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
 		-o $(JSON_TEST_TARGET) $(JSON_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
+		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="json_test" \
 		sh $(srcdir)/link.sh
 
 $(KWORD_TEST_TARGET): $(KWORD_TEST_OBJ)
-	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
 		-o $(KWORD_TEST_TARGET) $(KWORD_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
+		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="kword_test" \
 		sh $(srcdir)/link.sh
 
 $(MEMFILE_TEST_TARGET): $(MEMFILE_TEST_OBJ)
-	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
 		-o $(MEMFILE_TEST_TARGET) $(MEMFILE_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
+		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="memfile_test" \
 		sh $(srcdir)/link.sh
 
 $(MESSAGE_TEST_TARGET): $(MESSAGE_TEST_OBJ)
-	@LINK="$(PURIFY) $(SHRPENV) $(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
 		-o $(MESSAGE_TEST_TARGET) $(MESSAGE_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=$(LINK_AS_NEEDED) \
+		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="message_test" \
 		sh $(srcdir)/link.sh
 
@@ -2055,11 +1993,6 @@ lintinstall:
 os/.c.o:
 	$(COMPILE) $<
 
-
-
-# Dependencies through eegl.h that most targets depend on.  Used by targets
-# that are not taken care of by "make depend".
-VIM_H_DEPENDENCIES = eegl.h termdefs.h commands.h
 
 # All the object files are put in the ".b" directory.  Since not all make
 # commands understand putting object files in another directory, it must be

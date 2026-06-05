@@ -255,6 +255,7 @@
 [-] @filetype, @syntax (shouldn't be an option)
 [-] @previewport - shouldn't be an option, just a single portal per tab
 [-] @shortmess - fixed at sane defaults
+[-] p_udir @undodir - fixed, now same as swap file dir
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany
@@ -306,6 +307,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] Replace the "messages" mess with popup portals
 [ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
    a general way to create auto-updateable views of buffers?
+[-] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
 
    [[[Bugs to fix]]]

@@ -1344,7 +1344,7 @@ swapfile_process_running(Block0 *b0p, CS swap_fname) {
 // Try to recover curBook from the .swp file.
 // If "checkext" is TRUE, check the extension and detect whether it is a swap file.
 void
-ml_recover(int checkext) {
+ml_recover(Boole checkext) {
    Book* book = NULL;
    MemFile* mfp = NULL ;
    CS fname_used = NULL;
@@ -1368,40 +1368,24 @@ ml_recover(int checkext) {
    Boole called_from_main = (curBook->mem.mfile == NULL);
    char deco = getDecoFlags(HLF_E);
 
-   //If the file name ends in ".s[a-w][a-z]" we assume this is the swap file.
+   //If the file name ends in ".swp", we assume this is the swap file.
    //Otherwise a search is done to find the swap file(s).
-   CS fname = curBook->currFileName;
+   CS fname = curBook->fullFileName;
    if (!fname)          // When there is no file name
       fname = S"";
    len = (int)STRLEN(fname);
-   if (checkext && len >= 4 && STRNICMP(fname + len - 4, ".s", 2) == 0
-      && firstOccurrence((CS)"abcdefghijklmnopqrstuvw", TOLOWER_ASC(fname[len - 2])) != NULL
-      && ASCII_ISALPHA(fname[len - 1])
-   ) {
+   if (checkext && len >= 4 && STRNICMP(fname + len - 4, ".swp", 4) == 0) {
       directly = true;
       fname_used = copyStr(fname); // make a copy for mf_open()
    } else {
       directly = false;
 
       // count the number of matching swap files
-      len = memRecoverSwapNames(fname, false, NULL, 0, NULL);
-      if (len == 0) {  // no swap files found
+      fname_used = fiBuildSwapOrUndoFname(fname, false);
+      if (!fname_used) {  // no swap files found
          showErrFmtMsg(_(e_no_swap_file_found_for_str), fname);
          goto theend;
       }
-      if (len == 1)          // one swap file found, use it
-         i = 1;
-      else {    // several swap files found, choose
-         // list the names of the swap files
-         (void)memRecoverSwapNames(fname, true, NULL, 0, NULL);
-         msg_putchar('\n');
-         msg_puts(_("Enter number of swap file to use (0 to quit): "));
-         i = get_number(FALSE, NULL);
-         if (i < 1 || i > len)
-            goto theend;
-      }
-      // get the swap file name that will be used
-      (void)memRecoverSwapNames(fname, false, NULL, i, &fname_used);
    }
    if (!fname_used)
       goto theend;         // out of memory
@@ -1645,8 +1629,7 @@ ml_recover(int checkext) {
                //It is a data block. Append all the lines in this block.
                has_error = FALSE;
 
-               // Check the length of the block.
-               // If wrong, use the length given in the pointer block.
+               //Check the length of the block. If wrong, use the length given in the pointer block
                if (pageCount * mfp->pageSize != block->endByte) {
                   ml_append(lnum++, 
                      (CS)_("??? from here until ???END lines may be messed up"),
@@ -1657,12 +1640,12 @@ ml_recover(int checkext) {
                   block->endByte = pageCount * mfp->pageSize;
                }
 
-               // Make sure there is a ZERO at the end of the block so we
-               // don't go over the end when copying text.
+               //Make sure there is a ZERO at the end of the block so we
+               //don't go over the end when copying text.
                *((CS)block + block->endByte - 1) = ZERO;
 
-               // Check the number of lines in the block.
-               // If wrong, use the count in the data block.
+               //Check the number of lines in the block.
+               //If wrong, use the count in the data block.
                if (lineCount != block->countLines) {
                   ml_append(lnum++, 
                      (CS)_("??? from here until ???END" " lines may have been inserted/deleted"),
@@ -1675,12 +1658,12 @@ ml_recover(int checkext) {
                int did_questions = FALSE;
                for (i = 0; i < block->countLines; ++i) {
                   if ((CS)&(block->c[i]) >= (CS)block + block->startByte) {
-                      // line count must be wrong
-                      ++error;
-                      ml_append(lnum++,
-                         (CS)_("??? lines may be missing"),
-                                   (ColNr)0, TRUE);
-                      break;
+                     // line count must be wrong
+                     ++error;
+                     ml_append(
+                         lnum++, (CS)_("??? lines may be missing"), (ColNr)0, TRUE
+                     );
+                     break;
                   }
 
                   txt_start = (block->c[i] & c_MASK);
@@ -1718,11 +1701,11 @@ ml_recover(int checkext) {
    //Lines lnum + 1 to lineCount are the original contents.
    //Line lineCount + 1 in the dummy empty line.
    if (orig_file_status != OK || curBook->mem.lineCount != lnum * 2 + 1) {
-      // Recovering an empty file results in two lines and the first line is
-      // empty.  Don't set the modified flag then.
+      //Recovering an empty file results in two lines and the first line is
+      //empty. Don't set the modified flag then.
       if (!(curBook->mem.lineCount == 2 && *ml_get(1) == ZERO)) {
-          changed_internal();
-          ++CHANGEDTICK(curBook);
+         changed_internal();
+         ++CHANGEDTICK(curBook);
       }
    } else {
       for (idx = 1; idx <= lnum; ++idx) {
@@ -1778,7 +1761,7 @@ theend:
    recoveryModeG = false;
    if (mfp) {
       if (hdr)
-          mf_put(mfp, hdr, FALSE, FALSE);
+         mf_put(mfp, hdr, FALSE, FALSE);
       mf_close(mfp, FALSE);       // will also eeglFree(mfp->fName)
    }
    if (book) {
@@ -1877,11 +1860,11 @@ swapfile_unchanged(CS fname) {
    return ret;
 }
 
-// sync all memlines
+//sync all memlines
 //
-// If 'check_file' is TRUE, check if original file exists and was not changed.
-// If 'check_char' is TRUE, stop syncing when character becomes available, but
-// always sync at least one block.
+//If 'check_file' is TRUE, check if original file exists and was not changed.
+//If 'check_char' is TRUE, stop syncing when character becomes available, but
+//always sync at least one block.
 void
 ml_sync_all(int check_file, int check_char) {
    Book* book;
@@ -1905,16 +1888,17 @@ ml_sync_all(int check_file, int check_char) {
 #ifdef ST_MTIM_NSEC
              || st.ST_MTIM_NSEC != book->readTimeNs
 #endif
-             || st.st_size != book->origSize)
-          {
+             || st.st_size != book->origSize
+         ) {
             ml_preserve(book, FALSE);
             did_check_timestamps = FALSE;
             need_check_timestamps = TRUE;   // give message later
          }
       }
       if (book->mem.mfile->mf_dirty == MF_DIRTY_YES) {
-         (void)mf_sync(book->mem.mfile, (check_char ? MFS_STOP : 0)
-                  | (doWasBookChanged(book) ? MFS_FLUSH : 0));
+         (void)mf_sync(
+            book->mem.mfile, (check_char ? MFS_STOP : 0) | (doWasBookChanged(book) ? MFS_FLUSH : 0)
+         );
          if (check_char && ui_char_avail())   // character available now
             break;
       }
@@ -1926,11 +1910,11 @@ ml_sync_all(int check_file, int check_char) {
 // when message is TRUE the success of preserving is reported
 void
 ml_preserve(Book* book, int message) {
-   BlockHeader   *hdr;
-   LineNr   lnum;
-   MemFile   *mfp = book->mem.mfile;
-   int      status;
-   int      gotInterruptG_save = gotInterruptG;
+   BlockHeader* hdr;
+   LineNr lnum;
+   MemFile* mfp = book->mem.mfile;
+   int status;
+   int gotInterruptG_save = gotInterruptG;
 
    if (!mfp || !mfp->fName) {
       if (message)
@@ -1969,7 +1953,7 @@ ml_preserve(Book* book, int message) {
       (void)ml_find_line(book, (LineNr)0, ML_FLUSH);   // flush locked block
       // sync the updated pointer blocks
       if (mf_sync(mfp, MFS_ALL | MFS_FLUSH) == FAIL)
-          status = FAIL;
+         status = FAIL;
       book->mem.ml_stack_top = 0;       // stack is invalid now
    }
 theend:
@@ -2000,7 +1984,7 @@ ml_get(LineNr lnum) {
 
 // Return pointer to position "pos".
 CS
-ml_get_pos(Pos *pos){
+ml_get_pos(Pos* pos){
    return (memGetLine(curBook, pos->lnum, false) + pos->col);
 }
 
@@ -2062,8 +2046,8 @@ memGetLine(Book* book, LineNr   lnum, Boole  willChange) { // line will be chang
 
    if (lnum > book->mem.lineCount) { // invalid line number
       if (recursive == 0) {
-         // Avoid giving this message for a recursive call, may happen when
-         // the GUI redraws part of the text.
+         //Avoid giving this message for a recursive call, may happen when
+         //the GUI redraws part of the text.
          ++recursive;
          internalErrFmtMsg(e_ml_get_invalid_lnum_nr, lnum);
          --recursive;
@@ -2095,8 +2079,8 @@ errorret:
       //the root to the data block and releases any locked block.
       if ((hdr = ml_find_line(book, lnum, ML_FIND)) == NULL) {
          if (recursive == 0) {
-            // Avoid giving this message for a recursive call, may happen
-            // when the UI redraws part of the text.
+            //Avoid giving this message for a recursive call, may happen
+            //when the UI redraws part of the text.
             ++recursive;
             drawGetTranslatedBookName(book);
             shorten_dir(nameBuffG);
@@ -2204,28 +2188,28 @@ addTextPropsForAppend(
 // Insert a new line with text at an arbitrary line number
 private int
 insertLineText(
-   Book   *book,
-   LineNr   lnum,      // append after this line (can be 0)
-   Arr(Byte) newContentArg, // text of the new line
-   ColNr   lenArgWithZeroChar,   // length of line, including ZERO, or 0
-   int      flags      // ML_APPEND_ flags
+   Book* book,
+   LineNr lnum,      // append after this line (can be 0)
+   CS newContentArg, // text of the new line
+   ColNr lenArgWithZeroChar,   // length of line, including ZERO, or 0
+   Unt flags      // ML_APPEND_ flags
 ){
    Arr(Byte) newContent = newContentArg;
-   ColNr   len = lenArgWithZeroChar;
-   int      i;
-   int      lineCount;   // number of indexes in current block
-   int      offset;
-   int      from, to;
-   int      neededSpace; // space needed for new line
-   int      page_size;
-   int      pageCount;
-   int      oldLineInd;   // index for lnum in data block
+   ColNr len = lenArgWithZeroChar;
+   int i;
+   int lineCount;   // number of indexes in current block
+   int offset;
+   int from, to;
+   int neededSpace; // space needed for new line
+   int page_size;
+   int pageCount;
+   int oldLineInd;   // index for lnum in data block
    BlockHeader* hdr;
    PointerBlock* pp;
    InfoPtr* ip;
    Byte* tofree = NULL;
-   ColNr  textLen = 0;   // text len with ZERO without text properties
-   int   ret = FAIL;
+   ColNr textLen = 0;   // text len with ZERO without text properties
+   int ret = FAIL;
 
    if (lnum > book->mem.lineCount || book->mem.mfile == NULL)
       return FAIL;  // lnum out of range
@@ -2253,8 +2237,8 @@ insertLineText(
    MemFile* mfp = book->mem.mfile;
    page_size = mfp->pageSize;
 
-   // Find the data block containing the previous line. This also fills the stack with the blocks
-   // from the root to the data block, and releases any locked block.
+   //Find the data block containing the previous line. This also fills the stack with the blocks
+   //from the root to the data block, and releases any locked block.
    if ((hdr = ml_find_line(book, lnum == 0 ? (LineNr)1 : lnum, ML_INSERT)) == NULL)
       goto theend;
 
@@ -3511,102 +3495,6 @@ fixBlockStack(Book* book, int count) {
    }
 }
 
-// Resolve a symlink in the last component of a file name.
-// Note that f_resolve() does it for every part of the path, we don't do that here.
-// If it worked returns OK and the resolved link in "buf[MAXPATHL]". Otherwise return FAIL.
-int
-resolve_symlink(CS fname, OUT CS builder) {
-   Byte   tmp[MAXPATHL];
-   int      ret;
-   int      depth = 0;
-
-   if (!fname)
-      return FAIL;
-
-   // Put the result so far in tmp[], starting with the original name.
-   copySubstrToAllocation(tmp, (Text){fname, MAXPATHL - 1});
-
-   for (;;) {
-      // Limit symlink depth to 100, catch recursive loops.
-      if (++depth == 100) {
-         showErrFmtMsg(_(e_symlink_loop_for_str), fname);
-         return FAIL;
-      }
-
-      ret = readlink((char *)tmp, (char *)builder, MAXPATHL - 1);
-      if (ret <= 0) {
-         if (errno == EINVAL || errno == ENOENT) {
-            // Found non-symlink or not existing file, stop here.
-            // When at the first level use the unmodified name, skip the call to eeFullFileName().
-            if (depth == 1)
-                return FAIL;
-
-            // Use the resolved name in tmp[].
-            break;
-         }
-
-         // There must be some error reading links, use original name.
-         return FAIL;
-      }
-      builder[ret] = ZERO;
-
-      //Check whether the symlink is relative.
-      //If it's relative, build a new path based on the directory
-      //portion of the filename (if any) and the path the symlink points to.
-      if (fiIsRelative(builder))
-         STRCPY(tmp, builder);
-      else {
-         CS tail = fiGetShortFiName(tmp);
-         if (STRLEN(tail) + STRLEN(builder) >= MAXPATHL)
-            return FAIL;
-         STRCPY(tail, builder);
-      }
-   }
-
-   //Try to resolve the full name of the file so that the swapfile name will
-   //be consistent even when opening a relative symlink from different working directories.
-   return eeFullFileName(tmp, builder, MAXPATHL, TRUE);
-}
-
-//Get file name to use for swap file or backup file.
-//Use the name of the edited file "fname" and an entry in the 'dir' or 'bdir' option "dname".
-//- If "dname" is ".", return "fname" (swap file in dir of file).
-//- If "dname" starts with "./", insert "dname" in "fname" (swap file
-//  relative to dir of file).
-//- Otherwise, prepend "dname" to the tail of "fname" (swap file in specific
-//  dir).
-//
-//The return value is an allocated string and can be NULL.
-CS
-get_file_in_dir(CS fname, CS dname ){  // don't use "dirname", it is a global for Alpha
-   CS t;
-   CS retval;
-
-   CS tail = fiGetShortFiName(fname);
-
-   if (dname[0] == '.' && dname[1] == ZERO)
-      retval = copyStr(fname);
-   ei (dname[0] == '.' && dname[1] == '/') {
-      if (tail == fname)       // no path before file name
-         retval = concat_fnames(dname + 2, tail, TRUE);
-      else {
-         int save_char = *tail;
-         *tail = ZERO;
-         t = concat_fnames(fname, dname + 2, TRUE);
-         *tail = save_char;
-         if (t == NULL)       // out of memory
-            retval = NULL;
-         else {
-            retval = concat_fnames(t, tail, TRUE);
-            eeglFree(t);
-         }
-      }
-   } else
-      retval = concat_fnames(dname, tail, TRUE);
-
-   return retval;
-}
-
 // Print the ATTENTION message: info about an existing swap file.
 private void
 attention_message(Book* book, CS swapName) {
@@ -3692,7 +3580,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
    int n;
    CS buf_fname = book->currFileName;
 
-   CS fname = memBuildSwapName(book->fullFileName);
+   CS fname = fiBuildSwapOrUndoFname(book->fullFileName, false);
 
    if ((n = (int)STRLEN(fname)) == 0) {// sanity check
       EE_CLEAR(fname);
@@ -4422,12 +4310,11 @@ goto_byte(long cnt) {
    mb_adjust_cursor();
 }
 
-//Need _very_ long file names.
 //Append the full path to name with path separators made into percent
 //signs, to "dir". An unnamed book is handled as "" (<currentdir>/"")
 //The last character in "dir" must be an extra slash or backslash, it is removed.
 CS
-make_percent_swname(CS dir, CS dir_end, CS name) {
+memMakePercentSwapName(CS dir, CS dir_end, CS name) {
    CS d = NULL;
    CS f = fiExpandAndCopy(name ? name : S"", true);
    CS s = alloc(STRLEN(f) + 1);
@@ -4442,270 +4329,6 @@ make_percent_swname(CS dir, CS dir_end, CS name) {
    eeglFree(s);
    eeglFree(f);
    return d;
-}
-
-//Make swap file name out of the file name and a directory name. Return pointer to allocated 
-//memory or NULL.
-CS
-memBuildSwapName(CS fname) {
-   CS fname_res = fname;
-   Byte fnameBuilder[MAXPATHL];
-
-   //Expand symlink in the file name, so that we put the swap file with the
-   //actual file instead of with the symlink.
-   if (resolve_symlink(fname, fnameBuilder) == OK)
-      fname_res = fnameBuilder;
-
-   CS s = swapDirG.c + swapDirG.len;
-   if (after_pathsep(swapDirG.c, s) && s[-1] == s[-2]) {
-      // Ends with '//', Use Full path
-      CS r = NULL;
-      if ((s = make_percent_swname(swapDirG.c, s, fname_res)) != NULL) {
-         r = fiAppendFileExtension(s, S".swp", FALSE);
-         eeglFree(s);
-      }
-      return r;
-   }
-
-   CS r = fiAppendFileExtension(fname_res, S".swp", false);
-   if (!r)       // out of memory
-      return NULL;
-
-   s = get_file_in_dir(r, swapDirG.c);
-   eeglFree(r);
-   return s;
-}
-
-private int
-recoverFileNames(Byte **names, Byte *path, int prepend_dot) {
-   int i;
-   int num_names = 0;
-
-   // May also add the file name with a dot prepended, for swap file in same dir as original file.
-   if (prepend_dot) {
-      names[num_names] = fiAppendFileExtension(path, (CS)".sw?", TRUE);
-      if (names[num_names] == NULL)
-         goto end;
-      ++num_names;
-   }
-
-   // Form the normal swap file name pattern by appending ".sw?".
-   names[num_names] = concat_fnames(path, (CS)".sw?", FALSE);
-   if (names[num_names] == NULL)
-      goto end;
-   //  maybe short name, maybe not: Try both. Only use the short name if it is different.
-   CS p;
-   if (num_names >= 1)   {    // check if we have the same name twice
-      p = names[num_names - 1];
-      i = (int)STRLEN(names[num_names - 1]) - (int)STRLEN(names[num_names]);
-      if (i > 0)
-         p += i;       // file name has been expanded to full path
-
-      if (STRCMP(p, names[num_names]) != 0)
-         ++num_names;
-      else
-         eeglFree(names[num_names]);
-   } else
-      ++num_names;
-
-   if (names[num_names] == NULL)
-      goto end;
-
-   p = names[num_names];
-   i = STRLEN(names[num_names]) - STRLEN(names[num_names - 1]);
-   if (i > 0)
-      p += i;      // file name has been expanded to full path
-   if (STRCMP(names[num_names - 1], p) == 0)
-      eeglFree(names[num_names]);
-   else
-      ++num_names;
-
-end:
-    return num_names;
-}
-
-//Find the names of swap files in current directory and the directory given
-//with the 'directory' option.
-//
-//Used to:
-//- list the swap files for "eegl -r"
-//- count the number of swap files when recovering
-//- list the swap files when recovering
-//- list the swap files for swapfilelist()
-//- find the name of the n'th swap file when recovering
-int
-memRecoverSwapNames(
-   CS fname,         //book filename
-   Boole do_list,    //when TRUE, list the swap file names
-   List* ret_list,   //when not NULL add file names to it
-   int nr,           //when non-zero, return nr'th swap file name
-   OUT CS* fname_out //result when "nr" > 0
-){
-   int num_names;
-   CS names[6];
-   CS tail;
-   CS p;
-   int num_files;
-   ExpandMatch files = {};
-   files.a = createArena();
-   CS dirp;
-   CS fname_res = NULL;
-   Byte fnameBuilder[MAXPATHL];
-
-   if (fname) {
-      //Expand symlink in the file name, because the swap file is created
-      //with the actual file instead of with the symlink.
-      if (resolve_symlink(fname, fnameBuilder) == OK)
-         fname_res = fnameBuilder;
-      else
-         fname_res = fname;
-   }
-
-   if (do_list) {
-      //use msg() to start the scrolling properly
-      msg(_("Swap files found:"));
-      msg_putchar('\n');
-   }
-
-   //Do the loop for every directory in 'directory'.
-   //First allocate some memory to put the directory name in.
-   CS dir_name = alloc(sizeof(SWAP_DIR));
-   dirp = SWAP_DIR;
-   while (dir_name && *dirp) {
-      //Isolate a directory name from *dirp and put it into dir_name (we know
-      //it is large enough, so use 31000 for length). Advance dirp to next directory name.
-      (void)doCutPathFromListOfPaths(OUT &dirp, dir_name, 31000, S",");
-
-      if (dir_name[0] == '.' && dir_name[1] == ZERO) { //check current dir
-         if (!fname) {
-            names[0] = copyStr(S"*.sw?");
-            //Names starting with a dot are special.
-            names[1] = copyStr(S".*.sw?");
-            names[2] = copyStr(S".sw?");
-            num_names = 3;
-         } else
-            num_names = recoverFileNames(names, fname_res, TRUE);
-      } else { //check directory dir_name
-         if (!fname) {
-            names[0] = concat_fnames(dir_name, S"*.sw?", TRUE);
-            //Names starting with a dot are special.
-            names[1] = concat_fnames(dir_name, S".*.sw?", TRUE);
-            names[2] = concat_fnames(dir_name, S".sw?", TRUE);
-            num_names = 3;
-         } else {
-            int len = (int)STRLEN(dir_name);
-
-            p = dir_name + len;
-            if (after_pathsep(dir_name, p) && len > 1 && p[-1] == p[-2]) {
-               // Ends with '//', Use Full path for swap name
-               tail = make_percent_swname(dir_name, p, fname_res);
-            } else {
-               tail = fiGetShortFiName(fname_res);
-               tail = concat_fnames(dir_name, tail, TRUE);
-            }
-            if (!tail)
-               num_names = 0;
-            else {
-               num_names = recoverFileNames(names, tail, FALSE);
-               eeglFree(tail);
-            }
-         }
-      }
-
-      // check for out-of-memory
-      for (int i = 0; i < num_names; ++i) {
-         if (names[i] == NULL) {
-            for (i = 0; i < num_names; ++i)
-               eeglFree(names[i]);
-            num_names = 0;
-         }
-      }
-      if (num_names == 0)
-         num_files = 0;
-      ei (expand_wildcards(num_names, names, EW_NOTENV|EW_KEEPALL|EW_FILE|EW_SILENT, OUT &files
-          ) == FAIL
-      )
-         num_files = 0;
-
-      //When no swap file found, wildcard expansion might have failed (e.g. not able to execute 
-      //the shell). Try finding a swap file by simply adding ".swp" to the file name.
-      if (*dirp == ZERO && files.len + num_files == 0 && fname != NULL) {
-         FileStat st;
-         CS swapname = fiAppendFileExtension(fname_res, S".swp", TRUE);
-         if (swapname) {
-            if (stat((char *)swapname, &st) != -1) {   // It exists!
-               files.c = ALLOC_ONE(CS);
-               if (files.c) { 
-                  files.c[0] = swapname;
-                  swapname = NULL;
-                  num_files = 1;
-               }
-            }
-            eeglFree(swapname);
-         }
-      }
-
-      //Remove swapfile name of the current book, it must be ignored.
-      //But keep it for swapfilelist().
-      if (curBook->mem.mfile && (p = curBook->mem.mfile->fName) != NULL && !ret_list) {
-         for (int i = 0; i < num_files; ++i) {
-            // Do not expand wildcards
-            if (fullpathcmp(p, files.c[i], TRUE, FALSE) & FPC_SAME) {
-               files.len--;
-               if (files.len > 0) {
-                  for ( ; i < (int)files.len; ++i)
-                      files.c[i] = files.c[i + 1];
-               } 
-            }
-         }
-      }
-      if (nr > 0) {
-         files.len += num_files;
-         if (nr <= (int)files.len)  {
-            *fname_out = copyStr(files.c[nr - 1 + num_files - files.len]);
-            dirp = S"";          // stop searching
-         }
-      } ei (do_list) {
-         if (dir_name[0] == '.' && dir_name[1] == ZERO) {
-            if (!fname)
-               msg_puts(_("   In current directory:\n"));
-            else
-               msg_puts(_("   Using specified name:\n"));
-         } else {
-            msg_puts(_("   In directory "));
-            msg_home_replace(dir_name);
-            msg_puts(S":\n");
-         }
-
-         if (num_files) {
-            for (int i = 0; i < num_files; ++i) {
-               // print the swap file name
-               msg_outnum((long)++files.len);
-               msg_puts(S".    ");
-               msg_puts(fiGetShortFiName(files.c[i]));
-               msg_putchar('\n');
-               (void)swapfile_info(files.c[i]);
-            }
-         } else
-            msg_puts(_("      -- none --\n"));
-         out_flush();
-     } ei (ret_list) {
-         for (int i = 0; i < num_files; ++i) {
-            CS name = concat_fnames(dir_name, files.c[i], TRUE);
-            if (name) {
-               list_append_string(ret_list, name, -1);
-               eeglFree(name);
-            }
-         }
-      } else
-         files.len += num_files;
-
-      for (int i = 0; i < num_names; ++i)
-         eeglFree(names[i]);
-      deleteArena(files.a);
-   }
-   eeglFree(dir_name);
-   return files.len;
 }
 
 //}}}

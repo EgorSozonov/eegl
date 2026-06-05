@@ -756,18 +756,11 @@ List of directories for the backup file, separated with commas.
   name, precede it with a backslash.
 - To include a comma in a directory name precede it with a backslash.
 - A directory name may end in an '/'.
-- For Unix and Win32, if a directory ends in two path separators "//",
+- If a directory ends in two path separators "//",
   the backup file name will be built from the complete path to the
   file with all path separators changed to percent '%' signs. This
   will ensure file name uniqueness in the backup directory.
-  On Win32, it is also possible to end with "\\".  However, When a
-  separating comma is following, you must use "//", since "\\" will
-  include the comma in the file name. Therefore it is recommended to
-  use '//', instead of '\\'.
 - Environment variables are expanded |:set_env|.
-- Careful with '\' characters, type one before a space, type two to
-  get one in the option (see |option-backslash|), for example: 
-    :set bdir=c:\\tmp,\ dir\\,with\\,commas,\\\ dir\ with\ spaces
     
 - For backwards compatibility with Eegl version 3.0 a '>' at the start
   of the option is removed.
@@ -4074,22 +4067,6 @@ Maximum number of lines to scroll the screen.  If there are more lines
 to scroll the window is redrawn.  For terminals where scrolling is
 very slow and redrawing is not slow this can be set to a small number,
 e.g., 3, to speed up displaying.
-
-
-@@undodir                Global. String. Default = "."
-   
-List of directory names for undo files, separated with commas.
-See @backupdir for details of the format.
-"." means using the directory of the file.  The undo file name for
-"file.txt" is ".file.txt.un~".
-For other directories the file name is the full path of the edited
-file, with path separators replaced with "%".
-When writing: The first directory that exists is used. "." always
-works, no directories after "." will be used for writing.
-When reading all entries are tried to find an undo file.  The first
-undo file that exists is used.  When it cannot be read an error is
-given, no further entry is used.
-See |undo-persistence|.
 
 
 @@undofile               Book. Boolean. Default = off

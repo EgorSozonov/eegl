@@ -2443,7 +2443,7 @@ did_set_completeitemalign(OptionChange* cha) {
    Byte   buffer[10];
    CS p = cha->newVal.string;
    while (*p) {
-      doCutPathFromListOfPaths(&p, buffer, sizeof(buffer), S",");
+      doCutPathFromListOfPaths(OUT &p, OUT buffer, sizeof(buffer), S",");
       if (count >= 3)
           return e_invalid_argument;
 
@@ -3909,7 +3909,7 @@ put_setstring(
             // the option, :set rtp+=value
             if (fprintf(fd, "%s %s+=", cmd, name) < 0)
                goto fail;
-            (void)doCutPathFromListOfPaths(&p, part, size,  ",");
+            (void)doCutPathFromListOfPaths(OUT &p, OUT part, size,  ",");
             if (put_escstr(fd, part, 2) == FAIL || put_eol(fd) == FAIL)
                goto fail;
          }

@@ -450,7 +450,7 @@ doInPath(
    while (*p != ZERO && ((flags & DIP_ALL) || !did_one)) {
 
       // Copy the path from 'runtimepath' to builder[].
-      doCutPathFromListOfPaths(&p, builder, MAXPATHL, ",");
+      doCutPathFromListOfPaths(OUT &p, OUT builder, MAXPATHL, S",");
       Unt buflen = STRLEN(builder);
 
       // Skip after or non-after directories.
@@ -474,7 +474,7 @@ doInPath(
          CS np = name;
          while (*np != ZERO && ((flags & DIP_ALL) || !did_one)) {
             // Append the pattern from "name" to builder[].
-            doCutPathFromListOfPaths(&np, tail, (int)(MAXPATHL - (tail - builder)), "\t ");
+            doCutPathFromListOfPaths(OUT &np, OUT tail, (int)(MAXPATHL - (tail - builder)), S"\t ");
 
             if (p_verbose > 10) {
                verbose_enter();

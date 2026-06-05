@@ -1292,7 +1292,7 @@ removable(CS name) {
    Unt  n;
    name = home_replace_save(NULL, name);
    for (CS p = p_eeglinfo; *p; ) {
-      doCutPathFromListOfPaths(&p, part, 51, ", ");
+      doCutPathFromListOfPaths(OUT &p, OUT part, 51, S", ");
       if (part[0] == 'r') {
          n = STRLEN(part + 1);
          if (MB_STRNICMP(part + 1, name, n) == 0) {

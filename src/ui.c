@@ -7164,7 +7164,7 @@ term_flush_messages(void) {
 
 // Close a terminal book (and its portal). Used when creating the terminal fails.
 private void
-closeFailedTerminalBook(Book* book, Book *old_curBook) {
+closeFailedTerminalBook(Book* book, Book* old_curBook) {
    free_terminal(book);
    if (old_curBook) {
       --curBook->countPortals;
@@ -7174,20 +7174,15 @@ closeFailedTerminalBook(Book* book, Book *old_curBook) {
    }
    CHECK_CURBOOK;
 
-   // Wiping out the buffer will also close the portal and call free_terminal().
-   bookDo(DOBOOK_WIPE, DOBOOK_FIRST, FORWARD, book->fiNum, TRUE);
+   // Wiping out the book will also close the portal and call free_terminal().
+   bookDo(DOBOOK_WIPE, DOBOOK_FIRST, FORWARD, book->fiNum, DOBOOK_FORCEIT);
 }
 
-//Start a terminal portal and return its buffer. Use either "argvar" or "argv", the other must be 
+//Start a terminal portal and return its book. Use either "argvar" or "argv", the other must be 
 //NULL. When "flags" has TERM_START_NOJOB only create the buffer, term and open the portal.
 //Return NULL when failed.
 Book*
-term_start(
-   Var* argvar,
-   Byte** argv,
-   JobOptions* opt,
-   Unt flags
-){
+term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
    Invocation splitInvo;
    Portal* old_curPor = curPor;
    Book* curBookSaved = NULL; 
@@ -7300,8 +7295,8 @@ term_start(
       eeglFree(curBook->fullFileName);
       curBook->fullFileName = copyStr(S"!system");
    } else {
-      int   i;
-      Unt   len;
+      int i;
+      Unt len;
       CS cmd;
 
       if (argvar->tag == VAR_STRING) {
@@ -7472,6 +7467,7 @@ c_terminal(Invocation* invo) {
 
 # define OPTARG_HAS(name) ((int)(p - cmd) == sizeof(name) - 1 \
                 && STRNICMP(cmd, name, sizeof(name) - 1) == 0)
+                
       if (OPTARG_HAS("close"))
          opt.jo_term_finish = 'c';
       ei (OPTARG_HAS("noclose"))
@@ -7692,7 +7688,7 @@ term_should_restore(Book* book) {
 // Free the scrollback buffer for "term".
 private void
 free_scrollback(Terminal* term) {
-    int i;
+   int i;
 
    for (i = 0; i < term->scrollback.len; ++i)
       eeglFree(((ScrollbackLine *)term->scrollback.c + i)->sb_cells);

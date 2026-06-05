@@ -14,15 +14,14 @@
 // Now there is a simple IDE forked off from it, Eegl.
 
 CS Version = (CS)EEGL_VERSION_SHORT;
-private char   *mediumVersion = EEGL_VERSION_MEDIUM;
+private CS mediumVersion = (CS)EEGL_VERSION_MEDIUM;
 
 //char longVersion[sizeof(EEGL_VERSION_LONG_DATE) + sizeof(__DATE__) + sizeof(__TIME__) + 3];
 
 private Byte longVersion[] = EEGL_VERSION_LONG_DATE __DATE__ " " __TIME__ ")";
 
-private char *(features[]) = {
+private CS features[] = {SMAP((CS),
    "+mouse_sgr",
-       // only interesting on Unix systems
    "+wayland",
    "+xattr",
    "-xfontset",
@@ -32,7 +31,7 @@ private char *(features[]) = {
    "-xterm_save",
 #endif
    NULL
-};
+)};
 
 private int included_patches[] = {   
 // Add new patch number below this line */
@@ -44,7 +43,7 @@ private int included_patches[] = {
 //Also add a comment marker to separate the lines.
 //See the official Eegl patches for the diff format: It must use a context of
 //one line only.  Create it by hand or use "diff -C2" and edit the patch.
-private CS (extra_patches[]) = {
+private CS extra_patches[] = {
    // Add your patch description below this line
    NULL
 };
@@ -64,9 +63,9 @@ list_features(void) {
 
 private void
 list_version(void) {
-   int      i;
-   int      first;
-   CS s = E;
+   int i;
+   int first;
+   CS s = S"";
 
    //When adding features here, don't forget to update the list of internal variables in eval.c!
    msg(longVersion);
@@ -83,7 +82,7 @@ list_version(void) {
             first = included_patches[i];
          if (i == 0 || included_patches[i - 1] != included_patches[i] + 1) {
             msg_puts(s);
-            s = (CS)", ";
+            s = S", ";
             msg_outnum((long)first);
             if (first != included_patches[i]) {
                msg_puts((CS)"-");
@@ -137,11 +136,7 @@ private void intro_message(int colon);
 // Show the intro message when not editing a file.
 void
 maybe_intro_message(void) {
-   if (CURBOOK_EMPTY()
-          && curBook->currFileName == NULL
-          && firstPor->next == NULL
-          && p_intro
-   )
+   if (CURBOOK_EMPTY() && !curBook->currFileName && !firstPor->next && p_intro)
       intro_message(FALSE);
 }
 
@@ -149,8 +144,8 @@ maybe_intro_message(void) {
 //Only used when starting Eegl on an empty file, without a file name.
 //Or with the ":intro" command (for Sven :-).
 private void
-intro_message( int      colon) {     // TRUE for ":intro"
-   int      i;
+intro_message(int colon) {     // TRUE for ":intro"
+   int i;
    CS p;
    static CS lines[] = { SMAP((CS),
       "Eegl - Extensible editor for GNU/Linux",
@@ -459,9 +454,8 @@ eeglMain1(void) {
          params.portalLayout = WIN_VER;   // use vertical split
    }
 
-   //Recovery mode without a file name: List swap files.
+   //Recovery mode without a file name
    if (recoveryModeG && params.fname == NULL) {
-      memRecoverSwapNames(NULL, true, NULL, 0, NULL);
       mch_exit(0);
    }
 
@@ -592,9 +586,9 @@ eeglMain1(void) {
          exitEegl(1);
    }
 
-      // Execute any "+", "-c" and "-S" arguments.
-      if (params.n_commands > 0)
-         exeCommands(&params);
+   // Execute any "+", "-c" and "-S" arguments.
+   if (params.n_commands > 0)
+      exeCommands(&params);
 
    // Must come before the may_req_ calls.
    starting = 0;
@@ -1075,7 +1069,7 @@ exitEegl(int exitval) {
       write_eeglinfo(NULL, false);
 
    if (v_dying <= 1) {
-      int   unblock = 0;
+      int unblock = 0;
 
       // deathtrap() blocks autocommands, but we do want to trigger EeglLeave.
       if (areAutocommsBlocked()) {
@@ -1110,7 +1104,7 @@ exitEegl(int exitval) {
 //
 //Also find the --server... arguments and --socketid and --windowid
 private void
-earlyArgScan(MainParams *params UNUSED) {
+earlyArgScan(MainParams* params) {
    int      argc = params->argc;
    char   **argv = params->argv;
    int      i;
@@ -1142,7 +1136,7 @@ getNumericArg(
 //If the next characters are "view" we start in readonly mode.
 //If the next characters are "diff" or "eegldiff" we start in diff mode.
 private void
-parseCommandName(MainParams *params) {
+parseCommandName(MainParams* params) {
    CS initstr;
 
    initstr = fiGetShortFiName((CS)params->argv[0]);
@@ -1546,7 +1540,7 @@ scripterror:
 
 // Print a warning if stdout is not a terminal.
 private void
-check_tty(MainParams *params) {
+check_tty(MainParams* params) {
    int      input_isatty;      // is active input a terminal?
 
    input_isatty = mch_input_isatty();
@@ -1617,7 +1611,7 @@ createPortals(MainParams *params) {
 
    if (recoveryModeG) {         // do recover
       msg_scroll = TRUE;      // scroll message up
-      ml_recover(TRUE);
+      ml_recover(true);
       if (curBook->mem.mfile == NULL) // failed
           exitEegl(1);
    } else {

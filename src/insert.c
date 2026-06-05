@@ -1408,7 +1408,7 @@ insertchar0(
          // Skip middle-comment string
          while (*p && p[-1] != ':')   // find end of middle flags
             ++p;
-         middle_len = doCutPathFromListOfPaths(&p, lead_end, COM_MAX_LEN, ",");
+         middle_len = doCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, S",");
          // Don't count trailing white space for middle_len
          while (middle_len > 0 && SPACE_OR_TAB(lead_end[middle_len - 1]))
             --middle_len;
@@ -1416,7 +1416,7 @@ insertchar0(
          // Find the end-comment string
          while (*p && p[-1] != ':')   // find end of end flags
             ++p;
-         end_len = doCutPathFromListOfPaths(&p, lead_end, COM_MAX_LEN, ",");
+         end_len = doCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, S",");
 
          // Skip white space before the cursor
          i = curPor->cursor.col;
@@ -4632,7 +4632,7 @@ ins_compl_dictionaries(
           files = (ExpandMatch){.c = &dict, .len = 1};
       } else {
          // Expand wildcards in the dictionary name, but do not allow backticks
-         doCutPathFromListOfPaths(&dict, buf, LSIZE, ",");
+         doCutPathFromListOfPaths(OUT &dict, OUT buf, LSIZE, S",");
          if (!thesaurus && STRCMP(buf, "spell") == 0)
             files.len = 0;
          ei (firstOccurrence(buf, '`') != NULL
@@ -6017,7 +6017,7 @@ f_complete_match(Arr(Var) argvars, Var* returnVar) {
             if (next_comma && *(next_comma + 1) == ' ')
                p_space = next_comma;
 
-            len = doCutPathFromListOfPaths(&p, part, MAXPATHL, ",");
+            len = doCutPathFromListOfPaths(OUT &p, OUT part, MAXPATHL, S",");
          }
 
          if (len > 0 && len <= col) {
@@ -6367,7 +6367,7 @@ process_next_cpt_value(
       }
 
       // in any case e_cpt is advanced to the next entry
-      (void)doCutPathFromListOfPaths(&st->e_cpt, IObuff, IOSIZE, ",");
+      (void)doCutPathFromListOfPaths(OUT &st->e_cpt, OUT IObuff, IOSIZE, S",");
       *advance_cpt_idx = may_advance_cpt_index(st->e_cpt);
 
       st->found_all = TRUE;
@@ -7056,7 +7056,7 @@ prepare_cpt_compl_funcs(void) {
       } else
          cpt_sources_array[idx].startCol = -3;
 
-      (void)doCutPathFromListOfPaths(&p, IObuff, IOSIZE, ","); // Advance p
+      (void)doCutPathFromListOfPaths(OUT &p, OUT IObuff, IOSIZE, S","); // Advance p
       idx++;
    }
 
@@ -8509,7 +8509,7 @@ setup_cpt_sources(void) {
       while (*p == ',' || *p == ' ') // Skip delimiters
          p++;
       if (*p) { // If not end of string, count this segment
-         slen = doCutPathFromListOfPaths(&p, buf, LSIZE, ","); // Advance p
+         slen = doCutPathFromListOfPaths(OUT &p, OUT buf, LSIZE, S","); // Advance p
          if (slen > 0) {
             CS caret = firstOccurrence(buf, '^');
             if (caret)
@@ -8662,7 +8662,7 @@ cpt_compl_refresh(void) {
          }
       }
 
-      (void)doCutPathFromListOfPaths(&p, IObuff, IOSIZE, ","); // Advance p
+      (void)doCutPathFromListOfPaths(OUT &p, OUT IObuff, IOSIZE, S","); // Advance p
       if (may_advance_cpt_index(p))
          (void)advance_cpt_sources_index_safe();
    }
@@ -8762,7 +8762,7 @@ setCompletionCallbacks(OptionChange *cha) {
          p++; // Skip delimiters
 
       if (*p != ZERO) {
-         int slen = doCutPathFromListOfPaths(&p, buf, LSIZE, ","); // Advance p
+         int slen = doCutPathFromListOfPaths(OUT &p, OUT buf, LSIZE, S","); // Advance p
          if (slen > 0 && buf[0] == 'F' && buf[1] != ZERO) {
             CS caret = firstOccurrence(buf, '^');
             if (caret)
