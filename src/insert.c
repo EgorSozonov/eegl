@@ -2303,7 +2303,7 @@ ins_esc(long* count, int commChar, int nomove) {      // don't move cursor
    return TRUE;       // exit Insert mode
 }
 
-//If 'keymodel' contains "startsel", may start selection.
+//If @keymodel contains "startsel", may start selection.
 //Return TRUE when a CTRL-O and other keys stuffed.
 private int
 ins_start_select(int c) {

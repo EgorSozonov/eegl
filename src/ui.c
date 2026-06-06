@@ -35,27 +35,26 @@ int stat(const char* restrict path, struct stat* restrict buf);
 
 # define XT_TRACE_DELAY   50   // delay for xterm tracing
 
-//{{{libvterm
+//{{{vTerm (abstraction over a terminal)
 //{{{types
 
 typedef struct {
-  Unt row;
-  Unt col;
+   Short row;
+   Short col;
 } VTermPos;
 
 typedef struct {
-  // libvterm relies on this memory to be zeroed out before it is returned
-  // by the allocator
-  void *(*malloc)(Unt size, void *allocdata);
-  void  (*free)(void *ptr, void *allocdata);
+   //libvterm relies on this memory to be zeroed out before it is returned by the allocator
+   void *(*malloc)(Unt size, void* allocdata);
+   void (*free)(void* ptr, void* allocdata);
 } VTermAllocatorFunctions;
 
 // Specifies a rectangular screen area.
 typedef struct {
-   Unt start_row;
-   Unt end_row;
-   Unt start_col;
-   Unt end_col;
+   Short start_row;
+   Short end_row;
+   Short start_col;
+   Short end_col;
 } VTermRect;
 
 typedef struct {
@@ -151,21 +150,6 @@ typedef enum {
   VTERM_N_PROPS
 } VTermProp;
 
-typedef struct {
-    unsigned int bold      : 1;
-    unsigned int underline : 2;
-    unsigned int italic    : 1;
-    unsigned int blink     : 1;
-    unsigned int reverse   : 1;
-    unsigned int conceal   : 1;
-    unsigned int strike    : 1;
-    unsigned int font      : 4; /* 0 to 9 */
-    unsigned int dwl       : 1; /* On a DECDWL or DECDHL line */
-    unsigned int dhl       : 2; /* On a DECDHL line (1=top 2=bottom) */
-    unsigned int small     : 1;
-    unsigned int baseline  : 2;
-} VTermScreenCellAttrs;
-
 typedef enum {
   VTERM_ATTR_BOLD_MASK       = 1 << 0,
   VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
@@ -195,9 +179,8 @@ typedef union {
 #define VTERM_MAX_CHARS_PER_CELL 6
 
 typedef struct {
-  uint32_t chars[VTERM_MAX_CHARS_PER_CELL];
-  char     width;
-  VTermScreenCellAttrs attrs;
+  Unt chars[VTERM_MAX_CHARS_PER_CELL];
+  VTermDeco deco;
   VTermColor fg, bg;
 } VTermScreenCell;
 
@@ -211,7 +194,7 @@ typedef struct {
    int (*resize)(int rows, int cols, void *user);
    // A line was pushed off the top of the window.
    // "cells[cols]" contains the cells of that line. Return value is unused.
-   int (*sb_pushline)(int cols, const VTermScreenCell *cells, void *user);
+   int (*sb_pushline)(int cols, VTermScreenCell *cells, void *user);
    int (*sb_popline)(int cols, VTermScreenCell *cells, void *user);
    int (*sb_clear)(void* user);
 } VTermScreenCallbacks;
@@ -434,7 +417,7 @@ typedef struct {
    int (*text)(Byte *bytes, Unt len, void *user);
    int (*control)(Byte control, void *user);
    int (*escape)(Byte *bytes, Unt len, void *user);
-   int (*csi)(Byte* leader, const long args[], int argcount, CS intermed, Byte command, void *user);
+   int (*csi)(Byte* leader, long args[], int argcount, CS intermed, Byte command, void *user);
    int (*osc)(int command, VTermStringFragment frag, void *user);
    int (*dcs)(Byte* command, Unt commandlen, VTermStringFragment frag, void *user);
    int (*apc)(VTermStringFragment frag, void *user);
@@ -444,9 +427,9 @@ typedef struct {
 } VTermParserCallbacks;
 
 struct VTermLineInfo {
-  unsigned int    doublewidth:1;     /* DECDWL or DECDHL line */
-  unsigned int    doubleheight:2;    /* DECDHL line (1=top 2=bottom) */
-  unsigned int    continuation:1;    /* Line is a flow continuation of the previous */
+   Unt doublewidth:1;  //DECDWL or DECDHL line
+   Unt doubleheight:2; //DECDHL line (1=top 2=bottom)
+   Unt continuation:1; //Line is a flow continuation of the previous
 };
 
 typedef struct {
@@ -457,17 +440,16 @@ typedef struct {
    int (*erase)(VTermRect rect, int selective, void *user);
    int (*initpen)(void *user);
    int (*setpenattr)(VTermAttr attr, VTermValue *val, void *user);
-   // Callback for setting various properties.  Must return 1 if the property
-   // was accepted, 0 otherwise.
+   //Callback for setting various properties. Must return 1 if the property was accepted, or 0
    int (*settermprop)(VTermProp prop, VTermValue *val, void *user);
    int (*bell)(void *user);
    int (*resize)(int rows, int cols, VTermStateFields *fields, void *user);
-   int (*setlineinfo)(int row, const VTermLineInfo *newinfo, const VTermLineInfo *oldinfo, void *user);
+   int (*setlineinfo)(int row, VTermLineInfo *newinfo, VTermLineInfo *oldinfo, void *user);
    int (*sb_clear)(void *user);
 } VTermStateCallbacks;
 
 struct VTerm {
-   const VTermAllocatorFunctions *allocator;
+   VTermAllocatorFunctions *allocator;
    void *allocdata;
 
    int rows;
@@ -486,79 +468,79 @@ struct VTerm {
          VT_DCS,
          VT_APC,
          VT_PM,
-         VT_SOS,
-   } state;
+         VT_SOS
+      } state;
 
-   unsigned int in_esc : 1;
+      unsigned int in_esc : 1;
 
-   int intermedlen;
-   Byte intermed[INTERMED_MAX];
+      int intermedlen;
+      Byte intermed[INTERMED_MAX];
 
-   union {
-      struct {
-        int leaderlen;
-        Byte leader[CSI_LEADER_MAX];
+      union {
+         struct {
+         int leaderlen;
+         Byte leader[CSI_LEADER_MAX];
 
-        int argi;
-        long args[CSI_ARGS_MAX];
-      } csi;
-      struct {
-        int command;
-      } osc;
-      struct {
-        int commandlen;
-        Byte command[CSI_LEADER_MAX];
-      } dcs;
-    } v;
+         int argi;
+         long args[CSI_ARGS_MAX];
+         } csi;
+         struct {
+            int command;
+         } osc;
+         struct {
+            int commandlen;
+            Byte command[CSI_LEADER_MAX];
+         } dcs;
+      } v;
 
-    const VTermParserCallbacks *callbacks;
-    void *cbdata;
+      VTermParserCallbacks* callbacks;
+      void* cbdata;
 
-    int string_initial;
+      int string_initial;
 
-    int emit_nul;
-  } parser;
+      int emit_nul;
+   } parser;
 
-  // len == malloc()ed size; cur == number of valid bytes
-
-  VTermOutputCallback *outfunc;
-  void                *outdata;
-
-  char  *outbuffer;
-  Unt outbuffer_len;
-  Unt outbuffer_cur;
-
-  char  *tmpbuffer;
-  Unt tmpbuffer_len;
-
-  VTermState *state;
-  VTermScreen *screen;
-
-  int in_backspace;
+   // len == malloc()ed size; cur == number of valid bytes
+ 
+   VTermOutputCallback* outfunc;
+   void* outdata;
+ 
+   char* outbuffer;
+   Unt outbuffer_len;
+   Unt outbuffer_cur;
+ 
+   char* tmpbuffer;
+   Unt tmpbuffer_len;
+ 
+   VTermState* state;
+   VTermScreen* screen;
+ 
+   int in_backspace;
 };
 
 
 typedef struct {
-  int (*control)(unsigned char control, void *user);
-  int (*csi)(CS leader, const long args[], int argcount, CS intermed, Byte command, void *user);
-  int (*osc)(int command, VTermStringFragment frag, void *user);
-  int (*dcs)(CS command, Unt commandlen, VTermStringFragment frag, void *user);
-  int (*apc)(VTermStringFragment frag, void *user);
-  int (*pm)(VTermStringFragment frag, void *user);
-  int (*sos)(VTermStringFragment frag, void *user);
+   int (*control)(unsigned char control, void *user);
+   int (*csi)(CS leader, const long args[], int argcount, CS intermed, Byte command, void *user);
+   int (*osc)(int command, VTermStringFragment frag, void *user);
+   int (*dcs)(CS command, Unt commandlen, VTermStringFragment frag, void *user);
+   int (*apc)(VTermStringFragment frag, void *user);
+   int (*pm)(VTermStringFragment frag, void *user);
+   int (*sos)(VTermStringFragment frag, void *user);
 } VTermStateFallbacks;
 
 typedef enum {
-  VTERM_SELECTION_CLIPBOARD = (1<<0),
-  VTERM_SELECTION_PRIMARY   = (1<<1),
-  VTERM_SELECTION_SECONDARY = (1<<2),
-  VTERM_SELECTION_SELECT    = (1<<3),
-  VTERM_SELECTION_CUT0      = (1<<4), /* also CUT1 .. CUT7 by bitshifting */
+   VTERM_SELECTION_CLIPBOARD = (1<<0),
+   VTERM_SELECTION_PRIMARY   = (1<<1),
+   VTERM_SELECTION_SECONDARY = (1<<2),
+   VTERM_SELECTION_SELECT    = (1<<3),
+   VTERM_SELECTION_CUT0      = (1<<4), /* also CUT1 .. CUT7 by bitshifting */
 } VTermSelectionMask;
 
 typedef struct {
-  int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void *user);
-  int (*query)(VTermSelectionMask mask, void *user);
+   int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void *user);
+   int (*query)(VTermSelectionMask mask, void *user);
 } VTermSelectionCallbacks;
 
 struct VTermState {
@@ -820,8 +802,6 @@ private void vterm_state_free(VTermState *state);
 
 private void vterm_state_newpen(VTermState *state);
 private void vterm_state_resetpen(VTermState *state);
-private void vterm_state_setpen(VTermState *state, const long args[], int argcount);
-private int  vterm_state_getpen(VTermState *state, long args[], int argcount);
 private void vterm_state_savepen(VTermState *state, int save);
 
 //}}}
@@ -2272,11 +2252,11 @@ vterm_get_special_pty_type(void) {
 
 //Structure used to store RGB triples without the additional metadata stored in VTermColor.
 typedef struct {
-   uint8_t red, green, blue;
+   Byte red, green, blue;
 } VTermRGB;
 
-static const VTermRGB ansi_colors[] = {
-  /* R    G    B */
+private const VTermRGB ansiColorsS[] = {
+  // R    G    B
   {   0,   0,   0 }, // black
   { 224,   0,   0 }, // red
   {   0, 224,   0 }, // green
@@ -2297,128 +2277,132 @@ static const VTermRGB ansi_colors[] = {
   { 255, 255, 255 }, // white for real
 };
 
-static int ramp6[] = {
-  0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF,
+private int ramp6[] = {
+   0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF,
 };
 
 // Use 0x81 instead of 0x80 to be able to distinguish from ansi black
-static int ramp24[] = {
-  0x08, 0x12, 0x1C, 0x26, 0x30, 0x3A, 0x44, 0x4E, 0x58, 0x62, 0x6C, 0x76,
-  0x81, 0x8A, 0x94, 0x9E, 0xA8, 0xB2, 0xBC, 0xC6, 0xD0, 0xDA, 0xE4, 0xEE,
+private int ramp24[] = {
+   0x08, 0x12, 0x1C, 0x26, 0x30, 0x3A, 0x44, 0x4E, 0x58, 0x62, 0x6C, 0x76,
+   0x81, 0x8A, 0x94, 0x9E, 0xA8, 0xB2, 0xBC, 0xC6, 0xD0, 0xDA, 0xE4, 0xEE,
 };
 
 private void 
-vterm_color_rgb(VTermColor *col, uint8_t red, uint8_t green, uint8_t blue) {
-  col->type = VTERM_COLOR_RGB;
-  col->red   = red;
-  col->green = green;
-  col->blue  = blue;
+vterm_color_rgb(VTermColor* colr, Byte red, Byte green, Byte blue) {
+   colr->type = VTERM_COLOR_RGB;
+   colr->red   = red;
+   colr->green = green;
+   colr->blue  = blue;
 }
 
 //private void 
-//vterm_color_indexed(VTermColor *col, uint8_t idx) {
+//vterm_color_indexed(VTermColor *col, Byte idx) {
 //  col->type = VTERM_COLOR_INDEXED;
 //  col->index = idx;
 //}
 
 private int 
-vterm_color_is_equal(const VTermColor *a, const VTermColor *b) {
-  /* First make sure that the two colours are of the same type (RGB/Indexed) */
-  if (a->type != b->type) {
-    return FALSE;
-  }
-
-  /* Depending on the type inspect the corresponding members */
-  if (VTERM_COLOR_IS_INDEXED(a)) {
-    return a->index == b->index;
-  } ei (VTERM_COLOR_IS_RGB(a)) {
-    return    (a->red   == b->red)
-           && (a->green == b->green)
-           && (a->blue  == b->blue);
-  }
-
-  return 0;
+vterm_color_is_equal(VTermColor* a, VTermColor* b) {
+   // First make sure that the two colours are of the same type (RGB/Indexed)
+   if (a->type != b->type) {
+      return FALSE;
+   }
+ 
+   // Depending on the type inspect the corresponding members
+   if (VTERM_COLOR_IS_INDEXED(a)) {
+      return a->index == b->index;
+   } ei (VTERM_COLOR_IS_RGB(a)) {
+     return    (a->red   == b->red)
+            && (a->green == b->green)
+            && (a->blue  == b->blue);
+   }
+ 
+   return 0;
 }
 
-
-static void 
+private void 
 lookup_default_colour_ansi(long idx, VTermColor *col) {
-  //store both RGB color and index
-  vterm_color_rgb(
+   //store both RGB color and index
+   vterm_color_rgb(
       col,
-      ansi_colors[idx].red, ansi_colors[idx].green, ansi_colors[idx].blue);
-  col->index = (uint8_t)idx;
-  col->type = VTERM_COLOR_INDEXED;
+      ansiColorsS[idx].red, ansiColorsS[idx].green, ansiColorsS[idx].blue
+   );
+   col->index = (Byte)idx;
+   col->type = VTERM_COLOR_INDEXED;
 }
 
-static int 
+private int 
 lookup_colour_ansi(const VTermState *state, long index, VTermColor *col) {
-  if (index >= 0 && index < 16) {
-    *col = state->colors[index];
-    return TRUE;
-  }
-
-  return FALSE;
+   if (index >= 0 && index < 16) {
+      *col = state->colors[index];
+      return TRUE;
+   }
+ 
+   return FALSE;
 }
 
-static int 
-lookup_colour_palette(const VTermState *state, long index, VTermColor *col) {
-  if (index >= 0 && index < 16) {
-    // Normal 8 colours or high intensity - parse as palette 0
-    return lookup_colour_ansi(state, index, col);
-  }
-  ei(index >= 16 && index < 232) {
-    // 216-colour cube
-    index -= 16;
-
-    vterm_color_rgb(col, ramp6[index/6/6 % 6],
-                         ramp6[index/6   % 6],
-                         ramp6[index     % 6]);
-
-    return TRUE;
-  } ei(index >= 232 && index < 256) {
-    // 24 greyscales
-    index -= 232;
-
-    vterm_color_rgb(col, ramp24[index], ramp24[index], ramp24[index]);
-
-    return TRUE;
-  }
-
-  return FALSE;
+//Lookup in 256-color palette
+private int 
+lookupIn256Palette(VTermState* state, long index, VTermColor* col) {
+   if (index >= 0 && index < 16) {
+      // Normal 8 colours or high intensity - parse as palette 0
+      return lookup_colour_ansi(state, index, col);
+   } ei(index >= 16 && index < 232) {
+      // 216-colour cube
+      index -= 16;
+ 
+      vterm_color_rgb(col, ramp6[index/6/6 % 6],
+                           ramp6[index/6   % 6],
+                           ramp6[index     % 6]);
+ 
+      return TRUE;
+   } ei(index >= 232 && index < 256) {
+      // 24 greyscales
+      index -= 232;
+      vterm_color_rgb(col, ramp24[index], ramp24[index], ramp24[index]);
+      return TRUE;
+   }
+ 
+   return FALSE;
 }
 
-static int 
+private int 
 lookup_colour(
-      const VTermState *state, int palette, const long args[], int argcount, VTermColor *col
+      VTermState *state, int palette, long args[], int argcount, VTermColor *col
 ) {
    switch(palette) {
    case 2: // RGB mode - 3 args contain colour values directly
-    if (argcount < 3)
-      return argcount;
+      if (argcount < 3)
+          return argcount;
 
-    vterm_color_rgb(col, (uint8_t)CSI_ARG(args[0]), (uint8_t)CSI_ARG(args[1]), (uint8_t)CSI_ARG(args[2]));
+      vterm_color_rgb(col, (Byte)CSI_ARG(args[0]), (Byte)CSI_ARG(args[1]), (Byte)CSI_ARG(args[2]));
 
-    return 3;
+      return 3;
 
    case 5: // XTerm 256-colour mode
-    if (!argcount || CSI_ARG_IS_MISSING(args[0])) {
-      return argcount ? 1 : 0;
-    }
+      if (!argcount || CSI_ARG_IS_MISSING(args[0])) {
+         return argcount ? 1 : 0;
+      }
 
-    lookup_colour_palette(state, args[0], col);
-    return 1;
+      lookupIn256Palette(state, args[0], col);
+      return 1;
 
   default:
-    DEBUG_LOG1("Unrecognized colour palette %d\n", palette);
-    return 0;
+      DEBUG_LOG1("Unrecognized colour palette %d\n", palette);
+      return 0;
   }
 }
 
 // Some conveniences
 
 private void 
-penSetpenattr(VTermState *state, VTermAttr attr, VTermValueType type UNUSED, VTermValue *val) {
+penSetpenattr(
+      VTermState* state, VTermAttr attr, 
+#ifdef DEBUG 
+      VTermValueType type, 
+#endif
+      VTermValue* val
+) {
 #ifdef DEBUG
   if (type != vterm_get_attr_type(attr)) {
     DEBUG_LOG3("Cannot set attr %d as it has type %d, not type %d\n",
@@ -2426,38 +2410,55 @@ penSetpenattr(VTermState *state, VTermAttr attr, VTermValueType type UNUSED, VTe
     return;
   }
 #endif
-  if (state->callbacks && state->callbacks->setpenattr)
-    (*state->callbacks->setpenattr)(attr, val, state->cbdata);
+   if (state->callbacks && state->callbacks->setpenattr)
+      (*state->callbacks->setpenattr)(attr, val, state->cbdata);
 }
 
 private void 
 setpenattr_bool(VTermState *state, VTermAttr attr, int boolean) {
-  VTermValue val;
-  val.boolean = boolean;
-  penSetpenattr(state, attr, VTERM_VALUETYPE_BOOL, &val);
+   VTermValue val;
+   val.boolean = boolean;
+   penSetpenattr(
+         state, attr, 
+#ifdef DEBUG
+         VTERM_VALUETYPE_BOOL, 
+#endif 
+         &val
+   );
 }
 
 private void 
 setpenattr_int(VTermState *state, VTermAttr attr, int number) {
-  VTermValue val;
-  val.number = number;
-  penSetpenattr(state, attr, VTERM_VALUETYPE_INT, &val);
+   VTermValue val;
+   val.number = number;
+   penSetpenattr(
+         state, attr, 
+#ifdef DEBUG 
+         VTERM_VALUETYPE_INT, 
+#endif 
+         &val
+   );
 }
 
 private void 
-setpenattr_col(VTermState *state, VTermAttr attr, VTermColor color) {
-  VTermValue val;
-  val.color = color;
-  penSetpenattr(state, attr, VTERM_VALUETYPE_COLOR, &val);
+setpenattr_col(VTermState* state, VTermAttr attr, VTermColor color) {
+   VTermValue val;
+   val.color = color;
+   penSetpenattr(
+         state, attr, 
+#ifdef DEBUG 
+         VTERM_VALUETYPE_COLOR, 
+#endif 
+         &val
+   );
 }
 
+//Set color by ANSI code
 private void 
-set_pen_col_ansi(VTermState *state, VTermAttr attr, long col) {
-  VTermColor *colp = (attr == VTERM_ATTR_BACKGROUND) ? &state->pen.bg : &state->pen.fg;
-
-  lookup_colour_ansi(state, col, colp);
-
-  setpenattr_col(state, attr, *colp);
+set_pen_col_ansi(VTermState* state, VTermAttr attr, long col) {
+   VTermColor *colp = (attr == VTERM_ATTR_BACKGROUND) ? &state->pen.bg : &state->pen.fg;
+   lookup_colour_ansi(state, col, colp);
+   setpenattr_col(state, attr, *colp);
 }
 
 private void 
@@ -2479,291 +2480,296 @@ vterm_state_set_default_colors(
 
 private void 
 vterm_state_newpen(VTermState *state) {
-  // 90% grey so that pure white is brighter
-  vterm_color_rgb(&state->default_fg, 240, 240, 240);
-  vterm_color_rgb(&state->default_bg, 0, 0, 0);
-  vterm_state_set_default_colors(state, &state->default_fg, &state->default_bg);
-
-  for(int col = 0; col < 16; col++)
-    lookup_default_colour_ansi(col, &state->colors[col]);
+   // 90% grey so that pure white is brighter
+   vterm_color_rgb(&state->default_fg, 240, 240, 240);
+   vterm_color_rgb(&state->default_bg, 0, 0, 0);
+   vterm_state_set_default_colors(state, &state->default_fg, &state->default_bg);
+ 
+   for(int col = 0; col < 16; col++)
+      lookup_default_colour_ansi(col, &state->colors[col]);
 }
 
 private void 
 vterm_state_resetpen(VTermState *state) {
-  state->pen.bold = 0;      setpenattr_bool(state, VTERM_ATTR_BOLD, 0);
-  state->pen.underline = 0; setpenattr_int (state, VTERM_ATTR_UNDERLINE, 0);
-  state->pen.italic = 0;    setpenattr_bool(state, VTERM_ATTR_ITALIC, 0);
-  state->pen.blink = 0;     setpenattr_bool(state, VTERM_ATTR_BLINK, 0);
-  state->pen.reverse = 0;   setpenattr_bool(state, VTERM_ATTR_REVERSE, 0);
-  state->pen.conceal = 0;   setpenattr_bool(state, VTERM_ATTR_CONCEAL, 0);
-  state->pen.strike = 0;    setpenattr_bool(state, VTERM_ATTR_STRIKE, 0);
-  state->pen.font = 0;      setpenattr_int (state, VTERM_ATTR_FONT, 0);
-  state->pen.small = 0;     setpenattr_bool(state, VTERM_ATTR_SMALL, 0);
-  state->pen.baseline = 0;  setpenattr_int (state, VTERM_ATTR_BASELINE, 0);
-
-  state->pen.fg = state->default_fg;  setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->default_fg);
-  state->pen.bg = state->default_bg;  setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->default_bg);
+   state->pen.bold = 0;      setpenattr_bool(state, VTERM_ATTR_BOLD, 0);
+   state->pen.underline = 0; setpenattr_int (state, VTERM_ATTR_UNDERLINE, 0);
+   state->pen.italic = 0;    setpenattr_bool(state, VTERM_ATTR_ITALIC, 0);
+   state->pen.blink = 0;     setpenattr_bool(state, VTERM_ATTR_BLINK, 0);
+   state->pen.reverse = 0;   setpenattr_bool(state, VTERM_ATTR_REVERSE, 0);
+   state->pen.conceal = 0;   setpenattr_bool(state, VTERM_ATTR_CONCEAL, 0);
+   state->pen.strike = 0;    setpenattr_bool(state, VTERM_ATTR_STRIKE, 0);
+   state->pen.font = 0;      setpenattr_int (state, VTERM_ATTR_FONT, 0);
+   state->pen.small = 0;     setpenattr_bool(state, VTERM_ATTR_SMALL, 0);
+   state->pen.baseline = 0;  setpenattr_int (state, VTERM_ATTR_BASELINE, 0);
+ 
+   state->pen.fg = state->default_fg;  
+   setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->default_fg);
+   state->pen.bg = state->default_bg;  
+   setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->default_bg);
 }
 
 private void 
 vterm_state_savepen(VTermState *state, int save) {
-  if (save) {
-    state->saved.pen = state->pen;
-  } else {
-    state->pen = state->saved.pen;
-
-    setpenattr_bool(state, VTERM_ATTR_BOLD,      state->pen.bold);
-    setpenattr_int (state, VTERM_ATTR_UNDERLINE, state->pen.underline);
-    setpenattr_bool(state, VTERM_ATTR_ITALIC,    state->pen.italic);
-    setpenattr_bool(state, VTERM_ATTR_BLINK,     state->pen.blink);
-    setpenattr_bool(state, VTERM_ATTR_REVERSE,   state->pen.reverse);
-    setpenattr_bool(state, VTERM_ATTR_CONCEAL,   state->pen.conceal);
-    setpenattr_bool(state, VTERM_ATTR_STRIKE,    state->pen.strike);
-    setpenattr_int (state, VTERM_ATTR_FONT,      state->pen.font);
-    setpenattr_bool(state, VTERM_ATTR_SMALL,     state->pen.small);
-    setpenattr_int (state, VTERM_ATTR_BASELINE,  state->pen.baseline);
-
-    setpenattr_col( state, VTERM_ATTR_FOREGROUND, state->pen.fg);
-    setpenattr_col( state, VTERM_ATTR_BACKGROUND, state->pen.bg);
-  }
+   if (save) {
+      state->saved.pen = state->pen;
+   } else {
+      state->pen = state->saved.pen;
+  
+      setpenattr_bool(state, VTERM_ATTR_BOLD,      state->pen.bold);
+      setpenattr_int (state, VTERM_ATTR_UNDERLINE, state->pen.underline);
+      setpenattr_bool(state, VTERM_ATTR_ITALIC,    state->pen.italic);
+      setpenattr_bool(state, VTERM_ATTR_BLINK,     state->pen.blink);
+      setpenattr_bool(state, VTERM_ATTR_REVERSE,   state->pen.reverse);
+      setpenattr_bool(state, VTERM_ATTR_CONCEAL,   state->pen.conceal);
+      setpenattr_bool(state, VTERM_ATTR_STRIKE,    state->pen.strike);
+      setpenattr_int (state, VTERM_ATTR_FONT,      state->pen.font);
+      setpenattr_bool(state, VTERM_ATTR_SMALL,     state->pen.small);
+      setpenattr_int (state, VTERM_ATTR_BASELINE,  state->pen.baseline);
+  
+      setpenattr_col( state, VTERM_ATTR_FOREGROUND, state->pen.fg);
+      setpenattr_col( state, VTERM_ATTR_BACKGROUND, state->pen.bg);
+   }
 }
 
 private void 
-vterm_state_get_default_colors(
-      const VTermState *state, VTermColor *default_fg, VTermColor *default_bg
-) {
-  *default_fg = state->default_fg;
-  *default_bg = state->default_bg;
+vterm_state_get_default_colors( VTermState* state, VTermColor* default_fg, VTermColor* default_bg) {
+   *default_fg = state->default_fg;
+   *default_bg = state->default_bg;
 }
 
 private void 
-vterm_state_get_palette_color(const VTermState *state, int index, VTermColor *col) {
-  lookup_colour_palette(state, index, col);
+vterm_state_get_palette_color(VTermState* state, int index, VTermColor* col) {
+   lookupIn256Palette(state, index, col);
 }
 
 private void 
 vterm_state_set_palette_color(VTermState *state, int index, const VTermColor *col) {
-  if (index >= 0 && index < 16)
-    state->colors[index] = *col;
+   if (index >= 0 && index < 16)
+      state->colors[index] = *col;
 }
 
 //private void 
 //vterm_state_convert_color_to_rgb(const VTermState *state, VTermColor *col) {
 //  if (VTERM_COLOR_IS_INDEXED(col)) { /* Convert indexed colors to RGB */
-//    lookup_colour_palette(state, col->index, col);
+//    lookupIn256Palette(state, col->index, col);
 //  }
 //  col->type &= VTERM_COLOR_TYPE_MASK; /* Reset any metadata but the type */
 //}
 
+//Main function to apply decorations. SGR - ECMA-48 8.3.117
 private void 
-vterm_state_setpen(VTermState *state, const long args[], int argcount) {
-  // SGR - ECMA-48 8.3.117
+vterm_state_setpen(VTermState* state, long args[], int argcount) {
+   int argi = 0;
+   int value;
 
-  int argi = 0;
-  int value;
-
-  while(argi < argcount) {
-    // This logic is easier to do 'done' backwards; set it true, and make it
-    // false again in the 'default' case
-    int done = 1;
-
-    long arg;
-    switch(arg = CSI_ARG(args[argi])) {
-    case CSI_ARG_MISSING:
-    case 0: // Reset
-      vterm_state_resetpen(state);
-      break;
-
-   case 1: { // Bold on
-      const VTermColor *fg = &state->pen.fg;
-      state->pen.bold = 1;
-      setpenattr_bool(state, VTERM_ATTR_BOLD, 1);
-      if (!VTERM_COLOR_IS_DEFAULT_FG(fg) && VTERM_COLOR_IS_INDEXED(fg) && fg->index < 8 && state->bold_is_highbright)
-        set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, fg->index + (state->pen.bold ? 8 : 0));
-      break;
-   }
-
-   case 3: // Italic on
-      state->pen.italic = 1;
-      setpenattr_bool(state, VTERM_ATTR_ITALIC, 1);
-      break;
-
-   case 4: // Underline
-      state->pen.underline = VTERM_UNDERLINE_SINGLE;
-      if (CSI_ARG_HAS_MORE(args[argi])) {
-        argi++;
-        switch(CSI_ARG(args[argi])) {
-          case 0:
-            state->pen.underline = 0;
-            break;
-          case 1:
-            state->pen.underline = VTERM_UNDERLINE_SINGLE;
-            break;
-          case 2:
-            state->pen.underline = VTERM_UNDERLINE_DOUBLE;
-            break;
-          case 3:
-            state->pen.underline = VTERM_UNDERLINE_CURLY;
-            break;
-        }
+   while (argi < argcount) {
+      //This logic is easier to do 'done' backwards; set it true, and make it
+      //false again in the 'default' case
+      int done = 1;
+ 
+      long arg;
+      switch(arg = CSI_ARG(args[argi])) {
+      case CSI_ARG_MISSING:
+      case 0: //Reset
+         vterm_state_resetpen(state);
+         break;
+ 
+      case 1: { //Bold on
+         const VTermColor *fg = &state->pen.fg;
+         state->pen.bold = 1;
+         setpenattr_bool(state, VTERM_ATTR_BOLD, 1);
+         if (!VTERM_COLOR_IS_DEFAULT_FG(fg) 
+                && VTERM_COLOR_IS_INDEXED(fg) && fg->index < 8 && state->bold_is_highbright
+         )
+            set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, fg->index + (state->pen.bold ? 8 : 0));
+         break;
       }
-      setpenattr_int(state, VTERM_ATTR_UNDERLINE, state->pen.underline);
-      break;
+ 
+      case 3: //Italic on
+         state->pen.italic = 1;
+         setpenattr_bool(state, VTERM_ATTR_ITALIC, 1);
+         break;
+ 
+      case 4: //Underline
+         state->pen.underline = VTERM_UNDERLINE_SINGLE;
+         if (CSI_ARG_HAS_MORE(args[argi])) {
+            argi++;
+            switch(CSI_ARG(args[argi])) {
+            case 0:
+               state->pen.underline = 0;
+               break;
+            case 1:
+               state->pen.underline = VTERM_UNDERLINE_SINGLE;
+               break;
+            case 2:
+               state->pen.underline = VTERM_UNDERLINE_DOUBLE;
+               break;
+            case 3:
+               state->pen.underline = VTERM_UNDERLINE_CURLY;
+               break;
+            }
+         }
+         setpenattr_int(state, VTERM_ATTR_UNDERLINE, state->pen.underline);
+         break;
+ 
+      case 5: //Blink
+         state->pen.blink = 1;
+         setpenattr_bool(state, VTERM_ATTR_BLINK, 1);
+         break;
+ 
+      case 7: //Reverse on
+         state->pen.reverse = 1;
+         setpenattr_bool(state, VTERM_ATTR_REVERSE, 1);
+         break;
+ 
+      case 8: //Conceal on
+         state->pen.conceal = 1;
+         setpenattr_bool(state, VTERM_ATTR_CONCEAL, 1);
+         break;
+ 
+      case 9: //Strikethrough on
+         state->pen.strike = 1;
+         setpenattr_bool(state, VTERM_ATTR_STRIKE, 1);
+         break;
+ 
+      case 10: case 11: case 12: case 13: case 14:
+      case 15: case 16: case 17: case 18: case 19: //Select font
+         state->pen.font = CSI_ARG(args[argi]) - 10;
+         setpenattr_int(state, VTERM_ATTR_FONT, state->pen.font);
+         break;
+ 
+      case 21: //Underline double
+         state->pen.underline = VTERM_UNDERLINE_DOUBLE;
+         setpenattr_int(state, VTERM_ATTR_UNDERLINE, state->pen.underline);
+         break;
+ 
+      case 22: //Bold off
+         state->pen.bold = 0;
+         setpenattr_bool(state, VTERM_ATTR_BOLD, 0);
+         break;
+ 
+      case 23: //Italic and Gothic (currently unsupported) off
+         state->pen.italic = 0;
+         setpenattr_bool(state, VTERM_ATTR_ITALIC, 0);
+         break;
+ 
+      case 24: // Underline off
+         state->pen.underline = 0;
+         setpenattr_int(state, VTERM_ATTR_UNDERLINE, 0);
+         break;
+ 
+      case 25: // Blink off
+         state->pen.blink = 0;
+         setpenattr_bool(state, VTERM_ATTR_BLINK, 0);
+         break;
+ 
+      case 27: // Reverse off
+         state->pen.reverse = 0;
+         setpenattr_bool(state, VTERM_ATTR_REVERSE, 0);
+         break;
+ 
+      case 28: // Conceal off (Reveal)
+         state->pen.conceal = 0;
+         setpenattr_bool(state, VTERM_ATTR_CONCEAL, 0);
+         break;
+ 
+      case 29: // Strikethrough off
+         state->pen.strike = 0;
+         setpenattr_bool(state, VTERM_ATTR_STRIKE, 0);
+         break;
+  
+      case 30: case 31: case 32: case 33:
+      case 34: case 35: case 36: case 37: // Foreground color ANSI palette
+         value = CSI_ARG(args[argi]) - 30;
+         if (state->pen.bold && state->bold_is_highbright)
+            value += 8;
+         set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
+         break;
+ 
+      case 38: // Foreground color alternative palette
+         if (argcount - argi < 1)
+            return;
+         argi += 1 + lookup_colour(
+               state, CSI_ARG(args[argi + 1]), args + argi + 2, argcount - argi - 2, &state->pen.fg
+         );
+         setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->pen.fg);
+         break;
+ 
+      case 39: // Foreground colour default
+         state->pen.fg = state->default_fg;
+         setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->pen.fg);
+         break;
+ 
+      case 40: case 41: case 42: case 43:
+      case 44: case 45: case 46: case 47: // Background color ANSI palette
+         value = CSI_ARG(args[argi]) - 40;
+         set_pen_col_ansi(state, VTERM_ATTR_BACKGROUND, value);
+         break;
+ 
+      case 48: // Background color alternative palette
+         if (argcount - argi < 1)
+            return;
+         argi += 1 + lookup_colour(
+               state, CSI_ARG(args[argi + 1]), args + argi + 2, argcount - argi - 2, &state->pen.bg
+         );
+         setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->pen.bg);
+         break;
+ 
+      case 49: // Default background
+         state->pen.bg = state->default_bg;
+         setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->pen.bg);
+         break;
+ 
+      case 73: // Superscript
+      case 74: // Subscript
+      case 75: // Superscript/subscript off
+         state->pen.small = (arg != 75);
+         state->pen.baseline =
+           (arg == 73) ? VTERM_BASELINE_RAISE :
+           (arg == 74) ? VTERM_BASELINE_LOWER :
+                         VTERM_BASELINE_NORMAL;
+         setpenattr_bool(state, VTERM_ATTR_SMALL,    state->pen.small);
+         setpenattr_int (state, VTERM_ATTR_BASELINE, state->pen.baseline);
+         break;
+ 
+      case 90: case 91: case 92: case 93:
+      case 94: case 95: case 96: case 97: // Foreground color high-intensity ANSI palette
+         value = CSI_ARG(args[argi]) - 90 + 8;
+         set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
+         break;
+ 
+      case 100: case 101: case 102: case 103:
+      case 104: case 105: case 106: case 107: // Background color high-intensity ANSI palette
+         value = CSI_ARG(args[argi]) - 100 + 8;
+         set_pen_col_ansi(state, VTERM_ATTR_BACKGROUND, value);
+         break;
+ 
+      default:
+         done = 0;
+         break;
+      }
 
-    case 5: // Blink
-      state->pen.blink = 1;
-      setpenattr_bool(state, VTERM_ATTR_BLINK, 1);
-      break;
+       if (!done) {
+          DEBUG_LOG1("libvterm: Unhandled CSI SGR %ld\n", arg);
+       }
 
-    case 7: // Reverse on
-      state->pen.reverse = 1;
-      setpenattr_bool(state, VTERM_ATTR_REVERSE, 1);
-      break;
-
-    case 8: // Conceal on
-      state->pen.conceal = 1;
-      setpenattr_bool(state, VTERM_ATTR_CONCEAL, 1);
-      break;
-
-    case 9: // Strikethrough on
-      state->pen.strike = 1;
-      setpenattr_bool(state, VTERM_ATTR_STRIKE, 1);
-      break;
-
-    case 10: case 11: case 12: case 13: case 14:
-    case 15: case 16: case 17: case 18: case 19: // Select font
-      state->pen.font = CSI_ARG(args[argi]) - 10;
-      setpenattr_int(state, VTERM_ATTR_FONT, state->pen.font);
-      break;
-
-    case 21: // Underline double
-      state->pen.underline = VTERM_UNDERLINE_DOUBLE;
-      setpenattr_int(state, VTERM_ATTR_UNDERLINE, state->pen.underline);
-      break;
-
-    case 22: // Bold off
-      state->pen.bold = 0;
-      setpenattr_bool(state, VTERM_ATTR_BOLD, 0);
-      break;
-
-    case 23: // Italic and Gothic (currently unsupported) off
-      state->pen.italic = 0;
-      setpenattr_bool(state, VTERM_ATTR_ITALIC, 0);
-      break;
-
-    case 24: // Underline off
-      state->pen.underline = 0;
-      setpenattr_int(state, VTERM_ATTR_UNDERLINE, 0);
-      break;
-
-    case 25: // Blink off
-      state->pen.blink = 0;
-      setpenattr_bool(state, VTERM_ATTR_BLINK, 0);
-      break;
-
-    case 27: // Reverse off
-      state->pen.reverse = 0;
-      setpenattr_bool(state, VTERM_ATTR_REVERSE, 0);
-      break;
-
-    case 28: // Conceal off (Reveal)
-      state->pen.conceal = 0;
-      setpenattr_bool(state, VTERM_ATTR_CONCEAL, 0);
-      break;
-
-    case 29: // Strikethrough off
-      state->pen.strike = 0;
-      setpenattr_bool(state, VTERM_ATTR_STRIKE, 0);
-      break;
-
-    case 30: case 31: case 32: case 33:
-    case 34: case 35: case 36: case 37: // Foreground colour palette
-      value = CSI_ARG(args[argi]) - 30;
-      if (state->pen.bold && state->bold_is_highbright)
-        value += 8;
-      set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
-      break;
-
-    case 38: // Foreground colour alternative palette
-      if (argcount - argi < 1)
-        return;
-      argi += 1 + lookup_colour(state, CSI_ARG(args[argi+1]), args+argi+2, argcount-argi-2, &state->pen.fg);
-      setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->pen.fg);
-      break;
-
-    case 39: // Foreground colour default
-      state->pen.fg = state->default_fg;
-      setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->pen.fg);
-      break;
-
-    case 40: case 41: case 42: case 43:
-    case 44: case 45: case 46: case 47: // Background colour palette
-      value = CSI_ARG(args[argi]) - 40;
-      set_pen_col_ansi(state, VTERM_ATTR_BACKGROUND, value);
-      break;
-
-    case 48: // Background colour alternative palette
-      if (argcount - argi < 1)
-        return;
-      argi += 1 + lookup_colour(state, CSI_ARG(args[argi+1]), args+argi+2, argcount-argi-2, &state->pen.bg);
-      setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->pen.bg);
-      break;
-
-    case 49: // Default background
-      state->pen.bg = state->default_bg;
-      setpenattr_col(state, VTERM_ATTR_BACKGROUND, state->pen.bg);
-      break;
-
-    case 73: // Superscript
-    case 74: // Subscript
-    case 75: // Superscript/subscript off
-      state->pen.small = (arg != 75);
-      state->pen.baseline =
-        (arg == 73) ? VTERM_BASELINE_RAISE :
-        (arg == 74) ? VTERM_BASELINE_LOWER :
-                      VTERM_BASELINE_NORMAL;
-      setpenattr_bool(state, VTERM_ATTR_SMALL,    state->pen.small);
-      setpenattr_int (state, VTERM_ATTR_BASELINE, state->pen.baseline);
-      break;
-
-    case 90: case 91: case 92: case 93:
-    case 94: case 95: case 96: case 97: // Foreground colour high-intensity palette
-      value = CSI_ARG(args[argi]) - 90 + 8;
-      set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
-      break;
-
-    case 100: case 101: case 102: case 103:
-    case 104: case 105: case 106: case 107: // Background colour high-intensity palette
-      value = CSI_ARG(args[argi]) - 100 + 8;
-      set_pen_col_ansi(state, VTERM_ATTR_BACKGROUND, value);
-      break;
-
-    default:
-      done = 0;
-      break;
-    }
-
-    if (!done)
-    {
-      DEBUG_LOG1("libvterm: Unhandled CSI SGR %ld\n", arg);
-    }
-
-    while(CSI_ARG_HAS_MORE(args[argi++]))
-      ;
-  }
+       while(CSI_ARG_HAS_MORE(args[argi++]))
+          {}
+   }
 }
 
-static int 
+//Forming termcode to change color
+private int 
 vterm_state_getpen_color(const VTermColor *col, int argi, long args[], int fg) {
-    /* Do nothing if the given color is the default color */
+    // Do nothing if the given color is the default color
     if (( fg && VTERM_COLOR_IS_DEFAULT_FG(col)) ||
         (!fg && VTERM_COLOR_IS_DEFAULT_BG(col))) {
         return argi;
     }
 
-    /* Decide whether to send an indexed color or an RGB color */
+    // Decide whether to send an indexed color or an RGB color
     if (VTERM_COLOR_IS_INDEXED(col)) {
-        const uint8_t idx = col->index;
+        const Byte idx = col->index;
         if (idx < 8) {
             args[argi++] = (idx + (fg ? 30 : 40));
         } ei (idx < 16) {
@@ -2784,50 +2790,50 @@ vterm_state_getpen_color(const VTermColor *col, int argi, long args[], int fg) {
 }
 
 private int 
-vterm_state_getpen(VTermState *state, long args[], int argcount UNUSED) {
-  int argi = 0;
-
-  if (state->pen.bold)
-    args[argi++] = 1;
-
-  if (state->pen.italic)
-    args[argi++] = 3;
-
-  if (state->pen.underline == VTERM_UNDERLINE_SINGLE)
-    args[argi++] = 4;
-  if (state->pen.underline == VTERM_UNDERLINE_CURLY)
-    args[argi++] = 4 | CSI_ARG_FLAG_MORE, args[argi++] = 3;
-
-  if (state->pen.blink)
-    args[argi++] = 5;
-
-  if (state->pen.reverse)
-    args[argi++] = 7;
-
-  if (state->pen.conceal)
-    args[argi++] = 8;
-
-  if (state->pen.strike)
-    args[argi++] = 9;
-
-  if (state->pen.font)
-    args[argi++] = 10 + state->pen.font;
-
-  if (state->pen.underline == VTERM_UNDERLINE_DOUBLE)
-    args[argi++] = 21;
-
-  argi = vterm_state_getpen_color(&state->pen.fg, argi, args, TRUE);
-
-  argi = vterm_state_getpen_color(&state->pen.bg, argi, args, FALSE);
-
-  if (state->pen.small) {
-    if (state->pen.baseline == VTERM_BASELINE_RAISE)
-      args[argi++] = 73;
-    ei(state->pen.baseline == VTERM_BASELINE_LOWER)
-      args[argi++] = 74;
-  }
-
-  return argi;
+vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED) {
+   int argi = 0;
+ 
+   if (state->pen.bold)
+      args[argi++] = 1;
+ 
+   if (state->pen.italic)
+      args[argi++] = 3;
+ 
+   if (state->pen.underline == VTERM_UNDERLINE_SINGLE)
+      args[argi++] = 4;
+   if (state->pen.underline == VTERM_UNDERLINE_CURLY)
+      args[argi++] = 4 | CSI_ARG_FLAG_MORE, args[argi++] = 3;
+ 
+   if (state->pen.blink)
+     args[argi++] = 5;
+ 
+   if (state->pen.reverse)
+     args[argi++] = 7;
+ 
+   if (state->pen.conceal)
+     args[argi++] = 8;
+ 
+   if (state->pen.strike)
+     args[argi++] = 9;
+ 
+   if (state->pen.font)
+     args[argi++] = 10 + state->pen.font;
+ 
+   if (state->pen.underline == VTERM_UNDERLINE_DOUBLE)
+     args[argi++] = 21;
+ 
+   argi = vterm_state_getpen_color(&state->pen.fg, argi, args, TRUE);
+ 
+   argi = vterm_state_getpen_color(&state->pen.bg, argi, args, FALSE);
+ 
+   if (state->pen.small) {
+     if (state->pen.baseline == VTERM_BASELINE_RAISE)
+       args[argi++] = 73;
+     ei(state->pen.baseline == VTERM_BASELINE_LOWER)
+       args[argi++] = 74;
+   }
+ 
+   return argi;
 }
 
 //private int 
@@ -3003,13 +3009,13 @@ struct VTermScreen {
   unsigned int global_reverse : 1;
   unsigned int reflow : 1;
 
-  /* Primary and Altscreen. buffers[1] is lazily allocated as needed */
+  // Primary and Altscreen. buffers[1] is lazily allocated as needed
   ScreenCell *buffers[2];
 
-  /* buffer will == buffers[0] or buffers[1], depending on altscreen */
+  // buffer will == buffers[0] or buffers[1], depending on altscreen
   ScreenCell *buffer;
 
-  /* buffer for a single screen row used in scrollback storage callbacks */
+  // buffer for a single screen row used in scrollback storage callbacks
   VTermScreenCell *sb_buffer;
 
   ScreenPen pen;
@@ -3346,51 +3352,51 @@ movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user) {
 
 private int 
 setpenattr(VTermAttr attr, VTermValue *val, void *user) {
-  VTermScreen *screen = user;
+   VTermScreen *screen = user;
 
    switch(attr) {
    case VTERM_ATTR_BOLD:
-    screen->pen.bold = val->boolean;
-    return 1;
+      screen->pen.bold = val->boolean;
+      return 1;
    case VTERM_ATTR_UNDERLINE:
-    screen->pen.underline = val->number;
-    return 1;
+      screen->pen.underline = val->number;
+      return 1;
    case VTERM_ATTR_ITALIC:
-    screen->pen.italic = val->boolean;
-    return 1;
+      screen->pen.italic = val->boolean;
+      return 1;
    case VTERM_ATTR_BLINK:
-    screen->pen.blink = val->boolean;
-    return 1;
+      screen->pen.blink = val->boolean;
+      return 1;
    case VTERM_ATTR_REVERSE:
-    screen->pen.reverse = val->boolean;
-    return 1;
+      screen->pen.reverse = val->boolean;
+      return 1;
    case VTERM_ATTR_CONCEAL:
-    screen->pen.conceal = val->boolean;
-    return 1;
+      screen->pen.conceal = val->boolean;
+      return 1;
    case VTERM_ATTR_STRIKE:
-    screen->pen.strike = val->boolean;
-    return 1;
+      screen->pen.strike = val->boolean;
+      return 1;
    case VTERM_ATTR_FONT:
-    screen->pen.font = val->number;
-    return 1;
+      screen->pen.font = val->number;
+      return 1;
    case VTERM_ATTR_FOREGROUND:
-    screen->pen.fg = val->color;
-    return 1;
+      screen->pen.fg = val->color;
+      return 1;
    case VTERM_ATTR_BACKGROUND:
-    screen->pen.bg = val->color;
-    return 1;
+      screen->pen.bg = val->color;
+      return 1;
    case VTERM_ATTR_SMALL:
-    screen->pen.small = val->boolean;
-    return 1;
+      screen->pen.small = val->boolean;
+      return 1;
    case VTERM_ATTR_BASELINE:
-    screen->pen.baseline = val->number;
-    return 1;
+      screen->pen.baseline = val->number;
+      return 1;
 
    case VTERM_N_ATTRS:
-    return 0;
-  }
-
-  return 0;
+      return 0;
+   }
+ 
+   return 0;
 }
 
 static int 
@@ -3637,31 +3643,31 @@ resize_buffer(
              pos.col < (Unt)old_cols && pos.col < (Unt)new_cols; 
              pos.col += screen->sb_buffer[pos.col].width
          ) {
-           VTermScreenCell *src = &screen->sb_buffer[pos.col];
-           ScreenCell *dst = &new_buffer[pos.row * new_cols + pos.col];
+            VTermScreenCell *src = &screen->sb_buffer[pos.col];
+            ScreenCell *dst = &new_buffer[pos.row * new_cols + pos.col];
 
-           for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL; i++) {
-             dst->chars[i] = src->chars[i];
-             if (!src->chars[i])
-               break;
-           }
+            for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL; i++) {
+               dst->chars[i] = src->chars[i];
+               if (!src->chars[i])
+                  break;
+            }
 
-           dst->pen.bold      = src->attrs.bold;
-           dst->pen.underline = src->attrs.underline;
-           dst->pen.italic    = src->attrs.italic;
-           dst->pen.blink     = src->attrs.blink;
-           dst->pen.reverse   = src->attrs.reverse ^ screen->global_reverse;
-           dst->pen.conceal   = src->attrs.conceal;
-           dst->pen.strike    = src->attrs.strike;
-           dst->pen.font      = src->attrs.font;
-           dst->pen.small     = src->attrs.small;
-           dst->pen.baseline  = src->attrs.baseline;
+            dst->pen.bold      = src->deco.bold;
+            dst->pen.underline = src->deco.underline;
+            dst->pen.italic    = src->deco.italic;
+            dst->pen.blink     = src->deco.blink;
+            dst->pen.reverse   = src->deco.reverse ^ screen->global_reverse;
+            dst->pen.conceal   = src->deco.conceal;
+            dst->pen.strike    = src->deco.strike;
+            dst->pen.font      = src->deco.font;
+            dst->pen.small     = src->deco.small;
+            dst->pen.baseline  = src->deco.baseline;
 
-           dst->pen.fg = src->fg;
-           dst->pen.bg = src->bg;
+            dst->pen.fg = src->fg;
+            dst->pen.bg = src->bg;
 
-           if (src->width == 2 && new_cols > 1 && pos.col < (Unt)(new_cols - 1))
-              (dst + 1)->chars[0] = UNT;
+            if (src->width == 2 && new_cols > 1 && pos.col < (Unt)(new_cols - 1))
+               (dst + 1)->chars[0] = UNT;
          }
          for( ; (int)pos.col < new_cols; pos.col++)
             clearcell(screen, &new_buffer[pos.row * new_cols + pos.col]);
@@ -3824,45 +3830,45 @@ static VTermStateCallbacks state_cbs = {
 //Allocate a new screen and return it. Return NULL when out of memory.
 static VTermScreen *
 screen_new(VTerm *vt) {
-  VTermState *state = vterm_obtain_state(vt);
-  if (!state)
-    return NULL;
-
-   VTermScreen *screen = vterm_allocator_malloc(vt, sizeof(VTermScreen));
-   if (screen == NULL)
+   VTermState *state = vterm_obtain_state(vt);
+   if (!state)
      return NULL;
-   Unt rows, cols;
-   vterm_get_size(vt, OUT &rows, OUT &cols);
-
-   screen->vt = vt;
-   screen->state = state;
-
-   screen->damage_merge = VTERM_DAMAGE_CELL;
-   screen->damaged.start_row = -1;
-   screen->pending_scrollrect.start_row = -1;
-
-  screen->rows = rows;
-  screen->cols = cols;
-
-  screen->global_reverse = FALSE;
-  screen->reflow = FALSE;
-
-  screen->callbacks = NULL;
-  screen->cbdata    = NULL;
-
-  screen->buffers[BUFIDX_PRIMARY] = alloc_buffer(screen, rows, cols);
-
-  screen->buffer = screen->buffers[BUFIDX_PRIMARY];
-
-  screen->sb_buffer = vterm_allocator_malloc(screen->vt, sizeof(VTermScreenCell) * cols);
-  if (screen->buffer == NULL || screen->sb_buffer == NULL) {
-    vterm_screen_free(screen);
-    return NULL;
-  }
-
-  vterm_state_set_callbacks(screen->state, &state_cbs, screen);
-
-  return screen;
+ 
+    VTermScreen *screen = vterm_allocator_malloc(vt, sizeof(VTermScreen));
+    if (screen == NULL)
+      return NULL;
+    Unt rows, cols;
+    vterm_get_size(vt, OUT &rows, OUT &cols);
+ 
+    screen->vt = vt;
+    screen->state = state;
+ 
+    screen->damage_merge = VTERM_DAMAGE_CELL;
+    screen->damaged.start_row = -1;
+    screen->pending_scrollrect.start_row = -1;
+ 
+   screen->rows = rows;
+   screen->cols = cols;
+ 
+   screen->global_reverse = FALSE;
+   screen->reflow = FALSE;
+ 
+   screen->callbacks = NULL;
+   screen->cbdata    = NULL;
+ 
+   screen->buffers[BUFIDX_PRIMARY] = alloc_buffer(screen, rows, cols);
+ 
+   screen->buffer = screen->buffers[BUFIDX_PRIMARY];
+ 
+   screen->sb_buffer = vterm_allocator_malloc(screen->vt, sizeof(VTermScreenCell) * cols);
+   if (screen->buffer == NULL || screen->sb_buffer == NULL) {
+     vterm_screen_free(screen);
+     return NULL;
+   }
+ 
+   vterm_state_set_callbacks(screen->state, &state_cbs, screen);
+ 
+   return screen;
 }
 
 private void 
@@ -3946,8 +3952,8 @@ vterm_screen_get_text(const VTermScreen *screen, char *str, Unt len, const VTerm
 
 // Copy internal to external representation of a screen cell
 private int 
-vterm_screen_get_cell(const VTermScreen *screen, VTermPos pos, VTermScreenCell *cell) {
-  ScreenCell *intcell = getcell(screen, pos.row, pos.col);
+vterm_screen_get_cell(const VTermScreen* screen, VTermPos pos, VTermScreenCell* cell) {
+  ScreenCell* intcell = getcell(screen, pos.row, pos.col);
 
   if (!intcell)
     return 0;
@@ -3958,19 +3964,19 @@ vterm_screen_get_cell(const VTermScreen *screen, VTermPos pos, VTermScreenCell *
       break;
   }
 
-  cell->attrs.bold      = intcell->pen.bold;
-  cell->attrs.underline = intcell->pen.underline;
-  cell->attrs.italic    = intcell->pen.italic;
-  cell->attrs.blink     = intcell->pen.blink;
-  cell->attrs.reverse   = intcell->pen.reverse ^ screen->global_reverse;
-  cell->attrs.conceal   = intcell->pen.conceal;
-  cell->attrs.strike    = intcell->pen.strike;
-  cell->attrs.font      = intcell->pen.font;
-  cell->attrs.small     = intcell->pen.small;
-  cell->attrs.baseline  = intcell->pen.baseline;
+  cell->deco.bold      = intcell->pen.bold;
+  cell->deco.underline = intcell->pen.underline;
+  cell->deco.italic    = intcell->pen.italic;
+  cell->deco.blink     = intcell->pen.blink;
+  cell->deco.reverse   = intcell->pen.reverse ^ screen->global_reverse;
+  cell->deco.conceal   = intcell->pen.conceal;
+  cell->deco.strike    = intcell->pen.strike;
+  cell->deco.font      = intcell->pen.font;
+  cell->deco.small     = intcell->pen.small;
+  cell->deco.baseline  = intcell->pen.baseline;
 
-  cell->attrs.dwl = intcell->pen.dwl;
-  cell->attrs.dhl = intcell->pen.dhl;
+  cell->deco.dwl = intcell->pen.dwl;
+  cell->deco.dhl = intcell->pen.dhl;
 
   cell->fg = intcell->pen.fg;
   cell->bg = intcell->pen.bg;
@@ -4062,30 +4068,30 @@ vterm_screen_flush_damage(VTermScreen *screen) {
 //}
 
 //static int 
-//attrs_differ(VTermAttrMask attrs, ScreenCell *a, ScreenCell *b) {
-//   if ((attrs & VTERM_ATTR_BOLD_MASK)       && (a->pen.bold != b->pen.bold))
+//attrs_differ(VTermAttrMask deco, ScreenCell *a, ScreenCell *b) {
+//   if ((deco & VTERM_ATTR_BOLD_MASK)       && (a->pen.bold != b->pen.bold))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_UNDERLINE_MASK)  && (a->pen.underline != b->pen.underline))
+//   if ((deco & VTERM_ATTR_UNDERLINE_MASK)  && (a->pen.underline != b->pen.underline))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_ITALIC_MASK)     && (a->pen.italic != b->pen.italic))
+//   if ((deco & VTERM_ATTR_ITALIC_MASK)     && (a->pen.italic != b->pen.italic))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_BLINK_MASK)      && (a->pen.blink != b->pen.blink))
+//   if ((deco & VTERM_ATTR_BLINK_MASK)      && (a->pen.blink != b->pen.blink))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_REVERSE_MASK)    && (a->pen.reverse != b->pen.reverse))
+//   if ((deco & VTERM_ATTR_REVERSE_MASK)    && (a->pen.reverse != b->pen.reverse))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_CONCEAL_MASK)    && (a->pen.conceal != b->pen.conceal))
+//   if ((deco & VTERM_ATTR_CONCEAL_MASK)    && (a->pen.conceal != b->pen.conceal))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_STRIKE_MASK)     && (a->pen.strike != b->pen.strike))
+//   if ((deco & VTERM_ATTR_STRIKE_MASK)     && (a->pen.strike != b->pen.strike))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_FONT_MASK)       && (a->pen.font != b->pen.font))
+//   if ((deco & VTERM_ATTR_FONT_MASK)       && (a->pen.font != b->pen.font))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_FOREGROUND_MASK) && !vterm_color_is_equal(&a->pen.fg, &b->pen.fg))
+//   if ((deco & VTERM_ATTR_FOREGROUND_MASK) && !vterm_color_is_equal(&a->pen.fg, &b->pen.fg))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_BACKGROUND_MASK) && !vterm_color_is_equal(&a->pen.bg, &b->pen.bg))
+//   if ((deco & VTERM_ATTR_BACKGROUND_MASK) && !vterm_color_is_equal(&a->pen.bg, &b->pen.bg))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_SMALL_MASK)    && (a->pen.small != b->pen.small))
+//   if ((deco & VTERM_ATTR_SMALL_MASK)    && (a->pen.small != b->pen.small))
 //      return 1;
-//   if ((attrs & VTERM_ATTR_BASELINE_MASK)    && (a->pen.baseline != b->pen.baseline))
+//   if ((deco & VTERM_ATTR_BASELINE_MASK)    && (a->pen.baseline != b->pen.baseline))
 //      return 1;
 //
 //   return 0;
@@ -4093,7 +4099,7 @@ vterm_screen_flush_damage(VTermScreen *screen) {
 
 //private int 
 //vterm_screen_get_attrs_extent(
-//    const VTermScreen *screen, VTermRect *extent, VTermPos pos, VTermAttrMask attrs
+//    const VTermScreen *screen, VTermRect *extent, VTermPos pos, VTermAttrMask deco
 //) {
 //   ScreenCell *target = getcell(screen, pos.row, pos.col);
 //
@@ -4108,13 +4114,13 @@ vterm_screen_flush_damage(VTermScreen *screen) {
 //
 //   Unt col;
 //   for(col = pos.col - 1; col >= extent->start_col; col--) {
-//      if (attrs_differ(attrs, target, getcell(screen, pos.row, col)))
+//      if (attrs_differ(deco, target, getcell(screen, pos.row, col)))
 //         break;
 //   } 
 //   extent->start_col = col + 1;
 //
 //   for(col = pos.col + 1; col < extent->end_col; col++) {
-//      if (attrs_differ(attrs, target, getcell(screen, pos.row, col)))
+//      if (attrs_differ(deco, target, getcell(screen, pos.row, col)))
 //         break;
 //   } 
 //   extent->end_col = col - 1;
@@ -5389,7 +5395,7 @@ private void request_version_string(VTermState *state) {
 private int
 on_csi(
    CS leader, 
-   const long args[], 
+   long args[], 
    int argcount, 
    CS intermed, 
    Byte command, 
@@ -5815,166 +5821,161 @@ on_csi(
     break;
 
    case 0x6b: // VPB - ECMA-48 8.3.159
-    count = CSI_ARG_COUNT(args[0]);
-    state->pos.row -= count;
-    state->at_phantom = 0;
-    break;
+      count = CSI_ARG_COUNT(args[0]);
+      state->pos.row -= count;
+      state->at_phantom = 0;
+      break;
 
    case 0x6c: // RM - ECMA-48 8.3.106
-    if (!CSI_ARG_IS_MISSING(args[0]))
-      set_mode(state, CSI_ARG(args[0]), 0);
-    break;
+      if (!CSI_ARG_IS_MISSING(args[0]))
+         set_mode(state, CSI_ARG(args[0]), 0);
+      break;
 
    case LEADER('?', 0x6c): // DEC private mode reset
-    break;
+      break;
 
    case 0x6d: // SGR - ECMA-48 8.3.117
-    vterm_state_setpen(state, args, argcount);
-    break;
+      vterm_state_setpen(state, args, argcount);
+      break;
 
    case LEADER('?', 0x6d): // DECSGR and XTQMODKEYS
-    // CSI ? 4 m  XTQMODKEYS: request modifyOtherKeys level
-    if (argcount == 1 && CSI_ARG(args[0]) == 4)
-    {
-      vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, ">4;%dm",
-					state->mode.modify_other_keys ? 2 : 0);
-      break;
-    }
+      // CSI ? 4 m  XTQMODKEYS: request modifyOtherKeys level
+      if (argcount == 1 && CSI_ARG(args[0]) == 4) {
+         vterm_push_output_sprintf_ctrl(
+               state->vt, C1_CSI, ">4;%dm", state->mode.modify_other_keys ? 2 : 0
+         );
+         break;
+      }
 
-    /* No actual DEC terminal recognized these, but some printers did. These
-     * are alternative ways to request subscript/superscript/off
-     */
-    for(int argi = 0; argi < argcount; argi++) {
+   //No actual DEC terminal recognized these, but some printers did. These
+   //are alternative ways to request subscript/superscript/off
+   for(int argi = 0; argi < argcount; argi++) {
       long arg;
       switch(arg = CSI_ARG(args[argi])) {
-        case 4: // Superscript on
-          arg = 73;
-          vterm_state_setpen(state, &arg, 1);
-          break;
-        case 5: // Subscript on
-          arg = 74;
-          vterm_state_setpen(state, &arg, 1);
-          break;
-        case 24: // Super+subscript off
-          arg = 75;
-          vterm_state_setpen(state, &arg, 1);
-          break;
+      case 4: // Superscript on
+         arg = 73;
+         vterm_state_setpen(state, &arg, 1);
+         break;
+      case 5: // Subscript on
+         arg = 74;
+         vterm_state_setpen(state, &arg, 1);
+         break;
+      case 24: // Super+subscript off
+         arg = 75;
+         vterm_state_setpen(state, &arg, 1);
+         break;
       }
-    }
-    break;
+   }
+   break;
 
    case LEADER('>', 0x6d): // CSI > 4 ; Pv m   xterm resource modifyOtherKeys
-    if (argcount == 2 && CSI_ARG(args[0]) == 4)
-    {
-      // can't have both modify_other_keys and kitty_keyboard
-      state->mode.kitty_keyboard = 0;
-
-      state->mode.modify_other_keys = CSI_ARG(args[1]) == 2;
-    }
-    break;
+      if (argcount == 2 && CSI_ARG(args[0]) == 4) {
+         // can't have both modify_other_keys and kitty_keyboard
+         state->mode.kitty_keyboard = 0;
+         state->mode.modify_other_keys = CSI_ARG(args[1]) == 2;
+      }
+      break;
 
    case LEADER('>', 0x75): // CSI > 1 u  enable kitty keyboard protocol
-    if (argcount == 1 && CSI_ARG(args[0]) == 1)
-    {
-      // can't have both modify_other_keys and kitty_keyboard
-      state->mode.modify_other_keys = 0;
+      if (argcount == 1 && CSI_ARG(args[0]) == 1) {
+         // can't have both modify_other_keys and kitty_keyboard
+         state->mode.modify_other_keys = 0;
 
-      state->mode.kitty_keyboard = 1;
-    }
-    break;
+         state->mode.kitty_keyboard = 1;
+      }
+      break;
 
    case LEADER('<', 0x75): // CSI < u  disable kitty keyboard protocol
-    if (argcount <= 1)
-      state->mode.kitty_keyboard = 0;
-    break;
+      if (argcount <= 1)
+         state->mode.kitty_keyboard = 0;
+      break;
 
    case LEADER('?', 0x75): // CSI ? u  request kitty keyboard protocol state
-    if (argcount <= 1)
-      // TODO: this only uses the values zero and one.  The protocol specifies
-      // more values, the progressive enhancement flags.
-      vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "?%du",
-						   state->mode.kitty_keyboard);
-    break;
+      if (argcount <= 1)
+         //TODO: this only uses the values zero and one. The protocol specifies
+         //more values, the progressive enhancement flags.
+         vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "?%du",
+	  					   state->mode.kitty_keyboard);
+      break;
 
    case 0x6e: // DSR - ECMA-48 8.3.35
-   case LEADER('?', 0x6e): // DECDSR
-    val = CSI_ARG_OR(args[0], 0);
+   case LEADER('?', 0x6e): { // DECDSR
+      val = CSI_ARG_OR(args[0], 0);
 
-    {
       char *qmark = (leader_byte == '?') ? "?" : "";
 
       switch(val) {
       case 0: case 1: case 2: case 3: case 4:
-        // ignore - these are replies
-        break;
+         // ignore - these are replies
+         break;
       case 5:
-        vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "%s0n", qmark);
-        break;
+         vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "%s0n", qmark);
+         break;
       case 6: // CPR - cursor position report
-        vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "%s%d;%dR", qmark, state->pos.row + 1, state->pos.col + 1);
-        break;
+         vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "%s%d;%dR", qmark, state->pos.row + 1, state->pos.col + 1);
+         break;
       }
-    }
-    break;
+      break;
+      }
 
 
    case INTERMED('!', 0x70): // DECSTR - DEC soft terminal reset
-    vterm_state_reset(state, 0);
-    break;
+      vterm_state_reset(state, 0);
+      break;
 
    case LEADER('?', INTERMED('$', 0x70)):
-    request_dec_mode(state, CSI_ARG(args[0]));
-    break;
+      request_dec_mode(state, CSI_ARG(args[0]));
+      break;
 
    case LEADER('>', 0x71): // XTVERSION - xterm query version string
-    request_version_string(state);
-    break;
+      request_version_string(state);
+      break;
 
    case INTERMED(' ', 0x71): // DECSCUSR - DEC set cursor shape
-    val = CSI_ARG_OR(args[0], 1);
+      val = CSI_ARG_OR(args[0], 1);
 
-    switch(val) {
-    case 0: case 1:
-      settermprop_bool(state, VTERM_PROP_CURSORBLINK, 1);
-      settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BLOCK);
-      break;
-    case 2:
-      settermprop_bool(state, VTERM_PROP_CURSORBLINK, 0);
-      settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BLOCK);
-      break;
-    case 3:
-      settermprop_bool(state, VTERM_PROP_CURSORBLINK, 1);
-      settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_UNDERLINE);
-      break;
-    case 4:
-      settermprop_bool(state, VTERM_PROP_CURSORBLINK, 0);
-      settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_UNDERLINE);
-      break;
-    case 5:
-      settermprop_bool(state, VTERM_PROP_CURSORBLINK, 1);
-      settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BAR_LEFT);
-      break;
-    case 6:
-      settermprop_bool(state, VTERM_PROP_CURSORBLINK, 0);
-      settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BAR_LEFT);
-      break;
-    }
+      switch(val) {
+      case 0: case 1:
+         settermprop_bool(state, VTERM_PROP_CURSORBLINK, 1);
+         settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BLOCK);
+         break;
+      case 2:
+         settermprop_bool(state, VTERM_PROP_CURSORBLINK, 0);
+         settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BLOCK);
+         break;
+      case 3:
+         settermprop_bool(state, VTERM_PROP_CURSORBLINK, 1);
+         settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_UNDERLINE);
+         break;
+      case 4:
+         settermprop_bool(state, VTERM_PROP_CURSORBLINK, 0);
+         settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_UNDERLINE);
+         break;
+      case 5:
+         settermprop_bool(state, VTERM_PROP_CURSORBLINK, 1);
+         settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BAR_LEFT);
+         break;
+      case 6:
+         settermprop_bool(state, VTERM_PROP_CURSORBLINK, 0);
+         settermprop_int (state, VTERM_PROP_CURSORSHAPE, VTERM_PROP_CURSORSHAPE_BAR_LEFT);
+         break;
+      }
 
-    break;
+      break;
 
    case INTERMED('"', 0x71): // DECSCA - DEC select character protection attribute
-    val = CSI_ARG_OR(args[0], 0);
-
-    switch(val) {
-    case 0: case 2:
-      state->protected_cell = 0;
+      val = CSI_ARG_OR(args[0], 0);
+  
+      switch(val) {
+      case 0: case 2:
+         state->protected_cell = 0;
+         break;
+      case 1:
+         state->protected_cell = 1;
+         break;
+      }
+  
       break;
-    case 1:
-      state->protected_cell = 1;
-      break;
-    }
-
-    break;
 
    case 0x72: // DECSTBM - DEC custom
       state->scrollregion_top = CSI_ARG_OR(args[0], 1) - 1;
@@ -5986,21 +5987,21 @@ on_csi(
       else
          UBOUND(state->scrollregion_bottom, state->rows);
 
-    if (SCROLLREGION_BOTTOM(state) <= state->scrollregion_top) {
-      // Invalid
-      state->scrollregion_top    = 0;
-      state->scrollregion_bottom = UNT;
-    }
+      if (SCROLLREGION_BOTTOM(state) <= state->scrollregion_top) {
+         // Invalid
+         state->scrollregion_top    = 0;
+         state->scrollregion_bottom = UNT;
+      }
 
-    // Setting the scrolling region restores the cursor to the home position
-    state->pos.row = 0;
-    state->pos.col = 0;
-    if (state->mode.origin) {
-      state->pos.row += state->scrollregion_top;
-      state->pos.col += SCROLLREGION_LEFT(state);
-    }
+      // Setting the scrolling region restores the cursor to the home position
+      state->pos.row = 0;
+      state->pos.col = 0;
+      if (state->mode.origin) {
+        state->pos.row += state->scrollregion_top;
+        state->pos.col += SCROLLREGION_LEFT(state);
+      }
 
-    break;
+      break;
 
    case 0x73: // DECSLRM - DEC custom
       // Always allow setting these margins, just they won't take effect without DECVSSM
@@ -6043,19 +6044,19 @@ on_csi(
       break;
 
    case INTERMED('\'', 0x7D): // DECIC
-    count = CSI_ARG_COUNT(args[0]);
-
-    if (!is_cursor_in_scrollregion(state))
+      count = CSI_ARG_COUNT(args[0]);
+  
+      if (!is_cursor_in_scrollregion(state))
+         break;
+  
+      rect.start_row = state->scrollregion_top;
+      rect.end_row   = SCROLLREGION_BOTTOM(state);
+      rect.start_col = state->pos.col;
+      rect.end_col   = SCROLLREGION_RIGHT(state);
+  
+      scroll(state, rect, 0, -count);
+  
       break;
-
-    rect.start_row = state->scrollregion_top;
-    rect.end_row   = SCROLLREGION_BOTTOM(state);
-    rect.start_col = state->pos.col;
-    rect.end_col   = SCROLLREGION_RIGHT(state);
-
-    scroll(state, rect, 0, -count);
-
-    break;
 
    case INTERMED('\'', 0x7E): // DECDC
       count = CSI_ARG_COUNT(args[0]);
@@ -6099,18 +6100,19 @@ on_csi(
   updatecursor(state, &oldpos, cancel_phantom);
 
 #ifdef DEBUG
-  if (state->pos.row < 0 || state->pos.row >= state->rows ||
-     state->pos.col < 0 || state->pos.col >= state->cols) {
-    fprintf(stderr, "Position out of bounds after CSI %c: (%d,%d)\n",
-        command, state->pos.row, state->pos.col);
-    abort();
-  }
+   if (state->pos.row < 0 || state->pos.row >= state->rows 
+         || state->pos.col < 0 || state->pos.col >= state->cols
+   ) {
+     fprintf(stderr, "Position out of bounds after CSI %c: (%d,%d)\n",
+         command, state->pos.row, state->pos.col);
+     abort();
+   }
 
-  if (SCROLLREGION_BOTTOM(state) <= state->scrollregion_top) {
-    fprintf(stderr, "Scroll region height out of bounds after CSI %c: %d <= %d\n",
-        command, SCROLLREGION_BOTTOM(state), state->scrollregion_top);
-    abort();
-  }
+   if (SCROLLREGION_BOTTOM(state) <= state->scrollregion_top) {
+      fprintf(stderr, "Scroll region height out of bounds after CSI %c: %d <= %d\n",
+          command, SCROLLREGION_BOTTOM(state), state->scrollregion_top);
+      abort();
+   }
 
    if (SCROLLREGION_RIGHT(state) <= SCROLLREGION_LEFT(state)) {
       fprintf(stderr, "Scroll region width out of bounds after CSI %c: %d <= %d\n",
@@ -6124,7 +6126,7 @@ on_csi(
 }
 
 //private char
-//base64_one(uint8_t b) {
+//base64_one(Byte b) {
 //   if (b < 26)
 //      return 'A' + b;
 //   ei(b < 52)
@@ -6138,44 +6140,44 @@ on_csi(
 //   return 0;
 //}
 
-static uint8_t
+private Byte
 unbase64one(char c) {
-  if (c >= 'A' && c <= 'Z')
-    return c - 'A';
-  ei(c >= 'a' && c <= 'z')
-    return c - 'a' + 26;
-  ei(c >= '0' && c <= '9')
-    return c - '0' + 52;
-  ei(c == '+')
-    return 62;
-  ei(c == '/')
-    return 63;
+   if (c >= 'A' && c <= 'Z')
+      return c - 'A';
+   ei(c >= 'a' && c <= 'z')
+      return c - 'a' + 26;
+   ei(c >= '0' && c <= '9')
+      return c - '0' + 52;
+   ei(c == '+')
+      return 62;
+   ei(c == '/')
+      return 63;
 
-  return 0xFF;
+   return 0xFF;
 }
 
-static void 
-osc_selection(VTermState *state, VTermStringFragment frag) {
-  if (frag.initial) {
-    state->tmp.selection.mask = 0;
-    state->tmp.selection.state = SELECTION_INITIAL;
-  }
+private void 
+osc_selection(VTermState* state, VTermStringFragment frag) {
+   if (frag.initial) {
+      state->tmp.selection.mask = 0;
+      state->tmp.selection.state = SELECTION_INITIAL;
+   }
 
-  while(!state->tmp.selection.state && frag.len) {
-    /* Parse selection parameter */
-    switch(frag.str[0]) {
+   while(!state->tmp.selection.state && frag.len) {
+      // Parse selection parameter
+      switch(frag.str[0]) {
       case 'c':
-        state->tmp.selection.mask |= VTERM_SELECTION_CLIPBOARD;
-        break;
+         state->tmp.selection.mask |= VTERM_SELECTION_CLIPBOARD;
+         break;
       case 'p':
-        state->tmp.selection.mask |= VTERM_SELECTION_PRIMARY;
-        break;
+         state->tmp.selection.mask |= VTERM_SELECTION_PRIMARY;
+         break;
       case 'q':
-        state->tmp.selection.mask |= VTERM_SELECTION_SECONDARY;
-        break;
+         state->tmp.selection.mask |= VTERM_SELECTION_SECONDARY;
+         break;
       case 's':
-        state->tmp.selection.mask |= VTERM_SELECTION_SELECT;
-        break;
+         state->tmp.selection.mask |= VTERM_SELECTION_SELECT;
+         break;
       case '0':
       case '1':
       case '2':
@@ -6184,135 +6186,133 @@ osc_selection(VTermState *state, VTermStringFragment frag) {
       case '5':
       case '6':
       case '7':
-        state->tmp.selection.mask |= (VTERM_SELECTION_CUT0 << (frag.str[0] - '0'));
-        break;
+         state->tmp.selection.mask |= (VTERM_SELECTION_CUT0 << (frag.str[0] - '0'));
+         break;
 
       case ';':
-        state->tmp.selection.state = SELECTION_SELECTED;
-        if (!state->tmp.selection.mask)
-          state->tmp.selection.mask = VTERM_SELECTION_SELECT|VTERM_SELECTION_CUT0;
-        break;
-    }
+         state->tmp.selection.state = SELECTION_SELECTED;
+         if (!state->tmp.selection.mask)
+            state->tmp.selection.mask = VTERM_SELECTION_SELECT|VTERM_SELECTION_CUT0;
+         break;
+      }
 
-    frag.str++;
-    frag.len--;
-  }
-
-  if (!frag.len) {
-    /* Clear selection if we're already finished but didn't do anything */
-    if (frag.final && state->selection.callbacks->set) {
-      (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
-              .str     = NULL,
-              .len     = 0,
-              .initial = state->tmp.selection.state != SELECTION_SET,
-              .final   = TRUE,
-            }, state->selection.user);
-    }
-    return;
-  }
-
-  if (state->tmp.selection.state == SELECTION_SELECTED) {
-    if (frag.str[0] == '?') {
-      state->tmp.selection.state = SELECTION_QUERY;
-    }
-    else {
-      state->tmp.selection.state = SELECTION_SET_INITIAL;
-      state->tmp.selection.recvpartial = 0;
-    }
-  }
-
-  if (state->tmp.selection.state == SELECTION_QUERY) {
-    if (state->selection.callbacks->query)
-      (*state->selection.callbacks->query)(state->tmp.selection.mask, state->selection.user);
-    return;
-  }
-
-  if (state->tmp.selection.state == SELECTION_INVALID)
-    return;
-
-  if (state->selection.callbacks->set) {
-    Unt bufcur = 0;
-    CS buffer = state->selection.buffer;
-
-    uint32_t x = 0; /* Current decoding value */
-    int n = 0;      /* Number of sextets consumed */
-
-    if (state->tmp.selection.recvpartial) {
-      n = state->tmp.selection.recvpartial >> 24;
-      x = state->tmp.selection.recvpartial & 0x03FFFF; /* could be up to 18 bits of state in here */
-
-      state->tmp.selection.recvpartial = 0;
+      frag.str++;
+      frag.len--;
    }
 
-   while((state->selection.buflen - bufcur) >= 3 && frag.len) {
-      if (frag.str[0] == '=') {
-        if (n == 2) {
-          buffer[0] = (x >> 4) & 0xFF;
-          buffer += 1, bufcur += 1;
-        }
-        if (n == 3) {
-          buffer[0] = (x >> 10) & 0xFF;
-          buffer[1] = (x >>  2) & 0xFF;
-          buffer += 2, bufcur += 2;
-        }
-
-        while(frag.len && frag.str[0] == '=')
-          frag.str++, frag.len--;
-
-        n = 0;
-      } else {
-        uint8_t b = unbase64one(frag.str[0]);
-        if (b == 0xFF) {
-          DEBUG_LOG1("base64decode bad input %02X\n", (uint8_t)frag.str[0]);
-
-          state->tmp.selection.state = SELECTION_INVALID;
-          if (state->selection.callbacks->set) {
-            (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
+   if (!frag.len) {
+      // Clear selection if we're already finished but didn't do anything
+      if (frag.final && state->selection.callbacks->set) {
+        (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
                 .str     = NULL,
                 .len     = 0,
-                .initial = TRUE,
+                .initial = state->tmp.selection.state != SELECTION_SET,
                 .final   = TRUE,
-                }, state->selection.user);
-          }
-          break;
-        }
+              }, state->selection.user);
+      }
+      return;
+   }
 
-        x = (x << 6) | b;
-        n++;
-        frag.str++, frag.len--;
+   if (state->tmp.selection.state == SELECTION_SELECTED) {
+      if (frag.str[0] == '?') {
+         state->tmp.selection.state = SELECTION_QUERY;
+      } else {
+         state->tmp.selection.state = SELECTION_SET_INITIAL;
+         state->tmp.selection.recvpartial = 0;
+      }
+   }
 
-        if (n == 4) {
-            buffer[0] = (x >> 16) & 0xFF;
-            buffer[1] = (x >>  8) & 0xFF;
-            buffer[2] = (x >>  0) & 0xFF;
+   if (state->tmp.selection.state == SELECTION_QUERY) {
+      if (state->selection.callbacks->query)
+         (*state->selection.callbacks->query)(state->tmp.selection.mask, state->selection.user);
+      return;
+   }
 
-            buffer += 3, bufcur += 3;
-            x = 0;
-            n = 0;
+   if (state->tmp.selection.state == SELECTION_INVALID)
+      return;
+
+   if (state->selection.callbacks->set) {
+      Unt bufcur = 0;
+      CS buffer = state->selection.buffer;
+
+      uint32_t x = 0; /* Current decoding value */
+      int n = 0;      /* Number of sextets consumed */
+
+      if (state->tmp.selection.recvpartial) {
+         n = state->tmp.selection.recvpartial >> 24;
+         x = state->tmp.selection.recvpartial & 0x03FFFF; /* could be up to 18 bits of state in here */
+
+         state->tmp.selection.recvpartial = 0;
+      }
+
+      while((state->selection.buflen - bufcur) >= 3 && frag.len) {
+         if (frag.str[0] == '=') {
+           if (n == 2) {
+             buffer[0] = (x >> 4) & 0xFF;
+             buffer += 1, bufcur += 1;
+           }
+           if (n == 3) {
+             buffer[0] = (x >> 10) & 0xFF;
+             buffer[1] = (x >>  2) & 0xFF;
+             buffer += 2, bufcur += 2;
+           }
+
+           while(frag.len && frag.str[0] == '=')
+             frag.str++, frag.len--;
+
+           n = 0;
+         } else {
+            Byte b = unbase64one(frag.str[0]);
+            if (b == 0xFF) {
+               DEBUG_LOG1("base64decode bad input %02X\n", (Byte)frag.str[0]);
+
+               state->tmp.selection.state = SELECTION_INVALID;
+               if (state->selection.callbacks->set) {
+                  (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
+                      .str     = NULL,
+                      .len     = 0,
+                      .initial = TRUE,
+                      .final   = TRUE,
+                      }, state->selection.user);
+               }
+               break;
+            }
+
+            x = (x << 6) | b;
+            n++;
+            frag.str++, frag.len--;
+
+            if (n == 4) {
+               buffer[0] = (x >> 16) & 0xFF;
+               buffer[1] = (x >>  8) & 0xFF;
+               buffer[2] = (x >>  0) & 0xFF;
+
+               buffer += 3, bufcur += 3;
+               x = 0;
+               n = 0;
+            }
+         }
+
+         if (!frag.len || (state->selection.buflen - bufcur) < 3) {
+            if (bufcur) {
+               VTermStringFragment setfrag = {
+                     state->selection.buffer, // str
+                     bufcur, // len
+                     state->tmp.selection.state == SELECTION_SET_INITIAL, // initial
+                     frag.final && !frag.len // final
+               };
+               (*state->selection.callbacks->set)(state->tmp.selection.mask, setfrag, state->selection.user);
+               state->tmp.selection.state = SELECTION_SET;
+            }
+
+            buffer = state->selection.buffer;
+            bufcur = 0;
          }
       }
 
-      if (!frag.len || (state->selection.buflen - bufcur) < 3) {
-        if (bufcur) {
-	  VTermStringFragment setfrag = {
-	    state->selection.buffer, // str
-	    bufcur, // len
-	    state->tmp.selection.state == SELECTION_SET_INITIAL, // initial
-	    frag.final && !frag.len // final
-	  };
-          (*state->selection.callbacks->set)(state->tmp.selection.mask,
-	      setfrag, state->selection.user);
-          state->tmp.selection.state = SELECTION_SET;
-        }
-
-        buffer = state->selection.buffer;
-        bufcur = 0;
-      }
-    }
-
-    if (n)
-      state->tmp.selection.recvpartial = (n << 24) | x;
-  }
+      if (n)
+         state->tmp.selection.recvpartial = (n << 24) | x;
+   }
 }
 
 static int
@@ -6371,11 +6371,11 @@ on_osc(int command, VTermStringFragment frag, void *user) {
   return 0;
 }
 
-static void
-request_status_string(VTermState *state, VTermStringFragment frag) {
-   VTerm *vt = state->vt;
+private void
+request_status_string(VTermState* state, VTermStringFragment frag) {
+   VTerm* vt = state->vt;
 
-   char *tmp = state->tmp.decrqss;
+   char* tmp = state->tmp.decrqss;
  
    if (frag.initial)
       tmp[0] = tmp[1] = tmp[2] = tmp[3] = 0;
@@ -6402,13 +6402,16 @@ request_status_string(VTermState *state, VTermStringFragment frag) {
         return;
 
       for(int argi = 0; argi < argc; argi++) {
-        cur += SNPRINTF(vt->tmpbuffer + cur, vt->tmpbuffer_len - cur,
-            argi == argc - 1             ? "%ld" :
-            CSI_ARG_HAS_MORE(args[argi]) ? "%ld:" :
-                                           "%ld;",
-            CSI_ARG(args[argi]));
-        if (cur >= vt->tmpbuffer_len)
-          return;
+         cur += SNPRINTF(
+            vt->tmpbuffer + cur, 
+            vt->tmpbuffer_len - cur,
+            argi == argc - 1             
+               ? "%ld" 
+               : (CSI_ARG_HAS_MORE(args[argi]) ? "%ld:" : "%ld;"),
+            CSI_ARG(args[argi])
+         );
+         if (cur >= vt->tmpbuffer_len)
+            return;
       }
 
       cur += SNPRINTF(vt->tmpbuffer + cur, vt->tmpbuffer_len - cur, "m" ESC_S "\\"); //... m ST
@@ -6599,7 +6602,7 @@ on_resize(Unt rows, Unt cols, void *user) {
    return true;
 }
 
-private VTermParserCallbacks const PARSER_TABLE = {
+private VTermParserCallbacks PARSER_TABLE = {
    on_text, // text
    on_control, // control
    on_escape, // escape
@@ -6904,7 +6907,7 @@ vterm_state_get_lineinfo(const VTermState *state, int row) {
 
 // This is VTermScreenCell without the characters, thus much smaller.
 typedef struct {
-   VTermScreenCellAttrs flags;
+   VTermDeco flags;
    char width;
    VTermColor fg;
    VTermColor bg;
@@ -8251,9 +8254,9 @@ add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
 }
 
 private void
-convertCellDecoFromVterm(OUT CellDeco* deco, const VTermScreenCell* cell) {
+convertCellDecoFromVterm(OUT CellDeco* deco, VTermScreenCell* cell) {
    deco->width = cell->width;
-   deco->flags = cell->attrs;
+   deco->flags = cell->deco;
    deco->fg = cell->fg;
    deco->bg = cell->bg;
 }
@@ -8358,17 +8361,17 @@ update_snapshot(Terminal *term) {
             p = ALLOC_MULT(CellDeco, len);
          if ((p || len == 0) && ga_grow(&term->scrollback, 1) == OK) {
             ArrayList    ga;
-            int       width;
+            int width;
             ScrollbackLine *line = (ScrollbackLine *)term->scrollback.c + term->scrollback.len;
 
             ga_init2(&ga, 1, 100);
             for (pos.col = 0; pos.col < len; pos.col += width) {
                if (vterm_screen_get_cell(screen, pos, &cell) == 0) {
-               width = 1;
-               CLEAR_POINTER(p + pos.col);
-               if (ga_grow(&ga, 1) == OK)
-                   ga.len += mb_char2bytes(' ', (CS)ga.c + ga.len);
-                } else {
+                  width = 1;
+                  CLEAR_POINTER(p + pos.col);
+                  if (ga_grow(&ga, 1) == OK)
+                      ga.len += mb_char2bytes(' ', (CS)ga.c + ga.len);
+               } else {
                   width = cell.width;
 
                   convertCellDecoFromVterm(OUT &p[pos.col], &cell);
@@ -8435,20 +8438,20 @@ forAllPortalsAndCurPort(OUT Portal **po, OUT int *did_curPor) {
    return TRUE;
 }
 
-// If needed, add the current lines of the terminal to scrollback and to the
-// buffer.  Called after the job has ended and when switching to Terminal-Normal mode.
-// When "redraw" is TRUE redraw the portals that show the terminal.
+//If needed, add the current lines of the terminal to scrollback and to the
+//buffer. Called after the job has ended and when switching to Terminal-Normal mode.
+//When "redraw" is TRUE redraw the portals that show the terminal.
 private void
-may_move_terminal_to_buffer(Terminal *term, int redraw) {
-   if (term->vterm == NULL)
+may_move_terminal_to_buffer(Terminal* term, int redraw) {
+   if (!term->vterm)
       return;
 
-   // Update the snapshot only if something changes or the buffer does not have all the lines.
+   //Update the snapshot only if something changes or the buffer does not have all the lines.
    if (term->dirtySnapshot || term->book->mem.lineCount <= term->scrollbackScrolled) {
       update_snapshot(term);
    } 
 
-   // Obtain the current background color.
+   //Obtain the current background color.
    vterm_state_get_default_colors(
       vterm_obtain_state(term->vterm), &term->cellDeco.fg, &term->cellDeco.bg
    );
@@ -9044,22 +9047,6 @@ may_toggle_cursor(Terminal *term) {
       cursor_off();
 }
 
-//Convert Vterm decorations to hilite decorations.
-private char
-convertDecoFlagsFromVterm(VTermScreenCellAttrs* cellDecoFlags) {
-   char flags = 0;
-
-   if (cellDecoFlags->bold)
-      flags |= HL_BOLD;
-   if (cellDecoFlags->underline)
-      flags |= HL_UNDERLINE;
-   if (cellDecoFlags->italic)
-      flags |= HL_ITALIC;
-   if (cellDecoFlags->reverse)
-      flags |= HL_INVERSE;
-   return flags;
-}
-
 // Store Vterm decorations in "cell" from highlight flags.
 private void
 copyDecorationsToVterm(OUT CellDeco *cell, char decoFlags) {
@@ -9080,38 +9067,12 @@ private Decoration
 cellToDecoration(
    Terminal* term,
    Portal* po,
-   VTermScreenCellAttrs* cellattrs,
-   VTermColor* cellfg,
-   VTermColor* cellbg
+   VTermDeco* cellattrs,
+   VTermColor* cellFg,
+   VTermColor* cellBg
 ){
-   char decoFlags = convertDecoFlagsFromVterm(cellattrs);
-   VTermColor* fg = cellfg;
-   VTermColor* bg = cellbg;
-   int is_default_fg = VTERM_COLOR_IS_DEFAULT_FG(fg);
-   int is_default_bg = VTERM_COLOR_IS_DEFAULT_BG(bg);
-
-   if (is_default_fg || is_default_bg) {
-      if (po && po->o.hiliteGroupName) {
-         if (is_default_fg)
-            fg = &po->termHiliteGroupName.fg;
-         if (is_default_bg)
-            bg = &po->termHiliteGroupName.bg;
-      } else {
-         if (is_default_fg)
-            fg = &term->cellDeco.fg;
-         if (is_default_bg)
-            bg = &term->cellDeco.bg;
-      }
-   }
-
-   UiColor tgcfg = VTERM_COLOR_IS_INVALID(fg)
-       ? INVALCOLOR
-       : toUiColor(fg->red, fg->green, fg->blue);
-   UiColor tgcbg = VTERM_COLOR_IS_INVALID(bg)
-       ? INVALCOLOR
-       : toUiColor(bg->red, bg->green, bg->blue);
    return (Decoration) {
-      .fg = tgcfg, .bg = tgcbg, .under = INVALCOLOR, .flags = decoFlags, .hiId = SHORT
+      .fg = cellFg, .bg = cellBg, .flags = cellattrs, .hiId = SHORT
    };
 }
 
@@ -9137,11 +9098,11 @@ handle_damage(VTermRect rect, void *user) {
 }
 
 private void
-term_scroll_up(Terminal *term, int start_row, int count) {
+term_scroll_up(Terminal* term, int start_row, int count) {
    Portal       *po = NULL;
    int          did_curPor = FALSE;
    VTermColor       fg, bg;
-   VTermScreenCellAttrs cellAttr;
+   VTermDeco cellAttr;
 
    CLEAR_FIELD(cellAttr);
 
@@ -9156,7 +9117,7 @@ term_scroll_up(Terminal *term, int start_row, int count) {
 }
 
 private int
-handle_moverect(VTermRect dest, VTermRect src, void *user) {
+handle_moverect(VTermRect dest, VTermRect src, void* user) {
    Terminal   *term = (Terminal *)user;
    int      count = src.start_row - dest.start_row;
 
@@ -9675,7 +9636,7 @@ term_line2screenline(
              screenLinesUCG[off] = ZERO;
          }
       }
-      screenDecosG[off] = cellToDecoration(term, po, &cell.attrs, &cell.fg, &cell.bg);
+      screenDecosG[off] = cellToDecoration(term, po, &cell.deco, &cell.fg, &cell.bg);
 
       ++pos->col;
       ++off;
@@ -9849,23 +9810,11 @@ termGetDeco(Portal* po, LineNr lnum, int col) {
    return cellToDecoration(term, po, &cellattr->flags, &cellattr->fg, &cellattr->bg);
 }
 
-//Convert a cterm color number 0 - 255 to RGB. This is compatible with xterm.
-private void
-cterm_color2vterm(int nr, VTermColor *rgb) {
-   cterm_color2rgb(nr, &rgb->red, &rgb->green, &rgb->blue, &rgb->index);
-   if (rgb->index == 0)
-      rgb->type = VTERM_COLOR_RGB;
-   else {
-      rgb->type = VTERM_COLOR_INDEXED;
-      --rgb->index;
-   }
-}
-
 //Initialize vterm color from the synID. Return TRUE if color is set to "fg" and "bg", or FALSE
 private int
 get_vterm_color_from_synid(int id, VTermColor* fg, VTermColor* bg) {
-   UiColor fgRgb = INVALCOLOR;
-   UiColor bgRgb = INVALCOLOR;
+   VTermColor fgRgb = INVALCOLOR;
+   VTermColor bgRgb = INVALCOLOR;
 
    if (id > 0)
       syn_id2colors(id, OUT &fgRgb, OUT &bgRgb);
@@ -9931,29 +9880,8 @@ init_default_colors(Terminal* term) {
    VTermColor* fg = &term->cellDeco.fg;
    VTermColor* bg = &term->cellDeco.bg;
 
-   // Vterm uses a default black background. Set it to white when 'liteTheme' is set
-   fgval = 255;
-   bgval = 0;
-   fg->red = fg->green = fg->blue = fgval;
-   bg->red = bg->green = bg->blue = bgval;
-   fg->type = VTERM_COLOR_RGB | VTERM_COLOR_DEFAULT_FG;
-   bg->type = VTERM_COLOR_RGB | VTERM_COLOR_DEFAULT_BG;
-
    // The highlight group overrules the defaults.
    id = term_get_highlight_id(term, NULL);
-
-   if (!get_vterm_color_from_synid(id, fg, bg)) {
-
-      if (defaultFgColorG > 0) {
-         cterm_color2vterm(defaultFgColorG - 1, fg);
-      } else
-        term_get_fg_color(&fg->red, &fg->green, &fg->blue);
-
-      if (defaultBgColorG > 0) {
-         cterm_color2vterm(defaultBgColorG - 1, bg);
-      } else
-         term_get_bg_color(&bg->red, &bg->green, &bg->blue);
-   }
 }
 
 //Set the 16 ANSI colors from array of RGB values
@@ -9985,7 +9913,7 @@ set_ansi_colors_list(VTerm* vterm, List* list) {
       if (!colorName)
          return FAIL;
 
-      UiColor uiColor = hiColorByName(text(colorName));
+      VTermColor uiColor = hiColorByName(text(colorName));
       if (uiColor == INVALCOLOR)
          return FAIL;
 
@@ -10350,18 +10278,6 @@ term_update_palette(Terminal* term) {
       term_reset_palette(term->vterm);
 }
 
-// Called when option 'termguicolors' is changed.
-void
-term_update_palette_all(void) {
-   Terminal *term;
-
-   FOR_ALL_TERMS(term) {
-      if (term->vterm == NULL)
-          continue;
-      term_update_palette(term);
-   }
-}
-
 // Called when option 'liteTheme' was set, or when any hilite is changed.
 void
 term_update_colors_all(void) {
@@ -10566,7 +10482,7 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
             if (should_break)
                break;
          }
-         sameFlags = convertDecoFlagsFromVterm(&cell.attrs) == convertDecoFlagsFromVterm(&prev_cell.attrs)
+         sameFlags = cell.deco == prev_cell.deco
             && vterm_color_is_equal(&cell.fg, &prev_cell.fg)
             && vterm_color_is_equal(&cell.bg, &prev_cell.bg);
          if (same_chars && cell.width == prev_cell.width && sameFlags && !is_cursor_pos) {
@@ -10601,7 +10517,7 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
                if (sameFlags) {
                   fputs("&", fd);
                } else {
-                  fprintf(fd, "%d", convertDecoFlagsFromVterm(&cell.attrs));
+                  fprintf(fd, "%d", cell.deco);
                   if (vterm_color_is_equal(&cell.fg, &prev_cell.fg))
                      fputs("&", fd);
                   else {
@@ -11062,8 +10978,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
                   textline[col] = 'f';
                ei (!vterm_color_is_equal(&(cellattr1 + col)->bg, &(cellattr2 + col)->bg))
                   textline[col] = 'b';
-               ei (convertDecoFlagsFromVterm(&(cellattr1 + col)->flags)
-                    != convertDecoFlagsFromVterm(&((cellattr2 + col)->flags)))
+               ei (cellattr1 + col->flags != ((cellattr2 + col)->flags))
                   textline[col] = 'a';
             }
             p1 += len1;
@@ -11473,7 +11388,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    for (pos.col = 0; pos.col < term->cols; ) {
       Bag      *dcell;
       int      width;
-      VTermScreenCellAttrs attrs;
+      VTermDeco deco;
       VTermColor   fg, bg;
       Byte rgb[8];
       Byte mbs[MB_MAXBYTES * VTERM_MAX_CHARS_PER_CELL + 1];
@@ -11489,7 +11404,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
             break;
          cellattr = line->sb_cells + pos.col;
          width = cellattr->width;
-         attrs = cellattr->flags;
+         deco = cellattr->flags;
          fg = cellattr->fg;
          bg = cellattr->bg;
          len = utfCharLen(p);
@@ -11508,7 +11423,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
          }
          mbs[off] = ZERO;
          width = cell.width;
-         attrs = cell.attrs;
+         deco = cell.deco;
          fg = cell.fg;
          bg = cell.bg;
       }
@@ -11522,7 +11437,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
       eeSnprintf(rgb, 8, "#%02x%02x%02x", bg.red, bg.green, bg.blue);
       bagAddString(dcell, S"bg", rgb);
 
-      bagAddNumber(dcell, S"deco", cellToDecoration(term, NULL, &attrs, &fg, &bg).flags);
+      bagAddNumber(dcell, S"deco", cellToDecoration(term, NULL, &deco, &fg, &bg).flags);
       bagAddNumber(dcell, S"width", width);
 
       ++pos.col;
@@ -11585,52 +11500,6 @@ f_term_getansicolors(Arr(Var) argvars, Var* returnVar) {
       if (list_append_string(list, hexbuf, 7) == FAIL)
           return;
    }
-}
-
-// "term_setansicolors(book, list)" function
-void
-f_term_setansicolors(Arr(Var) argvars, Var* returnVar UNUSED) {
-   Book   *book;
-   Terminal   *term;
-   ListItem   *li;
-   int      n = 0;
-
-   book = term_get_buf(argvars, S"term_setansicolors()");
-   if (book == NULL)
-      return;
-   term = book->term;
-   if (term->vterm == NULL)
-      return;
-
-   if (confirmVarIsNonnullList(argvars, 1) == FAIL)
-      return;
-
-   if (argvars[1].list->first == &range_list_item || argvars[1].list->len != 16) {
-      showErrFmtMsg(_(e_invalid_value_for_argument_str), "\"colors\"");
-      return;
-   }
-
-   if (term->palette == NULL)
-      term->palette = ALLOC_MULT(Ulong, 16);
-   if (term->palette == NULL)
-      return;
-
-   FOR_ALL_LIST_ITEMS(argvars[1].list, li) {
-
-      CS colorName = convertVarToStringSingleUse(&li->c);
-      if (!colorName)
-         return;
-
-      UiColor color = hiColorByName(text(colorName));
-      if (color == INVALCOLOR) {
-         showErrFmtMsg(_(e_cannot_allocate_color_str), colorName);
-         return;
-      }
-
-      term->palette[n++] = GUI_MCH_GET_RGB(color);
-   }
-
-   term_update_palette(term);
 }
 
 // "term_setapi(book, api)" function
@@ -12112,9 +11981,9 @@ mch_inchar(
    OUT CS buf,
    int maxlen,
    long wtime,       // don't use "time", MIPS cannot handle it
-   int tb_change_cnt
+   int changeCnt
 ) {
-   return inchar_loop(OUT buf, maxlen, wtime, tb_change_cnt, waitForChar, resize_func);
+   return inchar_loop(OUT buf, maxlen, wtime, changeCnt, waitForChar, resize_func);
 }
 
 // ui_inchar(): low level input function. Get characters from the keyboard.
@@ -12123,15 +11992,15 @@ mch_inchar(
 // If "wtime" == -1 wait forever for characters.
 // If "wtime" > 0 wait "wtime" milliseconds for a character.
 //
-// "tb_change_cnt" is the value of typeBufG.tb_change_cnt iff "buf" points into
-// it (null otherwise).  When typeBufG.tb_change_cnt changes (e.g., when a message is received
+// "changeCnt" is the value of typeBufG.changeCnt iff "buf" points into
+// it (null otherwise).  When typeBufG.changeCnt changes (e.g., when a message is received
 // from a remote client) "buf" can no longer be used.
 int
 ui_inchar(
    OUT CS buf,
    int maxlen,
    long wtime,       // don't use "time", MIPS cannot handle it
-   int tb_change_cnt
+   int changeCnt
 ){
    int      retval = 0;
 
@@ -12185,7 +12054,7 @@ ui_inchar(
    //        break;
    //}
 
-   retval = mch_inchar(OUT buf, maxlen, wtime, tb_change_cnt);
+   retval = mch_inchar(OUT buf, maxlen, wtime, changeCnt);
 
    if (wtime == -1 || wtime > 100L) {
       // block SIGHUP et al.
@@ -12209,7 +12078,7 @@ inchar_loop(
    OUT CS buf,
    int maxlen,
    long wtime,       // don't use "time", MIPS cannot handle it
-   int tb_change_cnt,
+   int changeCnt,
    int (*wait_func)(long wtime, int *interrupted, int ignore_input),
    int (*resize_func)(int check_only)
 ){
@@ -12234,7 +12103,7 @@ inchar_loop(
       if (wtime != 0) {
          parse_queued_messages();
          //If input was put directly in typeahead buffer bail out here.
-         if (typebuf_changed(tb_change_cnt))
+         if (typebuf_changed(changeCnt))
             return 0;
       }
       if (wtime < 0 && did_start_blocking)
@@ -12258,7 +12127,7 @@ inchar_loop(
 
             // No character available within 'updatetime'.
             did_start_blocking = TRUE;
-            if (trigger_cursorhold() && maxlen >= 3 && !typebuf_changed(tb_change_cnt)) {
+            if (trigger_cursorhold() && maxlen >= 3 && !typebuf_changed(changeCnt)) {
                // Put K_CURSORHOLD in the input buffer or return it.
                if (!buf) {
                   Byte ibuf[3];
@@ -12297,7 +12166,7 @@ inchar_loop(
       did_call_wait_func = TRUE;
       if (wait_func(wait_time, &interrupted, FALSE)) {
          // If input was put directly in typeahead buffer bail out here.
-         if (typebuf_changed(tb_change_cnt))
+         if (typebuf_changed(changeCnt))
             return 0;
 
          // We might have something to return now.
@@ -12342,7 +12211,7 @@ ui_wait_for_chars_or_timer(
 ){
    int due_time;
    long remaining = wtime;
-   int tb_change_cnt = typeBufG.tb_change_cnt;
+   int changeCnt = typeBufG.changeCnt;
    int brief_wait = FALSE;
 
    // When waiting very briefly don't trigger timers.
@@ -12353,7 +12222,7 @@ ui_wait_for_chars_or_timer(
       //Trigger timers and then get the time in wtime until the next one is due. Wait up to that 
       //time.
       due_time = check_due_timer();
-      if (typeBufG.tb_change_cnt != tb_change_cnt) {
+      if (typeBufG.changeCnt != changeCnt) {
          // timer may have used feedkeys()
          return FAIL;
       }

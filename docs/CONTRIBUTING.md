@@ -44,11 +44,11 @@ Low-level memory work is in memory.c
 
 Options like `runtimepath` are declared in optiondefs.h
 
-Helpful macros are defined in eegl.h searchable via @@@macros
+Helpful macros are defined in eegl.h searchable via ":::macros"
 
-Global structs are defined in eegl.h searchable via "@@@structs"
+Global structs are defined in eegl.h searchable via ":::structs"
 
-Generic types are defined in eegl.h searchable via @@@generics
+Generic types are defined in eegl.h searchable via ":::generics"
 
 Generic functions are defined in generic.h
 
@@ -71,7 +71,7 @@ eval.c: evaluation of functions
 fileio.c: read from and write to a file
 fold.c: code for text folding
 getchar.c: Code related to getting a character from the user or scripts, redo & stuff buffers
-hilite.c: hiliting text
+hilite.c: hiliting text and syntax hiliting
 indent.c: indentation-related functions
 insert.c: functions for Insert mode (manual input of text)
 location.c: functions for location lists (searches, errors from compilation, help greps etc)
@@ -90,16 +90,14 @@ regexp.c: Handling of regular expressions: compileRegexp(), vim_regexec(), vim_r
 scriptfile.c: functions for dealing with the runtime directories/files and running scripts
 search.c: code for normal mode searching commands and hiliting matches
 session.c: session related functions. Saving and restoring IDE state to files
-spell.c: spell checking 
 strings.c: utility functions for string manipulation 
-syntax.c: code for syntax highlighting
 tag.c: Code to handle tags and the tag stack
 term.c: terminal and pseudo-teletype functions
 testing.c: Support for tests.
 ui.c: terminal-based user interface
 usercomm.c: user command line, its completion and user-defined functions
 var.c: the tagged data accessible from scripts
-window.c: functions for displaying the window in X11 or in Wayland
+window.c: functions for displaying the window in Wayland
 
 ## Jumping around ##
 
@@ -386,23 +384,3 @@ For the recommended documentation style, please check [helphelp.txt][16].
 If you have some question on the style guide, please contact the [vim-dev][0]
 mailing list. For other questions please use the [Vi Stack Exchange][8] website, the
 [vim-use][9] mailing list or make use of the [discussion][10] feature here at github.
-
-[todo list]: https://github.com/vim/vim/blob/master/runtime/doc/todo.txt
-[0]: http://www.vim.org/maillist.php#vim-dev
-[1]: https://github.com/vim/vim/blob/master/src/po/README.txt
-[2]: https://github.com/vim/vim/blob/master/runtime/lang/README.txt
-[3]: https://github.com/vim/vim/blob/master/runtime/tutor/README.txt
-[4]: https://github.com/vim/vim/blob/master/runtime/doc/vim.1
-[5]: https://github.com/vim/vim/blob/master/nsis/lang/README.txt
-[6]: https://github.com/vim/vim/discussions/13087
-[7]: https://github.com/vim/vim/blob/master/runtime/doc/develop.txt
-[8]: https://vi.stackexchange.com
-[9]: http://www.vim.org/maillist.php#vim-use
-[10]: https://github.com/vim/vim/discussions
-[11]: https://github.com/vim/vim/blob/master/.github/MAINTAINERS
-[12]: https://github.com/vim/vim/blob/master/src/testdir/test_filetype.vim
-[13]: https://github.com/vim/vim/blob/master/runtime/doc/filetype.txt
-[14]: https://github.com/vim/vim/blob/master/runtime/doc/syntax.txt
-[15]: https://en.wikipedia.org/wiki/Developer_Certificate_of_Origin
-[16]: https://github.com/vim/vim/blob/master/runtime/doc/helphelp.txt
-[17]: https://github.com/vim/vim/issues

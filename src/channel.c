@@ -5898,13 +5898,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                if (!colorName)
                   return FAIL;
 
-               UiColor color = hiColorByName(text(colorName));
-               if (color == INVALCOLOR) {
-                  if (called_emsg_before == called_emsg)
-                     // may not get the error if the GUI didn't start
-                     showErrFmtMsg(_(e_cannot_allocate_color_str), colorName);
-                  return FAIL;
-               }
+               VTermColor color = atoi(text(colorName));
 
                rgb[n] = GUI_MCH_GET_RGB(color);
             }

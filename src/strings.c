@@ -6021,40 +6021,6 @@ hexDigit(int c) {
    return SHORT;
 }
 
-UiColor
-decode_hex_color(Text hex) {
-   if (hex.c[0] != '#' || hex.len != 7)
-      return INVALCOLOR;
-
-   //Name is in "#rrggbb" format
-   UiColor color = RGB(((hexDigit(hex.c[1]) << 4) + hexDigit(hex.c[2])),
-      ((hexDigit(hex.c[3]) << 4) + hexDigit(hex.c[4])),
-      ((hexDigit(hex.c[5]) << 4) + hexDigit(hex.c[6])));
-   if (color > 0xffffff)
-      return INVALCOLOR;
-   return color;
-}
-
-//Decode a hex color with a guarantee that there is no need to check ZERO
-UiColor
-decodeHexColorLengthGuaranteed(CS hex) {
-   UiColor color = 0;
-
-   // Name is in "#rrggbb" format
-   int level = 20;
-   for (int i = 0; i < 6; i++) {
-      char c = hex[i]; 
-      if (SAFE_isdigit(c))
-         color += (c - '0') << level;
-      else
-         color +=  (c - 'a' + 10) << level;
-      level -= 4;
-   }
-   if (color > 0xffffff)
-      return INVALCOLOR;
-   return color;
-}
-
 //Return TRUE if "val" is a valid name: only consists of alphanumeric ASCII
 //characters or characters in "allowed".
 int

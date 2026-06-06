@@ -164,14 +164,6 @@ private TinfoEntry builtin_kitty[] = {SMAP1((CS),
                                        //xterm may already have been used.
 )};
 
-// Additions for using the RGB colors and terminal font
-private TinfoEntry builtin_rgb[] = {SMAP1((CS),
-   //These are printf strings, not terminal codes.
-   "\033[38;2;%lu;%lu;%lum", (Unt)KS_8F,
-   "\033[48;2;%lu;%lu;%lum", (Unt)KS_8B,
-   "\033[58;2;%lu;%lu;%lum", (Unt)KS_8U
-)};
-
 private TinfoEntry special_term[] = {
    //These are printf strings, not terminal codes.
    {S"\033[%dm", (Unt)KS_CF},
@@ -201,8 +193,8 @@ isEeglXterm(CS name) {
 //{{{functions for controlling the terminal
 
 //NOTE: padding and variable substitution is not performed
-UiColor
-termgui_mch_get_rgb(UiColor color) {
+VTermColor
+termgui_mch_get_rgb(VTermColor color) {
    return color;
 }
 
@@ -415,11 +407,6 @@ set_termname(CS termName) {
    applyBuiltinCapability(builtin_kitty, ARRAY_LENGTH(builtin_kitty));
    accept_modifiers_for_function_keys();
 
-   //There is no good way to detect that the terminal supports RGB colors. Since these termcap
-   //entries are non-standard anyway we might as well add them.  But not when one of them was
-   //already set.
-   if (termCodeS[KS_8F] == Em && termCodeS[KS_8B] == Em && termCodeS[KS_8U] == Em)
-      applyBuiltinCapability(builtin_rgb, ARRAY_LENGTH(builtin_rgb));
    if (termCodeS[KS_CF] == Em)
       applyBuiltinCapability(special_term, ARRAY_LENGTH(special_term));
 
@@ -903,92 +890,19 @@ term_font(int n) {
    }
 }
 
-private void
-term_color(CS s, int n) {
-   Byte buffer[20];
-   int i = *s == CSI ? 1 : 2;
-   // index in s[] just after <Esc>[ or CSI
-
-   // Special handling of 16 colors, because termcap can't handle it
-   // Also accept "\e[3%dm", it is sometimes used.
-   // Also accept CSI instead of <Esc>[
-   if (n >= 8
-         && ((s[0] == ESC && s[1] == '[') || (s[0] == CSI && (i = 1) == 1))
-         && s[i] != ZERO
-         && (STRCMP(s + i + 1, "%p1%dm") == 0 || STRCMP(s + i + 1, "%dm") == 0)
-         && (s[i] == '3' || s[i] == '4')
-   ) {
-      CS format = S"%s%s%%p1%%dm";
-      CS lead = i == 2 ? ( S"\033[") : S"\233";
-      CS tail = s[i] == '3' ? (n >= 16 ? S"38;5;" : S"9") : (n >= 16 ? S"48;5;" : S"10");
-
-      SPRINTF(buffer, format, lead, tail);
-      OUT_STR(TGOTO(buffer, 0, n >= 16 ? n : n - 8));
-   } else
-      OUT_STR(TGOTO(s, 0, n));
+void
+termApplyFgColor(Byte n) {
+   OUT_STR(TGOTO("\033[38;5;%dm", 0, n));
 }
 
 void
-term_fg_color(int n) {
-   // Use "AF" termcap entry if present, "Sf" entry otherwise
-   if (termCodeS[KS_CAF] != Em)
-      term_color(termCodeS[KS_CAF], n);
-   ei (termCodeS[KS_CSF] != Em)
-      term_color(termCodeS[KS_CSF], n);
+termApplyBgColor(Byte n) {
+   OUT_STR(TGOTO("\033[48;5;%dm", 0, n));
 }
 
 void
-term_bg_color(int n) {
-   // Use "AB" termcap entry if present, "Sb" entry otherwise
-   if (termCodeS[KS_CAB] != Em)
-      term_color(termCodeS[KS_CAB], n);
-   ei (termCodeS[KS_CSB] != Em)
-      term_color(termCodeS[KS_CSB], n);
-}
-
-void
-term_ul_color(int n) {
-   if (termCodeS[KS_CAU] != Em)
-      term_color(termCodeS[KS_CAU], n);
-}
-
-
-# define RED(rgb)   (((Ulong)(rgb) >> 16) & 0xFF)
-# define GREEN(rgb) (((Ulong)(rgb) >>  8) & 0xFF)
-# define BLUE(rgb)  (((Ulong)(rgb)      ) & 0xFF)
-
-private void
-term_rgb_color(Byte *s, UiColor rgb) {
-# define MAX_COLOR_STR_LEN 100
-   Byte buffer[MAX_COLOR_STR_LEN];
-
-   if (*s == ZERO)
-      return;
-   eeSnprintf(buffer, MAX_COLOR_STR_LEN, (char *)s, RED(rgb), GREEN(rgb), BLUE(rgb));
-   OUT_STR(buffer);
-}
-
-void
-term_fgRgb_color(UiColor rgb) {
-   if (rgb != INVALCOLOR)
-      term_rgb_color(termCodeS[KS_8F], rgb);
-}
-
-void
-term_bgRgb_color(UiColor rgb) {
-   if (rgb != INVALCOLOR)
-      term_rgb_color(termCodeS[KS_8B], rgb);
-}
-
-void
-term_underlRgb_color(UiColor rgb) {
-   // If the user explicitly sets t_8u then use it.  Otherwise wait for
-   // termresponse to be received, which is when t_8u would be set and a
-   // redraw is needed if it was used.
-   if (!optWasSet(S"t_8u") && write_t_8u_state != OK)
-      write_t_8u_state = MAYBE;
-   else
-      term_rgb_color(termCodeS[KS_8U], rgb);
+termApplyUnderColor(Byte n) {
+   OUT_STR(TGOTO("\033[4;58;5;%dm", 0, n));
 }
 
 // Make sure we have a valid set or terminal options. Replace all null entries by Em
@@ -1383,11 +1297,10 @@ termSetMode(TermInputMode tmode) {
          if (tmode != TMODE_RAW) {
             out_str(termCodeS[KS_CBD]);
             out_str_t_TE();   // possibly disables modifyOtherKeys
-          } else {
-            out_str_t_BE();   // enable bracketed paste mode (should
-                  // be before mch_termSetMode().
+         } else {
+            out_str_t_BE();   // enable bracketed paste mode (should be before mch_termSetMode().
             out_str_t_TI();   // possibly enables modifyOtherKeys
-          }
+         }
       }
       out_flush();
       mch_termSetMode(tmode);   // machine specific function

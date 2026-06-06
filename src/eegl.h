@@ -1006,7 +1006,7 @@ LIST_TY(Unt)
 // special attribute addition: Put message in history
 #define MSG_HIST     64
 
-#define EMPTY_DECO  (Decoration){.hiId = SHORT, .flags = 0, .under = INVALCOLOR}
+#define EMPTY_DECO  (Decoration){.hiId = SHORT, .fieldPresence = 0, .flags = 0}
 
 //Values for State.
 //
@@ -2541,37 +2541,35 @@ typedef struct {
    int freeCount;
 } BookRef;
 
-typedef Unt UiColor;
-#define INVALCOLOR ((UiColor)0x1ffffff)  // means "color for this hilite group was not set"
-
-typedef enum {
-   FG_COLOR,    // foreground
-   BG_COLOR,    // background
-   UNDER_COLOR,  // underline
-   FG_RGB,
-   BG_RGB,
-   UNDER_RGB
-} DecoColor;
-
-typedef struct {
-  //Tag indicating which member is actually valid.
-  //Please use the `VTERM_COLOR_IS_*` test macros to check whether a particular type flag is set.
-  uint8_t type;
-  uint8_t red, green, blue;
-  uint8_t index;
-} VTermColor;
+typedef Byte VTermColor;
 
 typedef struct {
    VTermColor fg;
    VTermColor bg;
 } TermCellColor;
 
+typedef struct {
+   Unt bold       : 1;
+   Unt italic     : 1;
+   Unt inverse    : 1;
+   Unt strike     : 1;
+   Unt underline  : 1;
+   Unt undercurl  : 1;
+   Unt noCombine  : 1;
+   Unt doubleWide : 1;
+} VTermDeco;
+
+#define HI_HAS_FG    1
+#define HI_HAS_BG    2
+#define HI_HAS_UNDER 4
+#define HI_IS_LINK   8
 
 typedef struct {
-   UiColor fg; // foreground, always from original hiId group
-   UiColor bg; // background, always from original hiId group
-   UiColor under; // underline color, possibly from merging hilites
-   char flags; // HL_BOLD, underline etc. Result from possibly merging hilites
+   VTermColor fg; // foreground, always from original hiId group
+   VTermColor bg; // background, always from original hiId group
+   VTermColor under; // underline color, possibly from merging hilites
+   VTermDeco flags; // HL_BOLD, underline etc. Result from possibly merging hilites
+   Byte fieldPresence; //HI_* constants
    Short hiId; // original hilite group id
 } Decoration;
 
@@ -3406,9 +3404,6 @@ typedef struct {
 
 declStruct(SyntaxState);
 
-#define MAX_HL_ID       20000   // maximum value for a highlight ID.
-
-
 // Used for the typeahead buffer: typebuf.
 typedef struct {
    CS c;   // The contents. Vbuffer for typed characters
@@ -3417,9 +3412,9 @@ typedef struct {
    int currPos;      // current position in c[]
    int validLen;   // number of valid bytes in tb_buf[]
    int mappedLen;   // nr of mapped bytes in tb_buf[]
-   int tb_silent;   // nr of silently mapped bytes in tb_buf[]
-   int tb_no_abbr_cnt; // nr of bytes without abbrev. in tb_buf[]
-   int tb_change_cnt;   // nr of time tb_buf was changed; never zero
+   int silentCnt;   // nr of silently mapped bytes in tb_buf[]
+   int noAbbrCnt; // nr of bytes without abbrev. in tb_buf[]
+   int changeCnt;   // nr of time tb_buf was changed; never zero
 } Typeahead;
 
 // Struct to hold the saved typeahead for save_typeahead().
@@ -6281,9 +6276,9 @@ EXTERN int countDecosG; // length of decorationsG
 
 // When TRUE skip calling terminal_loop() once.  Used when typing ':' at the more prompt
 EXTERN Boole skip_term_loop INIT(= false);
-EXTERN UiColor defaultFgColorG INIT(= INVALCOLOR);
-EXTERN UiColor defaultBgColorG INIT(= INVALCOLOR);
-EXTERN UiColor defaultUnderlColorG INIT(= INVALCOLOR);
+EXTERN VTermColor defaultFgColorG INIT(= 7);
+EXTERN VTermColor defaultBgColorG INIT(= 0);
+EXTERN VTermColor defaultUnderlColorG INIT(= 1);
 EXTERN Boole currentlyBoldG INIT(= false);
 
 EXTERN Boole autocmd_busy INIT(= false);   // Is apply_autocmds() busy?

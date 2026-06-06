@@ -130,7 +130,6 @@ get_user_name(CS builder, int len) {
 //}}}
 //{{{sessions
 
-
 // Variable flavor
 typedef enum {
    VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
@@ -201,21 +200,19 @@ ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // TRUE: use ful
 
 // Return non-zero if portal "po" is to be stored in the Session.
 private Boole
-portNeedsToBeSaved(Portal *po) {
+portNeedsToBeSaved(Portal* po) {
    if (bt_terminal(po->book)) {
-      return !term_is_finished(po->book)
-          && term_should_restore(po->book);
+      return !term_is_finished(po->book) && term_should_restore(po->book);
    } 
-   if (po->book->currFileName == NULL
-          // When 'buftype' is "nofile" can't restore the portal contents.
-          || bt_nofilename(po->book))
+   if (!po->book->currFileName || bt_nofilename(po->book))
+      // When 'buftype' is "nofile", can't restore the portal contents.
       return false;
    return TRUE;
 }
 
 // Return TRUE if frame "fr" has a window somewhere that we want to save in the Session
 private Boole
-ses_do_frame(Frame *fr) {
+ses_do_frame(Frame* fr) {
    if (fr->layout == FR_LEAF)
       return portNeedsToBeSaved(fr->port);
       
@@ -242,7 +239,7 @@ ses_skipframe(Frame* fr) {
 // split. After the commands the last portal in the frame is the current portal. Return FAIL when 
 // writing the commands to "fd" fails.
 private int
-createPortals(FILE *fd, Frame *fr) {
+createPortals(FILE* fd, Frame* fr) {
    if (fr->layout == FR_LEAF)
       return OK;
 
@@ -281,9 +278,9 @@ createPortals(FILE *fd, Frame *fr) {
 }
 
 private int
-portalSizes( FILE   *fd, int      restore_size, Portal   *tab_firstPor) {
+portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
    int      n = 0;
-   Portal   *wp;
+   Portal* wp;
 
    if (restore_size) {
       for (wp = tab_firstPor; wp != NULL; wp = wp->next) {
@@ -328,13 +325,13 @@ put_view_curpos(FILE *fd, Portal *wp, char *spaces) {
 //Caller must make sure 'scrolloff' is zero.
 private int
 put_view(
-   FILE   *fd,
-   Portal   *wp,
-   Tab   *tp,
-   int      add_edit,        // add ":edit" command to view
-   int      current_arg_idx,     // current argument index of the portal, use -1 if unknown
-   EeSet *terminal_bufs UNUSED) // already encountered terminal books, can be NULL
-{
+   FILE* fd,
+   Portal* wp,
+   Tab* tp,
+   int add_edit,        // add ":edit" command to view
+   int current_arg_idx,     // current argument index of the portal, use -1 if unknown
+   EeSet* terminal_bufs // already encountered terminal books, can be NULL
+){
    Portal   *save_curPor;
    int      f;
    int      did_next = FALSE;
@@ -353,8 +350,8 @@ put_view(
          return FAIL;
    }
 
-   // Only when part of a session: restore the argument index.  Some
-   // arguments may have been deleted, check if the index is valid.
+   //Only when part of a session: restore the argument index.  Some
+   //arguments may have been deleted, check if the index is valid.
    if (wp->argListInd != current_arg_idx && wp->argListInd < WARGCOUNT(wp)) {
       if (fprintf(fd, "%ldargu", (long)wp->argListInd + 1) < 0 || put_eol(fd) == FAIL)
          return FAIL;
@@ -364,14 +361,14 @@ put_view(
    // Edit the file.  Skip this when ":next" already did it.
    if (add_edit && (!did_next || wp->isNotValid)) {
       if (bookIsHelp(wp->book)) {
-         char *curtag = "";
+         CS curtag = S"";
 
          // A help book needs some options to be set.
          // First, create a new empty book with "buftype=help".
          // Then ":help" will re-use both the book and the portal and set the options, even when
          // "options" is not in 'sessionoptions'.
          if (0 < wp->tagStackInd && wp->tagStackInd <= wp->tagStackLen)
-            curtag = (char *)wp->tagStack[wp->tagStackInd - 1].tagname;
+            curtag = wp->tagStack[wp->tagStackInd - 1].tagname;
 
          if (put_line(fd, S"enew | setl bt=help") == FAIL
                 || fprintf(fd, "help %s", curtag) < 0
@@ -1106,10 +1103,10 @@ eeglinfo_filename(CS file) {
 //- write " CTRL-V <length> \n " in first line
 //- write " < <string> \n "     in second line
 private void
-eeglinfo_writestring(FILE *fd, Byte *p) {
-   int      c;
-   Byte   *s;
-   int      len = 0;
+eeglinfo_writestring(FILE* fd, CS p) {
+   int c;
+   CS s;
+   int len = 0;
 
    for (s = p; *s != ZERO; ++s) {
       if (*s == Ctrl_V || *s == '\n')
@@ -1117,10 +1114,9 @@ eeglinfo_writestring(FILE *fd, Byte *p) {
       ++len;
    }
 
-   // If the string will be too long, write its length and put it in the next
-   // line.  Take into account that some room is needed for what comes before
-   // the string (e.g., variable name).  Add something to the length for the
-   // '<', NL and trailing ZERO.
+   //If the string will be too long, write its length and put it in the next line. Take into 
+   //account that some room is needed for what comes before the string (e.g., variable name). 
+   //Add something to the length for the '<', NL and trailing ZERO.
    if (len > LSIZE / 2)
       fprintf(fd, "\026%d\n<", len + 3);
 
@@ -1196,7 +1192,7 @@ private CS
 eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
    CS retval = NULL;
    CS s;
-   long   len;
+   long len;
 
    if (virp->line[off] == Ctrl_V && eeIsDigit(virp->line[off + 1])) {
       len = atol((char *)virp->line + off + 1);
@@ -1237,7 +1233,7 @@ eeglinfo_readline(Vir* virp) {
 }
 
 private int
-readEeglinfoBookList(Vir* virp, int      writing) {
+readEeglinfoBookList(Vir* virp, int writing) {
    CS tab;
    LineNr   lnum;
    ColNr   col;
@@ -1766,10 +1762,10 @@ write_eeglinfo_history(FILE *fp, int merge) {
 
 private void
 write_eeglinfo_barlines(Vir *virp, FILE *fp_out) {
-   int      i;
-   ArrayList   *gap = &virp->vir_barlines;
-   int      seen_useful = FALSE;
-   char   *line;
+   int i;
+   ArrayList* gap = &virp->vir_barlines;
+   int seen_useful = FALSE;
+   char* line;
 
    if (gap->len <= 0)
       return;
@@ -1794,10 +1790,10 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
    CS nextp = NULL;
    CS buf = NULL;
    BVal  *value;
-   int       i;
-   int       allocated = FALSE;
-   int       eof;
-   int       converted;
+   int i;
+   int allocated = FALSE;
+   int eof;
+   int converted;
 
    while (*p == ',') {
       ++p;
@@ -1952,8 +1948,8 @@ eeglinfo_error(CS errnum, CS message, Byte *line) {
 //Restore global vars that start with a capital from the eeglinfo file
 private int
 read_eeglinfo_varlist(Vir* virp, int writing) {
-   int      type = VAR_NUMBER;
-   Var   tv;
+   int type = VAR_NUMBER;
+   Var tv;
    FnCallEntry funccal_entry;
 
    if (!writing && (find_eeglinfo_parameter('!') != NULL)) {
@@ -2117,15 +2113,15 @@ write_eeglinfo_sub_string(FILE *fp) {
 
 private int
 read_eeglinfo_search_pattern(Vir* virp, Boole force) {
-   int      idx = -1;
-   int      magic = FALSE;
-   int      no_scs = FALSE;
-   int      off_line = FALSE;
-   int      off_end = 0;
-   long   off = 0;
-   int      setlast = FALSE;
+   int idx = -1;
+   int magic = FALSE;
+   int no_scs = FALSE;
+   int off_line = FALSE;
+   int off_end = 0;
+   long off = 0;
+   int setlast = FALSE;
    static Boole   hlsearch_on = false;
-   Byte   *val;
+   Byte* val;
    SearchPattern* spat;
 
    // Old line types:
@@ -2144,13 +2140,13 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    CS lp = virp->line;
    if (lp[0] == '~' && (lp[1] == 'm' || lp[1] == 'M')) {  // new line type
       if (lp[1] == 'M')      // magic on
-          magic = TRUE;
+         magic = TRUE;
       if (lp[2] == 's')
-          no_scs = TRUE;
+         no_scs = TRUE;
       if (lp[3] == 'L')
-          off_line = TRUE;
+         off_line = TRUE;
       if (lp[4] == 'E')
-          off_end = SEARCH_END;
+         off_end = SEARCH_END;
       lp += 5;
       off = parseLong(&lp);
    }
@@ -2187,11 +2183,11 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
 
 private void
 wvsp_one(
-   FILE   *fp,   // file to write to
-   int      idx,   // spats[] index
+   FILE* fp,   // file to write to
+   int idx,   // spats[] index
    CS s,   // search pat
-   int      sc)   // dir char
-{
+   int sc   // dir char
+){
    SearchPattern   *spat = getPrevSearchPattern(idx);
    if (!spat->pat)
       return;
@@ -2543,7 +2539,7 @@ write_eeglinfo_registers(FILE* fp) {
       }
 
       {
-         int       flags = 0;
+         Unt flags = 0;
 
          // New style with a bar line. Format:
          // |{bartype},{flags},{name},{type},
@@ -2617,8 +2613,8 @@ skip_for_eeglinfo(Book *book) {
 //When "buflist" is not NULL fill it with the books for which marks are to be written.
 private void
 write_eeglinfo_marks(FILE* fp_out, ArrayList* buflist) {
-   int      is_mark_set;
-   int      i;
+   int is_mark_set;
+   int i;
 
    // Set lastCursor for all books that have a portal.
    Portal   *port;
@@ -2682,14 +2678,14 @@ write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2) {
 }
 
 private void
-write_eeglinfo_filemarks(FILE *fp) {
-   int      i;
+write_eeglinfo_filemarks(FILE* fp) {
+   int i;
    CS name;
    Book* book;
    FileMarkExt* namedfm_p = get_namedfm();
    FileMarkExt* fm;
-   int      vi_idx;
-   int      idx;
+   int vi_idx;
+   int idx;
 
    if (get_eeglinfo_parameter('f') == 0)
       return;
@@ -2793,11 +2789,11 @@ copy_eeglinfo_marks(
 ){
    CS line = virp->line;
    Book* book;
-   int      num_marked_files;
-   int      load_marks;
-   int      copy_marks_out;
-   Byte   *str;
-   int      i;
+   int num_marked_files;
+   int load_marks;
+   int copy_marks_out;
+   CS str;
+   int i;
    Byte   *p;
    Pos   pos;
    List   *list = NULL;
@@ -2822,10 +2818,10 @@ copy_eeglinfo_marks(
    num_marked_files = get_eeglinfo_parameter('\'');
    while (!eof && (count < num_marked_files || fp_out == NULL)) {
       if (line[0] != '>') {
-         if (line[0] != '\n' && line[0] != '\r' && line[0] != '#') {
-            if (eeglinfo_error(S"E576: ", _(e_nonr_missing_gt), line))
-                break;   // too many errors, return now
-         }
+         if (line[0] != '\n' && line[0] != '\r' && line[0] != '#'
+            && eeglinfo_error(S"E576: ", _(e_nonr_missing_gt), line)
+         )
+            break;   // too many errors, return now
          eof = eeFgets(line, LSIZE, virp->vir_fd);
          continue;      // Skip this dud line
       }
@@ -2835,10 +2831,10 @@ copy_eeglinfo_marks(
       str = skipwhite(line + 1);
       str = eeglinfo_readstring(virp, (int)(str - virp->line));
       if (str == NULL)
-          continue;
+         continue;
       p = str + STRLEN(str);
       while (p != str && (*p == ZERO || isSpace(*p)))
-          p--;
+         p--;
       if (*p)
          p++;
       *p = ZERO;
@@ -2850,12 +2846,12 @@ copy_eeglinfo_marks(
       // If fp_out != NULL, copy marks for books not in booklist.
       load_marks = copy_marks_out = FALSE;
       if (fp_out == NULL) {
-          if ((flags & EIF_WANT_MARKS) && curBook->fullFileName != NULL) {
-         if (*name_buf == ZERO)       // only need to do this once
-             home_replace(NULL, curBook->fullFileName, name_buf, LSIZE, TRUE);
-         if (fnamecmp(str, name_buf) == 0)
-             load_marks = TRUE;
-          }
+         if ((flags & EIF_WANT_MARKS) && curBook->fullFileName != NULL) {
+            if (*name_buf == ZERO)       // only need to do this once
+               home_replace(NULL, curBook->fullFileName, name_buf, LSIZE, TRUE);
+            if (fnamecmp(str, name_buf) == 0)
+               load_marks = TRUE;
+         }
       } else { // fp_out != NULL
          // This is slow if there are many books!!
          FOR_ALL_BOOKS(book) {
@@ -2991,9 +2987,9 @@ check_marks_read(void) {
 
 private int
 read_eeglinfo_filemark(Vir *virp, int force) {
-   FileMarkExt   *namedfm_p = get_namedfm();
-   FileMarkExt   *fm;
-   int      i;
+   FileMarkExt* namedfm_p = get_namedfm();
+   FileMarkExt* fm;
+   int i;
 
    // We only get here if line[0] == '\'' or '-'.
    // Illegal mark names are ignored (for future expansion).
@@ -3019,7 +3015,7 @@ read_eeglinfo_filemark(Vir *virp, int force) {
          fm = &namedfm_p[*str - '0' + NMARKS];
       else
          fm = &namedfm_p[*str - 'A'];
-      if (fm != NULL && (fm->fmark.mark.lnum == 0 || force)) {
+      if (fm && (fm->fmark.mark.lnum == 0 || force)) {
          str = skipwhite(str + 1);
          fm->fmark.mark.lnum = parseLong(&str);
          str = skipwhite(str);
@@ -3047,12 +3043,12 @@ private void
 finish_eeglinfo_marks(void) {
    if (vi_namedfm) {
       for (int i = 0; i < NMARKS + EXTRA_MARKS; ++i)
-          eeglFree(vi_namedfm[i].fname);
+         eeglFree(vi_namedfm[i].fname);
       EE_CLEAR(vi_namedfm);
    }
    if (vi_jumplist != NULL) {
       for (int i = 0; i < vi_jumplist_len; ++i)
-          eeglFree(vi_jumplist[i].fname);
+         eeglFree(vi_jumplist[i].fname);
       EE_CLEAR(vi_jumplist);
    }
 }
@@ -3084,8 +3080,8 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
    FileMarkExt* fm = NULL;
    if (name == '\'') {
       if (vi_jumplist) {
-          if (vi_jumplist_len < JUMPLISTSIZE)
-         fm = &vi_jumplist[vi_jumplist_len++];
+         if (vi_jumplist_len < JUMPLISTSIZE)
+            fm = &vi_jumplist[vi_jumplist_len++];
       } else {
          int idx;
          int i;
@@ -3109,17 +3105,17 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
 
          if (idx >= 0) {
             if (curPor->jumpListLen == JUMPLISTSIZE) {
-                // Drop the oldest entry.
-                --idx;
-                eeglFree(curPor->jumpList[0].fname);
-                for (i = 0; i < idx; ++i)
-               curPor->jumpList[i] = curPor->jumpList[i + 1];
+               // Drop the oldest entry.
+               --idx;
+               eeglFree(curPor->jumpList[0].fname);
+               for (i = 0; i < idx; ++i)
+                  curPor->jumpList[i] = curPor->jumpList[i + 1];
             } else {
-                // Move newer entries forward.
-                for (i = curPor->jumpListLen; i > idx; --i)
-               curPor->jumpList[i] = curPor->jumpList[i - 1];
-                ++curPor->jumpListInd;
-                ++curPor->jumpListLen;
+               // Move newer entries forward.
+               for (i = curPor->jumpListLen; i > idx; --i)
+                  curPor->jumpList[i] = curPor->jumpList[i - 1];
+               ++curPor->jumpListInd;
+               ++curPor->jumpListLen;
             }
             fm = &curPor->jumpList[idx];
             fm->fmark.mark.lnum = 0;
@@ -3180,11 +3176,11 @@ handle_eeglinfo_mark(ArrayList *values, int force) {
 private int
 read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
    CS p = virp->line + 1;
-   int      bartype;
-   ArrayList   values;
-   BVal   *vp;
-   int      i;
-   int      read_next = TRUE;
+   int bartype;
+   ArrayList values;
+   BVal* vp;
+   int i;
+   int read_next = TRUE;
 
    // The format is: |{bartype},{value},...
    // For a very long string:
@@ -3248,7 +3244,6 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
 //are local to a file.  Return TRUE when end-of-file is reached. -- webb
 private int
 read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
-   Book   *book;
 
    prepare_eeglinfo_history(forceit ? 9999 : 0, writing);
 
@@ -3298,9 +3293,9 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
       case '@':
          // When history is in bar lines skip the old style history lines.
          if (virp->vir_version < EEGLINFO_VERSION_WITH_HISTORY)
-             eof = read_eeglinfo_history(virp, writing);
+            eof = read_eeglinfo_history(virp, writing);
          else
-             eof = eeglinfo_readline(virp);
+            eof = eeglinfo_readline(virp);
          break;
       case '-':
       case '\'':
@@ -3324,15 +3319,17 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
       finish_eeglinfo_history(virp);
 
    // Change file names to book numbers for fmarks.
-   FOR_ALL_BOOKS(book)
+   Book* book;
+   FOR_ALL_BOOKS(book) {
       fmarks_check_names(book);
+   } 
 
    return eof;
 }
 
 // do_eeglinfo() -- Should only be called from read_eeglinfo() & write_eeglinfo().
 private void
-do_eeglinfo(FILE *fp_in, FILE *fp_out, Unt flags) {
+do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
    int eof = FALSE;
    int merge = FALSE;
    int do_copy_marks = FALSE;
@@ -3400,8 +3397,8 @@ do_eeglinfo(FILE *fp_in, FILE *fp_out, Unt flags) {
 int
 read_eeglinfo(
    CS file,       // file name or NULL to use default name
-   Unt     flags)       // EIF_WANT_INFO et al.
-{
+   Unt flags       // EIF_WANT_INFO et al.
+){
    FileStat   st;      // stat() of existing eeglinfo file
 
    if (no_eeglinfo())
@@ -3443,7 +3440,7 @@ read_eeglinfo(
 //run simultaneously, without losing any marks etc. If "forceit" is TRUE, then the old file is not
 //read in, and only internal info is written to the file.
 void
-write_eeglinfo(CS file, int forceit) {
+write_eeglinfo(CS file, Boole forceit) {
    FILE* fp_out = NULL;   // output eeglinfo file
    CS tempname = NULL;   // name of temp eeglinfo file
    FileStat   st_new;      // stat() of potential new file
@@ -3501,7 +3498,7 @@ write_eeglinfo(CS file, int forceit) {
       for (;;) {
          int next_char = 'z';
 
-         tempname = fiAppendFileExtension(fname, (CS)".tmp", FALSE);
+         tempname = fiAppendFileExtension(fname, S".tmp", FALSE);
          if (!tempname)      // out of memory
             break;
 

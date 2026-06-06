@@ -49,9 +49,9 @@ private int keyNoremapG = 0;       // remapping flags
 // typeBufG.c[typeBufG.currPos + typeBufG.validLen] must be ZERO.
 // The head of the book may contain the result of mappings, abbreviations and @a commands. The 
 // length of this part is typeBufG.mappedLen.
-// typeBufG.tb_silent is the part where <silent> applies.
+// typeBufG.silentCnt is the part where <silent> applies.
 // After the head are characters that come from the terminal.
-// typeBufG.tb_no_abbr_cnt is the number of characters in typeBufG.c that
+// typeBufG.noAbbrCnt is the number of characters in typeBufG.c that
 // should not be considered for abbreviations.
 // Some parts of typeBufG.c must be processed without custom mappings. These parts are remembered
 // in typeBufG.noremap[], which is the same length as typeBufG.c[] and
@@ -66,22 +66,23 @@ private int keyNoremapG = 0;       // remapping flags
 // typeBufG.c has three parts: room in front (for result of mappings), the
 // middle for typeahead and room for new characters.
 #define TYPELEN_INIT   (5 * (MAXMAPLEN + 3))
-private Byte   typeBufG_init[TYPELEN_INIT];   // initial typeBufG.c
-private Byte   noremapbuf_init[TYPELEN_INIT];   // initial typeBufG.noremap
+private Byte typeBufG_init[TYPELEN_INIT];   // initial typeBufG.c
+private Byte noremapbuf_init[TYPELEN_INIT];   // initial typeBufG.noremap
 
 private Unt lastRecordedLen = 0;   // number of last recorded chars
 
-MapBlock   *last_used_map = NULL;
-int      last_used_sid = -1;
+MapBlock* last_used_map = NULL;
+int last_used_sid = -1;
 
-private int   read_readbuf(TextHeader *buf, int advance);
-private void   initTypebuf(void);
-private void   maySyncUndo(void);
-private void   free_typeBufG(void);
-private void   closeScript(void);
-private void   updateScript(int c);
-private Unt   vGetOrPeek(Boole);
-private int   ingestChar(Byte *buf, int maxlen, long wait_time);
+private int read_readbuf(TextHeader *buf, int advance);
+private void initTypebuf(void);
+private void maySyncUndo(void);
+private void free_typeBufG(void);
+private void closeScript(void);
+private void updateScript(int c);
+private Unt vGetOrPeek(Boole);
+private int ingestChar(Byte *buf, int maxlen, long wait_time);
+private int fixInputBuffer(OUT CS buf, int len);
 
 #define TTYM_SGR      0x80
 
@@ -189,7 +190,7 @@ get_keystroke(void) {
       out_flush();
 
       // Leave some room for check_termcode() to insert a key code into (max
-      // 5 chars plus ZERO).  And fix_input_buffer() can triple the number of bytes.
+      // 5 chars plus ZERO).  And fixInputBuffer() can triple the number of bytes.
       maxlen = (buflen - 6 - len) / 3;
       if (!buf)
          buf = alloc(buflen);
@@ -208,7 +209,7 @@ get_keystroke(void) {
       count = ui_inchar(buf + len, maxlen, len == 0 ? -1L : 100L, 0);
       if (count > 0) {
          // Replace zero and CSI by a special key code.
-         count = fix_input_buffer(buf + len, count);
+         count = fixInputBuffer(buf + len, count);
          len += count;
          waited = 0;
       } ei (len > 0)
@@ -498,49 +499,48 @@ typeahead_noflush(int c) {
    TYPEAHEAD_CHAR = c;
 }
 
-// Remove the contents of the stuff buffer and the mapped characters in the
-// typeahead buffer (used in case of an error).  If "flush_typeahead" is true,
-// flush all typeahead characters (used when interrupted by a CTRL-C).
+//Remove the contents of the stuff buffer and the mapped characters in the
+//typeahead buffer (used in case of an error). If "flush_typeahead" is true,
+//flush all typeahead characters (used when interrupted by a CTRL-C).
 void
 flush_buffers(FlushBuffers flush_typeahead) {
-    initTypebuf();
+   initTypebuf();
 
-    start_stuff();
-    while (read_readbuffers(TRUE) != ZERO)
-       {}
+   start_stuff();
+   while (read_readbuffers(TRUE) != ZERO)
+      {}
 
-    if (flush_typeahead == FLUSH_MINIMAL) {
-       // remove mapped characters at the start only, but only when enough space left in typeBufG
-       if (typeBufG.currPos + typeBufG.mappedLen >= typeBufG.len) {
-          typeBufG.currPos = MAXMAPLEN;
-          typeBufG.validLen = 0;
-       } else {
-          typeBufG.currPos += typeBufG.mappedLen;
-          typeBufG.validLen -= typeBufG.mappedLen;
-       }
-       if (typeBufG.validLen == 0)
-          typebuf_was_filled = FALSE;
-    } else {
-       // remove typeahead
-       if (flush_typeahead == FLUSH_INPUT) {
-           // We have to get all characters, because we may delete the first
-           // part of an escape sequence.  In an xterm we get one char at a
-           // time and we have to get them all.
-           while (ingestChar(typeBufG.c, typeBufG.len - 1, 10L) != 0)
-              {}
-       }
-       typeBufG.currPos = MAXMAPLEN;
-       typeBufG.validLen = 0;
-       // Reset the flag that text received from a client or from feedkeys()
-       // was inserted in the typeahead buffer.
-       typebuf_was_filled = FALSE;
-    }
-    typeBufG.mappedLen = 0;
-    typeBufG.tb_silent = 0;
-    cmd_silent = false;
-    typeBufG.tb_no_abbr_cnt = 0;
-    if (++typeBufG.tb_change_cnt == 0)
-       typeBufG.tb_change_cnt = 1;
+   if (flush_typeahead == FLUSH_MINIMAL) {
+      // remove mapped characters at the start only, but only when enough space left in typeBufG
+      if (typeBufG.currPos + typeBufG.mappedLen >= typeBufG.len) {
+         typeBufG.currPos = MAXMAPLEN;
+         typeBufG.validLen = 0;
+      } else {
+         typeBufG.currPos += typeBufG.mappedLen;
+         typeBufG.validLen -= typeBufG.mappedLen;
+      }
+      if (typeBufG.validLen == 0)
+         typebuf_was_filled = FALSE;
+   } else {
+      // remove typeahead
+      if (flush_typeahead == FLUSH_INPUT) {
+          //We have to get all characters because we may delete the first part of an escape 
+          //sequence. In an xterm we get one char at a time and we have to get them all.
+          while (ingestChar(typeBufG.c, typeBufG.len - 1, 10L) != 0)
+             {}
+      }
+      typeBufG.currPos = MAXMAPLEN;
+      typeBufG.validLen = 0;
+      // Reset the flag that text received from a client or from feedkeys()
+      // was inserted in the typeahead buffer.
+      typebuf_was_filled = FALSE;
+   }
+   typeBufG.mappedLen = 0;
+   typeBufG.silentCnt = 0;
+   cmd_silent = false;
+   typeBufG.noAbbrCnt = 0;
+   if (++typeBufG.changeCnt == 0)
+      typeBufG.changeCnt = 1;
 }
 
 // The previous contents of the redo buffer is kept in old_redobuffer.
@@ -922,7 +922,7 @@ initTypebuf(void) {
     typeBufG.len = TYPELEN_INIT;
     typeBufG.validLen = 0;
     typeBufG.currPos = MAXMAPLEN + 4;
-    typeBufG.tb_change_cnt = 1;
+    typeBufG.changeCnt = 1;
 }
 
 // TRUE when keys cannot be remapped.
@@ -965,8 +965,8 @@ insertIntoTypebuf(
    int      nrm;
 
    initTypebuf();
-   if (++typeBufG.tb_change_cnt == 0)
-      typeBufG.tb_change_cnt = 1;
+   if (++typeBufG.changeCnt == 0)
+      typeBufG.changeCnt = 1;
    state_no_longer_safe("insertIntoTypebuf()");
 
    addlen = (int)STRLEN(str);
@@ -1046,17 +1046,17 @@ insertIntoTypebuf(
       typeBufG.noremap[typeBufG.currPos + i + offset] = (--nrm >= 0) ? val : RM_YES;
    }
 
-   // mappedLen and tb_silent only remember the length of mapped and/or
+   // mappedLen and silentCnt only remember the length of mapped and/or
    // silent mappings at the start of the buffer, assuming that a mapped
    // sequence doesn't result in typed characters.
    if (nottyped || typeBufG.mappedLen > offset)
       typeBufG.mappedLen += addlen;
-   if (silent || typeBufG.tb_silent > offset) {
-      typeBufG.tb_silent += addlen;
+   if (silent || typeBufG.silentCnt > offset) {
+      typeBufG.silentCnt += addlen;
       cmd_silent = true;
    }
-   if (typeBufG.tb_no_abbr_cnt && offset == 0)   // and not used for abbrev.s
-      typeBufG.tb_no_abbr_cnt += addlen;
+   if (typeBufG.noAbbrCnt && offset == 0)   // and not used for abbrev.s
+      typeBufG.noAbbrCnt += addlen;
 
    return OK;
 }
@@ -1081,8 +1081,8 @@ ins_char_typebuf(int c, int modifiers){
 //Or "typeBufG.currPos" may have been changed and we would overwrite characters
 //that was just added.
 int
-typebuf_changed(int tb_change_cnt){   // old value of typeBufG.tb_change_cnt
-   return (tb_change_cnt != 0 && (typeBufG.tb_change_cnt != tb_change_cnt || typebuf_was_filled));
+typebuf_changed(int changeCnt){   // old value of typeBufG.changeCnt
+   return (changeCnt != 0 && (typeBufG.changeCnt != changeCnt || typebuf_was_filled));
 }
 
 // Return TRUE if there are no untyped characters in the typeahead buffer
@@ -1140,24 +1140,24 @@ del_typebuf(int len, int offset) {
       else
          typeBufG.mappedLen -= len;
    }
-   if (typeBufG.tb_silent > offset) {     // adjust tb_silent
-      if (typeBufG.tb_silent < offset + len)
-         typeBufG.tb_silent = offset;
+   if (typeBufG.silentCnt > offset) {     // adjust silentCnt
+      if (typeBufG.silentCnt < offset + len)
+         typeBufG.silentCnt = offset;
       else
-         typeBufG.tb_silent -= len;
+         typeBufG.silentCnt -= len;
    }
-   if (typeBufG.tb_no_abbr_cnt > offset) {  // adjust tb_no_abbr_cnt
-      if (typeBufG.tb_no_abbr_cnt < offset + len)
-         typeBufG.tb_no_abbr_cnt = offset;
+   if (typeBufG.noAbbrCnt > offset) {  // adjust noAbbrCnt
+      if (typeBufG.noAbbrCnt < offset + len)
+         typeBufG.noAbbrCnt = offset;
       else
-         typeBufG.tb_no_abbr_cnt -= len;
+         typeBufG.noAbbrCnt -= len;
    }
 
    // Reset the flag that text received from a client or from feedkeys()
    // was inserted in the typeahead buffer.
    typebuf_was_filled = FALSE;
-   if (++typeBufG.tb_change_cnt == 0)
-      typeBufG.tb_change_cnt = 1;
+   if (++typeBufG.changeCnt == 0)
+      typeBufG.changeCnt = 1;
 }
 
 // stateG for adding bytes to a recording or 'showcmd'.
@@ -1289,10 +1289,10 @@ reallocateTypebuf(void) {
    typeBufG.currPos = MAXMAPLEN + 4;  // can insert without realloc
    typeBufG.validLen = 0;
    typeBufG.mappedLen = 0;
-   typeBufG.tb_silent = 0;
-   typeBufG.tb_no_abbr_cnt = 0;
-   if (++typeBufG.tb_change_cnt == 0)
-      typeBufG.tb_change_cnt = 1;
+   typeBufG.silentCnt = 0;
+   typeBufG.noAbbrCnt = 0;
+   if (++typeBufG.changeCnt == 0)
+      typeBufG.changeCnt = 1;
    typebuf_was_filled = FALSE;
 }
 
@@ -2446,7 +2446,7 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
          gotchars(typeBufG.c + typeBufG.currPos + typeBufG.mappedLen, fin.keylen - typeBufG.mappedLen);
       }
 
-      cmd_silent = (typeBufG.tb_silent > 0);
+      cmd_silent = (typeBufG.silentCnt > 0);
       del_typebuf(fin.keylen, 0);   // remove the mapped keys
 
       //Put the replacement string in front of mapstr. 
@@ -2615,8 +2615,8 @@ check_end_reg_executing(int advance) {
 // if "advance" is FALSE (vpeekc()):
 //   Just look whether there is a character available. Return ZERO if not.
 //
-// When "no_mapping" is zero, checks for mappings in the current mode. Only returns one byte (of 
-// a multi-byte character). K_SPECIAL and CSI may be escaped, need to get two more bytes then.
+//When "no_mapping" is zero, checks for mappings in the current mode. Only returns one byte (of 
+//a multi-byte character). K_SPECIAL and CSI may be escaped, need to get two more bytes then.
 private Unt
 vGetOrPeek(Boole advance) {
    int      countRead;
@@ -2670,8 +2670,8 @@ vGetOrPeek(Boole advance) {
               // needed for CTRL-W CTRL-] to open a fold, for example.
               KeyStuffed = TRUE;
            }
-           if (typeBufG.tb_no_abbr_cnt == 0) {
-              typeBufG.tb_no_abbr_cnt = 1;   // no abbreviations now
+           if (typeBufG.noAbbrCnt == 0) {
+              typeBufG.noAbbrCnt = 1;   // no abbreviations now
            }
       } else {
             for (;;) { //{{{inner loop
@@ -2697,9 +2697,9 @@ vGetOrPeek(Boole advance) {
                   // flush all input
                   countRead = ingestChar(typeBufG.c, typeBufG.len - 1, 0L);
 
-                  // If ingestChar() returns TRUE (script file was active) or we are inside a mapping,
-                  // get out of Insert mode. Otherwise we behave like having gotten a CTRL-C.
-                  // As a result typing CTRL-C in insert mode will really insert a CTRL-C.
+                  //If ingestChar() returns TRUE (script file was active) or we are inside a mapping,
+                  //get out of Insert mode. Otherwise we behave like having gotten a CTRL-C.
+                  //As a result typing CTRL-C in insert mode will really insert a CTRL-C.
                   if ((countRead || typeBufG.mappedLen) && (stateG & (MODE_INSERT | MODE_COMMLINE))) {
                      specialChar = ESC;
                   } else {
@@ -2730,7 +2730,7 @@ vGetOrPeek(Boole advance) {
                      // get a character: 2. from the typeahead buffer
                      countRead = typeBufG.c[typeBufG.currPos];
                      if (advance)  {  // remove chars from typeBufG
-                        cmd_silent = (typeBufG.tb_silent > 0);
+                        cmd_silent = (typeBufG.silentCnt > 0);
                         if (typeBufG.mappedLen > 0) {
                            KeyTyped = FALSE;
                         } else {
@@ -2799,16 +2799,16 @@ vGetOrPeek(Boole advance) {
                       typebuf_was_empty = TRUE;
 
                    // no chars to block abbreviation for
-                   typeBufG.tb_no_abbr_cnt = 0;
+                   typeBufG.noAbbrCnt = 0;
                    break;
                }
 
-               // get a character: 3. from the user - update display
-               // In insert mode a screen update is skipped when characters are still available. 
-               // But when those available characters are part of a mapping, and we are going to 
-               // do a blocking wait here.  Need to update the screen to display the changed text
-               // so far. Also for when 'lazyredraw' is set and redrawing was postponed because 
-               // there was something in the input buffer (e.g., termresponse).
+               //get a character: 3. from the user - update display
+               //In Insert mode, a screen update is skipped when characters are still available. 
+               //But when those available characters are part of a mapping, and we are going to 
+               //do a blocking wait here. Need to update the screen to display the changed text
+               //so far. Also for when 'lazyredraw' is set and redrawing was postponed because 
+               //there was something in the input buffer (e.g., termresponse).
                if (((stateG & MODE_INSERT) != 0 || p_lz)
                      && (stateG & MODE_COMMLINE) == 0 && advance && must_redraw != 0 
                      && !need_wait_return
@@ -2848,8 +2848,8 @@ vGetOrPeek(Boole advance) {
                       curPor->cursorRow = old_wrow;
                    }
 
-                   // This looks nice when typing a dead character map.
-                   // There is no actual command line for get_number().
+                   //This looks nice when typing a dead character map.
+                   //There is no actual command line for get_number().
                    if ((stateG & MODE_COMMLINE)
                          && getCommlineInfo()->commBuf != NULL
                          && ptr2cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
@@ -2884,7 +2884,6 @@ vGetOrPeek(Boole advance) {
                   typeBufG.len - typeBufG.currPos - typeBufG.validLen - 1,
                   wait_time
                );
-               
 
                if (showcmd_idx != 0) {
                   pop_showcmd();
@@ -2947,30 +2946,30 @@ vGetOrPeek(Boole advance) {
    return countRead;
 }
 
-// ingestChar() - get one character from
+//ingestChar() - get one character from
 //   1. a scriptfile
 //   2. the keyboard
 //
-//  As many characters as we can get (up to 'maxlen') are put in "buf" and ZERO terminated
-//  (buffer length must be 'maxlen' + 1). Minimum for "maxlen" is 3!!!!
+//As many characters as we can get (up to 'maxlen') are put in "buf" and ZERO terminated
+//(buffer length must be 'maxlen' + 1). Minimum for "maxlen" is 3!!!!
 //
-//  "tb_change_cnt" is the value of typeBufG.tb_change_cnt if "buf" points into it. When 
-//  typeBufG.tb_change_cnt changes (e.g., when a message is received from a remote client) "buf" 
-//  can no longer be used.  "tb_change_cnt" is 0 otherwise.
+//"changeCnt" is the value of typeBufG.changeCnt if "buf" points into it. When 
+//typeBufG.changeCnt changes (e.g., when a message is received from a remote client) "buf" 
+//can no longer be used.  "changeCnt" is 0 otherwise.
 //
-//  If we got an interrupt all input is read until none is available.
+//If we got an interrupt all input is read until none is available.
 //
-//  If wait_time == 0  there is no waiting for the char.
-//  If wait_time == n  we wait for n msec for a character to arrive.
-//  If wait_time == -1 we wait forever for a character to arrive.
+//If wait_time == 0  there is no waiting for the char.
+//If wait_time == n  we wait for n msec for a character to arrive.
+//If wait_time == -1 we wait forever for a character to arrive.
 //
-//  Return the number of obtained characters, or -1 when end of input script reached.
+//Return the number of obtained characters, or -1 when end of input script reached.
 private int
 ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
    int len = 0;
    int retesc = FALSE; // return ESC when we got an interrupt
    int scriptChar;
-   int tb_change_cnt = typeBufG.tb_change_cnt;
+   int changeCnt = typeBufG.changeCnt;
    if (wait_time == -1L || wait_time > 100L) { // flush output before waiting
        cursor_on();
        out_flush();
@@ -3030,42 +3029,39 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
          out_flush();
 
       // Fill up to a third of the buffer, because each character may be tripled below.
-      len = ui_inchar(OUT buf, maxlen / 3, wait_time, tb_change_cnt);
+      len = ui_inchar(OUT buf, maxlen / 3, wait_time, changeCnt);
    }
 
    // If the typeBufG was changed further down, it is like nothing was added by this call.
-   if (typebuf_changed(tb_change_cnt)) {
+   if (typebuf_changed(changeCnt)) {
       return 0;
    }
 
    //Note the change in the typeahead buffer, this matters for when
    //vGetOrPeek() is called recursively, e.g. using getchar(1) in a timer function.
-   if (len > 0 && ++typeBufG.tb_change_cnt == 0)
-      typeBufG.tb_change_cnt = 1;
+   if (len > 0 && ++typeBufG.changeCnt == 0)
+      typeBufG.changeCnt = 1;
 
-
-   int count = fix_input_buffer(OUT buf, len);
+   int count = fixInputBuffer(OUT buf, len);
 
    return count;
 }
 
 // Fix typed characters for use by vgetc() and check_termcode(). "buf[]" must have room to triple 
 // the number of bytes! Return the new length.
-int
-fix_input_buffer(OUT CS buf, int len) {
-   int      i;
+private int
+fixInputBuffer(OUT CS buf, int len) {
    CS p = buf;
 
-   //Two characters are special: ZERO and K_SPECIAL.
-   //When compiled With the GUI CSI is also special.
+   //3 characters are special: ZERO, CSI and K_SPECIAL.
    //Replace        ZERO by K_SPECIAL KS_ZERO    KE_FILLER
    //Replace K_SPECIAL by K_SPECIAL KS_SPECIAL KE_FILLER
    //Replace       CSI by K_SPECIAL KS_EXTRA   KE_CSI
-   for (i = len; --i >= 0; ++p) {
-      if (p[0] == ZERO || (p[0] == K_SPECIAL
-         // timeout may generate K_CURSORHOLD
-         && (i < 2 || p[1] != KS_EXTRA || p[2] != (int)KE_CURSORHOLD)
-         )) {
+   for (int i = len; --i >= 0; ++p) {
+      if (p[0] == ZERO 
+            || (p[0] == K_SPECIAL && (i < 2 || p[1] != KS_EXTRA || p[2] != (int)KE_CURSORHOLD))
+            // timeout may generate K_CURSORHOLD
+      ) {
          mch_memmove(p + 3, p + 1, (Unt)i);
          p[2] = K_THIRD(p[0]);
          p[1] = K_SECOND(p[0]);

@@ -7,25 +7,20 @@
 
 //{{{Hilite groups
 
-typedef struct {
-   UiColor c;
-   Text name; // points into colorNamesContainer
-} NamedColor;
+//Information about a hilite group. The ID of a hilite group is also called group ID.
+//This is module-private info, the publically usable part is written to decorationsG.
 
-// Information about a hilite group. The ID of a hilite group is also called group ID.
-// This is module-internal info, the publically usable part is written to decorationsG.
 typedef struct {
    Unt hiId;
    Text name;
-   Byte flags;   // flag of text decoration combo (bold, underline etc)
-   
-   NamedColor darkFg; // foreground color  if theme is dark
-   NamedColor darkBg; // background color if theme is dark
-   NamedColor darkUnder; // underline color if theme is dark
+   VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
+   Byte fieldPresence; // HI_* flags
+   VTermColor fg; // foreground color
+   VTermColor bg; // background color
+   VTermColor under; // underline color if theme is dark
     
    int link;   // link to this hilite group ID
    int deflink;   // default link; restored in clearHiliteWorker()
-   Boole isLink;      // is this a link to another hilite group?
    ScriptPos deflink_sctx; // script where the default link was set
    ScriptPos script_ctx;   // script in which the group was last set
 } HiliteGroup;
@@ -34,7 +29,7 @@ typedef struct {
 typedef enum {
    BG,
    FG,
-   SPEC,
+   UNDER,
    DECO,
    LINK,
    KEY_PARSE_ERROR
@@ -43,11 +38,11 @@ typedef enum {
 typedef struct {
    int nameStart; // index into "colorsText"
    int nameLen;
-   UiColor value;
+   VTermColor value;
 } BuiltinColor;
 
 
-// Parsed single names like the hilite group name or "clear"
+//Parsed single names like the hilite group name or "clear"
 typedef struct {
    Short start;
    Short end;
@@ -69,9 +64,7 @@ typedef struct {
 
 private Boole printHiliteHeaderWorker(int didHeader, int lineLen, HiliteGroup* group);
 private void printHilite(HiliteGroup* g);
-private Boole hasSettings(HiliteGroup* g, Boole checkLink);
 private void clearHiliteWorker(Short hiId);
-private void parseColorNames(OUT HiliteGroup* g);
 private void printHiliteHeaderNew(HiliteGroup* group);
 private void printHiliteFieldNew(//HiliteGroup* group, CS keyName, 
                                  Text sarg);
@@ -160,13 +153,13 @@ enum {
 
 // The hilite groups.
 private char *(hiliteGroupStrings[]) = {
-   "Normal fg=#ffffff bg=#000000 liteFg=#000000 liteBg=#ffffff",
-   "NonText deco=bold fg=blue",
+   "Normal fg=regular7 bg=regular0",
+   "NonText deco=bold fg=regular4",
    "NormalFloat link=Normal",
    "AfterLastLine link=NonText", // 2 HLF_EOB after the last line in the buffer
    "InvisAtEndOfScreen link=Normal", // HLF_AT @ chars at end of screen, chars that don't really exist in text 
    "Directories link=Normal", //HLF_D directories in CTRL-D listing
-   "ErrorMsg bg=red fg=white", //HLF_E  error messages
+   "ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
    "WarningMsg link=Normal", // HLF_W       warning messages
    "IncrementalSearch deco=inverse", //HLF_I incremental search
    "PrevSearch link=Normal", //HLF_L  last search string
@@ -185,80 +178,80 @@ private char *(hiliteGroupStrings[]) = {
    "VisualModeAutoselecting link=Normal", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
    "WildcardMenu link=Normal", // HLF_WM    Wildmenu hilite
    "FoldedLine link=Normal", // HLF_FL      Folded line
-   "FoldColumn bg=grey fg=cyan liteFg=darkblue", // HLF_FC      Fold column
-   "DiffTextAdd fg=green liteFg=darkGreen", // HLF_ADD  Added diff line
-   "DiffText fg=blue liteFg=DarkBlue", // HLF_CHD  Changed diff line
+   "FoldColumn bg=grey12 fg=regular6", // HLF_FC      Fold column
+   "DiffTextAdd fg=regular2", // HLF_ADD  Added diff line
+   "DiffText fg=regular4", // HLF_CHD  Changed diff line
    "DiffChangedTextInChanged link=Normal", // HLF_TXD  Text Changed in changed diff line
    "DiffAddedTextInChanged link=Normal", // HLF_TXA  Text Added in changed diff line
    // Deleted diff line
-   "DiffDeleted deco=bold bg=DarkCyan fg=blue liteFg=blue liteBg=LightCyan", // HLF_DED
-   "SignColumn bg=Grey fg=Cyan liteBg=Grey liteFg=DarkBlue", // 30 HLF_SC Sign column
-   "Pmenu bg=blue liteBg=black liteFg=white", // HLF_PNI  popup menu normal item
-   "PmenuSelected bg=DarkGrey liteFg=White liteBg=Grey", // HLF_PSI  popup menu selected item
+   "DiffDeleted deco=bold bg=bright6 fg=regular4", // HLF_DED
+   "SignColumn bg=grey10 fg=regular6", // 30 HLF_SC Sign column
+   "Pmenu bg=regular4 liteBg=regular0", // HLF_PNI  popup menu normal item
+   "PmenuSelected bg=grey4", // HLF_PSI  popup menu selected item
    "PmenuMatchedText link=Normal", // HLF_PMNI popup menu matched text in normal item
    "PmenuMatchedInSelected link=Normal", // HLF_PMSI popup menu matched text in selected item
    "PmenuNormalItem link=Normal", // HLF_PNK  popup menu normal item "kind"
    "PmenuSelectedItem link=Normal", // HLF_PSK   popup menu selected item "kind"
    "PmenuExtraText link=Normal", // HLF_PNX   popup menu normal item "menu" (extra text)
    "PmenuSelectedExtraText link=Normal", // HLF_PSX   popup menu selected item "menu" (extra text)
-   "PmenuScrollbar bg=Grey", // HLF_PSB  popup menu scrollbar
-   "PmenuScrollBarThumb  bg=White liteBg=Black", // 40 HLF_PST  popup menu scrollbar thumb
-   "Tabpanel deco=underline bg=DarkGrey liteBg=LightGrey", // HLF_TPL   tabpanel
+   "PmenuScrollbar bg=grey12", // HLF_PSB  popup menu scrollbar
+   "PmenuScrollBarThumb  bg=regular7", // 40 HLF_PST  popup menu scrollbar thumb
+   "Tabpanel deco=underline bg=grey4", // HLF_TPL   tabpanel
    "TabpanelSelected link=Normal", // HLF_TPLS  tabpanel selected
    "TabpanelFill link=Normal", // HLF_TPLF  tabpanel filler
-   "CursorColumn bg=Grey40 liteBg=Grey90", // HLF_CUC  'cursorcolumn'
-   "CursorLine  bg=Grey40 liteBg=Grey90", // HLF_CUL  'cursorline'
+   "CursorColumn bg=grey18", // HLF_CUC  'cursorcolumn'
+   "CursorLine  bg=444", // HLF_CUL  'cursorline'
    "ColorColumn link=Normal", // HLF_MC   'colorcolumn'
    "LocationPortalSelected link=PmenuSelectedItem", // HLF_QFL   location portal line currently selected
    "TerminalStatusLine link=Normal", // 50 HLF_ST    status lines of terminal portals
    "TerminalNoncurrentStatusLine link=Normal", // HLF_STNC  status lines of not-current terminal portals
-   "TerminalRed fg=#c00000", // HLF_TERMR  status lines of not-current terminal portals
-   "TerminalGreen fg=#00c000", // HLF_TERMG  status lines of not-current terminal portals
-   "TerminalBlue fg=#0000c0", // HLF_TERMB  status lines of not-current terminal portals
+   "TerminalRed fg=regular1", // HLF_TERMR  status lines of not-current terminal portals
+   "TerminalGreen fg=bright2", // HLF_TERMG  status lines of not-current terminal portals
+   "TerminalBlue fg=bright4", // HLF_TERMB  status lines of not-current terminal portals
    "MessageArea link=Normal", // HLF_MSG   message area
    "MetaSpecialKeys link=Normal",   // HLF_8 Meta & special keys listed with ":map", text that is 
                                     // displayed different
-   "LineNr fg=yellow liteFg=brown", // HLF_N   line number for ":number" and ":#" commands
+   "LineNr fg=regular3", // HLF_N   line number for ":number" and ":#" commands
    "LineNrAbove link=Normal", // HLF_LNA  LineNrAbove
    "LineNrBelow link=Normal", // HLF_LNB  LineNrBelow
-   "SpellBad under=red deco=undercurl", // HLF_SPB  SpellBad
-   "SpellCap liteUnder=blue deco=undercurl", // HLF_SPC   SpellCap
-   "SpellRare liteUnder=magenta deco=undercurl", // HLF_SPR  SpellRare
-   "SpellLocal under=Cyan liteUnder=DarkCyan deco=undercurl", // 60 HLF_SPL  SpellLocal
-   "Directory fg=Cyan liteFg=blue",
-   "CursorLineNr deco=bold fg=Yellow liteFg=Brown",
-   "MoreMsg deco=bold fg=SeaGreen",
-   "Question deco=bold fg=Green liteFg=SeaGreen", 
-   "SpecialKey fg=Cyan liteFg=blue",
-   "Title deco=bold fg=magenta",
-   "WarningMsg liteBg=#303030 fg=Red",
-   "InfoMsg liteBg=#303030 liteFg=Green",
-   "WildMenu bg=Yellow fg=Black",
-   "Folded bg=DarkGrey fg=Cyan liteBg=LightGrey liteFg=DarkBlue",
-   "Visual bg=#575757 fg=LightGrey liteBg=LightGrey liteFg=Black",
-   "ColorColumn bg=DarkRed liteBg=LightRed",
-   "MatchParen bg=DarkCyan liteBg=cyan",
-   "StatusLineTerm deco=bold fg=LightGreen bg=LightGreen liteFg=DarkGreen liteBg=DarkGreen",
-   "StatusLineTermNC liteFg=liteBg liteBg=DarkGreen",
-   "Search fg=black bg=yellow liteBg=yellow liteFg=black",
+   "SpellBad under=regular2 deco=undercurl", // HLF_SPB  SpellBad
+   "SpellCap liteUnder=regular4 deco=undercurl", // HLF_SPC   SpellCap
+   "SpellRare liteUnder=regular5 deco=undercurl", // HLF_SPR  SpellRare
+   "SpellLocal under=regular6 deco=undercurl", // 60 HLF_SPL  SpellLocal
+   "Directory fg=bright6",
+   "CursorLineNr deco=bold fg=regular3",
+   "MoreMsg deco=bold fg=143",
+   "Question deco=bold fg=bright2", 
+   "SpecialKey fg=bright4",
+   "Title deco=bold fg=bright5",
+   "WarningMsg bg=grey7 fg=bright1",
+   "InfoMsg bg=grey6 fg=bright2",
+   "WildMenu bg=regular3 fg=regular0",
+   "Folded bg=grey2 fg=bright6",
+   "Visual bg=grey16 fg=grey23",
+   "ColorColumn bg=regular1",
+   "MatchParen bg=regular6",
+   "StatusLineTerm deco=bold fg=regular2 bg=bright2",
+   "StatusLineTermNC fg=353 bg=050",
+   "Search fg=regular0 bg=bright3",
    "CursorLineFold link=FoldColumn",
    "CurSearch link=Search",
    "LocationLine link=Search",
-   "Comment fg=green liteFg=DarkGreen",
-   "Constant fg=#ffa0a0 liteFg=Magenta",
-   "Special fg=Orange liteFg=#6a5acd",
-   "Identifier fg=#40ffff",
-   "Statement fg=#ffff60",
-   "PreProc fg=#ff80ff",
-   "Type fg=#60ff60",
-   "Keyword fg=#ffff00",
-   "Underlined fg=#80a0ff deco=underline",
-   "Ignore fg=DarkGrey liteFg=LiteGrey",
-   "Added fg=LimeGreen liteFg=SeaGreen",
-   "Changed fg=DodgerBlue liteFg=DodgerBlue",
-   "Removed fg=red liteFg=red",
-   "Error bg=red",
-   "Todo bg=yellow fg=blue",
+   "Comment fg=regular2",
+   "Constant fg=544",
+   "Special fg=540",
+   "Identifier fg=255",
+   "Statement fg=552",
+   "PreProc fg=525",
+   "Type fg=353",
+   "Keyword fg=550",
+   "Underlined fg=125 deco=underline",
+   "Ignore fg=grey7",
+   "Added fg=252",
+   "Changed fg=225",
+   "Removed fg=regular1",
+   "Error bg=regular1",
+   "Todo bg=regular3 fg=regular4",
    "Bold deco=bold",
    "Italic deco=italic"
 }; 
@@ -277,11 +270,6 @@ private DictStringInt128* hiNames;
 
 private Arena* a;
 
-// The names of built-in colors, separated by ZERO
-private CS colorNamesContainer;
-// The color dictionary: its keys are indices into @colorNamesContainer, its values are UiColors
-private DictStringInt128* colorDictS;
-
 
 // Return the name of a hilite group.
 private Text
@@ -293,351 +281,6 @@ hiliteGroupName(Short hiId) {
 int
 highlight_link_id(Short hiId) {
    return hilites[hiId].link;
-}
-
-//{{{built-in colors in text form
-
-static Byte colorsText[] = "snow#fffafaghostWhite#f8f8ffwhiteSmoke#f5f5f5"
-   "whiteSmoke#f5f5f5gainsboro#dcdcdcfloralWhite#fffaf0floralWhite#fffaf0"
-   "oldLace#fdf5e6oldlace#fdf5e6linen#faf0e6antiqueWhite#faebd7antiqueWhite#faebd7"
-   "papayaWhip#ffefd5papayawhip#ffefd5blanchedAlmond#ffebcdblanchedalmond#ffebcd"
-   "bisque#ffe4c4peachPuff#ffdab9peachpuff#ffdab9navajoWhite#ffdeadnavajowhite#ffdead"
-   "moccasin#ffe4b5cornsilk#fff8dcivory#fffff0lemonChiffon#fffacdlemonchiffon#fffacd"
-   "seashell#fff5eehoneydew#f0fff0mintCream#f5fffaazure#f0ffff"
-   "aliceBlue#f0f8fflavender#e6e6falavenderBlush#fff0f5"
-   "lavenderBlush#fff0f5mistyRose#ffe4e1mistyrose#ffe4e1white#ffffffblack#000000"
-   "darkSlateGray#2f4f4fdarkslategray#2f4f4fdarkSlateGrey#2f4f4fdarkslategrey#2f4f4f"
-   "dimGray#696969dimgray#696969dimGrey#696969dimgrey#696969slateGray#708090"
-   "slategray#708090slateGrey#708090slategrey#708090lightSlateGray#778899"
-   "lightslategray#778899lightSlateGrey#778899"
-   "grey#bebebex11gray#bebebex11gray#bebebex11Grey#bebebex11grey#bebebewebGray#808080"
-   "webgray#808080webGrey#808080webgrey#808080lightGrey#d3d3d3lightgrey#d3d3d3"
-   "lightGray#d3d3d3lightgray#d3d3d3midnightBlue#191970midnightBlue#191970navy#000080"
-   "navyBlue#000080navyblue#000080cornflowerBlue#6495edcornflowerblue#6495ed"
-   "darkSlateBlue#483d8bdarkslateblue#483d8bslateBlue#6a5acdslateBlue#6a5acd"
-   "mediumSlateBlue#7b68eemediumslateblue#7b68eelight slate blue#8470ff"
-   "lightSlateBlue#8470ffmediumBlue#0000cdmediumblue#0000cdroyalBlue#4169e1"
-   "royalBlue#4169e1blue#0000ffdodgerBlue#1e90ff"
-   "dodgerBlue#1e90ffdeepSkyBlue#00bfffdeepskyblue#00bfffskyBlue#87ceebskyblue#87ceeb"
-   "lightSkyBlue#87cefalightskyblue#87cefasteelBlue#4682b4steelblue#4682b4"
-   "lightSteelBlue#b0c4delightsteelblue#b0c4delightBlue#add8e6lightblue#add8e6powderBlue#b0e0e6"
-   "powderblue#b0e0e6paleTurquoise#afeeeepaleturquoise#afeeeedarkTurquoise#00ced1"
-   "darkturquoise#00ced1medium turquoise#48d1ccmediumturquoise#48d1ccturquoise#40e0d0cyan#00ffff"
-   "aqua#00fffflightCyan#e0fffflightcyan#e0ffffcadetBlue#5f9ea0cadetblue#5f9ea0"
-   "mediumAquamarine#66cdaamedium aquamarine#66cdaaaquamarine#7fffd4darkGreen#006400"
-   "darkgreen#006400darkOliveGreen#556b2fdarkolivegreen#556b2fdarkSeaGreen#8fbc8f"
-   "darkseagreen#8fbc8fsea green#2e8b57seagreen#2e8b57mediumSeaGreen#3cb371"
-   "mediumSeaGreen#3cb371"
-   "lightSeaGreen#20b2aalightSeaGreen#20b2aapaleGreen#98fb98palegreen#98fb98"
-   "springGreen#00ff7f"
-   "springGreen#00ff7flawnGreen#7cfc00lawnGreen#7cfc00green#00ff00lime#00ff00x11Green#00ff00"
-   "x11green#00ff00webGreen#008000webgreen#008000chartreuse#7fff00mediumSpringGreen#00fa9a"
-   "mediumspringgreen#00fa9agreenYellow#adff2fgreenyellow#adff2flimeGreen#32cd32"
-   "limegreen#32cd32yellowGreen#9acd32yellowgreen#9acd32forestGreen#228b22forestgreen#228b22"
-   "olive drab#6b8e23olivedrab#6b8e23dark khaki#bdb76bkhaki#f0e68c"
-   "pale goldenrod#eee8aapalegoldenrod#eee8aalight goldenrod yellow#fafad2"
-   "lightgoldenrodyellow#fafad2light yellow#ffffe0lightyellow#ffffe0yellow#ffff00gold#ffd700"
-   "light goldenrod#eedd82lightgoldenrod#eedd82goldenrod#daa520dark goldenrod#b8860b"
-   "darkgoldenrod#b8860brosy brown#bc8f8frosybrown#bc8f8findian red#cd5c5cindianred#cd5c5c"
-   "saddle brown#8b4513saddlebrown#8b4513sienna#a0522dperu#cd853fburlywood#deb887beige#f5f5dc"
-   "wheat#f5deb3sandy brown#f4a460sandybrown#f4a460tan#d2b48cchocolate#d2691e"
-   "firebrick#b22222brown#a52a2adark salmon#e9967adarksalmon#e9967asalmon#fa8072"
-   "light salmon#ffa07alightsalmon#ffa07aorange#ffa500dark orange#ff8c00darkorange#ff8c00"
-   "coral#ff7f50light coral#f08080lightcoral#f08080tomato#ff6347orange red#ff4500"
-   "orangered#ff4500red#ff0000hot pink#ff69b4hotpink#ff69b4deep pink#ff1493deeppink#ff1493"
-   "pink#ffc0cblight pink#ffb6c1lightpink#ffb6c1pale violet red#db7093palevioletred#db7093"
-   "maroon#b03060x11 maroon#b03060x11maroon#b03060web maroon#800000webmaroon#800000"
-   "medium violet red#c71585mediumvioletred#c71585violet red#d02090violetred#d02090"
-   "magenta#ff00fffuchsia#ff00ffviolet#ee82eeplum#dda0ddorchid#da70d6medium orchid#ba55d3"
-   "darkOrchid#9932ccdarkorchid#9932ccdarkViolet#9400d3darkviolet#9400d3"
-   "blueViolet#8a2be2blueviolet#8a2be2purple#a020f0"
-   "x11 purple#a020f0x11purple#a020f0web purple#800080webpurple#800080medium purple#9370db"
-   "thistle#d8bfd8snow1#fffafasnow2#eee9e9snow3#cdc9c9snow4#8b8989"
-   "seashell1#fff5eeseashell2#eee5deseashell3#cdc5bfseashell4#8b8682antiquewhite1#ffefdb"
-   "antiquewhite2#eedfccantiquewhite3#cdc0b0antiquewhite4#8b8378bisque1#ffe4c4bisque2#eed5b7"
-   "bisque3#cdb79ebisque4#8b7d6bpeachpuff1#ffdab9peachpuff2#eecbadpeachpuff3#cdaf95"
-   "peachpuff4#8b7765navajowhite1#ffdeadnavajowhite2#eecfa1navajowhite3#cdb38bnavajowhite4#8b795e"
-   "lemonchiffon1#fffacdlemonchiffon2#eee9bflemonchiffon3#cdc9a5lemonchiffon4#8b8970"
-   "cornsilk1#fff8dccornsilk2#eee8cdcornsilk3#cdc8b1cornsilk4#8b8878ivory1#fffff0ivory2#eeeee0"
-   "ivory3#cdcdc1ivory4#8b8b83honeydew1#f0fff0honeydew2#e0eee0honeydew3#c1cdc1honeydew4#838b83"
-   "lavenderblush1#fff0f5lavenderblush2#eee0e5lavenderblush3#cdc1c5lavenderblush4#8b8386"
-   "mistyrose1#ffe4e1mistyrose2#eed5d2mistyrose3#cdb7b5mistyrose4#8b7d7bazure1#f0ffff"
-   "azure2#e0eeeeazure3#c1cdcdazure4#838b8bslateblue1#836fffslateblue2#7a67eeslateblue3#6959cd"
-   "slateblue4#473c8broyalblue1#4876ffroyalblue2#436eeeroyalblue3#3a5fcdroyalblue4#27408b"
-   "blue#0000ffblue2#0000eeblue3#0000cdblue4#00008bdodger blue1#1e90ffdodger blue2#1c86ee"
-   "dodgerBlue3#1874cddodgerBlue4#104e8bsteelBlue1#63b8ffsteelBlue2#5caceesteelBlue3#4f94cd"
-   "steelBlue4#36648bdeep sky blue1#00bfffdeep sky blue2#00b2eedeep sky blue3#009acd"
-   "deepSkyBlue4#00688bsky blue1#87ceffsky blue2#7ec0eesky blue3#6ca6cdsky blue4#4a708b"
-   "lightSkyBlue1#b0e2fflight sky blue2#a4d3eelight sky blue3#8db6cdlight sky blue4#607b8b"
-   "slateGray1#c6e2ffslateGray2#b9d3eeslate gray3#9fb6cdslateGray4#6c7b8b"
-   "lightSteelBlue1#cae1fflightSteelBlue2#bcd2eelightSteelBlue3#a2b5cd"
-   "lightSteelBlue4#6e7b8blightBlue1#bfeffflight blue2#b2dfeelight blue3#9ac0cd"
-   "lightBlue4#68838blightCyan1#e0fffflightCyan2#d1eeeelightCyan3#b4cdcdlightCyan4#7a8b8b"
-   "pale turquoise1#bbffffpaleTurquoise2#aeeeeepaleTurquoise3#96cdcdpaleTurquoise4#668b8b"
-   "cadet blue1#98f5ffcadet blue2#8ee5eecadet blue3#7ac5cdcadetBlue4#53868bturquoise1#00f5ff"
-   "turquoise2#00e5eeturquoise3#00c5cdturquoise4#00868bcyan1#00ffffcyan2#00eeeecyan3#00cdcd"
-   "cyan4#008b8bdarkSlateGray1#97ffffdarkSlateGray2#8deeeedarkSlateGray3#79cdcd"
-   "dark slate gray4#528b8baquamarine1#7fffd4aquamarine2#76eec6aquamarine3#66cdaa"
-   "aquamarine4#458b74dark sea green#c1ffc1dark sea green2#b4eeb4dark sea green3#9bcd9b"
-   "dark sea green4#698b69sea green1#54ff9fsea green2#4eee94sea green3#43cd80sea green4#2e8b57"
-   "pale green1#9aff9apale green2#90ee90pale green3#7ccd7cpale green4#548b54spring green1#00ff7f"
-   "spring green2#00ee76spring green3#00cd66spring green4#008b45green1#00ff00green2#00ee00"
-   "green3#00cd00green4#008b00chartreuse1#7fff00chartreuse2#76ee00chartreuse3#66cd00"
-   "chartreuse4#458b00oliveDrab1#c0ff3eolive drab2#b3ee3aolive drab3#9acd32olive drab4#698b22"
-   "dark olive green1#caff70darkOlive green2#bcee68dark olive green3#a2cd5a"
-   "dark olive green4#6e8b3dkhaki1#fff68fkhaki2#eee685khaki3#cdc673khaki4#8b864e"
-   "light goldenrod1#ffec8blightGoldenrod2#eedc82lightGoldenrod3#cdbe70lightGoldenrod4#8b814c"
-   "light yellow1#ffffe0light yellow2#eeeed1light yellow3#cdcdb4lightYellow4#8b8b7a"
-   "yellow1#ffff00yellow2#eeee00yellow3#cdcd00yellow4#8b8b00darkYellow#8b8b00gold1#ffd700"
-   "gold2#eec900gold3#cdad00gold4#8b7500goldenrod1#ffc125goldenrod2#eeb422goldenrod3#cd9b1d"
-   "goldenrod4#8b6914darkGoldenrod1#ffb90fdark goldenrod2#eead0edarkGoldenrod3#cd950c"
-   "darkGoldenrod4#8b6508rosyBrown1#ffc1c1rosy brown2#eeb4b4rosyBrown3#cd9b9b"
-   "rosy brown4#8b6969indianRed1#ff6a6aindianRed2#ee6363indian red3#cd5555indian red4#8b3a3a"
-   "sienna1#ff8247sienna2#ee7942sienna3#cd6839sienna4#8b4726burly wood1#ffd39bburly wood2#eec591"
-   "burly wood3#cdaa7dburly wood4#8b7355wheat1#ffe7bawheat2#eed8aewheat3#cdba96wheat4#8b7e66"
-   "tan1#ffa54ftan2#ee9a49tan3#cd853ftan4#8b5a2bchocolate1#ff7f24chocolate2#ee7621"
-   "chocolate3#cd661dchocolate4#8b4513fireBrick1#ff3030fire brick2#ee2c2cfire brick3#cd2626"
-   "fire brick4#8b1a1abrown1#ff4040brown2#ee3b3bbrown3#cd3333brown4#8b2323salmon1#ff8c69"
-   "salmon2#ee8262salmon3#cd7054salmon4#8b4c39lightSalmon1#ffa07alight salmon2#ee9572"
-   "light salmon3#cd8162light salmon4#8b5742orange1#ffa500orange2#ee9a00orange3#cd8500"
-   "orange4#8b5a00dark orange1#ff7f00dark orange2#ee7600darkOrange3#cd6600dark orange4#8b4500"
-   "coral1#ff7256coral2#ee6a50coral3#cd5b45coral4#8b3e2ftomato1#ff6347tomato2#ee5c42"
-   "tomato3#cd4f39tomato4#8b3626orange red1#ff4500orangeRed2#ee4000orange red3#cd3700"
-   "orange red4#8b2500light red#ff8b8bred#ff0000red2#ee0000red3#cd0000red4#8b0000"
-   "deep pink1#ff1493deep pink2#ee1289deep pink3#cd1076deepPink4#8b0a50hot pink1#ff6eb4"
-   "hot pink2#ee6aa7hot pink3#cd6090hot pink4#8b3a62pink1#ffb5c5pink2#eea9b8"
-   "pink3#cd919epink4#8b636clightPink1#ffaeb9lightPink2#eea2adlightPink3#cd8c95"
-   "lightPink4#8b5f65paleVioletRed1#ff82abpaleVioletRed2#ee799fpaleViolet red3#cd6889"
-   "paleVioletRed4#8b475dmaroon1#ff34b3maroon2#ee30a7"
-   "maroon3#cd2990maroon4#8b1c62violetRed1#ff3e9violet red2#ee3a8cviolet red3#cd3278"
-   "violetRed4#8b2252lightMagenta#ff8bffmagenta1#ff00ffmagenta2#ee00ee"
-   "magenta3#cd00cdmagenta4#8b008borchid1#ff83faorchid2#ee7ae9orchid3#cd69c9orchid4#8b4789"
-   "plum1#ffbbffplum2#eeaeeeplum3#cd96cdplum4#8b668bmedium orchid1#e066ffmedium orchid2#d15fee"
-   "mediumOrchid3#b452cdmediumOrchid4#7a378bdark orchid1#bf3effdark orchid2#b23aee"
-   "darkOrchid3#9a32cddarkOrchid4#68228bpurple1#9b30ffpurple2#912ceepurple3#7d26cdpurple4#551a8b"
-   "mediumPurple1#ab82ff"
-   "mediumPurple2#9f79eemediumPurple3#8968cdmediumPurple4#5d478bthistle1#ffe1ffthistle2#eed2ee"
-   "thistle3#cdb5cdthistle4#8b7b8bgrey0#000000grey1#030303grey2#050505grey3#080808grey4#0a0a0a"
-   "grey5#0d0d0dgrey6#0f0f0f"
-   "grey7#121212grey8#141414grey9#171717grey10#1a1a1agrey11#1c1c1cgrey12#1f1f1fgrey13#212121"
-   "grey14#242424grey15#262626gray16#292929grey16#292929gray17#2b2b2bgrey17#2b2b2b"
-   "grey18#2e2e2egray19#303030grey19#303030gray20#333333grey20#333333"
-   "grey21#363636grey22#383838grey23#3b3b3bgrey24#3d3d3dgrey25#404040grey26#424242grey27#454545"
-   "grey28#474747grey29#4a4a4agrey30#4d4d4dgrey31#4f4f4fgrey32#525252gray33#545454grey33#545454"
-   "grey34#575757grey35#595959grey36#5c5c5cgrey37#5e5e5egrey38#616161grey39#636363"
-   "grey40#666666grey41#696969grey42#6b6b6bgrey43#6e6e6egrey44#707070grey45#737373"
-   "grey46#757575grey47#787878grey48#7a7a7agrey49#7d7d7dgrey50#7f7f7fgrey51#828282"
-   "grey52#858585grey53#878787grey54#8a8a8agrey55#8c8c8cgrey56#8f8f8fgrey57#919191"
-   "grey58#949494grey59#969696grey60#999999grey61#9c9c9cgrey62#9e9e9egrey63#a1a1a1"
-   "grey64#a3a3a3grey65#a6a6a6grey66#a8a8a8grey67#abababgrey68#adadadgrey69#b0b0b0"
-   "grey70#b3b3b3grey71#b5b5b5grey72#b8b8b8grey73#bababagrey74#bdbdbdgrey75#bfbfbf"
-   "grey76#c2c2c2grey77#c4c4c4grey78#c7c7c7grey79#c9c9c9grey80#ccccccgrey81#cfcfcf"
-   "grey82#d1d1d1grey83#d4d4d4grey84#d6d6d6gray85#d9d9d9grey85#d9d9d9grey86#dbdbdb"
-   "grey87#dededegrey88#e0e0e0grey89#e3e3e3grey90#e5e5e5grey91#e8e8e8grey92#ebebeb"
-   "grey93#edededgrey94#f0f0f0grey95#f2f2f2grey96#f5f5f5grey97#f7f7f7grey98#fafafa"
-   "grey99#fcfcfcgray100#ffffffgrey100#ffffffdark grey#a9a9a9darkgrey#a9a9a9dark blue#00008b"
-   "darkblue#00008bdark cyan#008b8bdarkcyan#008b8b"
-   "dark magenta#8b008bdarkmagenta#8b008bdark red#8b0000darkred#8b0000light green#90ee90"
-   "crimson#dc143cindigo#4b0082olive#808000rebecca purple#663399"
-   "silver#c0c0c0teal#008080";
-   
-   
-// 'css_black': '#000000',
-// 'css_silver': '#c0c0c0',
-// 'css_gray': '#808080',
-// 'css_white': '#FFFFFF',
-// 'css_maroon': '#800000',
-// 'css_red': '#FF0000',
-// 'css_purple': '#800080',
-// 'css_fuchsia': '#FF00FF',
-// 'css_green': '#008000',
-// 'css_lime': '#00FF00',
-// 'css_olive': '#808000',
-// 'css_yellow': '#FFFF00',
-// 'css_navy': '#000080',
-// 'css_blue': '#0000FF',
-// 'css_teal': '#008080',
-// 'css_aqua': '#00FFFF',
-// 'css_aliceblue': '#f0f8ff',
-// 'css_antiquewhite': '#faebd7',
-// 'css_aquamarine': '#7fffd4',
-// 'css_azure': '#f0ffff',
-// 'css_beige': '#f5f5dc',
-// 'css_bisque': '#ffe4c4',
-// 'css_blanchedalmond': '#ffebcd',
-// 'css_blueviolet': '#8a2be2',
-// 'css_brown': '#a52a2a',
-// 'css_burlywood': '#deb887',
-// 'css_cadetblue': '#5f9ea0',
-// 'css_chartreuse': '#7fff00',
-// 'css_chocolate': '#d2691e',
-// 'css_coral': '#ff7f50',
-// 'css_cornflowerblue': '#6495ed',
-// 'css_cornsilk': '#fff8dc',
-// 'css_crimson': '#dc143c',
-// 'css_cyan': '#00ffff',
-// 'css_darkblue': '#00008b',
-// 'css_darkcyan': '#008b8b',
-// 'css_darkgoldenrod': '#b8860b',
-// 'css_darkgray': '#a9a9a9',
-// 'css_darkgreen': '#006400',
-// 'css_darkgrey': '#a9a9a9',
-// 'css_darkkhaki': '#bdb76b',
-// 'css_darkmagenta': '#8b008b',
-// 'css_darkolivegreen': '#556b2f',
-// 'css_darkorange': '#ff8c00',
-// 'css_darkorchid': '#9932cc',
-// 'css_darkred': '#8b0000',
-// 'css_darksalmon': '#e9967a',
-// 'css_darkseagreen': '#8fbc8f',
-// 'css_darkslateblue': '#483d8b',
-// 'css_darkslategray': '#2f4f4f',
-// 'css_darkslategrey': '#2f4f4f',
-// 'css_darkturquoise': '#00ced1',
-// 'css_darkviolet': '#9400d3',
-// 'css_deeppink': '#ff1493',
-// 'css_deepskyblue': '#00bfff',
-// 'css_dimgray': '#696969',
-// 'css_dimgrey': '#696969',
-// 'css_dodgerblue': '#1e90ff',
-// 'css_firebrick': '#b22222',
-// 'css_floralwhite': '#fffaf0',
-// 'css_forestgreen': '#228b22',
-// 'css_gainsboro': '#dcdcdc',
-// 'css_ghostwhite': '#f8f8ff',
-// 'css_gold': '#ffd700',
-// 'css_goldenrod': '#daa520',
-// 'css_greenyellow': '#adff2f',
-// 'css_grey': '#808080',
-// 'css_honeydew': '#f0fff0',
-// 'css_hotpink': '#ff69b4',
-// 'css_indianred': '#cd5c5c',
-// 'css_indigo': '#4b0082',
-// 'css_ivory': '#fffff0',
-// 'css_khaki': '#f0e68c',
-// 'css_lavender': '#e6e6fa',
-// 'css_lavenderblush': '#fff0f5',
-// 'css_lawngreen': '#7cfc00',
-// 'css_lemonchiffon': '#fffacd',
-// 'css_lightblue': '#add8e6',
-// 'css_lightcoral': '#f08080',
-// 'css_lightcyan': '#e0ffff',
-// 'css_lightgoldenrodyellow': '#fafad2',
-// 'css_lightgray': '#d3d3d3',
-// 'css_lightgreen': '#90ee90',
-// 'css_lightgrey': '#d3d3d3',
-// 'css_lightpink': '#ffb6c1',
-// 'css_lightsalmon': '#ffa07a',
-// 'css_lightseagreen': '#20b2aa',
-// 'css_lightskyblue': '#87cefa',
-// 'css_lightslategray': '#778899',
-// 'css_lightslategrey': '#778899',
-// 'css_lightsteelblue': '#b0c4de',
-// 'css_lightyellow': '#ffffe0',
-// 'css_limegreen': '#32cd32',
-// 'css_linen': '#faf0e6',
-// 'css_magenta': '#ff00ff',
-// 'css_mediumaquamarine': '#66cdaa',
-// 'css_mediumblue': '#0000cd',
-// 'css_mediumorchid': '#ba55d3',
-// 'css_mediumpurple': '#9370db',
-// 'css_mediumseagreen': '#3cb371',
-// 'css_mediumslateblue': '#7b68ee',
-// 'css_mediumspringgreen': '#00fa9a',
-// 'css_mediumturquoise': '#48d1cc',
-// 'css_mediumvioletred': '#c71585',
-// 'css_midnightblue': '#191970',
-// 'css_mintcream': '#f5fffa',
-// 'css_mistyrose': '#ffe4e1',
-// 'css_moccasin': '#ffe4b5',
-// 'css_navajowhite': '#ffdead',
-// 'css_oldlace': '#fdf5e6',
-// 'css_olivedrab': '#6b8e23',
-// 'css_orange': '#ffa500',
-// 'css_orangered': '#ff4500',
-// 'css_orchid': '#da70d6',
-// 'css_palegoldenrod': '#eee8aa',
-// 'css_palegreen': '#98fb98',
-// 'css_paleturquoise': '#afeeee',
-// 'css_palevioletred': '#db7093',
-// 'css_papayawhip': '#ffefd5',
-// 'css_peachpuff': '#ffdab9',
-// 'css_peru': '#cd853f',
-// 'css_pink': '#ffc0cb',
-// 'css_plum': '#dda0dd',
-// 'css_powderblue': '#b0e0e6',
-// 'css_rosybrown': '#bc8f8f',
-// 'css_royalblue': '#4169e1',
-// 'css_saddlebrown': '#8b4513',
-// 'css_salmon': '#fa8072',
-// 'css_sandybrown': '#f4a460',
-// 'css_seagreen': '#2e8b57',
-// 'css_seashell': '#fff5ee',
-// 'css_sienna': '#a0522d',
-// 'css_skyblue': '#87ceeb',
-// 'css_slateblue': '#6a5acd',
-// 'css_slategray': '#708090',
-// 'css_slategrey': '#708090',
-// 'css_snow': '#fffafa',
-// 'css_springgreen': '#00ff7f',
-// 'css_steelblue': '#4682b4',
-// 'css_tan': '#d2b48c',
-// 'css_thistle': '#d8bfd8',
-// 'css_tomato': '#ff6347',
-// 'css_turquoise': '#40e0d0',
-// 'css_violet': '#ee82ee',
-// 'css_wheat': '#f5deb3',
-// 'css_whitesmoke': '#f5f5f5',
-// 'css_yellowgreen': '#9acd32',
-
-//}}}
-
-private Boole
-parseSingleColor(OUT UiColor* color, CS p) {
-   *color = decodeHexColorLengthGuaranteed(p);
-   return *color != INVALCOLOR;
-}
-
-
-// Parse the built-in colors array
-private void
-initializeColors() {
-   int countColors = 0;
-   int textLen = 0;
-   for (CS p = colorsText; *p != ZERO; p++) {
-      textLen++;
-      if (*p == '#') {
-         countColors++;
-      } 
-   }
-   Arena* aTmp = createArena();
-   Arr(UiColor) colors = allocateArray(countColors, UiColor, aTmp);
-   colorNamesContainer = allocateArray(textLen - 6*countColors, Byte, a);
-   
-   int startName = 0;
-   CS names = colorNamesContainer;
-   int colorInd = 0;
-   for (int i = 0; i < textLen;) {
-      if (colorsText[i] == '#') {
-         int lenName = i - startName;
-         memcpy(names, colorsText + startName, lenName);
-         names += lenName;
-         *names = ZERO;
-         names++;
-         
-         if (!parseSingleColor(OUT colors + colorInd, colorsText + i + 1)) { 
-            emsg(_(e_cannot_allocate_color_str));
-            return;
-         }
-         colorInd++;
-         i += 7;
-         startName = i;
-      } else {
-         i++;
-      }
-   }
-   colorDictS = dictStringInt128New(colorNamesContainer, (Arr(int))colors, countColors, a);
-   deleteArena(aTmp);
 }
 
 // Store group names from hiliteGroupStrings into hiNames. Initialize names of hilite groups
@@ -695,7 +338,6 @@ initHilite(int reset) { // clear group first?
 
    // load colors and groups (they are all built-in)
    countGroups = ARRAY_LENGTH(hiliteGroupStrings);
-   initializeColors();
    initializeGroups();
    
    decorationsG = alloc((countGroups + 10)*sizeof(Decoration));
@@ -737,54 +379,56 @@ setDecoration(Text arg, OUT HiliteGroup* g) {
    return TRUE;
 }
 
-private NamedColor
-getColorByName(Text name) {
-   // Try to decode it in case it's RGB like "#abcdef"
-   NamedColor color = (NamedColor) {.c = decode_hex_color(name)};
-   if (color.c != INVALCOLOR)
-      color.name = (Text){.c = E, .len = 0};
-   else {
-      Unt nameId;
-      color.c = getKv(OUT &nameId, name, colorDictS);
-      color.name = (Text){.c = colorNamesContainer + nameId, 
-         .len = STRLEN(colorNamesContainer + nameId)
-      };
-   } 
-   return color;
-}
-
 private Boole
-changeColor(OUT NamedColor* tgt, Text arg) {
-   // Colors are only used when recognized
-   NamedColor color = getColorByName(arg);
-   
-   Boole settingToNone = sliceCmpToConst(arg, "NONE");
-   if (color.c == INVALCOLOR && !settingToNone) {
-      return false; 
+getColorByName(OUT VTermColor* res, Text name) {
+   if (name.len == 8 
+         && name.c[7] >= '0' && name.c[7] < '8' 
+         && eq((Text){name.c, 7}, S"regular")
+   ) {
+      *res = name.c[7] - '0';
+      return true;
+   } ei (name.len == 7
+         && name.c[6] >= '0' && name.c[6] < '8' 
+         && eq((Text){name.c, 6}, S"bright")
+   ) {
+      *res = (name.c[7] - '0') + 8;
+      return true;
+   } ei (name.len == 3
+         && EE_ISDIGIT(name.c[0])
+         && EE_ISDIGIT(name.c[1])
+         && EE_ISDIGIT(name.c[2])
+   ) {
+      *res = 16 + (name.c[0] - '0')*36 + (name.c[1] - '0')*6 + (name.c[2] - '0');
+      return true;
+   } ei ((name.len == 5 || (name.len == 6 && EE_ISDIGIT(name.c[5])))
+         && EE_ISDIGIT(name.c[4])
+         && eq((Text){name.c, 4}, S"grey")
+   ) {
+      *res = 232 + ((name.len == 5) ? (name.c[4] - '0') : ((name.c[4] - '0')*10 + name.c[5] - '0'));
+      return true;
    }
-   *tgt = color;
-   return true;
+   return false;
 }
 
 //Set the foreground color for the hilite group at 'id'. Return TRUE if the color is set
-private int
+private Boole
 setForeground(HiliteGroup* group, Text arg){
-   return changeColor(&(group->darkFg), arg);
+   return getColorByName(&(group->fg), arg);
 }
 
 //Set the background color for the hilite group at 'id'. Returns TRUE if the color is set
-private int
+private Boole
 setBackground(HiliteGroup* group, Text arg){
-   return changeColor(&(group->darkBg), arg);
+   return getColorByName(&(group->bg), arg);
 }
 
 //Set the underline/undercurl color for the hilite group at 'id'.
 //Return TRUE if the color is set.
-private int
+private Boole
 setUnderline(OUT HiliteGroup* group, Text arg, int init) {
-   if (init && (group->isLink))
-      return FALSE;
-   return changeColor(&(group->darkUnder), arg);
+   if (init && (group->fieldPresence & HI_IS_LINK) != 0)
+      return false;
+   return getColorByName(&(group->under), arg);
 }
 
 //{{{printing hilite groups
@@ -809,15 +453,15 @@ printHilite(HiliteGroup* group) {
       return;
    printHiliteHeaderNew(group);
 
-   if (hasSettings(group, false))  {
+   if (group->fieldPresence != 0)  {
       // Note: Keep this in sync with expand_highlight_group().
       printHiliteDeco(group);
       printHiliteFieldNew(//group, S"fg", 
-                          group->darkFg.name);
+                          group->fg.name);
       printHiliteFieldNew(//group, S"bg", 
-                          group->darkBg.name);
+                          group->bg.name);
       printHiliteFieldNew(//group, S"under", 
-                          group->darkUnder.name);
+                          group->under.name);
    } else {
       msg_outtrans((CS)"CLEARED");
    }
@@ -975,7 +619,7 @@ parseHiliteKey(Text key) {
    } ei (sliceCmpToConst(key, "bg")) {
       retVal = BG;
    } ei (sliceCmpToConst(key, "under")) {
-      retVal = SPEC;
+      retVal = UNDER;
    } else {
       retVal = KEY_PARSE_ERROR;
    }
@@ -986,9 +630,9 @@ parseHiliteKey(Text key) {
 private void
 writeToDecoration(HiliteGroup* restrict g) {
    Decoration deco;
-   deco.fg = g->darkFg.c;
-   deco.bg = g->darkBg.c;
-   deco.under = g->darkUnder.c;
+   deco.fg = g->fg.c;
+   deco.bg = g->bg.c;
+   deco.under = g->under.c;
    deco.flags = g->flags;
    deco.hiId = g->hiId;
    decorationsG[g->hiId] = deco;
@@ -999,14 +643,13 @@ writeToDecoration(HiliteGroup* restrict g) {
 // In case of parse error, keys[0].start = SHORT - 1.
 private void 
 parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line) {
-   int posEquals = -1; // set when "=" is encountered
-   int posStart = 0;
-   int indKeys = 0;
-   int indKvs = 0;
-   CS p = skipSpace(line);
-   for (;;) {
+   Byte posEquals = 255; // set when "=" is encountered
+   Byte posStart = 0;
+   Byte indKeys = 0;
+   Byte indKvs = 0;
+   for (CS p = skipSpace(line); ;) {
       if (*p == ZERO || *p == ' ') {
-         if (posEquals != -1) {
+         if (posEquals != 255) { //we've met "="
             if (indKvs == 4) {
                goto finalize;
             } ei (posEquals == posStart || p - line == posEquals + 1) {
@@ -1027,15 +670,16 @@ parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line)
          if (*p == ZERO) {
             goto finalize;
          }
-         posStart = p - line;
-         posEquals = -1;
+         posStart = (Short)(p - line);
+         posEquals = 255;
       } else {
          if (*p == '=') {
-            posEquals = p - line;
+            posEquals = (Short)(p - line);
          } 
          p++;
       }
    }
+   
 finalize:
    kvs[indKvs] = (HiKeyValue){.start = SHORT};
    keys[indKeys] = (HiKey){.start = SHORT};
@@ -1052,11 +696,7 @@ errorOut:
 // :highlight Foo fg=blue bg=#abcdef
 // "init" is true when building the default hilite groups, false when called in script/commline
 void
-doHilite(
-   CS line,
-   Boole forceit,
-   Boole init       // TRUE when called for initializing
-){
+doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializing
    Boole didChange = false;
    Boole error = false;
 
@@ -1067,7 +707,7 @@ doHilite(
    }
    
    HiKey keys[3]; // up to two keys, the group name & "none"
-   HiKeyValue kvs[5]; // up to 4 key-values, "fg", "bg", "under" and "deco", or the single "link"
+   HiKeyValue kvs[5]; // up to 4 key-values: "fg", "bg", "under" and "deco", or the single "link"
    parseHiliteArgs(OUT keys, OUT kvs, line);
    if (keys[0].start == SHORT || keys[0].start == SHORT - 1) {
       showErrFmtMsg(_(e_illegal_argument_str_3), line);
@@ -1093,11 +733,10 @@ doHilite(
 
    // Clear the highlighting for ":hi clear {group}" and ":hi clear".
    if (forceit || init) {
-      clearHiliteWorker(hiId);
+      clearHiliteWorker(group);
    } 
    
-   Boole didFieldChange = false; // if there's anything except "link", then "link" is ignored
-   group->isLink = false;
+   group->fieldPresence &= ~HI_IS_LINK;
    for (HiKeyValue* kv = kvs; kv->start != SHORT && !error; kv++) {
       Text keyStr = keyOf(*kv, line);
       HiliteKey key = parseHiliteKey(keyStr);
@@ -1110,27 +749,26 @@ doHilite(
       case DECO: {
          if (!setDecoration(val, OUT group)) {
             error = true;
-            goto breakTheLoop;
          } 
          break;
       }
       case FG: {
-         if (setForeground(OUT group, val))
-            didFieldChange = true;
+         if (!setForeground(OUT group, val))
+            error = true;
          break; 
       } 
       case BG: {
-         if (setBackground(OUT group, val))
-            didFieldChange = true;
+         if (!setBackground(OUT group, val))
+            error = true;
          break; 
       } 
-      case SPEC: {
-         if (setUnderline(OUT group, val, init))
-            didFieldChange = true;
+      case UNDER: {
+         if (!setUnderline(OUT group, val, init))
+            error = true;
          break; 
       } 
       case LINK: {
-         if (didFieldChange) {
+         if (kv != kvs || kvs[1].start != SHORT) { //if "link" is present, it must be alone
             showErrFmtMsg(_(e_illegal_argument_str_3), keyStr);
             error = true;
             break;
@@ -1152,56 +790,31 @@ doHilite(
    }
 breakTheLoop:
    writeToDecoration(group);
-   // When hiliting has been given for a group, don't link it
-   if (didFieldChange)
-      group->isLink = false;
 
-   parseColorNames(OUT group);
    group->script_ctx = scriptPosG;
    group->script_ctx.lineNr += SOURCING_LNUM;
-   
 
    if (didFieldChange && !didChange) {
       //Do not trigger a redraw when highlighting is changed while
-      //redrawing. This may happen when evaluating 'statusline' changes the StatusLine group.
+      //redrawing. This may happen when evaluating @statusline changes the StatusLine group.
       if (!updating_screen)
          redraw_all_later(UPD_NOT_VALID);
       need_highlight_changed = TRUE;
    }
 }
 
-// True if hilite group "id" has any settings. When "check_link", also check for an existing link
-private Boole
-hasSettings(HiliteGroup* g, Boole checkLink) {
-   return (g->flags != 0
-          || g->darkFg.c != INVALCOLOR 
-          || g->darkBg.c != INVALCOLOR 
-          || g->darkUnder.c != INVALCOLOR 
-          // lite colors don't need checking because if any were present, they would've been copied
-          // to the dark counterparts 
-          || (checkLink && (g->isLink))
-          );
-}
-
 // Clear hiliting for one group.
 private void
-clearHiliteWorker(Short hiId) {
-   HiliteGroup* restrict g = hilites + hiId;
+clearHiliteWorker(HiliteGroup* g) {
+   g->fieldPresence = 0;
    g->flags = 0;
-   g->darkFg = (NamedColor){.c = INVALCOLOR, .name = {}};
-   g->darkBg = (NamedColor){.c = INVALCOLOR, .name = {}};
-   g->darkUnder = (NamedColor){.c = INVALCOLOR, .name = {}};
-   // Restore default link and context if they exist. Otherwise clears.
-   g->link = SHORT;
    // Since we set the default link, set the location to where the default link was set.
    g->script_ctx = g->deflink_sctx;
 }
 
-// Set the normal foreground and background colors according to the "Normal"
-// hiliting group.
+//Set the normal foreground and background colors according to the "Normal" hiliting group.
 private void
 set_normal_colors(void) {
-   parseColorNames(hilites);
    Decoration deco = getFullDecoration(0);
    // If the normal fg or bg color changed, a complete redraw is required.
    if (defaultFgColorG != deco.fg || defaultBgColorG != deco.bg) {
@@ -1209,23 +822,6 @@ set_normal_colors(void) {
       defaultBgColorG = deco.bg;
       set_must_redraw(UPD_CLEAR);
    }
-}
-
-UiColor
-hiColorByName(Text name) {
-   // Try to decode it in case it's RGB like "#abcdef"
-   UiColor color = decode_hex_color(name);
-   if (color != INVALCOLOR)
-      return color;
-   else {
-      return get(name, colorDictS);
-   } 
-}
-
-UiColor
-toUiColor(int r, int g, int b) {
-   UiColor  color = RGB(r, g, b);
-   return (color > 0xffffff) ? INVALCOLOR : color;
 }
 
 // Combine special decos (e.g., for spelling) with other decos (e.g., for syntax hiliting).
@@ -1251,48 +847,15 @@ hiliteHasFlag(Short hiId, char flag){
       return NULL;
    if (hilites[hiId].flags & flag) {
    }
-   return (hilites[hiId].flags & flag) ? (CS)"1" : null;
+   return (hilites[hiId].flags & flag) ? S"1" : null;
 }
 
 // Return color name (or, for RGB colors, "#123456") of a single field of hilite group "hiId"
 // Always make a separate allocation
-Text
-hiliteColor(Short hiId, DecoColor which) {
-   if (hiId >= countGroups)
-      return (Text){Em, 0};
-      
-   switch(which) {
-   case FG_RGB:
-   case BG_RGB:
-   case UNDER_RGB:
-      Decoration deco = getFullDecoration(hiId);
-      UiColor color;
-      if (which == FG_RGB)
-         color = deco.fg;
-      ei (which == UNDER_RGB)
-         color = deco.under;
-      else
-         color = deco.bg;
-      if (color == INVALCOLOR)
-         return (Text){E, 0};
-      Ulong rgb = (Ulong)GUI_MCH_GET_RGB(color);
-      CS rgbString = alloc(11);
-      sprintf(
-         (char *)rgbString, "#%02x%02x%02x",
-         (unsigned)(rgb >> 16),
-         (unsigned)(rgb >> 8) & 255,
-         (unsigned)rgb & 255
-      );
-      rgbString[10] = ZERO;
-      return (Text){rgbString, 10};
-   case FG_COLOR:
-      return copyText(hilites[hiId].darkFg.name);
-   case BG_COLOR:
-      return copyText(hilites[hiId].darkBg.name);
-   case UNDER_COLOR:
-      return copyText(hilites[hiId].darkUnder.name);
-   }
-   return (Text){E, 0}; // unreachable
+CS
+hiliteColor(OUT Byte[static 4] buf, VTermColor color) {
+   sprintf((char *)buf, "%d", color);
+   return buf;
 }
 
 // Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
@@ -1318,7 +881,7 @@ hiliteExists(Text name) {
 CS
 syn_id2name(Unt id) {
    if (id >= countGroups)
-      return (CS)"";
+      return S"";
    return hilites[id].name.c;
 }
 
@@ -1330,9 +893,9 @@ decorationByHiliteId(Short hiId) {
    return hilites[resolvedId].flags;
 }
 
-// Get the colors and decos for a group ID. NOTE: the colors will be INVALCOLOR when not set
+// Get the colors and decos for a group ID. NOTE: the colors will be regular0 when not set
 char
-syn_id2colors(Short hiId, OUT UiColor* fgp, OUT UiColor* bgp) {
+syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp) {
    Unt resolvedId = hiResolveLinks(hiId);
    assert(resolvedId < SHORT);
    Decoration deco = getFullDecoration(resolvedId);
@@ -1363,20 +926,6 @@ resolveLinksByGroup(HiliteGroup* group) {
       {}
    return group;
 }
-
-private void
-parseColorNames(OUT HiliteGroup* g){
-   if (g->darkFg.name.len > 0) {
-      g->darkFg = getColorByName(g->darkFg.name);
-   }
-   if (g->darkBg.name.len > 0) {
-      g->darkBg = getColorByName(g->darkBg.name);
-   }
-   if (g->darkUnder.name.len > 0) {
-      g->darkUnder = getColorByName(g->darkUnder.name);
-   }
-}
-
 
 // context for :highlight <group> <arg> expansion
 //typedef struct {
@@ -1461,7 +1010,7 @@ getDecorationDict(int hlDeco) {
    return dict;
 }
 
-// Return the decos of the hilite group at index 'hl_idx' as a
+// Return the contents of the hilite group at index 'hl_idx' as a
 // Dictionary. If 'resolveLinks' is TRUE, then resolves the hilite group links recursively
 private Bag*
 toDict(Short hiId, int resolveLinks) {
@@ -1481,26 +1030,25 @@ toDict(Short hiId, int resolveLinks) {
          goto error;
    }
    Decoration decoration = getFullDecoration(hiId); 
-   if (decoration.fg != INVALCOLOR 
-         && bagAddString(dict, S"fg", hiliteColor(hiId, FG_COLOR).c) == FAIL
-   )
-      goto error;
-   if (decoration.fg != INVALCOLOR 
-         && bagAddString(dict, S"bg", hiliteColor(hiId, BG_COLOR).c) == FAIL
-   )
-      goto error;
-   if (decoration.under != INVALCOLOR
-         && bagAddString(dict, S"under", hiliteColor(hiId, UNDER_COLOR).c) == FAIL
-   )
-      goto error;
-   if (group->link) {
+   Byte buf[4];
+   buf[3] = ZERO;
+   
+   if ((group->fieldPresence & IS_LINK) != 0) {
       Text linkName = hilites[group->link].name;
       if (linkName.len > 0 && bagAddString(dict, S"linksto", linkName.c) == FAIL)
          goto error;
 
       if (group->deflink)
          bagAdd_bool(dict, S"default", VVAL_TRUE);
+   } else {
+      if ((group->fieldPresence & HAS_FG) != 0)
+         bagAddString(dict, S"fg", hiliteColor(OUT buf, group->fg));
+      if ((group->fieldPresence & HAS_BG) != 0)
+         bagAddString(dict, S"bg", hiliteColor(OUT buf, group->bg));
+      if ((group->fieldPresence & HAS_UNDER) != 0)
+         bagAddString(dict, S"under", hiliteColor(OUT buf, group->under));
    }
+   
    if (bagSize(dict) == 2)
       // If only 'name' is present, then the hilite group is cleared.
       bagAdd_bool(dict, S"cleared", VVAL_TRUE);
@@ -1562,7 +1110,7 @@ Decoration
 getFullDecoration(Unt hiId) {
    HiliteGroup* g = hilites + hiId;
    return (Decoration) {
-      .fg = g->darkFg.c, .bg = g->darkBg.c, .under = g->darkUnder.c, .flags = g->flags, 
+      .fg = g->fg.c, .bg = g->bg.c, .under = g->under.c, .flags = g->flags, 
       .hiId = hiId
    };
 }
@@ -1570,15 +1118,6 @@ getFullDecoration(Unt hiId) {
 Boole
 decoEq(Decoration a, Decoration b) {
    return a.flags == b.flags && a.hiId == b.hiId;
-}
-
-// Reset the term colors to what they were before Eegl was started, if possible.
-// Otherwise reset them to zero
-void
-restore_cterm_colors(void) {
-   defaultFgColorG = INVALCOLOR;
-   defaultBgColorG = INVALCOLOR;
-   defaultUnderlColorG = INVALCOLOR;
 }
 
 //}}}
@@ -1751,9 +1290,9 @@ typedef struct syn_cluster_S {
 //21000 - 21999  TOP indicator (current_syn_inc_tag added)
 //22000 - 22999  CONTAINED indicator (current_syn_inc_tag added)
 //23000 - 32767  cluster IDs (subtract SYNID_CLUSTER for the cluster ID)
-#define SYNID_ALLBUT   MAX_HL_ID // syntax group ID for contains=ALLBUT
-#define SYNID_TOP   21000        // syntax group ID for contains=TOP
-#define SYNID_CONTAINED   22000  // syntax group ID for contains=CONTAINED
+#define SYNID_ALLBUT    SHORT // syntax group ID for contains=ALLBUT
+#define SYNID_TOP       21000        // syntax group ID for contains=TOP
+#define SYNID_CONTAINED 22000  // syntax group ID for contains=CONTAINED
 #define SYNID_CLUSTER   23000    // first syntax group ID for clusters
 
 #define MAX_SYN_INC_TAG   999    // maximum before the above overflow
@@ -1789,17 +1328,17 @@ private Byte msg_no_items[] = "No Syntax items defined for this buffer";
 //When matchEndPos.lnum is 0, the items other than si_idx are unknown.
 //(The end positions have the column number of the next char)
 typedef struct state_item {
-   int      si_idx;         // index of syntax pattern or KEYWORD_IDX
+   int si_idx;         // index of syntax pattern or KEYWORD_IDX
    Short hiId;         // highlight group ID for keywords
-   int      transparentHiId;      // idem, transparency removed
-   int      matchLnum;      // lnum of the match
-   int      matchStartCol;      // starting column of the match
+   int transparentHiId;      // idem, transparency removed
+   int matchLnum;      // lnum of the match
+   int matchStartCol;      // starting column of the match
    PosNoVirt matchEndPos;      // just after end posn of the match
    PosNoVirt hiStartPos;      // start position of the highlighting
    PosNoVirt hiEndPos;      // end position of the highlighting
    PosNoVirt endPattEndPos;      // end position of end pattern
-   int      si_end_idx;      // group ID for end pattern or zero
-   int      si_ends;      // if match ends before matchEndPos
+   int si_end_idx;      // group ID for end pattern or zero
+   int si_ends;      // if match ends before matchEndPos
    char flags;      // decorations in this state
    long si_flags;      // HL_HAS_EOL flag in this state, and HL_SKIP* for nextList
    Short* si_containsHiId;      // list of contained groups
@@ -1849,16 +1388,16 @@ private RegExternalMatch *next_match_extmatch = NULL;
 //The current state (within the line) of the recognition engine.
 //When current_state.ga_itemsize is 0 the current state is invalid.
 private Portal* syntPortS;      // current portal for hiliting
-private Book   *synBookS;      // current buffer for hiliting
-private SyntaxBlock *synBlockS; // current buffer for hiliting
+private Book* synBookS;      // current buffer for hiliting
+private SyntaxBlock* synBlockS; // current buffer for hiliting
 private LineNr currLnumS = 0;   // lnum of current state
-private ColNr   currColS = 0;   // column of current state
+private ColNr currColS = 0;   // column of current state
 private Boole currentStateStoredS = false; // if stored current state after setting currentFinishedS
-private Boole   currentFinishedS = false;   // current line has been finished
+private Boole currentFinishedS = false;   // current line has been finished
 private ArrayList current_state = {0, 0, 0, 0, NULL}; // current stack of state_items
-private Short   *current_next_list = NULL; // when non-zero, nextgroup list
-private Unt   current_next_flags = 0; // flags for current_next_list
-private int   current_line_id = 0;   // unique number for current line
+private Short* current_next_list = NULL; // when non-zero, nextgroup list
+private Unt current_next_flags = 0; // flags for current_next_list
+private int current_line_id = 0;   // unique number for current line
 
 #define CUR_STATE(idx)   ((StateItem *)(current_state.c))[idx]
 
@@ -1883,7 +1422,7 @@ private void check_state_ends(void);
 private void update_si_attr(int idx);
 private void check_keepend(void);
 private void update_si_end(StateItem *sip, int startcol, Boole force);
-private Short *copy_id_list(Short *list);
+private Short* copy_id_list(Short *list);
 private int in_id_list(StateItem *item, Arr(Short) containsHiId, SyntaxInfo* ssp, int flags);
 private int push_current_state(int idx);
 private void pop_current_state(void);

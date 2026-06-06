@@ -126,5 +126,5 @@ int mch_setperm(CS name, long perm);
 void mch_copy_xattr(CS from_file, CS to_file);
 int mch_fsetperm(int fd, long perm);
 int mch_can_exe(CS name, CS *path, int use_path);
-CS fiBuildSwapOrUndoFname(CS fname, Boole isBackup);
+CS fiBuildSwapOrUndoFname(CS fname, Boole isUndo);
 /* eegl: set ft=c : */

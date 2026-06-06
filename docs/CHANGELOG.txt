@@ -267,6 +267,7 @@
 [-] EVENT_OPTIONSET (too hard)
 [-] TEXTCHANGED, TEXTCHANGEDI, TEXTCHANGEDP, TEXTCHANGEDT (superfluous and slow)
 [-] spelling (will be done with external program)
+[ ] cellToDecoration (decoration conversions between VTerm format and "internal" format)
 [ ] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
 [ ] cindent (smartindent is enough)
 
@@ -283,7 +284,6 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] the :edit command should work with multiple files `:e a.txt b.txt` 
 [+] Skip the quickfix buffer when looping through buffers
 [+] The :S command: a case-sensitive version of :s substitution
-[+] Comments in Vimscript with "//"
 [+] :hi prints hilite groups sorted by name
 [+] replace CUT_BUFFER0 in X11 with PRIMARY or CLIPBOARD (clipboard.c) and remove string_convert()
 [+] Tab in insert mode enters Normal Mode
@@ -297,18 +297,21 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] sane discriminated unions in options.c instead of byte casting 
 [+] move @signcolumn option from string to bool
 [-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
+[ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
 [ ] "rX", char replacing, shoult not set the "modified" flag on a buffer if previous char was same
 [ ] finish implementing @smoothscroll?
 [ ] "gg" to a line should open all folds this line is in
 [ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down
-[ ] Replace terminfo use with XTGETTCAP
+[ ] Replace terminfo use with shelling out to infocmp and parsing the result
 [ ] Growable strings (search for `TODO growable string`)
-[ ] Remove internet connectivity to massively increase security
+[ ] Remove internet connectivity (channel.c) to massively increase security
 [ ] Replace the "messages" mess with popup portals
 [ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
    a general way to create auto-updateable views of buffers?
-[-] remove dependency on libattr - migrate to glibc 
+[+] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
+[ ] Transition to pure 256-color palette
+[ ] Replace VimScript with Wren
 
    [[[Bugs to fix]]]
 
@@ -323,4 +326,4 @@ tag.c:do_tag (weird matches is static, also newMatches?)
    
 [+] "\a b c\" parameter lists instead of "|a b c|" 
 [+] "foo/3" signatures instead of "foo(_,_,_)" 
-
+[+] API functions for lists of different types

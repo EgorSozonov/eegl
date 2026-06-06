@@ -1,5 +1,5 @@
 /* src/term.c */
-UiColor termgui_mch_get_rgb(UiColor color);
+VTermColor termgui_mch_get_rgb(VTermColor color);
 void init_term_props(int all);
 void f_terminalprops(Var *argvars, Var *returnVar);
 int set_termname(CS termName);
@@ -20,12 +20,9 @@ void term_set_winpos(int x, int y);
 int term_get_winpos(int *x, int *y, Long timeout);
 void term_set_winsize(int height, int width);
 void term_font(int n);
-void term_fg_color(int n);
-void term_bg_color(int n);
-void term_ul_color(int n);
-void term_fgRgb_color(UiColor rgb);
-void term_bgRgb_color(UiColor rgb);
-void term_underlRgb_color(UiColor rgb);
+void termApplyFgColor(Byte n);
+void termApplyBgColor(Byte n);
+void termApplyUnderColor(Byte n);
 void ttest(int pairs);
 void add_long_to_buf(Ulong val, CS dst);
 int get_bytes_from_buf(CS buffer, CS bytes, int num_bytes);

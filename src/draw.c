@@ -815,36 +815,41 @@ end_search_hl(void) {
 }
 
 private void
-startDrawingHilite(Unt hiId) {
-   activeDecoS = getFullDecoration(hiId);
-   Decoration fullDeco = getFullDecoration(activeDecoS.hiId);
+startDrawingHilite(Short hiId) {
    if (!fullScreenG)
       return;
+   activeDecoS = getFullDecoration(hiId);
+   Decoration fullDeco = getFullDecoration(activeDecoS.hiId);
+      
    if ((activeDecoS.flags & HL_BOLD) && *termCodeS[KS_MD] != ZERO)
       out_str(termCodeS[KS_MD]);
-   ei ((activeDecoS.flags & HL_BOLD) && (fullDeco.fg != INVALCOLOR))
+   ei ((activeDecoS.flags & HL_BOLD) != 0 && (fullDeco.fieldPresence & HI_HAS_FG) != 0)
       // If the Normal FG color has BOLD flag and the new HL has a FG color defined, clear BOLD
       out_str(termCodeS[KS_ME]);
+      
    if ((activeDecoS.flags & HL_UNDERCURL) && *termCodeS[KS_UCS] != ZERO)
       out_str(termCodeS[KS_UCS]);
+      
    if (((activeDecoS.flags & HL_UNDERLINE) 
             || ((activeDecoS.flags & HL_UNDERCURL) && *termCodeS[KS_UCS] == ZERO))
        && *termCodeS[KS_US] != ZERO
    ) {
       out_str(termCodeS[KS_US]);
    } 
+   
    if ((activeDecoS.flags & HL_ITALIC) && *termCodeS[KS_CZH] != ZERO)
       out_str(termCodeS[KS_CZH]);
+      
    if ((activeDecoS.flags & HL_INVERSE) && *termCodeS[KS_MR] != ZERO)
       out_str(termCodeS[KS_MR]);
 
    // Output the color or start string after bold etc., in case the bold overrides the color setting
-   if (fullDeco.fg != INVALCOLOR)
-      term_fgRgb_color(fullDeco.fg);
-   if (fullDeco.bg != INVALCOLOR)
-      term_bgRgb_color(fullDeco.bg);
-   if (fullDeco.under != INVALCOLOR)
-      term_underlRgb_color(fullDeco.under);
+   if ((fullDeco.fieldPresence & HI_HAS_FG) != 0)
+      termApplyFgColor(fullDeco.fg);
+   if ((fullDeco.fieldPresence & HI_HAS_BG) != 0)
+      termApplyBgColor(fullDeco.bg);
+   if ((fullDeco.fieldPresence & HI_HAS_UNDER) != 0)
+      termApplyUnderColor(fullDeco.under);
 }
 
 void
@@ -878,12 +883,9 @@ drawStopHilite(void) {
    if (do_ME || (activeDecoS.flags & (HL_BOLD | HL_INVERSE)))
       out_str(termCodeS[KS_ME]);
 
-   if (defaultFgColorG != INVALCOLOR)
-       term_fgRgb_color(defaultFgColorG);
-   if (defaultBgColorG != INVALCOLOR)
-       term_bgRgb_color(defaultBgColorG);
-   if (defaultUnderlColorG != INVALCOLOR)
-       term_underlRgb_color(defaultUnderlColorG);
+   termApplyFgColor(defaultFgColorG);
+   termApplyBgColor(defaultBgColorG);
+   termApplyUnderColor(defaultUnderlColorG);
    activeDecoS = EMPTY_DECO;
 }
 
@@ -892,10 +894,8 @@ drawStopHilite(void) {
 void
 reset_cterm_colors(void) {
    // set Normal cterm colors
-   if (defaultFgColorG != INVALCOLOR || defaultBgColorG != INVALCOLOR) {
-      out_str(termCodeS[KS_OP]);
-      activeDecoS.hiId = SHORT;
-   }
+   out_str(termCodeS[KS_OP]);
+   activeDecoS.hiId = SHORT;
    if (currentlyBoldG) {
       out_str(termCodeS[KS_ME]);
       activeDecoS.hiId = SHORT;
@@ -922,7 +922,7 @@ screen_char(unsigned off, int row, int col) {
    }
 
    // Stop hiliting first, so it's easier to move the cursor.
-   Unt hiId;
+   Short hiId;
    if (screen_charDeco != SHORT)
       hiId = screen_charDeco;
    else
@@ -1561,7 +1561,7 @@ linecopy(int to, int from, Portal* po) {
 int
 can_clear(CS p) {
     return (*p != ZERO 
-             && ((defaultBgColorG == INVALCOLOR) || *termCodeS[KS_UT] != ZERO)
+             && (*termCodeS[KS_UT] != ZERO)
              && !(p == termCodeS[KS_CE] && popup_visible)
     );
 }

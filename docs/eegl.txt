@@ -84,7 +84,10 @@ globals.h mod_mask - current key modifiers (Ctrl etc)
 input:merge_modifyOtherKeys - handles Ctrl and other modifier keys in input
 
 keymap.h - special character keys
-nv_cmds.h - normal mode commands
+commands.h - normal mode commands
+
+//enter Insert mode
+insert.c:edit()
 
 edit.c:ins_bs - backspace
 
@@ -93,11 +96,11 @@ termdefs.h - definitions for terminal
 // opening files
 main.c -> create_windows -> arglistIngest -> bufferOpen -> buflistNew
 
-// switching to another buffer
+// switching to another book
 ex_cmds -> do_ecmd -> window.c enterWinExt
 
 // shell calling
-misc.c:call_shell
+fileio.c:call_shell
 
 // paste without indenting
 insert.c:bracketed_paste
@@ -137,8 +140,8 @@ normal.c:nv_put_opt()
 // deleting text
 ops.c:op_delete
 
-// Ctrl-F in command mode (i.e. after ":") - edit history of commands as a buffer and run them 
-// with <Enter>
+//Ctrl-F in command mode (i.e. after ":") - edit history of commands as a buffer and run them 
+//with <Enter>
 script.c:openCommPort
 
 // CSI sequences from terminal
@@ -182,6 +185,9 @@ main.c:sourceStartupScripts()
 
 //syntax coloring
 hilite.c:getCurrentDeco()
+
+//actually applying colors, decorations:
+draw.c:startDrawingHilite()
 
 // Get pointer to actual line contents for a buffer and line number
 memory.c:memGetLine()

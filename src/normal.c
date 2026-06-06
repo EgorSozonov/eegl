@@ -10589,7 +10589,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
    Boole is_id = true;
    Boole eeglAbbr;
 
-   if (typeBufG.tb_no_abbr_cnt)   // abbrev. are not recursive
+   if (typeBufG.noAbbrCnt)   // abbrev. are not recursive
        return false;
 
    // no remapping implies no abbreviation, except for CTRL-]
@@ -10710,7 +10710,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
             // insert the to string
             (void)insertIntoTypebuf(s, noremap, 0, TRUE, silent);
             // no abbrev. for these chars
-            typeBufG.tb_no_abbr_cnt += (int)STRLEN(s) + j + 1;
+            typeBufG.noAbbrCnt += (int)STRLEN(s) + j + 1;
             if (expr)
                eeglFree(s);
          }

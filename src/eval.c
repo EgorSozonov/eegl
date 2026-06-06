@@ -9417,7 +9417,6 @@ private BuiltinFn globalFunctions[] = {
    {S"term_list",   0, 0, 0,         TERM_FUNC(f_term_list)},
    {S"term_scrape",   2, 2, FEARG_1,  TERM_FUNC(f_term_scrape)},
    {S"term_sendkeys",   2, 2, FEARG_1,        TERM_FUNC(f_term_sendkeys)},
-   {S"term_setansicolors", 2, 2, FEARG_1,  &f_term_setansicolors },
    {S"term_setapi",   2, 2, FEARG_1,            TERM_FUNC(f_term_setapi)},
    {S"term_setkill",   2, 2, FEARG_1,           TERM_FUNC(f_term_setkill)},
    {S"term_setrestore",   2, 2, FEARG_1,        TERM_FUNC(f_term_setrestore)},

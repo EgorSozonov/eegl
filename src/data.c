@@ -5692,9 +5692,9 @@ bagAddString(Bag* d, CS key, CS str) {
    return bagAddString_len(d, key, str, -1);
 }
 
-// Add a string entry to Bag. "str" will be copied to allocated memory.
-// When "len" is -1 use the whole string, otherwise only this many bytes.
-// Return FAIL when out of memory and when key already exists.
+//Add a string entry to Bag. "str" will be copied to allocated memory.
+//When "len" is -1 use the whole string, otherwise only this many bytes.
+//Return FAIL when out of memory and when key already exists.
 int
 bagAddString_len(Bag *d, CS key, CS str, int len) {
    CS val = NULL;

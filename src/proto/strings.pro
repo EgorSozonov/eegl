@@ -144,8 +144,6 @@ void op_format(Operator *oper, int keep_cursor);
 void op_formatexpr(Operator *oper);
 int fex_format(LineNr lnum, long count, int c);
 void format_lines(LineNr line_count, int avoid_fex);
-UiColor decode_hex_color(Text hex);
-UiColor decodeHexColorLengthGuaranteed(CS hex);
 int valid_name(CS val, CS allowed);
 int isValidForScriptName(int c);
 int isValidForScriptName1(int c);
