@@ -310,7 +310,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
    a general way to create auto-updateable views of buffers?
 [+] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
-[ ] Transition to pure 256-color palette
+[ ] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Replace VimScript with Wren
 
    [[[Bugs to fix]]]

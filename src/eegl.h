@@ -995,14 +995,17 @@ LIST_TY(Unt)
 #define POPUP_HANDLED_4 0x08    //used by may_update_popup_mask()
 #define POPUP_HANDLED_5 0x10    //used by update_popups()
 
-// Terminal hiliting decoration bits
-#define HL_NORMAL     0
-#define HL_INVERSE    1
-#define HL_BOLD       2
-#define HL_ITALIC     4
-#define HL_UNDERLINE  8
-#define HL_UNDERCURL 16
-#define HL_NOCOMBINE 32 
+// Terminal hiliting decoration flags
+#define DECO_NORMAL       0
+#define DECO_INVERSE      1
+#define DECO_BOLD         2
+#define DECO_ITALIC       4
+#define DECO_UNDERLINE    8
+#define DECO_UNDERCURL   16
+#define DECO_NOCOMBINE   32 
+
+
+
 // special attribute addition: Put message in history
 #define MSG_HIST     64
 
@@ -2548,16 +2551,7 @@ typedef struct {
    VTermColor bg;
 } TermCellColor;
 
-typedef struct {
-   Unt bold       : 1;
-   Unt italic     : 1;
-   Unt inverse    : 1;
-   Unt strike     : 1;
-   Unt underline  : 1;
-   Unt undercurl  : 1;
-   Unt noCombine  : 1;
-   Unt doubleWide : 1;
-} VTermDeco;
+typedef Byte VTermDeco;
 
 #define HI_HAS_FG    1
 #define HI_HAS_BG    2

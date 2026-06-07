@@ -3,7 +3,6 @@ int highlight_link_id(Short hiId);
 void initHilite(int reset);
 void doHilite(CS line, Boole forceit, Boole init);
 Decoration combineDecorations(Decoration overlay, Decoration base);
-CS hiliteHasFlag(Short hiId, char flag);
 Short hiliteGroupByName(Text name);
 Decoration decosByHiliteName(CS name);
 Boole hiliteExists(Text name);
@@ -39,4 +38,6 @@ int syn_get_id(Portal *wp, long lnum, ColNr col, int trans, int keep_state);
 int get_syntax_info(int *seqnrp);
 int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, long lnum);
+void f_synIDattr(Var *argvars, Var *returnVar);
+void f_synIDtrans(Var *argvars, Var *returnVar);
 /* eegl: set ft=c : */

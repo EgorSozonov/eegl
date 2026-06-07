@@ -130,10 +130,7 @@ private void f_swapfilelist(Arr(Var) argvars, Var* returnVar);
 private void f_swapinfo(Arr(Var) argvars, Var* returnVar);
 private void f_swapname(Arr(Var) argvars, Var* returnVar);
 private void f_synID(Arr(Var) argvars, Var* returnVar);
-private void f_synIDattr(Arr(Var) argvars, Var* returnVar);
-private void f_synIDtrans(Arr(Var) argvars, Var* returnVar);
 private void f_synstack(Arr(Var) argvars, Var* returnVar);
-private void f_synconcealed(Arr(Var) argvars, Var* returnVar);
 private void f_tabpagebuflist(Arr(Var) argvars, Var* returnVar);
 private void f_taglist(Arr(Var) argvars, Var* returnVar);
 private void f_tagfiles(Arr(Var) argvars, Var* returnVar);
@@ -9254,37 +9251,37 @@ private BuiltinFn globalFunctions[] = {
    {S"popup_clear",   0, 1, 0,           &f_popup_clear},
    {S"popup_close",   1, 2, FEARG_1,        &f_popup_close},
    {S"createPopup",   2, 2, FEARG_1,        &f_createPopup},
-   {S"popup_dialog",   2, 2, FEARG_1,       &f_popup_dialog},
+   {S"popup_dialog",  2, 2, FEARG_1,       &f_popup_dialog},
    {S"popup_filter_menu", 2, 2, 0,          &f_popup_filter_menu},
    {S"popup_filter_yesno", 2, 2, 0,         &f_popup_filter_yesno},
    {S"popup_findecho",   0, 0, 0,           &f_popup_findecho},
    {S"popup_findinfo",   0, 0, 0,           &f_popup_findinfo},
    {S"popup_findpreview", 0, 0, 0,          &f_popup_findpreview},
    {S"popup_getoptions", 1, 1, FEARG_1,        &f_popup_getoptions},
-   {S"popup_getpos",   1, 1, FEARG_1,          &f_popup_getpos},
+   {S"popup_getpos", 1, 1, FEARG_1,          &f_popup_getpos},
    {S"popup_hide",   1, 1, FEARG_1,           &f_popup_hide},
    {S"popup_list",   0, 0, 0,       &f_popup_list},
-   {S"popup_locate",   2, 2, 0,             &f_popup_locate},
+   {S"popup_locate", 2, 2, 0,             &f_popup_locate},
    {S"popup_menu",   2, 2, FEARG_1,         &f_popup_menu},
    {S"popup_move",   2, 2, FEARG_1,         &f_popup_move},
    {S"popup_notification", 2, 2, FEARG_1,   &f_popup_notification},
-   {S"popup_setbuf",   2, 2, FEARG_1,       &f_popup_setbuf},
+   {S"popup_setbuf", 2, 2, FEARG_1,       &f_popup_setbuf},
    {S"popup_setoptions", 2, 2, FEARG_1,     &f_popup_setoptions},
    {S"popup_settext",   2, 2, FEARG_1,      &f_popup_settext},
    {S"popup_show",   1, 1, FEARG_1,         &f_popup_show},
-   {S"pow",      2, 2, FEARG_1,           &f_pow},
-   {S"prevnonblank",   1, 1, FEARG_1,        &f_prevnonblank},
-   {S"printf",      1, 19, FEARG_2,          &f_printf},
+   {S"pow",          2, 2, FEARG_1,           &f_pow},
+   {S"prevnonblank", 1, 1, FEARG_1,        &f_prevnonblank},
+   {S"printf",       1, 19, FEARG_2,          &f_printf},
    {S"prompt_getprompt", 1, 1, FEARG_1,        &f_prompt_getprompt},
    {S"prompt_setcallback", 2, 2, FEARG_1,        &f_prompt_setcallback},
    {S"prompt_setinterrupt", 2, 2, FEARG_1,       &f_prompt_setinterrupt},
    {S"prompt_setprompt", 2, 2, FEARG_1,          &f_prompt_setprompt},
-   {S"prop_add",   3, 3, FEARG_1,            &f_prop_add},
-   {S"prop_add_list",   2, 2, FEARG_1,        &f_prop_add_list},
+   {S"prop_add",     3, 3, FEARG_1,            &f_prop_add},
+   {S"prop_add_list", 2, 2, FEARG_1,        &f_prop_add_list},
    {S"prop_clear",   1, 3, FEARG_1,           &f_prop_clear},
-   {S"prop_find",   1, 2, FEARG_1,            &f_prop_find},
-   {S"prop_list",   1, 2, FEARG_1,            &f_prop_list},
-   {S"prop_remove",   1, 3, FEARG_1,          &f_prop_remove},
+   {S"prop_find",    1, 2, FEARG_1,            &f_prop_find},
+   {S"prop_list",    1, 2, FEARG_1,            &f_prop_list},
+   {S"prop_remove",  1, 3, FEARG_1,          &f_prop_remove},
    {S"prop_type_add",   2, 2, FEARG_1,        &f_prop_type_add},
    {S"prop_type_change", 2, 2, FEARG_1,       &f_prop_type_change},
    {S"prop_type_delete", 1, 2, FEARG_1,       &f_prop_type_delete},
@@ -9292,104 +9289,103 @@ private BuiltinFn globalFunctions[] = {
    {S"prop_type_list",   0, 1, FEARG_1,       &f_prop_type_list},
    {S"pum_getpos",   0, 0, 0,        &f_pum_getpos},
    {S"pumvisible",   0, 0, 0,        &f_pumvisible},
-   {S"rand",      0, 1, FEARG_1,          &f_rand},
-   {S"range",      1, 3, FEARG_1,      &f_range},
-   {S"readblob",   1, 3, FEARG_1,         &f_readblob},
+   {S"rand",         0, 1, FEARG_1,          &f_rand},
+   {S"range",        1, 3, FEARG_1,      &f_range},
+   {S"readblob",     1, 3, FEARG_1,         &f_readblob},
    {S"readdir",      1, 3, FEARG_1,    &f_readdir},
-   {S"readdirex",   1, 3, FEARG_1,   &f_readdirex},
-   {S"readfile",   1, 3, FEARG_1,      &f_readfile},
-   {S"reduce",      2, 3, FEARG_1,        &f_reduce},
+   {S"readdirex",    1, 3, FEARG_1,   &f_readdirex},
+   {S"readfile",     1, 3, FEARG_1,      &f_readfile},
+   {S"reduce",       2, 3, FEARG_1,        &f_reduce},
    {S"reg_executing",   0, 0, 0,          &f_reg_executing},
    {S"reg_recording",   0, 0, 0,          &f_reg_recording},
    {S"reltime",      0, 2, FEARG_1,       &f_reltime},
-   {S"reltimefloat",   1, 1, FEARG_1,        &f_reltimefloat},
+   {S"reltimefloat", 1, 1, FEARG_1,        &f_reltimefloat},
    {S"reltimestr",   1, 1, FEARG_1,          &f_reltimestr},
-   {S"remove",      2, 3, FEARG_1,            &f_remove},
-   {S"rename",      2, 2, FEARG_1,         &f_rename},
-   {S"repeat",      2, 2, FEARG_1,            &f_repeat},
+   {S"remove",       2, 3, FEARG_1,            &f_remove},
+   {S"rename",       2, 2, FEARG_1,         &f_rename},
+   {S"repeat",       2, 2, FEARG_1,            &f_repeat},
    {S"resolve",      1, 1, FEARG_1,           &f_resolve},
    {S"reverse",      1, 1, FEARG_1,           &f_reverse},
-   {S"round",      1, 1, FEARG_1,             &f_round},
+   {S"round",        1, 1, FEARG_1,             &f_round},
    {S"screenattr",   2, 2, FEARG_1,           &f_screenattr},
    {S"screenchar",   2, 2, FEARG_1,           &f_screenchar},
-   {S"screenchars",   2, 2, FEARG_1,       &f_screenchars},
-   {S"screencol",   0, 0, 0,           &f_screencol},
-   {S"screenpos",   3, 3, FEARG_1,     &f_screenpos},
-   {S"screenrow",   0, 0, 0,           &f_screenrow},
-   {S"screenstring",   2, 2, FEARG_1,        &f_screenstring},
-   {S"search",      1, 5, FEARG_1,           &f_search},
-   {S"searchcount",   0, 1, FEARG_1,         &f_searchcount},
+   {S"screenchars",  2, 2, FEARG_1,       &f_screenchars},
+   {S"screencol",    0, 0, 0,           &f_screencol},
+   {S"screenpos",    3, 3, FEARG_1,     &f_screenpos},
+   {S"screenrow",    0, 0, 0,           &f_screenrow},
+   {S"screenstring", 2, 2, FEARG_1,        &f_screenstring},
+   {S"search",       1, 5, FEARG_1,           &f_search},
+   {S"searchcount",  0, 1, FEARG_1,         &f_searchcount},
    {S"searchdecl",   1, 3, FEARG_1,       &f_searchdecl},
    {S"searchpair",   3, 7, 0,          &f_searchpair},
-   {S"searchpairpos",   3, 7, 0,      &f_searchpairpos},
-   {S"searchpos",   1, 5, FEARG_1,     &f_searchpos},
+   {S"searchpairpos", 3, 7, 0,      &f_searchpairpos},
+   {S"searchpos",    1, 5, FEARG_1,     &f_searchpos},
    {S"setbufline",   3, 3, FEARG_3,     &f_setbufline},
-   {S"setbufvar",   3, 3, FEARG_3,         &f_setbufvar},
+   {S"setbufvar",    3, 3, FEARG_3,         &f_setbufvar},
    {S"setcharpos",   2, 2, FEARG_2,        &f_setcharpos},
-   {S"setcharsearch",   1, 1, FEARG_1,        &f_setcharsearch},
+   {S"setcharsearch", 1, 1, FEARG_1,        &f_setcharsearch},
    {S"setcmdline",   1, 2, FEARG_1,        &f_setcmdline},
-   {S"setcmdpos",   1, 1, FEARG_1,       &f_setcmdpos},
+   {S"setcmdpos",    1, 1, FEARG_1,       &f_setcmdpos},
    {S"setcursorcharpos", 1, 3, FEARG_1,      &f_setcursorcharpos},
-   {S"setenv",      2, 2, FEARG_2,            &f_setenv},
-   {S"setfperm",   2, 2, FEARG_1,          &f_setfperm},
+   {S"setenv",       2, 2, FEARG_2,            &f_setenv},
+   {S"setfperm",     2, 2, FEARG_1,          &f_setfperm},
    {S"setline",      2, 2, FEARG_2,        &f_setline},
    {S"setloclist",   2, 4, FEARG_2,        &f_setloclist},
    {S"setmatches",   1, 2, FEARG_1,        &f_setmatches},
-   {S"setpos",      2, 2, FEARG_2,         &f_setpos},
-   {S"setreg",      2, 3, FEARG_2,       &f_setreg},
-   {S"settabvar",   3, 3, FEARG_3,          &f_settabvar},
-   {S"settabwinvar",   4, 4, FEARG_4,       &f_settabwinvar},
-   {S"settagstack",   2, 3, FEARG_2,     &f_settagstack},
-   {S"setwinvar",   3, 3, FEARG_3,          &f_setwinvar},
-   {S"sha256",      1, 1, FEARG_1,    &f_sha256 },
-   {S"shellescape",   1, 2, FEARG_1,          &f_shellescape},
+   {S"setpos",       2, 2, FEARG_2,         &f_setpos},
+   {S"setreg",       2, 3, FEARG_2,       &f_setreg},
+   {S"settabvar",    3, 3, FEARG_3,          &f_settabvar},
+   {S"settabwinvar", 4, 4, FEARG_4,       &f_settabwinvar},
+   {S"settagstack",  2, 3, FEARG_2,     &f_settagstack},
+   {S"setwinvar",    3, 3, FEARG_3,          &f_setwinvar},
+   {S"sha256",       1, 1, FEARG_1,    &f_sha256 },
+   {S"shellescape",  1, 2, FEARG_1,          &f_shellescape},
    {S"shiftwidth",   0, 1, FEARG_1,           &f_shiftwidth},
-   {S"sign_define",   1, 2, FEARG_1,          &f_sign_define},
+   {S"sign_define",  1, 2, FEARG_1,          &f_sign_define},
    {S"sign_getdefined",   0, 1, FEARG_1,   &f_sign_getdefined},
    {S"sign_getplaced",   0, 2, FEARG_1,    &f_sign_getplaced},
-   {S"sign_jump",   3, 3, FEARG_1,         &f_sign_jump},
+   {S"sign_jump",    3, 3, FEARG_1,         &f_sign_jump},
    {S"sign_place",   4, 5, FEARG_1,        &f_sign_place},
    {S"sign_placelist",   1, 1, FEARG_1,    &f_sign_placelist},
    {S"sign_undefine",   0, 1, FEARG_1,     &f_sign_undefine},
-   {S"sign_unplace",   1, 2, FEARG_1,      &f_sign_unplace},
+   {S"sign_unplace", 1, 2, FEARG_1,      &f_sign_unplace},
    {S"sign_unplacelist", 1, 1, FEARG_1,    &f_sign_unplacelist},
-   {S"simplify",   1, 1, FEARG_1,          &f_simplify},
-   {S"sin",      1, 1, FEARG_1,           &f_sin},
-   {S"sinh",      1, 1, FEARG_1,          &f_sinh},
-   {S"slice",      2, 3, FEARG_1,         &f_slice},
-   {S"sort",      1, 3, FEARG_1,          &f_sort},
-   {S"split",      1, 3, FEARG_1,         &f_split},
-   {S"sqrt",      1, 1, FEARG_1,           &f_sqrt},
-   {S"srand",      0, 1, FEARG_1,       &f_srand},
-   {S"state",      0, 1, FEARG_1,          &f_state},
-   {S"str2blob",   1, 2, FEARG_1,          &f_str2blob},
-   {S"str2float",   1, 2, FEARG_1,         &f_str2float},
-   {S"str2list",   1, 2, FEARG_1,       &f_str2list},
-   {S"str2nr",      1, 3, FEARG_1,         &f_str2nr},
+   {S"simplify",     1, 1, FEARG_1,          &f_simplify},
+   {S"sin",          1, 1, FEARG_1,           &f_sin},
+   {S"sinh",         1, 1, FEARG_1,          &f_sinh},
+   {S"slice",        2, 3, FEARG_1,         &f_slice},
+   {S"sort",         1, 3, FEARG_1,          &f_sort},
+   {S"split",        1, 3, FEARG_1,         &f_split},
+   {S"sqrt",         1, 1, FEARG_1,           &f_sqrt},
+   {S"srand",        0, 1, FEARG_1,       &f_srand},
+   {S"state",        0, 1, FEARG_1,          &f_state},
+   {S"str2blob",     1, 2, FEARG_1,          &f_str2blob},
+   {S"str2float",    1, 2, FEARG_1,         &f_str2float},
+   {S"str2list",     1, 2, FEARG_1,       &f_str2list},
+   {S"str2nr",       1, 3, FEARG_1,         &f_str2nr},
    {S"strcharlen",   1, 1, FEARG_1,           &f_strcharlen},
-   {S"strcharpart",   2, 4, FEARG_1,          &f_strcharpart},
-   {S"strchars",   1, 2, FEARG_1,             &f_strchars},
+   {S"strcharpart",  2, 4, FEARG_1,          &f_strcharpart},
+   {S"strchars",     1, 2, FEARG_1,             &f_strchars},
    {S"strdisplaywidth",   1, 2, FEARG_1,        &f_strdisplaywidth},
-   {S"strftime",   1, 2, FEARG_1,       &f_strftime },
+   {S"strftime",     1, 2, FEARG_1,       &f_strftime },
    {S"strgetchar",   2, 2, FEARG_1,           &f_strgetchar},
-   {S"stridx",      2, 3, FEARG_1,            &f_stridx},
-   {S"string",      1, 1, FEARG_1|FE_X,       &f_string},
-   {S"strlen",      1, 1, FEARG_1,            &f_strlen},
+   {S"stridx",       2, 3, FEARG_1,            &f_stridx},
+   {S"string",       1, 1, FEARG_1|FE_X,       &f_string},
+   {S"strlen",       1, 1, FEARG_1,            &f_strlen},
    {S"strpart",      2, 4, FEARG_1,           &f_strpart},
-   {S"strptime",   2, 2, FEARG_1,       &f_strptime },
+   {S"strptime",     2, 2, FEARG_1,       &f_strptime },
    {S"strridx",      2, 3, FEARG_1,           &f_strridx},
-   {S"strtrans",   1, 1, FEARG_1,             &f_strtrans},
-   {S"strwidth",   1, 1, FEARG_1,            &f_strwidth},
-   {S"submatch",   1, 2, FEARG_1,            &f_submatch},
+   {S"strtrans",     1, 1, FEARG_1,             &f_strtrans},
+   {S"strwidth",     1, 1, FEARG_1,            &f_strwidth},
+   {S"submatch",     1, 2, FEARG_1,            &f_submatch},
    {S"substitute",   4, 4, FEARG_1,          &f_substitute},
-   {S"swapfilelist",   0, 0, 0,        &f_swapfilelist},
-   {S"swapinfo",   1, 1, FEARG_1,         &f_swapinfo},
-   {S"swapname",   1, 1, FEARG_1,         &f_swapname},
-   {S"synID",      3, 3, 0,           &f_synID},
-   {S"synIDattr",   2, 3, FEARG_1,            &f_synIDattr},
+   {S"swapfilelist", 0, 0, 0,        &f_swapfilelist},
+   {S"swapinfo",     1, 1, FEARG_1,         &f_swapinfo},
+   {S"swapname",     1, 1, FEARG_1,         &f_swapname},
+   {S"synID",        3, 3, 0,           &f_synID},
+   {S"synIDattr",    2, 3, FEARG_1,            &f_synIDattr},
    {S"synIDtrans",   1, 1, FEARG_1,           &f_synIDtrans},
-   {S"synconcealed",   2, 2, 0,            &f_synconcealed},
-   {S"synstack",   2, 2, 0,        &f_synstack},
+   {S"synstack",     2, 2, 0,              &f_synstack},
    {S"system",      1, 2, FEARG_1,         &f_system},
    {S"systemlist",   1, 2, FEARG_1,     &f_systemlist},
    {S"tabpagebuflist",   0, 1, FEARG_1,     &f_tabpagebuflist},
@@ -14527,76 +14523,6 @@ f_synID(Arr(Var) argvars UNUSED, Var* returnVar) {
       id = syn_get_id(curPor, lnum, col, trans, false);
 
    returnVar->number = id;
-}
-
-// "synIDattr(id, what [, mode])" function
-private void
-f_synIDattr(Arr(Var) argvars, Var* returnVar) {
-   int id = (int)tv_get_number(&argvars[0]);
-   Short hiId = (id < SHORT && id >= 0) ? (Short)id : SHORT;
-   CS what = tv_get_string(&argvars[1]);
-
-   CS p = NULL;
-   switch (what[0]) {
-   case 'b':
-      if (what[1] == 'g')   // bg[#]
-         p = hiliteColor(hiId, what[2] == '#' ? BG_RGB : BG_COLOR).c;
-      else               // bold
-         p = hiliteHasFlag(hiId, HL_BOLD);
-      break;
-
-   case 'f':               // fg[#]
-      if (what[1] == 'g')
-         p = hiliteColor(hiId, what[2] == '#' ? FG_RGB : FG_COLOR).c;
-      break;
-
-   case 'i':
-      if (TOLOWER_ASC(what[1]) == 'n')
-         p = hiliteHasFlag(hiId, HL_INVERSE);
-      else           
-         p = hiliteHasFlag(hiId, HL_ITALIC);
-      break;
-
-   case 'n':
-      if (TOLOWER_ASC(what[1]) == 'o')
-         p = hiliteHasFlag(hiId, HL_NOCOMBINE);
-      else           
-         p = getHiliteGroupName(NULL, id).c;
-      break;
-   case 'u':
-      if (STRLEN(what) >= 9) {
-         if (TOLOWER_ASC(what[5]) == 'l') // underline
-            p = hiliteHasFlag(id, HL_UNDERLINE);
-         ei (TOLOWER_ASC(what[5]) != 'd') // undercurl
-            p = hiliteHasFlag(id, HL_UNDERCURL);
-      } ei (what[1] == 'n') // under
-         p = hiliteColor(hiId, what[2] == '#' ? UNDER_RGB : UNDER_COLOR).c;
-      break;
-   }
-
-   if (p)
-      p = copyStr(p);
-   returnVar->tag = VAR_STRING;
-   returnVar->string = p;
-}
-
-// "synIDtrans(id)" function
-private void
-f_synIDtrans(Arr(Var) argvars UNUSED, Var* returnVar) {
-   int id = (int)tv_get_number(&argvars[0]);
-
-   if (id > 0)
-      id = hiResolveLinks(id);
-   else
-      id = 0;
-
-   returnVar->number = id;
-}
-
-// "synconcealed(lnum, col)" function
-private void
-f_synconcealed(Arr(Var) argvars UNUSED, Var* returnVar) {
-   returnVar_list_set(returnVar, NULL);
 }
 
 // "synstack(lnum, col)" function

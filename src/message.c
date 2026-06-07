@@ -317,10 +317,8 @@ msg_home_replace_hl(Byte *fname) {
 }
 
 private void
-homeReplaceDeco(Byte *fname, char flags) {
-   Byte   *name;
-
-   name = home_replace_save(NULL, fname);
+homeReplaceDeco(CS fname, char flags) {
+   CS name = home_replace_save(NULL, fname);
    if (name)
       msgOuttransDeco(name, flags);
    eeglFree(name);
@@ -334,8 +332,8 @@ msg_outtrans(Byte const* str) {
 }
 
 int
-msgOuttransDeco(Byte const* str, char flags) {
-   return msgOuttransLenDeco(mbText((CS)str), flags);
+msgOuttransDeco(CS str, Byte flags) {
+   return msgOuttransLenDeco(mbText(str), flags);
 }
 
 int
@@ -388,7 +386,7 @@ msgOuttransLenDeco(Text slice, char flags) {
    // If the string starts with a composing character, first draw a space on which the composing 
    // char can be drawn
    if (utf_iscomposing(mb_ptr2char(str)))
-      msgPutsDeco((CS)" ", flags);
+      msgPutsDeco(S" ", flags);
 
    // Go over the string.  Special characters are translated and printed.
    // Normal characters are printed several at a time.
@@ -468,16 +466,16 @@ msg_make(CS arg) {
 //the character/string -- webb
 int
 msg_outtrans_special(
-   Byte   *strstart,
-   int      from,   // TRUE for lhs of a mapping
-   int      maxlen) // screen columns, 0 for unlimited
-{
-   Byte   *str = strstart;
-   int      retval = 0;
+   CS strstart,
+   int from,   // TRUE for lhs of a mapping
+   int maxlen  // screen columns, 0 for unlimited
+){
+   CS str = strstart;
+   int retval = 0;
    CS text;
-   int      len;
+   int len;
 
-   char flags = getDecoFlags(HLF_8);
+   Byte flags = getDecoFlags(HLF_8);
    while (*str != ZERO) {
       // Leading and trailing spaces need to be displayed in <> form.
       if ((str == strstart || str[1] == ZERO) && *str == ' ') {
@@ -500,13 +498,13 @@ msg_outtrans_special(
 
 //Return the lhs or rhs of a mapping, with the key codes turned into printable
 //strings, in an allocated string.
-Byte *
+CS
 str2special_save(
    Byte  *str,
    int       replace_spaces,   // TRUE to replace " " with "<Space>".
             // used for the lhs of mapping and keytrans().
-   int       replace_lt)      // TRUE to replace "<" with "<lt>".
-{
+   int       replace_lt      // TRUE to replace "<" with "<lt>".
+){
    ArrayList   ga;
    Byte   *p = str;
 

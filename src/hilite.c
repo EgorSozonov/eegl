@@ -64,10 +64,9 @@ typedef struct {
 
 private Boole printHiliteHeaderWorker(int didHeader, int lineLen, HiliteGroup* group);
 private void printHilite(HiliteGroup* g);
-private void clearHiliteWorker(Short hiId);
+private void clearHiliteWorker(HiliteGroup* g);
 private void printHiliteHeaderNew(HiliteGroup* group);
-private void printHiliteFieldNew(//HiliteGroup* group, CS keyName, 
-                                 Text sarg);
+private void msgColor(VTermColor color);
 private void printHiliteDeco(HiliteGroup* group);
 private void set_normal_colors(void);
 
@@ -95,24 +94,24 @@ sliceCmpToConst0(Text a, Arr(char) b, Unt len) {
 
 // must be sorted by the 'value' field because it is used by bsearch()!
 private Kv decoKinds[] = {
-   KEYVALUE_ENTRY(HL_BOLD, "bold"),           
-   KEYVALUE_ENTRY(HL_INVERSE, "inverse"),     
-   KEYVALUE_ENTRY(HL_ITALIC, "italic"),       
-   KEYVALUE_ENTRY(HL_NOCOMBINE, "nocombine"), 
-   KEYVALUE_ENTRY(HL_NORMAL, "NONE"),         
-   KEYVALUE_ENTRY(HL_UNDERCURL, "undercurl"), 
-   KEYVALUE_ENTRY(HL_UNDERLINE, "underline")  
+   KEYVALUE_ENTRY(DECO_BOLD, "bold"),           
+   KEYVALUE_ENTRY(DECO_INVERSE, "inverse"),     
+   KEYVALUE_ENTRY(DECO_ITALIC, "italic"),       
+   KEYVALUE_ENTRY(DECO_NOCOMBINE, "nocombine"), 
+   KEYVALUE_ENTRY(DECO_NORMAL, "NONE"),         
+   KEYVALUE_ENTRY(DECO_UNDERCURL, "undercurl"), 
+   KEYVALUE_ENTRY(DECO_UNDERLINE, "underline")  
 };
 
 // this table is used to display hilite names in the correct order. keep in sync with decoKinds[]
 private Kv *decoKindIndices[] = {
-    decoKinds,       // HL_BOLD
-    decoKinds + 6,   // HL_UNDERLINE
-    decoKinds + 5,   // HL_UNDERCURL
-    decoKinds + 2,   // HL_ITALIC
-    decoKinds + 1,   // HL_INVERSE
-    decoKinds + 3,   // HL_NOCOMBINE
-    decoKinds + 4    // HL_NORMAL
+    decoKinds,       // DECO_BOLD
+    decoKinds + 6,   // DECO_UNDERLINE
+    decoKinds + 5,   // DECO_UNDERCURL
+    decoKinds + 2,   // DECO_ITALIC
+    decoKinds + 1,   // DECO_INVERSE
+    decoKinds + 3,   // DECO_NOCOMBINE
+    decoKinds + 4    // DECO_NORMAL
 };
 
 // length of all decoKinds names, plus commas, together (and a bit more)
@@ -260,8 +259,8 @@ private char *(hiliteGroupStrings[]) = {
 private CS hiNamesContainer;
 
 // Table with the specifications for an decoration number.
-// Note that this table is used by ALL buffers. This is required because the
-// TUI can redraw at any time for any buffer.
+// Note that this table is used by ALL books. This is required because the
+// TUI can redraw at any time for any book.
 private Arr(HiliteGroup) hilites;
 private Short countGroups;
 private DictStringInt128* hiNames;
@@ -383,13 +382,13 @@ private Boole
 getColorByName(OUT VTermColor* res, Text name) {
    if (name.len == 8 
          && name.c[7] >= '0' && name.c[7] < '8' 
-         && eq((Text){name.c, 7}, S"regular")
+         && eq(((Text){name.c, 7}), S"regular")
    ) {
       *res = name.c[7] - '0';
       return true;
    } ei (name.len == 7
          && name.c[6] >= '0' && name.c[6] < '8' 
-         && eq((Text){name.c, 6}, S"bright")
+         && eq(((Text){name.c, 6}), S"bright")
    ) {
       *res = (name.c[7] - '0') + 8;
       return true;
@@ -402,7 +401,7 @@ getColorByName(OUT VTermColor* res, Text name) {
       return true;
    } ei ((name.len == 5 || (name.len == 6 && EE_ISDIGIT(name.c[5])))
          && EE_ISDIGIT(name.c[4])
-         && eq((Text){name.c, 4}, S"grey")
+         && eq(((Text){name.c, 4}), S"grey")
    ) {
       *res = 232 + ((name.len == 5) ? (name.c[4] - '0') : ((name.c[4] - '0')*10 + name.c[5] - '0'));
       return true;
@@ -433,18 +432,13 @@ setUnderline(OUT HiliteGroup* group, Text arg, int init) {
 
 //{{{printing hilite groups
 
-// Prints a single field of a hilite group to Messages
-private void
-printHiliteFieldNew(
-//   HiliteGroup* group,
-//   CS keyName,
-   Text fieldName
-){
-   if (fieldName.len == 0)
-      return;
-   msg_outtrans(fieldName.c);
+// Return color name (or, for RGB colors, "#123456") of a single field of hilite group "hiId"
+// Always make a separate allocation
+private CS
+printColor(OUT Byte buf[static 4], VTermColor color) {
+   sprintf((char *)buf, "%d", color);
+   return buf;
 }
-
 
 // Print a hilite group to messages
 private void
@@ -452,21 +446,18 @@ printHilite(HiliteGroup* group) {
    if (gotInterruptG || message_filtered(group->name.c))
       return;
    printHiliteHeaderNew(group);
-
+   Byte buf[4];
    if (group->fieldPresence != 0)  {
-      // Note: Keep this in sync with expand_highlight_group().
+      // Note: Keep this in sync with expandHiliteGroup().
       printHiliteDeco(group);
-      printHiliteFieldNew(//group, S"fg", 
-                          group->fg.name);
-      printHiliteFieldNew(//group, S"bg", 
-                          group->bg.name);
-      printHiliteFieldNew(//group, S"under", 
-                          group->under.name);
+      msg_outtrans(printColor(OUT buf, group->fg));
+      msg_outtrans(printColor(OUT buf, group->bg));
+      msg_outtrans(printColor(OUT buf, group->under));
    } else {
-      msg_outtrans((CS)"CLEARED");
+      msg_outtrans(S"CLEARED");
    }
    if (group->link) {
-      msgPutsDeco((CS)"links to", getDecoFlags(HLF_D));
+      msgPutsDeco(S"links to", getDecoFlags(HLF_D));
       msg_putchar(' ');
       msg_outtrans(hilites[group->link].name.c);
    }
@@ -595,7 +586,7 @@ linkHilite(
    HiliteGroup* group,
    Text toName
 ) {
-   clearHiliteWorker(group->hiId);
+   clearHiliteWorker(OUT group);
    
    Short toId = hiliteGroupByName(toName);
    if (toId == SHORT) {
@@ -627,15 +618,15 @@ parseHiliteKey(Text key) {
 }
 
 // Write the info from a hilite group to the corresponding decoration in decorationsG
-private void
+private Decoration
 writeToDecoration(HiliteGroup* restrict g) {
    Decoration deco;
-   deco.fg = g->fg.c;
-   deco.bg = g->bg.c;
-   deco.under = g->under.c;
+   deco.fg = g->fg;
+   deco.bg = g->bg;
+   deco.under = g->under;
    deco.flags = g->flags;
    deco.hiId = g->hiId;
-   decorationsG[g->hiId] = deco;
+   return deco;
 }
 
 // Fill the keys and kvs arrays for a hilite expression
@@ -733,7 +724,7 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
 
    // Clear the highlighting for ":hi clear {group}" and ":hi clear".
    if (forceit || init) {
-      clearHiliteWorker(group);
+      clearHiliteWorker(OUT group);
    } 
    
    group->fieldPresence &= ~HI_IS_LINK;
@@ -789,7 +780,7 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
       return;
    }
 breakTheLoop:
-   writeToDecoration(group);
+   decorationsG[group->hiId] = writeToDecoration(group);
 
    group->script_ctx = scriptPosG;
    group->script_ctx.lineNr += SOURCING_LNUM;
@@ -805,7 +796,7 @@ breakTheLoop:
 
 // Clear hiliting for one group.
 private void
-clearHiliteWorker(HiliteGroup* g) {
+clearHiliteWorker(OUT HiliteGroup* g) {
    g->fieldPresence = 0;
    g->flags = 0;
    // Since we set the default link, set the location to where the default link was set.
@@ -841,21 +832,9 @@ combineDecorations(Decoration overlay, Decoration base) {
 }
 
 // Return "1" if hilite group "id" has deco "flag". Return NULL otherwise.
-CS
-hiliteHasFlag(Short hiId, char flag){
-   if (hiId >= countGroups)
-      return NULL;
-   if (hilites[hiId].flags & flag) {
-   }
-   return (hilites[hiId].flags & flag) ? S"1" : null;
-}
-
-// Return color name (or, for RGB colors, "#123456") of a single field of hilite group "hiId"
-// Always make a separate allocation
-CS
-hiliteColor(OUT Byte[static 4] buf, VTermColor color) {
-   sprintf((char *)buf, "%d", color);
-   return buf;
+private CS
+hiliteHasFlag(HiliteGroup* g, Byte flag){
+   return ((g->flags & flag) != 0) ? S"1" : null;
 }
 
 // Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
@@ -1031,7 +1010,6 @@ toDict(Short hiId, int resolveLinks) {
    }
    Decoration decoration = getFullDecoration(hiId); 
    Byte buf[4];
-   buf[3] = ZERO;
    
    if ((group->fieldPresence & IS_LINK) != 0) {
       Text linkName = hilites[group->link].name;
@@ -1042,11 +1020,11 @@ toDict(Short hiId, int resolveLinks) {
          bagAdd_bool(dict, S"default", VVAL_TRUE);
    } else {
       if ((group->fieldPresence & HAS_FG) != 0)
-         bagAddString(dict, S"fg", hiliteColor(OUT buf, group->fg));
+         bagAddString(dict, S"fg", printColor(OUT buf, group->fg));
       if ((group->fieldPresence & HAS_BG) != 0)
-         bagAddString(dict, S"bg", hiliteColor(OUT buf, group->bg));
+         bagAddString(dict, S"bg", printColor(OUT buf, group->bg));
       if ((group->fieldPresence & HAS_UNDER) != 0)
-         bagAddString(dict, S"under", hiliteColor(OUT buf, group->under));
+         bagAddString(dict, S"under", printColor(OUT buf, group->under));
    }
    
    if (bagSize(dict) == 2)
@@ -6243,6 +6221,73 @@ syn_get_foldlevel(Portal *po, long lnum) {
          level = 0;
    }
    return level;
+}
+
+// "synIDattr(id, what [, mode])" function
+void
+f_synIDattr(Arr(Var) argvars, Var* returnVar) {
+   int id = (int)tv_get_number(&argvars[0]);
+   if (id >= SHORT || id < 0)
+      return;
+   Short hiId = (id < SHORT && id >= 0) ? (Short)id : SHORT;
+   HiliteGroup* g = hilites + hiId;
+   
+   CS what = tv_get_string(&argvars[1]);
+   CS p = NULL;
+   Byte buf[4];
+   
+   switch (what[0]) {
+   case 'b':
+      if (what[1] == 'g')   // bg[#]
+         p = printColor(OUT buf,  g->bg);
+      else               // bold
+         p = hiliteHasFlag(g, DECO_BOLD);
+      break;
+
+   case 'f':               // fg[#]
+      if (what[1] == 'g')
+         p = printColor(OUT buf, g->fg);
+      break;
+
+   case 'i':
+      if (TOLOWER_ASC(what[1]) == 'n')
+         p = hiliteHasFlag(g, HL_INVERSE);
+      else           
+         p = hiliteHasFlag(g, HL_ITALIC);
+      break;
+
+   case 'n':
+      if (TOLOWER_ASC(what[1]) == 'o')
+         p = hiliteHasFlag(g, HL_NOCOMBINE);
+      else           
+         p = getHiliteGroupName(NULL, id).c;
+      break;
+   case 'u':
+      if (STRLEN(what) >= 9) {
+         if (TOLOWER_ASC(what[5]) == 'l') // underline
+            p = hiliteHasFlag(g, HL_UNDERLINE);
+         ei (TOLOWER_ASC(what[5]) != 'd') // undercurl
+            p = hiliteHasFlag(g, HL_UNDERCURL);
+      } ei (what[1] == 'n') // under
+         p = printColor(hiId, what[2] == '#' ? UNDER_RGB : UNDER_COLOR).c;
+      break;
+   }
+
+   returnVar->tag = VAR_STRING;
+   returnVar->string = p ? copyStr(p) : null;
+}
+
+// "synIDtrans(id)" function
+void
+f_synIDtrans(Arr(Var) argvars UNUSED, Var* returnVar) {
+   int id = (int)tv_get_number(&argvars[0]);
+
+   if (id > 0)
+      id = hiResolveLinks(id);
+   else
+      id = 0;
+
+   returnVar->number = id;
 }
 
 //}}}

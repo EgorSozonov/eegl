@@ -55,7 +55,7 @@ private void msg_pos_mode(void);
 private void recording_mode(char flags);
 
 // Ugly global: overrule decoration used by screen_char()
-private int screen_charDeco = 0;
+private VTermDeco screen_charDeco = DECO_NORMAL;
 
 //Get 'portcolor' decoration for portal "po".  If not set and "po" is a popup
 //portal then get the "Pmenu" hilite decoration.
@@ -193,8 +193,8 @@ blocked_by_popup(int row, int col) {
 // Reset the hiliting.  Used before clearing the screen.
 void
 resetActiveDeco(void) {
-   // Use a decoration that are very unlikely to appear in text
-   activeDecoS.flags = HL_BOLD | HL_UNDERLINE | HL_INVERSE;
+   //Use decorations that are very unlikely to appear in text
+   activeDecoS.flags = DECO_BOLD | DECO_UNDERLINE | DECO_INVERSE;
 }
 
 //Return TRUE if the character at "row" / "col" is under the popup menu and it
@@ -325,7 +325,7 @@ screen_line(
          //for some xterms.
          if ( term_is_xterm) {
             char deco = getDecoFlags(screenDecosG[off_to].hiId);
-            if (deco & HL_BOLD)
+            if ((deco & DECO_BOLD) != 0)
                redraw_next = TRUE;
          }
          screenDecosG[off_to] = screenDecosG[off_from];
@@ -738,8 +738,8 @@ drawTextLen(
          // GUI and for some xterms.
          if (need_redraw && screenLinesG[off] != ' ' && ( term_is_xterm)) {
             char n = getDecoFlags(screenDecosG[off].hiId);
-            if (n & HL_BOLD)
-               force_redraw_next = TRUE;
+            if ((n & DECO_BOLD) != 0)
+               force_redraw_next = true;
          }
          // When at the end of the text and overwriting a two-cell character with a one-cell 
          // character, need to clear the next cell.  Also when overwriting the left half of a two-cell
@@ -821,26 +821,26 @@ startDrawingHilite(Short hiId) {
    activeDecoS = getFullDecoration(hiId);
    Decoration fullDeco = getFullDecoration(activeDecoS.hiId);
       
-   if ((activeDecoS.flags & HL_BOLD) && *termCodeS[KS_MD] != ZERO)
+   if ((activeDecoS.flags & DECO_BOLD) != 0 && *termCodeS[KS_MD] != ZERO)
       out_str(termCodeS[KS_MD]);
-   ei ((activeDecoS.flags & HL_BOLD) != 0 && (fullDeco.fieldPresence & HI_HAS_FG) != 0)
+   ei ((activeDecoS.flags & DECO_BOLD) != 0 && (fullDeco.fieldPresence & HI_HAS_FG) != 0)
       // If the Normal FG color has BOLD flag and the new HL has a FG color defined, clear BOLD
       out_str(termCodeS[KS_ME]);
       
-   if ((activeDecoS.flags & HL_UNDERCURL) && *termCodeS[KS_UCS] != ZERO)
+   if ((activeDecoS.flags & DECO_UNDERCURL) && *termCodeS[KS_UCS] != ZERO)
       out_str(termCodeS[KS_UCS]);
       
-   if (((activeDecoS.flags & HL_UNDERLINE) 
-            || ((activeDecoS.flags & HL_UNDERCURL) && *termCodeS[KS_UCS] == ZERO))
+   if (((activeDecoS.flags & DECO_UNDERLINE) 
+            || ((activeDecoS.flags & DECO_UNDERCURL) && *termCodeS[KS_UCS] == ZERO))
        && *termCodeS[KS_US] != ZERO
    ) {
       out_str(termCodeS[KS_US]);
    } 
    
-   if ((activeDecoS.flags & HL_ITALIC) && *termCodeS[KS_CZH] != ZERO)
+   if ((activeDecoS.flags & DECO_ITALIC) && *termCodeS[KS_CZH] != ZERO)
       out_str(termCodeS[KS_CZH]);
       
-   if ((activeDecoS.flags & HL_INVERSE) && *termCodeS[KS_MR] != ZERO)
+   if ((activeDecoS.flags & DECO_INVERSE) && *termCodeS[KS_MR] != ZERO)
       out_str(termCodeS[KS_MR]);
 
    // Output the color or start string after bold etc., in case the bold overrides the color setting
@@ -861,26 +861,26 @@ drawStopHilite(void) {
    int do_ME = FALSE;       // output KS_ME code
 
    // Often all ending-codes are equal to KS_ME. Avoid outputting the same sequence several times
-   int is_under = (activeDecoS.flags & (HL_UNDERCURL));
+   int is_under = (activeDecoS.flags & (DECO_UNDERCURL));
    if (is_under && *termCodeS[KS_UCE] != ZERO) {
       if (STRCMP(termCodeS[KS_UCE], termCodeS[KS_ME]) == 0)
          do_ME = TRUE;
       else
          out_str(termCodeS[KS_UCE]);
    }
-   if ((activeDecoS.flags & HL_UNDERLINE) || (is_under && *termCodeS[KS_UCE] == ZERO)) {
+   if ((activeDecoS.flags & DECO_UNDERLINE) != 0 || (is_under && *termCodeS[KS_UCE] == ZERO)) {
       if (STRCMP(termCodeS[KS_UE], termCodeS[KS_ME]) == 0)
          do_ME = TRUE;
       else
          out_str(termCodeS[KS_UE]);
    }
-   if (activeDecoS.flags & HL_ITALIC) {
+   if ((activeDecoS.flags & DECO_ITALIC) != 0) {
       if (STRCMP(termCodeS[KS_CZR], termCodeS[KS_ME]) == 0)
          do_ME = TRUE;
       else
          out_str(termCodeS[KS_CZR]);
    }
-   if (do_ME || (activeDecoS.flags & (HL_BOLD | HL_INVERSE)))
+   if (do_ME || (activeDecoS.flags & (DECO_BOLD | DECO_INVERSE)) != 0)
       out_str(termCodeS[KS_ME]);
 
    termApplyFgColor(defaultFgColorG);
@@ -923,7 +923,7 @@ screen_char(unsigned off, int row, int col) {
 
    // Stop hiliting first, so it's easier to move the cursor.
    Short hiId;
-   if (screen_charDeco != SHORT)
+   if (screen_charDeco != DECO_NORMAL)
       hiId = screen_charDeco;
    else
       hiId = screenDecosG[off].hiId;
@@ -960,7 +960,7 @@ screen_draw_rectangle(int row, int col, int height, int width, Boole invert) {
       return;
 
    if (invert)
-      screen_charDeco = HL_INVERSE;
+      screen_charDeco = DECO_INVERSE;
    for (int r = row; r < row + height; ++r) {
       int off = lineOffsetG[r];
       int max_off = off + screenLinesColsG;
@@ -971,7 +971,7 @@ screen_draw_rectangle(int row, int col, int height, int width, Boole invert) {
             ++c;
       }
    }
-   screen_charDeco = 0;
+   screen_charDeco = DECO_NORMAL;
 }
 
 // Redraw the characters for a vertically split portal
@@ -1011,7 +1011,7 @@ fillRowsWithTwoChars(
    Unt end_col,
    int c1,
    int c2,
-   char decoFlags
+   Byte decoFlags
 ){
    Unt col;
    int off;
@@ -1089,7 +1089,7 @@ fillRowsWithTwoChars(
             // bold character is removed, the next character should be redrawn too.  This happens for 
             // our own GUI and for some xterms.
             if (term_is_xterm) {
-               if (screenLinesG[off] != ' ' && screenDecosG[off].flags & HL_BOLD)
+               if (screenLinesG[off] != ' ' && screenDecosG[off].flags & DECO_BOLD)
                   force_next = TRUE;
                else
                   force_next = FALSE;

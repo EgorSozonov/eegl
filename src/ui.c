@@ -77,36 +77,6 @@ struct VTermBuilder {
   Unt tmpbuffer_len;  // default: 4096
 };
 
-//Bit-field describing the value of VTermColor.type
-typedef enum {
-   //If the lower bit of `type` is not set, the colour is 24-bit RGB.
-   VTERM_COLOR_RGB = 0x00,
-
-   //The colour is an index into a palette of 256 colours.
-   VTERM_COLOR_INDEXED = 0x01,
-
-   //Mask that can be used to extract the RGB/Indexed bit.
-   VTERM_COLOR_TYPE_MASK = 0x01,
-
-   //If set, indicates that this colour should be the default foreground
-   //color, i.e. there was no SGR request for another colour. When
-   //rendering this colour it is possible to ignore "idx" and just use a
-   //color that is not in the palette.
-   VTERM_COLOR_DEFAULT_FG = 0x02,
-
-   //If set, indicates that this colour should be the default background
-   //color, i.e. there was no SGR request for another colour. A common
-   //option when rendering this colour is to not render a background at
-   //all, for example by rendering the window transparently at this spot.
-   VTERM_COLOR_DEFAULT_BG = 0x04,
-
-   //Mask that can be used to extract the default foreground/background bit.
-   VTERM_COLOR_DEFAULT_MASK = 0x06,
-
-   //If set, indicates that the color is invalid.
-   VTERM_COLOR_INVALID = 0x08
-} VTermColorType;
-
 enum {
   VTERM_UNDERLINE_OFF,
   VTERM_UNDERLINE_SINGLE,
@@ -135,7 +105,7 @@ typedef struct {
 
 
 typedef enum {
-  /* VTERM_PROP_NONE = 0 */
+  // VTERM_PROP_NONE = 0
   VTERM_PROP_CURSORVISIBLE = 1, // bool
   VTERM_PROP_CURSORBLINK,       // bool
   VTERM_PROP_ALTSCREEN,         // bool
@@ -6907,7 +6877,7 @@ vterm_state_get_lineinfo(const VTermState *state, int row) {
 
 // This is VTermScreenCell without the characters, thus much smaller.
 typedef struct {
-   VTermDeco flags;
+   Byte flags; //DECO_* constants
    char width;
    VTermColor fg;
    VTermColor bg;
@@ -10971,7 +10941,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
                       && (cursor_pos1.row != cursor_pos2.row || cursor_pos1.col != cursor_pos2.col))
                // cursor in second but not in first
                textline[col] = '<';
-            ei (cellattr1 != NULL && cellattr2 != NULL) {
+            ei (cellattr1 && cellattr2) {
                if ((cellattr1 + col)->width != (cellattr2 + col)->width)
                   textline[col] = 'w';
                ei (!vterm_color_is_equal(&(cellattr1 + col)->fg, &(cellattr2 + col)->fg))
