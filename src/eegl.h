@@ -4359,9 +4359,9 @@ typedef struct {
 } DictIterator;
 
 // values for b_syn_spell: what to do with toplevel text
-#define SYNSPL_DEFAULT   0   // spell check if @Spell not defined
-#define SYNSPL_TOP   1   // spell check toplevel text
-#define SYNSPL_NOTOP   2   // don't spell check toplevel text
+#define SYNSPL_DEFAULT 0   //spell check if @Spell not defined
+#define SYNSPL_TOP     1   //spell check toplevel text
+#define SYNSPL_NOTOP   2   //don't spell check toplevel text
 
 // values for b_syn_foldlevel: how to compute foldlevel on a line
 #define SYNFLD_START   0   // use level of item at start of line

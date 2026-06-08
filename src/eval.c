@@ -9400,7 +9400,6 @@ private BuiltinFn globalFunctions[] = {
    {S"term_dumpload",   1, 2, FEARG_1,        TERM_FUNC(f_term_dumpload)},
    {S"term_dumpwrite",   2, 3, FEARG_2,       TERM_FUNC(f_term_dumpwrite)},
    {S"term_getaltscreen", 1, 1, FEARG_1,         TERM_FUNC(f_term_getaltscreen)},
-   {S"term_getansicolors", 1, 1, FEARG_1, &f_term_getansicolors },
 //   {S"term_getattr",   2, 2, FEARG_1,            TERM_FUNC(f_term_getattr)},
    {S"term_getcursor",   1, 1, FEARG_1,          TERM_FUNC(f_term_getcursor)},
    {S"term_getjob",   1, 1, FEARG_1,            TERM_FUNC(f_term_getjob)},

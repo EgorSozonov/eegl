@@ -66,7 +66,6 @@ private Boole printHiliteHeaderWorker(int didHeader, int lineLen, HiliteGroup* g
 private void printHilite(HiliteGroup* g);
 private void clearHiliteWorker(HiliteGroup* g);
 private void printHiliteHeaderNew(HiliteGroup* group);
-private void msgColor(VTermColor color);
 private void printHiliteDeco(HiliteGroup* group);
 private void set_normal_colors(void);
 
@@ -688,7 +687,6 @@ errorOut:
 // "init" is true when building the default hilite groups, false when called in script/commline
 void
 doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializing
-   Boole didChange = false;
    Boole error = false;
 
    // If no argument, list current groups
@@ -785,13 +783,9 @@ breakTheLoop:
    group->script_ctx = scriptPosG;
    group->script_ctx.lineNr += SOURCING_LNUM;
 
-   if (didFieldChange && !didChange) {
-      //Do not trigger a redraw when highlighting is changed while
-      //redrawing. This may happen when evaluating @statusline changes the StatusLine group.
-      if (!updating_screen)
-         redraw_all_later(UPD_NOT_VALID);
-      need_highlight_changed = TRUE;
-   }
+   if (!updating_screen)
+      redraw_all_later(UPD_NOT_VALID);
+   need_highlight_changed = TRUE;
 }
 
 // Clear hiliting for one group.
@@ -820,10 +814,10 @@ set_normal_colors(void) {
 // Return the resulting decos.
 Decoration
 combineDecorations(Decoration overlay, Decoration base) {
-   if ((base.flags & HL_UNDERLINE) && overlay.flags & HL_UNDERCURL) {
+   if ((base.flags & DECO_UNDERLINE) && overlay.flags & DECO_UNDERCURL) {
       return base;
-   } ei((base.flags & HL_UNDERCURL) && overlay.flags & HL_UNDERLINE) { 
-      base.flags = (base.flags & ~HL_UNDERCURL) | HL_UNDERLINE;
+   } ei((base.flags & DECO_UNDERCURL) && overlay.flags & DECO_UNDERLINE) { 
+      base.flags = (base.flags & ~DECO_UNDERCURL) | DECO_UNDERLINE;
    } else {
       base.flags |= overlay.flags;
    }
@@ -865,7 +859,7 @@ syn_id2name(Unt id) {
 }
 
 // Translate a group ID to hilite decos. Precondition: "hl_id" must be > 0
-char
+Byte
 decorationByHiliteId(Short hiId) {
    Unt resolvedId = hiResolveLinks(hiId);
    assert(resolvedId < SHORT);
@@ -873,7 +867,7 @@ decorationByHiliteId(Short hiId) {
 }
 
 // Get the colors and decos for a group ID. NOTE: the colors will be regular0 when not set
-char
+Byte
 syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp) {
    Unt resolvedId = hiResolveLinks(hiId);
    assert(resolvedId < SHORT);
@@ -1008,10 +1002,9 @@ toDict(Short hiId, int resolveLinks) {
       if (deco && bagAddBag(dict, (CS)"deco", deco) == FAIL)
          goto error;
    }
-   Decoration decoration = getFullDecoration(hiId); 
    Byte buf[4];
    
-   if ((group->fieldPresence & IS_LINK) != 0) {
+   if ((group->fieldPresence & HI_IS_LINK) != 0) {
       Text linkName = hilites[group->link].name;
       if (linkName.len > 0 && bagAddString(dict, S"linksto", linkName.c) == FAIL)
          goto error;
@@ -1019,11 +1012,11 @@ toDict(Short hiId, int resolveLinks) {
       if (group->deflink)
          bagAdd_bool(dict, S"default", VVAL_TRUE);
    } else {
-      if ((group->fieldPresence & HAS_FG) != 0)
+      if ((group->fieldPresence & HI_HAS_FG) != 0)
          bagAddString(dict, S"fg", printColor(OUT buf, group->fg));
-      if ((group->fieldPresence & HAS_BG) != 0)
+      if ((group->fieldPresence & HI_HAS_BG) != 0)
          bagAddString(dict, S"bg", printColor(OUT buf, group->bg));
-      if ((group->fieldPresence & HAS_UNDER) != 0)
+      if ((group->fieldPresence & HI_HAS_UNDER) != 0)
          bagAddString(dict, S"under", printColor(OUT buf, group->under));
    }
    
@@ -1088,8 +1081,7 @@ Decoration
 getFullDecoration(Unt hiId) {
    HiliteGroup* g = hilites + hiId;
    return (Decoration) {
-      .fg = g->fg.c, .bg = g->bg.c, .under = g->under.c, .flags = g->flags, 
-      .hiId = hiId
+      .fg = g->fg, .bg = g->bg, .under = g->under, .flags = g->flags, .hiId = hiId
    };
 }
 
@@ -6238,38 +6230,38 @@ f_synIDattr(Arr(Var) argvars, Var* returnVar) {
    
    switch (what[0]) {
    case 'b':
-      if (what[1] == 'g')   // bg[#]
+      if (what[1] == 'g')   // bg
          p = printColor(OUT buf,  g->bg);
       else               // bold
          p = hiliteHasFlag(g, DECO_BOLD);
       break;
 
-   case 'f':               // fg[#]
+   case 'f':               // fg
       if (what[1] == 'g')
          p = printColor(OUT buf, g->fg);
       break;
 
    case 'i':
       if (TOLOWER_ASC(what[1]) == 'n')
-         p = hiliteHasFlag(g, HL_INVERSE);
+         p = (g->flags & DECO_INVERSE) != 0 ? S"inverse" : null;
       else           
-         p = hiliteHasFlag(g, HL_ITALIC);
+         p = (g->flags & DECO_ITALIC) != 0 ? S"italic" : null;
       break;
 
    case 'n':
       if (TOLOWER_ASC(what[1]) == 'o')
-         p = hiliteHasFlag(g, HL_NOCOMBINE);
+         p = (g->flags & DECO_NOCOMBINE) != 0 ? S"nocombine" : null;
       else           
-         p = getHiliteGroupName(NULL, id).c;
+         p = g->name.c;
       break;
    case 'u':
       if (STRLEN(what) >= 9) {
          if (TOLOWER_ASC(what[5]) == 'l') // underline
-            p = hiliteHasFlag(g, HL_UNDERLINE);
+            p = (g->flags & DECO_UNDERLINE) != 0 ? S"underline" : null;
          ei (TOLOWER_ASC(what[5]) != 'd') // undercurl
-            p = hiliteHasFlag(g, HL_UNDERCURL);
+            p = (g->flags & DECO_UNDERCURL) != 0 ? S"undercurl" : null;
       } ei (what[1] == 'n') // under
-         p = printColor(hiId, what[2] == '#' ? UNDER_RGB : UNDER_COLOR).c;
+         p = printColor(OUT buf, g->under);
       break;
    }
 
