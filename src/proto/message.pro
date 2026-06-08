@@ -8,7 +8,7 @@ void msgPutcharDeco(Unt c, char flags);
 void msg_outnum(long n);
 void msg_home_replace(Byte *fname);
 void msg_home_replace_hl(Byte *fname);
-int msg_outtrans(Byte const *str);
+int msg_outtrans(Byte *str);
 int msgOuttransDeco(CS str, Byte flags);
 int msgTranslatedSlice(Text slice);
 CS msgOneChar(CS p, char flags);

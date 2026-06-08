@@ -1821,6 +1821,7 @@ typedef enum{
 #define STRCMP(d, s)       strcmp((char *)(d), (char *)(s))
 #define STRNCMP(d, s, n)   strncmp((char *)(d), (char *)(s), (Unt)(n))
 #define SPRINTF(a, fmt, ...) sprintf((char* restrict)a, (char*)fmt, ##__VA_ARGS__)
+#define SNPRINTF(a, b, fmt, ...) snprintf((char* restrict)(a), b, (char*)(fmt), ##__VA_ARGS__)
 #define caseInsensitiveCompare(d, s)       strcasecmp((char *)(d), (char *)(s))
 #define STRCOLL(d, s)      strcoll((char *)(d), (char *)(s))
 #define STRTOD(a, b)       strtod((char*)a, (char**) b)
@@ -4285,7 +4286,6 @@ typedef struct {
    Byte   *jo_eof_chars;
    Byte   jo_term_kill_buf[NUMBUFLEN];
    Byte   *jo_term_kill;
-   Ulong   jo_ansi_colors[16];
    Byte   jo_term_highlight_buf[NUMBUFLEN];
    Byte   *jo_term_highlight;
    int      jo_tty_type;       // first character of "tty_type"

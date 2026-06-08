@@ -337,6 +337,10 @@ if has('vim9script')
 endif
 ```
 
+## Debugging flags
+
+DEBUG_GLYPH_COMBINE - debug combining Unicode characters
+
 ## Contributing new runtime files
 
 If you want to contribute new runtime files for Vim or Neovim, please create a

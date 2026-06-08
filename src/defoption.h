@@ -274,8 +274,6 @@ OPTION("wltimeoutlen", p_wtm, long, 500, 0, &did_set_wltimeoutlen, NULL)
 
 OPTION("breakindent", breakIndent, Boole, false, 0, null, null)
 OPTION("breakindentopt", breakIndentOpt, CS, null, 0, setBreakindentOpt, expandBreakindentOpt)
-OPTION("portcolor", hiliteGroupName, CS, null, P_REDRAW_PORT, 
-   &didSetPortcolor, &expandSetPortcolor)
 OPTION("diff", diff, Boole, false, P_REDRAW_PORT, &did_set_diff, null)
 OPTION("eventignoreport", eventIgnorePort, CS, null, P_ONECOMMA|P_NODUP, 
    &did_set_eventignore, &expand_set_eventignore)

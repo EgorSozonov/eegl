@@ -327,7 +327,7 @@ homeReplaceDeco(CS fname, char flags) {
 // Output 'len' characters in 'str' (including ZEROSs) with translation if 'len' is -1, 
 // output up to a ZERO character. Return the number of characters it takes on the screen.
 int
-msg_outtrans(Byte const* str) {
+msg_outtrans(Byte* str) {
    return msgOuttransDeco(str, 0);
 }
 

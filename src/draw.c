@@ -57,14 +57,11 @@ private void recording_mode(char flags);
 // Ugly global: overrule decoration used by screen_char()
 private VTermDeco screen_charDeco = DECO_NORMAL;
 
-//Get 'portcolor' decoration for portal "po".  If not set and "po" is a popup
-//portal then get the "Pmenu" hilite decoration.
+//If "po" is a popup portal, then get the "Pmenu" hilite decoration.
 Decoration
 getPortcolorDeco(Portal* po) {
    Decoration portalDeco;
-   if (po->o.hiliteGroupName)
-      portalDeco = decosByHiliteName(po->o.hiliteGroupName);
-   ei (PORTAL_IS_POPUP(po)) {
+   if (PORTAL_IS_POPUP(po)) {
       if (isInfoPopup(po))
          portalDeco = getFullDecoration(HLF_PSI);    // PmenuSel
       else

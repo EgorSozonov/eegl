@@ -256,6 +256,7 @@
 [-] @previewport - shouldn't be an option, just a single portal per tab
 [-] @shortmess - fixed at sane defaults
 [-] p_udir @undodir - fixed, now same as swap file dir
+[-] @portcolor
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany

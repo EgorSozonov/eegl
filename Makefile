@@ -4,7 +4,7 @@ INTERNAL_CFLAGS = --std=c17 -gdwarf-5 -pthread -Wp,-D_FORTIFY_SOURCE=2 -fno-plt 
       -fdebug-prefix-map=$(shell pwd)=.
 
 # The debug flags
-CFLAGS ?=  $(INTERNAL_FLAGS) -Wall -Wextra -Wfatal-errors -O0 \
+CFLAGS ?=  $(INTERNAL_CFLAGS) -Wall -Wextra -Wfatal-errors -O0 \
               -Wno-cpp -Werror=return-type -Werror=pointer-compare \
 # The release flags
 RELEASE_CFLAGS = $(INTERNAL_CFLAGS) -O2
@@ -29,7 +29,6 @@ LIBS	= -lm -ltinfo -lwayland-client
 
 VIEWNAME	= view
 
-DEFS	= -DHAVE_CONFIG_H
 srcdir = 
 
 TAGPRG		= ctags
@@ -270,7 +269,6 @@ VIEWNAME = view
 EXNAME = eegl
 VIEWNAME	= view
 
-DEFS = -DHAVE_CONFIG_H
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 CPPFLAGS	= 
 
@@ -875,7 +873,7 @@ SHELL = /usr/bin/bash
 .SUFFIXES: .c .o .pro
 
 
-PRE_DEFS = -Isrc/proto $(DEFS) $(CPPFLAGS) $(EXTRA_IPATHS)
+PRE_DEFS = -Isrc/proto $(CPPFLAGS) $(EXTRA_IPATHS)
 POST_DEFS = $(X_FLAGS) $(EXTRA_DEFS)
 
 ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLAGS) \

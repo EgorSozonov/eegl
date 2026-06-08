@@ -996,7 +996,7 @@ parseAndSet(SetScope setScope, OUT CS* arg) {
    if (frozenOptionsG && setScope == SET_GLOBAL)
       return e_options_are_frozen;
    
-   return parseAndSetImpl(o, *arg, setScope);
+   return parseAndSetImpl(o, *arg, (o->flags & P_GLOBAL) != 0 ? SET_GLOBAL : setScope);
 }
 
 CS
@@ -2783,22 +2783,8 @@ expandWildoptions(OptExpand* args, OUT ExpandMatch* matches) {
    return expandFlagOption(OUT matches, args, CONST_ARRAY_ARG(p_wop_values));
 }
 
-private CS
-didSetPortcolor(OptionChange* args UNUSED) {
-   termUpdatePortcolor(curPor);
-   return null;
-}
-
-private int
-expandSetPortcolor(OptExpand* args, OUT ExpandMatch* matches) {
-   return optionCompletionExpand(
-       OUT matches,
-       args,
-       &getHiliteGroupNameAsCString
-   );
-}
-
 private Boole expandEipS = false;
+
 private int
 expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches) {
    expandEipS = args->ref.string != &p_ei;
@@ -3866,7 +3852,6 @@ printOptions(ToPrint which) {  // OPT_LOCAL and/or OPT_GLOBAL
    }
 }
 
-
 private int
 put_setstring(
    FILE   *fd,
@@ -3905,11 +3890,10 @@ put_setstring(
 
          p = buffer;
          while (*p != ZERO) {
-            // for each comma separated option part, append value to
-            // the option, :set rtp+=value
+            // for each comma separated option part, append value to the option, :set rtp+=value
             if (fprintf(fd, "%s %s+=", cmd, name) < 0)
                goto fail;
-            (void)doCutPathFromListOfPaths(OUT &p, OUT part, size,  ",");
+            (void)doCutPathFromListOfPaths(OUT &p, OUT part, size,  S",");
             if (put_escstr(fd, part, 2) == FAIL || put_eol(fd) == FAIL)
                goto fail;
          }

@@ -5554,9 +5554,9 @@ mch_clear_job(Job* job) {
 }
 
 
-// Get the option entries from the dict in "tv", parse them and put the result in "opt".
-// Only accept JO_ options in "supported" and JO2_ options in "supported2".
-// If an option value is invalid, return FAIL.
+//Get the option entries from the dict in "tv", parse them and put the result in "opt".
+//Only accept JO_ options in "supported" and JO2_ options in "supported2".
+//If an option value is invalid, return FAIL.
 int
 get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
    Var   *item;
@@ -5875,41 +5875,6 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
             opt->jo_tty_type = p[0];
-         } ei (STRCMP(hi->hi_key, "ansi_colors") == 0) {
-            int n = 0;
-            Ulong rgb[16];
-
-            if (!(supported2 & JO2_ANSI_COLORS))
-                break;
-
-            if (item == NULL || item->tag != VAR_LIST
-                  || item->list == NULL
-                  || item->list->first == &range_list_item
-            ) {
-               showErrFmtMsg(_(e_invalid_value_for_argument_str), "ansi_colors");
-               return FAIL;
-            }
-
-            ListItem* li = item->list->first;
-            for (; li != NULL && n < 16; li = li->next, n++) {
-               int      called_emsg_before = called_emsg;
-
-               CS colorName = convertVarToStringSingleUse(&li->c);
-               if (!colorName)
-                  return FAIL;
-
-               VTermColor color = atoi(text(colorName));
-
-               rgb[n] = GUI_MCH_GET_RGB(color);
-            }
-
-            if (n != 16 || li) {
-               showErrFmtMsg(_(e_invalid_value_for_argument_str), "ansi_colors");
-               return FAIL;
-            }
-
-            opt->set1 |= JO2_ANSI_COLORS;
-            memcpy(opt->jo_ansi_colors, rgb, sizeof(rgb));
          } ei (STRCMP(hi->hi_key, "term_highlight") == 0) {
             if (!(supported2 & JO2_TERM_HIGHLIGHT))
                 break;

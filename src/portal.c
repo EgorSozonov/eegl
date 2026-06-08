@@ -1306,7 +1306,6 @@ init(Portal* newp, Portal* oldp, Unt flags UNUSED) {
    copyFoldingState(oldp, newp);
 
    initg_some(newp, oldp);
-   termUpdatePortcolor(newp);
 }
 
 //Initialize portal "newp" from portal "old". Only the essential things are copied.
@@ -2030,7 +2029,6 @@ initEmptyPortal(Portal* po) {
    po->bottomLine = 2;
    po->cacheState = 0;
    po->ownSyntax = &po->book->syntax;
-   termResetPortcolor(po);
 }
 
 // Init the current portal "curPor". Called when a new file is being edited.
@@ -7831,12 +7829,6 @@ apply_general_options(Portal* po, Bag* dict) {
          showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "close", tv_get_string(&di->c));
    }
 
-   str = bagGetString(dict, tConst("highlight"), FALSE);
-   if (str) {
-      optSetStringOptionDirectInPort(po, S"portcolor", str, OPT_LOCAL, 0);
-      termUpdatePortcolor(po);
-   }
-
    if (set_padding_border(dict, po->pup.padding, S"padding", 999) == FAIL 
          || set_padding_border(dict, po->pup.border, S"border", 1) == FAIL
    )
@@ -9788,7 +9780,6 @@ f_popup_getoptions(Arr(Var) argvars, OUT Var* returnVar) {
    bagAddNumber(b, S"resize", (po->pup.flags & POPF_RESIZE) != 0);
    bagAddNumber(b, S"posinvert", (po->pup.flags & POPF_POSINVERT) != 0);
    bagAddNumber(b, S"cursorline", (po->pup.flags & POPF_CURSORLINE) != 0);
-   bagAddString(b, S"highlight", po->o.hiliteGroupName);
    if (po->pup.scrollbarHilite)
       bagAddString(b, S"scrollbarhighlight", po->pup.scrollbarHilite);
    if (po->pup.thumbHilite)
