@@ -41,7 +41,6 @@ void starttermcap(void);
 void termStopTerminfo(void);
 void may_req_termresponse(void);
 void check_terminal_behavior(void);
-void may_req_bg_color(void);
 int termIsScreenBeingSwapped(void);
 void scroll_start(void);
 void cursor_on_force(void);

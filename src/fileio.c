@@ -1694,7 +1694,7 @@ fullpathcmp(
    return FPC_DIFF;
 }
 
-//Get the tail of a path: the file name. When the path ends in a path separator the tail is the 
+//Get the tail of a path: the file name. When the path ends in a path separator, the tail is the 
 //ZERO after it. Fail safe: never return NULL.
 CS
 fiGetShortFiName(CS fname){
@@ -7828,8 +7828,9 @@ f_systemlist(Var* argvars, Var* returnVar) {
 Text
 fiInitSwapDir(CS progName) {
    Unt swapLen = doExpandEnvVarsWithEscaped(OUT nameBuffTextG, SWAP_DIR, true, null); 
-   int progNameLen = STRLEN(progName);
-   memcpy(nameBuffTextG.c + swapLen, progName, progNameLen);
+   CS shortProgName = fiGetShortFiName(progName);
+   int progNameLen = STRLEN(shortProgName);
+   memcpy(nameBuffTextG.c + swapLen, shortProgName, progNameLen);
    nameBuffTextG.c[swapLen + progNameLen] = ZERO;
    return copyText(nameBuffTextG);
 }

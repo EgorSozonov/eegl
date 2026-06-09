@@ -799,12 +799,12 @@ text(CS b) {
 
 Boole
 eq_Text_Text(Text a, Text b) {
-   return a.len == b.len && memcmp(a.c, b.c, a.len);
+   return a.len == b.len && memcmp(a.c, b.c, a.len) == 0;
 }
 
 Boole
 eq_Text_CString(Text a, CS b) {
-   return a.len == STRLEN(b) && memcmp(a.c, b, a.len);
+   return a.len == STRLEN(b) && memcmp(a.c, b, a.len) == 0;
 }
 
 Boole

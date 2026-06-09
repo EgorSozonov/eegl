@@ -184,7 +184,7 @@
 [-] p_xtermcodes
 [-] p_lisp, p_lop, p_lispwords (lisp)
 [-] p_pvp (preview popups, always on)
-[-] p_ek (esckeys, always on)
+[-] p_ek (@esckeys, always on)
 [-] p_tpm (max number of tabs)
 [-] p_to (tilde as operator)
 [-] p_ws (searches wrap around file end)
@@ -269,7 +269,8 @@
 [-] TEXTCHANGED, TEXTCHANGEDI, TEXTCHANGEDP, TEXTCHANGEDT (superfluous and slow)
 [-] spelling (will be done with external program)
 [ ] cellToDecoration (decoration conversions between VTerm format and "internal" format)
-[ ] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
+[-] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
+[-] KS_XON (terminal freezing - harmful) and KS_BC (backspace - obsolete)
 [ ] cindent (smartindent is enough)
 
 tag.c:do_tag (weird matches is static, also newMatches?)

@@ -65,9 +65,7 @@ typedef struct {
 } VTermStringFragment;
 
 typedef struct {
-  int ver; // currently unused but reserved for some sort of ABI version flag
-
-  int rows, cols;
+  Short rows, cols;
 
   VTermAllocatorFunctions* allocator;
 
@@ -75,12 +73,6 @@ typedef struct {
   Unt outbuffer_len;  // default: 4096
   Unt tmpbuffer_len;  // default: 4096
 } VTermBuilder;
-
-enum {
-  VTERM_UNDERLINE_OFF,
-  VTERM_UNDERLINE_SINGLE,
-  VTERM_UNDERLINE_CURLY,
-};
 
 enum {
   VTERM_BASELINE_NORMAL,
@@ -103,43 +95,36 @@ typedef struct {
 
 
 typedef enum {
-  // VTERM_PROP_NONE = 0
-  VTERM_PROP_CURSORVISIBLE = 1, // bool
-  VTERM_PROP_CURSORBLINK,       // bool
-  VTERM_PROP_ALTSCREEN,         // bool
-  VTERM_PROP_TITLE,             // string
-  VTERM_PROP_ICONNAME,          // string
-  VTERM_PROP_REVERSE,           // bool
-  VTERM_PROP_CURSORSHAPE,       // number
-  VTERM_PROP_MOUSE,             // number
-  VTERM_PROP_FOCUSREPORT,       // bool
-  VTERM_PROP_CURSORCOLOR,       // string
+   // VTERM_PROP_NONE = 0
+   VTERM_PROP_CURSORVISIBLE = 1, // bool
+   VTERM_PROP_CURSORBLINK,       // bool
+   VTERM_PROP_ALTSCREEN,         // bool
+   VTERM_PROP_TITLE,             // string
+   VTERM_PROP_ICONNAME,          // string
+   VTERM_PROP_REVERSE,           // bool
+   VTERM_PROP_CURSORSHAPE,       // number
+   VTERM_PROP_MOUSE,             // number
+   VTERM_PROP_FOCUSREPORT,       // bool
+   VTERM_PROP_CURSORCOLOR,       // string
 
-  VTERM_N_PROPS
+   VTERM_N_PROPS
 } VTermProp;
 
 typedef enum {
-  VTERM_ATTR_BOLD_MASK       = 1 << 0,
-  VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
-  VTERM_ATTR_ITALIC_MASK     = 1 << 2,
-  VTERM_ATTR_BLINK_MASK      = 1 << 3,
-  VTERM_ATTR_REVERSE_MASK    = 1 << 4,
-  VTERM_ATTR_STRIKE_MASK     = 1 << 5,
-  VTERM_ATTR_FONT_MASK       = 1 << 6,
-  VTERM_ATTR_FOREGROUND_MASK = 1 << 7,
-  VTERM_ATTR_BACKGROUND_MASK = 1 << 8,
-  VTERM_ATTR_CONCEAL_MASK    = 1 << 9,
-  VTERM_ATTR_SMALL_MASK      = 1 << 10,
-  VTERM_ATTR_BASELINE_MASK   = 1 << 11,
+   VTERM_ATTR_BOLD_MASK       = 1 << 0,
+   VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
+   VTERM_ATTR_ITALIC_MASK     = 1 << 2,
+   VTERM_ATTR_FOREGROUND_MASK = 1 << 7,
+   VTERM_ATTR_BACKGROUND_MASK = 1 << 8,
 
-  VTERM_ALL_ATTRS_MASK = (1 << 12) - 1
+   VTERM_ALL_ATTRS_MASK = (1 << 12) - 1
 } VTermAttrMask;
 
 typedef union {
-  int boolean;
-  int number;
-  VTermStringFragment string;
-  VTermColor color;
+   int number;
+   VTermStringFragment string;
+   Boole boolean;
+   VTermColor color;
 } VTermValue;
 
 // Any cell can contain at most one basic printing character and 5 combining
@@ -163,7 +148,7 @@ typedef struct {
    int (*damage)(VTermRect rect, void* user);
    int (*moverect)(VTermRect dest, VTermRect src, void* user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void* user);
-   int (*settermprop)(VTermProp prop, VTermValue *val, void* user);
+   int (*settermprop)(VTermProp prop, VTermValue* val, void* user);
    int (*resize)(int rows, int cols, void* user);
    // A line was pushed off the top of the window.
    // "cells[cols]" contains the cells of that line. Return value is unused.
@@ -240,33 +225,33 @@ enum {
 // Expand dst to contain src as well
 private void 
 rect_expand(VTermRect *dst, VTermRect *src) {
-  if (dst->start_row > src->start_row) dst->start_row = src->start_row;
-  if (dst->start_col > src->start_col) dst->start_col = src->start_col;
-  if (dst->end_row   < src->end_row)   dst->end_row   = src->end_row;
-  if (dst->end_col   < src->end_col)   dst->end_col   = src->end_col;
+   if (dst->start_row > src->start_row) dst->start_row = src->start_row;
+   if (dst->start_col > src->start_col) dst->start_col = src->start_col;
+   if (dst->end_row   < src->end_row)   dst->end_row   = src->end_row;
+   if (dst->end_col   < src->end_col)   dst->end_col   = src->end_col;
 }
 
 // Clip the dst to ensure it does not step outside of bounds
 private void 
 rect_clip(VTermRect *dst, VTermRect *bounds) {
-  if (dst->start_row < bounds->start_row) dst->start_row = bounds->start_row;
-  if (dst->start_col < bounds->start_col) dst->start_col = bounds->start_col;
-  if (dst->end_row   > bounds->end_row)   dst->end_row   = bounds->end_row;
-  if (dst->end_col   > bounds->end_col)   dst->end_col   = bounds->end_col;
-  // Ensure it doesn't end up negatively-sized
-  if (dst->end_row < dst->start_row) dst->end_row = dst->start_row;
-  if (dst->end_col < dst->start_col) dst->end_col = dst->start_col;
+   if (dst->start_row < bounds->start_row) dst->start_row = bounds->start_row;
+   if (dst->start_col < bounds->start_col) dst->start_col = bounds->start_col;
+   if (dst->end_row   > bounds->end_row)   dst->end_row   = bounds->end_row;
+   if (dst->end_col   > bounds->end_col)   dst->end_col   = bounds->end_col;
+   // Ensure it doesn't end up negatively-sized
+   if (dst->end_row < dst->start_row) dst->end_row = dst->start_row;
+   if (dst->end_col < dst->start_col) dst->end_col = dst->start_col;
 }
 
 // True if the two rectangles are equal
 private int rect_equal(VTermRect *a, VTermRect *b) {
-  return (a->start_row == b->start_row) &&
-         (a->start_col == b->start_col) &&
-         (a->end_row   == b->end_row)   &&
-         (a->end_col   == b->end_col);
+  return (a->start_row == b->start_row) 
+     && (a->start_col == b->start_col) 
+     && (a->end_row   == b->end_row)   
+     && (a->end_col   == b->end_col);
 }
 
-/* True if small is contained entirely within big */
+// True if small is contained entirely within big
 private int 
 rect_contains(VTermRect *big, VTermRect *small) {
   if (small->start_row < big->start_row) return 0;
@@ -278,7 +263,7 @@ rect_contains(VTermRect *big, VTermRect *small) {
 
 // True if the rectangles overlap at all
 private int 
-rect_intersects(VTermRect *a, VTermRect *b) {
+rect_intersects(VTermRect* a, VTermRect* b) {
    if (a->start_row > b->end_row || b->start_row > a->end_row)
       return 0;
    if (a->start_col > b->end_col || b->start_col > a->end_col)
@@ -288,17 +273,6 @@ rect_intersects(VTermRect *a, VTermRect *b) {
 
 // A handy macro for defaulting values out of builder fields
 #define DEFAULT(v, def)  ((v) ? (v) : (def))
-
-
-//Return true if the VTERM_COLOR_INVALID `type` flag is set, indicating
-//that the given VTermColor instance is an invalid color.
-#define VTERM_COLOR_IS_INVALID(col) (!!((col)->type & VTERM_COLOR_INVALID))
-
-#define VTERM_VERSION_MAJOR 0
-#define VTERM_VERSION_MINOR 3
-#define VTERM_VERSION_PATCH 3
-
-#define VTERM_CHECK_VERSION vterm_check_version(VTERM_VERSION_MAJOR, VTERM_VERSION_MINOR)
 
 #define VTERM_KEY_FUNCTION(n) (VTERM_KEY_FUNCTION_0+(n))
 
@@ -336,15 +310,6 @@ rect_intersects(VTermRect *a, VTermRect *b) {
 #define BUFIDX_PRIMARY   0
 #define BUFIDX_ALTSCREEN 1
 
-
-typedef struct {
-   VTermColor fg;
-   VTermColor bg;
-   Unt bold:1;
-   Unt underline:2;
-   Unt italic:1;
-} VTermPen;
-
 declStruct(VTermState);
 declStruct(VTermScreen);
 declStruct(VTerm);
@@ -363,7 +328,7 @@ typedef struct {
    int (*apc)(VTermStringFragment frag, void *user);
    int (*pm)(VTermStringFragment frag, void *user);
    int (*sos)(VTermStringFragment frag, void *user);
-   Boole (*resize)(Unt rows, Unt cols, void *user);
+   Boole (*resize)(Short rows, Short cols, void *user);
 } VTermParserCallbacks;
 
 struct VTermLineInfo {
@@ -377,14 +342,14 @@ typedef struct {
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void *user);
    int (*scrollrect)(VTermRect rect, int downward, int rightward, void *user);
    int (*moverect)(VTermRect dest, VTermRect src, void *user);
-   int (*erase)(VTermRect rect, void *user);
-   int (*initpen)(void *user);
-   int (*setpenattr)(VTermAttr attr, VTermValue *val, void *user);
+   int (*erase)(VTermRect rect, void* user);
+   int (*initpen)(void* user);
+   int (*setpenattr)(VTermAttr attr, VTermValue* val, void *user);
    //Callback for setting various properties. Must return 1 if the property was accepted, or 0
-   int (*settermprop)(VTermProp prop, VTermValue *val, void *user);
-   int (*resize)(int rows, int cols, VTermStateFields *fields, void *user);
-   int (*setlineinfo)(int row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* user);
-   int (*sb_clear)(void *user);
+   int (*settermprop)(VTermProp prop, VTermValue* val, void* user);
+   int (*resize)(Short rows, Short cols, VTermStateFields* fields, void* user);
+   int (*setlineinfo)(Short row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* user);
+   int (*sb_clear)(void* user);
 } VTermStateCallbacks;
 
 struct VTerm {
@@ -473,12 +438,12 @@ typedef enum {
    VTERM_SELECTION_PRIMARY   = (1<<1),
    VTERM_SELECTION_SECONDARY = (1<<2),
    VTERM_SELECTION_SELECT    = (1<<3),
-   VTERM_SELECTION_CUT0      = (1<<4), /* also CUT1 .. CUT7 by bitshifting */
+   VTERM_SELECTION_CUT0      = (1<<4), // also CUT1 .. CUT7 by bitshifting
 } VTermSelectionMask;
 
 typedef struct {
-   int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void *user);
-   int (*query)(VTermSelectionMask mask, void *user);
+   int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void* user);
+   int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
 
 struct VTermState {
@@ -493,10 +458,10 @@ struct VTermState {
    Unt rows;
    Unt cols;
 
-   // Current cursor position */
+   // Current cursor position
    VTermPos pos;
 
-   int at_phantom; /* True if we're on the "81st" phantom column to defer a wraparound */
+   int at_phantom; // True if we're on the "101st" phantom column to defer a wraparound
 
    Unt scrollregion_top;
    Unt scrollregion_bottom; // UNT means unbounded
@@ -552,18 +517,15 @@ struct VTermState {
 
    int gl_set, gr_set, gsingle_set;
 
-   VTermPen pen;
+   CellDeco pen;
 
    VTermColor default_fg;
    VTermColor default_bg;
-   VTermColor colors[16]; // Store the 8 ANSI and the 8 ANSI high-brights only
-
-   int bold_is_highbright;
 
    // Saved state under DEC mode 1048/1049
    struct {
       VTermPos pos;
-      VTermPen pen;
+      CellDeco pen;
 
       struct {
          Unt cursor_visible:1;
@@ -1179,7 +1141,7 @@ default_malloc(Unt size) {
    return ptr;
 }
 
-static void
+private void
 default_free(void *ptr) {
    free(ptr);
 }
@@ -1239,7 +1201,6 @@ vterm_new_with_allocator(int rows, int cols, VTermAllocatorFunctions* funcs) {
    builder.allocator = funcs;
    return vterm_build(&builder);
 }
-
 
 private void 
 vterm_free(VTerm *vt) {
@@ -1388,27 +1349,6 @@ vterm_output_read(VTerm *vt, CS builder, Unt len) {
 
    return len;
 }
-
-//private VTermValueType 
-//vterm_get_attr_type(VTermAttr attr) {
-//   switch(attr) {
-//   case VTERM_ATTR_BOLD:       return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_UNDERLINE:  return VTERM_VALUETYPE_INT;
-//   case VTERM_ATTR_ITALIC:     return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_BLINK:      return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_REVERSE:    return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_CONCEAL:    return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_STRIKE:     return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_FONT:       return VTERM_VALUETYPE_INT;
-//   case VTERM_ATTR_FOREGROUND: return VTERM_VALUETYPE_COLOR;
-//   case VTERM_ATTR_BACKGROUND: return VTERM_VALUETYPE_COLOR;
-//   case VTERM_ATTR_SMALL:      return VTERM_VALUETYPE_BOOL;
-//   case VTERM_ATTR_BASELINE:   return VTERM_VALUETYPE_INT;
-//
-//   case VTERM_N_ATTRS: return 0;
-//   }
-//   return 0; /* UNREACHABLE */
-//}
 
 //private VTermValueType 
 //vterm_get_prop_type(VTermProp prop) {
@@ -2140,21 +2080,6 @@ vterm_get_special_pty_type(void) {
 //}}}
 //{{{pen
 
-//Structure used to store RGB triples without the additional metadata stored in VTermColor.
-typedef struct {
-   Byte red, green, blue;
-} VTermRGB;
-
-private int 
-lookup_colour_ansi(const VTermState *state, long index, VTermColor *col) {
-   if (index >= 0 && index < 16) {
-      *col = state->colors[index];
-      return TRUE;
-   }
- 
-   return FALSE;
-}
-
 // Some conveniences
 
 private void 
@@ -2174,19 +2099,6 @@ penSetpenattr(
 #endif
    if (state->callbacks && state->callbacks->setpenattr)
       (*state->callbacks->setpenattr)(attr, val, state->cbdata);
-}
-
-private void 
-setpenattr_bool(VTermState *state, VTermAttr attr, int boolean) {
-   VTermValue val;
-   val.boolean = boolean;
-   penSetpenattr(
-         state, attr, 
-#ifdef DEBUG
-         VTERM_VALUETYPE_BOOL, 
-#endif 
-         &val
-   );
 }
 
 private void 
@@ -2218,9 +2130,7 @@ setpenattr_col(VTermState* state, VTermAttr attr, VTermColor color) {
 //Set color by ANSI code
 private void 
 set_pen_col_ansi(VTermState* state, VTermAttr attr, long col) {
-   VTermColor *colp = (attr == VTERM_ATTR_BACKGROUND) ? &state->pen.bg : &state->pen.fg;
-   lookup_colour_ansi(state, col, colp);
-   setpenattr_col(state, attr, *colp);
+   setpenattr_col(state, attr, col);
 }
 
 private void 
@@ -2238,10 +2148,8 @@ vterm_state_newpen(VTermState* state) {
 }
 
 private void 
-vterm_state_resetpen(VTermState *state) {
-   state->pen.bold = 0;      setpenattr_bool(state, VTERM_ATTR_BOLD, 0);
-   state->pen.underline = 0; setpenattr_int (state, VTERM_ATTR_UNDERLINE, 0);
-   state->pen.italic = 0;    setpenattr_bool(state, VTERM_ATTR_ITALIC, 0);
+vterm_state_resetpen(VTermState* state) {
+   state->pen.flags = 0;
  
    state->pen.fg = state->default_fg;  
    setpenattr_col(state, VTERM_ATTR_FOREGROUND, state->default_fg);
@@ -2255,11 +2163,6 @@ vterm_state_savepen(VTermState *state, int save) {
       state->saved.pen = state->pen;
    } else {
       state->pen = state->saved.pen;
-  
-      setpenattr_bool(state, VTERM_ATTR_BOLD,      state->pen.bold);
-      setpenattr_int (state, VTERM_ATTR_UNDERLINE, state->pen.underline);
-      setpenattr_bool(state, VTERM_ATTR_ITALIC,    state->pen.italic);
-  
       setpenattr_col( state, VTERM_ATTR_FOREGROUND, state->pen.fg);
       setpenattr_col( state, VTERM_ATTR_BACKGROUND, state->pen.bg);
    }
@@ -2292,58 +2195,48 @@ vterm_state_setpen(VTermState* state, long args[], int argcount) {
          break;
  
       case 1: { //Bold on
-         const VTermColor *fg = &state->pen.fg;
-         state->pen.bold = 1;
-         setpenattr_bool(state, VTERM_ATTR_BOLD, 1);
-         if (*fg < 8 && state->bold_is_highbright)
-            set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, *fg + (state->pen.bold ? 8 : 0));
+         state->pen.flags |= DECO_BOLD;
          break;
       }
  
       case 3: //Italic on
-         state->pen.italic = 1;
-         setpenattr_bool(state, VTERM_ATTR_ITALIC, 1);
+         state->pen.flags |= DECO_ITALIC;
          break;
  
       case 4: //Underline
-         state->pen.underline = VTERM_UNDERLINE_SINGLE;
+         state->pen.flags |= DECO_UNDERLINE;
          if (CSI_ARG_HAS_MORE(args[argi])) {
             argi++;
             switch(CSI_ARG(args[argi])) {
             case 0:
-               state->pen.underline = 0;
+               state->pen.flags &= ~DECO_UNDERLINE;
                break;
             case 1:
-               state->pen.underline = VTERM_UNDERLINE_SINGLE;
+               state->pen.flags |= DECO_UNDERLINE;
                break;
             case 3:
-               state->pen.underline = VTERM_UNDERLINE_CURLY;
+               state->pen.flags |= DECO_UNDERCURL;
                break;
             }
          }
-         setpenattr_int(state, VTERM_ATTR_UNDERLINE, state->pen.underline);
          break;
  
       case 22: //Bold off
-         state->pen.bold = 0;
-         setpenattr_bool(state, VTERM_ATTR_BOLD, 0);
+         state->pen.flags &= ~DECO_BOLD;
          break;
  
-      case 23: //Italic and Gothic (currently unsupported) off
-         state->pen.italic = 0;
-         setpenattr_bool(state, VTERM_ATTR_ITALIC, 0);
+      case 23: //Italic off
+         state->pen.flags &= ~DECO_ITALIC;
          break;
  
       case 24: // Underline off
-         state->pen.underline = 0;
+         state->pen.flags &= ~DECO_UNDERLINE;
          setpenattr_int(state, VTERM_ATTR_UNDERLINE, 0);
          break;
  
       case 30: case 31: case 32: case 33:
       case 34: case 35: case 36: case 37: // Foreground color ANSI palette
          value = CSI_ARG(args[argi]) - 30;
-         if (state->pen.bold && state->bold_is_highbright)
-            value += 8;
          set_pen_col_ansi(state, VTERM_ATTR_FOREGROUND, value);
          break;
  
@@ -2422,15 +2315,15 @@ private int
 vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED) {
    int argi = 0;
  
-   if (state->pen.bold)
+   if ((state->pen.flags & DECO_BOLD) != 0)
       args[argi++] = 1;
  
-   if (state->pen.italic)
+   if ((state->pen.flags & DECO_ITALIC) != 0)
       args[argi++] = 3;
  
-   if (state->pen.underline == VTERM_UNDERLINE_SINGLE)
+   if ((state->pen.flags & DECO_UNDERLINE) != 0)
       args[argi++] = 4;
-   if (state->pen.underline == VTERM_UNDERLINE_CURLY)
+   if ((state->pen.flags & DECO_UNDERCURL) != 0)
       args[argi++] = 4 | CSI_ARG_FLAG_MORE, args[argi++] = 3;
  
  
@@ -2439,64 +2332,6 @@ vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED) {
  
    return argi;
 }
-
-//private int 
-//vterm_state_get_penattr(const VTermState *state, VTermAttr attr, VTermValue *val) {
-//   switch(attr) {
-//   case VTERM_ATTR_BOLD:
-//    val->boolean = state->pen.bold;
-//    return 1;
-//
-//   case VTERM_ATTR_UNDERLINE:
-//    val->number = state->pen.underline;
-//    return 1;
-//
-//   case VTERM_ATTR_ITALIC:
-//    val->boolean = state->pen.italic;
-//    return 1;
-//
-//   case VTERM_ATTR_BLINK:
-//    val->boolean = state->pen.blink;
-//    return 1;
-//
-//   case VTERM_ATTR_REVERSE:
-//    val->boolean = state->pen.reverse;
-//    return 1;
-//
-//   case VTERM_ATTR_CONCEAL:
-//    val->boolean = state->pen.conceal;
-//    return 1;
-//
-//   case VTERM_ATTR_STRIKE:
-//    val->boolean = state->pen.strike;
-//    return 1;
-//
-//   case VTERM_ATTR_FONT:
-//    val->number = state->pen.font;
-//    return 1;
-//
-//   case VTERM_ATTR_FOREGROUND:
-//    val->color = state->pen.fg;
-//    return 1;
-//
-//   case VTERM_ATTR_BACKGROUND:
-//    val->color = state->pen.bg;
-//    return 1;
-//
-//   case VTERM_ATTR_SMALL:
-//    val->boolean = state->pen.small;
-//    return 1;
-//
-//   case VTERM_ATTR_BASELINE:
-//    val->number = state->pen.baseline;
-//    return 1;
-//
-//   case VTERM_N_ATTRS:
-//    return 0;
-//  }
-//
-//  return 0;
-//}
 
 //}}}
 //{{{mouse
@@ -2567,34 +2402,34 @@ vterm_mouse_button(VTerm *vt, int button, int pressed, VTermModifier mod) {
 #undef DEBUG_REFLOW
 
 struct VTermScreen {
-  VTerm* vt;
-  VTermState *state;
+   VTerm* vt;
+   VTermState* state;
 
-  const VTermScreenCallbacks *callbacks;
-  void *cbdata;
+   const VTermScreenCallbacks *callbacks;
+   void *cbdata;
 
-  VTermDamageSize damage_merge;
-  // start_row == -1 => no damage
-  VTermRect damaged;
-  VTermRect pending_scrollrect;
-  int pending_scroll_downward, pending_scroll_rightward;
+   VTermDamageSize damage_merge;
+   // start_row == -1 => no damage
+   VTermRect damaged;
+   VTermRect pending_scrollrect;
+   int pending_scroll_downward, pending_scroll_rightward;
 
-  Unt rows;
-  Unt cols;
+   Short rows;
+   Short cols;
 
-  unsigned int global_reverse : 1;
-  unsigned int reflow : 1;
+   Unt global_reverse : 1;
+   Unt reflow : 1;
 
-  // Primary and Altscreen. buffers[1] is lazily allocated as needed
-  ScreenCell* buffers[2];
+   // Primary and Altscreen. buffers[1] is lazily allocated as needed
+   ScreenCell* buffers[2];
 
-  // buffer will == buffers[0] or buffers[1], depending on altscreen
-  ScreenCell *buffer;
+   // buffer will == buffers[0] or buffers[1], depending on altscreen
+   ScreenCell *buffer;
 
-  // buffer for a single screen row used in scrollback storage callbacks
-  ScreenCell *sb_buffer;
+   // buffer for a single screen row used in scrollback storage callbacks
+   ScreenCell *sb_buffer;
 
-  CellDeco pen;
+   CellDeco pen;
 };
 
 private void 
@@ -2988,7 +2823,7 @@ line_popcount(ScreenCell *buffer, int row, int rows UNUSED, int cols) {
 
 static void 
 resize_buffer(
-    VTermScreen *screen, int bufidx, int new_rows, int new_cols, int active, 
+    VTermScreen *screen, int bufidx, int newRows, int newCols, int active, 
     VTermStateFields *statefields
 ) {
   int old_rows = screen->rows;
@@ -2997,24 +2832,24 @@ resize_buffer(
   ScreenCell *old_buffer = screen->buffers[bufidx];
   VTermLineInfo *old_lineinfo = statefields->lineinfos[bufidx];
 
-  ScreenCell *new_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * new_rows * new_cols);
-  VTermLineInfo *new_lineinfo = vterm_allocator_malloc(screen->vt, sizeof(new_lineinfo[0]) * new_rows);
+  ScreenCell *new_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * newRows * newCols);
+  VTermLineInfo *new_lineinfo = vterm_allocator_malloc(screen->vt, sizeof(new_lineinfo[0]) * newRows);
 
   // Find the final row of old buffer content
   int old_row = old_rows - 1;
-  int new_row = new_rows - 1;
+  int new_row = newRows - 1;
 
   VTermPos old_cursor = statefields->pos;
   VTermPos new_cursor = { SHORT, SHORT };
 
 #ifdef DEBUG_REFLOW
   fprintf(stderr, "Resizing from %dx%d to %dx%d; cursor was at (%d,%d)\n",
-      old_cols, old_rows, new_cols, new_rows, old_cursor.col, old_cursor.row);
+      old_cols, old_rows, newCols, newRows, old_cursor.col, old_cursor.row);
 #endif
 
    //Keep track of the final row that is knonw to be blank, so we know what
    //spare space we have for scrolling into
-   Unt final_blank_row = new_rows;
+   Unt final_blank_row = newRows;
 
    while(old_row >= 0) {
       int old_row_end = old_row;
@@ -3035,7 +2870,7 @@ resize_buffer(
          final_blank_row = new_row;
 
       int new_height = REFLOW
-         ? width ? (width + new_cols - 1) / new_cols : 1
+         ? width ? (width + newCols - 1) / newCols : 1
          : 1;
 
       int new_row_end = new_row;
@@ -3044,24 +2879,24 @@ resize_buffer(
       old_row = old_row_start;
       int old_col = 0;
   
-      int spare_rows = new_rows - final_blank_row;
+      int spare_rows = newRows - final_blank_row;
   
       if (new_row_start < 0 && // we'd fall off the top
            spare_rows >= 0 && // we actually have spare rows
-           (!active || new_cursor.row == SHORT || ((int)new_cursor.row - new_row_start) < new_rows)
+           (!active || new_cursor.row == SHORT || ((int)new_cursor.row - new_row_start) < newRows)
       ){
          //Attempt to scroll content down into the blank rows at the bottom to make it fit
          int downwards = -new_row_start;
          if (downwards > spare_rows)
             downwards = spare_rows;
-         int rowcount = new_rows - downwards;
+         int rowcount = newRows - downwards;
 
 #ifdef DEBUG_REFLOW
          fprintf(stderr, "  scroll %d rows +%d downwards\n", rowcount, downwards);
 #endif
 
          memmove(
-            &new_buffer[downwards*new_cols], &new_buffer[0], rowcount*new_cols*sizeof(ScreenCell)
+            &new_buffer[downwards*newCols], &new_buffer[0], rowcount*newCols*sizeof(ScreenCell)
          );
          memmove(
             &new_lineinfo[downwards], &new_lineinfo[0], rowcount*sizeof(new_lineinfo[0])
@@ -3086,21 +2921,21 @@ resize_buffer(
        if ((Unt)old_row_start <= old_cursor.row && old_cursor.row < (Unt)old_row_end) {
          new_cursor.row = 0;
          new_cursor.col = old_cursor.col;
-         if (new_cursor.col >= (Unt)new_cols)
-            new_cursor.col = new_cols - 1;
+         if (new_cursor.col >= (Unt)newCols)
+            new_cursor.col = newCols - 1;
       }
       break;
     }
 
       for (new_row = new_row_start, old_row = old_row_start; new_row <= new_row_end; new_row++) {
-         int count = width >= new_cols ? new_cols : width;
+         int count = width >= newCols ? newCols : width;
          width -= count;
 
          int new_col = 0;
 
          while(count) {
            //TODO: This could surely be done a lot faster by memcpy()'ing the entire range
-           new_buffer[new_row * new_cols + new_col] = old_buffer[old_row * old_cols + old_col];
+           new_buffer[new_row * newCols + new_col] = old_buffer[old_row * old_cols + old_col];
 
            if (old_cursor.row == (Unt)old_row && old_cursor.col == (Unt)old_col)
               new_cursor.row = new_row, new_cursor.col = new_col;
@@ -3122,12 +2957,12 @@ resize_buffer(
 
          if (old_cursor.row == (Unt)old_row && old_cursor.col >= (Unt)old_col) {
              new_cursor.row = new_row, new_cursor.col = (old_cursor.col - old_col + new_col);
-             if (new_cursor.col >= (Unt)new_cols)
-                new_cursor.col = new_cols - 1;
+             if (new_cursor.col >= (Unt)newCols)
+                new_cursor.col = newCols - 1;
          }
 
-         while(new_col < new_cols) {
-           clearcell(screen, &new_buffer[new_row * new_cols + new_col]);
+         while(new_col < newCols) {
+           clearcell(screen, &new_buffer[new_row * newCols + new_col]);
            new_col++;
          }
 
@@ -3142,12 +2977,12 @@ resize_buffer(
       //cursor would have moved entirely off the top of the screen; lets just
       //bring it within range
       new_cursor.row = 0, new_cursor.col = old_cursor.col;
-      if (new_cursor.col >= (Unt)new_cols)
-         new_cursor.col = new_cols - 1;
+      if (new_cursor.col >= (Unt)newCols)
+         new_cursor.col = newCols - 1;
    }
 
    //We really expect the cursor position to be set by now Unfortunately we do get here when 
-   //"new_rows" is one.  We don't want to crash, so until the above code is fixed let's just set 
+   //"newRows" is one.  We don't want to crash, so until the above code is fixed let's just set 
    //the cursor.
    if (active && (new_cursor.row == SHORT || new_cursor.col == SHORT)) {
       //fprintf(stderr, "screen_resize failed to update cursor position\n");
@@ -3176,11 +3011,11 @@ resize_buffer(
 
          pos.row = new_row;
          for(pos.col = 0; 
-             pos.col < (Unt)old_cols && pos.col < (Unt)new_cols; 
+             pos.col < (Unt)old_cols && pos.col < (Unt)newCols; 
              pos.col++
          ) {
             ScreenCell *src = &screen->sb_buffer[pos.col];
-            ScreenCell *dst = &new_buffer[pos.row * new_cols + pos.col];
+            ScreenCell *dst = &new_buffer[pos.row * newCols + pos.col];
 
             for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL; i++) {
                dst->chars[i] = src->chars[i];
@@ -3190,8 +3025,8 @@ resize_buffer(
 
             dst->deco = src->deco;
          }
-         for( ; (int)pos.col < new_cols; pos.col++)
-            clearcell(screen, &new_buffer[pos.row * new_cols + pos.col]);
+         for( ; (int)pos.col < newCols; pos.col++)
+            clearcell(screen, &new_buffer[pos.row * newCols + pos.col]);
          new_row--;
 
          if (active)
@@ -3200,19 +3035,19 @@ resize_buffer(
    }
    if (new_row >= 0) {
       // Scroll new rows back up to the top and fill in blanks at the bottom
-      int moverows = new_rows - new_row - 1;
+      int moverows = newRows - new_row - 1;
       memmove(
          &new_buffer[0], 
-         &new_buffer[(new_row + 1) * new_cols], 
-         moverows * new_cols * sizeof(ScreenCell)
+         &new_buffer[(new_row + 1) * newCols], 
+         moverows * newCols * sizeof(ScreenCell)
       );
       memmove(&new_lineinfo[0], &new_lineinfo[new_row + 1], moverows * sizeof(new_lineinfo[0]));
 
       new_cursor.row -= (new_row + 1);
 
-      for(new_row = moverows; new_row < new_rows; new_row++) {
-         for(int col = 0; col < new_cols; col++)
-            clearcell(screen, &new_buffer[new_row * new_cols + col]);
+      for(new_row = moverows; new_row < newRows; new_row++) {
+         for(int col = 0; col < newCols; col++)
+            clearcell(screen, &new_buffer[new_row * newCols + col]);
          new_lineinfo[new_row] = (VTermLineInfo){ 0 };
       }
    }
@@ -3230,7 +3065,7 @@ resize_buffer(
 }
 
 static int 
-resize(int new_rows, int new_cols, VTermStateFields *fields, void *user) {
+resize(Short newRows, Short newCols, VTermStateFields *fields, void *user) {
    VTermScreen *screen = user;
 
    int altscreen_active = (screen->buffers[BUFIDX_ALTSCREEN] && screen->buffer == screen->buffers[BUFIDX_ALTSCREEN]);
@@ -3238,30 +3073,30 @@ resize(int new_rows, int new_cols, VTermStateFields *fields, void *user) {
    int old_rows = (int)screen->rows;
    int old_cols = (int)screen->cols;
 
-   if (new_cols > old_cols) {
+   if (newCols > old_cols) {
       // Ensure that ->sb_buffer is large enough for a new or and old row */
       if (screen->sb_buffer)
          vterm_allocator_free(screen->vt, screen->sb_buffer);
 
-      if (new_cols > VTERM_MAX_COLS)
-         new_cols = VTERM_MAX_COLS;
+      if (newCols > VTERM_MAX_COLS)
+         newCols = VTERM_MAX_COLS;
 
-      screen->sb_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * new_cols);
+      screen->sb_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * newCols);
    }
 
-   if (new_rows > VTERM_MAX_ROWS)
-      new_rows = VTERM_MAX_ROWS;
+   if (newRows > VTERM_MAX_ROWS)
+      newRows = VTERM_MAX_ROWS;
 
-   resize_buffer(screen, 0, new_rows, new_cols, !altscreen_active, fields);
+   resize_buffer(screen, 0, newRows, newCols, !altscreen_active, fields);
    if (screen->buffers[BUFIDX_ALTSCREEN])
-      resize_buffer(screen, 1, new_rows, new_cols, altscreen_active, fields);
-   ei(new_rows != (int)old_rows) {
+      resize_buffer(screen, 1, newRows, newCols, altscreen_active, fields);
+   ei(newRows != (int)old_rows) {
       // We don't need a full resize of the altscreen because it isn't enabled
       // but we should at least keep the lineinfo the right size */
       vterm_allocator_free(screen->vt, fields->lineinfos[BUFIDX_ALTSCREEN]);
 
-      VTermLineInfo *new_lineinfo = vterm_allocator_malloc(screen->vt, sizeof(new_lineinfo[0]) * new_rows);
-      for (int row = 0; row < new_rows; row++)
+      VTermLineInfo *new_lineinfo = vterm_allocator_malloc(screen->vt, sizeof(new_lineinfo[0]) * newRows);
+      for (int row = 0; row < newRows; row++)
          new_lineinfo[row] = (VTermLineInfo){ 0 };
 
       fields->lineinfos[BUFIDX_ALTSCREEN] = new_lineinfo;
@@ -3269,32 +3104,32 @@ resize(int new_rows, int new_cols, VTermStateFields *fields, void *user) {
 
    screen->buffer = altscreen_active ? screen->buffers[BUFIDX_ALTSCREEN] : screen->buffers[BUFIDX_PRIMARY];
 
-   screen->rows = new_rows;
-   screen->cols = new_cols;
+   screen->rows = newRows;
+   screen->cols = newCols;
 
-   if (new_cols <= (int)old_cols) {
+   if (newCols <= (int)old_cols) {
       if (screen->sb_buffer)
          vterm_allocator_free(screen->vt, screen->sb_buffer);
 
-      screen->sb_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * new_cols);
+      screen->sb_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * newCols);
    }
 
    damagescreen(screen);
 
    if (screen->callbacks && screen->callbacks->resize)
-      return (*screen->callbacks->resize)(new_rows, new_cols, screen->cbdata);
+      return (*screen->callbacks->resize)(newRows, newCols, screen->cbdata);
 
    return 1;
 }
 
 static int 
-setlineinfo(int row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* user) {
+setlineinfo(Short row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* user) {
    VTermScreen *screen = user;
 
    if (newinfo->doublewidth != oldinfo->doublewidth 
         || newinfo->doubleheight != oldinfo->doubleheight
    ) {
-      for(Unt col = 0; col < screen->cols; col++) {
+      for(Short col = 0; col < screen->cols; col++) {
          ScreenCell *cell = getcell(screen, row, col);
          if (!cell) {
             DEBUG_LOG2("libvterm: setlineinfo() position invalid: %d / %d", row, col);
@@ -4033,12 +3868,12 @@ vterm_parser_set_callbacks(VTerm* vt, VTermParserCallbacks* callbacks, void* use
 # define DEBUG_GLYPH_COMBINE
 #endif
 
-static Boole on_resize(Unt rows, Unt cols, void *user);
+static Boole on_resize(Short rows, Short cols, void *user);
 
 // Some convenient wrappers to make callback functions easier
 
 private void 
-statePutglyph(VTermState* state, uint32_t chars[], int width, VTermPos pos) {
+statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos) {
    VTermGlyphInfo info;
 
    info.chars = chars;
@@ -4100,8 +3935,6 @@ vterm_state_new(VTerm* vt) {
    state->selection.buffer    = NULL;
  
    vterm_state_newpen(state);
- 
-   state->bold_is_highbright = 0;
  
    state->combine_chars_size = 16;
    state->combine_chars = vterm_allocator_malloc(
@@ -4798,11 +4631,6 @@ request_dec_mode(VTermState* state, int num) {
    vterm_push_output_sprintf_ctrl(state->vt, C1_CSI, "?%d;%d$y", num, reply ? 1 : 2);
 }
 
-private void request_version_string(VTermState *state) {
-   vterm_push_output_sprintf_str(state->vt, C1_DCS, TRUE, ">|libvterm(%d.%d)",
-      VTERM_VERSION_MAJOR, VTERM_VERSION_MINOR);
-}
-
 private int
 on_csi(
    CS leader, 
@@ -5333,10 +5161,6 @@ on_csi(
 
    case LEADER('?', INTERMED('$', 0x70)):
       request_dec_mode(state, CSI_ARG(args[0]));
-      break;
-
-   case LEADER('>', 0x71): // XTVERSION - xterm query version string
-      request_version_string(state);
       break;
 
    case INTERMED(' ', 0x71): // DECSCUSR - DEC set cursor shape
@@ -5880,7 +5704,7 @@ on_sos(VTermStringFragment frag, void* user) {
 
 // Return true if success
 private Boole
-on_resize(Unt rows, Unt cols, void* user) {
+on_resize(Short rows, Short cols, void* user) {
    VTermState* state = user;
    VTermPos oldpos = state->pos;
 
@@ -7172,7 +6996,7 @@ term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg) {
 }
 
 private void
-position_cursor(Portal *po, VTermPos *pos) {
+position_cursor(Portal *po, VTermPos* pos) {
    po->cursorRow = MIN((int)pos->row, MAX(0, (int)po->height - 1));
    po->cursorCol = MIN((int)pos->col, MAX(0, (int)po->width - 1));
    if (popup_is_popup(po)) {
@@ -7652,13 +7476,13 @@ cleanup_scrollback(Terminal *term) {
 
 // Add the current lines of the terminal to scrollback and to the buffer.
 private void
-update_snapshot(Terminal *term) {
-   VTermScreen       *screen;
-   int          lines_skipped = 0;
-   VTermPos       pos;
+update_snapshot(Terminal* term) {
+   VTermScreen* screen;
+   int lines_skipped = 0;
+   VTermPos pos;
    ScreenCell cell;
-   CellDeco       fillDeco, newFillDeco;
-   CellDeco       *p;
+   CellDeco fillDeco, newFillDeco;
+   CellDeco* p;
 
    ch_log(term->job == NULL ? NULL : term->job->jv_channel,
               "Adding terminal portal snapshot to buffer");
@@ -9484,12 +9308,10 @@ dump_term_color(FILE* fd, VTermColor color) {
 // Each screen cell in full is:
 //    |{characters}+{decorations}#{fg-color}{color-idx}#{bg-color}{color-idx}
 // {characters} is a space for an empty cell
-// For a double-width character "+" is changed to "*" and the next cell is
-// skipped.
 // {decorations} is the decimal value of DECO_BOLD + DECO_UNDERLINE, etc.
 //           when "&" use the same as the previous cell.
-// {fg-color} is hex RGB, when "&" use the same as the previous cell.
-// {bg-color} is hex RGB, when "&" use the same as the previous cell.
+// {fg-color} is a 256-color index, when "&" use the same as the previous cell.
+// {bg-color} is a 256-color index, when "&" use the same as the previous cell.
 // {color-idx} is a number from 0 to 255
 //
 // Screen cell with same width, decorations and color as the previous one:
@@ -9535,7 +9357,7 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
    }
 
    if (*fname == ZERO || (fd = fopen((char *)fname, WRITEBIN)) == NULL) {
-      showErrFmtMsg(_(e_cant_create_file_str), *fname == ZERO ? (CS)_("<empty>") : fname);
+      showErrFmtMsg(_(e_cant_create_file_str), *fname == ZERO ? _("<empty>") : fname);
       return;
    }
 
@@ -9557,16 +9379,14 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
          (max_width == 0 || pos.col < max_width) && pos.col < term->cols; 
          ++pos.col
       ){
-         ScreenCell cell;
-         Boole sameFlags;
-         int same_chars = TRUE;
-         int i;
+         Boole same_chars = true;
          int is_cursor_pos = (pos.col == cursor_pos.col && pos.row == cursor_pos.row);
 
+         ScreenCell cell;
          if (vterm_screen_get_cell(screen, pos, OUT &cell) == 0)
             CLEAR_FIELD(cell);
 
-         for (i = 0; i < VTERM_MAX_CHARS_PER_CELL; ++i) {
+         for (Unt i = 0; i < VTERM_MAX_CHARS_PER_CELL; ++i) {
             int c = cell.chars[i];
             int pc = prev_cell.chars[i];
             int should_break = c == ZERO || pc == ZERO;
@@ -9577,11 +9397,11 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
                 pc = (pc == ZERO) ? ' ' : pc;
             }
             if (c != pc)
-               same_chars = FALSE;
+               same_chars = false;
             if (should_break)
                break;
          }
-         sameFlags = cell.deco.flags == prev_cell.deco.flags
+         Boole sameFlags = cell.deco.flags == prev_cell.deco.flags
             && cell.deco.fg == prev_cell.deco.fg
             && cell.deco.bg == prev_cell.deco.bg;
          if (same_chars && sameFlags && !is_cursor_pos) {
@@ -9599,14 +9419,14 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
                Byte charbuf[10];
                int len;
 
-               for (i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i] != ZERO; ++i) {
+               for (Unt i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i] != ZERO; ++i) {
                   len = mb_char2bytes(cell.chars[i], charbuf);
                   fwrite(charbuf, len, 1, fd);
                }
             }
 
-            // When only the characters differ we don't write anything, the
-            // following "|", "@" or NL will indicate using the same decorations.
+            //When only the characters differ we don't write anything, the
+            //following "|", "@" or NL will indicate using the same decorations.
             if (!sameFlags) {
                fputs("+", fd);
                fprintf(fd, "%d", cell.deco.flags);

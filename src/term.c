@@ -156,6 +156,10 @@ typedef struct {
    Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
 
+//Reset all text attributes (like colors, boldness, or background shades) back to the terminal's 
+//default settings.
+//private CS resetDecorationsCode = S"\033[0m";
+
 // Additions for using the Kitty keyboard protocol.
 private TinfoEntry builtin_kitty[] = {SMAP1((CS),
    "\033[=1;1u", KS_CTI, //t_TI enables the kitty keyboard protocol.
@@ -229,8 +233,6 @@ typedef struct {
 #define TPR_CURSOR_STYLE   0
 // can request the cursor blink mode without messing up the display
 #define TPR_CURSOR_BLINK   1
-// can set the underline color with t_8u without resetting other colors
-#define TPR_UNDERLINE_RGB  2
 // mouse support - TPR_MOUSE_XTERM, TPR_MOUSE_XTERM2 or TPR_MOUSE_SGR
 #define TPR_MOUSE          3
 // term response indicates kitty
@@ -248,8 +250,6 @@ init_term_props(int all) {
    term_props[TPR_CURSOR_STYLE].setByTermResponse = FALSE;
    term_props[TPR_CURSOR_BLINK].name = S"cursor_blink_mode";
    term_props[TPR_CURSOR_BLINK].setByTermResponse = FALSE;
-   term_props[TPR_UNDERLINE_RGB].name = S"underline_rgb";
-   term_props[TPR_UNDERLINE_RGB].setByTermResponse = TRUE;
    term_props[TPR_MOUSE].name = S"mouse";
    term_props[TPR_MOUSE].setByTermResponse = TRUE;
    term_props[TPR_KITTY].name = S"kitty";
@@ -288,7 +288,7 @@ applyBuiltinCapability(Arr(TinfoEntry) entries, int len) {
 private CS key_names[] = {SMAP((CS),
    //Do those ones first, both may cause a screen redraw.
    "Co",
-   //disabled, because it switches termguicolors, but that is noticeable and confuses users "RGB",
+   //disabled, because it switches termguicolors, but that is noticeable and confuses users,
    "ku", "kd", "kr", "kl", "#2", "#4", "%i", "*7",
    "k1", "k2", "k3", "k4", "k5", "k6"
    ), SMAP((CS),
@@ -307,22 +307,19 @@ get_term_entries(OUT int* height, OUT int* width) {
       Unt dest; //index in termCodeS[]
    } entryNames[] = { SMAP1((CS),
       "ce", KS_CE,  "al", KS_AL,  "AL", KS_CAL, "dl", KS_DL,  "DL", KS_CDL,  "cs", KS_CS,
-      "cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "mb", KS_MB,   "me", KS_ME, 
+      "cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "me", KS_ME, 
       "mr", KS_MR,  "md", KS_MD,  "se", KS_SE,  "so", KS_SO,  "ZH", KS_CZH,  "ZR", KS_CZR
       ), SMAP1((CS),
       "ue", KS_UE,  "us", KS_US,  "Ce", KS_UCE, "Cs", KS_UCS, "Us", KS_USS, "ds", KS_DS,
-      "Ds", KS_CDS, "Te", KS_STE, "Ts", KS_STS, "cm", KS_CM,  "sr", KS_SR,  "RI", KS_CRI,
-      "vb", KS_VB,  "ks", KS_KS,  "ke", KS_KE,  "ti", KS_TI,  "te", KS_TE 
+      "cm", KS_CM,  "sr", KS_SR,  "RI", KS_CRI,
+      "ks", KS_KS,  "ke", KS_KE,  "ti", KS_TI,  "te", KS_TE 
       ), SMAP1((CS),
-      "TI", KS_CTI, "RK", KS_CRK, "TE", KS_CTE, "bc", KS_BC,  "Sb", KS_CSB, "Sf", KS_CSF,
+      "TI", KS_CTI, "RK", KS_CRK, "TE", KS_CTE, "Sb", KS_CSB, "Sf", KS_CSF,
       "AB", KS_CAB, "AF", KS_CAF, "AU", KS_CAU, "le", KS_LE,  "nd", KS_ND,  "op", KS_OP,  
-      "RV", KS_CRV, "XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS, "IS", KS_CIS, "IE", KS_CIE 
+      "RV", KS_CRV, "XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS
       ), SMAP1((CS),
       "SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "WS", KS_CWS, 
-      "SI", KS_CSI, "EI", KS_CEI, "u7", KS_U7,  "RF", KS_RFG, "RB", KS_RBG, "8f", KS_8F,
-      "8b", KS_8B,  "8u", KS_8U,  "BE", KS_CBE, "BD", KS_CBD, "ST", KS_CST, "RT", KS_CRT 
-      ), SMAP1((CS),
-      "Si", KS_SSI, "Ri", KS_SRI, "CF", KS_CF
+      "SI", KS_CSI, "EI", KS_CEI, "u7", KS_U7,  "BE", KS_CBE, "BD", KS_CBD, "CF", KS_CF
    )};
    static Byte tstrbuf[TBUFSZ];
    CS tp = tstrbuf;
@@ -335,7 +332,7 @@ get_term_entries(OUT int* height, OUT int* width) {
    }
    for (Unt i = 0; i < ARRAY_LENGTH(termCodeS); i++) {
       if (!termCodeS[i])
-         termCodeS[i] = Em;
+         termCodeS[i] = S"";
    }
 
    // tgetflag() returns 1 if the flag is present, 0 if not and
@@ -352,8 +349,6 @@ get_term_entries(OUT int* height, OUT int* width) {
       termCodeS[KS_DA] = S"y";
    if (termCodeS[KS_UT] == Em && tgetflag("ut") > 0)
       termCodeS[KS_UT] = S"y";
-   if (termCodeS[KS_XON] == Em && tgetflag("xo") > 0)
-      termCodeS[KS_XON] = S"y";
 
    // get key codes
    for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
@@ -403,7 +398,6 @@ set_termname(CS termName) {
 
       get_term_entries(OUT &height, OUT &width);
    }
-
    applyBuiltinCapability(builtin_kitty, ARRAY_LENGTH(builtin_kitty));
    accept_modifiers_for_function_keys();
 
@@ -921,7 +915,6 @@ ttest(int pairs) {
    if (pairs) {
       // optional pairs. TP goes to normal mode for TI (invert) and TB (bold)
       if (termCodeS[KS_ME] == null) {
-         termCodeS[KS_MB] = null;
          termCodeS[KS_MD] = null;
          termCodeS[KS_MR] = null;
          termCodeS[KS_ME] = null;
@@ -1324,7 +1317,7 @@ starttermcap(void) {
    out_str(termCodeS[KS_KS]);         // start "keypad transmit" mode
    out_str_t_BE();         // enable bracketed paste mode
 
-   // Enable xterm's focus reporting mode when 'esckeys' is set.
+   //Enable xterm's focus reporting mode when 'esckeys' is set.
    if (termCodeS[KS_FE] != Em)
       out_str(termCodeS[KS_FE]);
 
@@ -1487,39 +1480,6 @@ check_terminal_behavior(void) {
       //check for the characters now, otherwise they might be eaten by get_keystroke()
       out_flush();
       (void)vpeekc_nomap();
-   }
-}
-
-//Similar to requesting the version string: Request the terminal background
-//color when it is the right moment.
-void
-may_req_bg_color(void) {
-   if (can_get_termresponse() && starting == 0) {
-      Boole didit = false;
-
-      //Only request foreground if t_RF is set.
-      if (rfg_status.tr_progress == STATUS_GET && termCodeS[KS_RFG] != Em) {
-         MAY_WANT_TO_LOG_THIS;
-         LOG_TR1("Sending FG request");
-         out_str(termCodeS[KS_RFG]);
-         termrequest_sent(&rfg_status);
-         didit = true;
-      }
-
-      //Only request background if t_RB is set.
-      if (backgroundColorRequestS.tr_progress == STATUS_GET && termCodeS[KS_RBG] != Em) {
-         MAY_WANT_TO_LOG_THIS;
-         LOG_TR1("Sending BG request");
-         out_str(termCodeS[KS_RBG]);
-         termrequest_sent(&backgroundColorRequestS);
-         didit = true;
-      }
-
-      if (didit) {
-         //check for the characters now, otherwise they might be eaten by get_keystroke()
-         out_flush();
-         (void)vpeekc_nomap();
-      }
    }
 }
 
@@ -2055,7 +2015,6 @@ handle_version_response(int first, int* arg, int argc) {
       if (version == 95) {
          //Mac Terminal.app sends 1;95;0
          if (arg[0] == 1 && arg[2] == 0) {
-            term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
             term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
          }
          //iTerm2 sends 0;95;0
@@ -2063,9 +2022,6 @@ handle_version_response(int first, int* arg, int argc) {
             // iTerm2 can do SGR mouse reporting
             term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
          }
-         // old iTerm2 sends 0;95;
-         ei (arg[0] == 0 && arg[2] == -1)
-            term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
       }
 
       //screen sends 83;40500;0 83 is 'S' in ASCII.
@@ -2088,12 +2044,8 @@ handle_version_response(int first, int* arg, int argc) {
       //screen sends 83;40500;0
       //Assuming any version number over 2500 is not an
       //xterm (without the limit for rxvt and screen).
-      if (arg[1] >= 2500)
-          term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
 
-      ei (version == 136 && arg[2] == 0) {
-         term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
-
+      if (version == 136 && arg[2] == 0) {
          // PuTTY sends 0;136;0
          if (arg[0] == 0) {
             // supports sgr-like mouse reporting.
@@ -2101,10 +2053,6 @@ handle_version_response(int first, int* arg, int argc) {
          }
          // vandyke SecureCRT sends 1;136;0
       }
-
-      //Konsole sends 0;115;0 - but t_u8 does not actually work, therefore commented out.
-      //ei (version == 115 && arg[0] == 0 && arg[2] == 0)
-      //    term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
 
       //Kitty up to 9.x sends 1;400{version};{secondary-version}
       if (arg[0] == 1 && arg[1] >= 4000 && arg[1] <= 4009) {
@@ -2124,12 +2072,6 @@ handle_version_response(int first, int* arg, int argc) {
           term_props[TPR_CURSOR_BLINK].status = TPR_NO;
       }
 
-      //Xterm first responded to this request at patch level
-      //95, so assume anything below 95 is not xterm and hopefully supports
-      //the underline RGB color sequence.
-      if (version < 95)
-          term_props[TPR_UNDERLINE_RGB].status = TPR_YES;
-
       //Getting the cursor style is only supported properly by xterm since
       //version 279 (otherwise it returns 0x18).
       if (version < 279)
@@ -2137,9 +2079,6 @@ handle_version_response(int first, int* arg, int argc) {
 
       //Take action on the detected properties.
 
-      if (termCodeS[KS_8U] != Em && write_t_8u_state == MAYBE)
-         // Did skip writing t_8u, a complete redraw is needed.
-         redraw_later_clear();
       write_t_8u_state = OK;  // can output t_8u now
 
       int need_flush = FALSE;
@@ -2535,8 +2474,8 @@ handleControlSequenceIntroducer(
 // Consume any code that starts with "{lead}11;", it's also
 // possible that "rgba" is following.
 private int
-handle_osc(Byte *tp, Byte *argp, int len, Byte *key_name, int *slen) {
-   int      i;
+handle_osc(CS tp, CS argp, int len, CS key_name, int* slen) {
+   int i;
 
    int j = 1 + (tp[0] == ESC);
    if (len >= j + 3 && (argp[0] != '1' || (argp[1] != '1' && argp[1] != '0') || argp[2] != ';'))
@@ -2940,14 +2879,6 @@ check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
                return resp;
             }
          }
-         //Check for fore/background color response from the terminal,
-         //starting} with <Esc>] or OSC
-         ei ((termCodeS[KS_RBG] != Em || termCodeS[KS_RFG] != Em)
-              && ((readPos[0] == ESC && len >= 2 && readPos[1] == ']') || readPos[0] == OSC)
-         ) {
-            if (handle_osc(readPos, argp, len, keyName, &slen) == FAIL)
-               return -1;
-         }
          //Check for key code response from xterm, starting with <Esc>P or DCS
          //It would only be needed with this condition:
          //       (check_for_codes || cursorStyleRequestS.tr_progress == STATUS_SENT)
@@ -3109,7 +3040,7 @@ mch_termSetMode(TermInputMode tmode) {
    if (tmode == TMODE_RAW) {
       // ~ICRNL enables typing ^V^M
       // ~IXON disables CTRL-S stopping output, so that it can be mapped.
-      tnew.c_iflag &= ~(ICRNL | (termCodeS[KS_XON] == Em ? IXON : 0));
+      tnew.c_iflag &= ~(ICRNL | IXON);
       tnew.c_lflag &= ~(ICANON | ECHO | ISIG | ECHOE
 # if defined(IEXTEN)
              | IEXTEN

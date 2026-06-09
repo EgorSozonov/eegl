@@ -17,7 +17,7 @@ typedef struct {
    Byte fieldPresence; // HI_* flags
    VTermColor fg; // foreground color
    VTermColor bg; // background color
-   VTermColor under; // underline color if theme is dark
+   VTermColor under; // underline color
     
    int link;   // link to this hilite group ID
    int deflink;   // default link; restored in clearHiliteWorker()
@@ -68,6 +68,7 @@ private void clearHiliteWorker(HiliteGroup* g);
 private void printHiliteHeaderNew(HiliteGroup* group);
 private void printHiliteDeco(HiliteGroup* group);
 private void set_normal_colors(void);
+private Short hiResolveLinks(Short hiId);
 
 //}}}
 
@@ -97,7 +98,7 @@ private Kv decoKinds[] = {
    KEYVALUE_ENTRY(DECO_INVERSE, "inverse"),     
    KEYVALUE_ENTRY(DECO_ITALIC, "italic"),       
    KEYVALUE_ENTRY(DECO_NOCOMBINE, "nocombine"), 
-   KEYVALUE_ENTRY(DECO_NORMAL, "NONE"),         
+   KEYVALUE_ENTRY(DECO_NONE, "NONE"),         
    KEYVALUE_ENTRY(DECO_UNDERCURL, "undercurl"), 
    KEYVALUE_ENTRY(DECO_UNDERLINE, "underline")  
 };
@@ -110,7 +111,7 @@ private Kv *decoKindIndices[] = {
     decoKinds + 2,   // DECO_ITALIC
     decoKinds + 1,   // DECO_INVERSE
     decoKinds + 3,   // DECO_NOCOMBINE
-    decoKinds + 4    // DECO_NORMAL
+    decoKinds + 4    // DECO_NONE
 };
 
 // length of all decoKinds names, plus commas, together (and a bit more)
@@ -151,70 +152,72 @@ enum {
 
 // The hilite groups.
 private char *(hiliteGroupStrings[]) = {
-   "Normal fg=regular7 bg=regular0",
+   "Normal fg=regular7 bg=regular0", //0
    "NonText deco=bold fg=regular4",
    "NormalFloat link=Normal",
-   "AfterLastLine link=NonText", // 2 HLF_EOB after the last line in the buffer
+   "AfterLastLine link=NonText",     // 2 HLF_EOB after the last line in the book
    "InvisAtEndOfScreen link=Normal", // HLF_AT @ chars at end of screen, chars that don't really exist in text 
-   "Directories link=Normal", //HLF_D directories in CTRL-D listing
+   "Directories link=Normal",        //HLF_D directories in CTRL-D listing
    "ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
-   "WarningMsg link=Normal", // HLF_W       warning messages
+   "WarningMsg link=Normal",         // HLF_W       warning messages
    "IncrementalSearch deco=inverse", //HLF_I incremental search
-   "PrevSearch link=Normal", //HLF_L  last search string
+   "PrevSearch link=Normal",         //HLF_L  last search string
    "PrevSearchUnderCursor link=Normal", // HLF_LC   last search string under cursor
-   "MoreMsg link=Normal", // 10 HLF_M    "--More--" message
-   "ModeName deco=bold", // HLF_CM    Mode (e.g., "-- INSERT --")
-   "CurrentLineNr link=Normal", // HLF_CLN   current line number
-   "CurrentSign link=Normal", // HLF_CLS   current line sign column
-   "CurrentFold link=Normal", // HLF_CLF   current line fold
-   "YesNoQuestions link=Normal", // HLF_R     return to continue message and yes/no questions
-   "StatusLine deco=inverse", // HLF_S  status lines
+   "MoreMsg link=Normal",            // 10 HLF_M    "--More--" message
+   "ModeName deco=bold",             // HLF_CM    Mode (e.g., "-- INSERT --")
+   "CurrentLineNr link=Normal",      // HLF_CLN   current line number
+   "CurrentSign link=Normal",        // HLF_CLS   current line sign column
+   "CurrentFold link=Normal",        // HLF_CLF   current line fold
+   "YesNoQuestions link=Normal",     // HLF_R     return to continue message and yes/no questions
+   "StatusLine deco=inverse",        // HLF_S  status lines
    "StatusLinesInactive deco=inverse", // HLF_SNC    status lines of not-current portals
-   "VertSplit deco=inverse", // HLF_C    column to separate vertically split portals
-   "OutputOfAutocmd link=Normal", // HLF_T     Titles for output from ":set all", ":autocmd" etc.
-   "VisualMode deco=bold", // 20 HLF_V       Visual mode
+   "VertSplit deco=inverse",         // HLF_C    column to separate vertically split portals
+   "OutputOfAutocmd link=Normal",    // HLF_T     Titles for output from ":set all", ":autocmd" etc.
+   "VisualMode deco=bold",           // 20 HLF_V       Visual mode
    "VisualModeAutoselecting link=Normal", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
-   "WildcardMenu link=Normal", // HLF_WM    Wildmenu hilite
-   "FoldedLine link=Normal", // HLF_FL      Folded line
+   "WildcardMenu link=Normal",       // HLF_WM    Wildmenu hilite
+   "FoldedLine link=Normal",         // HLF_FL      Folded line
    "FoldColumn bg=grey12 fg=regular6", // HLF_FC      Fold column
-   "DiffTextAdd fg=regular2", // HLF_ADD  Added diff line
-   "DiffText fg=regular4", // HLF_CHD  Changed diff line
+   "DiffTextAdd fg=regular2",        // HLF_ADD  Added diff line
+   "DiffText fg=regular4",           // HLF_CHD  Changed diff line
    "DiffChangedTextInChanged link=Normal", // HLF_TXD  Text Changed in changed diff line
    "DiffAddedTextInChanged link=Normal", // HLF_TXA  Text Added in changed diff line
    // Deleted diff line
    "DiffDeleted deco=bold bg=bright6 fg=regular4", // HLF_DED
    "SignColumn bg=grey10 fg=regular6", // 30 HLF_SC Sign column
    "Pmenu bg=regular4 liteBg=regular0", // HLF_PNI  popup menu normal item
-   "PmenuSelected bg=grey4", // HLF_PSI  popup menu selected item
-   "PmenuMatchedText link=Normal", // HLF_PMNI popup menu matched text in normal item
+   "PmenuSelected bg=grey4",         // HLF_PSI  popup menu selected item
+   "PmenuMatchedText link=Normal",   // HLF_PMNI popup menu matched text in normal item
    "PmenuMatchedInSelected link=Normal", // HLF_PMSI popup menu matched text in selected item
-   "PmenuNormalItem link=Normal", // HLF_PNK  popup menu normal item "kind"
-   "PmenuSelectedItem link=Normal", // HLF_PSK   popup menu selected item "kind"
-   "PmenuExtraText link=Normal", // HLF_PNX   popup menu normal item "menu" (extra text)
+   "PmenuNormalItem link=Normal",    // HLF_PNK  popup menu normal item "kind"
+   "PmenuSelectedItem link=Normal",  // HLF_PSK   popup menu selected item "kind"
+   "PmenuExtraText link=Normal",     // HLF_PNX   popup menu normal item "menu" (extra text)
    "PmenuSelectedExtraText link=Normal", // HLF_PSX   popup menu selected item "menu" (extra text)
-   "PmenuScrollbar bg=grey12", // HLF_PSB  popup menu scrollbar
+   "PmenuScrollbar bg=grey12",       // HLF_PSB  popup menu scrollbar
    "PmenuScrollBarThumb  bg=regular7", // 40 HLF_PST  popup menu scrollbar thumb
    "Tabpanel deco=underline bg=grey4", // HLF_TPL   tabpanel
-   "TabpanelSelected link=Normal", // HLF_TPLS  tabpanel selected
-   "TabpanelFill link=Normal", // HLF_TPLF  tabpanel filler
-   "CursorColumn bg=grey18", // HLF_CUC  'cursorcolumn'
-   "CursorLine  bg=444", // HLF_CUL  'cursorline'
-   "ColorColumn link=Normal", // HLF_MC   'colorcolumn'
-   "LocationPortalSelected link=PmenuSelectedItem", // HLF_QFL   location portal line currently selected
+   "TabpanelSelected link=Normal",   // HLF_TPLS  tabpanel selected
+   "TabpanelFill link=Normal",       // HLF_TPLF  tabpanel filler
+   "CursorColumn bg=grey18",         // HLF_CUC  'cursorcolumn'
+   "CursorLine  bg=444",             // HLF_CUL  'cursorline'
+   "ColorColumn link=Normal",        // HLF_MC   'colorcolumn'
+   "LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
+                                                    //selected
    "TerminalStatusLine link=Normal", // 50 HLF_ST    status lines of terminal portals
-   "TerminalNoncurrentStatusLine link=Normal", // HLF_STNC  status lines of not-current terminal portals
-   "TerminalRed fg=regular1", // HLF_TERMR  status lines of not-current terminal portals
-   "TerminalGreen fg=bright2", // HLF_TERMG  status lines of not-current terminal portals
-   "TerminalBlue fg=bright4", // HLF_TERMB  status lines of not-current terminal portals
-   "MessageArea link=Normal", // HLF_MSG   message area
-   "MetaSpecialKeys link=Normal",   // HLF_8 Meta & special keys listed with ":map", text that is 
-                                    // displayed different
-   "LineNr fg=regular3", // HLF_N   line number for ":number" and ":#" commands
-   "LineNrAbove link=Normal", // HLF_LNA  LineNrAbove
-   "LineNrBelow link=Normal", // HLF_LNB  LineNrBelow
+   "TerminalNoncurrentStatusLine link=Normal", //HLF_STNC  status lines of not-current terminal 
+                                               //portals
+   "TerminalRed fg=regular1",        // HLF_TERMR  status lines of not-current terminal portals
+   "TerminalGreen fg=bright2",       // HLF_TERMG  status lines of not-current terminal portals
+   "TerminalBlue fg=bright4",        // HLF_TERMB  status lines of not-current terminal portals
+   "MessageArea link=Normal",        // HLF_MSG   message area
+   "MetaSpecialKeys link=Normal",    // HLF_8 Meta & special keys listed with ":map", text that is 
+                                     // displayed different
+   "LineNr fg=regular3",             // HLF_N   line number for ":number" and ":#" commands
+   "LineNrAbove link=Normal",        // HLF_LNA  LineNrAbove
+   "LineNrBelow link=Normal",        // HLF_LNB  LineNrBelow
    "SpellBad under=regular2 deco=undercurl", // HLF_SPB  SpellBad
-   "SpellCap liteUnder=regular4 deco=undercurl", // HLF_SPC   SpellCap
-   "SpellRare liteUnder=regular5 deco=undercurl", // HLF_SPR  SpellRare
+   "SpellCap under=regular4 deco=undercurl", // HLF_SPC   SpellCap
+   "SpellRare under=regular5 deco=undercurl", // HLF_SPR  SpellRare
    "SpellLocal under=regular6 deco=undercurl", // 60 HLF_SPL  SpellLocal
    "Directory fg=bright6",
    "CursorLineNr deco=bold fg=regular3",
@@ -306,7 +309,6 @@ initializeGroups(void) {
       for (Short j = 0; j < nameLen; j++) {
          Byte byte = groupString[j];
          if (!bookIsCharPrintable(byte)) {
-            _bp(true);
             emsg(_(e_unprintable_character_in_group_name));
             return;
          } ei (!ASCII_ISALNUM(byte) && byte != '_' && byte != '.') {
@@ -411,28 +413,36 @@ getColorByName(OUT VTermColor* res, Text name) {
 //Set the foreground color for the hilite group at 'id'. Return TRUE if the color is set
 private Boole
 setForeground(HiliteGroup* group, Text arg){
-   return getColorByName(&(group->fg), arg);
+   if (getColorByName(&(group->fg), arg)) {
+      group->fieldPresence |= HI_HAS_FG;
+      return true;
+   }
+   return false;
 }
 
 //Set the background color for the hilite group at 'id'. Returns TRUE if the color is set
 private Boole
 setBackground(HiliteGroup* group, Text arg){
-   return getColorByName(&(group->bg), arg);
+   if (getColorByName(&(group->bg), arg) ) {
+      group->fieldPresence |= HI_HAS_BG;
+      return true;
+   }
+   return false; 
 }
 
 //Set the underline/undercurl color for the hilite group at 'id'.
 //Return TRUE if the color is set.
 private Boole
-setUnderline(OUT HiliteGroup* group, Text arg, int init) {
-   if (init && (group->fieldPresence & HI_IS_LINK) != 0)
-      return false;
-   return getColorByName(&(group->under), arg);
+setUnderline(OUT HiliteGroup* group, Text arg) {
+   if (getColorByName(&(group->under), arg)) {
+      group->fieldPresence |= HI_HAS_UNDER;
+      return true;
+   }
+   return false;
 }
 
 //{{{printing hilite groups
 
-// Return color name (or, for RGB colors, "#123456") of a single field of hilite group "hiId"
-// Always make a separate allocation
 private CS
 printColor(OUT Byte buf[static 4], VTermColor color) {
    sprintf((char *)buf, "%d", color);
@@ -595,6 +605,7 @@ linkHilite(
    group->link = toId;
    group->script_ctx = scriptPosG;
    group->script_ctx.lineNr += SOURCING_LNUM;
+   group->fieldPresence |= HI_IS_LINK;
    redraw_all_later(UPD_SOME_VALID);
    return true;
 }
@@ -610,6 +621,8 @@ parseHiliteKey(Text key) {
       retVal = BG;
    } ei (sliceCmpToConst(key, "under")) {
       retVal = UNDER;
+   } ei (sliceCmpToConst(key, "link")) {
+      retVal = LINK;
    } else {
       retVal = KEY_PARSE_ERROR;
    }
@@ -624,6 +637,7 @@ writeToDecoration(HiliteGroup* restrict g) {
    deco.bg = g->bg;
    deco.under = g->under;
    deco.flags = g->flags;
+   deco.fieldPresence = g->fieldPresence;
    deco.hiId = g->hiId;
    return deco;
 }
@@ -695,7 +709,7 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
       return;
    }
    
-   HiKey keys[3]; // up to two keys, the group name & "none"
+   HiKey keys[3]; // up to two keys, the group name & optionala "none"
    HiKeyValue kvs[5]; // up to 4 key-values: "fg", "bg", "under" and "deco", or the single "link"
    parseHiliteArgs(OUT keys, OUT kvs, line);
    if (keys[0].start == SHORT || keys[0].start == SHORT - 1) {
@@ -724,14 +738,13 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
    if (forceit || init) {
       clearHiliteWorker(OUT group);
    } 
-   
    group->fieldPresence &= ~HI_IS_LINK;
    for (HiKeyValue* kv = kvs; kv->start != SHORT && !error; kv++) {
       Text keyStr = keyOf(*kv, line);
       HiliteKey key = parseHiliteKey(keyStr);
       if (key == KEY_PARSE_ERROR) {
          error = true;
-         goto breakTheLoop;
+         break;
       }
       Text val = valueOf(*kv, line);
       switch (key) {
@@ -752,7 +765,7 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
          break; 
       } 
       case UNDER: {
-         if (!setUnderline(OUT group, val, init))
+         if (!setUnderline(OUT group, val))
             error = true;
          break; 
       } 
@@ -774,10 +787,12 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
          break;
       }
    }
+   
    if (error) {
+      showErrFmtMsg(_(e_hilite_group_name_not_found_str), line);
       return;
    }
-breakTheLoop:
+   
    decorationsG[group->hiId] = writeToDecoration(group);
 
    group->script_ctx = scriptPosG;
@@ -814,9 +829,9 @@ set_normal_colors(void) {
 // Return the resulting decos.
 Decoration
 combineDecorations(Decoration overlay, Decoration base) {
-   if ((base.flags & DECO_UNDERLINE) && overlay.flags & DECO_UNDERCURL) {
+   if ((base.flags & DECO_UNDERLINE) != 0 && (overlay.flags & DECO_UNDERCURL) != 0) {
       return base;
-   } ei((base.flags & DECO_UNDERCURL) && overlay.flags & DECO_UNDERLINE) { 
+   } ei((base.flags & DECO_UNDERCURL) != 0 && (overlay.flags & DECO_UNDERLINE) != 0) { 
       base.flags = (base.flags & ~DECO_UNDERCURL) | DECO_UNDERLINE;
    } else {
       base.flags |= overlay.flags;
@@ -879,18 +894,17 @@ syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp) {
 }
 
 // Translate a group ID to the final group ID (following links). hiId must be != SHORT
-Short
-hiResolveLinks(Unt hiId) {
+private Short
+hiResolveLinks(Short hiId) {
    // Follow links until there is no more. Look out for loops! Break after 100 links.
    for (int depth = 0; depth < 100; depth++) {
       HiliteGroup* group = hilites + hiId;
-      if (group->link == SHORT)
+      if ((group->fieldPresence & HI_IS_LINK) == 0)
          break;
       hiId = group->link;
    }
    return hiId;
 }
-
 
 // Translate a group to the final group id (following links)
 private HiliteGroup*
@@ -1078,10 +1092,13 @@ getDecoFlags(Short hiId) {
 }
 
 Decoration
-getFullDecoration(Unt hiId) {
-   HiliteGroup* g = hilites + hiId;
+getFullDecoration(Short hiId) {
+   Short resolvedId = hiResolveLinks(hiId);
+   HiliteGroup* g = hilites + resolvedId;
+   
    return (Decoration) {
-      .fg = g->fg, .bg = g->bg, .under = g->under, .flags = g->flags, .hiId = hiId
+      .fg = g->fg, .bg = g->bg, .under = g->under, .flags = g->flags, 
+      .fieldPresence = g->fieldPresence, .hiId = hiId
    };
 }
 

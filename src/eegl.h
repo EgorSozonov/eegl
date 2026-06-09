@@ -315,100 +315,82 @@ typedef Byte Byte;
 //This list contains the defines for the machine dependent escape sequences that the editor needs 
 //to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
 
-// Index of the terminfo codes
-#define KS_NAME   0 // name of this terminal entry
-#define KS_CE     1 // clear to end of line
-#define KS_AL     2 // add new blank line
-#define KS_CAL    3 // add number of blank lines
-#define KS_DL     4 // delete line
-#define KS_CDL    5 // delete number of lines
-#define KS_CS     6 // scroll region
-#define KS_CL     7 // clear screen
-#define KS_CD     8 // clear to end of display
-#define KS_UT     9 // clearing uses current background color
-#define KS_DA    10 // text may be scrolled down from up
-#define KS_DB    11 // text may be scrolled up from down
-#define KS_VI    12 // cursor invisible
-#define KS_VE    13 // cursor visible
-#define KS_VS    14 // cursor very visible (blink)
-#define KS_CVS   15 // cursor normally visible (no blink)
-#define KS_CSH   16 // cursor shape
-#define KS_CRC   17 // request cursor blinking
-#define KS_CRS   18 // request cursor style
-#define KS_ME    19 // normal mode
-#define KS_MR    20 // reverse mode
-#define KS_MD    21 // bold mode
-#define KS_SE    22 // normal mode
-#define KS_SO    23 // standout mode
-#define KS_CZH   24 // italic mode start
-#define KS_CZR   25 // italic mode end
-#define KS_UE    26 // exit underscore (underline) mode
-#define KS_US    27 // underscore (underline) mode
-#define KS_UCE   28 // exit undercurl mode
-#define KS_UCS   29 // undercurl mode
-#define KS_USS   30 // double underline mode
-#define KS_DS    31 // dotted underline mode
-#define KS_CDS   32 // dashed underline mode
-#define KS_STE   33 // exit strikethrough mode
-#define KS_STS   34 // strikethrough mode
-#define KS_MS    35 // save to move cur in reverse mode
-#define KS_CM    36 // cursor motion
-#define KS_SR    37 // scroll reverse (backward)
-#define KS_CRI   38 // cursor number of chars right
-#define KS_VB    39 // visual bell
-#define KS_KS    40 // put term in "keypad transmit" mode
-#define KS_KE    41 // out of "keypad transmit" mode
-#define KS_TI    42 // put terminal in terminfo mode
-#define KS_CTI   43 // put terminal in "raw" mode
-#define KS_CRK   44 // request keyboard protocol state
-#define KS_TE    45 // end of terminfo mode
-#define KS_CTE   46 // end of "raw" mode
-#define KS_BC    47 // backspace character (cursor left)
-#define KS_CCS   48 // cur is relative to scroll region
-#define KS_CSF   49 // set foreground color
-#define KS_CSB   50 // set background color
-#define KS_XS    51 // standout not erased by overwriting (hpterm)
-#define KS_XN    52 // newline glitch
-#define KS_MB    53 // blink mode
-#define KS_CAF   54 // set foreground color (ANSI)
-#define KS_CAB   55 // set background color (ANSI)
-#define KS_CAU   56 // set underline color (ANSI)
-#define KS_LE    57 // cursor left (mostly backspace)
-#define KS_ND    58 // cursor right
-#define KS_CIS   59 // set icon text start
-#define KS_CIE   60 // set icon text end
-#define KS_CSC   61 // set cursor color start
-#define KS_CEC   62 // set cursor color end
-#define KS_TS    63 // set portal title start (to status line)
-#define KS_FS    64 // set portal title end (from status line)
-#define KS_CWP   65 // set portal position in pixels
-#define KS_CGP   66 // get portal position
-#define KS_CWS   67 // set portal size in characters
-#define KS_CRV   68 // request version string
-#define KS_CXM   69 // enable/disable mouse reporting
-#define KS_RFG   70 // request foreground color
-#define KS_RBG   71 // request background color
-#define KS_CSI   72 // start insert mode (bar cursor)
-#define KS_CEI   73 // end insert mode (block cursor)
-#define KS_CSR   74 // start replace mode (underline cursor)
-#define KS_CSV   75 // scroll region vertical
-#define KS_OP    76 // original color pair
-#define KS_U7    77 // request cursor position
-#define KS_8F    78 // set foreground color (RGB)
-#define KS_8B    79 // set background color (RGB)
-#define KS_8U    80 // set underline color (RGB)
-#define KS_CBE   81 // enable bracketed paste mode
-#define KS_CBD   82 // disable bracketed paste mode
-#define KS_CST   83 // save portal title
-#define KS_CRT   84 // restore window title
-#define KS_SSI   85 // save icon text
-#define KS_SRI   86 // restore icon text
-#define KS_FD    87 // disable focus event tracking
-#define KS_FE    88 // enable focus event tracking
-#define KS_CF    89 // set terminal alternate font
-#define KS_XON   90 // terminal uses xon/xoff handshaking
 
-#define KS_LAST  KS_XON
+// Index of the terminfo codes, with their capability names and example values.
+#define KS_NAME   0 //name of this terminal entry. foot
+#define KS_CE     1 //clear to end of line. el. \e[K
+#define KS_AL     2 //add new blank line. il1. \e[L
+#define KS_CAL    3 //add number of blank lines. il. \e[%p1%dL
+#define KS_DL     4 //delete line. dl1. \e[M
+#define KS_CDL    5 //delete number of lines. dl. \e[%p1%dM
+#define KS_CS     6 //scroll region. csr. \e[%i%p1%d;%p2%dr
+#define KS_CL     7 //clear screen. clear. \e[H\e[2J
+#define KS_CD     8 //clear to end of display. ed. \e [J
+#define KS_UT     9 //clearing uses current background color. y???
+#define KS_DA    10 //text may be scrolled down from up. Empty
+#define KS_DB    11 //text may be scrolled up from down. Empty
+#define KS_VI    12 //cursor invisible. civis. \e[?25l
+#define KS_VE    13 //cursor visible. cnorm. \e[?12l\e[?25h
+#define KS_VS    14 //cursor very visible (blink). cvvis. \e[?12;25h
+#define KS_CVS   15 //cursor normally visible (no blink). Empty
+#define KS_CSH   16 //cursor shape. Empty.
+#define KS_CRC   17 //request cursor blinking. Empty
+#define KS_CRS   18 //request cursor style. Empty
+#define KS_ME    19 //normal mode. \e[0m
+#define KS_MR    20 //reverse mode. rev. \e[7m
+#define KS_MD    21 //bold mode. bold. \e[1m
+#define KS_SE    22 //normal mode. rmso. \e[27m
+#define KS_SO    23 //standout mode. rev. \e[7m. AGAIN???
+#define KS_CZH   24 //italic mode start. sitm. \e[3m
+#define KS_CZR   25 //italic mode end. ritm. \e[23m
+#define KS_UE    26 //exit underscore (underline) mode. rmul. \e[24m
+#define KS_US    27 //underscore (underline) mode. smul. \e[4m
+#define KS_UCE   28 //exit undercurl mode. EMPTY
+#define KS_UCS   29 //undercurl mode. Cs. `\e]12;%p1%s\e\`
+#define KS_USS   30 //double underline mode. EMPTY
+#define KS_DS    31 //dotted underline mode. dsl. `\e]2;\e\`
+#define KS_MS    32 //save to move cur in reverse mode. y ???
+#define KS_CM    33 //cursor motion. cursor_address. \e[%i%p1%d;%p2%dH
+#define KS_SR    34 //scroll reverse (backward). scroll_reverse. \eM
+#define KS_CRI   35 //cursor number of chars right. parm_right_cursor. \e[%p1%dC
+#define KS_KS    36 //put term in "keypad transmit" mode. keypad_xmit. \e[?1h\e=
+#define KS_KE    37 //out of "keypad transmit" mode. keypad_local. \e[?1l\e>
+#define KS_TI    38 //put terminal in terminfo mode. enter_ca_mode. \e[?1049h\e[22;0;0t
+#define KS_CTI   39 //put terminal in "raw" mode. EMPTY
+#define KS_CRK   40 //request keyboard protocol state. EMPTY
+#define KS_TE    41 //end of terminfo mode. exit_ca_mode. \e[?1049l\e[23;0;0t
+#define KS_CTE   42 //end of "raw" mode. EMPTY
+#define KS_CCS   43 //cur is relative to scroll region. EMPTY
+#define KS_CSF   44 //set foreground color. EMPTY
+#define KS_CSB   45 //set background color. EMPTY
+#define KS_XS    46 //standout not erased by overwriting (hpterm). EMPTY
+#define KS_XN    47 //newline glitch. y ???
+#define KS_CAF   48 //set fg color (ANSI). set_a_foreground. \e[%?%p1%{8}%<%t3%p1%d%e%p1%{16}%<%t9%p1%{8}%-%d%e38:5:%p1%d%;m
+#define KS_CAB   49 //set bg color (ANSI). set_a_background. \e[%?%p1%{8}%<%t4%p1%d%e%p1%{16}%<%t10%p1%{8}%-%d%e48:5:%p1%d%;m
+#define KS_CAU   50 //set underline color (ANSI). EMPTY
+#define KS_LE    51 //cursor left (mostly backspace). cub1. ^H (which is ASCII 08)
+#define KS_ND    52 //cursor right. cuf1. \e[C
+#define KS_CSC   53 //set cursor color start. EMPTY
+#define KS_CEC   54 //set cursor color end. EMPTY
+#define KS_TS    55 //set window title start (to status line). \e]2;
+#define KS_FS    56 //set window title end (from status line). `\e\`
+#define KS_CWP   57 //set window position in pixels. EMPTY
+#define KS_CGP   58 //get window position. EMPTY
+#define KS_CWS   59 //set window size in characters. EMPTY
+#define KS_CRV   60 //request version string. \e[>c
+#define KS_CXM   61 //enable/disable mouse reporting. \e[?1006;1000%?%p1%{1}%=%th%el%;
+#define KS_CSI   62 //bar cursor. Ss. EMPTY. Should be `\e[6 q`
+#define KS_CEI   63 //block cursor. EMPTY. Should be `\e[2 q`. Underline is `\e[4 q`
+#define KS_CSV   64 //scroll region vertical. EMPTY
+#define KS_OP    65 //original color pair. \e[39;49m
+#define KS_U7    66 //request cursor position. \e[6n
+#define KS_CBE   67 //enable bracketed paste mode. BE. \e[?2004h
+#define KS_CBD   68 //disable bracketed paste mode. BD. \e[?2004l
+#define KS_FD    69 //disable focus event tracking. EMPTY
+#define KS_FE    70 //enable focus event tracking. EMPTY
+#define KS_CF    71 //set terminal alternate font. EMPTY
+
+#define KS_LAST  KS_CF
 
 //the terminal capabilities are stored in this array
 //IMPORTANT: When making changes, note the following:
@@ -996,7 +978,7 @@ LIST_TY(Unt)
 #define POPUP_HANDLED_5 0x10    //used by update_popups()
 
 // Terminal hiliting decoration flags
-#define DECO_NORMAL       0
+#define DECO_NONE         0
 #define DECO_INVERSE      1
 #define DECO_BOLD         2
 #define DECO_ITALIC       4
@@ -1624,6 +1606,8 @@ typedef enum AutoEvent AutoEvent;
 //Values for index in highlight_attr[]. When making changes, also update HL_FLAGS below!
 //And update the default value of 'highlight': HIGHLIGHT_INIT in option.c
 
+
+#define HLF_NORM  1 //Normal
 #define HLF_EOB   2 //after the last line in the book
 #define HLF_AT    3 //@ characters at end of screen, characters that don't really exist in the text
 #define HLF_D     4 //directories in CTRL-D listing
@@ -6041,7 +6025,7 @@ EXTERN Arr(Unt) screenLinesUCG INIT(= NULL);   // decoded UTF-8 characters
 EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
 
 // Last known cursor position. Positioning the cursor is reduced by remembering the last position.
-// Mostly used by windgoto() and screen_char().
+// Mostly used by windgoto() and draw.c:screen_char().
 EXTERN int screen_cur_row INIT(= 0);
 EXTERN int screen_cur_col INIT(= 0);
 
@@ -6068,7 +6052,7 @@ EXTERN Arr(Byte) popupTransparencyG INIT(= NULL);
 //Flag set to TRUE when popup_mask needs to be updated.
 EXTERN int needRefreshPopupMaskG INIT(= TRUE);
 
-//Zindex in for screen_char(): if lower than the value in "popup_mask"
+//Zindex in for draw.c:screen_char(): if lower than the value in "popup_mask"
 //drawing the character is skipped.
 EXTERN int screenZindexG INIT(= 0);
 
@@ -9510,8 +9494,6 @@ EXTERN Byte e_use_get_not_set_for_reading_options[]
    INIT(= "E1564: Use :get, not :set, for reading option values");
 EXTERN Byte e_argument_must_not_be_negative[]
    INIT(= "E1565: Argument must not be negative");
-EXTERN Byte e_terminal_options_only_in_full_screen[]
-   INIT(= "E1566: Terminal options can only be changed in full screen mode");
 EXTERN Byte e_illegal_combination_of_flags_str[]
    INIT(= "E1567: Illegal combination of flags in the option %s");
 EXTERN Byte e_trying_to_set_option_to_wrong_type[]
