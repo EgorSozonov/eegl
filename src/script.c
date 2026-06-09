@@ -905,8 +905,9 @@ cmd_source(Byte *fname, Invocation* invo) {
       );
 
    // ":source" read commands
-   ei (scriptRunFile(fname, NULL) == FAIL)
+   ei (scriptRunFile(fname, NULL) == FAIL) {
       showErrFmtMsg(_(e_cant_open_file_str), fname);
+   } 
 }
 
 // ":source {fname}"
@@ -1023,8 +1024,8 @@ may_load_script(int sid, int *loaded) {
    if (si->sn_state == SN_STATE_NOT_LOADED) {
       *loaded = TRUE;
       if (scriptRunFile(si->sn_name, NULL) == FAIL) {
-          showErrFmtMsg(_(e_cant_open_file_str), si->sn_name);
-          return FAIL;
+         showErrFmtMsg(_(e_cant_open_file_str), si->sn_name);
+         return FAIL;
       }
    }
    return OK;

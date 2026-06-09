@@ -150,71 +150,70 @@ enum {
     NONE
 };
 
-// The hilite groups.
+// The hilite groups. Keep in sync with the HLF_* constants
 private char *(hiliteGroupStrings[]) = {
-   "Normal fg=regular7 bg=regular0", //0
+   "None fg=regular7 bg=regular0", //0
    "NonText deco=bold fg=regular4",
-   "NormalFloat link=Normal",
-   "AfterLastLine link=NonText",     // 2 HLF_EOB after the last line in the book
-   "InvisAtEndOfScreen link=Normal", // HLF_AT @ chars at end of screen, chars that don't really exist in text 
-   "Directories link=Normal",        //HLF_D directories in CTRL-D listing
+   "NormalFloat link=None",
+   "InvisAtEndOfScreen link=None", // HLF_AT chars at end of screen, chars that don't really exist in text 
+   "Directories link=None",        //HLF_D directories in CTRL-D listing
    "ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
-   "WarningMsg link=Normal",         // HLF_W       warning messages
+   "WarningMsg link=None",         // HLF_W       warning messages
    "IncrementalSearch deco=inverse", //HLF_I incremental search
-   "PrevSearch link=Normal",         //HLF_L  last search string
-   "PrevSearchUnderCursor link=Normal", // HLF_LC   last search string under cursor
-   "MoreMsg link=Normal",            // 10 HLF_M    "--More--" message
-   "ModeName deco=bold",             // HLF_CM    Mode (e.g., "-- INSERT --")
-   "CurrentLineNr link=Normal",      // HLF_CLN   current line number
-   "CurrentSign link=Normal",        // HLF_CLS   current line sign column
-   "CurrentFold link=Normal",        // HLF_CLF   current line fold
-   "YesNoQuestions link=Normal",     // HLF_R     return to continue message and yes/no questions
-   "StatusLine deco=inverse",        // HLF_S  status lines
+   "PrevSearch link=None",         //HLF_L  last search string
+   "PrevSearchUnderCursor link=None", //  HLF_LC   last search string under cursor
+   "MoreMsg link=None",            // 10 HLF_M    "--More--" message
+   "ModeName deco=bold",           // HLF_CM    Mode (e.g., "-- INSERT --")
+   "CurrentLineNr link=None",      // HLF_CLN   current line number
+   "CurrentSign link=None",        // HLF_CLS   current line sign column
+   "CurrentFold link=None",        // HLF_CLF   current line fold
+   "YesNoQuestions link=None",     // HLF_R     return to continue message and yes/no questions
+   "StatusLine deco=inverse",      // HLF_S  status lines
    "StatusLinesInactive deco=inverse", // HLF_SNC    status lines of not-current portals
-   "VertSplit deco=inverse",         // HLF_C    column to separate vertically split portals
-   "OutputOfAutocmd link=Normal",    // HLF_T     Titles for output from ":set all", ":autocmd" etc.
-   "VisualMode deco=bold",           // 20 HLF_V       Visual mode
-   "VisualModeAutoselecting link=Normal", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
-   "WildcardMenu link=Normal",       // HLF_WM    Wildmenu hilite
-   "FoldedLine link=Normal",         // HLF_FL      Folded line
+   "VertSplit deco=inverse",       // HLF_C    column to separate vertically split portals
+   "OutputOfAutocmd link=None",    // HLF_T     Titles for output from ":set all", ":autocmd" etc.
+   "VisualMode deco=bold",         // 20 HLF_V       Visual mode
+   "VisualModeAutoselecting link=None", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
+   "WildcardMenu link=None",       // HLF_WM    Wildmenu hilite
+   "FoldedLine link=None",         // HLF_FL      Folded line
    "FoldColumn bg=grey12 fg=regular6", // HLF_FC      Fold column
-   "DiffTextAdd fg=regular2",        // HLF_ADD  Added diff line
-   "DiffText fg=regular4",           // HLF_CHD  Changed diff line
-   "DiffChangedTextInChanged link=Normal", // HLF_TXD  Text Changed in changed diff line
-   "DiffAddedTextInChanged link=Normal", // HLF_TXA  Text Added in changed diff line
+   "DiffTextAdd fg=regular2",      // HLF_ADD  Added diff line
+   "DiffText fg=regular4",         // HLF_CHD  Changed diff line
+   "DiffChangedTextInChanged link=None", // HLF_TXD  Text Changed in changed diff line
+   "DiffAddedTextInChanged link=None", // HLF_TXA  Text Added in changed diff line
    // Deleted diff line
    "DiffDeleted deco=bold bg=bright6 fg=regular4", // HLF_DED
    "SignColumn bg=grey10 fg=regular6", // 30 HLF_SC Sign column
-   "Pmenu bg=regular4 liteBg=regular0", // HLF_PNI  popup menu normal item
+   "Pmenu bg=regular4 bg=regular0", // HLF_PNI  popup menu normal item
    "PmenuSelected bg=grey4",         // HLF_PSI  popup menu selected item
-   "PmenuMatchedText link=Normal",   // HLF_PMNI popup menu matched text in normal item
-   "PmenuMatchedInSelected link=Normal", // HLF_PMSI popup menu matched text in selected item
-   "PmenuNormalItem link=Normal",    // HLF_PNK  popup menu normal item "kind"
-   "PmenuSelectedItem link=Normal",  // HLF_PSK   popup menu selected item "kind"
-   "PmenuExtraText link=Normal",     // HLF_PNX   popup menu normal item "menu" (extra text)
-   "PmenuSelectedExtraText link=Normal", // HLF_PSX   popup menu selected item "menu" (extra text)
+   "PmenuMatchedText link=None",   // HLF_PMNI popup menu matched text in normal item
+   "PmenuMatchedInSelected link=None", // HLF_PMSI popup menu matched text in selected item
+   "PmenuNormalItem link=None",    // HLF_PNK  popup menu normal item "kind"
+   "PmenuSelectedItem link=None",  // HLF_PSK   popup menu selected item "kind"
+   "PmenuExtraText link=None",     // HLF_PNX   popup menu normal item "menu" (extra text)
+   "PmenuSelectedExtraText link=None", // HLF_PSX   popup menu selected item "menu" (extra text)
    "PmenuScrollbar bg=grey12",       // HLF_PSB  popup menu scrollbar
    "PmenuScrollBarThumb  bg=regular7", // 40 HLF_PST  popup menu scrollbar thumb
    "Tabpanel deco=underline bg=grey4", // HLF_TPL   tabpanel
-   "TabpanelSelected link=Normal",   // HLF_TPLS  tabpanel selected
-   "TabpanelFill link=Normal",       // HLF_TPLF  tabpanel filler
+   "TabpanelSelected link=None",   // HLF_TPLS  tabpanel selected
+   "TabpanelFill link=None",       // HLF_TPLF  tabpanel filler
    "CursorColumn bg=grey18",         // HLF_CUC  'cursorcolumn'
    "CursorLine  bg=444",             // HLF_CUL  'cursorline'
-   "ColorColumn link=Normal",        // HLF_MC   'colorcolumn'
+   "ColorColumn link=None",        // HLF_MC   'colorcolumn'
    "LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
                                                     //selected
-   "TerminalStatusLine link=Normal", // 50 HLF_ST    status lines of terminal portals
-   "TerminalNoncurrentStatusLine link=Normal", //HLF_STNC  status lines of not-current terminal 
+   "TerminalStatusLine link=None", // 50 HLF_ST    status lines of terminal portals
+   "TerminalNoncurrentStatusLine link=None", //HLF_STNC  status lines of not-current terminal 
                                                //portals
    "TerminalRed fg=regular1",        // HLF_TERMR  status lines of not-current terminal portals
    "TerminalGreen fg=bright2",       // HLF_TERMG  status lines of not-current terminal portals
    "TerminalBlue fg=bright4",        // HLF_TERMB  status lines of not-current terminal portals
-   "MessageArea link=Normal",        // HLF_MSG   message area
-   "MetaSpecialKeys link=Normal",    // HLF_8 Meta & special keys listed with ":map", text that is 
+   "MessageArea link=None",        // HLF_MSG   message area
+   "MetaSpecialKeys link=None",    // HLF_8 Meta & special keys listed with ":map", text that is 
                                      // displayed different
    "LineNr fg=regular3",             // HLF_N   line number for ":number" and ":#" commands
-   "LineNrAbove link=Normal",        // HLF_LNA  LineNrAbove
-   "LineNrBelow link=Normal",        // HLF_LNB  LineNrBelow
+   "LineNrAbove link=None",        // HLF_LNA  LineNrAbove
+   "LineNrBelow link=None",        // HLF_LNB  LineNrBelow
    "SpellBad under=regular2 deco=undercurl", // HLF_SPB  SpellBad
    "SpellCap under=regular4 deco=undercurl", // HLF_SPC   SpellCap
    "SpellRare under=regular5 deco=undercurl", // HLF_SPR  SpellRare
@@ -4783,8 +4782,11 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
    prev_toplvl_grp = curPor->ownSyntax->b_syn_topgrp;
    curPor->ownSyntax->b_syn_topgrp = sgl_id;
    if (source ? scriptRunFile(invo->arg, NULL) == FAIL
-            : source_runtime(invo->arg, DIP_ALL) == FAIL)
+            : source_runtime(invo->arg, DIP_ALL) == FAIL
+   ) {
+      _bp(true);
       showErrFmtMsg(_(e_cant_open_file_str), invo->arg);
+   } 
    curPor->ownSyntax->b_syn_topgrp = prev_toplvl_grp;
    current_syn_inc_tag = prev_syn_inc_tag;
 }

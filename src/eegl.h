@@ -987,7 +987,6 @@ LIST_TY(Unt)
 #define DECO_NOCOMBINE   32 
 
 
-
 // special attribute addition: Put message in history
 #define MSG_HIST     64
 
@@ -1607,67 +1606,68 @@ typedef enum AutoEvent AutoEvent;
 //And update the default value of 'highlight': HIGHLIGHT_INIT in option.c
 
 
-#define HLF_NORM  1 //Normal
-#define HLF_EOB   2 //after the last line in the book
-#define HLF_AT    3 //@ characters at end of screen, characters that don't really exist in the text
-#define HLF_D     4 //directories in CTRL-D listing
-#define HLF_E     5 //error messages
-#define HLF_W     6 //warning messages
-#define HLF_I     7 //incremental search
-#define HLF_L     8 //last search string
-#define HLF_LC    9 //last search string under cursor
-#define HLF_M    10 //"--More--" message
-#define HLF_CM   11 //Mode (e.g., "-- INSERT --")
-#define HLF_CLN  12 //current line number
-#define HLF_CLS  13 //current line sign column
-#define HLF_CLF  14 //current line fold
-#define HLF_R    15 //return to continue message and yes/no questions
-#define HLF_S    16 //status lines
-#define HLF_SNC  17 //status lines of not-current portals
-#define HLF_C    18 //column to separate vertically split windows
-#define HLF_T    19 //Titles for output from ":set all", ":autocmd" etc.
-#define HLF_V    20 //Visual mode
-#define HLF_VNC  21 //Visual mode, autoselecting and not clipboard owner
-#define HLF_WM   22 //Wildmenu highlight
-#define HLF_FL   23 //Folded line
-#define HLF_FC   24 //Fold column
-#define HLF_ADD  25 //Added diff line
-#define HLF_CHD  26 //Changed diff line
-#define HLF_TXD  27 //Text Changed in changed diff line
-#define HLF_TXA  28 //Text Added in changed diff line
-#define HLF_DED  29 //Deleted diff line
-#define HLF_SC   30 //Sign column
-#define HLF_PNI  31 //popup menu normal item
-#define HLF_PSI  32 //popup menu selected item
-#define HLF_PMNI 33 //popup menu matched text in normal item
-#define HLF_PMSI 34 //popup menu matched text in selected item
-#define HLF_PNK  35 //popup menu normal item "kind"
-#define HLF_PSK  36 //popup menu selected item "kind"
-#define HLF_PNX  37 //popup menu normal item "menu" (extra text)
-#define HLF_PSX  38 //popup menu selected item "menu" (extra text)
-#define HLF_PSB  39 //popup menu scrollbar
-#define HLF_PST  40 //popup menu scrollbar thumb
-#define HLF_TPL  41 //tabpanel
-#define HLF_TPLS 42 //tabpanel selected
-#define HLF_TPLF 43 //tabpanel filler
-#define HLF_CUC  44 //'cursorcolumn'
-#define HLF_CUL  45 //'cursorline'
-#define HLF_MC   46 //'colorcolumn'
-#define HLF_QFL  47 //location portal line currently selected
-#define HLF_ST   48 //status lines of terminal windows
-#define HLF_STNC 49 //status lines of not-current terminal portals
-#define HLF_TERMR 50 //status lines of not-current terminal portals
-#define HLF_TERMG 51 //status lines of not-current terminal portals
-#define HLF_TERMB 52 //status lines of not-current terminal portals
-#define HLF_MSG  53 //message area
-#define HLF_8    54 //Meta & special keys listed with ":map", text that is displayed different
-#define HLF_N    55 //line number for ":number" and ":#" commands
-#define HLF_LNA  56 //LineNrAbove
-#define HLF_LNB  57 //LineNrBelow
-#define HLF_SPB  58 //SpellBad
-#define HLF_SPC  59 //SpellCap
-#define HLF_SPR  60 //SpellRare
-#define HLF_SPL  61 //SpellLocal
+#define HLF_NONE     0 //No decorations
+#define HLF_NONTEXT  1 //Non-text
+#define HLF_FLOAT    2 //Normal float
+#define HLF_AT       3   // characters at end of screen, characters that don't really exist in the text
+#define HLF_D        4 //directories in CTRL-D listing
+#define HLF_E        5 //error messages
+#define HLF_W        6 //warning messages
+#define HLF_I        7 //incremental search
+#define HLF_L        8 //last search string
+#define HLF_LC       9 //last search string under cursor
+#define HLF_M       10 //"--More--" message
+#define HLF_CM      11 //Mode (e.g., "-- INSERT --")
+#define HLF_CLN     12 //current line number
+#define HLF_CLS     13 //current line sign column
+#define HLF_CLF     14 //current line fold
+#define HLF_R       15 //return to continue message and yes/no questions
+#define HLF_S       16 //status lines
+#define HLF_SNC     17 //status lines of not-current portals
+#define HLF_C       18 //column to separate vertically split windows
+#define HLF_T       19 //Titles for output from ":set all", ":autocmd" etc.
+#define HLF_V       20 //Visual mode
+#define HLF_VNC     21 //Visual mode, autoselecting and not clipboard owner
+#define HLF_WM      22 //Wildmenu highlight
+#define HLF_FL      23 //Folded line
+#define HLF_FC      24 //Fold column
+#define HLF_ADD     25 //Added diff line
+#define HLF_CHD     26 //Changed diff line
+#define HLF_TXD     27 //Text Changed in changed diff line
+#define HLF_TXA     28 //Text Added in changed diff line
+#define HLF_DED     29 //Deleted diff line
+#define HLF_SC      30 //Sign column
+#define HLF_PNI     31 //popup menu normal item
+#define HLF_PSI     32 //popup menu selected item
+#define HLF_PMNI    33 //popup menu matched text in normal item
+#define HLF_PMSI    34 //popup menu matched text in selected item
+#define HLF_PNK     35 //popup menu normal item "kind"
+#define HLF_PSK     36 //popup menu selected item "kind"
+#define HLF_PNX     37 //popup menu normal item "menu" (extra text)
+#define HLF_PSX     38 //popup menu selected item "menu" (extra text)
+#define HLF_PSB     39 //popup menu scrollbar
+#define HLF_PST     40 //popup menu scrollbar thumb
+#define HLF_TPL     41 //tabpanel
+#define HLF_TPLS    42 //tabpanel selected
+#define HLF_TPLF    43 //tabpanel filler
+#define HLF_CUC     44 //'cursorcolumn'
+#define HLF_CUL     45 //'cursorline'
+#define HLF_MC      46 //'colorcolumn'
+#define HLF_QFL     47 //location portal line currently selected
+#define HLF_ST      48 //status lines of terminal windows
+#define HLF_STNC    49 //status lines of not-current terminal portals
+#define HLF_TERMR   50 //status lines of not-current terminal portals
+#define HLF_TERMG   51 //status lines of not-current terminal portals
+#define HLF_TERMB   52 //status lines of not-current terminal portals
+#define HLF_MSG     53 //message area
+#define HLF_8       54 //Meta & special keys listed with ":map", text that is displayed different
+#define HLF_N       55 //line number for ":number" and ":#" commands
+#define HLF_LNA     56 //LineNrAbove
+#define HLF_LNB     57 //LineNrBelow
+#define HLF_SPB     58 //SpellBad
+#define HLF_SPC     59 //SpellCap
+#define HLF_SPR     60 //SpellRare
+#define HLF_SPL     61 //SpellLocal
 
 // Values for behaviour in spell_move_to
 typedef enum{
@@ -2249,14 +2249,9 @@ EXTERN long   p_ut;      //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
 EXTERN long p_verbose; //@verbose
-
-#ifdef IN_OPTION_C
-CS p_vfile = S""; // used before options are initialized
-#else
-extern CS p_vfile;   // @verbosefile
-#endif
-
+EXTERN CS p_vfile;   // @verbosefile
 EXTERN Unt p_wop;   //@wildoptions
+
 //Sync with option.c:p_wop_values
 #define WILDOPT_EXACT   1
 #define WILDOPT_FUZZY   2

@@ -67,7 +67,7 @@ getPortcolorDeco(Portal* po) {
       else
          return getFullDecoration(HLF_PNI);    // Pmenu
    } else {
-      return getFullDecoration(HLF_NORM);
+      return getFullDecoration(HLF_NONE);
    }
 }
 
@@ -117,6 +117,7 @@ drawVoidAtPortalEnd(
    int n = 0;
    Decoration deco = toScreenDeco(hl);
    
+   _bp(hl == 2);
    Decoration portalDeco = getPortcolorDeco(po);
 
    deco = combineDecorations(portalDeco, deco);
@@ -135,12 +136,13 @@ drawVoidAtPortalEnd(
       );
    }
 
+   _bp(hl == 2);
    fillRowsWithTwoChars(
       po->portalRow + row, po->portalRow + endrow, po->portalCol + n, (int)P_ENDCOL(po), c1, c2, 
       deco.flags
    );
 
-   set_empty_rows(po, row);
+   normSetEmptyRowCount(po, row);
 }
 
 //Return if the composing characters at "off_from" and "off_to" differ.
@@ -820,9 +822,9 @@ private void
 startDrawingHilite(Short hiId) {
    if (!fullScreenG)
       return;
-   _bp(true);
    activeDecoS = getFullDecoration(hiId);
    Decoration fullDeco = getFullDecoration(activeDecoS.hiId);
+   _bp(activeDecoS.flags != 0);
       
    if ((activeDecoS.flags & DECO_BOLD) != 0 && *termCodeS[KS_MD] != ZERO)
       out_str(termCodeS[KS_MD]);
@@ -923,8 +925,6 @@ singleChar(Unt off, int row, int col) {
       screenColsG[off] = -1;
       return;
    }
-   
-   _bp(true);
 
    // Stop hiliting first, so it's easier to move the cursor.
    Short hiId;
@@ -1014,14 +1014,13 @@ fillRowsWithTwoChars(
    Unt end_row,
    Unt start_col,
    Unt end_col,
-   int c1,
-   int c2,
+   Unt c1,
+   Unt c2,
    VTermDeco decoFlags
 ){
    Unt col;
    int off;
    int end_off;
-   int did_delete;
    int c;
    int force_next = FALSE;
 
@@ -1038,9 +1037,9 @@ fillRowsWithTwoChars(
          drawTextLen(S" ", 1, row, start_col - 1, 0);
       if ((int)end_col < screenLinesColsG && mb_fix_col(end_col, row) != end_col)
          drawTextLen(S" ", 1, row, end_col, 0);
-      // Try to use delete-line termcap code, when no decorations or in a "normal" terminal, where 
-      // a bold/italic space is just a space.
-      did_delete = FALSE;
+      //Try to use delete-line termcap code, when no decorations or in a "normal" terminal, where 
+      //a bold/italic space is just a space.
+      Boole did_delete = false;
       if (c2 == ' '
          && end_col == visibleColsG
          && can_clear(termCodeS[KS_CE])
@@ -1072,7 +1071,7 @@ fillRowsWithTwoChars(
                ++off;
             }
          }
-         did_delete = TRUE;      // the chars are cleared now
+         did_delete = true;      // the chars are cleared now
       }
 
       off = lineOffsetG[row] + start_col;
@@ -1804,12 +1803,12 @@ insertLinesIntoPortal(
    //If there is a next portal or a status line, we first try to delete the lines at the bottom 
    //to avoid messing what is after the portal. If this fails and there are following portals, 
    //don't do anything to avoid messing up those portals, better just redraw.
-   int did_delete = FALSE;
+   Boole did_delete = false;
    if (po->next || po->statusHeight) {
       if (screen_del_lines(0, po->portalRow + po->height - line_count,
                  line_count, (int)visibleRowsG, FALSE, 0, NULL) == OK
       ) {
-         did_delete = TRUE;
+         did_delete = true;
       } ei (po->next) {
          return FAIL;
       } 
@@ -1987,21 +1986,20 @@ markFollowingPortalsForRedraw(Portal* po) {
 //return FAIL for failure, OK for success.
 int
 screen_ins_lines(
-   int      off,
-   int      row,
-   int      line_count,
-   int      end,
-   int      clearHiId,
-   Portal   *po       // NULL or portal to use width from
+   int off,
+   int row,
+   int line_count,
+   int end,
+   int clearHiId,
+   Portal* po       // NULL or portal to use width from
 ){
-   int      i;
-   int      j;
+   int i;
+   int j;
    unsigned   temp;
-   int      cursor_row;
-   int      cursor_col = 0;
-   int      type;
-   int      result_empty;
-   int      can_ce = can_clear(termCodeS[KS_CE]);
+   int cursor_row;
+   int cursor_col = 0;
+   int type;
+   int can_ce = can_clear(termCodeS[KS_CE]);
 
    //FAIL if
    //- there is no valid screen
@@ -2038,7 +2036,7 @@ screen_ins_lines(
    //
    //Careful: In a hpterm scroll reverse doesn't work as expected, it moves
    //the scrollbar for the portal. It does have insert line, use that if it exists.
-   result_empty = (row + line_count >= end);
+   int result_empty = (row + line_count >= end);
    if (po && po->width != topframeG->width && *termCodeS[KS_CSV] == ZERO) {
       //Avoid that lines are first cleared here and then redrawn, which
       //results in many characters updated twice. This happens with CTRL-F
@@ -2101,7 +2099,7 @@ screen_ins_lines(
          while ((j -= line_count) >= row)
             linecopy(j + line_count, j, po);
          j += line_count;
-         if (can_clear((CS)" "))
+         if (can_clear(S" "))
             lineclear(lineOffsetG[j] + po->portalCol, po->width, clearHiId);
          else
             lineinvalid(lineOffsetG[j] + po->portalCol, po->width);
@@ -2115,7 +2113,7 @@ screen_ins_lines(
          }
          lineOffsetG[j + line_count] = temp;
          lineWrapsG[j + line_count] = FALSE;
-         if (can_clear((CS)" "))
+         if (can_clear(S" "))
             lineclear(temp, (int)visibleColsG, clearHiId);
          else
             lineinvalid(temp, (int)visibleColsG);
@@ -4669,7 +4667,9 @@ updatePortal(Portal* po) {
          // popup line that doesn't fit is left as-is
          po->bottomLine = lnum;
       } else {
+         _bp(true);
          drawVoidAtPortalEnd(po, fillCharsG.lastline, ' ', true, srow, po->height, HLF_AT);
+         _bp(true);
          po->bottomLine = lnum;
       }
    } else {
@@ -4685,7 +4685,9 @@ updatePortal(Portal* po) {
                i = fillCharsG.diff;
             if (row + j > po->height)
                j = po->height - row;
+            _bp(true);
             drawVoidAtPortalEnd(po, i, i, TRUE, row, row + (int)j, HLF_DED);
+            _bp(true);
             row += j;
           }
       }
@@ -4694,9 +4696,9 @@ updatePortal(Portal* po) {
       // Make sure the rest of the screen is blank.
       // write the "eob" character from @fillchars to rows that aren't part of the file.
       if (PORTAL_IS_POPUP(po))
-          drawVoidAtPortalEnd(po, ' ', ' ', FALSE, row, po->height, HLF_AT);
+         drawVoidAtPortalEnd(po, ' ', ' ', FALSE, row, po->height, HLF_AT);
       else
-          drawVoidAtPortalEnd(po, fillCharsG.eob, ' ', FALSE, row, po->height, HLF_EOB);
+         drawVoidAtPortalEnd(po, fillCharsG.eob, ' ', FALSE, row, po->height, HLF_NONE);
   }
 
 #ifdef SYN_TIME_LIMIT
@@ -6078,7 +6080,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
          m->dont_use_showbreak = TRUE;
       }
 
-      // When the portal is too narrow draw all "@" lines.
+      //When the portal is too narrow, draw all "@" lines.
       if (m->draw_state != WL_LINE && m->filler_todo <= 0) {
          drawVoidAtPortalEnd(port, '@', ' ', TRUE, m->row, port->height, HLF_AT);
          drawVerticalSeparator(port, m->row);

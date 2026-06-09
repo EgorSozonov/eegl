@@ -103,7 +103,7 @@ private TermRequest cursorStyleRequestS = TERMREQUEST_INIT;
 // Request window's position report:
 private TermRequest winPositionRequestS = TERMREQUEST_INIT;
 
-private TermRequest *all_termrequests[] = {
+private TermRequest* termRequestS[] = {
    &crv_status,
    &u7_status,
    &xcc_status,
@@ -183,14 +183,15 @@ private int
 isEeglXterm(CS name) {
    if (!name)
       return FALSE;
-   return ((STRNICMP(name, "xterm", 5) == 0
-                 && STRNICMP(name, "xterm-kitty", 11) != 0)
+   return (
+        (STRNICMP(name, "xterm", 5) == 0 && STRNICMP(name, "xterm-kitty", 11) != 0)
       || STRNICMP(name, "nxterm", 6) == 0
       || STRNICMP(name, "kterm", 5) == 0
       || STRNICMP(name, "mlterm", 6) == 0
       || STRNICMP(name, "rxvt", 4) == 0
       || STRNICMP(name, "screen.xterm", 12) == 0
-      || STRCMP(name, "builtin_xterm") == 0);
+      || STRCMP(name, "builtin_xterm") == 0
+   );
 }
 
 //}}}
@@ -439,8 +440,8 @@ set_termname(CS termName) {
    }
 
    term_is_xterm = isEeglXterm(termName);
-   // Reset terminal properties that are set based on the termresponse, which
-   // will be sent out soon.
+   //Reset terminal properties that are set based on the termresponse, which
+   //will be sent out soon.
    init_term_props(FALSE);
 
    // If the first number in t_XM is 1006 then the terminal will support SGR mouse reporting.
@@ -811,13 +812,13 @@ private int
 termrequest_any_pending(void) {
    Tyme now = time(NULL);
 
-   for (Unt i = 0; i < ARRAY_LENGTH(all_termrequests); ++i) {
-      if (all_termrequests[i]->tr_progress == STATUS_SENT) {
-         if (all_termrequests[i]->tr_start > 0 && now > 0
-               && all_termrequests[i]->tr_start + 2 < now
+   for (Unt i = 0; i < ARRAY_LENGTH(termRequestS); ++i) {
+      if (termRequestS[i]->tr_progress == STATUS_SENT) {
+         if (termRequestS[i]->tr_start > 0 && now > 0
+               && termRequestS[i]->tr_start + 2 < now
          )
             // Sent the request more than 2 seconds ago and didn't get a response, assume it failed.
-            all_termrequests[i]->tr_progress = STATUS_FAIL;
+            termRequestS[i]->tr_progress = STATUS_FAIL;
          else
             return TRUE;
       }
@@ -855,8 +856,8 @@ term_get_winpos(int* x, int* y, Long timeout) {
       }
       ui_delay(10L, FALSE);
    }
-   // Do not reset "did_request_winpos", if we timed out the response might
-   // still come later and we must consume it.
+   //Do not reset "did_request_winpos", if we timed out the response might
+   //still come later and we must consume it.
 
    winpos_x = prev_winpos_x;
    winpos_y = prev_winpos_y;
@@ -873,15 +874,6 @@ term_get_winpos(int* x, int* y, Long timeout) {
 void
 term_set_winsize(int height, int width) {
    OUT_STR(TGOTO(termCodeS[KS_CWS], width, height));
-}
-
-void
-term_font(int n) {
-   if (termCodeS[KS_CF] != Em) {
-      Byte buffer[20];
-      SPRINTF(buffer, termCodeS[KS_CF], 9 + n);
-      OUT_STR(buffer);
-   }
 }
 
 void
@@ -1556,7 +1548,7 @@ term_cursor_mode(int forced) {
    if (!fullScreenG || termCodeS[KS_CEI] == Em) {
       if (forced && initial_cursor_shape > 0)
          // Restore to initial values.
-         term_cursor_shape(initial_cursor_shape, initial_cursor_blink);
+         termSetCursorShape(initial_cursor_shape, initial_cursor_blink);
       return;
    }
 
@@ -1591,7 +1583,7 @@ blink_state_is_inverted(void) {
 
 //"shape": 1 = block, 2 = underline, 3 = vertical bar
 void
-term_cursor_shape(int shape, int blink) {
+termSetCursorShape(int shape, int blink) {
    if (termCodeS[KS_CSH] != Em) {
       OUT_STR(TGOTO(termCodeS[KS_CSH], 0, shape * 2 - blink));
       out_flush();
@@ -2951,28 +2943,6 @@ check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
    LOG_TR1("normal character");
 
    return 0;             // no match found
-}
-
-//Get the text foreground color, if known.
-void
-term_get_fg_color(Byte* r, Byte* g, Byte* b) {
-   if (rfg_status.tr_progress != STATUS_GOT)
-      return;
-
-   *r = fg_r;
-   *g = fg_g;
-   *b = fg_b;
-}
-
-//Get the text background color, if known.
-void
-term_get_bg_color(Byte* r, Byte* g, Byte* b) {
-   if (backgroundColorRequestS.tr_progress != STATUS_GOT)
-      return;
-
-   *r = bg_r;
-   *g = bg_g;
-   *b = bg_b;
 }
 
 //Try to get the code for "t_kb" from the stty setting

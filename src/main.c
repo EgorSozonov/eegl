@@ -672,6 +672,11 @@ init1(OUT MainParams* params) {
    init_locale();
    TIME_MSG("locale set");
    
+   // Set the default values for the options.
+   // First find out the home directory, needed to expand "~" in options.
+   init_homedir();      // find real value of $HOME
+   TIME_MSG("inits 0");
+
    swapDirG = fiInitSwapDir((CS)params->argv[0]);
 
    // Do a first scan of the arguments in "argv[]":
@@ -699,11 +704,6 @@ init1(OUT MainParams* params) {
 
    alist_init(&argListG);   // Init the argument list to empty.
    argListG.id = 0;
-
-   // Set the default values for the options.
-   // First find out the home directory, needed to expand "~" in options.
-   init_homedir();      // find real value of $HOME
-   TIME_MSG("inits 0");
 
    // set v:lang and v:ctype
    set_lang_var();

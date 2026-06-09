@@ -7935,7 +7935,7 @@ may_output_cursor_props(void) {
          // this will restore the initial cursor style, if possible
          ui_cursor_shape_forced(TRUE);
       else
-         term_cursor_shape(desired_cursor_shape, desired_cursor_blink);
+         termSetCursorShape(desired_cursor_shape, desired_cursor_blink);
    }
 }
 

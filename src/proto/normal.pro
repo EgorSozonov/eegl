@@ -89,7 +89,7 @@ void adjust_skipcol(void);
 void check_topfill(Portal *po, int down);
 void scrolldown_clamp(void);
 void scrollup_clamp(void);
-void set_empty_rows(Portal *po, int used);
+void normSetEmptyRowCount(Portal *po, int used);
 void scroll_cursor_bot(int min_scroll, int set_topbot);
 void scroll_cursor_halfway(int atend, int prefer_above);
 void cursor_correct(void);

@@ -7016,7 +7016,7 @@ comp_botline(Portal* po) {
    po->bottomLine = lnum;
    po->cacheState |= VALID_BOTLINE|VALID_BOTLINE_AP;
 
-   set_empty_rows(po, done);
+   normSetEmptyRowCount(po, done);
 }
 
 // Redraw when cursorLineRow changes and 'relativenumber' or 'cursorline' is set.
@@ -8683,7 +8683,7 @@ scroll_cursor_top(int min_scroll, int always) {
 // Set emptyRowCount and fillerRowCount for portal "po", having used up "used"
 // screen lines for text lines.
 void
-set_empty_rows(Portal* po, int used) {
+normSetEmptyRowCount(Portal* po, int used) {
    po->fillerRowCount = 0;
    if (used == 0)
       po->emptyRowCount = 0;   // single line that doesn't fit
@@ -8752,7 +8752,7 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
          used += loff.height;
       }
 
-      set_empty_rows(curPor, used);
+      normSetEmptyRowCount(curPor, used);
       curPor->cacheState |= VALID_BOTLINE|VALID_BOTLINE_AP;
       if (curPor->topLine != old_topline
          || curPor->topFill != old_topfill

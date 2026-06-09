@@ -8156,8 +8156,6 @@ resolveSymlink(OUT Text* result, Unt cap) {
 //Make swap file name out of the file name. Return pointer to allocated memory or NULL.
 CS
 fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
-   _bp(true);
-
    Byte fnameBuf[MAXPATHL];
    memcpy(OUT fnameBuf, swapDirG.c, swapDirG.len);
    Unt variableLen = STRLEN(fname);

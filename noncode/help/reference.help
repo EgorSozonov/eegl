@@ -4146,7 +4146,7 @@ When the @verbosefile option is set, then the verbose messages are not displayed
 
 @@verbosefile            Global. String. Default = ""
    
-When not empty all messages are written in a file with this name.
+When not empty all messages are written into the file with this name.
 When the file exists messages are appended.
 Writing to the file ends when Eegl exits or when @verbosefile is made
 empty.  Writes are buffered, thus may not show up for some time.

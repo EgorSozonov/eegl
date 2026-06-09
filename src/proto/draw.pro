@@ -14,7 +14,7 @@ void end_search_hl(void);
 void drawStopHilite(void);
 void reset_cterm_colors(void);
 void screen_draw_rectangle(int row, int col, int height, int width, Boole invert);
-void fillRowsWithTwoChars(Unt start_row, Unt end_row, Unt start_col, Unt end_col, int c1, int c2, Byte decoFlags);
+void fillRowsWithTwoChars(Unt start_row, Unt end_row, Unt start_col, Unt end_col, Unt c1, Unt c2, VTermDeco decoFlags);
 void check_for_delay(int check_msg_scroll);
 int screen_valid(int doclear);
 void screenalloc(int doclear);
