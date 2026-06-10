@@ -400,6 +400,7 @@ main(int argc, char** argv) {
       printf((char*)_("%d files to edit\n"), GARGCOUNT);
 
    initHilite(true); // set the default hilite groups
+   drawInit();
    if (params.want_full_screen && !silentModeG) {
       //set terminal name and get terminal capabilities (will set fullScreenG)
       termInitTerminfo(params.term);

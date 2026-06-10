@@ -7,6 +7,9 @@
 
 //{{{low level
 
+private Arr(Decoration) screenDecoS = null;
+private Arr(ColNr) screenColS = null;
+private CS lineWrapS = null;   // line wraps to next line
 private int screenClearedS = FALSE;   // screen has been cleared, yes/no/maybe
 private Boole avoidLineInsertionS = false; // don't insert lines
 private int   rulerColS;      // column for ruler
@@ -23,13 +26,13 @@ private int redrawingForCallbackS INIT(= 0);
 //screenLinesG[off]  Contains a copy of the whole screen, as it is currently
 //   displayed (excluding text written by external commands).
 //   Dimensions of screenLinesG = (visibleRowsG + 1) * visibleColumnsG
-//screenDecosG[off]  Contains the associated (drawn) decorations.
-//screenColsG[off]   Contains the virtual columns in the line. -1 means not
+//screenDecoS[off]  Contains the associated (drawn) decorations.
+//screenColS[off]   Contains the virtual columns in the line. -1 means not
 //                   available or before buffer text.
 //
-//lineOffsetG[row]   Contains the offset into screenLinesG*[], screenDecosG[]
-//                   and screenColsG[] for each line.
-//lineWrapsG[row]    Flag for each line whether it wraps to the next line.
+//lineOffsetG[row]   Contains the offset into screenLinesG*[], screenDecoS[]
+//                   and screenColS[] for each line.
+//lineWrapS[row]    Flag for each line whether it wraps to the next line.
 //
 //Multi-byte characters are converted to Unicode and stored in screenLinesUCG[]. 
 //screenLinesG[] contains the first byte only. For an ASCII character without composing chars 
@@ -44,7 +47,8 @@ private int redrawingForCallbackS INIT(= 0);
 private CS currScreenLineS = null;
 
 // The decorations that are actually active for writing to the screen.
-private Decoration activeDecoS = EMPTY_DECO;
+private Decoration activeDecoS;
+private Decoration defaultDecoS;
 
 private int screenclear2(int doclear);
 private void lineinvalid(unsigned off, int width);
@@ -57,6 +61,12 @@ private void singleChar(Unt off, int row, int col);
 
 // Ugly global: overrule decoration used by singleChar()
 private VTermDeco screen_charDeco = DECO_NONE;
+
+void
+drawInit() {
+   defaultDecoS = getFullDecoration(0);
+   activeDecoS = defaultDecoS;
+}
 
 //If "po" is a popup portal, then get the "Pmenu" hilite decoration.
 Decoration
@@ -167,7 +177,7 @@ private int
 char_needs_redraw(int off_from, int off_to, int cols) {
    if (cols > 0
           && ((screenLinesG[off_from] != screenLinesG[off_to]
-             || screenDecosG[off_from].flags != screenDecosG[off_to].flags)
+             || screenDecoS[off_from].flags != screenDecoS[off_to].flags)
          || (screenLinesUCG[off_from] != screenLinesUCG[off_to]
                || (screenLinesUCG[off_from] != 0 && comp_char_differs(off_from, off_to))
                || (mb_off2cells(off_from, off_from + cols) > 1 
@@ -233,9 +243,9 @@ fillchar_vsep(OUT Decoration* deco) {
 //   When TRUE and "clear_width" > 0, clear columns 0 to "endcol"
 //   When FALSE and "clear_width" > 0, clear columns "endcol" to "clear_width"
 //SLF_INC_VCOL:
-//   When FALSE, use "last_vcol" for screenColsG[] of the columns to clear.
+//   When FALSE, use "last_vcol" for screenColS[] of the columns to clear.
 //   When TRUE, use an increasing sequence starting from "last_vcol + 1" for
-//   screenColsG[] of the columns to clear.
+//   screenColS[] of the columns to clear.
 void
 screen_line(
    int row,
@@ -254,7 +264,6 @@ screen_line(
    int redraw_this;      // bool: does character need redraw?
    int redraw_next;   // redraw_this for next character
    int clear_next = FALSE;
-   int charCells;      // 1: normal char 2: occupies two display cells
 
    // Check for illegal row and col, just in case.
    if (row >= visibleRowsG)
@@ -286,31 +295,19 @@ screen_line(
    redraw_next = char_needs_redraw(off_from, off_to, endcol - col);
 
    while (col < endcol) {
-      if ((col + 1 < endcol))
-         charCells = mb_off2cells(off_from, max_off_from);
-      else
-         charCells = 1;
-
       redraw_this = redraw_next;
-      redraw_next = force 
-         || char_needs_redraw(off_from + charCells, off_to + charCells, endcol - col - charCells);
+      redraw_next = force || char_needs_redraw(off_from + 1, off_to + 1, endcol - col - 1);
 
-     // Do not redraw if under the popup menu.
-     if (redraw_this && skip_for_popup(row, col + coloff))
+      // Do not redraw if under the popup menu.
+      if (redraw_this && skip_for_popup(row, col + coloff))
          redraw_this = FALSE;
 
       if (redraw_this) {
-         // When writing a single-width character over a double-width character and at the end of 
-         // the redrawn text, need to clear out the right half of the old character.
-         // Also required when writing the right half of a double-width
-         // char over the left half of an existing one.
-         if (col + charCells == endcol
-             && ((charCells == 1
-                && mb_off2cells(off_to, max_off_to) > 1)
-               || (charCells == 2
-                   && mb_off2cells(off_to, max_off_to) == 1
-                   && mb_off2cells(off_to + 1, max_off_to) > 1))
-         ) {
+         //When writing a single-width character over a double-width character and at the end of 
+         //the redrawn text, need to clear out the right half of the old character.
+         //Also required when writing the right half of a double-width
+         //char over the left half of an existing one.
+         if (col + 1 == endcol && (mb_off2cells(off_to, max_off_to) > 1)) {
             clear_next = TRUE;
          } 
 
@@ -320,33 +317,14 @@ screen_line(
             for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i)
                screenLinesCG[i][off_to] = screenLinesCG[i][off_from];
          }
-         
-         if (charCells == 2)
-            screenLinesG[off_to + 1] = screenLinesG[off_from + 1];
-
-         //The bold trick makes a single column of pixels appear in the next character. When a 
-         //bold character is removed, the next character should be redrawn too. This happens 
-         //for some xterms.
-         if ( term_is_xterm) {
-            char deco = getDecoFlags(screenDecosG[off_to].hiId);
-            if ((deco & DECO_BOLD) != 0)
-               redraw_next = TRUE;
-         }
-         screenDecosG[off_to] = screenDecosG[off_from];
-
-         // For simplicity set the decos of 2nd half of a double-wide character same as first half
-         if (charCells == 2)
-            screenDecosG[off_to + 1] = screenDecosG[off_from];
+         screenDecoS[off_to] = screenDecoS[off_from];
          singleChar(off_to, row, col + coloff);
       }
 
-      screenColsG[off_to] = screenColsG[off_from];
-      if (charCells == 2)
-         screenColsG[off_to + 1] = screenColsG[off_from + 1];
-
-      off_to += charCells;
-      off_from += charCells;
-      col += charCells;
+      screenColS[off_to] = screenColS[off_from];
+      off_to++;
+      off_from++;
+      col++;
    }
 
    if (clear_next && !skip_for_popup(row, col + coloff)) {
@@ -362,37 +340,36 @@ screen_line(
       // blank out the rest of the line
       while (col < clear_width 
             && screenLinesG[off_to] == ' '
-            && screenDecosG[off_to].flags == 0
+            && screenDecoS[off_to].flags == 0
             && screenLinesUCG[off_to] == 0
       ){
-          screenColsG[off_to] = (flags & SLF_INC_VCOL) ? ++last_vcol : last_vcol;
-          ++off_to;
-          ++col;
+         screenColS[off_to] = (flags & SLF_INC_VCOL) ? ++last_vcol : last_vcol;
+         ++off_to;
+         ++col;
       }
       if (col < clear_width) {
          fillRowsWithTwoChars(row, row + 1, col + coloff, clear_width + coloff, ' ', ' ', 0);
          while (col < clear_width) {
-            screenColsG[off_to++]
-                   = (flags & SLF_INC_VCOL) ? ++last_vcol : last_vcol;
+            screenColS[off_to++] = (flags & SLF_INC_VCOL) ? ++last_vcol : last_vcol;
             ++col;
          }
       }
    }
 
-   if (clear_width > 0 && !(flags & SLF_POPUP)) {  // no separator for popup portal
-      // For a portal that has a right neighbor, draw the separator char
-      // right of the portal contents.  But not on top of a popup portal.
+   if (clear_width > 0 && !(flags & SLF_POPUP)) {  //no separator for popup portal
+      //For a portal that has a right neighbor, draw the separator char
+      //right of the portal contents. But not on top of a popup portal.
       if (coloff + col < (int)firstPor->portalCol + (int)topframeG->width) {
          if (!skip_for_popup(row, col + coloff)) {
             Decoration deco;
             int c = fillchar_vsep(OUT &deco);
             if (screenLinesG[off_to] != (Byte)c
                || ((int)screenLinesUCG[off_to] != (c >= 0x80 ? c : 0))
-               || getDecoFlags(screenDecosG[off_to].hiId) != deco.flags
+               || getDecoFlags(screenDecoS[off_to].hiId) != deco.flags
             ){
                screenLinesG[off_to] = c;
-               screenDecosG[off_to].hiId = HLF_C;
-               screenDecosG[off_to].flags = getDecoFlags(HLF_C);
+               screenDecoS[off_to].hiId = HLF_C;
+               screenDecoS[off_to].flags = getDecoFlags(HLF_C);
                
                if (c >= 0x80) {
                    screenLinesUCG[off_to] = c;
@@ -403,7 +380,7 @@ screen_line(
             }
          }
       } else
-         lineWrapsG[row] = FALSE;
+         lineWrapS[row] = FALSE;
    }
 }
 
@@ -623,7 +600,7 @@ screen_getbytes(int row, int col, Byte* bytes, OUT char* decoFlags) {
 
    unsigned off = lineOffsetG[row] + col;
    if (decoFlags)
-      *decoFlags = screenDecosG[off].flags;
+      *decoFlags = screenDecoS[off].flags;
    bytes[0] = screenLinesG[off];
    bytes[1] = ZERO;
 
@@ -645,7 +622,7 @@ screen_comp_differs(int off, int* characterCombiner) {
 }
 
 //Put string '*text' on the screen at position 'row' and 'col', with
-//decorations 'deco', and update screenLinesG[] and screenDecosG[].
+//decorations 'deco', and update screenLinesG[] and screenDecoS[].
 //Note: only outputs within one row, message is truncated at screen boundary!
 //Note: if screenLinesG[], row and/or col is invalid, nothing is done.
 void
@@ -695,7 +672,7 @@ drawTextLen(
    if (col > 0 && (int)col < screenLinesColsG && (int)mb_fix_col(col, row) != col) {
       if (!skip_for_popup(row, col - 1)) {
          screenLinesG[off - 1] = ' ';
-         screenDecosG[off - 1].flags = 0;
+         screenDecoS[off - 1].flags = 0;
          screenLinesUCG[off - 1] = 0;
          screenLinesCG[0][off - 1] = 0;
          // redraw the previous cell, make it empty
@@ -734,14 +711,14 @@ drawTextLen(
          || ((screenLinesUCG[off] != (Unt)(c < 0x80 && characterCombiner[0] == 0 ? 0 : u8c)
                || (screenLinesUCG[off] != 0 && screen_comp_differs(off, characterCombiner)))
             )
-         || screenDecosG[off].flags != flags;
+         || screenDecoS[off].flags != flags;
 
       if ((need_redraw || force_redraw_this) && !skip_for_popup(row, col)) {
          // The bold trick makes a single row of pixels appear in the next character. When a bold 
          // character is removed, the next character should be redrawn too.  This happens for our own
          // GUI and for some xterms.
          if (need_redraw && screenLinesG[off] != ' ' && ( term_is_xterm)) {
-            char n = getDecoFlags(screenDecosG[off].hiId);
+            char n = getDecoFlags(screenDecoS[off].hiId);
             if ((n & DECO_BOLD) != 0)
                force_redraw_next = true;
          }
@@ -760,8 +737,8 @@ drawTextLen(
          } 
 
          screenLinesG[off] = c;
-         screenDecosG[off].flags = flags;
-         screenColsG[off] = -1;
+         screenDecoS[off].flags = flags;
+         screenColS[off] = -1;
          if (c < 0x80 && characterCombiner[0] == 0)
             screenLinesUCG[off] = 0;
          else {
@@ -774,8 +751,8 @@ drawTextLen(
          }
          if (mbyte_cells == 2) {
              screenLinesG[off + 1] = 0;
-             screenDecosG[off + 1].flags = flags;
-             screenColsG[off + 1] = -1;
+             screenDecoS[off + 1].flags = flags;
+             screenColS[off + 1] = -1;
          }
          singleChar(off, row, col);
       }
@@ -786,7 +763,7 @@ drawTextLen(
          // This only happens at the end, display one space next. Keep the decorations from before
          ptr = (CS)" ";
          len = -1;
-         flags = screenDecosG[off].flags;
+         flags = screenDecoS[off].flags;
       }
    }
 
@@ -824,7 +801,6 @@ startDrawingHilite(Short hiId) {
       return;
    activeDecoS = getFullDecoration(hiId);
    Decoration fullDeco = getFullDecoration(activeDecoS.hiId);
-   _bp(activeDecoS.flags != 0);
       
    if ((activeDecoS.flags & DECO_BOLD) != 0 && *termCodeS[KS_MD] != ZERO)
       out_str(termCodeS[KS_MD]);
@@ -859,7 +835,7 @@ startDrawingHilite(Short hiId) {
 
 void
 drawStopHilite(void) {
-   if (activeDecoS.hiId == SHORT) {
+   if (activeDecoS.hiId == 0) {
       return;
    }
    
@@ -891,7 +867,7 @@ drawStopHilite(void) {
    termApplyFgColor(defaultFgColorG);
    termApplyBgColor(defaultBgColorG);
    termApplyUnderColor(defaultUnderlColorG);
-   activeDecoS = EMPTY_DECO;
+   activeDecoS = defaultDecoS;
 }
 
 //Reset the colors for a cterm. Used when leaving Eegl. The machine-specific code may override this
@@ -900,15 +876,14 @@ void
 reset_cterm_colors(void) {
    // set Normal cterm colors
    out_str(termCodeS[KS_OP]);
-   activeDecoS.hiId = SHORT;
+   activeDecoS.hiId = 0;
    if (currentlyBoldG) {
       out_str(termCodeS[KS_ME]);
-      activeDecoS.hiId = SHORT;
    }
 }
 
 //Put character screenLinesG["off"] on the screen at position "row" and "col",
-//using the decorations from screenDecosG["off"].
+//using the decorations from screenDecoS["off"].
 private void
 singleChar(Unt off, int row, int col) {
    //Check for illegal values, just in case (could happen just after resizing)
@@ -918,11 +893,9 @@ singleChar(Unt off, int row, int col) {
    //Outputting a character in the last cell on the screen may scroll the screen up. Only do it 
    //when the "xn" termcap property is set, otherwise mark the character invalid (update it when 
    //scrolled up).
-   if (*termCodeS[KS_XN] == ZERO 
-         && row == screenLinesRowsG - 1 && col == screenLinesColsG - 1
-   ) {
-      screenDecosG[off].flags = 0;
-      screenColsG[off] = -1;
+   if (*termCodeS[KS_XN] == ZERO && row == screenLinesRowsG - 1 && col == screenLinesColsG - 1) {
+      screenDecoS[off].flags = 0;
+      screenColS[off] = -1;
       return;
    }
 
@@ -931,7 +904,7 @@ singleChar(Unt off, int row, int col) {
    if (screen_charDeco != DECO_NONE)
       hiId = screen_charDeco;
    else
-      hiId = screenDecosG[off].hiId;
+      hiId = screenDecoS[off].hiId;
    if (activeDecoS.hiId != hiId)
       drawStopHilite();
 
@@ -1000,8 +973,8 @@ redraw_block(int row, int end, Portal* po) {
 private void
 space_to_screenline(int off, char deco) {
    screenLinesG[off] = ' ';
-   screenDecosG[off].flags = deco;
-   screenColsG[off] = -1;
+   screenDecoS[off].flags = deco;
+   screenColS[off] = -1;
    screenLinesUCG[off] = 0;
 }
 
@@ -1055,7 +1028,7 @@ fillRowsWithTwoChars(
 
          // skip blanks (used often, keep it fast!)
          while (off < end_off && screenLinesG[off] == ' '
-                && screenDecosG[off].flags == 0 && screenLinesUCG[off] == 0
+                && screenDecoS[off].flags == 0 && screenLinesUCG[off] == 0
          ) {
             ++off;
          } 
@@ -1079,7 +1052,7 @@ fillRowsWithTwoChars(
       for (col = start_col; col < end_col; ++col) {
          if ((screenLinesG[off] != c
              || ((int)screenLinesUCG[off] != (c >= 0x80 ? c : 0))
-             || screenDecosG[off].flags != decoFlags
+             || screenDecoS[off].flags != decoFlags
              || must_redraw == UPD_CLEAR  // screen clear pending
              || force_next
              )
@@ -1090,7 +1063,7 @@ fillRowsWithTwoChars(
             // bold character is removed, the next character should be redrawn too.  This happens for 
             // our own GUI and for some xterms.
             if (term_is_xterm) {
-               if (screenLinesG[off] != ' ' && (screenDecosG[off].flags & DECO_BOLD))
+               if (screenLinesG[off] != ' ' && (screenDecoS[off].flags & DECO_BOLD))
                   force_next = TRUE;
                else
                   force_next = FALSE;
@@ -1101,11 +1074,11 @@ fillRowsWithTwoChars(
                screenLinesCG[0][off] = 0;
             } else
                screenLinesUCG[off] = 0;
-            screenDecosG[off].flags = decoFlags;
+            screenDecoS[off].flags = decoFlags;
             if (!did_delete || c != ' ')
                singleChar(off, row, col);
          }
-         screenColsG[off] = -1;
+         screenColS[off] = -1;
          ++off;
          if (col == start_col) {
             if (did_delete)
@@ -1114,7 +1087,7 @@ fillRowsWithTwoChars(
           }
       }
       if (end_col == visibleColsG)
-         lineWrapsG[row] = FALSE;
+         lineWrapS[row] = FALSE;
       if (row == visibleRowsG - 1) {    // overwritten the command line
          redrawCommlineG = TRUE;
          if (start_col == 0 && end_col == visibleColsG
@@ -1220,7 +1193,7 @@ retry:
    computeColumnsForRulerAndCommand();      // recompute columns for shown command and ruler
 
    //We're changing the size of the screen.
-   //- Allocate new arrays for screenLinesG and screenDecosG.
+   //- Allocate new arrays for screenLinesG and screenDecoS.
    //- Move lines from the old arrays into the new arrays, clear extra
    //   lines (unless the screen is going to be cleared).
    //- Free the old arrays.
@@ -1250,7 +1223,7 @@ retry:
       new_screenLinesCG[i] = LALLOC_CLEAR_MULT(Unt, (visibleRowsG + 1) * visibleColsG);
    } 
    new_screenDecosG = LALLOC_MULT(Decoration, (visibleRowsG + 1) * visibleColsG);
-   // Clear screenColsG to avoid a warning for uninitialized memory in jump_to_mouse().
+   // Clear screenColS to avoid a warning for uninitialized memory in jump_to_mouse().
    new_screenColsG = LALLOC_CLEAR_MULT(ColNr, (visibleRowsG + 1) * visibleColsG);
    new_lineOffsetG = LALLOC_MULT(unsigned, visibleRowsG);
    new_lineWrapsG = LALLOC_MULT(Byte, visibleRowsG);
@@ -1371,10 +1344,10 @@ retry:
                   } 
                }
                mch_memmove(new_screenDecosG + new_lineOffsetG[new_row],
-                  screenDecosG + lineOffsetG[old_row], (Unt)len
+                  screenDecoS + lineOffsetG[old_row], (Unt)len
                );
                mch_memmove(new_screenColsG + new_lineOffsetG[new_row],
-                  screenDecosG + lineOffsetG[old_row], (Unt)len * sizeof(ColNr)
+                  screenDecoS + lineOffsetG[old_row], (Unt)len * sizeof(ColNr)
                );
             }
          }
@@ -1392,10 +1365,10 @@ retry:
    screenLinesUCG = new_screenLinesUCG;
    for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i)
       screenLinesCG[i] = new_screenLinesCG[i];
-   screenDecosG = new_screenDecosG;
-   screenColsG = new_screenColsG;
+   screenDecoS = new_screenDecosG;
+   screenColS = new_screenColsG;
    lineOffsetG = new_lineOffsetG;
-   lineWrapsG = new_lineWrapsG;
+   lineWrapS = new_lineWrapsG;
    tabIndsG = new_tabInds;
    popupMaskG = new_popupMaskG;
    popupMaskNextG = new_popupMaskNextG;
@@ -1434,10 +1407,10 @@ free_screenlines(void) {
       EE_CLEAR(screenLinesCG[i]);
    } 
    EE_CLEAR(screenLinesG);
-   EE_CLEAR(screenDecosG);
-   EE_CLEAR(screenColsG);
+   EE_CLEAR(screenDecoS);
+   EE_CLEAR(screenColS);
    EE_CLEAR(lineOffsetG);
-   EE_CLEAR(lineWrapsG);
+   EE_CLEAR(lineWrapS);
    EE_CLEAR(tabIndsG);
    EE_CLEAR(popupMaskG);
    EE_CLEAR(popupMaskNextG);
@@ -1467,7 +1440,7 @@ screenclear2(int doclear) {
       
    int did_clear = FALSE;
 
-   activeDecoS = EMPTY_DECO;   // force setting the Normal colors
+   activeDecoS = defaultDecoS;   // force setting the None colors
    drawStopHilite();   // don't want hiliting here
 
    // disable selection without redrawing it
@@ -1476,7 +1449,7 @@ screenclear2(int doclear) {
    // blank out screenLinesG
    for (int i = 0; i < visibleRowsG; ++i) {
       lineclear(lineOffsetG[i], (int)visibleColsG, 0);
-      lineWrapsG[i] = FALSE;
+      lineWrapS[i] = FALSE;
    }
 
    if (doclear && can_clear(termCodeS[KS_CL])) {
@@ -1515,15 +1488,15 @@ private void
 lineclear(unsigned off, int width, Unt hiId) {
    (void)memset(screenLinesG + off, ' ', (Unt)width * sizeof(Byte));
    (void)memset(screenLinesUCG + off, 0, (Unt)width * sizeof(Unt));
-   (void)memset(screenDecosG + off, hiId, (Unt)width);
-   (void)memset(screenColsG + off, -1, (Unt)width * sizeof(ColNr));
+   (void)memset(screenDecoS + off, hiId, (Unt)width);
+   (void)memset(screenColS + off, -1, (Unt)width * sizeof(ColNr));
 }
 
 // Mark one line in screenLinesG invalid by setting the decorations to an invalid value.
 private void
 lineinvalid(unsigned off, int width) {
-   (void)memset(screenDecosG + off, -1, (Unt)width);
-   (void)memset(screenColsG + off, -1, (Unt)width * sizeof(ColNr));
+   (void)memset(screenDecoS + off, -1, (Unt)width);
+   (void)memset(screenColS + off, -1, (Unt)width * sizeof(ColNr));
 }
 
 // To be called when chars were sent to the terminal directly, outputting test on "screen_lnum".
@@ -1549,9 +1522,9 @@ linecopy(int to, int from, Portal* po) {
          po->width * sizeof(Unt)
       );
    } 
-   mch_memmove( screenDecosG + off_to, screenDecosG + off_from, po->width);
+   mch_memmove( screenDecoS + off_to, screenDecoS + off_from, po->width);
    mch_memmove(
-      screenColsG + off_to, screenColsG + off_from,
+      screenColS + off_to, screenColS + off_from,
       po->width * sizeof(ColNr)
    );
 }
@@ -1675,7 +1648,7 @@ windgoto(int row, int col) {
          cost += i;
       if (cost < goto_cost && i > 0) {
          // Check if the decorations are correct without additionally stopping hiliting
-         dec = screenDecosG + lineOffsetG[row] + wouldbe_col;
+         dec = screenDecoS + lineOffsetG[row] + wouldbe_col;
          for (; i && dec->flags == activeDeco; dec++)
             --i;
          if (i != 0) {
@@ -1731,7 +1704,7 @@ windgoto(int row, int col) {
             } else {
                int off = lineOffsetG[row] + screen_cur_col;
                while (i-- > 0) {
-                  if (getDecoFlags(screenDecosG[off].hiId) != activeDecoS.flags)
+                  if (getDecoFlags(screenDecoS[off].hiId) != activeDecoS.flags)
                      drawStopHilite();
                   out_char(screenLinesG[off]);
                   ++off;
@@ -2103,16 +2076,16 @@ screen_ins_lines(
             lineclear(lineOffsetG[j] + po->portalCol, po->width, clearHiId);
          else
             lineinvalid(lineOffsetG[j] + po->portalCol, po->width);
-         lineWrapsG[j] = FALSE;
+         lineWrapS[j] = FALSE;
       } else {
          j = end - 1 - i;
          temp = lineOffsetG[j];
          while ((j -= line_count) >= row) {
             lineOffsetG[j + line_count] = lineOffsetG[j];
-            lineWrapsG[j + line_count] = lineWrapsG[j];
+            lineWrapS[j + line_count] = lineWrapS[j];
          }
          lineOffsetG[j + line_count] = temp;
-         lineWrapsG[j + line_count] = FALSE;
+         lineWrapS[j + line_count] = FALSE;
          if (can_clear(S" "))
             lineclear(temp, (int)visibleColsG, clearHiId);
          else
@@ -2122,7 +2095,7 @@ screen_ins_lines(
 
    drawStopHilite();
    windgoto(cursor_row, cursor_col);
-   if (clearHiId != SHORT)
+   if (clearHiId != 0)
       startDrawingHilite(clearHiId);
 
    // redraw the characters
@@ -2271,17 +2244,17 @@ screen_del_lines(
             lineclear(lineOffsetG[j] + po->portalCol, po->width, clearHiId);
          else
             lineinvalid(lineOffsetG[j] + po->portalCol, po->width);
-         lineWrapsG[j] = FALSE;
+         lineWrapS[j] = FALSE;
       } else {
          //whole width, moving the line pointers is faster
          j = row + i;
          temp = lineOffsetG[j];
          while ((j += line_count) <= end - 1) {
             lineOffsetG[j - line_count] = lineOffsetG[j];
-            lineWrapsG[j - line_count] = lineWrapsG[j];
+            lineWrapS[j - line_count] = lineWrapS[j];
          }
          lineOffsetG[j - line_count] = temp;
-         lineWrapsG[j - line_count] = FALSE;
+         lineWrapS[j - line_count] = FALSE;
          if (can_clear((CS)" "))
             lineclear(temp, (int)visibleColsG, clearHiId);
          else
@@ -3580,7 +3553,7 @@ copyTextWithDecos(int off, CS builder, int len, char flags) {
    mch_memmove(screenLinesG + off, builder, (Unt)len);
    memset(screenLinesUCG + off, 0, sizeof(Unt) * (Unt)len);
    for (int i = 0; i < len; ++i)
-      screenDecosG[off + i].flags = flags;
+      screenDecoS[off + i].flags = flags;
 }
 
 //Get the line number relative to the current cursor position, i.e. the
@@ -3646,7 +3619,7 @@ fold_line(
    // Ignores 'rightleft', this portal is never right-left.
    if (po == commPortPortG) {
       screenLinesG[off] = commPortTypeG;
-      screenDecosG[off].flags = getDecoFlags(HLF_AT);
+      screenDecoS[off].flags = getDecoFlags(HLF_AT);
       screenLinesUCG[off] = 0;
       ++col;
    }
@@ -3654,7 +3627,7 @@ fold_line(
 # define RL_MEMSET(p, v, l) \
    do { \
    for (ri = 0; ri < l; ++ri) \
-       screenDecosG[off + (p) + ri].flags = v; \
+       screenDecoS[off + (p) + ri].flags = v; \
    } while (0)
 
    // Set all decorations of the 'number' or 'relativenumber' column and the text
@@ -3774,8 +3747,8 @@ fold_line(
       else
          txtcol -= po->leftCol;
       if (txtcol >= 0 && txtcol < (int)po->width) {
-         screenDecosG[off + txtcol] = combineDecorations(
-            screenDecosG[off + txtcol], getFullDecoration(HLF_CUC)
+         screenDecoS[off + txtcol] = combineDecorations(
+            screenDecoS[off + txtcol], getFullDecoration(HLF_CUC)
          );
       } 
    }
@@ -4031,9 +4004,9 @@ updatePortal(Portal* po) {
          type = UPD_VALID;
    }
 
-   // Trick: we want to avoid clearing the screen twice.  screenclear() will
-   // set "screenClearedS" to TRUE.  The special value MAYBE (which is still
-   // non-zero and thus not FALSE) will indicate that screenclear() was not called.
+   //Trick: we want to avoid clearing the screen twice. screenclear() will
+   //set "screenClearedS" to TRUE.  The special value MAYBE (which is still
+   //non-zero and thus not FALSE) will indicate that screenclear() was not called.
    if (screenClearedS)
       screenClearedS = MAYBE;
 
@@ -4075,8 +4048,7 @@ updatePortal(Portal* po) {
             i = plines_m_win(po, po->topLine, po->lines[0].bookLnum - 1, po->height);
             // insert extra lines for previously invisible filler lines
             if (po->lines[0].bookLnum != po->topLine)
-                i += diff_check_fill(po, po->lines[0].bookLnum)
-                             - po->topFillOld;
+                i += diff_check_fill(po, po->lines[0].bookLnum) - po->topFillOld;
             if (i < (int)po->height - 2) {  // less than a screen off
                // Try to insert the correct number of lines.
                // If not the last portal, delete the lines at the bottom.
@@ -4264,14 +4236,12 @@ updatePortal(Portal* po) {
                // Need to find the longest line.
                toc = 0;
                pos.coladd = 0;
-               for (pos.lnum = curPor->cursor.lnum; cursor_above
-                     ? pos.lnum <= VIsual.lnum
-                     : pos.lnum >= VIsual.lnum;
-                          pos.lnum += cursor_above ? 1 : -1)
-               {
-                  ColNr t;
-
+               for (pos.lnum = curPor->cursor.lnum; 
+                    cursor_above ? pos.lnum <= VIsual.lnum : pos.lnum >= VIsual.lnum;
+                    pos.lnum += cursor_above ? 1 : -1
+               ) {
                   pos.col = (int)memGetBookLen(po->book, pos.lnum);
+                  ColNr t;
                   bookGetVirtualColInVirtualMode(po, &pos, NULL, NULL, &t);
                   if (toc < t)
                      toc = t;
@@ -4327,14 +4297,14 @@ updatePortal(Portal* po) {
             mid_start = 0;
          while (lnum < from && idx < po->validLines) {  // find start
             if (po->lines[idx].isValid)
-                mid_start += po->lines[idx].height;
+               mid_start += po->lines[idx].height;
             ei (!scrolled_down)
-                srow += po->lines[idx].height;
+               srow += po->lines[idx].height;
             ++idx;
             if (idx < po->validLines && po->lines[idx].isValid)
-                lnum = po->lines[idx].bookLnum;
+               lnum = po->lines[idx].bookLnum;
             else
-                ++lnum;
+               ++lnum;
          }
          srow += mid_start;
          mid_end = po->height;
@@ -4433,10 +4403,10 @@ updatePortal(Portal* po) {
          //redrawing. Don't do this when the change continues until the end.
          //Don't scroll when redrawing the top, scrolled already above.
          if (lnum == mod_top && mod_bot != MAXLNUM && row >= top_end) {
-            int      old_rows = 0;
-            int      new_rows = 0;
-            int      xtra_rows;
-            LineNr   l;
+            int old_rows = 0;
+            int new_rows = 0;
+            int xtra_rows;
+            LineNr l;
 
             //Count the old number of portal rows, using lines[], which
             //should still contain the sizes for the lines as they are currently displayed.
@@ -4500,8 +4470,8 @@ updatePortal(Portal* po) {
                         bot_start = po->height + xtra_rows;
                   }
                } ei (xtra_rows > 0) {
-                  // May scroll text down. If there is not enough
-                  // remaining text of scrolling fails, must redraw the rest.
+                  //May scroll text down. If there is not enough
+                  //remaining text of scrolling fails, must redraw the rest.
                   if (row + xtra_rows >= (int)po->height - 2)
                       mod_bot = MAXLNUM;
                   else {
@@ -4546,8 +4516,8 @@ updatePortal(Portal* po) {
                      for (i = po->validLines; i - j >= idx; --i)
                         po->lines[i] = po->lines[i - j];
 
-                     // The lines[] entries for inserted lines are
-                     // now invalid, but height may be used above. Reset to zero.
+                     //The lines[] entries for inserted lines are
+                     //now invalid, but height may be used above. Reset to zero.
                      while (i >= idx) {
                         po->lines[i].height = 0;
                         po->lines[i--].isValid = FALSE;
@@ -4594,9 +4564,9 @@ updatePortal(Portal* po) {
           po->lines[idx].bookLnum = lnum;
           po->lines[idx].isValid = TRUE;
 
-          // Past end of the portal or end of the portal. Note that after resizing po->height may 
-          // end up too big. That's a problem elsewhere, but we prevent a crash here.
-          if (row > (int)po->height || row + po->portalRow >= visibleRowsG) {
+         //Past end of the portal or end of the portal. Note that after resizing po->height may 
+         //end up too big. That's a problem elsewhere, but we prevent a crash here.
+         if (row > (int)po->height || row + po->portalRow >= visibleRowsG) {
             // we may need the size of that too long line later on
             po->lines[idx].height = plines_win(po, lnum, TRUE);
             ++idx;
@@ -4633,7 +4603,7 @@ updatePortal(Portal* po) {
          break;
       }
 
-      // Safety check: if any of the height values is wrong we might go over the end of lines[].
+      //Safety check: if any of the height values is wrong we might go over the end of lines[].
       if (idx >= visibleRowsG)
          break;
    }
@@ -4771,7 +4741,7 @@ redraw_asap(int type) {
    // Allocate space to save the text displayed in the command line area.
    int rows = screenLinesRowsG - commlineRowG;
    Arr(Byte) screenline = LALLOC_MULT(Byte, rows * cols);   // copy from screenLinesG[]
-   Arr(Unt) screenDecos = LALLOC_MULT(Unt, rows * cols); // copy from screenDecosG[]
+   Arr(Unt) screenDecos = LALLOC_MULT(Unt, rows * cols); // copy from screenDecoS[]
    if (!screenline)
       ret = 2;
    screenlineUC = LALLOC_MULT(Unt, rows * cols);
@@ -4780,7 +4750,7 @@ redraw_asap(int type) {
    }
 
    if (ret != 2) {
-      // Save the text displayed in the command line area.
+      //Save the text displayed in the command line area.
       for (r = 0; r < rows; ++r) {
          mch_memmove(
             screenline + r * cols, 
@@ -4789,7 +4759,7 @@ redraw_asap(int type) {
          );
          mch_memmove(
             screenDecos + r * cols, 
-            screenDecosG + lineOffsetG[commlineRowG + r], 
+            screenDecoS + lineOffsetG[commlineRowG + r], 
             (Unt)cols * sizeof(Unt)
          );
          mch_memmove(
@@ -4820,7 +4790,7 @@ redraw_asap(int type) {
                (Unt)cols * sizeof(Byte)
             );
             mch_memmove(
-               screenDecosG + off,
+               screenDecoS + off,
                screenDecos + r * cols,
                (Unt)cols * sizeof(Unt)
             );
@@ -5126,7 +5096,7 @@ typedef struct {
    int col;      // visual column on screen, after wrapping
    int virtualOffset;   // offset for virtual text
    int eol_hl_off;   // 1 if hilited char after EOL
-   Unt off;      // offset in screenLinesG/screenDecosG
+   Unt off;      // offset in screenLinesG/screenDecoS
    CS ptr; // current position in text line
    CS line; // current text line start
 
@@ -5608,7 +5578,7 @@ wlv_screen_line(Portal* po, DrawCtx* m, int clear_end) {
             screenLinesG[off + 1] = ' ';
          screenLinesG[off] = '<';
          screenLinesUCG[off] = 0;
-         screenDecosG[off].flags = getFullDecoration(HLF_AT).flags;
+         screenDecoS[off].flags = getFullDecoration(HLF_AT).flags;
          ++off;
       }
    }
@@ -5653,8 +5623,8 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
          if (po->o.cursorColumn 
                && VCOL_HLC == (long)po->virtCol && m->lnum != po->cursor.lnum)
             deco = combineDecorations(deco, getFullDecoration(HLF_CUC));
-         screenDecosG[m->off].flags = deco.flags;
-         screenColsG[m->off] = m->vcol;
+         screenDecoS[m->off].flags = deco.flags;
+         screenColS[m->off] = m->vcol;
          ++m->off;
          ++m->col;
          ++m->vcol;
@@ -5664,7 +5634,7 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
       }
    }
 
-   // Set increasing virtual columns in screenColsG[] to set correct curswant
+   // Set increasing virtual columns in screenColS[] to set correct curswant
    // (or "coladd" for 'virtualedit') when clicking after end of line.
    m->screen_line_flags |= SLF_INC_VCOL;
    wlv_screen_line(po, m, TRUE);
@@ -5903,8 +5873,8 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
             get_search_match_hl(port, &screenSearchMatchG, (long)(m->ptr - m->line), &charHiId);
             m->charDeco = getFullDecoration(charHiId);
          }
-         screenDecosG[m->off] = m->charDeco;
-         screenColsG[m->off] = m->vcol;
+         screenDecoS[m->off] = m->charDeco;
+         screenColS[m->off] = m->vcol;
          ++m->col;
          ++m->off;
          ++m->vcol;
@@ -5994,15 +5964,15 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
       } else
          screenLinesUCG[m->off] = 0;
       if (sc->multiDeco.hiId < SHORT) {
-         screenDecosG[m->off].flags = sc->multiDeco.flags;
+         screenDecoS[m->off].flags = sc->multiDeco.flags;
          sc->multiDeco = EMPTY_DECO;
       } else
-         screenDecosG[m->off].flags = m->charDeco.flags;
+         screenDecoS[m->off].flags = m->charDeco.flags;
 
       if (m->draw_state > WL_NR && m->filler_todo <= 0)
-         screenColsG[m->off] = m->vcol;
+         screenColS[m->off] = m->vcol;
       else
-         screenColsG[m->off] = -1;
+         screenColS[m->off] = -1;
 
       if (mb_char2cells(sc->mb_c) > 1) {
          // Need to fill two screen columns.
@@ -6012,9 +5982,9 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
          screenLinesG[m->off] = 0;
 
          if (m->draw_state > WL_NR && m->filler_todo <= 0)
-            screenColsG[m->off] = ++m->vcol;
+            screenColS[m->off] = ++m->vcol;
          else
-            screenColsG[m->off] = -1;
+            screenColS[m->off] = -1;
 
          //When "m->tocol" is halfway a character, set it to the end
          //of the character, otherwise hiliting won't stop.
@@ -6099,7 +6069,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
            && port->width == visibleColsG
       ) {
          // Remember that the line wraps, used for modeless copy.
-         lineWrapsG[m->screen_row - 1] = TRUE;
+         lineWrapS[m->screen_row - 1] = TRUE;
 
          // Special trick to make copy/paste of wrapped lines work with xterm/screen: write an 
          // extra character beyond the end of the line. This will work with all terminal types
@@ -6132,7 +6102,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
                out_char(screenLinesG[lineOffsetG[m->screen_row - 1] + (topframeG->width - 1)]);
                
             // force a redraw of the first char on the next line
-            screenDecosG[lineOffsetG[m->screen_row]].hiId = SHORT;
+            screenDecoS[lineOffsetG[m->screen_row]].hiId = SHORT;
             screen_start();   // don't know where cursor is now
          }
       }
@@ -7568,4 +7538,137 @@ drawLineOnScreen(
 }
 
 //}}}
+//}}}
+//{{{api functions
+
+void
+f_screenattr(Arr(Var) argvars, Var* returnVar) {
+   int      row;
+   int      col;
+   char flags;
+
+   row = (int)varGetNumberChk(argvars, NULL) - 1;
+   col = (int)varGetNumberChk(argvars + 1, NULL) - 1;
+   if (row < 0 || row >= screenLinesRowsG || col < 0 || col >= screenLinesColsG)
+      flags = 0;
+   else
+      flags = screenDecoS[lineOffsetG[row] + col].flags;
+   returnVar->number = flags;
+}
+
+void
+f_screenchar(Arr(Var) argvars, Var* returnVar) {
+   int row = (int)varGetNumberChk(argvars, NULL) - 1;
+   int col = (int)varGetNumberChk(argvars + 1, NULL) - 1;
+   Unt      c;
+   if (row < 0 || row >= screenLinesRowsG || col < 0 || col >= screenLinesColsG)
+      c = UNT;
+   else {
+      Byte buf[MB_MAXBYTES + 1];
+      screen_getbytes(row, col, buf, NULL);
+      c = mb_ptr2char(buf);
+   }
+   returnVar->number = c;
+}
+
+void
+f_screenchars(Arr(Var) argvars, Var* returnVar) {
+   allocReturnList(returnVar);
+
+   int row = (int)varGetNumberChk(argvars, NULL) - 1;
+   int col = (int)varGetNumberChk(argvars + 1, NULL) - 1;
+   if (row < 0 || row >= screenLinesRowsG || col < 0 || col >= screenLinesColsG)
+      return;
+
+   Byte buf[MB_MAXBYTES + 1];
+   screen_getbytes(row, col, buf, NULL);
+   int pcc[MAX_COMBINED_SYMBOLS];
+   int c = utfc_ptr2char(buf, pcc);
+   list_append_number(returnVar->list, (Long)c);
+
+   for (int i = 0; i < MAX_COMBINED_SYMBOLS && pcc[i] != 0; ++i)
+      list_append_number(returnVar->list, (Long)pcc[i]);
+}
+
+//"screencol()" function. First column is 1 to be consistent with virtcol().
+void
+f_screencol(Arr(Var) argvars UNUSED, Var* returnVar) {
+   returnVar->number = screen_screencol() + 1;
+}
+
+void
+f_screenrow(Arr(Var) argvars UNUSED, Var* returnVar) {
+   returnVar->number = screen_screenrow() + 1;
+}
+
+void
+f_screenstring(Arr(Var) argvars, Var* returnVar) {
+   int      row;
+   int      col;
+   Byte   buf[MB_MAXBYTES + 1];
+
+   returnVar->string = NULL;
+   returnVar->tag = VAR_STRING;
+
+   row = (int)varGetNumberChk(argvars, NULL) - 1;
+   col = (int)varGetNumberChk(argvars + 1, NULL) - 1;
+   if (row < 0 || row >= screenLinesRowsG || col < 0 || col >= screenLinesColsG)
+      return;
+
+   screen_getbytes(row, col, buf, NULL);
+   returnVar->string = copyStr(buf);
+}
+
+
+// Scroll the screen up one line for displaying the next message line.
+void
+drawMsgScrollUp(void) {
+   if (inEchoPortalG)
+      return;
+   // scrolling up always works
+   screen_del_lines(0, 0, 1, (int)visibleRowsG, TRUE, 0, NULL);
+
+   if (!can_clear(S" ")) {
+      //Scrolling up doesn't result in the right background. Set the
+      //background here. It's not efficient, but avoids that we have to do it all over the code.
+      fillRowsWithTwoChars(
+         (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', 
+         getDecoFlags(HLF_MSG)
+      );
+
+      // Also clear the last char of the last but one line if it was not cleared before to avoid 
+      // a scroll-up.
+      if (screenDecoS[lineOffsetG[visibleRowsG - 2] + visibleColsG - 1].hiId == SHORT) {
+          fillRowsWithTwoChars(
+             (int)visibleRowsG - 2, (int)visibleRowsG - 1, (int)visibleColsG - 1, 
+             (int)visibleColsG, ' ', ' ', getDecoFlags(HLF_MSG)
+          );
+      } 
+   }
+}
+
+void
+drawMsgSetCharAtOffset(Unt c, int off, ScreenCell cell) {
+   if (c == ZERO) {
+      screenLinesG[off] = ' ';
+      screenLinesUCG[off] = ZERO;
+   } else {
+      // composing chars
+      for (Unt i = 0; i + 1 < MAX_COMBINED_SYMBOLS; ++i) {
+         screenLinesCG[i][off] = cell.chars[i + 1];
+         if (cell.chars[i + 1] == 0)
+            break;
+      }
+      if (c >= 0x80 || (MAX_COMBINED_SYMBOLS > 0 && screenLinesCG[0][off] != 0)) {
+          screenLinesG[off] = ' ';
+          screenLinesUCG[off] = c;
+      } else {
+          screenLinesG[off] = c;
+          screenLinesUCG[off] = ZERO;
+      }
+   }
+   screenDecoS[off] = cellToDecoration(cell.deco.flags, cell.deco.fg, cell.deco.bg);
+}
+
+
 //}}}

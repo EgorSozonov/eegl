@@ -5999,13 +5999,10 @@ EXTERN long   visibleColsG INIT(= 80);   // nr of columns in the screen
 //The same value is used for ScreenLinesUC[], ScreenDecosG[] and ScreenCols[].
 //Note: before the screen is initialized and when out of memory these can be null.
 EXTERN CS screenLinesG INIT(= null);
-EXTERN Arr(Decoration) screenDecosG INIT(= NULL);
-EXTERN Arr(ColNr) screenColsG INIT(= NULL);
 EXTERN Arr(Unt) lineOffsetG INIT(= NULL);
-EXTERN CS lineWrapsG INIT(= null);   // line wraps to next line
 EXTERN Boole wrapSearchG INIT(= true); // search wraps on file end
 
-EXTERN int screenLinesRowsG INIT(= 0);       // actual size of ScreenLines[]
+EXTERN int screenLinesRowsG INIT(= 0);   // actual size of ScreenLines[]
 EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
 
 //When using Unicode characters the character in ScreenLinesUC[] contains the Unicode for 

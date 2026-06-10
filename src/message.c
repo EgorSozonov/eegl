@@ -49,7 +49,6 @@ private void hit_return_msg(void);
 private void homeReplaceDeco(Byte *fname, char flags);
 private void printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags);
 private void toDisplay(Byte *str, int maxlen, char flags, int recurse);
-private void msg_scroll_up(void);
 private void inc_msg_scrolled(void);
 private void saveToScrollback(Byte **sb_str, Byte *s, char flags, int *sb_col, int finish);
 private void t_puts(int *t_col, Byte *t_s, Byte *s, char flags);
@@ -2173,7 +2172,7 @@ do_more_prompt(int typedChar) {
          // First display any text that we scrolled back.
          while (toscroll > 0 && lastChunk) {
             // scroll up, display line at bottom
-            msg_scroll_up();
+            drawMsgScrollUp();
             inc_msg_scrolled();
             fillRowsWithTwoChars(
                (int)visibleRowsG - 2, (int)visibleRowsG - 1, 0, (int)visibleColsG, ' ', ' ', 
@@ -2410,7 +2409,7 @@ toDisplay(
 
          if (messagePort == NULL)
             //Scroll the screen up one line.
-            msg_scroll_up();
+            drawMsgScrollUp();
 
          msgRowG = visibleRowsG - 2;
          if (msgColG >= visibleColsG)   // can happen after screen resize
@@ -3133,41 +3132,13 @@ msg_show_console_dialog(
 //}}}
 //{{{scrollin' messages
 
-
-// Scroll the screen up one line for displaying the next message line.
-private void
-msg_scroll_up(void) {
-   if (inEchoPortalG)
-      return;
-   // scrolling up always works
-   screen_del_lines(0, 0, 1, (int)visibleRowsG, TRUE, 0, NULL);
-
-   if (!can_clear((CS)" ")) {
-      // Scrolling up doesn't result in the right background. Set the
-      // background here.  It's not efficient, but avoids that we have to do it all over the code.
-      fillRowsWithTwoChars(
-         (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', 
-         getDecoFlags(HLF_MSG)
-      );
-
-      // Also clear the last char of the last but one line if it was not cleared before to avoid 
-      // a scroll-up.
-      if (screenDecosG[lineOffsetG[visibleRowsG - 2] + visibleColsG - 1].hiId == SHORT) {
-          fillRowsWithTwoChars(
-             (int)visibleRowsG - 2, (int)visibleRowsG - 1, (int)visibleColsG - 1, 
-             (int)visibleColsG, ' ', ' ', getDecoFlags(HLF_MSG)
-          );
-      } 
-   }
-}
-
 // Increment "msg_scrolled".
 private void
 inc_msg_scrolled(void) {
    if (*get_EeglVar_str(VV_SCROLLSTART) == ZERO) {
-      Byte       *p = SOURCING_NAME;
-      Byte       *tofree = NULL;
-      int       len;
+      Byte* p = SOURCING_NAME;
+      Byte* tofree = NULL;
+      int len;
 
       // v:scrollstart is empty, set it to the script/function name and line number
       if (!p)

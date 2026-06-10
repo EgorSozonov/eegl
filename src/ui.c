@@ -127,10 +127,6 @@ typedef union {
    VTermColor color;
 } VTermValue;
 
-// Any cell can contain at most one basic printing character and 5 combining
-// characters. This number could be changed but will be ABI-incompatible if you do
-#define VTERM_MAX_CHARS_PER_CELL 6
-
 // This is ScreenCell without the characters, thus much smaller.
 typedef struct {
    VTermDeco flags;
@@ -139,7 +135,7 @@ typedef struct {
 } CellDeco;
 
 typedef struct {
-   Unt chars[VTERM_MAX_CHARS_PER_CELL];
+   Unt chars[MAX_COMBINED_SYMBOLS];
    CellDeco deco;
 } ScreenCell;
 
@@ -2533,11 +2529,11 @@ putglyph(VTermGlyphInfo* info, VTermPos pos, void *user) {
     return 0;
 
   Unt i;
-  for(i = 0; i < VTERM_MAX_CHARS_PER_CELL && info->chars[i]; i++) {
+  for(i = 0; i < MAX_COMBINED_SYMBOLS && info->chars[i]; i++) {
      cell->chars[i] = info->chars[i];
      cell->deco = screen->pen;
   }
-  if (i < VTERM_MAX_CHARS_PER_CELL)
+  if (i < MAX_COMBINED_SYMBOLS)
      cell->chars[i] = 0;
 
   for(int col = 1; col < info->width; col++) {
@@ -3017,7 +3013,7 @@ resize_buffer(
             ScreenCell *src = &screen->sb_buffer[pos.col];
             ScreenCell *dst = &new_buffer[pos.row * newCols + pos.col];
 
-            for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL; i++) {
+            for(int i = 0; i < MAX_COMBINED_SYMBOLS; i++) {
                dst->chars[i] = src->chars[i];
                if (!src->chars[i])
                   break;
@@ -3268,7 +3264,7 @@ _get_chars(VTermScreen* screen, void* buffer, Unt len, VTermRect rect) {
                PUT(UNICODE_SPACE);
                padding--;
             }
-            for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell->chars[i]; i++) {
+            for(Unt i = 0; i < MAX_COMBINED_SYMBOLS && cell->chars[i]; i++) {
                PUT(cell->chars[i]);
             }
          }
@@ -3296,7 +3292,7 @@ vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell) {
    if (!intcell)
       return 0;
  
-   for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL; i++) {
+   for(Unt i = 0; i < MAX_COMBINED_SYMBOLS; i++) {
       cell->chars[i] = intcell->chars[i];
       if (!intcell->chars[i])
          break;
@@ -4168,13 +4164,13 @@ on_text(CS bytes UNUSED, Unt len UNUSED, void* user) {
       int width = 0;
 
       for(glyph_ends = i + 1;
-          (glyph_ends < npoints) && (glyph_ends < glyph_starts + VTERM_MAX_CHARS_PER_CELL);
+          (glyph_ends < npoints) && (glyph_ends < glyph_starts + MAX_COMBINED_SYMBOLS);
           glyph_ends++) {
          if (!vterm_unicode_is_combining(codepoints[glyph_ends]))
             break;
       } 
 
-      Arr(Unt) chars = vterm_allocator_malloc(state->vt, (VTERM_MAX_CHARS_PER_CELL + 1) * 4);
+      Arr(Unt) chars = vterm_allocator_malloc(state->vt, (MAX_COMBINED_SYMBOLS + 1) * 4);
 
       for( ; i < glyph_ends; i++) {
          int this_width;
@@ -7536,11 +7532,10 @@ update_snapshot(Terminal* term) {
                       p[pos.col + 1] = p[pos.col];
 
                   // Each character can be up to 6 bytes.
-                  if (ga_grow(&ga, VTERM_MAX_CHARS_PER_CELL * 6) == OK) {
-                     int i;
+                  if (ga_grow(&ga, MAX_COMBINED_SYMBOLS * 6) == OK) {
                      int c;
 
-                     for (i = 0; (c = cell.chars[i]) > 0 || i == 0; ++i)
+                     for (Unt i = 0; (c = cell.chars[i]) > 0 || i == 0; ++i)
                         ga.len += mb_char2bytes(c == ZERO ? ' ' : c, (CS)ga.c + ga.len);
                   }
                }
@@ -8702,56 +8697,24 @@ term_check_channel_closed_recently(void) {
    for (Terminal* term = first_term; term != NULL; term = next_term) {
       next_term = term->next;
       if (term->isChannelRecentlyClosed) {
-          term->isChannelRecentlyClosed = FALSE;
-          if (term_after_channel_closed(term))
-         // start over, the list may have changed
-         next_term = first_term;
+         term->isChannelRecentlyClosed = FALSE;
+         if (term_after_channel_closed(term))
+            // start over, the list may have changed
+            next_term = first_term;
       }
    }
 }
 
-//Fill one screen line from a line of the terminal. Advances "pos" to past the last column.
+//Fill one screen line from a line of the terminal. Advance "pos" to past the last column.
 private void
-term_line2screenline(
-   VTermScreen* screen,
-   VTermPos* pos,
-   Unt max_col
-) {
+term_line2screenline(VTermScreen* screen, VTermPos* pos, Unt max_col) {
    int off = screen_get_current_line_off();
-
-   for (pos->col = 0; pos->col < max_col; ) {
+   for (pos->col = 0; pos->col < max_col; pos->col++, off++) {
       ScreenCell cell;
-      int      c;
-
       if (vterm_screen_get_cell(screen, *pos, OUT &cell) == 0)
-          CLEAR_FIELD(cell);
+         CLEAR_FIELD(cell);
 
-      c = cell.chars[0];
-      if (c == ZERO) {
-         screenLinesG[off] = ' ';
-         screenLinesUCG[off] = ZERO;
-      } else {
-         int i;
-
-         // composing chars
-         for (i = 0; i < MAX_COMBINED_SYMBOLS && i + 1 < VTERM_MAX_CHARS_PER_CELL; ++i) {
-            screenLinesCG[i][off] = cell.chars[i + 1];
-            if (cell.chars[i + 1] == 0)
-               break;
-         }
-         if (c >= 0x80 || (MAX_COMBINED_SYMBOLS > 0 && screenLinesCG[0][off] != 0)) {
-             screenLinesG[off] = ' ';
-             screenLinesUCG[off] = c;
-         }
-         else {
-             screenLinesG[off] = c;
-             screenLinesUCG[off] = ZERO;
-         }
-      }
-      screenDecosG[off] = cellToDecoration(cell.deco.flags, cell.deco.fg, cell.deco.bg);
-
-      ++pos->col;
-      ++off;
+      drawMsgSetCharAtOffset(cell.chars[0], off, cell);
    }
 }
 
@@ -9386,7 +9349,7 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
          if (vterm_screen_get_cell(screen, pos, OUT &cell) == 0)
             CLEAR_FIELD(cell);
 
-         for (Unt i = 0; i < VTERM_MAX_CHARS_PER_CELL; ++i) {
+         for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
             int c = cell.chars[i];
             int pc = prev_cell.chars[i];
             int should_break = c == ZERO || pc == ZERO;
@@ -9419,7 +9382,7 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
                Byte charbuf[10];
                int len;
 
-               for (Unt i = 0; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i] != ZERO; ++i) {
+               for (Unt i = 0; i < MAX_COMBINED_SYMBOLS && cell.chars[i] != ZERO; ++i) {
                   len = mb_char2bytes(cell.chars[i], charbuf);
                   fwrite(charbuf, len, 1, fd);
                }
@@ -10249,7 +10212,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
       VTermDeco deco;
       VTermColor   fg, bg;
       Byte colorBuf[4];
-      Byte mbs[MB_MAXBYTES * VTERM_MAX_CHARS_PER_CELL + 1];
+      Byte mbs[MB_MAXBYTES * MAX_COMBINED_SYMBOLS + 1];
       int off = 0;
       int i;
 
@@ -10270,7 +10233,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 
          if (vterm_screen_get_cell(screen, pos, OUT &cell) == 0)
             break;
-         for (i = 0; i < VTERM_MAX_CHARS_PER_CELL; ++i) {
+         for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
             if (cell.chars[i] == 0)
                 break;
             off += mb_char2bytes((int)cell.chars[i], mbs + off);
