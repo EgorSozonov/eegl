@@ -106,4 +106,3 @@ int tabpanel_width(void);
 int tabpanel_leftcol(void);
 void draw_tabpanel(void);
 Unt get_tabNr_on_tabpanel(void);
-/* eegl: set ft=c : */

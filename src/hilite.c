@@ -340,10 +340,10 @@ initHilite(int reset) { // clear group first?
    initializeGroups();
    
    decorationsG = alloc((countGroups + 10)*sizeof(Decoration));
-   doHilite((CS)hiliteGroupStrings[0], reset, TRUE);
+   doHilite((CS)hiliteGroupStrings[0], reset, true);
    set_normal_colors();
    for (int i = 1; i < countGroups; ++i) {
-      doHilite((CS)hiliteGroupStrings[i], reset, TRUE);
+      doHilite((CS)hiliteGroupStrings[i], reset, true);
    } 
 }
 
@@ -355,13 +355,13 @@ initHilite(int reset) { // clear group first?
 //   // Clear all default hilite groups and load the defaults.
 //   for (Short hiId = 0; hiId < countGroups; ++hiId)
 //      clearHiliteWorker(hiId);
-//   initHilite(TRUE);
+//   initHilite(true);
 //   hiliteStarted();
 //   redraw_later_clear();
 //}
 
 // Set the 'deco' field for the hilite group at index 'id'. 'arg' is deco name . 
-// Returns TRUE if the decos are set.
+// Returns true if the decos are set.
 private int
 setDecoration(Text arg, OUT HiliteGroup* g) {
    Kv   input = (Kv){.value = arg};
@@ -371,11 +371,11 @@ setDecoration(Text arg, OUT HiliteGroup* g) {
    );
    if (!entry) {
       showErrFmtMsg(_(e_illegal_value_str), arg);
-      return FALSE;
+      return false;
    }
 
    g->flags = entry->key;
-   return TRUE;
+   return true;
 }
 
 private Boole
@@ -409,7 +409,7 @@ getColorByName(OUT VTermColor* res, Text name) {
    return false;
 }
 
-//Set the foreground color for the hilite group at 'id'. Return TRUE if the color is set
+//Set the foreground color for the hilite group at 'id'. Return true if the color is set
 private Boole
 setForeground(HiliteGroup* group, Text arg){
    if (getColorByName(&(group->fg), arg)) {
@@ -419,7 +419,7 @@ setForeground(HiliteGroup* group, Text arg){
    return false;
 }
 
-//Set the background color for the hilite group at 'id'. Returns TRUE if the color is set
+//Set the background color for the hilite group at 'id'. Returns true if the color is set
 private Boole
 setBackground(HiliteGroup* group, Text arg){
    if (getColorByName(&(group->bg), arg) ) {
@@ -430,7 +430,7 @@ setBackground(HiliteGroup* group, Text arg){
 }
 
 //Set the underline/undercurl color for the hilite group at 'id'.
-//Return TRUE if the color is set.
+//Return true if the color is set.
 private Boole
 setUnderline(OUT HiliteGroup* group, Text arg) {
    if (getColorByName(&(group->under), arg)) {
@@ -554,7 +554,7 @@ printHiliteHeaderWorker(
          return true;
    } else {
       if (msgColG >= endcol)   // wrap around is like starting a new line
-         newline = FALSE;
+         newline = false;
    }
 
    if (msgColG >= endcol)   // output at least one space
@@ -574,7 +574,7 @@ printHiliteHeaderWorker(
    return newline;
 }
 
-// Output the syntax group header. Return TRUE when started a new line.
+// Output the syntax group header. Return true when started a new line.
 private Boole
 printHiliteHeader(
    int       didHeader,   // did header already
@@ -699,7 +699,7 @@ errorOut:
 // :highlight Foo fg=blue bg=#abcdef
 // "init" is true when building the default hilite groups, false when called in script/commline
 void
-doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializing
+doHilite(CS line, Boole forceit, Boole init) { //true when called for initializing
    Boole error = false;
 
    // If no argument, list current groups
@@ -799,7 +799,7 @@ doHilite(CS line, Boole forceit, Boole init) { //TRUE when called for initializi
 
    if (!updating_screen)
       redraw_all_later(UPD_NOT_VALID);
-   need_highlight_changed = TRUE;
+   need_highlight_changed = true;
 }
 
 // Clear hiliting for one group.
@@ -858,7 +858,7 @@ decosByHiliteName(CS name) {
    return hiId != SHORT ? getFullDecoration(hiId) : EMPTY_DECO;
 }
 
-// Return TRUE if hilite group "name" exists.
+// Return true if hilite group "name" exists.
 Boole
 hiliteExists(Text name) {
    return (hiliteGroupByName(name) < SHORT);
@@ -975,7 +975,7 @@ expandHiliteGroup(
       xp,
       rmp,
       &getHiliteGroupNameAsCString,
-      FALSE,
+      false,
       OUT matches
    );
 }
@@ -997,7 +997,7 @@ getDecorationDict(int hlDeco) {
 }
 
 // Return the contents of the hilite group at index 'hl_idx' as a
-// Dictionary. If 'resolveLinks' is TRUE, then resolves the hilite group links recursively
+// Dictionary. If 'resolveLinks' is true, then resolves the hilite group links recursively
 private Bag*
 toDict(Short hiId, int resolveLinks) {
    Bag* dict = allocBag();
@@ -1339,9 +1339,9 @@ typedef struct state_item {
 // Struct to reduce the number of arguments to get_syn_options(), it's used very often.
 typedef struct {
    int flags;      // flags for contained and transparent
-   int keyword;   // TRUE for ":syn keyword"
+   int keyword;   // true for ":syn keyword"
    int* sync_idx;   // syntax item for "grouphere" argument, NULL if not allowed
-   Boole has_containsHiId;   // TRUE if "containsHiId" can be used
+   Boole has_containsHiId;   // true if "containsHiId" can be used
    Short* containsHiId;   // group IDs for "contains" argument
    Short* containedInHiId;   // group IDs for "containedin" argument
    Short* next_list;   // group IDs for "nextgroup" argument
@@ -1489,7 +1489,7 @@ syntaxStartLine(Portal *wp, LineNr lnum) {
        && currLnumS < lnum
        && currLnumS < synBookS->mem.lineCount
    ) {
-      (void)syn_finish_line(FALSE);
+      (void)syn_finish_line(false);
       if (!currentStateStoredS) {
          ++currLnumS;
          (void)store_current_state();
@@ -1539,7 +1539,7 @@ syntaxStartLine(Portal *wp, LineNr lnum) {
       dist = synBookS->mem.lineCount / (synBlockS->len - visibleRowsG) + 1;
    while (currLnumS < lnum) {
       syn_start_line();
-      (void)syn_finish_line(FALSE);
+      (void)syn_finish_line(false);
       ++currLnumS;
 
       // If we parsed at least "minlines" lines or started at a valid
@@ -1753,7 +1753,7 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
          for (currLnumS = lnum; currLnumS < end_lnum; ++currLnumS) {
             syn_start_line();
             for (;;) {
-                had_sync_point = syn_finish_line(TRUE);
+                had_sync_point = syn_finish_line(true);
                 /*
                  * When a sync point has been found, remember where, and
                  * continue to look for another one, further on in the line.
@@ -1817,12 +1817,12 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
                   currStateItem = &CUR_STATE(current_state.len - 1);
                   currStateItem->hiStartPos.lnum = found_current_lnum;
                   currStateItem->hiStartPos.col = found_current_col;
-                  update_si_end(currStateItem, (int)currColS, TRUE);
+                  update_si_end(currStateItem, (int)currColS, true);
                   check_keepend();
                }
                currColS = found_m_endpos.col;
                currLnumS = found_m_endpos.lnum;
-               (void)syn_finish_line(FALSE);
+               (void)syn_finish_line(false);
                ++currLnumS;
             } else
                currLnumS = start_lnum;
@@ -1859,14 +1859,14 @@ restoreKeywordChars(CS chartab) {
       mch_memmove(synBookS->charsForKeywords, chartab, (Unt)32);
 }
 
-// Return TRUE if the line-continuation pattern matches in line "lnum".
+// Return true if the line-continuation pattern matches in line "lnum".
 private int
 syn_match_linecont(LineNr lnum) {
    RegMultilineMatch regmatch;
    Byte bookKeywordChars[32];  // chartab array for syn iskeyword
 
    if (synBlockS->lineContinProg == NULL)
-      return FALSE;
+      return false;
 
    // use syntax @iskeyword option
    save_chartab(bookKeywordChars);
@@ -1888,7 +1888,7 @@ syn_start_line(void) {
    //Need to update the end of a start/skip/end that continues from the
    //previous line and regions that have "keepend".
    if (current_state.len > 0) {
-      syn_update_ends(TRUE);
+      syn_update_ends(true);
       check_state_ends();
    }
 
@@ -1897,8 +1897,8 @@ syn_start_line(void) {
 }
 
 //Check for items in the stack that need their end updated.
-//When "startofline" is TRUE the last item is always updated.
-//When "startofline" is FALSE the item with "keepend" is forcefully updated.
+//When "startofline" is true the last item is always updated.
+//When "startofline" is false the item with "keepend" is forcefully updated.
 private void
 syn_update_ends(int startofline) {
    StateItem   *currStateItem;
@@ -1918,7 +1918,7 @@ syn_update_ends(int startofline) {
             currStateItem->matchEndPos.lnum = 0;
             currStateItem->matchEndPos.col = 0;
             currStateItem->hiEndPos = currStateItem->matchEndPos;
-            currStateItem->si_ends = TRUE;
+            currStateItem->si_ends = true;
          }
       }
    }
@@ -1934,7 +1934,7 @@ syn_update_ends(int startofline) {
       if (CUR_STATE(i).si_flags & HL_EXTEND)
          break;
 
-   seen_keepend = FALSE;
+   seen_keepend = false;
    for ( ; i < current_state.len; ++i) {
       currStateItem = &CUR_STATE(i);
       if ((currStateItem->si_flags & HL_KEEPEND)
@@ -1948,7 +1948,7 @@ syn_update_ends(int startofline) {
             update_si_end(currStateItem, (int)currColS, !startofline);
 
          if (!startofline && (currStateItem->si_flags & HL_KEEPEND))
-            seen_keepend = TRUE;
+            seen_keepend = true;
       }
    }
     check_keepend();
@@ -2115,14 +2115,14 @@ syn_stack_apply_changes_block(SyntaxBlock *block, Book *book) {
 }
 
 // Reduce the number of entries in the state stack for synBookS.
-// Return TRUE if at least one entry was freed.
+// Return true if at least one entry was freed.
 private int
 syn_stack_cleanup(void) {
    SyntaxState   *p, *prev;
    DisplayTick   tick;
    int      above;
    int      dist;
-   int      retval = FALSE;
+   int      retval = false;
 
    if (synBlockS->first == NULL)
       return retval;
@@ -2139,14 +2139,14 @@ syn_stack_cleanup(void) {
     * "lastDisplayTick" (the display tick wraps around).
     */
    tick = synBlockS->lastDisplayTick;
-   above = FALSE;
+   above = false;
    prev = synBlockS->first;
    for (p = prev->next; p != NULL; prev = p, p = p->next) {
       if (prev->lnum + dist > p->lnum) {
          if (p->tick > synBlockS->lastDisplayTick) {
             if (!above || p->tick < tick)
                tick = p->tick;
-            above = TRUE;
+            above = true;
          } ei (!above && p->tick < tick)
             tick = p->tick;
       }
@@ -2160,7 +2160,7 @@ syn_stack_cleanup(void) {
          prev->next = p->next;
          syn_stack_free_entry(synBlockS, p);
          p = prev;
-         retval = TRUE;
+         retval = true;
       }
    }
    return retval;
@@ -2312,7 +2312,7 @@ load_current_state(SyntaxState *from) {
          CUR_STATE(i).si_extmatch = ref_extmatch(bp[i].bs_extmatch);
          if (keepend_level < 0 && (CUR_STATE(i).si_flags & HL_KEEPEND))
             keepend_level = i;
-         CUR_STATE(i).si_ends = FALSE;
+         CUR_STATE(i).si_ends = false;
          CUR_STATE(i).matchLnum = 0;
          if (CUR_STATE(i).si_idx >= 0)
             CUR_STATE(i).nextList = (SYN_ITEMS(synBlockS)[CUR_STATE(i).si_idx]).sp_next_list;
@@ -2327,7 +2327,7 @@ load_current_state(SyntaxState *from) {
    currLnumS = from->lnum;
 }
 
-// Compare saved state stack "*sp" with the current state. Return TRUE when they are equal.
+// Compare saved state stack "*sp" with the current state. Return true when they are equal.
 private int
 syn_stack_equal(SyntaxState *sp) {
    int      i, j;
@@ -2336,7 +2336,7 @@ syn_stack_equal(SyntaxState *sp) {
 
    // First a quick check if the stacks have the same size end nextlist.
    if (sp->stacksize != current_state.len || sp->next_list != current_next_list)
-      return FALSE;
+      return false;
 
    // Need to compare all states on both stacks.
    if (sp->stacksize > SST_FIX_STATES)
@@ -2373,7 +2373,7 @@ syn_stack_equal(SyntaxState *sp) {
       if (j != NSUBEXP)
          break;
    }
-   return i < 0 ? TRUE : FALSE;
+   return i < 0 ? true : false;
 }
 
 // We stop parsing syntax above line "lnum".  If the stored state at or below this line depended on
@@ -2414,12 +2414,12 @@ validate_current_state(void) {
    current_state.ga_growsize = 3;
 }
 
-//Return TRUE if the syntax at start of lnum changed since last time.
+//Return true if the syntax at start of lnum changed since last time.
 //This will only be called just after syntGetDeco() for the previous
 //line, to check if the next line needs to be redrawn too.
 int
 syntax_check_changed(LineNr lnum) {
-   int      retval = TRUE;
+   int      retval = true;
    SyntaxState   *sp;
 
     /*
@@ -2433,11 +2433,11 @@ syntax_check_changed(LineNr lnum) {
       sp = syn_stack_find_entry(lnum);
       if (sp != NULL && sp->lnum == lnum) {
          // finish the previous line (needed when not all of the line was drawn)
-         (void)syn_finish_line(FALSE);
+         (void)syn_finish_line(false);
 
          // Compare the current state with the previously saved state of the line.
          if (syn_stack_equal(sp))
-            retval = FALSE;
+            retval = false;
 
          // Store the current state in array[] for later use.
          ++currLnumS;
@@ -2465,7 +2465,7 @@ syn_finish_line(int       syncing) {     // called for syncing
          if (currStateItem->si_idx >= 0
                 && (SYN_ITEMS(synBlockS)[currStateItem->si_idx].sp_flags 
                    & (HL_SYNC_HERE|HL_SYNC_THERE)))
-            return TRUE;
+            return true;
 
          // getCurrentDeco() will have skipped the check for an item that ends here, need to do 
          // that now.  Be careful not to go past the ZERO.
@@ -2477,7 +2477,7 @@ syn_finish_line(int       syncing) {     // called for syncing
       }
       ++currColS;
     }
-    return FALSE;
+    return false;
 }
 
 //Return hilite decorations for next character. Must first call syntaxStartLine() once for the line.
@@ -2541,7 +2541,7 @@ getCurrentDeco(
    int      cchar;
    Short* next_list;
    int      found_match;          // found usable match
-   static int   try_next_column = FALSE;    // must try in next col
+   static int   try_next_column = false;    // must try in next col
    int      do_keywords;
    RegMultilineMatch   regmatch;
    PosNoVirt   pos;
@@ -2552,7 +2552,7 @@ getCurrentDeco(
 
    // variables for zero-width matches that have a "nextgroup" argument
    int      keep_next_list;
-   int      zero_width_next_list = FALSE;
+   int      zero_width_next_list = false;
    ArrayList   zero_width_next_ga;
 
    // No character, no attributes! Past end of line?
@@ -2578,7 +2578,7 @@ getCurrentDeco(
    // (empty match or already matched in this column) need to try again in the next column.
    if (try_next_column) {
       nextMatchIdx = -1;
-      try_next_column = FALSE;
+      try_next_column = false;
    }
 
    // Only check for keywords when not syncing and there are some.
@@ -2595,8 +2595,8 @@ getCurrentDeco(
    // Repeat matching keywords and patterns, to find contained items at the
    // same column.  This stops when there are no extra matches at the current column.
    do {
-      found_match = FALSE;
-      keep_next_list = FALSE;
+      found_match = false;
+      keep_next_list = false;
       hiId = SHORT;
 
       // 1. Check for a current state. Only when there is no current state, or if the current state 
@@ -2627,7 +2627,7 @@ getCurrentDeco(
                      currStateItem->matchEndPos.col = endcol;
                      currStateItem->hiEndPos.lnum = currLnumS;
                      currStateItem->hiEndPos.col = endcol;
-                     currStateItem->si_ends = TRUE;
+                     currStateItem->si_ends = true;
                      currStateItem->si_end_idx = 0;
                      currStateItem->si_flags = flags;
                      currStateItem->hiId = hiId;
@@ -2718,7 +2718,7 @@ getCurrentDeco(
                      // If we matched this pattern at this position before, skip it.  Must retry 
                      // in the next column, because it may match from there.
                      if (did_match_already(idx, &zero_width_next_ga)) {
-                        try_next_column = TRUE;
+                        try_next_column = true;
                         continue;
                      }
 
@@ -2767,7 +2767,7 @@ getCurrentDeco(
                            // If an empty string is matched, may need
                            // to try matching again at next column.
                            if (regmatch.startpos[0].col == regmatch.endpos[0].col)
-                              try_next_column = TRUE;
+                              try_next_column = true;
                            continue;
                         }
                      }
@@ -2806,8 +2806,8 @@ getCurrentDeco(
                ){
                   current_next_list = lspp->sp_next_list;
                   current_next_flags = lspp->sp_flags;
-                  keep_next_list = TRUE;
-                  zero_width_next_list = TRUE;
+                  keep_next_list = true;
+                  zero_width_next_list = true;
 
                   // Add the index to a list, so that we can check later that we don't match it 
                   // again (and cause an endless loop).
@@ -2818,7 +2818,7 @@ getCurrentDeco(
                   nextMatchIdx = -1;
                } else
                   currStateItem = push_next_match(currStateItem);
-               found_match = TRUE;
+               found_match = true;
             }
          }
       }
@@ -2844,7 +2844,7 @@ getCurrentDeco(
          current_next_list = NULL;
          nextMatchIdx = -1;
          if (!zero_width_next_list)
-            found_match = TRUE;
+            found_match = true;
       }
 
    } while (found_match);
@@ -2913,17 +2913,17 @@ did_match_already(int idx, ArrayList *gap) {
       if (CUR_STATE(i).matchStartCol == (int)currColS
             && CUR_STATE(i).matchLnum == (int)currLnumS
             && CUR_STATE(i).si_idx == idx)
-         return TRUE;
+         return true;
    } 
 
    // Zero-width matches with a nextgroup argument are not put on the syntax
    // stack, and can only be matched once anyway.
    for (int i = gap->len; --i >= 0; ) {
       if (((int *)(gap->c))[i] == idx)
-         return TRUE;
+         return true;
    } 
 
-   return FALSE;
+   return false;
 }
 
 // Push the next match onto the stack.
@@ -2946,12 +2946,12 @@ push_next_match(StateItem *currStateItem) {
       currStateItem->si_extmatch = ref_extmatch(next_match_extmatch);
       if (spp->sp_type == SPTYPE_START && !(spp->sp_flags & HL_ONELINE)) {
          // Try to find the end pattern in the current line
-         update_si_end(currStateItem, (int)(next_match_m_endpos.col), TRUE);
+         update_si_end(currStateItem, (int)(next_match_m_endpos.col), true);
          check_keepend();
       } else {
          currStateItem->matchEndPos = next_match_m_endpos;
          currStateItem->hiEndPos = next_match_h_endpos;
-         currStateItem->si_ends = TRUE;
+         currStateItem->si_ends = true;
          currStateItem->si_flags |= next_match_flags;
          currStateItem->endPattEndPos = next_match_eoe_pos;
          currStateItem->si_end_idx = next_match_end_idx;
@@ -2973,7 +2973,7 @@ push_next_match(StateItem *currStateItem) {
          currStateItem->matchLnum = currLnumS;
          currStateItem->matchEndPos = next_match_eos_pos;
          currStateItem->hiEndPos = next_match_eos_pos;
-         currStateItem->si_ends = TRUE;
+         currStateItem->si_ends = true;
          currStateItem->si_end_idx = 0;
          currStateItem->si_flags = HL_MATCH;
          currStateItem->nextList = NULL;
@@ -3041,7 +3041,7 @@ check_state_ends(void) {
             break;
 
          if (had_extend && keepend_level >= 0) {
-            syn_update_ends(FALSE);
+            syn_update_ends(false);
             if (current_state.len == 0)
                break;
          }
@@ -3059,7 +3059,7 @@ check_state_ends(void) {
              && SYN_ITEMS(synBlockS)[currStateItem->si_idx].sp_type == SPTYPE_START
              && !(currStateItem->si_flags & (HL_MATCH | HL_KEEPEND))
          ){
-            update_si_end(currStateItem, (int)currColS, TRUE);
+            update_si_end(currStateItem, (int)currColS, true);
             check_keepend();
             if ((current_next_flags & HL_HAS_EOL) != 0
                   && keepend_level < 0
@@ -3144,7 +3144,7 @@ check_keepend(void) {
          limit_pos_zero(&sip->matchEndPos, &maxpos);
          limit_pos_zero(&sip->hiEndPos, &maxpos_h);
          limit_pos_zero(&sip->endPattEndPos, &maxpos);
-         sip->si_ends = TRUE;
+         sip->si_ends = true;
       }
       if (sip->si_ends && (sip->si_flags & HL_KEEPEND)) {
          if (maxpos.lnum == 0
@@ -3169,7 +3169,7 @@ private void
 update_si_end(
    StateItem   *sip,
    int  startcol,   // where to start searching for the end
-   Boole force)       // when TRUE overrule a previous end
+   Boole force)       // when true overrule a previous end
 {
    PosNoVirt   startpos;
    PosNoVirt   endpos;
@@ -3198,12 +3198,12 @@ update_si_end(
       // No end pattern matched.
       if (SYN_ITEMS(synBlockS)[sip->si_idx].sp_flags & HL_ONELINE) {
          // a "oneline" never continues in the next line
-         sip->si_ends = TRUE;
+         sip->si_ends = true;
          sip->matchEndPos.lnum = currLnumS;
          sip->matchEndPos.col = syn_getcurline_len();
       } else {
          // continues in the next line
-         sip->si_ends = FALSE;
+         sip->si_ends = false;
          sip->matchEndPos.lnum = 0;
       }
       sip->hiEndPos = sip->matchEndPos;
@@ -3212,7 +3212,7 @@ update_si_end(
    sip->matchEndPos = endpos;
    sip->hiEndPos = hl_endpos;
    sip->endPattEndPos = end_endpos;
-   sip->si_ends = TRUE;
+   sip->si_ends = true;
    sip->si_end_idx = end_idx;
     }
 }
@@ -3266,7 +3266,7 @@ find_endpos(
    RegMultilineMatch   regmatch;
    RegMultilineMatch   best_regmatch;       // startpos/endpos of best match
    PosNoVirt   pos;
-   int      had_match = FALSE;
+   int      had_match = false;
    Byte bookKeywordChars[32];  // chars for keywords array for syn option @iskeyword
 
    // just in case we are invoked for a keyword
@@ -3425,7 +3425,7 @@ find_endpos(
 
       *flagsp = spp->sp_flags;
 
-      had_match = TRUE;
+      had_match = true;
       break;
    }
 
@@ -3486,7 +3486,7 @@ syn_add_end_off(
    if (result->lnum > synBookS->mem.lineCount)
       col = 0;
    ei (off != 0) {
-      base = memGetLine(synBookS, result->lnum, FALSE);
+      base = memGetLine(synBookS, result->lnum, false);
       p = base + col;
       if (off > 0) {
           while (off-- > 0 && *p != ZERO)
@@ -3530,7 +3530,7 @@ syn_add_start_off(
       col = memGetBookLen(synBookS, result->lnum);
    }
    if (off != 0) {
-      base = memGetLine(synBookS, result->lnum, FALSE);
+      base = memGetLine(synBookS, result->lnum, false);
       p = base + col;
       if (off > 0) {
          while (off-- && *p != ZERO)
@@ -3547,7 +3547,7 @@ syn_add_start_off(
 // Get current line in syntax buffer.
 private CS
 syn_getcurline(void) {
-   return memGetLine(synBookS, currLnumS, FALSE);
+   return memGetLine(synBookS, currLnumS, false);
 }
 
 // Get length of current line in syntax buffer.
@@ -3556,7 +3556,7 @@ syn_getcurline_len(void) {
    return memGetBookLen(synBookS, currLnumS);
 }
 
-// Call eeRegexec() to find a match with "rmp" in "synBookS". Return TRUE when there is a match.
+// Call eeRegexec() to find a match with "rmp" in "synBookS". Return true when there is a match.
 private int
 syn_regexec(
    RegMultilineMatch   *rmp,
@@ -3565,28 +3565,28 @@ syn_regexec(
    syn_Time  *st UNUSED
 ) {
    int      r;
-   int      timed_out = FALSE;
+   int      timed_out = false;
 
    if (rmp->regprog == NULL)
       // This can happen if a previous call to eeRegexec_multi() tried to
       // use the NFA engine, which resulted in NFA_TOO_EXPENSIVE, and
       // compiling the pattern with the other engine fails.
-      return FALSE;
+      return false;
 
    rmp->rmm_maxcol = SYNTAX_MAX_COL;
    r = eeRegexec_multi(rmp, syntPortS, synBookS, lnum, col, &timed_out);
 
    if (timed_out && redrawtime_limit_set && !syntPortS->ownSyntax->redrawTime) {
-      syntPortS->ownSyntax->redrawTime = TRUE;
+      syntPortS->ownSyntax->redrawTime = true;
       msg(_("'redrawtime' exceeded, syntax highlighting disabled"));
    }
 
    if (r > 0) {
       rmp->startpos[0].lnum += lnum;
       rmp->endpos[0].lnum += lnum;
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 // Check one position in a line for a matching keyword. The caller must check if a keyword can 
@@ -3670,9 +3670,9 @@ caseSubcommand(Invocation* invo, int syncing UNUSED) {
    else
        msg((CS)"syntax case match");
    } ei (STRNICMP(arg, "match", 5) == 0 && next - arg == 5)
-      curPor->ownSyntax->b_syn_ic = FALSE;
+      curPor->ownSyntax->b_syn_ic = false;
    ei (STRNICMP(arg, "ignore", 6) == 0 && next - arg == 6)
-      curPor->ownSyntax->b_syn_ic = TRUE;
+      curPor->ownSyntax->b_syn_ic = true;
    else
       showErrFmtMsg(_(e_illegal_argument_str_2), arg);
 }
@@ -3780,12 +3780,12 @@ syn_cmd_iskeyword(Invocation* invo, int syncing UNUSED) {
 // Clear all syntax info for one buffer.
 void
 syntax_clear(SyntaxBlock *block) {
-   block->b_syn_error = FALSE;       // clear previous error
-   block->redrawTime = FALSE;       // clear previous timeout
-   block->b_syn_ic = FALSE;       // Use case, by default
+   block->b_syn_error = false;       // clear previous error
+   block->redrawTime = false;       // clear previous timeout
+   block->b_syn_ic = false;       // Use case, by default
    block->foldLevel = SYNFLD_START;
    block->synSpell = SYNSPL_DEFAULT; // default spell checking
-   block->b_syn_containedin = FALSE;
+   block->b_syn_containedin = false;
 
    // free the keywords
    clearKeywordTable(&block->keywords);
@@ -4025,7 +4025,7 @@ callScriptForSubcommand(Invocation* invo, char *name) {
 
 // The ":syntax [list]" command: list current syntax words.
 private void
-syn_cmd_list(Invocation* invo, int syncing)  {     // when TRUE: list syncing items
+syn_cmd_list(Invocation* invo, int syncing)  {     // when true: list syncing items
    CS arg = invo->arg;
    Short      id;
    CS arg_end;
@@ -4074,7 +4074,7 @@ syn_cmd_list(Invocation* invo, int syncing)  {     // when TRUE: list syncing it
    if (endsComm(arg)) {
       // No argument: List all group IDs and all syntax clusters.
       for (id = 0; id < countDecosG && !gotInterruptG; ++id)
-         syn_list_one(id, syncing, FALSE);
+         syn_list_one(id, syncing, false);
       for (id = 0; id < curPor->ownSyntax->syntaxClusters.len && !gotInterruptG; ++id)
          syn_list_cluster(id);
    } else {
@@ -4092,7 +4092,7 @@ syn_cmd_list(Invocation* invo, int syncing)  {     // when TRUE: list syncing it
             if (id == 0)
                showErrFmtMsg(_(e_no_such_highlight_group_name_str), arg);
             else
-               syn_list_one(id, syncing, TRUE);
+               syn_list_one(id, syncing, true);
          }
          arg = skipwhite(arg_end);
       }
@@ -4139,11 +4139,11 @@ private void syn_list_flags(Kv *nlist, int nr_entries, int flags, char decoFlags
 private void
 syn_list_one(
    int id,
-   int syncing,       // when TRUE: list syncing items
-   int link_only       // when TRUE; list link-only too
+   int syncing,       // when true: list syncing items
+   int link_only       // when true; list link-only too
 ){
    int idx;
-   int did_header = FALSE;
+   int did_header = false;
    SyntaxPattern* spp;
    static Kv namelist1[] = {
       KEYVALUE_ENTRY(HL_DISPLAY, "display"),
@@ -4165,7 +4165,7 @@ syn_list_one(
 
    // list the keywords for "id"
    if (!syncing) {
-      did_header = syn_list_keywords(id, &curPor->ownSyntax->keywords, FALSE, decoFlags);
+      did_header = syn_list_keywords(id, &curPor->ownSyntax->keywords, false, decoFlags);
       did_header = syn_list_keywords(id, &curPor->ownSyntax->keywordsIgnoreCase, did_header, decoFlags);
    }
 
@@ -4176,7 +4176,7 @@ syn_list_one(
          continue;
 
       printHiliteHeader(did_header, 999, id);
-      did_header = TRUE;
+      did_header = true;
       last_matchgroup = 0;
       if (spp->sp_type == SPTYPE_MATCH) {
          put_pattern((CS)"match", ' ', spp, decoFlags);
@@ -4330,7 +4330,7 @@ put_pattern(CS s, int c, SyntaxPattern   *spp, int deco) {
    msg_putchar(sepchars[i]);
 
    // output any pattern options
-   first = TRUE;
+   first = true;
    for (i = 0; i < SPO_COUNT; ++i) {
       mask = (1 << i);
       if (spp->sp_off_flags & (mask + (mask << SPO_COUNT))) {
@@ -4348,14 +4348,14 @@ put_pattern(CS s, int c, SyntaxPattern   *spp, int deco) {
          }
          if (n || i == SPO_LC_OFF)
             msg_outnum(n);
-         first = FALSE;
+         first = false;
       }
     }
     msg_putchar(' ');
 }
 
 //List or clear the keywords for one syntax group.
-//Return TRUE if the header has been printed.
+//Return true if the header has been printed.
 private int
 syn_list_keywords(
    int id,
@@ -4398,7 +4398,7 @@ syn_list_keywords(
                   prev_skipwhite = 0;
                   prev_skipempty = 0;
                }
-               did_header = TRUE;
+               did_header = true;
                if (prev_contained != (kp->flags & HL_CONTAINED)) {
                   msgPutsDeco((CS)"contained", deco);
                   msg_putchar(' ');
@@ -4532,7 +4532,7 @@ add_keyword(
    kp->flags = flags;
    kp->syntax.containedInHiId = copy_id_list(containedInHiId);
    if (containedInHiId != NULL)
-      curPor->ownSyntax->b_syn_containedin = TRUE;
+      curPor->ownSyntax->b_syn_containedin = true;
    kp->next_list = copy_id_list(next_list);
 
    if (curPor->ownSyntax->b_syn_ic)
@@ -4580,7 +4580,7 @@ private CS
 get_syn_options(
    CS start,      // next argument to be checked
    SynOptArg* opt,      // various things
-   int skip      // TRUE if skipping over command
+   int skip      // true if skipping over command
 ) {
    CS arg = start;
    CS gname_start;
@@ -4737,7 +4737,7 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
    CS errorMsg = NULL;
    int      prev_toplvl_grp;
    int      prev_syn_inc_tag;
-   int      source = FALSE;
+   int      source = false;
 
    invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
@@ -4759,11 +4759,11 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
 
    // Everything that's left, up to the next command, should be the filename to include.
    invo->argFlags |= (commandFlagExpandWildcards() | commandFlagNoSpacesInExtra());
-   separateNextCommand(invo, FALSE);
+   separateNextCommand(invo, false);
    if (*invo->arg == '<' || *invo->arg == '$' || !fiIsRelative(invo->arg)) {
       //For an absolute path, "$EEGL/..." or "<sfile>.." we ":source" the
       //file.  Need to expand the file name first.  In other cases ":runtime!" is used.
-      source = TRUE;
+      source = true;
       if (expand_filename(invo, synCommline, OUT &errorMsg) == FAIL) {
          if (errorMsg)
             emsg(errorMsg);
@@ -4815,7 +4815,7 @@ syn_cmd_keyword(Invocation* invo, int syncing UNUSED) {
          keyword_copy = alloc(STRLEN(rest) + 1);
       if (keyword_copy) {
          syn_opt_arg.flags = 0;
-         syn_opt_arg.keyword = TRUE;
+         syn_opt_arg.keyword = true;
          syn_opt_arg.sync_idx = NULL;
          syn_opt_arg.has_containsHiId = false;
          syn_opt_arg.containedInHiId = NULL;
@@ -4899,7 +4899,7 @@ syn_cmd_keyword(Invocation* invo, int syncing UNUSED) {
 //
 //Also ":syntax sync match {name} [[grouphere | groupthere] {group-name}] .."
 private void
-syn_cmd_match( Invocation   *invo, int      syncing) {      // TRUE for ":syntax sync match .. "
+syn_cmd_match( Invocation   *invo, int      syncing) {      // true for ":syntax sync match .. "
    CS arg = invo->arg;
    SyntaxPattern   item;      // the item found in the line
    Unt      hiId;
@@ -4914,7 +4914,7 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      // TRUE for ":syntax
 
    // Get options before the pattern
    syn_opt_arg.flags = 0;
-   syn_opt_arg.keyword = FALSE;
+   syn_opt_arg.keyword = false;
    syn_opt_arg.sync_idx = syncing ? &sync_idx : NULL;
    syn_opt_arg.has_containsHiId = true;
    syn_opt_arg.containsHiId = NULL;
@@ -4954,7 +4954,7 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      // TRUE for ":syntax
          SYN_ITEMS(curPor->ownSyntax)[idx].sp_containsHiId = syn_opt_arg.containsHiId;
          SYN_ITEMS(curPor->ownSyntax)[idx].syntax.containedInHiId = syn_opt_arg.containedInHiId;
          if (syn_opt_arg.containedInHiId != NULL)
-            curPor->ownSyntax->b_syn_containedin = TRUE;
+            curPor->ownSyntax->b_syn_containedin = true;
          SYN_ITEMS(curPor->ownSyntax)[idx].sp_next_list = syn_opt_arg.next_list;
          ++curPor->ownSyntax->syntaxPatterns.len;
 
@@ -4986,7 +4986,7 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      // TRUE for ":syntax
 private void
 syn_cmd_region(
    Invocation   *invo,
-   int      syncing       // TRUE for ":syntax sync region .."
+   int      syncing       // true for ":syntax sync region .."
 ){
    CS arg = invo->arg;
    CS group_name_end;
@@ -5010,9 +5010,9 @@ syn_cmd_region(
    int         pat_count = 0;      // nr of syn_patterns found
    Short hiId;
    Short matchgroup_id = SHORT;
-   int         not_enough = FALSE;   // not enough arguments
-   int         illegal = FALSE;   // illegal arguments
-   int         success = FALSE;
+   int         not_enough = false;   // not enough arguments
+   int         illegal = false;   // illegal arguments
+   int         success = false;
    int         idx;
 
    // Isolate the group name, check for validity
@@ -5026,7 +5026,7 @@ syn_cmd_region(
 
    SynOptArg   syn_opt_arg;
    syn_opt_arg.flags = 0;
-   syn_opt_arg.keyword = FALSE;
+   syn_opt_arg.keyword = false;
    syn_opt_arg.sync_idx = NULL;
    syn_opt_arg.has_containsHiId = true;
    syn_opt_arg.containsHiId = NULL;
@@ -5058,7 +5058,7 @@ syn_cmd_region(
           item = ITEM_END;
       ei (STRCMP(key, "SKIP") == 0) {
          if (pat_ptrs[ITEM_SKIP] != NULL) {  // one skip pattern allowed
-            illegal = TRUE;
+            illegal = true;
             break;
          }
          item = ITEM_SKIP;
@@ -5072,7 +5072,7 @@ syn_cmd_region(
       }
       rest = skipwhite(rest + 1);
       if (*rest == ZERO) {
-         not_enough = TRUE;
+         not_enough = true;
          break;
       }
 
@@ -5083,7 +5083,7 @@ syn_cmd_region(
          else {
             matchgroup_id = hiliteGroupByName(mbText(rest));
             if (matchgroup_id == SHORT) {
-               illegal = TRUE;
+               illegal = true;
                break;
             }
          }
@@ -5125,7 +5125,7 @@ syn_cmd_region(
 
    // Must have a "start" and "end" pattern.
    if (rest && (pat_ptrs[ITEM_START] == NULL || pat_ptrs[ITEM_END] == NULL)) {
-      not_enough = TRUE;
+      not_enough = true;
       rest = NULL;
    }
 
@@ -5155,7 +5155,7 @@ syn_cmd_region(
                   SYN_ITEMS(curPor->ownSyntax)[idx].sp_containsHiId = syn_opt_arg.containsHiId;
                   SYN_ITEMS(curPor->ownSyntax)[idx].syntax.containedInHiId = syn_opt_arg.containedInHiId;
                   if (syn_opt_arg.containedInHiId != NULL)
-                      curPor->ownSyntax->b_syn_containedin = TRUE;
+                      curPor->ownSyntax->b_syn_containedin = true;
                   SYN_ITEMS(curPor->ownSyntax)[idx].sp_next_list = syn_opt_arg.next_list;
                }
                ++curPor->ownSyntax->syntaxPatterns.len;
@@ -5167,7 +5167,7 @@ syn_cmd_region(
 
          drawCurBookLater(UPD_SOME_VALID);
          synFreeBlock(curPor->ownSyntax);   // Need to recompute all syntax.
-         success = TRUE;       // don't free the progs and patterns now
+         success = true;       // don't free the progs and patterns now
       }
    }
 
@@ -5386,7 +5386,7 @@ syn_cmd_cluster(Invocation* invo, int syncing UNUSED) {
    CS group_name_end;
    CS rest;
    int      scl_id;
-   int      got_clstr = FALSE;
+   int      got_clstr = false;
    int      opt_len;
    int      list_op;
 
@@ -5428,7 +5428,7 @@ syn_cmd_cluster(Invocation* invo, int syncing UNUSED) {
             syn_combine_list(&SYN_CLSTR(curPor->ownSyntax)[scl_id].hiIds, &cluster, list_op);
          else
             eeglFree(cluster);
-         got_clstr = TRUE;
+         got_clstr = true;
       }
 
       if (got_clstr) {
@@ -5462,7 +5462,7 @@ getSyntPattern(CS arg, SyntaxPattern *ci, OUT Boole* hadEol) {
    if (arg == NULL || arg[0] == ZERO || arg[1] == ZERO || arg[2] == ZERO)
       return NULL;
 
-   CS end = skip_regexp(arg + 1, *arg, TRUE);
+   CS end = skip_regexp(arg + 1, *arg, true);
    if (*end != *arg) {            // end delimiter not found
       showErrFmtMsg(_(e_pattern_delimiter_not_found_str), arg);
       return NULL;
@@ -5538,12 +5538,12 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
     CS arg_end;
     CS key = NULL;
     CS next_arg;
-    int      illegal = FALSE;
-    int      finished = FALSE;
+    int      illegal = false;
+    int      finished = false;
     long   n;
 
    if (endsComm(arg_start)) {
-      syn_cmd_list(invo, TRUE);
+      syn_cmd_list(invo, true);
       return;
    }
 
@@ -5577,7 +5577,7 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
          else
             arg_end = key + 9;
          if (arg_end[-1] != '=' || !EE_ISDIGIT(*arg_end)) {
-            illegal = TRUE;
+            illegal = true;
             break;
          }
          n = parseLong(&arg_end);
@@ -5596,17 +5596,17 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
           }
       } ei (STRCMP(key, "LINECONT") == 0) {
           if (*next_arg == ZERO) {     // missing pattern
-         illegal = TRUE;
+         illegal = true;
          break;
          }
          if (curPor->ownSyntax->lineContinuationPattern != NULL) {
             emsg(_(e_syntax_sync_line_continuations_pattern_specified_twice));
-            finished = TRUE;
+            finished = true;
             break;
          }
-         arg_end = skip_regexp(next_arg + 1, *next_arg, TRUE);
+         arg_end = skip_regexp(next_arg + 1, *next_arg, true);
          if (*arg_end != *next_arg)  {     // end delimiter not found
-            illegal = TRUE;
+            illegal = true;
             break;
          }
 
@@ -5615,7 +5615,7 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
             if ((curPor->ownSyntax->lineContinuationPattern =
                    copySubstr(next_arg + 1, arg_end - next_arg - 1)) == NULL
             ){
-                finished = TRUE;
+                finished = true;
                 break;
             }
             curPor->ownSyntax->lineContinIgnoreCase = curPor->ownSyntax->b_syn_ic;
@@ -5625,7 +5625,7 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
 
             if (curPor->ownSyntax->lineContinProg == NULL) {
                 EE_CLEAR(curPor->ownSyntax->lineContinuationPattern);
-                finished = TRUE;
+                finished = true;
                 break;
             }
          }
@@ -5633,14 +5633,14 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
       } else {
          invo->arg = next_arg;
          if (STRCMP(key, "MATCH") == 0)
-            syn_cmd_match(invo, TRUE);
+            syn_cmd_match(invo, true);
          ei (STRCMP(key, "REGION") == 0)
-            syn_cmd_region(invo, TRUE);
+            syn_cmd_region(invo, true);
          ei (STRCMP(key, "CLEAR") == 0)
-            clearSubcommand(invo, TRUE);
+            clearSubcommand(invo, true);
          else
-            illegal = TRUE;
-         finished = TRUE;
+            illegal = true;
+         finished = true;
          break;
       }
       arg_start = next_arg;
@@ -5676,7 +5676,7 @@ get_id_list(
    RegMatch   regmatch;
    Short      id;
    int      i;
-   int      failed = FALSE;
+   int      failed = false;
 
    //We parse the list twice:
    //round == 1: count the number of items, allocate the array.
@@ -5710,13 +5710,13 @@ get_id_list(
          ){
             if (TOUPPER_ASC(**arg) != 'C') {
                showErrFmtMsg(_(e_str_not_allowed_here), name + 1);
-               failed = TRUE;
+               failed = true;
                eeglFree(name);
                break;
             }
             if (count != 0) {
                 showErrFmtMsg(_(e_str_must_be_first_in_contains_list), name + 1);
-                failed = TRUE;
+                failed = true;
                 eeglFree(name);
                 break;
             }
@@ -5742,12 +5742,12 @@ get_id_list(
                STRCAT(name, "$");
                regmatch.regprog = compileRegexp(name, RE_MAGIC);
                if (regmatch.regprog == NULL) {
-                  failed = TRUE;
+                  failed = true;
                   eeglFree(name);
                   break;
                }
 
-               regmatch.rm_ic = TRUE;
+               regmatch.rm_ic = true;
                id = SHORT;
                for (i = countDecosG; --i >= 0; ) {
                   if (eeRegexec(&regmatch, hiliteGroupName(i).c, (ColNr)0)) {
@@ -5771,7 +5771,7 @@ get_id_list(
          eeglFree(name);
          if (id == SHORT) {
             showErrFmtMsg(_(e_unknown_group_name_str), p);
-            failed = TRUE;
+            failed = true;
             break;
          }
          if (id > 0) {
@@ -5850,7 +5850,7 @@ in_id_list(
    int      r;
    int      toplevel;
 
-   // If ssp has a "containedin" list and "currStateItem" is in it, return TRUE.
+   // If ssp has a "containedin" list and "currStateItem" is in it, return true.
    if (currStateItem != NULL 
          && ssp->containedInHiId != NULL 
          && !(currStateItem->si_flags & HL_MATCH)
@@ -5864,11 +5864,11 @@ in_id_list(
       if (currStateItem->si_idx >= 0 && in_id_list(NULL, ssp->containedInHiId,
          &(SYN_ITEMS(synBlockS)[currStateItem->si_idx].syntax),
            SYN_ITEMS(synBlockS)[currStateItem->si_idx].sp_flags))
-          return TRUE;
+          return true;
    }
 
    if (!list)
-      return FALSE;
+      return false;
 
    // If list is ID_LIST_ALL, we are in a transparent item that isn't inside anything. Only allow 
    // not-contained groups.
@@ -5879,7 +5879,7 @@ in_id_list(
     //For included files, this is different from HL_CONTAINED, which is set unconditionally.
     toplevel = !(flags & HL_CONTAINED) || (flags & HL_INCLUDED_TOPLEVEL);
 
-   //If the first item is "ALLBUT", return TRUE if "id" is NOT in the
+   //If the first item is "ALLBUT", return true if "id" is NOT in the
    //contains list.  We also require that "id" is at the same ":syn include"
    //level as the list.
    item = *list;
@@ -5887,20 +5887,20 @@ in_id_list(
       if (item < SYNID_TOP) {
           // ALL or ALLBUT: accept all groups in the same file
           if (item - SYNID_ALLBUT != ssp->inc_tag)
-         return FALSE;
+         return false;
       } ei (item < SYNID_CONTAINED) {
           // TOP: accept all not-contained groups in the same file
           if (item - SYNID_TOP != ssp->inc_tag || !toplevel)
-         return FALSE;
+         return false;
       } else {
           // CONTAINED: accept all contained groups in the same file
           if (item - SYNID_CONTAINED != ssp->inc_tag || toplevel)
-         return FALSE;
+         return false;
       }
       item = *++list;
-      retval = FALSE;
+      retval = false;
    } else
-      retval = TRUE;
+      retval = true;
 
    // Return "retval" if id is in the contains list.
    while (item != 0) {
@@ -5973,7 +5973,7 @@ c_syntax(Invocation* invo) {
    for (i = 0; i < (int)ARRAY_LENGTH(subcommands); ++i) {
       if (STRCMP(subcmd_name, (CS)subcommands[i].name) == 0) {
           invo->arg = skipwhite(subcmd_end);
-          (subcommands[i].fn)(invo, FALSE);
+          (subcommands[i].fn)(invo, false);
           break;
       }
    }
@@ -6004,7 +6004,7 @@ c_ownsyntax(Invocation* invo) {
       old_value = copyStr(old_value);
 
    //Apply the "syntax" autocommand event, this finds and loads the syntax file.
-   applyAutocomms(EVENT_SYNTAX, invo->arg, curBook->currFileName, TRUE, curBook);
+   applyAutocomms(EVENT_SYNTAX, invo->arg, curBook->currFileName, true, curBook);
 
    //move value of b:currentSyntax to w:currentSyntax
    new_value = get_var_value(BUFF_SYN_VAR);
@@ -6174,7 +6174,7 @@ int
 syn_get_stack_item(int i) {
    if (i >= current_state.len) {
       // Need to invalidate the state, because we didn't properly finish it
-      // for the last character, "keep_state" was TRUE.
+      // for the last character, "keep_state" was true.
       invalidate_current_state();
       currColS = MAXCOL;
       return -1;

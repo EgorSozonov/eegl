@@ -34,4 +34,3 @@ LineNr diff_lnum_win(LineNr lnum, Portal *po);
 void f_diff_filler(Var *argvars, Var *returnVar);
 void f_diff_hlID(Var *argvars, Var *returnVar);
 void f_diff(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

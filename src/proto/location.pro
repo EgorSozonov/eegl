@@ -41,4 +41,3 @@ void c_helpgrep(Invocation *invo);
 void free_quickfix(void);
 void f_getloclist(Var *argvars, Var *returnVar);
 void f_setloclist(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

@@ -102,7 +102,7 @@ struct RegMatch {
 
 
 private int numComplexBracesS; // Complex \{...} count
-private Byte hadEndbraceS[NSUBEXP];   // flags, TRUE if end of () found
+private Byte hadEndbraceS[NSUBEXP];   // flags, true if end of () found
 
 private sig_atomic_t dummy_timeout_flag = 0;
 private volatile sig_atomic_t *timeout_flag = &dummy_timeout_flag;
@@ -442,7 +442,7 @@ disable_regexp_timeout(void) {
    }
 }
 
-// Return TRUE if compiled regular expression "prog" can match a line break.
+// Return true if compiled regular expression "prog" can match a line break.
 int
 re_multiline(RegProg* prog){
    return (prog->regflags & RF_HASNL);
@@ -622,8 +622,8 @@ initchr(Byte *str) {
    regparse = str;
    prevchr_len = 0;
    curchr = prevprevchr = prevchr = nextchr = -1;
-   at_start = TRUE;
-   prev_at_start = FALSE;
+   at_start = true;
+   prev_at_start = false;
 }
 
 // Save the current parse state, so that it can be restored and parsing restarts in the same state
@@ -658,7 +658,7 @@ restoreParseState(ParseState *ps) {
 // Get the next character without advancing.
 private Unt
 peekchr(void) {
-   static int after_slash = FALSE;
+   static int after_slash = false;
    if (curchr != UNT)
       return curchr;
 
@@ -724,8 +724,8 @@ peekchr(void) {
                 && prevprevchr == Magic('%')))
       ){
          curchr = Magic('^');
-         at_start = TRUE;
-         prev_at_start = FALSE;
+         at_start = true;
+         prev_at_start = false;
       }
       break;
    case '$':
@@ -741,9 +741,9 @@ peekchr(void) {
                 || p[1] == 'v' || p[1] == 'V' || p[1] == 'Z'))
          {
             if (p[1] == 'v')
-               is_magic_all = TRUE;
+               is_magic_all = true;
             ei (p[1] == 'm' || p[1] == 'M' || p[1] == 'V')
-               is_magic_all = FALSE;
+               is_magic_all = false;
             p += 2;
          }
          if (p[0] == ZERO
@@ -771,7 +771,7 @@ peekchr(void) {
            */
           curchr = -1;
           prev_at_start = at_start;
-          at_start = FALSE;   // be able to say "/\*ptr"
+          at_start = false;   // be able to say "/\*ptr"
           ++regparse;
           ++after_slash;
           peekchr();
@@ -811,7 +811,7 @@ skipchr(void) {
    }
    regparse += prevchr_len;
    prev_at_start = at_start;
-   at_start = FALSE;
+   at_start = false;
    prevprevchr = prevchr;
    prevchr = curchr;
    curchr = nextchr;       // use previously unget char, or -1
@@ -902,14 +902,14 @@ getdecchrs(void) {
  */
 private int
 read_limits(long *minval, long *maxval) {
-    int      reverse = FALSE;
+    int      reverse = false;
     Byte   *first_char;
     long   tmp;
 
     if (*regparse == '-') {
    // Starts with '-', so reverse the range later
    regparse++;
-   reverse = TRUE;
+   reverse = true;
     }
     first_char = regparse;
     *minval = parseLong(&regparse);
@@ -971,7 +971,7 @@ private unsigned   reg_tofreelen;
 //buf      curBook         book in which to search
 //reg_firstlnum   <invalid>      first line in which to search
 //reg_maxline      0         last line nr
-//reg_line_lbr      FALSE or TRUE      FALSE
+//reg_line_lbr      false or true      false
 typedef struct {
    RegMatch      *match;
    RegMultilineMatch      *multiMatch;
@@ -1023,15 +1023,15 @@ typedef struct {
 } Execution;
 
 private Execution   exe;
-private int      isBusyS = FALSE;
+private int      isBusyS = false;
 
-//Return TRUE if character 'c' is included in 'iskeyword' option for "buf" buffer.
+//Return true if character 'c' is included in 'iskeyword' option for "buf" buffer.
 private int
 reg_iswordc(int c) {
    return eeIsWordc_buf(c, exe.book);
 }
 
-private int can_f_submatch = FALSE;   // TRUE when submatch() can be used
+private int can_f_submatch = false;   // true when submatch() can be used
 
 // This struct is used for reg_submatch(). Needed for when the
 // substitution string is an expression that contains a call to substitute()
@@ -1044,7 +1044,7 @@ typedef struct {
    int      sm_line_lbr;
 } regsubMatch;
 
-private regsubMatch rsm;  // can only be used when can_f_submatch is TRUE
+private regsubMatch rsm;  // can only be used when can_f_submatch is true
 
 typedef enum {
     RGLF_LINE = 0x01,
@@ -1129,7 +1129,7 @@ private Byte   *reg_endzp[NSUBEXP];   //   and end of \z(...\) matches
 private PosNoVirt   reg_startzpos[NSUBEXP];   // idem, beginning pos
 private PosNoVirt   reg_endzpos[NSUBEXP];   // idem, end pos
 
-// TRUE if using multi-line regexp.
+// true if using multi-line regexp.
 #define REG_MULTI   (exe.match == NULL)
 
 // Create a new extmatch and mark it as referenced once.
@@ -1167,7 +1167,7 @@ reg_prev_class(void) {
    return -1;
 }
 
-// Return TRUE if the current exe.input position matches the Visual area.
+// Return true if the current exe.input position matches the Visual area.
 private int
 reg_match_visual(void) {
    Pos   top, bot;
@@ -1182,7 +1182,7 @@ reg_match_visual(void) {
 
    // Check if the book is the current book and not using a string.
    if (exe.book != curBook || VIsual.lnum == 0 || !REG_MULTI)
-      return FALSE;
+      return false;
 
    if (VIsual_active) {
       if (LT_POS(VIsual, wp->cursor)) {
@@ -1210,13 +1210,13 @@ reg_match_visual(void) {
    }
    lnum = exe.lnum + exe.reg_firstlnum;
    if (lnum < top.lnum || lnum > bot.lnum)
-      return FALSE;
+      return false;
 
    col = (ColNr)(exe.input - exe.line);
    if (mode == 'v') {
       if ((lnum == top.lnum && col < top.col)
             || (lnum == bot.lnum && col >= bot.col + 1))
-         return FALSE;
+         return false;
    } ei (mode == Ctrl_V) {
       bookGetVirtualColInVirtualMode(wp, &top, &start, NULL, &end);
       bookGetVirtualColInVirtualMode(wp, &bot, &start2, NULL, &end2);
@@ -1233,9 +1233,9 @@ reg_match_visual(void) {
 
       cols = drawLineOnScreentabsize(wp, exe.reg_firstlnum + exe.lnum, exe.line, col);
       if (cols < start || cols > end)
-          return FALSE;
+          return false;
    }
-    return TRUE;
+    return true;
 }
 
 // Cleanup the subexpressions, if this wasn't done yet.
@@ -1253,7 +1253,7 @@ cleanup_subexpr(void) {
       memset(exe.reg_startp, 0, sizeof(CS) * NSUBEXP);
       memset(exe.reg_endp, 0, sizeof(CS) * NSUBEXP);
    }
-   exe.need_clear_subexpr = FALSE;
+   exe.need_clear_subexpr = false;
 }
 
 private void
@@ -1269,7 +1269,7 @@ cleanup_zsubexpr(void) {
       memset(reg_startzp, 0, sizeof(CS) * NSUBEXP);
       memset(reg_endzp, 0, sizeof(CS) * NSUBEXP);
    }
-   exe.need_clear_zsubexpr = FALSE;
+   exe.need_clear_zsubexpr = false;
 }
 
 // Advance exe.lnum, exe.line and exe.input to the next line.
@@ -1572,7 +1572,7 @@ regtilde(CS source) {
    Unt   newsublen = 0;
    Byte   tilde[3] = {'~', ZERO, ZERO};
    Unt   tildelen = 1;
-   int      error = FALSE;
+   int      error = false;
 
    for (p = newsub; *p; ++p) {
       if (STRNCMP(p, tilde, tildelen) == 0) {
@@ -1594,7 +1594,7 @@ regtilde(CS source) {
             // trouble at some point.
             if (tmpsublen > MAXCOL) {
                emsg(_(e_resulting_text_too_long));
-               error = TRUE;
+               error = true;
                break;
             }
             tmpsub = alloc(tmpsublen + 1);
@@ -1720,13 +1720,13 @@ eeRegsub(
    if (isBusyS)
       // Being called recursively, save the state.
       exeSaved = exe;
-   isBusyS = TRUE;
+   isBusyS = true;
 
     exe.match = rmp;
     exe.multiMatch = NULL;
     exe.reg_maxline = 0;
     exe.book = curBook;
-    exe.reg_line_lbr = TRUE;
+    exe.reg_line_lbr = true;
     result = eeRegsub_both(source, expr, dest, destlen, flags);
 
     isBusyS = isBusyS_save;
@@ -1752,14 +1752,14 @@ eeRegsub_multi(
    if (isBusyS)
       // Being called recursively, save the state.
       exeSaved = exe;
-   isBusyS = TRUE;
+   isBusyS = true;
 
    exe.match = NULL;
    exe.multiMatch = rmp;
    exe.book = curBook;   // always works on the current book!
    exe.reg_firstlnum = lnum;
    exe.reg_maxline = curBook->mem.lineCount - lnum;
-   exe.reg_line_lbr = FALSE;
+   exe.reg_line_lbr = false;
    result = eeRegsub_both(source, NULL, dest, destlen, flags);
 
    isBusyS = isBusyS_save;
@@ -1845,7 +1845,7 @@ eeRegsub_both(
          // recursively.  Make sure submatch() gets the text from the first level.
          if (can_f_submatch)
             rsm_save = rsm;
-         can_f_submatch = TRUE;
+         can_f_submatch = true;
          rsm.sm_match = exe.match;
          rsm.sm_mmatch = exe.multiMatch;
          rsm.sm_firstlnum = exe.reg_firstlnum;
@@ -1871,7 +1871,7 @@ eeRegsub_both(
             matchList.list.len = 0;
             CLEAR_FIELD(funcexe);
             funcexe.fe_argv_func = fill_submatch_list;
-            funcexe.fe_evaluate = TRUE;
+            funcexe.fe_evaluate = true;
             if (expr->tag == VAR_FUNC) {
                s = expr->string;
                call_func(s, -1, &returnVar, 1, argv, &funcexe);
@@ -1896,11 +1896,11 @@ eeRegsub_both(
             }
             clearVar(&returnVar);
          } else
-            eval_result[nested] = eval_to_string(source + 2, TRUE, FALSE);
+            eval_result[nested] = eval_to_string(source + 2, true, false);
          --nesting;
 
          if (eval_result[nested] != NULL) {
-            int had_backslash = FALSE;
+            int had_backslash = false;
 
             for (s = eval_result[nested]; *s != ZERO; MB_PTR_ADV(s)) {
                // Change NL to CR, so that it becomes a line break,
@@ -1918,7 +1918,7 @@ eeRegsub_both(
                    */
                   if (*s == NL && !rsm.sm_line_lbr)
                       *s = ENTER;
-                  had_backslash = TRUE;
+                  had_backslash = true;
                 }
             }
             if (had_backslash && (flags & REGSUB_BACKSLASH)) {
@@ -1997,7 +1997,7 @@ eeRegsub_both(
                 // case 'e':   c = ESC;   ++src;   break;
                   case 'b':   c = Ctrl_H;   ++src;   break;
 
-                  // If "backslash" is TRUE the backslash will be removed
+                  // If "backslash" is true the backslash will be removed
                   // later.  Used to insert a literal CR.
                   default:   
                      if (flags & REGSUB_BACKSLASH) {
@@ -2271,7 +2271,7 @@ reg_submatch_list(int no) {
    ColNr   scol;
    ColNr   ecol;
    int      i;
-   int      error = FALSE;
+   int      error = false;
 
    if (!can_f_submatch || no < 0)
       return NULL;
@@ -2291,20 +2291,20 @@ reg_submatch_list(int no) {
       s = reg_getline_submatch(slnum) + scol;
       if (slnum == elnum) {
           if (list_append_string(list, s, ecol - scol) == FAIL)
-         error = TRUE;
+         error = true;
       } else {
           int max_lnum = elnum - slnum;
 
           if (list_append_string(list, s, -1) == FAIL)
-         error = TRUE;
+         error = true;
           for (i = 1; i < max_lnum; i++) {
          s = reg_getline_submatch(slnum + i);
          if (list_append_string(list, s, -1) == FAIL)
-             error = TRUE;
+             error = true;
           }
           s = reg_getline_submatch(elnum);
           if (list_append_string(list, s, ecol) == FAIL)
-         error = TRUE;
+         error = true;
       }
    } else {
       s = rsm.sm_match->startp[no];
@@ -2312,7 +2312,7 @@ reg_submatch_list(int no) {
          return NULL;
       list = list_alloc();
       if (list_append_string(list, s, (int)(rsm.sm_match->endp[no] - s)) == FAIL)
-         error = TRUE;
+         error = true;
     }
 
    if (error) {
@@ -2637,8 +2637,8 @@ compile_start(CS expr, Unt flags) {      // see compileRegexp()
    postfixStartS = alloc(postfix_size);
    postfixS = postfixStartS;
    postfixEndS = postfixStartS + nstate_max;
-   exe.nfa_has_zend = FALSE;
-   exe.nfa_has_backref = FALSE;
+   exe.nfa_has_zend = false;
+   exe.nfa_has_backref = false;
 
    regcomp_start(expr, flags);
 
@@ -2840,12 +2840,12 @@ recognizeCharClass(Byte *start, Byte *end, int extra_newl) {
 #   define CLASS_o9      0x02
 #   define CLASS_underscore   0x01
 
-   int      newl = FALSE;
+   int      newl = false;
    Byte   *p;
    int      config = 0;
 
-   if (extra_newl == TRUE)
-      newl = TRUE;
+   if (extra_newl == true)
+      newl = true;
 
    if (*end != ']')
       return FAIL;
@@ -2896,13 +2896,13 @@ recognizeCharClass(Byte *start, Byte *end, int extra_newl) {
          }
          p += 3;
       } ei (p + 1 < end && *p == '\\' && *(p + 1) == 'n') {
-         newl = TRUE;
+         newl = true;
          p += 2;
       } ei (*p == '_') {
          config |= CLASS_underscore;
          p ++;
       } ei (*p == '\n') {
-         newl = TRUE;
+         newl = true;
          p ++;
       } else
          return FAIL;
@@ -2911,7 +2911,7 @@ recognizeCharClass(Byte *start, Byte *end, int extra_newl) {
    if (p != end)
       return FAIL;
 
-   if (newl == TRUE)
+   if (newl == true)
       extra_newl = ADD_NL;
 
    switch (config) {
@@ -3530,13 +3530,13 @@ nfa_emit_equi_class(int c) {
 }
 
 
-//Return TRUE if the back reference is legal. We must have seen the close brace.
+//Return true if the back reference is legal. We must have seen the close brace.
 //TODO: Should also check that we don't refer to something that is repeated
 //(+*=): what instance of the repetition should we match?
 private int
 seen_endbrace(int refnum){
    if (hadEndbraceS[refnum]) {
-      return TRUE;
+      return true;
    }
    Byte *p;
 
@@ -3548,10 +3548,10 @@ seen_endbrace(int refnum){
    if (*p == ZERO) {
       emsg(_(e_illegal_back_reference));
       anyRegexEmsgG = true;
-      return FALSE;
+      return false;
    }
    
-   return TRUE;
+   return true;
 }
 
 //{{{parsing
@@ -3743,7 +3743,7 @@ parseAtom(OUT Boole* hadEol) {
          if (!seen_endbrace(refnum + 1))
             return FAIL;
          EMIT(BACKREF1 + refnum);
-         exe.nfa_has_backref = TRUE;
+         exe.nfa_has_backref = true;
       }
       break;
 
@@ -3757,7 +3757,7 @@ parseAtom(OUT Boole* hadEol) {
          break;
       case 'e':
          EMIT(ZEND);
-         exe.nfa_has_zend = TRUE;
+         exe.nfa_has_zend = true;
          if (re_mult_next(S"\\ze") == FAIL)
             return FAIL;
          break;
@@ -3881,13 +3881,13 @@ parseAtom(OUT Boole* hadEol) {
          default: {
             Ulong   n = 0;
             int   cmp = c;
-            int   cur = FALSE;
-            int   got_digit = FALSE;
+            int   cur = false;
+            int   got_digit = false;
 
             if (c == '<' || c == '>')
                c = getchr();
             if (no_Magic(c) == '.') {
-               cur = TRUE;
+               cur = true;
                c = getchr();
             }
             while (EE_ISDIGIT(c)) {
@@ -3906,7 +3906,7 @@ parseAtom(OUT Boole* hadEol) {
                }
                n = tmp;
                c = getchr();
-               got_digit = TRUE;
+               got_digit = true;
             }
             if (c == 'l' || c == 'c' || c == 'v') {
                Ulong limit = INT_MAX;
@@ -3921,7 +3921,7 @@ parseAtom(OUT Boole* hadEol) {
                   // \%{n}l  \%{n}<l  \%{n}>l
                   EMIT(cmp == '<' ? LNUM_LT : cmp == '>' ? LNUM_GT : LNUM);
                   if (save_prev_at_start)
-                      at_start = TRUE;
+                      at_start = true;
                } ei (c == 'c') {
                   if (cur) {
                      n = curPor->cursor.col;
@@ -3989,9 +3989,9 @@ collection:
          //Failed to recognize a character class. Use the simple version that turns [abc] into 
          //'a' OR 'b' OR 'c'
          startc = UNT;
-         negated = FALSE;
+         negated = false;
          if (*regparse == '^')  {       // negated range
-            negated = TRUE;
+            negated = true;
             MB_PTR_ADV(regparse);
             EMIT(START_NEG_COLL);
          } else {
@@ -4004,12 +4004,12 @@ collection:
             MB_PTR_ADV(regparse);
          }
          // Emit the OR branches for each character in the []
-         emit_range = FALSE;
+         emit_range = false;
          while (regparse < endp) {
             Unt oldstartc = startc;
 
             startc = UNT;
-            got_coll_char = FALSE;
+            got_coll_char = false;
             if (*regparse == '[') {
                // Check for [: :], [= =], [. .]
                equiclass = collclass = 0;
@@ -4101,7 +4101,7 @@ collection:
             }
             //Try a range like 'a-x' or '\t-z'. Also allows '-' as a start character.
             if (*regparse == '-' && oldstartc != UNT) {
-               emit_range = TRUE;
+               emit_range = true;
                startc = oldstartc;
                MB_PTR_ADV(regparse);
                continue;       // reading the end of the range
@@ -4131,7 +4131,7 @@ collection:
                   if (hexValue >= INT_MAX)
                      EMSG_RET_FAIL(_(e_unicode_val_too_large));
                   startc = (Unt)hexValue;
-                  got_coll_char = TRUE;
+                  got_coll_char = true;
                   MB_PTR_BACK(old_regparse, regparse);
                } else {
                   // \r,\t,\e,\b
@@ -4178,7 +4178,7 @@ collection:
                      EMIT(CONCAT);
                   }
                }
-               emit_range = FALSE;
+               emit_range = false;
                startc = -1;
             } else {
                // This char (startc) is not part of a range. Just emit it.
@@ -4191,7 +4191,7 @@ collection:
                   if (!negated)
                      extra = ADD_NL;
                } else {
-                  if (got_coll_char == TRUE && startc == 0) {
+                  if (got_coll_char == true && startc == 0) {
                      EMIT(0x0a);
                      EMIT(CONCAT);
                   } else {
@@ -4238,7 +4238,7 @@ collection:
          MB_PTR_ADV(regparse);
 
          // Mark end of the collection.
-         if (negated == TRUE) {
+         if (negated == true) {
             EMIT(END_NEG_COLL);
          } else {
             EMIT(END_COLL);
@@ -4309,7 +4309,7 @@ parsePiece(OUT Boole* hadEol) {
    int      op;
    int      ret;
    long   minval, maxval;
-   int      greedy = TRUE;      // Braces are prefixed with '-' ?
+   int      greedy = true;      // Braces are prefixed with '-' ?
    ParseState old_state;
    ParseState new_state;
    long   c2;
@@ -4399,11 +4399,11 @@ parsePiece(OUT Boole* hadEol) {
       // a{-1,3} will expand to 'aa??a??', where ?? is the nongreedy version of '?'
       // \v(ab){2,3} will expand to '(ab)(ab)(ab)?', where all the parentheses have the same id
 
-      greedy = TRUE;
+      greedy = true;
       c2 = peekchr();
       if (c2 == '-' || c2 == Magic('-')) {
          skipchr();
-         greedy = FALSE;
+         greedy = false;
       }
       if (!read_limits(&minval, &maxval))
          EMSG_RET_FAIL(_(e_nfa_regexp_error_reading_repetition_limits));
@@ -4434,7 +4434,7 @@ parsePiece(OUT Boole* hadEol) {
       //Save parse state after the repeated atom and the \{}
       saveParseState(&new_state);
 
-      quest = (greedy == TRUE? QUEST : QUEST_NONGREEDY);
+      quest = (greedy == true? QUEST : QUEST_NONGREEDY);
       for (i = 0; i < maxval; i++) {
          //Goto beginning of the repeated atom
          restoreParseState(&old_state);
@@ -4485,8 +4485,8 @@ parsePiece(OUT Boole* hadEol) {
 //  etc.
 private int
 parseOneOrMorePieces(OUT Boole* hadEol){
-   int      cont = TRUE;
-   int      first = TRUE;
+   int      cont = true;
+   int      first = true;
 
    while (cont) {
       switch (peekchr()) {
@@ -4494,7 +4494,7 @@ parseOneOrMorePieces(OUT Boole* hadEol){
       case Magic('|'):
       case Magic('&'):
       case Magic(')'):
-         cont = FALSE;
+         cont = false;
          break;
 
       case Magic('Z'):
@@ -4533,10 +4533,10 @@ parseOneOrMorePieces(OUT Boole* hadEol){
       default:
          if (parsePiece(OUT hadEol) == FAIL)
             return FAIL;
-      if (first == FALSE) {
+      if (first == false) {
          EMIT(CONCAT);
       } else {
-         first = FALSE;
+         first = false;
       } 
       break;
       }
@@ -4637,7 +4637,7 @@ parse(Unt paren, OUT Boole* hadEol) {  // REG_NOPAREN, REG_PAREN, REG_NPAREN or 
    }
    // Here we set the flag allowing back references to this set of parentheses.
    if (paren == REG_PAREN) {
-      hadEndbraceS[parno] = TRUE;     // have seen the close paren
+      hadEndbraceS[parno] = true;     // have seen the close paren
       EMIT(MOPEN + parno);
    } ei (paren == REG_ZPAREN) {
       EMIT(ZOPEN + parno);
@@ -4668,10 +4668,10 @@ private Byte code[50];
 
 private void
 nfa_set_code(int c) {
-   int addnl = FALSE;
+   int addnl = false;
 
    if (c >= FIRST_NL && c <= LAST_NL) {
-      addnl = TRUE;
+      addnl = true;
       c -= ADD_NL;
    }
 
@@ -4878,7 +4878,7 @@ nfa_set_code(int c) {
       code[5] = c;
    }
 
-   if (addnl == TRUE)
+   if (addnl == true)
       STRCAT(code, " + NEWLINE ");
 
 }
@@ -5847,7 +5847,7 @@ addOptimizationHints(RegProg* prog) {
 
          // Do it directly when what follows is possibly the end of the match.
          if (match_follows(prog->state[i].out1->out, 0))
-            directly = TRUE;
+            directly = true;
          else {
             int ch_invisible = failure_chance(prog->state[i].out, 0);
             int ch_follows = failure_chance(prog->state[i].out1->out, 0);
@@ -5859,7 +5859,7 @@ addOptimizationHints(RegProg* prog) {
                // unless what follows will always match.
                // Otherwise strongly prefer what follows.
                if (prog->state[i].val <= 0 && ch_follows > 0)
-                  directly = FALSE;
+                  directly = false;
                else
                   directly = ch_follows * 10 < ch_invisible;
             } else {
@@ -5882,7 +5882,7 @@ addOptimizationHints(RegProg* prog) {
 typedef struct {
    int       in_use; // number of subexpr with useful info
 
-   // When REG_MULTI is TRUE list.multi is used, otherwise list.line.
+   // When REG_MULTI is true list.multi is used, otherwise list.line.
    union {
       struct multipos {
          LineNr   start_lnum;
@@ -5935,7 +5935,7 @@ typedef struct {
    int          n;      // nr of states currently in "t"
    int          len;   // max nr of states in "t"
    int          id;      // ID of the list
-   int          has_pim;   // TRUE when any state has a PIM
+   int          has_pim;   // true when any state has a PIM
 } nfa_List;
 
 #ifdef ENABLE_LOG
@@ -6071,7 +6071,7 @@ copy_ze_off(Submatch *to, Submatch *from) {
    }
 }
 
-// Return TRUE if "sub1" and "sub2" have the same start positions.
+// Return true if "sub1" and "sub2" have the same start positions.
 // When using back-references also check the end position.
 private int
 sub_equal(Submatch *sub1, Submatch *sub2) {
@@ -6094,10 +6094,10 @@ sub_equal(Submatch *sub1, Submatch *sub2) {
           else
          s2 = -1;
           if (s1 != s2)
-         return FALSE;
+         return false;
           if (s1 != -1 && sub1->list.multi[i].start_col
                        != sub2->list.multi[i].start_col)
-         return FALSE;
+         return false;
 
           if (exe.nfa_has_backref) {
          if (i < sub1->in_use)
@@ -6109,10 +6109,10 @@ sub_equal(Submatch *sub1, Submatch *sub2) {
          else
              s2 = -1;
          if (s1 != s2)
-             return FALSE;
+             return false;
          if (s1 != -1 && sub1->list.multi[i].end_col
                          != sub2->list.multi[i].end_col)
-         return FALSE;
+         return false;
           }
       }
     } else {
@@ -6126,7 +6126,7 @@ sub_equal(Submatch *sub1, Submatch *sub2) {
        else
       sp2 = NULL;
        if (sp1 != sp2)
-      return FALSE;
+      return false;
        if (exe.nfa_has_backref) {
       if (i < sub1->in_use)
           sp1 = sub1->list.line[i].end;
@@ -6137,12 +6137,12 @@ sub_equal(Submatch *sub1, Submatch *sub2) {
       else
           sp2 = NULL;
       if (sp1 != sp2)
-          return FALSE;
+          return false;
        }
    }
     }
 
-    return TRUE;
+    return true;
 }
 
 // Check whether we are past the time limit, if there is one.
@@ -6152,11 +6152,11 @@ nfa_did_time_out(void) {
       if (timedOutS != NULL) {
          if (!*timedOutS)
             lo("NFA regexp timed out");
-         *timedOutS = TRUE;
+         *timedOutS = true;
       }
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 #ifdef ENABLE_LOG
@@ -6170,8 +6170,8 @@ open_debug_log(int result) {
 
     fprintf(log_fd, "****************************\n");
     fprintf(log_fd, "FINISHED RUNNING match() recursively\n");
-    fprintf(log_fd, "MATCH = %s\n", result == TRUE ? "OK" : result == MAYBE
-       ? "MAYBE" : "FALSE");
+    fprintf(log_fd, "MATCH = %s\n", result == true ? "OK" : result == MAYBE
+       ? "MAYBE" : "false");
     fprintf(log_fd, "****************************\n");
 }
 
@@ -6200,7 +6200,7 @@ report_state(char *action,
 }
 #endif
 
-// Return TRUE if the same state is already in list "l" with the same positions as "subs".
+// Return true if the same state is already in list "l" with the same positions as "subs".
 private int
 has_state_with_pos(
     nfa_List      *l,   // runtime state list
@@ -6218,12 +6218,12 @@ has_state_with_pos(
       && (!exe.nfa_has_zsubexpr
             || sub_equal(&thread->subs.synt, &subs->synt))
       && pim_equal(&thread->pim, pim))
-       return TRUE;
+       return true;
     }
-    return FALSE;
+    return false;
 }
 
-// Return TRUE if "one" and "two" are equal.  That includes when both are not set.
+// Return true if "one" and "two" are equal.  That includes when both are not set.
 private int
 pim_equal(PostponedMatch *one, PostponedMatch *two) {
    int one_unused = (one == NULL || one->result == PIM_UNUSED);
@@ -6234,10 +6234,10 @@ pim_equal(PostponedMatch *one, PostponedMatch *two) {
    return two_unused;
     if (two_unused)
    // one is used and two is not: not equal
-   return FALSE;
+   return false;
     // compare the state id
     if (one->state->id != two->state->id)
-   return FALSE;
+   return false;
     // compare the position
     if (REG_MULTI)
    return one->end.pos.lnum == two->end.pos.lnum
@@ -6245,14 +6245,14 @@ pim_equal(PostponedMatch *one, PostponedMatch *two) {
     return one->end.ptr == two->end.ptr;
 }
 
-// Return TRUE if "state" leads to a MATCH without advancing the input.
+// Return true if "state" leads to a MATCH without advancing the input.
 private int
 match_follows(RState *startstate, int depth) {
    RState       *state = startstate;
 
    // avoid too much recursion
    if (depth > 10)
-      return FALSE;
+      return false;
 
    while (state != NULL) {
       switch (state->c) {
@@ -6261,7 +6261,7 @@ match_follows(RState *startstate, int depth) {
          case END_INVISIBLE:
          case END_INVISIBLE_NEG:
          case END_PATTERN:
-            return TRUE;
+            return true;
 
          case SPLIT:
             return match_follows(state->out, depth + 1) || match_follows(state->out1, depth + 1);
@@ -6313,12 +6313,12 @@ match_follows(RState *startstate, int depth) {
          case START_NEG_COLL:
          case NEWL:
             // state will advance input
-            return FALSE;
+            return false;
 
          default:
             if (state->c > 0)
                 // state will advance input
-                return FALSE;
+                return false;
 
             // Others: zero-width or possibly zero-width, might still find
             // a match at the same position, keep looking.
@@ -6326,11 +6326,11 @@ match_follows(RState *startstate, int depth) {
       }
       state = state->out;
    }
-   return FALSE;
+   return false;
 }
 
 
-// Return TRUE if "state" is already in list "l".
+// Return true if "state" is already in list "l".
 private int
 state_in_list(
     nfa_List      *l,   // runtime state list
@@ -6339,9 +6339,9 @@ state_in_list(
 ){
    if (state->lastlist[nfa_ll_index] == l->id) {
       if (!exe.nfa_has_backref || has_state_with_pos(l, state, subs, NULL))
-         return TRUE;
+         return true;
    }
-   return FALSE;
+   return false;
 }
 
 // Offset used for "off" by addstate_here().
@@ -6360,10 +6360,10 @@ addstate(
 ){
    int         subidx;
    int         off = off_arg;
-   int         add_here = FALSE;
+   int         add_here = false;
    int         listindex = 0;
    int         k;
-   int         found = FALSE;
+   int         found = false;
    nfa_thread_T   *thread;
    struct multipos   save_multipos;
    int         save_in_use;
@@ -6373,7 +6373,7 @@ addstate(
    Submatches      *subs = subs_arg;
    static Submatches   temp_subs;
 #ifdef ENABLE_LOG
-   int         did_print = FALSE;
+   int         did_print = false;
 #endif
    static int      depth = 0;
 
@@ -6388,7 +6388,7 @@ addstate(
    }
 
    if (off_arg <= -ADDSTATE_HERE_OFFSET) {
-      add_here = TRUE;
+      add_here = true;
       off = 0;
       listindex = -(off_arg + ADDSTATE_HERE_OFFSET);
    }
@@ -6466,7 +6466,7 @@ addstate(
          if (add_here) {
             for (k = 0; k < l->n && k < listindex; ++k)
                if (l->t[k].state->id == state->id) {
-                  found = TRUE;
+                  found = true;
                   break;
                }
          }
@@ -6523,14 +6523,14 @@ addstate(
          thread->pim.result = PIM_UNUSED;
       else {
          copy_pim(&thread->pim, pim);
-         l->has_pim = TRUE;
+         l->has_pim = true;
       }
       copy_sub(&thread->subs.norm, &subs->norm);
       if (exe.nfa_has_zsubexpr)
          copy_sub(&thread->subs.synt, &subs->synt);
 #ifdef ENABLE_LOG
       report_state("Adding", &thread->subs.norm, state, l->id, pim);
-      did_print = TRUE;
+      did_print = true;
 #endif
    }
 
@@ -6895,7 +6895,7 @@ check_char_class(int class, int c) {
    return FAIL;
 }
 
-// Check for a match with subexpression "subidx". Return TRUE if it matches.
+// Check for a match with subexpression "subidx". Return true if it matches.
 private int
 match_backref(
    Submatch   *sub,       // pointers to subexpressions
@@ -6908,7 +6908,7 @@ match_backref(
 retempty:
       // backref was not set, match an empty string
       *bytelen = 0;
-      return TRUE;
+      return true;
    }
 
    if (REG_MULTI) {
@@ -6920,7 +6920,7 @@ retempty:
          len = sub->list.multi[subidx].end_col - sub->list.multi[subidx].start_col;
          if (cstrncmp(exe.line + sub->list.multi[subidx].start_col, exe.input, &len) == 0) {
             *bytelen = len;
-            return TRUE;
+            return true;
          }
       } else {
          if (match_with_backref(
@@ -6929,7 +6929,7 @@ retempty:
             sub->list.multi[subidx].end_lnum,
             sub->list.multi[subidx].end_col,
             bytelen) == RA_MATCH)
-         return TRUE;
+         return true;
       }
    } else {
       if (sub->list.line[subidx].start == NULL || sub->list.line[subidx].end == NULL)
@@ -6937,14 +6937,14 @@ retempty:
       len = (int)(sub->list.line[subidx].end - sub->list.line[subidx].start);
       if (cstrncmp(sub->list.line[subidx].start, exe.input, &len) == 0) {
          *bytelen = len;
-         return TRUE;
+         return true;
       }
    }
-   return FALSE;
+   return false;
 }
 
 
-// Check for a match with \z subexpression "subidx". Return TRUE if it matches.
+// Check for a match with \z subexpression "subidx". Return true if it matches.
 private int
 match_zref(
    int      subidx,
@@ -6956,15 +6956,15 @@ match_zref(
    if (re_extmatch_in == NULL || re_extmatch_in->matches[subidx] == NULL) {
       // backref was not set, match an empty string
       *bytelen = 0;
-      return TRUE;
+      return true;
    }
 
    len = (int)STRLEN(re_extmatch_in->matches[subidx]);
    if (cstrncmp(re_extmatch_in->matches[subidx], exe.input, &len) == 0) {
       *bytelen = len;
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 // Save list IDs for all NFA states of "prog" into "list". Also reset the IDs to zero.
@@ -7019,7 +7019,7 @@ recursiveMatch(
    StartEnd   endpos;
    StartEnd* endposp = NULL;
    int      result;
-   int      need_restore = FALSE;
+   int      need_restore = false;
 
    if (pim != NULL) {
       // start at the position where the postponed match was
@@ -7099,7 +7099,7 @@ recursiveMatch(
          *listids_len = prog->nstate;
       }
       nfa_save_listids(prog, *listids);
-      need_restore = TRUE;
+      need_restore = true;
       // any value of exe.nfa_listid will do
    } else {
       // First recursive match() call, switch to the second lastlist
@@ -7316,7 +7316,7 @@ find_input(ColNr *startcol, int regstart, Byte *input) {
    int       match;
 
    for (;;) {
-      match = TRUE;
+      match = true;
       // skip regstart
       Unt len2 = MB_CHAR2LEN(regstart);
       if (len2 > 1 && MB_CHAR2LEN(mb_ptr2char(exe.line + col)) != len2)
@@ -7327,7 +7327,7 @@ find_input(ColNr *startcol, int regstart, Byte *input) {
          c1 = mb_ptr2char(input + len1);
          c2 = mb_ptr2char(exe.line + col + len2);
          if (c1 != c2 && (!exe.reg_ic || MB_CASEFOLD(c1) != MB_CASEFOLD(c2))) {
-            match = FALSE;
+            match = false;
             break;
          }
          len2 += utf_ptr2len(exe.line + col + len2);
@@ -7366,7 +7366,7 @@ find_input(ColNr *startcol, int regstart, Byte *input) {
 //
 // When "mustEndAtS" is not NULL it is a required end-of-match position.
 //
-// Return TRUE if there is a match, FALSE if there is no match,
+// Return true if there is a match, false if there is no match,
 // TOO_EXPENSIVE if we end up with too many states.
 // When there is a match "submatch" contains the positions.
 //
@@ -7378,10 +7378,10 @@ match(
    Submatches* submatch,
    Submatches* m
 ){
-   int      result = FALSE;
+   int      result = false;
    Unt   size = 0;
    int      flag = 0;
-   int      go_to_nextline = FALSE;
+   int      go_to_nextline = false;
    nfa_thread_T *t;
    nfa_List   list[2];
    int      listidx;
@@ -7403,18 +7403,18 @@ match(
    // recursiveMatch(). Allow interrupting them with CTRL-C.
    fast_breakcheck();
    if (gotInterruptG)
-      return FALSE;
+      return false;
    if (nfa_did_time_out())
-      return FALSE;
+      return false;
 
 #ifdef REGEXP_DEBUG_LOG
    debug = fopen(REGEXP_DEBUG_LOG, "a");
    if (debug == NULL) {
       showErrFmtMsg("(NFA) COULD NOT OPEN %s!", REGEXP_DEBUG_LOG);
-      return FALSE;
+      return false;
    }
 #endif
-   nfa_match = FALSE;
+   nfa_match = false;
 
    // Allocate memory for the lists of nodes.
    size = (prog->nstate + 1) * sizeof(nfa_thread_T);
@@ -7441,10 +7441,10 @@ match(
 
     thislist = &list[0];
     thislist->n = 0;
-    thislist->has_pim = FALSE;
+    thislist->has_pim = false;
     nextlist = &list[1];
     nextlist->n = 0;
-    nextlist->has_pim = FALSE;
+    nextlist->has_pim = false;
 #ifdef ENABLE_LOG
     fprintf(log_fd, "(---) STARTSTATE first\n");
 #endif
@@ -7481,14 +7481,14 @@ match(
       int clen = utfCharLen(exe.input);
       if (curc == ZERO) {
          clen = 0;
-         go_to_nextline = FALSE;
+         go_to_nextline = false;
       }
 
       // swap lists
       thislist = &list[flag];
       nextlist = &list[flag ^= 1];
       nextlist->n = 0;       // clear nextlist
-      nextlist->has_pim = FALSE;
+      nextlist->has_pim = false;
       ++exe.nfa_listid;
       thislist->id = exe.nfa_listid;
       nextlist->id = exe.nfa_listid + 1;
@@ -7548,7 +7548,7 @@ match(
 
        // Handle the possible codes of the current state. The most important is MATCH.
        add_state = NULL;
-       add_here = FALSE;
+       add_here = false;
        add_count = 0;
        switch (t->state->c) {
        case MATCH: {
@@ -7558,7 +7558,7 @@ match(
          if (!exe.reg_icombine && exe.input != exe.line && utf_iscomposing(curc))
              break;
 
-         nfa_match = TRUE;
+         nfa_match = true;
          copy_sub(&submatch->norm, &t->subs.norm);
          if (exe.nfa_has_zsubexpr)
              copy_sub(&submatch->synt, &t->subs.synt);
@@ -7618,7 +7618,7 @@ match(
       fprintf(log_fd, "Match found:\n");
       log_subsexpr(m);
 #endif
-      nfa_match = TRUE;
+      nfa_match = true;
       // See comment above at "goto nextchar".
       if (nextlist->n == 0)
           clen = 0;
@@ -7660,7 +7660,7 @@ match(
                goto theend;
             }
 
-            // for \@! and \@<! it is a match when the result is FALSE
+            // for \@! and \@<! it is a match when the result is false
             if (result != (t->state->c == START_INVISIBLE_NEG
                    || t->state->c == START_INVISIBLE_NEG_FIRST
                    || t->state->c
@@ -7677,7 +7677,7 @@ match(
 
                // t->state->out1 is the corresponding
                // END_INVISIBLE node; Add its out to the current list (zero-width match).
-               add_here = TRUE;
+               add_here = true;
                add_state = t->state->out1->out;
             }
             m->norm.in_use = in_use;
@@ -7776,7 +7776,7 @@ match(
          if (bytelen == 0) {
             // empty match, output of corresponding
             // END_PATTERN/SKIP to be used at current position
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out1->out->out;
          } ei (bytelen <= clen) {
             // match current character, output of corresponding
@@ -7795,43 +7795,43 @@ match(
 
       case BOL:
          if (exe.input == exe.line) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
 
       case EOL:
          if (curc == ZERO) {
-             add_here = TRUE;
+             add_here = true;
              add_state = t->state->out;
          }
          break;
 
       case BOW:
-         result = TRUE;
+         result = true;
 
       if (curc == ZERO)
-         result = FALSE;
+         result = false;
       else {
          int this_class;
 
          // Get class of current and previous char (if it exists).
          this_class = inpGetClassForBook(exe.input, exe.book);
          if (this_class <= 1)
-            result = FALSE;
+            result = false;
          ei (reg_prev_class() == this_class)
-            result = FALSE;
+            result = false;
       } 
       if (result) {
-         add_here = TRUE;
+         add_here = true;
          add_state = t->state->out;
       }
       break;
 
       case EOW:
-      result = TRUE;
+      result = true;
       if (exe.input == exe.line)
-         result = FALSE;
+         result = false;
       else {
          int this_class, prev_class;
 
@@ -7839,24 +7839,24 @@ match(
          this_class = inpGetClassForBook(exe.input, exe.book);
          prev_class = reg_prev_class();
          if (this_class == prev_class || prev_class == 0 || prev_class == 1)
-            result = FALSE;
+            result = false;
       } 
       if (result) {
-         add_here = TRUE;
+         add_here = true;
          add_state = t->state->out;
       }
       break;
 
       case BOF:
          if (exe.lnum == 0 && exe.input == exe.line && (!REG_MULTI || exe.reg_firstlnum == 1)) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
 
       case EOFF:
          if (exe.lnum == exe.reg_maxline && curc == ZERO) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
@@ -7929,7 +7929,7 @@ match(
 
       case NEWL:
       if (curc == ZERO && !exe.reg_line_lbr && REG_MULTI && exe.lnum <= exe.reg_maxline) {
-         go_to_nextline = TRUE;
+         go_to_nextline = true;
          //Pass -1 for the offset, which means taking the position at the start of the next line.
          add_state = t->state->out;
          add_off = -1;
@@ -8084,7 +8084,7 @@ match(
          if (utf_iscomposing(curc)) {
             add_off = clen;
          } else {
-            add_here = TRUE;
+            add_here = true;
             add_off = 0;
          }
          add_state = t->state->out;
@@ -8265,7 +8265,7 @@ match(
             if (bytelen == 0) {
                // empty match always works, output of SKIP to be
                // used next
-               add_here = TRUE;
+               add_here = true;
                add_state = t->state->out->out;
             } ei (bytelen <= clen) {
                // match current character, jump ahead to out of SKIP
@@ -8302,7 +8302,7 @@ match(
             nfa_re_num_cmp(t->state->val, t->state->c - LNUM,
                 (Ulong)(exe.lnum + exe.reg_firstlnum)));
          if (result) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
@@ -8313,7 +8313,7 @@ match(
          result = nfa_re_num_cmp(t->state->val, t->state->c - COL,
             (Ulong)(exe.input - exe.line) + 1);
          if (result) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
@@ -8329,7 +8329,7 @@ match(
          // overhead of drawLineOnScreentabsize() on long lines.
          if (op != 1 && col > t->state->val * MB_MAXBYTES)
             break;
-         result = FALSE;
+         result = false;
          if (op == 1 && col - 1 > t->state->val && col > 100) {
             int ts = wp->book->o.shiftWidth;
 
@@ -8348,7 +8348,7 @@ match(
             result = nfa_re_num_cmp(t->state->val, op, vcol + 1);
          }
          if (result) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
       }
@@ -8360,7 +8360,7 @@ match(
          Pos   *pos;
          Unt   col = REG_MULTI ? exe.input - exe.line : 0;
 
-         pos = markGetBook(exe.book, t->state->val, FALSE);
+         pos = markGetBook(exe.book, t->state->val, false);
 
          // Line may have been freed, get it again.
          if (REG_MULTI) {
@@ -8386,7 +8386,7 @@ match(
                    ? t->state->c == (Unt)MARK_GT
                    : t->state->c == (Unt)MARK_LT));
             if (result) {
-               add_here = TRUE;
+               add_here = true;
                add_state = t->state->out;
             }
          }
@@ -8399,7 +8399,7 @@ match(
                && ((ColNr)(exe.input - exe.line) == exe.portal->cursor.col)
          );
          if (result) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
@@ -8407,7 +8407,7 @@ match(
       case VISUAL:
          result = reg_match_visual();
          if (result) {
-            add_here = TRUE;
+            add_here = true;
             add_state = t->state->out;
          }
          break;
@@ -8478,7 +8478,7 @@ match(
 #endif
                result = recursiveMatch(pim->state, pim, prog, submatch, m, &listids, &listids_len);
                pim->result = result ? PIM_MATCH : PIM_NOMATCH;
-               // for \@! and \@<! it is a match when the result is FALSE
+               // for \@! and \@<! it is a match when the result is false
                if (result != (pim->state->c == (Unt)START_INVISIBLE_NEG
                     || pim->state->c == (Unt)START_INVISIBLE_NEG_FIRST
                     || pim->state->c == (Unt)START_INVISIBLE_BEFORE_NEG
@@ -8494,12 +8494,12 @@ match(
 #ifdef ENABLE_LOG
             fprintf(log_fd, "\n");
             fprintf(log_fd, "Using previous recursive match() result, result == %d\n", pim->result);
-            fprintf(log_fd, "MATCH = %s\n", result == TRUE ? "OK" : "FALSE");
+            fprintf(log_fd, "MATCH = %s\n", result == true ? "OK" : "false");
             fprintf(log_fd, "\n");
 #endif
             }
 
-            // for \@! and \@<! it is a match when result is FALSE
+            // for \@! and \@<! it is a match when result is false
             if (result != (pim->state->c == (Unt)START_INVISIBLE_NEG
                  || pim->state->c == (Unt)START_INVISIBLE_NEG_FIRST
                  || pim->state->c == (Unt)START_INVISIBLE_BEFORE_NEG
@@ -8548,7 +8548,7 @@ match(
    // because recursive calls should only start in the first position.
    // Unless "mustEndAtS" is not NULL, then we match the end position.
    // Also don't start a match past the first line.
-   if (nfa_match == FALSE
+   if (nfa_match == false
       && ((toplevel
          && exe.lnum == 0
          && clen != 0
@@ -8567,7 +8567,7 @@ match(
 #endif
       // Inline optimized code for addstate() if we know the state is the first MOPEN.
       if (toplevel) {
-         int add = TRUE;
+         int add = true;
          int c;
 
          if (prog->regstart != ZERO && clen != 0) {
@@ -8593,7 +8593,7 @@ match(
 #ifdef ENABLE_LOG
                    fprintf(log_fd, "  Skipping start state, regstart does not match\n");
 #endif
-                   add = FALSE;
+                   add = false;
                }
             }
          }
@@ -8704,7 +8704,7 @@ parseBranchtry(
    clear_sub(&subs.synt);
    clear_sub(&m.synt);
    result = match(prog, start, &subs, &m);
-   if (result == FALSE)
+   if (result == false)
       return 0;
    ei (result == TOO_EXPENSIVE)
       return result;
@@ -8812,13 +8812,13 @@ parseBranchexec_both(
 
    //If pattern contains "\c" or "\C": overrule value of exe.reg_ic
    if (prog->regflags & RF_ICASE)
-      exe.reg_ic = TRUE;
+      exe.reg_ic = true;
    ei (prog->regflags & RF_NOICASE)
-      exe.reg_ic = FALSE;
+      exe.reg_ic = false;
 
    //If pattern contains "\Z" overrule value of exe.reg_icombine
    if (prog->regflags & RF_ICOMBINE)
-      exe.reg_icombine = TRUE;
+      exe.reg_icombine = true;
 
    exe.line = line;
    exe.lnum = 0;    // relative to line
@@ -8835,14 +8835,14 @@ parseBranchexec_both(
    if (prog->reganch && col > 0)
       return 0L;
 
-   exe.need_clear_subexpr = TRUE;
+   exe.need_clear_subexpr = true;
    //Clear the external match subpointers if necessary.
    if (prog->reghasz == REX_SET) {
-      exe.nfa_has_zsubexpr = TRUE;
-      exe.need_clear_zsubexpr = TRUE;
+      exe.nfa_has_zsubexpr = true;
+      exe.need_clear_zsubexpr = true;
    } else {
-      exe.nfa_has_zsubexpr = FALSE;
-      exe.need_clear_zsubexpr = FALSE;
+      exe.nfa_has_zsubexpr = false;
+      exe.need_clear_zsubexpr = false;
    }
 
    if (prog->regstart != ZERO) {
@@ -9014,7 +9014,7 @@ freeBranch(RegProg *prog) {
 
 // Match a regexp against a string.
 // "rmp->regprog" is a compiled regexp as returned by compile(). Use curBook for line count 
-// and 'iskeyword'. If "line_lbr" is TRUE consider a "\n" in "line" to be a line break.
+// and 'iskeyword'. If "line_lbr" is true consider a "\n" in "line" to be a line break.
 // Return <= 0 for failure, number of lines contained in the match otherwise.
 private int
 parseBranchexec_nl(
@@ -9030,7 +9030,7 @@ parseBranchexec_nl(
    exe.book = curBook;
    exe.portal = NULL;
    exe.reg_ic = rmp->rm_ic;
-   exe.reg_icombine = FALSE;
+   exe.reg_icombine = false;
    exe.reg_maxcol = 0;
    return parseBranchexec_both(line, col, NULL);
 }
@@ -9049,9 +9049,9 @@ init_regexec_multi(
    exe.portal = win;
    exe.reg_firstlnum = lnum;
    exe.reg_maxline = exe.book->mem.lineCount - lnum;
-   exe.reg_line_lbr = FALSE;
+   exe.reg_line_lbr = false;
    exe.reg_ic = rmp->rmm_ic;
-   exe.reg_icombine = FALSE;
+   exe.reg_icombine = false;
    exe.reg_maxcol = rmp->rmm_maxcol;
 }
 
@@ -9153,9 +9153,9 @@ free_regexp_stuff(void) {
 // "rmp->regprog" must be a compiled regexp as returned by compileRegexp().
 // Note: "rmp->regprog" may be freed and changed.
 // Uses curBook for line count and 'iskeyword'.
-// When "nl" is TRUE consider a "\n" in "line" to be a line break.
+// When "nl" is true consider a "\n" in "line" to be a line break.
 //
-// Return TRUE if there is a match, FALSE if not.
+// Return true if there is a match, false if not.
 private Boole
 eeRegexec_string(
    RegMatch   *rmp,
@@ -9193,28 +9193,28 @@ eeRegexec_string(
    return result > 0;
 }
 
-// Note: "*prog" may be freed and changed. Return TRUE if there is a match, FALSE if not.
+// Note: "*prog" may be freed and changed. Return true if there is a match, false if not.
 Boole
 eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
    RegMatch regmatch;
    regmatch.regprog = *prog;
    regmatch.rm_ic = ignore_case;
-   int r = eeRegexec_string(&regmatch, line, col, FALSE);
+   int r = eeRegexec_string(&regmatch, line, col, false);
    *prog = regmatch.regprog;
    return r;
 }
 
-// Note: "rmp->regprog" may be freed and changed. Return TRUE if there is a match, FALSE if not.
+// Note: "rmp->regprog" may be freed and changed. Return true if there is a match, false if not.
 Boole
 eeRegexec(RegMatch* rmp, Byte *line, ColNr col) {
-   return eeRegexec_string(rmp, line, col, FALSE);
+   return eeRegexec_string(rmp, line, col, false);
 }
 
 // Like eeRegexec(), but consider a "\n" in "line" to be a line break.
-// Note: "rmp->regprog" may be freed and changed. Return TRUE if there is a match, FALSE if not.
+// Note: "rmp->regprog" may be freed and changed. Return true if there is a match, false if not.
 int
 eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col) {
-   return eeRegexec_string(rmp, line, col, TRUE);
+   return eeRegexec_string(rmp, line, col, true);
 }
 
 // Match a regexp against multiple lines.
@@ -9239,14 +9239,14 @@ eeRegexec_multi(
    // Cannot use the same prog recursively, it contains state.
    if (rmp->regprog->re_in_use) {
       emsg(_(e_cannot_use_pattern_recursively));
-      return FALSE;
+      return false;
    }
    rmp->regprog->re_in_use = true;
 
    if (isBusyS)
       // Being called recursively, save the state.
       exeSaved = exe;
-   isBusyS = TRUE;
+   isBusyS = true;
 
    result = matchManyLines(rmp, port, book, lnum, col, timed_out);
    rmp->regprog->re_in_use = false;

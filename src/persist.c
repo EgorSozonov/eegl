@@ -29,12 +29,12 @@ add_user(Byte *user, int need_copy) {
 //Find all user names for user completion. Done only once and then cached.
 private void
 init_users(void) {
-   static int   lazy_init_done = FALSE;
+   static int   lazy_init_done = false;
 
    if (lazy_init_done)
       return;
 
-   lazy_init_done = TRUE;
+   lazy_init_done = true;
    ga_init2(&ga_users, sizeof(CS), 20);
 
    {
@@ -42,7 +42,7 @@ init_users(void) {
 
    setpwent();
    while ((pw = getpwent()) != NULL)
-      add_user((CS)pw->pw_name, TRUE);
+      add_user((CS)pw->pw_name, true);
    endpwent();
    }
    CS user_env = mch_getenv(S"USER");
@@ -64,7 +64,7 @@ init_users(void) {
       if (i == (Unt)ga_users.len) {
          struct passwd *pw = getpwnam((char *)user_env);
          if (pw)
-            add_user((CS)pw->pw_name, TRUE);
+            add_user((CS)pw->pw_name, true);
       }
    }
 }
@@ -160,7 +160,7 @@ ses_put_fname(FILE *fd, CS name) {
 }
 
 //Write a book name to the session file.
-//Also end the line, if "add_eol" is TRUE. Return FAIL if writing fails.
+//Also end the line, if "add_eol" is true. Return FAIL if writing fails.
 private int
 ses_fname(FILE* fd, Book* book, int add_eol) {
    CS name = book->shortFileName;
@@ -171,7 +171,7 @@ ses_fname(FILE* fd, Book* book, int add_eol) {
 
 // Write an argument list to the session file. Return FAIL if writing fails.
 private int
-ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // TRUE: use full path name
+ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // true: use full path name
    if (FPUTS(cmd, fd) < 0 || put_eol(fd) == FAIL)
       return FAIL;
    if (put_line(fd, S"%argdel") == FAIL)
@@ -185,7 +185,7 @@ ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname) {   // TRUE: use ful
       
       Byte buf[MAXPATHL];
       if (fullname) {
-         (void)eeFullFileName(s, buf, MAXPATHL, FALSE);
+         (void)eeFullFileName(s, buf, MAXPATHL, false);
          s = buf;
       }
       if (fputs("$argadd ", fd) < 0 
@@ -207,10 +207,10 @@ portNeedsToBeSaved(Portal* po) {
    if (!po->book->currFileName || bt_nofilename(po->book))
       // When 'buftype' is "nofile", can't restore the portal contents.
       return false;
-   return TRUE;
+   return true;
 }
 
-// Return TRUE if frame "fr" has a window somewhere that we want to save in the Session
+// Return true if frame "fr" has a window somewhere that we want to save in the Session
 private Boole
 ses_do_frame(Frame* fr) {
    if (fr->layout == FR_LEAF)
@@ -318,7 +318,7 @@ put_view_curpos(FILE *fd, Portal *wp, char *spaces) {
       r = fprintf(fd, "%snormal! $", spaces);
    else
       r = fprintf(fd, "%snormal! 0%d|", spaces, wp->virtCol + 1);
-   return r < 0 || put_eol(fd) == FAIL ? FALSE : OK;
+   return r < 0 || put_eol(fd) == FAIL ? false : OK;
 }
 
 //Write commands to "fd" to restore the view of a window.
@@ -334,7 +334,7 @@ put_view(
 ){
    Portal   *save_curPor;
    int      f;
-   int      did_next = FALSE;
+   int      did_next = false;
 
    // Always restore cursor position for ":mksession".
    Boole do_cursor = true;
@@ -355,7 +355,7 @@ put_view(
    if (wp->argListInd != current_arg_idx && wp->argListInd < WARGCOUNT(wp)) {
       if (fprintf(fd, "%ldargu", (long)wp->argListInd + 1) < 0 || put_eol(fd) == FAIL)
          return FAIL;
-      did_next = TRUE;
+      did_next = true;
    }
 
    // Edit the file.  Skip this when ":next" already did it.
@@ -387,11 +387,11 @@ put_view(
           // edit that book, to not lose folding information (:edit resets
           // folds in other books)
           if (fputs("if bufexists(fnamemodify(\"", fd) < 0
-             || ses_fname(fd, wp->book, FALSE) == FAIL
+             || ses_fname(fd, wp->book, false) == FAIL
              || fputs("\", \":p\")) | buffer ", fd) < 0
-             || ses_fname(fd, wp->book, FALSE) == FAIL
+             || ses_fname(fd, wp->book, false) == FAIL
              || fputs(" | else | edit ", fd) < 0
-             || ses_fname(fd, wp->book, FALSE) == FAIL
+             || ses_fname(fd, wp->book, false) == FAIL
              || fputs(" | endif", fd) < 0
              || put_eol(fd) == FAIL)
          return FAIL;
@@ -401,10 +401,10 @@ put_view(
             return FAIL;
          if (wp->book->fullFileName != NULL) {
             //The book does have a name, but it's not a file name.
-            if (fputs("file ", fd) < 0 || ses_fname(fd, wp->book, TRUE) == FAIL)
+            if (fputs("file ", fd) < 0 || ses_fname(fd, wp->book, true) == FAIL)
                return FAIL;
          }
-         do_cursor = FALSE;
+         do_cursor = false;
       }
    }
 
@@ -416,7 +416,7 @@ put_view(
             && alt->currFileName != NULL
             && *alt->currFileName != ZERO
             && alt->o.bookListed
-            && (fputs("balt ", fd) < 0 || ses_fname(fd, alt, TRUE) == FAIL))
+            && (fputs("balt ", fd) < 0 || ses_fname(fd, alt, true) == FAIL))
          return FAIL;
    }
 
@@ -569,12 +569,12 @@ private int
 makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    Book   *book;
    int      nr;
-   int      restore_size = TRUE;
-   int      restore_height_width = FALSE;
+   int      restore_size = true;
+   int      restore_height_width = false;
    Portal   *wp;
    Byte   *sname;
    Portal   *edited_win = NULL;
-   int      restore_stal = FALSE;
+   int      restore_stal = false;
    Portal   *tab_firstPor;
    Frame   *tab_topframe;
    int      cur_arg_idx = 0;
@@ -631,7 +631,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
    FOR_ALL_BOOKS(book) {
       if (fprintf(fd, "badd +%ld ", book->portInfos == NULL ? 1L
                   : book->portInfos->wi_fpos.lnum) < 0
-             || ses_fname(fd, book, TRUE) == FAIL)
+             || ses_fname(fd, book, true) == FAIL)
          goto fail;
    }
 
@@ -659,7 +659,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
 
    // Assume "tabs" is in 'sessionoptions'. If not then we only do "curtab" and bail out of the loop
    FOR_ALL_TABS(tp) {
-      int   need_tabnext = FALSE;
+      int   need_tabnext = false;
       int   cnr = 1;
 
       // May repeat putting Portals for each tab, when "tabs" is in 'sessionoptions'.
@@ -672,7 +672,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          tab_topframe = tp->topframe;
       }
       if (tp != firstTabG)
-         need_tabnext = TRUE;
+         need_tabnext = true;
 
       // Before creating the window layout, try loading one file.  If this
       // is aborted we don't end up with a number of useless windows.
@@ -685,9 +685,9 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          ){
             if (need_tabnext && put_line(fd, S"tabnext") == FAIL)
                goto fail;
-            need_tabnext = FALSE;
+            need_tabnext = false;
 
-            if (fputs("edit ", fd) < 0 || ses_fname(fd, wp->book, TRUE) == FAIL)
+            if (fputs("edit ", fd) < 0 || ses_fname(fd, wp->book, true) == FAIL)
                goto fail;
             if (!wp->isNotValid)
                edited_win = wp;
@@ -720,7 +720,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
          if (portNeedsToBeSaved(wp))
             ++nr;
          else
-            restore_size = FALSE;
+            restore_size = false;
          if (curPor == wp)
             cnr = nr;
       }
@@ -746,7 +746,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
                 || put_line(fd, S"set winminwidth=0") == FAIL
                 || put_line(fd, S"set winwidth=1") == FAIL)
             goto fail;
-         restore_height_width = TRUE;
+         restore_height_width = true;
       }
       if (nr > 1 && portalSizes(fd, restore_size, tab_firstPor) == FAIL)
          goto fail;
@@ -833,7 +833,7 @@ fail:
 # if (defined(EXPERIMENTAL_GUI_CMD)) || defined(PROTO)
 //Generate a script that can be used to restore the current editing session.
 //Save the value of v:this_session before running :mksession in order to make
-//automagic session save fully transparent.  Return TRUE on success.
+//automagic session save fully transparent.  Return true on success.
 int
 write_session_file(CS filename) {
    // Build a command line to create a script that restores the current
@@ -859,13 +859,13 @@ write_session_file(CS filename) {
    //the user's own sessions.  FIXME: It's probably less hackish to add
    //a "stealth" flag to 'sessionoptions' -- gotta ask Bram.
    if (!failed) {
-      FILE* fd = doOpenCommandsFile(filename, TRUE, APPENDBIN);
+      FILE* fd = doOpenCommandsFile(filename, true, APPENDBIN);
       failed = (fd == NULL
              || put_line(fd, S"let v:this_session = Save_VV_this_session") == FAIL
              || put_line(fd, S"unlet Save_VV_this_session") == FAIL);
 
       if (fd != NULL && fclose(fd) != 0)
-         failed = TRUE;
+         failed = true;
 
       if (failed)
          mch_remove(filename);
@@ -879,15 +879,15 @@ write_session_file(CS filename) {
 // ":mkvimrc",  and ":mksession".
 void
 c_mkrc(Invocation* invo) {
-   int failed = FALSE;
-   int using_vdir = FALSE;   // using 'viewdir'?
+   int failed = false;
+   int using_vdir = false;   // using 'viewdir'?
    CS viewFile = NULL;
 
    Boole sessionFile = (invo->id == C_mksession);
 
    // Use the short file name until ":lcd" is used.  We also don't use the
    // short file name when 'acd' is set, that is checked later.
-   did_lcd = FALSE;
+   did_lcd = false;
    
    CS fname;
    if (*invo->arg != ZERO)
@@ -908,7 +908,7 @@ c_mkrc(Invocation* invo) {
 
    if (invo->id == C_mksession) {
        if (put_line(fd, S"let SessionLoad = 1") == FAIL)
-      failed = TRUE;
+      failed = true;
    }
 
    (void)put_line(fd, S"if &cp | set nocp | endif");
@@ -920,7 +920,7 @@ c_mkrc(Invocation* invo) {
    if (!failed && sessionFile) {
       if (put_line(fd, S"let s:so_save = &g:so | let s:siso_save = &g:siso | "
          "setg so=0 siso=0 | setl so=-1 siso=-1") == FAIL)
-      failed = TRUE;
+      failed = true;
       if (invo->id == C_mksession) {
          Byte currDir[MAXPATHL];    // current directory
          // Change to session file's dir.
@@ -928,10 +928,10 @@ c_mkrc(Invocation* invo) {
             *currDir = ZERO;
          if (*currDir != ZERO) {
             if (eeChdirfile(fname, NULL) == OK)
-               shorten_fnames(TRUE);
+               shorten_fnames(true);
          } ei (*currDir != ZERO && globaldir) {
             if (mch_chdir((char *)globaldir) == 0)
-               shorten_fnames(TRUE);
+               shorten_fnames(true);
          }
 
          failed |= (makeopens(fd, currDir) == FAIL);
@@ -940,24 +940,24 @@ c_mkrc(Invocation* invo) {
          if (*currDir != ZERO && globaldir) {
             if (mch_chdir((char *)currDir) != 0)
                emsg(_(e_cannot_go_back_to_previous_directory));
-            shorten_fnames(TRUE);
+            shorten_fnames(true);
          }
       } else {
          failed |= (put_view(fd, curPor, curtab, !using_vdir, -1, NULL) == FAIL);
       }
       if (put_line(fd, S"let &g:so = s:so_save | let &g:siso = s:siso_save") == FAIL)
-         failed = TRUE;
+         failed = true;
       if (!hiliteSearchG && put_line(fd, S"hlsearch") == FAIL)
-         failed = TRUE;
+         failed = true;
       if (put_line(fd, S"doautoall SessionLoadPost") == FAIL)
-         failed = TRUE;
+         failed = true;
       if (invo->id == C_mksession) {
          if (put_line(fd, S"unlet SessionLoad") == FAIL)
-            failed = TRUE;
+            failed = true;
       }
    }
    if (put_line(fd, S"\" vim: set ft=vim :") == FAIL)
-      failed = TRUE;
+      failed = true;
 
    failed |= fclose(fd);
 
@@ -966,7 +966,7 @@ c_mkrc(Invocation* invo) {
    ei (invo->id == C_mksession) {
       // successful session write - set this_session var
       Byte tbuf[MAXPATHL];
-      if (eeFullFileName(fname, tbuf, MAXPATHL, FALSE) == OK)
+      if (eeFullFileName(fname, tbuf, MAXPATHL, false) == OK)
          set_EeglVar_string(VV_THIS_SESSION, tbuf, -1);
    }
 theEnd:
@@ -1197,7 +1197,7 @@ eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
    if (virp->line[off] == Ctrl_V && eeIsDigit(virp->line[off + 1])) {
       len = atol((char *)virp->line + off + 1);
       if (len > 0 && len < 1000000)
-         retval = lalloc(len, TRUE);
+         retval = lalloc(len, true);
       else {
          // Invalid length, line too long?  Skip next line.
          (void)eeFgets(virp->line, 10, virp->vir_fd);
@@ -1226,7 +1226,7 @@ eeglinfo_readstring(Vir* virp, int off) {          // offset for virp->line
    return retval;
 }
 
-// Read a line from the eeglinfo file. Return TRUE for end-of-file;
+// Read a line from the eeglinfo file. Return true for end-of-file;
 private int
 eeglinfo_readline(Vir* virp) {
    return eeFgets(virp->line, LSIZE, virp->vir_fd);
@@ -1269,7 +1269,7 @@ readEeglinfoBookList(Vir* virp, int writing) {
       if (book != NULL) {  // just in case...
          book->lastCursor.lnum = lnum;
          book->lastCursor.col = col;
-         bookSetPosInPort(book, curPor, lnum, col, FALSE);
+         bookSetPosInPort(book, curPor, lnum, col, false);
       }
    }
    eeglFree(xline);
@@ -1277,7 +1277,7 @@ readEeglinfoBookList(Vir* virp, int writing) {
    return eeglinfo_readline(virp);
 }
 
-// Return TRUE if "name" is on removable media (depending on @eeglinfo).
+// Return true if "name" is on removable media (depending on @eeglinfo).
 private Boole
 removable(CS name) {
    if (!p_eeglinfo)
@@ -1332,7 +1332,7 @@ writeEeglInfoBookList(FILE* fp) {
       if (max_buffers-- == 0)
          break;
       putc('%', fp);
-      home_replace(NULL, book->fullFileName, line, MAXPATHL, TRUE);
+      home_replace(NULL, book->fullFileName, line, MAXPATHL, true);
       eeSnprintfAdd(line, LINE_BUF_LEN, "\t%ld\t%d",
             (long)book->lastCursor.lnum,
             book->lastCursor.col);
@@ -1344,7 +1344,7 @@ writeEeglInfoBookList(FILE* fp) {
 private HistoryEntry *eeglinfo_history[HIST_COUNT] = {NULL, NULL, NULL, NULL, NULL};
 private int   eeglinfo_hisidx[HIST_COUNT] = {0, 0, 0, 0, 0};
 private int   eeglinfo_hislen[HIST_COUNT] = {0, 0, 0, 0, 0};
-private int   eeglinfo_add_at_front = FALSE;
+private int   eeglinfo_add_at_front = false;
 
 // Translate a history type number to the associated character.
 private int
@@ -1433,7 +1433,7 @@ read_eeglinfo_history(Vir* virp, int writing) {
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisstr = p;
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisstrlen = (Unt)len;
    eeglinfo_history[type][eeglinfo_hisidx[type]].time_set = 0;
-   eeglinfo_history[type][eeglinfo_hisidx[type]].eeglinfo = TRUE;
+   eeglinfo_history[type][eeglinfo_hisidx[type]].eeglinfo = true;
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisnum = 0;
    eeglinfo_hisidx[type]++;
 
@@ -1469,7 +1469,7 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
 
    int sep = type == HIST_SEARCH && vp[2].btag == BVAL_NR ? vp[2].bv_nr : ZERO;
    int idx;
-   int overwrite = FALSE;
+   int overwrite = false;
 
    if (in_history(type, val, eeglinfo_add_at_front, sep, writing))
       return;
@@ -1483,7 +1483,7 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
       p = eeglinfo_history[type][idx].hisstr;
       len = eeglinfo_history[type][idx].hisstrlen;
       if (STRCMP(val, p) == 0 && (type != HIST_SEARCH || sep == p[len + 1])) {
-          overwrite = TRUE;
+          overwrite = true;
           break;
       }
    }
@@ -1503,7 +1503,7 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
           eeglinfo_history[type][idx].hisstr = p;
           eeglinfo_history[type][idx].hisstrlen = (Unt)len;
           eeglinfo_history[type][idx].hisnum = 0;
-          eeglinfo_history[type][idx].eeglinfo = TRUE;
+          eeglinfo_history[type][idx].eeglinfo = true;
           eeglinfo_hisidx[type]++;
       }
    }
@@ -1541,7 +1541,7 @@ concat_history(int type) {
       eeglFree(histentry[idx].hisstr);
       histentry[idx].hisstr = eeglinfo_history[type][i].hisstr;
       histentry[idx].hisstrlen = eeglinfo_history[type][i].hisstrlen;
-      histentry[idx].eeglinfo = TRUE;
+      histentry[idx].eeglinfo = true;
       histentry[idx].time_set = eeglinfo_history[type][i].time_set;
       if (--idx < 0)
          idx = hislen - 1;
@@ -1643,9 +1643,9 @@ finish_eeglinfo_history(Vir *virp) {
 }
 
 //Write history to eeglinfo file in "fp".
-//When "merge" is TRUE merge history lines with a previously read eeglinfo
+//When "merge" is true merge history lines with a previously read eeglinfo
 //file, data is in eeglinfo_history[].
-//When "merge" is FALSE just write all history lines.  Used for ":weeglinfo!".
+//When "merge" is false just write all history lines.  Used for ":weeglinfo!".
 private void
 write_eeglinfo_history(FILE *fp, int merge) {
    int i;
@@ -1661,7 +1661,7 @@ write_eeglinfo_history(FILE *fp, int merge) {
       HistoryEntry *histentry = get_histentry(type);
       int       *hisidx = get_hisidx(type);
 
-      num_saved = get_eeglinfo_parameter(hist_type2char(type, FALSE));
+      num_saved = get_eeglinfo_parameter(hist_type2char(type, false));
       if (num_saved == 0)
           continue;
       if (num_saved < 0)  // Use default
@@ -1713,7 +1713,7 @@ write_eeglinfo_history(FILE *fp, int merge) {
 
                if (p != NULL && (round == 2 || !merge || !histentry[i].eeglinfo)) {
                   --num_saved;
-                  fputc(hist_type2char(type, TRUE), fp);
+                  fputc(hist_type2char(type, true), fp);
                   // For the search history: put the separator in the
                   // second column; use a space if there isn't one.
                   if (type == HIST_SEARCH) {
@@ -1764,7 +1764,7 @@ private void
 write_eeglinfo_barlines(Vir *virp, FILE *fp_out) {
    int i;
    ArrayList* gap = &virp->vir_barlines;
-   int seen_useful = FALSE;
+   int seen_useful = false;
    char* line;
 
    if (gap->len <= 0)
@@ -1777,13 +1777,13 @@ write_eeglinfo_barlines(Vir *virp, FILE *fp_out) {
       line = ((char **)(gap->c))[i];
       if (seen_useful || line[1] != '<') {
          fputs(line, fp_out);
-         seen_useful = TRUE;
+         seen_useful = true;
       }
    }
 }
 
 //Parse a eeglinfo line starting with '|'. Add each decoded value to "values".
-//Return TRUE if the next line is to be read after using the parsed values.
+//Return true if the next line is to be read after using the parsed values.
 private int
 barline_parse(Vir* virp, CS text, ArrayList* values) {
    CS p = text;
@@ -1791,7 +1791,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
    CS buf = NULL;
    BVal  *value;
    int i;
-   int allocated = FALSE;
+   int allocated = false;
    int eof;
    int converted;
 
@@ -1810,10 +1810,10 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
 
                if (vp->btag == BVAL_STRING && !vp->bv_allocated) {
                   vp->bv_string = copySubstr(vp->bv_string, vp->bv_len);
-                  vp->bv_allocated = TRUE;
+                  vp->bv_allocated = true;
                }
             }
-            allocated = TRUE;
+            allocated = true;
          }
 
          if (eeIsDigit(p[1])) {
@@ -1878,7 +1878,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          ++p;
          while (*p != '"') {
             if (*p == NL || *p == ZERO)
-               return TRUE;  // syntax error, drop the value
+               return true;  // syntax error, drop the value
             if (*p == '\\') {
                ++p;
                if (*p == 'n')
@@ -1892,7 +1892,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
          ++p;
          s[len] = ZERO;
 
-         converted = FALSE;
+         converted = false;
          value->bv_tofree = NULL;
 
          // Need to copy in allocated memory if the string wasn't allocated
@@ -1915,7 +1915,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
       } else
          break;
    }
-   return TRUE;
+   return true;
 }
 
 private void
@@ -1930,7 +1930,7 @@ no_eeglinfo(void) {
 }
 
 //Report an error for reading a eeglinfo file.
-//Count the number of errors.   When there are more than 10, return TRUE.
+//Count the number of errors.   When there are more than 10, return true.
 private int
 eeglinfo_error(CS errnum, CS message, Byte *line) {
    eeSnprintf(IObuff, IOSIZE, _("%seeglinfo: %s in line: "), errnum, message);
@@ -1940,9 +1940,9 @@ eeglinfo_error(CS errnum, CS message, Byte *line) {
    emsg(IObuff);
    if (++eeglinfo_errcnt >= 10) {
       emsg(_(e_eeglinfo_too_many_errors_skipping_rest_of_file));
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 //Restore global vars that start with a capital from the eeglinfo file
@@ -2003,7 +2003,7 @@ read_eeglinfo_varlist(Vir* virp, int writing) {
 
             // when in a function use global variables
             save_funccal(&funccal_entry);
-            set_var(mbText(virp->line + 1), &tv, FALSE);
+            set_var(mbText(virp->line + 1), &tv, false);
             restore_funccal();
 
             if (tv.tag == VAR_STRING)
@@ -2114,12 +2114,12 @@ write_eeglinfo_sub_string(FILE *fp) {
 private int
 read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    int idx = -1;
-   int magic = FALSE;
-   int no_scs = FALSE;
-   int off_line = FALSE;
+   int magic = false;
+   int no_scs = false;
+   int off_line = false;
    int off_end = 0;
    long off = 0;
-   int setlast = FALSE;
+   int setlast = false;
    static Boole   hlsearch_on = false;
    Byte* val;
    SearchPattern* spat;
@@ -2140,18 +2140,18 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
    CS lp = virp->line;
    if (lp[0] == '~' && (lp[1] == 'm' || lp[1] == 'M')) {  // new line type
       if (lp[1] == 'M')      // magic on
-         magic = TRUE;
+         magic = true;
       if (lp[2] == 's')
-         no_scs = TRUE;
+         no_scs = true;
       if (lp[3] == 'L')
-         off_line = TRUE;
+         off_line = true;
       if (lp[4] == 'E')
          off_end = SEARCH_END;
       lp += 5;
       off = parseLong(&lp);
    }
    if (lp[0] == '~') {     // use this pattern for last-used pattern
-      setlast = TRUE;
+      setlast = true;
       lp++;
    }
    if (lp[0] == '/')
@@ -2249,8 +2249,8 @@ finish_eeglinfo_registers(void) {
 private int
 read_eeglinfo_register(Vir* virp, Boole force) {
    int eof;
-   int do_it = TRUE;
-   int set_prev = FALSE;
+   int do_it = true;
+   int set_prev = false;
    Arr(Text) array = NULL;
    int      new_type = MCHAR; // init to shut up compiler
    ColNr   new_width = 0; // init to shut up compiler
@@ -2261,19 +2261,19 @@ read_eeglinfo_register(Vir* virp, Boole force) {
 
    // If the line starts with "" this is the y_previous register.
    if (*str == '"') {
-      set_prev = TRUE;
+      set_prev = true;
       str++;
    }
 
    if (!ASCII_ISALNUM(*str) && *str != '-') {
       if (eeglinfo_error(S"E577: ", _(e_illegal_register_name), virp->line))
-          return TRUE;   // too many errors, pretend end-of-file
-      do_it = FALSE;
+          return true;   // too many errors, pretend end-of-file
+      do_it = false;
    }
-   get_yank_register(*str++, FALSE);
+   get_yank_register(*str++, false);
    y_current_p = get_y_current();
    if (!force && y_current_p->y_array != NULL)
-      do_it = FALSE;
+      do_it = false;
 
    if (*str == '@') {
       // "x@: register x used for @@
@@ -2310,7 +2310,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
          if (size == limit) {
             Arr(Text) new_array = (Text *)alloc(limit * 2 * sizeof(Text));
             if (!new_array) {
-               do_it = FALSE;
+               do_it = false;
                break;
             }
             for (int i = 0; i < limit; i++)
@@ -2326,7 +2326,7 @@ read_eeglinfo_register(Vir* virp, Boole force) {
             ++size;
          } else
             // error, don't store the result
-            do_it = FALSE;
+            do_it = false;
       }
    }
 
@@ -2579,7 +2579,7 @@ write_one_mark(FILE* fp_out, int c, Pos* pos) {
 
 private void
 writeBookMarks(Book* book, FILE* fp_out) {
-   home_replace(NULL, book->fullFileName, IObuff, IOSIZE, TRUE);
+   home_replace(NULL, book->fullFileName, IObuff, IOSIZE, true);
    fprintf(fp_out, "\n> ");
    eeglinfo_writestring(fp_out, IObuff);
 
@@ -2603,7 +2603,7 @@ writeBookMarks(Book* book, FILE* fp_out) {
       write_one_mark(fp_out, 'a' + i, &book->namedMarks[i]);
 }
 
-// Return TRUE if marks for "book" should not be written.
+// Return true if marks for "book" should not be written.
 private int
 skip_for_eeglinfo(Book *book) {
     return bt_terminal(book) || removable(book->fullFileName);
@@ -2628,12 +2628,12 @@ write_eeglinfo_marks(FILE* fp_out, ArrayList* buflist) {
       // Only write something if book has been loaded and at least one mark is set.
       if (book->haveReadEeglinfoMarks) {
          if (book->lastCursor.lnum != 0)
-            is_mark_set = TRUE;
+            is_mark_set = true;
          else {
-            is_mark_set = FALSE;
+            is_mark_set = false;
             for (i = 0; i < NMARKS; i++)
                if (book->namedMarks[i].lnum != 0) {
-                  is_mark_set = TRUE;
+                  is_mark_set = true;
                   break;
                }
          }
@@ -2656,7 +2656,7 @@ write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2) {
 
    CS name;
    if (fm->fmark.fnum != 0)      // there is a book
-      name = bookGetNameByBookNr(fm->fmark.fnum, TRUE, FALSE);
+      name = bookGetNameByBookNr(fm->fmark.fnum, true, false);
    else
       name = fm->fname;      // use name from .eeglinfo
    if (name && *name != ZERO) {
@@ -2706,7 +2706,7 @@ write_eeglinfo_filemarks(FILE* fp) {
    // Move '0 to '1, '1 to '2, etc. until the matching one or '9
    // Set the '0 mark to current cursor position.
    if (curBook->fullFileName != NULL && !skip_for_eeglinfo(curBook)) {
-      name = bookGetNameByBookNr(curBook->fiNum, TRUE, FALSE);
+      name = bookGetNameByBookNr(curBook->fiNum, true, false);
       for (i = NMARKS; i < NMARKS + EXTRA_MARKS - 1; ++i)
           if (namedfm_p[i].fmark.mark.lnum == curPor->cursor.lnum
              && (namedfm_p[i].fname == NULL
@@ -2754,7 +2754,7 @@ write_eeglinfo_filemarks(FILE* fp) {
    // Write the jumplist with -'
    FPUTS(_("\n# Jumplist (newest first):\n"), fp);
    setpcmark();   // add current cursor position
-   cleanup_jumplist(curPor, FALSE);
+   cleanup_jumplist(curPor, false);
    vi_idx = 0;
    idx = curPor->jumpListLen - 1;
    for (i = 0; i < JUMPLISTSIZE; ++i) {
@@ -2844,19 +2844,19 @@ copy_eeglinfo_marks(
 
       // If fp_out == NULL, load marks for current book.
       // If fp_out != NULL, copy marks for books not in booklist.
-      load_marks = copy_marks_out = FALSE;
+      load_marks = copy_marks_out = false;
       if (fp_out == NULL) {
          if ((flags & EIF_WANT_MARKS) && curBook->fullFileName != NULL) {
             if (*name_buf == ZERO)       // only need to do this once
-               home_replace(NULL, curBook->fullFileName, name_buf, LSIZE, TRUE);
+               home_replace(NULL, curBook->fullFileName, name_buf, LSIZE, true);
             if (fnamecmp(str, name_buf) == 0)
-               load_marks = TRUE;
+               load_marks = true;
          }
       } else { // fp_out != NULL
          // This is slow if there are many books!!
          FOR_ALL_BOOKS(book) {
             if (book->fullFileName) {
-               home_replace(NULL, book->fullFileName, name_buf, LSIZE, TRUE);
+               home_replace(NULL, book->fullFileName, name_buf, LSIZE, true);
                if (fnamecmp(str, name_buf) == 0)
                   break;
             }
@@ -2864,13 +2864,13 @@ copy_eeglinfo_marks(
 
          // Copy marks if the book has not been loaded.
          if (book == NULL || !book->haveReadEeglinfoMarks) {
-            int   did_read_line = FALSE;
+            int   did_read_line = false;
 
             if (buflist_buf) {
                // Read the next line.  If it has the "*" mark compare the
                // time stamps.  Write entries from "buflist" that are newer.
                if (!eeglinfo_readline(virp) && line[0] == TAB) {
-                  did_read_line = TRUE;
+                  did_read_line = true;
                   if (line[1] == '*') {
                      long   ltime;
                      sscanf((char *)line + 2, "%ld ", OUT &ltime);
@@ -2908,7 +2908,7 @@ copy_eeglinfo_marks(
                FPUTS(line, fp_out);
 
             count++;
-            copy_marks_out = TRUE;
+            copy_marks_out = true;
           }
       }
       eeglFree(str);
@@ -2982,7 +2982,7 @@ check_marks_read(void) {
 
    // Always set haveReadEeglinfoMarks; needed when 'eeglinfo' is changed to include
    // the ' parameter after opening a book.
-   curBook->haveReadEeglinfoMarks = TRUE;
+   curBook->haveReadEeglinfoMarks = true;
 }
 
 private int
@@ -3180,7 +3180,7 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
    ArrayList values;
    BVal* vp;
    int i;
-   int read_next = TRUE;
+   int read_next = true;
 
    // The format is: |{bartype},{value},...
    // For a very long string:
@@ -3236,12 +3236,12 @@ read_eeglinfo_barline(Vir* virp, Boole force, int writing) {
 
    if (read_next)
       return eeglinfo_readline(virp);
-   return FALSE;
+   return false;
 }
 
 //read_eeglinfo_up_to_marks() -- Only called from do_eeglinfo().  Reads in the
 //first part of the eeglinfo file which contains everything but the marks that
-//are local to a file.  Return TRUE when end-of-file is reached. -- webb
+//are local to a file.  Return true when end-of-file is reached. -- webb
 private int
 read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
 
@@ -3307,7 +3307,7 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
          break;
       default:
          if (eeglinfo_error(S"E575: ", _(e_illegal_starting_char), virp->line))
-            eof = TRUE;
+            eof = true;
          else
             eof = eeglinfo_readline(virp);
          break;
@@ -3330,9 +3330,9 @@ read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing) {
 // do_eeglinfo() -- Should only be called from read_eeglinfo() & write_eeglinfo().
 private void
 do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
-   int eof = FALSE;
-   int merge = FALSE;
-   int do_copy_marks = FALSE;
+   int eof = false;
+   int merge = false;
+   int do_copy_marks = false;
    ArrayList   buflist;
 
    Vir  vir;
@@ -3351,7 +3351,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
          }
 
          eof = read_eeglinfo_up_to_marks(&vir, flags & EIF_FORCEIT, fp_out != NULL);
-         merge = TRUE;
+         merge = true;
       } ei (flags != 0)
          // Skip info, find start of marks
          while (!(eof = eeglinfo_readline(&vir)) && vir.line[0] != '>')
@@ -3437,7 +3437,7 @@ read_eeglinfo(
 
 //Write the eeglinfo file. The old one is read in first so that effectively a
 //merge of current info and old info is done. This allows multiple vims to
-//run simultaneously, without losing any marks etc. If "forceit" is TRUE, then the old file is not
+//run simultaneously, without losing any marks etc. If "forceit" is true, then the old file is not
 //read in, and only internal info is written to the file.
 void
 write_eeglinfo(CS file, Boole forceit) {
@@ -3498,7 +3498,7 @@ write_eeglinfo(CS file, Boole forceit) {
       for (;;) {
          int next_char = 'z';
 
-         tempname = fiAppendFileExtension(fname, S".tmp", FALSE);
+         tempname = fiAppendFileExtension(fname, S".tmp", false);
          if (!tempname)      // out of memory
             break;
 

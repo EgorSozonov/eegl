@@ -237,10 +237,10 @@ alloc_does_fail(Unt size) {
       if (--alloc_fail_repeat <= 0)
           alloc_fail_id = 0;
       do_outofmem_msg(size);
-      return TRUE;
+      return true;
    }
    --alloc_fail_countdown;
-   return FALSE;
+   return false;
 }
 
 // Some memory is reserved for error messages and for being able to
@@ -259,7 +259,7 @@ alloc(Unt size) {
 //Try to make a big allocation. Quietly return null if unsucessful.
 void*
 tryBigAlloc(Unt size) {
-   static int releasing = FALSE;  // don't do mf_release_all() recursive
+   static int releasing = false;  // don't do mf_release_all() recursive
 
 #ifdef MEM_PROFILE
    //Safety check for allocating zero bytes
@@ -285,12 +285,12 @@ tryBigAlloc(Unt size) {
       //loop, because mf_release_all() may call alloc() recursively.
       if (releasing)
          break;
-      releasing = TRUE;
+      releasing = true;
 
-      clear_sb_text(TRUE);         // free any scrollback text
+      clear_sb_text(true);         // free any scrollback text
       int try_again = mf_release_all(); // release as many blocks as possible
 
-      releasing = FALSE;
+      releasing = false;
       if (!try_again)
          break;
    }
@@ -338,7 +338,7 @@ lallocZeroed(Unt size, Boole message){
 // Low-level memory allocation function. This is used often, KEEP IT FAST!
 void *
 lalloc(Unt size, Boole message) {
-   static int   releasing = FALSE;  // don't do mf_release_all() recursive
+   static int   releasing = false;  // don't do mf_release_all() recursive
 
 #ifdef MEM_PROFILE
    // Safety check for allocating zero bytes
@@ -364,12 +364,12 @@ lalloc(Unt size, Boole message) {
       //loop, because mf_release_all() may call alloc() recursively.
       if (releasing)
           break;
-      releasing = TRUE;
+      releasing = true;
 
-      clear_sb_text(TRUE);         // free any scrollback text
+      clear_sb_text(true);         // free any scrollback text
       int try_again = mf_release_all(); // release as many blocks as possible
 
-      releasing = FALSE;
+      releasing = false;
       if (!try_again)
          break;
    }
@@ -422,7 +422,7 @@ do_outofmem_msg(Unt size) {
 
    //Must come first to avoid coming back here when printing the error
    //message fails, e.g. when setting v:errmsg.
-   did_outofmem_msg = TRUE;
+   did_outofmem_msg = true;
 
    showErrFmtMsg(_(e_out_of_memory_allocating_nr_bytes), (Ulong)size);
 
@@ -446,12 +446,12 @@ free_all_mem(void) {
    if (entered_free_all_mem)
       return;
       
-   entered_free_all_mem = TRUE;
+   entered_free_all_mem = true;
    // Don't want to trigger autocommands from here on.
    block_autocmds();
 
    // Close all tabs and portals. Reset 'equalalways' to avoid redraws.
-   p_ea = FALSE;
+   p_ea = false;
    if (firstTabG != NULL && firstTabG->next != NULL)
       executeCommLine(S"tabonly!");
    if (!ONLY_ONE_PORTAL)
@@ -462,7 +462,7 @@ free_all_mem(void) {
 
    ui_remove_balloon();
    if (curPor)
-      close_all_popups(TRUE);
+      close_all_popups(true);
 
    // Clear user commands (before deleting books).
    ex_comclear(NULL);
@@ -504,7 +504,7 @@ free_all_mem(void) {
    set_expr_line(NULL, NULL);
    if (curtab)
       diff_clear(curtab);
-   clear_sb_text(TRUE);         // free any scrollback text
+   clear_sb_text(true);         // free any scrollback text
 
    // Free some global vars.
    eeglFree(username);
@@ -535,7 +535,7 @@ free_all_mem(void) {
       BookRef    bufref;
       bookStoreInRef(OUT &bufref, book);
       Book* nextBook = book->next;
-      closeBook(NULL, book, DOBUF_WIPE, FALSE, FALSE);
+      closeBook(NULL, book, DOBUF_WIPE, false, false);
       if (bookRefValid(&bufref))
          book = nextBook;   // didn't work, try next one
       else
@@ -677,7 +677,7 @@ private void
 exit_scroll(void) {
    if (silentModeG)
       return;
-   if (newline_on_exit || msg_didout) {
+   if (newlineOnExitG || msg_didout) {
       if (msg_use_printf()) {
          if (info_message)
             mch_msg("\n");
@@ -701,15 +701,15 @@ mch_exit(int r) {
    //When t_ti is not empty but it doesn't cause swapping terminal pages, need to output a 
    //newline when msg_didout is set. But when t_ti does swap pages it should not go to the shell 
    //page. Do this before termStopTerminfo().
-   if (termIsScreenBeingSwapped() && !newline_on_exit)
+   if (termIsScreenBeingSwapped() && !newlineOnExitG)
       exit_scroll();
 
    // Stop termcap: May need to check for KS_CRV response, which requires RAW mode.
    termStopTerminfo();
 
    //A newline is only required after a message in the alternate screen.
-   //This is set to TRUE by wait_return().
-   if (!termIsScreenBeingSwapped() || newline_on_exit)
+   //This is set to true by wait_return().
+   if (!termIsScreenBeingSwapped() || newlineOnExitG)
       exit_scroll();
 
    //Cursor may have been switched off without calling starttermcap()
@@ -783,7 +783,7 @@ struct InfoPtr {
 
 // Flag that is set when switching off 'swapfile'. It means that all blocks
 // are to be loaded into memory.
-static int   dontReleaseBlocksS = FALSE;
+static int   dontReleaseBlocksS = false;
 
 typedef struct Block0 Block0;      // contents of the first block
 typedef struct PointerBlock   PointerBlock; // contents of a pointer block
@@ -963,13 +963,13 @@ ml_open(Book *book) {
    book->mem.ml_usedchunks = 0;
 
    if (commModifierG.cmod_flags & CMOD_NOSWAPFILE)
-      book->o.swapFile = FALSE;
+      book->o.swapFile = false;
 
    //When 'updatecount' is non-zero swap file may be opened later.
    if (swapEnabledG && book->o.swapFile)
-      book->maySwap = TRUE;
+      book->maySwap = true;
    else
-      book->maySwap = FALSE;
+      book->maySwap = false;
 
    // Open the memfile.  No swap file is created yet.
    mfp = mf_open(NULL, 0);
@@ -982,7 +982,7 @@ ml_open(Book *book) {
    book->mem.lineCount = 1;
 
    // fill Block0 struct and write page 0
-   if ((hdr = mf_new(mfp, FALSE, 1)) == NULL)
+   if ((hdr = mf_new(mfp, false, 1)) == NULL)
       goto error;
    if (hdr->bh_bnum != 0) {
       internalErrMsg(e_didnt_get_block_nr_zero);
@@ -1012,7 +1012,7 @@ ml_open(Book *book) {
    //Always sync block number 0 to disk, so we can check the file name in
    //the swap file in findSwapName(). Don't do this for a help files or a spell book though.
    //Only works when there's a swapfile, otherwise it's done when the file is created.
-   mf_put(mfp, hdr, TRUE, FALSE);
+   mf_put(mfp, hdr, true, false);
    if (book->kind != BOOK_HELP)
       (void)mf_sync(mfp, 0);
 
@@ -1029,10 +1029,10 @@ ml_open(Book *book) {
    pp->c[0].pageCount = 1;
    pp->c[0].oldLnum = 1;
    pp->c[0].lineCount = 1;    // line count after insertion
-   mf_put(mfp, hdr, TRUE, FALSE);
+   mf_put(mfp, hdr, true, false);
 
    //Allocate first data block and create an empty line 1.
-   if ((hdr = newDataBlock(mfp, FALSE, 1)) == NULL)
+   if ((hdr = newDataBlock(mfp, false, 1)) == NULL)
       goto error;
    if (hdr->bh_bnum != 2) {
       internalErrMsg(e_didnt_get_block_nr_two);
@@ -1050,8 +1050,8 @@ ml_open(Book *book) {
 error:
    if (mfp) {
       if (hdr)
-         mf_put(mfp, hdr, FALSE, FALSE);
-      mf_close(mfp, TRUE);       // will also free(mfp->fName)
+         mf_put(mfp, hdr, false, false);
+      mf_close(mfp, true);       // will also free(mfp->fName)
    }
    book->mem.mfile = NULL;
    return FAIL;
@@ -1061,7 +1061,7 @@ error:
 //ml_setname() is called when the file name of "book" has been changed. It may rename the swap file.
 void
 ml_setname(Book* book) {
-   int success = FALSE;
+   int success = false;
    MemFile* mfp = book->mem.mfile;
    if (mfp->fd < 0)   {    // there is no swap file yet
       //When 'updatecount' is 0 and 'noswapfile' there is no swap file.
@@ -1081,7 +1081,7 @@ ml_setname(Book* book) {
 
    //try to rename the swap file
    if (eeRename(mfp->fName, swapName) == 0) {
-      success = TRUE;
+      success = true;
       eeglFree(mfp->fName);
       mfp->fName = swapName;
       eeglFree(mfp->fullFName);
@@ -1145,12 +1145,12 @@ memOpenSwapFile(Book* book) {
          goto success;
       }
       // Writing block 0 failed: close the file and try another dir
-      mf_close_file(book, FALSE);
+      mf_close_file(book, false);
    }
 
 success:
    if (!mfp->fName) {
-      need_wait_return = TRUE;   // call wait_return() later
+      need_wait_return = true;   // call wait_return() later
       ++no_wait_return;
       (void)showErrFmtMsg(_(e_unable_to_open_swap_file_for_str_recovery_impossible),
              bookSpName(book) != NULL ? bookSpName(book) : book->currFileName
@@ -1173,7 +1173,7 @@ check_need_swap(int newfile)  {    // reading file into new book
    msg_silent = old_msg_silent;
 }
 
-// Close memline for book. If 'del_file' is TRUE, delete the swap file
+// Close memline for book. If 'del_file' is true, delete the swap file
 void
 ml_close(Book* book, Boole del_file) {
    if (book->mem.mfile == NULL)      // not open
@@ -1191,7 +1191,7 @@ ml_close(Book* book, Boole del_file) {
 }
 
 // Close all existing memlines and memfiles. Only used when exiting.
-// When 'del_file' is TRUE, delete the memfiles.
+// When 'del_file' is true, delete the memfiles.
 // But don't delete files that were ":preserve"d when we are POSIX compatible.
 void
 ml_close_all(Boole del_file) {
@@ -1253,7 +1253,7 @@ updateBlock0(Book *book, upd_block0_T what) {
       else // what == UB_SAME_DIR
          set_b0_dir_flag(b0p, book);
    }
-   mf_put(mfp, hdr, TRUE, FALSE);
+   mf_put(mfp, hdr, true, false);
 }
 
 //Write file name and timestamp into block 0 of a swap file. Also set book->modifiedTime.
@@ -1271,7 +1271,7 @@ set_b0_fname(Block0 *b0p, Book *book) {
       //directory path with "~user". This helps when editing the same file on different machines 
       //over a network. First replace home dir path with "~/" with home_replace().
       //Then insert the user name to get "~user/".
-      home_replace(NULL, book->fullFileName, b0p->b0_fname, B0_FNAME_SIZE_CRYPT, TRUE);
+      home_replace(NULL, book->fullFileName, b0p->b0_fname, B0_FNAME_SIZE_CRYPT, true);
       if (b0p->b0_fname[0] == '~') {
          flen = STRLEN(b0p->b0_fname);
          // If there is no user name or it is too long, don't use "~/"
@@ -1321,8 +1321,8 @@ set_b0_dir_flag(Block0* b0p, Book* book) {
 
 #include <sys/sysinfo.h>
 
-//Return TRUE if the process with number "b0p->b0_pid" is still running. "swap_fname" is the name 
-//of the swap file, if it's from before a reboot then the result is FALSE.
+//Return true if the process with number "b0p->b0_pid" is still running. "swap_fname" is the name 
+//of the swap file, if it's from before a reboot then the result is false.
 private int
 swapfile_process_running(Block0 *b0p, CS swap_fname) {
    FileStat st;
@@ -1335,12 +1335,12 @@ swapfile_process_running(Block0 *b0p, CS swap_fname) {
           && st.st_mtime 
              < time(NULL) - (overrideSysinfoUptimeG >= 0 ? overrideSysinfoUptimeG : sinfo.uptime)
    )
-      return FALSE;
+      return false;
    return mch_process_running(charToLong(b0p->b0_pid));
 }
 
 // Try to recover curBook from the .swp file.
-// If "checkext" is TRUE, check the extension and detect whether it is a swap file.
+// If "checkext" is true, check the extension and detect whether it is a swap file.
 void
 ml_recover(Boole checkext) {
    Book* book = NULL;
@@ -1482,17 +1482,17 @@ ml_recover(Boole checkext) {
    // If .swp file name given directly, use name from swap file for book.
    if (directly) {
       doExpandEnv(OUT nameBuffTextG, b0p->b0_fname);
-      if (setfname(curBook, nameBuffG, NULL, TRUE) == FAIL)
+      if (setfname(curBook, nameBuffG, NULL, true) == FAIL)
           goto theend;
    }
 
-   home_replace(NULL, mfp->fName, nameBuffG, MAXPATHL, TRUE);
+   home_replace(NULL, mfp->fName, nameBuffG, MAXPATHL, true);
    smsg(_("Using swap file \"%s\""), nameBuffG);
 
    if (bookSpName(curBook) != NULL)
       copySubstrToAllocation(nameBuffG, (Text){bookSpName(curBook), MAXPATHL - 1});
    else
-      home_replace(NULL, curBook->fullFileName, nameBuffG, MAXPATHL, TRUE);
+      home_replace(NULL, curBook->fullFileName, nameBuffG, MAXPATHL, true);
    smsg(_("Original file \"%s\""), nameBuffG);
    msg_putchar('\n');
 
@@ -1507,7 +1507,7 @@ ml_recover(Boole checkext) {
    out_flush();
 
 
-   mf_put(mfp, hdr, FALSE, FALSE);   // release block 0
+   mf_put(mfp, hdr, false, false);   // release block 0
    hdr = NULL;
 
    //Now that we are sure that the file is going to be recovered, clear the
@@ -1522,7 +1522,7 @@ ml_recover(Boole checkext) {
             curBook->fullFileName, NULL, (LineNr)0, (LineNr)0, (LineNr)MAXLNUM, NULL, READ_NEW
       );
 
-   unchanged(curBook, TRUE);
+   unchanged(curBook, true);
 
    BlockId bnum = 1;      // start with block 1
    int pageCount = 1;   // which is 1 page
@@ -1539,7 +1539,7 @@ ml_recover(Boole checkext) {
    serious_error = false;
    for ( ; !gotInterruptG; line_breakcheck()) {
       if (hdr)
-         mf_put(mfp, hdr, FALSE, FALSE);   // release previous block
+         mf_put(mfp, hdr, false, false);   // release previous block
 
       // get block
       if ((hdr = mf_get(mfp, bnum, pageCount)) == NULL) {
@@ -1548,17 +1548,17 @@ ml_recover(Boole checkext) {
             goto theend;
          }
          ++error;
-         ml_append(lnum++, (CS)_("???MANY LINES MISSING"), (ColNr)0, TRUE);
+         ml_append(lnum++, (CS)_("???MANY LINES MISSING"), (ColNr)0, true);
       } else   {// there is a block
          pp = (PointerBlock *)(hdr->bh_data);
          if (pp->id == PTR_ID) { // it is a pointer block
-            int PointerBlockock_error = FALSE;
+            int PointerBlockock_error = false;
             if (pp->pointerCountMax != pointerCountMax(mfp)) {
-                PointerBlockock_error = TRUE;
+                PointerBlockock_error = true;
                 pp->pointerCountMax = pointerCountMax(mfp);
             }
             if (pp->pointerCount > pp->pointerCountMax) {
-                PointerBlockock_error = TRUE;
+                PointerBlockock_error = true;
                 pp->pointerCount = pp->pointerCountMax;
             }
             if (PointerBlockock_error)
@@ -1570,12 +1570,12 @@ ml_recover(Boole checkext) {
                   lineCount -= pp->c[i].lineCount;
                if (lineCount != 0) {
                   ++error;
-                  ml_append(lnum++, (CS)_("???LINE COUNT WRONG"), (ColNr)0, TRUE);
+                  ml_append(lnum++, (CS)_("???LINE COUNT WRONG"), (ColNr)0, true);
                }
             }
 
             if (pp->pointerCount == 0) {
-               ml_append(lnum++, (CS)_("???EMPTY BLOCK"), (ColNr)0, TRUE);
+               ml_append(lnum++, (CS)_("???EMPTY BLOCK"), (ColNr)0, true);
                ++error;
             } ei (idx < (int)pp->pointerCount) {// go a block deeper
                if (pp->c[idx].blockId < 0) {
@@ -1593,7 +1593,7 @@ ml_recover(Boole checkext) {
                   }
                   if (cannotOpen) {
                       ++error;
-                      ml_append(lnum++, (CS)_("???LINES MISSING"), (ColNr)0, TRUE);
+                      ml_append(lnum++, (CS)_("???LINES MISSING"), (ColNr)0, true);
                   }
                   ++idx;       // get same block again for next index
                   continue;
@@ -1622,19 +1622,19 @@ ml_recover(Boole checkext) {
                   goto theend;
                }
                ++error;
-               ml_append(lnum++, (CS)_("???BLOCK MISSING"), (ColNr)0, TRUE);
+               ml_append(lnum++, (CS)_("???BLOCK MISSING"), (ColNr)0, true);
             } else {
                //It is a data block. Append all the lines in this block.
-               has_error = FALSE;
+               has_error = false;
 
                //Check the length of the block. If wrong, use the length given in the pointer block
                if (pageCount * mfp->pageSize != block->endByte) {
                   ml_append(lnum++, 
                      (CS)_("??? from here until ???END lines may be messed up"),
-                     (ColNr)0, TRUE
+                     (ColNr)0, true
                   );
                   ++error;
-                  has_error = TRUE;
+                  has_error = true;
                   block->endByte = pageCount * mfp->pageSize;
                }
 
@@ -1647,19 +1647,19 @@ ml_recover(Boole checkext) {
                if (lineCount != block->countLines) {
                   ml_append(lnum++, 
                      (CS)_("??? from here until ???END" " lines may have been inserted/deleted"),
-                     (ColNr)0, TRUE
+                     (ColNr)0, true
                   );
                   ++error;
-                  has_error = TRUE;
+                  has_error = true;
                }
 
-               int did_questions = FALSE;
+               int did_questions = false;
                for (i = 0; i < block->countLines; ++i) {
                   if ((CS)&(block->c[i]) >= (CS)block + block->startByte) {
                      // line count must be wrong
                      ++error;
                      ml_append(
-                         lnum++, (CS)_("??? lines may be missing"), (ColNr)0, TRUE
+                         lnum++, (CS)_("??? lines may be missing"), (ColNr)0, true
                      );
                      break;
                   }
@@ -1670,16 +1670,16 @@ ml_recover(Boole checkext) {
                      // avoid lots of lines with "???"
                      if (did_questions)
                         continue;
-                     did_questions = TRUE;
+                     did_questions = true;
                      p = (CS)"???";
                   } else {
-                     did_questions = FALSE;
+                     did_questions = false;
                      p = (CS)block + txt_start;
                   }
-                  ml_append(lnum++, p, (ColNr)0, TRUE);
+                  ml_append(lnum++, p, (ColNr)0, true);
                }
                if (has_error)
-                  ml_append(lnum++, (CS)_("???END"), (ColNr)0, TRUE);
+                  ml_append(lnum++, (CS)_("???END"), (ColNr)0, true);
             }
          }
       }
@@ -1759,8 +1759,8 @@ theend:
    recoveryModeG = false;
    if (mfp) {
       if (hdr)
-         mf_put(mfp, hdr, FALSE, FALSE);
-      mf_close(mfp, FALSE);       // will also eeglFree(mfp->fName)
+         mf_put(mfp, hdr, false, false);
+      mf_close(mfp, false);       // will also eeglFree(mfp->fName)
    }
    if (book) {
       eeglFree(book->mem.ml_stack);
@@ -1807,38 +1807,38 @@ get_b0_dict(CS fname, Bag *bag) {
       bagAddString(bag, S"error", (CS)"Cannot open file");
 }
 
-// Return TRUE if the swap file looks OK and there are no changes, thus it can be safely deleted.
+// Return true if the swap file looks OK and there are no changes, thus it can be safely deleted.
 private int
 swapfile_unchanged(CS fname) {
    FileStat st;
-   int ret = TRUE;
+   int ret = true;
 
    // must be able to stat the swap file
    if (stat((char *)fname, &st) == -1)
-      return FALSE;
+      return false;
 
    // must be able to read the first block
    int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
    if (fd < 0)
-      return FALSE;
+      return false;
    Block0   b0;
    if (read_eintr(fd, OUT &b0, sizeof(b0)) != sizeof(b0)) {
       close(fd);
-      return FALSE;
+      return false;
    }
 
    // the ID and magic number must be correct
    if (ml_check_b0_id(&b0) == FAIL|| b0_magic_wrong(&b0))
-      ret = FALSE;
+      ret = false;
 
    // must be unchanged
    if (b0.b0_dirty)
-      ret = FALSE;
+      ret = false;
 
    // Host name must be known and must equal the current host name, otherwise
    // comparing pid is meaningless.
    if (*(b0.b0_hname) == ZERO) {
-      ret = FALSE;
+      ret = false;
    } else {
       Byte hostname[B0_HNAME_SIZE];
 
@@ -1846,12 +1846,12 @@ swapfile_unchanged(CS fname) {
       hostname[B0_HNAME_SIZE - 1] = ZERO;
       b0.b0_hname[B0_HNAME_SIZE - 1] = ZERO; // in case of corruption
       if (caseInsensitiveCompare(b0.b0_hname, hostname) != 0)
-         ret = FALSE;
+         ret = false;
    }
 
    // process must be known and not be running
    if (charToLong(b0.b0_pid) == 0L || swapfile_process_running(&b0, fname))
-      ret = FALSE;
+      ret = false;
 
    // We do not check the user, it should be irrelevant for whether the swap file is still useful
    close(fd);
@@ -1860,8 +1860,8 @@ swapfile_unchanged(CS fname) {
 
 //sync all memlines
 //
-//If 'check_file' is TRUE, check if original file exists and was not changed.
-//If 'check_char' is TRUE, stop syncing when character becomes available, but
+//If 'check_file' is true, check if original file exists and was not changed.
+//If 'check_char' is true, stop syncing when character becomes available, but
 //always sync at least one block.
 void
 ml_sync_all(int check_file, int check_char) {
@@ -1888,9 +1888,9 @@ ml_sync_all(int check_file, int check_char) {
 #endif
              || st.st_size != book->origSize
          ) {
-            ml_preserve(book, FALSE);
-            did_check_timestamps = FALSE;
-            need_check_timestamps = TRUE;   // give message later
+            ml_preserve(book, false);
+            did_check_timestamps = false;
+            need_check_timestamps = true;   // give message later
          }
       }
       if (book->mem.mfile->mf_dirty == MF_DIRTY_YES) {
@@ -1905,7 +1905,7 @@ ml_sync_all(int check_file, int check_char) {
 
 // Sync one book, including negative blocks. After this all the blocks are in the swap file
 // Used for the :preserve command and when the original file has been changed or deleted.
-// when message is TRUE the success of preserving is reported
+// when message is true the success of preserving is reported
 void
 ml_preserve(Book* book, int message) {
    BlockHeader* hdr;
@@ -1921,7 +1921,7 @@ ml_preserve(Book* book, int message) {
    }
 
    // We only want to stop when interrupted here, not when interrupted before.
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    flushLine(book);                // flush buffered line
    (void)ml_find_line(book, (LineNr)0, ML_FLUSH); // flush locked block
@@ -2034,7 +2034,7 @@ memGetBookLen(Book* book, LineNr lnum) {
 }
 
 //Return a pointer to a line in a specific book
-//"willChange": if TRUE mark the book dirty (chars in the line are expected to change)
+//"willChange": if true mark the book dirty (chars in the line are expected to change)
 CS
 memGetLine(Book* book, LineNr   lnum, Boole  willChange) { // line will be changed
    BlockHeader* hdr;
@@ -2352,20 +2352,20 @@ insertLineText(
       //inserting a lot of lines at one place.
       if (oldLineInd < 0)   {// left block is new, right block is existing
           lines_moved = 0;
-          in_left = TRUE;
+          in_left = true;
           // neededSpace does not change
        } else { // left block is existing, right block is new
          lines_moved = lineCount - oldLineInd - 1;
          if (lines_moved == 0)
-            in_left = FALSE;   // put new line in right block. neededSpace does not change
+            in_left = false;   // put new line in right block. neededSpace does not change
          else {
             data_moved = ((block->c[oldLineInd]) & c_MASK) - block->startByte;
             total_moved = data_moved + lines_moved * INDEX_SIZE;
             if ((int)block->freeSpace + total_moved >= neededSpace) {
-               in_left = TRUE;   // put new line in left block
+               in_left = true;   // put new line in left block
                neededSpace = total_moved;
             } else {
-               in_left = FALSE;       // put new line in right block
+               in_left = false;       // put new line in right block
                neededSpace += total_moved;
             }
          }
@@ -2464,7 +2464,7 @@ insertLineText(
          book->mem.flags |= ML_LOCKED_DIRTY;
       if ((flags & ML_APPEND_NEW) == 0 && oldLineInd >= 0 && in_left)
          book->mem.flags |= ML_LOCKED_POS;
-      mf_put(mfp, newBlock, TRUE, FALSE);
+      mf_put(mfp, newBlock, true, false);
 
       // flush the old data block. set lockedInsertedLines to 0, because the updating of the
       // pointer blocks is done below
@@ -2481,7 +2481,7 @@ insertLineText(
          pp = (PointerBlock *)(hdr->bh_data);   // must be pointer block
          if (pp->id != PTR_ID) {
             internalErrMsg(e_pointer_block_id_wrong_three);
-            mf_put(mfp, hdr, FALSE, FALSE);
+            mf_put(mfp, hdr, false, false);
             goto theend;
          }
          //TODO: If the pointer block is full and we are adding at the end
@@ -2504,7 +2504,7 @@ insertLineText(
             if (lnum_right != 0)
                pp->c[idx + 1].oldLnum = lnum_right;
 
-            mf_put(mfp, hdr, TRUE, FALSE);
+            mf_put(mfp, hdr, true, false);
             book->mem.ml_stack_top = stack_idx + 1;       // truncate stack
 
             if (lineadd) {
@@ -2541,7 +2541,7 @@ insertLineText(
             pp->c[0].lineCount = book->mem.lineCount;
             pp->c[0].oldLnum = 1;
             pp->c[0].pageCount = 1;
-            mf_put(mfp, hdr, TRUE, FALSE);   // release block 1
+            mf_put(mfp, hdr, true, false);   // release block 1
             hdr = newBlock;      // new block is to be split
             pp = pp_new;
             CHECK(stack_idx != 0, _("stack_idx should be 0"));
@@ -2591,8 +2591,8 @@ insertLineText(
          bnum_right = newBlock->bh_bnum;
          pageCount_left = 1;
          pageCount_right = 1;
-         mf_put(mfp, hdr, TRUE, FALSE);
-         mf_put(mfp, newBlock, TRUE, FALSE);
+         mf_put(mfp, hdr, true, false);
+         mf_put(mfp, newBlock, true, false);
       }
 
       // Safety check: fallen out of for loop?
@@ -2642,7 +2642,7 @@ appendFlush(
 //"line" does not need to be allocated, but can't be another line in a
 //book, unlocking may make it invalid.
 //
-//"newfile": TRUE when starting to edit a new file, meaning that oldLnum will be set for 
+//"newfile": true when starting to edit a new file, meaning that oldLnum will be set for 
 //recovery.
 //
 //Check: The caller of this function should probably also call appended_lines().
@@ -2680,7 +2680,7 @@ ml_append_flags(
 
 
 //Like ml_append() but for an arbitrary book. The buffer must already have a memline.
-//"newfile": TRUE when starting to edit a new file, meaning that oldLnum will be set for recovery.
+//"newfile": true when starting to edit a new file, meaning that oldLnum will be set for recovery.
 int
 memAppendBook(
    Book* book,
@@ -2696,8 +2696,8 @@ memAppendBook(
 
 //Replace line "lnum", with buffering, in current book.
 //
-//If "copy" is TRUE, make a copy of the line, otherwise the line has been copied to allocated 
-//memory already. If "copy" is FALSE the "line" may be freed to add text properties! Do not use 
+//If "copy" is true, make a copy of the line, otherwise the line has been copied to allocated 
+//memory already. If "copy" is false the "line" may be freed to add text properties! Do not use 
 //it after calling ml_replace().
 //Check: The caller of this function should probably also call changed_lines(), unless 
 //drawUpdateScreen(UPD_NOT_VALID) is used.
@@ -2708,12 +2708,12 @@ ml_replace(LineNr lnum, CS line, int copy) {
 
    if (line)
       len = (ColNr)STRLEN(line);
-   return ml_replace_len(lnum, line, len, FALSE, copy);
+   return ml_replace_len(lnum, line, len, false, copy);
 }
 
 //Replace a line for the current buffer. Like ml_replace() with: "len_arg" is the length of the 
-//text, excluding ZERO. If "has_props" is TRUE then "line_arg" includes the text properties 
-//and "len_arg" includes the ZERO of the text and text properties. When "copy" is TRUE copy 
+//text, excluding ZERO. If "has_props" is true then "line_arg" includes the text properties 
+//and "len_arg" includes the ZERO of the text and text properties. When "copy" is true copy 
 //the text into allocated memory, otherwise "line_arg" must be allocated and will be consumed here.
 int
 ml_replace_len(
@@ -2796,7 +2796,7 @@ adjustTextPropsForDeletion(
    int del_props_len,
    int above
 ) {
-   int      did_get_line = FALSE;
+   int      did_get_line = false;
    int      done_this;
    TextProp   prop_del;
    BlockHeader   *hdr;
@@ -2817,7 +2817,7 @@ adjustTextPropsForDeletion(
              && !(prop_del.flags & TEXT_PROP_CONT_PREV))
       ){
          if (!did_get_line) {
-            did_get_line = TRUE;
+            did_get_line = true;
             if ((hdr = ml_find_line(book, lnum, ML_FIND)) == NULL)
                return;
 
@@ -2840,7 +2840,7 @@ adjustTextPropsForDeletion(
             this_props_len = line_size - (int)textlen;
          }
 
-         found = FALSE;
+         found = false;
          for (done_this = 0; done_this < this_props_len; done_this += sizeof(TextProp)) {
             int flag = above ? TEXT_PROP_CONT_NEXT : TEXT_PROP_CONT_PREV;
             TextProp  prop_this;
@@ -2850,7 +2850,7 @@ adjustTextPropsForDeletion(
                && prop_del.id == prop_this.id
                && prop_del.type == prop_this.type
             ){
-               found = TRUE;
+               found = true;
                prop_this.flags &= ~flag;
                mch_memmove(text + textlen + done_this, &prop_this, sizeof(TextProp));
                break;
@@ -2897,7 +2897,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
           set_keep_msg((CS)_(no_lines_msg), 0);
        }
 
-       i = ml_replace((LineNr)1, Em, TRUE);
+       i = ml_replace((LineNr)1, Em, true);
        book->mem.flags |= ML_EMPTY;
 
        return i;
@@ -2953,7 +2953,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
          pp = (PointerBlock *)(hdr->bh_data);   // must be pointer block
          if (pp->id != PTR_ID) {
             internalErrMsg(e_pointer_block_id_wrong_four);
-            mf_put(mfp, hdr, FALSE, FALSE);
+            mf_put(mfp, hdr, false, false);
             goto theend;
          }
          count = --(pp->pointerCount);
@@ -2962,7 +2962,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
          else {
             if (count != idx)   // move entries after the deleted one
                 mch_memmove(&pp->c[idx], &pp->c[idx + 1], (Unt)(count - idx) * sizeof(PtrEntry));
-            mf_put(mfp, hdr, TRUE, FALSE);
+            mf_put(mfp, hdr, true, false);
 
             book->mem.ml_stack_top = stack_idx;   // truncate stack
             // fix line count for rest of blocks in the stack
@@ -3003,9 +3003,9 @@ theend:
    if (textprop_save != NULL) {
       // Adjust text properties in the line above and below.
       if (lnum > 1)
-         adjustTextPropsForDeletion(book, lnum - 1, textprop_save, (int)textprop_len, TRUE);
+         adjustTextPropsForDeletion(book, lnum - 1, textprop_save, (int)textprop_len, true);
       if (lnum <= book->mem.lineCount) {
-         adjustTextPropsForDeletion(book, lnum, textprop_save, (int)textprop_len, FALSE);
+         adjustTextPropsForDeletion(book, lnum, textprop_save, (int)textprop_len, false);
       }
    }
    eeglFree(textprop_save);
@@ -3014,7 +3014,7 @@ theend:
 
 
 // Delete line "lnum" in the current book.
-// When "message" is TRUE may give a "No lines in book" message.
+// When "message" is true may give a "No lines in book" message.
 //
 // Check: The caller of this function should probably also call
 // deleted_lines() after this.
@@ -3025,7 +3025,7 @@ ml_delete(LineNr lnum) {
    return ml_delete_flags(lnum, 0);
 }
 
-// Delete line "lnum" in the current book. When "message" is TRUE may give a 
+// Delete line "lnum" in the current book. When "message" is true may give a 
 // "No lines in book" message.
 // Check: The caller of this function should probably also call deleted_lines() after this.
 //
@@ -3150,7 +3150,7 @@ flushLine(Book *book) {
    int      start;
    int      count;
    int      i;
-   static int  entered = FALSE;
+   static int  entered = false;
 
    if (book->mem.ml_line_lnum == 0 || book->mem.mfile == NULL)
       return;      // nothing to do
@@ -3160,7 +3160,7 @@ flushLine(Book *book) {
       // when obtaining the cursor position.
       if (entered)
          return;
-      entered = TRUE;
+      entered = true;
 
       lnum = book->mem.ml_line_lnum;
       new_line = book->mem.cachedLine;
@@ -3227,7 +3227,7 @@ flushLine(Book *book) {
       }
       eeglFree(new_line);
 
-      entered = FALSE;
+      entered = false;
    }
 
    book->mem.flags &= ~ML_LINE_DIRTY;
@@ -3255,7 +3255,7 @@ newDataBlock(MemFile *mfp, int negative, int pageCount) {
 private BlockHeader *
 ml_new_ptr(MemFile *mfp) {
    BlockHeader   *hdr;
-   if ((hdr = mf_new(mfp, FALSE, 1)) == NULL)
+   if ((hdr = mf_new(mfp, false, 1)) == NULL)
       return NULL;
 
    PointerBlock* pp = (PointerBlock *)(hdr->bh_data);
@@ -3387,7 +3387,7 @@ ml_find_line(Book *book, LineNr lnum, int action) {
       ip->ip_high = high;
       ip->ip_index = -1;      // index not known yet
 
-      dirty = FALSE;
+      dirty = false;
       for (idx = 0; idx < (int)pp->pointerCount; ++idx) {
          t = pp->c[idx].lineCount;
          CHECK(t == 0, _("lineCount is zero"));
@@ -3404,7 +3404,7 @@ ml_find_line(Book *book, LineNr lnum, int action) {
                if (bnum != bnum2) {
                   bnum = bnum2;
                   pp->c[idx].blockId = bnum;
-                  dirty = TRUE;
+                  dirty = true;
                }
             }
 
@@ -3421,16 +3421,16 @@ ml_find_line(Book *book, LineNr lnum, int action) {
       }
       if (action == ML_DELETE) {
          pp->c[idx].lineCount--;
-         dirty = TRUE;
+         dirty = true;
       } ei (action == ML_INSERT) {
          pp->c[idx].lineCount++;
-         dirty = TRUE;
+         dirty = true;
       }
-      mf_put(mfp, hdr, dirty, FALSE);
+      mf_put(mfp, hdr, dirty, false);
    }
 
 error_block:
-   mf_put(mfp, hdr, FALSE, FALSE);
+   mf_put(mfp, hdr, false, false);
 error_noblock:
    // If action is ML_DELETE or ML_INSERT we have to correct the tree for the 
    // incremented/decremented line counts, because there won't be a line inserted/deleted after all
@@ -3483,13 +3483,13 @@ fixBlockStack(Book* book, int count) {
          break;
       pp = (PointerBlock *)(hdr->bh_data);   // must be pointer block
       if (pp->id != PTR_ID) {
-         mf_put(mfp, hdr, FALSE, FALSE);
+         mf_put(mfp, hdr, false, false);
          internalErrMsg(e_pointer_block_id_wrong_two);
          break;
       }
       pp->c[ip->ip_index].lineCount += count;
       ip->ip_high += count;
-      mf_put(mfp, hdr, TRUE, FALSE);
+      mf_put(mfp, hdr, true, false);
    }
 }
 
@@ -3511,7 +3511,7 @@ attention_message(Book* book, CS swapName) {
       msg_puts(_("      CANNOT BE FOUND"));
    } else {
       msg_puts(_("             dated: "));
-      msg_puts(get_ctime(st.st_mtime, TRUE));
+      msg_puts(get_ctime(st.st_mtime, true));
       if (swap_mtime != 0 && st.st_mtime > swap_mtime)
          msg_puts(_("      NEWER than swap file!\n"));
    }
@@ -3603,7 +3603,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
       //when the path of the file is different (happens when all .swp files are in one directory)
       if (!recoveryModeG && buf_fname && !(book->flags & (BF_DUMMY | BF_NO_SEA))){
          Block0   b0;
-         int      differ = FALSE;
+         int      differ = false;
 
          // Try to read block 0 from the swap file to get the original file name (and inode number)
          int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
@@ -3622,13 +3622,13 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
                            book->fullFileName, nameBuffG, charToLong(b0.b0_ino)
                         )
                      )
-                        differ = TRUE;
+                        differ = true;
                   }
                } else {
                   // The name in the swap file may be "~user/path/file".  Expand it first.
                   doExpandEnv(OUT nameBuffTextG, b0.b0_fname);
                   if (compareFnameWithInode(book->fullFileName, nameBuffG, charToLong(b0.b0_ino)))
-                     differ = TRUE;
+                     differ = true;
                }
             }
             close(fd);
@@ -3636,10 +3636,10 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
 
          // give the ATTENTION message when there is an old swap file
          // for the current file, and the buffer was not recovered.
-         if (differ == FALSE && !(curBook->flags & BF_RECOVERED)) {
+         if (differ == false && !(curBook->flags & BF_RECOVERED)) {
             SeaChoice choice = SEA_CHOICE_NONE;
             FileStat    st;
-            process_still_running = FALSE;
+            process_still_running = false;
             // It's safe to delete the swap file if all these are true:
             // - the edited file exists
             // - the swap file has no changes and looks OK
@@ -3666,7 +3666,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
                attention_message(book, fname);
 
                // We don't want a 'q' typed at the more-prompt interrupt loading a file.
-               gotInterruptG = FALSE;
+               gotInterruptG = false;
 
                // If vimrc has "simalt ~x" we don't want it to interfere with the prompt here
                flush_buffers(FLUSH_TYPEAHEAD);
@@ -3680,7 +3680,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
                name = alloc(STRLEN(fname) + len + STRLEN(_("\" already exists!")) + 5);
                if (!name) {
                   STRCPY(name, _("Swap file \""));
-                  home_replace(NULL, fname, name + len, 1000, TRUE);
+                  home_replace(NULL, fname, name + len, 1000, true);
                   STRCAT(name, _("\" already exists!"));
                }
                dialog_result = do_dialog(
@@ -3691,7 +3691,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
                      ? (CS)_("&Open Read-Only\n&Edit anyway\n&Recover\n&Quit\n&Abort") :
                      (CS)_(
                         "&Open Read-Only\n&Edit anyway\n&Recover\n&Delete it\n&Quit\n&Abort"), 1, 
-                        NULL, FALSE
+                        NULL, false
                      );
 
                if (process_still_running && dialog_result >= 4)
@@ -3722,13 +3722,13 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
                break;
             case SEA_CHOICE_ABORT:
                swap_exists_action = SEA_QUIT;
-               gotInterruptG = TRUE;
+               gotInterruptG = true;
                break;
             case SEA_CHOICE_NONE:
                msg_puts(S"\n");
                if (msg_silent == 0)
                   // call wait_return() later
-                  need_wait_return = TRUE;
+                  need_wait_return = true;
                break;
             }
 
@@ -3791,18 +3791,18 @@ b0_magic_wrong(Block0* b0p) {
 //
 //current file doesn't exist, file for swap file exist, file name(s) not
 //available -> probably different
-//     == 0   != 0    FAIL    X   TRUE
-//     == 0   != 0   X   FAIL   TRUE
+//     == 0   != 0    FAIL    X   true
+//     == 0   != 0   X   FAIL   true
 //
 //current file exists, inode for swap unknown, file name(s) not
 //available -> probably different
-//     != 0   == 0    FAIL    X   TRUE
-//     != 0   == 0   X   FAIL   TRUE
+//     != 0   == 0    FAIL    X   true
+//     != 0   == 0   X   FAIL   true
 //
 //current file doesn't exist, inode for swap unknown, one file name not
 //available -> probably different
-//     == 0   == 0    FAIL    OK   TRUE
-//     == 0   == 0   OK   FAIL   TRUE
+//     == 0   == 0    FAIL    OK   true
+//     == 0   == 0   OK   FAIL   true
 //
 //current file doesn't exist, inode for swap unknown, both file names not
 //available -> compare file names
@@ -3829,8 +3829,8 @@ compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0){
       return (ino_c != ino_s);
 
    //One of the inode numbers is unknown, try a forced eeFullFileName() and compare the file names
-   int retval_c = eeFullFileName(fname_c, buf_c, MAXPATHL, TRUE); //flag: buf_c valid
-   int retval_s = eeFullFileName(nameFromSwap, buf_s, MAXPATHL, TRUE); //flag: buf_s valid
+   int retval_c = eeFullFileName(fname_c, buf_c, MAXPATHL, true); //flag: buf_c valid
+   int retval_s = eeFullFileName(nameFromSwap, buf_s, MAXPATHL, true); //flag: buf_s valid
    if (retval_c == OK && retval_s == OK)
       return STRCMP(buf_c, buf_s) != 0;
 
@@ -3838,7 +3838,7 @@ compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0){
    //not to exist at all, then compare with the file name in the swap file.
    if (ino_s == 0 && ino_c == 0 && retval_c == FAIL && retval_s == FAIL)
       return STRCMP(fname_c, nameFromSwap) != 0;
-   return TRUE;
+   return true;
 }
 
 //Move a long integer into a four byte character array. Used for machine independency in block zero
@@ -4223,7 +4223,7 @@ swapfile_info(CS fname) {
          msg_puts(_("   dated: "));
       } else
          msg_puts(_("             dated: "));
-      msg_puts(get_ctime(st.st_mtime, TRUE));
+      msg_puts(get_ctime(st.st_mtime, true));
    } else
       st.st_mtime = 0;
 
@@ -4264,7 +4264,7 @@ swapfile_info(CS fname) {
                msg_outnum(charToLong(b0.b0_pid));
                if (swapfile_process_running(&b0, fname)) {
                   msg_puts(_(" (STILL RUNNING)"));
-                  process_still_running = TRUE;
+                  process_still_running = true;
                }
             }
 
@@ -4323,7 +4323,7 @@ memMakePercentSwapName(CS dir, CS dir_end, CS name) {
    } 
 
    dir_end[-1] = ZERO;  // remove one trailing slash
-   d = concat_fnames(dir, s, TRUE);
+   d = concat_fnames(dir, s, true);
    eeglFree(s);
    eeglFree(f);
    return d;
@@ -4506,7 +4506,7 @@ mf_open_file(MemFile* mfp, CS fname) {
    return OK;
 }
 
-// Close a memory file and delete the associated file if 'del_file' is TRUE.
+// Close a memory file and delete the associated file if 'del_file' is true.
 void
 mf_close(MemFile* mfp, int del_file) {
    if (!mfp)          // safety check
@@ -4540,10 +4540,10 @@ mf_close_file(Book* book, int getlines) {  // get all lines into memory?
 
    if (getlines) {
       // get all blocks in memory by accessing all lines (clumsy!)
-      dontReleaseBlocksS = TRUE;
+      dontReleaseBlocksS = true;
       for (LineNr lnum = 1; lnum <= book->mem.lineCount; ++lnum)
          (void)memGetLine(book, lnum, false);
-      dontReleaseBlocksS = FALSE;
+      dontReleaseBlocksS = false;
       // TODO: should check if all blocks are really in core
    }
 
@@ -4569,7 +4569,7 @@ mf_new_page_size(MemFile* mfp, unsigned new_size) {
 }
 
 // get a new block
-//   negative: TRUE if negative block number desired (data block)
+//   negative: true if negative block number desired (data block)
 BlockHeader *
 mf_new(MemFile* mfp, int negative, int page_count) {
    CS p;
@@ -4727,7 +4727,7 @@ mf_sync(MemFile* mfp, Unt flags) {
    }
 
    // Only a CTRL-C while writing will break us here, not one typed previously.
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    //sync from last to first (may reduce the probability of an inconsistent
    //file) If a write fails, it is very likely caused by a full filesystem.
@@ -4898,13 +4898,13 @@ mf_release(MemFile* mfp, int page_count) {
 //release as many blocks as possible
 //Used in case of out of memory
 //
-//return TRUE if any memory was released
+//return true if any memory was released
 int
 mf_release_all(void){
    Book* book;
    MemFile* mfp;
    BlockHeader* hp;
-   int retval = FALSE;
+   int retval = false;
 
    FOR_ALL_BOOKS(book) {
       mfp = book->mem.mfile;
@@ -4922,7 +4922,7 @@ mf_release_all(void){
                   mf_rem_hash(mfp, hp);
                   mf_free_bhdr(hp);
                   hp = mfp->usedLast;   // re-start, list was changed
-                  retval = TRUE;
+                  retval = true;
                }
                else
                   hp = hp->bh_prev;
@@ -5055,12 +5055,12 @@ mf_write(MemFile* mfp, BlockHeader* hp) {
             //on trying, in case some space becomes available.
             if (!did_swapwrite_msg)
                emsg(_(e_write_error_in_swap_file));
-            did_swapwrite_msg = TRUE;
+            did_swapwrite_msg = true;
             return FAIL;
          }
       }
 
-      did_swapwrite_msg = FALSE;
+      did_swapwrite_msg = false;
       if (hp2 != NULL)          // written a non-dummy block
          hp2->bh_flags &= ~BH_DIRTY;
                       // appended to the file
@@ -5159,7 +5159,7 @@ mf_trans_del(MemFile* mfp, BlockId old_nr) {
 // name so we must work out the full path name.
 void
 mf_set_ffname(MemFile* mfp) {
-   mfp->fullFName = fiExpandAndCopy(mfp->fName, FALSE);
+   mfp->fullFName = fiExpandAndCopy(mfp->fName, false);
 }
 
 // Make the name of the file used for the memfile a full path. Used before doing a :cd
@@ -5173,7 +5173,7 @@ mf_fullname(MemFile* mfp) {
    mfp->fullFName = NULL;
 }
 
-// TRUE if there are any translations pending for 'mfp'
+// true if there are any translations pending for 'mfp'
 int
 mf_need_trans(MemFile* mfp) {
    return (mfp->fName && mfp->mf_neg_count > 0);
@@ -5312,7 +5312,7 @@ mf_hash_grow(MfHashTable *mht) {
    MfHashItem   **buckets;
 
    Unt size = (mht->mask + 1) * MHT_GROWTH_FACTOR * sizeof(void *);
-   buckets = lallocZeroed(size, FALSE);
+   buckets = lallocZeroed(size, false);
    if (!buckets)
       return FAIL;
 
@@ -5394,22 +5394,22 @@ get_copyID(void) {
 //   http://python.ca/nas/python/gc/
 
 // Perform garbage collection for lists and dicts.
-// When "testing" is TRUE this is called from test_garbagecollect_now().
-// Return TRUE if some memory was freed.
+// When "testing" is true this is called from test_garbagecollect_now().
+// Return true if some memory was freed.
 int
 garbage_collect(int testing) {
    int      copyID;
-   int      abort = FALSE;
+   int      abort = false;
    Book   *book;
    Portal   *wp;
-   int      did_free = FALSE;
+   int      did_free = false;
    Tab   *tab;
 
    if (!testing) {
       // Only do this once.
-      want_garbage_collect = FALSE;
-      may_garbage_collect = FALSE;
-      garbage_collect_at_exit = FALSE;
+      want_garbage_collect = false;
+      may_garbage_collect = false;
+      garbage_collect_at_exit = false;
    }
 
    // The execution stack can grow big, limit the size.
@@ -5519,7 +5519,7 @@ free_unref_items(int copyID) {
 
    // Let all "free" functions know that we are here.  This means no
    // dictionaries, lists, channels or jobs are to be freed, because we will do that here.
-   in_free_unref_items = TRUE;
+   in_free_unref_items = true;
 
    // PASS 1: free the contents of the items.  We don't free the items
    // themselves yet, so that it is possible to decrement refcount counters
@@ -5550,7 +5550,7 @@ free_unref_items(int copyID) {
    // Go through the list of channels and free items without the copyID.
    free_unused_channels(copyID, COPYID_MASK);
 
-   in_free_unref_items = FALSE;
+   in_free_unref_items = false;
 
    return did_free;
 }
@@ -5558,11 +5558,11 @@ free_unref_items(int copyID) {
 //Mark all lists and dicts referenced through EeSet "eeset" with "copyID".
 //"list_stack" is used to add lists to be marked.  Can be NULL.
 //
-//Return TRUE if setting references failed somehow.
+//Return true if setting references failed somehow.
 int
 setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack) {
    int      todo;
-   int      abort = FALSE;
+   int      abort = false;
    EeSetItem* hi;
    EeSet   *cur_ht;
    HtStack   *ht_stack = NULL;
@@ -5597,35 +5597,35 @@ setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack) {
 
 #if defined(PROTO)
 
-// Mark a dict and its items with "copyID". Return TRUE if setting references failed somehow.
+// Mark a dict and its items with "copyID". Return true if setting references failed somehow.
 int
 set_ref_in_dict(Bag* b, int copyID) {
    if (b && b->copyId != copyID) {
       b->copyId = copyID;
       return setRefInSet(&b->hashTable, copyID, NULL, NULL);
    }
-   return FALSE;
+   return false;
 }
 #endif
 
-// Mark a list and its items with "copyID". Return TRUE if setting references failed somehow.
+// Mark a list and its items with "copyID". Return true if setting references failed somehow.
 int
 set_ref_in_list(List *ll, int copyID) {
    if (ll && ll->copyId != copyID) {
       ll->copyId = copyID;
       return set_ref_in_list_items(ll, copyID, NULL);
    }
-   return FALSE;
+   return false;
 }
 
 //Mark all lists and dicts referenced through list "l" with "copyID".
 //"ht_stack" is used to add hashtabs to be marked.  Can be NULL.
 //
-//Return TRUE if setting references failed somehow.
+//Return true if setting references failed somehow.
 int
 set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
    ListItem    *li;
-   int       abort = FALSE;
+   int       abort = false;
    List    *cur_l;
    ListStack *list_stack = NULL;
    ListStack *tempitem;
@@ -5654,7 +5654,7 @@ set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
 Boole
 memSetRefInCallback(Callback* cb, int copyID) {
    if (!cb || !cb->name || *cb->name == ZERO || cb->cb_partial == NULL)
-      return FALSE;
+      return false;
 
    Var tv;
    tv.tag = VAR_PARTIAL;
@@ -5671,7 +5671,7 @@ set_ref_in_item_dict(
    ListStack** list_stack
 ){
    if (!bag || bag->copyId == copyID)
-      return FALSE;
+      return false;
 
    // Didn't see this bag yet.
    bag->copyId = copyID;
@@ -5683,7 +5683,7 @@ set_ref_in_item_dict(
    newitem->prev = *ht_stack;
    *ht_stack = newitem;
 
-   return FALSE;
+   return false;
 }
 
 // Mark the list "ll" with "copyID". Also see set_ref_in_item().
@@ -5695,7 +5695,7 @@ set_ref_in_item_list(
    ListStack** list_stack
 ) {
    if (!ll || ll->copyId == copyID)
-      return FALSE;
+      return false;
 
    // Didn't see this list yet.
    ll->copyId = copyID;
@@ -5704,13 +5704,13 @@ set_ref_in_item_list(
 
    ListStack *newitem = ALLOC_ONE(ListStack);
    if (newitem == NULL)
-      return TRUE;
+      return true;
 
    newitem->list = ll;
    newitem->prev = *list_stack;
    *list_stack = newitem;
 
-   return FALSE;
+   return false;
 }
 
 // Mark the partial "pt" with "copyID". Also see set_ref_in_item().
@@ -5752,7 +5752,7 @@ set_ref_in_item_job(
    Var    dtv;
 
    if (job == NULL || job->jv_copyID == copyID)
-      return FALSE;
+      return false;
 
    job->jv_copyID = copyID;
    if (job->jv_channel != NULL) {
@@ -5816,7 +5816,7 @@ set_ref_in_item_channel(
 // "list_stack" is used to add lists to be marked. May be NULL.
 // "ht_stack" is used to add hashtabs to be marked. May be NULL.
 //
-// Return TRUE if setting references failed somehow.
+// Return true if setting references failed somehow.
 int
 set_ref_in_item(
    Var* tv,

@@ -59,4 +59,3 @@ void inSetTagCbForBook(Book *book);
 void inSetCustomCompletionCbForBook(Book *book);
 CS setOmnifunc(OptionChange *cha);
 Unt setCompletionCallbacks(OptionChange *cha);
-/* eegl: set ft=c : */

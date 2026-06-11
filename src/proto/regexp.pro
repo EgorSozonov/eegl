@@ -23,4 +23,3 @@ Boole eeRegexec_prog(RegProg **prog, Boole ignore_case, CS line, ColNr col);
 Boole eeRegexec(RegMatch *rmp, Byte *line, ColNr col);
 int eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col);
 long eeRegexec_multi(RegMultilineMatch *rmp, Portal *port, Book *book, LineNr lnum, ColNr col, int *timed_out);
-/* eegl: set ft=c : */

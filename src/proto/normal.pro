@@ -159,4 +159,3 @@ void f_foldclosedend(Var *argvars, Var *returnVar);
 void f_foldlevel(Var *argvars, Var *returnVar);
 void f_foldtext(Var *argvars, Var *returnVar);
 void f_foldtextresult(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

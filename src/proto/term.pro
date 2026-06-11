@@ -85,4 +85,3 @@ int trans_special(Byte **srcp, CS dst, Unt flags, int escape_ks, Boole *didSimpl
 int setup_slavepty(int fd);
 int openpty(char **ttyn);
 int mch_isatty(int fd);
-/* eegl: set ft=c : */

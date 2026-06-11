@@ -352,7 +352,7 @@ private vwl_clipboard_T   vwl_clipboard = {
 private YankReg   y_regs[NUM_REGISTERS];
 
 private YankReg   *y_current;       // ptr to current yankreg
-private int      y_append;       // TRUE when appending
+private int      y_append;       // true when appending
 private YankReg   *y_previous = NULL; // ptr to last written yankreg
 
 private int   stuff_yank(int, CS);
@@ -397,7 +397,7 @@ set_y_previous(YankReg *yreg) {
 
 void
 reset_y_append(void) {
-   y_append = FALSE;
+   y_append = false;
 }
 
 
@@ -463,7 +463,7 @@ get_expr_line_src(void) {
 //Check if 'regname' is a valid name of a yank register.
 //Note: There is no check for 0 (default register), caller should do this
 int
-valid_yank_reg(int regname, Boole writing) {      // if TRUE check for writable registers
+valid_yank_reg(int regname, Boole writing) {      // if true check for writable registers
    if (      (regname > 0 && ASCII_ISALNUM(regname))
           || (!writing && firstOccurrence((CS)"/.%:=", regname) != NULL)
           || regname == '#'
@@ -474,14 +474,14 @@ valid_yank_reg(int regname, Boole writing) {      // if TRUE check for writable 
           || regname == '+'
           || (!writing && regname == '~')
                         )
-      return TRUE;
+      return true;
    // clipboard support not enabled in this build
    ei (regname == '*' || regname == '+') {
       // Warn about missing clipboard support once
       msg_warn_missing_clipboard();
-      return FALSE;
+      return false;
    }
-   return FALSE;
+   return false;
 }
 
 //Set y_current and y_append, according to the value of "regname".
@@ -490,13 +490,13 @@ valid_yank_reg(int regname, Boole writing) {      // if TRUE check for writable 
 //
 //If regname is 0 and writing, use register 0. If regname is 0 and reading, use previous register
 //
-//Return TRUE when the register should be inserted literally (selection or clipboard).
+//Return true when the register should be inserted literally (selection or clipboard).
 int
 get_yank_register(int regname, int writing) {
    int       i;
-   int       ret = FALSE;
+   int       ret = false;
 
-   y_append = FALSE;
+   y_append = false;
    if ((regname == 0 || regname == '"') && !writing && y_previous != NULL) {
       y_current = y_previous;
       return ret;
@@ -508,18 +508,18 @@ get_yank_register(int regname, int writing) {
       i = i - 'a' + 10;
    ei (ASCII_ISUPPER(i)) {
       i = i - 'A' + 10;
-      y_append = TRUE;
+      y_append = true;
    } ei (regname == '-')
       i = DELETION_REGISTER;
     // When selection is not available, use register 0 instead of '*'
    ei (clipboard.available && regname == '*') {
       i = STAR_REGISTER;
-      ret = TRUE;
+      ret = true;
    }
    // When clipboard is not available, use register 0 instead of '+'
    ei (clipboard.available && regname == '+') {
       i = PLUS_REGISTER;
-      ret = TRUE;
+      ret = true;
    } ei (!writing && regname == '~')
       i = TILDE_REGISTER;
    else      // not 0-9, a-z, A-Z or '-': use register 0
@@ -533,7 +533,7 @@ get_yank_register(int regname, int writing) {
 //Obtain the contents of a "normal" register. The register is made empty.
 //The returned pointer has allocated memory, use put_register() later.
 void *
-get_register(int      name, int copy) {  // make a copy, if FALSE make register empty.
+get_register(int      name, int copy) {  // make a copy, if false make register empty.
    YankReg   *reg;
    int      i;
 
@@ -596,14 +596,14 @@ free_register(void *reg) {
     *y_current = tmp;
 }
 
-// return TRUE if the current yank register has type MLINE
+// return true if the current yank register has type MLINE
 int
 yank_register_mline(int regname) {
    if (regname != 0 && !valid_yank_reg(regname, false))
-      return FALSE;
+      return false;
    if (regname == '_')      // black hole is always empty
-      return FALSE;
-   get_yank_register(regname, FALSE);
+      return false;
+   get_yank_register(regname, false);
    return (y_current->y_type == MLINE);
 }
 
@@ -669,7 +669,7 @@ stuff_yank(int regname, CS p) {
    }
 
    Unt plen = STRLEN(p);
-   get_yank_register(regname, TRUE);
+   get_yank_register(regname, true);
    if (y_append && y_current->y_array != NULL) {
       Text    *pp;
       Byte       *tmp;
@@ -827,16 +827,16 @@ do_execreg(
           // When in Visual mode "'<,'>" will be prepended to the command.
           // Remove it when it's already there.
           if (VIsual_active && STRNCMP(p, "'<,'>", 5) == 0)
-         retval = put_in_typeBufG(p + 5, TRUE, TRUE, silent);
+         retval = put_in_typeBufG(p + 5, true, true, silent);
           else
-         retval = put_in_typeBufG(p, TRUE, TRUE, silent);
+         retval = put_in_typeBufG(p, true, true, silent);
       }
       eeglFree(p);
    } ei (regname == '=') {
       p = get_expr_line();
       if (p == NULL)
           return FAIL;
-      retval = put_in_typeBufG(p, TRUE, colon, silent);
+      retval = put_in_typeBufG(p, true, colon, silent);
       eeglFree(p);
     } ei (regname == '.') {      // use last inserted text
       p = get_last_insert_save();
@@ -844,10 +844,10 @@ do_execreg(
          emsg(_(e_no_inserted_text_yet));
          return FAIL;
    }
-   retval = put_in_typeBufG(p, FALSE, colon, silent);
+   retval = put_in_typeBufG(p, false, colon, silent);
    eeglFree(p);
    } else {
-      get_yank_register(regname, FALSE);
+      get_yank_register(regname, false);
       if (y_current->y_array == NULL)
           return FAIL;
 
@@ -859,11 +859,11 @@ do_execreg(
       for (i = y_current->y_size; --i >= 0; ) {
          CS escaped;
          CS str;
-         int free_str = FALSE;
+         int free_str = false;
 
          // insert NL between lines and after last line if type is MLINE
          if (y_current->y_type == MLINE || i < y_current->y_size - 1 || addcr) {
-            if (insertIntoTypebuf((CS)"\n", remap, 0, TRUE, silent) == FAIL)
+            if (insertIntoTypebuf((CS)"\n", remap, 0, true, silent) == FAIL)
                return FAIL;
          }
 
@@ -875,21 +875,21 @@ do_execreg(
                str = execreg_line_continuation(y_current->y_array, &i);
                if (str == NULL)
                   return FAIL;
-               free_str = TRUE;
+               free_str = true;
             }
          }
          escaped = copyStr_escape_csi(str);
          if (free_str)
             eeglFree(str);
-         retval = insertIntoTypebuf(escaped, remap, 0, TRUE, silent);
+         retval = insertIntoTypebuf(escaped, remap, 0, true, silent);
          eeglFree(escaped);
          if (retval == FAIL)
             return FAIL;
-         if (colon && insertIntoTypebuf((CS)":", remap, 0, TRUE, silent) == FAIL)
+         if (colon && insertIntoTypebuf((CS)":", remap, 0, true, silent) == FAIL)
             return FAIL;
       }
       reg_executing = regname == 0 ? '"' : regname; // disable "q" command
-      pending_end_reg_executing = FALSE;
+      pending_end_reg_executing = false;
    }
    return retval;
 }
@@ -911,12 +911,12 @@ put_reedit_in_typeBufG(int silent) {
       buf[0] = restart_edit == 'I' ? 'i' : restart_edit;
       buf[1] = ZERO;
    }
-   if (insertIntoTypebuf(buf, REMAP_NONE, 0, TRUE, silent) == OK)
+   if (insertIntoTypebuf(buf, REMAP_NONE, 0, true, silent) == OK)
       restart_edit = ZERO;
 }
 
 //Insert register contents "s" into the typeahead buffer, so that it will be executed again.
-//When "esc" is TRUE it is to be taken literally: Escape CSI characters and no remapping.
+//When "esc" is true it is to be taken literally: Escape CSI characters and no remapping.
 private int
 put_in_typeBufG(
     CS s,
@@ -928,7 +928,7 @@ put_in_typeBufG(
 
    put_reedit_in_typeBufG(silent);
    if (colon)
-      retval = insertIntoTypebuf((CS)"\n", REMAP_NONE, 0, TRUE, silent);
+      retval = insertIntoTypebuf((CS)"\n", REMAP_NONE, 0, true, silent);
    if (retval == OK) {
       Byte   *p;
 
@@ -939,12 +939,12 @@ put_in_typeBufG(
       if (p == NULL)
          retval = FAIL;
       else
-         retval = insertIntoTypebuf(p, esc ? REMAP_NONE : REMAP_YES, 0, TRUE, silent);
+         retval = insertIntoTypebuf(p, esc ? REMAP_NONE : REMAP_YES, 0, true, silent);
       if (esc)
          eeglFree(p);
    }
    if (colon && retval == OK)
-       retval = insertIntoTypebuf((CS)":", REMAP_NONE, 0, TRUE, silent);
+       retval = insertIntoTypebuf((CS)":", REMAP_NONE, 0, true, silent);
    return retval;
 }
 
@@ -977,16 +977,16 @@ insert_reg(
     regname = may_get_selection(regname);
 
     if (regname == '.')         // insert last inserted text
-   retval = stuff_inserted(ZERO, 1L, TRUE);
-    ei (get_spec_reg(regname, &arg, &allocated, TRUE)) {
+   retval = stuff_inserted(ZERO, 1L, true);
+    ei (get_spec_reg(regname, &arg, &allocated, true)) {
    if (arg == NULL)
        return FAIL;
    stuffescaped(arg, literally);
    if (allocated)
        eeglFree(arg);
     } else {           // name or number register
-   if (get_yank_register(regname, FALSE))
-       literally = TRUE;
+   if (get_yank_register(regname, false))
+       literally = true;
    if (y_current->y_array == NULL)
        retval = FAIL;
    else {
@@ -1011,88 +1011,88 @@ insert_reg(
     return retval;
 }
 
-//If "regname" is a special register, return TRUE and store a pointer to its value in "retVal".
+//If "regname" is a special register, return true and store a pointer to its value in "retVal".
 int
 get_spec_reg(
    int      regname,
    OUT CS* retVal,
-   int      *allocated,   // return: TRUE when value was allocated
+   int      *allocated,   // return: true when value was allocated
    int      errmsg)      // give error message when failing
 {
    int      cnt;
 
    *retVal = E;
-   *allocated = FALSE;
+   *allocated = false;
    switch (regname) {
    case '%':      // file name
       if (errmsg)
          check_fname();   // will give emsg if not set
       *retVal = curBook->currFileName;
-      return TRUE;
+      return true;
 
    case '#':      // alternate file name
       *retVal = getaltfname(errmsg);   // may give emsg if not set
-      return TRUE;
+      return true;
 
    case '=':      // result of expression
       *retVal = get_expr_line();
-      *allocated = TRUE;
-      return TRUE;
+      *allocated = true;
+      return true;
 
    case ':':      // last command line
       if (!lastCommlineG && errmsg)
          emsg(_(e_no_previous_command_line));
       *retVal = lastCommlineG != E ? lastCommlineG : E;
-      return TRUE;
+      return true;
 
    case '/':      // last search-pattern
       CS lastPat = last_search_pat();
       if (!lastPat && errmsg)
          emsg(_(e_no_previous_regular_expression));
       *retVal = lastPat ? lastPat : E;
-      return TRUE;
+      return true;
 
    case '.':      // last inserted text
       *retVal = get_last_insert_save();
-      *allocated = TRUE;
+      *allocated = true;
       if (*retVal == E && errmsg)
          emsg(_(e_no_inserted_text_yet));
-      return TRUE;
+      return true;
 
    case Ctrl_F:      // Filename under cursor
    case Ctrl_P:      // Path under cursor, expand via "path"
       if (!errmsg)
-         return FALSE;
+         return false;
       *retVal = file_name_at_cursor(
             FNAME_MESS | FNAME_HYP | (regname == Ctrl_P ? FNAME_EXP : 0), 1L, NULL
       );
-      *allocated = TRUE;
-      return TRUE;
+      *allocated = true;
+      return true;
 
    case Ctrl_W:      // word under cursor
    case Ctrl_A:      // WORD (mnemonic All) under cursor
        if (!errmsg)
-      return FALSE;
+      return false;
        cnt = find_ident_under_cursor(retVal, regname == Ctrl_W
                ?  (FIND_IDENT|FIND_STRING) : FIND_STRING);
        *retVal = cnt ? copySubstr(*retVal, cnt) : E;
-       *allocated = TRUE;
-       return TRUE;
+       *allocated = true;
+       return true;
 
    case Ctrl_L:      // Line under cursor
       if (!errmsg)
-         return FALSE;
+         return false;
 
       *retVal = memGetLine(curPor->book,
-         curPor->cursor.lnum, FALSE);
-       return TRUE;
+         curPor->cursor.lnum, false);
+       return true;
 
    case '_':      // black hole: always empty
        *retVal = (CS)"";
-       return TRUE;
+       return true;
    }
 
-   return FALSE;
+   return false;
 }
 
 //Paste a yank register into the command line. Only for non-special registers.
@@ -1109,8 +1109,8 @@ cmdline_paste_reg(
    long   i;
    int      literally = literally_arg;
 
-   if (get_yank_register(regname, FALSE))
-      literally = TRUE;
+   if (get_yank_register(regname, false))
+      literally = true;
    if (y_current->y_array == NULL)
       return FAIL;
 
@@ -1118,7 +1118,7 @@ cmdline_paste_reg(
       cmdline_paste_str(y_current->y_array[i].c, literally);
 
       // Insert ^M between lines and after last line if type is MLINE.
-      // Don't do this when "remcr" is TRUE.
+      // Don't do this when "remcr" is true.
       if ((y_current->y_type == MLINE || i < y_current->y_size - 1) && !remcr)
           cmdline_paste_str((CS)"\r", literally);
 
@@ -1148,7 +1148,7 @@ shift_delete_registers(void) {
 
 void
 yank_do_autocmd(Operator* opArg, YankReg *reg) {
-   static int recursive = FALSE;
+   static int recursive = false;
    Byte buf[NUMBUFLEN + 2];
    long reglen = 0;
    SaveVEvent save_v_event;
@@ -1198,11 +1198,11 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
    // Lock the dictionary and its keys
    bagSetItemsRo(v_event);
 
-   recursive = TRUE;
+   recursive = true;
    textlock++;
    applyAutocomms(EVENT_TEXTYANKPOST, NULL, NULL, false, curBook);
    textlock--;
-   recursive = FALSE;
+   recursive = false;
 
    // Empty the dictionary, v:event is still valid
    restore_v_event(v_event, &save_v_event);
@@ -1276,7 +1276,7 @@ op_yank(Operator *opArg, int deleting, int mess) {
    }
 
     if (!deleting)          // op_delete() already set y_current
-   get_yank_register(opArg->regname, TRUE);
+   get_yank_register(opArg->regname, true);
 
     curr = y_current;
                 // append to existing contents
@@ -1303,7 +1303,7 @@ op_yank(Operator *opArg, int deleting, int mess) {
    y_current->y_size = yanklines;
    y_current->y_type = yanktype;   // set the yank register type
    y_current->y_width = 0;
-   y_current->y_array = lallocZeroed(sizeof(Text)* yanklines, TRUE);
+   y_current->y_array = lallocZeroed(sizeof(Text)* yanklines, true);
    y_current->y_time_set = eeTime();
 
    y_idx = 0;
@@ -1346,7 +1346,7 @@ op_yank(Operator *opArg, int deleting, int mess) {
             if (tmp < bd.textlen)
                bd.textlen = tmp;
 
-            if (yank_copy_line(&bd, y_idx, FALSE) == FAIL)
+            if (yank_copy_line(&bd, y_idx, false) == FAIL)
                goto fail;
             break;
          }
@@ -1498,7 +1498,7 @@ copy_yank_reg(YankReg *reg) {
    y_current = reg;
    free_yank_all();
    *y_current = *curr;
-   y_current->y_array = lallocZeroed(sizeof(Text) * y_current->y_size, TRUE);
+   y_current->y_array = lallocZeroed(sizeof(Text) * y_current->y_size, true);
    for (long j = 0; j < y_current->y_size; ++j) {
        if ((y_current->y_array[j].c = copySubstr(curr->y_array[j].c, curr->y_array[j].len)) 
             == NULL
@@ -1542,7 +1542,7 @@ do_put(
    Text* y_array = NULL;
    YankReg   *y_current_used = NULL;
    long   nr_lines = 0;
-   int      allocated = FALSE;
+   int      allocated = false;
    Pos   orig_start = curBook->opStart;
    Pos   orig_end = curBook->opEnd;
 
@@ -1559,7 +1559,7 @@ do_put(
       if (VIsual_active)
           stuffcharReadbuff(VIsual_mode);
       (void)stuff_inserted((dir == FORWARD ? (count == -1 ? 'o' : 'a') :
-                   (count == -1 ? 'O' : 'i')), count, FALSE);
+                   (count == -1 ? 'O' : 'i')), count, false);
       // Putting the text is done later, so can't really move the cursor to
       // the next character.  Use "l" to simulate it.
       if ((flags & PUT_CURSEND) && gchar_cursor() != ZERO)
@@ -1573,7 +1573,7 @@ do_put(
    Text insertText = (Text){E, 0};
    if (regname == '=' && expr_result)
       insertText.c = expr_result;
-   ei (get_spec_reg(regname, &insertText.c, &allocated, TRUE) && insertText.c == NULL)
+   ei (get_spec_reg(regname, &insertText.c, &allocated, true) && insertText.c == NULL)
       return;
 
    // Autocommands may be executed when saving lines for undo.  This might
@@ -1629,7 +1629,7 @@ do_put(
           y_array = &insertText;
       }
    } else {
-      get_yank_register(regname, FALSE);
+      get_yank_register(regname, false);
 
       y_type = y_current->y_type;
       y_width = y_current->y_width;
@@ -1652,7 +1652,7 @@ do_put(
          ptr = copySubstr(p, plen - (Unt)(p - p_orig));
          if (!ptr)
             goto end;
-         ml_append(curPor->cursor.lnum, ptr, (ColNr)0, FALSE);
+         ml_append(curPor->cursor.lnum, ptr, (ColNr)0, false);
          eeglFree(ptr);
 
          oldp = ml_get_curline();
@@ -1662,7 +1662,7 @@ do_put(
          ptr = copySubstr(oldp, (Unt)(p - oldp));
          if (ptr == NULL)
             goto end;
-         ml_replace(curPor->cursor.lnum, ptr, FALSE);
+         ml_replace(curPor->cursor.lnum, ptr, false);
          ++nr_lines;
          dir = FORWARD;
       }
@@ -1746,7 +1746,7 @@ do_put(
 
          // add a new line
          if (curPor->cursor.lnum > curBook->mem.lineCount) {
-            if (ml_append(curBook->mem.lineCount, (CS)"", (ColNr)1, FALSE) == FAIL)
+            if (ml_append(curBook->mem.lineCount, (CS)"", (ColNr)1, false) == FAIL)
                break;
             ++nr_lines;
          }
@@ -1839,7 +1839,7 @@ do_put(
          // move the text after the cursor to the end of the line.
          mch_memmove(ptr, oldp + bd.textcol + delcount,
                (Unt)(oldlen - bd.textcol - delcount + 1));
-         ml_replace(curPor->cursor.lnum, newp, FALSE);
+         ml_replace(curPor->cursor.lnum, newp, false);
 
          ++curPor->cursor.lnum;
          if (i == 0)
@@ -1954,7 +1954,7 @@ do_put(
                 first_byte_off = mb_head_off(newp, ptr - 1);
 
                 // Note: this may free "newp"
-                ml_replace(lnum, newp, FALSE);
+                ml_replace(lnum, newp, false);
 
                 inserted_bytes(lnum, col, totlen);
 
@@ -1988,7 +1988,7 @@ do_put(
          int      indent;
          int      orig_indent = 0;
          int      indent_diff = 0;   // init for gcc
-         int      first_indent = TRUE;
+         int      first_indent = true;
          int      lendiff = 0;
          long   cnt;
 
@@ -2009,7 +2009,7 @@ do_put(
                STRCPY(newp, y_array[y_size - 1].c);
                STRCPY(newp + totlen, ptr);
                // insert second line
-               ml_append(lnum, newp, (ColNr)0, FALSE);
+               ml_append(lnum, newp, (ColNr)0, false);
                ++new_lnum;
                eeglFree(newp);
 
@@ -2017,7 +2017,7 @@ do_put(
                newp = alloc(col + yanklen + 1); // copy first part of line
                mch_memmove(newp, oldp, (Unt)col); // append to first line
                mch_memmove(newp + col, y_array[0].c, (Unt)(yanklen + 1));
-               ml_replace(lnum, newp, FALSE);
+               ml_replace(lnum, newp, false);
 
                curPor->cursor.lnum = lnum;
                i = 1;
@@ -2025,7 +2025,7 @@ do_put(
 
             for (; i < y_size; ++i) {
                 if (y_type != MCHAR || i < y_size - 1) {
-               if (ml_append(lnum, y_array[i].c, (ColNr)0, FALSE) == FAIL)
+               if (ml_append(lnum, y_array[i].c, (ColNr)0, false) == FAIL)
                    goto error;
                new_lnum++;
                }
@@ -2046,7 +2046,7 @@ do_put(
                {
                    indent_diff = orig_indent - get_indent();
                    indent = orig_indent;
-                   first_indent = FALSE;
+                   first_indent = false;
                }
                ei ((indent = get_indent() + indent_diff) < 0)
                    indent = 0;
@@ -2127,7 +2127,7 @@ do_put(
    }
 
    msgmore(nr_lines);
-   curPor->setCursWant = TRUE;
+   curPor->setCursWant = true;
 
    // Make sure the cursor is not after the ZERO.
    int len = ml_get_curline_len();
@@ -2145,7 +2145,7 @@ end:
    if (regname == '=')
       eeglFree(y_array);
 
-    VIsual_active = FALSE;
+    VIsual_active = false;
 
     // If the cursor is past the end of the line put it at the end.
     adjust_cursor_eol();
@@ -2229,7 +2229,7 @@ c_display(Invocation* invo) {
                 // pointer can be freed
 
       if (yb->y_array) {
-         int do_show = FALSE;
+         int do_show = false;
          for (j = 0; !do_show && j < yb->y_size; ++j)
             do_show = !message_filtered(yb->y_array[j].c);
 
@@ -2268,7 +2268,7 @@ c_display(Invocation* invo) {
         && (arg || firstOccurrence(arg, '.') != NULL) && !gotInterruptG && !message_filtered(p)
    ) {
       msg_puts(S"\n  c  \".   ");
-      dis_msg(p, TRUE);
+      dis_msg(p, true);
    }
 
    // display last command line
@@ -2276,7 +2276,7 @@ c_display(Invocation* invo) {
                 && !gotInterruptG && !message_filtered(lastCommlineG))
    {
       msg_puts(S"\n  c  \":   ");
-      dis_msg(lastCommlineG, FALSE);
+      dis_msg(lastCommlineG, false);
    }
 
    // display current file name
@@ -2285,7 +2285,7 @@ c_display(Invocation* invo) {
                && !message_filtered(curBook->currFileName))
     {
       msg_puts(S"\n  c  \"%   ");
-      dis_msg(curBook->currFileName, FALSE);
+      dis_msg(curBook->currFileName, false);
    }
 
    // display alternate file name
@@ -2295,7 +2295,7 @@ c_display(Invocation* invo) {
 
       if (bookGetFnameByFileId(0, &fname, &dummy) != FAIL && !message_filtered(fname)) {
           msg_puts(S"\n  c  \"#   ");
-          dis_msg(fname, FALSE);
+          dis_msg(fname, false);
       }
    }
 
@@ -2305,14 +2305,14 @@ c_display(Invocation* invo) {
                   && !message_filtered(last_search_pat())
    ) {
       msg_puts(S"\n  c  \"/   ");
-      dis_msg(last_search_pat(), FALSE);
+      dis_msg(last_search_pat(), false);
    }
 
    // display last used expression
    if (expr_line && (!arg || firstOccurrence(arg, '=') != NULL)
               && !gotInterruptG && !message_filtered(expr_line)) {
       msg_puts(S"\n  c  \"=   ");
-      dis_msg(expr_line, FALSE);
+      dis_msg(expr_line, false);
    }
 }
 
@@ -2320,7 +2320,7 @@ c_display(Invocation* invo) {
 private void
 dis_msg(
    Byte   *p,
-   int      skip_esc       // if TRUE, ignore trailing ESC
+   int      skip_esc       // if true, ignore trailing ESC
 ){
    int n = (int)visibleColsG - 6;
    while (*p != ZERO && !(*p == ESC && skip_esc && *(p + 1) == ZERO)
@@ -2341,7 +2341,7 @@ str_to_reg(
    CS str,      // string to put in register
    long   len,      // length of string
    long   blocklen,   // width of Visual block
-   int      str_list)   // TRUE if str is a CString
+   int      str_list)   // true if str is a CString
 {
    int      type;         // MCHAR, MLINE or MBLOCK
    int      lnum;
@@ -2390,7 +2390,7 @@ str_to_reg(
 
    // Allocate an array to hold the pointers to the new register lines.
    // If the register was not empty, move the existing lines to the new array.
-   Text* pp = lallocZeroed((yReg->y_size + newlines) * sizeof(Text), TRUE);
+   Text* pp = lallocZeroed((yReg->y_size + newlines) * sizeof(Text), true);
    for (lnum = 0; lnum < yReg->y_size; ++lnum)
       pp[lnum] = yReg->y_array[lnum];
    eeglFree(yReg->y_array);
@@ -2466,7 +2466,7 @@ dnd_yank_drag_data(CS str, long len) {
    YankReg* curr = y_current;
    y_current = &y_regs[TILDE_REGISTER];
    free_yank_all();
-   str_to_reg(y_current, MCHAR, str, len, 0L, FALSE);
+   str_to_reg(y_current, MCHAR, str, len, 0L, false);
    y_current = curr;
 }
 
@@ -2494,7 +2494,7 @@ get_reg_type(int regname, long *reglen) {
    if (regname != ZERO && !valid_yank_reg(regname, false))
       return MAUTO;
 
-   get_yank_register(regname, FALSE);
+   get_yank_register(regname, false);
 
    if (y_current->y_array != NULL) {
       if (reglen != NULL && y_current->y_type == MBLOCK)
@@ -2551,7 +2551,7 @@ get_reg_contents(int regname, int flags) {
 
    regname = may_get_selection(regname);
 
-   if (get_spec_reg(regname, &retval, &allocated, FALSE)) {
+   if (get_spec_reg(regname, &retval, &allocated, false)) {
       if (retval == NULL)
          return NULL;
       if (allocated)
@@ -2559,7 +2559,7 @@ get_reg_contents(int regname, int flags) {
       return getreg_wrap_one_line(copyStr(retval), flags);
    }
 
-   get_yank_register(regname, FALSE);
+   get_yank_register(regname, false);
    if (y_current->y_array == NULL)
       return NULL;
 
@@ -2621,7 +2621,7 @@ init_write_reg(
    *old_y_previous = y_previous;
    *old_y_current = y_current;
 
-   get_yank_register(name, TRUE);
+   get_yank_register(name, true);
    if (!y_append && !must_append)
       free_yank_all();
    return OK;
@@ -2644,7 +2644,7 @@ finish_write_reg(
 
 //Store string "str" in register "name".
 //"maxlen" is the maximum number of bytes to use, -1 for all bytes.
-//If "must_append" is TRUE, always append to the register.  Otherwise append
+//If "must_append" is true, always append to the register.  Otherwise append
 //if "name" is an uppercase letter.
 //Note: "maxlen" and "must_append" don't work for the "/" register.
 //Careful: 'str' is modified, you may have to use a copy!
@@ -2691,7 +2691,7 @@ write_reg_contents_lst(
       &yank_type) == FAIL)
    return;
 
-   str_to_reg(y_current, yank_type, (CS)strings, -1, block_len, TRUE);
+   str_to_reg(y_current, yank_type, (CS)strings, -1, block_len, true);
    finish_write_reg(name, old_y_previous, old_y_current);
 }
 
@@ -2709,7 +2709,7 @@ write_reg_contents_ex(
       
    // Special case: '/' search pattern
    if (name == '/') {
-      set_last_search_pat(str, RE_SEARCH, TRUE, TRUE);
+      set_last_search_pat(str, RE_SEARCH, true, true);
       return;
    }
 
@@ -2722,7 +2722,7 @@ write_reg_contents_ex(
          if (!buf)
             showErrFmtMsg(_(e_book_nr_does_not_exist), (long)num);
       } else
-         buf = bookFindFileByBookNr(booklistFindPattern(str, str + len, TRUE, FALSE, FALSE));
+         buf = bookFindFileByBookNr(booklistFindPattern(str, str + len, true, false, false));
       if (!buf)
          return;
       curPor->altFnum = buf->fiNum;
@@ -2747,7 +2747,7 @@ write_reg_contents_ex(
    if (init_write_reg(name, &old_y_previous, &old_y_current, must_append, &yank_type) == FAIL)
       return;
 
-   str_to_reg(y_current, yank_type, str, len, block_len, FALSE);
+   str_to_reg(y_current, yank_type, str, len, block_len, false);
    finish_write_reg(name, old_y_previous, old_y_current);
 }
 
@@ -2796,9 +2796,9 @@ private void clip_wl_selection_cancelled(WaylandSelection selection);
 
 //Selection stuff using Visual mode, for cutting and pasting text to other windows.
 
-//Call this to initialise the clipboard.  Pass it FALSE if the clipboard code
-//is included, but the clipboard can not be used, or TRUE if the clipboard can
-//be used.  Eg unix may call this with FALSE, then call it again with TRUE if
+//Call this to initialise the clipboard.  Pass it false if the clipboard code
+//is included, but the clipboard can not be used, or true if the clipboard can
+//be used.  Eg unix may call this with false, then call it again with true if
 //the GUI starts.
 void
 clip_init(int can_use){
@@ -2809,7 +2809,7 @@ clip_init(int can_use){
          goto skip;
 
       cb->available  = can_use;
-      cb->owned      = FALSE;
+      cb->owned      = false;
       cb->start.lnum = 0;
       cb->start.col  = 0;
       cb->end.lnum   = 0;
@@ -2893,7 +2893,7 @@ void
 clip_lose_selection(ClipBoard* cbd) {
    Boole isVisual = (cbd == &clipboard);
    freeSelection(cbd);
-   cbd->owned = FALSE;
+   cbd->owned = false;
    if (isVisual)
       clip_clear_selection(cbd);
    clip_gen_lose_selection(cbd);
@@ -2912,22 +2912,22 @@ clip_copy_selection(ClipBoard *clip) {
 }
 
 private int global_change_count = 0; // if set, inside a start_global_changes
-private int clipboard_needs_update = FALSE; // clipboard needs to be updated
-private int clip_did_set_selection = TRUE;
+private int clipboard_needs_update = false; // clipboard needs to be updated
+private int clip_did_set_selection = true;
 
 // Save state and reset it.
 void
 start_global_changes(void) {
    if (++global_change_count > 1)
       return;
-   clipboard_needs_update = FALSE;
+   clipboard_needs_update = false;
 
    if (clip_did_set_selection) {
-      clip_did_set_selection = FALSE;
+      clip_did_set_selection = false;
    }
 }
 
-//Return TRUE if setting the clipboard was postponed, it already contains the right text.
+//Return true if setting the clipboard was postponed, it already contains the right text.
 private int
 is_clipboard_needs_update(void){
    return clipboard_needs_update;
@@ -2939,14 +2939,14 @@ end_global_changes(void){
       // recursive
       return;
    if (!clip_did_set_selection) {
-      clip_did_set_selection = TRUE;
+      clip_did_set_selection = true;
       if (clipboard_needs_update) {
          // only store something in the clipboard if we have yanked anything to it
          clip_own_selection(&clipboard);
          clip_gen_set_selection(&clipboard);
       }
    }
-   clipboard_needs_update = FALSE;
+   clipboard_needs_update = false;
 }
 
 // Called when Visual mode is ended: update the selection.
@@ -3074,7 +3074,7 @@ clip_modeless(int button, int is_click, int is_drag){
       //Right mouse button: If there was no selection, start one. Otherwise extend the 
       //existing selection.
       if (clipboard.state == SELECT_CLEARED)
-         startSelection(mouseColG, mouseRowG, FALSE);
+         startSelection(mouseColG, mouseRowG, false);
       processSelection(button, mouseColG, mouseRowG, repeat);
    } ei (is_click)
       startSelection(mouseColG, mouseRowG, repeat);
@@ -3084,7 +3084,7 @@ clip_modeless(int button, int is_click, int is_drag){
       if (clipboard.state != SELECT_CLEARED)
          processSelection(button, mouseColG, mouseRowG, repeat);
    } else // release
-      processSelection(MOUSE_RELEASE, mouseColG, mouseRowG, FALSE);
+      processSelection(MOUSE_RELEASE, mouseColG, mouseRowG, false);
 }
 
 //Update the currently selected region by adding and/or subtracting from the
@@ -3416,11 +3416,11 @@ private void
 clip_yank_selection(int type, CS str, long len, ClipBoard* cbd) {
    YankReg* yReg = (cbd == &clipboard) ? getYRegister(PLUS_REGISTER) : getYRegister(STAR_REGISTER);
    freeSelection(cbd);
-   str_to_reg(yReg, type, str, len, -1, FALSE);
+   str_to_reg(yReg, type, str, len, -1, false);
 }
 
 //Copy the currently selected area into the '*' register so it will be available for pasting.
-//When "both" is TRUE also copy to the '+' register.
+//When "both" is true also copy to the '+' register.
 void
 clip_copy_modeless_selection() {
    // Can't use screenLinesP unless initialized
@@ -3431,7 +3431,7 @@ clip_copy_modeless_selection() {
    int start_col;
    int end_col;
    int line_end_col;
-   int add_newline_flag = FALSE;
+   int add_newline_flag = false;
    int row1 = clipboard.start.lnum;
    int col1 = clipboard.start.col;
    int row2 = clipboard.end.lnum;
@@ -3482,7 +3482,7 @@ clip_copy_modeless_selection() {
 
          // If the last line extended to the end, add an extra newline
          if (row == row2)
-            add_newline_flag = TRUE;
+            add_newline_flag = true;
       }
 
       //If after the first row, we need to always add a newline
@@ -3532,7 +3532,7 @@ clip_gen_set_selection(ClipBoard *cbd){
       //Updating postponed, so that accessing the system clipboard won't
       //hang Eegl when accessing it many times (e.g. on a :g command).
       if (cbd == &clipboard) {
-          clipboard_needs_update = TRUE;
+          clipboard_needs_update = true;
           return;
       }
    }
@@ -3606,7 +3606,7 @@ clip_get_selection(ClipBoard* cbd) {
       ca.cmdchar = 'y';
       ca.count1 = 1;
       ca.retval = CA_NO_ADJ_OP_END;
-      visualOperator(&ca, 0, TRUE);
+      visualOperator(&ca, 0, true);
 
       // restore things
       set_y_previous(old_y_previous);
@@ -3736,7 +3736,7 @@ clip_wl_receive_data(ClipBoard* cbd, CS mime_type, int fd) {
    // reads and check for EAGAIN or EINTR to signal to poll again.
    goto poll_data;
 
-   while (errno = 0, TRUE) {
+   while (errno = 0, true) {
       r = read(fd, start, buf.cap - 1 - buf.len);
 
       if (r == 0)
@@ -3835,9 +3835,9 @@ clip_wl_send_data(const char* mime_type, int fd, WaylandSelection selection) {
    CS string;
    Long written = 0;
    Unt total = 0;
-   int did_motion_type = TRUE;
+   int did_motion_type = true;
    int motion_type;
-   int skip_len_check = FALSE;
+   int skip_len_check = false;
    fd_set wfds;
    TimeVal  tv;
 
@@ -3864,7 +3864,7 @@ clip_wl_send_data(const char* mime_type, int fd, WaylandSelection selection) {
       goto exit;
 
    if (STRCMP(mime_type, EE_ATOM_NAME) == 0)
-      did_motion_type = FALSE;
+      did_motion_type = false;
 
    while ((total < (Unt)length || skip_len_check) 
          && select(fd + 1, NULL, &wfds, NULL, &tv) > 0
@@ -3873,17 +3873,17 @@ clip_wl_send_data(const char* mime_type, int fd, WaylandSelection selection) {
       if (!did_motion_type) {
          if (total == 1) {
             total = 0;
-            did_motion_type = TRUE;
+            did_motion_type = true;
             continue;
          }
          // We cast to char so that we only send one byte
          written = write( fd, (Byte*)&motion_type, 1);
-         skip_len_check = TRUE;
+         skip_len_check = true;
       } else {
          // write the actual selection to the fd
          written = write(fd, string + total, length - total);
          if (skip_len_check)
-             skip_len_check = FALSE;
+             skip_len_check = false;
       }
 
       if (written == -1)
@@ -3948,7 +3948,7 @@ clip_wl_set_selection(ClipBoard *cbd UNUSED) {
 
 // Only really used for debugging/testing purposes in order to force focus
 // stealing even when a data control protocol is available.
-private int force_fs  = FALSE;
+private int force_fs  = false;
 
 //Like wl_display_flush but always writes all the data in the buffer to the
 //display fd. Returns FAIL on failure and OK on success.
@@ -3987,7 +3987,7 @@ vwl_display_flush(WaylandDisplay *display) {
 //Called when compositor is done processing requests/events.
 private void
 vwl_callback_done(void *data, struct wl_callback *callback, uint32_t cb_data UNUSED) {
-   *((int*)data) = TRUE;
+   *((int*)data) = true;
    wl_callback_destroy(callback);
 }
 
@@ -3995,7 +3995,7 @@ vwl_callback_done(void *data, struct wl_callback *callback, uint32_t cb_data UNU
 private int
 vwl_display_roundtrip(WaylandDisplay *display) {
    struct wl_callback   *callback;
-   int         ret, done = FALSE;
+   int         ret, done = false;
    TimeVal start, now;
 
    if (display->proxy == NULL)
@@ -4012,8 +4012,8 @@ vwl_display_roundtrip(WaylandDisplay *display) {
 
    gettimeofday(&start, NULL);
 
-   //Wait till we get the done event (which will set `done` to TRUE), unless we timeout
-   while (TRUE) {
+   //Wait till we get the done event (which will set `done` to true), unless we timeout
+   while (true) {
       ret = vwl_display_dispatch(display);
 
       if (done || ret == -1)
@@ -4209,9 +4209,9 @@ vwl_listen_to_registry(void) {
    CS env = mch_getenv("EEGL_WAYLAND_FORCE_FS");
 
    if (env != NULL && STRCMP(env, "1") == 0)
-      force_fs = TRUE;
+      force_fs = true;
    else
-      force_fs = FALSE;
+      force_fs = false;
 
    ga_init2(&vwl_seats, sizeof(WaylandSeat), 1);
 
@@ -4409,7 +4409,7 @@ wayland_uninit_client(void) {
     wayland_set_display(S"");
 }
 
-// TRUE if Wayland display connection is valid and ready.
+// true if Wayland display connection is valid and ready.
 int
 wayland_client_is_connected(int quiet) {
    if (vwl_display.proxy == NULL)
@@ -4419,11 +4419,11 @@ wayland_client_is_connected(int quiet) {
    if (wl_display_get_error(vwl_display.proxy) != 0 || vwl_display_flush(&vwl_display) == FAIL)
       goto error;
 
-   return TRUE;
+   return true;
 error:
    if (!quiet)
       emsg(e_wayland_connection_unavailable);
-   return FALSE;
+   return false;
 }
 
 // Flush requests and process new Wayland events, does not poll the display file descriptor.
@@ -4456,7 +4456,7 @@ vwl_xdg_surface_listener_configure(
 private void
 vwl_bs_buffer_listener_release(void* data, struct wl_buffer* buffer UNUSED) {
    BufferStore* store = data;
-   store->available = TRUE;
+   store->available = true;
 }
 
 // Destroy a buffer store structure.
@@ -4492,7 +4492,7 @@ mch_create_anon_file(void) {
    if (fd == -1) {
       Byte   *tempname;
       // get a name for the temp file
-      if ((tempname = eeTempName('w', FALSE)) == NULL) {
+      if ((tempname = eeTempName('w', false)) == NULL) {
          emsg(_(e_cant_get_temp_file_name));
          return -1;
       }
@@ -4512,7 +4512,7 @@ vwl_init_buffer_store(int width, int height) {
 
    BufferStore* store = alloc(sizeof(BufferStore));
 
-   store->available = FALSE;
+   store->available = false;
 
    store->width = width;
    store->height = height;
@@ -4546,7 +4546,7 @@ vwl_init_buffer_store(int width, int height) {
       return NULL;
    }
 
-   store->available = TRUE;
+   store->available = true;
 
    return store;
 }
@@ -4610,12 +4610,12 @@ vwl_init_fs_surface(
 
    store->on_focus = on_focus;
    store->user_data = user_data;
-   store->got_focus = FALSE;
+   store->got_focus = false;
 
    if (vwl_display_roundtrip(&vwl_display) == FAIL)
       goto fail;
 
-   // We may get the enter event early, if we do then we will set `got_focus` to TRUE.
+   // We may get the enter event early, if we do then we will set `got_focus` to true.
    if (store->got_focus)
       goto early_exit;
 
@@ -4623,7 +4623,7 @@ vwl_init_fs_surface(
    if (!buffer_store->available)
       goto fail;
 
-   buffer_store->available = FALSE;
+   buffer_store->available = false;
 
    wl_surface_attach(store->surface, buffer_store->buffer, 0, 0);
    wl_surface_damage(store->surface, 0, 0, buffer_store->width, buffer_store->height);
@@ -4671,7 +4671,7 @@ vwl_fs_keyboard_listener_enter(
 ) {
    vwl_fs_surface_T *store = data;
 
-   store->got_focus = TRUE;
+   store->got_focus = true;
 
    if (store->on_focus != NULL)
       store->on_focus(store->user_data, serial);
@@ -4802,7 +4802,7 @@ vwl_gen_data_device_listener_selection(
        .protocol = protocol
    };
 
-   vwl_data_offer_destroy(&tmp, FALSE);
+   vwl_data_offer_destroy(&tmp, false);
 
    // If offer proxy is NULL then we know the selection has been cleared.
    if (offer_proxy == NULL)
@@ -5047,8 +5047,8 @@ vwl_data_offer_receive(DataOffer *offer, const char *mime_type, int fd) {
    } while (0)
 
 // Get a data device manager that supports the given selection. If none if found
-// then the manager protocol is set to VWL_DATA_PROTOCOL_NONE. TRUE is returned
-// if the given data device manager requires focus to work else FALSE.
+// then the manager protocol is set to VWL_DATA_PROTOCOL_NONE. true is returned
+// if the given data device manager requires focus to work else false.
 private int
 vwl_get_data_device_manager(
    vwl_data_device_manager_T   *manager,
@@ -5061,23 +5061,23 @@ vwl_get_data_device_manager(
 
    // Ext data control protocol supports both selections, try it first
    if (vwl_gobjects.ext_data_control_manager_v1 != NULL)
-      SET_MANAGER(ext_data_control_manager_v1, VWL_DATA_PROTOCOL_EXT, FALSE);
+      SET_MANAGER(ext_data_control_manager_v1, VWL_DATA_PROTOCOL_EXT, false);
 
 focus_steal:
    if (vwl_focus_stealing_available()) {
       if (vwl_gobjects.wl_data_device_manager != NULL
          && selection == WAYLAND_SELECTION_REGULAR)
-          SET_MANAGER(wl_data_device_manager, VWL_DATA_PROTOCOL_CORE, TRUE);
+          SET_MANAGER(wl_data_device_manager, VWL_DATA_PROTOCOL_CORE, true);
 
       ei (vwl_gobjects.zwp_primary_selection_device_manager_v1 != NULL
          && selection == WAYLAND_SELECTION_PRIMARY)
           SET_MANAGER(zwp_primary_selection_device_manager_v1,
-             VWL_DATA_PROTOCOL_PRIMARY, TRUE);
+             VWL_DATA_PROTOCOL_PRIMARY, true);
    }
 
     manager->protocol = VWL_DATA_PROTOCOL_NONE;
 
-    return FALSE;
+    return false;
 }
 
 // Get a data device that manages the given seat's selection.
@@ -5213,7 +5213,7 @@ wayland_cb_init(const char *seat) {
       wayland_cb_uninit();
       return FAIL;
    }
-   clip_init(TRUE);
+   clip_init(true);
 
    return OK;
 }
@@ -5228,14 +5228,14 @@ wayland_cb_uninit(void) {
    }
 
    // Destroy the current offer if it exists
-   vwl_data_offer_destroy(vwl_clipboard.regular.offer, TRUE);
-   vwl_data_offer_destroy(vwl_clipboard.primary.offer, TRUE);
+   vwl_data_offer_destroy(vwl_clipboard.regular.offer, true);
+   vwl_data_offer_destroy(vwl_clipboard.primary.offer, true);
 
    // Destroy any devices or sources
-   vwl_data_device_destroy(&vwl_clipboard.regular.device, FALSE);
-   vwl_data_device_destroy(&vwl_clipboard.primary.device, FALSE);
-   vwl_data_source_destroy(&vwl_clipboard.regular.source, FALSE);
-   vwl_data_source_destroy(&vwl_clipboard.primary.source, FALSE);
+   vwl_data_device_destroy(&vwl_clipboard.regular.device, false);
+   vwl_data_device_destroy(&vwl_clipboard.primary.device, false);
+   vwl_data_source_destroy(&vwl_clipboard.regular.source, false);
+   vwl_data_source_destroy(&vwl_clipboard.primary.source, false);
 
    // Free mime types
    vwl_clipboard_free_mime_types(&vwl_clipboard.regular);
@@ -5302,7 +5302,7 @@ vwl_data_device_listener_selection(
    else {
       // Example: selection event is for the primary selection but this device
       // is only for the regular selection, if so then just discard the offer and tmp_mime_types.
-      vwl_data_offer_destroy(offer, TRUE);
+      vwl_data_offer_destroy(offer, true);
       tmp_vwl_offer = NULL;
       ga_clear_strings(&clip_sel->tmp_mime_types);
       return;
@@ -5318,7 +5318,7 @@ vwl_data_device_listener_selection(
       goto exit;
    } ei (clip_sel->source.proxy != NULL) {
       // We own the selection, ignore it
-      vwl_data_offer_destroy(offer, TRUE);
+      vwl_data_offer_destroy(offer, true);
       ga_clear_strings(&clip_sel->tmp_mime_types);
       clip_sel->offer = NULL;
       goto exit;
@@ -5326,7 +5326,7 @@ vwl_data_device_listener_selection(
 
 exit:
    // Destroy previous offer if any
-   vwl_data_offer_destroy(prev_offer, TRUE);
+   vwl_data_offer_destroy(prev_offer, true);
    ga_clear_strings(&clip_sel->mime_types);
 
    // Copy the grow array over
@@ -5344,9 +5344,9 @@ private void
 vwl_data_device_listener_finished(DataDevice *device) {
    WaylandClipboardSelection *clip_sel = device->data;
 
-   vwl_data_device_destroy(&clip_sel->device, FALSE);
-   vwl_data_offer_destroy(clip_sel->offer, TRUE);
-   vwl_data_source_destroy(&clip_sel->source, FALSE);
+   vwl_data_device_destroy(&clip_sel->device, false);
+   vwl_data_offer_destroy(clip_sel->offer, true);
+   vwl_data_source_destroy(&clip_sel->source, false);
    vwl_clipboard_free_mime_types(clip_sel);
 }
 
@@ -5393,7 +5393,7 @@ wayland_cb_receive_data(CS mime_type, WaylandSelection selection) {
    else
       return -1;
 
-   if (!wayland_client_is_connected(FALSE) || !vwl_clipboard_selection_is_ready(clip_sel))
+   if (!wayland_client_is_connected(false) || !vwl_clipboard_selection_is_ready(clip_sel))
       return -1;
 
    if (clip_sel->offer == NULL || clip_sel->offer->proxy == NULL)
@@ -5432,7 +5432,7 @@ vwl_data_source_listener_cancelled(DataSource *source) {
 
    if (clip_sel->send_cb != NULL)
       clip_sel->cancelled_cb(clip_sel->selection);
-   vwl_data_source_destroy(source, FALSE);
+   vwl_data_source_destroy(source, false);
 }
 
 // Set the selection when we gain focus
@@ -5488,14 +5488,14 @@ wayland_cb_own_selection(
           // There should be no noticable performance change since its not like this is running 
           // in the background constantly in Eegl, only runs once when the user yanks text to the 
           // system clipboard.
-          vwl_data_source_destroy(&clip_sel->source, FALSE);
+          vwl_data_source_destroy(&clip_sel->source, false);
           vwl_display_flush(&vwl_display);
       } else
           // Shouldn't happen
           return FAIL;
    }
 
-   if (!wayland_client_is_connected(FALSE) || !vwl_clipboard_selection_is_ready(clip_sel))
+   if (!wayland_client_is_connected(false) || !vwl_clipboard_selection_is_ready(clip_sel))
       return FAIL;
 
    clip_sel->send_cb = send_cb;
@@ -5523,7 +5523,7 @@ wayland_cb_own_selection(
 
    return OK;
 fail:
-   vwl_data_source_destroy(&clip_sel->source, FALSE);
+   vwl_data_source_destroy(&clip_sel->source, false);
    return FAIL;
 }
 
@@ -5532,13 +5532,13 @@ fail:
 void
 wayland_cb_lose_selection(WaylandSelection selection) {
    if (selection == WAYLAND_SELECTION_REGULAR)
-      vwl_data_source_destroy(&vwl_clipboard.regular.source, FALSE);
+      vwl_data_source_destroy(&vwl_clipboard.regular.source, false);
    ei (selection == WAYLAND_SELECTION_PRIMARY)
-      vwl_data_source_destroy(&vwl_clipboard.primary.source, FALSE);
+      vwl_data_source_destroy(&vwl_clipboard.primary.source, false);
    vwl_display_flush(&vwl_display);
 }
 
-// Return TRUE if the selection is owned by either us or another client.
+// Return true if the selection is owned by either us or another client.
 int
 wayland_cb_selection_is_owned(WaylandSelection selection) {
    vwl_display_roundtrip(&vwl_display);
@@ -5550,16 +5550,16 @@ wayland_cb_selection_is_owned(WaylandSelection selection) {
       return vwl_clipboard.primary.source.proxy != NULL
           || vwl_clipboard.primary.offer != NULL;
    else
-      return FALSE;
+      return false;
 }
 
-// Return TRUE if the Wayland clipboard/selections are ready to use.
+// Return true if the Wayland clipboard/selections are ready to use.
 int
 wayland_cb_is_ready(void) {
    vwl_display_roundtrip(&vwl_display);
 
    // Clipboard is ready if we have at least one selection available
-   return wayland_client_is_connected(TRUE) &&
+   return wayland_client_is_connected(true) &&
        (vwl_clipboard_selection_is_ready(&vwl_clipboard.regular) ||
        vwl_clipboard_selection_is_ready(&vwl_clipboard.primary));
 }
@@ -5587,7 +5587,7 @@ private int wayland_ct_restore_count = 0;
 int
 wayland_may_restore_connection(void) {
    // No point if we still are already connected properly
-   if (wayland_client_is_connected(TRUE))
+   if (wayland_client_is_connected(true))
       return OK;
 
    // No point in restoring the connection if we are exiting or dying.
@@ -5609,7 +5609,7 @@ c_wlrestore(Invocation *invo) {
 
    // Return early if shebang is not passed, we are still connected, and if not
    // changing to a new Wayland display.
-   if (!invo->forceit && wayland_client_is_connected(TRUE) &&
+   if (!invo->forceit && wayland_client_is_connected(true) &&
        (display == wayland_display_name 
            || (wayland_display_name && STRCMP(wayland_display_name, display) == 0))
    )

@@ -62,4 +62,3 @@ void searchFixHelpBook(void);
 void c_exusage(Invocation *invo);
 void c_usage(Invocation *invo);
 void c_helptags(Invocation *invo);
-/* eegl: set ft=c : */

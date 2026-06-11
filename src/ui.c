@@ -1152,7 +1152,7 @@ vterm_build(VTermBuilder* builder) {
    vt->parser.callbacks = NULL;
    vt->parser.cbdata    = NULL;
 
-   vt->parser.emit_nul  = FALSE;
+   vt->parser.emit_nul  = false;
 
    vt->outfunc = NULL;
    vt->outdata = NULL;
@@ -3185,8 +3185,8 @@ screen_new(VTerm *vt) {
    screen->rows = rows;
    screen->cols = cols;
  
-   screen->global_reverse = FALSE;
-   screen->reflow = FALSE;
+   screen->global_reverse = false;
+   screen->reflow = false;
  
    screen->callbacks = NULL;
    screen->cbdata    = NULL;
@@ -3558,7 +3558,7 @@ string_fragment(VTerm *vt, CS str, Unt len, int final) {
       break;
    }
 
-   vt->parser.string_initial = FALSE;
+   vt->parser.string_initial = false;
 }
 
 private Unt 
@@ -3597,7 +3597,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
 
       if (c == 0x00 || c == 0x7f) { // NUL, DEL
          if (IS_STRING_STATE()) {
-            string_fragment(vt, string_start, bytes + pos - string_start, FALSE);
+            string_fragment(vt, string_start, bytes + pos - string_start, false);
             string_start = bytes + pos + 1;
          }
          if (vt->parser.emit_nul)
@@ -3605,7 +3605,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
          continue;
       }
       if (c == 0x18 || c == 0x1a) { // CAN, SUB
-         vt->parser.in_esc = FALSE;
+         vt->parser.in_esc = false;
          ENTER_NORMAL_STATE();
          if (vt->parser.emit_nul)
             do_control(vt, c);
@@ -3614,7 +3614,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
          vt->parser.intermedlen = 0;
          if (!IS_STRING_STATE())
             vt->parser.state = VT_NORMAL;
-         vt->parser.in_esc = TRUE;
+         vt->parser.in_esc = true;
          continue;
       } ei (c == 0x07 && IS_STRING_STATE()) {// BEL, can stand for ST in VT_OSC or VT_DCS state
          // fallthrough
@@ -3629,7 +3629,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
                vt->in_backspace = 2; // Trigger when count down to 1
          }
          if (IS_STRING_STATE())
-            string_fragment(vt, string_start, bytes + pos - string_start, FALSE);
+            string_fragment(vt, string_start, bytes + pos - string_start, false);
          do_control(vt, c);
          if (IS_STRING_STATE())
             string_start = bytes + pos + 1;
@@ -3646,10 +3646,10 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
              c >= 0x40 && c < 0x60 &&
              ((!IS_STRING_STATE() || c == 0x5c))) {
            c += 0x40;
-           c1_allowed = TRUE;
+           c1_allowed = true;
            if (string_len)
              string_len -= 1;
-           vt->parser.in_esc = FALSE;
+           vt->parser.in_esc = false;
          } else {
             string_start = NULL;
             vt->parser.state = VT_NORMAL;
@@ -3752,7 +3752,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
       case VT_PM:
       case VT_SOS:
          if (c == 0x07 || (c1_allowed && c == 0x9c)) {
-            string_fragment(vt, string_start, string_len, TRUE);
+            string_fragment(vt, string_start, string_len, true);
             ENTER_NORMAL_STATE();
          }
          break;
@@ -3774,12 +3774,12 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
          if (c1_allowed && c >= 0x80 && c < 0xa0) {
             switch(c) {
             case 0x90: // DCS
-               vt->parser.string_initial = TRUE;
+               vt->parser.string_initial = true;
                vt->parser.v.dcs.commandlen = 0;
                ENTER_STATE(VT_DCS_COMMAND);
                break;
             case 0x98: // SOS
-               vt->parser.string_initial = TRUE;
+               vt->parser.string_initial = true;
                ENTER_STATE(VT_SOS);
                string_start = bytes + pos + 1;
                string_len = 0;
@@ -3790,18 +3790,18 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
                break;
             case 0x9d: // OSC
                vt->parser.v.osc.command = -1;
-               vt->parser.string_initial = TRUE;
+               vt->parser.string_initial = true;
                string_start = bytes + pos + 1;
                ENTER_STATE(VT_OSC_COMMAND);
                break;
             case 0x9e: // PM
-               vt->parser.string_initial = TRUE;
+               vt->parser.string_initial = true;
                ENTER_STATE(VT_PM);
                string_start = bytes + pos + 1;
                string_len = 0;
                break;
             case 0x9f: // APC
-               vt->parser.string_initial = TRUE;
+               vt->parser.string_initial = true;
                ENTER_STATE(VT_APC);
                string_start = bytes + pos + 1;
                string_len = 0;
@@ -3831,7 +3831,7 @@ vterm_input_write(VTerm *vt, CS bytes, Unt len) {
       Unt string_len = bytes + pos - string_start;
       if (vt->parser.in_esc)
          string_len -= 1;
-      string_fragment(vt, string_start, string_len, FALSE);
+      string_fragment(vt, string_start, string_len, false);
    }
 
    return len;
@@ -4594,7 +4594,7 @@ request_dec_mode(VTermState* state, int num) {
       break;
   
    case 1006:
-      reply = TRUE;
+      reply = true;
       break;
   
    case 1015: break;
@@ -5409,7 +5409,7 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
                 .str     = NULL,
                 .len     = 0,
                 .initial = state->tmp.selection.state != SELECTION_SET,
-                .final   = TRUE,
+                .final   = true,
               }, state->selection.user);
       }
       return;
@@ -5473,8 +5473,8 @@ osc_selection(VTermState* state, VTermStringFragment frag) {
                   (*state->selection.callbacks->set)(state->tmp.selection.mask, (VTermStringFragment){
                       .str     = NULL,
                       .len     = 0,
-                      .initial = TRUE,
-                      .final   = TRUE,
+                      .initial = true,
+                      .final   = true,
                       }, state->selection.user);
                }
                break;
@@ -5608,13 +5608,13 @@ request_status_string(VTermState* state, VTermStringFragment frag) {
 
    case 'r':
       // Query DECSTBM
-      vterm_push_output_sprintf_str(vt, C1_DCS, TRUE,
+      vterm_push_output_sprintf_str(vt, C1_DCS, true,
           "1$r%d;%dr", state->scrollregion_top + 1, SCROLLREGION_BOTTOM(state));
       return;
 
    case 's':
       // Query DECSLRM
-      vterm_push_output_sprintf_str(vt, C1_DCS, TRUE,
+      vterm_push_output_sprintf_str(vt, C1_DCS, true,
           "1$r%d;%ds", SCROLLREGION_LEFT(state)+1, SCROLLREGION_RIGHT(state)
       );
       return;
@@ -5629,13 +5629,13 @@ request_status_string(VTermState* state, VTermStringFragment frag) {
       }
       if (state->mode.cursor_blink)
          reply--;
-      vterm_push_output_sprintf_str(vt, C1_DCS, TRUE, "1$r%d q", reply);
+      vterm_push_output_sprintf_str(vt, C1_DCS, true, "1$r%d q", reply);
       return;
    }
 
    }
 
-   vterm_push_output_sprintf_str(state->vt, C1_DCS, TRUE, "0$r");
+   vterm_push_output_sprintf_str(state->vt, C1_DCS, true, "0$r");
 }
 
 private int
@@ -5998,7 +5998,7 @@ vterm_state_focus_out(VTermState *state) {
 //      if (mask & (1 << idx))
 //        break;
 //
-//    vterm_push_output_sprintf_str(vt, C1_OSC, FALSE, "52;%c;", selection_chars[idx]);
+//    vterm_push_output_sprintf_str(vt, C1_OSC, false, "52;%c;", selection_chars[idx]);
 //
 //    state->tmp.selection.sendpartial = 0;
 //  }
@@ -6060,9 +6060,9 @@ vterm_state_focus_out(VTermState *state) {
 //         buffer[2] = (n == 1) ? '=' : base64_one((x >>  6) & 0x3F);
 //         buffer[3] = '=';
 //  
-//         vterm_push_output_sprintf_str(vt, 0, TRUE, "%.*s", 4, buffer);
+//         vterm_push_output_sprintf_str(vt, 0, true, "%.*s", 4, buffer);
 //     } else
-//         vterm_push_output_sprintf_str(vt, 0, TRUE, "");
+//         vterm_push_output_sprintf_str(vt, 0, true, "");
 //   }
 //}
 
@@ -6093,7 +6093,7 @@ struct Terminal {
    // Set when setting the size of a vterm, reset after redrawing.
    int vterm_size_changed;
 
-   int isNormalMode; // TRUE: Terminal-Normal mode
+   int isNormalMode; // true: Terminal-Normal mode
    int isChannelClosing;
    int isChannelClosed;
    int isChannelRecentlyClosed; // still need to handle tl_finish
@@ -6210,7 +6210,7 @@ cursor_color_get(CS color) {
 
 // Parse 'termwinsize' and set "rows" and "cols" for the terminal size in the current portal.
 // Set "rows" and/or "cols" to 0 when it should follow the portal size.
-// Return TRUE if the size is the minimum size: "24*80".
+// Return true if the size is the minimum size: "24*80".
 private Boole
 parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols) {
 
@@ -6306,7 +6306,7 @@ setup_job_options(JobOptions *opt, int rows, int cols) {
       opt->set |= JO_ERR_IO + JO_ERR_BUF + JO_ERR_MODIFIABLE;
    }
 
-   opt->jo_pty = TRUE;
+   opt->jo_pty = true;
    if ((opt->set1 & JO2_TERM_ROWS) == 0)
       opt->jo_term_rows = rows;
    if ((opt->set1 & JO2_TERM_COLS) == 0)
@@ -6316,7 +6316,7 @@ setup_job_options(JobOptions *opt, int rows, int cols) {
 //Check for any pending input or messages.
 private int
 mch_check_messages(void) {
-   return waitForChar(0L, NULL, TRUE);
+   return waitForChar(0L, NULL, true);
 }
 
 
@@ -6375,7 +6375,7 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
 
    Terminal* term = ALLOC_CLEAR_ONE(Terminal);
    term->dirtyRowEnd = MAX_ROW;
-   term->tl_cursor_visible = TRUE;
+   term->tl_cursor_visible = true;
    term->tl_cursor_shape = VTERM_PROP_CURSORSHAPE_BLOCK;
    term->tl_finish = opt->jo_term_finish;
    ga_init2(&term->scrollback, sizeof(ScrollbackLine), 300);
@@ -6421,10 +6421,10 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
          splitInvo.addr_count = 1;
       }
 
-      int cmod_split_modified = FALSE;
+      int cmod_split_modified = false;
       if (vertical) {
          if (!(commModifierG.cmod_split & WSP_VERT))
-            cmod_split_modified = TRUE;
+            cmod_split_modified = true;
          commModifierG.cmod_split |= WSP_VERT;
       }
       c_splitview(&splitInvo);
@@ -6587,8 +6587,8 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
       } ei (vgetcBusyG || timer_busy || input_busy) {
          // When waiting for input need to return and possibly end up in terminal_loop() instead
          Byte ignore[4] = {K_SPECIAL, KS_EXTRA, KE_IGNORE, ZERO};
-         insertIntoTypebuf(ignore, REMAP_NONE, 0, TRUE, FALSE);
-         typebuf_was_filled = TRUE;
+         insertIntoTypebuf(ignore, REMAP_NONE, 0, true, false);
+         typebuf_was_filled = true;
       }
    } else {
       closeFailedTerminalBook(curBook, curBookSaved);
@@ -6776,7 +6776,7 @@ expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches)
              xp,
              rmp,
              cb,
-             FALSE,
+             false,
              OUT matches
          );
       }
@@ -6787,7 +6787,7 @@ expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches)
        xp,
        rmp,
        get_terminaloname,
-       FALSE,
+       false,
        OUT matches
    );
 }
@@ -6837,7 +6837,7 @@ term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
    return put_eol(fd);
 }
 
-// Return TRUE if "buf" has a terminal that should be restored.
+// Return true if "buf" has a terminal that should be restored.
 int
 term_should_restore(Book* book) {
    Terminal* term = book->term;
@@ -7039,9 +7039,9 @@ write_to_term(Book *book, CS msg, Channel* channel) {
              draw_tabpanel();
          // drawUpdateScreen() can be slow, check the terminal wasn't closed already
          if (book == curBook && curBook->term != NULL)
-            update_cursor(curBook->term, TRUE);
+            update_cursor(curBook->term, true);
       } else
-         redraw_after_callback(TRUE, FALSE);
+         redraw_after_callback(true, false);
    }
 }
 
@@ -7059,18 +7059,18 @@ sendMouse(VTerm *vterm, int button, int pressed) {
    vterm_mouse_move(vterm, row, col, mod);
    if (button != 0)
       vterm_mouse_button(vterm, button, pressed, mod);
-   return TRUE;
+   return true;
 }
 
 private int enter_mouse_col = -1;
 private int enter_mouse_row = -1;
 
-// Handle a mouse click, drag or release. Return TRUE when a mouse event is sent to the terminal.
+// Handle a mouse click, drag or release. Return true when a mouse event is sent to the terminal.
 private int
 handleMouseEvent(VTerm *vterm, Unt key) {
    // For modeless selection mouse drag and release events are ignored, unless they are preceded 
    // with a mouse down event
-   static int       ignore_drag_release = TRUE;
+   static int       ignore_drag_release = true;
    VTermMouseState mouse_state;
 
    vterm_state_get_mousestate(vterm_obtain_state(vterm), &mouse_state);
@@ -7093,7 +7093,7 @@ handleMouseEvent(VTerm *vterm, Unt key) {
             save_mouse_row = mouseRowG;
             mouseColG = enter_mouse_col;
             mouseRowG = enter_mouse_row;
-            clip_modeless(MOUSE_LEFT, TRUE, FALSE);
+            clip_modeless(MOUSE_LEFT, true, false);
             mouseColG = save_mouse_col;
             mouseRowG = save_mouse_row;
          }
@@ -7101,9 +7101,9 @@ handleMouseEvent(VTerm *vterm, Unt key) {
       case K_LEFTMOUSE:
       case K_RIGHTMOUSE:
          if (key == K_LEFTRELEASE || key == K_RIGHTRELEASE)
-            ignore_drag_release = TRUE;
+            ignore_drag_release = true;
          else
-            ignore_drag_release = FALSE;
+            ignore_drag_release = false;
          if (clipboard.available) {
             Boole is_click, is_drag;
             int button = get_mouse_button(KEY2TERMCAP1(key), &is_click, &is_drag);
@@ -7113,11 +7113,11 @@ handleMouseEvent(VTerm *vterm, Unt key) {
 
       case K_MIDDLEMOUSE:
          if (clipboard.available)
-            insert_reg('*', TRUE);
+            insert_reg('*', true);
          break;
       }
       enter_mouse_col = -1;
-      return FALSE;
+      return false;
    }
    enter_mouse_col = -1;
 
@@ -7135,7 +7135,7 @@ handleMouseEvent(VTerm *vterm, Unt key) {
    case K_RIGHTDRAG:   sendMouse(vterm, 3, 1); break;
    case K_RIGHTRELEASE:   sendMouse(vterm, 3, 0); break;
    }
-   return TRUE;
+   return true;
 }
 
 // Convert typed key "c" with modifiers "modmask" into bytes to send to the job.
@@ -7145,7 +7145,7 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    VTerm       *vterm = term->vterm;
    VTermKey       key = VTERM_KEY_NONE;
    VTermModifier   mod = VTERM_MOD_NONE;
-   int          other = FALSE;
+   int          other = false;
 
    switch (c) {
    // don't use VTERM_KEY_ENTER, it may do an unwanted conversion
@@ -7241,7 +7241,7 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    case K_RIGHTRELEASE:   
       if (!handleMouseEvent(vterm, c))
          return 0;
-      other = TRUE;
+      other = true;
       break;
 
    case K_X1MOUSE:      /* TODO */ return 0;
@@ -7263,11 +7263,11 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    case K_CURSORHOLD:   return 0;
    case K_PS:      
       vterm_keyboard_start_paste(vterm);
-      other = TRUE;
+      other = true;
       break;
    case K_PE:
          vterm_keyboard_end_paste(vterm);
-         other = TRUE;
+         other = true;
          break;
    }
 
@@ -7300,14 +7300,14 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
    return (int)vterm_output_read(vterm, buf, KEY_BUF_LEN);
 }
 
-// Return TRUE if the job for "term" is still running. If "check_job_status" is TRUE update the 
+// Return true if the job for "term" is still running. If "check_job_status" is true update the 
 // job status. NOTE: "term" may be freed by callbacks.
 private int
 term_job_running_check(Terminal *term, int check_job_status) {
    // Also consider the job finished when the channel is closed, to avoid a
    // race condition when updating the title.
    if (!term || !term->job || !channel_is_open(term->job->jv_channel))
-      return FALSE;
+      return false;
 
    Job *job = term->job;
 
@@ -7319,19 +7319,19 @@ term_job_running_check(Terminal *term, int check_job_status) {
           || (job->jv_channel != NULL && job->jv_channel->ch_keep_open));
 }
 
-// Return TRUE if the job for "term" is still running.
+// Return true if the job for "term" is still running.
 int
 term_job_running(Terminal *term) {
-   return term_job_running_check(term, FALSE);
+   return term_job_running_check(term, false);
 }
 
-// Return TRUE if the job for "term" is still running, ignoring the job was "NONE".
+// Return true if the job for "term" is still running, ignoring the job was "NONE".
 int
 term_job_running_not_none(Terminal *term) {
    return term_job_running(term) && !term_none_open(term);
 }
 
-// Return TRUE if "term" has an active channel and used ":term NONE".
+// Return true if "term" has an active channel and used ":term NONE".
 int
 term_none_open(Terminal *term) {
    // Also consider the job finished when the channel is closed, to avoid a
@@ -7389,7 +7389,7 @@ term_try_stop_job(Book* book) {
       if (job->jv_status >= JOB_ENDED)
          return OK;
 
-      ui_delay(10L, TRUE);
+      ui_delay(10L, true);
       term_flush_messages();
    }
    return FAIL;
@@ -7402,7 +7402,7 @@ add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len) {
    int      empty = (book->mem.flags & ML_EMPTY);
    LineNr   lnum = book->mem.lineCount;
 
-   memAppendBook(term->book, lnum, text, len + 1, FALSE);
+   memAppendBook(term->book, lnum, text, len + 1, false);
    if (empty) {
       // Delete the empty line that was in the empty buffer.
       ml_deleteBufLine(book, 1);
@@ -7419,7 +7419,7 @@ equal_celattr(CellDeco *a, CellDeco *b) {
 private int
 add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum){
    if (ga_grow(&term->scrollback, 1) == FAIL)
-      return FALSE;
+      return false;
 
    ScrollbackLine *line = (ScrollbackLine *)term->scrollback.c + term->scrollback.len;
 
@@ -7561,7 +7561,7 @@ update_snapshot(Terminal* term) {
 
 // Loop over all portals in the current tab, and also curPor, which is not
 // encountered when using a terminal in a popup portal.
-// Return TRUE if "*po" was set to the next portal.
+// Return true if "*po" was set to the next portal.
 private int
 forAllPortalsAndCurPort(OUT Portal **po, OUT int *did_curPor) {
    if (!*po)
@@ -7571,15 +7571,15 @@ forAllPortalsAndCurPort(OUT Portal **po, OUT int *did_curPor) {
    ei (!*did_curPor)
       *po = curPor;
    else
-      return FALSE;
+      return false;
    if (*po == curPor)
-      *did_curPor = TRUE;
-   return TRUE;
+      *did_curPor = true;
+   return true;
 }
 
 //If needed, add the current lines of the terminal to scrollback and to the
 //buffer. Called after the job has ended and when switching to Terminal-Normal mode.
-//When "redraw" is TRUE redraw the portals that show the terminal.
+//When "redraw" is true redraw the portals that show the terminal.
 private void
 may_move_terminal_to_buffer(Terminal* term, int redraw) {
    if (!term->vterm)
@@ -7597,7 +7597,7 @@ may_move_terminal_to_buffer(Terminal* term, int redraw) {
 
    if (redraw) {
       Portal* po = NULL;
-      int did_curPor = FALSE;
+      int did_curPor = false;
 
       while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor)) {
          if (po->book == term->book) {
@@ -7629,7 +7629,7 @@ term_check_timers(int next_due_arg, ProfTime *now) {
 
          if (this_due <= 1) {
             term->timerSet = false;
-            may_move_terminal_to_buffer(term, FALSE);
+            may_move_terminal_to_buffer(term, false);
          } ei (next_due == -1 || next_due > this_due)
             next_due = this_due;
       }
@@ -7638,7 +7638,7 @@ term_check_timers(int next_due_arg, ProfTime *now) {
    return next_due;
 }
 
-// When "normal_mode" is TRUE set the terminal to Terminal-Normal mode, otherwise end it.
+// When "normal_mode" is true set the terminal to Terminal-Normal mode, otherwise end it.
 private void
 set_terminal_mode(Terminal *term, int normal_mode) {
    term->isNormalMode = normal_mode;
@@ -7652,9 +7652,9 @@ set_terminal_mode(Terminal *term, int normal_mode) {
 // Move the vterm contents into the scrollback buffer and free the vterm.
 private void
 cleanup_vterm(Terminal *term) {
-   set_terminal_mode(term, FALSE);
+   set_terminal_mode(term, false);
    if (term->tl_finish != TL_FINISH_CLOSE)
-      may_move_terminal_to_buffer(term, TRUE);
+      may_move_terminal_to_buffer(term, true);
    term_free_vterm(term);
 }
 
@@ -7663,10 +7663,10 @@ private void
 term_enter_normal_mode(void) {
    Terminal *term = curBook->term;
 
-   set_terminal_mode(term, TRUE);
+   set_terminal_mode(term, true);
 
    // Append the current terminal contents to the buffer.
-   may_move_terminal_to_buffer(term, TRUE);
+   may_move_terminal_to_buffer(term, true);
 
    // Move the portal cursor to the position of the cursor in the terminal.
    curPor->cursor.lnum = term->scrollbackScrolled
@@ -7680,7 +7680,7 @@ term_enter_normal_mode(void) {
    curPor->topLine = term->scrollbackScrolled + 1;
 }
 
-// Return TRUE if the current portal contains a terminal and we are in Terminal-Normal mode.
+// Return true if the current portal contains a terminal and we are in Terminal-Normal mode.
 int
 term_in_normal_mode(void) {
    Terminal *term = curBook->term;
@@ -7692,7 +7692,7 @@ void
 term_enter_job_mode(void) {
    Terminal   *term = curBook->term;
 
-   set_terminal_mode(term, FALSE);
+   set_terminal_mode(term, false);
 
    if (term->isChannelClosed)
       cleanup_vterm(term);
@@ -7713,7 +7713,7 @@ typedef enum {
 
 private reduce_key_state_T  no_reduce_key_state = NRKS_NONE;
 
-// Return TRUE if the term is using modifyOtherKeys level 2 or the kitty keyboard protocol.
+// Return true if the term is using modifyOtherKeys level 2 or the kitty keyboard protocol.
 private int
 vterm_using_key_protocol(void) {
     return curBook->term
@@ -7746,7 +7746,7 @@ term_vgetc(void) {
    int save_State = stateG;
 
    stateG = MODE_TERMINAL;
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    if (vterm_using_key_protocol()) {
       ++no_reduce_keys;
@@ -7756,7 +7756,7 @@ term_vgetc(void) {
    }
 
    Unt c = vgetc();
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
    stateG = save_State;
 
    if (no_reduce_key_state == NRKS_SET)
@@ -7766,7 +7766,7 @@ term_vgetc(void) {
    return c;
 }
 
-private int   mouse_was_outside = FALSE;
+private int   mouse_was_outside = false;
 
 // Send key "c" with modifiers "modmask" to terminal. FAIL when the key needs to be handled in 
 // Normal mode. OK when the key was dropped or sent to the terminal.
@@ -7774,7 +7774,7 @@ int
 send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    Byte msg[KEY_BUF_LEN];
    Unt len;
-   int dragging_outside = FALSE;
+   int dragging_outside = false;
 
    // Catch keys that need to be handled as in Normal mode.
    switch (c) {
@@ -7833,7 +7833,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
         // click or scroll outside the current portal or on status line or vertical separator
         if (typed) {
             stuffcharReadbuff(c);
-            mouse_was_outside = TRUE;
+            mouse_was_outside = true;
          }
          return FAIL;
       }
@@ -7845,7 +7845,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
       return do_cmdkey_command(c, 0);
    }
    if (typed)
-      mouse_was_outside = FALSE;
+      mouse_was_outside = false;
 
    // Convert the typed key to a sequence of bytes for the job.
    len = term_convert_key(term, c, modmask, msg);
@@ -7897,7 +7897,7 @@ term_paste_register(Unt prev_c) {
    list_free(l);
 }
 
-//Return TRUE when waiting for a character in the terminal, the cursor of the terminal should be 
+//Return true when waiting for a character in the terminal, the cursor of the terminal should be 
 //displayed.
 int
 terminal_is_active(void) {
@@ -7916,7 +7916,7 @@ may_output_cursor_props(void) {
       term_cursor_color(cursor_color_get(desired_cursor_color));
       if (desired_cursor_shape == -1 || desired_cursor_blink == -1)
          // this will restore the initial cursor style, if possible
-         ui_cursor_shape_forced(TRUE);
+         ui_cursor_shape_forced(true);
       else
          termSetCursorShape(desired_cursor_shape, desired_cursor_blink);
    }
@@ -7942,8 +7942,8 @@ prepare_restoreCursor_props(void) {
    may_output_cursor_props();
 }
 
-//Return TRUE if the current portal contains a terminal and we are sending keys to the job.
-//If "check_job_status" is TRUE update the job status.
+//Return true if the current portal contains a terminal and we are sending keys to the job.
+//If "check_job_status" is true update the job status.
 private int
 term_use_loop_check(int check_job_status) {
    Terminal *term = curBook->term;
@@ -7952,10 +7952,10 @@ term_use_loop_check(int check_job_status) {
       && term_job_running_check(term, check_job_status);
 }
 
-// Return TRUE if the current portal contains a terminal and we are sending keys to the job.
+// Return true if the current portal contains a terminal and we are sending keys to the job.
 int
 term_use_loop(void) {
-   return term_use_loop_check(FALSE);
+   return term_use_loop_check(false);
 }
 
 // Called when entering a portal with the mouse. If this is a terminal portal, we may 
@@ -7967,12 +7967,12 @@ term_enterPortaled(void) {
    if (!term)
       return;
 
-   if (term_use_loop_check(TRUE)) {
+   if (term_use_loop_check(true)) {
       reset_VIsual_and_resel();
       if ((stateG & MODE_INSERT) != 0)
-         stop_insert_mode = TRUE;
+         stop_insert_mode = true;
    }
-   mouse_was_outside = FALSE;
+   mouse_was_outside = false;
    enter_mouse_col = mouseColG;
    enter_mouse_row = mouseRowG;
 }
@@ -8014,7 +8014,7 @@ ctrl_to_raw_c(int c) {
 }
 
 //Wait for input and send it to the job.
-//When "blocking" is TRUE wait for a character to be typed.  Otherwise return when there is no more
+//When "blocking" is true wait for a character to be typed.  Otherwise return when there is no more
 //typahead. Return when the start of a CTRL-W command is typed or anything else that should be 
 //handled as a Normal mode command. Returns OK if a typed character is to be handled in Normal 
 //mode, FAIL if the terminal was closed.
@@ -8033,7 +8033,7 @@ terminal_loop(int blocking) {
    in_terminal_loop = curBook->term;
 
    if (curPor->o.termWinKey) {
-      termwinkey = stringToChar(curPor->o.termWinKey, TRUE);
+      termwinkey = stringToChar(curPor->o.termWinKey, true);
 
       if (termwinkey == Ctrl_W)
          termwinkey = 0;
@@ -8048,15 +8048,15 @@ terminal_loop(int blocking) {
          if (drawUpdateScreen(0) == FAIL)
             break;
       }
-      if (!term_use_loop_check(TRUE) || in_terminal_loop != curBook->term)
+      if (!term_use_loop_check(true) || in_terminal_loop != curBook->term)
          // job finished while redrawing
          break;
 
-      update_cursor(curBook->term, FALSE);
+      update_cursor(curBook->term, false);
       restoreCursor = true;
 
       raw_c = term_vgetc();
-      if (!term_use_loop_check(TRUE) || in_terminal_loop != curBook->term) {
+      if (!term_use_loop_check(true) || in_terminal_loop != curBook->term) {
           // Job finished while waiting for a character.  Push back the received character.
           if (raw_c != K_IGNORE)
              vungetc(raw_c);
@@ -8091,7 +8091,7 @@ terminal_loop(int blocking) {
       
          clear_showcmd();
 
-         if (!term_use_loop_check(TRUE) || in_terminal_loop != curBook->term)
+         if (!term_use_loop_check(true) || in_terminal_loop != curBook->term)
             // job finished while waiting for a character
             break;
 
@@ -8103,7 +8103,7 @@ terminal_loop(int blocking) {
                goto theend;
             }
             // Send both keys to the terminal, first one here, second one below.
-            send_keys_to_term(curBook->term, prev_raw_c, prev_modMaskG, TRUE);
+            send_keys_to_term(curBook->term, prev_raw_c, prev_modMaskG, true);
          } ei (c == Ctrl_C) {
             // "CTRL-W CTRL-C" or 'termwinkey' CTRL-C: end the job
             mch_signal_job(curBook->term->job, (CS)"kill");
@@ -8129,13 +8129,13 @@ terminal_loop(int blocking) {
             //Put the command into the typeahead buffer, when using the
             //stuff buffer KeyStuffed is set and 'langmap' won't be used.
             buf[0] = Ctrl_W;
-            buf[special_to_buf(c, modMaskG, FALSE, buf + 1) + 1] = ZERO;
-            insertIntoTypebuf(buf, REMAP_NONE, 0, TRUE, FALSE);
+            buf[special_to_buf(c, modMaskG, false, buf + 1) + 1] = ZERO;
+            insertIntoTypebuf(buf, REMAP_NONE, 0, true, false);
             ret = OK;
             goto theend;
          }
       }
-      if (send_keys_to_term(curBook->term, raw_c, modMaskG, TRUE) != OK) {
+      if (send_keys_to_term(curBook->term, raw_c, modMaskG, true) != OK) {
            if (raw_c == K_MOUSEMOVE)
               // We are sure to come back here, don't reset the cursor color
               // and shape to avoid flickering.
@@ -8155,7 +8155,7 @@ theend:
    // Move a snapshot of the screen contents to the buffer, so that completion
    // works in other buffers.
    if (curBook->term != NULL && !curBook->term->isNormalMode)
-      may_move_terminal_to_buffer(curBook->term, FALSE);
+      may_move_terminal_to_buffer(curBook->term, false);
 
    return ret;
 }
@@ -8204,7 +8204,7 @@ handle_damage(VTermRect rect, void *user) {
 private void
 term_scroll_up(Terminal* term, int start_row, int count) {
    Portal       *po = NULL;
-   int          did_curPor = FALSE;
+   int          did_curPor = false;
    VTermColor       fg, bg;
    VTermDeco cellAttr;
 
@@ -8215,7 +8215,7 @@ term_scroll_up(Terminal* term, int start_row, int count) {
          // Set the color to clear lines with.
          vterm_state_get_default_colors(vterm_obtain_state(term->vterm), OUT &fg, OUT &bg);
          Decoration clearDeco = cellToDecoration(cellAttr, fg, bg);
-         deleteLinesFromPortal(po, start_row, count, FALSE, FALSE, clearDeco.flags);
+         deleteLinesFromPortal(po, start_row, count, false, false, clearDeco.flags);
       }
    }
 }
@@ -8256,7 +8256,7 @@ handle_movecursor(
 ){
    Terminal   *term = (Terminal *)user;
    Portal   *po = NULL;
-   int      did_curPor = FALSE;
+   int      did_curPor = false;
 
    term->cursorPos = pos;
    term->tl_cursor_visible = visible;
@@ -8302,7 +8302,7 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
       }
       EE_CLEAR(term->tl_status_text);
       if (term == curBook->term) {
-         curPor->statusLineNeedsRedraw = TRUE;
+         curPor->statusLineNeedsRedraw = true;
       }
       break;
 
@@ -8346,7 +8346,7 @@ handle_settermprop(VTermProp prop, VTermValue* value, void* user) {
 
 private void
 handleShellResize(void) {
-   doResizeG = FALSE;
+   doResizeG = false;
    shell_resized();
 }
 
@@ -8359,7 +8359,7 @@ handle_resize(int rows, int cols, void *user) {
    term->cols = cols;
    if (term->vterm_size_changed)
       // Size was set by vterm_set_size(), don't set the portal size.
-      term->vterm_size_changed = FALSE;
+      term->vterm_size_changed = false;
    else {
       Portal* po;
       FOR_ALL_PORTALS(po) {
@@ -8375,7 +8375,7 @@ handle_resize(int rows, int cols, void *user) {
 
 // If the number of lines that are stored goes over 'termwinscroll' then delete the first 10%.
 // "scrollback" points to scrollback or scrollbackPostponed.
-// "update_buffer" is TRUE when the buffer should be updated.
+// "update_buffer" is true when the buffer should be updated.
 private void
 limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
    if (scrollback->len < p_twsl)
@@ -8421,12 +8421,12 @@ handle_pushline(int cols, Arr(ScreenCell) cells, void* user) {
       //In Terminal-Normal mode the user interacts with the buffer, thus we
       //must not change it. Postpone adding the scrollback lines.
       scrollback = &term->scrollbackPostponed;
-      update_buffer = FALSE;
+      update_buffer = false;
    } else {
       //First remove the lines that were appended before, the pushed line goes above it.
       cleanup_scrollback(term);
       scrollback = &term->scrollback;
-      update_buffer = TRUE;
+      update_buffer = true;
    }
 
    limit_scrollback(term, scrollback, update_buffer);
@@ -8533,7 +8533,7 @@ handle_postponed_scrollback(Terminal *term) {
    }
 
    ga_clear(&term->scrollbackPostponed);
-   limit_scrollback(term, &term->scrollback, TRUE);
+   limit_scrollback(term, &term->scrollback, true);
 }
 
 private VTermScreenCallbacks screen_callbacks = {
@@ -8548,7 +8548,7 @@ private VTermScreenCallbacks screen_callbacks = {
 };
 
 //Do the work after the channel of a terminal was closed. Must be called only when updating_screen
-//is FALSE. Returns TRUE when a buffer was closed (list of terminals may have changed).
+//is false. Returns true when a buffer was closed (list of terminals may have changed).
 private int
 term_after_channel_closed(Terminal* term) {
     // Unless in Terminal-Normal mode: clear the vterm.
@@ -8566,7 +8566,7 @@ term_after_channel_closed(Terminal* term) {
          if (popup_is_popup(curPor) && curBook == term->book) {
             po = curPor;
             if (portalIsValid(prevPor))
-                enterPortal(prevPor, FALSE);
+                enterPortal(prevPor, false);
          } else
             // If this is the last normal portal: exit Em.
             if (term->book->countPortals > 0 && onlyOnePortal()) {
@@ -8574,7 +8574,7 @@ term_after_channel_closed(Terminal* term) {
 
                CLEAR_FIELD(ea);
                c_quit(&ea);
-               return TRUE;
+               return true;
             }
 
          // ++close or term_finish == "close"
@@ -8583,17 +8583,17 @@ term_after_channel_closed(Terminal* term) {
          if (curBook == term->book) {
             // Avoid closing the portal if we temporarily use it.
             if (is_autoCommPort(curPor))
-               do_set_locked = TRUE;
+               do_set_locked = true;
             if (do_set_locked)
-               curPor->locked = TRUE;
-            do_bufdel(DOBOOK_WIPE, Em, 1, fnum, fnum, FALSE);
+               curPor->locked = true;
+            do_bufdel(DOBOOK_WIPE, Em, 1, fnum, fnum, false);
             if (do_set_locked)
-                curPor->locked = FALSE;
+                curPor->locked = false;
             auCommRestoreBook(&aco);
          }
          if (po)
             popup_close_with_retval(po, 0);
-         return TRUE;
+         return true;
       }
       if (term->tl_finish == TL_FINISH_OPEN && term->book->countPortals == 0) {
          CS comm = term->openComm ? term->openComm : S"botright sbuf %d";
@@ -8609,7 +8609,7 @@ term_after_channel_closed(Terminal* term) {
    }
 
    drawBookAndStatusLater(term->book, UPD_NOT_VALID);
-   return FALSE;
+   return false;
 }
 
 //If the current portal is a terminal in a popup portal and the job has finished, close the 
@@ -8622,7 +8622,7 @@ may_close_term_popup(void) {
    Portal* po = curPor;
 
    if (portalIsValid(prevPor))
-      enterPortal(prevPor, FALSE);
+      enterPortal(prevPor, false);
    popup_close_with_retval(po, 0);
    return OK;
 }
@@ -8632,7 +8632,7 @@ void
 term_channel_closing(Channel* ch) {
    for (Terminal* term = first_term; term != NULL; term = term->next) {
       if (term->job == ch->job && !term->isChannelClosed)
-          term->isChannelClosing = TRUE;
+          term->isChannelClosing = true;
    } 
 }
 
@@ -8641,20 +8641,20 @@ void
 term_channel_closed(Channel* ch) {
    Terminal* term;
    Terminal* next_term;
-   int did_one = FALSE;
+   int did_one = false;
 
    for (term = first_term; term != NULL; term = next_term) {
       next_term = term->next;
       if (term->job == ch->job && !term->isChannelClosed) {
-         term->isChannelClosed = TRUE;
-         did_one = TRUE;
+         term->isChannelClosed = true;
+         did_one = true;
 
          EE_CLEAR(term->title);
          EE_CLEAR(term->tl_status_text);
 
          if (updating_screen) {
             // Cannot open or close portals now.  Can happen when 'lazyredraw' is set.
-            term->isChannelRecentlyClosed = TRUE;
+            term->isChannelRecentlyClosed = true;
             continue;
          }
 
@@ -8668,7 +8668,7 @@ term_channel_closed(Channel* ch) {
 
       // Need to break out of vgetc().
       ins_char_typebuf(K_IGNORE, 0);
-      typebuf_was_filled = TRUE;
+      typebuf_was_filled = true;
 
       term = curBook->term;
       if (term) {
@@ -8685,7 +8685,7 @@ term_check_channel_closed_recently(void) {
    for (Terminal* term = first_term; term != NULL; term = next_term) {
       next_term = term->next;
       if (term->isChannelRecentlyClosed) {
-         term->isChannelRecentlyClosed = FALSE;
+         term->isChannelRecentlyClosed = false;
          if (term_after_channel_closed(term))
             // start over, the list may have changed
             next_term = first_term;
@@ -8706,8 +8706,8 @@ term_line2screenline(VTermScreen* screen, VTermPos* pos, Unt max_col) {
    }
 }
 
-//Return TRUE if portal "po" is to be redrawn with term_update_window().
-//Return FALSE when there is no terminal running in this portal or it is in Terminal-Normal mode.
+//Return true if portal "po" is to be redrawn with term_update_window().
+//Return false when there is no terminal running in this portal or it is in Terminal-Normal mode.
 int
 termDoUpdatePortal(Portal* po) {
    Terminal* term = po->book->term;
@@ -8771,7 +8771,7 @@ termUpdatePortal(Portal* po) {
       return;
 
    if (term->rows != newrows || term->cols != newcols) {
-      term->vterm_size_changed = TRUE;
+      term->vterm_size_changed = true;
       vterm_set_size(vterm, newrows, newcols);
       ch_log(term->job->jv_channel, "Resizing terminal to %d lines", newrows);
       term_report_winsize(term, newrows, newcols);
@@ -8779,7 +8779,7 @@ termUpdatePortal(Portal* po) {
       //Updating the terminal size will cause the snapshot to be cleared.
       //When not in terminal_loop() we need to restore it.
       if (term != in_terminal_loop)
-          may_move_terminal_to_buffer(term, FALSE);
+          may_move_terminal_to_buffer(term, false);
    }
 
    // The cursor may have been moved when resizing.
@@ -8815,13 +8815,13 @@ termDidUpdatePortal(Portal* po) {
    term->dirtyRowEnd = 0;
 }
 
-//Return TRUE if "po" is a terminal portals where the job has finished.
+//Return true if "po" is a terminal portals where the job has finished.
 int
 term_is_finished(Book* book) {
    return book->term && book->term->vterm == NULL;
 }
 
-//Return TRUE if "po" is a terminal portals where the job has finished or we
+//Return true if "po" is a terminal portals where the job has finished or we
 //are in Terminal-Normal mode, thus we show the buffer contents.
 int
 term_shobuffer(Book* book) {
@@ -8914,7 +8914,7 @@ handle_drop_command(ListItem* item) {
    eeglFree(tofree);
 }
 
-//Return TRUE if "func" starts with "pat" and "pat" isn't empty.
+//Return true if "func" starts with "pat" and "pat" isn't empty.
 private int
 is_permitted_term_api(CS func, CS pat) {
    return pat != NULL && *pat != ZERO && STRNICMP(func, pat, STRLEN(pat)) == 0;
@@ -8945,7 +8945,7 @@ handle_call_command(Terminal* term, Channel* channel, ListItem* item) {
    CLEAR_FIELD(funcexe);
    funcexe.fe_firstline = 1L;
    funcexe.fe_lastline = 1L;
-   funcexe.fe_evaluate = TRUE;
+   funcexe.fe_evaluate = true;
    if (call_func(func, -1, &returnVar, 2, argvars, &funcexe) == OK) {
       clearVar(&returnVar);
       ch_log(channel, "Function %s called", func);
@@ -9220,7 +9220,7 @@ term_clear_status_text(Terminal* term) {
 // Mark references in jobs of terminals.
 int
 set_ref_in_term(int copyID) {
-   int      abort = FALSE;
+   int      abort = false;
 
    for (Terminal* term = first_term; !abort && term; term = term->next) {
       if (term->job) {
@@ -9238,7 +9238,7 @@ set_ref_in_term(int copyID) {
 private Book *
 term_get_buf(Var* argvars, CS where) {
    ++emsg_off;
-   Book* book = daGetBook(&argvars[0], FALSE);
+   Book* book = daGetBook(&argvars[0], false);
    --emsg_off;
    if (!book || !book->term) {
       (void)tv_get_number(&argvars[0]);    // issue errmsg if type error
@@ -9465,7 +9465,7 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
             ga_init(&ga_cell);
 
             ga_append(&ga_text, ZERO);
-            ml_append(curBook->mem.lineCount, ga_text.c, ga_text.len, FALSE);
+            ml_append(curBook->mem.lineCount, ga_text.c, ga_text.len, false);
          } else
             ga_clear(&ga_cell);
           ga_text.len = 0;
@@ -9570,7 +9570,7 @@ read_dump_file(FILE *fd, VTermPos* cursor_pos) {
       // trailing characters after last NL
       dump_is_corrupt(&ga_text);
       ga_append(&ga_text, ZERO);
-      ml_append(curBook->mem.lineCount, ga_text.c, ga_text.len, FALSE);
+      ml_append(curBook->mem.lineCount, ga_text.c, ga_text.len, false);
    }
 
    ga_clear(&ga_text);
@@ -9723,14 +9723,14 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    if (!textline)
       goto theend;
    if (add_empty_scrollback(term, &term->cellDeco, 0) == OK)
-      ml_append(curBook->mem.lineCount, textline, 0, FALSE);
+      ml_append(curBook->mem.lineCount, textline, 0, false);
    eeglFree(textline);
 
    textline = get_separator(width, fname2);
    if (!textline)
       goto theend;
    if (add_empty_scrollback(term, &term->cellDeco, 0) == OK)
-      ml_append(curBook->mem.lineCount, textline, 0, FALSE);
+      ml_append(curBook->mem.lineCount, textline, 0, false);
    textline[width] = ZERO;
 
    LineNr bot_lnum = curBook->mem.lineCount;
@@ -9812,7 +9812,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
          eeglFree(line1);
       }
       if (add_empty_scrollback(term, &term->cellDeco, term->topDiffRows) == OK)
-         ml_append(term->topDiffRows + lnum, textline, 0, FALSE);
+         ml_append(term->topDiffRows + lnum, textline, 0, false);
       ++bot_lnum;
    }
 
@@ -9821,7 +9821,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
       for (Unt i = 0; i < width; ++i)
          textline[i] = '+';
       if (add_empty_scrollback(term, &term->cellDeco, term->topDiffRows) == OK)
-         ml_append(term->topDiffRows + lnum, textline, 0, FALSE);
+         ml_append(term->topDiffRows + lnum, textline, 0, false);
       ++lnum;
       ++bot_lnum;
    }
@@ -9864,7 +9864,7 @@ term_swap_diff(void) {
    // move lines from top to above the bottom part
    for (lnum = 1; lnum <= top_rows; ++lnum) {
       p = copyStr(ml_get(1));
-      ml_append(bot_start, p, 0, FALSE);
+      ml_append(bot_start, p, 0, false);
       ml_delete(1);
       eeglFree(p);
    }
@@ -9873,20 +9873,20 @@ term_swap_diff(void) {
    for (lnum = 1; lnum <= bot_rows; ++lnum) {
       p = copyStr(ml_get(bot_start + lnum));
       ml_delete(bot_start + lnum);
-      ml_append(lnum - 1, p, 0, FALSE);
+      ml_append(lnum - 1, p, 0, false);
       eeglFree(p);
    }
 
    // move top title to bottom
    p = copyStr(ml_get(bot_rows + 1));
-   ml_append(line_count - top_rows - 1, p, 0, FALSE);
+   ml_append(line_count - top_rows - 1, p, 0, false);
    ml_delete(bot_rows + 1);
    eeglFree(p);
 
    // move bottom title to top
    p = copyStr(ml_get(line_count - top_rows));
    ml_delete(line_count - top_rows);
-   ml_append(bot_rows, p, 0, FALSE);
+   ml_append(bot_rows, p, 0, false);
    eeglFree(p);
 
    if (top_rows == bot_rows) {
@@ -9927,13 +9927,13 @@ term_swap_diff(void) {
 // "term_dumpdiff(filename, filename, options)" function
 void
 f_term_dumpdiff(Arr(Var) argvars, Var* returnVar) {
-   term_load_dump(argvars, returnVar, TRUE);
+   term_load_dump(argvars, returnVar, true);
 }
 
 // "term_dumpload(filename, options)" function
 void
 f_term_dumpload(Arr(Var) argvars, Var* returnVar) {
-   term_load_dump(argvars, returnVar, FALSE);
+   term_load_dump(argvars, returnVar, false);
 }
 
 // "term_getaltscreen(book)" function
@@ -10011,7 +10011,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
 
       // vterm is finished, get the text from the book
       if (lnum > 0 && lnum <= book->mem.lineCount)
-         returnVar->string = copyStr(memGetLine(book, lnum, FALSE));
+         returnVar->string = copyStr(memGetLine(book, lnum, false));
    } else {
       VTermScreen* screen = vterm_obtain_screen(term->vterm);
       VTermRect rect;
@@ -10191,7 +10191,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 
       if (lnum < 0 || lnum >= term->scrollback.len)
           return;
-      p = memGetLine(book, lnum + 1, FALSE);
+      p = memGetLine(book, lnum + 1, false);
       line = (ScrollbackLine *)term->scrollback.c + lnum;
    }
 
@@ -10271,7 +10271,7 @@ f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
          c = mb_ptr2char(msg);
          msg += MB_CPTR2LEN(msg);
       }
-      send_keys_to_term(term, c, 0, FALSE);
+      send_keys_to_term(term, c, 0, false);
    }
 }
 
@@ -10358,7 +10358,7 @@ f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
       while (book->term != NULL && !book->term->isChannelClosed) {
          term_flush_messages();
 
-         ui_delay(10L, FALSE);
+         ui_delay(10L, false);
          if (!bookIsValid(book))
             // If the terminal is closed when the channel is closed the buffer disappears.
             break;
@@ -10376,7 +10376,7 @@ f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
       // Wait for some time for any channel I/O.
       if (argvars[1].tag != VAR_UNKNOWN)
          wait = tv_get_number(&argvars[1]);
-      ui_delay(wait, TRUE);
+      ui_delay(wait, true);
 
       // Flushing messages on channels is hopefully sufficient. TODO: is there a better way?
       term_flush_messages();
@@ -10497,7 +10497,7 @@ preserve_exit(void) {
 
    // Setting this will prevent free() calls.  That avoids calling free()
    // recursively when free() was invoked with a bad pointer.
-   really_exiting = TRUE;
+   really_exiting = true;
 
    out_str(IObuff);
    screen_start();          // don't know where cursor is now
@@ -10511,7 +10511,7 @@ preserve_exit(void) {
          OUT_STR("Eegl: preserving files...\r\n");
          screen_start();       // don't know where cursor is now
          out_flush();
-         ml_sync_all(FALSE, FALSE);   // preserve all swap files
+         ml_sync_all(false, false);   // preserve all swap files
          break;
       }
    }
@@ -10529,13 +10529,13 @@ preserve_exit(void) {
 //When a GUI is being used, this will not be used for input -- webb
 //Or when a Linux GPM mouse event is waiting.
 //Or when a clientserver message is on the queue.
-//"interrupted" (if not NULL) is set to TRUE when no character is available
+//"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
 int
 realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) {
    int      ret;
    int      result;
-   static int   busy = FALSE;
+   static int   busy = false;
 
    // Remember at what time we started, so that we know how much longer we
    // should wait after being interrupted.
@@ -10551,7 +10551,7 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       return 0;
 
    for (;;) {
-      int finished = TRUE; // default is to 'loop' just once
+      int finished = true; // default is to 'loop' just once
       TimeVal tv;
       TimeVal* tvp;
       // These are static because they can take 8 Kbyte each and cause the
@@ -10586,7 +10586,7 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
 
       maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &tvp);
       if (interrupted != NULL)
-         *interrupted = FALSE;
+         *interrupted = false;
 
       ret = select(
          maxfd + 1, SELECT_TYPE_ARG234 &rfds, SELECT_TYPE_ARG234 &wfds, SELECT_TYPE_ARG234 &efds, tvp
@@ -10595,7 +10595,7 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       if (result)
          --ret;
       ei (interrupted != NULL && ret > 0)
-         *interrupted = TRUE;
+         *interrupted = true;
 
 # ifdef EINTR
       if (ret == -1 && errno == EINTR) {
@@ -10658,12 +10658,12 @@ mch_write(CS s, int len) {
 //   }
 //}
 
-//Return TRUE if the input comes from a terminal, FALSE otherwise.
+//Return true if the input comes from a terminal, false otherwise.
 int
 mch_input_isatty(void) {
    if (isatty(read_cmd_fd))
-      return TRUE;
-   return FALSE;
+      return true;
+   return false;
 }
 
 //}}}
@@ -10724,8 +10724,8 @@ ui_inBytendo(CS s, int len) {
 }
 
 //Function passed to inchar_loop() to handle window resizing.
-//If "check_only" is TRUE: Return whether there was a resize.
-//If "check_only" is FALSE: Deal with the window resized.
+//If "check_only" is true: Return whether there was a resize.
+//If "check_only" is false: Deal with the window resized.
 private int
 resize_func(int check_only) {
    if (check_only)
@@ -10734,7 +10734,7 @@ resize_func(int check_only) {
       lo("calling handleShellResize() in resize_func()");
       handleShellResize();
    }
-   return FALSE;
+   return false;
 }
 
 //mch_inchar(): low level input function. Get characters from the keyboard.
@@ -10778,7 +10778,7 @@ ui_inchar(
       // ... there is no need for CTRL-C to interrupt something, don't let
       // it set gotInterruptG when it was mapped.
       if ((mapped_ctrl_c | curBook->mappedCtrlC) & get_real_state())
-          ctrl_c_interrupts = FALSE;
+          ctrl_c_interrupts = false;
    }
 
    //Here we call gui_inchar() or mch_inchar(), the GUI or machine-dependent
@@ -10827,7 +10827,7 @@ ui_inchar(
       (void)eeHandleSignal(SIGNAL_BLOCK);
    }
 
-   ctrl_c_interrupts = TRUE;
+   ctrl_c_interrupts = true;
    return retval;
 }
 
@@ -10849,9 +10849,9 @@ inchar_loop(
    int (*resize_func)(int check_only)
 ){
    int len;
-   int interrupted = FALSE;
-   int did_call_wait_func = FALSE;
-   int did_start_blocking = FALSE;
+   int interrupted = false;
+   int did_call_wait_func = false;
+   int did_start_blocking = false;
    long wait_time;
    long elapsed_time = 0;
    Elapsed start_tv;
@@ -10863,7 +10863,7 @@ inchar_loop(
       //Check if portal changed size while we were busy, perhaps the ":set
       //columns=99" command was used.
       if (resize_func)
-         resize_func(FALSE);
+         resize_func(false);
 
       //Only process messages when waiting.
       if (wtime != 0) {
@@ -10892,7 +10892,7 @@ inchar_loop(
                return 0;
 
             // No character available within 'updatetime'.
-            did_start_blocking = TRUE;
+            did_start_blocking = true;
             if (trigger_cursorhold() && maxlen >= 3 && !typebuf_changed(changeCnt)) {
                // Put K_CURSORHOLD in the input buffer or return it.
                if (!buf) {
@@ -10929,8 +10929,8 @@ inchar_loop(
 
       // Wait for a character to be typed or another event, such as the winch
       // signal or an event on the monitored file descriptors.
-      did_call_wait_func = TRUE;
-      if (wait_func(wait_time, &interrupted, FALSE)) {
+      did_call_wait_func = true;
+      if (wait_func(wait_time, &interrupted, false)) {
          // If input was put directly in typeahead buffer bail out here.
          if (typebuf_changed(changeCnt))
             return 0;
@@ -10952,7 +10952,7 @@ inchar_loop(
       // estimate the elapsed time
       elapsed_time += wait_time;
 
-      if ((resize_func && resize_func(TRUE))
+      if ((resize_func && resize_func(true))
             || interrupted
             || wait_time > 0
             || (wtime < 0 && !did_start_blocking)
@@ -10978,7 +10978,7 @@ ui_wait_for_chars_or_timer(
    int due_time;
    long remaining = wtime;
    int changeCnt = typeBufG.changeCnt;
-   int brief_wait = FALSE;
+   int brief_wait = false;
 
    // When waiting very briefly don't trigger timers.
    if (wtime >= 0 && wtime < 10L)
@@ -10998,7 +10998,7 @@ ui_wait_for_chars_or_timer(
          //There is a pending job or channel, should return soon in order
          //to handle them ASAP. Do check for input briefly.
          due_time = 10L;
-         brief_wait = TRUE;
+         brief_wait = true;
       }
       if (wait_func(due_time, interrupted, ignore_input))
          return OK;
@@ -11014,7 +11014,7 @@ ui_wait_for_chars_or_timer(
 //Wait "msec" msec until a character is available from the mouse or keyboard or from inbuf[].
 //"msec" == -1 will block forever.
 //for "ignore_input" see WaitForCharOr().
-//"interrupted" (if not NULL) is set to TRUE when no character is available
+//"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
 private int
 waitForCharOrMouse(long msec, int *interrupted, int ignore_input) {
@@ -11028,10 +11028,10 @@ waitForCharOrMouse(long msec, int *interrupted, int ignore_input) {
 //Wait "msec" msec until a character is available from the mouse, keyboard, from inbuf[].
 //"msec" == -1 will block forever.
 //Invokes timer callbacks when needed.
-//When "ignore_input" is TRUE even check for pending input when input is already available.
-//"interrupted" (if not NULL) is set to TRUE when no character is available
+//When "ignore_input" is true even check for pending input when input is already available.
+//"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
-//Return TRUE when a character is available.
+//Return true when a character is available.
 //When a GUI is being used, this will never get called -- webb
 int
 waitForChar(long msec, int *interrupted, int ignore_input) {
@@ -11041,7 +11041,7 @@ waitForChar(long msec, int *interrupted, int ignore_input) {
 //Return non-zero if a character is available.
 private int
 mch_char_avail(void) {
-   return waitForChar(0L, NULL, FALSE);
+   return waitForChar(0L, NULL, false);
 }
 
 // Return non-zero if a character is available.
@@ -11050,7 +11050,7 @@ ui_char_avail(void) {
    return mch_char_avail();
 }
 
-//Delay for the given number of milliseconds. If ignoreinput is FALSE then we
+//Delay for the given number of milliseconds. If ignoreinput is false then we
 //cancel the delay if a key is hit.
 void
 ui_delay(long msec_arg, int ignoreinput) {
@@ -11095,7 +11095,7 @@ ui_breakcheck(void) {
 // This is useful to read input on channels.
 void
 ui_breakcheck_force(Boole force) {
-   static int recursive = FALSE;
+   static int recursive = false;
    int save_updating_screen = updating_screen;
 
    // We could be called recursively if stderr is redirected, calling
@@ -11103,7 +11103,7 @@ ui_breakcheck_force(Boole force) {
    // calls vgetorpeek() which calls ui_breakcheck() again.
    if (recursive)
       return;
-   recursive = TRUE;
+   recursive = true;
 
    // We do not want gui_resize_shell() to redraw the screen here.
    ++updating_screen;
@@ -11111,11 +11111,11 @@ ui_breakcheck_force(Boole force) {
    chBreakcheck(force);
 
    if (save_updating_screen)
-      updating_screen = TRUE;
+      updating_screen = true;
    else
-      after_updating_screen(FALSE);
+      after_updating_screen(false);
 
-   recursive = FALSE;
+   recursive = false;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -11174,7 +11174,7 @@ get_input_buf(void) {
 }
 
 // Restore the input buffer with a pointer returned from get_input_buf(). The allocated memory is 
-// freed, this only works once! When "overwrite" is FALSE input typed later is kept.
+// freed, this only works once! When "overwrite" is false input typed later is kept.
 void
 set_input_buf(CS p, Boole overwrite) {
    ArrayList   *gap = (ArrayList *)p;
@@ -11246,7 +11246,7 @@ read_from_input_buf(CS buf, long maxlen) {
 void
 fill_input_buf(Boole exit_on_error) {
    int try;
-   static int   did_read_something = FALSE;
+   static int   did_read_something = false;
    static CS rest = NULL;       // unconverted rest of previous read
    static int   restlen = 0;
    int      unconverted;
@@ -11305,7 +11305,7 @@ fill_input_buf(Boole exit_on_error) {
    if (len <= 0 && !gotInterruptG)
       read_error_exit();
    if (len > 0)
-      did_read_something = TRUE;
+      did_read_something = true;
    if (gotInterruptG) {
       // Interrupted, pretend a CTRL-C was typed.
       inbuf[0] = 3;
@@ -11325,7 +11325,7 @@ fill_input_buf(Boole exit_on_error) {
             // remove everything typed before the CTRL-C
             mch_memmove(inbuf, inbuf + inbufcount, (Unt)(len));
             inbufcount = 0;
-            gotInterruptG = TRUE;
+            gotInterruptG = true;
          }
          --len;
          ++inbufcount;
@@ -11351,7 +11351,7 @@ ui_cursor_shape_forced(int forced) {
 
 void
 ui_cursor_shape(void) {
-   ui_cursor_shape_forced(FALSE);
+   ui_cursor_shape_forced(false);
 }
 
 // Check bounds for column number
@@ -11425,14 +11425,14 @@ ui_find_longest_lnum(void) {
 
 // Called when focus changed. 
 void
-ui_focus_change(int in_focus) {  // TRUE if focus gained.
+ui_focus_change(int in_focus) {  // true if focus gained.
    static time_t   last_time = (time_t)0;
-   int need_redraw = FALSE;
+   int need_redraw = false;
 
    //When activated: Check if any file was modified outside of Eegl. Only do this when not done 
    //within the last two seconds (could get several events in a row).
    if (in_focus && last_time + 2 < time(NULL)) {
-      need_redraw = check_timestamps( FALSE);
+      need_redraw = check_timestamps( false);
       last_time = time(NULL);
    }
 
@@ -11443,7 +11443,7 @@ ui_focus_change(int in_focus) {  // TRUE if focus gained.
             : EVENT_FOCUSLOST, NULL, NULL, false, curBook);
 
    if (need_redraw)
-      redraw_after_callback(TRUE, TRUE);
+      redraw_after_callback(true, true);
 }
 
 // Report the windows size "rows" and "cols" to tty "fd".
@@ -11627,7 +11627,7 @@ private void do_by_tplmode(Unt tplmode, Unt col_start, Unt col_end,
 private int opt_scope = OPT_LOCAL;
 private int tabPanelAlignS = ALIGN_LEFT;
 private int tpl_columns = 20;
-private int tpl_is_vert = FALSE;
+private int tpl_is_vert = false;
 
 typedef struct {
    Portal*po;
@@ -11649,7 +11649,7 @@ uiValidateTabpanelopt(CS new) {
    
    int      new_align = ALIGN_LEFT;
    int      new_columns = 20;
-   int      new_is_vert = FALSE;
+   int      new_is_vert = false;
 
    CS p = new;
    while (*p != ZERO) {
@@ -11668,7 +11668,7 @@ uiValidateTabpanelopt(CS new) {
          new_columns = parseLong(&p);
       } ei (STRNCMP(p, "vert", 4) == 0) {
          p += 4;
-         new_is_vert = TRUE;
+         new_is_vert = true;
       }
 
       if (*p != ',' && *p != ZERO)
@@ -11719,7 +11719,7 @@ draw_tabpanel(void) {
       return;
 
    // Reset gotInterruptG to avoid bookRenderStatusLine() isn't evaluted.
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    if (tpl_is_vert) {
       if (is_right) {
@@ -11749,7 +11749,7 @@ draw_tabpanel(void) {
    // A user function may reset KeyTyped, restore it.
    KeyTyped = saved_KeyTyped;
 
-   needRedrawTabpanelG = FALSE;
+   needRedrawTabpanelG = false;
 }
 
 // Return tabNr when clicking and dragging in tabpanel. UNT if not found.
@@ -11869,10 +11869,10 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    Unt len = 0;
    Byte buf[2] = { ZERO, ZERO };
 
-   modified = FALSE;
+   modified = false;
    for (countPortals = 0; tapa->po; tapa->po = tapa->po->next, ++countPortals) {
       if (doWasBookChanged(tapa->po->book))
-         modified = TRUE;
+         modified = true;
    } 
 
    if (modified || countPortals > 1) {
@@ -11917,7 +11917,7 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
 
    //Temporarily reset 'cursorbind', we don't want a side effect from moving the cursor away & back
    p_crb_save = tapa->currPort->o.cursorBind;
-   tapa->currPort->o.cursorBind = FALSE;
+   tapa->currPort->o.cursorBind = false;
 
    // Make a copy, because the statusline may include a function call that
    // might change the option value and free the memory.
@@ -11967,9 +11967,9 @@ startsWithPercentAndBang(Tabpanel* tapa) {
       Var tv = {};
       tv.tag = VAR_NUMBER;
       tv.number = tapa->currPort->id;
-      set_var(tConst("g:tabpanel_winid"), &tv, FALSE);
+      set_var(tConst("g:tabpanel_winid"), &tv, false);
 
-      CS p = eval_to_string_safe(usefmt + 2, FALSE);
+      CS p = eval_to_string_safe(usefmt + 2, false);
       if (p)
          usefmt = p;
 
@@ -12019,7 +12019,7 @@ do_by_tplmode(
 
       v.tag = VAR_NUMBER;
       v.number = indexOfTab(tp);
-      set_var(tConst("g:actual_curtabpage"), &v, TRUE);
+      set_var(tConst("g:actual_curtabpage"), &v, true);
 
       if (tp->topframe == topframeG) {
          if (tplmode == TPLMODE_GET_CURTAB_ROW) {

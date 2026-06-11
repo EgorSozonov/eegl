@@ -1226,8 +1226,6 @@ PROTO_RESULTS := $(addprefix src/proto/,$(patsubst %.c,%.pro,$(BASIC_SRC_NO_DIR)
 
 src/proto/%.pro: src/%.c
 	$(CPROTO) $< > $@
-	echo "/* eegl: set ft=c : */" >> $@
-
 
 proto: $(PROTO_RESULTS) $(addprefix src/proto/,$(PRO_MANUAL))
 

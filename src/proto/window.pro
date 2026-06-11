@@ -65,4 +65,3 @@ int wayland_cb_is_ready(void);
 int wayland_cb_reload(void);
 int wayland_may_restore_connection(void);
 void c_wlrestore(Invocation *invo);
-/* eegl: set ft=c : */

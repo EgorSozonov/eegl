@@ -46,4 +46,3 @@ void c_language(Invocation *invo);
 void free_locales(void);
 CS get_lang_arg(Expand *xp, int idx);
 CS get_locales(Expand *xp, int idx);
-/* eegl: set ft=c : */

@@ -204,7 +204,7 @@ typedef struct {
       } line;
       struct {
          Long   value;      // value if sorting by integer
-         int is_number;      // TRUE when line contains a number
+         int is_number;      // true when line contains a number
       } num;
       double value_flt;      // value if sorting by float
    } st_u;
@@ -230,7 +230,7 @@ sort_compare(const void *s1, const void *s2) {
    return 0;
     fast_breakcheck();
    if (gotInterruptG)
-   sort_abort = TRUE;
+   sort_abort = true;
 
    if (sort_nr) {
    if (l1.st_u.num.is_number != l2.st_u.num.is_number)
@@ -275,13 +275,13 @@ c_sort(Invocation* invo) {
    CS s;
    CS s2;
    Byte   c;         // temporary character storage
-   int      unique = FALSE;
+   int      unique = false;
    long   deleted;
    ColNr   start_col;
    ColNr   end_col;
    int      sort_what = 0;
    int      format_found = 0;
-   int      change_occurred = FALSE; // Book contents changed.
+   int      change_occurred = false; // Book contents changed.
 
    // Sorting one line is really quick!
    if (count <= 1)
@@ -301,11 +301,11 @@ c_sort(Invocation* invo) {
       if (SPACE_OR_TAB(*p))
           ;
       ei (*p == 'i')
-          sort_ic = TRUE;
+          sort_ic = true;
       ei (*p == 'l')
-          sort_lc = TRUE;
+          sort_lc = true;
       ei (*p == 'r')
-          sort_rx = TRUE;
+          sort_rx = true;
       ei (*p == 'n') {
           sort_nr = 1;
           ++format_found;
@@ -320,14 +320,14 @@ c_sort(Invocation* invo) {
           ++format_found;
       }
       ei (*p == 'u')
-          unique = TRUE;
+          unique = true;
       ei (isComment(p))
           break;
       ei (invo->nextComm == NULL && check_nextcmd(p) != NULL) {
           invo->nextComm = check_nextcmd(p);
           break;
       } ei (!ASCII_ISALPHA(*p) && regmatch.regprog == NULL) {
-          s = skip_regexp_err(p + 1, *p, TRUE);
+          s = skip_regexp_err(p + 1, *p, true);
           if (s == NULL)
          goto sortend;
           *s = ZERO;
@@ -402,10 +402,10 @@ c_sort(Invocation* invo) {
                 --s;  // include preceding negative sign
             if (*s == ZERO) {
                 // line without number should sort before any number
-                nrs[lnum - invo->line1].st_u.num.is_number = FALSE;
+                nrs[lnum - invo->line1].st_u.num.is_number = false;
                 nrs[lnum - invo->line1].st_u.num.value = 0;
             } else {
-               nrs[lnum - invo->line1].st_u.num.is_number = TRUE;
+               nrs[lnum - invo->line1].st_u.num.is_number = true;
                readLongNumber(
                   s, NULL, NULL, sort_what,
                   &nrs[lnum - invo->line1].st_u.num.value,
@@ -456,14 +456,14 @@ c_sort(Invocation* invo) {
       // If the original line number of the line being placed is not the same
       // as "lnum" (accounting for offset), we know that the buffer changed.
       if (get_lnum + ((LineNr)count - 1) != lnum)
-          change_occurred = TRUE;
+          change_occurred = true;
 
       s = ml_get(get_lnum);
       if (!unique || i == 0 || string_compare(s, sortbuf1) != 0) {
           // Copy the line into a buffer, it may become invalid in
           // ml_append(). And it's needed for "unique".
           STRCPY(sortbuf1, s);
-          if (ml_append(lnum++, sortbuf1, (ColNr)0, FALSE) == FAIL)
+          if (ml_append(lnum++, sortbuf1, (ColNr)0, false) == FAIL)
          break;
       }
       fast_breakcheck();
@@ -513,12 +513,12 @@ c_uniq(Invocation* invo) {
    CS p;
    CS s;
    Byte save_c = 0;      // temporary character storage
-   int keep_only_unique = FALSE;
-   int keep_only_not_unique = invo->forceit ? TRUE : FALSE;
+   int keep_only_unique = false;
+   int keep_only_not_unique = invo->forceit ? true : false;
    long deleted = 0;
    ColNr start_col;
    ColNr end_col;
-   int change_occurred = FALSE; // Book contents changed.
+   int change_occurred = false; // Book contents changed.
 
    // Uniq one line is really quick!
    if (count <= 1)
@@ -536,22 +536,22 @@ c_uniq(Invocation* invo) {
       if (SPACE_OR_TAB(*p))
           ;
       ei (*p == 'i')
-          sort_ic = TRUE;
+          sort_ic = true;
       ei (*p == 'l')
-          sort_lc = TRUE;
+          sort_lc = true;
       ei (*p == 'r')
-          sort_rx = TRUE;
+          sort_rx = true;
       ei (*p == 'u') {
           // 'u' is only valid when '!' is not given.
           if (!keep_only_not_unique)
-         keep_only_unique = TRUE;
+         keep_only_unique = true;
       } ei (isComment(p))   // comment start
          break;
       ei (invo->nextComm == NULL && check_nextcmd(p) != NULL) {
          invo->nextComm = check_nextcmd(p);
          break;
       } ei (!ASCII_ISALPHA(*p) && regmatch.regprog == NULL) {
-         s = skip_regexp_err(p + 1, *p, TRUE);
+         s = skip_regexp_err(p + 1, *p, true);
          if (s == NULL)
             goto uniqend;
          *s = ZERO;
@@ -588,8 +588,8 @@ c_uniq(Invocation* invo) {
    sortbuf1 = alloc(maxlen + 1);
 
    // Delete lines according to options.
-   int match_continue = FALSE;
-   int next_is_unmatch = FALSE;
+   int match_continue = false;
+   int next_is_unmatch = false;
    int is_match;
    LineNr done_lnum = invo->line1 - 1;
    LineNr delete_lnum = 0;
@@ -615,11 +615,11 @@ c_uniq(Invocation* invo) {
          s[end_col] = ZERO;
       }
 
-      is_match = i > 0 ? !string_compare(&s[start_col], sortbuf1) : FALSE;
+      is_match = i > 0 ? !string_compare(&s[start_col], sortbuf1) : false;
       delete_lnum = 0;
       if (next_is_unmatch) {
-         is_match = FALSE;
-         next_is_unmatch = FALSE;
+         is_match = false;
+         next_is_unmatch = false;
       }
 
       if (!keep_only_unique && !keep_only_not_unique) {
@@ -631,15 +631,15 @@ c_uniq(Invocation* invo) {
           if (is_match) {
          done_lnum = get_lnum - 1;
          delete_lnum = get_lnum;
-         match_continue = TRUE;
+         match_continue = true;
           } else {
          if (i > 0 && !match_continue && get_lnum - 1 > done_lnum) {
              delete_lnum = get_lnum - 1;
-             next_is_unmatch = TRUE;
+             next_is_unmatch = true;
          }
          ei (i >= count - 1)
              delete_lnum = get_lnum;
-         match_continue = FALSE;
+         match_continue = false;
          STRCPY(sortbuf1, &s[start_col]);
           }
       } else // keep_only_unique
@@ -649,11 +649,11 @@ c_uniq(Invocation* invo) {
              delete_lnum = get_lnum - 1;
          else
              delete_lnum = get_lnum;
-         match_continue = TRUE;
+         match_continue = true;
           } else {
          if (i == 0 && match_continue)
              delete_lnum = get_lnum;
-         match_continue = FALSE;
+         match_continue = false;
          STRCPY(sortbuf1, &s[start_col]);
           }
       }
@@ -666,7 +666,7 @@ c_uniq(Invocation* invo) {
           i -= get_lnum - delete_lnum + 1;
           count--;
           deleted++;
-          change_occurred = TRUE;
+          change_occurred = true;
       }
 
       fast_breakcheck();
@@ -731,7 +731,7 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
    for (extra = 0, l = line1; l <= line2; l++) {
       str = copySubstr(ml_get(l + extra), ml_get_len(l + extra));
       if (str) {
-         ml_append(dest + l - line1, str, (ColNr)0, FALSE);
+         ml_append(dest + l - line1, str, (ColNr)0, false);
          eeglFree(str);
          if (dest < line1)
             extra++;
@@ -839,7 +839,7 @@ doCopy(LineNr line1, LineNr line2, LineNr n) {
       // need to make a copy because the line will be unlocked within ml_append()
       p = copySubstr(ml_get(line1), ml_get_len(line1));
       if (p) {
-         ml_append(curPor->cursor.lnum, p, (ColNr)0, FALSE);
+         ml_append(curPor->cursor.lnum, p, (ColNr)0, false);
          eeglFree(p);
       }
       // situation 2: skip already copied lines
@@ -869,14 +869,14 @@ free_prev_shellcmd(void) {
 }
 #endif
 
-//Check that "prevcmd" is not NULL. If it is NULL, then give an error message and return FALSE.
+//Check that "prevcmd" is not NULL. If it is NULL, then give an error message and return false.
 private int
 prevcmd_is_set(void) {
    if (prevcmd == NULL) {
    emsg(_(e_no_previous_command));
-   return FALSE;
+   return false;
     }
-    return TRUE;
+    return true;
 }
 
 //Handle the ":!cmd" command.   Also for ":r !cmd" and ":w !cmd"
@@ -901,7 +901,7 @@ do_bang(
    int         scroll_save = msg_scroll;
 
    if (addr_count == 0) {     // :!
-      msg_scroll = FALSE;       // don't scroll here
+      msg_scroll = false;       // don't scroll here
       doFlushAllBooks();
       msg_scroll = scroll_save;
    }
@@ -946,7 +946,7 @@ do_bang(
          else {
              trailarg = p;
              *trailarg++ = ZERO;
-             ins_prevcmd = TRUE;
+             ins_prevcmd = true;
              break;
          }
           }
@@ -973,7 +973,7 @@ do_bang(
       AppendToRedobuffLit(cmd, -1);
       eeglFree(cmd);
       AppendToRedobuff((CS)"\n");
-      bangredo = FALSE;
+      bangredo = false;
    }
    if (addr_count == 0) {     // :!
       // echo the command
@@ -1006,8 +1006,8 @@ theend:
 //command name given by the user. All reasonable versions of call_shell() do this.
 //Alternatively, if on Unix and redirecting input or output, but not both,
 //and the @shelltemp option isn't set, use pipes.
-//We use input redirection if do_in is TRUE.
-//We use output redirection if do_out is TRUE.
+//We use input redirection if do_in is true.
+//We use output redirection if do_out is true.
 private void
 do_filter(
    LineNr   line1,
@@ -1074,8 +1074,8 @@ do_filter(
       curBook->opEnd.lnum = line2;
       curPor->cursor.lnum = line2;
     } else
-   if ((do_in && (itmp = eeTempName('i', FALSE)) == NULL)
-      || (do_out && (otmp = eeTempName('o', FALSE)) == NULL))
+   if ((do_in && (itmp = eeTempName('i', false)) == NULL)
+      || (do_out && (otmp = eeTempName('o', false)) == NULL))
    {
        emsg(_(e_cant_get_temp_file_name));
        goto filterend;
@@ -1084,7 +1084,7 @@ do_filter(
    //The writing and reading of temp files will not be shown.
    ++no_wait_return;      // don't call wait_return() while busy
    if (itmp && bookWrite(curBook, itmp, NULL, line1, line2, invo,
-                  FALSE, FALSE, FALSE, TRUE) == FAIL
+                  false, false, false, true) == FAIL
    ) {
       msg_putchar('\n');      // keep message from bookWrite()
       --no_wait_return;
@@ -1110,7 +1110,7 @@ do_filter(
    //When not redirecting the output the command can write anything to the
    //screen. If 'shellredir' is equal to ">", screen may be messed up by
    //stderr output of external command. Clear the screen later.
-   //If do_in is FALSE, this could be something like ":r !cat", which may
+   //If do_in is false, this could be something like ":r !cat", which may
    //also mess up the screen, clear it later.
    if (!do_out || (p_srr && STRCMP(p_srr, ">") == 0) || !do_in)
       redraw_later_clear();
@@ -1133,17 +1133,17 @@ do_filter(
    //Pass on the SHELL_DOOUT flag when the output is being redirected.
    if (call_shell(cmd_buf, null, SHELL_FILTER | SHELL_COOKED | shell_flags)) {
       redraw_later_clear();
-      wait_return(FALSE);
+      wait_return(false);
    }
    eeglFree(cmd_buf);
 
-   did_check_timestamps = FALSE;
-   need_check_timestamps = TRUE;
+   did_check_timestamps = false;
+   need_check_timestamps = true;
 
    // When interrupting the shell command, it may still have produced some
    // useful output.  Reset gotInterruptG here, so that readfile() won't cancel reading.
    ui_breakcheck();
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    if (do_out) {
       if (otmp) {
@@ -1184,7 +1184,7 @@ do_filter(
          //Put cursor on first filtered line for ":range!cmd".
          //Adjust '[ and '] (set by bookWrite()).
          curPor->cursor.lnum = line1;
-         del_lines(linecount, TRUE);
+         del_lines(linecount, true);
          curBook->opStart.lnum -= linecount;   // adjust '[
          curBook->opEnd.lnum -= linecount;      // adjust ']
          write_lnum_adjust(-linecount);      // adjust last line for next write
@@ -1210,7 +1210,7 @@ error:
       // put cursor back in same position for ":w !cmd"
       curPor->cursor = cursor_save;
       --no_wait_return;
-      wait_return(FALSE);
+      wait_return(false);
    }
 
 filterend:
@@ -1261,8 +1261,8 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
    cursor_on();
    
    (void)call_shell(cmd, null, SHELL_COOKED | flags);
-   did_check_timestamps = FALSE;
-   need_check_timestamps = TRUE;
+   did_check_timestamps = false;
+   need_check_timestamps = true;
 
    //put the message cursor at the end of the screen, avoids wait_return()
    //to overwrite the text that the external command showed
@@ -1279,7 +1279,7 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
       //Otherwise there is probably text on the screen that the user wants
       //to read before redrawing, so call wait_return().
 
-      if (!keep_termcap)   // if keep_termcap is TRUE didn't stop termcap
+      if (!keep_termcap)   // if keep_termcap is true didn't stop termcap
          starttermcap();   // start termcap if not done by wait_return()
    }
 
@@ -1311,14 +1311,14 @@ prompt_for_number(int *mouse_used) {
    // May show different mouse shape.
    setmouse();
 
-   int i = get_number(TRUE, mouse_used);
+   int i = get_number(true, mouse_used);
    if (KeyTyped) {
       // don't call wait_return() now
       if (msgRowG > 0)
          commlineRowG = msgRowG - 1;
-      need_wait_return = FALSE;
-      msg_didany = FALSE;
-      msg_didout = FALSE;
+      need_wait_return = false;
+      msg_didany = false;
+      msg_didout = false;
    } else
       commlineRowG = save_commlineRowG;
    stateG = save_State;
@@ -1396,7 +1396,7 @@ doAppendRedir(CS buf, int buflen, NULLABLE CS opt, CS fname) {
 void
 do_fixdel(Invocation* invo UNUSED) {
     CS p = find_termcode(S"kb");
-    add_termcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, FALSE);
+    add_termcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, false);
 }
 
 private void
@@ -1418,7 +1418,7 @@ print_line(LineNr lnum, int list) {
 
    msg_start();
    silentModeG = false;
-   info_message = TRUE;   // use mch_msg(), not mch_errmsg()
+   info_message = true;   // use mch_msg(), not mch_errmsg()
    print_line_no_prefix(lnum, list);
    if (save_silent) {
       msg_putchar('\n');
@@ -1426,7 +1426,7 @@ print_line(LineNr lnum, int list) {
       out_flush();
       silentModeG = save_silent;
    }
-   info_message = FALSE;
+   info_message = false;
 }
 
 private int
@@ -1447,7 +1447,7 @@ renameBook(CS new_fname) {
    CS xfname = curBook->currFileName;
    curBook->fullFileName = NULL;
    curBook->shortFileName = NULL;
-   if (setfname(curBook, new_fname, NULL, TRUE) == FAIL) {
+   if (setfname(curBook, new_fname, NULL, true) == FAIL) {
       curBook->fullFileName = fname;
       curBook->shortFileName = sfname;
       return FAIL;
@@ -1483,11 +1483,11 @@ c_file(Invocation* invo) {
    if (*invo->arg != ZERO || invo->addr_count == 1) {
       if (renameBook(invo->arg) == FAIL)
           return;
-      needRedrawTabpanelG = TRUE;
+      needRedrawTabpanelG = true;
    }
 
    // print file name if no argument or 'F' is not in 'shortmess'
-   fileinfo(FALSE, FALSE, invo->forceit);
+   fileinfo(false, false, invo->forceit);
 }
 
 // ":update".
@@ -1533,7 +1533,7 @@ check_overwrite(
    Boole other)       // writing under other name
 {
    //Write to another file or flags set or not writing the whole file: overwriting only allowed 
-   //with '!'. If "other" is FALSE and bt_nofilename(book) is TRUE, this must be
+   //with '!'. If "other" is false and bt_nofilename(book) is true, this must be
    //writing an "acwrite" book to the same file as its fullFileName, and bookWrite() will only 
    //allow writing with BufWriteCmd autocommands, so there is no need for an overwrite check.
    if (       (other
@@ -1554,7 +1554,7 @@ check_overwrite(
             dialog_msg(buff, _("Overwrite existing file \"%s\"?"), fname);
             if (eeDialog_yesno(EE_QUESTION, NULL, buff, 2) != EE_YES)
                 return FAIL;
-            invo->forceit = TRUE;
+            invo->forceit = true;
          } else {
             emsg(_(e_file_exists));
             return FAIL;
@@ -1573,7 +1573,7 @@ check_overwrite(
                   eeglFree(swapname);
                   return FAIL;
                }
-               invo->forceit = TRUE;
+               invo->forceit = true;
             } else {
                showErrFmtMsg(_(e_swap_file_exists_str_silent_overrides), swapname);
                eeglFree(swapname);
@@ -1588,7 +1588,7 @@ check_overwrite(
 
 
 //Write the current book to file "invo->arg".
-//If "invo->append" is TRUE, append to the file.
+//If "invo->append" is true, append to the file.
 //
 //If "*invo->arg == ZERO" write to current file.
 //
@@ -1651,7 +1651,7 @@ do_write(Invocation* invo) {
          if (p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM)) {
             if (eeDialog_yesno(EE_QUESTION, NULL, (CS)_("Write partial file?"), 2) != EE_YES)
                goto theend;
-            invo->forceit = TRUE;
+            invo->forceit = true;
          } else {
             emsg(_(e_use_bang_to_write_partial_buffer));
             goto theend;
@@ -1709,13 +1709,13 @@ do_write(Invocation* invo) {
       name_was_missing = curBook->fullFileName == NULL;
 
       retval = bookWrite(curBook, fullFName, fname, invo->line1, invo->line2,
-                invo, invo->append, invo->forceit, TRUE, FALSE);
+                invo, invo->append, invo->forceit, true, false);
 
       // After ":saveas fname" reset 'readonly'.
       if (invo->id == C_saveas) {
          if (retval == OK) {
-            curBook->o.modifiable = TRUE;
-            needRedrawTabpanelG = TRUE;
+            curBook->o.modifiable = true;
+            needRedrawTabpanelG = true;
          }
       }
 
@@ -1835,7 +1835,7 @@ do_wqall(Invocation* invo){
    }
 }
 
-//Check the @modifiable option. Return TRUE and give a message when it's not set.
+//Check the @modifiable option. Return true and give a message when it's not set.
 private Boole
 isWritingForbidden(void) {
    if (curBook->o.modifiable)
@@ -1845,7 +1845,7 @@ isWritingForbidden(void) {
 }
 
 // Check if a book is read-only (either 'modifiable' option is not set or file is
-// read-only). Ask for overruling in a dialog. Return TRUE and give an error
+// read-only). Ask for overruling in a dialog. Return true and give an error
 // message when the book is readonly.
 private Boole
 check_readonly(OUT Boole* forceit, Book* book) {
@@ -1967,7 +1967,7 @@ getfile(
 //       if ECMD_LAST: use last position in all files
 //       if ECMD_ONE: use first line
 //   flags:
-//  ECMD_HIDE: if TRUE don't free the current book
+//  ECMD_HIDE: if true don't free the current book
 //  ECMD_SET_HELP: set kind = BOOK_HELP for (new) book before opening file
 //  ECMD_OLDBUF: use existing book if it exists
 //  ECMD_FORCEIT: ! used for a command
@@ -1993,10 +1993,10 @@ startEditingFile(
    if (portErrorIfTermPopup())
       return FAIL;
       
-   int oldbuf;           // TRUE if using existing book
-   int auto_buf = FALSE; // TRUE if autocommands brought us into the book unexpectedly
+   int oldbuf;           // true if using existing book
+   int auto_buf = false; // true if autocommands brought us into the book unexpectedly
    CS new_name = NULL;
-   int did_set_swapcommand = FALSE;
+   int did_set_swapcommand = false;
    Book* book;
    BookRef bufref;
    BookRef curBookSaved;
@@ -2010,7 +2010,7 @@ startEditingFile(
    Pos* pos;
    CS command = NULL;
    Unt readfile_flags = 0;
-   int did_inc_redrawing_disabled = FALSE;
+   int did_inc_redrawing_disabled = false;
    long* so_ptr = &curPor->o.scrollOff;
       
    Unt modifiable = flags & ECMD_MODIFIABLE; 
@@ -2019,7 +2019,7 @@ startEditingFile(
       command = invo->higherOrderComm;
    bookStoreInRef(OUT &curBookSaved, curBook);
 
-   Boole sameFile;      // TRUE if editing another file
+   Boole sameFile;      // true if editing another file
    if (fnum != 0) {
       if (fnum == curBook->fiNum)   // file is already being edited
          return OK;         // nothing to do
@@ -2050,7 +2050,7 @@ startEditingFile(
 
    //If the file was changed we may not be allowed to abandon it:
    //- if we are going to re-edit the same file
-   //- or if we are the only portal into this file and if ECMD_HIDE is FALSE
+   //- or if we are the only portal into this file and if ECMD_HIDE is false
    if (((sameFile && !(flags & ECMD_OLDBUF))
              || (curBook->countPortals == 1
             && !(flags & (ECMD_HIDE | ECMD_ADDBUF | ECMD_ALTBUF)))
@@ -2085,7 +2085,7 @@ startEditingFile(
       else
          eeSnprintf(p, len, "%ldG", (long)newlnum);
       set_EeglVar_string(VV_SWAPCOMMAND, p, -1);
-      did_set_swapcommand = TRUE;
+      did_set_swapcommand = true;
       eeglFree(p);
    }
 
@@ -2098,7 +2098,7 @@ startEditingFile(
          if ((commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
             curPor->altFnum = curBook->fiNum;
          if (oldPort)
-            bookSetPosInPort(curBook, oldPort, oldPort->cursor.lnum, oldPort->cursor.col, TRUE);
+            bookSetPosInPort(curBook, oldPort, oldPort->cursor.lnum, oldPort->cursor.col, true);
       }
 
       if (fnum) {
@@ -2153,9 +2153,9 @@ startEditingFile(
          curPor->altFnum = prev_alt_fnum;
 
       if (book->mem.mfile == NULL) {    // no memfile yet
-         oldbuf = FALSE;
+         oldbuf = false;
       } else {              // existing memfile
-         oldbuf = TRUE;
+         oldbuf = true;
          bookStoreInRef(OUT &bufref, book);
          (void)fiCheckBookTimestamp(book);
          // Check if autocommands made the book invalid or changed the current book.
@@ -2173,7 +2173,7 @@ startEditingFile(
       }
 
       //Make the (new) book the one used by the current portal.
-      //If the old book becomes unused, free it if ECMD_HIDE is FALSE.
+      //If the old book becomes unused, free it if ECMD_HIDE is false.
       //If the current buffer was empty and has no file name, curBook
       //is returned by bookNew(), nothing to do here.
       if (book != curBook) {
@@ -2215,7 +2215,7 @@ startEditingFile(
             goto theend;
          }
          if (book == curBook)      // already in new buffer
-            auto_buf = TRUE;
+            auto_buf = true;
          else {
             Portal* the_curPor = curPor;
             int did_decrement;
@@ -2223,20 +2223,20 @@ startEditingFile(
 
             //Set the locked flag to avoid that autocommands close the
             //portal. And set locked for the same reason.
-            the_curPor->locked = TRUE;
+            the_curPor->locked = true;
             ++book->locked;
 
             if (curBook == curBookSaved.c)
                optsCopyToBook(book, BCO_ENTER);
 
             // Close the link to the current buffer. This will set oldPort->buffer to NULL.
-            u_sync(FALSE);
+            u_sync(false);
             did_decrement = closeBook(oldPort, curBook,
-                (flags & ECMD_HIDE) ? 0 : DOBOOK_UNLOAD, FALSE, FALSE);
+                (flags & ECMD_HIDE) ? 0 : DOBOOK_UNLOAD, false, false);
 
             // Autocommands may have closed the portal.
             if (portalIsValid(the_curPor))
-               the_curPor->locked = FALSE;
+               the_curPor->locked = false;
             --book->locked;
 
             // autocmds may abort script processing
@@ -2259,7 +2259,7 @@ startEditingFile(
                   ++was_curbuf->countPortals;
                if (doesPortalExistInAnyTab(oldPort) && !oldPort->book)
                   oldPort->book = was_curbuf;
-               auto_buf = TRUE;
+               auto_buf = true;
             } else {
                // <VN> We could instead free the synblock and re-attach to buffer, perhaps.
                if (!curPor->book || curPor->ownSyntax == &(curPor->book->syntax))
@@ -2294,7 +2294,7 @@ startEditingFile(
    // Don't redraw until the cursor is in the right line, otherwise
    // autocommands may cause ml_get errors.
    ++isRedrawingDisabledG;
-   did_inc_redrawing_disabled = TRUE;
+   did_inc_redrawing_disabled = true;
 
    book = curBook;
    if ((flags & ECMD_SET_HELP) || keep_help_flag) {
@@ -2315,13 +2315,13 @@ startEditingFile(
    //Since we are starting to edit a file, consider the filetype to be
    //unset.  Helps for when an autocommand changes files and expects syntax
    //highlighting to work in the other file.
-   curBook->didFiletype = FALSE;
+   curBook->didFiletype = false;
 
    //sameFile   oldbuf
-   // true    FALSE      re-edit same file, buffer is re-used
-   // true    TRUE       re-edit same file, nothing changes
-   // false   FALSE      start editing new file, new buffer
-   // false   TRUE       start editing in existing buffer (nothing to do)
+   // true    false      re-edit same file, buffer is re-used
+   // true    true       re-edit same file, nothing changes
+   // false   false      start editing new file, new buffer
+   // false   true       start editing in existing buffer (nothing to do)
    if (sameFile && !oldbuf) {    //re-use the buffer
       set_last_cursor(curPor);   //may set lastCursor
       if (newlnum == ECMD_LAST || newlnum == ECMD_LASTL) {
@@ -2340,8 +2340,8 @@ startEditingFile(
       // being re-used for another file.
       if (!(curBook->flags & BF_NEVERLOADED) && (p_ur < 0 || curBook->mem.lineCount <= p_ur)) {
          // Sync first so that this is a separate undo-able action.
-         u_sync(FALSE);
-         if (u_savecommon(0, curBook->mem.lineCount + 1, 0, TRUE) == FAIL) {
+         u_sync(false);
+         if (u_savecommon(0, curBook->mem.lineCount + 1, 0, true) == FAIL) {
             eeglFree(new_name);
             goto theend;
          }
@@ -2423,9 +2423,9 @@ startEditingFile(
             retval = FAIL;
          handle_swap_exists(&curBookSaved);
       } else {
-         applyAutocommsRetval(EVENT_BUFENTER, NULL, NULL, FALSE, curBook, &retval);
+         applyAutocommsRetval(EVENT_BUFENTER, NULL, NULL, false, curBook, &retval);
          if ((flags & ECMD_NOWINENTER) == 0)
-            applyAutocommsRetval(EVENT_BUFWINENTER, NULL, NULL, FALSE, curBook, &retval);
+            applyAutocommsRetval(EVENT_BUFWINENTER, NULL, NULL, false, curBook, &retval);
       }
       check_arg_idx(curPor);
 
@@ -2480,7 +2480,7 @@ startEditingFile(
    }
 
    // Check if cursors in other portals into the same buffer are still valid
-   check_lnums(FALSE);
+   check_lnums(false);
 
    //Did not read the file, need to show some info about the file. Do this after setting the cursor
    if (oldbuf && !auto_buf) {
@@ -2489,16 +2489,16 @@ startEditingFile(
       // Obey the 'O' flag in 'cpoptions': overwrite any previous file
       // message.
       if (!isExitingG && p_verbose == 0)
-         msg_scroll = FALSE;
+         msg_scroll = false;
       if (!msg_scroll)   // wait a bit when overwriting an error msg
-         check_for_delay(FALSE);
+         check_for_delay(false);
       msg_start();
       msg_scroll = msg_scroll_save;
-      msg_scrolled_ign = TRUE;
+      msg_scrolled_ign = true;
 
-      fileinfo(FALSE, TRUE, FALSE);
+      fileinfo(false, true, false);
 
-      msg_scrolled_ign = FALSE;
+      msg_scrolled_ign = false;
     }
 
     curBook->lastUsed = eeTime();
@@ -2508,7 +2508,7 @@ startEditingFile(
 
    if (isRedrawingDisabledG > 0)
       --isRedrawingDisabledG;
-   did_inc_redrawing_disabled = FALSE;
+   did_inc_redrawing_disabled = false;
    if (!skip_redraw) {
       n = *so_ptr;
       if (topline == 0 && !command)
@@ -2542,7 +2542,7 @@ private int append_indent = 0;       // autoindent for first line
 void
 c_append(Invocation* invo) {
    CS theline;
-   int did_undo = FALSE;
+   int did_undo = false;
    LineNr lnum = invo->line2;
    int indent = 0;
    CS p;
@@ -2569,8 +2569,8 @@ c_append(Invocation* invo) {
       stateG |= MODE_LANGMAP;
 
    for (;;) {
-      msg_scroll = TRUE;
-      need_wait_return = FALSE;
+      msg_scroll = true;
+      need_wait_return = false;
       if (curBook->o.autoIndent) {
          if (append_indent >= 0) {
             indent = append_indent;
@@ -2603,7 +2603,7 @@ c_append(Invocation* invo) {
          stateG = MODE_COMMLINE;
          theline = invo->ea_getline(
              invo->cstack->loopLevel > 0 ? -1 :
-             ZERO, invo->cookie, indent, TRUE
+             ZERO, invo->cookie, indent, true
          );
          stateG = save_State;
       }
@@ -2633,8 +2633,8 @@ c_append(Invocation* invo) {
       if (p[0] == ZERO)
          theline[0] = ZERO;
 
-      did_undo = TRUE;
-      ml_append(lnum, theline, (ColNr)0, FALSE);
+      did_undo = true;
+      ml_append(lnum, theline, (ColNr)0, false);
       if (empty)
          // there are no marks below the inserted lines
          appended_lines(lnum, 1L);
@@ -2646,7 +2646,7 @@ c_append(Invocation* invo) {
 
       if (empty) {
          ml_delete(2L);
-         empty = FALSE;
+         empty = false;
       }
    }
    stateG = MODE_NORMAL;
@@ -2671,8 +2671,8 @@ c_append(Invocation* invo) {
    check_cursor_lnum();
    beginline(BL_SOL | BL_FIX);
 
-   need_wait_return = FALSE;   // don't use wait_return() now
-   ex_no_reprint = TRUE;
+   need_wait_return = false;   // don't use wait_return() now
+   ex_no_reprint = true;
 }
 
 //":change"
@@ -2817,7 +2817,7 @@ c_z(Invocation* invo) {
       curPor->cursor.lnum = curs;
       curPor->cursor.col = 0;
    }
-   ex_no_reprint = TRUE;
+   ex_no_reprint = true;
 }
 
 //}}}
@@ -2877,7 +2877,7 @@ c_substitute(Invocation* invo) {
    LineNr lnum;
    long i = 0;
    RegMultilineMatch regmatch;
-   static SubstitutionState subflags = {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, 0};
+   static SubstitutionState subflags = {false, false, false, true, false, false, false, 0};
    SubstitutionState subflags_save;
    int save_do_all;      // remember user specified 'g' flag
    int save_do_ask;      // remember user specified 'c' flag
@@ -2886,8 +2886,8 @@ c_substitute(Invocation* invo) {
    Unt patlen = 0;
    int delimiter;
    int sublen;
-   int got_quit = FALSE;
-   int got_match = FALSE;
+   int got_quit = false;
+   int got_match = false;
    int which_pat;
    CS p;
    int  save_State;
@@ -2896,7 +2896,7 @@ c_substitute(Invocation* invo) {
    LineNr old_line_count = curBook->mem.lineCount;
    LineNr line2;
    long nmatch;         // number of lines in match
-   int endcolumn = FALSE;   // cursor in last column when done
+   int endcolumn = false;   // cursor in last column when done
    Pos old_cursor = curPor->cursor;
    int keeppatterns = commModifierG.cmod_flags & CMOD_KEEPPATTERNS;
    int save_ma = 0;
@@ -2939,7 +2939,7 @@ c_substitute(Invocation* invo) {
          which_pat = RE_LAST;       // use last used regexp
          delimiter = *cmd++;          // remember delimiter character
          pat = cmd;             // remember start of search pat
-         cmd = skip_regexp_ex(cmd, delimiter, TRUE, &invo->arg, NULL, NULL);
+         cmd = skip_regexp_ex(cmd, delimiter, true, &invo->arg, NULL, NULL);
          if (cmd[0] == delimiter)       // end delimiter found
             *cmd++ = ZERO;          // replace it with a ZERO
          patlen = STRLEN(pat);
@@ -2997,17 +2997,17 @@ c_substitute(Invocation* invo) {
       if (invo->line2 < curBook->mem.lineCount)
          ++joined_lines_count;
       if (joined_lines_count > 1) {
-         (void)jugJoinLinesUnderCursor(joined_lines_count, FALSE, TRUE, FALSE, TRUE);
+         (void)jugJoinLinesUnderCursor(joined_lines_count, false, true, false, true);
          sub_nsubs = joined_lines_count - 1;
          sub_nlines = 1;
-         (void)do_sub_msg(FALSE);
+         (void)do_sub_msg(false);
          mayPrint(invo);
       }
 
       if (!keeppatterns)
-         save_re_pat(RE_SUBST, pat, patlen, TRUE);
+         save_re_pat(RE_SUBST, pat, patlen, true);
       // put pattern in history
-      add_to_history(HIST_SEARCH, pat, patlen, TRUE, ZERO);
+      add_to_history(HIST_SEARCH, pat, patlen, true, ZERO);
       eeglFree(sub);
 
       return;
@@ -3017,13 +3017,13 @@ c_substitute(Invocation* invo) {
    if (*cmd == '&')
       ++cmd;
    else {
-      subflags.do_all = TRUE; // default is global on
-      subflags.do_ask = FALSE;
-      subflags.do_error = TRUE;
-      subflags.do_print = FALSE;
-      subflags.do_list = FALSE;
-      subflags.do_count = FALSE;
-      subflags.do_number = FALSE;
+      subflags.do_all = true; // default is global on
+      subflags.do_ask = false;
+      subflags.do_error = true;
+      subflags.do_print = false;
+      subflags.do_list = false;
+      subflags.do_count = false;
+      subflags.do_number = false;
       subflags.do_ic = 0;
    }
    while (*cmd) {
@@ -3033,19 +3033,19 @@ c_substitute(Invocation* invo) {
       ei (*cmd == 'c')
          subflags.do_ask = !subflags.do_ask;
       ei (*cmd == 'n')
-         subflags.do_count = TRUE;
+         subflags.do_count = true;
       ei (*cmd == 'e')
          subflags.do_error = !subflags.do_error;
       ei (*cmd == 'r')       // use last used regexp
          which_pat = RE_LAST;
       ei (*cmd == 'p')
-         subflags.do_print = TRUE;
+         subflags.do_print = true;
       ei (*cmd == '#') {
-         subflags.do_print = TRUE;
-         subflags.do_number = TRUE;
+         subflags.do_print = true;
+         subflags.do_number = true;
       } ei (*cmd == 'l') {
-         subflags.do_print = TRUE;
-         subflags.do_list = TRUE;
+         subflags.do_print = true;
+         subflags.do_list = true;
       } ei (*cmd == 'i')       // ignore case
          subflags.do_ic = 'i';
       ei (*cmd == 'I')       // don't ignore case
@@ -3055,7 +3055,7 @@ c_substitute(Invocation* invo) {
       ++cmd;
    }
    if (subflags.do_count)
-      subflags.do_ask = FALSE;
+      subflags.do_ask = false;
 
    save_do_all = subflags.do_all;
    save_do_ask = subflags.do_ask;
@@ -3113,11 +3113,11 @@ c_substitute(Invocation* invo) {
 
    // the 'i' or 'I' flag overrules 'ignorecase' and 'smartcase'
    if (invo->comm[0] == 'S') {
-      regmatch.rmm_ic = FALSE;
+      regmatch.rmm_ic = false;
    } ei (subflags.do_ic == 'i') {
-      regmatch.rmm_ic = TRUE;
+      regmatch.rmm_ic = true;
    } ei (subflags.do_ic == 'I') {
-      regmatch.rmm_ic = FALSE;
+      regmatch.rmm_ic = false;
    }
 
    CS sub_firstline = NULL;// allocated copy of first sub line
@@ -3151,12 +3151,12 @@ c_substitute(Invocation* invo) {
          CS new_start = null;
          unsigned   new_start_len = 0;
          CS p1;
-         int did_sub = FALSE;
+         int did_sub = false;
          int lastone;
          int len, copy_len, needed_len;
          long   nmatch_tl = 0;   // nr of lines matched below lnum
          int do_again;   // do it again after joining lines
-         int skip_match = FALSE;
+         int skip_match = false;
          LineNr   sub_firstlnum;   // nr of first sub line
          int apc_flags = APC_SAVE_FOR_UNDO | APC_SUBSTITUTE;
          ColNr total_added =  0;
@@ -3209,7 +3209,7 @@ c_substitute(Invocation* invo) {
          // At first match, remember current cursor position.
          if (!got_match) {
             setpcmark();
-            got_match = TRUE;
+            got_match = true;
          }
 
          // Loop until nothing more to replace in this line.
@@ -3242,7 +3242,7 @@ c_substitute(Invocation* invo) {
 
             // Save the line number of the last change for the final cursor position
             curPor->cursor.lnum = lnum;
-            do_again = FALSE;
+            do_again = false;
 
             // 1. Match empty string does not count, except for first
             // match. This reproduces the strange vi behaviour. This also catches endless loops.
@@ -3253,7 +3253,7 @@ c_substitute(Invocation* invo) {
                if (sub_firstline[matchcol] == ZERO)
                   // We already were at the end of the line.  Don't look
                   // for a match in this line again.
-                  skip_match = TRUE;
+                  skip_match = true;
                else {
                 // search for a match at next column
                    matchcol += utfCharLen(sub_firstline + matchcol);
@@ -3274,10 +3274,10 @@ c_substitute(Invocation* invo) {
                if (nmatch > 1) {
                   matchcol = (ColNr)STRLEN(sub_firstline);
                   nmatch = 1;
-                  skip_match = TRUE;
+                  skip_match = true;
                }
                sub_nsubs++;
-               did_sub = TRUE;
+               did_sub = true;
                // Skip the substitution, unless an expression is used
                if (!(sub[0] == '\\' && sub[1] == '='))
                   goto skip;
@@ -3302,13 +3302,13 @@ c_substitute(Invocation* invo) {
                   int save_p_lz = p_lz;
                   int save_p_fen = curPor->o.foldEnable;
 
-                  curPor->o.foldEnable = FALSE;
+                  curPor->o.foldEnable = false;
                   // Invert the matched string. Remove the inversion afterwards.
                   int save_isRedrawingDisabledG = isRedrawingDisabledG;
                   isRedrawingDisabledG = 0;
 
                   // avoid calling drawUpdateScreen() in vgetorpeek()
-                  p_lz = FALSE;
+                  p_lz = false;
 
                   if (new_start) {
                      // There already was a substitution, we would like to show this to the user. 
@@ -3329,7 +3329,7 @@ c_substitute(Invocation* invo) {
                         len_change = (int)STRLEN(new_line)
                                 - (int)STRLEN(orig_line);
                         curPor->cursor.col += len_change;
-                        ml_replace(lnum, new_line, FALSE);
+                        ml_replace(lnum, new_line, false);
                          }
                      }
                    }
@@ -3339,26 +3339,26 @@ c_substitute(Invocation* invo) {
                   if (search_match_lines == 0 && search_match_endcol == 0)
                      // highlight at least one character for /^/
                      search_match_endcol = 1;
-                  highlight_match = TRUE;
+                  highlight_match = true;
 
                   update_topline();
                   validate_cursor();
                   drawUpdateScreen(UPD_SOME_VALID);
-                  highlight_match = FALSE;
+                  highlight_match = false;
                   redraw_later(UPD_SOME_VALID);
 
                   curPor->o.foldEnable = save_p_fen;
                   if (msgRowG == visibleRowsG - 1)
-                     msg_didout = FALSE;   // avoid a scroll-up
+                     msg_didout = false;   // avoid a scroll-up
                   msg_starthere();
                   i = msg_scroll;
                   msg_scroll = 0;      // truncate msg when needed
-                  msg_no_more = TRUE;
+                  msg_no_more = true;
                   // write message same highlighting as for wait_return()
                   smsgDeco(getDecoFlags(HLF_R), _("replace with %s (y/n/a/q/l/^E/^Y)?"), sub);
-                  msg_no_more = FALSE;
+                  msg_no_more = false;
                   msg_scroll = i;
-                  showruler(TRUE);
+                  showruler(true);
                   windgoto(msgRowG, msgColG);
                   isRedrawingDisabledG = save_isRedrawingDisabledG;
 
@@ -3369,20 +3369,20 @@ c_substitute(Invocation* invo) {
                   --no_mapping;
 
                   // clear the question
-                  msg_didout = FALSE;   // don't scroll up
+                  msg_didout = false;   // don't scroll up
                   msgColG = 0;
-                  gotoCommline(TRUE);
+                  gotoCommline(true);
                   p_lz = save_p_lz;
 
                   // restore the line
                   if (orig_line)
-                     ml_replace(lnum, orig_line, FALSE);
+                     ml_replace(lnum, orig_line, false);
 
-                  need_wait_return = FALSE; // no hit-return prompt
+                  need_wait_return = false; // no hit-return prompt
                   if (typed == 'q' || typed == ESC || typed == Ctrl_C 
                         || typed == extraInterruptCharG
                   ){
-                     got_quit = TRUE;
+                     got_quit = true;
                      break;
                   }
                   if (typed == 'n')
@@ -3391,12 +3391,12 @@ c_substitute(Invocation* invo) {
                      break;
                   if (typed == 'l') {
                      // last: replace and then stop
-                     subflags.do_all = FALSE;
+                     subflags.do_all = false;
                      line2 = lnum;
                      break;
                   }
                   if (typed == 'a') {
-                      subflags.do_ask = FALSE;
+                      subflags.do_ask = false;
                       break;
                   }
                   if (typed == Ctrl_E)
@@ -3414,7 +3414,7 @@ c_substitute(Invocation* invo) {
                   // pressing 'n'.
                   if (nmatch > 1) {
                      matchcol = (ColNr)STRLEN(sub_firstline);
-                     skip_match = TRUE;
+                     skip_match = true;
                   }
                   goto skip;
                }
@@ -3457,7 +3457,7 @@ c_substitute(Invocation* invo) {
             // go beyond the last line of the buffer.
             if (nmatch > curBook->mem.lineCount - sub_firstlnum + 1) {
                 nmatch = curBook->mem.lineCount - sub_firstlnum + 1;
-                skip_match = TRUE;
+                skip_match = true;
                 // safety check
                 if (nmatch < 0)
                goto skip;
@@ -3565,7 +3565,7 @@ c_substitute(Invocation* invo) {
                         REGSUB_COPY | REGSUB_BACKSLASH | (REGSUB_MAGIC));
             --textlock;
             sub_nsubs++;
-            did_sub = TRUE;
+            did_sub = true;
 
             // Move the cursor to the start of the line, to avoid that it
             // is beyond the end of the line after the substitution.
@@ -3578,9 +3578,9 @@ c_substitute(Invocation* invo) {
                sub_firstline = copySubstr(ml_get(sub_firstlnum), ml_get_len(sub_firstlnum));
                // When going beyond the last line, stop substituting.
                if (sub_firstlnum <= line2)
-                  do_again = TRUE;
+                  do_again = true;
                else
-                  subflags.do_all = FALSE;
+                  subflags.do_all = false;
             }
 
             // Remember next character to be copied.
@@ -3613,7 +3613,7 @@ c_substitute(Invocation* invo) {
                      ColNr   plen = (ColNr)(p1 - new_start + 1);
 
                      *p1 = ZERO;          // truncate up to the CR
-                     ml_append(lnum - 1, new_start, plen, FALSE);
+                     ml_append(lnum - 1, new_start, plen, false);
                      mark_adjust(lnum + 1, (LineNr)MAXLNUM, 1L, 0L);
                      if (subflags.do_ask)
                         appended_lines(lnum - 1, 1L);
@@ -3622,7 +3622,7 @@ c_substitute(Invocation* invo) {
                            first_line = lnum;
                         last_line = lnum + 1;
                      }
-                     adjustPropsForSplit(lnum + 1, lnum, plen, 1, FALSE);
+                     adjustPropsForSplit(lnum + 1, lnum, plen, 1, false);
                      // all line numbers increase
                      ++sub_firstlnum;
                      ++lnum;
@@ -3677,7 +3677,7 @@ c_substitute(Invocation* invo) {
 
                   if (u_savesub(lnum) != OK)
                      break;
-                  ml_replace(lnum, new_start, TRUE);
+                  ml_replace(lnum, new_start, true);
                   if (text_props)
                      add_text_props(lnum, text_props, text_prop_count);
                   if (nmatch_tl > 0) {
@@ -3800,7 +3800,7 @@ outofmem:
 }
 
 // Give message for number of substitutions. Can also be used after a ":global" command.
-// Return TRUE if a message was given.
+// Return true if a message was given.
 int
 do_sub_msg(int       count_only) {    // used 'n' flag for ":s"
    // Only report substitutions when:
@@ -3828,13 +3828,13 @@ do_sub_msg(int       count_only) {    // used 'n' flag for ":s"
       if (msg(msg_buf))
          // save message to display it after redraw
          set_keep_msg(msg_buf, 0);
-      return TRUE;
+      return true;
    }
    if (gotInterruptG) {
       emsg(_(e_interrupted));
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 // Get the previous substitute pattern.
@@ -3939,7 +3939,7 @@ c_global(Invocation* invo) {
       delim = *cmd;      // get the delimiter
       ++cmd;         // skip delimiter if there is one
       pat = cmd;      // remember start of pattern
-      cmd = skip_regexp_ex(cmd, delim, TRUE, &invo->arg, NULL, NULL);
+      cmd = skip_regexp_ex(cmd, delim, true, &invo->arg, NULL, NULL);
       if (cmd[0] == delim)          // end delimiter found
           *cmd++ = ZERO;          // replace it with a ZERO
       patlen = STRLEN(pat);
@@ -4006,7 +4006,7 @@ global_exe(CS cmd) {
    setpcmark();
 
    // When the command writes a message, don't overwrite the command.
-   msg_didout = TRUE;
+   msg_didout = true;
 
    sub_nsubs = 0;
    sub_nlines = 0;
@@ -4031,13 +4031,13 @@ global_exe(CS cmd) {
    // If it looks like no message was written, allow overwriting the
    // command with the report for number of changes.
    if (msgColG == 0 && msg_scrolled == 0)
-      msg_didout = FALSE;
+      msg_didout = false;
 
    // If substitutes done, report number of substitutes, otherwise report
    // number of extra or deleted lines.
    // Don't report extra or deleted lines in the edge case where the buffer
    // we are in after execution is different from the buffer we started in.
-   if (!do_sub_msg(FALSE) && curBook == old_buf)
+   if (!do_sub_msg(false) && curBook == old_buf)
       msgmore(curBook->mem.lineCount - old_lcount);
 }
 
@@ -4045,7 +4045,7 @@ global_exe(CS cmd) {
 //{{{misc
 
 // Set up for a tagpreview. Make the preview portal the current portal.
-// Return TRUE when it was created.
+// Return true when it was created.
 int
 prepare_tagpreview(
    int      undo_sync,       // sync undo when leaving the portal
@@ -4053,7 +4053,7 @@ prepare_tagpreview(
    UsePopup   use_popup)       // use other popup portal
 {
    if (curPor->isPreview)
-      return FALSE;
+      return false;
 
    // If there is already a preview portal open, use that one.
    Portal* po;
@@ -4080,20 +4080,20 @@ prepare_tagpreview(
    }
    if (po) {
       enterPortal(po, undo_sync);
-      return FALSE;
+      return false;
    }
 
    // There is no preview portal open yet.  Create one.
    if ((use_previewpopup) || use_popup != USEPOPUP_NONE)
       return portalCreatePreviewPortal(use_popup != USEPOPUP_NONE);
    if (splitPortal(g_do_tagpreview > 0 ? g_do_tagpreview : 0, 0) == FAIL)
-      return FALSE;
+      return false;
    curPor->isPreview = true;
-   curPor->o.portFixHeight = TRUE;
+   curPor->o.portFixHeight = true;
    RESET_BINDING(curPor);       // don't take over 'scrollbind'
                // and 'cursorbind'
-   curPor->o.diff = FALSE;       // no 'diff'
-   return TRUE;
+   curPor->o.diff = false;       // no 'diff'
+   return true;
 }
 
 
@@ -4138,7 +4138,7 @@ c_smile(Invocation* invo UNUSED) {
 // ":drop" Open the first argument in a portal, and the argument list is redefined.
 void
 c_drop(Invocation* invo) {
-   int      split = FALSE;
+   int      split = false;
    Portal   *po;
 
    if (portErrorIfPopup(false) || portErrorIfTermPopup())
@@ -4216,7 +4216,7 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
       if (s)
          *s = p + 1;
       c = *p;
-      p = skip_regexp(p + 1, c, TRUE);
+      p = skip_regexp(p + 1, c, true);
       if (*p != c)
          return NULL;
 
@@ -4271,7 +4271,7 @@ c_oldfiles(Invocation* invo) {
    int matches = -1;
 
    msg_start();
-   msg_scroll = TRUE;
+   msg_scroll = true;
    for (ListItem* li = l->first; li && !gotInterruptG; li = li->next) {
       ++nr;
       CS fname = tv_get_string(&li->c);
@@ -4291,17 +4291,17 @@ c_oldfiles(Invocation* invo) {
    }
 
    // Assume "gotInterruptG" was set to truncate the listing.
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    if (commModifierG.cmod_flags & CMOD_BROWSE) {
-      quit_more = FALSE;
+      quitMoreG = false;
       // we only need to prompt if there is more than 1 match
       if (matches > 0) {
          nr = matches;
          // msg_putchar above sets needs_wait_return
-         need_wait_return = FALSE;
+         need_wait_return = false;
       } else
-         nr = prompt_for_number(FALSE);
+         nr = prompt_for_number(false);
       msg_starthere();
       if (nr > 0) {
          CS p = list_find_str(get_EeglVar_list(VV_OLDFILES), (long)nr);
@@ -4391,7 +4391,7 @@ c_listDo(Invocation* invo) {
          bookGoto(invo, DOBOOK_FIRST, FORWARD, book->fiNum);
    } else
        setpcmark();
-   listcmd_busy = TRUE;       // avoids setting pcmark below
+   listcmd_busy = true;       // avoids setting pcmark below
 
    while (!gotInterruptG && book) {
       if (invo->id == C_argdo) {
@@ -4416,7 +4416,7 @@ c_listDo(Invocation* invo) {
          // go to portal "t"
          if (!isTabValid(t))
             break;
-         gotoTab(t, TRUE, TRUE);
+         gotoTab(t, true, true);
          t = t->next;
       } ei (invo->id == C_bufdo) {
          // Remember the number of the next listed book, in case
@@ -4459,7 +4459,7 @@ c_listDo(Invocation* invo) {
 
          // required when @scrollbind has been set
          if (curPor->o.scrollBind)
-            normPostProcessScrollbind(TRUE);
+            normPostProcessScrollbind(true);
       }
 
       if (invo->id == C_windo || invo->id == C_tabdo)
@@ -4468,7 +4468,7 @@ c_listDo(Invocation* invo) {
       if (invo->id == C_argdo && i >= invo->line2)
          break;
    }
-   listcmd_busy = FALSE;
+   listcmd_busy = false;
 
    if (save_ei) {
       Book      *bnext;
@@ -4567,7 +4567,7 @@ c_checktime(Invocation* invo){
 
    no_check_timestamps = 0;
    if (invo->addr_count == 0)   // default is all books
-      check_timestamps(FALSE);
+      check_timestamps(false);
    else {
       book = bookFindFileByBookNr((int)invo->line2);
       if (book)   // cannot happen?
@@ -4611,7 +4611,7 @@ doFlushAllBooks(void) {
 
          bookStoreInRef(OUT &bufref, book);
 
-         (void)bookWrite_all(book, FALSE);
+         (void)bookWrite_all(book, false);
 
          // an autocommand may have deleted the buffer
          if (!bookRefValid(&bufref))
@@ -4620,7 +4620,7 @@ doFlushAllBooks(void) {
    }
 }
 
-// Return TRUE if buffer was changed and cannot be abandoned. For flags use the CCGD_ values.
+// Return true if buffer was changed and cannot be abandoned. For flags use the CCGD_ values.
 int
 check_changed(Book *book, int flags) {
    int      forceit = (flags & CCGD_FORCEIT);
@@ -4650,22 +4650,22 @@ check_changed(Book *book, int flags) {
          }
          if (!bookRefValid(&bufref))
             // Autocommand deleted buffer, oops!  It's not changed now.
-            return FALSE;
+            return false;
 
          dialog_changed(book, count > 1);
 
          if (!bookRefValid(&bufref))
          // Autocommand deleted buffer, oops!  It's not changed now.
-            return FALSE;
+            return false;
          return doWasBookChanged(book);
       }
       if (flags & CCGD_EXCMD)
          no_write_message();
       else
          no_write_message_nobang(curBook);
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 // Ask the user what to do when abandoning a changed buffer. Must check 'write' option first!
@@ -4688,13 +4688,13 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
    if (ret == EE_YES) {
       int   empty_bufname;
 
-      empty_bufname = book->currFileName == NULL ? TRUE : FALSE;
+      empty_bufname = book->currFileName == NULL ? true : false;
       if (empty_bufname)
          bookSetName(book->fiNum, S"Untitled");
 
       if (check_overwrite(&invo, book, book->currFileName, book->fullFileName, false) == OK) {
          // didn't hit Cancel
-         if (bookWrite_all(book, FALSE) == OK)
+         if (bookWrite_all(book, false) == OK)
             return;
       }
 
@@ -4703,10 +4703,10 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
          book->currFileName = NULL;
          EE_CLEAR(book->fullFileName);
          EE_CLEAR(book->shortFileName);
-         unchanged(book, FALSE);
+         unchanged(book, false);
       }
    } ei (ret == EE_NO) {
-      unchanged(book, FALSE);
+      unchanged(book, false);
    } ei (ret == EE_ALL) {
       // Write all modified files that can be written.
       // Skip readonly buffers, these need to be confirmed individually.
@@ -4723,7 +4723,7 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
                     buf2->currFileName, buf2->fullFileName, false) == OK
             )
                // didn't hit Cancel
-               (void)bookWrite_all(buf2, FALSE);
+               (void)bookWrite_all(buf2, false);
 
             // an autocommand may have deleted the buffer
             if (!bookRefValid(&bufref))
@@ -4732,7 +4732,7 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
       }
    } ei (ret == EE_DISCARDALL) {
       FOR_ALL_BOOKS(buf2)
-         unchanged(buf2, FALSE);
+         unchanged(buf2, false);
    }
 }
 
@@ -4747,15 +4747,15 @@ add_bufnum(int *bufnrs, int *bufnump, int nr) {
    *bufnump = *bufnump + 1;
 }
 
-// TRUE if any buffer was changed and cannot be abandoned. That changed buffer becomes the 
-// current buffer. When "unload" is TRUE the current buffer is unloaded instead of making it
+// true if any buffer was changed and cannot be abandoned. That changed buffer becomes the 
+// current buffer. When "unload" is true the current buffer is unloaded instead of making it
 // hidden.  This is used for ":q!".
 int
 check_changed_any(
     int      hidden,      // Only check hidden buffers
     int      unload)
 {
-   int      ret = FALSE;
+   int      ret = false;
    Book   *book;
    int      save;
    int      i;
@@ -4770,7 +4770,7 @@ check_changed_any(
       ++bufcount;
 
    if (bufcount == 0)
-      return FALSE;
+      return false;
 
    bufnrs = ALLOC_MULT(int, bufcount);
 
@@ -4821,8 +4821,8 @@ check_changed_any(
       goto theend;
 
    // Get here if "book" cannot be abandoned.
-   ret = TRUE;
-   isExitingG = FALSE;
+   ret = true;
+   isExitingG = false;
    // When ":confirm" used, don't give an error message.
    if (!(p_confirm || (commModifierG.cmod_flags & CMOD_CONFIRM))) {
       // There must be a wait_return() for this message, bookDo()
@@ -4831,7 +4831,7 @@ check_changed_any(
       if (vgetcBusyG > 0) {
           msgRowG = commlineRowG;
           msgColG = 0;
-          msg_didout = FALSE;
+          msg_didout = false;
       }
       if (
          term_job_running(book->term)
@@ -4841,8 +4841,8 @@ check_changed_any(
              bookSpName(book) ? bookSpName(book) : book->currFileName))
       {
           save = no_wait_return;
-          no_wait_return = FALSE;
-          wait_return(FALSE);
+          no_wait_return = false;
+          wait_return(false);
           no_wait_return = save;
       }
    }
@@ -4894,7 +4894,7 @@ bookWrite_all(Book *book, int forceit) {
 
    retval = (bookWrite(book, book->fullFileName, book->currFileName,
                (LineNr)1, book->mem.lineCount, NULL,
-                    FALSE, forceit, TRUE, FALSE));
+                    false, forceit, true, false));
    if (curBook != curBookSaved) {
       msg_source(getDecoFlags(HLF_W));
       msg(_("Warning: Entered other buffer unexpectedly (check autocommands)"));
@@ -4906,7 +4906,7 @@ bookWrite_all(Book *book, int forceit) {
 //{{{command array
 
 private int quitmore = 0;
-private int ex_pressedreturn = FALSE;
+private int ex_pressedreturn = false;
 
 private CS doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
 private void append_command(CS cmd);
@@ -4962,8 +4962,8 @@ typedef struct {
 typedef struct {
    ArrayList   *lines_gap;      // growarray with line info
    int      current_line;      // last read line from growarray
-   int      repeating;      // TRUE when looping a second time
-   // When "repeating" is FALSE use "getline" and "cookie" to get lines
+   int      repeating;      // true when looping a second time
+   // When "repeating" is false use "getline" and "cookie" to get lines
    LineGetter lc_getline;
    void   *cookie;
 } LoopCookie;
@@ -4990,16 +4990,16 @@ typedef struct {
 private void
 saveDbgStuff(DebugStuff* dsp) {
    dsp->trylevel   = trylevel;      trylevel = 0;
-   dsp->force_abort   = force_abort;      force_abort = FALSE;
+   dsp->force_abort   = force_abort;      force_abort = false;
    dsp->caught_stack   = caught_stack;      caught_stack = NULL;
    dsp->vv_exception   = v_exception(NULL);
    dsp->vv_throwpoint   = v_throwpoint(NULL);
 
    // Necessary for debugging an inactive ":catch", ":finally", ":endtry"
-   dsp->anyEmsgG   = anyEmsgG;      anyEmsgG     = FALSE;
-   dsp->gotInterruptG   = gotInterruptG;      gotInterruptG        = FALSE;
-   dsp->did_throw   = did_throw;      did_throw    = FALSE;
-   dsp->need_rethrow   = need_rethrow;      need_rethrow = FALSE;
+   dsp->anyEmsgG   = anyEmsgG;      anyEmsgG     = false;
+   dsp->gotInterruptG   = gotInterruptG;      gotInterruptG        = false;
+   dsp->did_throw   = did_throw;      did_throw    = false;
+   dsp->need_rethrow   = need_rethrow;      need_rethrow = false;
    dsp->check_cstack   = check_cstack;      
    check_cstack = false;
    dsp->current_exception = current_exception;   current_exception = NULL;
@@ -5007,7 +5007,7 @@ saveDbgStuff(DebugStuff* dsp) {
 
 private void
 restore_DebugStuff(DebugStuff* dsp) {
-   suppress_errthrow = FALSE;
+   suppress_errthrow = false;
    trylevel = dsp->trylevel;
    force_abort = dsp->force_abort;
    caught_stack = dsp->caught_stack;
@@ -5111,8 +5111,8 @@ handle_did_throw(void) {
 
    // If "silent!" is active the uncaught exception is not fatal.
    if (emsg_silent == 0) {
-      suppress_errthrow = TRUE;
-      force_abort = TRUE;
+      suppress_errthrow = true;
+      force_abort = true;
    }
 
    if (messages) {
@@ -5159,7 +5159,7 @@ get_loop_line(Unt c, void* cookie, int indent, GetlineAlgo options) {
       return line;
    }
 
-   KeyTyped = FALSE;
+   KeyTyped = false;
    ++cp->current_line;
    LoopComm* wp = (LoopComm *)(cp->lines_gap->c) + cp->current_line;
    SOURCING_LNUM = wp->lnum;
@@ -5186,8 +5186,8 @@ free_commlines(ArrayList *gap) {
    }
 }
 
-//If "fgetline" is get_loop_line(), return TRUE if the getline it uses equals
-//"func". Otherwise return TRUE when "fgetline" equals "func".
+//If "fgetline" is get_loop_line(), return true if the getline it uses equals
+//"func". Otherwise return true when "fgetline" equals "func".
 int
 getline_equal(
    LineGetter fgetline,
@@ -5347,11 +5347,11 @@ doCommand(
    Unt flags
 ){
    CS commlineCopy = NULL;   // copy of cmd line
-   int      used_getline = FALSE;   // used "fgetline" to obtain command
+   int      used_getline = false;   // used "fgetline" to obtain command
    static int   recursive = 0;      // recursive depth
    int      msg_didout_before_start = 0;
    int      count = 0;      // line number count
-   int      did_inc_isRedrawingDisabledG = FALSE;
+   int      did_inc_isRedrawingDisabledG = false;
    int      retval = OK;
    CondStack   cstack;         // conditional stack
    ArrayList   lines_ga;      // keep lines for ":while"/":for"
@@ -5418,8 +5418,8 @@ doCommand(
 
    // Initialize "force_abort"  and "suppress_errthrow" at the top level.
    if (!recursive) {
-      force_abort = FALSE;
-      suppress_errthrow = FALSE;
+      force_abort = false;
+      suppress_errthrow = false;
    }
 
    // If requested, store and reset the global values controlling the
@@ -5432,17 +5432,17 @@ doCommand(
 
    initial_trylevel = trylevel;
 
-   // "did_throw" will be set to TRUE if an exception will be thrown
-   did_throw = FALSE;
-   // "anyEmsgG" will be set to TRUE when emsg() is used, in which case we
+   // "did_throw" will be set to true if an exception will be thrown
+   did_throw = false;
+   // "anyEmsgG" will be set to true when emsg() is used, in which case we
    // cancel the whole command line, and any if/endif or loop.
    // If force_abort is set, we cancel everything.
-   anyEmsgG = FALSE;
+   anyEmsgG = false;
 
    // KeyTyped is only set when calling vgetc(). Reset it here when not calling vgetc() (
    // sourced command lines).
    if (!(flags & DOCMD_KEYTYPED) && !getline_equal(fgetline, cookie, getexline))
-      KeyTyped = FALSE;
+      KeyTyped = false;
 
    //Continue executing command lines:
    //- when inside an ":if", ":while" or ":for"
@@ -5456,7 +5456,7 @@ doCommand(
       if (!nextCommline && !force_abort && cstack.ind < 0 
             && !(isGetlineAFn && func_has_abort(real_cookie))
       ) {
-         anyEmsgG = FALSE;
+         anyEmsgG = false;
       }
 
       //1. If repeating a line in a loop, get a line from lines_ga.
@@ -5510,7 +5510,7 @@ doCommand(
         //Need to set msg_didout for the first line after an ":if",
         //otherwise the ":if" will be overwritten.
         if (count == 1 && getline_equal(fgetline, cookie, getexline))
-           msg_didout = TRUE;
+           msg_didout = true;
         if (fgetline == NULL 
               || (nextCommline = 
                     fgetline(
@@ -5522,11 +5522,11 @@ doCommand(
             // returned for the end of a sourced file or executed function
             // doesn't do this.
             if (KeyTyped && !(flags & DOCMD_REPEAT))
-                need_wait_return = FALSE;
+                need_wait_return = false;
             retval = FAIL;
             break;
          }
-         used_getline = TRUE;
+         used_getline = true;
 
          // Keep the first typed line. Clear it when more lines are typed.
          if (flags & DOCMD_KEEPLINE) {
@@ -5573,7 +5573,7 @@ doCommand(
          commCookie = cookie;
       }
 
-      did_endif = FALSE;
+      did_endif = false;
 
       if (count++ == 0) {
          //All output from the commands is put below each other, without waiting for a return. 
@@ -5581,12 +5581,12 @@ doCommand(
          //(e.g. for ":e +command file").
          if (!(flags & DOCMD_NOWAIT) && !recursive) {
             msg_didout_before_start = msg_didout;
-            msg_didany = FALSE; // no output yet
+            msg_didany = false; // no output yet
             msg_start();
-            msg_scroll = TRUE;  // put messages below each other
+            msg_scroll = true;  // put messages below each other
             ++no_wait_return;   // don't wait for return until finished
             ++isRedrawingDisabledG;
-            did_inc_isRedrawingDisabledG = TRUE;
+            did_inc_isRedrawingDisabledG = true;
          }
       }
 
@@ -5626,7 +5626,7 @@ doCommand(
       if (anyEmsgG && !force_abort
                && getline_equal(fgetline, cookie, &get_func_line)
                && !func_has_abort(real_cookie)) {
-          anyEmsgG = FALSE;
+          anyEmsgG = false;
       }
 
       if (cstack.loopLevel > 0) {
@@ -5680,7 +5680,7 @@ doCommand(
 
       // Check for the next breakpoint after a watchexpression
       if (breakpoint && has_watchexpr()) {
-         *breakpoint = dbg_find_breakpoint(FALSE, fname, SOURCING_LNUM);
+         *breakpoint = dbg_find_breakpoint(false, fname, SOURCING_LNUM);
          *dbg_tick = debug_tick;
       }
 
@@ -5702,7 +5702,7 @@ doCommand(
           report_make_pending(cstack.pending[cstack.ind]
              & (CSTP_ERROR | CSTP_INTERRUPT | CSTP_THROW),
              did_throw ? (void *)current_exception : NULL);
-          anyEmsgG = gotInterruptG = did_throw = FALSE;
+          anyEmsgG = gotInterruptG = did_throw = false;
           cstack.flags[cstack.ind] |= CSF_ACTIVE | CSF_FINALLY;
       }
 
@@ -5714,7 +5714,7 @@ doCommand(
       //exception, cancel everything.  If it is left normally, reset
       //force_abort to get the non-EH compatible abortion behavior for the rest of the script.
       if (trylevel == 0 && !anyEmsgG && !gotInterruptG && !did_throw)
-         force_abort = FALSE;
+         force_abort = false;
 
       // Convert an interrupt to an exception if appropriate.
       (void)do_intthrow(&cstack);
@@ -5775,7 +5775,7 @@ doCommand(
        * Also cleanup any "forInfo" structures.
        */
       do {
-         int idx = cleanup_conditionals(&cstack, 0, TRUE);
+         int idx = cleanup_conditionals(&cstack, 0, true);
 
          if (idx >= 0)
             --idx;       // remove try block not in its finally clause
@@ -5794,7 +5794,7 @@ doCommand(
    if (trylevel == 0) {
       // Just in case did_throw got set but current_exception wasn't.
       if (current_exception == NULL)
-          did_throw = FALSE;
+          did_throw = false;
 
       /*
        * When an exception is being thrown out of the outermost try
@@ -5812,7 +5812,7 @@ doCommand(
        * from a finally clause after an error.
        */
       ei (gotInterruptG || (anyEmsgG && force_abort))
-         suppress_errthrow = TRUE;
+         suppress_errthrow = true;
    }
 
    //The current cstack will be freed when doCommand() returns. An uncaught exception will have to
@@ -5868,22 +5868,22 @@ doCommand(
       if (isRedrawingDisabledG > 0)
          --isRedrawingDisabledG;
       --no_wait_return;
-      msg_scroll = FALSE;
+      msg_scroll = false;
 
       // When just finished an ":if"-":else" which was typed, no need to
       // wait for hit-return.  Also for an error situation.
       if (retval == FAIL || (did_endif && KeyTyped && !anyEmsgG)) {
-         need_wait_return = FALSE;
-         msg_didany = FALSE;      // don't wait when restarting edit
+         need_wait_return = false;
+         msg_didany = false;      // don't wait when restarting edit
       } ei (need_wait_return) {
          // The msg_start() above clears msg_didout. The wait_return() we do
          // here should not overwrite the command that may be shown before doing that.
          msg_didout |= msg_didout_before_start;
-         wait_return(FALSE);
+         wait_return(false);
       }
    }
 
-   did_endif = FALSE;  // in case doCommand used recursively
+   did_endif = false;  // in case doCommand used recursively
 
    --callDepth;
    return retval;
@@ -5924,9 +5924,9 @@ doOneCommand(
    int      ni;         // set when Not Implemented
    CS cmd;
    int      may_have_range;
-   int      did_set_expr_line = FALSE;
+   int      did_set_expr_line = false;
    int      sourcing = flags & DOCMD_VERBOSE;
-   int      did_append_cmd = FALSE;
+   int      did_append_cmd = false;
 
    CLEAR_FIELD(invo);
    invo.line1 = 1;
@@ -5959,7 +5959,7 @@ doOneCommand(
    invo.ea_getline = fgetline;
    invo.cookie = cookie;
    invo.cstack = cstack;
-   if (parse_command_modifiers(&invo, OUT &errorMsg, &commModifierG, FALSE) == FAIL)
+   if (parse_command_modifiers(&invo, OUT &errorMsg, &commModifierG, false) == FAIL)
       goto doend;
    applyCommModifiers(&commModifierG);
    after_modifier = invo.comm;
@@ -5972,9 +5972,9 @@ doOneCommand(
    //We need the command to know what kind of range it uses.
    cmd = invo.comm;
    
-   may_have_range = TRUE;
+   may_have_range = true;
    if (may_have_range)
-      invo.comm = skip_range(invo.comm, TRUE, NULL);
+      invo.comm = skip_range(invo.comm, true, NULL);
 
    p = findCommand(&invo, NULL, NULL);
 
@@ -5984,7 +5984,7 @@ doOneCommand(
    // used, throw an interrupt exception and skip the next command.
    dbg_check_breakpoint(&invo);
    if (!invo.skip && gotInterruptG) {
-      invo.skip = TRUE;
+      invo.skip = true;
       (void)do_intthrow(cstack);
    }
 
@@ -6019,7 +6019,7 @@ doOneCommand(
 
    if (!may_have_range)
       invo.line1 = invo.line2 = default_address(&invo);
-   ei (parse_cmd_address(&invo, OUT &errorMsg, FALSE) == FAIL)
+   ei (parse_cmd_address(&invo, OUT &errorMsg, false) == FAIL)
       goto doend;
 
    // 5. Parse the command.
@@ -6081,7 +6081,7 @@ doOneCommand(
                append_command(after_modifier);
             else
                append_command(*commline);
-            did_append_cmd = TRUE;
+            did_append_cmd = true;
          }
          errorMsg = IObuff;
          anySyntaxEmsgS = true;
@@ -6098,9 +6098,9 @@ doOneCommand(
    // forced commands
    if (*p == '!' && invo.id != C_substitute) {
       ++p;
-      invo.forceit = TRUE;
+      invo.forceit = true;
    } else
-      invo.forceit = FALSE;
+      invo.forceit = false;
 
    // 6. Parse arguments.  Then check for errors.
    if (!IS_USER_COMMAND(invo.id))
@@ -6162,7 +6162,7 @@ doOneCommand(
                errorMsg = _(e_backwards_range_given);
                goto doend;
             }
-            if (ask_yesno((CS)_("Backwards range given, OK to swap"), FALSE) != 'y')
+            if (ask_yesno((CS)_("Backwards range given, OK to swap"), false) != 'y')
                goto doend;
          }
          lnum = invo.line1;
@@ -6220,20 +6220,20 @@ doOneCommand(
             goto doend;
          }
          invo.arg = skipwhite(invo.arg + 1);
-         invo.append = TRUE;
+         invo.append = true;
       } ei (*invo.arg == '!' && invo.id == C_write) { // :w !filter
          ++invo.arg;
-         invo.usefilter = TRUE;
+         invo.usefilter = true;
       }
    }
 
    if (invo.id == C_read) {
       if (invo.forceit) {
-         invo.usefilter = TRUE;      // :r! filter if invo.forceit
-         invo.forceit = FALSE;
+         invo.usefilter = true;      // :r! filter if invo.forceit
+         invo.forceit = false;
       } ei (*invo.arg == '!') {     // :r !filter
          ++invo.arg;
-         invo.usefilter = TRUE;
+         invo.usefilter = true;
       }
    }
 
@@ -6259,7 +6259,7 @@ doOneCommand(
    //Also do this inside a { - } block after :command and :autocmd.
    //Any others?
    if ((invo.argFlags & TRLBAR) && !invo.usefilter) {
-      separateNextCommand(&invo, FALSE);
+      separateNextCommand(&invo, false);
    } ei (invo.id == C_bang
        || invo.id == C_terminal
        || invo.id == C_global
@@ -6296,7 +6296,7 @@ doOneCommand(
          if (invo.arg[-1] == '=' && invo.arg[0] != ZERO) {
             if (!invo.skip) {
                set_expr_line(copyStr(invo.arg), &invo);
-               did_set_expr_line = TRUE;
+               did_set_expr_line = true;
             }
             invo.arg += STRLEN(invo.arg);
          }
@@ -6453,7 +6453,7 @@ doOneCommand(
             --p;
       }
       invo.line2 = booklistFindPattern(invo.arg, p, (invo.argFlags & BUFUNL) != 0,
-                           FALSE, FALSE);
+                           false, false);
       if (invo.line2 < 0)       // failed
           goto doend;
       invo.addr_count = 1;
@@ -6591,8 +6591,8 @@ ex_range_without_command(Invocation* invo) {
 }
 
 //Check for a command with optional tail.
-//If there is a match advance "pp" to the argument and return TRUE.
-//If "noparen" is TRUE do not recognize the command followed by "(" or ".".
+//If there is a match advance "pp" to the argument and return true.
+//If "noparen" is true do not recognize the command followed by "(" or ".".
 private int
 checkforcmd_opt(
    OUT CS* pp,      // start of command
@@ -6608,39 +6608,39 @@ checkforcmd_opt(
    if (i >= len && !ASCII_ISALPHA((*pp)[i]) && (*pp)[i] != '_'
           && (!noparen || ((*pp)[i] != '(' && (*pp)[i] != '.'))) {
       *pp = skipwhite(*pp + i);
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 //Check for a command with optional tail.
-//If there is a match advance "pp" to the argument and return TRUE.
+//If there is a match advance "pp" to the argument and return true.
 int
 checkforcmd(
    OUT CS* pp,      // start of command
    CS cmd,      // name of command
    int      len
 ) {      // required length
-   return checkforcmd_opt(OUT pp, cmd, len, FALSE);
+   return checkforcmd_opt(OUT pp, cmd, len, false);
 }
 
 //Check for a command with optional tail, not followed by "(" or ".".
-//If there is a match advance "pp" to the argument and return TRUE.
+//If there is a match advance "pp" to the argument and return true.
 int
 checkforcmd_noparen(
     OUT CS* pp,      // start of command
     CS cmd,      // name of command
     int len      // required length
 ){
-   return checkforcmd_opt(pp, cmd, len, TRUE);
+   return checkforcmd_opt(pp, cmd, len, true);
 }
 
 //Parse and skip over command modifiers:
 //- update invo->comm
 //- store flags in "cmod".
 //- Set ex_pressedreturn for an empty command line.
-//When "skip_only" is TRUE the global variables are not changed, except for "commModifierG".
-//When "skip_only" is FALSE then undoCommModifier() must be called later to free any 
+//When "skip_only" is true the global variables are not changed, except for "commModifierG".
+//When "skip_only" is false then undoCommModifier() must be called later to free any 
 //cmod_filter_regmatch.regprog.
 //Call applyCommModifiers() to get the side effects of the modifiers:
 //- set p_verbose for ":verbose"
@@ -6656,8 +6656,8 @@ parse_command_modifiers(
 ){
    CS orig_cmd = invo->comm;
    CS cmd_start = NULL;
-   int use_plus_cmd = FALSE;
-   int has_visual_range = FALSE;
+   int use_plus_cmd = false;
+   int has_visual_range = false;
 
    CLEAR_POINTER(cmod);
    cmod->cmod_flags = stickyCommandModifiersG;
@@ -6669,7 +6669,7 @@ parse_command_modifiers(
       //parse "commModifierG cmd" and then put back "'<,'>" before "cmd" below.
       invo->comm += 5;
       cmd_start = invo->comm;
-      has_visual_range = TRUE;
+      has_visual_range = true;
    }
 
    //Repeat until no more command modifiers are found.
@@ -6692,12 +6692,12 @@ parse_command_modifiers(
       }
       if (*invo->comm == ZERO) {
          if (!skip_only) {
-            ex_pressedreturn = TRUE;
+            ex_pressedreturn = true;
          }
          return FAIL;
       }
 
-      CS p = skip_range(invo->comm, TRUE, NULL);
+      CS p = skip_range(invo->comm, true, NULL);
 
       switch (*p) {
       // When adding an entry, also modify modeInfoTable[].
@@ -6712,7 +6712,7 @@ parse_command_modifiers(
             cmod->cmod_split |= WSP_BELOW;
             continue;
          }
-         if (checkforcmd_opt(OUT &invo->comm, S"browse", 3, TRUE)) {
+         if (checkforcmd_opt(OUT &invo->comm, S"browse", 3, true)) {
             cmod->cmod_flags |= CMOD_BROWSE;
             continue;
          }
@@ -6722,7 +6722,7 @@ parse_command_modifiers(
          continue;
 
       case 'c':   
-        if (!checkforcmd_opt(OUT &invo->comm, S"confirm", 4, TRUE))
+        if (!checkforcmd_opt(OUT &invo->comm, S"confirm", 4, true))
            break;
         cmod->cmod_flags |= CMOD_CONFIRM;
         continue;
@@ -6757,7 +6757,7 @@ parse_command_modifiers(
             // in ":filter #pat# cmd" # does not start a comment
             break;
          if (*p == '!') {
-            cmod->cmod_filter_force = TRUE;
+            cmod->cmod_filter_force = true;
             p = skipwhite(p + 1);
             if (*p == ZERO || endsComm(p))
                break;
@@ -6837,7 +6837,7 @@ parse_command_modifiers(
             if (!skip_only) {
                long tabnr = doGetCommandAddress(invo, &invo->comm,
                         ADDR_TABS, invo->skip,
-                        skip_only, FALSE, 1);
+                        skip_only, false, 1);
                if (tabnr == MAXLNUM)
                   cmod->cmod_tab = indexOfTab(curtab) + 1;
                else {
@@ -6981,12 +6981,12 @@ undoCommModifier(CommandModifier *cmod) {
 }
 
 //Parse the address range, if any, in "invo". May set the last search pattern, unless "silent" 
-//is TRUE. Return FAIL and set "errorMsg" or return OK.
+//is true. Return FAIL and set "errorMsg" or return OK.
 int
 parse_cmd_address(Invocation* invo, CS* errorMsg, int silent) {
    int      address_count = 1;
    LineNr   lnum;
-   int      need_check_cursor = FALSE;
+   int      need_check_cursor = false;
    int      ret = FAIL;
 
    // Repeat for all ',' or ';' separated addresses.
@@ -7070,11 +7070,11 @@ parse_cmd_address(Invocation* invo, CS* errorMsg, int silent) {
 
                ++invo->comm;
                if (!invo->skip) {
-                   fp = getmark('<', FALSE);
+                   fp = getmark('<', false);
                    if (check_mark(fp) == FAIL)
                       goto theend;
                    invo->line1 = fp->lnum;
-                   fp = getmark('>', FALSE);
+                   fp = getmark('>', false);
                    if (check_mark(fp) == FAIL)
                       goto theend;
                    invo->line2 = fp->lnum;
@@ -7100,7 +7100,7 @@ parse_cmd_address(Invocation* invo, CS* errorMsg, int silent) {
              check_cursor();
          else
              check_cursor_col();
-         need_check_cursor = TRUE;
+         need_check_cursor = true;
           }
       } ei (*invo->comm != ',')
           break;
@@ -7166,7 +7166,7 @@ skip_option_env_lead(CS start) {
    return name;
 }
 
-//Return TRUE and set "*idx" if "p" points to a one letter command.
+//Return true and set "*idx" if "p" points to a one letter command.
 //- The 'k' command can directly be followed by any character
 //      but :keepa[lt] is another command, as are :keepj[umps],
 //      :kee[pmarks] and :keepp[atterns].
@@ -7177,7 +7177,7 @@ private int
 oneLetterCommand(CS p, OUT CommIndex *idx) {
    if (p[0] == 'k'  && (p[1] != 'e' || (p[1] == 'e' && p[2] != 'e'))) {
       *idx = C_k;
-      return TRUE;
+      return true;
    }
    if (p[0] == 's'
           && ((p[1] == 'c' && (p[2] == ZERO || (p[2] != 's' && p[2] != 'r'
@@ -7188,12 +7188,12 @@ oneLetterCommand(CS p, OUT CommIndex *idx) {
              || (p[1] == 'r' && p[2] != 'e'))
    ) {
       *idx = C_substitute;
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
-//TRUE if "cmd" starts with "123->", a number followed by a method call.
+//true if "cmd" starts with "123->", a number followed by a method call.
 int
 number_method(CS cmd) {
    CS p = skipdigits(cmd);
@@ -7202,7 +7202,7 @@ number_method(CS cmd) {
 
 //Find a Command by its name, either built-in or user. Start of the name can be found at 
 //invo->comm. Set invo->id and return a pointer to char after the command name.
-//"full" is set to TRUE if the whole command name matched.
+//"full" is set to true if the whole command name matched.
 //
 //If "lookup" is not NULL recognize expression without "eval" or "call" and assignment without 
 //"let".  Sets invo->id to the command while returning "invo->comm".
@@ -7224,15 +7224,15 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
          if (*invo->comm == '&'
              || (invo->comm[0] == '$' && invo->comm[1] != '\'' && !isComment(invo->comm))
              || (invo->comm[0] == '@'
-                  && (valid_yank_reg(invo->comm[1], FALSE) || invo->comm[1] == '@'))
+                  && (valid_yank_reg(invo->comm[1], false) || invo->comm[1] == '@'))
          ){
             if (*invo->comm == '&') {
                p = invo->comm + 1;
                if (STRNCMP("l:", p, 2) == 0 || STRNCMP("g:", p, 2) == 0)
                   p += 2;
-               p = toNameEnd(p, FALSE);
+               p = toNameEnd(p, false);
             } ei (*invo->comm == '$') {
-               p = toNameEnd(invo->comm + 1, FALSE);
+               p = toNameEnd(invo->comm + 1, false);
             } else {
                p = invo->comm + 2;
             }
@@ -7305,9 +7305,9 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
             p = to_name_const_end(invo->comm);
             if (p == invo->comm && *p == '[') {
                int count = 0;
-               int   semicolon = FALSE;
+               int   semicolon = false;
 
-               p = skip_var_list(invo->comm, &count, &semicolon, TRUE);
+               p = skip_var_list(invo->comm, &count, &semicolon, true);
             }
             CS eq = p;
             if (eq) {
@@ -7341,7 +7341,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
       // If it is an ID it might be a variable with an operator on the next
       // line, if the variable exists it can't be a command.
       if (p > invo->comm && endsComm(skipwhite(p))
-            && (lookup(invo->comm, p - invo->comm, TRUE) == OK
+            && (lookup(invo->comm, p - invo->comm, true) == OK
                 || (ASCII_ISALPHA(invo->comm[0]) && invo->comm[1] == ':'))) {
           invo->id = C_eval;
           return invo->comm;
@@ -7353,7 +7353,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
    if (oneLetterCommand(p, OUT &invo->id)) {
       ++p;
       if (full)
-         *full = TRUE;
+         *full = true;
    } else {
       while (ASCII_ISALPHA(*p))
          ++p;
@@ -7404,7 +7404,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
       for ( ; (int)invo->id < (int)COUNT_COMMANDS; invo->id = (CommIndex)((int)invo->id + 1)) {
          if (STRNCMP(commands[(int)invo->id].name, (char *)invo->comm, (Unt)len) == 0) {
             if (full && commands[invo->id].name[len] == ZERO)
-               *full = TRUE;
+               *full = true;
             break;
          }
       } 
@@ -7440,30 +7440,30 @@ typedef struct {
 } CommModeInfo;
 
 private CommModeInfo modeInfoTable[] = {
-   {"aboveleft", 3, FALSE},
-   {"belowright", 3, FALSE},
-   {"botright", 2, FALSE},
-   {"browse", 3, FALSE},
-   {"confirm", 4, FALSE},
-   {"filter", 4, FALSE},
-   {"hide", 3, FALSE},
-   {"horizontal", 3, FALSE},
-   {"keepalt", 5, FALSE},
-   {"keepjumps", 5, FALSE},
-   {"keepmarks", 3, FALSE},
-   {"keeppatterns", 5, FALSE},
-   {"leftabove", 5, FALSE},
-   {"legacy", 3, FALSE},
-   {"lockmarks", 3, FALSE},
-   {"noautocmd", 3, FALSE},
-   {"noswapfile", 3, FALSE},
-   {"rightbelow", 6, FALSE},
-   {"silent", 3, FALSE},
-   {"tab", 3, TRUE},
-   {"topleft", 2, FALSE},
-   {"unsilent", 3, FALSE},
-   {"verbose", 4, TRUE},
-   {"vertical", 4, FALSE}
+   {"aboveleft", 3, false},
+   {"belowright", 3, false},
+   {"botright", 2, false},
+   {"browse", 3, false},
+   {"confirm", 4, false},
+   {"filter", 4, false},
+   {"hide", 3, false},
+   {"horizontal", 3, false},
+   {"keepalt", 5, false},
+   {"keepjumps", 5, false},
+   {"keepmarks", 3, false},
+   {"keeppatterns", 5, false},
+   {"leftabove", 5, false},
+   {"legacy", 3, false},
+   {"lockmarks", 3, false},
+   {"noautocmd", 3, false},
+   {"noswapfile", 3, false},
+   {"rightbelow", 6, false},
+   {"silent", 3, false},
+   {"tab", 3, true},
+   {"topleft", 2, false},
+   {"unsilent", 3, false},
+   {"verbose", 4, true},
+   {"vertical", 4, false}
 };   // modeInfoTable
 
 //Return length of a command modifier (including optional count). Return 0 when it's not a modifier.
@@ -7490,7 +7490,7 @@ modifier_len(CS cmd) {
 //Return 3 if there is an ambiguous match.
 int
 cmd_exists(CS name) {
-   int full = FALSE;
+   int full = false;
 
    // Check command modifiers.
    for (int i = 0; i < (int)ARRAY_LENGTH(modeInfoTable); ++i) {
@@ -7532,7 +7532,7 @@ f_fullcommand(Var *argvars, Var *returnVar) {
 
    while (*name == ':')
       name++;
-   name = skip_range(name, TRUE, NULL);
+   name = skip_range(name, true, NULL);
 
    Invocation invo;
    invo.comm = (*name == '2' || *name == '3') ? name + 1 : name;
@@ -7832,7 +7832,7 @@ doGetCommandAddress(
             goto error;
          }
          if (skip)  { // skip "/pat/"
-            cmd = skip_regexp(cmd, c, TRUE);
+            cmd = skip_regexp(cmd, c, true);
             if (*cmd == c)
                ++cmd;
          } else {
@@ -8294,7 +8294,7 @@ expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
       //Try to find a match at this position.
       repl = evalVars(
             OUT &(invo->higherOrderLnum), OUT errorMsg, 
-            p, invo->arg, &srclen, &escaped, TRUE
+            p, invo->arg, &srclen, &escaped, true
       );
       if (*errorMsg)      // error detected
          return FAIL;
@@ -8451,7 +8451,7 @@ repl_commline(
 }
 
 // Check for '|' to separate commands and '//' to start comments.
-// If "keep_backslash" is TRUE do not remove any backslash.
+// If "keep_backslash" is true do not remove any backslash.
 void
 separateNextCommand(Invocation* invo, int keep_backslash) {
    for (CS p = skip_grep_pat(invo) ; *p; MB_PTR_ADV(p)) {
@@ -8507,7 +8507,7 @@ getargcmd(OUT CS* argp) {
           command = dollar_command;
       else {
           command = arg;
-          arg = skip_cmd_arg(command, TRUE);
+          arg = skip_cmd_arg(command, true);
           if (*arg != ZERO)
          *arg++ = ZERO;      // terminate command with ZERO
       }
@@ -8520,7 +8520,7 @@ getargcmd(OUT CS* argp) {
 
 //Find end of "+command" argument.  Skip over "\ " and "\\".
 CS
-skip_cmd_arg(CS p, int rembs) {   // TRUE to halve the number of backslashes
+skip_cmd_arg(CS p, int rembs) {   // true to halve the number of backslashes
    while (*p && !isSpace(*p)) {
       if (*p == '\\' && p[1] != ZERO) {
          if (rembs)
@@ -8600,7 +8600,7 @@ getargopt(Invocation* invo) {
 
    ++arg;
    *pp = (int)(arg - invo->comm);
-   arg = skip_cmd_arg(arg, FALSE);
+   arg = skip_cmd_arg(arg, false);
    invo->arg = skipwhite(arg);
    *arg = ZERO;
 
@@ -8645,7 +8645,7 @@ expand_argopt(
 
       if (cb) {
          return expandGeneric(
-             pat, xp, rmp, cb, FALSE, OUT matches
+             pat, xp, rmp, cb, false, OUT matches
          );
       }
       return FAIL;
@@ -8656,7 +8656,7 @@ expand_argopt(
        xp,
        rmp,
        get_argoname,
-       FALSE,
+       false,
        OUT matches
    );
 }
@@ -8844,7 +8844,7 @@ c_hilite(Invocation* invo) {
 // (because of an error). May need to restore the terminal mode.
 void
 not_exiting(void) {
-   isExitingG = FALSE;
+   isExitingG = false;
    termSetMode(TMODE_RAW);
 }
 
@@ -8857,7 +8857,7 @@ before_quit_autocmds(Portal *po, int quit_all) {
    if (!portalIsValid(po)
           || curBookLocked()
           || (po->book->countPortals == 1 && po->book->locked > 0))
-      return TRUE;
+      return true;
 
    if (quit_all) {
       applyAutocomms(EVENT_EXITPRE, NULL, NULL, false, curBook);
@@ -8865,10 +8865,10 @@ before_quit_autocmds(Portal *po, int quit_all) {
       // is being closed (can only happen in autocommands).
       if (!portalIsValid(po) || curBookLocked()
               || (curBook->countPortals == 1 && curBook->locked > 0))
-          return TRUE;
+          return true;
    }
 
-   return FALSE;
+   return false;
 }
 
 //":quit": quit current portal, quit Eegl if the last portal is closed.
@@ -8901,13 +8901,13 @@ c_quit(Invocation* invo) {
       return;
 
    // Trigger QuitPre and maybe ExitPre
-   if (before_quit_autocmds(po, FALSE))
+   if (before_quit_autocmds(po, false))
       return;
 
    // If there is only one relevant portal, we will exit.
    if (onlyOnePortal())
       isExitingG = true;
-   if (onlyOnePortal() && check_changed_any(invo->forceit, TRUE)) {
+   if (onlyOnePortal() && check_changed_any(invo->forceit, true)) {
       not_exiting();
    } else {
       // quit last portal
@@ -8947,7 +8947,7 @@ before_quit_all(Invocation* invo) {
       return FAIL;
    }
 
-   if (before_quit_autocmds(curPor, TRUE))
+   if (before_quit_autocmds(curPor, true))
       return FAIL;
 
    return OK;
@@ -8959,7 +8959,7 @@ c_quit_all(Invocation* invo) {
    if (before_quit_all(invo) == FAIL)
       return;
    isExitingG = true;
-   if (invo->forceit || !check_changed_any(FALSE, FALSE))
+   if (invo->forceit || !check_changed_any(false, false))
       exitEegl(0);
    not_exiting();
 }
@@ -9027,9 +9027,9 @@ closePortalInternal(Portal* port, Tab* t) {     // NULL or the tab "port" is in
    if (lastPortal())
       exitEegl(0);
    ei (t == NULL)
-      closePortal(port, FALSE);
+      closePortal(port, false);
    else
-      closePortal_othertab(port, FALSE, t);
+      closePortal_othertab(port, false, t);
 }
 
 //Handle the argument for a tab-related command. Return a tab number.
@@ -9202,12 +9202,12 @@ tabClose() {
    if (portalLayout_locked(C_tabclose))
       return;
 
-   trigger_tabclosedpre(curtab, TRUE);
+   trigger_tabclosedpre(curtab, true);
 
    // First close all the portals but the current one.  If that worked then
    // close the last portal in this tab, that will close it.
    if (!ONLY_ONE_PORTAL)
-      close_others(true);
+      portCloseOthers(true);
    if (ONLY_ONE_PORTAL)
       closePortalInternal(curPor, NULL);
 }
@@ -9216,7 +9216,7 @@ tabClose() {
 void
 tabCloseOther(Tab *t) {
    int      done = 0;
-   trigger_tabclosedpre(t, TRUE);
+   trigger_tabclosedpre(t, true);
 
    // Limit to 1000 portals, autocommands may add a portal while we close one. OK, so I'm paranoid..
    while (++done < 1000) {
@@ -9248,7 +9248,7 @@ c_only(Invocation* invo) {
       }
       gotoPortal(po);
    }
-   close_others(true);
+   portCloseOthers(true);
 }
 
 void
@@ -9260,7 +9260,7 @@ c_hide(Invocation* invo UNUSED) {
    if (portalLayout_locked(C_hide))
    return;
    if (invo->addr_count == 0)
-   closePortal(curPor, FALSE);   // don't free book
+   closePortal(curPor, false);   // don't free book
     else {
       int winnr = 0;
       Portal* po;
@@ -9272,7 +9272,7 @@ c_hide(Invocation* invo UNUSED) {
       }
       if (!po)
          po = lastPor;
-      closePortal(po, FALSE);
+      closePortal(po, false);
    }
 }
 
@@ -9297,8 +9297,8 @@ c_exit(Invocation* invo) {
    // Trigger QuitPre and ExitPre.
    // Check if we can exit now, after autocommands have changed things.
    if (((invo->id == C_wq || doWasCurBookChanged()) && do_write(invo) == FAIL)
-       || before_quit_autocmds(curPor, FALSE)
-       || (onlyOnePortal() && check_changed_any(invo->forceit, FALSE))
+       || before_quit_autocmds(curPor, false)
+       || (onlyOnePortal() && check_changed_any(invo->forceit, false))
    ) {
       not_exiting();
    } else {
@@ -9306,7 +9306,7 @@ c_exit(Invocation* invo) {
          exitEegl(0);
       not_exiting();
       // Quit current portal, may free the book.
-      closePortal(curPor, FALSE);
+      closePortal(curPor, false);
    }
 }
 
@@ -9328,7 +9328,7 @@ c_print(Invocation* invo) {
       beginline(BL_SOL | BL_FIX);
    }
 
-   ex_no_reprint = TRUE;
+   ex_no_reprint = true;
 }
 
 void
@@ -9346,7 +9346,7 @@ c_shell(Invocation* invo UNUSED) {
 void
 c_preserve(Invocation* invo UNUSED) {
    curBook->flags |= BF_PRESERVED;
-   ml_preserve(curBook, TRUE);
+   ml_preserve(curBook, true);
 }
 
 // ":recover".
@@ -9358,7 +9358,7 @@ c_recover(Invocation* invo) {
               | CCGD_MULTWIN
               | (invo->forceit ? CCGD_FORCEIT : 0)
               | CCGD_EXCMD)
-          && (*invo->arg == ZERO || setfname(curBook, invo->arg, NULL, TRUE) == OK)
+          && (*invo->arg == ZERO || setfname(curBook, invo->arg, NULL, true) == OK)
    )
       ml_recover(true);
    recoveryModeG = false;
@@ -9401,7 +9401,7 @@ call_findfunc(CS pat, int cmdcomplete) {
 
    if (retval == OK) {
       if (returnVar.tag == VAR_LIST)
-         retlist = list_copy(returnVar.list, FALSE, FALSE, get_copyID());
+         retlist = list_copy(returnVar.list, false, false, get_copyID());
       else
          emsg(_(e_invalid_return_type_from_findfunc));
 
@@ -9585,7 +9585,7 @@ c_splitview(Invocation* invo) {
       if (*invo->arg != ZERO)
           RESET_BINDING(curPor);
       else
-          normPostProcessScrollbind(FALSE);
+          normPostProcessScrollbind(false);
       do_exedit(invo, old_curPor);
    }
 
@@ -9666,7 +9666,7 @@ c_tabs(Invocation* invo UNUSED) {
    int tabcount = 1;
 
    msg_start();
-   msg_scroll = TRUE;
+   msg_scroll = true;
    for (Tab* t = firstTabG; t && !gotInterruptG; t = t->next) {
       msg_putchar('\n');
       eeSnprintf(IObuff, IOSIZE, _("Tab %d"), tabcount++);
@@ -9687,7 +9687,7 @@ c_tabs(Invocation* invo UNUSED) {
          if (bookSpName(po->book) != NULL)
             copySubstrToAllocation(OUT IObuff, (Text){bookSpName(po->book), IOSIZE - 1});
          else
-            home_replace(po->book, po->book->currFileName, IObuff, IOSIZE, TRUE);
+            home_replace(po->book, po->book->currFileName, IObuff, IOSIZE, true);
          msg_outtrans(IObuff);
          out_flush();       // output one line at a time
          ui_breakcheck();
@@ -9791,7 +9791,7 @@ c_open(Invocation* invo) {
    if (*invo->arg == '/') {
       // ":open /pattern/": put cursor in column found with pattern
       ++invo->arg;
-      p = skip_regexp(invo->arg, '/', TRUE);
+      p = skip_regexp(invo->arg, '/', true);
       *p = ZERO;
       regmatch.regprog = compileRegexp(invo->arg, RE_MAGIC);
       if (regmatch.regprog) {
@@ -9884,10 +9884,10 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      // curPor before doing a 
          //Editing the file failed. If the portal was split, close it.
          if (old_curPor) {
             //Reset the error/interrupt/exception state here so that
-            //aborting() returns FALSE when closing a portal.
+            //aborting() returns false when closing a portal.
             Cleanup   cs;
             enter_cleanup(OUT &cs);
-            closePortal(curPor, FALSE);
+            closePortal(curPor, false);
 
             //Restore the error/interrupt/exception state if not discarded by a new aborting
             //error, interrupt, or uncaught exception.
@@ -9915,7 +9915,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      // curPor before doing a 
       old_curPor->altFnum = curBook->fiNum;
    } 
 
-   ex_no_reprint = TRUE;
+   ex_no_reprint = true;
 }
 
 void
@@ -9962,23 +9962,23 @@ c_syncbind(Invocation* invo UNUSED) {
          curBook = curPor->book;
          y = topline - curPor->topLine;
          if (y > 0)
-            scrollup(y, TRUE);
+            scrollup(y, true);
          else
-            scrolldown(-y, TRUE);
+            scrolldown(-y, true);
          curPor->scbindPos = topline;
          redraw_later(UPD_VALID);
          cursor_correct();
-         curPor->statusLineNeedsRedraw = TRUE;
+         curPor->statusLineNeedsRedraw = true;
       }
    }
    curPor = save_curPor;
    curBook = save_curbuf;
    if (curPor->o.scrollBind) {
-      did_syncbind = TRUE;
+      did_syncbind = true;
       checkpcmark();
       if (old_linenr != curPor->cursor.lnum) {
          Byte ctrl_o[2] = {Ctrl_O, 0};
-         insertIntoTypebuf(ctrl_o, REMAP_NONE, 0, TRUE, FALSE);
+         insertIntoTypebuf(ctrl_o, REMAP_NONE, 0, true, false);
       }
    }
 }
@@ -10062,7 +10062,7 @@ post_chdir(CdScopeKind scope) {
    }
 
    last_chdir_reason = NULL;
-   shorten_fnames(TRUE);
+   shorten_fnames(true);
 }
 
 // Trigger DirChangedPre for "acmd_fname" with directory "new_dir".
@@ -10083,7 +10083,7 @@ trigger_DirChangedPre(CS acmd_fname, CS new_dir) {
 //scope == CDSCOPE_WINDOW: changes the portal-local directory
 //scope == CDSCOPE_TABPAGE: changes the tab-local directory
 //Otherwise: change the global directory
-//Return TRUE if the directory is successfully changed.
+//Return true if the directory is successfully changed.
 int
 changedir_func(CS new_dir, CdScopeKind scope){
    CS pdir = NULL;
@@ -10093,7 +10093,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
    Byte   *tofree;
 
    if (new_dir == NULL || allbuf_locked()) {
-       return FALSE;
+       return false;
    }
 
    // ":cd -": Change to previous directory
@@ -10101,7 +10101,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
       pdir = get_prevdir(scope);
       if (pdir == NULL) {
          emsg(_(e_no_previous_directory));
-         return FALSE;
+         return false;
       }
       new_dir = pdir;
    }
@@ -10128,7 +10128,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
       if (eeChdir(new_dir)) {
           emsg(_(e_command_failed));
           eeglFree(pdir);
-          return FALSE;
+          return false;
       }
    }
 
@@ -10146,7 +10146,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
    if (dir_differs)
       applyAutocomms(EVENT_DIRCHANGED, acmd_fname, new_dir, false, curBook);
    eeglFree(tofree);
-   return TRUE;
+   return true;
 }
 
 // ":cd", ":tcd", ":lcd", ":chdir" ":tchdir" and ":lchdir".
@@ -10215,7 +10215,7 @@ c_sleep(Invocation* invo) {
 }
 
 // Sleep for "msec" milliseconds, but keep checking for a CTRL-C every second.
-// Hide the cursor if "hide_cursor" is TRUE.
+// Hide the cursor if "hide_cursor" is true.
 void
 do_sleep(long msec, int hide_cursor) {
    long   done = 0;
@@ -10241,7 +10241,7 @@ do_sleep(long msec, int hide_cursor) {
       }
       if (has_any_channel() && wait_now > 20L)
           wait_now = 20L;
-      ui_delay(wait_now, TRUE);
+      ui_delay(wait_now, true);
 
       if (has_any_channel())
           ui_breakcheck_force(true);
@@ -10328,7 +10328,7 @@ c_operators(Invocation* invo) {
    oper.end.lnum = invo->line2;
    oper.line_count = invo->line2 - invo->line1 + 1;
    oper.motion_type = MLINE;
-   virtual_op = FALSE;
+   virtual_op = false;
    if (invo->id != C_yank) {  // position cursor for undo
       setpcmark();
       curPor->cursor.lnum = invo->line1;
@@ -10346,7 +10346,7 @@ c_operators(Invocation* invo) {
 
    case C_yank:
       oper.opTy = OP_YANK;
-      (void)op_yank(&oper, FALSE, TRUE);
+      (void)op_yank(&oper, false, true);
       break;
 
    default:    // C_rshift or C_lshift
@@ -10354,7 +10354,7 @@ c_operators(Invocation* invo) {
          oper.opTy = OP_RSHIFT;
       else
          oper.opTy = OP_LSHIFT;
-      op_shift(&oper, FALSE, invo->amount);
+      op_shift(&oper, false, invo->amount);
       break;
    }
    virtual_op = MAYBE;
@@ -10367,7 +10367,7 @@ c_put(Invocation* invo) {
    // ":0put" works like ":1put!".
    if (invo->line2 == 0) {
       invo->line2 = 1;
-      invo->forceit = TRUE;
+      invo->forceit = true;
    }
    curPor->cursor.lnum = invo->line2;
    check_cursor_col();
@@ -10380,7 +10380,7 @@ c_iput(Invocation* invo) {
    // ":0iput" works like ":1iput!".
    if (invo->line2 == 0) {
       invo->line2 = 1;
-      invo->forceit = TRUE;
+      invo->forceit = true;
    }
    curPor->cursor.lnum = invo->line2;
    check_cursor_col();
@@ -10393,7 +10393,7 @@ c_iput(Invocation* invo) {
 // Handle ":copy" and ":move".
 void
 c_copymove(Invocation* invo) {
-   long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, FALSE, FALSE, FALSE, 1);
+   long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, false, false, false, 1);
    if (invo->arg == NULL) {      // error detected
       invo->nextComm = NULL;
       return;
@@ -10421,7 +10421,7 @@ private void
 mayPrint(Invocation* invo) {
    if (invo->flags != 0) {
       print_line(curPor->cursor.lnum, (invo->flags & EXFLAG_LIST));
-      ex_no_reprint = TRUE;
+      ex_no_reprint = true;
    }
 }
 
@@ -10438,7 +10438,7 @@ c_join(Invocation* invo) {
       }
       ++invo->line2;
    }
-   (void)jugJoinLinesUnderCursor(invo->line2 - invo->line1 + 1, !invo->forceit, TRUE, TRUE, TRUE);
+   (void)jugJoinLinesUnderCursor(invo->line2 - invo->line1 + 1, !invo->forceit, true, true, true);
    beginline(BL_WHITE | BL_FIX);
    mayPrint(invo);
 }
@@ -10456,14 +10456,14 @@ c_at(Invocation* invo) {
    if (c == ZERO || (c == '*' && *invo->comm == '*'))
       c = '@';
    // Put the register in the typeahead buffer with the "silent" flag.
-   if (do_execreg(c, TRUE, TRUE, TRUE) == FAIL) {
+   if (do_execreg(c, true, true, true) == FAIL) {
       beep_flush();
       return;
    }
 
     int   save_efr = executingFromRegG;
 
-   executingFromRegG = TRUE;
+   executingFromRegG = true;
 
    // Execute from the typeahead buffer.
    // Continue until the stuff buffer is empty and all added characters have been consumed.
@@ -10483,7 +10483,7 @@ c_bang(Invocation* invo) {
 void
 c_undo(Invocation* invo) {
    if (invo->addr_count == 1)       // :undo 123
-      undo_time(invo->line2, FALSE, FALSE, TRUE);
+      undo_time(invo->line2, false, false, true);
    else
       u_undo(1);
 }
@@ -10514,8 +10514,8 @@ c_redo(Invocation* invo UNUSED) {
 void
 c_later(Invocation* invo) {
    long   count = 0;
-   int      sec = FALSE;
-   int      file = FALSE;
+   int      sec = false;
+   int      file = false;
    CS p = invo->arg;
 
    if (*p == ZERO)
@@ -10523,18 +10523,18 @@ c_later(Invocation* invo) {
    ei (SAFE_isdigit(*p)) {
       count = parseLong(&p);
       switch (*p) {
-         case 's': ++p; sec = TRUE; break;
-         case 'm': ++p; sec = TRUE; count *= 60; break;
-         case 'h': ++p; sec = TRUE; count *= 60 * 60; break;
-         case 'd': ++p; sec = TRUE; count *= 24 * 60 * 60; break;
-         case 'f': ++p; file = TRUE; break;
+         case 's': ++p; sec = true; break;
+         case 'm': ++p; sec = true; count *= 60; break;
+         case 'h': ++p; sec = true; count *= 60 * 60; break;
+         case 'd': ++p; sec = true; count *= 24 * 60 * 60; break;
+         case 'f': ++p; file = true; break;
       }
    }
 
    if (*p != ZERO)
       showErrFmtMsg(_(e_invalid_argument_str), invo->arg);
    else
-      undo_time(invo->id == C_earlier ? -count : count, sec, file, FALSE);
+      undo_time(invo->id == C_earlier ? -count : count, sec, file, false);
 }
 
 // ":redir": start/stop redirection.
@@ -10588,7 +10588,7 @@ c_redir(Invocation* invo) {
                   arg++;
                // Make register empty when not using @A-@Z and the command is valid.
                if (*arg == ZERO && !SAFE_isupper(redir_reg))
-                  write_reg_contents(redir_reg, (CS)"", -1, FALSE);
+                  write_reg_contents(redir_reg, (CS)"", -1, false);
             }
          }
          if (*arg != ZERO) {
@@ -10604,9 +10604,9 @@ c_redir(Invocation* invo) {
 
          if (*arg == '>') {
             ++arg;
-            append = TRUE;
+            append = true;
          } else
-            append = FALSE;
+            append = false;
 
          if (var_redir_start(skipwhite(arg), append) == OK)
             redir_vname = 1;
@@ -10620,7 +10620,7 @@ c_redir(Invocation* invo) {
    // Make sure redirection is not off.  Can happen for commline completion
    // that indirectly invokes a command to catch its output.
    if (redir_fd || redir_reg || redir_vname)
-      redir_off = FALSE;
+      redir_off = false;
 }
 
 // ":redraw": force redraw, with clear for ":redraw!".
@@ -10629,14 +10629,14 @@ c_redraw(Invocation* invo) {
    redraw_cmd(invo->forceit);
 }
 
-// ":redraw": force redraw, with clear if "clear" is TRUE.
+// ":redraw": force redraw, with clear if "clear" is true.
 void
 redraw_cmd(int clear) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
 
    int save_p_lz = p_lz;
-   p_lz = FALSE;
+   p_lz = false;
 
    validate_cursor();
    update_topline();
@@ -10648,11 +10648,11 @@ redraw_cmd(int clear) {
    drawStopHilite();
 
    // Reset msg_didout, so that a message that's there is overwritten.
-   msg_didout = FALSE;
+   msg_didout = false;
    msgColG = 0;
 
    // No need to wait after an intentional redraw.
-   need_wait_return = FALSE;
+   need_wait_return = false;
 
     // When invoked from a callback or autocmd the command line may be active.
    if (stateG & MODE_COMMLINE)
@@ -10675,7 +10675,7 @@ c_redrawstatus(Invocation* invo) {
    isRedrawingDisabledG = 0;
 
    int save_p_lz = p_lz;
-   p_lz = FALSE;
+   p_lz = false;
 
    if (stateG & MODE_COMMLINE)
       redraw_statuslines();
@@ -10693,7 +10693,7 @@ c_redrawtabpanel(Invocation* invo UNUSED) {
    isRedrawingDisabledG = 0;
 
    int save_p_lz = p_lz;
-   p_lz = FALSE;
+   p_lz = false;
 
    draw_tabpanel();
 
@@ -10775,7 +10775,7 @@ update_topline_cursor(void) {
    update_curswant();
 }
 
-//Save the current stateG and go to Normal mode. Return TRUE if the typeahead could be saved.
+//Save the current stateG and go to Normal mode. Return true if the typeahead could be saved.
 int
 save_current_state(SaveState* sst) {
    sst->save_msg_scroll = msg_scroll;
@@ -10787,7 +10787,7 @@ save_current_state(SaveState* sst) {
    sst->save_reg_executing = reg_executing;
    sst->save_pending_end_reg_executing = pending_end_reg_executing;
 
-   msg_scroll = FALSE;          // no msg scrolling in Normal mode
+   msg_scroll = false;          // no msg scrolling in Normal mode
    restart_edit = 0;          // don't go to Insert mode
 
    // Save the current typeahead.  This is required to allow using ":normal" from an event handler
@@ -10871,7 +10871,7 @@ c_normal(Invocation* invo) {
 
          exec_normal_cmd(arg
               ? arg
-              : invo->arg, invo->forceit ? REMAP_NONE : REMAP_YES, FALSE);
+              : invo->arg, invo->forceit ? REMAP_NONE : REMAP_YES, false);
       } while (invo->addr_count > 0 && invo->line1 <= invo->line2 && !gotInterruptG);
    }
 
@@ -10920,7 +10920,7 @@ c_startinsert(Invocation* invo) {
 void
 c_stopinsert(Invocation* invo UNUSED) {
    restart_edit = 0;
-   stop_insert_mode = TRUE;
+   stop_insert_mode = true;
    // when called from remote_expr in insert mode, make sure insert mode is
    // ended by adding K_NOP to the typeahead buffer
    if (vgetcBusyG)
@@ -10932,12 +10932,12 @@ c_stopinsert(Invocation* invo UNUSED) {
 void
 exec_normal_cmd(CS cmd, int remap, int silent) {
    // Stuff the argument into the typeahead buffer.
-   insertIntoTypebuf(cmd, remap, 0, TRUE, silent);
-   exec_normal(FALSE, FALSE, FALSE);
+   insertIntoTypebuf(cmd, remap, 0, true, silent);
+   exec_normal(false, false, false);
 }
 
 // Execute normalAction() until there is no typeahead left.
-// When "use_vpeekc" is TRUE use vpeekc() to check for available chars.
+// When "use_vpeekc" is true use vpeekc() to check for available chars.
 void
 exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
    Operator   oper;
@@ -10946,7 +10946,7 @@ exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
    // When calling vpeekc() from feedkeys() it will return Ctrl_C when there
    // is nothing to get, so also check for Ctrl_C.
    clear_oparg(&oper);
-   finish_op = FALSE;
+   finish_op = false;
    while ((!stuff_empty()
       || ((was_typed || !typebuf_typed()) && typeBufG.validLen > 0)
       || (use_vpeekc && (c = vpeekc()) != ZERO && c != Ctrl_C)) && !gotInterruptG
@@ -10959,20 +10959,20 @@ exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
          // If terminal_loop() returns OK we got a key that is handled
          // in Normal model.  With FAIL we first need to position the
          // cursor and the screen needs to be redrawn.
-         if (terminal_loop(TRUE) == OK)
-            normalAction(&oper, TRUE);
+         if (terminal_loop(true) == OK)
+            normalAction(&oper, true);
       } else {
           // execute a Normal mode cmd
-          normalAction(&oper, TRUE);
+          normalAction(&oper, true);
       }
    }
 }
 
 void
 c_checkpath(Invocation* invo) {
-   find_pattern_in_path(NULL, 0, 0, FALSE, FALSE, CHECK_PATH, 1L,
+   find_pattern_in_path(NULL, 0, 0, false, false, CHECK_PATH, 1L,
       invo->forceit ? ACTION_SHOW_ALL : ACTION_SHOW,
-      (LineNr)1, (LineNr)MAXLNUM, invo->forceit, FALSE);
+      (LineNr)1, (LineNr)MAXLNUM, invo->forceit, false);
 }
 
 // ":psearch"
@@ -10985,7 +10985,7 @@ c_psearch(Invocation* invo) {
 
 void
 c_findpat(Invocation* invo) {
-   int      whole = TRUE;
+   int      whole = true;
    CS p;
    int      action;
 
@@ -11013,9 +11013,9 @@ c_findpat(Invocation* invo) {
       invo->arg = skipwhite(invo->arg);
    }
    if (*invo->arg == '/') {  // Match regexp, not just whole words
-      whole = FALSE;
+      whole = false;
       ++invo->arg;
-      p = skip_regexp(invo->arg, '/', TRUE);
+      p = skip_regexp(invo->arg, '/', true);
       if (*p) {
          *p++ = ZERO;
          p = skipwhite(p);
@@ -11031,7 +11031,7 @@ c_findpat(Invocation* invo) {
    find_pattern_in_path(invo->arg, 0, (int)STRLEN(invo->arg),
       whole, !invo->forceit,
       *invo->comm == 'd' ? FIND_DEFINE : FIND_ANY, n, action,
-      invo->line1, invo->line2, invo->forceit, FALSE);
+      invo->line1, invo->line2, invo->forceit, false);
 }
 
 private void
@@ -11070,7 +11070,7 @@ tagCmd(Invocation* invo, CS name) {
       return;
    }
 
-   do_tag(invo->arg, cmd, invo->addr_count > 0 ? (int)invo->line2 : 1, invo->forceit, TRUE);
+   do_tag(invo->arg, cmd, invo->addr_count > 0 ? (int)invo->line2 : 1, invo->forceit, true);
 }
 
 
@@ -11113,7 +11113,7 @@ prepare_preview_window(void) {
 
    // Open the preview portal or popup and make it the current portal.
    g_do_tagpreview = p_pvh;
-   prepare_tagpreview(TRUE, TRUE, FALSE);
+   prepare_tagpreview(true, true, false);
 }
 
 private void
@@ -11122,10 +11122,10 @@ back_to_current_window(Portal *curPor_save) {
       // Return cursor to where we were
       validate_cursor();
       redraw_later(UPD_VALID);
-      enterPortal(curPor_save, TRUE);
+      enterPortal(curPor_save, true);
    } ei (PORTAL_IS_POPUP(curPor)) {
       // can't keep focus in popup portal
-      enterPortal(firstPor, TRUE);
+      enterPortal(firstPor, true);
    }
    g_do_tagpreview = 0;
 }
@@ -11259,13 +11259,13 @@ evalVars(
    Book* book;
    int valid = VALID_HEAD + VALID_PATH;    // assume valid result
    int spec_idx;
-   int tilde_file = FALSE;
-   int skip_mod = FALSE;
+   int tilde_file = false;
+   int skip_mod = false;
    Byte   strbuf[30];
 
    *errorMsg = NULL;
    if (escaped)
-      *escaped = FALSE;
+      *escaped = false;
 
    // Check if there is something to do.
    spec_idx = find_commline_var(src, usedlen);
@@ -11323,8 +11323,8 @@ evalVars(
             resultbuf = result;
             *usedlen = off + 2;
             if (escaped)
-               *escaped = TRUE;
-            skip_mod = TRUE;
+               *escaped = true;
+            skip_mod = true;
             break;
          }
          s = src + off + 1;
@@ -11381,8 +11381,8 @@ evalVars(
          if (result && !autocmd_fname_full) {
             // Still need to turn the fname into a full path.  It is
             // postponed to avoid a delay when <afile> is not used.
-            autocmd_fname_full = TRUE;
-            result = fiExpandAndCopy(autocmd_fname, FALSE);
+            autocmd_fname_full = true;
+            result = fiExpandAndCopy(autocmd_fname, false);
             eeglFree(autocmd_fname);
             autocmd_fname = result;
          }
@@ -11516,7 +11516,7 @@ expand_sfile(CS arg) {
          // replace "<sfile>" with the sourced file name, and do ":" stuff
          CS repl = evalVars(
                null, OUT &errorMsg,
-               p, result, &srclen, NULL, TRUE
+               p, result, &srclen, NULL, true
          );
          if (errorMsg) {
             if (*errorMsg != ZERO)
@@ -11557,9 +11557,9 @@ dialog_msg(CS buff, CS format, CS fname) {
    eeSnprintf(buff, DIALOG_MSG_SIZE, format, fname);
 }
 
-private int filetype_detect = FALSE;
-private int filetype_plugin = FALSE;
-private int filetype_indent = FALSE;
+private int filetype_detect = false;
+private int filetype_plugin = false;
+private int filetype_indent = false;
 
 // ":filetype [plugin] [indent] {on,off,detect}"
 // on: Load the filetype.vim file to install autocommands for file types.
@@ -11571,8 +11571,8 @@ private int filetype_indent = FALSE;
 void
 c_filetype(Invocation* invo) {
    CS arg = invo->arg;
-   int plugin = FALSE;
-   int indent = FALSE;
+   int plugin = false;
+   int indent = false;
 
    if (*invo->arg == ZERO) {
       // Print current status.
@@ -11586,12 +11586,12 @@ c_filetype(Invocation* invo) {
    // Accept "plugin" and "indent" in any order.
    for (;;) {
       if (STRNCMP(arg, "plugin", 6) == 0) {
-         plugin = TRUE;
+         plugin = true;
          arg = skipwhite(arg + 6);
          continue;
       }
       if (STRNCMP(arg, "indent", 6) == 0) {
-         indent = TRUE;
+         indent = true;
          arg = skipwhite(arg + 6);
          continue;
       }
@@ -11600,14 +11600,14 @@ c_filetype(Invocation* invo) {
    if (STRCMP(arg, "on") == 0 || STRCMP(arg, "detect") == 0) {
       if (*arg == 'o' || !filetype_detect) {
          source_runtime((CS)FILETYPE_FILE, DIP_ALL);
-         filetype_detect = TRUE;
+         filetype_detect = true;
          if (plugin) {
             source_runtime((CS)FTPLUGIN_FILE, DIP_ALL);
-            filetype_plugin = TRUE;
+            filetype_plugin = true;
           }
          if (indent) {
             source_runtime((CS)INDENT_FILE, DIP_ALL);
-            filetype_indent = TRUE;
+            filetype_indent = true;
          }
       }
       if (*arg == 'd') {
@@ -11617,15 +11617,15 @@ c_filetype(Invocation* invo) {
       if (plugin || indent) {
          if (plugin) {
             source_runtime((CS)FTPLUGOF_FILE, DIP_ALL);
-            filetype_plugin = FALSE;
+            filetype_plugin = false;
          }
          if (indent) {
             source_runtime((CS)INDOFF_FILE, DIP_ALL);
-            filetype_indent = FALSE;
+            filetype_indent = false;
          }
       } else {
          source_runtime((CS)FTOFF_FILE, DIP_ALL);
-         filetype_detect = FALSE;
+         filetype_detect = false;
       }
    } else
       showErrFmtMsg(_(e_invalid_argument_str), arg);
@@ -11646,13 +11646,13 @@ c_nohlsearch(Invocation* invo UNUSED) {
 
 void
 c_fold(Invocation* invo) {
-   if (foldManualAllowed(TRUE))
+   if (foldManualAllowed(true))
       foldCreate(invo->line1, invo->line2);
 }
 
 void
 c_foldopen(Invocation* invo) {
-   opFoldRange(invo->line1, invo->line2, invo->id == C_foldopen, invo->forceit, FALSE);
+   opFoldRange(invo->line1, invo->line2, invo->id == C_foldopen, invo->forceit, false);
 }
 
 void
@@ -11693,7 +11693,7 @@ commandFlagExpandWildcards() {
 
 //Ask for a reply from the user, a 'y' or a 'n', with prompt "str" (which should have been 
 //translated already). No other characters are accepted, the message is repeated until a valid
-//reply is entered or CTRL-C is hit. If direct is TRUE, don't use vgetc() but ui_inchar(), don't 
+//reply is entered or CTRL-C is hit. If direct is true, don't use vgetc() but ui_inchar(), don't 
 //get characters from any buffers but directly from the user.
 //
 //return the 'y' or 'n'
@@ -11779,7 +11779,7 @@ doExpandEnvVarsWithEscaped(
    CS var;
    Boole copyChar;
    Boole mustfree;   // var was allocated, need to free it later
-   int at_start = TRUE; // at start of a name
+   int at_start = true; // at start of a name
    int startstr_len = 0;
    CS wr = dst.c;
    CS const sentinel = dst.c + dst.len - 1; // leave one char space for "\,"
@@ -11854,19 +11854,19 @@ doExpandEnvVarsWithEscaped(
 
       if (copyChar)   { // copy at least one char
          //Recognize the start of a new name, for '~'.
-         //Don't do this when "one" is TRUE, to avoid expanding "~" in ":edit foo ~ foo".
-         at_start = FALSE;
+         //Don't do this when "one" is true, to avoid expanding "~" in ":edit foo ~ foo".
+         at_start = false;
          if (src[0] == '\\' && src[1] != ZERO) {
             *wr++ = *src++;
          } ei ((src[0] == ' ' || src[0] == ',') && !one)
-            at_start = TRUE;
+            at_start = true;
          if (wr < sentinel - 1) {
             *wr++ = *src++;
 
             if (startstr && src - startstr_len >= srcArg
                   && STRNCMP(src - startstr_len, startstr, startstr_len) == 0
             )
-               at_start = TRUE;
+               at_start = true;
          }
       }
    }
@@ -11876,8 +11876,8 @@ doExpandEnvVarsWithEscaped(
 }
 
 //Eegl's version of getenv(). Special handling of $HOME, $EEGL and $EEGLRUNTIME.
-//"mustfree" is set to TRUE when the returned string is allocated.  It must be
-//initialized to FALSE by the caller.
+//"mustfree" is set to true when the returned string is allocated.  It must be
+//initialized to false by the caller.
 NULLABLE CS
 eeglGetEnv(CS name) {
    CS p = mch_getenv(name);
@@ -12062,7 +12062,7 @@ private void u_blockfree(Book *book);
 private long   u_newcount, u_oldcount;
 
 //???
-private int   undo_undoes = FALSE;
+private int   undo_undoes = false;
 
 private int   lastmark = 0;
 
@@ -12159,7 +12159,7 @@ u_save(LineNr top, LineNr bot) {
    if (top + 2 == bot)
       u_saveline((LineNr)(top + 1));
 
-   return (u_savecommon(top, bot, (LineNr)0, FALSE));
+   return (u_savecommon(top, bot, (LineNr)0, false));
 }
 
 //Save the line "lnum" (used by ":s" and "~" command). The line is replaced, so the new bottom line
@@ -12170,7 +12170,7 @@ u_savesub(LineNr lnum) {
    if (undo_off)
       return OK;
 
-   return (u_savecommon(lnum - 1, lnum + 1, lnum + 1, FALSE));
+   return (u_savecommon(lnum - 1, lnum + 1, lnum + 1, false));
 }
 
 //A new line is inserted before line "lnum" (used by :s command). The line is inserted, so the new 
@@ -12181,7 +12181,7 @@ u_inssub(LineNr lnum) {
    if (undo_off)
       return OK;
 
-   return (u_savecommon(lnum - 1, lnum, lnum + 1, FALSE));
+   return (u_savecommon(lnum - 1, lnum, lnum + 1, false));
 }
 
 //Save the lines "lnum" - "lnum" + nlines (used by delete command).
@@ -12194,26 +12194,26 @@ u_savedel(LineNr lnum, long nlines) {
       return OK;
 
    return (u_savecommon(lnum - 1, lnum + nlines,
-           nlines == curBook->mem.lineCount ? 2 : lnum, FALSE));
+           nlines == curBook->mem.lineCount ? 2 : lnum, false));
 }
 
-//TRUE when undo is allowed.  Otherwise give an error message and return FALSE.
+//true when undo is allowed.  Otherwise give an error message and return false.
 int
 undo_allowed(void) {
    // Don't allow changes when @modifiable is off.
    if (!curBook->o.modifiable) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
-      return FALSE;
+      return false;
    }
 
    // Don't allow changes in the book while editing the commline. The
    // caller of getCommline() may get confused.
    if (textlock != 0) {
       emsg(_(e_not_allowed_to_change_text_or_change_portal));
-      return FALSE;
+      return false;
    }
 
-   return TRUE;
+   return true;
 }
 
 //u_save_line(): save an allocated copy of line "lnum" into "ul".
@@ -12233,7 +12233,7 @@ u_save_line(UndoLine *ul, LineNr lnum) {
    return ul->ul_line == NULL ? FAIL : OK;
 }
 
-//return TRUE if line "lnum" has text property "flags".
+//return true if line "lnum" has text property "flags".
 private Boole
 has_prop_w_flags(LineNr lnum, int flags) {
    CS props;
@@ -12252,7 +12252,7 @@ has_prop_w_flags(LineNr lnum, int flags) {
 //"top" is the line above the first changed line.
 //"bot" is the line below the last changed line.
 //"newbot" is the new bottom line.  Use zero when not known.
-//"reload" is TRUE when saving for a book reload.
+//"reload" is true when saving for a book reload.
 //Careful: may trigger autocommands that reload the book.
 //Return FAIL when lines could not be saved, OK otherwise.
 int
@@ -12288,7 +12288,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
    }
 
 #ifdef U_DEBUG
-    u_check(FALSE);
+    u_check(false);
 #endif
 
    // Include the line above if a text property continues from it.
@@ -12305,7 +12305,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
 
    size = bot - top - 1;
 
-   //If curBook->undo.synced == TRUE make a new header.
+   //If curBook->undo.synced == true make a new header.
    if (curBook->undo.synced) {
       // Need to create new entry in changeList.
       curBook->newChange = true;
@@ -12345,14 +12345,14 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
             freeBranch(curBook, uhfree, &old_curhead);
          }
 #ifdef U_DEBUG
-         u_check(TRUE);
+         u_check(true);
 #endif
       }
 
       if (!uhp) {     // no undo at all
          if (old_curhead != NULL)
             freeBranch(curBook, old_curhead, NULL);
-         curBook->undo.synced = FALSE;
+         curBook->undo.synced = false;
          return OK;
       }
 
@@ -12434,7 +12434,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
                   // It's not the last entry: get ue_bot for the last
                   // entry now. Following deleted/inserted lines go to the re-used entry.
                   u_getbot();
-                  curBook->undo.synced = FALSE;
+                  curBook->undo.synced = false;
 
                   // Move the found entry to become the last entry. The order of undo/redo doesn't 
                   // matter for the entries we move it over, since they don't change the line
@@ -12502,18 +12502,18 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
     }
     uep->ue_next = curBook->undo.newHead->uh_entry;
     curBook->undo.newHead->uh_entry = uep;
-    curBook->undo.synced = FALSE;
-    undo_undoes = FALSE;
+    curBook->undo.synced = false;
+    undo_undoes = false;
 
 #ifdef U_DEBUG
-    u_check(FALSE);
+    u_check(false);
 #endif
     return OK;
 
 nomem:
     msg_silent = 0;   // must display the prompt
-    if (ask_yesno((CS)_("No undo possible; continue anyway"), TRUE) == 'y') {
-       undo_off = TRUE;       // will be reset when character typed
+    if (ask_yesno((CS)_("No undo possible; continue anyway"), true) == 'y') {
+       undo_off = true;       // will be reset when character typed
        return OK;
     }
     do_outofmem_msg((Ulong)0);
@@ -12787,7 +12787,7 @@ unserialize_uhp(BufInfo* bi, CS file_name) {
    // Unserialize the uep list.
    UndoEntry* last_uep = NULL;
    while ((c = undo_read_2c(bi)) == UF_ENTRY_MAGIC) {
-      error = FALSE;
+      error = false;
       UndoEntry* uep = unserialize_uep(bi, &error, file_name);
       if (last_uep)
          last_uep->ue_next = uep;
@@ -12846,7 +12846,7 @@ unserialize_uep(BufInfo *bi, int *error, CS file_name) {
       if (uep->ue_size < LONG_MAX / (int)sizeof(CS))
          array = U_ALLOC_LINE(sizeof(UndoLine) * uep->ue_size);
       if (array == NULL) {
-         *error = TRUE;
+         *error = true;
          return uep;
       }
       memset(array, 0, sizeof(UndoLine) * uep->ue_size);
@@ -12862,7 +12862,7 @@ unserialize_uep(BufInfo *bi, int *error, CS file_name) {
          corruption_error("line length", file_name);
       }
       if (line == NULL) {
-         *error = TRUE;
+         *error = true;
          return uep;
       }
       array[i].ul_line = line;
@@ -12916,7 +12916,7 @@ unserialize_visualinfo(BufInfo *bi, VisualInfo *info) {
 //When "name" is not NULL, use it as the name of the undo file.
 //Otherwise use book->fullFileName to generate the undo file name.
 //"book" must never be null, book->fullFileName is used to obtain the original file permissions.
-//"forceit" is TRUE for ":wundo!", FALSE otherwise.
+//"forceit" is true for ":wundo!", false otherwise.
 //"hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
 void
 u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
@@ -12927,15 +12927,15 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
    int headers_written = 0;
 #endif
    int fd;
-   int write_ok = FALSE;
-   int st_old_valid = FALSE;
+   int write_ok = false;
+   int st_old_valid = false;
    FileStat st_old;
    FileStat st_new;
    BufInfo bi;
    CLEAR_FIELD(bi);
 
    if (!name) {
-      file_name = fiBuildSwapOrUndoFname(book->fullFileName, FALSE);
+      file_name = fiBuildSwapOrUndoFname(book->fullFileName, false);
       if (file_name == NULL) {
          if (p_verbose > 0) {
             verbose_enter();
@@ -12954,7 +12954,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
    if (book->fullFileName) {
       if (stat((char *)book->fullFileName, OUT &st_old) >= 0) {
           perm = st_old.st_mode;
-          st_old_valid = TRUE;
+          st_old_valid = true;
       }
    }
 
@@ -13015,7 +13015,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
 
 #ifdef U_DEBUG
     //Check there is no problem in undo info before writing.
-    u_check(FALSE);
+    u_check(false);
 #endif
 
     //Try to set the group of the undo file same as the original file. If
@@ -13036,7 +13036,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
    }
 
    // Undo must be synced.
-   u_sync(TRUE);
+   u_sync(true);
 
    bi.bk = book;
    bi.file = fp;
@@ -13071,7 +13071,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
    }
 
    if (undo_write_bytes(&bi, (Ulong)UF_HEADER_END_MAGIC, 2) == OK)
-      write_ok = TRUE;
+      write_ok = true;
 #ifdef U_DEBUG
    if (headers_written != book->undo.countHeaders) {
       showErrFmtMsg("Written %ld headers, ...", headers_written);
@@ -13080,7 +13080,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
 #endif
 
    if (p_fs && fflush(fp) == 0 && eeFsync(fd) != 0)
-      write_ok = FALSE;
+      write_ok = false;
 
 write_error:
    fclose(fp);
@@ -13182,7 +13182,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
       if (p_verbose > 0 || name != NULL) {
          if (!name)
             verbose_enter();
-         give_warning((CS) _("File contents changed, cannot use undo info"), TRUE);
+         give_warning((CS) _("File contents changed, cannot use undo info"), true);
          if (name == NULL)
             verbose_leave();
       }
@@ -13338,7 +13338,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
        .timeCurr = seq_time,    
        .saveNrLast = last_save_nr,    
        .saveNrCurr = last_save_nr,
-       .synced = TRUE
+       .synced = true
    };
 
    eeglFree(uhp_table);
@@ -13349,7 +13349,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
          showErrFmtMsg("uhp_table entry %ld not used, leaking memory", i);
    } 
    eeglFree(uhp_table_used);
-   u_check(TRUE);
+   u_check(true);
 #endif
 
    if (name)
@@ -13378,18 +13378,18 @@ void
 u_undo(int count) {
    //If we get an undo command while executing a macro, we behave like the
    //original vi. If this happens twice in one macro the result will not be compatible.
-   if (curBook->undo.synced == FALSE) {
-      u_sync(TRUE);
+   if (curBook->undo.synced == false) {
+      u_sync(true);
       count = 1;
    }
 
-   undo_undoes = TRUE;
+   undo_undoes = true;
    u_doit(count);
 }
 
 void
 u_redo(int count) {
-   undo_undoes = FALSE;
+   undo_undoes = false;
    u_doit(count);
 }
 
@@ -13453,10 +13453,10 @@ u_doit(int startcount) {
 
 //Undo or redo over the timeline.
 //When "step" is negative go back in time, otherwise goes forward in time.
-//When "sec" is FALSE make "step" steps, when "sec" is TRUE use "step" as
+//When "sec" is false make "step" steps, when "sec" is true use "step" as
 //seconds.
-//When "file" is TRUE use "step" as a number of file writes.
-//When "absolute" is TRUE use "step" as the sequence number to jump to. "sec" must be FALSE then.
+//When "file" is true use "step" as a number of file writes.
+//When "absolute" is true use "step" as the sequence number to jump to. "sec" must be false then.
 void
 undo_time(long step, int sec, int file, int absolute) {
    long target;
@@ -13471,8 +13471,8 @@ undo_time(long step, int sec, int file, int absolute) {
    int round;
    int dosec = sec;
    int dofile = file;
-   int above = FALSE;
-   int did_undo = TRUE;
+   int above = false;
+   int did_undo = true;
 
    if (text_locked()) {
       text_locked_msg();
@@ -13480,8 +13480,8 @@ undo_time(long step, int sec, int file, int absolute) {
    }
 
    // First make sure the current undoable change is synced.
-   if (curBook->undo.synced == FALSE)
-      u_sync(TRUE);
+   if (curBook->undo.synced == false)
+      u_sync(true);
 
    u_newcount = 0;
    u_oldcount = 0;
@@ -13514,14 +13514,14 @@ undo_time(long step, int sec, int file, int absolute) {
                target = curBook->undo.saveNrCurr + step + 1;
             if (target <= 0)
                //Go to before first write: before the oldest change. Use the sequence number for that
-               dofile = FALSE;
+               dofile = false;
          } else {
             // Moving forward to a newer write.
             target = curBook->undo.saveNrCurr + step;
             if (target > curBook->undo.saveNrLast) {
                // Go to after last write: after the latest change. Use the sequence number for that.
                target = curBook->undo.seqLast + 1;
-               dofile = FALSE;
+               dofile = false;
             }
          }
       } else
@@ -13658,10 +13658,10 @@ undo_time(long step, int sec, int file, int absolute) {
       }
 
       target = closest_seq;
-      dosec = FALSE;
-      dofile = FALSE;
+      dosec = false;
+      dofile = false;
       if (step < 0)
-         above = TRUE;   // stop above the header
+         above = true;   // stop above the header
    }
 
 target_zero:
@@ -13743,7 +13743,7 @@ target_zero:
          if (uhp->prev.ptr == NULL)
             curBook->undo.newHead = uhp;
          curBook->undo.currHead = uhp->prev.ptr;
-         did_undo = FALSE;
+         did_undo = false;
 
          if (uhp->uh_seq == target)   // found it!
              break;
@@ -13766,7 +13766,7 @@ theEnd:
 //curBook->undo.currHead. The replaced lines in the file are saved in the entry
 //list for the next undo/redo.
 //
-//When "undo" is TRUE we go up in the tree, when FALSE we go down.
+//When "undo" is true we go up in the tree, when false we go down.
 private void
 u_undoredo(Boole undo) {
    UndoLine* newarray = NULL;
@@ -13789,7 +13789,7 @@ u_undoredo(Boole undo) {
    block_autocmds();
 
 #ifdef U_DEBUG
-   u_check(FALSE);
+   u_check(false);
 #endif
    old_flags = curhead->uh_flags;
    new_flags = (curBook->wasModified ? UH_CHANGED : 0) +
@@ -13850,7 +13850,7 @@ u_undoredo(Boole undo) {
          }
       }
 
-      empty_buffer = FALSE;
+      empty_buffer = false;
 
       //Delete the lines between top and bot and save them in newarray.
       if (oldsize > 0) {
@@ -13863,7 +13863,7 @@ u_undoredo(Boole undo) {
             //remember we deleted the last line in the buffer, and a
             //dummy empty line will be inserted
             if (curBook->mem.lineCount == 1)
-               empty_buffer = TRUE;
+               empty_buffer = true;
             ml_delete_flags(lnum, ML_DEL_UNDO);
          }
       }
@@ -13880,7 +13880,7 @@ u_undoredo(Boole undo) {
             //should get rid of, by replacing it with the new line.
             if (empty_buffer && lnum == 0)
                 ml_replace_len((LineNr)1, uep->ue_array[i].ul_line,
-                       uep->ue_array[i].ul_len, TRUE, TRUE);
+                       uep->ue_array[i].ul_len, true, true);
             else
                 ml_append_flags(lnum, uep->ue_array[i].ul_line,
                     (ColNr)uep->ue_array[i].ul_len, ML_APPEND_UNDO);
@@ -13939,7 +13939,7 @@ u_undoredo(Boole undo) {
    if (old_flags & UH_CHANGED)
       changed();
    else
-      unchanged(curBook, TRUE);
+      unchanged(curBook, true);
 
    //restore marks from before undo/redo
    for (i = 0; i < NMARKS; ++i) {
@@ -14005,7 +14005,7 @@ u_undoredo(Boole undo) {
 
    unblock_autocmds();
 #ifdef U_DEBUG
-   u_check(FALSE);
+   u_check(false);
 #endif
 }
 
@@ -14051,7 +14051,7 @@ u_undo_end(
    // For ":undo N" we prefer a "after #N" message.
    if (absolute && curBook->undo.currHead->next.ptr != NULL) {
       uhp = curBook->undo.currHead->next.ptr;
-      did_undo = FALSE;
+      did_undo = false;
    } ei (did_undo)
       uhp = curBook->undo.currHead;
    else
@@ -14084,7 +14084,7 @@ u_sync(int force) {  // Also sync when no_u_sync is set.
    if (curBook->undo.synced || (!force && no_u_sync > 0))
       return;
    if (p_ul < 0)
-      curBook->undo.synced = TRUE;  // no entries, nothing to do
+      curBook->undo.synced = true;  // no entries, nothing to do
    else {
       u_getbot();          // compute ue_bot of previous u_save
       curBook->undo.currHead = NULL;
@@ -14202,7 +14202,7 @@ c_undojoin(Invocation* invo UNUSED) {
       return;          // no entries, nothing to do
    else
       // Append next change to the last entry
-      curBook->undo.synced = FALSE;
+      curBook->undo.synced = false;
 }
 
 //Called after writing or reloading the file and setting wasModified to false.
@@ -14229,7 +14229,7 @@ u_find_first_changed(void) {
       return;
 
    for (lnum = 1; lnum < curBook->mem.lineCount && lnum <= uep->ue_size; ++lnum) {
-      CS p = memGetLine(curBook, lnum, FALSE);
+      CS p = memGetLine(curBook, lnum, false);
 
       if (uep->ue_array[lnum - 1].ul_len != curBook->mem.lineLen
          || memcmp(p, uep->ue_array[lnum - 1].ul_line, uep->ue_array[lnum - 1].ul_len) != 0
@@ -14276,7 +14276,7 @@ u_get_headentry(void) {
    return curBook->undo.newHead->uh_entry;
 }
 
-//u_getbot(): compute the line number of the previous u_save It is called only when synced is FALSE
+//u_getbot(): compute the line number of the previous u_save It is called only when synced is false
 private void
 u_getbot(void) {
    UndoEntry* uep = u_get_headentry();   // check for corrupt undo list
@@ -14299,7 +14299,7 @@ u_getbot(void) {
       curBook->undo.newHead->uh_getbot_entry = NULL;
    }
 
-   curBook->undo.synced = TRUE;
+   curBook->undo.synced = true;
 }
 
 //Free one header "uhp" and its entry list and adjust the pointers.
@@ -14409,7 +14409,7 @@ freeEntry(UndoEntry *uep, long n) {
 private void
 invalidateUndoBuffer(Book *book) {
    book->undo.newHead = book->undo.oldHead = book->undo.currHead = NULL;
-   book->undo.synced = TRUE;
+   book->undo.synced = true;
    book->undo.countHeaders = 0;
    book->undo.line.ul_line = NULL;
    book->undo.line.ul_len = 0;
@@ -14476,7 +14476,7 @@ u_undoline(void) {
 
    // first save the line for the 'u' command
    if (u_savecommon(curBook->undo.lineLnum - 1,
-             curBook->undo.lineLnum + 1, (LineNr)0, FALSE) == FAIL)
+             curBook->undo.lineLnum + 1, (LineNr)0, false) == FAIL)
       return;
       
    UndoLine  oldp;
@@ -14485,7 +14485,7 @@ u_undoline(void) {
       return;
    }
    ml_replace_len(curBook->undo.lineLnum, curBook->undo.line.ul_line,
-                 curBook->undo.line.ul_len, TRUE, FALSE);
+                 curBook->undo.line.ul_len, true, false);
    changed_bytes(curBook->undo.lineLnum, 0);
    curBook->undo.line = oldp;
 
@@ -14507,7 +14507,7 @@ doWasBookChanged(Book* book) {
    return wasBookChangedNotTerm(book);
 }
 
-//Return TRUE if any book has changes. Also books that haven't been written.
+//Return true if any book has changes. Also books that haven't been written.
 Boole
 doWasAnyBookChanged(void) {
    Book *book;

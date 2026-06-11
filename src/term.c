@@ -103,10 +103,10 @@ private TermRequest* termRequestS[] = {
 // The t_8u code may default to a value but get reset when the term response is
 // received.  To avoid redrawing too often, only redraw when t_8u is not reset
 // and it was supposed to be written.  Unless t_8u was set explicitly.
-// FALSE -> don't output t_8u yet
-// MAYBE -> tried outputting t_8u while FALSE
+// false -> don't output t_8u yet
+// MAYBE -> tried outputting t_8u while false
 // OK    -> can write t_8u
-int write_t_8u_state = FALSE;
+int write_t_8u_state = false;
 
 
 extern char *UP, *BC, PC; // in termcap.h
@@ -114,7 +114,7 @@ extern char *UP, *BC, PC; // in termcap.h
 # define TGETENT(b, t)   tgetent((char *)(b), (char *)(t))
 private CS eeTgetstr(CS s, Byte **pp);
 
-private int focus_state = MAYBE; // TRUE if the Eegl window has focus
+private int focus_state = MAYBE; // true if the Eegl window has focus
 
 // When the cursor shape was detected these values are used:
 // 1: block, 2: underline, 3: vertical bar
@@ -122,10 +122,10 @@ private int initial_cursor_shape = 0;
 
 // The blink flag from the style response may be inverted from the actual
 // blinking state, xterm XORs the flags.
-private int initial_cursor_shape_blink = FALSE;
+private int initial_cursor_shape_blink = false;
 
 // The blink flag from the blinking-cursor mode response
-private int initial_cursor_blink = FALSE;
+private int initial_cursor_blink = false;
 //}}}
 //{{{terminfo: The builtin terminfo entries.
 
@@ -160,7 +160,7 @@ private TinfoEntry special_term[] = {
    {null, (Unt)KS_NAME}  // end marker
 };
 
-//Return TRUE if "name" looks like some xterm name.
+//Return true if "name" looks like some xterm name.
 //This matches "xterm.*", thus "xterm-256color", "xterm-kitty", etc.
 //Do not consider "xterm-kitty" an xterm, it is not fully xterm compatible,
 //using the "xterm-kitty" terminfo entry should work better.
@@ -168,7 +168,7 @@ private TinfoEntry special_term[] = {
 private int
 isEeglXterm(CS name) {
    if (!name)
-      return FALSE;
+      return false;
    return (
         (STRNICMP(name, "xterm", 5) == 0 && STRNICMP(name, "xterm-kitty", 11) != 0)
       || STRNICMP(name, "nxterm", 6) == 0
@@ -197,9 +197,9 @@ termgui_mch_get_rgb(VTermColor color) {
 //Nulls are not allowed! Only empty strings
 CS termCodeS[KS_LAST + 1];
 
-private int  needToGatherTermLeaders = FALSE; // need to fill termLeaderG[]
+private int  needToGatherTermLeaders = false; // need to fill termLeaderG[]
 private Byte termLeaderG[256 + 1];         // for check_termcode()
-private int  check_for_codes = FALSE;         // check for key code response
+private int  check_for_codes = false;         // check for key code response
 
 // Structure and table to store terminal features that can be detected by
 // querying the terminal.  Either by inspecting the termresponse or a more
@@ -230,17 +230,17 @@ typedef struct {
 private TermProp term_props[TPR_COUNT];
 
 // Initialize the term_props table.
-// When "all" is FALSE only set those that are detected from the version response.
+// When "all" is false only set those that are detected from the version response.
 void
 init_term_props(int all) {
    term_props[TPR_CURSOR_STYLE].name = S"cursor_style";
-   term_props[TPR_CURSOR_STYLE].setByTermResponse = FALSE;
+   term_props[TPR_CURSOR_STYLE].setByTermResponse = false;
    term_props[TPR_CURSOR_BLINK].name = S"cursor_blink_mode";
-   term_props[TPR_CURSOR_BLINK].setByTermResponse = FALSE;
+   term_props[TPR_CURSOR_BLINK].setByTermResponse = false;
    term_props[TPR_MOUSE].name = S"mouse";
-   term_props[TPR_MOUSE].setByTermResponse = TRUE;
+   term_props[TPR_MOUSE].setByTermResponse = true;
    term_props[TPR_KITTY].name = S"kitty";
-   term_props[TPR_KITTY].setByTermResponse = FALSE;
+   term_props[TPR_KITTY].setByTermResponse = false;
 
    for (int i = 0; i < TPR_COUNT; ++i) {
       if (all || term_props[i].setByTermResponse)
@@ -366,7 +366,7 @@ get_term_entries(OUT int* height, OUT int* width) {
 //While doing this, until ttest(), some options may be NULL, be careful.
 int
 set_termname(CS termName) {
-   int termcap_cleared = FALSE;
+   int termcap_cleared = false;
    int width = 0, height = 0;
    CS errorMsg = NULL;
 
@@ -380,7 +380,7 @@ set_termname(CS termName) {
    // If the external terminfo does not have a matching entry, try the builtin ones.
    if ((errorMsg = invoke_tgetent(tbuf, termName)) == NULL) {
       if (!termcap_cleared) {
-         termcap_cleared = TRUE;
+         termcap_cleared = true;
       }
 
       get_term_entries(OUT &height, OUT &width);
@@ -428,7 +428,7 @@ set_termname(CS termName) {
    term_is_xterm = isEeglXterm(termName);
    //Reset terminal properties that are set based on the termresponse, which
    //will be sent out soon.
-   init_term_props(FALSE);
+   init_term_props(false);
 
    // If the first number in t_XM is 1006 then the terminal will support SGR mouse reporting.
    if (termCodeS[KS_CXM] != NULL && *termCodeS[KS_CXM] != ZERO) {
@@ -453,18 +453,18 @@ set_termname(CS termName) {
 #ifdef USE_TERM_CONSOLE
    // DEFAULT_TERM indicates that it is the machine console.
    if (STRCMP(termName, DEFAULT_TERM) != 0)
-      term_console = FALSE;
+      term_console = false;
    else {
-      term_console = TRUE;
+      term_console = true;
    }
 #endif
 
-   ttest(TRUE);   // make sure we have a valid set of terminal codes
+   ttest(true);   // make sure we have a valid set of terminal codes
 
-   fullScreenG = TRUE;      // we can use termcap codes from now on
+   fullScreenG = true;      // we can use termcap codes from now on
    LOG_TR1("setting crv_status to STATUS_GET");
    crv_status.tr_progress = STATUS_GET;   // Get terminal version later
-   write_t_8u_state = FALSE;
+   write_t_8u_state = false;
 
    //Initialize the terminal with the appropriate termcap codes.
    //Set the mouse and window title if possible.
@@ -480,7 +480,7 @@ set_termname(CS termName) {
       width = 80;
       height = 24;       // most terminals are 24 lines
    }
-   set_shellsize(width, height, FALSE);   // may change visibleRowsG
+   set_shellsize(width, height, false);   // may change visibleRowsG
    if (starting != NO_SCREEN) {
       if (scroll_region)
          scroll_region_reset();      // In case visibleRowsG changed
@@ -667,12 +667,12 @@ out_flush(void) {
    // set out_pos to 0 before ui_write, to avoid recursiveness
    int len = out_pos;
    out_pos = 0;
-   ui_write(out_buf, len, FALSE);
-   if (ch_log_output != FALSE) {
+   ui_write(out_buf, len, false);
+   if (ch_log_output != false) {
       out_buf[len] = ZERO;
       lo("raw %s output: \"%s\"", "terminal", out_buf);
-      if (ch_log_output == TRUE)
-         ch_log_output = FALSE;  // only log once
+      if (ch_log_output == true)
+         ch_log_output = false;  // only log once
    }
 }
 
@@ -778,7 +778,7 @@ term_set_winpos(int x, int y) {
    OUT_STR(TGOTO(termCodeS[KS_CWP], y, x));
 }
 
-// Return TRUE if we can request the terminal for a response.
+// Return true if we can request the terminal for a response.
 private int
 can_get_termresponse(void) {
     return cur_tmode == TMODE_RAW
@@ -793,7 +793,7 @@ termrequest_sent(TermRequest* status) {
    status->tr_start = time(NULL);
 }
 
-// Return TRUE if any of the requests are in STATUS_SENT.
+// Return true if any of the requests are in STATUS_SENT.
 private int
 termrequest_any_pending(void) {
    Tyme now = time(NULL);
@@ -806,10 +806,10 @@ termrequest_any_pending(void) {
             // Sent the request more than 2 seconds ago and didn't get a response, assume it failed.
             termRequestS[i]->tr_progress = STATUS_FAIL;
          else
-            return TRUE;
+            return true;
       }
    }
-   return FALSE;
+   return false;
 }
 
 private int winpos_x = -1;
@@ -840,7 +840,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
          *y = winpos_y;
          return OK;
       }
-      ui_delay(10L, FALSE);
+      ui_delay(10L, false);
    }
    //Do not reset "did_request_winpos", if we timed out the response might
    //still come later and we must consume it.
@@ -854,7 +854,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
       return OK;
    }
 
-   return FALSE;
+   return false;
 }
 
 void
@@ -886,9 +886,9 @@ ttest(int pairs) {
 
    //if "cs" defined, use a scroll region, it's faster.
    if (termCodeS[KS_CS])
-      scroll_region = TRUE;
+      scroll_region = true;
    else
-      scroll_region = FALSE;
+      scroll_region = false;
 
    if (pairs) {
       // optional pairs. TP goes to normal mode for TI (invert) and TB (bold)
@@ -951,7 +951,7 @@ ttest(int pairs) {
          termCodeS[KS_CAF] = null;
       }
    }
-   needToGatherTermLeaders = TRUE;
+   needToGatherTermLeaders = true;
 }
 
 #if defined(PROTO)
@@ -1065,7 +1065,7 @@ win_new_shellsize(void) {
 //Will obtain the current size and redraw (also when size didn't change).
 void
 shell_resized(void){
-   set_shellsize(0, 0, FALSE);
+   set_shellsize(0, 0, false);
 }
 
 //Check if the shell size changed.  Handle a resize.
@@ -1085,9 +1085,9 @@ shell_resized_check(void) {
 }
 
 //Set size of the Eegl shell.
-//If 'mustset' is TRUE, we must set visibleRowsG and Columns, do not get the real
+//If 'mustset' is true, we must set visibleRowsG and Columns, do not get the real
 //window size (this is used for the :win command).
-//If 'mustset' is FALSE, we may try to get the real window size and if
+//If 'mustset' is false, we may try to get the real window size and if
 //it fails use 'width' and 'height'.
 private void
 set_shellsize_inner(int width, int height, int mustset) {
@@ -1132,11 +1132,11 @@ set_shellsize_inner(int width, int height, int mustset) {
       //Always need to call drawUpdateScreen() or screenalloc(), to make
       //sure visibleRowsG/visibleColsG and the size of ScreenLines[] is correct!
       if (stateG == MODE_ASKMORE || stateG == MODE_EXTERNCMD || stateG == MODE_CONFIRM) {
-         screenalloc(FALSE);
+         screenalloc(false);
          repeat_message();
       } else {
          if (curPor->o.scrollBind)
-            normPostProcessScrollbind(TRUE);
+            normPostProcessScrollbind(true);
          if (stateG & MODE_COMMLINE) {
             drawUpdateScreen(UPD_NOT_VALID);
             redrawCommline();
@@ -1158,8 +1158,8 @@ set_shellsize_inner(int width, int height, int mustset) {
 
 void
 set_shellsize(int width, int height, int mustset) {
-   static int busy = FALSE;
-   static int do_run = FALSE;
+   static int busy = false;
+   static int do_run = false;
 
    if (width < 0 || height < 0)    // just checking...
       return;
@@ -1173,15 +1173,15 @@ set_shellsize(int width, int height, int mustset) {
    //Avoid recursivity. This can happen when setting the window size causes another window-changed
    //signal or when two SIGWINCH signals come very close together. There needs to be another run
    //then after the current one is done to pick up the latest size.
-   do_run = TRUE;
+   do_run = true;
    if (busy)
       return;
 
    while (do_run) {
-      do_run = FALSE;
-      busy = TRUE;
+      do_run = false;
+      busy = true;
       set_shellsize_inner(width, height, mustset);
-      busy = FALSE;
+      busy = false;
    }
 }
 
@@ -1206,7 +1206,7 @@ out_str_t_TE(void) {
       modify_otherkeys_state = MOKS_AFTER_T_TE;
 }
 
-private int send_t_RK = FALSE;
+private int send_t_RK = false;
 
 //Output termCodeS[KS_TI] and setup for what follows.
 void
@@ -1214,7 +1214,7 @@ out_str_t_TI(void) {
    out_str(termCodeS[KS_CTI]);
 
    //Send t_RK when there is no more work to do.
-   send_t_RK = TRUE;
+   send_t_RK = true;
 }
 
 //Output termCodeS[KS_CBE], but only when t_PS and t_PE are set.
@@ -1235,7 +1235,7 @@ out_str_t_BE(void) {
 void
 may_send_t_RK(void) {
    if (send_t_RK && !work_pending() && !ex_normal_busy && !in_feedkeys && !isExitingG) {
-      send_t_RK = FALSE;
+      send_t_RK = false;
       out_str(termCodeS[KS_CRK]);
       out_flush();
    }
@@ -1258,7 +1258,7 @@ termSetMode(TermInputMode tmode) {
          (void)vpeekc_nomap();
       handleUnansweredRequests();
       if (tmode != TMODE_RAW)
-         mch_setmouse(FALSE);   // switch mouse off
+         mch_setmouse(false);   // switch mouse off
 
       //Disable bracketed paste and modifyOtherKeys in cooked mode.
       //Avoid doing this too often, on some terminals the codes are not handled properly.
@@ -1300,7 +1300,7 @@ starttermcap(void) {
       out_str(termCodeS[KS_FE]);
 
    out_flush();
-   termcap_active = TRUE;
+   termcap_active = true;
    screen_start();         // don't know where cursor is now
    may_req_termresponse();
    //Immediately check for a response.  If t_Co changes, we don't
@@ -1338,7 +1338,7 @@ termStopTerminfo(void) {
    out_str(termCodeS[KS_CBD]);
    out_str(termCodeS[KS_KE]);         // stop "keypad transmit" mode
    out_flush();
-   termcap_active = FALSE;
+   termcap_active = false;
 
    //Output t_te before t_TE, t_te may switch between main and alternate
    //screen and following codes may work on the active screen only.
@@ -1388,7 +1388,7 @@ may_req_termresponse(void) {
 // can be used when the termresponse arrives.
 void
 check_terminal_behavior(void) {
-   int       did_send = FALSE;
+   int       did_send = false;
 
    if (!can_get_termresponse() || starting != 0 || termCodeS[KS_U7] == Em)
       return;
@@ -1412,7 +1412,7 @@ check_terminal_behavior(void) {
       out_str(termCodeS[KS_U7]);
       termrequest_sent(&u7_status);
       out_flush();
-      did_send = TRUE;
+      did_send = true;
 
       //This overwrites a few characters on the screen, a redraw is needed
       //after this. Clear them out for now.
@@ -1439,7 +1439,7 @@ check_terminal_behavior(void) {
       out_str(termCodeS[KS_U7]);
       termrequest_sent(&xcc_status);
       out_flush();
-      did_send = TRUE;
+      did_send = true;
 
       //If the terminal handles test sequence incorrectly, garbage text is
       //displayed. Clear them out for now.
@@ -1461,7 +1461,7 @@ check_terminal_behavior(void) {
    }
 }
 
-//Return TRUE when saving and restoring the screen.
+//Return true when saving and restoring the screen.
 int
 termIsScreenBeingSwapped(void) {
    return (fullScreenG && termCodeS[KS_TI] != Em);
@@ -1482,17 +1482,17 @@ scroll_start(void) {
 }
 
 // True if cursor is not visible
-private int cursor_is_off = FALSE;
+private int cursor_is_off = false;
 
 //True if cursor is not visible due to an ongoing cursor-less sleep
-private int cursor_is_asleep = FALSE;
+private int cursor_is_asleep = false;
 
 //Enable the cursor without checking if it's already enabled.
 void
 cursor_on_force(void) {
    out_str(termCodeS[KS_VE]);
-   cursor_is_off = FALSE;
-   cursor_is_asleep = FALSE;
+   cursor_is_off = false;
+   cursor_is_asleep = false;
 }
 
 //Enable the cursor if it's currently off.
@@ -1507,21 +1507,21 @@ void
 cursor_off(void) {
    if (fullScreenG && !cursor_is_off) {
       out_str(termCodeS[KS_VI]);       // disable cursor
-      cursor_is_off = TRUE;
+      cursor_is_off = true;
    }
 }
 
 // Disable the cursor and mark it disabled by cursor-less sleep
 void
 cursor_sleep(void) {
-   cursor_is_asleep = TRUE;
+   cursor_is_asleep = true;
    cursor_off();
 }
 
 // Enable the cursor and mark it not disabled by cursor-less sleep
 void
 cursor_unsleep(void) {
-   cursor_is_asleep = FALSE;
+   cursor_is_asleep = false;
    cursor_on();
 }
 
@@ -1639,7 +1639,7 @@ clear_termcodes(void) {
    PC = ZERO;         // set pad character to ZERO
    ospeed = 0;
 
-   needToGatherTermLeaders = TRUE;      // need to fill termLeaderG[]
+   needToGatherTermLeaders = true;      // need to fill termLeaderG[]
 }
 
 #define ATC_FROM_TERM 55
@@ -1662,7 +1662,7 @@ adjust_modlen(int idx) {
 //Add a new entry for "name[2]" to the list of terminal codes.
 //Note that "name" may not have a terminating ZERO.
 //The list is kept alphabetical for ":set termcap"
-//"flags" is TRUE when replacing 7-bit by 8-bit controls is desired.
+//"flags" is true when replacing 7-bit by 8-bit controls is desired.
 //"flags" can also be ATC_FROM_TERM for got_code_from_term().
 void
 add_termcode(CS name, CS string, Boole isAtcFromTerm) {
@@ -1678,7 +1678,7 @@ add_termcode(CS name, CS string, Boole isAtcFromTerm) {
    int          i, j;
    int len = (int)STRLEN(s);
 
-   needToGatherTermLeaders = TRUE;
+   needToGatherTermLeaders = true;
 
    // need to make space for more entries
    if (tc_len == tc_max_len) {
@@ -1747,7 +1747,7 @@ private void
 accept_modifiers_for_function_keys(void) {
    RegMatch regmatch;
    CLEAR_FIELD(regmatch);
-   regmatch.rm_ic = TRUE;
+   regmatch.rm_ic = true;
    regmatch.regprog = compileRegexp(S"^\033[\\d\\+\\~$", RE_MAGIC);
 
    for (int i = 0; i < tc_len; ++i) {
@@ -1814,7 +1814,7 @@ del_termcode(CS name) {
    if (!recognizedCodeS)   // nothing there yet
       return;
 
-   needToGatherTermLeaders = TRUE;
+   needToGatherTermLeaders = true;
 
    for (int i = 0; i < tc_len; ++i) {
       if (recognizedCodeS[i].name[0] == name[0] && recognizedCodeS[i].name[1] == name[1]) {
@@ -1847,7 +1847,7 @@ set_mouse_topline(Portal* po) {
    orig_topfill = po->topFill;
 }
 
-// TRUE if the top line and top fill of window 'wp' matches the saved topline and topfill.
+// true if the top line and top fill of window 'wp' matches the saved topline and topfill.
 int
 is_mouse_topline(Portal* po) {
    return orig_topline == po->topLine && orig_topfill == po->topFill;
@@ -1874,7 +1874,7 @@ termPutStrIntoTypebuf(
          del_typebuf(-extra, offset);
       ei (extra > 0)
          //insert the extra space we need
-         if (insertIntoTypebuf(string + slen, REMAP_YES, offset, FALSE, FALSE) == FAIL)
+         if (insertIntoTypebuf(string + slen, REMAP_YES, offset, false, false) == FAIL)
             return FAIL;
 
       // Careful: del_typebuf() and insertIntoTypebuf() may have reallocated typeBufG.c[]!
@@ -1939,7 +1939,7 @@ handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED) {
    if (arg[0] == 2 && arg[1] >= 2) {
       LOG_TRN("Received U7 status: %s", tp);
       u7_status.tr_progress = STATUS_GOT;
-      did_cursorhold = TRUE;
+      did_cursorhold = true;
    } ei (arg[0] == 3) {
       LOG_TRN("Received compatibility test result: %s", tp);
       xcc_status.tr_progress = STATUS_GOT;
@@ -1962,7 +1962,7 @@ handle_version_response(int first, int* arg, int argc) {
 
    LOG_TRN("Received CRV response: %s", tp);
    crv_status.tr_progress = STATUS_GOT;
-   did_cursorhold = TRUE;
+   did_cursorhold = true;
 
    //Reset terminal properties that are set based on the termresponse.
    //Mainly useful for tests that send the termresponse multiple times.
@@ -2035,7 +2035,7 @@ handle_version_response(int first, int* arg, int argc) {
       //Kitty up to 9.x sends 1;400{version};{secondary-version}
       if (arg[0] == 1 && arg[1] >= 4000 && arg[1] <= 4009) {
           term_props[TPR_KITTY].status = TPR_YES;
-          term_props[TPR_KITTY].setByTermResponse = TRUE;
+          term_props[TPR_KITTY].setByTermResponse = true;
 
           //Kitty can handle SGR mouse reporting.
           term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
@@ -2059,7 +2059,7 @@ handle_version_response(int first, int* arg, int argc) {
 
       write_t_8u_state = OK;  // can output t_8u now
 
-      int need_flush = FALSE;
+      int need_flush = false;
 
       //Only request the cursor style if t_SH and t_RS are
       //set. Only supported properly by xterm since version
@@ -2075,7 +2075,7 @@ handle_version_response(int first, int* arg, int argc) {
           LOG_TR1("Sending cursor style request");
           out_str(termCodeS[KS_CRS]);
           termrequest_sent(&cursorStyleRequestS);
-          need_flush = TRUE;
+          need_flush = true;
       }
 
       //Only request the cursor blink mode if t_RC set. Not
@@ -2089,7 +2089,7 @@ handle_version_response(int first, int* arg, int argc) {
           LOG_TR1("Sending cursor blink mode request");
           out_str(termCodeS[KS_CRC]);
           termrequest_sent(&cursorBlinkingRequestS);
-          need_flush = TRUE;
+          need_flush = true;
       }
 
       if (need_flush)
@@ -2400,7 +2400,7 @@ handleControlSequenceIntroducer(
       if (arg[0] != '0') {
          // Reset seenModifyOtherKeys just in case some key combination has
          // been seen that set it before we get the status response.
-         seenModifyOtherKeys = FALSE;
+         seenModifyOtherKeys = false;
       }
 
       key_name[0] = (int)KS_EXTRA;
@@ -2501,7 +2501,7 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
             number = number == 0 ? 1 : number;
             initial_cursor_shape = (number + 1) / 2;
             //The blink flag is actually inverted, compared to the value set with termCodeS[KS_SH].
-            initial_cursor_shape_blink = (number & 1) ? FALSE : TRUE;
+            initial_cursor_shape_blink = (number & 1) ? false : true;
             cursorStyleRequestS.tr_progress = STATUS_GOT;
             LOG_TRN("Received cursor shape response: %s", tp);
 
@@ -2627,7 +2627,7 @@ check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
             slen = recognizedCodeS[idx].len;
             modifiers_start = NULL;
             if (STRNCMP(recognizedCodeS[idx].code, readPos, (Unt)(slen > len ? len : slen)) == 0) {
-               int looks_like_mouse_start = FALSE;
+               int looks_like_mouse_start = false;
 
                if (len < slen)      // got a partial sequence
                   return -1;      // need to get more chars
@@ -2655,7 +2655,7 @@ check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
                  if (!SAFE_isdigit(readPos[2])) {
                     //ESC [ without number following: Only use it when
                     //there is no other match.
-                    looks_like_mouse_start = TRUE;
+                    looks_like_mouse_start = true;
                  } ei (recognizedCodeS[idx].name[0] == KS_DEC_MOUSE) {
                      Byte  *nr = readPos + 2;
                      int       count = 0;
@@ -2812,16 +2812,16 @@ check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
       if (keyName[0] == KS_EXTRA) {
          if (keyName[1] == KE_FOCUSGAINED) {
             if (!focus_state) {
-               ui_focus_change(TRUE);
-               did_cursorhold = TRUE;
-               focus_state = TRUE;
+               ui_focus_change(true);
+               did_cursorhold = true;
+               focus_state = true;
             }
             keyName[1] = (int)KE_IGNORE;
           } ei (keyName[1] == KE_FOCUSLOST) {
             if (focus_state) {
-               ui_focus_change(FALSE);
-               did_cursorhold = TRUE;
-               focus_state = FALSE;
+               ui_focus_change(false);
+               did_cursorhold = true;
+               focus_state = false;
             }
             keyName[1] = (int)KE_IGNORE;
          }
@@ -2899,9 +2899,9 @@ get_tty_info(int fd, TtyInfo* info) {
       else
          info->enter = ENTER;
       if (keys.c_oflag & ONLCR)
-         info->nl_does_cr = TRUE;
+         info->nl_does_cr = true;
       else
-         info->nl_does_cr = FALSE;
+         info->nl_does_cr = false;
       return OK;
    }
    return FAIL;
@@ -2909,13 +2909,13 @@ get_tty_info(int fd, TtyInfo* info) {
 
 void
 mch_termSetMode(TermInputMode tmode) {
-   static int first = TRUE;
+   static int first = true;
 
    static TermIos told;
    TermIos tnew;
 
    if (first) {
-      first = FALSE;
+      first = false;
       mch_tcgetattr(read_cmd_fd, &told);
    }
 
@@ -2965,7 +2965,7 @@ check_mouse_termcode(void) {
    set_mouse_termcode(KS_SGR_MOUSE, S"\233<*M");
    set_mouse_termcode(KS_SGR_MOUSE_RELEASE, S"\233<*m");
 
-   mch_setmouse(FALSE);
+   mch_setmouse(false);
    setmouse();
 }
 
@@ -3349,7 +3349,7 @@ replace_termcodes(
          int fsk_flags = FSK_KEYCODE
            | ((flags & REPTERM_NO_SIMPLIFY) ? 0 : FSK_SIMPLIFY)
            | ((flags & REPTERM_FROM_PART) ? FSK_FROM_PART : 0);
-         slen = trans_special(&src, result + dlen, fsk_flags, TRUE, OUT didSimplify);
+         slen = trans_special(&src, result + dlen, fsk_flags, true, OUT didSimplify);
          if (slen > 0) {
             dlen += slen;
             continue;
@@ -3489,7 +3489,7 @@ gatherTermLeaders(void) {
       }
    }
 
-   needToGatherTermLeaders = FALSE;
+   needToGatherTermLeaders = false;
 }
 
 //Show all recognizedCodeS (for ":set termcap")
@@ -3524,7 +3524,7 @@ show_termcodes(Unt flags) {
       //collect the items in items[]
       item_count = 0;
       for (i = 0; i < tc_len; i++) {
-         len = show_one_termcode(recognizedCodeS[i].name, recognizedCodeS[i].code, FALSE);
+         len = show_one_termcode(recognizedCodeS[i].name, recognizedCodeS[i].code, false);
          if ((flags & OPT_ONECOLUMN) ||
                 (len <= INC3 - GAP 
                  ? run == 1
@@ -3550,7 +3550,7 @@ show_termcodes(Unt flags) {
          col = 0;
          for (i = row; i < item_count; i += rows) {
             msgColG = col;         // make columns
-            show_one_termcode(recognizedCodeS[items[i]].name, recognizedCodeS[items[i]].code, TRUE);
+            show_one_termcode(recognizedCodeS[items[i]].name, recognizedCodeS[items[i]].code, true);
             if (run == 2)
                col += INC2;
             else
@@ -3692,7 +3692,7 @@ get_special_key_code(CS name) {
    // If it's <t_xx> we get the code for xx from the termcap
    if (name[0] == 'z' && name[1] == 'z' && name[2] != ZERO && name[3] != ZERO) {
       Byte string[3] = {name[2], name[3], ZERO};
-      if (add_termcap_entry(string, FALSE) == OK)
+      if (add_termcap_entry(string, false) == OK)
          return TERMCAP2KEY(name[2], name[3]);
    } else {
       KeyNameEntry target;
@@ -4019,8 +4019,8 @@ term_replace_keycodes(CS ta_buf, int ta_len, int len_arg) {
 
 //Try to include modifiers in the key.
 //Changes "Shift-a" to 'A', "Alt-A" to 0xc0, etc.
-//When "simplify" is FALSE don't do Ctrl and Alt.
-//When "simplify" is TRUE and Ctrl or Alt is removed from modifiers set
+//When "simplify" is false don't do Ctrl and Alt.
+//When "simplify" is true and Ctrl or Alt is removed from modifiers set
 //"didSimplify" when it's not NULL.
 private int
 extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSimplify) {
@@ -4047,7 +4047,7 @@ extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSi
          key = K_ZERO;
       if (didSimplify) {
          //lo("ccc simpl misc.c 3241 key %d", key);
-         //*didSimplify = TRUE;
+         //*didSimplify = true;
       }
    }
 
@@ -4116,7 +4116,7 @@ termFindSpecialKey(
       if (bp[0] == 'z' && bp[1] == 'z' && bp[2] && bp[3])
          bp += 3;   // skip t_xx, xx may be '-' or '>'
       ei (STRNICMP(bp, "char-", 5) == 0) {
-         readLongNumber(bp + 5, NULL, &l, STR2NR_ALL, NULL, NULL, 0, TRUE, NULL);
+         readLongNumber(bp + 5, NULL, &l, STR2NR_ALL, NULL, NULL, 0, true, NULL);
          if (l == 0) {
             emsg(_(e_invalid_argument));
             return 0;
@@ -4144,7 +4144,7 @@ termFindSpecialKey(
       if (bp >= last_dash) {
          if (STRNICMP(last_dash + 1, "char-", 5) == 0 && EE_ISDIGIT(last_dash[6])) {
             // <Char-123> or <Char-033> or <Char-0x33>
-            readLongNumber(last_dash + 6, NULL, &l, STR2NR_ALL, NULL, &n, 0, TRUE, NULL);
+            readLongNumber(last_dash + 6, NULL, &l, STR2NR_ALL, NULL, &n, 0, true, NULL);
             if (l == 0) {
                emsg(_(e_invalid_argument));
                return 0;
@@ -4274,7 +4274,7 @@ termFindSpecialKey_in_table(int c) {
 
 //Put the character sequence for "key" with "modifiers" into "dst" and return
 //the resulting length.
-//When "escape_ks" is TRUE escape K_SPECIAL bytes in the character.
+//When "escape_ks" is true escape K_SPECIAL bytes in the character.
 //The sequence is not ZERO terminated. This is how characters in a string are encoded.
 int
 special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst) {

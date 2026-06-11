@@ -233,7 +233,7 @@ private void initGlobalAndSpecialVars(void);
 private Text expandCurlyBraces(Text braces, Text outer);
 
 //Return "n1" divided by "n2", taking care of dividing by zero.
-//If "failed" is not NULL set it to TRUE when dividing by zero fails.
+//If "failed" is not NULL set it to true when dividing by zero fails.
 Long
 num_divide(Long n1, Long n2, OUT Boole* failed) {
    Long   result;
@@ -259,7 +259,7 @@ num_divide(Long n1, Long n2, OUT Boole* failed) {
 }
 
 //Return "n1" modulus "n2", taking care of dividing by zero.
-//If "failed" is not NULL set it to TRUE when dividing by zero fails.
+//If "failed" is not NULL set it to true when dividing by zero fails.
 Long
 num_modulus(Long n1, Long n2, OUT Boole* failed) {
    if (n2 == 0) {
@@ -288,7 +288,7 @@ eval_clear(void) {
    free_autoload_scriptnames();
 
    // unreferenced lists and dicts
-   (void)garbage_collect(FALSE);
+   (void)garbage_collect(false);
 
    // functions not garbage collected
    free_all_functions();
@@ -311,7 +311,7 @@ fillEvalArgFromInvo(OUT EvalCtx *evalarg, Invocation* invo, int skip) {
 }
 
 // Top level evaluation function, returning a boolean.
-// Sets "error" to TRUE if there was an error. Return TRUE or FALSE.
+// Sets "error" to true if there was an error. Return true or false.
 int
 eval_to_bool(
    CS arg,
@@ -321,7 +321,7 @@ eval_to_bool(
    Boole use_simple_function
 ){
    Var   tv;
-   Long   retval = FALSE;
+   Long   retval = false;
    EvalCtx   evalarg;
    int      r;
 
@@ -334,9 +334,9 @@ eval_to_bool(
    else
       r = eval0(arg, &tv, invo, &evalarg);
    if (r == FAIL)
-      *error = TRUE;
+      *error = true;
    else {
-      *error = FALSE;
+      *error = false;
       if (!skip) {
          retval = (varGetNumberChk(&tv, OUT error) != 0);
          clearVar(&tv);
@@ -372,7 +372,7 @@ eval1_emsg(Byte **arg, Var* returnVar, Invocation* invo) {
 }
 
 //Return whether a typval is a valid expression to pass to eval_expr_typval()
-//or eval_expr_to_bool(). For an empty string return FALSE;
+//or eval_expr_to_bool(). For an empty string return false;
 Boole
 eval_expr_valid_arg(Var *tv) {
    return tv->tag != VAR_UNKNOWN
@@ -395,7 +395,7 @@ partialEvalExp(Var* expr, Var* argv, int argc, Var* returnVar) {
       return FAIL;
 
    CLEAR_FIELD(funcexe);
-   funcexe.fe_evaluate = TRUE;
+   funcexe.fe_evaluate = true;
    funcexe.fe_partial = partial;
    if (call_func(s, -1, returnVar, argc, argv, &funcexe) == FAIL)
       return FAIL;
@@ -420,12 +420,12 @@ eval_expr_func(
    if (expr->tag == VAR_FUNC)
       s = expr->string;
    else
-      s = convertVarToString_strict(expr, buf, FALSE);
+      s = convertVarToString_strict(expr, buf, false);
    if (!s || *s == ZERO)
       return FAIL;
 
    CLEAR_FIELD(funcexe);
-   funcexe.fe_evaluate = TRUE;
+   funcexe.fe_evaluate = true;
    if (call_func(s, -1, returnVar, argc, argv, &funcexe) == FAIL)
       return FAIL;
 
@@ -437,7 +437,7 @@ private int
 eval_expr_string(Var* expr, Var* returnVar) {
    Byte buf[NUMBUFLEN];
 
-   CS s = convertVarToString_strict(expr, buf, FALSE);
+   CS s = convertVarToString_strict(expr, buf, false);
    if (!s)
       return FAIL;
 
@@ -455,7 +455,7 @@ eval_expr_string(Var* expr, Var* returnVar) {
 }
 
 //Evaluate an expression, which can be a function, partial or string. Pass arguments "argv[argc]".
-//If "want_func" is TRUE treat a string as a function name, not an expression.
+//If "want_func" is true treat a string as a function name, not an expression.
 //Return the result in "returnVar" and OK or FAIL.
 int
 eval_expr_typval(
@@ -488,9 +488,9 @@ eval_expr_to_bool(Var *expr, OUT Boole* error) {
    return res;
 }
 
-//Top level evaluation function, returning a string.  If "skip" is TRUE,
+//Top level evaluation function, returning a string.  If "skip" is true,
 //only parsing to "nextComm" is done, without reporting errors. Return
-//pointer to allocated memory, or NULL for failure or when "skip" is TRUE.
+//pointer to allocated memory, or NULL for failure or when "skip" is true.
 CS
 eval_to_string_skip(
    CS arg,
@@ -606,7 +606,7 @@ skip_expr_concatenate(
    return res;
 }
 
-//Convert "tv" to a string. When "join_list" is TRUE, convert a List into a sequence 
+//Convert "tv" to a string. When "join_list" is true, convert a List into a sequence 
 //of lines. Return an allocated string (NULL when out of memory).
 CS
 typval2string(Var *tv, int join_list) {
@@ -616,7 +616,7 @@ typval2string(Var *tv, int join_list) {
    if (join_list && (tv->tag == VAR_LIST)) {
       ga_init2(&ga, sizeof(char), 80);
       if (tv->list) {
-         list_join(&ga, tv->list, (CS)"\n", TRUE, FALSE, 0);
+         list_join(&ga, tv->list, (CS)"\n", true, false, 0);
          if (tv->list->len > 0)
              ga_append(&ga, NL);
       }
@@ -636,7 +636,7 @@ typval2string(Var *tv, int join_list) {
 }
 
 //Top-level evaluation function, returning a string. Do not handle line breaks.
-//When "join_list" is TRUE, convert a List into a sequence of lines.
+//When "join_list" is true, convert a List into a sequence of lines.
 //Return pointer to allocated memory, or NULL for failure.
 CS
 evalToStringWithInvo(CS arg, Boole join_list, Invocation* invo, Boole use_simple_function){
@@ -674,8 +674,8 @@ eval_to_string_safe(CS arg, Boole use_simple_function) {
 
    save_funccal(&funccal_entry);
    ++textlock;
-   may_garbage_collect = FALSE;
-   CS retval = eval_to_string(arg, FALSE, use_simple_function);
+   may_garbage_collect = false;
+   CS retval = eval_to_string(arg, false, use_simple_function);
    --textlock;
    may_garbage_collect = save_garbage;
    restore_funccal();
@@ -732,12 +732,12 @@ evalExprInternal(CS arg, Invocation* invo, int use_simple_function) {
 //is an error.
 Var*
 eval_expr(CS arg, Invocation* invo) {
-   return evalExprInternal(arg, invo, FALSE);
+   return evalExprInternal(arg, invo, false);
 }
 
 //Evaluate a string constant and put the result into "returnVar".
-//"*arg" points to the double quote or to after it when "interpolate" is TRUE.
-//When "interpolate" is TRUE, reduce "{{" to "{", reduce "}}" to "}" and stop
+//"*arg" points to the double quote or to after it when "interpolate" is true.
+//When "interpolate" is true, reduce "{{" to "{", reduce "}}" to "}" and stop
 //at a single "{". Return OK or FAIL.
 private int
 evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpolate) {
@@ -836,7 +836,7 @@ evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpol
 
             if (p[1] != '*')
                flags |= FSK_SIMPLIFY;
-            extra = trans_special(OUT &p, end, flags, FALSE, NULL);
+            extra = trans_special(OUT &p, end, flags, false, NULL);
             if (extra != 0) {
               end += extra;
               if (end >= returnVar->string + len)
@@ -866,7 +866,7 @@ evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpol
    return OK;
 }
 
-//Allocate a variable for a 'str''ing' constant. When "interpolate" is TRUE reduce "{{" to "{" and 
+//Allocate a variable for a 'str''ing' constant. When "interpolate" is true reduce "{{" to "{" and 
 //stop at a single "{". Return OK when a "returnVar" was set to the string.
 //Return FAIL on error, "returnVar" is not set.
 private int
@@ -954,9 +954,9 @@ eval_interp_string(Byte **arg, Var* returnVar, int evaluate) {
       // Get the string up to the matching quote or to a single '{'.
       // "arg" is advanced to either the quote or the '{'.
       if (quote == '"')
-         ret = evalStringLiteral(arg, &tv, evaluate, TRUE);
+         ret = evalStringLiteral(arg, &tv, evaluate, true);
       else
-         ret = evalRawString(arg, &tv, evaluate, TRUE);
+         ret = evalRawString(arg, &tv, evaluate, true);
       if (ret == FAIL)
          break;
       if (evaluate) {
@@ -993,7 +993,7 @@ eval_interp_string(Byte **arg, Var* returnVar, int evaluate) {
 
 //"*arg" points to what can be a function name in the form of "import.Name" or "Funcref". 
 //Return the name of the function. Set "tofree" to something that was allocated.
-//If "verbose" is FALSE no errors are given. Return NULL for any failure.
+//If "verbose" is false no errors are given. Return NULL for any failure.
 private CS
 deref_function_name(
     Byte   **arg,
@@ -1012,11 +1012,11 @@ deref_function_name(
       save_flags = evalarg->eval_flags;
       evalarg->eval_flags |= EVAL_EVALUATE;
    }
-   if (eval9(arg, &ref, evalarg, FALSE) == FAIL) {
+   if (eval9(arg, &ref, evalarg, false) == FAIL) {
       DictItem   *v;
 
       // If <SID>VarName was used it would not be found, try another way.
-      v = findVar_also_in_script(name, NULL, FALSE);
+      v = findVar_also_in_script(name, NULL, false);
       if (v == NULL) {
          name = NULL;
          goto theend;
@@ -1075,7 +1075,7 @@ callEeglFunction(
    CLEAR_FIELD(funcexe);
    funcexe.fe_firstline = curPor->cursor.lnum;
    funcexe.fe_lastline = curPor->cursor.lnum;
-   funcexe.fe_evaluate = TRUE;
+   funcexe.fe_evaluate = true;
 
    //The name might be "import.Func" or "Funcref". We don't know, we need to ignore errors for an 
    //undefined name. But we do want errors when an autoload script has errors.  Guess that when 
@@ -1084,7 +1084,7 @@ callEeglFunction(
    arg = func;
    if (ignore_errors)
       ++emsg_off;
-   name = deref_function_name(&arg, &tofree, &EVALARG_EVALUATE, FALSE);
+   name = deref_function_name(&arg, &tofree, &EVALARG_EVALUATE, false);
    if (ignore_errors)
       --emsg_off;
    if (name == NULL)
@@ -1262,7 +1262,7 @@ fillLvalFromRoot(Lval *lp, LvalRoot* root) {
    lo("LKVAR:    ... type: %s", vartype_name(lr->var->tag));
 #endif
    lp->var = root->var;
-   lp->isRoot = TRUE;
+   lp->isRoot = true;
 }
 
 typedef enum {
@@ -1274,7 +1274,7 @@ typedef enum {
 //Get a Bag lval variable that can be assigned a value to: "name", "name[expr]", 
 //"name[expr][expr]", "name.key", "name.key[expr]" etc.
 //"name" points to the start of the name. If "returnVar" is not NULL, it points to the value to be
-//assigned. "unlet" is TRUE for ":unlet": slightly different behavior when something is
+//assigned. "unlet" is true for ":unlet": slightly different behavior when something is
 //wrong; must end in space or cmd separator.
 //
 // flags:
@@ -1371,7 +1371,7 @@ get_lval_dict_item(
 //
 // 'var1' specifies the starting blob index and 'var2' specifies the ending
 // blob index.  If the first index is not specified in a range, then 'empty1'
-// is TRUE.  If 'quiet' is TRUE, then error messages are not displayed for
+// is true.  If 'quiet' is true, then error messages are not displayed for
 // invalid indexes.
 //
 // The blob is returned in 'lp'.  Return OK on success and FAIL on failure.
@@ -1415,7 +1415,7 @@ get_lval_blob(
 //
 // 'var1' specifies the starting List index and 'var2' specifies the ending
 // List index.  If the first index is not specified in a range, then 'empty1'
-// is TRUE.  If 'quiet' is TRUE, then error messages are not displayed for
+// is true.  If 'quiet' is true, then error messages are not displayed for
 // invalid indexes.
 //
 // The List is returned in 'lp'.  Return OK on success and FAIL on failure.
@@ -1443,7 +1443,7 @@ get_lval_list(
       return FAIL;
 
    //May need to find the item or absolute index for the second index of a range.
-   //When no index given: "lp->ll_empty2" is TRUE.
+   //When no index given: "lp->ll_empty2" is true.
    //Otherwise "lp->ll_n2" is set to the second index.
    if (lp->ll_range && !lp->ll_empty2) {
       lp->ll_n2 = (long)tv_get_number(var2);
@@ -1458,20 +1458,20 @@ get_lval_list(
 }
 
 //Check whether dot (".") is allowed after the variable "name" with type "tag". Only Bag, Class 
-//and Object types support a dot after the name. Return TRUE if dot is allowed after the name.
+//and Object types support a dot after the name. Return true if dot is allowed after the name.
 private int
 dot_allowed_after_type(Text name, VarTag tag, int quiet) {
    if (tag != VAR_BAG) {
       if (!quiet)
          showErrFmtMsg(_(e_dot_not_allowed_after_str_str), vartype_name(tag), name);
-      return FALSE;
+      return false;
    }
 
-   return TRUE;
+   return true;
 }
 
 //Check whether the variable "name" with type "tag" can be followed by an index. Only Bag, List, 
-//Blob, Object and Class types support indexing.  Return TRUE if indexing is allowed after 
+//Blob, Object and Class types support indexing.  Return true if indexing is allowed after 
 //the name.
 private Boole
 index_allowed_after_type(Text name, VarTag tag, int quiet) {
@@ -1481,16 +1481,16 @@ index_allowed_after_type(Text name, VarTag tag, int quiet) {
    ) {
       if (!quiet)
          showErrFmtMsg(_(e_index_not_allowed_after_str_str), vartype_name(tag), name.c);
-      return FALSE;
+      return false;
    }
 
-   return TRUE;
+   return true;
 }
 
 // Get the lval of a list/dict/blob subitem starting at "p".
 // Loop until no more [idx] or .key is following.
 //
-// If "returnVar" is not NULL it points to the value to be assigned. "unlet" is TRUE for ":unlet".
+// If "returnVar" is not NULL it points to the value to be assigned. "unlet" is true for ":unlet".
 //
 // Return a pointer to the character after the subscript on success or NULL on failure.
 private CS
@@ -1500,7 +1500,7 @@ getLvalSubscript(Lval* lv, CS p, GetLval arg) {
    int      len;
    Var   var1;
    Var   var2;
-   int      empty1 = FALSE;
+   int      empty1 = false;
    int      rc = FAIL;
 
    // Loop until no more [idx] or .key is following.
@@ -1551,9 +1551,9 @@ getLvalSubscript(Lval* lv, CS p, GetLval arg) {
          // Get the index [expr] or the first index [expr: ].
          p = skipwhite(p + 1);
          if (*p == ':')
-            empty1 = TRUE;
+            empty1 = true;
          else {
-            empty1 = FALSE;
+            empty1 = false;
             if (eval1(OUT &p, &var1, &EVALARG_EVALUATE) == FAIL)  // recursive!
                goto done;
             if (convertVarToStringSingleUse(&var1) == NULL)
@@ -1579,9 +1579,9 @@ getLvalSubscript(Lval* lv, CS p, GetLval arg) {
             }
             p = skipwhite(p + 1);
             if (*p == ']')
-               lv->ll_empty2 = TRUE;
+               lv->ll_empty2 = true;
             else {
-               lv->ll_empty2 = FALSE;
+               lv->ll_empty2 = false;
                // recursive!
                if (eval1(OUT &p, &var2, &EVALARG_EVALUATE) == FAIL)
                   goto done;
@@ -1589,9 +1589,9 @@ getLvalSubscript(Lval* lv, CS p, GetLval arg) {
                   // not a number or string
                   goto done;
             }
-            lv->ll_range = TRUE;
+            lv->ll_range = true;
          } else
-            lv->ll_range = FALSE;
+            lv->ll_range = false;
 
          if (*p != ']') {
             if (!quiet)
@@ -1642,7 +1642,7 @@ done:
 //Get an lval: variable, Bag item or List item that can be assigned a value to: "name", "na{me}",
 //"name[expr]", "name[expr:expr]", "name[expr][expr]", "name.key", "name.key[expr]" etc.
 //Indexing only works if "name" is an existing List or Dictionary. "name" points to the start of 
-//the name. If "returnVar" is not NULL it points to the value to be assigned. "unlet" is TRUE for 
+//the name. If "returnVar" is not NULL it points to the value to be assigned. "unlet" is true for 
 //":unlet": slightly different behavior when something is wrong; must end in space or cmd separator
 //
 //flags:
@@ -1700,7 +1700,7 @@ getLval(
          // Report an invalid expression in braces, unless the expression evaluation has been 
          // cancelled due to an aborting error, an interrupt, or an exception.
          if (!aborting() && !quiet) {
-            emsg_severe = TRUE;
+            emsg_severe = true;
             showErrFmtMsg(_(e_invalid_argument_str), arg.name);
             return NULL;
          }
@@ -2074,7 +2074,7 @@ tv_op(Var *tv1, Var *tv2, CS op) {
 
 // Info used by a ":for" loop.
 struct ForInfo {
-   int endsWithSemicolon;   // TRUE if ending in '; var]'
+   int endsWithSemicolon;   // true if ending in '; var]'
    int fi_varcount;   // nr of variables in [] or zero
    int fi_break_count;   // nr of line breaks encountered
    ListWatch fi_lw;      // keep an eye on the item used.
@@ -2089,7 +2089,7 @@ struct ForInfo {
 };
 
 //Evaluate the expression used in a ":for var in expr" command. "arg" points to "var".
-//Set "*errp" to TRUE for an error, FALSE otherwise;
+//Set "*errp" to true for an error, false otherwise;
 //Return a pointer that holds the info.  Null when there is an error.
 void*
 eval_for_line(CS arg, OUT Boole* errp, Invocation   *invo, EvalCtx   *evalarg) {
@@ -2117,7 +2117,7 @@ eval_for_line(CS arg, OUT Boole* errp, Invocation   *invo, EvalCtx   *evalarg) {
       ++emsg_skip;
    expr = skipwhite_and_linebreak(expr + 2, evalarg);
    if (eval0(expr, &tv, invo, evalarg) == OK) {
-      *errp = FALSE;
+      *errp = false;
       if (!skip) {
          if (tv.tag == VAR_LIST) {
             l = tv.list;
@@ -2165,7 +2165,7 @@ eval_for_line(CS arg, OUT Boole* errp, Invocation   *invo, EvalCtx   *evalarg) {
 
 //Use the first item in a ":for" list.  Advance to the next.
 //Assign the values to the variable (list).  "arg" points to the first one.
-//Return TRUE when a valid item was found, FALSE when at end of list or something wrong.
+//Return true when a valid item was found, false when at end of list or something wrong.
 int
 next_for_item(void *fi_void, CS arg) {
    ForInfo* fi = (ForInfo *)fi_void;
@@ -2177,7 +2177,7 @@ next_for_item(void *fi_void, CS arg) {
       Var   tv;
 
       if (fi->fi_bi >= blob_len(fi->fi_blob))
-         return FALSE;
+         return false;
       tv.tag = VAR_NUMBER;
       tv.lock = VAR_FIXED;
       tv.number = blob_get(fi->fi_blob, fi->fi_bi);
@@ -2188,7 +2188,7 @@ next_for_item(void *fi_void, CS arg) {
    if (fi->fi_string) {
       int len = utfCharLen(fi->fi_string + fi->fi_byte_idx);
       if (len == 0)
-          return FALSE;
+          return false;
       Var tv;
       tv.tag = VAR_STRING;
       tv.lock = VAR_FIXED;
@@ -2202,7 +2202,7 @@ next_for_item(void *fi_void, CS arg) {
 
    item = fi->fi_lw.c;
    if (item == NULL)
-      result = FALSE;
+      result = false;
    else {
       fi->fi_lw.c = item->next;
       ++fi->fi_bi;
@@ -2243,7 +2243,7 @@ free_for_info(void *fi_void) {
 //eval9 = the damn rest (constants, registers, options, function calls, variables, lists etc)
 
 
-// Return TRUE if an operator was started but not finished yet.
+// Return true if an operator was started but not finished yet.
 // Include typing a count or a register name.
 int
 op_pending(void) {
@@ -2350,10 +2350,10 @@ set_context_for_expression(Expand   *xp, CS arg, CommIndex   id) {
    xp->input.c = arg;
 }
 
-// TRUE if "pat" matches "text". Always uses 'magic'.
+// true if "pat" matches "text". Always uses 'magic'.
 int
 pattern_match(CS pat, CS text, int ic) {
-   int      matches = FALSE;
+   int      matches = false;
    RegMatch   regmatch;
 
    regmatch.regprog = compileRegexp(pat, RE_MAGIC + RE_STRING);
@@ -2409,7 +2409,7 @@ eval_func(
    }
    eeglFree(s);
 
-   // If evaluate is FALSE returnVar->tag was not set in
+   // If evaluate is false returnVar->tag was not set in
    // get_func_tv, but it's needed in handle_subscript() to parse
    // what follows. So set it here.
    if (returnVar->tag == VAR_UNKNOWN && !evaluate && **arg == '(') {
@@ -2465,7 +2465,7 @@ skipwhite_and_linebreak(CS arg, EvalCtx *evalarg) {
 //error.
 
 //Handle zero level expression. Call eval1() and handle error message and nextcmd.
-//Put the result in "returnVar" when returning OK and "evaluate" is TRUE.
+//Put the result in "returnVar" when returning OK and "evaluate" is true.
 //Note: "returnVar.lock" is not set. "evalarg" can be NULL, EVALARG_EVALUATE or a pointer.
 //Return OK or FAIL.
 int
@@ -2484,7 +2484,7 @@ may_call_simple_func(CS arg, OUT Var* returnVar) {
    if (parens && *skipwhite(parens + 2) == ZERO) {
       CS p = STRNCMP(arg, "<SNR>", 5) == 0 ? skipdigits(arg + 5) : arg;
 
-      if (toNameEnd(p, TRUE) == parens)
+      if (toNameEnd(p, true) == parens)
          r = call_simple_func(arg, (Unt)(parens - arg), OUT returnVar);
    }
    return r;
@@ -2513,7 +2513,7 @@ eval0_retarg(
    int anyEmsgG_before = anyEmsgG;
    int called_emsg_before = called_emsg;
    int check_for_end = retarg == NULL;
-   int end_error = FALSE;
+   int end_error = false;
 
    CS p = skipwhite(arg);
    int ret = eval1(OUT &p, returnVar, evalarg);
@@ -2595,14 +2595,14 @@ eval1(OUT CS* arg, Var* returnVar, OUT EvalCtx* evalarg) {
 
       *arg = p;
 
-      result = FALSE;
+      result = false;
       if (evaluate) {
          Boole error = false;
 
          if (op_falsy)
             result = tv2bool(returnVar);
          ei (varGetNumberChk(returnVar, OUT &error) != 0)
-            result = TRUE;
+            result = true;
          if (error || !op_falsy || !result)
             clearVar(returnVar);
          if (error)
@@ -2676,7 +2676,7 @@ eval2(OUT Byte **arg, Var* returnVar, EvalCtx* evalarg) {
       EvalCtx   local_evalarg;
       int       evaluate;
       int       orig_flags;
-      long  result = FALSE;
+      long  result = false;
       Var    var2;
       Boole error = false;
 
@@ -2688,7 +2688,7 @@ eval2(OUT Byte **arg, Var* returnVar, EvalCtx* evalarg) {
       evaluate = orig_flags & EVAL_EVALUATE;
       if (evaluate) {
          if (varGetNumberChk(returnVar, OUT &error) != 0)
-            result = TRUE;
+            result = true;
          clearVar(returnVar);
          if (error)
             return FAIL;
@@ -2707,7 +2707,7 @@ eval2(OUT Byte **arg, Var* returnVar, EvalCtx* evalarg) {
          //Compute the result.
          if (evaluate && !result) {
             if (varGetNumberChk(&var2, OUT &error) != 0)
-               result = TRUE;
+               result = true;
             clearVar(&var2);
             if (error)
                return FAIL;
@@ -2750,7 +2750,7 @@ eval3(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
       EvalCtx   *evalarg_used = evalarg;
       EvalCtx   local_evalarg;
       int evaluate;
-      long result = TRUE;
+      long result = true;
       Var var2;
       Boole error = false;
 
@@ -2762,7 +2762,7 @@ eval3(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
       evaluate = orig_flags & EVAL_EVALUATE;
       if (evaluate) {
          if (varGetNumberChk(returnVar, OUT &error) == 0)
-            result = FALSE;
+            result = false;
          clearVar(returnVar);
          if (error)
             return FAIL;
@@ -2782,7 +2782,7 @@ eval3(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
          //Compute the result.
          if (evaluate && result) {
             if (varGetNumberChk(&var2, OUT &error) == 0)
-               result = FALSE;
+               result = false;
             clearVar(&var2);
             if (error)
                return FAIL;
@@ -2825,7 +2825,7 @@ eval4(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
    Byte   *p;
    ExprType   type = EXPR_UNKNOWN;
    int len = 2;
-   int type_is = FALSE;
+   int type_is = false;
 
    //Get the first expression.
    if (eval5(arg, returnVar, evalarg) == FAIL)
@@ -3075,7 +3075,7 @@ eval_addsub_number(Var *tv1, Var *tv2, int op) {
 // Return OK or FAIL.
 private int
 eval6(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
-   if (eval7(arg, returnVar, evalarg, FALSE) == FAIL)
+   if (eval7(arg, returnVar, evalarg, false) == FAIL)
       return FAIL;
 
    //Repeat computing, until no '+', '-' or '.' is following.
@@ -3151,7 +3151,7 @@ eval_multdiv_number(Var *tv1, Var *tv2, int op) {
 
    f1 = 0;
    f2 = 0;
-   Boole error = FALSE;
+   Boole error = false;
    if (tv1->tag == VAR_FLOAT) {
       f1 = tv1->floatt;
       use_float = true;
@@ -3250,7 +3250,7 @@ eval7(
 
       // Get the second variable.
       *arg = skipwhite_and_linebreak(*arg + 1, evalarg);
-      if (eval8(arg, &var2, evalarg, FALSE) == FAIL)
+      if (eval8(arg, &var2, evalarg, false) == FAIL)
           return FAIL;
 
       if (evaluate)
@@ -3412,7 +3412,7 @@ eval9_nested_expr(
    *arg = skipwhite_and_linebreak(*arg + 1, evalarg);
    if (**arg == ')')
       // empty list
-      ret = eval_list(arg, returnVar, evalarg, TRUE);
+      ret = eval_list(arg, returnVar, evalarg, true);
    else {
       ret = eval1(OUT arg, returnVar, evalarg);   // recursive!
       if (ret != OK)
@@ -3444,7 +3444,7 @@ eval9_var_func_name(
    int      ret = OK;
    CS s = *arg;
    CS alias;
-   int len = get_name_len(arg, OUT &alias, evaluate, TRUE);
+   int len = get_name_len(arg, OUT &alias, evaluate, true);
    if (alias)
       s = alias;
 
@@ -3556,17 +3556,17 @@ eval9(
 
       // Apply prefixed "-" and "+" now.  Matters especially when "->" follows.
       if (ret == OK && evaluate && end_leader > start_leader && returnVar->tag != VAR_BLOB)
-          ret = eval9_leader(returnVar, TRUE, start_leader, &end_leader);
+          ret = eval9_leader(returnVar, true, start_leader, &end_leader);
       break;
 
    // String constant: "string".
-   case '"':   ret = evalStringLiteral(arg, returnVar, evaluate, FALSE); break;
+   case '"':   ret = evalStringLiteral(arg, returnVar, evaluate, false); break;
 
    // Literal string constant: 'str''ing'.
-   case '\'':   ret = evalRawString(arg, returnVar, evaluate, FALSE); break;
+   case '\'':   ret = evalRawString(arg, returnVar, evaluate, false); break;
 
    // List: [expr, expr]
-   case '[':   ret = eval_list(arg, returnVar, evalarg, TRUE); break;
+   case '[':   ret = eval_list(arg, returnVar, evalarg, true); break;
 
    // Literal Dictionary: #{key: val, key: val}
    case '#':   ret = bagEvalLiteral(arg, returnVar, evalarg); break;
@@ -3575,7 +3575,7 @@ eval9(
    case '{':   
       ret = get_lambda_tv(arg, returnVar, evalarg);
       if (ret == NOTDONE)
-          ret = bagEval(arg, returnVar, evalarg, FALSE);
+          ret = bagEval(arg, returnVar, evalarg, false);
       break;
 
    // Option value: &name
@@ -3609,14 +3609,14 @@ eval9(
 
    // Apply logical NOT and unary '-', from right to left, ignore '+'.
    if (ret == OK && evaluate && end_leader > start_leader)
-      ret = eval9_leader(returnVar, FALSE, start_leader, &end_leader);
+      ret = eval9_leader(returnVar, false, start_leader, &end_leader);
 
    --recurse;
    return ret;
 }
 
 //Apply the leading "!" and "-" before an eval9 expression to "returnVar". When "numeric_only" 
-//is TRUE only handle "+" and "-". Adjust "end_leaderp" until it is at "start_leader".
+//is true only handle "+" and "-". Adjust "end_leaderp" until it is at "start_leader".
 private int
 eval9_leader(
    Var* returnVar,
@@ -3886,9 +3886,9 @@ eval_index(
    int verbose)   // give error messages
 {
    int evaluate = evalarg && (evalarg->eval_flags & EVAL_EVALUATE);
-   int empty1 = FALSE, empty2 = FALSE;
+   int empty1 = false, empty2 = false;
    Var var1, var2;
-   int range = FALSE;
+   int range = false;
 
    if (check_can_index(returnVar, evaluate, verbose) == FAIL)
       return FAIL;
@@ -3910,11 +3910,11 @@ eval_index(
       //Get the (first) variable from inside the [].
       *arg = skipwhite_and_linebreak(*arg + 1, evalarg);
       if (**arg == ':')
-          empty1 = TRUE;
+          empty1 = true;
       ei (eval1(OUT arg, &var1, evalarg) == FAIL) {  // recursive!
           return FAIL;
       } ei (evaluate) {
-          int error = FALSE;
+          int error = false;
 
          // allow for indexing with float
 
@@ -3929,11 +3929,11 @@ eval_index(
       //Get the second variable from inside the [:].
       *arg = skipwhite_and_linebreak(*arg, evalarg);
       if (**arg == ':') {
-         range = TRUE;
+         range = true;
          ++*arg;
          *arg = skipwhite_and_linebreak(*arg, evalarg);
          if (**arg == ']')
-            empty2 = TRUE;
+            empty2 = true;
          ei (eval1(OUT arg, &var2, evalarg) == FAIL) {   // recursive!
             if (!empty1)
                 clearVar(&var1);
@@ -3962,7 +3962,7 @@ eval_index(
 
    if (evaluate) {
       int res = eval_index_inner(
-         returnVar, range, empty1 ? NULL : &var1, empty2 ? NULL : &var2, FALSE, key, keylen, verbose
+         returnVar, range, empty1 ? NULL : &var1, empty2 ? NULL : &var2, false, key, keylen, verbose
       );
 
       if (!empty1)
@@ -4020,7 +4020,7 @@ partial_unref(PartiallyApplied *pt) {
 
 //Return a textual representation of a string in "tv".
 //If the memory is allocated, "tofree" is set to it, otherwise NULL.
-//When both "echo_style" and "composite_val" are FALSE, put quotes around
+//When both "echo_style" and "composite_val" are false, put quotes around
 //strings as "string()", otherwise does not put quotes around strings. May return NULL.
 private CS
 string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val) {
@@ -4032,7 +4032,7 @@ string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val) {
       if (!r)
          r = S"";
    } else {
-      *tofree = string_quote(tv->string, FALSE);
+      *tofree = string_quote(tv->string, false);
       r = *tofree;
    }
 
@@ -4041,7 +4041,7 @@ string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val) {
 
 //Return a textual representation of a function in "tv".
 //If the memory is allocated "tofree" is set to it, otherwise NULL.
-//When "echo_style" is FALSE, put quotes around the function name as
+//When "echo_style" is false, put quotes around the function name as
 //"function()", otherwise does not put quotes around function name. May return NULL.
 private CS
 func_tv2string(Var* tv, Byte** tofree, int echo_style) {
@@ -4062,7 +4062,7 @@ func_tv2string(Var* tv, Byte** tofree, int echo_style) {
       }
    } else {
       CS s = (tv->string) ? make_ufunc_name_readable(tv->string, buf, MAX_FUNC_NAME_LEN) : null;
-      r = *tofree = string_quote(s, TRUE);
+      r = *tofree = string_quote(s, true);
    }
 
    return r;
@@ -4070,7 +4070,7 @@ func_tv2string(Var* tv, Byte** tofree, int echo_style) {
 
 //Return a textual representation of the object method in "tv", a VAR_PARTIAL.
 //If the memory is allocated "tofree" is set to it, otherwise NULL.
-//When "echo_style" is FALSE, put quotes around the function name as
+//When "echo_style" is false, put quotes around the function name as
 //"function()", otherwise does not put quotes around function name. May return NULL.
 private CS
 method_tv2string(Var* tv, Byte** tofree, int echo_style) {
@@ -4085,7 +4085,7 @@ method_tv2string(Var* tv, Byte** tofree, int echo_style) {
          *tofree = NULL;
          return S"function()";
       } else
-         return *tofree = string_quote(Em, TRUE);
+         return *tofree = string_quote(Em, true);
    }
 
    return *tofree = echo_style ? copyStr(buf) : string_quote(buf, true);
@@ -4109,7 +4109,7 @@ partial_tv2string(
    Byte   *tf;
 
    pt = tv->partial;
-   fname = string_quote(pt == NULL ? NULL : partial_name(pt), FALSE);
+   fname = string_quote(pt == NULL ? NULL : partial_name(pt), false);
 
    ga_init2(&ga, 1, 100);
    ga_concat(&ga, (CS)"function(");
@@ -4152,7 +4152,7 @@ partial_tv2string(
 
 //Return a textual representation of a List in "tv". If the memory is allocated, "tofree" is set 
 //to it, otherwise NULL. When "copyID" is not zero replace recursive lists with "...". When 
-//"restore_copyID" is FALSE, repeated items in lists are replaced with "...". May return NULL.
+//"restore_copyID" is false, repeated items in lists are replaced with "...". May return NULL.
 private CS
 list_tv2string(
    Var   *tv,
@@ -4186,7 +4186,7 @@ list_tv2string(
 
 //Return a textual representation of a Bag in "tv". If the memory is allocated "tofree" is set to 
 //it, otherwise NULL. When "copyID" is not zero replace recursive dicts with "...".
-//When "restore_copyID" is FALSE, repeated items in the dictionary are replaced with "...". May 
+//When "restore_copyID" is false, repeated items in the dictionary are replaced with "...". May 
 //return NULL.
 private CS
 dict_tv2string(
@@ -4221,7 +4221,7 @@ dict_tv2string(
 
 //Return a textual representation of a job or a channel in "tv". If the memory is allocated 
 //"tofree" is set to it, otherwise NULL. "numBuf" is used for a number.
-//When "composite_val" is FALSE, put quotes around strings as "string()",
+//When "composite_val" is false, put quotes around strings as "string()",
 //otherwise does not put quotes around strings. May return NULL.
 private CS
 jobchan_tv2string(
@@ -4243,7 +4243,7 @@ jobchan_tv2string(
    } 
 
    if (composite_val) {
-      *tofree = string_quote(r, FALSE);
+      *tofree = string_quote(r, false);
       r = *tofree;
    }
 
@@ -4253,9 +4253,9 @@ jobchan_tv2string(
 //Return a string with the string representation of a variable. If the memory is allocated 
 //"tofree" is set to it, otherwise NULL. "numbuf" is used for a number.
 //When "copyID" is not zero replace recursive lists and dicts with "...". When both "echo_style" 
-//and "composite_val" are FALSE, put quotes around strings as "string()", otherwise does not put 
+//and "composite_val" are false, put quotes around strings as "string()", otherwise does not put 
 //quotes around strings, as ":echo" displays values.
-//When "restore_copyID" is FALSE, repeated items in dictionaries and lists are replaced with "...".
+//When "restore_copyID" is false, repeated items in dictionaries and lists are replaced with "...".
 //May return NULL.
 CS
 echo_string_core(
@@ -4274,7 +4274,7 @@ echo_string_core(
       if (!did_echo_string_emsg) {
           //Only give this message once for a recursive call to avoid flooding the user with 
           //errors. And stop iterating over lists and dicts and objects.
-          did_echo_string_emsg = TRUE;
+          did_echo_string_emsg = true;
           emsg(_(e_variable_nested_too_deep_for_displaying));
       }
       *tofree = NULL;
@@ -4338,7 +4338,7 @@ echo_string_core(
    }
 
    if (--recurse == 0)
-      did_echo_string_emsg = FALSE;
+      did_echo_string_emsg = false;
    return r;
 }
 
@@ -4353,7 +4353,7 @@ echo_string(
     Byte   *numbuf,
     int      copyID)
 {
-    return echo_string_core(tv, tofree, numbuf, copyID, TRUE, FALSE, FALSE);
+    return echo_string_core(tv, tofree, numbuf, copyID, true, false, false);
 }
 
 //Convert the specified byte index of line 'lnum' in book 'book' to a character index. Works only 
@@ -4369,7 +4369,7 @@ buf_byteidx_to_charidx(Book *book, int lnum, int byteidx) {
    if (lnum > book->mem.lineCount)
       lnum = book->mem.lineCount;
 
-   CS str = memGetLine(book, lnum, FALSE);
+   CS str = memGetLine(book, lnum, false);
    if (str == NULL)
       return -1;
 
@@ -4394,7 +4394,7 @@ buf_byteidx_to_charidx(Book *book, int lnum, int byteidx) {
 Pos*
 var2fpos(
    Var* varp,
-   int dollar_lnum,   // TRUE when $ is last line
+   int dollar_lnum,   // true when $ is last line
    int* fnum,      // set to fnum for '0, 'A, etc.
    int charcol)   // return character column
 {
@@ -4462,7 +4462,7 @@ var2fpos(
           pos = curPor->cursor;
    } ei (name[0] == '\'') {
       // mark
-      pp = markGetBookFnum(curBook, name[1], FALSE, fnum);
+      pp = markGetBookFnum(curBook, name[1], false, fnum);
       if (pp == NULL || pp == (Pos *)-1 || pp->lnum <= 0)
          return NULL;
       pos = *pp;
@@ -4513,7 +4513,7 @@ var2fpos(
 //When "fnump" is NULL there is no file number, only 3 items: [lnum, col, off]
 //Note that the column is passed on as-is, the caller may want to decrement
 //it to use 1 for the first column.
-//If "charcol" is TRUE use the column as the character index instead of the byte index.
+//If "charcol" is true use the column as the character index instead of the byte index.
 //Return FAIL when conversion is not possible, doesn't check the position for validity.
 int
 list2fpos(
@@ -4816,7 +4816,7 @@ handle_subscript(
    int      evaluate = evalarg && (evalarg->eval_flags & EVAL_EVALUATE);
    int      ret = OK;
    Bag   *selfdict = NULL;
-   int      check_white = TRUE;
+   int      check_white = true;
    Byte   *p;
 
    while (ret == OK) {
@@ -4872,7 +4872,7 @@ handle_subscript(
    }
 
    // Turn "dict.Func" into a partial for "Func" bound to "dict".
-   // Don't do this when "Func" is already a partial that was bound explicitly (isAuto == FALSE)
+   // Don't do this when "Func" is already a partial that was bound explicitly (isAuto == false)
    if (selfdict
           && (returnVar->tag == VAR_FUNC
             || (returnVar->tag == VAR_PARTIAL
@@ -4884,7 +4884,7 @@ handle_subscript(
 }
 
 //Make a copy of an item. Lists and Dictionaries are also copied.  A deep copy if "deep" is set.
-//"top" is TRUE for the toplevel of copy(). For deepcopy() "copyID" is zero for a full copy or the 
+//"top" is true for the toplevel of copy(). For deepcopy() "copyID" is zero for a full copy or the 
 //ID for when a reference to an already copied list/dict can be used. Return FAIL or OK.
 int
 item_copy(
@@ -4990,7 +4990,7 @@ echo_one(Var* returnVar, int with_space, int *atstart, int *needclr) {
    CS p = echo_string(returnVar, &tofree, numbuf, get_copyID());
 
    if (*atstart) {
-      *atstart = FALSE;
+      *atstart = false;
       // Call msg_start() after eval1(), evaluating the expression
       // may cause a message to appear.
       if (with_space) {
@@ -5008,7 +5008,7 @@ echo_one(Var* returnVar, int with_space, int *atstart, int *needclr) {
             if (*p != TAB && *needclr) {
                // remove any text still there from the command
                msg_clr_eos();
-               *needclr = FALSE;
+               *needclr = false;
             }
             msgPutcharDeco(*p, echoDecoFlagsG);
          } else {
@@ -5028,8 +5028,8 @@ c_echo(Invocation* invo) {
    CS arg = invo->arg;
    Var   returnVar;
    Byte   *arg_start;
-   int      needclr = TRUE;
-   int      atstart = TRUE;
+   int      needclr = true;
+   int      atstart = true;
    int      anyEmsgG_before = anyEmsgG;
    int      called_emsg_before = called_emsg;
    EvalCtx   evalarg;
@@ -5049,10 +5049,10 @@ c_echo(Invocation* invo) {
          //has been cancelled due to an aborting error, an interrupt, or an exception.
          if (!aborting() && anyEmsgG == anyEmsgG_before && called_emsg == called_emsg_before)
             showErrFmtMsg(_(e_invalid_expression_str), arg_start);
-         need_clr_eos = FALSE;
+         need_clr_eos = false;
          break;
       }
-      need_clr_eos = FALSE;
+      need_clr_eos = false;
 
       if (!invo->skip) {
          if (returnVar.tag == VAR_VOID) {
@@ -5169,8 +5169,8 @@ c_execute(Invocation* invo) {
          msgDeco(ga.c, echoDecoFlagsG);
          end_echowindow();
       } ei (invo->id == C_echoconsole) {
-         ui_write(ga.c, (int)STRLEN(ga.c), TRUE);
-         ui_write((CS)"\r\n", 2, TRUE);
+         ui_write(ga.c, (int)STRLEN(ga.c), true);
+         ui_write((CS)"\r\n", 2, true);
       } ei (invo->id == C_echoerr) {
          int save_anyEmsgG = anyEmsgG;
 
@@ -5339,7 +5339,7 @@ do_string_sub(
    return ret;
 }
 
-//To be called after eval_next_non_blank() sets "getnext" to TRUE.
+//To be called after eval_next_non_blank() sets "getnext" to true.
 //
 //If "arg" is not NULL, then the caller should assign the return value to "arg".
 private CS
@@ -5384,7 +5384,7 @@ eval_next_line(CS arg, EvalCtx* evalarg) {
    //the return value to "arg". If "arg" is NULL, then the return value is discarded. In that 
    //case, "arg" still points to the previous line. So don't reset "eval_using_cmdline".
    if (arg)
-      evalarg->eval_using_cmdline = FALSE;
+      evalarg->eval_using_cmdline = false;
    return skipwhite(line);
 }
 
@@ -5397,10 +5397,10 @@ set_ref_in_loopvars(int copyID) {
 
       for (int i = 0; i < loopvars->lvs_ga.len; ++i) {
          if (set_ref_in_item(stack + i, copyID, NULL, NULL))
-            return TRUE;  // abort
+            return true;  // abort
       } 
    }
-   return FALSE;
+   return false;
 }
 
 //}}}
@@ -5705,7 +5705,7 @@ garbageCollectEeglVars(int copyID) {
 
 int
 garbage_collect_scriptvars(int copyID) {
-   int abort = FALSE;
+   int abort = false;
    for (Unt i = 1; i <= (Unt)script_items.len; ++i) {
       abort = abort || setRefInSet(&SCRIPT_VARS(i), copyID, NULL);
 
@@ -5745,7 +5745,7 @@ eval_diff(CS origfile, CS newfile, CS outfile){
       scriptPosG = *ctx;
 
    // errors are ignored
-   Var* var = evalExprInternal(p_dex, NULL, TRUE);
+   Var* var = evalExprInternal(p_dex, NULL, true);
    freeVar(var);
 
    set_EeglVar_string(VV_FNAME_IN, NULL, -1);
@@ -5770,7 +5770,7 @@ eval_patch(CS origfile, CS diffFile, CS outfile) {
    if (!p_pex)
       return;
 
-   Var* tv = evalExprInternal(p_pex, NULL, TRUE);
+   Var* tv = evalExprInternal(p_pex, NULL, true);
    freeVar(tv);
 
    set_EeglVar_string(VV_FNAME_IN, NULL, -1);
@@ -5848,17 +5848,17 @@ restoreEeglVar(int idx, Var* save_tv) {
 // List Eegl variables.
 private void
 listEeglVars(int *first) {
-   list_hashtable_vars(&eeglVarsHt, S"v:", FALSE, first);
+   list_hashtable_vars(&eeglVarsHt, S"v:", false, first);
 }
 
 // List script-local variables, if there is a script.
 private void
 list_script_vars(int *first) {
    if (SCRIPT_ID_VALID(scriptPosG.sid))
-   list_hashtable_vars(&SCRIPT_VARS(scriptPosG.sid), S"s:", FALSE, first);
+   list_hashtable_vars(&SCRIPT_VARS(scriptPosG.sid), S"s:", false, first);
 }
 
-// Return TRUE if "name" starts with "g:", "w:", "t:" or "b:".
+// Return true if "name" starts with "g:", "w:", "t:" or "b:".
 // But only when an identifier character follows.
 int
 is_scoped_variable(CS name) {
@@ -5868,7 +5868,7 @@ is_scoped_variable(CS name) {
 }
 
 // Evaluate one Vim expression {expr} in string "p" and append the resulting string to "gap". 
-// "p" points to the opening "{". When "evaluate" is FALSE only skip over the expression.
+// "p" points to the opening "{". When "evaluate" is false only skip over the expression.
 // Return a pointer to the character after "}", NULL for an error.
 CS
 eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate) {
@@ -5890,7 +5890,7 @@ eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate) {
    }
    if (evaluate) {
       *block_end = ZERO;
-      expr_val = eval_to_string(block_start, FALSE, FALSE); //{
+      expr_val = eval_to_string(block_start, false, false); //{
       *block_end = '}';
       if (expr_val == NULL)
          return NULL;
@@ -5912,7 +5912,7 @@ eval_all_expr_in_str(CS str) {
    CS p = str;
 
    while (*p != ZERO) {
-      int   escaped_brace = FALSE;
+      int   escaped_brace = false;
 
       // Look for a block start.
       CS lit_start = p;
@@ -5923,7 +5923,7 @@ eval_all_expr_in_str(CS str) {
           // Escaped brace, unescape and continue.
           // Include the brace in the literal string.
           ++p;
-          escaped_brace = TRUE;
+          escaped_brace = true;
       } ei (*p == '}') {
           showErrFmtMsg(_(e_stray_closing_curly_str), str);
           ga_clear(&ga);
@@ -5943,7 +5943,7 @@ eval_all_expr_in_str(CS str) {
       }
 
       // Evaluate the expression and append the result.
-      p = eval_one_expr_in_str(p, &ga, TRUE);
+      p = eval_one_expr_in_str(p, &ga, true);
       if (p == NULL) {
          ga_clear(&ga);
          return NULL;
@@ -5978,14 +5978,14 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
    int      text_indent_len = 0;
    CS text_indent = NULL;
    Byte dot[] = ".";
-   int evalstr = FALSE;
-   int eval_failed = FALSE;
-   int heredoc_in_string = FALSE;
+   int evalstr = false;
+   int eval_failed = false;
+   int heredoc_in_string = false;
    CS line_arg = NULL;
    CS nl_ptr = firstOccurrence(cmd, '\n');
 
    if (nl_ptr) {
-      heredoc_in_string = TRUE;
+      heredoc_in_string = true;
       line_arg = nl_ptr + 1;
       *nl_ptr = ZERO;
    } ei (invo->ea_getline == NULL) {
@@ -5996,7 +5996,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
    // Check for the optional 'trim' word before the marker
    cmd = skipwhite(cmd);
 
-   while (TRUE) {
+   while (true) {
       if (STRNCMP(cmd, "trim", 4) == 0 && (cmd[4] == ZERO || SPACE_OR_TAB(cmd[4]))) {
          cmd = skipwhite(cmd + 4);
 
@@ -6014,7 +6014,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
       }
       if (STRNCMP(cmd, "eval", 4) == 0 && (cmd[4] == ZERO || SPACE_OR_TAB(cmd[4]))) {
          cmd = skipwhite(cmd + 4);
-         evalstr = TRUE;
+         evalstr = true;
          continue;
       }
       break;
@@ -6071,7 +6071,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
          }
       } else {
          eeglFree(theline);
-         theline = invo->ea_getline(ZERO, invo->cookie, 0, FALSE);
+         theline = invo->ea_getline(ZERO, invo->cookie, 0, false);
          if (!theline) {
             showErrFmtMsg(_(e_missing_end_marker_str), marker);
             break;
@@ -6107,16 +6107,16 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
       } 
 
       str = theline + ti;
-      int free_str = FALSE;
+      int free_str = false;
 
       if (evalstr && !invo->skip) {
          str = eval_all_expr_in_str(str);
          if (!str) {
             //expression evaluation failed
-            eval_failed = TRUE;
+            eval_failed = true;
             continue;
          }
-         free_str = TRUE;
+         free_str = true;
       }
 
       if (list_append_string(l, str, -1) == FAIL)
@@ -6169,7 +6169,7 @@ c_let(Invocation* invo) {
    int semicolon = 0;
    Byte   op[4];
    CS argend;
-   int first = TRUE;
+   int first = true;
    int concat;
    int has_assign;
    Unt flags = 0;
@@ -6189,7 +6189,7 @@ c_let(Invocation* invo) {
    if (invo->arg == invo->comm)
       flags |= ASSIGN_NO_DECL;
 
-   argend = skip_var_list(arg, &var_count, &semicolon, FALSE);
+   argend = skip_var_list(arg, &var_count, &semicolon, false);
    if (!argend)
       return;
    if (argend > arg && argend[-1] == '.')  // for var.='str'
@@ -6223,7 +6223,7 @@ c_let(Invocation* invo) {
 
       // :let text =<< [trim] [eval] END
       // :var text =<< [trim] [eval] END
-      List* l = heredoc_get(invo, expr + 3, FALSE);
+      List* l = heredoc_get(invo, expr + 3, false);
 
       if (l) {
          returnVar_list_set(&returnVar, l);
@@ -6395,7 +6395,7 @@ skip_var_one(CS arg) {
 //Used for ":let varvar = expr" and ":for varvar in expr".
 //For "[var, var]" increment "*var_count" for each variable.
 //for "[var, var; var]" set "semicolon" to 1.
-//If "silent" is TRUE do not give an "invalid argument" error message. Return NULL for an error.
+//If "silent" is true do not give an "invalid argument" error message. Return NULL for an error.
 CS
 skip_var_list(CS arg, OUT int* var_count, OUT int* semicolon, int silent) {
    Byte   *p, *s;
@@ -6436,7 +6436,7 @@ skip_var_list(CS arg, OUT int* var_count, OUT int* semicolon, int silent) {
 }
 
 // List variables for Set "ht" with prefix "prefix".
-// If "empty" is TRUE also list NULL strings as empty strings.
+// If "empty" is true also list NULL strings as empty strings.
 void
 list_hashtable_vars(EeSet* ht, CS prefix, int empty, int* first) {
    EeSetItem   *hi;
@@ -6469,31 +6469,31 @@ list_hashtable_vars(EeSet* ht, CS prefix, int empty, int* first) {
 // List global variables.
 private void
 list_globVars(int* first) {
-   list_hashtable_vars(&globvarht, S"", TRUE, first);
+   list_hashtable_vars(&globvarht, S"", true, first);
 }
 
 // List book variables.
 private void
 list_buf_vars(int* first) {
-   list_hashtable_vars(&curBook->bVars->hashTable, S"b:", TRUE, first);
+   list_hashtable_vars(&curBook->bVars->hashTable, S"b:", true, first);
 }
 
 // List window variables.
 private void
 list_win_vars(int* first) {
-   list_hashtable_vars(&curPor->internalVars->hashTable, S"w:", TRUE, first);
+   list_hashtable_vars(&curPor->internalVars->hashTable, S"w:", true, first);
 }
 
 // List tab variables.
 private void
 list_tabVars(int* first) {
-   list_hashtable_vars(&curtab->vars->hashTable, S"t:", TRUE, first);
+   list_hashtable_vars(&curtab->vars->hashTable, S"t:", true, first);
 }
 
 // List variables in "arg".
 private CS
 list_arg_vars(Invocation* invo, CS arg, int* first) {
-   int      error = FALSE;
+   int      error = false;
    int      len;
    CS name;
    CS name_start;
@@ -6505,7 +6505,7 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
       if (error || invo->skip) {
          arg = findNameEnd(mbText(arg), NULL, FNE_INCL_BR | FNE_CHECK_START).c;
          if (!SPACE_OR_TAB(*arg) && !endsComm(arg)) {
-            emsg_severe = TRUE;
+            emsg_severe = true;
             if (!anyEmsgG) {
                showErrFmtMsg(_(e_trailing_characters_str), arg);
             } 
@@ -6514,27 +6514,27 @@ list_arg_vars(Invocation* invo, CS arg, int* first) {
       } else {
          // get_name_len() takes care of expanding curly braces
          name_start = name = arg;
-         len = get_name_len(&arg, &tofree, TRUE, TRUE);
+         len = get_name_len(&arg, &tofree, true, true);
          if (len <= 0) {
             // This is mainly to keep test 49 working: when expanding
             // curly braces fails overrule the exception error message.
             if (len < 0 && !aborting()) {
-               emsg_severe = TRUE;
+               emsg_severe = true;
                showErrFmtMsg(_(e_invalid_argument_str), arg);
                break;
             }
-            error = TRUE;
+            error = true;
          } else {
             arg = skipwhite(arg);
             if (tofree)
                 name = tofree;
             if (eval_variable((Text){name, len}, &tv, NULL, EVAL_VAR_VERBOSE) == FAIL)
-                error = TRUE;
+                error = true;
             else {
                // handle d.key, l[idx], f(expr)
                arg_subsc = arg;
-               if (handle_subscript(&arg, &tv, &EVALARG_EVALUATE, TRUE) == FAIL)
-                  error = TRUE;
+               if (handle_subscript(&arg, &tv, &EVALARG_EVALUATE, true) == FAIL)
+                  error = true;
                else {
                   if (arg == arg_subsc && len == 2 && name[1] == ':') {
                      switch (*name) {
@@ -6607,7 +6607,7 @@ letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
          name[len] = ZERO;
          CS p = convertVarToStringSingleUse(tv);
          if (p && op && *op == '.') {
-            int   mustfree = FALSE;
+            int   mustfree = false;
             Byte  *s = eeglGetEnv(name);
 
             if (s) {
@@ -6756,7 +6756,7 @@ letRegister(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
          }
       }
       if (p) {
-         write_reg_contents(*arg == '@' ? '"' : *arg, p, -1, FALSE);
+         write_reg_contents(*arg == '@' ? '"' : *arg, p, -1, false);
          arg_end = arg + 1;
       }
       eeglFree(ptofree);
@@ -6861,7 +6861,7 @@ unletOrLock(
                clear_lval(OUT &lv);
             break;
          } ei (!SPACE_OR_TAB(*nameEnd) && !endsComm(nameEnd)) {
-            emsg_severe = TRUE;
+            emsg_severe = true;
             showErrFmtMsg(_(e_trailing_characters_str), nameEnd);
             if (!(invo->skip || error))
                clear_lval(OUT &lv);
@@ -7005,7 +7005,7 @@ unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit) {
 
 // "unlet" a variable. Return OK if it existed, FAIL if not.
 // "nameWithPrefix" is the full variable name like "g:foo"
-// When "forceit" is TRUE don't complain if the variable doesn't exist.
+// When "forceit" is true don't complain if the variable doesn't exist.
 int
 unletImpl(CS nameWithPrefix, Boole forceit) {
    CS name = NULL;
@@ -7014,7 +7014,7 @@ unletImpl(CS nameWithPrefix, Boole forceit) {
 }
 
 // Lock or unlock variable indicated by "lp". "deep" is the levels to go (-1 for unlimited);
-// "lock" is TRUE for ":lockvar", FALSE for ":unlockvar".
+// "lock" is true for ":lockvar", false for ":unlockvar".
 private int
 do_lock_var(
    Lval* lp,
@@ -7060,7 +7060,7 @@ do_lock_var(
                   else
                      di->flags &= ~DI_FLAGS_LOCK;
                   if (deep != 0)
-                     item_lock(&di->c, deep, lock, FALSE);
+                     item_lock(&di->c, deep, lock, false);
                 }
             }
           }
@@ -7070,32 +7070,32 @@ do_lock_var(
    // nothing to do
    } ei (lp->isRoot)
       // (un)lock the item.
-      item_lock(lp->var, deep, lock, FALSE);
+      item_lock(lp->var, deep, lock, false);
    ei (lp->ll_range) {
       ListItem    *li = lp->ll_li;
 
       // (un)lock a range of List items.
       while (li && (lp->ll_empty2 || lp->ll_n2 >= lp->ll_n1)) {
-         item_lock(&li->c, deep, lock, FALSE);
+         item_lock(&li->c, deep, lock, false);
          li = li->next;
          ++lp->ll_n1;
       }
    } ei (lp->ll_list) {
       // (un)lock a List item.
-      item_lock(&lp->ll_li->c, deep, lock, FALSE);
+      item_lock(&lp->ll_li->c, deep, lock, false);
    } else {
       // (un)lock a Dictionary item.
       if (lp->ll_di == NULL) {
          emsg(_(e_dictionary_required));
          ret = FAIL;
       } else
-         item_lock(&lp->ll_di->c, deep, lock, FALSE);
+         item_lock(&lp->ll_di->c, deep, lock, false);
    }
 
    return ret;
 }
 
-// Lock or unlock an item.  "deep" is nr of levels to go. When "check_refcount" is TRUE do not 
+// Lock or unlock an item.  "deep" is nr of levels to go. When "check_refcount" is true do not 
 // lock a list or dict with a reference count larger than 1.
 void
 item_lock(Var *tv, int deep, int lock, int check_refcount) {
@@ -7421,7 +7421,7 @@ set_EeglVar_char(int c) {
 }
 
 //Set v:count to "count" and v:count1 to "count1".
-//When "set_prevcount" is TRUE first set v:prevcount from v:count.
+//When "set_prevcount" is true first set v:prevcount from v:count.
 void
 set_vcount( long   count, long   count1, int      set_prevcount) {
    if (set_prevcount)
@@ -7446,7 +7446,7 @@ restoreEeglVars(EeglVarsSave* evSave) {
    eeglVars[VV_COUNT1].entry.c.number = evSave->count1;
 }
 
-// Set string v: variable to a copy of "val". If 'copy' is FALSE, then set the value.
+// Set string v: variable to a copy of "val". If 'copy' is false, then set the value.
 void
 set_EeglVar_string(int idx, Byte* val, int len) { //length of "val" to use or -1 (whole string)
    clearVar(&eeglVars[idx].entry.c);
@@ -7608,7 +7608,7 @@ eval_variable(
 ){
    int ret = OK;
    Var   *tv = NULL;
-   int found = FALSE;
+   int found = false;
    EeSet* ht = NULL;
    Byte cc = 0;
    TypeSpec* type = NULL;
@@ -7638,7 +7638,7 @@ eval_variable(
       } ei (returnVar) {
          Svar* sv = NULL;
          if (ht && ht == get_script_local_ht() && tv != &SCRIPT_SV(scriptPosG.sid)->sv_var.c) {
-            sv = find_typval_in_script(tv, 0, TRUE);
+            sv = find_typval_in_script(tv, 0, true);
             if (sv) {
                type = sv->sv_type;
             }
@@ -7699,7 +7699,7 @@ eval_variable_import(CS name, Var* returnVar) {
 
 
 //Check if variable "name" is a local variable or an argument.
-//If so, "*eval_lavars_used" is set to TRUE.
+//If so, "*eval_lavars_used" is set to true.
 private void
 check_vars(Text name) {
    if (eval_lavars_used == NULL)
@@ -7712,7 +7712,7 @@ check_vars(Text name) {
    CS varname;
    EeSet* ht = findVarHashTable(name, OUT &varname);
    if ((ht == get_funccal_local_ht() || ht == get_funccal_args_ht()) && (findVar(name.c, true))){  
-      *eval_lavars_used = TRUE;
+      *eval_lavars_used = true;
    }
 
    name.c[name.len] = cc;
@@ -7804,7 +7804,7 @@ findVar_in_ht(
       // checking if a function name is a Funcref variable.
       if (ht == &globvarht && !no_autoload) {
          //Note: scriautoload() may make "hi" invalid. It must either be obtained again or not used
-         if (!scriautoload(varname.c, FALSE) || aborting())
+         if (!scriautoload(varname.c, false) || aborting())
             return NULL;
          hi = hash_find(ht, varname);
       }
@@ -7825,7 +7825,7 @@ get_script_local_ht(void) {
 }
 
 // Look for "name" in script-local variables and functions.
-// When "cmd" is TRUE it must look like a command, a function must be followed by "(" or "->".
+// When "cmd" is true it must look like a command, a function must be followed by "(" or "->".
 // Return OK when found, FAIL when not found.
 int
 lookup_scriptitem(Text name, int cmd) {
@@ -7965,10 +7965,10 @@ unref_var_dict(Bag* dict) {
 // Clear hashtab "ht", does not free it.
 void
 vars_clear(EeSet* ht) {
-   vars_clear_ext(ht, TRUE);
+   vars_clear_ext(ht, true);
 }
 
-// Like vars_clear(), but only free the value if "free_val" is TRUE.
+// Like vars_clear(), but only free the value if "free_val" is true.
 void
 vars_clear_ext(EeSet* ht, int free_val) {
    EeSetItem* hi;
@@ -8022,7 +8022,7 @@ list_one_var_a(
    CS name,
    int type,
    CS string,
-   int* first  // when TRUE clear rest of screen and set to FALSE
+   int* first  // when true clear rest of screen and set to false
 ){
    // don't use msg() or msgDeco() to avoid overwriting "v:statusmsg"
    msg_start();
@@ -8052,12 +8052,12 @@ list_one_var_a(
       msg_puts(S"()");
    if (*first) {
       msg_clr_eos();
-      *first = FALSE;
+      *first = false;
    }
 }
 
 // Addition handling for setting a v: variable.
-// Return TRUE if the variable should be set normally, FALSE if nothing else needs to be done.
+// Return true if the variable should be set normally, false if nothing else needs to be done.
 int
 before_set_vvar(
     CS varname,
@@ -8080,7 +8080,7 @@ before_set_vvar(
           di->c.string = tv->string;
           tv->string = NULL;
       }
-      return FALSE;
+      return false;
    } ei (di->c.tag == VAR_NUMBER) {
       di->c.number = tv_get_number(tv);
       if (STRCMP(varname, "searchforward") == 0)
@@ -8089,12 +8089,12 @@ before_set_vvar(
          hiliteSearchG = di->c.number != 0;
          redraw_all_later(UPD_SOME_VALID);
       }
-      return FALSE;
+      return false;
    } ei (di->c.tag != tv->tag) {
-      *type_error = TRUE;
-      return FALSE;
+      *type_error = true;
+      return false;
    }
-   return TRUE;
+   return true;
 }
 
 //Set variable "name" to "newValue".
@@ -8105,7 +8105,7 @@ set_var(Text name, Var* newValue, Boole copy){  // make copy of value in "tv"
 }
 
 // Set variable "name" to value in "tv_arg". When "sid" is non-zero, "name" is in the script with 
-// this ID. If the variable already exists and "is_const" is FALSE, the value is updated.
+// this ID. If the variable already exists and "is_const" is false, the value is updated.
 // Otherwise the variable is created.
 private int
 setVarImpl(
@@ -8147,7 +8147,7 @@ setVarImpl(
    DictItem* di = findVar_in_ht(ht, 0, mbText(varname), true);
    // Search in parent scope which is possible to reference from lambda
    if (!di)
-      di = findVar_in_scoped_ht(name, TRUE);
+      di = findVar_in_scoped_ht(name, true);
 
    if ((tv->tag == VAR_FUNC || tv->tag == VAR_PARTIAL) && var_wrong_func_name(name, di == NULL))
       goto failed;
@@ -8179,7 +8179,7 @@ setVarImpl(
       // existing variable, need to clear the value
 
       //Handle setting internal v: variables separately where needed to prevent changing the type.
-      int type_error = FALSE;
+      int type_error = false;
       if (ht == &eeglVarsHt && !before_set_vvar(varname, di, tv, copy, &type_error)) {
          if (type_error)
             showErrFmtMsg(_(e_setting_v_str_to_value_with_wrong_type), varname);
@@ -8190,7 +8190,7 @@ setVarImpl(
    } else {
       //Item not found, check if a function already exists.
       if (is_script_local && (flags & (ASSIGN_NO_DECL | ASSIGN_DECL)) == 0
-             && lookup_scriptitem(name, FALSE) == OK
+             && lookup_scriptitem(name, false) == OK
       ) {
          showErrFmtMsg(_(e_redefining_script_item_str), name);
          goto failed;
@@ -8236,7 +8236,7 @@ setVarImpl(
    if ((flags & ASSIGN_CONST) > 0)
       //Like :lockvar! name: lock the value and what it contains, but only
       //if the reference count is up to one. That locks only literal values.
-      item_lock(dest_tv, DICT_MAXNEST, TRUE, TRUE);
+      item_lock(dest_tv, DICT_MAXNEST, true, true);
 
    retStatus = OK;
 
@@ -8257,12 +8257,12 @@ int
 var_check_permission(DictItem* di, CS name) {
    if (var_check_ro(di->flags, mbText(name), false)
              || value_check_lock(di->c.lock, mbText(name), false)
-             || var_check_lock(di->flags, mbText(name), FALSE))
+             || var_check_lock(di->flags, mbText(name), false))
       return FAIL;
    return OK;
 }
 
-// Return TRUE if flags "flags" indicates variable "name" is read-only.
+// Return true if flags "flags" indicates variable "name" is read-only.
 // Also give an error message.
 Boole
 var_check_ro(int flags, Text name, Boole use_gettext) {
@@ -8277,7 +8277,7 @@ var_check_ro(int flags, Text name, Boole use_gettext) {
    return false;
 }
 
-// Return TRUE if flags "flags" indicates variable "name" is locked. Also give an error message.
+// Return true if flags "flags" indicates variable "name" is locked. Also give an error message.
 int
 var_check_lock(Unt flags, Text name, Boole use_gettext) {
    if (flags & DI_FLAGS_LOCK) {
@@ -8287,7 +8287,7 @@ var_check_lock(Unt flags, Text name, Boole use_gettext) {
    return false;
 }
 
-// Return TRUE if flags "flags" indicates variable "name" is fixed. Also give an error message.
+// Return true if flags "flags" indicates variable "name" is fixed. Also give an error message.
 Boole
 var_check_fixed(int flags, Text name, Boole use_gettext) {
    if (flags & DI_FLAGS_FIX) {
@@ -8301,8 +8301,8 @@ var_check_fixed(int flags, Text name, Boole use_gettext) {
 }
 
 
-// Return TRUE if "flags" indicates variable "name" has a locked (immutable)
-// value.  Also give an error message, using "name" or _("name") when "use_gettext" is TRUE.
+// Return true if "flags" indicates variable "name" has a locked (immutable)
+// value.  Also give an error message, using "name" or _("name") when "use_gettext" is true.
 Boole
 value_check_lock(int lock, Text name, Boole use_gettext) {
    if (lock & VAR_LOCKED) {
@@ -8323,7 +8323,7 @@ value_check_lock(int lock, Text name, Boole use_gettext) {
 }
 
 //Check if a variable name is valid.  When "autoload" is true "#" is allowed.
-//If "len" is -1 use all of "varname", otherwise up to "varname[len]". Return FALSE and give an 
+//If "len" is -1 use all of "varname", otherwise up to "varname[len]". Return false and give an 
 //error if not.
 Boole
 valid_varname(Text varname, Boole autoload) {
@@ -8350,7 +8350,7 @@ getVarFrom(
    Book* book // Ignored if htname is not 'b'.
 ) {     
    DictItem   *v;
-   int      done = FALSE;
+   int      done = false;
    SwitchPort   switchPort;
    int      needSwitchPortal;
    Boole doChangeCurBook = book && level == VAR_BOOK;
@@ -8365,7 +8365,7 @@ getVarFrom(
       //valid. Only do this when needed, autocommands get blocked. If we have a book reference 
       //avoid the switching, we're saving and restoring curBook directly.
       needSwitchPortal = !(t == curtab && port == curPor) && !doChangeCurBook;
-      if (!needSwitchPortal || portSwitch(&switchPort, port, t, TRUE) == OK) {
+      if (!needSwitchPortal || portSwitch(&switchPort, port, t, true) == OK) {
          //Handle options. There are no tab-local options.
          if (*varname == '&' && level == VAR_TAB) {
             Book* curBookSaved = curBook;
@@ -8380,11 +8380,11 @@ getVarFrom(
 
                if (opts) {
                   returnVar_dict_set(returnVar, opts);
-                  done = TRUE;
+                  done = true;
                }
-            } ei (eval_option(&varname, returnVar, TRUE) == OK)
+            } ei (eval_option(&varname, returnVar, true) == OK)
                //Local option
-               done = TRUE;
+               done = true;
 
             curBook = curBookSaved;
          } ei (*varname == ZERO) {
@@ -8396,7 +8396,7 @@ getVarFrom(
             else
                v = &t->tabVar;
             copy_tv(OUT returnVar, &v->c);
-            done = TRUE;
+            done = true;
          } else {
             EeSet* ht;
             if (level == VAR_BOOK)
@@ -8410,14 +8410,14 @@ getVarFrom(
             v = findVar_in_ht(ht, level, mbText(varname), false);
             if (v) {
                copy_tv(OUT returnVar, &v->c);
-               done = TRUE;
+               done = true;
             }
          }
       }
 
       if (needSwitchPortal)
          //restore previous notion of curPor
-         portRestore(&switchPort, TRUE);
+         portRestore(&switchPort, true);
    }
 
    if (!done && deftv->tag != VAR_UNKNOWN)
@@ -8458,7 +8458,7 @@ setPortVar(Var* argvars, int off) {
 
    int needSwitchPortal = !(t == curtab && port == curPor);
    SwitchPort switchPort;
-   if (!needSwitchPortal || portSwitch(OUT &switchPort, port, t, TRUE) == OK) {
+   if (!needSwitchPortal || portSwitch(OUT &switchPort, port, t, true) == OK) {
       if (*varname == '&')
          optSetFromVar(varname + 1, varp);
       else {
@@ -8470,7 +8470,7 @@ setPortVar(Var* argvars, int off) {
       }
    }
    if (needSwitchPortal)
-      portRestore(OUT &switchPort, TRUE);
+      portRestore(OUT &switchPort, true);
 }
 
 // Add an assert error to v:errors.
@@ -8488,11 +8488,11 @@ int
 var_exists(CS var) {
    CS arg = var;
    CS tofree;
-   int n = FALSE;
+   int n = false;
 
    // get_name_len() takes care of expanding curly braces
    CS name = var;
-   int len = get_name_len(OUT &arg, OUT &tofree, TRUE, FALSE);
+   int len = get_name_len(OUT &arg, OUT &tofree, true, false);
    if (len > 0) {
       if (tofree)
          name = tofree;
@@ -8501,13 +8501,13 @@ var_exists(CS var) {
       if (n) {
          // handle d.key, l[idx], f(expr)
          arg = skipwhite(arg);
-         n = (handle_subscript(&arg, &tv, &EVALARG_EVALUATE, FALSE) == OK);
+         n = (handle_subscript(&arg, &tv, &EVALARG_EVALUATE, false) == OK);
          if (n)
             clearVar(&tv);
       }
    }
    if (*arg != ZERO)
-      n = FALSE;
+      n = false;
 
    eeglFree(tofree);
    return n;
@@ -8546,7 +8546,7 @@ getRedirLval() {
    );
 }
 
-//Start recording command output to a variable. When "append" is TRUE append to an existing 
+//Start recording command output to a variable. When "append" is true append to an existing 
 //variable. Return OK if successfully completed the setup. FAIL otherwise.
 int
 var_redir_start(CS name, int append) {
@@ -8587,7 +8587,7 @@ var_redir_start(CS name, int append) {
    Var tv;
    tv.tag = VAR_STRING;
    tv.string = E;
-   letImpl(OUT redirLvalS, &tv, TRUE, ASSIGN_NO_DECL, append ? S"." : S"=");
+   letImpl(OUT redirLvalS, &tv, true, ASSIGN_NO_DECL, append ? S"." : S"=");
    clear_lval(OUT redirLvalS);
    if (called_emsg > called_emsg_before) {
       redirNameEndS = NULL;  // don't store a value, only cleanup
@@ -8640,7 +8640,7 @@ var_redir_stop(void) {
          // Call getLval() again, if it's inside a Bag or List it may have changed.
          redirNameEndS = getRedirLval();
          if (redirNameEndS && redirLvalS->name.len > 0)
-            letImpl(OUT redirLvalS, &tv, FALSE, 0, S".");
+            letImpl(OUT redirLvalS, &tv, false, 0, S".");
          clear_lval(OUT redirLvalS);
       }
 
@@ -8754,7 +8754,7 @@ f_settabvar(Var* argvars, Var* returnVar UNUSED) {
 
    Tab* save_curtab = curtab;
    Tab* save_lu_tp = lastUsedTabG;
-   gotoTab(t, FALSE, FALSE);
+   gotoTab(t, false, false);
 
    CS tabvarname = alloc(STRLEN(varname) + 3);
    STRCPY(tabvarname, "t:");
@@ -8764,7 +8764,7 @@ f_settabvar(Var* argvars, Var* returnVar UNUSED) {
 
    // Restore current tabpage and last accessed tabpage.
    if (isTabValid(save_curtab)) {
-      gotoTab(save_curtab, FALSE, FALSE);
+      gotoTab(save_curtab, false, false);
       if (isTabValid(save_lu_tp))
           lastUsedTabG = save_lu_tp;
    }
@@ -8822,7 +8822,7 @@ f_setbufvar(Var* argvars, Var* returnVar UNUSED) {
 
 // Get a callback from "arg".  It can be a Funcref or a function name. When "arg" is zero 
 // "res.name" is set to an empty string. If "res.name" is allocated then 
-// "res.needsFreeing" is set to TRUE. "res.name" is set to NULL for an invalid argument.
+// "res.needsFreeing" is set to true. "res.name" is set to NULL for an invalid argument.
 Callback
 get_callback(Var* arg) {
    int r = OK;
@@ -8842,7 +8842,7 @@ get_callback(Var* arg) {
             CS name = get_scriptlocal_funcname(arg->string);
             if (name) {
                res.name = name;
-               res.needsFreeing = TRUE;
+               res.needsFreeing = true;
             }
          }
          func_ref(res.name);
@@ -9539,7 +9539,7 @@ get_expr_name(Expand* xp, int idx) {
 }
 
 //Find internal function "name" in table "globalFunctions".
-//Return index, or -1 if not found or "implemented" is TRUE and the function is not implemented.
+//Return index, or -1 if not found or "implemented" is true and the function is not implemented.
 private Unt
 find_internal_func_opt(CS name, int implemented) {
    int      first = 0;
@@ -9568,17 +9568,17 @@ find_internal_func_opt(CS name, int implemented) {
 //Return index, or UNT if not found or the function is not implemented.
 Unt
 find_internal_func(CS name) {
-   return find_internal_func_opt(name, TRUE);
+   return find_internal_func_opt(name, true);
 }
 
 int
 has_internal_func(CS name) {
-   return find_internal_func_opt(name, TRUE) < UNT;
+   return find_internal_func_opt(name, true) < UNT;
 }
 
 private int
 has_internal_func_name(CS name) {
-   return find_internal_func_opt(name, FALSE) < UNT;
+   return find_internal_func_opt(name, false) < UNT;
 }
 
 private CS
@@ -9595,7 +9595,7 @@ internal_func_get_argcount(int idx, OUT int *argcount, OUT int *min_argcount) {
 }
 
 
-// Return TRUE if "idx" is for the map() function.
+// Return true if "idx" is for the map() function.
 int
 internal_func_is_map(int idx) {
    return globalFunctions[idx].f_func == f_map;
@@ -9705,7 +9705,7 @@ call_internal_method(
    return FCERR_NONE;
 }
 
-// Return TRUE for a non-zero Number and a non-empty String.
+// Return true for a non-zero Number and a non-empty String.
 int
 non_zero_arg(Var* argvars) {
    return ((argvars[0].tag == VAR_NUMBER && argvars[0].number != 0)
@@ -9826,7 +9826,7 @@ f_base64_encode(Var* argvars, Var* returnVar) {
 Book *
 evGetBookArg(Var* arg) {
    ++emsg_off;
-   Book* book = daGetBook(arg, FALSE);
+   Book* book = daGetBook(arg, false);
    --emsg_off;
    if (!book)
       showErrFmtMsg(_(e_invalid_buffer_name_str), tv_get_string(arg));
@@ -9890,7 +9890,7 @@ f_call(Arr(Var) argvars, Var* returnVar) {
 
    if (argvars[0].tag == VAR_STRING) {
       Byte   *p = func;
-      tofree = trans_function_name(&p, NULL, FALSE, TFN_INT|TFN_QUIET);
+      tofree = trans_function_name(&p, NULL, false, TFN_INT|TFN_QUIET);
       if (tofree == NULL) {
          emsg_funcname(e_unknown_function_str, func);
          return;
@@ -9929,7 +9929,7 @@ f_char2nr(Arr(Var) argvars, Var* returnVar) {
       returnVar->number = (*mb_ptr2char)(tv_get_string(&argvars[0]));
 }
 
-//Get the current cursor column and store it in 'returnVar'. If 'charcol' is TRUE,
+//Get the current cursor column and store it in 'returnVar'. If 'charcol' is true,
 //return the character index of the column. Otherwise, return the byte index of the column.
 private void
 get_col(Arr(Var) argvars, Var* returnVar, int charcol) {
@@ -9950,7 +9950,7 @@ get_col(Arr(Var) argvars, Var* returnVar, int charcol) {
       if (!po || !t)
           return;
 
-      if (portSwitchNoblock(&switchPort, po, t, TRUE) != OK)
+      if (portSwitchNoblock(&switchPort, po, t, true) != OK)
           return;
 
       check_cursor();
@@ -9958,7 +9958,7 @@ get_col(Arr(Var) argvars, Var* returnVar, int charcol) {
    }
 
    int fnum = curBook->fiNum;
-   fp = var2fpos(&argvars[0], FALSE, &fnum, charcol);
+   fp = var2fpos(&argvars[0], false, &fnum, charcol);
    if (fp && fnum == curBook->fiNum) {
       if (fp->col == MAXCOL) {
          // '> can be MAXCOL, get the length of the line then
@@ -9987,12 +9987,12 @@ get_col(Arr(Var) argvars, Var* returnVar, int charcol) {
    returnVar->number = col;
 
    if (portChanged)
-      portRestoreNoblock(&switchPort, TRUE);
+      portRestoreNoblock(&switchPort, true);
 }
 
 private void
 f_charcol(Arr(Var) argvars, Var* returnVar) {
-   get_col(argvars, returnVar, TRUE);
+   get_col(argvars, returnVar, true);
 }
 
 Portal*
@@ -10011,7 +10011,7 @@ getOptionalPortal(Arr(Var) argvars, int idx) {
 //"col(string)" function
 private void
 f_col(Arr(Var) argvars, Var* returnVar) {
-   get_col(argvars, returnVar, FALSE);
+   get_col(argvars, returnVar, false);
 }
 
 //"confirm(message, buttons[, default [, type]])" function
@@ -10030,7 +10030,7 @@ f_confirm(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    if (argvars[1].tag != VAR_UNKNOWN) {
       buttons = convertVarToString(&argvars[1], buf);
       if (!buttons)
-         error = TRUE;
+         error = true;
       if (argvars[2].tag != VAR_UNKNOWN) {
          def = (int)varGetNumberChk(argvars + 2, OUT &error);
          if (argvars[3].tag != VAR_UNKNOWN) {
@@ -10054,15 +10054,15 @@ f_confirm(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
       buttons = (CS)_("&Ok");
 
    if (!error)
-      returnVar->number = do_dialog(type, NULL, message, buttons, def, NULL, FALSE);
+      returnVar->number = do_dialog(type, NULL, message, buttons, def, NULL, false);
 }
 
 private void
 f_copy(Arr(Var) argvars, Var* returnVar) {
-   item_copy(&argvars[0], returnVar, FALSE, TRUE, 0);
+   item_copy(&argvars[0], returnVar, false, true, 0);
 }
 
-//Set the cursor position. If "charcol" is TRUE, then use the column number as a character offset.
+//Set the cursor position. If "charcol" is true, then use the column number as a character offset.
 //Otherwise use the column number as a byte offset.
 private void
 set_cursorpos(Var* argvars, OUT Var* returnVar, int charcol) {
@@ -10126,7 +10126,7 @@ set_cursorpos(Var* argvars, OUT Var* returnVar, int charcol) {
 //Return 0 when the position could be set, -1 otherwise.
 private void
 f_cursor(Var* argvars, Var* returnVar) {
-   set_cursorpos(argvars, OUT returnVar, FALSE);
+   set_cursorpos(argvars, OUT returnVar, false);
 }
 
 private void
@@ -10139,7 +10139,7 @@ f_deepcopy(Var* argvars, Var* returnVar) {
    if (argvars[1].tag != VAR_UNKNOWN)
    noref = varGetNumberChk(argvars + 1, NULL);
 
-   item_copy(&argvars[0], returnVar, TRUE, TRUE, noref == 0 ? get_copyID() : 0);
+   item_copy(&argvars[0], returnVar, true, true, noref == 0 ? get_copyID() : 0);
 }
 
 private void
@@ -10160,7 +10160,7 @@ f_echoraw(Var* argvars, Var* returnVar UNUSED) {
 //"empty({expr})" function
 private void
 f_empty(Var* argvars, Var* returnVar) {
-   int      n = FALSE;
+   int      n = false;
 
    switch (argvars[0].tag) {
    case VAR_STRING:
@@ -10202,7 +10202,7 @@ f_empty(Var* argvars, Var* returnVar) {
    case VAR_ANY:
    case VAR_VOID:
       internal_error_no_abort(S"f_empty(UNKNOWN)");
-      n = TRUE;
+      n = true;
       break;
    }
 
@@ -10274,7 +10274,7 @@ f_eval(Var* argvars, Var* returnVar) {
    if (!s || eval1(OUT &s, returnVar, &EVALARG_EVALUATE) == FAIL) {
       if (p && !aborting())
          showErrFmtMsg(_(e_invalid_expression_str), p);
-      need_clr_eos = FALSE;
+      need_clr_eos = false;
       returnVar->tag = VAR_NUMBER;
       returnVar->number = 0;
    } ei (*s != ZERO)
@@ -10377,7 +10377,7 @@ execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
    ArrayList   save_ga;
    int      saveMsgCol = msgColG;
    int      save_stickyCommandModifiersG = stickyCommandModifiersG;
-   int      echo_output = FALSE;
+   int      echo_output = false;
 
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
@@ -10399,17 +10399,17 @@ execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
 
    if (argvars[arg_off + 1].tag != VAR_UNKNOWN) {
       Byte   buf[NUMBUFLEN];
-      Byte  *s = convertVarToString_strict(&argvars[arg_off + 1], buf, FALSE);
+      Byte  *s = convertVarToString_strict(&argvars[arg_off + 1], buf, false);
 
       if (s == NULL)
          return;
       if (*s == ZERO)
-         echo_output = TRUE;
+         echo_output = true;
       if (STRNCMP(s, "silent", 6) == 0)
          ++msg_silent;
       if (STRCMP(s, "silent!") == 0) {
-         emsg_silent = TRUE;
-         emsg_noredir = TRUE;
+         emsg_silent = true;
+         emsg_noredir = true;
       }
    } else
       ++msg_silent;
@@ -10417,8 +10417,8 @@ execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
    if (redir_execute)
       save_ga = redir_execute_ga;
    ga_init2(&redir_execute_ga, sizeof(char), 500);
-   redir_execute = TRUE;
-   redir_off = FALSE;
+   redir_execute = true;
+   redir_off = false;
    if (!echo_output)
       msgColG = 0;  // prevent leading spaces
 
@@ -10472,27 +10472,27 @@ f_execute(Var* argvars, Var* returnVar) {
 // "exists()" function
 void
 f_exists(Var* argvars, Var* returnVar) {
-   int      n = FALSE;
+   int      n = false;
 
    CS p = tv_get_string(&argvars[0]);
    if (*p == '$')  {       // environment variable
       // first try "normal" environment variables (fast)
       if (mch_getenv(p + 1))
-         n = TRUE;
+         n = true;
       else {
          // try expanding things like $EEGL and ${HOME}
          p = doExpandEnvInMultiplePaths(p);
          if (p && *p != '$')
-            n = TRUE;
+            n = true;
          eeglFree(p);
       }
    }
    ei (*p == '&' || *p == '+') {       // option
-      n = (eval_option(&p, NULL, TRUE) == OK);
+      n = (eval_option(&p, NULL, true) == OK);
       if (*skipwhite(p) != ZERO)
-         n = FALSE;         // trailing garbage
+         n = false;         // trailing garbage
    } ei (*p == '*') {       // internal or user defined function
-      n = function_exists(p + 1, FALSE);
+      n = function_exists(p + 1, false);
    }
    ei (*p == '?')   {      // internal function only
       n = has_internal_func_name(p + 1);
@@ -10532,7 +10532,7 @@ f_expand(Var* argvars, Var* returnVar) {
 
       if (p_verbose == 0)
          ++emsg_off;
-      result = evalVars(NULL, OUT &errorMsg, s, s, &len, NULL, FALSE);
+      result = evalVars(NULL, OUT &errorMsg, s, s, &len, NULL, false);
       if (p_verbose == 0)
          --emsg_off;
       ei (errorMsg)
@@ -10587,7 +10587,7 @@ f_expandcmd(Var* argvars, Var* returnVar) {
    invo.comm = cmdstr;
    invo.arg = cmdstr;
    invo.argFlags |= commandFlagNoSpacesInExtra();
-   invo.usefilter = FALSE;
+   invo.usefilter = false;
    invo.nextComm = NULL;
    invo.id = C_USER;
 
@@ -10620,14 +10620,14 @@ f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
       CS flags = tv_get_string_buf(&argvars[1], nbuf);
       for ( ; *flags != ZERO; ++flags) {
          switch (*flags) {
-         case 'n': remap = FALSE; break;
-         case 'm': remap = TRUE; break;
-         case 't': typed = TRUE; break;
-         case 'i': insert = TRUE; break;
-         case 'x': execute = TRUE; break;
-         case 'c': context = TRUE; break;
-         case '!': dangerous = TRUE; break;
-         case 'L': lowlevel = TRUE; break;
+         case 'n': remap = false; break;
+         case 'm': remap = true; break;
+         case 't': typed = true; break;
+         case 'i': insert = true; break;
+         case 'x': execute = true; break;
+         case 'c': context = true; break;
+         case '!': dangerous = true; break;
+         case 'L': lowlevel = true; break;
          }
       }
    }
@@ -10642,7 +10642,7 @@ f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
             //if a CTRL-C was typed, set gotInterruptG, similar to what
             // happens in fill_input_buf()
             if (keys[idx] == 3 && ctrl_c_interrupts && typed)
-                gotInterruptG = TRUE;
+                gotInterruptG = true;
             add_to_input_buf(keys + idx, 1);
          }
 #else
@@ -10657,9 +10657,9 @@ f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
          lo("feedkeys(%s): %s", typed ? "typed" : "", keys);
 
          insertIntoTypebuf(keys_esc, (remap ? REMAP_YES : REMAP_NONE),
-                  insert ? 0 : typeBufG.validLen, !typed, FALSE);
+                  insert ? 0 : typeBufG.validLen, !typed, false);
          if (vgetcBusyG || timer_busy || input_busy)
-            typebuf_was_filled = TRUE;
+            typebuf_was_filled = true;
 
          eeglFree(keys_esc);
       }
@@ -10669,7 +10669,7 @@ f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
          ScriptPos   save_sctx;
 
          // Avoid a 1 second delay when the keys start Insert mode.
-         msg_scroll = FALSE;
+         msg_scroll = false;
 
          lo("feedkeys() executing");
 
@@ -10682,7 +10682,7 @@ f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
             ++ex_normal_busy;
             ++in_feedkeys;
          }
-         exec_normal(TRUE, lowlevel, TRUE);
+         exec_normal(true, lowlevel, true);
          if (!dangerous) {
             --ex_normal_busy;
             --in_feedkeys;
@@ -10708,7 +10708,7 @@ private void
 common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
    CS s;
    CS name;
-   int use_string = FALSE;
+   int use_string = false;
    PartiallyApplied   *arg_pt = NULL;
    CS trans_name = NULL;
    Boole is_global = false;
@@ -10724,7 +10724,7 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
    } else {
       // function('MyFunc', [arg], dict)
       s = tv_get_string(&argvars[0]);
-      use_string = TRUE;
+      use_string = true;
    }
    if (s == NULL) {
       showErrFmtMsg(_(e_invalid_argument_str), "NULL");
@@ -10733,7 +10733,7 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
 
    if ((use_string && firstOccurrence(s, AUTOLOAD_CHAR) == NULL) || is_funcref) {
       name = s;
-      trans_name = save_function_name(&name, OUT &is_global, FALSE,
+      trans_name = save_function_name(&name, OUT &is_global, false,
             TFN_INT | TFN_QUIET | TFN_NO_AUTOLOAD | TFN_NO_DEREF, NULL);
       if (*name != ZERO)
          s = NULL;
@@ -10833,7 +10833,7 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
             // For "function(dict.func, [], dict)" and "func" is a partial
             // use "dict". That is backwards compatible.
             if (dict_idx > 0) {
-               // The dict is bound explicitly, auto is FALSE.
+               // The dict is bound explicitly, auto is false.
                pt->self = argvars[dict_idx].bag;
                ++pt->self->refcount;
             } ei (arg_pt) {
@@ -10882,22 +10882,22 @@ theend:
 
 private void
 f_funcref(Var* argvars, Var* returnVar) {
-   common_function(argvars, returnVar, TRUE);
+   common_function(argvars, returnVar, true);
 }
 
 private void
 f_function(Var* argvars, Var* returnVar) {
-   common_function(argvars, returnVar, FALSE);
+   common_function(argvars, returnVar, false);
 }
 
 private void
 f_garbagecollect(Var* argvars, Var* returnVar UNUSED) {
    // This is postponed until we are back at the toplevel, because we may be
    // using Lists and Dicts internally.  E.g.: ":echo [garbagecollect()]".
-   want_garbage_collect = TRUE;
+   want_garbage_collect = true;
 
    if (argvars[0].tag != VAR_UNKNOWN && tv_get_bool(&argvars[0]) == 1)
-   garbage_collect_at_exit = TRUE;
+   garbage_collect_at_exit = true;
 }
 
 private void
@@ -10907,7 +10907,7 @@ f_get(Var* argvars, Var*  returnVar) {
    DictItem   *di;
    Bag* d;
    Var* tv = NULL;
-   int what_is_dict = FALSE;
+   int what_is_dict = false;
 
    if (argvars[0].tag == VAR_BLOB) {
       Boole error = false;
@@ -10968,7 +10968,7 @@ f_get(Var* argvars, Var*  returnVar) {
                returnVar->string = copyStr(name);
             }
          } ei (STRCMP(what, "dict") == 0) {
-            what_is_dict = TRUE;
+            what_is_dict = true;
             if (pt->self)
                returnVar_dict_set(returnVar, pt->self);
          } ei (STRCMP(what, "args") == 0) {
@@ -10978,7 +10978,7 @@ f_get(Var* argvars, Var*  returnVar) {
                list_append_tv(returnVar->list, &pt->argv[i]);
             } 
          } ei (STRCMP(what, "arity") == 0) {
-            int required = 0, optional = 0, varargs = FALSE;
+            int required = 0, optional = 0, varargs = false;
             CS name = partial_name(pt);
 
             get_func_arity(name, &required, &optional, &varargs);
@@ -11099,7 +11099,7 @@ getpos_both(Arr(Var) argvars, Var* returnVar, int getcurpos, int charcol) {
          fp = &pos;
       }
    } else
-      fp = var2fpos(&argvars[0], TRUE, &fnum, charcol);
+      fp = var2fpos(&argvars[0], true, &fnum, charcol);
    if (fnum != -1)
       list_append_number(l, (Long)fnum);
    else
@@ -11132,7 +11132,7 @@ getpos_both(Arr(Var) argvars, Var* returnVar, int getcurpos, int charcol) {
 
 private void
 f_getcharpos(Var* argvars, Var* returnVar) {
-   getpos_both(argvars, returnVar, FALSE, TRUE);
+   getpos_both(argvars, returnVar, false, true);
 }
 
 private void
@@ -11147,7 +11147,7 @@ f_getcharsearch(Var* argvars UNUSED, Var* returnVar) {
 
 private void
 f_getenv(Var* argvars, Var* returnVar) {
-   int mustfree = FALSE;
+   int mustfree = false;
 
    CS p = eeglGetEnv(tv_get_string(&argvars[0]));
    if (!p) {
@@ -11177,7 +11177,7 @@ f_getjumplist(Var* argvars, Var* returnVar) {
    if (!wp)
       return;
 
-   cleanup_jumplist(wp, TRUE);
+   cleanup_jumplist(wp, true);
 
    List* l = list_alloc();
    if (list_append_list(returnVar->list, l) == FAIL) {
@@ -11211,18 +11211,18 @@ f_getpid(Arr(Var) argvars UNUSED, Var* returnVar) {
 // "getcurpos()" function
 private void
 f_getcurpos(Arr(Var) argvars, Var* returnVar) {
-   getpos_both(argvars, returnVar, TRUE, FALSE);
+   getpos_both(argvars, returnVar, true, false);
 }
 
 private void
 f_getcursorcharpos(Arr(Var) argvars, Var* returnVar) {
-   getpos_both(argvars, returnVar, TRUE, TRUE);
+   getpos_both(argvars, returnVar, true, true);
 }
 
 //"getpos(string)" function
 private void
 f_getpos(Var* argvars, Var* returnVar) {
-   getpos_both(argvars, returnVar, FALSE, FALSE);
+   getpos_both(argvars, returnVar, false, false);
 }
 
 //}}}
@@ -11266,14 +11266,14 @@ getregionpos(
           || check_for_oself_arg(argvars, 2) == FAIL)
       return FAIL;
 
-   if (list2fpos(&argvars[0], p1, &fnum1, NULL, FALSE) != OK
-          || list2fpos(&argvars[1], p2, &fnum2, NULL, FALSE) != OK
+   if (list2fpos(&argvars[0], p1, &fnum1, NULL, false) != OK
+          || list2fpos(&argvars[1], p2, &fnum2, NULL, false) != OK
           || fnum1 != fnum2)
       return FAIL;
 
    CS type;
    if (argvars[2].tag == VAR_BAG) {
-      type = bagGetString(argvars[2].bag, tConst("type"), FALSE);
+      type = bagGetString(argvars[2].bag, tConst("type"), false);
       if (!type)
           type = default_type;
    } else {
@@ -11343,14 +11343,14 @@ getregionpos(
    if (*region_type == MCHAR) {
       // If p2 is on ZERO (end of line), inclusive becomes false.
       if (*inclusive && !virtual_op && *ml_get_pos(p2) == ZERO)
-          *inclusive = FALSE;
+          *inclusive = false;
    } ei (*region_type == MBLOCK) {
       ColNr sc1, ec1, sc2, ec2;
 
       bookGetVirtualColInVirtualMode(curPor, p1, &sc1, NULL, &ec1);
       bookGetVirtualColInVirtualMode(curPor, p2, &sc2, NULL, &ec2);
       oper->motion_type = MBLOCK;
-      oper->inclusive = TRUE;
+      oper->inclusive = true;
       oper->opTy = OP_NOP;
       oper->start = *p1;
       oper->end = *p2;
@@ -11373,7 +11373,7 @@ getregionpos(
 private void
 f_getregion(Arr(Var) argvars, Var* returnVar) {
    Pos      p1, p2;
-   int         inclusive = TRUE;
+   int         inclusive = true;
    int         region_type = -1;
    Operator      oa;
 
@@ -11458,9 +11458,9 @@ add_regionpos_range(Var* returnVar, Pos p1, Pos p2) {
 private void
 f_getregionpos(Arr(Var) argvars, Var* returnVar) {
    Pos   p1, p2;
-   int      inclusive = TRUE;
+   int      inclusive = true;
    int      region_type = -1;
-   int      allow_eol = FALSE;
+   int      allow_eol = false;
    Operator   oa;
    int      lnum;
 
@@ -11503,7 +11503,7 @@ f_getregionpos(Arr(Var) argvars, Var* returnVar) {
             // blockwise selection entirely beyond end of line
             ret_p1.col = MAXCOL;
             ret_p1.coladd = oa.start_vcol - bd.start_vcol;
-            bd.is_oneChar = TRUE;
+            bd.is_oneChar = true;
          } ei (bd.startspaces > 0) {
             ret_p1.col = mb_prevptr(line, bd.textstart) - line + 1;
             ret_p1.coladd = bd.start_char_vcols - bd.startspaces;
@@ -11567,8 +11567,8 @@ getreg_get_regname(Arr(Var) argvars) {
 // "getreg()" function
 private void
 f_getreg(Arr(Var) argvars, Var* returnVar) {
-   int arg2 = FALSE;
-   int return_list = FALSE;
+   int arg2 = false;
+   int return_list = false;
 
    int regname = getreg_get_regname(argvars);
    if (regname == 0)
@@ -11665,8 +11665,8 @@ void
 f_has(Arr(Var) argvars, Var* returnVar) {
    int      i;
    Byte   *name;
-   int      x = FALSE;
-   int      n = FALSE;
+   int      x = false;
+   int      n = false;
    typedef struct {
       char *name;
       short present;
@@ -11921,14 +11921,14 @@ f_has(Arr(Var) argvars, Var* returnVar) {
    name = tv_get_string(&argvars[0]);
    for (i = 0; has_list[i].name; ++i) {
       if (caseInsensitiveCompare(name, has_list[i].name) == 0) {
-          x = TRUE;
+          x = true;
           n = has_list[i].present;
           break;
       }
    } 
 
    // features also in has_list[] but sometimes enabled at runtime
-   if (x == TRUE && n == FALSE) {
+   if (x == true && n == false) {
       if (0) {
           // intentionally empty
       }
@@ -11944,7 +11944,7 @@ f_has(Arr(Var) argvars, Var* returnVar) {
 
 //}}}
 
-//Return TRUE if "feature" can change later.
+//Return true if "feature" can change later.
 //Also when checking for the feature has side effects, such as loading a DLL.
 int
 dynamic_feature(CS feature) {
@@ -12106,7 +12106,7 @@ indexof_eval_expr(Var *expr) {
    argv[1] = *get_EeglVar_tv(VV_VAL);
    newtv.tag = VAR_UNKNOWN;
 
-   if (eval_expr_typval(expr, FALSE, argv, 2, &newtv) == FAIL)
+   if (eval_expr_typval(expr, false, argv, 2, &newtv) == FAIL)
       return false;
 
    Long found = varGetNumberChk(&newtv, OUT &error);
@@ -12116,8 +12116,8 @@ indexof_eval_expr(Var *expr) {
 }
 
 //Evaluate 'expr' for each byte in the Blob 'b' starting with the byte at
-//'startidx' and return the index of the byte where 'expr' is TRUE.  Return
-//-1 if 'expr' doesn't evaluate to TRUE for any of the bytes.
+//'startidx' and return the index of the byte where 'expr' is true.  Return
+//-1 if 'expr' doesn't evaluate to true for any of the bytes.
 private int
 indexof_blob(Blob *b, long startidx, Var *expr) {
    if (!b)
@@ -12149,8 +12149,8 @@ indexof_blob(Blob *b, long startidx, Var *expr) {
 }
 
 //Evaluate 'expr' for each item in the List 'l' starting with the item at
-//'startidx' and return the index of the item where 'expr' is TRUE.  Return
-//-1 if 'expr' doesn't evaluate to TRUE for any of the items.
+//'startidx' and return the index of the item where 'expr' is true.  Return
+//-1 if 'expr' doesn't evaluate to true for any of the items.
 private int
 indexof_list(List *l, long startidx, Var *expr) {
    ListItem* item;
@@ -12222,7 +12222,7 @@ f_indexof(Arr(Var) argvars, Var* returnVar) {
    //We reset "anyEmsgG" to be able to detect whether an error occurred
    //during evaluation of the expression.
    save_anyEmsgG = anyEmsgG;
-   anyEmsgG = FALSE;
+   anyEmsgG = false;
 
    if (argvars[0].tag == VAR_BLOB)
       returnVar->number = indexof_blob(argvars[0].blob, startidx, &argvars[1]);
@@ -12239,12 +12239,12 @@ private int inputsecret_flag = 0;
 // "input()" function Also handles inputsecret() when inputsecret is set.
 private void
 f_input(Arr(Var) argvars, Var* returnVar) {
-   get_user_input(argvars, returnVar, FALSE, inputsecret_flag);
+   get_user_input(argvars, returnVar, false, inputsecret_flag);
 }
 
 private void
 f_inputdialog(Arr(Var) argvars, Var* returnVar) {
-   get_user_input(argvars, returnVar, TRUE, inputsecret_flag);
+   get_user_input(argvars, returnVar, true, inputsecret_flag);
 }
 
 private void
@@ -12257,7 +12257,7 @@ f_inputlist(Arr(Var) argvars, Var* returnVar) {
    msg_start();
    msgRowG = visibleRowsG - 1;  // for when @commheight > 1
    lines_left = visibleRowsG;   // avoid more prompt
-   msg_scroll = TRUE;
+   msg_scroll = true;
    msg_clr_eos();
 
    List* l = argvars[0].list;
@@ -12316,7 +12316,7 @@ f_inputsecret(Arr(Var) argvars, Var* returnVar) {
 // "interrupt()" function
 private void
 f_interrupt(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
-    gotInterruptG = TRUE;
+    gotInterruptG = true;
 }
 
 // "invert(expr)" function
@@ -12398,7 +12398,7 @@ f_keytrans(Arr(Var) argvars, Var* returnVar) {
       return;
    // Need to escape K_SPECIAL and CSI for mb_unescape().
    CS escaped = copyStr_escape_csi(argvars[0].string);
-   returnVar->string = str2special_save(escaped, TRUE, TRUE);
+   returnVar->string = str2special_save(escaped, true, true);
    eeglFree(escaped);
 }
 
@@ -12460,20 +12460,20 @@ f_line(Arr(Var) argvars, Var* returnVar) {
       int id = (int)tv_get_number(&argvars[1]);
       wp = getPortAndTab(id, OUT &t);
       if (wp && t) {
-         if (portSwitchNoblock(&switchPort, wp, t, TRUE) == OK) {
+         if (portSwitchNoblock(&switchPort, wp, t, true) == OK) {
             // With 'splitkeep' != cursor and in diff mode, prevent that the
             // window scrolls and keep the topline.
             if (curPor->o.diff && switchPort.curPor->o.diff)
-               skipUpdateToplineG = TRUE;
+               skipUpdateToplineG = true;
             check_cursor();
-            fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);
+            fp = var2fpos(&argvars[0], true, &fnum, false);
          }
-         skipUpdateToplineG = FALSE;
-         portRestoreNoblock(&switchPort, TRUE);
+         skipUpdateToplineG = false;
+         portRestoreNoblock(&switchPort, true);
       }
    } else
       // use current portal
-      fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);
+      fp = var2fpos(&argvars[0], true, &fnum, false);
 
    if (fp)
       lnum = fp->lnum;
@@ -12593,7 +12593,7 @@ find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type) {
       for (;;) {
          if (l) {
             if (li == NULL) {
-                match = FALSE;
+                match = false;
                 break;
             }
             eeglFree(tofree);
@@ -12617,7 +12617,7 @@ find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type) {
             startcol = (ColNr)(regmatch.startp[0]
                       + utfCharLen(regmatch.startp[0]) - str);
             if (startcol > (ColNr)len || str + startcol <= regmatch.startp[0]) {
-               match = FALSE;
+               match = false;
                break;
             }
          }
@@ -12677,8 +12677,8 @@ theend:
 }
 
 //Return all the matches in string "str" for pattern "rmp". The matches are returned in the List 
-//"mlist". If "submatches" is TRUE, then submatch information is also returned. "matchbuf" is 
-//TRUE when called for matchbufline().
+//"mlist". If "submatches" is true, then submatch information is also returned. "matchbuf" is 
+//true when called for matchbufline().
 private int
 get_matches_in_str(
    CS str,
@@ -12753,7 +12753,7 @@ f_matchbufline(Arr(Var) argvars, Var* returnVar) {
       return;
 
    int prev_anyEmsgG = anyEmsgG;
-   Book *book = daGetBook(&argvars[0], FALSE);
+   Book *book = daGetBook(&argvars[0], false);
    if (!book) {
       if (anyEmsgG == prev_anyEmsgG)
          showErrFmtMsg(_(e_invalid_buffer_name_str), tv_get_string(&argvars[0]));
@@ -12807,8 +12807,8 @@ f_matchbufline(Arr(Var) argvars, Var* returnVar) {
    regmatch.rm_ic = p_ic;
 
    while (slnum <= elnum) {
-      CS str = memGetLine(book, slnum, FALSE);
-      if (get_matches_in_str(str, &regmatch, retlist, slnum, submatches, TRUE) == FAIL)
+      CS str = memGetLine(book, slnum, false);
+      if (get_matches_in_str(str, &regmatch, retlist, slnum, submatches, true) == FAIL)
          goto cleanup;
       slnum++;
    }
@@ -12943,7 +12943,7 @@ max_min(Arr(Var) argvars, Var* returnVar, int domax) {
          }
       }
    } ei (argvars[0].tag == VAR_BAG) {
-      int      first = TRUE;
+      int      first = true;
       int      todo;
 
       Bag* d = argvars[0].bag;
@@ -12958,7 +12958,7 @@ max_min(Arr(Var) argvars, Var* returnVar, int domax) {
                   return; // type error; errmsg already given
                if (first) {
                   n = i;
-                  first = FALSE;
+                  first = false;
                } ei (domax ? i > n : i < n)
                   n = i;
             }
@@ -12973,13 +12973,13 @@ max_min(Arr(Var) argvars, Var* returnVar, int domax) {
 // "max()" function
 private void
 f_max(Arr(Var) argvars, Var* returnVar) {
-   max_min(argvars, returnVar, TRUE);
+   max_min(argvars, returnVar, true);
 }
 
 // "min()" function
 private void
 f_min(Arr(Var) argvars, Var* returnVar) {
-   max_min(argvars, returnVar, FALSE);
+   max_min(argvars, returnVar, false);
 }
 
 // "nextnonblank()" function
@@ -13078,7 +13078,7 @@ f_printf(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 //   returnVar->string = NULL;
 //
 //   // Get the required length, allocate the buffer and do it for real.
-//   anyEmsgG = FALSE;
+//   anyEmsgG = false;
 //   CS fmt = tv_get_string_buf(&argvars[0], buf);
 // TODO why null?   int len = eeVarPrintf(null, 0, fmt, ap, argvars + 1);
 //   if (!anyEmsgG) {
@@ -13105,15 +13105,15 @@ f_pumvisible(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 
 
 private Unt srand_seed_for_testing = 0;
-private int   srand_seed_for_testing_is_used = FALSE;
+private int   srand_seed_for_testing_is_used = false;
 
 private void
 f_test_srand_seed(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (argvars[0].tag == VAR_UNKNOWN)
-      srand_seed_for_testing_is_used = FALSE;
+      srand_seed_for_testing_is_used = false;
    else {
       srand_seed_for_testing = (Unt)tv_get_number(&argvars[0]);
-      srand_seed_for_testing_is_used = TRUE;
+      srand_seed_for_testing_is_used = true;
    }
 }
 
@@ -13166,13 +13166,13 @@ private void
 f_rand(Arr(Var) argvars, Var* returnVar) {
    List   *l = NULL;
    static Unt   gx, gy, gz, gw;
-   static int   initialized = FALSE;
+   static int   initialized = false;
    ListItem   *lx, *ly, *lz, *lw;
    Unt   x = 0, y, z, w, t, result;
 
    if (argvars[0].tag == VAR_UNKNOWN) {
       // When no argument is given use the global seed list.
-      if (initialized == FALSE) {
+      if (initialized == false) {
          // Initialize the global seed list.
          init_srand(&x);
 
@@ -13180,7 +13180,7 @@ f_rand(Arr(Var) argvars, Var* returnVar) {
          gy = SPLITMIX32(x, z);
          gz = SPLITMIX32(x, z);
          gw = SPLITMIX32(x, z);
-         initialized = TRUE;
+         initialized = true;
       }
 
       SHUFFLE_XOSHIRO128STARSTAR(gx, gy, gz, gw);
@@ -13581,7 +13581,7 @@ search_cmn(Arr(Var) argvars, OUT Pos *match_pos, OUT Unt* flagsp) {
 
    patlen = STRLEN(pat);
 
-   // Repeat until {skip} return FALSE.
+   // Repeat until {skip} return false.
    for (;;) {
       subpatnum = searchit(
          curPor, curBook, &pos, NULL, dir, pat, patlen, 1L, options, RE_SEARCH, &sia
@@ -13924,7 +13924,7 @@ f_searchpos(Arr(Var) argvars, Var* returnVar) {
       list_append_number(returnVar->list, (Long)n);
 }
 
-//Set the cursor or mark position. If "charpos" is TRUE, then use the column number as a character 
+//Set the cursor or mark position. If "charpos" is true, then use the column number as a character 
 //offset. Otherwise use the column number as a byte offset.
 private void
 set_position(Arr(Var) argvars, Var* returnVar, int charpos) {
@@ -13963,7 +13963,7 @@ set_position(Arr(Var) argvars, Var* returnVar, int charpos) {
 
 private void
 f_setcharpos(Arr(Var) argvars, Var* returnVar) {
-   set_position(argvars, returnVar, TRUE);
+   set_position(argvars, returnVar, true);
 }
 
 private void
@@ -13978,7 +13978,7 @@ f_setcharsearch(Arr(Var) argvars, Var* returnVar UNUSED) {
    if ((d = argvars[0].bag) == NULL)
       return;
 
-   csearch = bagGetString(d, tConst("char"), FALSE);
+   csearch = bagGetString(d, tConst("char"), false);
    if (csearch) {
        int pcc[MAX_COMBINED_SYMBOLS];
        int c = utfc_ptr2char(csearch, pcc);
@@ -14000,7 +14000,7 @@ f_setcharsearch(Arr(Var) argvars, Var* returnVar UNUSED) {
 // "setcursorcharpos" function
 private void
 f_setcursorcharpos(Arr(Var) argvars, Var* returnVar) {
-   set_cursorpos(argvars, returnVar, TRUE);
+   set_cursorpos(argvars, returnVar, true);
 }
 
 //"setenv()" function
@@ -14051,7 +14051,7 @@ f_setfperm(Arr(Var) argvars, Var* returnVar) {
 // "setpos()" function
 private void
 f_setpos(Arr(Var) argvars, Var* returnVar) {
-    set_position(argvars, returnVar, FALSE);
+    set_position(argvars, returnVar, false);
 }
 
 // Translate a register type string to the yank type and block length
@@ -14097,7 +14097,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
    regcontents = NULL;
    block_len = -1;
    yank_type = MAUTO;
-   append = FALSE;
+   append = false;
 
    strregname = convertVarToStringSingleUse(argvars);
    returnVar->number = 1;      // FAIL is default
@@ -14113,7 +14113,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
       if (!d || d->hashTable.count == 0) {
           // Empty dict, clear the register (like setreg(0, []))
           CS lstval[2] = {NULL, NULL};
-          write_reg_contents_lst(regname, lstval, 0, FALSE, MAUTO, -1);
+          write_reg_contents_lst(regname, lstval, 0, false, MAUTO, -1);
           return;
       }
 
@@ -14121,7 +14121,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
       if (di)
           regcontents = &di->c;
 
-      stropt = bagGetString(d, tConst("regtype"), FALSE);
+      stropt = bagGetString(d, tConst("regtype"), false);
       if (stropt) {
           int ret = get_yank_type(&stropt, &yank_type, &block_len);
 
@@ -14132,7 +14132,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
       }
 
       if (regname == '"') {
-         stropt = bagGetString(d, tConst("points_to"), FALSE);
+         stropt = bagGetString(d, tConst("points_to"), false);
          if (stropt) {
             pointreg = *stropt;
             regname = pointreg;
@@ -14154,7 +14154,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
       for (; *stropt != ZERO; ++stropt)
          switch (*stropt) {
          case 'a': case 'A':   // append
-             append = TRUE;
+             append = true;
              break;
          default:
              get_yank_type(&stropt, &yank_type, &block_len);
@@ -14202,7 +14202,7 @@ f_setreg(Arr(Var) argvars, Var* returnVar) {
       write_reg_contents_ex(regname, strval, -1, append, yank_type, block_len);
     }
    if (pointreg != 0)
-   get_yank_register(pointreg, TRUE);
+   get_yank_register(pointreg, true);
 
     returnVar->number = 0;
 }
@@ -14288,7 +14288,7 @@ f_split(Arr(Var) argvars, Var* returnVar) {
    Byte   patbuf[NUMBUFLEN];
    int      match;
    ColNr   col = 0;
-   int      keepempty = FALSE;
+   int      keepempty = false;
    Boole typeerr = false;
 
    CS str = tv_get_string(&argvars[0]);
@@ -14309,10 +14309,10 @@ f_split(Arr(Var) argvars, Var* returnVar) {
 
    regmatch.regprog = compileRegexp(pat, RE_MAGIC + RE_STRING);
    if (regmatch.regprog) {
-      regmatch.rm_ic = FALSE;
+      regmatch.rm_ic = false;
       while (*str != ZERO || keepempty) {
          if (*str == ZERO)
-            match = FALSE;   // empty item at the end
+            match = false;   // empty item at the end
          else
             match = eeRegexec_nl(&regmatch, str, col);
          if (match)
@@ -14415,7 +14415,7 @@ private void
 f_swapname(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_STRING;
 
-   Book* book = daGetBook(&argvars[0], FALSE);
+   Book* book = daGetBook(&argvars[0], false);
    if (book == NULL || book->mem.mfile == NULL || book->mem.mfile->fName == NULL)
       returnVar->string = NULL;
    else
@@ -14494,7 +14494,7 @@ f_tagfiles(Arr(Var) argvars UNUSED, Var* returnVar) {
    allocReturnList(returnVar);
    Byte fname[MAXPATHL];
 
-   for (int first = TRUE; ; first = FALSE) {
+   for (int first = true; ; first = false) {
       if (get_tagfname(&tn, first, fname) == FAIL
             || list_append_string(returnVar->list, fname, -1) == FAIL)
          break;
@@ -14508,7 +14508,7 @@ f_taglist(Arr(Var) argvars, Var* returnVar) {
 
    CS tag_pattern = tv_get_string(&argvars[0]);
 
-   returnVar->number = FALSE;
+   returnVar->number = false;
    if (*tag_pattern == ZERO)
       return;
 
@@ -14564,7 +14564,7 @@ f_virtcol(Arr(Var) argvars, Var* returnVar) {
       if (!po || !t)
           goto theend;
 
-      if (portSwitchNoblock(&switchPort, po, t, TRUE) != OK)
+      if (portSwitchNoblock(&switchPort, po, t, true) != OK)
           goto theend;
 
       check_cursor();
@@ -14572,7 +14572,7 @@ f_virtcol(Arr(Var) argvars, Var* returnVar) {
    }
 
    int fnum = curBook->fiNum;
-   fp = var2fpos(&argvars[0], FALSE, &fnum, FALSE);
+   fp = var2fpos(&argvars[0], false, &fnum, false);
    if (fp && fp->lnum <= curBook->mem.lineCount && fnum == curBook->fiNum) {
       // Limit the column to a valid value, bookGetVirtualColInVirtualMode() doesn't check.
       if (fp->col < 0)
@@ -14652,7 +14652,7 @@ private CS get_end_emsg(CondStack* cstack);
 //there or even outside the try conditional.  Try conditionals may be nested.
 //
 //Configuration whether an exception is thrown on error or interrupt.  When
-//the preprocessor macros below evaluate to FALSE, an error (anyEmsgG) or
+//the preprocessor macros below evaluate to false, an error (anyEmsgG) or
 //interrupt (gotInterruptG) under an active try conditional terminates the script
 //after the non-active finally clauses of all active try conditionals have been
 //executed.  Otherwise, errors and/or interrupts are converted into catchable
@@ -14672,21 +14672,21 @@ private CS get_end_emsg(CondStack* cstack);
 # define THROW_TEST
 #else
 // Values used for the Eegl release.
-# define THROW_ON_ERROR      TRUE
-# define THROW_ON_ERROR_TRUE
-# define THROW_ON_INTERRUPT   TRUE
-# define THROW_ON_INTERRUPT_TRUE
+# define THROW_ON_ERROR      true
+# define THROW_ON_ERROR_true
+# define THROW_ON_INTERRUPT   true
+# define THROW_ON_INTERRUPT_true
 #endif
 
 //When several errors appear in a row, setting "force_abort" is delayed until the failing command 
-//returned.  "cause_abort" is set to TRUE meanwhile, in order to indicate that situation.  This 
+//returned.  "cause_abort" is set to true meanwhile, in order to indicate that situation.  This 
 //is useful when "force_abort" was set during execution of a function call from an expression: 
 //the aborting of the expression evaluation is done without producing any error messages, but all
 //error messages on parsing errors during the expression evaluation are given (even if a try 
 //conditional is active).
-private int cause_abort = FALSE;
+private int cause_abort = false;
 
-//Return TRUE when immediately aborting on error, or when an interrupt occurred or an exception 
+//Return true when immediately aborting on error, or when an interrupt occurred or an exception 
 //was thrown but not caught.  Use for ":{range}call" to check whether an aborted function that 
 //does not handle a range itself should be called again for the next line in the range. Also used 
 //for cancelling expression evaluation after a function call caused an immediate abort. Note that 
@@ -14706,10 +14706,10 @@ aborting(void) {
 void
 update_force_abort(void) {
    if (cause_abort)
-      force_abort = TRUE;
+      force_abort = true;
 }
 
-//Return TRUE if a command with a subcommand resulting in "retcode" should abort the script 
+//Return true if a command with a subcommand resulting in "retcode" should abort the script 
 //processing. Can be used to suppress an autocommand after execution of a failing subcommand as 
 //long as the error message has not been displayed and actually caused the abortion.
 int
@@ -14717,7 +14717,7 @@ should_abort(int retcode) {
    return ((retcode == FAIL && trylevel != 0 && !emsg_silent) || aborting());
 }
 
-//Return TRUE if a function with the "abort" flag should not be considered ended on an error. 
+//Return true if a function with the "abort" flag should not be considered ended on an error. 
 //This means that parsing commands is continued in order to find finally clauses to be executed, 
 //and that some errors in skipped commands are still reported.
 int
@@ -14727,11 +14727,11 @@ aborted_in_try(void) {
    return force_abort;
 }
 
-//cause_errthrow(): Cause a throw of an error exception if appropriate. Return TRUE if the error 
+//cause_errthrow(): Cause a throw of an error exception if appropriate. Return true if the error 
 //message should not be displayed by emsg(). Set "ignore", if the emsg() call should be ignored 
 //completely.
 //When several messages appear in the same command, the first is usually the most specific one and
-//used as the exception value.  The "severe" flag can be set to TRUE, if a later but severer 
+//used as the exception value.  The "severe" flag can be set to true, if a later but severer 
 //message should be used instead.
 int
 cause_errthrow(CS mesg, int severe, int* ignore) {
@@ -14742,7 +14742,7 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    //uncaught exception (which has already been discarded then) at the top
    //level.  Also when no exception can be thrown. The message will be displayed by emsg().
    if (suppress_errthrow)
-      return FALSE;
+      return false;
 
    //If emsg() has not been called previously, temporarily reset
    //"force_abort" until the throw point for error messages has been
@@ -14753,7 +14753,7 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    //that was activated due to an aborting error, interrupt, or exception.
    if (!anyEmsgG) {
       cause_abort = force_abort;
-      force_abort = FALSE;
+      force_abort = false;
    }
 
    //If no try conditional is active and no exception is being thrown and there has not been an
@@ -14762,19 +14762,19 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    //not currently throwing an exception, do nothing.  The message text will
    //then be stored to v:errmsg by emsg() without displaying it.
    if (((trylevel == 0 && !cause_abort) || emsg_silent) && !did_throw)
-      return FALSE;
+      return false;
 
    //Ignore an interrupt message when inside a try conditional or when an exception is being 
    //thrown or when an error in a try conditional or throw has been detected previously. 
    //This is important in order that an interrupt exception is catchable by the innermost try 
    //conditional and not replaced by an interrupt message error exception.
    if (mesg == (CS)_(e_interrupted)) {
-      *ignore = TRUE;
-      return TRUE;
+      *ignore = true;
+      return true;
    }
 
    //Ensure that all commands in nested function calls and sourced files are aborted immediately
-   cause_abort = TRUE;
+   cause_abort = true;
 
    //When an exception is being thrown, some commands (like conditionals) are not skipped. Errors 
    //in those commands may affect what of the subsequent commands are regarded part of catch and 
@@ -14787,7 +14787,7 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
       //same interrupt being converted to an exception again and discarding
       //the error exception we are about to throw here.
       if (current_exception->type == ET_INTERRUPT)
-         gotInterruptG = FALSE;
+         gotInterruptG = false;
       discard_current_exception();
    }
 
@@ -14795,7 +14795,7 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
    if (!THROW_ON_ERROR) {
       //Print error message immediately without searching for a matching
       //catch clause; just finally clauses are executed before the script is terminated.
-      return FALSE;
+      return false;
    } else
 #endif
     {
@@ -14835,7 +14835,7 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
        elem->slnum = SOURCING_LNUM;
        elem->msg_compiling = estack_compiling;
    }
-   return TRUE;
+   return true;
    }
 }
 
@@ -14865,8 +14865,8 @@ void
 do_errthrow(CondStack *cstack, CS cmdname) {
    // Ensure that all commands in nested function calls and sourced files are aborted immediately.
    if (cause_abort) {
-      cause_abort = FALSE;
-      force_abort = TRUE;
+      cause_abort = false;
+      force_abort = true;
    }
 
    // If no exception is to be thrown or the conversion should be done after
@@ -14880,19 +14880,19 @@ do_errthrow(CondStack *cstack, CS cmdname) {
       if (cstack)
          do_throw(cstack);
       else
-         need_rethrow = TRUE;
+         need_rethrow = true;
    }
    *msg_list = NULL;
 }
 
 //do_intthrow(): Replace the current exception by an interrupt or interrupt exception if 
-//appropriate.  Return TRUE if the current exception is discarded, FALSE otherwise.
+//appropriate.  Return true if the current exception is discarded, false otherwise.
 int
 do_intthrow(CondStack *cstack) {
    //If no interrupt occurred or no try conditional is active and no exception
    //is being thrown, do nothing (for compatibility of non-EH scripts).
    if (!gotInterruptG || (trylevel == 0 && !did_throw))
-      return FALSE;
+      return false;
 
 #ifdef THROW_TEST   // avoid warning for condition always true
    if (!THROW_ON_INTERRUPT) {
@@ -14909,7 +14909,7 @@ do_intthrow(CondStack *cstack) {
    //will be terminated then.  -  If an interrupt exception is already being thrown, do nothing.
    if (did_throw) {
       if (current_exception->type == ET_INTERRUPT)
-         return FALSE;
+         return false;
 
       // An interrupt exception replaces any user or error exception.
       discard_current_exception();
@@ -14918,7 +14918,7 @@ do_intthrow(CondStack *cstack) {
        do_throw(cstack);
    }
 
-   return TRUE;
+   return true;
 }
 
 //Get an exception message that is to be stored in current_exception->value.
@@ -14931,7 +14931,7 @@ get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_fr
    CS val;
 
    if (type == ET_ERROR) {
-      *should_free = TRUE;
+      *should_free = true;
       mesg = ((MsgList *)value)->throw_msg;
       if (cmdname && *cmdname != ZERO) {
          cmdlen = (int)STRLEN(cmdname);
@@ -14974,7 +14974,7 @@ get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_fr
         }
       }
    } else {
-      *should_free = FALSE;
+      *should_free = false;
       ret = value;
    }
 
@@ -15035,12 +15035,12 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
    int   save_msg_silent = msg_silent;
 
    if (debug_break_level > 0)
-       msg_silent = FALSE;      // display messages
+       msg_silent = false;      // display messages
    else
        verbose_enter();
    ++no_wait_return;
    if (debug_break_level > 0 || !p_vfile)
-       msg_scroll = TRUE;       // always scroll up, don't overwrite
+       msg_scroll = true;       // always scroll up, don't overwrite
 
    smsg(_("Exception thrown: %s"), excp->value);
    msg_puts(S"\n");   // don't overwrite this either
@@ -15059,7 +15059,7 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
 
 nomem:
    eeglFree(excp);
-   suppress_errthrow = TRUE;
+   suppress_errthrow = true;
    emsg(_(e_out_of_memory));
 fail:
    current_exception = NULL;
@@ -15084,12 +15084,12 @@ discard_exception(Exception *excp, int was_finished) {
 
       saved_IObuff = copyStr(IObuff);
       if (debug_break_level > 0)
-          msg_silent = FALSE;      // display messages
+          msg_silent = false;      // display messages
       else
           verbose_enter();
       ++no_wait_return;
       if (debug_break_level > 0 || !p_vfile)
-          msg_scroll = TRUE;       // always scroll up, don't overwrite
+          msg_scroll = true;       // always scroll up, don't overwrite
       smsg(was_finished
              ? _("Exception finished: %s")
              : _("Exception discarded: %s"),
@@ -15117,9 +15117,9 @@ discard_exception(Exception *excp, int was_finished) {
 void
 discard_current_exception(void) {
    if (current_exception)
-      discard_exception(current_exception, FALSE);
-   did_throw = FALSE;
-   need_rethrow = FALSE;
+      discard_exception(current_exception, false);
+   did_throw = false;
+   need_rethrow = false;
 }
 
 // Put an exception on the caught stack.
@@ -15145,12 +15145,12 @@ catch_exception(Exception *excp) {
       int   save_msg_silent = msg_silent;
 
       if (debug_break_level > 0)
-         msg_silent = FALSE;      // display messages
+         msg_silent = false;      // display messages
       else
          verbose_enter();
       ++no_wait_return;
       if (debug_break_level > 0 || !p_vfile)
-         msg_scroll = TRUE;       // always scroll up, don't overwrite
+         msg_scroll = true;       // always scroll up, don't overwrite
 
       smsg(_("Exception caught: %s"), excp->value);
       msg_puts(S"\n");   // don't overwrite this either
@@ -15194,7 +15194,7 @@ finish_exception(Exception *excp) {
    }
 
    // Discard the exception, but use the finish message for 'verbose'.
-   discard_exception(excp, TRUE);
+   discard_exception(excp, true);
 }
 
 // Save the current exception state in "estate"
@@ -15224,8 +15224,8 @@ exception_state_restore(ExceptionState *estate) {
 void
 exception_state_clear(void) {
    current_exception = NULL;
-   did_throw = FALSE;
-   need_rethrow = FALSE;
+   did_throw = false;
+   need_rethrow = false;
    trylevel = 0;
    anyEmsgG = 0;
 }
@@ -15295,9 +15295,9 @@ report_pending(int action, int pending, void* value) {
 
    save_msg_silent = msg_silent;
    if (debug_break_level > 0)
-      msg_silent = FALSE;   // display messages
+      msg_silent = false;   // display messages
    ++no_wait_return;
-   msg_scroll = TRUE;      // always scroll up, don't overwrite
+   msg_scroll = true;      // always scroll up, don't overwrite
    smsg(mesg, s);
    msg_puts(S"\n");   // don't overwrite this either
    commlineRowG = msgRowG;
@@ -15353,13 +15353,13 @@ report_discard_pending(int pending, void *value) {
 //}}}
 //{{{if, else
 
-//Return TRUE if "arg" is only a variable, register, environment variable,
+//Return true if "arg" is only a variable, register, environment variable,
 //option name or string.
 int
 cmd_is_name_only(CS arg) {
    Byte  *p = arg;
    Byte  *alias = NULL;
-   int       name_only = FALSE;
+   int       name_only = false;
 
    if (*p == '@') {
       ++p;
@@ -15369,11 +15369,11 @@ cmd_is_name_only(CS arg) {
       int       r;
 
       if (*p == '"')
-         r = evalStringLiteral(&p, NULL, FALSE, FALSE);
+         r = evalStringLiteral(&p, NULL, false, false);
       else
-         r = evalRawString(&p, NULL, FALSE, FALSE);
+         r = evalRawString(&p, NULL, false, false);
       if (r == FAIL)
-          return FALSE;
+          return false;
    } else {
       if (*p == '&') {
          ++p;
@@ -15381,7 +15381,7 @@ cmd_is_name_only(CS arg) {
             p += 2;
       } ei (*p == '$')
          ++p;
-      (void)get_name_len(&p, &alias, FALSE, FALSE);
+      (void)get_name_len(&p, &alias, false, false);
    }
    name_only = endsComm(skipwhite(p));
    eeglFree(alias);
@@ -15439,7 +15439,7 @@ c_if(Invocation* invo) {
       if (result)
          cstack->flags[cstack->ind] = CSF_ACTIVE | CSF_TRUE;
    } else
-       // set TRUE, so this conditional will never get active
+       // set true, so this conditional will never get active
        cstack->flags[cstack->ind] = CSF_TRUE;
 }
 
@@ -15448,7 +15448,7 @@ void
 c_endif(Invocation* invo) {
    CondStack   *cstack = invo->cstack;
 
-   did_endif = TRUE;
+   did_endif = true;
    if (cstack->ind < 0
           || (cstack->flags[cstack->ind] & (CSF_WHILE | CSF_FOR | CSF_TRY | CSF_BLOCK))
    )
@@ -15456,7 +15456,7 @@ c_endif(Invocation* invo) {
    else {
       //When debugging or a breakpoint was encountered, display the debug prompt (if not already 
       //done). This shows the user that an ":endif" is executed when the ":if" or a previous 
-      //":elseif" was not TRUE. Handle a ">quit" debug command as if an interrupt had occurred 
+      //":elseif" was not true. Handle a ">quit" debug command as if an interrupt had occurred 
       //before the ":endif". That is, throw an interrupt exception if appropriate.
       //Doing this here prevents an exception for a parsing error being discarded by throwing 
       //the interrupt exception later on.
@@ -15489,14 +15489,14 @@ c_else(Invocation* invo) {
          return;
       }
       invo->errmsg = _(e_elseif_without_if);
-      skip = TRUE;
+      skip = true;
    } ei (cstack->flags[cstack->ind] & CSF_ELSE) {
       if (invo->id == C_else) {
          invo->errmsg = _(e_multiple_else);
          return;
       }
       invo->errmsg = _(e_elseif_after_else);
-      skip = TRUE;
+      skip = true;
    }
 
    if (cstack->ind >= 0) {
@@ -15506,7 +15506,7 @@ c_else(Invocation* invo) {
       enter_block(cstack);
    }
 
-   // if skipping or the ":if" was TRUE, reset ACTIVE, otherwise set it
+   // if skipping or the ":if" was true, reset ACTIVE, otherwise set it
    if (skip || cstack->flags[cstack->ind] & CSF_TRUE) {
       if (invo->errmsg == NULL)
          cstack->flags[cstack->ind] = CSF_TRUE;
@@ -15516,7 +15516,7 @@ c_else(Invocation* invo) {
 
    //When debugging or a breakpoint was encountered, display the debug prompt (if not already 
    //done). This shows the user that an ":else" or ":elseif" is executed when the ":if" or 
-   //previous ":elseif" was not TRUE.  Handle a ">quit" debug command as if an interrupt had 
+   //previous ":elseif" was not true.  Handle a ">quit" debug command as if an interrupt had 
    //occurred before the ":else" or ":elseif". That is, set "skip" and throw an interrupt
    //exception if appropriate. Doing this here prevents that an exception for a parsing errors is
    //discarded when throwing the interrupt exception later on.
@@ -15543,7 +15543,7 @@ c_else(Invocation* invo) {
       else
          cstack->flags[cstack->ind] = 0;
    } ei (invo->errmsg == NULL)
-      // set TRUE, so this conditional will never get active
+      // set true, so this conditional will never get active
       cstack->flags[cstack->ind] = CSF_TRUE;
    } else
       cstack->flags[cstack->ind] |= CSF_ELSE;
@@ -15613,7 +15613,7 @@ c_while(Invocation* invo) {
       if (!error && fi && !skip)
          result = next_for_item(fi, invo->arg);
       else
-         result = FALSE;
+         result = false;
       if (fi)
          // OR all the flags together, if a function was defined in
          // any round then the loop variable may have been used.
@@ -15639,9 +15639,9 @@ c_while(Invocation* invo) {
       cstack->loopFlags ^= CSL_HAD_LOOP;
    } else {
       cstack->loopFlags &= ~CSL_HAD_LOOP;
-      // If the ":while" evaluates to FALSE or ":for" is past the end of
+      // If the ":while" evaluates to false or ":for" is past the end of
       // the list, show the debug prompt at the ":endwhile"/":endfor" as
-      // if there was a ":break" in a ":while"/":for" evaluating to TRUE.
+      // if there was a ":break" in a ":while"/":for" evaluating to true.
       if (!skip && !error)
          cstack->flags[cstack->ind] |= CSF_TRUE;
    }
@@ -15659,7 +15659,7 @@ c_continue(Invocation* invo) {
       // Try to find the matching ":while". This might stop at a try conditional not in its 
       // "finally" clause (which is then to be executed next). Therefore, inactivate all 
       // conditionals except the ":while" itself (if reached).
-      idx = cleanup_conditionals(cstack, CSF_WHILE | CSF_FOR, FALSE);
+      idx = cleanup_conditionals(cstack, CSF_WHILE | CSF_FOR, false);
       if (idx >= 0 && (cstack->flags[idx] & (CSF_WHILE | CSF_FOR))) {
          rewind_conditionals(cstack, idx, CSF_TRY, &cstack->tryLevel);
          //Set CSL_HAD_CONT, so doCommand() will jump back to the matching ":while".
@@ -15684,7 +15684,7 @@ c_break(Invocation* invo) {
       // Inactivate conditionals until the matching ":while" or a try conditional not in its 
       // finally clause (which is then to be executed next) is found.  In the latter case, make 
       // the ":break" pending for execution at the ":endtry".
-      int idx = cleanup_conditionals(cstack, CSF_WHILE | CSF_FOR, TRUE);
+      int idx = cleanup_conditionals(cstack, CSF_WHILE | CSF_FOR, true);
       if (idx >= 0 && !(cstack->flags[idx] & (CSF_WHILE | CSF_FOR))) {
          cstack->pending[idx] = CSTP_BREAK;
          report_make_pending(CSTP_BREAK, NULL);
@@ -15738,13 +15738,13 @@ c_endwhile(Invocation* invo) {
                break;
          }
          // Cleanup and rewind all contained (and unclosed) conditionals.
-         (void)cleanup_conditionals(cstack, CSF_WHILE | CSF_FOR, FALSE);
+         (void)cleanup_conditionals(cstack, CSF_WHILE | CSF_FOR, false);
          rewind_conditionals(cstack, idx, CSF_TRY, &cstack->tryLevel);
       }
 
       //When debugging or a breakpoint was encountered, display the debug prompt (if not already 
       //done).  This shows the user that an ":endwhile"/":endfor" is executed when the ":while" 
-      //was not TRUE or after a ":break".  Handle a ">quit" debug command as if an interrupt had 
+      //was not true or after a ":break".  Handle a ">quit" debug command as if an interrupt had 
       //occurred before the ":endwhile"/":endfor".  That is, throw an interrupt exception if 
       //appropriate.  Doing this here prevents that an exception for a parsing error is discarded 
       //when throwing the interrupt exception later on.
@@ -15787,9 +15787,9 @@ inside_block(Invocation* invo) {
    CondStack* cstack = invo->cstack;
    for (int i = 0; i <= cstack->ind; ++i) {
       if (cstack->flags[cstack->ind] & CSF_BLOCK)
-          return TRUE;
+          return true;
    } 
-   return FALSE;
+   return false;
 }
 
 //}}}
@@ -15823,7 +15823,7 @@ c_throw(Invocation* invo) {
 void
 do_throw(CondStack *cstack) {
    int      idx;
-   int      inactivate_try = FALSE;
+   int      inactivate_try = false;
 
    //Cleanup and inactivate up to the next surrounding try conditional that is not in its finally
    //clause.  Normally, do not inactivate the try conditional itself, so that its ACTIVE flag can 
@@ -15831,16 +15831,16 @@ do_throw(CondStack *cstack) {
    //inactivate the try conditional, too, as if the conversion had been done, and reset the 
    //anyEmsgG or gotInterruptG flag, so this won't happen again at the next surrounding try 
    //conditional.
-#ifndef THROW_ON_ERROR_TRUE
+#ifndef THROW_ON_ERROR_true
    if (anyEmsgG && !THROW_ON_ERROR) {
-      inactivate_try = TRUE;
-      anyEmsgG = FALSE;
+      inactivate_try = true;
+      anyEmsgG = false;
    }
 #endif
-#ifndef THROW_ON_INTERRUPT_TRUE
+#ifndef THROW_ON_INTERRUPT_true
    if (gotInterruptG && !THROW_ON_INTERRUPT) {
-      inactivate_try = TRUE;
-      gotInterruptG = FALSE;
+      inactivate_try = true;
+      gotInterruptG = false;
    }
 #endif
    idx = cleanup_conditionals(cstack, 0, inactivate_try);
@@ -15865,7 +15865,7 @@ do_throw(CondStack *cstack) {
       cstack->pend.csp_ex[idx] = current_exception;
     }
 
-    did_throw = TRUE;
+    did_throw = true;
 }
 
 // ":try"
@@ -15888,7 +15888,7 @@ c_try(Invocation* invo) {
          && !(cstack->flags[cstack->ind - 1] & CSF_ACTIVE));
 
       if (!skip) {
-         // Set ACTIVE and TRUE.  TRUE means that the corresponding ":catch"
+         // Set ACTIVE and true.  true means that the corresponding ":catch"
          // commands should check for a match if an exception is thrown and
          // that the finally clause needs to be executed.
          cstack->flags[cstack->ind] |= CSF_ACTIVE | CSF_TRUE;
@@ -15923,9 +15923,9 @@ c_try(Invocation* invo) {
 void
 c_catch(Invocation* invo) {
    int      idx = 0;
-   int      give_up = FALSE;
-   int      skip = FALSE;
-   int      caught = FALSE;
+   int      give_up = false;
+   int      skip = false;
+   int      caught = false;
    Byte   *end;
    int      save_char = 0;
    RegMatch   regmatch;
@@ -15935,12 +15935,12 @@ c_catch(Invocation* invo) {
 
    if (cstack->tryLevel <= 0 || cstack->ind < 0) {
       invo->errmsg = _(e_catch_without_try);
-      give_up = TRUE;
+      give_up = true;
    } else {
       if (!(cstack->flags[cstack->ind] & CSF_TRY)) {
          // Report what's missing if the matching ":try" is not in its finally clause.
          invo->errmsg = get_end_emsg(cstack);
-         skip = TRUE;
+         skip = true;
       }
       for (idx = cstack->ind; idx > 0; --idx)
           if (cstack->flags[idx] & CSF_TRY)
@@ -15950,7 +15950,7 @@ c_catch(Invocation* invo) {
       if (cstack->flags[idx] & CSF_FINALLY) {
          // Give up for a ":catch" after ":finally" and ignore it. Just parse.
          invo->errmsg = _(e_catch_after_finally);
-         give_up = TRUE;
+         give_up = true;
       } else
          rewind_conditionals(cstack, idx, CSF_WHILE | CSF_FOR, &cstack->loopLevel);
    }
@@ -15961,9 +15961,9 @@ c_catch(Invocation* invo) {
       invo->nextComm = find_nextcmd(invo->arg);
    } else {
       pat = invo->arg + 1;
-      end = skip_regexp_err(pat, *invo->arg, TRUE);
+      end = skip_regexp_err(pat, *invo->arg, true);
       if (end == NULL)
-          give_up = TRUE;
+          give_up = true;
     }
 
    if (!give_up) {
@@ -15971,7 +15971,7 @@ c_catch(Invocation* invo) {
       //never got active (because of an inactive surrounding conditional or after an error or 
       //interrupt or throw).
       if (!did_throw || !(cstack->flags[idx] & CSF_TRUE))
-          skip = TRUE;
+          skip = true;
 
       //Check for a match only if an exception is thrown but not caught by
       //a previous ":catch".  An exception that has replaced a discarded
@@ -15996,7 +15996,7 @@ c_catch(Invocation* invo) {
             ++emsg_off;
             regmatch.regprog = compileRegexp(pat, RE_MAGIC + RE_STRING);
             --emsg_off;
-            regmatch.rm_ic = FALSE;
+            regmatch.rm_ic = false;
             if (end)
                 *end = save_char;
             if (regmatch.regprog == NULL)
@@ -16005,7 +16005,7 @@ c_catch(Invocation* invo) {
                //Save the value of gotInterruptG and reset it. We don't want a previous 
                //interruption cancel matching, only hitting CTRL-C while matching should abort it.
                prev_gotInterruptG = gotInterruptG;
-               gotInterruptG = FALSE;
+               gotInterruptG = false;
                caught = eeRegexec_nl(&regmatch,
                       (CS)current_exception->value, (ColNr)0);
                gotInterruptG |= prev_gotInterruptG;
@@ -16018,7 +16018,7 @@ c_catch(Invocation* invo) {
           // Make this ":catch" clause active and reset anyEmsgG, gotInterruptG,
           // and did_throw. Put the exception on the caught stack.
           cstack->flags[idx] |= CSF_ACTIVE | CSF_CAUGHT;
-          anyEmsgG = gotInterruptG = did_throw = FALSE;
+          anyEmsgG = gotInterruptG = did_throw = false;
           catch_exception((Exception *)cstack->pend.csp_ex[idx]);
 
          if (cstack->ind >= 0 && (cstack->flags[cstack->ind] & CSF_TRY)) {
@@ -16040,7 +16040,7 @@ c_catch(Invocation* invo) {
          //clauses are skipped.  On an error or interrupt after the preceding try block or catch 
          //clause was left by a ":continue", ":break", ":return", or ":finish", discard the pending
          //action.
-         cleanup_conditionals(cstack, CSF_TRY, TRUE);
+         cleanup_conditionals(cstack, CSF_TRY, true);
       }
    }
 
@@ -16052,7 +16052,7 @@ c_catch(Invocation* invo) {
 void
 c_finally(Invocation* invo) {
    int idx;
-   int skip = FALSE;
+   int skip = false;
    int pending = CSTP_NONE;
    CondStack* cstack = invo->cstack;
 
@@ -16099,7 +16099,7 @@ c_finally(Invocation* invo) {
       //This happens also after errors except when this is a multiple ":finally" or one not within 
       //a ":try". After an error or interrupt, this also discards a pending ":continue", ":break",
       //":finish", or ":return" from the preceding try block or catch clause.
-      cleanup_conditionals(cstack, CSF_TRY, FALSE);
+      cleanup_conditionals(cstack, CSF_TRY, false);
 
       if (cstack->ind >= 0 && (cstack->flags[cstack->ind] & CSF_TRY)) {
          // Variables declared in the previous block can no longer be used.
@@ -16151,7 +16151,7 @@ void
 c_endtry(Invocation* invo) {
    int      idx;
    int      skip;
-   int      rethrow = FALSE;
+   int      rethrow = false;
    int      pending = CSTP_NONE;
    void   *returnVar = NULL;
    CondStack   *cstack = invo->cstack;
@@ -16181,7 +16181,7 @@ c_endtry(Invocation* invo) {
       // Find the matching ":try" and report what's missing.
       rewind_conditionals(cstack, idx, CSF_WHILE | CSF_FOR,
                         &cstack->loopLevel);
-      skip = TRUE;
+      skip = true;
 
       //If an exception is being thrown, discard it to prevent it from being rethrown at the end 
       //of this function. It would be discarded by the error message, anyway. Resets did_throw.
@@ -16191,7 +16191,7 @@ c_endtry(Invocation* invo) {
           discard_current_exception();
 
       // report invo->errmsg, also when there already was an error
-      anyEmsgG = FALSE;
+      anyEmsgG = false;
    } else {
       idx = cstack->ind;
 
@@ -16199,7 +16199,7 @@ c_endtry(Invocation* invo) {
       //try conditional since we didn't know that it doesn't have
       //a finally clause, we need to rethrow it after closing the try conditional.
       if (did_throw && (cstack->flags[idx] & CSF_TRUE) && !(cstack->flags[idx] & CSF_FINALLY))
-         rethrow = TRUE;
+         rethrow = true;
    }
 
    // If there was no finally clause, show the user when debugging or
@@ -16216,12 +16216,12 @@ c_endtry(Invocation* invo) {
       // Handle a ">quit" debug command as if an interrupt had occurred before the ":endtry".
       // That is, throw an interrupt exception and set "skip" and "rethrow".
       if (gotInterruptG) {
-         skip = TRUE;
+         skip = true;
          (void)do_intthrow(cstack);
          // The do_intthrow() call may have reset did_throw or cstack->pending[idx].
-         rethrow = FALSE;
+         rethrow = false;
          if (did_throw && !(cstack->flags[idx] & CSF_FINALLY))
-            rethrow = TRUE;
+            rethrow = true;
       }
    }
 
@@ -16243,7 +16243,7 @@ c_endtry(Invocation* invo) {
    //caught by the last of the catch clauses and there was no finally clause, finish the exception 
    //now. This happens also after errors except when this ":endtry" is not within a ":try".
    //Restore "emsg_silent" if it has been reset by this try conditional.
-   (void)cleanup_conditionals(cstack, CSF_TRY | CSF_SILENT, TRUE);
+   (void)cleanup_conditionals(cstack, CSF_TRY | CSF_SILENT, true);
 
    if (cstack->ind >= 0 && (cstack->flags[cstack->ind] & CSF_TRY))
       leave_block(cstack);
@@ -16270,10 +16270,10 @@ c_endtry(Invocation* invo) {
          c_break(invo);
          break;
       case CSTP_RETURN:
-         do_return(invo, FALSE, FALSE, returnVar);
+         do_return(invo, false, false, returnVar);
          break;
       case CSTP_FINISH:
-         do_finish(invo, FALSE);
+         do_finish(invo, false);
          break;
 
       // When the finally clause was entered due to an error,
@@ -16284,11 +16284,11 @@ c_endtry(Invocation* invo) {
       // ":return", or ":finish".  in the finally clause.
       default:
          if (pending & CSTP_ERROR)
-             anyEmsgG = TRUE;
+             anyEmsgG = true;
          if (pending & CSTP_INTERRUPT)
-             gotInterruptG = TRUE;
+             gotInterruptG = true;
          if (pending & CSTP_THROW)
-             rethrow = TRUE;
+             rethrow = true;
          break;
       }
     }
@@ -16336,10 +16336,10 @@ enter_cleanup(Cleanup *csp) {
          csp->exception = NULL;
          if (anyEmsgG) {
             force_abort |= cause_abort;
-            cause_abort = FALSE;
+            cause_abort = false;
          }
       }
-      anyEmsgG = gotInterruptG = did_throw = need_rethrow = FALSE;
+      anyEmsgG = gotInterruptG = did_throw = need_rethrow = false;
 
       // Report if required by the 'verbose' option or when debugging.
       report_make_pending(pending, csp->exception);
@@ -16374,7 +16374,7 @@ leave_cleanup(Cleanup *csp) {
    // to the user if required by the 'verbose' option or when debugging.
    if (aborting() || need_rethrow) {
       if (pending & CSTP_THROW) // Cancel the pending exception (includes report).
-         discard_exception(csp->exception, FALSE);
+         discard_exception(csp->exception, false);
       else
          report_discard_pending(pending, NULL);
 
@@ -16397,16 +16397,16 @@ leave_cleanup(Cleanup *csp) {
       //"force_abort" (as done by cause_errthrow()).
       ei (pending & CSTP_ERROR) {
          cause_abort = force_abort;
-         force_abort = FALSE;
+         force_abort = false;
       }
 
       //Restore the pending values of anyEmsgG, gotInterruptG, and did_throw.
       if (pending & CSTP_ERROR)
-         anyEmsgG = TRUE;
+         anyEmsgG = true;
       if (pending & CSTP_INTERRUPT)
-         gotInterruptG = TRUE;
+         gotInterruptG = true;
       if (pending & CSTP_THROW)
-         need_rethrow = TRUE;    // did_throw will be set by do_one_cmd()
+         need_rethrow = true;    // did_throw will be set by do_one_cmd()
 
       // Report if required by the 'verbose' option or when debugging.
       report_resume_pending(pending, (pending & CSTP_THROW) ? (void *)current_exception : NULL);
@@ -16419,7 +16419,7 @@ leave_cleanup(Cleanup *csp) {
 //stopped. Values used for "searched_cond" are (CSF_WHILE | CSF_FOR) or CSF_TRY or 0,
 //the latter meaning the innermost try conditional not in its finally clause. "inclusive" tells 
 //whether the conditional searched for should be made inactive itself (a try conditional not in 
-//its finally clause possibly find before is always made inactive).  If "inclusive" is TRUE and
+//its finally clause possibly find before is always made inactive).  If "inclusive" is true and
 //"searched_cond" is CSF_TRY|CSF_SILENT, the saved former value of "emsg_silent", if reset when 
 //the try conditional finally reached was entered, is restored (used by ex_endtry()). This is 
 //normally done only when such a try conditional is left.
@@ -16430,7 +16430,7 @@ cleanup_conditionals(
    int      inclusive
 ) {
    int      idx;
-   int      stop = FALSE;
+   int      stop = false;
 
    for (idx = cstack->ind; idx >= 0; --idx) {
       if (cstack->flags[idx] & CSF_TRY) {
@@ -16460,7 +16460,7 @@ cleanup_conditionals(
                   if ((cstack->pending[idx] & CSTP_THROW) && cstack->pend.csp_ex[idx] != NULL) {
                      //Cancel the pending exception. This is in the finally clause, so that the 
                      //stack of the caught exceptions is not involved.
-                     discard_exception( (Exception *)cstack->pend.csp_ex[idx], FALSE);
+                     discard_exception( (Exception *)cstack->pend.csp_ex[idx], false);
                   } else
                      report_discard_pending(cstack->pending[idx], NULL);
                   cstack->pending[idx] = CSTP_NONE;
@@ -16485,19 +16485,19 @@ cleanup_conditionals(
             if (cstack->flags[idx] & CSF_TRUE) {
                if (searched_cond == 0 && !inclusive)
                   break;
-               stop = TRUE;
+               stop = true;
             }
          }
       }
 
       // Stop on the searched conditional type (even when the surrounding
       // conditional is not active or something has been made pending).
-      // If "inclusive" is TRUE and "searched_cond" is CSF_TRY|CSF_SILENT,
+      // If "inclusive" is true and "searched_cond" is CSF_TRY|CSF_SILENT,
       // check first whether "emsg_silent" needs to be restored.
       if (cstack->flags[idx] & searched_cond) {
          if (!inclusive)
             break;
-         stop = TRUE;
+         stop = true;
       }
       cstack->flags[idx] &= ~CSF_ACTIVE;
       if (stop && searched_cond != (CSF_TRY | CSF_SILENT))
@@ -16559,7 +16559,7 @@ c_endfunction(Invocation* invo) {
       showErrFmtMsg(_(e_str_not_inside_function), ":endfunction");
 }
 
-// Return TRUE if the string "p" looks like a ":while" or ":for" command.
+// Return true if the string "p" looks like a ":while" or ":for" command.
 int
 has_loop_cmd(CS p) {
    // skip modifiers, white space and ':'
@@ -16572,8 +16572,8 @@ has_loop_cmd(CS p) {
       p += len;
    }
    if ((p[0] == 'w' && p[1] == 'h') || (p[0] == 'f' && p[1] == 'o' && p[2] == 'r'))
-      return TRUE;
-   return FALSE;
+      return true;
+   return false;
 }
 
 //}}}

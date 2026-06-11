@@ -33,7 +33,7 @@ private int msg_hist_max = 500;      // The default max value is 500
 private int msg_flags = MESSAGES_HIT_ENTER | MESSAGES_HISTORY;
 private int msg_wait = 0;
 private FILE *verbose_fd = NULL;
-private int  verbose_did_open = FALSE;
+private int  verbose_did_open = false;
 
 // Text builder holding one message line, sized up to the longest line ever printed
 private Text longestLineS = (Text){.len = 0, .c = null};
@@ -59,11 +59,11 @@ private void msg_moremsg(int full);
 private int  msg_check_screen(void);
 private void redir_write(Byte *s, int maxlen);
 private Byte *msg_show_console_dialog(Byte *message, Byte *buttons, int dfltbutton);
-private int   confirm_msg_used = FALSE;   // displaying confirm_msg
+private int   confirm_msg_used = false;   // displaying confirm_msg
 private Byte   *confirm_msg = NULL;      // ":confirm" message
 private Byte   *confirm_msg_tail;      // tail of confirm_msg
 private void display_confirm_msg(void);
-private int emsg_to_channel_log = FALSE;
+private int emsg_to_channel_log = false;
 private Boole isVerboseFileDefined();
 private MsgChunk *moveToStartOfScreenLine(MsgChunk *mps);
 private MsgChunk * disp_sb_line(int row, MsgChunk *smp, int clear_to_eol);
@@ -72,11 +72,11 @@ private MsgChunk * disp_sb_line(int row, MsgChunk *smp, int clear_to_eol);
 
 //When writing messages to the screen, there are many different situations.
 //A number of variables is used to remember the current state:
-//msg_didany       TRUE when messages were written since the last time the user reacted to a prompt.
+//msg_didany       true when messages were written since the last time the user reacted to a prompt.
 //         Reset: After hitting a key for the hit-return prompt,
 //         hitting <CR> for the command line or input().
 //         Set: When any message is written to the screen.
-//msg_didout       TRUE when something was written to the current line.
+//msg_didout       true when something was written to the current line.
 //         Reset: When advancing to the next line, when the current
 //         text can be overwritten.
 //         Set: When any message is written to the screen.
@@ -88,13 +88,13 @@ private MsgChunk * disp_sb_line(int row, MsgChunk *smp, int clear_to_eol);
 //msg_scrolled       How many lines the screen has been scrolled (because of
 //         messages).  Used in drawUpdateScreen() to scroll the screen
 //         back.  Incremented each time the screen scrolls a line.
-//msg_scrolled_ign  TRUE when msg_scrolled is non-zero and msgPutsDeco()
+//msg_scrolled_ign  true when msg_scrolled is non-zero and msgPutsDeco()
 //         writes something without scrolling should not make
 //         need_wait_return to be set.  This is a hack to make ":ts"
 //         work without an extra prompt.
 //lines_left       Number of lines available for messages before the
 //         more-prompt is to be given.  -1 when not set.
-//need_wait_return TRUE when the hit-return prompt is needed.
+//need_wait_return true when the hit-return prompt is needed.
 //         Reset: After giving the hit-return prompt, when the user
 //         has answered some other prompt.
 //         Set: When the ruler or typeahead display is overwritten,
@@ -220,20 +220,20 @@ trunc_string(
 // Prepare for outputting characters in the command line.
 void
 msg_start(void) {
-   int      did_return = FALSE;
+   int      did_return = false;
 
    if (msgRowG < commlineRowG)
       msgRowG = commlineRowG;
 
    if (!msg_silent) {
       EE_CLEAR(msgAfterRedrawG);
-      needFileinfoG = FALSE;
+      needFileinfoG = false;
    }
 
    if (need_clr_eos) {
       // Halfway an ":echo" command and getting an (error) message: clear
       // any text from the command.
-      need_clr_eos = FALSE;
+      need_clr_eos = false;
       msg_clr_eos();
    }
 
@@ -245,7 +245,7 @@ msg_start(void) {
           // start a new line
           curBook = wp->book;
           ml_append(wp->book->mem.lineCount,
-                        (CS)"", (ColNr)0, FALSE);
+                        (CS)"", (ColNr)0, false);
           curBook = curPor->book;
       }
       msgColG = 0;
@@ -256,13 +256,13 @@ msg_start(void) {
    } ei (msg_didout || inEchoPortalG) {
       // start message on next line
       msg_putchar('\n');
-      did_return = TRUE;
+      did_return = true;
       commlineRowG = msgRowG;
    } 
    if (!msg_didany || lines_left < 0)
       msg_starthere();
    if (msg_silent == 0) {
-      msg_didout = FALSE;          // no output on current line yet
+      msg_didout = false;          // no output on current line yet
       cursor_off();
    }
 
@@ -275,7 +275,7 @@ msg_start(void) {
 void
 msg_starthere(void) {
    lines_left = commlineRowG;
-   msg_didany = FALSE;
+   msg_didany = false;
 }
 
 void
@@ -364,7 +364,7 @@ msgOuttransLenDeco(Text slice, char flags) {
    int      save_gotInterruptG = gotInterruptG;
 
    // Only quit when gotInterruptG was set in here.
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    if (flags == 0)
       flags = getDecoFlags(HLF_MSG);
@@ -378,8 +378,8 @@ msgOuttransLenDeco(Text slice, char flags) {
    // When drawing over the command line no need to clear it later or remove
    // the mode message.
    if (msg_silent == 0 && slice.len > 0 && msgRowG >= commlineRowG && msgColG == 0) {
-      mustClearCommlineG = FALSE;
-      isModeDisplayedG = FALSE;
+      mustClearCommlineG = false;
+      isModeDisplayedG = false;
    }
 
    // If the string starts with a composing character, first draw a space on which the composing 
@@ -457,7 +457,7 @@ msg_make(CS arg) {
 //If K_SPECIAL is encountered, then it is taken in conjunction with the
 //following character and shown as <F1>, <S-Up> etc.  Any other character
 //which is not printable shown in <> form.
-//If 'from' is TRUE (lhs of a mapping), a space is shown as <Space>.
+//If 'from' is true (lhs of a mapping), a space is shown as <Space>.
 //If a character is displayed in one of these special ways, is also
 //highlighted (its highlight name is '8' in the p_hl variable).
 //Otherwise characters are not highlighted.
@@ -466,7 +466,7 @@ msg_make(CS arg) {
 int
 msg_outtrans_special(
    CS strstart,
-   int from,   // TRUE for lhs of a mapping
+   int from,   // true for lhs of a mapping
    int maxlen  // screen columns, 0 for unlimited
 ){
    CS str = strstart;
@@ -481,7 +481,7 @@ msg_outtrans_special(
          text = S"<Space>";
          ++str;
       } else
-         text = str2special(&str, from, FALSE);
+         text = str2special(&str, from, false);
       if (text[0] != ZERO && text[1] == ZERO)
          // single-byte character or illegal byte
          text = transchar_byte((Byte)text[0]);
@@ -500,9 +500,9 @@ msg_outtrans_special(
 CS
 str2special_save(
    Byte  *str,
-   int       replace_spaces,   // TRUE to replace " " with "<Space>".
+   int       replace_spaces,   // true to replace " " with "<Space>".
             // used for the lhs of mapping and keytrans().
-   int       replace_lt      // TRUE to replace "<" with "<lt>".
+   int       replace_lt      // true to replace "<" with "<lt>".
 ){
    ArrayList   ga;
    Byte   *p = str;
@@ -520,15 +520,15 @@ str2special_save(
 CS
 str2special(
    Byte** sp,
-   int      replace_spaces,   // TRUE to replace " " with "<Space>".
+   int      replace_spaces,   // true to replace " " with "<Space>".
             // used for the lhs of mapping and keytrans().
-   int  replace_lt)   // TRUE to replace "<" with "<lt>".
+   int  replace_lt)   // true to replace "<" with "<lt>".
 {
    Unt         c;
    static Byte   builder[7];
    Byte      *str = *sp;
    int         modifiers = 0;
-   int         special = FALSE;
+   int         special = false;
 
    Byte   *p;
 
@@ -550,7 +550,7 @@ str2special(
          str += 2;
       }
       if (IS_SPECIAL(c) || modifiers)   // special key
-         special = TRUE;
+         special = true;
     }
 
    if (!IS_SPECIAL(c) && utf8CharLens[c] > 1) {
@@ -558,7 +558,7 @@ str2special(
       // Try to un-escape a multi-byte character after modifiers.
       CS p = mb_unescape(sp);
       if (p)
-         //Since 'special' is TRUE the multi-byte character 'c' will be
+         //Since 'special' is true the multi-byte character 'c' will be
          //processed by get_special_key_name()
          c = (*mb_ptr2char)(p);
       else
@@ -584,7 +584,7 @@ void
 str2specialbuf(Byte *sp, OUT Byte *builder, int len) {
    *builder = ZERO;
    while (*sp) {
-      Byte* s = str2special(&sp, FALSE, FALSE);
+      Byte* s = str2special(&sp, false, false);
       if ((int)(STRLEN(s) + STRLEN(builder)) < len)
          STRCAT(builder, s);
    }
@@ -603,13 +603,13 @@ msg_prt_line(CS s, int list) {
    char      flags = 0;
    CS trail = NULL;
    CS lead = NULL;
-   int      in_multispace = FALSE;
+   int      in_multispace = false;
    int      multispace_pos = 0;
    int      l;
    Byte builder[MB_MAXBYTES + 1];
 
    if (curPor->o.list)
-      list = TRUE;
+      list = true;
 
    if (list) {
       // find start of trailing whitespace
@@ -737,7 +737,7 @@ msg_prt_line(CS s, int list) {
 // Return the pointer "s" advanced to the next character.
 private CS
 drawText_mbyte(CS s, int l, char flags) {
-   msg_didout = TRUE;      // remember that line is not empty
+   msg_didout = true;      // remember that line is not empty
    int cw = mb_ptr2cells(s);
    if (cw > 1 && ( msgColG == visibleColsG - 1)) {
       // Doesn't fit, print a highlighted '>' to fill it up.
@@ -814,7 +814,7 @@ skipped:
          mch_errmsg(bbb);
    }
 
-   msg_didout = TRUE;       // assume that line is not empty
+   msg_didout = true;       // assume that line is not empty
 }
 
 private Boole
@@ -827,17 +827,17 @@ isVerboseFileDefined() {
 
 //msg(s) - displays the string 's' on the status line
 //When terminal not initialized (yet) mch_errmsg(..) is used.
-//return TRUE if wait_return() not called
+//return true if wait_return() not called
 int
 msg(CS s) {
-   return msgAndKeep(s, 0, FALSE);
+   return msgAndKeep(s, 0, false);
 }
 
 // Like msg() but keep it silent when 'verbosefile' is set.
 int
 verb_msg(CS s) {
    verbose_enter();
-   int n = msgAndKeep(s, 0, FALSE);
+   int n = msgAndKeep(s, 0, false);
    verbose_leave();
 
    return n;
@@ -845,14 +845,14 @@ verb_msg(CS s) {
 
 int
 msgDeco(CS s, char flags) {
-   return msgAndKeep(s, flags, FALSE);
+   return msgAndKeep(s, flags, false);
 }
 
 int
 msgAndKeep(
    CS s,
    char      flags,
-   int      keep)       // TRUE: set msgAfterRedrawG if it doesn't scroll
+   int      keep)       // true: set msgAfterRedrawG if it doesn't scroll
 {
    static int   entered = 0;
    int      retval;
@@ -860,7 +860,7 @@ msgAndKeep(
    // Skip messages not matching ":filter pattern".
    // Don't filter when there is an error.
    if (!emsg_on_display && message_filtered(s))
-      return TRUE;
+      return true;
 
    if (flags == 0)
       set_EeglVar_string(VV_STATUSMSG, s, -1);
@@ -869,7 +869,7 @@ msgAndKeep(
    //when redrawing the window), which causes another message, etc..   To
    //break this loop, limit the recursiveness to 3 levels.
    if (entered >= 3)
-      return TRUE;
+      return true;
    ++entered;
 
    // Add message to history (unless it's a repeated kept message or a
@@ -885,7 +885,7 @@ msgAndKeep(
 
    // Truncate the message if needed.
    msg_start();
-   Arr(Byte) builder = msg_strtrunc(s, FALSE);
+   Arr(Byte) builder = msg_strtrunc(s, false);
    if (builder)
       s = builder;
 
@@ -897,7 +897,7 @@ msgAndKeep(
              < (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + sc_col)
       set_keep_msg(s, 0);
 
-   needFileinfoG = FALSE;
+   needFileinfoG = false;
 
    eeglFree(builder);
    --entered;
@@ -947,7 +947,7 @@ smsgDecoKeep0(char flags, const char *s, ...) {
    if (!IObuff) {
       // Very early in initialisation and already something wrong, just
       // give the raw message so the user at least gets a hint.
-      return msgAndKeep((CS)s, flags, TRUE);
+      return msgAndKeep((CS)s, flags, true);
    }
 
    va_list arglist;
@@ -955,7 +955,7 @@ smsgDecoKeep0(char flags, const char *s, ...) {
    va_start(arglist, s);
    eeVsnprintf(IObuff, IOSIZE, s, arglist);
    va_end(arglist);
-   return msgAndKeep(IObuff, flags, TRUE);
+   return msgAndKeep(IObuff, flags, true);
 }
 
 #endif
@@ -974,18 +974,18 @@ reset_last_sourcing(void) {
 
 #define HAVE_SOURCING_INFO  (exestack.c != NULL && exestack.len > 0)
 
-// Return TRUE if "SOURCING_NAME" differs from "last_sourcing_name".
+// Return true if "SOURCING_NAME" differs from "last_sourcing_name".
 private int
 other_sourcing_name(void) {
    if (HAVE_SOURCING_INFO && SOURCING_NAME) {
       if (last_sourcing_name)
          return STRCMP(SOURCING_NAME, last_sourcing_name) != 0;
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
-//Like msg(), but truncate to a single line if "force" is TRUE. This 
+//Like msg(), but truncate to a single line if "force" is true. This 
 //truncates in another way as for normal messages. Careful: The string may be changed by 
 //msg_may_trunc()! Returns a pointer to the printed message, if wait_return() not called.
 CS
@@ -995,9 +995,9 @@ msgTruncDeco(CS s, char flags) {
 
    CS ts = msg_may_trunc(s);
 
-   msg_hist_off = TRUE;
+   msg_hist_off = true;
    int n = msgDeco(ts, flags);
-   msg_hist_off = FALSE;
+   msg_hist_off = false;
 
    if (n)
       return ts;
@@ -1096,7 +1096,7 @@ msg_source(char flags) {
    ++no_wait_return;
    Byte *p = get_emsg_source();
    if (p) {
-      msg_scroll = TRUE;  // this will take more than one line
+      msg_scroll = true;  // this will take more than one line
       msgDeco(p, flags);
       eeglFree(p);
    }
@@ -1119,7 +1119,7 @@ msg_source(char flags) {
    recursive = false;
 }
 
-//Return TRUE if not giving error messages right now:
+//Return true if not giving error messages right now:
 //If "emsg_off" is set: no error messages at the moment.
 //If "msg" is in 'debug': do error message but without side effects.
 //If "emsg_skip" is set: never do error messages.
@@ -1130,8 +1130,8 @@ emsg_not_now(void) {
                || (firstOccurrence(p_debug, 'm') == NULL && firstOccurrence(p_debug, 't') == NULL))
        ) || emsg_skip > 0
    )
-      return TRUE;
-   return FALSE;
+      return true;
+   return false;
 }
 
 private ArrayList ignore_error_list = GA_EMPTY;
@@ -1151,44 +1151,44 @@ private int
 ignore_error(Arr(Byte const) msg) {
    for (int i = 0; i < ignore_error_list.len; ++i) {
       if (STRSTR(msg, ((Byte **)(ignore_error_list.c))[i]))
-         return TRUE;
+         return true;
    } 
-   return FALSE;
+   return false;
 }
 
 //Display an error message
 //Call message() to do the real work. When terminal not initialized (yet), use mch_errmsg(..).
-//Return TRUE if wait_return() not called.
+//Return true if wait_return() not called.
 //Note: caller must check 'emsg_not_now()' before calling this.
 private int
 emsgImpl(CS s) {
    char      flags;
    CS p;
    int      r;
-   int      ignore = FALSE;
+   int      ignore = false;
    int      severe;
 
    // When testing some errors are turned into a normal message.
    if (ignore_error(s))
       // don't call msg() if it results in a dialog
-      return msg_use_printf() ? FALSE : msg(s);
+      return msg_use_printf() ? false : msg(s);
    
    ++called_emsg;
 
-   // If "emsg_severe" is TRUE: When an error exception is to be thrown,
+   // If "emsg_severe" is true: When an error exception is to be thrown,
    // prefer this message over previous messages for the same command.
    severe = emsg_severe;
-   emsg_severe = FALSE;
+   emsg_severe = false;
 
    if (!emsg_off || firstOccurrence(p_debug, 't') != NULL) {
       //Cause a throw of an error exception if appropriate.  Don't display
       //the error message in this case.  (If no matching catch clause will
       //be found, the message will be displayed later on.)  "ignore" is set
       //when the message should be ignored completely (used for the interrupt message).
-      if (cause_errthrow((CS)s, severe, &ignore) == TRUE) {
+      if (cause_errthrow((CS)s, severe, &ignore) == true) {
          if (!ignore)
             ++anyEmsgG;
-         return TRUE;
+         return true;
       }
 
       if (in_assert_fails && emsg_assert_fails_msg == NULL) {
@@ -1220,14 +1220,14 @@ emsgImpl(CS s) {
             redir_write((CS)s, -1);
          }
          lo("ERROR silent: %s", s);
-         return TRUE;
+         return true;
       }
 
       ex_exitval = 1;
 
       // Reset msg_silent, an error causes messages to be switched back on.
       msg_silent = 0;
-      cmd_silent = FALSE;
+      cmd_silent = false;
 
       if (global_busy)      // break :global command
          ++global_busy;
@@ -1238,33 +1238,33 @@ emsgImpl(CS s) {
    }
 
    if (!inEchoPortalG)
-      emsg_on_display = TRUE;       // remember there is an error message
+      emsg_on_display = true;       // remember there is an error message
 
    flags = getDecoFlags(HLF_E);       // set highlight mode for error messages
    if (msg_scrolled != 0)
-      need_wait_return = TRUE;    // needed in case emsg() is called after
+      need_wait_return = true;    // needed in case emsg() is called after
                 // wait_return() has reset need_wait_return and a redraw is expected because
                 // msg_scrolled is non-zero
 
-   emsg_to_channel_log = TRUE;
+   emsg_to_channel_log = true;
    // Display name and line number for the source of the error.
-   msg_scroll = TRUE;
+   msg_scroll = true;
    msg_source(flags);
 
    // Display the error message itself.
-   msg_nowait = FALSE;         // wait for this msg
+   msg_nowait = false;         // wait for this msg
    r = msgDeco(s, flags);
 
-   emsg_to_channel_log = FALSE;
+   emsg_to_channel_log = false;
    return r;
 }
 
-// Print error message "s".  Should already be translated. Return TRUE if wait_return() not called
+// Print error message "s".  Should already be translated. Return true if wait_return() not called
 int
 emsg(CS s) {
    // Skip this if not giving error messages at the moment.
    if (emsg_not_now())
-      return TRUE;
+      return true;
 
    return emsgImpl(s);
 }
@@ -1275,12 +1275,12 @@ emsg(CS s) {
 //Print error message "s" with format string and variable arguments.
 //"s" should already be translated.
 //Note: caller must not use "IObuff" for "s"!
-//Return TRUE if wait_return() not called.
+//Return true if wait_return() not called.
 int
 showErrFmtMsg0(char const* s, ...) {
    // Skip this if not giving error messages at the moment.
    if (emsg_not_now())
-      return TRUE;
+      return true;
 
    if (!IObuff)
       // Very early in initialisation and already something wrong, just
@@ -1527,7 +1527,7 @@ c_messages(Invocation *invo) {
       return;
    }
 
-   msg_hist_off = TRUE;
+   msg_hist_off = true;
 
    MsgHist* p = first_msg_hist;
    int c = 0;
@@ -1560,7 +1560,7 @@ c_messages(Invocation *invo) {
           msgDeco(p->c, p->deco);
    } 
 
-   msg_hist_off = FALSE;
+   msg_hist_off = false;
 }
 
 //}}}
@@ -1571,7 +1571,7 @@ c_messages(Invocation *invo) {
 struct MsgChunk {
    MsgChunk   *sb_next;
    MsgChunk   *sb_prev;
-   char   sb_eol;      // TRUE when line ends after this text
+   char   sb_eol;      // true when line ends after this text
    int      sb_msgColG;   // column in which text starts
    int      sb_attr;   // text attributes
    Byte   sb_text[1];   // text to be displayed, actually longer
@@ -1581,8 +1581,8 @@ struct MsgChunk {
 // Call this after prompting the user.  This will avoid a hit-return message and a delay.
 private void
 msg_end_prompt(void) {
-   need_wait_return = FALSE;
-   emsg_on_display = FALSE;
+   need_wait_return = false;
+   emsg_on_display = false;
    commlineRowG = msgRowG;
    msgColG = 0;
    msg_clr_eos();
@@ -1590,8 +1590,8 @@ msg_end_prompt(void) {
 }
 
 // Wait for the user to hit a key (normally Enter).
-// If "redraw" is TRUE, clear and redraw the screen.
-// If "redraw" is FALSE, just redraw the screen.
+// If "redraw" is true, clear and redraw the screen.
+// If "redraw" is false, just redraw the screen.
 // If "redraw" is -1, don't redraw at all.
 void
 wait_return(Boole redraw) {
@@ -1617,21 +1617,21 @@ wait_return(Boole redraw) {
    //the end. Adjust commlineRowG to avoid the next message overwriting the last one.
    if (vgetcBusyG > 0)
       return;
-   need_wait_return = TRUE;
+   need_wait_return = true;
    if (no_wait_return) {
       commlineRowG = msgRowG;
       return;
    }
 
-   redir_off = TRUE;      // don't redirect this message
+   redir_off = true;      // don't redirect this message
    oldState = stateG;
-   if (quit_more) {
+   if (quitMoreG) {
       c = ENTER;      // just pretend CR was hit
-      quit_more = FALSE;
-      gotInterruptG = FALSE;
+      quitMoreG = false;
+      gotInterruptG = false;
    } else {
       // Make sure the hit-return prompt is on screen when 'guioptions' was just changed.
-      screenalloc(FALSE);
+      screenalloc(false);
 
       stateG = MODE_HITRETURN;
       setmouse();
@@ -1640,7 +1640,7 @@ wait_return(Boole redraw) {
       // Avoid the sequence that the user types ":" at the hit-return prompt
       // to start a command, but the file-changed dialog gets in the way.
       if (need_check_timestamps)
-          check_timestamps(FALSE);
+          check_timestamps(false);
 
       if (msg_flags & MESSAGES_HIT_ENTER) {
          hit_return_msg();
@@ -1663,7 +1663,7 @@ wait_return(Boole redraw) {
             scriptout = NULL;
             c = safe_vgetc();
             if (had_gotInterruptG && !global_busy)
-               gotInterruptG = FALSE;
+               gotInterruptG = false;
             --no_mapping;
             --allow_keys;
             reg_recording = save_reg_recording;
@@ -1686,14 +1686,14 @@ wait_return(Boole redraw) {
                      // scroll back to show older messages
                      do_more_prompt(c);
                   else {
-                     msg_didout = FALSE;
+                     msg_didout = false;
                      c = K_IGNORE;
                      msgColG = 0;
                   }
-                  if (quit_more) {
+                  if (quitMoreG) {
                      c = ENTER;      // just pretend CR was hit
-                     quit_more = FALSE;
-                     gotInterruptG = FALSE;
+                     quitMoreG = false;
+                     gotInterruptG = false;
                   } ei (c != K_IGNORE) {
                      c = K_IGNORE;
                      hit_return_msg();
@@ -1722,22 +1722,22 @@ wait_return(Boole redraw) {
             // Put the character back in the typeahead buffer.  Don't use
             // the stuff buffer, because lmaps wouldn't work.
             ins_char_typebuf(vgetcOrigCharG, vgetcModMaskG);
-            do_redraw = TRUE;   // need a redraw even though there is typeahead
+            do_redraw = true;   // need a redraw even though there is typeahead
          }
       } else {
           c = ENTER;
           // Wait to allow the user to verify the output.
-          do_sleep(msg_wait, TRUE);
+          do_sleep(msg_wait, true);
       }
    }
-   redir_off = FALSE;
+   redir_off = false;
 
    // If the user hits ':', '?' or '/' we get a command line from the next line.
    if (c == ':' || c == '?' || c == '/') {
       commlineRowG = msgRowG;
-      skip_redraw = TRUE;       // skip redraw once
-      do_redraw = FALSE;
-      skip_term_loop = TRUE;
+      skip_redraw = true;       // skip redraw once
+      do_redraw = false;
+      skip_term_loop = true;
    }
 
    // If the window size changed set_shellsize() will redraw the screen.
@@ -1749,11 +1749,11 @@ wait_return(Boole redraw) {
 
    // When switching screens, we need to output an extra newline on exit.
    if (termIsScreenBeingSwapped() && !termcap_active)
-      newline_on_exit = TRUE;
+      newlineOnExitG = true;
 
-   need_wait_return = FALSE;
-   did_wait_return = TRUE;
-   emsg_on_display = FALSE;   // can delete error message now
+   need_wait_return = false;
+   did_wait_return = true;
+   emsg_on_display = false;   // can delete error message now
    lines_left = -1;      // reset lines_left at next msg_start()
    reset_last_sourcing();
    if (msgAfterRedrawG
@@ -1794,7 +1794,7 @@ set_keep_msg(Byte *s, char flags) {
       msgAfterRedrawG = copyStr(s);
    else
       msgAfterRedrawG = NULL;
-   keep_msg_more = FALSE;
+   keep_msg_more = false;
    decoAfterRedrawG = flags;
 }
 
@@ -1822,7 +1822,7 @@ msgmore(long n) {
        concatenateStrings((CS)msg_buf, (CS)_(" (Interrupted)"), MSG_BUF_LEN);
    if (msg(msg_buf)) {
        set_keep_msg((CS)msg_buf, 0);
-       keep_msg_more = TRUE;
+       keep_msg_more = true;
    }
 }
 
@@ -1859,7 +1859,7 @@ do_dialog(
    Byte   *buttons,
    int      dfltbutton,
    Byte   *textfield UNUSED,   // IObuff for inputdialog(), NULL otherwise
-   int      ex_cmd)       // when TRUE pressing : accepts default and starts a Command
+   int      ex_cmd)       // when true pressing : accepts default and starts a Command
 {
    int      oldState;
    int      retval = 0;
@@ -1956,7 +1956,7 @@ eeDialog_yesno(
    if (do_dialog(type,
       title == NULL ? (CS)_("Question") : title,
       message,
-      (CS)_("&Yes\n&No"), dflt, NULL, FALSE) == 1) {
+      (CS)_("&Yes\n&No"), dflt, NULL, false) == 1) {
       return EE_YES;
    } 
    return EE_NO;
@@ -1973,7 +1973,7 @@ eeDialog_yesnocancel(
          type,
          title == NULL ? (CS)_("Question") : title,
          message,
-         (CS)_("&Yes\n&No\n&Cancel"), dflt, NULL, FALSE
+         (CS)_("&Yes\n&No\n&Cancel"), dflt, NULL, false
    )){
    case 1: return EE_YES;
    case 2: return EE_NO;
@@ -1991,7 +1991,7 @@ eeDialog_yesnoallcancel(
    switch (do_dialog(type,
       title == NULL ? (CS)"Question" : title,
       message,
-      (CS)_("&Yes\n&No\nSave &All\n&Discard All\n&Cancel"), dflt, NULL, FALSE)
+      (CS)_("&Yes\n&No\nSave &All\n&Discard All\n&Cancel"), dflt, NULL, false)
    ) {
    case 1: return EE_YES;
    case 2: return EE_NO;
@@ -2003,14 +2003,14 @@ eeDialog_yesnoallcancel(
 
 //Show the more-prompt and handle the user response. This takes care of scrolling back and 
 //displaying previously displayed text. When at hit-enter prompt "typedChar" is the already 
-//typed character, otherwise it's ZERO. TRUE when jumping ahead to "confirm_msg_tail".
+//typed character, otherwise it's ZERO. true when jumping ahead to "confirm_msg_tail".
 private int
 do_more_prompt(int typedChar) {
-   static int entered = FALSE;
+   static int entered = false;
    int      usedTypedChar = typedChar;
    int      oldState = stateG;
    int      c;
-   int      retval = FALSE;
+   int      retval = false;
    int      toscroll;
    MsgChunk   *mp;
    int      i;
@@ -2020,8 +2020,8 @@ do_more_prompt(int typedChar) {
    // We get called recursively when a timer callback outputs a message. In that case don't show
    // another prompt. Also when at the hit-Enter prompt and nothing was typed.
    if (entered || (stateG == MODE_HITRETURN && typedChar == 0))
-      return FALSE;
-   entered = TRUE;
+      return false;
+   entered = true;
 
    MsgChunk* lastChunk = NULL;
    if (typedChar == 'G') {
@@ -2034,7 +2034,7 @@ do_more_prompt(int typedChar) {
    stateG = MODE_ASKMORE;
    setmouse();
    if (typedChar == ZERO)
-      msg_moremsg(FALSE);
+      msg_moremsg(false);
    for (;;) {
       // Get a typed character directly from the user.
       if (usedTypedChar != ZERO) {
@@ -2093,10 +2093,10 @@ do_more_prompt(int typedChar) {
             // Since gotInterruptG is set all typeahead will be flushed, but we
             // want to keep this ':', remember that in a special way.
             typeahead_noflush(':');
-            skip_term_loop = TRUE;
+            skip_term_loop = true;
             commlineRowG = visibleRowsG - 1;      // put ':' on this line
-            skip_redraw = TRUE;      // skip redraw once
-            need_wait_return = FALSE;   // don't wait in main()
+            skip_redraw = true;      // skip redraw once
+            need_wait_return = false;   // don't wait in main()
          }
          // FALLTHROUGH
       case 'q':      // quit
@@ -2104,10 +2104,10 @@ do_more_prompt(int typedChar) {
       case ESC:
          if (confirm_msg_used) {
             // Jump to the choices of the dialog.
-            retval = TRUE;
+            retval = true;
          } else {
-            gotInterruptG = TRUE;
-            quit_more = TRUE;
+            gotInterruptG = true;
+            quitMoreG = true;
          }
          // When there is some more output (wrapping line) display that
          // without another prompt.
@@ -2122,7 +2122,7 @@ do_more_prompt(int typedChar) {
             clip_copy_modeless_selection();
          continue;
       default:      // no valid response
-          msg_moremsg(TRUE);
+          msg_moremsg(true);
           continue;
       }
 
@@ -2156,7 +2156,7 @@ do_more_prompt(int typedChar) {
 
             if (toscroll == -1 && screen_ins_lines(0, 0, 1, (int)visibleRowsG, 0, NULL) == OK) {
                //display line at top
-               (void)disp_sb_line(0, mp, FALSE);
+               (void)disp_sb_line(0, mp, false);
             } else {
                int did_clear = screenclear();
 
@@ -2178,7 +2178,7 @@ do_more_prompt(int typedChar) {
                (int)visibleRowsG - 2, (int)visibleRowsG - 1, 0, (int)visibleColsG, ' ', ' ', 
                msgFlags
             );
-            lastChunk = disp_sb_line((int)visibleRowsG - 2, lastChunk, FALSE);
+            lastChunk = disp_sb_line((int)visibleRowsG - 2, lastChunk, false);
             --toscroll;
          }
       }
@@ -2188,7 +2188,7 @@ do_more_prompt(int typedChar) {
          fillRowsWithTwoChars(
             (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgFlags
          );
-         msg_moremsg(FALSE);
+         msg_moremsg(false);
          continue;
       }
 
@@ -2203,12 +2203,12 @@ do_more_prompt(int typedChar) {
    );
    stateG = oldState;
    setmouse();
-   if (quit_more) {
+   if (quitMoreG) {
       msgRowG = visibleRowsG - 1;
       msgColG = 0;
    }
 
-   entered = FALSE;
+   entered = false;
    return retval;
 }
 
@@ -2277,8 +2277,8 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
    // later. Needed when scrolling, resetting need_wait_return after some prompt, and then 
    // outputting something without scrolling Not needed when only using CR to move the cursor.
    if (msg_scrolled != 0 && !msg_scrolled_ign && STRCMP(str, "\r") != 0)
-      need_wait_return = TRUE;
-   msg_didany = TRUE;      // remember that something was outputted
+      need_wait_return = true;
+   msg_didany = true;      // remember that something was outputted
 
    //If there is no valid screen, use fprintf so we can see error messages.
    //If termcap is not active, we may be writing in an alternate console portal, cursor 
@@ -2286,9 +2286,9 @@ printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags) {
    if (msg_use_printf())
       toPrintf((CS)str, maxlen);
    else
-      toDisplay((CS)str, maxlen, flags, FALSE);
+      toDisplay((CS)str, maxlen, flags, false);
 
-   needFileinfoG = FALSE;
+   needFileinfoG = false;
 }
 
 // values for "where"
@@ -2307,7 +2307,7 @@ put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum) {
          p = copySubstr(t_s, end - t_s);
       } else
          p = t_s;
-      memAppendBook(wp->book, lnum, p, (ColNr)0, FALSE);
+      memAppendBook(wp->book, lnum, p, (ColNr)0, false);
       if (p != t_s)
          eeglFree(p);
    } else {
@@ -2323,7 +2323,7 @@ put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum) {
       } else {
           newp = copySubstr(t_s, end - t_s);
       }
-      ml_replace(lnum, newp, FALSE);
+      ml_replace(lnum, newp, false);
       curBook = curPor->book;
    }
    redrawPortLater(wp, UPD_NOT_VALID);
@@ -2378,7 +2378,7 @@ toDisplay(
       }
    }
 
-   did_wait_return = FALSE;
+   did_wait_return = false;
    while ((maxlen < 0 || (int)(s - str) < maxlen) && *s != ZERO) {
       // We are at the end of the screen line when:
       // - outputting a newline.
@@ -2422,18 +2422,18 @@ toDisplay(
             else
                l = utfCharLen(s);
             s = drawText_mbyte(s, l, flags);
-         did_last_char = TRUE;
+         did_last_char = true;
          } else
-            did_last_char = FALSE;
+            did_last_char = false;
 
          if (p_more)
             // store text for scrolling back
-            saveToScrollback(&sb_str, s, flags, &sb_col, TRUE);
+            saveToScrollback(&sb_str, s, flags, &sb_col, true);
 
          if (messagePort == NULL) {
             inc_msg_scrolled();
-            need_wait_return = TRUE; // may need wait_return() in main()
-            redrawCommlineG = TRUE;
+            need_wait_return = true; // may need wait_return() in main()
+            redrawCommlineG = true;
             if (commlineRowG > 0)
                --commlineRowG;
 
@@ -2444,7 +2444,7 @@ toDisplay(
          if (p_more && lines_left == 0 && stateG != MODE_HITRETURN && !msg_no_more) {
             if (do_more_prompt(ZERO))
                s = confirm_msg_tail;
-            if (quit_more)
+            if (quitMoreG)
                return;
          }
 
@@ -2469,7 +2469,7 @@ toDisplay(
 
       if (wrap && p_more && !recurse)
           // store text for scrolling back
-          saveToScrollback(&sb_str, s, flags, &sb_col, TRUE);
+          saveToScrollback(&sb_str, s, flags, &sb_col, true);
 
       if (*s == '\n') {        // go to next line
          if (messagePort) {
@@ -2479,7 +2479,7 @@ toDisplay(
                ++lnum;
             }
          } else
-            msg_didout = FALSE;       // remember that line is empty
+            msg_didout = false;       // remember that line is empty
          msgColG = 0;
          if (++msgRowG >= visibleRowsG)  // safety check
             msgRowG = visibleRowsG - 1;
@@ -2534,16 +2534,16 @@ toDisplay(
       popup_show_messagePort();
    // Store the text for scroll back, unless it's a newline by itself.
    if (p_more && !recurse && !(s == sb_str + 1 && *sb_str == '\n'))
-      saveToScrollback(&sb_str, s, flags, &sb_col, FALSE);
+      saveToScrollback(&sb_str, s, flags, &sb_col, false);
 
    msg_check();
 }
 
-// Return TRUE when ":filter pattern" was used and "msg" does not match "pattern".
+// Return true when ":filter pattern" was used and "msg" does not match "pattern".
 int
 message_filtered(Byte *msg) {
    if (commModifierG.cmod_filter_regmatch.regprog == NULL)
-      return FALSE;
+      return false;
    int  match = eeRegexec(&commModifierG.cmod_filter_regmatch, msg, (ColNr)0);
    return commModifierG.cmod_filter_force ? match : !match;
 }
@@ -2557,7 +2557,7 @@ t_puts(
    char      flags
 ){
    // output postponed text
-   msg_didout = TRUE;      // remember that line is not empty
+   msg_didout = true;      // remember that line is not empty
    drawTextLen(t_s, (int)(s - t_s), msgRowG, msgColG, flags);
    msgColG += *t_col;
    *t_col = 0;
@@ -2570,7 +2570,7 @@ t_puts(
    }
 }
 
-//TRUE when messages should be printed with mch_errmsg().
+//true when messages should be printed with mch_errmsg().
 //This is used when there is no valid screen, so we can see error messages.
 //If termcap is not active, we may be writing in an alternate console
 //window, cursor positioning may not work correctly (window size may be
@@ -2604,7 +2604,7 @@ mch_errmsg(CS errMsg) {
    }
 
    // avoid a delay for a message that isn't there
-   emsg_on_display = FALSE;
+   emsg_on_display = false;
 
    int len = (int)STRLEN(errMsg) + 1;
    if (errorsG.ga_growsize == 0) {
@@ -2647,7 +2647,7 @@ mch_msg(CS str) {
 // Only for printable ASCII!
 private void
 msg_screen_putchar(int c, char flags) {
-   msg_didout = TRUE;      // remember that line is not empty
+   msg_didout = true;      // remember that line is not empty
    screen_putchar(c, msgRowG, msgColG, flags); {
       if (++msgColG >= visibleColsG) {
          msgColG = 0;
@@ -2674,7 +2674,7 @@ msg_moremsg(int full) {
 void
 repeat_message(void) {
    if (stateG == MODE_ASKMORE) {
-      msg_moremsg(TRUE);   // display --more-- message again
+      msg_moremsg(true);   // display --more-- message again
       msgRowG = visibleRowsG - 1;
    } ei (stateG == MODE_CONFIRM) {
       display_confirm_msg();   // display ":confirm" message again
@@ -2686,7 +2686,7 @@ repeat_message(void) {
          // Avoid drawing the "hit-enter" prompt below the previous one,
          // overwrite it.  Esp. useful when regaining focus and a
          // FocusGained autocmd exists but didn't draw anything.
-         msg_didout = FALSE;
+         msg_didout = false;
          msgColG = 0;
          msg_clr_eos();
       }
@@ -2700,14 +2700,14 @@ repeat_message(void) {
 //GUI, but the output goes to the terminal. Don't use the terminal codes then.
 private int
 msg_check_screen(void) {
-   if (!fullScreenG || !screen_valid(FALSE))
-      return FALSE;
+   if (!fullScreenG || !screen_valid(false))
+      return false;
 
    if (msgRowG >= visibleRowsG)
       msgRowG = visibleRowsG - 1;
    if (msgColG >= visibleColsG)
       msgColG = visibleColsG - 1;
-   return TRUE;
+   return true;
 }
 
 //Clear from current message position to end of screen.
@@ -2751,18 +2751,18 @@ msgClearCommline(void) {
 
 // end putting a message on the screen
 // call wait_return() if the message does not fit in the available space
-// return TRUE if wait_return() not called.
+// return true if wait_return() not called.
 int
 msg_end(void) {
    //If the string is larger than the portal, or the ruler option is set and we run into it, we 
    //have to redraw the portal. Do not do this if we are abandoning the file or editing the 
    //command line.
    if (!isExitingG && need_wait_return && !(stateG & MODE_COMMLINE)) {
-      wait_return(FALSE);
-      return FALSE;
+      wait_return(false);
+      return false;
    }
    out_flush();
-   return TRUE;
+   return true;
 }
 
 //If the written message runs into the shown command or ruler, we have to wait for hit-return and 
@@ -2770,8 +2770,8 @@ msg_end(void) {
 void
 msg_check(void) {
    if (msgRowG == visibleRowsG - 1 && msgColG >= sc_col && !inEchoPortalG) {
-      need_wait_return = TRUE;
-      redrawCommlineG = TRUE;
+      need_wait_return = true;
+      redrawCommlineG = true;
    }
 }
 
@@ -2797,7 +2797,7 @@ redir_write(Byte *str, int maxlen) {
             if (redir_execute)
                execute_redir_str((CS)" ", -1);
             ei (redir_reg)
-               write_reg_contents(redir_reg, (CS)" ", -1, TRUE);
+               write_reg_contents(redir_reg, (CS)" ", -1, true);
             ei (redir_vname)
                var_redir_str((CS)" ", -1);
             ei (redir_fd) {
@@ -2812,7 +2812,7 @@ redir_write(Byte *str, int maxlen) {
       if (redir_execute)
           execute_redir_str(s, maxlen);
       ei (redir_reg)
-          write_reg_contents(redir_reg, s, maxlen, TRUE);
+          write_reg_contents(redir_reg, s, maxlen, true);
       ei (redir_vname)
           var_redir_str(s, maxlen);
 
@@ -2866,7 +2866,7 @@ verbose_enter_scroll(void) {
       ++msg_silent;
    else
       // always scroll up, don't overwrite
-      msg_scroll = TRUE;
+      msg_scroll = true;
 }
 
 //Like verbose_leave() and set commlineRowG when displaying the message.
@@ -2886,7 +2886,7 @@ verbose_stop(void) {
       fclose(verbose_fd);
       verbose_fd = NULL;
    }
-   verbose_did_open = FALSE;
+   verbose_did_open = false;
 }
 
 // Open the file 'verbosefile'. Return FAIL or OK.
@@ -2894,7 +2894,7 @@ int
 verbose_open(void) {
    if (verbose_fd == NULL && !verbose_did_open && isVerboseFileDefined() && p_vfile) {
       // Only give the error message once.
-      verbose_did_open = TRUE;
+      verbose_did_open = true;
 
       verbose_fd = fopen((char *)p_vfile, "a");
       if (verbose_fd == NULL) {
@@ -2909,7 +2909,7 @@ verbose_open(void) {
 // after redrawing
 void
 give_warning(Byte *message, int hl) {
-   give_warning_with_source(message, hl, FALSE);
+   give_warning_with_source(message, hl, false);
 }
 
 void
@@ -2940,8 +2940,8 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
    } ei (msgDeco(message, decoAfterRedrawG) && msg_scrolled == 0)
       set_keep_msg(message, decoAfterRedrawG);
 
-   msg_didout = FALSE;       // overwrite this message
-   msg_nowait = TRUE;       // don't wait for this message
+   msg_didout = false;       // overwrite this message
+   msg_nowait = true;       // don't wait for this message
    msgColG = 0;
 
    --no_wait_return;
@@ -2977,7 +2977,7 @@ void
 msg_warn_missing_clipboard(void) {
    if (!global_busy && !did_warn_clipboard) {
       msg(_("W23: Clipboard register not available, using register 0"));
-      did_warn_clipboard = TRUE;
+      did_warn_clipboard = true;
    }
 }
 
@@ -3022,10 +3022,10 @@ msg_show_console_dialog(
    int      copy;
 #define HAS_HOTKEY_LEN 30
    Byte   has_hotkey[HAS_HOTKEY_LEN];
-   int      first_hotkey = FALSE;   // first char of button is hotkey
+   int      first_hotkey = false;   // first char of button is hotkey
    int      idx;
 
-   has_hotkey[0] = FALSE;
+   has_hotkey[0] = false;
 
    // First loop: compute the size of memory to allocate. Second loop: copy to the allocated memory
    for (copy = 0; copy <= 1; ++copy) {
@@ -3039,44 +3039,44 @@ msg_show_console_dialog(
 
             // advance to next hotkey and set default hotkey
             hotkp += STRLEN(hotkp);
-            hotkp[copy_char(r + 1, hotkp, TRUE)] = ZERO;
+            hotkp[copy_char(r + 1, hotkp, true)] = ZERO;
             if (dfltbutton)
                --dfltbutton;
 
             // If no hotkey is specified first char is used.
             if (idx < HAS_HOTKEY_LEN - 1 && !has_hotkey[++idx])
-               first_hotkey = TRUE;
+               first_hotkey = true;
          } else {
             len += 3;          // '\n' -> ', '; 'x' -> '(x)'
             lenhotkey += HOTK_LEN;  // each button needs a hotkey
             if (idx < HAS_HOTKEY_LEN - 1)
-               has_hotkey[++idx] = FALSE;
+               has_hotkey[++idx] = false;
          }
       } ei (*r == DLG_HOTKEY_CHAR || first_hotkey) {
          if (*r == DLG_HOTKEY_CHAR)
             ++r;
-         first_hotkey = FALSE;
+         first_hotkey = false;
          if (copy) {
             if (*r == DLG_HOTKEY_CHAR)      // '&&a' -> '&a'
                *msgp++ = *r;
             else {
                // '&a' -> '[a]'
                *msgp++ = (dfltbutton == 1) ? '[' : '(';
-               msgp += copy_char(r, msgp, FALSE);
+               msgp += copy_char(r, msgp, false);
                *msgp++ = (dfltbutton == 1) ? ']' : ')';
 
                // redefine hotkey
-               hotkp[copy_char(r, hotkp, TRUE)] = ZERO;
+               hotkp[copy_char(r, hotkp, true)] = ZERO;
             }
          } else {
             ++len;       // '&a' -> '[a]'
             if (idx < HAS_HOTKEY_LEN - 1)
-               has_hotkey[idx] = TRUE;
+               has_hotkey[idx] = true;
          }
       } else {
          // everything else copy literally
          if (copy)
-            msgp += copy_char(r, msgp, FALSE);
+            msgp += copy_char(r, msgp, false);
       }
 
       // advance to the next character
@@ -3096,7 +3096,7 @@ msg_show_console_dialog(
 
        // If no hotkey is specified first char is used.
       if (!has_hotkey[0]) {
-         first_hotkey = TRUE;
+         first_hotkey = true;
          len += 2;      // "x" -> "[x]"
       }
 
@@ -3114,7 +3114,7 @@ msg_show_console_dialog(
 
       //Define first default hotkey.  Keep the hotkey string ZERO terminated to avoid reading
       //past the end.
-      hotkp[copy_char(buttons, hotkp, TRUE)] = ZERO;
+      hotkp[copy_char(buttons, hotkp, true)] = ZERO;
 
       //Remember where the choices start, displaying starts here when "hotkp" typed at the more 
       //prompt.
@@ -3200,7 +3200,7 @@ saveToScrollback(
       }
       mp->sb_next = NULL;
    } ei (finish && lastChunkS)
-      lastChunkS->sb_eol = TRUE;
+      lastChunkS->sb_eol = true;
 
    *sb_str = s;
    *sb_col = 0;
@@ -3257,7 +3257,7 @@ sb_text_end_cmdline(void) {
 }
 
 // Clear any text remembered for scrolling back.
-// When "all" is FALSE keep the last line. Called when redrawing the screen.
+// When "all" is false keep the last line. Called when redrawing the screen.
 void
 clear_sb_text(int all) {
    MsgChunk   *mp;
@@ -3289,7 +3289,7 @@ show_sb_text(void) {
    if (mp == NULL || mp->sb_prev == NULL) {
    } else {
       do_more_prompt('G');
-      wait_return(FALSE);
+      wait_return(false);
    }
 }
 
@@ -3307,7 +3307,7 @@ moveToStartOfScreenLine(MsgChunk *mps) {
 void
 msg_sb_eol(void){
    if (lastChunkS)
-      lastChunkS->sb_eol = TRUE;
+      lastChunkS->sb_eol = true;
 }
 
 //Display a screen line from previously displayed text at row "row".
@@ -3324,7 +3324,7 @@ disp_sb_line(int row, MsgChunk *smp, int clear_to_eol) {
       p = mp->sb_text;
       if (*p == '\n')       // don't display the line break
          ++p;
-      toDisplay(p, -1, mp->sb_attr, TRUE);
+      toDisplay(p, -1, mp->sb_attr, true);
 
       // If clearing the screen did not work (e.g. because of a background
       // color and t_ut isn't set) clear until the last column here.

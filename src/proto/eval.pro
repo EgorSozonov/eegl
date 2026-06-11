@@ -233,4 +233,3 @@ int cleanup_conditionals(CondStack *cstack, int searched_cond, int inclusive);
 void rewind_conditionals(CondStack *cstack, int idx, int cond_type, int *cond_level);
 void c_endfunction(Invocation *invo);
 int has_loop_cmd(CS p);
-/* eegl: set ft=c : */

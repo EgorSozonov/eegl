@@ -134,4 +134,3 @@ int vcol2col(Portal *po, LineNr lnum, int vcol, ColNr *coladdp);
 void f_getmousepos(Var *argvars, Var *returnVar);
 void mch_setmouse(Boole on);
 void mch_bevalterm_changed(void);
-/* eegl: set ft=c : */

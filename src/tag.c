@@ -60,8 +60,8 @@ typedef enum {
 //Arguments used for matching tags read from a tags file against a pattern.
 typedef struct {
    int   matchoff;      // tag match offset
-   int   match_re;      // TRUE if the tag matches a regexp
-   int   match_no_ic;      // TRUE if the tag matches with case
+   int   match_re;      // true if the tag matches a regexp
+   int   match_no_ic;      // true if the tag matches with case
    int   has_re;         // regular expression used
    int   sortic;         // tags file sorted ignoring case (foldcase)
    int   sort_error;      // tags file not sorted
@@ -103,7 +103,7 @@ private Byte   *tagmatchname = NULL;   // name of last used tag
 //Tag for preview window is remembered separately, to avoid messing up the normal tagstack.
 private Taggy ptag_entry = {NULL, {{0, 0, 0}, 0}, 0, 0, NULL};
 
-private int  tfu_in_use = FALSE;       // disallow recursive call of tagfunc
+private int  tfu_in_use = false;       // disallow recursive call of tagfunc
 private Callback tfu_cb;       // 'tagfunc' callback function
 
 // Used instead of ZERO to separate tag fields in the growarrays.
@@ -162,7 +162,7 @@ set_ref_in_tagfunc(int copyID UNUSED) {
 //type == DT_LTAG:   use location list for displaying tag matches
 //type == DT_FREE:   free cached matches
 //
-//for cscope, returns TRUE if we jumped to tag or aborted, FALSE otherwise
+//for cscope, returns true if we jumped to tag or aborted, false otherwise
 int
 do_tag(
    CS tag,      // tag (pattern) to jump to
@@ -178,15 +178,15 @@ do_tag(
    int cur_fnum = curBook->fiNum;
    int oldtagstackidx = tagstackidx;
    int prevtagstackidx = tagstackidx;
-   int new_tag = FALSE;
+   int new_tag = false;
    int ic;
-   int no_regexp = FALSE;
+   int no_regexp = false;
    Unt error_cur_match = 0;
-   int save_pos = FALSE;
+   int save_pos = false;
    FileMark saved_fmark;
-   int jumped_to_tag = FALSE;
+   int jumped_to_tag = false;
    int use_tagstack;
-   int skip_msg = FALSE;
+   int skip_msg = false;
    CS buf_ffname = curBook->fullFileName;       // name to use for priority computation
    int use_tfu = 1;
    CS tofree = NULL;
@@ -204,21 +204,21 @@ do_tag(
       deleteArena(matches->a);
       matches->a = createArena();
       cs_free_tags();
-      return FALSE;
+      return false;
    }
 #endif
 
    if (tfu_in_use) {
       emsg(_(e_cannot_modify_tag_stack_within_tagfunc));
-      return FALSE;
+      return false;
    }
 
    if (postponed_split == 0 && !portCheckCanSetCurBookForceIt(forceit))
-      return FALSE;
+      return false;
 
    if (type == DT_HELP) {
       type = DT_TAG;
-      no_regexp = TRUE;
+      no_regexp = true;
       use_tfu = 0;
    }
 
@@ -230,8 +230,8 @@ do_tag(
 
    //Don't add a tag to the tagstack if @tagstack has been reset.
    if ((!p_tgst && *tag != ZERO)) {
-      use_tagstack = FALSE;
-      new_tag = TRUE;
+      use_tagstack = false;
+      new_tag = true;
       if (g_do_tagpreview != 0) {
          tagstack_clear_entry(&ptag_entry);
          if ((ptag_entry.tagname = copyStr(tag)) == NULL)
@@ -239,9 +239,9 @@ do_tag(
       }
    } else {
       if (g_do_tagpreview != 0)
-         use_tagstack = FALSE;
+         use_tagstack = false;
       else
-         use_tagstack = TRUE;
+         use_tagstack = true;
 
       // new pattern, add to the tag stack
       if (*tag != ZERO
@@ -282,10 +282,10 @@ do_tag(
             }
             curPor->tagStackLen = tagstacklen;
 
-            save_pos = TRUE;   // save the cursor position below
+            save_pos = true;   // save the cursor position below
          }
 
-         new_tag = TRUE;
+         new_tag = true;
       } else {
          if (g_do_tagpreview != 0 ? ptag_entry.tagname == NULL : tagstacklen == 0) {
             // empty stack
@@ -327,7 +327,7 @@ do_tag(
                curPor->cursor.lnum = saved_fmark.mark.lnum;
             }
             curPor->cursor.col = saved_fmark.mark.col;
-            curPor->setCursWant = TRUE;
+            curPor->setCursWant = true;
             check_cursor();
             if ((p_fdo & FDO_TAG) && old_KeyTyped)
                foldOpenCursor();
@@ -346,13 +346,13 @@ do_tag(
                cur_fnum = ptag_entry.cur_fnum;
             } else {
                // ":tag" (no argument): go to newer pattern
-               save_pos = TRUE;   // save the cursor position below
+               save_pos = true;   // save the cursor position below
                if ((tagstackidx += count - 1) >= (int)tagstacklen) {
                   //Beyond the last one, just give an error message and
                   //go to the last one. Don't store the cursor position.
                   tagstackidx = tagstacklen - 1;
                   emsg(_(e_at_top_of_tag_stack));
-                  save_pos = FALSE;
+                  save_pos = false;
                } ei (tagstackidx < 0) {// must have been count == 0
                   emsg(_(e_at_bottom_of_tag_stack));
                   tagstackidx = 0;
@@ -361,7 +361,7 @@ do_tag(
                cur_match = tagstack[tagstackidx].cur_match;
                cur_fnum = tagstack[tagstackidx].cur_fnum;
             }
-            new_tag = TRUE;
+            new_tag = true;
          } else { // go to other matching tag
             // Save index for when selection is cancelled.
             prevtagstackidx = tagstackidx;
@@ -389,7 +389,7 @@ do_tag(
                cur_match = MAXCOL - 1;
             ei (cur_match == UNT) {
                emsg(_(e_cannot_go_before_first_matching_tag));
-               skip_msg = TRUE;
+               skip_msg = true;
                cur_match = 0;
                cur_fnum = curBook->fiNum;
             }
@@ -519,25 +519,25 @@ do_tag(
             showErrFmtMsg(_(e_tag_not_found_str), name);
          g_do_tagpreview = 0;
       } else {
-         int ask_for_selection = FALSE;
+         int ask_for_selection = false;
 
          if (type == DT_CSCOPE && matches.len > 1) {
             cs_print_tags();
-            ask_for_selection = TRUE;
+            ask_for_selection = true;
          } else
          if (type == DT_TAG && *tag != ZERO)
             //If a count is supplied to the ":tag <name>" command, jump to count'th matching tag
             cur_match = count > 0 ? count - 1 : 0;
          ei (type == DT_SELECT || (type == DT_JUMP && matches.len > 1)) {
             print_tag_list(new_tag, use_tagstack, matches);
-            ask_for_selection = TRUE;
+            ask_for_selection = true;
          } ei (type == DT_LTAG) {
             if (add_llist_tags(tag, matches) == FAIL)
                goto end_do_tag;
             cur_match = 0;      // Jump to the first tag
          }
 
-         if (ask_for_selection == TRUE) {
+         if (ask_for_selection == true) {
             //Ask to select a tag from the list.
             Unt i = prompt_for_number(NULL);
             if (i > matches.len || gotInterruptG) {
@@ -547,7 +547,7 @@ do_tag(
                   tagstackidx = prevtagstackidx;
                }
                cs_free_tags();
-               jumped_to_tag = TRUE;
+               jumped_to_tag = true;
                break;
             }
             cur_match = i - 1;
@@ -562,7 +562,7 @@ do_tag(
                   emsg(_(e_there_is_only_one_matching_tag));
                else
                   emsg(_(e_cannot_go_beyond_last_matching_tag));
-               skip_msg = TRUE;
+               skip_msg = true;
             }
             cur_match = matches.len - 1;
          }
@@ -608,12 +608,12 @@ do_tag(
                   msgDeco(IObuff, getDecoFlags(HLF_W));
                else
                   msg(IObuff);
-               msg_scroll = TRUE;   // don't overwrite this message
+               msg_scroll = true;   // don't overwrite this message
             } else
                give_warning(IObuff, ic);
             if (ic && !msg_scrolled && msg_silent == 0) {
                out_flush();
-               ui_delay(1007L, TRUE);
+               ui_delay(1007L, true);
             }
          }
 
@@ -648,7 +648,7 @@ do_tag(
             // We may have jumped to another portal, check that tagstackidx is still valid.
             if (use_tagstack && tagstackidx > (int)curPor->tagStackLen)
                tagstackidx = curPor->tagStackInd;
-            jumped_to_tag = TRUE;
+            jumped_to_tag = true;
          }
       }
       break;
@@ -684,7 +684,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
    if (taglen > visibleColsG - 25)
       taglen = MAXCOL;
    if (msgColG == 0)
-      msg_didout = FALSE;   // overwrite previous message
+      msg_didout = false;   // overwrite previous message
    msg_start();
    msgPutsDeco(_("  # pri kind tag"), getDecoFlags(HLF_T));
    msg_clr_eos();
@@ -813,7 +813,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
       ui_breakcheck();
    }
    if (gotInterruptG)
-      gotInterruptG = FALSE;   // only stop the listing
+      gotInterruptG = false;   // only stop the listing
 }
 
 //}}}
@@ -1275,17 +1275,17 @@ findtags_state_init(FindTags* st, CS pat, Unt flags, int mincount) {
    st->flags = flags;
    st->tag_file_sorted = ZERO;
    st->help_only = (flags & TAG_HELP);
-   st->get_searchpat = FALSE;
+   st->get_searchpat = false;
    st->help_lang[0] = ZERO;
    st->help_pri = 0;
    st->help_lang_find = NULL;
-   st->is_txt = FALSE;
-   st->did_open = FALSE;
+   st->is_txt = false;
+   st->did_open = false;
    st->mincount = mincount;
    st->lbuf_size = LSIZE;
    st->lbuf = alloc(st->lbuf_size);
    st->match_count = 0;
-   st->stop_searching = FALSE;
+   st->stop_searching = false;
 
    for (mtt = 0; mtt < MT_COUNT; ++mtt) {
       ga_init2(&st->ga_match[mtt], sizeof(CS), 100);
@@ -1305,7 +1305,7 @@ findtags_state_free(FindTags *st) {
 }
 
 //Initialize the language and priority used for searching tags in an Eegl help file.
-//Return TRUE to process the help file for tags and FALSE to skip the file.
+//Return true to process the help file for tags and false to skip the file.
 private int
 findtags_in_help_init(FindTags *st) {
    int      i;
@@ -1324,7 +1324,7 @@ findtags_in_help_init(FindTags *st) {
    // When searching for a specific language skip tags files for other languages.
    if (st->help_lang_find != NULL
           && caseInsensitiveCompare(st->help_lang, st->help_lang_find) != 0)
-      return FALSE;
+      return false;
 
    // For CTRL-] in a help file prefer a match with the same language.
    if ((st->flags & TAG_KEEP_LANG)
@@ -1354,7 +1354,7 @@ findtags_in_help_init(FindTags *st) {
       }
    }
 
-   return TRUE;
+   return true;
 }
 
 //Use the function set in 'tagfunc' (if configured and enabled) to get the tags.
@@ -1368,9 +1368,9 @@ findtags_apply_tfu(FindTags *st, CS pat, CS buf_ffname) {
    if (!use_tfu || tfu_in_use || !curBook->o.tagFn)
       return NOTDONE;
 
-   tfu_in_use = TRUE;
+   tfu_in_use = true;
    retval = find_tagfunc_tags(pat, st->ga_match, &st->match_count, st->flags, buf_ffname);
-   tfu_in_use = FALSE;
+   tfu_in_use = false;
 
    return retval;
 }
@@ -1453,8 +1453,8 @@ findtags_get_next_line(FindTags *st, TagSearchInfo* sinfo_p) {
 }
 
 //Parse a tags file header line in "st->lbuf".
-//Returns TRUE if the current line in st->lbuf is not a tags header line and
-//should be parsed as a regular tag line. Returns FALSE if the line is a
+//Returns true if the current line in st->lbuf is not a tags header line and
+//should be parsed as a regular tag line. Returns false if the line is a
 //header line and the next header line should be read.
 private int
 findtags_hdr_parse(FindTags *st) {
@@ -1463,7 +1463,7 @@ findtags_hdr_parse(FindTags *st) {
     // Header lines in a tags file start with "!_TAG_"
     if (STRNCMP(st->lbuf, "!_TAG_", 6) != 0)
    // Non-header item before the header, e.g. "!" itself.
-   return TRUE;
+   return true;
 
    // Process the header line.
    if (STRNCMP(st->lbuf, "!_TAG_FILE_SORTED\t", 18) == 0)
@@ -1476,13 +1476,13 @@ findtags_hdr_parse(FindTags *st) {
    }
 
    // Read the next line.  Unrecognized flags are ignored.
-   return FALSE;
+   return false;
 }
 
 //Handler to initialize the state when starting to process a new tags file.
 //Called in the TS_START state when finding tags from a tags file.
-//Returns TRUE if the line read from the tags file should be parsed and
-//FALSE if the line should be ignored.
+//Returns true if the line read from the tags file should be parsed and
+//false if the line should be ignored.
 private int
 findtags_start_state_handler(
    FindTags   *st,
@@ -1513,14 +1513,14 @@ findtags_start_state_handler(
       st->state = TS_BINARY;
    ei (st->tag_file_sorted == '2') {
       st->state = TS_BINARY;
-      *sortic = TRUE;
+      *sortic = true;
       st->orgpat->regmatch.rm_ic = (p_ic || !noic);
    } else
       st->state = TS_LINEAR;
 
    if (st->state == TS_BINARY && st->orgpat->regmatch.rm_ic && !*sortic) {
       // Binary search won't work for ignoring case, use linear search.
-      st->linear = TRUE;
+      st->linear = true;
       st->state = TS_LINEAR;
    }
 
@@ -1543,10 +1543,10 @@ findtags_start_state_handler(
           sinfo_p->curr_offset = 0;
           sinfo_p->high_char = 0xff;
       }
-      return FALSE;
+      return false;
    }
 
-   return TRUE;
+   return true;
 }
 
 //Parse a tag line read from a tags file.
@@ -1595,7 +1595,7 @@ findtags_parse_line(
          if (margs->sortic)
             i = (int)TOUPPER_ASC(tagpp->tagname[0]);
          if (i < sinfo_p->low_char || i > sinfo_p->high_char)
-            margs->sort_error = TRUE;
+            margs->sort_error = true;
 
           // Compare the current tag with the searched tag.
           if (margs->sortic)
@@ -1684,15 +1684,15 @@ findtags_parse_line(
 private void
 findtags_matchargs_init(FindTagsMatchArgs *margs, int flags) {
    margs->matchoff = 0;         // match offset
-   margs->match_re = FALSE;         // match with regexp
-   margs->match_no_ic = FALSE;         // matches with case
+   margs->match_re = false;         // match with regexp
+   margs->match_no_ic = false;         // matches with case
    margs->has_re = (flags & TAG_REGEXP);   // regexp used
-   margs->sortic = FALSE;         // tag file sorted in nocase
-   margs->sort_error = FALSE;         // tags file not sorted
+   margs->sortic = false;         // tag file sorted in nocase
+   margs->sort_error = false;         // tags file not sorted
 }
 
 //Compare the tag name in "tagpp->tagname" with a search pattern in "st->orgpat->pat".
-//Return TRUE if the tag matches, FALSE if the tag doesn't match.
+//Return true if the tag matches, false if the tag doesn't match.
 //Use the values in "margs" for doing the comparison.
 private int
 findtags_match_tag(
@@ -1700,14 +1700,14 @@ findtags_match_tag(
     Tagline      *tagpp,
     FindTagsMatchArgs *margs)
 {
-   int      match = FALSE;
+   int      match = false;
    int      cmplen;
 
    // First try matching with the pattern literally (also when it is a regexp).
    cmplen = (int)(tagpp->tagname_end - tagpp->tagname);
    // if tag length does not match, don't try comparing
    if (st->orgpat->len != cmplen)
-      match = FALSE;
+      match = false;
    else {
       if (st->orgpat->regmatch.rm_ic) {
           match =
@@ -1720,7 +1720,7 @@ findtags_match_tag(
    }
 
    // Has a regexp: Also find tags matching regexp.
-   margs->match_re = FALSE;
+   margs->match_re = false;
    if (!match && st->orgpat->regmatch.regprog != NULL) {
       int   cc;
 
@@ -1730,14 +1730,14 @@ findtags_match_tag(
       if (match) {
          margs->matchoff = (int)(st->orgpat->regmatch.startp[0] - tagpp->tagname);
          if (st->orgpat->regmatch.rm_ic) {
-            st->orgpat->regmatch.rm_ic = FALSE;
+            st->orgpat->regmatch.rm_ic = false;
             margs->match_no_ic = eeRegexec(&st->orgpat->regmatch,
                tagpp->tagname, (ColNr)0);
-            st->orgpat->regmatch.rm_ic = TRUE;
+            st->orgpat->regmatch.rm_ic = true;
          }
       }
       *tagpp->tagname_end = cc;
-      margs->match_re = TRUE;
+      margs->match_re = true;
    }
 
    return match;
@@ -1827,7 +1827,7 @@ findtags_add_match(
             copySubstrToAllocation(mfp, (Text){tagpp->command + 2, len});
          } else
             mfp = NULL;
-         st->get_searchpat = FALSE;
+         st->get_searchpat = false;
       } else {
          len = (int)(tagpp->tagname_end - tagpp->tagname);
          mfp = alloc(sizeof(Byte) + len + 1);
@@ -1873,7 +1873,7 @@ findtags_add_match(
              || ga_grow(&st->ga_match[mtt], 1) == FAIL
          ) {
             // Out of memory! Just forget about the rest.
-            st->stop_searching = TRUE;
+            st->stop_searching = true;
             return FAIL;
          }
 
@@ -1888,7 +1888,7 @@ findtags_add_match(
 }
 
 //Read and get all the tags from file st->tag_fname.
-//Set "st->stop_searching" to TRUE to stop searching for additional tags.
+//Set "st->stop_searching" to true to stop searching for additional tags.
 private void
 findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname) {
    Tagline      tagp;
@@ -1908,15 +1908,15 @@ findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname) {
       else
          fast_breakcheck();
       if ((st->flags & TAG_INS_COMP))   // Double brackets for gcc
-         ins_compl_check_keys(30, FALSE);
+         ins_compl_check_keys(30, false);
       if (gotInterruptG || ins_compl_interrupted()) {
-         st->stop_searching = TRUE;
+         st->stop_searching = true;
          break;
       }
       // When mincount is TAG_MANY, stop when enough matches have been
       // found (for completion).
       if (st->mincount == TAG_MANY && st->match_count >= TAG_MANY) {
-         st->stop_searching = TRUE;
+         st->stop_searching = true;
          break;
       }
       if (st->get_searchpat)
@@ -1933,7 +1933,7 @@ findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname) {
       // When still at the start of the file, check for Emacs tags file
       // format, and for "not sorted" flag.
       if (st->state == TS_START) {
-         if (findtags_start_state_handler(st, &margs->sortic, &search_info) == FALSE)
+         if (findtags_start_state_handler(st, &margs->sortic, &search_info) == false)
             continue;
       }
 
@@ -1962,7 +1962,7 @@ findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname) {
           showErrFmtMsg(_(e_format_error_in_tags_file_str), st->tag_fname);
           if (!use_cscope)
          showErrFmtMsg(_("Before byte %ld"), (long)ftello(st->fp));
-          st->stop_searching = TRUE;
+          st->stop_searching = true;
           return;
       }
 
@@ -1975,7 +1975,7 @@ findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname) {
 
 //Search for tags matching "st->orgpat->pat" in the "st->tag_fname" tags file. Information needed 
 //to search for the tags is in the "st" state structure. The matching tags are returned in "st". 
-//If an error is encountered, then "st->stop_searching" is set to TRUE.
+//If an error is encountered, then "st->stop_searching" is set to true.
 private void
 findtags_in_file(FindTags* st, CS buf_ffname) {
    FindTagsMatchArgs margs;
@@ -2003,7 +2003,7 @@ findtags_in_file(FindTags* st, CS buf_ffname) {
           verbose_leave();
       }
    }
-   st->did_open = TRUE;   // remember that we found at least one file
+   st->did_open = true;   // remember that we found at least one file
 
    st->state = TS_START;   // we're at the start of the file
 
@@ -2020,7 +2020,7 @@ findtags_in_file(FindTags* st, CS buf_ffname) {
 
    // Stop searching if sufficient tags have been found.
    if (st->match_count >= st->mincount)
-      st->stop_searching = TRUE;
+      st->stop_searching = true;
 }
 
 //Copy the tags found by find_tags() to "matchesp". Return the number of matches copied.
@@ -2124,10 +2124,10 @@ find_tags(
    //Change the value of @ignorecase according to @tagcase for the duration of this function.
    switch (curBook->o.tagCase) {
    case TC_FOLLOWIC:       break;
-   case TC_IGNORE:    p_ic = TRUE;  break;
-   case TC_MATCH:     p_ic = FALSE; break;
+   case TC_IGNORE:    p_ic = true;  break;
+   case TC_MATCH:     p_ic = false; break;
    case TC_FOLLOWSCS: p_ic = ignorecase(pat); break;
-   case TC_SMART:     p_ic = ignorecase_opt(pat, TRUE, TRUE); break;
+   case TC_SMART:     p_ic = ignorecase_opt(pat, true, true); break;
    }
 
    Unt kindSave = curBook->kind; // eegl.h/BOOK_ constants
@@ -2142,7 +2142,7 @@ find_tags(
       curBook->kind = BOOK_HELP;         // will be restored later
    ei (use_cscope) {
       // Make sure we don't mix help and cscope, confuses Coverity.
-      st.help_only = FALSE;
+      st.help_only = false;
       curBook->kind = BOOK_NORMAL;
    }
 
@@ -2163,7 +2163,7 @@ find_tags(
    }
 
    save_emsg_off = emsg_off;
-   emsg_off = TRUE;  // don't want error for invalid RE here
+   emsg_off = true;  // don't want error for invalid RE here
    prepare_pats(st.orgpat, has_re);
    emsg_off = save_emsg_off;
    if (has_re && st.orgpat->regmatch.regprog == NULL)
@@ -2182,7 +2182,7 @@ find_tags(
           && curBook->currFileName
           && (i = (int)STRLEN(curBook->currFileName)) > 4
           && caseInsensitiveCompare(curBook->currFileName + i - 4, ".txt") == 0)
-      st.is_txt = TRUE;
+      st.is_txt = true;
 
    //When finding a specified number of matches, first try with matching case, so binary search 
    //can be used, and try ignore-case matches in a second loop.
@@ -2196,8 +2196,8 @@ find_tags(
       st.linear = (st.orgpat->headlen == 0 || !p_tbs || round == 2);
 
       //Try tag file names from tags option one by one.
-      for (first_file = TRUE;
-       use_cscope || get_tagfname(&tn, first_file, st.tag_fname) == OK; first_file = FALSE
+      for (first_file = true;
+       use_cscope || get_tagfname(&tn, first_file, st.tag_fname) == OK; first_file = false
       ) {
          findtags_in_file(&st, buf_ffname);
          if (st.stop_searching || use_cscope) {
@@ -2219,7 +2219,7 @@ find_tags(
           break;
 
       // try another time while ignoring case
-      st.orgpat->regmatch.rm_ic = TRUE;
+      st.orgpat->regmatch.rm_ic = true;
    }
 
    if (!st.stop_searching) {
@@ -2277,7 +2277,7 @@ free_tag_stuff(void) {
 int
 get_tagfname(
    TagName   *tnp,   // holds status info
-   int      first,   // TRUE when first file name is wanted
+   int      first,   // true when first file name is wanted
    OUT CS buf)   // pointer to buffer of MAXPATHL chars
 {
    CS fname = NULL;
@@ -2326,15 +2326,15 @@ get_tagfname(
    }
 
    //Loop until we have found a file name that can be used. There are two states:
-   //tnp->tn_did_filefind_init == FALSE: setup for next part in 'tags'.
-   //tnp->tn_did_filefind_init == TRUE: find next file in this part.
+   //tnp->tn_did_filefind_init == false: setup for next part in 'tags'.
+   //tnp->tn_did_filefind_init == true: find next file in this part.
    for (;;) {
       if (tnp->tn_did_filefind_init) {
          fname = eeFindFile(tnp->searchCtx);
          if (fname)
             break;
 
-         tnp->tn_did_filefind_init = FALSE;
+         tnp->tn_did_filefind_init = false;
       } else {
          // Stop when used all parts of 'tags'.
          if (*tnp->tn_np == ZERO) {
@@ -2361,12 +2361,12 @@ get_tagfname(
              buf, 
              text(filename),
              r_ptr, 100,
-             FALSE,      // don't free visited list
+             false,      // don't free visited list
              FINDFILE_FILE, // we search for a file
-             tnp->searchCtx, TRUE, curBook->fullFileName
+             tnp->searchCtx, true, curBook->fullFileName
          );
          if (tnp->searchCtx)
-            tnp->tn_did_filefind_init = TRUE;
+            tnp->tn_did_filefind_init = true;
       }
    }
 
@@ -2388,7 +2388,7 @@ tagname_free(TagName *tnp) {
 //Parse one line from the tags file. Find start/end of tag name, start/end of
 //file name and start of search pattern.
 //
-//If is_etag is TRUE, tagp->fname and tagp->fname_end are not set.
+//If is_etag is true, tagp->fname and tagp->fname_end are not set.
 //
 //Return FAIL if there is a format error in this line, OK otherwise.
 private int
@@ -2429,8 +2429,8 @@ parse_tag_line(CS lbuf, Tagline* tagp) {
 //Static tags produced by the new ctags program have the format:
 //  'tag  file  /pattern/;"<Tab>file:'       "
 //
-//Return TRUE if it is a static tag and adjust *tagname to the real tag.
-//Return FALSE if it is not a static tag.
+//Return true if it is a static tag and adjust *tagname to the real tag.
+//Return false if it is not a static tag.
 private int
 test_for_static(Tagline* tagp) {
    //Check for new style static tag ":...<Tab>file:[<Tab>...]"
@@ -2438,10 +2438,10 @@ test_for_static(Tagline* tagp) {
    while ((p = firstOccurrence(p, '\t')) != NULL) {
       ++p;
       if (STRNCMP(p, "file:", 5) == 0)
-         return TRUE;
+         return true;
    }
 
-   return FALSE;
+   return false;
 }
 
 //Return the length of a matching tag line.
@@ -2532,7 +2532,7 @@ private CS
 tag_full_fname(Tagline* tagp) {
    int c = *tagp->fname_end;
    *tagp->fname_end = ZERO;
-   CS fullname = expand_tag_fname(tagp->fname, tagp->tag_fname, FALSE);
+   CS fullname = expand_tag_fname(tagp->fname, tagp->tag_fname, false);
 
    *tagp->fname_end = c;
    return fullname;
@@ -2544,7 +2544,7 @@ private int
 jumpto_tag(
    CS lbuf_arg,   // line from the tags file for this tag
    int forceit,   // :ta with !
-   int keep_help)   // keep help flag (FALSE for cscope)
+   int keep_help)   // keep help flag (false for cscope)
 {
    int      save_p_scs, save_p_ic;
    LineNr   save_lnum;
@@ -2605,7 +2605,7 @@ jumpto_tag(
 
    //Expand file name, when needed (for environment variables).
    //If 'tagrelative' option set, may change file name.
-   fname = expand_tag_fname(fname, tagp.tag_fname, TRUE);
+   fname = expand_tag_fname(fname, tagp.tag_fname, true);
    CS tofree_fname = fname;   // free() it later
 
    //Check if the file with the tag exists before abandoning the current file. Also accept a file
@@ -2628,11 +2628,11 @@ jumpto_tag(
       //If we are reusing a portal, we may change dir when
       //entering it (autocommands) so turn the tag filename into a fullpath
       if (!curPor->isPreview) {
-         full_fname = fiExpandAndCopy(fname, FALSE);
+         full_fname = fiExpandAndCopy(fname, false);
          fname = full_fname;
 
          //Make the preview window the current window. Open a preview window when needed.
-         prepare_tagpreview(TRUE, TRUE, FALSE);
+         prepare_tagpreview(true, true, false);
       }
    }
 
@@ -2667,11 +2667,11 @@ jumpto_tag(
 
    if (getfile_result == GETFILE_UNUSED)
       // Careful: getfile() may trigger autocommands and call jumpto_tag() recursively.
-      getfile_result = getfile(0, fname, NULL, TRUE, (LineNr)0, forceit);
-   keep_help_flag = FALSE;
+      getfile_result = getfile(0, fname, NULL, true, (LineNr)0, forceit);
+   keep_help_flag = false;
 
    if (GETFILE_SUCCESS(getfile_result)) {  // got to the right file
-      curPor->setCursWant = TRUE;
+      curPor->setCursWant = true;
       postponed_split = 0;
 
       // Save value of hlsearch, jumping to a tag is not a real search
@@ -2687,15 +2687,15 @@ jumpto_tag(
       //Only use do_search() when there is a full search command, without anything following.
       str = pbuf;
       if (pbuf[0] == '/' || pbuf[0] == '?')
-         str = skip_regexp(pbuf + 1, pbuf[0], FALSE) + 1;
+         str = skip_regexp(pbuf + 1, pbuf[0], false) + 1;
       if (str > pbuf_end - 1) {  // search command with nothing following
          Unt pbuflen = pbuf_end - pbuf;
 
          save_p_ic = p_ic;
          save_p_scs = p_scs;
          wrapSearchG = true;   // need to wrap for backward searches
-         p_ic = FALSE;   // don't ignore case now
-         p_scs = FALSE;
+         p_ic = false;   // don't ignore case now
+         p_scs = false;
          save_lnum = curPor->cursor.lnum;
          if (tagp.c > 0)
             // start search before line from "line:" field
@@ -2711,7 +2711,7 @@ jumpto_tag(
             int   cc;
 
             // try again, ignore case now
-            p_ic = TRUE;
+            p_ic = true;
             if (!do_search(NULL, pbuf[0], pbuf[0], pbuf + 1, pbuflen - 1, (long)1,
                             search_options, NULL)
             ) {
@@ -2741,7 +2741,7 @@ jumpto_tag(
                   msg(_(e_couldnt_find_tag_just_guessing));
                   if (!msg_scrolled && msg_silent == 0) {
                      out_flush();
-                     ui_delay(1010L, TRUE);
+                     ui_delay(1010L, true);
                   }
                }
                retval = OK;
@@ -2783,7 +2783,7 @@ jumpto_tag(
           // Return cursor to where we were
           validate_cursor();
           redraw_later(UPD_VALID);
-          enterPortal(curPor_save, TRUE);
+          enterPortal(curPor_save, true);
       }
 
       if (isRedrawingDisabledG > 0)
@@ -2791,21 +2791,21 @@ jumpto_tag(
    } else {
       if (isRedrawingDisabledG > 0)
          --isRedrawingDisabledG;
-      gotInterruptG = FALSE;  // don't want entering window to fail
+      gotInterruptG = false;  // don't want entering window to fail
       if (postponed_split) {     // close the window
-         closePortal(curPor, FALSE);
+         closePortal(curPor, false);
          postponed_split = 0;
       } ei (PORTAL_IS_POPUP(curPor)) {
          Portal* po = curPor;
 
          if (portalIsValid(curPor_save))
-            enterPortal(curPor_save, TRUE);
-         popup_close(po->id, FALSE);
+            enterPortal(curPor_save, true);
+         popup_close(po->id, false);
       }
    }
    if (PORTAL_IS_POPUP(curPor))
       // something went wrong, still in popup, but it can't have focus
-      enterPortal(firstPor, TRUE);
+      enterPortal(firstPor, true);
 
 erret:
    g_do_tagpreview = 0; // For next time
@@ -2817,7 +2817,7 @@ erret:
    return retval;
 }
 
-//If "expand" is TRUE, expand wildcards in fname.
+//If "expand" is true, expand wildcards in fname.
 //If @tagrelative option set, change fname (name of file containing tag)
 //according to tag_fname (name of tag file containing fname). Return a pointer to allocated memory
 private CS
@@ -2856,7 +2856,7 @@ expand_tag_fname(CS fname, CS tag_fname, int expand) {
 
 //Check if we have a tag for the buffer with name "buf_ffname".
 //This is a bit slow, because of the full path compare in fullpathcmp().
-//Return TRUE if tag for file "fname" if tag file "tag_fname" is for current file.
+//Return true if tag for file "fname" if tag file "tag_fname" is for current file.
 private int
 test_for_current(CS fname, CS fname_end, CS tag_fname, CS buf_ffname) {
    Boole retval = false;
@@ -2864,8 +2864,8 @@ test_for_current(CS fname, CS fname_end, CS tag_fname, CS buf_ffname) {
    if (buf_ffname) {   // if the buffer has a name
       Unt c = *fname_end;
       *fname_end = ZERO;
-      CS fullname = expand_tag_fname(fname, tag_fname, TRUE);
-      retval = (fullpathcmp(fullname, buf_ffname, TRUE, TRUE) & FPC_SAME) != 0 ;
+      CS fullname = expand_tag_fname(fname, tag_fname, true);
+      retval = (fullpathcmp(fullname, buf_ffname, true, true) & FPC_SAME) != 0 ;
       eeglFree(fullname);
       *fname_end = c;
    }
@@ -2884,7 +2884,7 @@ find_extra(OUT CS* pp) {
       if (EE_ISDIGIT(*str))
           str = skipdigits(str + 1);
       ei (*str == '/' || *str == '?') {
-         str = skip_regexp(str + 1, *str, FALSE);
+         str = skip_regexp(str + 1, *str, false);
          if (*str != first_char)
             str = NULL;
          else
@@ -3195,11 +3195,11 @@ tagstack_push_items(Portal* wp, List* l) {
       // parse 'from' for the cursor position before the tag jump
       if ((di = bagFind(itemdict, tConst("from"))) == NULL)
           continue;
-      if (list2fpos(&di->c, &mark, &fnum, NULL, FALSE) != OK)
+      if (list2fpos(&di->c, &mark, &fnum, NULL, false) != OK)
           continue;
           
       CS  tagname;
-      if ((tagname = bagGetString(itemdict, tConst("tagname"), TRUE)) == NULL)
+      if ((tagname = bagGetString(itemdict, tConst("tagname"), true)) == NULL)
          continue;
 
       if (mark.col > 0)
@@ -3208,7 +3208,7 @@ tagstack_push_items(Portal* wp, List* l) {
          (int)bagGetNumber(itemdict, tConst("bufnr")),
          (int)bagGetNumber(itemdict, tConst("matchnr")) - 1,
          mark, fnum,
-         bagGetString(itemdict, tConst("user_data"), TRUE));
+         bagGetString(itemdict, tConst("user_data"), true));
     }
 }
 
@@ -3475,19 +3475,19 @@ do_cscope_general(Invocation* invo, int make_split) { // whether to split window
 //Implementation of ":cscope" and ":lcscope"
 void
 c_cscope(Invocation* invo) {
-   do_cscope_general(invo, FALSE);
+   do_cscope_general(invo, false);
 }
 
 //Implementation of ":scscope". Same as c_cscope(), but splits window, too.
 void
 c_scscope(Invocation* invo) {
-   do_cscope_general(invo, TRUE);
+   do_cscope_general(invo, true);
 }
 
 //Implementation of ":cstag"
 void
 c_cstag(Invocation* invo) {
-   int ret = FALSE;
+   int ret = false;
 
    if (*invo->arg == ZERO) {
       (void)emsg(_(e_usage_cstag_ident));
@@ -3498,33 +3498,33 @@ c_cstag(Invocation* invo) {
    case 0 :
       if (cs_check_for_connections()) {
          ret = cs_find_common(S"g", invo->arg, invo->forceit, false, false, *invo->commline);
-         if (ret == FALSE) {
+         if (ret == false) {
             cs_free_tags();
             if (msgColG)
                msg_putchar('\n');
             if (cs_check_for_tags())
-               ret = do_tag(invo->arg, DT_JUMP, 0, invo->forceit, FALSE);
+               ret = do_tag(invo->arg, DT_JUMP, 0, invo->forceit, false);
          }
       } ei (cs_check_for_tags()) {
-         ret = do_tag(invo->arg, DT_JUMP, 0, invo->forceit, FALSE);
+         ret = do_tag(invo->arg, DT_JUMP, 0, invo->forceit, false);
       }
       break;
    case 1 :
       if (cs_check_for_tags()) {
-         ret = do_tag(invo->arg, DT_JUMP, 0, invo->forceit, FALSE);
-         if (ret == FALSE) {
+         ret = do_tag(invo->arg, DT_JUMP, 0, invo->forceit, false);
+         if (ret == false) {
             if (msgColG)
                msg_putchar('\n');
 
             if (cs_check_for_connections()) {
                ret = cs_find_common(S"g", (invo->arg), invo->forceit, false, false, *invo->commline);
-               if (ret == FALSE)
+               if (ret == false)
                   cs_free_tags();
             }
          }
       } ei (cs_check_for_connections()) {
          ret = cs_find_common(S"g", (invo->arg), invo->forceit, false, false, *invo->commline);
-         if (ret == FALSE)
+         if (ret == false)
             cs_free_tags();
       }
       break;
@@ -3542,15 +3542,15 @@ c_cstag(Invocation* invo) {
 //This simulates a eeFgets(), but for cscope, returns the next line
 //from the cscope output. should only be called from find_tags()
 //
-//return TRUE if eof, FALSE otherwise
+//return true if eof, false otherwise
 int
 cs_fgets(CS buf, int size) {
    CS p;
    if ((p = cs_manage_matches(NULL, NULL, -1, Get)) == NULL)
-      return TRUE;
+      return true;
    copySubstrToAllocation(buf, (Text){p, size - 1});
 
-   return FALSE;
+   return false;
 }
 
 // Called only from do_tag(), when popping the tag stack.
@@ -3593,42 +3593,42 @@ cs_print_tags(void) {
 private int
 cs_connection(int num, CS dbpath, CS ppath) {
    if (num < 0 || num > 4 || (num > 0 && !dbpath))
-      return FALSE;
+      return false;
 
    for (int i = 0; i < csinfo_size; i++) {
       if (!csinfo[i].fname)
          continue;
 
       if (num == 0)
-         return TRUE;
+         return true;
 
       switch (num) {
       case 1:
          if (STRSTR(csinfo[i].fname, dbpath))
-            return TRUE;
+            return true;
          break;
       case 2:
          if (STRCMP(csinfo[i].fname, dbpath) == 0)
-            return TRUE;
+            return true;
          break;
       case 3:
          if (STRSTR(csinfo[i].fname, dbpath)
              && ((!ppath && !csinfo[i].ppath)
                || (ppath && csinfo[i].ppath && STRSTR(csinfo[i].ppath, ppath)))
          )
-            return TRUE;
+            return true;
          break;
       case 4:
          if ((STRCMP(csinfo[i].fname, dbpath) == 0)
              && ((!ppath && !csinfo[i].ppath)
                   || (ppath && csinfo[i].ppath && (STRCMP(csinfo[i].ppath, ppath) == 0)))
          )
-            return TRUE;
+            return true;
          break;
       }
    }
 
-   return FALSE;
+   return false;
 }
 
 //PRIVATE functions
@@ -3675,7 +3675,7 @@ cs_add_common(
 
    Unt len = doExpandEnv(OUT (Text){fname, MAXPATHL}, (CS)arg1);
    CS fbuf = (CS)fname;
-   (void)modify_fname((CS)":p", FALSE, &usedlen, (Byte **)&fname, &fbuf, &len);
+   (void)modify_fname((CS)":p", false, &usedlen, (Byte **)&fname, &fbuf, &len);
    if (!fname)
       goto add_err;
    fname = copySubstr((CS)fname, len);
@@ -3733,7 +3733,7 @@ staterr:
 
    if (i != -1) {
       if (cs_create_connection(i) == CSCOPE_FAILURE || cs_read_prompt(i) == CSCOPE_FAILURE) {
-         cs_release_csp(i, TRUE);
+         cs_release_csp(i, true);
          goto add_err;
       }
 
@@ -3993,24 +3993,24 @@ cs_create_connection(int i) {
 //Query cscope using command line interface. Parse the output and use tselect
 //to allow choices. Create a pipe to send to/from query/cscope.
 //
-//return TRUE if we jump to a tag or abort, FALSE if not.
+//return true if we jump to a tag or abort, false if not.
 private int
 cs_find(Invocation* invo) {
-   if (cs_check_for_connections() == FALSE) {
+   if (cs_check_for_connections() == false) {
       (void)emsg(_(e_no_cscope_connections));
-      return FALSE;
+      return false;
    }
 
    CS opt;
    if ((opt = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
       cs_usage_msg(Find);
-      return FALSE;
+      return false;
    }
 
    CS pat = opt + STRLEN(opt) + 1;
    if (pat >= invo->arg + eap_arg_len) {
       cs_usage_msg(Find);
-      return FALSE;
+      return false;
    }
 
    //Let's replace the ZEROs written by strtok() with spaces - we need the
@@ -4037,16 +4037,16 @@ cs_find_common(
 ) {
    int i;
 
-   if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"cscope", curBook->currFileName, TRUE, curBook)
+   if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"cscope", curBook->currFileName, true, curBook)
       && aborting()
    ){
-      return FALSE;
+      return false;
    }
 
    // create the actual command to send to cscope
    CS cmd = cs_create_cmd(opt, pat);
    if (!cmd)
-      return FALSE;
+      return false;
 
    int* nummatches = ALLOC_MULT(int, csinfo_size);
 
@@ -4077,13 +4077,13 @@ cs_find_common(
       if (verbose)
          (void)showErrFmtMsg(_(e_no_matches_found_for_cscope_query_str_of_str), opt, pat);
       eeglFree(nummatches);
-      return FALSE;
+      return false;
    }
 
    if (totmatches > 0) {
       // fill error list
       FILE* f;
-      Byte* tmp = eeTempName('c', TRUE);
+      Byte* tmp = eeTempName('c', true);
       LocationStack* llStack = NULL;
       Portal* wp = NULL;
 
@@ -4098,7 +4098,7 @@ cs_find_common(
          // '-' starts a new error list
          if (llInitFromFile(
                 getLocationStack(LOC_LIST_CSCOPE), tmp, (CS)"%f%*\\t%l%*\\t%m", 
-                FALSE, commline
+                false, commline
              ) > 0
          ) {
             if (postponed_split != 0) {
@@ -4108,7 +4108,7 @@ cs_find_common(
             }
 
             applyAutocomms(
-               EVENT_QUICKFIXCMDPOST, (CS)"cscope", curBook->currFileName, TRUE, curBook
+               EVENT_QUICKFIXCMDPOST, (CS)"cscope", curBook->currFileName, true, curBook
             );
             if (use_ll) {
                // In the location list portal, use the displayed location list. Otherwise, use the
@@ -4122,7 +4122,7 @@ cs_find_common(
       mch_remove(tmp);
       eeglFree(tmp);
       eeglFree(nummatches);
-      return TRUE;
+      return true;
    } else {
       Arr(CS) matches = NULL;
       Arr(CS) contexts = NULL;
@@ -4132,7 +4132,7 @@ cs_find_common(
       cs_fill_results(pat, totmatches, nummatches, &matches, &contexts, &matched);
       eeglFree(nummatches);
       if (!matches)
-         return FALSE;
+         return false;
 
       (void)cs_manage_matches(matches, contexts, matched, Store);
 
@@ -4172,7 +4172,7 @@ cs_help(Invocation* invo UNUSED) {
       cmdp++;
    }
 
-    wait_return(TRUE);
+    wait_return(true);
     return 0;
 }
 
@@ -4318,7 +4318,7 @@ cs_kill_execute(int i,                 CS cname) {
       msg_clr_eos();
       (void)smsgDeco(getDecoFlags(HLF_R) | MSG_HIST, _("cscope connection %s closed"), cname);
    }
-   cs_release_csp(i, TRUE);
+   cs_release_csp(i, true);
 }
 
 //Convert the cscope output into a ctags style entry (as might be found
@@ -4713,7 +4713,7 @@ cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches) {
 
       ui_breakcheck();
       if (gotInterruptG) {
-         gotInterruptG = FALSE;   // don't print any more matches
+         gotInterruptG = false;   // don't print any more matches
          break;
       }
 
@@ -4773,7 +4773,7 @@ cs_read_prompt(int i) {
                (void)showErrFmtMsg(cs_emsg, buf);
             ei (p_csverbose)
                cs_reading_emsg(i); // don't have additional information
-            cs_release_csp(i, TRUE);
+            cs_release_csp(i, true);
             eeglFree(buf);
             return CSCOPE_FAILURE;
          }
@@ -4840,7 +4840,7 @@ cs_release_csp(int i, int freefnpp) {
    //would be killed.  -1 and 1 are dangerous as well.
    if (pid < 0 && csinfo[i].pid > 1) {
 # ifdef ECHILD
-      int alive = TRUE;
+      int alive = true;
 
       if (waitpid_errno == ECHILD) {
          //When using 'vim -g', vim is forked and cscope process is
@@ -4855,7 +4855,7 @@ cs_release_csp(int i, int freefnpp) {
          for (waited = 0; waited < 40; ++waited) {
             // Check whether cscope process is still alive
             if (kill(csinfo[i].pid, 0) != 0) {
-               alive = FALSE; // cscope process no longer exists
+               alive = false; // cscope process no longer exists
                break;
             }
             mch_delay(50L, 0); // sleep 50 ms
@@ -4903,7 +4903,7 @@ cs_reset(Invocation* invo UNUSED) {
       pplist[i] = csinfo[i].ppath;
       fllist[i] = csinfo[i].flags;
       if (csinfo[i].fname != NULL)
-         cs_release_csp(i, FALSE);
+         cs_release_csp(i, false);
    }
 
    // rebuild the cscope connection list
@@ -4965,7 +4965,7 @@ cs_resolve_file(int i, CS name) {
       (void)SPRINTF(fullname, "%s/%s", csinfo[i].ppath, name);
    } ei (csinfo[i].fname && *csdir != ZERO) {
       // Check for csdir to be non empty to avoid empty path concatenated to cscope output.
-      fullname = concat_fnames(csdir, name, TRUE);
+      fullname = concat_fnames(csdir, name, true);
    } else {
       fullname = copyStr(name);
    }
@@ -4996,7 +4996,7 @@ cs_show(Invocation* invo UNUSED) {
       }
    }
 
-   wait_return(FALSE);
+   wait_return(false);
    return CSCOPE_SUCCESS;
 }
 
@@ -5005,7 +5005,7 @@ cs_show(Invocation* invo UNUSED) {
 void
 cs_end(void) {
    for (int i = 0; i < csinfo_size; i++)
-      cs_release_csp(i, TRUE);
+      cs_release_csp(i, true);
    eeglFree(csinfo);
    csinfo_size = 0;
 }

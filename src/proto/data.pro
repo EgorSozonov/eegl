@@ -352,4 +352,3 @@ void blob_reduce(Var *argvars, Var *expr, Var *returnVar);
 void blob_reverse(Blob *b, Var *returnVar);
 void f_blob2list(Var *argvars, Var *returnVar);
 void f_list2blob(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

@@ -5293,12 +5293,12 @@ typedef struct {
    CS term;         // specified terminal name
    int no_swap_file;      // "-n" argument used
    int use_debug_break_level;
-   int portalCount;      // number of windows to use
-   int portalLayout;      // 0, WIN_HOR, WIN_VER or WIN_TABS
+   Unt portalCount;      // number of portals to use
+   int portalLayout;     // 0, WIN_HOR, WIN_VER or WIN_TABS
 
    int serverArg;      // TRUE when argument for a server
-   CS serverName_arg;   // cmdline arg for server name
-   CS serverStr;      // remote server command
+   CS serverName_arg;  // cmdline arg for server name
+   CS serverStr;       // remote server command
    CS servername;      // allocated name for our server
    int diff_mode;      // start with 'diff' set
 } MainParams;
@@ -6026,8 +6026,8 @@ EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing chara
 
 // Last known cursor position. Positioning the cursor is reduced by remembering the last position.
 // Mostly used by windgoto() and draw.c:screen_char().
-EXTERN int screen_cur_row INIT(= 0);
-EXTERN int screen_cur_col INIT(= 0);
+EXTERN int screenCursRowG INIT(= 0);
+EXTERN int screenCursColG INIT(= 0);
 
 // used for 'hlsearch' hilite matching
 EXTERN Match screenSearchMatchG;
@@ -6080,17 +6080,17 @@ EXTERN Boole isModeDisplayedG INIT(= false);   // mode is being displayed
 EXTERN Boole executingFromRegG INIT(= false);   // executing register
 
 // Variables for Insert mode completion.
-EXTERN CS edit_submode INIT(= NULL); // msg for CTRL-X submode
-EXTERN CS edit_submode_pre INIT(= NULL); // prepended to edit_submode
-EXTERN CS edit_submode_extra INIT(= NULL);// appended to edit_submode
-EXTERN Unt edit_submode_highl;   // hilite method for extra info
+EXTERN CS editSubmodeMsgG INIT(= NULL); // msg for CTRL-X submode
+EXTERN CS editSubmodePreMsgG INIT(= NULL); // prepended to edit_submode
+EXTERN CS editSubmodeExtraMsgG INIT(= NULL);// appended to edit_submode
+EXTERN Unt editSubmodeHiG;   // hilite method for extra info
 
 // Functions for putting characters into the command line while keeping ScreenLines[] updated.
-EXTERN int   msgColG;
-EXTERN Unt   msgRowG;
-EXTERN int   msg_scrolled; // Number of screen lines that portals have
+EXTERN int msgColG;
+EXTERN Unt msgRowG;
+EXTERN int msg_scrolled; // Number of screen lines that portals have
                            // scrolled because of printing messages.
-EXTERN int   msg_scrolled_ign INIT(= FALSE);
+EXTERN int msg_scrolled_ign INIT(= FALSE);
             // when TRUE don't set need_wait_return in msgPutsDeco() when msg_scrolled is non-zero
 
 EXTERN Arr(Byte) msgAfterRedrawG INIT(= NULL); // msg to be shown after redraw
@@ -6125,8 +6125,8 @@ EXTERN int no_wait_return INIT(= 0);   // don't wait for return for now
 EXTERN int need_wait_return INIT(= 0); // need to wait for return later
 EXTERN int did_wait_return INIT(= FALSE); //wait_return() was used and nothing written since then
 
-EXTERN int quit_more INIT(= FALSE);    // 'q' hit at "--more--" msg
-EXTERN int newline_on_exit INIT(= FALSE);   // did msg in altern. screen
+EXTERN Boole quitMoreG INIT(= false);    // 'q' hit at "--more--" msg
+EXTERN Boole newlineOnExitG INIT(= false);   // did msg in altern. screen
 EXTERN Unt extraInterruptCharG INIT(= 0);       // extra interrupt character
 
 EXTERN int vgetcBusyG INIT(= 0);         // when inside vgetc() then > 0

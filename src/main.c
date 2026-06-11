@@ -137,14 +137,14 @@ private void intro_message(int colon);
 void
 maybe_intro_message(void) {
    if (CURBOOK_EMPTY() && !curBook->currFileName && !firstPor->next && p_intro)
-      intro_message(FALSE);
+      intro_message(false);
 }
 
 //Give an introductory message about Eegl.
 //Only used when starting Eegl on an empty file, without a file name.
 //Or with the ":intro" command (for Sven :-).
 private void
-intro_message(int colon) {     // TRUE for ":intro"
+intro_message(int colon) {     // true for ":intro"
    int i;
    CS p;
    static CS lines[] = { SMAP((CS),
@@ -249,8 +249,8 @@ void
 c_intro(Invocation* invo UNUSED){
    screenclear();
    draw_tabpanel();
-   intro_message(TRUE);
-   wait_return(TRUE);
+   intro_message(true);
+   wait_return(true);
 }
 
 //}}}
@@ -320,9 +320,9 @@ main(int argc, char** argv) {
    CLEAR_FIELD(paramsP);
    paramsP.argc = argc;
    paramsP.argv = argv;
-   paramsP.want_full_screen = TRUE;
+   paramsP.want_full_screen = true;
    paramsP.use_debug_break_level = -1;
-   paramsP.portalCount = -1;
+   paramsP.portalCount = UNT;
 
    autocmd_init();
 
@@ -347,7 +347,7 @@ main(int argc, char** argv) {
    // Need to find "--clean" before actually parsing arguments.
    for (i = 1; i < argc; ++i) {
       if (caseInsensitiveCompare(argv[i], "--clean") == 0) {
-          paramsP.clean = TRUE;
+          paramsP.clean = true;
           break;
       }
    } 
@@ -370,7 +370,7 @@ main(int argc, char** argv) {
 
    TIME_MSG("expanding arguments");
 
-   if (paramsP.diff_mode && paramsP.portalCount == -1)
+   if (paramsP.diff_mode && paramsP.portalCount == UNT)
       paramsP.portalCount = 0;   // open up to 3 portals
 
    // Don't redraw until much later.
@@ -378,7 +378,7 @@ main(int argc, char** argv) {
 
    // When listing swap file names, don't do cursor positioning et. al.
    if (recoveryModeG && paramsP.fname == NULL)
-      paramsP.want_full_screen = FALSE;
+      paramsP.want_full_screen = false;
 
    //uiInit() sets up the terminal (window) for use. This must be done after resetting 
    //fullScreenG, otherwise it may move the cursor. Note that we may use mch_exit() before uiInit()!
@@ -414,20 +414,20 @@ main(int argc, char** argv) {
    //Set the @diff option now, so that it can be checked for in an init.vim
    //file. There is no book yet, though.
    if (paramsP.diff_mode)
-      diff_win_options(firstPor, FALSE);
+      diff_win_options(firstPor, false);
 
    commlineRowG = visibleRowsG - commlineHeightG;
    msgRowG = commlineRowG;
-   screenalloc(FALSE);      // allocate screen buffers
+   screenalloc(false);      // allocate screen buffers
    optInit1();
    TIME_MSG("inits 0");
 
-   msg_scroll = TRUE;
-   no_wait_return = TRUE;
+   msg_scroll = true;
+   no_wait_return = true;
 
    TIME_MSG("init hilite");
 
-   init_term_props(TRUE);
+   init_term_props(true);
 
    //Set the break level after the terminal is initialized.
    debug_break_level = paramsP.use_debug_break_level;
@@ -485,7 +485,7 @@ eeglMain1(void) {
       if (paramsP.use_ef)
          optChangeStringOptionDirect(S"errorfile", paramsP.use_ef, 0, SID_CARG);
       eeSnprintf(IObuff, IOSIZE, "cfile %s", p_ef);
-      if (llInitFromFile(NULL, p_ef, curBook->o.errorFormat, TRUE, IObuff) < 0) {
+      if (llInitFromFile(NULL, p_ef, curBook->o.errorFormat, true, IObuff) < 0) {
          out_char('\n');
          mch_exit(3);
       }
@@ -496,8 +496,8 @@ eeglMain1(void) {
    //Scroll screen down before drawing over it
    //Clear screen now, so file message will not be cleared.
    starting = NO_BOOKS;
-   no_wait_return = FALSE;
-   msg_scroll = FALSE;
+   no_wait_return = false;
+   msg_scroll = false;
 
    if (wayland_init_client(wayland_display_name) == OK) {
       TIME_MSG("connected to Wayland display");
@@ -514,7 +514,7 @@ eeglMain1(void) {
    // When switching screens and something caused a message from a vimrc
    // script, need to output an extra newline on exit.
    if ((anyEmsgG || msg_didout) && *termCodeS[KS_TI] != ZERO && paramsP.edit_type != EDIT_STDIN)
-      newline_on_exit = TRUE;
+      newlineOnExitG = true;
 
    //When done something that is not allowed or given an error message call wait_return(). This 
    //must be done before starttermcap(), because it may switch to another screen. It must be done
@@ -525,7 +525,7 @@ eeglMain1(void) {
    TIME_MSG("setting raw mode");
 
    if (need_wait_return || msg_didany) {
-      wait_return(TRUE);
+      wait_return(true);
       TIME_MSG("waiting for return");
    }
 
@@ -540,7 +540,7 @@ eeglMain1(void) {
    screenclear();         // clear screen
    TIME_MSG("clearing screen");
 
-   no_wait_return = TRUE;
+   no_wait_return = true;
 
    // Create the requested number of portals and edit buffers.
    // Also does recovery if "recoveryModeG" set.
@@ -556,7 +556,7 @@ eeglMain1(void) {
 
    // When started with "-q errorfile" jump to first error now.
    if (paramsP.edit_type == EDIT_QF) {
-      llJump(NULL, 0, 0, FALSE);
+      llJump(NULL, 0, 0, false);
       TIME_MSG("jump to first error");
    }
 
@@ -568,15 +568,15 @@ eeglMain1(void) {
       // set options in each portal for "eegldiff".
       Portal* port;
       FOR_ALL_PORTALS(port)
-         diff_win_options(port, TRUE);
+         diff_win_options(port, true);
    }
 
    //Shorten any of the filenames, but only when absolute.
-   shorten_fnames(FALSE);
+   shorten_fnames(false);
 
    //Need to jump to the tag before executing the '-c command'. Makes "eegl -c '/return' -t main" work
    if (paramsP.tagname != NULL) {
-      swap_exists_did_quit = FALSE;
+      swap_exists_did_quit = false;
 
       eeSnprintf(IObuff, IOSIZE, "ta %s", paramsP.tagname);
       executeCommLine(IObuff);
@@ -599,7 +599,7 @@ eeglMain1(void) {
 
    isRedrawingDisabledG = 0;
    redraw_all_later(UPD_NOT_VALID);
-   no_wait_return = FALSE;
+   no_wait_return = false;
 
    // 'autochdir' has been postponed
    DO_AUTOCHDIR;
@@ -631,7 +631,7 @@ eeglMain1(void) {
       stuffcharReadbuff(K_NOP);
 
    // Redraw at least once, also when 'lazyredraw' is set, to be sure the window title gets updated
-   //do_redraw = TRUE;
+   //do_redraw = true;
 
    TIME_MSG("before starting main loop");
 
@@ -687,7 +687,7 @@ init1(OUT MainParams* paramsP) {
    //   --windowid
    earlyArgScan(paramsP);
 
-   clip_init(FALSE);      // Initialise clipboard stuff
+   clip_init(false);      // Initialise clipboard stuff
    TIME_MSG("clipboard setup");
 
    //Check if we have an interactive window.
@@ -721,13 +721,13 @@ init1(OUT MainParams* paramsP) {
    llInitStacksOnce();
 }
 
-// Return TRUE when the --not-a-term argument was found.
+// Return true when the --not-a-term argument was found.
 int
 is_not_a_term(void) {
    return paramsP.not_a_term;
 }
 
-// Return TRUE when the --not-a-term argument was found or the GUI is in use.
+// Return true when the --not-a-term argument was found or the GUI is in use.
 int
 is_not_a_term_or_gui(void) {
    return paramsP.not_a_term;
@@ -744,7 +744,7 @@ free_vbuf(void) {
 }
 #endif
 
-// When TRUE in a safe state when starting to wait for a character.
+// When true in a safe state when starting to wait for a character.
 private Boole wasSafeP = false;
 
 // Return whether currently it is safe, assuming it was safe before (high level state didn't change)
@@ -757,7 +757,7 @@ isSafeNow(void) {
       && !global_busy;
 }
 
-// Trigger SafeState if currently in a safe state, that is "safe" is TRUE and there is no typeahead
+// Trigger SafeState if currently in a safe state, that is "safe" is true and there is no typeahead
 void
 may_trigger_safestate(Boole safe) {
    Boole is_safe = safe && isSafeNow();
@@ -807,7 +807,7 @@ may_trigger_safestateagain(void) {
       lo("SafeState: back to waiting, not triggering SafeStateAgain");
 }
 
-//Return TRUE if there is any typeahead, pending operator or command.
+//Return true if there is any typeahead, pending operator or command.
 int
 work_pending(void) {
    return op_pending() || !isSafeNow();
@@ -817,7 +817,7 @@ work_pending(void) {
 //Also used to handle commands in the command-line portal, until the portal is closed.
 //Also used to handle ":visual" command after ":global": execute Normal mode commands.
 void
-mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
+mainLoop(Boole inCommPort) {  // true when working in the command-line window
    Operator oper;      // operator arguments
    Operator* operPrev = currOperatorG; //operator arguments
    currOperatorG = &oper;
@@ -825,11 +825,11 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
    clear_oparg(OUT &oper);
    while (!inCommPort || commPortResultG == 0) {
       if (stuff_empty()) {
-         did_check_timestamps = FALSE;
+         did_check_timestamps = false;
          if (need_check_timestamps)
-            check_timestamps(FALSE);
+            check_timestamps(false);
          if (need_wait_return)   // if wait_return() still needed ...
-            wait_return(FALSE);   // ... call it now
+            wait_return(false);   // ... call it now
       }
 
       //Reset "gotInterruptG" now that we got back to the main loop.  Except when
@@ -837,10 +837,10 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
       //For ":g/pat/vi" we reset "gotInterruptG" when used once.  When used
       //a second time we go back to Ex mode and abort the ":g" command.
       if (gotInterruptG) {
-         if (!quit_more) {
+         if (!quitMoreG) {
             (void)vgetc();      // flush all buffers
          }
-         gotInterruptG = FALSE;
+         gotInterruptG = false;
       }
 
       //At the toplevel there is no exception handling.  Discard any that
@@ -848,16 +848,16 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
       if (did_throw && !ex_normal_busy)
          discard_current_exception();
 
-      msg_scroll = FALSE;
-      quit_more = FALSE;
+      msg_scroll = false;
+      quitMoreG = false;
 
       //it's not safe unless may_trigger_safestate_main() is called
       wasSafeP = false;
 
       //If skip redraw is set (for ":" in wait_return()), don't redraw now.
-      //If there is nothing in the stuff_buffer or do_redraw is TRUE, update cursor and redraw.
+      //If there is nothing in the stuff_buffer or do_redraw is true, update cursor and redraw.
       if (skip_redraw) {
-         skip_redraw = FALSE;
+         skip_redraw = false;
          setcursor();
          cursor_on();
       } ei (do_redraw || stuff_empty()) {
@@ -884,14 +884,14 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
          // esp. updating folds.  Do an update just before redrawing if needed.
          if (curtab->diff_update || curtab->diff_invalid) {
             c_diffupdate(NULL);
-            curtab->diff_update = FALSE;
+            curtab->diff_update = false;
          }
 
          // Scroll-binding for diff mode may have been postponed until
          // here.  Avoids doing it for every change.
          if (diff_need_scrollbind) {
             check_scrollbind((LineNr)0, 0L);
-            diff_need_scrollbind = FALSE;
+            diff_need_scrollbind = false;
          }
          // Include a closed fold completely in the Visual area.
          foldAdjustVisual();
@@ -923,26 +923,26 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
             //msg_start() will set msgAfterRedrawG to NULL, make a copy first. Don't reset 
             //msgAfterRedrawG, msgDeco_keep() uses it to check for duplicates. Never append this 
             //message to history.
-            msg_hist_off = TRUE;
+            msg_hist_off = true;
             msgDeco(p, decoAfterRedrawG);
-            msg_hist_off = FALSE;
+            msg_hist_off = false;
             eeglFree(p);
          }
          if (needFileinfoG) {     // show file info after redraw
-            fileinfo(FALSE, TRUE, FALSE);
-            needFileinfoG = FALSE;
+            fileinfo(false, true, false);
+            needFileinfoG = false;
          }
 
-         emsg_on_display = FALSE;   // can delete error message now
-         anyEmsgG = FALSE;
-         msg_didany = FALSE;      // reset lines_left in msg_start()
+         emsg_on_display = false;   // can delete error message now
+         anyEmsgG = false;
+         msg_didany = false;      // reset lines_left in msg_start()
          may_clear_sb_text();   // clear scroll-back text on next msg
-         showruler(FALSE);
+         showruler(false);
 
          setcursor();
          cursor_on();
 
-         do_redraw = FALSE;
+         do_redraw = false;
 
          //Now that we have drawn the first screen all the startup stuff
          //has been done, close any file for startup messages.
@@ -976,11 +976,11 @@ mainLoop(Boole inCommPort) {  // TRUE when working in the command-line window
       ){
          //If terminal_loop() returns OK we got a key that is handled in Normal mode.  With FAIL 
          //we first need to position the cursor and the screen needs to be redrawn.
-         if (terminal_loop(TRUE) == OK) {
+         if (terminal_loop(true) == OK) {
             normalAction(OUT &oper, true);
          }
       } else {
-         skip_term_loop = FALSE;
+         skip_term_loop = false;
          normalAction(&oper, true);
       }
    }
@@ -1061,7 +1061,7 @@ exitEegl(int exitval) {
 
    if (
 #ifdef EXITFREE
-       entered_free_all_mem == FALSE &&
+       entered_free_all_mem == false &&
 #endif
          p_eeglinfo
    )
@@ -1083,8 +1083,8 @@ exitEegl(int exitval) {
 
    if (anyEmsgG) {
       // give the user a chance to read the (error) message
-      no_wait_return = FALSE;
-      wait_return(FALSE);
+      no_wait_return = false;
+      wait_return(false);
    }
 
    // Position the cursor again, the autocommands may have moved it
@@ -1094,7 +1094,7 @@ exitEegl(int exitval) {
    job_stop_on_exit();
    cs_end();
    if (garbage_collect_at_exit)
-      garbage_collect(FALSE);
+      garbage_collect(false);
 
    mch_exit(exitval);
 }
@@ -1154,7 +1154,7 @@ parseCommandName(MainParams* paramsP) {
 
    // Catch "eegldiff" and "viewdiff".
    if (caseInsensitiveCompare(initstr, "diff") == 0) {
-      paramsP->diff_mode = TRUE;
+      paramsP->diff_mode = true;
    }
 }
 
@@ -1164,7 +1164,7 @@ scanCommandLineArgs(MainParams *paramsP) {
    int      argc = paramsP->argc;
    char   **argv = paramsP->argv;
    int      argv_idx;      // index in argv[n][]
-   int      had_minmin = FALSE;   // found "--" argument
+   int      had_minmin = false;   // found "--" argument
    int      want_argument;      // option argument with argument
    int      c;
    CS text = NULL;
@@ -1185,7 +1185,7 @@ scanCommandLineArgs(MainParams *paramsP) {
       }
       // Optional argument.
       ei (argv[0][0] == '-' && !had_minmin) {
-         want_argument = FALSE;
+         want_argument = false;
          c = argv[0][argv_idx++];
          switch (c) {
          case ZERO:      // "eegl -"  read from stdin. "ex -" silent mode
@@ -1214,32 +1214,32 @@ scanCommandLineArgs(MainParams *paramsP) {
                 usage();
             ei (caseInsensitiveCompare(argv[0] + argv_idx, "version") == 0) {
                 visibleColsG = 80;
-                info_message = TRUE; // use mch_msg(), not mch_errmsg()
+                info_message = true; // use mch_msg(), not mch_errmsg()
                 list_version();
                 msg_putchar('\n');
-                msg_didout = FALSE;
+                msg_didout = false;
                 mch_exit(0);
             } ei (STRNICMP(argv[0] + argv_idx, "clean", 5) == 0) {
                 paramsP->altInitFile = (CS)"DEFAULTS";
-                paramsP->clean = TRUE;
+                paramsP->clean = true;
                 optChangeAndReportError(S"eeglinfofile", optStr("NONE"), SET_GLOBAL);
             } ei (STRNICMP(argv[0] + argv_idx, "literal", 7) == 0) {
             } ei (STRNICMP(argv[0] + argv_idx, "nofork", 6) == 0) {
             } ei (STRNICMP(argv[0] + argv_idx, "not-a-term", 10) == 0)
-                paramsP->not_a_term = TRUE;
+                paramsP->not_a_term = true;
             ei (STRNICMP(argv[0] + argv_idx, "gui-dialog-file", 15) == 0) {
-                want_argument = TRUE;
+                want_argument = true;
                 argv_idx += 15;
             } ei (STRNICMP(argv[0] + argv_idx, "ttyfail", 7) == 0)
-                paramsP->tty_fail = TRUE;
+                paramsP->tty_fail = true;
             ei (STRNICMP(argv[0] + argv_idx, "comm", 3) == 0) {
-                want_argument = TRUE;
+                want_argument = true;
                 argv_idx += 3;
             } ei (STRNICMP(argv[0] + argv_idx, "startuptime", 11) == 0) {
-                want_argument = TRUE;
+                want_argument = true;
                 argv_idx += 11;
             } ei (STRNICMP(argv[0] + argv_idx, "log", 3) == 0) {
-                want_argument = TRUE;
+                want_argument = true;
                 argv_idx += 3;
             } ei (STRNICMP(argv[0] + argv_idx, "serverlist", 10) == 0)
                 ; // already processed -- no arg
@@ -1254,7 +1254,7 @@ scanCommandLineArgs(MainParams *paramsP) {
             } else {
                if (argv[0][argv_idx])
                   mainerr(ME_UNKNOWN_OPTION, (CS)argv[0]);
-               had_minmin = TRUE;
+               had_minmin = true;
             }
             if (!want_argument)
                argv_idx = -1;   // skip to next argument
@@ -1307,11 +1307,11 @@ scanCommandLineArgs(MainParams *paramsP) {
                paramsP->use_ef = (CS)argv[0] + argv_idx;
                argv_idx = -1;
             } ei (argc > 1)      // "-q {errorfile}"
-               want_argument = TRUE;
+               want_argument = true;
             break;
 
          case 'R':      // "-R" readonly mode, equivalent to "-m" or "-M"
-            p_modifiable = FALSE;
+            p_modifiable = false;
             break;
 
          case 'r':      // "-r" recovery mode
@@ -1321,7 +1321,7 @@ scanCommandLineArgs(MainParams *paramsP) {
 
          case 's':
             // "-s {scriptin}" read from script file
-            want_argument = TRUE;
+            want_argument = true;
             break;
 
          case 't':      // "-t {tag}" or "-t{tag}" jump to tag
@@ -1332,14 +1332,14 @@ scanCommandLineArgs(MainParams *paramsP) {
                paramsP->tagname = (CS)argv[0] + argv_idx;
                argv_idx = -1;
             } else            // "-t {tag}"
-                want_argument = TRUE;
+                want_argument = true;
             break;
 
          case 'D':      // "-D"      Debugging
             paramsP->use_debug_break_level = 9999;
             break;
          case 'd':      // "-d"      'diff'
-            paramsP->diff_mode = TRUE;
+            paramsP->diff_mode = true;
             break;
          case 'V':      // "-V{N}"   Verbose level
             // default is 10: a little bit verbose
@@ -1354,11 +1354,11 @@ scanCommandLineArgs(MainParams *paramsP) {
 
 
          case 'w': // "-w {scriptout}"   write to script
-            want_argument = TRUE;
+            want_argument = true;
             break;
 
          case 'Y':      // "-Y" don't connect to Wayland compositor
-            wayland_no_connect = TRUE;
+            wayland_no_connect = true;
             break;
 
          case 'c':      // "-c{command}" or "-c {command}" execute command
@@ -1375,7 +1375,7 @@ scanCommandLineArgs(MainParams *paramsP) {
          case 'T':      // "-T {terminal}" terminal name
          case 'u':      // "-u {vimrc}" Eegl inits file
          case 'W':      // "-W {scriptout}" overwrite
-            want_argument = TRUE;
+            want_argument = true;
             break;
 
          default:
@@ -1414,7 +1414,7 @@ scanCommandLineArgs(MainParams *paramsP) {
                      fName = argv[0];
                   text = alloc(STRLEN(fName) + 4);
                   sprintf((char *)text, "so %s", fName);
-                  paramsP->cmds_tofree[paramsP->n_commands] = TRUE;
+                  paramsP->cmds_tofree[paramsP->n_commands] = true;
                   paramsP->commands[paramsP->n_commands++] = text;
                } else
                   paramsP->commands[paramsP->n_commands++] = (CS)argv[0];
@@ -1508,7 +1508,7 @@ scripterror:
             && !mch_isdir(alist_name(&GARGLIST[0]))
          ) {
             CS concattedFnames = 
-               concat_fnames(text, fiGetShortFiName(alist_name(&GARGLIST[0])), TRUE);
+               concat_fnames(text, fiGetShortFiName(alist_name(&GARGLIST[0])), true);
             if (concattedFnames) {
                eeglFree(text);
                text = concattedFnames;
@@ -1553,7 +1553,7 @@ check_tty(MainParams* paramsP) {
       if (paramsP->tty_fail && (!stdout_isatty || !input_isatty))
          exit(1);
       if (scriptin[0] == NULL)
-         ui_delay(2005L, TRUE);
+         ui_delay(2005L, true);
       TIME_MSG("Warning delay");
    }
 }
@@ -1564,14 +1564,14 @@ readStdin(void) {
    // When getting the ATTENTION prompt here, use a dialog
    swap_exists_action = SEA_DIALOG;
 
-   no_wait_return = TRUE;
+   no_wait_return = true;
    int i = msg_didany;
    bookSetBooklisted(true);
 
    // Create memfile and read from stdin.
    (void)bookOpenFromInvo(true, NULL, 0);
 
-   no_wait_return = FALSE;
+   no_wait_return = false;
    msg_didany = i;
    TIME_MSG("reading stdin");
 
@@ -1590,7 +1590,7 @@ createPortals(MainParams *paramsP) {
    int dorewind;
 
    //Create the number of portals that was requested.
-   if (paramsP->portalCount == -1)   // was not set
+   if (paramsP->portalCount == UNT)   // was not set
       paramsP->portalCount = 1;
    if (paramsP->portalCount == 0)
       paramsP->portalCount = GARGCOUNT;
@@ -1599,7 +1599,7 @@ createPortals(MainParams *paramsP) {
    if (paramsP->portalLayout == 0)
        paramsP->portalLayout = WIN_HOR;
    if (paramsP->portalLayout == WIN_TABS) {
-       paramsP->portalCount = make_tabpages(paramsP->portalCount);
+       paramsP->portalCount = portMakeTabs(paramsP->portalCount);
        TIME_MSG("making tabs");
    } ei (firstPor->next == NULL) {
        paramsP->portalCount = makePortals(paramsP->portalCount, paramsP->portalLayout == WIN_VER);
@@ -1610,7 +1610,7 @@ createPortals(MainParams *paramsP) {
       paramsP->portalCount = 1;
 
    if (recoveryModeG) {         // do recover
-      msg_scroll = TRUE;      // scroll message up
+      msg_scroll = true;      // scroll message up
       ml_recover(true);
       if (curBook->mem.mfile == NULL) // failed
           exitEegl(1);
@@ -1620,7 +1620,7 @@ createPortals(MainParams *paramsP) {
       //Win/Buf Enter/Leave autocommands here
       ++autocmd_no_enter;
       ++autocmd_no_leave;
-      dorewind = TRUE;
+      dorewind = true;
       for (int done = 0; done < 1000; done++) {
          if (dorewind) {
             if (paramsP->portalLayout == WIN_TABS)
@@ -1636,7 +1636,7 @@ createPortals(MainParams *paramsP) {
                break;
             curPor = curPor->next;
          }
-         dorewind = FALSE;
+         dorewind = false;
          curBook = curPor->book;
          if (curBook->mem.mfile == NULL) {
             if (foldLevelStart >= 0)
@@ -1652,17 +1652,17 @@ createPortals(MainParams *paramsP) {
             if (swap_exists_action == SEA_QUIT) {
                if (gotInterruptG || onlyOnePortal()) {
                   // abort selected or quit and only one portal
-                  anyEmsgG = FALSE;   // avoid hit-enter prompt
+                  anyEmsgG = false;   // avoid hit-enter prompt
                   exitEegl(1);
                }
                //We can't close the window, it would disturb what happens next. Clear the file 
                //name and set the arg index to -1 to delete it later.
-               setfname(curBook, NULL, NULL, FALSE);
+               setfname(curBook, NULL, NULL, false);
                curPor->argListInd = -1;
                swap_exists_action = SEA_NONE;
             } else
                handle_swap_exists(NULL);
-            dorewind = TRUE;      // start again
+            dorewind = true;      // start again
          }
          ui_breakcheck();
          if (gotInterruptG) {
@@ -1685,8 +1685,7 @@ createPortals(MainParams *paramsP) {
 private void
 editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
    int      arg_idx;      // index in argument list
-   int      i;
-   int      advance = TRUE;
+   int      advance = true;
 
    //Don't execute Win/Buf Enter/Leave autocommands here
    ++autocmd_no_enter;
@@ -1694,19 +1693,19 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
 
    // When argListInd is -1 remove the window (see createPortals()).
    if (curPor->argListInd == -1) {
-      closePortal(curPor, TRUE);
-      advance = FALSE;
+      closePortal(curPor, true);
+      advance = false;
    }
 
    arg_idx = 1;
-   for (i = 1; i < paramsP->portalCount; ++i) {
+   for (Unt i = 1; i < paramsP->portalCount; ++i) {
       if (cwd)
          mch_chdir((char *)cwd);
       // When argListInd is -1 remove the window (see createPortals()).
       if (curPor->argListInd == -1) {
          ++arg_idx;
-         closePortal(curPor, TRUE);
-         advance = FALSE;
+         closePortal(curPor, true);
+         advance = false;
          continue;
       }
       if (advance) {
@@ -1717,10 +1716,10 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
          } else {
             if (!curPor->next)   // just checking
                break;
-            enterPortal(curPor->next, FALSE);
+            enterPortal(curPor->next, false);
          }
       }
-      advance = TRUE;
+      advance = true;
 
       // Only open the file if there is no file in this window yet (that can
       // happen when .vimrc contains ":sall").
@@ -1728,7 +1727,7 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
          curPor->argListInd = arg_idx;
          // Edit file from arg list, if there is one.  When "Quit" selected
          // at the ATTENTION prompt close the window.
-         swap_exists_did_quit = FALSE;
+         swap_exists_did_quit = false;
          (void)startEditingFile(0, 
             arg_idx < GARGCOUNT ? alist_name(&GARGLIST[arg_idx]) : NULL,
             NULL, NULL, ECMD_LASTL, ECMD_HIDE, curPor
@@ -1737,14 +1736,14 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
             // abort or quit selected
             if (gotInterruptG || onlyOnePortal()) {
                //abort selected and only one portal
-               anyEmsgG = FALSE;  //avoid hit-enter prompt
+               anyEmsgG = false;  //avoid hit-enter prompt
                exitEegl(1);
             }
-            closePortal(curPor, TRUE);
-            advance = FALSE;
+            closePortal(curPor, true);
+            advance = false;
          }
          if (arg_idx == GARGCOUNT - 1)
-            arg_had_last = TRUE;
+            arg_had_last = true;
          ++arg_idx;
       }
       ui_breakcheck();
@@ -1773,7 +1772,7 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
    --autocmd_no_leave;
    TIME_MSG("editing files in windows");
    if (paramsP->portalCount > 1 && paramsP->portalLayout != WIN_TABS)
-      portEqualizeHeight(curPor, FALSE, EAD_BOTH);   // adjust heights
+      portEqualizeHeight(curPor, false, EAD_BOTH);   // adjust heights
 }
 
 // Execute the commands from --comm arguments "comms[cnt]".
@@ -1807,7 +1806,7 @@ exeCommands(MainParams* paramsP) {
 
    // We start commands on line 0, make "eegl +/pat file" match a
    // pattern on line 1.  But don't move the cursor when an autocommand with g`" was used.
-   msg_scroll = TRUE;
+   msg_scroll = true;
    if (paramsP->tagname == NULL && curPor->cursor.lnum <= 1)
       curPor->cursor.lnum = 0;
    estack_push(ETYPE_ARGS, S"command line", 0);
@@ -1825,11 +1824,11 @@ exeCommands(MainParams* paramsP) {
    if (curPor->cursor.lnum == 0)
       curPor->cursor.lnum = 1;
 
-   msg_scroll = FALSE;
+   msg_scroll = false;
 
    // When started with "-q errorfile" jump to first error again.
    if (paramsP->edit_type == EDIT_QF)
-      llJump(NULL, 0, 0, FALSE);
+      llJump(NULL, 0, 0, false);
    TIME_MSG("executing command arguments");
 }
 

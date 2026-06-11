@@ -130,4 +130,3 @@ void f_indent(Var *argVars, Var *returnVar);
 int is_pos_in_string(CS line, ColNr col);
 Pos *find_start_comment(int ind_maxcomment);
 void do_expr_indent(void);
-/* eegl: set ft=c : */

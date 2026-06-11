@@ -87,4 +87,3 @@ ColNr drawGetOffset(int row);
 Boole drawHasLines(void);
 Byte drawGetLine(int offset);
 CS drawGetLinesWithOffset(Unt row);
-/* eegl: set ft=c : */

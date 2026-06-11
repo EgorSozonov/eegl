@@ -200,7 +200,7 @@ append_ga_line(ArrayList *gap) {
           && ((CS)gap->c)[gap->len - 1] == ENTER)
       --gap->len;
    ga_append(gap, ZERO);
-   ml_append(curPor->cursor.lnum++, gap->c, 0, FALSE);
+   ml_append(curPor->cursor.lnum++, gap->c, 0, false);
    gap->len = 0;
 }
 
@@ -367,14 +367,14 @@ list_free_contents(List *l) {
 // a watcher (used in a for loop), these are not referenced anywhere.
 int
 list_free_nonref(int copyID) {
-   int did_free = FALSE;
+   int did_free = false;
 
    for (List* ll = first_list; ll != NULL; ll = ll->usedNext) {
       if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
           // Free the List and ordinary items it contains, but don't recurse
           // into Lists and Dictionaries, they will be in the list of dicts or list of lists.
           list_free_contents(ll);
-          did_free = TRUE;
+          did_free = true;
       }
    } 
    return did_free;
@@ -455,19 +455,19 @@ list_len(List* l) {
    return l->len;
 }
 
-// Return TRUE when two lists have exactly the same values.
+// Return true when two lists have exactly the same values.
 int
 list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
 
    if (l1 == l2)
-      return TRUE;
+      return true;
    if (list_len(l1) != list_len(l2))
-      return FALSE;
+      return false;
    if (list_len(l1) == 0)
       // empty and NULL list are considered equal
-      return TRUE;
+      return true;
    if (l1 == NULL || l2 == NULL)
-      return FALSE;
+      return false;
 
    CHECK_LIST_MATERIALIZE(l1);
    CHECK_LIST_MATERIALIZE(l2);
@@ -479,7 +479,7 @@ list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
         item1 = item1->next, item2 = item2->next
    ) {
       if (!tv_equal(&item1->c, &item2->c, ic))
-         return FALSE;
+         return false;
    } 
    return item1 == NULL && item2 == NULL;
 }
@@ -555,7 +555,7 @@ list_find(List* l, long n) {
 
 // Get list item "l[idx]" as a number.
 long
-list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to TRUE when something wrong
+list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to true when something wrong
    if (l && l->first == &range_list_item) {
       long       n = idx;
 
@@ -789,7 +789,7 @@ check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
 // Assign values from list "src" into a range of "dest".
 // "idx1_arg" is the index of the first item in "dest" to be replaced.
 // "idx2" is the index of last item to be replaced, but when "empty_idx2" is
-// TRUE then replace all items after "idx1".
+// true then replace all items after "idx1".
 // "op" is the operator, normally "=" but can be "+=" and the like.
 // "varname" is used for error messages. Return OK or FAIL.
 int
@@ -810,7 +810,7 @@ list_assign_range(
    idx = idx1;
    ListItem* destItem = first_li;
    for (ListItem* srcItem = src->first; srcItem != NULL && destItem != NULL; ) {
-      if (value_check_lock(destItem->c.lock, varname, FALSE))
+      if (value_check_lock(destItem->c.lock, varname, false))
          return FAIL;
       srcItem = srcItem->next;
       if (srcItem == NULL || (!empty_idx2 && idx2 == idx))
@@ -929,7 +929,7 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
       return;
 
    if (make_copy) {
-      l = list_copy(l, FALSE, TRUE, get_copyID());
+      l = list_copy(l, false, true, get_copyID());
       returnVar->list = l;
       if (l == NULL)
          return;
@@ -937,7 +937,7 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
       free_type(l->ty);
       l->ty = NULL;
    } else {
-      if (value_check_lock(l->lock, text(N_("flatten() argument")), TRUE))
+      if (value_check_lock(l->lock, text(N_("flatten() argument")), true))
          return;
       ++l->refcount;
    }
@@ -948,13 +948,13 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
 // "flatten(list[, {maxdepth}])" function
 void
 f_flatten(Arr(Var) argvars, Var* returnVar) {
-   flatten_common(argvars, returnVar, FALSE);
+   flatten_common(argvars, returnVar, false);
 }
 
 // "flattennew(list[, {maxdepth}])" function
 void
 f_flattennew(Arr(Var) argvars, Var* returnVar) {
-   flatten_common(argvars, returnVar, TRUE);
+   flatten_common(argvars, returnVar, true);
 }
 
 // "items(list)" function Caller must have already checked that argvars[0] is a List.
@@ -1041,7 +1041,7 @@ list_extend(List *l1, List *l2, ListItem *bef) {
 int
 list_concat(List *l1, List *l2, Var *tv) {
    // make a copy of the first list.
-   List* l = l1 ? list_copy(l1, FALSE, TRUE, 0) : list_alloc();
+   List* l = l1 ? list_copy(l1, false, true, 0) : list_alloc();
    tv->tag = VAR_LIST;
    tv->lock = 0;
    tv->list = l;
@@ -1117,7 +1117,7 @@ list_slice_or_index(
    return OK;
 }
 
-// Make a copy of list "orig".  Shallow if "deep" is FALSE.
+// Make a copy of list "orig".  Shallow if "deep" is false.
 // The refcount of the new list is set to 1.
 // See item_copy() for "top" and "copyID". Return NULL when out of memory.
 List *
@@ -1144,7 +1144,7 @@ list_copy(List *orig, int deep, int top, int copyID) {
    for (item = orig->first; item != NULL && !gotInterruptG; item = item->next) {
       ni = listitem_alloc();
       if (deep) {
-         if (item_copy(&item->c, &ni->c, deep, FALSE, copyID) == FAIL) {
+         if (item_copy(&item->c, &ni->c, deep, false, copyID) == FAIL) {
             eeglFree(ni);
             break;
          }
@@ -1198,7 +1198,7 @@ list2string(Var* tv, int copyID, int restore_copyID) {
    ga_init2(&ga, sizeof(char), 80);
    ga_append(&ga, '[');
    CHECK_LIST_MATERIALIZE(tv->list);
-   if (list_join(&ga, tv->list, (CS)", ", FALSE, restore_copyID, copyID) == FAIL) {
+   if (list_join(&ga, tv->list, (CS)", ", false, restore_copyID, copyID) == FAIL) {
       eeglFree(ga.c);
       return NULL;
    }
@@ -1226,7 +1226,7 @@ list_join_inner(
     Join* p;
     int len;
     int sumlen = 0;
-    int first = TRUE;
+    int first = true;
     Byte* tofree;
     Byte numbuf[NUMBUFLEN];
     ListItem   *item;
@@ -1267,7 +1267,7 @@ list_join_inner(
 
    for (i = 0; i < join_gap->len && !gotInterruptG; ++i) {
       if (first)
-         first = FALSE;
+         first = false;
       else
          ga_concat(gap, sep);
       p = ((Join *)join_gap->c) + i;
@@ -1281,7 +1281,7 @@ list_join_inner(
 }
 
 // Join list "l" into a string in "*gap", using separator "sep".
-// When "echo_style" is TRUE use String as echoed, otherwise as inside a List.
+// When "echo_style" is true use String as echoed, otherwise as inside a List.
 // Return FAIL or OK.
 int
 list_join(
@@ -1330,7 +1330,7 @@ f_join(Arr(Var) argvars, Var* returnVar) {
 
    if (sep != NULL) {
       ga_init2(&ga, sizeof(char), 80);
-      list_join(&ga, argvars[0].list, sep, TRUE, FALSE, 0);
+      list_join(&ga, argvars[0].list, sep, true, false, 0);
       ga_append(&ga, ZERO);
       returnVar->string = (CS)ga.c;
    } else
@@ -1341,7 +1341,7 @@ f_join(Arr(Var) argvars, Var* returnVar) {
 // "*arg" points to the "[". Return OK or FAIL.
 int
 eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
-   int evaluate = evalarg == NULL ? FALSE : evalarg->eval_flags & EVAL_EVALUATE;
+   int evaluate = evalarg == NULL ? false : evalarg->eval_flags & EVAL_EVALUATE;
    List* l = NULL;
    Var tv;
    ListItem   *item;
@@ -1690,7 +1690,7 @@ item_compare2(const void *s1, const void *s2) {
    Var returnVar;
    returnVar.tag = VAR_UNKNOWN;      // clearVar() uses this
    CLEAR_FIELD(funcexe);
-   funcexe.fe_evaluate = TRUE;
+   funcexe.fe_evaluate = true;
    funcexe.fe_partial = partial;
    funcexe.fe_selfdict = sortinfo->item_compare_selfdict;
    int res = call_func(funcName, -1, &returnVar, 2, argv, &funcexe);
@@ -1808,11 +1808,11 @@ do_uniq(List *l, SortInfo *info) {
 // return the values in "info".
 private int
 parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
-   info->item_compare_ic = FALSE;
-   info->item_compare_lc = FALSE;
-   info->item_compare_numeric = FALSE;
-   info->item_compare_numbers = FALSE;
-   info->item_compare_float = FALSE;
+   info->item_compare_ic = false;
+   info->item_compare_lc = false;
+   info->item_compare_numeric = false;
+   info->item_compare_numbers = false;
+   info->item_compare_float = false;
    info->item_compare_func = NULL;
    info->item_compare_partial = NULL;
    info->item_compare_selfdict = NULL;
@@ -1834,7 +1834,7 @@ parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
          if (error)
             return FAIL;
          if (nr == 1)
-            info->item_compare_ic = TRUE;
+            info->item_compare_ic = true;
       }
       if (nr != 1) {
          if (argvars[1].tag != VAR_NUMBER)
@@ -1850,19 +1850,19 @@ parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info) {
             info->item_compare_func = NULL;
           } ei (STRCMP(info->item_compare_func, "n") == 0) {
             info->item_compare_func = NULL;
-            info->item_compare_numeric = TRUE;
+            info->item_compare_numeric = true;
           } ei (STRCMP(info->item_compare_func, "N") == 0) {
             info->item_compare_func = NULL;
-            info->item_compare_numbers = TRUE;
+            info->item_compare_numbers = true;
           } ei (STRCMP(info->item_compare_func, "f") == 0) {
             info->item_compare_func = NULL;
-            info->item_compare_float = TRUE;
+            info->item_compare_float = true;
           } ei (STRCMP(info->item_compare_func, "i") == 0) {
             info->item_compare_func = NULL;
-            info->item_compare_ic = TRUE;
+            info->item_compare_ic = true;
           } ei (STRCMP(info->item_compare_func, "l") == 0) {
             info->item_compare_func = NULL;
-            info->item_compare_lc = TRUE;
+            info->item_compare_lc = true;
           }
       }
    }
@@ -1921,13 +1921,13 @@ theend:
 // "sort({list})" function
 void
 f_sort(Arr(Var) argvars, Var* returnVar) {
-   do_sort_uniq(argvars, returnVar, TRUE);
+   do_sort_uniq(argvars, returnVar, true);
 }
 
 // "uniq({list})" function
 void
 f_uniq(Arr(Var) argvars, Var* returnVar) {
-   do_sort_uniq(argvars, returnVar, FALSE);
+   do_sort_uniq(argvars, returnVar, false);
 }
 
 // Handle one item for map(), filter(), foreach(). Set v:val to "tv". Caller must set v:key.
@@ -1955,7 +1955,7 @@ filter_map_one(
 
    argv[0] = *get_EeglVar_tv(VV_KEY);
    argv[1] = *get_EeglVar_tv(VV_VAL);
-   if (eval_expr_typval(expr, FALSE, argv, 2, newtv) == FAIL)
+   if (eval_expr_typval(expr, false, argv, 2, newtv) == FAIL)
       goto theend;
    if (filtermap == FILTERMAP_FILTER) {
       Boole error = false;
@@ -2136,7 +2136,7 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
    // We reset "anyEmsgG" to be able to detect whether an error
    // occurred during evaluation of the expression.
    save_anyEmsgG = anyEmsgG;
-   anyEmsgG = FALSE;
+   anyEmsgG = false;
 
    if (argvars[0].tag == VAR_BAG)
       bagFilterMap(argvars[0].bag, filtermap, arg_errmsg, expr, returnVar);
@@ -2200,7 +2200,7 @@ f_add(Arr(Var) argvars, Var* returnVar) {
 }
 
 //Count the number of times item "needle" occurs in List "l" starting at index
-//"idx". Case is ignored if "ic" is TRUE.
+//"idx". Case is ignored if "ic" is true.
 private long
 list_count(List *l, Var *needle, long idx, int ic) {
    long   n = 0;
@@ -2230,7 +2230,7 @@ list_count(List *l, Var *needle, long idx, int ic) {
 void
 f_count(Arr(Var) argvars, Var* returnVar) {
    long   n = 0;
-   int      ic = FALSE;
+   int      ic = false;
    Boole error = false;
 
    if (argvars[2].tag != VAR_UNKNOWN)
@@ -2256,7 +2256,7 @@ f_count(Arr(Var) argvars, Var* returnVar) {
 }
 
 // extend() a List. Append List argvars[1] to List argvars[0] before index
-// argvars[3] and return the resulting list in "returnVar".  "is_new" is TRUE for extendnew().
+// argvars[3] and return the resulting list in "returnVar".  "is_new" is true for extendnew().
 private void
 list_extend_func(
    Var   *argvars,
@@ -2278,7 +2278,7 @@ list_extend_func(
       return;
    } 
    if (is_new) {
-      l1 = list_copy(l1, FALSE, TRUE, get_copyID());
+      l1 = list_copy(l1, false, true, get_copyID());
       if (!l1)
          return;
    }
@@ -2302,12 +2302,12 @@ list_extend_func(
    list_extend(l1, l2, item);
 
    if (is_new) {
-      *returnVar = (Var){.tag = VAR_LIST, .list = l1, .lock = FALSE};
+      *returnVar = (Var){.tag = VAR_LIST, .list = l1, .lock = false};
    } else
       copy_tv(OUT returnVar, &argvars[0]);
 }
 
-// "extend()" or "extendnew()" function.  "is_new" is TRUE for extendnew().
+// "extend()" or "extendnew()" function.  "is_new" is true for extendnew().
 private void
 extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
    CS funcName = (CS)( is_new ? "extendnew()" : "extend()");
@@ -2326,14 +2326,14 @@ extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
 void
 f_extend(Arr(Var) argvars, Var* returnVar) {
    CS errmsg = (CS)N_("extend() argument");
-   extend(argvars, returnVar, errmsg, FALSE);
+   extend(argvars, returnVar, errmsg, false);
 }
 
 // "extendnew(list, list [, idx])" function. "extendnew(dict, dict [, action])" function
 void
 f_extendnew(Arr(Var) argvars, Var* returnVar) {
    CS errmsg = (CS)N_("extendnew() argument");
-   extend(argvars, returnVar, errmsg, TRUE);
+   extend(argvars, returnVar, errmsg, true);
 }
 
 private void
@@ -2497,7 +2497,7 @@ list_reduce(
       } else
          argv[1] = li->c;
 
-      r = eval_expr_typval(expr, TRUE, argv, 2, returnVar);
+      r = eval_expr_typval(expr, true, argv, 2, returnVar);
 
       if (argv[0].tag != VAR_NUMBER && argv[0].tag != VAR_UNKNOWN)
           clearVar(&argv[0]);
@@ -2546,13 +2546,13 @@ f_reduce(Arr(Var) argvars, Var* returnVar) {
 
 void
 f_slice(Arr(Var) argvars, Var* returnVar) {
-   if (check_can_index(&argvars[0], TRUE, FALSE) != OK)
+   if (check_can_index(&argvars[0], true, false) != OK)
       return;
 
    copy_tv(OUT returnVar, argvars);
    eval_index_inner(
-      returnVar, TRUE, argvars + 1,
-      argvars[2].tag == VAR_UNKNOWN ? NULL : argvars + 2, TRUE, NULL, 0, FALSE
+      returnVar, true, argvars + 1,
+      argvars[2].tag == VAR_UNKNOWN ? NULL : argvars + 2, true, NULL, 0, false
    );
 }
 
@@ -2856,14 +2856,14 @@ hash_init(EeSet* ht) {
    ht->mask = HT_INIT_SIZE - 1;
 }
 
-// If "ht->flags" has HTFLAGS_FROZEN then give an error message using "command" and return TRUE.
+// If "ht->flags" has HTFLAGS_FROZEN then give an error message using "command" and return true.
 int
 check_hashtab_frozen(EeSet* ht, CS command) {
    if ((ht->flags & HTFLAGS_FROZEN) == 0)
-      return FALSE;
+      return false;
 
    showErrFmtMsg(_(e_not_allowed_to_add_or_remove_entries_str), command);
-      return TRUE;
+      return true;
 }
 
 // Free the array of a hash table.  Does not free the items it contains!
@@ -2892,7 +2892,7 @@ hash_clear_all(EeSet* ht, int off) {
 }
 
 // Find "key" in hashtable "ht". "key" must not be NULL. Always return a pointer to a EeSetItem.
-// If the item was not found, then HASHITEM_EMPTY() is TRUE.  The pointer is then the place where
+// If the item was not found, then HASHITEM_EMPTY() is true.  The pointer is then the place where
 // the key would be added. WARNING: The returned pointer becomes invalid when the hashtable is 
 // changed (adding, setting or removing an item)!
 EeSetItem *
@@ -3695,7 +3695,7 @@ addExpandMatch(CS m, OUT ExpandMatch* t) {
 //{{{Scripting variables (the tagged data accessible from scripts)
 //{{{Variables
 
-//Return TRUE if "type" is NULL, any or unknown.
+//Return true if "type" is NULL, any or unknown.
 //This also works for const (comparing with &t_any and &t_unknown doesn't).
 int
 type_any_or_unknown(TypeSpec *type) {
@@ -3900,7 +3900,7 @@ convertToBoolOrNumber(
 
 //Get the numeric value of a variable. If it is a String variable, use readLongNumber(). For 
 //incompatible types, return 0. varGetNumberChk() is similar to tv_get_number(), but informs the
-//caller of incompatible types: set *denote to TRUE if "denote" is not NULL or return -1 otherwise.
+//caller of incompatible types: set *denote to true if "denote" is not NULL or return -1 otherwise.
 Long
 tv_get_number(Var* varp) {
    return varGetNumberChk(varp, null);   // return 0L on error
@@ -4436,7 +4436,7 @@ tv_get_string(Var* varp) {
 CS
 tv_get_string_strict(Var* varp) {
    static Byte mybuf[NUMBUFLEN];
-   CS res =  convertVarToString_strict(varp, mybuf, FALSE);
+   CS res =  convertVarToString_strict(varp, mybuf, false);
 
    return res != NULL ? res : (CS)"";
 }
@@ -4456,7 +4456,7 @@ convertVarToStringSingleUse(Var* varp) {
 
 CS
 convertVarToString(Var* varp, CS buf) {
-   return convertVarToString_strict(varp, buf, FALSE);
+   return convertVarToString_strict(varp, buf, false);
 }
 
 CS
@@ -4536,8 +4536,8 @@ tv_stringify(Var* varp, CS buf) {
    return tv_get_string_buf(varp, buf);
 }
 
-//Return TRUE if typeval "tv" and its value are set to be locked (immutable).
-//Also give an error message, using "name" or _("name") when use_gettext is TRUE.
+//Return true if typeval "tv" and its value are set to be locked (immutable).
+//Also give an error message, using "name" or _("name") when use_gettext is true.
 int
 tv_check_lock(Var* tv, Text name, Boole use_gettext) {
    int   lock = 0;
@@ -4653,7 +4653,7 @@ typval_compare(
    int      type_is = type == EXPR_IS || type == EXPR_ISNOT;
 
    if (type_is && tv1->tag != tv2->tag) {
-      //For "is" a different type always means FALSE, for "isnot" it means TRUE.
+      //For "is" a different type always means false, for "isnot" it means true.
       n1 = (type == EXPR_ISNOT);
    } ei (((tv1->tag == VAR_SPECIAL && tv1->number == VVAL_NULL)
       || (tv2->tag == VAR_SPECIAL && tv2->number == VVAL_NULL))
@@ -4710,7 +4710,7 @@ typval_compare(
        clearVar(tv1);
        return FAIL;
    }
-   n1 = FALSE;
+   n1 = false;
    switch (type) {
    case EXPR_IS:
    case EXPR_EQUAL:    n1 = (f1 == f2); break;
@@ -4810,7 +4810,7 @@ typval_compare_list(
 }
 
 
-//Compare v:null with another type.  Return TRUE if the value is NULL.
+//Compare v:null with another type.  Return true if the value is NULL.
 int
 typval_compare_null(Var *tv1, Var *tv2) {
    if ((tv1->tag == VAR_SPECIAL && tv1->number == VVAL_NULL)
@@ -4838,7 +4838,7 @@ typval_compare_null(Var *tv1, Var *tv2) {
    }
    // although comparing null with number, float or bool is not very useful
    // we won't give an error
-    return FALSE;
+    return false;
 }
 
 //Compare "tv1" to "tv2" as blobs according to "type".
@@ -4927,7 +4927,7 @@ typval_compare_func(
       ei (tv1->tag == VAR_PARTIAL && tv2->tag == VAR_PARTIAL)
          val = (tv1->partial == tv2->partial);
       else
-         val = FALSE;
+         val = false;
    } else
       val = tv_equal(tv1, tv2, ic);
    if (type == EXPR_NEQUAL || type == EXPR_ISNOT)
@@ -4948,7 +4948,7 @@ typval_compare_string(
    int* res
 ) {
    int i = 0;
-   int val = FALSE;
+   int val = false;
    Byte buf1[NUMBUFLEN], buf2[NUMBUFLEN];
 
    CS s1 = tv_get_string_buf(tv1, buf1);
@@ -4983,7 +4983,7 @@ typval_compare_string(
    return OK;
 }
 //Convert any type to a string, never give an error.
-//When "quotes" is TRUE add quotes to a string. Return an allocated string.
+//When "quotes" is true add quotes to a string. Return an allocated string.
 CS
 typval_tostring(Var *arg, int quotes) {
    CS tofree;
@@ -5003,7 +5003,7 @@ typval_tostring(Var *arg, int quotes) {
    return ret;
 }
 
-//Return TRUE if internal var is locked: Either that value is locked itself
+//Return true if internal var is locked: Either that value is locked itself
 //or it refers to a List or Bag that is locked.
 int
 tv_islocked(Var *tv) {
@@ -5028,33 +5028,33 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
       s2 = NULL;
    if (!s1 || !s2) {
       if (s1 != s2)
-          return FALSE;
+          return false;
    } ei (STRCMP(s1, s2) != 0)
-      return FALSE;
+      return false;
 
    // empty dict and NULL dict is different
    Bag* d1 = tv1->tag == VAR_FUNC ? NULL : tv1->partial->self;
    Bag* d2 = tv2->tag == VAR_FUNC ? NULL : tv2->partial->self;
    if (!d1 || !d2) {
       if (d1 != d2)
-         return FALSE;
+         return false;
    } ei (!bagEqual(d1, d2, ic))
-      return FALSE;
+      return false;
 
    // empty list and no list considered the same
    int a1 = tv1->tag == VAR_FUNC ? 0 : tv1->partial->argc;
    int a2 = tv2->tag == VAR_FUNC ? 0 : tv2->partial->argc;
    if (a1 != a2)
-      return FALSE;
+      return false;
    for (i = 0; i < a1; ++i) {
       if (!tv_equal(tv1->partial->argv + i, tv2->partial->argv + i, ic))
-         return FALSE;
+         return false;
    } 
 
-   return TRUE;
+   return true;
 }
 
-//Return TRUE if "tv1" and "tv2" have the same value.
+//Return true if "tv1" and "tv2" have the same value.
 //Compares the items just like "==" would compare them, but strings and
 //numbers are different.  Floats and numbers are also different.
 int
@@ -5074,7 +5074,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
    tv_equal_recurse_limit = 1000;
    if (recursive_cnt >= tv_equal_recurse_limit) {
       --tv_equal_recurse_limit;
-      return TRUE;
+      return true;
    }
 
    // For VAR_FUNC and VAR_PARTIAL compare the function name, bound dict and arguments.
@@ -5092,7 +5092,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
    if (tv1->tag != tv2->tag
           && ((tv1->tag != VAR_BOOL && tv1->tag != VAR_SPECIAL)
             || (tv2->tag != VAR_BOOL && tv2->tag != VAR_SPECIAL)))
-      return FALSE;
+      return false;
 
    switch (tv1->tag) {
    case VAR_LIST:
@@ -5140,7 +5140,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
 
    // VAR_UNKNOWN can be the result of a invalid expression, let's say it
    // does not equal anything, not even itself.
-   return FALSE;
+   return false;
 }
 
 //Get an option value.
@@ -5196,7 +5196,7 @@ eval_option(
 //Allocate a variable for a number constant. Also deals with "0z" for blob. Return OK or FAIL.
 int
 eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
-   int get_float = FALSE;
+   int get_float = false;
 
    // We accept a float when the format matches
    // "[0-9]\+\.[0-9]\+\([eE][+-]\?[0-9]\+\)\?".  This is very
@@ -5217,19 +5217,19 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
       }
    }
    if (!want_string && p[0] == '.' && eeIsDigit(p[1])) {
-      get_float = TRUE;
+      get_float = true;
       p = skipdigits(p + 2);
       if (*p == 'e' || *p == 'E') {
          ++p;
          if (*p == '-' || *p == '+')
             ++p;
          if (!eeIsDigit(*p))
-            get_float = FALSE;
+            get_float = false;
          else
             p = skipdigits(p + 1);
       }
       if (ASCII_ISALPHA(*p) || *p == '.')
-         get_float = FALSE;
+         get_float = false;
    }
    if (get_float) {
       double   f;
@@ -5295,7 +5295,7 @@ tv2string(
    CS numbuf,
    int copyID)
 {
-   return echo_string_core(tv, tofree, numbuf, copyID, FALSE, TRUE, FALSE);
+   return echo_string_core(tv, tofree, numbuf, copyID, false, true, false);
 }
 
 //Get the value of an environment variable.
@@ -5306,7 +5306,7 @@ int
 eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
    CS string = NULL;
    int cc;
-   int mustfree = FALSE;
+   int mustfree = false;
 
    ++*arg;
    CS name = *arg;
@@ -5351,7 +5351,7 @@ tv_get_lnum(Arr(Var) argvars) {
    if (lnum <= 0 && anyEmsgG_before == anyEmsgG && argvars[0].tag != VAR_NUMBER) {
       int fnum;
       // no valid number, try using arg like line()
-      Pos* fp = var2fpos(&argvars[0], TRUE, &fnum, FALSE);
+      Pos* fp = var2fpos(&argvars[0], true, &fnum, false);
       if (fp)
           lnum = fp->lnum;
    }
@@ -5398,7 +5398,7 @@ daGetBook(Var* tv, Boole curtab_only) {
 Book *
 daGetBookFromArg(Var* tv) {
    ++emsg_off;
-   Book* book = daGetBook(tv, FALSE);
+   Book* book = daGetBook(tv, false);
    --emsg_off;
    if (!book
        && tv->tag != VAR_NUMBER
@@ -5417,9 +5417,9 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
    int i;
 
    if (type1 == NULL || type2 == NULL)
-      return FALSE;
+      return false;
    if (type1->tag != type2->tag)
-      return FALSE;
+      return false;
    switch (type1->tag) {
    case VAR_UNKNOWN:
    case VAR_ANY:
@@ -5439,17 +5439,17 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
    case VAR_FUNC:
    case VAR_PARTIAL:
       if (!equal_type(type1->member, type2->member, flags) || type1->argCount != type2->argCount)
-         return FALSE;
+         return false;
       if (type1->argCount < 0 || type1->args == NULL || type2->args == NULL)
-         return TRUE;
+         return true;
       for (i = 0; i < type1->argCount; ++i) {
          if ((flags & ETYPE_ARG_UNKNOWN) == 0
             && !equal_type(type1->args[i], type2->args[i], flags))
-             return FALSE;
+             return false;
       } 
-      return TRUE;
+      return true;
     }
-    return TRUE;
+    return true;
 }
 
 ExprType
@@ -5492,7 +5492,7 @@ get_compare_type(CS p, int* len, int* type_is) {
          i = p[*len];
          if (!SAFE_isalnum(i) && i != '_') {
             type = *len == 2 ? EXPR_IS : EXPR_ISNOT;
-            *type_is = TRUE;
+            *type_is = true;
          }
       }
       break;
@@ -5500,9 +5500,9 @@ get_compare_type(CS p, int* len, int* type_is) {
    return type;
 }
 
-//Return TRUE when "tv" is not falsy: non-zero, non-empty string, non-empty
+//Return true when "tv" is not falsy: non-zero, non-empty string, non-empty
 //list, etc.  Mostly like what JavaScript does, except that empty list and
-//empty dictionary are FALSE.
+//empty dictionary are false.
 int
 tv2bool(Var* tv) {
    switch (tv->tag) {
@@ -5521,7 +5521,7 @@ tv2bool(Var* tv) {
       return tv->bag && tv->bag->hashTable.count > 0;
    case VAR_BOOL:
    case VAR_SPECIAL:
-      return tv->number == VVAL_TRUE ? TRUE : FALSE;
+      return tv->number == VVAL_TRUE ? true : false;
    case VAR_JOB:
       return tv->job != NULL;
    case VAR_CHANNEL:
@@ -5533,7 +5533,7 @@ tv2bool(Var* tv) {
    case VAR_VOID:
       break;
    }
-   return FALSE;
+   return false;
 }
 
 //}}}
@@ -5847,7 +5847,7 @@ bagFind(Bag* b, Text const key) {
    return HI2DI(hi);
 }
 
-// Return TRUE if "key" is present in Dictionary "d".
+// Return true if "key" is present in Dictionary "d".
 int
 bagHasKey(Bag* b, Text key) {
    return bagFind(b, key) != NULL;
@@ -5864,7 +5864,7 @@ bagGetVar(Bag *d, Text key, Var* returnVar) {
    return OK;
 }
 
-//Get a string item from a dictionary. When "save" is TRUE allocate memory for it. When FALSE 
+//Get a string item from a dictionary. When "save" is true allocate memory for it. When false 
 //a shared buffer is used, can only be used once! Return NULL if the entry doesn't exist or out 
 //of memory.
 CS
@@ -5937,17 +5937,17 @@ bagToString(Var* tv, int copyID, int restore_copyID) {
          --todo;
 
          if (first)
-            first = FALSE;
+            first = false;
          else
             ga_concat(&ga, S", ");
 
-         CS tofree = string_quote(hi->hi_key, FALSE);
+         CS tofree = string_quote(hi->hi_key, false);
          if (tofree) {
             ga_concat(&ga, tofree);
             eeglFree(tofree);
          }
          ga_concat(&ga, S": ");
-         s = echo_string_core(&HI2DI(hi)->c, &tofree, numbuf, copyID, FALSE, restore_copyID, TRUE);
+         s = echo_string_core(&HI2DI(hi)->c, &tofree, numbuf, copyID, false, restore_copyID, true);
          if (s)
             ga_concat(&ga, s);
          eeglFree(tofree);
@@ -5993,11 +5993,11 @@ get_literal_key_tv(Arr(CS) arg, Var *tv) {
 }
 
 //Allocate a variable for a Dictionary and fill it from "*arg". "*arg" points to the opening brace.
-//"literal" is TRUE for #{key: val}
+//"literal" is true for #{key: val}
 //Return OK or FAIL, or NOTDONE for {expr}.
 int
 bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
-   int evaluate = evalarg == NULL ? FALSE : (evalarg->eval_flags & EVAL_EVALUATE);
+   int evaluate = evalarg == NULL ? false : (evalarg->eval_flags & EVAL_EVALUATE);
    Bag   *d = NULL;
    Var   tvkey;
    Var   tv;
@@ -6044,7 +6044,7 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
       }
       if (evaluate) {
          if (tvkey.tag == VAR_FLOAT) {
-            tvkey.string = typval_tostring(&tvkey, TRUE);
+            tvkey.string = typval_tostring(&tvkey, true);
             tvkey.tag = VAR_STRING;
          }
          keyStr = convertVarToString(&tvkey, buf);
@@ -6122,7 +6122,7 @@ bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg) {
 
    if ((*arg)[1] == '{') {
       ++*arg;
-      ret = bagEval(OUT arg, returnVar, evalarg, TRUE);
+      ret = bagEval(OUT arg, returnVar, evalarg, true);
    } else
       ret = NOTDONE;
 
@@ -6210,7 +6210,7 @@ bagLookup(EeSetItem* hi) {
    return HI2DI(hi);
 }
 
-// Return TRUE when two bags have exactly the same key/values.
+// Return true when two bags have exactly the same key/values.
 int
 bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
    EeSetItem   *hi;
@@ -6218,30 +6218,30 @@ bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
    int todo;
 
    if (d1 == d2)
-      return TRUE;
+      return true;
    if (bagSize(d1) != bagSize(d2))
-      return FALSE;
+      return false;
    if (bagSize(d1) == 0)
       // empty and NULL dicts are considered equal
-      return TRUE;
+      return true;
    if (d1 == NULL || d2 == NULL)
-      return FALSE;
+      return false;
 
    todo = (int)d1->hashTable.count;
    FOR_ALL_HASHTAB_ITEMS(&d1->hashTable, hi, todo) {
       if (!HASHITEM_EMPTY(hi)) {
           item2 = bagFind(d2, textOfItem(hi));
           if (item2 == NULL)
-         return FALSE;
+         return false;
           if (!tv_equal(&HI2DI(hi)->c, &item2->c, ic))
-         return FALSE;
+         return false;
           --todo;
       }
    }
-   return TRUE;
+   return true;
 }
 
-// Count the number of times item "needle" occurs in Bag "d". Case is ignored if "ic" is TRUE.
+// Count the number of times item "needle" occurs in Bag "d". Case is ignored if "ic" is true.
 long
 bagCount(Bag* d, Var* needle, int ic) {
    if (!d)
@@ -6262,7 +6262,7 @@ bagCount(Bag* d, Var* needle, int ic) {
 }
 
 // extend() a Bag. Append Bag argvars[1] to Bag argvars[0] and return the
-// resulting Bag in "returnVar".  "is_new" is TRUE for extendnew().
+// resulting Bag in "returnVar".  "is_new" is true for extendnew().
 void
 bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
    int   i;
@@ -6280,7 +6280,7 @@ bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
       return;
 
    if (is_new) {
-      d1 = dict_copy(d1, FALSE, TRUE, get_copyID());
+      d1 = dict_copy(d1, false, true, get_copyID());
       if (d1 == NULL)
           return;
    }
@@ -6314,7 +6314,7 @@ bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
    if (is_new) {
       returnVar->tag = VAR_BAG;
       returnVar->bag = d1;
-      returnVar->lock = FALSE;
+      returnVar->lock = false;
    } else
       copy_tv(OUT returnVar, &argvars[0]);
 }
@@ -6404,7 +6404,7 @@ bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    }
 
    Bag* b = argvars[0].bag;
-   if (!b || value_check_lock(b->lock, mbText(arg_errmsg), TRUE))
+   if (!b || value_check_lock(b->lock, mbText(arg_errmsg), true))
       return;
 
    CS key = convertVarToStringSingleUse(&argvars[1]);
@@ -6533,7 +6533,7 @@ f_has_key(Arr(Var) argvars, Var* returnVar) {
 }
 
 //Return the slice "str[first : last]" using character indexes.  Composing
-//characters are included. "exclusive" is TRUE for slice().
+//characters are included. "exclusive" is true for slice().
 //Return NULL when the result is empty.
 CS
 string_slice(CS str, Long first, Long last, int exclusive) {
@@ -6566,7 +6566,7 @@ bagUnref(Bag *d) {
 }
 
 
-// Go through the list of dicts and free items without the copyID. TRUE if anything was freed.
+// Go through the list of dicts and free items without the copyID. true if anything was freed.
 int
 dict_free_nonref(int copyID) {
    Boole did_free = false;
@@ -6685,7 +6685,7 @@ dictitem_free(DictItem *item) {
       eeglFree(item);
 }
 
-// Make a copy of dict "d".  Shallow if "deep" is FALSE. The refcount of the new dict is set to 1.
+// Make a copy of dict "d".  Shallow if "deep" is false. The refcount of the new dict is set to 1.
 // See item_copy() for "top" and "copyID". Return NULL when out of memory.
 Bag *
 dict_copy(Bag* orig, int deep, int top, int copyID) {
@@ -6709,7 +6709,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
 
          di = dictitem_alloc(textOfItem(hi));
          if (deep) {
-            if (item_copy(&HI2DI(hi)->c, &di->c, deep, FALSE, copyID) == FAIL) {
+            if (item_copy(&HI2DI(hi)->c, &di->c, deep, false, copyID) == FAIL) {
                 eeglFree(di);
                 break;
             }
@@ -6732,12 +6732,12 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
 }
 
 // Check for adding a function to g: or or l:.
-// If the name is wrong give an error message and return TRUE.
+// If the name is wrong give an error message and return true.
 int
 dictWrongFuncName(Bag* b, Var* tv, Text name) {
    return (b == get_globvar_dict() || &b->hashTable == get_funccal_local_ht())
        && (tv->tag == VAR_FUNC || tv->tag == VAR_PARTIAL)
-       && var_wrong_func_name(name, TRUE);
+       && var_wrong_func_name(name, true);
 }
 
 //}}}
@@ -6921,8 +6921,8 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
    switch (val->tag) {
    case VAR_BOOL:
       switch ((long)val->number) {
-         case VVAL_FALSE: ga_concat(gap, (CS)"false"); break;
-         case VVAL_TRUE: ga_concat(gap, (CS)"true"); break;
+         case VVAL_FALSE: ga_concat(gap, S"false"); break;
+         case VVAL_TRUE: ga_concat(gap, S"true"); break;
       }
       break;
 
@@ -7000,7 +7000,7 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
          if (d->copyId == copyID)
             ga_concat(gap, (CS)"{}");
          else {
-            int      first = TRUE;
+            int      first = true;
             int      todo = (int)d->hashTable.count;
             EeSetItem   *hi;
 
@@ -7011,7 +7011,7 @@ json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
                if (!HASHITEM_EMPTY(hi)) {
                    --todo;
                    if (first)
-                  first = FALSE;
+                  first = false;
                    else
                   ga_append(gap, ',');
                   write_string(gap, hi->hi_key);
@@ -8103,7 +8103,7 @@ fill_assert_error(
    Byte* tofree;
    Var   *exp_tv = exp_tv_arg;
    Var   *got_tv = got_tv_arg;
-   int      did_copy = FALSE;
+   int      did_copy = false;
    int      omitted = 0;
 
    if (opt_msg_tv->tag != VAR_UNKNOWN
@@ -8134,7 +8134,7 @@ fill_assert_error(
          DictItem   *item2;
          int      todo;
 
-         did_copy = TRUE;
+         did_copy = true;
          exp_tv->bag = allocBag();
          got_tv->bag = allocBag();
 
@@ -8142,7 +8142,7 @@ fill_assert_error(
          FOR_ALL_HASHTAB_ITEMS(&exp_d->hashTable, hi, todo) {
             if (!HASHITEM_EMPTY(hi)) {
                item2 = bagFind(got_d, textOfItem(hi));
-               if (!item2 || !tv_equal(&HI2DI(hi)->c, &item2->c, FALSE)) {
+               if (!item2 || !tv_equal(&HI2DI(hi)->c, &item2->c, false)) {
                   // item of exp_d not present in got_d or values differ.
                   bagAddVar(exp_tv->bag, hi->hi_key, &HI2DI(hi)->c);
                   if (item2)
@@ -8200,7 +8200,7 @@ fill_assert_error(
 
 private int
 assert_equal_common(Arr(Var) argvars, AssertKind assKind) {
-   if (tv_equal(&argvars[0], &argvars[1], FALSE) != (assKind == ASSERT_EQUAL)) {
+   if (tv_equal(&argvars[0], &argvars[1], false) != (assKind == ASSERT_EQUAL)) {
       ArrayList   ga;
       prepare_assert_error(&ga);
       fill_assert_error(&ga, &argvars[2], NULL, &argvars[0], &argvars[1], assKind);
@@ -8218,7 +8218,7 @@ assert_match_common(Arr(Var) argvars, AssertKind assKind) {
    Byte buf2[NUMBUFLEN];
    CS pat = convertVarToString(&argvars[0], buf1);
    CS text = convertVarToString(&argvars[1], buf2);
-   if (pat && text && pattern_match(pat, text, FALSE) != (assKind == ASSERT_MATCH)) {
+   if (pat && text && pattern_match(pat, text, false) != (assKind == ASSERT_MATCH)) {
       prepare_assert_error(&ga);
       fill_assert_error(&ga, &argvars[2], NULL, &argvars[0], &argvars[1], assKind);
       assert_error(&ga);
@@ -8415,8 +8415,8 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
 
    // trylevel must be zero for a ":throw" command to be considered failed
    trylevel = 0;
-   suppress_errthrow = TRUE;
-   in_assert_fails = TRUE;
+   suppress_errthrow = true;
+   in_assert_fails = true;
    ++no_wait_return;
 
    CS cmd = convertVarToStringSingleUse(&argvars[0]);
@@ -8424,7 +8424,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
 
    // reset here for any errors reported below
    trylevel = save_trylevel;
-   suppress_errthrow = FALSE;
+   suppress_errthrow = false;
 
    if (called_emsg == called_emsg_before) {
       prepare_assert_error(&ga);
@@ -8437,7 +8437,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
       Byte buf[NUMBUFLEN];
       CS expected;
       CS expected_str = NULL;
-      int   error_found = FALSE;
+      int   error_found = false;
       int   error_found_index = 1;
       CS actual = emsg_assert_fails_msg  ? emsg_assert_fails_msg : S"[unknown]";
 
@@ -8457,8 +8457,8 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
          expected = convertVarToString(tv, buf);
          if (expected == NULL)
             goto theend;
-         if (!pattern_match(expected, actual, FALSE)) {
-            error_found = TRUE;
+         if (!pattern_match(expected, actual, false)) {
+            error_found = true;
             expected_str = expected;
          } ei (list->len == 2) {
             // make a copy, an error in pattern_match() may free it
@@ -8467,8 +8467,8 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
             expected = convertVarToString(tv, buf);
             if (expected == NULL)
                goto theend;
-            if (!pattern_match(expected, actual, FALSE)) {
-               error_found = TRUE;
+            if (!pattern_match(expected, actual, false)) {
+               error_found = true;
                expected_str = expected;
             }
          }
@@ -8482,7 +8482,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
             wrong_arg_msg = e_assert_fails_fourth_argument;
             goto theend;
          } ei (argvars[3].number >= 0 && argvars[3].number != emsg_assert_fails_lnum) {
-            error_found = TRUE;
+            error_found = true;
             error_found_index = 3;
          }
          if (!error_found && argvars[4].tag != VAR_UNKNOWN) {
@@ -8490,9 +8490,9 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
                wrong_arg_msg = e_assert_fails_fifth_argument;
                goto theend;
             } ei (argvars[4].string 
-                  && !pattern_match(argvars[4].string, emsg_assert_fails_context, FALSE)
+                  && !pattern_match(argvars[4].string, emsg_assert_fails_context, false)
             ) {
-               error_found = TRUE;
+               error_found = true;
                error_found_index = 4;
             }
          }
@@ -8525,14 +8525,14 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
 
 theend:
    trylevel = save_trylevel;
-   suppress_errthrow = FALSE;
-   in_assert_fails = FALSE;
-   anyEmsgG = FALSE;
-   gotInterruptG = FALSE;
+   suppress_errthrow = false;
+   in_assert_fails = false;
+   anyEmsgG = false;
+   gotInterruptG = false;
    msgColG = 0;
    --no_wait_return;
-   need_wait_return = FALSE;
-   emsg_on_display = FALSE;
+   need_wait_return = false;
+   emsg_on_display = false;
    msg_scrolled = 0;
    lines_left = visibleRowsG;
    EE_CLEAR(emsg_assert_fails_msg);
@@ -8545,7 +8545,7 @@ theend:
 //"assert_false(actual[, msg])" function
 void
 f_assert_false(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = assert_bool(argvars, FALSE);
+   returnVar->number = assert_bool(argvars, false);
 }
 
 private int
@@ -8625,7 +8625,7 @@ f_assert_report(Arr(Var) argvars, Var* returnVar) {
 //"assert_true(actual[, msg])" function
 void
 f_assert_true(Arr(Var) argvars, Var* returnVar) {
-   returnVar->number = assert_bool(argvars, TRUE);
+   returnVar->number = assert_bool(argvars, true);
 }
 
 //"test_alloc_fail(id, countdown, repeat)" function
@@ -8644,7 +8644,7 @@ f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED) {
          emsg(_(e_invalid_argument));
       alloc_fail_countdown = argvars[1].number;
       alloc_fail_repeat = argvars[2].number;
-      did_outofmem_msg = FALSE;
+      did_outofmem_msg = false;
    }
 }
 
@@ -8736,13 +8736,13 @@ f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
    ei (STRCMP(name, S"defcompile") == 0)
       override_defcompile = val;
    ei (STRCMP(name, S"ALL") == 0) {
-      disable_char_avail_for_testing = FALSE;
-      disable_redraw_for_testing = FALSE;
-      ignore_redraw_flag_for_testing = FALSE;
-      nfa_fail_for_testing = FALSE;
-      no_query_mouse_for_testing = FALSE;
+      disable_char_avail_for_testing = false;
+      disable_redraw_for_testing = false;
+      ignore_redraw_flag_for_testing = false;
+      nfa_fail_for_testing = false;
+      no_query_mouse_for_testing = false;
       ui_delay_for_testing = 0;
-      reset_term_props_on_termresponse = FALSE;
+      reset_term_props_on_termresponse = false;
       overrideSysinfoUptimeG = -1;
       // ml_get_alloc_lines is not reset by "ALL"
       if (save_starting >= 0) {
@@ -8781,7 +8781,7 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
       if (argvars[0].string != NULL) {
          UserFunc *fp;
 
-         fp = find_func(argvars[0].string, FALSE);
+         fp = find_func(argvars[0].string, false);
          if (fp)
             retval = fp->refcount;
       }
@@ -8814,12 +8814,12 @@ f_test_garbagecollect_now(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
     if (!get_EeglVar_nr(VV_TESTING))
    emsg(_(e_calling_test_garbagecollect_now_while_v_testing_is_not_set));
     else
-   garbage_collect(TRUE);
+   garbage_collect(true);
 }
 
 void
 f_test_garbagecollect_soon(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
-   may_garbage_collect = TRUE;
+   may_garbage_collect = true;
 }
 
 void
@@ -8945,7 +8945,7 @@ check_can_index(Var* var, int evaluate, int verbose) {
 // Apply index or range to "returnVar".
 // "var1" is the first index, NULL for [:expr].
 // "var2" is the second index, NULL for [expr] and [expr: ]
-// "exclusive" is TRUE for slice(): second index is exclusive, use character index for string.
+// "exclusive" is true for slice(): second index is exclusive, use character index for string.
 // Alternatively, "key" is not NULL, then key[keylen] is the dict index.
 int
 eval_index_inner(
@@ -9212,7 +9212,7 @@ blob_set_append(Blob *blob, int idx, int byte) {
    }
 }
 
-// Return TRUE when two blobs have exactly the same values.
+// Return true when two blobs have exactly the same values.
 int
 blob_equal(Blob   *b1, Blob   *b2) {
    int       i;
@@ -9221,14 +9221,14 @@ blob_equal(Blob   *b1, Blob   *b2) {
 
    // empty and NULL are considered the same
    if (len1 == 0 && len2 == 0)
-      return TRUE;
+      return true;
    if (b1 == b2)
-      return TRUE;
+      return true;
    if (len1 != len2)
-      return FALSE;
+      return false;
    for (i = 0; i < b1->c.len; i++)
-      if (blob_get(b1, i) != blob_get(b2, i)) return FALSE;
-   return TRUE;
+      if (blob_get(b1, i) != blob_get(b2, i)) return false;
+   return true;
 }
 
 // Convert a blob to a readable form: "0z00112233.44556677.8899"
@@ -9426,7 +9426,7 @@ blob_add(Arr(Var) argvars, Var* returnVar) {
       return;
    }
 
-   if (value_check_lock(b->lock, text(N_("add() argument")), TRUE))
+   if (value_check_lock(b->lock, text(N_("add() argument")), true))
       return;
 
    Long n = varGetNumberChk(&argvars[1], &error);
@@ -9444,7 +9444,7 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    Boole error = false;
    CS p;
 
-   if (b && value_check_lock(b->lock, mbText(arg_errmsg), TRUE))
+   if (b && value_check_lock(b->lock, mbText(arg_errmsg), true))
       return;
 
    long idx = (long)varGetNumberChk(&argvars[1], &error);
@@ -9522,7 +9522,7 @@ blob_filter_map(
       returnVar->tag = VAR_BLOB;
       returnVar->blob = NULL;
    }
-   if (!b || (filtermap == FILTERMAP_FILTER && value_check_lock(b->lock, mbText(arg_errmsg), TRUE)))
+   if (!b || (filtermap == FILTERMAP_FILTER && value_check_lock(b->lock, mbText(arg_errmsg), true)))
       return;
 
    b_ret = b;
@@ -9581,7 +9581,7 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
       return;
    }
 
-   if (value_check_lock(b->lock, text(N_("insert() argument")), TRUE))
+   if (value_check_lock(b->lock, text(N_("insert() argument")), true))
       return;
 
    len = blob_len(b);
@@ -9647,7 +9647,7 @@ blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
       argv[1].tag = VAR_NUMBER;
       argv[1].number = blob_get(b, i);
 
-      r = eval_expr_typval(expr, TRUE, argv, 2, returnVar);
+      r = eval_expr_typval(expr, true, argv, 2, returnVar);
 
       clearVar(&argv[0]);
       if (r == FAIL || called_emsg != called_emsg_start)
@@ -9701,7 +9701,7 @@ f_list2blob(Arr(Var) argvars, Var* returnVar) {
    FOR_ALL_LIST_ITEMS(l, li) {
       Boole error = false;
       Long n = varGetNumberChk(&li->c, &error);
-      if (error == TRUE || n < 0 || n > 255) {
+      if (error == true || n < 0 || n > 255) {
          if (!error)
             showErrFmtMsg(_(e_invalid_value_for_blob_nr), n);
          ga_clear(&blob->c);

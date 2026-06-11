@@ -19,7 +19,7 @@ private Boole cin_is_cinword(CS line);
 
 //If the file is readonly, give a warning message with the first change. Don't do this for 
 //autocommands. Don't use emsg() because it flushes the macro buffer.
-//If we have undone all changes, "wasModified" will be false, but "didWarnReadonly" will be TRUE.
+//If we have undone all changes, "wasModified" will be false, but "didWarnReadonly" will be true.
 //"col" is the column for the message; non-zero when in insert mode and 'showmode' is on.
 //Careful: may trigger autocommands that reload the book.
 void
@@ -52,10 +52,10 @@ change_warning(int col) {
     && time_for_testing != 1
    ) {
        out_flush();
-       ui_delay(1002L, TRUE); // give the user time to think about it
+       ui_delay(1002L, true); // give the user time to think about it
    }
-   curBook->didWarnReadonly = TRUE;
-   redrawCommlineG = FALSE;   // don't redraw and erase the message
+   curBook->didWarnReadonly = true;
+   redrawCommlineG = false;   // don't redraw and erase the message
    if (msgRowG < visibleRowsG - 1)
       showmode();
 }
@@ -80,7 +80,7 @@ changed(void) {
       if (curBook->maySwap && curBook->currFileName && !bookDontWrite(curBook)) {
          int save_need_wait_return = need_wait_return;
 
-         need_wait_return = FALSE;
+         need_wait_return = false;
          memOpenSwapFile(curBook);
 
          // The memOpenSwapFile() can cause an ATTENTION message.
@@ -89,8 +89,8 @@ changed(void) {
          // and don't let the emsg() set msg_scroll.
          if (need_wait_return && emsg_silent == 0 && !in_assert_fails) {
             out_flush();
-            ui_delay(2002L, TRUE);
-            wait_return(TRUE);
+            ui_delay(2002L, true);
+            wait_return(true);
             msg_scroll = save_msg_scroll;
          } else
             need_wait_return = save_need_wait_return;
@@ -100,7 +100,7 @@ changed(void) {
    ++CHANGEDTICK(curBook);
 
    // If a pattern is highlighted, the position may now be invalid.
-   highlight_match = FALSE;
+   highlight_match = false;
 }
 
 //check_status: called when the status bars for the book 'book'
@@ -122,7 +122,7 @@ changed_internal(void) {
    curBook->wasModified = true;
    ml_setflags(curBook);
    check_status(curBook);
-   needRedrawTabpanelG = TRUE;
+   needRedrawTabpanelG = true;
 }
 
 private long next_listener_id = 0;
@@ -295,7 +295,7 @@ invoke_listeners(Book* book) {
    LineNr   end = 0;
    LineNr   added = 0;
    int      save_updating_screen = updating_screen;
-   static int   recursive = FALSE;
+   static int   recursive = false;
    Listener   *next;
    Listener   *prev;
 
@@ -303,7 +303,7 @@ invoke_listeners(Book* book) {
           || book->listener == NULL   // no listeners
           || recursive)       // already busy
       return;
-   recursive = TRUE;
+   recursive = true;
 
    // Block messages on channels from being handled, so that they don't make
    // text changes here.
@@ -352,10 +352,10 @@ invoke_listeners(Book* book) {
     book->recordedChanges = NULL;
 
    if (save_updating_screen)
-      updating_screen = TRUE;
+      updating_screen = true;
    else
-      after_updating_screen(TRUE);
-   recursive = FALSE;
+      after_updating_screen(true);
+   recursive = false;
 }
 
 //Remove all listeners associated with "book".
@@ -391,7 +391,7 @@ changed_common(
 
    may_record_change(lnum, col, lnume, xtra);
    if (curPor->o.diff && diff_internal()) {
-      curtab->diff_update = TRUE;
+      curtab->diff_update = true;
       diff_update_line(lnum);
    }
 
@@ -404,16 +404,16 @@ changed_common(
       // don't have an entry yet.
       if (curBook->newChange || curBook->changeListLen == 0) {
          if (curBook->changeListLen == 0)
-            add = TRUE;
+            add = true;
          else {
             // Don't create a new entry when the line number is the same
             // as the last one and the column is not too far away.  Avoids
             // creating many entries for typing "xxxxx".
             p = &curBook->changeList[curBook->changeListLen - 1];
             if (p->lnum != lnum)
-               add = TRUE;
+               add = true;
             else {
-               cols = comp_textwidth(FALSE);
+               cols = comp_textwidth(false);
                if (cols == 0)
                   cols = 79;
                add = (p->col + cols < col || col + cols < p->col);
@@ -490,11 +490,11 @@ changed_common(
          //might be displayed differently.
          //Set isCursorLineFolded here as an efficient way to update it when
          //inserting lines just above a closed fold.
-         i = getFoldsPortal(po, lnum, &lnum, NULL, FALSE, NULL);
+         i = getFoldsPortal(po, lnum, &lnum, NULL, false, NULL);
          if (po->cursor.lnum == lnum) {
             po->isCursorLineFolded = i;
          }
-         i = getFoldsPortal(po, last, NULL, &last, FALSE, NULL);
+         i = getFoldsPortal(po, last, NULL, &last, false, NULL);
          if (po->cursor.lnum == last) {
             po->isCursorLineFolded = i;
          }
@@ -532,7 +532,7 @@ changed_common(
                // compare with topLine.  Invalidate it instead.
                if (po->lines[i].bookLnum < lnume || i == 0) {
                    // line included in change
-                   po->lines[i].isValid = FALSE;
+                   po->lines[i].isValid = false;
                } ei (xtra != 0) {
                    // line below change
                    po->lines[i].bookLnum += xtra;
@@ -541,7 +541,7 @@ changed_common(
                 } ei (po->lines[i].lastBookLnum >= lnum) {
                // change somewhere inside this range of folded lines,
                // may need to be redrawn
-               po->lines[i].isValid = FALSE;
+               po->lines[i].isValid = false;
                }
             }
          }
@@ -589,7 +589,7 @@ changedOneline(Book* book, LineNr lnum) {
           book->needsRedrawBott = lnum + 1;
    } else {
       // set the area that must be redisplayed to one line
-      book->needsRedraw = TRUE;
+      book->needsRedraw = true;
       book->needsRedrawTop = lnum;
       book->needsRedrawBott = lnum + 1;
       book->lineCountDiff = 0;
@@ -686,7 +686,7 @@ changed_lines_buf(
       book->lineCountDiff += xtra;
    } else {
       // set the area that must be redisplayed
-      book->needsRedraw = TRUE;
+      book->needsRedraw = true;
       book->needsRedrawTop = lnum;
       book->needsRedrawBott = lnume + xtra;
       book->lineCountDiff = xtra;
@@ -729,14 +729,14 @@ changed_lines(
 }
 
 // Called when the changed flag must be reset for book "book". When "always_inc_changedtick" is 
-// TRUE b:changedtick is incremented also when the changed flag was off.
+// true b:changedtick is incremented also when the changed flag was off.
 void
 unchanged(Book* book, int always_inc_changedtick) {
    if (book->wasModified) {
       book->wasModified = false;
       ml_setflags(book);
       check_status(book);
-      needRedrawTabpanelG = TRUE;
+      needRedrawTabpanelG = true;
       ++CHANGEDTICK(book);
    } ei (always_inc_changedtick)
       ++CHANGEDTICK(book);
@@ -824,7 +824,7 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
    }
 
    // Replace the line in the book.
-   ml_replace(lnum, newp, FALSE);
+   ml_replace(lnum, newp, false);
 
    // mark the book as changed and prepare for displaying
    changed_bytes(lnum, col);
@@ -856,13 +856,13 @@ ins_str(CS s, Unt slen) {
       mch_memmove(newp, oldp, (Unt)col);
    mch_memmove(newp + col, s, slen);
    mch_memmove(newp + col + slen, oldp + col, (Unt)(oldlen - col + 1));
-   ml_replace(lnum, newp, FALSE);
+   ml_replace(lnum, newp, false);
    inserted_bytes(lnum, col, (int)slen);
    curPor->cursor.col += (ColNr)slen;
 }
 
 //Delete one character under the cursor.
-//If "fixpos" is TRUE, don't leave the cursor on the ZERO after the line.
+//If "fixpos" is true, don't leave the cursor on the ZERO after the line.
 //Caller must have prepared for undo.
 //
 //return FAIL for failure, OK otherwise
@@ -885,11 +885,11 @@ del_chars(long count, Boole fixpos) {
       bytes += l;
       p += l;
    }
-   return del_bytes(bytes, fixpos, TRUE);
+   return del_bytes(bytes, fixpos, true);
 }
 
 //Delete "count" bytes under the cursor.
-//If "fixpos" is TRUE, don't leave the cursor on the ZERO after the line.
+//If "fixpos" is true, don't leave the cursor on the ZERO after the line.
 //Caller must have prepared for undo.
 //
 //Return FAIL for failure, OK otherwise.
@@ -947,7 +947,7 @@ del_bytes(
    movelen = (long)oldlen - (long)col - count + 1; // includes trailing ZERO
    if (movelen <= 1) {
       // If we just took off the last character of a non-blank line, and
-      // fixpos is TRUE, we don't want to end up positioned at the ZERO,
+      // fixpos is true, we don't want to end up positioned at the ZERO,
       // unless "restart_edit" is set
       if (col > 0 && fixpos && restart_edit == 0) {
          --curPor->cursor.col;
@@ -971,7 +971,7 @@ del_bytes(
    }
    mch_memmove(newp + col, oldp + col + count, (Unt)movelen);
    if (alloc_newp)
-      ml_replace(lnum, newp, FALSE);
+      ml_replace(lnum, newp, false);
    else {
       // Also move any following text properties.
       if (oldlen + 1 < curBook->mem.lineLen)
@@ -997,7 +997,7 @@ insertLine(
    int newIndent = get_indent_lnum(curPor->cursor.lnum);
    if (dir == BACKWARD)
       --curPor->cursor.lnum;
-   if (ml_append(curPor->cursor.lnum, NULL, (ColNr)0, FALSE) == FAIL) {
+   if (ml_append(curPor->cursor.lnum, NULL, (ColNr)0, false) == FAIL) {
       return FAIL;
    }
    ++curPor->cursor.lnum;
@@ -1024,7 +1024,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
    }
    
    int j;
-   int got_com = FALSE;
+   int got_com = false;
    Boole foundOne;
    Byte   part_buf[COM_MAX_LEN];   // buffer for one option part
    CS string;      // pointer to comment string
@@ -1130,7 +1130,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
          result = i;
 
       // If this comment doesn't nest, stop here.
-      got_com = TRUE;
+      got_com = true;
       if (firstOccurrence(part_buf, COM_NEST) == NULL)
          break;
    }
@@ -1153,7 +1153,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
 //      OPENLINE_FORCE_INDENT  set indent from second_line_indent, ignore 'autoindent'
 //
 //"second_line_indent": indent for after ^^D in Insert mode or if flag OPENLINE_COM_LIST
-//"did_do_comment" is set to TRUE when intentionally putting the comment leader in front of the 
+//"did_do_comment" is set to true when intentionally putting the comment leader in front of the 
 // new line.
 //
 //Return OK for success, FAIL for failure
@@ -1172,7 +1172,7 @@ openLine(
    int newcol = 0;      // new cursor column
    int newindent = 0;      // auto-indent of the new line
    int n;
-   int shouldTruncateLine = FALSE;
+   int shouldTruncateLine = false;
    int retval = FAIL;      // return value
    int lead_len;      // length of comment leader
    int comment_start = 0;   // start index of the comment leader
@@ -1183,7 +1183,7 @@ openLine(
    int      saved_char = ZERO;   // init for GCC
    Pos* pos;
    int do_si = may_do_si();
-   int no_si = FALSE;      // reset didSindentG afterwards
+   int no_si = false;      // reset didSindentG afterwards
    int first_char = ZERO;   // init for GCC
    int didAppend;      // appended a new line
    int at_eol;         // cursor after last character
@@ -1213,7 +1213,7 @@ openLine(
    //the prior line, and it should be truncated.  Do this even if 'ai' is not
    //set because automatically inserting a comment leader also sets didAindentG.
    if (didAindentG)
-      shouldTruncateLine = TRUE;
+      shouldTruncateLine = true;
 
    if ((flags & OPENLINE_FORCE_INDENT) != 0 && second_line_indent >= 0) {
       newindent = second_line_indent;
@@ -1237,7 +1237,7 @@ openLine(
          old_cursor = curPor->cursor;
          CS ptr = savedLine;
          if ((flags & OPENLINE_DO_COM) != 0) {
-             lead_len = get_leader_len(ptr, NULL, FALSE, TRUE);
+             lead_len = get_leader_len(ptr, NULL, false, true);
          } else {
              lead_len = 0;
          }
@@ -1248,7 +1248,7 @@ openLine(
             newindent = get_indent();
          }
          if ((flags & OPENLINE_DO_COM) != 0)
-            lead_len = get_leader_len(ptr, NULL, FALSE, TRUE);
+            lead_len = get_leader_len(ptr, NULL, false, true);
          else
             lead_len = 0;
          if (lead_len > 0) {
@@ -1309,7 +1309,7 @@ openLine(
             //If last character is '{' do indent, without checking for "if" and the like.
             if (last_char == '{') {
                didSindentG = true;   // do indent
-               no_si = TRUE;   // don't delete it when '{' typed
+               no_si = true;   // don't delete it when '{' typed
                //Look for "if" and the like, use 'cinwords'.
                //Don't do this if the previous line ended in ';' or '}'.
             } ei (last_char != ';' && last_char != '}' && cin_is_cinword(ptr)) {
@@ -1319,7 +1319,7 @@ openLine(
          curPor->cursor = old_cursor;
       }
       if (do_si)
-         can_si = TRUE;
+         can_si = true;
 
       didAindentG = true;
    }
@@ -1328,7 +1328,7 @@ openLine(
    // This may then be inserted in front of the new line.
    end_comment_pending = ZERO;
    if ((flags & OPENLINE_DO_COM) != 0) {
-      lead_len = get_leader_len(savedLine, &lead_flags, FALSE, TRUE);
+      lead_len = get_leader_len(savedLine, &lead_flags, false, true);
    } else
       lead_len = 0;
    if (lead_len > 0) {
@@ -1337,16 +1337,16 @@ openLine(
       Byte lead_middle[COM_MAX_LEN];   // middle-comment string
       Byte lead_end[COM_MAX_LEN];       // end-comment string
       CS comment_end = NULL;       // where lead_end has been found
-      int extra_space = FALSE;       // append extra space
+      int extra_space = false;       // append extra space
       int current_flag;
-      int require_blank = FALSE;       // requires blank after middle
+      int require_blank = false;       // requires blank after middle
       CS p2;
 
       // If the comment leader has the start, middle or end flag, it may not
       // be used or may be replaced with the middle leader.
       for (p = lead_flags; *p && *p != ':'; ++p) {
          if (*p == COM_BLANK) {
-            require_blank = TRUE;
+            require_blank = true;
             continue;
          }
          if (*p == COM_START || *p == COM_MIDDLE) {
@@ -1354,13 +1354,13 @@ openLine(
             if (*p == COM_START) {
                 // find start of middle part
                 (void)doCutPathFromListOfPaths(OUT &p, OUT lead_middle, COM_MAX_LEN, S",");
-                require_blank = FALSE;
+                require_blank = false;
             }
 
             // Isolate the strings of the middle and end leader.
             while (*p && p[-1] != ':') { // find end of middle flags
                if (*p == COM_BLANK)
-                  require_blank = TRUE;
+                  require_blank = true;
                ++p;
             }
             (void)doCutPathFromListOfPaths(OUT &p, OUT lead_middle, COM_MAX_LEN, S",");
@@ -1398,7 +1398,7 @@ openLine(
                    && ((transferText != NULL && (int)curPor->cursor.col == lead_len)
                   || (transferText == NULL && savedLine[lead_len] == ZERO)
                   || require_blank))
-               extra_space = TRUE;
+               extra_space = true;
             }
             break;
          }
@@ -1419,7 +1419,7 @@ openLine(
             lead_repl_len = (int)(p - lead_repl);
 
             // We can probably always add an extra space when doing "O" on the comment-end
-            extra_space = TRUE;
+            extra_space = true;
 
             // Check whether we allow automatic ending of comments
             for (p2 = p; *p2 && *p2 != ':'; p2++) {
@@ -1591,7 +1591,7 @@ openLine(
 
                 // If the leader ends in white space, don't add an extra space
                 if (lead_len > 0 && SPACE_OR_TAB(leader[lead_len - 1]))
-                   extra_space = FALSE;
+                   extra_space = false;
                 leader[lead_len] = ZERO;
             }
 
@@ -1671,11 +1671,11 @@ openLine(
       end_comment_pending = ZERO;  // turns out there was no leader
 
    old_cursor = curPor->cursor;
-   if (ml_append(curPor->cursor.lnum, transferText, (ColNr)transferLen, FALSE) == FAIL)
+   if (ml_append(curPor->cursor.lnum, transferText, (ColNr)transferLen, false) == FAIL)
       goto theend;
    // Postpone calling changed_lines(), because it would mess up folding with markers.
    mark_adjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L);
-   didAppend = TRUE;
+   didAppend = true;
    if (stateG & MODE_INSERT) {
       // Properties after the split move to the next line.
       adjustPropsForSplit(curPor->cursor.lnum, curPor->cursor.lnum,
@@ -1710,13 +1710,13 @@ openLine(
       if (shouldTruncateLine && (flags & OPENLINE_KEEPTRAIL) == 0) {
          truncate_spaces(savedLine, curPor->cursor.col);
       }
-      ml_replace(curPor->cursor.lnum, savedLine, FALSE);
+      ml_replace(curPor->cursor.lnum, savedLine, false);
       savedLine = NULL;
       if (didAppend) {
           changed_lines(
              curPor->cursor.lnum, curPor->cursor.col, curPor->cursor.lnum + 1, 1L
           );
-          didAppend = FALSE;
+          didAppend = false;
 
           // Move marks after the line break to the new line.
           if ((flags & OPENLINE_MARKFIX) != 0) {
@@ -1751,7 +1751,7 @@ theend:
 }
 
 //Delete from cursor to end of line. Caller must have prepared for undo.
-//If "fixpos" is TRUE fix the cursor position when done.
+//If "fixpos" is true fix the cursor position when done.
 //
 //Return FAIL for failure, OK otherwise.
 int
@@ -1762,19 +1762,19 @@ truncate_line(int fixpos) {
    CS old_line = ml_get(lnum);
    CS newp = (col == 0) ? copyStr(Em) : copySubstr(old_line, col);
    int deleted = (int)ml_get_len(lnum) - col;
-   ml_replace(lnum, newp, FALSE);
+   ml_replace(lnum, newp, false);
 
    // mark the book as changed and prepare for displaying
    inserted_bytes(lnum, curPor->cursor.col, -deleted);
 
-   // If "fixpos" is TRUE we don't want to end up positioned at the ZERO.
+   // If "fixpos" is true we don't want to end up positioned at the ZERO.
    if (fixpos && curPor->cursor.col > 0)
       --curPor->cursor.col;
 
    return OK;
 }
 
-//Delete "nlines" lines at the cursor. Saves the lines for undo first if "undo" is TRUE.
+//Delete "nlines" lines at the cursor. Saves the lines for undo first if "undo" is true.
 void
 del_lines(long nlines,   int undo) {
    long   n;
@@ -1885,13 +1885,13 @@ get_op_type(Unt char1, Unt char2) {
    return i;
 }
 
-// Return TRUE if operator "op" always works on whole lines.
+// Return true if operator "op" always works on whole lines.
 private int
 op_on_lines(int op) {
    return opchars[op][2] & OPF_LINES;
 }
 
-// Return TRUE if operator "op" changes text.
+// Return true if operator "op" changes text.
 int
 op_is_change(int op) {
    return opchars[op][2] & OPF_CHANGE;
@@ -1928,7 +1928,7 @@ op_shift(Operator *oper, int curs_top, int amount) {
       ei (first_char != '#' || !preprocs_left())
          // Move the line right if it doesn't start with '#', 'smartindent'
          // isn't set or 'cindent' isn't set or '#' isn't in 'cino'.
-         shift_line(oper->opTy == OP_LSHIFT, TRUE, amount, FALSE);
+         shift_line(oper->opTy == OP_LSHIFT, true, amount, false);
       ++curPor->cursor.lnum;
    }
 
@@ -1951,7 +1951,7 @@ op_shift(Operator *oper, int curs_top, int amount) {
    eeSnprintf(IObuff, IOSIZE,
       NGETTEXT(msg_line_single, msg_line_plural, oper->line_count),
       oper->line_count, op, amount);
-   msgAndKeep(IObuff, 0, TRUE);
+   msgAndKeep(IObuff, 0, true);
 
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       // Set "'[" and "']" marks.
@@ -1966,8 +1966,8 @@ op_shift(Operator *oper, int curs_top, int amount) {
 
 private Long
 get_new_sw_indent(
-   int      left,      // TRUE if shift is to the left
-   int      round,      // TRUE if new indent is to be to a tabstop
+   int      left,      // true if shift is to the left
+   int      round,      // true if new indent is to be to a tabstop
    Long   amount,      // Number of shifts
    Long   sw_val)
 {
@@ -1998,7 +1998,7 @@ get_new_sw_indent(
    return count;
 }
 
-//Shift the current line 'amount' shiftwidth(s) left (if 'left' is TRUE) or right.
+//Shift the current line 'amount' shiftwidth(s) left (if 'left' is true) or right.
 //
 //The rules for choosing a shiftwidth are: If 'shiftwidth' is non-zero, use 'shiftwidth'; else if 
 //'vartabstop' is not empty, use 'vartabstop'; else use 'tabstop'. The Eegl documentation says 
@@ -2006,8 +2006,8 @@ get_new_sw_indent(
 //shiftwidth in current versions of Eegl, so they are not considered here.
 void
 shift_line(
-   int   left,         // TRUE if shift is to the left
-   int   round,         // TRUE if new indent is to be to a tabstop
+   int   left,         // true if shift is to the left
+   int   round,         // true if new indent is to be to a tabstop
    int   amount,         // Number of shifts
    Boole   call_changed_bytes)   // call changed_bytes()
 {
@@ -2190,7 +2190,7 @@ shift_block(Operator *oper, int amount) {
       STRCPY(newp + newlen + fill, non_white);
    }
    // replace the line
-   ml_replace(curPor->cursor.lnum, newp, FALSE);
+   ml_replace(curPor->cursor.lnum, newp, false);
 
    //compute the number of bytes added or subtracted. note new_line_len and oldlen are unsigned 
    //so we have to be careful about how we calculate this.
@@ -2291,7 +2291,7 @@ block_insert(
          offset += count;
       STRCPY(newp + offset, oldp);
 
-      ml_replace(lnum, newp, FALSE);
+      ml_replace(lnum, newp, false);
 
       if (b_insert)
          // correct any text properties
@@ -2349,7 +2349,7 @@ op_delete(Operator* oper) {
    Byte      *ptr;
    BlockDef   bd;
    LineNr      old_lcount = curBook->mem.lineCount;
-   int         did_yank = FALSE;
+   int         did_yank = false;
 
    if (curBook->mem.flags & ML_EMPTY)       // nothing to do
       return OK;
@@ -2403,13 +2403,13 @@ op_delete(Operator* oper) {
    if (oper->regname != '_') {
       if (oper->regname != 0) {
          // check for read-only register
-         if (!valid_yank_reg(oper->regname, TRUE)) {
+         if (!valid_yank_reg(oper->regname, true)) {
             beep_flush();
             return OK;
          }
-         get_yank_register(oper->regname, TRUE); // yank into specif'd reg.
-         if (op_yank(oper, TRUE, FALSE) == OK)   // yank without message
-            did_yank = TRUE;
+         get_yank_register(oper->regname, true); // yank into specif'd reg.
+         if (op_yank(oper, true, false) == OK)   // yank without message
+            did_yank = true;
       } else
          reset_y_append(); // not appending to unnamed register
 
@@ -2417,8 +2417,8 @@ op_delete(Operator* oper) {
       // break, or when using a specific operator (Vi compatible)
       if (oper->motion_type == MLINE || oper->line_count > 1 || oper->use_reg_one) {
          shift_delete_registers();
-         if (op_yank(oper, TRUE, FALSE) == OK)
-            did_yank = TRUE;
+         if (op_yank(oper, true, false) == OK)
+            did_yank = true;
       }
 
       //Yank into small delete register when no named register specified
@@ -2427,9 +2427,9 @@ op_delete(Operator* oper) {
          && oper->motion_type != MLINE && oper->line_count == 1
       ){
          oper->regname = '-';
-         get_yank_register(oper->regname, TRUE);
-         if (op_yank(oper, TRUE, FALSE) == OK)
-            did_yank = TRUE;
+         get_yank_register(oper->regname, true);
+         if (op_yank(oper, true, false) == OK)
+            did_yank = true;
          oper->regname = 0;
       }
 
@@ -2440,7 +2440,7 @@ op_delete(Operator* oper) {
          int msg_silent_save = msg_silent;
 
          msg_silent = 0;   // must display the prompt
-         n = ask_yesno((CS)_("cannot yank; delete anyway"), TRUE);
+         n = ask_yesno((CS)_("cannot yank; delete anyway"), true);
          msg_silent = msg_silent_save;
          if (n != 'y') {
             emsg(_(e_command_aborted));
@@ -2481,7 +2481,7 @@ op_delete(Operator* oper) {
          // copy the part after the deleted part
          STRCPY(newp + bd.textcol + bd.startspaces + bd.endspaces, oldp + bd.textcol + bd.textlen);
          // replace the line
-         ml_replace(lnum, newp, FALSE);
+         ml_replace(lnum, newp, false);
 
          if (curBook->hasTextprop && n != 0)
             adjustPropColumns(lnum, bd.textcol, -n, 0);
@@ -2498,7 +2498,7 @@ op_delete(Operator* oper) {
          if (oper->line_count > 1) {
             lnum = curPor->cursor.lnum;
             ++curPor->cursor.lnum;
-            del_lines((long)(oper->line_count - 1), TRUE);
+            del_lines((long)(oper->line_count - 1), true);
             curPor->cursor.lnum = lnum;
          }
          if (u_save_cursor() == FAIL)
@@ -2509,11 +2509,11 @@ op_delete(Operator* oper) {
             ai_col = curPor->cursor.col;
          } else
             beginline(0);       // cursor in column 0
-         truncate_line(FALSE);  //delete the rest of the line, leaving cursor past last char in line
+         truncate_line(false);  //delete the rest of the line, leaving cursor past last char in line
          if (oper->line_count > 1)
             u_clearline();      // "U" command not possible after "2cc"
       } else {
-         del_lines(oper->line_count, TRUE);
+         del_lines(oper->line_count, true);
          beginline(BL_WHITE | BL_FIX);
          u_clearline();   // "U" command not possible after "dd"
       }
@@ -2583,11 +2583,11 @@ op_delete(Operator* oper) {
                (LineNr)(curPor->cursor.lnum + oper->line_count)) == FAIL)
             return FAIL;
 
-          truncate_line(TRUE);   // delete from cursor to end of line
+          truncate_line(true);   // delete from cursor to end of line
 
           curpos = curPor->cursor;   // remember curPor->cursor
           ++curPor->cursor.lnum;
-          del_lines((long)(oper->line_count - 2), FALSE);
+          del_lines((long)(oper->line_count - 2), false);
 
           // delete from start of line until op_end
           n = (oper->end.col + 1 - !oper->inclusive);
@@ -2595,10 +2595,10 @@ op_delete(Operator* oper) {
           (void)del_bytes((long)n, !virtual_op,
                 oper->opTy == OP_DELETE && !oper->is_VIsual);
           curPor->cursor = curpos;   // restore curPor->cursor
-          (void)jugJoinLinesUnderCursor(2, FALSE, FALSE, FALSE, FALSE);
+          (void)jugJoinLinesUnderCursor(2, false, false, false, false);
       }
       if (oper->opTy == OP_DELETE)
-          auto_format(FALSE, TRUE);
+          auto_format(false, true);
     }
 
     msgmore(curBook->mem.lineCount - old_lcount);
@@ -2648,16 +2648,16 @@ op_replace(Operator *oper, Unt c) {
    Unt      newlen, oldlen;
    BlockDef   bd;
    Byte      *after_p = NULL;
-   int         had_ctrl_v_cr = FALSE;
+   int         had_ctrl_v_cr = false;
 
    if ((curBook->mem.flags & ML_EMPTY ) || oper->empty)
       return OK;       // nothing to do
 
    if (c == REPLACE_CR_NCHAR) {
-      had_ctrl_v_cr = TRUE;
+      had_ctrl_v_cr = true;
       c = ENTER;
    } ei (c == REPLACE_NL_NCHAR) {
-      had_ctrl_v_cr = TRUE;
+      had_ctrl_v_cr = true;
       c = NL;
    }
 
@@ -2745,9 +2745,9 @@ op_replace(Operator *oper, Unt c) {
          }
 
          //replace the line
-         ml_replace(curPor->cursor.lnum, newp, FALSE);
+         ml_replace(curPor->cursor.lnum, newp, false);
          if (after_p != NULL) {
-            ml_append(curPor->cursor.lnum++, after_p, 0, FALSE);
+            ml_append(curPor->cursor.lnum++, after_p, 0, false);
             appended_lines_mark(curPor->cursor.lnum, 1L);
             oper->end.lnum++;
             eeglFree(after_p);
@@ -2765,7 +2765,7 @@ op_replace(Operator *oper, Unt c) {
          dec(&(oper->end));
 
       while (LTOREQ_POS(curPor->cursor, oper->end)) {
-         int done = FALSE;
+         int done = false;
 
          n = gchar_cursor();
          if (n != ZERO) {
@@ -2778,7 +2778,7 @@ op_replace(Operator *oper, Unt c) {
                if (curPor->cursor.lnum == oper->end.lnum)
                   oper->end.col += new_byte_len - old_byte_len;
                replaceAndMoveBack(c);
-               done = TRUE;
+               done = true;
             } else {
                if (n == TAB) {
                   int end_vcol = 0;
@@ -2796,7 +2796,7 @@ op_replace(Operator *oper, Unt c) {
                // with "coladd" set may move to just after a TAB
                if (gchar_cursor() != ZERO) {
                   PBYTE(curPor->cursor, c);
-                  done = TRUE;
+                  done = true;
                }
             }
           }
@@ -2904,7 +2904,7 @@ op_tilde(Operator* oper) {
 
 //Invoke swapchar() on "length" bytes at position "pos". "pos" is advanced to just after the 
 //changed characters. "length" is rounded up to include the whole last multi-byte character.
-//Also work correctly when the number of bytes changes. Return TRUE if some character was changed.
+//Also work correctly when the number of bytes changes. Return true if some character was changed.
 private Boole
 swapchars(Unt opTy, Pos* pos, int length) {
    int todo;
@@ -2926,14 +2926,14 @@ swapchars(Unt opTy, Pos* pos, int length) {
 //If opTy == OP_UPPER: make uppercase,
 //if opTy == OP_LOWER: make lowercase,
 //if opTy == OP_ROT13: do rot13 encoding, else swap case of character at 'pos'.
-//Return TRUE when something actually changed.
+//Return true when something actually changed.
 Boole
 swapchar(Unt opTy, Pos* pos) {
    Unt c = gchar_pos(pos);
 
    // Only do rot13 encoding for ASCII characters.
    if (c >= 0x80 && opTy == OP_ROT13)
-      return FALSE;
+      return false;
 
    Unt nc = c;
    if (MB_ISLOWER(c)) {
@@ -2953,14 +2953,14 @@ swapchar(Unt opTy, Pos* pos) {
 
          curPor->cursor = *pos;
          // don't use del_char(), it also removes composing chars
-         del_bytes(utf_ptr2len(ml_get_cursor()), FALSE, FALSE);
+         del_bytes(utf_ptr2len(ml_get_cursor()), false, false);
          insertChar(nc);
          curPor->cursor = sp;
       } else
          PBYTE(*pos, nc);
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 // op_insert - Insert and append operators for Visual mode.
@@ -3032,7 +3032,7 @@ op_insert(Operator *oper, long count1) {
 
    t1 = oper->start;
    start_insert = curPor->cursor;
-   (void)edit(ZERO, FALSE, (LineNr)count1);
+   (void)edit(ZERO, false, (LineNr)count1);
 
    // When a tab was inserted, and the characters in front of the tab
    // have been converted to a tab as well, the column of the cursor
@@ -3051,7 +3051,7 @@ op_insert(Operator *oper, long count1) {
       int         ins_len;
       Byte         *firstline, *ins_text;
       BlockDef   bd2;
-      int         did_indent = FALSE;
+      int         did_indent = false;
       Unt         len;
       Unt         add;
       // offset when cursor was moved in insert mode
@@ -3064,7 +3064,7 @@ op_insert(Operator *oper, long count1) {
           bd.textcol += ind_post_col - ind_pre_col;
           ind_post_vcol = get_indent();
           bd.start_vcol += ind_post_vcol - ind_pre_vcol;
-          did_indent = TRUE;
+          did_indent = true;
       }
 
       // The user may have moved the cursor before inserting something, try
@@ -3165,7 +3165,7 @@ op_insert(Operator *oper, long count1) {
 }
 
 //op_change - handle a change operation
-//return TRUE if edit() returns because of a CTRL-O command
+//return true if edit() returns because of a CTRL-O command
 int
 op_change(Operator *oper) {
    ColNr      l;
@@ -3186,9 +3186,9 @@ op_change(Operator *oper) {
    // First delete the text in the region. In an empty book only need to save for undo
    if (curBook->mem.flags & ML_EMPTY) {
       if (u_save_cursor() == FAIL)
-         return FALSE;
+         return false;
    } ei (op_delete(oper) == FAIL)
-      return FALSE;
+      return false;
 
    if ((l > curPor->cursor.col) && !LINEEMPTY(curPor->cursor.lnum) && !virtual_op)
       inc_cursor();
@@ -3209,9 +3209,9 @@ op_change(Operator *oper) {
 
     // Reset finish_op now, don't want it set inside edit().
     int save_finish_op = finish_op;
-    finish_op = FALSE;
+    finish_op = false;
 
-    retval = edit(ZERO, FALSE, (LineNr)1);
+    retval = edit(ZERO, false, (LineNr)1);
 
     finish_op = save_finish_op;
 
@@ -3258,7 +3258,7 @@ op_change(Operator *oper) {
                   newlen += vpos.coladd;
                   mch_memmove(newp + newlen, ins_text, ins_len);
                   STRCPY(newp + newlen + ins_len, oldp + bd.textcol);
-                  ml_replace(linenr, newp, FALSE);
+                  ml_replace(linenr, newp, false);
                   // Shift the properties for linenr as edit() would do.
                   if (curBook->hasTextprop)
                      adjustPropColumns(linenr, bd.textcol, vpos.coladd + (int)ins_len, 0);
@@ -3271,7 +3271,7 @@ op_change(Operator *oper) {
          eeglFree(ins_text);
       }
    }
-   auto_format(FALSE, TRUE);
+   auto_format(false, true);
 
    return retval;
 }
@@ -3420,11 +3420,11 @@ get_last_leader_offset(CS line, Byte **flags) {
 }
 
 
-//If "process" is TRUE and the line begins with a comment leader (possibly
+//If "process" is true and the line begins with a comment leader (possibly
 //after some white space), return a pointer to the text after it. Put a boolean
 //value indicating whether the line ends with an unclosed comment in "is_comment".
 //line - line to be processed,
-//process - if FALSE, will only check whether the line ends with an unclosed comment,
+//process - if false, will only check whether the line ends with an unclosed comment,
 //include_space - whether to also skip space following the comment leader,
 //is_comment - will indicate whether the current line ends with an unclosed comment.
 CS
@@ -3438,7 +3438,7 @@ skip_comment(
    int    lead_len;
    int    leader_offset = get_last_leader_offset(line, &comment_flags);
 
-   *is_comment = FALSE;
+   *is_comment = false;
    if (leader_offset != -1) {
       // Let's check whether the line ends with an unclosed comment.
       // If the last comment leader has COM_END in flags, there's no comment.
@@ -3448,13 +3448,13 @@ skip_comment(
          ++comment_flags;
       }
       if (*comment_flags != COM_END)
-         *is_comment = TRUE;
+         *is_comment = true;
    }
 
-   if (process == FALSE)
+   if (process == false)
       return line;
 
-   lead_len = get_leader_len(line, &comment_flags, FALSE, include_space);
+   lead_len = get_leader_len(line, &comment_flags, false, include_space);
 
    if (lead_len == 0)
       return line;
@@ -3479,10 +3479,10 @@ skip_comment(
 }
 
 //Join 'count' lines (minimal 2) at the cursor position.
-//When "save_undo" is TRUE save lines for undo first.
-//Set "use_formatoptions" to FALSE when e.g. processing backspace and comment
+//When "save_undo" is true save lines for undo first.
+//Set "use_formatoptions" to false when e.g. processing backspace and comment
 //leaders should not be removed.
-//When setmark is TRUE, sets the '[ and '] mark, else, the caller is expected
+//When setmark is true, sets the '[ and '] mark, else, the caller is expected
 //to set those marks.
 //
 //return FAIL for failure, OK otherwise
@@ -3505,7 +3505,7 @@ jugJoinLinesUnderCursor(
    ColNr col = 0;
    int ret = OK;
    int* comments = NULL;
-   int remove_comments = (use_formatoptions == TRUE) && has_format_option(FO_REMOVE_COMS);
+   int remove_comments = (use_formatoptions == true) && has_format_option(FO_REMOVE_COMS);
    int prev_was_comment;
    int propcount = 0;   // number of props over all joined lines
    int props_remaining;
@@ -3517,9 +3517,9 @@ jugJoinLinesUnderCursor(
    // Allocate an array to store the number of spaces inserted before each
    // line.  We will use it to pre-compute the length of the new line and the
    // proper placement of each original line in the new one.
-   CS spaces = lallocZeroed(count, TRUE);
+   CS spaces = lallocZeroed(count, true);
    if (remove_comments) {
-      comments = lallocZeroed(count * sizeof(int), TRUE);
+      comments = lallocZeroed(count * sizeof(int), true);
       if (comments == NULL) {
           eeglFree(spaces);
           return FAIL;
@@ -3540,11 +3540,11 @@ jugJoinLinesUnderCursor(
           // We don't want to remove the comment leader if the
           // previous line is not a comment.
           if (t > 0 && prev_was_comment) {
-            CS new_curr = skip_comment(curr, TRUE, insert_space, &prev_was_comment);
+            CS new_curr = skip_comment(curr, true, insert_space, &prev_was_comment);
             comments[t] = (int)(new_curr - curr);
             curr = new_curr;
          } else
-            curr = skip_comment(curr, FALSE, insert_space, &prev_was_comment);
+            curr = skip_comment(curr, false, insert_space, &prev_was_comment);
       }
 
       if (insert_space && t > 0) {
@@ -3634,7 +3634,7 @@ jugJoinLinesUnderCursor(
       currsize = (int)STRLEN(curr);
    }
 
-   ml_replace_len(curPor->cursor.lnum, newp, (ColNr)newp_len, TRUE, FALSE);
+   ml_replace_len(curPor->cursor.lnum, newp, (ColNr)newp_len, true, false);
 
    if (setmark && (commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       // Set the '] mark.
@@ -3650,7 +3650,7 @@ jugJoinLinesUnderCursor(
    //have moved up (last line deleted), so the current lnum is kept in t.
    t = curPor->cursor.lnum;
    ++curPor->cursor.lnum;
-   del_lines(count - 1, FALSE);
+   del_lines(count - 1, false);
    curPor->cursor.lnum = t;
 
    //Set the cursor column: use the column of the last join
@@ -3694,8 +3694,8 @@ block_prep(
    bdp->textlen = 0;
    bdp->start_vcol = 0;
    bdp->end_vcol = 0;
-   bdp->is_short = FALSE;
-   bdp->is_oneChar = FALSE;
+   bdp->is_short = false;
+   bdp->is_oneChar = false;
    bdp->pre_whitesp = 0;
    bdp->pre_whitesp_c = 0;
    bdp->end_char_vcols = 0;
@@ -3725,7 +3725,7 @@ block_prep(
    bdp->start_char_vcols = incr;
    if (bdp->start_vcol < oper->start_vcol) {  // line too short
       bdp->end_vcol = bdp->start_vcol;
-      bdp->is_short = TRUE;
+      bdp->is_short = true;
       if (!is_del || oper->opTy == OP_APPEND)
          bdp->endspaces = oper->end_vcol - oper->start_vcol + 1;
    } else {
@@ -3736,7 +3736,7 @@ block_prep(
       pend = pstart;
       bdp->end_vcol = bdp->start_vcol;
       if (bdp->end_vcol > oper->end_vcol) {  // it's all in one character
-         bdp->is_oneChar = TRUE;
+         bdp->is_oneChar = true;
          if (oper->opTy == OP_INSERT)
             bdp->endspaces = bdp->start_char_vcols - bdp->startspaces;
          ei (oper->opTy == OP_APPEND) {
@@ -3769,7 +3769,7 @@ block_prep(
                || oper->opTy == OP_APPEND
                || oper->opTy == OP_REPLACE) // line too short
          ){
-            bdp->is_short = TRUE;
+            bdp->is_short = true;
             // Alternative: include spaces to fill up the block. Disadvantage: can lead to 
             // trailing spaces when the line is short where the text is put
             // if (!is_del || oper->opTy == OP_APPEND)
@@ -3812,7 +3812,7 @@ jugCharwiseBlockPrep(
    CS p = ml_get(lnum);
    bdp->startspaces = 0;
    bdp->endspaces = 0;
-   bdp->is_oneChar = FALSE;
+   bdp->is_oneChar = false;
    bdp->start_char_vcols = 0;
 
    if (lnum == start.lnum) {
@@ -3840,7 +3840,7 @@ jugCharwiseBlockPrep(
           {
          if (start.lnum == end.lnum && start.col == end.col) {
              // Special case: inside a single char
-             bdp->is_oneChar = TRUE;
+             bdp->is_oneChar = true;
              bdp->startspaces = end.coladd - start.coladd + inclusive;
              endcol = startcol;
          } else {
@@ -3953,7 +3953,7 @@ op_addsub(
 }
 
 //Add or subtract 'prenum1' from a number in a line opTy is OP_ADD or OP_SUB
-//Return TRUE if some character was changed.
+//Return true if some character was changed.
 private int
 do_addsub(
    int opTy,
@@ -3963,7 +3963,7 @@ do_addsub(
 ){
    int      col;
    int      pre;      // 'X'/'x': hex; 'B'/'b': bin
-   static int   hexupper = FALSE;   // 0xABC
+   static int   hexupper = false;   // 0xABC
    ULong   n;
    ULong   oldn;
    Byte   *ptr;
@@ -3972,10 +3972,10 @@ do_addsub(
    int      todel;
    int      firstdigit;
    int      subtract;
-   int      negative = FALSE;
-   int      was_positive = TRUE;
+   int      negative = false;
+   int      was_positive = true;
    int      visual = VIsual_active;
-   int      didChange = FALSE;
+   int      didChange = false;
    Pos   save_cursor = curPor->cursor;
    int      maxlen = 0;
    Pos   startpos;
@@ -4072,7 +4072,7 @@ do_addsub(
       curPor->cursor.col = col;
       if (!didChange)
          startpos = curPor->cursor;
-      didChange = TRUE;
+      didChange = true;
       (void)del_char(false);
       insertChar(firstdigit);
       endpos = curPor->cursor;
@@ -4098,14 +4098,14 @@ do_addsub(
       if (pre && negative) {
           ++col;
           --length;
-          negative = FALSE;
+          negative = false;
       }
       // add or subtract
-      subtract = FALSE;
+      subtract = false;
       if (opTy == OP_SUB)
-          subtract ^= TRUE;
+          subtract ^= true;
       if (negative)
-          subtract ^= TRUE;
+          subtract ^= true;
 
       oldn = n;
       if (!overflow) { // if number is too big don't add/subtract
@@ -4120,17 +4120,17 @@ do_addsub(
          if (subtract) {
             if (n > oldn) {
                n = 1 + (n ^ (ULong)-1);
-               negative ^= TRUE;
+               negative ^= true;
             }
          } else {
             // add
             if (n < oldn) {
                n = (n ^ (ULong)-1);
-               negative ^= TRUE;
+               negative ^= true;
             }
          }
          if (n == 0)
-            negative = FALSE;
+            negative = false;
       }
 
       if (subtract)
@@ -4139,7 +4139,7 @@ do_addsub(
       else
          // sticking at 2^64 - 1.
          n = (ULong)(-1);
-      negative = FALSE;
+      negative = false;
 
       if (visual && !was_positive && !negative && col > 0) {
          // need to remove the '-'
@@ -4151,7 +4151,7 @@ do_addsub(
       curPor->cursor.col = col;
       if (!didChange)
          startpos = curPor->cursor;
-      didChange = TRUE;
+      didChange = true;
       todel = length;
       c = gchar_cursor();
       //Don't include the '-' in the length, only the length of the part after it is kept the same
@@ -4162,9 +4162,9 @@ do_addsub(
       for (i = 0; i < todel; ++i) {
          if (c < 0x100 && SAFE_isalpha(c)) {
             if (SAFE_isupper(c))
-               hexupper = TRUE;
+               hexupper = true;
             else
-               hexupper = FALSE;
+               hexupper = false;
          }
          inc_cursor();
          c = gchar_cursor();
@@ -4370,7 +4370,7 @@ cursor_pos_info(Bag* dict) {
             // Make @showbreak empty for a moment to get the correct size.
             p_sbr = null;
             oparg.is_VIsual = 1;
-            oparg.block_mode = TRUE;
+            oparg.block_mode = true;
             oparg.opTy = OP_NOP;
             getvcols(curPor, &min_pos, &max_pos, &oparg.start_vcol, &oparg.end_vcol);
             p_sbr = saved_sbr;
@@ -4633,7 +4633,7 @@ op_function(Operator *oper UNUSED) {
 
       // Reset finish_op so that mode() returns the right value.
       int save_finish_op = finish_op;
-      finish_op = FALSE;
+      finish_op = false;
 
       if (call_callback(&opfunc_cb, 0, &returnVar, 1, argv) != FAIL)
           clearVar(&returnVar);
@@ -4655,7 +4655,7 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
    if (VIsual_mode != Ctrl_V || (!initial && oper->end.col < (int)curPor->width))
       return;
 
-   oper->block_mode = TRUE;
+   oper->block_mode = true;
 
    // prevent from moving onto a trail byte
    mb_adjustpos(curPor->book, &oper->end);
@@ -4729,7 +4729,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    //on it and lose it forever.
    //Don't do it if a specific register was specified, so that ""x"*P works.
    //This could call visualOperator() recursively, but that's OK
-   //because clipbYank will be TRUE for the nested call.
+   //because clipbYank will be true for the nested call.
    if (clipboard.available
           && oper->opTy != OP_NOP
           && !clipbYank
@@ -4750,7 +4750,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          // If the motion was linewise, "inclusive" will not have been set.
          // Use "exclusive" to be consistent.  Makes "dvj" work nice.
          if (oper->motion_type == MLINE)
-            oper->inclusive = FALSE;
+            oper->inclusive = false;
          // If the motion already was characterwise, toggle "inclusive"
          ei (oper->motion_type == MCHAR)
             oper->inclusive = !oper->inclusive;
@@ -4758,11 +4758,11 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       } ei (oper->motion_force == Ctrl_V) {
          // Change line- or characterwise motion into Visual block mode.
          if (!VIsual_active) {
-            VIsual_active = TRUE;
+            VIsual_active = true;
             VIsual = oper->start;
          }
          VIsual_mode = Ctrl_V;
-         VIsual_reselect = FALSE;
+         VIsual_reselect = false;
       }
 
       //Only redo yank when 'y' flag is in 'cpoptions'. Never redo "zf" (define fold).
@@ -4883,7 +4883,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       virtual_op = virtual_active();
 
       if (VIsual_active || isRedoVisualBusy) {
-         get_op_vcol(oper, redo_VIsual.vcol, TRUE);
+         get_op_vcol(oper, redo_VIsual.vcol, true);
 
          if (!isRedoVisualBusy && !clipbYank) {
             // Prepare to reselect and redo Visual: this is based on the size of the Visual text
@@ -4950,17 +4950,17 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             }
          }
 
-         //oper->inclusive defaults to TRUE.
+         //oper->inclusive defaults to true.
          //If oper->end is on a ZERO (empty line) oper->inclusive becomes
-         //FALSE.  This makes "d}P" and "v}dP" work the same.
+         //false.  This makes "d}P" and "v}dP" work the same.
          if (oper->motion_force == ZERO || oper->motion_type == MLINE)
-            oper->inclusive = TRUE;
+            oper->inclusive = true;
          if (VIsual_mode == 'V')
             oper->motion_type = MLINE;
          else {
             oper->motion_type = MCHAR;
             if (VIsual_mode != Ctrl_V && *ml_get_pos(&(oper->end)) == ZERO && (!virtual_op)) {
-               oper->inclusive = FALSE;
+               oper->inclusive = false;
                //Try to include the newline, unless it's an operator that works on lines only.
                if (!op_on_lines(oper->opTy) && oper->end.lnum < curBook->mem.lineCount) {
                   ++oper->end.lnum;
@@ -4971,13 +4971,13 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             }
          }
 
-         isRedoVisualBusy = FALSE;
+         isRedoVisualBusy = false;
 
          //Switch Visual off now, so screen updating does not show inverted text when the screen 
          //is redrawn. With OP_YANK and sometimes with OP_COLON and OP_FILTER there is
          //no screen redraw, so it is done here to remove the inverted part.
          if (!clipbYank) {
-            VIsual_active = FALSE;
+            VIsual_active = false;
             setmouse();
             mouseDraggingG = 0;
             may_clear_cmdline();
@@ -5015,18 +5015,18 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       }
 
       //If the end of an operator is in column one while oper->motion_type is MCHAR and 
-      //oper->inclusive is FALSE, we put op_end after the last character in the previous line. If 
+      //oper->inclusive is false, we put op_end after the last character in the previous line. If 
       //op_start is on or before the first non-blank in the line, the operator becomes linewise
       //(strange, but that's the way vi does it).
       if (  oper->motion_type == MCHAR
-         && oper->inclusive == FALSE
+         && oper->inclusive == false
          && !(cap->retval & CA_NO_ADJ_OP_END)
          && oper->end.col == 0
          && (!oper->is_VIsual)
          && !oper->block_mode
          && oper->line_count > 1
       ) {
-         oper->end_adjusted = TRUE;       // remember that we did this
+         oper->end_adjusted = true;       // remember that we did this
          --oper->line_count;
          --oper->end.lnum;
          if (inindent(0))
@@ -5035,17 +5035,17 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             oper->end.col = ml_get_len(oper->end.lnum);
             if (oper->end.col) {
                --oper->end.col;
-               oper->inclusive = TRUE;
+               oper->inclusive = true;
             }
          }
       } else
-         oper->end_adjusted = FALSE;
+         oper->end_adjusted = false;
 
       switch (oper->opTy) {
       case OP_LSHIFT:
       case OP_RSHIFT:
-         op_shift(oper, TRUE, oper->is_VIsual ? (int)cap->count1 : 1);
-         auto_format(FALSE, TRUE);
+         op_shift(oper, true, oper->is_VIsual ? (int)cap->count1 : 1);
+         auto_format(false, true);
          break;
 
       case OP_JOIN_NS:
@@ -5055,27 +5055,27 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          if (curPor->cursor.lnum + oper->line_count - 1 > curBook->mem.lineCount)
             beep_flush();
          else {
-            (void)jugJoinLinesUnderCursor(oper->line_count, oper->opTy == OP_JOIN, TRUE, TRUE, TRUE);
-            auto_format(FALSE, TRUE);
+            (void)jugJoinLinesUnderCursor(oper->line_count, oper->opTy == OP_JOIN, true, true, true);
+            auto_format(false, true);
          }
          break;
 
       case OP_DELETE:
-         VIsual_reselect = FALSE;       // don't reselect now
+         VIsual_reselect = false;       // don't reselect now
          (void)op_delete(oper);
          // save cursor line for undo if it wasn't saved yet
          if (oper->motion_type == MLINE && has_format_option(FO_AUTO) && u_save_cursor() == OK)
-            auto_format(FALSE, TRUE);
+            auto_format(false, true);
          break;
 
       case OP_YANK:
           oper->excludeTrailingWhitespace = cap->cmdchar == 'z';
-          (void)op_yank(oper, FALSE, !clipbYank);
+          (void)op_yank(oper, false, !clipbYank);
           check_cursor_col();
           break;
 
       case OP_CHANGE:
-         VIsual_reselect = FALSE;       // don't reselect now
+         VIsual_reselect = false;       // don't reselect now
          //This is a new edit command, not a restart.  Need to
          //remember it to make 'insertmode' work with mappings for
          //Visual mode.  But do this only once and not when typed and 'insertmode' isn't set.
@@ -5094,7 +5094,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          break;
 
       case OP_FILTER:
-         bangredo = TRUE;    // do_bang() will put cmd in redo buffer
+         bangredo = true;    // do_bang() will put cmd in redo buffer
          // FALLTHROUGH
 
       case OP_INDENT:
@@ -5122,11 +5122,11 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
             if (p_fp || curBook->o.formatProg)
                op_colon(oper);      // use external command
             else
-               op_format(oper, FALSE);   // use internal function
+               op_format(oper, false);   // use internal function
          }
          break;
       case OP_FORMAT2:
-         op_format(oper, TRUE);   // use internal function
+         op_format(oper, true);   // use internal function
          break;
 
       case OP_FUNCTION: {
@@ -5143,7 +5143,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 
       case OP_INSERT:
       case OP_APPEND:
-         VIsual_reselect = FALSE;   // don't reselect now
+         VIsual_reselect = false;   // don't reselect now
          // This is a new edit command, not a restart.  Need to
          // remember it to make 'insertmode' work with mappings for
          // Visual mode.  But do this only once.
@@ -5155,7 +5155,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          op_insert(oper, cap->count1);
 
          // TODO: when inserting in several lines, should format all the lines.
-         auto_format(FALSE, TRUE);
+         auto_format(false, true);
 
          if (restart_edit == 0)
             restart_edit = restart_edit_save;
@@ -5164,12 +5164,12 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          break;
 
       case OP_REPLACE:
-         VIsual_reselect = FALSE;   // don't reselect now
+         VIsual_reselect = false;   // don't reselect now
          op_replace(oper, cap->nchar);
          break;
 
       case OP_FOLD:
-         VIsual_reselect = FALSE;   // don't reselect now
+         VIsual_reselect = false;   // don't reselect now
          foldCreate(oper->start.lnum, oper->end.lnum);
          break;
 
@@ -5177,7 +5177,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       case OP_FOLDOPENREC:
       case OP_FOLDCLOSE:
       case OP_FOLDCLOSEREC:
-         VIsual_reselect = FALSE;   // don't reselect now
+         VIsual_reselect = false;   // don't reselect now
          opFoldRange(
             oper->start.lnum, oper->end.lnum,
             oper->opTy == OP_FOLDOPEN || oper->opTy == OP_FOLDOPENREC,
@@ -5188,15 +5188,15 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 
       case OP_FOLDDEL:
       case OP_FOLDDELREC:
-         VIsual_reselect = FALSE;   // don't reselect now
+         VIsual_reselect = false;   // don't reselect now
          deleteFold(oper->start.lnum, oper->end.lnum,
                    oper->opTy == OP_FOLDDELREC, oper->is_VIsual);
          break;
       case OP_ADD:
       case OP_SUB:
-         VIsual_active = TRUE;
+         VIsual_active = true;
          op_addsub(oper, cap->count1, redo_VIsual.extraArg);
-         VIsual_active = FALSE;
+         VIsual_active = false;
          check_cursor_col();
          break;
       default:
@@ -5214,7 +5214,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       } else {
          curPor->cursor = old_cursor;
       }
-      oper->block_mode = FALSE;
+      oper->block_mode = false;
       clearop(oper);
       motion_force = ZERO;
     }
@@ -5224,7 +5224,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
 // verify, that the position to place is actually safe
 private void
 pbyte(Pos lp, int c) {
-   CS p = memGetLine(curBook, lp.lnum, TRUE);
+   CS p = memGetLine(curBook, lp.lnum, true);
    int len = curBook->mem.lineLen;
 
    // safety check
@@ -5287,7 +5287,7 @@ eeTime(void) {
 //Replacement for ctime(), which is not safe to use.
 //Requires strftime(), otherwise returns "(unknown)".
 //If "thetime" is invalid returns "(invalid)".  Never returns NULL.
-//When "add_newline" is TRUE add a newline like ctime() does. Use a static buffer.
+//When "add_newline" is true add a newline like ctime() does. Use a static buffer.
 CS
 get_ctime(Tyme thetime, int add_newline) {
    static Byte buf[100];  // hopefully enough for every language
@@ -5451,7 +5451,7 @@ insert_timer(Timer* timer) {
    if (firstTimerS != NULL)
       firstTimerS->prev = timer;
    firstTimerS = timer;
-   did_add_timer = TRUE;
+   did_add_timer = true;
 }
 
 //Take a timer out of the list of timers.
@@ -5494,7 +5494,7 @@ create_timer(long msec, int repeat) {
 void
 timer_start(Timer *timer) {
    profile_setlimit(timer->tr_interval, &timer->due);
-   timer->tr_paused = FALSE;
+   timer->tr_paused = false;
 }
 
 // Invoke the callback of "timer".
@@ -5563,16 +5563,16 @@ check_due_timer(void) {
          timer_busy = timer_busy > 0 || vgetcBusyG > 0;
          vgetcBusyG = 0;
          called_emsg = 0;
-         anyEmsgG = FALSE;
+         anyEmsgG = false;
          must_redraw = 0;
-         may_garbage_collect = FALSE;
+         may_garbage_collect = false;
          exception_state_clear();
          saveEeglVars(&vvsave);
 
          // Invoke the callback.
-         timer->tr_firing = TRUE;
+         timer->tr_firing = true;
          timer_callback(timer);
-         timer->tr_firing = FALSE;
+         timer->tr_firing = false;
 
          // Restore stuff.
          timer_next = timer->next;
@@ -5603,7 +5603,7 @@ check_due_timer(void) {
          } else {
             this_due = -1;
             if (timer->tr_keep)
-               timer->tr_paused = TRUE;
+               timer->tr_paused = true;
             else {
                remove_timer(timer);
                free_timer(timer);
@@ -5620,10 +5620,10 @@ check_due_timer(void) {
    if (bevalexpr_due_set) {
       this_due = proftime_time_left(&bevalexpr_due, &now);
       if (this_due <= 1) {
-         bevalexpr_due_set = FALSE;
+         bevalexpr_due_set = false;
          if (balloonEval == NULL) {
             balloonEval = ALLOC_CLEAR_ONE(BalloonEval);
-            balloonEvalForTerm = TRUE;
+            balloonEvalForTerm = true;
          }
          if (balloonEval != NULL) {
             general_beval_cb(balloonEval, 0);
@@ -5719,7 +5719,7 @@ add_timer_info_all(OUT Var* returnVar) {
 // Mark references in partials of timers.
 int
 set_ref_in_timer(int copyID) {
-   int abort = FALSE;
+   int abort = false;
    Var   tv;
 
    for (Timer* timer = firstTimerS; !abort && timer; timer = timer->next) {
@@ -5735,18 +5735,18 @@ set_ref_in_timer(int copyID) {
    return abort;
 }
 
-//Return TRUE if "timer" exists in the list of timers.
+//Return true if "timer" exists in the list of timers.
 int
 timer_valid(Timer *timer) {
    if (!timer)
-      return FALSE;
+      return false;
 
    Timer *t;
    FOR_ALL_TIMERS(t) {
       if (t == timer)
-         return TRUE;
+         return true;
    } 
-   return FALSE;
+   return false;
 }
 
 # if defined(EXITFREE) || defined(PROTO)
@@ -6000,11 +6000,11 @@ profile_setlimit(long msec, ProfTime *tm) {
    }
 }
 
-// Return TRUE if the current time is past "tm".
+// Return true if the current time is past "tm".
 int
 profile_passed_limit(ProfTime *tm) {
    if (tm->tv_sec == 0)    // timer was not set
-      return FALSE;
+      return false;
       
    ProfTime   now;
    PROF_GET_TIME(&now);
@@ -6083,14 +6083,14 @@ elapsed(DWORD start_tick) {
 
 # if defined(PROF_NSEC) || defined(PROTO)
 // Implement timeout with timer_create() and timer_settime().
-private volatile sig_atomic_t timeout_flag = FALSE;
+private volatile sig_atomic_t timeout_flag = false;
 private timer_t timer_id;
-private int timer_created = FALSE;
+private int timer_created = false;
 
 // Callback for when the timer expires.
 private void
 set_flag(union sigval _unused UNUSED) {
-   timeout_flag = TRUE;
+   timeout_flag = true;
 }
 
 // Stop any active timeout.
@@ -6107,18 +6107,18 @@ stop_timeout(void) {
 
    // Clear the current timeout flag; any previous timeout should be
    // considered _not_ triggered.
-   timeout_flag = FALSE;
+   timeout_flag = false;
 }
 
 // Start the timeout timer.
 //
-// The return value is a pointer to a flag that is initialised to FALSE. If the
-// timeout expires, the flag is set to TRUE. This will only return pointers to
+// The return value is a pointer to a flag that is initialised to false. If the
+// timeout expires, the flag is set to true. This will only return pointers to
 // static memory; i.e. any pointer returned by this function may always be
 // safely dereferenced.
 //
 // This function is not expected to fail, but if it does it will still return a
-// valid flag pointer; the flag will remain stuck as FALSE .
+// valid flag pointer; the flag will remain stuck as false .
 volatile sig_atomic_t *
 start_timeout(long msec) {
    struct itimerspec interval = {
@@ -6140,7 +6140,7 @@ start_timeout(long msec) {
          showErrFmtMsg(_(e_could_not_set_timeout_str), strerror(errno));
          return &timeout_flag;
       }
-      timer_created = TRUE;
+      timer_created = true;
    }
 
    lo("setting timeout timer to %d sec %ld nsec",
@@ -6159,25 +6159,25 @@ delete_timer(void) {
       return;
 
    timer_delete(timer_id);
-   timer_created = FALSE;
+   timer_created = false;
 }
 
 # else // PROF_NSEC
 
 // Implement timeout with setitimer()
 private struct sigaction      prev_sigaction;
-private volatile sig_atomic_t   timeout_flag        = FALSE;
-private int         timer_active        = FALSE;
-private int         timer_handler_active = FALSE;
-private volatile sig_atomic_t   alarm_pending        = FALSE;
+private volatile sig_atomic_t   timeout_flag        = false;
+private int         timer_active        = false;
+private int         timer_handler_active = false;
+private volatile sig_atomic_t   alarm_pending        = false;
 
 // Handle SIGALRM for a timeout.
 private void
 set_flag SIGDEFARG(sigarg) {
    if (alarm_pending)
-      alarm_pending = FALSE;
+      alarm_pending = false;
    else
-      timeout_flag = TRUE;
+      timeout_flag = true;
 }
 
 // Stop any active timeout.
@@ -6187,7 +6187,7 @@ stop_timeout(void) {
    int             ret;
 
    if (timer_active) {
-      timer_active = FALSE;
+      timer_active = false;
       ret = setitimer(ITIMER_REAL, &disarm, NULL);
       if (ret < 0)
          // Should only get here as a result of coding errors.
@@ -6195,23 +6195,23 @@ stop_timeout(void) {
    }
 
    if (timer_handler_active) {
-      timer_handler_active = FALSE;
+      timer_handler_active = false;
       ret = sigaction(SIGALRM, &prev_sigaction, NULL);
       if (ret < 0)
          // Should only get here as a result of coding errors.
          showErrFmtMsg(_(e_could_not_reset_handler_for_timeout_str), strerror(errno));
    }
-   timeout_flag = FALSE;
+   timeout_flag = false;
 }
 
 //Start the timeout timer.
 //
-//The return value is a pointer to a flag that is initialised to FALSE. If the timeout expires, the
-//flag is set to TRUE. This will only return pointers to static memory; i.e. any pointer returned 
+//The return value is a pointer to a flag that is initialised to false. If the timeout expires, the
+//flag is set to true. This will only return pointers to static memory; i.e. any pointer returned 
 //by this function may always be safely dereferenced.
 //
 //This function is not expected to fail, but if it does it will still return a valid flag pointer;
-//the flag will remain stuck as FALSE.
+//the flag will remain stuck as false.
 volatile sig_atomic_t*
 start_timeout(long msec) {
    struct itimerval   interval = {
@@ -6228,11 +6228,11 @@ start_timeout(long msec) {
 
    // There is a small chance that SIGALRM is pending and so the handler must
    // ignore it on the first call.
-   alarm_pending = FALSE;
+   alarm_pending = false;
    ret = sigemptyset(&sigs);
    ret = ret == 0 ? sigaddset(&sigs, SIGALRM) : ret;
    ret = ret == 0 ? sigprocmask(SIG_BLOCK, &sigs, &saved_sigs) : ret;
-   timeout_flag = FALSE;
+   timeout_flag = false;
    ret = ret == 0 ? sigpending(&sigs) : ret;
    if (ret == 0) {
       alarm_pending = sigismember(&sigs, SIGALRM);
@@ -6241,7 +6241,7 @@ start_timeout(long msec) {
    if (unlikely(ret != 0 || alarm_pending < 0)) {
       // Just catching coding errors. Write an error message, but carry on.
       showErrFmtMsg(_(e_could_not_check_for_pending_sigalrm_str), strerror(errno));
-      alarm_pending = FALSE;
+      alarm_pending = false;
    }
 
    // Set up the alarm handler first.
@@ -6255,7 +6255,7 @@ start_timeout(long msec) {
       showErrFmtMsg(_(e_could_not_set_handler_for_timeout_str), strerror(errno));
       return &timeout_flag;
    }
-   timer_handler_active = TRUE;
+   timer_handler_active = true;
 
    // Set up the interval timer once the alarm handler is in place.
    ret = setitimer(ITIMER_REAL, &interval, NULL);
@@ -6266,7 +6266,7 @@ start_timeout(long msec) {
       return &timeout_flag;
    }
 
-   timer_active = TRUE;
+   timer_active = true;
    return &timeout_flag;
 }
 # endif // PROF_NSEC
@@ -6287,7 +6287,7 @@ getviscol(void) {
 //The caller must have saved the cursor line for undo!
 int
 coladvance_force(ColNr wcol) {
-   int rc = coladvance2(&curPor->cursor, TRUE, FALSE, wcol);
+   int rc = coladvance2(&curPor->cursor, true, false, wcol);
 
    if (wcol == MAXCOL)
       curPor->cacheState &= ~VALID_VIRTCOL;
@@ -6321,7 +6321,7 @@ coladvance(ColNr wantcol) {
 //return OK if desired column is reached, FAIL if not
 int
 getvpos(Pos *pos, ColNr wantcol) {
-   return coladvance2(pos, FALSE, virtual_active(), wantcol);
+   return coladvance2(pos, false, virtual_active(), wantcol);
 }
 
 private int
@@ -6338,7 +6338,7 @@ coladvance2(
    int      head = 0;
 
    Boole one_more = ((stateG & MODE_INSERT) != 0) || restart_edit != ZERO || (VIsual_active);
-   CS line = memGetLine(curBook, pos->lnum, FALSE);
+   CS line = memGetLine(curBook, pos->lnum, false);
    int linelen = memGetBookLen(curBook, pos->lnum);
 
    if (wcol >= MAXCOL) {
@@ -6418,7 +6418,7 @@ coladvance2(
 
             newline[idx + correct] = ZERO;
 
-            ml_replace(pos->lnum, newline, FALSE);
+            ml_replace(pos->lnum, newline, false);
             changed_bytes(pos->lnum, (ColNr)idx);
             idx += correct;
             col = wcol;
@@ -6445,7 +6445,7 @@ coladvance2(
 
             newline[linelen + csize - 1] = ZERO;
 
-            ml_replace(pos->lnum, newline, FALSE);
+            ml_replace(pos->lnum, newline, false);
             changed_bytes(pos->lnum, idx);
             idx += (csize - 1 + correct);
             col += correct;
@@ -6597,7 +6597,7 @@ check_pos(Book* book, Pos *pos) {
 //Return the effective shiftwidth value for current book
 long
 get_sw_value(Book *book) {
-   return get_sw_value_col(book, 0, FALSE);
+   return get_sw_value_col(book, 0, false);
 }
 
 //Idem, using "pos".
@@ -6640,12 +6640,12 @@ get_indent_lnum(LineNr lnum) {
 //Count the size (in portal cells) of the indent in line "lnum" of book "book".
 int
 get_indent_buf(Book* book, LineNr lnum) {
-   return get_indent_str(memGetLine(book, lnum, FALSE), (int)book->o.shiftWidth);
+   return get_indent_str(memGetLine(book, lnum, false), (int)book->o.shiftWidth);
 }
 
 //count the size (in portal cells) of the indent in line "ptr", with 'tabstop' at "ts"
 private int
-get_indent_str(CS ptr, int ts) {// if TRUE, count a tab as ^I
+get_indent_str(CS ptr, int ts) {// if true, count a tab as ^I
    int count = 0;
    for (; *ptr != ZERO; ++ptr) {
       if (*ptr == TAB) {   // count a tab for what it is worth
@@ -6664,7 +6664,7 @@ get_indent_str(CS ptr, int ts) {// if TRUE, count a tab as ^I
 //  SIN_CHANGED:   call changed_bytes() if the line was changed.
 //  SIN_INSERT:   insert the indent in front of the line.
 //  SIN_UNDO:   save line for undo before changing it.
-//Return TRUE if the line was changed.
+//Return true if the line was changed.
 int
 set_indent(
    int      size,          // measured in spaces
@@ -6672,8 +6672,8 @@ set_indent(
 ){
    Byte   *s;
    int      line_len;       // size of the line (including the ZERO)
-   int      doit = FALSE;
-   int      retval = FALSE;
+   int      doit = false;
+   int      retval = false;
 
    // First check if there is anything to do and compute the number of
    // characters needed for the indent.
@@ -6690,7 +6690,7 @@ set_indent(
       // count tabs required for indent
       while (todo >= (int)curBook->o.shiftWidth) {
          if (*p != TAB)
-             doit = TRUE;
+             doit = true;
          else
              ++p;
          todo -= (int)curBook->o.shiftWidth;
@@ -6700,7 +6700,7 @@ set_indent(
    // count spaces required for indent
    while (todo > 0) {
       if (*p != ' ')
-         doit = TRUE;
+         doit = true;
       else
          ++p;
       --todo;
@@ -6709,7 +6709,7 @@ set_indent(
 
    // Return if the indent is OK already.
    if (!doit && !SPACE_OR_TAB(*p) && !(flags & SIN_INSERT))
-      return FALSE;
+      return false;
 
    // Allocate memory for the new line.
    if ((flags & SIN_INSERT) != 0)
@@ -6743,7 +6743,7 @@ set_indent(
       ColNr new_offset = (ColNr)(s - newline);
 
       // this may free "newline"
-      ml_replace(curPor->cursor.lnum, newline, FALSE);
+      ml_replace(curPor->cursor.lnum, newline, false);
       if (flags & SIN_CHANGED)
           changed_bytes(curPor->cursor.lnum, 0);
 
@@ -6764,7 +6764,7 @@ set_indent(
       adjustPropColumns(
          curPor->cursor.lnum, added > 0 ? old_offset : (ColNr)ind_len, added, APC_INDENT
       );
-      retval = TRUE;
+      retval = true;
    } else
        eeglFree(newline);
 
@@ -6789,11 +6789,11 @@ get_number_indent(LineNr lnum) {
 
    // In format_lines() (i.e. not insert mode), fo+=q is needed too...
    if ((stateG & MODE_INSERT) || has_format_option(FO_Q_COMS))
-      lead_len = get_leader_len(ml_get(lnum), NULL, FALSE, TRUE);
+      lead_len = get_leader_len(ml_get(lnum), NULL, false, true);
 
    regmatch.regprog = compileRegexp(curBook->o.formatListPattern, RE_MAGIC);
    if (regmatch.regprog) {
-      regmatch.rm_ic = FALSE;
+      regmatch.rm_ic = false;
       // eeRegexec() expects a pointer to a line.  This lets us
       // start matching for the flp beyond any comment leader...
       if (eeRegexec(&regmatch, ml_get(lnum) + lead_len, (ColNr)0)) {
@@ -6821,7 +6821,7 @@ getBreakindentForPort(Portal* po, CS line) {
    static Long prev_tick = 0;   // changedtick of cached value
    static int preList = 0;   // cached list indent
    static int preListopt = 0;   // cached o.breakIndent_list value
-   static int prev_no_ts = FALSE;   // cached no_ts value
+   static int prev_no_ts = false;   // cached no_ts value
    // cached formatlistpat value
    static Byte   *prev_flp = NULL;
    int          bri = 0;
@@ -6867,7 +6867,7 @@ getBreakindentForPort(Portal* po, CS line) {
          regmatch.regprog = compileRegexp(prev_flp, RE_MAGIC + RE_STRING + RE_AUTO + RE_STRICT);
 
          if (regmatch.regprog != NULL) {
-             regmatch.rm_ic = FALSE;
+             regmatch.rm_ic = false;
              if (eeRegexec(&regmatch, line, 0)) {
                 if (po->breakIndent.list > 0)
                    preList = po->breakIndent.list;
@@ -6916,8 +6916,8 @@ getBreakindentForPort(Portal* po, CS line) {
    return bri;
 }
 
-//When extra == 0: Return TRUE if the cursor is before or on the first non-blank in the line.
-//When extra == 1: Return TRUE if the cursor is before the first non-blank in the line.
+//When extra == 0: Return true if the cursor is before or on the first non-blank in the line.
+//When extra == 1: Return true if the cursor is before the first non-blank in the line.
 int
 inindent(int extra) {
    Byte   *ptr;
@@ -6926,9 +6926,9 @@ inindent(int extra) {
    for (col = 0, ptr = ml_get_curline(); SPACE_OR_TAB(*ptr); ++col)
       ++ptr;
    if (col >= curPor->cursor.col + extra)
-      return TRUE;
+      return true;
    else
-      return FALSE;
+      return false;
 }
 
 //op_reindent - handle reindenting a block of lines.
@@ -6950,7 +6950,7 @@ op_reindent(Operator *oper, int (*how)(void)) {
    // Save for undo.  Do this once for all lines, much faster than doing this
    // for each line separately, especially when undoing.
    if (u_savecommon(
-         start_lnum - 1, start_lnum + oper->line_count, start_lnum + oper->line_count, FALSE
+         start_lnum - 1, start_lnum + oper->line_count, start_lnum + oper->line_count, false
        ) == OK
    ) {
       for (i = oper->line_count; --i >= 0 && !gotInterruptG; ) {
@@ -7000,13 +7000,13 @@ op_reindent(Operator *oper, int (*how)(void)) {
    }
 }
 
-// TRUE if lines starting with '#' should be left aligned.
+// true if lines starting with '#' should be left aligned.
 int
 preprocs_left(void) {
    return curBook->o.smartIndent;
 }
 
-// TRUE if the conditions are OK for smart indenting.
+// true if the conditions are OK for smart indenting.
 int
 may_do_si(void) {
    return curBook->o.smartIndent && !curBook->o.indentExpr;
@@ -7045,7 +7045,7 @@ ins_try_si(int c) {
       } ei (curPor->cursor.col > 0) {
           // when inserting '{' after "O" reduce indent, but not
           // more than indent of previous line
-          temp = TRUE;
+          temp = true;
           if (c == '{' && can_si_back && curPor->cursor.lnum > 1) {
              old_pos = curPor->cursor;
              i = get_indent();
@@ -7057,11 +7057,11 @@ ins_try_si(int c) {
                  break;
                }
                if (get_indent() >= i)
-                   temp = FALSE;
+                   temp = false;
                curPor->cursor = old_pos;
            }
           if (temp)
-           shift_line(TRUE, FALSE, 1, TRUE);
+           shift_line(true, false, 1, true);
           }
    }
 
@@ -7082,7 +7082,7 @@ ins_try_si(int c) {
 // type == INDENT_INC   increase indent (for CTRL-T or <Tab>)
 // type == INDENT_DEC   decrease indent (for CTRL-D)
 // type == INDENT_SET   set indent to "amount"
-// if round is TRUE, round the indent to 'shiftwidth' (only with _INC and _Dec).
+// if round is true, round the indent to 'shiftwidth' (only with _INC and _Dec).
 void
 opChangeIndent(
    int type,
@@ -7095,8 +7095,8 @@ opChangeIndent(
 
    // for the following tricks we don't want list mode
    int save_p_list = curPor->o.list;
-   curPor->o.list = FALSE;
-   ignore_text_props = TRUE;
+   curPor->o.list = false;
+   ignore_text_props = true;
    ColNr vc = getvcol_nolist(&curPor->cursor);
    int vcol = vc;
 
@@ -7200,7 +7200,7 @@ opChangeIndent(
          ai_col -= insstart_less;
     }
 
-    ignore_text_props = FALSE;
+    ignore_text_props = false;
 }
 
 // Give a "resulting text too long" error and maybe set gotInterruptG.
@@ -7209,14 +7209,14 @@ emsg_text_too_long(void) {
    emsg(_(e_resulting_text_too_long));
    // when not inside a try/catch set gotInterruptG to break out of any loop
    if (trylevel == 0)
-       gotInterruptG = TRUE;
+       gotInterruptG = true;
 }
 
 // ":retab".
 void
 c_retab(Invocation *eap) {
    LineNr   lnum;
-   int      got_tab = FALSE;
+   int      got_tab = false;
    long   num_spaces = 0;
    long   num_tabs;
    long   len;
@@ -7268,7 +7268,7 @@ c_retab(Invocation *eap) {
       old_len = ml_get_len(lnum);
       col = 0;
       vcol = 0;
-      did_undo = FALSE;
+      did_undo = false;
       for (;;) {
          if (SPACE_OR_TAB(ptr[col])) {
               if (!got_tab && num_spaces == 0) {
@@ -7279,7 +7279,7 @@ c_retab(Invocation *eap) {
               if (ptr[col] == ' ')
                  num_spaces++;
               else
-                 got_tab = TRUE;
+                 got_tab = true;
           } else {
               if (got_tab || (eap->forceit && num_spaces > 1)) {
                   // Retabulate this string of white-space
@@ -7297,8 +7297,8 @@ c_retab(Invocation *eap) {
                  num_spaces -= (num_spaces / new_ts) * new_ts;
                   }
                   if (curBook->o.expandTab || got_tab || (num_spaces + num_tabs < len)) {
-                 if (did_undo == FALSE) {
-                    did_undo = TRUE;
+                 if (did_undo == false) {
+                    did_undo = true;
                     if (u_save((LineNr)(lnum - 1), (LineNr)(lnum + 1)) == FAIL) {
                        new_line = NULL;   // flag out-of-memory
                        break;
@@ -7319,7 +7319,7 @@ c_retab(Invocation *eap) {
                  ptr = new_line + start_col;
                  for (col = 0; col < len; col++)
                     ptr[col] = (col < num_tabs) ? '\t' : ' ';
-                 if (ml_replace(lnum, new_line, FALSE) == OK)
+                 if (ml_replace(lnum, new_line, false) == OK)
                     // "new_line" may have been copied
                     new_line = curBook->mem.cachedLine;
                  if (first_line == 0)
@@ -7330,7 +7330,7 @@ c_retab(Invocation *eap) {
                  col = start_col + len;
                   }
               }
-              got_tab = FALSE;
+              got_tab = false;
               num_spaces = 0;
 
               if (is_indent_only)
@@ -7382,7 +7382,7 @@ get_expr_indent(void) {
    //Need to make a copy, the @indentexpr option could be changed while evaluating it.
    CS inde_copy = copyStr(curBook->o.indentExpr);
    if (inde_copy) {
-      indent = (int)eval_to_number(inde_copy, TRUE);
+      indent = (int)eval_to_number(inde_copy, true);
       eeglFree(inde_copy);
    }
 
@@ -7402,7 +7402,7 @@ get_expr_indent(void) {
    // Reset did_throw, unless 'debug' has "throw" and inside a try/catch.
    if (did_throw && ((p_debug && firstOccurrence(p_debug, 't') == NULL) || trylevel == 0)) {
       handle_did_throw();
-      did_throw = FALSE;
+      did_throw = false;
    }
 
    // If there is an error, just keep the current indent.
@@ -7423,13 +7423,13 @@ fixthisline(int (*get_the_indent)(void)) {
    if (amount < 0)
       return;
 
-   opChangeIndent(INDENT_SET, amount, 0, TRUE);
+   opChangeIndent(INDENT_SET, amount, 0, true);
    if (linewhite(curPor->cursor.lnum))
       didAindentG = true;   // delete the indent if the line stays empty
 }
 
 
-// TRUE if current book has expression-based indenting.
+// true if current book has expression-based indenting.
 Boole
 jugIsIndentationExpressionBased(void) {
    return curBook->o.indentExpr != null;
@@ -7452,7 +7452,7 @@ f_indent(Arr(Var) argVars, OUT Var* returnVar) {
    }
 }
 
-// TRUE if the string "line" starts with a word from @cinwords
+// true if the string "line" starts with a word from @cinwords
 private Boole
 cin_is_cinword(CS line) {
    if (!curBook->o.indentKeywords)
@@ -7525,7 +7525,7 @@ skipStringLiteral(CS p) {
 }
 
 
-// TRUE if "line[col]" is inside a C string.
+// true if "line[col]" is inside a C string.
 int
 is_pos_in_string(CS line, ColNr col) {
    CS p;

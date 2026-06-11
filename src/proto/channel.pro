@@ -106,4 +106,3 @@ void ch_logfile(CS fname, CS opt);
 int ch_log_active(void);
 void f_ch_log(Var *argvars, Var *returnVar);
 void f_ch_logfile(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

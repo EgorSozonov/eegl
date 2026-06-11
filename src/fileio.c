@@ -129,7 +129,7 @@ repeat:
          if (**fnamep == '~')
             p = pbuf = doExpandEnvInMultiplePaths(*fnamep);
          else
-            p = pbuf = fiExpandAndCopy(*fnamep, FALSE);
+            p = pbuf = fiExpandAndCopy(*fnamep, false);
       } else
          p = *fnamep;
 
@@ -142,7 +142,7 @@ repeat:
             mch_dirname(dirname, MAXPATHL);
             if (has_homerelative) {
                s = copyStr(dirname);
-               home_replace(NULL, s, dirname, MAXPATHL, TRUE);
+               home_replace(NULL, s, dirname, MAXPATHL, true);
                eeglFree(s);
             }
             namelen = STRLEN(dirname);
@@ -164,14 +164,14 @@ repeat:
                }
             }
          } else {
-            home_replace(NULL, p, dirname, MAXPATHL, TRUE);
+            home_replace(NULL, p, dirname, MAXPATHL, true);
             // Only replace it when it starts with '~'
             if (*dirname == '~') {
                s = copyStr(dirname);
                *fnamep = s;
                eeglFree(*bufp);
                *bufp = s;
-               has_homerelative = TRUE;
+               has_homerelative = true;
             }
           }
           eeglFree(pbuf);
@@ -251,7 +251,7 @@ repeat:
       CS pat;
       CS sub;
       int sep;
-      int didit = FALSE;
+      int didit = false;
 
       CS flags = S"";
       s = src + *usedlen + 2;
@@ -283,7 +283,7 @@ repeat:
                   *fnamelen = slen;
                   eeglFree(*bufp);
                   *bufp = s;
-                  didit = TRUE;
+                  didit = true;
                    }
                }
                eeglFree(sub);
@@ -303,7 +303,7 @@ repeat:
       c = (*fnamep)[*fnamelen];
       if (c != ZERO)
          (*fnamep)[*fnamelen] = ZERO;
-      p = copyStr_shellescape(*fnamep, FALSE, FALSE);
+      p = copyStr_shellescape(*fnamep, false, false);
       if (c != ZERO)
          (*fnamep)[*fnamelen] = c;
       eeglFree(*bufp);
@@ -320,7 +320,7 @@ repeat:
 //Must be 1 or more. It's done in-place.
 private void
 shorten_dir_len(CS str, int trim_len) {
-   int skip = FALSE;
+   int skip = false;
    int dirchunk_len = 0;
 
    CS tail = fiGetShortFiName(str);
@@ -332,7 +332,7 @@ shorten_dir_len(CS str, int trim_len) {
             break;
       } ei (*s == '/') {     // copy '/' and next char
          *d++ = *s;
-         skip = FALSE;
+         skip = false;
          dirchunk_len = 0;
       } ei (!skip) {
          *d++ = *s;         // copy next char
@@ -342,7 +342,7 @@ shorten_dir_len(CS str, int trim_len) {
             // keep copying chars until we have our preferred length (or
             // until the above if/else branches move us along)
             if (dirchunk_len >= trim_len)
-                skip = TRUE;
+                skip = true;
          }
          int l = utfCharLen(s);
 
@@ -383,7 +383,7 @@ shorten_dir(CS str){
    shorten_dir_len(str, 1);
 }
 
-//Return TRUE if "fname" is a readable file.
+//Return true if "fname" is a readable file.
 int
 file_is_readable(CS fname){
    int      fd;
@@ -393,9 +393,9 @@ file_is_readable(CS fname){
 #endif
    if (*fname && !mch_isdir(fname) && (fd = open((char *)fname, O_RDONLY | O_NONBLOCK, 0)) >= 0) {
       close(fd);
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 //"chdir(dir)" function
@@ -473,13 +473,13 @@ f_delete(Var* argvars, Var* returnVar) {
 void
 f_executable(Var *argvars, Var* returnVar) {
    // Check in $PATH and also check directly if there is a directory name.
-   returnVar->number = mch_can_exe(tv_get_string(&argvars[0]), NULL, TRUE);
+   returnVar->number = mch_can_exe(tv_get_string(&argvars[0]), NULL, true);
 }
 
 void
 f_exepath(Var *argvars, Var* returnVar) {
    CS p = NULL;
-   (void)mch_can_exe(tv_get_string(&argvars[0]), OUT &p, TRUE);
+   (void)mch_can_exe(tv_get_string(&argvars[0]), OUT &p, true);
    returnVar->tag = VAR_STRING;
    returnVar->string = p;
 }
@@ -504,7 +504,7 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
    CS p;
    Byte pathbuf[NUMBUFLEN];
    int count = 1;
-   int first = TRUE;
+   int first = true;
    Boole error = false;
 
    returnVar->string = NULL;
@@ -515,7 +515,7 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
    if (argvars[1].tag != VAR_UNKNOWN) {
       p = convertVarToString(&argvars[1], pathbuf);
       if (!p)
-         error = TRUE;
+         error = true;
       else {
          if (!p)
             path = p;
@@ -543,7 +543,7 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
             OUT &file_to_find, 
             OUT &searchCtx
          );
-         first = FALSE;
+         first = false;
 
          if (fresult && returnVar->tag == VAR_LIST)
             list_append_string(returnVar->list, fresult, -1);
@@ -587,7 +587,7 @@ f_fnamemodify(Var *argvars, Var* returnVar) {
    else {
       len = STRLEN(fname);
       if (mods != NULL && *mods != ZERO)
-          (void)modify_fname(mods, FALSE, &usedlen, &fname, &fbuf, &len);
+          (void)modify_fname(mods, false, &usedlen, &fname, &fbuf, &len);
    }
 
    returnVar->tag = VAR_STRING;
@@ -613,13 +613,13 @@ void
 f_getcwd(Var *argvars, Var* returnVar) {
    Portal   *wp = NULL;
    Tab   *tp = NULL;
-   int      global = FALSE;
+   int      global = false;
 
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
    if (argvars[0].tag == VAR_NUMBER && argvars[0].number == -1 && argvars[1].tag == VAR_UNKNOWN)
-      global = TRUE;
+      global = true;
    else
       wp = find_tabwin(&argvars[0], &argvars[1], &tp);
 
@@ -784,7 +784,7 @@ void
 f_glob2regpat(Var *argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
 
-   CS pat = convertVarToString_strict(&argvars[0], buf, FALSE);
+   CS pat = convertVarToString_strict(&argvars[0], buf, false);
    returnVar->tag = VAR_STRING;
    returnVar->string = (pat == NULL) ? NULL : file_pat_to_reg_pat(pat, NULL, NULL);
 }
@@ -812,7 +812,7 @@ f_globpath(Var *argvars, Var* returnVar) {
       }
    }
    if (file && !error) {
-      fiGlobpath(tv_get_string(&argvars[0]), file, OUT &matches, flags, FALSE);
+      fiGlobpath(tv_get_string(&argvars[0]), file, OUT &matches, flags, false);
       if (returnVar->tag == VAR_STRING)
          returnVar->string = concatStrArray(matches.c, matches.len, text(S"\n"), matches.a);
       else {
@@ -856,7 +856,7 @@ mkdir_recurse(CS dir, Unt prot, Byte** created) {
    ei (mkdir_recurse(updir, prot, created) == OK) {
       r = eeMkdir_emsg(updir, prot);
       if (r == OK && created != NULL && *created == NULL)
-         *created = fiExpandAndCopy(updir, FALSE);
+         *created = fiExpandAndCopy(updir, false);
    }
    eeglFree(updir);
    return r;
@@ -866,8 +866,8 @@ void
 f_mkdir(Var* argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    Unt prot = 7*64 + 5*8 + 5;
-   int defer = FALSE;
-   int defer_recurse = FALSE;
+   int defer = false;
+   int defer_recurse = false;
    CS created = NULL;
 
    returnVar->number = FAIL;
@@ -906,7 +906,7 @@ f_mkdir(Var* argvars, Var* returnVar) {
     // Handle "D" and "R": deferred deletion of the created directory.
    if (returnVar->number == OK
             && created == NULL && (defer || defer_recurse))
-   created = fiExpandAndCopy(dir, FALSE);
+   created = fiExpandAndCopy(dir, false);
    if (created != NULL) {
       Var tv[2];
 
@@ -956,7 +956,7 @@ readdirex_dict_arg(Var *argvars, int *cmp) {
       return FAIL;
 
    if (bagHasKey(argvars[2].bag, tConst("sort")))
-      compare = bagGetString(argvars[2].bag, tConst("sort"), FALSE);
+      compare = bagGetString(argvars[2].bag, tConst("sort"), false);
    else {
       showErrFmtMsg(_(e_dictionary_key_str_required), (CS)"sort");
       return FAIL;
@@ -987,7 +987,7 @@ f_readdir(Var *argvars, Var* returnVar) {
       readdirex_dict_arg(argvars, &sort) == FAIL)
    return;
 
-   ret = readdir_core(&ga, FALSE, sort);
+   ret = readdir_core(&ga, false, sort);
    if (ret == OK) {
       for (i = 0; i < ga.len; i++) {
           p = ((Byte **)ga.c)[i];
@@ -1010,7 +1010,7 @@ f_readdirex(Var *argvars, Var* returnVar) {
           readdirex_dict_arg(argvars, &sort) == FAIL)
       return;
 
-   ret = readdir_core(&ga, TRUE, sort);
+   ret = readdir_core(&ga, true, sort);
    if (ret == OK) {
       for (i = 0; i < ga.len; i++) {
           Bag* bag = ((Bag**)ga.c)[i];
@@ -1023,9 +1023,9 @@ f_readdirex(Var *argvars, Var* returnVar) {
 
 private void
 read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
-   int      binary = FALSE;
+   int      binary = false;
    int      blob = always_blob;
-   int      failed = FALSE;
+   int      failed = false;
    FILE   *fd;
    Byte   buf[(IOSIZE/256)*256];   // rounded to avoid odd + 1
    int io_size = sizeof(buf);
@@ -1047,9 +1047,9 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
             size = (FileSize)tv_get_number(&argvars[2]);
       } else {
          if (STRCMP(tv_get_string(&argvars[1]), "b") == 0)
-            binary = TRUE;
+            binary = true;
          if (STRCMP(tv_get_string(&argvars[1]), "B") == 0)
-            blob = TRUE;
+            blob = true;
 
          if (argvars[2].tag != VAR_UNKNOWN)
             maxline = (long)tv_get_number(&argvars[2]);
@@ -1122,13 +1122,13 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
             }
             if (!s) {
                do_outofmem_msg((Ulong) prevlen + len + 1);
-               failed = TRUE;
+               failed = true;
                break;
             }
 
             li = listitem_alloc();
             eeglFree(s);
-            failed = TRUE;
+            failed = true;
             break;
             li->c = (Var){.tag = VAR_STRING, .lock = 0, .string = s};
             list_append(returnVar->list, li);
@@ -1222,13 +1222,13 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
 // "readblob()" function
 void
 f_readblob(Var* argvars, Var* returnVar) {
-   read_file_or_blob(argvars, returnVar, TRUE);
+   read_file_or_blob(argvars, returnVar, true);
 }
 
 // "readfile()" function
 void
 f_readfile(Var* argvars, Var* returnVar) {
-   read_file_or_blob(argvars, returnVar, FALSE);
+   read_file_or_blob(argvars, returnVar, false);
 }
 
 void
@@ -1239,17 +1239,17 @@ f_resolve(Var *argvars, Var* returnVar) {
    int   len;
    CS remain = NULL;
    CS q;
-   int   is_relative_to_current = FALSE;
-   int   has_trailing_pathsep = FALSE;
+   int   is_relative_to_current = false;
+   int   has_trailing_pathsep = false;
    int   limit = 100;
 
    p = copyStr(p);
    if (p[0] == '.' && (p[1] == '/' || (p[1] == '.' && (p[2] == '/'))))
-      is_relative_to_current = TRUE;
+      is_relative_to_current = true;
 
    len = STRLEN(p);
    if (len > 1 && after_pathsep(p, p + len)) {
-       has_trailing_pathsep = TRUE;
+       has_trailing_pathsep = true;
        p[len - 1] = ZERO; // the trailing slash breaks readlink()
    }
 
@@ -1386,7 +1386,7 @@ f_tempname(Var *argvars UNUSED, Var* returnVar) {
    static int   x = 'A';
 
    returnVar->tag = VAR_STRING;
-   returnVar->string = eeTempName(x, FALSE);
+   returnVar->string = eeTempName(x, false);
 
     // Advance 'x' to use A-Z and 0-9, so that there are at least 34 different
     // names.  Skip 'I' and 'O', they are used for shell redirection.
@@ -1402,9 +1402,9 @@ f_tempname(Var *argvars UNUSED, Var* returnVar) {
 
 void
 f_writefile(Var *argvars, Var* returnVar){
-   int      binary = FALSE;
-   int      append = FALSE;
-   int      defer = FALSE;
+   int      binary = false;
+   int      append = false;
+   int      defer = false;
    int      do_fsync = p_fs;
    CS fname;
    FILE   *fd;
@@ -1440,15 +1440,15 @@ f_writefile(Var *argvars, Var* returnVar){
       if (arg2 == NULL)
           return;
       if (firstOccurrence(arg2, 'b') != NULL)
-          binary = TRUE;
+          binary = true;
       if (firstOccurrence(arg2, 'a') != NULL)
-          append = TRUE;
+          append = true;
       if (firstOccurrence(arg2, 'D') != NULL)
-          defer = TRUE;
+          defer = true;
       if (firstOccurrence(arg2, 's') != NULL)
-          do_fsync = TRUE;
+          do_fsync = true;
       ei (firstOccurrence(arg2, 'S') != NULL)
-          do_fsync = FALSE;
+          do_fsync = false;
    }
 
    fname = convertVarToStringSingleUse(&argvars[1]);
@@ -1469,7 +1469,7 @@ f_writefile(Var *argvars, Var* returnVar){
 
          tv.tag = VAR_STRING;
          tv.lock = 0;
-         tv.string = fiExpandAndCopy(fname, FALSE);
+         tv.string = fiExpandAndCopy(fname, false);
          if (tv.string == NULL || add_defer((CS)"delete", 1, &tv) == FAIL) {
             ret = -1;
             fclose(fd);
@@ -1515,7 +1515,7 @@ void
 f_filecopy(Var *argvars, Var* returnVar){
    FileStat   st;
 
-   returnVar->number = FALSE;
+   returnVar->number = false;
 
    if (check_for_string_arg(argvars, 0) == FAIL || check_for_string_arg(argvars, 1) == FAIL)
       return;
@@ -1525,7 +1525,7 @@ f_filecopy(Var *argvars, Var* returnVar){
    if (lstat((char *)from, &st) >= 0 && (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode))) {
       returnVar->number = eeCopyfile(
           tv_get_string(&argvars[0]),
-          tv_get_string(&argvars[1])) == OK ? TRUE : FALSE;
+          tv_get_string(&argvars[1])) == OK ? true : false;
    } 
 }
 
@@ -1537,7 +1537,7 @@ home_replace(
    CS src, //input file name
    CS dst, //where to put the result
    int dstlen,  //maximum length of the result
-   int one      //if TRUE, only replace one file name, include spaces and commas in the file name.
+   int one      //if true, only replace one file name, include spaces and commas in the file name.
 ){
    Unt   dirlen = 0, envlen = 0;
    Unt   len;
@@ -1570,7 +1570,7 @@ home_replace(
 
       Unt flen = STRLEN(homedir_env);
       CS fbuf = NULL;
-      (void)modify_fname(S":p", FALSE, &usedlen, &homedir_env, OUT &fbuf, &flen);
+      (void)modify_fname(S":p", false, &usedlen, &homedir_env, OUT &fbuf, &flen);
       flen = STRLEN(homedir_env);
       if (flen > 0 && homedir_env[flen - 1] == '/')
          // Remove the trailing / that is added to a directory.
@@ -1634,7 +1634,7 @@ home_replace_save(Book* book, CS inputFname){
    if (inputFname)      // just in case
       len += STRLEN(inputFname);
    CS dst = alloc(len);
-   home_replace(book, inputFname, OUT dst, len, TRUE);
+   home_replace(book, inputFname, OUT dst, len, true);
    return dst;
 }
 
@@ -1646,7 +1646,7 @@ homeReplaceA(Book* book, CS inputFname, Arena* a){
    if (inputFname)      // just in case
       len += STRLEN(inputFname);
    CS dst = allocateArray(len, Byte, a);
-   home_replace(book, inputFname, OUT dst, len, TRUE);
+   home_replace(book, inputFname, OUT dst, len, true);
    return dst;
 }
 
@@ -1656,7 +1656,7 @@ homeReplaceA(Book* book, CS inputFname, Arena* a){
 //FPC_DIFF   if they both exist and are different files.
 //FPC_NOTX   if they both don't exist.
 //FPC_DIFFX  if one of them doesn't exist.
-//For the first name environment variables are expanded if "expandenv" is TRUE.
+//For the first name environment variables are expanded if "expandenv" is true.
 int
 fullpathcmp(
    CS s1,
@@ -1680,8 +1680,8 @@ fullpathcmp(
       if (checkname) {
          if (fnamecmp(exp1, s2) == 0)
             return FPC_SAMEX;
-         r1 = eeFullFileName(exp1, full1, MAXPATHL, FALSE);
-         r2 = eeFullFileName(s2, full2, MAXPATHL, FALSE);
+         r1 = eeFullFileName(exp1, full1, MAXPATHL, false);
+         r2 = eeFullFileName(s2, full2, MAXPATHL, false);
          if (r1 == OK && r2 == OK && fnamecmp(full1, full2) == 0)
             return FPC_SAMEX;
       }
@@ -1742,13 +1742,13 @@ skipInitialSlashes(CS path){
    return retval;
 }
 
-//Return TRUE if the directory of "fname" exists, FALSE otherwise.
-//Also return TRUE if there is no directory name. "fname" must be writable!.
+//Return true if the directory of "fname" exists, false otherwise.
+//Also return true if there is no directory name. "fname" must be writable!.
 private int
 dir_of_file_exists(CS fname){
    CS p = gettail_sep(fname);
    if (p == fname)
-      return TRUE;
+      return true;
    int c = *p;
    *p = ZERO;
    int retval = mch_isdir(fname);
@@ -1757,7 +1757,7 @@ dir_of_file_exists(CS fname){
 }
 
 //Concatenate file names fname1 and fname2 into allocated memory.
-//Only add a '/' or '\\' when 'sep' is TRUE and it is necessary.
+//Only add a '/' or '\\' when 'sep' is true and it is necessary.
 CS
 concat_fnames(CS fname1, CS fname2, Boole sep){
    CS dest = alloc(STRLEN(fname1) + STRLEN(fname2) + 2);
@@ -1791,14 +1791,14 @@ fiExpandAndCopy(NULLABLE CS fname, int force) { // force expansion, even when it
       ? copyStr(buf) : copyStr(fname);
 }
 
-// return TRUE if "fname" exists.
+// return true if "fname" exists.
 int
 eeFexists(CS fname){
    FileStat st;
 
    if (stat((char *)fname, &st))
-      return FALSE;
-   return TRUE;
+      return false;
+   return true;
 }
 
 //Invoke expand_wildcards() for one pattern.
@@ -1815,11 +1815,11 @@ expand_wildcards_eval(
    CS   ignoredMsg;
    Unt   usedlen;
    int is_cur_alt_file = *exp_pat == '%' || *exp_pat == '#';
-   int star_follows = FALSE;
+   int star_follows = false;
 
    if (is_cur_alt_file || *exp_pat == '<') {
       ++emsg_off;
-      eval_pat = evalVars(NULL, OUT &ignoredMsg, exp_pat, exp_pat, &usedlen, NULL, TRUE);
+      eval_pat = evalVars(NULL, OUT &ignoredMsg, exp_pat, exp_pat, &usedlen, NULL, true);
       --emsg_off;
       if (eval_pat) {
          star_follows = STRCMP(exp_pat + usedlen, "*") == 0;
@@ -1867,7 +1867,7 @@ expand_wildcards(
    if (p_wig) {
       // check all files in files->c
       for (int i = 0; i < (int)files->len; ++i) {
-         CS ffname = fiExpandAndCopy(files->c[i], FALSE);
+         CS ffname = fiExpandAndCopy(files->c[i], false);
          if (match_file_list(p_wig, files->c[i], ffname)) {
             // remove this matching file from the list
             eeglFree(files->c[i]);
@@ -1904,7 +1904,7 @@ expand_wildcards(
    return retval;
 }
 
-// Return TRUE if "fname" matches with an entry in 'suffixes'.
+// Return true if "fname" matches with an entry in 'suffixes'.
 Boole
 match_suffix(CS fname){
    if (!p_su)
@@ -1935,7 +1935,7 @@ match_suffix(CS fname){
    return (setsuflen != 0);
 }
 
-//Return TRUE if we can expand this backtick thing here.
+//Return true if we can expand this backtick thing here.
 private int
 eeBacktick(CS p) {
    return (*p == '`' && *(p + 1) != ZERO && *(p + STRLEN(p) - 1) == '`');
@@ -2005,7 +2005,7 @@ unix_expandpath(
    int starts_with_dot;
    int matches;
    Unt len;
-   int starstar = FALSE;
+   int starstar = false;
    static int stardepth = 0;       // depth for "**" expansion
 
    DIR* dirp;
@@ -2065,7 +2065,7 @@ unix_expandpath(
    //Check for "**" between "s" and "e".
    for (p = s; p < e; ++p) {
       if (p[0] == '*' && p[1] == '*')
-         starstar = TRUE;
+         starstar = true;
    } 
 
    // convert the file pattern to a regexp pattern
@@ -2074,9 +2074,9 @@ unix_expandpath(
 
    // compile the regexp into a program
    if (flags & EW_ICASE)
-      regmatch.rm_ic = TRUE;      // 'wildignorecase' set
+      regmatch.rm_ic = true;      // 'wildignorecase' set
    else
-      regmatch.rm_ic = FALSE;   // ignore case when 'fileignorecase' is set
+      regmatch.rm_ic = false;   // ignore case when 'fileignorecase' is set
    if (flags & (EW_NOERROR | EW_NOTWILD))
       ++emsg_silent;
    regmatch.regprog = compileRegexp(pat, RE_MAGIC);
@@ -2095,7 +2095,7 @@ unix_expandpath(
    if (!didstar && stardepth < 100 && starstar && e - s == 2 && *path_end == '/') {
       eeSnprintf(s, tempLen - len, "%s", path_end + 1);
       ++stardepth;
-      (void)unix_expandpath(OUT fileList, temp, len, flags, TRUE);
+      (void)unix_expandpath(OUT fileList, temp, len, flags, true);
       --stardepth;
    }
 
@@ -2126,7 +2126,7 @@ unix_expandpath(
                // For "**" in the pattern first go deeper in the tree to find matches.
                eeSnprintf(temp + len, tempLen - len, "/**%s", path_end);
                ++stardepth;
-               (void)unix_expandpath(OUT fileList, temp, len + 1, flags, TRUE);
+               (void)unix_expandpath(OUT fileList, temp, len + 1, flags, true);
                --stardepth;
             }
 
@@ -2134,7 +2134,7 @@ unix_expandpath(
             if (mch_has_exp_wildcard(path_end)) { // handle more wildcards
                // need to expand another component of the path
                // remove backslashes for the remaining components only
-               (void)unix_expandpath(OUT fileList, temp, len + 1, flags, FALSE);
+               (void)unix_expandpath(OUT fileList, temp, len + 1, flags, false);
             } else {
                FileStat  sb;
 
@@ -2170,7 +2170,7 @@ unix_expandpath(
 //Returns the number of matches found.
 private int
 mch_expandpath(OUT ExpandMatch* matches, CS path, Unt flags){
-   return unix_expandpath(OUT matches, path, 0, flags, FALSE);
+   return unix_expandpath(OUT matches, path, 0, flags, false);
 }
 
 typedef DIR* DirPtr;
@@ -2255,21 +2255,21 @@ LIST_TY(DirPtr)
 //   return countMatches;
 //}
 
-// Return TRUE if "p" contains what looks like an environment variable. Allowing for escaping.
+// Return true if "p" contains what looks like an environment variable. Allowing for escaping.
 private int
 hasEnvVar(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
          ++p;
       ei (firstOccurrence((CS)"$",  *p) != NULL)
-         return TRUE;
+         return true;
    }
-   return FALSE;
+   return false;
 }
 
 #ifdef SPECIAL_WILDCHAR
 
-// Return TRUE if "p" contains a special wildcard character, one that Eegl cannot expand, 
+// Return true if "p" contains a special wildcard character, one that Eegl cannot expand, 
 // requires using a shell.
 private int
 has_special_wildchar(CS p){
@@ -2287,10 +2287,10 @@ has_special_wildchar(CS p){
          // A quote and backtick must be followed by another one.
          if ((*p == '`' || *p == '\'') && firstOccurrence(p, *p) == NULL)
             continue;
-         return TRUE;
+         return true;
       }
    }
-   return FALSE;
+   return false;
 }
 
 #endif
@@ -2314,7 +2314,7 @@ gen_expand_wildcards(
    CS p;
    static Boole recursive = false;
    int retval = OK;
-   int did_expand_in_path = FALSE;
+   int did_expand_in_path = false;
    CS path_option = curBook->o.path;
 
    //doExpandEnv() is called to expand things like "~user". If this fails,
@@ -2344,7 +2344,7 @@ gen_expand_wildcards(
       } else {
          // First expand environment variables, "~/" and "~user/".
          if ((hasEnvVar(p) && !(flags & EW_NOTENV)) || *p == '~') {
-            p = doExpandEnvInFilePaths(p, TRUE);
+            p = doExpandEnvInFilePaths(p, true);
             if (p == NULL)
                p = pat[i];
             //If doExpandEnv() can't expand an environment variable, use the shell to do that. 
@@ -2370,7 +2370,7 @@ gen_expand_wildcards(
                recursive = false;
                add_pat = expand_in_path(OUT matches, p, flags);
                recursive = true;
-               did_expand_in_path = TRUE;
+               did_expand_in_path = true;
             } else
                add_pat = mch_expandpath(OUT matches, p, flags);
          }
@@ -2505,7 +2505,7 @@ pathcmp(CS p, CS q, int maxlen) {
    return 1;
 }
 
-//TRUE if "name" is a full (absolute) path name or URL.
+//true if "name" is a full (absolute) path name or URL.
 int
 eeIsAbsName(CS name){
    return (path_with_url(name) != 0 || !fiIsRelative(name));
@@ -2516,7 +2516,7 @@ private int
 mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand when already absolute path
    int buflen = 0;
    int fd = -1;
-   static int dont_fchdir = FALSE;   // TRUE when fchdir() doesn't work
+   static int dont_fchdir = false;   // true when fchdir() doesn't work
    Byte olddir[MAXPATHL];
    CS p;
    int retval = OK;
@@ -2541,7 +2541,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
             if (fd >= 0 && fchdir(fd) < 0) {
                close(fd);
                fd = -1;
-               dont_fchdir = TRUE;       // don't try again
+               dont_fchdir = true;       // don't try again
             }
          }
 
@@ -2808,7 +2808,7 @@ private void *ff_fn_search_context = NULL;
 Byte *
 eeFindfirst(Byte *path, Byte *filename, int level) {
     ff_fn_search_context =
-   eeFindFile_init(path, filename, NULL, level, TRUE, FALSE,
+   eeFindFile_init(path, filename, NULL, level, true, false,
       ff_fn_search_context, rel_fname);
     if (NULL == ff_fn_search_context)
    return NULL;
@@ -2854,8 +2854,8 @@ eeFindnext(void) {
 //
 //Upward search is only done on the starting dir.
 //
-//If 'free_visited' is TRUE, the list of already visited files/directories is cleared. Set this to 
-//FALSE if you just want to search from another directory, but want to be sure that no directory 
+//If 'free_visited' is true, the list of already visited files/directories is cleared. Set this to 
+//false if you just want to search from another directory, but want to be sure that no directory 
 //from a previous search is searched again. This is useful if you search for a file at different 
 //places. The list of visited files/dirs can also be cleared with the function
 //findfileFreeVisitedList().
@@ -2901,7 +2901,7 @@ eeFindFile_init(
    ff_clear(searchCtx);
 
    // clear visited list if wanted
-   if (free_visited == TRUE)
+   if (free_visited == true)
       findfileFreeVisitedList(searchCtx);
    else {
       // Reuse old visited lists. Get the visited list for the given
@@ -2928,7 +2928,7 @@ eeFindFile_init(
          copySubstrToAllocation(fileExpansionS.c, (Text){rel_fname, len});
          fileExpansionS.len = len;
 
-         searchCtx->startDir.c = fiExpandAndCopy(fileExpansionS.c, FALSE);
+         searchCtx->startDir.c = fiExpandAndCopy(fileExpansionS.c, false);
          if (searchCtx->startDir.c == NULL)
             goto error_return;
          searchCtx->startDir.len = STRLEN(searchCtx->startDir.c);
@@ -2982,7 +2982,7 @@ eeFindFile_init(
             fileExpansionS.len = len;
 
             tmp = &searchCtx->stopDirs[dircount - 1];
-            tmp->c = fiExpandAndCopy(fileExpansionS.c, FALSE);
+            tmp->c = fiExpandAndCopy(fileExpansionS.c, false);
             tmp->len = tmp->c ? STRLEN(tmp->c) : 0;
          } else {
             tmp = &searchCtx->stopDirs[dircount - 1];
@@ -3216,7 +3216,7 @@ eeChdirfile(CS fname, char *trigger_autocmd) {
       return FAIL;
 
    if (trigger_autocmd != NULL)
-      applyAutocomms(EVENT_DIRCHANGED, (CS)trigger_autocmd, new_dir, FALSE, curBook);
+      applyAutocomms(EVENT_DIRCHANGED, (CS)trigger_autocmd, new_dir, false, curBook);
    return OK;
 }
 
@@ -3634,7 +3634,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
           int plen = (path_end - searchCtx->startDir.c) + (*path_end != ZERO);
 
           // is the last starting directory in the stop list?
-          if (ff_path_in_stoplist(searchCtx->startDir.c, plen, searchCtx->stopDirs) == TRUE)
+          if (ff_path_in_stoplist(searchCtx->startDir.c, plen, searchCtx->stopDirs) == true)
          break;
 
          // cut of last dir
@@ -3761,7 +3761,7 @@ ff_get_visited_list(Text filename, OUT VisitedList** listHead) {
    return retptr;
 }
 
-//check if two wildcard paths are equal. Returns TRUE or FALSE.
+//check if two wildcard paths are equal. Returns true or false.
 //They are equal if:
 // - both paths are NULL
 // - they have the same length
@@ -3777,17 +3777,17 @@ ff_wc_equal(CS s1, CS s2) {
    int prev2 = ZERO;
 
    if (s1 == s2)
-      return TRUE;
+      return true;
 
    if (s1 == NULL || s2 == NULL)
-      return FALSE;
+      return false;
 
    for (i = 0, j = 0; s1[i] != ZERO && s2[j] != ZERO;) {
       c1 = mb_ptr2char(s1 + i);
       c2 = mb_ptr2char(s2 + j);
 
       if ((c1 != c2) && (prev1 != '*' || prev2 != '*'))
-          return FALSE;
+          return false;
       prev2 = prev1;
       prev1 = c1;
 
@@ -3802,18 +3802,18 @@ ff_wc_equal(CS s1, CS s2) {
 //returns OK if it is newly added
 //
 //TODO: What to do on memory allocation problems?
-//   -> return TRUE - Better the file is found several times instead of never.
+//   -> return true - Better the file is found several times instead of never.
 private int
 checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathlen) {
    FileStat st;
-   int url = FALSE;
+   int url = false;
 
    // For a URL we only compare the name, otherwise we compare the
    // device/inode (unix) or the full path name (not Unix).
    if (path_with_url(fname.c)) {
       copySubstrToAllocation(fileExpansionS.c, fname);
       fileExpansionS.len = fname.len;
-      url = TRUE;
+      url = true;
    } else {
       fileExpansionS.c[0] = ZERO;
       fileExpansionS.len = 0;
@@ -3832,7 +3832,7 @@ checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathl
          )
       {
           // are the wildcard parts equal
-          if (ff_wc_equal(vp->wildcardPath, wc_path) == TRUE)
+          if (ff_wc_equal(vp->wildcardPath, wc_path) == true)
          // already visited
          return FAIL;
       }
@@ -3842,12 +3842,12 @@ checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathl
    vp = alloc( offsetof(Visited, ffv_fname) + fileExpansionS.len + 1);
 
    if (!url) {
-      vp->areDevInoValid = TRUE;
+      vp->areDevInoValid = true;
       vp->deviceId = st.st_dev;
       vp->inodeId = st.st_ino;
       vp->ffv_fname[0] = ZERO;
    } else {
-      vp->areDevInoValid = FALSE;
+      vp->areDevInoValid = false;
       STRCPY(vp->ffv_fname, fileExpansionS.c);
    }
    if (wc_path != NULL)
@@ -3963,7 +3963,7 @@ ff_clear(FileSearchCtx* searchCtx) {
    searchCtx->maxRecursion = 0;
 }
 
-// check if the given path is in the stopdirs returns TRUE if yes else FALSE
+// check if the given path is in the stopdirs returns true if yes else false
 private int
 ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
    int      i = 0;
@@ -3974,7 +3974,7 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
 
    // if no path consider it as match
    if (path_len == 0)
-      return TRUE;
+      return true;
 
    for (i = 0; stopdirs_v[i].c != NULL; i++) {
       // match for parent directory. So '/home' also matches
@@ -3983,16 +3983,16 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
       if (fnamencmp(stopdirs_v[i].c, path, path_len) == 0
          && ((int)stopdirs_v[i].len <= path_len
              || stopdirs_v[i].c[path_len] == '/'))
-          return TRUE;
+          return true;
    } 
 
-   return FALSE;
+   return false;
 }
 
 //Find the file name "ptr[len]" in the path. Also find directory names.
 //
-//On the first call set the parameter 'first' to TRUE to initialize
-//the search. For repeating calls to FALSE.
+//On the first call set the parameter 'first' to true to initialize
+//the search. For repeating calls to false.
 //
 //Repeating calls will return other files called 'ptr[len]' from the path.
 //
@@ -4053,8 +4053,8 @@ find_directory_in_path(
 
 //Find the file name "ptr[len]" in the path. Also find directory names.
 //
-//On the first call set the parameter 'first' to TRUE to initialize
-//the search. For repeating calls to FALSE.
+//On the first call set the parameter 'first' to true to initialize
+//the search. For repeating calls to false.
 //
 //Repeating calls will return other files called 'ptr[len]' from the path.
 //
@@ -4084,7 +4084,7 @@ findFileInPathImpl(
 ){
    FileSearchCtx** searchCtx = search_ctx_arg;
    static CS dir;
-   static int did_findfile_init = FALSE;
+   static int did_findfile_init = false;
    CS file_name = NULL;
    int rel_to_curdir;
    static Unt file_to_findlen = 0;
@@ -4126,7 +4126,7 @@ findFileInPathImpl(
    ) {
       //Absolute path, no need to use "path_option".
       //If this is not a first call, return NULL.  We already returned a filename on the first call.
-      if (first == TRUE) {
+      if (first == true) {
          int      l;
          int      nameBuffGlen;
          int      run;
@@ -4187,11 +4187,11 @@ findFileInPathImpl(
       //Loop over all paths in the 'path' or 'cdpath' option.
       //When "first" is set, first setup to the start of the option.
       //Otherwise continue to find the next match.
-      if (first == TRUE) {
+      if (first == true) {
          // findfileFreeVisitedList can handle a possible NULL pointer
          findfileFreeVisitedList(*searchCtx);
          dir = path_option;
-         did_findfile_init = FALSE;
+         did_findfile_init = false;
       }
 
       for (;;) {
@@ -4200,7 +4200,7 @@ findFileInPathImpl(
             if (file_name)
                break;
 
-            did_findfile_init = FALSE;
+            did_findfile_init = false;
          } else {
             if (!dir || *dir == ZERO) {
                // We searched all paths of the option, now we can free the search context.
@@ -4217,16 +4217,16 @@ findFileInPathImpl(
             // get the stopdir string
             CS r_ptr = eeFindFile_stopdir(buf);
             *searchCtx = eeFindFile_init(
-               buf, (Text){*file_to_find, file_to_findlen}, r_ptr, 100, FALSE, find_what,
-               *searchCtx, FALSE, rel_fname
+               buf, (Text){*file_to_find, file_to_findlen}, r_ptr, 100, false, find_what,
+               *searchCtx, false, rel_fname
             );
             if (*searchCtx != NULL)
-               did_findfile_init = TRUE;
+               did_findfile_init = true;
          }
       }
    }
    if (file_name == NULL && (options & FNAME_MESS)) {
-      if (first == TRUE) {
+      if (first == true) {
           if (find_what == FINDFILE_DIR)
          showErrFmtMsg(_(e_cant_find_directory_str_in_cdpath), *file_to_find);
           else
@@ -4295,8 +4295,8 @@ file_name_in_line(
    OUT LineNr* file_lnum   // line number after the file name
 ){
    int len;
-   int in_type = TRUE;
-   int is_url = FALSE;
+   int in_type = true;
+   int is_url = false;
 
    //search forward for what could be the start of a file name
    CS ptr = line + col;
@@ -4330,9 +4330,9 @@ file_name_in_line(
       // that http://google.com:8080?q=this&that=ok works.
       if ((ptr[len] >= 'A' && ptr[len] <= 'Z') || (ptr[len] >= 'a' && ptr[len] <= 'z')) {
          if (in_type && path_is_url(ptr + len + 1))
-            is_url = TRUE;
+            is_url = true;
       } else
-         in_type = FALSE;
+         in_type = false;
 
       if (ptr[len] == '\\')
           // Skip over the "\" in "\ ".
@@ -4500,7 +4500,7 @@ find_previous_pathsep(CS path, Byte** psep) {
    return FAIL;
 }
 
-//Return TRUE if "maybe_unique" is unique wrt other_paths in "matches".
+//Return true if "maybe_unique" is unique wrt other_paths in "matches".
 //"maybe_unique" is the end portion of "matches->c[i]".
 private Boole
 is_unique(CS maybe_unique, ExpandMatch* matches, Unt i) {
@@ -4619,7 +4619,7 @@ get_path_cutoff(CS fname, OUT ExpandMatch* matches) {
 private void
 uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // path or cdpath
    Arr(CS) fnames = matches->c;
-   int sort_again = FALSE;
+   int sort_again = false;
    RegMatch regmatch;
    CS short_name;
 
@@ -4636,7 +4636,7 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
    CS pat = file_pat_to_reg_pat(file_pattern, NULL, NULL);
    eeglFree(file_pattern);
 
-   regmatch.rm_ic = TRUE;      // always ignore case
+   regmatch.rm_ic = true;      // always ignore case
    regmatch.regprog = compileRegexp(pat, RE_MAGIC + RE_STRING);
    eeglFree(pat);
    if (regmatch.regprog == NULL)
@@ -4666,7 +4666,7 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
             && eeRegexec(&regmatch, path_cutoff, (ColNr)0)
             && is_unique(path_cutoff, matches, i)
       ) {
-         sort_again = TRUE;
+         sort_again = true;
          mch_memmove(path, path_cutoff, STRLEN(path_cutoff) + 1);
       } else {
          // Here all files can be reached without path, so get shortest
@@ -4678,7 +4678,7 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
                && is_unique(pathsep_p + 1, matches, i)
                && path_cutoff != NULL && pathsep_p + 1 >= path_cutoff
             ) {
-                sort_again = TRUE;
+                sort_again = true;
                 mch_memmove(path, pathsep_p + 1,
                    (Unt)((path + len) - (pathsep_p + 1)) + 1);  // +1 for ZERO
                 break;
@@ -4726,7 +4726,7 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
 
       eeglFree(fnames[i]);
       fnames[i] = rel_path;
-      sort_again = TRUE;
+      sort_again = true;
       ui_breakcheck();
    }
 
@@ -4779,12 +4779,12 @@ simplify_filename(CS filename) {
    int components = 0;
    CS tail;
    Boole stripping_disabled = false;
-   int relative = TRUE;
+   int relative = true;
 
    CS p = filename;
 
    if (*p == '/') {
-      relative = FALSE;
+      relative = false;
       do
          ++p;
       while (*p == '/');
@@ -4828,7 +4828,7 @@ simplify_filename(CS filename) {
             MB_PTR_ADV(tail);
 
          if (components > 0) {     // strip one preceding component
-            int do_strip = FALSE;
+            int do_strip = false;
             Byte saved_char;
             FileStat st;
 
@@ -4840,7 +4840,7 @@ simplify_filename(CS filename) {
                saved_char = p[-1];
                p[-1] = ZERO;
                if (lstat((char *)filename, &st) < 0)
-                  do_strip = TRUE;
+                  do_strip = true;
                p[-1] = saved_char;
 
                --p;
@@ -4859,7 +4859,7 @@ simplify_filename(CS filename) {
                   saved_char = *tail;
                   *tail = ZERO;
                   if (stat((char *)filename, &st) >= 0)
-                      do_strip = TRUE;
+                      do_strip = true;
                   else
                       stripping_disabled = true;
                   *tail = saved_char;
@@ -4880,7 +4880,7 @@ simplify_filename(CS filename) {
                      }
 
                      if (new_st.st_ino != st.st_ino || new_st.st_dev != st.st_dev) {
-                        do_strip = FALSE;
+                        do_strip = false;
                         //We don't disable stripping of later
                         //components since the unstripped path name is still valid.
                      }
@@ -4931,7 +4931,7 @@ simplify_filename(CS filename) {
     return (Unt)(p_end - filename);
 }
 
-//Return TRUE if the string "p" contains a wildcard that mch_expandpath() can expand.
+//Return true if the string "p" contains a wildcard that mch_expandpath() can expand.
 int
 mch_has_exp_wildcard(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
@@ -4939,12 +4939,12 @@ mch_has_exp_wildcard(CS p) {
          ++p;
       else
          if (firstOccurrence((CS)"*?[{'", *p) != NULL)
-            return TRUE;
+            return true;
    }
-   return FALSE;
+   return false;
 }
 
-//Return TRUE if the string "p" contains a wildcard. Don't recognize '~' at the end as a wildcard.
+//Return true if the string "p" contains a wildcard. Don't recognize '~' at the end as a wildcard.
 int
 mch_has_wildcard(CS p){
    for ( ; *p; MB_PTR_ADV(p)) {
@@ -4952,9 +4952,9 @@ mch_has_wildcard(CS p){
          ++p;
       else
          if (firstOccurrence((CS)"*?[{`'$", *p) != NULL || (*p == '~' && p[1] != ZERO))
-            return TRUE;
+            return true;
    }
-   return FALSE;
+   return false;
 }
 
 private int
@@ -5085,7 +5085,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
 
    // get a name for the temp file
    CS tempname;
-   if ((tempname = eeTempName('o', FALSE)) == NULL) {
+   if ((tempname = eeTempName('o', false)) == NULL) {
       emsg(_(e_cant_get_temp_file_name));
       return FAIL;
    }
@@ -5306,19 +5306,19 @@ filemess(Book* book, CS name, CS s, int attr){
    //one, reset msg_scroll before calling filemess().
    msg_scroll_save = msg_scroll;
    if (!isExitingG && p_verbose == 0)
-      msg_scroll = FALSE;
+      msg_scroll = false;
    if (!msg_scroll)   // wait a bit when overwriting an error msg
-      check_for_delay(FALSE);
+      check_for_delay(false);
    msg_start();
    if (prevMsgCol != 0 && msgColG == 0)
       msg_putchar('\r');  // overwrite any previous message.
    msg_scroll = msg_scroll_save;
-   msg_scrolled_ign = TRUE;
+   msg_scrolled_ign = true;
    //may truncate the message to avoid a hit-return prompt
    msgOuttransDeco(msg_may_trunc(IObuff), attr);
    msg_clr_eos();
    out_flush();
-   msg_scrolled_ign = FALSE;
+   msg_scrolled_ign = false;
 }
 
 //Read lines from file "fname" into the book after line "from".
@@ -5376,13 +5376,13 @@ readfile(
    long   size = 0;
    CS p;
    FileSize   filesize = 0;
-   int      skip_read = FALSE;
+   int      skip_read = false;
    ContextSha256 sha_ctx;
-   int      read_undo_file = FALSE;
+   int      read_undo_file = false;
    int      split = 0;      // number of split lines
 #define UNKNOWN    0x0fffffff      // file size is unknown
    LineNr   linecnt;
-   int      error = FALSE;      // errors encountered
+   int      error = false;      // errors encountered
    long   linerest = 0;      // remaining chars in line
    int      perm = 0;
    int      swap_mode = -1;      // protection bits for swap file
@@ -5392,17 +5392,17 @@ readfile(
    int msg_save = msg_scroll;
    LineNr read_no_eol_lnum = 0;   // non-zero lnum when last line of
                // last read was missing the eol
-   int file_rewind = FALSE;
+   int file_rewind = false;
    LineNr illegal_byte = 0;   // line nr with illegal byte
    int bad_char_behavior = BAD_REPLACE; // BAD_KEEP, BAD_DROP or character to replace with
-   int converted = FALSE;   // TRUE if conversion done
-   int notconverted = FALSE;   // TRUE if conversion wanted but it wasn't possible
+   int converted = false;   // true if conversion done
+   int notconverted = false;   // true if conversion wanted but it wasn't possible
    Pos  orig_start;
    Book* old_curbuf;
    static CS msg_is_a_directory = S"is a directory";
    Unt fnamelen = 0;
 
-   curBook->auDidFileType = FALSE; // reset before triggering any autocommands
+   curBook->auDidFileType = false; // reset before triggering any autocommands
    curBook->noEolLnum = 0;   // in case it was set by the previous read
 
    // Remember the initial values of curBook, curBook->fullFileName and
@@ -5417,10 +5417,10 @@ readfile(
    int using_currFileName = (fname == curBook->currFileName) || (sfname == curBook->currFileName);
 
    // After reading a file the cursor line changes but we don't want to display the line.
-   ex_no_reprint = TRUE;
+   ex_no_reprint = true;
 
    // don't display the file info for another buffer now
-   needFileinfoG = FALSE;
+   needFileinfoG = false;
 
    //For Unix: Use the short file name whenever possible.
    //Avoids problems with networks and when directory names are changed.
@@ -5438,7 +5438,7 @@ readfile(
       curBook->opStart.col = 0;
 
       if (newfile) {
-         if (auCommApplyWithInvo(EVENT_BUFREADCMD, NULL, sfname, FALSE, curBook, invo)) {
+         if (auCommApplyWithInvo(EVENT_BUFREADCMD, NULL, sfname, false, curBook, invo)) {
             retval = OK;
             if (aborting())
                 retval = FAIL;
@@ -5451,7 +5451,7 @@ readfile(
                curBook->flags &= ~BF_NOTEDITED;
             goto theend;
          }
-      } ei (auCommApplyWithInvo(EVENT_FILEREADCMD, sfname, sfname, FALSE, NULL, invo)) {
+      } ei (auCommApplyWithInvo(EVENT_FILEREADCMD, sfname, sfname, false, NULL, invo)) {
           retval = aborting() ? FAIL : OK;
           goto theend;
       }
@@ -5467,9 +5467,9 @@ readfile(
    }
 
    if (p_verbose == 0)
-      msg_scroll = FALSE;   // overwrite previous file message
+      msg_scroll = false;   // overwrite previous file message
    else
-      msg_scroll = TRUE;   // don't overwrite previous file message
+      msg_scroll = true;   // don't overwrite previous file message
 
    if (fname && *fname != ZERO) {
       fnamelen = STRLEN(fname);
@@ -5597,7 +5597,7 @@ readfile(
                // Even though this is a new file, it might have been
                // edited before and deleted.  Get the old marks.
                check_marks_read();
-               auCommApplyWithInvo(EVENT_BUFNEWFILE, sfname, sfname, FALSE, curBook, invo);
+               auCommApplyWithInvo(EVENT_BUFNEWFILE, sfname, sfname, false, curBook, invo);
 
                if (!aborting())   // autocmds may abort script processing
                   retval = OK;       // a new file is not an error
@@ -5628,8 +5628,8 @@ readfile(
       // Don't change 'eol' if reading from buffer as it will already be
       // correctly set when reading stdin.
       if (!read_buffer) {
-          curBook->startEof = FALSE;
-          curBook->startEol = TRUE;
+          curBook->startEof = false;
+          curBook->startEol = true;
       }
    }
 
@@ -5691,13 +5691,13 @@ readfile(
 
       //The output from the autocommands should not overwrite anything and should not be 
       //overwritten: Set msg_scroll, restore its value if no output was done.
-      msg_scroll = TRUE;
+      msg_scroll = true;
       if (filtering)
-         auCommApplyWithInvo(EVENT_FILTERREADPRE, NULL, sfname, FALSE, curBook, invo);
+         auCommApplyWithInvo(EVENT_FILTERREADPRE, NULL, sfname, false, curBook, invo);
       ei (newfile)
-         auCommApplyWithInvo(EVENT_BUFREADPRE, NULL, sfname, FALSE, curBook, invo);
+         auCommApplyWithInvo(EVENT_BUFREADPRE, NULL, sfname, false, curBook, invo);
       else
-         auCommApplyWithInvo(EVENT_FILEREADPRE, sfname, sfname, FALSE, NULL, invo);
+         auCommApplyWithInvo(EVENT_FILEREADPRE, sfname, sfname, false, NULL, invo);
       curBook->opStart = orig_start;
 
       if (msg_scrolled == n)
@@ -5743,7 +5743,7 @@ readfile(
        filemess(curBook, sfname, (CS)"", 0);
    }
 
-   msg_scroll = FALSE;         // overwrite the file message
+   msg_scroll = false;         // overwrite the file message
 
    // Set linecnt now, after the autocommands, which may change them.
    linecnt = curBook->mem.lineCount;
@@ -5756,7 +5756,7 @@ readfile(
    } else
       curBook->badChar = 0;
 
-   c = TRUE;
+   c = true;
 
    if (file_rewind) {
       if (read_buffer) {
@@ -5764,13 +5764,13 @@ readfile(
          read_buf_col = 0;
       } ei (read_stdin || lseek(fd, (FileSize)0L, SEEK_SET) != 0) {
          // Can't rewind the file, give up.
-         error = TRUE;
+         error = true;
          goto failed;
       }
       // Delete the previously read lines.
       while (lnum > from)
          ml_delete(lnum--);
-      file_rewind = FALSE;
+      file_rewind = false;
    }
 
    if (!skip_read) {
@@ -5814,12 +5814,12 @@ readfile(
       } else {
          if (!skip_read) {
             for ( ; size >= 10; size = (long)((Ulong)size >> 1)) {
-               if ((nebuffer = lalloc(size + linerest + 1, FALSE)) != NULL)
+               if ((nebuffer = lalloc(size + linerest + 1, false)) != NULL)
                   break;
             }
             if (!nebuffer) {
                do_outofmem_msg((Ulong)(size * 2 + linerest + 1));
-               error = TRUE;
+               error = true;
                break;
             }
             if (linerest)   // copy characters from the previous buffer
@@ -5878,10 +5878,10 @@ readfile(
             }
 
             if (size < 0) {          // read error
-               error = TRUE;
+               error = true;
             }
          }
-         skip_read = FALSE;
+         skip_read = false;
 
          // Break here for a read error or end-of-file.
          if (size <= 0)
@@ -5898,14 +5898,14 @@ readfile(
                *ptr = ZERO;      // end of line
                len = (ColNr)(ptr - line_start + 1);
                if (ml_append(lnum, line_start, len, newfile) == FAIL) {
-                  error = TRUE;
+                  error = true;
                   break;
                }
                if (read_undo_file)
                   sha256_update(&sha_ctx, line_start, len);
                ++lnum;
                if (--read_count == 0) {
-                  error = TRUE;       // break loop
+                  error = true;       // break loop
                   line_start = ptr;   // nothing left to write
                   break;
                }
@@ -5923,7 +5923,7 @@ readfile(
 failed:
    // not an error, max. number of lines reached
    if (error && read_count == 0)
-      error = FALSE;
+      error = false;
 
    // If we get EOF in the middle of a line, note the fact by resetting
    // 'endofline' and add the line normally.
@@ -5932,7 +5932,7 @@ failed:
       *ptr = ZERO;
       len = (ColNr)(ptr - line_start + 1);
       if (ml_append(lnum, line_start, len, newfile) == FAIL)
-         error = TRUE;
+         error = true;
       else {
          if (read_undo_file)
             sha256_update(&sha_ctx, line_start, len);
@@ -6003,54 +6003,54 @@ failed:
 
    if (!filtering && !(flags & READ_DUMMY)) {
       msg_add_fname(curBook, sfname);   // fname in IObuff with quotes
-      c = FALSE;
+      c = false;
 
       int buflen = (int)STRLEN(IObuff);
       if (S_ISFIFO(perm)) {            // fifo
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[fifo]"));
-         c = TRUE;
+         c = true;
       }
       if (S_ISSOCK(perm)) {            // or socket
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[socket]"));
-         c = TRUE;
+         c = true;
       }
 #ifdef OPEN_CHR_FILES
       if (S_ISCHR(perm)) {            // or character special
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[character special]"));
-         c = TRUE;
+         c = true;
       }
 #endif
       if (!curBook->o.modifiable) {
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, "[-]");
-         c = TRUE;
+         c = true;
       }
       if (read_no_eol_lnum) {
          msg_add_eol();
-         c = TRUE;
+         c = true;
       }
       if (split) {
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[long lines split]"));
-         c = TRUE;
+         c = true;
       }
       if (notconverted) {
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[NOT converted]"));
-         c = TRUE;
+         c = true;
       } ei (converted) {
          buflen += eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[converted]"));
-         c = TRUE;
+         c = true;
       }
       if (illegal_byte > 0) {
          eeSnprintf(IObuff + buflen, IOSIZE - buflen,
             _("[ILLEGAL BYTE in line %ld]"), (long)illegal_byte);
-         c = TRUE;
+         c = true;
       } ei (error) {
          eeSnprintf(IObuff + buflen, IOSIZE - buflen, _("[READ ERRORS]"));
-         c = TRUE;
+         c = true;
       }
       msg_add_lines(c, (long)linecnt, filesize);
 
       EE_CLEAR(msgAfterRedrawG);
-      msg_scrolled_ign = TRUE;
+      msg_scrolled_ign = true;
       {
       if (msgColG > 0)
          msg_putchar('\r');  // overwrite previous message
@@ -6064,7 +6064,7 @@ failed:
       //   before redrawing).
       // - When the screen was scrolled but there is no wait-return prompt.
       set_keep_msg(p, 0);
-      msg_scrolled_ign = FALSE;
+      msg_scrolled_ign = false;
    }
 
    // with errors writing the file requires ":w!"
@@ -6115,18 +6115,18 @@ afterRecovery:
 
       //The output from the autocommands should not overwrite anything and
       //should not be overwritten: Set msg_scroll, restore its value if no output was done.
-      msg_scroll = TRUE;
+      msg_scroll = true;
       if (filtering)
-         auCommApplyWithInvo(EVENT_FILTERREADPOST, NULL, sfname, FALSE, curBook, invo);
+         auCommApplyWithInvo(EVENT_FILTERREADPOST, NULL, sfname, false, curBook, invo);
       ei (newfile || (read_buffer && sfname != NULL)) {
          auCommApplyWithInvo(EVENT_BUFREADPOST, NULL, sfname,
-                          FALSE, curBook, invo);
+                          false, curBook, invo);
          if (!curBook->auDidFileType && curBook->fileType)
             //EVENT_FILETYPE was not triggered but the book already has a
             //filetype. Trigger EVENT_FILETYPE using the existing filetype.
-            applyAutocomms(EVENT_FILETYPE, curBook->fileType, curBook->currFileName, TRUE, curBook);
+            applyAutocomms(EVENT_FILETYPE, curBook->fileType, curBook->currFileName, true, curBook);
       } else
-         auCommApplyWithInvo(EVENT_FILEREADPOST, sfname, sfname, FALSE, NULL, invo);
+         auCommApplyWithInvo(EVENT_FILEREADPOST, sfname, sfname, false, NULL, invo);
       if (msg_scrolled == n)
          msg_scroll = m;
       if (aborting())       // autocmds may abort script processing
@@ -6203,7 +6203,7 @@ write_blob(FILE* fd, Blob* blob) {
 //{{{aux functions
 
 #if defined(OPEN_CHR_FILES) || defined(PROTO)
-//Return TRUE if the file name argument is of the form "/dev/fd/\d\+", which is the name of files 
+//Return true if the file name argument is of the form "/dev/fd/\d\+", which is the name of files 
 //used for process substitution output by some shells on some operating systems, e.g., bash on 
 //SunOS. Do not accept "/dev/fd/[012]", opening these may hang Eegl.
 int
@@ -6242,7 +6242,7 @@ set_file_options(Invocation* invo) {
    }
 }
 
-// Return TRUE if a file appears to be read-only from the file permissions.
+// Return true if a file appears to be read-only from the file permissions.
 int
 check_file_readonly(CS fname, Unt perm) {  // known permissions on file
    return ( (perm & 0222) == 0 || mch_access(fname, W_OK));
@@ -6263,8 +6263,8 @@ set_rw_fname(CS fname, CS sfname){
 
    // It's like the unnamed book is deleted....
    if (curBook->o.bookListed)
-      applyAutocomms(EVENT_BUFDELETE, NULL, NULL, FALSE, curBook);
-   applyAutocomms(EVENT_BUFWIPEOUT, NULL, NULL, FALSE, curBook);
+      applyAutocomms(EVENT_BUFDELETE, NULL, NULL, false, curBook);
+   applyAutocomms(EVENT_BUFWIPEOUT, NULL, NULL, false, curBook);
    if (aborting())       // autocmds may abort script processing
       return FAIL;
    if (curBook != book) {
@@ -6273,20 +6273,20 @@ set_rw_fname(CS fname, CS sfname){
       return FAIL;
    }
 
-   if (setfname(curBook, fname, sfname, FALSE) == OK)
+   if (setfname(curBook, fname, sfname, false) == OK)
       curBook->flags |= BF_NOTEDITED;
 
    // ....and a new named one is created
-   applyAutocomms(EVENT_BUFNEW, NULL, NULL, FALSE, curBook);
+   applyAutocomms(EVENT_BUFNEW, NULL, NULL, false, curBook);
    if (curBook->o.bookListed)
-      applyAutocomms(EVENT_BUFADD, NULL, NULL, FALSE, curBook);
+      applyAutocomms(EVENT_BUFADD, NULL, NULL, false, curBook);
    if (aborting())       // autocmds may abort script processing
       return FAIL;
 
    // Do filetype detection now if 'filetype' is empty.
    if (!curBook->fileType) {
       if (auGroupExists(S"filetypedetect"))
-          (void)do_doautocmd(S"filetypedetect BufRead", FALSE, NULL);
+          (void)do_doautocmd(S"filetypedetect BufRead", false, NULL);
    }
 
    return OK;
@@ -6297,7 +6297,7 @@ void
 msg_add_fname(Book* book, CS fname){
    if (!fname)
       fname = S"-stdin-";
-   home_replace(book, fname, IObuff + 1, IOSIZE - 4, TRUE);
+   home_replace(book, fname, IObuff + 1, IOSIZE - 4, true);
    IObuff[0] = '"';
    STRCAT(IObuff, "\" ");
 }
@@ -6366,10 +6366,10 @@ shorten_fname(CS full_path, CS dir_name){
 }
 
 //Shorten filename of a book.
-//When "force" is TRUE: Use full path from now on for files currently being
+//When "force" is true: Use full path from now on for files currently being
 //edited, both for file name and swap file name.  Try to shorten the file
 //names a bit, if safe to do so.
-//When "force" is FALSE: Only try to shorten absolute file names.
+//When "force" is false: Only try to shorten absolute file names.
 //For books that have buftype "nofile" or "scratch": never change the file name.
 void
 shorten_buf_fname(Book* book, CS dirname, int force) {
@@ -6404,7 +6404,7 @@ shorten_fnames(Boole force){
       mf_fullname(book->mem.mfile);
    }
    status_redraw_all();
-   needRedrawTabpanelG = TRUE;
+   needRedrawTabpanelG = true;
    popup_update_preview_title();
 }
 
@@ -6437,7 +6437,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '
          fnamelen++;
          retval[fnamelen] = ZERO;
       }
-      prepend_dot = FALSE;       // nothing to prepend a dot to
+      prepend_dot = false;       // nothing to prepend a dot to
    } else {
       fnamelen = (int)STRLEN(fname);
       retval = alloc(fnamelen + extlen + 3);
@@ -6486,7 +6486,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '
 }
 
 //Like fgets(), but if the file line is too long, it is truncated and the rest of the line is 
-//thrown away. Return TRUE for end-of-file. If the line is truncated then buf[size - 2] 
+//thrown away. Return true for end-of-file. If the line is truncated then buf[size - 2] 
 //will not be ZERO.
 int
 eeFgets(CS buf, int size, FILE *fp){
@@ -6515,7 +6515,7 @@ eeRename(CS from, CS to){
    int      n;
    int      ret;
    FileStat   st;
-   int      use_tmp_file = FALSE;
+   int      use_tmp_file = false;
 
    //When the names are identical, there is nothing to do.  When they refer
    //to the same file (ignoring case and slash/backslash differences) but
@@ -6537,7 +6537,7 @@ eeRename(CS from, CS to){
    if (stat((char *)to, &st_to) >= 0
       && st.st_dev == st_to.st_dev
       && st.st_ino == st_to.st_ino)
-       use_tmp_file = TRUE;
+       use_tmp_file = true;
    }
 
    if (use_tmp_file) {
@@ -6646,14 +6646,14 @@ eeCopyfile(CS from, CS to){
    return OK;
 }
 
-private int already_warned = FALSE;
+private int already_warned = false;
 
 //{{{book work
 
 //Check if any not hidden book has been changed.
 //Postpone the check if there are characters in the stuff buffer, a global
 //command is being executed, a mapping is being executed or an autocommand is busy.
-//Return TRUE if some message was written (screen should be redrawn and cursor positioned).
+//Return true if some message was written (screen should be redrawn and cursor positioned).
 int
 check_timestamps( int      focus) {     // called for GUI focus event
    Book* book;
@@ -6663,23 +6663,23 @@ check_timestamps( int      focus) {     // called for GUI focus event
    // Don't check timestamps while system() or another low-level function may
    // cause us to lose and gain focus.
    if (no_check_timestamps > 0)
-      return FALSE;
+      return false;
 
    // Avoid doing a check twice.  The OK/Reload dialog can cause a focus
    // event and we would keep on checking if the file is steadily growing.
    // Do check again after typing something.
    if (focus && did_check_timestamps) {
-      need_check_timestamps = TRUE;
-      return FALSE;
+      need_check_timestamps = true;
+      return false;
    }
 
    if (!stuff_empty() || global_busy || !typebuf_typed()
          || autocmd_busy || curBookLock > 0 || allBookLock > 0)
-      need_check_timestamps = TRUE;      // check later
+      need_check_timestamps = true;      // check later
    else {
       ++no_wait_return;
-      did_check_timestamps = TRUE;
-      already_warned = FALSE;
+      did_check_timestamps = true;
+      already_warned = false;
       FOR_ALL_BOOKS(book) {
          // Only check books in a portal.
          if (book->countPortals > 0) {
@@ -6697,7 +6697,7 @@ check_timestamps( int      focus) {     // called for GUI focus event
          }
       }
       --no_wait_return;
-      need_check_timestamps = FALSE;
+      need_check_timestamps = false;
       if (need_wait_return && didit == 2) {
          // make sure msg isn't overwritten
          msg_puts(S"\n");
@@ -6720,7 +6720,7 @@ move_lines(Book* frombuf, Book* tobuf) {
    curBook = tobuf;
    for (lnum = 1; lnum <= frombuf->mem.lineCount; ++lnum) {
       p = copySubstr(memGetLine(frombuf, lnum, false), memGetBookLen(frombuf, lnum));
-      if (p == NULL || ml_append(lnum - 1, p, 0, FALSE) == FAIL) {
+      if (p == NULL || ml_append(lnum - 1, p, 0, false) == FAIL) {
           eeglFree(p);
           retval = FAIL;
           break;
@@ -6757,16 +6757,16 @@ fiCheckBookTimestamp(
    int      retval = 0;
    CS mesg = NULL;
    CS mesg2 = Em;
-   int      helpmesg = FALSE;
+   int      helpmesg = false;
    enum {
       RELOAD_NONE,
       RELOAD_NORMAL,
       RELOAD_DETECT
    }      reload = RELOAD_NONE;
-   int      can_reload = FALSE;
+   int      can_reload = false;
    FileSize   orig_size = book->origSize;
    int      orig_mode = book->origMode;
-   static int   busy = FALSE;
+   static int   busy = false;
    int      n;
    BookRef   bufref;
 
@@ -6836,15 +6836,15 @@ fiCheckBookTimestamp(
 
          //Only give the warning if there are no FileChangedShell autocommands.
          //Avoid being called recursively by setting "busy".
-         busy = TRUE;
+         busy = true;
          set_EeglVar_string(VV_FCS_REASON, reason, (int)reasonlen);
          set_EeglVar_string(VV_FCS_CHOICE, Em, 0);
          ++allBookLock;
          n = applyAutocomms(
-               EVENT_FILECHANGEDSHELL, book->currFileName, book->currFileName, FALSE, book
+               EVENT_FILECHANGEDSHELL, book->currFileName, book->currFileName, false, book
          );
          --allBookLock;
-         busy = FALSE;
+         busy = false;
          if (n) {
             if (!bookRefValid(&bufref))
                 emsg(_(e_filechangedshell_autocommand_deleted_buffer));
@@ -6854,7 +6854,7 @@ fiCheckBookTimestamp(
             ei (STRCMP(s, "edit") == 0)
                reload = RELOAD_DETECT;
             ei (STRCMP(s, "ask") == 0)
-               n = FALSE;
+               n = false;
             else
                return 2;
          }
@@ -6864,8 +6864,8 @@ fiCheckBookTimestamp(
                if (prev_modifiedTime != -1)
                   mesg = _(e_file_str_no_longer_available);
             } else {
-               helpmesg = TRUE;
-               can_reload = TRUE;
+               helpmesg = true;
+               can_reload = true;
                if (reason[2] == 'n') {
                   mesg = _("W12: Warning: File \"%s\" has changed and the buffer was changed in Eegl as well");
                   mesg2 = _("See \":help W12\" for more info.");
@@ -6890,7 +6890,7 @@ fiCheckBookTimestamp(
       retval = 1;
       mesg = _("W13: Warning: File \"%s\" has been created after editing started");
       book->flags |= BF_NEW_W;
-      can_reload = TRUE;
+      can_reload = true;
    }
 
    if (mesg) {
@@ -6912,7 +6912,7 @@ fiCheckBookTimestamp(
              switch (do_dialog(EE_WARNING, (CS)_("Warning"),
                 (CS)tbuf,
                 (CS)_("&OK\n&Load File\nLoad File &and Options"),
-                1, NULL, TRUE))
+                1, NULL, true))
              {
             case 2:
                 reload = RELOAD_NORMAL;
@@ -6937,13 +6937,13 @@ fiCheckBookTimestamp(
             if (emsg_silent == 0 && !in_assert_fails) {
                 out_flush();
                // give the user some time to think about it
-               ui_delay(1004L, TRUE);
+               ui_delay(1004L, true);
 
                 // don't redraw and erase the message
-                redrawCommlineG = FALSE;
+                redrawCommlineG = false;
             }
              }
-             already_warned = TRUE;
+             already_warned = true;
          }
 
           eeglFree(tbuf);
@@ -6961,7 +6961,7 @@ fiCheckBookTimestamp(
          // Any existing undo file is unusable, write it now.
          curBook = book;
          u_compute_hash(hash);
-         u_write_undo(NULL, FALSE, book, hash);
+         u_write_undo(NULL, false, book, hash);
          curBook = save_curbuf;
       }
    }
@@ -6969,7 +6969,7 @@ fiCheckBookTimestamp(
    // Trigger FileChangedShell when the file was changed in any way.
    if (bookRefValid(&bufref) && retval != 0) {
       (void)applyAutocomms(
-            EVENT_FILECHANGEDSHELLPOST, book->currFileName, book->currFileName, FALSE, book
+            EVENT_FILECHANGEDSHELLPOST, book->currFileName, book->currFileName, false, book
       );
    } 
 
@@ -7014,8 +7014,8 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    if (p_ur < 0 || curBook->mem.lineCount <= p_ur) {
        // Save all the text, so that the reload can be undone.
        // Sync first so that this is a separate undo-able action.
-       u_sync(FALSE);
-       saved = u_savecommon(0, curBook->mem.lineCount + 1, 0, TRUE);
+       u_sync(false);
+       saved = u_savecommon(0, curBook->mem.lineCount + 1, 0, true);
        flags |= READ_KEEP_UNDO;
    }
 
@@ -7047,7 +7047,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
       int old_msg_silent = msg_silent;
 
       curBook->flags |= BF_CHECK_RO;   // check for RO again
-      curBook->keepFiletype = TRUE;   // don't detect 'filetype'
+      curBook->keepFiletype = true;   // don't detect 'filetype'
 
       if (readfile(book->fullFileName, book->currFileName, (LineNr)0,
          (LineNr)0,
@@ -7065,7 +7065,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
          }
       } ei (book == curBook) {  // "book" still valid
          //Mark the book as unmodified and free undo info.
-         unchanged(book, TRUE);
+         unchanged(book, true);
          if ((flags & READ_KEEP_UNDO) == 0)
             invalidateUndoBufferAndFreeBlocks(book);
          else {
@@ -7079,7 +7079,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    eeglFree(invo.comm);
 
    if (savebuf != NULL && bookRefValid(&bufref))
-       bookWipe(savebuf, FALSE);
+       bookWipe(savebuf, false);
 
    // Invalidate diff info if necessary.
    diff_invalidate(curBook);
@@ -7092,7 +7092,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    curPor->cursor = old_cursor;
    check_cursor();
    update_topline();
-   curBook->keepFiletype = FALSE;
+   curBook->keepFiletype = false;
    {
       Portal   *wp;
       Tab   *t;
@@ -7138,8 +7138,8 @@ write_lnum_adjust(LineNr offset){
 
 private int
 compare_readdirex_item(const void *p1, const void *p2) {
-   CS name1 = bagGetString(*(Bag**)p1, tConst("name"), FALSE);
-   CS name2 = bagGetString(*(Bag**)p2, tConst("name"), FALSE);
+   CS name1 = bagGetString(*(Bag**)p1, tConst("name"), false);
+   CS name2 = bagGetString(*(Bag**)p2, tConst("name"), false);
    if (readdirex_sort == READDIR_SORT_BYTE)
       return STRCMP(name1, name2);
    if (readdirex_sort == READDIR_SORT_IC)
@@ -7160,11 +7160,11 @@ compare_readdir_item(const void *s1, const void *s2) {
 
 //Core part of "readdir()" and "readdirex()" function.
 //Retrieve the list of files/directories of "path" into "gap".
-//If "withattr" is TRUE, retrieve the names and their attributes.
-//If "withattr" is FALSE, retrieve the names only. Return OK for success, FAIL for failure.
+//If "withattr" is true, retrieve the names and their attributes.
+//If "withattr" is false, retrieve the names only. Return OK for success, FAIL for failure.
 private int
 readdir_core(ArrayList   *gap, int withattr UNUSED, int sort) {
-   int         failed = FALSE;
+   int         failed = false;
    ga_init2(gap, sizeof(void *), 20);
 
 #define FREE_ITEM(item)   do { \
@@ -7189,21 +7189,21 @@ readdir_core(ArrayList   *gap, int withattr UNUSED, int sort) {
    return failed ? FAIL : OK;
 }
 
-//return TRUE if "name" is a directory, NOT a symlink to a directory
-//return FALSE if "name" is not a directory. return FALSE for error
+//return true if "name" is a directory, NOT a symlink to a directory
+//return false if "name" is not a directory. return false for error
 int
 mch_isrealdir(CS name) {
    struct stat statb;
 
    if (*name == ZERO)       // Some stat()s don't flag "" as an error.
-      return FALSE;
+      return false;
    if (lstat((char *)name, &statb))
-      return FALSE;
-   return (S_ISDIR(statb.st_mode) ? TRUE : FALSE);
+      return false;
+   return (S_ISDIR(statb.st_mode) ? true : false);
 }
 
-//TRUE if "name" is a directory or a symlink to a directory
-//FALSE if "name" is not a directory. FALSE for error
+//true if "name" is a directory or a symlink to a directory
+//false if "name" is not a directory. false for error
 Boole
 mch_isdir(CS name) {
    struct stat statb;
@@ -7245,7 +7245,7 @@ recursivelyDeleteDir(CS name){
       CS exp = copyStr(name);
       ArrayList    ga;
 
-      if (readdir_core(&ga, FALSE, READDIR_SORT_NONE) == OK) {
+      if (readdir_core(&ga, false, READDIR_SORT_NONE) == OK) {
          int   len = eeSnprintf(nameBuffG, MAXPATHL, "%s/", exp);
 
          for (int i = 0; i < ga.len; ++i) {
@@ -7311,7 +7311,7 @@ private void
 eeSettempdir(CS tempdir){
    Byte buf[MAXPATHL + 2];
    
-   if (eeFullFileName(tempdir, buf, MAXPATHL, FALSE) == FAIL)
+   if (eeFullFileName(tempdir, buf, MAXPATHL, false) == FAIL)
       STRCPY(buf, tempdir);
    Unt buflen = STRLEN(buf);
    if (!after_pathsep(buf, buf + buflen)) {
@@ -7324,7 +7324,7 @@ eeSettempdir(CS tempdir){
 
 //eeTempName(): Return a unique name that can be used for a temp file.
 //
-//The temp file is NOT guaranteed to be created. If "keep" is FALSE it is guaranteed to NOT be 
+//The temp file is NOT guaranteed to be created. If "keep" is false it is guaranteed to NOT be 
 //created.
 //
 //The returned pointer is to allocated memory.
@@ -7388,7 +7388,7 @@ eeTempName(
 
 //Try matching a filename with a "pattern" ("prog" is NULL), or use the precompiled regprog "prog"
 //("pattern" is NULL). That avoids calling compileRegexp() often. Used for autocommands and 
-//'wildignore'. Return TRUE if there is a match, FALSE otherwise.
+//'wildignore'. Return true if there is a match, false otherwise.
 int
 match_file_pat(
    CS pattern,      // pattern to match with
@@ -7398,9 +7398,9 @@ match_file_pat(
    CS tail,         // tail of path
    Boole allow_dirs      // allow matching with dir
 ){
-   int      result = FALSE;
+   int      result = false;
    RegMatch   regmatch;
-   regmatch.rm_ic = FALSE;
+   regmatch.rm_ic = false;
    if (prog)
       regmatch.regprog = *prog;
    else
@@ -7416,7 +7416,7 @@ match_file_pat(
              || (sfname != NULL && eeRegexec(&regmatch, sfname, (ColNr)0))))
           || (!allow_dirs && eeRegexec(&regmatch, tail, (ColNr)0)))
    ) {
-      result = TRUE;
+      result = true;
    } 
 
    if (prog != NULL)
@@ -7426,7 +7426,7 @@ match_file_pat(
    return result;
 }
 
-//Return TRUE if a file matches with a pattern in "list". "list" is a comma-separated list of 
+//Return true if a file matches with a pattern in "list". "list" is a comma-separated list of 
 //patterns, like 'wildignore'. "sfname" is the short file name or NULL, "ffname" the long file name
 int
 match_file_list(CS list, CS sfname, CS ffname){
@@ -7443,14 +7443,14 @@ match_file_list(CS list, CS sfname, CS ffname){
       int match = match_file_pat(regpat, NULL, ffname, sfname, tail, allow_dirs);
       eeglFree(regpat);
       if (match)
-         return TRUE;
+         return true;
    }
-   return FALSE;
+   return false;
 }
 
 //Convert the given pattern "pat" which has shell style wildcards in it, into a regular expression,
 //and return the result in allocated memory. If there is a directory path separator to be matched, 
-//then TRUE is put in allow_dirs, otherwise FALSE is put there -- webb.
+//then true is put in allow_dirs, otherwise false is put there -- webb.
 //Handle backslashes before special characters, like "\*" and "\ ".
 CS
 file_pat_to_reg_pat(
@@ -7462,7 +7462,7 @@ file_pat_to_reg_pat(
    CS p;
    int i;
    int nested = 0;
-   int add_dollar = TRUE;
+   int add_dollar = true;
 
    if (allow_dirs)
       *allow_dirs = false;
@@ -7497,7 +7497,7 @@ file_pat_to_reg_pat(
    if (endp >= pat && *endp == '*') {
       while (endp - pat > 0 && *endp == '*')
          endp--;
-      add_dollar = FALSE;
+      add_dollar = false;
    }
    for (p = pat; *p && nested >= 0 && p <= endp; p++) {
       switch (*p) {
@@ -7635,7 +7635,7 @@ get_cmd_output(
    FILE   *fd;
 
    // get a name for the temp file
-   if ((tempname = eeTempName('o', FALSE)) == NULL) {
+   if ((tempname = eeTempName('o', false)) == NULL) {
       emsg(_(e_cant_get_temp_file_name));
       return NULL;
    }
@@ -7694,7 +7694,7 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
    CS res = NULL;
    Byte   *p;
    Byte   *infile = NULL;
-   int      err = FALSE;
+   int      err = false;
    FILE   *fd;
    List   *list = NULL;
    int      flags = SHELL_SILENT;
@@ -7704,7 +7704,7 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
 
    if (argvars[1].tag != VAR_UNKNOWN) {
       //Write the text to a temp file, to be used for input of the shell command.
-      if ((infile = eeTempName('i', TRUE)) == NULL) {
+      if ((infile = eeTempName('i', true)) == NULL) {
          emsg(_(e_cant_get_temp_file_name));
          goto errret;
       }
@@ -7725,18 +7725,18 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
          for (LineNr lnum = 1; lnum <= buf->mem.lineCount; lnum++) {
             for (p = memGetLine(buf, lnum, false); *p != ZERO; ++p) {
                if (putc(*p == '\n' ? ZERO : *p, fd) == EOF) {
-                  err = TRUE;
+                  err = true;
                   break;
                }
             } 
             if (putc(NL, fd) == EOF) {
-                err = TRUE;
+                err = true;
                 break;
             }
          }
       } ei (argvars[1].tag == VAR_LIST) {
-         if (write_list(fd, argvars[1].list, TRUE) == FAIL)
-            err = TRUE;
+         if (write_list(fd, argvars[1].list, true) == FAIL)
+            err = true;
       } else {
          Unt len;
          Byte buf[NUMBUFLEN];
@@ -7748,10 +7748,10 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
          }
          len = STRLEN(p);
          if (len > 0 && fwrite(p, len, 1, fd) != 1)
-            err = TRUE;
+            err = true;
       }
       if (fclose(fd) != 0)
-         err = TRUE;
+         err = true;
       if (err) {
          emsg(_(e_error_writing_temp_file));
          goto errret;
@@ -7815,12 +7815,12 @@ errret:
 
 void
 f_system(Var* argvars, Var* returnVar) {
-   get_cmd_output_as_returnVar(argvars, returnVar, FALSE);
+   get_cmd_output_as_returnVar(argvars, returnVar, false);
 }
 
 void
 f_systemlist(Var* argvars, Var* returnVar) {
-   get_cmd_output_as_returnVar(argvars, returnVar, TRUE);
+   get_cmd_output_as_returnVar(argvars, returnVar, true);
 }
 
 //Expand envs and program name to determine the swapfile dir, e.g. "/home/usern/.local/state/eegl/"
@@ -8046,8 +8046,8 @@ executable_file(CS name) {
    return S_ISREG(st.st_mode) && mch_access(name, X_OK) == 0;
 }
 
-//Return TRUE if "name" can be found in $PATH and executed, FALSE if not.
-//If "use_path" is FALSE only check if "name" is executable.
+//Return true if "name" can be found in $PATH and executed, false if not.
+//If "use_path" is false only check if "name" is executable.
 //Return -1 if unknown.
 int
 mch_can_exe(CS name, Arr(CS) path, int use_path) {
@@ -8065,13 +8065,13 @@ mch_can_exe(CS name, Arr(CS) path, int use_path) {
       if ((use_path || fiGetShortFiName(name) != name) && executable_file(name)) {
          if (path) {
             if (name[0] != '/')
-               *path = fiExpandAndCopy(name, TRUE);
+               *path = fiExpandAndCopy(name, true);
             else
                *path = copyStr(name);
          }
-         return TRUE;
+         return true;
       }
-      return FALSE;
+      return false;
    }
 
    CS p = (CS)getenv("PATH");
@@ -8100,7 +8100,7 @@ mch_can_exe(CS name, Arr(CS) path, int use_path) {
       retval = executable_file(buf);
       if (retval == 1) {
          if (path) {
-            *path = buf[0] == '/' ? copySubstr(buf, buflen) : fiExpandAndCopy(buf, TRUE);
+            *path = buf[0] == '/' ? copySubstr(buf, buflen) : fiExpandAndCopy(buf, true);
          }
          break;
       }

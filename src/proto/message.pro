@@ -78,4 +78,3 @@ void sb_text_end_cmdline(void);
 void clear_sb_text(int all);
 void show_sb_text(void);
 void msg_sb_eol(void);
-/* eegl: set ft=c : */

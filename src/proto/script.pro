@@ -300,4 +300,3 @@ int au_exists(CS arg);
 void f_autocmd_add(Var *argvars, Var *returnVar);
 void f_autocmd_delete(Var *argvars, Var *returnVar);
 void f_autocmd_get(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

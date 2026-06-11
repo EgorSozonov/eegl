@@ -33,8 +33,8 @@ struct LocLine {
    Arr(Byte) fName;   // different filename if there're hard links
    Arr(Byte) pattern;   // search pattern for the error
    Arr(Byte) text;   // description of the error
-   Byte visCol;   // set to TRUE if col and endCol is screen column
-   Byte isCleared;   // set to TRUE if line has been deleted
+   Byte visCol;   // set to true if col and endCol is screen column
+   Byte isCleared;   // set to true if line has been deleted
    Byte kind;   // type of the error (mostly 'E'); 1 for :helpgrep
    Var userData;   // custom user data associated with this item
    Byte isValid;   // valid error message detected
@@ -58,8 +58,8 @@ typedef struct {
    LocLine* curr;   // pointer to the current error
    int count;   // number of errors (0 means empty list)
    int currentIdx;   // current index in the error list
-   int noValidEntries;   // TRUE if not a single valid entry found
-   int hasUserData; // TRUE if at least one item has user_data attached
+   int noValidEntries;   // true if not a single valid entry found
+   int hasUserData; // true if at least one item has user_data attached
    Arr(Byte) title;   // title derived from the command that created
             // the error list or set by setqflist
    Var* qf_ctx;   // context set by setqflist/setloclist
@@ -233,10 +233,10 @@ private ArrayList tempList;
 // Get a growarray to buffer text in.  Shared between various commands to avoid many alloc/free calls.
 private ArrayList *
 getTempList(void) {
-   static int initialized = FALSE;
+   static int initialized = false;
 
    if (!initialized) {
-      initialized = TRUE;
+      initialized = true;
       ga_init2(&tempList, 1, 256);
    }
 
@@ -433,7 +433,7 @@ ErrorFormatInfoo_regpat(
          ei (*efmp == '#')
             *ptr++ = '*';
          ei (*efmp == '>')
-            fmt_ptr->conthere = TRUE;
+            fmt_ptr->conthere = true;
          ei (efmp == efm + 1) {     // analyse prefix
             // prefix is allowed only at the beginning of the errorformat
             // option part
@@ -988,7 +988,7 @@ qf_parse_fmt_p(RegMatch* rmp, int midx, Fields* fields) {
       }
    }
    ++fields->col;
-   fields->use_viscol = TRUE;
+   fields->use_viscol = true;
    return QF_OK;
 }
 
@@ -999,7 +999,7 @@ qf_parse_fmt_v(RegMatch* rmp, int midx, Fields* fields) {
    if (rmp->startp[midx] == NULL)
       return QF_FAIL;
    fields->col = (int)atol((char *)rmp->startp[midx]);
-   fields->use_viscol = TRUE;
+   fields->use_viscol = true;
    return QF_OK;
 }
 
@@ -1132,13 +1132,13 @@ qf_parse_get_fields(
    fields->end_lnum = 0;
    fields->col = 0;
    fields->end_col = 0;
-   fields->use_viscol = FALSE;
+   fields->use_viscol = false;
    fields->enr = -1;
    fields->type = 0;
    *tail = NULL;
 
    // Always ignore case when looking for a matching error.
-   regmatch.rm_ic = TRUE;
+   regmatch.rm_ic = true;
    regmatch.regprog = fmt_ptr->prog;
    int r = eeRegexec(&regmatch, linebuf, (ColNr)0);
    fmt_ptr->prog = regmatch.regprog;
@@ -1160,7 +1160,7 @@ parse_dir_pfx(int idx, Fields* fields, LocationList *ll) {
          emsg(_(e_missing_or_empty_directory_name));
          return QF_FAIL;
       }
-      ll->dir = pushDir(fields->namebuf, &ll->dirStack, FALSE);
+      ll->dir = pushDir(fields->namebuf, &ll->dirStack, false);
       if (ll->dir == NULL)
          return QF_FAIL;
    } ei (idx == 'X')         // leave directory
@@ -1177,16 +1177,16 @@ parse_file_pfx(
    LocationList* ll,
    CS tail
 ) {
-   fields->valid = FALSE;
+   fields->valid = false;
    if (*fields->namebuf == ZERO || mch_getperm(fields->namebuf) >= 0) {
       if (*fields->namebuf && idx == 'P')
-        ll->currFName = pushDir(fields->namebuf, &ll->fileStack, TRUE);
+        ll->currFName = pushDir(fields->namebuf, &ll->fileStack, true);
       ei (idx == 'Q')
         ll->currFName = popDir(&ll->fileStack);
       *fields->namebuf = ZERO;
       if (tail && *tail) {
           STRMOVE(IObuff, skipwhite(tail));
-          ll->qf_multiscan = TRUE;
+          ll->qf_multiscan = true;
           return QF_MULTISCAN;
       }
    }
@@ -1199,7 +1199,7 @@ private int
 qf_parse_line_nomatch(CS linebuf, int linelen, Fields* fields) {
    fields->namebuf[0] = ZERO;   // no match found, remove file name
    fields->lnum = 0;      // don't jump to this line
-   fields->valid = FALSE;
+   fields->valid = false;
 
    return copy_nonerror_line(linebuf, linelen, fields);
 }
@@ -1252,7 +1252,7 @@ qf_parse_multiline_pfx(
              ? ll->currFName : 0);
    }
    if (idx == 'Z')
-      ll->qf_multiline = ll->qf_multiignore = FALSE;
+      ll->qf_multiline = ll->qf_multiignore = false;
    line_breakcheck();
 
    return QF_IGNORE_LINE;
@@ -1283,7 +1283,7 @@ restofline:
    }
 
    // Try to match each part of 'errorformat' until we find a complete match or no match.
-   fields->valid = TRUE;
+   fields->valid = true;
    for ( ; fmt_ptr; fmt_ptr = fmt_ptr->next) {
       idx = fmt_ptr->prefix;
       status = qf_parse_get_fields(linebuf, linelen, fmt_ptr, fields,
@@ -1293,7 +1293,7 @@ restofline:
       if (status == QF_OK)
          break;
    }
-   ll->qf_multiscan = FALSE;
+   ll->qf_multiscan = false;
 
    if (fmt_ptr == NULL || idx == 'D' || idx == 'X') {
       if (fmt_ptr != NULL) {
@@ -1308,15 +1308,15 @@ restofline:
           return status;
 
       if (fmt_ptr == NULL)
-          ll->qf_multiline = ll->qf_multiignore = FALSE;
+          ll->qf_multiline = ll->qf_multiignore = false;
    } ei (fmt_ptr != NULL) {
       // honor %> item
       if (fmt_ptr->conthere)
          fmt_start = fmt_ptr;
 
       if (firstOccurrence((CS)"AEWIN", idx) != NULL) {
-         ll->qf_multiline = TRUE;   // start of a multi-line message
-         ll->qf_multiignore = FALSE;// reset continuation
+         ll->qf_multiline = true;   // start of a multi-line message
+         ll->qf_multiignore = false;// reset continuation
       } ei (firstOccurrence((CS)"CZ", idx) != NULL) {
                   // continuation of multi-line msg
          status = qf_parse_multiline_pfx(idx, ll, fields);
@@ -1331,7 +1331,7 @@ restofline:
       if (fmt_ptr->flags == '-') {  // generally exclude this line
          if (ll->qf_multiline)
             // also exclude continuation lines
-            ll->qf_multiignore = TRUE;
+            ll->qf_multiignore = true;
          return QF_IGNORE_LINE;
       }
    }
@@ -1349,7 +1349,7 @@ isEmpty(LocationList* ll) {
    return ll == NULL || ll->count <= 0;
 }
 
-// Returns TRUE if the specified location list is not empty and has valid entries.
+// Returns true if the specified location list is not empty and has valid entries.
 private int
 listHasValidEntries(LocationList* ll) {
     return !isEmpty(ll) && !ll->noValidEntries;
@@ -1462,12 +1462,12 @@ initWorker(
    OUT LocationStack* stack,
    int ind,
    CS errorformat,
-   Boole newlist,      // TRUE: start a new location list
+   Boole newlist,      // true: start a new location list
    CS title
 ) {
    Fields fields;
    LocLine* oldLast = NULL;
-   int adding = FALSE;
+   int adding = false;
    static ErrorFormatInfo* fmtFirst = NULL;
    Byte       *efm;
    static Byte   *last_efm = NULL;
@@ -1493,7 +1493,7 @@ initWorker(
       ll = getList(stack, ind);
    } else {
       // Adding to existing list, use last entry.
-      adding = TRUE;
+      adding = true;
       ll = getList(stack, ind);
       if (!isEmpty(ll))
          oldLast = ll->last;
@@ -1522,7 +1522,7 @@ initWorker(
 
    // gotInterruptG is reset here, because it was probably set when killing the
    // ":make" command, but we still want to read the errorfile then.
-   gotInterruptG = FALSE;
+   gotInterruptG = false;
 
    // Read the lines in the error file one by one.
    // Try to recognize one of the error formats in each line.
@@ -1542,9 +1542,9 @@ initWorker(
          // no valid entry found
          ll->curr = ll->first;
          ll->currentIdx = 1;
-         ll->noValidEntries = TRUE;
+         ll->noValidEntries = true;
       } else {
-         ll->noValidEntries = FALSE;
+         ll->noValidEntries = false;
          if (ll->curr == NULL)
             ll->curr = ll->first;
       }
@@ -1591,7 +1591,7 @@ llInitFromFile(
    OUT LocationStack* st,
    CS errorFName,
    NULLABLE CS errorformat,
-   Boole newlist,      // TRUE: start a new error list
+   Boole newlist,      // true: start a new error list
    CS title
 ) {
    Source source = (Source){.tag = SOURCE_FILENAME, .FileName = {.c = errorFName}};
@@ -1631,7 +1631,7 @@ getCurrent(LocationStack* stack) {
 
 //Pop a location list from the location list stack Automatically adjust currList so that it stays 
 //pointed to the same list, unless it is deleted, if so then use the newest created list instead. 
-//listcount will be set correctly. The above will only happen if <adjust> is TRUE.
+//listcount will be set correctly. The above will only happen if <adjust> is true.
 private void
 pop(LocationStack* stack, int adjust) {
    freeAList(&stack->lists[0]);
@@ -1681,7 +1681,7 @@ newLocList(LocationStack* stack, CS title) {
 
    // When the stack is full, remove to oldest entry Otherwise, add a new entry.
    if (stack->listcount == stack->cap) {
-      pop(stack, FALSE);
+      pop(stack, false);
       stack->currList = stack->listcount - 1; // point to new empty list
    } else
       stack->currList = stack->listcount++;
@@ -1690,7 +1690,7 @@ newLocList(LocationStack* stack, CS title) {
    CLEAR_POINTER(ll);
    storeTitle(ll, title);
    ll->id = ++lastUsedLlIdS;
-   ll->hasUserData = FALSE;
+   ll->hasUserData = false;
 }
 
 //Queue location list stack delete request.
@@ -1719,18 +1719,18 @@ wipeLlBook(LocationStack* stack) {
 
    Book* llBook = bookFindFileByBookNr(stack->bufNum);
    if (llBook && llBook->countPortals == 0) {
-      int buf_was_null = FALSE;
+      int buf_was_null = false;
       // can happen when curPor is going to be closed e.g. curPor->book
       // was already closed in closePortal(), and we are now closing the
       // portal related location list buffer from win_free_mem()
       // but closeBook() calls CHECK_CURBOOK() macro and requires curPor->book == curBook
       if (curPor->book == NULL) {
          curPor->book = curBook;
-         buf_was_null = TRUE;
+         buf_was_null = true;
       }
 
       // If the location buffer is not loaded in any portal, then wipe the buffer.
-      closeBook(NULL, llBook, DOBOOK_WIPE, FALSE, FALSE);
+      closeBook(NULL, llBook, DOBOOK_WIPE, false, false);
       stack->bufNum = INVALID_LL_BUFNR;
       if (buf_was_null)
           curPor->book = NULL;
@@ -1885,7 +1885,7 @@ addEntry(
       lline->userData.tag = VAR_UNKNOWN;
    else {
       copy_tv(OUT &lline->userData, user_data);
-      ll->hasUserData = TRUE;
+      ll->hasUserData = true;
    }
    if (!pattern || *pattern == ZERO)
       lline->pattern = NULL;
@@ -1913,7 +1913,7 @@ addEntry(
       (*lastp)->next = lline;
    }
    lline->next = NULL;
-   lline->isCleared = FALSE;
+   lline->isCleared = false;
    *lastp = lline;
    ++ll->count;
    if (ll->currentIdx == 0 && lline->isValid) {  // first valid entry
@@ -2082,7 +2082,7 @@ getBookNrForPath(LocationList* ll, CS directory, CS fname) {
       return 0;
 
    if (directory && !eeIsAbsName(fname)
-       && (ptr = concat_fnames(directory, fname, TRUE)) != NULL
+       && (ptr = concat_fnames(directory, fname, true)) != NULL
    ) {
       // Here we check if the file really exists.
       // This should normally be true, but if make works without
@@ -2091,7 +2091,7 @@ getBookNrForPath(LocationList* ll, CS directory, CS fname) {
          eeglFree(ptr);
          directory = guessFilepath(ll, fname);
          if (directory)
-            ptr = concat_fnames(directory, fname, TRUE);
+            ptr = concat_fnames(directory, fname, true);
          else
             ptr = copyStr(fname);
       }
@@ -2145,8 +2145,8 @@ pushDir(CS dirbuf, DirStack** stackptr, int is_file_stack) {
       (*stackptr)->dirname = NULL;
       while (ds_new) {
          eeglFree((*stackptr)->dirname);
-         (*stackptr)->dirname = concat_fnames(ds_new->dirname, dirbuf, TRUE);
-         if (mch_isdir((*stackptr)->dirname) == TRUE)
+         (*stackptr)->dirname = concat_fnames(ds_new->dirname, dirbuf, true);
+         if (mch_isdir((*stackptr)->dirname) == true)
             break;
 
          ds_new = ds_new->next;
@@ -2236,7 +2236,7 @@ guessFilepath(LocationList* ll, CS filename) {
    CS fullname = NULL;
    while (ds_ptr) {
       eeglFree(fullname);
-      fullname = concat_fnames(ds_ptr->dirname, filename, TRUE);
+      fullname = concat_fnames(ds_ptr->dirname, filename, true);
 
       // If concat_fnames failed, just go on. The worst thing that can happen
       // is that we delete the entire stack.
@@ -2260,18 +2260,18 @@ guessFilepath(LocationList* ll, CS filename) {
    return ds_ptr == NULL ? NULL : ds_ptr->dirname;
 }
 
-//Return TRUE if a location list with the given identifier exists.
+//Return true if a location list with the given identifier exists.
 private int
 isIdValid(LocationStack* st, Unt id){
    if (st == NULL)
-      return FALSE;
+      return false;
 
    for (int i = 0; i < st->listcount; ++i) {
       if (st->lists[i].id == id)
-         return TRUE;
+         return true;
    } 
 
-   return FALSE;
+   return false;
 }
 
 //When loading a file from the location list, the autocommands may modify it.
@@ -2288,9 +2288,9 @@ isEntryPresent(LocationList *ll, LocLine *curr) {
    } 
 
    if (i > ll->count) // Entry is not found
-      return FALSE;
+      return false;
 
-   return TRUE;
+   return true;
 }
 
 //Get the next valid entry in the current location list. Start search from the current entry. 
@@ -2418,7 +2418,7 @@ findHelpPortal(void) {
    return NULL;
 }
 
-// Find a help portal or open one. If 'newPort' is TRUE, then open a new help portal.
+// Find a help portal or open one. If 'newPort' is true, then open a new help portal.
 private int
 jumpToHelpPortal(int newPort, int *openedPortal) {
    int      flags;
@@ -2429,7 +2429,7 @@ jumpToHelpPortal(int newPort, int *openedPortal) {
    else
       helpPort = findHelpPortal();
    if (helpPort && helpPort->book->countPortals > 0)
-      enterPortal(helpPort, TRUE);
+      enterPortal(helpPort, true);
    else {
       // Split off help portal; put it at far top if no position
       // specified, the current portal is vertically split and narrow.
@@ -2444,7 +2444,7 @@ jumpToHelpPortal(int newPort, int *openedPortal) {
       if (splitPortal(0, flags) == FAIL)
          return FAIL;
 
-      *openedPortal = TRUE;
+      *openedPortal = true;
 
       if (curPor->height < p_hh)
          portSetHeight((int)p_hh, curPor);
@@ -2466,8 +2466,8 @@ findPortalIntoLocList_with_normal_buf(void) {
    return NULL;
 }
 
-//Go to a portal in any tab containing the specified file.  Returns TRUE
-//if successfully jumped to the portal. Otherwise returns FALSE.
+//Go to a portal in any tab containing the specified file.  Returns true
+//if successfully jumped to the portal. Otherwise returns false.
 private int
 qf_goto_tabwin_with_file(int fnum) {
    Tab* t;
@@ -2476,11 +2476,11 @@ qf_goto_tabwin_with_file(int fnum) {
    FOR_ALL_TAB_PORTALS(t, po) {
       if (po->book->fiNum == fnum) {
           goto_tab_port(t, po);
-          return TRUE;
+          return true;
       }
    } 
 
-   return FALSE;
+   return false;
 }
 
 //Create a new portal to show a file above the location portal. Called when
@@ -2566,11 +2566,11 @@ gotoPortalIntoQflFile(int fNum) {
 
 //Find a suitable portal for opening a file (fNum) from the location list and jump to it.  If 
 //there already is a portal into the file, jump to it. Otherwise open a new portal into the file.
-//If 'newPort' is TRUE, then always open a new portal. This is called from  location list portals.
+//If 'newPort' is true, then always open a new portal. This is called from  location list portals.
 private int
 jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
    Portal* usable_wp = NULL;
-   int usablePort = FALSE;
+   int usablePort = false;
 
    // If opening a new portal, then don't use the location list referred by
    // the current portal. Otherwise two windows will refer to the same location list.
@@ -2580,14 +2580,14 @@ jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
       //Find a non-LL portal with this location list
       usable_wp = NULL;
       if (usable_wp)
-         usablePort = TRUE;
+         usablePort = true;
    }
 
    if (!usablePort) {
       //Locate a portal showing a normal book
       Portal* port = findPortalIntoLocList_with_normal_buf();
       if (port)
-         usablePort = TRUE;
+         usablePort = true;
    }
 
    // If no usable portal is found and 'switchbook' contains "usetab" then search in other tabs
@@ -2598,7 +2598,7 @@ jumpToUsablePortal(int fNum, int newPort, int* openedPortal) {
    if ((ONLY_ONE_PORTAL && isLocationListBook(curBook)) || !usablePort || newPort) {
       if (open_new_file_port(llRef) != OK)
          return FAIL;
-      *openedPortal = TRUE;   // close it when fail
+      *openedPortal = true;   // close it when fail
    } else {
       if (curPor->locationStackRef != NULL)   // In a location portal
          gotoPortalIntoLlFile(usable_wp, fNum);
@@ -2652,7 +2652,7 @@ jumpAndEditBook(
          if (curPor->o.portFixBuf) {
             // Split the window, which will be 'noportfixbuf', and set curPor to that
             if (splitPortal(0, 0) == OK)
-               *openedPortal = TRUE;
+               *openedPortal = true;
 
             if (curPor->o.portFixBuf) {
                // Autocommands set 'portfixbuf' or sent us to another window
@@ -2673,7 +2673,7 @@ jumpAndEditBook(
    Portal* wp = getPortalById(prevPortId);
    if (!wp) {
       emsg(_(e_current_window_was_closed));
-      *openedPortal = FALSE;
+      *openedPortal = false;
       return QF_ABORT;
    }
 
@@ -2709,7 +2709,7 @@ jumpToEntry(LineNr lNum, int col, Byte visCol, CS pattern){
       }
       if (col > 0) {
          curPor->cursor.coladd = 0;
-         if (visCol == TRUE)
+         if (visCol == true)
             coladvance(col - 1);
          else
             curPor->cursor.col = col - 1;
@@ -2755,17 +2755,17 @@ printMsg(
    //flag is present in 'shortmess'; But when not jumping, print the whole message.
    LineNr i = msg_scroll;
    if (curBook == oldCurBook && curPor->cursor.lnum == old_lnum)
-      msg_scroll = TRUE;
+      msg_scroll = true;
    ei (!msg_scrolled)
-      msg_scroll = FALSE;
-   msgAndKeep((CS)gap->c, 0, TRUE);
+      msg_scroll = false;
+   msgAndKeep((CS)gap->c, 0, true);
    msg_scroll = i;
 
    clearArrayList();
 }
 
 //Find a usable portal for opening a file from the location list. If a portal is not found then 
-//open a new portal. If 'newPort' is TRUE, then open a new portal. Return OK if successfully 
+//open a new portal. If 'newPort' is true, then open a new portal. Return OK if successfully 
 //jumped or opened a portal. Return FAIL if not able to jump/open a portal. Return NOTDONE if 
 //a file is not associated with the entry. Return QF_ABORT if the location list was modified
 //by an autocmd.
@@ -2868,8 +2868,8 @@ llJump(LocationStack* stack, Unt dir, int errornr, Boole forceit){
 //If dir == FORWARD_FILE go "errornr" valid entries files backward.
 //If dir == BACKWARD_FILE go "errornr" valid entries files backward
 //ei "errornr" is zero, redisplay the same line
-//If 'forceit' is TRUE, then can discard changes to the current buffer.
-//If 'newPort' is TRUE, then open the file in a new portal.
+//If 'forceit' is true, then can discard changes to the current buffer.
+//If 'newPort' is true, then open the file in a new portal.
 private void
 jumpToNewPortal(
    LocationStack* stack,
@@ -2885,8 +2885,8 @@ jumpToNewPortal(
    int old_currentIdx;
    Unt old_swb = p_swb;
    int prevPortId;
-   int openedPortal = FALSE;
-   int print_message = TRUE;
+   int openedPortal = false;
+   int print_message = true;
    int old_KeyTyped = KeyTyped; // getting file may reset it
    int retval = OK;
 
@@ -2915,7 +2915,7 @@ jumpToNewPortal(
    ll->curr = curr;
    if (updatePortalPos(stack, old_currentIdx))
       // No need to print the error message if it's visible in the error portal
-      print_message = FALSE;
+      print_message = false;
 
    prevPortId = curPor->id;
 
@@ -2940,7 +2940,7 @@ jumpToNewPortal(
 
    if (retval != OK) {
       if (openedPortal)
-         closePortal(curPor, TRUE);    // Close opened portal
+         closePortal(curPor, true);    // Close opened portal
       if (curr != NULL && curr->fNum != 0) {
          // Couldn't open file, so put index back where it was.  This could
          // happen if the file was readonly and we changed something.
@@ -2968,7 +2968,7 @@ private Decoration lineDeco;
 
 //Display information about a single entry from the location list.
 //Used by ":mlist/:llist" commands.
-//'cursel' will be set to TRUE for the currently selected entry in the list.
+//'cursel' will be set to true for the currently selected entry in the list.
 private void
 displayListEntry(LocLine* lline, int ind, int cursel) {
    Book* book;
@@ -2996,7 +2996,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
    // Support for filtering entries using :filter /pat/ clist
    // Match against the module name, file name, search pattern and
    // text of the entry.
-   filter_entry = TRUE;
+   filter_entry = true;
    if (lline->moduleName != NULL && *lline->moduleName != ZERO)
       filter_entry &= message_filtered(lline->moduleName);
    if (filter_entry && fname != NULL)
@@ -3037,7 +3037,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
    gap = getTempList();
    formatText(gap, (fname != NULL || lline->lNum != 0) ? skipwhite(lline->text) : lline->text);
    ga_append(gap, ZERO);
-   msg_prt_line((CS)gap->c, FALSE);
+   msg_prt_line((CS)gap->c, false);
    out_flush();      // show one line at a time
 }
 
@@ -3051,7 +3051,7 @@ c_list(Invocation* invo) {
    Boole plus = false;
    int all = invo->forceit;   // if not :ml!, only show recognized errors
    LocationStack   *stack;
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    if (isStackEmpty(stack) || isEmpty(getCurrent(stack))) {
@@ -3080,7 +3080,7 @@ c_list(Invocation* invo) {
    }
 
    // Shorten all the file names, so that it is easy to read
-   shorten_fnames(FALSE);
+   shorten_fnames(false);
 
    // Get the attributes for the different location highlight items.  Note
    // that this depends on syntax items defined in the qf.vim syntax file
@@ -3095,7 +3095,7 @@ c_list(Invocation* invo) {
       lineDeco = getFullDecoration(HLF_N);
 
    if (ll->noValidEntries)
-      all = TRUE;
+      all = true;
       
    LocLine* lline;
    FOR_ALL_LL_ITEMS(ll, lline, i) {
@@ -3186,7 +3186,7 @@ void
 c_llAge(Invocation* invo) {
    LocationStack* stack;
 
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    int count = (invo->addr_count != 0) ? invo->line2 : 1;
@@ -3212,7 +3212,7 @@ c_llAge(Invocation* invo) {
 // Display the information about all the location lists in the stack
 void
 qf_history(Invocation* invo) {
-   LocationStack   *stack = getStackForCommand(invo, FALSE);
+   LocationStack   *stack = getStackForCommand(invo, false);
    int      i;
 
    if (invo->addr_count > 0) {
@@ -3246,7 +3246,7 @@ private void
 freeItems(LocationList* ll) {
    LocLine* lline;
    LocLine* nextLine;
-   int      stop = FALSE;
+   int      stop = false;
 
    while (ll->count && ll->first != NULL) {
       lline = ll->first;
@@ -3274,15 +3274,15 @@ freeItems(LocationList* ll) {
    ll->first = NULL;
    ll->last = NULL;
    ll->curr = NULL;
-   ll->noValidEntries = TRUE;
+   ll->noValidEntries = true;
 
    qf_clean_dir_stack(&ll->dirStack);
    ll->dir = NULL;
    qf_clean_dir_stack(&ll->fileStack);
    ll->currFName = NULL;
-   ll->qf_multiline = FALSE;
-   ll->qf_multiignore = FALSE;
-   ll->qf_multiscan = FALSE;
+   ll->qf_multiline = false;
+   ll->qf_multiignore = false;
+   ll->qf_multiscan = false;
 }
 
 // Free location list "idx". Frees all the entries, associated context information and the title.
@@ -3327,7 +3327,7 @@ llAdjustEntries(
                isBufferLinked = true;
                if (lline->lNum >= line1 && lline->lNum <= line2) {
                   if (amount == MAXLNUM)
-                     lline->isCleared = TRUE;
+                     lline->isCleared = true;
                   else
                      lline->lNum += amount;
                } ei (amount_after && lline->lNum > line2)
@@ -3386,8 +3386,8 @@ createMsg(int c, int nr) {
    return builder;
 }
 
-//When "split" is FALSE: Open the entry/result under the cursor.
-//When "split" is TRUE: Open the entry/result under the cursor in a new portal.
+//When "split" is false: Open the entry/result under the cursor.
+//When "split" is true: Open the entry/result under the cursor in a new portal.
 void
 llViewLocation(int split) {
    LocationStack* stack;
@@ -3418,7 +3418,7 @@ llViewLocation(int split) {
 void
 c_cPortal(Invocation* invo) {
    LocationStack* stack;
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    LocationList* ll = getCurrent(stack);
@@ -3442,13 +3442,13 @@ c_cPortal(Invocation* invo) {
 void
 c_lClose(Invocation* invo) {
    LocationStack   *stack;
-   if ((stack = getStackForCommand(invo, FALSE)) == NULL)
+   if ((stack = getStackForCommand(invo, false)) == NULL)
       return;
 
    // Find existing location portal and close it.
    Portal* port = findPortalIntoLocList(stack);
    if (port != NULL)
-      closePortal(port, FALSE);
+      closePortal(port, false);
 }
 
 // Set "w:quickfix_title" if "stack" has a title.
@@ -3492,7 +3492,7 @@ setPortalOptions() {
       S"bufhdden", (OptionValue){.tag = OPTION_STRING, .string = S"hide"}, SET_LOCAL
    );
    RESET_BINDING(curPor);
-   curPor->o.diff = FALSE;
+   curPor->o.diff = false;
    optChangeAndReportError(
       S"foldmethod", (OptionValue){.tag = OPTION_STRING, .string = S"manual"}, SET_LOCAL
    );
@@ -3558,7 +3558,7 @@ openNewPortal(LocationStack* stack, int height) {
    // Only set the height when still in the same tab and there is no portal to the side.
    if (curtab == prevtab && curPor->width == visibleColsG)
       portSetHeight(height, curPor);
-   curPor->o.portFixHeight = TRUE;       // set 'winfixheight'
+   curPor->o.portFixHeight = true;       // set 'winfixheight'
    if (portalIsValid(port))
       prevPor = port;
 
@@ -3571,7 +3571,7 @@ c_lOpen(Invocation* invo) {
    LocationStack* stack;
    int      status = FAIL;
 
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    incrementLlBusyness();
@@ -3621,7 +3621,7 @@ gotoLine(Portal* po, LineNr lnum) {
    curPor->cursWant = 0;
    update_topline();      // scroll to show the line
    redraw_later(UPD_VALID);
-   curPor->statusLineNeedsRedraw = TRUE;   // update ruler
+   curPor->statusLineNeedsRedraw = true;   // update ruler
    
    curPor = old_curPor;
    curBook = curPor->book;
@@ -3631,7 +3631,7 @@ gotoLine(Portal* po, LineNr lnum) {
 void
 c_lBottom(Invocation* invo) {
    LocationStack* stack;
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    Portal* po = findPortalIntoLocList(stack);
@@ -3647,7 +3647,7 @@ llCurrentEntry(Portal* po) {
 }
 
 // Update the cursor position in the location portal to the current error.
-// Return TRUE if there is a location portal.
+// Return true if there is a location portal.
 private Boole
 updatePortalPos(LocationStack* stack, int      old_currentIdx) {   // previous currentIdx or zero
    int currentIdx = getCurrent(stack)->currentIdx;
@@ -3764,13 +3764,13 @@ updateBook(LocationStack* stack, LocLine* oldLast) {
    // autocommands may cause trouble
    incrementLlBusyness();
 
-   int doFill = TRUE;
+   int doFill = true;
    AutocommSave aco;
    if (oldLast == NULL) {
       // set curPor/curBook to book and save a few things
       auCommPrepareBook(&aco, book);
       if (curBook != book)
-         doFill = FALSE;  // failed to find a portal into "book"
+         doFill = false;  // failed to find a portal into "book"
    }
 
    if (doFill) {
@@ -3831,7 +3831,7 @@ addLine(
             ){
                if (*dirname == ZERO)
                   mch_dirname(dirname, MAXPATHL);
-               shorten_buf_fname(errBook, dirname, FALSE);
+               shorten_buf_fname(errBook, dirname, false);
             }
             if (lline->fName == NULL)
                ga_concat(gap, errBook->currFileName);
@@ -3856,7 +3856,7 @@ addLine(
    }
 
    ga_append(gap, ZERO);
-   if (memAppendBook(book, lnum, gap->c, gap->len, FALSE) == FAIL)
+   if (memAppendBook(book, lnum, gap->c, gap->len, false) == FAIL)
       return FAIL;
 
    return OK;
@@ -3868,11 +3868,11 @@ private List *
 callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_idx) {
    Callback   *cb = &locationTextFnS;
    List   *qftf_list = NULL;
-   static int recursive = FALSE;
+   static int recursive = false;
 
    if (recursive)
       return NULL;  // this doesn't work properly recursively
-   recursive = TRUE;
+   recursive = true;
 
    // If 'quickfixtextfunc' is set, then use the user-supplied function to get the text to display.
    // Use the local value of 'quickfixtextfunc' if it is set.
@@ -3885,7 +3885,7 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
 
       // create the dict argument
       if ((d = allocBag_lock(VAR_FIXED)) == NULL) {
-         recursive = FALSE;
+         recursive = false;
          return NULL;
       }
       bagAddNumber(d, S"winid", (long)getLlPortalId);
@@ -3907,7 +3907,7 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
       bagUnref(d);
    }
 
-   recursive = FALSE;
+   recursive = false;
    return qftf_list;
 }
 
@@ -3952,7 +3952,7 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
    // Check if there is anything to display
    if (ll && ll->first) {
       Byte dirname[MAXPATHL];
-      int invalid_val = FALSE;
+      int invalid_val = false;
       int prev_bufnr = -1;
 
       dirname[0] = ZERO;
@@ -3982,7 +3982,7 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
          if (listItem != NULL && !invalid_val) {
             str = convertVarToStringSingleUse(&listItem->c);
             if (str == NULL)
-               invalid_val = TRUE;
+               invalid_val = true;
          }
 
          if (addLine(book, lnum, lline, dirname, prev_bufnr != lline->fNum, str) == FAIL)
@@ -4006,17 +4006,17 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
    }
 
    // correct cursor position
-   check_lnums(TRUE);
+   check_lnums(true);
 
    if (!oldLast) {
       // Set the book kind to "location" each time after filling the book.
       // This resembles reading a file into a book, it's more logical when using autocommands.
       curBook->kind = BOOK_LOCATION;
-      curBook->keepFiletype = TRUE;   // don't detect 'filetype'
+      curBook->keepFiletype = true;   // don't detect 'filetype'
       ++curBookLock;
       applyAutocomms(EVENT_BUFREADPOST, S"quickfix", NULL, false, curBook);
       applyAutocomms(EVENT_BUFWINENTER, S"quickfix", NULL, false, curBook);
-      curBook->keepFiletype = FALSE;
+      curBook->keepFiletype = false;
       --curBookLock;
 
       // make sure it will be redrawn
@@ -4073,7 +4073,7 @@ jumpToFirstEntry(LocationStack* stack, Unt idSave, Boole forceit) {
       llJump(stack, 0, 0, forceit);
 }
 
-// Return TRUE when using ":vimgrep" for ":grep".
+// Return true when using ":vimgrep" for ":grep".
 int
 grepIsActuallyInternal(CommIndex id) {
    return (id == C_grep || id == C_grepadd) 
@@ -4101,7 +4101,7 @@ buildErrorFileName(void) {
 
    CS name;
    if (!p_mef) {
-      name = eeTempName('e', FALSE);
+      name = eeTempName('e', false);
       if (!name)
          emsg(_(e_cant_get_temp_file_name));
       return name;
@@ -4156,7 +4156,7 @@ buildFullShellCommand(CS makecmd, CS fname) {
    // Display the fully formed command.  Output a newline if there's something
    // else than the :make command that was typed (in which case the cursor is in column 0).
    if (msgColG == 0)
-      msg_didout = FALSE;
+      msg_didout = false;
    msg_start();
    msg_puts(S":!");
    msg_outtrans(cmd);      // show what we are doing
@@ -4240,7 +4240,7 @@ c_elgrep(Invocation* invo) {
    }
 
    ll = getCurrent(stack);
-   ll->noValidEntries = FALSE;
+   ll->noValidEntries = false;
    ll->curr = ll->first;
    ll->currentIdx = 1;
    updateChangedTick(ll);
@@ -4336,7 +4336,7 @@ c_grep(Invocation* invo) {
       applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
    if (res > 0 && !invo->forceit && isIdValid(stack, llIdSaved))
       // display the first error
-      jumpToFirstEntry(stack, llIdSaved, FALSE);
+      jumpToFirstEntry(stack, llIdSaved, false);
 
    decrementLlBusyness();
    mch_remove(fname);
@@ -4370,7 +4370,7 @@ void initInProgressLl() {
 // Callback for a single error message from "make"
 private void
 makeReceiveMessage(Arr(Byte) msg) {
-   Var newMessage = (Var){.tag = VAR_STRING, .lock = FALSE, .string = msg };
+   Var newMessage = (Var){.tag = VAR_STRING, .lock = false, .string = msg };
    list_append_tv(makeInProgressS, &newMessage);
 }
 
@@ -4431,7 +4431,7 @@ c_make(Invocation* invo UNUSED) {
 int
 llGetSize(Invocation* invo) {
    LocationStack* stack;
-   if ((stack = getStackForCommand(invo, FALSE)) == NULL)
+   if ((stack = getStackForCommand(invo, false)) == NULL)
       return 0;
    return getCurrent(stack)->count;
 }
@@ -4444,7 +4444,7 @@ llGetValidSize(Invocation* invo){
    int i, sz = 0;
    int prev_fnum = 0;
 
-   if ((stack = getStackForCommand(invo, FALSE)) == NULL)
+   if ((stack = getStackForCommand(invo, false)) == NULL)
       return 0;
 
    LocationList* ll = getCurrent(stack);
@@ -4468,7 +4468,7 @@ int
 llGetCurrIndex(Invocation* invo) {
    LocationStack   *stack;
 
-   if ((stack = getStackForCommand(invo, FALSE)) == NULL)
+   if ((stack = getStackForCommand(invo, false)) == NULL)
       return 0;
 
    return getCurrent(stack)->currentIdx;
@@ -4482,7 +4482,7 @@ llGetCurrValidIndex(Invocation* invo) {
    int      i, eidx = 0;
    int      prev_fnum = 0;
 
-   if ((stack = getStackForCommand(invo, FALSE)) == NULL)
+   if ((stack = getStackForCommand(invo, false)) == NULL)
       return 1;
 
    LocationList* ll = getCurrent(stack);
@@ -4551,7 +4551,7 @@ c_lMove(Invocation* invo) {
    LocationStack* stack;
    int      errornr;
 
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    if (invo->addr_count > 0)
@@ -4588,7 +4588,7 @@ c_lMove(Invocation* invo) {
 void
 c_lNext(Invocation* invo) {
    LocationStack* stack;
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    int errornr;
@@ -4669,8 +4669,8 @@ qf_find_last_entry_on_line(LocLine* entry, int* errornr){
    return entry;
 }
 
-//Return TRUE if the specified location entry is
-//  after the given line (linewise is TRUE)
+//Return true if the specified location entry is
+//  after the given line (linewise is true)
 //  or after the line and column.
 private int
 isEntryAfterPos(LocLine* lline, Pos* pos, int linewise){
@@ -4680,8 +4680,8 @@ isEntryAfterPos(LocLine* lline, Pos* pos, int linewise){
       return (lline->lNum > pos->lnum || (lline->lNum == pos->lnum && lline->col > pos->col));
 }
 
-//Return TRUE if the specified location entry is
-//before the given line (linewise is TRUE) or before the line and column.
+//Return true if the specified location entry is
+//before the given line (linewise is true) or before the line and column.
 private int
 qf_entry_before_pos(LocLine *lline, Pos *pos, int linewise){
    if (linewise)
@@ -4690,7 +4690,7 @@ qf_entry_before_pos(LocLine *lline, Pos *pos, int linewise){
       return (lline->lNum < pos->lnum || (lline->lNum == pos->lnum && lline->col < pos->col));
 }
 
-//Return TRUE if the specified location entry is on or after the given line (linewise is TRUE)
+//Return true if the specified location entry is on or after the given line (linewise is true)
 //or on or after the line and column.
 private int
 qf_entry_on_or_after_pos(LocLine* lline, Pos* pos, int linewise){
@@ -4700,8 +4700,8 @@ qf_entry_on_or_after_pos(LocLine* lline, Pos* pos, int linewise){
       return (lline->lNum > pos->lnum || (lline->lNum == pos->lnum && lline->col >= pos->col));
 }
 
-//Return TRUE if the specified location entry is
-//on or before the given line (linewise is TRUE) or on or before the line and column.
+//Return true if the specified location entry is
+//on or before the given line (linewise is true) or on or before the line and column.
 private int
 isEntryOnOrBeforePos(LocLine* lline, Pos* pos, int linewise) {
    if (linewise)
@@ -4711,7 +4711,7 @@ isEntryOnOrBeforePos(LocLine* lline, Pos* pos, int linewise) {
 }
 
 //Find the first location entry after position 'pos' in buffer 'bnr'.
-//If 'linewise' is TRUE, return the entry after the specified line and treat multiple entries on a 
+//If 'linewise' is true, return the entry after the specified line and treat multiple entries on a 
 //single line as one. Otherwise returns the entry after the specified line and column.
 //'lline' points to the very first entry in the buffer and 'errornr' is the index of the very 
 //first entry in the location list. Return NULL if an entry is not found after 'pos'.
@@ -4748,7 +4748,7 @@ findEntryAfterPos(
 }
 
 // Find the first location entry before position 'pos' in buffer 'bnr'.
-// If 'linewise' is TRUE, returns the entry before the specified line and
+// If 'linewise' is true, returns the entry before the specified line and
 // treats multiple entries on a single line as one. Otherwise returns the entry
 // before the specified line and column.
 // 'lline' points to the very first entry in the buffer and 'errornr' is the
@@ -4807,7 +4807,7 @@ findClosestEntry(
 }
 
 //Get the nth location entry below the specified entry.  Searches forward in
-//the list. If linewise is TRUE, then treat multiple entries on a single line as one.
+//the list. If linewise is true, then treat multiple entries on a single line as one.
 private void
 getNthEntryBelow(LocLine *entry_arg, int n, int linewise, int *errornr) {
    LocLine *entry = entry_arg;
@@ -4833,7 +4833,7 @@ getNthEntryBelow(LocLine *entry_arg, int n, int linewise, int *errornr) {
 }
 
 //Get the nth location entry above the specified entry.  Searches backwards in
-//the list. If linewise is TRUE, then treat multiple entries on a single line as one.
+//the list. If linewise is true, then treat multiple entries on a single line as one.
 private void
 getNthEntryAbove(LocLine *entry, int n, int linewise, int *errornr){
    while (n-- > 0 && !gotInterruptG) {
@@ -4896,7 +4896,7 @@ c_lBelow(Invocation* invo) {
       return;
    }
 
-   if ((stack = getStackForCommand(invo, TRUE)) == NULL)
+   if ((stack = getStackForCommand(invo, true)) == NULL)
       return;
 
    LocationList* ll = getCurrent(stack);
@@ -5021,7 +5021,7 @@ vgr_init_regmatch(RegMultilineMatch* regmatch, CS s) {
 private void
 vgr_display_fname(Byte *fname) {
    msg_start();
-   CS p = msg_strtrunc(fname, TRUE);
+   CS p = msg_strtrunc(fname, true);
    if (p == NULL)
       msg_outtrans(fname);
    else {
@@ -5029,8 +5029,8 @@ vgr_display_fname(Byte *fname) {
       eeglFree(p);
    }
    msg_clr_eos();
-   msg_didout = FALSE;       // overwrite this message
-   msg_nowait = TRUE;       // don't wait for this message
+   msg_didout = false;       // overwrite this message
+   msg_nowait = true;       // don't wait for this message
    msgColG = 0;
    out_flush();
 }
@@ -5061,9 +5061,9 @@ vgr_isIdValid(LocationStack* stack, Unt listId, CS title){
    }
 
    if (restoreList(stack, listId) == FAIL)
-      return FALSE;
+      return false;
 
-   return TRUE;
+   return true;
 }
 
 //Search for a pattern in all the lines in a buffer and add the matching lines to a location list.
@@ -5078,7 +5078,7 @@ vgr_match_buflines(
    int duplicate_name,
    int flags
 ) {
-   int      found_match = FALSE;
+   int      found_match = false;
    long   lnum;
    ColNr   col;
    int      pat_len = (int)STRLEN(spat);
@@ -5102,18 +5102,18 @@ vgr_match_buflines(
                 regmatch->endpos[0].lnum + lnum,
                 regmatch->startpos[0].col + 1,
                 regmatch->endpos[0].col + 1,
-                FALSE,   // vis_col
+                false,   // vis_col
                 NULL,   // search pattern
                 0,      // nr
                 0,      // type
                 NULL,   // user_data
-                TRUE   // valid
+                true   // valid
                 ) == QF_FAIL)
          {
-             gotInterruptG = TRUE;
+             gotInterruptG = true;
              break;
          }
-         found_match = TRUE;
+         found_match = true;
          if (--*tomatch == 0)
             break;
          if ((flags & VGR_GLOBAL) == 0 || regmatch->endpos[0].lnum > 0)
@@ -5131,7 +5131,7 @@ vgr_match_buflines(
 
          // Fuzzy string match
          CLEAR_FIELD(matches);
-         while (fuzzy_match(str + col, spat, FALSE, &score, matches, sz) > 0) {
+         while (fuzzy_match(str + col, spat, false, &score, matches, sz) > 0) {
             //Pass the book number so that it gets used even for a dummy book, unless 
             //duplicate_name is set, then the book will be wiped out below.
             if (addEntry(ll,
@@ -5144,18 +5144,18 @@ vgr_match_buflines(
                    0,
                    matches[0] + col + 1,
                    0,
-                   FALSE,   // vis_col
+                   false,   // vis_col
                    NULL,   // search pattern
                    0,      // nr
                    0,      // type
                    NULL,   // user_data
-                   TRUE   // valid
+                   true   // valid
                    ) == QF_FAIL)
             {
-                gotInterruptG = TRUE;
+                gotInterruptG = true;
                 break;
             }
-            found_match = TRUE;
+            found_match = true;
             if (--*tomatch == 0)
                 break;
             if ((flags & VGR_GLOBAL) == 0)
@@ -5185,7 +5185,7 @@ jumpToFirstMatchAndUpdateDir(
    llJump(stack, 0, 0, forceit);
    if (book != curBook)
       // If we jumped to another book redrawing will already be taken care of.
-      *redrawForDummy = FALSE;
+      *redrawForDummy = false;
 
    // Jump to the directory used after loading the book.
    if (curBook == firstMatchBook && target_dir != NULL) {
@@ -5232,7 +5232,7 @@ vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
    ExpandMatch matches = (ExpandMatch){.c = args->fnames, .len = args->fcount };
 
    // Parse the list of arguments, wildcards have already been expanded.
-   if ((bookParseAndExpandFnames(p, TRUE, OUT &matches) == FAIL) || args->fcount == 0) {
+   if ((bookParseAndExpandFnames(p, true, OUT &matches) == FAIL) || args->fcount == 0) {
       emsg(_(e_no_match));
       return FAIL;
    }
@@ -5240,7 +5240,7 @@ vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
    return OK;
 }
 
-// Return TRUE if "book" had an existing swap file, the current swap file does not end in ".swp".
+// Return true if "book" had an existing swap file, the current swap file does not end in ".swp".
 private int
 existing_swapfile(Book* book) {
    if (book->mem.mfile != NULL && book->mem.mfile->fName != NULL) {
@@ -5248,7 +5248,7 @@ existing_swapfile(Book* book) {
       Unt len = STRLEN(fname);
       return fname[len - 1] != 'p' || fname[len - 2] != 'w';
    }
-   return FALSE;
+   return false;
 }
 
 // Search for a pattern in a list of files and populate the location list with the matches
@@ -5262,7 +5262,7 @@ elckGrepFiles(
 ) {
    int status = FAIL;
    Unt idSave = getCurrent(stack)->id;
-   int duplicate_name = FALSE;
+   int duplicate_name = false;
 
    Byte dirnameStart[MAXPATHL];
    Byte dirnameNow[MAXPATHL];
@@ -5284,12 +5284,12 @@ elckGrepFiles(
       if (!book || book->mem.mfile == NULL) {
          //Remember that a book with this name already exists.
          duplicate_name = (book != NULL);
-         using_dummy = TRUE;
-         *redrawForDummy = TRUE;
+         using_dummy = true;
+         *redrawForDummy = true;
          book = vgr_load_dummy_buf(fname, dirnameStart, dirnameNow);
       } else
          // Use existing, loaded book.
-         using_dummy = FALSE;
+         using_dummy = false;
 
       //Check whether the location list is still valid. When loading a
       //book above, autocommands might have changed the location list.
@@ -5401,7 +5401,7 @@ c_vimgrep(Invocation* invo) {
    }
 
    LocationList* ll = getCurrent(stack);
-   ll->noValidEntries = FALSE;
+   ll->noValidEntries = false;
    ll->curr = ll->first;
    ll->currentIdx = 1;
    updateChangedTick(ll);
@@ -5481,7 +5481,7 @@ loadDummyBook(
 ){
    BookRef   newbufref;
    BookRef   newbuf_to_wipe;
-   int      failed = TRUE;
+   int      failed = true;
    AutocommSave   aco;
    int      readfile_result;
 
@@ -5503,10 +5503,10 @@ loadDummyBook(
       auCommPrepareBook(&aco, newBook);
       if (curBook == newBook) {
          // Need to set the filename for autocommands.
-         (void)setfname(curBook, fname, NULL, FALSE);
+         (void)setfname(curBook, fname, NULL, false);
 
          // Create swap file now to avoid the ATTENTION message.
-         check_need_swap(TRUE);
+         check_need_swap(true);
 
          // Remove the "dummy" flag, otherwise autocommands may not work.
          curBook->flags &= ~BF_DUMMY;
@@ -5517,7 +5517,7 @@ loadDummyBook(
          );
          --newBook->locked;
          if (readfile_result == OK && !gotInterruptG && !(curBook->flags & BF_NEW)) {
-            failed = FALSE;
+            failed = false;
             if (curBook != newBook) {
                 // Bloody autocommands changed the book!  Can happen when
                 // using netrw and editing a remote file.  Use the current
@@ -5563,14 +5563,14 @@ wipeDummyBook(Book* book, CS dirname_start) {
    // If any autocommand opened a portal into the dummy book, close that portal.  
    // If we can't close them all then give up.
    while (book->countPortals > 0) {
-      int       did_one = FALSE;
+      int       did_one = false;
       Portal       *wp;
 
       if (firstPor->next != NULL)
          FOR_ALL_PORTALS(wp)
          if (wp->book == book) {
-             if (closePortal(wp, FALSE) == OK)
-            did_one = TRUE;
+             if (closePortal(wp, false) == OK)
+            did_one = true;
              break;
          }
       if (!did_one)
@@ -5581,11 +5581,11 @@ wipeDummyBook(Book* book, CS dirname_start) {
       Cleanup   cs;
 
       // Reset the error/interrupt/exception state here so that aborting()
-      // returns FALSE when wiping out the book.  Otherwise it doesn't
+      // returns false when wiping out the book.  Otherwise it doesn't
       // work when gotInterruptG is set.
       enter_cleanup(&cs);
 
-      bookWipe(book, TRUE);
+      bookWipe(book, true);
 
       // Restore the error/interrupt/exception state if not discarded by a
       // new aborting error, interrupt, or uncaught exception.
@@ -5610,7 +5610,7 @@ unloadDummyBook(Book* book, CS dirname_start) {
    if (curBook == book)      // safety check
       return;
 
-   closeBook(NULL, book, DOBOOK_UNLOAD, FALSE, TRUE);
+   closeBook(NULL, book, DOBOOK_UNLOAD, false, true);
 
    // When autocommands/'autochdir' option changed directory: go back.
    restore_start_dir(dirname_start);
@@ -6014,16 +6014,16 @@ getProperties(LocationStack* stack, Bag* specifics, OUT Bag* retBag) {
 }
 
 // Add a new location entry to list at 'ind' in the stack 'stack' from the
-// items in the dict 'd'. If it is a valid error entry, then set 'valid_entry' to TRUE.
+// items in the dict 'd'. If it is a valid error entry, then set 'valid_entry' to true.
 private int
 addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry){
    static int   did_bufnr_emsg;
 
    if (first_entry)
-      did_bufnr_emsg = FALSE;
+      did_bufnr_emsg = false;
 
-   CS filename = bagGetString(d,tConst("filename"), TRUE);
-   CS module = bagGetString(d,tConst("module"), TRUE);
+   CS filename = bagGetString(d,tConst("filename"), true);
+   CS module = bagGetString(d,tConst("module"), true);
    int bufnum = (int)bagGetNumber(d, tConst("bufnr"));
    long lnum = (int)bagGetNumber(d, tConst("lnum"));
    long end_lnum = (int)bagGetNumber(d, tConst("end_lnum"));
@@ -6031,9 +6031,9 @@ addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry){
    int end_col = (int)bagGetNumber(d, tConst("end_col"));
    int vcol = (int)bagGetNumber(d, tConst("vcol"));
    int nr = (int)bagGetNumber(d, tConst("nr"));
-   CS type = bagGetString(d, tConst("type"), TRUE);
-   CS pattern = bagGetString(d, tConst("pattern"), TRUE);
-   CS text = bagGetString(d, tConst("text"), TRUE);
+   CS type = bagGetString(d, tConst("type"), true);
+   CS pattern = bagGetString(d, tConst("pattern"), true);
+   CS text = bagGetString(d, tConst("text"), true);
    if (text == NULL)
       text = copyStr(E);
    Var user_data;
@@ -6042,12 +6042,12 @@ addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry){
 
    Boole valid = true;
    if ((filename == NULL && bufnum == 0) || (lnum == 0 && pattern == NULL))
-      valid = FALSE;
+      valid = false;
 
    // Mark entries with non-existing book number as not valid. Give the error message only once.
    if (bufnum != 0 && (bookFindFileByBookNr(bufnum) == NULL)) {
       if (!did_bufnr_emsg) {
-         did_bufnr_emsg = TRUE;
+         did_bufnr_emsg = true;
          showErrFmtMsg(_(e_book_nr_not_found), bufnum);
       }
       valid = false;
@@ -6084,15 +6084,15 @@ addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry){
    clearVar(&user_data);
 
    if (valid)
-      *valid_entry = TRUE;
+      *valid_entry = true;
 
    return status;
 }
 
 // Check if `entry` is closer to the target than `other_entry`.
 //
-// Only return TRUE if `entry` is definitively closer. If it's further away, or there's not 
-// enough information to tell, return FALSE.
+// Only return true if `entry` is definitively closer. If it's further away, or there's not 
+// enough information to tell, return false.
 private int
 entry_is_closer_to_target(
    LocLine* entry,
@@ -6104,43 +6104,43 @@ entry_is_closer_to_target(
    // First, compare entries to target file.
    if (!target_fnum)
       // Without a target file, we can't know which is closer.
-      return FALSE;
+      return false;
 
    int is_target_file = entry->fNum && entry->fNum == target_fnum;
    int other_is_target_file = other_entry->fNum && other_entry->fNum == target_fnum;
    if (!is_target_file && other_is_target_file)
-      return FALSE;
+      return false;
    ei (is_target_file && !other_is_target_file)
-      return TRUE;
+      return true;
 
     // Both entries are pointing at the exact same file. Now compare line
     // numbers.
    if (!target_lnum)
       // Without a target line number, we can't know which is closer.
-      return FALSE;
+      return false;
 
    int line_distance = entry->lNum ? labs(entry->lNum - target_lnum) : INT_MAX;
    int other_line_distance = other_entry->lNum ? labs(other_entry->lNum - target_lnum) : INT_MAX;
    if (line_distance > other_line_distance)
-      return FALSE;
+      return false;
    ei (line_distance < other_line_distance)
-      return TRUE;
+      return true;
 
    //Both entries are pointing at the exact same line number (or no line
    //number at all). Now compare columns.
    if (!target_col)
       // Without a target column, we can't know which is closer.
-      return FALSE;
+      return false;
 
    int column_distance = entry->col ? abs(entry->col - target_col) : INT_MAX;
    int other_column_distance = other_entry->col ? abs(other_entry->col - target_col): INT_MAX;
    if (column_distance > other_column_distance)
-      return FALSE;
+      return false;
    ei (column_distance < other_column_distance)
-      return TRUE;
+      return true;
 
    // It's a complete tie! The exact same file, line, and column.
-   return FALSE;
+   return false;
 }
 
 // Add list of entries to location list. Each list entry is a dictionary with item information.
@@ -6155,7 +6155,7 @@ addEntries(
    Bag   *d;
    LocLine   *oldLast = NULL;
    int      retval = OK;
-   int      valid_entry = FALSE;
+   int      valid_entry = false;
 
    // If there's an entry selected in the location list, remember its location
    // (file, line, column), so we can select the nearest entry in the updated list.
@@ -6169,11 +6169,11 @@ addEntries(
       prev_col = ll->curr->col;
    }
 
-   int select_first_entry = FALSE;
-   int select_nearest_entry = FALSE;
+   int select_first_entry = false;
+   int select_nearest_entry = false;
 
    if (action == LL_ACTION_NEW || ind == stack->listcount) {
-      select_first_entry = TRUE;
+      select_first_entry = true;
       // make place for a new list
       newLocList(stack, title);
       ind = stack->currList;
@@ -6181,16 +6181,16 @@ addEntries(
    } ei (action == LL_ACTION_ADD) {
       if (isEmpty(ll))
          // Appending to empty list, select first entry.
-         select_first_entry = TRUE;
+         select_first_entry = true;
       else
          // Adding to existing list, use last entry.
          oldLast = ll->last;
    } ei (action == LL_ACTION_REPLACE) {
-      select_first_entry = TRUE;
+      select_first_entry = true;
       freeItems(ll);
       storeTitle(ll, title);
    } ei (action == LL_ACTION_UPDATE) {
-      select_nearest_entry = TRUE;
+      select_nearest_entry = true;
       freeItems(ll);
       storeTitle(ll, title);
    }
@@ -6227,10 +6227,10 @@ addEntries(
 
    // Check if any valid error entries are added to the list.
    if (valid_entry)
-      ll->noValidEntries = FALSE;
+      ll->noValidEntries = false;
    ei (ll->currentIdx == 0)
       // no valid entry
-      ll->noValidEntries = TRUE;
+      ll->noValidEntries = true;
 
    // Set the current error.
    if (entry_to_select) {
@@ -6265,12 +6265,12 @@ qf_setprop_get_qfidx(
          if ((action == LL_ACTION_ADD) && ind == stack->listcount) {
             // When creating a new list, accept ind pointing to the next
             // non-available list and add the new list at the end of the stack.
-            *newlist = TRUE;
+            *newlist = true;
             ind = isStackEmpty(stack) ? 0 : stack->listcount - 1;
          } ei (ind < 0 || ind >= stack->listcount)
             return INVALID_LL_IND;
          else
-            *newlist = FALSE;   // use the specified list
+            *newlist = false;   // use the specified list
       } ei (di->c.tag == VAR_STRING
             && di->c.string != NULL
             && STRCMP(di->c.string, "$") == 0) {
@@ -6303,7 +6303,7 @@ setTitle(LocationStack* stack, int ind, Bag* specifics, DictItem* di) {
       return FAIL;
 
    eeglFree(ll->title);
-   ll->title = bagGetString(specifics, tConst("title"), TRUE);
+   ll->title = bagGetString(specifics, tConst("title"), true);
    if (ind == stack->currList)
       updateTitleVar(stack);
 
@@ -6518,7 +6518,7 @@ setLocationList(
 
 private int
 checkIfUserDataLocked(LocationStack* stack, int copyID) {
-   int abort = FALSE;
+   int abort = false;
    for (int i = 0; i < stack->cap && !abort; ++i) {
       LocationList *ll = &stack->lists[i];
       if (!ll->hasUserData)
@@ -6540,7 +6540,7 @@ checkIfUserDataLocked(LocationStack* stack, int copyID) {
 // in a location stack.
 private int
 checkIfContextAndCallbackLocked(LocationStack* stack, int copyID) {
-   int abort = FALSE;
+   int abort = false;
 
    for (int i = 0; i < stack->cap && !abort; ++i) {
       Var* ctx = stack->lists[i].qf_ctx;
@@ -6566,7 +6566,7 @@ markReferencesInStack(LocationStack* st, int copyId) {
 Boole
 set_ref_in_quickfix(int copyId) {
    if (mainStackG == NULL)
-      return TRUE;
+      return true;
       
    Boole abort = false;
    for (int i = 0; i < COUNT_LOC_LISTS; i++) {
@@ -6807,15 +6807,15 @@ searchInFile(
                   + 1,   // col
                   (int)(p_regmatch->endp[0] - line)
                   + 1,   // end_col
-                  FALSE,   // vis_col
+                  false,   // vis_col
                   NULL,   // search pattern
                   0,   // nr
                   1,   // type
                   NULL,   // user_data
-                  TRUE   // valid
+                  true   // valid
             ) == QF_FAIL
          ) {
-            gotInterruptG = TRUE;
+            gotInterruptG = true;
             if (line != IObuff)
                eeglFree(line);
             break;
@@ -6859,7 +6859,7 @@ searchFilesInDir(LocationList* ll, CS dirname, OUT RegMatch* p_regmatch, CS lang
 // ":helpgrep {pattern}"
 void
 c_helpgrep(Invocation* invo) {
-   int updated = FALSE;
+   int updated = false;
 
    CS auName = S"helpgrep";
    
@@ -6876,7 +6876,7 @@ c_helpgrep(Invocation* invo) {
    CS lang = check_help_lang(invo->arg);
    RegMatch regmatch;
    regmatch.regprog = compileRegexp(invo->arg, RE_MAGIC + RE_STRING);
-   regmatch.rm_ic = FALSE;
+   regmatch.rm_ic = false;
    if (regmatch.regprog != NULL) {
       LocationList   *ll;
 
@@ -6887,11 +6887,11 @@ c_helpgrep(Invocation* invo) {
 
       eeRegFree(regmatch.regprog);
 
-      ll->noValidEntries = FALSE;
+      ll->noValidEntries = false;
       ll->curr = ll->first;
       ll->currentIdx = 1;
       updateChangedTick(ll);
-      updated = TRUE;
+      updated = true;
    }
 
    if (updated) // This may open a portal and source scripts
@@ -6966,7 +6966,7 @@ setLocationListInternal(
    else {
       List* newContent = listArg->list;
       Bag* specific = NULL;
-      Boole isDictValid = TRUE;
+      Boole isDictValid = true;
 
       LocListAction action = LL_ACTION_INVALID;
       
@@ -6996,7 +6996,7 @@ setLocationListInternal(
             specific = specificArg->bag;
          else {
             emsg(_(e_dictionary_required));
-            isDictValid = FALSE;
+            isDictValid = false;
          }
       }
 

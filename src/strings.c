@@ -212,7 +212,7 @@ eeglStrSize(CS s) {
    return eeglStrNsize(s, (int)MAXCOL);
 }
 
-//return TRUE if 'c' is a valid file-name character or a wildcard character
+//return true if 'c' is a valid file-name character or a wildcard character
 //Assume characters above 0x100 are valid (multi-byte).
 //Explicitly interpret ']' as a wildcard character as mch_has_wildcard("]") returns false.
 int
@@ -356,7 +356,7 @@ eeIsLower(Unt c) {
 int
 eeIsUpper(Unt c) {
    if (c <= '@')
-      return FALSE;
+      return false;
    if (c >= 0x80) {
       return utf_isupper(c);
    }
@@ -459,7 +459,7 @@ parseLong_quoted(OUT CS* pp) {
    return retval;
 }
 
-// Return TRUE if "lbuf" is empty or only contains blanks.
+// Return true if "lbuf" is empty or only contains blanks.
 int
 eeIsBlankLine(CS lbuf) {
    CS p = skipwhite(lbuf);
@@ -482,7 +482,7 @@ eeIsBlankLine(CS lbuf) {
 //If "what" contains STR2NR_FORCE always assume bin/hex.
 //If "what" contains STR2NR_QUOTE ignore embedded single quotes
 //If maxlen > 0, check at a maximum maxlen chars.
-//If strict is TRUE, check the number strictly. return *len = 0 if fail.
+//If strict is true, check the number strictly. return *len = 0 if fail.
 void
 readLongNumber(
    CS start,
@@ -493,18 +493,18 @@ readLongNumber(
    ULong* unptr,  // return: unsigned result
    int maxlen,   // max length of string to check
    Boole strict,   // check strictly
-   Boole* overflow  // when not NULL set to TRUE for overflow
+   Boole* overflow  // when not NULL set to true for overflow
 ){
    CS ptr = start;
    int          pre = 0;      // default is decimal
-   int          negative = FALSE;
+   int          negative = false;
    ULong    un = 0;
 
    if (len)
       *len = 0;
 
    if (ptr[0] == '-') {
-      negative = TRUE;
+      negative = true;
       ++ptr;
    }
 
@@ -539,7 +539,7 @@ readLongNumber(
           else {
          un = UVARNUM_MAX;
          if (overflow != NULL)
-             *overflow = TRUE;
+             *overflow = true;
           }
           ++ptr;
           if (n++ == maxlen)
@@ -561,7 +561,7 @@ readLongNumber(
          else {
             un = UVARNUM_MAX;
             if (overflow)
-                *overflow = TRUE;
+                *overflow = true;
          }
          ++ptr;
          if (n++ == maxlen)
@@ -584,7 +584,7 @@ readLongNumber(
          else {
             un = UVARNUM_MAX;
             if (overflow != NULL)
-                *overflow = TRUE;
+                *overflow = true;
          }
          ++ptr;
          if (n++ == maxlen)
@@ -611,7 +611,7 @@ readLongNumber(
          if (un > VARNUM_MAX) {
             *nptr = VARNUM_MIN;
             if (overflow != NULL)
-                *overflow = TRUE;
+                *overflow = true;
          } else
             *nptr = -(Long)un;
       } else {
@@ -619,7 +619,7 @@ readLongNumber(
          if (un > VARNUM_MAX) {
             un = VARNUM_MAX;
             if (overflow != NULL)
-                *overflow = TRUE;
+                *overflow = true;
          }
          *nptr = (Long)un;
       }
@@ -647,7 +647,7 @@ hexhex2nr(CS p) {
    return (hex2nr(p[0]) << 4) + hex2nr(p[1]);
 }
 
-//Return TRUE if "str" starts with a backslash that should be removed. '$' is a valid file name 
+//Return true if "str" starts with a backslash that should be removed. '$' is a valid file name 
 //character, we don't remove the backslash before it.  This means it is not possible to use an 
 //environment variable after a backslash. "~/\$EEGL\doc" is taken literally, only "$EEGL\doc" works.
 //Assume a file name doesn't start with a space.
@@ -931,7 +931,7 @@ copyStrEscapedA(CS string, CS escChars, Arena* a) {
    return copyStr_escaped_ext(string, escChars, '\\', false, a);
 }
 
-//Same as copyStr_escaped(), but when "bsl" is TRUE also escape characters where rem_backslash() 
+//Same as copyStr_escaped(), but when "bsl" is true also escape characters where rem_backslash() 
 //would remove the backslash. Escape the characters with "cc".
 //If "a" is non-null, allocation is within it, otherwise it's separate allocations
 CS
@@ -1033,10 +1033,10 @@ splitBySpace(CS inp) {
 
 //Escape "string" for use as a shell argument with system().
 //This uses single quotes.
-//Escape a newline, depending on the 'shell' option. When "do_special" is TRUE also replace 
+//Escape a newline, depending on the 'shell' option. When "do_special" is true also replace 
 //"!", "%", "#" and things starting
 //with "<" like "<cfile>".
-//When "do_newline" is FALSE do not escape newline unless it is csh shell.
+//When "do_newline" is false do not escape newline unless it is csh shell.
 //Return the result in allocated memory, NULL if we have run out.
 CS
 copyStr_shellescape(CS string, int do_special, int do_newline) {
@@ -1371,16 +1371,16 @@ sortStrings(Arr(CS) files, int count) {
    qsort((void *)files, (Unt)count, sizeof(CS), stringComparer);
 }
 
-// Return TRUE if string "s" contains a non-ASCII character (128 or higher). FALSE for null
+// Return true if string "s" contains a non-ASCII character (128 or higher). false for null
 int
 has_non_ascii(CS s) {
    if (s) {
       for (CS p = s; *p != ZERO; ++p) {
          if (*p >= 128)
-            return TRUE;
+            return true;
       } 
    }
-   return FALSE;
+   return false;
 }
 
 // Concatenate two strings and return the result in allocated memory.
@@ -1416,7 +1416,7 @@ reverse_text(CS s) {
 }
 
 //Return string "str" in ' quotes, doubling ' characters. If "str" is NULL an empty string is 
-//assumed. If "function" is TRUE make it function('string').
+//assumed. If "function" is true make it function('string').
 CS
 string_quote(CS str, int function) {
    CS p;
@@ -1450,7 +1450,7 @@ string_quote(CS str, int function) {
    return s;
 }
 
-// Count the number of times "needle" occurs in string "haystack". Case is ignored if "ic" is TRUE.
+// Count the number of times "needle" occurs in string "haystack". Case is ignored if "ic" is true.
 long
 string_count(CS haystack, CS needle, int ic) {
    long   n = 0;
@@ -1581,7 +1581,7 @@ string_reduce(Var* argvars, Var* expr, Var* returnVar) {
          break;
       len = (int)STRLEN(argv[1].string);
 
-      r = eval_expr_typval(expr, TRUE, argv, 2, returnVar);
+      r = eval_expr_typval(expr, true, argv, 2, returnVar);
 
       clearVar(&argv[0]);
       clearVar(&argv[1]);
@@ -1600,7 +1600,7 @@ byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
    if (!str || idx < 0)
       return;
 
-   Long   utf16idx = FALSE;
+   Long   utf16idx = false;
    if (argvars[2].tag != VAR_UNKNOWN) {
       Boole error = false;
       utf16idx = varGetNumberChk(argvars + 2, OUT &error);
@@ -1659,8 +1659,8 @@ f_charidx(Var* argvars, Var* returnVar) {
    if (str == NULL || idx < 0)
       return;
 
-   Long   countcc = FALSE;
-   Long   utf16idx = FALSE;
+   Long   countcc = false;
+   Long   utf16idx = false;
    if (argvars[2].tag != VAR_UNKNOWN) {
       countcc = tv_get_bool(&argvars[2]);
       if (argvars[3].tag != VAR_UNKNOWN)
@@ -1837,7 +1837,7 @@ f_str2nr(Var* argvars, Var* returnVar) {
    case 2: what |= STR2NR_BIN + STR2NR_FORCE; break;
    case 16: what |= STR2NR_HEX + STR2NR_FORCE; break;
    }
-   readLongNumber(p, NULL, NULL, what, &n, NULL, 0, FALSE, NULL);
+   readLongNumber(p, NULL, NULL, what, &n, NULL, 0, false, NULL);
    // Text after the number is silently ignored.
    returnVar->number = isneg ? -n : n;
 }
@@ -1927,12 +1927,12 @@ strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc) {
 
 void
 f_strcharlen(Arr(Var) argvars, OUT Var* returnVar) {
-   strchar_common(argvars, returnVar, TRUE);
+   strchar_common(argvars, returnVar, true);
 }
 
 void
 f_strchars(Arr(Var) argvars, OUT Var* returnVar) {
-   Long      skipcc = FALSE;
+   Long      skipcc = false;
    if (argvars[1].tag != VAR_UNKNOWN) {
       Boole error = false;
       skipcc = varGetNumberChk(argvars + 1, OUT &error);
@@ -1968,7 +1968,7 @@ f_strwidth(Var* argvars, OUT Var* returnVar) {
 void
 f_strcharpart(Arr(Var) argvars, OUT Var* returnVar) {
    int nbyte = 0;
-   int skipcc = FALSE;
+   int skipcc = false;
    int len = 0;
    Boole error = false;
 
@@ -2121,7 +2121,7 @@ f_toupper(Arr(Var) argvars, OUT Var* returnVar) {
 void
 f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    CS p;
-   int  first = TRUE;
+   int  first = true;
    Byte buf[NUMBUFLEN];
    Byte buffer1[NUMBUFLEN];
 
@@ -2168,7 +2168,7 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
          // Check that fromstr and tostr have the same number of
          // (multi-byte) characters.  Done only once when a character
          // of in_str doesn't appear in fromstr.
-         first = FALSE;
+         first = false;
          for (p = tostr; *p != ZERO; p += tolen) {
             tolen = utfCharLen(p);
             --idx;
@@ -3593,7 +3593,7 @@ eeVarPrintf0(
             // Floating point.
             Byte format[40];
             int      l;
-            int      remove_trailing_zeroes = FALSE;
+            int      remove_trailing_zeroes = false;
 
             double f = tvs
                ? tv_float(tvs, &arg_idx) 
@@ -3611,7 +3611,7 @@ eeVarPrintf0(
                    fmt_spec = ASCII_ISUPPER(fmt_spec) ? 'F' : 'f';
                else
                    fmt_spec = fmt_spec == 'g' ? 'e' : 'E';
-               remove_trailing_zeroes = TRUE;
+               remove_trailing_zeroes = true;
             }
 
             if ((fmt_spec == 'f' || fmt_spec == 'F') &&
@@ -3983,7 +3983,7 @@ addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t) {
    t->len++;
 }
 
-//Return TRUE if "pat_arg" matches "str". Also returns the match score in
+//Return true if "pat_arg" matches "str". Also returns the match score in
 //"outScore" and the matching character positions in "matches".
 int
 fuzzy_match(
@@ -3994,7 +3994,7 @@ fuzzy_match(
    Arr(Unt) matches,
    int maxMatches
 ) {
-   int complete = FALSE;
+   int complete = false;
    int score = 0;
    int numMatches = 0;
    double fzy_score;
@@ -4008,7 +4008,7 @@ fuzzy_match(
    // Try matching each word in 'pat_arg' in 'str'
    while (true) {
       if (matchseq)
-         complete = TRUE;
+         complete = true;
       else {
          // Extract one word from the pattern (separated by space)
          p = skipwhite(p);
@@ -4019,7 +4019,7 @@ fuzzy_match(
             MB_PTR_ADV(p);
          }
          if (*p == ZERO)      // processed all the words
-            complete = TRUE;
+            complete = true;
          *p = ZERO;
       }
 
@@ -4066,7 +4066,7 @@ fuzzy_match_item_compare(const void *s1, const void *s2) {
    int v2 = ((FuzzyItem *)s2)->score;
 
    if (v1 == v2) {
-      int exact_match1 = FALSE, exact_match2 = FALSE;
+      int exact_match1 = false, exact_match2 = false;
       CS pat = ((FuzzyItem *)s1)->pat;
       int patlen = (int)STRLEN(pat);
       int startpos = ((FuzzyItem *)s1)->startpos;
@@ -4089,11 +4089,11 @@ fuzzy_match_item_compare(const void *s1, const void *s2) {
 
 //Fuzzy search the string 'str' in a list of 'items' and return the matching
 //strings in 'fmatchlist'.
-//If 'matchseq' is TRUE, then for multi-word search strings, match all the words in sequence.
+//If 'matchseq' is true, then for multi-word search strings, match all the words in sequence.
 //If 'items' is a list of strings, then search for 'str' in the list.
 //If 'items' is a list of dicts, then either use 'key' to lookup the string
 //for each item or use 'item_cb' Funcref function to get the string.
-//If 'retmatchpos' is TRUE, then return a list of positions where 'str' matches for each item.
+//If 'retmatchpos' is true, then return a list of positions where 'str' matches for each item.
 private void
 fuzzy_match_in_list(
    List* l,
@@ -4124,7 +4124,7 @@ fuzzy_match_in_list(
       int      score;
       Byte      *itemstr;
       Var   returnVar;
-      int      itemstr_allocate = FALSE;
+      int      itemstr_allocate = false;
 
       if (max_matches > 0 && match_count >= max_matches)
           break;
@@ -4137,7 +4137,7 @@ fuzzy_match_in_list(
          // For a dict, either use the specified key to lookup the string or
          // use the specified callback function to get the string.
          if (key)
-            itemstr = bagGetString(li->c.bag, text(key), FALSE);
+            itemstr = bagGetString(li->c.bag, text(key), false);
          else {
             Var   argv[2];
 
@@ -4149,7 +4149,7 @@ fuzzy_match_in_list(
             if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL) {
                if (returnVar.tag == VAR_STRING) {
                   itemstr = returnVar.string;
-                  itemstr_allocate = TRUE;
+                  itemstr_allocate = true;
                }
             }
             bagUnref(li->c.bag);
@@ -4257,12 +4257,12 @@ done:
 }
 
 //Do fuzzy matching. Returns the list of matched strings in 'returnVar'.
-//If 'retmatchpos' is TRUE, also returns the matching character positions.
+//If 'retmatchpos' is true, also returns the matching character positions.
 private void
 do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
    Callback   cb;
    CS key = NULL;
-   int      matchseq = FALSE;
+   int      matchseq = false;
    long   max_matches = 0;
 
    CLEAR_POINTER(&cb);
@@ -4313,7 +4313,7 @@ do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
       }
 
       if (bagHasKey(d, tConst("matchseq")))
-         matchseq = TRUE;
+         matchseq = true;
    }
 
    // get the fuzzy matches
@@ -4350,12 +4350,12 @@ done:
 
 void
 f_matchfuzzy(Arr(Var) argvars, OUT Var* returnVar) {
-   do_fuzzymatch(argvars, returnVar, FALSE);
+   do_fuzzymatch(argvars, returnVar, false);
 }
 
 void
 f_matchfuzzypos(Arr(Var) argvars, OUT Var* returnVar) {
-    do_fuzzymatch(argvars, returnVar, TRUE);
+    do_fuzzymatch(argvars, returnVar, true);
 }
 
 //Same as fuzzy_match_item_compare() except for use with a string match
@@ -4416,7 +4416,7 @@ fuzzyMatchStr(CS str, CS pat) {
    if (str == NULL || pat == NULL)
       return score;
 
-   fuzzy_match(str, pat, TRUE, &score, matchpos, sizeof(matchpos) / sizeof(matchpos[0]));
+   fuzzy_match(str, pat, true, &score, matchpos, sizeof(matchpos) / sizeof(matchpos[0]));
 
    return score;
 }
@@ -4438,7 +4438,7 @@ fuzzyMatchStr_with_pos(CS str, CS pat) {
       return NULL;
    ga_init2(match_positions, sizeof(Unt), 10);
 
-   if (!fuzzy_match(str, pat, FALSE, &score, matches, FUZZY_MATCH_MAX_LEN)
+   if (!fuzzy_match(str, pat, false, &score, matches, FUZZY_MATCH_MAX_LEN)
           || score == FUZZY_SCORE_NONE) {
       ga_clear(match_positions);
       eeglFree(match_positions);
@@ -4503,7 +4503,7 @@ fuzzyMatchStr_in_line(
    CS strBegin = str;
    CS end = NULL;
    CS start = NULL;
-   int found = FALSE;
+   int found = false;
    Byte save_end;
    CS line_end = NULL;
 
@@ -4528,7 +4528,7 @@ fuzzyMatchStr_in_line(
 
       if (*score != FUZZY_SCORE_NONE) {
          *len = (int)(end - start);
-         found = TRUE;
+         found = true;
          *ptr = start;
          if (current_pos)
             current_pos->col += (int)(end - strBegin);
@@ -4550,7 +4550,7 @@ fuzzyMatchStr_in_line(
 
 //Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of 
 //the given pattern in the buffer, starting from the current position. Handle line wrapping and 
-//direction of search. Return TRUE if a match is found, otherwise FALSE.
+//direction of search. Return true if a match is found, otherwise false.
 int
 search_for_fuzzy_match(
    Book* book,
@@ -4564,8 +4564,8 @@ search_for_fuzzy_match(
 ) {
    Pos current_pos = *pos;
    Pos circly_end;
-   int found_new_match = FALSE;
-   int looped_around = FALSE;
+   int found_new_match = false;
+   int looped_around = false;
    int whole_line = ctrl_x_mode_whole_line();
 
    if (book == curBook)
@@ -4605,7 +4605,7 @@ search_for_fuzzy_match(
                   break;
             } else {
                if (fuzzyMatchStr(*ptr, pattern) != FUZZY_SCORE_NONE) {
-                  found_new_match = TRUE;
+                  found_new_match = true;
                   *pos = current_pos;
                   *len = (int)memGetBookLen(book, current_pos.lnum);
                   break;
@@ -4619,7 +4619,7 @@ search_for_fuzzy_match(
          if (++current_pos.lnum > book->mem.lineCount) {
             if (wrapSearchG) {
                current_pos.lnum = 1;
-               looped_around = TRUE;
+               looped_around = true;
             } else
                break;
          }
@@ -4627,13 +4627,13 @@ search_for_fuzzy_match(
          if (--current_pos.lnum < 1) {
             if (wrapSearchG) {
                current_pos.lnum = book->mem.lineCount;
-               looped_around = TRUE;
+               looped_around = true;
             } else
                break;
          }
       }
       current_pos.col = 0;
-   } while (TRUE);
+   } while (true);
 
    return found_new_match;
 }
@@ -4701,13 +4701,13 @@ has_match(Byte *needle, Byte *haystack) {
       int n_char = mb_ptr2char(needle);
       Byte *p = haystack;
       int h_char;
-      int matched = FALSE;
+      int matched = false;
 
       while (*p != ZERO) {
          h_char = mb_ptr2char(p);
 
          if (n_char == h_char || MB_TOUPPER(n_char) == h_char) {
-            matched = TRUE;
+            matched = true;
             break;
          }
          p += utfCharLen(p);
@@ -4897,7 +4897,7 @@ private Byte base64DecodingTableG[256];
 // Initialize the base64 decoding table
 private void
 initBase64Table(void) {
-   static Boole wasInitialized = FALSE;
+   static Boole wasInitialized = false;
 
    if (wasInitialized)
       return;
@@ -5013,16 +5013,16 @@ decodeBase64(Arr(Byte const) base64, int inputLen) {
 //}}}
 //{{{file path names
 
-//Return TRUE if file names "f1" and "f2" are in the same directory.
+//Return true if file names "f1" and "f2" are in the same directory.
 //"f1" may be a short name, "f2" must be a full path.
 int
 same_directory(CS f1, CS f2) {
    // safety check
    if (!f1 || !f2)
-      return FALSE;
+      return false;
       
    Byte ffname[MAXPATHL];
-   (void)eeFullFileName(f1, ffname, MAXPATHL, FALSE);
+   (void)eeFullFileName(f1, ffname, MAXPATHL, false);
    CS t1 = gettail_sep(ffname);
    CS t2 = gettail_sep(f2);
    return (t1 - ffname == t2 - f2 && pathcmp(ffname, f2, (int)(t1 - ffname)) == 0);
@@ -5043,7 +5043,7 @@ remove_tail(CS p, CS pend, CS name) {
    return pend;
 }
 
-//TRUE if "afterSep" points to just after a path separator.
+//true if "afterSep" points to just after a path separator.
 //Take care of multi-byte characters.
 Boole
 after_pathsep(CS fileName, CS afterSep) {
@@ -5083,11 +5083,11 @@ path_with_url(CS fname) {
 //}}}
 //{{{text formatting
 
-private int   did_add_space = FALSE;   // auto_format() added an extra space under the cursor
+private int   did_add_space = false;   // auto_format() added an extra space under the cursor
 
 #define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
 
-//Return TRUE if format option 'x' is in effect.
+//Return true if format option 'x' is in effect.
 Boole
 has_format_option(int x) {
    return curBook->o.formatOptions && firstOccurrence(curBook->o.formatOptions, x) != NULL;
@@ -5113,20 +5113,20 @@ internal_format(
    int cc;
    int skip_pos;
    int save_char = ZERO;
-   int haveto_redraw = FALSE;
+   int haveto_redraw = false;
    int fo_ins_blank = has_format_option(FO_INS_BLANK);
    int fo_multibyte = has_format_option(FO_MBYTE_BREAK);
    int fo_rigor_tw  = has_format_option(FO_RIGOROUS_TW);
    int fo_white_par = has_format_option(FO_WHITE_PAR);
-   int first_line = TRUE;
+   int first_line = true;
    ColNr   leader_len;
-   int no_leader = FALSE;
+   int no_leader = false;
    int doComments = (flags & INSCHAR_DO_COM);
    int safe_tw = trim_to_int(8 * (Long)textwidth);
    int has_bri = curPor->o.breakIndent;
 
    // make sure win_lbr_chartabsize() counts correctly
-   curPor->o.breakIndent = FALSE;
+   curPor->o.breakIndent = false;
 
    // When 'ai' is off we don't want a space under the cursor to be
    // deleted.  Replace it with an 'x' temporarily.
@@ -5147,7 +5147,7 @@ internal_format(
       ColNr virtcol;
       ColNr col;
       int wcc;         // counter for whitespace chars
-      int did_do_comment = FALSE;
+      int did_do_comment = false;
       int first_pass;
 
       //Cursor is currently at the end of line. No need to format
@@ -5159,15 +5159,15 @@ internal_format(
       }
 
       if (no_leader)
-         doComments = FALSE;
+         doComments = false;
       ei (!(flags & INSCHAR_FORMAT) && has_format_option(FO_WRAP_COMS))
-         doComments = TRUE;
+         doComments = true;
 
       // Don't break until after the comment leader
       if (doComments) {
          CS line = ml_get_curline();
 
-         leader_len = get_leader_len(line, NULL, FALSE, TRUE);
+         leader_len = get_leader_len(line, NULL, false, true);
       } else
          leader_len = 0;
 
@@ -5175,7 +5175,7 @@ internal_format(
      //start one in a following broken line.  Avoids that a %word
      //moved to the start of the next line causes all following lines to start with %.
      if (leader_len == 0)
-         no_leader = TRUE;
+         no_leader = true;
      if (!(flags & INSCHAR_FORMAT) && leader_len == 0 && !has_format_option(FO_WRAP))
          break;
      if ((startcol = curPor->cursor.col) == 0)
@@ -5194,7 +5194,7 @@ internal_format(
 
       foundcol = 0;
       skip_pos = 0;
-      first_pass = TRUE;
+      first_pass = true;
 
       // Find position to break at. Stop at first entered white when 'formatoptions' has 'v'
       while ((!fo_ins_blank && !has_format_option(FO_INS_VI))
@@ -5204,7 +5204,7 @@ internal_format(
       ){
         if (first_pass && c != ZERO) {
             cc = c;
-            first_pass = FALSE;
+            first_pass = false;
          } else
             cc = gchar_cursor();
          if (WHITECHAR(cc)) {
@@ -5370,7 +5370,7 @@ internal_format(
 
       // If a comment leader was inserted, may also do this on a following line.
       if (did_do_comment)
-          no_leader = FALSE;
+          no_leader = false;
 
       if (first_line) {
           if (!(flags & INSCHAR_COM_LIST)) {
@@ -5395,7 +5395,7 @@ internal_format(
                 }
              }
           }
-          first_line = FALSE;
+          first_line = false;
       }
 
       // Check if cursor is not past the ZERO off the line, cindent
@@ -5405,13 +5405,13 @@ internal_format(
       if (curPor->cursor.col > len)
          curPor->cursor.col = len;
 
-      haveto_redraw = TRUE;
-      set_can_cindent(TRUE);
+      haveto_redraw = true;
+      set_can_cindent(true);
       // moved the cursor, don't autoindent or cindent now
-      didAindentG = FALSE;
-      didSindentG = FALSE;
-      can_si = FALSE;
-      can_si_back = FALSE;
+      didAindentG = false;
+      didSindentG = false;
+      can_si = false;
+      can_si_back = false;
       line_breakcheck();
    }
 
@@ -5426,7 +5426,7 @@ internal_format(
 }
 
 //Blank lines, and lines containing only the comment leader, are left untouched by the formatting.
-//The function returns TRUE in this case.  It also returns TRUE when a line starts with the end 
+//The function returns true in this case.  It also returns true when a line starts with the end 
 //of a comment ('e' in comment flags), so that this line is skipped, and not joined to the
 //previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
@@ -5435,7 +5435,7 @@ fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComm
    CS flags = NULL;
 
    CS ptr = ml_get(lnum);
-   *leader_len = doComments ? get_leader_len(ptr, leader_flags, FALSE, TRUE) : 0;
+   *leader_len = doComments ? get_leader_len(ptr, leader_flags, false, true) : 0;
 
    if (*leader_len > 0) {
       // Search for 'e' flag in comment leader flags.
@@ -5446,20 +5446,20 @@ fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComm
 
    return (*skipwhite(ptr + *leader_len) == ZERO
        || (*leader_len > 0 && *flags == COM_END)
-       || startPS(lnum, ZERO, FALSE));
+       || startPS(lnum, ZERO, false));
 }
 
-//Return TRUE if line "lnum" ends in a white character.
+//Return true if line "lnum" ends in a white character.
 private int
 ends_in_white(LineNr lnum) {
    CS s = ml_get(lnum);
    if (*s == ZERO)
-      return FALSE;
+      return false;
    Unt l = ml_get_len(lnum) - 1;
    return SPACE_OR_TAB(s[l]);
 }
 
-//Return TRUE if the two comment leaders given are the same.  "lnum" is
+//Return true if the two comment leaders given are the same.  "lnum" is
 //the first line.  White-space is ignored.  Note that the whole of
 //'leader1' must match 'leader2_len' characters from 'leader2' -- webb
 private int
@@ -5485,16 +5485,16 @@ same_leader(
          if (*p == COM_FIRST)
             return (leader2_len == 0);
          if (*p == COM_END)
-            return FALSE;
+            return false;
          if (*p == COM_START) {
             int line_len = ml_get_len(lnum);
             if (line_len <= leader1_len  || leader2_flags == NULL || leader2_len == 0)
-               return FALSE;
+               return false;
             for (p = leader2_flags; *p && *p != ':'; ++p) {
                if (*p == COM_MIDDLE)
-                  return TRUE;
+                  return true;
             } 
-            return FALSE;
+            return false;
          }
       }
    }
@@ -5519,7 +5519,7 @@ same_leader(
    return (idx2 == leader2_len && idx1 == leader1_len);
 }
 
-//Return TRUE when a paragraph starts in line "lnum".  Return FALSE when the
+//Return true when a paragraph starts in line "lnum".  Return false when the
 //previous line is in the same paragraph.  Used for auto-formatting.
 private int
 paragraph_start(LineNr lnum) {
@@ -5530,11 +5530,11 @@ paragraph_start(LineNr lnum) {
    int doComments;      // format comments
 
    if (lnum <= 1)
-      return TRUE;      // start of the file
+      return true;      // start of the file
 
    CS p = ml_get(lnum - 1);
    if (*p == ZERO)
-      return TRUE;      // after empty line
+      return true;      // after empty line
 
    doComments = has_format_option(FO_Q_COMS);
    if (  // after non-paragraph line
@@ -5548,10 +5548,10 @@ paragraph_start(LineNr lnum) {
          // change of comment leader.
          ||  !same_leader(lnum - 1, leader_len, leader_flags, next_leader_len, next_leader_flags)
    ){
-      return TRUE;      
+      return true;      
    } 
 
-   return FALSE;
+   return false;
 }
 
 //Called after inserting or deleting text: When 'formatoptions' includes the
@@ -5560,7 +5560,7 @@ paragraph_start(LineNr lnum) {
 //The caller must have saved the cursor line for undo, following ones will be saved here.
 void
 auto_format(
-    int      trailblank,   // when TRUE also format with trailing blank
+    int      trailblank,   // when true also format with trailing blank
     int      prev_line   // may start in previous line
 ){
    if (!has_format_option(FO_AUTO))
@@ -5570,7 +5570,7 @@ auto_format(
    CS old = ml_get_curline();
 
    // may remove added space
-   check_auto_format(FALSE);
+   check_auto_format(false);
 
    //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
    //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single 
@@ -5592,7 +5592,7 @@ auto_format(
 
    //With the 'c' flag in @formatoptions and 't' missing: only format comments.
    if (has_format_option(FO_WRAP_COMS) && !has_format_option(FO_WRAP)
-            && get_leader_len(old, NULL, FALSE, TRUE) == 0)
+            && get_leader_len(old, NULL, false, true) == 0)
       return;
 
    //May start formatting in a previous line, so that after "x" a word is moved to the previous 
@@ -5606,7 +5606,7 @@ auto_format(
    //Do the formatting and restore the cursor position.  "saved_cursor" will
    //be adjusted for the text formatting.
    saved_cursor = pos;
-   format_lines((LineNr)-1, FALSE);
+   format_lines((LineNr)-1, false);
    curPor->cursor = saved_cursor;
    saved_cursor.lnum = 0;
 
@@ -5627,12 +5627,12 @@ auto_format(
          CS pnew = copySubstr(new, len + 2);
          pnew[len] = ' ';
          pnew[len + 1] = ZERO;
-         ml_replace(curPor->cursor.lnum, pnew, FALSE);
+         ml_replace(curPor->cursor.lnum, pnew, false);
          // remove the space later
-         did_add_space = TRUE;
+         did_add_space = true;
       } else
          // may remove added space
-         check_auto_format(FALSE);
+         check_auto_format(false);
    }
 
    check_cursor();
@@ -5641,7 +5641,7 @@ auto_format(
 //When an extra space was added to continue a paragraph for auto-formatting,
 //delete it now.  The space must be under the cursor, just after the insert position.
 void
-check_auto_format(int      end_insert){      // TRUE when ending Insert mode
+check_auto_format(int      end_insert){      // true when ending Insert mode
 
    if (!did_add_space)
       return;
@@ -5650,7 +5650,7 @@ check_auto_format(int      end_insert){      // TRUE when ending Insert mode
    Unt cc = gchar_cursor();
    if (!WHITECHAR(cc))
       // Somehow the space was removed already.
-      did_add_space = FALSE;
+      did_add_space = false;
    else {
       if (!end_insert) {
          inc_cursor();
@@ -5660,7 +5660,7 @@ check_auto_format(int      end_insert){      // TRUE when ending Insert mode
       if (c != ZERO) {
          // The space is no longer at the end of the line, delete it.
          del_char(false);
-         did_add_space = FALSE;
+         did_add_space = false;
       }
    }
 }
@@ -5769,7 +5769,7 @@ op_formatexpr(Operator* oper) {
 
    if (fex_format(oper->start.lnum, oper->line_count, ZERO) != 0)
       // As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
-      op_format(oper, FALSE);
+      op_format(oper, false);
 }
 
 int
@@ -5787,7 +5787,7 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
    scriptPosG = curBook->o.scriptLocs[PORT_foldExpr];
 
    // Evaluate the function.
-   int r = (int)eval_to_number(fex, TRUE);
+   int r = (int)eval_to_number(fex, true);
 
    set_EeglVar_string(VV_CHAR, NULL, -1);
    eeglFree(fex);
@@ -5804,25 +5804,25 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
    int is_not_par;      // current line not part of parag.
    int next_is_not_par;   // next line not part of paragraph
    int is_end_par;      // at end of paragraph
-   int prev_is_end_par = FALSE;// prev. line not part of parag.
-   int next_is_start_par = FALSE;
+   int prev_is_end_par = false;// prev. line not part of parag.
+   int next_is_start_par = false;
    int leader_len = 0;      // leader len of current line
    int next_leader_len;   // leader len of next line
    CS leader_flags = NULL;   // flags for leader of current line
    CS next_leader_flags = NULL; // flags for leader of next line
    int doCommentsList = 0;   // format comments with 'n' or '2'
-   int advance = TRUE;
+   int advance = true;
    int second_indent = -1;   // indent for second line (comment aware)
-   int first_par_line = TRUE;
+   int first_par_line = true;
    int smd_save;
    long count;
-   int need_set_indent = TRUE;   // set indent of next paragraph
+   int need_set_indent = true;   // set indent of next paragraph
    LineNr first_line = curPor->cursor.lnum;
-   int force_format = FALSE;
+   int force_format = false;
    int old_State = stateG;
 
    // length of a line to force formatting: 3 * 'tw'
-   int max_len = comp_textwidth(TRUE) * 3;
+   int max_len = comp_textwidth(true) * 3;
 
    // check for 'q', '2', 'n' and 'w' in 'formatoptions'
    Boole doComments = has_format_option(FO_Q_COMS); // format comments?
@@ -5836,7 +5836,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
             curPor->cursor.lnum - 1 , OUT &leader_len, OUT &leader_flags, doComments
       );
    else
-      is_not_par = TRUE;
+      is_not_par = true;
    next_is_not_par = fmt_check_par(
          curPor->cursor.lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments
    );
@@ -5857,7 +5857,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 
       // The last line to be formatted.
       if (count == 1 || curPor->cursor.lnum == curBook->mem.lineCount) {
-         next_is_not_par = TRUE;
+         next_is_not_par = true;
          next_leader_len = 0;
          next_leader_flags = NULL;
       } else {
@@ -5867,7 +5867,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
          if (do_number_indent)
             next_is_start_par = (get_number_indent(curPor->cursor.lnum + 1) > 0);
       }
-      advance = TRUE;
+      advance = true;
       is_end_par = (is_not_par || next_is_not_par || next_is_start_par);
       if (!is_end_par && do_trail_white)
          is_end_par = !ends_in_white(curPor->cursor.lnum);
@@ -5914,7 +5914,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
             if (next_leader_flags == NULL
                || STRNCMP(next_leader_flags, "://", 3) != 0
                || check_linecomment(ml_get_curline()) == MAXCOL)
-            is_end_par = TRUE;
+            is_end_par = true;
          }
 
          //If we have got to the end of a paragraph, or the line is
@@ -5946,7 +5946,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
             // do the formatting, without 'showmode'
             stateG = MODE_INSERT;   // for openLine()
             smd_save = p_smd;
-            p_smd = FALSE;
+            p_smd = false;
 
             insertchar0(
                   ZERO, INSCHAR_FORMAT + (doComments ? INSCHAR_DO_COM : 0)
@@ -5967,41 +5967,41 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
                // When called with a negative line count, break at the end of the paragraph.
                if (line_count < 0)
                   break;
-               first_par_line = TRUE;
+               first_par_line = true;
             }
-            force_format = FALSE;
+            force_format = false;
          }
 
          // When still in same paragraph, join the lines together.  But
          // first delete the leader from the second line.
          if (!is_end_par) {
-            advance = FALSE;
+            advance = false;
             curPor->cursor.lnum++;
             curPor->cursor.col = 0;
             if (line_count < 0 && u_save_cursor() == FAIL)
                break;
             if (next_leader_len > 0) {
-               (void)del_bytes((long)next_leader_len, FALSE, FALSE);
+               (void)del_bytes((long)next_leader_len, false, false);
                mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-next_leader_len, 0);
             } ei (second_indent > 0) { // the "leader" for FO_Q_SECOND
                int indent = getwhitecols_curline();
 
                if (indent > 0) {
-                  (void)del_bytes(indent, FALSE, FALSE);
+                  (void)del_bytes(indent, false, false);
                    mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-indent, 0);
                }
             }
             curPor->cursor.lnum--;
-            if (jugJoinLinesUnderCursor(2, TRUE, FALSE, FALSE, FALSE) == FAIL) {
+            if (jugJoinLinesUnderCursor(2, true, false, false, false) == FAIL) {
                beep_flush();
                break;
             }
-            first_par_line = FALSE;
+            first_par_line = false;
             // If the line is getting long, format it next time
             if (ml_get_curline_len() > max_len)
-               force_format = TRUE;
+               force_format = true;
             else
-               force_format = FALSE;
+               force_format = false;
          }
       }
       line_breakcheck();
@@ -6011,42 +6011,42 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 //}}}
 //{{{simple formats
 
-private Short
-hexDigit(int c) {
-   if (SAFE_isdigit(c))
-      return c - '0';
-   c = TOLOWER_ASC(c);
-   if (c >= 'a' && c <= 'f')
-      return c - 'a' + 10;
-   return SHORT;
-}
+//private Short
+//hexDigit(int c) {
+//   if (SAFE_isdigit(c))
+//      return c - '0';
+//   c = TOLOWER_ASC(c);
+//   if (c >= 'a' && c <= 'f')
+//      return c - 'a' + 10;
+//   return SHORT;
+//}
 
-//Return TRUE if "val" is a valid name: only consists of alphanumeric ASCII
+//Return true if "val" is a valid name: only consists of alphanumeric ASCII
 //characters or characters in "allowed".
 int
 valid_name(CS val, CS allowed) {
    for (CS s = val; *s != ZERO; ++s) {
       if (!ASCII_ISALNUM(*s) && firstOccurrence((CS)allowed, *s) == NULL)
-          return FALSE;
+          return false;
    } 
-   return TRUE;
+   return true;
 }
 
-//Return TRUE if character "c" can be used in a variable or function name.
+//Return true if character "c" can be used in a variable or function name.
 //Do not include '{' or '}' for magic braces.
 int
 isValidForScriptName(int c) {
    return ASCII_ISALNUM(c) || c == '_' || c == ':' || c == AUTOLOAD_CHAR;
 }
 
-//Return TRUE if character "c" can be used as the first character in a
+//Return true if character "c" can be used as the first character in a
 //variable or function name (excluding '{' and '}').
 int
 isValidForScriptName1(int c) {
    return ASCII_ISALPHA(c) || c == '_';
 }
 
-//Return TRUE if character "c" can be used as the first character of a dictionary key.
+//Return true if character "c" can be used as the first character of a dictionary key.
 int
 isValidForFirstCharDictKey(int c) {
    return ASCII_ISALNUM(c) || c == '_';

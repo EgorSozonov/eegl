@@ -55,4 +55,3 @@ SignEntry *get_first_valid_sign(Portal *wp);
 Boole isSigncolumnOn(Portal *wp);
 void f_sign_unplace(Var *argvars, Var *returnVar);
 void f_sign_unplacelist(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

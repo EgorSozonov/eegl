@@ -39,4 +39,3 @@ int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, long lnum);
 void f_synIDattr(Var *argvars, Var *returnVar);
 void f_synIDtrans(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

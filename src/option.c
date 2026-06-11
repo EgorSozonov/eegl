@@ -68,7 +68,7 @@ typedef enum {
 //written to a file.
 #define DFLT_EFM   "%*[^\"]\"%f\"%*\\D%l: %m,\"%f\"%*\\D%l: %m,%-Gg%\\?make[%*\\d]: *** [%f:%l:%m,%-Gg%\\?make: *** [%f:%l:%m,%-G%f:%l: (Each undeclared identifier is reported only once,%-G%f:%l: for each function it appears in.),%-GIn file included from %f:%l:%c:,%-GIn file included from %f:%l:%c\\,,%-GIn file included from %f:%l:%c,%-GIn file included from %f:%l,%-G%*[ ]from %f:%l:%c,%-G%*[ ]from %f:%l:,%-G%*[ ]from %f:%l\\,,%-G%*[ ]from %f:%l,%f:%l:%c:%m,%f(%l):%m,%f:%l:%m,\"%f\"\\, line %l%*\\D%c%*[^ ] %m,%D%*\\a[%*\\d]: Entering directory %*[`']%f',%X%*\\a[%*\\d]: Leaving directory %*[`']%f',%D%*\\a: Entering directory %*[`']%f',%X%*\\a: Leaving directory %*[`']%f',%DMaking %*\\a in %f,%f|%l| %m"
 
-#define DFLT_TEXTAUTO FALSE
+#define DFLT_TEXTAUTO false
 #define FO_ALL      "tcro/q2vlb1mMBn,aw]jp"   // for c_set()
 
 // characters for p_ww option:
@@ -76,7 +76,7 @@ typedef enum {
 
 //}}}
 
-//{(Byte \*)TRUE, (Byte \*)0L}
+//{(Byte \*)true, (Byte \*)0L}
 //{(Byte \*)1L, (Byte \*)0L}
 
 //Return NULL if the new value is valid and can be applied to the option.
@@ -223,7 +223,7 @@ private SetScope expandOptionScopeS = SET_GLOBAL;
 private Boole expandAppendS = false;
 private int expandStartColS = 0;
 
-// Return TRUE if option "p" has its default value.
+// Return true if option "p" has its default value.
 private int
 isOptionAtDefault(Option* o, OptionRef ref) {
    if (o->defaultValue.tag == OPTION_NUM)
@@ -243,7 +243,7 @@ isOptionAtDefault(Option* o, OptionRef ref) {
 //}
 
 //Set the default value of a string option from @Option.defaultValue.
-//Used for @sh, @backupskip and @term. When "escape" is TRUE, escape spaces with a backslash.
+//Used for @sh, @backupskip and @term. When "escape" is true, escape spaces with a backslash.
 private void
 optSetStringDefault_esc(CS name, CS val, Boole escape) {
    Option* o = findOption(name);
@@ -332,7 +332,7 @@ set_init_default_backupskip(void) {
    ga_init2(&ga, 1, 100);
    CS p;
    for (int i = 0; i < (int)ARRAY_LENGTH(names); ++i) {
-      int mustfree = FALSE;
+      int mustfree = false;
       int plen;
       if (*names[i] == ZERO) {
          p = S"/tmp";
@@ -344,14 +344,14 @@ set_init_default_backupskip(void) {
       if (p && *p != ZERO) {
          Byte* item;
          Unt itemsize;
-         int has_trailing_path_sep = FALSE;
+         int has_trailing_path_sep = false;
 
          if (plen == 0) {
             //the value was retrieved from the environment
             plen = (int)STRLEN(p);
             //does the value include a trailing path separator?
             if (after_pathsep(p, p + plen))
-               has_trailing_path_sep = TRUE;
+               has_trailing_path_sep = true;
          }
 
          //item size needs to be large enough to include "/*" and a trailing ZERO
@@ -1009,7 +1009,7 @@ optSetByName(CS name, OptionValue newVal, SetScope setScope) {
 }
 
 //Convert a key name or string into a key value. Used for @termwinkey, @wildchar and @wildcharm 
-//options. When "multi_byte" is TRUE, allow for multi-byte characters.
+//options. When "multi_byte" is true, allow for multi-byte characters.
 Unt
 stringToChar(CS arg, Boole multi_byte) {
    if (*arg == '<' && arg[1] != ZERO)
@@ -1162,13 +1162,13 @@ escape_option_str_cmdline(CS var) {
 }
 
 
-//Return TRUE if 'optStr' either matches 'regmatch' or fuzzy matches 'pat'.
+//Return true if 'optStr' either matches 'regmatch' or fuzzy matches 'pat'.
 //
-//If 'fuzzy' is FALSE and if 'optStr' matches the regular expression 'regmatch', then store the 
-//match in matches[idx] and return TRUE.
+//If 'fuzzy' is false and if 'optStr' matches the regular expression 'regmatch', then store the 
+//match in matches[idx] and return true.
 //
-//If 'fuzzy' is TRUE and if 'optStr' fuzzy matches
-//'fuzzystr', then store the match details in fuzmatch[idx] and return TRUE.
+//If 'fuzzy' is true and if 'optStr' fuzzy matches
+//'fuzzystr', then store the match details in fuzmatch[idx] and return true.
 private Boole
 matchString(
    CS optStr,
@@ -1253,12 +1253,12 @@ toString(Option* o, SetScope scope) {
    }
 }
 
-//Return TRUE when option "name" has been set.
+//Return true when option "name" has been set.
 Boole
 optWasSet(CS name) {
    Option* o = findOption(name);
    if (!o)
-      return FALSE;
+      return false;
    return (o->flags & P_WAS_SET) > 0;
 }
 
@@ -1443,7 +1443,7 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
    Boole save_silent = silentModeG;
 
    silentModeG = false;
-   info_message = TRUE;   // use mch_msg(), not mch_errmsg()
+   info_message = true;   // use mch_msg(), not mch_errmsg()
 
    OptionRef ref = getRefInScope(o, setScope);
 
@@ -1465,7 +1465,7 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
    }
 
    silentModeG = save_silent;
-   info_message = FALSE;
+   info_message = false;
 }
 
 //Generate set commands for the local fold options only. Used when
@@ -1484,7 +1484,7 @@ makefoldset(FILE *fd) {
    return OK;
 }
 
-////Return TRUE if "val" is a valid @filetype name. Also used for @syntax and @keymap.
+////Return true if "val" is a valid @filetype name. Also used for @syntax and @keymap.
 //private int
 //valid_filetype(CS val) {
 //   return valid_name(val, S".-_");
@@ -1596,7 +1596,7 @@ optSetBinary(OptionChange* cha) {
       setScriptPos(findOption(options[i]), SET_LOCAL, scriptPosG);
    }
    
-   needRedrawTabpanelG = TRUE;
+   needRedrawTabpanelG = true;
 
    return NULL;
 }
@@ -1604,7 +1604,7 @@ optSetBinary(OptionChange* cha) {
 private void
 resizeOrPlanResizingWindow() {
    if (fullScreenG)
-      set_shellsize((int)visibleColsG, (int)visibleRowsG, TRUE);
+      set_shellsize((int)visibleColsG, (int)visibleRowsG, true);
    else {
       // Postpone the resizing; check the size and cmdline position for messages.
       check_shellsize();
@@ -1661,7 +1661,7 @@ setBookListed(OptionChange* cha) {
    updateBoolRef(cha);
    if (cha->oldVal.boole != curBook->o.bookListed) {
       applyAutocomms(
-         curBook->o.bookListed ? EVENT_BUFADD : EVENT_BUFDELETE, NULL, NULL, TRUE, curBook
+         curBook->o.bookListed ? EVENT_BUFADD : EVENT_BUFDELETE, NULL, NULL, true, curBook
       );
    } 
    return NULL;
@@ -1706,7 +1706,7 @@ private CS
 did_set_equalalways(OptionChange* cha) {
    updateBoolRef(cha);
    if (cha->newVal.boole && !cha->oldVal.boole)
-      portEqualizeHeight(curPor, FALSE, 0);
+      portEqualizeHeight(curPor, false, 0);
    return NULL;
 }
 
@@ -1771,7 +1771,7 @@ did_set_scrollbind(OptionChange* cha) {
    if (!curPor->o.scrollBind)
       return NULL;
 
-   normPostProcessScrollbind(FALSE);
+   normPostProcessScrollbind(false);
    curPor->scbindPos = curPor->topLine;
    return NULL;
 }
@@ -1818,7 +1818,7 @@ did_set_swapfile(OptionChange* cha) {
       memOpenSwapFile(curBook);      // create the swap file
    else
       // no need to reset curBook->maySwap, memOpenSwapFile() will check buf->o.swapFile
-      mf_close_file(curBook, TRUE);   // remove the swap file
+      mf_close_file(curBook, true);   // remove the swap file
    return NULL;
 }
 
@@ -2333,16 +2333,16 @@ optExpandOldOption(OUT ExpandMatch* matches) {
    return OK;
 }
 
-//Return TRUE if "ref" points to 'wildchar' or 'wildcharm' and it can be printed as a keyname.
+//Return true if "ref" points to 'wildchar' or 'wildcharm' and it can be printed as a keyname.
 //"*wcp" is set to the value of the option if it's 'wildchar' or 'wildcharm'.
 private int
 wildcharUseKeyname(OptionRef ref, long* wcp) {
    if (ref.tag == OPTION_NUM && (ref.num == &p_wc || ref.num == &p_wcm)) {
       *wcp = *ref.num;
    if (IS_SPECIAL(*wcp) || termFindSpecialKey_in_table((int)*wcp) >= 0)
-      return TRUE;
+      return true;
    }
-   return FALSE;
+   return false;
 }
 
 //Reset the flag indicating option "name" was set.
@@ -2438,7 +2438,7 @@ did_set_completeitemalign(OptionChange* cha) {
    } 
    
    Unt newCia = 0;
-   int seen[3] = { FALSE, FALSE, FALSE };
+   int seen[3] = { false, false, false };
    int count = 0;
    Byte   buffer[10];
    CS p = cha->newVal.string;
@@ -2451,19 +2451,19 @@ did_set_completeitemalign(OptionChange* cha) {
          if (seen[CPT_ABBR])
             return e_invalid_argument;
          newCia = newCia * 10 + CPT_ABBR;
-         seen[CPT_ABBR] = TRUE;
+         seen[CPT_ABBR] = true;
          count++;
       } ei (STRCMP(buffer, "kind") == 0) {
          if (seen[CPT_KIND])
             return e_invalid_argument;
          newCia = newCia * 10 + CPT_KIND;
-         seen[CPT_KIND] = TRUE;
+         seen[CPT_KIND] = true;
          count++;
       } ei (STRCMP(buffer, "menu") == 0) {
          if (seen[CPT_MENU])
             return e_invalid_argument;
          newCia = newCia * 10 + CPT_MENU;
-         seen[CPT_MENU] = TRUE;
+         seen[CPT_MENU] = true;
          count++;
       } else
          return e_invalid_argument;
@@ -2957,7 +2957,7 @@ did_set_iskeyword(OptionChange* cha) {
 }
 
 //The @statusline or the @rulerformat option is changed.
-//"rulerformat" is TRUE if the @rulerformat is changed.
+//"rulerformat" is true if the @rulerformat is changed.
 private CS
 parse_status_rulerformat(OptionChange* cha) {
    OptionRef ref = cha->ref;
@@ -3160,7 +3160,7 @@ private CS
 did_set_termwinkey(OptionChange* cha) {
    OptionRef ref = cha->ref;
 
-   if ((*ref.string)[0] != ZERO && stringToChar(*ref.string, TRUE) == 0)
+   if ((*ref.string)[0] != ZERO && stringToChar(*ref.string, true) == 0)
       return e_invalid_argument;
 
    return NULL;
@@ -3197,7 +3197,7 @@ argumentIsValid:
       curPor->statusLineNeedsRedraw = true;
       redraw_later(UPD_VALID);
    }
-   needRedrawTabpanelG = TRUE;
+   needRedrawTabpanelG = true;
    return NULL;
 }
 
@@ -3333,7 +3333,7 @@ checkBreakIndent(
 ){
    int bri_shift = 0;
    long bri_min = 20;
-   int bri_sbr = FALSE;
+   int bri_sbr = false;
    int bri_list = 0;
    int bri_vcol = 0;
 
@@ -3354,7 +3354,7 @@ checkBreakIndent(
          bri_min = parseLong(&p);
       } ei (STRNCMP(p, brioptValues[2], 3) == 0) {
          p += 3;
-         bri_sbr = TRUE;
+         bri_sbr = true;
       } ei (STRNCMP(p, brioptValues[3], 5) == 0) {
          p += 5;
          bri_list = parseLong(&p);
@@ -3877,7 +3877,7 @@ put_setstring(
 
       //replace home directory in the whole option value into "buffer"
       buffer = alloc(size);
-      home_replace(NULL, *ref.string, buffer, size, FALSE);
+      home_replace(NULL, *ref.string, buffer, size, false);
 
       //If the option value is longer than MAXPATHL, we need to append each comma separated part 
       //of the option separately, so that it can be expanded when read back.
@@ -4034,7 +4034,7 @@ setDefaultValuesForAllOptions(SetScope setScope) {
 
 //Set all portal-local and buffer-local options to the Eegl default.
 //local-global options will use the global value.
-//When "doBook" is FALSE, don't set book-local options.
+//When "doBook" is false, don't set book-local options.
 void
 optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
    Portal* curPorSaved = curPor;
@@ -4100,7 +4100,7 @@ c_get(Invocation *invo) {
    if (didShow)
       msg_putchar('\n');    //cursor below last one
    else {
-      gotoCommline(TRUE);   //cursor at status line
+      gotoCommline(true);   //cursor at status line
       didShow = true;       //remember that we did a line
    }
    showoneopt(o, scope);
@@ -4121,12 +4121,12 @@ theend:
    if (silentModeG && didShow) {
       // After displaying option values in silent mode.
       silentModeG = false;
-      info_message = TRUE;   // use mch_msg(), not mch_errmsg()
+      info_message = true;   // use mch_msg(), not mch_errmsg()
       msg_putchar('\n');
       cursor_on();      // msg_start() switches it off
       out_flush();
       silentModeG = true;
-      info_message = FALSE;   // use mch_msg(), not mch_errmsg()
+      info_message = false;   // use mch_msg(), not mch_errmsg()
    }
 }
 
@@ -4173,12 +4173,12 @@ c_set(Invocation* invo) {
    if (silentModeG && didShow) {
       // After displaying option values in silent mode.
       silentModeG = false;
-      info_message = TRUE;   // use mch_msg(), not mch_errmsg()
+      info_message = true;   // use mch_msg(), not mch_errmsg()
       msg_putchar('\n');
       cursor_on();      // msg_start() switches it off
       out_flush();
       silentModeG = true;
-      info_message = FALSE;   // use mch_msg(), not mch_errmsg()
+      info_message = false;   // use mch_msg(), not mch_errmsg()
    }
 }
 
@@ -4501,7 +4501,7 @@ optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Ex
        args->expand,
        args->oe_regmatch,
        optionCompletionExpand_cb,
-       FALSE,
+       false,
        OUT matches
    );
 
@@ -4559,7 +4559,7 @@ get_locale_val(int what) {
    return loc;
 }
 
-//Return TRUE when "lang" starts with a valid language name.
+//Return true when "lang" starts with a valid language name.
 //Reject NULL, empty string, "C", "C.UTF-8" and others.
 private int
 is_valid_mess_lang(Byte *lang) {
@@ -4665,7 +4665,7 @@ init_locale(void) {
 # endif
 
    {
-   int   mustfree = FALSE;
+   int   mustfree = false;
 
    // doExpandEnv() doesn't work yet, because g_chartab[] is not
    // initialized yet, call eeglGetEnv() directly

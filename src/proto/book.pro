@@ -174,4 +174,3 @@ void clear_global_prop_types(void);
 Boole adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags);
 void adjustPropsForSplit(LineNr lnumProps, LineNr lnumTop, int kept, int deleted, int atEol);
 void prepend_joined_props(CS new_props, int propcount, int *props_remaining, LineNr lnum, int last_line, long col, int removed);
-/* eegl: set ft=c : */

@@ -149,4 +149,3 @@ int isValidForScriptName(int c);
 int isValidForScriptName1(int c);
 int isValidForFirstCharDictKey(int c);
 int xxdMain(int argc, char *argv[]);
-/* eegl: set ft=c : */

@@ -24,4 +24,3 @@ void cs_free_tags(void);
 void cs_print_tags(void);
 void cs_end(void);
 void f_cscope_connection(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */

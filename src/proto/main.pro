@@ -15,4 +15,3 @@ void mainLoop(Boole inCommPort);
 void exitEegl(int exitval);
 void mainerr_arg_missing(CS str);
 void __bp(void);
-/* eegl: set ft=c : */

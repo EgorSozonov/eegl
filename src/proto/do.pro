@@ -229,4 +229,3 @@ int doWasCurBookChanged(void);
 void f_undofile(Var *argvars, Var *returnVar);
 void u_undofile_reset_and_delete(Book *book);
 void f_undotree(Var *argvars, Var *returnVar);
-/* eegl: set ft=c : */
