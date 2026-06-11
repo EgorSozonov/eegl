@@ -82,18 +82,6 @@ private TermRequest u7_status = TERMREQUEST_INIT;
 // Request xterm compatibility check:
 private TermRequest xcc_status = TERMREQUEST_INIT;
 
-// Request foreground color report:
-private TermRequest rfg_status = TERMREQUEST_INIT;
-private int fg_r = 0;
-private int fg_g = 0;
-private int fg_b = 0;
-private int bg_r = 255;
-private int bg_g = 255;
-private int bg_b = 255;
-
-// Request background color report:
-private TermRequest backgroundColorRequestS = TERMREQUEST_INIT;
-
 // Request cursor blinking mode report:
 private TermRequest cursorBlinkingRequestS = TERMREQUEST_INIT;
 
@@ -107,8 +95,6 @@ private TermRequest* termRequestS[] = {
    &crv_status,
    &u7_status,
    &xcc_status,
-   &rfg_status,
-   &backgroundColorRequestS,
    &cursorBlinkingRequestS,
    &cursorStyleRequestS,
    &winPositionRequestS
@@ -2452,79 +2438,6 @@ handleControlSequenceIntroducer(
 
    // else: Unknown CSI sequence.  We could drop it, but then the user can't create a map for it.
    return 0;
-}
-
-// Handle an OSC sequence, fore/background color response from the terminal:
-//
-//       {lead}{code};rgb:{rrrr}/{gggg}/{bbbb}{tail}
-// or    {lead}{code};rgb:{rr}/{gg}/{bb}{tail}
-//
-// {code} is 10 for foreground, 11 for background
-// {lead} can be <Esc>] or OSC
-// {tail} can be '\007', <Esc>\ or STERM.
-//
-// Consume any code that starts with "{lead}11;", it's also
-// possible that "rgba" is following.
-private int
-handle_osc(CS tp, CS argp, int len, CS key_name, int* slen) {
-   int i;
-
-   int j = 1 + (tp[0] == ESC);
-   if (len >= j + 3 && (argp[0] != '1' || (argp[1] != '1' && argp[1] != '0') || argp[2] != ';'))
-      i = 0; // no match
-   else {
-      for (i = j; i < len; ++i) {
-         if (tp[i] != '\007'
-                && (tp[0] == OSC
-                   ? tp[i] != STERM
-                   : (tp[i] != ESC || i + 1 >= len || tp[i + 1] != '\\'))
-         ) {
-            continue;
-         }
-         Boole isBg = argp[1] == '1';
-         Boole is4digit = i - j >= 21 && tp[j + 11] == '/' && tp[j + 16] == '/';
-
-         if (i - j >= 15 && STRNCMP(tp + j + 3, "rgb:", 4) == 0
-                && (is4digit || (tp[j + 9] == '/' && tp[j + 12] == '/'))
-         ){
-            Byte *tp_r = tp + j + 7;
-            Byte *tp_g = tp + j + (is4digit ? 12 : 10);
-            Byte *tp_b = tp + j + (is4digit ? 17 : 13);
-            int rval, gval, bval;
-
-            rval = hexhex2nr(tp_r);
-            gval = hexhex2nr(tp_g);
-            bval = hexhex2nr(tp_b);
-            if (isBg) {
-               LOG_TRN("Received RBG response: %s", tp);
-               backgroundColorRequestS.tr_progress = STATUS_GOT;
-               bg_r = rval;
-               bg_g = gval;
-               bg_b = bval;
-            } else {
-               LOG_TRN("Received RFG response: %s", tp);
-               rfg_status.tr_progress = STATUS_GOT;
-               fg_r = rval;
-               fg_g = gval;
-               fg_b = bval;
-            }
-         }
-
-         // got finished code: consume it
-         key_name[0] = (int)KS_EXTRA;
-         key_name[1] = (int)KE_IGNORE;
-         *slen = i + 1 + (tp[i] == ESC);
-         set_EeglVar_string(isBg ? VV_TERMRBGRESP : VV_TERMRFGRESP, tp, *slen);
-         applyAutocomms(EVENT_TERMRESPONSEALL,
-                isBg ? S"background" : S"foreground", NULL, false, curBook);
-         break;
-      }
-   }
-   if (i == len) {
-     LOG_TR1("not enough characters for RB");
-     return FAIL;
-   }
-   return OK;
 }
 
 // Check for key code response from xterm:

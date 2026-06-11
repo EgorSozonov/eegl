@@ -94,9 +94,11 @@ typedef struct timeval TimeVal;
 // user ID of root is usually zero, but not for everybody
 #define ROOT_UID 0
 
-
 // Can limit syntax hilite time to 'redrawtime'.
 #define SYN_TIME_LIMIT 1
+
+//How many Unicode symbols to combine max
+#define MAX_COMBINED_SYMBOLS 6
 
 #ifndef EEGLPACKAGE
 # define EEGLPACKAGE   "eegl"
@@ -2532,6 +2534,18 @@ typedef struct {
 } TermCellColor;
 
 typedef Byte VTermDeco;
+
+// This is ScreenCell without the characters, thus much smaller.
+typedef struct {
+   VTermDeco flags;
+   VTermColor fg;
+   VTermColor bg;
+} CellDeco;
+
+typedef struct {
+   Unt chars[MAX_COMBINED_SYMBOLS];
+   CellDeco deco;
+} ScreenCell;
 
 #define HI_HAS_FG    1
 #define HI_HAS_BG    2
@@ -5894,7 +5908,6 @@ typedef enum {
 //#define XImage int
 
 #include "proto/book.pro"
-#include "proto/clipboard.pro"
 #include "proto/data.pro"
 #include "proto/diff.pro"
 #include "proto/do.pro"
@@ -5998,8 +6011,6 @@ EXTERN long   visibleColsG INIT(= 80);   // nr of columns in the screen
 //"LineOffset[n]" is the offset from ScreenLines[] for the start of line 'n'.
 //The same value is used for ScreenLinesUC[], ScreenDecosG[] and ScreenCols[].
 //Note: before the screen is initialized and when out of memory these can be null.
-EXTERN CS screenLinesG INIT(= null);
-EXTERN Arr(Unt) lineOffsetG INIT(= NULL);
 EXTERN Boole wrapSearchG INIT(= true); // search wraps on file end
 
 EXTERN int screenLinesRowsG INIT(= 0);   // actual size of ScreenLines[]
@@ -6010,9 +6021,6 @@ EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
 //used (ASCII char). The composing characters are to be drawn on top of the original character.
 //ScreenLinesC[0][off] is only to be used when ScreenLinesUC[off] != 0.
 EXTERN Arr(Unt) screenLinesUCG INIT(= NULL);   // decoded UTF-8 characters
-
-//How many Unicode symbols to combine max
-#define MAX_COMBINED_SYMBOLS 6
 
 EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
 

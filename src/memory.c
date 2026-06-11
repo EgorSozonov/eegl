@@ -696,7 +696,6 @@ exit_scroll(void) {
 void
 mch_exit(int r) {
    isExitingG = true;
-   {
    termSetMode(TMODE_COOK);
 
    //When t_ti is not empty but it doesn't cause swapping terminal pages, need to output a 
@@ -717,13 +716,13 @@ mch_exit(int r) {
    //when doing "eegl -u vimrc" and vimrc contains ":q".
    if (fullScreenG)
       cursor_on();
-   }
+   
    out_flush();
    ml_close_all(true);      // remove all memfiles
 
 #ifdef USE_GCOV_FLUSH
-    // Flush coverage info before possibly being killed by a deadly signal.
-    __gcov_flush();
+   // Flush coverage info before possibly being killed by a deadly signal.
+   __gcov_flush();
 #endif
 
    may_core_dump();

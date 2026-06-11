@@ -23,6 +23,7 @@ int term_use_loop(void);
 void term_enterPortaled(void);
 void term_focus_change(int in_focus);
 int terminal_loop(int blocking);
+Decoration cellToDecoration(VTermDeco flags, VTermColor fg, VTermColor bg);
 int may_close_term_popup(void);
 void term_channel_closing(Channel *ch);
 void term_channel_closed(Channel *ch);

@@ -4427,9 +4427,9 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 
 // Used for building in the status line.
 typedef struct {
-   CS stl_start;
-   int stl_minwid;
-   int stl_maxwid;
+   CS start;
+   int minWidth;
+   int maxWidth;
    enum {
       Normal,
       Empty,
@@ -4442,11 +4442,11 @@ typedef struct {
 } StatusItem;
 
 private Unt countStatusItems = 20; // Initial value, grows as needed.
-private Arr(StatusItem) stl_items = NULL;
-private int* stl_groupitem = NULL;
+private Arr(StatusItem) statusItemsP = NULL;
+private int* stlGroupItemP = NULL;
 private StatusLineHilite* statusHilitesS = NULL;
 private StatusLineHilite* stl_tabtab = NULL;
-private int* stl_separator_locations = NULL;
+private int* stlSeparatorLocationsP = NULL;
 
 // Build a string from the status line items in "fmt".
 // Return length of string in screen cells.
@@ -4511,22 +4511,21 @@ bookRenderStatusLine(
    if (updating_screen)
       redraw_not_allowed = TRUE;
 
-   if (!stl_items) {
-      stl_items = ALLOC_MULT(StatusItem, countStatusItems);
-      stl_groupitem = ALLOC_MULT(int, countStatusItems);
+   if (!statusItemsP) {
+      statusItemsP = ALLOC_MULT(StatusItem, countStatusItems);
+      stlGroupItemP = ALLOC_MULT(int, countStatusItems);
 
       // Allocate one more, because the last element is used to indicate the end of the list
       statusHilitesS  = ALLOC_MULT(StatusLineHilite, countStatusItems + 1);
       stl_tabtab = ALLOC_MULT(StatusLineHilite, countStatusItems + 1);
 
-      stl_separator_locations = ALLOC_MULT(int, countStatusItems);
+      stlSeparatorLocationsP = ALLOC_MULT(int, countStatusItems);
    }
 
    // When the format starts with "%!" then evaluate it as an expression and
    // use the result as the actual format string.
    if (fmt[0] == '%' && fmt[1] == '!') {
-      Var   tv;
-
+      Var tv;
       tv.tag = VAR_NUMBER;
       tv.number = po->id;
       set_var(tConst("g:statusline_winid"), &tv, FALSE);
@@ -4575,11 +4574,11 @@ bookRenderStatusLine(
       if (curitem == (int)countStatusItems) {
          Unt   newLen = countStatusItems * 3 / 2;
 
-         StatusItem* new_items = eeRealloc(stl_items, sizeof(StatusItem) * newLen);
-         stl_items = new_items;
+         StatusItem* new_items = eeRealloc(statusItemsP, sizeof(StatusItem) * newLen);
+         statusItemsP = new_items;
 
-         int *new_groupitem = eeRealloc(stl_groupitem, sizeof(int) * newLen);
-         stl_groupitem = new_groupitem;
+         int *new_groupitem = eeRealloc(stlGroupItemP, sizeof(int) * newLen);
+         stlGroupItemP = new_groupitem;
 
          StatusLineHilite* new_hlrec = 
              eeRealloc(statusHilitesS, sizeof(StatusLineHilite) * (newLen + 1));
@@ -4587,8 +4586,8 @@ bookRenderStatusLine(
          new_hlrec = eeRealloc(stl_tabtab, sizeof(StatusLineHilite) * (newLen + 1));
          stl_tabtab = new_hlrec;
 
-         int *new_separator_locs = eeRealloc(stl_separator_locations, sizeof(int) * newLen);
-         stl_separator_locations = new_separator_locs;
+         int *new_separator_locs = eeRealloc(stlSeparatorLocationsP, sizeof(int) * newLen);
+         stlSeparatorLocationsP = new_separator_locs;
          countStatusItems = newLen;
       }
 
@@ -4617,14 +4616,14 @@ bookRenderStatusLine(
          s++;
          if (groupdepth > 0)
             continue;
-         stl_items[curitem].StatusTag = Separate;
-         stl_items[curitem++].stl_start = p;
+         statusItemsP[curitem].StatusTag = Separate;
+         statusItemsP[curitem++].start = p;
          continue;
       }
       if (*s == STL_TRUNCMARK) {
          s++;
-         stl_items[curitem].StatusTag = Trunc;
-         stl_items[curitem++].stl_start = p;
+         statusItemsP[curitem].StatusTag = Trunc;
+         statusItemsP[curitem++].start = p;
          continue;
       }
       if (*s == ')') {
@@ -4633,47 +4632,47 @@ bookRenderStatusLine(
             continue;
          groupdepth--;
 
-         CS t = stl_items[stl_groupitem[groupdepth]].stl_start;
+         CS t = statusItemsP[stlGroupItemP[groupdepth]].start;
          *p = ZERO;
          l = eeglStrSize(t);
-         if (curitem > stl_groupitem[groupdepth] + 1 
-               && stl_items[stl_groupitem[groupdepth]].stl_minwid == 0
+         if (curitem > stlGroupItemP[groupdepth] + 1 
+               && statusItemsP[stlGroupItemP[groupdepth]].minWidth == 0
          ) {
             Short groupStartUserId = 0;
             Short groupEndHiId = 0;
 
             // remove group if all items are empty and hilite group doesn't change
-            for (n = stl_groupitem[groupdepth] - 1; n >= 0; n--) {
-               if (stl_items[n].StatusTag == Highlight) {
-                  groupStartUserId = groupEndHiId = stl_items[n].stl_minwid;
+            for (n = stlGroupItemP[groupdepth] - 1; n >= 0; n--) {
+               if (statusItemsP[n].StatusTag == Highlight) {
+                  groupStartUserId = groupEndHiId = statusItemsP[n].minWidth;
                   break;
                }
             }
-            for (n = stl_groupitem[groupdepth] + 1; n < curitem; n++) {
-               if (stl_items[n].StatusTag == Normal)
+            for (n = stlGroupItemP[groupdepth] + 1; n < curitem; n++) {
+               if (statusItemsP[n].StatusTag == Normal)
                   break;
-               if (stl_items[n].StatusTag == Highlight)
-                  groupEndHiId = stl_items[n].stl_minwid;
+               if (statusItemsP[n].StatusTag == Highlight)
+                  groupEndHiId = statusItemsP[n].minWidth;
             }
             if (n == curitem && groupStartUserId == groupEndHiId) {
                // empty group
                p = t;
                l = 0;
-               for (n = stl_groupitem[groupdepth] + 1; n < curitem; n++) {
+               for (n = stlGroupItemP[groupdepth] + 1; n < curitem; n++) {
                   // do not use the hiliting from the removed group
-                  if (stl_items[n].StatusTag == Highlight)
-                      stl_items[n].StatusTag = Empty;
+                  if (statusItemsP[n].StatusTag == Highlight)
+                      statusItemsP[n].StatusTag = Empty;
                   // adjust the start position of TabPage to the next item position
-                  if (stl_items[n].StatusTag == TabPage)
-                      stl_items[n].stl_start = p;
+                  if (statusItemsP[n].StatusTag == TabPage)
+                      statusItemsP[n].start = p;
                }
             }
          }
-         if (l > stl_items[stl_groupitem[groupdepth]].stl_maxwid) {
+         if (l > statusItemsP[stlGroupItemP[groupdepth]].maxWidth) {
             // truncate, remove n bytes of text at the start
             // Find the first character that should be included.
             n = 0;
-            while (l >= stl_items[stl_groupitem[groupdepth]].stl_maxwid) {
+            while (l >= statusItemsP[stlGroupItemP[groupdepth]].maxWidth) {
                l -= ptr2cells(t + n);
                n += utfCharLen(t + n);
             }
@@ -4683,19 +4682,19 @@ bookRenderStatusLine(
             p = p - n + 1;
 
             // Fill up space left over by half a double-wide char.
-            while (++l < stl_items[stl_groupitem[groupdepth]].stl_minwid)
+            while (++l < statusItemsP[stlGroupItemP[groupdepth]].minWidth)
                 MB_CHAR2BYTES(fillchar, p);
 
             // correct the start of the items for the truncation
-            for (l = stl_groupitem[groupdepth] + 1; l < curitem; l++) {
+            for (l = stlGroupItemP[groupdepth] + 1; l < curitem; l++) {
                // Minus one for the leading '<' added above.
-               stl_items[l].stl_start -= n - 1;
-               if (stl_items[l].stl_start < t)
-                  stl_items[l].stl_start = t;
+               statusItemsP[l].start -= n - 1;
+               if (statusItemsP[l].start < t)
+                  statusItemsP[l].start = t;
             }
-         } ei (abs(stl_items[stl_groupitem[groupdepth]].stl_minwid) > l) {
+         } ei (abs(statusItemsP[stlGroupItemP[groupdepth]].minWidth) > l) {
             // fill
-            n = stl_items[stl_groupitem[groupdepth]].stl_minwid;
+            n = statusItemsP[stlGroupItemP[groupdepth]].minWidth;
             if (n < 0) {
                // fill by appending characters
                n = 0 - n;
@@ -4708,8 +4707,8 @@ bookRenderStatusLine(
                if (p + l >= out + outlen)
                   l = (long)((out + outlen) - p - 1);
                p += l;
-               for (n = stl_groupitem[groupdepth] + 1; n < curitem; n++)
-                  stl_items[n].stl_start += l;
+               for (n = stlGroupItemP[groupdepth] + 1; n < curitem; n++)
+                  statusItemsP[n].start += l;
                for ( ; l > 0; l--)
                   MB_CHAR2BYTES(fillchar, t);
             }
@@ -4734,9 +4733,9 @@ bookRenderStatusLine(
             minwid = 0;
       }
       if (*s == STL_USER_HL) {
-         stl_items[curitem].StatusTag = Highlight;
-         stl_items[curitem].stl_start = p;
-         stl_items[curitem].stl_minwid = minwid > 9 ? 1 : minwid;
+         statusItemsP[curitem].StatusTag = Highlight;
+         statusItemsP[curitem].start = p;
+         statusItemsP[curitem].minWidth = minwid > 9 ? 1 : minwid;
          s++;
          curitem++;
          continue;
@@ -4746,8 +4745,8 @@ bookRenderStatusLine(
             if (minwid == 0) {
                // %X ends the close label, go back to the previously define tab label nr.
                for (n = curitem - 1; n >= 0; --n) {
-                  if (stl_items[n].StatusTag == TabPage && stl_items[n].stl_minwid >= 0) {
-                      minwid = stl_items[n].stl_minwid;
+                  if (statusItemsP[n].StatusTag == TabPage && statusItemsP[n].minWidth >= 0) {
+                      minwid = statusItemsP[n].minWidth;
                       break;
                   }
                } 
@@ -4755,9 +4754,9 @@ bookRenderStatusLine(
                // close nrs are stored as negative values
                minwid = - minwid;
          }
-         stl_items[curitem].StatusTag = TabPage;
-         stl_items[curitem].stl_start = p;
-         stl_items[curitem].stl_minwid = minwid;
+         statusItemsP[curitem].StatusTag = TabPage;
+         statusItemsP[curitem].start = p;
+         statusItemsP[curitem].minWidth = minwid;
          s++;
          curitem++;
          continue;
@@ -4772,11 +4771,11 @@ bookRenderStatusLine(
       }
       minwid = (minwid > 50 ? 50 : minwid) * l;
       if (*s == '(') {
-         stl_groupitem[groupdepth++] = curitem;
-         stl_items[curitem].StatusTag = Group;
-         stl_items[curitem].stl_start = p;
-         stl_items[curitem].stl_minwid = minwid;
-         stl_items[curitem].stl_maxwid = maxwid;
+         stlGroupItemP[groupdepth++] = curitem;
+         statusItemsP[curitem].StatusTag = Group;
+         statusItemsP[curitem].start = p;
+         statusItemsP[curitem].minWidth = minwid;
+         statusItemsP[curitem].maxWidth = maxwid;
          s++;
          curitem++;
          continue;
@@ -5048,9 +5047,9 @@ bookRenderStatusLine(
          while (*s != '#' && *s != ZERO)
             ++s;
          if (*s == '#') {
-            stl_items[curitem].StatusTag = Highlight;
-            stl_items[curitem].stl_start = p;
-            stl_items[curitem].stl_minwid = -syntaxClusterByName((Text){.c = t, .len = s - t});
+            statusItemsP[curitem].StatusTag = Highlight;
+            statusItemsP[curitem].start = p;
+            statusItemsP[curitem].minWidth = -syntaxClusterByName((Text){.c = t, .len = s - t});
             curitem++;
          }
          if (*s != ZERO)
@@ -5059,8 +5058,8 @@ bookRenderStatusLine(
       }
       }
 
-      stl_items[curitem].stl_start = p;
-      stl_items[curitem].StatusTag = Normal;
+      statusItemsP[curitem].start = p;
+      statusItemsP[curitem].StatusTag = Normal;
       if (str && *str) {
          CS t = str;
 
@@ -5140,7 +5139,7 @@ bookRenderStatusLine(
          else
             p += eeSnprintfSafelen(p, outlen - (p - out), (char *)nstr, minwid, num);
       } else
-         stl_items[curitem].StatusTag = Empty;
+         statusItemsP[curitem].StatusTag = Empty;
 
       if (num >= 0 || (!itemisflag && str && *str != ZERO))
          prevchar_isflag = FALSE;       // Item not NULL, but not a flag
@@ -5163,15 +5162,15 @@ bookRenderStatusLine(
          s = out;
       else {
          for ( ; l < itemcnt; l++) {
-            if (stl_items[l].StatusTag == Trunc) {
+            if (statusItemsP[l].StatusTag == Trunc) {
                //Truncate at %< item.
-               s = stl_items[l].stl_start;
+               s = statusItemsP[l].start;
                break;
             }
          } 
          if (l == itemcnt) {
             //No %< item, truncate first item.
-            s = stl_items[0].stl_start;
+            s = statusItemsP[0].start;
             l = 0;
          }
       }
@@ -5190,7 +5189,7 @@ bookRenderStatusLine(
          while (++width < maxwidth)
             MB_CHAR2BYTES(fillchar, s);
          for (l = 0; l < itemcnt; l++) {
-            if (stl_items[l].stl_start > s) {
+            if (statusItemsP[l].start > s) {
                break;
             } 
          } 
@@ -5212,10 +5211,10 @@ bookRenderStatusLine(
 
          --n;   // count the '<'
          for (; l < itemcnt; l++) {
-            if (stl_items[l].stl_start - n >= s)
-               stl_items[l].stl_start -= n;
+            if (statusItemsP[l].start - n >= s)
+               statusItemsP[l].start -= n;
             else
-               stl_items[l].stl_start = s;
+               statusItemsP[l].start = s;
          }
 
          // Fill up for half a double-wide character.
@@ -5233,9 +5232,9 @@ bookRenderStatusLine(
       int num_separators = 0;
 
       for (l = 0; l < itemcnt; l++) {
-         if (stl_items[l].StatusTag == Separate) {
+         if (statusItemsP[l].StatusTag == Separate) {
             // Create an array of the start location for each separator mark.
-            stl_separator_locations[num_separators] = l;
+            stlSeparatorLocationsP[num_separators] = l;
             num_separators++;
          }
       }
@@ -5247,14 +5246,14 @@ bookRenderStatusLine(
          for (l = 0; l < num_separators; l++) {
             int dislocation = (l == (num_separators - 1)) ? final_spaces : standard_spaces;
             dislocation *= MB_CHAR2LEN(fillchar);
-            CS start = stl_items[stl_separator_locations[l]].stl_start;
+            CS start = statusItemsP[stlSeparatorLocationsP[l]].start;
             CS seploc = start + dislocation;
             STRMOVE(seploc, start);
             for (s = start; s < seploc;)
                MB_CHAR2BYTES(fillchar, s);
 
-            for (int i = stl_separator_locations[l] + 1; i < itemcnt; i++)
-               stl_items[i].stl_start += dislocation;
+            for (int i = stlSeparatorLocationsP[l] + 1; i < itemcnt; i++)
+               statusItemsP[i].start += dislocation;
           }
 
           width = maxwidth;
@@ -5266,9 +5265,9 @@ bookRenderStatusLine(
       *hltab = statusHilitesS;
       sp = statusHilitesS;
       for (l = 0; l < itemcnt; l++) {
-         if (stl_items[l].StatusTag == Highlight) {
-            sp->start = stl_items[l].stl_start;
-            sp->hiId = stl_items[l].stl_minwid;
+         if (statusItemsP[l].StatusTag == Highlight) {
+            sp->start = statusItemsP[l].start;
+            sp->hiId = statusItemsP[l].minWidth;
             sp++;
          }
       }
@@ -5281,9 +5280,9 @@ bookRenderStatusLine(
       *labels = stl_tabtab;
       sp = stl_tabtab;
       for (l = 0; l < itemcnt; l++) {
-         if (stl_items[l].StatusTag == TabPage) {
-            sp->start = stl_items[l].stl_start;
-            sp->hiId = stl_items[l].stl_minwid;
+         if (statusItemsP[l].StatusTag == TabPage) {
+            sp->start = statusItemsP[l].start;
+            sp->hiId = statusItemsP[l].minWidth;
             sp++;
          }
       }

@@ -1129,7 +1129,7 @@ private int  pc_col;
 
 void
 edit_putchar(int c, Boole needDoHilite) {
-   if (!screenLinesG)
+   if (!drawHasLines())
       return;
 
    update_topline();   // just in case topLine isn't valid

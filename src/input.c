@@ -967,7 +967,7 @@ insertIntoTypebuf(
    initTypebuf();
    if (++typeBufG.changeCnt == 0)
       typeBufG.changeCnt = 1;
-   state_no_longer_safe("insertIntoTypebuf()");
+   state_no_longer_safe(S"insertIntoTypebuf()");
 
    addlen = (int)STRLEN(str);
 
@@ -1531,7 +1531,7 @@ mergeModifierKey(Unt cArg, Unt* modifiers) {
 private void
 addByteToShowcmd(Byte byte) {
    static GotCharsState state;
-   int modifiers = 0;
+   Unt modifiers = 0;
    int c = ZERO;
 
    if (msg_silent != 0)
@@ -1564,8 +1564,7 @@ addByteToShowcmd(Byte byte) {
       }
    }
 
-   // TODO: is there a more readable and yet compact representation of
-   // modifiers and special keys?
+   //TODO: is there a more readable and yet compact representation of modifiers and special keys?
    if (modifiers != 0) {
       add_to_showcmd(K_SPECIAL);
       add_to_showcmd(KS_MODIFIER);
@@ -1578,14 +1577,14 @@ addByteToShowcmd(Byte byte) {
 }
 
 
-// Get the next input character.
-// Can return a special key or a multi-byte character.
-// Can return ZERO when called recursively, use safe_vgetc() if that's not wanted.
-// Set modMaskG to the set of modifiers that are held down based on the MOD_MASK_* symbols 
-// that are read first.
-// Translate escaped K_SPECIAL and CSI bytes to a K_SPECIAL or CSI byte.
-// Collect the bytes of a multibyte character into the whole character.
-// Return the modifiers in the global "modMaskG".
+//Get the next input character.
+//Can return a special key or a multi-byte character.
+//Can return ZERO when called recursively, use safe_vgetc() if that's not wanted.
+//Set modMaskG to the set of modifiers that are held down based on the MOD_MASK_* symbols 
+//that are read first.
+//Translate escaped K_SPECIAL and CSI bytes to a K_SPECIAL or CSI byte.
+//Collect the bytes of a multibyte character into the whole character.
+//Return the modifiers in the global "modMaskG".
 Unt
 vgetc(void) {
    Unt c, c2;
@@ -1765,7 +1764,7 @@ afterGotChar:
 
    // Need to process the character before we know it's safe to do something else.
    if (c != K_IGNORE)
-      { state_no_longer_safe("key typed"); }
+      { state_no_longer_safe(S"key typed"); }
        
    return c;
 }
@@ -2254,8 +2253,8 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                   break;
             }
 
-            // Don't allow mapping the first byte(s) of a multi-byte char.
-            // Happens when mapping <M-a> and then changing 'encoding'. Beware that 0x80 is escaped.
+            //Don't allow mapping the first byte(s) of a multi-byte char.
+            //Happens when mapping <M-a> and then changing 'encoding'. Beware that 0x80 is escaped.
             {
                CS p1 = fin.foundMapping->lhs;
                CS p2 = mb_unescape(&p1);
@@ -2264,9 +2263,9 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
                   fin.matchLen = 0;
             }
 
-            // Check whether an entry matches.
-            // - Full match: matchLen == keylen
-            // - Partial match: matchLen == typeBufG.validLen
+            //Check whether an entry matches.
+            //- Full match: matchLen == keylen
+            //- Partial match: matchLen == typeBufG.validLen
             fin.keylen = fin.foundMapping->keylen;
             if (fin.matchLen == fin.keylen 
                   || (fin.matchLen == typeBufG.validLen && typeBufG.validLen < fin.keylen)
@@ -2344,8 +2343,8 @@ nextIter:
 // - On failure (out of memory) return mrFail.
 private MapResult
 handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
-   int      i;
-   int      isAbstractPlugMapping = FALSE; // is this an abstract <plug> mapping?
+   int i;
+   int isAbstractPlugMapping = FALSE; // is this an abstract <plug> mapping?
    
    //{{{<Plug>. If typeahead starts with <Plug> then remap, even for a "noremap" mapping.
    // <Plug> mappings are abstract function names exposed by plugins that users can map concrete
@@ -2619,11 +2618,11 @@ check_end_reg_executing(int advance) {
 //a multi-byte character). K_SPECIAL and CSI may be escaped, need to get two more bytes then.
 private Unt
 vGetOrPeek(Boole advance) {
-   int      countRead;
-   Unt      specialChar;
-   int      timedout = FALSE;   // waited for more than 'timeoutlen'
-              // for mapping to complete or 'ttimeoutlen' for complete key code
-   int mapdepth = 0;      // check for recursive mapping
+   int countRead;
+   Unt specialChar;
+   int timedout = FALSE; // waited for more than 'timeoutlen'
+                         // for mapping to complete or 'ttimeoutlen' for complete key code
+   int mapdepth = 0;     // check for recursive mapping
    int mode_deleted = FALSE;   // set when mode has been deleted
    int necursorCol, necursorRow;
    int n;
@@ -2924,15 +2923,15 @@ vGetOrPeek(Boole advance) {
    //   if we don't return an ESC but deleted the message before, redisplay it
    if (advance && p_smd && msg_silent == 0 && (stateG & MODE_INSERT)) {
       if (specialChar == ESC && !mode_deleted && !no_mapping && isModeDisplayedG) {
-           if (typeBufG.validLen && !KeyTyped)
-              redrawCommlineG = TRUE; // delete mode later
-           else
-              unshowmode(FALSE);
+         if (typeBufG.validLen && !KeyTyped)
+            redrawCommlineG = TRUE; // delete mode later
+         else
+            unshowmode(FALSE);
       } ei (specialChar != ESC && mode_deleted) {
-           if (typeBufG.validLen && !KeyTyped)
-              redrawCommlineG = TRUE; // show mode later
-           else
-              showmode();
+         if (typeBufG.validLen && !KeyTyped)
+            redrawCommlineG = TRUE; // show mode later
+         else
+            showmode();
       }
    }
    if (timedout && specialChar == ESC)  {
@@ -2968,7 +2967,6 @@ private int
 ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
    int len = 0;
    int retesc = FALSE; // return ESC when we got an interrupt
-   int scriptChar;
    int changeCnt = typeBufG.changeCnt;
    if (wait_time == -1L || wait_time > 100L) { // flush output before waiting
        cursor_on();
@@ -2986,7 +2984,7 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
 
    // Get a character from a script file if there is one.
    // If interrupted: Stop reading script files, close them all.
-   scriptChar = -1;
+   int scriptChar = -1;
    while (scriptin[curscript] != NULL && scriptChar < 0 && !ignore_script ) {
       parse_queued_messages();
 
@@ -3092,7 +3090,7 @@ getCommandNameCb(
    Unt promptc UNUSED,
    void* cookie UNUSED,
    int indent UNUSED,
-   GetlineAlgo   do_concat UNUSED
+   GetlineAlgo do_concat UNUSED
 ) {
    ArrayList   line_ga;
    Unt c1 = UNT;
@@ -3111,16 +3109,15 @@ getCommandNameCb(
       }
 
       if (vGetOrPeek(false) == ZERO) {
-         // incomplete <Cmd> is an error, because there is not much the user
-         // could do in this state.
+         //incomplete <Cmd> is an error, because there is not much the user could do in this state.
          emsg(_(e_cmd_mapping_must_end_with_cr));
          aborted = TRUE;
          break;
       }
 
-      // Get one character at a time.
+      //Get one character at a time.
       c1 = vGetOrPeek(true);
-      // Get two extra bytes for special keys
+      //Get two extra bytes for special keys
       if (c1 == K_SPECIAL) {
          c1 = vGetOrPeek(true);
          c2 = vGetOrPeek(true);
@@ -3130,8 +3127,8 @@ getCommandNameCb(
          }
          c1 = TO_SPECIAL(c1, c2);
          
-         // K_ESC is used to avoid ambiguity with the single Esc character
-         // that might be the start of an escape sequence.  Convert it back to a single Esc here.
+         //K_ESC is used to avoid ambiguity with the single Esc character
+         //that might be the start of an escape sequence.  Convert it back to a single Esc here.
          if (c1 == K_ESC)
             { c1 = ESC; }
       }
@@ -3279,9 +3276,7 @@ reset_last_used_map(MapBlock* mp) {
 
 #include <wchar.h>
 
-private int dbcs_ptr2len(CS p);
 int mb_ptr2cells_len(CS p, int size);
-private int dbcs_head_off(CS base, CS p);
 
 // Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
 // UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
@@ -3304,10 +3299,6 @@ private Byte utf8LenTable_zero[256] = {
    0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,
    3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0
 };
-
-#ifndef CP_UTF8
-# define CP_UTF8 65001   // magic number from winnls.h
-#endif
 
 
 //Set up for using multi-byte characters. Called in three cases:
@@ -3351,20 +3342,6 @@ inpGetClassForBook(CS p, Book* book) {
    return utf_class_buf(mb_ptr2char(p), book);
 }
 
-//Get byte length of character at "*p".  Return zero when "*p" is ZERO.
-//Used for utfCharLen() when 'encoding' DBCS.
-private int
-dbcs_ptr2len(Byte *p) {
-   if (*p == ZERO)
-      return 0;
-
-   // if the second byte is missing the length is 1
-   int len = utf8CharLens[*p];
-   if (len == 2 && p[1] == ZERO)
-      len = 1;
-   return len;
-}
-
 typedef struct {
    long first;
    long last;
@@ -3373,7 +3350,6 @@ typedef struct {
 // Return TRUE if "c" is in the sorted "table[size / sizeof(Interval)]".
 private Boole
 intable(Interval* table, Unt size, Unt c) {
-
    // first quick check for Latin1 etc. characters
    if ((long)c < table[0].first)
       return false;
@@ -3777,8 +3753,8 @@ mb_string2cells(CS p, int len) {
 }
 
 int
-mb_off2cells(unsigned off, unsigned max_off) {
-    return (off + 1 < max_off && screenLinesG[off + 1] == 0) ? 2 : 1;
+mb_off2cells(Unt off, Unt max_off) {
+    return (off + 1 < max_off && drawGetLine(off + 1) == 0) ? 2 : 1;
 }
 
 //Convert a UTF-8 byte sequence to a character number.
@@ -3786,7 +3762,7 @@ mb_off2cells(unsigned off, unsigned max_off) {
 //For an overlong sequence this may return zero.
 //Do not include composing characters, of course.
 Unt
-mb_ptr2char(Byte const* p) {
+mb_ptr2char(Byte* p) {
    if (p[0] < 0x80)   // be quick for ASCII
       return (Unt)p[0];
 
@@ -3803,16 +3779,18 @@ mb_ptr2char(Byte const* p) {
                   + ((p[2] & 0x3f) << 6) + (p[3] & 0x3f);
            } 
            if ((p[4] & 0xc0) == 0x80) {
-              if (len == 5)
-                 return ((p[0] & 0x03) << 24) + ((p[1] & 0x3f) << 18)
-                   + ((p[2] & 0x3f) << 12) + ((p[3] & 0x3f) << 6)
-                   + (p[4] & 0x3f);
-              if ((p[5] & 0xc0) == 0x80 && len == 6)
+               if (len == 5) {
+                  return ((p[0] & 0x03) << 24) + ((p[1] & 0x3f) << 18)
+                     + ((p[2] & 0x3f) << 12) + ((p[3] & 0x3f) << 6)
+                     + (p[4] & 0x3f);
+               } 
+               if ((p[5] & 0xc0) == 0x80 && len == 6) {
                  return ((p[0] & 0x01) << 30) + ((p[1] & 0x3f) << 24)
-                   + ((p[2] & 0x3f) << 18) + ((p[3] & 0x3f) << 12)
-                   + ((p[4] & 0x3f) << 6) + (p[5] & 0x3f);
+                    + ((p[2] & 0x3f) << 18) + ((p[3] & 0x3f) << 12)
+                    + ((p[4] & 0x3f) << 6) + (p[5] & 0x3f);
+               } 
             }
-          }
+         }
       }
    }
    // Illegal value, just return the first byte
@@ -4056,7 +4034,7 @@ utfCharLen(CS p) {
 //This includes following composing characters.
 //Return 0 for an empty string. Return 1 for an illegal char or an incomplete byte sequence.
 Unt
-utfCharLen_len(Byte const* p, int size) {
+utfCharLen_len(Byte* p, int size) {
    int len;
 
    if (size < 1 || *p == ZERO)
@@ -5229,21 +5207,6 @@ show_utf8(void) {
    msg(IObuff);
 }
 
-private int
-dbcs_head_off(CS base, CS p) {
-   // It can't be a trailing byte when not using DBCS, at the start of the
-   // string or the previous byte can't start a double-byte.
-   if (p <= base || utf8CharLens[p[-1]] == 1 || *p == ZERO)
-      return 0;
-
-   // This is slow: need to start at the base and go forward until the
-   // byte we are looking for.  Return 1 when we went past it, 0 otherwise.
-   CS q = base;
-   while (q < p)
-      q += dbcs_ptr2len(q);
-   return (q == p) ? 0 : 1;
-}
-
 //Return offset from "p" to the start of a character, including composing
 //characters. "base" must be the start of the C string.
 int
@@ -5445,16 +5408,15 @@ mb_off_next(CS base, CS p) {
 //Composing characters are not included.
 int
 mb_tail_off(CS base, CS p) {
-   int i;
-   int j;
-
    if (*p == ZERO)
       return 0;
 
    // Find the last character that is 10xx.xxxx
+   int i;
    for (i = 0; (p[i + 1] & 0xc0) == 0x80; ++i)
        ;
    // Check for illegal sequence.
+   int j;
    for (j = 0; p - j > base; ++j) {
       if ((p[-j] & 0xc0) != 0x80)
          break;
@@ -5462,14 +5424,6 @@ mb_tail_off(CS base, CS p) {
    if (utf8LenTable[p[-j]] != i + j + 1)
       return 0;
    return i;
-
-   // It can't be the first byte if a double-byte when not using DBCS, at the
-   // end of the string or the byte can't start a double-byte.
-   if (p[1] == ZERO || utf8CharLens[*p] == 1)
-      return 0;
-
-   // Return 1 when on the lead byte, 0 when on the tail byte.
-   return 1 - dbcs_head_off(base, p);
 }
 
 // Find the next illegal byte sequence.
@@ -5545,14 +5499,7 @@ mb_adjustpos(Book* book, Pos *lp) {
           lp->col = 0;
       else
           lp->col -= mb_head_off(p, p + lp->col);
-      // Reset "coladd" when the cursor would be on the right half of a
-      // double-wide character.
-      if (lp->coladd == 1
-         && p[lp->col] != TAB
-         && bookIsCharPrintable(mb_ptr2char(p + lp->col))
-         && ptr2cells(p + lp->col) > 1)
-          lp->coladd = 0;
-    }
+   }
 }
 
 // Return a pointer to the character before "*p", if there is one.
@@ -5635,19 +5582,7 @@ mb_unescape(OUT CS* pp) {
 //Caller must make sure "row" and "col" are not invalid!
 int
 mb_lefthalve(int row, int col) {
-   return mb_off2cells(lineOffsetG[row] + col, lineOffsetG[row] + screenLinesColsG) > 1;
-}
-
-//Correct a position on the screen, if it's the right half of a double-wide char move it to the 
-//left half. Return the corrected column.
-Unt
-mb_fix_col(Unt col, Unt row) {
-   col = check_col(col);
-   row = check_row(row);
-   int off = lineOffsetG[row] + col;
-   if (screenLinesG != NULL && col > 0 && (screenLinesG[off] == 0 && screenLinesUCG[off] == 0))
-      return col - 1;
-   return col;
+   return mb_off2cells(drawGetOffset(row) + col, drawGetOffset(row) + screenLinesColsG) > 1;
 }
 
 #include <langinfo.h>
@@ -6979,16 +6914,16 @@ retnomove:
          && (Unt)prevRow < curPor->portalRow + curPor->height
          && prevCol >= curPor->portalCol 
          && (Unt)prevCol < P_ENDCOL(curPor)
-         && screenLinesG != 0
+         && drawHasLines()
    ) {
-      int off = lineOffsetG[prevRow] + prevCol;
+      int off = drawGetOffset(prevRow) + prevCol;
 
-      //Only use screenColsG[] after the portal was redrawn. Mainly matters for tests, a user 
-      //would not click before redrawing. Do not use when 'virtualedit' is active.
+      //Only use screenColS[] after the portal was redrawn. Mainly matters for tests, a user 
+      //would not click before redrawing.
       if (curPor->redrawType <= UPD_VALID_NO_UPDATE)
-          col_from_screen = screenColsG[off];
+          col_from_screen = drawGetScreenCol(off);
       // Remember the character under the mouse, it might be a '-' or '+' in the fold column.
-      mouse_char = screenLinesG[off];
+      mouse_char = drawGetLine(off);
    }
 
    if ( col >= (commPortPortG != curPor ? 0 : 1))

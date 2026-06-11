@@ -127,18 +127,6 @@ typedef union {
    VTermColor color;
 } VTermValue;
 
-// This is ScreenCell without the characters, thus much smaller.
-typedef struct {
-   VTermDeco flags;
-   VTermColor fg;
-   VTermColor bg;
-} CellDeco;
-
-typedef struct {
-   Unt chars[MAX_COMBINED_SYMBOLS];
-   CellDeco deco;
-} ScreenCell;
-
 // All fields are optional, NULL when not used.
 typedef struct {
    int (*damage)(VTermRect rect, void* user);
@@ -8185,7 +8173,7 @@ may_toggle_cursor(Terminal *term) {
 
 //Convert the decorations of a vterm cell into a Decoration
 // TODO get rid of it through type unification
-private Decoration
+Decoration
 cellToDecoration(VTermDeco flags, VTermColor fg, VTermColor bg){
    return (Decoration) {
       .fg = fg, .bg = bg, .flags = flags, .hiId = SHORT

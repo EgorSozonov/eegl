@@ -52,9 +52,19 @@ Generic types are defined in eegl.h searchable via ":::generics"
 
 Generic functions are defined in generic.h
 
+
 ## Abbreviations
+
 CS = C String, a zero-terminated byte array
 Unt = Unsigned 4-byte integer
+
+f_.. | API functions (i.e. the things which can be called from scripts)
+c_.. | commands (i.e. the things which can be called from the commline like `:echo`)
+globOpt...  | global variables holding current values of global options (i.e. things settable by 
+   the user from the commline like `:set foldmethod=...`)
+...G | internal global variables
+...P | internal private variables (i.e. global within a single code module)
+
 
 
 ## Source file descriptions (regenerate with ```grep '//##' -h *.c```)
@@ -62,7 +72,6 @@ Unt = Unsigned 4-byte integer
 autocmd.c: autocommand-related functions
 buffer.c: functions for dealing with the buffer structure (i.e. open files)
 channel.c: implements communication through a socket or any file handle, plus logging
-clipboard.c: Functions to handle the clipboard and copy-and-paste registers
 data.c: core data structures
 diff.c: code for diffing two, three or four buffers.
 do.c: functions for executing Commands
@@ -97,7 +106,7 @@ testing.c: Support for tests.
 ui.c: terminal-based user interface
 usercomm.c: user command line, its completion and user-defined functions
 var.c: the tagged data accessible from scripts
-window.c: functions for displaying the window in Wayland
+window.c: functions for displaying the window in Wayland, clipboard and copy-and-paste registers
 
 ## Jumping around ##
 
@@ -250,14 +259,6 @@ file.
 
 
 This is `README.md` for version 9.1 of the Vim source code.
-## Variable naming scheme
-
-f_.. | API functions (i.e. the things which can be called from scripts)
-c_.. | commands (i.e. the things which can be called from the commline like `:echo`)
-globOpt...  | global variables holding current values of global options (i.e. things settable by 
-   the user from the commline like `:set foldmethod=...`)
-...G | internal global variables
-...S | internal static variables (i.e. global within a single code module)
 
 
 ## Signing-off commits

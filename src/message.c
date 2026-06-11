@@ -1673,7 +1673,7 @@ wait_return(Boole redraw) {
             // Use CTRL-Y, because the same is used in Commline-mode and it's harmless when there 
             // is no selection.
             if (c == Ctrl_Y && clipboard.state == SELECT_DONE) {
-               clip_copy_modeless_selection(TRUE);
+               clip_copy_modeless_selection();
                c = K_IGNORE;
             }
 
@@ -2115,11 +2115,11 @@ do_more_prompt(int typedChar) {
          break;
 
       case Ctrl_Y:
-         // Strange way to allow copying (yanking) a modeless selection at the more prompt.
-         // Use CTRL-Y, because the same is used in Cmdline-mode and at the hit-enter prompt. 
-         // However, scrolling one line up might be expected...
+         //Strange way to allow copying (yanking) a modeless selection at the more prompt.
+         //Use CTRL-Y, because the same is used in Cmdline-mode and at the hit-enter prompt. 
+         //However, scrolling one line up might be expected...
          if (clipboard.state == SELECT_DONE)
-            clip_copy_modeless_selection(TRUE);
+            clip_copy_modeless_selection();
          continue;
       default:      // no valid response
           msg_moremsg(TRUE);
@@ -2131,7 +2131,7 @@ do_more_prompt(int typedChar) {
       }
       if (toscroll < 0) {
          // go to start of last line
-         if (lastChunk == NULL)
+         if (!lastChunk)
             mp = moveToStartOfScreenLine(lastChunkS);
          ei (lastChunk->sb_prev)
             mp = moveToStartOfScreenLine(lastChunk->sb_prev);
@@ -2145,25 +2145,25 @@ do_more_prompt(int typedChar) {
          if (mp && mp->sb_prev) {
             // Find line to be displayed at top.
             for (i = 0; i > toscroll; --i) {
-               if (mp == NULL || mp->sb_prev == NULL)
+               if (!mp || !mp->sb_prev)
                   break;
                mp = moveToStartOfScreenLine(mp->sb_prev);
-               if (lastChunk == NULL)
+               if (!lastChunk)
                   lastChunk = moveToStartOfScreenLine(lastChunkS);
                else
                   lastChunk = moveToStartOfScreenLine(lastChunk->sb_prev);
             }
 
             if (toscroll == -1 && screen_ins_lines(0, 0, 1, (int)visibleRowsG, 0, NULL) == OK) {
-               // display line at top
+               //display line at top
                (void)disp_sb_line(0, mp, FALSE);
             } else {
                int did_clear = screenclear();
 
-               // redisplay all lines
+               //redisplay all lines
                for (i = 0; mp && i < visibleRowsG - 1; ++i) {
-                   mp = disp_sb_line(i, mp, !did_clear);
-                   ++msg_scrolled;
+                  mp = disp_sb_line(i, mp, !did_clear);
+                  ++msg_scrolled;
                }
             }
             toscroll = 0;
@@ -2211,7 +2211,6 @@ do_more_prompt(int typedChar) {
    entered = FALSE;
    return retval;
 }
-
 
 //}}}
 //{{{putting messages on screen

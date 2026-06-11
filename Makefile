@@ -963,7 +963,6 @@ include noncode/tests/Make_all.mak
 BASIC_SRC_NO_DIR = \
 	book.c \
    channel.c \
-	clipboard.c \
 	data.c \
 	diff.c \
 	do.c \
@@ -1038,7 +1037,6 @@ LINT_SRC = $(BASIC_SRC) $(CHANNEL_SRC)
 
 OBJ_COMMON = \
 	.b/book.o \
-	.b/clipboard.o \
 	.b/data.o \
 	.b/diff.o \
 	.b/do.o \
@@ -1120,7 +1118,6 @@ PRO_AUTO = \
 	book.pro \
 	change.pro \
 	channel.pro \
-	clipboard.pro \
 	dict.pro \
 	diff.pro \
 	do.pro \
@@ -2043,7 +2040,6 @@ Makefile:
 ### Dependencies:
 .b/book.o: src/book.c src/eegl.h src/generic.h
 .b/channel.o: src/channel.c src/eegl.h src/generic.h
-.b/clipboard.o: src/clipboard.c src/eegl.h src/generic.h
 .b/data.o: src/data.c src/eegl.h \
  src/generic.h src/commands.h
 .b/diff.o: src/diff.c src/eegl.h src/generic.h src/commands.h

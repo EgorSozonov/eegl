@@ -8786,7 +8786,7 @@ getCommandWorker(
          // Copy the modeless selection, if there is one.
          if (clipboard.state != SELECT_CLEARED) {
             if (clipboard.state == SELECT_DONE)
-               clip_copy_modeless_selection(TRUE);
+               clip_copy_modeless_selection();
             goto commlineUnchanged;
          }
          break;

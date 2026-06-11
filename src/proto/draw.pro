@@ -73,4 +73,18 @@ void drawPortLineLater(Portal *po, LineNr lnum);
 void redrawPortRangeLater(Portal *po, LineNr first, LineNr last);
 int text_prop_position(Portal *po, TextProp *t, int vcol, int scr_col, int *countExtraBytes, Byte **extraBytes, int *numDecoCells, int *toSkipBeforeDeco, int do_skip);
 int drawLineOnScreen(Portal *port, LineNr lnum, int startrow, int endrow, int drawingOnlyNumberCol);
+void f_screenattr(Var *argvars, Var *returnVar);
+void f_screenchar(Var *argvars, Var *returnVar);
+void f_screenchars(Var *argvars, Var *returnVar);
+void f_screencol(Var *argvars, Var *returnVar);
+void f_screenrow(Var *argvars, Var *returnVar);
+void f_screenstring(Var *argvars, Var *returnVar);
+void drawMsgScrollUp(void);
+void drawMsgSetCharAtOffset(Unt c, int off, ScreenCell cell);
+Byte drawGetLineWrap(int row);
+ColNr drawGetScreenCol(int offset);
+ColNr drawGetOffset(int row);
+Boole drawHasLines(void);
+Byte drawGetLine(int offset);
+CS drawGetLinesWithOffset(Unt row);
 /* eegl: set ft=c : */
