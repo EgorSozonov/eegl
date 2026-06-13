@@ -1760,7 +1760,7 @@ truncate_line(int fixpos) {
    ColNr   col = curPor->cursor.col;
 
    CS old_line = ml_get(lnum);
-   CS newp = (col == 0) ? copyStr(Em) : copySubstr(old_line, col);
+   CS newp = (col == 0) ? copyStr(S"") : copySubstr(old_line, col);
    int deleted = (int)ml_get_len(lnum) - col;
    ml_replace(lnum, newp, false);
 
@@ -3964,8 +3964,8 @@ do_addsub(
    int      col;
    int      pre;      // 'X'/'x': hex; 'B'/'b': bin
    static int   hexupper = false;   // 0xABC
-   ULong   n;
-   ULong   oldn;
+   Ulong   n;
+   Ulong   oldn;
    Byte   *ptr;
    int      linelen;
    int      c;
@@ -4110,22 +4110,22 @@ do_addsub(
       oldn = n;
       if (!overflow) { // if number is too big don't add/subtract
          if (subtract)
-            n -= (ULong)prenum1;
+            n -= (Ulong)prenum1;
          else
-            n += (ULong)prenum1;
+            n += (Ulong)prenum1;
       }
 
       // handle wraparound for decimal numbers
       if (!pre) {
          if (subtract) {
             if (n > oldn) {
-               n = 1 + (n ^ (ULong)-1);
+               n = 1 + (n ^ (Ulong)-1);
                negative ^= true;
             }
          } else {
             // add
             if (n < oldn) {
-               n = (n ^ (ULong)-1);
+               n = (n ^ (Ulong)-1);
                negative ^= true;
             }
          }
@@ -4135,10 +4135,10 @@ do_addsub(
 
       if (subtract)
          // sticking at zero.
-         n = (ULong)0;
+         n = (Ulong)0;
       else
          // sticking at 2^64 - 1.
-         n = (ULong)(-1);
+         n = (Ulong)(-1);
       negative = false;
 
       if (visual && !was_positive && !negative && col > 0) {
@@ -4189,7 +4189,7 @@ do_addsub(
       // Put the number characters in buf2[].
       if (pre == 'b' || pre == 'B') {
          int bit = 0;
-         int bits = sizeof(ULong) * 8;
+         int bits = sizeof(Ulong) * 8;
 
          // leading zeros
          for (bit = bits; bit > 0; bit--) {
@@ -4730,8 +4730,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    //Don't do it if a specific register was specified, so that ""x"*P works.
    //This could call visualOperator() recursively, but that's OK
    //because clipbYank will be true for the nested call.
-   if (clipboard.available
-          && oper->opTy != OP_NOP
+   if (      oper->opTy != OP_NOP
           && !clipbYank
           && VIsual_active
           && !isRedoVisualBusy
@@ -5270,7 +5269,7 @@ eeLocaltime(
 ){
    CS tz = mch_getenv(S"TZ");      // pointer for TZ environment var
    if (tz == NULL)
-      tz = Em;
+      tz = S"";
    if (STRNCMP(tz_cache, tz, sizeof(tz_cache) - 1) != 0) {
       tzset();
       copySubstrToAllocation((CS)tz_cache, (Text){tz, sizeof(tz_cache) - 1});

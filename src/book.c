@@ -1338,7 +1338,7 @@ win_lbr_chartabsize(CharTableSize* cts, int* headp){
    // May have to add something for 'breakindent' and/or 'showbreak'
    // string at the start of a screen line.
    int head = mb_added;
-   CS sbr = no_sbr || !p_sbr ? Em : p_sbr;
+   CS sbr = no_sbr || !p_sbr ? S"" : p_sbr;
    // When "size" is 0, no new screen line is started.
    if (size > 0 && po->o.wrap && (*sbr != ZERO || po->o.breakIndent)) {
       int col_off_prev = normalPortalColumnOffset(po);
@@ -3757,7 +3757,7 @@ bufExpandBufnames(
          patSaved[len - 1] = ZERO;
          to_free = true;
       } ei (*pat == '^')
-         patSaved = Em;
+         patSaved = S"";
       else
          patSaved = pat;
       regmatch.regprog = compileRegexp(patSaved, RE_MAGIC);
@@ -4374,11 +4374,11 @@ fileinfo(
       IOSIZE - bufLen,
       "\"%s%s%s%s%s%s",
       doWasCurBookChanged() ? (S" (+)") : S" ",
-      (curBook->flags & BF_NOTEDITED) && !bookDontWrite(curBook) ? _("[Not edited]") : Em,
-      (curBook->flags & BF_NEW) && !bookDontWrite(curBook) ? new_file_message() : Em,
+      (curBook->flags & BF_NOTEDITED) && !bookDontWrite(curBook) ? _("[Not edited]") : S"",
+      (curBook->flags & BF_NEW) && !bookDontWrite(curBook) ? new_file_message() : S"",
       (curBook->flags & BF_READERR) ? _("[Read errors]") : E, 
-      curBook->o.modifiable ? Em : S"[-]",
-      (doWasCurBookChanged() || (curBook->flags & BF_WRITE_MASK) || !curBook->o.modifiable) ? S" " : Em
+      curBook->o.modifiable ? S"" : S"[-]",
+      (doWasCurBookChanged() || (curBook->flags & BF_WRITE_MASK) || !curBook->o.modifiable) ? S" " : S"" 
    );
 
    if (curBook->mem.flags & ML_EMPTY) {
@@ -6229,7 +6229,7 @@ bookWrite(
 
    msg_scroll = isExitingG; // overwrite previous file message?
    if (!filtering)
-      filemess(book, fname, Em, 0);   // show that we are busy
+      filemess(book, fname, S"", 0);   // show that we are busy
    msg_scroll = false;          // always overwrite the file message now
 
    buffer = tryBigAlloc(WRITEBUFSIZE);

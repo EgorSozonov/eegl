@@ -271,10 +271,6 @@ typedef void (*sighandler_T) SIGPROTOARG;
 
 typedef unsigned char Byte;
 
-// Make sure Ulong is big enough to hold a pointer.
-// For printf() and scanf(), we need to take care of Ulong specifically.
-typedef unsigned long Ulong;
-typedef long long_i;
 #define SCANF_HEX_ULONG       "%lx"
 #define SCANF_DECIMAL_ULONG   "%lu"
 #define PRINTF_HEX_ULONG      "0x%lx"
@@ -312,104 +308,6 @@ typedef Byte Byte;
 
 #define FOLD_NEST_MAX 32
 
-//{{{termdefs
-
-//This list contains the defines for the machine dependent escape sequences that the editor needs 
-//to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
-
-
-// Index of the terminfo codes, with their capability names and example values.
-#define KS_NAME   0 //name of this terminal entry. foot
-#define KS_CE     1 //clear to end of line. el. \e[K
-#define KS_AL     2 //add new blank line. il1. \e[L
-#define KS_CAL    3 //add number of blank lines. il. \e[%p1%dL
-#define KS_DL     4 //delete line. dl1. \e[M
-#define KS_CDL    5 //delete number of lines. dl. \e[%p1%dM
-#define KS_CS     6 //scroll region. csr. \e[%i%p1%d;%p2%dr
-#define KS_CL     7 //clear screen. clear. \e[H\e[2J
-#define KS_CD     8 //clear to end of display. ed. \e [J
-#define KS_UT     9 //clearing uses current background color. y???
-#define KS_DA    10 //text may be scrolled down from up. Empty
-#define KS_DB    11 //text may be scrolled up from down. Empty
-#define KS_VI    12 //cursor invisible. civis. \e[?25l
-#define KS_VE    13 //cursor visible. cnorm. \e[?12l\e[?25h
-#define KS_VS    14 //cursor very visible (blink). cvvis. \e[?12;25h
-#define KS_CVS   15 //cursor normally visible (no blink). Empty
-#define KS_CSH   16 //cursor shape. Empty.
-#define KS_CRC   17 //request cursor blinking. Empty
-#define KS_CRS   18 //request cursor style. Empty
-#define KS_ME    19 //normal mode. \e[0m
-#define KS_MR    20 //reverse mode. rev. \e[7m
-#define KS_MD    21 //bold mode. bold. \e[1m
-#define KS_SE    22 //normal mode. rmso. \e[27m
-#define KS_SO    23 //standout mode. rev. \e[7m. AGAIN???
-#define KS_CZH   24 //italic mode start. sitm. \e[3m
-#define KS_CZR   25 //italic mode end. ritm. \e[23m
-#define KS_UE    26 //exit underscore (underline) mode. rmul. \e[24m
-#define KS_US    27 //underscore (underline) mode. smul. \e[4m
-#define KS_UCE   28 //exit undercurl mode. EMPTY
-#define KS_UCS   29 //undercurl mode. Cs. `\e]12;%p1%s\e\`
-#define KS_USS   30 //double underline mode. EMPTY
-#define KS_DS    31 //dotted underline mode. dsl. `\e]2;\e\`
-#define KS_MS    32 //save to move cur in reverse mode. y ???
-#define KS_CM    33 //cursor motion. cursor_address. \e[%i%p1%d;%p2%dH
-#define KS_SR    34 //scroll reverse (backward). scroll_reverse. \eM
-#define KS_CRI   35 //cursor number of chars right. parm_right_cursor. \e[%p1%dC
-#define KS_KS    36 //put term in "keypad transmit" mode. keypad_xmit. \e[?1h\e=
-#define KS_KE    37 //out of "keypad transmit" mode. keypad_local. \e[?1l\e>
-#define KS_TI    38 //put terminal in terminfo mode. enter_ca_mode. \e[?1049h\e[22;0;0t
-#define KS_CTI   39 //put terminal in "raw" mode. EMPTY
-#define KS_CRK   40 //request keyboard protocol state. EMPTY
-#define KS_TE    41 //end of terminfo mode. exit_ca_mode. \e[?1049l\e[23;0;0t
-#define KS_CTE   42 //end of "raw" mode. EMPTY
-#define KS_CCS   43 //cur is relative to scroll region. EMPTY
-#define KS_CSF   44 //set foreground color. EMPTY
-#define KS_CSB   45 //set background color. EMPTY
-#define KS_XS    46 //standout not erased by overwriting (hpterm). EMPTY
-#define KS_XN    47 //newline glitch. y ???
-#define KS_CAF   48 //set fg color (ANSI). set_a_foreground. \e[%?%p1%{8}%<%t3%p1%d%e%p1%{16}%<%t9%p1%{8}%-%d%e38:5:%p1%d%;m
-#define KS_CAB   49 //set bg color (ANSI). set_a_background. \e[%?%p1%{8}%<%t4%p1%d%e%p1%{16}%<%t10%p1%{8}%-%d%e48:5:%p1%d%;m
-#define KS_CAU   50 //set underline color (ANSI). EMPTY
-#define KS_LE    51 //cursor left (mostly backspace). cub1. ^H (which is ASCII 08)
-#define KS_ND    52 //cursor right. cuf1. \e[C
-#define KS_CSC   53 //set cursor color start. EMPTY
-#define KS_CEC   54 //set cursor color end. EMPTY
-#define KS_TS    55 //set window title start (to status line). \e]2;
-#define KS_FS    56 //set window title end (from status line). `\e\`
-#define KS_CWP   57 //set window position in pixels. EMPTY
-#define KS_CGP   58 //get window position. EMPTY
-#define KS_CWS   59 //set window size in characters. EMPTY
-#define KS_CRV   60 //request version string. \e[>c
-#define KS_CXM   61 //enable/disable mouse reporting. \e[?1006;1000%?%p1%{1}%=%th%el%;
-#define KS_CSI   62 //bar cursor. Ss. EMPTY. Should be `\e[6 q`
-#define KS_CEI   63 //block cursor. EMPTY. Should be `\e[2 q`. Underline is `\e[4 q`
-#define KS_CSV   64 //scroll region vertical. EMPTY
-#define KS_OP    65 //original color pair. \e[39;49m
-#define KS_U7    66 //request cursor position. \e[6n
-#define KS_CBE   67 //enable bracketed paste mode. BE. \e[?2004h
-#define KS_CBD   68 //disable bracketed paste mode. BD. \e[?2004l
-#define KS_FD    69 //disable focus event tracking. EMPTY
-#define KS_FE    70 //enable focus event tracking. EMPTY
-#define KS_CF    71 //set terminal alternate font. EMPTY
-
-#define KS_LAST  KS_CF
-
-//the terminal capabilities are stored in this array
-//IMPORTANT: When making changes, note the following:
-//- there should be an entry for each code in the builtin terminfos
-//- there should be an option for each code in option.c
-//- there should be code in term.c to obtain the value from the termcap
-
-extern CS termCodeS[]; //current terminal output strings, defined in term.c
-
-typedef enum {
-   TMODE_COOK,     //terminal mode for external commands
-   TMODE_SLEEP,    //terminal mode for sleeping (cooked but no echo)
-   TMODE_RAW,      //terminal mode for Normal and Insert mode
-   TMODE_UNKNOWN   //after executing a shell
-} TermInputMode;
-
-//}}}
 //{{{:::macros
 
 //Macros should be ALL_CAPS. An exception is for where a function is
@@ -909,13 +807,12 @@ LIST_TY(Unt)
 #include <inttypes.h>
 //#include <wctype.h>
 #include <stdarg.h>
-// older compilers do not define va_copy
-#ifndef va_copy
-#define va_copy(dst, src)   ((dst) = (src))
-#endif
 
 // for offsetof()
+#ifndef PROTO
 #include <stddef.h>
+#endif
+
 #include <stdbool.h>
 
 #include <sys/select.h>
@@ -3497,8 +3394,6 @@ typedef struct EeSet {
 
 typedef Ulong Hash;      // Type for hi_hash
 
-// Use 64-bit Number.
-typedef unsigned long long   ULong;
 #ifdef LLONG_MIN
 # define VARNUM_MIN      LLONG_MIN
 # define VARNUM_MAX      LLONG_MAX
@@ -5792,8 +5687,7 @@ typedef enum {
 
 // Info about selected text
 typedef struct {
-   int available;  //Is clipboard available?
-   int owned;      //Flag: do we own the selection?
+   Boole owned;      //Flag: do we own the selection?
    Pos start;      //Start of selected area
    Pos end;        //End of selected area
    Unt vmode;      //Visual mode character
@@ -5907,20 +5801,20 @@ typedef enum {
 //#define Widget int
 //#define XImage int
 
-#include "proto/book.pro"
-#include "proto/data.pro"
-#include "proto/diff.pro"
-#include "proto/do.pro"
-#include "proto/draw.pro"
-#include "proto/eval.pro"
-#include "proto/fileio.pro"
-#include "proto/hilite.pro"
-#include "proto/input.pro"
-#include "proto/insert.pro"
-#include "proto/location.pro"
-#include "proto/main.pro"
-#include "proto/mark.pro"
-#include "proto/memory.pro"
+#include "proto/book.h"
+#include "proto/data.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/input.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/main.h"
+#include "proto/mark.h"
+#include "proto/memory.h"
 
 // These prototypes cannot be produced automatically.
 int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
@@ -5953,21 +5847,21 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
    ATTRIBUTE_FORMAT_PRINTF(3, 0);
 #define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
 
-#include "proto/juggle.pro"
-#include "proto/message.pro"
-#include "proto/normal.pro"
-#include "proto/option.pro"
-#include "proto/persist.pro"
-#include "proto/portal.pro"
-#include "proto/regexp.pro"
-#include "proto/script.pro"
-#include "proto/search.pro"
-#include "proto/strings.pro"
-#include "proto/tag.pro"
-#include "proto/term.pro"
-#include "proto/ui.pro"
-#include "proto/window.pro"
-#include "proto/channel.pro"
+#include "proto/juggle.h"
+#include "proto/message.h"
+#include "proto/normal.h"
+#include "proto/option.h"
+#include "proto/persist.h"
+#include "proto/portal.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
+#include "proto/search.h"
+#include "proto/strings.h"
+#include "proto/tag.h"
+#include "proto/term.h"
+#include "proto/ui.h"
+#include "proto/window.h"
+#include "proto/channel.h"
 
 // Not generated automatically so that we can add an extra attribute.
 void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
@@ -5977,8 +5871,105 @@ void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
 #endif // !PROTO && !NOPROTO
 
 //}}}
+//{{{termdefs
 
-// This has to go after the include of proto.h, as proto/gui.pro declares
+//This list contains the defines for the machine dependent escape sequences that the editor needs 
+//to perform various operations. All of the sequences here are optional, except "cm" (cursor motion)
+
+
+// Index of the terminfo codes, with their capability names and example values.
+#define KS_NAME   0 //name of this terminal entry. foot
+#define KS_CE     1 //clear to end of line. el. \e[K
+#define KS_AL     2 //add new blank line. il1. \e[L
+#define KS_CAL    3 //add number of blank lines. il. \e[%p1%dL
+#define KS_DL     4 //delete line. dl1. \e[M
+#define KS_CDL    5 //delete number of lines. dl. \e[%p1%dM
+#define KS_CS     6 //scroll region. csr. \e[%i%p1%d;%p2%dr
+#define KS_CL     7 //clear screen. clear. \e[H\e[2J
+#define KS_CD     8 //clear to end of display. ed. \e [J
+#define KS_UT     9 //clearing uses current background color. y???
+#define KS_DA    10 //text may be scrolled down from up. Empty
+#define KS_DB    11 //text may be scrolled up from down. Empty
+#define KS_VI    12 //cursor invisible. civis. \e[?25l
+#define KS_VE    13 //cursor visible. cnorm. \e[?12l\e[?25h
+#define KS_VS    14 //cursor very visible (blink). cvvis. \e[?12;25h
+#define KS_CVS   15 //cursor normally visible (no blink). Empty
+#define KS_CSH   16 //cursor shape. Empty.
+#define KS_CRC   17 //request cursor blinking. Empty
+#define KS_CRS   18 //request cursor style. Empty
+#define KS_ME    19 //normal mode. \e[0m
+#define KS_MR    20 //reverse mode. rev. \e[7m
+#define KS_MD    21 //bold mode. bold. \e[1m
+#define KS_SE    22 //normal mode. rmso. \e[27m
+#define KS_SO    23 //standout mode. rev. \e[7m. AGAIN???
+#define KS_CZH   24 //italic mode start. sitm. \e[3m
+#define KS_CZR   25 //italic mode end. ritm. \e[23m
+#define KS_UE    26 //exit underscore (underline) mode. rmul. \e[24m
+#define KS_US    27 //underscore (underline) mode. smul. \e[4m
+#define KS_UCE   28 //exit undercurl mode. EMPTY
+#define KS_UCS   29 //undercurl mode. Cs. `\e]12;%p1%s\e\`
+#define KS_USS   30 //double underline mode. EMPTY
+#define KS_DS    31 //dotted underline mode. dsl. `\e]2;\e\`
+#define KS_MS    32 //save to move cur in reverse mode. y ???
+#define KS_CM    33 //cursor motion. cursor_address. \e[%i%p1%d;%p2%dH
+#define KS_SR    34 //scroll reverse (backward). scroll_reverse. \eM
+#define KS_CRI   35 //cursor number of chars right. parm_right_cursor. \e[%p1%dC
+#define KS_KS    36 //put term in "keypad transmit" mode. keypad_xmit. \e[?1h\e=
+#define KS_KE    37 //out of "keypad transmit" mode. keypad_local. \e[?1l\e>
+#define KS_TI    38 //put terminal in terminfo mode. enter_ca_mode. \e[?1049h\e[22;0;0t
+#define KS_CTI   39 //put terminal in "raw" mode. EMPTY
+#define KS_CRK   40 //request keyboard protocol state. EMPTY
+#define KS_TE    41 //end of terminfo mode. exit_ca_mode. \e[?1049l\e[23;0;0t
+#define KS_CTE   42 //end of "raw" mode. EMPTY
+#define KS_CCS   43 //cur is relative to scroll region. EMPTY
+#define KS_CSF   44 //set foreground color. EMPTY
+#define KS_CSB   45 //set background color. EMPTY
+#define KS_XS    46 //standout not erased by overwriting (hpterm). EMPTY
+#define KS_XN    47 //newline glitch. y ???
+#define KS_CAF   48 //set fg color (ANSI). set_a_foreground. \e[%?%p1%{8}%<%t3%p1%d%e%p1%{16}%<%t9%p1%{8}%-%d%e38:5:%p1%d%;m
+#define KS_CAB   49 //set bg color (ANSI). set_a_background. \e[%?%p1%{8}%<%t4%p1%d%e%p1%{16}%<%t10%p1%{8}%-%d%e48:5:%p1%d%;m
+#define KS_CAU   50 //set underline color (ANSI). EMPTY
+#define KS_LE    51 //cursor left (mostly backspace). cub1. ^H (which is ASCII 08)
+#define KS_ND    52 //cursor right. cuf1. \e[C
+#define KS_CSC   53 //set cursor color start. EMPTY
+#define KS_CEC   54 //set cursor color end. EMPTY
+#define KS_TS    55 //set window title start (to status line). \e]2;
+#define KS_FS    56 //set window title end (from status line). `\e\`
+#define KS_CWP   57 //set window position in pixels. EMPTY
+#define KS_CGP   58 //get window position. EMPTY
+#define KS_CWS   59 //set window size in characters. EMPTY
+#define KS_CRV   60 //request version string. \e[>c
+#define KS_CXM   61 //enable/disable mouse reporting. \e[?1006;1000%?%p1%{1}%=%th%el%;
+#define KS_CSI   62 //bar cursor. Ss. EMPTY. Should be `\e[6 q`
+#define KS_CEI   63 //block cursor. EMPTY. Should be `\e[2 q`. Underline is `\e[4 q`
+#define KS_CSV   64 //scroll region vertical. EMPTY
+#define KS_OP    65 //original color pair. \e[39;49m
+#define KS_U7    66 //request cursor position. \e[6n
+#define KS_CBE   67 //enable bracketed paste mode. BE. \e[?2004h
+#define KS_CBD   68 //disable bracketed paste mode. BD. \e[?2004l
+#define KS_FD    69 //disable focus event tracking. EMPTY
+#define KS_FE    70 //enable focus event tracking. EMPTY
+#define KS_CF    71 //set terminal alternate font. EMPTY
+
+#define KS_LAST  KS_CF
+
+//the terminal capabilities are stored in this array
+//IMPORTANT: When making changes, note the following:
+//- there should be an entry for each code in the builtin terminfos
+//- there should be an option for each code in option.c
+//- there should be code in term.c to obtain the value from the termcap
+
+
+typedef enum {
+   TMODE_COOK,     //terminal mode for external commands
+   TMODE_SLEEP,    //terminal mode for sleeping (cooked but no echo)
+   TMODE_RAW,      //terminal mode for Normal and Insert mode
+   TMODE_UNKNOWN   //after executing a shell
+} TermInputMode;
+
+//}}}
+
+// This has to go after the include of proto.h, as proto/gui.h declares
 // functions of these names. The declarations would break if the defines had
 // been seen at that stage.  But it must be before globals, where errorsG is declared.
 #if defined(PROTO)
@@ -6002,6 +5993,12 @@ EXTERN long visibleRowsG         // nr of rows in the screen
 #endif
 ;
 EXTERN long   visibleColsG INIT(= 80);   // nr of columns in the screen
+
+EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
+//Contains currently used terminal codes (strings used to communicate with the terminal).
+//The values can be changed by setting the option with the same name.
+//Nulls are not allowed! Only empty strings
+EXTERN CS termCodesG[KS_LAST + 1];
 
 //The characters that are currently on the screen are kept in ScreenLinesG[].
 //It is a single block of characters, the size of the screen plus one line.
@@ -9704,8 +9701,6 @@ long elapsed(TimeVal* start_tv);
 #define VSE_BOOK   2   //escape for a ":book" command
 
 #define SYNTAX_MAX_COL 256 //maximum column for syntax coloring
-
-#define MAX_LSHIFT_BITS (Long)((sizeof(ULong) * 8) - 1)
 
 #ifndef EEGLINFO_FILE
 #define EEGLINFO_FILE  "$HOME/foo/.eeglinfo"

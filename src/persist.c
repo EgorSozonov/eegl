@@ -3413,10 +3413,10 @@ read_eeglinfo(
       verbose_enter();
       smsg(_("Reading eeglinfo file \"%s\"%s%s%s%s"),
          fname,
-         (flags & EIF_WANT_INFO) ? _(" info") : Em,
-         (flags & EIF_WANT_MARKS) ? _(" marks") : Em,
-         (flags & EIF_GET_OLDFILES) ? _(" oldfiles") : Em,
-         fp == NULL ? _(" FAILED") : Em);
+         (flags & EIF_WANT_INFO) ? _(" info") : S"",
+         (flags & EIF_WANT_MARKS) ? _(" marks") : S"",
+         (flags & EIF_GET_OLDFILES) ? _(" oldfiles") : S"",
+         fp == NULL ? _(" FAILED") : S"");
       verbose_leave();
    }
 

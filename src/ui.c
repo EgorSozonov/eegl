@@ -6396,7 +6396,7 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
     } ei (opt->jo_hidden || (flags & TERM_START_SYSTEM)) {
       //Create a new buffer without a portal. Make it the current buffer for
       //a moment to be able to do the initializations.
-      Book* book = bookNew(Em, NULL, (LineNr)0, BLN_NEW | BLN_LISTED);
+      Book* book = bookNew(S"", NULL, (LineNr)0, BLN_NEW | BLN_LISTED);
       if (!book || ml_open(book) == FAIL) {
           eeglFree(term);
           return NULL;
@@ -6411,7 +6411,7 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
       //Open a new portal or tab.
       splitInvo.id = C_new;
       splitInvo.comm = S"new";
-      splitInvo.arg = Em;
+      splitInvo.arg = S"";
       if (opt->jo_term_rows > 0 && !vertical) {
          splitInvo.line2 = opt->jo_term_rows;
          splitInvo.addr_count = 1;
@@ -6474,7 +6474,7 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
             || argvar->list == NULL
             || argvar->list->len == 0
             || (cmd = convertVarToStringSingleUse( &argvar->list->first->c)) == NULL)
-         cmd = Em;
+         cmd = S"";
 
       len = STRLEN(cmd) + 10;
       CS p = alloc(len);
@@ -7070,7 +7070,7 @@ private int
 handleMouseEvent(VTerm *vterm, Unt key) {
    // For modeless selection mouse drag and release events are ignored, unless they are preceded 
    // with a mouse down event
-   static int       ignore_drag_release = true;
+   static Boole ignoreDragRelease = true;
    VTermMouseState mouse_state;
 
    vterm_state_get_mousestate(vterm_obtain_state(vterm), &mouse_state);
@@ -7082,7 +7082,7 @@ handleMouseEvent(VTerm *vterm, Unt key) {
       case K_RIGHTDRAG:
       case K_RIGHTRELEASE:
          // Ignore drag and release events when the button-down wasn't seen before.
-         if (ignore_drag_release) {
+         if (ignoreDragRelease) {
             int save_mouse_col, save_mouse_row;
 
             if (enter_mouse_col < 0)
@@ -7100,20 +7100,14 @@ handleMouseEvent(VTerm *vterm, Unt key) {
          // FALLTHROUGH
       case K_LEFTMOUSE:
       case K_RIGHTMOUSE:
-         if (key == K_LEFTRELEASE || key == K_RIGHTRELEASE)
-            ignore_drag_release = true;
-         else
-            ignore_drag_release = false;
-         if (clipboard.available) {
-            Boole is_click, is_drag;
-            int button = get_mouse_button(KEY2TERMCAP1(key), &is_click, &is_drag);
-            clip_modeless(button, is_click, is_drag);
-         }
+         ignoreDragRelease = (key == K_LEFTRELEASE || key == K_RIGHTRELEASE);
+         Boole is_click, is_drag;
+         int button = get_mouse_button(KEY2TERMCAP1(key), OUT &is_click, OUT &is_drag);
+         clip_modeless(button, is_click, is_drag);
          break;
 
       case K_MIDDLEMOUSE:
-         if (clipboard.available)
-            insert_reg('*', true);
+         insert_reg('*', true);
          break;
       }
       enter_mouse_col = -1;
@@ -8176,7 +8170,7 @@ may_toggle_cursor(Terminal *term) {
 Decoration
 cellToDecoration(VTermDeco flags, VTermColor fg, VTermColor bg){
    return (Decoration) {
-      .fg = fg, .bg = bg, .flags = flags, .hiId = SHORT
+      .fg = fg, .bg = bg, .flags = flags, .hiId = 0
    };
 }
 
@@ -8568,7 +8562,7 @@ term_after_channel_closed(Terminal* term) {
             if (portalIsValid(prevPor))
                 enterPortal(prevPor, false);
          } else
-            // If this is the last normal portal: exit Em.
+            // If this is the last normal portal: exit Eegl.
             if (term->book->countPortals > 0 && onlyOnePortal()) {
                Invocation ea;
 
@@ -8586,7 +8580,7 @@ term_after_channel_closed(Terminal* term) {
                do_set_locked = true;
             if (do_set_locked)
                curPor->locked = true;
-            do_bufdel(DOBOOK_WIPE, Em, 1, fnum, fnum, false);
+            do_bufdel(DOBOOK_WIPE, S"", 1, fnum, fnum, false);
             if (do_set_locked)
                 curPor->locked = false;
             auCommRestoreBook(&aco);
@@ -8848,7 +8842,7 @@ uiBeforeLeavingTerminal(void) {
 //Get the screen decoration for a position in the buffer. Use a negative "col" to get the 
 //filler bg color
 Decoration
-termGetDeco(Portal* po, LineNr lnum, int col) {
+uiGetDeco(Portal* po, LineNr lnum, int col) {
    Book* book = po->book;
    Terminal* term = book->term;
    ScrollbackLine* line;
@@ -11489,7 +11483,7 @@ mch_report_winsize(int fd, int rows, int cols) {
 // Try to set the window size to visibleRowsG and visibleColsG.
 void
 mch_set_shellsize(void) {
-   if (*termCodeS[KS_CWS] != ZERO) {
+   if (*termCodesG[KS_CWS] != ZERO) {
       // NOTE: if you get an error here that term_set_winsize() is undefined, check the output of 
       // configure.  It could probably not find a ncurses, termcap or termlib library.
       term_set_winsize((int)visibleRowsG, (int)visibleColsG);
@@ -11977,7 +11971,7 @@ startsWithPercentAndBang(Tabpanel* tapa) {
 
       if (anyEmsgG > anyEmsgG_before) {
          usefmt = NULL;
-         optChangeStringOptionDirect(S"tabpanel", Em, opt_scope, SID_ERROR);
+         optChangeStringOptionDirect(S"tabpanel", S"", opt_scope, SID_ERROR);
       }
    }
 

@@ -48,7 +48,7 @@ typedef struct {
    int fd;
 
    struct wl_buffer* buffer;
-   int available;
+   Boole available;
 
    int width;
    int height;
@@ -511,13 +511,13 @@ get_yank_register(int regname, int writing) {
       y_append = true;
    } ei (regname == '-')
       i = DELETION_REGISTER;
-    // When selection is not available, use register 0 instead of '*'
-   ei (clipboard.available && regname == '*') {
+   //When selection is not available, use register 0 instead of '*'
+   ei (regname == '*') {
       i = STAR_REGISTER;
       ret = true;
    }
    // When clipboard is not available, use register 0 instead of '+'
-   ei (clipboard.available && regname == '+') {
+   ei (regname == '+') {
       i = PLUS_REGISTER;
       ret = true;
    } ei (!writing && regname == '~')
@@ -538,11 +538,11 @@ get_register(int      name, int copy) {  // make a copy, if false make register 
    int      i;
 
    // When Visual area changed, may have to update selection. Obtain the selection too.
-   if (name == '*' && clipboard.available) {
+   if (name == '*') {
       clip_update_selection(&clipboard);
       may_get_selection(name);
    }
-   if (name == '+' && clipboard.available) {
+   if (name == '+') {
       clip_update_selection(&clipboard);
       may_get_selection(name);
    }
@@ -1268,22 +1268,15 @@ op_yank(Operator *opArg, int deleting, int mess) {
    if (opArg->regname == '_')       // black hole: nothing to do
       return OK;
 
-   if ((!clipboard.available && opArg->regname == '*') 
-          || (!clipboard.available && opArg->regname == '+')
-   ) {
-      opArg->regname = 0;
-      msg_warn_missing_clipboard();
-   }
+   if (!deleting)          // op_delete() already set y_current
+      get_yank_register(opArg->regname, true);
 
-    if (!deleting)          // op_delete() already set y_current
-   get_yank_register(opArg->regname, true);
-
-    curr = y_current;
+   curr = y_current;
                 // append to existing contents
-    if (y_append && y_current->y_array != NULL)
-   y_current = &newreg;
-    else
-   free_yank_all();       // free previously yanked lines
+   if (y_append && y_current->y_array != NULL)
+      y_current = &newreg;
+   else
+      free_yank_all();       // free previously yanked lines
 
     // If the cursor was in column 1 before and after the movement, and the
     // operator is not inclusive, the yank is always linewise.
@@ -1424,11 +1417,9 @@ op_yank(Operator *opArg, int deleting, int mess) {
          decl(&curBook->opEnd);
     }
 
-   // If we were yanking to the '*' register, send result to clipboard.
-   // If no register was specified, and "unnamed" in 'clipboard', make a copy to the '*' register.
-   if (clipboard.available
-       && (curr == &(y_regs[STAR_REGISTER]) || (!deleting && opArg->regname == 0))
-   ) {
+   //If we were yanking to the '*' register, send result to clipboard.
+   //If no register was specified, and "unnamed" in 'clipboard', make a copy to the '*' register.
+   if ((curr == &(y_regs[STAR_REGISTER]) || (!deleting && opArg->regname == 0))) {
       if (curr != &(y_regs[STAR_REGISTER]))
          // Copy the text from register 0 to the clipboard register.
          copy_yank_reg(&(y_regs[STAR_REGISTER]));
@@ -1437,13 +1428,11 @@ op_yank(Operator *opArg, int deleting, int mess) {
       clip_gen_set_selection(&clipboard);
    }
 
-   // If we were yanking to the '+' register, send result to selection.
-   // Also copy to the '*' register, in case auto-select is off.  But not when
-   // 'clipboard' has "unnamedplus" and not "unnamed"; and not when
-   // deleting and both "unnamedplus" and "unnamed".
-   if (clipboard.available
-       && (curr == &(y_regs[PLUS_REGISTER]) || (!deleting && opArg->regname == 0)))
-    {
+   //If we were yanking to the '+' register, send result to selection.
+   //Also copy to the '*' register, in case auto-select is off. But not when
+   //'clipboard' has "unnamedplus" and not "unnamed"; and not when
+   //deleting and both "unnamedplus" and "unnamed".
+   if ((curr == &(y_regs[PLUS_REGISTER]) || (!deleting && opArg->regname == 0))) {
       if (curr != &(y_regs[PLUS_REGISTER]))
          // Copy the text from register 0 to the clipboard register.
          copy_yank_reg(&(y_regs[PLUS_REGISTER]));
@@ -2796,31 +2785,18 @@ private void clip_wl_selection_cancelled(WaylandSelection selection);
 
 //Selection stuff using Visual mode, for cutting and pasting text to other windows.
 
-//Call this to initialise the clipboard.  Pass it false if the clipboard code
-//is included, but the clipboard can not be used, or true if the clipboard can
-//be used.  Eg unix may call this with false, then call it again with true if
-//the GUI starts.
+//Call this to initialise the clipboard. Pass it false if the clipboard code is included, but the 
+//clipboard can not be used, or true if the clipboard can be used. Eg unix may call this with 
+//false, then call it again with true if the GUI starts.
 void
-clip_init(int can_use){
+clip_init(){
    ClipBoard* cb = &clipboard;
-   for (;;) {
-      // No need to init again if cbd is already available
-      if (can_use && cb->available)
-         goto skip;
-
-      cb->available  = can_use;
-      cb->owned      = false;
-      cb->start.lnum = 0;
-      cb->start.col  = 0;
-      cb->end.lnum   = 0;
-      cb->end.col    = 0;
-      cb->state      = SELECT_CLEARED;
-
-   skip:
-      if (cb == &clipboard)
-         break;
-      cb = &clipboard;
-   }
+   cb->owned      = false;
+   cb->start.lnum = 0;
+   cb->start.col  = 0;
+   cb->end.lnum   = 0;
+   cb->end.col    = 0;
+   cb->state      = SELECT_CLEARED;
 }
 
 //Check whether the VIsual area has changed, and if so try to become the owner
@@ -2864,12 +2840,9 @@ clip_gen_own_selection(ClipBoard *cbd){
 
 private void
 clip_own_selection(ClipBoard *cbd){
-   // Also want to check somehow that we are reading from the keyboard rather than a mapping etc
-   // Always own the selection, we might have lost it without being notified, e.g. during a 
-   // ":sh" command.
-   if (!cbd->available) {
-      return;
-   }
+   //Also want to check somehow that we are reading from the keyboard rather than a mapping etc
+   //Always own the selection, we might have lost it without being notified, e.g. during a ":sh" 
+   //command.
    int was_owned = cbd->owned;
 
    cbd->owned = (clip_gen_own_selection(cbd) == OK);
@@ -2901,7 +2874,7 @@ clip_lose_selection(ClipBoard* cbd) {
 
 private void
 clip_copy_selection(ClipBoard *clip) {
-   if (VIsual_active && (stateG & MODE_NORMAL) && clip->available) {
+   if (VIsual_active && (stateG & MODE_NORMAL) != 0) {
       clip_update_selection(clip);
       freeSelection(clip);
       clip_own_selection(clip);
@@ -3310,13 +3283,9 @@ processSelection(int button, int col, int row, Unt repeated_click) {
             clip_update_modeless_selection(cb, cb->origin_row,
                 cb->origin_start_col, row, (int)visibleColsG);
          else {
-            if (mb_lefthalve(row, col))
-              slen = 2;
             clip_update_modeless_selection(cb, cb->origin_row, cb->origin_start_col, row, col + slen);
          }
       } else {
-         if (mb_lefthalve(cb->origin_row, cb->origin_start_col))
-            slen = 2;
          if (col >= (int)cb->word_end_col)
             clip_update_modeless_selection(cb, row, cb->word_end_col,
                 cb->origin_row, cb->origin_start_col + slen);
@@ -3668,15 +3637,9 @@ clip_convert_selection(OUT Byte** str, OUT Ulong *len, ClipBoard* cbd) {
 int
 may_get_selection(int regname) {
    if (regname == '*') {
-      if (!clipboard.available)
-         regname = 0;
-      else
-         clip_get_selection(&clipboard);
+      clip_get_selection(&clipboard);
    } ei (regname == '+') {
-      if (!clipboard.available)
-         regname = 0;
-      else
-         clip_get_selection(&clipboard);
+      clip_get_selection(&clipboard);
    }
    return regname;
 }
@@ -3684,26 +3647,21 @@ may_get_selection(int regname) {
 // If we have written to a clipboard register, send the text to the clipboard.
 private void
 may_set_selection(void){
-   if ((get_y_current() == getYRegister(STAR_REGISTER)) && clipboard.available) {
+   if ((get_y_current() == getYRegister(STAR_REGISTER))) {
       clip_own_selection(&clipboard);
       clip_gen_set_selection(&clipboard);
-   } ei ((get_y_current() == getYRegister(PLUS_REGISTER)) && clipboard.available) {
+   } ei ((get_y_current() == getYRegister(PLUS_REGISTER))) {
       clip_own_selection(&clipboard);
       clip_gen_set_selection(&clipboard);
    }
 }
 
-//Adjust the register name pointed to with "rp" for the clipboard being
-//used always and the clipboard being available.
+//Adjust the register name pointed to with "rp" for the clipboard being used always.
 void
 adjust_clip_reg(OUT int* rp){
    //If no reg. specified, use '*' or '+' reg, respectively. "unnamedplus" prevails.
    if (*rp == 0) {
-      *rp = (clipboard.available) ? '+' : '*';
-   }
-   if ((!clipboard.available && *rp == '*') || (!clipboard.available && *rp == '+')) {
-      msg_warn_missing_clipboard();
-      *rp = 0;
+      *rp = '+';
    }
 }
 
@@ -4891,59 +4849,60 @@ VWL_FUNC_DATA_OFFER_OFFER(ext_data_control_offer_v1)
 VWL_FUNC_DATA_OFFER_OFFER(wl_data_offer)
 VWL_FUNC_DATA_OFFER_OFFER(zwp_primary_selection_offer_v1)
 
-// Listener handlers
+// Listener handlers. Used via VWL_CODE_DATA_OBJECT_ADD_LISTENER macro
 
 // DATA DEVICES
-struct ext_data_control_device_v1_listener
-ext_data_control_device_v1_listener = {
-    .data_offer       = ext_data_control_device_v1_listener_data_offer,
-    .selection       = ext_data_control_device_v1_listener_selection,
+private struct ext_data_control_device_v1_listener
+ext_data_control_device_v1_listenerObj = {
+    .data_offer = ext_data_control_device_v1_listener_data_offer,
+    .selection  = ext_data_control_device_v1_listener_selection,
     .primary_selection = ext_data_control_device_v1_listener_primary_selection,
-    .finished       = ext_data_control_device_v1_listener_finished
+    .finished   = ext_data_control_device_v1_listener_finished
 };
 
-struct wl_data_device_listener wl_data_device_listener = {
-    .data_offer       = wl_data_device_listener_data_offer,
-    .selection       = wl_data_device_listener_selection,
+private struct wl_data_device_listener wl_data_device_listenerObj = {
+    .data_offer = wl_data_device_listener_data_offer,
+    .selection  = wl_data_device_listener_selection,
 };
 
-struct zwp_primary_selection_device_v1_listener
-zwp_primary_selection_device_v1_listener = {
-    .selection   = zwp_primary_selection_device_v1_listener_primary_selection,
-    .data_offer       = zwp_primary_selection_device_v1_listener_data_offer
+private struct zwp_primary_selection_device_v1_listener
+zwp_primary_selection_device_v1_listenerObj = {
+    .selection  = zwp_primary_selection_device_v1_listener_primary_selection,
+    .data_offer = zwp_primary_selection_device_v1_listener_data_offer
 };
 
 // DATA SOURCES
-struct ext_data_control_source_v1_listener
-ext_data_control_source_v1_listener = {
-    .send       = ext_data_control_source_v1_listener_send,
-    .cancelled       = ext_data_control_source_v1_listener_cancelled
+private struct ext_data_control_source_v1_listener
+ext_data_control_source_v1_listenerObj = {
+    .send      = ext_data_control_source_v1_listener_send,
+    .cancelled = ext_data_control_source_v1_listener_cancelled
 };
 
-struct wl_data_source_listener wl_data_source_listener = {
-    .send       = wl_data_source_listener_send,
-    .cancelled       = wl_data_source_listener_cancelled
+private struct wl_data_source_listener 
+wl_data_source_listenerObj = {
+    .send      = wl_data_source_listener_send,
+    .cancelled = wl_data_source_listener_cancelled
 };
 
-struct zwp_primary_selection_source_v1_listener
-zwp_primary_selection_source_v1_listener = {
-    .send       = zwp_primary_selection_source_v1_listener_send,
-    .cancelled       = zwp_primary_selection_source_v1_listener_cancelled,
+private struct zwp_primary_selection_source_v1_listener
+zwp_primary_selection_source_v1_listenerObj = {
+    .send      = zwp_primary_selection_source_v1_listener_send,
+    .cancelled = zwp_primary_selection_source_v1_listener_cancelled,
 };
 
 // OFFERS
-struct ext_data_control_offer_v1_listener
-ext_data_control_offer_v1_listener = {
-    .offer       = ext_data_control_offer_v1_listener_offer
+private struct ext_data_control_offer_v1_listener
+ext_data_control_offer_v1_listenerObj = {
+    .offer = ext_data_control_offer_v1_listener_offer
 };
 
-struct wl_data_offer_listener wl_data_offer_listener = {
-    .offer       = wl_data_offer_listener_offer
+private struct wl_data_offer_listener wl_data_offer_listenerObj = {
+    .offer = wl_data_offer_listener_offer
 };
 
-struct zwp_primary_selection_offer_v1_listener
-zwp_primary_selection_offer_v1_listener = {
-    .offer       = zwp_primary_selection_offer_v1_listener_offer
+private struct zwp_primary_selection_offer_v1_listener
+zwp_primary_selection_offer_v1_listenerObj = {
+    .offer = zwp_primary_selection_offer_v1_listener_offer
 };
 
 // `type` is also used as the user data
@@ -4955,15 +4914,15 @@ do { \
    switch (type->protocol){ \
    case VWL_DATA_PROTOCOL_EXT: \
        ext_data_control_##type##_v1_add_listener(type->proxy, \
-          &ext_data_control_##type##_v1_listener, type); \
+          &ext_data_control_##type##_v1_listenerObj, type); \
        break; \
    case VWL_DATA_PROTOCOL_CORE: \
        wl_data_##type##_add_listener(type->proxy, \
-          &wl_data_##type##_listener, type); \
+          &wl_data_##type##_listenerObj, type); \
        break; \
    case VWL_DATA_PROTOCOL_PRIMARY: \
        zwp_primary_selection_##type##_v1_add_listener(type->proxy, \
-          &zwp_primary_selection_##type##_v1_listener, type); \
+          &zwp_primary_selection_##type##_v1_listenerObj, type); \
        break; \
    default: \
        break; \
@@ -4971,23 +4930,23 @@ do { \
 } while (0)
 
 private void
-vwl_data_device_add_listener(DataDevice *device, void *data) {
-    VWL_CODE_DATA_OBJECT_ADD_LISTENER(device);
+vwl_data_device_add_listener(DataDevice* device, void* data) {
+   VWL_CODE_DATA_OBJECT_ADD_LISTENER(device);
 }
 
 private void
 vwl_data_source_add_listener(DataSource *source, void *data) {
-    VWL_CODE_DATA_OBJECT_ADD_LISTENER(source);
+   VWL_CODE_DATA_OBJECT_ADD_LISTENER(source);
 }
 
 private void
 vwl_data_offer_add_listener(DataOffer *offer, void *data) {
-    VWL_CODE_DATA_OBJECT_ADD_LISTENER(offer);
+   VWL_CODE_DATA_OBJECT_ADD_LISTENER(offer);
 }
 
-// Sets the selection using the given data device with the given selection. If the device does
-// not support the selection then nothing happens. For data control protocols the serial argument is 
-// ignored.
+//Sets the selection using the given data device with the given selection. If the device does
+//not support the selection then nothing happens. For data control protocols the serial argument is 
+//ignored.
 private void
 vwl_data_device_set_selection(
    DataDevice* device,
@@ -5213,7 +5172,7 @@ wayland_cb_init(const char *seat) {
       wayland_cb_uninit();
       return FAIL;
    }
-   clip_init(true);
+   clip_init();
 
    return OK;
 }

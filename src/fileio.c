@@ -454,7 +454,7 @@ f_delete(Var* argvars, Var* returnVar) {
    if (argvars[1].tag != VAR_UNKNOWN)
       flags = tv_get_string_buf(&argvars[1], nbuf);
    else
-      flags = Em;
+      flags = S"";
 
    if (*flags == ZERO)
       // delete a file
@@ -539,7 +539,7 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
             0, first, path,
             find_what,
             curBook->fullFileName,
-            find_what == FINDFILE_DIR || !curBook->o.suffixesAdd? Em : curBook->o.suffixesAdd,
+            find_what == FINDFILE_DIR || !curBook->o.suffixesAdd? S"" : curBook->o.suffixesAdd,
             OUT &file_to_find, 
             OUT &searchCtx
          );
@@ -1699,7 +1699,7 @@ fullpathcmp(
 CS
 fiGetShortFiName(CS fname){
    if (!fname)
-      return Em;
+      return S"";
       
    CS afterSlash;
    CS p;
@@ -3507,7 +3507,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                   //Try without extra suffix and then with suffixes from @suffixesadd.
                   len = filePath.len;
                   if (searchCtx->tagFile || !curBook->o.suffixesAdd)
-                     suf = Em;
+                     suf = S"";
                   else
                      suf = curBook->o.suffixesAdd;
                   for (;;) {
@@ -3882,14 +3882,14 @@ ff_create_stack_element(
 
    // the following saves NULL pointer checks in eeFindFile
    if (fix_part == NULL) {
-      fix_part = Em;
+      fix_part = S"";
       fix_partlen = 0;
    }
    new->fixedPathPart.c = copySubstr(fix_part, fix_partlen);
    new->fixedPathPart.len = fix_partlen;
 
    if (!wc_part) {
-      wc_part = Em;
+      wc_part = S"";
       wc_partlen = 0;
    }
    new->wildcardPathPart.c = copySubstr(wc_part, wc_partlen);
@@ -4047,7 +4047,7 @@ find_directory_in_path(
    OUT FileSearchCtx** searchCtx   // in/out: state of the search
 ){
    return findFileInPathImpl(
-         fName, options, true, p_cdpath, FINDFILE_DIR, rel_fname, Em, OUT file_to_find, OUT searchCtx
+         fName, options, true, p_cdpath, FINDFILE_DIR, rel_fname, S"", OUT file_to_find, OUT searchCtx
    );
 }
 
@@ -4404,7 +4404,7 @@ find_file_name_in_path(
    CS rel_fname   // file we are searching relative to
 ){
    if (len == 0)
-      return Em;
+      return S"";
 
    CS file_name;
    CS tofree = NULL;
@@ -6756,7 +6756,7 @@ fiCheckBookTimestamp(
    int      stat_res;
    int      retval = 0;
    CS mesg = NULL;
-   CS mesg2 = Em;
+   CS mesg2 = S"";
    int      helpmesg = false;
    enum {
       RELOAD_NONE,
@@ -6838,7 +6838,7 @@ fiCheckBookTimestamp(
          //Avoid being called recursively by setting "busy".
          busy = true;
          set_EeglVar_string(VV_FCS_REASON, reason, (int)reasonlen);
-         set_EeglVar_string(VV_FCS_CHOICE, Em, 0);
+         set_EeglVar_string(VV_FCS_CHOICE, S"", 0);
          ++allBookLock;
          n = applyAutocomms(
                EVENT_FILECHANGEDSHELL, book->currFileName, book->currFileName, false, book

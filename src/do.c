@@ -10312,7 +10312,7 @@ c_portPos(Invocation* invo) {
          emsg(_(e_winpos_requires_two_number_arguments));
          return;
       }
-      if (*termCodeS[KS_CWP])
+      if (*termCodesG[KS_CWP])
          term_set_winpos(x, y);
     }
 }

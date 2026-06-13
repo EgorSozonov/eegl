@@ -1091,7 +1091,7 @@ reg_getline_common(
    if (lnum > maxline) {
       // must have matched the "\n" in the last line.
       if (get_line)
-         *line = Em;
+         *line = S"";
       if (get_length)
          *length = 0;
 

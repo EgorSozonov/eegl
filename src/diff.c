@@ -3639,7 +3639,7 @@ nvDiffGetPut(int put, long count) {
       return;
    }
    if (count == 0)
-      ea.arg = Em;
+      ea.arg = S"";
    else {
       eeSnprintf(buf, 30, "%ld", count);
       ea.arg = buf;

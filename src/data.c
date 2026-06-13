@@ -1642,9 +1642,9 @@ item_compare(const void *s1, const void *s2) {
    } else
       p2 = tv2string(tv2, &tofree2, numbuf2, 0);
    if (p1 == NULL)
-      p1 = Em;
+      p1 = S"";
    if (p2 == NULL)
-      p2 = Em;
+      p2 = S"";
    if (!sortinfo->item_compare_numeric) {
       if (sortinfo->item_compare_lc)
          res = strcoll((char *)p1, (char *)p2);
@@ -4444,7 +4444,7 @@ tv_get_string_strict(Var* varp) {
 CS
 tv_get_string_buf(Var* varp, CS buf) {
     CS res = convertVarToString(varp, buf);
-    return res ? res : Em;
+    return res ? res : S"";
 }
 
 //Careful: This uses a single, static buffer. YOU CAN ONLY USE IT ONCE!
@@ -4489,7 +4489,7 @@ convertVarToString_strict(Var* varp, CS buf, int strict) {
    case VAR_STRING:
       if (varp->string)
          return varp->string;
-      return Em;
+      return S"";
    case VAR_BOOL:
    case VAR_SPECIAL:
       STRCPY(buf, get_var_special_name(varp->number));
@@ -8691,7 +8691,7 @@ f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
 //"test_override({name}, {val})" function
 void
 f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
-   CS name = Em;
+   CS name = S"";
    static int save_starting = -1;
 
    if (check_for_string_arg(argvars, 0) == FAIL || check_for_number_arg(argvars, 1) == FAIL)

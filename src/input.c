@@ -59,9 +59,9 @@ private int keyNoremapG = 0;       // remapping flags
 // typeBufG.noremap[typeBufG.currPos] is the first valid flag.
 // (typeBufG has been put in globals.h, because check_termcode() needs it).
 #define RM_YES      0   // noremap: remap
-#define RM_NONE      1   // noremap: don't remap
+#define RM_NONE     1   // noremap: don't remap
 #define RM_SCRIPT   2   // noremap: remap local script mappings
-#define RM_ABBR      4   // noremap: don't remap, do abbrev.
+#define RM_ABBR     4   // noremap: don't remap, do abbrev.
 
 // typeBufG.c has three parts: room in front (for result of mappings), the
 // middle for typeahead and room for new characters.
@@ -71,8 +71,8 @@ private Byte noremapbuf_init[TYPELEN_INIT];   // initial typeBufG.noremap
 
 private Unt lastRecordedLen = 0;   // number of last recorded chars
 
-MapBlock* last_used_map = NULL;
-int last_used_sid = -1;
+private MapBlock* last_used_map = NULL;
+private int last_used_sid = -1;
 
 private int read_readbuf(TextHeader *buf, int advance);
 private void initTypebuf(void);
@@ -89,9 +89,8 @@ private int fixInputBuffer(OUT CS buf, int len);
 // Free and clear a buffer.
 private void
 freeBuffer(TextHeader* buf) {
-   TextChunk   *p, *np;
-
-   for (p = buf->first.next; p != NULL; p = np) {
+   TextChunk* np;
+   for (TextChunk* p = buf->first.next; p != NULL; p = np) {
       np = p->next;
       eeglFree(p);
    }
@@ -104,10 +103,10 @@ freeBuffer(TextHeader* buf) {
 private CS
 get_buffcont(
    TextHeader* buffer,
-   int         dozero,       // count == zero is not an error
+   Boole dozero,       // count == zero is not an error
    OUT Unt* len       // the length of the returned buffer
 ){
-   Ulong       count = 0;
+   Ulong count = 0;
    CS p = NULL;
    CS p2;
    CS str;
@@ -175,7 +174,7 @@ get_inserted(void) {
 //Translate the interrupt character for Unix to ESC.
 Unt
 get_keystroke(void) {
-   CS buf = Em;
+   CS buf = S"";
    int buflen = 150;
    int maxlen;
    int len = 0;
@@ -3752,11 +3751,6 @@ mb_string2cells(CS p, int len) {
    return clen;
 }
 
-int
-mb_off2cells(Unt off, Unt max_off) {
-    return (off + 1 < max_off && drawGetLine(off + 1) == 0) ? 2 : 1;
-}
-
 //Convert a UTF-8 byte sequence to a character number.
 //If the sequence is illegal or truncated by a ZERO the first byte is returned.
 //For an overlong sequence this may return zero.
@@ -5578,13 +5572,6 @@ mb_unescape(OUT CS* pp) {
     return NULL;
 }
 
-//Return true if the character at "row"/"col" on the screen is the left side of a double-width character.
-//Caller must make sure "row" and "col" are not invalid!
-int
-mb_lefthalve(int row, int col) {
-   return mb_off2cells(drawGetOffset(row) + col, drawGetOffset(row) + screenLinesColsG) > 1;
-}
-
 #include <langinfo.h>
 
 void
@@ -5910,7 +5897,7 @@ do_mouse(
          if (regname == '.')
             insert_reg(regname, true);
          else {
-            if (clipboard.available && regname == 0)
+            if (regname == ZERO)
                regname = '*';
             do_put(regname, NULL, BACKWARD, 1L, fixindent | PUT_CURSEND);
 
@@ -6080,7 +6067,7 @@ do_mouse(
          curPor->cursor = save_cursor;
    }
 
-   if ((jump_flags & IN_OTHER_WIN) && !VIsual_active && clipboard.available) {
+   if ((jump_flags & IN_OTHER_WIN) && !VIsual_active) {
       clip_modeless(which_button, is_click, is_drag);
       return false;
    }
@@ -6164,7 +6151,7 @@ do_mouse(
 
    // Middle mouse click: Put text before cursor.
    if (which_button == MOUSE_MIDDLE) {
-      if (clipboard.available && regname == 0)
+      if (regname == 0)
          regname = '*';
       if (yank_register_mline(regname)) {
          if (isMouseBelowBottomLineS)
@@ -7396,7 +7383,7 @@ mch_setmouse(Boole on){
 
    xterm_mouse_vers = 4; // SGR mouse
 
-   if (termCodeS[KS_CXM] != NULL && *termCodeS[KS_CXM] != ZERO) {
+   if (termCodesG[KS_CXM] != NULL && *termCodesG[KS_CXM] != ZERO) {
       term_enable_mouse(on);
    } ei (ttym_flags == TTYM_SGR) {
       // SGR mode supports columns above 223

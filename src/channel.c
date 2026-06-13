@@ -10,7 +10,6 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-//#include <libgen.h>
 
 #include <sys/resource.h>
 
@@ -5180,7 +5179,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       (void)setsid();
 
       if (options->jo_term_rows > 0) {
-         CS term = termCodeS[KS_NAME];
+         CS term = termCodesG[KS_NAME];
 
          //Use 'term' or $TERM if it starts with "xterm", otherwise fall
          //back to "xterm" or "xterm-color".
@@ -6495,7 +6494,7 @@ job_stop(Job* job, Arr(Var) argvars, CS type) {
    if (type)
       arg = (CS)type;
    ei (argvars[1].tag == VAR_UNKNOWN)
-      arg = Em;
+      arg = S"";
    else {
       arg = convertVarToStringSingleUse(&argvars[1]);
       if (!arg) {
@@ -7004,7 +7003,7 @@ ch_log(Channel* ch, char const* fmt, ...) {
 
    va_list ap;
 
-   logLead(Em, ch, PART_COUNT);
+   logLead(S"", ch, PART_COUNT);
    va_start(ap, fmt);
    vfprintf(log_fd, fmt, ap);
    va_end(ap);
@@ -7020,7 +7019,7 @@ lo(char const* fmt, ...) {
 
    va_list ap;
 
-   logLead(Em, null, PART_COUNT);
+   logLead(S"", null, PART_COUNT);
    va_start(ap, fmt);
    vfprintf(log_fd, fmt, ap);
    va_end(ap);
@@ -7072,7 +7071,7 @@ void
 f_ch_logfile(Arr(Var) argvars, Var* returnVar UNUSED) {
    Byte builder[NUMBUFLEN];
    CS fname = tv_get_string(&argvars[0]);
-   CS opt = (argvars[1].tag == VAR_STRING) ? tv_get_string_buf(&argvars[1], builder) : Em;
+   CS opt = (argvars[1].tag == VAR_STRING) ? tv_get_string_buf(&argvars[1], builder) : S"";
    ch_logfile(fname, opt);
 }
 

@@ -363,7 +363,7 @@ set_init_default_backupskip(void) {
          Unt itemlen;
 
          itemlen = eeSnprintf(
-            item, itemsize, "%s%s*", p, (has_trailing_path_sep) ? Em : S"/"
+            item, itemsize, "%s%s*", p, (has_trailing_path_sep) ? S"" : S"/"
          );
 
          if (findUnchangedItemInCommaList((CS)ga.c, item, itemlen, o->flags) == NULL
@@ -4485,7 +4485,7 @@ optionCompletionExpand_cb(Expand *xp, int idx) {
       if (set_opt_callback_orig_option)
          return set_opt_callback_orig_option;
       else
-         return Em; // empty strings are ignored
+         return S""; // empty strings are ignored
    }
    return set_opt_callback_func(xp, idx - 1);
 }
@@ -4497,7 +4497,7 @@ optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Ex
    set_opt_callback_func = func;
 
    int ret = expandGeneric(
-       Em, // not using fuzzy as currently EXPAND_STRING_OPTION doesn't use it
+       S"", // not using fuzzy as currently EXPAND_STRING_OPTION doesn't use it
        args->expand,
        args->oe_regmatch,
        optionCompletionExpand_cb,
@@ -4683,10 +4683,10 @@ init_locale(void) {
 //":language":  Set the language (locale).
 void
 c_language(Invocation* invo) {
-   char   *loc;
+   char* loc;
    CS name;
    int      what = LC_ALL;
-   CS whatstr = Em;
+   CS whatstr = S"";
 # ifdef LC_MESSAGES
 #  define EE_LC_MESSAGES LC_MESSAGES
 # else
@@ -4750,7 +4750,7 @@ c_language(Invocation* invo) {
 
           ++_nl_msg_cat_cntr;
           // Reset $LC_ALL, otherwise it would overrule everything.
-          eeSetenv(S"LC_ALL", Em);
+          eeSetenv(S"LC_ALL", S"");
 
           if (what != LC_TIME && what != LC_COLLATE) {
             //Tell gettext() what to translate to. It apparently doesn't

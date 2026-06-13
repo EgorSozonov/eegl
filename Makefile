@@ -33,10 +33,9 @@ srcdir =
 
 TAGPRG		= ctags
 
-CPP		= gcc -E
+CPP		?= gcc -E
 CPP_MM		= M
 DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
-X_FLAGS	=  
 X_LIBS_DIR	=  
 X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
@@ -270,10 +269,8 @@ EXNAME = eegl
 VIEWNAME	= view
 
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
-CPPFLAGS	= 
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
-X_FLAGS	=  
 X_LIBS_DIR	=  
 X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
@@ -836,12 +833,10 @@ TRANSSOURCE = ../lang
 
 ### Command to create dependencies based on #include "..."
 ### prototype headers are ignored due to -DPROTO, system
-### headers #include <...> are ignored if we use the -MM option, as
-### e.g. provided by gcc-cpp.
+### headers #include <...> are ignored if we use the -MM option, as ### e.g. provided by gcc-cpp.
 CPP_DEPEND = $(CC) -I$(srcdir) -M$(CPP_MM) \
 		`echo "$(DEPEND_FLAGS)" $(DEPEND_FLAGS_FILTER)`
 
-# flags for cproto
 #     This is for cproto 3 patchlevel 8 or below
 #     __inline, __attribute__ and __extension__ are not recognized by cproto
 #     G_IMPLEMENT_INLINES is to avoid functions defined in glib/gutils.h.
@@ -854,13 +849,10 @@ CPP_DEPEND = $(CC) -I$(srcdir) -M$(CPP_MM) \
 #     __inline and __attribute__ are now recognized by cproto
 #     __attribute() is not recognized and used in X11/Intrinsic.h
 #     -D"foo()=" is not supported by all compilers so do not use it
-NO_ATTR = -D"__attribute\\(x\\)="
-#
-# Use this for cproto 3 patchlevel 6 or below (use "cproto -V" to check):
-# PROTO_FLAGS = -f4 -d -E"$(CPP)" $(NO_ATTR)
+NO_ATTR = #-D"__attribute\\(x\\)="
 #
 # Use this for cproto 3 patchlevel 7 or above (use "cproto -V" to check):
-PROTO_FLAGS = -d -E"$(CPP)" $(NO_ATTR)
+CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" $(NO_ATTR) # -D"__typeof__\\(x\\)=x"
 
 
 ################################################
@@ -870,18 +862,17 @@ PROTO_FLAGS = -d -E"$(CPP)" $(NO_ATTR)
 SHELL = /usr/bin/bash
 
 .SUFFIXES:
-.SUFFIXES: .c .o .pro
+.SUFFIXES: .c .o .h
 
 
-PRE_DEFS = -Isrc/proto $(CPPFLAGS) $(EXTRA_IPATHS)
-POST_DEFS = $(X_FLAGS) $(EXTRA_DEFS)
+PRE_DEFS = -Isrc/proto
 
 ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLAGS) \
-   $(ABORT_FLAGS) $(POST_DEFS)
+   $(ABORT_FLAGS)
 
 
-LINT_FLAGS = -DLINT -I. $(PRE_DEFS) $(POST_DEFS) \
-	      -Dinline= -D__extension__= -Dalloca=alloca
+LINT_FLAGS = -DLINT -I. $(PRE_DEFS) -Dinline= -D__extension__= -Dalloca=alloca
+LINT_FLAGS_CPROTO = -DLINT -Isrc -Isrc/proto -Dinline= -D__extension__= -Dalloca=alloca
 
 LINT_EXTRA = -D"__attribute__(x)="
 
@@ -1114,40 +1105,40 @@ ALL_OBJ = $(OBJ_COMMON) \
 
 
 PRO_AUTO = \
-	alloc.pro \
-	book.pro \
-	change.pro \
-	channel.pro \
-	dict.pro \
-	diff.pro \
-	do.pro \
-	draw.pro \
-	eval.pro \
-	fileio.pro \
-	hilite.pro \
-	input.pro \
-	insert.pro \
-	juggle.pro \
-	list.pro \
-	location.pro \
-	main.pro \
-	mark.pro \
-	memory.pro \
-	message.pro \
-	normal.pro \
-	option.pro \
-	unix.pro \
-	persist.pro \
-	portal.pro \
-	regexp.pro \
-	script.pro \
-	search.pro \
-	sound.pro \
-	strings.pro \
-	tag.pro \
-	term.pro \
-	ui.pro \
-	window.pro
+	alloc.h \
+	book.h \
+	change.h \
+	channel.h \
+	dict.h \
+	diff.h \
+	do.h \
+	draw.h \
+	eval.h \
+	fileio.h \
+	hilite.h \
+	input.h \
+	insert.h \
+	juggle.h \
+	list.h \
+	location.h \
+	main.h \
+	mark.h \
+	memory.h \
+	message.h \
+	normal.h \
+	option.h \
+	unix.h \
+	persist.h \
+	portal.h \
+	regexp.h \
+	script.h \
+	search.h \
+	sound.h \
+	strings.h \
+	tag.h \
+	term.h \
+	ui.h \
+	window.h
 
 # Default target is making the executable and tools
 all: $(EEGLTARGET) $(TOOLS) languages
@@ -1217,14 +1208,13 @@ update-po:
 # The -E"gcc -E" argument must be separate to avoid problems with shell
 # quoting.
 # Strip -O2, it may cause cproto to write stderr to the file "2".
-CPROTO = cproto $(PROTO_FLAGS) -DPROTO \
-	 `echo '$(LINT_FLAGS)' | sed -e 's/ -[a-z-]\+//g' -e 's/ -O[^ ]\+//g'`
+CPROTO = cproto $(CPROTO_FLAGS) -X 1 $(LINT_FLAGS_CPROTO)
 
 
 
-PROTO_RESULTS := $(addprefix src/proto/,$(patsubst %.c,%.pro,$(BASIC_SRC_NO_DIR)))
+PROTO_RESULTS := $(addprefix src/proto/,$(patsubst %.c,%.h,$(BASIC_SRC_NO_DIR)))
 
-src/proto/%.pro: src/%.c
+src/proto/%.h: src/%.c
 	$(CPROTO) $< > $@
 
 proto: $(PROTO_RESULTS) $(addprefix src/proto/,$(PRO_MANUAL))
@@ -1244,7 +1234,7 @@ tags TAGS: notags
 csclean:
 	-rm -vf cscope.out
 cscope.out:
-	cscope -bv ./*.[ch] src/proto/*.pro
+	cscope -bv ./*.[ch] src/proto/*.h
 cscope: csclean cscope.out  ;
 
 # Make a hilite file for types.  Requires Exuberant ctags and awk

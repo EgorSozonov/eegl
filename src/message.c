@@ -684,7 +684,7 @@ msg_prt_line(CS s, int list) {
             c = listCharsG.nbsp;
             flags = getDecoFlags(HLF_8);
          } ei (c == ZERO && list && listCharsG.eol != ZERO) {
-            p_extra = Em;
+            p_extra = S"";
             c_extra = ZERO;
             c_final = ZERO;
             n_extra = 1;
@@ -2726,10 +2726,10 @@ msg_clr_eos_force(void) {
       return;  // messages go into a popup
    if (msg_use_printf()) {
       if (fullScreenG) { // only when termcap codes are valid
-         if (*termCodeS[KS_CD])
-            out_str(termCodeS[KS_CD]);   // clear to end of display
-         ei (*termCodeS[KS_CE])
-            out_str(termCodeS[KS_CE]);   // clear to end of line
+         if (*termCodesG[KS_CD])
+            out_str(termCodesG[KS_CD]);   // clear to end of display
+         ei (*termCodesG[KS_CE])
+            out_str(termCodesG[KS_CE]);   // clear to end of line
       }
    } else {
       int msgFlags = getDecoFlags(HLF_MSG);
@@ -2976,6 +2976,7 @@ msg_advance(int col) {
 void
 msg_warn_missing_clipboard(void) {
    if (!global_busy && !did_warn_clipboard) {
+      _bp(true);
       msg(_("W23: Clipboard register not available, using register 0"));
       did_warn_clipboard = true;
    }

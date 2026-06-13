@@ -1,6 +1,6 @@
 /* src/term.c */
 VTermColor termgui_mch_get_rgb(VTermColor color);
-void init_term_props(int all);
+void termInitProps(Boole all);
 void f_terminalprops(Var *argvars, Var *returnVar);
 int set_termname(CS termName);
 void free_cur_term(void);
@@ -82,6 +82,10 @@ int termFindSpecialKey(Byte **srcp, Unt *modp, Unt flags, Boole *didSimplify);
 int termFindSpecialKey_in_table(int c);
 int special_to_buf(Unt key, Unt modifiers, int escape_ks, CS dst);
 int trans_special(Byte **srcp, CS dst, Unt flags, int escape_ks, Boole *didSimplify);
+char *ptsname(int);
+int unlockpt(int);
+int grantpt(int);
+int posix_openpt(int flags);
 int setup_slavepty(int fd);
 int openpty(char **ttyn);
 int mch_isatty(int fd);

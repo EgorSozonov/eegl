@@ -1139,8 +1139,6 @@ edit_putchar(int c, Boole needDoHilite) {
    pc_col = curPor->portalCol;
    pc_status = PC_STATUS_UNSET;
    pc_col += curPor->cursorCol;
-   if (mb_lefthalve(pc_row, pc_col))
-      pc_status = PC_STATUS_LEFT;
 
    // save the character to be able to put it back
    if (pc_status == PC_STATUS_UNSET) {
@@ -2045,10 +2043,10 @@ get_last_insert_save(void){
    Text   insert = get_last_insert();
 
    if (!insert.c)
-      return Em;
+      return S"";
    CS s = copySubstr(insert.c, insert.len);
    if (!s)
-      return Em;
+      return S"";
 
    if (insert.len > 0 && s[insert.len - 1] == ESC)   // remove trailing ESC
       s[--insert.len] = ZERO;
@@ -5259,8 +5257,8 @@ trigger_complete_done_event(int mode, CS word) {
    mode = mode & ~CTRL_X_WANT_IDENT;
    CS modeStr = (ctrl_x_mode_names[mode]) ? (CS)ctrl_x_mode_names[mode] : null;
 
-   (void)bagAddString(v_event, S"complete_word", !word ? Em : word);
-   (void)bagAddString(v_event, S"complete_type", modeStr ? modeStr : Em);
+   (void)bagAddString(v_event, S"complete_word", !word ? S"" : word);
+   (void)bagAddString(v_event, S"complete_type", modeStr ? modeStr : S"");
 
    bagSetItemsRo(v_event);
    ins_applyAutocomms(EVENT_COMPLETEDONE);
@@ -5625,7 +5623,7 @@ get_complete_funcname(int type) {
    case CTRL_X_FUNCTION: return curBook->o.completeFn->name;
    case CTRL_X_OMNI: return curBook->o.omniFn->name;
    case CTRL_X_THESAURUS: return curBook->o.thesaurusFn->name;
-   default: return Em;
+   default: return S"";
    }
 }
 

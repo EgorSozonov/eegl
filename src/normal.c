@@ -2390,10 +2390,10 @@ end_visual_mode(void) {
 
 void
 end_visual_mode_keep_button(void) {
-   // If we are using the clipboard, then remember what was selected in case we need to paste it 
-   // somewhere while we still own the selection. Only do this when the clipboard is already owned.
-   // Don't want to grab the selection when hitting ESC.
-   if (clipboard.available && clipboard.owned)
+   //If we are using the clipboard, then remember what was selected in case we need to paste it 
+   //somewhere while we still own the selection. Only do this when the clipboard is already owned.
+   //Don't want to grab the selection when hitting ESC.
+   if (clipboard.owned)
       clip_auto_select();
 
    // Emit a TextYankPost for the automatic copy of the selection into the star and/or plus register
@@ -4293,7 +4293,7 @@ nv_ident(ActionArg* aArg) {
       ei (tag_cmd) {
          if (curBook->kind == BOOK_HELP)
             // ":help" handles unescaped argument
-            aux_ptr = Em;
+            aux_ptr = S"";
          else
             aux_ptr = S"\\|\"\n[";
       } else
@@ -4342,7 +4342,7 @@ nv_ident(ActionArg* aArg) {
 private void
 nv_tagpop(ActionArg* aArg) {
    if (!checkclearopq(aArg->oper))
-      do_tag(Em, DT_POP, (int)aArg->count1, false, true);
+      do_tag(S"", DT_POP, (int)aArg->count1, false, true);
 }
 
 // Handle scrolling command 'H', 'L' and 'M'.
@@ -9862,7 +9862,7 @@ do_map(int maptype, CS arg, Unt mode, int abbrev){ // not a mapping but an abbre
    orig_rhs = rhs;
    if (hasarg) {
       if (caseInsensitiveCompare(rhs, "<nop>") == 0) { // "<Nop>" means nothing
-         rhs = Em;
+         rhs = S"";
       } else {
          rhs = replace_termcodes(
             rhs, &arg_buf, 0, REPTERM_DO_LT | (special ? REPTERM_SPECIAL : 0), NULL, false
@@ -11242,7 +11242,7 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
             get_dict = (int)tv_get_bool(&argvars[3]);
       }
    } else
-      which = Em;
+      which = S"";
    if (!which)
       return;
 
@@ -11452,7 +11452,7 @@ f_mapset(Var *argvars, Var* returnVar UNUSED) {
 
    CS arg_buf = NULL;
    if (caseInsensitiveCompare(rhs, "<nop>") == 0)   // "<Nop>" means nothing
-      rhs = Em;
+      rhs = S"";
    else
       rhs = replace_termcodes(rhs, &arg_buf, sid, REPTERM_DO_LT | REPTERM_SPECIAL, NULL, false);
 

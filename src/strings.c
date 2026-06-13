@@ -5,8 +5,6 @@
  
 #include "eegl.h"
 
-CS const Em = S"";
-
 //{{{charset (utf-8)
 
 #include <wchar.h>       // for towupper() and towlower()
@@ -490,7 +488,7 @@ readLongNumber(
    int* len,     // return: detected length of number
    int what,     // what numbers to recognize
    Long* nptr, // return: signed result
-   ULong* unptr,  // return: unsigned result
+   Ulong* unptr,  // return: unsigned result
    int maxlen,   // max length of string to check
    Boole strict,   // check strictly
    Boole* overflow  // when not NULL set to true for overflow
@@ -498,7 +496,7 @@ readLongNumber(
    CS ptr = start;
    int          pre = 0;      // default is decimal
    int          negative = false;
-   ULong    un = 0;
+   Ulong    un = 0;
 
    if (len)
       *len = 0;
@@ -535,7 +533,7 @@ readLongNumber(
       while ('0' <= *ptr && *ptr <= '1') {
           // avoid ubsan error for overflow
           if (un <= UVARNUM_MAX / 2)
-         un = 2 * un + (ULong)(*ptr - '0');
+         un = 2 * un + (Ulong)(*ptr - '0');
           else {
          un = UVARNUM_MAX;
          if (overflow != NULL)
@@ -557,7 +555,7 @@ readLongNumber(
       while (eeIsXDigit(*ptr)) {
          // avoid ubsan error for overflow
          if (un <= UVARNUM_MAX / 16)
-            un = 16 * un + (ULong)hex2nr(*ptr);
+            un = 16 * un + (Ulong)hex2nr(*ptr);
          else {
             un = UVARNUM_MAX;
             if (overflow)
@@ -575,7 +573,7 @@ readLongNumber(
    } else {
       // decimal
       while (EE_ISDIGIT(*ptr)) {
-         ULong    digit = (ULong)(*ptr - '0');
+         Ulong    digit = (Ulong)(*ptr - '0');
 
          // avoid ubsan error for overflow
          if (un < UVARNUM_MAX / 10
@@ -680,8 +678,8 @@ backslash_halve_save(CS p) {
 
 // Append a sub-directory name to DirName. Ensure that the underlying array end with a slash.
 void
-appendSubDir(Arr(char) subDir, OUT DirName* dn) {
-   Int const rawLen = strlen(subDir);
+appendSubDir(CS subDir, OUT DirName* dn) {
+   Int const rawLen = STRLEN(subDir);
    if (rawLen == 0) {
       return;
    } 
@@ -789,7 +787,7 @@ toStringChunky(ChunkyString* chunky) {
 
 Text
 mbText(NULLABLE CS b) {
-   return b ? (Text){b, STRLEN(b)} : (Text){Em, 0};
+   return b ? (Text){b, STRLEN(b)} : (Text){null, 0};
 }
 
 Text
@@ -2372,7 +2370,7 @@ infinity_str(Unt positive, char fmt_spec, int force_sign, int space_for_positive
 //Limited support for floating point was added: 'f', 'F', 'e', 'E', 'g', 'G'.
 //
 //Length modifiers 'h' (short int) and 'l' (long int) and 'll' (long long int)
-//are supported.  NOTE: for 'll' the argument is Long or ULong.
+//are supported.  NOTE: for 'll' the argument is Long or Ulong.
 //
 //The locale is not used, the string is used as a byte string.  This is only
 //relevant for double-byte encodings where the second byte may be '%'.
@@ -3000,7 +2998,7 @@ skip_to_arg(
           break;
 
       case TYPE_UNSIGNEDLONGLONGINT:
-          va_arg(*ap, ULong);
+          va_arg(*ap, Ulong);
           break;
 
       case TYPE_FLOAT:
@@ -3041,7 +3039,7 @@ eeVarPrintf0(
    va_copy(ap, ap_start);
 
    if (!p)
-      p = Em;
+      p = S"";
    while (*p != ZERO) {
       if (*p != '%') {
          CS q = STRCHR(p + 1, '%');
@@ -3371,10 +3369,10 @@ eeVarPrintf0(
 
             //only set for length modifier ll
             Long llong_arg = 0;
-            ULong ullong_arg = 0;
+            Ulong ullong_arg = 0;
 
             //only set for b conversion
-            ULong bin_arg = 0;
+            Ulong bin_arg = 0;
 
             //pointer argument value -only defined for p conversion
             void *ptr_arg = NULL;
@@ -3391,9 +3389,9 @@ eeVarPrintf0(
                    arg_sign = 1;
             } ei (fmt_spec == 'b' || fmt_spec == 'B') {
                bin_arg = tvs 
-                  ? (ULong)tv_nr(tvs, OUT &arg_idx) 
+                  ? (Ulong)tv_nr(tvs, OUT &arg_idx) 
                   : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                     va_arg(ap, ULong)
+                     va_arg(ap, Ulong)
                     );
 
                if (bin_arg != 0)
@@ -3466,9 +3464,9 @@ eeVarPrintf0(
                   break;
                case 'L':
                   ullong_arg = tvs
-                     ? (ULong) tv_nr(tvs, OUT &arg_idx) 
+                     ? (Ulong) tv_nr(tvs, OUT &arg_idx) 
                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                        va_arg(ap, ULong)
+                        va_arg(ap, Ulong)
                        );
 
                   if (ullong_arg != 0)
@@ -3528,9 +3526,9 @@ eeVarPrintf0(
                if (fmt_spec == 'p')
                   str_arg_l += SPRINTF(tmp + str_arg_l, f, ptr_arg);
                ei (fmt_spec == 'b' || fmt_spec == 'B') {
-                  Byte       b[8 * sizeof(ULong)];
+                  Byte       b[8 * sizeof(Ulong)];
                   Unt       b_l = 0;
-                  ULong    bn = bin_arg;
+                  Ulong    bn = bin_arg;
 
                   do {
                      b[sizeof(b) - ++b_l] = '0' + (bn & 0x1);
@@ -6055,8 +6053,8 @@ isValidForFirstCharDictKey(int c) {
 //}}}
 //{{{xxd (hex dumping of binary data)
 
-Byte version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
-Byte osver[] = "";
+private Byte version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
+private Byte osver[] = "";
 
 #define BIN_READ(dummy)  "r"
 #define BIN_WRITE(dummy) "w"
@@ -6083,7 +6081,7 @@ Byte osver[] = "";
 #define COLS 256   /* change here, if you ever need more columns */
 
 //LLEN is the maximum length of a line; other than the visible characters
-//we need to consider also the escape color sequence prologue/epilogue ,
+//we need to consider also the escape color sequence prologue/epilogue,
 //(11 bytes for each character).
 #define LLEN \
     (39            /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
@@ -6103,7 +6101,8 @@ Byte osver[] = "";
     + COLS      /* ASCII dump */ \
     + 2)        /* "\n\0" */
 
-char hexxa[] = "0123456789abcdef0123456789ABCDEF", *hexx = hexxa;
+private Byte hexxa[] = "0123456789abcdef0123456789ABCDEF";
+private CS hexx = hexxa;
 
 // the different hextypes known by this program:
 #define HEX_NORMAL         0x00 // no flags set

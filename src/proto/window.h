@@ -1,4 +1,6 @@
 /* src/window.c */
+int fstat(int fd, struct stat *statbuf);
+int stat(const char *restrict path, struct stat *restrict buf);
 YankReg *get_y_regs(void);
 YankReg *get_y_current(void);
 YankReg *get_y_previous(void);
@@ -37,7 +39,7 @@ CS get_reg_contents(int regname, int flags);
 void write_reg_contents(int name, CS str, int maxlen, int must_append);
 void write_reg_contents_lst(int name, Byte **strings, int maxlen, int must_append, int yank_type, long block_len);
 void write_reg_contents_ex(int name, CS str, int maxlen, int must_append, int yank_type, long block_len);
-void clip_init(int can_use);
+void clip_init(void);
 void clip_update_selection(ClipBoard *clip);
 void clip_lose_selection(ClipBoard *cbd);
 void start_global_changes(void);

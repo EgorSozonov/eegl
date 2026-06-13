@@ -2919,13 +2919,15 @@ eval_shift_number(Var *tv1, Var *tv2, int shift_type) {
       return FAIL;
    }
 
+#define MAX_LSHIFT_BITS 63
+
    if (tv2->number > MAX_LSHIFT_BITS)
       // shifting more bits than we have always results in zero
       tv1->number = 0;
    ei (shift_type == EXPR_LSHIFT)
-      tv1->number = (ULong)tv1->number << tv2->number;
+      tv1->number = (Ulong)tv1->number << tv2->number;
    else
-      tv1->number = (ULong)tv1->number >> tv2->number;
+      tv1->number = (Ulong)tv1->number >> tv2->number;
    return OK;
 }
 
@@ -3708,7 +3710,7 @@ call_func_returnVar(
          }
       }
    } else
-      s = Em;
+      s = S"";
 
    CLEAR_FIELD(funcexe);
    funcexe.fe_firstline = curPor->cursor.lnum;
@@ -3895,7 +3897,7 @@ eval_index(
 
    initVarToNull(OUT &var1);
    initVarToNull(OUT &var2);
-   CS key = Em;
+   CS key = S"";
    int keylen = -1;
    if (**arg == '.') {
       //dict.name
@@ -3988,7 +3990,7 @@ partial_name(PartiallyApplied* pt) {
       if (pt->fn)
          return pt->fn->uf_name;
    }
-   return Em;
+   return S"";
 }
 
 private void
@@ -4085,7 +4087,7 @@ method_tv2string(Var* tv, Byte** tofree, int echo_style) {
          *tofree = NULL;
          return S"function()";
       } else
-         return *tofree = string_quote(Em, true);
+         return *tofree = string_quote(S"", true);
    }
 
    return *tofree = echo_style ? copyStr(buf) : string_quote(buf, true);
@@ -5595,7 +5597,6 @@ private void list_one_var_a(CS prefix, CS name, int type, CS string, int *first)
 // Initialize global and Eegl-special variables
 private void
 initGlobalAndSpecialVars(void) {
-   int i;
    EeglVar* p;
 
    init_var_dict(&globvardict, &globvars_var, VAR_DEF_SCOPE);
@@ -5603,7 +5604,7 @@ initGlobalAndSpecialVars(void) {
    init_var_dict(&eeglVarsS, &currEeglVarS, VAR_SCOPE);
    eeglVarsS.lock = VAR_FIXED;
 
-   for (i = 0; i < EV_LEN; ++i) {
+   for (Unt i = 0; i < EV_LEN; ++i) {
       p = &eeglVars[i];
       int nameLen = STRLEN(p->name);
       if (nameLen > DICTITEM16_KEY_LEN) {
@@ -5613,13 +5614,13 @@ initGlobalAndSpecialVars(void) {
       STRCPY(p->entry.key, p->name);
       p->entry.len = nameLen;
       if (p->isReadonly)
-          p->entry.flags = DI_FLAGS_RO | DI_FLAGS_FIX;
+         p->entry.flags = DI_FLAGS_RO | DI_FLAGS_FIX;
       else
-          p->entry.flags = DI_FLAGS_FIX;
+         p->entry.flags = DI_FLAGS_FIX;
 
       // add to v: scope dict, unless the value is not always available
       if (p->entry.c.tag != VAR_UNKNOWN)
-          hash_add(&eeglVarsHt, (Text){p->entry.key, nameLen}, S"initialization");
+         hash_add(&eeglVarsHt, (Text){p->entry.key, nameLen}, S"initialization");
    }
    set_EeglVar_nr(VV_VERSION, EEGL_VERSION_100);
    set_EeglVar_nr(VV_VERSIONLONG, EEGL_VERSION_100 * 10000 + highest_patch());
@@ -5670,7 +5671,7 @@ initGlobalAndSpecialVars(void) {
 // Free all Eegl variables information on exit
 void
 evalvars_clear(void) {
-   for (int i = 0; i < EV_LEN; ++i) {
+   for (Unt i = 0; i < EV_LEN; ++i) {
       EeglVar* p = &eeglVars[i];
       if (p->entry.type == VAR_STRING)
          EE_CLEAR(p->entry.c.string);
@@ -8847,7 +8848,7 @@ get_callback(Var* arg) {
          }
          func_ref(res.name);
       } ei (arg->tag == VAR_NUMBER && arg->number == 0)
-         res.name = Em;
+         res.name = S"";
       else
          r = FAIL;
 

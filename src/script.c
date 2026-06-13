@@ -720,7 +720,7 @@ expandRuntimeDirInternal(
 
       // Build base pattern
       eeSnprintf(
-         buf, bufLen, "%s%s%s%s", *dirnames[i] ? dirnames[i] : Em, *dirnames[i] ? S"/" : Em,
+         buf, bufLen, "%s%s%s%s", *dirnames[i] ? dirnames[i] : S"", *dirnames[i] ? S"/" : S"",
          pat, "*.vim"
       );
 
@@ -731,8 +731,8 @@ expand:
       if (flags & DIP_START) {
          // Build complete search path: pack/*/start/*/dirnames[i]/pat*.vim
          eeSnprintf(buf, bufLen, "pack/*/start/*/%s%s%s%s",
-             *dirnames[i] ? dirnames[i] : Em,
-             *dirnames[i] ? S"/" : Em,
+             *dirnames[i] ? dirnames[i] : S"",
+             *dirnames[i] ? S"/" : S"",
              pat,
              expand_dirs ? "*" : "*.vim"
          );
@@ -742,8 +742,8 @@ expand:
       if ((flags & DIP_OPT) != 0) {
          // Build complete search path: pack/*/opt/*/dirnames[i]/pat*.vim
          eeSnprintf(buf, bufLen, "pack/*/opt/*/%s%s%s%s",
-             *dirnames[i] ? dirnames[i] : Em,
-             *dirnames[i] ? S"/" : Em, pat,
+             *dirnames[i] ? dirnames[i] : S"",
+             *dirnames[i] ? S"/" : S"", pat,
              expand_dirs ? "*" : "*.vim"
          );
          fiGlobpath(runtimePath, buf, OUT matches, gloflags, expand_dirs);
@@ -818,7 +818,7 @@ expandRuntimeDir(
 private int
 expand_runtime_cmd(CS pat, OUT ExpandMatch* matches) {
    Unt pat_len = STRLEN(pat);
-   CS dirnames[] = {Em, NULL};
+   CS dirnames[] = {S"", NULL};
    expandRuntimeDirInternal(pat, pat_len, runtime_expand_flags, true, OUT matches, dirnames);
 
    // Try to complete values for [where] argument when none was found.
@@ -3549,10 +3549,10 @@ expandWildcard(
       return get_next_or_prev_match(mode, xp);
 
    if (mode == WILD_CANCEL)
-      ss = copyStr(xp->orig ? xp->orig : Em);
+      ss = copyStr(xp->orig ? xp->orig : S"");
    ei (mode == WILD_APPLY)
       ss = copyStr(xp->xp_selected == UNT
-                ? (xp->orig ? xp->orig : Em)
+                ? (xp->orig ? xp->orig : S"")
                 : xp->files.c[xp->xp_selected]);
 
    // free old names
@@ -3587,7 +3587,7 @@ expandWildcard(
    // and the result probably won't be used.
    if (mode == WILD_ALL && xp->files.len > 0 && !gotInterruptG) {
       Unt   ss_size = 0;
-      CS prefix = Em;
+      CS prefix = S"";
       CS suffix = (options & WILD_USE_NL) ? S"\n" : S" ";
       Unt   n = xp->files.len - 1;
 
@@ -3611,9 +3611,9 @@ expandWildcard(
              ss + ss_len,
              ss_size - ss_len,
              "%s%s%s",
-             (i > 0) ? prefix : Em,
+             (i > 0) ? prefix : S"",
              xp->files.c[i],
-             (i < n) ? suffix : Em 
+             (i < n) ? suffix : S"" 
          );
       }
    }
@@ -8127,7 +8127,7 @@ cmdline_insert_reg(int *gotesc UNUSED) {
          c = get_expr_register();
    }
    if (c != ESC) {      // use ESC to cancel inserting register
-      literally = i == Ctrl_R || (clipboard.available && (c == '*' || c == '+')) ;
+      literally = i == Ctrl_R || (c == '*' || c == '+') ;
       cmdline_paste(c, literally, false);
 
       // When there was a serious error, abort getting the command line.
@@ -8162,7 +8162,7 @@ cmdline_left_right_mouse(Unt c, int *ignore_drag_release) {
       *ignore_drag_release = true;
    else
       *ignore_drag_release = false;
-   if (mouseRowG < (int)commlineRowG && clipboard.available) {
+   if (mouseRowG < (int)commlineRowG) {
 
       // Handle modeless selection.
       Boole is_click, is_drag;
@@ -8854,10 +8854,7 @@ getCommandWorker(
          goto commlineUnchanged;   // Ignore mouse
 
       case K_MIDDLEMOUSE:
-         if (clipboard.available)
-            cmdline_paste('*', true, true);
-         else
-            cmdline_paste(0, true, true);
+         cmdline_paste('*', true, true);
          redrawcmd();
          goto commlineChanged;
 
@@ -10878,7 +10875,7 @@ get_user_commands(Expand* xp UNUSED, int idx) {
       for (int i = 0; i < book->userCommands.len; ++i) {
          if (STRCMP(name, USER_CMD_GA(&book->userCommands, i)->uc_name) == 0)
             // global command is overruled by buffer-local one
-            return Em;
+            return S"";
       } 
       return name;
    }
@@ -15459,7 +15456,7 @@ get_user_func_name(Expand *xp, int idx) {
       //don't show dead, dict and lambda functions
       if ((fp->uf_flags & FC_DEAD) || (fp->uf_flags & FC_DICT)
                || STRNCMP(fp->uf_name, "<lambda>", 8) == 0)
-         return Em;
+         return S"";
 
       if (fp->uf_namelen + 4 >= IOSIZE)
          return fp->uf_name;   // prevents overflow
@@ -17663,7 +17660,7 @@ do_autocmd(Invocation* invo, CS arg_in, int forceit) {
 
    if (*arg == '|') {
       invo->nextComm = arg + 1;
-      arg = Em;
+      arg = S"";
       group = AUGROUP_ALL;   // no argument, use all groups
    } else {
       // Check for a legal group name.  If not, use AUGROUP_ALL.
@@ -17678,8 +17675,8 @@ do_autocmd(Invocation* invo, CS arg_in, int forceit) {
    pat = skipwhite(pat);
    if (*pat == '|') {
       invo->nextComm = pat + 1;
-      pat = Em;
-      comm = Em;
+      pat = S"";
+      comm = S"";
    } else {
       // Scan over the pattern.  Put a ZERO at the end.
       comm = pat;
@@ -19475,7 +19472,7 @@ f_autocmd_get(Arr(Var) argvars, Var* returnVar) {
 
             if (bagAddString(event_dict, S"event", event_name) == FAIL
                || bagAddString(
-                     event_dict, S"group", group_name == NULL ? Em : group_name
+                     event_dict, S"group", group_name == NULL ? S"" : group_name
                   ) == FAIL
                || (ap->buflocal_nr != 0
                   && (bagAddNumber(event_dict, S"bufnr", ap->buflocal_nr) == FAIL))

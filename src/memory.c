@@ -997,7 +997,7 @@ ml_open(Book *book) {
    b0p->b0_magic_short = (short)B0_MAGIC_SHORT;
    b0p->b0_magic_char = B0_MAGIC_CHAR;
    mch_memmove(b0p->b0_version, "EEGL ", 4);
-   STRNCPY(b0p->b0_version + 4, Version, 6);
+   STRNCPY(b0p->b0_version + 4, mainProgramVersion(), 6);
    longToChar((long)mfp->pageSize, b0p->b0_page_size);
 
    b0p->b0_dirty = book->wasModified ? B0_DIRTY : 0;
@@ -1318,8 +1318,6 @@ set_b0_dir_flag(Block0* b0p, Book* book) {
       b0p->b0_flags &= ~B0_SAME_DIR;
 }
 
-
-#include <sys/sysinfo.h>
 
 //Return true if the process with number "b0p->b0_pid" is still running. "swap_fname" is the name 
 //of the swap file, if it's from before a reboot then the result is false.
@@ -2064,7 +2062,7 @@ errorret:
    if (book->mem.mfile == NULL) {// there are no lines
       book->mem.lineLen = 1;
       book->mem.lineTextLen = book->mem.lineLen;
-      return Em;
+      return S"";
    }
 
    //See if it is the same line as requested last time. Otherwise may need to flush last used line.
@@ -2897,7 +2895,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
           set_keep_msg((CS)_(no_lines_msg), 0);
        }
 
-       i = ml_replace((LineNr)1, Em, true);
+       i = ml_replace((LineNr)1, S"", true);
        book->mem.flags |= ML_EMPTY;
 
        return i;

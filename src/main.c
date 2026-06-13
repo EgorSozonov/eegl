@@ -13,7 +13,7 @@
 // It has been changed beyond recognition since then.
 // Now there is a simple IDE forked off from it, Eegl.
 
-CS Version = (CS)EEGL_VERSION_SHORT;
+private CS programVersion = (CS)EEGL_VERSION_SHORT;
 private CS mediumVersion = (CS)EEGL_VERSION_MEDIUM;
 
 //char longVersion[sizeof(EEGL_VERSION_LONG_DATE) + sizeof(__DATE__) + sizeof(__TIME__) + 3];
@@ -427,7 +427,7 @@ main(int argc, char** argv) {
 
    TIME_MSG("init hilite");
 
-   init_term_props(true);
+   termInitProps(true);
 
    //Set the break level after the terminal is initialized.
    debug_break_level = paramsP.use_debug_break_level;
@@ -513,7 +513,7 @@ eeglMain1(void) {
 
    // When switching screens and something caused a message from a vimrc
    // script, need to output an extra newline on exit.
-   if ((anyEmsgG || msg_didout) && *termCodeS[KS_TI] != ZERO && paramsP.edit_type != EDIT_STDIN)
+   if ((anyEmsgG || msg_didout) && *termCodesG[KS_TI] != ZERO && paramsP.edit_type != EDIT_STDIN)
       newlineOnExitG = true;
 
    //When done something that is not allowed or given an error message call wait_return(). This 
@@ -687,7 +687,7 @@ init1(OUT MainParams* paramsP) {
    //   --windowid
    earlyArgScan(paramsP);
 
-   clip_init(false);      // Initialise clipboard stuff
+   clip_init();      // Initialise clipboard stuff
    TIME_MSG("clipboard setup");
 
    //Check if we have an interactive window.
@@ -1888,6 +1888,11 @@ main_msg(CS s) {
    mch_msg("   ");
    mch_msg(s);
    mch_msg("\n");
+}
+
+CS
+mainProgramVersion() {
+   return programVersion;
 }
 
 // Print messages for "eegl -h" or "eegl --help" and exit.

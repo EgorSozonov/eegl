@@ -4110,7 +4110,7 @@ c_help(Invocation* invo) {
       if (invo->skip)       // not executing commands
           return;
    } else
-      arg = Em;
+      arg = S"";
 
    // remove trailing blanks
    CS p = arg + STRLEN(arg) - 1;

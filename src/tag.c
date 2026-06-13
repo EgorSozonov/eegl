@@ -599,7 +599,7 @@ do_tag(
             SPRINTF(IObuff, _("tag %d of %d%s"),
                   cur_match + 1,
                   matches.len,
-                  maxMatchCount != MAXCOL ? _(" or more") : Em
+                  maxMatchCount != MAXCOL ? _(" or more") : S""
             );
             if (ic)
                STRCAT(IObuff, _("  Using tag with different case!"));

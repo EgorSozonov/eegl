@@ -8019,7 +8019,7 @@ add_popup_strings(Book* book, List* l) {
    FOR_ALL_LIST_ITEMS(l, li) {
       if (li->c.tag == VAR_STRING) {
          CS p = li->c.string;
-         memAppendBook(book, lnum++, p == NULL ? Em : p, (ColNr)0, true);
+         memAppendBook(book, lnum++, p == NULL ? S"" : p, (ColNr)0, true);
       }
    }
 }
@@ -8551,7 +8551,7 @@ setBookText(Book* book, Var text) {
 
    // Add text to the book.
    if (text.tag == VAR_STRING) {
-      CS s = text.string ? text.string : Em;
+      CS s = text.string ? text.string : S"";
       Unt len = STRLEN(s) + 1;
 
       // just a string

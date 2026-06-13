@@ -2514,7 +2514,7 @@ syntGetDeco(
       deco = getCurrentDeco(false, true, currColS == col ? keep_state : false);
       ++currColS;
    }
-
+   _bp(deco.hiId == SHORT);
    return deco;
 }
 
@@ -3754,7 +3754,7 @@ syn_cmd_iskeyword(Invocation* invo, int syncing UNUSED) {
    CS arg = skipwhite(invo->arg);
    if (*arg == ZERO) {
       msg_puts(S"\n");
-      if (curPor->book->o.isKeyword != Em) {
+      if (curPor->book->o.isKeyword != S"") {
           msg_puts((CS)"syntax iskeyword ");
           msg_outtrans(curPor->book->o.isKeyword);
       } else

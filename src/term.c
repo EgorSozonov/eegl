@@ -100,32 +100,34 @@ private TermRequest* termRequestS[] = {
    &winPositionRequestS
 };
 
-// The t_8u code may default to a value but get reset when the term response is
-// received.  To avoid redrawing too often, only redraw when t_8u is not reset
-// and it was supposed to be written.  Unless t_8u was set explicitly.
-// false -> don't output t_8u yet
-// MAYBE -> tried outputting t_8u while false
-// OK    -> can write t_8u
-int write_t_8u_state = false;
+//The t_8u code may default to a value but get reset when the term response is
+//received.  To avoid redrawing too often, only redraw when t_8u is not reset
+//and it was supposed to be written.  Unless t_8u was set explicitly.
+//false -> don't output t_8u yet
+//MAYBE -> tried outputting t_8u while false
+//OK    -> can write t_8u
+private int write_t_8u_state = false;
 
-
+#ifndef PROTO
 extern char *UP, *BC, PC; // in termcap.h
+#endif
 
 # define TGETENT(b, t)   tgetent((char *)(b), (char *)(t))
 private CS eeTgetstr(CS s, Byte **pp);
 
 private int focus_state = MAYBE; // true if the Eegl window has focus
 
-// When the cursor shape was detected these values are used:
-// 1: block, 2: underline, 3: vertical bar
+//When the cursor shape was detected these values are used:
+//1: block, 2: underline, 3: vertical bar
 private int initial_cursor_shape = 0;
 
-// The blink flag from the style response may be inverted from the actual
-// blinking state, xterm XORs the flags.
+//The blink flag from the style response may be inverted from the actual
+//blinking state, xterm XORs the flags.
 private int initial_cursor_shape_blink = false;
 
-// The blink flag from the blinking-cursor mode response
+//The blink flag from the blinking-cursor mode response
 private int initial_cursor_blink = false;
+
 //}}}
 //{{{terminfo: The builtin terminfo entries.
 
@@ -192,11 +194,6 @@ termgui_mch_get_rgb(VTermColor color) {
 // DEFAULT_TERM is used, when no terminal is specified with -T option or $TERM.
 #define DEFAULT_TERM S"ansi"
 
-//termCodeS contains currently used terminal output strings.
-//The values can be changed by setting the option with the same name.
-//Nulls are not allowed! Only empty strings
-CS termCodeS[KS_LAST + 1];
-
 private int  needToGatherTermLeaders = false; // need to fill termLeaderG[]
 private Byte termLeaderG[256 + 1];         // for check_termcode()
 private int  check_for_codes = false;         // check for key code response
@@ -232,7 +229,7 @@ private TermProp term_props[TPR_COUNT];
 // Initialize the term_props table.
 // When "all" is false only set those that are detected from the version response.
 void
-init_term_props(int all) {
+termInitProps(Boole all) {
    term_props[TPR_CURSOR_STYLE].name = S"cursor_style";
    term_props[TPR_CURSOR_STYLE].setByTermResponse = false;
    term_props[TPR_CURSOR_BLINK].name = S"cursor_blink_mode";
@@ -249,7 +246,7 @@ init_term_props(int all) {
 }
 
 void
-f_terminalprops(Var *argvars UNUSED, Var *returnVar) {
+f_terminalprops(Var* argvars UNUSED, Var* returnVar) {
    allocReturnDict(returnVar);
    for (Unt i = 0; i < TPR_COUNT; ++i) {
       Byte value[2] = { term_props[i].status, ZERO };
@@ -262,7 +259,7 @@ private void
 applyBuiltinCapability(Arr(TinfoEntry) entries, int len) {
    for (TinfoEntry *p = entries; p < entries + len && p->c != BT_EXTRA_KEYS; ++p) {
       if ((int)p->c >= 0) {  // KS_xx entry
-         termCodeS[p->c] = p->value;
+         termCodesG[p->c] = p->value;
       } else {
          Byte  name[2];
          name[0] = KEY2TERMCAP0((int)p->c);
@@ -291,7 +288,7 @@ private void
 get_term_entries(OUT int* height, OUT int* width) {
    static struct {
       CS name;  //capability name
-      Unt dest; //index in termCodeS[]
+      Unt dest; //index in termCodesG[]
    } entryNames[] = { SMAP1((CS),
       "ce", KS_CE,  "al", KS_AL,  "AL", KS_CAL, "dl", KS_DL,  "DL", KS_CDL,  "cs", KS_CS,
       "cl", KS_CL,  "cd", KS_CD,  "vi", KS_VI,  "ve", KS_VE,  "me", KS_ME, 
@@ -313,29 +310,29 @@ get_term_entries(OUT int* height, OUT int* width) {
 
    // get output strings
    for (Unt i = 0; i < ARRAY_LENGTH(entryNames); ++i) {
-      if (termCodeS[entryNames[i].dest] == Em) {
-         termCodeS[entryNames[i].dest] = eeTgetstr(entryNames[i].name, &tp);
+      if (termCodesG[entryNames[i].dest] == S"") {
+         termCodesG[entryNames[i].dest] = eeTgetstr(entryNames[i].name, &tp);
       }
    }
-   for (Unt i = 0; i < ARRAY_LENGTH(termCodeS); i++) {
-      if (!termCodeS[i])
-         termCodeS[i] = S"";
+   for (Unt i = 0; i < ARRAY_LENGTH(termCodesG); i++) {
+      if (!termCodesG[i])
+         termCodesG[i] = S"";
    }
 
    // tgetflag() returns 1 if the flag is present, 0 if not and
    // possibly -1 if the flag doesn't exist.
-   if (termCodeS[KS_MS] == Em && tgetflag("ms") > 0)
-      termCodeS[KS_MS] = S"y";
-   if (termCodeS[KS_XS] == Em && tgetflag("xs") > 0)
-      termCodeS[KS_XS] = S"y";
-   if (termCodeS[KS_XN] == Em && tgetflag("xn") > 0)
-      termCodeS[KS_XN] = S"y";
-   if (termCodeS[KS_DB] == Em && tgetflag("db") > 0)
-      termCodeS[KS_DB] = S"y";
-   if (termCodeS[KS_DA] == Em && tgetflag("da") > 0)
-      termCodeS[KS_DA] = S"y";
-   if (termCodeS[KS_UT] == Em && tgetflag("ut") > 0)
-      termCodeS[KS_UT] = S"y";
+   if (termCodesG[KS_MS] == S"" && tgetflag("ms") > 0)
+      termCodesG[KS_MS] = S"y";
+   if (termCodesG[KS_XS] == S"" && tgetflag("xs") > 0)
+      termCodesG[KS_XS] = S"y";
+   if (termCodesG[KS_XN] == S"" && tgetflag("xn") > 0)
+      termCodesG[KS_XN] = S"y";
+   if (termCodesG[KS_DB] == S"" && tgetflag("db") > 0)
+      termCodesG[KS_DB] = S"y";
+   if (termCodesG[KS_DA] == S"" && tgetflag("da") > 0)
+      termCodesG[KS_DA] = S"y";
+   if (termCodesG[KS_UT] == S"" && tgetflag("ut") > 0)
+      termCodesG[KS_UT] = S"y";
 
    // get key codes
    for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
@@ -388,23 +385,23 @@ set_termname(CS termName) {
    applyBuiltinCapability(builtin_kitty, ARRAY_LENGTH(builtin_kitty));
    accept_modifiers_for_function_keys();
 
-   if (termCodeS[KS_CF] == Em)
+   if (termCodesG[KS_CF] == S"")
       applyBuiltinCapability(special_term, ARRAY_LENGTH(special_term));
 
    //special: There is no info in the termcap about whether the cursor
    //positioning is relative to the start of the screen or to the start of the
    //scrolling region. We just guess here. Only msdos pcterm is known to do it relative.
    if (STRCMP(termName, "pcterm") == 0)
-      termCodeS[KS_CCS] = S"yes";
+      termCodesG[KS_CCS] = S"yes";
    else
-      termCodeS[KS_CCS] = Em;
+      termCodesG[KS_CCS] = S"";
 
    //Special case: "kitty" may not have a "RV" entry in terminfo, but we need
    //to request the version for several other things to work.
    if (strstr((char *)termName, "kitty") != NULL
-         && (termCodeS[KS_CRV] == NULL || *termCodeS[KS_CRV] == ZERO)
+         && (termCodesG[KS_CRV] == NULL || *termCodesG[KS_CRV] == ZERO)
    )
-      termCodeS[KS_CRV] = S"\033[>c";
+      termCodesG[KS_CRV] = S"\033[>c";
 
    //Any "stty" settings override the default for t_kb from the termcap.
    //This is in os_unix.c, because it depends a lot on the version of unix that is being used.
@@ -428,11 +425,11 @@ set_termname(CS termName) {
    term_is_xterm = isEeglXterm(termName);
    //Reset terminal properties that are set based on the termresponse, which
    //will be sent out soon.
-   init_term_props(false);
+   termInitProps(false);
 
    // If the first number in t_XM is 1006 then the terminal will support SGR mouse reporting.
-   if (termCodeS[KS_CXM] != NULL && *termCodeS[KS_CXM] != ZERO) {
-      CS p = termCodeS[KS_CXM];
+   if (termCodesG[KS_CXM] != NULL && *termCodesG[KS_CXM] != ZERO) {
+      CS p = termCodesG[KS_CXM];
 
       while (*p != ZERO && !EE_ISDIGIT(*p))
           ++p;
@@ -441,7 +438,7 @@ set_termname(CS termName) {
    // Set the 'ttymouse' option to the type of mouse to be used.
    // The termcode for the mouse is added as a side effect in option.c.
    {
-   CS p = Em;
+   CS p = S"";
 
    if (!p)
       check_mouse_termcode();   // set mouse termcode anyway
@@ -564,22 +561,19 @@ eeTgetstr(CS s, Byte **pp) {
 //and "li" entries never change. But on some systems this works.
 //Errors while getting the entries are ignored.
 void
-getlinecol(
-   Arr(long) cp,  // columns
-   Arr(long) rp   // rows
-){
+getlinecol(Arr(long) cols, Arr(long) rows) {
    Byte tbuf[TBUFSZ];
 
-   if (termCodeS[KS_NAME] == Em
-         || *termCodeS[KS_NAME] == ZERO
-         || invoke_tgetent(tbuf, termCodeS[KS_NAME]) != NULL
+   if (termCodesG[KS_NAME] == S""
+         || *termCodesG[KS_NAME] == ZERO
+         || invoke_tgetent(tbuf, termCodesG[KS_NAME]) != NULL
    )
       return;
 
-   if (*cp == 0)
-      *cp = tgetnum("co");
-   if (*rp == 0)
-      *rp = tgetnum("li");
+   if (*cols == 0)
+      *cols = tgetnum("co");
+   if (*rows == 0)
+      *rows = tgetnum("li");
 }
 
 // Get a string entry from the termcap and add it to the list of recognizedCodeS.
@@ -596,8 +590,8 @@ add_termcap_entry(CS name, int force) {
    if (!force && find_termcode(name) != NULL)       // it's already there
       return OK;
 
-   CS term = termCodeS[KS_NAME];
-   if (term == Em)       // 'term' not defined yet
+   CS term = termCodesG[KS_NAME];
+   if (term == S"")       // 'term' not defined yet
       return FAIL;
 
    // Search in external terminfos
@@ -624,8 +618,8 @@ add_termcap_entry(CS name, int force) {
 // If that fails, use the default terminal name.
 void
 termInitTerminfo(CS name) {
-   for (Unt i = 0; i < ARRAY_LENGTH(termCodeS); i++) {
-      termCodeS[i] = Em;
+   for (Unt i = 0; i < ARRAY_LENGTH(termCodesG); i++) {
+      termCodesG[i] = S"";
    }
 
    CS termName = name;
@@ -744,28 +738,28 @@ out_str(CS s) {
 //cursor positioning using termcap parser. (jw)
 void
 term_windgoto(int row, int col) {
-   OUT_STR(TGOTO(termCodeS[KS_CM], col, row));
+   OUT_STR(TGOTO(termCodesG[KS_CM], col, row));
 }
 
 void
 term_cursor_right(int i) {
-   OUT_STR(TGOTO(termCodeS[KS_CRI], 0, i));
+   OUT_STR(TGOTO(termCodesG[KS_CRI], 0, i));
 }
 
 void
 term_append_lines(int line_count) {
-    OUT_STR(TGOTO(termCodeS[KS_CAL], 0, line_count));
+    OUT_STR(TGOTO(termCodesG[KS_CAL], 0, line_count));
 }
 
 void
 term_delete_lines(int line_count) {
-   OUT_STR(TGOTO(termCodeS[KS_CDL], 0, line_count));
+   OUT_STR(TGOTO(termCodesG[KS_CDL], 0, line_count));
 }
 
 void
 term_enable_mouse(int enable) {
    int on = enable ? 1 : 0;
-   OUT_STR(TGOTO(termCodeS[KS_CXM], 0, on));
+   OUT_STR(TGOTO(termCodesG[KS_CXM], 0, on));
 }
 
 void
@@ -775,7 +769,7 @@ term_set_winpos(int x, int y) {
       x = 0;
    if (y < 0)
       y = 0;
-   OUT_STR(TGOTO(termCodeS[KS_CWP], y, x));
+   OUT_STR(TGOTO(termCodesG[KS_CWP], y, x));
 }
 
 // Return true if we can request the terminal for a response.
@@ -823,13 +817,13 @@ term_get_winpos(int* x, int* y, Long timeout) {
    int prev_winpos_x = winpos_x;
    int prev_winpos_y = winpos_y;
 
-   if (termCodeS[KS_CGP] == Em || !can_get_termresponse())
+   if (termCodesG[KS_CGP] == S"" || !can_get_termresponse())
       return FAIL;
    winpos_x = -1;
    winpos_y = -1;
    ++did_request_winpos;
    termrequest_sent(&winPositionRequestS);
-   OUT_STR(termCodeS[KS_CGP]);
+   OUT_STR(termCodesG[KS_CGP]);
    out_flush();
 
    // Try reading the result for "timeout" msec.
@@ -859,7 +853,7 @@ term_get_winpos(int* x, int* y, Long timeout) {
 
 void
 term_set_winsize(int height, int width) {
-   OUT_STR(TGOTO(termCodeS[KS_CWS], width, height));
+   OUT_STR(TGOTO(termCodesG[KS_CWS], width, height));
 }
 
 void
@@ -877,78 +871,78 @@ termApplyUnderColor(Byte n) {
    OUT_STR(TGOTO("\033[4;58;5;%dm", 0, n));
 }
 
-// Make sure we have a valid set or terminal options. Replace all null entries by Em
+// Make sure we have a valid set or terminal options. Replace all null entries by empty string
 void
 ttest(int pairs) {
    //MUST have "cm": cursor motion.
-   if (termCodeS[KS_CM] == null)
+   if (termCodesG[KS_CM] == null)
       emsg(_(e_terminal_capability_cm_required));
 
    //if "cs" defined, use a scroll region, it's faster.
-   if (termCodeS[KS_CS])
+   if (termCodesG[KS_CS])
       scroll_region = true;
    else
       scroll_region = false;
 
    if (pairs) {
       // optional pairs. TP goes to normal mode for TI (invert) and TB (bold)
-      if (termCodeS[KS_ME] == null) {
-         termCodeS[KS_MD] = null;
-         termCodeS[KS_MR] = null;
-         termCodeS[KS_ME] = null;
+      if (termCodesG[KS_ME] == null) {
+         termCodesG[KS_MD] = null;
+         termCodesG[KS_MR] = null;
+         termCodesG[KS_ME] = null;
       }
-      if (termCodeS[KS_SO] == null || termCodeS[KS_SE] == null) {
-         termCodeS[KS_SO] = null;
-         termCodeS[KS_SE] = null;
+      if (termCodesG[KS_SO] == null || termCodesG[KS_SE] == null) {
+         termCodesG[KS_SO] = null;
+         termCodesG[KS_SE] = null;
       }
-      if (!termCodeS[KS_US] || termCodeS[KS_UE] == null) {
-         termCodeS[KS_US] = null;
-         termCodeS[KS_UE] = null;
+      if (!termCodesG[KS_US] || termCodesG[KS_UE] == null) {
+         termCodesG[KS_US] = null;
+         termCodesG[KS_UE] = null;
       }
-      if (!termCodeS[KS_CZH] || !termCodeS[KS_CZR]) {
-         termCodeS[KS_CZH] = null;
-         termCodeS[KS_CZR] = null;
+      if (!termCodesG[KS_CZH] || !termCodesG[KS_CZR]) {
+         termCodesG[KS_CZH] = null;
+         termCodesG[KS_CZR] = null;
       }
 
-      // termCodeS[KS_VE] is needed even though termCodeS[KS_VI] is not defined
-      if (!termCodeS[KS_VE])
-         termCodeS[KS_VI] = null;
+      // termCodesG[KS_VE] is needed even though termCodesG[KS_VI] is not defined
+      if (!termCodesG[KS_VE])
+         termCodesG[KS_VI] = null;
 
       //if 'mr' or 'me' is not defined, use 'so' and 'se'
-      if (!termCodeS[KS_ME]) {
-         termCodeS[KS_ME] = termCodeS[KS_SE];
-         termCodeS[KS_MR] = termCodeS[KS_SO];
-         termCodeS[KS_MD] = termCodeS[KS_SO];
+      if (!termCodesG[KS_ME]) {
+         termCodesG[KS_ME] = termCodesG[KS_SE];
+         termCodesG[KS_MR] = termCodesG[KS_SO];
+         termCodesG[KS_MD] = termCodesG[KS_SO];
       }
 
       // if 'so' or 'se' is not defined, use 'mr' and 'me'
-      if (!termCodeS[KS_SO]) {
-         termCodeS[KS_SE] = termCodeS[KS_ME];
-         if (!termCodeS[KS_MR])
-            termCodeS[KS_SO] = termCodeS[KS_MD];
+      if (!termCodesG[KS_SO]) {
+         termCodesG[KS_SE] = termCodesG[KS_ME];
+         if (!termCodesG[KS_MR])
+            termCodesG[KS_SO] = termCodesG[KS_MD];
          else
-            termCodeS[KS_SO] = termCodeS[KS_MR];
+            termCodesG[KS_SO] = termCodesG[KS_MR];
       }
 
       // if 'ZH' or 'ZR' is not defined, use 'mr' and 'me'
-      if (!termCodeS[KS_CZH]) {
-         termCodeS[KS_CZR] = termCodeS[KS_ME];
-         if (!termCodeS[KS_MR])
-            termCodeS[KS_CZH] = termCodeS[KS_MD];
+      if (!termCodesG[KS_CZH]) {
+         termCodesG[KS_CZR] = termCodesG[KS_ME];
+         if (!termCodesG[KS_MR])
+            termCodesG[KS_CZH] = termCodesG[KS_MD];
          else
-            termCodeS[KS_CZH] = termCodeS[KS_MR];
+            termCodesG[KS_CZH] = termCodesG[KS_MR];
       }
 
       // "Sb" and "Sf" come in pairs
-      if (!termCodeS[KS_CSB] || !termCodeS[KS_CSF]) {
-         termCodeS[KS_CSB] = null;
-         termCodeS[KS_CSF] = null;
+      if (!termCodesG[KS_CSB] || !termCodesG[KS_CSF]) {
+         termCodesG[KS_CSB] = null;
+         termCodesG[KS_CSF] = null;
       }
 
       // "AB" and "AF" come in pairs
-      if (!termCodeS[KS_CAB] || !termCodeS[KS_CAF]) {
-         termCodeS[KS_CAB] = null;
-         termCodeS[KS_CAF] = null;
+      if (!termCodesG[KS_CAB] || !termCodesG[KS_CAF]) {
+         termCodesG[KS_CAB] = null;
+         termCodesG[KS_CAF] = null;
       }
    }
    needToGatherTermLeaders = true;
@@ -1185,11 +1179,11 @@ set_shellsize(int width, int height, int mustset) {
    }
 }
 
-//Output termCodeS[KS_CTE], the t_TE termcap entry, and handle expected effects.
+//Output termCodesG[KS_CTE], the t_TE termcap entry, and handle expected effects.
 //The code possibly disables modifyOtherKeys and the Kitty keyboard protocol.
 void
 out_str_t_TE(void) {
-    out_str(termCodeS[KS_CTE]);
+    out_str(termCodesG[KS_CTE]);
 
    //The seenModifyOtherKeys flag is not reset here.  We do expect t_TE to
    //disable modifyOtherKeys, but until Xterm version 377 there is no way to
@@ -1208,26 +1202,26 @@ out_str_t_TE(void) {
 
 private int send_t_RK = false;
 
-//Output termCodeS[KS_TI] and setup for what follows.
+//Output termCodesG[KS_TI] and setup for what follows.
 void
 out_str_t_TI(void) {
-   out_str(termCodeS[KS_CTI]);
+   out_str(termCodesG[KS_CTI]);
 
    //Send t_RK when there is no more work to do.
    send_t_RK = true;
 }
 
-//Output termCodeS[KS_CBE], but only when t_PS and t_PE are set.
+//Output termCodesG[KS_CBE], but only when t_PS and t_PE are set.
 void
 out_str_t_BE(void) {
    Byte *p;
 
-   if (termCodeS[KS_CBE] == Em
+   if (termCodesG[KS_CBE] == S""
        || (p = find_termcode(S"PS")) == NULL || *p == ZERO
        || (p = find_termcode(S"PE")) == NULL || *p == ZERO
    )
       return;
-   out_str(termCodeS[KS_CBE]);
+   out_str(termCodesG[KS_CBE]);
 }
 
 //If t_TI was recently sent and there is no typeahead or work to do, now send
@@ -1236,7 +1230,7 @@ void
 may_send_t_RK(void) {
    if (send_t_RK && !work_pending() && !ex_normal_busy && !in_feedkeys && !isExitingG) {
       send_t_RK = false;
-      out_str(termCodeS[KS_CRK]);
+      out_str(termCodesG[KS_CRK]);
       out_flush();
    }
 }
@@ -1252,7 +1246,7 @@ termSetMode(TermInputMode tmode) {
    //mode. When we think the terminal is normal, don't try to set it to normal again, because that 
    //causes problems (logout!) on some machines.
    if (tmode != cur_tmode) {
-      // May need to check for termCodeS[KS_CRV] response and recognizedCodeS, it
+      // May need to check for termCodesG[KS_CRV] response and recognizedCodeS, it
       // doesn't work in Cooked mode, an external program may get them.
       if (tmode != TMODE_RAW && termrequest_any_pending())
          (void)vpeekc_nomap();
@@ -1266,7 +1260,7 @@ termSetMode(TermInputMode tmode) {
          MAY_WANT_TO_LOG_THIS;
 
          if (tmode != TMODE_RAW) {
-            out_str(termCodeS[KS_CBD]);
+            out_str(termCodesG[KS_CBD]);
             out_str_t_TE();   // possibly disables modifyOtherKeys
          } else {
             out_str_t_BE();   // enable bracketed paste mode (should be before mch_termSetMode().
@@ -1290,14 +1284,14 @@ starttermcap(void) {
 
    MAY_WANT_TO_LOG_THIS;
 
-   out_str(termCodeS[KS_TI]);         // start termcap mode
+   out_str(termCodesG[KS_TI]);         // start termcap mode
    out_str_t_TI();         // start "raw" mode
-   out_str(termCodeS[KS_KS]);         // start "keypad transmit" mode
+   out_str(termCodesG[KS_KS]);         // start "keypad transmit" mode
    out_str_t_BE();         // enable bracketed paste mode
 
    //Enable xterm's focus reporting mode when 'esckeys' is set.
-   if (termCodeS[KS_FE] != Em)
-      out_str(termCodeS[KS_FE]);
+   if (termCodesG[KS_FE] != S"")
+      out_str(termCodesG[KS_FE]);
 
    out_flush();
    termcap_active = true;
@@ -1317,7 +1311,7 @@ termStopTerminfo(void) {
    if (!termcap_active)
       return;
 
-   //May need to discard termCodeS[KS_CRV], termCodeS[KS_U7] or termCodeS[KS_RBG] response.
+   //May need to discard termCodesG[KS_CRV], termCodesG[KS_U7] or termCodesG[KS_RBG] response.
    if (termrequest_any_pending()) {
       // Give the terminal a chance to respond.
       mch_delay(100L, 0);
@@ -1332,11 +1326,11 @@ termStopTerminfo(void) {
    MAY_WANT_TO_LOG_THIS;
 
    // Disable xterm's focus reporting mode if 'esckeys' is set.
-   if (termCodeS[KS_FD] != Em)
-      out_str(termCodeS[KS_FD]);
+   if (termCodesG[KS_FD] != S"")
+      out_str(termCodesG[KS_FD]);
 
-   out_str(termCodeS[KS_CBD]);
-   out_str(termCodeS[KS_KE]);         // stop "keypad transmit" mode
+   out_str(termCodesG[KS_CBD]);
+   out_str(termCodesG[KS_KE]);         // stop "keypad transmit" mode
    out_flush();
    termcap_active = false;
 
@@ -1346,10 +1340,10 @@ termStopTerminfo(void) {
    //When using the Kitty keyboard protocol the main and alternate screen use a separate state. 
    //If we are (or were) using the Kitty keyboard protocol and t_te is not empty (possibly 
    //switching screens) then output t_TE both before and after outputting t_te.
-   if (termCodeS[KS_TE] != Em)
+   if (termCodesG[KS_TE] != S"")
       out_str_t_TE();      // probably disables the kitty keyboard protocol
 
-   out_str(termCodeS[KS_TE]);  // stop termcap mode
+   out_str(termCodesG[KS_TE]);  // stop termcap mode
    cursor_on();    // just in case it is still off
    out_str_t_TE(); // stop "raw" mode, modifyOtherKeys and Kitty keyboard protocol
    screen_start(); // don't know where cursor is now
@@ -1371,11 +1365,11 @@ may_req_termresponse(void) {
    if (crv_status.tr_progress == STATUS_GET
        && can_get_termresponse()
        && starting == 0
-       && termCodeS[KS_CRV] != Em
+       && termCodesG[KS_CRV] != S""
    ) {
       MAY_WANT_TO_LOG_THIS;
       LOG_TR1("Sending CRV request");
-      out_str(termCodeS[KS_CRV]);
+      out_str(termCodesG[KS_CRV]);
       termrequest_sent(&crv_status);
       // check for the characters now, otherwise they might be eaten by get_keystroke()
       out_flush();
@@ -1384,13 +1378,13 @@ may_req_termresponse(void) {
 }
 
 // Send sequences to the terminal and check with t_u7 how the cursor moves, to find out properties
-// of the terminal. Note that this goes out before termCodeS[KS_CRV], so that the result
+// of the terminal. Note that this goes out before termCodesG[KS_CRV], so that the result
 // can be used when the termresponse arrives.
 void
 check_terminal_behavior(void) {
    int       did_send = false;
 
-   if (!can_get_termresponse() || starting != 0 || termCodeS[KS_U7] == Em)
+   if (!can_get_termresponse() || starting != 0 || termCodesG[KS_U7] == S"")
       return;
 
    if (u7_status.tr_progress == STATUS_GET) {
@@ -1409,7 +1403,7 @@ check_terminal_behavior(void) {
       term_windgoto(1, 0);
       buffer[mb_char2bytes(0x25bd, buffer)] = ZERO;
       out_str(buffer);
-      out_str(termCodeS[KS_U7]);
+      out_str(termCodesG[KS_U7]);
       termrequest_sent(&u7_status);
       out_flush();
       did_send = true;
@@ -1436,7 +1430,7 @@ check_terminal_behavior(void) {
       out_str((CS)"\033Pzz\033\\");
       //send the test CSI sequence with intermediate byte.
       out_str((CS)"\033[0%m");
-      out_str(termCodeS[KS_U7]);
+      out_str(termCodesG[KS_U7]);
       termrequest_sent(&xcc_status);
       out_flush();
       did_send = true;
@@ -1464,7 +1458,7 @@ check_terminal_behavior(void) {
 //Return true when saving and restoring the screen.
 int
 termIsScreenBeingSwapped(void) {
-   return (fullScreenG && termCodeS[KS_TI] != Em);
+   return (fullScreenG && termCodesG[KS_TI] != S"");
 }
 
 //By outputting the 'cursor very visible' termcap code, for some windowed
@@ -1472,12 +1466,12 @@ termIsScreenBeingSwapped(void) {
 //Used when starting Eegl or returning from a shell.
 void
 scroll_start(void) {
-   if (termCodeS[KS_VS] == Em || termCodeS[KS_CVS] == Em)
+   if (termCodesG[KS_VS] == S"" || termCodesG[KS_CVS] == S"")
       return;
 
    MAY_WANT_TO_LOG_THIS;
-   out_str(termCodeS[KS_VS]);
-   out_str(termCodeS[KS_CVS]);
+   out_str(termCodesG[KS_VS]);
+   out_str(termCodesG[KS_CVS]);
    screen_start();      // don't know where cursor is now
 }
 
@@ -1490,7 +1484,7 @@ private int cursor_is_asleep = false;
 //Enable the cursor without checking if it's already enabled.
 void
 cursor_on_force(void) {
-   out_str(termCodeS[KS_VE]);
+   out_str(termCodesG[KS_VE]);
    cursor_is_off = false;
    cursor_is_asleep = false;
 }
@@ -1506,7 +1500,7 @@ cursor_on(void) {
 void
 cursor_off(void) {
    if (fullScreenG && !cursor_is_off) {
-      out_str(termCodeS[KS_VI]);       // disable cursor
+      out_str(termCodesG[KS_VI]);       // disable cursor
       cursor_is_off = true;
    }
 }
@@ -1531,7 +1525,7 @@ term_cursor_mode(int forced) {
    static int showing_mode = -1;
 
    // Only do something when redrawing the screen and we can restore the mode.
-   if (!fullScreenG || termCodeS[KS_CEI] == Em) {
+   if (!fullScreenG || termCodesG[KS_CEI] == S"") {
       if (forced && initial_cursor_shape > 0)
          // Restore to initial values.
          termSetCursorShape(initial_cursor_shape, initial_cursor_blink);
@@ -1539,24 +1533,24 @@ term_cursor_mode(int forced) {
    }
 
    if (stateG & MODE_INSERT) {
-      if ((forced || showing_mode != MODE_INSERT) && termCodeS[KS_CSI] != Em) {
-         out_str(termCodeS[KS_CSI]);       // Insert mode cursor
+      if ((forced || showing_mode != MODE_INSERT) && termCodesG[KS_CSI] != S"") {
+         out_str(termCodesG[KS_CSI]);       // Insert mode cursor
          showing_mode = MODE_INSERT;
       }
    } ei (forced || showing_mode != MODE_NORMAL) {
-      out_str(termCodeS[KS_CEI]);          // non-Insert mode cursor
+      out_str(termCodesG[KS_CEI]);          // non-Insert mode cursor
       showing_mode = MODE_NORMAL;
    }
 }
 
 void
 term_cursor_color(CS color) {
-   if (termCodeS[KS_CSC] == Em)
+   if (termCodesG[KS_CSC] == S"")
       return;
 
-   out_str(termCodeS[KS_CSC]);      // set cursor color start
+   out_str(termCodesG[KS_CSC]);      // set cursor color start
    out_str_nf(color);
-   out_str(termCodeS[KS_CEC]);      // set cursor color end
+   out_str(termCodesG[KS_CEC]);      // set cursor color end
    out_flush();
 }
 
@@ -1570,8 +1564,8 @@ blink_state_is_inverted(void) {
 //"shape": 1 = block, 2 = underline, 3 = vertical bar
 void
 termSetCursorShape(int shape, int blink) {
-   if (termCodeS[KS_CSH] != Em) {
-      OUT_STR(TGOTO(termCodeS[KS_CSH], 0, shape * 2 - blink));
+   if (termCodesG[KS_CSH] != S"") {
+      OUT_STR(TGOTO(termCodesG[KS_CSH], 0, shape * 2 - blink));
       out_flush();
    } else {
       int do_blink = blink;
@@ -1582,11 +1576,11 @@ termSetCursorShape(int shape, int blink) {
       if (blink_state_is_inverted())
          do_blink = !blink;
 
-      if (do_blink && termCodeS[KS_VS] != Em) {
-         out_str(termCodeS[KS_VS]);
+      if (do_blink && termCodesG[KS_VS] != S"") {
+         out_str(termCodesG[KS_VS]);
          out_flush();
-      } ei (!do_blink && termCodeS[KS_CVS] != Em) {
-         out_str(termCodeS[KS_CVS]);
+      } ei (!do_blink && termCodesG[KS_CVS] != S"") {
+         out_str(termCodesG[KS_CVS]);
          out_flush();
       }
    }
@@ -1597,18 +1591,18 @@ termSetCursorShape(int shape, int blink) {
 //portal, excluding the vertical separator.
 void
 scroll_region_set(Portal* wp, int off) {
-   OUT_STR(TGOTO( termCodeS[KS_CS], wp->portalRow + wp->height - 1, wp->portalRow + off));
-   if (termCodeS[KS_CSV] != Em && wp->width != visibleColsG)
-      OUT_STR(TGOTO(termCodeS[KS_CSV], wp->portalCol + wp->width - 1, wp->portalCol));
+   OUT_STR(TGOTO( termCodesG[KS_CS], wp->portalRow + wp->height - 1, wp->portalRow + off));
+   if (termCodesG[KS_CSV] != S"" && wp->width != visibleColsG)
+      OUT_STR(TGOTO(termCodesG[KS_CSV], wp->portalCol + wp->width - 1, wp->portalCol));
    screen_start();          // don't know where cursor is now
 }
 
 //Reset scrolling region to the whole screen.
 void
 scroll_region_reset(void) {
-   OUT_STR(TGOTO(termCodeS[KS_CS], (int)visibleRowsG - 1, 0));
-   if (termCodeS[KS_CSV] != Em)
-      OUT_STR(TGOTO(termCodeS[KS_CSV], (int)visibleColsG - 1, 0));
+   OUT_STR(TGOTO(termCodesG[KS_CS], (int)visibleRowsG - 1, 0));
+   if (termCodesG[KS_CSV] != S"")
+      OUT_STR(TGOTO(termCodesG[KS_CSV], (int)visibleColsG - 1, 0));
    screen_start();          // don't know where cursor is now
 }
 
@@ -1634,8 +1628,8 @@ clear_termcodes(void) {
    EE_CLEAR(recognizedCodeS);
    tc_max_len = 0;
 
-   BC = (char*)Em;
-   UP = (char*)Em;
+   BC = "";
+   UP = "";
    PC = ZERO;         // set pad character to ZERO
    ospeed = 0;
 
@@ -1953,7 +1947,7 @@ handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED) {
    }
 }
 
-//Handle a response to termCodeS[KS_CRV]: {lead}{first}{x};{vers};{y}c
+//Handle a response to termCodesG[KS_CRV]: {lead}{first}{x};{vers};{y}c
 //Xterm and alike use '>' for {first}. Rxvt sends "{lead}?1;2c".
 private void
 handle_version_response(int first, int* arg, int argc) {
@@ -1967,7 +1961,7 @@ handle_version_response(int first, int* arg, int argc) {
    //Reset terminal properties that are set based on the termresponse.
    //Mainly useful for tests that send the termresponse multiple times.
    //For testing all props can be reset.
-   init_term_props(reset_term_props_on_termresponse);
+   termInitProps(reset_term_props_on_termresponse);
 
    //Screen sends 40500.
    //rxvt sends its version number: "20703" is 2.7.3.
@@ -2068,12 +2062,12 @@ handle_version_response(int first, int* arg, int argc) {
       //Not for Terminal.app, it can't handle t_RS, it echoes the characters to the screen.
       if (cursorStyleRequestS.tr_progress == STATUS_GET
          && term_props[TPR_CURSOR_STYLE].status == TPR_YES
-         && termCodeS[KS_CSH] != Em
-         && termCodeS[KS_CRS] != Em)
+         && termCodesG[KS_CSH] != S""
+         && termCodesG[KS_CRS] != S"")
       {
           MAY_WANT_TO_LOG_THIS;
           LOG_TR1("Sending cursor style request");
-          out_str(termCodeS[KS_CRS]);
+          out_str(termCodesG[KS_CRS]);
           termrequest_sent(&cursorStyleRequestS);
           need_flush = true;
       }
@@ -2083,11 +2077,11 @@ handle_version_response(int first, int* arg, int argc) {
       //echoes the characters to the screen. Only when getting the cursor style was detected to work.
       if (cursorBlinkingRequestS.tr_progress == STATUS_GET
          && term_props[TPR_CURSOR_BLINK].status == TPR_YES
-         && termCodeS[KS_CRC] != Em)
+         && termCodesG[KS_CRC] != S"")
       {
           MAY_WANT_TO_LOG_THIS;
           LOG_TR1("Sending cursor blink mode request");
-          out_str(termCodeS[KS_CRC]);
+          out_str(termCodesG[KS_CRC]);
           termrequest_sent(&cursorBlinkingRequestS);
           need_flush = true;
       }
@@ -2225,7 +2219,7 @@ handle_csi_function_key(
    case 'C': key_name[1] = 'r'; break;  // K_RIGHT
    case 'D': key_name[1] = 'l'; break;  // K_LEFT
 
-   // case 'Em': keypad BEGIN - not supported
+   // case 'S""': keypad BEGIN - not supported
    case 'F': key_name[0] = '@'; key_name[1] = '7'; break;  // K_END
    case 'H': key_name[1] = 'h'; break;  // K_HOME
 
@@ -2361,7 +2355,7 @@ handleControlSequenceIntroducer(
    }
 
    // Version string: Eat it when there is at least one digit and it ends in 'c'
-   ei (termCodeS[KS_CRV] != Em && ap > argp + 1 && trail == 'c') {
+   ei (termCodesG[KS_CRV] != S"" && ap > argp + 1 && trail == 'c') {
       handle_version_response(first, arg, argc);
 
       *slen = csi_len;
@@ -2500,7 +2494,7 @@ handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen) {
             // 5 = vertical bar blink, 6 = vertical bar
             number = number == 0 ? 1 : number;
             initial_cursor_shape = (number + 1) / 2;
-            //The blink flag is actually inverted, compared to the value set with termCodeS[KS_SH].
+            //The blink flag is actually inverted, compared to the value set with termCodesG[KS_SH].
             initial_cursor_shape_blink = (number & 1) ? false : true;
             cursorStyleRequestS.tr_progress = STATUS_GOT;
             LOG_TRN("Received cursor shape response: %s", tp);
@@ -2604,7 +2598,7 @@ check_termcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
 
       //Raw input from the user:
       //Skip this position if the character does not appear as the first character in
-      //termCodeS. This speeds up a lot, since most recognizedCodeS start with the same
+      //termCodesG. This speeds up a lot, since most recognizedCodeS start with the same
       //character (ESC or CSI).
       i = *readPos;
       Byte   *p;
@@ -3475,7 +3469,7 @@ find_term_bykeys(CS src) {
 private void
 gatherTermLeaders(void) {
    int       len = 0;
-   if (check_for_codes || termCodeS[KS_CRS] != Em) {
+   if (check_for_codes || termCodesG[KS_CRS] != S"") {
       termLeaderG[len] = DCS; // the termcode response starts with DCS in 8-bit mode
       len++;
    }
@@ -4089,7 +4083,7 @@ termFindSpecialKey(
    Unt modifiers;
    int bit;
    Unt key;
-   ULong   n;
+   Ulong   n;
    int      l;
 
    CS src = *srcp;

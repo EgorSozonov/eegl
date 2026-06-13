@@ -14,4 +14,5 @@ int work_pending(void);
 void mainLoop(Boole inCommPort);
 void exitEegl(int exitval);
 void mainerr_arg_missing(CS str);
+CS mainProgramVersion(void);
 void __bp(void);

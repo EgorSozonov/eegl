@@ -1,4 +1,6 @@
 /* src/do.c */
+int stat(const char *restrict path, struct stat *restrict buf);
+int mkdir(const char *pathname, mode_t mode);
 void do_ascii(Invocation *invo);
 void c_align(Invocation *invo);
 void c_sort(Invocation *invo);

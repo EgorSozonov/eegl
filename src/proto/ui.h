@@ -1,4 +1,6 @@
 /* src/ui.c */
+int fstat(int fd, struct stat *statbuf);
+int stat(const char *restrict path, struct stat *restrict buf);
 void init_job_options(JobOptions *opt);
 Book *term_start(Var *argvar, Byte **argv, JobOptions *opt, Unt flags);
 void c_terminal(Invocation *invo);
@@ -34,7 +36,7 @@ void termDidUpdatePortal(Portal *po);
 int term_is_finished(Book *book);
 int term_shobuffer(Book *book);
 void uiBeforeLeavingTerminal(void);
-Decoration termGetDeco(Portal *po, LineNr lnum, int col);
+Decoration uiGetDeco(Portal *po, LineNr lnum, int col);
 void term_update_colors_all(void);
 CS term_get_status_text(Terminal *term);
 void term_clear_status_text(Terminal *term);
