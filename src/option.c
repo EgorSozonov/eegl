@@ -471,8 +471,8 @@ private Byte
 parseCursorShape(CS input) {
    if (STRCMP(input, "block") == 0) {
       return CURSOR_BLOCK;
-   } ei (STRCMP(input, "beam") == 0) {
-      return CURSOR_BEAM;
+   } ei (STRCMP(input, "bar") == 0) {
+      return CURSOR_BAR;
    } else {
       return CURSOR_UNDERSCORE;
    }
@@ -4013,6 +4013,11 @@ setDefaultValuesForAllOptions(SetScope setScope) {
    copyDefaultsToGlobalStringValues(OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
    
    Option* o UNUSED;
+   FOR_GLOBAL(o) {
+      if (o->defaultValue.tag != OPTION_STRING && (o->flags & P_NODEFAULT) == 0) {
+         setDefault(o, SET_GLOBAL);
+      } 
+   }
    FOR_PORTAL(o) {
       if (o->defaultValue.tag != OPTION_STRING && (o->flags & P_NODEFAULT) == 0) {
          setDefault(o, setScope);

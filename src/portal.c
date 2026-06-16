@@ -2057,7 +2057,7 @@ closePortalsInto(Book* book, Boole keep_curPor)  {     // don't close "curPor"
 
    // Also check portals in other tabs
    Tab* nexttp;
-   for (Tab* t = firstTabG; t != NULL; t = nexttp) {
+   for (Tab* t = firstTabG; t; t = nexttp) {
       nexttp = t->next;
       if (t == curtab) {
          continue;
@@ -3542,8 +3542,8 @@ loadTab(Tab* t) {
 int
 portAllocFirst(void) {
    allocateFirstPortal(NULL);
-
    firstTabG = alloc_tab();
+   
    curtab = firstTabG;
    unloadTab(firstTabG);
 
@@ -5797,7 +5797,9 @@ command_height(void) {
 
    // Clear the commheight area.
    if (msg_scrolled == 0 && fullScreenG) {
-      fillRowsWithTwoChars(commlineRowG, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', 0);
+      fillRowsWithTwoChars(
+         commlineRowG, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', getFullDecoration(0)
+      );
       msgRowG = commlineRowG;
    }
 
@@ -10492,17 +10494,18 @@ update_popups(void (*win_update)(Portal* po)) {
                po->portalRow, po->portalRow + 1, wincol < 0 ? 0 : wincol, title_wincol,
                po->pup.border[3] != 0 
                   && po->pup.leftOff == 0 ? border_char[4] : border_char[0],
-               border_char[0], borderDeco[0].flags
+               border_char[0], borderDeco[0]
             );
             fillRowsWithTwoChars(
                po->portalRow, po->portalRow + 1, title_wincol + title_len, wincol + total_width,
-               border_char[0], border_char[0], borderDeco[0].flags
+               border_char[0], border_char[0], borderDeco[0]
             );
          } else {
-         fillRowsWithTwoChars(po->portalRow, po->portalRow + 1,
-            wincol < 0 ? 0 : wincol, wincol + total_width,
-            po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[4] : border_char[0],
-            border_char[0], borderDeco[0].flags);
+            fillRowsWithTwoChars(po->portalRow, po->portalRow + 1,
+               wincol < 0 ? 0 : wincol, wincol + total_width,
+               po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[4] : border_char[0],
+               border_char[0], borderDeco[0]
+            );
          }
          if (po->pup.border[1] > 0) {
             buf[mb_char2bytes(border_char[5], buf)] = ZERO;
@@ -10524,14 +10527,14 @@ update_popups(void (*win_update)(Portal* po)) {
          row = po->portalRow + po->pup.border[0];
          if (title_len > 0 && row == po->portalRow) {
             // top padding and no border; do not draw over the title
-            fillRowsWithTwoChars(row, row + 1, padcol, title_wincol, ' ', ' ', popupDeco.flags);
+            fillRowsWithTwoChars(row, row + 1, padcol, title_wincol, ' ', ' ', popupDeco);
             fillRowsWithTwoChars(
-               row, row + 1, title_wincol + title_len, padendcol, ' ', ' ', popupDeco.flags
+               row, row + 1, title_wincol + title_len, padendcol, ' ', ' ', popupDeco
             );
             row += 1;
             top_padding -= 1;
          }
-         fillRowsWithTwoChars(row, row + top_padding, padcol, padendcol, ' ', ' ', popupDeco.flags);
+         fillRowsWithTwoChars(row, row + top_padding, padcol, padendcol, ' ', ' ', popupDeco);
       }
 
       // Compute scrollbar thumb position and size.
@@ -10627,7 +10630,7 @@ update_popups(void (*win_update)(Portal* po)) {
          // bottom padding
          row = po->portalRow + po->pup.border[0] + po->pup.padding[0] + po->height;
          fillRowsWithTwoChars(
-            row, row + po->pup.padding[2], padcol, padendcol, ' ', ' ', popupDeco.flags
+            row, row + po->pup.padding[2], padcol, padendcol, ' ', ' ', popupDeco
          );
       }
 
@@ -10637,7 +10640,7 @@ update_popups(void (*win_update)(Portal* po)) {
          fillRowsWithTwoChars(
              row , row + 1, wincol < 0 ? 0 : wincol, wincol + total_width,
              po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[7] : border_char[2],
-             border_char[2], borderDeco[2].flags
+             border_char[2], borderDeco[2]
          );
          if (po->pup.border[1] > 0) {
             buf[mb_char2bytes(border_char[6], buf)] = ZERO;
@@ -11400,14 +11403,14 @@ displayText(
    int row,
    int col,
    CS text,
-   char decoFlags,
+   Decoration deco,
    Arr(Decoration) decos,
    int width,        // width already calculated in outer loop
    int widthLimit,
    int totwidth,
    int next_isempty,
-   int selected)
-{
+   int selected
+) {
    CS st_end = NULL;
    int over_cell = 0;
    int pad = next_isempty ? 0 : 2;
@@ -11449,14 +11452,14 @@ displayText(
    }
 
    if (!decos)
-      drawTextLen(text, size, row, col, decoFlags);
+      drawTextLen(text, size, row, col, deco.flags);
    else
       pum_drawText_withDecos(row, col, cells, text, size, decos);
 
    if (truncated) {
       if (over_cell > 0) {
          fillRowsWithTwoChars(
-            row, row + 1, col + cells, col + cells + over_cell, ' ', ' ', decoFlags
+            row, row + 1, col + cells, col + cells + over_cell, ' ', ' ', deco
          );
       } 
 
@@ -11478,7 +11481,7 @@ drawMenuItem(
    int j,         // Current position in order array
    int* order,    // Order array
    Short hiId,
-   char decoFlags,
+   Decoration deco,
    int* totwidth_ptr,
    int next_isempty
 ){
@@ -11511,7 +11514,7 @@ drawMenuItem(
       if (item_type == CPT_ABBR)
          decos = computeTextDeco(sanitizedText, hiId, displayedItemsS[idx].abbreviationDeco);
       col = displayText(
-            row, col, sanitizedText, decoFlags, decos, width, pum_width, *totwidth_ptr, next_isempty, 
+            row, col, sanitizedText, deco, decos, width, pum_width, *totwidth_ptr, next_isempty, 
             selected
       );
 
@@ -11522,7 +11525,7 @@ drawMenuItem(
           break;
 
       // Display two spaces for a Tab.
-      drawTextLen((CS)"  ", 2, row, col, decoFlags);
+      drawTextLen(S"  ", 2, row, col, deco.flags);
       col += 2;
       *totwidth_ptr += 2;
       s = NULL;  // start text at next char
@@ -11629,7 +11632,7 @@ pum_redraw(void) {
 
          if (p)
             // Process and display the item
-            col = drawMenuItem(row, col, idx, j, order, hiId, deco.flags, &totwidth, next_isempty);
+            col = drawMenuItem(row, col, idx, j, order, hiId, deco, &totwidth, next_isempty);
 
          if (j > 0)
             n = items_width_array[order[1]] + (last_isabbr ? 0 : 1);
@@ -11642,16 +11645,12 @@ pum_redraw(void) {
                       && (j == 1 || (j == 0 && pum_get_item(idx, order[j + 2]) == NULL)))
                 || basic_width + n >= pum_width)
             break;
-         fillRowsWithTwoChars(
-            row, row + 1, col, pum_col + basic_width + n, ' ', ' ', origDeco.flags
-         );
+         fillRowsWithTwoChars( row, row + 1, col, pum_col + basic_width + n, ' ', ' ', origDeco);
          col = pum_col + basic_width + n;
          totwidth = basic_width + n;
       }
 
-      fillRowsWithTwoChars(
-         row, row + 1, col, pum_col + pum_width, ' ', ' ', origDeco.flags
-      );
+      fillRowsWithTwoChars( row, row + 1, col, pum_col + pum_width, ' ', ' ', origDeco);
       pum_draw_scrollbar(row, i, thumb_pos, thumb_height);
 
       ++row;

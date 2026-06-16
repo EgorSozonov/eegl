@@ -5117,16 +5117,12 @@ handle_did_throw(void) {
 
    if (messages) {
       do {
-         MsgList   *next = messages->next;
-         int      save_compiling = estack_compiling;
-
-         estack_compiling = messages->msg_compiling;
+         MsgList* next = messages->next;
          emsg(messages->msg);
          eeglFree(messages->msg);
          eeglFree(messages->sfile);
          eeglFree(messages);
          messages = next;
-         estack_compiling = save_compiling;
       }
       while (messages);
    } ei (p) {

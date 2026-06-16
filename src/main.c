@@ -502,7 +502,7 @@ eeglMain1(void) {
    if (wayland_init_client(wayland_display_name) == OK) {
       TIME_MSG("connected to Wayland display");
 
-      if (wayland_cb_init((char*)p_wse) == OK)
+      if (wayland_cb_init(p_wse) == OK)
          TIME_MSG("setup Wayland clipboard");
    }
    //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may 

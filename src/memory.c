@@ -1129,8 +1129,6 @@ memOpenSwapFile(Book* book) {
    )
       return;      // nothing to do
       
-   
-   _bp(true);
    //There is a small chance that between choosing the swap file name and creating it, another
    //Eegl creates the file. In that case the creation will fail and we will use another directory
    CS fname = findSwapName(book, NULL); // allocates fname

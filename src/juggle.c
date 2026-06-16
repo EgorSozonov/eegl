@@ -4,6 +4,7 @@
 //## juggle.c: low-level operations and operators for changing text
 
 #include "eegl.h"
+#include <inttypes.h> // for PRIu64
 
 #define TABSIZE_MAX 16
 
@@ -3963,7 +3964,6 @@ do_addsub(
 ){
    int      col;
    int      pre;      // 'X'/'x': hex; 'B'/'b': bin
-   static int   hexupper = false;   // 0xABC
    Ulong   n;
    Ulong   oldn;
    Byte   *ptr;
@@ -4160,12 +4160,6 @@ do_addsub(
 
       save_pos = curPor->cursor;
       for (i = 0; i < todel; ++i) {
-         if (c < 0x100 && SAFE_isalpha(c)) {
-            if (SAFE_isupper(c))
-               hexupper = true;
-            else
-               hexupper = false;
-         }
          inc_cursor();
          c = gchar_cursor();
       }
@@ -4201,15 +4195,10 @@ do_addsub(
             buf2[buf2len++] = ((n >> (bit - 1)) & 0x1) ? '1' : '0';
 
          buf2[buf2len] = ZERO;
-      }
-      ei (pre == 0)
-          buf2len = eeSnprintf(buf2, NUMBUFLEN, "%llu", n);
-      ei (pre == '0')
-          buf2len = eeSnprintf(buf2, NUMBUFLEN, "%llo", n);
-      ei (pre && hexupper)
-          buf2len = eeSnprintf(buf2, NUMBUFLEN, "%llX", n);
+      } ei (pre == 0)
+         buf2len = eeSnprintf(buf2, NUMBUFLEN, "%" PRIu64, n);
       else
-         buf2len = eeSnprintf(buf2, NUMBUFLEN, "%llx", n);
+         buf2len = eeSnprintf(buf2, NUMBUFLEN, "%" PRIx64, n);
       length -= buf2len;
 
       //Adjust number of zeros to the new number of digits, so the total length of the number 

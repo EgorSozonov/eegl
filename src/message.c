@@ -1048,10 +1048,7 @@ get_emsg_source(void) {
       if (!sname)
          sname = SOURCING_NAME;
 
-      if (estack_compiling)
-         p = (CS)_("Error detected while compiling %s:");
-      else
-         p = (CS)_("Error detected while processing %s:");
+      p = (CS)_("Error detected while processing %s:");
       Arr(Byte) builder = alloc(STRLEN(sname) + STRLEN(p));
       SPRINTF(builder, p, sname);
       eeglFree(tofree);
@@ -2015,7 +2012,7 @@ do_more_prompt(int typedChar) {
    MsgChunk   *mp;
    int      i;
 
-   char msgFlags = getDecoFlags(HLF_MSG);
+   Decoration msgDeco = getFullDecoration(HLF_MSG);
 
    // We get called recursively when a timer callback outputs a message. In that case don't show
    // another prompt. Also when at the hit-Enter prompt and nothing was typed.
@@ -2175,8 +2172,7 @@ do_more_prompt(int typedChar) {
             drawMsgScrollUp();
             inc_msg_scrolled();
             fillRowsWithTwoChars(
-               (int)visibleRowsG - 2, (int)visibleRowsG - 1, 0, (int)visibleColsG, ' ', ' ', 
-               msgFlags
+               (int)visibleRowsG - 2, (int)visibleRowsG - 1, 0, (int)visibleColsG, ' ', ' ', msgDeco
             );
             lastChunk = disp_sb_line((int)visibleRowsG - 2, lastChunk, false);
             --toscroll;
@@ -2186,7 +2182,7 @@ do_more_prompt(int typedChar) {
       if (toscroll <= 0) {
          // displayed the requested text, more prompt again
          fillRowsWithTwoChars(
-            (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgFlags
+            (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgDeco
          );
          msg_moremsg(false);
          continue;
@@ -2199,7 +2195,7 @@ do_more_prompt(int typedChar) {
 
    // clear the --more-- message
    fillRowsWithTwoChars(
-      (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgFlags
+      (int)visibleRowsG - 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgDeco
    );
    stateG = oldState;
    setmouse();
@@ -2732,11 +2728,11 @@ msg_clr_eos_force(void) {
             out_str(termCodesG[KS_CE]);   // clear to end of line
       }
    } else {
-      int msgFlags = getDecoFlags(HLF_MSG);
+      Decoration msgDeco = getFullDecoration(HLF_MSG);
 
-      fillRowsWithTwoChars(msgRowG, msgRowG + 1, msgColG, (int)visibleColsG, ' ', ' ', msgFlags);
+      fillRowsWithTwoChars(msgRowG, msgRowG + 1, msgColG, (int)visibleColsG, ' ', ' ', msgDeco);
       fillRowsWithTwoChars(
-            msgRowG + 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgFlags
+            msgRowG + 1, (int)visibleRowsG, 0, (int)visibleColsG, ' ', ' ', msgDeco
       );
    }
 }
@@ -2976,7 +2972,6 @@ msg_advance(int col) {
 void
 msg_warn_missing_clipboard(void) {
    if (!global_busy && !did_warn_clipboard) {
-      _bp(true);
       msg(_("W23: Clipboard register not available, using register 0"));
       did_warn_clipboard = true;
    }
@@ -3315,14 +3310,12 @@ msg_sb_eol(void){
 //When "clear_to_eol" is set clear the rest of the screen line.
 //Return a pointer to the text for the next line (can be NULL).
 private MsgChunk *
-disp_sb_line(int row, MsgChunk *smp, int clear_to_eol) {
-   MsgChunk   *mp = smp;
-   Byte   *p;
-
-   for (;;) {
+disp_sb_line(int row, MsgChunk* smp, int clear_to_eol) {
+   MsgChunk* mp;
+   for (mp = smp;;mp = mp->sb_next) {
       msgRowG = row;
       msgColG = mp->sb_msgColG;
-      p = mp->sb_text;
+      CS p = mp->sb_text;
       if (*p == '\n')       // don't display the line break
          ++p;
       toDisplay(p, -1, mp->sb_attr, true);
@@ -3330,11 +3323,12 @@ disp_sb_line(int row, MsgChunk *smp, int clear_to_eol) {
       // If clearing the screen did not work (e.g. because of a background
       // color and t_ut isn't set) clear until the last column here.
       if (clear_to_eol)
-         fillRowsWithTwoChars(row, row + 1, msgColG, (int)visibleColsG, ' ', ' ', getDecoFlags(HLF_MSG));
+         fillRowsWithTwoChars(
+            row, row + 1, msgColG, (int)visibleColsG, ' ', ' ', getFullDecoration(HLF_MSG)
+         );
 
       if (mp->sb_eol || mp->sb_next == NULL)
           break;
-      mp = mp->sb_next;
    }
    return mp->sb_next;
 }

@@ -8127,7 +8127,7 @@ resolveSymlink(OUT Text* result, Unt cap) {
    for (Unt i = 0; i < 16; i++) {
       int linkTargetLen = readlink((char *)src.c, OUT (char *)tgt.c, cap);
       if (linkTargetLen < 0) {
-         if (errno == EINVAL) { // file exists and is not a symbolic link
+         if (errno == EINVAL || errno == ENOENT) { //file exists and is not a symbolic link || doesn't exist
             if (src.c != result->c) {
                memcpy(OUT result->c, src.c, src.len + 1);
             }
@@ -8164,6 +8164,7 @@ fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
    //Expand symlink in the file name, so that we put the swap file with the
    //actual file instead of with the symlink.
    Text variablePart = (Text){.c = fnameBuf + swapDirG.len, .len = variableLen};
+   _bp(true);
    if (resolveSymlink(OUT &variablePart, (Unt)(MAXPATHL - swapDirG.len - 1)) == FAIL) {
       return null;
    }

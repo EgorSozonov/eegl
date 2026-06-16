@@ -11682,7 +11682,7 @@ uiValidateTabpanelopt(CS new) {
 int
 tabpanel_width(void) {
    if (p_stpl) {
-      if (firstTabG->next == NULL)
+      if (!firstTabG || !firstTabG->next)
          return 0;
    } else {
       return 0;

@@ -14834,7 +14834,6 @@ cause_errthrow(CS mesg, int severe, int* ignore) {
        // reaching do_errthrow().
        elem->sfile = estack_sfile(ESTACK_NONE);
        elem->slnum = SOURCING_LNUM;
-       elem->msg_compiling = estack_compiling;
    }
    return true;
    }

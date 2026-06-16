@@ -2514,7 +2514,6 @@ syntGetDeco(
       deco = getCurrentDeco(false, true, currColS == col ? keep_state : false);
       ++currColS;
    }
-   _bp(deco.hiId == SHORT);
    return deco;
 }
 
@@ -4784,7 +4783,6 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
    if (source ? scriptRunFile(invo->arg, NULL) == FAIL
             : source_runtime(invo->arg, DIP_ALL) == FAIL
    ) {
-      _bp(true);
       showErrFmtMsg(_(e_cant_open_file_str), invo->arg);
    } 
    curPor->ownSyntax->b_syn_topgrp = prev_toplvl_grp;

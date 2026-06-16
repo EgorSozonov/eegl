@@ -1064,7 +1064,6 @@ scriptRunFileInternal(
    FnCallEntry funccalp_entry;
    int save_debug_break_level = debug_break_level;
    ScriptItem* si = NULL;
-   int save_estack_compiling = estack_compiling;
    ESTACK_CHECK_DECLARATION;
 
    CLEAR_FIELD(cookie);
@@ -1083,7 +1082,6 @@ scriptRunFileInternal(
          goto theend;
       }
    }
-   estack_compiling = false;
 
    // See if we loaded this script before.
    int sid = find_script_by_name(fname_exp);
@@ -1278,7 +1276,6 @@ theend:
     eeglFree(fname_not_fixed);
     eeglFree(fname_exp);
     stickyCommandModifiersG = save_stickyCommandModifiersG;
-    estack_compiling = save_estack_compiling;
     return retval;
 }
 
@@ -3338,7 +3335,7 @@ redrawPortalStatusLine_matches(
          drawText(selstart, row, selstart_col, getDecoFlags(HLF_WM));
       }
 
-      fillRowsWithTwoChars(row, row + 1, clen, (int)visibleColsG, fillchar, fillchar, deco.flags);
+      fillRowsWithTwoChars(row, row + 1, clen, (int)visibleColsG, fillchar, fillchar, deco);
    }
 
    redrawAllStatusLinesInFrame(topframeG);

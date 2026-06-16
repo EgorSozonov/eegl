@@ -54,7 +54,7 @@ int wayland_init_client(CS display);
 void wayland_uninit_client(void);
 int wayland_client_is_connected(int quiet);
 int wayland_client_update(void);
-int wayland_cb_init(const char *seat);
+int wayland_cb_init(CS seat);
 void wayland_cb_uninit(void);
 ArrayList *wayland_cb_get_mime_types(WaylandSelection selection);
 int wayland_cb_receive_data(CS mime_type, WaylandSelection selection);

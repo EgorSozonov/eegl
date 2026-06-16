@@ -1317,9 +1317,9 @@ If you only want the highlighting in the current window you can use these autoco
       au WinEnter * set cursorline cursorcolumn
 
 
-@@cursorInsert           Global. Enumerated. Default = beam
+@@cursorInsert           Global. Enumerated. Default = bar
    
-The cursor in Insert mode. Can be one of: beam, block, underscore
+The cursor in Insert mode. Can be one of: bar, block, underscore
    
 
 @@cursorline             Portal. Boolean. Default = off
@@ -1332,7 +1332,7 @@ easier to see the selected text.
    
 @@cursorNormal           Global. Enumerated. Default = block
    
-   The cursor in Normal mode. Can be one of: beam, block, underscore
+   The cursor in Normal mode. Can be one of: bar, block, underscore
 
 
 @@debug                  Global. String. Default = ""
@@ -4577,14 +4577,9 @@ the minimal width for other portals.
 
 @@wlseat                 Global. String. Default = off
 
-      {only under |+wayland|}
-      
 Specifies the Wayland seat to use for Wayland functionality,
-specifically the clipboard.  If the seat does not exist, then the
-option will still be set to the new value, with the Wayland clipboard
-being unavailable as a result.  If an empty value is passed then Eegl
-will attempt to use the first seat found available.  Updating this
-option will also update |v:clipmethod|.
+specifically the clipboard. If an empty value is passed then Eegl
+will attempt to use the first seat found available.
 
 
 @@wlsteal                Global. Boolean. Default = off

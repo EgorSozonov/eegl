@@ -142,7 +142,7 @@ OPTION("cscoperelative", p_csre, Boole, false, 0, null, null)
 OPTION("cscopetag", p_cst, Boole, false, 0, null, null)
 OPTION("cscopetagorder", p_csto, long, 0, 0, null, null)
 OPTION("cscopeverbose", p_csverbose, Boole, false, 0, null, null)
-OPTION("cursorInsert", cursorInsertG, Byte, CURSOR_BEAM, P_ONECOMMA|P_NODUP, &setCursorInsert, NULL)
+OPTION("cursorInsert", cursorInsertG, Byte, CURSOR_BAR, P_ONECOMMA|P_NODUP, &setCursorInsert, NULL)
 OPTION("cursorNormal", cursorNormalG, Byte, CURSOR_BLOCK, P_ONECOMMA|P_NODUP, 
    &setCursorNormal, null)
 OPTION("debug", p_debug, CS, null, 0, &did_set_debug, &expand_set_debug)

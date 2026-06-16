@@ -429,15 +429,15 @@ typedef Byte Byte;
       SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_8(m, x4, y4, x5, y5, x6, y6, x7, y7)
 #define SMAP1_18(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8) \
       SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_8(m, x4, y4, x5, y5, x6, y6, x7, y7),\
-      SMAP1_2(m, x8, y8}
+      SMAP1_2(m, x8, y8)
 #define SMAP1_20(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8, \
                  x9, y9) \
       SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_8(m, x4, y4, x5, y5, x6, y6, x7, y7),\
-      SMAP1_4(m, x8, y8, x9, y9}
+      SMAP1_4(m, x8, y8, x9, y9)
 #define SMAP1_22(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8, \
                  x9, y9, x10, y10) \
       SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_8(m, x4, y4, x5, y5, x6, y6, x7, y7),\
-      SMAP1_6(m, x8, y8, x9, y9, x10, y10}
+      SMAP1_6(m, x8, y8, x9, y9, x10, y10)
 #define SMAP1_24(m, x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8, \
                  x9, y9, x10, y10, x11, y11) \
       SMAP1_8(m, x0, y0, x1, y1, x2, y2, x3, y3), SMAP1_8(m, x4, y4, x5, y5, x6, y6, x7, y7),\
@@ -2159,18 +2159,18 @@ EXTERN Unt p_wop;   //@wildoptions
 
 EXTERN CS p_wig;   //@wildignore
 EXTERN CS p_ww;    //@whichwrap
-EXTERN long p_wc;       //@wildchar
-EXTERN long p_wcm;      //@wildcharm
-EXTERN Boole p_wic;      //@wildignorecase
-EXTERN CS p_wim;   //@wildmode
-EXTERN Boole p_wmnu;     //@wildmenu
-EXTERN long p_wh;       //@winheight
-EXTERN long p_wiw;      //@winwidth
-EXTERN CS p_wse;   //@wlseat
-EXTERN Boole p_wst;       //@wlsteal
-EXTERN long p_wtm;      //@wltimeoutlen
-EXTERN int p_wa;        //@writeany
-EXTERN long p_wd;       //@writedelay
+EXTERN long p_wc;    //@wildchar
+EXTERN long p_wcm;   //@wildcharm
+EXTERN Boole p_wic;  //@wildignorecase
+EXTERN CS p_wim;     //@wildmode
+EXTERN Boole p_wmnu; //@wildmenu
+EXTERN long p_wh;    //@winheight
+EXTERN long p_wiw;   //@winwidth
+EXTERN CS p_wse;     //@wlseat
+EXTERN Boole p_wst;  //@wlsteal
+EXTERN long p_wtm;   //@wltimeoutlen
+EXTERN int p_wa;     //@writeany
+EXTERN long p_wd;    //@writedelay
 
 
 // Value for b_p_ul indicating the global value must be used.
@@ -3235,12 +3235,10 @@ typedef struct ArgFileEntry {
 # define CSL_HAD_CONT    4   // just found ":continue"
 # define CSL_HAD_FINA    8   // just found ":finally"
 
-/*
- * A list of error messages that can be converted to an exception.  "throw_msg"
- * is only set in the first element of the list.  Usually, it points to the
- * original message stored in that element, but sometimes it points to a later
- * message in the list.  See cause_errthrow().
- */
+//A list of error messages that can be converted to an exception.  "throw_msg"
+//is only set in the first element of the list.  Usually, it points to the
+//original message stored in that element, but sometimes it points to a later
+//message in the list.  See cause_errthrow().
 typedef struct MsgList MsgList;
 struct MsgList {
    MsgList   *next;      // next of several messages in a row
@@ -3248,7 +3246,6 @@ struct MsgList {
    CS throw_msg;   // msg to throw: usually original one
    CS sfile;      // value from estack_sfile(), allocated
    long   slnum;      // line number for "sfile"
-   int      msg_compiling;   // saved value of estack_compiling
 };
 
 // The exception types.
@@ -5067,9 +5064,9 @@ typedef enum {
 #define CA_COMMAND_BUSY   1 //skip restarting edit() once
 #define CA_NO_ADJ_OP_END  2 //don't adjust operator end
 
-#define CURSOR_BLOCK      1
-#define CURSOR_BEAM       2
-#define CURSOR_UNDERSCORE 3
+#define CURSOR_BLOCK      0
+#define CURSOR_UNDERSCORE 1
+#define CURSOR_BAR        2
 
 //}}}
 //{{{MainParams
@@ -5859,16 +5856,14 @@ typedef enum {
 #define KS_CWS   59 //set window size in characters. EMPTY
 #define KS_CRV   60 //request version string. \e[>c
 #define KS_CXM   61 //enable/disable mouse reporting. \e[?1006;1000%?%p1%{1}%=%th%el%;
-#define KS_CSI   62 //bar cursor. Ss. EMPTY. Should be `\e[6 q`
-#define KS_CEI   63 //block cursor. EMPTY. Should be `\e[2 q`. Underline is `\e[4 q`
-#define KS_CSV   64 //scroll region vertical. EMPTY
-#define KS_OP    65 //original color pair. \e[39;49m
-#define KS_U7    66 //request cursor position. \e[6n
-#define KS_CBE   67 //enable bracketed paste mode. BE. \e[?2004h
-#define KS_CBD   68 //disable bracketed paste mode. BD. \e[?2004l
-#define KS_FD    69 //disable focus event tracking. EMPTY
-#define KS_FE    70 //enable focus event tracking. EMPTY
-#define KS_CF    71 //set terminal alternate font. EMPTY
+#define KS_CSV   62 //scroll region vertical. EMPTY
+#define KS_OP    63 //original color pair. \e[39;49m
+#define KS_U7    64 //request cursor position. \e[6n
+#define KS_CBE   65 //enable bracketed paste mode. BE. \e[?2004h
+#define KS_CBD   66 //disable bracketed paste mode. BD. \e[?2004l
+#define KS_FD    67 //disable focus event tracking. EMPTY
+#define KS_FE    68 //enable focus event tracking. EMPTY
+#define KS_CF    69 //set terminal alternate font. EMPTY
 
 #define KS_LAST  KS_CF
 
@@ -5991,7 +5986,7 @@ EXTERN long visibleRowsG         // nr of rows in the screen
           = 24L
 #endif
 ;
-EXTERN long   visibleColsG INIT(= 80);   // nr of columns in the screen
+EXTERN long visibleColsG INIT(= 80);   // nr of columns in the screen
 
 EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
 //Contains currently used terminal codes (strings used to communicate with the terminal).
@@ -6144,9 +6139,6 @@ EXTERN ArrayList   exestack INIT5(0, 0, sizeof(Estack), 50, NULL);
 
 // Script context being sourced or was sourced to define the current function.
 EXTERN ScriptPos scriptPosG INIT3(0, 0, 0);
-
-// whether inside compile_def_function()
-EXTERN int   estack_compiling INIT(= FALSE);
 
 EXTERN int   ex_nesting_level INIT(= 0);   // nesting level
 EXTERN int   debug_break_level INIT(= -1);   // break below this level

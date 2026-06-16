@@ -8,6 +8,13 @@
 
 typedef struct termios TermIos;
 
+private CS TC_CURSOR_SHAPES[] = {
+   S"\033[2 q", //block cursor
+   S"\033[4 q", //underline cursor
+   S"\033[6 q"  //bar cursor
+};
+private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
+
 //{{{forward declarations
 
 private int may_adjust_key_for_ctrl(int modifiers, Unt key);
@@ -303,8 +310,9 @@ get_term_entries(OUT int* height, OUT int* width) {
       "RV", KS_CRV, "XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS
       ), SMAP1((CS),
       "SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "WS", KS_CWS, 
-      "SI", KS_CSI, "EI", KS_CEI, "u7", KS_U7,  "BE", KS_CBE, "BD", KS_CBD, "CF", KS_CF
-   )};
+      "u7", KS_U7,  "BE", KS_CBE, "BD", KS_CBD, "CF", KS_CF
+      )
+   };
    static Byte tstrbuf[TBUFSZ];
    CS tp = tstrbuf;
 
@@ -334,9 +342,6 @@ get_term_entries(OUT int* height, OUT int* width) {
    if (termCodesG[KS_UT] == S"" && tgetflag("ut") > 0)
       termCodesG[KS_UT] = S"y";
       
-   termCodesG[KS_CEI] = S"\033[2 q";
-   termCodesG[KS_CSI] = S"\033[6 q";
-
    // get key codes
    for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
       if (find_termcode(key_names[i]) == NULL) {
@@ -1186,7 +1191,7 @@ set_shellsize(int width, int height, int mustset) {
 //The code possibly disables modifyOtherKeys and the Kitty keyboard protocol.
 void
 out_str_t_TE(void) {
-    out_str(termCodesG[KS_CTE]);
+   out_str(termCodesG[KS_CTE]);
 
    //The seenModifyOtherKeys flag is not reset here.  We do expect t_TE to
    //disable modifyOtherKeys, but until Xterm version 377 there is no way to
@@ -1310,7 +1315,7 @@ void
 termStopTerminfo(void) {
    drawStopHilite();
    reset_cterm_colors();
-
+   out_str(TC_CURSOR_DEFAULT_SHAPE);
    if (!termcap_active)
       return;
 
@@ -1527,22 +1532,21 @@ void
 term_cursor_mode(int forced) {
    static int showing_mode = -1;
 
-   _bp(true);
    // Only do something when redrawing the screen and we can restore the mode.
-   if (!fullScreenG || termCodesG[KS_CEI] == S"") {
+   if (!fullScreenG) {
       if (forced && initial_cursor_shape > 0)
          // Restore to initial values.
          termSetCursorShape(initial_cursor_shape, initial_cursor_blink);
       return;
    }
 
-   if (stateG & MODE_INSERT) {
-      if ((forced || showing_mode != MODE_INSERT) && termCodesG[KS_CSI] != S"") {
-         out_str(termCodesG[KS_CSI]);       // Insert mode cursor
+   if ((stateG & MODE_INSERT) != 0) {
+      if (forced || showing_mode != MODE_INSERT) {
+         out_str(TC_CURSOR_SHAPES[cursorInsertG]);
          showing_mode = MODE_INSERT;
       }
    } ei (forced || showing_mode != MODE_NORMAL) {
-      out_str(termCodesG[KS_CEI]);          // non-Insert mode cursor
+      out_str(TC_CURSOR_SHAPES[cursorNormalG]); // non-Insert mode cursor
       showing_mode = MODE_NORMAL;
    }
 }

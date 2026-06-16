@@ -1123,7 +1123,7 @@ private int  pc_status;
 #define PC_STATUS_LEFT   2   // left half of double-wide char
 #define PC_STATUS_SET    3   // pc_bytes was filled
 private Byte pc_bytes[MB_MAXBYTES + 1]; // saved bytes
-private char  charDecoFlagsS;
+private Byte charDecoFlagsP;
 private int  pc_row;
 private int  pc_col;
 
@@ -1142,7 +1142,7 @@ edit_putchar(int c, Boole needDoHilite) {
 
    // save the character to be able to put it back
    if (pc_status == PC_STATUS_UNSET) {
-      screen_getbytes(pc_row, pc_col, pc_bytes, OUT &charDecoFlagsS);
+      screen_getbytes(pc_row, pc_col, pc_bytes, OUT &charDecoFlagsP);
       pc_status = PC_STATUS_SET;
    }
    screen_putchar(c, pc_row, pc_col, decoFl);
@@ -1168,7 +1168,7 @@ edit_unputchar(void) {
       if (pc_status == PC_STATUS_RIGHT || pc_status == PC_STATUS_LEFT)
          drawPortLineLater(curPor, curPor->cursor.lnum);
       else
-         drawText(pc_bytes, pc_row - msg_scrolled, pc_col, charDecoFlagsS);
+         drawText(pc_bytes, pc_row - msg_scrolled, pc_col, charDecoFlagsP);
    }
 }
 

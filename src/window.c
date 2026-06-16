@@ -19,7 +19,7 @@ int stat(const char* restrict path, struct stat* restrict buf);
 typedef struct {
    struct wl_seat* proxy;
    char* label;      // Name of seat as text (e.g. seat0, seat1...).
-   uint32_t capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
+   Unt capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
 } WaylandSeat;
 
 // Global objects
@@ -58,7 +58,7 @@ typedef struct {
 
 typedef struct {
    void* user_data;
-   void (*on_focus)(void *data, uint32_t serial);
+   void (*on_focus)(void *data, Unt serial);
 
    struct wl_surface* surface;
    struct wl_keyboard* keyboard;
@@ -177,7 +177,7 @@ private void freeSelection(ClipBoard* cbd);
 private void clip_get_selection(ClipBoard* cbd);
 private int   vwl_display_flush(WaylandDisplay *display);
 private void   vwl_callback_done(void *data, struct wl_callback *callback,
-          uint32_t cb_data);
+          Unt cb_data);
 private int   vwl_display_roundtrip(WaylandDisplay *display);
 private int   vwl_display_dispatch(WaylandDisplay *display);
 private int vwl_display_dispatch_any(WaylandDisplay *display);
@@ -186,54 +186,53 @@ private void   vwl_log_handler(char const* fmt, va_list args); // it MUST be "ch
 private int   vwl_connect_display(CS display);
 private void   vwl_disconnect_display(void);
 
-private void vwl_xdg_wm_base_listener_ping(void *data, struct xdg_wm_base *base, uint32_t serial);
+private void vwl_xdg_wm_base_listener_ping(void *data, struct xdg_wm_base *base, Unt serial);
 private int   vwl_listen_to_registry(void);
 
 private void   vwl_registry_listener_global(
-    void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version
+    void *data, struct wl_registry *registry, Unt name, const char *interface, Unt version
 );
 private void   vwl_registry_listener_global_remove(void *data,
-          struct wl_registry *registry,  uint32_t name);
+          struct wl_registry *registry,  Unt name);
 
-private void   vwl_add_seat(struct wl_seat *seat);
-private void   vwl_seat_listener_name(void *data, struct wl_seat *seat, const char *name);
-private void   vwl_seat_listener_capabilities(void *data, struct wl_seat *seat,
-          uint32_t capabilities);
-private void   vwl_destroy_seat(WaylandSeat *seat);
+private void vwl_add_seat(struct wl_seat *seat);
+private void vwl_seat_listener_name(void *data, struct wl_seat *seat, const char *name);
+private void vwl_seat_listener_capabilities(void *data, struct wl_seat *seat, Unt capabilities);
+private void vwl_destroy_seat(WaylandSeat *seat);
 
-private WaylandSeat       *vwl_get_seat(const char *label);
+private WaylandSeat* vwl_get_seat(CS label);
 private struct wl_keyboard   *vwl_seat_get_keyboard(WaylandSeat *seat);
 
-private int   vwl_focus_stealing_available(void);
-private void   vwl_xdg_surface_listener_configure(void *data,
-          struct xdg_surface *surface, uint32_t serial);
+private int vwl_focus_stealing_available(void);
+private void vwl_xdg_surface_listener_configure(void *data,
+          struct xdg_surface *surface, Unt serial);
 
-private void   vwl_bs_buffer_listener_release(void *data,
+private void vwl_bs_buffer_listener_release(void *data,
           struct wl_buffer *buffer);
-private void   vwl_destroy_buffer_store(BufferStore *store);
+private void vwl_destroy_buffer_store(BufferStore *store);
 private BufferStore *vwl_init_buffer_store(int width, int height);
 
-private void   vwl_destroy_fs_surface(vwl_fs_surface_T *store);
-private int   vwl_init_fs_surface(WaylandSeat *seat,
+private void vwl_destroy_fs_surface(vwl_fs_surface_T *store);
+private int vwl_init_fs_surface(WaylandSeat *seat,
           BufferStore *buffer_store,
-          void (*on_focus)(void *, uint32_t), void *user_data);
+          void (*on_focus)(void *, Unt), void *user_data);
 
-private void   vwl_fs_keyboard_listener_enter(void *data,
-          struct wl_keyboard *keyboard, uint32_t serial,
+private void vwl_fs_keyboard_listener_enter(void *data,
+          struct wl_keyboard *keyboard, Unt serial,
           struct wl_surface *surface, struct wl_array *keys);
-private void   vwl_fs_keyboard_listener_keymap(void *data,
-          struct wl_keyboard *keyboard, uint32_t format,
-          int fd, uint32_t size);
-private void   vwl_fs_keyboard_listener_leave(void *data,
-          struct wl_keyboard *keyboard, uint32_t serial,
+private void vwl_fs_keyboard_listener_keymap(void *data,
+          struct wl_keyboard *keyboard, Unt format,
+          int fd, Unt size);
+private void vwl_fs_keyboard_listener_leave(void *data,
+          struct wl_keyboard *keyboard, Unt serial,
           struct wl_surface *surface);
-private void   vwl_fs_keyboard_listener_key(void *data,
-          struct wl_keyboard *keyboard, uint32_t serial,
-          uint32_t time, uint32_t key, uint32_t state);
-private void   vwl_fs_keyboard_listener_modifiers(void *data,
-          struct wl_keyboard *keyboard, uint32_t serial,
-          uint32_t mods_depressed, uint32_t mods_latched,
-          uint32_t mods_locked, uint32_t group);
+private void vwl_fs_keyboard_listener_key(void *data,
+          struct wl_keyboard *keyboard, Unt serial,
+          Unt time, Unt key, Unt state);
+private void vwl_fs_keyboard_listener_modifiers(void *data,
+          struct wl_keyboard *keyboard, Unt serial,
+          Unt mods_depressed, Unt mods_latched,
+          Unt mods_locked, Unt group);
 private void   vwl_fs_keyboard_listener_repeat_info(void *data,
           struct wl_keyboard *keyboard, int32_t rate, int32_t delay);
 
@@ -252,7 +251,7 @@ private void vwl_data_source_add_listener(DataSource *source, void *data);
 private void vwl_data_offer_add_listener(DataOffer *offer, void *data);
 
 private void   vwl_data_device_set_selection(DataDevice *device,
-          DataSource *source, uint32_t serial,
+          DataSource *source, Unt serial,
           WaylandSelection selection);
 private void vwl_data_offer_receive(DataOffer *offer, char const* mime_type, int fd);
 private int   vwl_get_data_device_manager(vwl_data_device_manager_T *manager,
@@ -277,7 +276,7 @@ private void vwl_data_device_listener_selection(DataDevice *device,
 private void vwl_data_device_listener_finished(DataDevice *device);
 private void vwl_data_source_listener_send(DataSource *source, char const* mime_type, int fd);
 private void vwl_data_source_listener_cancelled(DataSource *source);
-private void vwl_on_focus_set_selection(void *data, uint32_t serial);
+private void vwl_on_focus_set_selection(void *data, Unt serial);
 private void wayland_set_display(CS display);
 
 //}}}
@@ -3944,7 +3943,7 @@ vwl_display_flush(WaylandDisplay *display) {
 
 //Called when compositor is done processing requests/events.
 private void
-vwl_callback_done(void *data, struct wl_callback *callback, uint32_t cb_data UNUSED) {
+vwl_callback_done(void *data, struct wl_callback *callback, Unt cb_data UNUSED) {
    *((int*)data) = true;
    wl_callback_destroy(callback);
 }
@@ -4155,7 +4154,7 @@ private void
 vwl_xdg_wm_base_listener_ping(
    void* data UNUSED,
    struct xdg_wm_base *base,
-   uint32_t serial
+   Unt serial
 ) {
     xdg_wm_base_pong(base, serial);
 }
@@ -4206,13 +4205,13 @@ private void
 vwl_registry_listener_global(
    void* data UNUSED,
    struct wl_registry  *registry UNUSED,
-   uint32_t name,
+   Unt name,
    const char* interface,
-   uint32_t version
+   Unt version
 ) {
    const struct wl_interface   *chosen_interface = NULL;
    void* proxy;
-   uint32_t min_version;
+   Unt min_version;
    void** object_member;
 
    if (STRCMP(interface, wl_seat_interface.name) == 0) {
@@ -4251,7 +4250,7 @@ vwl_registry_listener_global(
 // global will just be ignored on the compositor side.
 private void
 vwl_registry_listener_global_remove(
-      void* data UNUSED, struct wl_registry* registry UNUSED, uint32_t name UNUSED
+      void* data UNUSED, struct wl_registry* registry UNUSED, Unt name UNUSED
 ) {
 }
 
@@ -4292,7 +4291,7 @@ private void
 vwl_seat_listener_capabilities(
    void      *data,
    struct wl_seat   *seat_proxy UNUSED,
-   uint32_t   capabilities
+   Unt   capabilities
 ) {
    WaylandSeat *seat = data;
    seat->capabilities = capabilities;
@@ -4317,8 +4316,8 @@ vwl_destroy_seat(WaylandSeat *seat) {
 // If NULL or an empty string is passed as the label then the first available
 // seat found is used.
 private WaylandSeat *
-vwl_get_seat(const char *label) {
-   if ((STRCMP(label, "") == 0 || label == NULL) && vwl_seats.len > 0)
+vwl_get_seat(CS label) {
+   if (!label && vwl_seats.len > 0)
       return &((WaylandSeat *)vwl_seats.c)[0];
 
    for (int i = 0; i < vwl_seats.len; i++) {
@@ -4405,7 +4404,7 @@ private void
 vwl_xdg_surface_listener_configure(
    void          *data UNUSED,
    struct xdg_surface  *surface,
-   uint32_t       serial)
+   Unt       serial)
 {
    xdg_surface_ack_configure(surface, serial);
 }
@@ -4533,7 +4532,7 @@ private int
 vwl_init_fs_surface(
    WaylandSeat       *seat,
    BufferStore* buffer_store,
-   void (*on_focus)(void *, uint32_t),
+   void (*on_focus)(void *, Unt),
    void *user_data
 ) {
    vwl_fs_surface_T *store;
@@ -4623,7 +4622,7 @@ private void
 vwl_fs_keyboard_listener_enter(
    void      *data,
    struct wl_keyboard   *keyboard UNUSED,
-   uint32_t      serial,
+   Unt      serial,
    struct wl_surface   *surface UNUSED,
    struct wl_array   *keys UNUSED
 ) {
@@ -4641,9 +4640,9 @@ private void
 vwl_fs_keyboard_listener_keymap(
    void* data UNUSED,
    struct wl_keyboard   *keyboard UNUSED,
-   uint32_t      format UNUSED,
+   Unt      format UNUSED,
    int         fd,
-   uint32_t      size UNUSED
+   Unt      size UNUSED
 ) {
    close(fd);
 }
@@ -4652,7 +4651,7 @@ private void
 vwl_fs_keyboard_listener_leave(
    void      *data UNUSED,
    struct wl_keyboard   *keyboard UNUSED,
-   uint32_t      serial UNUSED,
+   Unt      serial UNUSED,
    struct wl_surface   *surface UNUSED)
 {
 }
@@ -4661,10 +4660,10 @@ private void
 vwl_fs_keyboard_listener_key(
    void      *data UNUSED,
    struct wl_keyboard   *keyboard UNUSED,
-   uint32_t      serial UNUSED,
-   uint32_t      time UNUSED,
-   uint32_t      key UNUSED,
-   uint32_t      state UNUSED)
+   Unt      serial UNUSED,
+   Unt      time UNUSED,
+   Unt      key UNUSED,
+   Unt      state UNUSED)
 {
 }
 
@@ -4672,11 +4671,11 @@ private void
 vwl_fs_keyboard_listener_modifiers(
     void      *data UNUSED,
     struct wl_keyboard   *keyboard UNUSED,
-    uint32_t      serial UNUSED,
-    uint32_t      mods_depressed UNUSED,
-    uint32_t      mods_latched UNUSED,
-    uint32_t      mods_locked UNUSED,
-    uint32_t      group UNUSED)
+    Unt      serial UNUSED,
+    Unt      mods_depressed UNUSED,
+    Unt      mods_latched UNUSED,
+    Unt      mods_locked UNUSED,
+    Unt      group UNUSED)
 {
 }
 
@@ -5118,7 +5117,7 @@ vwl_clipboard_free_mime_types(WaylandClipboardSelection *clip_sel) {
 // Setup required objects to interact with Wayland selections/clipboard on given
 // seat. Returns OK on success and FAIL on failure.
 int
-wayland_cb_init(const char *seat) {
+wayland_cb_init(CS seat) {
    vwl_clipboard.seat = vwl_get_seat(seat);
 
    if (vwl_clipboard.seat == NULL)
@@ -5396,8 +5395,8 @@ vwl_data_source_listener_cancelled(DataSource *source) {
 
 // Set the selection when we gain focus
 private void
-vwl_on_focus_set_selection(void *data, uint32_t serial) {
-    WaylandClipboardSelection *clip_sel = data;
+vwl_on_focus_set_selection(void* data, Unt serial) {
+    WaylandClipboardSelection* clip_sel = data;
 
     vwl_data_device_set_selection(
        &clip_sel->device,
@@ -5532,7 +5531,7 @@ wayland_cb_reload(void) {
 
    wayland_cb_uninit();
 
-   if (wayland_cb_init((char*)p_wse) == FAIL)
+   if (wayland_cb_init(p_wse) == FAIL)
       return FAIL;
 
    return OK;
@@ -5589,7 +5588,7 @@ c_wlrestore(Invocation *invo) {
    if (wayland_init_client(display) == OK) {
       smsg(_("restoring Wayland display %s"), wayland_display_name);
 
-      wayland_cb_init((char*)p_wse);
+      wayland_cb_init(p_wse);
    } else
       msg(_("failed restoring, lost connection to Wayland display"));
 
