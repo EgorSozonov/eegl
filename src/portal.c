@@ -41,7 +41,7 @@ private void enterTab(Tab*, Book*, Boole, Boole);
 private void frame_fix_height(Portal* po);
 private Unt frame_minheight(Frame *topfrp, Portal *next_curPor);
 private int mayOpenTab(void);
-private int enterPortalWorker(Portal* po, int flags);
+private int enterPortalWorker(Portal* po, Unt flags);
 private void freePortal(Portal* po, Tab *t);
 private void append(Portal *after, Portal* po);
 private void frame_append(Frame *after, Frame *fr);
@@ -83,15 +83,14 @@ private void pum_position_info_popup(Portal* po);
 // Lowest number used for portal ID. Cannot have this many portals.
 #define MIN_PORT_ID 1000
 
-
 #define ROWS_AVAIL (visibleRowsG - commlineHeightG)
 
 // flags for enterPortalWorker()
-#define WEE_UNDO_SYNC         0x01
-#define WEE_CURWIN_INVALID      0x02
+#define WEE_UNDO_SYNC              0x01
+#define WEE_CURWIN_INVALID         0x02
 #define WEE_TRIGGER_NEW_AUTOCMDS   0x04
-#define WEE_TRIGGER_ENTER_AUTOCMDS   0x08
-#define WEE_TRIGGER_LEAVE_AUTOCMDS   0x10
+#define WEE_TRIGGER_ENTER_AUTOCMDS 0x08
+#define WEE_TRIGGER_LEAVE_AUTOCMDS 0x10
 #define WEE_ALLOW_PARSE_MESSAGES   0x20
 
 private CS m_onlyone = S"Already only one portal";
@@ -1216,7 +1215,7 @@ splitPortal_ins(
 
    if (need_status) {
       msgRowG = visibleRowsG - 1;
-      msgColG = sc_col;
+      msgColG = shownCommandColG;
       msg_clr_eos_force();   // Old command/ruler may still be there
       computeColumnsForRulerAndCommand();
       msgRowG = visibleRowsG - 1;
@@ -4288,7 +4287,6 @@ portFixCurrentDir(void) {
       CS dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
 
       if (mch_chdir((char *)dirname) == 0) {
-         last_chdir_reason = NULL;
          shorten_fnames(true);
       }
    } ei (globaldir) {
@@ -4296,7 +4294,6 @@ portFixCurrentDir(void) {
       //directory: Change to the global directory.
       (void)mch_chdir((char *)globaldir);
       EE_CLEAR(globaldir);
-      last_chdir_reason = NULL;
       shorten_fnames(true);
    }
 }
@@ -4306,7 +4303,7 @@ portFixCurrentDir(void) {
 //curPor has just been closed and isn't valid.
 //Return true when dont_parse_messages was decremented.
 private int
-enterPortalWorker(Portal* po, int flags) {
+enterPortalWorker(Portal* po, Unt flags) {
    int      isOtherBook = false;
    int      curPor_invalid = (flags & WEE_CURWIN_INVALID);
    int      did_decrement = false;
@@ -5402,7 +5399,7 @@ set_leftcol(ColNr leftcol) {
    curPor->leftCol = leftcol;
 
    changed_cline_bef_curs();
-   long lastcol = curPor->leftCol + curPor->width - curPor_col_off() - 1;
+   long lastcol = curPor->leftCol + curPor->width - normalPortalColumnOffset(curPor) - 1;
    validate_virtcol();
 
    // If the cursor is right or left of the screen, move it to last or first

@@ -1684,9 +1684,9 @@ do_put(
       // Correct line number for closed fold.  Don't move the cursor yet,
       // u_save() uses it.
       if (dir == BACKWARD)
-          (void)getFolds(lnum, &lnum, NULL);
+          (void)getFolds(lnum, OUT &lnum, NULL);
       else
-          (void)getFolds(lnum, NULL, &lnum);
+          (void)getFolds(lnum, NULL, OUT &lnum);
       if (dir == FORWARD)
           ++lnum;
       //In an empty buffer the empty line is going to be replaced, include it in the saved lines.

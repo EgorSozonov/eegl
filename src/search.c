@@ -960,9 +960,9 @@ do_search(
 
    // If the cursor is in a closed fold, don't find another match in the same fold.
    if (dirc == '/') {
-      if (getFolds(pos.lnum, NULL, &pos.lnum))
+      if (getFolds(pos.lnum, NULL, OUT &pos.lnum))
          pos.col = MAXCOL - 2;   // avoid overflow when adding 1
-   } ei (getFolds(pos.lnum, &pos.lnum, NULL))
+   } ei (getFolds(pos.lnum, OUT &pos.lnum, NULL))
       pos.col = 0;
 
    //Turn @hlsearch hiliting back on.
@@ -1088,7 +1088,7 @@ do_search(
                 msgbufsize = (int)(visibleRowsG - msgRowG) * visibleColsG - 1;
             else
                 // Use up to 'showcmd' column.
-                msgbufsize = (int)(visibleRowsG - msgRowG - 1) * visibleColsG + sc_col - 1;
+                msgbufsize = (int)(visibleRowsG - msgRowG - 1) * visibleColsG + shownCommandColG - 1;
             if (msgbufsize < plen + off_len + SEARCH_STAT_BUF_LEN + 3)
                 msgbufsize = plen + off_len + SEARCH_STAT_BUF_LEN + 3;
          } else

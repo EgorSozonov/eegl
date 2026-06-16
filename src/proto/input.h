@@ -59,7 +59,6 @@ int input_available(void);
 void may_add_last_used_map_to_redobuff(void);
 int do_cmdkey_command(Unt key, Unt flags);
 void reset_last_used_map(MapBlock *mp);
-int mb_ptr2cells_len(CS p, int size);
 CS inputInitCharLens(void);
 int mb_get_class(CS p);
 int inpGetClassForBook(CS p, Book *book);

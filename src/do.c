@@ -6183,8 +6183,8 @@ doOneCommand(
           && invo.addressKind == ADDR_LINES) {
       // Put the first line at the start of a closed fold, put the last line
       // at the end of a closed fold.
-      (void)getFolds(invo.line1, &invo.line1, NULL);
-      (void)getFolds(invo.line2, NULL, &invo.line2);
+      (void)getFolds(invo.line1, OUT &invo.line1, NULL);
+      (void)getFolds(invo.line2, NULL, OUT &invo.line2);
    }
 
    //For the ":make" and ":grep" commands we insert the 'makeprg'/'grepprg'
@@ -7987,7 +7987,7 @@ doGetCommandAddress(
             // closed fold after the first address.
             if (addressKind == ADDR_LINES && (i == '-' || i == '+')
                             && address_count >= 2)
-                (void)getFolds(lnum, NULL, &lnum);
+                (void)getFolds(lnum, NULL, OUT &lnum);
             if (i == '-')
                 lnum -= n;
             else {
@@ -10061,7 +10061,6 @@ post_chdir(CdScopeKind scope) {
       EE_CLEAR(globaldir);
    }
 
-   last_chdir_reason = NULL;
    shorten_fnames(true);
 }
 
@@ -10172,9 +10171,7 @@ c_pwd(Invocation* invo UNUSED) {
       if (p_verbose > 0) {
          CS context = S"global";
 
-         if (last_chdir_reason)
-            context = last_chdir_reason;
-         ei (curPor->localDir)
+         if (curPor->localDir)
             context = S"window";
          ei (curtab->localdir)
             context = S"tabpage";

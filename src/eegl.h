@@ -5790,87 +5790,6 @@ typedef enum {
    CPT_COUNT,      // Number of entries
 } CpItem;
 
-//#include "proto.h"       // function prototypes
-//{{{prototypes: include the (automatically generated) function prototypes
-
-//Don't include these while generating prototypes.  Prevents problems when files are missing.
-#if !defined(PROTO) && !defined(NOPROTO)
-
-//Machine-dependent routines. avoid errors in function prototypes
-//#define Display int
-//#define Widget int
-//#define XImage int
-
-#include "proto/book.h"
-#include "proto/data.h"
-#include "proto/diff.h"
-#include "proto/do.h"
-#include "proto/draw.h"
-#include "proto/eval.h"
-#include "proto/fileio.h"
-#include "proto/hilite.h"
-#include "proto/input.h"
-#include "proto/insert.h"
-#include "proto/location.h"
-#include "proto/main.h"
-#include "proto/mark.h"
-#include "proto/memory.h"
-
-// These prototypes cannot be produced automatically.
-int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
-#define smsg(a, ...) smsg0((char const*)(a), ##__VA_ARGS__)
-
-int smsgDeco0(char, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-#define smsgDeco(a, b, ...) smsgDeco0(a, (char const*)b, ##__VA_ARGS__)
-
-int smsgDecoKeep0(char, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-#define smsgDecoKeep(a, fmt, ...) smsgDecoKeep0(a, (char const*)fmt, ##__VA_ARGS__);
-
-// These prototypes cannot be produced automatically.
-int showErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
-#define showErrFmtMsg(a, ...) showErrFmtMsg0((char const*)a, ##__VA_ARGS__)
-
-// These prototypes cannot be produced automatically.
-void internalErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
-#define internalErrFmtMsg(a, ...) internalErrFmtMsg0((char const*)a, ##__VA_ARGS__)
-int eeSnprintfAdd0(CS, Unt, char const *, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
-#define eeSnprintfAdd(a, b, fmt, ...) eeSnprintfAdd0(a, b, (char const*)fmt, ##__VA_ARGS__)
-
-int eeSnprintf0(CS, Unt, char const* , ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
-#define eeSnprintf(a, len, fmt, ...) eeSnprintf0(a, len, (char const*)(fmt), ##__VA_ARGS__)
-Unt eeSnprintfSafelen0(CS, Unt, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
-#define eeSnprintfSafelen(a, b, fmt, ...) eeSnprintfSafelen0(a, b, (char const*)fmt, ##__VA_ARGS__)
-
-int eeVsnprintf(CS str, Unt str_m, char const* fmt, va_list ap)
-   ATTRIBUTE_FORMAT_PRINTF(3, 0);
-int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
-   ATTRIBUTE_FORMAT_PRINTF(3, 0);
-#define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
-
-#include "proto/juggle.h"
-#include "proto/message.h"
-#include "proto/normal.h"
-#include "proto/option.h"
-#include "proto/persist.h"
-#include "proto/portal.h"
-#include "proto/regexp.h"
-#include "proto/script.h"
-#include "proto/search.h"
-#include "proto/strings.h"
-#include "proto/tag.h"
-#include "proto/term.h"
-#include "proto/ui.h"
-#include "proto/window.h"
-#include "proto/channel.h"
-
-// Not generated automatically so that we can add an extra attribute.
-void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-void lo(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
-void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
-
-#endif // !PROTO && !NOPROTO
-
-//}}}
 //{{{termdefs
 
 //This list contains the defines for the machine dependent escape sequences that the editor needs 
@@ -5966,6 +5885,86 @@ typedef enum {
    TMODE_RAW,      //terminal mode for Normal and Insert mode
    TMODE_UNKNOWN   //after executing a shell
 } TermInputMode;
+
+//}}}
+//{{{prototypes: include the (automatically generated) function prototypes
+
+//Don't include these while generating prototypes.  Prevents problems when files are missing.
+#if !defined(PROTO) && !defined(NOPROTO)
+
+//Machine-dependent routines. avoid errors in function prototypes
+//#define Display int
+//#define Widget int
+//#define XImage int
+
+#include "proto/book.h"
+#include "proto/data.h"
+#include "proto/diff.h"
+#include "proto/do.h"
+#include "proto/draw.h"
+#include "proto/eval.h"
+#include "proto/fileio.h"
+#include "proto/hilite.h"
+#include "proto/input.h"
+#include "proto/insert.h"
+#include "proto/location.h"
+#include "proto/main.h"
+#include "proto/mark.h"
+#include "proto/memory.h"
+
+// These prototypes cannot be produced automatically.
+int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
+#define smsg(a, ...) smsg0((char const*)(a), ##__VA_ARGS__)
+
+int smsgDeco0(char, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
+#define smsgDeco(a, b, ...) smsgDeco0(a, (char const*)b, ##__VA_ARGS__)
+
+int smsgDecoKeep0(char, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
+#define smsgDecoKeep(a, fmt, ...) smsgDecoKeep0(a, (char const*)fmt, ##__VA_ARGS__);
+
+// These prototypes cannot be produced automatically.
+int showErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
+#define showErrFmtMsg(a, ...) showErrFmtMsg0((char const*)a, ##__VA_ARGS__)
+
+// These prototypes cannot be produced automatically.
+void internalErrFmtMsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);
+#define internalErrFmtMsg(a, ...) internalErrFmtMsg0((char const*)a, ##__VA_ARGS__)
+int eeSnprintfAdd0(CS, Unt, char const *, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
+#define eeSnprintfAdd(a, b, fmt, ...) eeSnprintfAdd0(a, b, (char const*)fmt, ##__VA_ARGS__)
+
+int eeSnprintf0(CS, Unt, char const* , ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
+#define eeSnprintf(a, len, fmt, ...) eeSnprintf0(a, len, (char const*)(fmt), ##__VA_ARGS__)
+Unt eeSnprintfSafelen0(CS, Unt, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
+#define eeSnprintfSafelen(a, b, fmt, ...) eeSnprintfSafelen0(a, b, (char const*)fmt, ##__VA_ARGS__)
+
+int eeVsnprintf(CS str, Unt str_m, char const* fmt, va_list ap)
+   ATTRIBUTE_FORMAT_PRINTF(3, 0);
+int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
+   ATTRIBUTE_FORMAT_PRINTF(3, 0);
+#define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)
+
+#include "proto/juggle.h"
+#include "proto/message.h"
+#include "proto/normal.h"
+#include "proto/option.h"
+#include "proto/persist.h"
+#include "proto/portal.h"
+#include "proto/regexp.h"
+#include "proto/script.h"
+#include "proto/search.h"
+#include "proto/strings.h"
+#include "proto/tag.h"
+#include "proto/term.h"
+#include "proto/ui.h"
+#include "proto/window.h"
+#include "proto/channel.h"
+
+// Not generated automatically so that we can add an extra attribute.
+void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
+void lo(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
+void ch_error(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
+
+#endif // !PROTO && !NOPROTO
 
 //}}}
 
@@ -6357,8 +6356,8 @@ EXTERN EeArgList argListG;          // global argument list
 EXTERN int max_alist_id INIT(= 0);       // the previous argument list id
 EXTERN int arg_had_last INIT(= FALSE); // accessed last file in argListG
 
-EXTERN int ru_wid;      // 'rulerfmt' width of ruler when non-zero
-EXTERN int sc_col;      // column for shown command
+EXTERN int rulerWidthG;      // @rulerformat: width of ruler when non-zero
+EXTERN int shownCommandColG; // column for shown command
 
 EXTERN DIR* eeTempDir_dpG INIT(= NULL); // File descriptor of temp dir
 EXTERN CS eeTempDirG INIT(= NULL); // Name of Eegl's own temp dir. Ends with a slash.
@@ -6367,13 +6366,12 @@ EXTERN CS eeTempDirG INIT(= NULL); // Name of Eegl's own temp dir. Ends with a s
 EXTERN int   starting INIT(= NO_SCREEN);
             // first NO_SCREEN, then NO_BUFFERS and then set to 0 when starting up finished
 EXTERN Boole isExitingG INIT(= false); //TRUE when planning to exit Eegl. Might
-                                    //still keep on running if there is a changed book.
+                                       //still keep on running if there is a changed book.
 EXTERN Boole really_exiting INIT(= false);
             // TRUE when we are sure to exit, e.g., after a deadly signal
 EXTERN int   v_dying INIT(= 0); // internal value of v:dying
 EXTERN Boole stdout_isatty INIT(= true);   // is stdout a terminal?
 
-EXTERN CS last_chdir_reason INIT(= NULL);
 #if defined(EXITFREE)
 EXTERN Boole   entered_free_all_mem INIT(= false); // TRUE when in or after free_all_mem()
 #endif

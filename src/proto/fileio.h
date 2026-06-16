@@ -1,7 +1,4 @@
 /* src/fileio.c */
-ssize_t listxattr(const char *, char *, size_t);
-ssize_t getxattr(const char *, const char *, void *, size_t);
-int setxattr(const char *, const char *, const void *, size_t, int);
 int modify_fname(CS src, int tilde_file, Unt *usedlen, CS *fnamep, CS *bufp, Unt *fnamelen);
 void init_homedir(void);
 void shorten_dir(CS str);

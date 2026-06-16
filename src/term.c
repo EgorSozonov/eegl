@@ -333,6 +333,9 @@ get_term_entries(OUT int* height, OUT int* width) {
       termCodesG[KS_DA] = S"y";
    if (termCodesG[KS_UT] == S"" && tgetflag("ut") > 0)
       termCodesG[KS_UT] = S"y";
+      
+   termCodesG[KS_CEI] = S"\033[2 q";
+   termCodesG[KS_CSI] = S"\033[6 q";
 
    // get key codes
    for (Unt i = 0; i < ARRAY_LENGTH(key_names); ++i) {
@@ -1377,12 +1380,12 @@ may_req_termresponse(void) {
    }
 }
 
-// Send sequences to the terminal and check with t_u7 how the cursor moves, to find out properties
-// of the terminal. Note that this goes out before termCodesG[KS_CRV], so that the result
-// can be used when the termresponse arrives.
+//Send sequences to the terminal and check with t_u7 how the cursor moves, to find out properties
+//of the terminal. Note that this goes out before termCodesG[KS_CRV], so that the result
+//can be used when the termresponse arrives.
 void
 check_terminal_behavior(void) {
-   int       did_send = false;
+   Boole did_send = false;
 
    if (!can_get_termresponse() || starting != 0 || termCodesG[KS_U7] == S"")
       return;
@@ -1412,7 +1415,7 @@ check_terminal_behavior(void) {
       //after this. Clear them out for now.
       drawStopHilite();
       term_windgoto(1, 0);
-      out_str((CS)"  ");
+      out_str(S"  ");
       line_was_clobbered(1);
    }
 
@@ -1439,7 +1442,7 @@ check_terminal_behavior(void) {
       //displayed. Clear them out for now.
       drawStopHilite();
       term_windgoto(2, 0);
-      out_str((CS)"           ");
+      out_str(S"           ");
       line_was_clobbered(2);
    }
 
@@ -1524,6 +1527,7 @@ void
 term_cursor_mode(int forced) {
    static int showing_mode = -1;
 
+   _bp(true);
    // Only do something when redrawing the screen and we can restore the mode.
    if (!fullScreenG || termCodesG[KS_CEI] == S"") {
       if (forced && initial_cursor_shape > 0)

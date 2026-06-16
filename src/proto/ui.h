@@ -1,6 +1,4 @@
 /* src/ui.c */
-int fstat(int fd, struct stat *statbuf);
-int stat(const char *restrict path, struct stat *restrict buf);
 void init_job_options(JobOptions *opt);
 Book *term_start(Var *argvar, Byte **argv, JobOptions *opt, Unt flags);
 void c_terminal(Invocation *invo);
@@ -92,7 +90,6 @@ void trash_input_buf(void);
 int read_from_input_buf(CS buf, long maxlen);
 void fill_input_buf(Boole exit_on_error);
 void read_error_exit(void);
-void ui_cursor_shape_forced(int forced);
 void ui_cursor_shape(void);
 Unt check_col(Unt col);
 Unt check_row(Unt row);

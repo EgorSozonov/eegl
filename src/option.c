@@ -2965,16 +2965,16 @@ parse_status_rulerformat(OptionChange* cha) {
    int      wid;
 
    CS new = cha->newVal.string;
-   if (new)   // reset ru_wid first
-      ru_wid = 0;
+   if (new)   // reset rulerWidthG first
+      rulerWidthG = 0;
    CS s = new;
    if (new && *s == '%') {
-      // set ru_wid if 'ruf' starts with "%99("
+      // set rulerWidthG if 'ruf' starts with "%99("
       if (*++s == '-')   // ignore a '-'
          s++;
       wid = parseLong(&s);
       if (wid && *s == '(' && (errmsg = check_stl_option(new)) == NULL)
-         ru_wid = wid;
+         rulerWidthG = wid;
       else {
          //Validate the flags in 'rulerformat' only if it doesn't point to a custom function 
          //("%!" flag).

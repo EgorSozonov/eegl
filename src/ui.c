@@ -7898,6 +7898,12 @@ terminal_is_active(void) {
    return in_terminal_loop != NULL;
 }
 
+// May update the shape of the cursor.
+private void
+ui_cursor_shape_forced(Boole forced) {
+   term_cursor_mode(forced);
+}
+
 private void
 may_output_cursor_props(void) {
    if (!cursor_color_equal(last_set_cursor_color, desired_cursor_color)
@@ -11337,12 +11343,6 @@ read_error_exit(void) {
     preserve_exit();
 }
 
-// May update the shape of the cursor.
-void
-ui_cursor_shape_forced(int forced) {
-   term_cursor_mode(forced);
-}
-
 void
 ui_cursor_shape(void) {
    ui_cursor_shape_forced(false);
@@ -11765,12 +11765,12 @@ get_tabNr_on_tabpanel(void) {
 // Fill tailing area between {start_row} and {end_row - 1}.
 private void
 fillRowsWithTwoCharsWithTailingArea(
-   int   tplmode,
-   int   row_start,
-   int   row_end,
-   int   col_start,
-   int   col_end,
-   char  decoFlags
+   int tplmode,
+   int row_start,
+   int row_end,
+   int col_start,
+   int col_end,
+   Decoration deco
 ) {
    int is_right = tabPanelAlignS == ALIGN_RIGHT;
    if (tplmode == TPLMODE_REDRAW)
@@ -11778,19 +11778,19 @@ fillRowsWithTwoCharsWithTailingArea(
          row_start, row_end,
          (is_right ? topframeG->width : 0) + col_start,
          (is_right ? topframeG->width : 0) + col_end,
-         TPL_FILLCHAR, TPL_FILLCHAR, decoFlags
+         TPL_FILLCHAR, TPL_FILLCHAR, deco
       );
 }
 
 private void
 drawTextLen_for_tabpanel(
-   Unt       tplmode,
+   Unt tplmode,
    CS p,
-   Unt       len,
-   char decoFlags,
+   Unt len,
+   Decoration deco,
    Tabpanel* tapa
 ){
-   Unt      chcells;
+   Unt chcells;
    Byte buf[IOSIZE];
    CS temp;
 
@@ -11804,7 +11804,7 @@ drawTextLen_for_tabpanel(
             fillRowsWithTwoCharsWithTailingArea(tplmode,
                *tapa->prow - tapa->offsetrow,
                *tapa->prow - tapa->offsetrow + 1,
-               *tapa->pcol, tapa->col_end, decoFlags
+               *tapa->pcol, tapa->col_end, deco
             );
          } 
          (*tapa->prow)++;
@@ -11834,7 +11834,7 @@ drawTextLen_for_tabpanel(
                   tplmode,
                   *tapa->prow - tapa->offsetrow,
                   *tapa->prow - tapa->offsetrow + 1,
-                  *tapa->pcol, tapa->col_end, decoFlags
+                  *tapa->pcol, tapa->col_end, deco
                );
             *tapa->pcol = tapa->col_end;
 
@@ -11845,10 +11845,10 @@ drawTextLen_for_tabpanel(
          if (*tapa->pcol + chcells <= tapa->col_end) {
             int off = (tabPanelAlignS == ALIGN_RIGHT) ? topframeG->width : 0;
             if (TPLMODE_REDRAW == tplmode
-                  && (*tapa->prow >= tapa->offsetrow
+                  && (  *tapa->prow >= tapa->offsetrow
                      && *tapa->prow < tapa->offsetrow + tapa->maxrow)
             )
-               drawText(buf, *tapa->prow - tapa->offsetrow, *tapa->pcol + off, decoFlags);
+               drawText(buf, *tapa->prow - tapa->offsetrow, *tapa->pcol + off, deco.flags);
             *tapa->pcol += chcells;
          }
       }
@@ -11868,32 +11868,33 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
       if (doWasBookChanged(tapa->po->book))
          modified = true;
    } 
+   Decoration defaultDeco = getFullDecoration(0);
 
    if (modified || countPortals > 1) {
       if (countPortals > 1) {
          eeSnprintf(nameBuffG, MAXPATHL, "%d", countPortals);
          len = (Unt)STRLEN(nameBuffG);
-         drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getDecoFlags(HLF_T), tapa);
+         drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getFullDecoration(HLF_T), tapa);
       }
       if (modified) {
          buf[0] = '+';
-         drawTextLen_for_tabpanel(tplmode, buf, 1, 0, tapa);
+         drawTextLen_for_tabpanel(tplmode, buf, 1, defaultDeco, tapa);
       }
 
       buf[0] = TPL_FILLCHAR;
-      drawTextLen_for_tabpanel(tplmode, buf, 1, 0, tapa);
+      drawTextLen_for_tabpanel(tplmode, buf, 1, defaultDeco, tapa);
    }
 
    drawGetTranslatedBookName(tapa->currPort->book);
    shorten_dir(nameBuffG);
    len = (int)STRLEN(nameBuffG);
-   drawTextLen_for_tabpanel(tplmode, nameBuffG, len, 0, tapa);
+   drawTextLen_for_tabpanel(tplmode, nameBuffG, len, getFullDecoration(0), tapa);
 
    // fill the tailing area of current row.
    if (*tapa->prow >= tapa->offsetrow && *tapa->prow < tapa->offsetrow + tapa->maxrow) {
       fillRowsWithTwoCharsWithTailingArea(
          tplmode, *tapa->prow - tapa->offsetrow, *tapa->prow - tapa->offsetrow + 1,
-         *tapa->pcol, tapa->col_end, 0
+         *tapa->pcol, tapa->col_end, defaultDeco
       );
    } 
    *tapa->pcol = tapa->col_end;
@@ -11906,7 +11907,7 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    Byte buf[IOSIZE];
    StatusLineHilite* hilites;
    StatusLineHilite* labels;
-   char currDecoFlags;
+   Decoration currDeco;
    int n;
 
    //Temporarily reset 'cursorbind', we don't want a side effect from moving the cursor away & back
@@ -11925,23 +11926,23 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    eeglFree(p);
    tapa->currPort->o.cursorBind = p_crb_save;
 
-   currDecoFlags = 0;
+   currDeco = getFullDecoration(0);
    p = buf;
    for (n = 0; hilites[n].start; n++) {
-      drawTextLen_for_tabpanel(tplmode, p, (int)(hilites[n].start - p), currDecoFlags, tapa);
+      drawTextLen_for_tabpanel(tplmode, p, (int)(hilites[n].start - p), currDeco, tapa);
       p = hilites[n].start;
       if (hilites[n].hiId == SHORT)
-         currDecoFlags = 0;
+         currDeco = getFullDecoration(0);
       else
-         currDecoFlags = decorationsG[hilites[n].hiId].flags;
+         currDeco = decorationsG[hilites[n].hiId];
    }
-   drawTextLen_for_tabpanel(tplmode, p, (int)STRLEN(p), currDecoFlags, tapa);
+   drawTextLen_for_tabpanel(tplmode, p, (int)STRLEN(p), currDeco, tapa);
 
    // fill the tailing area of current row.
    if (*tapa->prow >= tapa->offsetrow && *tapa->prow < tapa->offsetrow + tapa->maxrow) {
       fillRowsWithTwoCharsWithTailingArea(
          tplmode, *tapa->prow - tapa->offsetrow, *tapa->prow + 1 - tapa->offsetrow, 
-         *tapa->pcol, tapa->col_end, currDecoFlags
+         *tapa->pcol, tapa->col_end, currDeco
       );
    } 
    *tapa->pcol = tapa->col_end;
@@ -11987,7 +11988,7 @@ do_by_tplmode(
    OUT Unt* pcurtab_row,
    OUT Unt* tabNr
 ){
-   char fillerFlags = getDecoFlags(HLF_TPLF);
+   Decoration fillerDeco = getFullDecoration(HLF_TPLF);
    Unt      col = col_start;
    Unt row = 0;
    Tab* tp = NULL;
@@ -12044,7 +12045,7 @@ do_by_tplmode(
                      tplmode,
                      row - tapa.offsetrow,
                      row - tapa.offsetrow + 1,
-                     col, tapa.col_end, 0
+                     col, tapa.col_end, getFullDecoration(0)
                   );
                } 
 
@@ -12097,7 +12098,7 @@ do_by_tplmode(
 
    // fill the area of TabPanelFill.
    fillRowsWithTwoCharsWithTailingArea(
-      tplmode, row - tapa.offsetrow, tapa.maxrow, tapa.col_start, tapa.col_end, fillerFlags
+      tplmode, row - tapa.offsetrow, tapa.maxrow, tapa.col_start, tapa.col_end, fillerDeco
    );
 }
 

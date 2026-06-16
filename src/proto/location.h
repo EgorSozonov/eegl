@@ -1,7 +1,4 @@
 /* src/location.c */
-int fstat(int fd, struct stat *statbuf);
-int stat(const char *restrict path, struct stat *restrict buf);
-int lstat(const char *restrict , struct stat *restrict );
 int llInitFromFile(LocationStack *st, CS errorFName, CS errorformat, Boole newlist, CS title);
 int qf_stack_get_bufnr(void);
 void check_qfBusynessG(void);

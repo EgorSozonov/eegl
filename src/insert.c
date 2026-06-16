@@ -378,7 +378,7 @@ edit(Unt commChar, int startln, long count){
          ) {
             if (curPor->topFill > 0)
                --curPor->topFill;
-            ei (getFolds(curPor->topLine, NULL, &old_topline))
+            ei (getFolds(curPor->topLine, NULL, OUT &old_topline))
                set_topline(curPor, old_topline + 1);
             else
                set_topline(curPor, curPor->topLine + 1);
@@ -1868,7 +1868,7 @@ cursor_up_inner(Portal* po, long n) {
    ei (hasAnyFolding(po)) {
       //Count each sequence of folded lines as one logical line.
       // go to the start of the current fold
-      (void)getFoldsPortal(po, lnum, &lnum, NULL, true, NULL);
+      (void)getFoldsPortal(po, lnum, OUT &lnum, NULL, true, NULL);
 
       while (n--) {
          // move up one line
@@ -1879,7 +1879,7 @@ cursor_up_inner(Portal* po, long n) {
          // Insert mode or when 'foldopen' contains "all": it will open
          // in a moment.
          if (n > 0 || !((stateG & MODE_INSERT) || (p_fdo & FDO_ALL)))
-            (void)getFoldsPortal(po, lnum, &lnum, NULL, true, NULL);
+            (void)getFoldsPortal(po, lnum, OUT &lnum, NULL, true, NULL);
       }
       if (lnum < 1)
           lnum = 1;
@@ -1919,7 +1919,7 @@ cursor_down_inner(Portal* wp, long n) {
 
       // count each sequence of folded lines as one logical line
       while (n--) {
-         if (getFoldsPortal(wp, lnum, NULL, &last, true, NULL))
+         if (getFoldsPortal(wp, lnum, NULL, OUT &last, true, NULL))
             lnum = last + 1;
          else
             ++lnum;
@@ -1941,7 +1941,7 @@ cursor_down(long n, int upd_topline) {      // When true: update topline
    LineNr line_count = curPor->book->mem.lineCount;
    // This fails if the cursor is already in the last (folded) line, or would
    // move beyond the last line and '-' is in 'cpoptions'.
-   getFoldsPortal(curPor, lnum, NULL, &lnum, true, NULL);
+   getFoldsPortal(curPor, lnum, NULL, OUT &lnum, true, NULL);
    if (n > 0 && lnum >= line_count)
       return FAIL;
    cursor_down_inner(curPor, n);
@@ -7418,7 +7418,7 @@ ins_compl_insert(int move_cursor) {
 private void
 ins_compl_show_filename(void) {
    CS  lead = _("match in file");
-   int      space = sc_col - eeglStrSize((CS)lead) - 2;
+   int      space = shownCommandColG - eeglStrSize((CS)lead) - 2;
    CS s;
    CS e;
 

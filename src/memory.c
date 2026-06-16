@@ -5,7 +5,9 @@
 
 #include "eegl.h"
 
+#ifndef PROTO
 #include <sys/resource.h>
+#endif
 #include <sys/sysinfo.h>
 int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);

@@ -18,83 +18,83 @@ private void   del_from_showcmd(int);
 // nv_*(): functions called to handle Normal and Visual mode actions.
 // n_*(): functions called to handle Normal mode actions.
 // v_*(): functions called to handle Visual mode actions.
-private void   nv_ignore(ActionArg* aArg);
-private void   nv_nop(ActionArg* aArg);
-private void   nvError(ActionArg* aArg);
-private void   nv_help(ActionArg* aArg);
-private void   nvAddSub(ActionArg* aArg);
-private void   nvPage(ActionArg* aArg);
-private void   nv_zet(ActionArg* aArg);
-private void   nv_colon(ActionArg* aArg);
-private void   nv_ctrlg(ActionArg* aArg);
-private void   nv_ctrlh(ActionArg* aArg);
-private void   nv_clear(ActionArg* aArg);
-private void   nv_ctrlo(ActionArg* aArg);
-private void   nv_hat(ActionArg* aArg);
-private void   nv_Zet(ActionArg* aArg);
-private void   nv_ident(ActionArg* aArg);
-private void   nv_tagpop(ActionArg* aArg);
-private void   nv_scroll(ActionArg* aArg);
-private void   nv_right(ActionArg* aArg);
-private void   nv_left(ActionArg* aArg);
-private void   nv_up(ActionArg* aArg);
-private void   nv_down(ActionArg* aArg);
-private void   nv_end(ActionArg* aArg);
-private void   nv_dollar(ActionArg* aArg);
-private void   nv_search(ActionArg* aArg);
-private void   nv_next(ActionArg* aArg);
+private void nv_ignore(ActionArg* aArg);
+private void nv_nop(ActionArg* aArg);
+private void nvError(ActionArg* aArg);
+private void nv_help(ActionArg* aArg);
+private void nvAddSub(ActionArg* aArg);
+private void nvPage(ActionArg* aArg);
+private void nv_zet(ActionArg* aArg);
+private void nv_colon(ActionArg* aArg);
+private void nv_ctrlg(ActionArg* aArg);
+private void nv_ctrlh(ActionArg* aArg);
+private void nv_clear(ActionArg* aArg);
+private void nv_ctrlo(ActionArg* aArg);
+private void nv_hat(ActionArg* aArg);
+private void nv_Zet(ActionArg* aArg);
+private void nv_ident(ActionArg* aArg);
+private void nv_tagpop(ActionArg* aArg);
+private void nv_scroll(ActionArg* aArg);
+private void nv_right(ActionArg* aArg);
+private void nv_left(ActionArg* aArg);
+private void nv_up(ActionArg* aArg);
+private void nv_down(ActionArg* aArg);
+private void nv_end(ActionArg* aArg);
+private void nv_dollar(ActionArg* aArg);
+private void nv_search(ActionArg* aArg);
+private void nv_next(ActionArg* aArg);
 private int normal_search(ActionArg* aArg, int dir, CS pat, Unt patlen, int opt, int *wrapped);
-private void   nv_csearch(ActionArg* aArg);
-private void   nv_brackets(ActionArg* aArg);
-private void   nv_percent(ActionArg* aArg);
-private void   nv_brace(ActionArg* aArg);
-private void   nv_mark(ActionArg* aArg);
-private void   nv_findpar(ActionArg* aArg);
-private void   nv_undo(ActionArg* aArg);
-private void   nv_kundo(ActionArg* aArg);
-private void   nv_replace(ActionArg* aArg);
-private void   nv_cursormark(ActionArg* aArg, int flag, Pos *pos);
-private void   v_visop(ActionArg* aArg);
-private void   nv_subst(ActionArg* aArg);
-private void   nv_abbrev(ActionArg* aArg);
-private void   nv_optrans(ActionArg* aArg);
-private void   nv_gomark(ActionArg* aArg);
-private void   nv_pcmark(ActionArg* aArg);
-private void   nv_regname(ActionArg* aArg);
-private void   nv_visual(ActionArg* aArg);
-private void   n_start_visual_mode(int c);
-private void   nv_portal(ActionArg* aArg);
-private void   nv_suspend(ActionArg* aArg);
+private void nv_csearch(ActionArg* aArg);
+private void nv_brackets(ActionArg* aArg);
+private void nv_percent(ActionArg* aArg);
+private void nv_brace(ActionArg* aArg);
+private void nv_mark(ActionArg* aArg);
+private void nv_findpar(ActionArg* aArg);
+private void nv_undo(ActionArg* aArg);
+private void nv_kundo(ActionArg* aArg);
+private void nv_replace(ActionArg* aArg);
+private void nv_cursormark(ActionArg* aArg, int flag, Pos *pos);
+private void vVisualOperators(ActionArg* aArg);
+private void nv_subst(ActionArg* aArg);
+private void nv_abbrev(ActionArg* aArg);
+private void nvOperatorAliases(ActionArg* aArg);
+private void nv_gomark(ActionArg* aArg);
+private void nv_pcmark(ActionArg* aArg);
+private void nv_regname(ActionArg* aArg);
+private void nv_visual(ActionArg* aArg);
+private void n_start_visual_mode(int c);
+private void nv_portal(ActionArg* aArg);
+private void nv_suspend(ActionArg* aArg);
 private void n_swapchar(ActionArg* aArg);
-private void   nv_g_cmd(ActionArg* aArg);
-private void   nvDot(ActionArg* aArg);
-private void   nv_redo_or_register(ActionArg* aArg);
-private void   nv_Undo(ActionArg* aArg);
-private void   nv_tilde(ActionArg* aArg);
-private void   nv_operator(ActionArg* aArg);
-private void   set_op_var(int optype);
-private void   nv_home(ActionArg* aArg);
-private void   nv_pipe(ActionArg* aArg);
-private void   nv_bck_word(ActionArg* aArg);
-private void   nv_wordcmd(ActionArg* aArg);
-private void   nv_beginline(ActionArg* aArg);
-private void   adjust_cursor(Operator *oper);
-private void   nv_goto(ActionArg* aArg);
-private void   nv_normal(ActionArg* aArg);
-private void   nv_esc(ActionArg *oper);
-private void   nv_edit(ActionArg* aArg);
-private void   invokeEdit(ActionArg* aArg, int repl, int cmd, int startln);
-private void   nv_object(ActionArg* aArg);
-private void   nv_record(ActionArg* aArg);
-private void   nv_at(ActionArg* aArg);
-private void   nv_halfpage(ActionArg* aArg);
-private void   nvJoin(ActionArg* aArg);
-private void   nv_put(ActionArg* aArg);
-private void   nv_put_opt(ActionArg* aArg, int fix_indent);
-private void   nvOpen(ActionArg* aArg);
+private void nv_g_cmd(ActionArg* aArg);
+private void nvDot(ActionArg* aArg);
+private void nv_redo_or_register(ActionArg* aArg);
+private void nv_Undo(ActionArg* aArg);
+private void nv_tilde(ActionArg* aArg);
+private void nv_operator(ActionArg* aArg);
+private void set_op_var(int optype);
+private void nv_home(ActionArg* aArg);
+private void nv_pipe(ActionArg* aArg);
+private void nv_bck_word(ActionArg* aArg);
+private void nv_wordcmd(ActionArg* aArg);
+private void nv_beginline(ActionArg* aArg);
+private void adjust_cursor(Operator *oper);
+private void nv_goto(ActionArg* aArg);
+private void nv_normal(ActionArg* aArg);
+private void nv_esc(ActionArg *oper);
+private void nv_edit(ActionArg* aArg);
+private void invokeEdit(ActionArg* aArg, int repl, int cmd, int startln);
+private void nv_object(ActionArg* aArg);
+private void nv_record(ActionArg* aArg);
+private void nv_at(ActionArg* aArg);
+private void nv_halfpage(ActionArg* aArg);
+private void nvJoin(ActionArg* aArg);
+private void nv_put(ActionArg* aArg);
+private void nv_put_opt(ActionArg* aArg, int fix_indent);
+private void nvOpen(ActionArg* aArg);
 private void nOpenAction(ActionArg* aArg);
-private void   nv_drop(ActionArg* aArg);
-private void   nv_cursorhold(ActionArg* aArg);
+private void nv_drop(ActionArg* aArg);
+private void nv_cursorhold(ActionArg* aArg);
 private void v_swap_corners(int cmdchar);
 
 private void update_curswant_force(void);
@@ -102,7 +102,7 @@ private void scroll_cursor_top(int min_scroll, int always);
 
 private void openFoldRecurse(LineNr lnum);
 private void closeFoldRecurse(LineNr lnum);
-private int foldMoveTo(Boole      updown, Unt      dir, long   count);
+private int foldMoveTo(Boole updown, Unt dir, long count);
 private int getDeepestNesting(void);
 private void foldAdjustCursor(void);
 
@@ -2900,11 +2900,11 @@ display_showcmd(void) {
          redrawPortalStatusLine(curPor, false);
    } else { // @showcmdloc is "last" or empty
       if (!showcmd_is_clear)
-          drawText(showcmd_buf, (int)visibleRowsG - 1, sc_col, 0);
+          drawText(showcmd_buf, (int)visibleRowsG - 1, shownCommandColG, 0);
 
       // clear the rest of an old message by outputting up to SHOWCMD_COLS
       // spaces
-      drawText((CS)"          " + len, (int)visibleRowsG - 1, sc_col + len, 0);
+      drawText((CS)"          " + len, (int)visibleRowsG - 1, shownCommandColG + len, 0);
    }
 
     setcursor();       // put cursor back where it belongs
@@ -3319,27 +3319,22 @@ invokeEdit(
    int cmd,
    int startln
 ){
-   int      restart_edit_save = 0;
-
-   // Complicated: When the user types "a<C-O>a" we don't want to do Insert
-   // mode recursively.  But when doing "a<C-O>." or "a<C-O>rx" we do allow it.
-   if (repl || !stuff_empty())
-      restart_edit_save = restart_edit;
-   else
-      restart_edit_save = 0;
+   //Complicated: When the user types "a<C-O>a" we don't want to do Insert
+   //mode recursively.  But when doing "a<C-O>." or "a<C-O>rx" we do allow it.
+   int restartEditSaved = (repl || !stuff_empty()) ? restart_edit : 0;
 
    // Always reset "restart_edit", this is not a restarted edit.
    restart_edit = 0;
 
-   // Reset Changedtick_i, so that TextChangedI will only be triggered for stuff
-   // from insert mode, for 'o/O' this has already been done in nOpenAction
+   //Reset Changedtick_i, so that TextChangedI will only be triggered for stuff
+   //from insert mode, for 'o/O' this has already been done in nOpenAction
    if (aArg->cmdchar != 'O' && aArg->cmdchar != 'o')
       curBook->lastChangeTickInsert = CHANGEDTICK(curBook);
    if (edit(cmd, startln, aArg->count1))
       aArg->retval |= CA_COMMAND_BUSY;
 
    if (restart_edit == 0)
-      restart_edit = restart_edit_save;
+      restart_edit = restartEditSaved;
 }
 
 //}}}
@@ -3431,15 +3426,14 @@ nv_gd(Operator* oper, int nchar, int      thisblock) {  // 1 for "1gd" and "1gD"
 // Return OK if able to move cursor, FAIL otherwise.
 int
 nv_screengo(Operator* oper, Unt dir, long dist) {
-   int      linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
-   int      retval = OK;
-   int      atend = false;
-   int      n;
+   int linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
+   int retval = OK;
+   int atend = false;
 
    oper->motion_type = MCHAR;
    oper->inclusive = (curPor->cursWant == MAXCOL);
 
-   int col_off1 = curPor_col_off(); //margin offset for first screen line
+   int col_off1 = normalPortalColumnOffset(curPor); //margin offset for first screen line
    int width1 = curPor->width - col_off1; //text width for first screen line
    int width2 = curPor->width - col_off1; //text width for wrapped screen line
    if (width2 == 0)
@@ -3459,10 +3453,8 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
                curPor->cursWant += ((curPor->virtCol - curPor->cursWant - 1) / width2 + 1) * width2;
          }
       } else {
-         if (linelen > width1)
-            n = ((linelen - width1 - 1) / width2 + 1) * width2 + width1;
-         else
-            n = width1;
+         int n = (linelen > width1) 
+            ? ((linelen - width1 - 1) / width2 + 1) * width2 + width1 :  width1;
          if (curPor->cursWant >= (ColNr)n)
             curPor->cursWant = n - 1;
       }
@@ -3489,18 +3481,16 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
                   curPor->cursWant += (((linelen - width1 - 1) / width2) + 1) * width2;
             }
          } else { // dir == FORWARD
-            if (linelen > width1)
-               n = ((linelen - width1 - 1) / width2 + 1) * width2 + width1;
-            else
-               n = width1;
+            int n = (linelen > width1) 
+               ? ((linelen - width1 - 1) / width2 + 1) * width2 + width1 : width1;
             if (curPor->cursWant + width2 < (ColNr)n && !getFolds(curPor->cursor.lnum, NULL, NULL))
                // move forward within line
                curPor->cursWant += width2;
             else {
                // to next line
                if (curPor->cursor.lnum >= curPor->book->mem.lineCount) {
-                   retval = FAIL;
-                   break;
+                  retval = FAIL;
+                  break;
                }
                cursor_down_inner(curPor, 1);
                curPor->cursWant %= width2;
@@ -3509,7 +3499,7 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
                //(with cpoptions+=n). Subtract width2 to get a negative value for cursWant, which 
                //will get clipped to column 0.
                if (curPor->cursWant >= width1)
-                   curPor->cursWant -= width2;
+                  curPor->cursWant -= width2;
                linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
             }
          }
@@ -3528,12 +3518,12 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
       validate_virtcol();
       ColNr virtcol = curPor->virtCol;
       if (virtcol > (ColNr)width1 && p_sbr)
-          virtcol -= eeglStrSize(p_sbr);
+         virtcol -= eeglStrSize(p_sbr);
 
       Unt c = mb_ptr2char(ml_get_cursor());
       if (dir == FORWARD && virtcol < curPor->cursWant
-         && (curPor->cursWant <= (ColNr)width1)
-         && !bookIsCharPrintable(c) && c > 255
+            && (curPor->cursWant <= (ColNr)width1)
+            && !bookIsCharPrintable(c) && c > 255
       )
          oneright();
 
@@ -3561,13 +3551,18 @@ nv_scroll_line(ActionArg* aArg) {
 
 // For overflow detection, add a digit safely to a long value.
 private int
-appendDigitLong(long* value, int digit) {
+appendDigitLong(OUT long* value, int digit) {
    long x = *value;
    if (x > ((LONG_MAX - (long)digit) / 10))
       return FAIL;
    *value = x * 10 + (long)digit;
    return OK;
 }
+
+private int
+widthLeft(Portal* po) {
+   return po->width - normalPortalColumnOffset(po);
+} 
 
 // Get the count specified after a 'z' action. Only the 'z<CR>', 'zl', 'zh', 'z<Left>', and 
 // 'z<Right>' commands accept a count after 'z'. Return true to process the 'z' command and 
@@ -3578,7 +3573,7 @@ nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
    if (checkclearop(aArg->oper))
       return false;
       
-   Unt      nchar = *nchar_arg;
+   Unt nchar = *nchar_arg;
    long n = (Long)nchar - '0';
 
    for (;;) {
@@ -3593,7 +3588,7 @@ nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
       if (nchar == K_DEL || nchar == K_KDEL)
          n /= 10;
       ei (EE_ISDIGIT(nchar)) {
-         if (appendDigitLong(&n, nchar - '0') == FAIL) {
+         if (appendDigitLong(OUT &n, nchar - '0') == FAIL) {
             clearopbeep(aArg->oper);
             break;
          }
@@ -3754,7 +3749,7 @@ nv_zet(ActionArg* aArg) {
             col = 0;   // like the cursor is in col 0
          else
             getvcol(curPor, &curPor->cursor, NULL, NULL, &col);
-         n = curPor->width - curPor_col_off();
+         n = widthLeft(curPor);
          if ((long)col + siso < n)
             col = 0;
          else
@@ -5264,7 +5259,7 @@ nv_subst(ActionArg* aArg) {
       aArg->cmdchar = 'c';
       nv_operator(aArg);
    } else
-      nv_optrans(aArg);
+      nvOperatorAliases(aArg);
 }
 
 // Abbreviated commands.
@@ -5275,14 +5270,14 @@ nv_abbrev(ActionArg* aArg) {
 
    // in Visual mode these commands are operators
    if (VIsual_active)
-      v_visop(aArg);
+      vVisualOperators(aArg);
    else
-      nv_optrans(aArg);
+      nvOperatorAliases(aArg);
 }
 
 // Translate a command into another command.
 private void
-nv_optrans(ActionArg* aArg) {
+nvOperatorAliases(ActionArg* aArg) {
    static CS substitutions[8] = {SMAP((CS),
          "dl", "dh",
          "d$", "c$",
@@ -5302,19 +5297,15 @@ nv_optrans(ActionArg* aArg) {
 // "'" and "`" commands.  Also for "g'" and "g`". aArg->arg is true for "'" and "g'".
 private void
 nv_gomark(ActionArg* aArg) {
-   int c;
    Pos old_cursor = curPor->cursor;
    int old_KeyTyped = KeyTyped;    // getting file may reset it
 
-   if (aArg->cmdchar == 'g')
-      c = aArg->extra_char;
-   else
-      c = aArg->nchar;
+   int c = (aArg->cmdchar == 'g') ? aArg->extra_char : aArg->nchar;
    Pos* pos = getmark(c, (aArg->oper->opTy == OP_NOP));
    if (pos == (Pos *)-1) {      // jumped to other file
       if (aArg->arg) {
-          check_cursor_lnum();
-          beginline(BL_WHITE | BL_FIX);
+         check_cursor_lnum();
+         beginline(BL_WHITE | BL_FIX);
       } else
          check_cursor();
    } else
@@ -5327,7 +5318,7 @@ nv_gomark(ActionArg* aArg) {
    if (aArg->oper->opTy == OP_NOP
           && pos
           && (pos == (Pos *)-1 || !EQUAL_POS(old_cursor, *pos))
-          && (p_fdo & FDO_MARK)
+          && (p_fdo & FDO_MARK) != 0
           && old_KeyTyped
    )
       foldOpenCursor();
@@ -5336,8 +5327,8 @@ nv_gomark(ActionArg* aArg) {
 // Handle CTRL-O, CTRL-I, "g;", "g," and "CTRL-Tab" commands.
 private void
 nv_pcmark(ActionArg* aArg) {
-   LineNr   lnum = curPor->cursor.lnum;
-   int      old_KeyTyped = KeyTyped;    // getting file may reset it
+   LineNr lnum = curPor->cursor.lnum;
+   int old_KeyTyped = KeyTyped;    // getting file may reset it
 
    if (checkclearopq(aArg->oper))
       return;
@@ -5552,8 +5543,8 @@ nv_g_home_m_cmd(ActionArg* aArg) {
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = false;
    if (curPor->o.wrap && curPor->width != 0) {
-      int   width1 = curPor->width - curPor_col_off();
-      int   virtcol;
+      int width1 = widthLeft(curPor);
+      int virtcol;
 
       validate_virtcol();
       virtcol = curPor->virtCol - curPor->virtColFirstChar;
@@ -5574,7 +5565,7 @@ nv_g_home_m_cmd(ActionArg* aArg) {
    // 'relativenumber' is on and lines are wrapping the middle can be more
    // to the left.
    if (aArg->nchar == 'm')
-      i += (curPor->width - curPor_col_off()) / 2;
+      i += widthLeft(curPor) / 2;
    coladvance((ColNr)i);
    if (flag) {
       do {
@@ -5619,7 +5610,7 @@ private void
 nvGDollarAction(ActionArg* aArg) {
    Operator* oper = aArg->oper;
    int i;
-   int col_off = curPor_col_off();
+   int col_off = normalPortalColumnOffset(curPor);
    Boole flag = false;
 
    if (aArg->nchar == K_END || aArg->nchar == K_KEND)
@@ -6316,7 +6307,7 @@ nv_esc(ActionArg* aArg) {
 // Handle "A", "a", "I", "i" and <Insert> commands. Also handle K_PS, start bracketed paste.
 private void
 nv_edit(ActionArg* aArg) {
-   // <Insert> is equal to "i"
+   //<Insert> is equal to "i"
    if (aArg->cmdchar == K_INS || aArg->cmdchar == K_KINS)
       aArg->cmdchar = 'i';
 
@@ -6328,7 +6319,7 @@ nv_edit(ActionArg* aArg) {
          term_enter_job_mode();
          return;
       }
-      v_visop(aArg);
+      vVisualOperators(aArg);
    }
 
    // in Visual mode and after an operator "a" and "i" are for text objects
@@ -6364,20 +6355,18 @@ nv_edit(ActionArg* aArg) {
 
       if (*ml_get_cursor() != ZERO) {
          if (old_visual_mode == 'V') {
-            // In linewise Visual mode insert before the beginning of the next line.
-            // When the last line in the buffer was deleted then create a
-            // new line, otherwise there is not need to move cursor.
-            // Detect this by checking if cursor moved above Visual area.
-            if (curPor->cursor.lnum < old_pos.lnum
-                  && curPor->cursor.lnum < old_visual.lnum) {
-               if (u_save_cursor() == OK) {
-                  ml_append(curPor->cursor.lnum, (CS)"", 0, false);
-                  appended_lines(curPor->cursor.lnum++, 1L);
-               }
+            //In linewise Visual mode insert before the beginning of the next line. When the last 
+            //line in the book was deleted then create a new line, otherwise there is not need to 
+            //move cursor. Detect this by checking if cursor moved above Visual area.
+            if (curPor->cursor.lnum < old_pos.lnum && curPor->cursor.lnum < old_visual.lnum
+                  && u_save_cursor() == OK
+            ) {
+               ml_append(curPor->cursor.lnum, S"", 0, false);
+               appended_lines(curPor->cursor.lnum++, 1L);
             }
          }
-         // When the last char in the line was deleted then append.
-         // Detect this by checking if cursor moved before Visual area.
+         //When the last char in the line was deleted then append.
+         //Detect this by checking if cursor moved before Visual area.
          ei (curPor->cursor.col < old_pos.col && curPor->cursor.col < old_visual.col)
             inc_cursor();
       }
@@ -6868,7 +6857,7 @@ n_start_visual_mode(int c) {
 
 // Handle actions that are operators in Visual mode.
 private void
-v_visop(ActionArg* aArg) {
+vVisualOperators(ActionArg* aArg) {
    static Byte trans[] = "YyDdCcxdXdAAIIrr";
 
    // Uppercase means linewise, except in block mode, then "D" deletes till
@@ -6947,7 +6936,7 @@ adjust_plines_for_skipcol(Portal *po) {
    if (po->skipCol == 0)
       return 0;
 
-   int width = po->width - normalPortalColumnOffset(po);
+   int width = widthLeft(po);
    int w2 = width;
    if (po->skipCol >= width && w2 > 0)
       return (po->skipCol - width) / w2 + 1;
@@ -6993,7 +6982,7 @@ comp_botline(Portal* po) {
    for ( ; lnum <= po->book->mem.lineCount; ++lnum) {
       last = lnum;
       folded = false;
-      if (getFoldsPortal(po, lnum, NULL, &last, true, NULL)) {
+      if (getFoldsPortal(po, lnum, NULL, OUT &last, true, NULL)) {
          n = 1;
          folded = true;
       } else {
@@ -7067,8 +7056,8 @@ sms_marker_overlap(Portal* po, int extra2) {
 
 // Calculate the skipcol offset for portal "po" given how many physical lines we want to scroll down
 private int
-skipcol_from_plines(Portal *po, int plines_off) {
-   int width1 = po->width - normalPortalColumnOffset(po);
+skipcol_from_plines(Portal* po, int plines_off) {
+   int width1 = widthLeft(po);
    int skipcol = 0;
    if (plines_off > 0)
       skipcol += width1;
@@ -7103,18 +7092,15 @@ update_topline_redraw(void) {
 // Update curPor->topLine to move the cursor onto the screen.
 void
 update_topline(void) {
-   long line_count;
-   int halfheight;
-   int n;
-   LineNr   lnum;
-   int check_topline = false;
-   int check_botline = false;
-   long* scrollOff = &curPor->o.scrollOff;
-   int save_so = *scrollOff;
-
    // Cursor is updated instead when this is true for 'splitkeep'.
    if (skipUpdateToplineG)
       return;
+
+   int n;
+   Boole check_topline = false;
+   Boole check_botline = false;
+   long* scrollOff = &curPor->o.scrollOff;
+   int save_so = *scrollOff;
 
    // If there is no valid screen and when the portal height is zero, just use the cursor line.
    if (!screen_valid(true) || curPor->height == 0) {
@@ -7174,7 +7160,7 @@ update_topline(void) {
          check_topline = true;
 
       if (check_topline) {
-         halfheight = curPor->height / 2 - 1;
+         int halfheight = curPor->height / 2 - 1;
          if (halfheight < 2)
             halfheight = 2;
 
@@ -7183,7 +7169,7 @@ update_topline(void) {
             // topline + scrolloff (approximation of how much will be
             // scrolled).
             n = 0;
-            for (lnum = curPor->cursor.lnum; lnum < curPor->topLine + *scrollOff; ++lnum) {
+            for (LineNr lnum = curPor->cursor.lnum; lnum < curPor->topLine + *scrollOff; ++lnum) {
                ++n;
                // stop at end of file or when we know we are far off
                if (lnum >= curBook->mem.lineCount || n >= halfheight)
@@ -7247,21 +7233,25 @@ update_topline(void) {
               check_botline = false;
          }
          if (check_botline) {
+            long lineCount; 
             if (hasAnyFolding(curPor)) {
                // Count the number of logical lines between the cursor and botline - scrolloff 
                // (approximation of how much will be scrolled).
-               line_count = 0;
-               for (lnum = curPor->cursor.lnum; lnum >= curPor->bottomLine - *scrollOff; --lnum) {
-                  ++line_count;
+               lineCount = 0;
+               for (LineNr lnum = curPor->cursor.lnum; 
+                    lnum >= curPor->bottomLine - *scrollOff; 
+                    --lnum
+               ) {
+                  ++lineCount;
                   // stop at end of file or when we know we are far off
-                  if (lnum <= 0 || line_count > curPor->height + 1)
+                  if (lnum <= 0 || lineCount > curPor->height + 1)
                       break;
                   (void)getFolds(lnum, &lnum, NULL);
                }
             } else
-               line_count = curPor->cursor.lnum - curPor->bottomLine + 1 + *scrollOff;
+               lineCount = curPor->cursor.lnum - curPor->bottomLine + 1 + *scrollOff;
                
-            if (line_count <= curPor->height + 1)
+            if (lineCount <= curPor->height + 1)
                scroll_cursor_bot(scrolljump_value(), false);
             else
                scroll_cursor_halfway(false, false);
@@ -7411,7 +7401,7 @@ set_topline(Portal* po, LineNr lnum) {
    LineNr prev_topline = po->topLine;
 
    // go to first of folded lines
-   (void)getFoldsPortal(po, lnum, &lnum, NULL, true, NULL);
+   (void)getFoldsPortal(po, lnum, OUT &lnum, NULL, true, NULL);
    // Approximate the value of bottomLine
    po->bottomLine += lnum - po->topLine;
    if (po->bottomLine > po->book->mem.lineCount + 1)
@@ -7448,14 +7438,13 @@ changed_cline_bef_curs_win(Portal *po) {
 // changed. Need to take care of bottomLine separately!
 void
 changed_line_abv_curs(void) {
-    curPor->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW
-                  |VALID_CHEIGHT|VALID_TOPLINE);
+    curPor->cacheState &= 
+       ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW |VALID_CHEIGHT|VALID_TOPLINE);
 }
 
 void
 changed_line_abv_curs_win(Portal *po) {
-    po->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW
-                  |VALID_CHEIGHT|VALID_TOPLINE);
+    po->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE);
 }
 
 // Display of line has changed for "book", invalidate cursor position and bottomLine.
@@ -7463,18 +7452,19 @@ void
 normInvalidateDisplayOfChangedBookLine(Book* book) {
    Portal *po;
    FOR_ALL_PORTALS(po) {
-      if (po->book == book)
+      if (po->book == book) {
          po->cacheState &= ~(
-                VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT 
-                |VALID_TOPLINE|VALID_BOTLINE|VALID_BOTLINE_AP
+             VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE
+             |VALID_BOTLINE|VALID_BOTLINE_AP
          );
+      } 
    } 
 }
 
 // Make sure the value of curPor->bottomLine is valid.
 void
 validate_botline(void) {
-    validate_botline_win(curPor);
+   validate_botline_win(curPor);
 }
 
 // Make sure the value of po->bottomLine is valid.
@@ -7503,8 +7493,8 @@ approximate_botline_win( Portal   *po) {
 // true if curPor->cursorRow and curPor->cursorCol are valid.
 int
 cursor_valid(void) {
-    check_cursor_moved(curPor);
-    return ((curPor->cacheState & (VALID_WROW|VALID_WCOL)) == (VALID_WROW|VALID_WCOL));
+   check_cursor_moved(curPor);
+   return ((curPor->cacheState & (VALID_WROW|VALID_WCOL)) == (VALID_WROW|VALID_WCOL));
 }
 
 // Validate cursor position.  Makes sure cursorRow and cursorCol are valid.
@@ -7520,8 +7510,6 @@ validate_cursor(void) {
 // Compute po->cursorLineRow and po->cursorLineHeight, based on the current value of po->topLine.
 private void
 curs_rows(Portal* po) {
-   long   fold_count;
-
    // Check if po->lines[].height is invalid
    int all_invalid = (!redrawing()
         || po->validLines == 0
@@ -7550,7 +7538,7 @@ curs_rows(Portal* po) {
          break;
           po->cursorLineRow += po->lines[i].height;
       } else {
-         fold_count = foldedCount(po, lnum, NULL);
+         long fold_count = foldedCount(po, lnum, NULL);
          if (fold_count) {
             lnum += fold_count;
             if (lnum > po->cursor.lnum)
@@ -7569,8 +7557,8 @@ curs_rows(Portal* po) {
          || i == po->validLines
          || (i < po->validLines
              && (!po->lines[i].isValid
-            || po->lines[i].bookLnum != po->cursor.lnum)))
-      {
+            || po->lines[i].bookLnum != po->cursor.lnum))
+      ) {
          if (po->cursor.lnum == po->topLine)
             po->cursorLineHeight = plines_win_nofill(po, po->cursor.lnum, true) + po->topFill;
          else
@@ -7601,7 +7589,7 @@ void
 validate_virtcol_win(Portal* po) {
    check_cursor_moved(po);
 
-   if (po->cacheState & VALID_VIRTCOL)
+   if ((po->cacheState & VALID_VIRTCOL) != 0)
       return;
 
    po->virtColFirstChar = 0;
@@ -7615,7 +7603,7 @@ void
 validate_cheight(void) {
    check_cursor_moved(curPor);
 
-   if (curPor->cacheState & VALID_CHEIGHT)
+   if ((curPor->cacheState & VALID_CHEIGHT) != 0)
       return;
 
    if (curPor->cursor.lnum == curPor->topLine)
@@ -7631,19 +7619,16 @@ void
 validate_cursor_col(void) {
    validate_virtcol();
 
-   if (curPor->cacheState & VALID_WCOL)
+   if ((curPor->cacheState & VALID_WCOL) != 0)
       return;
 
    ColNr col = curPor->virtCol;
-   ColNr off = curPor_col_off();
+   ColNr off = normalPortalColumnOffset(curPor);
    col += off;
    int width = curPor->width - off;
 
    // long line wrapping, adjust curPor->cursorRow
-   if (curPor->o.wrap
-       && col >= (ColNr)curPor->width
-       && width > 0
-   )
+   if (curPor->o.wrap && col >= (ColNr)curPor->width && width > 0)
       // use same formula as what is used in curs_columns()
       col -= ((col - curPor->width) / width + 1) * width;
    if (col > (int)curPor->leftCol)
@@ -7664,11 +7649,6 @@ normalPortalColumnOffset(Portal *po) {
                          // ^ for the line number column
 }
 
-int
-curPor_col_off(void) {
-   return normalPortalColumnOffset(curPor);
-}
-
 // Compute curPor->cursorCol and curPor->virtCol.
 // Also update curPor->cursorRow and curPor->cursorLineRow. Also update curPor->leftCol.
 void
@@ -7676,10 +7656,7 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
    int diff;
    int off_left, off_right;
    int n;
-   int p_lines;
-   int width1;      // text width for first screen line
    int width2 = 0;   // text width for second and later screen line
-   int neleftCol;
    ColNr startcol;
    ColNr endcol;
    ColNr prev_skipcol;
@@ -7704,14 +7681,14 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
    else
       bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, &startcol, &(curPor->virtCol), &endcol);
 
-   int extra = curPor_col_off();  // offset for first screen line
+   int extra = normalPortalColumnOffset(curPor);  // offset for first screen line
    curPor->cursorCol = curPor->virtCol + extra;
    endcol += extra;
 
    // Now compute cursorRow, counting screen lines from cursorLineRow.
    curPor->cursorRow = curPor->cursorLineRow;
-
-   width1 = curPor->width - extra;
+   // text width for first screen line
+   int width1 = curPor->width - extra;
    if (width1 <= 0) {
       // No room for text, put cursor in last char of portal.
       // If not wrapping, the last non-empty line.
@@ -7772,17 +7749,15 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
          else
             diff = off_right;
 
-         // When far off or not enough room on either side, put cursor in
-         // middle of portal.
+         // When far off or not enough room on either side, put cursor in middle of portal.
+         
+         int neleftCol;
          if (p_ss == 0 || diff >= width1 / 2 || off_right >= off_left)
             neleftCol = curPor->cursorCol - extra - width1 / 2;
          else {
             if (diff < p_ss)
                diff = p_ss;
-            if (off_left < 0)
-               neleftCol = curPor->leftCol - diff;
-            else
-               neleftCol = curPor->leftCol + diff;
+            neleftCol = (off_left < 0) ? curPor->leftCol - diff : curPor->leftCol + diff;
          }
          if (neleftCol < 0)
             neleftCol = 0;
@@ -7807,11 +7782,11 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
 
    prev_skipcol = curPor->skipCol;
 
-   p_lines = 0;
+   int pLines = 0;
 
    if ((curPor->cursorRow >= (int)curPor->height
       || ((prev_skipcol > 0 || curPor->cursorRow + so >= curPor->height)
-          && (p_lines = plines_win_nofill(curPor, curPor->cursor.lnum, false)) - 1 
+          && (pLines = plines_win_nofill(curPor, curPor->cursor.lnum, false)) - 1 
              >= (int)curPor->height
          )
        )
@@ -7830,13 +7805,13 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
       if (curPor->skipCol + so * width2 > curPor->virtCol)
          extra = 1;
       // Compute last display line of the book line that we want at the bottom of the portal.
-      if (p_lines == 0)
-         p_lines = plines_win(curPor, curPor->cursor.lnum, false);
-      --p_lines;
-      if (p_lines > curPor->cursorRow + so)
+      if (pLines == 0)
+         pLines = plines_win(curPor, curPor->cursor.lnum, false);
+      --pLines;
+      if (pLines > curPor->cursorRow + so)
          n = curPor->cursorRow + so;
       else
-         n = p_lines;
+         n = pLines;
       if ((ColNr)n >= curPor->height + curPor->skipCol / width2 - so)
          extra += 2;
 
@@ -7848,8 +7823,8 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
          else
             n = 0;
          // don't skip more than necessary
-         if (n > p_lines - (int)curPor->height + 1)
-            n = p_lines - (int)curPor->height + 1;
+         if (n > pLines - (int)curPor->height + 1)
+            n = pLines - (int)curPor->height + 1;
          if (n > 0)
             curPor->skipCol = width1 + (n - 1) * width2;
          else
@@ -7927,9 +7902,8 @@ textpos2screenpos(
 
    if (pos->lnum >= po->topLine && pos->lnum <= po->bottomLine) {
       ColNr col;
-      int width;
       LineNr lnum = pos->lnum;
-      int is_folded = getFoldsPortal(po, lnum, &lnum, NULL, true, NULL);
+      Boole is_folded = getFoldsPortal(po, lnum, OUT &lnum, NULL, true, NULL);
       row = plines_m_win(po, po->topLine, lnum - 1, INT_MAX);
       // "row" should be the screen line where line "lnum" begins, which can
       // be negative if "lnum" is "topLine" and "skipCol" is non-zero.
@@ -7938,7 +7912,7 @@ textpos2screenpos(
       // Add filler lines above this book line.
       row += lnum == po->topLine ? po->topFill : diff_check_fill(po, lnum);
 
-      ColNr   off = normalPortalColumnOffset(po);
+      ColNr off = normalPortalColumnOffset(po);
       if (is_folded) {
          row += po->portalRow + 1;
          coloff = po->portalCol + 1 + off;
@@ -7948,7 +7922,7 @@ textpos2screenpos(
          // similar to what is done in validate_cursor_col()
          col = scol;
          col += off;
-         width = po->width - off;
+         int width = po->width - off;
 
          // long line wrapping, adjust row
          if (po->o.wrap && col >= (ColNr)po->width && width > 0) {
@@ -8055,7 +8029,7 @@ private void cursor_correct_sms(void) {
       return;
 
    long scrollOff = curPor->o.scrollOff;
-   int width1 = curPor->width - curPor_col_off();
+   int width1 = widthLeft(curPor);
    int so_cols = scrollOff == 0 ? 0 : (scrollOff * width1);
    int space_cols = (curPor->height - 1) * width1;
    int overlap, top, bot;
@@ -8166,14 +8140,14 @@ scroll_redraw(int up, long count) {
 // Scroll the current portal down by "line_count" logical lines.  "CTRL-Y"
 void
 scrolldown(long line_count, int byfold) {  // true: count a closed fold as one line
-   long   done = 0;   // total # of physical lines done
-   int      wrow;
-   int      moved = false;
-   int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
-   int      width1 = 0;
+   long done = 0;   // total # of physical lines done
+   int wrow;
+   int moved = false;
+   int doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
+   int width1 = 0;
 
    if (doSmoothly) {
-      width1 = curPor->width - curPor_col_off();
+      width1 = widthLeft(curPor);
    }
 
    LineNr   first;
@@ -8277,9 +8251,9 @@ scrollup(long line_count, int byfold) {  // true: count a closed fold as one lin
        || (byfold && hasAnyFolding(curPor))
        || (curPor->o.diff && !curPor->o.wrap)
    ) {
-      int       width1 = curPor->width - curPor_col_off();
-      int       size = 0;
-      ColNr       prev_skipcol = curPor->skipCol;
+      int width1 = widthLeft(curPor);
+      int size = 0;
+      ColNr prev_skipcol = curPor->skipCol;
 
       if (doSmoothly)
           size = linetabsize_eol(curPor, curPor->topLine);
@@ -8365,7 +8339,7 @@ adjust_skipcol(void) {
    )
       return;
 
-   int width1 = curPor->width - curPor_col_off();
+   int width1 = widthLeft(curPor);
    if (width1 <= 0)
       return;  // no text will be displayed
 
@@ -8783,7 +8757,7 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
          // occupying more than the entire portal, we need to scroll the additional clipped 
          // lines to scroll past the top line before we can move on to the other lines.
          int top_plines = plines_win_nofill (curPor, curPor->topLine, false);
-         int width1 = curPor->width - curPor_col_off();
+         int width1 = widthLeft(curPor);
 
          if (width1 > 0) {
             int skip_lines = 0;
@@ -9211,7 +9185,7 @@ scrollSmoothly(int dir, long count, long *curscount) {
       if (labs(curPor->topLine - prev_topline) > (dir == BACKWARD))
           fixdir = dir * -1;
 
-      int width1 = curPor->width - curPor_col_off();
+      int width1 = widthLeft(curPor);
       count = 1 + (curPor->skipCol - width1 - 1) / width1;
       if (fixdir == FORWARD) {
           count = 1 + (linetabsize_eol(curPor, curPor->topLine) - curPor->skipCol - 1)/width1;
@@ -11803,12 +11777,12 @@ hasAnyFolding(Portal* po) {
 //Return true if line "lnum" in the current portal is part of a closed fold.
 //When returning true, *firstp and *lastp are set to the first and last
 //lnum of the sequence of folded lines (skipped when NULL).
-int
+Boole
 getFolds(LineNr lnum, OUT LineNr *firstp, OUT LineNr *lastp) {
-   return getFoldsPortal(curPor, lnum, firstp, lastp, true, NULL);
+   return getFoldsPortal(curPor, lnum, OUT firstp, OUT lastp, true, NULL);
 }
 
-int
+Boole
 getFoldsPortal(
    Portal* po,
    LineNr lnum,
@@ -14431,7 +14405,7 @@ foldclosed_both(Var* argvars, Var* returnVar, int end) {
 
    LineNr lnum = tv_get_lnum(argvars);
    if (lnum >= 1 && lnum <= curBook->mem.lineCount) {
-      if (getFoldsPortal(curPor, lnum, &first, &last, false, NULL)) {
+      if (getFoldsPortal(curPor, lnum, OUT &first, OUT &last, false, NULL)) {
          if (end)
             returnVar->number = (Long)last;
          else

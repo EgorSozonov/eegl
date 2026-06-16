@@ -2709,7 +2709,7 @@ diff_set_topline(Portal* fromPort, Portal* toPort){
    changed_line_abv_curs_win(toPort);
 
    check_topfill(toPort, false);
-   (void)getFoldsPortal(toPort, toPort->topLine, &toPort->topLine, NULL, true, NULL);
+   (void)getFoldsPortal(toPort, toPort->topLine, OUT &toPort->topLine, NULL, true, NULL);
 }
 
 private int

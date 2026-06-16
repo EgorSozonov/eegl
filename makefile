@@ -36,7 +36,6 @@ TAGPRG		= ctags
 CPP		?= gcc -E
 CPP_MM		= M
 DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
-X_LIBS_DIR	=  
 X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
 X_LIBS		= -lXt -lX11
@@ -82,9 +81,6 @@ MANDIR		= ${datarootdir}/man
 
 
 
-### Any OS dependent extra source and object file
-OS_EXTRA_SRC	= 
-OS_EXTRA_OBJ	= 
 
 ### If the *.po files are to be translated to *.mo files.
 MAKEMO		= yes
@@ -271,7 +267,6 @@ VIEWNAME	= view
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
-X_LIBS_DIR	=  
 X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
 X_LIBS		= -lXt -lX11
@@ -852,7 +847,7 @@ CPP_DEPEND = $(CC) -I$(srcdir) -M$(CPP_MM) \
 NO_ATTR = #-D"__attribute\\(x\\)="
 #
 # Use this for cproto 3 patchlevel 7 or above (use "cproto -V" to check):
-CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" $(NO_ATTR) # -D"__typeof__\\(x\\)=x"
+CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" -I./src $(NO_ATTR) # -D"__typeof__\\(x\\)=x"
 
 
 ################################################
@@ -860,10 +855,6 @@ CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" $(NO_ATTR) # -D"__typeof__\\(x\\)=x"
 ################################################
 
 SHELL = /usr/bin/bash
-
-.SUFFIXES:
-.SUFFIXES: .c .o .h
-
 
 PRE_DEFS = -Isrc/proto
 
@@ -878,7 +869,6 @@ LINT_EXTRA = -D"__attribute__(x)="
 
 DEPEND_FLAGS = -DPROTO -DDEPEND $(LINT_FLAGS)
 
-ALL_LIB_DIRS = $(X_LIBS_DIR)
 ALL_LIBS = \
 	   $(X_PRE_LIBS) \
 	   $(X_LIBS) \
@@ -980,8 +970,7 @@ BASIC_SRC_NO_DIR = \
 	tag.c \
 	term.c \
 	ui.c \
-   window.c \
-	$(OS_EXTRA_SRC)
+   window.c
 
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
 
@@ -1052,7 +1041,6 @@ OBJ_COMMON = \
 	.b/ui.o \
 	.b/window.o \
    $(WAYLAND_OBJ) \
-	$(OS_EXTRA_OBJ) \
 	$(CHANNEL_OBJ)
 
 # The files included by tests are not in OBJ_COMMON.
@@ -1165,7 +1153,7 @@ CClink = $(CC)
 # Link the target for normal use or debugging.
 # A shell script is used to try linking without unnecessary libraries.
 $(EEGLTARGET): $(OBJ)
-	#@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	#@LINK="$(CClink) $(LDFLAGS) \
 	#	-o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)" \
 	#	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 	#	PROG="eegl" \
@@ -1208,7 +1196,7 @@ update-po:
 # The -E"gcc -E" argument must be separate to avoid problems with shell
 # quoting.
 # Strip -O2, it may cause cproto to write stderr to the file "2".
-CPROTO = cproto $(CPROTO_FLAGS) -X 1 $(LINT_FLAGS_CPROTO)
+CPROTO = cproto $(CPROTO_FLAGS) $(LINT_FLAGS_CPROTO)
 
 
 
@@ -1330,28 +1318,28 @@ testclean:
 # Unittests
 # It's build just like Eegl to satisfy all dependencies.
 $(JSON_TEST_TARGET): $(JSON_TEST_OBJ)
-	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(LDFLAGS) \
 		-o $(JSON_TEST_TARGET) $(JSON_TEST_OBJ) $(ALL_LIBS)" \
 		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="json_test" \
 		sh $(srcdir)/link.sh
 
 $(KWORD_TEST_TARGET): $(KWORD_TEST_OBJ)
-	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(LDFLAGS) \
 		-o $(KWORD_TEST_TARGET) $(KWORD_TEST_OBJ) $(ALL_LIBS)" \
 		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="kword_test" \
 		sh $(srcdir)/link.sh
 
 $(MEMFILE_TEST_TARGET): $(MEMFILE_TEST_OBJ)
-	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(LDFLAGS) \
 		-o $(MEMFILE_TEST_TARGET) $(MEMFILE_TEST_OBJ) $(ALL_LIBS)" \
 		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="memfile_test" \
 		sh $(srcdir)/link.sh
 
 $(MESSAGE_TEST_TARGET): $(MESSAGE_TEST_OBJ)
-	@LINK="$(CClink) $(ALL_LIB_DIRS) $(LDFLAGS) \
+	@LINK="$(CClink) $(LDFLAGS) \
 		-o $(MESSAGE_TEST_TARGET) $(MESSAGE_TEST_OBJ) $(ALL_LIBS)" \
 		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
 		PROG="message_test" \
@@ -1362,8 +1350,6 @@ $(MESSAGE_TEST_TARGET): $(MESSAGE_TEST_OBJ)
 install: $(GUI_INSTALL)
 
 install_normal: installvim installtools $(INSTALL_LANGS) install-icons
-
-install_gui_extra: installgtutorbin
 
 installvim: installvimbin installtutorbin \
 		installruntime installlinks installmanlinks
@@ -1837,8 +1823,7 @@ uninstall_runtime:
 	-rmdir $(DEST_VIM)
 
 # Clean up all the files that have been produced, except configure's.
-# We support common typing mistakes for Juergen! :-)
-clean celan: testclean
+clean: testclean
 	-rm -f *.o core $(EEGLTARGET).core $(EEGLTARGET) vim
 	-rm .b/*
 	-rm .b/os/*
@@ -1854,78 +1839,8 @@ clean celan: testclean
 	fi
 	cd libs/wayland; $(MAKE) clean
 
-# Make a shadow directory for compilation on another system or with different
-# features:
-#  % make shadow
-#  % cd shadow
-#  edit configuration in src/shadow/Makefile
-#  % make
-#
-# Alternatively use a link for the Makefile and run configure with flags in
-# another way.  When new source files are added use "shadowupdate":
-#  % cd shadow
-#  % rm Makefile
-#  % ln -s ../Makefile .
-#  % ./configure {options}
-#  % make
-# And later:
-#  % git pull
-#  % make distclean shadowupdate
-#  % ./configure {options}
-#  % make
-SHADOWDIR = shadow
-
 LINKEDFILES = ../*.[chm] ../*.cc ../*.in ../*.sh ../*.xs ../*.xbm ../gui_gtk_res.xml ../toolcheck ../proto ../libvterm ../vimtutor ../install-sh ../Make_all.mak
 
-shadow:	runtime
-	mkdir -p $(SHADOWDIR)
-	cd $(SHADOWDIR); ln -s $(LINKEDFILES) .
-	mkdir $(SHADOWDIR)/auto
-	mkdir $(SHADOWDIR)/libs/wayland
-	cd $(SHADOWDIR)/libs/wayland; ln -s ../../../libs/wayland/* .
-	mkdir -p $(SHADOWDIR)/po
-	cd $(SHADOWDIR)/po; ln -s ../../po/*.po ../../po/*.mak ../../po/*.vim ../../po/*.in ../../po/Makefile ../../po/*.c .
-	cd $(SHADOWDIR); rm -f auto/link.sed
-	cp Makefile configure $(SHADOWDIR)
-	mkdir -p $(SHADOWDIR)/tests
-	cd $(SHADOWDIR)/tests; ln -s ../../tests/Makefile \
-				 ../../tests/Make_all.mak \
-				 ../../tests/README.txt \
-				 ../../tests/*.in \
-				 ../../tests/*.vim \
-				 ../../tests/*.py \
-				 ../../tests/python* \
-				 ../../tests/pyxfile \
-				 ../../tests/ru_RU \
-				 ../../tests/sautest \
-				 ../../tests/samples \
-				 ../../tests/util \
-				 ../../tests/dumps \
-				 ../../tests/*.ok \
-				 ../../tests/testluaplugin \
-				 .
-
-# After updating Eegl new files may have been created, use this to refresh the
-# symbolic links in the shadow directory. This isn't guaranteed to catch all
-# changes, running "make shadow" again might sometimes be needed.
-shadowupdate:
-	ln -sf $(LINKEDFILES) .
-
-# Link needed for doing "make install" in a shadow directory.
-runtime:
-	-ln -s ../runtime .
-	-ln -s ../README.txt .
-	-ln -s ../LICENSE .
-
-# Update the synmenu.vim file with the latest Syntax menu.
-# This is only needed when runtime/makemenu.vim was changed.
-menu: ./vim ../runtime/makemenu.vim
-	./vim --clean -X --not-a-term -S ../runtime/makemenu.vim
-
-# Start configure from scratch
-scrub scratch:
-	-rm -f auto/config.status auto/config.cache config.log auto/config.log
-	touch auto/config.h
 
 distclean: clean scratch
 	-rm -f tags
@@ -1934,29 +1849,6 @@ dist: distclean
 	@echo
 	@echo Making the distribution has to be done in the top directory
 
-mdepend:
-	-@rm -f Makefile~
-	cp Makefile Makefile~
-	sed -e '/\#\#\# Dependencies/q' < Makefile > tmp_make
-	@for i in $(ALL_SRC) ; do \
-	  echo "$$i" ; \
-	  echo `echo "$$i" | sed -e 's/[^ ]*\.c$$/.b\/\1.o/'`": $$i" `\
-	    $(CPP) $$i |\
-	    grep '^# .*"\./.*\.h"' |\
-	    sort -t'"' -u +1 -2 |\
-	    sed -e 's/.*"\.\/\(.*\)".*/\1/'\
-	    ` >> tmp_make ; \
-	done
-	mv tmp_make Makefile
-
-depend:
-	-@rm -f Makefile.bak
-	cp Makefile Makefile.bak
-	sed -e '/\#\#\# Dependencies/q' < Makefile > tmp_make
-	-for i in $(ALL_LOCAL_SRC); do echo $$i; \
-		$(CPP_DEPEND) $$i | \
-		sed -e 's+^\([^ ]*\.o\)+.b/\1+' >> tmp_make; done
-	mv tmp_make Makefile
 
 # Run lint.  Clean up the *.ln files that are sometimes left behind.
 lint:
@@ -2018,9 +1910,6 @@ $(ALL_OBJ): .b/.dirstamp
 .b/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
-
-Makefile:
-	@echo 'The name of the makefile MUST be "Makefile" (with capital M)!'
 
 
 ###############################################################################

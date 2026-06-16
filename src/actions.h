@@ -105,7 +105,7 @@ private const int actions[] =
    ACTION('#',		nv_ident,	0,			0),
    ACTION('$',		nv_dollar,	0,			0),
    ACTION('%',		nv_percent,	0,			0),
-   ACTION('&',		nv_optrans,	0,			0),
+   ACTION('&',		nvOperatorAliases,	0,			0),
    ACTION('\'',		nv_gomark,	NV_NCH_ALW,		TRUE),
    ACTION('(',		nv_brace,	0,			BACKWARD),
    ACTION(')',		nv_brace,	0,			FORWARD),

@@ -224,8 +224,7 @@ OPTION("tabpanelopt",p_tplo, CS, null, P_ONECOMMA|P_COLON|P_NODUP,
    &did_set_tabpanelopt, &expand_set_tabpanelopt)
 OPTION("tagbsearch", p_tbs, Boole, true, 0, null, null) 
 OPTION("tagstack", p_tgst, Boole, false, 0, null, null)
-OPTION("term", termCodeS[KS_NAME], CS, null, P_EXPAND|P_NODEFAULT|P_NO_MKRC|P_RALL, 
-   &setTerm, null)
+OPTION("term", termCodesG[KS_NAME], CS, null, P_EXPAND|P_NODEFAULT|P_NO_MKRC|P_RALL, &setTerm, null)
 OPTION("timeout", p_timeout, Boole, false, 0, null, null)
 OPTION("timeoutlen", p_tm, long, 0,  0, &setTimeoutLen, null)
 OPTION("ttimeout", p_ttimeout, Boole, false, 0, null, null)

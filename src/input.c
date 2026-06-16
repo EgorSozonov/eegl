@@ -6847,7 +6847,7 @@ retnomove:
             if (!first && count > (Unt)-row)
                break;
             first = false;
-            (void)getFolds(curPor->topLine, &curPor->topLine, NULL);
+            (void)getFolds(curPor->topLine, OUT &curPor->topLine, NULL);
             if (curPor->topFill < diff_check_fill(curPor, curPor->topLine))
                ++curPor->topFill;
             else {
@@ -6869,7 +6869,7 @@ retnomove:
             if (!first && count > row - curPor->height + 1)
                 break;
             first = false;
-            if (getFolds(curPor->topLine, NULL, &curPor->topLine)
+            if (getFolds(curPor->topLine, NULL, OUT &curPor->topLine)
                && curPor->topLine == curBook->mem.lineCount
             )
                 break;
@@ -7205,7 +7205,7 @@ mouse_comp_pos(
 
       if (count > row)
          break;   // Position is in this book line.
-      (void)getFoldsPortal(port, lnum, NULL, &lnum, true, NULL);
+      (void)getFoldsPortal(port, lnum, NULL, OUT &lnum, true, NULL);
       if (lnum == port->book->mem.lineCount) {
          retval = true;
          break;      // past end of file

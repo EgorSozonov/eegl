@@ -120,7 +120,7 @@ msg_strtrunc(CS s, int force) {      // always truncate
          room = (int)(visibleRowsG - msgRowG) * visibleColsG - 1;
       else
          // Use up to 'showcmd' column.
-         room = (int)(visibleRowsG - msgRowG - 1) * visibleColsG + sc_col - 1;
+         room = (int)(visibleRowsG - msgRowG - 1) * visibleColsG + shownCommandColG - 1;
       if (len > room && room > 0) {
          // UTF-8 may have up to 18 bytes per cell (6 per char, up to two composing chars)
          len = (room + 2) * 18;
@@ -894,7 +894,7 @@ msgAndKeep(
    retval = msg_end();
 
    if (keep && retval && eeglStrSize((CS)s)
-             < (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + sc_col)
+             < (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG)
       set_keep_msg(s, 0);
 
    needFileinfoG = false;
@@ -1013,7 +1013,7 @@ msg_may_trunc(CS s) {
    int      room;
 
    // If @commheight' is zero or something unexpected happened "room" may be negative.
-   room = (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + sc_col - 1;
+   room = (int)(visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG - 1;
    if (room > 0 && (n = (int)STRLEN(s) - room) > 0){
       int   size = eeglStrSize(s);
 
@@ -1757,7 +1757,7 @@ wait_return(Boole redraw) {
    lines_left = -1;      // reset lines_left at next msg_start()
    reset_last_sourcing();
    if (msgAfterRedrawG
-         && eeglStrSize(msgAfterRedrawG) >= (visibleRowsG - commlineRowG - 1) * visibleColsG + sc_col)
+         && eeglStrSize(msgAfterRedrawG) >= (visibleRowsG - commlineRowG - 1) * visibleColsG + shownCommandColG)
       EE_CLEAR(msgAfterRedrawG);       // don't redisplay message, it's too long
 
    if (tmpState == MODE_SETWSIZE) { // got resize event while in vgetc()
@@ -2769,7 +2769,7 @@ msg_end(void) {
 //redraw the portal later.
 void
 msg_check(void) {
-   if (msgRowG == visibleRowsG - 1 && msgColG >= sc_col && !inEchoPortalG) {
+   if (msgRowG == visibleRowsG - 1 && msgColG >= shownCommandColG && !inEchoPortalG) {
       need_wait_return = true;
       redrawCommlineG = true;
    }

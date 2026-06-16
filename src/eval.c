@@ -5658,7 +5658,7 @@ initGlobalAndSpecialVars(void) {
    set_EeglVar_nr(VV_TYPE_ENUM,    VAR_TYPE_ENUM);
    set_EeglVar_nr(VV_TYPE_ENUMVALUE,  VAR_TYPE_ENUMVALUE);
 
-   set_EeglVar_nr(VV_ECHOSPACE,    sc_col - 1);
+   set_EeglVar_nr(VV_ECHOSPACE,    shownCommandColG - 1);
 
    set_EeglVar_dict(VV_COLORNAMES, allocBag());
 

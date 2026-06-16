@@ -1,5 +1,4 @@
 /* src/diff.c */
-int stat(const char *restrict path, struct stat *restrict buf);
 void diffDeleteBook(Book *book);
 void diffBookAdjust(Portal *port);
 void diffAddBook(Book *book);

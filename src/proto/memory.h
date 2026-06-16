@@ -1,7 +1,4 @@
 /* src/memory.c */
-int fstat(int fd, struct stat *statbuf);
-int stat(const char *restrict path, struct stat *restrict buf);
-int lstat(const char *restrict , struct stat *restrict );
 Arena *createArena(void);
 void *allocateOnArena(Unt allocSize, Arena *a);
 void deleteArena(Arena *ar);

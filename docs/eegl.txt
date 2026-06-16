@@ -192,6 +192,9 @@ draw.c:startDrawingHilite()
 // Get pointer to actual line contents for a buffer and line number
 memory.c:memGetLine()
 
+//Change cursor appearance on mode change
+term.c:term_cursor_mode
+
 
 
 //// ideas

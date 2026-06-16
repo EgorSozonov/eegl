@@ -490,11 +490,11 @@ changed_common(
          //might be displayed differently.
          //Set isCursorLineFolded here as an efficient way to update it when
          //inserting lines just above a closed fold.
-         i = getFoldsPortal(po, lnum, &lnum, NULL, false, NULL);
+         i = getFoldsPortal(po, lnum, OUT &lnum, NULL, false, NULL);
          if (po->cursor.lnum == lnum) {
             po->isCursorLineFolded = i;
          }
-         i = getFoldsPortal(po, last, NULL, &last, false, NULL);
+         i = getFoldsPortal(po, last, NULL, OUT &last, false, NULL);
          if (po->cursor.lnum == last) {
             po->isCursorLineFolded = i;
          }
@@ -4538,7 +4538,7 @@ op_colon(Operator *oper) {
       // When using !! on a closed fold the range ".!" works best to operate
       // on, it will be made the whole closed fold later.
       LineNr endOfStartFold = oper->start.lnum;
-      (void)getFolds(oper->start.lnum, NULL, &endOfStartFold);
+      (void)getFolds(oper->start.lnum, NULL, OUT &endOfStartFold);
       if (oper->end.lnum != oper->start.lnum && oper->end.lnum != endOfStartFold) {
          // Make it a range with the end line.
          stuffcharReadbuff(',');
@@ -4849,10 +4849,10 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       if (LT_POS(oper->start, curPor->cursor)) {
          // Include folded lines completely.
          if (!VIsual_active) {
-            if (getFolds(oper->start.lnum, &oper->start.lnum, NULL))
+            if (getFolds(oper->start.lnum, OUT &oper->start.lnum, NULL))
                oper->start.col = 0;
             if ((curPor->cursor.col > 0 || oper->inclusive || oper->motion_type == MLINE)
-                  && getFolds(curPor->cursor.lnum, NULL, &curPor->cursor.lnum)
+                  && getFolds(curPor->cursor.lnum, NULL, OUT &curPor->cursor.lnum)
             )
                curPor->cursor.col = ml_get_curline_len();
          }
@@ -4865,9 +4865,9 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
       } else {
          // Include folded lines completely.
          if (!VIsual_active && oper->motion_type == MLINE) {
-            if (getFolds(curPor->cursor.lnum, &curPor->cursor.lnum, NULL))
+            if (getFolds(curPor->cursor.lnum, OUT &curPor->cursor.lnum, NULL))
                curPor->cursor.col = 0;
-            if (getFolds(oper->start.lnum, NULL, &oper->start.lnum))
+            if (getFolds(oper->start.lnum, NULL, OUT &oper->start.lnum))
                oper->start.col = ml_get_len(oper->start.lnum);
          }
          oper->end = oper->start;

@@ -1,6 +1,4 @@
 /* src/window.c */
-int fstat(int fd, struct stat *statbuf);
-int stat(const char *restrict path, struct stat *restrict buf);
 YankReg *get_y_regs(void);
 YankReg *get_y_current(void);
 YankReg *get_y_previous(void);
