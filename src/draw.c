@@ -737,7 +737,7 @@ start_search_hl(void) {
 
    end_search_hl();  // just in case it wasn't called before
    last_pat_prog(&screenSearchP.rm);
-   screenSearchP.hiId = HLF_L;
+   screenSearchP.extraDeco = EXTRA_DECO_INVERT;
 }
 
 // Clean up for @hlsearch hiliting.
@@ -3669,20 +3669,6 @@ fold_line(
       }
    }
 
-   // Show 'cursorcolumn' in the fold line.
-   if (po->o.cursorColumn) {
-      txtcol += po->virtCol;
-      if (po->o.wrap)
-         txtcol -= po->skipCol;
-      else
-         txtcol -= po->leftCol;
-      if (txtcol >= 0 && txtcol < (int)po->width) {
-         screenDecosP[off + txtcol] = combineDecorations(
-            screenDecosP[off + txtcol], getFullDecoration(HLF_CUC)
-         );
-      } 
-   }
-
    screen_line(row + po->portalRow, po->portalCol, po->width, po->width, -1, 0);
 
    // Update cursorLineHeight and isCursorLineFolded if the cursor line was
@@ -3840,7 +3826,7 @@ updatePortalFinish(Portal* po, UpdatePortalInfo u) {
                xtra_rows = new_rows - old_rows;
                if (xtra_rows < 0) {
                   //May scroll text up. If there is not enough remaining text or scrolling fails, 
-                  //must redraw the rest.  If scrolling works, must redraw the text
+                  //must redraw the rest. If scrolling works, must redraw the text
                   //below the scrolled text.
                   if (row - xtra_rows >= (int)po->height - 2)
                      u.modBot = MAXLNUM;
@@ -4091,7 +4077,6 @@ updatePortalFinish(Portal* po, UpdatePortalInfo u) {
       } 
       recursive = false;
    }
-
 }
 
 //Update a single portal.
@@ -5518,7 +5503,6 @@ wlv_screen_line(Portal* po, DrawCtx* m, int clear_end) {
 // right of the portal.
 private void
 finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
-   // Hilite 'cursorcolumn' past end of the line.
    long v = (po->o.wrap) ? (m->startrow == 0 ? po->skipCol : 0) : po->leftCol;
    int wcol = m->col;
    // check if line ends before left margin
@@ -5526,17 +5510,8 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
       m->vcol = v + wcol - normalPortalColumnOffset(po);
 #  define VCOL_HLC (m->vcol - m->virtualOffset)
 
-   if ((po->o.cursorColumn
-          && (int)po->virtCol >= VCOL_HLC - m->eol_hl_off
-          && (int)po->virtCol < (long)po->width * (m->row - m->startrow + 1) + v
-          && m->lnum != po->cursor.lnum)
-       || m->lineDeco.hiId != SHORT
-       || m->portalDeco.flags != 0
-   ) {
+   if (m->lineDeco.hiId != SHORT || m->portalDeco.flags != 0) {
       int rightmost_vcol = 0;
-
-      if (po->o.cursorColumn)
-         rightmost_vcol = po->virtCol;
 
       while ((m->col < (int)po->width)) {
          screenLinesP[m->off] = ' ';
@@ -5545,9 +5520,6 @@ finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m) {
          Decoration deco = m->portalDeco;
          if (m->lineDeco.hiId != SHORT)
             deco = combineDecorations(deco, m->lineDeco);
-         if (po->o.cursorColumn 
-               && VCOL_HLC == (long)po->virtCol && m->lnum != po->cursor.lnum)
-            deco = combineDecorations(deco, getFullDecoration(HLF_CUC));
          screenDecosP[m->off].flags = deco.flags;
          screenColS[m->off] = m->vcol;
          ++m->off;
@@ -5699,7 +5671,6 @@ private Boole
 drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int currSymb) {
    int charsWithOverrulingUnder = 0;       // chars with overruling special deco
    Decoration charDecoSavedForOverruling;
-   Decoration vcolDecoSaved;   // saved deco for 'cursorcolumn'
    
    // Use "m->extraDeco", but don't override visual selection hiliting, unless text property 
    // overrides. Don't use "m->extraDeco" until m->toSkipBeforeDeco is zero.
@@ -5853,20 +5824,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
    }
 
 
-   //Hilite the cursor column if @cursorcolumn is set. But don't hilite the cursor position itself
    vcolDecoSaved = EMPTY_DECO;
-   if (((m->draw_state == WL_LINE || m->draw_state == WL_BRI || m->draw_state == WL_SBR)
-         && !c->isLineVisible && m->searchHiId == 0 && sc->areaDeco.hiId == SHORT
-       )
-         && m->filler_todo <= 0
-   ) {
-       if (port->o.cursorColumn && VCOL_HLC == (long)port->virtCol
-             && c->lnum != port->cursor.lnum
-       ){
-         vcolDecoSaved = m->charDeco;
-         m->charDeco = combineDecorations(m->charDeco, getFullDecoration(HLF_CUC));
-      }
-   }
 
    if (m->draw_state == WL_LINE)
       sc->vcol_prev = m->vcol;
@@ -7362,9 +7320,7 @@ drawLineOnScreen(
       // - the visual mode is active,
       // the end of the line may be before the start of the displayed part.
       if (m.vcol < m.bufferLen 
-            && (port->o.cursorColumn
-                || virtual_active() || (VIsual_active && port->book == curPor->book)
-               )
+            && (virtual_active() || (VIsual_active && port->book == curPor->book))
       )
          m.vcol = m.bufferLen;
 

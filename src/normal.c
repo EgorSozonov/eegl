@@ -7024,11 +7024,8 @@ redraw_for_cursorline(Portal* po) {
 private void
 redraw_for_cursorcolumn(Portal* po) {
    if ((po->cacheState & VALID_VIRTCOL) == 0 && !pum_visible()) {
-      // When 'cursorcolumn' is set need to redraw with UPD_SOME_VALID.
-      if (po->o.cursorColumn)
-          redrawPortLater(po, UPD_SOME_VALID);
-      // When 'cursorlineopt' contains "screenline" need to redraw with UPD_VALID.
-      ei (po->o.cursorLine)
+      // When 'cursorlineopt' contains "screenline", need to redraw with UPD_VALID.
+      if (po->o.cursorLine)
           redrawPortLater(po, UPD_VALID);
    }
 }

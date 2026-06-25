@@ -1307,16 +1307,6 @@ differences between two versions of a file (see @diff); in diff mode,
 inserted and deleted lines (though not characters within a line) are taken into account.
 
 
-@@cursorcolumn           Portal. Boolean. Default = off
-   
-Highlight the screen column of the cursor with CursorColumn
-|hl-CursorColumn|.  Useful to align text.  Will make screen redrawing slower.
-If you only want the highlighting in the current window you can use these autocommands:
-   
-      au WinLeave * set nocursorline nocursorcolumn
-      au WinEnter * set cursorline cursorcolumn
-
-
 @@cursorInsert           Global. Enumerated. Default = bar
    
 The cursor in Insert mode. Can be one of: bar, block, underscore

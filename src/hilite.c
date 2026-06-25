@@ -159,9 +159,6 @@ private char *(hiliteGroupStrings[]) = {
    "Directories link=None",        //HLF_D directories in CTRL-D listing
    "ErrorMsg bg=regular1 fg=regular7", //HLF_E  error messages
    "WarningMsg link=None",         // HLF_W       warning messages
-   "IncrementalSearch deco=inverse", //HLF_I incremental search
-   "PrevSearch link=None",         //HLF_L  last search string
-   "PrevSearchUnderCursor link=None", //  HLF_LC   last search string under cursor
    "MoreMsg link=None",            // 10 HLF_M    "--More--" message
    "ModeName deco=bold",           // HLF_CM    Mode (e.g., "-- INSERT --")
    "CurrentLineNr link=None",      // HLF_CLN   current line number
@@ -176,7 +173,6 @@ private char *(hiliteGroupStrings[]) = {
    "VisualModeAutoselecting link=None", // HLF_VNC   Visual mode, autoselecting and not clipboard owner
    "WildcardMenu link=None",       // HLF_WM    Wildmenu hilite
    "FoldedLine link=None",         // HLF_FL      Folded line
-   "FoldColumn bg=grey12 fg=regular6", // HLF_FC      Fold column
    "DiffTextAdd fg=regular2",      // HLF_ADD  Added diff line
    "DiffText fg=regular4",         // HLF_CHD  Changed diff line
    "DiffChangedTextInChanged link=None", // HLF_TXD  Text Changed in changed diff line
@@ -197,7 +193,6 @@ private char *(hiliteGroupStrings[]) = {
    "Tabpanel deco=underline bg=grey4", // HLF_TPL   tabpanel
    "TabpanelSelected link=None",   // HLF_TPLS  tabpanel selected
    "TabpanelFill link=None",       // HLF_TPLF  tabpanel filler
-   "CursorColumn bg=grey18",         // HLF_CUC  'cursorcolumn'
    "CursorLine  bg=444",             // HLF_CUL  'cursorline'
    "ColorColumn link=None",        // HLF_MC   'colorcolumn'
    "LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
@@ -214,10 +209,6 @@ private char *(hiliteGroupStrings[]) = {
    "LineNr fg=regular3",             // HLF_N   line number for ":number" and ":#" commands
    "LineNrAbove link=None",        // HLF_LNA  LineNrAbove
    "LineNrBelow link=None",        // HLF_LNB  LineNrBelow
-   "SpellBad under=regular2 deco=undercurl", // HLF_SPB  SpellBad
-   "SpellCap under=regular4 deco=undercurl", // HLF_SPC   SpellCap
-   "SpellRare under=regular5 deco=undercurl", // HLF_SPR  SpellRare
-   "SpellLocal under=regular6 deco=undercurl", // 60 HLF_SPL  SpellLocal
    "Directory fg=bright6",
    "CursorLineNr deco=bold fg=regular3",
    "MoreMsg deco=bold fg=143",

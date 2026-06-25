@@ -4120,10 +4120,7 @@ c_smile(Invocation* invo UNUSED) {
             msg_putchar('\n');
          else {
             for (n = *p++; n > 0; --n) {
-               if (*p == 'o' || *p == '$')
-                  msgPutcharDeco(*p, getDecoFlags(HLF_L));
-               else
-                  msg_putchar(*p);
+               msg_putchar(*p);
             } 
          } 
       } 

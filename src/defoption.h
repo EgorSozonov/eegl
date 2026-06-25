@@ -293,7 +293,6 @@ OPTION("portfixbuf", portFixBuf, Boole, false, 0, null, null)
 OPTION("portfixheight", portFixHeight, Boole, false, P_RSTAT, null, null)
 OPTION("portfixwidth", portFixWidth, Boole, false, P_RSTAT, null, null)
 OPTION("smoothscroll", smoothScroll, Boole, false, P_REDRAW_PORT, &did_set_smoothscroll, NULL)
-OPTION("cursorcolumn", cursorColumn, Boole, false, P_REDRAW_PORT|P_HLONLY, null, null)
 OPTION("cursorline", cursorLine, Boole, false, P_REDRAW_PORT|P_HLONLY, null, null)
 OPTION("statusline", statusLine, CS, 
       "%n\\:%f%r%m\\ \\|%l\\:%c\\/%L\\L\\|\\ %{strftime('%H:%M')}",
