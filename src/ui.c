@@ -6983,7 +6983,7 @@ private void
 position_cursor(Portal *po, VTermPos* pos) {
    po->cursorRow = MIN((int)pos->row, MAX(0, (int)po->height - 1));
    po->cursorCol = MIN((int)pos->col, MAX(0, (int)po->width - 1));
-   if (popup_is_popup(po)) {
+   if (portalIsPopup(po)) {
       po->cursorRow += popup_top_extra(po);
       po->cursorCol += popup_left_extra(po);
       po->flags |= WFLAG_WCOL_OFF_ADDED | WFLAG_WROW_OFF_ADDED;
@@ -7052,7 +7052,7 @@ sendMouse(VTerm *vterm, int button, int pressed) {
    int row = mouseRowG - curPor->portalRow;
    int col = mouseColG - curPor->portalCol;
 
-   if (popup_is_popup(curPor)) {
+   if (portalIsPopup(curPor)) {
       row -= popup_top_extra(curPor);
       col -= popup_left_extra(curPor);
    }
@@ -7814,7 +7814,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
       int   row = mouseRowG;
       int   col = mouseColG;
 
-      if (popup_is_popup(curPor)) {
+      if (portalIsPopup(curPor)) {
          row -= popup_top_extra(curPor);
          col -= popup_left_extra(curPor);
       }
@@ -8563,7 +8563,7 @@ term_after_channel_closed(Terminal* term) {
          Portal* po = NULL;
 
          // If this was a terminal in a popup portal, go back to the previous portal.
-         if (popup_is_popup(curPor) && curBook == term->book) {
+         if (portalIsPopup(curPor) && curBook == term->book) {
             po = curPor;
             if (portalIsValid(prevPor))
                 enterPortal(prevPor, false);
@@ -8616,7 +8616,7 @@ term_after_channel_closed(Terminal* term) {
 //popup and to back to the previous portal. Otherwise return FAIL.
 int
 may_close_term_popup(void) {
-   if (!popup_is_popup(curPor) || !curBook->term || term_job_running_not_none(curBook->term))
+   if (!portalIsPopup(curPor) || !curBook->term || term_job_running_not_none(curBook->term))
       return FAIL;
 
    Portal* po = curPor;
@@ -8798,7 +8798,7 @@ termUpdatePortal(Portal* po) {
 
       screen_line(
          po->portalRow + pos.row, po->portalCol, pos.col, po->width, -1, 
-         popup_is_popup(po) ? SLF_POPUP : 0
+         portalIsPopup(po) ? SLF_POPUP : 0
       );
    }
 }

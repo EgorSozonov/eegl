@@ -314,6 +314,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] Frozen options mode? (options cannot be changed after the init script)
 [ ] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Replace VimScript with Wren
+[ ] Code OSC 52 instead of Wayland clipboard, which is insecure and unsupported on Gnome
 
    [[[Bugs to fix]]]
 

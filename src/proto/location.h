@@ -31,7 +31,7 @@ void c_lBelow(Invocation *invo);
 void c_lFile(Invocation *invo);
 void c_vimgrep(Invocation *invo);
 int setLocationList(LocationStack *stack, List *newContent, LocListAction action, CS title, Bag *specific);
-Boole set_ref_in_quickfix(int copyId);
+Boole llSetRef(int copyId);
 void c_lbook(Invocation *invo);
 CS cexpr_get_auname(CommIndex id);
 int trigger_cexpr_autocmd(int id);

@@ -7870,7 +7870,7 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
       redraw_later(UPD_SOME_VALID);
 
    redraw_for_cursorcolumn(curPor);
-   if (popup_is_popup(curPor) && curBook->term != NULL) {
+   if (portalIsPopup(curPor) && curBook->term != NULL) {
       curPor->cursorRow += popup_top_extra(curPor);
       curPor->cursorCol += popup_left_extra(curPor);
       curPor->flags |= WFLAG_WCOL_OFF_ADDED + WFLAG_WROW_OFF_ADDED;

@@ -239,9 +239,8 @@ updateLinesFromVars(
 
       appended_lines_mark(appendLnum, added);
 
-      // Only adjust the cursor for books other than the current, unless it
-      // is the current portal.  For curBook and other portals it has been
-      // done in mark_adjust_internal().
+      //Only adjust the cursor for books other than the current, unless it is the current portal. 
+      //For curBook and other portals it has been done in markAdjust().
       FOR_ALL_TAB_PORTALS(t, po) {
          if (po->book == book
                 && (po->book != curBook || po == curPor)

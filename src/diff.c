@@ -764,7 +764,7 @@ diff_invalidate(Book* book) {
    }
 }
 
-// Called by mark_adjust(): update line numbers in "curBook".
+// Called by markAdjust(): update line numbers in "curBook".
 void
 diff_mark_adjust(
    LineNr line1,
@@ -811,15 +811,15 @@ diff_mark_adjust_tp(
    }
 
    if (line2 == MAXLNUM) {
-      // mark_adjust(99, MAXLNUM, 9, 0): insert lines
+      // markAdjust(99, MAXLNUM, 9, 0, true): insert lines
       inserted = amount;
       deleted = 0;
    } ei (amount_after > 0) {
-      // mark_adjust(99, 98, MAXLNUM, 9): a change that inserts lines
+      // markAdjust(99, 98, MAXLNUM, 9, true): a change that inserts lines
       inserted = amount_after;
       deleted = 0;
    } else {
-      // mark_adjust(98, 99, MAXLNUM, -2): delete lines
+      // markAdjust(98, 99, MAXLNUM, -2, true): delete lines
       inserted = 0;
       deleted = -amount_after;
    }
@@ -3894,8 +3894,8 @@ c_diffgetput(Invocation* invo) {
          }
 
          if (added != 0) {
-            // Adjust marks.  This will change the following entries!
-            mark_adjust(lnum, lnum + count - 1, (long)MAXLNUM, (long)added);
+            //Adjust marks. This will change the following entries!
+            markAdjust(lnum, lnum + count - 1, (long)MAXLNUM, (long)added, true);
             if (curPor->cursor.lnum >= lnum) {
                // Adjust the cursor position if it's in/after the changed lines.
                if (curPor->cursor.lnum >= lnum + count)
@@ -3912,12 +3912,12 @@ c_diffgetput(Invocation* invo) {
             clear_diffblock(dfree);
          }
 
-         //mark_adjust() may have made "dp" invalid.  We don't know where to continue then, bail out
+         //markAdjust() may have made "dp" invalid.  We don't know where to continue then, bail out
          if (added != 0 && !valid_diff(dp))
             break;
 
          if (!dfree)
-            // mark_adjust() may have changed the count in a wrong way
+            // markAdjust() may have changed the count in a wrong way
             dp->count[idx_to] = new_count;
 
          // When changing the current book, keep track of line numbers

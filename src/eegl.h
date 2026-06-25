@@ -2791,7 +2791,7 @@ typedef struct {
    LineNr lnum;   // line number
    ColNr col;   // column number
    int len;   // length: 0 - to the end of line
-} lPosNoVirt;
+} PosNoVirtLen;
 
 // provides a linked list for storing match items for ":match", matchadd() and matchaddpos()
 declStruct(MatchItem);
@@ -2805,7 +2805,7 @@ struct MatchItem {
    Byte* pattern;   // pattern to hilite
    RegMultilineMatch match;   // regexp program for pattern
 
-   Arr(lPosNoVirt) pos; // positions
+   Arr(PosNoVirtLen) pos; // positions
    int      posLen;   // nr of entries in mit_pos
    int      currPos;   // internal position counter
    LineNr   topLnum;   // top book line
@@ -4942,7 +4942,7 @@ struct Portal { //:Portal
 // === end of cached values ===
 ///////////////////////////////////////////////////////////////////
 
-   int redrawType;   // type of redraw to be performed on portal
+   Unt redrawType;   // type of redraw to be performed on portal
    int rowsToUpdate;    // number of portal lines to update when w_redr_type is UPD_REDRAW_TOP
    LineNr redrawTop;  // when != 0: first line needing redraw
    LineNr redrawBott;  // when != 0: last line needing redraw
@@ -6020,9 +6020,6 @@ EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing chara
 EXTERN int screenCursRowG INIT(= 0);
 EXTERN int screenCursColG INIT(= 0);
 
-// used for 'hlsearch' hilite matching
-EXTERN Match screenSearchMatchG;
-
 // last lnum where CurSearch was displayed
 EXTERN LineNr searchLastLnumG INIT(= 0);
 
@@ -6589,14 +6586,14 @@ EXTERN int   KeyTyped;      // TRUE if user typed current char
 EXTERN int   KeyStuffed;      // TRUE if current char from stuffbuf
 EXTERN int   maptick INIT(= 0);   // tick for each non-mapped char
 
-EXTERN int   must_redraw INIT(= 0);       // type of redraw necessary
-EXTERN int   skip_redraw INIT(= FALSE);  // skip redraw once
-EXTERN int   do_redraw INIT(= FALSE);    // extra redraw once
+EXTERN Unt   must_redraw INIT(= 0);       // type of redraw necessary (UPD_* constants)
+EXTERN Boole skip_redraw INIT(= FALSE);  // skip redraw once
+EXTERN Boole do_redraw INIT(= FALSE);    // extra redraw once
 EXTERN Boole diffNeedsRedrawG INIT(= false); // need to call diff_redraw()
 // flag set when 'redrawtime' timeout has been set
-EXTERN int   redrawtime_limit_set INIT(= FALSE);
+EXTERN Boole redrawtime_limit_set INIT(= FALSE);
 
-EXTERN int   need_highlight_changed INIT(= TRUE);
+EXTERN Boole need_highlight_changed INIT(= TRUE);
 
 #define NSCRIPT 15
 EXTERN FILE* scriptin[NSCRIPT];       // streams to read script from

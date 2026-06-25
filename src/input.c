@@ -6764,7 +6764,7 @@ retnomove:
             return IN_STATUS_LINE;
          return IN_OTHER_WIN;
       }
-      if (popup_is_popup(curPor) && curBook->term != NULL)
+      if (portalIsPopup(curPor) && curBook->term != NULL)
          //terminal in popup portal: don't jump to another portal
          return IN_OTHER_WIN;
       //Only change portal focus when not clicking on or dragging the

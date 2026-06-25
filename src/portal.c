@@ -2261,7 +2261,7 @@ closePortal(Portal* port, int free_buf) {
 
    closePortalBook(port, free_buf ? DOBOOK_UNLOAD : 0, true);
 
-   if (portalIsValid(port) && port->book == NULL && !popup_is_popup(port) && lastPortal()) {
+   if (portalIsValid(port) && port->book == NULL && !portalIsPopup(port) && lastPortal()) {
       // Autocommands have closed all portals, quit now.  Restore
       // curPor->book, otherwise writing eeglinfo may fail.
       if (curPor->book == NULL)
@@ -4112,7 +4112,7 @@ void
 gotoPortal(Portal* po) {
    if (portErrorIfPopup(true))
       return;
-   if (popup_is_popup(po)) {
+   if (portalIsPopup(po)) {
       emsg(_(e_not_allowed_to_enter_popup_portal));
       return;
    }
@@ -4140,7 +4140,7 @@ gotoPortal(Portal* po) {
 //Return the specified portal if the neighbor is not found.
 private Portal *
 vertNeighbor(Tab *t, Portal* po, int up, long count) {
-   if (popup_is_popup(po))
+   if (portalIsPopup(po))
       // popups don't have neighbors.
       return NULL;
    Frame* foundfr = po->frame;
@@ -4206,7 +4206,7 @@ portHorizNeighbor(Tab *t, Portal* po, int left, long count) {
    Frame   *nfr;
    Frame   *foundfr;
 
-   if (popup_is_popup(po))
+   if (portalIsPopup(po))
       // popups don't have neighbors.
       return NULL;
    foundfr = po->frame;
@@ -4377,7 +4377,7 @@ enterPortalWorker(Portal* po, Unt flags) {
       redraw_later(UPD_VALID);   // causes status line redraw
 
    // set portal height to desired minimal value
-   if (curPor->height < p_wh && !curPor->o.portFixHeight  && !popup_is_popup(curPor))
+   if (curPor->height < p_wh && !curPor->o.portFixHeight  && !portalIsPopup(curPor))
       portSetHeight((int)p_wh, curPor);
    ei (curPor->height == 0)
       portSetHeight(1, curPor);
@@ -5920,7 +5920,7 @@ minRowsForAllTabs(void) {
 Boole
 onlyOnePortal(void) {
    // If the current portal is a popup then there always is another portal.
-   if (popup_is_popup(curPor))
+   if (portalIsPopup(curPor))
       return false;
 
    // If there is another tab there always is another portal.
@@ -6771,7 +6771,7 @@ f_gotoPortalid(Arr(Var) argvars, Var* returnVar) {
 
    if (text_or_buf_locked())
       return;
-   if (popup_is_popup(curPor) && curBook->term) {
+   if (portalIsPopup(curPor) && curBook->term) {
       emsg(_(e_not_allowed_for_terminal_in_popup_portal));
       return;
    }
@@ -7170,22 +7170,22 @@ private Tab* popupMaskTabS INIT(= NULL);
 #define POPF_POSINVERT  0x800   // vertical position can be inverted
 
 typedef struct {
-   char   *pp_name;
-   PopupPosition   pp_val;
+   CS pp_name;
+   PopupPosition pp_val;
 } PopposEntry;
 
 private PopposEntry popposEntriesS[] = {
-   {"botleft", POPPOS_BOTLEFT},
-   {"topleft", POPPOS_TOPLEFT},
-   {"botright", POPPOS_BOTRIGHT},
-   {"topright", POPPOS_TOPRIGHT},
-   {"center", POPPOS_CENTER}
+   {S"botleft", POPPOS_BOTLEFT},
+   {S"topleft", POPPOS_TOPLEFT},
+   {S"botright", POPPOS_BOTRIGHT},
+   {S"topright", POPPOS_TOPRIGHT},
+   {S"center", POPPOS_CENTER}
 };
 
 private int const defaultBorderChars[] = { 9472, 9474, 9472, 9474, 9484, 9488, 9496, 9492 };
 
 // Portal used for ":echowindow"
-private Portal *messagePort = NULL;
+private Portal* messagePortP = NULL;
 
 // Time used for the next ":echowindow" message in msec.
 private int  message_win_time = 3000;
@@ -9453,8 +9453,8 @@ popup_free(Portal* po) {
       mustClearCommlineG = true;
    portFreePopup(po);
 
-   if (po == messagePort)
-      messagePort = NULL;
+   if (po == messagePortP)
+      messagePortP = NULL;
 
    redraw_all_later(UPD_NOT_VALID);
    needRefreshPopupMaskG = true;
@@ -9951,10 +9951,10 @@ popup_do_filter(Unt c) {
    Portal   *po;
    int      save_KeyTyped = KeyTyped;
    int      state;
-   int      was_must_redraw = must_redraw;
+   Unt mustRedrawSaved = must_redraw;
 
    // Popup portal with terminal always gets focus.
-   if (popup_is_popup(curPor) && curBook->term != NULL)
+   if (portalIsPopup(curPor) && curBook->term != NULL)
       return false;
 
    if (recursive)
@@ -9989,7 +9989,7 @@ popup_do_filter(Unt c) {
    }
 
 
-   if (must_redraw > was_must_redraw) {
+   if (must_redraw > mustRedrawSaved) {
       int save_gotInterruptG = gotInterruptG;
 
       // Reset gotInterruptG to avoid a function used in the statusline aborts.
@@ -10344,7 +10344,7 @@ may_update_popup_mask(int type) {
 //If the current portal is a popup and something relevant changed, recompute the position and size
 void
 may_update_popup_position(void) {
-   if (popup_is_popup(curPor) && popup_need_position_adjust(curPor))
+   if (portalIsPopup(curPor) && popup_need_position_adjust(curPor))
       adjustPosition(curPor);
 }
 
@@ -10357,28 +10357,20 @@ get_spaces(int len) {
 }
 
 //Update popup portals.  They are drawn on top of normal portals.
-//"win_update" is called for each popup portal, lowest zindex first.
+//"portUpdate" is called for each popup portal, lowest zindex first.
 void
-update_popups(void (*win_update)(Portal* po)) {
-   Portal   *po;
-   int top_off;
-   int left_extra;
-   int total_width;
-   int total_height;
-   int top_padding;
-   Decoration popupDeco;
+update_popups(void (*portUpdate)(Portal* po)) {
+   Portal* po;
    Decoration borderDeco[4];
-   int border_char[8];
+   Unt border_char[8];
    Byte buf[MB_MAXBYTES];
    int row;
-   int wincol;
    int padcol = 0;
    int padendcol = 0;
-   int i;
    int sb_thumb_top = 0;
    int sb_thumb_height = 0;
-   char scrollDeco = 0;
-   char thumbFlags = 0;
+   Byte scrollDeco = 0;
+   Byte thumbFlags = 0;
 
    // hide the cursor until redrawing is done.
    cursor_off();
@@ -10398,11 +10390,11 @@ update_popups(void (*win_update)(Portal* po)) {
       update_popupTransparencyG(po, 1);
 
       //adjust portalRow and portalCol for border and padding, since
-      //win_update() doesn't handle them.
-      top_off = popup_top_extra(po);
-      left_extra = po->pup.padding[3] + po->pup.border[3] - po->pup.leftOff;
+      //portUpdate() doesn't handle them.
+      int top_off = popup_top_extra(po);
+      int left_extra = po->pup.padding[3] + po->pup.border[3] - po->pup.leftOff;
       if (po->portalCol + left_extra < 0)
-          left_extra = -po->portalCol;
+         left_extra = -po->portalCol;
       po->portalRow += top_off;
       po->portalCol += left_extra;
 
@@ -10412,10 +10404,10 @@ update_popups(void (*win_update)(Portal* po)) {
          if (po->pup.lastCurline != po->cursor.lnum)
             highlightCurrentLine(po);
 
-         win_update(po);
+         portUpdate(po);
 
-         // move the cursor into the visible lines, otherwise executing
-         // commands with win_execute() may cause the text to jump.
+         //move the cursor into the visible lines, otherwise executing
+         //commands with win_execute() may cause the text to jump.
          if (po->cursor.lnum < po->topLine)
             po->cursor.lnum = po->topLine;
          ei (po->cursor.lnum >= po->bottomLine)
@@ -10435,9 +10427,9 @@ update_popups(void (*win_update)(Portal* po)) {
          po->flags |= WFLAG_WROW_OFF_ADDED;
       }
 
-      total_width = popup_width(po) - po->pup.rightOff;
-      total_height = popup_height(po);
-      popupDeco = getPortcolorDeco(po);
+      int total_width = popup_width(po) - po->pup.rightOff;
+      int total_height = popup_height(po);
+      Decoration popupDeco = getPortcolorDeco(po);
 
       if (po->portalRow + total_height > (int)commlineRowG)
          po->pup.flags |= POPF_ON_CMDLINE;
@@ -10450,12 +10442,12 @@ update_popups(void (*win_update)(Portal* po)) {
       border_char[5] = 0x2557;
       border_char[6] = (po->pup.flags & POPF_RESIZE) ? 0x21f2 : 0x255d;
       border_char[7] = 0x255a;
-      for (i = 0; i < 8; ++i) {
+      for (Unt i = 0; i < 8; ++i) {
          if (po->pup.borderChar[i] != 0)
             border_char[i] = po->pup.borderChar[i];
       } 
 
-      for (i = 0; i < 4; ++i) {
+      for (Unt i = 0; i < 4; ++i) {
          borderDeco[i] = popupDeco;
          if (po->pup.borderHilite[i] != NULL)
             borderDeco[i] = decosByHiliteName(po->pup.borderHilite[i]);
@@ -10463,12 +10455,12 @@ update_popups(void (*win_update)(Portal* po)) {
 
       // Title goes on top of border or padding.
       title_wincol = po->portalCol + 1;
-      if (po->pup.title != NULL) {
-          title_len = eeglStrSize(po->pup.title);
+      if (po->pup.title) {
+         title_len = eeglStrSize(po->pup.title);
 
          // truncate the title if too long
          if (title_len > total_width - 2) {
-            int   title_byte_len = (int)STRLEN(po->pup.title);
+            int title_byte_len = (int)STRLEN(po->pup.title);
             CS title_text = alloc(title_byte_len + 1);
 
             trunc_string(po->pup.title, title_text, total_width - 2, title_byte_len + 1);
@@ -10485,8 +10477,8 @@ update_popups(void (*win_update)(Portal* po)) {
          } 
       }
 
-      wincol = po->portalCol - po->pup.leftOff;
-      top_padding = po->pup.padding[0];
+      int wincol = po->portalCol - po->pup.leftOff;
+      int top_padding = po->pup.padding[0];
       if (po->pup.border[0] > 0) {
          // top border; do not draw over the title
          if (title_len > 0) {
@@ -10511,8 +10503,7 @@ update_popups(void (*win_update)(Portal* po)) {
             buf[mb_char2bytes(border_char[5], buf)] = ZERO;
             drawText(buf, po->portalRow, wincol + total_width - 1, borderDeco[1].flags);
          }
-      }
-      ei (po->pup.padding[0] == 0 && popup_top_extra(po) > 0)
+      } ei (po->pup.padding[0] == 0 && popup_top_extra(po) > 0)
          top_padding = 1;
 
       if (top_padding > 0 || po->pup.padding[2] > 0) {
@@ -10539,9 +10530,8 @@ update_popups(void (*win_update)(Portal* po)) {
 
       // Compute scrollbar thumb position and size.
       if (po->pup.hasScrollbar) {
-         LineNr   linecount = po->book->mem.lineCount;
-         int      height = po->height;
-         int      last;
+         LineNr linecount = po->book->mem.lineCount;
+         int height = po->height;
 
          sb_thumb_height = ((LineNr)height * height + linecount / 2) / linecount;
          if (po->topLine > 1 && sb_thumb_height == height)
@@ -10556,7 +10546,7 @@ update_popups(void (*win_update)(Portal* po)) {
                   * (po->height - sb_thumb_height) / (linecount - po->height);
          if (po->topLine > 1 && sb_thumb_top == 0 && height > 1)
             sb_thumb_top = 1;  // show it's scrolled
-         last = total_height - top_off - po->pup.border[2];
+         int last = total_height - top_off - po->pup.border[2];
          if (sb_thumb_top >= last)
             // show at least one character
             sb_thumb_top = last - 1;
@@ -10571,11 +10561,10 @@ update_popups(void (*win_update)(Portal* po)) {
             thumbFlags = getDecoFlags(HLF_PST);
       }
 
-      for (i = po->pup.border[0]; i < total_height - po->pup.border[2]; ++i) {
-          int   pad_left;
-          // left and right padding only needed next to the body
-          int do_padding =
-             i >= po->pup.border[0] + po->pup.padding[0]
+      for (int i = po->pup.border[0]; i < total_height - po->pup.border[2]; ++i) {
+         int pad_left;
+         // left and right padding only needed next to the body
+         Boole do_padding = i >= po->pup.border[0] + po->pup.padding[0]
              && i < total_height - po->pup.border[2] - po->pup.padding[2];
 
          row = po->portalRow + i;
@@ -10617,13 +10606,14 @@ update_popups(void (*win_update)(Portal* po)) {
             drawText(buf, row, wincol + total_width - 1, borderDeco[1].flags);
          }
          // right padding
-         if (do_padding && po->pup.padding[1] > 0)
+         if (do_padding && po->pup.padding[1] > 0) {
             drawText(
                get_spaces( po->pup.padding[1]), 
                row, 
                wincol + po->pup.border[3] + po->pup.padding[3] + po->width + po->leftCol,
                popupDeco.flags
             );
+         } 
       }
 
       if (po->pup.padding[2] > 0) {
@@ -10638,9 +10628,9 @@ update_popups(void (*win_update)(Portal* po)) {
          // bottom border
          row = po->portalRow + total_height - 1;
          fillRowsWithTwoChars(
-             row , row + 1, wincol < 0 ? 0 : wincol, wincol + total_width,
-             po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[7] : border_char[2],
-             border_char[2], borderDeco[2]
+            row , row + 1, wincol < 0 ? 0 : wincol, wincol + total_width,
+            po->pup.border[3] != 0 && po->pup.leftOff == 0 ? border_char[7] : border_char[2],
+            border_char[2], borderDeco[2]
          );
          if (po->pup.border[1] > 0) {
             buf[mb_char2bytes(border_char[6], buf)] = ZERO;
@@ -10664,15 +10654,15 @@ update_popups(void (*win_update)(Portal* po)) {
       mayStartMessagePortalTimer(po);
    }
 
-   // In case win_update() called start_search_hl().
+   // In case portUpdate() called draw.c:start_search_hl().
    end_search_hl();
 }
 
 // Mark references in callbacks of one popup portal.
 private int
 set_ref_in_one_popup(Portal* po, int copyID) {
-   int      abort = false;
-   Var   tv;
+   Boole abort = false;
+   Var tv;
 
    if (po->pup.closeCb.cb_partial != NULL) {
       tv.tag = VAR_PARTIAL;
@@ -10684,31 +10674,30 @@ set_ref_in_one_popup(Portal* po, int copyID) {
       tv.partial = po->pup.filterCb.cb_partial;
       abort = abort || set_ref_in_item(&tv, copyID, NULL, NULL);
    }
-    abort = abort || set_ref_in_list(po->pup.mask, copyID);
+   abort = abort || set_ref_in_list(po->pup.mask, copyID);
    return abort;
 }
 
 // Set reference in callbacks of popup portals.
 int
 set_ref_in_popups(int copyID) {
-   int      abort = false;
-   Portal   *po;
+   Boole abort = false;
 
-   for (po = firstPopupPortG; !abort && po; po = po->next)
+   for (Portal* po = firstPopupPortG; !abort && po; po = po->next)
       abort = abort || set_ref_in_one_popup(po, copyID);
 
    Tab* tab;
    FOR_ALL_TABS(tab) {
-      for (po = tab->firstPopupPort; !abort && po; po = po->next)
-          abort = abort || set_ref_in_one_popup(po, copyID);
+      for (Portal* po = tab->firstPopupPort; !abort && po; po = po->next)
+         abort = abort || set_ref_in_one_popup(po, copyID);
       if (abort)
-          break;
+         break;
    }
    return abort;
 }
 
 int
-popup_is_popup(Portal* po) {
+portalIsPopup(Portal* po) {
    return po->pup.flags != 0;
 }
 
@@ -10733,24 +10722,23 @@ popupFindInfoPortal(void) {
 
 void
 f_popup_findecho(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
-   returnVar->number = messagePort == NULL ? 0 : messagePort->id;
+   returnVar->number = messagePortP ? messagePortP->id : 0;
 }
 
 void
 f_popup_findinfo(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
-   Portal   *po = popupFindInfoPortal();
+   Portal* po = popupFindInfoPortal();
    returnVar->number = po == NULL ? 0 : po->id;
 }
 
 void
 f_popup_findpreview(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
    Portal* po = popupFindPreviewPortal();
-
-   returnVar->number = po == NULL ? 0 : po->id;
+   returnVar->number = po? po->id : 0;
 }
 
 //Create a popup to be used as the preview or info portal.
-//NOTE: this makes the popup the current portal, so that the file can be edited.  However it 
+//NOTE: this makes the popup the current portal, so that the file can be edited. However it 
 //must not remain the current portal, which the caller must make sure of.
 int
 portalCreatePreviewPortal(int info) {
@@ -10811,58 +10799,56 @@ popup_overlaps_cmdline(void) {
    return popup_on_cmdline;
 }
 
-
 //Get the message portal. Return NULL if something failed.
 Portal*
 popup_get_messagePort(void) {
-   if (messagePort != NULL)
-      return messagePort;
+   if (messagePortP)
+      return messagePortP;
 
-   messagePort = createPopup(NULL, NULL, POPUP_MESSAGE_WIN);
-   if (!messagePort)
+   messagePortP = createPopup(NULL, NULL, POPUP_MESSAGE_WIN);
+   if (!messagePortP)
       return NULL;
 
    // use the full screen width
-   messagePort->width = visibleColsG;
+   messagePortP->width = visibleColsG;
 
    // position at bottom of screen
-   messagePort->pup.pos = POPPOS_BOTTOM;
-   messagePort->pup.wantCol = 1;
-   messagePort->pup.minWidth = 9999;
-   messagePort->pup.firstLine = -1;
+   messagePortP->pup.pos = POPPOS_BOTTOM;
+   messagePortP->pup.wantCol = 1;
+   messagePortP->pup.minWidth = 9999;
+   messagePortP->pup.firstLine = -1;
 
    // no padding, border at the top
-   for (int i = 0; i < 4; ++i)
-      messagePort->pup.padding[i] = 0;
-   for (int i = 1; i < 4; ++i)
-      messagePort->pup.border[i] = 0;
+   for (Unt i = 0; i < 4; ++i)
+      messagePortP->pup.padding[i] = 0;
+   for (Unt i = 1; i < 4; ++i)
+      messagePortP->pup.border[i] = 0;
 
-   if (messagePort->pup.timer != NULL)
-      messagePort->pup.timer->tr_keep = true;
-   return messagePort;
+   if (messagePortP->pup.timer)
+      messagePortP->pup.timer->tr_keep = true;
+   return messagePortP;
 }
 
-//If the message portal is not visible: show it
-//If the message portal is visible: reset the timeout
+//If the message portal is not visible: show it. If the message portal is visible: reset the timeout
 void
 popup_show_messagePort(void) {
-   if (!messagePort)
+   if (!messagePortP)
       return;
 
-   if ((messagePort->pup.flags & POPF_HIDDEN) != 0) {
+   if ((messagePortP->pup.flags & POPF_HIDDEN) != 0) {
       // the highlight may have changed.
-      updateNotificationColor(messagePort, POPUP_MESSAGE_WIN);
-      popup_show(messagePort);
+      updateNotificationColor(messagePortP, POPUP_MESSAGE_WIN);
+      popup_show(messagePortP);
    }
    start_message_win_timer = true;
 }
 
 private void
 mayStartMessagePortalTimer(Portal* po) {
-   if (po == messagePort && start_message_win_timer) {
-      if (messagePort->pup.timer != NULL) {
-         messagePort->pup.timer->tr_interval = message_win_time;
-         timer_start(messagePort->pup.timer);
+   if (po == messagePortP && start_message_win_timer) {
+      if (messagePortP->pup.timer) {
+         messagePortP->pup.timer->tr_interval = message_win_time;
+         timer_start(messagePortP->pup.timer);
          message_win_time = 3000;
       }
       start_message_win_timer = false;
@@ -10871,14 +10857,14 @@ mayStartMessagePortalTimer(Portal* po) {
 
 int
 popup_message_win_visible(void) {
-   return messagePort && (messagePort->pup.flags & POPF_HIDDEN) == 0;
+   return messagePortP && (messagePortP->pup.flags & POPF_HIDDEN) == 0;
 }
 
 // If the message portal is visible, hide it.
 void
 popup_hide_messagePort(void) {
-   if (messagePort)
-      popup_hide(messagePort);
+   if (messagePortP)
+      popup_hide(messagePortP);
 }
 
 // Values saved in start_echowindow() and restored in end_echowindow()
@@ -10920,10 +10906,10 @@ end_echowindow(void) {
 //Close any popup for a text property associated with "port". Return true if a popup was closed.
 private int
 popup_closePortal(Portal* port) {
-   int       ret = false;
+   int ret = false;
 
    for (int round = 1; round <= 2; ++round) {
-      Portal   *next;
+      Portal* next;
       for (Portal* po = round == 1 ? firstPopupPortG : curtab->firstPopupPort; po; po = next) {
          next = po->next;
          if (po->pup.propPort == port) {
@@ -10938,7 +10924,7 @@ popup_closePortal(Portal* port) {
 // Set the title of the popup portal to the file name.
 void
 setPopupTitle(Portal* po) {
-   if (po->book->currFileName == NULL)
+   if (!po->book->currFileName)
       return;
 
    Byte dirname[MAXPATHL];
@@ -10998,15 +10984,15 @@ private int pum_kind_width;      // width of pum items kind column
 private int pum_extra_width;      // width of extra stuff
 private int pum_scrollbar;      // true when scrollbar present
 
-private int pum_row;         // top row of pum
-private int pum_col;         // left column of pum
+private int pumRowP;         // top row of pum
+private int pumColP;         // left column of pum
 
 private Portal *pumPort = NULL;
-private Unt pumRow;
-private Unt pumHeight;
-private Unt pumCol;
-private Unt pumWCol;
-private Unt pumWWidth;
+private Unt pumPortRow;
+private Unt pumPortHeight;
+private Unt pumPortCol;
+private Unt pumPortWCol;
+private Unt pumPortWWidth;
 
 // Some parts are not updated when a popup menu is visible.  Setting this flag
 // makes pum_visible() return false even when there is a popup menu.
@@ -11018,7 +11004,7 @@ private int pum_set_selected(int n, int repeat);
 
 private void
 computeSize(void) {
-   int   w;
+   int w;
 
    // Compute the width of the widest match and the widest extra.
    pum_base_width = 0;
@@ -11047,11 +11033,7 @@ computeSize(void) {
 //called! When possible the leftmost character is aligned with cursor column. The menu appears 
 //above the screen line "row" or at "row" + "height" - 1.
 void
-pum_display(
-   PopupItem   *array,
-   Unt size,
-   int selected   // index of initially selected item, none if out of range
-){
+pum_display(PopupItem* array, Unt size, int selected) {   // index of initially selected item, none if out of range
    int def_width;
    int max_width;
    int context_lines;
@@ -11081,13 +11063,13 @@ pum_display(
       pumPort = curPor;
       if (stateG & MODE_COMMLINE)
          // cmdline completion popup menu
-         pumRow = commlineRowG;
+         pumPortRow = commlineRowG;
       else
-         pumRow = curPor->cursorRow + curPor->portalRow;
-      pumHeight = curPor->height;
-      pumCol = curPor->portalCol;
-      pumWCol = curPor->cursorCol;
-      pumWWidth = curPor->width;
+         pumPortRow = curPor->cursorRow + curPor->portalRow;
+      pumPortHeight = curPor->height;
+      pumPortCol = curPor->portalCol;
+      pumPortWCol = curPor->cursorCol;
+      pumPortWWidth = curPor->width;
 
       FOR_ALL_PORTALS(pvPort) {
          if (pvPort->isPreview)
@@ -11105,33 +11087,33 @@ pum_display(
       if (p_ph > 0 && pum_height > p_ph)
           pum_height = p_ph;
 
-      // Put the pum below "pumRow" if possible.  If there are few lines
-      // decide on where there is more room.
-      if ((int)pumRow + 2 >= below_row - pum_height
-            && (int)pumRow - above_row > (below_row - above_row) / 2
+      //Put the pum below "pumPortRow" if possible.  If there are few lines
+      //decide on where there is more room.
+      if ((int)pumPortRow + 2 >= below_row - pum_height
+            && (int)pumPortRow - above_row > (below_row - above_row) / 2
       ) {
-         // pum above "pumRow"
-         if (stateG & MODE_COMMLINE)
+         // pum above "pumPortRow"
+         if ((stateG & MODE_COMMLINE) != 0)
             // for cmdline pum, no need for context lines
             context_lines = 0;
          else
             // Leave two lines of context if possible
             context_lines = MIN(2, curPor->cursorRow - curPor->cursorLineRow);
 
-         if (pumRow >= size + context_lines) {
-            pum_row = pumRow - size - context_lines;
+         if (pumPortRow >= size + context_lines) {
+            pumRowP = pumPortRow - size - context_lines;
             pum_height = size;
          } else {
-            pum_row = 0;
-            pum_height = pumRow - context_lines;
+            pumRowP = 0;
+            pum_height = pumPortRow - context_lines;
          }
          if (p_ph > 0 && pum_height > p_ph) {
-            pum_row += pum_height - p_ph;
+            pumRowP += pum_height - p_ph;
             pum_height = p_ph;
          }
       } else {
-         // pum below "pumRow"
-         if (stateG & MODE_COMMLINE)
+         // pum below "pumPortRow"
+         if ((stateG & MODE_COMMLINE) & 0)
             // for cmdline pum, no need for context lines
             context_lines = 0;
          else {
@@ -11142,8 +11124,8 @@ pum_display(
             context_lines = MIN(3, cline_visible_offset);
          }
 
-         pum_row = pumRow + context_lines;
-         pum_height = MIN(below_row - pum_row, (int)size);
+         pumRowP = pumPortRow + context_lines;
+         pum_height = MIN(below_row - pumRowP, (int)size);
          if (p_ph > 0 && pum_height > p_ph)
             pum_height = p_ph;
       }
@@ -11153,9 +11135,9 @@ pum_display(
          return;
 
       // If there is a preview portal above, avoid drawing over it.
-      if (pvPort && pum_row < above_row && pum_height > above_row) {
-         pum_row = above_row;
-         pum_height = pumRow - above_row;
+      if (pvPort && pumRowP < above_row && pum_height > above_row) {
+         pumRowP = above_row;
+         pum_height = pumPortRow - above_row;
       }
 
       displayedItemsS = array;
@@ -11163,7 +11145,7 @@ pum_display(
       computeSize();
       max_width = pum_base_width;
       if (p_pmw > 0 && max_width > p_pmw)
-          max_width = p_pmw;
+         max_width = p_pmw;
 
       // Calculate column
       if (stateG & MODE_COMMLINE)
@@ -11187,10 +11169,10 @@ pum_display(
 
       if (((cursor_col < visibleColsG - p_pw || cursor_col < visibleColsG - max_width))) {
          // align pum with "cursor_col"
-         pum_col = cursor_col;
+         pumColP = cursor_col;
 
          // start with the maximum space available
-         pum_width = visibleColsG - pum_col - pum_scrollbar;
+         pum_width = visibleColsG - pumColP - pum_scrollbar;
 
          content_width = max_width + pum_kind_width + pum_extra_width + 1;
          if (pum_width > content_width && pum_width > p_pw) {
@@ -11204,17 +11186,17 @@ pum_display(
                right_edge_col = visibleColsG - max_width - pum_scrollbar;
                if (curPor->portalCol > right_edge_col && max_width <= p_pw)
                   // use full width to end of the screen
-                  pum_col = MAX(0, right_edge_col);
+                  pumColP = MAX(0, right_edge_col);
             }
 
-            pum_width = visibleColsG - pum_col - pum_scrollbar;
+            pum_width = visibleColsG - pumColP - pum_scrollbar;
 
             if (pum_width < p_pw) {
                pum_width = p_pw;
                if (p_pmw > 0 && pum_width > p_pmw)
                   pum_width = p_pmw;
-               if (pum_width >= visibleColsG - pum_col)
-                  pum_width = visibleColsG - pum_col - 1;
+               if (pum_width >= visibleColsG - pumColP)
+                  pum_width = visibleColsG - pumColP - 1;
             } ei (pum_width > content_width && pum_width > p_pw) {
                pum_width = MAX(content_width, p_pw);
                if (p_pmw > 0 && pum_width > p_pmw)
@@ -11226,7 +11208,7 @@ pum_display(
 
       } ei (visibleColsG < def_width) {
          // not enough room, will use what we have
-         pum_col = 0;
+         pumColP = 0;
          pum_width = visibleColsG - 1;
          if (p_pmw > 0 && pum_width > p_pmw)
             pum_width = p_pmw;
@@ -11235,7 +11217,7 @@ pum_display(
             max_width = p_pw;   // truncate
          if (p_pmw > 0 && max_width > p_pmw)
             max_width = p_pmw;
-         pum_col = visibleColsG - max_width;
+         pumColP = visibleColsG - max_width;
          pum_width = max_width - pum_scrollbar;
       }
 
@@ -11265,10 +11247,10 @@ pum_callUpdateScreen(void) {
 int
 pum_under_menu(int row, int col, int only_redrawing) {
    return (!only_redrawing || pum_will_redraw)
-       && row >= pum_row
-       && row < pum_row + pum_height
-       && col >= pum_col - 1
-       && col < pum_col + pum_width + pum_scrollbar;
+       && row >= pumRowP
+       && row < pumRowP + pum_height
+       && col >= pumColP - 1
+       && col < pumColP + pum_width + pum_scrollbar;
 }
 
 // Computes decorations of text on the popup menu.
@@ -11427,7 +11409,7 @@ displayText(
    truncated = widthLimit == p_pmw && widthLimit - totwidth < cells + pad;
 
    // only draw the text that fits
-   while (size > 0 && col + cells > widthLimit + pum_col) {
+   while (size > 0 && col + cells > widthLimit + pumColP) {
       --size;
       size -= mb_head_off(text, text + size);
       cells -= mb_ptr2cells(text + size);
@@ -11542,13 +11524,13 @@ pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height){
       return;
    char deco = (i >= thumb_pos && i < thumb_pos + thumb_height) ?
          getDecoFlags(HLF_PST) : getDecoFlags(HLF_PSB);
-   screen_putchar(' ', row, pum_col + pum_width, deco);
+   screen_putchar(' ', row, pumColP + pum_width, deco);
 }
 
 // Redraw the popup menu, using "firstItemIndS" and "selectedItemInd".
 void
 pum_redraw(void) {
-   int row = pum_row;
+   int row = pumRowP;
    int col;
    Arr(Short) hiIds; // array used for highlights
    Short hiId;
@@ -11556,7 +11538,6 @@ pum_redraw(void) {
    int i, j;
    int idx;
    CS p = NULL;
-   int totwidth;
    int thumb_pos = 0;
    int thumb_height = 1;
    int item_type;
@@ -11602,19 +11583,19 @@ pum_redraw(void) {
    // The popup menu is drawn over popup menus with zindex under POPUPMENU_ZINDEX.
    screenZindexG = POPUPMENU_ZINDEX;
 
-   for  (i = 0; i < pum_height; ++i) {
+   for (i = 0; i < pum_height; ++i) {
       idx = i + firstItemIndS;
       hiIds = (idx == selectedItemInd) ? hisSel : hisNorm;
       hiId = hiIds[0]; // start with "word" highlight
       deco = decorationsG[hiId];
 
       // prepend a space if there is room
-      if (pum_col > 0)
-         screen_putchar(' ', row, pum_col - 1, deco.flags);
+      if (pumColP > 0)
+         screen_putchar(' ', row, pumColP - 1, deco.flags);
 
       // Display each entry, use 2 spaces for a Tab. Do this 3 times and order from p_cia
-      col = pum_col;
-      totwidth = 0;
+      col = pumColP;
+      int totwidth = 0;
       pum_align_order(order);
       basic_width = items_width_array[order[0]];
       last_isabbr = order[2] == CPT_ABBR;
@@ -11645,34 +11626,33 @@ pum_redraw(void) {
                       && (j == 1 || (j == 0 && pum_get_item(idx, order[j + 2]) == NULL)))
                 || basic_width + n >= pum_width)
             break;
-         fillRowsWithTwoChars( row, row + 1, col, pum_col + basic_width + n, ' ', ' ', origDeco);
-         col = pum_col + basic_width + n;
+         fillRowsWithTwoChars( row, row + 1, col, pumColP + basic_width + n, ' ', ' ', origDeco);
+         col = pumColP + basic_width + n;
          totwidth = basic_width + n;
       }
 
-      fillRowsWithTwoChars( row, row + 1, col, pum_col + pum_width, ' ', ' ', origDeco);
+      fillRowsWithTwoChars( row, row + 1, col, pumColP + pum_width, ' ', ' ', origDeco);
       pum_draw_scrollbar(row, i, thumb_pos, thumb_height);
 
       ++row;
    }
 
-    screenZindexG = 0;
+   screenZindexG = 0;
 }
 
 // Position the info popup relative to the popup menu item.
 private void
 pum_position_info_popup(Portal* po) {
-   int col = pum_col + pum_width + pum_scrollbar + 1;
-   int row = pum_row;
+   int col = pumColP + pum_width + pum_scrollbar + 1;
    int botpos = POPPOS_BOTLEFT;
-   int   used_maxwidth_opt = false;
+   int used_maxwidth_opt = false;
 
    po->pup.pos = POPPOS_TOPLEFT;
-   if (visibleColsG - col < 20 && visibleColsG - col < pum_col) {
-      col = pum_col - 1;
+   if (visibleColsG - col < 20 && visibleColsG - col < pumColP) {
+      col = pumColP - 1;
       po->pup.pos = POPPOS_TOPRIGHT;
       botpos = POPPOS_BOTRIGHT;
-      po->pup.maxWidth = pum_col - 1;
+      po->pup.maxWidth = pumColP - 1;
    } else
       po->pup.maxWidth = visibleColsG - col + 1;
    po->pup.maxWidth -= popup_extra_width(po);
@@ -11682,9 +11662,9 @@ pum_position_info_popup(Portal* po) {
       used_maxwidth_opt = true;
    }
 
-   row -= popup_top_extra(po);
+   int row = pumRowP - popup_top_extra(po);
    if (po->pup.flags & POPF_INFO_MENU) {
-      if (pum_row < (int)pumRow) {
+      if (pumRowP < (int)pumPortRow) {
          // menu above cursor line, align with bottom
          row += pum_height;
          po->pup.pos = botpos;
@@ -11961,10 +11941,10 @@ pum_visible(void) {
 private int
 pum_in_same_position(void) {
    return pumPort != curPor
-       || ((int)pumRow == curPor->cursorRow + curPor->portalRow
-            && pumHeight == curPor->height
-            && (int)pumCol == curPor->portalCol
-            && pumWWidth == curPor->width
+       || ((int)pumPortRow == curPor->cursorRow + curPor->portalRow
+            && pumPortHeight == curPor->height
+            && (int)pumPortCol == curPor->portalCol
+            && pumPortWWidth == curPor->width
          );
 }
 
@@ -11997,7 +11977,7 @@ pum_may_redraw(void) {
       // Use the remembered cursorCol value, the cursor may have moved when a
       // completion was inserted, but we want the menu in the same position.
       pum_undisplay();
-      curPor->cursorCol = pumWCol;
+      curPor->cursorCol = pumPortWCol;
       curPor->cacheState |= VALID_WCOL;
       pum_display(array, len, selected);
       curPor->cursorCol = wcol;
@@ -12018,8 +11998,8 @@ pum_set_event_info(Bag *bag) {
       return;
    (void)bagAddNumber(bag, S"height", pum_height);
    (void)bagAddNumber(bag, S"width", pum_width);
-   (void)bagAddNumber(bag, S"row", pum_row);
-   (void)bagAddNumber(bag, S"col", pum_col);
+   (void)bagAddNumber(bag, S"row", pumRowP);
+   (void)bagAddNumber(bag, S"col", pumColP);
    (void)bagAddNumber(bag, S"size", menuLen);
    (void)bagAdd_bool(bag, S"scrollbar", pum_scrollbar ? VVAL_TRUE : VVAL_FALSE);
 }
@@ -12028,27 +12008,27 @@ private void
 pum_position_at_mouse(int min_width) {
    if (visibleRowsG - mouseRowG > menuLen || visibleRowsG - mouseRowG > mouseRowG) {
       // Enough space below the mouse row, or there is more space below the mouse row than above.
-      pum_row = mouseRowG + 1;
-      if (pum_height > visibleRowsG - pum_row)
-          pum_height = visibleRowsG - pum_row;
-      if (pum_row + pum_height > (int)commlineRowG)
+      pumRowP = mouseRowG + 1;
+      if (pum_height > visibleRowsG - pumRowP)
+          pum_height = visibleRowsG - pumRowP;
+      if (pumRowP + pum_height > (int)commlineRowG)
           pum_in_cmdline = true;
    } else {
    // Show above the mouse row, reduce height if it does not fit.
-   pum_row = mouseRowG - menuLen;
-   if (pum_row < 0) {
-       pum_height += pum_row;
-       pum_row = 0;
+   pumRowP = mouseRowG - menuLen;
+   if (pumRowP < 0) {
+       pum_height += pumRowP;
+       pumRowP = 0;
    }
    }
 
    if (visibleColsG - mouseColG >= pum_base_width || visibleColsG - mouseColG > min_width)
       // Enough space to show at mouse column.
-      pum_col = mouseColG;
+      pumColP = mouseColG;
    else
        // Not enough space, right align with portal.
-       pum_col = visibleColsG -  MIN(pum_base_width, min_width);
-   pum_width = visibleColsG - pum_col;
+       pumColP = visibleColsG -  MIN(pum_base_width, min_width);
+   pum_width = visibleColsG - pumColP;
 
    pum_width = MIN(pum_width, pum_base_width + 1);
    // Do not redraw at cursor position.

@@ -6102,8 +6102,8 @@ wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
 
 void
 f_getcompletion(Arr(Var) argvars, Var* returnVar) {
-   int      filtered = false;
-   int      options = WILD_SILENT | WILD_USE_NL | WILD_ADD_SLASH | WILD_NO_BEEP | WILD_HOME_REPLACE;
+   int filtered = false;
+   int options = WILD_SILENT | WILD_USE_NL | WILD_ADD_SLASH | WILD_NO_BEEP | WILD_HOME_REPLACE;
 
    CS input = tv_get_string(&argvars[0]);
    if (check_for_string_arg(argvars, 1) == FAIL)
@@ -7504,11 +7504,7 @@ finish_incsearch_highlighting(
 
 // Do 'incsearch' highlighting if desired.
 private void
-may_do_incsearch_highlighting(
-   int          firstc,
-   long          count,
-   IncSearch   *is_state)
-{
+may_do_incsearch_highlighting(int firstc, long count, IncSearch* is_state) {
    int      skiplen, patlen;
    int      found;  // do_search() result
    Pos   end_pos;
@@ -17014,7 +17010,7 @@ private Kv autoEvents[NUM_EVENTS] = {
    KEYVALUE_ENTRY(-EVENT_FILEAPPENDPRE, "FileAppendPre"),
    KEYVALUE_ENTRY(-EVENT_FILECHANGEDRO, "FileChangedRO"),
    KEYVALUE_ENTRY(-EVENT_FILECHANGEDSHELL, "FileChangedShell"),
-   KEYVALUE_ENTRY(-EVENT_FILECHANGEDSHELLPOST, "FileChangedShelPosNoVirtt"),
+   KEYVALUE_ENTRY(-EVENT_FILECHANGEDSHELLPOST, "FileChangedShePosNoVirtLent"),
    KEYVALUE_ENTRY(-EVENT_FILEREADCMD, "FileReadCmd"),
    KEYVALUE_ENTRY(-EVENT_FILEREADPOST, "FileReadPost"),
    KEYVALUE_ENTRY(-EVENT_FILEREADPRE, "FileReadPre"),

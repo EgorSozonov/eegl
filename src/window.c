@@ -1695,7 +1695,7 @@ do_put(
           curPor->cursor.lnum = lnum - 1;
       else
           curPor->cursor.lnum = lnum;
-      curBook->opStart = curPor->cursor;   // for mark_adjust()
+      curBook->opStart = curPor->cursor;   // for markAdjust()
    } ei (u_save_cursor() == FAIL)
       goto end;
 
@@ -2056,7 +2056,7 @@ do_put(
            if (dir == FORWARD)
                 curBook->opStart.lnum++;
          }
-         mark_adjust(curBook->opStart.lnum + (y_type == MCHAR), (LineNr)MAXLNUM, nr_lines, 0L);
+         markAdjust(curBook->opStart.lnum + (y_type == MCHAR), (LineNr)MAXLNUM, nr_lines, 0L, true);
 
          // note changed text for displaying and folding
          if (y_type == MCHAR)
@@ -3300,8 +3300,8 @@ processSelection(int button, int col, int row, Unt repeated_click) {
              && col < (int)cb->word_end_col && !repeated_click)
          return;
 
-       // Get new word boundaries
-       clip_get_word_boundaries(cb, row, col);
+      // Get new word boundaries
+      clip_get_word_boundaries(cb, row, col);
 
       // Handle being after the origin point of selection
       if (clip_compare_pos(row, col, cb->origin_row, cb->origin_start_col) >= 0)

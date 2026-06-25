@@ -19,9 +19,6 @@ private void fname2fnum(FileMarkExt *fm);
 private void fmarks_check_one(FileMarkExt *fm, Byte *name, Book *book);
 private CS mark_line(Pos* mp, int lead_len);
 private void show_one_mark(int, Byte *, Pos *, Byte *, int current);
-private void mark_adjust_internal(
-   LineNr line1, LineNr line2, long amount, long amount_after, int adjust_folds
-);
 
 //Set named mark "c" at current cursor position. Return OK on success, FAIL if bad name given.
 int
@@ -819,36 +816,25 @@ c_changes(Invocation* invo UNUSED) {
        *lp += amount_after; \
     }
 
-//Adjust marks between "line1" and "line2" (inclusive) to move "amount" lines.
-//Must be called before changed_*(), appended_lines() or deleted_lines().
-//May be called before or after changing the text.
-//When deleting lines "line1" to "line2", use an "amount" of MAXLNUM: The
-//marks within this range are made invalid.
-//If "amount_after" is non-zero adjust marks after "line2".
-//Example: Delete lines 34 and 35: mark_adjust(34, 35, MAXLNUM, -2);
-//Example: Insert two lines below 55: mark_adjust(56, MAXLNUM, 2, 0);
-//              or: mark_adjust(56, 55, MAXLNUM, 2);
+//Adjust marks between "line1" and "line2" (inclusive) to move "amount" lines. Must be called before
+//changed_*(), appended_lines() or deleted_lines(). May be called before or after changing the text.
+//When deleting lines "line1" to "line2", use an "amount" of MAXLNUM: then the marks within this 
+//range are made invalid.
+//If "amount_after" is non-zero adjust, marks after "line2".
+//Example: Delete lines 34 and 35: markAdjust(34, 35, MAXLNUM, -2, true);
+//Example: Insert two lines below 55: markAdjust(56, MAXLNUM, 2, 0, true);
+//              or: markAdjust(56, 55, MAXLNUM, 2, true);
 void
-mark_adjust(LineNr line1, LineNr line2, long amount, long amount_after) {
-   mark_adjust_internal(line1, line2, amount, amount_after, true);
-}
-
-void
-mark_adjust_nofold(LineNr line1, LineNr line2, long amount, long amount_after) {
-   mark_adjust_internal(line1, line2, amount, amount_after, false);
-}
-
-private void
-mark_adjust_internal(
+markAdjust(
    LineNr line1,
    LineNr line2,
    long amount,
    long amount_after,
-   int adjust_folds UNUSED
+   Boole adjust_folds
 ) {
-   int      i;
-   int      fnum = curBook->fiNum;
-   LineNr   *lp;
+   int i;
+   int fnum = curBook->fiNum;
+   LineNr* lp;
    static Pos initpos = {1, 0, 0};
 
    if (line2 < line1 && amount_after == 0L)       // nothing to do
@@ -876,15 +862,15 @@ mark_adjust_internal(
       if (!EQUAL_POS(curBook->lastCursor, initpos))
          one_adjust(&(curBook->lastCursor.lnum));
 
-      // list of change positions
+      //list of change positions
       for (Unt i = 0; i < curBook->changeListLen; ++i)
           one_adjust_nodel(&(curBook->changeList[i].lnum));
 
-      // Visual area
+      //Visual area
       one_adjust_nodel(&(curBook->visual.vi_start.lnum));
       one_adjust_nodel(&(curBook->visual.vi_end.lnum));
 
-      // quickfix marks
+      //location list marks
       llAdjustEntries(line1, line2, amount, amount_after);
       sign_mark_adjust(line1, line2, amount, amount_after);
    }
@@ -905,8 +891,8 @@ mark_adjust_internal(
    Tab* tab;
    FOR_ALL_TAB_PORTALS(tab, port) {
       if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-         // Marks in the jumplist.  When deleting lines, this may create
-         // duplicate marks in the jumplist, they will be removed later.
+         //Marks in the jumplist.  When deleting lines, this may create
+         //duplicate marks in the jumplist, they will be removed later.
          for (i = 0; i < port->jumpListLen; ++i) {
             if (port->jumpList[i].fmark.fnum == fnum)
                 one_adjust_nodel(&(port->jumpList[i].fmark.mark.lnum));
@@ -914,13 +900,13 @@ mark_adjust_internal(
 
       if (port->book == curBook) {
          if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
-            // marks in the tag stack
+            //marks in the tag stack
             for (Unt i = 0; i < port->tagStackLen; i++)
                if (port->tagStack[i].fmark.fnum == fnum)
                   one_adjust_nodel(&(port->tagStack[i].fmark.mark.lnum));
          } 
 
-         // the displayed Visual area
+         //the displayed Visual area
          if (port->prevVisualEnd != 0) {
             one_adjust_nodel(&(port->prevVisualEnd));
             one_adjust_nodel(&(port->oldVisualLnum));
@@ -935,8 +921,8 @@ mark_adjust_internal(
                   else
                       port->topLine = line1 - 1;
                } ei (port->topLine > line1)
-                  // keep topline on the same line, unless inserting just
-                  // above it (we probably want to see that line then)
+                  //Keep topline on the same line, unless inserting just
+                  //above it (we probably want to see that line then)
                   port->topLine += amount;
                port->topFill = 0;
             } ei (amount_after && port->topLine > line2) {
@@ -988,11 +974,11 @@ mark_adjust_internal(
 //them
 void
 mark_col_adjust(
-   LineNr   lnum,
-   ColNr   mincol,
-   long   lnum_amount,
-   long   col_amount,
-   int      spaces_removed
+   LineNr lnum,
+   ColNr mincol,
+   long lnum_amount,
+   long col_amount,
+   int spaces_removed
 ) {
    int i;
    int fnum = curBook->fiNum;
@@ -1175,15 +1161,15 @@ get_buf_local_marks(Book *book, List *l) {
    }
 
     // Mark '' is a portal local mark and not a buffer local mark
-    add_mark(l, (CS)"''", &curPor->prevContextMark, curBook->fiNum, NULL);
+    add_mark(l, S"''", &curPor->prevContextMark, curBook->fiNum, NULL);
 
-    add_mark(l, (CS)"'\"", &book->lastCursor, book->fiNum, NULL);
-    add_mark(l, (CS)"'[", &book->opStart, book->fiNum, NULL);
-    add_mark(l, (CS)"']", &book->opEnd, book->fiNum, NULL);
-    add_mark(l, (CS)"'^", &book->lastInsert, book->fiNum, NULL);
-    add_mark(l, (CS)"'.", &book->lastChange, book->fiNum, NULL);
-    add_mark(l, (CS)"'<", &book->visual.vi_start, book->fiNum, NULL);
-    add_mark(l, (CS)"'>", &book->visual.vi_end, book->fiNum, NULL);
+    add_mark(l, S"'\"", &book->lastCursor, book->fiNum, NULL);
+    add_mark(l, S"'[", &book->opStart, book->fiNum, NULL);
+    add_mark(l, S"']", &book->opEnd, book->fiNum, NULL);
+    add_mark(l, S"'^", &book->lastInsert, book->fiNum, NULL);
+    add_mark(l, S"'.", &book->lastChange, book->fiNum, NULL);
+    add_mark(l, S"'<", &book->visual.vi_start, book->fiNum, NULL);
+    add_mark(l, S"'>", &book->visual.vi_end, book->fiNum, NULL);
 }
 
 // Get information about global marks ('A' to 'Z' and '0' to '9')

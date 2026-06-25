@@ -5396,12 +5396,12 @@ get_copyID(void) {
 // Return true if some memory was freed.
 int
 garbage_collect(int testing) {
-   int      copyID;
-   int      abort = false;
-   Book   *book;
-   Portal   *wp;
-   int      did_free = false;
-   Tab   *tab;
+   int copyID;
+   int abort = false;
+   Book* book;
+   Portal* wp;
+   int did_free = false;
+   Tab* tab;
 
    if (!testing) {
       // Only do this once.
@@ -5412,13 +5412,13 @@ garbage_collect(int testing) {
 
    // The execution stack can grow big, limit the size.
    if (exestack.cap - exestack.len > 500) {
-      Unt   new_len;
-      Byte   *pp;
+      Unt new_len;
+      Byte* pp;
 
       // Keep 150% of the current size, with a minimum of the growth size.
       int n = exestack.len / 2;
       if (n < exestack.ga_growsize)
-          n = exestack.ga_growsize;
+         n = exestack.ga_growsize;
 
       // Don't make it bigger though.
       if (exestack.len + n < exestack.cap) {
@@ -5446,13 +5446,13 @@ garbage_collect(int testing) {
       abort = abort || set_ref_in_item(&book->bookVar.c, copyID, NULL, NULL);
    } 
 
-   // portal-local variables
+   //portal-local variables
    FOR_ALL_TAB_PORTALS(tab, wp)
       abort = abort || set_ref_in_item(&wp->wVar.c, copyID,  NULL, NULL);
-   // portal-local variables in autocmd portals
+   //portal-local variables in autocmd portals
    for (int i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].port) {
-          abort = abort || set_ref_in_item( &autoCommPortG[i].port->wVar.c, copyID, NULL, NULL);
+         abort = abort || set_ref_in_item( &autoCommPortG[i].port->wVar.c, copyID, NULL, NULL);
       } 
    } 
    FOR_ALL_POPUPPORTS(wp)
@@ -5468,35 +5468,36 @@ garbage_collect(int testing) {
    }
    // global variables
    abort = abort || garbage_collect_globvars(copyID)
-          // function-local variables
-          || set_ref_in_call_stack(copyID)
-          // named functions (matters for closures)
-          || set_ref_in_functions(copyID)
-          // function call arguments, if v:testing is set.
-          || set_ref_in_func_args(copyID)
-          // loopvars keep variables for loop blocks
-          || set_ref_in_loopvars(copyID);
+      // function-local variables
+      || set_ref_in_call_stack(copyID)
+      // named functions (matters for closures)
+      || set_ref_in_functions(copyID)
+      // function call arguments, if v:testing is set.
+      || set_ref_in_func_args(copyID)
+      // loopvars keep variables for loop blocks
+      || set_ref_in_loopvars(copyID);
 
     // v: vars
     abort = abort 
-          || garbageCollectEeglVars(copyID)
-          // callbacks in books
-          || setRefInBooks(copyID)
-          // @completefunc, @omnifunc and @thesaurusfunc callbacks
-          || set_ref_in_insexpand_funcs(copyID)
-          // @operatorfunc callback
-          || set_ref_in_opfunc(copyID)
-          // @tagfunc callback
-          || set_ref_in_tagfunc(copyID)
-          // @findfunc callback
-          || set_ref_in_findfunc(copyID);
+      || garbageCollectEeglVars(copyID)
+      // callbacks in books
+      || setRefInBooks(copyID)
+      // @completefunc, @omnifunc and @thesaurusfunc callbacks
+      || set_ref_in_insexpand_funcs(copyID)
+      // @operatorfunc callback
+      || set_ref_in_opfunc(copyID)
+      // @tagfunc callback
+      || set_ref_in_tagfunc(copyID)
+      // @findfunc callback
+      || set_ref_in_findfunc(copyID);
 
-    abort = abort || set_ref_in_channel(copyID)
-          || set_ref_in_job(copyID)
-          || set_ref_in_timer(copyID)
-          || set_ref_in_quickfix(copyID)
-          || set_ref_in_term(copyID)
-          || set_ref_in_popups(copyID);
+    abort = abort 
+      || set_ref_in_channel(copyID)
+      || set_ref_in_job(copyID)
+      || set_ref_in_timer(copyID)
+      || llSetRef(copyID)
+      || set_ref_in_term(copyID)
+      || set_ref_in_popups(copyID);
 
    if (!abort) {
       // 2. Free lists and dictionaries that are not referenced.

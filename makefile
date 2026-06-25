@@ -40,15 +40,19 @@ X_PRE_LIBS	=  -lSM -lICE -lXpm
 X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
 X_LIBS		= -lXt -lX11
 
+OBJDIR ?= .b
+
 WAYLAND_SRC	= libs/wayland/ext-data-control-v1.c \
         libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c
-WAYLAND_OBJ	= .b/ext-data-control-v1.o .b/xdg-shell.o .b/primary-selection-unstable-v1.o
+WAYLAND_OBJ	= $(OBJDIR)/ext-data-control-v1.o \
+   $(OBJDIR)/xdg-shell.o \
+   $(OBJDIR)/primary-selection-unstable-v1.o
 WAYLAND_FLAGS  = 
 
 
 
 CHANNEL_SRC	= channel.c
-CHANNEL_OBJ	= .b/channel.o
+CHANNEL_OBJ	= $(OBJDIR)/channel.o
 TERM_TEST	= test_libvterm
 
 CROSS_COMPILING = 
@@ -206,53 +210,6 @@ MSGFMT_DESKTOP	= eegl.desktop
 #	To find out which files and directories will be deleted, use:
 #		make -n uninstall
 # }}}
-#
-### This Makefile has been successfully tested on many systems. {{{
-### Only the ones that require special options are mentioned here.
-### Check the (*) column for remarks, listed below.
-### Later code changes may cause small problems, otherwise Eegl is supposed to
-### compile and run without problems.
-
-#system:	      configurations:		     version (*) tested by:
-#-------------	      ------------------------	     -------  -  ----------
-#AIX 3.2.5	      cc (not gcc)   -			4.5  (M) Will Fiveash
-#AIX 4		      cc	     +X11 -GUI		3.27 (4) Axel Kielhorn
-#AIX 4.1.4	      cc	     +X11 +GUI		4.5  (5) Nico Bakker
-#AIX 4.2.1	      cc				5.2k (C) Will Fiveash
-#AIX 4.3.3.12	      xic 3.6.6				5.6  (5) David R. Favor
-#A/UX 3.1.1	      gcc	     +X11		4.0  (6) Jim Jagielski
-#BSDI 2.1 (x86)       shlicc2 gcc-2.6.3 -X11 X11R6	4.5  (1) Jos Backus
-#BSD/OS 3.0 (x86)     gcc gcc-2.7.2.1 -X11 X11R6	4.6c (1) Jos Backus
-#CX/UX 6.2	      cc	     +X11 +GUI_Mofif	5.4  (V) Kipp E. Howard
-#DG/UX 5.4*	      gcc 2.5.8      GUI		5.0e (H) Jonas Schlein
-#DG/UX 5.4R4.20       gcc 2.7.2      GUI		5.0s (H) Rocky Olive
-#HP-UX (most)	      c89 cc				5.1  (2) Bram Moolenaar
-#HP-UX_9.04	      cc	     +X11 +Motif	5.0  (2) Carton Lao
-#Linux 2.0	      gcc-2.7.2      Infomagic Motif	4.3  (3) Ronald Rietman
-#NEC UP4800 UNIX_SV 4.2MP  cc	     +X11R6 Motif	4.6b (Q) Lennart Schultz
-#NetBSD 1.0A	      gcc-2.4.5      -X11 -GUI		3.21 (X) Juergen Weigert
-#QNX 4.2	      wcc386-10.6    -X11		4.2  (D) G.F. Desrochers
-#QNX 4.23	      Watcom	     -X11		4.2  (F) John Oleynick
-#SCO Unix v3.2.5      cc	     +X11 Motif		3.27 (C) M. Kuperblum
-#SCO Open Server 5    gcc 2.7.2.3    +X11 +GUI Motif	5.3  (A) Glauber Ribeiro
-#SINIX-N 5.43 RM400 R4000   cc	     +X11 +GUI		5.0l (I) Martin Furter
-#SINIX-Z 5.42 i386    gcc 2.7.2.3    +X11 +GUI Motif	5.1  (I) Joachim Fehn
-#SINIX-Y 5.43 RM600 R4000  gcc 2.7.2.3 +X11 +GUI Motif	5.1  (I) Joachim Fehn
-#Reliant/SINIX 5.44   cc	     +X11 +GUI		5.5a (I) B. Pruemmer
-#SNI Targon31 TOS 4.1.11 gcc-2.4.5   +X11 -GUI		4.6c (B) Paul Slootman
-#Solaris 2.4 (Sparc)  cc	     +X11 +GUI		3.29 (9) Glauber
-#Solaris 2.4/2.5      clcc	     +X11 -GUI openwin	3.20 (7) Robert Colon
-#Solaris 2.5 (sun4m)  cc (SC4.0)     +X11R6 +GUI (CDE)	4.6b (E) Andrew Large
-#Solaris 2.5	      gcc 2.5.6      +X11 Motif		5.0m (R) Ant. Colombo
-#Solaris 2.6	      gcc 2.8.1      ncurses		5.3  (G) Larry W. Virden
-#Solaris with -lthread					5.5  (W) K. Nagano
-#Solaris	      gcc				     (b) Riccardo
-#SunOS 4.1.x			     +X11 -GUI		5.1b (J) Bram Moolenaar
-#SUPER-UX 6.2 (NEC SX-4) cc	     +X11R6 Motif	4.6b (P) Lennart Schultz
-#Tandem/NSK						     (c) Matthew Woehlke
-#Unisys 6035	      cc	     +X11 Motif		5.3  (8) Glauber Ribeiro
-#ESIX V4.2	      cc	     +X11		6.0  (a) Reinhard Wobst
-# }}}
 
 # Argument for running ctags.
 TAGS_FILES = *.c *.h
@@ -275,9 +232,7 @@ XDIFF_OBJS_USED	= $(XDIFF_OBJS)
 
 
 CHANNEL_SRC	= channel.c
-CHANNEL_OBJ	= .b/channel.o
-TERM_SRC	= libvterm/src/encoding.c libvterm/src/keyboard.c libvterm/src/mouse.c libvterm/src/parser.c libvterm/src/pen.c libvterm/src/creen.c libvterm/src/state.c libvterm/src/unicode.c libvterm/src/vterm.c
-TERM_OBJ	= .b/vterm_encoding.o .b/vterm_keyboard.o .b/vterm_mouse.o .b/vterm_parser.o .b/vterm_pen.o .b/vterm_screen.o .b/vterm_state.o .b/vterm_unicode.o .b/vterm_vterm.o
+CHANNEL_OBJ	= $(OBJDIR)/channel.o
 TERM_TEST	= test_libvterm
 
 
@@ -537,16 +492,16 @@ LINT_OPTIONS = -beprxzF
 # coverage information. (provided by Yegappan Lakshmanan)
 # 1. make clean, run configure and build Eegl as usual.
 # 2. Generate the baseline code coverage information:
-#	$ lcov -c -i -b . -d objects -o .b/coverage_base.info
+#	$ lcov -c -i -b . -d objects -o $(OBJDIR)/coverage_base.info
 # 3. Run "make test" to run the unit tests.  The code coverage information will
 #    be generated in the src/objects directory.
 # 4. Generate the code coverage information from the tests:
-#	$ lcov -c -b . -d .b/ -o .b/coverage_test.info
+#	$ lcov -c -b . -d $(OBJDIR)/ -o $(OBJDIR)/coverage_test.info
 # 5. Combine the baseline and test code coverage data:
-#	$ lcov -a .b/coverage_base.info -a objects/coverage_test.info -o objects/coverage_total.info
+#	$ lcov -a $(OBJDIR)/coverage_base.info -a objects/coverage_test.info -o objects/coverage_total.info
 # 6. Process the test coverage data and generate a report in html:
-#	$ genhtml .b/coverage_total.info -o objects
-# 7. Open the .b/index.html file in a web browser to view the coverage
+#	$ genhtml $(OBJDIR)/coverage_total.info -o objects
+# 7. Open the $(OBJDIR)/index.html file in a web browser to view the coverage
 #    information.
 #
 # LDFLAGS=--coverage
@@ -1016,71 +971,71 @@ LINT_SRC = $(BASIC_SRC) $(CHANNEL_SRC)
 #LINT_SRC = $(BASIC_SRC)
 
 OBJ_COMMON = \
-	.b/book.o \
-	.b/data.o \
-	.b/diff.o \
-	.b/do.o \
-	.b/draw.o \
-	.b/eval.o \
-	.b/fileio.o \
-	.b/hilite.o \
-	.b/input.o \
-	.b/insert.o \
-	.b/juggle.o \
-	.b/location.o \
-	.b/mark.o \
-	.b/normal.o \
-	.b/option.o \
-	.b/persist.o \
-	.b/portal.o \
-	.b/regexp.o \
-	.b/script.o \
-	.b/search.o \
-	.b/tag.o \
-	.b/term.o \
-	.b/ui.o \
-	.b/window.o \
+	$(OBJDIR)/book.o \
+	$(OBJDIR)/data.o \
+	$(OBJDIR)/diff.o \
+	$(OBJDIR)/do.o \
+	$(OBJDIR)/draw.o \
+	$(OBJDIR)/eval.o \
+	$(OBJDIR)/fileio.o \
+	$(OBJDIR)/hilite.o \
+	$(OBJDIR)/input.o \
+	$(OBJDIR)/insert.o \
+	$(OBJDIR)/juggle.o \
+	$(OBJDIR)/location.o \
+	$(OBJDIR)/mark.o \
+	$(OBJDIR)/normal.o \
+	$(OBJDIR)/option.o \
+	$(OBJDIR)/persist.o \
+	$(OBJDIR)/portal.o \
+	$(OBJDIR)/regexp.o \
+	$(OBJDIR)/script.o \
+	$(OBJDIR)/search.o \
+	$(OBJDIR)/tag.o \
+	$(OBJDIR)/term.o \
+	$(OBJDIR)/ui.o \
+	$(OBJDIR)/window.o \
    $(WAYLAND_OBJ) \
 	$(CHANNEL_OBJ)
 
 # The files included by tests are not in OBJ_COMMON.
 OBJ_MAIN = \
-	.b/strings.o \
-	.b/main.o \
-	.b/memory.o \
-	.b/message.o
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/main.o \
+	$(OBJDIR)/memory.o \
+	$(OBJDIR)/message.o
 
 OBJ = $(OBJ_COMMON) $(OBJ_MAIN)
 
 OBJ_JSON_TEST = \
-	.b/strings.o \
-	.b/memory.o \
-	.b/message.o \
-	.b/json_test.o
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/memory.o \
+	$(OBJDIR)/message.o \
+	$(OBJDIR)/json_test.o
 
 JSON_TEST_OBJ = $(OBJ_COMMON) $(OBJ_JSON_TEST)
 
 OBJ_KWORD_TEST = \
-	.b/strings.o \
-	.b/memory.o \
-	.b/message.o \
-	.b/kword_test.o
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/memory.o \
+	$(OBJDIR)/message.o \
+	$(OBJDIR)/kword_test.o
 
 KWORD_TEST_OBJ = $(OBJ_COMMON) $(OBJ_KWORD_TEST)
 
 OBJ_MEMFILE_TEST = \
-	.b/strings.o \
-	.b/strings.o \
-	.b/message.o \
-	.b/memfile_test.o
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/message.o \
+	$(OBJDIR)/memfile_test.o
 
 MEMFILE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MEMFILE_TEST)
 
 OBJ_MESSAGE_TEST = \
-	.b/strings.o \
-	.b/strings.o \
-	.b/memory.o \
-	.b/message_test.o
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/strings.o \
+	$(OBJDIR)/memory.o \
+	$(OBJDIR)/message_test.o
 
 MESSAGE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MESSAGE_TEST)
 
@@ -1139,10 +1094,10 @@ tools: $(TOOLS)
 # tables. This only needs to be run when command has been added or changed.
 # If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
-	$(CC) -I$(srcdir) $(INDICES_FLAGS) src/indices/indexGenerator.c -o .b/indexGenerator
-	.b/indexGenerator actions
-	.b/indexGenerator commands
-	.b/indexGenerator options
+	$(CC) -I$(srcdir) $(INDICES_FLAGS) src/indices/indexGenerator.c -o $(OBJDIR)/indexGenerator
+	$(OBJDIR)/indexGenerator actions
+	$(OBJDIR)/indexGenerator commands
+	$(OBJDIR)/indexGenerator options
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
@@ -1825,8 +1780,8 @@ uninstall_runtime:
 # Clean up all the files that have been produced, except configure's.
 clean: testclean
 	-rm -f *.o core $(EEGLTARGET).core $(EEGLTARGET) vim
-	-rm .b/*
-	-rm .b/os/*
+	-rm $(OBJDIR)/*
+	-rm $(OBJDIR)/os/*
 	-rm -f conftest* *~ auto/link.sed
 	-rm -f tests/opt_test.vim
 	-rm -f $(UNITTEST_TARGETS)
@@ -1869,45 +1824,45 @@ os/.c.o:
 	$(COMPILE) $<
 
 
-# All the object files are put in the ".b" directory.  Since not all make
+# All the object files are put in the "$(OBJDIR)" directory.  Since not all make
 # commands understand putting object files in another directory, it must be
 # specified for each file separately.
 
-.b: .b/.dirstamp
+$(OBJDIR): $(OBJDIR)/.dirstamp
 
-.b/.dirstamp:
-	mkdir -p .b
-	touch .b/.dirstamp
+$(OBJDIR)/.dirstamp:
+	mkdir -p $(OBJDIR)
+	touch $(OBJDIR)/.dirstamp
 
 # All object files depend on the objects directory, so that parallel make
 # works.  Can't depend on the directory itself, its timestamp changes all the time.
-$(ALL_OBJ): .b/.dirstamp
+$(ALL_OBJ): $(OBJDIR)/.dirstamp
 
-.b/%.o: src/%.c
+$(OBJDIR)/%.o: src/%.c
 	$(COMPILE) -o $@ $<
 
-.b/diff.o: src/diff.c
+$(OBJDIR)/diff.o: src/diff.c
 	$(COMPILE) -o $@ $<
 
-.b/option.o: src/option.c
+$(OBJDIR)/option.o: src/option.c
 	$(COMPILE) -o $@ $<
 
-.b/regexp.o: src/regexp.c
+$(OBJDIR)/regexp.o: src/regexp.c
 	$(COMPILE) -o $@ $<
 
-.b/ui.o: src/ui.c
+$(OBJDIR)/ui.o: src/ui.c
 	$(COMPILE) -o $@ $<
 
-.b/window.o: src/window.c
+$(OBJDIR)/window.o: src/window.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
-.b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
+$(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
 
-.b/xdg-shell.o: libs/wayland/xdg-shell.c
+$(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
-.b/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
+$(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 
@@ -1915,74 +1870,74 @@ $(ALL_OBJ): .b/.dirstamp
 ###############################################################################
 ### (automatically generated by 'make depend')
 ### Dependencies:
-.b/book.o: src/book.c src/eegl.h src/generic.h
-.b/channel.o: src/channel.c src/eegl.h src/generic.h
-.b/data.o: src/data.c src/eegl.h \
+$(OBJDIR)/book.o: src/book.c src/eegl.h src/generic.h
+$(OBJDIR)/channel.o: src/channel.c src/eegl.h src/generic.h
+$(OBJDIR)/data.o: src/data.c src/eegl.h \
  src/generic.h src/commands.h
-.b/diff.o: src/diff.c src/eegl.h src/generic.h src/commands.h
-.b/do.o: src/do.c src/eegl.h \
+$(OBJDIR)/diff.o: src/diff.c src/eegl.h src/generic.h src/commands.h
+$(OBJDIR)/do.o: src/do.c src/eegl.h \
  src/generic.h src/commands.h
-.b/draw.o: src/draw.c src/eegl.h \
+$(OBJDIR)/draw.o: src/draw.c src/eegl.h \
  src/generic.h src/commands.h
-.b/eval.o: src/eval.c src/eegl.h \
+$(OBJDIR)/eval.o: src/eval.c src/eegl.h \
  src/generic.h src/commands.h
-.b/fileio.o: src/fileio.c src/eegl.h \
+$(OBJDIR)/fileio.o: src/fileio.c src/eegl.h \
  src/generic.h src/commands.h
-.b/input.o: src/input.c src/eegl.h \
+$(OBJDIR)/input.o: src/input.c src/eegl.h \
  src/generic.h src/commands.h
-.b/hilite.o: src/hilite.c src/eegl.h \
+$(OBJDIR)/hilite.o: src/hilite.c src/eegl.h \
  src/generic.h src/commands.h
-.b/insert.o: src/insert.c src/eegl.h \
+$(OBJDIR)/insert.o: src/insert.c src/eegl.h \
  src/generic.h src/commands.h
-.b/juggle.o: src/juggle.c src/eegl.h \
+$(OBJDIR)/juggle.o: src/juggle.c src/eegl.h \
  src/generic.h src/commands.h
-.b/location.o: src/location.c src/eegl.h \
+$(OBJDIR)/location.o: src/location.c src/eegl.h \
  src/generic.h src/commands.h
-.b/main.o: src/main.c src/eegl.h \
+$(OBJDIR)/main.o: src/main.c src/eegl.h \
  src/generic.h src/commands.h
-.b/mark.o: src/mark.c src/eegl.h \
+$(OBJDIR)/mark.o: src/mark.c src/eegl.h \
  src/generic.h src/commands.h
-.b/memory.o: src/memory.c src/eegl.h \
+$(OBJDIR)/memory.o: src/memory.c src/eegl.h \
  src/generic.h src/commands.h
-.b/message.o: src/message.c src/eegl.h \
+$(OBJDIR)/message.o: src/message.c src/eegl.h \
  src/generic.h src/commands.h
-.b/normal.o: src/normal.c src/eegl.h \
+$(OBJDIR)/normal.o: src/normal.c src/eegl.h \
  src/generic.h src/commands.h src/actions.h src/indices/actions.h
-.b/option.o: src/option.c src/eegl.h \
+$(OBJDIR)/option.o: src/option.c src/eegl.h \
  src/generic.h src/commands.h
-.b/portal.o: src/portal.c src/eegl.h \
+$(OBJDIR)/portal.o: src/portal.c src/eegl.h \
  src/generic.h src/commands.h
-.b/regexp.o: src/regexp.c src/eegl.h \
+$(OBJDIR)/regexp.o: src/regexp.c src/eegl.h \
  src/generic.h src/commands.h
-.b/script.o: src/script.c src/eegl.h \
+$(OBJDIR)/script.o: src/script.c src/eegl.h \
  src/generic.h src/commands.h
-.b/search.o: src/search.c src/eegl.h \
+$(OBJDIR)/search.o: src/search.c src/eegl.h \
  src/generic.h src/commands.h
-.b/persist.o: src/persist.c src/eegl.h \
+$(OBJDIR)/persist.o: src/persist.c src/eegl.h \
  src/generic.h src/commands.h
-.b/strings.o: src/strings.c src/eegl.h \
+$(OBJDIR)/strings.o: src/strings.c src/eegl.h \
  src/generic.h src/commands.h
-.b/syntax.o: src/syntax.c src/eegl.h \
+$(OBJDIR)/syntax.o: src/syntax.c src/eegl.h \
  src/generic.h src/commands.h
-.b/tag.o: src/tag.c src/eegl.h \
+$(OBJDIR)/tag.o: src/tag.c src/eegl.h \
  src/generic.h src/commands.h
-.b/term.o: src/term.c src/eegl.h \
+$(OBJDIR)/term.o: src/term.c src/eegl.h \
  src/generic.h src/commands.h
-.b/ui.o: src/ui.c src/eegl.h \
+$(OBJDIR)/ui.o: src/ui.c src/eegl.h \
  src/generic.h src/commands.h
-.b/ui.o: src/ui.c src/eegl.h \
+$(OBJDIR)/ui.o: src/ui.c src/eegl.h \
  src/generic.h src/commands.h
-.b/json_test.o: src/json_test.c src/main.c src/eegl.h \
+$(OBJDIR)/json_test.o: src/json_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/strings.c
-.b/kword_test.o: src/kword_test.c src/main.c src/eegl.h \
+$(OBJDIR)/kword_test.o: src/kword_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/strings.c
-.b/memfile_test.o: src/memfile_test.c src/main.c src/eegl.h \
+$(OBJDIR)/memfile_test.o: src/memfile_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/memory.c
-.b/message_test.o: src/message_test.c src/main.c src/eegl.h \
+$(OBJDIR)/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/message.c
-.b/channel.o: src/channel.c src/eegl.h src/generic.h 
-.b/window.o: src/window.c src/eegl.h src/generic.h src/commands.h
+$(OBJDIR)/channel.o: src/channel.c src/eegl.h src/generic.h 
+$(OBJDIR)/window.o: src/window.c src/eegl.h src/generic.h src/commands.h
  
-.b/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
-.b/xdg-shell.o: libs/wayland/xdg-shell.c
-.b/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
+$(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
+$(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
+$(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c

@@ -5,6 +5,9 @@
  
 #include "eegl.h"
 
+// used for @hlsearch hilite matching
+private Match screenSearchP;
+
 //{{{low level
 
 private Arr(Decoration) screenDecosP = null;
@@ -139,22 +142,20 @@ drawVoidAtPortalEnd(
    
    Decoration portalDeco = getPortcolorDeco(po);
 
-   deco = combineDecorations(portalDeco, deco);
 
    if (draw_margin) {
       if (isSigncolumnOn(po))
          // draw the sign column
          n = fillRowsWithCharsWithColumnOffset(
-             po, ' ', ' ', n, 2, row, endrow, 
-             combineDecorations(portalDeco, getFullDecoration(HLF_SC))
+             po, ' ', ' ', n, 2, row, endrow, getFullDecoration(HLF_SC)
          );
       // draw the number column
       n = fillRowsWithCharsWithColumnOffset(
-         po, ' ', ' ', n, number_width(po) + 1, row, endrow, 
-         combineDecorations(portalDeco, getFullDecoration(HLF_N))
+         po, ' ', ' ', n, number_width(po) + 1, row, endrow, getFullDecoration(HLF_N)
       );
    }
 
+   deco = combineDecorations(portalDeco, deco);
    fillRowsWithTwoChars(
       po->portalRow + row, po->portalRow + endrow, po->portalCol + n, (int)P_ENDCOL(po), c1, c2, 
       deco
@@ -447,7 +448,7 @@ get_keymap_str(
 // Return the row for drawing the statusline and the ruler of portal "po".
 private int
 statusline_row(Portal* po) {
-   if (po->frame->width == (Unt)po->statusHeight && !popup_is_popup(po))
+   if (po->frame->width == (Unt)po->statusHeight && !portalIsPopup(po))
       return po->portalRow;
    return po->portalRow + po->height;
 }
@@ -729,24 +730,24 @@ drawTextLen(
 }
 
 // Prepare for @hlsearch hiliting.
-void
+private void
 start_search_hl(void) {
    if (!p_hls || hiliteSearchG)
       return;
 
    end_search_hl();  // just in case it wasn't called before
-   last_pat_prog(&screenSearchMatchG.rm);
-   screenSearchMatchG.hiId = HLF_L;
+   last_pat_prog(&screenSearchP.rm);
+   screenSearchP.hiId = HLF_L;
 }
 
 // Clean up for @hlsearch hiliting.
 void
 end_search_hl(void) {
-   if (!screenSearchMatchG.rm.regprog)
+   if (!screenSearchP.rm.regprog)
       return;
 
-   eeRegFree(screenSearchMatchG.rm.regprog);
-   screenSearchMatchG.rm.regprog = NULL;
+   eeRegFree(screenSearchP.rm.regprog);
+   screenSearchP.rm.regprog = NULL;
 }
 
 private void
@@ -3060,12 +3061,12 @@ private int  didUpdateOnePortal;
 //of stuff from Filemem to screenLinesP[], and update curPor->bottomLine.
 //Return OK when the screen was updated, FAIL if it was not done.
 int
-drawUpdateScreen(int type_arg) {
-   int      type = type_arg;
-   Portal   *po;
+drawUpdateScreen(Unt type_arg) {
+   Unt type = type_arg;
+   Portal* po;
    static int   did_intro = false;
-   int      no_update = false;
-   int      save_pum_will_redraw = pum_will_redraw;
+   int no_update = false;
+   int save_pum_will_redraw = pum_will_redraw;
 
    // Don't do anything if the screen structures are (not yet) valid.
    if (!screen_valid(true))
@@ -3222,7 +3223,7 @@ drawUpdateScreen(int type_arg) {
 
    // Go from top to bottom through the portals, redrawing the ones that need it
    didUpdateOnePortal = false;
-   screenSearchMatchG.rm.regprog = NULL;
+   screenSearchP.rm.regprog = NULL;
    FOR_ALL_PORTALS(po) {
       if (po->redrawType != 0) {
          cursor_off();
@@ -3435,7 +3436,7 @@ after_updating_screen(int may_resize_shell UNUSED) {
 
 // Update all portals into the current buffer.
 void
-update_curbuf(int type) {
+update_curbuf(Unt type) {
    drawCurBookLater(type);
    drawUpdateScreen(type);
 }
@@ -3694,68 +3695,453 @@ fold_line(
    }
 }
 
+typedef struct {
+   int topEnd;
+   int midStart;
+   int midEnd;
+   int botStart; //first row of the bot area that needs updating. 999 when no bot area updating
+   LineNr modTop;
+   LineNr modBot;
+   LineNr oldBottLine;
+   Boole eof;
+   Boole topToMod; //redraw above modTop
+} UpdatePortalInfo;
+
+
+private void
+updatePortalFinish(Portal* po, UpdatePortalInfo u) {
+   Book* book = po->book;
+   LineNr lnum = po->topLine;   // first line shown in portal
+   static Boole recursive = false;   // being called recursively
+
+   Boole didline = false; // if true, we finished the last line
+   // Update all the portal rows.
+   int idx = 0;      // first entry in lines[].height
+   int row = 0;
+   int srow = 0;
+      
+// remember what happened to the previous line, to know if
+// check_visual_highlight() can be used
+# define DID_NONE 1   // didn't update a line
+# define DID_LINE 2   // updated a normal line
+# define DID_FOLD 3   // updated a folded line
+
+   Unt didUpdate = DID_NONE;
+   long fold_count;
+   LineNr syntax_last_parsed = 0;      // last parsed text line
+   int j; 
+   for (;;) {
+      // stop updating when reached the end of the  portal (check for _past_
+      // the end of the portal is at the end of the loop)
+      if (row == (int)po->height) {
+         didline = true;
+         break;
+      }
+
+      // stop updating when hit the end of the file
+      if (lnum > book->mem.lineCount) {
+         u.eof = true;
+         break;
+      }
+
+      //Remember the starting row of the line that is going to be dealt
+      //with. It is used further down when the line doesn't fit.
+      srow = row;
+
+      //Update a line when it is in an area that needs updating, when it has changes or lines[idx]
+      //is invalid. "bot_start" may be halfway a wrapped line after using deleteLinesFromPortal(),
+      //check if the current line includes it. When syntax folding is being used, the saved syntax 
+      //states will already have been updated, we can't see where the syntax state is
+      //the same again, just update until the end of the portal.
+      if (row < u.topEnd
+         || (row >= u.midStart && row < u.midEnd)
+         || u.topToMod
+         || idx >= po->validLines
+         || (row + po->lines[idx].height > u.botStart)
+         || (u.modTop != 0
+             && (lnum == u.modTop
+                 || (lnum >= u.modTop
+                      && (lnum < u.modBot
+                           || didUpdate == DID_FOLD
+                           || (didUpdate == DID_LINE
+                               && syntax_present(po)
+                               && (syntax_check_changed(lnum))
+                              )
+                           //match in fixed position might need redraw if lines were 
+                           //inserted or deleted
+                           || (po->firstMatch && book->needsRedraw && book->lineCountDiff != 0)
+                         )
+                   )
+                )
+            )
+         || (po->o.cursorLine && lnum == po->cursor.lnum)
+         || lnum == po->lastCursorLine
+      ){
+         if (lnum == u.modTop)
+            u.topToMod = false;
+
+         //When at start of changed lines: May scroll following lines up or down to minimize 
+         //redrawing. Don't do this when the change continues until the end.
+         //Don't scroll when redrawing the top, scrolled already above.
+         if (lnum == u.modTop && u.modBot != MAXLNUM && row >= u.topEnd) {
+            int old_rows = 0;
+            int new_rows = 0;
+            int xtra_rows;
+            LineNr l;
+            int i;
+
+            //Count the old number of portal rows, using lines[], which
+            //should still contain the sizes for the lines as they are currently displayed.
+            for (i = idx; i < po->validLines; ++i) {
+               //Only valid lines have a meaningful bookLnum.  Invalid
+               //lines are part of the changed area.
+               if (po->lines[i].isValid && po->lines[i].bookLnum == u.modBot)
+                  break;
+               old_rows += po->lines[i].height;
+               if (po->lines[i].isValid && po->lines[i].lastBookLnum + 1 == u.modBot) {
+                  //Must have found the last valid entry above modBot.
+                  //Add following invalid entries.
+                  ++i;
+                  while (i < po->validLines && !po->lines[i].isValid)
+                     old_rows += po->lines[i++].height;
+                  break;
+               }
+            }
+
+            if (i >= po->validLines) {
+                //We can't find a valid line below the changed lines,
+                //need to redraw until the end of the portal.
+                //Inserting/deleting lines has no use.
+                u.botStart = 0;
+            } else {
+               //Able to count old number of rows: Count new portal
+               //rows, and may insert/delete lines
+               j = idx;
+               for (l = lnum; l < u.modBot; ++l) {
+                  if (getFoldsPortal(po, l, NULL, OUT &l, true, NULL))
+                     ++new_rows;
+                  else {
+                     if (l == po->topLine) {
+                        int n = plines_win_nofill(po, l, false) + po->topFill;
+                        n -= adjust_plines_for_skipcol(po);
+                        if (n > (int)po->height)
+                           n = (int)po->height;
+                        new_rows += n;
+                     } else
+                        new_rows += plines_win(po, l, true);
+                  }
+                  ++j;
+                  if (new_rows > (int)po->height - row - 2) {
+                     // it's getting too much, must redraw the rest
+                     new_rows = 9999;
+                     break;
+                  }
+               }
+               xtra_rows = new_rows - old_rows;
+               if (xtra_rows < 0) {
+                  //May scroll text up. If there is not enough remaining text or scrolling fails, 
+                  //must redraw the rest.  If scrolling works, must redraw the text
+                  //below the scrolled text.
+                  if (row - xtra_rows >= (int)po->height - 2)
+                     u.modBot = MAXLNUM;
+                  else {
+                     check_for_delay(false);
+                     if (deleteLinesFromPortal(po, row, -xtra_rows, false, false, 0) == FAIL)
+                        u.modBot = MAXLNUM;
+                     else
+                        u.botStart = po->height + xtra_rows;
+                  }
+               } ei (xtra_rows > 0) {
+                  //May scroll text down. If there is not enough
+                  //remaining text of scrolling fails, must redraw the rest.
+                  if (row + xtra_rows >= (int)po->height - 2)
+                      u.modBot = MAXLNUM;
+                  else {
+                     check_for_delay(false);
+                     if (insertLinesIntoPortal(po, row + old_rows, xtra_rows, false, false) == FAIL)
+                        u.modBot = MAXLNUM;
+                     ei (u.topEnd > row + old_rows)
+                        // Scrolled the part at the top that requires updating down.
+                        u.topEnd += xtra_rows;
+                  }
+               }
+
+               // When not updating the rest, may need to move lines[] entries.
+               if (u.modBot != MAXLNUM && i != j) {
+                  if (j < i) {
+                     int x = row + new_rows;
+
+                     // move entries in lines[] upwards
+                     for (;;) {
+                        // stop at last valid entry in lines[]
+                        if (i >= po->validLines) {
+                           po->validLines = j;
+                           break;
+                        }
+                        po->lines[j] = po->lines[i];
+                        // stop at a line that won't fit
+                        if (x + (int)po->lines[j].height > (int)po->height) {
+                           po->validLines = j + 1;
+                           break;
+                        }
+                        x += po->lines[j++].height;
+                        ++i;
+                     }
+                     if (u.botStart > x)
+                        u.botStart = x;
+                  } else { // j > i
+                     // move entries in lines[] downwards
+                     j -= i;
+                     po->validLines += j;
+                     if (po->validLines > (int)po->height)
+                        po->validLines = po->height;
+                     for (i = po->validLines; i - j >= idx; --i)
+                        po->lines[i] = po->lines[i - j];
+
+                     //The lines[] entries for inserted lines are
+                     //now invalid, but height may be used above. Reset to zero.
+                     while (i >= idx) {
+                        po->lines[i].height = 0;
+                        po->lines[i--].isValid = false;
+                     }
+                  }
+               }
+            }
+         }
+
+         //When lines are folded, display one line for all of them.
+         //Otherwise, display normally (can be several display lines when 'wrap' is on).
+         fold_count = foldedCount(po, lnum, OUT &portFoldS);
+         if (fold_count != 0) {
+            fold_line(po, fold_count, &portFoldS, lnum, row);
+            ++row;
+            --fold_count;
+            po->lines[idx].isFolded = true;
+            po->lines[idx].lastBookLnum = lnum + fold_count;
+            didUpdate = DID_FOLD;
+         } ei (idx < po->validLines
+             && po->lines[idx].isValid
+             && po->lines[idx].bookLnum == lnum
+             && lnum > po->topLine
+             && !PORTAL_IS_POPUP(po)
+             && srow + po->lines[idx].height > (int)po->height
+             && diff_check_fill(po, lnum) == 0
+         ) {
+            // This line is not going to fit. Don't draw anything here, will draw "@  " lines below
+            row = po->height + 1;
+         } else {
+            prepare_search_hl(po, &screenSearchP, lnum);
+            // Let the syntax stuff know we skipped a few lines.
+            if (syntax_last_parsed != 0 && syntax_last_parsed + 1 < lnum && syntax_present(po))
+               syntax_end_parsing(po, syntax_last_parsed + 1);
+            // Display one line.
+            row = drawLineOnScreen(po, lnum, srow, po->height, 0);
+
+            po->lines[idx].isFolded = false;
+            po->lines[idx].lastBookLnum = lnum;
+            didUpdate = DID_LINE;
+            syntax_last_parsed = lnum;
+         }
+
+          po->lines[idx].bookLnum = lnum;
+          po->lines[idx].isValid = true;
+
+         //Past end of the portal or end of the portal. Note that after resizing po->height may 
+         //end up too big. That's a problem elsewhere, but we prevent a crash here.
+         if (row > (int)po->height || row + po->portalRow >= visibleRowsG) {
+            // we may need the size of that too long line later on
+            po->lines[idx].height = plines_win(po, lnum, true);
+            ++idx;
+            break;
+         }
+         po->lines[idx].height = row - srow;
+         ++idx;
+         lnum += fold_count + 1;
+      } else {
+          // If:
+          // - 'number' is set and below inserted/deleted lines, or
+          // - 'relativenumber' is set and cursor moved vertically,
+          // the text doesn't need to be redrawn, but the number column does.
+          if ((u.modTop != 0 && lnum >= u.modBot && book->needsRedraw && book->lineCountDiff != 0)
+             || (po->o.relativeNumber && po->lastCursorLnumRnu != po->cursor.lnum)
+         ) {
+            fold_count = foldedCount(po, lnum, OUT &portFoldS);
+            if (fold_count != 0)
+               fold_line(po, fold_count, &portFoldS, lnum, row);
+            else
+               (void)drawLineOnScreen(po, lnum, srow, po->height, po->lines[idx].height);
+         }
+
+         // This line does not need to be drawn, advance to the next one.
+         row += po->lines[idx++].height;
+         if (row > (int)po->height)   // past end of screen
+            break;
+         lnum = po->lines[idx - 1].lastBookLnum + 1;
+         didUpdate = DID_NONE;
+      }
+
+      if (lnum > book->mem.lineCount) {
+         u.eof = true;
+         break;
+      }
+
+      //Safety check: if any of the height values is wrong we might go over the end of lines[].
+      if (idx >= visibleRowsG)
+         break;
+   }
+
+   // End of loop over all portal lines.
+
+   // Now that the portal has been redrawn with the old and new cursor line, update lastCursorLine.
+   po->lastCursorLine = po->o.cursorLine ? po->cursor.lnum : 0;
+   po->lastCursorLnumRnu = po->o.relativeNumber ? po->cursor.lnum : 0;
+
+   if (idx > po->validLines)
+      po->validLines = idx;
+
+   // Let the syntax stuff know we stop parsing here.
+   if (syntax_last_parsed != 0 && syntax_present(po))
+      syntax_end_parsing(po, syntax_last_parsed + 1);
+
+   // If we didn't hit the end of the file, and we didn't finish the last
+   // line we were working on, then the line didn't fit.
+   po->emptyRowCount = 0;
+   po->fillerRowCount = 0;
+   if (!u.eof && !didline) {
+      if (lnum == po->topLine) {
+         // Single line that does not fit! Don't overwrite it, it can be edited.
+         po->bottomLine = lnum + 1;
+      } ei (diff_check_fill(po, lnum) >= (int)po->height - srow) {
+         // Portal ends in filler lines.
+         po->bottomLine = lnum;
+         po->fillerRowCount = po->height - srow;
+      } ei (PORTAL_IS_POPUP(po)) {
+         // popup line that doesn't fit is left as-is
+         po->bottomLine = lnum;
+      } else {
+         drawVoidAtPortalEnd(po, fillCharsG.lastline, ' ', true, srow, po->height, HLF_AT);
+         po->bottomLine = lnum;
+      }
+   } else {
+      drawVerticalSeparator(po, row);
+      if (u.eof) {     // we hit the end of the file
+         po->bottomLine = book->mem.lineCount + 1;
+         j = diff_check_fill(po, po->bottomLine);
+         if (j > 0 && !po->bottFill) {
+            // Display filler lines at the end of the file.
+            Unt filler = (char2cells(fillCharsG.diff) > 1) ? '-' : fillCharsG.diff;
+            if (row + j > (int)po->height)
+               j = po->height - row;
+            drawVoidAtPortalEnd(po, filler, filler, true, row, row + (int)j, HLF_DED);
+            row += j;
+          }
+      }
+      po->bottomLine = lnum;
+
+      // Make sure the rest of the screen is blank.
+      // write the "eob" character from @fillchars to rows that aren't part of the file.
+      if (PORTAL_IS_POPUP(po))
+         drawVoidAtPortalEnd(po, ' ', ' ', false, row, po->height, HLF_AT);
+      else
+         drawVoidAtPortalEnd(po, fillCharsG.eob, ' ', false, row, po->height, HLF_NONE);
+  }
+
+#ifdef SYN_TIME_LIMIT
+   disable_regexp_timeout();
+   redrawtime_limit_set = false;
+#endif
+
+   // Reset the type of redrawing required, the portal has been updated.
+   po->redrawType = 0;
+   po->topFillOld = po->topFill;
+   po->bottFillOld = po->bottFill;
+
+   //There is a trick with bottomLine. If we invalidate it on each change that might modify it, 
+   //this will cause a lot of expensive calls to plines() in update_topline() each time. 
+   //Therefore the value of bottomLine is often approximated, and this value is used to
+   //compute the value of topLine. If the value of bottomLine was wrong, check that the value of 
+   //topLine is correct (cursor is on the visible part of the text).  If it's not, we need to 
+   //redraw again. Mostly this just means scrolling up a few lines, so it doesn't look too bad.
+   //Only do this for the current portal (where changes are relevant).
+   po->cacheState |= VALID_BOTLINE;
+   if (po == curPor && po->bottomLine != u.oldBottLine && !recursive) {
+      recursive = true;
+      curPor->cacheState &= ~VALID_TOPLINE;
+      update_topline();   // may invalidate bottomLine again
+
+      // New redraw either due to updated topline, wcol fix or reset skipcol.
+      if (po->redrawType != 0) {
+         // Don't update for changes in buffer again.
+         Boole needsRedrawSaved = curBook->needsRedraw;
+         curBook->needsRedraw = false;
+         j = curBook->lineCountDiff;
+         curBook->lineCountDiff = 0;
+         curs_columns(true);
+         updatePortal(curPor);
+         curBook->needsRedraw = needsRedrawSaved;
+         curBook->lineCountDiff = j;
+      }
+      // Other portals might have redrawType raised in update_topline().
+      must_redraw = 0;
+      
+      Portal* cPo;
+      FOR_ALL_PORTALS(cPo) {
+         if (cPo->redrawType > must_redraw)
+            must_redraw = cPo->redrawType;
+      } 
+      recursive = false;
+   }
+
+}
+
 //Update a single portal.
 //
 //This may cause the portals below it also to be redrawn (when clearing the
 //screen or scrolling lines).
 //
-//How the portal is redrawn depends on po->redrawType.  Each type also
-//implies the one below it.
-//UPD_NOT_VALID   redraw the whole portal
-//UPD_SOME_VALID   redraw the whole portal but do scroll when possible
-//UPD_REDRAW_TOP   redraw the top rowsToUpdate portal lines, otherwise like UPD_VALID
+//How the portal is redrawn depends on po->redrawType. Each type also implies the one below it.
+//UPD_NOT_VALID     redraw the whole portal
+//UPD_SOME_VALID    redraw the whole portal but do scroll when possible
+//UPD_REDRAW_TOP    redraw the top rowsToUpdate portal lines, otherwise like UPD_VALID
 //UPD_INVERTED      redraw the changed part of the Visual area
-//UPD_INVERTED_ALL   redraw the whole Visual area
-//UPD_VALID   1. scroll up/down to adjust for a changed topLine
-//     2. update lines at the top when scrolled down
-//     3. redraw changed text:
-//        - if po->book->needsRedraw set, update lines between
-//          needsRedrawTop and needsRedrawBott.
-//        - if po->redrawTop non-zero, redraw lines between
-//          po->redrawTop and po->redrawBott.
-//        - continue redrawing when syntax status is invalid.
-//     4. if scrolled up, update lines at the bottom.
+//UPD_INVERTED_ALL  redraw the whole Visual area
+//UPD_VALID         1. scroll up/down to adjust for a changed topLine
+//                  2. update lines at the top when scrolled down
+//                  3. redraw changed text:
+//                     - if po->book->needsRedraw set, update lines between
+//                       needsRedrawTop and needsRedrawBott.
+//                     - if po->redrawTop non-zero, redraw lines between
+//                       po->redrawTop and po->redrawBott.
+//                     - continue redrawing when syntax status is invalid.
+//                  4. if scrolled up, update lines at the bottom.
 //This results in three areas that may need updating:
-//top:   from first row to top_end (when scrolled down)
-//mid: from mid_start to mid_end (update inversion or changed text)
-//bot: from bot_start to last row (when scrolled up)
+//top:   from first row to topEnd (when scrolled down)
+//mid: from midStart to midEnd (update inversion or changed text)
+//bot: from botStart to last row (when scrolled up)
 private void
 updatePortal(Portal* po) {
    Book* book = po->book;
-   int type;
-   int top_end = 0; //Below last row of the top area that needs updating. 
-                    //0 when no top area updating.
-   int mid_start = 999;//first row of the mid area that needs
+   int topEnd = 0; //Below last row of the top area that needs updating. 
+                   //0 when no top area updating.
+   int midStart = 999;//first row of the mid area that needs
                        //updating. 999 when no mid area updating.
-   int mid_end = 0; //Below last row of the mid area that needs updating. 
-                    //0 when no mid area updating.
+   int midEnd = 0; //Below last row of the mid area that needs updating. 
+                   //0 when no mid area updating.
    int bot_start = 999;//first row of the bot area that needs
                        // updating. 999 when no bot area updating
    int scrolled_down = false; //true when scrolled down when topLine got smaller a bit
-   int top_to_mod = false;    // redraw above mod_top
+   Boole top_to_mod = false;    
 
    int row;      // current portal row to display
-   LineNr lnum;      // current buffer lnum to display
+   LineNr lnum;  // current buffer lnum to display
    int idx;      // current index in lines[]
-   int srow;      // starting row of the current line
+   int srow;     // starting row of the current line
 
-   int eof = false;   // if true, we hit the end of the file
-   int didline = false; // if true, we finished the last line
-   int i;
+   Boole eof = false;   // if true, we hit the end of the file
    long j;
-   static int   recursive = false;   // being called recursively
-   LineNr old_botline = po->bottomLine;
-   long fold_count;
-   // remember what happened to the previous line, to know if
-   // check_visual_highlight() can be used
-# define DID_NONE 1   // didn't update a line
-# define DID_LINE 2   // updated a normal line
-# define DID_FOLD 3   // updated a folded line
-   int did_update = DID_NONE;
-   LineNr syntax_last_parsed = 0;      // last parsed text line
-   LineNr mod_top = 0;
-   LineNr mod_bot = 0;
-   int save_gotInterruptG;
+   LineNr oldBottLine = po->bottomLine;
+   LineNr modTop = 0;
+   LineNr modBot = 0;
 
    // This needs to be done only for the first portal when drawUpdateScreen() is called.
    if (!didUpdateOnePortal) {
@@ -3765,7 +4151,7 @@ updatePortal(Portal* po) {
       clip_update_selection(&clipboard);
    }
 
-   type = po->redrawType;
+   int type = po->redrawType;
 
    if (type == UPD_NOT_VALID) {
       po->statusLineNeedsRedraw = true;
@@ -3773,7 +4159,7 @@ updatePortal(Portal* po) {
    }
 
    // Portal frame is zero-height: nothing to draw.
-   if (po->height == 0 || (po->frame->width == (Unt)po->statusHeight && !popup_is_popup(po))) {
+   if (po->height == 0 || (po->frame->width == (Unt)po->statusHeight && !portalIsPopup(po))) {
       po->redrawType = 0;
       return;
    }
@@ -3793,7 +4179,7 @@ updatePortal(Portal* po) {
       return;
    }
 
-   init_search_hl(po, &screenSearchMatchG);
+   searchInitHilite(po, &screenSearchP);
 
    // Make sure skipcol is valid, it depends on various options and the portal width.
    if (po->skipCol > 0 && (int)po->width > normalPortalColumnOffset(po)) {
@@ -3811,40 +4197,39 @@ updatePortal(Portal* po) {
          po->skipCol = w - add;
    }
 
-   // Force redraw when width of 'number' or 'relativenumber' column changes.
-   i = number_width(po);
+   // Force redraw when width of number column changes.
+   int i = number_width(po);
    if (po->numberColWidth != i) {
       type = UPD_NOT_VALID;
       po->numberColWidth = i;
    } else {
-      // Set mod_top to the first line that needs displaying because of
-      // changes.  Set mod_bot to the first line after the changes.
-      mod_top = po->redrawTop;
+      // Set modTop to the first line that needs displaying because of
+      // changes. Set modBot to the first line after the changes.
+      modTop = po->redrawTop;
       if (po->redrawBott != 0)
-         mod_bot = po->redrawBott + 1;
+         modBot = po->redrawBott + 1;
       else
-         mod_bot = 0;
+         modBot = 0;
       if (book->needsRedraw) {
-         if (mod_top == 0 || mod_top > book->needsRedrawTop) {
-            mod_top = book->needsRedrawTop;
+         if (modTop == 0 || modTop > book->needsRedrawTop) {
+            modTop = book->needsRedrawTop;
             // Need to redraw lines above the change that may be included in a pattern match.
             if (syntax_present(po)) {
-               mod_top -= book->syntax.syncLinebreaks;
-               if (mod_top < 1)
-                  mod_top = 1;
+               modTop -= book->syntax.syncLinebreaks;
+               if (modTop < 1)
+                  modTop = 1;
             }
          }
-         if (mod_bot == 0 || mod_bot < book->needsRedrawBott)
-            mod_bot = book->needsRedrawBott;
+         if (modBot == 0 || modBot < book->needsRedrawBott)
+            modBot = book->needsRedrawBott;
 
-         // When 'hlsearch' is on and using a multi-line search pattern, a change in one line may 
-         // make the Search hiliting in a previous line invalid.  Simple solution: redraw all 
-         // visible lines above the change. Same for a match pattern.
-         if (screenSearchMatchG.rm.regprog && re_multiline(screenSearchMatchG.rm.regprog))
+         //When @hlsearch is on and using a multi-line search pattern, a change in one line may 
+         //make the Search hiliting in a previous line invalid. Simple solution: redraw all 
+         //visible lines above the change. Same for a match pattern.
+         if (screenSearchP.rm.regprog && re_multiline(screenSearchP.rm.regprog))
             top_to_mod = true;
          else {
-            MatchItem *cur = po->firstMatch;
-
+            MatchItem* cur = po->firstMatch;
             while (cur) {
                if (cur->match.regprog && re_multiline(cur->match.regprog)) {
                   top_to_mod = true;
@@ -3858,20 +4243,20 @@ updatePortal(Portal* po) {
       if (searchLastLnumG > 0) {
          // CurSearch was used last time, need to redraw the line with it to
          // avoid having two matches hilited with CurSearch.
-         if (mod_top == 0 || mod_top > searchLastLnumG)
-            mod_top = searchLastLnumG;
-         if (mod_bot == 0 || mod_bot < searchLastLnumG + 1)
-            mod_bot = searchLastLnumG + 1;
+         if (modTop == 0 || modTop > searchLastLnumG)
+            modTop = searchLastLnumG;
+         if (modBot == 0 || modBot < searchLastLnumG + 1)
+            modBot = searchLastLnumG + 1;
       }
 
-      if (mod_top != 0 && hasAnyFolding(po)) {
+      if (modTop != 0 && hasAnyFolding(po)) {
          // A change in a line can cause lines above it to become folded or unfolded. Find the top 
          // most buffer line that may be affected. If the line was previously folded and displayed,
          // get the first line of that fold. If the line is folded now, get the first folded line.
          // Use the minimum of these two.
 
-         // Find last valid lines[] entry above mod_top. Set lnumt to the line below it. If there 
-         // is no valid entry, use topLine. Find the first valid lines[] entry below mod_bot. Set 
+         // Find last valid lines[] entry above modTop. Set lnumt to the line below it. If there 
+         // is no valid entry, use topLine. Find the first valid lines[] entry below modBot. Set 
          // lnumb to this line. If there is no valid entry, use MAXLNUM.
          LineNr lnumt = po->topLine;
          LineNr lnumb = MAXLNUM;
@@ -3879,52 +4264,51 @@ updatePortal(Portal* po) {
             if (!po->lines[i].isValid) {
                continue;
             }
-            if (po->lines[i].lastBookLnum < mod_top)
+            if (po->lines[i].lastBookLnum < modTop)
                lnumt = po->lines[i].lastBookLnum + 1;
-            if (lnumb == MAXLNUM && po->lines[i].bookLnum >= mod_bot) {
+            if (lnumb == MAXLNUM && po->lines[i].bookLnum >= modBot) {
                lnumb = po->lines[i].bookLnum;
             }
          } 
 
-         (void)getFoldsPortal(po, mod_top, OUT &mod_top, NULL, true, NULL);
-         if (mod_top > lnumt)
-            mod_top = lnumt;
+         (void)getFoldsPortal(po, modTop, OUT &modTop, NULL, true, NULL);
+         if (modTop > lnumt)
+            modTop = lnumt;
 
-         // Now do the same for the bottom line (one above mod_bot).
-         --mod_bot;
-         (void)getFoldsPortal(po, mod_bot, NULL, OUT &mod_bot, true, NULL);
-         ++mod_bot;
-         if (mod_bot < lnumb)
-            mod_bot = lnumb;
+         // Now do the same for the bottom line (one above modBot).
+         --modBot;
+         (void)getFoldsPortal(po, modBot, NULL, OUT &modBot, true, NULL);
+         ++modBot;
+         if (modBot < lnumb)
+            modBot = lnumb;
       }
 
       // When a change starts above topLine and the end is below
       // topLine, start redrawing at topLine. If the end of the change is above topLine: do like 
       // no change was made, but redraw the first line to find changes in syntax.
-      if (mod_top != 0 && mod_top < po->topLine) {
-         if (mod_bot > po->topLine)
-            mod_top = po->topLine;
+      if (modTop != 0 && modTop < po->topLine) {
+         if (modBot > po->topLine)
+            modTop = po->topLine;
          ei (syntax_present(po))
-            top_end = 1;
+            topEnd = 1;
       }
    }
    po->redrawTop = 0;   // reset for next time
    po->redrawBott = 0;
    searchLastLnumG = 0;
 
-
-   // When only displaying the lines at the top, set top_end. Used when
+   // When only displaying the lines at the top, set topEnd. Used when
    // portal has scrolled down for msg_scrolled.
    if (type == UPD_REDRAW_TOP) {
       j = 0;
       for (i = 0; i < po->validLines; ++i) {
          j += po->lines[i].height;
          if (j >= po->rowsToUpdate) {
-            top_end = j;
+            topEnd = j;
             break;
          }
       }
-      if (top_end == 0)
+      if (topEnd == 0)
          // not found (cannot happen?): redraw everything
          type = UPD_NOT_VALID;
       else
@@ -3938,28 +4322,26 @@ updatePortal(Portal* po) {
    if (isScreenClearedP)
       isScreenClearedP = MAYBE;
 
-   // If there are no changes on the screen that require a complete redraw,
-   // handle three cases:
+   // If there are no changes on the screen that require a complete redraw, handle three cases:
    // 1: we are off the top of the screen by a few lines: scroll down
    // 2: po->topLine is below po->lines[0].bookLnum: may scroll up
-   // 3: po->topLine is po->lines[0].bookLnum: find first entry in
-   //    lines[] that needs updating.
+   // 3: po->topLine is po->lines[0].bookLnum: find first entry in lines[] that needs updating.
    if ((type == UPD_VALID || type == UPD_SOME_VALID
             || type == UPD_INVERTED || type == UPD_INVERTED_ALL)
        && !po->bottFill && !po->bottFillOld
    ) {
-      if (mod_top != 0
-         && po->topLine == mod_top
+      if (modTop != 0
+         && po->topLine == modTop
          && (!po->lines[0].isValid
-             || po->topLine == po->lines[0].bookLnum))
-      {
-          // topLine is the first changed line and portal is not scrolled,
-          // the scrolling from changed lines will be done further down.
+             || po->topLine == po->lines[0].bookLnum)
+      ) {
+          //topLine is the first changed line and portal is not scrolled,
+          //the scrolling from changed lines will be done further down.
       } ei (po->lines[0].isValid
          && (po->topLine < po->lines[0].bookLnum
              || (po->topLine == po->lines[0].bookLnum && po->topFill > po->topFillOld)
-            ))
-      {
+            )
+      ) {
          // New topline is above old topline: May scroll down.
          if (hasAnyFolding(po)) {
             // count the number of lines we are off, counting a sequence of folded lines as one
@@ -3986,7 +4368,7 @@ updatePortal(Portal* po) {
                if (insertLinesIntoPortal(po, 0, i, false, po == firstPor) == OK) {
                   if (po->validLines != 0) {
                      // Need to update rows that are new, stop at the first one that scrolled down
-                     top_end = i;
+                     topEnd = i;
                      scrolled_down = true;
 
                      // Move the entries that were scrolled, disable
@@ -3999,11 +4381,11 @@ updatePortal(Portal* po) {
                         po->lines[idx--].isValid = false;
                   }
                } else
-                  mid_start = 0;      // redraw all lines
+                  midStart = 0; //redraw all lines
             } else
-               mid_start = 0;      // redraw all lines
+               midStart = 0;    //redraw all lines
          } else
-            mid_start = 0;      // redraw all lines
+            midStart = 0;       //redraw all lines
       } else {
          // New topline is at or below old topline: May scroll up.
          // When topline didn't change, find first entry in lines[] that needs updating.
@@ -4021,7 +4403,7 @@ updatePortal(Portal* po) {
          }
          if (j == -1) {
             // if po->topLine is not in po->lines[].bookLnum redraw all lines
-            mid_start = 0;
+            midStart = 0;
          } else {
             // Try to delete the correct number of lines.
             // po->topLine is at po->lines[i].bookLnum.
@@ -4040,7 +4422,7 @@ updatePortal(Portal* po) {
                if (deleteLinesFromPortal(po, 0, row, false, po == firstPor, 0) == OK)
                   bot_start = po->height - row;
                else
-                  mid_start = 0;      // redraw all lines
+                  midStart = 0;      // redraw all lines
             }
             if ((row == 0 || bot_start < 999) && po->validLines != 0) {
                // Skip the lines (below the deleted lines) that are still valid and don't need 
@@ -4077,8 +4459,8 @@ updatePortal(Portal* po) {
       }
 
       // When starting redraw in the first line, redraw all lines.
-      if (mid_start == 0)
-          mid_end = po->height;
+      if (midStart == 0)
+          midEnd = po->height;
 
       // When deleteLinesFromPortal() or insertLinesIntoPortal() caused the screen to be
       // cleared (only happens for the first portal) or when screenclear()
@@ -4088,27 +4470,27 @@ updatePortal(Portal* po) {
           must_redraw = 0;
    } else {
       // Not UPD_VALID or UPD_INVERTED: redraw all lines.
-      mid_start = 0;
-      mid_end = po->height;
+      midStart = 0;
+      midEnd = po->height;
    }
 
    if (type == UPD_SOME_VALID) {
       // UPD_SOME_VALID: redraw all lines.
-      mid_start = 0;
-      mid_end = po->height;
+      midStart = 0;
+      midEnd = po->height;
       type = UPD_NOT_VALID;
    }
 
-    // check if we are updating or removing the inverted part
+   // check if we are updating or removing the inverted part
    if ((VIsual_active && book == curPor->book)
        || (po->prevVisualEnd != 0 && type != UPD_NOT_VALID)
    ) {
-      LineNr    from, to;
+      LineNr from, to;
 
       if (VIsual_active) {
          if (VIsual_mode != po->prevVisualMode || type == UPD_INVERTED_ALL) {
-            // If the type of Visual selection changed, redraw the whole
-            // selection.  Also when the ownership of the X selection is gained or lost.
+            //If the type of Visual selection changed, redraw the whole
+            //selection. Also when the ownership of the X selection is gained or lost.
             if (curPor->cursor.lnum < VIsual.lnum) {
                from = curPor->cursor.lnum;
                to = VIsual.lnum;
@@ -4158,11 +4540,11 @@ updatePortal(Portal* po) {
             getvcols(po, &VIsual, &curPor->cursor, &fromc, &toc);
             ++toc;
             if (curPor->cursWant == MAXCOL) {
-               Pos pos;
                int cursor_above = curPor->cursor.lnum < VIsual.lnum;
 
                // Need to find the longest line.
                toc = 0;
+               Pos pos;
                pos.coladd = 0;
                for (pos.lnum = curPor->cursor.lnum; 
                     cursor_above ? pos.lnum <= VIsual.lnum : pos.lnum >= VIsual.lnum;
@@ -4211,21 +4593,21 @@ updatePortal(Portal* po) {
       }
 
       // Find the minimal part to be updated. Watch out for scrolling that made entries in lines[]
-      // invalid. E.g., CTRL-U makes the first half of lines[] invalid and sets top_end; need to 
-      // redraw from top_end to the "to" line. A middle mouse click with a Visual selection may 
-      // change the text above the Visual area and reset isValid, do count these for mid_end 
+      // invalid. E.g., CTRL-U makes the first half of lines[] invalid and sets topEnd; need to 
+      // redraw from topEnd to the "to" line. A middle mouse click with a Visual selection may 
+      // change the text above the Visual area and reset isValid, do count these for midEnd 
       // (in srow).
-      if (mid_start > 0) {
+      if (midStart > 0) {
          lnum = po->topLine;
          idx = 0;
          srow = 0;
          if (scrolled_down)
-            mid_start = top_end;
+            midStart = topEnd;
          else
-            mid_start = 0;
+            midStart = 0;
          while (lnum < from && idx < po->validLines) {  // find start
             if (po->lines[idx].isValid)
-               mid_start += po->lines[idx].height;
+               midStart += po->lines[idx].height;
             ei (!scrolled_down)
                srow += po->lines[idx].height;
             ++idx;
@@ -4234,12 +4616,12 @@ updatePortal(Portal* po) {
             else
                ++lnum;
          }
-         srow += mid_start;
-         mid_end = po->height;
+         srow += midStart;
+         midEnd = po->height;
          for ( ; idx < po->validLines; ++idx) {     // find end
          if (po->lines[idx].isValid && po->lines[idx].bookLnum >= to + 1) {
             // Only update until first row of this line
-            mid_end = srow;
+            midEnd = srow;
             break;
          }
          srow += po->lines[idx].height;
@@ -4261,7 +4643,7 @@ updatePortal(Portal* po) {
    }
 
    // reset gotInterruptG, otherwise regexp won't work
-   save_gotInterruptG = gotInterruptG;
+   int save_gotInterrupt = gotInterruptG;
    gotInterruptG = 0;
 #ifdef SYN_TIME_LIMIT
    // Set the time limit to 'redrawtime'.
@@ -4269,380 +4651,16 @@ updatePortal(Portal* po) {
    init_regexp_timeout(p_rdt);
 #endif
    portFoldS.fi_level = 0;
-
-
-   lnum = po->topLine;   // first line shown in portal
-
-   // Update all the portal rows.
-   idx = 0;      // first entry in lines[].height
-   row = 0;
-   srow = 0;
-   for (;;) {
-      // stop updating when reached the end of the  portal (check for _past_
-      // the end of the portal is at the end of the loop)
-      if (row == (int)po->height) {
-         didline = true;
-         break;
-      }
-
-      // stop updating when hit the end of the file
-      if (lnum > book->mem.lineCount) {
-         eof = true;
-         break;
-      }
-
-      // Remember the starting row of the line that is going to be dealt
-      // with. It is used further down when the line doesn't fit.
-      srow = row;
-
-      // Update a line when it is in an area that needs updating, when it has changes or lines[idx]
-      // is invalid. "bot_start" may be halfway a wrapped line after using deleteLinesFromPortal(),
-      // check if the current line includes it. When syntax folding is being used, the saved syntax 
-      // states will already have been updated, we can't see where the syntax state is
-      // the same again, just update until the end of the portal.
-      if (row < top_end
-         || (row >= mid_start && row < mid_end)
-         || top_to_mod
-         || idx >= po->validLines
-         || (row + po->lines[idx].height > bot_start)
-         || (mod_top != 0
-             && (lnum == mod_top
-                 || (lnum >= mod_top
-                      && (lnum < mod_bot
-                           || did_update == DID_FOLD
-                           || (did_update == DID_LINE
-                               && syntax_present(po)
-                               && (syntax_check_changed(lnum))
-                              )
-                           //match in fixed position might need redraw if lines were 
-                           //inserted or deleted
-                           || (po->firstMatch && book->needsRedraw && book->lineCountDiff != 0)
-                         )
-                   )
-                )
-            )
-         || (po->o.cursorLine && lnum == po->cursor.lnum)
-         || lnum == po->lastCursorLine
-      ){
-         if (lnum == mod_top)
-            top_to_mod = false;
-
-         //When at start of changed lines: May scroll following lines up or down to minimize 
-         //redrawing. Don't do this when the change continues until the end.
-         //Don't scroll when redrawing the top, scrolled already above.
-         if (lnum == mod_top && mod_bot != MAXLNUM && row >= top_end) {
-            int old_rows = 0;
-            int new_rows = 0;
-            int xtra_rows;
-            LineNr l;
-
-            //Count the old number of portal rows, using lines[], which
-            //should still contain the sizes for the lines as they are currently displayed.
-            for (i = idx; i < po->validLines; ++i) {
-               //Only valid lines have a meaningful bookLnum.  Invalid
-               //lines are part of the changed area.
-               if (po->lines[i].isValid && po->lines[i].bookLnum == mod_bot)
-                  break;
-               old_rows += po->lines[i].height;
-               if (po->lines[i].isValid && po->lines[i].lastBookLnum + 1 == mod_bot) {
-                  //Must have found the last valid entry above mod_bot.
-                  //Add following invalid entries.
-                  ++i;
-                  while (i < po->validLines && !po->lines[i].isValid)
-                     old_rows += po->lines[i++].height;
-                  break;
-               }
-            }
-
-            if (i >= po->validLines) {
-                // We can't find a valid line below the changed lines,
-                // need to redraw until the end of the portal.
-                // Inserting/deleting lines has no use.
-                bot_start = 0;
-            } else {
-               // Able to count old number of rows: Count new portal
-               // rows, and may insert/delete lines
-               j = idx;
-               for (l = lnum; l < mod_bot; ++l) {
-                  if (getFoldsPortal(po, l, NULL, OUT &l, true, NULL))
-                     ++new_rows;
-                  else {
-                     if (l == po->topLine) {
-                        int n = plines_win_nofill(po, l, false) + po->topFill;
-                        n -= adjust_plines_for_skipcol(po);
-                        if (n > (int)po->height)
-                           n = (int)po->height;
-                        new_rows += n;
-                     } else
-                        new_rows += plines_win(po, l, true);
-                  }
-                  ++j;
-                  if (new_rows > (int)po->height - row - 2) {
-                     // it's getting too much, must redraw the rest
-                     new_rows = 9999;
-                     break;
-                  }
-               }
-               xtra_rows = new_rows - old_rows;
-               if (xtra_rows < 0) {
-                  //May scroll text up. If there is not enough remaining text or scrolling fails, 
-                  //must redraw the rest.  If scrolling works, must redraw the text
-                  //below the scrolled text.
-                  if (row - xtra_rows >= (int)po->height - 2)
-                     mod_bot = MAXLNUM;
-                  else {
-                     check_for_delay(false);
-                     if (deleteLinesFromPortal(po, row, -xtra_rows, false, false, 0) == FAIL)
-                        mod_bot = MAXLNUM;
-                     else
-                        bot_start = po->height + xtra_rows;
-                  }
-               } ei (xtra_rows > 0) {
-                  //May scroll text down. If there is not enough
-                  //remaining text of scrolling fails, must redraw the rest.
-                  if (row + xtra_rows >= (int)po->height - 2)
-                      mod_bot = MAXLNUM;
-                  else {
-                     check_for_delay(false);
-                     if (insertLinesIntoPortal(po, row + old_rows, xtra_rows, false, false) == FAIL)
-                        mod_bot = MAXLNUM;
-                     ei (top_end > row + old_rows)
-                        // Scrolled the part at the top that requires updating down.
-                        top_end += xtra_rows;
-                  }
-               }
-
-               // When not updating the rest, may need to move lines[] entries.
-               if (mod_bot != MAXLNUM && i != j) {
-                  if (j < i) {
-                     int x = row + new_rows;
-
-                     // move entries in lines[] upwards
-                     for (;;) {
-                        // stop at last valid entry in lines[]
-                        if (i >= po->validLines) {
-                           po->validLines = j;
-                           break;
-                        }
-                        po->lines[j] = po->lines[i];
-                        // stop at a line that won't fit
-                        if (x + (int)po->lines[j].height > (int)po->height) {
-                           po->validLines = j + 1;
-                           break;
-                        }
-                        x += po->lines[j++].height;
-                        ++i;
-                     }
-                      if (bot_start > x)
-                     bot_start = x;
-                  } else { // j > i
-                     // move entries in lines[] downwards
-                     j -= i;
-                     po->validLines += j;
-                     if (po->validLines > (int)po->height)
-                        po->validLines = po->height;
-                     for (i = po->validLines; i - j >= idx; --i)
-                        po->lines[i] = po->lines[i - j];
-
-                     //The lines[] entries for inserted lines are
-                     //now invalid, but height may be used above. Reset to zero.
-                     while (i >= idx) {
-                        po->lines[i].height = 0;
-                        po->lines[i--].isValid = false;
-                     }
-                  }
-               }
-            }
+   updatePortalFinish(
+         po, 
+         (UpdatePortalInfo){
+            topEnd, midStart, midEnd, bot_start, modTop, modBot, oldBottLine, eof, top_to_mod
          }
-
-         // When lines are folded, display one line for all of them.
-         // Otherwise, display normally (can be several display lines when 'wrap' is on).
-         fold_count = foldedCount(po, lnum, OUT &portFoldS);
-         if (fold_count != 0) {
-            fold_line(po, fold_count, &portFoldS, lnum, row);
-            ++row;
-            --fold_count;
-            po->lines[idx].isFolded = true;
-            po->lines[idx].lastBookLnum = lnum + fold_count;
-            did_update = DID_FOLD;
-         } ei (idx < po->validLines
-             && po->lines[idx].isValid
-             && po->lines[idx].bookLnum == lnum
-             && lnum > po->topLine
-             && !PORTAL_IS_POPUP(po)
-             && srow + po->lines[idx].height > (int)po->height
-             && diff_check_fill(po, lnum) == 0
-         ) {
-            // This line is not going to fit. Don't draw anything here, will draw "@  " lines below
-            row = po->height + 1;
-         } else {
-            prepare_search_hl(po, &screenSearchMatchG, lnum);
-            // Let the syntax stuff know we skipped a few lines.
-            if (syntax_last_parsed != 0 && syntax_last_parsed + 1 < lnum && syntax_present(po))
-               syntax_end_parsing(po, syntax_last_parsed + 1);
-            // Display one line.
-            row = drawLineOnScreen(po, lnum, srow, po->height, 0);
-
-            po->lines[idx].isFolded = false;
-            po->lines[idx].lastBookLnum = lnum;
-            did_update = DID_LINE;
-            syntax_last_parsed = lnum;
-         }
-
-          po->lines[idx].bookLnum = lnum;
-          po->lines[idx].isValid = true;
-
-         //Past end of the portal or end of the portal. Note that after resizing po->height may 
-         //end up too big. That's a problem elsewhere, but we prevent a crash here.
-         if (row > (int)po->height || row + po->portalRow >= visibleRowsG) {
-            // we may need the size of that too long line later on
-            po->lines[idx].height = plines_win(po, lnum, true);
-            ++idx;
-            break;
-         }
-         po->lines[idx].height = row - srow;
-         ++idx;
-         lnum += fold_count + 1;
-      } else {
-          // If:
-          // - 'number' is set and below inserted/deleted lines, or
-          // - 'relativenumber' is set and cursor moved vertically,
-          // the text doesn't need to be redrawn, but the number column does.
-          if ((mod_top != 0 && lnum >= mod_bot && book->needsRedraw && book->lineCountDiff != 0)
-             || (po->o.relativeNumber && po->lastCursorLnumRnu != po->cursor.lnum)
-         ) {
-         fold_count = foldedCount(po, lnum, OUT &portFoldS);
-         if (fold_count != 0)
-            fold_line(po, fold_count, &portFoldS, lnum, row);
-         else
-            (void)drawLineOnScreen(po, lnum, srow, po->height, po->lines[idx].height);
-         }
-
-         // This line does not need to be drawn, advance to the next one.
-         row += po->lines[idx++].height;
-         if (row > (int)po->height)   // past end of screen
-            break;
-         lnum = po->lines[idx - 1].lastBookLnum + 1;
-         did_update = DID_NONE;
-      }
-
-      if (lnum > book->mem.lineCount) {
-         eof = true;
-         break;
-      }
-
-      //Safety check: if any of the height values is wrong we might go over the end of lines[].
-      if (idx >= visibleRowsG)
-         break;
-   }
-
-   // End of loop over all portal lines.
-
-   // Now that the portal has been redrawn with the old and new cursor line, update lastCursorLine.
-   po->lastCursorLine = po->o.cursorLine ? po->cursor.lnum : 0;
-   po->lastCursorLnumRnu = po->o.relativeNumber ? po->cursor.lnum : 0;
-
-   if (idx > po->validLines)
-      po->validLines = idx;
-
-   // Let the syntax stuff know we stop parsing here.
-   if (syntax_last_parsed != 0 && syntax_present(po))
-      syntax_end_parsing(po, syntax_last_parsed + 1);
-
-   // If we didn't hit the end of the file, and we didn't finish the last
-   // line we were working on, then the line didn't fit.
-   po->emptyRowCount = 0;
-   po->fillerRowCount = 0;
-   if (!eof && !didline) {
-      if (lnum == po->topLine) {
-         // Single line that does not fit! Don't overwrite it, it can be edited.
-         po->bottomLine = lnum + 1;
-      } ei (diff_check_fill(po, lnum) >= (int)po->height - srow) {
-         // Portal ends in filler lines.
-         po->bottomLine = lnum;
-         po->fillerRowCount = po->height - srow;
-      } ei (PORTAL_IS_POPUP(po)) {
-         // popup line that doesn't fit is left as-is
-         po->bottomLine = lnum;
-      } else {
-         drawVoidAtPortalEnd(po, fillCharsG.lastline, ' ', true, srow, po->height, HLF_AT);
-         po->bottomLine = lnum;
-      }
-   } else {
-      drawVerticalSeparator(po, row);
-      if (eof) {     // we hit the end of the file
-         po->bottomLine = book->mem.lineCount + 1;
-         j = diff_check_fill(po, po->bottomLine);
-         if (j > 0 && !po->bottFill) {
-            // Display filler lines at the end of the file.
-            if (char2cells(fillCharsG.diff) > 1)
-               i = '-';
-            else
-               i = fillCharsG.diff;
-            if (row + j > po->height)
-               j = po->height - row;
-            drawVoidAtPortalEnd(po, i, i, true, row, row + (int)j, HLF_DED);
-            row += j;
-          }
-      }
-      po->bottomLine = lnum;
-
-      // Make sure the rest of the screen is blank.
-      // write the "eob" character from @fillchars to rows that aren't part of the file.
-      if (PORTAL_IS_POPUP(po))
-         drawVoidAtPortalEnd(po, ' ', ' ', false, row, po->height, HLF_AT);
-      else
-         drawVoidAtPortalEnd(po, fillCharsG.eob, ' ', false, row, po->height, HLF_NONE);
-  }
-
-#ifdef SYN_TIME_LIMIT
-   disable_regexp_timeout();
-   redrawtime_limit_set = false;
-#endif
-
-   // Reset the type of redrawing required, the portal has been updated.
-   po->redrawType = 0;
-   po->topFillOld = po->topFill;
-   po->bottFillOld = po->bottFill;
-
-   //There is a trick with bottomLine. If we invalidate it on each change that might modify it, 
-   //this will cause a lot of expensive calls to plines() in update_topline() each time. 
-   //Therefore the value of bottomLine is often approximated, and this value is used to
-   //compute the value of topLine. If the value of bottomLine was wrong, check that the value of 
-   //topLine is correct (cursor is on the visible part of the text).  If it's not, we need to 
-   //redraw again. Mostly this just means scrolling up a few lines, so it doesn't look too bad.
-   //Only do this for the current portal (where changes are relevant).
-   po->cacheState |= VALID_BOTLINE;
-   if (po == curPor && po->bottomLine != old_botline && !recursive) {
-      Portal   *wwp;
-      recursive = true;
-      curPor->cacheState &= ~VALID_TOPLINE;
-      update_topline();   // may invalidate bottomLine again
-
-      // New redraw either due to updated topline, wcol fix or reset skipcol.
-      if (po->redrawType != 0) {
-         // Don't update for changes in buffer again.
-         i = curBook->needsRedraw;
-         curBook->needsRedraw = false;
-         j = curBook->lineCountDiff;
-         curBook->lineCountDiff = 0;
-         curs_columns(true);
-         updatePortal(curPor);
-         curBook->needsRedraw = i;
-         curBook->lineCountDiff = j;
-      }
-      // Other portals might have redrawType raised in update_topline().
-      must_redraw = 0;
-      FOR_ALL_PORTALS(wwp) {
-         if (wwp->redrawType > must_redraw)
-            must_redraw = wwp->redrawType;
-      } 
-      recursive = false;
-   }
-
+   );
+   
    // restore gotInterruptG, unless CTRL-C was hit while redrawing
    if (!gotInterruptG)
-      gotInterruptG = save_gotInterruptG;
+      gotInterruptG = save_gotInterrupt;
 }
 
 //Redraw as soon as possible. When the command line is not scrolled, redraw right away and restore
@@ -4791,7 +4809,7 @@ redraw_later(int type) {
 }
 
 void
-redrawPortLater(Portal* po, int type) {
+redrawPortLater(Portal* po, Unt type) {
    if (!isExitingG && !redraw_not_allowed && po->redrawType < type) {
       po->redrawType = type;
       if (type >= UPD_NOT_VALID)
@@ -4811,7 +4829,7 @@ redraw_later_clear(void) {
 
 // Mark all portals to be redrawn later.  Except popup portals.
 void
-redraw_all_later(int type) {
+redraw_all_later(Unt type) {
    Portal* po;
    FOR_ALL_PORTALS(po)
       redrawPortLater(po, type);
@@ -4830,7 +4848,7 @@ redraw_all_portals_later(int type) {
 
 //Set "must_redraw" to "type" unless it already has a higher value or it is currently not allowed.
 void
-set_must_redraw(int type) {
+set_must_redraw(Unt type) {
    if (!redraw_not_allowed && must_redraw < type)
       must_redraw = type;
 }
@@ -5740,7 +5758,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
    if ((currSymb == ZERO || sc->didLineDeco == 1) && m->eol_hl_off == 0) {
       // flag to indicate whether prevcol equals startcol of search_hl or one of the matches
       int prevcol_hl_flag = get_prevcol_hl_flag(
-             port, &screenSearchMatchG, (long)(m->ptr - m->line) - (currSymb == ZERO)
+             port, &screenSearchP, (long)(m->ptr - m->line) - (currSymb == ZERO)
       );
       // Invert at least one char, used for Visual and empty line or hilite match at end of 
       // line. If it's beyond the last char on the screen, just overwrite that one (tricky!)  Not
@@ -5777,7 +5795,7 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
          if (sc->areaDeco.hiId == SHORT) {
             // Use decos from the match with highest priority among 'search_hl' and the match list
             Short charHiId;
-            get_search_match_hl(port, &screenSearchMatchG, (long)(m->ptr - m->line), &charHiId);
+            get_search_match_hl(port, &screenSearchP, (long)(m->ptr - m->line), &charHiId);
             m->charDeco = getFullDecoration(charHiId);
          }
          screenDecosP[m->off] = m->charDeco;
@@ -6423,7 +6441,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             //When another match, have to check for start again.
             m->bufferLen = (long)(m->ptr - m->line);
             m->searchHiId = update_search_hl(
-               port, c->lnum, (ColNr)m->bufferLen, &(m->line), &screenSearchMatchG, sc.didLineDeco, 
+               port, c->lnum, (ColNr)m->bufferLen, &(m->line), &screenSearchP, sc.didLineDeco, 
                sc.listCharEndOfLine, OUT &onLastCol
             );
             m->ptr = m->line + (m->bufferLen);  // "line" may have been changed
@@ -7389,7 +7407,7 @@ drawLineOnScreen(
    if (drawingOnlyNumberCol == 0) {
       m.bufferLen = (long)(m.ptr - m.line);
       c.areaHiliting = c.areaHiliting || searchPrepareHiliteLine(
-         port, lnum, (ColNr)m.bufferLen, &m.line, &screenSearchMatchG, OUT &m.searchHiId
+         port, lnum, (ColNr)m.bufferLen, &m.line, &screenSearchP, OUT &m.searchHiId
       );
       m.ptr = m.line + m.bufferLen; // "line" may have been updated
    }

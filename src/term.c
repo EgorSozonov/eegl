@@ -14,6 +14,7 @@ private CS TC_CURSOR_SHAPES[] = {
    S"\033[6 q"  //bar cursor
 };
 private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
+private CS TC_CLIPBOARD = S"\033]52;c;%%\007";
 
 //{{{forward declarations
 

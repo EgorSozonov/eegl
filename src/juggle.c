@@ -632,7 +632,7 @@ inserted_bytes(LineNr lnum, ColNr col, int added UNUSED) {
 }
 
 //Appended "count" lines below line "lnum" in the current book.
-//Must be called AFTER the change and after mark_adjust().
+//Must be called AFTER the change and after markAdjust().
 //Takes care of marking the book to be redrawn and sets the changed flag.
 void
 appended_lines(LineNr lnum, long count) {
@@ -642,12 +642,12 @@ appended_lines(LineNr lnum, long count) {
 //Like appended_lines(), but adjust marks first.
 void
 appended_lines_mark(LineNr lnum, long count) {
-   mark_adjust(lnum + 1, (LineNr)MAXLNUM, count, 0L);
+   markAdjust(lnum + 1, (LineNr)MAXLNUM, count, 0L, true);
    changed_lines(lnum + 1, 0, lnum + 1, count);
 }
 
 //Deleted "count" lines at line "lnum" in the current book.
-//Must be called AFTER the change and after mark_adjust().
+//Must be called AFTER the change and after markAdjust().
 //Take care of marking the book to be redrawn and sets the changed flag.
 void
 deleted_lines(LineNr lnum, long count) {
@@ -659,7 +659,7 @@ deleted_lines(LineNr lnum, long count) {
 //be triggered to display the cursor.
 void
 deleted_lines_mark(LineNr lnum, long count) {
-   mark_adjust(lnum, (LineNr)(lnum + count - 1), (long)MAXLNUM, -count);
+   markAdjust(lnum, (LineNr)(lnum + count - 1), (long)MAXLNUM, -count, true);
    changed_lines(lnum, 0, lnum + count, -count);
 }
 
@@ -695,7 +695,7 @@ changed_lines_buf(
 }
 
 //Changed lines for the current book.
-//Must be called AFTER the change and after mark_adjust().
+//Must be called AFTER the change and after markAdjust().
 //- mark the book changed by calling changed()
 //- mark the portals on this book to be redisplayed
 //- invalidate cached values
@@ -713,7 +713,7 @@ changed_lines(
    changed_lines_buf(curBook, lnum, lnume, xtra);
 
    if (xtra == 0 && curPor->o.diff && !diff_internal()) {
-      // When the number of lines doesn't change then mark_adjust() isn't
+      // When the number of lines doesn't change then markAdjust() isn't
       // called and other diff books still need to be marked for displaying.
       Portal       *po;
       FOR_ALL_PORTALS(po) {
@@ -1006,7 +1006,7 @@ insertLine(
    (void)set_indent(newIndent, SIN_INSERT);
     
    // Postpone calling changed_lines(), because it would mess up folding with markers.
-   mark_adjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L);
+   markAdjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L, true);
     
    changed_lines(curPor->cursor.lnum, curPor->cursor.col, curPor->cursor.lnum + 1, 1L);
    curPor->cursor.lnum = oldCursor.lnum + 1;
@@ -1675,7 +1675,7 @@ openLine(
    if (ml_append(curPor->cursor.lnum, transferText, (ColNr)transferLen, false) == FAIL)
       goto theend;
    // Postpone calling changed_lines(), because it would mess up folding with markers.
-   mark_adjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L);
+   markAdjust(curPor->cursor.lnum + 1, (LineNr)MAXLNUM, 1L, 0L, true);
    didAppend = true;
    if (stateG & MODE_INSERT) {
       // Properties after the split move to the next line.

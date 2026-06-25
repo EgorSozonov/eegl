@@ -3062,39 +3062,37 @@ the_end:
 
 # define SEARCH_HL_PRIORITY 0
 
-// Add match to the match list of portal "wp".
-// If "pat" is not NULL the pattern will be highlighted with the group "grp" with priority "prio".
-// If "pos_list" is not NULL the list of posisions defines the highlights. Optionally, a desired 
-// ID "id" can be specified (greater than or equal to 1). If no particular ID is desired, -1 must 
-// be specified for "id". Return ID of added match, -1 on failure.
+//Add match to the match list of portal "po".
+//If "pat" is not NULL the pattern will be hilited with the group "grp" with priority "prio".
+//If "pos_list" is not NULL, the list of posisions defines the hilites. Optionally, a desired 
+//ID "id" can be specified (greater than or equal to 1). If no particular ID is desired, -1 must
+//be specified for "id". Return ID of added match, -1 on failure.
 private int
 match_add(
-   Portal* wp,
+   Portal* po,
    CS grp,
    CS pat,
    int prio,
    int id,
    List* pos_list
 ) {
-   MatchItem   *cur;
-   MatchItem   *prev;
-   MatchItem   *m;
-   int      hlg_id;
-   RegProg   *regprog = NULL;
-   int      rtype = UPD_SOME_VALID;
+   MatchItem* cur;
+   RegProg* regprog = NULL;
 
-   if (*grp == ZERO || (pat != NULL && *pat == ZERO))
+   if (*grp == ZERO || (pat && *pat == ZERO))
       return -1;
    if (id < -1 || id == 0) {
       showErrFmtMsg(_(e_invalid_id_nr_must_be_greater_than_or_equal_to_one_1), id);
       return -1;
    }
+   
+   Unt rtype = UPD_SOME_VALID;
    if (id == -1) {
       // use the next available match ID
-      id = wp->nextMatchId++;
+      id = po->nextMatchId++;
    } else {
       // check the given ID is not already in use
-      for (cur = wp->firstMatch; cur != NULL; cur = cur->next) {
+      for (cur = po->firstMatch; cur; cur = cur->next) {
          if (cur->id == id) {
             showErrFmtMsg(_(e_id_already_taken_nr), id);
             return -1;
@@ -3103,71 +3101,71 @@ match_add(
 
       // Make sure the next match ID is always higher than the highest manually selected ID. Add 
       // some extra in case a few more IDs are added soon.
-      if (wp->nextMatchId < id + 100)
-         wp->nextMatchId = id + 100;
+      if (po->nextMatchId < id + 100)
+         po->nextMatchId = id + 100;
    }
 
-   if ((hlg_id = syntaxClusterByName((Text){.c = grp, .len = STRLEN(grp)})) == 0) {
+   Short hiId;
+   if ((hiId = syntaxClusterByName((Text){.c = grp, .len = STRLEN(grp)})) == 0) {
       showErrFmtMsg(_(e_no_such_highlight_group_name_str), grp);
       return -1;
    }
-   if (pat != NULL && (regprog = compileRegexp(pat, RE_MAGIC)) == NULL) {
+   if (pat && (regprog = compileRegexp(pat, RE_MAGIC)) == NULL) {
       showErrFmtMsg(_(e_invalid_argument_str), pat);
       return -1;
    }
 
    // Build new match.
-   m = ALLOC_CLEAR_ONE(MatchItem);
-   if (pos_list != NULL && pos_list->len > 0) {
-      m->pos = ALLOC_CLEAR_MULT(lPosNoVirt, pos_list->len);
+   MatchItem* m = ALLOC_CLEAR_ONE(MatchItem);
+   if (pos_list && pos_list->len > 0) {
+      m->pos = ALLOC_CLEAR_MULT(PosNoVirtLen, pos_list->len);
       m->posLen = pos_list->len;
    }
    m->id = id;
    m->priority = prio;
-   m->pattern = pat == NULL ? NULL : copyStr(pat);
-   m->hiId = hlg_id;
+   m->pattern = pat ? copyStr(pat) : null;
+   m->hiId = hiId;
    m->match.regprog = regprog;
    m->match.rmm_ic = false;
    m->match.rmm_maxcol = 0;
 
    // Set up position matches
-   if (pos_list != NULL) {
-      LineNr   toplnum = 0;
-      LineNr   botlnum = 0;
-      ListItem   *li;
-      int      i;
-
+   if (pos_list) {
+      LineNr toplnum = 0;
+      LineNr botlnum = 0;
+      ListItem* li;
       CHECK_LIST_MATERIALIZE(pos_list);
-      for (i = 0, li = pos_list->first; li != NULL; i++, li = li->next) {
-         LineNr   lnum = 0;
-         ColNr   col = 0;
-         int      len = 1;
-         List   *subl;
-         ListItem   *subli;
+      int i;
+      for (i = 0, li = pos_list->first; li; i++, li = li->next) {
+         LineNr lnum = 0;
+         ColNr col = 0;
+         int len = 1;
+         List* subl;
+         ListItem* subli;
          Boole error = false;
 
          if (li->c.tag == VAR_LIST) {
             subl = li->c.list;
-            if (subl == NULL)
+            if (!subl)
                goto fail;
             subli = subl->first;
-            if (subli == NULL)
+            if (!subli)
                goto fail;
             lnum = varGetNumberChk(&subli->c, OUT &error);
             if (error == true)
                goto fail;
             if (lnum == 0) {
-                --i;
-                continue;
+               --i;
+               continue;
             }
             m->pos[i].lnum = lnum;
             subli = subli->next;
-            if (subli != NULL) {
-                col = varGetNumberChk(&subli->c, OUT &error);
-                if (error == true)
-               goto fail;
+            if (subli) {
+               col = varGetNumberChk(&subli->c, OUT &error);
+               if (error == true)
+                  goto fail;
                subli = subli->next;
-               if (subli != NULL) {
+               if (subli) {
                   len = varGetNumberChk(&subli->c, OUT &error);
                   if (error == true)
                      goto fail;
@@ -3195,7 +3193,7 @@ match_add(
 
       // Calculate top and bottom lines for redrawing area
       if (toplnum != 0) {
-         redrawPortRangeLater(wp, toplnum, botlnum);
+         redrawPortRangeLater(po, toplnum, botlnum);
          m->topLnum = toplnum;
          m->bottLnum = botlnum;
          rtype = UPD_VALID;
@@ -3203,19 +3201,19 @@ match_add(
    }
 
    // Insert new match.  The match list is in ascending order with regard to the match priorities.
-   cur = wp->firstMatch;
-   prev = cur;
+   cur = po->firstMatch;
+   MatchItem* prev = cur;
    while (cur && prio >= cur->priority) {
       prev = cur;
       cur = cur->next;
    }
    if (cur == prev)
-      wp->firstMatch = m;
+      po->firstMatch = m;
    else
       prev->next = m;
    m->next = cur;
 
-   redrawPortLater(wp, rtype);
+   redrawPortLater(po, rtype);
    return id;
 
 fail:
@@ -3225,22 +3223,18 @@ fail:
    return -1;
 }
 
-//Delete match with ID 'id' in the match list of portal 'wp'.
+//Delete match with ID 'id' in the match list of portal 'po'.
 //Print error messages if 'perr' is true.
 private int
-match_delete(Portal* wp, int id, int perr) {
-   MatchItem   *cur = wp->firstMatch;
-   MatchItem   *prev = cur;
-   int      rtype = UPD_SOME_VALID;
-
+match_delete(Portal* po, int id, int perr) {
    if (id < 1) {
       if (perr == true)
          showErrFmtMsg(_(e_invalid_id_nr_must_be_greater_than_or_equal_to_one_2), id);
       return -1;
    }
-   while (cur != NULL && cur->id != id) {
-      prev = cur;
-      cur = cur->next;
+   MatchItem* cur = po->firstMatch;
+   MatchItem* prev = cur;
+   for (; cur && cur->id != id; prev = cur, cur = cur->next) {
    }
    if (!cur) {
       if (perr == true)
@@ -3248,62 +3242,63 @@ match_delete(Portal* wp, int id, int perr) {
       return -1;
    }
    if (cur == prev)
-      wp->firstMatch = cur->next;
+      po->firstMatch = cur->next;
    else
       prev->next = cur->next;
    eeRegFree(cur->match.regprog);
    eeglFree(cur->pattern);
+   
+   Unt rtype = UPD_SOME_VALID;
    if (cur->topLnum != 0) {
-      redrawPortRangeLater(wp, cur->topLnum, cur->bottLnum);
+      redrawPortRangeLater(po, cur->topLnum, cur->bottLnum);
       rtype = UPD_VALID;
    }
    eeglFree(cur->pos);
    eeglFree(cur);
-   redrawPortLater(wp, rtype);
+   redrawPortLater(po, rtype);
    return 0;
 }
 
-// Delete all matches in the match list of portal 'wp'.
+// Delete all matches in the match list of portal 'po'.
 void
-clear_matches(Portal* wp) {
-   while (wp->firstMatch) {
-      MatchItem* m = wp->firstMatch->next;
-      eeRegFree(wp->firstMatch->match.regprog);
-      eeglFree(wp->firstMatch->pattern);
-      eeglFree(wp->firstMatch->pos);
-      eeglFree(wp->firstMatch);
-      wp->firstMatch = m;
+clear_matches(Portal* po) {
+   while (po->firstMatch) {
+      MatchItem* m = po->firstMatch->next;
+      eeRegFree(po->firstMatch->match.regprog);
+      eeglFree(po->firstMatch->pattern);
+      eeglFree(po->firstMatch->pos);
+      eeglFree(po->firstMatch);
+      po->firstMatch = m;
    }
-   redrawPortLater(wp, UPD_SOME_VALID);
+   redrawPortLater(po, UPD_SOME_VALID);
 }
 
-// Get match from ID 'id' in portal 'wp'. Return NULL if match not found.
+// Get match from ID 'id' in portal 'po'. Return NULL if match not found.
 private MatchItem*
-get_match(Portal* wp, int id) {
-   MatchItem *cur = wp->firstMatch;
-
-   while (cur != NULL && cur->id != id)
-      cur = cur->next;
+get_match(Portal* po, int id) {
+   MatchItem *cur;
+   for (cur = po->firstMatch; cur && cur->id != id; cur = cur->next)
+      {}
    return cur;
 }
 
 // Init for calling prepare_search_hl().
 void
-init_search_hl(Portal *wp, Match *search_hl) {
+searchInitHilite(Portal* po, Match* search_hl) {
    // Setup for match and @hlsearch hiliting.  Disable any previous match
-   MatchItem* cur = wp->firstMatch;
+   MatchItem* cur = po->firstMatch;
    while (cur) {
       cur->mit_hl.rm = cur->match;
       if (cur->hiId == SHORT)
          cur->mit_hl.hiId = SHORT;
       else
          cur->mit_hl.hiId = cur->hiId;
-      cur->mit_hl.book = wp->book;
+      cur->mit_hl.book = po->book;
       cur->mit_hl.lnum = 0;
       cur->mit_hl.first_lnum = 0;
       cur = cur->next;
    }
-   search_hl->book = wp->book;
+   search_hl->book = po->book;
    search_hl->lnum = 0;
    search_hl->first_lnum = 0;
    // time limit is set at the toplevel, for all portals
@@ -3319,7 +3314,7 @@ next_search_hl_pos(
 ){
    int found = -1;
    for (int i = matchItem->currPos; i < matchItem->posLen; i++) {
-      lPosNoVirt   *pos = &matchItem->pos[i];
+      PosNoVirtLen* pos = &matchItem->pos[i];
 
       if (pos->lnum == 0)
          break;
@@ -3329,15 +3324,14 @@ next_search_hl_pos(
          if (found >= 0) {
             // if this match comes before the one at "found" then swap them
             if (pos->col < matchItem->pos[found].col) {
-               lPosNoVirt   tmp = *pos;
-
-                *pos = matchItem->pos[found];
-                matchItem->pos[found] = tmp;
+               PosNoVirtLen tmp = *pos;
+               *pos = matchItem->pos[found];
+               matchItem->pos[found] = tmp;
             }
          } else
             found = i;
       }
-    }
+   }
    matchItem->currPos = 0;
    if (found >= 0) {
       ColNr start = matchItem->pos[found].col == 0 ? 0 : matchItem->pos[found].col - 1;
@@ -3370,11 +3364,10 @@ next_search_hl(
    ColNr mincol,   // minimal column for a match
    MatchItem* cur   // to retrieve match positions if any
 ){
-   LineNr   l;
-   ColNr   matchcol;
-   long   nmatched;
-   int      called_emsg_before = called_emsg;
-   int      timed_out = false;
+   ColNr matchcol;
+   long nmatched;
+   int called_emsg_before = called_emsg;
+   int timed_out = false;
 
    // for :{range}s/pat only highlight inside the range
    if ((lnum < search_first_line || lnum > search_last_line) && cur == NULL) {
@@ -3383,11 +3376,11 @@ next_search_hl(
    }
 
    if (match->lnum != 0) {
-      // Check for three situations:
-      // 1. If the "lnum" is below a previous match, start a new search.
-      // 2. If the previous match includes "mincol", use it.
-      // 3. Continue after the previous match.
-      l = match->lnum + match->rm.endpos[0].lnum - match->rm.startpos[0].lnum;
+      //Check for three situations:
+      //1. If the "lnum" is below a previous match, start a new search.
+      //2. If the previous match includes "mincol", use it.
+      //3. Continue after the previous match.
+      LineNr l = match->lnum + match->rm.endpos[0].lnum - match->rm.startpos[0].lnum;
       if (lnum > l)
          match->lnum = 0;
       ei (lnum < l || match->rm.endpos[0].col > mincol)
@@ -3437,7 +3430,7 @@ next_search_hl(
             match->lnum = 0;
             gotInterruptG = false;  // avoid the "Type :quit to exit Vim" message
             break;
-          }
+         }
       } ei (cur)
          nmatched = next_search_hl_pos(match, lnum, cur, matchcol);
       else
@@ -3449,26 +3442,26 @@ next_search_hl(
       if (match->rm.startpos[0].lnum > 0
          || match->rm.startpos[0].col >= mincol
          || nmatched > 1
-         || match->rm.endpos[0].col > mincol)
-      {
-          match->lnum += match->rm.startpos[0].lnum;
-          break;         // useful match found
+         || match->rm.endpos[0].col > mincol
+      ) {
+         match->lnum += match->rm.startpos[0].lnum;
+         break;         // useful match found
       }
    }
 }
 
-// Advance to the match in portal "wp" line "lnum" or past it.
+// Advance to the match in portal "po" line "lnum" or past it.
 void
-prepare_search_hl(Portal* wp, Match* search_hl, LineNr lnum) {
-   Match   *match;      // points to search_hl or a match
+prepare_search_hl(Portal* po, Match* search_hl, LineNr lnum) {
+   Match* match;      // points to search_hl or a match
    Boole pos_inprogress;   // marks that position match search is in progress
-   int      n;
+   int n;
 
    // When using a multi-line pattern, start searching at the top
    // of the portal or just after a closed fold.
    // Do this both for search_hl and the match list.
-   MatchItem* cur = wp->firstMatch; //points to the match list
-   Boole didHiliteSearch = PORTAL_IS_POPUP(wp);  // skip search_hl in a popup portal
+   MatchItem* cur = po->firstMatch; //points to the match list
+   Boole didHiliteSearch = PORTAL_IS_POPUP(po);  // skip search_hl in a popup portal
    while (cur || didHiliteSearch == false) {
       if (didHiliteSearch == false) {
          match = search_hl;
@@ -3478,9 +3471,9 @@ prepare_search_hl(Portal* wp, Match* search_hl, LineNr lnum) {
       if (match->rm.regprog && match->lnum == 0 && re_multiline(match->rm.regprog)) {
          if (match->first_lnum == 0) {
             for (match->first_lnum = lnum;
-                 match->first_lnum > wp->topLine; --match->first_lnum
+                 match->first_lnum > po->topLine; --match->first_lnum
             )
-               if (getFoldsPortal(wp, match->first_lnum - 1, NULL, NULL, true, NULL))
+               if (getFoldsPortal(po, match->first_lnum - 1, NULL, NULL, true, NULL))
                   break;
          }
          if (cur)
@@ -3488,7 +3481,7 @@ prepare_search_hl(Portal* wp, Match* search_hl, LineNr lnum) {
          pos_inprogress = true;
          n = 0;
          while (match->first_lnum < lnum && (match->rm.regprog || (cur && pos_inprogress))) {
-            next_search_hl(wp, search_hl, match, match->first_lnum, (ColNr)n,
+            next_search_hl(po, search_hl, match, match->first_lnum, (ColNr)n,
                             match == search_hl ? NULL : cur);
             pos_inprogress = !(!cur || cur->currPos == 0);
             if (match->lnum != 0) {
@@ -3509,13 +3502,13 @@ prepare_search_hl(Portal* wp, Match* search_hl, LineNr lnum) {
 
 // Update "match->has_cursor" based on the match in "match" and the cursor position.
 private void
-check_cur_search_hl(Portal* wp, Match* match) {
+check_cur_search_hl(Portal* po, Match* match) {
    LineNr linecount = match->rm.endpos[0].lnum - match->rm.startpos[0].lnum;
 
-   if (wp->cursor.lnum >= match->lnum
-         && wp->cursor.lnum <= match->lnum + linecount
-         && (wp->cursor.lnum > match->lnum || wp->cursor.col >= match->rm.startpos[0].col)
-         && (wp->cursor.lnum < match->lnum + linecount || wp->cursor.col < match->rm.endpos[0].col)
+   if (po->cursor.lnum >= match->lnum
+         && po->cursor.lnum <= match->lnum + linecount
+         && (po->cursor.lnum > match->lnum || po->cursor.col >= match->rm.startpos[0].col)
+         && (po->cursor.lnum < match->lnum + linecount || po->cursor.col < match->rm.endpos[0].col)
    )
       match->has_cursor = true;
    else
@@ -3523,10 +3516,10 @@ check_cur_search_hl(Portal* wp, Match* match) {
 }
 
 //Prepare for 'hlsearch' and match hiliting in one portal line.
-//Return true if there is such hiliting and set "searchDeco" to the current hilite decoration.
+//Return true if there is such hiliting and set "searchHiId" to the current hilite decoration.
 Boole
 searchPrepareHiliteLine(
-   Portal* wp,
+   Portal* po,
    LineNr lnum,
    ColNr mincol,
    OUT CS* line,
@@ -3535,11 +3528,10 @@ searchPrepareHiliteLine(
 ){
    Boole areaHiliting = false;
 
-   // Handle hiliting the last used search pattern and matches.
-   // Do this for both search_hl and the match list.
-   // Do not use search_hl in a popup portal.
-   MatchItem* cur = wp->firstMatch; //points to the match list
-   Boole didHiliteSearch = PORTAL_IS_POPUP(wp); //whether search_hl has been processed or not
+   //Handle hiliting the last used search pattern and matches.
+   //Do this for both search_hl and the match list. Do not use search_hl in a popup portal.
+   MatchItem* cur = po->firstMatch; //points to the match list
+   Boole didHiliteSearch = PORTAL_IS_POPUP(po); //whether search_hl has been processed or not
    Match* match; //search_hl or a match
    while (cur || didHiliteSearch == false) {
       if (didHiliteSearch == false) {
@@ -3554,10 +3546,10 @@ searchPrepareHiliteLine(
       match->has_cursor = false;
       if (cur)
          cur->currPos = 0;
-      next_search_hl(wp, search_hl, match, lnum, mincol, match == search_hl ? NULL : cur);
+      next_search_hl(po, search_hl, match, lnum, mincol, match == search_hl ? NULL : cur);
 
       // Need to get the line again, a multi-line regexp may have made it invalid.
-      *line = memGetLine(wp->book, lnum, false);
+      *line = memGetLine(po->book, lnum, false);
 
       if (match->lnum != 0 && match->lnum <= lnum) {
          if (match->lnum == lnum)
@@ -3569,9 +3561,9 @@ searchPrepareHiliteLine(
          else
             match->endcol = MAXCOL;
 
-       // check if the cursor is in the match before changing the columns
-       if (match == search_hl)
-          check_cur_search_hl(wp, match);
+         // check if the cursor is in the match before changing the columns
+         if (match == search_hl)
+            check_cur_search_hl(po, match);
 
          // Highlight one character for an empty match.
          if (match->startcol == match->endcol) {
@@ -3598,7 +3590,7 @@ searchPrepareHiliteLine(
 // column is endcol. Return the updated searchDeco.
 Short
 update_search_hl(
-   Portal* wp,
+   Portal* po,
    LineNr lnum,
    ColNr col,
    OUT CS* line,
@@ -3609,11 +3601,11 @@ update_search_hl(
 ) {
    Match* match;          // points to search_hl or a match
    Boole pos_inprogress;       // marks that position match search is in progress
-   Short      searchHiId = 0;
+   Short searchHiId = 0;
 
    // Do this for 'search_hl' and the match list (ordered by priority).
-   MatchItem* cur = wp->firstMatch; //the match list
-   Boole didHiliteSearch = PORTAL_IS_POPUP(wp); //whether search_hl has been processed or not
+   MatchItem* cur = po->firstMatch; //the match list
+   Boole didHiliteSearch = PORTAL_IS_POPUP(po); //whether search_hl has been processed or not
    while (cur || didHiliteSearch == false) {
       if (didHiliteSearch == false && (cur == NULL || cur->priority > SEARCH_HL_PRIORITY)) {
          match = search_hl;
@@ -3638,11 +3630,11 @@ update_search_hl(
             }
          } ei (col == match->endcol) {
             match->currHiId = SHORT;
-            next_search_hl(wp, search_hl, match, lnum, col, match == search_hl ? NULL : cur);
+            next_search_hl(po, search_hl, match, lnum, col, match == search_hl ? NULL : cur);
             pos_inprogress = !(cur == NULL || cur->currPos == 0);
 
             // Need to get the line again, a multi-line regexp may have made it invalid.
-            *line = memGetLine(wp->book, lnum, false);
+            *line = memGetLine(po->book, lnum, false);
 
             if (match->lnum == lnum) {
                match->startcol = match->rm.startpos[0].col;
@@ -3653,7 +3645,7 @@ update_search_hl(
 
                // check if the cursor is in the match
                if (match == search_hl)
-                  check_cur_search_hl(wp, match);
+                  check_cur_search_hl(po, match);
 
                if (match->startcol == match->endcol) {
                   // highlight empty match, try again after it
@@ -3678,8 +3670,8 @@ update_search_hl(
    }
 
    // Use decorations from match with highest priority among 'search_hl' and the match list.
-   cur = wp->firstMatch;
-   didHiliteSearch = PORTAL_IS_POPUP(wp);
+   cur = po->firstMatch;
+   didHiliteSearch = PORTAL_IS_POPUP(po);
    while (cur || didHiliteSearch == false) {
       if (didHiliteSearch == false && (cur == NULL || cur->priority > SEARCH_HL_PRIORITY)){
          match = search_hl;
@@ -3694,24 +3686,23 @@ update_search_hl(
          cur = cur->next;
    }
    // Only highlight one character after the last column.
-   if (*(*line + col) == ZERO 
-          && (didLineDecorations >= 1 || (wp->o.list && lcs_eol_one == -1)))
+   if (*(*line + col) == ZERO && (didLineDecorations >= 1 || (po->o.list && lcs_eol_one == -1)))
       searchHiId = SHORT;
    return searchHiId;
 }
 
 int
-get_prevcol_hl_flag(Portal* wp, Match* search_hl, long curcol) {
-   long   prevcol = curcol;
-   int      prevcol_hl_flag = false;
-   MatchItem *cur;         // points to the match list
+get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol) {
+   long prevcol = curcol;
+   Boole prevcol_hl_flag = false;
+   MatchItem* cur;         // points to the match list
 
    // don't do this in a popup portal
-   if (popup_is_popup(wp))
+   if (portalIsPopup(po))
       return false;
 
    // we're not really at that column when skipping some text
-   if ((long)(wp->o.wrap ? wp->skipCol : wp->leftCol) > prevcol)
+   if ((long)(po->o.wrap ? po->skipCol : po->leftCol) > prevcol)
       ++prevcol;
 
    // Highlight a character after the end of the line if the match started
@@ -3722,7 +3713,7 @@ get_prevcol_hl_flag(Portal* wp, Match* search_hl, long curcol) {
    )
       prevcol_hl_flag = true;
    else {
-      cur = wp->firstMatch;
+      cur = po->firstMatch;
       while (cur) {
          if (!cur->mit_hl.is_addpos && (prevcol == (long)cur->mit_hl.startcol
             || (prevcol > (long)cur->mit_hl.startcol && cur->mit_hl.endcol == MAXCOL))
@@ -3738,14 +3729,12 @@ get_prevcol_hl_flag(Portal* wp, Match* search_hl, long curcol) {
 
 // Get hiliting for the char after the text in "char_attr" from 'hlsearch' or match hiliting
 void
-get_search_match_hl(Portal* wp, Match* search_hl, long col, OUT Short* charHiId) {
-   MatchItem* cur = wp->firstMatch;         // points to the match list
-   Boole isPopup = PORTAL_IS_POPUP(wp);  // flag to indicate whether search_hl has been processed or not
+get_search_match_hl(Portal* po, Match* search_hl, long col, OUT Short* charHiId) {
+   MatchItem* cur = po->firstMatch;         // points to the match list
+   Boole isPopup = PORTAL_IS_POPUP(po);  // flag to indicate whether search_hl has been processed or not
    Match* match; // points to search_hl or a match        
    while (cur || isPopup == false) {
-      if (isPopup == false
-            && ((cur && cur->priority > SEARCH_HL_PRIORITY) || !cur)
-      ){
+      if (isPopup == false && ((cur && cur->priority > SEARCH_HL_PRIORITY) || !cur)){
          match = search_hl;
          isPopup = true;
       } else
@@ -3759,11 +3748,11 @@ get_search_match_hl(Portal* wp, Match* search_hl, long col, OUT Short* charHiId)
 
 private int
 matchadd_dict_arg(Var* tv, OUT Portal** port) {
-   DictItem *di;
+   DictItem* di;
 
    if (tv->tag != VAR_BAG) {
-     emsg(_(e_dictionary_required));
-     return FAIL;
+      emsg(_(e_dictionary_required));
+      return FAIL;
    }
 
 
@@ -3780,30 +3769,28 @@ matchadd_dict_arg(Var* tv, OUT Portal** port) {
 }
 
 void
-f_clearmatches(Var* argvars UNUSED, Var* returnVar UNUSED) {
+f_clearmatches(Var* argvars, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (port)
       clear_matches(port);
 }
 
 void
-f_getmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
+f_getmatches(Var *argvars, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (!port)
       return;
       
    allocReturnList(returnVar);
-   Bag   *bag;
    MatchItem* cur = port->firstMatch;
    while (cur) {
-      bag = allocBag();
-      if (cur->match.regprog == NULL) {
+      Bag* bag = allocBag();
+      if (!cur->match.regprog) {
          // match added with matchaddpos()
          for (int i = 0; i < cur->posLen; ++i) {
-            lPosNoVirt   *llpos;
             Byte buf[30];  // use 30 to avoid compiler warning
 
-            llpos = &cur->pos[i];
+            PosNoVirtLen* llpos = &cur->pos[i];
             if (llpos->lnum == 0)
                break;
             List* l = list_alloc();
@@ -3827,14 +3814,12 @@ f_getmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 void
-f_setmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
+f_setmatches(Var *argvars, Var* returnVar) {
    List   *l;
    ListItem   *li;
    Bag   *d;
    List   *s = NULL;
-
    returnVar->number = -1;
-
 
    if (confirmVarIsList(argvars, 0) == FAIL)
       return;
@@ -3864,12 +3849,12 @@ f_setmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
       clear_matches(port);
       li = l->first;
       while (li) {
-         int      i = 0;
-         Byte   buf[30];  // use 30 to avoid compiler warning
+         int i = 0;
+         Byte buf[30];  // use 30 to avoid compiler warning
          DictItem  *di;
          CS group;
-         int      priority;
-         int      id;
+         int priority;
+         int id;
 
          d = li->c.bag;
          if (!bagHasKey(d, tConst("pattern"))) {
@@ -3910,7 +3895,7 @@ f_setmatches(Var *argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 void
-f_matchadd(Var *argvars UNUSED, Var* returnVar UNUSED) {
+f_matchadd(Var *argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    int prio = 10;   // default priority
    int id = -1;
@@ -3944,7 +3929,7 @@ f_matchadd(Var *argvars UNUSED, Var* returnVar UNUSED) {
 
 // "matchaddpos()" function
 void
-f_matchaddpos(Var *argvars UNUSED, Var* returnVar UNUSED) {
+f_matchaddpos(Var *argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    int prio = 10;
    int id = -1;
@@ -3994,8 +3979,8 @@ f_matcharg(Var* argvars, Var* returnVar) {
    int id = (int)tv_get_number(&argvars[0]);
    if (id >= 1 && id <= 3) {
       if ((m = get_match(curPor, id)) != NULL) {
-          list_append_string(returnVar->list, syn_id2name(m->hiId), -1);
-          list_append_string(returnVar->list, m->pattern, -1);
+         list_append_string(returnVar->list, syn_id2name(m->hiId), -1);
+         list_append_string(returnVar->list, m->pattern, -1);
       } else {
          list_append_string(returnVar->list, NULL, -1);
          list_append_string(returnVar->list, NULL, -1);
@@ -4006,7 +3991,7 @@ f_matcharg(Var* argvars, Var* returnVar) {
 void
 f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 1);
-   if (port == NULL)
+   if (!port)
       returnVar->number = -1;
    else
       returnVar->number = match_delete(port, (int)tv_get_number(&argvars[0]), true);
@@ -4033,14 +4018,13 @@ c_match(Invocation* invo) {
       match_delete(curPor, id, false);
 
    CS end;
-   CS p;
    if (endsComm(invo->arg))
       end = invo->arg;
    ei ((STRNICMP(invo->arg, "none", 4) == 0
          && (SPACE_OR_TAB(invo->arg[4]) || endsComm(invo->arg + 4))))
       end = invo->arg + 4;
    else {
-      p = skiptowhite(invo->arg);
+      CS p = skiptowhite(invo->arg);
       if (!invo->skip)
          g = copySubstr(invo->arg, p - invo->arg);
       p = skipwhite(p);

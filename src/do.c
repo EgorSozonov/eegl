@@ -478,28 +478,27 @@ c_sort(Invocation* invo) {
    } else
       count = 0;
 
-    // Adjust marks for deleted (or added) lines and prepare for displaying.
-    deleted = (long)(count - (lnum - invo->line2));
+   // Adjust marks for deleted (or added) lines and prepare for displaying.
+   deleted = (long)(count - (lnum - invo->line2));
    if (deleted > 0) {
-   mark_adjust(invo->line2 - deleted, invo->line2, (long)MAXLNUM, -deleted);
-   msgmore(-deleted);
-    }
-    ei (deleted < 0)
-   mark_adjust(invo->line2, MAXLNUM, -deleted, 0L);
+      markAdjust(invo->line2 - deleted, invo->line2, (long)MAXLNUM, -deleted, true);
+      msgmore(-deleted);
+   } ei (deleted < 0)
+      markAdjust(invo->line2, MAXLNUM, -deleted, 0L, true);
 
    if (change_occurred || deleted != 0)
-   changed_lines(invo->line1, 0, invo->line2 + 1, -deleted);
+      changed_lines(invo->line1, 0, invo->line2 + 1, -deleted);
 
-    curPor->cursor.lnum = invo->line1;
-    beginline(BL_WHITE | BL_FIX);
+   curPor->cursor.lnum = invo->line1;
+   beginline(BL_WHITE | BL_FIX);
 
 sortend:
-    eeglFree(nrs);
-    eeglFree(sortbuf1);
-    eeglFree(sortbuf2);
-    eeRegFree(regmatch.regprog);
+   eeglFree(nrs);
+   eeglFree(sortbuf1);
+   eeglFree(sortbuf2);
+   eeRegFree(regmatch.regprog);
    if (gotInterruptG)
-   emsg(_(e_interrupted));
+      emsg(_(e_interrupted));
 }
 
 // ":uniq".
@@ -675,7 +674,7 @@ c_uniq(Invocation* invo) {
    }
 
    // Adjust marks for deleted lines and prepare for displaying.
-   mark_adjust(invo->line2 - deleted, invo->line2, (long)MAXLNUM, -deleted);
+   markAdjust(invo->line2 - deleted, invo->line2, (long)MAXLNUM, -deleted, true);
    msgmore(-deleted);
 
    if (change_occurred)
@@ -738,13 +737,11 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
       }
    }
 
-   //Now we must be careful adjusting our marks so that we don't overlap our
-   //mark_adjust() calls.
+   //Now we must be careful adjusting our marks so that we don't overlap our markAdjust() calls.
    //
    //We adjust the marks within the old text so that they refer to the
    //last lines of the file (temporarily), because we know no other marks
-   //will be set there since these line numbers did not exist until we added
-   //our new lines.
+   //will be set there since these line numbers did not exist until we added our new lines.
    //
    //Then we adjust the marks on lines between the old and new text positions
    //(either forwards or backwards).
@@ -752,10 +749,10 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
    //And Finally we adjust the marks we put at the end of the file back to
    //their final destination at the new text position -- webb
    last_line = curBook->mem.lineCount;
-   mark_adjust_nofold(line1, line2, last_line - line2, 0L);
+   markAdjust(line1, line2, last_line - line2, 0L, false);
    Portal* po;
    if (dest >= line2) {
-      mark_adjust_nofold(line2 + 1, dest, -num_lines, 0L);
+      markAdjust(line2 + 1, dest, -num_lines, 0L, false);
       FOR_ALL_TAB_PORTALS(t, po) {
          if (po->book == curBook)
             foldMoveRange(&po->folds, line1, line2, dest);
@@ -765,7 +762,7 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
           curBook->opEnd.lnum = dest;
       }
    } else {
-      mark_adjust_nofold(dest + 1, line1 - 1, num_lines, 0L);
+      markAdjust(dest + 1, line1 - 1, num_lines, 0L, false);
       FOR_ALL_TAB_PORTALS(t, po) {
          if (po->book == curBook)
             foldMoveRange(&po->folds, dest + 1, line1 - 1, line2);
@@ -776,9 +773,8 @@ do_move(LineNr line1, LineNr line2, LineNr dest) {
       }
    }
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-   curBook->opStart.col = curBook->opEnd.col = 0;
-    mark_adjust_nofold(last_line - num_lines + 1, last_line,
-                    -(last_line - dest - extra), 0L);
+      curBook->opStart.col = curBook->opEnd.col = 0;
+   markAdjust(last_line - num_lines + 1, last_line, -(last_line - dest - extra), 0L, false);
 
    // Now we delete the original text -- webb
    if (u_save(line1 + extra - 1, line2 + extra + 1) == FAIL)
@@ -1169,16 +1165,16 @@ do_filter(
       if (do_in) {
          if (read_linecount >= linecount)
             // move all marks from old lines to new lines
-            mark_adjust(line1, line2, linecount, 0L);
+            markAdjust(line1, line2, linecount, 0L, true);
          ei (save_cmod_flags & CMOD_LOCKMARKS) {
             // Move marks from the lines below the new lines down by the number of lines lost.
             // Move marks from the lines that will be deleted to the new lines and below.
-            mark_adjust(line2 + 1, (LineNr)MAXLNUM, linecount - read_linecount, 0L);
-            mark_adjust(line1, line2, linecount, 0L);
+            markAdjust(line2 + 1, (LineNr)MAXLNUM, linecount - read_linecount, 0L, true);
+            markAdjust(line1, line2, linecount, 0L, true);
          } else {
             // move marks from old lines to new lines, delete marks that are in deleted lines
-            mark_adjust(line1, line1 + read_linecount - 1, linecount, 0L);
-            mark_adjust(line1 + read_linecount, line2, MAXLNUM, 0L);
+            markAdjust(line1, line1 + read_linecount - 1, linecount, 0L, true);
+            markAdjust(line1 + read_linecount, line2, MAXLNUM, 0L, true);
          }
 
          //Put cursor on first filtered line for ":range!cmd".
@@ -3614,7 +3610,7 @@ c_substitute(Invocation* invo) {
 
                      *p1 = ZERO;          // truncate up to the CR
                      ml_append(lnum - 1, new_start, plen, false);
-                     mark_adjust(lnum + 1, (LineNr)MAXLNUM, 1L, 0L);
+                     markAdjust(lnum + 1, (LineNr)MAXLNUM, 1L, 0L, true);
                      if (subflags.do_ask)
                         appended_lines(lnum - 1, 1L);
                      else {
@@ -3689,7 +3685,7 @@ c_substitute(Invocation* invo) {
                         break;
                      for (i = 0; i < nmatch_tl; ++i)
                         ml_delete(lnum);
-                     mark_adjust(lnum, lnum + nmatch_tl - 1, (long)MAXLNUM, -nmatch_tl);
+                     markAdjust(lnum, lnum + nmatch_tl - 1, (long)MAXLNUM, -nmatch_tl, true);
                      if (subflags.do_ask)
                         deleted_lines(lnum, nmatch_tl);
                      --lnum;
@@ -13884,7 +13880,7 @@ u_undoredo(Boole undo) {
 
       // adjust marks
       if (oldsize != newsize) {
-         mark_adjust(top + 1, top + oldsize, (long)MAXLNUM, (long)newsize - (long)oldsize);
+         markAdjust(top + 1, top + oldsize, (long)MAXLNUM, (long)newsize - (long)oldsize, true);
          if (curBook->opStart.lnum > top + oldsize)
             curBook->opStart.lnum += newsize - oldsize;
          if (curBook->opEnd.lnum > top + oldsize)

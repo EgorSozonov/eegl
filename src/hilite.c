@@ -17,7 +17,7 @@ typedef struct {
    Byte fieldPresence; // HI_* flags
    VTermColor fg; // foreground color
    VTermColor bg; // background color
-   VTermColor under; // underline color
+   VTermColor under; // underline color, if underline is applied
     
    int link;   // link to this hilite group ID
    int deflink;   // default link; restored in clearHiliteWorker()
@@ -1779,10 +1779,10 @@ syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid){
                found_m_endpos = currStateItem->matchEndPos;
                // Continue after the match (be aware of a zero-length match).
                if (found_m_endpos.lnum > currLnumS) {
-                   currLnumS = found_m_endpos.lnum;
-                   currColS = found_m_endpos.col;
-                   if (currLnumS >= end_lnum)
-                  break;
+                  currLnumS = found_m_endpos.lnum;
+                  currColS = found_m_endpos.col;
+                  if (currLnumS >= end_lnum)
+                     break;
                } ei (found_m_endpos.col > currColS)
                   currColS = found_m_endpos.col;
                else
@@ -2554,8 +2554,8 @@ getCurrentDeco(
    int      zero_width_next_list = false;
    ArrayList   zero_width_next_ga;
 
-   // No character, no attributes! Past end of line?
-   // Do try matching with an empty line (could be the start of a region).
+   //No character, no attributes! Past end of line?
+   //Do try matching with an empty line (could be the start of a region).
    line = syn_getcurline();
    if (line[currColS] == ZERO && currColS != 0) {
       // If we found a match after the last column, use it.
@@ -2724,7 +2724,7 @@ getCurrentDeco(
                      endpos.lnum = regmatch.endpos[0].lnum;
                      endpos.col = regmatch.endpos[0].col;
 
-                     // Compute the highlight start.
+                     // Compute the hilite start.
                      syn_add_start_off(&hl_startpos, &regmatch, spp, SPO_HS_OFF, -1);
 
                      // Compute the region start. Default is to use the end of the match.
@@ -2772,7 +2772,7 @@ getCurrentDeco(
                      }
 
                      // keep the best match so far in next_match_*
-                     // Highlighting must start after startpos and end before endpos.
+                     // Hiliting must start after startpos and end before endpos.
                      if (hl_startpos.lnum == currLnumS && (int)hl_startpos.col < startcol)
                         hl_startpos.col = startcol;
                      limit_pos_zero(&hl_endpos, &endpos);
