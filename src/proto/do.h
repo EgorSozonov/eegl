@@ -87,8 +87,6 @@ void c_brewind(Invocation *invo);
 void c_blast(Invocation *invo);
 int endsComm(CS c);
 CS find_nextcmd(CS p);
-CS check_nextcmd(CS p);
-void set_nextcmd(Invocation *invo, CS arg);
 CS get_command_name(Expand *xp, int idx);
 void c_hilite(Invocation *invo);
 void not_exiting(void);

@@ -453,9 +453,9 @@ re_multiline(RegProg* prog){
 // recognized.  Otherwise "pp" is advanced to after the item.
 private int
 get_equi_class(Byte **pp) {
-   Unt      c;
-   int      l = 1;
-   Byte   *p = *pp;
+   Unt c;
+   int l = 1;
+   Byte* p = *pp;
 
    if (p[1] == '=' && p[2] != ZERO) {
       l = utfCharLen(p + 2);
@@ -488,14 +488,14 @@ get_coll_element(Byte **pp) {
          return c;
       }
    }
-    return 0;
+   return 0;
 }
 
 // Skip over a "[]" range. "p" must point to the character after the '['.
 // The returned pointer is on the matching ']', or the terminating ZERO.
 private Byte *
 skip_anyof(Byte *p) {
-   int      l;
+   int l;
 
    if (*p == '^')   // Complement of range.
       ++p;
@@ -517,8 +517,7 @@ skip_anyof(Byte *p) {
              && get_coll_element(&p) == 0
              && *p != ZERO)
          ++p; // it is not a class name and not ZERO
-      }
-      else
+      } else
          ++p;
    }
 
@@ -546,25 +545,23 @@ skip_regexp_err( Byte   *startp, int      delim, int      magic) {
    return p;
 }
 
-/*
- * skip_regexp() with extra arguments:
- * When "newp" is not NULL and "dirc" is '?', make an allocated copy of the expression and change 
- * "\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
- * If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
- * If "magic_val" is not NULL, returns the effective magicness of the pattern
- */
+//skip_regexp() with extra arguments:
+//When "newp" is not NULL and "dirc" is '?', make an allocated copy of the expression and change 
+//"\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
+//If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
+//If "magic_val" is not NULL, returns the effective magicness of the pattern
 Byte *
 skip_regexp_ex(
-   Byte   *startp,
-   int      dirc,
-   int      magic,
-   Byte   **newp,
-   int      *dropped,
-   Magic   *magic_val)
-{
-   Magic   mymagic;
-   Byte   *p = startp;
-   Unt   startplen = 0;
+   Byte* startp,
+   int dirc,
+   int magic,
+   Byte** newp,
+   int* dropped,
+   Magic* magic_val
+) {
+   Magic mymagic;
+   Byte* p = startp;
+   Unt startplen = 0;
 
    if (magic)
       mymagic = MAGIC_ON;

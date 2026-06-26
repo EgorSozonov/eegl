@@ -1722,9 +1722,7 @@ findtags_match_tag(
    // Has a regexp: Also find tags matching regexp.
    margs->match_re = false;
    if (!match && st->orgpat->regmatch.regprog != NULL) {
-      int   cc;
-
-      cc = *tagpp->tagname_end;
+      int cc = *tagpp->tagname_end;
       *tagpp->tagname_end = ZERO;
       match = eeRegexec(&st->orgpat->regmatch, tagpp->tagname, (ColNr)0);
       if (match) {
@@ -2703,30 +2701,30 @@ jumpto_tag(
          else
             // start search before first line
             curPor->cursor.lnum = 0;
-         if (do_search(NULL, pbuf[0], pbuf[0], pbuf + 1, pbuflen - 1, (long)1,
-                         search_options, NULL))
+         if (do_search(NULL, pbuf[0], pbuf[0], (Text){pbuf + 1, pbuflen - 1}, (long)1,
+                         search_options, NULL)
+         )
             retval = OK;
          else {
-            int   found = 1;
-            int   cc;
+            int found = 1;
 
             // try again, ignore case now
             p_ic = true;
-            if (!do_search(NULL, pbuf[0], pbuf[0], pbuf + 1, pbuflen - 1, (long)1,
+            if (!do_search(NULL, pbuf[0], pbuf[0], (Text){pbuf + 1, pbuflen - 1}, (long)1,
                             search_options, NULL)
             ) {
                //Failed to find pattern, take a guess: "^func  ("
                found = 2;
                (void)test_for_static(&tagp);
-               cc = *tagp.tagname_end;
+               int cc = *tagp.tagname_end;
                *tagp.tagname_end = ZERO;
                pbuflen = eeSnprintf(pbuf, LSIZE, "^%s\\s\\*(", tagp.tagname);
-               if (!do_search(NULL, '/', '/', pbuf, pbuflen, (long)1, search_options, NULL)) {
+               if (!do_search(NULL, '/', '/', (Text){pbuf, pbuflen}, (long)1, search_options, NULL)) {
                   // Guess again: "^char * \<func  ("
                   pbuflen = eeSnprintf(
                         pbuf, LSIZE, "^\\[#a-zA-Z_]\\.\\*\\<%s\\s\\*(", tagp.tagname
                   );
-                  if (!do_search(NULL, '/', '/', pbuf, pbuflen, (long)1, search_options, NULL))
+                  if (!do_search(NULL, '/', '/', (Text){pbuf, pbuflen}, (long)1, search_options, NULL))
                      found = 0;
                }
                *tagp.tagname_end = cc;

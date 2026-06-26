@@ -9948,8 +9948,7 @@ int
 popup_do_filter(Unt c) {
    static Boole recursive = false;
    int res = false;
-   Portal   *po;
-   Boole save_keyWasTyped = keyWasTypedG;
+   Boole keyWasTypedSaved = keyWasTypedG;
    int state;
    Unt mustRedrawSaved = mustRedrawG;
 
@@ -9961,28 +9960,29 @@ popup_do_filter(Unt c) {
       return false;
    recursive = true;
 
+   Portal* po;
    if (c == K_LEFTMOUSE) {
       int row = mouseRowG;
       int col = mouseColG;
 
       po = mouseFindPortal(&row, &col, FIND_POPUP);
-      if (po != NULL && popup_close_if_on_X(po, row, col))
-        res = true;
+      if (po && popup_close_if_on_X(po, row, col))
+         res = 1;
    }
 
    popup_reset_handled(POPUP_HANDLED_2);
    state = get_real_state();
-   while (res == false && (po = find_next_popup(false, POPUP_HANDLED_2)) != NULL) {
+   while (!res && (po = find_next_popup(false, POPUP_HANDLED_2)) != NULL) {
       if (po->pup.filterCb.name != NULL && (po->pup.filterMode & state) != 0)
          res = invoke_popup_filter(po, c);
    } 
 
    // when Ctrl-C and no popup has been processed (res is still false)
    // Try to find and close a popup that has no filter callback
-   if (c == Ctrl_C && res == false) {
+   if (c == Ctrl_C && !res) {
       popup_reset_handled(POPUP_HANDLED_2);
       po = find_next_popup(false, POPUP_HANDLED_2);
-      if (po != NULL) {
+      if (po) {
          popup_close_with_retval(po, -1);
          res = true;
       }
@@ -9998,10 +9998,10 @@ popup_do_filter(Unt c) {
       gotInterruptG |= save_gotInterruptG;
    }
    recursive = false;
-   keyWasTyped = save_keyWasTypedG;
+   keyWasTypedG = keyWasTypedSaved;
 
    // When interrupted return false to avoid looping.
-   return res == -1 ? false : res;
+   return res == -1 ? 0 : res;
 }
 
 //Return true if there is a popup visible with a filter callback and the "mapping" property off.

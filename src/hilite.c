@@ -227,7 +227,6 @@ private char *(hiliteGroupStrings[]) = {
    "StatusLineTerm deco=bold fg=regular2 bg=bright2",
    "StatusLineTermNC fg=353 bg=050",
    "Search fg=regular0 bg=bright3",
-   "CursorLineFold link=FoldColumn",
    "CurSearch link=Search",
    "LocationLine link=Search",
    "Comment fg=regular2",
@@ -3651,16 +3650,15 @@ private void
 caseSubcommand(Invocation* invo, int syncing UNUSED) {
    CS arg = invo->arg;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
    CS next = skiptowhite(arg);
    if (*arg == ZERO) {
    if (curPor->ownSyntax->b_syn_ic)
-       msg((CS)"syntax case ignore");
+       msg(S"syntax case ignore");
    else
-       msg((CS)"syntax case match");
+       msg(S"syntax case match");
    } ei (STRNICMP(arg, "match", 5) == 0 && next - arg == 5)
       curPor->ownSyntax->b_syn_ic = false;
    ei (STRNICMP(arg, "ignore", 6) == 0 && next - arg == 6)
@@ -3674,7 +3672,6 @@ private void
 syn_cmd_foldlevel(Invocation* invo, int syncing UNUSED) {
    CS arg = invo->arg;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
@@ -3708,7 +3705,6 @@ private void
 syn_cmd_spell(Invocation* invo, int syncing UNUSED) {
    CS arg = invo->arg;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
@@ -3885,7 +3881,6 @@ clearSubcommand(Invocation* invo, int syncing) {
    CS arg = invo->arg;
    CS arg_end;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
@@ -3989,7 +3984,6 @@ syn_cmd_enable(Invocation* invo, int syncing UNUSED) {
 // Handle ":syntax reset" command. It actually resets highlighting, not syntax.
 private void
 syn_cmd_reset(Invocation* invo, int syncing UNUSED) {
-   set_nextcmd(invo, invo->arg);
    if (!invo->skip) {
       set_internal_string_var((CS)"g:syntaxCmd", (CS)"reset");
       executeCommLine((CS)"runtime! syntax/syncolor.vim");
@@ -4007,7 +4001,6 @@ private void
 callScriptForSubcommand(Invocation* invo, char *name) {
    Byte buf[100];
 
-   set_nextcmd(invo, invo->arg);
    if (!invo->skip) {
       STRCPY(buf, "so ");
       eeSnprintf(buf + 3, sizeof(buf) - 3, SYNTAX_FNAME, name);
@@ -4022,7 +4015,6 @@ syn_cmd_list(Invocation* invo, int syncing)  {     // when true: list syncing it
    Short      id;
    CS arg_end;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
@@ -4089,7 +4081,6 @@ syn_cmd_list(Invocation* invo, int syncing)  {     // when true: list syncing it
          arg = skipwhite(arg_end);
       }
    }
-   set_nextcmd(invo, arg);
 }
 
 private void
@@ -4731,7 +4722,6 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
    int      prev_syn_inc_tag;
    int      source = false;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
@@ -4877,9 +4867,7 @@ syn_cmd_keyword(Invocation* invo, int syncing UNUSED) {
       }
    }
 
-   if (rest)
-     set_nextcmd(invo, rest);
-   else
+   if (!rest)
      showErrFmtMsg(_(e_invalid_argument_str), arg);
 
    drawCurBookLater(UPD_SOME_VALID);
@@ -4926,7 +4914,6 @@ syn_cmd_match( Invocation   *invo, int      syncing) {      // true for ":syntax
 
    if (rest) {     // all arguments are valid
       // Check for trailing command and illegal trailing arguments.
-      set_nextcmd(invo, rest);
       if (!endsComm(rest) || invo->skip)
          rest = NULL;
       ei (ga_grow(&curPor->ownSyntax->syntaxPatterns, 1) == OK 
@@ -5122,7 +5109,6 @@ syn_cmd_region(
 
    if (rest) {
       // Check for trailing garbage or command. If OK, add the item.
-      set_nextcmd(invo, rest);
       if (!endsComm(rest) || invo->skip)
          rest = NULL;
       ei (ga_grow(&(curPor->ownSyntax->syntaxPatterns), pat_count) == OK 
@@ -5374,37 +5360,31 @@ addCluster(CS name) {
 private void
 syn_cmd_cluster(Invocation* invo, int syncing UNUSED) {
    CS arg = invo->arg;
-   CS group_name_end;
    CS rest;
-   int      scl_id;
-   int      got_clstr = false;
-   int      opt_len;
-   int      list_op;
+   int got_clstr = false;
+   int opt_len;
+   int list_op;
 
-   invo->nextComm = find_nextcmd(arg);
    if (invo->skip)
       return;
 
+   CS group_name_end;
    rest = get_group_name(arg, OUT &group_name_end);
 
    if (rest) {
-      scl_id = syn_check_cluster(arg, (int)(group_name_end - arg));
+      int scl_id = syn_check_cluster(arg, (int)(group_name_end - arg));
       if (scl_id == 0)
          return;
       scl_id -= SYNID_CLUSTER;
 
       for (;;) {
-         if (STRNICMP(rest, "add", 3) == 0
-             && (SPACE_OR_TAB(rest[3]) || rest[3] == '='))
-          {
+         if (STRNICMP(rest, "add", 3) == 0 && (SPACE_OR_TAB(rest[3]) || rest[3] == '=')) {
             opt_len = 3;
             list_op = CLUSTER_ADD;
          } ei (STRNICMP(rest, "remove", 6) == 0 && (SPACE_OR_TAB(rest[6]) || rest[6] == '=')) {
             opt_len = 6;
             list_op = CLUSTER_SUBTRACT;
-         } ei (STRNICMP(rest, "contains", 8) == 0
-            && (SPACE_OR_TAB(rest[8]) || rest[8] == '='))
-          {
+         } ei (STRNICMP(rest, "contains", 8) == 0 && (SPACE_OR_TAB(rest[8]) || rest[8] == '=')) {
             opt_len = 8;
             list_op = CLUSTER_REPLACE;
          } else
@@ -5640,7 +5620,6 @@ syn_cmd_sync(Invocation* invo, int syncing UNUSED) {
    if (illegal)
       showErrFmtMsg(_(e_illegal_arguments_str), arg_start);
    ei (!finished) {
-      set_nextcmd(invo, arg_start);
       drawCurBookLater(UPD_SOME_VALID);
       synFreeBlock(curPor->ownSyntax);   // Need to recompute all syntax.
    }

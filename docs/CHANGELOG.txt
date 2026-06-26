@@ -272,6 +272,7 @@
 [ ] cellToDecoration (decoration conversions between VTerm format and "internal" format)
 [-] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
 [-] KS_XON (terminal freezing - harmful) and KS_BC (backspace - obsolete)
+[-] command piping (superfluous, and without it, substitution may be written as `s|inp|outp|g`)
 [ ] cindent (smartindent is enough)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
@@ -300,6 +301,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] sane discriminated unions in options.c instead of byte casting 
 [+] move @signcolumn option from string to bool
 [-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
+[ ] draw.c:screenLinesCG: change array layout to improve cache locality
 [ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
 [ ] "rX", char replacing, shoult not set the "modified" flag on a buffer if previous char was same
 [ ] finish implementing @smoothscroll?

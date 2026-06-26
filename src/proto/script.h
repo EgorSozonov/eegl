@@ -271,7 +271,7 @@ Boole event_ignored(AutoEvent event, CS evIgn);
 int check_ei(CS evIgn);
 CS au_event_disable(CS what);
 void au_event_restore(CS old_ei);
-void do_autocmd(Invocation *invo, CS arg_in, int forceit);
+void do_autocmd(CS arg_in, int forceit);
 int autoEventImpl(AutoEvent event, CS pat, AutoCommCreation creation);
 int do_doautocmd(CS arg_start, Boole do_msg, Boole *didSomething);
 void c_doautoall(Invocation *invo);

@@ -1045,16 +1045,16 @@ get_spec_reg(
       return true;
 
    case '/':      // last search-pattern
-      CS lastPat = last_search_pat();
+      CS lastPat = last_search_pat().c;
       if (!lastPat && errmsg)
          emsg(_(e_no_previous_regular_expression));
-      *retVal = lastPat ? lastPat : E;
+      *retVal = lastPat ? lastPat : S"";
       return true;
 
    case '.':      // last inserted text
       *retVal = get_last_insert_save();
       *allocated = true;
-      if (*retVal == E && errmsg)
+      if (*retVal == S"" && errmsg)
          emsg(_(e_no_inserted_text_yet));
       return true;
 
@@ -2288,12 +2288,12 @@ c_display(Invocation* invo) {
    }
 
    // display last search pattern
-   if (last_search_pat() != NULL
+   if (last_search_pat().len != 0
        && (!arg || firstOccurrence(arg, '/') != NULL) && !gotInterruptG
-                  && !message_filtered(last_search_pat())
+                  && !message_filtered(last_search_pat().c)
    ) {
       msg_puts(S"\n  c  \"/   ");
-      dis_msg(last_search_pat(), false);
+      dis_msg(last_search_pat().c, false);
    }
 
    // display last used expression

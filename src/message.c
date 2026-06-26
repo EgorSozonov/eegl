@@ -2537,7 +2537,7 @@ toDisplay(
 
 // Return true when ":filter pattern" was used and "msg" does not match "pattern".
 int
-message_filtered(Byte *msg) {
+message_filtered(CS msg) {
    if (commModifierG.cmod_filter_regmatch.regprog == NULL)
       return false;
    int  match = eeRegexec(&commModifierG.cmod_filter_regmatch, msg, (ColNr)0);

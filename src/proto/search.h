@@ -17,7 +17,7 @@ int last_csearch_until(void);
 void set_last_csearch(int c, CS s, int len);
 void set_csearch_direction(int cdir);
 void set_csearch_until(int t_cmd);
-CS last_search_pat(void);
+Text last_search_pat(void);
 void reset_search_dir(void);
 void set_last_search_pat(CS s, int idx, int magic, int setlast);
 void last_pat_prog(RegMultilineMatch *regmatch);

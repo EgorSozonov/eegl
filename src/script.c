@@ -899,9 +899,7 @@ cmd_source(Byte *fname, Invocation* invo) {
       // - after ":argdo", ":windo" or ":bufdo"
       // - another command follows
       // - inside a loop
-      openscript(
-         fname, global_busy || listcmd_busy || invo->nextComm != NULL || invo->cstack->ind >= 0
-      );
+      openscript( fname, global_busy || listcmd_busy || invo->cstack->ind >= 0);
 
    // ":source" read commands
    ei (scriptRunFile(fname, NULL) == FAIL) {
@@ -12756,7 +12754,6 @@ get_function_body(
                   // Another command follows. If the line came from "invo"
                   // we can simply point into it, otherwise we need to
                   // change "invo->commline" to point to the last fetched line.
-                  invo->nextComm = nextComm;
                   if (lines_to_free->len > 0
                         && *invo->commline 
                            != ((Byte **)lines_to_free->c)[lines_to_free->len - 1]
@@ -13012,34 +13009,16 @@ lambda_function_body(
       }
       if (ga_grow(gap, 1) == FAIL || ga_grow(freegap, 1) == FAIL)
           goto erret;
-      if (invo.nextComm != NULL) {
-          // more is following after the "}", which was skipped
-          last = commline;
-          plen = STRLEN(last);
-      } else {
-          // nothing is following the "}"
-          last = (CS)"}";
-          plen = 1;
-      }
+      // nothing is following the "}"
+      last = S"}";
+      plen = 1;
       pnl = copySubstr((CS)"\n", plen + 1);
       mch_memmove(pnl + 1, last, plen + 1);
       ((Byte **)gap->c)[gap->len++] = pnl;
       ((Byte **)freegap->c)[freegap->len++] = pnl;
-    }
+   }
 
-   if (invo.nextComm != NULL) {
-      ArrayList *tfgap = &evalarg->eval_tofree_ga;
-
-      // Something comes after the "}".
-      *arg = invo.nextComm;
-
-      // "arg" points into commline, need to keep the line and free it later.
-      if (ga_grow(tfgap, 1) == OK) {
-         ((Byte **)(tfgap->c))[tfgap->len++] = commline;
-         evalarg->eval_using_cmdline = true;
-      }
-   } else
-      *arg = (CS)"";
+   *arg = S"";
 
    if (!evaluate) {
       ret = OK;
@@ -15266,11 +15245,6 @@ listOneFunction(Invocation* invo, CS name, CS p, Boole is_global) {
       return NULL;
    }
 
-   set_nextcmd(invo, p);
-
-   if (invo->nextComm != NULL)
-      *p = ZERO;
-
    if (invo->skip || gotInterruptG)
       return NULL;
 
@@ -15457,9 +15431,6 @@ c_delfunction(Invocation* invo) {
       showErrFmtMsg(_(e_trailing_characters_str), p);
       return;
    }
-   set_nextcmd(invo, p);
-   if (invo->nextComm != NULL)
-      *p = ZERO;
 
    if (numbered_function(name) && !fudi.bag) {
       if (!invo->skip)
@@ -15564,7 +15535,6 @@ void
 c_return(Invocation* invo) {
    Byte   *arg = invo->arg;
    Var   returnVar;
-   int      returning = false;
    EvalCtx   evalarg;
 
    if (!currentCallS) {
@@ -15578,33 +15548,17 @@ c_return(Invocation* invo) {
    if (invo->skip)
       ++emsg_skip;
 
-   invo->nextComm = NULL;
    if ((*arg != ZERO && *arg != '|' && *arg != '\n')
-              && eval0(arg, &returnVar, invo, &evalarg) != FAIL
+              && eval0(arg, &returnVar, &evalarg) != FAIL
    ) {
-      if (!invo->skip)
-         returning = do_return(invo, false, true, &returnVar);
-      else
+      if (invo->skip)
          clearVar(&returnVar);
    }
    //It's safer to return also on error.
    ei (!invo->skip) {
       //In return statement, cause_abort should be force_abort.
       update_force_abort();
-
-      //Return unless the expression evaluation has been cancelled due to an aborting error, an 
-      //interrupt, or an exception.
-      if (!aborting())
-         returning = do_return(invo, false, true, NULL);
-    }
-
-   //When skipping or the return gets pending, advance to the next command
-   //in this line (!returning). Otherwise, ignore the rest of the line.
-   //Following lines will be ignored by get_func_line().
-   if (returning)
-      invo->nextComm = NULL;
-   ei (invo->nextComm == NULL)       // no argument
-      set_nextcmd(invo, arg);
+   }
 
    if (invo->skip)
       --emsg_skip;
@@ -15846,7 +15800,7 @@ c_call(Invocation* invo) {
       // instead to skip to any following command, e.g. for:
       //   :if 0 | call dict.foo().bar() | endif
       ++emsg_skip;
-      if (eval0(invo->arg, &returnVar, invo, &evalarg) != FAIL)
+      if (eval0(invo->arg, &returnVar, &evalarg) != FAIL)
          clearVar(&returnVar);
       --emsg_skip;
       clear_evalarg(&evalarg, invo);
@@ -15909,8 +15863,7 @@ c_call(Invocation* invo) {
             emsg_severe = true;
             showErrFmtMsg(_(e_trailing_characters_str), arg);
          }
-      } else
-          set_nextcmd(invo, arg);
+      }
    }
    // Must be after using "arg", it may point into memory cleared here.
    clear_evalarg(&evalarg, invo);
@@ -16453,14 +16406,12 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
    if (isComment(invo->comm)) {
       if (!invo->skip)
          list_functions(NULL);
-      set_nextcmd(invo, invo->arg);
       return NULL;
    }
 
    //":function /pat": list functions matching pattern.
    if (*invo->arg == '/') {
       p = list_functions_matching_pat(invo);
-      set_nextcmd(invo, p);
       return NULL;
    }
 
@@ -17383,7 +17334,7 @@ autocmd_init(void){
 void
 free_all_autocmds(void){
    for (currAugroupS = -1; currAugroupS < augroups.len; ++currAugroupS)
-      do_autocmd(NULL, E, true);
+      do_autocmd(S"", true);
 
    for (int i = 0; i < augroups.len; ++i) {
       CS s = ((Byte **)(augroups.c))[i];
@@ -17611,7 +17562,7 @@ au_event_restore(CS old_ei) {
 //
 //Mostly a {group} argument can optionally appear before <event>. "invo" can be NULL.
 void
-do_autocmd(Invocation* invo, CS arg_in, int forceit) {
+do_autocmd(CS arg_in, int forceit) {
    CS arg = arg_in;
    CS envpat = NULL;
    CS comm;
@@ -17621,14 +17572,8 @@ do_autocmd(Invocation* invo, CS arg_in, int forceit) {
    Boole once = false;
    Unt group;
 
-   if (*arg == '|') {
-      invo->nextComm = arg + 1;
-      arg = S"";
-      group = AUGROUP_ALL;   // no argument, use all groups
-   } else {
-      // Check for a legal group name.  If not, use AUGROUP_ALL.
-      group = au_get_grouparg(&arg);
-   }
+   // Check for a legal group name.  If not, use AUGROUP_ALL.
+   group = au_get_grouparg(&arg);
 
    //Scan over the events. If we find an illegal name, return here, don't do anything.
    CS pat = find_end_event(arg, group != AUGROUP_ALL);
@@ -17636,66 +17581,60 @@ do_autocmd(Invocation* invo, CS arg_in, int forceit) {
       return;
 
    pat = skipwhite(pat);
-   if (*pat == '|') {
-      invo->nextComm = pat + 1;
-      pat = S"";
-      comm = S"";
-   } else {
-      // Scan over the pattern.  Put a ZERO at the end.
-      comm = pat;
-      while (*comm && (!SPACE_OR_TAB(*comm) || comm[-1] == '\\'))
-         comm++;
-      if (*comm)
-         *comm++ = ZERO;
+   // Scan over the pattern.  Put a ZERO at the end.
+   comm = pat;
+   while (*comm && (!SPACE_OR_TAB(*comm) || comm[-1] == '\\'))
+      comm++;
+   if (*comm)
+      *comm++ = ZERO;
 
-      //Expand environment variables in the pattern.
-      if (firstOccurrence(pat, '$') != NULL || firstOccurrence(pat, '~') != NULL) {
-         envpat = doExpandEnvInMultiplePaths(pat);
-         if (envpat)
-            pat = envpat;
+   //Expand environment variables in the pattern.
+   if (firstOccurrence(pat, '$') != NULL || firstOccurrence(pat, '~') != NULL) {
+      envpat = doExpandEnvInMultiplePaths(pat);
+      if (envpat)
+         pat = envpat;
+   }
+
+   comm = skipwhite(comm);
+   for (int i = 0; i < 2; i++) {
+      if (*comm == ZERO)
+         continue;
+
+      // Check for "++once" flag.
+      if (STRNCMP(comm, "++once", 6) == 0 && SPACE_OR_TAB(comm[6])) {
+         if (once)
+            showErrFmtMsg(_(e_duplicate_argument_str), "++once");
+         once = true;
+         comm = skipwhite(comm + 6);
       }
 
-      comm = skipwhite(comm);
-      for (int i = 0; i < 2; i++) {
-         if (*comm == ZERO)
-            continue;
-
-         // Check for "++once" flag.
-         if (STRNCMP(comm, "++once", 6) == 0 && SPACE_OR_TAB(comm[6])) {
-            if (once)
-               showErrFmtMsg(_(e_duplicate_argument_str), "++once");
-            once = true;
-            comm = skipwhite(comm + 6);
-         }
-
-         // Check for "++nested" flag.
-         if ((STRNCMP(comm, "++nested", 8) == 0 && SPACE_OR_TAB(comm[8]))) {
-            if (nested) {
-               showErrFmtMsg(_(e_duplicate_argument_str), "++nested");
-               return;
-            }
-            nested = true;
-            comm = skipwhite(comm + 8);
-         }
-
-         // Check for the old "nested" flag in legacy script.
-         if (STRNCMP(comm, "nested", 6) == 0 && SPACE_OR_TAB(comm[6])) {
-            if (nested) {
-               showErrFmtMsg(_(e_duplicate_argument_str), "nested");
-               return;
-            }
-            nested = true;
-            comm = skipwhite(comm + 6);
-         }
-      }
-
-      //Find the start of the commands. Expand <sfile> in it.
-      if (*comm != ZERO) {
-         comm = expand_sfile(comm);
-         if (!comm)       // some error
+      // Check for "++nested" flag.
+      if ((STRNCMP(comm, "++nested", 8) == 0 && SPACE_OR_TAB(comm[8]))) {
+         if (nested) {
+            showErrFmtMsg(_(e_duplicate_argument_str), "++nested");
             return;
-         commNeedsFreeing = true;
+         }
+         nested = true;
+         comm = skipwhite(comm + 8);
       }
+
+      // Check for the old "nested" flag in legacy script.
+      if (STRNCMP(comm, "nested", 6) == 0 && SPACE_OR_TAB(comm[6])) {
+         if (nested) {
+            showErrFmtMsg(_(e_duplicate_argument_str), "nested");
+            return;
+         }
+         nested = true;
+         comm = skipwhite(comm + 6);
+      }
+   }
+
+   //Find the start of the commands. Expand <sfile> in it.
+   if (*comm != ZERO) {
+      comm = expand_sfile(comm);
+      if (!comm)       // some error
+         return;
+      commNeedsFreeing = true;
    }
 
    //Print header when showing autocommands.
@@ -18793,7 +18732,6 @@ auto_next_pat(AutoPatComm* apc, int stop_at_last) {      // stop when 'last' fla
             entry->info.aucmd = apc;
 
             apc->curpat = ap;
-            apc->nextComm = ap->comms;
             // mark last command
             for (cp = ap->comms; cp->next != NULL; cp = cp->next)
                 cp->last = false;

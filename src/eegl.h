@@ -2868,7 +2868,6 @@ typedef struct {
 struct Invocation {
    CS comm;      // the name of the command (except for :make)
    CommIndex id;      // the index for the command
-   CS nextComm;   // next command (NULL if none)
    CS arg;      // argument of the command
    CS*  commline;   // pointer to pointer of allocated cmdline
    CS commlineToFree; // free later

@@ -49,7 +49,7 @@ void msg_puts(CS s);
 void msg_puts_title(CS s);
 void outputShortenedToALine(Text slice, char flags);
 void msgPutsDeco(CS s, char flags);
-int message_filtered(Byte *msg);
+int message_filtered(CS msg);
 int msg_use_printf(void);
 void mch_errmsg(CS errMsg);
 void mch_msg(CS str);

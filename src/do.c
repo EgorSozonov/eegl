@@ -323,21 +323,18 @@ c_sort(Invocation* invo) {
           unique = true;
       ei (isComment(p))
           break;
-      ei (invo->nextComm == NULL && check_nextcmd(p) != NULL) {
-          invo->nextComm = check_nextcmd(p);
-          break;
-      } ei (!ASCII_ISALPHA(*p) && regmatch.regprog == NULL) {
-          s = skip_regexp_err(p + 1, *p, true);
-          if (s == NULL)
-         goto sortend;
-          *s = ZERO;
-          // Use last search pattern if sort pattern is empty.
-          if (s == p + 1) {
-         if (last_search_pat() == NULL) {
-             emsg(_(e_no_previous_regular_expression));
-             goto sortend;
-         }
-         regmatch.regprog = compileRegexp(last_search_pat(), RE_MAGIC);
+      ei (!ASCII_ISALPHA(*p) && regmatch.regprog == NULL) {
+         s = skip_regexp_err(p + 1, *p, true);
+         if (s == NULL)
+            goto sortend;
+         *s = ZERO;
+         // Use last search pattern if sort pattern is empty.
+         if (s == p + 1) {
+            if (last_search_pat().len == 0) {
+                emsg(_(e_no_previous_regular_expression));
+                goto sortend;
+            }
+            regmatch.regprog = compileRegexp(last_search_pat().c, RE_MAGIC);
           } else
             regmatch.regprog = compileRegexp(p + 1, RE_MAGIC);
          if (regmatch.regprog == NULL)
@@ -541,26 +538,23 @@ c_uniq(Invocation* invo) {
       ei (*p == 'r')
           sort_rx = true;
       ei (*p == 'u') {
-          // 'u' is only valid when '!' is not given.
-          if (!keep_only_not_unique)
-         keep_only_unique = true;
+         // 'u' is only valid when '!' is not given.
+         if (!keep_only_not_unique)
+            keep_only_unique = true;
       } ei (isComment(p))   // comment start
          break;
-      ei (invo->nextComm == NULL && check_nextcmd(p) != NULL) {
-         invo->nextComm = check_nextcmd(p);
-         break;
-      } ei (!ASCII_ISALPHA(*p) && regmatch.regprog == NULL) {
+      ei (!ASCII_ISALPHA(*p) && regmatch.regprog == NULL) {
          s = skip_regexp_err(p + 1, *p, true);
          if (s == NULL)
             goto uniqend;
          *s = ZERO;
          // Use last search pattern if uniq pattern is empty.
          if (s == p + 1) {
-            if (last_search_pat() == NULL) {
+            if (last_search_pat().len == 0) {
                 emsg(_(e_no_previous_regular_expression));
                 goto uniqend;
             }
-            regmatch.regprog = compileRegexp(last_search_pat(), RE_MAGIC);
+            regmatch.regprog = compileRegexp(last_search_pat().c, RE_MAGIC);
          } else
             regmatch.regprog = compileRegexp(p + 1, RE_MAGIC);
          if (regmatch.regprog == NULL)
@@ -930,10 +924,8 @@ do_bang(
       eeglFree(newcmd);
       newcmd = t;
 
-      /*
-       * Scan the rest of the argument for '!', which is replaced by the
-       * previous command.  "\!" is replaced by "!" (this is vi compatible).
-       */
+      //Scan the rest of the argument for '!', which is replaced by the
+      //previous command.  "\!" is replaced by "!" (this is vi compatible).
       trailarg = NULL;
       while (*p) {
           if (*p == '!') {
@@ -2578,19 +2570,9 @@ c_append(Invocation* invo) {
          //Get the text after the trailing bar.
          theline = copyStr(invo->arg + 1);
          *invo->arg = ZERO;
-      } ei (invo->ea_getline == NULL) {
+      } ei (!invo->ea_getline) {
          // No getline() function, use the lines that follow. This ends when there is no more.
-         if (invo->nextComm == NULL)
-            break;
-         p = firstOccurrence(invo->nextComm, NL);
-         if (!p)
-            p = invo->nextComm + STRLEN(invo->nextComm);
-         theline = copySubstr(invo->nextComm, p - invo->nextComm);
-         if (*p != ZERO)
-            ++p;
-         else
-            p = NULL;
-         invo->nextComm = p;
+         break;
       } else {
          int save_State = stateG;
 
@@ -3075,13 +3057,10 @@ c_substitute(Invocation* invo) {
 
    // check for trailing command or garbage
    cmd = skipwhite(cmd);
-   if (*cmd && !isComment(cmd)) {      // if not end-of-line or comment
-      set_nextcmd(OUT invo, cmd);
-      if (invo->nextComm == NULL) {
-         showErrFmtMsg(_(e_trailing_characters_str), cmd);
-         eeglFree(sub);
-         return;
-      }
+   if (*cmd != ZERO && !isComment(cmd)) {      // if not end-of-line or comment
+      showErrFmtMsg(_(e_trailing_characters_str), cmd);
+      eeglFree(sub);
+      return;
    }
 
    if (invo->skip) {      // not executing commands, only parsing
@@ -4894,7 +4873,7 @@ bookWrite_all(Book *book, int forceit) {
 private int quitmore = 0;
 private int ex_pressedreturn = false;
 
-private CS doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
+private void doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
 private void append_command(CS cmd);
 
 private void do_exbuffer(Invocation* invo);
@@ -4946,12 +4925,12 @@ typedef struct {
 // This is required, because doOneCommand() may invoke ex_function(), which
 // reads more lines that may come from the while/for loop.
 typedef struct {
-   ArrayList   *lines_gap;      // growarray with line info
-   int      current_line;      // last read line from growarray
-   int      repeating;      // true when looping a second time
+   ArrayList* lines_gap;      // growarray with line info
+   int current_line;      // last read line from growarray
+   int repeating;      // true when looping a second time
    // When "repeating" is false use "getline" and "cookie" to get lines
    LineGetter lc_getline;
-   void   *cookie;
+   void* cookie;
 } LoopCookie;
 
 private CS get_loop_line(Unt c, void *cookie, int indent, GetlineAlgo options);
@@ -5353,12 +5332,11 @@ doCommand(
    LoopCookie commLoopCookie;
    void* real_cookie;
    static int callDepth = 0;      // recursiveness
-   // For every pair of doCommand()/doOneCommand() calls, use an extra memory
-   // location for storing error messages to be converted to an exception.
-   // This ensures that the do_errthrow() call in doOneCommand() does not
-   // combine the messages stored by an earlier invocation of doOneCommand()
-   // with the command name of the later one.  This would happen when
-   // BufWritePost autocommands are executed after a write error.
+   //For every pair of doCommand()/doOneCommand() calls, use an extra memory location for storing 
+   //error messages to be converted to an exception. This ensures that the do_errthrow() call in 
+   //doOneCommand() does not combine the messages stored by an earlier invocation of doOneCommand()
+   //with the command name of the later one. This would happen when
+   //BufWritePost autocommands are executed after a write error.
    saved_msg_list = msg_list;
    msg_list = &private_msg_list;
 
@@ -5428,7 +5406,6 @@ doCommand(
 
    //Continue executing command lines:
    //- when inside an ":if", ":while" or ":for"
-   //- for multiple commands on one line, separated with '|'
    //- when repeating until there are no more lines (for ":source")
    CS nextCommline = commline;
    do {
@@ -5579,7 +5556,7 @@ doCommand(
       //   doOneCommand() will return NULL if there is no trailing '|'.
       //   "commlineCopy" can change, e.g. for '%' and '#' expansion.
       ++recursive;
-      nextCommline = doOneCommand(&commlineCopy, flags, &cstack, commGetLine, commCookie);
+      doOneCommand(&commlineCopy, flags, &cstack, commGetLine, commCookie);
       --recursive;
 
       if (commCookie == (void *)&commLoopCookie)
@@ -5886,7 +5863,7 @@ doCommand(
 //Note: "fgetline" can be NULL.
 //
 //This function may be called recursively!
-private CS
+private void
 doOneCommand(
    OUT CS* commline,
    int flags,
@@ -6011,13 +5988,7 @@ doOneCommand(
       invo.comm = skipwhite(invo.comm + 1);
 
    //If we got a line, but no command, then go to the line.
-   //If we find a '|' or '\n' we set invo.nextcmd.
-   if (*invo.comm == ZERO || isComment(invo.comm)
-                || (invo.nextComm = check_nextcmd(invo.comm)) != NULL) {
-      //strange vi behaviour:
-      //":3"      jumps to line 3
-      //":3|..."   prints line 3  (not in Vim9 script)
-      //":|"      prints current line  (not in Vim9 script)
+   if (*invo.comm == ZERO || isComment(invo.comm)) {
       if (invo.skip)       // skip this if inside :if
           goto doend;
       errorMsg = ex_range_without_command(&invo);
@@ -6242,7 +6213,7 @@ doOneCommand(
    //Any others?
    if ((invo.argFlags & TRLBAR) && !invo.usefilter) {
       separateNextCommand(&invo, false);
-   } ei (invo.id == C_bang
+   } ei ( invo.id == C_bang
        || invo.id == C_terminal
        || invo.id == C_global
        || invo.id == C_vglobal
@@ -6253,8 +6224,7 @@ doOneCommand(
           // Remove one backslash before a newline
          if (*p == '\\' && p[1] == '\n')
             STRMOVE(p, p + 1);
-         ei (*p == '\n' && !(invo.argFlags & EXPR_ARG)) {
-            invo.nextComm = p + 1;
+         ei (*p == '\n' && (invo.argFlags & EXPR_ARG) == 0) {
             *p = ZERO;
             break;
          }
@@ -6515,13 +6485,8 @@ doend:
    reg_executing = save_reg_executing;
    pending_end_reg_executing = save_pending_end_reg_executing;
 
-   if (invo.nextComm && *invo.nextComm == ZERO)   // not really a next command
-      invo.nextComm = NULL;
-
    --ex_nesting_level;
    eeglFree(invo.commlineToFree);
-
-   return invo.nextComm;
 }
 
 //}}}
@@ -6537,7 +6502,7 @@ ex_errmsg(CS msg, CS arg) {
    return ex_error_buf;
 }
 
-//The "+" string used in place of an empty command in Ex mode.
+//The "+" string used in place of an empty command in Command mode.
 //This string is used in pointer comparison.
 private char exmode_plus[] = "+";
 
@@ -6663,13 +6628,9 @@ parse_command_modifiers(
       //ignore comment and empty lines
       if (isComment(invo->comm)) {
          //a comment ends at a NL
-         invo->nextComm = firstOccurrence(invo->comm, '\n');
-         if (invo->nextComm)
-            ++invo->nextComm;
          return FAIL;
       }
       if (*invo->comm == '\n') {
-         invo->nextComm = invo->comm + 1;
          return FAIL;
       }
       if (*invo->comm == ZERO) {
@@ -7231,22 +7192,22 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
             // "(..." is an expression. "funcname(" is always a function call.
             *p == '('
              || (p == invo->comm
-            ? (
-                // "{..." is a dict expression or block start.
-                *invo->comm == '{'
-                // "'string'->func()" is an expression.
-             || *invo->comm == '\''
-                // '"string"->func()' is an expression.
-             || isComment(invo->comm)
-                // '$"string"->func()' is an expression.
-                // "$'string'->func()" is an expression.
-             || (invo->comm[0] == '$' && (invo->comm[1] == '\'' || isComment(invo->comm)))
-                // '0z1234->func()' is an expression.
-             || (invo->comm[0] == '0' && invo->comm[1] == 'z')
-                // "g:varname" is an expression.
-             || invo->comm[1] == ':')
-                // "varname->func()" is an expression.
-            : (*swp == '-' && swp[1] == '>'))
+               ? (
+                   // "{..." is a dict expression or block start.
+                   *invo->comm == '{'
+                   // "'string'->func()" is an expression.
+                || *invo->comm == '\''
+                   // '"string"->func()' is an expression.
+                || isComment(invo->comm)
+                   // '$"string"->func()' is an expression.
+                   // "$'string'->func()" is an expression.
+                || (invo->comm[0] == '$' && (invo->comm[1] == '\'' || isComment(invo->comm)))
+                   // '0z1234->func()' is an expression.
+                || (invo->comm[0] == '0' && invo->comm[1] == 'z')
+                   // "g:varname" is an expression.
+                || invo->comm[1] == ':')
+                   // "varname->func()" is an expression.
+               : (*swp == '-' && swp[1] == '>'))
          ) {
             if (*invo->comm == '{' && endsComm(skipwhite(invo->comm + 1))) {
                // "{" by itself is the start of a block.
@@ -8389,8 +8350,6 @@ repl_commline(
    Unt repllen = STRLEN(repl);
    Unt taillen = STRLEN(src + srclen);
    Unt i = (src - *commline) + repllen + taillen + 3;
-   if (invo->nextComm)
-      i += STRLEN(invo->nextComm);   // add space for next command
    CS newCommline = alloc(i);
 
    //Copy the stuff before the expanded part.
@@ -8405,11 +8364,6 @@ repl_commline(
    STRCPY(newCommline + newCommlineLen, src + srclen);
    src = newCommline + newCommlineLen;   // remember where to continue
 
-   if (invo->nextComm) {     // append next command
-      newCommlineLen += taillen + 1;
-      STRCPY(newCommline + newCommlineLen, invo->nextComm);
-      invo->nextComm = newCommline + newCommlineLen;
-   }
    invo->comm = newCommline + (invo->comm - *commline);
    invo->arg = newCommline + (invo->arg - *commline);
    if (invo->higherOrderComm && invo->higherOrderComm != dollar_command)
@@ -8441,8 +8395,7 @@ separateNextCommand(Invocation* invo, int keep_backslash) {
             break;
       }
 
-      // Check for '//': start of comment or '|': next command
-      // :redir @" doesn't either.
+      // Check for '//': start of comment or '|': next command :redir @" doesn't either.
       ei ((isComment(p) && !(invo->argFlags & NOTRLCOM))
          || (*p == '|' && invo->id != C_append && invo->id != C_change && invo->id != C_insert)
          || *p == '\n'
@@ -8454,7 +8407,6 @@ separateNextCommand(Invocation* invo, int keep_backslash) {
                 --p;
             }
          } else {
-            invo->nextComm = check_nextcmd(p);
             *p = ZERO;
             break;
          }
@@ -8753,42 +8705,18 @@ c_blast(Invocation* invo) {
 // Check if "c" ends a Command.
 int
 endsComm(CS c) {
-   return *c == ZERO || *c == '|' || isComment(c) || *c == '\n';
+   return *c == ZERO || isComment(c) || *c == '\n';
 }
 
 //Return the next command, after the first '|' or '\n'. NULL if not found.
 CS
 find_nextcmd(CS p) {
-   while (*p != '|' && *p != '\n') {
+   while (*p != '\n') {
       if (*p == ZERO)
          return NULL;
       ++p;
    }
    return (p + 1);
-}
-
-//Check if *p is a separator between commands, skipping over white space.
-//Return NULL if it isn't, the following character if it is.
-CS
-check_nextcmd(CS p) {
-   CS s = skipwhite(p);
-
-   if (*s == '|' || *s == '\n')
-      return (s + 1);
-   else
-      return NULL;
-}
-
-// If "invo->nextComm" is not set, check for a next command at "arg".
-void
-set_nextcmd(OUT Invocation* invo, CS arg) {
-   CS nextComm = check_nextcmd(arg);
-
-   if (!invo->nextComm)
-      invo->nextComm = nextComm;
-   ei (nextComm)
-      // cannot use "| command" inside a  {} block
-      showErrFmtMsg(_(e_cannot_use_bar_to_separate_commands_here_str), arg);
 }
 
 // Function given to expandGeneric() to obtain the list of command names.
@@ -10247,9 +10175,8 @@ c_wincmd(Invocation* invo) {
    } else
       p = invo->arg + 1;
 
-   set_nextcmd(OUT invo, p);
    p = skipwhite(p);
-   if (*p != ZERO && !isComment(p) && invo->nextComm == NULL)
+   if (*p != ZERO && !isComment(p))
       emsg(_(e_invalid_argument));
    ei (!invo->skip) {
       // Pass flags on for ":vertical wincmd ]".
@@ -10362,7 +10289,6 @@ void
 c_copymove(Invocation* invo) {
    long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, false, false, false, 1);
    if (invo->arg == NULL) {      // error detected
-      invo->nextComm = NULL;
       return;
    }
    get_flags(invo);
@@ -10990,8 +10916,6 @@ c_findpat(Invocation* invo) {
          // Check for trailing illegal characters
          if (!endsComm(invo->arg))
             invo->errmsg = ex_errmsg(e_trailing_characters_str, p);
-         else
-            set_nextcmd(OUT invo, p);
       }
    }
    if (!invo->skip)

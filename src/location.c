@@ -4989,11 +4989,11 @@ vgr_init_regmatch(RegMultilineMatch* regmatch, CS s) {
 
    if (s == NULL || *s == ZERO) {
       // Pattern is empty, use last search pattern.
-      if (last_search_pat() == NULL) {
+      if (last_search_pat().len == 0) {
           emsg(_(e_no_previous_regular_expression));
           return;
       }
-      regmatch->regprog = compileRegexp(last_search_pat(), RE_MAGIC);
+      regmatch->regprog = compileRegexp(last_search_pat().c, RE_MAGIC);
    } else
       regmatch->regprog = compileRegexp(s, RE_MAGIC);
 

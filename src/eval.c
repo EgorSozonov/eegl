@@ -144,7 +144,7 @@ private int setVarImpl(Text name, ScriptId sid, Var* tv_arg, Boole copy, Unt fla
 private int eval_variable(Text name, Var* returnVar, DictItem   **dip, int flags);
 private void check_vars(Text name);
 private int eval0_retarg(
-   CS arg, Var* returnVar, Invocation* invo, EvalCtx* evalarg, CS* retarg
+   CS arg, Var* returnVar, EvalCtx* evalarg, CS* retarg
 );
 
 //}}}
@@ -330,9 +330,9 @@ eval_to_bool(
    if (skip)
       ++emsg_skip;
    if (use_simple_function)
-      r = eval0_simple_funccal(arg, &tv, invo, &evalarg);
+      r = eval0_simple_funccal(arg, &tv, &evalarg);
    else
-      r = eval0(arg, &tv, invo, &evalarg);
+      r = eval0(arg, &tv, &evalarg);
    if (r == FAIL)
       *error = true;
    else {
@@ -504,7 +504,7 @@ eval_to_string_skip(
    fillEvalArgFromInvo(OUT &evalarg, invo, skip);
    if (skip)
       ++emsg_skip;
-   if (eval0(arg, &tv, invo, &evalarg) == FAIL || skip)
+   if (eval0(arg, &tv, &evalarg) == FAIL || skip)
       retval = NULL;
    else {
       retval = copyStr(tv_get_string(&tv));
@@ -647,9 +647,9 @@ evalToStringWithInvo(CS arg, Boole join_list, Invocation* invo, Boole use_simple
 
    fillEvalArgFromInvo(OUT &evalarg, invo, invo && invo->skip);
    if (use_simple_function)
-      r = eval0_simple_funccal(arg, &tv, NULL, &evalarg);
+      r = eval0_simple_funccal(arg, &tv, &evalarg);
    else
-      r = eval0(arg, &tv, NULL, &evalarg);
+      r = eval0(arg, &tv, &evalarg);
    if (r == FAIL)
       retval = NULL;
    else {
@@ -717,9 +717,9 @@ evalExprInternal(CS arg, Invocation* invo, int use_simple_function) {
    int r = NOTDONE;
 
    if (use_simple_function)
-      r = eval0_simple_funccal(arg, tv, invo, &evalarg);
+      r = eval0_simple_funccal(arg, tv, &evalarg);
    if (r == NOTDONE)
-      r = eval0(arg, tv, invo, &evalarg);
+      r = eval0(arg, tv, &evalarg);
 
    if (r == FAIL)
       EE_CLEAR(tv);
@@ -1157,7 +1157,7 @@ eval_foldexpr(Portal *wp, int *cp) {
    //Evaluate the expression. If the expression is "FuncName()", call the function directly.
    Long   retval;
    Var tv;
-   if (eval0_simple_funccal(arg, OUT &tv, NULL, &EVALARG_EVALUATE) == FAIL)
+   if (eval0_simple_funccal(arg, OUT &tv, &EVALARG_EVALUATE) == FAIL)
       retval = 0;
    else {
       // If the result is a number, just return the number.
@@ -2092,9 +2092,8 @@ struct ForInfo {
 //Set "*errp" to true for an error, false otherwise;
 //Return a pointer that holds the info.  Null when there is an error.
 void*
-eval_for_line(CS arg, OUT Boole* errp, Invocation   *invo, EvalCtx   *evalarg) {
-   Var   tv;
-   List   *l;
+eval_for_line(CS arg, OUT Boole* errp, EvalCtx* evalarg) {
+   List* l;
    Boole skip = !(evalarg->eval_flags & EVAL_EVALUATE);
 
    *errp = true;   // default: there is an error
@@ -2116,7 +2115,8 @@ eval_for_line(CS arg, OUT Boole* errp, Invocation   *invo, EvalCtx   *evalarg) {
    if (skip)
       ++emsg_skip;
    expr = skipwhite_and_linebreak(expr + 2, evalarg);
-   if (eval0(expr, &tv, invo, evalarg) == OK) {
+   Var tv;
+   if (eval0(expr, &tv, evalarg) == OK) {
       *errp = false;
       if (!skip) {
          if (tv.tag == VAR_LIST) {
@@ -2469,8 +2469,8 @@ skipwhite_and_linebreak(CS arg, EvalCtx *evalarg) {
 //Note: "returnVar.lock" is not set. "evalarg" can be NULL, EVALARG_EVALUATE or a pointer.
 //Return OK or FAIL.
 int
-eval0(CS arg, Var* returnVar, Invocation* invo, EvalCtx* evalarg) {
-   return eval0_retarg(arg, returnVar, invo, evalarg, NULL);
+eval0(CS arg, Var* returnVar, EvalCtx* evalarg) {
+   return eval0_retarg(arg, returnVar, evalarg, NULL);
 }
 
 //If "arg" is a simple function call without arguments then call it and return
@@ -2493,10 +2493,10 @@ may_call_simple_func(CS arg, OUT Var* returnVar) {
 //Handle zero level expression with optimization for a simple function call.
 //Same arguments and return value as eval0().
 int
-eval0_simple_funccal(CS arg, OUT Var* returnVar, Invocation* invo, EvalCtx* evalarg) {
+eval0_simple_funccal(CS arg, OUT Var* returnVar, EvalCtx* evalarg) {
    int r = may_call_simple_func(arg, OUT returnVar);
    if (r == NOTDONE)
-      r = eval0_retarg(arg, returnVar, invo, evalarg, NULL);
+      r = eval0_retarg(arg, returnVar, evalarg, NULL);
    return r;
 }
 
@@ -2506,7 +2506,6 @@ private int
 eval0_retarg(
    CS arg,
    Var* returnVar,
-   Invocation* invo,
    EvalCtx* evalarg,
    CS* retarg
 ){
@@ -2542,20 +2541,11 @@ eval0_retarg(
          } 
       }
 
-      if (invo && p) {
-         //Some of the expression may not have been consumed. Only execute a next command if it 
-         //cannot be a "||" operator. The next command may be "catch".
-         CS nextcmd = check_nextcmd(p);
-         if (nextcmd && *nextcmd != '|')
-            invo->nextComm = nextcmd;
-      }
       return FAIL;
    }
 
    if (retarg)
       *retarg = p;
-   ei (check_for_end && invo)
-      set_nextcmd(OUT invo, p);
 
    return ret;
 }
@@ -5067,7 +5057,6 @@ c_echo(Invocation* invo) {
       clearVar(&returnVar);
       arg = skipwhite(arg);
    }
-   set_nextcmd(OUT invo, arg);
    clear_evalarg(&evalarg, invo);
 
    if (invo->skip)
@@ -5189,7 +5178,6 @@ c_execute(Invocation* invo) {
 
    if (invo->skip)
       --emsg_skip;
-   set_nextcmd(OUT invo, arg);
 }
 
 //}}}
@@ -6126,10 +6114,7 @@ heredoc_get(Invocation* invo, CS cmd, int script_get) {
          eeglFree(str);
     
    }
-   if (heredoc_in_string)
-      // Next command follows the heredoc in the string.
-      invo->nextComm = line_arg;
-   else
+   if (!heredoc_in_string)
       eeglFree(theline);
    eeglFree(text_indent);
 
@@ -6215,7 +6200,6 @@ c_let(Invocation* invo) {
          list_func_vars(&first);
          listEeglVars(&first);
       }
-      set_nextcmd(OUT invo, arg);
       return;
    }
 
@@ -6263,7 +6247,7 @@ c_let(Invocation* invo) {
    fillEvalArgFromInvo(OUT &evalarg, invo, invo->skip);
    expr = skipwhite_and_linebreak(expr, &evalarg);
    int cur_lnum = SOURCING_LNUM;
-   int eval_res = eval0(expr, &returnVar, invo, &evalarg);
+   int eval_res = eval0(expr, &returnVar, &evalarg);
    if (invo->skip)
       --emsg_skip;
    clear_evalarg(&evalarg, invo);
@@ -6878,8 +6862,6 @@ unletOrLock(
 
       arg = skipwhite(nameEnd);
    } while (!endsComm(nameEnd));
-
-   set_nextcmd(OUT invo, arg);
 }
 
 private int
@@ -10588,7 +10570,6 @@ f_expandcmd(Var* argvars, Var* returnVar) {
    invo.arg = cmdstr;
    invo.argFlags |= commandFlagNoSpacesInExtra();
    invo.usefilter = false;
-   invo.nextComm = NULL;
    invo.id = C_USER;
 
    if (emsgoff)
@@ -15389,7 +15370,7 @@ c_eval(Invocation* invo) {
    EvalCtx   evalarg;
    fillEvalArgFromInvo(OUT &evalarg, invo, invo->skip);
 
-   if (eval0(invo->arg, &tv, invo, &evalarg) == OK) {
+   if (eval0(invo->arg, &tv, &evalarg) == OK) {
       clearVar(&tv);
    }
 
@@ -15398,7 +15379,7 @@ c_eval(Invocation* invo) {
 
 //Start a new scope/block.  Caller should have checked that ind is not exceeding CSTACK_LEN.
 private void
-enter_block(CondStack *cstack) {
+enter_block(CondStack* cstack) {
    ++cstack->ind;
    cstack->cs_script_var_len[cstack->ind] = 0;
    cstack->cs_block_id[cstack->ind] = 0;
@@ -15596,7 +15577,7 @@ c_while(Invocation* invo) {
          long save_lnum = SOURCING_LNUM;
 
          // Evaluate the argument and get the info in a structure.
-         fi = eval_for_line(invo->arg, OUT &error, invo, &evalarg);
+         fi = eval_for_line(invo->arg, OUT &error, &evalarg);
          cstack->forInfo[cstack->ind] = fi;
 
          // Errors should use the first line number.
@@ -15950,14 +15931,13 @@ c_catch(Invocation* invo) {
    }
 
    if (endsComm(invo->arg)) {  // no argument, catch all errors
-      pat = (CS)".*";
+      pat = S".*";
       end = NULL;
-      invo->nextComm = find_nextcmd(invo->arg);
    } else {
       pat = invo->arg + 1;
       end = skip_regexp_err(pat, *invo->arg, true);
-      if (end == NULL)
-          give_up = true;
+      if (!end)
+         give_up = true;
     }
 
    if (!give_up) {
@@ -16037,9 +16017,6 @@ c_catch(Invocation* invo) {
          cleanup_conditionals(cstack, CSF_TRY, true);
       }
    }
-
-   if (end)
-      invo->nextComm = find_nextcmd(end);
 }
 
 // ":finally"

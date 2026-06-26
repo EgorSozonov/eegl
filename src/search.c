@@ -26,7 +26,7 @@ private void restore_incsearch_state(void);
 private int check_prevcol(CS linep, int col, int ch, int *prevcol);
 private int find_rawstring_end(CS linep, Pos *startpos, Pos *endpos);
 private void find_mps_values(OUT Unt* initc, OUT Unt* findc, OUT int *backwards, int switchit);
-private int is_zero_width(CS pattern, Unt patternlen, int move, Pos* cur, int direction);
+private int is_zero_width(Text pattern, Boole move, Pos* cur, Unt direction);
 private void cmdline_search_stat(
    int dirc, Pos *pos, Pos *cursor_pos, int show_top_bot_msg, CS msgbuf, Unt msgbuflen, 
    int recompute, int maxcount, long timeout
@@ -226,7 +226,7 @@ free_search_patterns(void) {
       EE_CLEAR(prevSearchPatternsP[i].pat);
       prevSearchPatternsP[i].patlen = 0;
    }
-   EE_CLEAR(mrPatternS);
+   EE_CLEAR(mrPatternP.c);
    mrPatternLen = 0;
 }
 #endif
@@ -387,7 +387,7 @@ set_csearch_until(int t_cmd) {
    last_t_cmd = t_cmd;
 }
 
-CS
+Text
 last_search_pat(void) {
    return prevSearchPatternsP[last_idx].pat;
 }
@@ -408,16 +408,14 @@ set_last_search_pat(
    int magic,
    int setlast
 ) {
-   eeglFree(prevSearchPatternsP[idx].pat);
+   eeglFree(prevSearchPatternsP[idx].pat.c);
    // An empty string means that nothing should be matched.
    if (*s == ZERO)
-      prevSearchPatternsP[idx].pat = NULL;
+      prevSearchPatternsP[idx].pat.len = 0;
    else {
-      prevSearchPatternsP[idx].patlen = STRLEN(s);
-      prevSearchPatternsP[idx].pat = copySubstr(s, prevSearchPatternsP[idx].patlen);
+      prevSearchPatternsP[idx].pat = 
+         (Text){copySubstr(s, prevSearchPatternsP[idx].pat.len), STRLEN(s)};
    }
-   if (prevSearchPatternsP[idx].pat == NULL)
-      prevSearchPatternsP[idx].patlen = 0;
    prevSearchPatternsP[idx].magic = magic;
    prevSearchPatternsP[idx].no_scs = false;
    prevSearchPatternsP[idx].off.dir = '/';
@@ -428,18 +426,12 @@ set_last_search_pat(
    if (setlast)
       last_idx = idx;
    if (saveLevelS) {
-      eeglFree(saved_spats[idx].pat);
+      eeglFree(saved_spats[idx].pat.c);
       saved_spats[idx] = prevSearchPatternsP[0];
-      if (prevSearchPatternsP[idx].pat == NULL)
-         saved_spats[idx].pat = NULL;
+      if (prevSearchPatternsP[idx].pat.len == 0)
+         saved_spats[idx].pat.len = 0;
       else
-         saved_spats[idx].pat = copySubstr(
-            prevSearchPatternsP[idx].pat, prevSearchPatternsP[idx].patlen
-         );
-      if (saved_spats[idx].pat == NULL)
-         saved_spats[idx].patlen = 0;
-      else
-         saved_spats[idx].patlen = prevSearchPatternsP[idx].patlen;
+         saved_spats[idx].pat = copyText(prevSearchPatternsP[idx].pat);
       saved_spats_last_idx = last_idx;
    }
    // If @hlsearch set and search pat changed: need redraw.
@@ -450,8 +442,8 @@ set_last_search_pat(
 //Get a regexp program for the last used search pattern. This is used for hiliting all matches 
 //in a portal. Values returned in regmatch->regprog and regmatch->rmm_ic.
 void
-last_pat_prog(RegMultilineMatch *regmatch) {
-   if (prevSearchPatternsP[RE_SEARCH].pat == NULL) {
+last_pat_prog(RegMultilineMatch* regmatch) {
+   if (prevSearchPatternsP[RE_SEARCH].pat.len == 0) {
       regmatch->regprog = NULL;
       return;
    }
@@ -517,7 +509,7 @@ searchit(
          (options & (SEARCH_HIS + SEARCH_KEEP)), OUT &regmatch) == FAIL
    ){
       if ((options & SEARCH_MSG) && !anyRegexEmsgG)
-         showErrFmtMsg(_(e_invalid_search_string_str), mrPatternS);
+         showErrFmtMsg(_(e_invalid_search_string_str), mrPatternP.c);
       return FAIL;
    }
 
@@ -818,7 +810,7 @@ searchit(
          emsg(_(e_interrupted));
       ei ((options & SEARCH_MSG) == SEARCH_MSG) {
          if (wrapSearchG)
-            showErrFmtMsg(_(e_pattern_not_found_str), mrPatternS);
+            showErrFmtMsg(_(e_pattern_not_found_str), mrPatternP.c);
       }
       return FAIL;
    }
@@ -937,7 +929,7 @@ do_search(
 
    //Repeat the search when pattern followed by ';', e.g. "/foo/;?bar".
    for (;;) {
-      int      show_top_bot_msg = false;
+      int show_top_bot_msg = false;
 
       searchstr = pat;
 
@@ -960,17 +952,14 @@ do_search(
       if (pat.len > 0) {  // look for (new) offset
          // Find end of regular expression. If there is a matching '/' or '?', toss it.
          ps = strcopy;
-         p = skip_regexp_ex(pat, search_delim, true, &strcopy, NULL, NULL);
+         p = skip_regexp_ex(pat.c, search_delim, true, &strcopy, NULL, NULL);
          if (strcopy != ps) {
-            Unt len = STRLEN(strcopy);
             // made a copy of "pat" to change "\?" to "?"
-            pat = strcopy;
-            patlen = len;
-            searchstr = strcopy;
-            searchstrlen = len;
+            pat = text(strcopy);
+            searchstr = (Text){strcopy, pat.len};
          }
          if (*p == search_delim) {
-            searchstrlen = p - pat;
+            searchstr.len = p - pat.c;
             dircp = p;   // remember where we put the ZERO
             *p++ = ZERO;
          }
@@ -1000,8 +989,8 @@ do_search(
                ++p;
           }
 
-          patlen -= p - pat;
-          pat = p;             // put pat after search command
+          pat.len -= p - pat.c;
+          pat.c = p;             // put pat after search command
       }
 
       showSearchStats = false;
@@ -1031,12 +1020,12 @@ do_search(
                   sizeof(off_buf) - off_len, "%+ld", prevSearchPatternsP[0].off.off);
          }
 
-         if (*searchstr == ZERO) {
-            p = prevSearchPatternsP[0].pat;
-            plen = prevSearchPatternsP[0].patlen;
+         if (searchstr.len == ZERO) {
+            p = prevSearchPatternsP[0].pat.c;
+            plen = prevSearchPatternsP[0].pat.len;
          } else {
-            p = searchstr;
-            plen = searchstrlen;
+            p = searchstr.c;
+            plen = searchstr.len;
          }
 
          if (cmd_silent) {
@@ -1123,10 +1112,10 @@ do_search(
       //The actual search.
       c = searchit(
          curPor, curBook, &pos, NULL, dirc == '/' ? FORWARD : BACKWARD,
-         mbText(searchstr), count, 
+         searchstr, count, 
          prevSearchPatternsP[0].off.end 
             + (options & (SEARCH_KEEP + SEARCH_PEEK + SEARCH_HIS + SEARCH_MSG 
-               + SEARCH_START + ((pat != NULL && *pat == ';') ? 0 : SEARCH_NOOF))
+               + SEARCH_START + ((pat.len != 0 && pat.c[0] == ';') ? 0 : SEARCH_NOOF))
             ),
          RE_LAST, sia
       );
@@ -1145,7 +1134,7 @@ do_search(
       retval = 1;          // pattern found
 
       //Add character and/or line offset
-      if (!(options & SEARCH_NOOF) || (pat != NULL && *pat == ';')) {
+      if ((options & SEARCH_NOOF) == 0 || (pat.len != 0 && pat.c[0] == ';')) {
          Pos org_pos = pos;
 
          if (prevSearchPatternsP[0].off.line){   // Add the offset to the line number.
@@ -1195,18 +1184,20 @@ do_search(
       //- The remembered direction '/' or '?' is from the first search.
       //- When an error happens the cursor isn't moved at all.
       //Don't do this when called by doGetCommandAddress() (it handles ';' itself).
-      if (!(options & SEARCH_OPT) || pat == NULL || *pat != ';')
+      if ((options & SEARCH_OPT) == 0 || pat.len == 0 || pat.c[0] != ';')
          break;
 
-      dirc = *++pat;
+      dirc = pat.c[1];
+      pat.c++;
+      pat.len--;
       search_delim = dirc;
       if (dirc != '?' && dirc != '/') {
          retval = 0;
          emsg(_(e_expected_question_or_slash_after_semicolon));
          goto end_do_search;
       }
-      ++pat;
-      --patlen;
+      pat.c++;
+      pat.len--;
    }
 
    if (options & SEARCH_MARK)
@@ -1952,9 +1943,9 @@ check_linecomment(CS line) {
 private int
 is_zero_width(
    Text pattern,
-   int move,
+   Boole move,
    Pos* cur,
-   int direction
+   Unt direction
 ) {
    RegMultilineMatch   regmatch;
    int nmatched = 0;
@@ -1963,9 +1954,8 @@ is_zero_width(
    int called_emsg_before = called_emsg;
    int flag = 0;
 
-   if (pattern == NULL) {
+   if (pattern.len == 0) {
       pattern = prevSearchPatternsP[last_idx].pat;
-      patternlen = prevSearchPatternsP[last_idx].patlen;
    }
 
    if (search_regcomp(pattern, NULL, RE_SEARCH, RE_SEARCH, SEARCH_KEEP, OUT &regmatch) == FAIL)
@@ -1982,7 +1972,7 @@ is_zero_width(
       flag = SEARCH_START;
    }
 
-   if (searchit(curPor, curBook, &pos, NULL, direction, pattern, patternlen, 1,
+   if (searchit(curPor, curBook, &pos, NULL, direction, pattern, 1,
               SEARCH_KEEP + flag, RE_SEARCH, NULL) != FAIL
    ) {
       // Zero-width pattern should match somewhere, then we can check if
@@ -2020,7 +2010,6 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
    int result;      // result of various function calls
    int flags = 0;
    Pos   save_VIsual = VIsual;
-   int zero_width;
 
    // When searching forward and the cursor is at the start of the Visual
    // area, skip the first search backward, otherwise it doesn't move.
@@ -2035,8 +2024,7 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
    }
 
    // Is the pattern is zero-width?, this time, don't care about the direction
-   zero_width = is_zero_width(prevSearchPatternsP[last_idx].pat, prevSearchPatternsP[last_idx].patlen,
-                  true, &curPor->cursor, FORWARD);
+   int zero_width = is_zero_width(prevSearchPatternsP[last_idx].pat, true, &curPor->cursor, FORWARD);
    if (zero_width == -1)
       return FAIL;  // pattern not found
 
@@ -2062,7 +2050,7 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
 
       result = searchit(curPor, curBook, &pos, &end_pos,
          (dir ? FORWARD : BACKWARD),
-         prevSearchPatternsP[last_idx].pat, prevSearchPatternsP[last_idx].patlen, (long) (i ? count : 1),
+         prevSearchPatternsP[last_idx].pat, (long) (i ? count : 1),
          SEARCH_KEEP | flags, RE_SEARCH, NULL);
 
       wrapSearchG = true;
@@ -2194,18 +2182,17 @@ update_search_stat(
    int maxcount,
    long timeout
 ) {
-   int          wraparound = false;
-   Pos       p = (*pos);
-   static Pos    lastpos = {0, 0, 0};
-   static int       cur = 0;
-   static int       cnt = 0;
-   static int       exact_match = false;
-   static int       incomplete = 0;
-   static int       last_maxcount = 0;
-   static int       chgtick = 0;
+   Pos p = (*pos);
+   static Pos lastpos = {0, 0, 0};
+   static int cur = 0;
+   static int cnt = 0;
+   static int exact_match = false;
+   static int incomplete = 0;
+   static int last_maxcount = 0;
+   static int chgtick = 0;
    static CS lastpat = NULL;
-   static Unt   lastpatlen = 0;
-   static Book    *lbuf = NULL;
+   static Unt lastpatlen = 0;
+   static Book* lBook = NULL;
    ProfTime  start;
 
    CLEAR_POINTER(stat);
@@ -2220,25 +2207,25 @@ update_search_stat(
    }
    last_maxcount = maxcount;
 
-   wraparound = ((dirc == '?' && LT_POS(lastpos, p))
-          || (dirc == '/' && LT_POS(p, lastpos)));
+   Boole wraparound = ((dirc == '?' && LT_POS(lastpos, p)) || (dirc == '/' && LT_POS(p, lastpos)));
 
    // If anything relevant changed the count has to be recomputed.
    if (!(chgtick == CHANGEDTICK(curBook)
-      && (lastpat != NULL
-          && STRNCMP(lastpat, prevSearchPatternsP[last_idx].pat, lastpatlen) == 0
-          && lastpatlen == prevSearchPatternsP[last_idx].patlen
-      )
-      && EQUAL_POS(lastpos, *cursor_pos)
-      && lbuf == curBook) || wraparound || cur < 0
-          || (maxcount > 0 && cur > maxcount) || recompute
+         && (lastpat
+             && STRNCMP(lastpat, prevSearchPatternsP[last_idx].pat.c, lastpatlen) == 0
+             && lastpatlen == prevSearchPatternsP[last_idx].pat.len
+         )
+         && EQUAL_POS(lastpos, *cursor_pos)
+         && lBook == curBook) 
+      || wraparound || cur < 0
+      || (maxcount > 0 && cur > maxcount) || recompute
    ) {
       cur = 0;
       cnt = 0;
       exact_match = false;
       incomplete = 0;
       CLEAR_POS(&lastpos);
-      lbuf = curBook;
+      lBook = curBook;
    }
 
    // when searching backwards and having jumped to the first occurrence,
@@ -2247,15 +2234,17 @@ update_search_stat(
          && (dirc == 0 || dirc == '/' ? cur < cnt : cur > 1))
       cur += dirc == 0 ? 0 : dirc == '/' ? 1 : -1;
    else {
-      int   done_search = false;
-      Pos   endpos = {0, 0, 0};
+      int done_search = false;
+      Pos endpos = {0, 0, 0};
 
       wrapSearchG = false;
       if (timeout > 0)
-          profile_setlimit(timeout, &start);
-      while (!gotInterruptG && searchit(curPor, curBook, &lastpos, &endpos,
-             FORWARD, NULL, 0, 1, SEARCH_KEEP, RE_LAST, NULL) != FAIL)
-      {
+         profile_setlimit(timeout, &start);
+      while (!gotInterruptG 
+            && searchit(
+                  curPor, curBook, &lastpos, &endpos, FORWARD, (Text){null, 0}, 1, SEARCH_KEEP, RE_LAST, NULL
+               ) != FAIL
+      ) {
          done_search = true;
          // Stop after passing the time limit.
          if (timeout > 0 && profile_passed_limit(&start)) {
@@ -2278,13 +2267,11 @@ update_search_stat(
          cur = -1; // abort
       if (done_search) {
          eeglFree(lastpat);
-         lastpat = copySubstr(prevSearchPatternsP[last_idx].pat, prevSearchPatternsP[last_idx].patlen);
-         if (lastpat == NULL)
-            lastpatlen = 0;
-         else
-            lastpatlen = prevSearchPatternsP[last_idx].patlen;
+         lastpat = 
+            copySubstr(prevSearchPatternsP[last_idx].pat.c, prevSearchPatternsP[last_idx].pat.len);
+         lastpatlen = prevSearchPatternsP[last_idx].pat.len;
          chgtick = CHANGEDTICK(curBook);
-         lbuf = curBook;
+         lBook = curBook;
          lastpos = p;
       }
    }
@@ -2989,17 +2976,14 @@ f_searchcount(Var *argvars, Var* returnVar) {
 
    save_last_search_pattern();
    save_incsearch_state();
-   if (pattern != NULL) {
+   if (pattern) {
       if (*pattern == ZERO)
-          goto the_end;
-      eeglFree(prevSearchPatternsP[last_idx].pat);
-      prevSearchPatternsP[last_idx].patlen = STRLEN(pattern);
-      prevSearchPatternsP[last_idx].pat = 
-         copySubstr(pattern, prevSearchPatternsP[last_idx].patlen);
-      if (prevSearchPatternsP[last_idx].pat == NULL)
-          prevSearchPatternsP[last_idx].patlen = 0;
+         goto the_end;
+      eeglFree(prevSearchPatternsP[last_idx].pat.c);
+      prevSearchPatternsP[last_idx].pat = pattern 
+         ? (Text){copyStr(pattern), STRLEN(pattern)} : (Text){null, 0};
    }
-   if (prevSearchPatternsP[last_idx].pat == NULL || *prevSearchPatternsP[last_idx].pat == ZERO)
+   if (prevSearchPatternsP[last_idx].pat.len == 0)
       goto the_end;   // the previous pattern was never defined
 
    update_search_stat(0, &pos, &pos, &stat, recompute, maxcount, timeout);
@@ -3248,9 +3232,9 @@ searchInitHilite(Portal* po, Match* search_hl) {
    while (cur) {
       cur->mit_hl.rm = cur->match;
       if (cur->hiId == SHORT)
-         cur->mit_hl.hiId = SHORT;
+         cur->mit_hl.currHiId = SHORT;
       else
-         cur->mit_hl.hiId = cur->hiId;
+         cur->mit_hl.currHiId = cur->hiId;
       cur->mit_hl.book = po->book;
       cur->mit_hl.lnum = 0;
       cur->mit_hl.first_lnum = 0;
@@ -3531,8 +3515,8 @@ searchPrepareHiliteLine(
                match->endcol++;
          }
          if ((long)match->startcol < mincol) { // match at leftcol
-            match->currHiId = match->hiId;
-            *searchHiId = match->hiId;
+            match->currHiId = match->currHiId;
+            *searchHiId = match->currHiId;
          }
          areaHiliting = true;
       }
@@ -3565,7 +3549,7 @@ update_search_hl(
    MatchItem* cur = po->firstMatch; //the match list
    Boole didHiliteSearch = PORTAL_IS_POPUP(po); //whether search_hl has been processed or not
    while (cur || didHiliteSearch == false) {
-      if (didHiliteSearch == false && (cur == NULL || cur->priority > SEARCH_HL_PRIORITY)) {
+      if (didHiliteSearch == false && (!cur || cur->priority > SEARCH_HL_PRIORITY)) {
          match = search_hl;
          didHiliteSearch = true;
       } else
@@ -3579,17 +3563,15 @@ update_search_hl(
 
             if (match->endcol < next_col)
                match->endcol = next_col;
-            match->currHiId = match->hiId;
-            // Highlight the match were the cursor is using the CurSearch group.
+            match->currHiId = match->currHiId;
+            // Hilite the match were the cursor is using the CurSearch group.
             if (match == search_hl && match->has_cursor) {
-               match->currHiId = getDecoFlags(HLF_LC);
-               if (match->currHiId != match->hiId)
-                  searchLastLnumG = lnum;
+               match->extra = EXTRA_DECO_INVERT;
             }
          } ei (col == match->endcol) {
             match->currHiId = SHORT;
             next_search_hl(po, search_hl, match, lnum, col, match == search_hl ? NULL : cur);
-            pos_inprogress = !(cur == NULL || cur->currPos == 0);
+            pos_inprogress = (cur && cur->currPos != 0);
 
             // Need to get the line again, a multi-line regexp may have made it invalid.
             *line = memGetLine(po->book, lnum, false);
@@ -3601,12 +3583,12 @@ update_search_hl(
                else
                   match->endcol = MAXCOL;
 
-               // check if the cursor is in the match
+               //check if the cursor is in the match
                if (match == search_hl)
                   check_cur_search_hl(po, match);
 
                if (match->startcol == match->endcol) {
-                  // highlight empty match, try again after it
+                  //hilite empty match, try again after it
                   CS p = *line + match->endcol;
 
                   if (*p == ZERO)
@@ -3698,7 +3680,7 @@ get_search_match_hl(Portal* po, Match* search_hl, long col, OUT Short* charHiId)
       } else
          match = &cur->mit_hl;
       if (col - 1 == (long)match->startcol && (match == search_hl || !match->is_addpos))
-         *charHiId = match->hiId;
+         *charHiId = match->currHiId;
       if (match != search_hl && cur)
          cur = cur->next;
    }
@@ -3956,8 +3938,7 @@ f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 //":[N]match {group} {pattern}"
-//Set nextComm to the start of the next command, if any. Also called when
-//skipping commands to find the next command.
+//called when skipping commands to find the next command.
 void
 c_match(Invocation* invo) {
    CS g = NULL;
@@ -4012,7 +3993,6 @@ c_match(Invocation* invo) {
          *end = c;
       }
    }
-   invo->nextComm = find_nextcmd(end);
 }
 
 //}}}
@@ -4032,13 +4012,10 @@ c_help(Invocation* invo) {
       return;
 
    if (invo) {
-      // A ":help" command ends at the first LF, or at a '|' that is
-      // followed by some text.  Set nextComm to the following command.
+      // A ":help" command ends at the first LF
       for (arg = invo->arg; *arg; ++arg) {
-          if (*arg == '\n' || *arg == '\r'
-             || (*arg == '|' && arg[1] != ZERO && arg[1] != '|')) {
+          if (*arg == '\n' || *arg == '\r') {
             *arg++ = ZERO;
-            invo->nextComm = arg;
             break;
          }
       }
