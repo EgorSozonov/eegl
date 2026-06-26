@@ -547,8 +547,8 @@ typedef Byte Byte;
    do { \
    if (p_langmap \
       && (condition) \
-      && (p_lrm || (!p_lrm && KeyTyped)) \
-      && !KeyStuffed \
+      && (p_lrm || (!p_lrm && keyWasTypedG)) \
+      && !keyWasStuffedG \
       && (c) < UNT) \
    { \
     if ((c) < 256) \
@@ -883,8 +883,8 @@ LIST_TY(Unt)
 #define DECO_ITALIC       4
 #define DECO_UNDERLINE    8
 #define DECO_UNDERCURL   16
-#define DECO_NOCOMBINE   32 
-
+#define DECO_UNDERDASH   32 
+#define DECO_ALTERED_BG  64
 
 // special attribute addition: Put message in history
 #define MSG_HIST     64
@@ -1258,7 +1258,7 @@ LIST_TY(Unt)
 #define DOCMD_VERBOSE  0x01   // included command in error message
 #define DOCMD_NOWAIT   0x02   // don't call wait_return() and friends
 #define DOCMD_REPEAT   0x04   // repeat exec. until getline() returns NULL
-#define DOCMD_KEYTYPED 0x08   // don't reset KeyTyped
+#define DOCMD_KEYTYPED 0x08   // don't reset keyWasTypedG
 #define DOCMD_EXCRESET 0x10   // reset exception environment (for debugging)
 #define DOCMD_KEEPLINE 0x20   // keep typed line for repeating with "."
 
@@ -1545,19 +1545,18 @@ typedef enum AutoEvent AutoEvent;
 #define HLF_TPL     37 //tabpanel
 #define HLF_TPLS    38 //tabpanel selected
 #define HLF_TPLF    39 //tabpanel filler
-#define HLF_CUL     41 //@cursorline
-#define HLF_MC      42 //'colorcolumn'
-#define HLF_QFL     43 //location portal line currently selected
-#define HLF_ST      44 //status lines of terminal windows
-#define HLF_STNC    45 //status lines of not-current terminal portals
-#define HLF_TERMR   46 //status lines of not-current terminal portals
-#define HLF_TERMG   47 //status lines of not-current terminal portals
-#define HLF_TERMB   48 //status lines of not-current terminal portals
-#define HLF_MSG     49 //message area
-#define HLF_8       50 //Meta & special keys listed with ":map", text that is displayed different
-#define HLF_N       51 //line number for ":number" and ":#" commands
-#define HLF_LNA     52 //LineNrAbove
-#define HLF_LNB     53 //LineNrBelow
+#define HLF_MC      41 //'colorcolumn'
+#define HLF_QFL     42 //location portal line currently selected
+#define HLF_ST      43 //status lines of terminal windows
+#define HLF_STNC    44 //status lines of not-current terminal portals
+#define HLF_TERMR   45 //status lines of not-current terminal portals
+#define HLF_TERMG   46 //status lines of not-current terminal portals
+#define HLF_TERMB   47 //status lines of not-current terminal portals
+#define HLF_MSG     48 //message area
+#define HLF_8       49 //Meta & special keys listed with ":map", text that is displayed different
+#define HLF_N       50 //line number for ":number" and ":#" commands
+#define HLF_LNA     51 //LineNrAbove
+#define HLF_LNB     52 //LineNrBelow
 
 typedef enum {
    EXTRA_DECO_NONE,
@@ -2033,7 +2032,7 @@ typedef struct {
    //Unt conceal;
 } ListChars;
 
-// Characters from the 'fillchars' option
+// Characters from the @fillchars option
 typedef struct {
    Unt   stl;
    Unt   stlnc;
@@ -5303,8 +5302,8 @@ typedef struct {
 
 // Optional extra arguments for searchit().
 typedef struct {
-   LineNr   sa_stop_lnum;   // stop after this line number when != 0
-   long   sa_tm;      // timeout limit or zero
+   LineNr sa_stop_lnum;   // stop after this line number when != 0
+   long sa_tm;      // timeout limit or zero
    int sa_timed_out;   // set when timed out
    int sa_wrapped;   // search wrapped around
 } SearchitArg;
@@ -5319,10 +5318,9 @@ typedef struct {
 
 // A search pattern and its attributes are stored in a spat struct
 typedef struct {
-   Byte       *pat;   // the pattern (in allocated memory) or NULL
-   Unt       patlen;   // the length of the pattern (0 if pat is NULL)
-   int          magic;   // magicness of the pattern
-   int no_scs;   // no smartcase for this pattern
+   Text pat;// the pattern (in allocated memory) or NULL
+   int magic;   // magicness of the pattern
+   Boole no_scs;   // no smartcase for this pattern
    SearchOffset off;
 } SearchPattern;
 
@@ -5987,26 +5985,11 @@ EXTERN CS termCodesG[]; //current terminal output strings, defined in term.c
 //Nulls are not allowed! Only empty strings
 EXTERN CS termCodesG[KS_LAST + 1];
 
-//The characters that are currently on the screen are kept in ScreenLinesG[].
-//It is a single block of characters, the size of the screen plus one line.
-//The decorations for those characters are kept in ScreenDecosG[].
-//The virtual column in the line is kept in ScreenCols[].
-//
-//"LineOffset[n]" is the offset from ScreenLines[] for the start of line 'n'.
-//The same value is used for ScreenLinesUC[], ScreenDecosG[] and ScreenCols[].
 //Note: before the screen is initialized and when out of memory these can be null.
 EXTERN Boole wrapSearchG INIT(= true); // search wraps on file end
 
 EXTERN int screenLinesRowsG INIT(= 0);   // actual size of ScreenLines[]
 EXTERN int screenLinesColsG INIT(= 0);   // actual size of ScreenLines[]
-
-//When using Unicode characters the character in ScreenLinesUC[] contains the Unicode for 
-//the character at this position, or ZERO when the character in ScreenLines[] is to be 
-//used (ASCII char). The composing characters are to be drawn on top of the original character.
-//ScreenLinesC[0][off] is only to be used when ScreenLinesUC[off] != 0.
-EXTERN Arr(Unt) screenLinesUCG INIT(= NULL);   // decoded UTF-8 characters
-
-EXTERN Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
 
 // Last known cursor position. Positioning the cursor is reduced by remembering the last position.
 // Mostly used by windgoto() and draw.c:screen_char().
@@ -6575,11 +6558,11 @@ EXTERN int   ex_normal_lock INIT(= 0);   // forbid use of ex_normal()
 EXTERN int   ignore_script INIT(= FALSE);  // ignore script input
 EXTERN int   stop_insert_mode;   // for ":stopinsert" and 'insertmode'
 
-EXTERN int   KeyTyped;      // TRUE if user typed current char
-EXTERN int   KeyStuffed;      // TRUE if current char from stuffbuf
-EXTERN int   maptick INIT(= 0);   // tick for each non-mapped char
+EXTERN Boole keyWasTypedG;      // TRUE if user typed current char
+EXTERN Boole keyWasStuffedG;      // TRUE if current char from stuffbuf
+EXTERN int maptick INIT(= 0);   // tick for each non-mapped char
 
-EXTERN Unt   must_redraw INIT(= 0);       // type of redraw necessary (UPD_* constants)
+EXTERN Unt   mustRedrawG INIT(= 0);       // type of redraw necessary (UPD_* constants)
 EXTERN Boole skip_redraw INIT(= FALSE);  // skip redraw once
 EXTERN Boole do_redraw INIT(= FALSE);    // extra redraw once
 EXTERN Boole diffNeedsRedrawG INIT(= false); // need to call diff_redraw()

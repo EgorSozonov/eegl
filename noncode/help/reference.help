@@ -1312,7 +1312,7 @@ inserted and deleted lines (though not characters within a line) are taken into 
 The cursor in Insert mode. Can be one of: bar, block, underscore
    
 
-@@cursorline             Portal. Boolean. Default = off
+@@cursorline             Portal. Boolean. Default = on
 
 Highlight the text line of the cursor with CursorLine |hl-CursorLine|.
 Useful to easily spot the cursor.  Will make screen redrawing slower.

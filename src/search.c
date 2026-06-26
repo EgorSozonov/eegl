@@ -64,12 +64,12 @@ private void update_search_stat(
 
 //Two search patterns are remembered: One for the :substitute command and
 //one for other searches.  last_idx points to the one that was used the last time.
-private SearchPattern prevSearchPatternsG[2] = {
-    {NULL, 0, true, false, {'/', 0, 0, 0L}},   // last used search pat
-    {NULL, 0, true, false, {'/', 0, 0, 0L}}   // last used substitute pat
+private SearchPattern prevSearchPatternsP[2] = {
+    {(Text){NULL, 0}, true, false, {'/', 0, 0, 0L}},   // last used search pat
+    {(Text){NULL, 0}, true, false, {'/', 0, 0, 0L}}   // last used substitute pat
 };
 
-private int last_idx = 0;   // index in prevSearchPatternsG[] for RE_LAST
+private int last_idx = 0;   // index in prevSearchPatternsP[] for RE_LAST
 
 private Byte lastc[2] = {ZERO, ZERO};   // last character searched for
 private int lastcdir = FORWARD;      // last direction of character search
@@ -77,16 +77,14 @@ private int last_t_cmd = true;      // last search t_cmd
 private Byte lastc_bytes[MB_MAXBYTES + 1];
 private int lastc_bytelen = 1;   // >1 for multi-byte char
 
-// copy of prevSearchPatternsG[], for keeping the search patterns while executing autocmds
-private SearchPattern saved_spats[ARRAY_LENGTH(prevSearchPatternsG)];
-private CS saved_mr_pattern = NULL;
-private Unt saved_mrPatternLen = 0;
+// copy of prevSearchPatternsP[], for keeping the search patterns while executing autocmds
+private SearchPattern saved_spats[ARRAY_LENGTH(prevSearchPatternsP)];
+private Text mrPatternSaved = (Text){NULL, 0};
 private int saved_spats_last_idx = 0;
 private Boole saved_spatsHlsearch = true;
 
 // allocated copy of pattern used by search_regcomp()
-private CS mrPatternS = NULL;
-private Unt mrPatternLen = 0;
+private Text mrPatternP = (Text){NULL, 0};
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
 typedef struct SearchedFile {
@@ -97,8 +95,8 @@ typedef struct SearchedFile {
 } SearchedFile;
 
 //translate search pattern for compileRegexp()
-//pat_save == RE_SEARCH: save pat in prevSearchPatternsG[RE_SEARCH].pat (normal search cmd)
-//pat_save == RE_SUBST: save pat in prevSearchPatternsG[RE_SUBST].pat (:substitute command)
+//pat_save == RE_SEARCH: save pat in prevSearchPatternsP[RE_SEARCH].pat (normal search cmd)
+//pat_save == RE_SUBST: save pat in prevSearchPatternsP[RE_SUBST].pat (:substitute command)
 //pat_save == RE_BOTH: save pat in both patterns (:global command)
 //pat_use  == RE_SEARCH: use previous search pattern if "pat" is NULL
 //pat_use  == RE_SUBST: use previous substitute pattern if "pat" is NULL
@@ -108,8 +106,7 @@ typedef struct SearchedFile {
 //return FAIL if failed, OK otherwise.
 int
 search_regcomp(
-   CS pat,
-   Unt patlen,
+   Text pat,
    Arr(CS) used_pat,
    int pat_save,
    int pat_use,
@@ -120,14 +117,9 @@ search_regcomp(
    anyRegexEmsgG = false;
 
    // If no pattern given, use a previously defined pattern.
-   if (!pat || *pat == ZERO) {
-      int i;
-
-      if (pat_use == RE_LAST)
-         i = last_idx;
-      else
-         i = pat_use;
-      if (prevSearchPatternsG[i].pat == NULL) {   // pattern was never defined
+   if (pat.len == 0) {
+      int i = (pat_use == RE_LAST) ? last_idx : pat_use;
+      if (prevSearchPatternsP[i].pat.c == 0) {   // pattern was never defined
          if (pat_use == RE_SUBST)
             emsg(_(e_no_previous_substitute_regular_expression));
          else
@@ -135,34 +127,32 @@ search_regcomp(
          anyRegexEmsgG = true;
          return FAIL;
       }
-      pat = prevSearchPatternsG[i].pat;
-      patlen = prevSearchPatternsG[i].patlen;
-      magic = prevSearchPatternsG[i].magic;
-      no_smartcase = prevSearchPatternsG[i].no_scs;
+      pat = prevSearchPatternsP[i].pat;
+      magic = prevSearchPatternsP[i].magic;
+      no_smartcase = prevSearchPatternsP[i].no_scs;
    } ei (options & SEARCH_HIS)   // put new pattern in history
-      add_to_history(HIST_SEARCH, pat, patlen, true, ZERO);
+      scrAddToHistory(HIST_SEARCH, pat, true, ZERO);
 
    if (used_pat)
-      *used_pat = pat;
+      *used_pat = pat.c;
 
-   eeglFree(mrPatternS);
-   mrPatternS = copySubstr(pat, patlen);
-   mrPatternLen = mrPatternS ? patlen : 0;
+   eeglFree(mrPatternP.c);
+   mrPatternP = copyText(pat);
 
    //Save the currently used pattern in the appropriate place,
    //unless the pattern should not be remembered.
    if (!(options & SEARCH_KEEP) && (commModifierG.cmod_flags & CMOD_KEEPPATTERNS) == 0) {
       // search or global command
       if (pat_save == RE_SEARCH || pat_save == RE_BOTH)
-          save_re_pat(RE_SEARCH, pat, patlen, magic);
+          save_re_pat(RE_SEARCH, pat, magic);
       // substitute or global command
       if (pat_save == RE_SUBST || pat_save == RE_BOTH)
-          save_re_pat(RE_SUBST, pat, patlen, magic);
+          save_re_pat(RE_SUBST, pat, magic);
    }
 
-   regmatch->rmm_ic = ignorecase(pat);
+   regmatch->rmm_ic = ignorecase(pat.c);
    regmatch->rmm_maxcol = 0;
-   regmatch->regprog = compileRegexp(pat, magic ? RE_MAGIC : 0);
+   regmatch->regprog = compileRegexp(pat.c, magic ? RE_MAGIC : 0);
    if (regmatch->regprog == NULL)
       return FAIL;
    return OK;
@@ -171,19 +161,18 @@ search_regcomp(
 // Get search pattern used by search_regcomp().
 CS
 get_search_pat(void) {
-   return mrPatternS;
+   return mrPatternP.c;
 }
 
 void
-save_re_pat(int idx, CS pat, Unt patlen, int magic) {
-   if (prevSearchPatternsG[idx].pat == pat)
+save_re_pat(int idx, Text pat, int magic) {
+   if (prevSearchPatternsP[idx].pat.c == pat.c)
       return;
 
-   eeglFree(prevSearchPatternsG[idx].pat);
-   prevSearchPatternsG[idx].pat = copySubstr(pat, patlen);
-   prevSearchPatternsG[idx].patlen = prevSearchPatternsG[idx].pat ? patlen : 0;
-   prevSearchPatternsG[idx].magic = magic;
-   prevSearchPatternsG[idx].no_scs = no_smartcase;
+   eeglFree(prevSearchPatternsP[idx].pat.c);
+   prevSearchPatternsP[idx].pat = copyText(pat);
+   prevSearchPatternsP[idx].magic = magic;
+   prevSearchPatternsP[idx].no_scs = no_smartcase;
    last_idx = idx;
    //If @hlsearch set and search pat changed: need redraw.
    if (p_hls && idx == RE_SEARCH)
@@ -200,24 +189,16 @@ save_search_patterns(void) {
    if (saveLevelS++ != 0)
       return;
 
-   for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsG); ++i) {
-      saved_spats[i] = prevSearchPatternsG[i];
-      if (prevSearchPatternsG[i].pat != NULL) {
-         saved_spats[i].pat = copySubstr(prevSearchPatternsG[i].pat, prevSearchPatternsG[i].patlen);
-         if (saved_spats[i].pat == NULL)
-            saved_spats[i].patlen = 0;
-         else
-            saved_spats[i].patlen = prevSearchPatternsG[i].patlen;
+   for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsP); ++i) {
+      saved_spats[i] = prevSearchPatternsP[i];
+      if (prevSearchPatternsP[i].pat.len != 0) {
+         saved_spats[i].pat = copyText(prevSearchPatternsP[i].pat);
       }
    }
-   if (mrPatternS == NULL)
-      saved_mr_pattern = NULL;
+   if (mrPatternP.len == 0)
+      mrPatternSaved = (Text){NULL, 0};
    else
-      saved_mr_pattern = copySubstr(mrPatternS, mrPatternLen);
-   if (saved_mr_pattern == NULL)
-      saved_mrPatternLen = 0;
-   else
-      saved_mrPatternLen = mrPatternLen;
+      mrPatternSaved = copyText(mrPatternP);
    saved_spats_last_idx = last_idx;
    saved_spatsHlsearch = hiliteSearchG;
 }
@@ -227,14 +208,13 @@ restore_search_patterns(void) {
    if (--saveLevelS != 0)
       return;
 
-   for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsG); ++i) {
-      eeglFree(prevSearchPatternsG[i].pat);
-      prevSearchPatternsG[i] = saved_spats[i];
+   for (Unt i = 0; i < ARRAY_LENGTH(prevSearchPatternsP); ++i) {
+      eeglFree(prevSearchPatternsP[i].pat.c);
+      prevSearchPatternsP[i] = saved_spats[i];
    }
    set_vv_searchforward();
-   eeglFree(mrPatternS);
-   mrPatternS = saved_mr_pattern;
-   mrPatternLen = saved_mrPatternLen;
+   eeglFree(mrPatternP.c);
+   mrPatternP = mrPatternSaved;
    last_idx = saved_spats_last_idx;
    setHlsearch(saved_spatsHlsearch);
 }
@@ -242,16 +222,16 @@ restore_search_patterns(void) {
 #if defined(EXITFREE) || defined(PROTO)
 void
 free_search_patterns(void) {
-   for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsG); ++i) {
-      EE_CLEAR(prevSearchPatternsG[i].pat);
-      prevSearchPatternsG[i].patlen = 0;
+   for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsP); ++i) {
+      EE_CLEAR(prevSearchPatternsP[i].pat);
+      prevSearchPatternsP[i].patlen = 0;
    }
    EE_CLEAR(mrPatternS);
    mrPatternLen = 0;
 }
 #endif
 
-// copy of prevSearchPatternsG[RE_SEARCH], for keeping the search patterns while incremental
+// copy of prevSearchPatternsP[RE_SEARCH], for keeping the search patterns while incremental
 // searching
 private SearchPattern saved_last_search_spat;
 private int did_save_last_search_spat = 0;
@@ -271,15 +251,9 @@ save_last_search_pattern(void) {
       // nested call, nothing to do
       return;
 
-   saved_last_search_spat = prevSearchPatternsG[RE_SEARCH];
-   if (prevSearchPatternsG[RE_SEARCH].pat != NULL) {
-      saved_last_search_spat.pat = copySubstr(
-            prevSearchPatternsG[RE_SEARCH].pat, prevSearchPatternsG[RE_SEARCH].patlen
-      );
-      if (saved_last_search_spat.pat == NULL)
-         saved_last_search_spat.patlen = 0;
-      else
-         saved_last_search_spat.patlen = prevSearchPatternsG[RE_SEARCH].patlen;
+   saved_last_search_spat = prevSearchPatternsP[RE_SEARCH];
+   if (prevSearchPatternsP[RE_SEARCH].pat.len != 0) {
+      saved_last_search_spat.pat = copyText(prevSearchPatternsP[RE_SEARCH].pat);
    }
    saved_last_idx = last_idx;
    savedHlsearch = hiliteSearchG;
@@ -295,10 +269,9 @@ restore_last_search_pattern(void) {
       return;
    }
 
-   eeglFree(prevSearchPatternsG[RE_SEARCH].pat);
-   prevSearchPatternsG[RE_SEARCH] = saved_last_search_spat;
-   saved_last_search_spat.pat = NULL;
-   saved_last_search_spat.patlen = 0;
+   eeglFree(prevSearchPatternsP[RE_SEARCH].pat.c);
+   prevSearchPatternsP[RE_SEARCH] = saved_last_search_spat;
+   saved_last_search_spat.pat = (Text){NULL, 0};
    set_vv_searchforward();
    last_idx = saved_last_idx;
    setHlsearch(savedHlsearch);
@@ -318,14 +291,9 @@ restore_incsearch_state(void) {
    search_match_lines  = saved_search_match_lines;
 }
 
-CS
+Text
 last_search_pattern(void) {
-   return prevSearchPatternsG[RE_SEARCH].pat;
-}
-
-Unt
-last_search_patternLen(void) {
-   return prevSearchPatternsG[RE_SEARCH].patlen;
+   return prevSearchPatternsP[RE_SEARCH].pat;
 }
 
 //Return true when case should be ignored for search pattern "pat".
@@ -421,13 +389,13 @@ set_csearch_until(int t_cmd) {
 
 CS
 last_search_pat(void) {
-   return prevSearchPatternsG[last_idx].pat;
+   return prevSearchPatternsP[last_idx].pat;
 }
 
 // Reset search direction to forward.  For "gd" and "gD" commands.
 void
 reset_search_dir(void) {
-   prevSearchPatternsG[0].off.dir = '/';
+   prevSearchPatternsP[0].off.dir = '/';
    set_vv_searchforward();
 }
 
@@ -440,38 +408,38 @@ set_last_search_pat(
    int magic,
    int setlast
 ) {
-   eeglFree(prevSearchPatternsG[idx].pat);
+   eeglFree(prevSearchPatternsP[idx].pat);
    // An empty string means that nothing should be matched.
    if (*s == ZERO)
-      prevSearchPatternsG[idx].pat = NULL;
+      prevSearchPatternsP[idx].pat = NULL;
    else {
-      prevSearchPatternsG[idx].patlen = STRLEN(s);
-      prevSearchPatternsG[idx].pat = copySubstr(s, prevSearchPatternsG[idx].patlen);
+      prevSearchPatternsP[idx].patlen = STRLEN(s);
+      prevSearchPatternsP[idx].pat = copySubstr(s, prevSearchPatternsP[idx].patlen);
    }
-   if (prevSearchPatternsG[idx].pat == NULL)
-      prevSearchPatternsG[idx].patlen = 0;
-   prevSearchPatternsG[idx].magic = magic;
-   prevSearchPatternsG[idx].no_scs = false;
-   prevSearchPatternsG[idx].off.dir = '/';
+   if (prevSearchPatternsP[idx].pat == NULL)
+      prevSearchPatternsP[idx].patlen = 0;
+   prevSearchPatternsP[idx].magic = magic;
+   prevSearchPatternsP[idx].no_scs = false;
+   prevSearchPatternsP[idx].off.dir = '/';
    set_vv_searchforward();
-   prevSearchPatternsG[idx].off.line = false;
-   prevSearchPatternsG[idx].off.end = false;
-   prevSearchPatternsG[idx].off.off = 0;
+   prevSearchPatternsP[idx].off.line = false;
+   prevSearchPatternsP[idx].off.end = false;
+   prevSearchPatternsP[idx].off.off = 0;
    if (setlast)
       last_idx = idx;
    if (saveLevelS) {
       eeglFree(saved_spats[idx].pat);
-      saved_spats[idx] = prevSearchPatternsG[0];
-      if (prevSearchPatternsG[idx].pat == NULL)
+      saved_spats[idx] = prevSearchPatternsP[0];
+      if (prevSearchPatternsP[idx].pat == NULL)
          saved_spats[idx].pat = NULL;
       else
          saved_spats[idx].pat = copySubstr(
-            prevSearchPatternsG[idx].pat, prevSearchPatternsG[idx].patlen
+            prevSearchPatternsP[idx].pat, prevSearchPatternsP[idx].patlen
          );
       if (saved_spats[idx].pat == NULL)
          saved_spats[idx].patlen = 0;
       else
-         saved_spats[idx].patlen = prevSearchPatternsG[idx].patlen;
+         saved_spats[idx].patlen = prevSearchPatternsP[idx].patlen;
       saved_spats_last_idx = last_idx;
    }
    // If @hlsearch set and search pat changed: need redraw.
@@ -483,12 +451,12 @@ set_last_search_pat(
 //in a portal. Values returned in regmatch->regprog and regmatch->rmm_ic.
 void
 last_pat_prog(RegMultilineMatch *regmatch) {
-   if (prevSearchPatternsG[RE_SEARCH].pat == NULL) {
+   if (prevSearchPatternsP[RE_SEARCH].pat == NULL) {
       regmatch->regprog = NULL;
       return;
    }
    ++emsg_off;      // So it doesn't beep if bad expr
-   (void)search_regcomp((CS)"", 0, NULL, 0, RE_SEARCH, SEARCH_KEEP, OUT regmatch);
+   (void)search_regcomp((Text){null, 0}, NULL, 0, RE_SEARCH, SEARCH_KEEP, OUT regmatch);
    --emsg_off;
 }
 
@@ -514,14 +482,13 @@ searchit(
    Portal* port, // portal to search in; can be NULL for a buffer without a portal!
    Book* book,
    Pos* pos,
-   Pos* end_pos,   // set to end of the match, unless NULL
+   OUT Pos* end_pos,   // set to end of the match, unless NULL
    Unt dir,    // forward or backward
-   CS pat,
-   Unt patlen,
+   Text pat,
    long count,
-   int options,
+   Unt options,
    int pat_use,   // which pattern to use when "pat" is empty
-   SearchitArg *extra_arg   // optional extra arguments, can be NULL
+   SearchitArg* extra_arg   // optional extra arguments, can be NULL
 ){
    int      found;
    LineNr   lnum;      // no init to shut up Apollo cc
@@ -546,7 +513,7 @@ searchit(
    int      unused_timeout_flag = false;
    int      *timed_out = &unused_timeout_flag;  // set when timed out.
 
-   if (search_regcomp(pat, patlen, NULL, RE_SEARCH, pat_use,
+   if (search_regcomp(pat, NULL, RE_SEARCH, pat_use,
          (options & (SEARCH_HIS + SEARCH_KEEP)), OUT &regmatch) == FAIL
    ){
       if ((options & SEARCH_MSG) && !anyRegexEmsgG)
@@ -840,16 +807,15 @@ searchit(
       }
       if (gotInterruptG || called_emsg > called_emsg_before || *timed_out || break_loop)
          break;
-   }
-   while (--count > 0 && found);   // stop after count matches or no match
+   } while (--count > 0 && found);   // stop after count matches or no match
 
-   if (extra_arg != NULL && extra_arg->sa_tm > 0)
+   if (extra_arg && extra_arg->sa_tm > 0)
       disable_regexp_timeout();
    eeRegFree(regmatch.regprog);
 
    if (!found) {         // did not find it
       if (gotInterruptG)
-          emsg(_(e_interrupted));
+         emsg(_(e_interrupted));
       ei ((options & SEARCH_MSG) == SEARCH_MSG) {
          if (wrapSearchG)
             showErrFmtMsg(_(e_pattern_not_found_str), mrPatternS);
@@ -870,12 +836,12 @@ searchit(
 
 void
 set_search_direction(int cdir) {
-   prevSearchPatternsG[0].off.dir = cdir;
+   prevSearchPatternsP[0].off.dir = cdir;
 }
 
 private void
 set_vv_searchforward(void) {
-   set_EeglVar_nr(VV_SEARCHFORWARD, (long)(prevSearchPatternsG[0].off.dir == '/'));
+   set_EeglVar_nr(VV_SEARCHFORWARD, (long)(prevSearchPatternsP[0].off.dir == '/'));
 }
 
 //Return the number of the first subpat that matched. Return zero if none of them matched.
@@ -909,7 +875,7 @@ first_submatch(RegMultilineMatch *rp) {
 //   If 'options & SEARCH_START': accept match at curpos itself
 //   If 'options & SEARCH_PEEK': check for typed char, cancel search
 //
-//Careful: If prevSearchPatternsG[0].off.line == true and prevSearchPatternsG[0].off.off == 0 this
+//Careful: If prevSearchPatternsP[0].off.line == true and prevSearchPatternsP[0].off.off == 0 this
 //makes the movement linewise without moving the match position.
 //
 //Return 0 for failure, 1 for found, 2 for found and line offset added.
@@ -918,18 +884,16 @@ do_search(
    Operator* oap,   // can be NULL
    int dirc,   // '/' or '?'
    int search_delim, // the delimiter for the search, e.g. '%' in s%regex%replacement%
-   CS pat,
-   Unt patlen,
+   Text pat,
    long count,
    int options,
    SearchitArg* sia   // optional arguments or NULL
 ){
-   CS  searchstr;
-   Unt searchstrlen;
+   Text searchstr;
    SearchOffset       old_off;
-   int          retval;   // Return value
+   int retval;   // Return value
    CS p;
-   long       c;
+   long c;
    CS dircp;
    CS strcopy = NULL;
    CS ps;
@@ -940,15 +904,15 @@ do_search(
 
    //Save the values for when (options & SEARCH_KEEP) is used.
    //(there is no "if ()" around this because gcc wants them initialized)
-   old_off = prevSearchPatternsG[0].off;
+   old_off = prevSearchPatternsP[0].off;
    // position of the last match
    Pos pos = curPor->cursor;   // start searching at the cursor position
 
    //Find out the direction of the search.
    if (dirc == 0)
-      dirc = prevSearchPatternsG[0].off.dir;
+      dirc = prevSearchPatternsP[0].off.dir;
    else {
-      prevSearchPatternsG[0].off.dir = dirc;
+      prevSearchPatternsP[0].off.dir = dirc;
       set_vv_searchforward();
    }
    if (options & SEARCH_REV) {
@@ -976,27 +940,24 @@ do_search(
       int      show_top_bot_msg = false;
 
       searchstr = pat;
-      searchstrlen = patlen;
 
       dircp = NULL;
                       // use previous pattern
-      if (pat == NULL || *pat == ZERO || *pat == search_delim) {
-          if (prevSearchPatternsG[RE_SEARCH].pat == NULL) {      // no previous pattern
-            if (prevSearchPatternsG[RE_SUBST].pat == NULL) {
-                emsg(_(e_no_previous_regular_expression));
-                retval = 0;
-                goto end_do_search;
+      if (pat.len == 0 || pat.c[0] == search_delim) {
+          if (prevSearchPatternsP[RE_SEARCH].pat.len == 0) {      // no previous pattern
+            if (prevSearchPatternsP[RE_SUBST].pat.len == 0) {
+               emsg(_(e_no_previous_regular_expression));
+               retval = 0;
+               goto end_do_search;
             }
-            searchstr = prevSearchPatternsG[RE_SUBST].pat;
-            searchstrlen = prevSearchPatternsG[RE_SUBST].patlen;
+            searchstr = prevSearchPatternsP[RE_SUBST].pat;
          } else {
-            // make search_regcomp() use prevSearchPatternsG[RE_SEARCH].pat
-            searchstr = (CS)"";
-            searchstrlen = 0;
+            // make search_regcomp() use prevSearchPatternsP[RE_SEARCH].pat
+            searchstr = (Text){null, 0};
          }
       }
 
-      if (pat != NULL && *pat != ZERO) {  // look for (new) offset
+      if (pat.len > 0) {  // look for (new) offset
          // Find end of regular expression. If there is a matching '/' or '?', toss it.
          ps = strcopy;
          p = skip_regexp_ex(pat, search_delim, true, &strcopy, NULL, NULL);
@@ -1013,27 +974,27 @@ do_search(
             dircp = p;   // remember where we put the ZERO
             *p++ = ZERO;
          }
-         prevSearchPatternsG[0].off.line = false;
-         prevSearchPatternsG[0].off.end = false;
-         prevSearchPatternsG[0].off.off = 0;
+         prevSearchPatternsP[0].off.line = false;
+         prevSearchPatternsP[0].off.end = false;
+         prevSearchPatternsP[0].off.off = 0;
          //Check for a line offset or a character offset.
          //For doGetCommandAddress (echo off) we don't check for a character
          //offset, because it is meaningless and the 's' could be a substitute command.
          if (*p == '+' || *p == '-' || EE_ISDIGIT(*p))
-            prevSearchPatternsG[0].off.line = true;
+            prevSearchPatternsP[0].off.line = true;
          ei ((options & SEARCH_OPT) && (*p == 'e' || *p == 's' || *p == 'b')) {
             if (*p == 'e')      // end
-                prevSearchPatternsG[0].off.end = SEARCH_END;
+                prevSearchPatternsP[0].off.end = SEARCH_END;
             ++p;
          }
          if (EE_ISDIGIT(*p) || *p == '+' || *p == '-') { // got an offset
                          // 'nr' or '+nr' or '-nr'
             if (EE_ISDIGIT(*p) || EE_ISDIGIT(*(p + 1)))
-               prevSearchPatternsG[0].off.off = atol((char *)p);
+               prevSearchPatternsP[0].off.off = atol((char *)p);
             ei (*p == '-')       // single '-'
-               prevSearchPatternsG[0].off.off = -1;
+               prevSearchPatternsP[0].off.off = -1;
             else             // single '+'
-               prevSearchPatternsG[0].off.off = 1;
+               prevSearchPatternsP[0].off.off = 1;
             ++p;
             while (EE_ISDIGIT(*p))       // skip number
                ++p;
@@ -1055,24 +1016,24 @@ do_search(
 
          // Get the offset, so we know how long it is.
          if (!cmd_silent &&
-             (prevSearchPatternsG[0].off.line 
-              || prevSearchPatternsG[0].off.end 
-              || prevSearchPatternsG[0].off.off)
+             (prevSearchPatternsP[0].off.line 
+              || prevSearchPatternsP[0].off.end 
+              || prevSearchPatternsP[0].off.off)
          ) {
             off_buf[off_len++] = dirc;
-            if (prevSearchPatternsG[0].off.end)
+            if (prevSearchPatternsP[0].off.end)
                 off_buf[off_len++] = 'e';
-            ei (!prevSearchPatternsG[0].off.line)
+            ei (!prevSearchPatternsP[0].off.line)
                 off_buf[off_len++] = 's';
             off_buf[off_len] = ZERO;
-            if (prevSearchPatternsG[0].off.off != 0 || prevSearchPatternsG[0].off.line)
+            if (prevSearchPatternsP[0].off.off != 0 || prevSearchPatternsP[0].off.line)
                 off_len += eeSnprintf(off_buf + off_len,
-                  sizeof(off_buf) - off_len, "%+ld", prevSearchPatternsG[0].off.off);
+                  sizeof(off_buf) - off_len, "%+ld", prevSearchPatternsP[0].off.off);
          }
 
          if (*searchstr == ZERO) {
-            p = prevSearchPatternsG[0].pat;
-            plen = prevSearchPatternsG[0].patlen;
+            p = prevSearchPatternsP[0].pat;
+            plen = prevSearchPatternsP[0].patlen;
          } else {
             p = searchstr;
             plen = searchstrlen;
@@ -1139,9 +1100,9 @@ do_search(
       //position, so we don't get stuck at "?pat?e+2" or "/pat/s-2".
       //Skip this if pos.col is near MAXCOL (closed fold).
       //This is not done for a line offset, because then we would not be vi compatible.
-      if (!prevSearchPatternsG[0].off.line && prevSearchPatternsG[0].off.off && pos.col < MAXCOL - 2) {
-         if (prevSearchPatternsG[0].off.off > 0) {
-            for (c = prevSearchPatternsG[0].off.off; c; --c)
+      if (!prevSearchPatternsP[0].off.line && prevSearchPatternsP[0].off.off && pos.col < MAXCOL - 2) {
+         if (prevSearchPatternsP[0].off.off > 0) {
+            for (c = prevSearchPatternsP[0].off.off; c; --c)
                if (decl(&pos) == -1)
                   break;
             if (c) {        // at start of buffer
@@ -1149,7 +1110,7 @@ do_search(
                pos.col = MAXCOL;
             }
          } else {
-            for (c = prevSearchPatternsG[0].off.off; c; ++c)
+            for (c = prevSearchPatternsP[0].off.off; c; ++c)
                if (incl(&pos) == -1)
                   break;
             if (c) {        // at end of buffer
@@ -1162,8 +1123,8 @@ do_search(
       //The actual search.
       c = searchit(
          curPor, curBook, &pos, NULL, dirc == '/' ? FORWARD : BACKWARD,
-         searchstr, searchstrlen, count, 
-         prevSearchPatternsG[0].off.end 
+         mbText(searchstr), count, 
+         prevSearchPatternsP[0].off.end 
             + (options & (SEARCH_KEEP + SEARCH_PEEK + SEARCH_HIS + SEARCH_MSG 
                + SEARCH_START + ((pat != NULL && *pat == ';') ? 0 : SEARCH_NOOF))
             ),
@@ -1178,7 +1139,7 @@ do_search(
          retval = 0;
          goto end_do_search;
       }
-      if (prevSearchPatternsG[0].off.end && oap != NULL)
+      if (prevSearchPatternsP[0].off.end && oap != NULL)
          oap->inclusive = true;  // 'e' includes last character
 
       retval = 1;          // pattern found
@@ -1187,8 +1148,8 @@ do_search(
       if (!(options & SEARCH_NOOF) || (pat != NULL && *pat == ';')) {
          Pos org_pos = pos;
 
-         if (prevSearchPatternsG[0].off.line){   // Add the offset to the line number.
-            c = pos.lnum + prevSearchPatternsG[0].off.off;
+         if (prevSearchPatternsP[0].off.line){   // Add the offset to the line number.
+            c = pos.lnum + prevSearchPatternsP[0].off.off;
             if (c < 1)
                pos.lnum = 1;
             ei (c > curBook->mem.lineCount)
@@ -1200,7 +1161,7 @@ do_search(
             retval = 2;       // pattern found, line offset added
          } ei (pos.col < MAXCOL - 2) {  // just in case
             // to the right, check for end of file
-            c = prevSearchPatternsG[0].off.off;
+            c = prevSearchPatternsP[0].off.off;
             if (c > 0) {
                while (c-- > 0) {
                   if (incl(&pos) == -1)
@@ -1255,7 +1216,7 @@ do_search(
 
 end_do_search:
    if ((options & SEARCH_KEEP) || (commModifierG.cmod_flags & CMOD_KEEPPATTERNS))
-      prevSearchPatternsG[0].off = old_off;
+      prevSearchPatternsP[0].off = old_off;
    eeglFree(strcopy);
    eeglFree(msgbuf);
 
@@ -1333,7 +1294,7 @@ searchc(ActionArg* cap, int t_cmd) {
    int stop = true;
 
    if (c != ZERO) {  // normal search: remember args for repeat
-      if (!KeyStuffed) {   // don't remember when redoing
+      if (!keyWasStuffedG) {   // don't remember when redoing
          *lastc = c;
          set_csearch_direction(dir);
          set_csearch_until(t_cmd);
@@ -1990,8 +1951,7 @@ check_linecomment(CS line) {
 //"direction" is FORWARD or BACKWARD. Return true, false or -1 for failure.
 private int
 is_zero_width(
-   CS pattern,
-   Unt patternlen,
+   Text pattern,
    int move,
    Pos* cur,
    int direction
@@ -2004,13 +1964,11 @@ is_zero_width(
    int flag = 0;
 
    if (pattern == NULL) {
-      pattern = prevSearchPatternsG[last_idx].pat;
-      patternlen = prevSearchPatternsG[last_idx].patlen;
+      pattern = prevSearchPatternsP[last_idx].pat;
+      patternlen = prevSearchPatternsP[last_idx].patlen;
    }
 
-   if (search_regcomp(pattern, patternlen, NULL, RE_SEARCH, RE_SEARCH, SEARCH_KEEP, OUT &regmatch) 
-       == FAIL
-   )
+   if (search_regcomp(pattern, NULL, RE_SEARCH, RE_SEARCH, SEARCH_KEEP, OUT &regmatch) == FAIL)
       return -1;
 
    // init startcol correctly
@@ -2077,7 +2035,7 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
    }
 
    // Is the pattern is zero-width?, this time, don't care about the direction
-   zero_width = is_zero_width(prevSearchPatternsG[last_idx].pat, prevSearchPatternsG[last_idx].patlen,
+   zero_width = is_zero_width(prevSearchPatternsP[last_idx].pat, prevSearchPatternsP[last_idx].patlen,
                   true, &curPor->cursor, FORWARD);
    if (zero_width == -1)
       return FAIL;  // pattern not found
@@ -2104,7 +2062,7 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
 
       result = searchit(curPor, curBook, &pos, &end_pos,
          (dir ? FORWARD : BACKWARD),
-         prevSearchPatternsG[last_idx].pat, prevSearchPatternsG[last_idx].patlen, (long) (i ? count : 1),
+         prevSearchPatternsP[last_idx].pat, prevSearchPatternsP[last_idx].patlen, (long) (i ? count : 1),
          SEARCH_KEEP | flags, RE_SEARCH, NULL);
 
       wrapSearchG = true;
@@ -2150,7 +2108,7 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
    VIsual_active = true;
    VIsual_mode = 'v';
 
-   if (p_fdo & FDO_SEARCH && KeyTyped)
+   if (p_fdo & FDO_SEARCH && keyWasTypedG)
       foldOpenCursor();
 
    setmouse();
@@ -2268,8 +2226,8 @@ update_search_stat(
    // If anything relevant changed the count has to be recomputed.
    if (!(chgtick == CHANGEDTICK(curBook)
       && (lastpat != NULL
-          && STRNCMP(lastpat, prevSearchPatternsG[last_idx].pat, lastpatlen) == 0
-          && lastpatlen == prevSearchPatternsG[last_idx].patlen
+          && STRNCMP(lastpat, prevSearchPatternsP[last_idx].pat, lastpatlen) == 0
+          && lastpatlen == prevSearchPatternsP[last_idx].patlen
       )
       && EQUAL_POS(lastpos, *cursor_pos)
       && lbuf == curBook) || wraparound || cur < 0
@@ -2320,11 +2278,11 @@ update_search_stat(
          cur = -1; // abort
       if (done_search) {
          eeglFree(lastpat);
-         lastpat = copySubstr(prevSearchPatternsG[last_idx].pat, prevSearchPatternsG[last_idx].patlen);
+         lastpat = copySubstr(prevSearchPatternsP[last_idx].pat, prevSearchPatternsP[last_idx].patlen);
          if (lastpat == NULL)
             lastpatlen = 0;
          else
-            lastpatlen = prevSearchPatternsG[last_idx].patlen;
+            lastpatlen = prevSearchPatternsP[last_idx].patlen;
          chgtick = CHANGEDTICK(curBook);
          lbuf = curBook;
          lastpos = p;
@@ -2951,7 +2909,7 @@ show_pat_in_path(
 // Return the last used search pattern at "idx".
 SearchPattern *
 getPrevSearchPattern(int idx) {
-   return &prevSearchPatternsG[idx];
+   return &prevSearchPatternsP[idx];
 }
 
 //Return the last used search pattern index.
@@ -3034,14 +2992,14 @@ f_searchcount(Var *argvars, Var* returnVar) {
    if (pattern != NULL) {
       if (*pattern == ZERO)
           goto the_end;
-      eeglFree(prevSearchPatternsG[last_idx].pat);
-      prevSearchPatternsG[last_idx].patlen = STRLEN(pattern);
-      prevSearchPatternsG[last_idx].pat = 
-         copySubstr(pattern, prevSearchPatternsG[last_idx].patlen);
-      if (prevSearchPatternsG[last_idx].pat == NULL)
-          prevSearchPatternsG[last_idx].patlen = 0;
+      eeglFree(prevSearchPatternsP[last_idx].pat);
+      prevSearchPatternsP[last_idx].patlen = STRLEN(pattern);
+      prevSearchPatternsP[last_idx].pat = 
+         copySubstr(pattern, prevSearchPatternsP[last_idx].patlen);
+      if (prevSearchPatternsP[last_idx].pat == NULL)
+          prevSearchPatternsP[last_idx].patlen = 0;
    }
-   if (prevSearchPatternsG[last_idx].pat == NULL || *prevSearchPatternsG[last_idx].pat == ZERO)
+   if (prevSearchPatternsP[last_idx].pat == NULL || *prevSearchPatternsP[last_idx].pat == ZERO)
       goto the_end;   // the previous pattern was never defined
 
    update_search_stat(0, &pos, &pos, &stat, recompute, maxcount, timeout);
@@ -4068,7 +4026,7 @@ c_help(Invocation* invo) {
    int      empty_fnum = 0;
    int      alt_fnum = 0;
    int len;
-   int old_KeyTyped = KeyTyped;
+   int old_keyWasTypedG = keyWasTypedG;
 
    if (portErrorIfPopup(true))
       return;
@@ -4189,9 +4147,9 @@ c_help(Invocation* invo) {
 
    restart_edit = 0;       // don't want insert mode in help file
 
-   // Restore KeyTyped, setting 'filetype=help' may reset it.
+   // Restore keyWasTypedG, setting 'filetype=help' may reset it.
    // It is needed for do_tag top open folds under the cursor.
-   KeyTyped = old_KeyTyped;
+   keyWasTypedG = old_keyWasTypedG;
 
    if (tag != NULL)
       do_tag(tag, DT_HELP, 1, false, true);

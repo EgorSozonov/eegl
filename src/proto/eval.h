@@ -191,7 +191,7 @@ void f_id(Var *argvars, Var *returnVar);
 Boole indexof_eval_expr(Var *expr);
 void f_len(Var *argvars, Var *returnVar);
 void range_list_materialize(List *list);
-long do_searchpair(Byte *spat, Byte *mpat, Byte *epat, int dir, Var *skip, int flags, Pos *match_pos, LineNr lnum_stop, long time_limit);
+long do_searchpair(CS spat, CS mpat, CS epat, Unt dir, Var *skip, Unt flags, Pos *match_pos, LineNr lnum_stop, long time_limit);
 int aborting(void);
 void update_force_abort(void);
 int should_abort(int retcode);

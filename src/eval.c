@@ -9378,7 +9378,6 @@ private BuiltinFn globalFunctions[] = {
    {S"swapinfo",     1, 1, FEARG_1,         &f_swapinfo},
    {S"swapname",     1, 1, FEARG_1,         &f_swapname},
    {S"synID",        3, 3, 0,           &f_synID},
-   {S"synIDattr",    2, 3, FEARG_1,            &f_synIDattr},
    {S"synIDtrans",   1, 1, FEARG_1,           &f_synIDtrans},
    {S"synstack",     2, 2, 0,              &f_synstack},
    {S"system",      1, 2, FEARG_1,         &f_system},
@@ -13527,7 +13526,6 @@ get_search_arg(Var *varp, Unt *flagsp) {
 // Shared by search() and searchpos() functions.
 private int
 search_cmn(Arr(Var) argvars, OUT Pos *match_pos, OUT Unt* flagsp) {
-   Unt   patlen;
    Pos   save_cursor;
    int      retval = 0;   // default: FAIL
    long   lnum_stop = 0;
@@ -13580,12 +13578,11 @@ search_cmn(Arr(Var) argvars, OUT Pos *match_pos, OUT Unt* flagsp) {
    sia.sa_stop_lnum = (LineNr)lnum_stop;
    sia.sa_tm = time_limit;
 
-   patlen = STRLEN(pat);
 
    // Repeat until {skip} return false.
    for (;;) {
       subpatnum = searchit(
-         curPor, curBook, &pos, NULL, dir, pat, patlen, 1L, options, RE_SEARCH, &sia
+         curPor, curBook, &pos, NULL, dir, mbText(pat), 1L, options, RE_SEARCH, &sia
       );
       // finding the first match again means there is no match where {skip}
       // evaluates to zero.
@@ -13765,16 +13762,16 @@ f_searchpairpos(Arr(Var) argvars, Var* returnVar) {
 //Return 0 or -1 for no match,
 long
 do_searchpair(
-   Byte   *spat,       // start pattern
-   Byte   *mpat,       // middle pattern
-   Byte   *epat,       // end pattern
-   int      dir,       // BACKWARD or FORWARD
-   Var   *skip,       // skip expression
-   int      flags,       // SP_SETPCMARK and other SP_ values
-   Pos   *match_pos,
-   LineNr   lnum_stop,  // stop at this line if not zero
-   long   time_limit UNUSED) // stop after this many msec
-{
+   CS spat,       // start pattern
+   CS mpat,       // middle pattern
+   CS epat,       // end pattern
+   Unt dir,       // BACKWARD or FORWARD
+   Var* skip,       // skip expression
+   Unt flags,       // SP_SETPCMARK and other SP_ values
+   Pos* match_pos,
+   LineNr lnum_stop,  // stop at this line if not zero
+   long time_limit // stop after this many msec
+) {
    long   retval = 0;
    Pos   save_pos;
    int n;
@@ -13792,13 +13789,11 @@ do_searchpair(
    CS pat2 = alloc(pat2size);
    Unt pat3size = spatlen + STRLEN(mpat) + epatlen + 25;
    CS pat3 = alloc(pat3size);
-   Unt pat2len = eeSnprintf(pat2, pat2size, "\\m\\(%s\\m\\)\\|\\(%s\\m\\)", spat, epat);
-   Unt pat3len;
+   (void)eeSnprintf(pat2, pat2size, "\\m\\(%s\\m\\)\\|\\(%s\\m\\)", spat, epat);
    if (*mpat == ZERO) {
       STRCPY(pat3, pat2);
-      pat3len = pat2len;
    } else
-      pat3len = eeSnprintf(pat3, pat3size, 
+      (void)eeSnprintf(pat3, pat3size, 
             "\\m\\(%s\\m\\)\\|\\(%s\\m\\)\\|\\(%s\\m\\)", spat, epat, mpat
       );
    if (flags & SP_START)
@@ -13817,13 +13812,12 @@ do_searchpair(
    Pos foundpos;
    CLEAR_POS(OUT &foundpos);
    CS pat = pat3;
-   Unt patlen = pat3len;
    for (;;) {
       SearchitArg sia;
 
       CLEAR_FIELD(sia);
       sia.sa_stop_lnum = lnum_stop;
-      n = searchit(curPor, curBook, &pos, NULL, dir, pat, patlen, 1L,
+      n = searchit(curPor, curBook, &pos, NULL, dir, mbText(pat), 1L,
                           options, RE_SEARCH, &sia);
       if (n == FAIL || (firstpos.lnum != 0 && EQUAL_POS(pos, firstpos)))
          // didn't find it or found the first match again: FAIL

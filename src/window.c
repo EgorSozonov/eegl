@@ -3461,16 +3461,18 @@ clip_copy_modeless_selection() {
       if (row < screenLinesRowsG && end_col <= screenLinesColsG) {
          int off = drawGetOffset(row);
          for (int i = start_col; i < end_col; ++i) {
-            // The base character is either in screenLinesUCG[] or screenLinesP[].
-            if (screenLinesUCG[off + i] == 0)
+            // The base character is either in draw.c:screenLinesUCG[] or draw.c:screenLinesP[].
+            Unt unicodeChar = drawGetScreenUnicodeChar(off + i);
+            if (unicodeChar == 0)
                *bufp++ = drawGetLine(off + i);
             else {
-               bufp += mb_char2bytes(screenLinesUCG[off + i], bufp);
-               for (int ci = 0; ci < MAX_COMBINED_SYMBOLS; ++ci) {
+               bufp += mb_char2bytes(unicodeChar, bufp);
+               for (Unt ci = 0; ci < MAX_COMBINED_SYMBOLS; ++ci) {
+                  Unt compChar = drawGetScreenComposingChar(off + i, ci);
                   // Add a composing character.
-                  if (screenLinesCG[ci][off + i] == 0)
+                  if (compChar == 0)
                      break;
-                  bufp += mb_char2bytes(screenLinesCG[ci][off + i], bufp);
+                  bufp += mb_char2bytes(compChar, bufp);
                }
             }
          }

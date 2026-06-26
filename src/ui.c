@@ -8044,7 +8044,7 @@ terminal_loop(int blocking) {
    while (blocking || vpeekc_nomap() != ZERO) {
       // TODO: skip screen update when handling a sequence of keys.
       // Repeat redrawing in case a message is received while redrawing.
-      while (must_redraw != 0) {
+      while (mustRedrawG != 0) {
          if (drawUpdateScreen(0) == FAIL)
             break;
       }
@@ -8127,7 +8127,7 @@ terminal_loop(int blocking) {
             Byte buf[1 + 3 + MB_MAXBYTES + 1];
 
             //Put the command into the typeahead buffer, when using the
-            //stuff buffer KeyStuffed is set and 'langmap' won't be used.
+            //stuff buffer keyWasStuffedG is set and 'langmap' won't be used.
             buf[0] = Ctrl_W;
             buf[special_to_buf(c, modMaskG, false, buf + 1) + 1] = ZERO;
             insertIntoTypebuf(buf, REMAP_NONE, 0, true, false);
@@ -11702,7 +11702,7 @@ tabpanel_leftcol(void) {
 // draw the tabpanel.
 void
 draw_tabpanel(void) {
-   int saved_KeyTyped = KeyTyped;
+   int saved_keyWasTypedG = keyWasTypedG;
    int saved_gotInterruptG = gotInterruptG;
    Unt maxwidth = tabpanel_width();
    char vsDecoFlags = getDecoFlags(HLF_C);
@@ -11740,8 +11740,8 @@ draw_tabpanel(void) {
 
    gotInterruptG |= saved_gotInterruptG;
 
-   // A user function may reset KeyTyped, restore it.
-   KeyTyped = saved_KeyTyped;
+   // A user function may reset keyWasTypedG, restore it.
+   keyWasTypedG = saved_keyWasTypedG;
 
    needRedrawTabpanelG = false;
 }

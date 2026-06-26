@@ -705,15 +705,14 @@ remove_duplicates(OUT ExpandMatch* matches) {
 
 private void
 expandRuntimeDirInternal(
-   CS pat,
-   Unt pat_len,
+   Text pat,
    Unt flags,
    Boole keep_ext,
    OUT ExpandMatch* matches,
    CS dirnames[]
 ){
    for (int i = 0; dirnames[i] != NULL; ++i) {
-      const Unt bufLen = STRLEN(dirnames[i]) + pat_len + 64;
+      const Unt bufLen = STRLEN(dirnames[i]) + pat.len + 64;
       CS buf = alloc(bufLen);
       Unt gloflags = 0;
       Boole expand_dirs = false;
@@ -721,7 +720,7 @@ expandRuntimeDirInternal(
       // Build base pattern
       eeSnprintf(
          buf, bufLen, "%s%s%s%s", *dirnames[i] ? dirnames[i] : S"", *dirnames[i] ? S"/" : S"",
-         pat, "*.vim"
+         pat.c, "*.vim"
       );
 
 expand:
@@ -733,7 +732,7 @@ expand:
          eeSnprintf(buf, bufLen, "pack/*/start/*/%s%s%s%s",
              *dirnames[i] ? dirnames[i] : S"",
              *dirnames[i] ? S"/" : S"",
-             pat,
+             pat.c,
              expand_dirs ? "*" : "*.vim"
          );
          fiGlobpath(runtimePath, buf, OUT matches, gloflags, expand_dirs);
@@ -743,7 +742,7 @@ expand:
          // Build complete search path: pack/*/opt/*/dirnames[i]/pat*.vim
          eeSnprintf(buf, bufLen, "pack/*/opt/*/%s%s%s%s",
              *dirnames[i] ? dirnames[i] : S"",
-             *dirnames[i] ? S"/" : S"", pat,
+             *dirnames[i] ? S"/" : S"", pat.c,
              expand_dirs ? "*" : "*.vim"
          );
          fiGlobpath(runtimePath, buf, OUT matches, gloflags, expand_dirs);
@@ -752,7 +751,7 @@ expand:
       // Second round for directories
       if (*dirnames[i] == ZERO && !expand_dirs) {
          // expand dir names in another round
-         eeSnprintf(buf, bufLen, "%s*", pat);
+         eeSnprintf(buf, bufLen, "%s*", pat.c);
          gloflags = WILD_ADD_SLASH;
          expand_dirs = true;
          goto expand;
@@ -762,8 +761,8 @@ expand:
    }
 
    int pat_pathsep_cnt = 0;
-   for (Unt i = 0; i < pat_len; ++i) {
-      if (pat[i] == '/')
+   for (Unt i = 0; i < pat.len; ++i) {
+      if (pat.c[i] == '/')
          ++pat_pathsep_cnt;
    }
 
@@ -803,11 +802,11 @@ expand:
 int
 expandRuntimeDir(
    CS pat,
-   Unt      flags,
+   Unt flags,
    Arr(CS) dirnames,
    OUT ExpandMatch* matches
 ) {
-   expandRuntimeDirInternal(pat, STRLEN(pat), flags, false, OUT matches, dirnames);
+   expandRuntimeDirInternal(text(pat), flags, false, OUT matches, dirnames);
    if (matches->len == 0)
       return FAIL;
 
@@ -817,15 +816,15 @@ expandRuntimeDir(
 // Handle command line completion for :runtime command.
 private int
 expand_runtime_cmd(CS pat, OUT ExpandMatch* matches) {
-   Unt pat_len = STRLEN(pat);
+   Text patTxt = text(pat);
    CS dirnames[] = {S"", NULL};
-   expandRuntimeDirInternal(pat, pat_len, runtime_expand_flags, true, OUT matches, dirnames);
+   expandRuntimeDirInternal(patTxt, runtime_expand_flags, true, OUT matches, dirnames);
 
    // Try to complete values for [where] argument when none was found.
    if (runtime_expand_flags == 0) {
       CS where_values[] = {SMAP((CS), "START", "OPT", "PACK", "ALL" )};
       for (Unt i = 0; i < ARRAY_LENGTH(where_values); ++i) {
-         if (STRNCMP(pat, where_values[i], pat_len) == 0) {
+         if (STRNCMP(patTxt.c, where_values[i], patTxt.len) == 0) {
             CS p = copyStrA(where_values[i], matches->a);
             addExpandMatch(p, OUT matches);
          }
@@ -1157,10 +1156,10 @@ scriptRunFileInternal(
    //Also starts profiling timer for nested script.
    save_funccal(&funccalp_entry);
 
-   //Reset "KeyTyped" to avoid some commands thinking they are invoked
+   //Reset "keyWasTypedG" to avoid some commands thinking they are invoked
    //interactively.  E.g. defining a function would output indent.
-   int save_KeyTyped = KeyTyped;
-   KeyTyped = false;
+   int save_keyWasTypedG = keyWasTypedG;
+   keyWasTypedG = false;
 
    //Check if this script was sourced before to find its SID.
    //Always use a new sequence number.
@@ -1249,7 +1248,7 @@ almosttheend:
 
    restore_funccal();
 
-   KeyTyped = save_KeyTyped;
+   keyWasTypedG = save_keyWasTypedG;
    scriptPosG = save_scriptPosG;
 
    if (cookie.fp != NULL)
@@ -3107,7 +3106,7 @@ cmdline_pum_active(void){
 // Remove the commline completion popup menu (if present), free the list of items and refresh screen
 void
 cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw){
-   int   save_KeyTyped = KeyTyped;
+   int   save_keyWasTypedG = keyWasTypedG;
    int   save_isRedrawingDisabledG = isRedrawingDisabledG;
    if (cclp->input_fn)
       isRedrawingDisabledG = 0;
@@ -3124,8 +3123,8 @@ cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw){
       pum_callUpdateScreen();
    redrawcmd();
 
-   // When a function is called (e.g. for 'foldtext') KeyTyped might be reset as a side effect.
-   KeyTyped = save_KeyTyped;
+   // When a function is called (e.g. for 'foldtext') keyWasTypedG might be reset as a side effect.
+   keyWasTypedG = save_keyWasTypedG;
    if (cclp->input_fn)
       isRedrawingDisabledG = save_isRedrawingDisabledG;
 }
@@ -5109,29 +5108,22 @@ expand_files_and_dirs(
    int      options,
    OUT ExpandMatch* matches
 ) {
-   int      free_pat = false;
-   int      ret = FAIL;
+   int free_pat = false;
+   int ret = FAIL;
 
    // for ":set path=" and ":set tags=" halve backslashes for escaped space
    if (xp->backslash != XP_BS_NONE) {
-      Unt   pat_len;
-      Byte   *pat_end;
-      Byte   *p;
-
       free_pat = true;
 
-      pat_len = STRLEN(pat);
+      Unt pat_len = STRLEN(pat);
       pat = copySubstr(pat, pat_len);
-      if (pat == NULL)
-          return ret;
 
-      pat_end = pat + pat_len;
-      for (p = pat; *p != ZERO; ++p) {
-         Byte  *from;
-
+      CS pat_end = pat + pat_len;
+      for (CS p = pat; *p != ZERO; ++p) {
          if (*p != '\\')
             continue;
 
+         CS from;
          if (xp->backslash & XP_BS_THREE
             && *(p + 1) == '\\'
             && *(p + 2) == '\\'
@@ -5944,7 +5936,7 @@ wildmenu_process_key_menunames(CommlineInfo *cclp, Unt key, Expand *xp){
    // Hitting <Down> after "emenu Name.": complete submenu
    if (key == K_DOWN && cclp->cmdpos > 0 && cclp->commBuf[cclp->cmdpos - 1] == '.') {
       key = p_wc;
-      KeyTyped = true;  // in case the key was mapped
+      keyWasTypedG = true;  // in case the key was mapped
    } ei (key == K_UP) {
       // Hitting <Up>: Remove one submenu name in front of the
       // cursor
@@ -5970,7 +5962,7 @@ wildmenu_process_key_menunames(CommlineInfo *cclp, Unt key, Expand *xp){
       if (i > 0)
           cmdline_del(cclp, i);
       key = p_wc;
-      KeyTyped = true;  // in case the key was mapped
+      keyWasTypedG = true;  // in case the key was mapped
       xp->context = EXPAND_NOTHING;
     }
 
@@ -5994,7 +5986,7 @@ wildmenu_process_key_filenames(CommlineInfo *cclp, Unt key, Expand *xp){
    ) {
       // go down a directory
       key = p_wc;
-      KeyTyped = true;  // in case the key was mapped
+      keyWasTypedG = true;  // in case the key was mapped
    } ei (STRNCMP(xp->input.c, upseg + 1, 3) == 0 && key == K_DOWN) {
       // If in a direct ancestor, strip off one ../ to go down
       int found = false;
@@ -6015,7 +6007,7 @@ wildmenu_process_key_filenames(CommlineInfo *cclp, Unt key, Expand *xp){
       ){
           cmdline_del(cclp, j - 2);
           key = p_wc;
-          KeyTyped = true;  // in case the key was mapped
+          keyWasTypedG = true;  // in case the key was mapped
       }
    } ei (key == K_UP) {
       // go up a directory
@@ -6048,9 +6040,9 @@ wildmenu_process_key_filenames(CommlineInfo *cclp, Unt key, Expand *xp){
       } ei (cclp->cmdpos > i)
          cmdline_del(cclp, i);
 
-      // Now complete in the new directory. Set KeyTyped in case the Up key came from a mapping.
+      // Now complete in the new directory. Set keyWasTypedG in case the Up key came from a mapping.
       key = p_wc;
-      KeyTyped = true;
+      keyWasTypedG = true;
    }
 
    return key;
@@ -6072,7 +6064,7 @@ wildmenu_process_key(CommlineInfo *cclp, Unt key, Expand *xp) {
 // Free expanded names when finished walking through the matches
 void
 wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
-   int skt = KeyTyped;
+   int skt = keyWasTypedG;
 
    if (!p_wmnu || wild_menu_showing == 0)
       return;
@@ -6094,7 +6086,7 @@ wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
       drawUpdateScreen(UPD_VALID);   // redraw the screen NOW
       redrawcmd();
    }
-   KeyTyped = skt;
+   keyWasTypedG = skt;
    wild_menu_showing = 0;
    if (cclp->input_fn)
       isRedrawingDisabledG = save_isRedrawingDisabledG;
@@ -6357,17 +6349,12 @@ is_regex_match(Byte *pat, Byte *str) {
 //If 'lowercase' is true, the appended text is converted to lowercase before being combined. 
 //Return the newly allocated match string, or NULL on failure.
 private CS
-concat_pattern_with_buffer_match(
-   Byte *pat,
-   int pat_len,
-   Pos *end_match_pos,
-   Boole lowercase
-) {
+concat_pattern_with_buffer_match(Text pat, Pos* end_match_pos, Boole lowercase) {
    CS line = ml_get(end_match_pos->lnum);
    CS word_end = find_word_end(line + end_match_pos->col);
    int match_len = (int)(word_end - (line + end_match_pos->col));
-   CS match = alloc(match_len + pat_len + 1);  // +1 for ZERO
-   mch_memmove(match, pat, pat_len);
+   CS match = alloc(match_len + pat.len + 1);  // +1 for ZERO
+   mch_memmove(match, pat.c, pat.len);
    if (match_len > 0) {
       if (lowercase) {
           Byte  *mword = copySubstr(line + end_match_pos->col,
@@ -6378,12 +6365,12 @@ concat_pattern_with_buffer_match(
           eeglFree(mword);
           if (lower == NULL)
          goto cleanup;
-          mch_memmove(match + pat_len, lower, match_len);
+          mch_memmove(match + pat.len, lower, match_len);
           eeglFree(lower);
       } else
-          mch_memmove(match + pat_len, line + end_match_pos->col, match_len);
+          mch_memmove(match + pat.len, line + end_match_pos->col, match_len);
    }
-   match[pat_len + match_len] = ZERO;
+   match[pat.len + match_len] = ZERO;
    return match;
 
 cleanup:
@@ -6395,17 +6382,15 @@ cleanup:
 private int
 expandPatternInBook(
    CS pat,          // pattern to match
-   Unt dir,          // direction: FORWARD or BACKWARD
+   Unt dir,         // direction: FORWARD or BACKWARD
    OUT ExpandMatch* matches
 ){
    Pos cur_match_pos, prev_match_pos, end_match_pos, word_end_pos;
-   int found_new_match;
-   int looped_around = false;
-   int pat_len;
-   int has_range = false;
-   int compl_started = false;
-   int search_flags;
-   Byte   *match, *full_match;
+   Boole looped_around = false;
+   Boole has_range = false;
+   Boole compl_started = false;
+   CS match;
+   CS fullMatch;
    Boole  exacttext = (p_wop & WILDOPT_EXACT) != 0;
 
    has_range = search_first_line != 0;
@@ -6413,7 +6398,7 @@ expandPatternInBook(
    if (pat == NULL || *pat == ZERO)
       return FAIL;
 
-   pat_len = (int)STRLEN(pat);
+   Text patTxt = text(pat);
    CLEAR_FIELD(cur_match_pos);
    CLEAR_FIELD(prev_match_pos);
    if (has_range)
@@ -6421,15 +6406,14 @@ expandPatternInBook(
    else
       cur_match_pos = pre_incsearch_pos;
 
-   search_flags = SEARCH_OPT | SEARCH_NOOF | SEARCH_PEEK | SEARCH_NFMSG
+   Unt searchFlags = SEARCH_OPT | SEARCH_NOOF | SEARCH_PEEK | SEARCH_NFMSG
       | (has_range ? SEARCH_START : 0);
-
 
    for (;;) {
       ++emsg_off;
       ++msg_silent;
-      found_new_match = searchit(
-         NULL, curBook, &cur_match_pos, &end_match_pos, dir, pat, pat_len, 1L, search_flags, 
+      int found_new_match = searchit(
+         NULL, curBook, &cur_match_pos, OUT &end_match_pos, dir, patTxt, 1L, searchFlags, 
          RE_LAST, NULL
       );
       --msg_silent;
@@ -6477,28 +6461,28 @@ expandPatternInBook(
       }
 
       // Extract the matching text prepended to completed word
-      if (!copy_substring_from_pos(&cur_match_pos, &end_match_pos, &full_match, &word_end_pos))
+      if (!copy_substring_from_pos(&cur_match_pos, &end_match_pos, &fullMatch, &word_end_pos))
          break;
 
       if (exacttext)
-         match = full_match;
+         match = fullMatch;
       else {
          // Construct a new match from completed word appended to pattern itself
-         match = concat_pattern_with_buffer_match(pat, pat_len, &end_match_pos, false);
+         match = concat_pattern_with_buffer_match(patTxt, &end_match_pos, false);
 
          // The regex pattern may include '\C' or '\c'. First, try matching the
          // buffer word as-is. If it doesn't match, try again with the lowercase
          // version of the word to handle smartcase behavior.
-         if (match == NULL || !is_regex_match(match, full_match)) {
+         if (!match || !is_regex_match(match, fullMatch)) {
             eeglFree(match);
-            match = concat_pattern_with_buffer_match(pat, pat_len, &end_match_pos, true);
-            if (match == NULL || !is_regex_match(match, full_match)) {
+            match = concat_pattern_with_buffer_match(patTxt, &end_match_pos, true);
+            if (!match || !is_regex_match(match, fullMatch)) {
                 eeglFree(match);
-                eeglFree(full_match);
+                eeglFree(fullMatch);
                 continue;
             }
          }
-         eeglFree(full_match);
+         eeglFree(fullMatch);
       }
 
       // Include this match if it is not a duplicate
@@ -6750,25 +6734,24 @@ private int   last_maptick = -1;   // last seen maptick
 //Add the given string to the given history.  If the string is already in the
 //history then it is moved to the front.  "histype" may be one of he HIST_ values.
 void
-add_to_history(
-   int      histype,
-   Byte   *new_entry,
-   Unt   new_entrylen,
-   int      in_map,      // consider maptick when inside a mapping
-   int      sep      // separator character used (search hist)
+scrAddToHistory(
+   int histype,
+   Text newEntry,
+   int in_map,      // consider maptick when inside a mapping
+   int sep      // separator character used (search hist)
 ){
-   HistoryEntry   *hisptr;
 
    if (histLenG == 0)      // no history
       return;
 
-   if ((commModifierG.cmod_flags & CMOD_KEEPPATTERNS) && histype == HIST_SEARCH)
+   if ((commModifierG.cmod_flags & CMOD_KEEPPATTERNS) != 0 && histype == HIST_SEARCH)
       return;
 
+   HistoryEntry* hisptr;
    // Searches inside the same mapping overwrite each other, so that only
    // the last line is kept.  Be careful not to remove a line that was moved
    // down, only lines that were added.
-   if (histype == HIST_SEARCH && in_map) {
+   if ((histype == HIST_SEARCH && in_map) != 0) {
       if (maptick == last_maptick && hisidx[HIST_SEARCH] >= 0) {
          // Current line is from the same mapping, remove it
          hisptr = &history[HIST_SEARCH][hisidx[HIST_SEARCH]];
@@ -6781,22 +6764,18 @@ add_to_history(
       last_maptick = -1;
    }
 
-   if (in_history(histype, new_entry, true, sep, false))
+   if (in_history(histype, newEntry.c, true, sep, false))
       return;
 
    if (++hisidx[histype] == histLenG)
       hisidx[histype] = 0;
-  hisptr = &history[histype][hisidx[histype]];
-  eeglFree(hisptr->hisstr);
+   hisptr = &history[histype][hisidx[histype]];
+   eeglFree(hisptr->hisstr);
 
-    // Store the separator after the ZERO of the string.
-    hisptr->hisstr = copySubstr(new_entry, new_entrylen + 2);
-   if (hisptr->hisstr == NULL)
-   hisptr->hisstrlen = 0;
-   else {
-      hisptr->hisstr[new_entrylen + 1] = sep;
-      hisptr->hisstrlen = new_entrylen;
-   }
+   // Store the separator after the ZERO of the string.
+   hisptr->hisstr = copySubstr(newEntry.c, newEntry.len + 2);
+   hisptr->hisstr[newEntry.len + 1] = sep;
+   hisptr->hisstrlen = newEntry.len;
 
    hisptr->hisnum = ++hisnum[histype];
    hisptr->eeglinfo = false;
@@ -6950,23 +6929,22 @@ del_history_idx(int histype, int idx) {
 
 void
 f_histadd(Arr(Var) argvars UNUSED, Var* returnVar) {
-   int      histype;
-   Byte   builder[NUMBUFLEN];
+   Byte buf[NUMBUFLEN];
 
    returnVar->number = false;
 
    CS str = convertVarToStringSingleUse(&argvars[0]);   // NULL on type error
-   histype = str != NULL ? get_histtype(str) : -1;
+   int histype = str ? get_histtype(str) : -1;
    if (histype < 0)
        return;
 
-   str = tv_get_string_buf(&argvars[1], builder);
+   str = tv_get_string_buf(&argvars[1], buf);
    if (*str == ZERO)
        return;
 
-    init_history();
-    add_to_history(histype, str, STRLEN(str), false, ZERO);
-    returnVar->number = true;
+   init_history();
+   scrAddToHistory(histype, text(str), false, ZERO);
+   returnVar->number = true;
 }
 
 void
@@ -6984,7 +6962,7 @@ f_histdel(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
       // index given: remove that entry
       n = del_history_idx(get_histtype(str), (int)tv_get_number(&argvars[1]));
    else {
-      Byte   builder[NUMBUFLEN];
+      Byte builder[NUMBUFLEN];
 
       // string given: remove all matching entries
       n = del_history_entry(get_histtype(str), tv_get_string_buf(&argvars[1], builder));
@@ -7432,13 +7410,13 @@ parse_pattern_and_range(
 //Set search_first_line and search_last_line to the address range.
 //May change the last search pattern.
 private int
-do_incsearch_highlighting(
+incsearchHilitingImpl(
    int firstc,
    OUT Unt* searchDelim,
-   IncSearch   *is_state,
-   int* skiplen,
-   int* patlen)
-{
+   OUT IncSearch* is_state,
+   OUT int* skiplen,
+   OUT int* patlen
+) {
    int retval = false;
 
    *skiplen = 0;
@@ -7504,7 +7482,7 @@ finish_incsearch_highlighting(
 
 // Do 'incsearch' highlighting if desired.
 private void
-may_do_incsearch_highlighting(int firstc, long count, IncSearch* is_state) {
+may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state) {
    int      skiplen, patlen;
    int      found;  // do_search() result
    Pos   end_pos;
@@ -7518,7 +7496,7 @@ may_do_incsearch_highlighting(int firstc, long count, IncSearch* is_state) {
    // NOTE: must call restore_last_search_pattern() before returning!
    save_last_search_pattern();
 
-   if (!do_incsearch_highlighting(firstc, OUT &searchDelim, is_state, &skiplen, &patlen)) {
+   if (!incsearchHilitingImpl(firstc, OUT &searchDelim, OUT is_state, OUT &skiplen, OUT &patlen)) {
       restore_last_search_pattern();
       finish_incsearch_highlighting(false, is_state, true);
       if (did_do_incsearch && vpeekc() == ZERO)
@@ -7558,21 +7536,21 @@ may_do_incsearch_highlighting(int firstc, long count, IncSearch* is_state) {
    setHlsearch(false); // turn off previous hilite
    redraw_all_later(UPD_SOME_VALID);
    } else {
-      int search_flags = SEARCH_OPT + SEARCH_NOOF + SEARCH_PEEK;
+      Unt searchFlags = SEARCH_OPT | SEARCH_NOOF | SEARCH_PEEK;
 
       cursor_off();   // so the user knows we're busy
       out_flush();
       ++emsg_off;   // so it doesn't beep if bad expr
       if (!p_hls)
-          search_flags += SEARCH_KEEP;
+         searchFlags |= SEARCH_KEEP;
       if (search_first_line != 0)
-          search_flags += SEARCH_START;
+         searchFlags |= SEARCH_START;
       commInfo.commBuf[skiplen + patlen] = ZERO;
       CLEAR_FIELD(sia);
       // Set the time limit to half a second.
       sia.sa_tm = 500;
       found = do_search(NULL, firstc == ':' ? '/' : firstc, searchDelim,
-                commInfo.commBuf + skiplen, patlen, count, search_flags, &sia
+                (Text){commInfo.commBuf + skiplen, patlen}, count, searchFlags, &sia
       );
       commInfo.commBuf[skiplen + patlen] = next_char;
       --emsg_off;
@@ -7653,25 +7631,18 @@ may_do_incsearch_highlighting(int firstc, long count, IncSearch* is_state) {
 // Return FAIL when jumping to commlineUnchanged;
 private int
 may_adjust_incsearch_highlighting(
-   int         firstc,
-   long         count,
-   IncSearch   *is_state,
-   int         c
+   Unt firstc,
+   long count,
+   OUT IncSearch* is_state,
+   int c
 ){
-   int       skiplen, patlen;
-   Pos   t;
-   Byte  *pat;
-   int       search_flags = SEARCH_NOOF;
-   int       i;
-   int       save;
-   int       bslsh = false;
-   Unt       searchDelim;
-
    // Parsing range may already set the last search pattern.
    // NOTE: must call restore_last_search_pattern() before returning!
    save_last_search_pattern();
 
-   if (!do_incsearch_highlighting(firstc, OUT &searchDelim, is_state, &skiplen, &patlen)) {
+   int skiplen, patlen;
+   Unt searchDelim;
+   if (!incsearchHilitingImpl(firstc, OUT &searchDelim, OUT is_state, OUT &skiplen, OUT &patlen)) {
       restore_last_search_pattern();
       return OK;
    }
@@ -7680,23 +7651,27 @@ may_adjust_incsearch_highlighting(
       return FAIL;
    }
 
+   Pos t;
+   Unt searchFlags = SEARCH_NOOF;
+   int i;
+   int bslsh = false;
+   Text pat;
    if (searchDelim == commInfo.commBuf[skiplen]) {
       pat = last_search_pattern();
-      if (pat == NULL) {
+      if (pat.len == 0) {
          restore_last_search_pattern();
          return FAIL;
       }
       skiplen = 0;
-      patlen = (int)last_search_patternLen();
    } else
-      pat = commInfo.commBuf + skiplen;
+      pat = (Text){commInfo.commBuf + skiplen, patlen};
 
    // do not search for the search end delimiter,
    // unless it is part of the pattern
-   if (patlen > 2 && firstc == pat[patlen - 1]) {
-      patlen--;
-      if (pat[patlen - 1] == '\\') {
-         pat[patlen - 1] = firstc;
+   if (pat.len > 2 && firstc == pat.c[pat.len - 1]) {
+      pat.len--;
+      if (pat.c[pat.len - 1] == '\\') {
+         pat.c[pat.len - 1] = firstc;
          bslsh = true;
       }
    }
@@ -7708,23 +7683,23 @@ may_adjust_incsearch_highlighting(
       if (LT_POS(is_state->match_start, is_state->match_end))
           // Start searching at the end of the match not at the beginning of the next column.
           (void)decl(&t);
-      search_flags += SEARCH_COL;
+      searchFlags |= SEARCH_COL;
    } else
       t = is_state->match_start;
    if (!p_hls)
-      search_flags += SEARCH_KEEP;
+      searchFlags |= SEARCH_KEEP;
    ++emsg_off;
-   save = pat[patlen];
-   pat[patlen] = ZERO;
+   Unt save = pat.c[patlen];
+   pat.c[patlen] = ZERO;
    i = searchit(curPor, curBook, &t, NULL,
        c == Ctrl_G ? FORWARD : BACKWARD,
-       pat, patlen, count, search_flags, RE_SEARCH, NULL);
+       pat, count, searchFlags, RE_SEARCH, NULL);
    --emsg_off;
-   pat[patlen] = save;
+   pat.c[patlen] = save;
    if (bslsh)
-      pat[patlen - 1] = '\\';
+      pat.c[patlen - 1] = '\\';
    if (i) {
-         is_state->search_start = is_state->match_start;
+      is_state->search_start = is_state->match_start;
       is_state->match_end = t;
       is_state->match_start = t;
       if (c == Ctrl_T && firstc != '?') {
@@ -7766,15 +7741,15 @@ may_adjust_incsearch_highlighting(
 //When CTRL-L typed: add character from the match to the pattern.
 //May set "*c" to the added character. Return OK when jumping to commlineUnchanged.
 private int
-may_add_char_to_search(int firstc, OUT Unt *c, IncSearch *is_state) {
-   int      skiplen, patlen;
+may_add_char_to_search(int firstc, OUT Unt *c, OUT IncSearch *is_state) {
+   int skiplen, patlen;
    Unt searchDelim;
 
-   // Parsing range may already set the last search pattern.
-   // NOTE: must call restore_last_search_pattern() before returning!
+   //Parsing range may already set the last search pattern.
+   //NOTE: must call restore_last_search_pattern() before returning!
    save_last_search_pattern();
 
-   if (!do_incsearch_highlighting(firstc, OUT &searchDelim, is_state, &skiplen, &patlen)) {
+   if (!incsearchHilitingImpl(firstc, OUT &searchDelim, OUT is_state, OUT &skiplen, OUT &patlen)) {
       restore_last_search_pattern();
       return FAIL;
    }
@@ -7831,7 +7806,7 @@ cmdline_handle_ctrl_bsl(int c, int *gotesc) {
 
    // CTRL-\ e doesn't work when obtaining an expression, unless it is in a mapping.
    if (c != Ctrl_N && c != Ctrl_G && (c != 'e'
-      || (commInfo.cmdfirstc == '=' && KeyTyped)
+      || (commInfo.cmdfirstc == '=' && keyWasTypedG)
       )
    ){
       vungetc(c);
@@ -7870,7 +7845,7 @@ cmdline_handle_ctrl_bsl(int c, int *gotesc) {
              else
             commInfo.cmdpos = new_cmdpos;
 
-             KeyTyped = false;   // Don't do p_wc completion.
+             keyWasTypedG = false;   // Don't do p_wc completion.
              redrawcmd();
              return COMMLINE_CHANGED;
          }
@@ -8129,7 +8104,7 @@ cmdline_insert_reg(int *gotesc UNUSED) {
          // putting it in history
          return GOTO_NORMAL_MODE;
       }
-      KeyTyped = false;   // Don't do p_wc completion.
+      keyWasTypedG = false;   // Don't do p_wc completion.
       if (new_cmdpos >= 0) {
          // setCommlinePos() was used
          if (new_cmdpos > commInfo.cmdlen)
@@ -8185,29 +8160,26 @@ cmdline_left_right_mouse(Unt c, int *ignore_drag_release) {
 //  GOTO_NORMAL_MODE - go back to normal mode
 private int
 cmdline_browse_history(
-   Unt   c,
-   Unt   firstc,
-   Byte** curcmdstr,
-   Unt* curcmdstrlen,
+   Unt c,
+   Unt firstc,
+   OUT Text* currComm,
    int histype,
    int* hiscnt_p,
-   Expand *xp)
-{
-   int      orig_hiscnt;
-   int      hiscnt = orig_hiscnt = *hiscnt_p;
-   Byte   *lookfor = *curcmdstr;
-   Unt   lookforlen = *curcmdstrlen;
-   int      res;
+   Expand *xp
+) {
+   int orig_hiscnt;
+   int hiscnt = orig_hiscnt = *hiscnt_p;
+   Text lookfor = *currComm;
+   int res;
 
    if (getHistLen() == 0 || firstc == ZERO)   // no history
       return COMMLINE_UNCHANGED;
 
    // save current command string so it can be restored later
-   if (!lookfor) {
-      if ((lookfor = copySubstr(commInfo.commBuf, commInfo.cmdlen)) == NULL)
-         return COMMLINE_UNCHANGED;
-      lookfor[commInfo.cmdpos] = ZERO;
-      lookforlen = commInfo.cmdpos;
+   if (lookfor.len == 0) {
+      lookfor = copyText((Text){commInfo.commBuf, commInfo.cmdlen});
+      lookfor.c[commInfo.cmdpos] = ZERO;
+      lookfor.len = commInfo.cmdpos;
    }
 
    for (;;) {
@@ -8244,30 +8216,30 @@ cmdline_browse_history(
       }
       if ((c != K_UP && c != K_DOWN)
             || hiscnt == orig_hiscnt
-            || STRNCMP(get_histentry(histype)[hiscnt].hisstr,
-                lookfor, lookforlen) == 0)
+            || STRNCMP(get_histentry(histype)[hiscnt].hisstr, lookfor.c, lookfor.len) == 0
+      )
          break;
    }
 
    if (hiscnt != orig_hiscnt) {   // jumped to other entry
-      Byte   *p;
-      Unt   plen;
-      int   old_firstc;
+      CS p;
+      Unt plen;
+      int old_firstc;
 
       deallocCommBuf();
 
       xp->context = EXPAND_NOTHING;
       if (hiscnt == getHistLen()) {
-         p = lookfor;   // back to the old one
-         plen = lookforlen;
+         p = lookfor.c;   // back to the old one
+         plen = lookfor.len;
       } else {
          p = get_histentry(histype)[hiscnt].hisstr;
          plen = get_histentry(histype)[hiscnt].hisstrlen;
       }
 
-      if (histype == HIST_SEARCH && p != lookfor && (old_firstc = p[plen + 1]) != firstc) {
-         int     i;
-         int     j;
+      if (histype == HIST_SEARCH && p != lookfor.c && (old_firstc = p[plen + 1]) != firstc) {
+         int i;
+         int j;
          Unt  len;
 
          // Correct for the separator character used when
@@ -8320,8 +8292,7 @@ cmdline_browse_history(
    res = COMMLINE_UNCHANGED;
 
 done:
-   *curcmdstr = lookfor;
-   *curcmdstrlen = lookforlen;
+   *currComm = lookfor;
    *hiscnt_p = hiscnt;
    return res;
 }
@@ -8389,8 +8360,7 @@ getCommandWorker(
    int      j;
    int      gotesc = false;      // true when <ESC> just typed
    int      do_abbr;      // when true check for abbr.
-   CS lookfor = NULL;   // string to match
-   Unt   lookforlen = 0;
+   Text lookfor = (Text){NULL, 0};   // string to match
    int      hiscnt;         // current history line in use
    int      histype;      // history type to be used
    IncSearch   is_state;
@@ -8561,7 +8531,7 @@ getCommandWorker(
          }
       }
 
-      if (KeyTyped) {
+      if (keyWasTypedG) {
          some_key_typed = true;
       }
 
@@ -8576,7 +8546,7 @@ getCommandWorker(
          gotInterruptG = false;
 
       // free old command line when finished moving around in the history list
-      if (lookfor
+      if (lookfor.len > 0
          && c != K_S_DOWN && c != K_S_UP
          && c != K_DOWN && c != K_UP
          && c != K_PAGEDOWN && c != K_PAGEUP
@@ -8584,8 +8554,8 @@ getCommandWorker(
          && c != K_LEFT && c != K_RIGHT
          && (xp.files.len < UNT || (c != Ctrl_P && c != Ctrl_N))
       ){
-         EE_CLEAR(lookfor);
-         lookforlen = 0;
+         EE_CLEAR(lookfor.c);
+         lookfor.len = 0;
       }
 
       //When there are matching completions to select <S-Tab> works like
@@ -8596,7 +8566,7 @@ getCommandWorker(
       if (p_wmnu)
          c = wildmenu_translate_key(&commInfo, c, &xp, did_wild_list);
 
-      int key_is_wc = (c == p_wc && KeyTyped) || c == p_wcm;
+      int key_is_wc = (c == p_wc && keyWasTypedG) || c == p_wcm;
       if ((cmdline_pum_active() || did_wild_list) && !key_is_wc) {
          // Ctrl-Y: Accept the current selection and close the popup menu.
          // Ctrl-E: cancel the cmdline popup menu and return the original text.
@@ -8608,7 +8578,7 @@ getCommandWorker(
       }
 
       // Trigger CmdlineLeavePre autocommand
-      if (KeyTyped && (c == '\n' || c == '\r' || c == K_KENTER || c == ESC
+      if (keyWasTypedG && (c == '\n' || c == '\r' || c == K_KENTER || c == ESC
              || c == extraInterruptCharG
              || c == Ctrl_C)
       ){
@@ -8669,7 +8639,7 @@ getCommandWorker(
           }
       }
 
-      if (c == '\n' || c == '\r' || c == K_KENTER || (c == ESC && !KeyTyped)) {
+      if (c == '\n' || c == '\r' || c == K_KENTER || (c == ESC && !keyWasTypedG)) {
          gotesc = false;   // Might have typed ESC previously, don't truncate the cmdline now.
          if (ccheck_abbr(c + ABBR_OFF))
             goto commlineChanged;
@@ -8681,7 +8651,7 @@ getCommandWorker(
       }
 
       // Completion for 'wildchar', 'wildcharm', and wildtrigger()
-      if ((c == p_wc && !gotesc && KeyTyped) || c == p_wcm || c == K_WILD) {
+      if ((c == p_wc && !gotesc && keyWasTypedG) || c == p_wcm || c == K_WILD) {
          if (c == K_WILD)
             ++emsg_silent;  // Silence the bell
          res = commline_wildchar_complete(c, firstc != '@', &did_wild_list,
@@ -8699,7 +8669,7 @@ getCommandWorker(
       gotesc = false;
 
       // <S-Tab> goes to last match, in a clumsy way
-      if (c == K_S_TAB && KeyTyped) {
+      if (c == K_S_TAB && keyWasTypedG) {
          if (nextwild(OUT &xp, WILD_EXPAND_KEEP, 0, firstc != '@') == OK) {
             if (xp.files.len > 1
                && ((!did_wild_list && (wim_flags[wim_index] & WIM_LIST)) || p_wmnu)
@@ -8728,7 +8698,7 @@ getCommandWorker(
          // Apply search highlighting
          if (is_state.winid != curPor->id)
             init_incsearch_state(&is_state);
-         if (KeyTyped || vpeekc() == ZERO)
+         if (keyWasTypedG || vpeekc() == ZERO)
             may_do_incsearch_highlighting(firstc, count, &is_state);
          wild_type = 0;
          goto commlineUnchanged;
@@ -8811,7 +8781,7 @@ getCommandWorker(
             if (commInfo.cmdpos >= commInfo.cmdlen)
                break;
             i = commlineCharsize(commInfo.cmdpos);
-            if (KeyTyped && commInfo.cmdspos + i >= visibleColsG * visibleRowsG)
+            if (keyWasTypedG && commInfo.cmdspos + i >= visibleColsG * visibleRowsG)
                break;
             commInfo.cmdspos += i;
             commInfo.cmdpos += utfCharLen(commInfo.commBuf + commInfo.cmdpos);
@@ -8914,7 +8884,7 @@ getCommandWorker(
          goto commlineChanged;
 
       case Ctrl_L:
-         if (may_add_char_to_search(firstc, OUT &c, &is_state) == OK)
+         if (may_add_char_to_search(firstc, OUT &c, OUT &is_state) == OK)
             goto commlineUnchanged;
 
          // completion: longest common part
@@ -8950,7 +8920,7 @@ getCommandWorker(
                break;
             goto commlineChanged;
          } else {
-            res = cmdline_browse_history(c, firstc, &lookfor, &lookforlen, histype, &hiscnt, &xp);
+            res = cmdline_browse_history(c, firstc, OUT &lookfor, histype, &hiscnt, &xp);
             if (res == COMMLINE_CHANGED)
               goto commlineChanged;
             ei (res == GOTO_NORMAL_MODE)
@@ -8960,7 +8930,7 @@ getCommandWorker(
 
       case Ctrl_G:       // next match
       case Ctrl_T:       // previous match
-         if (may_adjust_incsearch_highlighting(firstc, count, &is_state, c) == FAIL)
+         if (may_adjust_incsearch_highlighting(firstc, count, OUT &is_state, c) == FAIL)
             goto commlineUnchanged;
          break;
 
@@ -9037,7 +9007,7 @@ getCommandWorker(
       // If the window changed incremental search state is not valid.
       if (is_state.winid != curPor->id)
          init_incsearch_state(&is_state);
-      if (xp.context == EXPAND_NOTHING && (KeyTyped || vpeekc() == ZERO))
+      if (xp.context == EXPAND_NOTHING && (keyWasTypedG || vpeekc() == ZERO))
          may_do_incsearch_highlighting(firstc, count, &is_state);
    }
 
@@ -9061,7 +9031,7 @@ returncmd:
    if (commInfo.commBuf) {
       //Put line in history buffer (":" and "=" only when it was typed).
       if (commInfo.cmdlen && firstc != ZERO && (some_key_typed || histype == HIST_SEARCH)) {
-         add_to_history(histype, commInfo.commBuf, commInfo.cmdlen, true,
+         scrAddToHistory(histype, (Text){commInfo.commBuf, commInfo.cmdlen}, true,
                       histype == HIST_SEARCH ? firstc : ZERO
          );
          if (firstc == ':') {
@@ -9287,7 +9257,7 @@ set_cmdspos_cursor(void) {
    int      i, m, c;
 
    set_cmdspos();
-   if (KeyTyped) {
+   if (keyWasTypedG) {
       m = visibleColsG * visibleRowsG;
       if (m < 0)   // overflow, visibleColsG or visibleRowsG at weird value
           m = MAXCOL;
@@ -9543,7 +9513,7 @@ put_on_cmdline(Byte *str, int len, int redraw) {
             msg_clr_eos();
          msg_no_more = false;
       }
-      if (KeyTyped) {
+      if (keyWasTypedG) {
           m = visibleColsG * visibleRowsG;
           if (m < 0)   // overflow, visibleColsG or visibleRowsG at weird value
          m = MAXCOL;
@@ -10294,13 +10264,13 @@ openCommPort(void) {
 
    isRedrawingDisabledG = save_isRedrawingDisabledG;
 
-   int save_KeyTyped = KeyTyped;
+   int save_keyWasTypedG = keyWasTypedG;
 
    // Trigger CommPortLeave autocommands.
    trigger_cmd_autocmd(commPortTypeG, EVENT_COMMPORTLEAVE);
 
-   // Restore KeyTyped in case it is modified by autocommands
-   KeyTyped = save_KeyTyped;
+   // Restore keyWasTypedG in case it is modified by autocommands
+   keyWasTypedG = save_keyWasTypedG;
 
    commPortTypeG = 0;
    commPortBookG = NULL;
@@ -12689,7 +12659,7 @@ get_function_body(
       Byte   *p;
       Byte   *arg;
 
-      if (KeyTyped) {
+      if (keyWasTypedG) {
          msg_scroll = true;
          saved_wait_return = false;
       }
@@ -12708,7 +12678,7 @@ get_function_body(
       } else {
          theline = get_function_line(invo, lines_to_free, indent, getline_options);
       }
-      if (KeyTyped)
+      if (keyWasTypedG)
          lines_left = visibleRowsG - 1;
       if (theline == NULL) {
          // Use the start of the function for the line number.
@@ -16635,7 +16605,7 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
       line_arg = p + 1;
 
    //Read the body of the function, until "}", ":endfunction" or ":enddef" is found.
-   if (KeyTyped) {
+   if (keyWasTypedG) {
       //Check if the function already exists, don't let the user type the
       //whole function before telling him it doesn't work!  For a script we
       //need to skip the body to be able to find what follows.
@@ -18420,7 +18390,7 @@ applyAutocommGroup(
    static Boole filechangeshell_busy = false;
    int did_save_redobuff = false;
    SaveRedo save_redo;
-   int save_KeyTyped = KeyTyped;
+   int save_keyWasTypedG = keyWasTypedG;
    ESTACK_CHECK_DECLARATION;
 
    // Quickly return if there are no autocommands for this event or autocommands are blocked.
@@ -18674,7 +18644,7 @@ applyAutocommGroup(
    autocmd_match = save_autocmd_match;
    scriptPosG = save_scriptPosG;
    restore_funccal();
-   KeyTyped = save_KeyTyped;
+   keyWasTypedG = save_keyWasTypedG;
    eeglFree(fname);
    eeglFree(sfname);
    --nesting;      // see matching increment above

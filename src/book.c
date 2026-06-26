@@ -4500,7 +4500,7 @@ bookRenderStatusLine(
    CS usefmt = fmt;
    StatusLineHilite *sp;
    int save_redraw_not_allowed = redraw_not_allowed;
-   int save_KeyTyped = KeyTyped;
+   int save_keyWasTypedG = keyWasTypedG;
    // TODO: find out why using called_emsg_before makes tests fail, does it matter?
    // int   called_emsg_before = called_emsg;
    int      anyEmsgSaved = anyEmsgG;
@@ -5291,7 +5291,7 @@ bookRenderStatusLine(
 
    // A user function may reset vars, restore them
    redraw_not_allowed = save_redraw_not_allowed;
-   KeyTyped = save_KeyTyped;
+   keyWasTypedG = save_keyWasTypedG;
 
    //Check for an error.  If there is one the display will be messed up and
    //might loop redrawing.  Avoid that by making the corresponding option empty.

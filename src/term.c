@@ -54,12 +54,12 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 # define DEBUG_TERMRESPONSE
 # define LOG_TR1(str) \
       lo("TermResp: %s " str, \
-         must_redraw == UPD_NOT_VALID ? "NV" \
-         : must_redraw == UPD_CLEAR ? "CL" : "  ")
+         mustRedrawG == UPD_NOT_VALID ? "NV" \
+         : mustRedrawG == UPD_CLEAR ? "CL" : "  ")
 # define LOG_TRN(fmt,...) \
       lo("TermResp: %s " fmt, \
-         must_redraw == UPD_NOT_VALID ? "NV" \
-         : must_redraw == UPD_CLEAR ? "CL" : "  ", __VA_ARGS__)
+         mustRedrawG == UPD_NOT_VALID ? "NV" \
+         : mustRedrawG == UPD_CLEAR ? "CL" : "  ", __VA_ARGS__)
 #else
 # define LOG_TR1(str) do { /**/ } while (0)
 # define LOG_TRN(fmt,...) do { /**/ } while (0)

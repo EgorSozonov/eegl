@@ -73,7 +73,6 @@ Unt mb_cptr2char_adv(CS *pp);
 int utf_composinglike(CS p1, CS p2);
 int utfc_ptr2char(CS p, int *pcc);
 int utfc_ptr2char_len(CS p, int *pcc, int maxlen);
-int utfc_char2bytes(int off, CS buf);
 Unt utf_ptr2len(CS p);
 Unt utf_byte2len(int b);
 Unt utf_byte2len_zero(int b);

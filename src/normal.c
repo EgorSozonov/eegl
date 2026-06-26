@@ -43,7 +43,7 @@ private void nv_end(ActionArg* aArg);
 private void nv_dollar(ActionArg* aArg);
 private void nv_search(ActionArg* aArg);
 private void nv_next(ActionArg* aArg);
-private int normal_search(ActionArg* aArg, int dir, CS pat, Unt patlen, int opt, int *wrapped);
+private int normal_search(ActionArg* aArg, int dir, Text pat, int opt, int *wrapped);
 private void nv_csearch(ActionArg* aArg);
 private void nv_brackets(ActionArg* aArg);
 private void nv_percent(ActionArg* aArg);
@@ -2043,7 +2043,7 @@ needToWaitForMsg(ActionArg* aArg, Pos *old_pos) {
           && (mustClearCommlineG || redrawCommlineG)
           && (msg_didout || (msg_didany && msg_scroll))
           && !msg_nowait
-          && KeyTyped)
+          && keyWasTypedG)
       || (restart_edit != 0
           && !VIsual_active
           && (msg_scroll
@@ -2069,7 +2069,7 @@ waitForMsg(void) {
       stateG = MODE_INSERT;
 
    // If need to redraw, and there is a "msgAfterRedrawG", redraw before the delay
-   if (must_redraw && msgAfterRedrawG != NULL && !emsg_on_display) {
+   if (mustRedrawG && msgAfterRedrawG != NULL && !emsg_on_display) {
       CS kmsg = msgAfterRedrawG;
       msgAfterRedrawG = NULL;
       // Showmode() will clear msgAfterRedrawG, but we want to use it anyway. First update topLine
@@ -2168,7 +2168,7 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
 
    // If the portal was made so small that nothing shows, make it at least one
    // line and one column when typing a command.
-   if (KeyTyped && !KeyStuffed)
+   if (keyWasTypedG && !keyWasStuffedG)
       portEnsureSize();
 
    need_flushbuf = add_to_showcmd(c);
@@ -3063,7 +3063,7 @@ find_decl(
    int t;
    int save_p_scs;
    int retval = OK;
-   int searchflags = flags_arg;
+   Unt searchflags = flags_arg;
 
    CS pat = alloc(len + 7);
 
@@ -3095,7 +3095,7 @@ find_decl(
    CLEAR_POS(&found_pos);
    for (;;) {
       t = searchit(curPor, curBook, &curPor->cursor, NULL, FORWARD,
-                    pat, patlen, 1L, searchflags, RE_LAST, NULL);
+                    (Text){pat, patlen}, 1L, searchflags, RE_LAST, NULL);
       if (curPor->cursor.lnum >= old_pos.lnum)
           t = FAIL;   // match after start is failure too
 
@@ -3217,8 +3217,7 @@ private int
 normal_search(
    ActionArg* aArg,
    int dir,
-   CS pat,
-   Unt patlen,
+   Text pat,
    int opt,      // extra flags for do_search()
    int* wrapped
 ) {
@@ -3232,7 +3231,7 @@ normal_search(
    curPor->setCursWant = true;
 
    CLEAR_FIELD(sia);
-   i = do_search(aArg->oper, dir, dir, pat, patlen, aArg->count1,
+   i = do_search(aArg->oper, dir, dir, pat, aArg->count1,
              opt | SEARCH_OPT | SEARCH_ECHO | SEARCH_MSG, &sia);
    if (wrapped != NULL)
       *wrapped = sia.sa_wrapped;
@@ -3242,7 +3241,7 @@ normal_search(
       if (i == 2)
          aArg->oper->motion_type = MLINE;
       curPor->cursor.coladd = 0;
-      if (aArg->oper->opTy == OP_NOP && (p_fdo & FDO_SEARCH) && KeyTyped)
+      if (aArg->oper->opTy == OP_NOP && (p_fdo & FDO_SEARCH) && keyWasTypedG)
          foldOpenCursor();
    }
    // Redraw the portal to refresh the hilited matches.
@@ -3412,7 +3411,7 @@ nv_gd(Operator* oper, int nchar, int      thisblock) {  // 1 for "1gd" and "1gD"
       return;
    }
 
-   if ((p_fdo & FDO_SEARCH) && KeyTyped && oper->opTy == OP_NOP)
+   if ((p_fdo & FDO_SEARCH) && keyWasTypedG && oper->opTy == OP_NOP)
       foldOpenCursor();
    // clear any search statistics
    if (messaging() && !msg_silent)
@@ -3981,7 +3980,7 @@ nv_colon(ActionArg* aArg) {
    }
 
    // When typing, don't type below an old message
-   if (KeyTyped)
+   if (keyWasTypedG)
       compute_cmdrow();
 
    // get a command line and execute it
@@ -4160,8 +4159,8 @@ private void
 nv_ident(ActionArg* aArg) {
    CS ptr = NULL;
    CS buffer;
-   Unt   bufsize;
-   Unt   buflen;
+   Unt bufsize;
+   Unt buflen;
    CS newbuf;
    CS p;
    CS kp;      // value of 'keywordprg'
@@ -4321,9 +4320,9 @@ nv_ident(ActionArg* aArg) {
 
       // put pattern in search history
       init_history();
-      add_to_history(HIST_SEARCH, buffer, buflen, true, ZERO);
+      scrAddToHistory(HIST_SEARCH, (Text){buffer, buflen}, true, ZERO);
 
-      (void)normal_search(aArg, cmdchar == '*' ? '/' : '?', buffer, buflen, 0, NULL);
+      (void)normal_search(aArg, cmdchar == '*' ? '/' : '?', (Text){buffer, buflen}, 0, NULL);
    } else {
       g_tag_at_cursor = true;
       executeCommLine(buffer);
@@ -4480,7 +4479,7 @@ nv_right(ActionArg* aArg) {
          }
       }
    }
-   if (n != aArg->count1 && (p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if (n != aArg->count1 && (p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4537,7 +4536,7 @@ nv_left(ActionArg* aArg) {
          break;
       }
    }
-   if (n != aArg->count1 && (p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if (n != aArg->count1 && (p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4642,7 +4641,7 @@ nv_dollar(ActionArg* aArg) {
       curPor->cursWant = MAXCOL;   // so we stay at the end
    if (cursor_down((long)(aArg->count1 - 1), aArg->oper->opTy == OP_NOP) == FAIL)
       clearopbeep(aArg->oper);
-   ei ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   ei ((p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4669,7 +4668,7 @@ nv_search(ActionArg* aArg) {
       return;
    }
 
-   (void)normal_search(aArg, aArg->cmdchar, aArg->searchbuf, STRLEN(aArg->searchbuf),
+   (void)normal_search(aArg, aArg->cmdchar, text(aArg->searchbuf),
          (aArg->arg || !EQUAL_POS(save_cursor, curPor->cursor))
                         ? 0 : SEARCH_MARK, NULL);
 }
@@ -4678,16 +4677,16 @@ nv_search(ActionArg* aArg) {
 // Handle "N" and "n" commands. aArg->arg is SEARCH_REV for "N", 0 for "n".
 private void
 nv_next(ActionArg* aArg) {
-   Pos   old = curPor->cursor;
+   Pos old = curPor->cursor;
    int wrapped = false;
-   int i = normal_search(aArg, 0, NULL, 0, SEARCH_MARK | aArg->arg, &wrapped);
+   int i = normal_search(aArg, 0, (Text){NULL, 0}, SEARCH_MARK | aArg->arg, &wrapped);
 
    if (i == 1 && !wrapped && EQUAL_POS(old, curPor->cursor)) {
       // Avoid getting stuck on the current cursor position, which can
       // happen when an offset is given and the cursor is on the last char
       // in the book: Repeat with count + 1.
       aArg->count1 += 1;
-      (void)normal_search(aArg, 0, NULL, 0, SEARCH_MARK | aArg->arg, NULL);
+      (void)normal_search(aArg, 0, (Text){NULL, 0}, SEARCH_MARK | aArg->arg, NULL);
       aArg->count1 -= 1;
    }
 
@@ -4722,7 +4721,7 @@ nv_csearch(ActionArg* aArg) {
       curPor->cursor.coladd = ecol - scol;
    } else
       curPor->cursor.coladd = 0;
-   if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -4830,7 +4829,7 @@ nv_bracket_block(ActionArg* aArg, Pos* old_pos) {
       setpcmark();
       curPor->cursor = *pos;
       curPor->setCursWant = true;
-      if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
+      if ((p_fdo & FDO_BLOCK) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
          foldOpenCursor();
    }
 }
@@ -4918,7 +4917,7 @@ nv_brackets(ActionArg* aArg) {
       else    {
          if (aArg->oper->opTy == OP_NOP)
             beginline(BL_WHITE | BL_FIX);
-         if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
+         if ((p_fdo & FDO_BLOCK) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
             foldOpenCursor();
       }
    }
@@ -5006,7 +5005,7 @@ nv_percent(ActionArg* aArg) {
    if (aArg->oper->opTy == OP_NOP
        && lnum != curPor->cursor.lnum
        && (p_fdo & FDO_PERCENT)
-       && KeyTyped
+       && keyWasTypedG
    )
       foldOpenCursor();
 }
@@ -5028,7 +5027,7 @@ nv_brace(ActionArg* aArg) {
    // Don't leave the cursor on the ZERO past end of line.
    adjust_cursor(aArg->oper);
    curPor->cursor.coladd = 0;
-   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if ((p_fdo & FDO_BLOCK) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -5056,7 +5055,7 @@ nv_findpar(ActionArg* aArg) {
    }
 
    curPor->cursor.coladd = 0;
-   if ((p_fdo & FDO_BLOCK) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if ((p_fdo & FDO_BLOCK) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -5298,7 +5297,7 @@ nvOperatorAliases(ActionArg* aArg) {
 private void
 nv_gomark(ActionArg* aArg) {
    Pos old_cursor = curPor->cursor;
-   int old_KeyTyped = KeyTyped;    // getting file may reset it
+   int old_keyWasTypedG = keyWasTypedG;    // getting file may reset it
 
    int c = (aArg->cmdchar == 'g') ? aArg->extra_char : aArg->nchar;
    Pos* pos = getmark(c, (aArg->oper->opTy == OP_NOP));
@@ -5319,7 +5318,7 @@ nv_gomark(ActionArg* aArg) {
           && pos
           && (pos == (Pos *)-1 || !EQUAL_POS(old_cursor, *pos))
           && (p_fdo & FDO_MARK) != 0
-          && old_KeyTyped
+          && old_keyWasTypedG
    )
       foldOpenCursor();
 }
@@ -5328,7 +5327,7 @@ nv_gomark(ActionArg* aArg) {
 private void
 nv_pcmark(ActionArg* aArg) {
    LineNr lnum = curPor->cursor.lnum;
-   int old_KeyTyped = KeyTyped;    // getting file may reset it
+   int old_keyWasTypedG = keyWasTypedG;    // getting file may reset it
 
    if (checkclearopq(aArg->oper))
       return;
@@ -5357,7 +5356,7 @@ nv_pcmark(ActionArg* aArg) {
    if (aArg->oper->opTy == OP_NOP
          && (pos == (Pos *)-1 || lnum != curPor->cursor.lnum)
          && (p_fdo & FDO_MARK)
-         && old_KeyTyped)
+         && old_keyWasTypedG)
       foldOpenCursor();
 }
 
@@ -6144,7 +6143,7 @@ nv_bck_word(ActionArg* aArg) {
    curPor->setCursWant = true;
    if (bck_word(aArg->count1, aArg->arg, false) == FAIL)
       clearopbeep(aArg->oper);
-   ei ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   ei ((p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -6186,7 +6185,7 @@ nv_wordcmd(ActionArg* aArg) {
    if (n == FAIL && aArg->oper->opTy == OP_NOP)
        clearopbeep(aArg->oper);
    else {
-      if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+      if ((p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
          foldOpenCursor();
    }
 }
@@ -6198,7 +6197,7 @@ nv_beginline(ActionArg* aArg) {
    aArg->oper->motion_type = MCHAR;
    aArg->oper->inclusive = false;
    beginline(aArg->arg);
-   if ((p_fdo & FDO_HOR) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
    ins_at_eol = false; // Don't move cursor past eol (only necessary in a one-character line).
 }
@@ -6220,7 +6219,7 @@ nv_goto(ActionArg* aArg) {
       lnum = curBook->mem.lineCount;
    curPor->cursor.lnum = lnum;
    beginline(BL_SOL | BL_FIX);
-   if ((p_fdo & FDO_JUMP) && KeyTyped && aArg->oper->opTy == OP_NOP)
+   if ((p_fdo & FDO_JUMP) && keyWasTypedG && aArg->oper->opTy == OP_NOP)
       foldOpenCursor();
 }
 
@@ -7082,7 +7081,7 @@ reset_skipcol(void) {
 void
 update_topline_redraw(void) {
    update_topline();
-   if (must_redraw)
+   if (mustRedrawG)
       drawUpdateScreen(0);
 }
 
@@ -14184,11 +14183,11 @@ foldlevelExpr(FoldLine *flp) {
    if (lnum <= 1)
       flp->lvl = 0;
 
-   // KeyTyped may be reset to 0 when calling a function which invokes
-   // doCommand().  To make 'foldopen' work correctly restore KeyTyped.
-   save_keytyped = KeyTyped;
+   // keyWasTypedG may be reset to 0 when calling a function which invokes
+   // doCommand().  To make 'foldopen' work correctly restore keyWasTypedG.
+   save_keytyped = keyWasTypedG;
    int n = eval_foldexpr(flp->po, &c);
-   KeyTyped = save_keytyped;
+   keyWasTypedG = save_keytyped;
 
    switch (c) {
    // "a1", "a2", .. : add to the fold level

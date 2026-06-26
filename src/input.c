@@ -221,7 +221,7 @@ get_keystroke(void) {
          continue;
 
       if (count == KEYLEN_REMOVED) { // key code removed
-         if (must_redraw != 0 && !need_wait_return 
+         if (mustRedrawG != 0 && !need_wait_return 
                && (stateG & (MODE_COMMLINE | MODE_HITRETURN | MODE_ASKMORE)) == 0
          ) {
             // Redrawing was postponed, do it now.
@@ -941,7 +941,7 @@ noremap_keys(void) {
 //         script-local mappings.
 // If "noremap" is > 0, that many characters of the new string cannot be mapped.
 //
-// If "nottyped" is true, the string does not return KeyTyped (don't use when
+// If "nottyped" is true, the string does not return keyWasTypedG (don't use when
 // "offset" is non-zero!).
 //
 // If "silent" is true, cmd_silent is set when the characters are obtained.
@@ -1061,7 +1061,7 @@ insertIntoTypebuf(
 }
 
 // Put character "c" back into the typeahead buffer. Can be used for a character obtained by 
-// vgetc() that needs to be put back. Use cmd_silent, KeyTyped and keyNoremapG to restore the 
+// vgetc() that needs to be put back. Use cmd_silent, keyWasTypedG and keyNoremapG to restore the 
 // flags belonging to the char. Return the length of what was inserted.
 int
 ins_char_typebuf(int c, int modifiers){
@@ -1069,7 +1069,7 @@ ins_char_typebuf(int c, int modifiers){
    int len = special_to_buf(c, modifiers, true, buf);
 
    buf[len] = ZERO;
-   (void)insertIntoTypebuf(buf, keyNoremapG, 0, !KeyTyped, cmd_silent);
+   (void)insertIntoTypebuf(buf, keyNoremapG, 0, !keyWasTypedG, cmd_silent);
    return len;
 }
 
@@ -1324,13 +1324,13 @@ private Unt old_char = UNT;   // character put back by vungetc()
 private int oldModMask;   // modMaskG for ungotten character
 private int old_mouse_row;   // mouse_row related to old_char
 private int old_mouse_col;   // mouse_col related to old_char
-private int old_KeyStuffed;   // whether old_char was stuffed
+private int old_keyWasStuffedG;   // whether old_char was stuffed
 
 private int 
 can_get_old_char(void) {
    // If the old character was not stuffed and characters have been added to
    // the stuff buffer, need to first get the stuffed characters instead.
-   return old_char != UNT && (old_KeyStuffed || stuff_empty());
+   return old_char != UNT && (old_keyWasStuffedG || stuff_empty());
 }
 
 // Save all 3 kinds of typeahead, so that the user must type at a prompt.
@@ -2580,7 +2580,7 @@ vungetc(Unt c) {
    oldModMask = modMaskG;
    old_mouse_row = mouseRowG;
    old_mouse_col = mouseColG;
-   old_KeyStuffed = KeyStuffed;
+   old_keyWasStuffedG = keyWasStuffedG;
 }
 
 // When peeking and not getting a character, reg_executing cannot be cleared
@@ -2608,8 +2608,8 @@ check_end_reg_executing(int advance) {
 //
 // if "advance" is true (vgetc()):
 //   Really get the character.
-//   KeyTyped is set to true in the case the user typed the key.
-//   KeyStuffed is true if the character comes from the stuff buffer.
+//   keyWasTypedG is set to true in the case the user typed the key.
+//   keyWasStuffedG is true if the character comes from the stuff buffer.
 // if "advance" is false (vpeekc()):
 //   Just look whether there is a character available. Return ZERO if not.
 //
@@ -2642,7 +2642,7 @@ vGetOrPeek(Boole advance) {
    ++vgetcBusyG;
 
    if (advance) {
-      KeyStuffed = false;
+      keyWasStuffedG = false;
       typebuf_was_empty = false;
    }
    initTypebuf();
@@ -2663,10 +2663,10 @@ vGetOrPeek(Boole advance) {
 
       if (countRead != ZERO && !gotInterruptG) {
            if (advance) {
-              // KeyTyped = false;  When the command that stuffed something
+              // keyWasTypedG = false;  When the command that stuffed something
               // was typed, behave like the stuffed command was typed.
               // needed for CTRL-W CTRL-] to open a fold, for example.
-              KeyStuffed = true;
+              keyWasStuffedG = true;
            }
            if (typeBufG.noAbbrCnt == 0) {
               typeBufG.noAbbrCnt = 1;   // no abbreviations now
@@ -2730,9 +2730,9 @@ vGetOrPeek(Boole advance) {
                      if (advance)  {  // remove chars from typeBufG
                         cmd_silent = (typeBufG.silentCnt > 0);
                         if (typeBufG.mappedLen > 0) {
-                           KeyTyped = false;
+                           keyWasTypedG = false;
                         } else {
-                           KeyTyped = true;
+                           keyWasTypedG = true;
                            // write char to script file(s)
                            gotchars(typeBufG.c + typeBufG.currPos, 1);
                         }
@@ -2808,7 +2808,7 @@ vGetOrPeek(Boole advance) {
                //so far. Also for when 'lazyredraw' is set and redrawing was postponed because 
                //there was something in the input buffer (e.g., termresponse).
                if (((stateG & MODE_INSERT) != 0 || p_lz)
-                     && (stateG & MODE_COMMLINE) == 0 && advance && must_redraw != 0 
+                     && (stateG & MODE_COMMLINE) == 0 && advance && mustRedrawG != 0 
                      && !need_wait_return
                      ) {
                   drawUpdateScreen(0);
@@ -2922,12 +2922,12 @@ vGetOrPeek(Boole advance) {
    //   if we don't return an ESC but deleted the message before, redisplay it
    if (advance && p_smd && msg_silent == 0 && (stateG & MODE_INSERT)) {
       if (specialChar == ESC && !mode_deleted && !no_mapping && isModeDisplayedG) {
-         if (typeBufG.validLen && !KeyTyped)
+         if (typeBufG.validLen && !keyWasTypedG)
             redrawCommlineG = true; // delete mode later
          else
             unshowmode(false);
       } ei (specialChar != ESC && mode_deleted) {
-         if (typeBufG.validLen && !KeyTyped)
+         if (typeBufG.validLen && !keyWasTypedG)
             redrawCommlineG = true; // show mode later
          else
             showmode();
@@ -3908,44 +3908,26 @@ utfc_ptr2char_len(
     OUT int* pcc,   // return: composing chars, last one is 0
     int maxlen
 ) {
-   int      cc;
-   int      i = 0;
-
    Unt c = mb_ptr2char(p);
    int len = utf_ptr2len_len(p, maxlen);
+   int i = 0;
    // Only accept a composing char when the first char isn't illegal.
    if ((len > 1 || *p < 0x80) && len < maxlen && p[len] >= 0x80 && UTF_COMPOSINGLIKE(p, p + len)) {
-      cc = mb_ptr2char(p + len);
+      int cc = mb_ptr2char(p + len);
       for (;;) {
-          pcc[i++] = cc;
-          if (i == MAX_COMBINED_SYMBOLS)
-         break;
-          len += utf_ptr2len_len(p + len, maxlen - len);
-          if (len >= maxlen
-             || p[len] < 0x80
-             || !utf_iscomposing(cc = mb_ptr2char(p + len)))
-         break;
+         pcc[i++] = cc;
+         if (i == MAX_COMBINED_SYMBOLS)
+            break;
+         len += utf_ptr2len_len(p + len, maxlen - len);
+         if (len >= maxlen || p[len] < 0x80 || !utf_iscomposing(cc = mb_ptr2char(p + len)))
+            break;
       }
    }
 
-    if (i < MAX_COMBINED_SYMBOLS)   // last composing char must be 0
-   pcc[i] = 0;
+   if (i < MAX_COMBINED_SYMBOLS)   // last composing char must be 0
+      pcc[i] = 0;
 
-    return c;
-}
-
-//Convert the character at screen position "off" to a sequence of bytes.
-//Include the composing characters. "buf" must at least have the length MB_MAXBYTES + 1.
-//Only to be used when screenLinesUCG[off] != 0. Return the produced number of bytes.
-int
-utfc_char2bytes(int off, CS buf) {
-   int  len = mb_char2bytes(screenLinesUCG[off], buf);
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      if (screenLinesCG[i][off] == 0)
-          break;
-      len += mb_char2bytes(screenLinesCG[i][off], buf + len);
-   }
-   return len;
+   return c;
 }
 
 // Get the length of a UTF-8 byte sequence, excluding any following composing characters.
@@ -5787,7 +5769,7 @@ do_mouse(
          //the status line. Note: Since characters added to the stuff buffer in the code
          //below need to come before the next character, do not do this when the current character 
          //was stuffed.
-         if (!KeyStuffed && vpeekc() != ZERO) {
+         if (!keyWasStuffedG && vpeekc() != ZERO) {
             int save_mouse_row = mouseRowG;
             int save_mouse_col = mouseColG;
 

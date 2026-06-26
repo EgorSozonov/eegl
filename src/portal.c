@@ -9947,11 +9947,11 @@ invoke_popup_filter(Portal* po, int c) {
 int
 popup_do_filter(Unt c) {
    static Boole recursive = false;
-   int      res = false;
+   int res = false;
    Portal   *po;
-   int      save_KeyTyped = KeyTyped;
-   int      state;
-   Unt mustRedrawSaved = must_redraw;
+   Boole save_keyWasTyped = keyWasTypedG;
+   int state;
+   Unt mustRedrawSaved = mustRedrawG;
 
    // Popup portal with terminal always gets focus.
    if (portalIsPopup(curPor) && curBook->term != NULL)
@@ -9989,7 +9989,7 @@ popup_do_filter(Unt c) {
    }
 
 
-   if (must_redraw > mustRedrawSaved) {
+   if (mustRedrawG > mustRedrawSaved) {
       int save_gotInterruptG = gotInterruptG;
 
       // Reset gotInterruptG to avoid a function used in the statusline aborts.
@@ -9998,7 +9998,7 @@ popup_do_filter(Unt c) {
       gotInterruptG |= save_gotInterruptG;
    }
    recursive = false;
-   KeyTyped = save_KeyTyped;
+   keyWasTyped = save_keyWasTypedG;
 
    // When interrupted return false to avoid looping.
    return res == -1 ? false : res;
@@ -11053,7 +11053,7 @@ pum_display(PopupItem* array, Unt size, int selected) {   // index of initially 
       above_row = 0;
       below_row = commlineRowG;
 
-      // Pretend the pum is already there to avoid that must_redraw is set when 'cuc' is on.
+      // Pretend the pum is already there to avoid that mustRedrawG is set when 'cuc' is on.
       displayedItemsS = (PopupItem *)1;
       validate_cursor_col();
       displayedItemsS = NULL;
@@ -12441,7 +12441,7 @@ bexpr_eval(
       post_balloon(beval, result, NULL);
 
    // The 'balloonexpr' evaluation may show something on the screen that requires a screen update
-   if (must_redraw)
+   if (mustRedrawG)
       redraw_after_callback(false, false);
 }
 

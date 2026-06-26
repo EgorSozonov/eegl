@@ -294,7 +294,7 @@ do_tag(
          }
 
          if (type == DT_POP) {     // go to older position
-            int   old_KeyTyped = KeyTyped;
+            int   old_keyWasTypedG = keyWasTypedG;
             if ((tagstackidx -= count) < 0) {
                emsg(_(e_at_bottom_of_tag_stack));
                if (tagstackidx + count == 0) {
@@ -329,7 +329,7 @@ do_tag(
             curPor->cursor.col = saved_fmark.mark.col;
             curPor->setCursWant = true;
             check_cursor();
-            if ((p_fdo & FDO_TAG) && old_KeyTyped)
+            if ((p_fdo & FDO_TAG) && old_keyWasTypedG)
                foldOpenCursor();
 
             // remove the old list of matches
@@ -2555,7 +2555,7 @@ jumpto_tag(
    Boole      saveHlsearch;
    Portal   *curPor_save = NULL;
    Byte   *full_fname = NULL;
-   int      old_KeyTyped = KeyTyped;    // getting the file may reset it
+   int      old_keyWasTypedG = keyWasTypedG;    // getting the file may reset it
 
    if (postponed_split == 0 && !portCheckCanSetCurBookForceIt(forceit))
       return FAIL;
@@ -2775,7 +2775,7 @@ jumpto_tag(
          //the help subject will be below it.
          if (curBook->kind == BOOK_HELP)
             set_topline(curPor, curPor->cursor.lnum);
-         if ((p_fdo & FDO_TAG) && old_KeyTyped)
+         if ((p_fdo & FDO_TAG) && old_keyWasTypedG)
             foldOpenCursor();
       }
 

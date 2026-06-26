@@ -37,5 +37,4 @@ int syn_get_id(Portal *wp, long lnum, ColNr col, int trans, int keep_state);
 int get_syntax_info(int *seqnrp);
 int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, long lnum);
-void f_synIDattr(Var *argvars, Var *returnVar);
 void f_synIDtrans(Var *argvars, Var *returnVar);

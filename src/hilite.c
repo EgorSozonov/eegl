@@ -94,23 +94,25 @@ sliceCmpToConst0(Text a, Arr(char) b, Unt len) {
 
 // must be sorted by the 'value' field because it is used by bsearch()!
 private Kv decoKinds[] = {
+   KEYVALUE_ENTRY(DECO_ALTERED_BG, "alteredBg"),  
    KEYVALUE_ENTRY(DECO_BOLD, "bold"),           
    KEYVALUE_ENTRY(DECO_INVERSE, "inverse"),     
    KEYVALUE_ENTRY(DECO_ITALIC, "italic"),       
-   KEYVALUE_ENTRY(DECO_NOCOMBINE, "nocombine"), 
    KEYVALUE_ENTRY(DECO_NONE, "NONE"),         
    KEYVALUE_ENTRY(DECO_UNDERCURL, "undercurl"), 
+   KEYVALUE_ENTRY(DECO_UNDERLINE, "underdash"),
    KEYVALUE_ENTRY(DECO_UNDERLINE, "underline")  
 };
 
 // this table is used to display hilite names in the correct order. keep in sync with decoKinds[]
-private Kv *decoKindIndices[] = {
-    decoKinds,       // DECO_BOLD
-    decoKinds + 6,   // DECO_UNDERLINE
+private Kv* decoKindIndices[] = {
+    decoKinds + 1,   // DECO_BOLD
+    decoKinds + 7,   // DECO_UNDERLINE
     decoKinds + 5,   // DECO_UNDERCURL
-    decoKinds + 2,   // DECO_ITALIC
-    decoKinds + 1,   // DECO_INVERSE
-    decoKinds + 3,   // DECO_NOCOMBINE
+    decoKinds + 6,   // DECO_UNDERDASH
+    decoKinds + 3,   // DECO_ITALIC
+    decoKinds + 2,   // DECO_INVERSE
+    decoKinds,       // DECO_ALTERED_BG
     decoKinds + 4    // DECO_NONE
 };
 
@@ -467,17 +469,17 @@ printHilite(HiliteGroup* group) {
 
 // Prints the decorations content of a hilite group to Messages
 private void
-printHiliteDeco( HiliteGroup* group){
+printHiliteDeco(HiliteGroup* group){
    int decoId = group->flags;
    if (decoId == 0) {
       return;
    }
    Byte buf[MAX_DECO_LEN];
    Unt resLen = 0;
-   for (Unt i = 0; i < (int)ARRAY_LENGTH(decoKindIndices); ++i) {
+   for (Unt i = 0; i < ARRAY_LENGTH(decoKindIndices); ++i) {
       if (decoId & decoKindIndices[i]->key) {
          if (resLen > 0) {
-            STRCPY(buf + resLen, (CS)",");
+            STRCPY(buf + resLen, S",");
             resLen++;
          }
          STRCPY(buf + resLen, decoKindIndices[i]->value.c);
@@ -810,7 +812,7 @@ set_normal_colors(void) {
    if (defaultFgColorG != deco.fg || defaultBgColorG != deco.bg) {
       defaultFgColorG = deco.fg;
       defaultBgColorG = deco.bg;
-      set_must_redraw(UPD_CLEAR);
+      drawSetMustRedraw(UPD_CLEAR);
    }
 }
 
@@ -831,10 +833,10 @@ combineDecorations(Decoration overlay, Decoration base) {
 }
 
 // Return "1" if hilite group "id" has deco "flag". Return NULL otherwise.
-private CS
-hiliteHasFlag(HiliteGroup* g, Byte flag){
-   return ((g->flags & flag) != 0) ? S"1" : null;
-}
+//private CS
+//hiliteHasFlag(HiliteGroup* g, Byte flag){
+//   return ((g->flags & flag) != 0) ? S"1" : null;
+//}
 
 // Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
 Short
@@ -6221,60 +6223,6 @@ syn_get_foldlevel(Portal *po, long lnum) {
          level = 0;
    }
    return level;
-}
-
-// "synIDattr(id, what [, mode])" function
-void
-f_synIDattr(Arr(Var) argvars, Var* returnVar) {
-   int id = (int)tv_get_number(&argvars[0]);
-   if (id >= SHORT || id < 0)
-      return;
-   Short hiId = (id < SHORT && id >= 0) ? (Short)id : SHORT;
-   HiliteGroup* g = hilites + hiId;
-   
-   CS what = tv_get_string(&argvars[1]);
-   CS p = NULL;
-   Byte buf[4];
-   
-   switch (what[0]) {
-   case 'b':
-      if (what[1] == 'g')   // bg
-         p = printColor(OUT buf,  g->bg);
-      else               // bold
-         p = hiliteHasFlag(g, DECO_BOLD);
-      break;
-
-   case 'f':               // fg
-      if (what[1] == 'g')
-         p = printColor(OUT buf, g->fg);
-      break;
-
-   case 'i':
-      if (TOLOWER_ASC(what[1]) == 'n')
-         p = (g->flags & DECO_INVERSE) != 0 ? S"inverse" : null;
-      else           
-         p = (g->flags & DECO_ITALIC) != 0 ? S"italic" : null;
-      break;
-
-   case 'n':
-      if (TOLOWER_ASC(what[1]) == 'o')
-         p = (g->flags & DECO_NOCOMBINE) != 0 ? S"nocombine" : null;
-      else           
-         p = g->name.c;
-      break;
-   case 'u':
-      if (STRLEN(what) >= 9) {
-         if (TOLOWER_ASC(what[5]) == 'l') // underline
-            p = (g->flags & DECO_UNDERLINE) != 0 ? S"underline" : null;
-         ei (TOLOWER_ASC(what[5]) != 'd') // undercurl
-            p = (g->flags & DECO_UNDERCURL) != 0 ? S"undercurl" : null;
-      } ei (what[1] == 'n') // under
-         p = printColor(OUT buf, g->under);
-      break;
-   }
-
-   returnVar->tag = VAR_STRING;
-   returnVar->string = p ? copyStr(p) : null;
 }
 
 // "synIDtrans(id)" function

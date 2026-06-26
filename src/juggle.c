@@ -112,7 +112,7 @@ check_status(Book* book) {
    FOR_ALL_PORTALS(po) {
       if (po->book == book && po->statusHeight) {
          po->statusLineNeedsRedraw = true;
-         set_must_redraw(UPD_VALID);
+         drawSetMustRedraw(UPD_VALID);
       }
    } 
 }
@@ -573,7 +573,7 @@ changed_common(
 
    // Call drawUpdateScreen() later, which checks out what needs to be redrawn,
    // since it notices needsRedraw and then uses b_mod_*.
-   set_must_redraw(UPD_VALID);
+   drawSetMustRedraw(UPD_VALID);
 
    // when the cursor line is changed always trigger CursorMoved
    if (lnum <= curPor->cursor.lnum && lnume + (xtra < 0 ? -xtra : xtra) > curPor->cursor.lnum)
@@ -5067,7 +5067,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          //This is a new edit command, not a restart.  Need to
          //remember it to make 'insertmode' work with mappings for
          //Visual mode.  But do this only once and not when typed and 'insertmode' isn't set.
-         if (!KeyTyped)
+         if (!keyWasTypedG)
             restart_edit_save = restart_edit;
          else
             restart_edit_save = 0;
@@ -5538,7 +5538,7 @@ check_due_timer(void) {
          int save_anyEmsgG = anyEmsgG;
          int prev_uncaught_emsg = uncaught_emsg;
          int save_called_emsg = called_emsg;
-         int save_must_redraw = must_redraw;
+         Unt mustRedrawSaved = mustRedrawG;
          int save_ex_pressedreturn = get_pressedreturn();
          int save_may_garbage_collect = may_garbage_collect;
          EeglVarsSave   vvsave;
@@ -5552,7 +5552,7 @@ check_due_timer(void) {
          vgetcBusyG = 0;
          called_emsg = 0;
          anyEmsgG = false;
-         must_redraw = 0;
+         mustRedrawG = 0;
          may_garbage_collect = false;
          exception_state_clear();
          saveEeglVars(&vvsave);
@@ -5573,9 +5573,9 @@ check_due_timer(void) {
          called_emsg = save_called_emsg;
          exception_state_restore(&estate);
          restoreEeglVars(&vvsave);
-         if (must_redraw != 0)
+         if (mustRedrawG != 0)
             need_drawUpdateScreen = true;
-         must_redraw = must_redraw > save_must_redraw ? must_redraw : save_must_redraw;
+         mustRedrawG = mustRedrawG > mustRedrawSaved ? mustRedrawG : mustRedrawSaved;
          set_pressedreturn(save_ex_pressedreturn);
          may_garbage_collect = save_may_garbage_collect;
 

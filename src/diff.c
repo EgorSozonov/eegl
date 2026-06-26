@@ -3936,7 +3936,7 @@ c_diffgetput(Invocation* invo) {
    if (invo->id != C_diffget) {
       //Syncing undo only works for the current book, but we change another book. Sync undo if the 
       //command was typed. This isn't 100% right when ":diffput" is used in a function or mapping
-      if (KeyTyped)
+      if (keyWasTypedG)
          u_sync(false);
       auCommRestoreBook(&aco);
    }

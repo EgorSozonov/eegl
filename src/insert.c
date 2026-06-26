@@ -392,7 +392,7 @@ edit(Unt commChar, int startln, long count){
       did_backspace = false;
 
       if (count <= 1)
-         validate_cursor();      // may set must_redraw
+         validate_cursor();      // may set mustRedrawG
 
       //Redraw the display when no characters are waiting.
       //Also shows mode, ruler and positions cursor.
@@ -450,7 +450,7 @@ edit(Unt commChar, int startln, long count){
 
       // If the window was made so small that nothing shows, make it at least
       // one line and one column when typing.
-      if (KeyTyped && !KeyStuffed)
+      if (keyWasTypedG && !keyWasStuffedG)
          portEnsureSize();
 
       //Special handling of keys while the popup menu is visible or wanted and the cursor is still
@@ -1018,7 +1018,7 @@ redrawInInsertMode(Boole ready) {      // not busy with something
       //Need to update the screen first, to make sure syntax highlighting is correct after making 
       //a change (e.g., inserting a "(".  The autocommand may also require a redraw, so it's done
       //again below, unfortunately.
-      if (syntax_present(curPor) && must_redraw)
+      if (syntax_present(curPor) && mustRedrawG)
          drawUpdateScreen(0);
       if (popup_visible)
          popup_check_cursor_pos();
@@ -1031,7 +1031,7 @@ redrawInInsertMode(Boole ready) {      // not busy with something
    // Trigger SafeState if nothing is pending.
    may_trigger_safestate(ready && !ins_compl_active() && !pum_visible());
 
-   if (must_redraw)
+   if (mustRedrawG)
       drawUpdateScreen(0);
    ei (mustClearCommlineG || redrawCommlineG)
       showmode();      // clear cmdline and show mode
@@ -2719,7 +2719,7 @@ private void
 ins_left(void) {
    int      end_change = dont_sync_undo == false; // end undoable change
 
-   if ((p_fdo & FDO_HOR) != 0 && KeyTyped)
+   if ((p_fdo & FDO_HOR) != 0 && keyWasTypedG)
       foldOpenCursor();
    Pos tpos = curPor->cursor;
    if (oneleft() == OK) {
@@ -2741,7 +2741,7 @@ ins_left(void) {
 
 private void
 ins_home(Unt c) {
-   if ((p_fdo & FDO_HOR) && KeyTyped)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG)
       foldOpenCursor();
    Pos tpos = curPor->cursor;
    if (c == K_C_HOME)
@@ -2754,7 +2754,7 @@ ins_home(Unt c) {
 
 private void
 ins_end(Unt c) {
-   if ((p_fdo & FDO_HOR) && KeyTyped)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG)
       foldOpenCursor();
    Pos tpos = curPor->cursor;
    if (c == K_C_END)
@@ -2768,7 +2768,7 @@ ins_end(Unt c) {
 private void
 ins_s_left(void) {
    int end_change = dont_sync_undo == false; // end undoable change
-   if ((p_fdo & FDO_HOR) && KeyTyped)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG)
       foldOpenCursor();
    if (curPor->cursor.lnum > 1 || curPor->cursor.col > 0) {
       start_arrow_with_change(&curPor->cursor, end_change);
@@ -2784,7 +2784,7 @@ private void
 ins_right(void) {
    int end_change = dont_sync_undo == false; // end undoable change
 
-   if ((p_fdo & FDO_HOR) && KeyTyped)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG)
       foldOpenCursor();
    if (gchar_cursor() != ZERO || virtual_active()) {
       start_arrow_with_change(&curPor->cursor, end_change);
@@ -2810,7 +2810,7 @@ ins_right(void) {
 private void
 ins_s_right(void) {
    int end_change = dont_sync_undo == false; // end undoable change
-   if ((p_fdo & FDO_HOR) && KeyTyped)
+   if ((p_fdo & FDO_HOR) && keyWasTypedG)
       foldOpenCursor();
    if (curPor->cursor.lnum < curBook->mem.lineCount || gchar_cursor() != ZERO) {
       start_arrow_with_change(&curPor->cursor, end_change);
@@ -6752,7 +6752,7 @@ get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos) {
                 st->cur_match_pos, compl_direction, compl_pattern.c);
       else
          found_new_match = searchit(NULL, st->scannedBook, st->cur_match_pos,
-               NULL, compl_direction, compl_pattern.c, (int)compl_pattern.len,
+               NULL, compl_direction, compl_pattern, 
                1L, SEARCH_KEEP + SEARCH_NFMSG, RE_LAST, NULL);
       --msg_silent;
       if (!compl_started || st->set_match_pos) {
@@ -7707,13 +7707,13 @@ ins_compl_check_keys(int frequency, Boole in_compl_func) {
          compl_shows_dir = ins_compl_key2dir(c);
          (void)ins_compl_next(false, ins_compl_key2count(c), c != K_UP && c != K_DOWN);
       } else {
-         // Need to get the character to have KeyTyped set.  We'll put it
+         // Need to get the character to have keyWasTypedG set.  We'll put it
          // back with vungetc() below.  But skip K_IGNORE.
          c = safe_vgetc();
          if (c != K_IGNORE) {
             // Don't interrupt completion when the character wasn't typed,
             // e.g., when doing @q to replay keys.
-            if (c != Ctrl_R && KeyTyped)
+            if (c != Ctrl_R && keyWasTypedG)
                 compl_interrupted = true;
 
             vungetc(c);

@@ -2164,7 +2164,7 @@ read_eeglinfo_search_pattern(Vir* virp, Boole force) {
       hlsearch_on = true;
    if (idx >= 0) {
       spat = getPrevSearchPattern(idx);
-      if (force || spat->pat == NULL) {
+      if (force || spat->pat.len == 0) {
          val = eeglinfo_readstring(virp, (int)(lp - virp->line + 1));
          if (val) {
             set_last_search_pat(val, idx, magic, setlast);
@@ -2188,8 +2188,8 @@ wvsp_one(
    CS s,   // search pat
    int sc   // dir char
 ){
-   SearchPattern   *spat = getPrevSearchPattern(idx);
-   if (!spat->pat)
+   SearchPattern* spat = getPrevSearchPattern(idx);
+   if (spat->pat.len == 0)
       return;
 
    fprintf(fp, (char*)_("\n# Last %sSearch Pattern:\n~"), s);
@@ -2204,7 +2204,7 @@ wvsp_one(
       getPrevSearchOrSubstPattern() == idx ? "~" : "",   // last used pat
       sc
    );
-   eeglinfo_writestring(fp, spat->pat);
+   eeglinfo_writestring(fp, spat->pat.c);
 }
 
 private void

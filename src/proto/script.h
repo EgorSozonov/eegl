@@ -98,7 +98,7 @@ CS get_history_arg(Expand *xp, int idx);
 void init_history(void);
 void clear_hist_entry(HistoryEntry *hisptr);
 int in_history(int type, Byte *str, int move_to_front, int sep, int writing);
-void add_to_history(int histype, Byte *new_entry, Unt new_entrylen, int in_map, int sep);
+void scrAddToHistory(int histype, Text newEntry, int in_map, int sep);
 void f_histadd(Var *argvars, Var *returnVar);
 void f_histdel(Var *argvars, Var *returnVar);
 void f_histget(Var *argvars, Var *returnVar);

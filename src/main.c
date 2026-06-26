@@ -911,7 +911,7 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
 
          if (VIsual_active)
             update_curbuf(UPD_INVERTED); // update inverted part
-         ei (must_redraw) {
+         ei (mustRedrawG) {
             drawUpdateScreen(0);
          } ei (redrawCommlineG || mustClearCommlineG || redrawModeG)
             showmode();

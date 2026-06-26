@@ -2686,7 +2686,7 @@ private void
 jumpToEntry(LineNr lNum, int col, Byte visCol, CS pattern){
    LineNr i;
 
-   if (pattern == NULL) {
+   if (!pattern) {
       // Go to line with error, unless lNum is 0.
       i = lNum;
       if (i > 0) {
@@ -2710,7 +2710,7 @@ jumpToEntry(LineNr lNum, int col, Byte visCol, CS pattern){
       // Move the cursor to the first line in the book
       save_cursor = curPor->cursor;
       curPor->cursor.lnum = 0;
-      if (!do_search(NULL, '/', '/', pattern, STRLEN(pattern), (long)1, SEARCH_KEEP, NULL))
+      if (!do_search(NULL, '/', '/', text(pattern), (long)1, SEARCH_KEEP, NULL))
          curPor->cursor = save_cursor;
    }
 }
@@ -2873,7 +2873,7 @@ jumpToNewPortal(
    int prevPortId;
    int openedPortal = false;
    int print_message = true;
-   int old_KeyTyped = KeyTyped; // getting file may reset it
+   int old_keyWasTypedG = keyWasTypedG; // getting file may reset it
    int retval = OK;
 
    if (isStackEmpty(stack) || isEmpty(getCurrent(stack))) {
@@ -2917,7 +2917,7 @@ jumpToNewPortal(
       goto theend;
 
    retval = jumpToBook(stack, currentIdx, curr, forceit, prevPortId,
-              &openedPortal, old_KeyTyped, print_message);
+              &openedPortal, old_keyWasTypedG, print_message);
    if (retval == QF_ABORT) {
       // Location list was modified by an autocomm
       stack = NULL;
@@ -3901,7 +3901,7 @@ private void
 fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPortalId) {
    LineNr lnum;
    LocLine* lline;
-   int keyTypedSave = KeyTyped;
+   int keyTypedSave = keyWasTypedG;
    List* locList = NULL;
    ListItem* listItem = NULL;
 
@@ -4006,8 +4006,8 @@ fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPor
       drawCurBookLater(UPD_NOT_VALID);
    }
 
-   // Restore KeyTyped, setting 'filetype' may reset it.
-   KeyTyped = keyTypedSave;
+   // Restore keyWasTypedG, setting 'filetype' may reset it.
+   keyWasTypedG = keyTypedSave;
 }
 
 // For every change made to the location list, update the changed tick.

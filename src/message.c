@@ -1600,7 +1600,7 @@ wait_return(Boole redraw) {
    FILE   *save_scriptout;
 
    if (redraw)
-      set_must_redraw(UPD_CLEAR);
+      drawSetMustRedraw(UPD_CLEAR);
 
    // If using ":silent cmd", don't wait for a return.  Also don't set
    // need_wait_return to do it later.
@@ -3148,7 +3148,7 @@ inc_msg_scrolled(void) {
       eeglFree(tofree);
    }
    ++msg_scrolled;
-   set_must_redraw(UPD_VALID);
+   drawSetMustRedraw(UPD_VALID);
 }
 
 

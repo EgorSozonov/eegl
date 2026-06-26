@@ -1308,7 +1308,7 @@ prompt_for_number(int *mouse_used) {
    setmouse();
 
    int i = get_number(true, mouse_used);
-   if (KeyTyped) {
+   if (keyWasTypedG) {
       // don't call wait_return() now
       if (msgRowG > 0)
          commlineRowG = msgRowG - 1;
@@ -2877,9 +2877,8 @@ c_substitute(Invocation* invo) {
    SubstitutionState subflags_save;
    int save_do_all;      // remember user specified 'g' flag
    int save_do_ask;      // remember user specified 'c' flag
-   CS pat = null;
+   Text pat = (Text){null, 0};
    CS sub = null;
-   Unt patlen = 0;
    int delimiter;
    int sublen;
    int got_quit = false;
@@ -2928,17 +2927,15 @@ c_substitute(Invocation* invo) {
          }
          if (*cmd != '&')
             which_pat = RE_SEARCH;       // use last '/' pattern
-         pat = S"";          // empty search pattern
-         patlen = 0;
+         pat = (Text){null, 0};          // empty search pattern
          delimiter = *cmd++;          // remember delimiter character
       } else {     // find the end of the regexp
          which_pat = RE_LAST;       // use last used regexp
          delimiter = *cmd++;          // remember delimiter character
-         pat = cmd;             // remember start of search pat
+         pat = mbText(cmd);             // remember start of search pat
          cmd = skip_regexp_ex(cmd, delimiter, true, &invo->arg, NULL, NULL);
          if (cmd[0] == delimiter)       // end delimiter found
             *cmd++ = ZERO;          // replace it with a ZERO
-         patlen = STRLEN(pat);
       }
 
       //Small incompatibility: vi sees '\n' as end of the command, but in
@@ -2958,8 +2955,7 @@ c_substitute(Invocation* invo) {
          emsg(_(e_no_previous_substitute_regular_expression));
          return;
       }
-      pat = NULL;      // search_regcomp() will use previous pattern
-      patlen = 0;
+      pat = (Text){null, 0};      // search_regcomp() will use previous pattern
       sub = copyStr(prevSubstS);
 
       //Vi compatibility quirk: repeating with ":s" keeps the cursor in the
@@ -2970,7 +2966,7 @@ c_substitute(Invocation* invo) {
    //Recognize ":%s/\n//" and turn it into a line join, which is much more efficient.
    //TODO: find a generic solution to make line-joining operations more
    //efficient, avoid allocating a string that grows in size.
-   if (pat && STRCMP(pat, "\\n") == 0
+   if (pat.len > 1 && STRCMP(pat.c, "\\n") == 0
        && *sub == ZERO
        && (*cmd == ZERO || (cmd[1] == ZERO && (*cmd == 'g' || *cmd == 'l'
                     || *cmd == 'p' || *cmd == '#'))))
@@ -3001,9 +2997,9 @@ c_substitute(Invocation* invo) {
       }
 
       if (!keeppatterns)
-         save_re_pat(RE_SUBST, pat, patlen, true);
+         save_re_pat(RE_SUBST, pat, true);
       // put pattern in history
-      add_to_history(HIST_SEARCH, pat, patlen, true, ZERO);
+      scrAddToHistory(HIST_SEARCH, pat, true, ZERO);
       eeglFree(sub);
 
       return;
@@ -3100,7 +3096,7 @@ c_substitute(Invocation* invo) {
       return;
    }
 
-   if (search_regcomp(pat, patlen, NULL, RE_SUBST, which_pat, SEARCH_HIS, OUT &regmatch) == FAIL) {
+   if (search_regcomp(pat, NULL, RE_SUBST, which_pat, SEARCH_HIS, OUT &regmatch) == FAIL) {
       if (subflags.do_error)
          emsg(_(e_invalid_command));
       eeglFree(sub);
@@ -3887,8 +3883,7 @@ c_global(Invocation* invo) {
    CS cmd;      // command argument
 
    Byte delim;      // delimiter, normally '/'
-   CS pat;
-   Unt patlen;
+   Text pat;
    CS used_pat;
    RegMultilineMatch   regmatch;
    int match;
@@ -3924,8 +3919,7 @@ c_global(Invocation* invo) {
       else
           which_pat = RE_SEARCH;   // use previous search pattern
       ++cmd;
-      pat = (CS)"";
-      patlen = 0;
+      pat = (Text){null, 0};
    } ei (*cmd == ZERO) {
       emsg(_(e_regular_expression_missing_from_global));
       return;
@@ -3934,14 +3928,13 @@ c_global(Invocation* invo) {
    } else {
       delim = *cmd;      // get the delimiter
       ++cmd;         // skip delimiter if there is one
-      pat = cmd;      // remember start of pattern
+      pat = text(cmd);      // remember start of pattern
       cmd = skip_regexp_ex(cmd, delim, true, &invo->arg, NULL, NULL);
       if (cmd[0] == delim)          // end delimiter found
           *cmd++ = ZERO;          // replace it with a ZERO
-      patlen = STRLEN(pat);
    }
 
-   if (search_regcomp(pat, patlen, &used_pat, RE_BOTH, which_pat, SEARCH_HIS, OUT &regmatch) 
+   if (search_regcomp(pat, &used_pat, RE_BOTH, which_pat, SEARCH_HIS, OUT &regmatch) 
          == FAIL
    ) {
       emsg(_(e_invalid_command));
@@ -5148,7 +5141,7 @@ get_loop_line(Unt c, void* cookie, int indent, GetlineAlgo options) {
       return line;
    }
 
-   KeyTyped = false;
+   keyWasTypedG = false;
    ++cp->current_line;
    LoopComm* wp = (LoopComm *)(cp->lines_gap->c) + cp->current_line;
    SOURCING_LNUM = wp->lnum;
@@ -5323,7 +5316,7 @@ current_tab_nr(Tab *tab) {
 // DOCMD_VERBOSE  - The command will be included in the error message.
 // DOCMD_NOWAIT   - Don't call wait_return() and friends.
 // DOCMD_REPEAT   - Repeat execution until fgetline() returns NULL.
-// DOCMD_KEYTYPED - Don't reset KeyTyped.
+// DOCMD_KEYTYPED - Don't reset keyWasTypedG.
 // DOCMD_EXCRESET - Reset the exception environment (used for debugging).
 // DOCMD_KEEPLINE - Store first typed line (for repeating with ".").
 //
@@ -5428,10 +5421,10 @@ doCommand(
    // If force_abort is set, we cancel everything.
    anyEmsgG = false;
 
-   // KeyTyped is only set when calling vgetc(). Reset it here when not calling vgetc() (
+   // keyWasTypedG is only set when calling vgetc(). Reset it here when not calling vgetc() (
    // sourced command lines).
    if (!(flags & DOCMD_KEYTYPED) && !getline_equal(fgetline, cookie, getexline))
-      KeyTyped = false;
+      keyWasTypedG = false;
 
    //Continue executing command lines:
    //- when inside an ":if", ":while" or ":for"
@@ -5510,7 +5503,7 @@ doCommand(
             // Don't call wait_return() for aborted command line.  The NULL
             // returned for the end of a sourced file or executed function
             // doesn't do this.
-            if (KeyTyped && !(flags & DOCMD_REPEAT))
+            if (keyWasTypedG && !(flags & DOCMD_REPEAT))
                 need_wait_return = false;
             retval = FAIL;
             break;
@@ -5861,7 +5854,7 @@ doCommand(
 
       // When just finished an ":if"-":else" which was typed, no need to
       // wait for hit-return.  Also for an error situation.
-      if (retval == FAIL || (did_endif && KeyTyped && !anyEmsgG)) {
+      if (retval == FAIL || (did_endif && keyWasTypedG && !anyEmsgG)) {
          need_wait_return = false;
          msg_didany = false;      // don't wait when restarting edit
       } ei (need_wait_return) {
@@ -6501,7 +6494,7 @@ doend:
    }
 
    if (errorMsg && *errorMsg != ZERO && !anyEmsgG) {
-      if ((sourcing || !KeyTyped) && !did_append_cmd) {
+      if ((sourcing || !keyWasTypedG) && !did_append_cmd) {
           if (errorMsg != IObuff) {
              STRCPY(IObuff, errorMsg);
              errorMsg = IObuff;
@@ -7825,28 +7818,19 @@ doGetCommandAddress(
             if (*cmd == c)
                ++cmd;
          } else {
-             int flags;
-
             pos = curPor->cursor; // save curPor->cursor
 
             // When '/' or '?' follows another address, start from there.
             if (lnum > 0 && lnum != MAXLNUM)
-               curPor->cursor.lnum =
-                  lnum > curBook->mem.lineCount
-                        ? curBook->mem.lineCount : lnum;
+               curPor->cursor.lnum = lnum > curBook->mem.lineCount ? curBook->mem.lineCount : lnum;
 
-            // Start a forward search at the end of the line (unless
-            // before the first line).
-            // Start a backward search at the start of the line.
-            // This makes sure we never match in the current
-            // line, and can match anywhere in the next/previous line.
-            if (c == '/' && curPor->cursor.lnum > 0)
-               curPor->cursor.col = MAXCOL;
-            else
-               curPor->cursor.col = 0;
+            //Start a forward search at the end of the line (unless before the first line).
+            //Start a backward search at the start of the line. This makes sure we never match in 
+            //the current line, and can match anywhere in the next/previous line.
+            curPor->cursor.col = (c == '/' && curPor->cursor.lnum > 0) ? MAXCOL : 0;
             searchcmdlen = 0;
-            flags = silent ? SEARCH_KEEP : SEARCH_HIS | SEARCH_MSG;
-            if (!do_search(NULL, c, c, cmd, STRLEN(cmd), 1L, flags, NULL)) {
+            Unt flags = silent ? SEARCH_KEEP : SEARCH_HIS | SEARCH_MSG;
+            if (!do_search(NULL, c, c, text(cmd), 1L, flags, NULL)) {
                curPor->cursor = pos;
                cmd = NULL;
                goto error;
@@ -7876,14 +7860,11 @@ doGetCommandAddress(
          }
 
          if (!skip) {
-             /*
-              * When search follows another address, start from
-              * there.
-              */
-             if (lnum != MAXLNUM)
-            pos.lnum = lnum;
-             else
-            pos.lnum = curPor->cursor.lnum;
+            //When search follows another address, start from there.
+            if (lnum != MAXLNUM)
+               pos.lnum = lnum;
+            else
+               pos.lnum = curPor->cursor.lnum;
 
             //Start the search just like for the above do_search().
             if (*cmd != '?')
@@ -7893,7 +7874,7 @@ doGetCommandAddress(
             pos.coladd = 0;
             if (searchit(curPor, curBook, &pos, NULL,
                   *cmd == '?' ? BACKWARD : FORWARD,
-                  (CS)"", 0, 1L, SEARCH_MSG, i, NULL) != FAIL)
+                  (Text){null, 0}, 1L, SEARCH_MSG, i, NULL) != FAIL)
                lnum = pos.lnum;
             else {
                cmd = NULL;
@@ -10148,7 +10129,7 @@ c_cd(Invocation* invo) {
    ei (invo->id == C_tcd || invo->id == C_tchdir)
       scope = CDSCOPE_TABPAGE;
 
-   if (changedir_func(new_dir, scope) && (KeyTyped || p_verbose >= 5))
+   if (changedir_func(new_dir, scope) && (keyWasTypedG || p_verbose >= 5))
       // Echo the new current directory if the command was typed.
       c_pwd(invo);
 }
@@ -14006,7 +13987,7 @@ u_undo_end(
    UndoHeader   *uhp;
    Byte msgbuf[80];
 
-   if ((p_fdo & FDO_UNDO) && KeyTyped)
+   if ((p_fdo & FDO_UNDO) && keyWasTypedG)
       foldOpenCursor();
 
    if (global_busy       // no messages now, wait until global is finished
