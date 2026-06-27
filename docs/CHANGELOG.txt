@@ -306,6 +306,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] draw.c:screenLinesCG: change array layout to improve cache locality
 [ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
 [ ] "rX", char replacing, shoult not set the "modified" flag on a buffer if previous char was same
+[+] prevent saving of immutable books. The "modifiable" flag should have actual power
 [ ] finish implementing @smoothscroll?
 [ ] "gg" to a line should open all folds this line is in
 [ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down

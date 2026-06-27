@@ -3810,7 +3810,7 @@ addLine(
             // Shorten the file name if not done already.
             // For optimization, do this only for the first entry in a buffer.
             if (firstBookLine 
-                  && (errBook->shortFileName == NULL || !fiIsRelative(errBook->shortFileName))
+                  && (errBook->shortFileName == NULL || !strIsRelative(errBook->shortFileName))
             ){
                if (*dirname == ZERO)
                   mch_dirname(dirname, MAXPATHL);

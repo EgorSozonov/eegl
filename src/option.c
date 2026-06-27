@@ -534,7 +534,7 @@ stropt_copy_value( CS arg) {
          ++arg;   // remove backslash
       if ((i = utfCharLen(arg)) > 1) {
          //copy multibyte char
-         mch_memmove(s, arg, (Unt)i);
+         MEMMOVE(s, arg, (Unt)i);
          arg += i;
          s += i;
       } else
@@ -1246,7 +1246,7 @@ toString(Option* o, SetScope scope) {
    } ei (ref.tag == OPTION_STRING) {   // P_STRING
       if (*ref.string != null) {
          if ((o->flags & P_EXPAND) != 0)
-            home_replace(NULL, *ref.string, nameBuffG, MAXPATHL, false);
+            home_replace(*ref.string, nameBuffG, MAXPATHL, false);
          else
             copySubstrToAllocation(nameBuffG, (Text){*ref.string, MAXPATHL - 1});
       }
@@ -1860,7 +1860,7 @@ did_set_undofile(OptionChange* cha) {
       if ((curBook == saveCurBook || (cha->setScope == SET_GLOBAL))
          && !doWasCurBookChanged() && curBook->mem.mfile != NULL
       ){
-         u_compute_hash(hash);
+         u_compute_hash(OUT hash);
          u_read_undo(NULL, hash, curBook->currFileName);
       }
    }
@@ -2154,7 +2154,7 @@ copyPortOpt(PortLocal* t, PortLocal* s) {
 #undef OPTIONS_COPY
 
    // Copy the script context so that we know where the value was last set.
-   mch_memmove(t->scriptLocs, s->scriptLocs, sizeof(t->scriptLocs));
+   MEMMOVE(t->scriptLocs, s->scriptLocs, sizeof(t->scriptLocs));
 }
 
 // Free the allocated memory inside a PortLocal.
@@ -3066,7 +3066,7 @@ did_set_showbreak(OptionChange* cha) {
    Byte   *s;
 
    for (s = *ref.string; *s; ) {
-      if (ptr2cells(s) != 1)
+      if (bookPtr2Cells(s) != 1)
          return e_showbreak_contains_unprintable_or_wide_character;
       MB_PTR_ADV(s);
    }
@@ -3877,7 +3877,7 @@ put_setstring(
 
       //replace home directory in the whole option value into "buffer"
       buffer = alloc(size);
-      home_replace(NULL, *ref.string, buffer, size, false);
+      home_replace(*ref.string, buffer, size, false);
 
       //If the option value is longer than MAXPATHL, we need to append each comma separated part 
       //of the option separately, so that it can be expanded when read back.
@@ -4160,7 +4160,7 @@ c_set(Invocation* invo) {
       if (i + (arg - startarg) < IOSIZE) {
          //append the argument with the error
          STRCPY(IObuff + i - 2, ": ");
-         mch_memmove(IObuff + i, startarg, (arg - startarg));
+         MEMMOVE(IObuff + i, startarg, (arg - startarg));
          IObuff[i + (arg - startarg)] = ZERO;
       }
       // make sure all characters are printable

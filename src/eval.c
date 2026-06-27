@@ -243,15 +243,15 @@ num_divide(Long n1, Long n2, OUT Boole* failed) {
 	   if (failed)
          *failed = true;
       if (n1 == 0)
-         result = VARNUM_MIN; // similar to NaN
+         result = LONG_MIN; // similar to NaN
       ei (n1 < 0)
-         result = -VARNUM_MAX;
+         result = -LONG_MAX;
       else
-         result = VARNUM_MAX;
-   } ei (n1 == VARNUM_MIN && n2 == -1) {
-      //specific case: trying to do VARNUM_MIN / -1 results in a positive
+         result = LONG_MAX;
+   } ei (n1 == LONG_MIN && n2 == -1) {
+      //specific case: trying to do LONG_MIN / -1 results in a positive
       //number that doesn't fit in Long and causes an FPE
-      result = VARNUM_MAX;
+      result = LONG_MAX;
    } else
       result = n1 / n2;
 
@@ -5269,7 +5269,7 @@ do_string_sub(
             if (zero_width == regmatch.startp[0]) {
                // avoid getting stuck on a match with an empty string
                i = utfCharLen(tail);
-               mch_memmove((CS)ga.c + ga.len, tail, (Unt)i);
+               MEMMOVE((CS)ga.c + ga.len, tail, (Unt)i);
                ga.len += i;
                tail += i;
                continue;
@@ -5295,7 +5295,7 @@ do_string_sub(
 
          // copy the text up to where the match is
          i = (int)(regmatch.startp[0] - tail);
-         mch_memmove((CS)ga.c + ga.len, tail, (Unt)i);
+         MEMMOVE((CS)ga.c + ga.len, tail, (Unt)i);
          // add the substituted text
          (void)eeRegsub(
             &regmatch, sub, expr, (CS)ga.c + ga.len + i, sublen, REGSUB_COPY | REGSUB_MAGIC
@@ -5624,8 +5624,8 @@ initGlobalAndSpecialVars(void) {
    set_EeglVar_nr(VV_TRUE, VVAL_TRUE);
    set_EeglVar_nr(VV_NONE, VVAL_NONE);
    set_EeglVar_nr(VV_NULL, VVAL_NULL);
-   set_EeglVar_nr(VV_NUMBERMAX, VARNUM_MAX);
-   set_EeglVar_nr(VV_NUMBERMIN, VARNUM_MIN);
+   set_EeglVar_nr(VV_NUMBERMAX, LONG_MAX);
+   set_EeglVar_nr(VV_NUMBERMIN, LONG_MIN);
    set_EeglVar_nr(VV_NUMBERSIZE, sizeof(Long) * 8);
    set_EeglVar_nr(VV_SIZEOFINT, sizeof(int));
    set_EeglVar_nr(VV_SIZEOFLONG, sizeof(long));
@@ -8599,7 +8599,7 @@ var_redir_str(CS value, int value_len) {
       len = value_len;      // Append only "value_len" characters
 
    if (ga_grow(&redirArrayList, len) == OK) {
-      mch_memmove((char *)redirArrayList.c + redirArrayList.len, value, len);
+      MEMMOVE((char *)redirArrayList.c + redirArrayList.len, value, len);
       redirArrayList.len += len;
    } else
       var_redir_stop();
@@ -10282,7 +10282,7 @@ execute_redir_str(CS value, int value_len) {
    if (ga_grow(&redir_execute_ga, len) == FAIL)
       return;
 
-   mch_memmove((char *)redir_execute_ga.c + redir_execute_ga.len, value, len);
+   MEMMOVE((char *)redir_execute_ga.c + redir_execute_ga.len, value, len);
    redir_execute_ga.len += len;
 }
 
@@ -11218,7 +11218,7 @@ block_def2str(BlockDef* bd) {
    CS p = ret;
    memset(p, ' ', bd->startspaces);
    p += bd->startspaces;
-   mch_memmove(p, bd->textstart, bd->textlen);
+   MEMMOVE(p, bd->textstart, bd->textlen);
    p += bd->textlen;
    memset(p, ' ', bd->endspaces);
    *(p + bd->endspaces) = ZERO;
@@ -13434,7 +13434,7 @@ repeat_string(Var *str_tv, int n, Var* returnVar) {
    r = alloc(len + 1);
 
    for (i = 0; i < n; i++)
-      mch_memmove(r + i * slen, p, (Unt)slen);
+      MEMMOVE(r + i * slen, p, (Unt)slen);
    r[len] = ZERO;
 
    returnVar->string = r;

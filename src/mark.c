@@ -105,7 +105,7 @@ mark_forget_file(Portal *wp, int fnum) {
           if (wp->jumpListInd > i)
          --wp->jumpListInd;
           --wp->jumpListLen;
-          mch_memmove(&wp->jumpList[i], &wp->jumpList[i + 1],
+          MEMMOVE(&wp->jumpList[i], &wp->jumpList[i + 1],
             (wp->jumpListLen - i) * sizeof(wp->jumpList[i]));
       }
    } 
@@ -116,7 +116,7 @@ mark_forget_file(Portal *wp, int fnum) {
          if (wp->tagStackInd > i)
             --wp->tagStackInd;
          --wp->tagStackLen;
-         mch_memmove(&wp->tagStack[i], &wp->tagStack[i + 1],
+         MEMMOVE(&wp->tagStack[i], &wp->tagStack[i + 1],
             (wp->tagStackLen - i) * sizeof(wp->tagStack[i]));
       }
    } 
@@ -520,7 +520,7 @@ mark_line(Pos* mp, int lead_len) {
    int len = 0;
    CS p;
    for (p = s; *p != ZERO; MB_PTR_ADV(p)) {
-      len += ptr2cells(p);
+      len += bookPtr2Cells(p);
       if (len >= visibleColsG - lead_len)
          break;
    }

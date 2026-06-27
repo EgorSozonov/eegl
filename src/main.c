@@ -232,7 +232,7 @@ do_intro_line(int row, CS mesg, int add_version){
       for (l = 0; p[l] != ZERO
              && (l == 0 || (p[l] != '<' && p[l - 1] != '>')); ++l
       ){
-         clen += ptr2cells(p + l);
+         clen += bookPtr2Cells(p + l);
          l += utfCharLen(p + l) - 1;
       }
       drawTextLen(p, l, row, col + firstPor->portalCol, *p == '<' ? getDecoFlags(HLF_8) : 0);
@@ -2004,7 +2004,7 @@ set_progpath(CS argv0) {
       val = linkBuf;
    }
 
-   if (fiIsRelative(val) 
+   if (strIsRelative(val) 
          && fiGetShortFiName(val) != val && eeFullFileName(val, OUT buf, MAXPATHL, true) != FAIL
    )
       val = buf;

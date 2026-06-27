@@ -782,7 +782,7 @@ expand:
       }
       ++s;
       if (s != match)
-         mch_memmove(match, s, e - s + 1);
+         MEMMOVE(match, s, e - s + 1);
    }
 
    if (matches->len == 0)
@@ -855,7 +855,7 @@ expandPackAddDir(CS pat, OUT ExpandMatch* matches) {
       match = matches->c[i];
       s = fiGetShortFiName(match);
       e = s + STRLEN(s);
-      mch_memmove(match, s, e - s + 1);
+      MEMMOVE(match, s, e - s + 1);
    }
 
 
@@ -1303,10 +1303,10 @@ c_scriptnames(Invocation* invo) {
    for (int i = 1; i <= script_items.len && !gotInterruptG; ++i) {
       ScriptItem *si = SCRIPT_ITEM(i);
 
-      if (si->sn_name != NULL) {
+      if (si->sn_name) {
          Byte sourced_buf[20];
 
-         home_replace(NULL, si->sn_name, nameBuffG, MAXPATHL, true);
+         home_replace(si->sn_name, nameBuffG, MAXPATHL, true);
          if (si->sn_sourced_sid > 0)
             eeSnprintf(sourced_buf, 20, "->%d", si->sn_sourced_sid);
          else
@@ -1327,7 +1327,7 @@ c_scriptnames(Invocation* invo) {
 }
 
 //Get a pointer to a script name. Used for ":verbose set". Message appended to "Last set from "
-Byte *
+CS
 get_scriptname(ScriptId id) {
    switch (id) {
    case SID_CMDARG: return (CS)_("--comm argument");
@@ -2609,7 +2609,7 @@ c_breakdel(Invocation* invo) {
       eeRegFree(DEBUGGY(gap, todel).dbg_prog);
       --gap->len;
       if (todel < gap->len)
-          mch_memmove(
+          MEMMOVE(
              &DEBUGGY(gap, todel), &DEBUGGY(gap, todel + 1), 
              (gap->len - todel) * sizeof(Debuggy)
          );
@@ -2638,7 +2638,7 @@ c_breaklist(Invocation* invo UNUSED) {
    for (int i = 0; i < dbg_breakp.len; ++i) {
       bp = &BREAKP(i);
       if (bp->dbg_type == DBG_FILE)
-         home_replace(NULL, bp->dbg_name, nameBuffG, MAXPATHL, true);
+         home_replace(bp->dbg_name, nameBuffG, MAXPATHL, true);
       if (bp->dbg_type != DBG_EXPR)
          smsg(
             _("%3d  %s %s  line %ld"),
@@ -3023,11 +3023,11 @@ nextwild(
       }
 
       if (v == OK) {
-         mch_memmove(&ccline->commBuf[ccline->cmdpos + difflen],
+         MEMMOVE(&ccline->commBuf[ccline->cmdpos + difflen],
              &ccline->commBuf[ccline->cmdpos],
              (Unt)(ccline->cmdlen - ccline->cmdpos + 1)
          );
-         mch_memmove(&ccline->commBuf[i], p, plen);
+         MEMMOVE(&ccline->commBuf[i], p, plen);
          ccline->cmdlen += difflen;
          ccline->cmdpos += difflen;
       }
@@ -3175,7 +3175,7 @@ status_match_len(Expand *xp, Byte *s) {
    int   len = 0;
    while (*s != ZERO) {
       s += skip_status_match_char(xp, s);
-      len += ptr2cells(s);
+      len += bookPtr2Cells(s);
       MB_PTR_ADV(s);
    }
 
@@ -3275,7 +3275,7 @@ redrawPortalStatusLine_matches(
       s = SHOW_MATCH(i);
       for ( ; *s != ZERO; ++s) {
          s += skip_status_match_char(xp, s);
-         clen += ptr2cells(s);
+         clen += bookPtr2Cells(s);
          if ((l = utfCharLen(s)) > 1) {
             STRNCPY(builder + len, s, l);
             s += l - 1;
@@ -3707,7 +3707,7 @@ showmatches_oneline(
          if (showtail)
             p = SHOW_MATCH(j);
          else {
-            home_replace(NULL, matches->c[j], nameBuffG, MAXPATHL, true);
+            home_replace(matches->c[j], nameBuffG, MAXPATHL, true);
             p = nameBuffG;
          }
       } else {
@@ -3782,7 +3782,7 @@ showmatches(Expand *xp, int wildmenu, int noselect){
               || xp->context == EXPAND_SHELLCMD
               || xp->context == EXPAND_BUFFERS)
          ){
-            home_replace(NULL, matches.c[i], nameBuffG, MAXPATHL, true);
+            home_replace(matches.c[i], nameBuffG, MAXPATHL, true);
             len = eeglStrSize(nameBuffG);
          } else
             len = eeglStrSize(showtail ? showmatches_gettail(matches.c[i]) : matches.c[i]);
@@ -5128,16 +5128,16 @@ expand_files_and_dirs(
             && *(p + 3) == ' '
          ) {
             from = p + 3;
-            mch_memmove(p, from, (Unt)(pat_end - from) + 1);   // +1 for ZERO
+            MEMMOVE(p, from, (Unt)(pat_end - from) + 1);   // +1 for ZERO
             pat_end -= 3;
          } ei ((xp->backslash & XP_BS_ONE) != 0 && *(p + 1) == ' ') {
             from = p + 1;
-            mch_memmove(p, from, (Unt)(pat_end - from) + 1);   // +1 for ZERO
+            MEMMOVE(p, from, (Unt)(pat_end - from) + 1);   // +1 for ZERO
             --pat_end;
          } ei (xp->backslash & XP_BS_COMMA) {
             if (*(p + 1) == '\\' && *(p + 2) == ',') {
                from = p + 2;
-               mch_memmove(p, from, (Unt)(pat_end - from) + 1);   // +1 for ZERO
+               MEMMOVE(p, from, (Unt)(pat_end - from) + 1);   // +1 for ZERO
                pat_end -= 2;
             }
          }
@@ -5225,7 +5225,7 @@ get_scriptnames_arg(Expand *xp UNUSED, int idx) {
       return NULL;
 
    si = SCRIPT_ITEM(idx + 1);
-   home_replace(NULL, si->sn_name, nameBuffG, MAXPATHL, true);
+   home_replace(si->sn_name, nameBuffG, MAXPATHL, true);
    return nameBuffG;
 }
 
@@ -5629,7 +5629,7 @@ expandShellCommand_onedir(
          EeSetItem* hi = hash_lookup(ht, t, hash);
          if (HASHITEM_EMPTY(hi)) {
             // Remove the path that was prepended.
-            mch_memmove(name, name + pathlen, (Unt)(namelen - pathlen) + 1); // +1 for ZERO
+            MEMMOVE(name, name + pathlen, (Unt)(namelen - pathlen) + 1); // +1 for ZERO
             addExpandMatch(name, matches);
             hash_add_item(ht, hi, text(name), hash);
             name = NULL;
@@ -5667,7 +5667,7 @@ expandShellCommand(
 
       CS p = s + 1;
       if (*p == ' ') {
-         mch_memmove(s, p, (Unt)(e - p) + 1);     // +1 for ZERO
+         MEMMOVE(s, p, (Unt)(e - p) + 1);     // +1 for ZERO
          --e;
       }
    }
@@ -5679,7 +5679,7 @@ expandShellCommand(
       path = S".";
    else {
       //For an absolute name we don't use $PATH.
-      if (fiIsRelative(pat))
+      if (strIsRelative(pat))
          path = eeglGetEnv(S"PATH");
       if (!path)
          path = S"";
@@ -5922,7 +5922,7 @@ wildmenu_translate_key(
 // Delete characters on the command line, from "from" to the current position.
 private void
 cmdline_del(CommlineInfo *cclp, int from){
-   mch_memmove(cclp->commBuf + from, cclp->commBuf + cclp->cmdpos,
+   MEMMOVE(cclp->commBuf + from, cclp->commBuf + cclp->cmdpos,
       (Unt)(cclp->cmdlen - cclp->cmdpos + 1));
    cclp->cmdlen -= cclp->cmdpos - from;
    cclp->cmdpos = from;
@@ -6352,7 +6352,7 @@ concat_pattern_with_buffer_match(Text pat, Pos* end_match_pos, Boole lowercase) 
    CS word_end = find_word_end(line + end_match_pos->col);
    int match_len = (int)(word_end - (line + end_match_pos->col));
    CS match = alloc(match_len + pat.len + 1);  // +1 for ZERO
-   mch_memmove(match, pat.c, pat.len);
+   MEMMOVE(match, pat.c, pat.len);
    if (match_len > 0) {
       if (lowercase) {
           Byte  *mword = copySubstr(line + end_match_pos->col,
@@ -6363,10 +6363,10 @@ concat_pattern_with_buffer_match(Text pat, Pos* end_match_pos, Boole lowercase) 
           eeglFree(mword);
           if (lower == NULL)
          goto cleanup;
-          mch_memmove(match + pat.len, lower, match_len);
+          MEMMOVE(match + pat.len, lower, match_len);
           eeglFree(lower);
       } else
-          mch_memmove(match + pat.len, line + end_match_pos->col, match_len);
+          MEMMOVE(match + pat.len, line + end_match_pos->col, match_len);
    }
    match[pat.len + match_len] = ZERO;
    return match;
@@ -7033,7 +7033,7 @@ remove_key_from_history(void) {
                 ++i;
          } 
 
-         mch_memmove(p, p + i, (p_end - (p + i)) + 1);       // +1 for the ZERO
+         MEMMOVE(p, p + i, (p_end - (p + i)) + 1);       // +1 for the ZERO
          p_end -= i;                      // adjust p_end for shortened string
          --p;
       }
@@ -9237,7 +9237,7 @@ allbuf_locked(void) {
 
 private int
 commlineCharsize(int idx) {
-   return ptr2cells(commInfo.commBuf + idx);
+   return bookPtr2Cells(commInfo.commBuf + idx);
 }
 
 //Compute the offset of the cursor on the command line for the prompt and indent.
@@ -9365,7 +9365,7 @@ reallocateCommBuf(int len) {
    allocateCommBuf(len);         // will get some more
    // There isn't always a ZERO after the command, but it may need to be
    // there, thus copy up to the ZERO and add a ZERO.
-   mch_memmove(commInfo.commBuf, p, (Unt)commInfo.cmdlen);
+   MEMMOVE(commInfo.commBuf, p, (Unt)commInfo.cmdlen);
    commInfo.commBuf[commInfo.cmdlen] = ZERO;
 
    if (commInfo.xpc && commInfo.xpc->input.len > 0
@@ -9457,7 +9457,7 @@ put_on_cmdline(Byte *str, int len, int redraw) {
       
    if (retval == OK) {
       if (!commInfo.overstrike) {
-          mch_memmove(commInfo.commBuf + commInfo.cmdpos + len,
+          MEMMOVE(commInfo.commBuf + commInfo.cmdpos + len,
                          commInfo.commBuf + commInfo.cmdpos,
                     (Unt)(commInfo.cmdlen - commInfo.cmdpos));
           commInfo.cmdlen += len;
@@ -9471,13 +9471,13 @@ put_on_cmdline(Byte *str, int len, int redraw) {
                 i += utfCharLen(commInfo.commBuf + i))
              --m;
          if (i < (Unt)commInfo.cmdlen) {
-            mch_memmove(commInfo.commBuf + commInfo.cmdpos + len,
+            MEMMOVE(commInfo.commBuf + commInfo.cmdpos + len,
                commInfo.commBuf + i, (Unt)(commInfo.cmdlen - i));
             commInfo.cmdlen += commInfo.cmdpos + len - i;
          } else
             commInfo.cmdlen = commInfo.cmdpos + len;
       }
-      mch_memmove(commInfo.commBuf + commInfo.cmdpos, str, (Unt)len);
+      MEMMOVE(commInfo.commBuf + commInfo.cmdpos, str, (Unt)len);
       commInfo.commBuf[commInfo.cmdlen] = ZERO;
 
       // When the inserted text starts with a composing character,
@@ -9492,7 +9492,7 @@ put_on_cmdline(Byte *str, int len, int redraw) {
       }
       if (i != 0) {
          // Also backup the cursor position.
-         i = ptr2cells(commInfo.commBuf + commInfo.cmdpos);
+         i = bookPtr2Cells(commInfo.commBuf + commInfo.cmdpos);
          commInfo.cmdspos -= i;
          msgColG -= i;
          if (msgColG < 0) {
@@ -11469,7 +11469,7 @@ uc_scan_attr(
 //          goto fail;
 //
 //      comm = USER_CMD_GA(gap, i);
-//      mch_memmove(comm + 1, comm, (gap->len - i) * sizeof(UserCommand));
+//      MEMMOVE(comm + 1, comm, (gap->len - i) * sizeof(UserCommand));
 //
 //      ++gap->len;
 //
@@ -11632,7 +11632,7 @@ c_delcommand(Invocation* invo) {
    --gap->len;
 
    if (i < gap->len)
-      mch_memmove(comm, comm + 1, (gap->len - i) * sizeof(UserCommand));
+      MEMMOVE(comm, comm + 1, (gap->len - i) * sizeof(UserCommand));
 }
 
 // Split and quote args for <f-args>.
@@ -12113,7 +12113,7 @@ do_ucmd(Invocation* invo) {
                // Also change K_SPECIAL KS_EXTRA KE_CSI into CSI.
                len = ksp - p;
                if (len > 0) {
-                  mch_memmove(q, p, len);
+                  MEMMOVE(q, p, len);
                   q += len;
                }
                *q++ = ksp[1] == KS_SPECIAL ? K_SPECIAL : CSI;
@@ -12134,7 +12134,7 @@ do_ucmd(Invocation* invo) {
          if (!builder)
             totlen += len;
          else {
-            mch_memmove(q, p, len);
+            MEMMOVE(q, p, len);
             q += len;
          }
 
@@ -12470,8 +12470,8 @@ make_ufunc_name_readable(Byte *name, Byte* builder, Unt bufsize) {
    if (len + 3 > bufsize)
       return name;
 
-   mch_memmove(builder + 5, name + 3, len - 2);  // Include trailing ZERO
-   mch_memmove(builder, "<SNR>", 5);
+   MEMMOVE(builder + 5, name + 3, len - 2);  // Include trailing ZERO
+   MEMMOVE(builder, "<SNR>", 5);
    return builder;
 }
 
@@ -12603,7 +12603,7 @@ function_using_block_scopes(UserFunc *fp, CondStack *cstack) {
 
    int count = cstack->ind + 1;
    fp->uf_block_ids = ALLOC_MULT(int, count);
-   mch_memmove(fp->uf_block_ids, cstack->cs_block_id, sizeof(int) * count);
+   MEMMOVE(fp->uf_block_ids, cstack->cs_block_id, sizeof(int) * count);
    fp->uf_block_depth = count;
 
    // Set flag in each block to indicate a function was defined.  This
@@ -13003,7 +13003,7 @@ lambda_function_body(
             plen = STRLEN(p);
          pnl = copySubstr((CS)"\n", plen + 1);
          if (pnl != NULL)
-            mch_memmove(pnl + 1, p, plen + 1);
+            MEMMOVE(pnl + 1, p, plen + 1);
          ((Byte **)gap->c)[gap->len++] = pnl;
          ((Byte **)freegap->c)[freegap->len++] = pnl;
       }
@@ -13013,7 +13013,7 @@ lambda_function_body(
       last = S"}";
       plen = 1;
       pnl = copySubstr((CS)"\n", plen + 1);
-      mch_memmove(pnl + 1, last, plen + 1);
+      MEMMOVE(pnl + 1, last, plen + 1);
       ((Byte **)gap->c)[gap->len++] = pnl;
       ((Byte **)freegap->c)[freegap->len++] = pnl;
    }
@@ -14698,7 +14698,7 @@ call_func(
 
             if (funcexe->fe_basetv != NULL) {
                // Method call: base->Method()
-               mch_memmove(&argv[1], argvars, sizeof(Var) * argcount);
+               MEMMOVE(&argv[1], argvars, sizeof(Var) * argcount);
                argv[0] = *funcexe->fe_basetv;
                argcount++;
                argvars = argv;
@@ -15024,7 +15024,7 @@ trans_function_name_ext(
          name[0] = K_SPECIAL;
          name[1] = KS_EXTRA;
          name[2] = (int)KE_SNR;
-         mch_memmove(name + 3, name + 5, STRLEN(name + 5) + 1);
+         MEMMOVE(name + 3, name + 5, STRLEN(name + 5) + 1);
       }
       goto theend;
    }
@@ -15106,7 +15106,7 @@ trans_function_name_ext(
       name[0] = 'g';
       name[1] = ':';
    }
-   mch_memmove(name + lead + extra, lv.name.c, (Unt)len);
+   MEMMOVE(name + lead + extra, lv.name.c, (Unt)len);
    name[lead + extra + len] = ZERO;
    *pp = end;
 

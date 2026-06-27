@@ -31,7 +31,7 @@ CS source_nextline(void *cookie);
 int may_load_script(int sid, int *loaded);
 int scriptRunFile(CS fname, int *retSid);
 void c_scriptnames(Invocation *invo);
-Byte *get_scriptname(ScriptId id);
+CS get_scriptname(ScriptId id);
 void free_scriptnames(void);
 void free_autoload_scriptnames(void);
 LineNr get_sourced_lnum(LineGetter fgetline, void *cookie);

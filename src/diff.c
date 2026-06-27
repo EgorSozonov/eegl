@@ -1229,12 +1229,12 @@ diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
             orig_len = utfCharLen(s);
             if (mb_char2bytes(c, cbuf) != c_len)
                // TODO: handle byte length difference. One example is Å (3 bytes) and å (2 bytes)
-               mch_memmove(ptr + len, s, orig_len);
+               MEMMOVE(ptr + len, s, orig_len);
             else {
-               mch_memmove(ptr + len, cbuf, c_len);
+               MEMMOVE(ptr + len, cbuf, c_len);
                if (orig_len > c_len) {
                   // Copy remaining composing characters
-                  mch_memmove(ptr + len + c_len, s + c_len, orig_len - c_len);
+                  MEMMOVE(ptr + len + c_len, s + c_len, orig_len - c_len);
                }
             }
 
@@ -1269,7 +1269,7 @@ diff_write(Book* book, DiffInp* din, LineNr start, LineNr end) {
       end = start;
       book->mem.flags |= ML_EMPTY;
    }
-   int r = bookWrite( book, din->externalFname, NULL, start, end, NULL, false, false, false, true);
+   int r = bookWrite(book, din->externalFname, NULL, start, end, NULL, false, false, false, true);
    commModifierG.cmod_flags = save_cmod_flags;
    book->mem.flags = save_ml_flags;
    return r;
@@ -4607,7 +4607,7 @@ private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 
 #define XDL_MAX_COST_MIN 256
 #define XDL_HEUR_MIN_COST 256
-#define XDL_LINE_MAX (long)((1UL << (CHAR_BIT * sizeof(long) - 1)) - 1)
+#define XDL_LINE_MAX (long)((1UL << (8 * sizeof(long) - 1)) - 1)
 #define XDL_SNAKE_CNT 20
 #define XDL_K_HEUR 4
 
@@ -5827,10 +5827,10 @@ xdl_hash_record(Byte** data, CS top, long flags) {
 }
 
 private Unt
-xdl_hashbits(unsigned int size) {
+xdl_hashbits(Unt size) {
    Unt val = 1, bits = 0;
 
-   for (; val < size && bits < CHAR_BIT * sizeof(unsigned int); val <<= 1, bits++);
+   for (; val < size && bits < 8 * sizeof(unsigned int); val <<= 1, bits++);
    return bits ? bits: 1;
 }
 

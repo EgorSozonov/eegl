@@ -7,24 +7,49 @@
 
 #include <string.h>
 #include "base.h"
+#include "proto/strings.h"
+#ifndef PROTO
+#include <wchar.h>   //for towupper() and towlower()
+#include <ctype.h>   //for islower()
+#include <stdlib.h>  //for atol()
+#endif
 
 //{{{charset (utf-8)
 
-#include <wchar.h>       // for towupper() and towlower()
+#define URL_SLASH      1      // path_is_url() has found "://"
+#define URL_BACKSLASH  2      // path_is_url() has found ":\\"
 
-#define URL_SLASH   1      // path_is_url() has found "://"
-#define URL_BACKSLASH   2      // path_is_url() has found ":\\"
+// Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
+// UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
+// The ZERO byte has length 1.
+private Byte utf8LenTable[256] = {
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+   1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,
+   3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
+};
 
+// Like utf8LenTable above, but using a zero for illegal lead bytes.
+private Byte utf8LenTable_zero[256] = {
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+   0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,
+   3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0
+};
 
 // Translate any special characters in buf[bufsize] in-place.
 // The result is a string with only printable characters, but if there is not
 // enough room, not all characters will be translated.
 void
 trans_characters(CS buf, int bufsize) {
-   int      len;      // length of string needing translation
-   int      room;      // room in buffer after string
+   int len;      // length of string needing translation
+   int room;      // room in buffer after string
    CS trs;      // translated character
-   int      trs_len;   // length of trs[]
+   int trs_len;   // length of trs[]
 
    len = (int)STRLEN(buf);
    room = bufsize - len;
@@ -39,58 +64,55 @@ trans_characters(CS buf, int bufsize) {
             room -= trs_len - 1;
             if (room <= 0)
                return;
-            mch_memmove(buf + trs_len, buf + 1, (Unt)len);
+            MEMMOVE(buf + trs_len, buf + 1, (Unt)len);
          }
-         mch_memmove(buf, trs, (Unt)trs_len);
+         MEMMOVE(buf, trs, (Unt)trs_len);
          --len;
       }
       buf += trs_len;
    }
 }
 
-// Translate a string into allocated memory, replacing special chars with printable chars.
-CS
-sanitizeStr(CS s) {
-   int      l, c;
-   Byte   hexbuf[11];
+//Convert a UTF-8 byte sequence to a character number.
+//If the sequence is illegal or truncated by a ZERO the first byte is returned.
+//For an overlong sequence this may return zero.
+//Do not include composing characters, of course.
+Unt
+mb_ptr2char(Byte* p) {
+   if (p[0] < 0x80)   // be quick for ASCII
+      return (Unt)p[0];
 
-   // Compute the length of the result, taking account of unprintable multi-byte characters
-   int len = 0;
-   CS p = s;
-   while (*p != ZERO) {
-      if ((l = utfCharLen(p)) > 1) {
-         c = mb_ptr2char(p);
-         p += l;
-         if (bookIsCharPrintable(c))
-            len += l;
-         else {
-           transchar_hex(hexbuf, c);
-           len += (int)STRLEN(hexbuf);
+   int len = utf8LenTable_zero[p[0]];
+   if (len > 1 && (p[1] & 0xc0) == 0x80) {
+      if (len == 2)
+         return ((p[0] & 0x1f) << 6) + (p[1] & 0x3f);
+      if ((p[2] & 0xc0) == 0x80) {
+         if (len == 3)
+         return ((p[0] & 0x0f) << 12) + ((p[1] & 0x3f) << 6) + (p[2] & 0x3f);
+         if ((p[3] & 0xc0) == 0x80) {
+            if (len == 4) {
+               return ((p[0] & 0x07) << 18) + ((p[1] & 0x3f) << 12)
+                  + ((p[2] & 0x3f) << 6) + (p[3] & 0x3f);
+           } 
+           if ((p[4] & 0xc0) == 0x80) {
+               if (len == 5) {
+                  return ((p[0] & 0x03) << 24) + ((p[1] & 0x3f) << 18)
+                     + ((p[2] & 0x3f) << 12) + ((p[3] & 0x3f) << 6)
+                     + (p[4] & 0x3f);
+               } 
+               if ((p[5] & 0xc0) == 0x80 && len == 6) {
+                 return ((p[0] & 0x01) << 30) + ((p[1] & 0x3f) << 24)
+                    + ((p[2] & 0x3f) << 18) + ((p[3] & 0x3f) << 12)
+                    + ((p[4] & 0x3f) << 6) + (p[5] & 0x3f);
+               } 
+            }
          }
-      } else {
-         l = byte2cells(*p++);
-         if (l > 0)
-            len += l;
-         else
-            len += 4;   // illegal byte sequence
       }
    }
-   CS res = alloc(len + 1);
-   *res = ZERO;
-   p = s;
-   while (*p != ZERO) {
-      if ((l = utfCharLen(p)) > 1) {
-         c = mb_ptr2char(p);
-         if (bookIsCharPrintable(c))
-            STRNCAT(res, p, l);   // append printable multi-byte char
-         else
-            transchar_hex(res + STRLEN(res), c);
-         p += l;
-      } else
-         STRCAT(res, transchar_byte(*p++));
-   }
-   return res;
+   // Illegal value, just return the first byte
+   return p[0];
 }
+
 
 //Convert the string "str[orglen]" to do ignore-case comparing. Uses the current locale.
 //When "buf" is NULL, return an allocated string (NULL for out-of-memory).
@@ -114,13 +136,13 @@ str_foldcase(
    if (buf) {
       if (len >= bufLen)       // Ugly!
          len = bufLen - 1;
-      mch_memmove(buf, str, (Unt)len);
+      MEMMOVE(buf, str, (Unt)len);
       buf[len] = ZERO;
    } else {
       ga_init2(&ga, 1, 10);
       if (ga_grow(&ga, len + 1) == FAIL)
          return NULL;
-      mch_memmove(ga.c, str, (Unt)len);
+      MEMMOVE(ga.c, str, (Unt)len);
       ga.len = len;
       GA_CHAR(len) = ZERO;
    }
@@ -189,39 +211,6 @@ transchar_hex(CS buf, int c) {
    buf[++i] = ZERO;
 }
 
-//Return the number of character cells string "s[len]" will take on the
-//screen, counting TABs as two characters: "^I".
-int
-eeglStrNsize(CS s, int len) {
-   int size = 0;
-
-   while (*s != ZERO && --len >= 0) {
-      int l = utfCharLen(s);
-
-      size += ptr2cells(s);
-      s += l;
-      len -= l - 1;
-   }
-
-   return size;
-}
-
-//Return the number of character cells string "s" will take on the screen,
-//counting TABs as two characters: "^I".
-int
-eeglStrSize(CS s) {
-   return eeglStrNsize(s, (int)MAXCOL);
-}
-
-//return true if 'c' is a valid file-name character or a wildcard character
-//Assume characters above 0x100 are valid (multi-byte).
-//Explicitly interpret ']' as a wildcard character as mch_has_wildcard("]") returns false.
-int
-eeIsFnameChar_or_wc(Unt c) {
-   Byte buf[2] = {(Byte)c, ZERO};
-   return eeIsFnameChar(c) || c == ']' || mch_has_wildcard(buf);
-}
-
 // Skip over ' ' and '\t'.
 CS
 skipwhite(CS q) {
@@ -249,12 +238,6 @@ skipwhite_and_nl(CS q) {
    while (SPACE_OR_TAB(*p) || *p == NL)
       ++p;
    return p;
-}
-
-// getwhitecols: return the number of whitespace columns (bytes) at the start of a given line
-int
-getwhitecols_curline(void) {
-   return getwhitecols(ml_get_curline());
 }
 
 int
@@ -351,7 +334,7 @@ eeIsLower(Unt c) {
    if (c >= 0x80) {
       return utf_islower(c);
    }
-   return SAFE_islower(c) != 0;
+   return islower(c) != 0;
 }
 
 int
@@ -361,7 +344,7 @@ eeIsUpper(Unt c) {
    if (c >= 0x80) {
       return utf_isupper(c);
    }
-   return SAFE_isupper(c) != 0;
+   return isupper(c) != 0;
 }
 
 int
@@ -375,10 +358,8 @@ eeglToUpper(Unt c) {
       return c;
    if (c >= 0x80) {
       return utf_toupper(c);
-   }
-   if (c < 0x80)
+   } else
       return TOUPPER_ASC(c);
-   return TOUPPER_LOC(c);
 }
 
 int
@@ -387,10 +368,8 @@ eeglToLower(Unt c) {
       return c;
    if (c >= 0x80) {
        return utf_tolower(c);
-   }
-   if (c < 0x80)
+   } else
       return TOLOWER_ASC(c);
-   return TOLOWER_LOC(c);
 }
 
 // skiptowhite: skip over text until ' ' or '\t' or ZERO.
@@ -487,19 +466,19 @@ eeIsBlankLine(CS lbuf) {
 void
 readLongNumber(
    CS start,
-   int* prep,    // return: type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
-   int* len,     // return: detected length of number
+   OUT int* prep,    // type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
+   OUT int* len,     // detected length of number
    int what,     // what numbers to recognize
-   Long* nptr, // return: signed result
-   Ulong* unptr,  // return: unsigned result
+   OUT Long* nptr, // signed result
+   OUT Ulong* unptr,  // unsigned result
    int maxlen,   // max length of string to check
    Boole strict,   // check strictly
    Boole* overflow  // when not NULL set to true for overflow
 ){
    CS ptr = start;
-   int          pre = 0;      // default is decimal
-   int          negative = false;
-   Ulong    un = 0;
+   int pre = 0;      // default is decimal
+   int negative = false;
+   Ulong un = 0;
 
    if (len)
       *len = 0;
@@ -514,7 +493,8 @@ readLongNumber(
       pre = ptr[1];
       if ((what & STR2NR_HEX)
             && (pre == 'X' || pre == 'x') && eeIsXDigit(ptr[2])
-            && (maxlen == 0 || maxlen > 2))
+            && (maxlen == 0 || maxlen > 2)
+      )
          // hexadecimal
          ptr += 2;
       ei ((what & STR2NR_BIN)
@@ -534,22 +514,22 @@ readLongNumber(
       if (pre != 0)
           n += 2;       // skip over "0b"
       while ('0' <= *ptr && *ptr <= '1') {
-          // avoid ubsan error for overflow
-          if (un <= UVARNUM_MAX / 2)
-         un = 2 * un + (Ulong)(*ptr - '0');
-          else {
-         un = UVARNUM_MAX;
-         if (overflow != NULL)
-             *overflow = true;
-          }
-          ++ptr;
-          if (n++ == maxlen)
-         break;
-          if ((what & STR2NR_QUOTE) && *ptr == '\'' && '0' <= ptr[1] && ptr[1] <= '1') {
+         // avoid ubsan error for overflow
+         if (un <= ULONG_MAX / 2)
+            un = 2 * un + (Ulong)(*ptr - '0');
+         else {
+            un = ULONG_MAX;
+            if (overflow != NULL)
+                *overflow = true;
+         }
          ++ptr;
          if (n++ == maxlen)
-             break;
-          }
+            break;
+         if ((what & STR2NR_QUOTE) && *ptr == '\'' && '0' <= ptr[1] && ptr[1] <= '1') {
+            ++ptr;
+            if (n++ == maxlen)
+                break;
+         }
       }
    } ei (pre != 0 || ((what & STR2NR_HEX) && (what & STR2NR_FORCE))) {
       // hex
@@ -557,10 +537,10 @@ readLongNumber(
           n += 2;       // skip over "0x"
       while (eeIsXDigit(*ptr)) {
          // avoid ubsan error for overflow
-         if (un <= UVARNUM_MAX / 16)
+         if (un <= ULONG_MAX / 16)
             un = 16 * un + (Ulong)hex2nr(*ptr);
          else {
-            un = UVARNUM_MAX;
+            un = ULONG_MAX;
             if (overflow)
                 *overflow = true;
          }
@@ -579,11 +559,11 @@ readLongNumber(
          Ulong    digit = (Ulong)(*ptr - '0');
 
          // avoid ubsan error for overflow
-         if (un < UVARNUM_MAX / 10
-             || (un == UVARNUM_MAX / 10 && digit <= UVARNUM_MAX % 10))
+         if (un < ULONG_MAX / 10
+             || (un == ULONG_MAX / 10 && digit <= ULONG_MAX % 10))
             un = 10 * un + digit;
          else {
-            un = UVARNUM_MAX;
+            un = ULONG_MAX;
             if (overflow != NULL)
                 *overflow = true;
          }
@@ -602,24 +582,24 @@ readLongNumber(
    if (strict && n - 1 != maxlen && ASCII_ISALNUM(*ptr))
       return;
 
-   if (prep != NULL)
+   if (prep)
       *prep = pre;
-   if (len != NULL)
+   if (len)
       *len = (int)(ptr - start);
    if (nptr) {
       if (negative) {  // account for leading '-' for decimal numbers
           // avoid ubsan error for overflow
-         if (un > VARNUM_MAX) {
-            *nptr = VARNUM_MIN;
-            if (overflow != NULL)
-                *overflow = true;
+         if (un > LONG_MAX) {
+            *nptr = LONG_MIN;
+            if (overflow)
+               *overflow = true;
          } else
             *nptr = -(Long)un;
       } else {
          // prevent a large unsigned number to become negative
-         if (un > VARNUM_MAX) {
-            un = VARNUM_MAX;
-            if (overflow != NULL)
+         if (un > LONG_MAX) {
+            un = LONG_MAX;
+            if (overflow)
                 *overflow = true;
          }
          *nptr = (Long)un;
@@ -675,6 +655,1880 @@ backslash_halve_save(CS p) {
    backslash_halve(res);
    return res;
 }
+
+// Like transchar_buf(), but called with a byte instead of a character.  Checks
+// for an illegal UTF-8 byte.
+CS
+transchar_byte(Unt c) {
+   if (c >= 0x80) {
+      transchar_nonprint(translateScratch, c);
+      return translateScratch;
+   }
+   return transchar_buf(c);
+}
+
+//Convert non-printable character to two or more printable characters in "charbuf[]". 
+//"charbuf" needs to be able to hold five bytes.
+//Does NOT work for multi-byte characters, c must be <= 255.
+void
+transchar_nonprint(CS charbuf, int c) {
+   if (c == NL)
+      c = ZERO;      // we use newline in place of a ZERO
+
+   ei (c <= 0x7f) {       // 0x00 - 0x1f and 0x7f
+      charbuf[0] = '^';
+      charbuf[1] = c ^ 0x40;      // DEL displayed as ^?
+      charbuf[2] = ZERO;
+   } else {
+      transchar_hex(charbuf, c);
+   }
+}
+
+int
+mb_ptr2cells(CS p) {
+   // Need to convert to a character number.
+   if (*p >= 0x80) {
+      int c = mb_ptr2char(p);
+      // An illegal byte is displayed as <xx>.
+      if (utf_ptr2len(p) == 1 || c == ZERO)
+         return 4;
+      // If the char is ASCII it must be an overlong sequence.
+      if (c < 0x80)
+         return char2cells(c);
+      return mb_char2cells(c);
+   }
+   return 1;
+}
+
+int
+mb_ptr2cells_len(CS p, int size) {
+   // Need to convert to a wide character.
+   if (size > 0 && *p >= 0x80) {
+      if (utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p])
+          return 1;  // truncated
+      int c = mb_ptr2char(p);
+      // An illegal byte is displayed as <xx>.
+      if (utf_ptr2len(p) == 1 || c == ZERO)
+          return 4;
+      // If the char is ASCII it must be an overlong sequence.
+      if (c < 0x80)
+          return char2cells(c);
+      return mb_char2cells(c);
+    }
+    return 1;
+}
+
+//Return the number of cells occupied by string "p".
+//Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
+int
+mb_string2cells(CS p, int len) {
+   int clen = 0;
+
+   for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
+      clen += mb_ptr2cells(p + i);
+   return clen;
+}
+
+//Convert a UTF-8 byte sequence to a wide character.
+//String is assumed to be terminated by ZERO or after "n" bytes, whichever comes first.
+//The function is safe in the sense that it never accesses memory beyond the
+//first "n" bytes of "s".
+//
+//On success, return decoded codepoint, advance "s" to the beginning of next character and 
+//decrease "n" accordingly.
+//
+//If end of string was reached, return 0 and, if "n" > 0, advance "s" past ZERO byte.
+//
+//If byte sequence is illegal or incomplete, returns UNT and does not advance "s".
+private Unt
+utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
+   Unt c;
+
+   if (*n == 0) // end of buffer
+      return 0;
+
+   int k = utf8LenTable_zero[**s];
+
+   if (k == 1) {
+      // ASCII character or ZERO
+      (*n)--;
+      return *(*s)++;
+   }
+
+   if ((Unt)k <= *n) {
+      //We have a multibyte sequence and it isn't truncated by buffer limits so mb_ptr2char() is 
+      //safe to use. Or the first byte is illegal (k=0), and it's also safe to use mb_ptr2char().
+      c = mb_ptr2char(*s);
+
+      //On failure, mb_ptr2char() returns the first byte, so here we check equality with the first 
+      //byte. The only non-ASCII character which equals the first byte of its own UTF-8 
+      //representation is U+00C3 (UTF-8: 0xC3 0x83), so need to check that special case too.
+      //It's safe even if n=1, else we would have k=2 > n.
+      if (c != (int)(**s) || (c == 0xC3 && (*s)[1] == 0x83)) {
+          // byte sequence was successfully decoded
+          *s += k;
+          *n -= k;
+          return c;
+      }
+   }
+
+   // byte sequence is incomplete or illegal
+   return UNT;
+}
+
+// Get the length of a UTF-8 byte sequence, excluding any following composing characters.
+// Return 0 for "". Return 1 for an illegal byte sequence.
+Unt
+utf_ptr2len(CS p) {
+   if (*p == ZERO)
+      return 0;
+   Unt len = utf8LenTable[*p];
+   for (Unt i = 1; i < len; ++i) {
+      if ((p[i] & 0xc0) != 0x80)
+         return 1;
+   } 
+   return len;
+}
+
+//Return length of UTF-8 character obtained from the first byte. "b" must be between 0 and 255!
+//Return 1 for an invalid first byte value.
+Unt
+utf_byte2len(int b) {
+   return utf8LenTable[b];
+}
+
+//Return length of UTF-8 character, obtained from the first byte.
+//"b" must be between 0 and 255! Return 0 for an invalid first byte value.
+Unt
+utf_byte2len_zero(int b) {
+   return utf8LenTable_zero[b];
+}
+
+//Get the length of UTF-8 byte sequence "p[size]". Do not include any following composing 
+//characters. Return 1 for "". 1 for an illegal byte sequence (also in incomplete byte seq.).
+//number > "size" for an incomplete byte sequence. Never return 0.
+Unt
+utf_ptr2len_len(Byte const* p, int size) {
+   Unt len = utf8LenTable[*p];
+   if (len == 1)
+      return 1;   // ZERO, ascii or illegal lead byte
+   Unt m;
+   if ((int)len > size)
+      m = size;   // incomplete byte sequence.
+   else
+      m = len;
+   for (Unt i = 1; i < m; ++i) {
+      if ((p[i] & 0xc0) != 0x80)
+         return 1;
+   } 
+   return len;
+}
+
+// Return the number of bytes the UTF-8 encoding of character "c" takes.
+// This does not include composing characters.
+Unt
+mb_char2len(Unt c) {
+   if (c < 0x80)
+      return 1;
+   if (c < 0x800)
+      return 2;
+   if (c < 0x10000)
+      return 3;
+   if (c < 0x200000)
+      return 4;
+   if (c < 0x4000000)
+      return 5;
+   return 6;
+}
+
+// Convert Unicode character "c" to UTF-8 string in "buf[]". Returns the number of bytes.
+int
+mb_char2bytes(Unt c, CS buf) {
+   if (c < 0x80)   { // 7 bits
+      buf[0] = c;
+      return 1;
+   }
+   if (c < 0x800) {    // 11 bits
+      buf[0] = 0xc0 + (c >> 6);
+      buf[1] = 0x80 + (c & 0x3f);
+      return 2;
+   }
+   if (c < 0x10000) {      // 16 bits
+      buf[0] = 0xe0 + (c >> 12);
+      buf[1] = 0x80 + ((c >> 6) & 0x3f);
+      buf[2] = 0x80 + (c & 0x3f);
+      return 3;
+   }
+   if (c < 0x200000) {     // 21 bits
+      buf[0] = 0xf0 + (c >> 18);
+      buf[1] = 0x80 + ((c >> 12) & 0x3f);
+      buf[2] = 0x80 + ((c >> 6) & 0x3f);
+      buf[3] = 0x80 + (c & 0x3f);
+      return 4;
+   }
+   if (c < 0x4000000) {     // 26 bits
+      buf[0] = 0xf8 + (c >> 24);
+      buf[1] = 0x80 + ((c >> 18) & 0x3f);
+      buf[2] = 0x80 + ((c >> 12) & 0x3f);
+      buf[3] = 0x80 + ((c >> 6) & 0x3f);
+      buf[4] = 0x80 + (c & 0x3f);
+      return 5;
+   }
+   // 31 bits
+   buf[0] = 0xfc + (c >> 30);
+   buf[1] = 0x80 + ((c >> 24) & 0x3f);
+   buf[2] = 0x80 + ((c >> 18) & 0x3f);
+   buf[3] = 0x80 + ((c >> 12) & 0x3f);
+   buf[4] = 0x80 + ((c >> 6) & 0x3f);
+   buf[5] = 0x80 + (c & 0x3f);
+   return 6;
+}
+
+// utf_iscomposing() with different argument type for libvterm.
+int
+utf_iscomposing_uint(Unt c) {
+   return utf_iscomposing(c);
+}
+
+Boole
+utf_islower(Unt a){
+   // German sharp s is lower case but has no upper case equivalent.
+   return (utf_toupper(a) != a) || a == 0xdf;
+}
+
+//Return the lower-case equivalent of "a", which is a UCS-4 character. Use simple case folding.
+Unt
+utf_tolower(Unt a) {
+   // Use ASCII style tolower().
+   if (a < 128)
+      return TOLOWER_ASC(a);
+
+   // If towlower() is available and handles Unicode, use it.
+   return towlower(a);
+}
+
+Boole
+utf_isupper(Unt a) {
+   return (utf_tolower(a) != a);
+}
+
+private int
+utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2){
+   Unt c1, c2;
+   int cdiff;
+   Byte buffer[6];
+
+   for (;;) {
+      c1 = utf_safe_read_char_adv(&s1, &n1);
+      c2 = utf_safe_read_char_adv(&s2, &n2);
+
+      if (c1 <= 0 || c2 <= 0)
+          break;
+
+      if (c1 == c2)
+          continue;
+
+      cdiff = utf_fold(c1) - utf_fold(c2);
+      if (cdiff != 0)
+         return cdiff;
+   }
+
+   //some string ended or has an incomplete/illegal character sequence
+
+   if (c1 == 0 || c2 == 0) {
+      //some string ended. shorter string is smaller
+      if (c1 == 0 && c2 == 0)
+          return 0;
+      return c1 == 0 ? -1 : 1;
+   }
+
+   //Continue with bytewise comparison to produce some result that
+   //would make comparison operations involving this function transitive.
+   //
+   //If only one string had an error, comparison should be made with
+   //folded version of the other string. In this case it is enough
+   //to fold just one character to determine the result of comparison.
+   if (c1 != UNT && c2 == UNT) {
+      n1 = mb_char2bytes(utf_fold(c1), buffer);
+      s1 = buffer;
+   } ei (c1 == UNT && c2 != UNT) {
+      n2 = mb_char2bytes(utf_fold(c2), buffer);
+      s2 = buffer;
+   }
+
+   while (n1 > 0 && n2 > 0 && *s1 != ZERO && *s2 != ZERO) {
+      cdiff = (int)(*s1) - (int)(*s2);
+      if (cdiff != 0)
+         return cdiff;
+
+      s1++;
+      s2++;
+      n1--;
+      n2--;
+   }
+
+   if (n1 > 0 && *s1 == ZERO)
+      n1 = 0;
+   if (n2 > 0 && *s2 == ZERO)
+      n2 = 0;
+
+   if (n1 == 0 && n2 == 0)
+      return 0;
+   return n1 == 0 ? -1 : 1;
+}
+
+//Code for Unicode case-dependent operations.  Based on notes in
+//http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
+//This code uses simple case folding, not full case folding.
+//Last updated for Unicode 5.2.
+
+//The following tables are built by ../runtime/tools/unicode.vim.
+//They must be in numeric order, because we use binary search.
+//An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
+//range from 0x41 to 0x5a inclusive, stepping by 1, are changed to folded/upper/lower by adding 32.
+typedef struct {
+   Unt rangeStart;
+   Unt rangeEnd;
+   int step;
+   int offset;
+} ConvertStruct;
+
+private ConvertStruct foldCase[] = {
+   {0x41,0x5a,1,32},
+   {0xb5,0xb5,-1,775},
+   {0xc0,0xd6,1,32},
+   {0xd8,0xde,1,32},
+   {0x100,0x12e,2,1},
+   {0x132,0x136,2,1},
+   {0x139,0x147,2,1},
+   {0x14a,0x176,2,1},
+   {0x178,0x178,-1,-121},
+   {0x179,0x17d,2,1},
+   {0x17f,0x17f,-1,-268},
+   {0x181,0x181,-1,210},
+   {0x182,0x184,2,1},
+   {0x186,0x186,-1,206},
+   {0x187,0x187,-1,1},
+   {0x189,0x18a,1,205},
+   {0x18b,0x18b,-1,1},
+   {0x18e,0x18e,-1,79},
+   {0x18f,0x18f,-1,202},
+   {0x190,0x190,-1,203},
+   {0x191,0x191,-1,1},
+   {0x193,0x193,-1,205},
+   {0x194,0x194,-1,207},
+   {0x196,0x196,-1,211},
+   {0x197,0x197,-1,209},
+   {0x198,0x198,-1,1},
+   {0x19c,0x19c,-1,211},
+   {0x19d,0x19d,-1,213},
+   {0x19f,0x19f,-1,214},
+   {0x1a0,0x1a4,2,1},
+   {0x1a6,0x1a6,-1,218},
+   {0x1a7,0x1a7,-1,1},
+   {0x1a9,0x1a9,-1,218},
+   {0x1ac,0x1ac,-1,1},
+   {0x1ae,0x1ae,-1,218},
+   {0x1af,0x1af,-1,1},
+   {0x1b1,0x1b2,1,217},
+   {0x1b3,0x1b5,2,1},
+   {0x1b7,0x1b7,-1,219},
+   {0x1b8,0x1bc,4,1},
+   {0x1c4,0x1c4,-1,2},
+   {0x1c5,0x1c5,-1,1},
+   {0x1c7,0x1c7,-1,2},
+   {0x1c8,0x1c8,-1,1},
+   {0x1ca,0x1ca,-1,2},
+   {0x1cb,0x1db,2,1},
+   {0x1de,0x1ee,2,1},
+   {0x1f1,0x1f1,-1,2},
+   {0x1f2,0x1f4,2,1},
+   {0x1f6,0x1f6,-1,-97},
+   {0x1f7,0x1f7,-1,-56},
+   {0x1f8,0x21e,2,1},
+   {0x220,0x220,-1,-130},
+   {0x222,0x232,2,1},
+   {0x23a,0x23a,-1,10795},
+   {0x23b,0x23b,-1,1},
+   {0x23d,0x23d,-1,-163},
+   {0x23e,0x23e,-1,10792},
+   {0x241,0x241,-1,1},
+   {0x243,0x243,-1,-195},
+   {0x244,0x244,-1,69},
+   {0x245,0x245,-1,71},
+   {0x246,0x24e,2,1},
+   {0x345,0x345,-1,116},
+   {0x370,0x372,2,1},
+   {0x376,0x376,-1,1},
+   {0x37f,0x37f,-1,116},
+   {0x386,0x386,-1,38},
+   {0x388,0x38a,1,37},
+   {0x38c,0x38c,-1,64},
+   {0x38e,0x38f,1,63},
+   {0x391,0x3a1,1,32},
+   {0x3a3,0x3ab,1,32},
+   {0x3c2,0x3c2,-1,1},
+   {0x3cf,0x3cf,-1,8},
+   {0x3d0,0x3d0,-1,-30},
+   {0x3d1,0x3d1,-1,-25},
+   {0x3d5,0x3d5,-1,-15},
+   {0x3d6,0x3d6,-1,-22},
+   {0x3d8,0x3ee,2,1},
+   {0x3f0,0x3f0,-1,-54},
+   {0x3f1,0x3f1,-1,-48},
+   {0x3f4,0x3f4,-1,-60},
+   {0x3f5,0x3f5,-1,-64},
+   {0x3f7,0x3f7,-1,1},
+   {0x3f9,0x3f9,-1,-7},
+   {0x3fa,0x3fa,-1,1},
+   {0x3fd,0x3ff,1,-130},
+   {0x400,0x40f,1,80},
+   {0x410,0x42f,1,32},
+   {0x460,0x480,2,1},
+   {0x48a,0x4be,2,1},
+   {0x4c0,0x4c0,-1,15},
+   {0x4c1,0x4cd,2,1},
+   {0x4d0,0x52e,2,1},
+   {0x531,0x556,1,48},
+   {0x10a0,0x10c5,1,7264},
+   {0x10c7,0x10cd,6,7264},
+   {0x13f8,0x13fd,1,-8},
+   {0x1c80,0x1c80,-1,-6222},
+   {0x1c81,0x1c81,-1,-6221},
+   {0x1c82,0x1c82,-1,-6212},
+   {0x1c83,0x1c84,1,-6210},
+   {0x1c85,0x1c85,-1,-6211},
+   {0x1c86,0x1c86,-1,-6204},
+   {0x1c87,0x1c87,-1,-6180},
+   {0x1c88,0x1c88,-1,35267},
+   {0x1c89,0x1c89,-1,1},
+   {0x1c90,0x1cba,1,-3008},
+   {0x1cbd,0x1cbf,1,-3008},
+   {0x1e00,0x1e94,2,1},
+   {0x1e9b,0x1e9b,-1,-58},
+   {0x1e9e,0x1e9e,-1,-7615},
+   {0x1ea0,0x1efe,2,1},
+   {0x1f08,0x1f0f,1,-8},
+   {0x1f18,0x1f1d,1,-8},
+   {0x1f28,0x1f2f,1,-8},
+   {0x1f38,0x1f3f,1,-8},
+   {0x1f48,0x1f4d,1,-8},
+   {0x1f59,0x1f5f,2,-8},
+   {0x1f68,0x1f6f,1,-8},
+   {0x1f88,0x1f8f,1,-8},
+   {0x1f98,0x1f9f,1,-8},
+   {0x1fa8,0x1faf,1,-8},
+   {0x1fb8,0x1fb9,1,-8},
+   {0x1fba,0x1fbb,1,-74},
+   {0x1fbc,0x1fbc,-1,-9},
+   {0x1fbe,0x1fbe,-1,-7173},
+   {0x1fc8,0x1fcb,1,-86},
+   {0x1fcc,0x1fcc,-1,-9},
+   {0x1fd3,0x1fd3,-1,-7235},
+   {0x1fd8,0x1fd9,1,-8},
+   {0x1fda,0x1fdb,1,-100},
+   {0x1fe3,0x1fe3,-1,-7219},
+   {0x1fe8,0x1fe9,1,-8},
+   {0x1fea,0x1feb,1,-112},
+   {0x1fec,0x1fec,-1,-7},
+   {0x1ff8,0x1ff9,1,-128},
+   {0x1ffa,0x1ffb,1,-126},
+   {0x1ffc,0x1ffc,-1,-9},
+   {0x2126,0x2126,-1,-7517},
+   {0x212a,0x212a,-1,-8383},
+   {0x212b,0x212b,-1,-8262},
+   {0x2132,0x2132,-1,28},
+   {0x2160,0x216f,1,16},
+   {0x2183,0x2183,-1,1},
+   {0x24b6,0x24cf,1,26},
+   {0x2c00,0x2c2f,1,48},
+   {0x2c60,0x2c60,-1,1},
+   {0x2c62,0x2c62,-1,-10743},
+   {0x2c63,0x2c63,-1,-3814},
+   {0x2c64,0x2c64,-1,-10727},
+   {0x2c67,0x2c6b,2,1},
+   {0x2c6d,0x2c6d,-1,-10780},
+   {0x2c6e,0x2c6e,-1,-10749},
+   {0x2c6f,0x2c6f,-1,-10783},
+   {0x2c70,0x2c70,-1,-10782},
+   {0x2c72,0x2c75,3,1},
+   {0x2c7e,0x2c7f,1,-10815},
+   {0x2c80,0x2ce2,2,1},
+   {0x2ceb,0x2ced,2,1},
+   {0x2cf2,0xa640,31054,1},
+   {0xa642,0xa66c,2,1},
+   {0xa680,0xa69a,2,1},
+   {0xa722,0xa72e,2,1},
+   {0xa732,0xa76e,2,1},
+   {0xa779,0xa77b,2,1},
+   {0xa77d,0xa77d,-1,-35332},
+   {0xa77e,0xa786,2,1},
+   {0xa78b,0xa78b,-1,1},
+   {0xa78d,0xa78d,-1,-42280},
+   {0xa790,0xa792,2,1},
+   {0xa796,0xa7a8,2,1},
+   {0xa7aa,0xa7aa,-1,-42308},
+   {0xa7ab,0xa7ab,-1,-42319},
+   {0xa7ac,0xa7ac,-1,-42315},
+   {0xa7ad,0xa7ad,-1,-42305},
+   {0xa7ae,0xa7ae,-1,-42308},
+   {0xa7b0,0xa7b0,-1,-42258},
+   {0xa7b1,0xa7b1,-1,-42282},
+   {0xa7b2,0xa7b2,-1,-42261},
+   {0xa7b3,0xa7b3,-1,928},
+   {0xa7b4,0xa7c2,2,1},
+   {0xa7c4,0xa7c4,-1,-48},
+   {0xa7c5,0xa7c5,-1,-42307},
+   {0xa7c6,0xa7c6,-1,-35384},
+   {0xa7c7,0xa7c9,2,1},
+   {0xa7cb,0xa7cb,-1,-42343},
+   {0xa7cc,0xa7d0,4,1},
+   {0xa7d6,0xa7da,2,1},
+   {0xa7dc,0xa7dc,-1,-42561},
+   {0xa7f5,0xa7f5,-1,1},
+   {0xab70,0xabbf,1,-38864},
+   {0xfb05,0xfb05,-1,1},
+   {0xff21,0xff3a,1,32},
+   {0x10400,0x10427,1,40},
+   {0x104b0,0x104d3,1,40},
+   {0x10570,0x1057a,1,39},
+   {0x1057c,0x1058a,1,39},
+   {0x1058c,0x10592,1,39},
+   {0x10594,0x10595,1,39},
+   {0x10c80,0x10cb2,1,64},
+   {0x10d50,0x10d65,1,32},
+   {0x118a0,0x118bf,1,32},
+   {0x16e40,0x16e5f,1,32},
+   {0x1e900,0x1e921,1,34}
+};
+
+//Generic conversion function for case operations.
+//Return the converted equivalent of "a", which is a UCS-4 character.  Use
+//the given conversion "table".  Uses binary search on "table".
+private Unt
+utf_convert(Unt a, ConvertStruct table[], int tableSize) {
+   int entries = tableSize / sizeof(ConvertStruct);
+   int start = 0;
+   int end = entries;
+   while (start < end) {
+      // need to search further
+      int mid = (end + start) / 2;
+      if (table[mid].rangeEnd < a)
+         start = mid + 1;
+      else
+         end = mid;
+   }
+   if (start < entries
+          && table[start].rangeStart <= a
+          && a <= table[start].rangeEnd
+          && (a - table[start].rangeStart) % table[start].step == 0)
+      return (Unt)((int)a + table[start].offset);
+   else
+      return a;
+}
+
+//Return the folded-case equivalent of "a", which is a UCS-4 character. Uses simple case folding.
+Unt
+utf_fold(Unt a) {
+   if (a < 0x80)
+      // be fast for ASCII
+      return a >= 0x41 && a <= 0x5a ? a + 32 : a;
+   return utf_convert(a, foldCase, (int)sizeof(foldCase));
+}
+
+//Return the upper-case equivalent of "a", which is a UCS-4 character.  Use simple case folding.
+Unt
+utf_toupper(Unt a) {
+   // Use ASCII style toupper().
+   if (a < 128)
+      return TOUPPER_ASC(a);
+
+   //If towupper() is available and handles Unicode, use it.
+   return towupper(a);
+}
+
+//Version of strnicmp() that handles multi-byte characters.
+//Needed for Big5, Shift-JIS and UTF-8 encoding. Return zero if s1 and s2 are equal (ignoring case),
+//the difference between two characters otherwise.
+int
+caseInsensitiveCompareNChars2(CS s1, CS s2, Unt n1, Unt n2) {
+   if (n1 == n2)
+      return caseInsensitiveCompareNChars(s1, s2, n1);
+   else
+      return utf_strnicmp(s1, s2, n1, n2);
+}
+
+int
+caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
+   return utf_strnicmp(s1, s2, nn, nn);
+}
+
+typedef struct {
+   long first;
+   long last;
+} Interval;
+
+// Return true if "c" is in the sorted "table[size / sizeof(Interval)]".
+private Boole
+intable(Arr(Interval) table, Unt size, Unt c) {
+   // first quick check for Latin1 etc. characters
+   if ((long)c < table[0].first)
+      return false;
+
+   // binary search in table
+   int bot = 0;
+   int top = (int)(size / sizeof(Interval) - 1);
+   while (top >= bot) {
+      int mid = (bot + top) / 2;
+      if ((Unt)table[mid].last < c)
+         bot = mid + 1;
+      ei ((Unt)table[mid].first > c)
+         top = mid - 1;
+      else
+         return true;
+   }
+   return false;
+}
+
+Boole
+strInEmojiTable(Unt c) {
+   return intable(emoji_all, sizeof(emoji_all), c);
+}
+
+Boole
+strInDoubleWidthTable(Unt c) {
+   // Sorted list of non-overlapping intervals of East Asian double width
+   // characters, generated with ../runtime/tools/unicode.vim.
+   static Interval doublewidth[] = {
+      {0x1100, 0x115f},
+      {0x231a, 0x231b},
+      {0x2329, 0x232a},
+      {0x23e9, 0x23ec},
+      {0x23f0, 0x23f0},
+      {0x23f3, 0x23f3},
+      {0x25fd, 0x25fe},
+      {0x2614, 0x2615},
+      {0x2630, 0x2637},
+      {0x2648, 0x2653},
+      {0x267f, 0x267f},
+      {0x268a, 0x268f},
+      {0x2693, 0x2693},
+      {0x26a1, 0x26a1},
+      {0x26aa, 0x26ab},
+      {0x26bd, 0x26be},
+      {0x26c4, 0x26c5},
+      {0x26ce, 0x26ce},
+      {0x26d4, 0x26d4},
+      {0x26ea, 0x26ea},
+      {0x26f2, 0x26f3},
+      {0x26f5, 0x26f5},
+      {0x26fa, 0x26fa},
+      {0x26fd, 0x26fd},
+      {0x2705, 0x2705},
+      {0x270a, 0x270b},
+      {0x2728, 0x2728},
+      {0x274c, 0x274c},
+      {0x274e, 0x274e},
+      {0x2753, 0x2755},
+      {0x2757, 0x2757},
+      {0x2795, 0x2797},
+      {0x27b0, 0x27b0},
+      {0x27bf, 0x27bf},
+      {0x2b1b, 0x2b1c},
+      {0x2b50, 0x2b50},
+      {0x2b55, 0x2b55},
+      {0x2e80, 0x2e99},
+      {0x2e9b, 0x2ef3},
+      {0x2f00, 0x2fd5},
+      {0x2ff0, 0x303e},
+      {0x3041, 0x3096},
+      {0x3099, 0x30ff},
+      {0x3105, 0x312f},
+      {0x3131, 0x318e},
+      {0x3190, 0x31e5},
+      {0x31ef, 0x321e},
+      {0x3220, 0x3247},
+      {0x3250, 0xa48c},
+      {0xa490, 0xa4c6},
+      {0xa960, 0xa97c},
+      {0xac00, 0xd7a3},
+      {0xf900, 0xfaff},
+      {0xfe10, 0xfe19},
+      {0xfe30, 0xfe52},
+      {0xfe54, 0xfe66},
+      {0xfe68, 0xfe6b},
+      {0xff01, 0xff60},
+      {0xffe0, 0xffe6},
+      {0x16fe0, 0x16fe3},
+      {0x16ff0, 0x16ff1},
+      {0x17000, 0x187f7},
+      {0x18800, 0x18cd5},
+      {0x18cff, 0x18d08},
+      {0x1aff0, 0x1aff3},
+      {0x1aff5, 0x1affb},
+      {0x1affd, 0x1affe},
+      {0x1b000, 0x1b122},
+      {0x1b132, 0x1b132},
+      {0x1b150, 0x1b152},
+      {0x1b155, 0x1b155},
+      {0x1b164, 0x1b167},
+      {0x1b170, 0x1b2fb},
+      {0x1d300, 0x1d356},
+      {0x1d360, 0x1d376},
+      {0x1f004, 0x1f004},
+      {0x1f0cf, 0x1f0cf},
+      {0x1f18e, 0x1f18e},
+      {0x1f191, 0x1f19a},
+      {0x1f200, 0x1f202},
+      {0x1f210, 0x1f23b},
+      {0x1f240, 0x1f248},
+      {0x1f250, 0x1f251},
+      {0x1f260, 0x1f265},
+      {0x1f300, 0x1f320},
+      {0x1f32d, 0x1f335},
+      {0x1f337, 0x1f37c},
+      {0x1f37e, 0x1f393},
+      {0x1f3a0, 0x1f3ca},
+      {0x1f3cf, 0x1f3d3},
+      {0x1f3e0, 0x1f3f0},
+      {0x1f3f4, 0x1f3f4},
+      {0x1f3f8, 0x1f43e},
+      {0x1f440, 0x1f440},
+      {0x1f442, 0x1f4fc},
+      {0x1f4ff, 0x1f53d},
+      {0x1f54b, 0x1f54e},
+      {0x1f550, 0x1f567},
+      {0x1f57a, 0x1f57a},
+      {0x1f595, 0x1f596},
+      {0x1f5a4, 0x1f5a4},
+      {0x1f5fb, 0x1f64f},
+      {0x1f680, 0x1f6c5},
+      {0x1f6cc, 0x1f6cc},
+      {0x1f6d0, 0x1f6d2},
+      {0x1f6d5, 0x1f6d7},
+      {0x1f6dc, 0x1f6df},
+      {0x1f6eb, 0x1f6ec},
+      {0x1f6f4, 0x1f6fc},
+      {0x1f7e0, 0x1f7eb},
+      {0x1f7f0, 0x1f7f0},
+      {0x1f90c, 0x1f93a},
+      {0x1f93c, 0x1f945},
+      {0x1f947, 0x1f9ff},
+      {0x1fa70, 0x1fa7c},
+      {0x1fa80, 0x1fa89},
+      {0x1fa8f, 0x1fac6},
+      {0x1face, 0x1fadc},
+      {0x1fadf, 0x1fae9},
+      {0x1faf0, 0x1faf8},
+      {0x20000, 0x2fffd},
+      {0x30000, 0x3fffd}
+   };
+
+   return intable(doublewidth, sizeof(doublewidth), c));
+}
+
+// Sorted list of non-overlapping intervals of East Asian Ambiguous
+// characters, generated with ../runtime/tools/unicode.vim.
+private Interval ambiguous[] = {
+   {0x00a1, 0x00a1},
+   {0x00a4, 0x00a4},
+   {0x00a7, 0x00a8},
+   {0x00aa, 0x00aa},
+   {0x00ad, 0x00ae},
+   {0x00b0, 0x00b4},
+   {0x00b6, 0x00ba},
+   {0x00bc, 0x00bf},
+   {0x00c6, 0x00c6},
+   {0x00d0, 0x00d0},
+   {0x00d7, 0x00d8},
+   {0x00de, 0x00e1},
+   {0x00e6, 0x00e6},
+   {0x00e8, 0x00ea},
+   {0x00ec, 0x00ed},
+   {0x00f0, 0x00f0},
+   {0x00f2, 0x00f3},
+   {0x00f7, 0x00fa},
+   {0x00fc, 0x00fc},
+   {0x00fe, 0x00fe},
+   {0x0101, 0x0101},
+   {0x0111, 0x0111},
+   {0x0113, 0x0113},
+   {0x011b, 0x011b},
+   {0x0126, 0x0127},
+   {0x012b, 0x012b},
+   {0x0131, 0x0133},
+   {0x0138, 0x0138},
+   {0x013f, 0x0142},
+   {0x0144, 0x0144},
+   {0x0148, 0x014b},
+   {0x014d, 0x014d},
+   {0x0152, 0x0153},
+   {0x0166, 0x0167},
+   {0x016b, 0x016b},
+   {0x01ce, 0x01ce},
+   {0x01d0, 0x01d0},
+   {0x01d2, 0x01d2},
+   {0x01d4, 0x01d4},
+   {0x01d6, 0x01d6},
+   {0x01d8, 0x01d8},
+   {0x01da, 0x01da},
+   {0x01dc, 0x01dc},
+   {0x0251, 0x0251},
+   {0x0261, 0x0261},
+   {0x02c4, 0x02c4},
+   {0x02c7, 0x02c7},
+   {0x02c9, 0x02cb},
+   {0x02cd, 0x02cd},
+   {0x02d0, 0x02d0},
+   {0x02d8, 0x02db},
+   {0x02dd, 0x02dd},
+   {0x02df, 0x02df},
+   {0x0300, 0x036f},
+   {0x0391, 0x03a1},
+   {0x03a3, 0x03a9},
+   {0x03b1, 0x03c1},
+   {0x03c3, 0x03c9},
+   {0x0401, 0x0401},
+   {0x0410, 0x044f},
+   {0x0451, 0x0451},
+   {0x2010, 0x2010},
+   {0x2013, 0x2016},
+   {0x2018, 0x2019},
+   {0x201c, 0x201d},
+   {0x2020, 0x2022},
+   {0x2024, 0x2027},
+   {0x2030, 0x2030},
+   {0x2032, 0x2033},
+   {0x2035, 0x2035},
+   {0x203b, 0x203b},
+   {0x203e, 0x203e},
+   {0x2074, 0x2074},
+   {0x207f, 0x207f},
+   {0x2081, 0x2084},
+   {0x20ac, 0x20ac},
+   {0x2103, 0x2103},
+   {0x2105, 0x2105},
+   {0x2109, 0x2109},
+   {0x2113, 0x2113},
+   {0x2116, 0x2116},
+   {0x2121, 0x2122},
+   {0x2126, 0x2126},
+   {0x212b, 0x212b},
+   {0x2153, 0x2154},
+   {0x215b, 0x215e},
+   {0x2160, 0x216b},
+   {0x2170, 0x2179},
+   {0x2189, 0x2189},
+   {0x2190, 0x2199},
+   {0x21b8, 0x21b9},
+   {0x21d2, 0x21d2},
+   {0x21d4, 0x21d4},
+   {0x21e7, 0x21e7},
+   {0x2200, 0x2200},
+   {0x2202, 0x2203},
+   {0x2207, 0x2208},
+   {0x220b, 0x220b},
+   {0x220f, 0x220f},
+   {0x2211, 0x2211},
+   {0x2215, 0x2215},
+   {0x221a, 0x221a},
+   {0x221d, 0x2220},
+   {0x2223, 0x2223},
+   {0x2225, 0x2225},
+   {0x2227, 0x222c},
+   {0x222e, 0x222e},
+   {0x2234, 0x2237},
+   {0x223c, 0x223d},
+   {0x2248, 0x2248},
+   {0x224c, 0x224c},
+   {0x2252, 0x2252},
+   {0x2260, 0x2261},
+   {0x2264, 0x2267},
+   {0x226a, 0x226b},
+   {0x226e, 0x226f},
+   {0x2282, 0x2283},
+   {0x2286, 0x2287},
+   {0x2295, 0x2295},
+   {0x2299, 0x2299},
+   {0x22a5, 0x22a5},
+   {0x22bf, 0x22bf},
+   {0x2312, 0x2312},
+   {0x2460, 0x24e9},
+   {0x24eb, 0x254b},
+   {0x2550, 0x2573},
+   {0x2580, 0x258f},
+   {0x2592, 0x2595},
+   {0x25a0, 0x25a1},
+   {0x25a3, 0x25a9},
+   {0x25b2, 0x25b3},
+   {0x25b6, 0x25b7},
+   {0x25bc, 0x25bd},
+   {0x25c0, 0x25c1},
+   {0x25c6, 0x25c8},
+   {0x25cb, 0x25cb},
+   {0x25ce, 0x25d1},
+   {0x25e2, 0x25e5},
+   {0x25ef, 0x25ef},
+   {0x2605, 0x2606},
+   {0x2609, 0x2609},
+   {0x260e, 0x260f},
+   {0x261c, 0x261c},
+   {0x261e, 0x261e},
+   {0x2640, 0x2640},
+   {0x2642, 0x2642},
+   {0x2660, 0x2661},
+   {0x2663, 0x2665},
+   {0x2667, 0x266a},
+   {0x266c, 0x266d},
+   {0x266f, 0x266f},
+   {0x269e, 0x269f},
+   {0x26bf, 0x26bf},
+   {0x26c6, 0x26cd},
+   {0x26cf, 0x26d3},
+   {0x26d5, 0x26e1},
+   {0x26e3, 0x26e3},
+   {0x26e8, 0x26e9},
+   {0x26eb, 0x26f1},
+   {0x26f4, 0x26f4},
+   {0x26f6, 0x26f9},
+   {0x26fb, 0x26fc},
+   {0x26fe, 0x26ff},
+   {0x273d, 0x273d},
+   {0x2776, 0x277f},
+   {0x2b56, 0x2b59},
+   {0x3248, 0x324f},
+   {0xe000, 0xf8ff},
+   {0xfe00, 0xfe0f},
+   {0xfffd, 0xfffd},
+   {0x1f100, 0x1f10a},
+   {0x1f110, 0x1f12d},
+   {0x1f130, 0x1f169},
+   {0x1f170, 0x1f18d},
+   {0x1f18f, 0x1f190},
+   {0x1f19b, 0x1f1ac},
+   {0xe0100, 0xe01ef},
+   {0xf0000, 0xffffd},
+   {0x100000, 0x10fffd}
+};
+
+// mb_char2cells() with different argument type for libvterm.
+int
+utf_uint2cells(Unt c) {
+   if (c >= 0x100 && utf_iscomposing((int)c))
+      return 0;
+   return mb_char2cells((int)c);
+}
+
+//Get character at **pp and advance *pp to the next character.
+//Note: composing characters are skipped!
+Unt
+inpAdvanceMultibyte(OUT CS* pp) {
+   Unt c = mb_ptr2char(*pp);
+   *pp += utfCharLen(*pp);
+   return c;
+}
+
+//Get character at **pp and advance *pp to the next character.
+//Note: composing characters are returned as separate characters.
+Unt
+mb_cptr2char_adv(OUT CS* pp) {
+   Unt c = mb_ptr2char(*pp);
+   *pp += utf_ptr2len(*pp);
+   return c;
+}
+
+
+int
+utf_ambiguous_width(Unt c) {
+    return c >= 0x80 && (intable(ambiguous, sizeof(ambiguous), c)
+       || intable(emoji_all, sizeof(emoji_all), c));
+}
+
+//Return offset from "p" to the start of a character, including composing
+//characters. "base" must be the start of the C string.
+int
+mb_head_off(CS base, CS p) {
+   CS q;
+   CS s;
+   int len;
+
+   if (*p < 0x80)      // be quick for ASCII
+      return 0;
+
+   // Skip backwards over trailing bytes: 10xx.xxxx. Skip backwards again if on a composing char.
+   for (q = p; ; --q) {
+      // Move s to the last byte of this char.
+      for (s = q; (s[1] & 0xc0) == 0x80; ++s)
+         {}
+      // Move q to the first byte of this char.
+      while (q > base && (*q & 0xc0) == 0x80)
+         --q;
+      // Check for illegal sequence. Do allow an illegal byte after where we started.
+      len = utf8LenTable[*q];
+      if (len != (int)(s - q + 1) && len != (int)(p - q + 1))
+         return 0;
+
+      if (q <= base)
+         break;
+
+      Unt c = mb_ptr2char(q);
+      if (utf_iscomposing(c))
+         continue;
+
+      break;
+   }
+
+   return (int)(p - q);
+}
+
+// Whether space is NOT allowed before/after 'c'.
+int
+utf_eat_space(int cc){
+    return ((cc >= 0x2000 && cc <= 0x206F)   // General punctuations
+       || (cc >= 0x2e00 && cc <= 0x2e7f)   // Supplemental punctuations
+       || (cc >= 0x3000 && cc <= 0x303f)   // CJK symbols and punctuations
+       || (cc >= 0xff01 && cc <= 0xff0f)   // Full width ASCII punctuations
+       || (cc >= 0xff1a && cc <= 0xff20)   // ..
+       || (cc >= 0xff3b && cc <= 0xff40)   // ..
+       || (cc >= 0xff5b && cc <= 0xff65));   // ..
+}
+
+// Whether line break is allowed before "cc".
+Boole
+utf_allow_break_before(Unt cc) {
+   static const Unt BOL_prohibition_punct[] = {
+      '!',
+      '%', //(
+      ')',
+      ',',
+      ':',
+      ';',
+      '>',
+      '?', //[
+      ']', //{
+      '}',
+      0x2019, // ’ right single quotation mark
+      0x201d, // ” right double quotation mark
+      0x2020, // † dagger
+      0x2021, // ‡ double dagger
+      0x2026, // … horizontal ellipsis
+      0x2030, // ‰ per mille sign
+      0x2031, // ‱ per ten thousand sign
+      0x203c, // ‼ double exclamation mark
+      0x2047, // ⁇ double question mark
+      0x2048, // ⁈ question exclamation mark
+      0x2049, // ⁉ exclamation question mark
+      0x2103, // ℃ degree celsius
+      0x2109, // ℉ degree fahrenheit
+      0x3001, // 、 ideographic comma
+      0x3002, // 。 ideographic full stop
+      0x3009, // 〉 right angle bracket
+      0x300b, // 》 right double angle bracket
+      0x300d, // 」 right corner bracket
+      0x300f, // 』 right white corner bracket
+      0x3011, // 】 right black lenticular bracket
+      0x3015, // 〕 right tortoise shell bracket
+      0x3017, // 〗 right white lenticular bracket
+      0x3019, // 〙 right white tortoise shell bracket
+      0x301b, // 〛 right white square bracket
+      0xff01, // ！ fullwidth exclamation mark
+      0xff09, // ） fullwidth right parenthesis
+      0xff0c, // ， fullwidth comma
+      0xff0e, // ． fullwidth full stop
+      0xff1a, // ： fullwidth colon
+      0xff1b, // ； fullwidth semicolon
+      0xff1f, // ？ fullwidth question mark
+      0xff3d, // ］ fullwidth right square bracket
+      0xff5d, // ｝ fullwidth right curly bracket
+   };
+
+   int first = 0;
+   int last  = ARRAY_LENGTH(BOL_prohibition_punct) - 1;
+   int mid   = 0;
+
+   while (first < last) {
+      mid = (first + last)/2;
+
+      if (cc == BOL_prohibition_punct[mid])
+         return false;
+      ei (cc > BOL_prohibition_punct[mid])
+         first = mid + 1;
+      else
+         last = mid - 1;
+   }
+
+   return cc != BOL_prohibition_punct[first];
+}
+
+//Whether line break is allowed after "cc".
+private Boole
+utf_allow_break_after(Unt cc) {
+   static const Unt EOL_prohibition_punct[] = {
+      '(', //)
+      '<',
+      '[', //]
+      '`',
+      '{', //}
+      //0x2014, // — em dash
+      0x2018, // ‘ left single quotation mark
+      0x201c, // “ left double quotation mark
+      //0x2053, // ～ swung dash
+      0x3008, // 〈 left angle bracket
+      0x300a, // 《 left double angle bracket
+      0x300c, // 「 left corner bracket
+      0x300e, // 『 left white corner bracket
+      0x3010, // 【 left black lenticular bracket
+      0x3014, // 〔 left tortoise shell bracket
+      0x3016, // 〖 left white lenticular bracket
+      0x3018, // 〘 left white tortoise shell bracket
+      0x301a, // 〚 left white square bracket
+      0xff08, // （ fullwidth left parenthesis
+      0xff3b, // ［ fullwidth left square bracket
+      0xff5b, // ｛ fullwidth left curly bracket
+   };
+
+   int first = 0;
+   int last  = ARRAY_LENGTH(EOL_prohibition_punct) - 1;
+   int mid   = 0;
+
+   while (first < last) {
+      mid = (first + last)/2;
+
+      if (cc == EOL_prohibition_punct[mid])
+         return false;
+      ei (cc > EOL_prohibition_punct[mid])
+         first = mid + 1;
+      else
+         last = mid - 1;
+    }
+
+    return cc != EOL_prohibition_punct[first];
+}
+
+//Whether line break is allowed between "cc" and "ncc".
+int
+utf_allow_break(Unt cc, Unt ncc) {
+   // don't break between two-letter punctuations
+   if (cc == ncc
+       && (cc == 0x2014 // em dash
+         || cc == 0x2026)) // horizontal ellipsis
+      return false;
+
+   return utf_allow_break_after(cc) && utf_allow_break_before(ncc);
+}
+
+// Copy a character from "*fp" to "*tp" and advance the pointers.
+void
+mb_copy_char(OUT CS* fp, OUT CS* tp) {
+   int l = utfCharLen(*fp);
+
+   MEMMOVE(*tp, *fp, (Unt)l);
+   *tp += l;
+   *fp += l;
+}
+
+//Return the offset from "p" to the first byte of a character.  When "p" is at the start of a 
+//character 0 is returned, otherwise the offset to the next character.  Can start anywhere in a 
+//stream of bytes.
+int
+mb_off_next(CS base, CS p) {
+   int head_off = mb_head_off(base, p);
+
+   if (head_off == 0)
+      return 0;
+
+   return utfCharLen(p - head_off) - head_off;
+}
+
+//Return the offset from "p" to the last byte of the character it points
+//into.  Can start anywhere in a stream of bytes.
+//Composing characters are not included.
+int
+mb_tail_off(CS base, CS p) {
+   if (*p == ZERO)
+      return 0;
+
+   // Find the last character that is 10xx.xxxx
+   int i;
+   for (i = 0; (p[i + 1] & 0xc0) == 0x80; ++i)
+       ;
+   // Check for illegal sequence.
+   int j;
+   for (j = 0; p - j > base; ++j) {
+      if ((p[-j] & 0xc0) != 0x80)
+         break;
+   } 
+   if (utf8LenTable[p[-j]] != i + j + 1)
+      return 0;
+   return i;
+}
+
+// Find the next illegal byte sequence.
+void
+utf_find_illegal(void) {
+   Pos   pos = curPor->cursor;
+   CS p;
+   CS tofree = NULL;
+
+   curPor->cursor.coladd = 0;
+   for (;;) {
+      p = ml_get_cursor();
+      while (*p != ZERO){
+         // Illegal means that there are not enough trail bytes (checked by
+         // utf_ptr2len()) or too many of them (overlong sequence).
+         Unt len = utf_ptr2len(p);
+         if (*p >= 0x80 && (len == 1 || mb_char2len(mb_ptr2char(p)) != len)) {
+            curPor->cursor.col += (ColNr)(p - ml_get_cursor());
+            goto theend;
+         }
+         p += len;
+      }
+      if (curPor->cursor.lnum == curBook->mem.lineCount)
+         break;
+      ++curPor->cursor.lnum;
+      curPor->cursor.col = 0;
+   }
+
+   // didn't find it: don't move and beep
+   curPor->cursor = pos;
+   beep_flush();
+
+theend:
+   eeglFree(tofree);
+}
+
+//Return true if string "s" is a valid utf-8 string. When "end" is NULL stop at the first 
+//ZERO. Otherwise stop at "end".
+int
+utf_valid_string(CS s, CS end) {
+   CS p = s;
+
+   while (end == NULL ? *p != ZERO : p < end) {
+      int l = utf8LenTable_zero[*p];
+      if (l == 0)
+          return false;   // invalid lead byte
+      if (end != NULL && p + l > end)
+          return false;   // incomplete byte sequence
+      ++p;
+      while (--l > 0)
+          if ((*p++ & 0xc0) != 0x80)
+         return false;   // invalid trail byte
+   }
+   return true;
+}
+
+// Return a pointer to the character before "*p", if there is one.
+CS
+mb_prevptr(CS line, CS p) {   // start of the string
+   if (p > line)
+      MB_PTR_BACK(line, p);
+   return p;
+}
+
+//Return the character length of "str". Each multi-byte character (with
+//following composing characters) counts as one.
+int
+mb_charlen(CS str) {
+   if (!str)
+      return 0;
+
+   int count;
+   CS p = str;
+   for (count = 0; *p != ZERO; count++)
+      p += utfCharLen(p);
+
+   return count;
+}
+
+// Like mb_charlen() but for a string with specified length.
+int
+mb_charlen_len(CS str, int len) {
+   CS p = str;
+   int count;
+
+   for (count = 0; *p != ZERO && p < str + len; count++)
+      p += utfCharLen(p);
+
+   return count;
+}
+
+//Try to un-escape a multi-byte character.
+//Used for the "to" and "from" part of a mapping.
+//Return the un-escaped string if it is a multi-byte character, and advance
+//"pp" to just after the bytes that formed it. Return NULL if no multi-byte char was found.
+CS
+mb_unescape(OUT CS* pp) {
+   static Byte   buf[6];
+   int n;
+   int m = 0;
+   CS str = *pp;
+
+   // Must translate K_SPECIAL KS_SPECIAL KE_FILLER to K_SPECIAL and CSI
+   // KS_EXTRA KE_CSI to CSI.
+   // Maximum length of a utf-8 character is 4 bytes.
+   for (n = 0; str[n] != ZERO && m < 4; ++n) {
+      if (str[n] == K_SPECIAL && str[n + 1] == KS_SPECIAL && str[n + 2] == KE_FILLER) {
+         buf[m++] = K_SPECIAL;
+         n += 2;
+      } ei ((str[n] == K_SPECIAL) && str[n + 1] == KS_EXTRA && str[n + 2] == (int)KE_CSI) {
+         buf[m++] = CSI;
+         n += 2;
+      } ei (str[n] == K_SPECIAL) {
+         break;      // a special key can't be a multibyte char
+      } else {
+          buf[m++] = str[n];
+      } 
+      buf[m] = ZERO;
+
+      //Return a multi-byte character if it's found.  An illegal sequence will result in a 1 here.
+      if (utfCharLen(buf) > 1) {
+         *pp = str + n + 1;
+         return buf;
+      }
+
+      // Bail out quickly for ASCII.
+      if (buf[0] < 128)
+         break;
+    }
+    return NULL;
+}
+
+#include <langinfo.h>
+
+//Return true if "c" is a composing UTF-8 character.  This means it will be
+//drawn on top of the preceding character. Based on code from Markus Kuhn.
+Boole
+utf_iscomposing(Unt c) {
+   // Sorted list of non-overlapping intervals.
+   // Generated by ../runtime/tools/unicode.vim.
+   static Interval combining[] = {
+      {0x0300, 0x036f},
+      {0x0483, 0x0489},
+      {0x0591, 0x05bd},
+      {0x05bf, 0x05bf},
+      {0x05c1, 0x05c2},
+      {0x05c4, 0x05c5},
+      {0x05c7, 0x05c7},
+      {0x0610, 0x061a},
+      {0x064b, 0x065f},
+      {0x0670, 0x0670},
+      {0x06d6, 0x06dc},
+      {0x06df, 0x06e4},
+      {0x06e7, 0x06e8},
+      {0x06ea, 0x06ed},
+      {0x0711, 0x0711},
+      {0x0730, 0x074a},
+      {0x07a6, 0x07b0},
+      {0x07eb, 0x07f3},
+      {0x07fd, 0x07fd},
+      {0x0816, 0x0819},
+      {0x081b, 0x0823},
+      {0x0825, 0x0827},
+      {0x0829, 0x082d},
+      {0x0859, 0x085b},
+      {0x0897, 0x089f},
+      {0x08ca, 0x08e1},
+      {0x08e3, 0x0902},
+      {0x093a, 0x093a},
+      {0x093c, 0x093c},
+      {0x0941, 0x0948},
+      {0x094d, 0x094d},
+      {0x0951, 0x0957},
+      {0x0962, 0x0963},
+      {0x0981, 0x0981},
+      {0x09bc, 0x09bc},
+      {0x09c1, 0x09c4},
+      {0x09cd, 0x09cd},
+      {0x09e2, 0x09e3},
+      {0x09fe, 0x09fe},
+      {0x0a01, 0x0a02},
+      {0x0a3c, 0x0a3c},
+      {0x0a41, 0x0a42},
+      {0x0a47, 0x0a48},
+      {0x0a4b, 0x0a4d},
+      {0x0a51, 0x0a51},
+      {0x0a70, 0x0a71},
+      {0x0a75, 0x0a75},
+      {0x0a81, 0x0a82},
+      {0x0abc, 0x0abc},
+      {0x0ac1, 0x0ac5},
+      {0x0ac7, 0x0ac8},
+      {0x0acd, 0x0acd},
+      {0x0ae2, 0x0ae3},
+      {0x0afa, 0x0aff},
+      {0x0b01, 0x0b01},
+      {0x0b3c, 0x0b3c},
+      {0x0b3f, 0x0b3f},
+      {0x0b41, 0x0b44},
+      {0x0b4d, 0x0b4d},
+      {0x0b55, 0x0b56},
+      {0x0b62, 0x0b63},
+      {0x0b82, 0x0b82},
+      {0x0bc0, 0x0bc0},
+      {0x0bcd, 0x0bcd},
+      {0x0c00, 0x0c00},
+      {0x0c04, 0x0c04},
+      {0x0c3c, 0x0c3c},
+      {0x0c3e, 0x0c40},
+      {0x0c46, 0x0c48},
+      {0x0c4a, 0x0c4d},
+      {0x0c55, 0x0c56},
+      {0x0c62, 0x0c63},
+      {0x0c81, 0x0c81},
+      {0x0cbc, 0x0cbc},
+      {0x0cbf, 0x0cbf},
+      {0x0cc6, 0x0cc6},
+      {0x0ccc, 0x0ccd},
+      {0x0ce2, 0x0ce3},
+      {0x0d00, 0x0d01},
+      {0x0d3b, 0x0d3c},
+      {0x0d41, 0x0d44},
+      {0x0d4d, 0x0d4d},
+      {0x0d62, 0x0d63},
+      {0x0d81, 0x0d81},
+      {0x0dca, 0x0dca},
+      {0x0dd2, 0x0dd4},
+      {0x0dd6, 0x0dd6},
+      {0x0e31, 0x0e31},
+      {0x0e34, 0x0e3a},
+      {0x0e47, 0x0e4e},
+      {0x0eb1, 0x0eb1},
+      {0x0eb4, 0x0ebc},
+      {0x0ec8, 0x0ece},
+      {0x0f18, 0x0f19},
+      {0x0f35, 0x0f35},
+      {0x0f37, 0x0f37},
+      {0x0f39, 0x0f39},
+      {0x0f71, 0x0f7e},
+      {0x0f80, 0x0f84},
+      {0x0f86, 0x0f87},
+      {0x0f8d, 0x0f97},
+      {0x0f99, 0x0fbc},
+      {0x0fc6, 0x0fc6},
+      {0x102d, 0x1030},
+      {0x1032, 0x1037},
+      {0x1039, 0x103a},
+      {0x103d, 0x103e},
+      {0x1058, 0x1059},
+      {0x105e, 0x1060},
+      {0x1071, 0x1074},
+      {0x1082, 0x1082},
+      {0x1085, 0x1086},
+      {0x108d, 0x108d},
+      {0x109d, 0x109d},
+      {0x135d, 0x135f},
+      {0x1712, 0x1714},
+      {0x1732, 0x1733},
+      {0x1752, 0x1753},
+      {0x1772, 0x1773},
+      {0x17b4, 0x17b5},
+      {0x17b7, 0x17bd},
+      {0x17c6, 0x17c6},
+      {0x17c9, 0x17d3},
+      {0x17dd, 0x17dd},
+      {0x180b, 0x180d},
+      {0x180f, 0x180f},
+      {0x1885, 0x1886},
+      {0x18a9, 0x18a9},
+      {0x1920, 0x1922},
+      {0x1927, 0x1928},
+      {0x1932, 0x1932},
+      {0x1939, 0x193b},
+      {0x1a17, 0x1a18},
+      {0x1a1b, 0x1a1b},
+      {0x1a56, 0x1a56},
+      {0x1a58, 0x1a5e},
+      {0x1a60, 0x1a60},
+      {0x1a62, 0x1a62},
+      {0x1a65, 0x1a6c},
+      {0x1a73, 0x1a7c},
+      {0x1a7f, 0x1a7f},
+      {0x1ab0, 0x1ace},
+      {0x1b00, 0x1b03},
+      {0x1b34, 0x1b34},
+      {0x1b36, 0x1b3a},
+      {0x1b3c, 0x1b3c},
+      {0x1b42, 0x1b42},
+      {0x1b6b, 0x1b73},
+      {0x1b80, 0x1b81},
+      {0x1ba2, 0x1ba5},
+      {0x1ba8, 0x1ba9},
+      {0x1bab, 0x1bad},
+      {0x1be6, 0x1be6},
+      {0x1be8, 0x1be9},
+      {0x1bed, 0x1bed},
+      {0x1bef, 0x1bf1},
+      {0x1c2c, 0x1c33},
+      {0x1c36, 0x1c37},
+      {0x1cd0, 0x1cd2},
+      {0x1cd4, 0x1ce0},
+      {0x1ce2, 0x1ce8},
+      {0x1ced, 0x1ced},
+      {0x1cf4, 0x1cf4},
+      {0x1cf8, 0x1cf9},
+      {0x1dc0, 0x1dff},
+      {0x20d0, 0x20f0},
+      {0x2cef, 0x2cf1},
+      {0x2d7f, 0x2d7f},
+      {0x2de0, 0x2dff},
+      {0x302a, 0x302d},
+      {0x3099, 0x309a},
+      {0xa66f, 0xa672},
+      {0xa674, 0xa67d},
+      {0xa69e, 0xa69f},
+      {0xa6f0, 0xa6f1},
+      {0xa802, 0xa802},
+      {0xa806, 0xa806},
+      {0xa80b, 0xa80b},
+      {0xa825, 0xa826},
+      {0xa82c, 0xa82c},
+      {0xa8c4, 0xa8c5},
+      {0xa8e0, 0xa8f1},
+      {0xa8ff, 0xa8ff},
+      {0xa926, 0xa92d},
+      {0xa947, 0xa951},
+      {0xa980, 0xa982},
+      {0xa9b3, 0xa9b3},
+      {0xa9b6, 0xa9b9},
+      {0xa9bc, 0xa9bd},
+      {0xa9e5, 0xa9e5},
+      {0xaa29, 0xaa2e},
+      {0xaa31, 0xaa32},
+      {0xaa35, 0xaa36},
+      {0xaa43, 0xaa43},
+      {0xaa4c, 0xaa4c},
+      {0xaa7c, 0xaa7c},
+      {0xaab0, 0xaab0},
+      {0xaab2, 0xaab4},
+      {0xaab7, 0xaab8},
+      {0xaabe, 0xaabf},
+      {0xaac1, 0xaac1},
+      {0xaaec, 0xaaed},
+      {0xaaf6, 0xaaf6},
+      {0xabe5, 0xabe5},
+      {0xabe8, 0xabe8},
+      {0xabed, 0xabed},
+      {0xfb1e, 0xfb1e},
+      {0xfe00, 0xfe0f},
+      {0xfe20, 0xfe2f},
+      {0x101fd, 0x101fd},
+      {0x102e0, 0x102e0},
+      {0x10376, 0x1037a},
+      {0x10a01, 0x10a03},
+      {0x10a05, 0x10a06},
+      {0x10a0c, 0x10a0f},
+      {0x10a38, 0x10a3a},
+      {0x10a3f, 0x10a3f},
+      {0x10ae5, 0x10ae6},
+      {0x10d24, 0x10d27},
+      {0x10d69, 0x10d6d},
+      {0x10eab, 0x10eac},
+      {0x10efc, 0x10eff},
+      {0x10f46, 0x10f50},
+      {0x10f82, 0x10f85},
+      {0x11001, 0x11001},
+      {0x11038, 0x11046},
+      {0x11070, 0x11070},
+      {0x11073, 0x11074},
+      {0x1107f, 0x11081},
+      {0x110b3, 0x110b6},
+      {0x110b9, 0x110ba},
+      {0x110c2, 0x110c2},
+      {0x11100, 0x11102},
+      {0x11127, 0x1112b},
+      {0x1112d, 0x11134},
+      {0x11173, 0x11173},
+      {0x11180, 0x11181},
+      {0x111b6, 0x111be},
+      {0x111c9, 0x111cc},
+      {0x111cf, 0x111cf},
+      {0x1122f, 0x11231},
+      {0x11234, 0x11234},
+      {0x11236, 0x11237},
+      {0x1123e, 0x1123e},
+      {0x11241, 0x11241},
+      {0x112df, 0x112df},
+      {0x112e3, 0x112ea},
+      {0x11300, 0x11301},
+      {0x1133b, 0x1133c},
+      {0x11340, 0x11340},
+      {0x11366, 0x1136c},
+      {0x11370, 0x11374},
+      {0x113bb, 0x113c0},
+      {0x113ce, 0x113ce},
+      {0x113d0, 0x113d0},
+      {0x113d2, 0x113d2},
+      {0x113e1, 0x113e2},
+      {0x11438, 0x1143f},
+      {0x11442, 0x11444},
+      {0x11446, 0x11446},
+      {0x1145e, 0x1145e},
+      {0x114b3, 0x114b8},
+      {0x114ba, 0x114ba},
+      {0x114bf, 0x114c0},
+      {0x114c2, 0x114c3},
+      {0x115b2, 0x115b5},
+      {0x115bc, 0x115bd},
+      {0x115bf, 0x115c0},
+      {0x115dc, 0x115dd},
+      {0x11633, 0x1163a},
+      {0x1163d, 0x1163d},
+      {0x1163f, 0x11640},
+      {0x116ab, 0x116ab},
+      {0x116ad, 0x116ad},
+      {0x116b0, 0x116b5},
+      {0x116b7, 0x116b7},
+      {0x1171d, 0x1171d},
+      {0x1171f, 0x1171f},
+      {0x11722, 0x11725},
+      {0x11727, 0x1172b},
+      {0x1182f, 0x11837},
+      {0x11839, 0x1183a},
+      {0x1193b, 0x1193c},
+      {0x1193e, 0x1193e},
+      {0x11943, 0x11943},
+      {0x119d4, 0x119d7},
+      {0x119da, 0x119db},
+      {0x119e0, 0x119e0},
+      {0x11a01, 0x11a0a},
+      {0x11a33, 0x11a38},
+      {0x11a3b, 0x11a3e},
+      {0x11a47, 0x11a47},
+      {0x11a51, 0x11a56},
+      {0x11a59, 0x11a5b},
+      {0x11a8a, 0x11a96},
+      {0x11a98, 0x11a99},
+      {0x11c30, 0x11c36},
+      {0x11c38, 0x11c3d},
+      {0x11c3f, 0x11c3f},
+      {0x11c92, 0x11ca7},
+      {0x11caa, 0x11cb0},
+      {0x11cb2, 0x11cb3},
+      {0x11cb5, 0x11cb6},
+      {0x11d31, 0x11d36},
+      {0x11d3a, 0x11d3a},
+      {0x11d3c, 0x11d3d},
+      {0x11d3f, 0x11d45},
+      {0x11d47, 0x11d47},
+      {0x11d90, 0x11d91},
+      {0x11d95, 0x11d95},
+      {0x11d97, 0x11d97},
+      {0x11ef3, 0x11ef4},
+      {0x11f00, 0x11f01},
+      {0x11f36, 0x11f3a},
+      {0x11f40, 0x11f40},
+      {0x11f42, 0x11f42},
+      {0x11f5a, 0x11f5a},
+      {0x13440, 0x13440},
+      {0x13447, 0x13455},
+      {0x1611e, 0x16129},
+      {0x1612d, 0x1612f},
+      {0x16af0, 0x16af4},
+      {0x16b30, 0x16b36},
+      {0x16f4f, 0x16f4f},
+      {0x16f8f, 0x16f92},
+      {0x16fe4, 0x16fe4},
+      {0x1bc9d, 0x1bc9e},
+      {0x1cf00, 0x1cf2d},
+      {0x1cf30, 0x1cf46},
+      {0x1d167, 0x1d169},
+      {0x1d17b, 0x1d182},
+      {0x1d185, 0x1d18b},
+      {0x1d1aa, 0x1d1ad},
+      {0x1d242, 0x1d244},
+      {0x1da00, 0x1da36},
+      {0x1da3b, 0x1da6c},
+      {0x1da75, 0x1da75},
+      {0x1da84, 0x1da84},
+      {0x1da9b, 0x1da9f},
+      {0x1daa1, 0x1daaf},
+      {0x1e000, 0x1e006},
+      {0x1e008, 0x1e018},
+      {0x1e01b, 0x1e021},
+      {0x1e023, 0x1e024},
+      {0x1e026, 0x1e02a},
+      {0x1e08f, 0x1e08f},
+      {0x1e130, 0x1e136},
+      {0x1e2ae, 0x1e2ae},
+      {0x1e2ec, 0x1e2ef},
+      {0x1e4ec, 0x1e4ef},
+      {0x1e5ee, 0x1e5ef},
+      {0x1e8d0, 0x1e8d6},
+      {0x1e944, 0x1e94a},
+      {0xe0100, 0xe01ef}
+   };
+
+   return intable(combining, sizeof(combining), c);
+}
+
+//Return true for characters that can be displayed in a normal way.
+//Only for characters of 0x100 and above!
+Boole
+utf_printable(Unt c) {
+   // Sorted list of non-overlapping intervals.
+   // 0xd800-0xdfff is reserved for UTF-16, actually illegal.
+   static Interval nonprint[] = {
+      {0x070f, 0x070f}, {0x180b, 0x180e}, {0x200b, 0x200f}, {0x202a, 0x202e},
+      {0x2060, 0x206f}, {0xd800, 0xdfff}, {0xfeff, 0xfeff}, {0xfff9, 0xfffb},
+      {0xfffe, 0xffff}
+   };
+
+   return !intable(nonprint, sizeof(nonprint), c);
+}
+
+// Sorted list of non-overlapping intervals of all Emoji characters,
+// based on http://unicode.org/emoji/charts/emoji-list.html
+// Generated by ../runtime/tools/unicode.vim.
+// Excludes 0x00a9 and 0x00ae because they are considered latin1.
+private Interval emoji_all[] = {
+    {0x203c, 0x203c},
+    {0x2049, 0x2049},
+    {0x2122, 0x2122},
+    {0x2139, 0x2139},
+    {0x2194, 0x2199},
+    {0x21a9, 0x21aa},
+    {0x231a, 0x231b},
+    {0x2328, 0x2328},
+    {0x23cf, 0x23cf},
+    {0x23e9, 0x23f3},
+    {0x23f8, 0x23fa},
+    {0x24c2, 0x24c2},
+    {0x25aa, 0x25ab},
+    {0x25b6, 0x25b6},
+    {0x25c0, 0x25c0},
+    {0x25fb, 0x25fe},
+    {0x2600, 0x2604},
+    {0x260e, 0x260e},
+    {0x2611, 0x2611},
+    {0x2614, 0x2615},
+    {0x2618, 0x2618},
+    {0x261d, 0x261d},
+    {0x2620, 0x2620},
+    {0x2622, 0x2623},
+    {0x2626, 0x2626},
+    {0x262a, 0x262a},
+    {0x262e, 0x262f},
+    {0x2638, 0x263a},
+    {0x2640, 0x2640},
+    {0x2642, 0x2642},
+    {0x2648, 0x2653},
+    {0x265f, 0x2660},
+    {0x2663, 0x2663},
+    {0x2665, 0x2666},
+    {0x2668, 0x2668},
+    {0x267b, 0x267b},
+    {0x267e, 0x267f},
+    {0x2692, 0x2697},
+    {0x2699, 0x2699},
+    {0x269b, 0x269c},
+    {0x26a0, 0x26a1},
+    {0x26a7, 0x26a7},
+    {0x26aa, 0x26ab},
+    {0x26b0, 0x26b1},
+    {0x26bd, 0x26be},
+    {0x26c4, 0x26c5},
+    {0x26c8, 0x26c8},
+    {0x26ce, 0x26cf},
+    {0x26d1, 0x26d1},
+    {0x26d3, 0x26d4},
+    {0x26e9, 0x26ea},
+    {0x26f0, 0x26f5},
+    {0x26f7, 0x26fa},
+    {0x26fd, 0x26fd},
+    {0x2702, 0x2702},
+    {0x2705, 0x2705},
+    {0x2708, 0x270d},
+    {0x270f, 0x270f},
+    {0x2712, 0x2712},
+    {0x2714, 0x2714},
+    {0x2716, 0x2716},
+    {0x271d, 0x271d},
+    {0x2721, 0x2721},
+    {0x2728, 0x2728},
+    {0x2733, 0x2734},
+    {0x2744, 0x2744},
+    {0x2747, 0x2747},
+    {0x274c, 0x274c},
+    {0x274e, 0x274e},
+    {0x2753, 0x2755},
+    {0x2757, 0x2757},
+    {0x2763, 0x2764},
+    {0x2795, 0x2797},
+    {0x27a1, 0x27a1},
+    {0x27b0, 0x27b0},
+    {0x27bf, 0x27bf},
+    {0x2934, 0x2935},
+    {0x2b05, 0x2b07},
+    {0x2b1b, 0x2b1c},
+    {0x2b50, 0x2b50},
+    {0x2b55, 0x2b55},
+    {0x3030, 0x3030},
+    {0x303d, 0x303d},
+    {0x3297, 0x3297},
+    {0x3299, 0x3299},
+    {0x1f004, 0x1f004},
+    {0x1f0cf, 0x1f0cf},
+    {0x1f170, 0x1f171},
+    {0x1f17e, 0x1f17f},
+    {0x1f18e, 0x1f18e},
+    {0x1f191, 0x1f19a},
+    {0x1f1e6, 0x1f1ff},
+    {0x1f201, 0x1f202},
+    {0x1f21a, 0x1f21a},
+    {0x1f22f, 0x1f22f},
+    {0x1f232, 0x1f23a},
+    {0x1f250, 0x1f251},
+    {0x1f300, 0x1f321},
+    {0x1f324, 0x1f393},
+    {0x1f396, 0x1f397},
+    {0x1f399, 0x1f39b},
+    {0x1f39e, 0x1f3f0},
+    {0x1f3f3, 0x1f3f5},
+    {0x1f3f7, 0x1f4fd},
+    {0x1f4ff, 0x1f53d},
+    {0x1f549, 0x1f54e},
+    {0x1f550, 0x1f567},
+    {0x1f56f, 0x1f570},
+    {0x1f573, 0x1f57a},
+    {0x1f587, 0x1f587},
+    {0x1f58a, 0x1f58d},
+    {0x1f590, 0x1f590},
+    {0x1f595, 0x1f596},
+    {0x1f5a4, 0x1f5a5},
+    {0x1f5a8, 0x1f5a8},
+    {0x1f5b1, 0x1f5b2},
+    {0x1f5bc, 0x1f5bc},
+    {0x1f5c2, 0x1f5c4},
+    {0x1f5d1, 0x1f5d3},
+    {0x1f5dc, 0x1f5de},
+    {0x1f5e1, 0x1f5e1},
+    {0x1f5e3, 0x1f5e3},
+    {0x1f5e8, 0x1f5e8},
+    {0x1f5ef, 0x1f5ef},
+    {0x1f5f3, 0x1f5f3},
+    {0x1f5fa, 0x1f64f},
+    {0x1f680, 0x1f6c5},
+    {0x1f6cb, 0x1f6d2},
+    {0x1f6d5, 0x1f6d7},
+    {0x1f6dc, 0x1f6e5},
+    {0x1f6e9, 0x1f6e9},
+    {0x1f6eb, 0x1f6ec},
+    {0x1f6f0, 0x1f6f0},
+    {0x1f6f3, 0x1f6fc},
+    {0x1f7e0, 0x1f7eb},
+    {0x1f7f0, 0x1f7f0},
+    {0x1f90c, 0x1f93a},
+    {0x1f93c, 0x1f945},
+    {0x1f947, 0x1f9ff},
+    {0x1fa70, 0x1fa7c},
+    {0x1fa80, 0x1fa88},
+    {0x1fa90, 0x1fabd},
+    {0x1fabf, 0x1fac5},
+    {0x1face, 0x1fadb},
+    {0x1fae0, 0x1fae8},
+    {0x1faf0, 0x1faf8}
+};
+
 
 //}}}
 //{{{directory name
@@ -737,6 +2591,7 @@ toFullFileName(Text fileName, DirName* dn) {
 // Linked lists of array chars living in an Arena. Very useful for file path construction
 
 declStruct(ChunkString);
+
 struct ChunkString {
    Arr(Byte const) c;
    Int len;
@@ -792,7 +2647,7 @@ toStringChunky(ChunkyString* chunky) {
 // This includes following composing characters.
 Unt
 utfCharLen(CS p) {
-   int      b0 = *p;
+   int b0 = *p;
    if (b0 == ZERO)
       return 0;
    if (b0 < 0x80 && p[1] < 0x80)   // be quick for ASCII
@@ -931,7 +2786,7 @@ CS
 copyStr(CS string) {
    Unt len = STRLEN(string) + 1;
    CS p = alloc(len);
-   mch_memmove(p, string, len);
+   MEMMOVE(p, string, len);
    return p;
 }
 
@@ -989,7 +2844,7 @@ CS
 copyStrA(CS string, Arena* a) {
    Unt len = STRLEN(string) + 1;
    CS p = allocateArray(len + 1, Byte, a);
-   mch_memmove(p, string, len);
+   MEMMOVE(p, string, len);
    return p;
 }
 
@@ -1030,7 +2885,7 @@ copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
    CS p2 = escaped_string;
    for (p = string; *p; p++) {
       if ((l = utfCharLen(p)) > 1) {
-         mch_memmove(p2, p, (Unt)l);
+         MEMMOVE(p2, p, (Unt)l);
          p2 += l;
          p += l - 1;      // skip multibyte char
          continue;
@@ -1211,7 +3066,7 @@ asciiToUpper(CS p) {
 
 //Make string "s" all upper-case and return it in allocated memory.
 //Handle multi-byte characters as well as possible.
-private CS
+CS
 strup_save(CS orig) {
    CS p;
    CS res = p = copyStr(orig);
@@ -1231,7 +3086,7 @@ strup_save(CS orig) {
       Unt newl = mb_char2len(uc);
       if (newl != l) {
          CS s = alloc(STRLEN(res) + 1 + newl - l);
-         mch_memmove(s, res, p - res);
+         MEMMOVE(s, res, p - res);
          STRCPY(s + (p - res) + newl, p + l);
          p = s + (p - res);
          eeglFree(res);
@@ -1291,7 +3146,7 @@ strlow_save(CS orig) {
       Unt newl = mb_char2len(lc);
       if (newl != l) {
          CS s = alloc(STRLEN(res) + 1 + newl - l);
-         mch_memmove(s, res, p - res);
+         MEMMOVE(s, res, p - res);
          STRCPY(s + (p - res) + newl, p + l);
          p = s + (p - res);
          eeglFree(res);
@@ -1328,10 +3183,10 @@ concatenateStrings(CS to, CS from, Unt tosize) {
    Unt fromlen = STRLEN(from);
 
    if (tolen + fromlen + 1 > tosize) {
-      mch_memmove(to + tolen, from, tosize - tolen - 1);
+      MEMMOVE(to + tolen, from, tosize - tolen - 1);
       to[tosize - 1] = ZERO;
    } else
-      mch_memmove(to + tolen, from, fromlen + 1);
+      MEMMOVE(to + tolen, from, fromlen + 1);
 }
 
 //Compare two ASCII strings, for length "len", ignoring case, ignoring locale (mostly matters 
@@ -1482,7 +3337,7 @@ reverse_text(CS s) {
    for (Unt s_i = 0, rev_i = len; s_i < len; ++s_i) {
       int mb_len = utfCharLen(s + s_i);
       rev_i -= mb_len;
-      mch_memmove(rev + rev_i, s + s_i, mb_len);
+      MEMMOVE(rev + rev_i, s + s_i, mb_len);
       s_i += mb_len - 1;
    }
    rev[len] = ZERO;
@@ -1553,881 +3408,6 @@ string_count(CS haystack, CS needle, int ic) {
    return n;
 }
 
-//Make a Var of the first character of "input" and store it in "output". Return OK or FAIL.
-private int
-copy_first_char_to_tv(CS input, Var* output) {
-   Byte buf[MB_MAXBYTES + 1];
-
-   if (input == NULL || output == NULL)
-      return FAIL;
-
-   int len = utfCharLen(input);
-   STRNCPY(buf, input, len);
-   buf[len] = ZERO;
-   output->tag = VAR_STRING;
-   output->string = copyStr(buf);
-
-   return output->string == NULL ? FAIL : OK;
-}
-
-//Implementation of map() and filter() for a String. Apply "expr" to every
-//character in string "str" and return the result in "returnVar".
-void
-string_filter_map(
-   CS str,
-   FilterMap filtermap,
-   Var* expr,
-   Var* returnVar
-) {
-   CS p;
-   Var   tv;
-   ArrayList   ga;
-   int      len = 0;
-   int      idx = 0;
-   int      rem;
-   Var   newtv;
-
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
-
-   // set_EeglVar_nr() doesn't set the type
-   set_EeglVar_type(VV_KEY, VAR_NUMBER);
-
-   ga_init2(&ga, sizeof(char), 80);
-   for (p = str; *p != ZERO; p += len) {
-      if (copy_first_char_to_tv(p, &tv) == FAIL)
-         break;
-      len = (int)STRLEN(tv.string);
-
-      set_EeglVar_nr(VV_KEY, idx);
-      if (filter_map_one(&tv, expr, filtermap, &newtv, &rem) == FAIL || anyEmsgG) {
-         clearVar(&newtv);
-         clearVar(&tv);
-         break;
-      }
-      if (filtermap == FILTERMAP_MAP || filtermap == FILTERMAP_MAPNEW) {
-         if (newtv.tag != VAR_STRING) {
-            clearVar(&newtv);
-            clearVar(&tv);
-            emsg(_(e_string_required));
-            break;
-         } else
-            ga_concat(&ga, newtv.string);
-      }
-      ei (filtermap == FILTERMAP_FOREACH || !rem)
-         ga_concat(&ga, tv.string);
-
-      clearVar(&newtv);
-      clearVar(&tv);
-
-      ++idx;
-   }
-   ga_append(&ga, ZERO);
-   returnVar->string = ga.c;
-}
-
-//Implementation of reduce() for String "argvars[0]" using the function "expr"
-//starting with the optional initial value "argvars[2]" and return the result in "returnVar".
-void
-string_reduce(Var* argvars, Var* expr, Var* returnVar) {
-   CS p = tv_get_string(&argvars[0]);
-   int      len;
-   Var   argv[3];
-   int      r;
-   int      called_emsg_start = called_emsg;
-
-   if (argvars[2].tag == VAR_UNKNOWN) {
-      if (*p == ZERO) {
-         showErrFmtMsg(_(e_reduce_of_an_empty_str_with_no_initial_value), "String");
-         return;
-      }
-      if (copy_first_char_to_tv(p, returnVar) == FAIL)
-         return;
-      p += STRLEN(returnVar->string);
-   } ei (check_for_string_arg(argvars, 2) == FAIL)
-      return;
-   else
-      copy_tv(OUT returnVar, &argvars[2]);
-
-   for ( ; *p != ZERO; p += len) {
-      argv[0] = *returnVar;
-      if (copy_first_char_to_tv(p, &argv[1]) == FAIL)
-         break;
-      len = (int)STRLEN(argv[1].string);
-
-      r = eval_expr_typval(expr, true, argv, 2, returnVar);
-
-      clearVar(&argv[0]);
-      clearVar(&argv[1]);
-      if (r == FAIL || called_emsg != called_emsg_start)
-          return;
-   }
-}
-
-// Implementation of "byteidx()" and "byteidxcomp()" functions
-private void
-byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
-   returnVar->number = -1;
-
-   CS str = convertVarToStringSingleUse(&argvars[0]);
-   Long idx = varGetNumberChk(argvars + 1, NULL);
-   if (!str || idx < 0)
-      return;
-
-   Long   utf16idx = false;
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      Boole error = false;
-      utf16idx = varGetNumberChk(argvars + 2, OUT &error);
-      if (error)
-         return;
-      if (utf16idx < 0 || utf16idx > 1) {
-         showErrFmtMsg(_(e_using_number_as_bool_nr), utf16idx);
-         return;
-      }
-   }
-
-   Unt (*ptr2len)(Byte*);
-   if (comp)
-      ptr2len = utf_ptr2len;
-   else
-      ptr2len = utfCharLen;
-
-   CS t = str;
-   for ( ; idx > 0; idx--) {
-      if (*t == ZERO)      // EOL reached
-         return;
-      if (utf16idx) {
-         int clen = ptr2len(t);
-         int c = (clen > 1) ? mb_ptr2char(t) : *t;
-         if (c > 0xFFFF)
-            idx--;
-      }
-      if (idx > 0)
-         t += ptr2len(t);
-   }
-   returnVar->number = (Long)(t - str);
-}
-
-void
-f_byteidx(Arr(Var) argvars, OUT Var* returnVar) {
-   byteidx_common(argvars, returnVar, false);
-}
-
-void
-f_byteidxcomp(Var* argvars, Var* returnVar) {
-   byteidx_common(argvars, returnVar, true);
-}
-
-void
-f_charidx(Var* argvars, Var* returnVar) {
-   returnVar->number = -1;
-
-   if (check_for_string_arg(argvars, 0) == FAIL
-         || check_for_number_arg(argvars, 1) == FAIL
-         || check_for_opt_bool_arg(argvars, 2) == FAIL
-         || (argvars[2].tag != VAR_UNKNOWN && check_for_opt_bool_arg(argvars, 3) == FAIL))
-      return;
-
-   CS str = convertVarToStringSingleUse(&argvars[0]);
-   Long   idx = varGetNumberChk(argvars + 1, NULL);
-   if (str == NULL || idx < 0)
-      return;
-
-   Long   countcc = false;
-   Long   utf16idx = false;
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      countcc = tv_get_bool(&argvars[2]);
-      if (argvars[3].tag != VAR_UNKNOWN)
-         utf16idx = tv_get_bool(&argvars[3]);
-   }
-
-   Unt (*ptr2len)(CS);
-   if (countcc)
-      ptr2len = utf_ptr2len;
-   else
-      ptr2len = utfCharLen;
-
-   Unt len = 0;
-   for (CS p = str; utf16idx ? idx >= 0 : p <= str + idx; len++) {
-      if (*p == ZERO) {
-         // If the index is exactly the number of bytes or utf-16 code units
-         // in the string then return the length of the string in characters.
-         if (utf16idx ? (idx == 0) : (p == (str + idx)))
-            returnVar->number = len;
-         return;
-      }
-      if (utf16idx) {
-         idx--;
-         int clen = ptr2len(p);
-         int c = (clen > 1) ? mb_ptr2char(p) : *p;
-         if (c > 0xFFFF)
-            idx--;
-      }
-      p += ptr2len(p);
-   }
-
-   returnVar->number = len > 0 ? len - 1 : 0;
-}
-
-// Add the bytes from "str" to "blob".
-private void
-blob_from_string(CS str, Blob* blob) {
-   Unt len = STRLEN(str);
-
-   for (Unt i = 0; i < len; i++) {
-      int ch = str[i];
-
-      if (str[i] == NL)
-         // Translate newlines in the string to ZERO character
-         ch = ZERO;
-
-      ga_append(&blob->c, ch);
-   }
-}
-
-//Return a string created from the bytes in blob starting at "start_idx". A NL character in the 
-//blob indicates end of string. A ZERO character in the blob is translated to a NL.
-//On return, "start_idx" points to next byte to process in blob.
-private CS
-string_from_blob(Blob *blob, long *start_idx) {
-   ArrayList str_ga;
-   int idx;
-
-   ga_init2(&str_ga, sizeof(char), 80);
-
-   long blen = blob_len(blob);
-
-   for (idx = *start_idx; idx < blen; idx++) {
-      Byte byte = (Byte)blob_get(blob, idx);
-      if (byte == NL) {
-         idx++;
-         break;
-      }
-
-      if (byte == ZERO)
-         byte = NL;
-
-      ga_append(&str_ga, byte);
-   }
-
-   ga_append(&str_ga, ZERO);
-
-   CS ret_str = copyStr(str_ga.c);
-   *start_idx = idx;
-
-   ga_clear(&str_ga);
-   return ret_str;
-}
-
-//"blob2str()" function Converts a blob to a string, ensuring valid UTF-8 encoding.
-void
-f_blob2str(Arr(Var) argvars, OUT Var* returnVar) {
-   if (check_for_blob_arg(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
-      return;
-
-   allocReturnList(returnVar);
-
-   Blob* blob = argvars->blob;
-   if (blob == NULL)
-      return;
-   int blen = blob_len(blob);
-
-   long idx = 0;
-   while (idx < blen) {
-      CS str = string_from_blob(blob, &idx);
-      if (!str)
-         break;
-
-      int ret = list_append_string(returnVar->list, str, -1);
-      if (ret == FAIL)
-         break;
-   }
-}
-
-// "str2blob()" function
-void
-f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
-   if (confirmVarIsList(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
-      return;
-
-   if (returnVar_blob_alloc(returnVar) == FAIL)
-      return;
-
-   Blob* blob = returnVar->blob;
-
-   List* list = argvars[0].list;
-   if (!list)
-      return;
-
-   ListItem* li;
-   FOR_ALL_LIST_ITEMS(list, li) {
-      if (li->c.tag != VAR_STRING)
-         continue;
-
-      CS str = li->c.string;
-      if (!str)
-         str = E;
-
-      if (li != list->first)
-         // Each list string item is separated by a newline in the blob
-         ga_append(&blob->c, NL);
-
-      blob_from_string(str, blob);
-   }
-}
-
-void
-f_str2list(Arr(Var) argvars, OUT Var* returnVar) {
-   allocReturnList(returnVar);
-
-   CS p = tv_get_string(&argvars[0]);
-
-   for ( ; *p != ZERO; p += utf_ptr2len(p))
-      list_append_number(returnVar->list, mb_ptr2char(p));
-}
-
-void
-f_str2nr(Var* argvars, Var* returnVar) {
-   int      base = 10;
-   Long   n;
-   int      what = 0;
-
-   if (argvars[1].tag != VAR_UNKNOWN) {
-      base = (int)tv_get_number(&argvars[1]);
-      if (base != 2 && base != 10 && base != 16) {
-         emsg(_(e_invalid_argument));
-         return;
-      }
-      if (argvars[2].tag != VAR_UNKNOWN && tv_get_bool(&argvars[2]))
-         what |= STR2NR_QUOTE;
-   }
-
-   CS p = skipwhite(tv_get_string_strict(&argvars[0]));
-   Boole isneg = (*p == '-');
-   if (*p == '+' || *p == '-')
-      p = skipwhite(p + 1);
-      
-   switch (base) {
-   case 2: what |= STR2NR_BIN + STR2NR_FORCE; break;
-   case 16: what |= STR2NR_HEX + STR2NR_FORCE; break;
-   }
-   readLongNumber(p, NULL, NULL, what, &n, NULL, 0, false, NULL);
-   // Text after the number is silently ignored.
-   returnVar->number = isneg ? -n : n;
-}
-
-void
-f_strgetchar(Var* argvars, Var* returnVar) {
-   Boole error = false;
-   int      byteidx = 0;
-   returnVar->number = -1;
-   CS str = convertVarToStringSingleUse(&argvars[0]);
-   if (!str)
-      return;
-      
-   int len = (int)STRLEN(str);
-   int charidx = (int)varGetNumberChk(argvars + 1, OUT &error);
-   if (error)
-      return;
-
-   while (charidx >= 0 && byteidx < len) {
-      if (charidx == 0) {
-         returnVar->number = mb_ptr2char(str + byteidx);
-         break;
-      }
-      --charidx;
-      byteidx += MB_CPTR2LEN(str + byteidx);
-   }
-}
-
-void
-f_stridx(Var* argvars, Var* returnVar) {
-   Byte buf[NUMBUFLEN];
-   int start_idx;
-
-   CS needle = convertVarToStringSingleUse(&argvars[1]);
-   CS haystack = convertVarToString(&argvars[0], buf);
-   CS save_haystack = haystack;
-   returnVar->number = -1;
-   if (needle == NULL || haystack == NULL)
-      return;      // type error; errmsg already given
-
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      Boole error = false;
-
-      start_idx = (int)varGetNumberChk(argvars + 2, OUT &error);
-      if (error || start_idx >= (int)STRLEN(haystack))
-         return;
-      if (start_idx >= 0)
-         haystack += start_idx;
-   }
-
-   CS pos   = (CS)strstr((char *)haystack, (char *)needle);
-   if (pos)
-      returnVar->number = (Long)(pos - save_haystack);
-}
-
-void
-f_string(Arr(Var) argvars, OUT Var* returnVar) {
-   CS tofree;
-   Byte numBuf[NUMBUFLEN];
-
-   returnVar->tag = VAR_STRING;
-   returnVar->string = tv2string(&argvars[0], &tofree, numBuf, get_copyID());
-   // Make a copy if we have a value but it's not in allocated memory.
-   if (returnVar->string != NULL && tofree == NULL)
-      returnVar->string = copyStr(returnVar->string);
-}
-
-void
-f_strlen(Arr(Var) argvars, OUT Var* returnVar) {
-   returnVar->number = (Long)(STRLEN(tv_get_string(&argvars[0])));
-}
-
-private void
-strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc) {
-   CS s = tv_get_string(&argvars[0]);
-   Long      len = 0;
-   
-   Unt (*func_inpAdvanceMultibyte)(OUT CS* pp);
-   func_inpAdvanceMultibyte = skipcc ? inpAdvanceMultibyte : mb_cptr2char_adv;
-   
-   while (*s != ZERO) {
-      func_inpAdvanceMultibyte(&s);
-      ++len;
-   }
-   returnVar->number = len;
-}
-
-void
-f_strcharlen(Arr(Var) argvars, OUT Var* returnVar) {
-   strchar_common(argvars, returnVar, true);
-}
-
-void
-f_strchars(Arr(Var) argvars, OUT Var* returnVar) {
-   Long      skipcc = false;
-   if (argvars[1].tag != VAR_UNKNOWN) {
-      Boole error = false;
-      skipcc = varGetNumberChk(argvars + 1, OUT &error);
-      if (error)
-         return;
-      if (skipcc < 0 || skipcc > 1) {
-         showErrFmtMsg(_(e_using_number_as_bool_nr), skipcc);
-         return;
-      }
-    }
-
-    strchar_common(argvars, returnVar, skipcc);
-}
-
-void
-f_strdisplaywidth(Arr(Var) argvars, OUT Var* returnVar) {
-   int      col = 0;
-   returnVar->number = -1;
-
-   CS s = tv_get_string(&argvars[0]);
-   if (argvars[1].tag != VAR_UNKNOWN)
-      col = (int)tv_get_number(&argvars[1]);
-
-   returnVar->number = (Long)(linetabsize_col(col, s) - col);
-}
-
-void
-f_strwidth(Var* argvars, OUT Var* returnVar) {
-   CS s = tv_get_string_strict(argvars);
-   returnVar->number = (Long)(mb_string2cells(s, -1));
-}
-
-void
-f_strcharpart(Arr(Var) argvars, OUT Var* returnVar) {
-   int nbyte = 0;
-   int skipcc = false;
-   int len = 0;
-   Boole error = false;
-
-   CS p = tv_get_string(&argvars[0]);
-   int slen = (int)STRLEN(p);
-
-   int nchar = (int)varGetNumberChk(argvars + 1, OUT &error);
-   if (!error) {
-      if (argvars[2].tag != VAR_UNKNOWN && argvars[3].tag != VAR_UNKNOWN) {
-         skipcc = varGetNumberChk(argvars + 3, OUT &error);
-         if (error)
-            return;
-         if (skipcc < 0 || skipcc > 1) {
-            showErrFmtMsg(_(e_using_number_as_bool_nr), skipcc);
-            return;
-         }
-      }
-
-      if (nchar > 0) {
-         while (nchar > 0 && nbyte < slen) {
-            nbyte += skipcc ? utfCharLen(p + nbyte) : MB_CPTR2LEN(p + nbyte);
-            --nchar;
-         }
-      } else
-         nbyte = nchar;
-      if (argvars[2].tag != VAR_UNKNOWN) {
-         int charlen = (int)tv_get_number(&argvars[2]);
-         while (charlen > 0 && nbyte + len < slen) {
-            int off = nbyte + len;
-
-            len += (off < 0) ? 1 : (skipcc ? utfCharLen(p + off) : MB_CPTR2LEN(p + off));
-            --charlen;
-         }
-      } else
-          len = slen - nbyte;    // default: all bytes that are available.
-   }
-
-   // Only return the overlap between the specified part and the actual string.
-   if (nbyte < 0) {
-      len += nbyte;
-      nbyte = 0;
-   } ei (nbyte > slen)
-      nbyte = slen;
-   if (len < 0)
-      len = 0;
-   ei (nbyte + len > slen)
-      len = slen - nbyte;
-
-   returnVar->tag = VAR_STRING;
-   returnVar->string = copySubstr(p + nbyte, len);
-}
-
-void
-f_strpart(Arr(Var) argvars, OUT Var* returnVar) {
-   Boole error = false;
-
-   CS p = tv_get_string(&argvars[0]);
-   int slen = (int)STRLEN(p);
-
-   int n = (int)varGetNumberChk(argvars + 1, OUT &error);
-   int      len;
-   if (error)
-      len = 0;
-   ei (argvars[2].tag != VAR_UNKNOWN)
-      len = (int)tv_get_number(&argvars[2]);
-   else
-      len = slen - n;       // default len: all bytes that are available.
-
-   // Only return the overlap between the specified part and the actual string.
-   if (n < 0) {
-      len += n;
-      n = 0;
-   } ei (n > slen)
-      n = slen;
-   if (len < 0)
-      len = 0;
-   ei (n + len > slen)
-      len = slen - n;
-
-   if (argvars[2].tag != VAR_UNKNOWN && argvars[3].tag != VAR_UNKNOWN) {
-      // length in characters
-      int off;
-      for (off = n; off < slen && len > 0; --len)
-         off += utfCharLen(p + off);
-      len = off - n;
-   }
-
-   returnVar->tag = VAR_STRING;
-   returnVar->string = copySubstr(p + n, len);
-}
-
-void
-f_strridx(Arr(Var) argvars, OUT Var* returnVar) {
-   Byte buf[NUMBUFLEN];
-
-   CS needle = convertVarToStringSingleUse(&argvars[1]);
-   CS haystack = convertVarToString(&argvars[0], buf);
-
-   returnVar->number = -1;
-   if (needle == NULL || haystack == NULL)
-      return;      // type error; errmsg already given
-
-   int haystack_len = (int)STRLEN(haystack);
-   int endInd;
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      // Third argument: upper limit for index
-      endInd = (int)varGetNumberChk(argvars + 2, NULL);
-      if (endInd < 0)
-          return;   // can never find a match
-   } else
-      endInd = haystack_len;
-
-   CS lastmatch = NULL;
-   if (*needle == ZERO) {
-      // Empty string matches past the end.
-      lastmatch = haystack + endInd;
-   } else {
-      for (CS rest = haystack; *rest != '\0'; ++rest) {
-         rest = STRSTR(rest, needle);
-         if (rest == NULL || rest > haystack + endInd)
-            break;
-         lastmatch = rest;
-      }
-   }
-
-   returnVar->number = lastmatch ? (Long)(lastmatch - haystack) : -1;
-}
-
-void
-f_strtrans(Arr(Var) argvars, OUT Var* returnVar) {
-   returnVar->tag = VAR_STRING;
-   returnVar->string = sanitizeStr(tv_get_string(&argvars[0]));
-}
-
-// "tolower(string)" function
-void
-f_tolower(Arr(Var) argvars, OUT Var* returnVar) {
-   returnVar->tag = VAR_STRING;
-   returnVar->string = strlow_save(tv_get_string(&argvars[0]));
-}
-
-// "toupper(string)" function
-void
-f_toupper(Arr(Var) argvars, OUT Var* returnVar) {
-   returnVar->tag = VAR_STRING;
-   returnVar->string = strup_save(tv_get_string(&argvars[0]));
-}
-
-// "tr(string, fromstr, tostr)" function
-void
-f_tr(Arr(Var) argvars, OUT Var* returnVar) {
-   CS p;
-   int  first = true;
-   Byte buf[NUMBUFLEN];
-   Byte buffer1[NUMBUFLEN];
-
-   CS in_str = tv_get_string(&argvars[0]);
-   CS fromstr = convertVarToString(&argvars[1], buf);
-   CS tostr = convertVarToString(&argvars[2], buffer1);
-
-   // Default return value: empty string.
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
-   if (fromstr == NULL || tostr == NULL)
-      return;      // type error; errmsg already given
-      
-   ArrayList   ga;
-   ga_init2(&ga, sizeof(char), 80);
-
-   // fromstr and tostr have to contain the same number of chars
-   while (*in_str != ZERO) {
-      int inlen = utfCharLen(in_str);
-      CS cpstr = in_str;
-      int cplen = inlen;
-      int idx = 0;
-      int fromlen;
-      int tolen;
-      for (p = fromstr; *p != ZERO; p += fromlen) {
-         fromlen = utfCharLen(p);
-         if (fromlen == inlen && STRNCMP(in_str, p, inlen) == 0) {
-            for (p = tostr; *p != ZERO; p += tolen) {
-               tolen = utfCharLen(p);
-               if (idx-- == 0) {
-                   cplen = tolen;
-                   cpstr = p;
-                   break;
-               }
-            }
-            if (*p == ZERO)   // tostr is shorter than fromstr
-               goto error;
-            break;
-         }
-         ++idx;
-      }
-
-      if (first && cpstr == in_str) {
-         // Check that fromstr and tostr have the same number of
-         // (multi-byte) characters.  Done only once when a character
-         // of in_str doesn't appear in fromstr.
-         first = false;
-         for (p = tostr; *p != ZERO; p += tolen) {
-            tolen = utfCharLen(p);
-            --idx;
-         }
-         if (idx != 0)
-            goto error;
-      }
-
-      (void)ga_grow(&ga, cplen);
-      mch_memmove((char *)ga.c + ga.len, cpstr, (Unt)cplen);
-      ga.len += cplen;
-
-      in_str += inlen;
-   }
-
-   // add a terminating ZERO
-   (void)ga_grow(&ga, 1);
-   ga_append(&ga, ZERO);
-
-   returnVar->string = ga.c;
-   
-   return;   
-   
-error:
-   showErrFmtMsg(_(e_invalid_argument_str), fromstr);
-   ga_clear(&ga);
-   return;
-}
-
-// "trim({expr})" function
-void
-f_trim(Arr(Var) argvars, OUT Var* returnVar) {
-   Byte buffer0[NUMBUFLEN];
-   Byte buffer1[NUMBUFLEN];
-   CS mask = NULL;
-   CS p;
-   int      dir = 0;
-
-   returnVar->tag = VAR_STRING;
-   returnVar->string = NULL;
-
-   CS head = convertVarToString(&argvars[0], buffer0);
-   if (!head)
-      return;
-
-   if (check_for_opt_string_arg(argvars, 1) == FAIL)
-      return;
-
-    if (argvars[1].tag == VAR_STRING) {
-      mask = convertVarToString(&argvars[1], buffer1);
-      if (*mask == ZERO)
-         mask = NULL;
-
-      if (argvars[2].tag != VAR_UNKNOWN) {
-         Boole error = false;
-
-         // leading or trailing characters to trim
-         dir = (int)varGetNumberChk(argvars + 2, OUT &error);
-         if (error)
-            return;
-         if (dir < 0 || dir > 2) {
-            showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[2]));
-            return;
-         }
-      }
-   }
-
-   if (dir == 0 || dir == 1) {
-      // Trim leading characters
-      while (*head != ZERO) {
-         Unt c1 = mb_ptr2char(head);
-         if (mask == NULL) {
-            if (c1 > ' ' && c1 != 0xa0)
-                break;
-         } else {
-            for (p = mask; *p != ZERO; MB_PTR_ADV(p))
-               if (c1 == mb_ptr2char(p))
-                  break;
-            if (*p == ZERO)
-                break;
-         }
-         MB_PTR_ADV(head);
-      }
-   }
-
-   CS tail = head + STRLEN(head);
-   if (dir == 0 || dir == 2) {
-      // Trim trailing characters
-      CS prev;
-      for (; tail > head; tail = prev) {
-         prev = tail;
-         MB_PTR_BACK(head, prev);
-         Unt c1 = mb_ptr2char(prev);
-         if (mask == NULL) {
-            if (c1 > ' ' && c1 != 0xa0)
-                break;
-         } else {
-            for (p = mask; *p != ZERO; MB_PTR_ADV(p))
-               if (c1 == mb_ptr2char(p))
-                  break;
-            if (*p == ZERO)
-               break;
-         }
-      }
-   }
-   returnVar->string = copySubstr(head, tail - head);
-}
-
-private CS e_printf = e_insufficient_arguments_for_printf;
-
-//Get number argument from "idxp" entry in "tvs".  First entry is 1. Skip the entry.
-private Long
-tv_nr(Var* tvs, OUT int* idxp) {
-   int idx = *idxp - 1;
-   Long n = 0;
-   Boole err = false;
-
-   if (tvs[idx].tag == VAR_UNKNOWN)
-      emsg(_(e_printf));
-   else {
-      ++*idxp;
-      n = varGetNumberChk(tvs + idx, OUT &err);
-      if (err)
-          n = 0;
-   }
-   return n;
-}
-
-//Get string argument from "idxp" entry in "tvs". First entry is 1.
-//If "tofree" is NULL convertVarToStringSingleUse() is used. Some types (e.g. List)
-//are not converted to a string.
-//If "tofree" is not NULL echo_string() is used. All types are converted to
-//a string with the same format as ":echo". The caller must free "*tofree". NULL for an error.
-private CS
-tv_str(Var* tvs, int* idxp, Byte** tofree) {
-   int idx = *idxp - 1;
-   CS s = NULL;
-   static Byte numBuf[NUMBUFLEN];
-
-   if (tvs[idx].tag == VAR_UNKNOWN)
-      emsg(_(e_printf));
-   else {
-      ++*idxp;
-      if (tofree)
-         s = echo_string(&tvs[idx], tofree, numBuf, get_copyID());
-      else
-         s = convertVarToStringSingleUse(&tvs[idx]);
-   }
-   return s;
-}
-
-//Get float argument from "idxp" entry in "tvs".  First entry is 1.
-private double
-tv_float(Var* tvs, int* idxp) {
-   int idx = *idxp - 1;
-   double f = 0;
-
-   if (tvs[idx].tag == VAR_UNKNOWN)
-      emsg(_(e_printf));
-   else {
-      ++*idxp;
-      if (tvs[idx].tag == VAR_FLOAT)
-         f = tvs[idx].floatt;
-      ei (tvs[idx].tag == VAR_NUMBER)
-         f = (double)tvs[idx].number;
-      else
-         emsg(_(e_expected_float_argument_for_printf));
-   }
-   return f;
-}
-
-//Return the representation of infinity for printf() function:
-//"-inf", "inf", "+inf", " inf", "-INF", "INF", "+INF" or " INF".
-private CS
-infinity_str(Unt positive, char fmt_spec, int force_sign, int space_for_positive) {
-   static CS table[] = {SMAP((CS),
-      "-inf", "inf", "+inf", " inf",
-      "-INF", "INF", "+INF", " INF"
-   )};
-   int idx = positive * (1 + force_sign + force_sign * space_for_positive);
-
-   if (ASCII_ISUPPER(fmt_spec))
-      idx += 4;
-   return table[idx];
-}
 
 //This code was included to provide a portable vsnprintf() and snprintf().
 //Some systems may provide their own, but we always use this one for consistency.
@@ -2522,1393 +3502,6 @@ eeVsnprintf(CS str, Unt   str_m, char const* fmt, va_list ap) {
    return eeVarPrintf0(str, str_m, fmt, ap, NULL);
 }
 
-enum {
-   TYPE_UNKNOWN = -1,
-   TYPE_INT,
-   TYPE_LONGINT,
-   TYPE_LONGLONGINT,
-   TYPE_UNSIGNEDINT,
-   TYPE_UNSIGNEDLONGINT,
-   TYPE_UNSIGNEDLONGLONGINT,
-   TYPE_POINTER,
-   TYPE_PERCENT,
-   TYPE_CHAR,
-   TYPE_STRING,
-   TYPE_FLOAT
-};
-
-//Types that can be used in a format string
-private int
-format_typeof(CS type) {
-   // allowed values: \0, h, l, L
-   Byte    length_modifier = '\0';
-
-   // current conversion specifier character
-   Byte    fmt_spec = '\0';
-
-   // parse 'h', 'l' and 'll' length modifiers
-   if (*type == 'h' || *type == 'l') {
-      length_modifier = *type;
-      type++;
-      if (length_modifier == 'l' && *type == 'l') {
-         // double l = __int64 / Long
-         length_modifier = 'L';
-         type++;
-      }
-   }
-   fmt_spec = *type;
-
-   // common synonyms:
-   switch (fmt_spec) {
-   case 'i': fmt_spec = 'd'; break;
-   case '*': fmt_spec = 'd'; length_modifier = 'h'; break;
-   case 'D': fmt_spec = 'd'; length_modifier = 'l'; break;
-   case 'U': fmt_spec = 'u'; length_modifier = 'l'; break;
-   case 'O': fmt_spec = 'o'; length_modifier = 'l'; break;
-   default: break;
-   }
-
-   // get parameter value, do initial processing
-   switch (fmt_spec) {
-   // '%' and 'c' behave similar to 's' regarding flags and field
-   // widths
-   case '%':
-      return TYPE_PERCENT;
-
-   case 'c':
-      return TYPE_CHAR;
-
-   case 's':
-   case 'S':
-      return TYPE_STRING;
-
-   case 'd': case 'u':
-   case 'b': case 'B':
-   case 'o':
-   case 'x': case 'X':
-   case 'p': {
-      // NOTE: the u, b, o, x, X and p conversion specifiers
-      // imply the value is unsigned;  d implies a signed value
-
-      // 0 if numeric argument is zero (or if pointer is
-      // NULL for 'p'), +1 if greater than zero (or nonzero
-      // for unsigned arguments), -1 if negative (unsigned argument is never negative)
-
-      if (fmt_spec == 'p')
-         return TYPE_POINTER;
-      ei (fmt_spec == 'b' || fmt_spec == 'B')
-         return TYPE_UNSIGNEDLONGLONGINT;
-      ei (fmt_spec == 'd') {
-         // signed
-         switch (length_modifier) {
-         case '\0':
-         case 'h':
-            // char and short arguments are passed as int.
-            return TYPE_INT;
-         case 'l':
-            return TYPE_LONGINT;
-         case 'L':
-            return TYPE_LONGLONGINT;
-         }
-      } else {
-         // unsigned
-         switch (length_modifier) {
-         case '\0':
-         case 'h':
-            return TYPE_UNSIGNEDINT;
-         case 'l':
-            return TYPE_UNSIGNEDLONGINT;
-         case 'L':
-            return TYPE_UNSIGNEDLONGLONGINT;
-         }
-      }
-   }
-   break;
-
-   case 'f':
-   case 'F':
-   case 'e':
-   case 'E':
-   case 'g':
-   case 'G':
-      return TYPE_FLOAT;
-   }
-
-   return TYPE_UNKNOWN;
-}
-
-private CS
-format_typename(CS type) {
-   switch (format_typeof(type)) {
-   case TYPE_INT: return _("int");
-   case TYPE_LONGINT: return _("long int");
-   case TYPE_LONGLONGINT: return _("long long int");
-   case TYPE_UNSIGNEDINT: return _("unsigned int");
-   case TYPE_UNSIGNEDLONGINT: return _("unsigned long int");
-   case TYPE_UNSIGNEDLONGLONGINT: return _("unsigned long long int");
-   case TYPE_POINTER: return _("pointer");
-   case TYPE_PERCENT: return _("percent");
-   case TYPE_CHAR: return _("char");
-   case TYPE_STRING: return _("string");
-   case TYPE_FLOAT: return _("float");
-   default: return _("unknown");
-   }
-}
-
-private int
-adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type) {
-   if (*ap_types == NULL || *num_posarg < arg) {
-      int       idx;
-      Arr(CS) new_types;
-
-      if (*ap_types == NULL)
-         new_types = ALLOC_CLEAR_MULT(Byte *, arg);
-      else
-         new_types = eeRealloc((Byte **)*ap_types, arg * sizeof(Byte *));
-
-      for (idx = *num_posarg; idx < arg; ++idx)
-          new_types[idx] = NULL;
-
-      *ap_types = new_types;
-      *num_posarg = arg;
-   }
-
-   if ((*ap_types)[arg - 1] != NULL) {
-      if ((*ap_types)[arg - 1][0] == '*' || type[0] == '*') {
-         CS pt = type;
-         if (pt[0] == '*')
-            pt = (*ap_types)[arg - 1];
-
-         if (pt[0] != '*') {
-            switch (pt[0]) {
-            case 'd': case 'i': 
-               break;
-            default:
-               showErrFmtMsg(
-                     _(e_positional_num_field_spec_reused_str_str), 
-                     arg, 
-                     format_typename((*ap_types)[arg - 1]), format_typename(type)
-               );
-               return FAIL;
-            }
-         }
-      } else {
-         if (format_typeof(type) != format_typeof((*ap_types)[arg - 1])) {
-            showErrFmtMsg(_( e_positional_arg_num_type_inconsistent_str_str), arg, format_typename(type), 
-                  format_typename((*ap_types)[arg - 1]));
-            return FAIL;
-         }
-      }
-   }
-
-    (*ap_types)[arg - 1] = type;
-
-    return OK;
-}
-
-private void
-format_overflow_error(CS pstart) {
-   Unt   arglen = 0;
-   CS p = pstart;
-
-   while (EE_ISDIGIT((int)(*p)))
-      ++p;
-
-   arglen = p - pstart;
-   CS argcopy = ALLOC_CLEAR_MULT(Byte, arglen + 1);
-   if (argcopy) {
-      STRNCPY(argcopy, pstart, arglen);
-      showErrFmtMsg(_( e_val_too_large), argcopy);
-      free(argcopy);
-   } else
-      showErrFmtMsg(_(e_out_of_memory_allocating_nr_bytes), arglen);
-}
-
-#define MAX_ALLOWED_STRING_WIDTH 1048576    // 1 MiB
-
-private int
-get_unsigned_int(CS pstart, OUT Byte** p, unsigned int *uj, int overflow_err) {
-   *uj = **p - '0';
-   ++*p;
-
-   while (EE_ISDIGIT((int)(**p)) && *uj < MAX_ALLOWED_STRING_WIDTH) {
-      *uj = 10 * *uj + (unsigned int)(**p - '0');
-      (*p)++;
-   }
-
-   if (*uj > MAX_ALLOWED_STRING_WIDTH) {
-      if (overflow_err) {
-          format_overflow_error(pstart);
-          return FAIL;
-      } else
-          *uj = MAX_ALLOWED_STRING_WIDTH;
-   }
-
-   return OK;
-}
-
-
-private int
-parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs UNUSED) {
-   Byte* p = fmt;
-   CS arg = NULL;
-
-   int      any_pos = 0;
-   int      any_arg = 0;
-   int      arg_idx;
-
-#define CHECK_POS_ARG do { \
-    if (any_pos && any_arg) \
-    { \
-   showErrFmtMsg(_( e_cannot_mix_positional_and_non_positional_str), fmt); \
-   goto error; \
-    } \
-} while (0);
-
-   if (p == NULL)
-      return OK;
-
-   while (*p != ZERO) {
-      if (*p != '%') {
-         CS q = STRCHR(p + 1, '%');
-         Unt  n = (q == NULL) ? STRLEN(p) : (Unt)(q - p);
-
-         p += n;
-      } else {
-         // allowed values: \0, h, l, L
-         Byte   length_modifier = '\0';
-
-          // variable for positional arg
-         int      pos_arg = -1;
-         CS ptype = NULL;
-         Byte* pstart = p+1;
-
-         p++;  // skip '%'
-
-         // First check to see if we find a positional argument specifier
-         ptype = p;
-
-         while (EE_ISDIGIT(*ptype))
-            ++ptype;
-
-         if (*ptype == '$') {
-            if (*p == '0') {
-                // 0 flag at the wrong place
-                showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-                goto error;
-            }
-
-            // Positional argument
-            unsigned int uj;
-
-            if (get_unsigned_int(pstart, OUT &p, &uj, tvs != NULL) == FAIL)
-                goto error;
-
-            pos_arg = uj;
-
-            any_pos = 1;
-            CHECK_POS_ARG;
-
-            ++p;
-         }
-
-         // parse flags
-         while (*p == '0' || *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '\'') {
-            switch (*p) {
-            case '0': break;
-            case '-': break;
-            case '+': break;
-            case ' ': // If both the ' ' and '+' flags appear, the ' '
-                 // flag should be ignored
-                 break;
-            case '#': break;
-            case '\'': break;
-            }
-            p++;
-         }
-         // If the '0' and '-' flags both appear, the '0' flag should be ignored.
-
-         // parse field width
-         if (*(arg = p) == '*') {
-            p++;
-
-            if (EE_ISDIGIT((int)(*p))) {
-               // Positional argument field width
-               unsigned int uj;
-
-               if (get_unsigned_int(arg + 1, OUT &p, &uj, tvs != NULL) == FAIL)
-                  goto error;
-
-               if (*p != '$') {
-                  showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-                  goto error;
-               } else {
-                  ++p;
-                  any_pos = 1;
-                  CHECK_POS_ARG;
-
-                  if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
-                      goto error;
-               }
-            } else {
-               any_arg = 1;
-               CHECK_POS_ARG;
-            }
-         } ei (EE_ISDIGIT((int)(*p))) {
-            // Unt could be wider than unsigned int; make sure we treat
-            // argument like common implementations do
-            CS digstart = p;
-            unsigned int uj;
-
-            if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-               goto error;
-
-            if (*p == '$') {
-               showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-               goto error;
-            }
-         }
-
-         // parse precision
-         if (*p == '.') {
-            p++;
-
-            if (*(arg = p) == '*') {
-               p++;
-
-               if (EE_ISDIGIT((int)(*p))) {
-                  // Parse precision
-                  unsigned int uj;
-
-                  if (get_unsigned_int(arg + 1, OUT &p, &uj, tvs != NULL) == FAIL)
-                      goto error;
-
-                  if (*p == '$') {
-                      any_pos = 1;
-                      CHECK_POS_ARG;
-
-                      ++p;
-
-                      if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
-                     goto error;
-                  } else {
-                      showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-                      goto error;
-                  }
-               } else {
-                  any_arg = 1;
-                  CHECK_POS_ARG;
-               }
-            } ei (EE_ISDIGIT((int)(*p))) {
-               // Unt could be wider than unsigned int; make sure we
-               // treat argument like common implementations do
-               CS digstart = p;
-               unsigned int uj;
-
-               if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-                  goto error;
-
-               if (*p == '$') {
-                  showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
-                  goto error;
-               }
-            }
-         }
-
-         if (pos_arg != -1) {
-            any_pos = 1;
-            CHECK_POS_ARG;
-
-            ptype = p;
-         }
-
-         // parse 'h', 'l' and 'll' length modifiers
-         if (*p == 'h' || *p == 'l') {
-            length_modifier = *p;
-            p++;
-            if (length_modifier == 'l' && *p == 'l') {
-               // double l = __int64 / Long
-               // length_modifier = 'L';
-               p++;
-            }
-         }
-
-         switch (*p) {
-         // Check for known format specifiers. % is special!
-         case 'i':
-         case '*':
-         case 'd':
-         case 'u':
-         case 'o':
-         case 'D':
-         case 'U':
-         case 'O':
-         case 'x':
-         case 'X':
-         case 'b':
-         case 'B':
-         case 'c':
-         case 's':
-         case 'S':
-         case 'p':
-         case 'f':
-         case 'F':
-         case 'e':
-         case 'E':
-         case 'g':
-         case 'G':
-            if (pos_arg != -1) {
-            if (adjust_types(ap_types, pos_arg, num_posarg, ptype) == FAIL)
-                goto error;
-            } else {
-               any_arg = 1;
-               CHECK_POS_ARG;
-            }
-            break;
-
-         default:
-            if (pos_arg != -1) {
-               showErrFmtMsg(_( e_cannot_mix_positional_and_non_positional_str), fmt);
-               goto error;
-            }
-         }
-
-         if (*p != ZERO)
-            p++;     // step over the just processed conversion specifier
-      }
-   }
-
-   for (arg_idx = 0; arg_idx < *num_posarg; ++arg_idx) {
-      if ((*ap_types)[arg_idx] == NULL) {
-         showErrFmtMsg(_(e_fmt_arg_nr_unused_str), arg_idx + 1, fmt);
-         goto error;
-      }
-
-      if (tvs && tvs[arg_idx].tag == VAR_UNKNOWN) {
-         showErrFmtMsg(_(e_positional_nr_out_of_bounds_str), arg_idx + 1, fmt);
-         goto error;
-      }
-   }
-
-   return OK;
-
-error:
-   eeglFree((Byte**)*ap_types);
-   *ap_types = NULL;
-   *num_posarg = 0;
-   return FAIL;
-}
-
-private void
-skip_to_arg(
-    Arr(CS) ap_types,
-    va_list   ap_start,
-    va_list   *ap,
-    int      *arg_idx,
-    int      *arg_cur,
-    CS fmt
-) {
-   int      arg_min = 0;
-
-   if (*arg_cur + 1 == *arg_idx) {
-      ++*arg_cur;
-      ++*arg_idx;
-      return;
-   }
-
-   if (*arg_cur >= *arg_idx) {
-      // Reset ap to ap_start and skip arg_idx - 1 types
-      va_end(*ap);
-      va_copy(*ap, ap_start);
-   } else {
-      // Skip over any we should skip
-      arg_min = *arg_cur;
-   }
-
-   for (*arg_cur = arg_min; *arg_cur < *arg_idx - 1; ++*arg_cur) {
-      if (ap_types == NULL || ap_types[*arg_cur] == NULL) {
-          internalErrFmtMsg(e_aptypes_is_null_nr_str, *arg_cur, fmt);
-          return;
-      }
-
-      CS p = ap_types[*arg_cur];
-
-      int fmt_type = format_typeof(p);
-
-      // get parameter value, do initial processing
-      switch (fmt_type) {
-      case TYPE_PERCENT:
-      case TYPE_UNKNOWN:
-          break;
-
-      case TYPE_CHAR:
-          va_arg(*ap, int);
-          break;
-
-      case TYPE_STRING:
-          va_arg(*ap, char *);
-          break;
-
-      case TYPE_POINTER:
-          va_arg(*ap, void *);
-          break;
-
-      case TYPE_INT:
-          va_arg(*ap, int);
-          break;
-
-      case TYPE_LONGINT:
-          va_arg(*ap, long int);
-          break;
-
-      case TYPE_LONGLONGINT:
-          va_arg(*ap, Long);
-          break;
-
-      case TYPE_UNSIGNEDINT:
-          va_arg(*ap, unsigned int);
-          break;
-
-      case TYPE_UNSIGNEDLONGINT:
-          va_arg(*ap, unsigned long int);
-          break;
-
-      case TYPE_UNSIGNEDLONGLONGINT:
-          va_arg(*ap, Ulong);
-          break;
-
-      case TYPE_FLOAT:
-          va_arg(*ap, double);
-          break;
-      }
-   }
-
-   //Because we know that after we return from this call, a va_arg() call is made, we can 
-   //pre-emptively increment the current argument index.
-   ++*arg_cur;
-   ++*arg_idx;
-
-   return;
-}
-
-int
-eeVarPrintf0(
-   CS str,
-   Unt str_m,
-   char const* fmt,
-   va_list ap_start,
-   Var* tvs
-) {
-   Unt   str_l = 0; // number of formatted characters. That is, the number of characters that 
-                    // would have been written to the string buf if it were large enough.
-
-   CS p = (CS)fmt;
-   int      arg_cur = 0;
-   int      num_posarg = 0;
-   int      arg_idx = 1;
-   va_list   ap;
-   Byte** ap_types = NULL;
-
-   if (parse_fmt_types(&ap_types, &num_posarg, (CS)fmt, tvs) == FAIL)
-      return 0;
-
-   va_copy(ap, ap_start);
-
-   if (!p)
-      p = S"";
-   while (*p != ZERO) {
-      if (*p != '%') {
-         CS q = STRCHR(p + 1, '%');
-         Unt  n = (q == NULL) ? STRLEN(p) : (Unt)(q - p);
-
-         // Copy up to the next '%' or ZERO without any changes.
-         if (str_l < str_m) {
-            Unt avail = str_m - str_l;
-            mch_memmove(str + str_l, p, n > avail ? avail : n);
-         }
-         p += n;
-         str_l += n;
-      } else {
-         Unt  min_field_width = 0, precision = 0;
-         int       zero_padding = 0, precision_specified = 0, justify_left = 0;
-         int       alternate_form = 0, force_sign = 0;
-
-         // If both the ' ' and '+' flags appear, the ' ' flag should be ignored.
-         int space_for_positive = 1;
-
-         // allowed values: \0, h, l, L
-         char length_modifier = '\0';
-
-         // temporary buffer for simple numeric->string conversion
-# define TMP_LEN 350   // On my system 1e308 is the biggest number possible.
-         // That sounds reasonable to use as the maximum printable.
-         Byte tmp[TMP_LEN];
-
-         // string address in case of string argument
-         CS str_arg = NULL;
-
-         // natural field width of arg without padding and sign
-         Unt  str_arg_l;
-
-         // unsigned char argument value - only defined for c conversion.
-         // N.B. standard explicitly states the char argument for the c conversion is unsigned
-         unsigned char uchar_arg;
-
-         // number of zeros to be inserted for numeric conversions as
-         // required by the precision or minimal field width
-         Unt  number_of_zeros_to_pad = 0;
-
-         // index into tmp where zero padding is to be inserted
-         Unt  zero_padding_insertion_ind = 0;
-
-         // current conversion specifier character
-         char    fmt_spec = '\0';
-
-         // buffer for 's' and 'S' specs
-         Byte  *tofree = NULL;
-
-         // variables for positional arg
-         int       pos_arg = -1;
-         CS ptype;
-
-
-         p++;  // skip '%'
-
-         // First check to see if we find a positional argument specifier
-         ptype = p;
-
-         while (EE_ISDIGIT(*ptype))
-            ++ptype;
-
-         if (*ptype == '$') {
-            // Positional argument
-            CS digstart = p;
-            unsigned int uj;
-
-            if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-               goto error;
-
-            pos_arg = uj;
-
-            ++p;
-         }
-
-         // parse flags
-         while (*p == '0' || *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '\'') {
-            switch (*p) {
-            case '0': zero_padding = 1; break;
-            case '-': justify_left = 1; break;
-            case '+': force_sign = 1; space_for_positive = 0; break;
-            case ' ': force_sign = 1;
-               // If both the ' ' and '+' flags appear, the ' ' flag should be ignored
-               break;
-            case '#': alternate_form = 1; break;
-            case '\'': break;
-            }
-            p++;
-         }
-         // If the '0' and '-' flags both appear, the '0' flag should be ignored.
-
-         // parse field width
-         if (*p == '*') {
-            int j;
-            CS digstart = p + 1;
-
-            p++;
-
-            if (EE_ISDIGIT((int)(*p))) {
-               // Positional argument field width
-               unsigned int uj;
-
-               if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-                  goto error;
-
-               arg_idx = uj;
-
-               ++p;
-            }
-
-            j = tvs
-               ? tv_nr(tvs, OUT &arg_idx) 
-               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
-                   va_arg(ap, int)
-                 );
-
-            if (j > MAX_ALLOWED_STRING_WIDTH) {
-               if (tvs) {
-                  format_overflow_error(digstart);
-                  goto error;
-               } else
-                  j = MAX_ALLOWED_STRING_WIDTH;
-            }
-
-            if (j >= 0)
-               min_field_width = j;
-            else {
-               min_field_width = -j;
-               justify_left = 1;
-            }
-         } ei (EE_ISDIGIT((int)(*p))) {
-            // Unt could be wider than unsigned int; make sure we treat
-            // argument like common implementations do
-            CS digstart = p;
-            unsigned int uj;
-
-            if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-               goto error;
-
-            min_field_width = uj;
-         }
-
-         // parse precision
-         if (*p == '.') {
-            p++;
-            precision_specified = 1;
-
-            if (EE_ISDIGIT((int)(*p))) {
-               // Unt could be wider than unsigned int; make sure we
-               // treat argument like common implementations do
-               CS digstart = p;
-               unsigned int uj;
-
-               if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-                  goto error;
-
-               precision = uj;
-            } ei (*p == '*') {
-               int j;
-               CS digstart = p;
-
-               p++;
-
-               if (EE_ISDIGIT((int)(*p))) {
-                  // positional argument
-                  unsigned int uj;
-
-                  if (get_unsigned_int(digstart, OUT &p, &uj, tvs != NULL) == FAIL)
-                     goto error;
-
-                  arg_idx = uj;
-
-                  ++p;
-               }
-
-               j = tvs 
-                  ? tv_nr(tvs, OUT &arg_idx) 
-                  : (skip_to_arg( ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
-                     va_arg(ap, int)
-                    );
-
-               if (j > MAX_ALLOWED_STRING_WIDTH) {
-                  if (tvs) {
-                     format_overflow_error(digstart);
-                     goto error;
-                  } else
-                     j = MAX_ALLOWED_STRING_WIDTH;
-               }
-
-               if (j >= 0)
-                  precision = j;
-               else {
-                  precision_specified = 0;
-                  precision = 0;
-               }
-            }
-         }
-
-         // parse 'h', 'l' and 'll' length modifiers
-         if (*p == 'h' || *p == 'l') {
-            length_modifier = *p;
-            p++;
-            if (length_modifier == 'l' && *p == 'l') {
-                // double l = __int64 / Long
-                length_modifier = 'L';
-                p++;
-            }
-         }
-         fmt_spec = *p;
-
-         // common synonyms:
-         switch (fmt_spec) {
-         case 'i': fmt_spec = 'd'; break;
-         case 'D': fmt_spec = 'd'; length_modifier = 'l'; break;
-         case 'U': fmt_spec = 'u'; length_modifier = 'l'; break;
-         case 'O': fmt_spec = 'o'; length_modifier = 'l'; break;
-         default: break;
-         }
-
-         switch (fmt_spec) {
-         case 'd': case 'u': case 'o': case 'x': case 'X':
-            if (tvs != NULL && length_modifier == '\0')
-               length_modifier = 'L';
-         }
-
-         if (pos_arg != -1)
-            arg_idx = pos_arg;
-
-         // get parameter value, do initial processing
-         switch (fmt_spec) {
-         // '%' and 'c' behave similar to 's' regarding flags and field widths
-         case '%':
-         case 'c':
-         case 's':
-         case 'S':
-            str_arg_l = 1;
-            switch (fmt_spec) {
-            case '%':
-                str_arg = p;
-                break;
-
-            case 'c': {
-               int j;
-
-               j = tvs 
-                  ? tv_nr(tvs, OUT &arg_idx) 
-                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                        va_arg(ap, int)
-                    );
-
-               // standard demands unsigned char
-               uchar_arg = (unsigned char)j;
-               str_arg = &uchar_arg;
-               break;
-               }
-
-            case 's':
-            case 'S':
-               str_arg = tvs 
-                  ? tv_str(tvs, &arg_idx, &tofree) 
-                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                    va_arg(ap, Byte *)
-                    );
-
-               if (str_arg == NULL) {
-                  str_arg = S"[NULL]";
-                  str_arg_l = 6;
-               }
-               // make sure not to address string beyond the specified precision !!!
-               ei (!precision_specified)
-                  str_arg_l = STRLEN(str_arg);
-               // truncate string if necessary as requested by precision
-               ei (precision == 0)
-                  str_arg_l = 0;
-               else {
-                  CS q = memchr(str_arg, '\0',
-                       precision <= (Unt)0x7fffffffL ? precision
-                                  : (Unt)0x7fffffffL);
-
-                  str_arg_l = (q == NULL) ? precision : (Unt)(q - str_arg);
-               }
-               if (fmt_spec == 'S') {
-                  Byte   *p1;
-                  Unt   i;
-                  int   cell;
-
-                  for (i = 0, p1 = (CS)str_arg; *p1; p1 += utfCharLen(p1)) {
-                     cell = mb_ptr2cells(p1);
-                     if (precision_specified && i + cell > precision)
-                        break;
-                     i += cell;
-                  }
-
-                  str_arg_l = p1 - (CS)str_arg;
-                  if (min_field_width != 0)
-                     min_field_width += str_arg_l - i;
-                }
-                break;
-
-            default:
-                break;
-            }
-         break;
-
-         case 'd': case 'u':
-         case 'b': case 'B':
-         case 'o':
-         case 'x': case 'X':
-         case 'p': {
-            //NOTE: the u, b, o, x, X and p conversion specifiers
-            //imply the value is unsigned;  d implies a signed value
-
-            //0 if numeric argument is zero (or if pointer is NULL for 'p'), +1 if greater than 
-            //zero (or nonzero for unsigned arguments), -1 if negative (unsigned argument is 
-            //never negative)
-            int arg_sign = 0;
-
-            //only set for length modifier h, or for no length modifiers
-            int int_arg = 0;
-            Unt uint_arg = 0;
-
-            //only set for length modifier l
-            long int long_arg = 0;
-            unsigned long int ulong_arg = 0;
-
-            //only set for length modifier ll
-            Long llong_arg = 0;
-            Ulong ullong_arg = 0;
-
-            //only set for b conversion
-            Ulong bin_arg = 0;
-
-            //pointer argument value -only defined for p conversion
-            void *ptr_arg = NULL;
-
-            if (fmt_spec == 'p') {
-               length_modifier = '\0';
-               ptr_arg = tvs
-                  ? (void *)tv_str(tvs, &arg_idx, NULL) 
-                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                     va_arg(ap, void *)
-                    );
-
-               if (ptr_arg != NULL)
-                   arg_sign = 1;
-            } ei (fmt_spec == 'b' || fmt_spec == 'B') {
-               bin_arg = tvs 
-                  ? (Ulong)tv_nr(tvs, OUT &arg_idx) 
-                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                     va_arg(ap, Ulong)
-                    );
-
-               if (bin_arg != 0)
-                   arg_sign = 1;
-            } ei (fmt_spec == 'd') {
-               // signed
-               switch (length_modifier) {
-               case '\0':
-               case 'h':
-                   // char and short arguments are passed as int.
-                   int_arg = tvs
-                      ? tv_nr(tvs, OUT &arg_idx) 
-                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                         va_arg(ap, int)
-                        );
-
-                   if (int_arg > 0)
-                  arg_sign =  1;
-                   ei (int_arg < 0)
-                  arg_sign = -1;
-                   break;
-               case 'l':
-                   long_arg = tvs 
-                      ? tv_nr(tvs, OUT &arg_idx) 
-                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                         va_arg(ap, long int)
-                        );
-
-                   if (long_arg > 0)
-                  arg_sign =  1;
-                   ei (long_arg < 0)
-                  arg_sign = -1;
-                   break;
-               case 'L':
-                   llong_arg = tvs
-                      ? tv_nr(tvs, OUT &arg_idx) 
-                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                         va_arg(ap, Long)
-                         );
-
-                   if (llong_arg > 0)
-                  arg_sign =  1;
-                   ei (llong_arg < 0)
-                  arg_sign = -1;
-                   break;
-               }
-            } else {
-               // unsigned
-               switch (length_modifier) {
-               case '\0':
-               case 'h':
-                  uint_arg = tvs
-                     ? (unsigned)tv_nr(tvs, OUT &arg_idx) 
-                     : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                        va_arg(ap, unsigned int)
-                       );
-
-                  if (uint_arg != 0)
-                      arg_sign = 1;
-                  break;
-               case 'l':
-                  ulong_arg = tvs
-                     ? (unsigned long) tv_nr(tvs, OUT &arg_idx) 
-                     : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                         va_arg(ap, unsigned long int)
-                       );
-
-                  if (ulong_arg != 0)
-                      arg_sign = 1;
-                  break;
-               case 'L':
-                  ullong_arg = tvs
-                     ? (Ulong) tv_nr(tvs, OUT &arg_idx) 
-                     : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
-                        va_arg(ap, Ulong)
-                       );
-
-                  if (ullong_arg != 0)
-                      arg_sign = 1;
-                  break;
-               }
-            }
-
-            str_arg = tmp;
-            str_arg_l = 0;
-
-            // NOTE:
-            //   For d, i, u, o, x, and X conversions, if precision is
-            //   specified, the '0' flag should be ignored.
-            if (precision_specified)
-               zero_padding = 0;
-            if (fmt_spec == 'd') {
-               if (force_sign && arg_sign >= 0)
-                   tmp[str_arg_l++] = space_for_positive ? ' ' : '+';
-               // leave negative numbers for sprintf to handle, to
-               // avoid handling tricky cases like (short int)-32768
-            } ei (alternate_form) {
-               if (arg_sign != 0
-                       && (fmt_spec == 'b' || fmt_spec == 'B'
-                        || fmt_spec == 'x' || fmt_spec == 'X') )
-               {
-                   tmp[str_arg_l++] = '0';
-                   tmp[str_arg_l++] = fmt_spec;
-               }
-               // alternate form should have no effect for p conversion, but ...
-            }
-
-            zero_padding_insertion_ind = str_arg_l;
-            if (!precision_specified)
-               precision = 1;   // default precision is 1
-            if (precision == 0 && arg_sign == 0) {
-               // When zero value is formatted with an explicit
-               // precision 0, the resulting formatted string is
-               // empty (d, i, u, b, B, o, x, X, p).
-            } else {
-               char   f[6];
-               int   f_l = 0;
-
-               // construct a simple format string for sprintf
-               f[f_l++] = '%';
-               if (!length_modifier)
-                   ;
-               ei (length_modifier == 'L') {
-                   f[f_l++] = 'l';
-                   f[f_l++] = 'l';
-               }
-               else
-                   f[f_l++] = length_modifier;
-               f[f_l++] = fmt_spec;
-               f[f_l++] = '\0';
-
-               if (fmt_spec == 'p')
-                  str_arg_l += SPRINTF(tmp + str_arg_l, f, ptr_arg);
-               ei (fmt_spec == 'b' || fmt_spec == 'B') {
-                  Byte       b[8 * sizeof(Ulong)];
-                  Unt       b_l = 0;
-                  Ulong    bn = bin_arg;
-
-                  do {
-                     b[sizeof(b) - ++b_l] = '0' + (bn & 0x1);
-                     bn >>= 1;
-                  } while (bn != 0);
-
-                  memcpy(tmp + str_arg_l, b + sizeof(b) - b_l, b_l);
-                  str_arg_l += b_l;
-               }
-               ei (fmt_spec == 'd') {
-                   // signed
-                   switch (length_modifier) {
-                   case '\0': str_arg_l += SPRINTF(tmp + str_arg_l, f, int_arg); break;
-                   case 'h': str_arg_l += SPRINTF(tmp + str_arg_l, f, (Short)int_arg); break;
-                   case 'l': str_arg_l += SPRINTF(tmp + str_arg_l, f, long_arg); break;
-                   case 'L': str_arg_l += SPRINTF(tmp + str_arg_l, f, llong_arg); break;
-                   }
-               } else {
-                  // unsigned
-                  switch (length_modifier) {
-                  case '\0': str_arg_l += SPRINTF(tmp + str_arg_l, f, uint_arg); break;
-                  case 'h': str_arg_l += SPRINTF( tmp + str_arg_l, f, (Short)uint_arg); break;
-                  case 'l': str_arg_l += SPRINTF(tmp + str_arg_l, f, ulong_arg); break;
-                  case 'L': str_arg_l += SPRINTF(tmp + str_arg_l, f, ullong_arg); break;
-                  }
-               }
-
-               // include the optional minus sign and possible "0x" in the region before the zero 
-               // padding insertion point
-               if (zero_padding_insertion_ind < str_arg_l && tmp[zero_padding_insertion_ind] == '-')
-                  zero_padding_insertion_ind++;
-               if (zero_padding_insertion_ind + 1 < str_arg_l
-                     && tmp[zero_padding_insertion_ind]   == '0'
-                     && (tmp[zero_padding_insertion_ind + 1] == 'x'
-                         || tmp[zero_padding_insertion_ind + 1] == 'X')
-               )
-                  zero_padding_insertion_ind += 2;
-            }
-
-            Unt num_of_digits = str_arg_l - zero_padding_insertion_ind;
-
-            // zero padding to specified precision?
-            if (num_of_digits < precision)
-                number_of_zeros_to_pad = precision - num_of_digits;
-             // zero padding to specified minimal field width?
-            if (!justify_left && zero_padding) {
-               int n = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
-               if (n > 0)
-                  number_of_zeros_to_pad += n;
-            }
-            break;
-         }
-
-         case 'f':
-         case 'F':
-         case 'e':
-         case 'E':
-         case 'g':
-         case 'G': {
-            // Floating point.
-            Byte format[40];
-            int      l;
-            int      remove_trailing_zeroes = false;
-
-            double f = tvs
-               ? tv_float(tvs, &arg_idx) 
-               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
-                  va_arg(ap, double)
-                 );
-
-            double abs_f = f < 0 ? -f : f;
-
-            if (fmt_spec == 'g' || fmt_spec == 'G') {
-               // Would be nice to use %g directly, but it prints
-               // "1.0" as "1", we don't want that.
-               if ((abs_f >= 0.001 && abs_f < 10000000.0)
-                                 || abs_f == 0.0)
-                   fmt_spec = ASCII_ISUPPER(fmt_spec) ? 'F' : 'f';
-               else
-                   fmt_spec = fmt_spec == 'g' ? 'e' : 'E';
-               remove_trailing_zeroes = true;
-            }
-
-            if ((fmt_spec == 'f' || fmt_spec == 'F') &&
-# ifdef VAX
-                abs_f > 1.0e38
-# else
-                abs_f > 1.0e307
-# endif
-            ) {
-               // Avoid a buffer overflow
-               STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
-               str_arg_l = STRLEN(tmp);
-               zero_padding = 0;
-            } else {
-               if (isnan(f)) {
-                  // Not a number: nan or NAN
-                  STRCPY(tmp, ASCII_ISUPPER(fmt_spec) ? "NAN" : "nan");
-                  str_arg_l = 3;
-                  zero_padding = 0;
-               } ei (isinf(f)) {
-                  STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
-                  str_arg_l = STRLEN(tmp);
-                  zero_padding = 0;
-               } else {
-                  // Regular float number
-                  format[0] = '%';
-                  l = 1;
-                  if (force_sign)
-                     format[l++] = space_for_positive ? ' ' : '+';
-                  if (precision_specified) {
-                     Unt max_prec = TMP_LEN - 10;
-
-                     // Make sure we don't get more digits than we
-                     // have room for.
-                     if ((fmt_spec == 'f' || fmt_spec == 'F') && abs_f > 1.0)
-                        max_prec -= (Unt)log10(abs_f);
-                     if (precision > max_prec)
-                        precision = max_prec;
-                     l += SPRINTF(format + l, ".%d", (int)precision);
-                  }
-                  format[l] = fmt_spec == 'F' ? 'f' : fmt_spec;
-                  format[l + 1] = ZERO;
-
-                  str_arg_l = SPRINTF(tmp, format, f);
-               }
-
-               if (remove_trailing_zeroes) {
-                  int i;
-                  CS tp;
-
-                  // Using %g or %G: remove superfluous zeroes.
-                  if (fmt_spec == 'f' || fmt_spec == 'F')
-                     tp = tmp + str_arg_l - 1;
-                  else {
-                     tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
-                     if (tp) {
-                        // Remove superfluous '+' and leading zeroes from the exponent.
-                        if (tp[1] == '+') {
-                           // Change "1.0e+07" to "1.0e07"
-                           STRMOVE(tp + 1, tp + 2);
-                           --str_arg_l;
-                        }
-                        i = (tp[1] == '-') ? 2 : 1;
-                        while (tp[i] == '0') {
-                           // Change "1.0e07" to "1.0e7"
-                           STRMOVE(tp + i, tp + i + 1);
-                           --str_arg_l;
-                        }
-                        --tp;
-                     }
-                  }
-
-                  if (tp && !precision_specified) {
-                     // Remove trailing zeroes, but keep the one just after a dot.
-                     while (tp > tmp + 2 && *tp == '0' && tp[-1] != '.') {
-                         STRMOVE(tp, tp + 1);
-                         --tp;
-                         --str_arg_l;
-                     }
-                  } 
-               } else {
-                  // Be consistent: some printf("%e") use 1.0e+12
-                  // and some 1.0e+012.  Remove one zero in the last case.
-                  CS tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
-                  if (tp != NULL && (tp[1] == '+' || tp[1] == '-')
-                       && tp[2] == '0'
-                       && eeIsDigit(tp[3])
-                       && eeIsDigit(tp[4])
-                  ) {
-                     STRMOVE(tp + 2, tp + 3);
-                     --str_arg_l;
-                  }
-               }
-            }
-            if (zero_padding && min_field_width > str_arg_l && (tmp[0] == '-' || force_sign)) {
-               // padding 0's should be inserted after the sign
-               number_of_zeros_to_pad = min_field_width - str_arg_l;
-               zero_padding_insertion_ind = 1;
-            }
-            str_arg = tmp;
-            break;
-         }
-
-         default:
-            // unrecognized conversion specifier, keep format string as-is
-            zero_padding = 0;  // turn zero padding off for non-numeric conversion
-            justify_left = 1;
-            min_field_width = 0;          // reset flags
-
-            // discard the unrecognized conversion, just keep *
-            // the unrecognized conversion character
-            str_arg = p;
-            str_arg_l = 0;
-            if (*p != ZERO)
-                str_arg_l++;  // include invalid conversion specifier
-                    // unchanged if not at end-of-string
-            break;
-         }
-
-         if (*p != ZERO)
-            p++;     // step over the just processed conversion specifier
-
-         // insert padding to the left as requested by min_field_width;
-         // this does not include the zero padding in case of numerical conversions
-         if (!justify_left) {
-            // left padding with blank or zero
-            int pn = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
-
-            if (pn > 0) {
-               if (str_l < str_m) {
-                  Unt avail = str_m - str_l;
-                  memset(
-                     str + str_l, zero_padding ? '0' : ' ', (Unt)pn > avail ? avail : (Unt)pn
-                  );
-               }
-               str_l += pn;
-            }
-         }
-
-         //zero padding as requested by the precision or by the minimal
-         //field width for numeric conversions required?
-         if (number_of_zeros_to_pad == 0) {
-            //will not copy first part of numeric right now, *
-            //force it to be copied later in its entirety
-            zero_padding_insertion_ind = 0;
-         } else {
-            // insert first part of numerics (sign or '0x') before zero padding
-            int zn = (int)zero_padding_insertion_ind;
-
-            if (zn > 0) {
-               if (str_l < str_m) {
-                  Unt avail = str_m - str_l;
-                  mch_memmove(str + str_l, str_arg, (Unt)zn > avail ? avail : (Unt)zn);
-               }
-               str_l += zn;
-            }
-
-            // insert zero padding as requested by the precision or min field width
-            zn = (int)number_of_zeros_to_pad;
-            if (zn > 0) {
-               if (str_l < str_m) {
-                  Unt avail = str_m - str_l;
-                  memset(str + str_l, '0', (Unt)zn > avail ? avail : (Unt)zn);
-               }
-               str_l += zn;
-            }
-         }
-
-         // insert formatted string
-         // (or as-is conversion specifier for unknown conversions)
-         {
-         int sn = (int)(str_arg_l - zero_padding_insertion_ind);
-
-         if (sn > 0) {
-            if (str_l < str_m) {
-               Unt avail = str_m - str_l;
-               mch_memmove(
-                  str + str_l, str_arg + zero_padding_insertion_ind, 
-                  (Unt)sn > avail ? avail : (Unt)sn
-               );
-            }
-            str_l += sn;
-         }
-         }
-
-         // insert right padding
-         if (justify_left) {
-            // right blank padding to the field width
-            int pn = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
-
-            if (pn > 0) {
-               if (str_l < str_m) {
-                  Unt avail = str_m - str_l;
-
-                  memset(str + str_l, ' ', (Unt)pn > avail ? avail : (Unt)pn);
-               }
-               str_l += pn;
-            }
-         }
-         eeglFree(tofree);
-      }
-    }
-
-   if (str_m > 0) {
-      // make sure the string is ZERO-terminated even at the expense of
-      // overwriting the last character (shouldn't happen, but just in case)
-      //
-      str[str_l <= str_m - 1 ? str_l : str_m - 1] = '\0';
-   }
-
-   if (tvs != NULL && tvs[num_posarg != 0 ? num_posarg : arg_idx - 1].tag != VAR_UNKNOWN)
-      emsg(_(e_too_many_arguments_to_printf));
-
-error:
-   eeglFree((Byte*)ap_types);
-   va_end(ap);
-
-   //Return the number of characters formatted (excluding trailing ZERO
-   //character), that is, the number of characters that would have been
-   //written to the buffer if it were large enough.
-   return str_l;
-}
-
 #endif // PROTO
 
 //Get the byte index for character index "idx" in string "str" with length
@@ -3985,977 +3578,6 @@ startsWith(CS longerStr, CS shorterStr) {
    for(; *l == *s && *l != ZERO && s != ZERO; l++, s++)
       {}
    return (*s == ZERO);
-}
-
-//}}}
-//{{{fuzzy searchin'
-
-//Fuzzy matching algorithm and related functions
-//
-//Portions of this file are adapted from fzy (https://github.com/jhawthorn/fzy)
-//Original code:
-//  Copyright (c) 2014 John Hawthorn
-//  Licensed under the MIT License.
-//
-//Permission is hereby granted, free of charge, to any person obtaining a copy
-//of this software and associated documentation files (the "Software"), to deal
-//in the Software without restriction, including without limitation the rights
-//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//copies of the Software, and to permit persons to whom the Software is
-//furnished to do so, subject to the following conditions:
-//
-//The above copyright notice and this permission notice shall be included in
-//all copies or substantial portions of the Software.
-//
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
-
-private int fuzzy_match_item_compare(const void *s1, const void *s2);
-private void fuzzy_match_in_list(
-      List *l, Byte *str, int matchseq, Byte *key, Callback *item_cb, int retmatchpos, 
-      List *fmatchlist, long max_matches
-);
-private void do_fuzzymatch(Arr(Var) argvars, OUT Var* returnVar, int retmatchpos);
-private int fuzzyMatchStr_compare(const void *s1, const void *s2);
-private int fuzzy_match_func_compare(const void *s1, const void *s2);
-private void sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz);
-
-private double match_positions(CS needle, CS haystack, Unt* positions);
-private int has_match(CS needle, CS haystack);
-
-#define SCORE_MAX INFINITY
-#define SCORE_MIN (-INFINITY)
-#define SCORE_SCALE 1000
-
-typedef struct {
-   int      idx;      // used for stable sort
-   ListItem* item;
-   int score;
-   List* lmatchpos;
-   CS pat;
-   CS itemstr;
-   int itemstr_allocated;
-   int startpos;
-} FuzzyItem;
-
-void
-addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t) {
-   if (t->len == t->cap) {
-      Arr(FuzzyMatch) newContent = allocateArray(t->cap*2, FuzzyMatch, t->a);
-      if (t->len > 0)
-         memcpy(newContent, t->c, t->len*sizeof(FuzzyMatch));
-      t->c = newContent;
-      t->cap *= 2;
-   }
-   m.idx = t->len;
-   t->c[t->len] = m;
-   t->len++;
-}
-
-//Return true if "pat_arg" matches "str". Also returns the match score in
-//"outScore" and the matching character positions in "matches".
-int
-fuzzy_match(
-   CS str,
-   CS pat_arg,
-   int matchseq,
-   int* outScore,
-   Arr(Unt) matches,
-   int maxMatches
-) {
-   int complete = false;
-   int score = 0;
-   int numMatches = 0;
-   double fzy_score;
-
-   *outScore = 0;
-
-   CS save_pat = copyStr(pat_arg);
-   CS pat = save_pat;
-   CS p = pat;
-
-   // Try matching each word in 'pat_arg' in 'str'
-   while (true) {
-      if (matchseq)
-         complete = true;
-      else {
-         // Extract one word from the pattern (separated by space)
-         p = skipwhite(p);
-         if (*p == ZERO)
-            break;
-         pat = p;
-         while (*p != ZERO && !SPACE_OR_TAB(mb_ptr2char(p))) {
-            MB_PTR_ADV(p);
-         }
-         if (*p == ZERO)      // processed all the words
-            complete = true;
-         *p = ZERO;
-      }
-
-      score = FUZZY_SCORE_NONE;
-      if (has_match(pat, str)) {
-         fzy_score = match_positions(pat, str, matches + numMatches);
-         score = (fzy_score == SCORE_MIN) ? INT_MIN + 1
-            : (fzy_score == SCORE_MAX) ? INT_MAX
-            : (fzy_score < 0) ? (int)ceil(fzy_score * SCORE_SCALE - 0.5)
-            : (int)floor(fzy_score * SCORE_SCALE + 0.5);
-      }
-
-      if (score == FUZZY_SCORE_NONE) {
-         numMatches = 0;
-         *outScore = FUZZY_SCORE_NONE;
-         break;
-      }
-
-      if (score > 0 && *outScore > INT_MAX - score)
-         *outScore = INT_MAX;
-      ei (score < 0 && *outScore < INT_MIN + 1 - score)
-         *outScore = INT_MIN + 1;
-      else
-         *outScore += score;
-
-      numMatches += MB_CHARLEN(pat);
-
-      if (complete || numMatches >= maxMatches)
-          break;
-
-      // try matching the next word
-      ++p;
-   }
-
-   eeglFree(save_pat);
-   return numMatches != 0;
-}
-
-//Sort the fuzzy matches in the descending order of the match score.
-//For items with same score, retain the order using the index (stable sort)
-private int
-fuzzy_match_item_compare(const void *s1, const void *s2) {
-   int v1 = ((FuzzyItem *)s1)->score;
-   int v2 = ((FuzzyItem *)s2)->score;
-
-   if (v1 == v2) {
-      int exact_match1 = false, exact_match2 = false;
-      CS pat = ((FuzzyItem *)s1)->pat;
-      int patlen = (int)STRLEN(pat);
-      int startpos = ((FuzzyItem *)s1)->startpos;
-      exact_match1 = (startpos >= 0) && STRNCMP(pat,
-         ((FuzzyItem *)s1)->itemstr + startpos, patlen) == 0;
-      startpos = ((FuzzyItem *)s2)->startpos;
-      exact_match2 = (startpos >= 0) && STRNCMP(pat,
-         ((FuzzyItem *)s2)->itemstr + startpos, patlen) == 0;
-
-      if (exact_match1 == exact_match2) {
-         int idx1 = ((FuzzyItem *)s1)->idx;
-         int idx2 = ((FuzzyItem *)s2)->idx;
-         return idx1 == idx2 ? 0 : idx1 > idx2 ? 1 : -1;
-      } ei (exact_match2)
-         return 1;
-      return -1;
-   } else
-      return v1 > v2 ? -1 : 1;
-}
-
-//Fuzzy search the string 'str' in a list of 'items' and return the matching
-//strings in 'fmatchlist'.
-//If 'matchseq' is true, then for multi-word search strings, match all the words in sequence.
-//If 'items' is a list of strings, then search for 'str' in the list.
-//If 'items' is a list of dicts, then either use 'key' to lookup the string
-//for each item or use 'item_cb' Funcref function to get the string.
-//If 'retmatchpos' is true, then return a list of positions where 'str' matches for each item.
-private void
-fuzzy_match_in_list(
-   List* l,
-   CS str,
-   int matchseq,
-   CS key,
-   Callback* item_cb,
-   int retmatchpos,
-   List* fmatchlist,
-   long max_matches
-) {
-   long match_count = 0;
-   Unt matches[FUZZY_MATCH_MAX_LEN];
-
-   long len = list_len(l);
-   if (len == 0)
-      return;
-   if (max_matches > 0 && len > max_matches)
-      len = max_matches;
-
-   Arr(FuzzyItem) items = ALLOC_CLEAR_MULT(FuzzyItem, len);
-   if (items == NULL)
-      return;
-
-   // For all the string items in items, get the fuzzy matching score
-   ListItem* li;
-   FOR_ALL_LIST_ITEMS(l, li) {
-      int      score;
-      Byte      *itemstr;
-      Var   returnVar;
-      int      itemstr_allocate = false;
-
-      if (max_matches > 0 && match_count >= max_matches)
-          break;
-
-      itemstr = NULL;
-      returnVar.tag = VAR_UNKNOWN;
-      if (li->c.tag == VAR_STRING)   // list of strings
-         itemstr = li->c.string;
-      ei (li->c.tag == VAR_BAG && (key != NULL || item_cb->name != NULL)) {
-         // For a dict, either use the specified key to lookup the string or
-         // use the specified callback function to get the string.
-         if (key)
-            itemstr = bagGetString(li->c.bag, text(key), false);
-         else {
-            Var   argv[2];
-
-            // Invoke the supplied callback (if any) to get the dict item
-            li->c.bag->refcount++;
-            argv[0].tag = VAR_BAG;
-            argv[0].bag = li->c.bag;
-            argv[1].tag = VAR_UNKNOWN;
-            if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL) {
-               if (returnVar.tag == VAR_STRING) {
-                  itemstr = returnVar.string;
-                  itemstr_allocate = true;
-               }
-            }
-            bagUnref(li->c.bag);
-         }
-      }
-
-      if (itemstr != NULL
-         && fuzzy_match(itemstr, str, matchseq, &score, matches, FUZZY_MATCH_MAX_LEN)
-      ){
-         items[match_count].idx = match_count;
-         items[match_count].item = li;
-         items[match_count].score = score;
-         items[match_count].pat = str;
-         items[match_count].startpos = matches[0];
-         items[match_count].itemstr = itemstr_allocate ? copyStr(itemstr) : itemstr;
-         items[match_count].itemstr_allocated = itemstr_allocate;
-
-         // Copy the list of matching positions in itemstr to a list, if "retmatchpos" is set.
-         if (retmatchpos) {
-            items[match_count].lmatchpos = list_alloc();
-            if (items[match_count].lmatchpos == NULL)
-               goto done;
-
-            int   j = 0;
-            CS p = str;
-            while (*p != ZERO && j < FUZZY_MATCH_MAX_LEN) {
-               if (!SPACE_OR_TAB(mb_ptr2char(p)) || matchseq) {
-                  if (list_append_number(items[match_count].lmatchpos, matches[j]) == FAIL)
-                     goto done;
-                  j++;
-                }
-                MB_PTR_ADV(p);
-            }
-         }
-         ++match_count;
-      }
-      clearVar(&returnVar);
-   }
-
-   if (match_count > 0) {
-      List      *retlist;
-
-      //Sort the list by the descending order of the match score
-      qsort((void *)items, (Unt)match_count, sizeof(FuzzyItem), fuzzy_match_item_compare);
-
-      //For matchfuzzy(), return a list of matched strings.
-      //      ['str1', 'str2', 'str3']
-      //For matchfuzzypos(), return a list with three items.
-      //The first item is a list of matched strings. The second item
-      //is a list of lists where each list item is a list of matched
-      //character positions. The third item is a list of matching scores.
-      //  [['str1', 'str2', 'str3'], [[1, 3], [1, 3], [1, 3]]]
-      if (retmatchpos) {
-         li = list_find(fmatchlist, 0);
-         if (li == NULL || li->c.list == NULL)
-            goto done;
-         retlist = li->c.list;
-      } else
-         retlist = fmatchlist;
-
-      // Copy the matching strings to the return list
-      for (int i = 0; i < match_count; i++) {
-         if (list_append_tv(retlist, &items[i].item->c) == FAIL)
-            goto done;
-      }
-
-      // next copy the list of matching positions
-      if (retmatchpos) {
-         li = list_find(fmatchlist, -2);
-         if (li == NULL || li->c.list == NULL)
-            goto done;
-         retlist = li->c.list;
-
-         for (int i = 0; i < match_count; i++) {
-            if (items[i].lmatchpos != NULL) {
-               if (list_append_list(retlist, items[i].lmatchpos) == OK)
-                  items[i].lmatchpos = NULL;
-               else
-                  goto done;
-
-            }
-         }
-
-         // copy the matching scores
-         li = list_find(fmatchlist, -1);
-         if (li == NULL || li->c.list == NULL)
-            goto done;
-         retlist = li->c.list;
-         for (int i = 0; i < match_count; i++) {
-            if (list_append_number(retlist, items[i].score) == FAIL)
-               goto done;
-         }
-      }
-   }
-
-done:
-   for (int i = 0; i < match_count; i++) {
-      if (items[i].itemstr_allocated)
-         eeglFree(items[i].itemstr);
-
-      if (items[i].lmatchpos)
-         list_free(items[i].lmatchpos);
-   }
-   eeglFree(items);
-}
-
-//Do fuzzy matching. Returns the list of matched strings in 'returnVar'.
-//If 'retmatchpos' is true, also returns the matching character positions.
-private void
-do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
-   Callback   cb;
-   CS key = NULL;
-   int      matchseq = false;
-   long   max_matches = 0;
-
-   CLEAR_POINTER(&cb);
-
-   // validate and get the arguments
-   if (argvars[0].tag != VAR_LIST || argvars[0].list == NULL) {
-      showErrFmtMsg(_(e_argument_of_str_must_be_list),
-                 retmatchpos ? "matchfuzzypos()" : "matchfuzzy()");
-      return;
-   }
-   if (argvars[1].tag != VAR_STRING || argvars[1].string == NULL) {
-      showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[1]));
-      return;
-   }
-
-   if (argvars[2].tag != VAR_UNKNOWN) {
-      Bag      *d;
-      DictItem   *di;
-
-      if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
-         return;
-
-      // To search a dict, either a callback function or a key can be specified.
-      d = argvars[2].bag;
-      if ((di = bagFind(d, tConst("key"))) != NULL) {
-         if (di->c.tag != VAR_STRING
-             || di->c.string == NULL
-             || *di->c.string == ZERO
-         ) {
-            showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "key", tv_get_string(&di->c));
-            return;
-         }
-         key = tv_get_string(&di->c);
-      } ei ((di = bagFind(d, tConst("text_cb"))) != NULL) {
-         cb = get_callback(&di->c);
-         if (cb.name == NULL) {
-            showErrFmtMsg(_(e_invalid_value_for_argument_str), "text_cb");
-            return;
-         }
-      }
-
-      if ((di = bagFind(d, tConst("limit"))) != NULL) {
-         if (di->c.tag != VAR_NUMBER) {
-            showErrFmtMsg(_(e_invalid_value_for_argument_str), "limit");
-            return;
-         }
-         max_matches = (long)varGetNumberChk(&di->c, NULL);
-      }
-
-      if (bagHasKey(d, tConst("matchseq")))
-         matchseq = true;
-   }
-
-   // get the fuzzy matches
-   allocReturnList(returnVar);
-   if (retmatchpos) {
-
-      //For matchfuzzypos(), a list with three items are returned. First
-      //item is a list of matching strings, the second item is a list of
-      //lists with matching positions within each string and the third item
-      //is the list of scores of the matches.
-      List* l = list_alloc();
-      if (list_append_list(returnVar->list, l) == FAIL) {
-         list_free(l);
-         goto done;
-      }
-      l = list_alloc();
-      if (list_append_list(returnVar->list, l) == FAIL) {
-         list_free(l);
-         goto done;
-      }
-      l = list_alloc();
-      if (list_append_list(returnVar->list, l) == FAIL) {
-         list_free(l);
-         goto done;
-      }
-   }
-
-   fuzzy_match_in_list(argvars[0].list, tv_get_string(&argvars[1]),
-       matchseq, key, &cb, retmatchpos, returnVar->list, max_matches);
-
-done:
-   evFreeCallback(&cb);
-}
-
-void
-f_matchfuzzy(Arr(Var) argvars, OUT Var* returnVar) {
-   do_fuzzymatch(argvars, returnVar, false);
-}
-
-void
-f_matchfuzzypos(Arr(Var) argvars, OUT Var* returnVar) {
-    do_fuzzymatch(argvars, returnVar, true);
-}
-
-//Same as fuzzy_match_item_compare() except for use with a string match
-private int
-fuzzyMatchStr_compare(const void *s0, const void *s1) {
-   int score0 = ((FuzzyMatch *)s0)->score;
-   int score1 = ((FuzzyMatch *)s1)->score;
-   int idx0 = ((FuzzyMatch *)s0)->idx;
-   int idx1 = ((FuzzyMatch *)s1)->idx;
-
-   if (score0 == score1)
-      return idx0 == idx1 ? 0 : idx0 > idx1 ? 1 : -1;
-   else
-      return score0 > score1 ? -1 : 1;
-}
-
-//Sort fuzzy matches by score
-void
-fuzzySortByScore(OUT Fuzzy* fuzzy) {
-   // Sort the list by the descending order of the match score
-   qsort((void *)fuzzy->c, (Unt)fuzzy->len, sizeof(FuzzyMatch), fuzzyMatchStr_compare);
-}
-
-//Same as fuzzy_match_item_compare() except for use with a function name
-//string match. <SNR> functions should be sorted to the end.
-private int
-fuzzy_match_func_compare(const void *s1, const void *s2) {
-   int      v1 = ((FuzzyMatch *)s1)->score;
-   int      v2 = ((FuzzyMatch *)s2)->score;
-   int      idx1 = ((FuzzyMatch *)s1)->idx;
-   int      idx2 = ((FuzzyMatch *)s2)->idx;
-   CS str1 = ((FuzzyMatch *)s1)->str;
-   CS str2 = ((FuzzyMatch *)s2)->str;
-
-   if (*str1 != '<' && *str2 == '<')
-      return -1;
-   if (*str1 == '<' && *str2 != '<')
-      return 1;
-   if (v1 == v2)
-      return idx1 == idx2 ? 0 : idx1 > idx2 ? 1 : -1;
-   else
-      return v1 > v2 ? -1 : 1;
-}
-
-//Sort fuzzy matches of function names by score. <SNR> functions should be sorted to the end.
-private void
-sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz) {
-   // Sort the list by the descending order of the match score
-   qsort((void *)fm, (Unt)sz, sizeof(FuzzyMatch), fuzzy_match_func_compare);
-}
-
-//Fuzzy match 'pat' in 'str'. Return 0 if there is no match. Otherwise, return the match score.
-int
-fuzzyMatchStr(CS str, CS pat) {
-   int      score = FUZZY_SCORE_NONE;
-   Unt   matchpos[FUZZY_MATCH_MAX_LEN];
-
-   if (str == NULL || pat == NULL)
-      return score;
-
-   fuzzy_match(str, pat, true, &score, matchpos, sizeof(matchpos) / sizeof(matchpos[0]));
-
-   return score;
-}
-
-//Fuzzy match the position of string 'pat' in string 'str'.
-//Return a dynamic array of matching positions. If there is no match, return NULL.
-ArrayList *
-fuzzyMatchStr_with_pos(CS str, CS pat) {
-   int          score = FUZZY_SCORE_NONE;
-   ArrayList       *match_positions = NULL;
-   Unt       matches[FUZZY_MATCH_MAX_LEN];
-   int          j = 0;
-
-   if (str == NULL || pat == NULL)
-      return NULL;
-
-   match_positions = ALLOC_ONE(ArrayList);
-   if (match_positions == NULL)
-      return NULL;
-   ga_init2(match_positions, sizeof(Unt), 10);
-
-   if (!fuzzy_match(str, pat, false, &score, matches, FUZZY_MATCH_MAX_LEN)
-          || score == FUZZY_SCORE_NONE) {
-      ga_clear(match_positions);
-      eeglFree(match_positions);
-      return NULL;
-   }
-
-   for (Byte *p = pat; *p != ZERO; MB_PTR_ADV(p)) {
-      if (!SPACE_OR_TAB(mb_ptr2char(p))) {
-         ga_grow(match_positions, 1);
-         ((Unt *)match_positions->c)[match_positions->len] = matches[j];
-         match_positions->len++;
-         j++;
-      }
-   }
-
-   return match_positions;
-}
-
-// Find the end of the word. Assumes it starts inside a word. Return a pointer to after the word
-CS
-find_word_end(CS ptr) {
-   int start_class = mb_get_class(ptr);
-   if (start_class > 1) {
-      while (*ptr != ZERO) {
-         ptr += utfCharLen(ptr);
-         if (mb_get_class(ptr) != start_class)
-            break;
-      }
-   } 
-   return ptr;
-}
-
-
-// Find the end of the line, omitting CR and NL at the end. Returns a pointer to just after the line.
-CS
-find_line_end(CS ptr) {
-   CS s = ptr + STRLEN(ptr);
-   while (s > ptr && (s[-1] == ENTER || s[-1] == NL))
-      --s;
-   return s;
-}
-
-//This function splits the line pointed to by `*ptr` into words and performs
-//a fuzzy match for the pattern `pat` on each word. It iterates through the
-//line, moving `*ptr` to the start of each word during the process.
-//
-//If a match is found:
-//- `*ptr` points to the start of the matched word.
-//- `*len` is set to the length of the matched word.
-//- `*score` contains the match score.
-//
-//If no match is found, `*ptr` is updated to the end of the line.
-int
-fuzzyMatchStr_in_line(
-   Byte   **ptr,
-   CS pat,
-   int* len,
-   Pos* current_pos,
-   int* score)
-{
-   CS str = *ptr;
-   CS strBegin = str;
-   CS end = NULL;
-   CS start = NULL;
-   int found = false;
-   Byte save_end;
-   CS line_end = NULL;
-
-   if (!str || !pat)
-      return found;
-   line_end = find_line_end(str);
-
-   while (str < line_end) {
-      // Skip non-word characters
-      start = findWordStart(str);
-      if (*start == ZERO)
-          break;
-      end = find_word_end(start);
-
-      // Extract the word from start to end
-      save_end = *end;
-      *end = ZERO;
-
-      // Perform fuzzy match
-      *score = fuzzyMatchStr(start, pat);
-      *end = save_end;
-
-      if (*score != FUZZY_SCORE_NONE) {
-         *len = (int)(end - start);
-         found = true;
-         *ptr = start;
-         if (current_pos)
-            current_pos->col += (int)(end - strBegin);
-         break;
-      }
-
-      // Move to the end of the current word for the next iteration
-      str = end;
-      // Ensure we continue searching after the current word
-      while (*str != ZERO && !eeIsWordPtr(str))
-         MB_PTR_ADV(str);
-   }
-
-   if (!found)
-      *ptr = line_end;
-
-   return found;
-}
-
-//Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of 
-//the given pattern in the buffer, starting from the current position. Handle line wrapping and 
-//direction of search. Return true if a match is found, otherwise false.
-int
-search_for_fuzzy_match(
-   Book* book,
-   Pos* pos,
-   CS pattern,
-   int dir,
-   Pos* start_pos,
-   OUT int* len,
-   OUT CS* ptr,
-   int* score
-) {
-   Pos current_pos = *pos;
-   Pos circly_end;
-   int found_new_match = false;
-   int looped_around = false;
-   int whole_line = ctrl_x_mode_whole_line();
-
-   if (book == curBook)
-      circly_end = *start_pos;
-   else {
-      circly_end.lnum = book->mem.lineCount;
-      circly_end.col = 0;
-      circly_end.coladd = 0;
-   }
-
-   if (whole_line && start_pos->lnum != pos->lnum)
-      current_pos.lnum += dir;
-
-   do {
-
-      // Check if looped around and back to start position
-      if (looped_around && EQUAL_POS(current_pos, circly_end))
-         break;
-
-      // Ensure current_pos is valid
-      if (current_pos.lnum >= 1 && current_pos.lnum <= book->mem.lineCount) {
-         // Get the current line buffer
-         *ptr = memGetLine(book, current_pos.lnum, false);
-         if (!whole_line)
-            *ptr += current_pos.col;
-
-         // If ptr is end of line is reached, move to next line
-         // or previous line based on direction
-         if (*ptr != NULL && **ptr != ZERO) {
-            if (!whole_line) {
-               // Try to find a fuzzy match in the current line starting from current position
-               found_new_match = fuzzyMatchStr_in_line(ptr, pattern, len, &current_pos, score);
-               if (found_new_match) {
-                  *pos = current_pos;
-                  break;
-               } ei (looped_around && current_pos.lnum == circly_end.lnum)
-                  break;
-            } else {
-               if (fuzzyMatchStr(*ptr, pattern) != FUZZY_SCORE_NONE) {
-                  found_new_match = true;
-                  *pos = current_pos;
-                  *len = (int)memGetBookLen(book, current_pos.lnum);
-                  break;
-               }
-            }
-         }
-      }
-
-      // Move to the next line or previous line based on direction
-      if (dir == FORWARD) {
-         if (++current_pos.lnum > book->mem.lineCount) {
-            if (wrapSearchG) {
-               current_pos.lnum = 1;
-               looped_around = true;
-            } else
-               break;
-         }
-      } else {
-         if (--current_pos.lnum < 1) {
-            if (wrapSearchG) {
-               current_pos.lnum = book->mem.lineCount;
-               looped_around = true;
-            } else
-               break;
-         }
-      }
-      current_pos.col = 0;
-   } while (true);
-
-   return found_new_match;
-}
-
-//Free an array of fuzzy string matches "fuzmatch[count]".
-void
-fuzmatch_str_free(FuzzyMatch *fuzmatch, int count) {
-   if (!fuzmatch)
-      return;
-
-   for (int i = 0; i < count; ++i)
-      eeglFree(fuzmatch[i].str);
-   eeglFree(fuzmatch);
-}
-
-//Copy a list of fuzzy matches into a string list after sorting the matches by
-//the fuzzy score. Free the memory allocated for 'fuzzy'.
-//Return OK on success and FAIL on memory allocation failure.
-int
-defuzz(
-   OUT ExpandMatch* matches,
-   Fuzzy fuzzy,
-   Boole funcsort
-) {
-   Unt const len = fuzzy.len;
-   if (fuzzy.len == 0)
-      goto theend;
-
-   if (matches->cap < len) {
-      matches->c = allocateArray(len, CS, matches->a);
-      matches->cap = len;
-   }
-
-   // Sort the list by the descending order of the match score
-   if (funcsort)
-      sortFnNamesByScore((void *)fuzzy.c, len);
-   else
-      fuzzySortByScore(&fuzzy);
-
-   for (Unt i = 0; i < len; i++)
-      matches->c[i] = fuzzy.c[i].str;
-   
-theend:
-   matches->len = len;
-   return OK;
-}
-
-//Fuzzy match algorithm ported from https://github.com/jhawthorn/fzy.
-//This implementation extends the original by supporting multibyte characters.
-
-#define MATCH_MAX_LEN FUZZY_MATCH_MAX_LEN
-
-#define SCORE_GAP_LEADING -0.005
-#define SCORE_GAP_TRAILING -0.005
-#define SCORE_GAP_INNER -0.01
-#define SCORE_MATCH_CONSECUTIVE 1.0
-#define SCORE_MATCH_SLASH 0.9
-#define SCORE_MATCH_WORD 0.8
-#define SCORE_MATCH_CAPITAL 0.7
-#define SCORE_MATCH_DOT 0.6
-
-private int
-has_match(Byte *needle, Byte *haystack) {
-   while (*needle != ZERO) {
-      int n_char = mb_ptr2char(needle);
-      Byte *p = haystack;
-      int h_char;
-      int matched = false;
-
-      while (*p != ZERO) {
-         h_char = mb_ptr2char(p);
-
-         if (n_char == h_char || MB_TOUPPER(n_char) == h_char) {
-            matched = true;
-            break;
-         }
-         p += utfCharLen(p);
-      }
-
-      if (!matched)
-         return 0;
-
-      needle += utfCharLen(needle);
-      haystack = p + utfCharLen(p);
-   }
-   return 1;
-}
-
-typedef struct match_struct {
-   int needle_len;
-   int haystack_len;
-   int lower_needle[MATCH_MAX_LEN];     // stores codepoints
-   int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
-   double match_bonus[MATCH_MAX_LEN];
-} match_struct;
-
-#define IS_WORD_SEP(c) ((c) == '-' || (c) == '_' || (c) == ' ')
-#define IS_PATH_SEP(c) ((c) == '/')
-#define IS_DOT(c)      ((c) == '.')
-
-private double
-compute_bonus_codepoint(Unt last_c, Unt c) {
-   if (ASCII_ISALNUM(c) || eeIsWordc(c)) {
-      if (IS_PATH_SEP(last_c))
-         return SCORE_MATCH_SLASH;
-      if (IS_WORD_SEP(last_c))
-         return SCORE_MATCH_WORD;
-      if (IS_DOT(last_c))
-         return SCORE_MATCH_DOT;
-      if (MB_ISUPPER(c) && MB_ISLOWER(last_c))
-         return SCORE_MATCH_CAPITAL;
-   }
-   return 0;
-}
-
-private void
-setup_match_struct(match_struct *match, CS needle, CS haystack) {
-   int i = 0;
-   CS p = needle;
-   while (*p != ZERO && i < MATCH_MAX_LEN) {
-      Unt c = mb_ptr2char(p);
-      match->lower_needle[i++] = MB_TOLOWER(c);
-      MB_PTR_ADV(p);
-   }
-   match->needle_len = i;
-
-   i = 0;
-   p = haystack;
-   Unt prev_c = '/';
-   while (*p != ZERO && i < MATCH_MAX_LEN) {
-      Unt c = mb_ptr2char(p);
-      match->lower_haystack[i] = MB_TOLOWER(c);
-      match->match_bonus[i] = compute_bonus_codepoint(prev_c, c);
-      prev_c = c;
-      MB_PTR_ADV(p);
-      i++;
-   }
-   match->haystack_len = i;
-}
-
-private inline void
-match_row(match_struct const* match, int row, double* curr_D,
-   double* curr_M, double const* last_D, double const* last_M
-) {
-   int n = match->needle_len;
-   int m = match->haystack_len;
-   int i = row;
-
-   const int *lower_needle = match->lower_needle;
-   const int *lower_haystack = match->lower_haystack;
-   const double *match_bonus = match->match_bonus;
-
-   double prev_score = SCORE_MIN;
-   double gap_score = i == n - 1 ? SCORE_GAP_TRAILING : SCORE_GAP_INNER;
-
-   // These will not be used with this value, but not all compilers see it
-   double prev_M = SCORE_MIN, prev_D = SCORE_MIN;
-
-   for (int j = 0; j < m; j++) {
-      if (lower_needle[i] == lower_haystack[j]) {
-         double score = SCORE_MIN;
-         if (!i) {
-            score = (j * SCORE_GAP_LEADING) + match_bonus[j];
-         } ei (j) { /* i > 0 && j > 0*/
-             score = MAX(
-                prev_M + match_bonus[j],
-                // consecutive match, doesn't stack with match_bonus
-                prev_D + SCORE_MATCH_CONSECUTIVE);
-         }
-         prev_D = last_D[j];
-         prev_M = last_M[j];
-         curr_D[j] = score;
-         curr_M[j] = prev_score = MAX(score, prev_score + gap_score);
-      } else {
-         prev_D = last_D[j];
-         prev_M = last_M[j];
-         curr_D[j] = SCORE_MIN;
-         curr_M[j] = prev_score = prev_score + gap_score;
-      }
-    }
-}
-
-private double
-match_positions(Byte *needle, Byte *haystack, Unt *positions) {
-   if (!*needle)
-      return SCORE_MIN;
-
-   match_struct match;
-   setup_match_struct(&match, needle, haystack);
-
-   int n = match.needle_len;
-   int m = match.haystack_len;
-
-   if (m > MATCH_MAX_LEN || n > m) {
-      // Unreasonably large candidate: return no score
-      // If it is a valid match it will still be returned, it will
-      // just be ranked below any reasonably sized candidates
-      return SCORE_MIN;
-   } ei (n == m) {
-      // Since this method can only be called with a haystack which
-      // matches needle. If the lengths of the strings are equal the
-      // strings themselves must also be equal (ignoring case).
-      if (positions) {
-         for (int i = 0; i < n; i++)
-            positions[i] = i;
-      } 
-      return SCORE_MAX;
-   }
-
-   // D[][] Stores the best score for this position ending with a match.
-   // M[][] Stores the best possible score at this position.
-   double (*D)[MATCH_MAX_LEN], (*M)[MATCH_MAX_LEN];
-   M = alloc(sizeof(double) * MATCH_MAX_LEN * n);
-   D = alloc(sizeof(double) * MATCH_MAX_LEN * n);
-   if (!D)
-      return SCORE_MIN;
-
-   match_row(&match, 0, D[0], M[0], D[0], M[0]);
-   for (int i = 1; i < n; i++)
-      match_row(&match, i, D[i], M[i], D[i - 1], M[i - 1]);
-
-   // backtrace to find the positions of optimal matching
-   if (positions) {
-      int match_required = 0;
-      for (int i = n - 1, j = m - 1; i >= 0; i--) {
-         for (; j >= 0; j--) {
-            // There may be multiple paths which result in the optimal weight.
-            //
-            // For simplicity, we will pick the first one
-            // we encounter, the latest in the candidate
-            // string.
-            if (D[i][j] != SCORE_MIN && (match_required || D[i][j] == M[i][j])) {
-               // If this score was determined using SCORE_MATCH_CONSECUTIVE, the
-               // previous character MUST be a match
-               match_required = i && j && M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE;
-               positions[i] = j--;
-               break;
-            }
-         }
-      }
-   }
-
-   double result = M[n - 1][m - 1];
-
-   eeglFree(M);
-   eeglFree(D);
-
-   return result;
 }
 
 //}}}
@@ -5132,9 +3754,7 @@ path_is_url(CS p) {
 
 //Check if "fname" starts with "name://".
 Boole
-path_with_url(CS fname) {
-   CS p;
-
+strStartsWithUrl(CS fname) {
    // We accept alphabetic characters and a dash in scheme part.
    // RFC 3986 allows for more, but it increases the risk of matching non-URL text.
 
@@ -5143,6 +3763,7 @@ path_with_url(CS fname) {
       return false;
 
    // check body: alpha or dash
+   CS p;
    for (p = fname + 1; (ASCII_ISALPHA(*p) || (*p == '-')); ++p)
       {}
 
@@ -5152,6 +3773,646 @@ path_with_url(CS fname) {
 
    // "://" must follow
    return path_is_url(p);
+}
+
+//Adjust a filename, according to a string of modifiers.
+//*fnamep must be ZERO terminated when called. When returning, the length is determined by *fnamelen
+//Return VALID_ flags or -1 for failure. When there is an error, *fnamep is set to NULL.
+int
+modify_fname(
+   CS src,      // string with modifiers
+   int tilde_file,   // "~" is a file name, not $HOME
+   Unt* usedlen,   // characters after src that are used
+   OUT CS* fnamep,   // file name so far
+   OUT CS* bufp,      // buffer for allocated file name or NULL
+   Unt* fnamelen   // length of fnamep
+){
+   int      valid = 0;
+   CS s;
+   CS p;
+   Byte   dirname[MAXPATHL];
+   int      c;
+   int      has_fullname = 0;
+   int      has_homerelative = 0;
+
+repeat:
+   // ":p" - full path/file_name
+   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'p') {
+      has_fullname = 1;
+
+      valid |= VALID_PATH;
+      *usedlen += 2;
+
+      // Expand "~/path" for all systems and "~user/path" for Unix
+      if ((*fnamep)[0] == '~' && !(tilde_file && (*fnamep)[1] == ZERO)) {
+         *fnamep = doExpandEnvInMultiplePaths(*fnamep);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == NULL)
+            return -1;
+      }
+
+      // When "/." or "/.." is used: force expansion to get rid of it.
+      for (p = *fnamep; *p != ZERO; MB_PTR_ADV(p)) {
+         if (*p == '/'
+                && p[1] == '.'
+                && (p[2] == ZERO
+                     || p[2] == '/'
+                     || (p[2] == '.' && (p[3] == ZERO || p[3] == '/'))
+                   )
+         )
+            break;
+      }
+
+      // fiExpandAndCopy() is slow, don't use it when not needed.
+      if (*p != ZERO || !eeIsAbsName(*fnamep)) {
+         *fnamep = fiExpandAndCopy(*fnamep, *p != ZERO);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == NULL)
+            return -1;
+      }
+
+      // Append a path separator to a directory.
+      if (mch_isdir(*fnamep)) {
+         // Make room for one or two extra characters.
+         *fnamep = copySubstr(*fnamep, STRLEN(*fnamep) + 2);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == null)
+            return -1;
+         add_pathsep(*fnamep);
+      }
+   }
+
+   // ":." - path relative to the current directory
+   // ":~" - path relative to the home directory
+   while (src[*usedlen] == ':'
+        && ((c = src[*usedlen + 1]) == '.' || c == '~')
+   ){
+      *usedlen += 2;
+      if (c == '8') {
+         continue;
+      }
+      CS pbuf = NULL;
+      // Need full path first (use doExpandEnv() to remove a "~/")
+      if (!has_fullname && !has_homerelative) {
+         if (**fnamep == '~')
+            p = pbuf = doExpandEnvInMultiplePaths(*fnamep);
+         else
+            p = pbuf = fiExpandAndCopy(*fnamep, false);
+      } else
+         p = *fnamep;
+
+      has_fullname = 0;
+
+      if (p) {
+         if (c == '.') {
+            Unt   namelen;
+
+            mch_dirname(dirname, MAXPATHL);
+            if (has_homerelative) {
+               s = copyStr(dirname);
+               home_replace(s, dirname, MAXPATHL, true);
+               eeglFree(s);
+            }
+            namelen = STRLEN(dirname);
+
+            // Do not call shorten_fname() here since it removes the prefix
+            // even though the path does not have a prefix.
+            if (fnamencmp(p, dirname, namelen) == 0) {
+               p += namelen;
+               if (*p == '/') {
+                  while (*p == '/')
+                     ++p;
+                  *fnamep = p;
+                  if (pbuf) {
+                      // free any allocated file name
+                      eeglFree(*bufp);
+                      *bufp = pbuf;
+                      pbuf = NULL;
+                  }
+               }
+            }
+         } else {
+            home_replace(p, dirname, MAXPATHL, true);
+            // Only replace it when it starts with '~'
+            if (*dirname == '~') {
+               s = copyStr(dirname);
+               *fnamep = s;
+               eeglFree(*bufp);
+               *bufp = s;
+               has_homerelative = true;
+            }
+          }
+          eeglFree(pbuf);
+      }
+   }
+
+   CS tail = fiGetShortFiName(*fnamep);
+   *fnamelen = STRLEN(*fnamep);
+
+   // ":h" - head, remove "/file_name", can be repeated
+   // Don't remove the first "/" or "c:\"
+   while (src[*usedlen] == ':' && src[*usedlen + 1] == 'h') {
+      valid |= VALID_HEAD;
+      *usedlen += 2;
+      s = skipInitialSlashes(*fnamep);
+      while (tail > s && after_pathsep(s, tail))
+          MB_PTR_BACK(*fnamep, tail);
+      *fnamelen = tail - *fnamep;
+      if (*fnamelen == 0) {
+         // Result is empty.  Turn it into "." to make ":cd %:h" work.
+         p = copyStr((CS)".");
+         eeglFree(*bufp);
+         *bufp = *fnamep = tail = p;
+         *fnamelen = 1;
+      } else {
+         while (tail > s && !after_pathsep(s, tail))
+            MB_PTR_BACK(*fnamep, tail);
+      }
+   }
+
+   // ":t" - tail, just the basename
+   if (src[*usedlen] == ':' && src[*usedlen + 1] == 't') {
+      *usedlen += 2;
+      *fnamelen -= tail - *fnamep;
+      *fnamep = tail;
+   }
+
+   // ":e" - extension, can be repeated
+   // ":r" - root, without extension, can be repeated
+   while (src[*usedlen] == ':'
+       && (src[*usedlen + 1] == 'e' || src[*usedlen + 1] == 'r')
+   ){
+      // find a '.' in the tail:
+      // - for second :e: before the current fname
+      // - otherwise: The last '.'
+      if (src[*usedlen + 1] == 'e' && *fnamep > tail)
+          s = *fnamep - 2;
+      else
+          s = *fnamep + *fnamelen - 1;
+      for ( ; s > tail; --s) {
+         if (s[0] == '.')
+            break;
+      } 
+      if (src[*usedlen + 1] == 'e') {     // :e
+         if (s > tail) {
+            *fnamelen += (*fnamep - (s + 1));
+            *fnamep = s + 1;
+         } ei (*fnamep <= tail)
+            *fnamelen = 0;
+      } else {           // :r
+         CS limit = *fnamep;
+         if (limit < tail)
+            limit = tail;
+         if (s > limit)   // remove one extension
+            *fnamelen = s - *fnamep;
+      }
+      *usedlen += 2;
+   }
+
+   // ":s?pat?foo?" - substitute
+   // ":gs?pat?foo?" - global substitute
+   if (src[*usedlen] == ':'
+       && (src[*usedlen + 1] == 's'
+      || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
+   ) {
+      CS str;
+      CS pat;
+      CS sub;
+      int sep;
+      int didit = false;
+
+      CS flags = S"";
+      s = src + *usedlen + 2;
+      if (src[*usedlen + 1] == 'g') {
+         flags = (CS)"g";
+         ++s;
+      }
+
+      sep = *s++;
+      if (sep) {
+         // find end of pattern
+         p = firstOccurrence(s, sep);
+         if (p) {
+            pat = copySubstr(s, p - s);
+            if (pat) {
+                s = p + 1;
+                // find end of substitution
+                p = firstOccurrence(s, sep);
+                if (p != NULL) {
+               sub = copySubstr(s, p - s);
+               str = copySubstr(*fnamep, *fnamelen);
+               if (sub != NULL && str != NULL) {
+                   Unt slen;
+
+                   *usedlen = p + 1 - src;
+                   s = do_string_sub(str, *fnamelen, pat, sub, NULL, flags, &slen);
+                   if (s != NULL) {
+                  *fnamep = s;
+                  *fnamelen = slen;
+                  eeglFree(*bufp);
+                  *bufp = s;
+                  didit = true;
+                   }
+               }
+               eeglFree(sub);
+               eeglFree(str);
+                }
+                eeglFree(pat);
+            }
+          }
+          // after using ":s", repeat all the modifiers
+          if (didit)
+         goto repeat;
+      }
+   }
+
+   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'S') {
+      // copyStr_shellescape() needs a ZERO terminated string.
+      c = (*fnamep)[*fnamelen];
+      if (c != ZERO)
+         (*fnamep)[*fnamelen] = ZERO;
+      p = copyStr_shellescape(*fnamep, false, false);
+      if (c != ZERO)
+         (*fnamep)[*fnamelen] = c;
+      eeglFree(*bufp);
+      *bufp = *fnamep = p;
+      *fnamelen = STRLEN(p);
+      *usedlen += 2;
+   }
+
+   return valid;
+}
+
+//Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname"
+//"trim_len" specifies how many characters to keep for each directory.
+//Must be 1 or more. It's done in-place.
+void
+shorten_dir_len(CS str, int trim_len) {
+   int skip = false;
+   int dirchunk_len = 0;
+
+   CS tail = fiGetShortFiName(str);
+   CS d = str;
+   for (CS s = str; ; ++s) {
+      if (s >= tail) {        // copy the whole tail
+         *d++ = *s;
+         if (*s == ZERO)
+            break;
+      } ei (*s == '/') {     // copy '/' and next char
+         *d++ = *s;
+         skip = false;
+         dirchunk_len = 0;
+      } ei (!skip) {
+         *d++ = *s;         // copy next char
+         if (*s != '~' && *s != '.') { // and leading "~" and "."
+            ++dirchunk_len; // only count word chars for the size
+
+            // keep copying chars until we have our preferred length (or
+            // until the above if/else branches move us along)
+            if (dirchunk_len >= trim_len)
+                skip = true;
+         }
+         int l = utfCharLen(s);
+
+         while (--l > 0)
+            *d++ = *++s;
+      }
+   }
+}
+
+//Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname" It's done in-place.
+void
+shorten_dir(CS str){
+   shorten_dir_len(str, 1);
+}
+
+//Remove the path from a filename completely.
+void
+strPrintShortName(CS src, CS dst, int dstlen) {
+   if (!src) {
+      *dst = ZERO;
+      return;
+   }
+   eeSnprintf(dst, dstlen, "%s", fiGetShortFiName(src));
+}
+
+//Replace home directory by "~" in each space or comma separated file name in 'src'.
+//If anything fails (except when out of space) dst equals src.
+void
+home_replace(
+   CS src, //input file name
+   CS dst, //where to put the result
+   int dstlen,  //maximum length of the result
+   Boole one      //if true, only replace one file name, include spaces and commas in the file name.
+){
+   Unt   dirlen = 0, envlen = 0;
+   Unt   len;
+   CS homedir_env;
+   CS homedir_env_orig;
+   CS p;
+
+   if (!src) {
+      *dst = ZERO;
+      return;
+   }
+
+   //We check both the value of the $HOME environment variable and the "real" home directory.
+   if (homedir)
+      dirlen = STRLEN(homedir);
+
+   homedir_env_orig = homedir_env = mch_getenv("HOME");
+   // Empty is the same as not set.
+   if (homedir_env && *homedir_env == ZERO)
+      homedir_env = NULL;
+
+   if (homedir_env && *homedir_env == '~') {
+      Unt usedlen = 0;
+
+      Unt flen = STRLEN(homedir_env);
+      CS fbuf = NULL;
+      (void)modify_fname(S":p", false, &usedlen, &homedir_env, OUT &fbuf, &flen);
+      flen = STRLEN(homedir_env);
+      if (flen > 0 && homedir_env[flen - 1] == '/')
+         // Remove the trailing / that is added to a directory.
+         homedir_env[flen - 1] = ZERO;
+   }
+
+   if (homedir_env != NULL)
+      envlen = STRLEN(homedir_env);
+
+   if (!one)
+      src = skipwhite(src);
+   while (*src && dstlen > 0) {
+      //Here we are at the beginning of a file name. First, check to see if the beginning of the 
+      //file name matches $HOME or the "real" home directory. Check that there is a '/'
+      //after the match (so that if e.g. the file is "/home/pieter/bla", and the home directory 
+      //is "/home/piet", the file does not end up as "~er/bla" (which would seem to indicate the 
+      //file "bla" in user er's home directory)).
+      p = homedir;
+      len = dirlen;
+      for (;;) {
+         if (  len
+            && fnamencmp(src, p, len) == 0
+            && (src[len] == '/'
+                || (!one && (src[len] == ',' || src[len] == ' '))
+                || src[len] == ZERO)
+         ){
+            src += len;
+            if (--dstlen > 0)
+               *dst++ = '~';
+
+            //Do not add directory separator into dst, because dst is expected to just return the 
+            //directory name without the directory separator '/'.
+            break;
+         }
+         if (p == homedir_env)
+            break;
+         p = homedir_env;
+         len = envlen;
+      }
+
+      //if (!one) skip to separator: space or comma
+      while (*src && (one || (*src != ',' && *src != ' ')) && --dstlen > 0)
+         *dst++ = *src++;
+      //skip separator
+      while ((*src == ' ' || *src == ',') && --dstlen > 0)
+          *dst++ = *src++;
+   }
+   //TODO if (dstlen == 0) out of space, what to do???
+
+   *dst = ZERO;
+
+   if (homedir_env != homedir_env_orig)
+      eeglFree(homedir_env);
+}
+
+//Compare two file names and return:
+//FPC_SAME   if they both exist and are the same file.
+//FPC_SAMEX  if they both don't exist and have the same file name.
+//FPC_DIFF   if they both exist and are different files.
+//FPC_NOTX   if they both don't exist.
+//FPC_DIFFX  if one of them doesn't exist.
+//For the first name environment variables are expanded if "expandenv" is true.
+int
+fullpathcmp(
+   CS s1,
+   CS s2,
+   int checkname,      // when both don't exist, check file names
+   int expandenv
+) {
+   Byte exp1[MAXPATHL];
+   Byte full1[MAXPATHL];
+   Byte full2[MAXPATHL];
+   FileStat st1, st2;
+
+   if (expandenv)
+      doExpandEnv(OUT (Text){exp1, MAXPATHL}, s1);
+   else
+      copySubstrToAllocation(exp1, (Text){s1, MAXPATHL - 1});
+   int r1 = stat((char *)exp1, &st1);
+   int r2 = stat((char *)s2, &st2);
+   if (r1 != 0 && r2 != 0) {
+      // if stat() doesn't work, may compare the names
+      if (checkname) {
+         if (fnamecmp(exp1, s2) == 0)
+            return FPC_SAMEX;
+         r1 = eeFullFileName(exp1, full1, MAXPATHL, false);
+         r2 = eeFullFileName(s2, full2, MAXPATHL, false);
+         if (r1 == OK && r2 == OK && fnamecmp(full1, full2) == 0)
+            return FPC_SAMEX;
+      }
+      return FPC_NOTX;
+   }
+   if (r1 != 0 || r2 != 0)
+      return FPC_DIFFX;
+   if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
+      return FPC_SAME;
+   return FPC_DIFF;
+}
+
+//Get the tail of a path: the file name. When the path ends in a path separator, the tail is the 
+//ZERO after it. Fail safe: never return NULL.
+CS
+fiGetShortFiName(CS fname){
+   if (!fname)
+      return S"";
+      
+   CS afterSlash;
+   CS p;
+   for (afterSlash = skipInitialSlashes(fname), p = afterSlash; *p != ZERO; MB_PTR_ADV(p)) {
+      if (*p == '/')
+         afterSlash = p + 1;
+   }
+   return afterSlash;
+}
+
+//Get pointer to tail of "fname", including path separators.
+//Take care of "//". Always return a valid pointer.
+// "/etc/a" -> "/a", "/etc" -> "/etc"
+CS
+gettail_sep(CS fname){
+   CS p = skipInitialSlashes(fname);   // don't remove the '/' from "c:/file"
+   CS t = fiGetShortFiName(fname);
+   while (t > p && after_pathsep(fname, t))
+      --t;
+   return t;
+}
+
+//get the next path component (just after the next path separator).
+CS
+getnextcomp(CS fname){
+   while (*fname && *fname != '/')
+      MB_PTR_ADV(fname);
+   if (*fname)
+      ++fname;
+   return fname;
+}
+
+
+//Get a pointer to one character past the initial slashes of a path name
+CS
+skipInitialSlashes(CS path){
+   CS retval = path;
+   for (; *retval == '/'; ++retval)
+      ++retval;
+
+   return retval;
+}
+
+
+Boole
+strIsRelative(CS fname) {
+   return (*fname != '/' && *fname != '~');
+}
+
+
+//true if "name" is a full (absolute) path name or URL.
+int
+eeIsAbsName(CS name){
+   return (strStartsWithUrl(name) != 0 || !strIsRelative(name));
+}
+
+//Compare path "p[]" to "q[]". If "maxlen" >= 0 compare "p[maxlen]" to "q[maxlen]"
+//Return value like strcmp(p, q), but consider path separators.
+int
+pathcmp(CS p, CS q, int maxlen) {
+   int i, j;
+   Unt c1, c2;
+   CS s = NULL;
+
+   for (i = 0, j = 0; maxlen < 0 || (i < maxlen && j < maxlen);) {
+      c1 = mb_ptr2char((CS)p + i);
+      c2 = mb_ptr2char((CS)q + j);
+
+      // End of "p": check if "q" also ends or just has a slash.
+      if (c1 == ZERO) {
+         if (c2 == ZERO)  // full match
+            return 0;
+         s = q;
+         i = j;
+         break;
+      }
+
+      // End of "q": check if "p" just has a slash.
+      if (c2 == ZERO) {
+         s = p;
+         break;
+      }
+
+      if ( c1 != c2) {
+         if (c1 == '/')
+            return -1;
+         if (c2 == '/')
+            return 1;
+         return c1 - c2;  // no match
+      }
+
+      i += utfCharLen((CS)p + i);
+      j += utfCharLen((CS)q + j);
+   }
+   if (s == NULL) //"i" or "j" ran into "maxlen"
+      return 0;
+
+   c1 = mb_ptr2char((CS)s + i);
+   c2 = mb_ptr2char((CS)s + i + utfCharLen((CS)s + i));
+   //ignore a trailing slash, but not "//" or ":/"
+   if (c2 == ZERO
+       && i > 0
+       && !after_pathsep((CS)s, (CS)s + i)
+       && c1 == '/'
+   )
+      return 0;   //match with trailing slash
+   if (s == q)
+      return -1;  //no match
+   return 1;
+}
+
+// Return true if "p" contains what looks like an environment variable. Allowing for escaping.
+Boole
+hasEnvVar(CS p) {
+   for ( ; *p; MB_PTR_ADV(p)) {
+      if (*p == '\\' && p[1] != ZERO)
+         ++p;
+      ei (firstOccurrence(S"$",  *p) != NULL)
+         return true;
+   }
+   return false;
+}
+
+
+// Return true if "fname" matches with an entry in 'suffixes'.
+Boole
+match_suffix(CS fname){
+   if (!p_su)
+      return false;
+      
+#define MAXSUFLEN 30       // maximum length of a file suffix
+   Byte suf_buf[MAXSUFLEN];
+
+   int fnamelen = (int)STRLEN(fname);
+   int setsuflen = 0;
+   for (CS setsuf = p_su; *setsuf != ZERO; ) {
+      setsuflen = doCutPathFromListOfPaths(OUT &setsuf, OUT suf_buf, MAXSUFLEN, S".,");
+      if (setsuflen == 0) {
+         CS tail = fiGetShortFiName(fname);
+
+         // empty entry: match name without a '.'
+         if (firstOccurrence(tail, '.') == NULL) {
+            setsuflen = 1;
+            break;
+         }
+      } else {
+         if (fnamelen >= setsuflen 
+               && fnamencmp(suf_buf, fname + fnamelen - setsuflen, (Unt)setsuflen) == 0)
+            break;
+         setsuflen = 0;
+      }
+   }
+   return (setsuflen != 0);
+}
+
+//Add a path separator to a file name, unless it already ends in a path separator.
+void
+add_pathsep(CS p){
+   if (*p != ZERO && !after_pathsep(p, p + STRLEN(p)))
+      STRCAT(p, "/");
+}
+
+
+//Concatenate file names fname1 and fname2 into allocated memory.
+//Only add a '/' or '\\' when 'sep' is true and it is necessary.
+CS
+concat_fnames(CS fname1, CS fname2, Boole sep){
+   CS dest = alloc(STRLEN(fname1) + STRLEN(fname2) + 2);
+
+   STRCPY(OUT dest, fname1);
+   if (sep)
+      add_pathsep(dest);
+   STRCAT(dest, fname2);
+   return dest;
 }
 
 //}}}
@@ -5417,8 +4678,8 @@ internal_format(
          break;
       }
 
-      // adjust startcol for spaces that will be deleted and
-      // characters that will remain on top line
+      //adjust startcol for spaces that will be deleted and
+      //characters that will remain on top line
       curPor->cursor.col = foundcol;
       while ((cc = gchar_cursor(), WHITECHAR(cc)) && (!fo_white_par || curPor->cursor.col < startcol))
          inc_cursor();
@@ -5504,7 +4765,7 @@ internal_format(
 //of a comment ('e' in comment flags), so that this line is skipped, and not joined to the
 //previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
-private int
+int
 fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
    CS flags = NULL;
 
@@ -5521,76 +4782,6 @@ fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComm
    return (*skipwhite(ptr + *leader_len) == ZERO
        || (*leader_len > 0 && *flags == COM_END)
        || startPS(lnum, ZERO, false));
-}
-
-//Return true if line "lnum" ends in a white character.
-private int
-ends_in_white(LineNr lnum) {
-   CS s = ml_get(lnum);
-   if (*s == ZERO)
-      return false;
-   Unt l = ml_get_len(lnum) - 1;
-   return SPACE_OR_TAB(s[l]);
-}
-
-//Return true if the two comment leaders given are the same.  "lnum" is
-//the first line.  White-space is ignored.  Note that the whole of
-//'leader1' must match 'leader2_len' characters from 'leader2' -- webb
-private int
-same_leader(
-   LineNr lnum,
-   int leader1_len,
-   CS leader1_flags,
-   int leader2_len,
-   CS leader2_flags
-){
-   int       idx1 = 0, idx2 = 0;
-
-   if (leader1_len == 0)
-      return (leader2_len == 0);
-
-   // If first leader has 'f' flag, the lines can be joined only if the
-   // second line does not have a leader.
-   // If first leader has 'e' flag, the lines can never be joined.
-   // If first leader has 's' flag, the lines can only be joined if there is
-   // some text after it and the second line has the 'm' flag.
-   if (leader1_flags != NULL) {
-      for (CS p = leader1_flags; *p && *p != ':'; ++p) {
-         if (*p == COM_FIRST)
-            return (leader2_len == 0);
-         if (*p == COM_END)
-            return false;
-         if (*p == COM_START) {
-            int line_len = ml_get_len(lnum);
-            if (line_len <= leader1_len  || leader2_flags == NULL || leader2_len == 0)
-               return false;
-            for (p = leader2_flags; *p && *p != ':'; ++p) {
-               if (*p == COM_MIDDLE)
-                  return true;
-            } 
-            return false;
-         }
-      }
-   }
-
-   // Get current line and next line, compare the leaders.
-   // The first line has to be saved, only one line can be locked at a time.
-   CS line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
-   for (idx1 = 0; SPACE_OR_TAB(line1[idx1]); ++idx1)
-      {} 
-      
-   CS line2 = ml_get(lnum + 1);
-   for (idx2 = 0; idx2 < leader2_len; ++idx2) {
-      if (!SPACE_OR_TAB(line2[idx2])) {
-         if (line1[idx1++] != line2[idx2])
-            break;
-      } else {
-         while (SPACE_OR_TAB(line1[idx1]))
-           ++idx1;
-      } 
-   }
-   eeglFree(line1);
-   return (idx2 == leader2_len && idx1 == leader1_len);
 }
 
 //Return true when a paragraph starts in line "lnum".  Return false when the
@@ -5634,8 +4825,8 @@ paragraph_start(LineNr lnum) {
 //The caller must have saved the cursor line for undo, following ones will be saved here.
 void
 auto_format(
-    int      trailblank,   // when true also format with trailing blank
-    int      prev_line   // may start in previous line
+    int trailblank,   // when true also format with trailing blank
+    int prev_line   // may start in previous line
 ){
    if (!has_format_option(FO_AUTO))
       return;
@@ -5666,7 +4857,8 @@ auto_format(
 
    //With the 'c' flag in @formatoptions and 't' missing: only format comments.
    if (has_format_option(FO_WRAP_COMS) && !has_format_option(FO_WRAP)
-            && get_leader_len(old, NULL, false, true) == 0)
+            && get_leader_len(old, NULL, false, true) == 0
+   )
       return;
 
    //May start formatting in a previous line, so that after "x" a word is moved to the previous 
@@ -5715,8 +4907,7 @@ auto_format(
 //When an extra space was added to continue a paragraph for auto-formatting,
 //delete it now.  The space must be under the cursor, just after the insert position.
 void
-check_auto_format(int      end_insert){      // true when ending Insert mode
-
+check_auto_format(int end_insert){      // true when ending Insert mode
    if (!did_add_space)
       return;
 
@@ -5740,10 +4931,10 @@ check_auto_format(int      end_insert){      // true when ending Insert mode
 }
 
 //Find out textwidth to be used for formatting:
-//  if 'textwidth' option is set, use it
-//  ei 'wrapmargin' option is set, use curPor->width - 'wrapmargin'
-//  if invalid value, use 0.
-//  Set default to window width (maximum 79) for "gq" operator.
+// if 'textwidth' option is set, use it
+// ei 'wrapmargin' option is set, use curPor->width - 'wrapmargin'
+// if invalid value, use 0.
+// Set default to window width (maximum 79) for "gq" operator.
 int
 comp_textwidth(int ff) {  // force formatting (for "gq" command)
    int textwidth = curBook->o.textWidth;
@@ -5766,84 +4957,6 @@ comp_textwidth(int ff) {  // force formatting (for "gq" command)
           textwidth = 79;
    }
    return textwidth;
-}
-
-//Implementation of the format operator 'gq'.
-void
-op_format(
-   Operator* oper,
-   int keep_cursor      // keep cursor on same text char
-){
-   long old_line_count = curBook->mem.lineCount;
-
-   //Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
-   curPor->cursor = oper->cursor_start;
-
-   if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
-      return;
-   curPor->cursor = oper->start;
-
-   if (oper->is_VIsual)
-      // When there is no change: need to remove the Visual selection
-      drawCurBookLater(UPD_INVERTED);
-
-   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-      // Set '[ mark at the start of the formatted area
-      curBook->opStart = oper->start;
-
-   // For "gw" remember the cursor position and put it back below (adjusted
-   // for joined and split lines).
-   if (keep_cursor)
-      saved_cursor = oper->cursor_start;
-
-   format_lines(oper->line_count, keep_cursor);
-
-   // Leave the cursor at the first non-blank of the last formatted line.
-   // If the cursor was moved one line back (e.g. with "Q}") go to the next
-   // line, so "." will do the next lines.
-   if (oper->end_adjusted && curPor->cursor.lnum < curBook->mem.lineCount)
-      ++curPor->cursor.lnum;
-   beginline(BL_WHITE | BL_FIX);
-   old_line_count = curBook->mem.lineCount - old_line_count;
-   msgmore(old_line_count);
-
-   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
-      // put '] mark on the end of the formatted area
-      curBook->opEnd = curPor->cursor;
-
-   if (keep_cursor) {
-      curPor->cursor = saved_cursor;
-      saved_cursor.lnum = 0;
-
-      // formatting may have made the cursor position invalid
-      check_cursor();
-   }
-
-   if (oper->is_VIsual) {
-      Portal* po;
-      FOR_ALL_PORTALS(po) {
-         if (po->prevVisualEnd != 0) {
-            // When lines have been inserted or deleted, adjust the end of
-            // the Visual area to be redrawn.
-            if (po->prevVisualEnd > po->oldVisualLnum)
-               po->prevVisualEnd += old_line_count;
-            else
-               po->oldVisualLnum += old_line_count;
-         }
-      }
-   }
-}
-
-// Implementation of the format operator 'gq' for when using 'formatexpr'.
-void
-op_formatexpr(Operator* oper) {
-   if (oper->is_VIsual)
-      // When there is no change: need to remove the Visual selection
-      drawCurBookLater(UPD_INVERTED);
-
-   if (fex_format(oper->start.lnum, oper->line_count, ZERO) != 0)
-      // As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
-      op_format(oper, false);
 }
 
 int
@@ -5870,224 +4983,12 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
    return r;
 }
 
-//Format "line_count" lines, starting at the cursor position.
-//When "line_count" is negative, format until the end of the paragraph.
-//Lines after the cursor line are saved for undo, caller must have saved the first line.
-void
-format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
-   int is_not_par;      // current line not part of parag.
-   int next_is_not_par;   // next line not part of paragraph
-   int is_end_par;      // at end of paragraph
-   int prev_is_end_par = false;// prev. line not part of parag.
-   int next_is_start_par = false;
-   int leader_len = 0;      // leader len of current line
-   int next_leader_len;   // leader len of next line
-   CS leader_flags = NULL;   // flags for leader of current line
-   CS next_leader_flags = NULL; // flags for leader of next line
-   int doCommentsList = 0;   // format comments with 'n' or '2'
-   int advance = true;
-   int second_indent = -1;   // indent for second line (comment aware)
-   int first_par_line = true;
-   int smd_save;
-   long count;
-   int need_set_indent = true;   // set indent of next paragraph
-   LineNr first_line = curPor->cursor.lnum;
-   int force_format = false;
-   int old_State = stateG;
-
-   // length of a line to force formatting: 3 * 'tw'
-   int max_len = comp_textwidth(true) * 3;
-
-   // check for 'q', '2', 'n' and 'w' in 'formatoptions'
-   Boole doComments = has_format_option(FO_Q_COMS); // format comments?
-   Boole do_second_indent = has_format_option(FO_Q_SECOND);
-   Boole do_number_indent = has_format_option(FO_Q_NUMBER);
-   Boole do_trail_white = has_format_option(FO_WHITE_PAR);
-
-   // Get info about the previous and current line.
-   if (curPor->cursor.lnum > 1)
-      is_not_par = fmt_check_par(
-            curPor->cursor.lnum - 1 , OUT &leader_len, OUT &leader_flags, doComments
-      );
-   else
-      is_not_par = true;
-   next_is_not_par = fmt_check_par(
-         curPor->cursor.lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments
-   );
-   is_end_par = (is_not_par || next_is_not_par);
-   if (!is_end_par && do_trail_white)
-      is_end_par = !ends_in_white(curPor->cursor.lnum - 1);
-
-   curPor->cursor.lnum--;
-   for (count = line_count; count != 0 && !gotInterruptG; --count) {
-      // Advance to next paragraph.
-      if (advance) {
-         curPor->cursor.lnum++;
-         prev_is_end_par = is_end_par;
-         is_not_par = next_is_not_par;
-         leader_len = next_leader_len;
-         leader_flags = next_leader_flags;
-      }
-
-      // The last line to be formatted.
-      if (count == 1 || curPor->cursor.lnum == curBook->mem.lineCount) {
-         next_is_not_par = true;
-         next_leader_len = 0;
-         next_leader_flags = NULL;
-      } else {
-         next_is_not_par = fmt_check_par(
-               curPor->cursor.lnum + 1, OUT &next_leader_len, OUT &next_leader_flags, doComments
-         );
-         if (do_number_indent)
-            next_is_start_par = (get_number_indent(curPor->cursor.lnum + 1) > 0);
-      }
-      advance = true;
-      is_end_par = (is_not_par || next_is_not_par || next_is_start_par);
-      if (!is_end_par && do_trail_white)
-         is_end_par = !ends_in_white(curPor->cursor.lnum);
-
-      // Skip lines that are not in a paragraph.
-      if (is_not_par) {
-         if (line_count < 0)
-         break;
-      } else {
-          // For the first line of a paragraph, check indent of second line.
-          // Don't do this for comments and empty lines.
-         if (first_par_line
-             && (do_second_indent || do_number_indent)
-             && prev_is_end_par
-             && curPor->cursor.lnum < curBook->mem.lineCount
-         )  {
-           if (do_second_indent && !LINEEMPTY(curPor->cursor.lnum + 1)) {
-               if (leader_len == 0 && next_leader_len == 0) {
-                  // no comment found
-                  second_indent = get_indent_lnum(curPor->cursor.lnum + 1);
-               }
-               else {
-                  second_indent = next_leader_len;
-                  doCommentsList = 1;
-               }
-            } ei (do_number_indent) {
-               if (leader_len == 0 && next_leader_len == 0) { // no comment found
-                  second_indent = get_number_indent(curPor->cursor.lnum);
-               } else { // get_number_indent() is now "comment aware"...
-                  second_indent = get_number_indent(curPor->cursor.lnum);
-                  doCommentsList = 1;
-               }
-            }
-         }
-
-         // When the comment leader changes, it's the end of the paragraph.
-         if (curPor->cursor.lnum >= curBook->mem.lineCount
-             || !same_leader(curPor->cursor.lnum,
-                  leader_len, leader_flags,
-                     next_leader_len, next_leader_flags)
-         ) {
-            //Special case: If the next line starts with a line comment and this line has a line 
-            //comment after some text, the paragraf doesn't really end.
-            if (next_leader_flags == NULL
-               || STRNCMP(next_leader_flags, "://", 3) != 0
-               || check_linecomment(ml_get_curline()) == MAXCOL)
-            is_end_par = true;
-         }
-
-         //If we have got to the end of a paragraph, or the line is
-         //getting long, format it.
-         if (is_end_par || force_format) {
-            if (need_set_indent) {
-               int      indent = 0; // amount of indent needed
-
-               // Replace indent in first line of a paragraph with minimal
-               // number of tabs and spaces, according to current options.
-               // For the very first formatted line keep the current indent.
-               if (curPor->cursor.lnum == first_line)
-                  indent = get_indent();
-               else {
-                 if (jugIsIndentationExpressionBased()) {
-                     indent = curBook->o.indentExpr ? get_expr_indent() : get_indent();
-                 } else
-                     indent = get_indent();
-               }
-               (void)set_indent(indent, SIN_CHANGED);
-            }
-
-            // put cursor on last non-space
-            stateG = MODE_NORMAL;   // don't go past end-of-line
-            coladvance((ColNr)MAXCOL);
-            while (curPor->cursor.col && isSpace(gchar_cursor()))
-               dec_cursor();
-
-            // do the formatting, without 'showmode'
-            stateG = MODE_INSERT;   // for openLine()
-            smd_save = p_smd;
-            p_smd = false;
-
-            insertchar0(
-                  ZERO, INSCHAR_FORMAT + (doComments ? INSCHAR_DO_COM : 0)
-                     + (doComments && doCommentsList ? INSCHAR_COM_LIST : 0)
-                     + (avoid_fex ? INSCHAR_NO_FEX : 0),
-                  second_indent
-            );
-
-            stateG = old_State;
-            p_smd = smd_save;
-            // Cursor and mouse shape shapes may have been updated (e.g. by
-            // :normal) in insertchar0(), so they need to be updated here.
-            ui_cursor_shape();
-            second_indent = -1;
-            // at end of par.: need to set indent of next par.
-            need_set_indent = is_end_par;
-            if (is_end_par) {
-               // When called with a negative line count, break at the end of the paragraph.
-               if (line_count < 0)
-                  break;
-               first_par_line = true;
-            }
-            force_format = false;
-         }
-
-         // When still in same paragraph, join the lines together.  But
-         // first delete the leader from the second line.
-         if (!is_end_par) {
-            advance = false;
-            curPor->cursor.lnum++;
-            curPor->cursor.col = 0;
-            if (line_count < 0 && u_save_cursor() == FAIL)
-               break;
-            if (next_leader_len > 0) {
-               (void)del_bytes((long)next_leader_len, false, false);
-               mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-next_leader_len, 0);
-            } ei (second_indent > 0) { // the "leader" for FO_Q_SECOND
-               int indent = getwhitecols_curline();
-
-               if (indent > 0) {
-                  (void)del_bytes(indent, false, false);
-                   mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-indent, 0);
-               }
-            }
-            curPor->cursor.lnum--;
-            if (jugJoinLinesUnderCursor(2, true, false, false, false) == FAIL) {
-               beep_flush();
-               break;
-            }
-            first_par_line = false;
-            // If the line is getting long, format it next time
-            if (ml_get_curline_len() > max_len)
-               force_format = true;
-            else
-               force_format = false;
-         }
-      }
-      line_breakcheck();
-   }
-}
-
 //}}}
 //{{{simple formats
 
 //private Short
 //hexDigit(int c) {
-//   if (SAFE_isdigit(c))
+//   if (isdigit(c))
 //      return c - '0';
 //   c = TOLOWER_ASC(c);
 //   if (c >= 'a' && c <= 'f')
@@ -6126,166 +5027,8 @@ isValidForFirstCharDictKey(int c) {
    return ASCII_ISALNUM(c) || c == '_';
 }
 
-//}}}
-//{{{xxd (hex dumping of binary data)
-
-private Byte version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
-private Byte osver[] = "";
-
-#define BIN_READ(dummy)  "r"
-#define BIN_WRITE(dummy) "w"
-#define BIN_CREAT(dummy) O_CREAT
-#define BIN_ASSIGN(fp, dummy) fp
-#define PATH_SEP '/'
-
-// open has only two arguments on the Mac
-#if __MWERKS__
-# define OPEN(name, mode, umask) open(name, mode)
-#else
-# define OPEN(name, mode, umask) open(name, mode, umask)
-#endif
-
-#ifndef __P
-# if defined(__STDC__)
-#  define __P(a) a
-# else
-#  define __P(a) ()
-# endif
-#endif
-
-#define TRY_SEEK   /* attempt to use lseek, or skip forward by reading */
-#define COLS 256   /* change here, if you ever need more columns */
-
-//LLEN is the maximum length of a line; other than the visible characters
-//we need to consider also the escape color sequence prologue/epilogue,
-//(11 bytes for each character).
-#define LLEN \
-    (39            /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
-    + 2            /* ": " */ \
-    + 13 * COLS    /* hex dump with colors */ \
-    + (COLS - 1)   /* whitespace between groups if "-g1" option given and "-c" maxed out */ \
-    + 2            /* whitespace */ \
-    + 12 * COLS    /* ASCII dump with colors */ \
-    + 2)           /* "\n\0" */
-
-//LLEN_NO_COLOR is the maximum length of a line excluding the colors.
-#define LLEN_NO_COLOR \
-    (39         /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
-    + 2         /* ": " */ \
-    + 9 * COLS  /* hex dump, worst case: bitwise output using -b */ \
-    + 2         /* whitespace */ \
-    + COLS      /* ASCII dump */ \
-    + 2)        /* "\n\0" */
-
-private Byte hexxa[] = "0123456789abcdef0123456789ABCDEF";
-private CS hexx = hexxa;
-
-// the different hextypes known by this program:
-#define HEX_NORMAL         0x00 // no flags set
-#define HEX_POSTSCRIPT     0x01
-#define HEX_CINCLUDE       0x02
-#define HEX_BITS           0x04 // not hex a dump, but bits: 01111001
-#define HEX_LITTLEENDIAN   0x08
-
-#define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
-
-#define COLOR_PROLOGUE(color) \
-l_colored[c++] = '\033'; \
-l_colored[c++] = '['; \
-l_colored[c++] = '1'; \
-l_colored[c++] = ';'; \
-l_colored[c++] = '3'; \
-l_colored[c++] = (color); \
-l_colored[c++] = 'm';
-
-#define COLOR_EPILOGUE \
-l_colored[c++] = '\033'; \
-l_colored[c++] = '['; \
-l_colored[c++] = '0'; \
-l_colored[c++] = 'm';
-
-#define COLOR_RED '1'
-#define COLOR_GREEN '2'
-#define COLOR_YELLOW '3'
-#define COLOR_BLUE '4'
-#define COLOR_WHITE '7'
-
-private char *pname;
-
-private void
-exit_with_usage(void) {
-  fprintf(stderr, "Usage:\n       %s [options] [infile [outfile]]\n", pname);
-  fprintf(stderr, "    or\n       %s -r [-s [-]offset] [-c cols] [-ps] [infile [outfile]]\n", pname);
-  fprintf(stderr, "Options:\n");
-  fprintf(stderr, "    -a          toggle autoskip: A single '*' replaces nul-lines. Default off.\n");
-  fprintf(stderr, "    -b          binary digit dump (incompatible with -ps). Default hex.\n");
-  fprintf(stderr, "    -C          capitalize variable names in C include file style (-i).\n");
-  fprintf(stderr, "    -c cols     format <cols> octets per line. Default 16 (-i: 12, -ps: 30).\n");
-  fprintf(stderr, "    -e          little-endian dump (incompatible with -ps,-i,-r).\n");
-  fprintf(stderr, "    -g bytes    number of octets per group in normal output. Default 2 (-e: 4).\n");
-  fprintf(stderr, "    -h          print this summary.\n");
-  fprintf(stderr, "    -i          output in C include file style.\n");
-  fprintf(stderr, "    -l len      stop after <len> octets.\n");
-  fprintf(stderr, "    -n name     set the variable name used in C include output (-i).\n");
-  fprintf(stderr, "    -o off      add <off> to the displayed file position.\n");
-  fprintf(stderr, "    -ps         output in postscript plain hexdump style.\n");
-  fprintf(stderr, "    -r          reverse operation: convert (or patch) hexdump into binary.\n");
-  fprintf(stderr, "    -r -s off   revert with <off> added to file positions found in hexdump.\n");
-  fprintf(stderr, "    -d          show offset in decimal instead of hex.\n");
-  fprintf(stderr, "    -s %sseek  start at <seek> bytes abs. %sinfile offset.\n",
-     "[+][-]", "(or +: rel.) ");
-  fprintf(stderr, "    -u          use upper case hex letters.\n");
-  fprintf(stderr, "    -R when     colorize the output; <when> can be 'always', 'auto' or 'never'. Default: 'auto'.\n"),
-  fprintf(stderr, "    -v          show version: \"%s%s\".\n", version, osver);
-  exit(1);
-}
-
-private void
-perror_exit(int ret) {
-  fprintf(stderr, "%s: ", pname);
-  perror(NULL);
-  exit(ret);
-}
-
-private void
-error_exit(int ret, char *msg) {
-   fprintf(stderr, "%s: %s\n", pname, msg);
-   exit(ret);
-}
-
-private int
-getc_or_die(FILE *fpi) {
-   int c = getc(fpi);
-   if (c == EOF && ferror(fpi))
-      perror_exit(2);
-   return c;
-}
-
-private void
-putc_or_die(int c, FILE *fpo) {
-  if (putc(c, fpo) == EOF)
-    perror_exit(3);
-}
-
-private void
-fputs_or_die(char *s, FILE *fpo) {
-   if (fputs(s, fpo) == EOF)
-      perror_exit(3);
-}
-
-// Use a macro to allow for different arguments.
-#define FPRINTF_OR_DIE(args) if (fprintf args < 0) perror_exit(3)
-
-private void
-fclose_or_die(FILE *fpi, FILE *fpo) {
-   if (fclose(fpo) != 0)
-      perror_exit(3);
-   if (fclose(fpi) != 0)
-      perror_exit(2);
-}
-
 //If "c" is a hex digit, return the value. Otherwise return -1.
-private int
+int
 parse_hex_digit(int c) {
    return (c >= '0' && c <= '9') ? c - '0'
       : (c >= 'a' && c <= 'f') ? c - 'a' + 10
@@ -6293,217 +5036,7 @@ parse_hex_digit(int c) {
       : -1;
 }
 
-//If "c" is a bin digit, return the value. Otherwise return -1.
-private int
-parse_bin_digit(int c) {
-   return (c >= '0' && c <= '1') ? c - '0' : -1;
-}
-
-//Ignore text on "fpi" until end-of-line or end-of-file. Return the '\n' or EOF character.
-//When an error is encountered exit with an error message.
-private int
-skip_to_eol(FILE *fpi, int c) {
-   while (c != '\n' && c != EOF)
-      c = getc_or_die(fpi);
-   return c;
-}
-
-//Max. cols binary characters are decoded from the input stream per line.
-//Two adjacent garbage characters after evaluated data delimit valid data.
-//Everything up to the next newline is discarded.
-//
-//The name is historic and came from 'undo type opt h'.
-private int
-huntype(
-  FILE *fpi,
-  FILE *fpo,
-  int cols,
-  int hextype,
-  long base_off
-) {
-  int c, ign_garb = 1, n1 = -1, n2 = 0, n3 = 0, p = cols, bt = 0, b = 0, bcnt = 0;
-  long have_off = 0, want_off = 0;
-
-  rewind(fpi);
-
-  while ((c = getc(fpi)) != EOF) {
-     if (c == '\r')   /* Doze style input file? */
-        continue;
-
-      // Allow multiple spaces.  This doesn't work when there is normal text
-      // after the hex codes in the last line that looks like hex, thus only
-      // use it for PostScript format. */
-      if (hextype == HEX_POSTSCRIPT && (c == ' ' || c == '\n' || c == '\t'))
-         continue;
-
-      if (hextype == HEX_NORMAL || hextype == HEX_POSTSCRIPT) {
-         n3 = n2;
-         n2 = n1;
-
-         n1 = parse_hex_digit(c);
-         if (n1 == -1 && ign_garb)
-            continue;
-      } else {// HEX_BITS
-         n1 = parse_hex_digit(c);
-         if (n1 == -1 && ign_garb)
-            continue;
-
-         bt = parse_bin_digit(c);
-         if (bt != -1) {
-            b = ((b << 1) | bt);
-            ++bcnt;
-         }
-      }
-
-      ign_garb = 0;
-
-      if ((hextype != HEX_POSTSCRIPT) && (p >= cols)) {
-         if (hextype == HEX_NORMAL) {
-            if (n1 < 0) {
-               p = 0;
-               continue;
-            }
-            want_off = (want_off << 4) | n1;
-         } else {/* HEX_BITS */
-            if (n1 < 0) {
-              p = 0;
-              bcnt = 0;
-              continue;
-            }
-            want_off = (want_off << 4) | n1;
-         }
-         continue;
-      }
-
-      if (base_off + want_off != have_off) {
-         if (fflush(fpo) != 0)
-            perror_exit(3);
-         if (fseek(fpo, base_off + want_off - have_off, SEEK_CUR) >= 0)
-            have_off = base_off + want_off;
-         if (base_off + want_off < have_off)
-            error_exit(5, "Sorry, cannot seek backwards.");
-         for (; have_off < base_off + want_off; have_off++)
-            putc_or_die(0, fpo);
-      }
-
-        if (hextype == HEX_NORMAL || hextype == HEX_POSTSCRIPT) {
-            if (n2 >= 0 && n1 >= 0) {
-               putc_or_die((n2 << 4) | n1, fpo);
-               have_off++;
-               want_off++;
-               n1 = -1;
-               if (!hextype && (++p >= cols))
-                  // skip the rest of the line as garbage
-                  c = skip_to_eol(fpi, c);
-            } ei (n1 < 0 && n2 < 0 && n3 < 0)
-             // already stumbled into garbage, skip line, wait and see
-             c = skip_to_eol(fpi, c);
-      } else { // HEX_BITS
-        if (bcnt == 8) {
-            putc_or_die(b, fpo);
-            have_off++;
-            want_off++;
-            b = 0;
-            bcnt = 0;
-            if (++p >= cols)
-               // skip the rest of the line as garbage
-               c = skip_to_eol(fpi, c);
-          }
-      }
-
-      if (c == '\n') {
-         if (hextype == HEX_NORMAL || hextype == HEX_BITS)
-            want_off = 0;
-         p = cols;
-         ign_garb = 1;
-      }
-   }
-   if (fflush(fpo) != 0)
-      perror_exit(3);
-   fseek(fpo, 0L, SEEK_END);
-   fclose_or_die(fpi, fpo);
-   return 0;
-}
-
-
-//Print line l with given colors.
-private void
-print_colored_line(FILE *fp, char *l, char *colors) {
-  static char l_colored[LLEN+1];
-
-  if (colors) {
-      int c = 0;
-      if (colors[0]) {
-     COLOR_PROLOGUE(colors[0])
-   }
-   l_colored[c++] = l[0];
-   int i;
-   for (i = 1; l[i]; i++) {
-      if (colors[i] != colors[i-1]) {
-        if (colors[i-1]) {
-           COLOR_EPILOGUE
-        }
-        if (colors[i]) {
-           COLOR_PROLOGUE(colors[i])
-         }
-      }
-     l_colored[c++] = l[i];
-   }
-
-   if (colors[i]) {
-     COLOR_EPILOGUE
-   }
-   l_colored[c++] = '\0';
-
-      fputs_or_die(l_colored, fp);
-    } else
-    fputs_or_die(l, fp);
-}
-
-//Print line l with given colors. If nz is false, xxdline regards the line as a line of
-//zeroes. If there are three or more consecutive lines of zeroes,
-//they are replaced by a single '*' character.
-//
-//If the output ends with more than two lines of zeroes, you
-//should call xxdline again with l belse ifng the last line and nz
-//negative. This ensures that the last line is shown even when
-//it is all zeroes.
-//
-//If nz is always positive, lines are never suppressed.
-private void
-xxdline(FILE* fp, char* l, char* colors, int nz) {
-   static char z[LLEN_NO_COLOR+1];
-   static char z_colors[LLEN_NO_COLOR+1];
-   static signed char zero_seen = 0;
-
-   if (!nz && zero_seen == 1) {
-      strcpy(z, l);
-      memcpy(z_colors, colors, strlen(z));
-   }
-
-   if (nz || !zero_seen++) {
-      if (nz) {
-         if (nz < 0)
-            zero_seen--;
-         if (zero_seen == 2)
-            print_colored_line(fp, z, z_colors);
-         if (zero_seen > 2)
-            fputs_or_die("*\n", fp);
-      }
-      if (nz >= 0 || zero_seen > 0)
-         print_colored_line(fp, l, colors);
-
-      if (nz)
-         zero_seen = 0;
-   }
-
-   //If zero_seen > 3, then its exact value doesn't matter, so long as it
-   //remains >3 and incrementing it will not cause overflow. */
-   if (zero_seen >= 0x7F)
-     zero_seen = 4;
-}
-
-private char
+Byte
 get_color_char(int e) {
    if (e > 31 && e < 127)
       return COLOR_GREEN;
@@ -6519,442 +5052,957 @@ get_color_char(int e) {
    return 0;
 }
 
-private int
-enable_color(void) {
-   return isatty(STDOUT_FILENO);
+//}}}
+//{{{arrayList
+
+// Clear an allocated growing array.
+void
+ga_clear(ArrayList* gap) {
+    eeglFree(gap->c);
+    ga_init(gap);
+}
+
+// Clear a growing array that contains a list of strings.
+void
+ga_clear_strings(ArrayList* gap) {
+   int i;
+
+   if (gap->c) {
+      for (i = 0; i < gap->len; ++i)
+         eeglFree(((Byte **)(gap->c))[i]);
+   } 
+   ga_clear(gap);
+}
+
+// Copy a growing array that contains a list of strings.
+int
+ga_copy_strings(ArrayList *from, ArrayList *to) {
+   ga_init2(to, sizeof(CS), 1);
+   if (ga_grow(to, from->len) == FAIL)
+      return FAIL;
+
+   for (int i = 0; i < from->len; ++i) {
+      CS orig = ((Byte **)from->c)[i];
+      CS copy = orig ? copyStr(orig) : null;
+      ((Byte **)to->c)[i] = copy;
+   }
+   to->len = from->len;
+   return OK;
+}
+
+// Initialize a growing array. Don't forget to set ga_itemsize and ga_growsize! Or use ga_init2()
+void
+ga_init(ArrayList* gap) {
+   gap->c = NULL;
+   gap->cap = 0;
+   gap->len = 0;
+}
+
+void
+ga_init2(ArrayList *gap, Unt itemsize, int growsize) {
+   ga_init(gap);
+   gap->ga_itemsize = (int)itemsize;
+   gap->ga_growsize = growsize;
+}
+
+// Make room in growing array "gap" for at least "n" items. FAIL for failure, OK otherwise.
+int
+ga_grow(ArrayList *gap, int n) {
+   if (gap->cap - gap->len < n)
+      return ga_grow_inner(gap, n);
+   return OK;
 }
 
 int
-xxdMain(int argc, char* argv[]) {
-   FILE *fp, *fpo;
-   int c, e, p = 0, relseek = 1, negseek = 0, revert = 0, i, x;
-   int cols = 0, colsgiven = 0, nonzero = 0, autoskip = 0, hextype = HEX_NORMAL;
-   int capitalize = 0, decimal_offset = 0;
-   int octspergrp = -1;   /* number of octets grouped in output */
-   int grplen;      /* total chars per octet group excluding colors */
-   long length = -1, n = 0, seekoff = 0;
-   unsigned long displayoff = 0;
-   static char l[LLEN_NO_COLOR+1];  /* static because it may be too big for stack */
-   static char colors[LLEN_NO_COLOR+1]; /* color array */
-   char *pp;
-   char *varname = NULL;
-   int addrlen = 9;
-   int color = 0;
-   char *no_color;
-   char cur_color = 0;
+ga_grow_inner(ArrayList* gap, int n) {
+   Unt old_len;
+   Unt new_len;
 
-   no_color = getenv("NO_COLOR");
-   if (no_color == NULL || no_color[0] == '\0')
-    color = enable_color();
+   if (n < gap->ga_growsize)
+      n = gap->ga_growsize;
 
-  pname = argv[0];
-  for (pp = pname; *pp; )
-    if (*pp++ == PATH_SEP)
-      pname = pp;
-#ifdef FILE_SEP
-  for (pp = pname; *pp; pp++)
-    if (*pp == FILE_SEP) {
-   *pp = '\0';
-   break;
+   // A linear growth is very inefficient when the array grows big.  This
+   // is a compromise between allocating memory that won't be used and too
+   // many copy operations. A factor of 1.5 seems reasonable.
+   if (n < gap->len / 2)
+      n = gap->len / 2;
+
+   new_len = (Unt)gap->ga_itemsize * (gap->len + n);
+   CS pp = eeRealloc(gap->c, new_len);
+   old_len = (Unt)gap->ga_itemsize * gap->cap;
+   memset(pp + old_len, 0, new_len - old_len);
+   gap->cap = gap->len + n;
+   gap->c = pp;
+   return OK;
+}
+
+//For an ArrayList that contains a list of strings: concatenate all the
+//strings with a separating "sep".
+//Return NULL when out of memory.
+CS
+ga_concat_strings(ArrayList *gap, char *sep) {
+   int i;
+   int len = 0;
+   int sep_len = (int)STRLEN(sep);
+
+   for (i = 0; i < gap->len; ++i)
+      len += (int)STRLEN(((Byte **)(gap->c))[i]) + sep_len;
+
+   CS s = alloc(len + 1);
+
+   *s = ZERO;
+   CS p = s;
+   for (i = 0; i < gap->len; ++i) {
+      if (p != s) {
+          STRCPY(p, sep);
+          p += sep_len;
       }
-#endif
+      STRCPY(p, ((Byte **)(gap->c))[i]);
+      p += STRLEN(p);
+   }
+   return s;
+}
 
-   while (argc >= 2) {
-      pp = argv[1] + (!STRNCMP(argv[1], "--", 2) && argv[1][2]);
-      if (!STRNCMP(pp, "-a", 2)) autoskip = 1 - autoskip;
-      ei (!STRNCMP(pp, "-b", 2)) hextype |= HEX_BITS;
-      ei (!STRNCMP(pp, "-e", 2)) hextype |= HEX_LITTLEENDIAN;
-      ei (!STRNCMP(pp, "-u", 2)) hexx = hexxa + 16;
-      ei (!STRNCMP(pp, "-p", 2)) hextype |= HEX_POSTSCRIPT;
-      ei (!STRNCMP(pp, "-i", 2)) hextype |= HEX_CINCLUDE;
-      ei (!STRNCMP(pp, "-C", 2)) capitalize = 1;
-      ei (!STRNCMP(pp, "-d", 2)) decimal_offset = 1;
-      ei (!STRNCMP(pp, "-r", 2)) revert++;
-      ei (!STRNCMP(pp, "-v", 2)
-   ) {
-      fprintf(stderr, "%s%s\n", version, osver);
-      exit(0);
-   } ei (!STRNCMP(pp, "-c", 2)) {
-      if (pp[2] && !STRNCMP("apitalize", pp + 2, 9))
-         capitalize = 1;
-      ei (pp[2] && STRNCMP("ols", pp + 2, 3)) {
-         colsgiven = 1;
-         cols = (int)strtol(pp + 2, NULL, 0);
+// Make a copy of string "p" and add it to "gap". When out of memory, 
+// nothing changes and FAIL is returned.
+int
+ga_copy_string(ArrayList *gap, CS p) {
+   CS cp = copyStr(p);
+
+   if (ga_grow(gap, 1) == FAIL) {
+      eeglFree(cp);
+      return FAIL;
+   }
+   ((Byte **)(gap->c))[gap->len] = cp;
+   gap->len++;
+   return OK;
+}
+
+// Add string "p" to "gap". When out of memory, FAIL is returned (caller may want to free "p").
+int
+ga_add_string(ArrayList *gap, CS p) {
+   if (ga_grow(gap, 1) == FAIL)
+      return FAIL;
+   ((Byte **)(gap->c))[gap->len] = p;
+   gap->len++;
+   return OK;
+}
+
+// Concatenate a string to a growarray which contains bytes.
+// When "s" is NULL memory allocation fails does not do anything.
+// Note: Does NOT copy the ZERO at the end!
+void
+ga_concat(ArrayList *gap, CS s) {
+   if (s == NULL || *s == ZERO)
+      return;
+   int len = (int)STRLEN(s);
+   if (ga_grow(gap, len) == OK) {
+      MEMMOVE((char *)gap->c + gap->len, s, (Unt)len);
+      gap->len += len;
+    }
+}
+
+// Concatenate 'len' bytes from string 's' to a growarray. When "s" is NULL do not do anything.
+void
+ga_concat_len(ArrayList *gap, CS s, Unt len) {
+   if (s == NULL || *s == ZERO || len == 0)
+      return;
+   if (ga_grow(gap, (int)len) == OK) {
+      MEMMOVE((char *)gap->c + gap->len, s, len);
+      gap->len += (int)len;
+   }
+}
+
+// Append one byte to a growarray which contains bytes.
+int
+ga_append(ArrayList *gap, int c) {
+   if (ga_grow(gap, 1) == FAIL)
+      return FAIL;
+   *((char *)gap->c + gap->len) = c;
+   ++gap->len;
+   return OK;
+}
+
+// Append the text in "gap" below the cursor line and clear "gap".
+void
+append_ga_line(ArrayList *gap) {
+   // Remove trailing CR.
+   if (gap->len > 0
+          && !curBook->o.binary
+          && ((CS)gap->c)[gap->len - 1] == ENTER)
+      --gap->len;
+   ga_append(gap, ZERO);
+   ml_append(curPor->cursor.lnum++, gap->c, 0, false);
+   gap->len = 0;
+}
+
+//}}}
+//{{{doubly-linked list
+
+// Iterative merge sort for doubly linked list.
+// O(NlogN) worst case, and stable.
+//  - The list is divided into blocks of increasing size (1, 2, 4, 8, ...).
+//  - Each pair of blocks is merged in sorted order.
+//  - Merged blocks are reconnected to build the sorted list.
+void *
+mergesort_list(
+   void *head,
+   void *(*get_next)(void *),
+   void (*set_next)(void *, void *),
+   void *(*get_prev)(void *),
+   void (*set_prev)(void *, void *),
+   int (*compare)(const void *, const void *)
+){
+   if (!head || !get_next(head))
+      return head;
+
+   // Count length
+   int       n = 0;
+   void*   curr = head;
+   while (curr) {
+      n++;
+      curr = get_next(curr);
+   }
+
+   int   size;
+   for (size = 1; size < n; size *= 2) {
+      void*   new_head = NULL;
+      void*   tail = NULL;
+      curr = head;
+
+      while (curr) {
+         // Split two runs
+         void* left = curr;
+         void* right = left;
+         int       i;
+         for (i = 0; i < size && right; ++i)
+            right = get_next(right);
+
+         void* next = right;
+         for (i = 0; i < size && next; ++i)
+            next = get_next(next);
+
+         // Break links
+         void* l_end = right ? get_prev(right) : NULL;
+         if (l_end)
+            set_next(l_end, NULL);
+         if (right)
+            set_prev(right, NULL);
+
+         void* r_end = next ? get_prev(next) : NULL;
+         if (r_end)
+            set_next(r_end, NULL);
+         if (next)
+            set_prev(next, NULL);
+
+         // Merge
+         void    *merged = NULL;
+         void    *merged_tail = NULL;
+
+         while (left || right) {
+            void   *chosen = NULL;
+            if (!left) {
+                chosen = right;
+                right = get_next(right);
+            } ei (!right) {
+                chosen = left;
+                left = get_next(left);
+            } ei (compare(left, right) <= 0) {
+                chosen = left;
+                left = get_next(left);
+            } else {
+                chosen = right;
+                right = get_next(right);
+            }
+
+            if (merged_tail) {
+                set_next(merged_tail, chosen);
+                set_prev(chosen, merged_tail);
+                merged_tail = chosen;
+            } else {
+                merged = merged_tail = chosen;
+                set_prev(chosen, NULL);
+            }
+         }
+
+          // Connect to full list
+         if (!new_head)
+            new_head = merged;
+         else {
+            set_next(tail, merged);
+            set_prev(merged, tail);
+         }
+
+         // Move tail to end
+         while (get_next(merged_tail))
+            merged_tail = get_next(merged_tail);
+         tail = merged_tail;
+
+         curr = next;
+      }
+
+      head = new_head;
+   }
+
+   return head;
+}
+
+//}}}
+//{{{sha256
+
+// FIPS-180-2 compliant SHA-256 implementation
+// GPL by Christophe Devine, applies to older version.
+// Modified for md5deep, in public domain.
+// Modified For Vim, Mohsin Ahmed,
+// (original link www.cs.albany.edu/~mosh no longer available)
+// Mohsin Ahmed states this work is distributed under the VIM License or GPL,
+// at your choice.
+//
+// Eegl specific notes:
+// Functions exported by this file:
+//  1. sha256_key() hashes the password to 64 bytes char string.
+//  2. sha2_seed() generates a random header.
+//  sha256_self_test() is implicitly called once.
+
+
+#define GET_UINT32(n, b, i)          \
+{                   \
+    (n) = ( (Unt)(b)[(i)    ] << 24)   \
+   | ( (Unt)(b)[(i) + 1] << 16)   \
+   | ( (Unt)(b)[(i) + 2] <<  8)   \
+   | ( (Unt)(b)[(i) + 3]   );  \
+}
+
+#define PUT_UINT32(n,b,i)        \
+{                 \
+    (b)[(i)    ] = (Byte)((n) >> 24);   \
+    (b)[(i) + 1] = (Byte)((n) >> 16);   \
+    (b)[(i) + 2] = (Byte)((n) >>  8);   \
+    (b)[(i) + 3] = (Byte)((n)      );   \
+}
+
+void
+sha256_start(ContextSha256* ctx) {
+   ctx->total[0] = 0;
+   ctx->total[1] = 0;
+
+   ctx->state[0] = 0x6A09E667;
+   ctx->state[1] = 0xBB67AE85;
+   ctx->state[2] = 0x3C6EF372;
+   ctx->state[3] = 0xA54FF53A;
+   ctx->state[4] = 0x510E527F;
+   ctx->state[5] = 0x9B05688C;
+   ctx->state[6] = 0x1F83D9AB;
+   ctx->state[7] = 0x5BE0CD19;
+}
+
+private void
+sha256_process(ContextSha256 *ctx, Byte data[64]) {
+   Unt temp1, temp2, W[64];
+   Unt A, B, C, D, EE, F, G, H;
+
+   GET_UINT32(W[0],  data,  0);
+   GET_UINT32(W[1],  data,  4);
+   GET_UINT32(W[2],  data,  8);
+   GET_UINT32(W[3],  data, 12);
+   GET_UINT32(W[4],  data, 16);
+   GET_UINT32(W[5],  data, 20);
+   GET_UINT32(W[6],  data, 24);
+   GET_UINT32(W[7],  data, 28);
+   GET_UINT32(W[8],  data, 32);
+   GET_UINT32(W[9],  data, 36);
+   GET_UINT32(W[10], data, 40);
+   GET_UINT32(W[11], data, 44);
+   GET_UINT32(W[12], data, 48);
+   GET_UINT32(W[13], data, 52);
+   GET_UINT32(W[14], data, 56);
+   GET_UINT32(W[15], data, 60);
+
+#define  SHR(x, n) (((x) & 0xFFFFFFFF) >> (n))
+#define ROTR(x, n) (SHR(x, n) | ((x) << (32 - (n))))
+
+#define S0(x) (ROTR(x, 7) ^ ROTR(x, 18) ^  SHR(x, 3))
+#define S1(x) (ROTR(x, 17) ^ ROTR(x, 19) ^  SHR(x, 10))
+
+#define S2(x) (ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22))
+#define S3(x) (ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25))
+
+#define F0(x, y, z) (((x) & (y)) | ((z) & ((x) | (y))))
+#define F1(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
+
+#define R(t)            \
+(               \
+    W[t] = S1(W[(t) -  2]) + W[(t) -  7] +   \
+      S0(W[(t) - 15]) + W[(t) - 16]   \
+)
+
+#define P(a,b,c,d,e,f,g,h,x,K)           \
+{                    \
+    temp1 = (h) + S3(e) + F1(e, f, g) + (K) + (x); \
+    temp2 = S2(a) + F0(a, b, c);        \
+    (d) += temp1; (h) = temp1 + temp2;        \
+}
+
+   A = ctx->state[0];
+   B = ctx->state[1];
+   C = ctx->state[2];
+   D = ctx->state[3];
+   EE = ctx->state[4];
+   F = ctx->state[5];
+   G = ctx->state[6];
+   H = ctx->state[7];
+
+   P( A, B, C, D, EE, F, G, H, W[ 0], 0x428A2F98);
+   P( H, A, B, C, D, EE, F, G, W[ 1], 0x71374491);
+   P( G, H, A, B, C, D, EE, F, W[ 2], 0xB5C0FBCF);
+   P( F, G, H, A, B, C, D, EE, W[ 3], 0xE9B5DBA5);
+   P( EE, F, G, H, A, B, C, D, W[ 4], 0x3956C25B);
+   P( D, EE, F, G, H, A, B, C, W[ 5], 0x59F111F1);
+   P( C, D, EE, F, G, H, A, B, W[ 6], 0x923F82A4);
+   P( B, C, D, EE, F, G, H, A, W[ 7], 0xAB1C5ED5);
+   P( A, B, C, D, EE, F, G, H, W[ 8], 0xD807AA98);
+   P( H, A, B, C, D, EE, F, G, W[ 9], 0x12835B01);
+   P( G, H, A, B, C, D, EE, F, W[10], 0x243185BE);
+   P( F, G, H, A, B, C, D, EE, W[11], 0x550C7DC3);
+   P( EE, F, G, H, A, B, C, D, W[12], 0x72BE5D74);
+   P( D, EE, F, G, H, A, B, C, W[13], 0x80DEB1FE);
+   P( C, D, EE, F, G, H, A, B, W[14], 0x9BDC06A7);
+   P( B, C, D, EE, F, G, H, A, W[15], 0xC19BF174);
+   P( A, B, C, D, EE, F, G, H, R(16), 0xE49B69C1);
+   P( H, A, B, C, D, EE, F, G, R(17), 0xEFBE4786);
+   P( G, H, A, B, C, D, EE, F, R(18), 0x0FC19DC6);
+   P( F, G, H, A, B, C, D, EE, R(19), 0x240CA1CC);
+   P( EE, F, G, H, A, B, C, D, R(20), 0x2DE92C6F);
+   P( D, EE, F, G, H, A, B, C, R(21), 0x4A7484AA);
+   P( C, D, EE, F, G, H, A, B, R(22), 0x5CB0A9DC);
+   P( B, C, D, EE, F, G, H, A, R(23), 0x76F988DA);
+   P( A, B, C, D, EE, F, G, H, R(24), 0x983E5152);
+   P( H, A, B, C, D, EE, F, G, R(25), 0xA831C66D);
+   P( G, H, A, B, C, D, EE, F, R(26), 0xB00327C8);
+   P( F, G, H, A, B, C, D, EE, R(27), 0xBF597FC7);
+   P( EE, F, G, H, A, B, C, D, R(28), 0xC6E00BF3);
+   P( D, EE, F, G, H, A, B, C, R(29), 0xD5A79147);
+   P( C, D, EE, F, G, H, A, B, R(30), 0x06CA6351);
+   P( B, C, D, EE, F, G, H, A, R(31), 0x14292967);
+   P( A, B, C, D, EE, F, G, H, R(32), 0x27B70A85);
+   P( H, A, B, C, D, EE, F, G, R(33), 0x2E1B2138);
+   P( G, H, A, B, C, D, EE, F, R(34), 0x4D2C6DFC);
+   P( F, G, H, A, B, C, D, EE, R(35), 0x53380D13);
+   P( EE, F, G, H, A, B, C, D, R(36), 0x650A7354);
+   P( D, EE, F, G, H, A, B, C, R(37), 0x766A0ABB);
+   P( C, D, EE, F, G, H, A, B, R(38), 0x81C2C92E);
+   P( B, C, D, EE, F, G, H, A, R(39), 0x92722C85);
+   P( A, B, C, D, EE, F, G, H, R(40), 0xA2BFE8A1);
+   P( H, A, B, C, D, EE, F, G, R(41), 0xA81A664B);
+   P( G, H, A, B, C, D, EE, F, R(42), 0xC24B8B70);
+   P( F, G, H, A, B, C, D, EE, R(43), 0xC76C51A3);
+   P( EE, F, G, H, A, B, C, D, R(44), 0xD192E819);
+   P( D, EE, F, G, H, A, B, C, R(45), 0xD6990624);
+   P( C, D, EE, F, G, H, A, B, R(46), 0xF40E3585);
+   P( B, C, D, EE, F, G, H, A, R(47), 0x106AA070);
+   P( A, B, C, D, EE, F, G, H, R(48), 0x19A4C116);
+   P( H, A, B, C, D, EE, F, G, R(49), 0x1E376C08);
+   P( G, H, A, B, C, D, EE, F, R(50), 0x2748774C);
+   P( F, G, H, A, B, C, D, EE, R(51), 0x34B0BCB5);
+   P( EE, F, G, H, A, B, C, D, R(52), 0x391C0CB3);
+   P( D, EE, F, G, H, A, B, C, R(53), 0x4ED8AA4A);
+   P( C, D, EE, F, G, H, A, B, R(54), 0x5B9CCA4F);
+   P( B, C, D, EE, F, G, H, A, R(55), 0x682E6FF3);
+   P( A, B, C, D, EE, F, G, H, R(56), 0x748F82EE);
+   P( H, A, B, C, D, EE, F, G, R(57), 0x78A5636F);
+   P( G, H, A, B, C, D, EE, F, R(58), 0x84C87814);
+   P( F, G, H, A, B, C, D, EE, R(59), 0x8CC70208);
+   P( EE, F, G, H, A, B, C, D, R(60), 0x90BEFFFA);
+   P( D, EE, F, G, H, A, B, C, R(61), 0xA4506CEB);
+   P( C, D, EE, F, G, H, A, B, R(62), 0xBEF9A3F7);
+   P( B, C, D, EE, F, G, H, A, R(63), 0xC67178F2);
+
+   ctx->state[0] += A;
+   ctx->state[1] += B;
+   ctx->state[2] += C;
+   ctx->state[3] += D;
+   ctx->state[4] += EE;
+   ctx->state[5] += F;
+   ctx->state[6] += G;
+   ctx->state[7] += H;
+}
+
+void
+sha256_update(ContextSha256 *ctx, CS input, Unt length) {
+   Unt left, fill;
+
+   if (length == 0)
+      return;
+
+   left = ctx->total[0] & 0x3F;
+   fill = 64 - left;
+
+   ctx->total[0] += length;
+   ctx->total[0] &= 0xFFFFFFFF;
+
+   if (ctx->total[0] < length)
+      ctx->total[1]++;
+
+   if (left && length >= fill) {
+      memcpy((void *)(ctx->buffer + left), (void *)input, fill);
+      sha256_process(ctx, ctx->buffer);
+      length -= fill;
+      input  += fill;
+      left = 0;
+   }
+
+   while (length >= 64) {
+      sha256_process(ctx, input);
+      length -= 64;
+      input  += 64;
+   }
+
+   if (length)
+      memcpy((void *)(ctx->buffer + left), (void *)input, length);
+}
+
+private Byte sha256_padding[64] = {
+   0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+void
+sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
+   Unt last, padn;
+   Unt high, low;
+   Byte   msglen[8];
+
+   high = (ctx->total[0] >> 29) | (ctx->total[1] <<  3);
+   low  = (ctx->total[0] <<  3);
+
+   PUT_UINT32(high, msglen, 0);
+   PUT_UINT32(low,  msglen, 4);
+
+   last = ctx->total[0] & 0x3F;
+   padn = (last < 56) ? (56 - last) : (120 - last);
+
+   sha256_update(ctx, sha256_padding, padn);
+   sha256_update(ctx, msglen, 8);
+
+   PUT_UINT32(ctx->state[0], digest,  0);
+   PUT_UINT32(ctx->state[1], digest,  4);
+   PUT_UINT32(ctx->state[2], digest,  8);
+   PUT_UINT32(ctx->state[3], digest, 12);
+   PUT_UINT32(ctx->state[4], digest, 16);
+   PUT_UINT32(ctx->state[5], digest, 20);
+   PUT_UINT32(ctx->state[6], digest, 24);
+   PUT_UINT32(ctx->state[7], digest, 28);
+}
+
+// Return hex digest of "buf[buf_len]" in a static array.
+// if "salt" is not NULL also do "salt[salt_len]".
+CS
+sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
+   Byte  sha256sum[32];
+   static Byte    hexit[65];
+   int j;
+   ContextSha256 ctx;
+
+   sha256_self_test();
+
+   sha256_start(&ctx);
+   sha256_update(&ctx, buf, buf_len);
+   if (salt != NULL)
+      sha256_update(&ctx, salt, salt_len);
+   sha256_finish(&ctx, sha256sum);
+   for (j = 0; j < 32; j++)
+      sprintf((char *)hexit + j * 2, "%02x", sha256sum[j]);
+   hexit[sizeof(hexit) - 1] = '\0';
+   return hexit;
+}
+
+// Return sha256(buf) as 64 hex chars in static array.
+CS
+sha256_key(CS buf, CS salt, int salt_len){
+   // No passwd means don't encrypt
+   if (!buf || *buf == ZERO)
+      return S"";
+
+   return sha256_bytes(buf, (int)STRLEN(buf), salt, salt_len);
+}
+
+// These are the standard FIPS-180-2 test vectors
+
+private char* sha_self_test_msg[] = {
+    "abc",
+    "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+    NULL
+};
+
+private char *sha_self_test_vector[] = {
+   "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+   "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
+   "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
+};
+
+// Perform a test on the SHA256 algorithm. Return FAIL or OK.
+int
+sha256_self_test(void) {
+   int i, j;
+   char output[65];
+   ContextSha256 ctx;
+   Byte buf[1000];
+   Byte sha256sum[32];
+   static int failures = 0;
+   Byte* hexit;
+   static int sha256_self_tested = 0;
+
+   if (sha256_self_tested > 0)
+      return failures > 0 ? FAIL : OK;
+   sha256_self_tested = 1;
+
+   for (i = 0; i < 3; i++) {
+      if (i < 2) {
+         hexit = sha256_bytes((CS)sha_self_test_msg[i],
+            (int)STRLEN(sha_self_test_msg[i]),
+            NULL, 0
+         );
+         STRCPY(output, hexit);
       } else {
-         if (!argv[2])
-            exit_with_usage();
-         colsgiven = 1;
-         cols = (int)strtol(argv[2], NULL, 0);
-         argv++;
-         argc--;
+          sha256_start(&ctx);
+          memset(buf, 'a', 1000);
+          for (j = 0; j < 1000; j++)
+         sha256_update(&ctx, (CS)buf, 1000);
+          sha256_finish(&ctx, sha256sum);
+          for (j = 0; j < 32; j++)
+         sprintf(output + j * 2, "%02x", sha256sum[j]);
       }
-   } ei (!STRNCMP(pp, "-g", 2)) {
-     if (pp[2] && STRNCMP("roup", pp + 2, 4))
-       octspergrp = (int)strtol(pp + 2, NULL, 0);
-     else {
-         if (!argv[2])
-      exit_with_usage();
-         octspergrp = (int)strtol(argv[2], NULL, 0);
-         argv++;
-         argc--;
-       }
-   } ei (!STRNCMP(pp, "-o", 2)) {
-     int reloffset = 0;
-     int negoffset = 0;
-     if (pp[2] && STRNCMP("ffset", pp + 2, 5))
-       displayoff = strtoul(pp + 2, NULL, 0);
-      else {
-         if (!argv[2])
-            exit_with_usage();
+      if (memcmp(output, sha_self_test_vector[i], 64)) {
+          failures++;
+          output[sizeof(output) - 1] = '\0';
+          // printf("sha256_self_test %d failed %s\n", i, output);
+      }
+    }
+    return failures > 0 ? FAIL : OK;
+}
 
-         if (argv[2][0] == '+')
-            reloffset++;
-         if (argv[2][reloffset] == '-')
-            negoffset++;
+private unsigned int
+get_some_time(void) {
+# ifdef HAVE_GETTIMEOFDAY
+    TimeVal tv;
 
-         if (negoffset)
-            displayoff = ULONG_MAX - strtoul(argv[2] + reloffset+negoffset, NULL, 0) + 1;
-         else
-            displayoff = strtoul(argv[2] + reloffset+negoffset, NULL, 0);
+    // Using usec makes it less predictable.
+    gettimeofday(&tv, NULL);
+    return (unsigned int)(tv.tv_sec + tv.tv_usec);
+# else
+    return (unsigned int)time(NULL);
+# endif
+}
 
-         argv++;
-         argc--;
-      }
-   } ei (!STRNCMP(pp, "-s", 2)) {
-      relseek = 0;
-      negseek = 0;
-      if (pp[2] && STRNCMP("kip", pp+2, 3) && STRNCMP("eek", pp+2, 3)) {
-         if (pp[2] == '+')
-            relseek++;
-         if (pp[2+relseek] == '-')
-            negseek++;
-         seekoff = strtol(pp + 2+relseek+negseek, (char **)NULL, 0);
-       } else {
-         if (!argv[2])
-            exit_with_usage();
-         if (argv[2][0] == '+')
-            relseek++;
-         if (argv[2][relseek] == '-')
-            negseek++;
-         seekoff = strtol(argv[2] + relseek+negseek, (char **)NULL, 0);
-         argv++;
-         argc--;
-      }
-   } ei (!STRNCMP(pp, "-l", 2)) {
-      if (pp[2] && STRNCMP("en", pp + 2, 2))
-         length = strtol(pp + 2, (char **)NULL, 0);
-      else {
-         if (!argv[2])
-            exit_with_usage();
-         length = strtol(argv[2], (char **)NULL, 0);
-         argv++;
-         argc--;
-      }
-   } ei (!STRNCMP(pp, "-n", 2)) {
-      if (pp[2] && STRNCMP("ame", pp + 2, 3))
-         varname = pp + 2;
-      else {
-         if (!argv[2])
-            exit_with_usage();
-         varname = argv[2];
-         argv++;
-         argc--;
-      }
-   } ei (!STRNCMP(pp, "-R", 2)) {
-     char *pw = pp + 2;
-     if (!pw[0]) {
-         pw = argv[2];
-         argv++;
-         argc--;
-       }
-     if (!pw)
-       exit_with_usage();
-     if (!STRNCMP(pw, "always", 6)) {
-         (void)enable_color();
-         color = 1;
-       }
-     ei (!STRNCMP(pw, "never", 5))
-       color = 0;
-     ei (!STRNCMP(pw, "auto", 4))
-       color = enable_color();
-     else
-       exit_with_usage();
-   } ei (!strcmp(argv[1], "--")) {  // end of options
-     argv++;
-     argc--;
-     break;
+// Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.
+void
+sha2_seed(CS header, int header_len, CS salt, int salt_len) {
+   static Byte random_data[1000];
+   Byte sha256sum[32];
+   ContextSha256 ctx;
+
+   srand(get_some_time());
+
+   for (int i = 0; i < (int)sizeof(random_data) - 1; i++)
+      random_data[i] = (Byte)((get_some_time() ^ rand()) & 0xff);
+   sha256_start(&ctx);
+   sha256_update(&ctx, (CS)random_data, sizeof(random_data));
+   sha256_finish(&ctx, sha256sum);
+
+   //put first block into header.
+   for (int i = 0; i < header_len; i++)
+      header[i] = sha256sum[i % sizeof(sha256sum)];
+
+   //put remaining block into salt.
+   if (salt) {
+      for (int i = 0; i < salt_len; i++)
+         salt[i] = sha256sum[(i + header_len) % sizeof(sha256sum)];
    }
-      ei (pp[0] == '-' && pp[1])   /* unknown option */
-   exit_with_usage();
-      else
-   break;            /* not an option */
+}
 
-      argv++;            /* advance to next argument */
-      argc--;
-    }
+//}}}
+//{{{searchin 'n' sortin'
 
-  if (hextype != (HEX_CINCLUDE | HEX_BITS)) {
-   // Allow at most one bit to be set in hextype
-   if (hextype & (hextype - 1))
-       error_exit(1, "only one of -b, -e, -u, -p, -i can be used");
-    }
-
-  if (!colsgiven || (!cols && hextype != HEX_POSTSCRIPT))
-    switch (hextype) {
-      case HEX_POSTSCRIPT:   cols = 30; break;
-      case HEX_CINCLUDE:   cols = 12; break;
-      case HEX_CINCLUDE | HEX_BITS:
-      case HEX_BITS:      cols = 6; break;
-      case HEX_NORMAL:
-      case HEX_LITTLEENDIAN:
-      default:         cols = 16; break;
-      }
-
-  if (octspergrp < 0)
-    switch (hextype) {
-      case HEX_CINCLUDE | HEX_BITS:
-      case HEX_BITS:      octspergrp = 1; break;
-      case HEX_NORMAL:      octspergrp = 2; break;
-      case HEX_LITTLEENDIAN:   octspergrp = 4; break;
-      case HEX_POSTSCRIPT:
-      case HEX_CINCLUDE:
-      default:         octspergrp = 0; break;
-      }
-
-  if ((hextype == HEX_POSTSCRIPT && cols < 0) ||
-      (hextype != HEX_POSTSCRIPT && cols < 1) ||
-      ((hextype == HEX_NORMAL || hextype == HEX_BITS || hextype == HEX_LITTLEENDIAN)
-                         && (cols > COLS)))
-    {
-      fprintf(stderr, "%s: invalid number of columns (max. %d).\n", pname, COLS);
-      exit(1);
-    }
-
-  if (octspergrp < 1 || octspergrp > cols)
-    octspergrp = cols;
-  ei (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
-    error_exit(1, "number of octets per group must be a power of 2 with -e.");
-
-  if (argc > 3)
-    exit_with_usage();
-
-  if (argc == 1 || (argv[1][0] == '-' && !argv[1][1]))
-    BIN_ASSIGN(fp = stdin, !revert);
-  else {
-      if ((fp = fopen(argv[1], BIN_READ(!revert))) == NULL) {
-     fprintf(stderr,"%s: ", pname);
-     perror(argv[1]);
-     return 2;
+// Return index of key in a sorted array, or -1 if not found.
+int
+binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr) {
+   if (end <= start) {
+      return -1;
    }
-    }
+   int i = start;
+   int j = end - 1;
+   if (arr[start] == key) {
+      return i;
+   } ei (arr[j] == key) {
+      return j;
+   }
 
-   if (argc < 3 || (argv[2][0] == '-' && !argv[2][1]))
-      BIN_ASSIGN(fpo = stdout, revert);
-   else {
-      int fd;
-      int mode = revert ? O_WRONLY : (O_TRUNC|O_WRONLY);
+   while (i < j) {
+      if (j - i == 1) {
+         return -1;
+      }
+      int midInd = (i + j)/2;
+      Unt mid = arr[midInd];
+      if (mid > key) {
+         j = midInd;
+      } ei (mid < key) {
+         i = midInd;
+      } else {
+         return midInd;
+      }
+   }
+   return -1;
+}
 
-      if (((fd = OPEN(argv[2], mode | BIN_CREAT(revert), 0666)) < 0) 
-           || (fpo = fdopen(fd, BIN_WRITE(revert))) == NULL
+//}}}
+//{{{key-value pair
+
+// compare two Kv structs by case sensitive value
+int
+cmp_keyvalue_value(const void *a, const void *b) {
+   return STRCMP(((Kv*)a)->value.c, ((Kv*)b)->value.c);
+}
+
+// compare two Kv structs by value with length
+int
+cmp_keyvalue_value_n(const void *a, const void *b) {
+   Kv *kv1 = (Kv *)a;
+   Kv *kv2 = (Kv *)b;
+
+   return STRNCMP(kv1->value.c, kv2->value.c, MAX(kv1->value.len, kv2->value.len));
+}
+
+// compare two Kv structs by case insensitive value
+int
+cmp_keyvalue_value_i(const void *a, const void *b) {
+    Kv *kv1 = (Kv *)a;
+    Kv *kv2 = (Kv *)b;
+
+    return caseInsensitiveCompare(kv1->value.c, kv2->value.c);
+}
+
+// compare two Kv structs by case insensitive ASCII value with value.length
+int
+cmp_keyvalue_value_ni(const void *a, const void *b) {
+    Kv *kv1 = (Kv *)a;
+    Kv *kv2 = (Kv *)b;
+    return compareAscii((Byte *)kv1->value.c,
+       (Byte *)kv2->value.c, MAX(kv1->value.len,
+          kv2->value.len));
+}
+
+//}}}
+//{{{DictStringInt
+
+// Dictionary = a hash table that is filled once and then unchanged. As opposed to the more general
+// term "hash table" which is a data structure with arbitrary usage patterns.
+// This particular data structure is optimized in the following ways:
+// - it relies on a byte array that lives longer than itself and contains all the keys separated by
+// the zero char (e.g. "asdf\0bc jk\0" for the keys "asdf" and "bc jk")
+// - it stores strings as simple integers (offsets into the said byte array)
+// - its values are 4-byte ints
+// - after construction its length doesn't change (no key insertions or removals), though the values
+// themselves may be changed
+
+private Unt
+hashCode(Byte const* start) {
+   Unt result = 5381;
+   Byte const* p = start;
+   for (int i = 0; p[i] != ZERO; i++) {
+      result = ((result << 5) + result) + p[i]; // hash*33 + c
+   }
+   return result;
+}
+
+private Unt
+hashOfText(Text s) {
+   Unt result = 5381;
+   Byte const* p = s.c;
+   for (Unt i = 0; i < s.len; i++) {
+      result = ((result << 5) + result) + p[i]; // hash*33 + c
+   }
+   return result;
+}
+
+private DictStringInt128*
+initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
+   DictStringInt128* dict = allocate(DictStringInt128, a);
+   dict->c = allocateArray(size, DictStringIntItem, a),
+   dict->hashes = allocateArray(size, Unt, a),
+   dict->text = text;
+   memset(dict->dict, 0, 128*4);
+   dict->dict[128] = size;
+   
+   // Temporary array which we'll free at end of function (since it's at the very end of the arena)
+   *temp = allocateOnArena(size*4, a);
+   
+   // calculate the hashes and keys
+   Byte const* ch = text;
+   for (Int i = 0; i < size; i++) {
+      Unt hash = hashCode(ch);
+      dict->hashes[i] = ch - text; // yep, initially the keys go into @hashes!
+      (*temp)[i] = hash;
+      dict->dict[hash >> 25]++;
+      for (; *ch != ZERO; ch++) {
+      }
+      ch++;
+   }
+   dict->textLen = ch - text;
+   
+   // Bucket counts -> bucket start indices
+   Unt sumBefore = dict->dict[0];
+   dict->dict[0] = 0;
+   for (Int i = 1; i < 128; i++) {
+      Unt value = dict->dict[i];
+      dict->dict[i] = sumBefore;
+      sumBefore += value;
+   }
+   return dict;
+}
+
+private void
+initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict) {
+   // After every key & value has been put, @dict now contains not starts of buckets but their ends.
+   // So not [0 5 7 .. 100 101 size] but [5 7 ... 101 size size]
+   // Shift all the elements right by 1 to restore
+   for (Int i = 126; i > -1; i--) {
+      dict->dict[i + 1] = dict->dict[i];
+   }
+   dict->dict[0] = 0;
+   
+   // Now store the hashes into their correct buckets
+   for (Int i = 0; i < size; i++) {
+      Unt hash = temp[i];
+      Unt ind = dict->dict[hash >> 25];
+      dict->hashes[ind] = hash; 
+      dict->dict[hash >> 25]++;
+   }
+   
+   // @dict needs the same shift again
+   for (Int i = 126; i > -1; i--) {
+      dict->dict[i + 1] = dict->dict[i];
+   }
+   dict->dict[0] = 0;
+   
+   arenaTryFree((void*)temp, size*4, a);
+}
+
+DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values, Int size, Arena* a) {
+   Arr(Unt) temp;
+   DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
+
+   // Store the keys and values into their correct buckets
+   for (Int i = 0; i < size; i++) {
+      Unt bucket = temp[i] >> 25;
+      Unt ind = dict->dict[bucket];
+      dict->c[ind] = (DictStringIntItem){.key = dict->hashes[i], .value = values[i]};
+      dict->dict[bucket]++;
+   }
+   
+   initDict1(a, size, temp, OUT dict);
+   return dict;
+}
+
+// Create a dictionary where values are just indices of names
+DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size, Arena* a) {
+   Arr(Unt) temp;
+   DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
+
+   // Store the keys and values into their correct buckets
+   for (Int i = 0; i < size; i++) {
+      Unt bucket = temp[i] >> 25;
+      Unt ind = dict->dict[bucket];
+      dict->c[ind] = (DictStringIntItem){.key = dict->hashes[i], .value = i};
+      dict->dict[bucket]++;
+   }
+   
+   initDict1(a, size, temp, OUT dict);
+   return dict;
+}
+
+#define dictGetterFn(ifFound, ifNotFound) \
+   Unt needleHash = hashCode(needle);\
+   Unt ind = needleHash >> 25;\
+   Unt const end = haystack->dict[ind + 1];\
+   for (Unt i = haystack->dict[ind]; i < end; i++) {\
+      if (haystack->hashes[i] == needleHash \
+            && STRCMP(haystack->text + haystack->c[i].key, needle) == 0\
+      ) {\
+         ifFound;\
+      }\
+   }\
+   ifNotFound;
+   
+#define dictGetterFn_Text(ifFound, ifNotFound) \
+   Unt needleHash = hashOfText(needle);\
+   Unt ind = needleHash >> 25;\
+   Unt const end = haystack->dict[ind + 1];\
+   for (Unt i = haystack->dict[ind]; i < end; i++) {\
+      if (haystack->hashes[i] == needleHash \
+            && haystack->c[i].key + needle.len < haystack->textLen\
+            && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0\
+      ) {\
+         ifFound;\
+      }\
+   }\
+   ifNotFound;
+
+
+Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
+   dictGetterFn(return true, return false);
+}
+
+Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
+   dictGetterFn(return haystack->c[i].value, return -1); // TODO throw exception
+}
+
+Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack) {
+   dictGetterFn_Text(return haystack->c[i].value, return -1); // TODO throw exception
+}
+
+Int getOrDefault_DictStringInt128(
+   Arr(Byte const) needle, Int defaultValue, DictStringInt128* restrict haystack
+) {
+   dictGetterFn(return haystack->c[i].value, return defaultValue);
+}
+
+Int getOrDefault_Text_DictStringInt128(
+   Text needle, Int defaultValue, DictStringInt128* restrict haystack
+) {
+   Unt needleHash = hashOfText(needle);
+   Unt ind = needleHash >> 25;
+   Unt const end = haystack->dict[ind + 1];
+   for (Unt i = haystack->dict[ind]; i < end; i++) {
+      if (haystack->hashes[i] == needleHash 
+            && haystack->c[i].key + needle.len < haystack->textLen
+            && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0
       ) {
-        fprintf(stderr, "%s: ", pname);
-        perror(argv[2]);
-        return 3;
-      }
-      rewind(fpo);
-   }
-
-   if (revert)
-    switch (hextype) {
-      case HEX_NORMAL:
-      case HEX_POSTSCRIPT:
-      case HEX_BITS:
-         return huntype(fp, fpo, cols, hextype, negseek ? -seekoff : seekoff);
-      break;
-      default:
-         error_exit(-1, "Sorry, cannot revert this type of hexdump");
-      }
-
-   if (seekoff || negseek || !relseek) {
-      if (relseek)
-         e = fseek(fp, negseek ? -seekoff : seekoff, SEEK_CUR);
-      else
-         e = fseek(fp, negseek ? -seekoff : seekoff, negseek ? SEEK_END : SEEK_SET);
-      if (e < 0 && negseek)
-         error_exit(4, "Sorry, cannot seek.");
-      if (e >= 0)
-         seekoff = ftell(fp);
-      else {
-         long s = seekoff;
-
-         while (s--) {
-            if (getc_or_die(fp) == EOF) {
-               error_exit(4, "Sorry, cannot seek.");
-            }
-         } 
+         return haystack->c[i].value;
       }
    }
+   return defaultValue;
+}
 
-   if (hextype & HEX_CINCLUDE) {
-      // A user-set variable name overrides fp == stdin
-      if (varname == NULL && fp != stdin)
-         varname = argv[1];
-
-      if (varname != NULL) {
-         FPRINTF_OR_DIE((fpo, "unsigned char %s", isdigit((unsigned char)varname[0]) ? "__" : ""));
-         for (e = 0; (c = varname[e]) != 0; e++)
-            putc_or_die(isalnum((unsigned char)c) ? CONDITIONAL_CAPITALIZE(c) : '_', fpo);
-         fputs_or_die("[] = {\n", fpo);
-      }
-
-      p = 0;
-      while ((length < 0 || p < length) && (c = getc_or_die(fp)) != EOF) {
-        if (hextype & HEX_BITS) {
-            if (p == 0)
-               fputs_or_die("  ", fpo);
-            ei (p % cols == 0)
-               fputs_or_die(",\n  ", fpo);
-            else
-               fputs_or_die(", ", fpo);
-
-            FPRINTF_OR_DIE((fpo, "0b"));
-            for (int j = 7; j >= 0; j--)
-               putc_or_die((c & (1 << j)) ? '1' : '0', fpo);
-            p++;
-          } else {
-            FPRINTF_OR_DIE(
-               (fpo, 
-                (hexx == hexxa) ? "%s0x%02x" : "%s0X%02X", 
-                   (p % cols) ? ", " : (!p ? "  " : ",\n  "), c)
-            );
-            p++;
-          }
-      }
-
-      if (p)
-         fputs_or_die("\n", fpo);
-
-      if (varname != NULL) {
-         fputs_or_die("};\n", fpo);
-         FPRINTF_OR_DIE((fpo, "unsigned int %s", isdigit((unsigned char)varname[0]) ? "__" : ""));
-         for (e = 0; (c = varname[e]) != 0; e++)
-            putc_or_die(isalnum((unsigned char)c) ? CONDITIONAL_CAPITALIZE(c) : '_', fpo);
-         FPRINTF_OR_DIE((fpo, "_%s = %d;\n", capitalize ? "LEN" : "len", p));
-      }
-
-      fclose_or_die(fp, fpo);
-      return 0;
-   }
-
-   if (hextype == HEX_POSTSCRIPT) {
-      p = cols;
-      while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
-         putc_or_die(hexx[(e >> 4) & 0xf], fpo);
-         putc_or_die(hexx[e & 0xf], fpo);
-         n++;
-         if (cols > 0 && !--p) {
-            putc_or_die('\n', fpo);
-            p = cols;
-         }
-      }
-      if (cols == 0 || p < cols)
-         putc_or_die('\n', fpo);
-      fclose_or_die(fp, fpo);
-      return 0;
-   }
-
-   // hextype: HEX_NORMAL or HEX_BITS or HEX_LITTLEENDIAN 
-   if (hextype != HEX_BITS) {
-      grplen = octspergrp + octspergrp + 1;   /* chars per octet group */
-   } else   // hextype == HEX_BITS
-      grplen = 8 * octspergrp + 1;
-
-   while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
-      if (p == 0) {
-         addrlen = sprintf(l, decimal_offset ? "%08ld:" : "%08lx:",
-              ((unsigned long)(n + seekoff + displayoff)));
-         for (c = addrlen; c < LLEN_NO_COLOR; l[c++] = ' ')
-            ;
-      }
-      x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
-      c = addrlen + 1 + (grplen * x) / octspergrp;
-      if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN) {
-         if (color) {
-            cur_color = get_color_char(e);
-            colors[c] = cur_color;
-            colors[c+1] = cur_color;
-         }
-
-         l[c]   = hexx[(e >> 4) & 0xf];
-         l[++c] = hexx[e & 0xf];
-      } else {// hextype == HEX_BITS */
-         for (i = 7; i >= 0; i--)
-            l[c++] = (e & (1 << i)) ? '1' : '0';
-      }
-      if (e)
-         nonzero++;
-         // When changing this update definition of LLEN and LLEN_NO_COLOR above.
-      if (hextype == HEX_LITTLEENDIAN)
-         // last group will be fully used, round up 
-         c = grplen * ((cols + octspergrp - 1) / octspergrp);
-      else
-         c = (grplen * cols - 1) / octspergrp;
-
-      if (hextype == HEX_LITTLEENDIAN)
-         c -= 1;
-
-      c += addrlen + 3 + p;
-      if (color)
-         colors[c] = cur_color;
-      l[c++] = (e > 31 && e < 127) ? e : '.';
-         n++;
-      if (++p == cols) {
-         l[c++] = '\n';
-         l[c] = '\0';
-
-         xxdline(fpo, l, color ? colors : NULL, autoskip ? nonzero : 1);
-         memset(colors, 0, c);
-         nonzero = 0;
-         p = 0;
+Int getKv_Text_DictStringInt128(
+   OUT Unt* key, Text needle, DictStringInt128* restrict haystack
+) {
+   Unt needleHash = hashOfText(needle);
+   Unt ind = needleHash >> 25;
+   Unt const end = haystack->dict[ind + 1];
+   for (Unt i = haystack->dict[ind]; i < end; i++) {
+      if (haystack->hashes[i] == needleHash 
+            && haystack->c[i].key + needle.len < haystack->textLen
+            && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0
+      ) {
+         *key = haystack->c[i].key;
+         return haystack->c[i].value;
       }
    }
-   if (p) {
-      l[c++] = '\n';
-      l[c] = '\0';
-      if (color) {
-         x = p;
-         if (hextype == HEX_LITTLEENDIAN) {
-            int fill = octspergrp - (p % octspergrp);
-            if (fill == octspergrp) fill = 0;
-
-            c = addrlen + 1 + (grplen * (x - (octspergrp-fill))) / octspergrp;
-
-            for (i = 0; i < fill;i++) {
-               colors[c] = COLOR_RED;
-               l[c++] = ' '; /* empty space */
-               x++;
-               p++;
-            }
-         }
-
-         if (hextype != HEX_BITS) {
-            c = addrlen + 1 + (grplen * x) / octspergrp;
-            c += cols - p;
-            c += (cols - p) / octspergrp;
-
-            for (i = cols - p; i > 0;i--) {
-               colors[c] = COLOR_RED;
-               l[c++] = ' ';
-            }
-         }
-         xxdline(fpo, l, colors, 1);
-      } else
-         xxdline(fpo, l, NULL, 1);
-   } ei (autoskip)
-      xxdline(fpo, l, color ? colors : NULL, -1);   // last chance to flush out suppressed lines
-
-   fclose_or_die(fp, fpo);
    return 0;
 }
+
+#undef dictGetterFn
 
 //}}}

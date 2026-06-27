@@ -4,7 +4,9 @@
 //## persist.c: session related functions. Saving and restoring IDE state to files
 
 #include "eegl.h"
+#ifndef PROTO
 #include <sys/stat.h> // for stat, fstat, S_ISDIR
+#endif
 
 //{{{users
 
@@ -1332,7 +1334,7 @@ writeEeglInfoBookList(FILE* fp) {
       if (max_buffers-- == 0)
          break;
       putc('%', fp);
-      home_replace(NULL, book->fullFileName, line, MAXPATHL, true);
+      home_replace(book->fullFileName, line, MAXPATHL, true);
       eeSnprintfAdd(line, LINE_BUF_LEN, "\t%ld\t%d",
             (long)book->lastCursor.lnum,
             book->lastCursor.col);
@@ -1420,14 +1422,14 @@ read_eeglinfo_history(Vir* virp, int writing) {
       p = alloc((Unt)len + 1); // +1 for the ZERO. val already includes the separator.
 
       // Search entry: Move the separator from the first column to after the ZERO.
-      mch_memmove(p, val + 1, (Unt)len);
+      MEMMOVE(p, val + 1, (Unt)len);
       p[len] = sep;
       --len;                // take into account the shortened string
    } else {
       p = alloc((Unt)len + 2);       // +1 for ZERO and +1 for separator
 
       // Not a search entry: No separator in the eeglinfo file, add a ZERO separator.
-      mch_memmove(p, val, (Unt)len + 1);   // +1 to include the ZERO
+      MEMMOVE(p, val, (Unt)len + 1);   // +1 to include the ZERO
       p[len + 1] = ZERO;         // put the separator *after* the string's ZERO
    }
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisstr = p;
@@ -1497,7 +1499,7 @@ handle_eeglinfo_history(ArrayList* values, int writing) {
    if (p) {
       eeglinfo_history[type][idx].time_set = vp[1].bv_nr;
       if (!overwrite) {
-          mch_memmove(p, val, (Unt)len + 1);
+          MEMMOVE(p, val, (Unt)len + 1);
           // Put the separator after the ZERO.
           p[len + 1] = sep;
           eeglinfo_history[type][idx].hisstr = p;
@@ -1848,7 +1850,7 @@ barline_parse(Vir* virp, CS text, ArrayList* values) {
                   nextp = virp->line + 2 + todo;
                   n = todo;
                }
-                mch_memmove(p, virp->line + 2, n);
+                MEMMOVE(p, virp->line + 2, n);
                 p += n;
             }
             *p = ZERO;
@@ -2579,7 +2581,7 @@ write_one_mark(FILE* fp_out, int c, Pos* pos) {
 
 private void
 writeBookMarks(Book* book, FILE* fp_out) {
-   home_replace(NULL, book->fullFileName, IObuff, IOSIZE, true);
+   home_replace(book->fullFileName, IObuff, IOSIZE, true);
    fprintf(fp_out, "\n> ");
    eeglinfo_writestring(fp_out, IObuff);
 
@@ -2848,7 +2850,7 @@ copy_eeglinfo_marks(
       if (fp_out == NULL) {
          if ((flags & EIF_WANT_MARKS) && curBook->fullFileName != NULL) {
             if (*name_buf == ZERO)       // only need to do this once
-               home_replace(NULL, curBook->fullFileName, name_buf, LSIZE, true);
+               home_replace(curBook->fullFileName, name_buf, LSIZE, true);
             if (fnamecmp(str, name_buf) == 0)
                load_marks = true;
          }
@@ -2856,7 +2858,7 @@ copy_eeglinfo_marks(
          // This is slow if there are many books!!
          FOR_ALL_BOOKS(book) {
             if (book->fullFileName) {
-               home_replace(NULL, book->fullFileName, name_buf, LSIZE, true);
+               home_replace(book->fullFileName, name_buf, LSIZE, true);
                if (fnamecmp(str, name_buf) == 0)
                   break;
             }
@@ -2930,7 +2932,7 @@ copy_eeglinfo_marks(
                     // first
                     if (curBook->changeListLen == JUMPLISTSIZE)
                         // list is full, remove oldest entry
-                        mch_memmove(curBook->changeList,
+                        MEMMOVE(curBook->changeList,
                          curBook->changeList + 1,
                          sizeof(Pos) * (JUMPLISTSIZE - 1));
                     else

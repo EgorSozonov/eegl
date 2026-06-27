@@ -84,10 +84,10 @@ private int saved_spats_last_idx = 0;
 private Boole saved_spatsHlsearch = true;
 
 // allocated copy of pattern used by search_regcomp()
-private Text mrPatternP = (Text){NULL, 0};
+private Text mrPatternP = (Text){null, 0};
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
-typedef struct SearchedFile {
+typedef struct {
    FILE* fp;     // File pointer
    CS name;      // Full name of file
    LineNr lnum;  // Line we were up to in file
@@ -1060,11 +1060,11 @@ do_search(
             if (utf_iscomposing(mb_ptr2char(p))) {
                // Use a space to draw the composing char on.
                msgbuf[1] = ' ';
-               mch_memmove(msgbuf + 2, p, plen);
+               MEMMOVE(msgbuf + 2, p, plen);
             } else
-               mch_memmove(msgbuf + 1, p, plen);
+               MEMMOVE(msgbuf + 1, p, plen);
             if (off_len > 0)
-               mch_memmove(msgbuf + plen + 1, off_buf, off_len);
+               MEMMOVE(msgbuf + plen + 1, off_buf, off_len);
 
             trunc = msg_strtrunc(msgbuf, true);
             if (trunc != NULL) {
@@ -2148,7 +2148,7 @@ cmdline_search_stat(
       len = eeSnprintf(t, SEARCH_STAT_BUF_LEN, "[%d/%d]", stat.cur, stat.cnt);
 
    if (show_top_bot_msg && len + 2 < SEARCH_STAT_BUF_LEN) {
-      mch_memmove(t + 2, t, len);
+      MEMMOVE(t + 2, t, len);
       t[0] = 'W';
       t[1] = ' ';
       len += 2;
@@ -2156,7 +2156,7 @@ cmdline_search_stat(
 
    if (len > msgbuflen)
       len = msgbuflen;
-   mch_memmove(msgbuf + msgbuflen - len, t, len);
+   MEMMOVE(msgbuf + msgbuflen - len, t, len);
 
    if (dirc == '?' && stat.cur == maxcount + 1)
       stat.cur = -1;
@@ -4435,15 +4435,15 @@ find_help_tags(
          if (*IObuff == '`') {
             if (d > IObuff + 2 && d[-1] == '`') {
                // remove the backticks from `command`
-               mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
+               MEMMOVE(IObuff, IObuff + 1, STRLEN(IObuff));
                d[-2] = ZERO;
             } ei (d > IObuff + 3 && d[-2] == '`' && d[-1] == ',') {
                // remove the backticks and comma from `command`,
-               mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
+               MEMMOVE(IObuff, IObuff + 1, STRLEN(IObuff));
                d[-3] = ZERO;
             } ei (d > IObuff + 4 && d[-3] == '`' && d[-2] == '\\' && d[-1] == '.') {
                // remove the backticks and dot from `command`\.
-               mch_memmove(IObuff, IObuff + 1, STRLEN(IObuff));
+               MEMMOVE(IObuff, IObuff + 1, STRLEN(IObuff));
                d[-4] = ZERO;
             }
          }

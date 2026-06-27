@@ -163,7 +163,7 @@ trunc_string(
          builder[e] = ZERO;
          return;
       }
-      n = ptr2cells(s + e);
+      n = bookPtr2Cells(s + e);
       if (len + n > half)
           break;
       len += n;
@@ -183,7 +183,7 @@ trunc_string(
       do {
          half = half - mb_head_off(s, s + half - 1) - 1;
       } while (half > 0 && utf_iscomposing(mb_ptr2char(s + half)));
-      n = ptr2cells(s + half);
+      n = bookPtr2Cells(s + half);
       if (len + n > room || half == 0)
          break;
       len += n;
@@ -201,15 +201,15 @@ trunc_string(
          if (len < 1)
             builder[e - 1] = ZERO;
          else
-            mch_memmove(builder + e, s + e, len);
+            MEMMOVE(builder + e, s + e, len);
       }
    } ei (e + 3 < buflen) {
       // set the middle and copy the last part
-      mch_memmove(builder + e, "...", (Unt)3);
+      MEMMOVE(builder + e, "...", (Unt)3);
       len = STRLEN(s + i) + 1;
       if (len >= (Unt)buflen - e - 3)
           len = buflen - e - 3 - 1;
-      mch_memmove(builder + e + 3, s + i, len);
+      MEMMOVE(builder + e + 3, s + i, len);
       builder[e + 3 + len - 1] = ZERO;
    } else {
       // can't fit in the "...", just truncate it
@@ -653,7 +653,7 @@ msg_prt_line(CS s, int list) {
             int len = mb_char2bytes(listCharsG.nbsp, builder);
             builder[len] = ZERO;
          } else {
-            mch_memmove(builder, s, (Unt)l);
+            MEMMOVE(builder, s, (Unt)l);
             builder[l] = ZERO;
          }
          msg_puts(builder);
@@ -2608,7 +2608,7 @@ mch_errmsg(CS errMsg) {
       errorsG.ga_itemsize = 1;
    }
    if (ga_grow(&errorsG, len) == OK) {
-      mch_memmove((CS)errorsG.c + errorsG.len, (CS)errMsg, len);
+      MEMMOVE((CS)errorsG.c + errorsG.len, (CS)errMsg, len);
       // remove CR characters, they are displayed
       {
          Byte* p = (CS)errorsG.c + errorsG.len;
@@ -2990,7 +2990,7 @@ copy_char(
       return (*mb_char2bytes)(c, to);
    } else {
       int len = utfCharLen(from);
-      mch_memmove(to, from, (Unt)len);
+      MEMMOVE(to, from, (Unt)len);
       return len;
    }
 }

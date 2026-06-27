@@ -9,200 +9,7 @@
 
 private int check_for_string_or_list_or_blob_arg(Arr(Var) args, int idx);
 private void dict_free(Bag *d);
-
-//}}}
-//{{{arrayList
-
-// Clear an allocated growing array.
-void
-ga_clear(ArrayList* gap) {
-    eeglFree(gap->c);
-    ga_init(gap);
-}
-
-// Clear a growing array that contains a list of strings.
-void
-ga_clear_strings(ArrayList* gap) {
-   int i;
-
-   if (gap->c) {
-      for (i = 0; i < gap->len; ++i)
-         eeglFree(((Byte **)(gap->c))[i]);
-   } 
-   ga_clear(gap);
-}
-
-// Copy a growing array that contains a list of strings.
-int
-ga_copy_strings(ArrayList *from, ArrayList *to) {
-   int      i;
-   ga_init2(to, sizeof(CS), 1);
-   if (ga_grow(to, from->len) == FAIL)
-      return FAIL;
-
-   for (i = 0; i < from->len; ++i) {
-      CS orig = ((Byte **)from->c)[i];
-      CS copy = orig ? copyStr(orig) : null;
-      ((Byte **)to->c)[i] = copy;
-   }
-   to->len = from->len;
-   return OK;
-}
-
-// Initialize a growing array. Don't forget to set ga_itemsize and ga_growsize! Or use ga_init2()
-void
-ga_init(ArrayList* gap) {
-    gap->c = NULL;
-    gap->cap = 0;
-    gap->len = 0;
-}
-
-void
-ga_init2(ArrayList *gap, Unt itemsize, int growsize) {
-    ga_init(gap);
-    gap->ga_itemsize = (int)itemsize;
-    gap->ga_growsize = growsize;
-}
-
-// Make room in growing array "gap" for at least "n" items. FAIL for failure, OK otherwise.
-int
-ga_grow(ArrayList *gap, int n) {
-   if (gap->cap - gap->len < n)
-      return ga_grow_inner(gap, n);
-   return OK;
-}
-
-// Same as ga_grow() but uses an allocation id for testing.
-int
-ga_grow_id(ArrayList *gap, int n, AllocId id UNUSED) {
-   if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
-      return FAIL;
-
-   return ga_grow(gap, n);
-}
-
-int
-ga_grow_inner(ArrayList* gap, int n) {
-   Unt old_len;
-   Unt new_len;
-
-   if (n < gap->ga_growsize)
-      n = gap->ga_growsize;
-
-   // A linear growth is very inefficient when the array grows big.  This
-   // is a compromise between allocating memory that won't be used and too
-   // many copy operations. A factor of 1.5 seems reasonable.
-   if (n < gap->len / 2)
-      n = gap->len / 2;
-
-   new_len = (Unt)gap->ga_itemsize * (gap->len + n);
-   CS pp = eeRealloc(gap->c, new_len);
-   old_len = (Unt)gap->ga_itemsize * gap->cap;
-   memset(pp + old_len, 0, new_len - old_len);
-   gap->cap = gap->len + n;
-   gap->c = pp;
-   return OK;
-}
-
-//For an ArrayList that contains a list of strings: concatenate all the
-//strings with a separating "sep".
-//Return NULL when out of memory.
-CS
-ga_concat_strings(ArrayList *gap, char *sep) {
-   int i;
-   int len = 0;
-   int sep_len = (int)STRLEN(sep);
-
-   for (i = 0; i < gap->len; ++i)
-      len += (int)STRLEN(((Byte **)(gap->c))[i]) + sep_len;
-
-   CS s = alloc(len + 1);
-
-   *s = ZERO;
-   CS p = s;
-   for (i = 0; i < gap->len; ++i) {
-      if (p != s) {
-          STRCPY(p, sep);
-          p += sep_len;
-      }
-      STRCPY(p, ((Byte **)(gap->c))[i]);
-      p += STRLEN(p);
-   }
-   return s;
-}
-
-// Make a copy of string "p" and add it to "gap". When out of memory, 
-// nothing changes and FAIL is returned.
-int
-ga_copy_string(ArrayList *gap, CS p) {
-   CS cp = copyStr(p);
-
-   if (ga_grow(gap, 1) == FAIL) {
-      eeglFree(cp);
-      return FAIL;
-   }
-   ((Byte **)(gap->c))[gap->len] = cp;
-   gap->len++;
-   return OK;
-}
-
-// Add string "p" to "gap". When out of memory, FAIL is returned (caller may want to free "p").
-int
-ga_add_string(ArrayList *gap, CS p) {
-   if (ga_grow(gap, 1) == FAIL)
-      return FAIL;
-   ((Byte **)(gap->c))[gap->len] = p;
-   gap->len++;
-   return OK;
-}
-
-// Concatenate a string to a growarray which contains bytes.
-// When "s" is NULL memory allocation fails does not do anything.
-// Note: Does NOT copy the ZERO at the end!
-void
-ga_concat(ArrayList *gap, CS s) {
-   if (s == NULL || *s == ZERO)
-      return;
-   int len = (int)STRLEN(s);
-   if (ga_grow(gap, len) == OK) {
-      mch_memmove((char *)gap->c + gap->len, s, (Unt)len);
-      gap->len += len;
-    }
-}
-
-// Concatenate 'len' bytes from string 's' to a growarray. When "s" is NULL do not do anything.
-void
-ga_concat_len(ArrayList *gap, CS s, Unt len) {
-   if (s == NULL || *s == ZERO || len == 0)
-      return;
-   if (ga_grow(gap, (int)len) == OK) {
-      mch_memmove((char *)gap->c + gap->len, s, len);
-      gap->len += (int)len;
-   }
-}
-
-// Append one byte to a growarray which contains bytes.
-int
-ga_append(ArrayList *gap, int c) {
-   if (ga_grow(gap, 1) == FAIL)
-      return FAIL;
-   *((char *)gap->c + gap->len) = c;
-   ++gap->len;
-   return OK;
-}
-
-// Append the text in "gap" below the cursor line and clear "gap".
-void
-append_ga_line(ArrayList *gap) {
-   // Remove trailing CR.
-   if (gap->len > 0
-          && !curBook->o.binary
-          && ((CS)gap->c)[gap->len - 1] == ENTER)
-      --gap->len;
-   ga_append(gap, ZERO);
-   ml_append(curPor->cursor.lnum++, gap->c, 0, false);
-   gap->len = 0;
-}
+private void string_reduce(Var* argvars, Var* expr, Var* returnVar);
 
 //}}}
 //{{{list
@@ -293,13 +100,13 @@ list_alloc_with_items(int count) {
    l->lv_u.mat.last = li + count - 1;
    for (i = 0; i < count; ++i) {
       if (i == 0)
-          li->prev = NULL;
+         li->prev = NULL;
       else
-          li->prev = li - 1;
+         li->prev = li - 1;
       if (i == count - 1)
-          li->next = NULL;
+         li->next = NULL;
       else
-          li->next = li + 1;
+         li->next = li + 1;
       ++li;
    }
 
@@ -343,18 +150,18 @@ returnVar_list_set(OUT Var* returnVar, List *l) {
 
 // Unreference a list: decrement the reference count and free it when it becomes zero.
 void
-list_unref(List *l) {
+list_unref(List* l) {
    if (l && --l->refcount <= 0)
       list_free(l);
 }
 
 // Free a list, including all non-container items it points to. Ignores the reference count.
 private void
-list_free_contents(List *l) {
+list_free_contents(List* l) {
    ListItem *item;
 
    if (l->first != &range_list_item) {
-      for (item = l->first; item != NULL; item = l->first) {
+      for (item = l->first; item; item = l->first) {
          // Remove the item before deleting it.
          l->first = item->next;
          clearVar(&item->c);
@@ -383,11 +190,11 @@ list_free_nonref(int copyID) {
 private void
 list_free_list(List* l) {
    // Remove the list from the list of lists for garbage collection.
-   if (l->usedPrev == NULL)
+   if (!l->usedPrev)
       first_list = l->usedNext;
    else
       l->usedPrev->usedNext = l->usedNext;
-   if (l->usedNext != NULL)
+   if (l->usedNext)
       l->usedNext->usedPrev = l->usedPrev;
 
    free_type(l->ty);
@@ -396,9 +203,8 @@ list_free_list(List* l) {
 
 void
 list_free_items(int copyID) {
-   List   *ll, *ll_next;
-
-   for (ll = first_list; ll != NULL; ll = ll_next) {
+   List* ll_next;
+   for (List* ll = first_list; ll != NULL; ll = ll_next) {
       ll_next = ll->usedNext;
       if ((ll->copyId & COPYID_MASK) != (copyID & COPYID_MASK) && ll->watcher == NULL) {
          // Free the List and ordinary items it contains, but don't recurse
@@ -557,11 +363,11 @@ list_find(List* l, long n) {
 long
 list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to true when something wrong
    if (l && l->first == &range_list_item) {
-      long       n = idx;
+      long n = idx;
 
       // not materialized range() list: compute the value. Negative index is relative to the end.
       if (n < 0)
-          n = l->len + n;
+         n = l->len + n;
 
       // Check for index out of range.
       if (n < 0 || n >= l->len) {
@@ -747,9 +553,9 @@ list_insert(List *l, ListItem *ni, ListItem *item) {
 // Get the list item in "l" with index "n1".  "n1" is adjusted if needed.
 // Return NULL if there is no such item.
 ListItem *
-check_range_index_one(List *l, long *n1, int quiet) {
-   long   orig_n1 = *n1;
-   ListItem   *li = list_find_index(l, n1);
+check_range_index_one(List* l, long* n1, int quiet) {
+   long orig_n1 = *n1;
+   ListItem* li = list_find_index(l, n1);
 
    if (li)
       return li;
@@ -2556,254 +2362,15 @@ f_slice(Arr(Var) argvars, Var* returnVar) {
    );
 }
 
-//}}}
-//{{{key-value pair
-
-// compare two Kv structs by case sensitive value
+// Same as ga_grow() but uses an allocation id for testing.
 int
-cmp_keyvalue_value(const void *a, const void *b) {
-   return STRCMP(((Kv*)a)->value.c, ((Kv*)b)->value.c);
+ga_grow_id(ArrayList *gap, int n, AllocId id) {
+   if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
+      return FAIL;
+
+   return ga_grow(gap, n);
 }
 
-// compare two Kv structs by value with length
-int
-cmp_keyvalue_value_n(const void *a, const void *b) {
-   Kv *kv1 = (Kv *)a;
-   Kv *kv2 = (Kv *)b;
-
-   return STRNCMP(kv1->value.c, kv2->value.c, MAX(kv1->value.len, kv2->value.len));
-}
-
-// compare two Kv structs by case insensitive value
-int
-cmp_keyvalue_value_i(const void *a, const void *b) {
-    Kv *kv1 = (Kv *)a;
-    Kv *kv2 = (Kv *)b;
-
-    return caseInsensitiveCompare(kv1->value.c, kv2->value.c);
-}
-
-// compare two Kv structs by case insensitive ASCII value with value.length
-int
-cmp_keyvalue_value_ni(const void *a, const void *b) {
-    Kv *kv1 = (Kv *)a;
-    Kv *kv2 = (Kv *)b;
-    return compareAscii((Byte *)kv1->value.c,
-       (Byte *)kv2->value.c, MAX(kv1->value.len,
-          kv2->value.len));
-}
-
-//}}}
-//{{{DictStringInt
-
-// Dictionary = a hash table that is filled once and then unchanged. As opposed to the more general
-// term "hash table" which is a data structure with arbitrary usage patterns.
-// This particular data structure is optimized in the following ways:
-// - it relies on a byte array that lives longer than itself and contains all the keys separated by
-// the zero char (e.g. "asdf\0bc jk\0" for the keys "asdf" and "bc jk")
-// - it stores strings as simple integers (offsets into the said byte array)
-// - its values are 4-byte ints
-// - after construction its length doesn't change (no key insertions or removals), though the values
-// themselves may be changed
-
-private Unt
-hashCode(Byte const* start) {
-   Unt result = 5381;
-   Byte const* p = start;
-   for (int i = 0; p[i] != ZERO; i++) {
-      result = ((result << 5) + result) + p[i]; // hash*33 + c
-   }
-   return result;
-}
-
-private Unt
-hashOfText(Text s) {
-   Unt result = 5381;
-   Byte const* p = s.c;
-   for (Unt i = 0; i < s.len; i++) {
-      result = ((result << 5) + result) + p[i]; // hash*33 + c
-   }
-   return result;
-}
-
-private DictStringInt128*
-initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp) {
-   DictStringInt128* dict = allocate(DictStringInt128, a);
-   dict->c = allocateArray(size, DictStringIntItem, a),
-   dict->hashes = allocateArray(size, Unt, a),
-   dict->text = text;
-   memset(dict->dict, 0, 128*4);
-   dict->dict[128] = size;
-   
-   // Temporary array which we'll free at end of function (since it's at the very end of the arena)
-   *temp = allocateOnArena(size*4, a);
-   
-   // calculate the hashes and keys
-   Byte const* ch = text;
-   for (Int i = 0; i < size; i++) {
-      Unt hash = hashCode(ch);
-      dict->hashes[i] = ch - text; // yep, initially the keys go into @hashes!
-      (*temp)[i] = hash;
-      dict->dict[hash >> 25]++;
-      for (; *ch != ZERO; ch++) {
-      }
-      ch++;
-   }
-   dict->textLen = ch - text;
-   
-   // Bucket counts -> bucket start indices
-   Unt sumBefore = dict->dict[0];
-   dict->dict[0] = 0;
-   for (Int i = 1; i < 128; i++) {
-      Unt value = dict->dict[i];
-      dict->dict[i] = sumBefore;
-      sumBefore += value;
-   }
-   return dict;
-}
-
-private void
-initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict) {
-   // After every key & value has been put, @dict now contains not starts of buckets but their ends.
-   // So not [0 5 7 .. 100 101 size] but [5 7 ... 101 size size]
-   // Shift all the elements right by 1 to restore
-   for (Int i = 126; i > -1; i--) {
-      dict->dict[i + 1] = dict->dict[i];
-   }
-   dict->dict[0] = 0;
-   
-   // Now store the hashes into their correct buckets
-   for (Int i = 0; i < size; i++) {
-      Unt hash = temp[i];
-      Unt ind = dict->dict[hash >> 25];
-      dict->hashes[ind] = hash; 
-      dict->dict[hash >> 25]++;
-   }
-   
-   // @dict needs the same shift again
-   for (Int i = 126; i > -1; i--) {
-      dict->dict[i + 1] = dict->dict[i];
-   }
-   dict->dict[0] = 0;
-   
-   arenaTryFree((void*)temp, size*4, a);
-}
-
-DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values, Int size, Arena* a) {
-   Arr(Unt) temp;
-   DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
-
-   // Store the keys and values into their correct buckets
-   for (Int i = 0; i < size; i++) {
-      Unt bucket = temp[i] >> 25;
-      Unt ind = dict->dict[bucket];
-      dict->c[ind] = (DictStringIntItem){.key = dict->hashes[i], .value = values[i]};
-      dict->dict[bucket]++;
-   }
-   
-   initDict1(a, size, temp, OUT dict);
-   return dict;
-}
-
-// Create a dictionary where values are just indices of names
-DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size, Arena* a) {
-   Arr(Unt) temp;
-   DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
-
-   // Store the keys and values into their correct buckets
-   for (Int i = 0; i < size; i++) {
-      Unt bucket = temp[i] >> 25;
-      Unt ind = dict->dict[bucket];
-      dict->c[ind] = (DictStringIntItem){.key = dict->hashes[i], .value = i};
-      dict->dict[bucket]++;
-   }
-   
-   initDict1(a, size, temp, OUT dict);
-   return dict;
-}
-
-#define dictGetterFn(ifFound, ifNotFound) \
-   Unt needleHash = hashCode(needle);\
-   Unt ind = needleHash >> 25;\
-   Unt const end = haystack->dict[ind + 1];\
-   for (Unt i = haystack->dict[ind]; i < end; i++) {\
-      if (haystack->hashes[i] == needleHash \
-            && STRCMP(haystack->text + haystack->c[i].key, needle) == 0\
-      ) {\
-         ifFound;\
-      }\
-   }\
-   ifNotFound;
-   
-#define dictGetterFn_Text(ifFound, ifNotFound) \
-   Unt needleHash = hashOfText(needle);\
-   Unt ind = needleHash >> 25;\
-   Unt const end = haystack->dict[ind + 1];\
-   for (Unt i = haystack->dict[ind]; i < end; i++) {\
-      if (haystack->hashes[i] == needleHash \
-            && haystack->c[i].key + needle.len < haystack->textLen\
-            && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0\
-      ) {\
-         ifFound;\
-      }\
-   }\
-   ifNotFound;
-
-
-Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
-   dictGetterFn(return true, return false);
-}
-
-Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
-   dictGetterFn(return haystack->c[i].value, return -1); // TODO throw exception
-}
-
-Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack) {
-   dictGetterFn_Text(return haystack->c[i].value, return -1); // TODO throw exception
-}
-
-Int getOrDefault_DictStringInt128(
-   Arr(Byte const) needle, Int defaultValue, DictStringInt128* restrict haystack
-) {
-   dictGetterFn(return haystack->c[i].value, return defaultValue);
-}
-
-Int getOrDefault_Text_DictStringInt128(
-   Text needle, Int defaultValue, DictStringInt128* restrict haystack
-) {
-   Unt needleHash = hashOfText(needle);
-   Unt ind = needleHash >> 25;
-   Unt const end = haystack->dict[ind + 1];
-   for (Unt i = haystack->dict[ind]; i < end; i++) {
-      if (haystack->hashes[i] == needleHash 
-            && haystack->c[i].key + needle.len < haystack->textLen
-            && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0
-      ) {
-         return haystack->c[i].value;
-      }
-   }
-   return defaultValue;
-}
-
-Int getKv_Text_DictStringInt128(
-   OUT Unt* key, Text needle, DictStringInt128* restrict haystack
-) {
-   Unt needleHash = hashOfText(needle);
-   Unt ind = needleHash >> 25;
-   Unt const end = haystack->dict[ind + 1];
-   for (Unt i = haystack->dict[ind]; i < end; i++) {
-      if (haystack->hashes[i] == needleHash 
-            && haystack->c[i].key + needle.len < haystack->textLen
-            && memcmp(haystack->text + haystack->c[i].key, needle.c, needle.len) == 0
-      ) {
-         *key = haystack->c[i].key;
-         return haystack->c[i].value;
-      }
-   }
-   return 0;
-}
-
-#undef dictGetterFn
 
 //}}}
 //{{{hashtable: Handling of a hashtable with Eegl-specific properties.
@@ -3114,7 +2681,7 @@ hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
       if (ht->array == newarray) {
          // Moving from smallArray to smallArray!  Happens when there
          // are many removed items.  Copy the items to be able to clean up removed items.
-         mch_memmove(temparray, newarray, sizeof(temparray));
+         MEMMOVE(temparray, newarray, sizeof(temparray));
          oldarray = temparray;
       } else
          oldarray = ht->array;
@@ -3181,492 +2748,6 @@ calcHash(Text const key) {
       hash = hash * 101 + (*p);
 
    return hash;
-}
-
-//}}}
-//{{{sha256
-
-// FIPS-180-2 compliant SHA-256 implementation
-// GPL by Christophe Devine, applies to older version.
-// Modified for md5deep, in public domain.
-// Modified For Vim, Mohsin Ahmed,
-// (original link www.cs.albany.edu/~mosh no longer available)
-// Mohsin Ahmed states this work is distributed under the VIM License or GPL,
-// at your choice.
-//
-// Eegl specific notes:
-// Functions exported by this file:
-//  1. sha256_key() hashes the password to 64 bytes char string.
-//  2. sha2_seed() generates a random header.
-//  sha256_self_test() is implicitly called once.
-
-
-#define GET_UINT32(n, b, i)          \
-{                   \
-    (n) = ( (Unt)(b)[(i)    ] << 24)   \
-   | ( (Unt)(b)[(i) + 1] << 16)   \
-   | ( (Unt)(b)[(i) + 2] <<  8)   \
-   | ( (Unt)(b)[(i) + 3]   );  \
-}
-
-#define PUT_UINT32(n,b,i)        \
-{                 \
-    (b)[(i)    ] = (Byte)((n) >> 24);   \
-    (b)[(i) + 1] = (Byte)((n) >> 16);   \
-    (b)[(i) + 2] = (Byte)((n) >>  8);   \
-    (b)[(i) + 3] = (Byte)((n)      );   \
-}
-
-void
-sha256_start(ContextSha256 *ctx) {
-   ctx->total[0] = 0;
-   ctx->total[1] = 0;
-
-   ctx->state[0] = 0x6A09E667;
-   ctx->state[1] = 0xBB67AE85;
-   ctx->state[2] = 0x3C6EF372;
-   ctx->state[3] = 0xA54FF53A;
-   ctx->state[4] = 0x510E527F;
-   ctx->state[5] = 0x9B05688C;
-   ctx->state[6] = 0x1F83D9AB;
-   ctx->state[7] = 0x5BE0CD19;
-}
-
-private void
-sha256_process(ContextSha256 *ctx, Byte data[64]) {
-   Unt temp1, temp2, W[64];
-   Unt A, B, C, D, EE, F, G, H;
-
-   GET_UINT32(W[0],  data,  0);
-   GET_UINT32(W[1],  data,  4);
-   GET_UINT32(W[2],  data,  8);
-   GET_UINT32(W[3],  data, 12);
-   GET_UINT32(W[4],  data, 16);
-   GET_UINT32(W[5],  data, 20);
-   GET_UINT32(W[6],  data, 24);
-   GET_UINT32(W[7],  data, 28);
-   GET_UINT32(W[8],  data, 32);
-   GET_UINT32(W[9],  data, 36);
-   GET_UINT32(W[10], data, 40);
-   GET_UINT32(W[11], data, 44);
-   GET_UINT32(W[12], data, 48);
-   GET_UINT32(W[13], data, 52);
-   GET_UINT32(W[14], data, 56);
-   GET_UINT32(W[15], data, 60);
-
-#define  SHR(x, n) (((x) & 0xFFFFFFFF) >> (n))
-#define ROTR(x, n) (SHR(x, n) | ((x) << (32 - (n))))
-
-#define S0(x) (ROTR(x, 7) ^ ROTR(x, 18) ^  SHR(x, 3))
-#define S1(x) (ROTR(x, 17) ^ ROTR(x, 19) ^  SHR(x, 10))
-
-#define S2(x) (ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22))
-#define S3(x) (ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25))
-
-#define F0(x, y, z) (((x) & (y)) | ((z) & ((x) | (y))))
-#define F1(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
-
-#define R(t)            \
-(               \
-    W[t] = S1(W[(t) -  2]) + W[(t) -  7] +   \
-      S0(W[(t) - 15]) + W[(t) - 16]   \
-)
-
-#define P(a,b,c,d,e,f,g,h,x,K)           \
-{                    \
-    temp1 = (h) + S3(e) + F1(e, f, g) + (K) + (x); \
-    temp2 = S2(a) + F0(a, b, c);        \
-    (d) += temp1; (h) = temp1 + temp2;        \
-}
-
-   A = ctx->state[0];
-   B = ctx->state[1];
-   C = ctx->state[2];
-   D = ctx->state[3];
-   EE = ctx->state[4];
-   F = ctx->state[5];
-   G = ctx->state[6];
-   H = ctx->state[7];
-
-   P( A, B, C, D, EE, F, G, H, W[ 0], 0x428A2F98);
-   P( H, A, B, C, D, EE, F, G, W[ 1], 0x71374491);
-   P( G, H, A, B, C, D, EE, F, W[ 2], 0xB5C0FBCF);
-   P( F, G, H, A, B, C, D, EE, W[ 3], 0xE9B5DBA5);
-   P( EE, F, G, H, A, B, C, D, W[ 4], 0x3956C25B);
-   P( D, EE, F, G, H, A, B, C, W[ 5], 0x59F111F1);
-   P( C, D, EE, F, G, H, A, B, W[ 6], 0x923F82A4);
-   P( B, C, D, EE, F, G, H, A, W[ 7], 0xAB1C5ED5);
-   P( A, B, C, D, EE, F, G, H, W[ 8], 0xD807AA98);
-   P( H, A, B, C, D, EE, F, G, W[ 9], 0x12835B01);
-   P( G, H, A, B, C, D, EE, F, W[10], 0x243185BE);
-   P( F, G, H, A, B, C, D, EE, W[11], 0x550C7DC3);
-   P( EE, F, G, H, A, B, C, D, W[12], 0x72BE5D74);
-   P( D, EE, F, G, H, A, B, C, W[13], 0x80DEB1FE);
-   P( C, D, EE, F, G, H, A, B, W[14], 0x9BDC06A7);
-   P( B, C, D, EE, F, G, H, A, W[15], 0xC19BF174);
-   P( A, B, C, D, EE, F, G, H, R(16), 0xE49B69C1);
-   P( H, A, B, C, D, EE, F, G, R(17), 0xEFBE4786);
-   P( G, H, A, B, C, D, EE, F, R(18), 0x0FC19DC6);
-   P( F, G, H, A, B, C, D, EE, R(19), 0x240CA1CC);
-   P( EE, F, G, H, A, B, C, D, R(20), 0x2DE92C6F);
-   P( D, EE, F, G, H, A, B, C, R(21), 0x4A7484AA);
-   P( C, D, EE, F, G, H, A, B, R(22), 0x5CB0A9DC);
-   P( B, C, D, EE, F, G, H, A, R(23), 0x76F988DA);
-   P( A, B, C, D, EE, F, G, H, R(24), 0x983E5152);
-   P( H, A, B, C, D, EE, F, G, R(25), 0xA831C66D);
-   P( G, H, A, B, C, D, EE, F, R(26), 0xB00327C8);
-   P( F, G, H, A, B, C, D, EE, R(27), 0xBF597FC7);
-   P( EE, F, G, H, A, B, C, D, R(28), 0xC6E00BF3);
-   P( D, EE, F, G, H, A, B, C, R(29), 0xD5A79147);
-   P( C, D, EE, F, G, H, A, B, R(30), 0x06CA6351);
-   P( B, C, D, EE, F, G, H, A, R(31), 0x14292967);
-   P( A, B, C, D, EE, F, G, H, R(32), 0x27B70A85);
-   P( H, A, B, C, D, EE, F, G, R(33), 0x2E1B2138);
-   P( G, H, A, B, C, D, EE, F, R(34), 0x4D2C6DFC);
-   P( F, G, H, A, B, C, D, EE, R(35), 0x53380D13);
-   P( EE, F, G, H, A, B, C, D, R(36), 0x650A7354);
-   P( D, EE, F, G, H, A, B, C, R(37), 0x766A0ABB);
-   P( C, D, EE, F, G, H, A, B, R(38), 0x81C2C92E);
-   P( B, C, D, EE, F, G, H, A, R(39), 0x92722C85);
-   P( A, B, C, D, EE, F, G, H, R(40), 0xA2BFE8A1);
-   P( H, A, B, C, D, EE, F, G, R(41), 0xA81A664B);
-   P( G, H, A, B, C, D, EE, F, R(42), 0xC24B8B70);
-   P( F, G, H, A, B, C, D, EE, R(43), 0xC76C51A3);
-   P( EE, F, G, H, A, B, C, D, R(44), 0xD192E819);
-   P( D, EE, F, G, H, A, B, C, R(45), 0xD6990624);
-   P( C, D, EE, F, G, H, A, B, R(46), 0xF40E3585);
-   P( B, C, D, EE, F, G, H, A, R(47), 0x106AA070);
-   P( A, B, C, D, EE, F, G, H, R(48), 0x19A4C116);
-   P( H, A, B, C, D, EE, F, G, R(49), 0x1E376C08);
-   P( G, H, A, B, C, D, EE, F, R(50), 0x2748774C);
-   P( F, G, H, A, B, C, D, EE, R(51), 0x34B0BCB5);
-   P( EE, F, G, H, A, B, C, D, R(52), 0x391C0CB3);
-   P( D, EE, F, G, H, A, B, C, R(53), 0x4ED8AA4A);
-   P( C, D, EE, F, G, H, A, B, R(54), 0x5B9CCA4F);
-   P( B, C, D, EE, F, G, H, A, R(55), 0x682E6FF3);
-   P( A, B, C, D, EE, F, G, H, R(56), 0x748F82EE);
-   P( H, A, B, C, D, EE, F, G, R(57), 0x78A5636F);
-   P( G, H, A, B, C, D, EE, F, R(58), 0x84C87814);
-   P( F, G, H, A, B, C, D, EE, R(59), 0x8CC70208);
-   P( EE, F, G, H, A, B, C, D, R(60), 0x90BEFFFA);
-   P( D, EE, F, G, H, A, B, C, R(61), 0xA4506CEB);
-   P( C, D, EE, F, G, H, A, B, R(62), 0xBEF9A3F7);
-   P( B, C, D, EE, F, G, H, A, R(63), 0xC67178F2);
-
-   ctx->state[0] += A;
-   ctx->state[1] += B;
-   ctx->state[2] += C;
-   ctx->state[3] += D;
-   ctx->state[4] += EE;
-   ctx->state[5] += F;
-   ctx->state[6] += G;
-   ctx->state[7] += H;
-}
-
-void
-sha256_update(ContextSha256 *ctx, CS input, Unt length) {
-   Unt left, fill;
-
-   if (length == 0)
-      return;
-
-   left = ctx->total[0] & 0x3F;
-   fill = 64 - left;
-
-   ctx->total[0] += length;
-   ctx->total[0] &= 0xFFFFFFFF;
-
-   if (ctx->total[0] < length)
-      ctx->total[1]++;
-
-   if (left && length >= fill) {
-      memcpy((void *)(ctx->buffer + left), (void *)input, fill);
-      sha256_process(ctx, ctx->buffer);
-      length -= fill;
-      input  += fill;
-      left = 0;
-   }
-
-   while (length >= 64) {
-      sha256_process(ctx, input);
-      length -= 64;
-      input  += 64;
-   }
-
-   if (length)
-      memcpy((void *)(ctx->buffer + left), (void *)input, length);
-}
-
-private Byte sha256_padding[64] = {
-   0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
-
-void
-sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
-   Unt last, padn;
-   Unt high, low;
-   Byte   msglen[8];
-
-   high = (ctx->total[0] >> 29) | (ctx->total[1] <<  3);
-   low  = (ctx->total[0] <<  3);
-
-   PUT_UINT32(high, msglen, 0);
-   PUT_UINT32(low,  msglen, 4);
-
-   last = ctx->total[0] & 0x3F;
-   padn = (last < 56) ? (56 - last) : (120 - last);
-
-   sha256_update(ctx, sha256_padding, padn);
-   sha256_update(ctx, msglen, 8);
-
-   PUT_UINT32(ctx->state[0], digest,  0);
-   PUT_UINT32(ctx->state[1], digest,  4);
-   PUT_UINT32(ctx->state[2], digest,  8);
-   PUT_UINT32(ctx->state[3], digest, 12);
-   PUT_UINT32(ctx->state[4], digest, 16);
-   PUT_UINT32(ctx->state[5], digest, 20);
-   PUT_UINT32(ctx->state[6], digest, 24);
-   PUT_UINT32(ctx->state[7], digest, 28);
-}
-
-// Return hex digest of "buf[buf_len]" in a static array.
-// if "salt" is not NULL also do "salt[salt_len]".
-CS
-sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
-   Byte  sha256sum[32];
-   static Byte    hexit[65];
-   int j;
-   ContextSha256 ctx;
-
-   sha256_self_test();
-
-   sha256_start(&ctx);
-   sha256_update(&ctx, buf, buf_len);
-   if (salt != NULL)
-      sha256_update(&ctx, salt, salt_len);
-   sha256_finish(&ctx, sha256sum);
-   for (j = 0; j < 32; j++)
-      sprintf((char *)hexit + j * 2, "%02x", sha256sum[j]);
-   hexit[sizeof(hexit) - 1] = '\0';
-   return hexit;
-}
-
-// Return sha256(buf) as 64 hex chars in static array.
-CS
-sha256_key(CS buf, CS salt, int salt_len){
-   // No passwd means don't encrypt
-   if (!buf || *buf == ZERO)
-      return S"";
-
-   return sha256_bytes(buf, (int)STRLEN(buf), salt, salt_len);
-}
-
-// These are the standard FIPS-180-2 test vectors
-
-private char* sha_self_test_msg[] = {
-    "abc",
-    "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
-    NULL
-};
-
-private char *sha_self_test_vector[] = {
-   "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-   "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
-   "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
-};
-
-// Perform a test on the SHA256 algorithm. Return FAIL or OK.
-int
-sha256_self_test(void) {
-   int i, j;
-   char output[65];
-   ContextSha256 ctx;
-   Byte buf[1000];
-   Byte sha256sum[32];
-   static int failures = 0;
-   Byte* hexit;
-   static int sha256_self_tested = 0;
-
-   if (sha256_self_tested > 0)
-      return failures > 0 ? FAIL : OK;
-   sha256_self_tested = 1;
-
-   for (i = 0; i < 3; i++) {
-      if (i < 2) {
-         hexit = sha256_bytes((CS)sha_self_test_msg[i],
-            (int)STRLEN(sha_self_test_msg[i]),
-            NULL, 0
-         );
-         STRCPY(output, hexit);
-      } else {
-          sha256_start(&ctx);
-          memset(buf, 'a', 1000);
-          for (j = 0; j < 1000; j++)
-         sha256_update(&ctx, (CS)buf, 1000);
-          sha256_finish(&ctx, sha256sum);
-          for (j = 0; j < 32; j++)
-         sprintf(output + j * 2, "%02x", sha256sum[j]);
-      }
-      if (memcmp(output, sha_self_test_vector[i], 64)) {
-          failures++;
-          output[sizeof(output) - 1] = '\0';
-          // printf("sha256_self_test %d failed %s\n", i, output);
-      }
-    }
-    return failures > 0 ? FAIL : OK;
-}
-
-private unsigned int
-get_some_time(void) {
-# ifdef HAVE_GETTIMEOFDAY
-    TimeVal tv;
-
-    // Using usec makes it less predictable.
-    gettimeofday(&tv, NULL);
-    return (unsigned int)(tv.tv_sec + tv.tv_usec);
-# else
-    return (unsigned int)time(NULL);
-# endif
-}
-
-// Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.
-void
-sha2_seed(CS header, int header_len, CS salt, int salt_len) {
-   static Byte random_data[1000];
-   Byte sha256sum[32];
-   ContextSha256 ctx;
-
-   srand(get_some_time());
-
-   for (int i = 0; i < (int)sizeof(random_data) - 1; i++)
-      random_data[i] = (Byte)((get_some_time() ^ rand()) & 0xff);
-   sha256_start(&ctx);
-   sha256_update(&ctx, (CS)random_data, sizeof(random_data));
-   sha256_finish(&ctx, sha256sum);
-
-   //put first block into header.
-   for (int i = 0; i < header_len; i++)
-      header[i] = sha256sum[i % sizeof(sha256sum)];
-
-   //put remaining block into salt.
-   if (salt) {
-      for (int i = 0; i < salt_len; i++)
-         salt[i] = sha256sum[(i + header_len) % sizeof(sha256sum)];
-   }
-}
-
-//}}}
-//{{{doubly-linked list
-
-// Iterative merge sort for doubly linked list.
-// O(NlogN) worst case, and stable.
-//  - The list is divided into blocks of increasing size (1, 2, 4, 8, ...).
-//  - Each pair of blocks is merged in sorted order.
-//  - Merged blocks are reconnected to build the sorted list.
-void *
-mergesort_list(
-   void *head,
-   void *(*get_next)(void *),
-   void (*set_next)(void *, void *),
-   void *(*get_prev)(void *),
-   void (*set_prev)(void *, void *),
-   int (*compare)(const void *, const void *)
-){
-   if (!head || !get_next(head))
-      return head;
-
-   // Count length
-   int       n = 0;
-   void*   curr = head;
-   while (curr) {
-      n++;
-      curr = get_next(curr);
-   }
-
-   int   size;
-   for (size = 1; size < n; size *= 2) {
-      void*   new_head = NULL;
-      void*   tail = NULL;
-      curr = head;
-
-      while (curr) {
-         // Split two runs
-         void* left = curr;
-         void* right = left;
-         int       i;
-         for (i = 0; i < size && right; ++i)
-            right = get_next(right);
-
-         void* next = right;
-         for (i = 0; i < size && next; ++i)
-            next = get_next(next);
-
-         // Break links
-         void* l_end = right ? get_prev(right) : NULL;
-         if (l_end)
-            set_next(l_end, NULL);
-         if (right)
-            set_prev(right, NULL);
-
-         void* r_end = next ? get_prev(next) : NULL;
-         if (r_end)
-            set_next(r_end, NULL);
-         if (next)
-            set_prev(next, NULL);
-
-         // Merge
-         void    *merged = NULL;
-         void    *merged_tail = NULL;
-
-         while (left || right) {
-            void   *chosen = NULL;
-            if (!left) {
-                chosen = right;
-                right = get_next(right);
-            } ei (!right) {
-                chosen = left;
-                left = get_next(left);
-            } ei (compare(left, right) <= 0) {
-                chosen = left;
-                left = get_next(left);
-            } else {
-                chosen = right;
-                right = get_next(right);
-            }
-
-            if (merged_tail) {
-                set_next(merged_tail, chosen);
-                set_prev(chosen, merged_tail);
-                merged_tail = chosen;
-            } else {
-                merged = merged_tail = chosen;
-                set_prev(chosen, NULL);
-            }
-         }
-
-          // Connect to full list
-         if (!new_head)
-            new_head = merged;
-         else {
-            set_next(tail, merged);
-            set_prev(merged, tail);
-         }
-
-         // Move tail to end
-         while (get_next(merged_tail))
-            merged_tail = get_next(merged_tail);
-         tail = merged_tail;
-
-         curr = next;
-      }
-
-      head = new_head;
-   }
-
-   return head;
 }
 
 //}}}
@@ -6135,7 +5216,7 @@ dictitem_copy(DictItem* org) {
    Unt   len = STRLEN(org->key);
    DictItem* di = alloc(offsetof(DictItem, key) + len + 1);
 
-   mch_memmove(di->key, org->key, len + 1);
+   MEMMOVE(di->key, org->key, len + 1);
    di->flags = DI_FLAGS_ALLOC;
    copy_tv(OUT &di->c, &org->c);
    return di;
@@ -6540,11 +5621,11 @@ string_slice(CS str, Long first, Long last, int exclusive) {
    if (!str)
       return NULL;
    Unt slen = STRLEN(str);
-   long start_byte = char_idx2byte(str, slen, first);
+   Long start_byte = char_idx2byte(str, slen, first);
    if (start_byte < 0)
       start_byte = 0; // first index very negative: use zero
-   long   end_byte;
-   if ((last == -1 && !exclusive) || last == VARNUM_MAX)
+   Long   end_byte;
+   if ((last == -1 && !exclusive) || last == LONG_MAX)
       end_byte = (long)slen;
    else {
       end_byte = char_idx2byte(str, slen, last);
@@ -6658,7 +5739,7 @@ DictItem *
 dictitem_alloc(Text value) {
    DictItem* di = alloc(offsetof(DictItem, key) + value.len + 1);
    di->len = value.len;
-   mch_memmove(di->key, value.c, value.len + 1);
+   MEMMOVE(di->key, value.c, value.len + 1);
    di->flags = DI_FLAGS_ALLOC;
    di->c.lock = 0;
    di->c.tag = VAR_UNKNOWN;
@@ -6741,904 +5822,6 @@ dictWrongFuncName(Bag* b, Var* tv, Text name) {
 }
 
 //}}}
-//{{{json
-
-// json.c: Encoding and decoding JSON.
-// Follows this standard: https://tools.ietf.org/html/rfc7159.html
-#define USING_FLOAT_STUFF
-
-private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
-
-// Encode "val" into a JSON format string. The result is added to "gap"
-// Returns FAIL on failure and makes gap->c empty.
-private int
-json_encode_gap(ArrayList* gap, Var* val, int options) {
-   if (json_encode_item(gap, val, get_copyID(), options) == FAIL) {
-      ga_clear(gap);
-      gap->c = copyStr(E);
-      return FAIL;
-   }
-   return OK;
-}
-
-//Encode "val" into a JSON format string. The result is in allocated memory.
-//The result is empty when encoding fails. "options" can contain JSON_NO_NONE and JSON_NL.
-CS
-json_encode(Var* val, int options) {
-   ArrayList ga;
-
-   // Store bytes in the growarray.
-   ga_init2(&ga, 1, 4000);
-   json_encode_gap(&ga, val, options);
-   ga_append(&ga, ZERO);
-   return ga.c;
-}
-
-//Encode ["nr", "val"] into a JSON format string in allocated memory.
-//"options" can contain JSON_NO_NONE and JSON_NL.
-//Return NULL when out of memory.
-CS
-json_encode_nr_expr(int nr, Var* val, int options) {
-   Var   listtv;
-   Var   nrtv;
-   ArrayList   ga;
-
-   nrtv.tag = VAR_NUMBER;
-   nrtv.number = nr;
-   allocReturnList(&listtv);
-   if (list_append_tv(listtv.list, &nrtv) == FAIL
-          || list_append_tv(listtv.list, val) == FAIL) {
-      list_unref(listtv.list);
-      return NULL;
-   }
-
-   ga_init2(&ga, 1, 4000);
-   if (json_encode_gap(&ga, &listtv, options) == OK && (options & JSON_NL))
-      ga_append(&ga, '\n');
-   list_unref(listtv.list);
-   ga_append(&ga, ZERO);
-   return ga.c;
-}
-
-//Encode "val" into a JSON format string prefixed by the LSP HTTP header. NULL when out of memory.
-CS
-json_encode_lsp_msg(Var* val) {
-   ArrayList   ga;
-
-   ga_init2(&ga, 1, 4000);
-   if (json_encode_gap(&ga, val, 0) == FAIL)
-      return NULL;
-   ga_append(&ga, ZERO);
-
-   ArrayList lspga;
-   ga_init2(&lspga, 1, 4000);
-   // Header according to LSP specification.
-   eeSnprintf(IObuff, IOSIZE, (CS)"Content-Length: %u\r\n\r\n", ga.len - 1);
-   ga_concat(&lspga, IObuff);
-   ga_concat_len(&lspga, ga.c, ga.len);
-   ga_clear(&ga);
-   return lspga.c;
-}
-
-//Lookup table to quickly know if the given ASCII character must be escaped.
-private const char ascii_needs_escape[128] = {
-   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x0.
-   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x1.
-   0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x2.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x3.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x4.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, // 0x5.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x6.
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x7.
-};
-
-//Encode the utf-8 encoded string "str" into "gap".
-private void
-write_string(ArrayList* gap, CS str) {
-   CS res = str;
-   Unt c;
-
-   if (!res) {
-      ga_concat(gap, (CS)"\"\"");
-      return;
-   }
-
-   ga_append(gap, '"');
-   // `from` is the beginning of a sequence of bytes we can directly copy from
-   // the input string, avoiding the overhead associated to decoding/encoding them.
-   CS from = res;
-   Byte numbuf[NUMBUFLEN];
-   while ((c = *res) != ZERO) {
-      // always use utf-8 encoding, ignore 'encoding'
-      if (c < 0x80) {
-         if (!ascii_needs_escape[c]) {
-            res += 1;
-            continue;
-         }
-
-         if (res != from)
-            ga_concat_len(gap, from, res - from);
-         from = res + 1;
-
-          switch (c) {
-         case 0x08:
-             ga_append(gap, '\\'); ga_append(gap, 'b'); break;
-         case 0x09:
-             ga_append(gap, '\\'); ga_append(gap, 't'); break;
-         case 0x0a:
-             ga_append(gap, '\\'); ga_append(gap, 'n'); break;
-         case 0x0c:
-             ga_append(gap, '\\'); ga_append(gap, 'f'); break;
-         case 0x0d:
-             ga_append(gap, '\\'); ga_append(gap, 'r'); break;
-         case 0x22: // "
-         case 0x5c: // backslash
-             ga_append(gap, '\\');
-             ga_append(gap, c);
-             break;
-         default:
-             eeSnprintf(numbuf, NUMBUFLEN, (CS)"\\u%04lx", (long)c);
-             ga_concat(gap, numbuf);
-          }
-
-          res += 1;
-      } else {
-         int l = utf_ptr2len(res);
-
-         if (l > 1) {
-            res += l;
-            continue;
-         }
-
-         // Invalid utf-8 sequence, replace it with the Unicode replacement character U+FFFD.
-         if (res != from)
-            ga_concat_len(gap, from, res - from);
-         from = res + 1;
-
-         numbuf[mb_char2bytes(0xFFFD, numbuf)] = ZERO;
-         ga_concat(gap, numbuf);
-
-         res += l;
-      }
-   }
-
-   if (res != from)
-      ga_concat_len(gap, from, res - from);
-
-   ga_append(gap, '"');
-}
-
-//Encode "val" into "gap". Return FAIL or OK.
-private int
-json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
-   Byte numbuf[NUMBUFLEN];
-   CS res;
-   Blob* b;
-   List* l;
-   Bag* d;
-   int i;
-
-   switch (val->tag) {
-   case VAR_BOOL:
-      switch ((long)val->number) {
-         case VVAL_FALSE: ga_concat(gap, S"false"); break;
-         case VVAL_TRUE: ga_concat(gap, S"true"); break;
-      }
-      break;
-
-   case VAR_SPECIAL:
-      switch ((long)val->number) {
-      case VVAL_NONE: 
-      case VVAL_NULL: ga_concat(gap, (CS)"null"); break;
-      }
-      break;
-
-   case VAR_NUMBER:
-      eeSnprintf(numbuf, NUMBUFLEN, (CS)"%ld", (Long)val->number);
-      ga_concat(gap, numbuf);
-      break;
-
-   case VAR_STRING:
-      res = val->string;
-      write_string(gap, res);
-      break;
-
-   case VAR_FUNC:
-   case VAR_PARTIAL:
-   case VAR_JOB:
-   case VAR_CHANNEL:
-      showErrFmtMsg(_(e_cannot_json_encode_str), vartype_name(val->tag));
-      return FAIL;
-
-   case VAR_BLOB:
-      b = val->blob;
-      if (b == NULL || b->c.len == 0)
-         ga_concat(gap, S"[]");
-      else {
-         ga_append(gap, '[');
-         for (i = 0; i < b->c.len; i++) {
-            if (i > 0)
-               ga_concat(gap, S",");
-            eeSnprintf(numbuf, NUMBUFLEN, "%d", blob_get(b, i));
-            ga_concat(gap, numbuf);
-         }
-         ga_append(gap, ']');
-      }
-      break;
-
-   case VAR_LIST:
-      l = val->list;
-      if (!l)
-         ga_concat(gap, S"[]");
-      else {
-         if (l->copyId == copyID)
-             ga_concat(gap, S"[]");
-         else {
-            ListItem   *li;
-
-            l->copyId = copyID;
-            ga_append(gap, '[');
-            CHECK_LIST_MATERIALIZE(l);
-            for (li = l->first; li != NULL && !gotInterruptG; ) {
-               if (json_encode_item(gap, &li->c, copyID, 0) == FAIL)
-                  return FAIL;
-               li = li->next;
-               if (li)
-                  ga_append(gap, ',');
-            }
-            ga_append(gap, ']');
-            l->copyId = 0;
-         }
-      }
-      break;
-
-   case VAR_BAG:
-      d = val->bag;
-      if (!d)
-         ga_concat(gap, (CS)"{}");
-      else {
-         if (d->copyId == copyID)
-            ga_concat(gap, (CS)"{}");
-         else {
-            int      first = true;
-            int      todo = (int)d->hashTable.count;
-            EeSetItem   *hi;
-
-            d->copyId = copyID;
-            ga_append(gap, '{');
-
-            for (hi = d->hashTable.array; todo > 0 && !gotInterruptG; ++hi) {
-               if (!HASHITEM_EMPTY(hi)) {
-                   --todo;
-                   if (first)
-                  first = false;
-                   else
-                  ga_append(gap, ',');
-                  write_string(gap, hi->hi_key);
-                  ga_append(gap, ':');
-                  if (json_encode_item(gap, &bagLookup(hi)->c, copyID, options | JSON_NO_NONE) 
-                        == FAIL
-                  )
-                     return FAIL;
-               }
-            } 
-            ga_append(gap, '}');
-            d->copyId = 0;
-         }
-       }
-       break;
-
-   case VAR_FLOAT:
-      if (isnan(val->floatt))
-         ga_concat(gap, (CS)"NaN");
-      ei (isinf(val->floatt)) {
-         if (val->floatt < 0.0)
-            ga_concat(gap, (CS)"-Infinity");
-         else
-            ga_concat(gap, (CS)"Infinity");
-      } else {
-         eeSnprintf(numbuf, NUMBUFLEN, "%g", val->floatt);
-         ga_concat(gap, numbuf);
-      }
-      break;
-   case VAR_UNKNOWN:
-   case VAR_ANY:
-   case VAR_VOID:
-       internal_error_no_abort((CS)"json_encode_item()");
-       return FAIL;
-    }
-    return OK;
-}
-
-// When "reader" has less than NUMBUFLEN bytes available, call the fill callback to get more.
-private void
-fill_numbuflen(JsReader* reader) {
-   if (reader->js_fill && (int)(reader->js_end - reader->js_buf) - reader->js_used < NUMBUFLEN
-         && reader->js_fill(reader)
-   )
-      reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-}
-
-// Skip white space in "reader".  All characters <= space are considered whitespace.
-// Also tops up readahead when needed.
-private void
-json_skip_white(JsReader* reader) {
-   for (;;) {
-      Unt c = reader->js_buf[reader->js_used];
-      if (reader->js_fill != NULL && c == ZERO) {
-         if (reader->js_fill(reader)) {
-            reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-            continue;
-         }
-      }
-      if (c == ZERO || c > ' ')
-         break;
-      ++reader->js_used;
-   }
-   fill_numbuflen(reader);
-}
-
-private int
-json_decode_string(JsReader* reader, Var* res, int quote) {
-   ArrayList    ga;
-   int len;
-   Unt c;
-   Long   nr;
-
-   if (res)
-      ga_init2(&ga, 1, 200);
-
-   CS p = reader->js_buf + reader->js_used + 1; // skip over " or '
-   while (*p != quote) {
-      // The JSON is always expected to be utf-8, thus use utf functions
-      // here. The string is converted below if needed.
-      if (*p == ZERO || p[1] == ZERO || utf_ptr2len(p) < utf_byte2len(*p)) {
-         // Not enough bytes to make a character or end of the string. Get
-         // more if possible.
-         if (reader->js_fill == NULL)
-            break;
-         len = (int)(reader->js_end - p);
-         reader->js_used = (int)(p - reader->js_buf);
-         if (!reader->js_fill(reader))
-            break; // didn't get more
-         p = reader->js_buf + reader->js_used;
-         reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-         continue;
-      }
-
-      if (*p == '\\') {
-         c = -1;
-         switch (p[1]) {
-         case '\\': c = '\\'; break;
-         case '"': c = '"'; break;
-         case 'b': c = BS; break;
-         case 't': c = TAB; break;
-         case 'n': c = NL; break;
-         case 'f': c = FF; break;
-         case 'r': c = ENTER; break;
-         case 'u':
-            if (reader->js_fill != NULL && (int)(reader->js_end - p) < NUMBUFLEN) {
-               reader->js_used = (int)(p - reader->js_buf);
-               if (reader->js_fill(reader)) {
-                  p = reader->js_buf + reader->js_used;
-                  reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-               }
-            }
-            nr = 0;
-            len = 0;
-            readLongNumber(p + 2, NULL, &len, STR2NR_HEX + STR2NR_FORCE, &nr, NULL, 4, true, NULL);
-            if (len == 0) {
-               if (res)
-                  ga_clear(&ga);
-               return FAIL;
-            }
-            p += len + 2;
-            if (0xd800 <= nr && nr <= 0xdfff
-                && (int)(reader->js_end - p) >= 6
-                && *p == '\\' && *(p+1) == 'u'
-            ) {
-               Long   nr2 = 0;
-
-               // decode surrogate pair: \ud812\u3456
-               len = 0;
-               readLongNumber(p + 2, NULL, &len, STR2NR_HEX + STR2NR_FORCE, &nr2, NULL, 4, true, NULL);
-               if (len == 0) {
-                  if (res != NULL)
-                     ga_clear(&ga);
-                  return FAIL;
-               }
-               if (0xdc00 <= nr2 && nr2 <= 0xdfff) {
-                   p += len + 2;
-                   nr = (((nr - 0xd800) << 10) |
-                  ((nr2 - 0xdc00) & 0x3ff)) + 0x10000;
-               }
-            }
-            if (res) {
-               Byte buf[NUMBUFLEN];
-
-               buf[mb_char2bytes((int)nr, buf)] = ZERO;
-               ga_concat(&ga, buf);
-            }
-            break;
-         default:
-            // not a special char, skip over backslash
-            ++p;
-            continue;
-         }
-         if (c > 0) {
-            p += 2;
-            if (res)
-               ga_append(&ga, c);
-         }
-      } else {
-         len = utf_ptr2len(p);
-         if (res) {
-            if (ga_grow(&ga, len) == FAIL) {
-               ga_clear(&ga);
-               return FAIL;
-            }
-            mch_memmove((Byte *)ga.c + ga.len, p, (Unt)len);
-            ga.len += len;
-         }
-         p += len;
-      }
-   }
-
-   reader->js_used = (int)(p - reader->js_buf);
-   if (*p == quote) {
-      ++reader->js_used;
-      if (res != NULL) {
-         ga_append(&ga, ZERO);
-         res->tag = VAR_STRING;
-         res->string = ga.c;
-      }
-      return OK;
-   }
-   if (res != NULL) {
-      res->tag = VAR_SPECIAL;
-      res->number = VVAL_NONE;
-      ga_clear(&ga);
-   }
-   return MAYBE;
-}
-
-typedef enum {
-   JSON_ARRAY,      // parsing items in an array
-   JSON_OBJECT_KEY,   // parsing key of an object
-   JSON_OBJECT      // parsing item in an object, after the key
-} JsonDecodeType;
-
-typedef struct {
-   JsonDecodeType jd_type;
-   Var jd_tv;   // the list or dict
-   Var jd_key_tv;
-   CS key;
-} JsonDecodeItem;
-
-// Decode one item and put it in "res".  If "res" is NULL only advance. Must already have skipped 
-// white space. Return FAIL for a decoding error (and give an error). Return MAYBE for an 
-// incomplete message.
-private int
-json_decode_item(JsReader* reader, Var *res) {
-   int i;
-   int len;
-   int retval;
-   ArrayList stack;
-   JsonDecodeItem* topJson;
-   Byte key_buf[NUMBUFLEN];
-
-   ga_init2(&stack, sizeof(JsonDecodeItem), 100);
-   Var* cur_item = res;
-   Var item;
-   initVarToNull(OUT &item);
-   if (res)
-      initVarToNull(OUT res);
-
-   fill_numbuflen(reader);
-   CS p = reader->js_buf + reader->js_used;
-   for (;;) {
-      topJson = NULL;
-      if (stack.len > 0) {
-         topJson = ((JsonDecodeItem *)stack.c) + stack.len - 1;
-         json_skip_white(reader);
-         p = reader->js_buf + reader->js_used;
-         if (*p == ZERO) {
-            retval = MAYBE;
-            goto theend;
-         }
-         if (topJson->jd_type == JSON_OBJECT_KEY || topJson->jd_type == JSON_ARRAY) {
-            // Check for end of object or array.
-            if (*p == (topJson->jd_type == JSON_ARRAY ? ']' : '}')) {
-               ++reader->js_used; // consume the ']' or '}'
-               --stack.len;
-               if (stack.len == 0) {
-                  retval = OK;
-                  goto theend;
-               }
-               if (cur_item != NULL)
-                  cur_item = &topJson->jd_tv;
-               goto item_end;
-            }
-         }
-      }
-
-      switch (*p) {
-      case '[': // start of array
-         if (topJson && topJson->jd_type == JSON_OBJECT_KEY) {
-            retval = FAIL;
-            break;
-         }
-         if (ga_grow(&stack, 1) == FAIL) {
-            retval = FAIL;
-            break;
-         }
-         if (cur_item) {
-            allocReturnList(cur_item);
-         }
-
-         ++reader->js_used; // consume the '['
-         topJson = ((JsonDecodeItem *)stack.c) + stack.len;
-         topJson->jd_type = JSON_ARRAY;
-         ++stack.len;
-         if (cur_item != NULL) {
-            topJson->jd_tv = *cur_item;
-            cur_item = &item;
-         }
-         continue;
-
-      case '{': // start of object
-         if (topJson && topJson->jd_type == JSON_OBJECT_KEY) {
-            retval = FAIL;
-            break;
-         }
-         if (ga_grow(&stack, 1) == FAIL) {
-            retval = FAIL;
-            break;
-         }
-         if (cur_item) {
-            allocReturnList(cur_item);
-         } 
-
-         ++reader->js_used; // consume the '{'
-         topJson = ((JsonDecodeItem *)stack.c) + stack.len;
-         topJson->jd_type = JSON_OBJECT_KEY;
-         ++stack.len;
-         if (cur_item) {
-            topJson->jd_tv = *cur_item;
-            cur_item = &topJson->jd_key_tv;
-         }
-         continue;
-
-      case '"': // string
-         retval = json_decode_string(reader, cur_item, *p);
-         break;
-
-      case '\'':
-         showErrFmtMsg(_(e_json_decode_error_at_str), p);
-         retval = FAIL;
-         break;
-
-      case ',': // comma: empty item
-         showErrFmtMsg(_(e_json_decode_error_at_str), p);
-         retval = FAIL;
-         break;
-         // FALLTHROUGH
-      case ZERO: // empty
-         if (cur_item != NULL) {
-            cur_item->tag = VAR_SPECIAL;
-            cur_item->number = VVAL_NONE;
-         }
-         retval = OK;
-         break;
-
-      default:
-         if (EE_ISDIGIT(*p) || (*p == '-' && (EE_ISDIGIT(p[1]) || p[1] == ZERO))) {
-            CS sp = p;
-
-            if (*sp == '-') {
-               ++sp;
-               if (*sp == ZERO) {
-                  retval = MAYBE;
-                  break;
-               }
-               if (!EE_ISDIGIT(*sp)) {
-                  showErrFmtMsg(_(e_json_decode_error_at_str), p);
-                  retval = FAIL;
-                  break;
-               }
-            }
-            sp = skipdigits(sp);
-            if (*sp == '.' || *sp == 'e' || *sp == 'E') {
-               if (cur_item == NULL) {
-                  double f;
-                  len = string2float(p, OUT &f, false);
-               } else {
-                  cur_item->tag = VAR_FLOAT;
-                  len = string2float(p, OUT &cur_item->floatt, false);
-               }
-            } else {
-               Long nr;
-
-               readLongNumber(reader->js_buf + reader->js_used,
-                   NULL, &len, 0, // what
-                   &nr, NULL, 0, true, NULL);
-               if (len == 0) {
-                  showErrFmtMsg(_(e_json_decode_error_at_str), p);
-                  retval = FAIL;
-                  goto theend;
-               }
-               if (cur_item != NULL) {
-                  cur_item->tag = VAR_NUMBER;
-                  cur_item->number = nr;
-               }
-            }
-            reader->js_used += len;
-            retval = OK;
-            break;
-         }
-         if (STRNICMP(p, "false", 5) == 0) {
-            reader->js_used += 5;
-            if (cur_item != NULL) {
-                cur_item->tag = VAR_BOOL;
-                cur_item->number = VVAL_FALSE;
-            }
-            retval = OK;
-            break;
-         }
-         if (STRNICMP(p, "true", 4) == 0) {
-            reader->js_used += 4;
-            if (cur_item != NULL) {
-               cur_item->tag = VAR_BOOL;
-               cur_item->number = VVAL_TRUE;
-            }
-            retval = OK;
-            break;
-         }
-         if (STRNICMP(p, "null", 4) == 0) {
-            reader->js_used += 4;
-            if (cur_item != NULL) {
-               cur_item->tag = VAR_SPECIAL;
-               cur_item->number = VVAL_NULL;
-            }
-            retval = OK;
-            break;
-         }
-         if (STRNICMP(p, "NaN", 3) == 0) {
-            reader->js_used += 3;
-            if (cur_item != NULL) {
-                cur_item->tag = VAR_FLOAT;
-                cur_item->floatt = NAN;
-            }
-            retval = OK;
-            break;
-         }
-         if (STRNICMP(p, "-Infinity", 9) == 0) {
-            reader->js_used += 9;
-            if (cur_item != NULL) {
-               cur_item->tag = VAR_FLOAT;
-               cur_item->floatt = -INFINITY;
-            }
-            retval = OK;
-            break;
-         }
-         if (STRNICMP(p, "Infinity", 8) == 0) {
-            reader->js_used += 8;
-            if (cur_item != NULL) {
-               cur_item->tag = VAR_FLOAT;
-               cur_item->floatt = INFINITY;
-            }
-            retval = OK;
-            break;
-         }
-         // check for truncated name
-         len = (int)(reader->js_end - (reader->js_buf + reader->js_used));
-         if (
-             (len < 5 && STRNICMP(p, "false", len) == 0)
-             || (len < 9 && STRNICMP(p, "-Infinity", len) == 0)
-             || (len < 8 && STRNICMP(p, "Infinity", len) == 0)
-             || (len < 3 && STRNICMP(p, "NaN", len) == 0)
-             || (len < 4 && (STRNICMP(p, "true", len) == 0 || STRNICMP(p, "null", len) == 0))
-         ) {
-            retval = MAYBE;
-         } else
-            retval = FAIL;
-         break;
-      }
-
-      // We are finished when retval is FAIL or MAYBE and when at the toplevel.
-      if (retval == FAIL)
-         break;
-      if (retval == MAYBE || stack.len == 0)
-         goto theend;
-
-      if (topJson && topJson->jd_type == JSON_OBJECT_KEY && cur_item != NULL) {
-         if (cur_item->tag == VAR_FLOAT) {
-            // cannot use a float as a key
-            emsg(_(e_using_float_as_string));
-            retval = FAIL;
-            goto theend;
-         }
-         topJson->key = convertVarToString(cur_item, key_buf);
-         if (topJson->key == NULL) {
-            emsg(_(e_invalid_argument));
-            retval = FAIL;
-            goto theend;
-         }
-      }
-
-   item_end:
-      topJson = ((JsonDecodeItem *)stack.c) + stack.len - 1;
-      switch (topJson->jd_type) {
-      case JSON_ARRAY:
-         if (res) {
-            ListItem   *li = listitem_alloc();
-            li->c = *cur_item;
-            list_append(topJson->jd_tv.list, li);
-         }
-         if (cur_item)
-            cur_item = &item;
-
-         json_skip_white(reader);
-         p = reader->js_buf + reader->js_used;
-         if (*p == ',')
-             ++reader->js_used;
-         ei (*p != ']') {
-             if (*p == ZERO)
-            retval = MAYBE;
-             else {
-            showErrFmtMsg(_(e_json_decode_error_at_str), p);
-            retval = FAIL;
-             }
-             goto theend;
-         }
-         break;
-
-      case JSON_OBJECT_KEY:
-         json_skip_white(reader);
-         p = reader->js_buf + reader->js_used;
-         if (*p != ':') {
-            if (cur_item != NULL)
-               clearVar(cur_item);
-            if (*p == ZERO)
-               retval = MAYBE;
-            else {
-               showErrFmtMsg(_(e_json_decode_error_at_str), p);
-               retval = FAIL;
-            }
-            goto theend;
-         }
-         ++reader->js_used;
-         json_skip_white(reader);
-         topJson->jd_type = JSON_OBJECT;
-         if (cur_item != NULL)
-            cur_item = &item;
-         break;
-
-      case JSON_OBJECT:
-         if (cur_item != NULL && bagHasKey(topJson->jd_tv.bag, mbText(topJson->key))){
-            showErrFmtMsg(_(e_duplicate_key_in_json_str), topJson->key);
-            clearVar(cur_item);
-            retval = FAIL;
-            goto theend;
-         }
-
-         if (cur_item) {
-            DictItem *di = dictitem_alloc(mbText(topJson->key));
-
-            clearVar(&topJson->jd_key_tv);
-            di->c = *cur_item;
-            di->c.lock = 0;
-            if (bagAdd(topJson->jd_tv.bag, di) == FAIL) {
-               dictitem_free(di);
-               retval = FAIL;
-               goto theend;
-            }
-         }
-
-         json_skip_white(reader);
-         p = reader->js_buf + reader->js_used;
-         if (*p == ',')
-            ++reader->js_used;
-         ei (*p != '}') {
-            if (*p == ZERO)
-               retval = MAYBE;
-            else {
-               showErrFmtMsg(_(e_json_decode_error_at_str), p);
-               retval = FAIL;
-            }
-            goto theend;
-         }
-         topJson->jd_type = JSON_OBJECT_KEY;
-         if (cur_item)
-             cur_item = &topJson->jd_key_tv;
-         break;
-      }
-   }
-
-   // Get here when parsing failed.
-   if (res != NULL) {
-      clearVar(res);
-      res->tag = VAR_SPECIAL;
-      res->number = VVAL_NONE;
-   }
-   showErrFmtMsg(_(e_json_decode_error_at_str), p);
-
-theend:
-   for (i = 0; i < stack.len; i++)
-      clearVar(&(((JsonDecodeItem *)stack.c) + i)->jd_key_tv);
-   ga_clear(&stack);
-
-   return retval;
-}
-
-// Decode the JSON from "reader" and store the result in "res".
-// Return FAIL if not the whole message was consumed.
-private int
-json_decode_all(OUT Var* res, JsReader* reader) {
-   // We find the end once, to avoid calling strlen() many times.
-   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-   json_skip_white(reader);
-   int ret = json_decode_item(reader, res);
-   if (ret != OK) {
-      if (ret == MAYBE)
-         showErrFmtMsg(_(e_json_decode_error_at_str), reader->js_buf);
-      return FAIL;
-   }
-   json_skip_white(reader);
-   if (reader->js_buf[reader->js_used] != ZERO) {
-      showErrFmtMsg(_(e_trailing_characters_str), reader->js_buf + reader->js_used);
-      return FAIL;
-   }
-   return OK;
-}
-
-// Decode the JSON from "reader" and store the result in "res".
-// Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message 
-// anyway.
-int
-json_decode(OUT Var* res, JsReader* reader) {
-   // We find the end once, to avoid calling strlen() many times.
-   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-   json_skip_white(reader);
-   int ret = json_decode_item(reader, res);
-   json_skip_white(reader);
-
-   return ret;
-}
-
-// Decode the JSON from "reader" to find the end of the message. "options" can be JSON_JS or zero.
-// This is only used for testing. Return FAIL if the message has a decoding error.
-// Return MAYBE if the message is truncated, need to read more. This only works reliable if the 
-// message contains an object, array or string. A number might be truncated without knowing. Does 
-// not advance the reader.
-int
-json_find_end(JsReader* reader) {
-   int used_save = reader->js_used;
-   int ret;
-
-   // We find the end once, to avoid calling strlen() many times.
-   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
-   json_skip_white(reader);
-   ret = json_decode_item(reader, NULL);
-   reader->js_used = used_save;
-   return ret;
-}
-
-void
-f_json_decode(Arr(Var) argvars, Var* returnVar) {
-   JsReader reader;
-   reader.js_buf = tv_get_string(argvars);
-   reader.js_fill = NULL;
-   reader.js_used = 0;
-   json_decode_all(OUT returnVar, &reader);
-}
-
-void
-f_json_encode(Arr(Var) argvars, Var* returnVar) {
-   returnVar->tag = VAR_STRING;
-   returnVar->string = json_encode(argvars, 0);
-}
-//}}}
 //{{{floating-point numerics
 
 #define USING_FLOAT_STUFF
@@ -7674,7 +5857,7 @@ string2float(CS text, OUT double* value, Boole skip_quotes) {
          // remove single quotes between digits, not in the exponent
          if (*p == '\'') {
             ++quotes;
-            mch_memmove(p, p + 1, STRLEN(p));
+            MEMMOVE(p, p + 1, STRLEN(p));
          }
          if (!eeIsDigit(*p))
             break;
@@ -7819,10 +6002,10 @@ f_float2nr(Arr(Var) argvars, Var* returnVar) {
    if (get_float_arg(argvars, OUT &f) != OK)
       return;
 
-   if (f <= (double)-VARNUM_MAX + DBL_EPSILON)
-      returnVar->number = -VARNUM_MAX;
-   ei (f >= (double)VARNUM_MAX - DBL_EPSILON)
-      returnVar->number = VARNUM_MAX;
+   if (f <= (double)-LONG_MAX + DBL_EPSILON)
+      returnVar->number = -LONG_MAX;
+   ei (f >= (double)LONG_MAX - DBL_EPSILON)
+      returnVar->number = LONG_MAX;
    else
       returnVar->number = (Long)f;
 }
@@ -8025,7 +6208,7 @@ ga_concat_esc(ArrayList *gap, CS p, int clen) {
    Byte  buf[NUMBUFLEN];
 
    if (clen > 1) {
-      mch_memmove(buf, p, clen);
+      MEMMOVE(buf, p, clen);
       buf[clen] = ZERO;
       ga_concat(gap, buf);
       return;
@@ -8320,8 +6503,8 @@ assert_equalfile(Arr(Var) argvars) {
                ++linecount;
                lineidx = 0;
             } ei (lineidx + 2 == (int)sizeof(line1)) {
-               mch_memmove(line1, line1 + 100, lineidx - 100);
-               mch_memmove(line2, line2 + 100, lineidx - 100);
+               MEMMOVE(line1, line1 + 100, lineidx - 100);
+               MEMMOVE(line2, line2 + 100, lineidx - 100);
                lineidx -= 100;
             }
          }
@@ -8974,7 +7157,7 @@ eval_index_inner(
       if (var2)
          n2 = tv_get_number(var2);
       else
-         n2 = VARNUM_MAX;
+         n2 = LONG_MAX;
    }
 
    switch (returnVar->tag) {
@@ -9036,7 +7219,7 @@ eval_index_inner(
       if (var1 == NULL)
          n1 = 0;
       if (var2 == NULL)
-         n2 = VARNUM_MAX;
+         n2 = LONG_MAX;
       if (list_slice_or_index(returnVar->list, is_range, n1, n2, exclusive, returnVar, verbose) 
             == FAIL)
          return FAIL;
@@ -9072,40 +7255,6 @@ eval_index_inner(
 
 
 //}}}
-//}}}
-//{{{searchin' an' sortin'
-
-// Return index of key in a sorted array, or -1 if not found.
-int
-binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr) {
-   if (end <= start) {
-      return -1;
-   }
-   int i = start;
-   int j = end - 1;
-   if (arr[start] == key) {
-      return i;
-   } ei (arr[j] == key) {
-      return j;
-   }
-
-   while (i < j) {
-      if (j - i == 1) {
-         return -1;
-      }
-      int midInd = (i + j)/2;
-      Unt mid = arr[midInd];
-      if (mid > key) {
-         j = midInd;
-      } ei (mid < key) {
-         i = midInd;
-      } else {
-         return midInd;
-      }
-   }
-   return -1;
-}
-
 //}}}
 //{{{blobs
 
@@ -9464,7 +7613,7 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
       // Remove one item, return its value.
       p = (CS)b->c.c;
       returnVar->number = (Long) *(p + idx);
-      mch_memmove(p + idx, p + idx + 1, (Unt)len - idx - 1);
+      MEMMOVE(p + idx, p + idx + 1, (Unt)len - idx - 1);
       --b->c.len;
       return;
    }
@@ -9489,13 +7638,13 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
       return;
    }
    p = (CS)b->c.c;
-   mch_memmove((CS)newblob->c.c, p + idx, (Unt)(end - idx + 1));
+   MEMMOVE((CS)newblob->c.c, p + idx, (Unt)(end - idx + 1));
    ++newblob->refcount;
    returnVar->tag = VAR_BLOB;
    returnVar->blob = newblob;
 
    if (len - end - 1 > 0)
-      mch_memmove(p + idx, p + end + 1, (Unt)(len - end - 1));
+      MEMMOVE(p + idx, p + end + 1, (Unt)(len - end - 1));
    b->c.len -= end - idx + 1;
 }
 
@@ -9557,7 +7706,7 @@ blob_filter_map(
                blob_set(b_ret, i, newtv.number);
          } ei (rem) {
             CS p = (CS)blob_arg->c.c;
-            mch_memmove(p + i, p + i + 1, (Unt)b->c.len - i - 1);
+            MEMMOVE(p + i, p + i + 1, (Unt)b->c.len - i - 1);
             --b->c.len;
             --i;
          }
@@ -9605,7 +7754,7 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    if (ga_grow(&b->c, 1) == FAIL)
       return;
    p = (CS)b->c.c;
-   mch_memmove(p + before + 1, p + before, (Unt)len - before);
+   MEMMOVE(p + before + 1, p + before, (Unt)len - before);
    *(p + before) = val;
    ++b->c.len;
 
@@ -9711,4 +7860,4215 @@ f_list2blob(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
+// Add the bytes from "str" to "blob".
+private void
+blob_from_string(CS str, Blob* blob) {
+   Unt len = STRLEN(str);
+
+   for (Unt i = 0; i < len; i++) {
+      int ch = str[i];
+
+      if (str[i] == NL)
+         // Translate newlines in the string to ZERO character
+         ch = ZERO;
+
+      ga_append(&blob->c, ch);
+   }
+}
+
+//Return a string created from the bytes in blob starting at "start_idx". A NL character in the 
+//blob indicates end of string. A ZERO character in the blob is translated to a NL.
+//On return, "start_idx" points to next byte to process in blob.
+private CS
+string_from_blob(Blob *blob, long *start_idx) {
+   ArrayList str_ga;
+   int idx;
+
+   ga_init2(&str_ga, sizeof(char), 80);
+
+   long blen = blob_len(blob);
+
+   for (idx = *start_idx; idx < blen; idx++) {
+      Byte byte = (Byte)blob_get(blob, idx);
+      if (byte == NL) {
+         idx++;
+         break;
+      }
+
+      if (byte == ZERO)
+         byte = NL;
+
+      ga_append(&str_ga, byte);
+   }
+
+   ga_append(&str_ga, ZERO);
+
+   CS ret_str = copyStr(str_ga.c);
+   *start_idx = idx;
+
+   ga_clear(&str_ga);
+   return ret_str;
+}
+
+//"blob2str()" function Converts a blob to a string, ensuring valid UTF-8 encoding.
+void
+f_blob2str(Arr(Var) argvars, OUT Var* returnVar) {
+   if (check_for_blob_arg(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
+      return;
+
+   allocReturnList(returnVar);
+
+   Blob* blob = argvars->blob;
+   if (blob == NULL)
+      return;
+   int blen = blob_len(blob);
+
+   long idx = 0;
+   while (idx < blen) {
+      CS str = string_from_blob(blob, &idx);
+      if (!str)
+         break;
+
+      int ret = list_append_string(returnVar->list, str, -1);
+      if (ret == FAIL)
+         break;
+   }
+}
+
+// "str2blob()" function
+void
+f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
+   if (confirmVarIsList(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
+      return;
+
+   if (returnVar_blob_alloc(returnVar) == FAIL)
+      return;
+
+   Blob* blob = returnVar->blob;
+
+   List* list = argvars[0].list;
+   if (!list)
+      return;
+
+   ListItem* li;
+   FOR_ALL_LIST_ITEMS(list, li) {
+      if (li->c.tag != VAR_STRING)
+         continue;
+
+      CS str = li->c.string;
+      if (!str)
+         str = E;
+
+      if (li != list->first)
+         // Each list string item is separated by a newline in the blob
+         ga_append(&blob->c, NL);
+
+      blob_from_string(str, blob);
+   }
+}
+
+
+
+//}}}
+//{{{fuzzy searchin'
+
+//Fuzzy matching algorithm and related functions
+//
+//Portions of this file are adapted from fzy (https://github.com/jhawthorn/fzy)
+//Original code:
+//  Copyright (c) 2014 John Hawthorn
+//  Licensed under the MIT License.
+//
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files (the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions:
+//
+//The above copyright notice and this permission notice shall be included in
+//all copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+//THE SOFTWARE.
+
+private int fuzzy_match_item_compare(const void *s1, const void *s2);
+private void fuzzy_match_in_list(
+      List *l, Byte *str, int matchseq, Byte *key, Callback *item_cb, int retmatchpos, 
+      List *fmatchlist, long max_matches
+);
+private void do_fuzzymatch(Arr(Var) argvars, OUT Var* returnVar, int retmatchpos);
+private int fuzzyMatchStr_compare(const void *s1, const void *s2);
+private int fuzzy_match_func_compare(const void *s1, const void *s2);
+private void sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz);
+
+private double match_positions(CS needle, CS haystack, Unt* positions);
+private int has_match(CS needle, CS haystack);
+
+#define SCORE_MAX INFINITY
+#define SCORE_MIN (-INFINITY)
+#define SCORE_SCALE 1000
+
+typedef struct {
+   int      idx;      // used for stable sort
+   ListItem* item;
+   int score;
+   List* lmatchpos;
+   CS pat;
+   CS itemstr;
+   int itemstr_allocated;
+   int startpos;
+} FuzzyItem;
+
+void
+addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t) {
+   if (t->len == t->cap) {
+      Arr(FuzzyMatch) newContent = allocateArray(t->cap*2, FuzzyMatch, t->a);
+      if (t->len > 0)
+         memcpy(newContent, t->c, t->len*sizeof(FuzzyMatch));
+      t->c = newContent;
+      t->cap *= 2;
+   }
+   m.idx = t->len;
+   t->c[t->len] = m;
+   t->len++;
+}
+
+//Return true if "pat_arg" matches "str". Also returns the match score in
+//"outScore" and the matching character positions in "matches".
+int
+fuzzy_match(
+   CS str,
+   CS pat_arg,
+   int matchseq,
+   int* outScore,
+   Arr(Unt) matches,
+   int maxMatches
+) {
+   int complete = false;
+   int score = 0;
+   int numMatches = 0;
+   double fzy_score;
+
+   *outScore = 0;
+
+   CS save_pat = copyStr(pat_arg);
+   CS pat = save_pat;
+   CS p = pat;
+
+   // Try matching each word in 'pat_arg' in 'str'
+   while (true) {
+      if (matchseq)
+         complete = true;
+      else {
+         // Extract one word from the pattern (separated by space)
+         p = skipwhite(p);
+         if (*p == ZERO)
+            break;
+         pat = p;
+         while (*p != ZERO && !SPACE_OR_TAB(mb_ptr2char(p))) {
+            MB_PTR_ADV(p);
+         }
+         if (*p == ZERO)      // processed all the words
+            complete = true;
+         *p = ZERO;
+      }
+
+      score = FUZZY_SCORE_NONE;
+      if (has_match(pat, str)) {
+         fzy_score = match_positions(pat, str, matches + numMatches);
+         score = (fzy_score == SCORE_MIN) ? INT_MIN + 1
+            : (fzy_score == SCORE_MAX) ? INT_MAX
+            : (fzy_score < 0) ? (int)ceil(fzy_score * SCORE_SCALE - 0.5)
+            : (int)floor(fzy_score * SCORE_SCALE + 0.5);
+      }
+
+      if (score == FUZZY_SCORE_NONE) {
+         numMatches = 0;
+         *outScore = FUZZY_SCORE_NONE;
+         break;
+      }
+
+      if (score > 0 && *outScore > INT_MAX - score)
+         *outScore = INT_MAX;
+      ei (score < 0 && *outScore < INT_MIN + 1 - score)
+         *outScore = INT_MIN + 1;
+      else
+         *outScore += score;
+
+      numMatches += MB_CHARLEN(pat);
+
+      if (complete || numMatches >= maxMatches)
+          break;
+
+      // try matching the next word
+      ++p;
+   }
+
+   eeglFree(save_pat);
+   return numMatches != 0;
+}
+
+//Sort the fuzzy matches in the descending order of the match score.
+//For items with same score, retain the order using the index (stable sort)
+private int
+fuzzy_match_item_compare(const void *s1, const void *s2) {
+   int v1 = ((FuzzyItem *)s1)->score;
+   int v2 = ((FuzzyItem *)s2)->score;
+
+   if (v1 == v2) {
+      int exact_match1 = false, exact_match2 = false;
+      CS pat = ((FuzzyItem *)s1)->pat;
+      int patlen = (int)STRLEN(pat);
+      int startpos = ((FuzzyItem *)s1)->startpos;
+      exact_match1 = (startpos >= 0) && STRNCMP(pat,
+         ((FuzzyItem *)s1)->itemstr + startpos, patlen) == 0;
+      startpos = ((FuzzyItem *)s2)->startpos;
+      exact_match2 = (startpos >= 0) && STRNCMP(pat,
+         ((FuzzyItem *)s2)->itemstr + startpos, patlen) == 0;
+
+      if (exact_match1 == exact_match2) {
+         int idx1 = ((FuzzyItem *)s1)->idx;
+         int idx2 = ((FuzzyItem *)s2)->idx;
+         return idx1 == idx2 ? 0 : idx1 > idx2 ? 1 : -1;
+      } ei (exact_match2)
+         return 1;
+      return -1;
+   } else
+      return v1 > v2 ? -1 : 1;
+}
+
+//Fuzzy search the string 'str' in a list of 'items' and return the matching
+//strings in 'fmatchlist'.
+//If 'matchseq' is true, then for multi-word search strings, match all the words in sequence.
+//If 'items' is a list of strings, then search for 'str' in the list.
+//If 'items' is a list of dicts, then either use 'key' to lookup the string
+//for each item or use 'item_cb' Funcref function to get the string.
+//If 'retmatchpos' is true, then return a list of positions where 'str' matches for each item.
+private void
+fuzzy_match_in_list(
+   List* l,
+   CS str,
+   int matchseq,
+   CS key,
+   Callback* item_cb,
+   int retmatchpos,
+   List* fmatchlist,
+   long max_matches
+) {
+   long match_count = 0;
+   Unt matches[FUZZY_MATCH_MAX_LEN];
+
+   long len = list_len(l);
+   if (len == 0)
+      return;
+   if (max_matches > 0 && len > max_matches)
+      len = max_matches;
+
+   Arr(FuzzyItem) items = ALLOC_CLEAR_MULT(FuzzyItem, len);
+   if (items == NULL)
+      return;
+
+   // For all the string items in items, get the fuzzy matching score
+   ListItem* li;
+   FOR_ALL_LIST_ITEMS(l, li) {
+      int      score;
+      Byte      *itemstr;
+      Var   returnVar;
+      int      itemstr_allocate = false;
+
+      if (max_matches > 0 && match_count >= max_matches)
+          break;
+
+      itemstr = NULL;
+      returnVar.tag = VAR_UNKNOWN;
+      if (li->c.tag == VAR_STRING)   // list of strings
+         itemstr = li->c.string;
+      ei (li->c.tag == VAR_BAG && (key != NULL || item_cb->name != NULL)) {
+         // For a dict, either use the specified key to lookup the string or
+         // use the specified callback function to get the string.
+         if (key)
+            itemstr = bagGetString(li->c.bag, text(key), false);
+         else {
+            Var   argv[2];
+
+            // Invoke the supplied callback (if any) to get the dict item
+            li->c.bag->refcount++;
+            argv[0].tag = VAR_BAG;
+            argv[0].bag = li->c.bag;
+            argv[1].tag = VAR_UNKNOWN;
+            if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL) {
+               if (returnVar.tag == VAR_STRING) {
+                  itemstr = returnVar.string;
+                  itemstr_allocate = true;
+               }
+            }
+            bagUnref(li->c.bag);
+         }
+      }
+
+      if (itemstr != NULL
+         && fuzzy_match(itemstr, str, matchseq, &score, matches, FUZZY_MATCH_MAX_LEN)
+      ){
+         items[match_count].idx = match_count;
+         items[match_count].item = li;
+         items[match_count].score = score;
+         items[match_count].pat = str;
+         items[match_count].startpos = matches[0];
+         items[match_count].itemstr = itemstr_allocate ? copyStr(itemstr) : itemstr;
+         items[match_count].itemstr_allocated = itemstr_allocate;
+
+         // Copy the list of matching positions in itemstr to a list, if "retmatchpos" is set.
+         if (retmatchpos) {
+            items[match_count].lmatchpos = list_alloc();
+            if (items[match_count].lmatchpos == NULL)
+               goto done;
+
+            int   j = 0;
+            CS p = str;
+            while (*p != ZERO && j < FUZZY_MATCH_MAX_LEN) {
+               if (!SPACE_OR_TAB(mb_ptr2char(p)) || matchseq) {
+                  if (list_append_number(items[match_count].lmatchpos, matches[j]) == FAIL)
+                     goto done;
+                  j++;
+                }
+                MB_PTR_ADV(p);
+            }
+         }
+         ++match_count;
+      }
+      clearVar(&returnVar);
+   }
+
+   if (match_count > 0) {
+      List      *retlist;
+
+      //Sort the list by the descending order of the match score
+      qsort((void *)items, (Unt)match_count, sizeof(FuzzyItem), fuzzy_match_item_compare);
+
+      //For matchfuzzy(), return a list of matched strings.
+      //      ['str1', 'str2', 'str3']
+      //For matchfuzzypos(), return a list with three items.
+      //The first item is a list of matched strings. The second item
+      //is a list of lists where each list item is a list of matched
+      //character positions. The third item is a list of matching scores.
+      //  [['str1', 'str2', 'str3'], [[1, 3], [1, 3], [1, 3]]]
+      if (retmatchpos) {
+         li = list_find(fmatchlist, 0);
+         if (li == NULL || li->c.list == NULL)
+            goto done;
+         retlist = li->c.list;
+      } else
+         retlist = fmatchlist;
+
+      // Copy the matching strings to the return list
+      for (int i = 0; i < match_count; i++) {
+         if (list_append_tv(retlist, &items[i].item->c) == FAIL)
+            goto done;
+      }
+
+      // next copy the list of matching positions
+      if (retmatchpos) {
+         li = list_find(fmatchlist, -2);
+         if (li == NULL || li->c.list == NULL)
+            goto done;
+         retlist = li->c.list;
+
+         for (int i = 0; i < match_count; i++) {
+            if (items[i].lmatchpos != NULL) {
+               if (list_append_list(retlist, items[i].lmatchpos) == OK)
+                  items[i].lmatchpos = NULL;
+               else
+                  goto done;
+
+            }
+         }
+
+         // copy the matching scores
+         li = list_find(fmatchlist, -1);
+         if (li == NULL || li->c.list == NULL)
+            goto done;
+         retlist = li->c.list;
+         for (int i = 0; i < match_count; i++) {
+            if (list_append_number(retlist, items[i].score) == FAIL)
+               goto done;
+         }
+      }
+   }
+
+done:
+   for (int i = 0; i < match_count; i++) {
+      if (items[i].itemstr_allocated)
+         eeglFree(items[i].itemstr);
+
+      if (items[i].lmatchpos)
+         list_free(items[i].lmatchpos);
+   }
+   eeglFree(items);
+}
+
+//Do fuzzy matching. Returns the list of matched strings in 'returnVar'.
+//If 'retmatchpos' is true, also returns the matching character positions.
+private void
+do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
+   Callback   cb;
+   CS key = NULL;
+   int      matchseq = false;
+   long   max_matches = 0;
+
+   CLEAR_POINTER(&cb);
+
+   // validate and get the arguments
+   if (argvars[0].tag != VAR_LIST || argvars[0].list == NULL) {
+      showErrFmtMsg(_(e_argument_of_str_must_be_list),
+                 retmatchpos ? "matchfuzzypos()" : "matchfuzzy()");
+      return;
+   }
+   if (argvars[1].tag != VAR_STRING || argvars[1].string == NULL) {
+      showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[1]));
+      return;
+   }
+
+   if (argvars[2].tag != VAR_UNKNOWN) {
+      Bag      *d;
+      DictItem   *di;
+
+      if (check_for_nonnull_dict_arg(argvars, 2) == FAIL)
+         return;
+
+      // To search a dict, either a callback function or a key can be specified.
+      d = argvars[2].bag;
+      if ((di = bagFind(d, tConst("key"))) != NULL) {
+         if (di->c.tag != VAR_STRING
+             || di->c.string == NULL
+             || *di->c.string == ZERO
+         ) {
+            showErrFmtMsg(_(e_invalid_value_for_argument_str_str), "key", tv_get_string(&di->c));
+            return;
+         }
+         key = tv_get_string(&di->c);
+      } ei ((di = bagFind(d, tConst("text_cb"))) != NULL) {
+         cb = get_callback(&di->c);
+         if (cb.name == NULL) {
+            showErrFmtMsg(_(e_invalid_value_for_argument_str), "text_cb");
+            return;
+         }
+      }
+
+      if ((di = bagFind(d, tConst("limit"))) != NULL) {
+         if (di->c.tag != VAR_NUMBER) {
+            showErrFmtMsg(_(e_invalid_value_for_argument_str), "limit");
+            return;
+         }
+         max_matches = (long)varGetNumberChk(&di->c, NULL);
+      }
+
+      if (bagHasKey(d, tConst("matchseq")))
+         matchseq = true;
+   }
+
+   // get the fuzzy matches
+   allocReturnList(returnVar);
+   if (retmatchpos) {
+
+      //For matchfuzzypos(), a list with three items are returned. First
+      //item is a list of matching strings, the second item is a list of
+      //lists with matching positions within each string and the third item
+      //is the list of scores of the matches.
+      List* l = list_alloc();
+      if (list_append_list(returnVar->list, l) == FAIL) {
+         list_free(l);
+         goto done;
+      }
+      l = list_alloc();
+      if (list_append_list(returnVar->list, l) == FAIL) {
+         list_free(l);
+         goto done;
+      }
+      l = list_alloc();
+      if (list_append_list(returnVar->list, l) == FAIL) {
+         list_free(l);
+         goto done;
+      }
+   }
+
+   fuzzy_match_in_list(argvars[0].list, tv_get_string(&argvars[1]),
+       matchseq, key, &cb, retmatchpos, returnVar->list, max_matches);
+
+done:
+   evFreeCallback(&cb);
+}
+
+void
+f_matchfuzzy(Arr(Var) argvars, OUT Var* returnVar) {
+   do_fuzzymatch(argvars, returnVar, false);
+}
+
+void
+f_matchfuzzypos(Arr(Var) argvars, OUT Var* returnVar) {
+    do_fuzzymatch(argvars, returnVar, true);
+}
+
+//Same as fuzzy_match_item_compare() except for use with a string match
+private int
+fuzzyMatchStr_compare(const void *s0, const void *s1) {
+   int score0 = ((FuzzyMatch *)s0)->score;
+   int score1 = ((FuzzyMatch *)s1)->score;
+   int idx0 = ((FuzzyMatch *)s0)->idx;
+   int idx1 = ((FuzzyMatch *)s1)->idx;
+
+   if (score0 == score1)
+      return idx0 == idx1 ? 0 : idx0 > idx1 ? 1 : -1;
+   else
+      return score0 > score1 ? -1 : 1;
+}
+
+//Sort fuzzy matches by score
+void
+fuzzySortByScore(OUT Fuzzy* fuzzy) {
+   // Sort the list by the descending order of the match score
+   qsort((void *)fuzzy->c, (Unt)fuzzy->len, sizeof(FuzzyMatch), fuzzyMatchStr_compare);
+}
+
+//Same as fuzzy_match_item_compare() except for use with a function name
+//string match. <SNR> functions should be sorted to the end.
+private int
+fuzzy_match_func_compare(const void *s1, const void *s2) {
+   int      v1 = ((FuzzyMatch *)s1)->score;
+   int      v2 = ((FuzzyMatch *)s2)->score;
+   int      idx1 = ((FuzzyMatch *)s1)->idx;
+   int      idx2 = ((FuzzyMatch *)s2)->idx;
+   CS str1 = ((FuzzyMatch *)s1)->str;
+   CS str2 = ((FuzzyMatch *)s2)->str;
+
+   if (*str1 != '<' && *str2 == '<')
+      return -1;
+   if (*str1 == '<' && *str2 != '<')
+      return 1;
+   if (v1 == v2)
+      return idx1 == idx2 ? 0 : idx1 > idx2 ? 1 : -1;
+   else
+      return v1 > v2 ? -1 : 1;
+}
+
+//Sort fuzzy matches of function names by score. <SNR> functions should be sorted to the end.
+private void
+sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz) {
+   // Sort the list by the descending order of the match score
+   qsort((void *)fm, (Unt)sz, sizeof(FuzzyMatch), fuzzy_match_func_compare);
+}
+
+//Fuzzy match 'pat' in 'str'. Return 0 if there is no match. Otherwise, return the match score.
+int
+fuzzyMatchStr(CS str, CS pat) {
+   int      score = FUZZY_SCORE_NONE;
+   Unt   matchpos[FUZZY_MATCH_MAX_LEN];
+
+   if (str == NULL || pat == NULL)
+      return score;
+
+   fuzzy_match(str, pat, true, &score, matchpos, sizeof(matchpos) / sizeof(matchpos[0]));
+
+   return score;
+}
+
+//Fuzzy match the position of string 'pat' in string 'str'.
+//Return a dynamic array of matching positions. If there is no match, return NULL.
+ArrayList *
+fuzzyMatchStr_with_pos(CS str, CS pat) {
+   int          score = FUZZY_SCORE_NONE;
+   ArrayList       *match_positions = NULL;
+   Unt       matches[FUZZY_MATCH_MAX_LEN];
+   int          j = 0;
+
+   if (str == NULL || pat == NULL)
+      return NULL;
+
+   match_positions = ALLOC_ONE(ArrayList);
+   if (match_positions == NULL)
+      return NULL;
+   ga_init2(match_positions, sizeof(Unt), 10);
+
+   if (!fuzzy_match(str, pat, false, &score, matches, FUZZY_MATCH_MAX_LEN)
+          || score == FUZZY_SCORE_NONE) {
+      ga_clear(match_positions);
+      eeglFree(match_positions);
+      return NULL;
+   }
+
+   for (Byte *p = pat; *p != ZERO; MB_PTR_ADV(p)) {
+      if (!SPACE_OR_TAB(mb_ptr2char(p))) {
+         ga_grow(match_positions, 1);
+         ((Unt *)match_positions->c)[match_positions->len] = matches[j];
+         match_positions->len++;
+         j++;
+      }
+   }
+
+   return match_positions;
+}
+
+// Find the end of the word. Assumes it starts inside a word. Return a pointer to after the word
+CS
+find_word_end(CS ptr) {
+   int start_class = mb_get_class(ptr);
+   if (start_class > 1) {
+      while (*ptr != ZERO) {
+         ptr += utfCharLen(ptr);
+         if (mb_get_class(ptr) != start_class)
+            break;
+      }
+   } 
+   return ptr;
+}
+
+
+// Find the end of the line, omitting CR and NL at the end. Returns a pointer to just after the line.
+CS
+find_line_end(CS ptr) {
+   CS s = ptr + STRLEN(ptr);
+   while (s > ptr && (s[-1] == ENTER || s[-1] == NL))
+      --s;
+   return s;
+}
+
+//This function splits the line pointed to by `*ptr` into words and performs
+//a fuzzy match for the pattern `pat` on each word. It iterates through the
+//line, moving `*ptr` to the start of each word during the process.
+//
+//If a match is found:
+//- `*ptr` points to the start of the matched word.
+//- `*len` is set to the length of the matched word.
+//- `*score` contains the match score.
+//
+//If no match is found, `*ptr` is updated to the end of the line.
+int
+fuzzyMatchStr_in_line(
+   Byte   **ptr,
+   CS pat,
+   int* len,
+   Pos* current_pos,
+   int* score)
+{
+   CS str = *ptr;
+   CS strBegin = str;
+   CS end = NULL;
+   CS start = NULL;
+   int found = false;
+   Byte save_end;
+   CS line_end = NULL;
+
+   if (!str || !pat)
+      return found;
+   line_end = find_line_end(str);
+
+   while (str < line_end) {
+      // Skip non-word characters
+      start = findWordStart(str);
+      if (*start == ZERO)
+          break;
+      end = find_word_end(start);
+
+      // Extract the word from start to end
+      save_end = *end;
+      *end = ZERO;
+
+      // Perform fuzzy match
+      *score = fuzzyMatchStr(start, pat);
+      *end = save_end;
+
+      if (*score != FUZZY_SCORE_NONE) {
+         *len = (int)(end - start);
+         found = true;
+         *ptr = start;
+         if (current_pos)
+            current_pos->col += (int)(end - strBegin);
+         break;
+      }
+
+      // Move to the end of the current word for the next iteration
+      str = end;
+      // Ensure we continue searching after the current word
+      while (*str != ZERO && !eeIsWordPtr(str))
+         MB_PTR_ADV(str);
+   }
+
+   if (!found)
+      *ptr = line_end;
+
+   return found;
+}
+
+//Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of 
+//the given pattern in the buffer, starting from the current position. Handle line wrapping and 
+//direction of search. Return true if a match is found, otherwise false.
+int
+search_for_fuzzy_match(
+   Book* book,
+   Pos* pos,
+   CS pattern,
+   int dir,
+   Pos* start_pos,
+   OUT int* len,
+   OUT CS* ptr,
+   int* score
+) {
+   Pos current_pos = *pos;
+   Pos circly_end;
+   int found_new_match = false;
+   int looped_around = false;
+   int whole_line = ctrl_x_mode_whole_line();
+
+   if (book == curBook)
+      circly_end = *start_pos;
+   else {
+      circly_end.lnum = book->mem.lineCount;
+      circly_end.col = 0;
+      circly_end.coladd = 0;
+   }
+
+   if (whole_line && start_pos->lnum != pos->lnum)
+      current_pos.lnum += dir;
+
+   do {
+
+      // Check if looped around and back to start position
+      if (looped_around && EQUAL_POS(current_pos, circly_end))
+         break;
+
+      // Ensure current_pos is valid
+      if (current_pos.lnum >= 1 && current_pos.lnum <= book->mem.lineCount) {
+         // Get the current line buffer
+         *ptr = memGetLine(book, current_pos.lnum, false);
+         if (!whole_line)
+            *ptr += current_pos.col;
+
+         // If ptr is end of line is reached, move to next line
+         // or previous line based on direction
+         if (*ptr != NULL && **ptr != ZERO) {
+            if (!whole_line) {
+               // Try to find a fuzzy match in the current line starting from current position
+               found_new_match = fuzzyMatchStr_in_line(ptr, pattern, len, &current_pos, score);
+               if (found_new_match) {
+                  *pos = current_pos;
+                  break;
+               } ei (looped_around && current_pos.lnum == circly_end.lnum)
+                  break;
+            } else {
+               if (fuzzyMatchStr(*ptr, pattern) != FUZZY_SCORE_NONE) {
+                  found_new_match = true;
+                  *pos = current_pos;
+                  *len = (int)memGetBookLen(book, current_pos.lnum);
+                  break;
+               }
+            }
+         }
+      }
+
+      // Move to the next line or previous line based on direction
+      if (dir == FORWARD) {
+         if (++current_pos.lnum > book->mem.lineCount) {
+            if (wrapSearchG) {
+               current_pos.lnum = 1;
+               looped_around = true;
+            } else
+               break;
+         }
+      } else {
+         if (--current_pos.lnum < 1) {
+            if (wrapSearchG) {
+               current_pos.lnum = book->mem.lineCount;
+               looped_around = true;
+            } else
+               break;
+         }
+      }
+      current_pos.col = 0;
+   } while (true);
+
+   return found_new_match;
+}
+
+//Free an array of fuzzy string matches "fuzmatch[count]".
+void
+fuzmatch_str_free(FuzzyMatch *fuzmatch, int count) {
+   if (!fuzmatch)
+      return;
+
+   for (int i = 0; i < count; ++i)
+      eeglFree(fuzmatch[i].str);
+   eeglFree(fuzmatch);
+}
+
+//Copy a list of fuzzy matches into a string list after sorting the matches by
+//the fuzzy score. Free the memory allocated for 'fuzzy'.
+//Return OK on success and FAIL on memory allocation failure.
+int
+defuzz(
+   OUT ExpandMatch* matches,
+   Fuzzy fuzzy,
+   Boole funcsort
+) {
+   Unt const len = fuzzy.len;
+   if (fuzzy.len == 0)
+      goto theend;
+
+   if (matches->cap < len) {
+      matches->c = allocateArray(len, CS, matches->a);
+      matches->cap = len;
+   }
+
+   // Sort the list by the descending order of the match score
+   if (funcsort)
+      sortFnNamesByScore((void *)fuzzy.c, len);
+   else
+      fuzzySortByScore(&fuzzy);
+
+   for (Unt i = 0; i < len; i++)
+      matches->c[i] = fuzzy.c[i].str;
+   
+theend:
+   matches->len = len;
+   return OK;
+}
+
+//Fuzzy match algorithm ported from https://github.com/jhawthorn/fzy.
+//This implementation extends the original by supporting multibyte characters.
+
+#define MATCH_MAX_LEN FUZZY_MATCH_MAX_LEN
+
+#define SCORE_GAP_LEADING -0.005
+#define SCORE_GAP_TRAILING -0.005
+#define SCORE_GAP_INNER -0.01
+#define SCORE_MATCH_CONSECUTIVE 1.0
+#define SCORE_MATCH_SLASH 0.9
+#define SCORE_MATCH_WORD 0.8
+#define SCORE_MATCH_CAPITAL 0.7
+#define SCORE_MATCH_DOT 0.6
+
+private int
+has_match(Byte *needle, Byte *haystack) {
+   while (*needle != ZERO) {
+      int n_char = mb_ptr2char(needle);
+      Byte *p = haystack;
+      int h_char;
+      int matched = false;
+
+      while (*p != ZERO) {
+         h_char = mb_ptr2char(p);
+
+         if (n_char == h_char || MB_TOUPPER(n_char) == h_char) {
+            matched = true;
+            break;
+         }
+         p += utfCharLen(p);
+      }
+
+      if (!matched)
+         return 0;
+
+      needle += utfCharLen(needle);
+      haystack = p + utfCharLen(p);
+   }
+   return 1;
+}
+
+typedef struct match_struct {
+   int needle_len;
+   int haystack_len;
+   int lower_needle[MATCH_MAX_LEN];     // stores codepoints
+   int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
+   double match_bonus[MATCH_MAX_LEN];
+} match_struct;
+
+#define IS_WORD_SEP(c) ((c) == '-' || (c) == '_' || (c) == ' ')
+#define IS_PATH_SEP(c) ((c) == '/')
+#define IS_DOT(c)      ((c) == '.')
+
+private double
+compute_bonus_codepoint(Unt last_c, Unt c) {
+   if (ASCII_ISALNUM(c) || eeIsWordc(c)) {
+      if (IS_PATH_SEP(last_c))
+         return SCORE_MATCH_SLASH;
+      if (IS_WORD_SEP(last_c))
+         return SCORE_MATCH_WORD;
+      if (IS_DOT(last_c))
+         return SCORE_MATCH_DOT;
+      if (MB_ISUPPER(c) && MB_ISLOWER(last_c))
+         return SCORE_MATCH_CAPITAL;
+   }
+   return 0;
+}
+
+private void
+setup_match_struct(match_struct *match, CS needle, CS haystack) {
+   int i = 0;
+   CS p = needle;
+   while (*p != ZERO && i < MATCH_MAX_LEN) {
+      Unt c = mb_ptr2char(p);
+      match->lower_needle[i++] = MB_TOLOWER(c);
+      MB_PTR_ADV(p);
+   }
+   match->needle_len = i;
+
+   i = 0;
+   p = haystack;
+   Unt prev_c = '/';
+   while (*p != ZERO && i < MATCH_MAX_LEN) {
+      Unt c = mb_ptr2char(p);
+      match->lower_haystack[i] = MB_TOLOWER(c);
+      match->match_bonus[i] = compute_bonus_codepoint(prev_c, c);
+      prev_c = c;
+      MB_PTR_ADV(p);
+      i++;
+   }
+   match->haystack_len = i;
+}
+
+private inline void
+match_row(match_struct const* match, int row, double* curr_D,
+   double* curr_M, double const* last_D, double const* last_M
+) {
+   int n = match->needle_len;
+   int m = match->haystack_len;
+   int i = row;
+
+   const int *lower_needle = match->lower_needle;
+   const int *lower_haystack = match->lower_haystack;
+   const double *match_bonus = match->match_bonus;
+
+   double prev_score = SCORE_MIN;
+   double gap_score = i == n - 1 ? SCORE_GAP_TRAILING : SCORE_GAP_INNER;
+
+   // These will not be used with this value, but not all compilers see it
+   double prev_M = SCORE_MIN, prev_D = SCORE_MIN;
+
+   for (int j = 0; j < m; j++) {
+      if (lower_needle[i] == lower_haystack[j]) {
+         double score = SCORE_MIN;
+         if (!i) {
+            score = (j * SCORE_GAP_LEADING) + match_bonus[j];
+         } ei (j) { /* i > 0 && j > 0*/
+             score = MAX(
+                prev_M + match_bonus[j],
+                // consecutive match, doesn't stack with match_bonus
+                prev_D + SCORE_MATCH_CONSECUTIVE);
+         }
+         prev_D = last_D[j];
+         prev_M = last_M[j];
+         curr_D[j] = score;
+         curr_M[j] = prev_score = MAX(score, prev_score + gap_score);
+      } else {
+         prev_D = last_D[j];
+         prev_M = last_M[j];
+         curr_D[j] = SCORE_MIN;
+         curr_M[j] = prev_score = prev_score + gap_score;
+      }
+    }
+}
+
+private double
+match_positions(Byte *needle, Byte *haystack, Unt *positions) {
+   if (!*needle)
+      return SCORE_MIN;
+
+   match_struct match;
+   setup_match_struct(&match, needle, haystack);
+
+   int n = match.needle_len;
+   int m = match.haystack_len;
+
+   if (m > MATCH_MAX_LEN || n > m) {
+      // Unreasonably large candidate: return no score
+      // If it is a valid match it will still be returned, it will
+      // just be ranked below any reasonably sized candidates
+      return SCORE_MIN;
+   } ei (n == m) {
+      // Since this method can only be called with a haystack which
+      // matches needle. If the lengths of the strings are equal the
+      // strings themselves must also be equal (ignoring case).
+      if (positions) {
+         for (int i = 0; i < n; i++)
+            positions[i] = i;
+      } 
+      return SCORE_MAX;
+   }
+
+   // D[][] Stores the best score for this position ending with a match.
+   // M[][] Stores the best possible score at this position.
+   double (*D)[MATCH_MAX_LEN], (*M)[MATCH_MAX_LEN];
+   M = alloc(sizeof(double) * MATCH_MAX_LEN * n);
+   D = alloc(sizeof(double) * MATCH_MAX_LEN * n);
+   if (!D)
+      return SCORE_MIN;
+
+   match_row(&match, 0, D[0], M[0], D[0], M[0]);
+   for (int i = 1; i < n; i++)
+      match_row(&match, i, D[i], M[i], D[i - 1], M[i - 1]);
+
+   // backtrace to find the positions of optimal matching
+   if (positions) {
+      int match_required = 0;
+      for (int i = n - 1, j = m - 1; i >= 0; i--) {
+         for (; j >= 0; j--) {
+            // There may be multiple paths which result in the optimal weight.
+            //
+            // For simplicity, we will pick the first one
+            // we encounter, the latest in the candidate
+            // string.
+            if (D[i][j] != SCORE_MIN && (match_required || D[i][j] == M[i][j])) {
+               // If this score was determined using SCORE_MATCH_CONSECUTIVE, the
+               // previous character MUST be a match
+               match_required = i && j && M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE;
+               positions[i] = j--;
+               break;
+            }
+         }
+      }
+   }
+
+   double result = M[n - 1][m - 1];
+
+   eeglFree(M);
+   eeglFree(D);
+
+   return result;
+}
+
+//}}}
+//{{{string functions
+
+#define MAX_ALLOWED_STRING_WIDTH 1048576    // 1 MiB
+
+//Make a Var of the first character of "input" and store it in "output". Return OK or FAIL.
+private int
+copy_first_char_to_tv(CS input, Var* output) {
+   Byte buf[MB_MAXBYTES + 1];
+
+   if (input == NULL || output == NULL)
+      return FAIL;
+
+   int len = utfCharLen(input);
+   STRNCPY(buf, input, len);
+   buf[len] = ZERO;
+   output->tag = VAR_STRING;
+   output->string = copyStr(buf);
+
+   return output->string == NULL ? FAIL : OK;
+}
+
+//Implementation of map() and filter() for a String. Apply "expr" to every
+//character in string "str" and return the result in "returnVar".
+void
+string_filter_map(
+   CS str,
+   FilterMap filtermap,
+   Var* expr,
+   Var* returnVar
+) {
+   CS p;
+   Var   tv;
+   ArrayList   ga;
+   int len = 0;
+   int idx = 0;
+   int rem;
+   Var newtv;
+
+   returnVar->tag = VAR_STRING;
+   returnVar->string = NULL;
+
+   // set_EeglVar_nr() doesn't set the type
+   set_EeglVar_type(VV_KEY, VAR_NUMBER);
+
+   ga_init2(&ga, sizeof(char), 80);
+   for (p = str; *p != ZERO; p += len) {
+      if (copy_first_char_to_tv(p, &tv) == FAIL)
+         break;
+      len = (int)STRLEN(tv.string);
+
+      set_EeglVar_nr(VV_KEY, idx);
+      if (filter_map_one(&tv, expr, filtermap, &newtv, &rem) == FAIL || anyEmsgG) {
+         clearVar(&newtv);
+         clearVar(&tv);
+         break;
+      }
+      if (filtermap == FILTERMAP_MAP || filtermap == FILTERMAP_MAPNEW) {
+         if (newtv.tag != VAR_STRING) {
+            clearVar(&newtv);
+            clearVar(&tv);
+            emsg(_(e_string_required));
+            break;
+         } else
+            ga_concat(&ga, newtv.string);
+      }
+      ei (filtermap == FILTERMAP_FOREACH || !rem)
+         ga_concat(&ga, tv.string);
+
+      clearVar(&newtv);
+      clearVar(&tv);
+
+      ++idx;
+   }
+   ga_append(&ga, ZERO);
+   returnVar->string = ga.c;
+}
+
+//Implementation of reduce() for String "argvars[0]" using the function "expr"
+//starting with the optional initial value "argvars[2]" and return the result in "returnVar".
+private void
+string_reduce(Var* argvars, Var* expr, Var* returnVar) {
+   CS p = tv_get_string(&argvars[0]);
+   int len;
+   Var  argv[3];
+   int r;
+   int called_emsg_start = called_emsg;
+
+   if (argvars[2].tag == VAR_UNKNOWN) {
+      if (*p == ZERO) {
+         showErrFmtMsg(_(e_reduce_of_an_empty_str_with_no_initial_value), "String");
+         return;
+      }
+      if (copy_first_char_to_tv(p, returnVar) == FAIL)
+         return;
+      p += STRLEN(returnVar->string);
+   } ei (check_for_string_arg(argvars, 2) == FAIL)
+      return;
+   else
+      copy_tv(OUT returnVar, &argvars[2]);
+
+   for ( ; *p != ZERO; p += len) {
+      argv[0] = *returnVar;
+      if (copy_first_char_to_tv(p, &argv[1]) == FAIL)
+         break;
+      len = (int)STRLEN(argv[1].string);
+
+      r = eval_expr_typval(expr, true, argv, 2, returnVar);
+
+      clearVar(&argv[0]);
+      clearVar(&argv[1]);
+      if (r == FAIL || called_emsg != called_emsg_start)
+          return;
+   }
+}
+
+// Implementation of "byteidx()" and "byteidxcomp()" functions
+private void
+byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
+   returnVar->number = -1;
+
+   CS str = convertVarToStringSingleUse(&argvars[0]);
+   Long idx = varGetNumberChk(argvars + 1, NULL);
+   if (!str || idx < 0)
+      return;
+
+   Long   utf16idx = false;
+   if (argvars[2].tag != VAR_UNKNOWN) {
+      Boole error = false;
+      utf16idx = varGetNumberChk(argvars + 2, OUT &error);
+      if (error)
+         return;
+      if (utf16idx < 0 || utf16idx > 1) {
+         showErrFmtMsg(_(e_using_number_as_bool_nr), utf16idx);
+         return;
+      }
+   }
+
+   Unt (*ptr2len)(Byte*);
+   if (comp)
+      ptr2len = utf_ptr2len;
+   else
+      ptr2len = utfCharLen;
+
+   CS t = str;
+   for ( ; idx > 0; idx--) {
+      if (*t == ZERO)      // EOL reached
+         return;
+      if (utf16idx) {
+         int clen = ptr2len(t);
+         int c = (clen > 1) ? mb_ptr2char(t) : *t;
+         if (c > 0xFFFF)
+            idx--;
+      }
+      if (idx > 0)
+         t += ptr2len(t);
+   }
+   returnVar->number = (Long)(t - str);
+}
+
+void
+f_byteidx(Arr(Var) argvars, OUT Var* returnVar) {
+   byteidx_common(argvars, returnVar, false);
+}
+
+void
+f_byteidxcomp(Var* argvars, Var* returnVar) {
+   byteidx_common(argvars, returnVar, true);
+}
+
+void
+f_charidx(Var* argvars, Var* returnVar) {
+   returnVar->number = -1;
+
+   if (check_for_string_arg(argvars, 0) == FAIL
+         || check_for_number_arg(argvars, 1) == FAIL
+         || check_for_opt_bool_arg(argvars, 2) == FAIL
+         || (argvars[2].tag != VAR_UNKNOWN && check_for_opt_bool_arg(argvars, 3) == FAIL))
+      return;
+
+   CS str = convertVarToStringSingleUse(&argvars[0]);
+   Long idx = varGetNumberChk(argvars + 1, NULL);
+   if (str == NULL || idx < 0)
+      return;
+
+   Long countcc = false;
+   Long utf16idx = false;
+   if (argvars[2].tag != VAR_UNKNOWN) {
+      countcc = tv_get_bool(&argvars[2]);
+      if (argvars[3].tag != VAR_UNKNOWN)
+         utf16idx = tv_get_bool(&argvars[3]);
+   }
+
+   Unt (*ptr2len)(CS);
+   if (countcc)
+      ptr2len = utf_ptr2len;
+   else
+      ptr2len = utfCharLen;
+
+   Unt len = 0;
+   for (CS p = str; utf16idx ? idx >= 0 : p <= str + idx; len++) {
+      if (*p == ZERO) {
+         // If the index is exactly the number of bytes or utf-16 code units
+         // in the string then return the length of the string in characters.
+         if (utf16idx ? (idx == 0) : (p == (str + idx)))
+            returnVar->number = len;
+         return;
+      }
+      if (utf16idx) {
+         idx--;
+         int clen = ptr2len(p);
+         int c = (clen > 1) ? mb_ptr2char(p) : *p;
+         if (c > 0xFFFF)
+            idx--;
+      }
+      p += ptr2len(p);
+   }
+
+   returnVar->number = len > 0 ? len - 1 : 0;
+}
+
+void
+f_str2list(Arr(Var) argvars, OUT Var* returnVar) {
+   allocReturnList(returnVar);
+
+   CS p = tv_get_string(&argvars[0]);
+
+   for ( ; *p != ZERO; p += utf_ptr2len(p))
+      list_append_number(returnVar->list, mb_ptr2char(p));
+}
+
+void
+f_str2nr(Var* argvars, Var* returnVar) {
+   int      base = 10;
+   Long   n;
+   int      what = 0;
+
+   if (argvars[1].tag != VAR_UNKNOWN) {
+      base = (int)tv_get_number(&argvars[1]);
+      if (base != 2 && base != 10 && base != 16) {
+         emsg(_(e_invalid_argument));
+         return;
+      }
+      if (argvars[2].tag != VAR_UNKNOWN && tv_get_bool(&argvars[2]))
+         what |= STR2NR_QUOTE;
+   }
+
+   CS p = skipwhite(tv_get_string_strict(&argvars[0]));
+   Boole isneg = (*p == '-');
+   if (*p == '+' || *p == '-')
+      p = skipwhite(p + 1);
+      
+   switch (base) {
+   case 2: what |= STR2NR_BIN + STR2NR_FORCE; break;
+   case 16: what |= STR2NR_HEX + STR2NR_FORCE; break;
+   }
+   readLongNumber(p, NULL, NULL, what, &n, NULL, 0, false, NULL);
+   // Text after the number is silently ignored.
+   returnVar->number = isneg ? -n : n;
+}
+
+void
+f_strgetchar(Var* argvars, Var* returnVar) {
+   Boole error = false;
+   int      byteidx = 0;
+   returnVar->number = -1;
+   CS str = convertVarToStringSingleUse(&argvars[0]);
+   if (!str)
+      return;
+      
+   int len = (int)STRLEN(str);
+   int charidx = (int)varGetNumberChk(argvars + 1, OUT &error);
+   if (error)
+      return;
+
+   while (charidx >= 0 && byteidx < len) {
+      if (charidx == 0) {
+         returnVar->number = mb_ptr2char(str + byteidx);
+         break;
+      }
+      --charidx;
+      byteidx += MB_CPTR2LEN(str + byteidx);
+   }
+}
+
+void
+f_stridx(Var* argvars, Var* returnVar) {
+   Byte buf[NUMBUFLEN];
+   int start_idx;
+
+   CS needle = convertVarToStringSingleUse(&argvars[1]);
+   CS haystack = convertVarToString(&argvars[0], buf);
+   CS save_haystack = haystack;
+   returnVar->number = -1;
+   if (needle == NULL || haystack == NULL)
+      return;      // type error; errmsg already given
+
+   if (argvars[2].tag != VAR_UNKNOWN) {
+      Boole error = false;
+
+      start_idx = (int)varGetNumberChk(argvars + 2, OUT &error);
+      if (error || start_idx >= (int)STRLEN(haystack))
+         return;
+      if (start_idx >= 0)
+         haystack += start_idx;
+   }
+
+   CS pos   = (CS)strstr((char *)haystack, (char *)needle);
+   if (pos)
+      returnVar->number = (Long)(pos - save_haystack);
+}
+
+void
+f_string(Arr(Var) argvars, OUT Var* returnVar) {
+   CS tofree;
+   Byte numBuf[NUMBUFLEN];
+
+   returnVar->tag = VAR_STRING;
+   returnVar->string = tv2string(&argvars[0], &tofree, numBuf, get_copyID());
+   // Make a copy if we have a value but it's not in allocated memory.
+   if (returnVar->string != NULL && tofree == NULL)
+      returnVar->string = copyStr(returnVar->string);
+}
+
+void
+f_strlen(Arr(Var) argvars, OUT Var* returnVar) {
+   returnVar->number = (Long)(STRLEN(tv_get_string(&argvars[0])));
+}
+
+private void
+strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc) {
+   CS s = tv_get_string(&argvars[0]);
+   Long len = 0;
+   
+   Unt (*func_inpAdvanceMultibyte)(OUT CS* pp);
+   func_inpAdvanceMultibyte = skipcc ? inpAdvanceMultibyte : mb_cptr2char_adv;
+   
+   while (*s != ZERO) {
+      func_inpAdvanceMultibyte(&s);
+      ++len;
+   }
+   returnVar->number = len;
+}
+
+void
+f_strcharlen(Arr(Var) argvars, OUT Var* returnVar) {
+   strchar_common(argvars, returnVar, true);
+}
+
+void
+f_strchars(Arr(Var) argvars, OUT Var* returnVar) {
+   Long      skipcc = false;
+   if (argvars[1].tag != VAR_UNKNOWN) {
+      Boole error = false;
+      skipcc = varGetNumberChk(argvars + 1, OUT &error);
+      if (error)
+         return;
+      if (skipcc < 0 || skipcc > 1) {
+         showErrFmtMsg(_(e_using_number_as_bool_nr), skipcc);
+         return;
+      }
+   }
+
+   strchar_common(argvars, returnVar, skipcc);
+}
+
+void
+f_strdisplaywidth(Arr(Var) argvars, OUT Var* returnVar) {
+   int col = 0;
+   returnVar->number = -1;
+
+   CS s = tv_get_string(&argvars[0]);
+   if (argvars[1].tag != VAR_UNKNOWN)
+      col = (int)tv_get_number(&argvars[1]);
+
+   returnVar->number = (Long)(linetabsize_col(col, s) - col);
+}
+
+void
+f_strwidth(Var* argvars, OUT Var* returnVar) {
+   CS s = tv_get_string_strict(argvars);
+   returnVar->number = (Long)(mb_string2cells(s, -1));
+}
+
+void
+f_strcharpart(Arr(Var) argvars, OUT Var* returnVar) {
+   int nbyte = 0;
+   int skipcc = false;
+   int len = 0;
+   Boole error = false;
+
+   CS p = tv_get_string(&argvars[0]);
+   int slen = (int)STRLEN(p);
+
+   int nchar = (int)varGetNumberChk(argvars + 1, OUT &error);
+   if (!error) {
+      if (argvars[2].tag != VAR_UNKNOWN && argvars[3].tag != VAR_UNKNOWN) {
+         skipcc = varGetNumberChk(argvars + 3, OUT &error);
+         if (error)
+            return;
+         if (skipcc < 0 || skipcc > 1) {
+            showErrFmtMsg(_(e_using_number_as_bool_nr), skipcc);
+            return;
+         }
+      }
+
+      if (nchar > 0) {
+         while (nchar > 0 && nbyte < slen) {
+            nbyte += skipcc ? utfCharLen(p + nbyte) : MB_CPTR2LEN(p + nbyte);
+            --nchar;
+         }
+      } else
+         nbyte = nchar;
+      if (argvars[2].tag != VAR_UNKNOWN) {
+         int charlen = (int)tv_get_number(&argvars[2]);
+         while (charlen > 0 && nbyte + len < slen) {
+            int off = nbyte + len;
+
+            len += (off < 0) ? 1 : (skipcc ? utfCharLen(p + off) : MB_CPTR2LEN(p + off));
+            --charlen;
+         }
+      } else
+          len = slen - nbyte;    // default: all bytes that are available.
+   }
+
+   // Only return the overlap between the specified part and the actual string.
+   if (nbyte < 0) {
+      len += nbyte;
+      nbyte = 0;
+   } ei (nbyte > slen)
+      nbyte = slen;
+   if (len < 0)
+      len = 0;
+   ei (nbyte + len > slen)
+      len = slen - nbyte;
+
+   returnVar->tag = VAR_STRING;
+   returnVar->string = copySubstr(p + nbyte, len);
+}
+
+void
+f_strpart(Arr(Var) argvars, OUT Var* returnVar) {
+   Boole error = false;
+
+   CS p = tv_get_string(&argvars[0]);
+   int slen = (int)STRLEN(p);
+
+   int n = (int)varGetNumberChk(argvars + 1, OUT &error);
+   int len;
+   if (error)
+      len = 0;
+   ei (argvars[2].tag != VAR_UNKNOWN)
+      len = (int)tv_get_number(&argvars[2]);
+   else
+      len = slen - n;       // default len: all bytes that are available.
+
+   // Only return the overlap between the specified part and the actual string.
+   if (n < 0) {
+      len += n;
+      n = 0;
+   } ei (n > slen)
+      n = slen;
+   if (len < 0)
+      len = 0;
+   ei (n + len > slen)
+      len = slen - n;
+
+   if (argvars[2].tag != VAR_UNKNOWN && argvars[3].tag != VAR_UNKNOWN) {
+      // length in characters
+      int off;
+      for (off = n; off < slen && len > 0; --len)
+         off += utfCharLen(p + off);
+      len = off - n;
+   }
+
+   returnVar->tag = VAR_STRING;
+   returnVar->string = copySubstr(p + n, len);
+}
+
+void
+f_strridx(Arr(Var) argvars, OUT Var* returnVar) {
+   Byte buf[NUMBUFLEN];
+
+   CS needle = convertVarToStringSingleUse(&argvars[1]);
+   CS haystack = convertVarToString(&argvars[0], buf);
+
+   returnVar->number = -1;
+   if (needle == NULL || haystack == NULL)
+      return;      // type error; errmsg already given
+
+   int haystack_len = (int)STRLEN(haystack);
+   int endInd;
+   if (argvars[2].tag != VAR_UNKNOWN) {
+      // Third argument: upper limit for index
+      endInd = (int)varGetNumberChk(argvars + 2, NULL);
+      if (endInd < 0)
+          return;   // can never find a match
+   } else
+      endInd = haystack_len;
+
+   CS lastmatch = NULL;
+   if (*needle == ZERO) {
+      // Empty string matches past the end.
+      lastmatch = haystack + endInd;
+   } else {
+      for (CS rest = haystack; *rest != '\0'; ++rest) {
+         rest = STRSTR(rest, needle);
+         if (rest == NULL || rest > haystack + endInd)
+            break;
+         lastmatch = rest;
+      }
+   }
+
+   returnVar->number = lastmatch ? (Long)(lastmatch - haystack) : -1;
+}
+
+void
+f_strtrans(Arr(Var) argvars, OUT Var* returnVar) {
+   returnVar->tag = VAR_STRING;
+   returnVar->string = sanitizeStr(tv_get_string(&argvars[0]));
+}
+
+// "tolower(string)" function
+void
+f_tolower(Arr(Var) argvars, OUT Var* returnVar) {
+   returnVar->tag = VAR_STRING;
+   returnVar->string = strlow_save(tv_get_string(&argvars[0]));
+}
+
+// "toupper(string)" function
+void
+f_toupper(Arr(Var) argvars, OUT Var* returnVar) {
+   returnVar->tag = VAR_STRING;
+   returnVar->string = strup_save(tv_get_string(&argvars[0]));
+}
+
+// "tr(string, fromstr, tostr)" function
+void
+f_tr(Arr(Var) argvars, OUT Var* returnVar) {
+   CS p;
+   int  first = true;
+   Byte buf[NUMBUFLEN];
+   Byte buffer1[NUMBUFLEN];
+
+   CS in_str = tv_get_string(&argvars[0]);
+   CS fromstr = convertVarToString(&argvars[1], buf);
+   CS tostr = convertVarToString(&argvars[2], buffer1);
+
+   // Default return value: empty string.
+   returnVar->tag = VAR_STRING;
+   returnVar->string = NULL;
+   if (fromstr == NULL || tostr == NULL)
+      return;      // type error; errmsg already given
+      
+   ArrayList   ga;
+   ga_init2(&ga, sizeof(char), 80);
+
+   // fromstr and tostr have to contain the same number of chars
+   while (*in_str != ZERO) {
+      int inlen = utfCharLen(in_str);
+      CS cpstr = in_str;
+      int cplen = inlen;
+      int idx = 0;
+      int fromlen;
+      int tolen;
+      for (p = fromstr; *p != ZERO; p += fromlen) {
+         fromlen = utfCharLen(p);
+         if (fromlen == inlen && STRNCMP(in_str, p, inlen) == 0) {
+            for (p = tostr; *p != ZERO; p += tolen) {
+               tolen = utfCharLen(p);
+               if (idx-- == 0) {
+                   cplen = tolen;
+                   cpstr = p;
+                   break;
+               }
+            }
+            if (*p == ZERO)   // tostr is shorter than fromstr
+               goto error;
+            break;
+         }
+         ++idx;
+      }
+
+      if (first && cpstr == in_str) {
+         // Check that fromstr and tostr have the same number of
+         // (multi-byte) characters.  Done only once when a character
+         // of in_str doesn't appear in fromstr.
+         first = false;
+         for (p = tostr; *p != ZERO; p += tolen) {
+            tolen = utfCharLen(p);
+            --idx;
+         }
+         if (idx != 0)
+            goto error;
+      }
+
+      (void)ga_grow(&ga, cplen);
+      MEMMOVE((char *)ga.c + ga.len, cpstr, (Unt)cplen);
+      ga.len += cplen;
+
+      in_str += inlen;
+   }
+
+   // add a terminating ZERO
+   (void)ga_grow(&ga, 1);
+   ga_append(&ga, ZERO);
+
+   returnVar->string = ga.c;
+   
+   return;   
+   
+error:
+   showErrFmtMsg(_(e_invalid_argument_str), fromstr);
+   ga_clear(&ga);
+   return;
+}
+
+// "trim({expr})" function
+void
+f_trim(Arr(Var) argvars, OUT Var* returnVar) {
+   Byte buffer0[NUMBUFLEN];
+   Byte buffer1[NUMBUFLEN];
+   CS mask = NULL;
+   CS p;
+   int dir = 0;
+
+   returnVar->tag = VAR_STRING;
+   returnVar->string = NULL;
+
+   CS head = convertVarToString(&argvars[0], buffer0);
+   if (!head)
+      return;
+
+   if (check_for_opt_string_arg(argvars, 1) == FAIL)
+      return;
+
+    if (argvars[1].tag == VAR_STRING) {
+      mask = convertVarToString(&argvars[1], buffer1);
+      if (*mask == ZERO)
+         mask = NULL;
+
+      if (argvars[2].tag != VAR_UNKNOWN) {
+         Boole error = false;
+
+         // leading or trailing characters to trim
+         dir = (int)varGetNumberChk(argvars + 2, OUT &error);
+         if (error)
+            return;
+         if (dir < 0 || dir > 2) {
+            showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[2]));
+            return;
+         }
+      }
+   }
+
+   if (dir == 0 || dir == 1) {
+      // Trim leading characters
+      while (*head != ZERO) {
+         Unt c1 = mb_ptr2char(head);
+         if (mask == NULL) {
+            if (c1 > ' ' && c1 != 0xa0)
+                break;
+         } else {
+            for (p = mask; *p != ZERO; MB_PTR_ADV(p))
+               if (c1 == mb_ptr2char(p))
+                  break;
+            if (*p == ZERO)
+                break;
+         }
+         MB_PTR_ADV(head);
+      }
+   }
+
+   CS tail = head + STRLEN(head);
+   if (dir == 0 || dir == 2) {
+      // Trim trailing characters
+      CS prev;
+      for (; tail > head; tail = prev) {
+         prev = tail;
+         MB_PTR_BACK(head, prev);
+         Unt c1 = mb_ptr2char(prev);
+         if (mask == NULL) {
+            if (c1 > ' ' && c1 != 0xa0)
+                break;
+         } else {
+            for (p = mask; *p != ZERO; MB_PTR_ADV(p))
+               if (c1 == mb_ptr2char(p))
+                  break;
+            if (*p == ZERO)
+               break;
+         }
+      }
+   }
+   returnVar->string = copySubstr(head, tail - head);
+}
+
+//Get number argument from "idxp" entry in "tvs".  First entry is 1. Skip the entry.
+private Long
+tv_nr(Var* tvs, OUT int* idxp) {
+   int idx = *idxp - 1;
+   Long n = 0;
+   Boole err = false;
+
+   if (tvs[idx].tag == VAR_UNKNOWN)
+      emsg(_(e_printf));
+   else {
+      ++*idxp;
+      n = varGetNumberChk(tvs + idx, OUT &err);
+      if (err)
+          n = 0;
+   }
+   return n;
+}
+
+//Get string argument from "idxp" entry in "tvs". First entry is 1.
+//If "tofree" is NULL convertVarToStringSingleUse() is used. Some types (e.g. List)
+//are not converted to a string.
+//If "tofree" is not NULL echo_string() is used. All types are converted to
+//a string with the same format as ":echo". The caller must free "*tofree". NULL for an error.
+private CS
+tv_str(Var* tvs, int* idxp, Byte** tofree) {
+   int idx = *idxp - 1;
+   CS s = NULL;
+   static Byte numBuf[NUMBUFLEN];
+
+   if (tvs[idx].tag == VAR_UNKNOWN)
+      emsg(_(e_printf));
+   else {
+      ++*idxp;
+      if (tofree)
+         s = echo_string(&tvs[idx], tofree, numBuf, get_copyID());
+      else
+         s = convertVarToStringSingleUse(&tvs[idx]);
+   }
+   return s;
+}
+
+//Get float argument from "idxp" entry in "tvs".  First entry is 1.
+private double
+tv_float(Var* tvs, int* idxp) {
+   int idx = *idxp - 1;
+   double f = 0;
+
+   if (tvs[idx].tag == VAR_UNKNOWN)
+      emsg(_(e_printf));
+   else {
+      ++*idxp;
+      if (tvs[idx].tag == VAR_FLOAT)
+         f = tvs[idx].floatt;
+      ei (tvs[idx].tag == VAR_NUMBER)
+         f = (double)tvs[idx].number;
+      else
+         emsg(_(e_expected_float_argument_for_printf));
+   }
+   return f;
+}
+
+private void
+format_overflow_error(CS pstart) {
+   Unt   arglen = 0;
+   CS p = pstart;
+
+   while (EE_ISDIGIT((int)(*p)))
+      ++p;
+
+   arglen = p - pstart;
+   CS argcopy = ALLOC_CLEAR_MULT(Byte, arglen + 1);
+   if (argcopy) {
+      STRNCPY(argcopy, pstart, arglen);
+      showErrFmtMsg(_( e_val_too_large), argcopy);
+      free(argcopy);
+   } else
+      showErrFmtMsg(_(e_out_of_memory_allocating_nr_bytes), arglen);
+}
+
+private int
+parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_err) {
+   *uj = **p - '0';
+   ++*p;
+
+   while (EE_ISDIGIT((Unt)(**p)) && *uj < MAX_ALLOWED_STRING_WIDTH) {
+      *uj = 10 * *uj + (unsigned int)(**p - '0');
+      (*p)++;
+   }
+
+   if (*uj > MAX_ALLOWED_STRING_WIDTH) {
+      if (overflow_err) {
+         format_overflow_error(pstart);
+         return FAIL;
+      } else
+         *uj = MAX_ALLOWED_STRING_WIDTH;
+   }
+
+   return OK;
+}
+
+enum {
+   TYPE_UNKNOWN = -1,
+   TYPE_INT,
+   TYPE_LONGINT,
+   TYPE_LONGLONGINT,
+   TYPE_UNSIGNEDINT,
+   TYPE_UNSIGNEDLONGINT,
+   TYPE_UNSIGNEDLONGLONGINT,
+   TYPE_POINTER,
+   TYPE_PERCENT,
+   TYPE_CHAR,
+   TYPE_STRING,
+   TYPE_FLOAT
+};
+
+//Types that can be used in a format string
+private int
+format_typeof(CS type) {
+   // allowed values: \0, h, l, L
+   Byte length_modifier = '\0';
+
+   // current conversion specifier character
+   Byte fmt_spec = '\0';
+
+   // parse 'h', 'l' and 'll' length modifiers
+   if (*type == 'h' || *type == 'l') {
+      length_modifier = *type;
+      type++;
+      if (length_modifier == 'l' && *type == 'l') {
+         // double l = __int64 / Long
+         length_modifier = 'L';
+         type++;
+      }
+   }
+   fmt_spec = *type;
+
+   // common synonyms:
+   switch (fmt_spec) {
+   case 'i': fmt_spec = 'd'; break;
+   case '*': fmt_spec = 'd'; length_modifier = 'h'; break;
+   case 'D': fmt_spec = 'd'; length_modifier = 'l'; break;
+   case 'U': fmt_spec = 'u'; length_modifier = 'l'; break;
+   case 'O': fmt_spec = 'o'; length_modifier = 'l'; break;
+   default: break;
+   }
+
+   // get parameter value, do initial processing
+   switch (fmt_spec) {
+   // '%' and 'c' behave similar to 's' regarding flags and field
+   // widths
+   case '%':
+      return TYPE_PERCENT;
+
+   case 'c':
+      return TYPE_CHAR;
+
+   case 's':
+   case 'S':
+      return TYPE_STRING;
+
+   case 'd': case 'u':
+   case 'b': case 'B':
+   case 'o':
+   case 'x': case 'X':
+   case 'p': {
+      //NOTE: the u, b, o, x, X and p conversion specifiers
+      //imply the value is unsigned;  d implies a signed value
+
+      //0 if numeric argument is zero (or if pointer is
+      //NULL for 'p'), +1 if greater than zero (or nonzero
+      //for unsigned arguments), -1 if negative (unsigned argument is never negative)
+
+      if (fmt_spec == 'p')
+         return TYPE_POINTER;
+      ei (fmt_spec == 'b' || fmt_spec == 'B')
+         return TYPE_UNSIGNEDLONGLONGINT;
+      ei (fmt_spec == 'd') {
+         // signed
+         switch (length_modifier) {
+         case '\0':
+         case 'h':
+            // char and short arguments are passed as int.
+            return TYPE_INT;
+         case 'l':
+            return TYPE_LONGINT;
+         case 'L':
+            return TYPE_LONGLONGINT;
+         }
+      } else {
+         //unsigned
+         switch (length_modifier) {
+         case '\0':
+         case 'h':
+            return TYPE_UNSIGNEDINT;
+         case 'l':
+            return TYPE_UNSIGNEDLONGINT;
+         case 'L':
+            return TYPE_UNSIGNEDLONGLONGINT;
+         }
+      }
+   }
+   break;
+
+   case 'f':
+   case 'F':
+   case 'e':
+   case 'E':
+   case 'g':
+   case 'G':
+      return TYPE_FLOAT;
+   }
+
+   return TYPE_UNKNOWN;
+}
+
+
+private CS
+format_typename(CS type) {
+   switch (format_typeof(type)) {
+   case TYPE_INT: return _("int");
+   case TYPE_LONGINT: return _("long int");
+   case TYPE_LONGLONGINT: return _("long long int");
+   case TYPE_UNSIGNEDINT: return _("unsigned int");
+   case TYPE_UNSIGNEDLONGINT: return _("unsigned long int");
+   case TYPE_UNSIGNEDLONGLONGINT: return _("unsigned long long int");
+   case TYPE_POINTER: return _("pointer");
+   case TYPE_PERCENT: return _("percent");
+   case TYPE_CHAR: return _("char");
+   case TYPE_STRING: return _("string");
+   case TYPE_FLOAT: return _("float");
+   default: return _("unknown");
+   }
+}
+
+private int
+adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type) {
+   if (*ap_types == NULL || *num_posarg < arg) {
+      int idx;
+      Arr(CS) new_types;
+
+      if (*ap_types == NULL)
+         new_types = ALLOC_CLEAR_MULT(Byte *, arg);
+      else
+         new_types = eeRealloc((Byte **)*ap_types, arg * sizeof(Byte *));
+
+      for (idx = *num_posarg; idx < arg; ++idx)
+         new_types[idx] = NULL;
+
+      *ap_types = new_types;
+      *num_posarg = arg;
+   }
+
+   if ((*ap_types)[arg - 1] != NULL) {
+      if ((*ap_types)[arg - 1][0] == '*' || type[0] == '*') {
+         CS pt = type;
+         if (pt[0] == '*')
+            pt = (*ap_types)[arg - 1];
+
+         if (pt[0] != '*') {
+            switch (pt[0]) {
+            case 'd': case 'i': 
+               break;
+            default:
+               showErrFmtMsg(
+                     _(e_positional_num_field_spec_reused_str_str), 
+                     arg, 
+                     format_typename((*ap_types)[arg - 1]), format_typename(type)
+               );
+               return FAIL;
+            }
+         }
+      } else {
+         if (format_typeof(type) != format_typeof((*ap_types)[arg - 1])) {
+            showErrFmtMsg(_( e_positional_arg_num_type_inconsistent_str_str), arg, format_typename(type), 
+                  format_typename((*ap_types)[arg - 1]));
+            return FAIL;
+         }
+      }
+   }
+
+   (*ap_types)[arg - 1] = type;
+
+   return OK;
+}
+
+
+private int
+parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs UNUSED) {
+   Byte* p = fmt;
+   CS arg = NULL;
+
+   int any_pos = 0;
+   int any_arg = 0;
+   int arg_idx;
+
+#define CHECK_POS_ARG do { \
+    if (any_pos && any_arg) \
+    { \
+   showErrFmtMsg(_( e_cannot_mix_positional_and_non_positional_str), fmt); \
+   goto error; \
+    } \
+} while (0);
+
+   if (p == NULL)
+      return OK;
+
+   while (*p != ZERO) {
+      if (*p != '%') {
+         CS q = STRCHR(p + 1, '%');
+         Unt  n = (q == NULL) ? STRLEN(p) : (Unt)(q - p);
+
+         p += n;
+      } else {
+         // allowed values: \0, h, l, L
+         Byte   length_modifier = '\0';
+
+          // variable for positional arg
+         int      pos_arg = -1;
+         CS ptype = NULL;
+         Byte* pstart = p+1;
+
+         p++;  // skip '%'
+
+         // First check to see if we find a positional argument specifier
+         ptype = p;
+
+         while (EE_ISDIGIT(*ptype))
+            ++ptype;
+
+         if (*ptype == '$') {
+            if (*p == '0') {
+               // 0 flag at the wrong place
+               showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+               goto error;
+            }
+
+            // Positional argument
+            Unt uj;
+
+            if (parseUnsignedInt(pstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+               goto error;
+
+            pos_arg = uj;
+
+            any_pos = 1;
+            CHECK_POS_ARG;
+
+            ++p;
+         }
+
+         // parse flags
+         while (*p == '0' || *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '\'') {
+            switch (*p) {
+            case '0': break;
+            case '-': break;
+            case '+': break;
+            case ' ': // If both the ' ' and '+' flags appear, the ' '
+                 // flag should be ignored
+                 break;
+            case '#': break;
+            case '\'': break;
+            }
+            p++;
+         }
+         // If the '0' and '-' flags both appear, the '0' flag should be ignored.
+
+         // parse field width
+         if (*(arg = p) == '*') {
+            p++;
+
+            if (EE_ISDIGIT((int)(*p))) {
+               // Positional argument field width
+               unsigned int uj;
+
+               if (parseUnsignedInt(arg + 1, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+                  goto error;
+
+               if (*p != '$') {
+                  showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+                  goto error;
+               } else {
+                  ++p;
+                  any_pos = 1;
+                  CHECK_POS_ARG;
+
+                  if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
+                      goto error;
+               }
+            } else {
+               any_arg = 1;
+               CHECK_POS_ARG;
+            }
+         } ei (EE_ISDIGIT((int)(*p))) {
+            // Unt could be wider than unsigned int; make sure we treat
+            // argument like common implementations do
+            CS digstart = p;
+            unsigned int uj;
+
+            if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+               goto error;
+
+            if (*p == '$') {
+               showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+               goto error;
+            }
+         }
+
+         // parse precision
+         if (*p == '.') {
+            p++;
+
+            if (*(arg = p) == '*') {
+               p++;
+               if (EE_ISDIGIT((int)(*p))) {
+                  // Parse precision
+                  unsigned int uj;
+
+                  if (parseUnsignedInt(arg + 1, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+                     goto error;
+
+                  if (*p == '$') {
+                     any_pos = 1;
+                     CHECK_POS_ARG;
+
+                     ++p;
+
+                     if (adjust_types(ap_types, uj, num_posarg, arg) == FAIL)
+                        goto error;
+                  } else {
+                     showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+                     goto error;
+                  }
+               } else {
+                  any_arg = 1;
+                  CHECK_POS_ARG;
+               }
+            } ei (EE_ISDIGIT((int)(*p))) {
+               // Unt could be wider than unsigned int; make sure we
+               // treat argument like common implementations do
+               CS digstart = p;
+               unsigned int uj;
+
+               if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+                  goto error;
+
+               if (*p == '$') {
+                  showErrFmtMsg(_( e_invalid_format_specifier_str), fmt);
+                  goto error;
+               }
+            }
+         }
+
+         if (pos_arg != -1) {
+            any_pos = 1;
+            CHECK_POS_ARG;
+
+            ptype = p;
+         }
+
+         // parse 'h', 'l' and 'll' length modifiers
+         if (*p == 'h' || *p == 'l') {
+            length_modifier = *p;
+            p++;
+            if (length_modifier == 'l' && *p == 'l') {
+               // double l = __int64 / Long
+               // length_modifier = 'L';
+               p++;
+            }
+         }
+
+         switch (*p) {
+         // Check for known format specifiers. % is special!
+         case 'i':
+         case '*':
+         case 'd':
+         case 'u':
+         case 'o':
+         case 'D':
+         case 'U':
+         case 'O':
+         case 'x':
+         case 'X':
+         case 'b':
+         case 'B':
+         case 'c':
+         case 's':
+         case 'S':
+         case 'p':
+         case 'f':
+         case 'F':
+         case 'e':
+         case 'E':
+         case 'g':
+         case 'G':
+            if (pos_arg != -1) {
+               if (adjust_types(ap_types, pos_arg, num_posarg, ptype) == FAIL)
+                  goto error;
+            } else {
+               any_arg = 1;
+               CHECK_POS_ARG;
+            }
+            break;
+
+         default:
+            if (pos_arg != -1) {
+               showErrFmtMsg(_( e_cannot_mix_positional_and_non_positional_str), fmt);
+               goto error;
+            }
+         }
+
+         if (*p != ZERO)
+            p++;     // step over the just processed conversion specifier
+      }
+   }
+
+   for (arg_idx = 0; arg_idx < *num_posarg; ++arg_idx) {
+      if ((*ap_types)[arg_idx] == NULL) {
+         showErrFmtMsg(_(e_fmt_arg_nr_unused_str), arg_idx + 1, fmt);
+         goto error;
+      }
+
+      if (tvs && tvs[arg_idx].tag == VAR_UNKNOWN) {
+         showErrFmtMsg(_(e_positional_nr_out_of_bounds_str), arg_idx + 1, fmt);
+         goto error;
+      }
+   }
+
+   return OK;
+
+error:
+   eeglFree((Byte**)*ap_types);
+   *ap_types = NULL;
+   *num_posarg = 0;
+   return FAIL;
+}
+
+private void
+skip_to_arg(
+    Arr(CS) ap_types,
+    va_list ap_start,
+    va_list* ap,
+    int* arg_idx,
+    int* arg_cur,
+    CS fmt
+) {
+   int arg_min = 0;
+
+   if (*arg_cur + 1 == *arg_idx) {
+      ++*arg_cur;
+      ++*arg_idx;
+      return;
+   }
+
+   if (*arg_cur >= *arg_idx) {
+      // Reset ap to ap_start and skip arg_idx - 1 types
+      va_end(*ap);
+      va_copy(*ap, ap_start);
+   } else {
+      // Skip over any we should skip
+      arg_min = *arg_cur;
+   }
+
+   for (*arg_cur = arg_min; *arg_cur < *arg_idx - 1; ++*arg_cur) {
+      if (ap_types == NULL || ap_types[*arg_cur] == NULL) {
+          internalErrFmtMsg(e_aptypes_is_null_nr_str, *arg_cur, fmt);
+          return;
+      }
+
+      CS p = ap_types[*arg_cur];
+
+      int fmt_type = format_typeof(p);
+
+      // get parameter value, do initial processing
+      switch (fmt_type) {
+      case TYPE_PERCENT:
+      case TYPE_UNKNOWN:
+          break;
+
+      case TYPE_CHAR:
+          va_arg(*ap, int);
+          break;
+
+      case TYPE_STRING:
+          va_arg(*ap, char *);
+          break;
+
+      case TYPE_POINTER:
+          va_arg(*ap, void *);
+          break;
+
+      case TYPE_INT:
+          va_arg(*ap, int);
+          break;
+
+      case TYPE_LONGINT:
+          va_arg(*ap, long int);
+          break;
+
+      case TYPE_LONGLONGINT:
+          va_arg(*ap, Long);
+          break;
+
+      case TYPE_UNSIGNEDINT:
+          va_arg(*ap, unsigned int);
+          break;
+
+      case TYPE_UNSIGNEDLONGINT:
+          va_arg(*ap, unsigned long int);
+          break;
+
+      case TYPE_UNSIGNEDLONGLONGINT:
+          va_arg(*ap, Ulong);
+          break;
+
+      case TYPE_FLOAT:
+          va_arg(*ap, double);
+          break;
+      }
+   }
+
+   //Because we know that after we return from this call, a va_arg() call is made, we can 
+   //pre-emptively increment the current argument index.
+   ++*arg_cur;
+   ++*arg_idx;
+
+   return;
+}
+
+
+//Return the representation of infinity for printf() function:
+//"-inf", "inf", "+inf", " inf", "-INF", "INF", "+INF" or " INF".
+private CS
+infinity_str(Unt positive, char fmt_spec, int force_sign, int space_for_positive) {
+   static CS table[] = {SMAP((CS),
+      "-inf", "inf", "+inf", " inf",
+      "-INF", "INF", "+INF", " INF"
+   )};
+   int idx = positive * (1 + force_sign + force_sign * space_for_positive);
+
+   if (ASCII_ISUPPER(fmt_spec))
+      idx += 4;
+   return table[idx];
+}
+
+int
+eeVarPrintf0(
+   CS str,
+   Unt str_m,
+   char const* fmt,
+   va_list ap_start,
+   Var* tvs
+) {
+   Unt str_l = 0; // number of formatted characters. That is, the number of characters that 
+                  // would have been written to the string buf if it were large enough.
+
+   CS p = (CS)fmt;
+   int arg_cur = 0;
+   int num_posarg = 0;
+   int arg_idx = 1;
+   va_list ap;
+   Byte** ap_types = NULL;
+
+   if (parse_fmt_types(&ap_types, &num_posarg, (CS)fmt, tvs) == FAIL)
+      return 0;
+
+   va_copy(ap, ap_start);
+
+   if (!p)
+      p = S"";
+   while (*p != ZERO) {
+      if (*p != '%') {
+         CS q = STRCHR(p + 1, '%');
+         Unt  n = (q == NULL) ? STRLEN(p) : (Unt)(q - p);
+
+         // Copy up to the next '%' or ZERO without any changes.
+         if (str_l < str_m) {
+            Unt avail = str_m - str_l;
+            MEMMOVE(str + str_l, p, n > avail ? avail : n);
+         }
+         p += n;
+         str_l += n;
+      } else {
+         Unt  min_field_width = 0, precision = 0;
+         int       zero_padding = 0, precision_specified = 0, justify_left = 0;
+         int       alternate_form = 0, force_sign = 0;
+
+         // If both the ' ' and '+' flags appear, the ' ' flag should be ignored.
+         int space_for_positive = 1;
+
+         // allowed values: \0, h, l, L
+         char length_modifier = '\0';
+
+         // temporary buffer for simple numeric->string conversion
+# define TMP_LEN 350   // On my system 1e308 is the biggest number possible.
+         // That sounds reasonable to use as the maximum printable.
+         Byte tmp[TMP_LEN];
+
+         // string address in case of string argument
+         CS str_arg = NULL;
+
+         // natural field width of arg without padding and sign
+         Unt str_arg_l;
+
+         // unsigned char argument value - only defined for c conversion.
+         // N.B. standard explicitly states the char argument for the c conversion is unsigned
+         unsigned char uchar_arg;
+
+         // number of zeros to be inserted for numeric conversions as
+         // required by the precision or minimal field width
+         Unt number_of_zeros_to_pad = 0;
+
+         // index into tmp where zero padding is to be inserted
+         Unt zero_padding_insertion_ind = 0;
+
+         // current conversion specifier character
+         Byte fmt_spec = '\0';
+
+         // buffer for 's' and 'S' specs
+         Byte* tofree = NULL;
+
+         // variables for positional arg
+         int pos_arg = -1;
+         CS ptype;
+
+
+         p++;  // skip '%'
+
+         // First check to see if we find a positional argument specifier
+         ptype = p;
+
+         while (EE_ISDIGIT(*ptype))
+            ++ptype;
+
+         if (*ptype == '$') {
+            // Positional argument
+            CS digstart = p;
+            unsigned int uj;
+
+            if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+               goto error;
+
+            pos_arg = uj;
+
+            ++p;
+         }
+
+         // parse flags
+         while (*p == '0' || *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '\'') {
+            switch (*p) {
+            case '0': zero_padding = 1; break;
+            case '-': justify_left = 1; break;
+            case '+': force_sign = 1; space_for_positive = 0; break;
+            case ' ': force_sign = 1;
+               // If both the ' ' and '+' flags appear, the ' ' flag should be ignored
+               break;
+            case '#': alternate_form = 1; break;
+            case '\'': break;
+            }
+            p++;
+         }
+         // If the '0' and '-' flags both appear, the '0' flag should be ignored.
+
+         // parse field width
+         if (*p == '*') {
+            int j;
+            CS digstart = p + 1;
+
+            p++;
+
+            if (EE_ISDIGIT((int)(*p))) {
+               // Positional argument field width
+               unsigned int uj;
+
+               if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+                  goto error;
+
+               arg_idx = uj;
+
+               ++p;
+            }
+
+            j = tvs
+               ? tv_nr(tvs, OUT &arg_idx) 
+               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
+                   va_arg(ap, int)
+                 );
+
+            if (j > MAX_ALLOWED_STRING_WIDTH) {
+               if (tvs) {
+                  format_overflow_error(digstart);
+                  goto error;
+               } else
+                  j = MAX_ALLOWED_STRING_WIDTH;
+            }
+
+            if (j >= 0)
+               min_field_width = j;
+            else {
+               min_field_width = -j;
+               justify_left = 1;
+            }
+         } ei (EE_ISDIGIT((int)(*p))) {
+            // Unt could be wider than unsigned int; make sure we treat
+            // argument like common implementations do
+            CS digstart = p;
+            unsigned int uj;
+
+            if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+               goto error;
+
+            min_field_width = uj;
+         }
+
+         // parse precision
+         if (*p == '.') {
+            p++;
+            precision_specified = 1;
+
+            if (EE_ISDIGIT((int)(*p))) {
+               // Unt could be wider than unsigned int; make sure we
+               // treat argument like common implementations do
+               CS digstart = p;
+               unsigned int uj;
+
+               if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+                  goto error;
+
+               precision = uj;
+            } ei (*p == '*') {
+               int j;
+               CS digstart = p;
+
+               p++;
+
+               if (EE_ISDIGIT((int)(*p))) {
+                  // positional argument
+                  unsigned int uj;
+
+                  if (parseUnsignedInt(digstart, OUT &p, OUT &uj, tvs != NULL) == FAIL)
+                     goto error;
+
+                  arg_idx = uj;
+
+                  ++p;
+               }
+
+               j = tvs 
+                  ? tv_nr(tvs, OUT &arg_idx) 
+                  : (skip_to_arg( ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
+                     va_arg(ap, int)
+                    );
+
+               if (j > MAX_ALLOWED_STRING_WIDTH) {
+                  if (tvs) {
+                     format_overflow_error(digstart);
+                     goto error;
+                  } else
+                     j = MAX_ALLOWED_STRING_WIDTH;
+               }
+
+               if (j >= 0)
+                  precision = j;
+               else {
+                  precision_specified = 0;
+                  precision = 0;
+               }
+            }
+         }
+
+         // parse 'h', 'l' and 'll' length modifiers
+         if (*p == 'h' || *p == 'l') {
+            length_modifier = *p;
+            p++;
+            if (length_modifier == 'l' && *p == 'l') {
+                // double l = __int64 / Long
+                length_modifier = 'L';
+                p++;
+            }
+         }
+         fmt_spec = *p;
+
+         // common synonyms:
+         switch (fmt_spec) {
+         case 'i': fmt_spec = 'd'; break;
+         case 'D': fmt_spec = 'd'; length_modifier = 'l'; break;
+         case 'U': fmt_spec = 'u'; length_modifier = 'l'; break;
+         case 'O': fmt_spec = 'o'; length_modifier = 'l'; break;
+         default: break;
+         }
+
+         switch (fmt_spec) {
+         case 'd': case 'u': case 'o': case 'x': case 'X':
+            if (tvs != NULL && length_modifier == '\0')
+               length_modifier = 'L';
+         }
+
+         if (pos_arg != -1)
+            arg_idx = pos_arg;
+
+         // get parameter value, do initial processing
+         switch (fmt_spec) {
+         // '%' and 'c' behave similar to 's' regarding flags and field widths
+         case '%':
+         case 'c':
+         case 's':
+         case 'S':
+            str_arg_l = 1;
+            switch (fmt_spec) {
+            case '%':
+                str_arg = p;
+                break;
+
+            case 'c': {
+               int j;
+
+               j = tvs 
+                  ? tv_nr(tvs, OUT &arg_idx) 
+                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                        va_arg(ap, int)
+                    );
+
+               // standard demands unsigned char
+               uchar_arg = (unsigned char)j;
+               str_arg = &uchar_arg;
+               break;
+               }
+
+            case 's':
+            case 'S':
+               str_arg = tvs 
+                  ? tv_str(tvs, &arg_idx, &tofree) 
+                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                    va_arg(ap, Byte *)
+                    );
+
+               if (str_arg == NULL) {
+                  str_arg = S"[NULL]";
+                  str_arg_l = 6;
+               }
+               // make sure not to address string beyond the specified precision !!!
+               ei (!precision_specified)
+                  str_arg_l = STRLEN(str_arg);
+               // truncate string if necessary as requested by precision
+               ei (precision == 0)
+                  str_arg_l = 0;
+               else {
+                  CS q = memchr(str_arg, '\0',
+                       precision <= (Unt)0x7fffffffL ? precision
+                                  : (Unt)0x7fffffffL);
+
+                  str_arg_l = (q == NULL) ? precision : (Unt)(q - str_arg);
+               }
+               if (fmt_spec == 'S') {
+                  Byte   *p1;
+                  Unt   i;
+                  int   cell;
+
+                  for (i = 0, p1 = (CS)str_arg; *p1; p1 += utfCharLen(p1)) {
+                     cell = mb_ptr2cells(p1);
+                     if (precision_specified && i + cell > precision)
+                        break;
+                     i += cell;
+                  }
+
+                  str_arg_l = p1 - (CS)str_arg;
+                  if (min_field_width != 0)
+                     min_field_width += str_arg_l - i;
+                }
+                break;
+
+            default:
+                break;
+            }
+         break;
+
+         case 'd': case 'u':
+         case 'b': case 'B':
+         case 'o':
+         case 'x': case 'X':
+         case 'p': {
+            //NOTE: the u, b, o, x, X and p conversion specifiers
+            //imply the value is unsigned;  d implies a signed value
+
+            //0 if numeric argument is zero (or if pointer is NULL for 'p'), +1 if greater than 
+            //zero (or nonzero for unsigned arguments), -1 if negative (unsigned argument is 
+            //never negative)
+            int arg_sign = 0;
+
+            //only set for length modifier h, or for no length modifiers
+            int int_arg = 0;
+            Unt uint_arg = 0;
+
+            //only set for length modifier l
+            long int long_arg = 0;
+            unsigned long int ulong_arg = 0;
+
+            //only set for length modifier ll
+            Long llong_arg = 0;
+            Ulong ullong_arg = 0;
+
+            //only set for b conversion
+            Ulong bin_arg = 0;
+
+            //pointer argument value -only defined for p conversion
+            void *ptr_arg = NULL;
+
+            if (fmt_spec == 'p') {
+               length_modifier = '\0';
+               ptr_arg = tvs
+                  ? (void *)tv_str(tvs, &arg_idx, NULL) 
+                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                     va_arg(ap, void *)
+                    );
+
+               if (ptr_arg != NULL)
+                   arg_sign = 1;
+            } ei (fmt_spec == 'b' || fmt_spec == 'B') {
+               bin_arg = tvs 
+                  ? (Ulong)tv_nr(tvs, OUT &arg_idx) 
+                  : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                     va_arg(ap, Ulong)
+                    );
+
+               if (bin_arg != 0)
+                   arg_sign = 1;
+            } ei (fmt_spec == 'd') {
+               // signed
+               switch (length_modifier) {
+               case '\0':
+               case 'h':
+                   // char and short arguments are passed as int.
+                   int_arg = tvs
+                      ? tv_nr(tvs, OUT &arg_idx) 
+                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                         va_arg(ap, int)
+                        );
+
+                   if (int_arg > 0)
+                  arg_sign =  1;
+                   ei (int_arg < 0)
+                  arg_sign = -1;
+                   break;
+               case 'l':
+                   long_arg = tvs 
+                      ? tv_nr(tvs, OUT &arg_idx) 
+                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                         va_arg(ap, long int)
+                        );
+
+                   if (long_arg > 0)
+                  arg_sign =  1;
+                   ei (long_arg < 0)
+                  arg_sign = -1;
+                   break;
+               case 'L':
+                   llong_arg = tvs
+                      ? tv_nr(tvs, OUT &arg_idx) 
+                      : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                         va_arg(ap, Long)
+                         );
+
+                   if (llong_arg > 0)
+                  arg_sign =  1;
+                   ei (llong_arg < 0)
+                  arg_sign = -1;
+                   break;
+               }
+            } else {
+               // unsigned
+               switch (length_modifier) {
+               case '\0':
+               case 'h':
+                  uint_arg = tvs
+                     ? (unsigned)tv_nr(tvs, OUT &arg_idx) 
+                     : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                        va_arg(ap, unsigned int)
+                       );
+
+                  if (uint_arg != 0)
+                      arg_sign = 1;
+                  break;
+               case 'l':
+                  ulong_arg = tvs
+                     ? (unsigned long) tv_nr(tvs, OUT &arg_idx) 
+                     : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                         va_arg(ap, unsigned long int)
+                       );
+
+                  if (ulong_arg != 0)
+                      arg_sign = 1;
+                  break;
+               case 'L':
+                  ullong_arg = tvs
+                     ? (Ulong) tv_nr(tvs, OUT &arg_idx) 
+                     : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt),
+                        va_arg(ap, Ulong)
+                       );
+
+                  if (ullong_arg != 0)
+                      arg_sign = 1;
+                  break;
+               }
+            }
+
+            str_arg = tmp;
+            str_arg_l = 0;
+
+            // NOTE:
+            //   For d, i, u, o, x, and X conversions, if precision is
+            //   specified, the '0' flag should be ignored.
+            if (precision_specified)
+               zero_padding = 0;
+            if (fmt_spec == 'd') {
+               if (force_sign && arg_sign >= 0)
+                   tmp[str_arg_l++] = space_for_positive ? ' ' : '+';
+               // leave negative numbers for sprintf to handle, to
+               // avoid handling tricky cases like (short int)-32768
+            } ei (alternate_form) {
+               if (arg_sign != 0
+                       && (fmt_spec == 'b' || fmt_spec == 'B'
+                        || fmt_spec == 'x' || fmt_spec == 'X') )
+               {
+                   tmp[str_arg_l++] = '0';
+                   tmp[str_arg_l++] = fmt_spec;
+               }
+               // alternate form should have no effect for p conversion, but ...
+            }
+
+            zero_padding_insertion_ind = str_arg_l;
+            if (!precision_specified)
+               precision = 1;   // default precision is 1
+            if (precision == 0 && arg_sign == 0) {
+               // When zero value is formatted with an explicit
+               // precision 0, the resulting formatted string is
+               // empty (d, i, u, b, B, o, x, X, p).
+            } else {
+               char   f[6];
+               int   f_l = 0;
+
+               // construct a simple format string for sprintf
+               f[f_l++] = '%';
+               if (!length_modifier)
+                   ;
+               ei (length_modifier == 'L') {
+                   f[f_l++] = 'l';
+                   f[f_l++] = 'l';
+               }
+               else
+                   f[f_l++] = length_modifier;
+               f[f_l++] = fmt_spec;
+               f[f_l++] = '\0';
+
+               if (fmt_spec == 'p')
+                  str_arg_l += SPRINTF(tmp + str_arg_l, f, ptr_arg);
+               ei (fmt_spec == 'b' || fmt_spec == 'B') {
+                  Byte       b[8 * sizeof(Ulong)];
+                  Unt       b_l = 0;
+                  Ulong    bn = bin_arg;
+
+                  do {
+                     b[sizeof(b) - ++b_l] = '0' + (bn & 0x1);
+                     bn >>= 1;
+                  } while (bn != 0);
+
+                  memcpy(tmp + str_arg_l, b + sizeof(b) - b_l, b_l);
+                  str_arg_l += b_l;
+               }
+               ei (fmt_spec == 'd') {
+                   // signed
+                   switch (length_modifier) {
+                   case '\0': str_arg_l += SPRINTF(tmp + str_arg_l, f, int_arg); break;
+                   case 'h': str_arg_l += SPRINTF(tmp + str_arg_l, f, (Short)int_arg); break;
+                   case 'l': str_arg_l += SPRINTF(tmp + str_arg_l, f, long_arg); break;
+                   case 'L': str_arg_l += SPRINTF(tmp + str_arg_l, f, llong_arg); break;
+                   }
+               } else {
+                  // unsigned
+                  switch (length_modifier) {
+                  case '\0': str_arg_l += SPRINTF(tmp + str_arg_l, f, uint_arg); break;
+                  case 'h': str_arg_l += SPRINTF( tmp + str_arg_l, f, (Short)uint_arg); break;
+                  case 'l': str_arg_l += SPRINTF(tmp + str_arg_l, f, ulong_arg); break;
+                  case 'L': str_arg_l += SPRINTF(tmp + str_arg_l, f, ullong_arg); break;
+                  }
+               }
+
+               // include the optional minus sign and possible "0x" in the region before the zero 
+               // padding insertion point
+               if (zero_padding_insertion_ind < str_arg_l && tmp[zero_padding_insertion_ind] == '-')
+                  zero_padding_insertion_ind++;
+               if (zero_padding_insertion_ind + 1 < str_arg_l
+                     && tmp[zero_padding_insertion_ind]   == '0'
+                     && (tmp[zero_padding_insertion_ind + 1] == 'x'
+                         || tmp[zero_padding_insertion_ind + 1] == 'X')
+               )
+                  zero_padding_insertion_ind += 2;
+            }
+
+            Unt num_of_digits = str_arg_l - zero_padding_insertion_ind;
+
+            // zero padding to specified precision?
+            if (num_of_digits < precision)
+                number_of_zeros_to_pad = precision - num_of_digits;
+             // zero padding to specified minimal field width?
+            if (!justify_left && zero_padding) {
+               int n = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
+               if (n > 0)
+                  number_of_zeros_to_pad += n;
+            }
+            break;
+         }
+
+         case 'f':
+         case 'F':
+         case 'e':
+         case 'E':
+         case 'g':
+         case 'G': {
+            // Floating point.
+            Byte format[40];
+            int      l;
+            int      remove_trailing_zeroes = false;
+
+            double f = tvs
+               ? tv_float(tvs, &arg_idx) 
+               : (skip_to_arg(ap_types, ap_start, &ap, &arg_idx, &arg_cur, (CS)fmt), 
+                  va_arg(ap, double)
+                 );
+
+            double abs_f = f < 0 ? -f : f;
+
+            if (fmt_spec == 'g' || fmt_spec == 'G') {
+               // Would be nice to use %g directly, but it prints
+               // "1.0" as "1", we don't want that.
+               if ((abs_f >= 0.001 && abs_f < 10000000.0)
+                                 || abs_f == 0.0)
+                   fmt_spec = ASCII_ISUPPER(fmt_spec) ? 'F' : 'f';
+               else
+                   fmt_spec = fmt_spec == 'g' ? 'e' : 'E';
+               remove_trailing_zeroes = true;
+            }
+
+            if ((fmt_spec == 'f' || fmt_spec == 'F') &&
+# ifdef VAX
+                abs_f > 1.0e38
+# else
+                abs_f > 1.0e307
+# endif
+            ) {
+               // Avoid a buffer overflow
+               STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
+               str_arg_l = STRLEN(tmp);
+               zero_padding = 0;
+            } else {
+               if (isnan(f)) {
+                  // Not a number: nan or NAN
+                  STRCPY(tmp, ASCII_ISUPPER(fmt_spec) ? "NAN" : "nan");
+                  str_arg_l = 3;
+                  zero_padding = 0;
+               } ei (isinf(f)) {
+                  STRCPY(tmp, infinity_str(f > 0.0, fmt_spec, force_sign, space_for_positive));
+                  str_arg_l = STRLEN(tmp);
+                  zero_padding = 0;
+               } else {
+                  // Regular float number
+                  format[0] = '%';
+                  l = 1;
+                  if (force_sign)
+                     format[l++] = space_for_positive ? ' ' : '+';
+                  if (precision_specified) {
+                     Unt max_prec = TMP_LEN - 10;
+
+                     // Make sure we don't get more digits than we
+                     // have room for.
+                     if ((fmt_spec == 'f' || fmt_spec == 'F') && abs_f > 1.0)
+                        max_prec -= (Unt)log10(abs_f);
+                     if (precision > max_prec)
+                        precision = max_prec;
+                     l += SPRINTF(format + l, ".%d", (int)precision);
+                  }
+                  format[l] = fmt_spec == 'F' ? 'f' : fmt_spec;
+                  format[l + 1] = ZERO;
+
+                  str_arg_l = SPRINTF(tmp, format, f);
+               }
+
+               if (remove_trailing_zeroes) {
+                  int i;
+                  CS tp;
+
+                  // Using %g or %G: remove superfluous zeroes.
+                  if (fmt_spec == 'f' || fmt_spec == 'F')
+                     tp = tmp + str_arg_l - 1;
+                  else {
+                     tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
+                     if (tp) {
+                        // Remove superfluous '+' and leading zeroes from the exponent.
+                        if (tp[1] == '+') {
+                           // Change "1.0e+07" to "1.0e07"
+                           STRMOVE(tp + 1, tp + 2);
+                           --str_arg_l;
+                        }
+                        i = (tp[1] == '-') ? 2 : 1;
+                        while (tp[i] == '0') {
+                           // Change "1.0e07" to "1.0e7"
+                           STRMOVE(tp + i, tp + i + 1);
+                           --str_arg_l;
+                        }
+                        --tp;
+                     }
+                  }
+
+                  if (tp && !precision_specified) {
+                     // Remove trailing zeroes, but keep the one just after a dot.
+                     while (tp > tmp + 2 && *tp == '0' && tp[-1] != '.') {
+                         STRMOVE(tp, tp + 1);
+                         --tp;
+                         --str_arg_l;
+                     }
+                  } 
+               } else {
+                  // Be consistent: some printf("%e") use 1.0e+12
+                  // and some 1.0e+012.  Remove one zero in the last case.
+                  CS tp = firstOccurrence((CS)tmp, fmt_spec == 'e' ? 'e' : 'E');
+                  if (tp != NULL && (tp[1] == '+' || tp[1] == '-')
+                       && tp[2] == '0'
+                       && eeIsDigit(tp[3])
+                       && eeIsDigit(tp[4])
+                  ) {
+                     STRMOVE(tp + 2, tp + 3);
+                     --str_arg_l;
+                  }
+               }
+            }
+            if (zero_padding && min_field_width > str_arg_l && (tmp[0] == '-' || force_sign)) {
+               // padding 0's should be inserted after the sign
+               number_of_zeros_to_pad = min_field_width - str_arg_l;
+               zero_padding_insertion_ind = 1;
+            }
+            str_arg = tmp;
+            break;
+         }
+
+         default:
+            // unrecognized conversion specifier, keep format string as-is
+            zero_padding = 0;  // turn zero padding off for non-numeric conversion
+            justify_left = 1;
+            min_field_width = 0;          // reset flags
+
+            // discard the unrecognized conversion, just keep *
+            // the unrecognized conversion character
+            str_arg = p;
+            str_arg_l = 0;
+            if (*p != ZERO)
+                str_arg_l++;  // include invalid conversion specifier
+                    // unchanged if not at end-of-string
+            break;
+         }
+
+         if (*p != ZERO)
+            p++;     // step over the just processed conversion specifier
+
+         // insert padding to the left as requested by min_field_width;
+         // this does not include the zero padding in case of numerical conversions
+         if (!justify_left) {
+            // left padding with blank or zero
+            int pn = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
+
+            if (pn > 0) {
+               if (str_l < str_m) {
+                  Unt avail = str_m - str_l;
+                  memset(
+                     str + str_l, zero_padding ? '0' : ' ', (Unt)pn > avail ? avail : (Unt)pn
+                  );
+               }
+               str_l += pn;
+            }
+         }
+
+         //zero padding as requested by the precision or by the minimal
+         //field width for numeric conversions required?
+         if (number_of_zeros_to_pad == 0) {
+            //will not copy first part of numeric right now, *
+            //force it to be copied later in its entirety
+            zero_padding_insertion_ind = 0;
+         } else {
+            // insert first part of numerics (sign or '0x') before zero padding
+            int zn = (int)zero_padding_insertion_ind;
+
+            if (zn > 0) {
+               if (str_l < str_m) {
+                  Unt avail = str_m - str_l;
+                  MEMMOVE(str + str_l, str_arg, (Unt)zn > avail ? avail : (Unt)zn);
+               }
+               str_l += zn;
+            }
+
+            // insert zero padding as requested by the precision or min field width
+            zn = (int)number_of_zeros_to_pad;
+            if (zn > 0) {
+               if (str_l < str_m) {
+                  Unt avail = str_m - str_l;
+                  memset(str + str_l, '0', (Unt)zn > avail ? avail : (Unt)zn);
+               }
+               str_l += zn;
+            }
+         }
+
+         // insert formatted string
+         // (or as-is conversion specifier for unknown conversions)
+         {
+         int sn = (int)(str_arg_l - zero_padding_insertion_ind);
+
+         if (sn > 0) {
+            if (str_l < str_m) {
+               Unt avail = str_m - str_l;
+               MEMMOVE(
+                  str + str_l, str_arg + zero_padding_insertion_ind, 
+                  (Unt)sn > avail ? avail : (Unt)sn
+               );
+            }
+            str_l += sn;
+         }
+         }
+
+         // insert right padding
+         if (justify_left) {
+            // right blank padding to the field width
+            int pn = (int)(min_field_width - (str_arg_l + number_of_zeros_to_pad));
+
+            if (pn > 0) {
+               if (str_l < str_m) {
+                  Unt avail = str_m - str_l;
+
+                  memset(str + str_l, ' ', (Unt)pn > avail ? avail : (Unt)pn);
+               }
+               str_l += pn;
+            }
+         }
+         eeglFree(tofree);
+      }
+    }
+
+   if (str_m > 0) {
+      // make sure the string is ZERO-terminated even at the expense of
+      // overwriting the last character (shouldn't happen, but just in case)
+      //
+      str[str_l <= str_m - 1 ? str_l : str_m - 1] = '\0';
+   }
+
+   if (tvs != NULL && tvs[num_posarg != 0 ? num_posarg : arg_idx - 1].tag != VAR_UNKNOWN)
+      emsg(_(e_too_many_arguments_to_printf));
+
+error:
+   eeglFree((Byte*)ap_types);
+   va_end(ap);
+
+   //Return the number of characters formatted (excluding trailing ZERO
+   //character), that is, the number of characters that would have been
+   //written to the buffer if it were large enough.
+   return str_l;
+}
+
+//Implementation of the format operator 'gq'.
+void
+op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
+   long old_line_count = curBook->mem.lineCount;
+
+   //Place the cursor where the "gq" or "gw" command was given, so that "u" can put it back there.
+   curPor->cursor = oper->cursor_start;
+
+   if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
+      return;
+   curPor->cursor = oper->start;
+
+   if (oper->is_VIsual)
+      // When there is no change: need to remove the Visual selection
+      drawCurBookLater(UPD_INVERTED);
+
+   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
+      // Set '[ mark at the start of the formatted area
+      curBook->opStart = oper->start;
+
+   // For "gw" remember the cursor position and put it back below (adjusted
+   // for joined and split lines).
+   if (keep_cursor)
+      saved_cursor = oper->cursor_start;
+
+   format_lines(oper->line_count, keep_cursor);
+
+   // Leave the cursor at the first non-blank of the last formatted line.
+   // If the cursor was moved one line back (e.g. with "Q}") go to the next
+   // line, so "." will do the next lines.
+   if (oper->end_adjusted && curPor->cursor.lnum < curBook->mem.lineCount)
+      ++curPor->cursor.lnum;
+   beginline(BL_WHITE | BL_FIX);
+   old_line_count = curBook->mem.lineCount - old_line_count;
+   msgmore(old_line_count);
+
+   if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0)
+      // put '] mark on the end of the formatted area
+      curBook->opEnd = curPor->cursor;
+
+   if (keep_cursor) {
+      curPor->cursor = saved_cursor;
+      saved_cursor.lnum = 0;
+
+      // formatting may have made the cursor position invalid
+      check_cursor();
+   }
+
+   if (oper->is_VIsual) {
+      Portal* po;
+      FOR_ALL_PORTALS(po) {
+         if (po->prevVisualEnd != 0) {
+            // When lines have been inserted or deleted, adjust the end of
+            // the Visual area to be redrawn.
+            if (po->prevVisualEnd > po->oldVisualLnum)
+               po->prevVisualEnd += old_line_count;
+            else
+               po->oldVisualLnum += old_line_count;
+         }
+      }
+   }
+}
+
+// Implementation of the format operator 'gq' for when using 'formatexpr'.
+void
+op_formatexpr(Operator* oper) {
+   if (oper->is_VIsual)
+      // When there is no change: need to remove the Visual selection
+      drawCurBookLater(UPD_INVERTED);
+
+   if (fex_format(oper->start.lnum, oper->line_count, ZERO) != 0)
+      // As documented: when 'formatexpr' returns non-zero fall back to internal formatting.
+      op_format(oper, false);
+}
+
+
+//}}}
+//{{{json
+
+// json.c: Encoding and decoding JSON.
+// Follows this standard: https://tools.ietf.org/html/rfc7159.html
+#define USING_FLOAT_STUFF
+
+private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
+
+// Encode "val" into a JSON format string. The result is added to "gap"
+// Returns FAIL on failure and makes gap->c empty.
+private int
+json_encode_gap(ArrayList* gap, Var* val, int options) {
+   if (json_encode_item(gap, val, get_copyID(), options) == FAIL) {
+      ga_clear(gap);
+      gap->c = copyStr(E);
+      return FAIL;
+   }
+   return OK;
+}
+
+//Encode "val" into a JSON format string. The result is in allocated memory.
+//The result is empty when encoding fails. "options" can contain JSON_NO_NONE and JSON_NL.
+CS
+json_encode(Var* val, int options) {
+   ArrayList ga;
+
+   // Store bytes in the growarray.
+   ga_init2(&ga, 1, 4000);
+   json_encode_gap(&ga, val, options);
+   ga_append(&ga, ZERO);
+   return ga.c;
+}
+
+//Encode ["nr", "val"] into a JSON format string in allocated memory.
+//"options" can contain JSON_NO_NONE and JSON_NL.
+//Return NULL when out of memory.
+CS
+json_encode_nr_expr(int nr, Var* val, int options) {
+   Var   listtv;
+   Var   nrtv;
+   ArrayList   ga;
+
+   nrtv.tag = VAR_NUMBER;
+   nrtv.number = nr;
+   allocReturnList(&listtv);
+   if (list_append_tv(listtv.list, &nrtv) == FAIL || list_append_tv(listtv.list, val) == FAIL) {
+      list_unref(listtv.list);
+      return NULL;
+   }
+
+   ga_init2(&ga, 1, 4000);
+   if (json_encode_gap(&ga, &listtv, options) == OK && (options & JSON_NL))
+      ga_append(&ga, '\n');
+   list_unref(listtv.list);
+   ga_append(&ga, ZERO);
+   return ga.c;
+}
+
+//Encode "val" into a JSON format string prefixed by the LSP HTTP header. NULL when out of memory.
+CS
+json_encode_lsp_msg(Var* val) {
+   ArrayList   ga;
+
+   ga_init2(&ga, 1, 4000);
+   if (json_encode_gap(&ga, val, 0) == FAIL)
+      return NULL;
+   ga_append(&ga, ZERO);
+
+   ArrayList lspga;
+   ga_init2(&lspga, 1, 4000);
+   // Header according to LSP specification.
+   eeSnprintf(IObuff, IOSIZE, (CS)"Content-Length: %u\r\n\r\n", ga.len - 1);
+   ga_concat(&lspga, IObuff);
+   ga_concat_len(&lspga, ga.c, ga.len);
+   ga_clear(&ga);
+   return lspga.c;
+}
+
+//Lookup table to quickly know if the given ASCII character must be escaped.
+private const char ascii_needs_escape[128] = {
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x0.
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x1.
+   0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x2.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x3.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x4.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, // 0x5.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x6.
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x7.
+};
+
+//Encode the utf-8 encoded string "str" into "gap".
+private void
+write_string(ArrayList* gap, CS str) {
+   CS res = str;
+   Unt c;
+
+   if (!res) {
+      ga_concat(gap, (CS)"\"\"");
+      return;
+   }
+
+   ga_append(gap, '"');
+   // `from` is the beginning of a sequence of bytes we can directly copy from
+   // the input string, avoiding the overhead associated to decoding/encoding them.
+   CS from = res;
+   Byte numbuf[NUMBUFLEN];
+   while ((c = *res) != ZERO) {
+      // always use utf-8 encoding, ignore 'encoding'
+      if (c < 0x80) {
+         if (!ascii_needs_escape[c]) {
+            res += 1;
+            continue;
+         }
+
+         if (res != from)
+            ga_concat_len(gap, from, res - from);
+         from = res + 1;
+
+          switch (c) {
+         case 0x08:
+             ga_append(gap, '\\'); ga_append(gap, 'b'); break;
+         case 0x09:
+             ga_append(gap, '\\'); ga_append(gap, 't'); break;
+         case 0x0a:
+             ga_append(gap, '\\'); ga_append(gap, 'n'); break;
+         case 0x0c:
+             ga_append(gap, '\\'); ga_append(gap, 'f'); break;
+         case 0x0d:
+             ga_append(gap, '\\'); ga_append(gap, 'r'); break;
+         case 0x22: // "
+         case 0x5c: // backslash
+             ga_append(gap, '\\');
+             ga_append(gap, c);
+             break;
+         default:
+             eeSnprintf(numbuf, NUMBUFLEN, (CS)"\\u%04lx", (long)c);
+             ga_concat(gap, numbuf);
+          }
+
+          res += 1;
+      } else {
+         int l = utf_ptr2len(res);
+
+         if (l > 1) {
+            res += l;
+            continue;
+         }
+
+         // Invalid utf-8 sequence, replace it with the Unicode replacement character U+FFFD.
+         if (res != from)
+            ga_concat_len(gap, from, res - from);
+         from = res + 1;
+
+         numbuf[mb_char2bytes(0xFFFD, numbuf)] = ZERO;
+         ga_concat(gap, numbuf);
+
+         res += l;
+      }
+   }
+
+   if (res != from)
+      ga_concat_len(gap, from, res - from);
+
+   ga_append(gap, '"');
+}
+
+//Encode "val" into "gap". Return FAIL or OK.
+private int
+json_encode_item(ArrayList *gap, Var *val, int copyID, int options) {
+   Byte numbuf[NUMBUFLEN];
+   CS res;
+   Blob* b;
+   List* l;
+   Bag* d;
+   int i;
+
+   switch (val->tag) {
+   case VAR_BOOL:
+      switch ((long)val->number) {
+         case VVAL_FALSE: ga_concat(gap, S"false"); break;
+         case VVAL_TRUE: ga_concat(gap, S"true"); break;
+      }
+      break;
+
+   case VAR_SPECIAL:
+      switch ((long)val->number) {
+      case VVAL_NONE: 
+      case VVAL_NULL: ga_concat(gap, (CS)"null"); break;
+      }
+      break;
+
+   case VAR_NUMBER:
+      eeSnprintf(numbuf, NUMBUFLEN, (CS)"%ld", (Long)val->number);
+      ga_concat(gap, numbuf);
+      break;
+
+   case VAR_STRING:
+      res = val->string;
+      write_string(gap, res);
+      break;
+
+   case VAR_FUNC:
+   case VAR_PARTIAL:
+   case VAR_JOB:
+   case VAR_CHANNEL:
+      showErrFmtMsg(_(e_cannot_json_encode_str), vartype_name(val->tag));
+      return FAIL;
+
+   case VAR_BLOB:
+      b = val->blob;
+      if (b == NULL || b->c.len == 0)
+         ga_concat(gap, S"[]");
+      else {
+         ga_append(gap, '[');
+         for (i = 0; i < b->c.len; i++) {
+            if (i > 0)
+               ga_concat(gap, S",");
+            eeSnprintf(numbuf, NUMBUFLEN, "%d", blob_get(b, i));
+            ga_concat(gap, numbuf);
+         }
+         ga_append(gap, ']');
+      }
+      break;
+
+   case VAR_LIST:
+      l = val->list;
+      if (!l)
+         ga_concat(gap, S"[]");
+      else {
+         if (l->copyId == copyID)
+             ga_concat(gap, S"[]");
+         else {
+            ListItem   *li;
+
+            l->copyId = copyID;
+            ga_append(gap, '[');
+            CHECK_LIST_MATERIALIZE(l);
+            for (li = l->first; li != NULL && !gotInterruptG; ) {
+               if (json_encode_item(gap, &li->c, copyID, 0) == FAIL)
+                  return FAIL;
+               li = li->next;
+               if (li)
+                  ga_append(gap, ',');
+            }
+            ga_append(gap, ']');
+            l->copyId = 0;
+         }
+      }
+      break;
+
+   case VAR_BAG:
+      d = val->bag;
+      if (!d)
+         ga_concat(gap, (CS)"{}");
+      else {
+         if (d->copyId == copyID)
+            ga_concat(gap, (CS)"{}");
+         else {
+            int      first = true;
+            int      todo = (int)d->hashTable.count;
+            EeSetItem   *hi;
+
+            d->copyId = copyID;
+            ga_append(gap, '{');
+
+            for (hi = d->hashTable.array; todo > 0 && !gotInterruptG; ++hi) {
+               if (!HASHITEM_EMPTY(hi)) {
+                   --todo;
+                   if (first)
+                  first = false;
+                   else
+                  ga_append(gap, ',');
+                  write_string(gap, hi->hi_key);
+                  ga_append(gap, ':');
+                  if (json_encode_item(gap, &bagLookup(hi)->c, copyID, options | JSON_NO_NONE) 
+                        == FAIL
+                  )
+                     return FAIL;
+               }
+            } 
+            ga_append(gap, '}');
+            d->copyId = 0;
+         }
+       }
+       break;
+
+   case VAR_FLOAT:
+      if (isnan(val->floatt))
+         ga_concat(gap, (CS)"NaN");
+      ei (isinf(val->floatt)) {
+         if (val->floatt < 0.0)
+            ga_concat(gap, (CS)"-Infinity");
+         else
+            ga_concat(gap, (CS)"Infinity");
+      } else {
+         eeSnprintf(numbuf, NUMBUFLEN, "%g", val->floatt);
+         ga_concat(gap, numbuf);
+      }
+      break;
+   case VAR_UNKNOWN:
+   case VAR_ANY:
+   case VAR_VOID:
+       internal_error_no_abort((CS)"json_encode_item()");
+       return FAIL;
+    }
+    return OK;
+}
+
+// When "reader" has less than NUMBUFLEN bytes available, call the fill callback to get more.
+private void
+fill_numbuflen(JsReader* reader) {
+   if (reader->js_fill && (int)(reader->js_end - reader->js_buf) - reader->js_used < NUMBUFLEN
+         && reader->js_fill(reader)
+   )
+      reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+}
+
+// Skip white space in "reader".  All characters <= space are considered whitespace.
+// Also tops up readahead when needed.
+private void
+json_skip_white(JsReader* reader) {
+   for (;;) {
+      Unt c = reader->js_buf[reader->js_used];
+      if (reader->js_fill != NULL && c == ZERO) {
+         if (reader->js_fill(reader)) {
+            reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+            continue;
+         }
+      }
+      if (c == ZERO || c > ' ')
+         break;
+      ++reader->js_used;
+   }
+   fill_numbuflen(reader);
+}
+
+private int
+json_decode_string(JsReader* reader, Var* res, int quote) {
+   ArrayList    ga;
+   int len;
+   Unt c;
+   Long   nr;
+
+   if (res)
+      ga_init2(&ga, 1, 200);
+
+   CS p = reader->js_buf + reader->js_used + 1; // skip over " or '
+   while (*p != quote) {
+      // The JSON is always expected to be utf-8, thus use utf functions
+      // here. The string is converted below if needed.
+      if (*p == ZERO || p[1] == ZERO || utf_ptr2len(p) < utf_byte2len(*p)) {
+         // Not enough bytes to make a character or end of the string. Get
+         // more if possible.
+         if (reader->js_fill == NULL)
+            break;
+         len = (int)(reader->js_end - p);
+         reader->js_used = (int)(p - reader->js_buf);
+         if (!reader->js_fill(reader))
+            break; // didn't get more
+         p = reader->js_buf + reader->js_used;
+         reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+         continue;
+      }
+
+      if (*p == '\\') {
+         c = -1;
+         switch (p[1]) {
+         case '\\': c = '\\'; break;
+         case '"': c = '"'; break;
+         case 'b': c = BS; break;
+         case 't': c = TAB; break;
+         case 'n': c = NL; break;
+         case 'f': c = FF; break;
+         case 'r': c = ENTER; break;
+         case 'u':
+            if (reader->js_fill != NULL && (int)(reader->js_end - p) < NUMBUFLEN) {
+               reader->js_used = (int)(p - reader->js_buf);
+               if (reader->js_fill(reader)) {
+                  p = reader->js_buf + reader->js_used;
+                  reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+               }
+            }
+            nr = 0;
+            len = 0;
+            readLongNumber(p + 2, NULL, &len, STR2NR_HEX + STR2NR_FORCE, &nr, NULL, 4, true, NULL);
+            if (len == 0) {
+               if (res)
+                  ga_clear(&ga);
+               return FAIL;
+            }
+            p += len + 2;
+            if (0xd800 <= nr && nr <= 0xdfff
+                && (int)(reader->js_end - p) >= 6
+                && *p == '\\' && *(p+1) == 'u'
+            ) {
+               Long   nr2 = 0;
+
+               // decode surrogate pair: \ud812\u3456
+               len = 0;
+               readLongNumber(p + 2, NULL, &len, STR2NR_HEX + STR2NR_FORCE, &nr2, NULL, 4, true, NULL);
+               if (len == 0) {
+                  if (res != NULL)
+                     ga_clear(&ga);
+                  return FAIL;
+               }
+               if (0xdc00 <= nr2 && nr2 <= 0xdfff) {
+                   p += len + 2;
+                   nr = (((nr - 0xd800) << 10) |
+                  ((nr2 - 0xdc00) & 0x3ff)) + 0x10000;
+               }
+            }
+            if (res) {
+               Byte buf[NUMBUFLEN];
+
+               buf[mb_char2bytes((int)nr, buf)] = ZERO;
+               ga_concat(&ga, buf);
+            }
+            break;
+         default:
+            // not a special char, skip over backslash
+            ++p;
+            continue;
+         }
+         if (c > 0) {
+            p += 2;
+            if (res)
+               ga_append(&ga, c);
+         }
+      } else {
+         len = utf_ptr2len(p);
+         if (res) {
+            if (ga_grow(&ga, len) == FAIL) {
+               ga_clear(&ga);
+               return FAIL;
+            }
+            MEMMOVE((Byte *)ga.c + ga.len, p, (Unt)len);
+            ga.len += len;
+         }
+         p += len;
+      }
+   }
+
+   reader->js_used = (int)(p - reader->js_buf);
+   if (*p == quote) {
+      ++reader->js_used;
+      if (res != NULL) {
+         ga_append(&ga, ZERO);
+         res->tag = VAR_STRING;
+         res->string = ga.c;
+      }
+      return OK;
+   }
+   if (res != NULL) {
+      res->tag = VAR_SPECIAL;
+      res->number = VVAL_NONE;
+      ga_clear(&ga);
+   }
+   return MAYBE;
+}
+
+typedef enum {
+   JSON_ARRAY,      // parsing items in an array
+   JSON_OBJECT_KEY,   // parsing key of an object
+   JSON_OBJECT      // parsing item in an object, after the key
+} JsonDecodeType;
+
+typedef struct {
+   JsonDecodeType jd_type;
+   Var jd_tv;   // the list or dict
+   Var jd_key_tv;
+   CS key;
+} JsonDecodeItem;
+
+// Decode one item and put it in "res".  If "res" is NULL only advance. Must already have skipped 
+// white space. Return FAIL for a decoding error (and give an error). Return MAYBE for an 
+// incomplete message.
+private int
+json_decode_item(JsReader* reader, Var *res) {
+   int i;
+   int len;
+   int retval;
+   ArrayList stack;
+   JsonDecodeItem* topJson;
+   Byte key_buf[NUMBUFLEN];
+
+   ga_init2(&stack, sizeof(JsonDecodeItem), 100);
+   Var* cur_item = res;
+   Var item;
+   initVarToNull(OUT &item);
+   if (res)
+      initVarToNull(OUT res);
+
+   fill_numbuflen(reader);
+   CS p = reader->js_buf + reader->js_used;
+   for (;;) {
+      topJson = NULL;
+      if (stack.len > 0) {
+         topJson = ((JsonDecodeItem *)stack.c) + stack.len - 1;
+         json_skip_white(reader);
+         p = reader->js_buf + reader->js_used;
+         if (*p == ZERO) {
+            retval = MAYBE;
+            goto theend;
+         }
+         if (topJson->jd_type == JSON_OBJECT_KEY || topJson->jd_type == JSON_ARRAY) {
+            // Check for end of object or array.
+            if (*p == (topJson->jd_type == JSON_ARRAY ? ']' : '}')) {
+               ++reader->js_used; // consume the ']' or '}'
+               --stack.len;
+               if (stack.len == 0) {
+                  retval = OK;
+                  goto theend;
+               }
+               if (cur_item != NULL)
+                  cur_item = &topJson->jd_tv;
+               goto item_end;
+            }
+         }
+      }
+
+      switch (*p) {
+      case '[': // start of array
+         if (topJson && topJson->jd_type == JSON_OBJECT_KEY) {
+            retval = FAIL;
+            break;
+         }
+         if (ga_grow(&stack, 1) == FAIL) {
+            retval = FAIL;
+            break;
+         }
+         if (cur_item) {
+            allocReturnList(cur_item);
+         }
+
+         ++reader->js_used; // consume the '['
+         topJson = ((JsonDecodeItem *)stack.c) + stack.len;
+         topJson->jd_type = JSON_ARRAY;
+         ++stack.len;
+         if (cur_item != NULL) {
+            topJson->jd_tv = *cur_item;
+            cur_item = &item;
+         }
+         continue;
+
+      case '{': // start of object
+         if (topJson && topJson->jd_type == JSON_OBJECT_KEY) {
+            retval = FAIL;
+            break;
+         }
+         if (ga_grow(&stack, 1) == FAIL) {
+            retval = FAIL;
+            break;
+         }
+         if (cur_item) {
+            allocReturnList(cur_item);
+         } 
+
+         ++reader->js_used; // consume the '{'
+         topJson = ((JsonDecodeItem *)stack.c) + stack.len;
+         topJson->jd_type = JSON_OBJECT_KEY;
+         ++stack.len;
+         if (cur_item) {
+            topJson->jd_tv = *cur_item;
+            cur_item = &topJson->jd_key_tv;
+         }
+         continue;
+
+      case '"': // string
+         retval = json_decode_string(reader, cur_item, *p);
+         break;
+
+      case '\'':
+         showErrFmtMsg(_(e_json_decode_error_at_str), p);
+         retval = FAIL;
+         break;
+
+      case ',': // comma: empty item
+         showErrFmtMsg(_(e_json_decode_error_at_str), p);
+         retval = FAIL;
+         break;
+         // FALLTHROUGH
+      case ZERO: // empty
+         if (cur_item != NULL) {
+            cur_item->tag = VAR_SPECIAL;
+            cur_item->number = VVAL_NONE;
+         }
+         retval = OK;
+         break;
+
+      default:
+         if (EE_ISDIGIT(*p) || (*p == '-' && (EE_ISDIGIT(p[1]) || p[1] == ZERO))) {
+            CS sp = p;
+
+            if (*sp == '-') {
+               ++sp;
+               if (*sp == ZERO) {
+                  retval = MAYBE;
+                  break;
+               }
+               if (!EE_ISDIGIT(*sp)) {
+                  showErrFmtMsg(_(e_json_decode_error_at_str), p);
+                  retval = FAIL;
+                  break;
+               }
+            }
+            sp = skipdigits(sp);
+            if (*sp == '.' || *sp == 'e' || *sp == 'E') {
+               if (cur_item == NULL) {
+                  double f;
+                  len = string2float(p, OUT &f, false);
+               } else {
+                  cur_item->tag = VAR_FLOAT;
+                  len = string2float(p, OUT &cur_item->floatt, false);
+               }
+            } else {
+               Long nr;
+
+               readLongNumber(reader->js_buf + reader->js_used,
+                   NULL, &len, 0, // what
+                   &nr, NULL, 0, true, NULL);
+               if (len == 0) {
+                  showErrFmtMsg(_(e_json_decode_error_at_str), p);
+                  retval = FAIL;
+                  goto theend;
+               }
+               if (cur_item != NULL) {
+                  cur_item->tag = VAR_NUMBER;
+                  cur_item->number = nr;
+               }
+            }
+            reader->js_used += len;
+            retval = OK;
+            break;
+         }
+         if (STRNICMP(p, "false", 5) == 0) {
+            reader->js_used += 5;
+            if (cur_item != NULL) {
+                cur_item->tag = VAR_BOOL;
+                cur_item->number = VVAL_FALSE;
+            }
+            retval = OK;
+            break;
+         }
+         if (STRNICMP(p, "true", 4) == 0) {
+            reader->js_used += 4;
+            if (cur_item != NULL) {
+               cur_item->tag = VAR_BOOL;
+               cur_item->number = VVAL_TRUE;
+            }
+            retval = OK;
+            break;
+         }
+         if (STRNICMP(p, "null", 4) == 0) {
+            reader->js_used += 4;
+            if (cur_item != NULL) {
+               cur_item->tag = VAR_SPECIAL;
+               cur_item->number = VVAL_NULL;
+            }
+            retval = OK;
+            break;
+         }
+         if (STRNICMP(p, "NaN", 3) == 0) {
+            reader->js_used += 3;
+            if (cur_item != NULL) {
+                cur_item->tag = VAR_FLOAT;
+                cur_item->floatt = NAN;
+            }
+            retval = OK;
+            break;
+         }
+         if (STRNICMP(p, "-Infinity", 9) == 0) {
+            reader->js_used += 9;
+            if (cur_item != NULL) {
+               cur_item->tag = VAR_FLOAT;
+               cur_item->floatt = -INFINITY;
+            }
+            retval = OK;
+            break;
+         }
+         if (STRNICMP(p, "Infinity", 8) == 0) {
+            reader->js_used += 8;
+            if (cur_item != NULL) {
+               cur_item->tag = VAR_FLOAT;
+               cur_item->floatt = INFINITY;
+            }
+            retval = OK;
+            break;
+         }
+         // check for truncated name
+         len = (int)(reader->js_end - (reader->js_buf + reader->js_used));
+         if (
+             (len < 5 && STRNICMP(p, "false", len) == 0)
+             || (len < 9 && STRNICMP(p, "-Infinity", len) == 0)
+             || (len < 8 && STRNICMP(p, "Infinity", len) == 0)
+             || (len < 3 && STRNICMP(p, "NaN", len) == 0)
+             || (len < 4 && (STRNICMP(p, "true", len) == 0 || STRNICMP(p, "null", len) == 0))
+         ) {
+            retval = MAYBE;
+         } else
+            retval = FAIL;
+         break;
+      }
+
+      // We are finished when retval is FAIL or MAYBE and when at the toplevel.
+      if (retval == FAIL)
+         break;
+      if (retval == MAYBE || stack.len == 0)
+         goto theend;
+
+      if (topJson && topJson->jd_type == JSON_OBJECT_KEY && cur_item != NULL) {
+         if (cur_item->tag == VAR_FLOAT) {
+            // cannot use a float as a key
+            emsg(_(e_using_float_as_string));
+            retval = FAIL;
+            goto theend;
+         }
+         topJson->key = convertVarToString(cur_item, key_buf);
+         if (topJson->key == NULL) {
+            emsg(_(e_invalid_argument));
+            retval = FAIL;
+            goto theend;
+         }
+      }
+
+   item_end:
+      topJson = ((JsonDecodeItem *)stack.c) + stack.len - 1;
+      switch (topJson->jd_type) {
+      case JSON_ARRAY:
+         if (res) {
+            ListItem   *li = listitem_alloc();
+            li->c = *cur_item;
+            list_append(topJson->jd_tv.list, li);
+         }
+         if (cur_item)
+            cur_item = &item;
+
+         json_skip_white(reader);
+         p = reader->js_buf + reader->js_used;
+         if (*p == ',')
+             ++reader->js_used;
+         ei (*p != ']') {
+             if (*p == ZERO)
+            retval = MAYBE;
+             else {
+            showErrFmtMsg(_(e_json_decode_error_at_str), p);
+            retval = FAIL;
+             }
+             goto theend;
+         }
+         break;
+
+      case JSON_OBJECT_KEY:
+         json_skip_white(reader);
+         p = reader->js_buf + reader->js_used;
+         if (*p != ':') {
+            if (cur_item != NULL)
+               clearVar(cur_item);
+            if (*p == ZERO)
+               retval = MAYBE;
+            else {
+               showErrFmtMsg(_(e_json_decode_error_at_str), p);
+               retval = FAIL;
+            }
+            goto theend;
+         }
+         ++reader->js_used;
+         json_skip_white(reader);
+         topJson->jd_type = JSON_OBJECT;
+         if (cur_item != NULL)
+            cur_item = &item;
+         break;
+
+      case JSON_OBJECT:
+         if (cur_item != NULL && bagHasKey(topJson->jd_tv.bag, mbText(topJson->key))){
+            showErrFmtMsg(_(e_duplicate_key_in_json_str), topJson->key);
+            clearVar(cur_item);
+            retval = FAIL;
+            goto theend;
+         }
+
+         if (cur_item) {
+            DictItem *di = dictitem_alloc(mbText(topJson->key));
+
+            clearVar(&topJson->jd_key_tv);
+            di->c = *cur_item;
+            di->c.lock = 0;
+            if (bagAdd(topJson->jd_tv.bag, di) == FAIL) {
+               dictitem_free(di);
+               retval = FAIL;
+               goto theend;
+            }
+         }
+
+         json_skip_white(reader);
+         p = reader->js_buf + reader->js_used;
+         if (*p == ',')
+            ++reader->js_used;
+         ei (*p != '}') {
+            if (*p == ZERO)
+               retval = MAYBE;
+            else {
+               showErrFmtMsg(_(e_json_decode_error_at_str), p);
+               retval = FAIL;
+            }
+            goto theend;
+         }
+         topJson->jd_type = JSON_OBJECT_KEY;
+         if (cur_item)
+             cur_item = &topJson->jd_key_tv;
+         break;
+      }
+   }
+
+   // Get here when parsing failed.
+   if (res != NULL) {
+      clearVar(res);
+      res->tag = VAR_SPECIAL;
+      res->number = VVAL_NONE;
+   }
+   showErrFmtMsg(_(e_json_decode_error_at_str), p);
+
+theend:
+   for (i = 0; i < stack.len; i++)
+      clearVar(&(((JsonDecodeItem *)stack.c) + i)->jd_key_tv);
+   ga_clear(&stack);
+
+   return retval;
+}
+
+// Decode the JSON from "reader" and store the result in "res".
+// Return FAIL if not the whole message was consumed.
+private int
+json_decode_all(OUT Var* res, JsReader* reader) {
+   // We find the end once, to avoid calling strlen() many times.
+   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+   json_skip_white(reader);
+   int ret = json_decode_item(reader, res);
+   if (ret != OK) {
+      if (ret == MAYBE)
+         showErrFmtMsg(_(e_json_decode_error_at_str), reader->js_buf);
+      return FAIL;
+   }
+   json_skip_white(reader);
+   if (reader->js_buf[reader->js_used] != ZERO) {
+      showErrFmtMsg(_(e_trailing_characters_str), reader->js_buf + reader->js_used);
+      return FAIL;
+   }
+   return OK;
+}
+
+// Decode the JSON from "reader" and store the result in "res".
+// Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message 
+// anyway.
+int
+json_decode(OUT Var* res, JsReader* reader) {
+   // We find the end once, to avoid calling strlen() many times.
+   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+   json_skip_white(reader);
+   int ret = json_decode_item(reader, res);
+   json_skip_white(reader);
+
+   return ret;
+}
+
+// Decode the JSON from "reader" to find the end of the message. "options" can be JSON_JS or zero.
+// This is only used for testing. Return FAIL if the message has a decoding error.
+// Return MAYBE if the message is truncated, need to read more. This only works reliable if the 
+// message contains an object, array or string. A number might be truncated without knowing. Does 
+// not advance the reader.
+int
+json_find_end(JsReader* reader) {
+   int used_save = reader->js_used;
+   int ret;
+
+   // We find the end once, to avoid calling strlen() many times.
+   reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
+   json_skip_white(reader);
+   ret = json_decode_item(reader, NULL);
+   reader->js_used = used_save;
+   return ret;
+}
+
+void
+f_json_decode(Arr(Var) argvars, Var* returnVar) {
+   JsReader reader;
+   reader.js_buf = tv_get_string(argvars);
+   reader.js_fill = NULL;
+   reader.js_used = 0;
+   json_decode_all(OUT returnVar, &reader);
+}
+
+void
+f_json_encode(Arr(Var) argvars, Var* returnVar) {
+   returnVar->tag = VAR_STRING;
+   returnVar->string = json_encode(argvars, 0);
+}
 //}}}

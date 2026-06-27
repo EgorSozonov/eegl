@@ -1282,25 +1282,25 @@ retry:
                
                // When switching to utf-8, don't copy characters, they may be invalid now.
                if (screenLinesUCG) {
-                  mch_memmove(newScreenLines + newLineOffsets[new_row],
+                  MEMMOVE(newScreenLines + newLineOffsets[new_row],
                      screenLinesP + lineStartsP[old_row], (Unt)len * sizeof(Byte)
                   );
                } 
                if (screenLinesUCG) {
-                  mch_memmove(new_screenLinesUCG + newLineOffsets[new_row],
+                  MEMMOVE(new_screenLinesUCG + newLineOffsets[new_row],
                      screenLinesUCG + lineStartsP[old_row],
                      (Unt)len * sizeof(Unt));
                   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-                     mch_memmove(new_screenLinesCG[i] + newLineOffsets[new_row],
+                     MEMMOVE(new_screenLinesCG[i] + newLineOffsets[new_row],
                         screenLinesCG[i] + lineStartsP[old_row], (Unt)len * sizeof(Unt)
                      );
                   } 
                }
-               mch_memmove(
+               MEMMOVE(
                   newScreenDecos + newLineOffsets[new_row],
                   screenDecosP + lineStartsP[old_row], (Unt)len
                );
-               mch_memmove(
+               MEMMOVE(
                   newScreenCols + newLineOffsets[new_row],
                   screenDecosP + lineStartsP[old_row], (Unt)len * sizeof(ColNr)
                );
@@ -1466,19 +1466,19 @@ linecopy(int to, int from, Portal* po) {
    Unt offTo = lineStartsP[to] + po->portalCol;
    Unt offFrom = lineStartsP[from] + po->portalCol;
 
-   mch_memmove(screenLinesP + offTo, screenLinesP + offFrom, po->width * sizeof(Byte));
+   MEMMOVE(screenLinesP + offTo, screenLinesP + offFrom, po->width * sizeof(Byte));
 
-   mch_memmove(screenLinesUCG + offTo, screenLinesUCG + offFrom,
+   MEMMOVE(screenLinesUCG + offTo, screenLinesUCG + offFrom,
       po->width * sizeof(Unt));
    for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      mch_memmove(
+      MEMMOVE(
          screenLinesCG[i] + offTo, 
          screenLinesCG[i] + offFrom, 
          po->width * sizeof(Unt)
       );
    } 
-   mch_memmove( screenDecosP + offTo, screenDecosP + offFrom, po->width);
-   mch_memmove(screenColS + offTo, screenColS + offFrom, po->width * sizeof(ColNr));
+   MEMMOVE( screenDecosP + offTo, screenDecosP + offFrom, po->width);
+   MEMMOVE(screenColS + offTo, screenColS + offFrom, po->width * sizeof(ColNr));
 }
 
 //Return true if clearing with term string "p" would work.
@@ -2586,32 +2586,31 @@ void
 drawGetTranslatedBookName(Book* book) {
    if (bookSpName(book))
       copySubstrToAllocation(nameBuffG, (Text){bookSpName(book), MAXPATHL - 1});
-   else
-      home_replace(book, book->currFileName, nameBuffG, MAXPATHL, true);
+   ei (book && book->kind == BOOK_HELP) { 
+      strPrintShortName(book->currFileName, nameBuffG, MAXPATHL);
+   } else
+      home_replace(book->currFileName, nameBuffG, MAXPATHL, true);
    trans_characters(nameBuffG, MAXPATHL);
 }
 
 // Get the character to use in a status line. Write its decorations into "*deco"
 Unt
 statusLineNextChar(OUT Decoration* deco, Portal* po) {
-   Unt fill;
-
    if (bt_terminal(po->book)) {
       if (po == curPor) {
          *deco = getFullDecoration(HLF_ST);
-         fill = fillCharsG.stl;
+         return fillCharsG.stl;
       } else {
          *deco = getFullDecoration(HLF_STNC);
-         fill = fillCharsG.stlnc;
+         return fillCharsG.stlnc;
       }
    } ei (po == curPor) {
       *deco = getFullDecoration(HLF_S);
-      fill = fillCharsG.stl;
+      return fillCharsG.stl;
    } else {
       *deco = getFullDecoration(HLF_SNC);
-      fill = fillCharsG.stlnc;
+      return fillCharsG.stlnc;
    }
-   return fill;
 }
 
 // Return true if redrawing should currently be done.
@@ -3500,7 +3499,7 @@ text_to_screenline(Portal* po, CS text, int col) {
 // Copy "builder[len]" to screenLinesP["off"] and set decoration flags to "flags".
 private void
 copyTextWithDecos(int off, CS builder, int len, char flags) {
-   mch_memmove(screenLinesP + off, builder, (Unt)len);
+   MEMMOVE(screenLinesP + off, builder, (Unt)len);
    memset(screenLinesUCG + off, 0, sizeof(Unt) * (Unt)len);
    for (int i = 0; i < len; ++i)
       screenDecosP[off + i].flags = flags;
@@ -4685,23 +4684,23 @@ redraw_asap(int type) {
    if (ret != 2) {
       //Save the text displayed in the command line area.
       for (r = 0; r < rows; ++r) {
-         mch_memmove(
+         MEMMOVE(
             screenline + r * cols, 
             screenLinesP + lineStartsP[commlineRowG + r], 
             (Unt)cols * sizeof(Byte)
          );
-         mch_memmove(
+         MEMMOVE(
             screenDecosP + r * cols, 
             screenDecosP + lineStartsP[commlineRowG + r], 
             (Unt)cols * sizeof(Unt)
          );
-         mch_memmove(
+         MEMMOVE(
             screenlineUC + r * cols, 
             screenLinesUCG + lineStartsP[commlineRowG + r],
             (Unt)cols * sizeof(Unt)
          );
          for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-            mch_memmove(
+            MEMMOVE(
                 screenlineC[i] + r * cols, 
                 screenLinesCG[i] + lineStartsP[commlineRowG + r], 
                 (Unt)cols * sizeof(Unt)
@@ -4717,11 +4716,11 @@ redraw_asap(int type) {
 
          // Restore the text displayed in the command line area.
          for (r = 0; r < rows; ++r) {
-            mch_memmove(currScreenLineS, screenline + r * cols, (Unt)cols * sizeof(Byte));
-            mch_memmove(screenDecosP + off, screenDecosP + r * cols, (Unt)cols * sizeof(Unt));
-            mch_memmove(screenLinesUCG + off, screenlineUC + r * cols, (Unt)cols * sizeof(Unt));
+            MEMMOVE(currScreenLineS, screenline + r * cols, (Unt)cols * sizeof(Byte));
+            MEMMOVE(screenDecosP + off, screenDecosP + r * cols, (Unt)cols * sizeof(Unt));
+            MEMMOVE(screenLinesUCG + off, screenlineUC + r * cols, (Unt)cols * sizeof(Unt));
             for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-               mch_memmove(
+               MEMMOVE(
                   screenLinesCG[i] + off, screenlineC[i] + r * cols, (Unt)cols * sizeof(Unt)
                );
             } 
@@ -5332,7 +5331,7 @@ textprop_size_after_trunc(
       
    CS p;
    for (p = text; *p != ZERO; p += utfCharLen(p)) {
-      int clen = ptr2cells(p);
+      int clen = bookPtr2Cells(p);
 
       if (strsize + clen > space)
          break;
@@ -6131,7 +6130,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                // length. An "above" property ends when used and countExtraBytes is zero.
                if ((t->col != MAXCOL && bcol >= t->col - 1 + t->len)) {
                   if (pi + 1 < countActiveTextProps)
-                     mch_memmove(c->textPropIndices + pi,
+                     MEMMOVE(c->textPropIndices + pi,
                         c->textPropIndices + pi + 1,
                         sizeof(int) * (countActiveTextProps - (pi + 1))
                      );
@@ -7212,7 +7211,7 @@ drawLineOnScreen(
    if (c.textPropCount > 0) {
       // Make a copy of the properties, so that they are properly aligned.
       c.textProps = ALLOC_MULT(TextProp, sc.textPropCount);
-      mch_memmove(OUT c.textProps, propStart, sc.textPropCount * sizeof(TextProp));
+      MEMMOVE(OUT c.textProps, propStart, sc.textPropCount * sizeof(TextProp));
 
       // Allocate an array for the indexes.
       c.textPropIndices = ALLOC_MULT(int, sc.textPropCount);

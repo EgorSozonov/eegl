@@ -745,7 +745,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
             // print all other extra fields
             attr = getDecoFlags(HLF_CM);
             while (*p && *p != '\r' && *p != '\n') {
-               if (msgColG + ptr2cells(p) >= visibleColsG) {
+               if (msgColG + bookPtr2Cells(p) >= visibleColsG) {
                   msg_putchar('\n');
                   if (gotInterruptG)
                       break;
@@ -785,7 +785,7 @@ print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches) {
          ++p;
 
       while (p != command_end) {
-         if (msgColG + (*p == TAB ? 1 : ptr2cells(p)) > visibleColsG)
+         if (msgColG + (*p == TAB ? 1 : bookPtr2Cells(p)) > visibleColsG)
             msg_putchar('\n');
          if (gotInterruptG)
             break;
@@ -2561,7 +2561,7 @@ jumpto_tag(
    //Make a copy of the line, it can become invalid when an autocommand calls back here recursively
    Unt len = matching_line_len(lbuf_arg) + 1;
    CS lbuf = alloc(len);
-   mch_memmove(lbuf, lbuf_arg, len);
+   MEMMOVE(lbuf, lbuf_arg, len);
 
    CS pbuf = allocZeroed(LSIZE);
 
@@ -2945,13 +2945,13 @@ expand_tags(Boole expandTagNames, CS pat, OUT ExpandMatch* matches) {
              namebuf = buf;
          }
 
-         mch_memmove(namebuf, tagline.tagname, len);
+         MEMMOVE(namebuf, tagline.tagname, len);
          namebuf[len++] = 0;
          namebuf[len++] = (tagline.tagkind && *tagline.tagkind) ? *tagline.tagkind : 'f';
          namebuf[len++] = 0;
-         mch_memmove(matches->c[i] + len, tagline.fname, tagline.fname_end - tagline.fname);
+         MEMMOVE(matches->c[i] + len, tagline.fname, tagline.fname_end - tagline.fname);
          matches->c[i][len + (tagline.fname_end - tagline.fname)] = 0;
-         mch_memmove(matches->c[i], namebuf, len);
+         MEMMOVE(matches->c[i], namebuf, len);
       }
    }
 

@@ -592,7 +592,7 @@ skip_regexp_ex(
          if (dropped != NULL)
             ++*dropped;
          if (*newp != NULL)
-            mch_memmove(p, p + 1, startplen - ((p + 1) - startp) + 1);
+            MEMMOVE(p, p + 1, startplen - ((p + 1) - startp) + 1);
          else
             ++p;
          } else
@@ -1597,9 +1597,9 @@ regtilde(CS source) {
             tmpsub = alloc(tmpsublen + 1);
 
             // copy prefix
-            mch_memmove(tmpsub, newsub, prefixlen);
+            MEMMOVE(tmpsub, newsub, prefixlen);
             // interpret tilde
-            mch_memmove(tmpsub + prefixlen, reg_prev_sub, reg_prev_sublen);
+            MEMMOVE(tmpsub + prefixlen, reg_prev_sub, reg_prev_sublen);
             // copy postfix
             STRCPY(tmpsub + prefixlen + reg_prev_sublen, postfix);
 
@@ -1610,7 +1610,7 @@ regtilde(CS source) {
             p = newsub + prefixlen + reg_prev_sublen;
           }
           else
-         mch_memmove(p, postfix, postfixlen + 1);   // remove the tilde (+1 for the ZERO)
+         MEMMOVE(p, postfix, postfixlen + 1);   // remove the tilde (+1 for the ZERO)
 
           --p;
       } else {
@@ -2041,7 +2041,7 @@ eeRegsub_both(
                         internalErrMsg(S"eeRegsub_both(): not enough space");
                         return 0;
                      }
-                      mch_memmove(dst + 1, src - 1 + clen,
+                      MEMMOVE(dst + 1, src - 1 + clen,
                                 (Unt)(totlen - clen));
                   }
                   dst += totlen - clen;
@@ -2810,7 +2810,7 @@ reallocPostfix(void) {
    // 50% seems a reasonable compromise between memory use and speed.
    new_max = nstate_max * 3 / 2 + 1;
    Unt* new_start = ALLOC_MULT(Unt, new_max);
-   mch_memmove(new_start, postfixStartS, nstate_max * sizeof(int));
+   MEMMOVE(new_start, postfixStartS, nstate_max * sizeof(int));
    Unt* old_start = postfixStartS;
    postfixStartS = new_start;
    postfixS = new_start + (Unt)(postfixS - old_start);
@@ -6024,12 +6024,12 @@ copy_sub(Submatch *to, Submatch *from) {
 
    // Copy the match start and end positions.
    if (REG_MULTI) {
-      mch_memmove(&to->list.multi[0],
+      MEMMOVE(&to->list.multi[0],
          &from->list.multi[0],
          sizeof(struct multipos) * from->in_use);
       to->orig_start_col = from->orig_start_col;
    } else
-      mch_memmove(&to->list.line[0], &from->list.line[0], sizeof(struct linepos) * from->in_use);
+      MEMMOVE(&to->list.line[0], &from->list.line[0], sizeof(struct linepos) * from->in_use);
 }
 
 // Like copy_sub() but exclude the main match.
@@ -6042,11 +6042,11 @@ copy_sub_off(Submatch *to, Submatch *from) {
 
    // Copy the match start and end positions.
    if (REG_MULTI)
-      mch_memmove(
+      MEMMOVE(
          &to->list.multi[1], &from->list.multi[1], sizeof(struct multipos) * (from->in_use - 1)
       );
    else
-      mch_memmove(
+      MEMMOVE(
          &to->list.line[1], &from->list.line[1], sizeof(struct linepos) * (from->in_use - 1)
       );
 }
@@ -6776,23 +6776,23 @@ addstate_here(
          }
          newl = alloc(newsize);
          l->len = newlen;
-         mch_memmove(&(newl[0]),
+         MEMMOVE(&(newl[0]),
             &(l->t[0]),
             sizeof(nfa_thread_T) * listidx);
-         mch_memmove(&(newl[listidx]),
+         MEMMOVE(&(newl[listidx]),
             &(l->t[l->n - count]),
             sizeof(nfa_thread_T) * count);
-         mch_memmove(&(newl[listidx + count]),
+         MEMMOVE(&(newl[listidx + count]),
             &(l->t[listidx + 1]),
             sizeof(nfa_thread_T) * (l->n - count - listidx - 1));
          eeglFree(l->t);
          l->t = newl;
       } else {
           // make space for new states, then move them from the end to the current position
-          mch_memmove(&(l->t[listidx + count]),
+          MEMMOVE(&(l->t[listidx + count]),
              &(l->t[listidx + 1]),
              sizeof(nfa_thread_T) * (l->n - listidx - 1));
-          mch_memmove(&(l->t[listidx]),
+          MEMMOVE(&(l->t[listidx]),
              &(l->t[l->n - 1]),
              sizeof(nfa_thread_T) * count);
       }

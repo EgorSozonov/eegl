@@ -5,13 +5,14 @@
 
 #include "eegl.h"
 
+#ifndef PROTO
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-
 #include <sys/resource.h>
+#endif
 
 
 # define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
@@ -1056,7 +1057,7 @@ channel_get_all(Channel *channel, ChannelFdKind part, int *outlen) {
    CS res = alloc(len + 1);
    CS p = res;
    for (node = head->next; node != NULL; node = node->next) {
-      mch_memmove(p, node->c, node->len);
+      MEMMOVE(p, node->c, node->len);
       p += node->len;
    }
    *p = ZERO;
@@ -1107,7 +1108,7 @@ channel_consume(Channel *channel, ChannelFdKind part, int len) {
    ReadChunk *node = head->next;
    CS buf = node->c;
 
-   mch_memmove(buf, buf + len, node->len - len);
+   MEMMOVE(buf, buf + len, node->len - len);
    node->len -= len;
    node->c[node->len] = ZERO;
 }
@@ -1136,13 +1137,13 @@ channel_collapse(Channel *channel, ChannelFdKind part, int want_nl) {
    } 
    CS newbuf = alloc(len + 1);
    CS p = newbuf;
-   mch_memmove(p, node->c, node->len);
+   MEMMOVE(p, node->c, node->len);
    p += node->len;
    eeglFree(node->c);
    node->c = newbuf;
    for (n = node; n != last_node; ) {
       n = n->next;
-      mch_memmove(p, n->c, n->len);
+      MEMMOVE(p, n->c, n->len);
       p += n->len;
       eeglFree(n->c);
    }
@@ -1185,7 +1186,7 @@ saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS l
       *p = ZERO;
       node->len = (Ulong)(p - node->c);
    } else {
-      mch_memmove(node->c, msg, len);
+      MEMMOVE(node->c, msg, len);
       node->c[len] = ZERO;
       node->len = (Ulong)len;
    }
@@ -1233,8 +1234,8 @@ channel_fill(JsReader* reader) {
       // Prepend unused text.
       addlen = (int)STRLEN(next);
       p = alloc(keeplen + addlen + 1);
-      mch_memmove(p, reader->js_buf, keeplen);
-      mch_memmove(p + keeplen, next, addlen + 1);
+      MEMMOVE(p, reader->js_buf, keeplen);
+      MEMMOVE(p + keeplen, next, addlen + 1);
       eeglFree(next);
       next = p;
    }
@@ -1489,7 +1490,7 @@ channel_remove_block_id(ChannelFd* chanpart, int id) {
          --gap->len;
          if (i < gap->len) {
             int *p = ((int *)gap->c) + i;
-            mch_memmove(p, p + 1, (gap->len - i) * sizeof(int));
+            MEMMOVE(p, p + 1, (gap->len - i) * sizeof(int));
          }
          return;
       }
@@ -2870,7 +2871,7 @@ channel_send(
             if (entry != NULL) {
                if (res > 0) {
                   // Remove the bytes that were written.
-                  mch_memmove(entry->wq_ga.c, (char *)entry->wq_ga.c + res, len - res);
+                  MEMMOVE(entry->wq_ga.c, (char *)entry->wq_ga.c + res, len - res);
                   entry->wq_ga.len -= res;
                }
                buf = buf_arg;
@@ -2888,7 +2889,7 @@ channel_send(
 
                // append to the last entry
                if (len > 0 && ga_grow(&last->wq_ga, len) == OK) {
-                  mch_memmove((char *)last->wq_ga.c + last->wq_ga.len, buf, len);
+                  MEMMOVE((char *)last->wq_ga.c + last->wq_ga.len, buf, len);
                   last->wq_ga.len += len;
                }
             } else {
@@ -2904,7 +2905,7 @@ channel_send(
                   wq->prev = last;
                   ga_init2(&last->wq_ga, 1, 1000);
                   if (len > 0 && ga_grow(&last->wq_ga, len) == OK) {
-                      mch_memmove(last->wq_ga.c, buf, len);
+                      MEMMOVE(last->wq_ga.c, buf, len);
                       last->wq_ga.len = len;
                   }
                }
@@ -4184,7 +4185,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                      len = write(toshell_fd, (char *)ta_buf, (Unt)1);
                      if (len > 0) {
                         ta_len -= len;
-                        mch_memmove(ta_buf, ta_buf + len, ta_len);
+                        MEMMOVE(ta_buf, ta_buf + len, ta_len);
                      }
                   }
                   }

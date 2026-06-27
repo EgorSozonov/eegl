@@ -4,6 +4,8 @@
 //## window.c: functions for displaying the window in Wayland
 
 #include "eegl.h"
+
+#ifndef PROTO
 // for shm_open:
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -14,6 +16,7 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #include "../libs/wayland/ext-data-control-v1.h"
 #include "../libs/wayland/xdg-shell.h"
 #include "../libs/wayland/primary-selection-unstable-v1.h"
+#endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
 typedef struct {
@@ -1460,7 +1463,7 @@ yank_copy_line(BlockDef* bd, long y_idx, int exclude_trailing_space) {
    y_current->y_array[y_idx].c = pnew;
    memset(pnew, ' ', (Unt)bd->startspaces);
    pnew += bd->startspaces;
-   mch_memmove(pnew, bd->textstart, (Unt)bd->textlen);
+   MEMMOVE(pnew, bd->textstart, (Unt)bd->textlen);
    pnew += bd->textlen;
    memset(pnew, ' ', (Unt)bd->endspaces);
    pnew += bd->endspaces;
@@ -1800,7 +1803,7 @@ do_put(
 
          // copy part up to cursor to new line
          ptr = newp;
-         mch_memmove(ptr, oldp, (Unt)bd.textcol);
+         MEMMOVE(ptr, oldp, (Unt)bd.textcol);
          ptr += bd.textcol;
 
          // may insert some spaces before the new text
@@ -1809,7 +1812,7 @@ do_put(
 
          // insert the new text
          for (j = 0; j < count; ++j) {
-            mch_memmove(ptr, y_array[i].c, (Unt)yanklen);
+            MEMMOVE(ptr, y_array[i].c, (Unt)yanklen);
             ptr += yanklen;
 
             // insert block's trailing spaces only if there's text behind
@@ -1825,7 +1828,7 @@ do_put(
          ptr += bd.endspaces;
 
          // move the text after the cursor to the end of the line.
-         mch_memmove(ptr, oldp + bd.textcol + delcount,
+         MEMMOVE(ptr, oldp + bd.textcol + delcount,
                (Unt)(oldlen - bd.textcol - delcount + 1));
          ml_replace(curPor->cursor.lnum, newp, false);
 
@@ -1930,13 +1933,13 @@ do_put(
                   continue;
                }
                newp = alloc(totlen + oldlen + 1);
-               mch_memmove(newp, oldp, (Unt)col);
+               MEMMOVE(newp, oldp, (Unt)col);
                ptr = newp + col;
                for (i = 0; i < count; ++i) {
-                  mch_memmove(ptr, y_array[0].c, (Unt)yanklen);
+                  MEMMOVE(ptr, y_array[0].c, (Unt)yanklen);
                   ptr += yanklen;
                }
-               mch_memmove(ptr, oldp + col, (Unt)(oldlen - col) + 1);       // +1 for ZERO
+               MEMMOVE(ptr, oldp + col, (Unt)(oldlen - col) + 1);       // +1 for ZERO
 
                 // compute the byte offset for the last character
                 first_byte_off = mb_head_off(newp, ptr - 1);
@@ -2003,8 +2006,8 @@ do_put(
 
                oldp = ml_get(lnum);
                newp = alloc(col + yanklen + 1); // copy first part of line
-               mch_memmove(newp, oldp, (Unt)col); // append to first line
-               mch_memmove(newp + col, y_array[0].c, (Unt)(yanklen + 1));
+               MEMMOVE(newp, oldp, (Unt)col); // append to first line
+               MEMMOVE(newp + col, y_array[0].c, (Unt)(yanklen + 1));
                ml_replace(lnum, newp, false);
 
                curPor->cursor.lnum = lnum;
@@ -2236,7 +2239,7 @@ c_display(Invocation* invo) {
                   msgPutsDeco(S"^J", flags);
                   n -= 2;
                }
-               for (p = yb->y_array[j].c; *p != ZERO && (n -= ptr2cells(p)) >= 0; ++p) {
+               for (p = yb->y_array[j].c; *p != ZERO && (n -= bookPtr2Cells(p)) >= 0; ++p) {
                   clen = utfCharLen(p);
                   msgTranslatedSlice((Text){p, clen});
                   p += clen - 1;
@@ -2312,7 +2315,7 @@ dis_msg(
 ){
    int n = (int)visibleColsG - 6;
    while (*p != ZERO && !(*p == ESC && skip_esc && *(p + 1) == ZERO)
-         && (n -= ptr2cells(p)) >= 0
+         && (n -= bookPtr2Cells(p)) >= 0
    ) {
       int l = utfCharLen(p);
       msgTranslatedSlice((Text){p, l});
@@ -2421,11 +2424,11 @@ str_to_reg(
             extra = 0;
          s = alloc(i + extra + 1);
          if (extra)
-            mch_memmove(s, yReg->y_array[lnum].c, (Unt)extra);
+            MEMMOVE(s, yReg->y_array[lnum].c, (Unt)extra);
          if (append)
             eeglFree(yReg->y_array[lnum].c);
          if (i > 0)
-            mch_memmove(s + extra, str + start, (Unt)i);
+            MEMMOVE(s + extra, str + start, (Unt)i);
          extra += i;
          s[extra] = ZERO;
          yReg->y_array[lnum].c = s;

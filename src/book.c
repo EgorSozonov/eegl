@@ -16,8 +16,10 @@
 //The current implementation remembers all file names ever used.
 
 #include "eegl.h"
+#ifndef PROTO
 #include <fcntl.h>      // Definition of AT_* constants for utimensat()
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')
+#endif
 
 private int text_prop_type_valid(Book* book, TextProp* prop);
 //{{{builtins. Book related builtin functions
@@ -71,7 +73,7 @@ findBook(Var* avar){
          //book, these don't use the full path.
          FOR_ALL_BOOKS(book) {
             if (book->currFileName
-                  && (path_with_url(book->currFileName) || bt_nofilename(book))
+                  && (strStartsWithUrl(book->currFileName) || bt_nofilename(book))
                   && STRCMP(book->currFileName, avar->string) == 0)
                break;
          } 
@@ -877,35 +879,6 @@ transchar_buf(Unt c) {
    return translateScratch;
 }
 
-// Like transchar_buf(), but called with a byte instead of a character.  Checks
-// for an illegal UTF-8 byte.
-CS
-transchar_byte(Unt c) {
-   if (c >= 0x80) {
-      transchar_nonprint(translateScratch, c);
-      return translateScratch;
-   }
-   return transchar_buf(c);
-}
-
-//Convert non-printable character to two or more printable characters in
-//"charbuf[]".  "charbuf" needs to be able to hold five bytes.
-//Does NOT work for multi-byte characters, c must be <= 255.
-void
-transchar_nonprint(CS charbuf, int c) {
-   if (c == NL)
-      c = ZERO;      // we use newline in place of a ZERO
-
-   ei (c <= 0x7f) {       // 0x00 - 0x1f and 0x7f
-      charbuf[0] = '^';
-      charbuf[1] = c ^ 0x40;      // DEL displayed as ^?
-      charbuf[2] = ZERO;
-   } else {
-      transchar_hex(charbuf, c);
-   }
-}
-
-
 //Return number of display cells occupied by byte "b". Caller must make sure 0 <= b <= 255.
 //For multi-byte mode "b" must be the first byte of a character.
 //A TAB is counted as two cells: "^I".
@@ -935,7 +908,7 @@ char2cells(Unt c) {
 //Return number of display cells occupied by character at "*p".
 //A TAB is counted as two cells: "^I" or four: "<09>".
 int
-ptr2cells(CS p) {
+bookPtr2Cells(CS p) {
    //For UTF-8 we need to look at more bytes if the first byte is >= 0x80.
    if (*p >= 0x80)
       return mb_ptr2cells(p);
@@ -950,7 +923,7 @@ ptr2cells(CS p) {
       ts = (book)->o.shiftWidth; \
       return (int)(ts - (col % ts)); \
    } else \
-      return ptr2cells(p);
+      return bookPtr2Cells(p);
 
 int
 chartabsize(CS p, ColNr col) {
@@ -1158,7 +1131,7 @@ bookInitCharsForKeywordsSizeArg(
          // Make a copy of the properties, so that they are properly
          // aligned.  Make it twice as long for the sorting below.
          cts->cts_text_props = ALLOC_MULT(TextProp, count * 2);
-         mch_memmove(cts->cts_text_props + count, propStart, count * sizeof(TextProp));
+         MEMMOVE(cts->cts_text_props + count, propStart, count * sizeof(TextProp));
          for (int i = 0; i < count; ++i) {
             TextProp *tp = cts->cts_text_props + i + count;
             if (tp->id < 0 && text_prop_type_valid(po->book, tp)) {
@@ -1464,7 +1437,7 @@ win_nolbr_chartabsize(CharTableSize* cts, int* headp){
       n = po->book->o.shiftWidth;
       return (int)(n - (col % n));
    }
-   n = ptr2cells(s);
+   n = bookPtr2Cells(s);
    // Add one cell for a double-width character in the last column of the
    // portal, displayed with a ">".
    if (n == 2 && utf8CharLens[*s] > 1 && inPortalBorder(po, col)) {
@@ -3250,8 +3223,7 @@ isCurBookReusable(void) {
 //If (flags & BLN_LISTED) is true, add new book to book list.
 //If (flags & BLN_DUMMY) is true, don't count it as a real book.
 //If (flags & BLN_NEW) is true, don't use an existing book.
-//If (flags & BLN_NOOPT) is true, don't copy options from the current book
-//               if the book already exists.
+//If (flags & BLN_NOOPT), don't copy options from the current book if the book already exists.
 //If (flags & BLN_REUSE) is true, may use book number from "recycledFileNumberS".
 //This is the ONLY way to create a new book.
 Book*
@@ -3263,15 +3235,15 @@ bookNew(
 ) {                    // BLN_ defines
    CS fullFName = ffname_arg;
    CS sfname = sfname_arg;
-   FileStat   st;
 
    if (top_file_num == 1)
       hash_init(&buf_hashtab);
 
    fname_expand(&fullFName, &sfname);   // will allocate fullFName
 
-   // If the file name already exists in the list, update the entry. On Unix we can use inode 
-   // numbers when the file exists. Works better for hard links.
+   //If the file name already exists in the list, update the entry. On Unix we can use inode 
+   //numbers when the file exists. Works better for hard links.
+   FileStat st;
    if (!sfname || stat((char *)sfname, &st) < 0)
       st.st_dev = (Device)-1;
       
@@ -3364,7 +3336,7 @@ bookNew(
       // put the new book at the end of the book list
       book->next = NULL;
       
-      if (firstBook == NULL) {     // book list is empty
+      if (!firstBook) {     // book list is empty
          book->prev = NULL;
          firstBook = book;
       } else {        // append new book at end of list
@@ -3381,7 +3353,7 @@ bookNew(
 
          // Move book to the right place in the book list.
          while (book->prev && book->fiNum < book->prev->fiNum) {
-            Book   *prev = book->prev;
+            Book* prev = book->prev;
 
             prev->next = book->next;
             if (prev->next)
@@ -3437,14 +3409,13 @@ bookNew(
    fmarks_check_names(book);      // check file marks for this file
    book->o.bookListed = (flags & BLN_LISTED) ? true : false;   // init 'buflisted'
    if (!(flags & BLN_DUMMY)) {
+      //Tricky: these autocommands may change the book list. They could also split the portal
+      //with re-using the one empty book. This may result in unexpectedly losing the empty book
       BookRef bookRef;
-
-      // Tricky: these autocommands may change the book list. They could also split the portal
-      // with re-using the one empty book. This may result in unexpectedly losing the empty book
       bookStoreInRef(OUT &bookRef, book);
       if (applyAutocomms(EVENT_BUFNEW, NULL, NULL, false, book) && !bookRefValid(&bookRef))
          return NULL;
-      if (flags & BLN_LISTED) {
+      if ((flags & BLN_LISTED) != 0) {
          if (applyAutocomms(EVENT_BUFADD, NULL, NULL, false, book) && !bookRefValid(&bookRef))
             return NULL;
       }
@@ -3457,7 +3428,7 @@ bookNew(
 
 //Get alternate file "n".
 //Set linenr to "lnum" or altfpos.lnum if "lnum" == 0.
-//  Also set cursor column to altfpos.col if 'startofline' is not set.
+//Also set cursor column to altfpos.col if 'startofline' is not set.
 //if (options & GETF_SETMARK) call setpcmark()
 //if (options & GETF_ALT) we are jumping to an alternate file.
 //if (options & GETF_SWITCH) respect 'switchbook' settings when jumping
@@ -3791,7 +3762,7 @@ bufExpandBufnames(
       if (!p)
          continue;
 
-      if (options & WILD_HOME_REPLACE)
+      if ((options & WILD_HOME_REPLACE) != 0)
          p = home_replace_save(book, p);
       else
          p = copyStr(p);
@@ -4105,8 +4076,10 @@ bookListFiles(Invocation* invo) {
       CS name = bookSpName(book);
       if (name)
          copySubstrToAllocation(OUT nameBuffG, (Text){name, MAXPATHL - 1});
-      else
-         home_replace(book, book->currFileName, nameBuffG, MAXPATHL, true);
+      ei (book && book->kind == BOOK_HELP) { 
+         strPrintShortName(book->currFileName, nameBuffG, MAXPATHL);
+      } else
+         home_replace(book->currFileName, nameBuffG, MAXPATHL, true);
       if (message_filtered(nameBuffG))
          continue;
 
@@ -4362,9 +4335,11 @@ fileinfo(
          name = curBook->currFileName;
       else
          name = curBook->fullFileName;
-      home_replace(
-         shorthelp ? curBook : NULL, name, (CS)buf + bufLen, IOSIZE - (int)bufLen, true
-      );
+      if (shorthelp && curBook->kind == BOOK_HELP) {
+         strPrintShortName(name, (CS)buf + bufLen, IOSIZE - (int)bufLen);
+      } else {
+         home_replace(name, (CS)buf + bufLen, IOSIZE - (int)bufLen, true);
+      }
       bufLen += STRLEN(buf + bufLen);
    }
 
@@ -4447,15 +4422,14 @@ private StatusLineHilite* statusHilitesS = NULL;
 private StatusLineHilite* stl_tabtab = NULL;
 private int* stlSeparatorLocationsP = NULL;
 
-// Build a string from the status line items in "fmt".
-// Return length of string in screen cells.
+//Build a string from the status line items in "fmt". Return length of string in screen cells.
 //
-// Items are drawn interspersed with the text that surrounds it
-// Specials: %-<wid>(xxx%) => group, %= => separation marker, %< => truncation
-// Item: %-<minwid>.<maxwid><itemch> All but <itemch> are optional
+//Items are drawn interspersed with the text that surrounds it
+//Specials: %-<wid>(xxx%) => group, %= => separation marker, %< => truncation
+//Item: %-<minwid>.<maxwid><itemch> All but <itemch> are optional
 //
-// If maxwidth is not zero, the string will be filled at any middle marker
-// or truncated if too long, fillchar is used for all whitespace.
+//If maxwidth is not zero, the string will be filled at any middle marker
+//or truncated if too long, fillchar is used for all whitespace.
 int
 bookRenderStatusLine(
    Portal* po,
@@ -4672,12 +4646,12 @@ bookRenderStatusLine(
             // Find the first character that should be included.
             n = 0;
             while (l >= statusItemsP[stlGroupItemP[groupdepth]].maxWidth) {
-               l -= ptr2cells(t + n);
+               l -= bookPtr2Cells(t + n);
                n += utfCharLen(t + n);
             }
 
             *t = '<';
-            mch_memmove(t + 1, t + n, (Unt)(p - (t + n)));
+            MEMMOVE(t + 1, t + n, (Unt)(p - (t + n)));
             p = p - n + 1;
 
             // Fill up space left over by half a double-wide char.
@@ -4702,7 +4676,7 @@ bookRenderStatusLine(
             } else {
                // fill by inserting characters
                l = (n - l) * MB_CHAR2LEN(fillchar);
-               mch_memmove(t + l, t, (Unt)(p - t));
+               MEMMOVE(t + l, t, (Unt)(p - t));
                if (p + l >= out + outlen)
                   l = (long)((out + outlen) - p - 1);
                p += l;
@@ -4809,7 +4783,11 @@ bookRenderStatusLine(
             copySubstrToAllocation(OUT nameBuffG, (Text){name, MAXPATHL - 1});
          else {
             CS t = (opt == STL_FULLPATH) ? po->book->fullFileName : po->book->currFileName;
-            home_replace(po->book, t, nameBuffG, MAXPATHL, true);
+            if (po->book->kind == BOOK_HELP) {
+               strPrintShortName(t, nameBuffG, MAXPATHL);
+            } else {
+               home_replace(t, nameBuffG, MAXPATHL, true);
+            }
          }
          trans_characters(nameBuffG, MAXPATHL);
          if (opt != STL_FILENAME)
@@ -4821,7 +4799,7 @@ bookRenderStatusLine(
 
       case STL_EE_EXPR: { // opening curly brace
          CS block_start = s - 1;
-         int       reevaluate = (*s == '%');
+         Boole reevaluate = (*s == '%');
 
          if (reevaluate)
             s++;
@@ -5074,7 +5052,7 @@ bookRenderStatusLine(
             prevchar_isitem = true;
          if (l > maxwid) {
             while (l >= maxwid)
-               l -= ptr2cells(t);
+               l -= bookPtr2Cells(t);
             t += utfCharLen(t);
             if (p + 1 >= out + outlen)
                 break;
@@ -5179,7 +5157,7 @@ bookRenderStatusLine(
          s = out;
          width = 0;
          for (;;) {
-            width += ptr2cells(s);
+            width += bookPtr2Cells(s);
             if (width >= maxwidth)
                break;
             s += utfCharLen(s);
@@ -5200,11 +5178,11 @@ bookRenderStatusLine(
 
          n = 0;
          while (width >= maxwidth) {
-            width -= ptr2cells(s + n);
+            width -= bookPtr2Cells(s + n);
             n += utfCharLen(s + n);
          }
          p = s + n;
-         mch_memmove(s + 1, p, (Unt)(end - p) + 1);   // +1 for ZERO
+         MEMMOVE(s + 1, p, (Unt)(end - p) + 1);   // +1 for ZERO
          end -= (Unt)(p - (s + 1));
          *s = '<';
 
@@ -5835,17 +5813,16 @@ bookCompare(const void* s0, const void* s1) {
 
 //{{{bookwrite: functions for writing a book
 
-
 #define SMALLBUFSIZE   256   // size of emergency write book
 
 // Structure to pass arguments from bookWrite() to writeBytes().
 typedef struct {
-   int      fd;      // file descriptor
+   int fd;      // file descriptor
    CS bw_buf;   // buffer with data to be written
-   int      bw_len;      // length of data
-   Book   *tgt;   // book being written
-   int      bw_first;   // first write call
-   LineNr   bw_start_lnum;   // line number at start of book
+   int bw_len;      // length of data
+   Book* tgt;   // book being written
+   int bw_first;   // first write call
+   LineNr bw_start_lnum;   // line number at start of book
 } BwInfo;
 
 //Call write() to write a number of bytes to the file.
@@ -5939,7 +5916,6 @@ determineBackupFilename(CS fname, CS dname){
    return retval;
 }
 
-
 //bookWrite() - write to file "fname" lines "start" through "end"
 //
 //We do our own buffering here because fwrite() is so slow.
@@ -5977,7 +5953,7 @@ bookWrite(
    LineNr lnum;
    long nchars;
    CS errmsg = NULL;
-   int          errmsg_allocated = false;
+   int errmsg_allocated = false;
    CS errnum = NULL;
    CS buffer;
    Byte smallbuf[SMALLBUFSIZE];
@@ -5990,19 +5966,23 @@ bookWrite(
    int overwriting;       // true if writing over original
    int no_eol = false;       // no end-of-line written
    int device = false;       // writing to a device
-   int          prev_gotInterruptG = gotInterruptG;
-   int          file_readonly = false;  // overwritten file is read-only
-   int          made_writable = false;  // 'w' bit has been set
-               // writing everything
+   int prev_gotInterruptG = gotInterruptG;
+   int file_readonly = false;  // overwritten file is read-only
+   int made_writable = false;  // 'w' bit has been set
+   // writing everything
    Boole whole = (start == 1 && end == book->mem.lineCount);
-   LineNr       old_line_count = book->mem.lineCount;
+   LineNr old_line_count = book->mem.lineCount;
    char flags; // decoration flags
-   int          write_bin;
+   int write_bin;
    ContextSha256 sha_ctx;
    Unt bkc = book->o.backupCopy;
-   Pos       orig_start = book->opStart;
-   Pos       orig_end = book->opEnd;
-
+   Pos orig_start = book->opStart;
+   Pos orig_end = book->opEnd;
+   
+   if (!p_modifiable || !book->o.modifiable) { //immutable books may not be saved. They are readonly
+      return FAIL;
+   }
+   
    if (!fname || *fname == ZERO)   // safety check
       return FAIL;
    if (!book->mem.mfile) {
@@ -6016,18 +5996,15 @@ bookWrite(
       emsg(_(e_name_too_long));
       return FAIL;
    }
+ 
+   BwInfo writeInfo = (BwInfo) { .tgt = book }; // for writeBytes()
 
-   BwInfo writeInfo = (BwInfo) { // for writeBytes()
-      .tgt = book
-   }; 
-
-   // After writing a file changedtick changes but we don't want to display the line.
+   //After writing a file changedtick changes but we don't want to display the line.
    ex_no_reprint = true;
 
-   // If there is no file name yet, use the one for the written file.
-   // BF_NOTEDITED is set to reflect this (in case the write fails).
-   // Don't do this when the write is for a filter command.
-   // Don't do this when appending.
+   //If there is no file name yet, use the one for the written file.
+   //BF_NOTEDITED is set to reflect this (in case the write fails).
+   //Don't do this when the write is for a filter command. Don't do this when appending.
    if (book->fullFileName == NULL
        && reset_changed
        && whole
@@ -6039,7 +6016,7 @@ bookWrite(
       if (set_rw_fname(fname, sfname) == FAIL)
          return FAIL;
       book = curBook;       // just in case autocmds made "book" invalid
-    }
+   }
 
    if (!sfname)
       sfname = fname;
@@ -6964,7 +6941,7 @@ nofail:
       // front of the file name.
       if (errnum) {
           STRMOVE(IObuff + numlen, IObuff);
-          mch_memmove(IObuff, errnum, (Unt)numlen);
+          MEMMOVE(IObuff, errnum, (Unt)numlen);
       }
       STRCAT(IObuff, errmsg);
       emsg(IObuff);
@@ -7268,7 +7245,7 @@ alist_add_list(
       if (after > ARGCOUNT)
          after = ARGCOUNT;
       if (after < ARGCOUNT)
-         mch_memmove(
+         MEMMOVE(
             ARGLIST + after + files.len, ARGLIST + after, 
             (ARGCOUNT - after) * sizeof(ArgFileEntry)
          );
@@ -7314,7 +7291,7 @@ arglist_del_files(ArrayList *alist_ga) {
          if (eeRegexec(&regmatch, alist_name(&ARGLIST[match]), (ColNr)0)) {
             didone = true;
             eeglFree(ARGLIST[match].fname);
-            mch_memmove(ARGLIST + match, ARGLIST + match + 1,
+            MEMMOVE(ARGLIST + match, ARGLIST + match + 1,
                (ARGCOUNT - match - 1) * sizeof(ArgFileEntry));
             --curPor->argList->al_ga.len;
             if (curPor->argListInd > match)
@@ -7627,7 +7604,7 @@ c_argdedupe(Invocation* invo UNUSED){
          if (areNamesDuplicate) {
             // remove one duplicate argument
             eeglFree(ARGLIST[j].fname);
-            mch_memmove(ARGLIST + j, ARGLIST + j + 1, (ARGCOUNT - j - 1) * sizeof(ArgFileEntry));
+            MEMMOVE(ARGLIST + j, ARGLIST + j + 1, (ARGCOUNT - j - 1) * sizeof(ArgFileEntry));
             --ARGCOUNT;
 
             if (curPor->argListInd == j)
@@ -7698,7 +7675,7 @@ c_argdelete(Invocation* invo) {
    } else {
        for (i = invo->line1; i <= invo->line2; ++i)
       eeglFree(ARGLIST[i - 1].fname);
-       mch_memmove(ARGLIST + invo->line1 - 1, ARGLIST + invo->line2,
+       MEMMOVE(ARGLIST + invo->line1 - 1, ARGLIST + invo->line2,
          (Unt)((ARGCOUNT - invo->line2) * sizeof(ArgFileEntry)));
        curPor->argList->al_ga.len -= n;
        if (curPor->argListInd >= invo->line2)
@@ -8372,13 +8349,13 @@ addProp(OUT Book* book, Prop prop) {
       // Allocate the new line with space for the new property.
       newtext = alloc(book->mem.lineLen + sizeof(TextProp));
       // Copy the text, including terminating ZERO.
-      mch_memmove(newtext, book->mem.cachedLine, textlen);
+      MEMMOVE(newtext, book->mem.cachedLine, textlen);
 
       // Find the index where to insert the new property.
       // Since the text properties are not aligned properly when stored with
       // the text, we need to copy them as bytes before using it as a struct.
       for (i = 0; i < proplen; ++i) {
-         mch_memmove(&tmpProp, props + i * sizeof(TextProp), sizeof(TextProp));
+         MEMMOVE(&tmpProp, props + i * sizeof(TextProp), sizeof(TextProp));
          // col is MAXCOL when the text goes above or after the line, when
          // above we should use column zero for sorting
          ColNr propCol = (tmpProp.flags & TEXT_PROP_ALIGN_ABOVE) ? 0 : tmpProp.col;
@@ -8387,7 +8364,7 @@ addProp(OUT Book* book, Prop prop) {
       }
       newprops = newtext + textlen;
       if (i > 0)
-         mch_memmove(newprops, props, sizeof(TextProp) * i);
+         MEMMOVE(newprops, props, sizeof(TextProp) * i);
 
       tmpProp.col = col;
       tmpProp.len = length;
@@ -8398,10 +8375,10 @@ addProp(OUT Book* book, Prop prop) {
                 | (lnum < prop.endLnum ? TEXT_PROP_CONT_NEXT : 0)
                 | ((type->flags & PT_FLAG_INS_START_INCL) ? TEXT_PROP_START_INCL : 0);
       tmpProp.leftPad = prop.textPaddingLeft;
-      mch_memmove(newprops + i * sizeof(TextProp), &tmpProp, sizeof(TextProp));
+      MEMMOVE(newprops + i * sizeof(TextProp), &tmpProp, sizeof(TextProp));
 
       if (i < proplen) {
-         mch_memmove(
+         MEMMOVE(
             newprops + (i + 1) * sizeof(TextProp), props + i * sizeof(TextProp), 
             sizeof(TextProp) * (proplen - i)
          );
@@ -8709,7 +8686,7 @@ prop_count_above_below(Book* book, LineNr lnum) {
    if (count == 0)
       return 0;
    for (i = 0; i < count; ++i) {
-      mch_memmove(&prop, props + i * sizeof(prop), sizeof(prop));
+      MEMMOVE(&prop, props + i * sizeof(prop), sizeof(prop));
       if (prop.col == MAXCOL && text_prop_type_valid(book, &prop)) {
          if ((prop.flags & (TEXT_PROP_ALIGN_ABOVE | TEXT_PROP_ALIGN_BELOW))
              || (next_right_goes_below && (prop.flags & TEXT_PROP_ALIGN_RIGHT))
@@ -8734,7 +8711,7 @@ count_props(LineNr lnum, int only_starting, int last_line) {
    TextProp   prop;
 
    for (i = 0; i < proplen; ++i) {
-      mch_memmove(&prop, props + i * sizeof(prop), sizeof(prop));
+      MEMMOVE(&prop, props + i * sizeof(prop), sizeof(prop));
       // A prop is dropped when in the first line and it continues from the
       // previous line, or when not in the last line and it is virtual text after the line.
       if ((only_starting && (prop.flags & TEXT_PROP_CONT_PREV))
@@ -8846,7 +8823,7 @@ find_visible_prop(
       CS props;
       int   count = get_text_props(OUT &props, wp->book, lnum, false);
       for (int i = 0; i < count; ++i) {
-         mch_memmove(prop, props + i * sizeof(TextProp), sizeof(TextProp));
+         MEMMOVE(prop, props + i * sizeof(TextProp), sizeof(TextProp));
          if (prop->type == type_id && (id <= 0 || prop->id == id)) {
             *found_lnum = lnum;
             return OK;
@@ -8864,9 +8841,9 @@ set_text_props(LineNr lnum, CS props, int len) {
    CS text = ml_get(lnum);
    int textlen = ml_get_len(lnum) + 1;
    CS newtext = alloc(textlen + len);
-   mch_memmove(newtext, text, textlen);
+   MEMMOVE(newtext, text, textlen);
    if (len > 0)
-      mch_memmove(newtext + textlen, props, len);
+      MEMMOVE(newtext + textlen, props, len);
    if ((curBook->mem.flags & ML_LINE_DIRTY) != 0)
       eeglFree(curBook->mem.cachedLine);
    curBook->mem.cachedLine = newtext;
@@ -8881,8 +8858,8 @@ add_text_props(LineNr lnum, TextProp *text_props, int text_prop_count) {
 
    CS text = ml_get(lnum);
    CS newtext = alloc(curBook->mem.lineLen + proplen);
-   mch_memmove(newtext, text, curBook->mem.lineLen);
-   mch_memmove(newtext + curBook->mem.lineLen, text_props, proplen);
+   MEMMOVE(newtext, text, curBook->mem.lineLen);
+   MEMMOVE(newtext + curBook->mem.lineLen, text_props, proplen);
    if ((curBook->mem.flags & ML_LINE_DIRTY) != 0)
       eeglFree(curBook->mem.cachedLine);
    curBook->mem.cachedLine = newtext;
@@ -9137,7 +9114,7 @@ f_prop_find(Var *argvars, Var *returnVar) {
       int       prop_end;
 
       for (i = dir == BACKWARD ? count - 1 : 0; i >= 0 && i < count; i += dir) {
-          mch_memmove(&prop, text + textlen + i * sizeof(TextProp),
+          MEMMOVE(&prop, text + textlen + i * sizeof(TextProp),
                            sizeof(TextProp));
 
          // For the very first line try to find the first property before or
@@ -9237,7 +9214,7 @@ get_props_in_line(
 
    int count = (int)((book->mem.lineLen - textlen) / sizeof(TextProp));
    for (i = 0; i < count; ++i) {
-      mch_memmove(&prop, text + textlen + i * sizeof(TextProp),
+      MEMMOVE(&prop, text + textlen + i * sizeof(TextProp),
          sizeof(TextProp));
       if ((prop_types == NULL
              || prop_type_or_id_in_list(prop_types, prop_types_len, prop.type))
@@ -9507,7 +9484,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
             int matches_id = 0;
             int matchty = 0;
 
-            mch_memmove(&textprop, cur_prop, sizeof(TextProp));
+            MEMMOVE(&textprop, cur_prop, sizeof(TextProp));
 
             matches_id = textprop.id == id;
             if (num_typeIds > 0) {
@@ -9521,7 +9498,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
                if (!(book->mem.flags & ML_LINE_DIRTY)) {
                   // need to allocate the line to be able to change it
                   CS newptr = alloc(book->mem.lineLen);
-                  mch_memmove(newptr, book->mem.cachedLine, book->mem.lineLen);
+                  MEMMOVE(newptr, book->mem.cachedLine, book->mem.lineLen);
                   book->mem.cachedLine = newptr;
                   book->mem.flags |= ML_LINE_DIRTY;
 
@@ -9530,7 +9507,7 @@ f_prop_remove(Var *argvars, Var *returnVar) {
 
                taillen = book->mem.lineLen - len - (idx + 1) * sizeof(TextProp);
                if (taillen > 0)
-                  mch_memmove(cur_prop, cur_prop + sizeof(TextProp), taillen);
+                  MEMMOVE(cur_prop, cur_prop + sizeof(TextProp), taillen);
                book->mem.lineLen -= sizeof(TextProp);
                --idx;
 
@@ -9925,7 +9902,7 @@ adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags) {
    for (int ri = 0; ri < proplen; ++ri) {
       TextProp   prop;
       AdjustRes   res;
-      mch_memmove(&prop, props + ri * sizeof(prop), sizeof(prop));
+      MEMMOVE(&prop, props + ri * sizeof(prop), sizeof(prop));
       res = adjust(&prop, col, bytes_added, flags);
       if (res.dirty) {
          // Save for undo if requested and not done yet.
@@ -9939,7 +9916,7 @@ adjustPropColumns(LineNr lnum, ColNr col, int bytes_added, Unt flags) {
       }
       if (res.mayDrop)
          continue; // Drop this text property
-      mch_memmove(props + wi * sizeof(TextProp), &prop, sizeof(TextProp));
+      MEMMOVE(props + wi * sizeof(TextProp), &prop, sizeof(TextProp));
       ++wi;
    }
    if (dirty) {
@@ -9986,7 +9963,7 @@ adjustPropsForSplit(
    for (int i = 0; i < count; ++i) {
       // copy the prop to an aligned structure
       TextProp  prop;
-      mch_memmove(&prop, props + i * sizeof(TextProp), sizeof(TextProp));
+      MEMMOVE(&prop, props + i * sizeof(TextProp), sizeof(TextProp));
 
       PropType* proTy = text_prop_type_by_id(curBook, prop.type);
       Boole startIncl = (proTy && (proTy->flags & PT_FLAG_INS_START_INCL));
@@ -10059,7 +10036,7 @@ prepend_joined_props(
    for (int i = proplen; i-- > 0; ) {
       TextProp  prop;
 
-      mch_memmove(&prop, props + i * sizeof(prop), sizeof(prop));
+      MEMMOVE(&prop, props + i * sizeof(prop), sizeof(prop));
       if (prop.col == MAXCOL && !last_line)
           continue;  // drop property with text after the line
       int end = !(prop.flags & TEXT_PROP_CONT_NEXT);
@@ -10068,7 +10045,7 @@ prepend_joined_props(
       adjust(&prop, -1, col, 0); // Make line start at its final column
 
       if (last_line || end)
-         mch_memmove(new_props + --(*props_remaining) * sizeof(prop), &prop, sizeof(prop));
+         MEMMOVE(new_props + --(*props_remaining) * sizeof(prop), &prop, sizeof(prop));
       else {
          Boole found = false;
 
@@ -10076,7 +10053,7 @@ prepend_joined_props(
          for (int j = *props_remaining; j < propcount; ++j) {
             TextProp op;
 
-            mch_memmove(&op, new_props + j * sizeof(op), sizeof(op));
+            MEMMOVE(&op, new_props + j * sizeof(op), sizeof(op));
             if ((op.flags & TEXT_PROP_CONT_PREV)
                && op.id == prop.id && op.type == prop.type
             ){
@@ -10085,7 +10062,7 @@ prepend_joined_props(
                op.col = prop.col;
                // Start/end is taken care of when deleting joined lines
                op.flags = prop.flags;
-               mch_memmove(new_props + j * sizeof(op), &op, sizeof(op));
+               MEMMOVE(new_props + j * sizeof(op), &op, sizeof(op));
                break;
             }
          }

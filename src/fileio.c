@@ -4,7 +4,10 @@
 //## fileio.c: read from and write to a file
 
 #include "eegl.h"
+#ifndef PROTO
 #include <sys/stat.h> // for stat, fstat etc
+#endif
+
 ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
 ssize_t getxattr(const char*, const char*, void*, size_t);
 int setxattr(const char*, const char*, const void*, size_t, int);
@@ -30,7 +33,6 @@ private CS findFileInPathImpl(
 );
 private int expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags);
 private Boole recursivelyDeleteDir(CS name);
-private CS skipInitialSlashes(CS path);
 
 //}}}
 //{{{file paths: dealing with file names and paths.
@@ -41,316 +43,6 @@ private CS skipInitialSlashes(CS path);
 #define READDIR_SORT_IC      2  // sort ignoring case (strcasecmp)
 #define READDIR_SORT_COLLATE 3  // sort according to collation (strcoll)
 
-
-//Adjust a filename, according to a string of modifiers.
-//*fnamep must be ZERO terminated when called.  When returning, the length is
-//determined by *fnamelen.
-//Return VALID_ flags or -1 for failure.
-//When there is an error, *fnamep is set to NULL.
-int
-modify_fname(
-   CS src,      // string with modifiers
-   int tilde_file,   // "~" is a file name, not $HOME
-   Unt* usedlen,   // characters after src that are used
-   OUT CS* fnamep,   // file name so far
-   OUT CS* bufp,      // buffer for allocated file name or NULL
-   Unt* fnamelen   // length of fnamep
-){
-   int      valid = 0;
-   CS s;
-   CS p;
-   Byte   dirname[MAXPATHL];
-   int      c;
-   int      has_fullname = 0;
-   int      has_homerelative = 0;
-
-repeat:
-   // ":p" - full path/file_name
-   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'p') {
-      has_fullname = 1;
-
-      valid |= VALID_PATH;
-      *usedlen += 2;
-
-      // Expand "~/path" for all systems and "~user/path" for Unix
-      if ((*fnamep)[0] == '~' && !(tilde_file && (*fnamep)[1] == ZERO)) {
-         *fnamep = doExpandEnvInMultiplePaths(*fnamep);
-         eeglFree(*bufp);   // free any allocated file name
-         *bufp = *fnamep;
-         if (*fnamep == NULL)
-            return -1;
-      }
-
-      // When "/." or "/.." is used: force expansion to get rid of it.
-      for (p = *fnamep; *p != ZERO; MB_PTR_ADV(p)) {
-         if (*p == '/'
-                && p[1] == '.'
-                && (p[2] == ZERO
-                     || p[2] == '/'
-                     || (p[2] == '.' && (p[3] == ZERO || p[3] == '/'))
-                   )
-         )
-            break;
-      }
-
-      // fiExpandAndCopy() is slow, don't use it when not needed.
-      if (*p != ZERO || !eeIsAbsName(*fnamep)) {
-         *fnamep = fiExpandAndCopy(*fnamep, *p != ZERO);
-         eeglFree(*bufp);   // free any allocated file name
-         *bufp = *fnamep;
-         if (*fnamep == NULL)
-            return -1;
-      }
-
-      // Append a path separator to a directory.
-      if (mch_isdir(*fnamep)) {
-         // Make room for one or two extra characters.
-         *fnamep = copySubstr(*fnamep, STRLEN(*fnamep) + 2);
-         eeglFree(*bufp);   // free any allocated file name
-         *bufp = *fnamep;
-         if (*fnamep == null)
-            return -1;
-         add_pathsep(*fnamep);
-      }
-   }
-
-   // ":." - path relative to the current directory
-   // ":~" - path relative to the home directory
-   while (src[*usedlen] == ':'
-        && ((c = src[*usedlen + 1]) == '.' || c == '~')
-   ){
-      *usedlen += 2;
-      if (c == '8') {
-         continue;
-      }
-      CS pbuf = NULL;
-      // Need full path first (use doExpandEnv() to remove a "~/")
-      if (!has_fullname && !has_homerelative) {
-         if (**fnamep == '~')
-            p = pbuf = doExpandEnvInMultiplePaths(*fnamep);
-         else
-            p = pbuf = fiExpandAndCopy(*fnamep, false);
-      } else
-         p = *fnamep;
-
-      has_fullname = 0;
-
-      if (p) {
-         if (c == '.') {
-            Unt   namelen;
-
-            mch_dirname(dirname, MAXPATHL);
-            if (has_homerelative) {
-               s = copyStr(dirname);
-               home_replace(NULL, s, dirname, MAXPATHL, true);
-               eeglFree(s);
-            }
-            namelen = STRLEN(dirname);
-
-            // Do not call shorten_fname() here since it removes the prefix
-            // even though the path does not have a prefix.
-            if (fnamencmp(p, dirname, namelen) == 0) {
-               p += namelen;
-               if (*p == '/') {
-                  while (*p == '/')
-                     ++p;
-                  *fnamep = p;
-                  if (pbuf) {
-                      // free any allocated file name
-                      eeglFree(*bufp);
-                      *bufp = pbuf;
-                      pbuf = NULL;
-                  }
-               }
-            }
-         } else {
-            home_replace(NULL, p, dirname, MAXPATHL, true);
-            // Only replace it when it starts with '~'
-            if (*dirname == '~') {
-               s = copyStr(dirname);
-               *fnamep = s;
-               eeglFree(*bufp);
-               *bufp = s;
-               has_homerelative = true;
-            }
-          }
-          eeglFree(pbuf);
-      }
-   }
-
-   CS tail = fiGetShortFiName(*fnamep);
-   *fnamelen = STRLEN(*fnamep);
-
-   // ":h" - head, remove "/file_name", can be repeated
-   // Don't remove the first "/" or "c:\"
-   while (src[*usedlen] == ':' && src[*usedlen + 1] == 'h') {
-      valid |= VALID_HEAD;
-      *usedlen += 2;
-      s = skipInitialSlashes(*fnamep);
-      while (tail > s && after_pathsep(s, tail))
-          MB_PTR_BACK(*fnamep, tail);
-      *fnamelen = tail - *fnamep;
-      if (*fnamelen == 0) {
-         // Result is empty.  Turn it into "." to make ":cd %:h" work.
-         p = copyStr((CS)".");
-         eeglFree(*bufp);
-         *bufp = *fnamep = tail = p;
-         *fnamelen = 1;
-      } else {
-         while (tail > s && !after_pathsep(s, tail))
-            MB_PTR_BACK(*fnamep, tail);
-      }
-   }
-
-   // ":t" - tail, just the basename
-   if (src[*usedlen] == ':' && src[*usedlen + 1] == 't') {
-      *usedlen += 2;
-      *fnamelen -= tail - *fnamep;
-      *fnamep = tail;
-   }
-
-   // ":e" - extension, can be repeated
-   // ":r" - root, without extension, can be repeated
-   while (src[*usedlen] == ':'
-       && (src[*usedlen + 1] == 'e' || src[*usedlen + 1] == 'r')
-   ){
-      // find a '.' in the tail:
-      // - for second :e: before the current fname
-      // - otherwise: The last '.'
-      if (src[*usedlen + 1] == 'e' && *fnamep > tail)
-          s = *fnamep - 2;
-      else
-          s = *fnamep + *fnamelen - 1;
-      for ( ; s > tail; --s) {
-         if (s[0] == '.')
-            break;
-      } 
-      if (src[*usedlen + 1] == 'e') {     // :e
-         if (s > tail) {
-            *fnamelen += (*fnamep - (s + 1));
-            *fnamep = s + 1;
-         } ei (*fnamep <= tail)
-            *fnamelen = 0;
-      } else {           // :r
-         CS limit = *fnamep;
-         if (limit < tail)
-            limit = tail;
-         if (s > limit)   // remove one extension
-            *fnamelen = s - *fnamep;
-      }
-      *usedlen += 2;
-   }
-
-   // ":s?pat?foo?" - substitute
-   // ":gs?pat?foo?" - global substitute
-   if (src[*usedlen] == ':'
-       && (src[*usedlen + 1] == 's'
-      || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
-   ) {
-      CS str;
-      CS pat;
-      CS sub;
-      int sep;
-      int didit = false;
-
-      CS flags = S"";
-      s = src + *usedlen + 2;
-      if (src[*usedlen + 1] == 'g') {
-         flags = (CS)"g";
-         ++s;
-      }
-
-      sep = *s++;
-      if (sep) {
-         // find end of pattern
-         p = firstOccurrence(s, sep);
-         if (p) {
-            pat = copySubstr(s, p - s);
-            if (pat) {
-                s = p + 1;
-                // find end of substitution
-                p = firstOccurrence(s, sep);
-                if (p != NULL) {
-               sub = copySubstr(s, p - s);
-               str = copySubstr(*fnamep, *fnamelen);
-               if (sub != NULL && str != NULL) {
-                   Unt slen;
-
-                   *usedlen = p + 1 - src;
-                   s = do_string_sub(str, *fnamelen, pat, sub, NULL, flags, &slen);
-                   if (s != NULL) {
-                  *fnamep = s;
-                  *fnamelen = slen;
-                  eeglFree(*bufp);
-                  *bufp = s;
-                  didit = true;
-                   }
-               }
-               eeglFree(sub);
-               eeglFree(str);
-                }
-                eeglFree(pat);
-            }
-          }
-          // after using ":s", repeat all the modifiers
-          if (didit)
-         goto repeat;
-      }
-   }
-
-   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'S') {
-      // copyStr_shellescape() needs a ZERO terminated string.
-      c = (*fnamep)[*fnamelen];
-      if (c != ZERO)
-         (*fnamep)[*fnamelen] = ZERO;
-      p = copyStr_shellescape(*fnamep, false, false);
-      if (c != ZERO)
-         (*fnamep)[*fnamelen] = c;
-      eeglFree(*bufp);
-      *bufp = *fnamep = p;
-      *fnamelen = STRLEN(p);
-      *usedlen += 2;
-   }
-
-   return valid;
-}
-
-//Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname"
-//"trim_len" specifies how many characters to keep for each directory.
-//Must be 1 or more. It's done in-place.
-private void
-shorten_dir_len(CS str, int trim_len) {
-   int skip = false;
-   int dirchunk_len = 0;
-
-   CS tail = fiGetShortFiName(str);
-   CS d = str;
-   for (CS s = str; ; ++s) {
-      if (s >= tail) {        // copy the whole tail
-         *d++ = *s;
-         if (*s == ZERO)
-            break;
-      } ei (*s == '/') {     // copy '/' and next char
-         *d++ = *s;
-         skip = false;
-         dirchunk_len = 0;
-      } ei (!skip) {
-         *d++ = *s;         // copy next char
-         if (*s != '~' && *s != '.') { // and leading "~" and "."
-            ++dirchunk_len; // only count word chars for the size
-
-            // keep copying chars until we have our preferred length (or
-            // until the above if/else branches move us along)
-            if (dirchunk_len >= trim_len)
-                skip = true;
-         }
-         int l = utfCharLen(s);
-
-         while (--l > 0)
-            *d++ = *++s;
-      }
-   }
-}
 
 //To get the "real" home directory:
 //- get value of $HOME
@@ -377,16 +69,10 @@ init_homedir(void) {
    }
 }
 
-//Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname" It's done in-place.
-void
-shorten_dir(CS str){
-   shorten_dir_len(str, 1);
-}
-
 //Return true if "fname" is a readable file.
 int
 file_is_readable(CS fname){
-   int      fd;
+   int fd;
 
 #ifndef O_NONBLOCK
 # define O_NONBLOCK 0
@@ -835,7 +521,7 @@ f_isdirectory(Var *argvars, Var* returnVar) {
 // "isabsolutepath()" function
 void
 f_isabsolutepath(Var *argvars, Var* returnVar) {
-   returnVar->number = fiIsRelative(tv_get_string_strict(&argvars[0])) ? 0 : 1;
+   returnVar->number = strIsRelative(tv_get_string_strict(&argvars[0])) ? 0 : 1;
 }
 
 //Create the directory in which "dir" is located, and higher levels when needed.
@@ -903,10 +589,9 @@ f_mkdir(Var* argvars, Var* returnVar) {
    }
    returnVar->number = eeMkdir_emsg(dir, prot);
 
-    // Handle "D" and "R": deferred deletion of the created directory.
-   if (returnVar->number == OK
-            && created == NULL && (defer || defer_recurse))
-   created = fiExpandAndCopy(dir, false);
+   // Handle "D" and "R": deferred deletion of the created directory.
+   if (returnVar->number == OK && created == NULL && (defer || defer_recurse))
+      created = fiExpandAndCopy(dir, false);
    if (created != NULL) {
       Var tv[2];
 
@@ -1023,11 +708,11 @@ f_readdirex(Var *argvars, Var* returnVar) {
 
 private void
 read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
-   int      binary = false;
-   int      blob = always_blob;
-   int      failed = false;
-   FILE   *fd;
-   Byte   buf[(IOSIZE/256)*256];   // rounded to avoid odd + 1
+   int binary = false;
+   int blob = always_blob;
+   int failed = false;
+   FILE* fd;
+   Byte buf[(IOSIZE/256)*256];   // rounded to avoid odd + 1
    int io_size = sizeof(buf);
    int readlen;      // size of last fread()
    CS prev    = NULL;   // previously read bytes, if any
@@ -1115,7 +800,7 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
                //Change "prev" buffer to be the right size. This way the bytes are only copied once, 
                //and very long lines are allocated only once.
                s = eeRealloc(prev, prevlen + len + 1);
-               mch_memmove(s + prevlen, start, len);
+               MEMMOVE(s + prevlen, start, len);
                s[prevlen + len] = ZERO;
                prev = NULL; // the list will own the string
                prevlen = prevsize = 0;
@@ -1165,7 +850,7 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
                      dest = buf;
                   }
                   if (readlen > p - buf + 1)
-                     mch_memmove(dest, p + 1, readlen - (p - buf) - 1);
+                     MEMMOVE(dest, p + 1, readlen - (p - buf) - 1);
                   readlen -= 3 - adjust_prevlen;
                   prevlen -= adjust_prevlen;
                   p = dest - 1;
@@ -1196,7 +881,7 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
             prev = newprev;
          }
          // Add the line part to end of "prev".
-         mch_memmove(prev + prevlen, start, p - start);
+         MEMMOVE(prev + prevlen, start, p - start);
          prevlen += (long)(p - start);
       }
    } // while
@@ -1234,14 +919,13 @@ f_readfile(Var* argvars, Var* returnVar) {
 void
 f_resolve(Var *argvars, Var* returnVar) {
    CS p = tv_get_string(&argvars[0]);
-   {
    CS cpy;
-   int   len;
+   int len;
    CS remain = NULL;
    CS q;
-   int   is_relative_to_current = false;
-   int   has_trailing_pathsep = false;
-   int   limit = 100;
+   int is_relative_to_current = false;
+   int has_trailing_pathsep = false;
+   int limit = 100;
 
    p = copyStr(p);
    if (p[0] == '.' && (p[1] == '/' || (p[1] == '.' && (p[2] == '/'))))
@@ -1305,7 +989,7 @@ f_resolve(Var *argvars, Var* returnVar) {
              p[q - p - 1] = ZERO;
              q = fiGetShortFiName(p);
          }
-         if (q > p && fiIsRelative(buf)) {
+         if (q > p && strIsRelative(buf)) {
             // symlink is relative to directory of argument
             cpy = alloc(STRLEN(p) + STRLEN(buf) + 1);
             STRCPY(cpy, p);
@@ -1373,7 +1057,6 @@ f_resolve(Var *argvars, Var* returnVar) {
    }
 
    returnVar->string = p;
-   }
 
    simplify_filename(returnVar->string);
 
@@ -1401,7 +1084,7 @@ f_tempname(Var *argvars UNUSED, Var* returnVar) {
 }
 
 void
-f_writefile(Var *argvars, Var* returnVar){
+f_writefile(Var* argvars, Var* returnVar){
    int      binary = false;
    int      append = false;
    int      defer = false;
@@ -1437,22 +1120,22 @@ f_writefile(Var *argvars, Var* returnVar){
    if (argvars[2].tag != VAR_UNKNOWN) {
       CS arg2 = convertVarToStringSingleUse(&argvars[2]);
 
-      if (arg2 == NULL)
-          return;
+      if (!arg2)
+         return;
       if (firstOccurrence(arg2, 'b') != NULL)
-          binary = true;
+         binary = true;
       if (firstOccurrence(arg2, 'a') != NULL)
-          append = true;
+         append = true;
       if (firstOccurrence(arg2, 'D') != NULL)
-          defer = true;
+         defer = true;
       if (firstOccurrence(arg2, 's') != NULL)
-          do_fsync = true;
+         do_fsync = true;
       ei (firstOccurrence(arg2, 'S') != NULL)
-          do_fsync = false;
+         do_fsync = false;
    }
 
    fname = convertVarToStringSingleUse(&argvars[1]);
-   if (fname == NULL)
+   if (!fname)
       return;
 
    if (defer && !can_add_defer())
@@ -1529,219 +1212,6 @@ f_filecopy(Var *argvars, Var* returnVar){
    } 
 }
 
-//Replace home directory by "~" in each space or comma separated file name in 'src'.
-//If anything fails (except when out of space) dst equals src.
-void
-home_replace(
-   Book* book, //when not NULL, check for help files
-   CS src, //input file name
-   CS dst, //where to put the result
-   int dstlen,  //maximum length of the result
-   int one      //if true, only replace one file name, include spaces and commas in the file name.
-){
-   Unt   dirlen = 0, envlen = 0;
-   Unt   len;
-   CS homedir_env;
-   CS homedir_env_orig;
-   CS p;
-
-   if (!src) {
-      *dst = ZERO;
-      return;
-   }
-
-   //If the file is a help file, remove the path completely.
-   if (book && book->kind == BOOK_HELP) {
-      eeSnprintf(dst, dstlen, "%s", fiGetShortFiName(src));
-      return;
-   }
-
-   //We check both the value of the $HOME environment variable and the "real" home directory.
-   if (homedir)
-      dirlen = STRLEN(homedir);
-
-   homedir_env_orig = homedir_env = mch_getenv("HOME");
-   // Empty is the same as not set.
-   if (homedir_env && *homedir_env == ZERO)
-      homedir_env = NULL;
-
-   if (homedir_env && *homedir_env == '~') {
-      Unt usedlen = 0;
-
-      Unt flen = STRLEN(homedir_env);
-      CS fbuf = NULL;
-      (void)modify_fname(S":p", false, &usedlen, &homedir_env, OUT &fbuf, &flen);
-      flen = STRLEN(homedir_env);
-      if (flen > 0 && homedir_env[flen - 1] == '/')
-         // Remove the trailing / that is added to a directory.
-         homedir_env[flen - 1] = ZERO;
-   }
-
-   if (homedir_env != NULL)
-      envlen = STRLEN(homedir_env);
-
-   if (!one)
-      src = skipwhite(src);
-   while (*src && dstlen > 0) {
-      //Here we are at the beginning of a file name. First, check to see if the beginning of the 
-      //file name matches $HOME or the "real" home directory. Check that there is a '/'
-      //after the match (so that if e.g. the file is "/home/pieter/bla", and the home directory 
-      //is "/home/piet", the file does not end up as "~er/bla" (which would seem to indicate the 
-      //file "bla" in user er's home directory)).
-      p = homedir;
-      len = dirlen;
-      for (;;) {
-         if (  len
-            && fnamencmp(src, p, len) == 0
-            && (src[len] == '/'
-                || (!one && (src[len] == ',' || src[len] == ' '))
-                || src[len] == ZERO)
-         ){
-            src += len;
-            if (--dstlen > 0)
-               *dst++ = '~';
-
-            //Do not add directory separator into dst, because dst is expected to just return the 
-            //directory name without the directory separator '/'.
-            break;
-         }
-         if (p == homedir_env)
-            break;
-         p = homedir_env;
-         len = envlen;
-      }
-
-      //if (!one) skip to separator: space or comma
-      while (*src && (one || (*src != ',' && *src != ' ')) && --dstlen > 0)
-         *dst++ = *src++;
-      //skip separator
-      while ((*src == ' ' || *src == ',') && --dstlen > 0)
-          *dst++ = *src++;
-   }
-   //TODO if (dstlen == 0) out of space, what to do???
-
-   *dst = ZERO;
-
-   if (homedir_env != homedir_env_orig)
-      eeglFree(homedir_env);
-}
-
-//Like home_replace, store the replaced string in allocated memory.
-//When something fails, src is returned.
-CS
-home_replace_save(Book* book, CS inputFname){
-   int len = 3;         // space for "~/" and trailing ZERO
-   if (inputFname)      // just in case
-      len += STRLEN(inputFname);
-   CS dst = alloc(len);
-   home_replace(book, inputFname, OUT dst, len, true);
-   return dst;
-}
-
-//Like home_replace, store the replaced string in allocated memory.
-//When something fails, src is returned.
-CS
-homeReplaceA(Book* book, CS inputFname, Arena* a){
-   int len = 3;         // space for "~/" and trailing ZERO
-   if (inputFname)      // just in case
-      len += STRLEN(inputFname);
-   CS dst = allocateArray(len, Byte, a);
-   home_replace(book, inputFname, OUT dst, len, true);
-   return dst;
-}
-
-//Compare two file names and return:
-//FPC_SAME   if they both exist and are the same file.
-//FPC_SAMEX  if they both don't exist and have the same file name.
-//FPC_DIFF   if they both exist and are different files.
-//FPC_NOTX   if they both don't exist.
-//FPC_DIFFX  if one of them doesn't exist.
-//For the first name environment variables are expanded if "expandenv" is true.
-int
-fullpathcmp(
-   CS s1,
-   CS s2,
-   int checkname,      // when both don't exist, check file names
-   int expandenv
-) {
-   Byte exp1[MAXPATHL];
-   Byte full1[MAXPATHL];
-   Byte full2[MAXPATHL];
-   FileStat st1, st2;
-
-   if (expandenv)
-      doExpandEnv(OUT (Text){exp1, MAXPATHL}, s1);
-   else
-      copySubstrToAllocation(exp1, (Text){s1, MAXPATHL - 1});
-   int r1 = stat((char *)exp1, &st1);
-   int r2 = stat((char *)s2, &st2);
-   if (r1 != 0 && r2 != 0) {
-      // if stat() doesn't work, may compare the names
-      if (checkname) {
-         if (fnamecmp(exp1, s2) == 0)
-            return FPC_SAMEX;
-         r1 = eeFullFileName(exp1, full1, MAXPATHL, false);
-         r2 = eeFullFileName(s2, full2, MAXPATHL, false);
-         if (r1 == OK && r2 == OK && fnamecmp(full1, full2) == 0)
-            return FPC_SAMEX;
-      }
-      return FPC_NOTX;
-   }
-   if (r1 != 0 || r2 != 0)
-      return FPC_DIFFX;
-   if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
-      return FPC_SAME;
-   return FPC_DIFF;
-}
-
-//Get the tail of a path: the file name. When the path ends in a path separator, the tail is the 
-//ZERO after it. Fail safe: never return NULL.
-CS
-fiGetShortFiName(CS fname){
-   if (!fname)
-      return S"";
-      
-   CS afterSlash;
-   CS p;
-   for (afterSlash = skipInitialSlashes(fname), p = afterSlash; *p != ZERO; MB_PTR_ADV(p)) {
-      if (*p == '/')
-         afterSlash = p + 1;
-   }
-   return afterSlash;
-}
-
-//Get pointer to tail of "fname", including path separators.
-//Take care of "//". Always return a valid pointer.
-// "/etc/a" -> "/a", "/etc" -> "/etc"
-CS
-gettail_sep(CS fname){
-   CS p = skipInitialSlashes(fname);   // don't remove the '/' from "c:/file"
-   CS t = fiGetShortFiName(fname);
-   while (t > p && after_pathsep(fname, t))
-      --t;
-   return t;
-}
-
-//get the next path component (just after the next path separator).
-CS
-getnextcomp(CS fname){
-   while (*fname && *fname != '/')
-      MB_PTR_ADV(fname);
-   if (*fname)
-      ++fname;
-   return fname;
-}
-
-//Get a pointer to one character past the initial slashes of a path name
-private CS
-skipInitialSlashes(CS path){
-   CS retval = path;
-   for (; *retval == '/'; ++retval)
-      ++retval;
-
-   return retval;
-}
-
 //Return true if the directory of "fname" exists, false otherwise.
 //Also return true if there is no directory name. "fname" must be writable!.
 private int
@@ -1754,26 +1224,6 @@ dir_of_file_exists(CS fname){
    int retval = mch_isdir(fname);
    *p = c;
    return retval;
-}
-
-//Concatenate file names fname1 and fname2 into allocated memory.
-//Only add a '/' or '\\' when 'sep' is true and it is necessary.
-CS
-concat_fnames(CS fname1, CS fname2, Boole sep){
-   CS dest = alloc(STRLEN(fname1) + STRLEN(fname2) + 2);
-
-   STRCPY(OUT dest, fname1);
-   if (sep)
-      add_pathsep(dest);
-   STRCAT(dest, fname2);
-   return dest;
-}
-
-//Add a path separator to a file name, unless it already ends in a path separator.
-void
-add_pathsep(CS p){
-   if (*p != ZERO && !after_pathsep(p, p + STRLEN(p)))
-      STRCAT(p, "/");
 }
 
 //If fname is not a full path, make it one. Return pointer to copied, allocated memory.
@@ -1903,38 +1353,6 @@ expand_wildcards(
 
    return retval;
 }
-
-// Return true if "fname" matches with an entry in 'suffixes'.
-Boole
-match_suffix(CS fname){
-   if (!p_su)
-      return false;
-      
-#define MAXSUFLEN 30       // maximum length of a file suffix
-   Byte suf_buf[MAXSUFLEN];
-
-   int fnamelen = (int)STRLEN(fname);
-   int setsuflen = 0;
-   for (CS setsuf = p_su; *setsuf != ZERO; ) {
-      setsuflen = doCutPathFromListOfPaths(OUT &setsuf, OUT suf_buf, MAXSUFLEN, S".,");
-      if (setsuflen == 0) {
-         CS tail = fiGetShortFiName(fname);
-
-         // empty entry: match name without a '.'
-         if (firstOccurrence(tail, '.') == NULL) {
-            setsuflen = 1;
-            break;
-         }
-      } else {
-         if (fnamelen >= setsuflen 
-               && fnamencmp(suf_buf, fname + fnamelen - setsuflen, (Unt)setsuflen) == 0)
-            break;
-         setsuflen = 0;
-      }
-   }
-   return (setsuflen != 0);
-}
-
 //Return true if we can expand this backtick thing here.
 private int
 eeBacktick(CS p) {
@@ -2255,18 +1673,6 @@ LIST_TY(DirPtr)
 //   return countMatches;
 //}
 
-// Return true if "p" contains what looks like an environment variable. Allowing for escaping.
-private int
-hasEnvVar(CS p) {
-   for ( ; *p; MB_PTR_ADV(p)) {
-      if (*p == '\\' && p[1] != ZERO)
-         ++p;
-      ei (firstOccurrence((CS)"$",  *p) != NULL)
-         return true;
-   }
-   return false;
-}
-
 #ifdef SPECIAL_WILDCHAR
 
 // Return true if "p" contains a special wildcard character, one that Eegl cannot expand, 
@@ -2363,7 +1769,7 @@ gen_expand_wildcards(
          //pattern. Otherwise: Add the file name if it exists or when EW_NOTFOUND is given.
          if (mch_has_exp_wildcard(p) || (flags & EW_ICASE)) {
             if ((flags & (EW_PATH | EW_CDPATH))
-               && fiIsRelative(p)
+               && strIsRelative(p)
                && !(p[0] == '.' && (p[1] == '/' || (p[1] == '.' && p[2] == '/')))
             ){
                // :find completion where 'path' is used. Recursiveness is OK here.
@@ -2450,67 +1856,6 @@ addFile(OUT ExpandMatch* matches, CS fName, Unt flags){
    addExpandMatch(p, OUT matches);
 }
 
-//Compare path "p[]" to "q[]". If "maxlen" >= 0 compare "p[maxlen]" to "q[maxlen]"
-//Return value like strcmp(p, q), but consider path separators.
-int
-pathcmp(CS p, CS q, int maxlen) {
-   int i, j;
-   Unt c1, c2;
-   CS s = NULL;
-
-   for (i = 0, j = 0; maxlen < 0 || (i < maxlen && j < maxlen);) {
-      c1 = mb_ptr2char((CS)p + i);
-      c2 = mb_ptr2char((CS)q + j);
-
-      // End of "p": check if "q" also ends or just has a slash.
-      if (c1 == ZERO) {
-         if (c2 == ZERO)  // full match
-            return 0;
-         s = q;
-         i = j;
-         break;
-      }
-
-      // End of "q": check if "p" just has a slash.
-      if (c2 == ZERO) {
-         s = p;
-         break;
-      }
-
-      if ( c1 != c2) {
-         if (c1 == '/')
-            return -1;
-         if (c2 == '/')
-            return 1;
-         return c1 - c2;  // no match
-      }
-
-      i += utfCharLen((CS)p + i);
-      j += utfCharLen((CS)q + j);
-   }
-   if (s == NULL) //"i" or "j" ran into "maxlen"
-      return 0;
-
-   c1 = mb_ptr2char((CS)s + i);
-   c2 = mb_ptr2char((CS)s + i + utfCharLen((CS)s + i));
-   //ignore a trailing slash, but not "//" or ":/"
-   if (c2 == ZERO
-       && i > 0
-       && !after_pathsep((CS)s, (CS)s + i)
-       && c1 == '/'
-   )
-      return 0;   //match with trailing slash
-   if (s == q)
-      return -1;  //no match
-   return 1;
-}
-
-//true if "name" is a full (absolute) path name or URL.
-int
-eeIsAbsName(CS name){
-   return (path_with_url(name) != 0 || !fiIsRelative(name));
-}
-
 //Get absolute file name into "buf[len]". return FAIL for failure, OK for success
 private int
 mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand when already absolute path
@@ -2523,7 +1868,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
 
    //Expand it if forced or not an absolute path.
    //Do not do it for "/file", the result is always "/".
-   if ((force || fiIsRelative(fname)) && ((p = lastOccurrence(fname, '/')) == NULL || p != fname)) {
+   if ((force || strIsRelative(fname)) && ((p = lastOccurrence(fname, '/')) == NULL || p != fname)) {
       if (!p && eq(fname, S".."))
          // Handle ".." without path separators.
          p = fname + 2;
@@ -2562,7 +1907,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
                if (mch_chdir((char *)buf)) {
                   //Path does not exist (yet). For a full path fail, will use the path as-is. 
                   //For a relative path use the current directory and append the file name.
-                  if (!fiIsRelative(fname))
+                  if (!strIsRelative(fname))
                      retval = FAIL;
                   else
                      p = NULL;
@@ -2626,7 +1971,7 @@ eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion e
    *buf = ZERO;
 
    int retval = OK;
-   Boole url = path_with_url(fname); //is it of the "asdf://..." form?
+   Boole url = strStartsWithUrl(fname); //is it of the "asdf://..." form?
    if (!url)
       retval = mch_FullName(fname, OUT buf, len, force);
    if (url || retval == FAIL) {
@@ -2647,9 +1992,37 @@ mch_dirname(CS buf, int len) {
    return OK;
 }
 
-Boole
-fiIsRelative(CS fname) {
-   return (*fname != '/' && *fname != '~');
+
+//Like home_replace, store the replaced string in allocated memory.
+//When something fails, src is returned.
+CS
+home_replace_save(Book* book, CS inputFname){
+   int len = 3;         // space for "~/" and trailing ZERO
+   if (inputFname)      // just in case
+      len += STRLEN(inputFname);
+   CS dst = alloc(len);
+   if (book && book->kind == BOOK_HELP) {
+      strPrintShortName(inputFname, OUT dst, len);
+   } else {
+      home_replace(inputFname, OUT dst, len, true);
+   }
+   return dst;
+}
+
+//Like home_replace, store the replaced string in allocated memory.
+//When something fails, src is returned.
+CS
+homeReplaceA(Book* book, CS inputFname, Arena* a){
+   int len = 3;         // space for "~/" and trailing ZERO
+   if (inputFname)      // just in case
+      len += STRLEN(inputFname);
+   CS dst = allocateArray(len, Byte, a);
+   if (book && book->kind == BOOK_HELP) {
+      strPrintShortName(inputFname, OUT dst, len);
+   } else {
+      home_replace(inputFname, OUT dst, len, true);
+   }
+   return dst;
 }
 
 //}}}
@@ -3232,8 +2605,8 @@ eeFindFile_stopdir(CS buf) {
          // use STRLEN(r_ptr) to move the trailing '\0'.
          if (r_ptr_end == NULL)
             r_ptr_end = r_ptr + STRLEN(r_ptr);
-         mch_memmove(r_ptr, r_ptr + 1,
-        (Unt)(r_ptr_end - (r_ptr + 1)) + 1);   // +1 for ZERO
+         MEMMOVE(r_ptr, r_ptr + 1,
+         (Unt)(r_ptr_end - (r_ptr + 1)) + 1);   // +1 for ZERO
          r_ptr++;
          --r_ptr_end;
       }
@@ -3415,7 +2788,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
 
                   if (*p == 0) {
                       // remove '**<numb> from wildcards
-                      mch_memmove(rest_of_wildcards.c,
+                      MEMMOVE(rest_of_wildcards.c,
                         rest_of_wildcards.c + 3,
                         (Unt)(rest_of_wildcards.len - 3) + 1);    // +1 for ZERO
                       rest_of_wildcards.len -= 3;
@@ -3455,7 +2828,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
             }
 
             //Expand wildcards like "*" and "$VAR". If the path is a URL don't try this.
-            if (path_with_url(dirptrs[0])) {
+            if (strStartsWithUrl(dirptrs[0])) {
                stackp->files.c = ALLOC_ONE(CS);
                if (stackp->files.c
                      && (stackp->files.c[0] = copySubstr(dirptrs[0], filePath.len)) != NULL)
@@ -3484,7 +2857,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
 
                //We don't have any wildcards to expand, so we have to check for the final file now
                for (Unt i = stackp->ffs_filearray_cur; i < stackp->files.len; ++i) {
-                  if (!path_with_url(stackp->files.c[i]) && !mch_isdir(stackp->files.c[i]))
+                  if (!strStartsWithUrl(stackp->files.c[i]) && !mch_isdir(stackp->files.c[i]))
                       continue;   // not a directory
 
                   // prepare the filename to be checked for existence below
@@ -3512,7 +2885,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                      suf = curBook->o.suffixesAdd;
                   for (;;) {
                       // if file exists and we didn't already find it
-                      if ((path_with_url(filePath.c)
+                      if ((strStartsWithUrl(filePath.c)
                           || (mch_getperm(filePath.c) >= 0
                               && (searchCtx->whatToFind == FINDFILE_BOTH
                                    || ((searchCtx->whatToFind == FINDFILE_DIR)
@@ -3549,14 +2922,14 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                         stackp->ffs_filearray_cur = i + 1;
                         ff_push(searchCtx, stackp);
 
-                        if (!path_with_url(filePath.c))
+                        if (!strStartsWithUrl(filePath.c))
                            filePath.len = simplify_filename(filePath.c);
 
                         if (mch_dirname(fileExpansionS.c, MAXPATHL) == OK) {
                            fileExpansionS.len = STRLEN(fileExpansionS.c);
                            CS p = shorten_fname(filePath.c, fileExpansionS.c);
                            if (p) {
-                              mch_memmove(filePath.c, p,
+                              MEMMOVE(filePath.c, p,
                                   (Unt)((filePath.c + filePath.len) - p) + 1);  // +1 for ZERO
                               filePath.len -= (p - filePath.c);
                            }
@@ -3810,7 +3183,7 @@ checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathl
 
    // For a URL we only compare the name, otherwise we compare the
    // device/inode (unix) or the full path name (not Unix).
-   if (path_with_url(fname.c)) {
+   if (strStartsWithUrl(fname.c)) {
       copySubstrToAllocation(fileExpansionS.c, fname);
       fileExpansionS.len = fname.len;
       url = true;
@@ -4107,7 +3480,7 @@ findFileInPathImpl(
          // Change all "\ " to " ".
          for (CS ptr = *file_to_find; *ptr != ZERO; ++ptr) {
             if (ptr[0] == '\\' && ptr[1] == ' ') {
-                mch_memmove(ptr, ptr + 1, (Unt)((*file_to_find + file_to_findlen) - (ptr + 1)) + 1);
+                MEMMOVE(ptr, ptr + 1, (Unt)((*file_to_find + file_to_findlen) - (ptr + 1)) + 1);
                 --file_to_findlen;
             }
          } 
@@ -4133,7 +3506,7 @@ findFileInPathImpl(
          Unt   rel_fnamelen = 0;
          CS suffix;
 
-         if (path_with_url(*file_to_find)) {
+         if (strStartsWithUrl(*file_to_find)) {
             file_name = copySubstr(*file_to_find, file_to_findlen);
             goto theend;
          }
@@ -4554,8 +3927,8 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
          if (buf[1] == ZERO)
             buf[plen] = ZERO;
          else
-            mch_memmove(buf + plen, buf + 2, (buflen - 2) + 1); // +1 for ZERO
-         mch_memmove(buf, curBook->fullFileName, plen);
+            MEMMOVE(buf + plen, buf + 2, (buflen - 2) + 1); // +1 for ZERO
+         MEMMOVE(buf, curBook->fullFileName, plen);
          buflen = simplify_filename(buf);
       } ei (buf[0] == ZERO) {
          // relative to current directory
@@ -4563,17 +3936,17 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
          if (curdirlen == 0)
             curdirlen = STRLEN(curdir);
          buflen = curdirlen;
-      } ei (path_with_url(buf))
+      } ei (strStartsWithUrl(buf))
          // URL can't be used here
          continue;
-      ei (fiIsRelative(buf)) {
+      ei (strIsRelative(buf)) {
          // Expand relative path to their full path equivalent
          if (curdirlen == 0)
             curdirlen = STRLEN(curdir);
          if (curdirlen + buflen + 3 > MAXPATHL)
             continue;
 
-         mch_memmove(buf + curdirlen + 1, buf, buflen + 1); // +1 for ZERO
+         MEMMOVE(buf + curdirlen + 1, buf, buflen + 1); // +1 for ZERO
          STRCPY(buf, curdir);
          buf[curdirlen] = '/';
          buflen = simplify_filename(buf);
@@ -4667,7 +4040,7 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
             && is_unique(path_cutoff, matches, i)
       ) {
          sort_again = true;
-         mch_memmove(path, path_cutoff, STRLEN(path_cutoff) + 1);
+         MEMMOVE(path, path_cutoff, STRLEN(path_cutoff) + 1);
       } else {
          // Here all files can be reached without path, so get shortest
          // unique path.  We start at the end of the path.
@@ -4679,14 +4052,14 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
                && path_cutoff != NULL && pathsep_p + 1 >= path_cutoff
             ) {
                 sort_again = true;
-                mch_memmove(path, pathsep_p + 1,
+                MEMMOVE(path, pathsep_p + 1,
                    (Unt)((path + len) - (pathsep_p + 1)) + 1);  // +1 for ZERO
                 break;
             }
          }
       }
 
-      if (!fiIsRelative(path)) {
+      if (!strIsRelative(path)) {
          //Last resort: shorten relative to curdir if possible. 'possible' means:
          //1. It is under the current directory.
          //2. The result is actually shorter than the original.
@@ -4793,7 +4166,7 @@ simplify_filename(CS filename) {
    CS p_end = p + STRLEN(p); // point to ZERO at end of string "p"
    // Posix says that "//path" is unchanged but "///path" is "/path".
    if (start > filename + 2) {
-      mch_memmove(filename + 1, p, (Unt)(p_end - p) + 1);       // +1 for ZERO
+      MEMMOVE(filename + 1, p, (Unt)(p_end - p) + 1);       // +1 for ZERO
       p_end -= (Unt)(p - (filename + 1));
       start = p = filename + 1;
    }
@@ -4802,7 +4175,7 @@ simplify_filename(CS filename) {
       // At this point "p" is pointing to the char following a single "/"
       // or "p" is at the "start" of the (absolute or relative) path name.
       if (*p == '/') {
-         mch_memmove(p, p + 1, (Unt)(p_end - (p + 1)) + 1); // remove duplicate "/"
+         MEMMOVE(p, p + 1, (Unt)(p_end - (p + 1)) + 1); // remove duplicate "/"
          --p_end;
       } ei (p[0] == '.' && (p[1] == '/' || p[1] == ZERO)) {
          if (p == start && relative)
@@ -4818,7 +4191,7 @@ simplify_filename(CS filename) {
             } ei (p > start)
                 --p;      // strip preceding path separator
 
-            mch_memmove(p, tail, (Unt)(p_end - tail) + 1);
+            MEMMOVE(p, tail, (Unt)(p_end - tail) + 1);
             p_end -= (Unt)(tail - p);
          }
       } ei (p[0] == '.' && p[1] == '.' && (p[2] == '/' || p[2] == ZERO)) {
@@ -4905,18 +4278,18 @@ simplify_filename(CS filename) {
                   if (p > start && tail[-1] == '.')
                      --p;
 
-                  mch_memmove(p, tail, (Unt)(p_end - tail) + 1);   // strip previous component
+                  MEMMOVE(p, tail, (Unt)(p_end - tail) + 1);   // strip previous component
                   p_end -= (Unt)(tail - p);
                }
 
                --components;
             }
          } ei (p == start && !relative) {  // leading "/.." or "/../"
-            mch_memmove(p, tail, (Unt)(p_end - tail) + 1);      // strip ".." or "../"
+            MEMMOVE(p, tail, (Unt)(p_end - tail) + 1);      // strip ".." or "../"
             p_end -= (Unt)(tail - p);
          } else {
             if (p == start + 2 && p[-2] == '.') {  // leading "./../"
-               mch_memmove(p - 2, p, (Unt)(p_end - p) + 1); // strip leading "./"
+               MEMMOVE(p - 2, p, (Unt)(p_end - p) + 1); // strip leading "./"
                p_end -= 2;
                tail -= 2;
             }
@@ -5319,6 +4692,21 @@ filemess(Book* book, CS name, CS s, int attr){
    msg_clr_eos();
    out_flush();
    msg_scrolled_ign = false;
+}
+
+private CS pnameP;
+
+private void
+perror_exit(int ret) {
+   fprintf(stderr, "%s: ", pnameP);
+   perror(NULL);
+   exit(ret);
+}
+
+private void
+errorExit(int ret, CS msg) {
+   fprintf(stderr, "%s: %s\n", pnameP, msg);
+   exit(ret);
 }
 
 //Read lines from file "fname" into the book after line "from".
@@ -5823,7 +5211,7 @@ readfile(
                break;
             }
             if (linerest)   // copy characters from the previous buffer
-               mch_memmove(nebuffer, ptr - linerest, (Unt)linerest);
+               MEMMOVE(nebuffer, ptr - linerest, (Unt)linerest);
             eeglFree(buffer);
             buffer = nebuffer;
             ptr = buffer + linerest;
@@ -6144,6 +5532,43 @@ theend:
    return retval;
 }
 
+private int
+getc_or_die(FILE *fpi) {
+   int c = getc(fpi);
+   if (c == EOF && ferror(fpi))
+      perror_exit(2);
+   return c;
+}
+
+private void
+putc_or_die(int c, FILE *fpo) {
+  if (putc(c, fpo) == EOF)
+      perror_exit(3);
+}
+
+private void
+fputs_or_die(CS s, FILE* fpo) {
+   if (fputs((char*)s, fpo) == EOF)
+      perror_exit(3);
+}
+
+private void
+fclose_or_die(FILE *fpi, FILE *fpo) {
+   if (fclose(fpo) != 0)
+      perror_exit(3);
+   if (fclose(fpi) != 0)
+      perror_exit(2);
+}
+
+//Ignore text on "fpi" until end-of-line or end-of-file. Return the '\n' or EOF character.
+//When an error is encountered exit with an error message.
+private int
+skip_to_eol(FILE *fpi, int c) {
+   while (c != '\n' && c != EOF)
+      c = getc_or_die(fpi);
+   return c;
+}
+
 //}}}
 //{{{blob i/o
 
@@ -6297,7 +5722,11 @@ void
 msg_add_fname(Book* book, CS fname){
    if (!fname)
       fname = S"-stdin-";
-   home_replace(book, fname, IObuff + 1, IOSIZE - 4, true);
+   if (book && book->kind == BOOK_HELP) {
+      strPrintShortName(fname, IObuff + 1, IOSIZE - 4);
+   } else {
+      home_replace(fname, IObuff + 1, IOSIZE - 4, true);
+   }
    IObuff[0] = '"';
    STRCAT(IObuff, "\" ");
 }
@@ -6375,8 +5804,8 @@ void
 shorten_buf_fname(Book* book, CS dirname, int force) {
    if (book->currFileName
        && !bt_nofilename(book)
-       && !path_with_url(book->currFileName)
-       && (force || book->shortFileName == NULL || !fiIsRelative(book->shortFileName))
+       && !strStartsWithUrl(book->currFileName)
+       && (force || book->shortFileName == NULL || !strIsRelative(book->shortFileName))
    ) {
       if (book->shortFileName != book->fullFileName)
          EE_CLEAR(book->shortFileName);
@@ -6466,7 +5895,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '
    STRCPY(s, ext);
    //Prepend the dot.
    if (prepend_dot && *(e = fiGetShortFiName(retval)) != '.') {
-      mch_memmove(e + 1, e, (Unt)(((fnamelen + extlen) - (e - retval)) + 1));   // +1 for ZERO
+      MEMMOVE(e + 1, e, (Unt)(((fnamelen + extlen) - (e - retval)) + 1));   // +1 for ZERO
       *e = '.';
    }
 
@@ -6960,7 +6389,7 @@ fiCheckBookTimestamp(
 
          // Any existing undo file is unusable, write it now.
          curBook = book;
-         u_compute_hash(hash);
+         u_compute_hash(OUT hash);
          u_write_undo(NULL, false, book, hash);
          curBook = save_curbuf;
       }
@@ -7995,17 +7424,17 @@ mch_copy_xattr(CS from_file, CS to_file) {
             switch (errno) {
             case E2BIG:
                errmsg = e_xattr_e2big;
-               goto error_exit;
+               goto exitWithError;
             case ENOTSUP:
             case EACCES:
             case EPERM:
                break;
             case ERANGE:
                errmsg = e_xattr_erange;
-               goto error_exit;
+               goto exitWithError;
             default:
                errmsg = e_xattr_other;
-               goto error_exit;
+               goto exitWithError;
             }
          }
 
@@ -8022,7 +7451,7 @@ mch_copy_xattr(CS from_file, CS to_file) {
 
       val = alloc(max_vallen + 1);
    }
-error_exit:
+exitWithError:
    eeglFree(xattr_buf);
    eeglFree(val);
 
@@ -8186,6 +7615,743 @@ fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
    }
    r[totalLen + extLen] = ZERO;
    return r;
+}
+
+//}}}
+//{{{xxd (hex dumping of binary data)
+
+private Byte version[] = "xxd 2025-08-08 by Juergen Welse ifgert et al.";
+private Byte osver[] = "";
+
+#define BIN_READ(dummy)  "r"
+#define BIN_WRITE(dummy) "w"
+#define BIN_CREAT(dummy) O_CREAT
+#define BIN_ASSIGN(fp, dummy) fp
+#define PATH_SEP '/'
+
+// open has only two arguments on the Mac
+#if __MWERKS__
+# define OPEN(name, mode, umask) open(name, mode)
+#else
+# define OPEN(name, mode, umask) open(name, mode, umask)
+#endif
+
+#ifndef __P
+# if defined(__STDC__)
+#  define __P(a) a
+# else
+#  define __P(a) ()
+# endif
+#endif
+
+#define TRY_SEEK   /* attempt to use lseek, or skip forward by reading */
+#define COLS 256   /* change here, if you ever need more columns */
+
+//LLEN is the maximum length of a line; other than the visible characters
+//we need to consider also the escape color sequence prologue/epilogue,
+//(11 bytes for each character).
+#define LLEN \
+    (39            /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
+    + 2            /* ": " */ \
+    + 13 * COLS    /* hex dump with colors */ \
+    + (COLS - 1)   /* whitespace between groups if "-g1" option given and "-c" maxed out */ \
+    + 2            /* whitespace */ \
+    + 12 * COLS    /* ASCII dump with colors */ \
+    + 2)           /* "\n\0" */
+
+//LLEN_NO_COLOR is the maximum length of a line excluding the colors.
+#define LLEN_NO_COLOR \
+    (39         /* addr: ⌈log10(ULONG_MAX)⌉ if "-d" flag given. We assume ULONG_MAX = 2**128 */ \
+    + 2         /* ": " */ \
+    + 9 * COLS  /* hex dump, worst case: bitwise output using -b */ \
+    + 2         /* whitespace */ \
+    + COLS      /* ASCII dump */ \
+    + 2)        /* "\n\0" */
+
+private Byte hexxa[] = "0123456789abcdef0123456789ABCDEF";
+private CS hexx = hexxa;
+
+#define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
+
+#define COLOR_PROLOGUE(color) \
+l_colored[c++] = '\033'; \
+l_colored[c++] = '['; \
+l_colored[c++] = '1'; \
+l_colored[c++] = ';'; \
+l_colored[c++] = '3'; \
+l_colored[c++] = (color); \
+l_colored[c++] = 'm';
+
+#define COLOR_EPILOGUE \
+l_colored[c++] = '\033'; \
+l_colored[c++] = '['; \
+l_colored[c++] = '0'; \
+l_colored[c++] = 'm';
+
+#define COLOR_RED '1'
+#define COLOR_GREEN '2'
+#define COLOR_YELLOW '3'
+#define COLOR_BLUE '4'
+#define COLOR_WHITE '7'
+
+// the different hextypes known by this program:
+#define HEX_NORMAL         0x00 // no flags set
+#define HEX_POSTSCRIPT     0x01
+#define HEX_CINCLUDE       0x02
+#define HEX_BITS           0x04 // not hex a dump, but bits: 01111001
+#define HEX_LITTLEENDIAN   0x08
+
+//Max. cols binary characters are decoded from the input stream per line.
+//Two adjacent garbage characters after evaluated data delimit valid data.
+//Everything up to the next newline is discarded.
+//
+//The name is historic and came from 'undo type opt h'.
+private int
+huntype(
+  FILE *fpi,
+  FILE *fpo,
+  int cols,
+  int hextype,
+  long base_off
+) {
+  int c, ign_garb = 1, n1 = -1, n2 = 0, n3 = 0, p = cols, b = 0, bcnt = 0;
+  long have_off = 0, want_off = 0;
+
+  rewind(fpi);
+
+  while ((c = getc(fpi)) != EOF) {
+     if (c == '\r')   // Doze style input file?
+        continue;
+
+      //Allow multiple spaces.  This doesn't work when there is normal text after the hex codes in 
+      //the last line that looks like hex, thus only use it for PostScript format.
+      if (hextype == HEX_POSTSCRIPT && (c == ' ' || c == '\n' || c == '\t'))
+         continue;
+
+      if (hextype == HEX_NORMAL || hextype == HEX_POSTSCRIPT) {
+         n3 = n2;
+         n2 = n1;
+
+         n1 = parse_hex_digit(c);
+         if (n1 == -1 && ign_garb)
+            continue;
+      } else {// HEX_BITS
+         n1 = parse_hex_digit(c);
+         if (n1 == -1 && ign_garb)
+            continue;
+
+         if (c >= '0' && c <= '1') {
+            b = ((b << 1) | (c - '0'));
+            ++bcnt;
+         }
+      }
+
+      ign_garb = 0;
+
+      if ((hextype != HEX_POSTSCRIPT) && (p >= cols)) {
+         if (hextype == HEX_NORMAL) {
+            if (n1 < 0) {
+               p = 0;
+               continue;
+            }
+            want_off = (want_off << 4) | n1;
+         } else {/* HEX_BITS */
+            if (n1 < 0) {
+              p = 0;
+              bcnt = 0;
+              continue;
+            }
+            want_off = (want_off << 4) | n1;
+         }
+         continue;
+      }
+
+      if (base_off + want_off != have_off) {
+         if (fflush(fpo) != 0)
+            perror_exit(3);
+         if (fseek(fpo, base_off + want_off - have_off, SEEK_CUR) >= 0)
+            have_off = base_off + want_off;
+         if (base_off + want_off < have_off)
+            errorExit(5, S"Sorry, cannot seek backwards.");
+         for (; have_off < base_off + want_off; have_off++)
+            putc_or_die(0, fpo);
+      }
+
+        if (hextype == HEX_NORMAL || hextype == HEX_POSTSCRIPT) {
+            if (n2 >= 0 && n1 >= 0) {
+               putc_or_die((n2 << 4) | n1, fpo);
+               have_off++;
+               want_off++;
+               n1 = -1;
+               if (!hextype && (++p >= cols))
+                  // skip the rest of the line as garbage
+                  c = skip_to_eol(fpi, c);
+            } ei (n1 < 0 && n2 < 0 && n3 < 0)
+             // already stumbled into garbage, skip line, wait and see
+             c = skip_to_eol(fpi, c);
+      } else { // HEX_BITS
+        if (bcnt == 8) {
+            putc_or_die(b, fpo);
+            have_off++;
+            want_off++;
+            b = 0;
+            bcnt = 0;
+            if (++p >= cols)
+               // skip the rest of the line as garbage
+               c = skip_to_eol(fpi, c);
+          }
+      }
+
+      if (c == '\n') {
+         if (hextype == HEX_NORMAL || hextype == HEX_BITS)
+            want_off = 0;
+         p = cols;
+         ign_garb = 1;
+      }
+   }
+   if (fflush(fpo) != 0)
+      perror_exit(3);
+   fseek(fpo, 0L, SEEK_END);
+   fclose_or_die(fpi, fpo);
+   return 0;
+}
+
+//Print line l with given colors.
+private void
+print_colored_line(FILE* fp, CS l, CS colors) {
+  static Byte l_colored[LLEN + 1];
+
+  if (colors) {
+      int c = 0;
+      if (colors[0]) {
+         COLOR_PROLOGUE(colors[0])
+      }
+      l_colored[c++] = l[0];
+      int i;
+      for (i = 1; l[i]; i++) {
+         if (colors[i] != colors[i-1]) {
+            if (colors[i-1]) {
+               COLOR_EPILOGUE
+            }
+            if (colors[i]) {
+               COLOR_PROLOGUE(colors[i])
+            }
+         }
+         l_colored[c++] = l[i];
+      }
+
+      if (colors[i]) {
+          COLOR_EPILOGUE
+      }
+      l_colored[c++] = '\0';
+
+      fputs_or_die(l_colored, fp);
+   } else
+      fputs_or_die(l, fp);
+}
+
+private void
+exit_with_usage(void) {
+  fprintf(stderr, "Usage:\n       %s [options] [infile [outfile]]\n", pnameP);
+  fprintf(stderr, "    or\n       %s -r [-s [-]offset] [-c cols] [-ps] [infile [outfile]]\n", pnameP);
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "    -a          toggle autoskip: A single '*' replaces nul-lines. Default off.\n");
+  fprintf(stderr, "    -b          binary digit dump (incompatible with -ps). Default hex.\n");
+  fprintf(stderr, "    -C          capitalize variable names in C include file style (-i).\n");
+  fprintf(stderr, "    -c cols     format <cols> octets per line. Default 16 (-i: 12, -ps: 30).\n");
+  fprintf(stderr, "    -e          little-endian dump (incompatible with -ps,-i,-r).\n");
+  fprintf(stderr, "    -g bytes    number of octets per group in normal output. Default 2 (-e: 4).\n");
+  fprintf(stderr, "    -h          print this summary.\n");
+  fprintf(stderr, "    -i          output in C include file style.\n");
+  fprintf(stderr, "    -l len      stop after <len> octets.\n");
+  fprintf(stderr, "    -n name     set the variable name used in C include output (-i).\n");
+  fprintf(stderr, "    -o off      add <off> to the displayed file position.\n");
+  fprintf(stderr, "    -ps         output in postscript plain hexdump style.\n");
+  fprintf(stderr, "    -r          reverse operation: convert (or patch) hexdump into binary.\n");
+  fprintf(stderr, "    -r -s off   revert with <off> added to file positions found in hexdump.\n");
+  fprintf(stderr, "    -d          show offset in decimal instead of hex.\n");
+  fprintf(stderr, "    -s %sseek  start at <seek> bytes abs. %sinfile offset.\n",
+        "[+][-]", "(or +: rel.) ");
+  fprintf(stderr, "    -u          use upper case hex letters.\n");
+  fprintf(stderr, "    -R when     colorize the output; <when> can be 'always', 'auto' or 'never'. "
+        "Default: 'auto'.\n"),
+  fprintf(stderr, "    -v          show version: \"%s%s\".\n", version, osver);
+  exit(1);
+}
+
+// Use a macro to allow for different arguments.
+#define FPRINTF_OR_DIE(args) if (fprintf args < 0) perror_exit(3)
+
+private int
+enable_color(void) {
+   return isatty(STDOUT_FILENO);
+}
+
+//Print line l with given colors. If nz is false, xxdline regards the line as a line of
+//zeroes. If there are three or more consecutive lines of zeroes,
+//they are replaced by a single '*' character.
+//
+//If the output ends with more than two lines of zeroes, you
+//should call xxdline again with l being the the last line and nz
+//negative. This ensures that the last line is shown even when it is all zeroes.
+//
+//If nz is always positive, lines are never suppressed.
+private void
+xxdline(FILE* fp, CS l, CS colors, int nz) {
+   static Byte z[LLEN_NO_COLOR + 1];
+   static Byte z_colors[LLEN_NO_COLOR + 1];
+   static Byte zero_seen = 0;
+
+   if (!nz && zero_seen == 1) {
+      STRCPY(z, l);
+      memcpy(z_colors, colors, STRLEN(z));
+   }
+
+   if (nz || !zero_seen++) {
+      if (nz) {
+         if (nz < 0)
+            zero_seen--;
+         if (zero_seen == 2)
+            print_colored_line(fp, z, z_colors);
+         if (zero_seen > 2)
+            fputs_or_die(S"*\n", fp);
+      }
+      if (nz >= 0 || zero_seen > 0)
+         print_colored_line(fp, l, colors);
+
+      if (nz)
+         zero_seen = 0;
+   }
+
+   //If zero_seen > 3, then its exact value doesn't matter, so long as it
+   //remains >3 and incrementing it will not cause overflow.
+   if (zero_seen >= 0x7F)
+      zero_seen = 4;
+}
+
+int
+xxdMain(int argc, char* argv[]) {
+   FILE *fp, *fpo;
+   int c, e, p = 0, relseek = 1, negseek = 0, revert = 0, i, x;
+   int cols = 0, colsgiven = 0, nonzero = 0, autoskip = 0, hextype = HEX_NORMAL;
+   int capitalize = 0, decimal_offset = 0;
+   int octspergrp = -1;   // number of octets grouped in output
+   int grplen;      // total chars per octet group excluding colors 
+   long length = -1, n = 0, seekoff = 0;
+   unsigned long displayoff = 0;
+   static Byte l[LLEN_NO_COLOR + 1];  // static because it may be too big for stack
+   static Byte colors[LLEN_NO_COLOR + 1]; // color array */
+   CS pp;
+   CS varname = NULL;
+   int addrlen = 9;
+   int color = 0;
+   Byte cur_color = 0;
+
+   CS no_color = (CS)getenv("NO_COLOR");
+   if (no_color == NULL || no_color[0] == '\0')
+      color = enable_color();
+
+   pnameP = (CS)argv[0];
+   for (pp = pnameP; *pp; ) {
+      if (*pp++ == PATH_SEP)
+         pnameP = pp;
+   } 
+
+   while (argc >= 2) {
+      pp = (CS)argv[1] + (!STRNCMP(argv[1], "--", 2) && argv[1][2]);
+      if (!STRNCMP(pp, "-a", 2)) autoskip = 1 - autoskip;
+      ei (!STRNCMP(pp, "-b", 2)) hextype |= HEX_BITS;
+      ei (!STRNCMP(pp, "-e", 2)) hextype |= HEX_LITTLEENDIAN;
+      ei (!STRNCMP(pp, "-u", 2)) hexx = hexxa + 16;
+      ei (!STRNCMP(pp, "-p", 2)) hextype |= HEX_POSTSCRIPT;
+      ei (!STRNCMP(pp, "-i", 2)) hextype |= HEX_CINCLUDE;
+      ei (!STRNCMP(pp, "-C", 2)) capitalize = 1;
+      ei (!STRNCMP(pp, "-d", 2)) decimal_offset = 1;
+      ei (!STRNCMP(pp, "-r", 2)) revert++;
+      ei (!STRNCMP(pp, "-v", 2)) {
+         fprintf(stderr, "%s%s\n", version, osver);
+         exit(0);
+      } ei (!STRNCMP(pp, "-c", 2)) {
+         if (pp[2] && !STRNCMP("apitalize", pp + 2, 9))
+            capitalize = 1;
+         ei (pp[2] && STRNCMP("ols", pp + 2, 3)) {
+            colsgiven = 1;
+            cols = (int)STRTOL(pp + 2, NULL, 0);
+         } else {
+            if (!argv[2])
+               exit_with_usage();
+            colsgiven = 1;
+            cols = (int)strtol(argv[2], NULL, 0);
+            argv++;
+            argc--;
+         }
+      } ei (!STRNCMP(pp, "-g", 2)) {
+      if (pp[2] && STRNCMP("roup", pp + 2, 4))
+       octspergrp = (int)STRTOL(pp + 2, NULL, 0);
+     else {
+         if (!argv[2])
+      exit_with_usage();
+         octspergrp = (int)strtol(argv[2], NULL, 0);
+         argv++;
+         argc--;
+       }
+     } ei (!STRNCMP(pp, "-o", 2)) {
+        int reloffset = 0;
+        int negoffset = 0;
+        if (pp[2] && STRNCMP("ffset", pp + 2, 5))
+            displayoff = strtoul((char*)(pp + 2), NULL, 0);
+        else {
+            if (!argv[2])
+               exit_with_usage();
+
+            if (argv[2][0] == '+')
+               reloffset++;
+            if (argv[2][reloffset] == '-')
+               negoffset++;
+
+            if (negoffset)
+               displayoff = ULONG_MAX - strtoul(argv[2] + reloffset+negoffset, NULL, 0) + 1;
+            else
+               displayoff = strtoul(argv[2] + reloffset+negoffset, NULL, 0);
+
+            argv++;
+            argc--;
+         }
+      } ei (!STRNCMP(pp, "-s", 2)) {
+         relseek = 0;
+         negseek = 0;
+         if (pp[2] && STRNCMP("kip", pp+2, 3) && STRNCMP("eek", pp+2, 3)) {
+            if (pp[2] == '+')
+               relseek++;
+            if (pp[2+relseek] == '-')
+               negseek++;
+            seekoff = STRTOL(pp + 2 + relseek + negseek, (char **)NULL, 0);
+          } else {
+            if (!argv[2])
+               exit_with_usage();
+            if (argv[2][0] == '+')
+               relseek++;
+            if (argv[2][relseek] == '-')
+               negseek++;
+            seekoff = strtol(argv[2] + relseek+negseek, (char **)NULL, 0);
+            argv++;
+            argc--;
+         }
+      } ei (!STRNCMP(pp, "-l", 2)) {
+         if (pp[2] && STRNCMP("en", pp + 2, 2))
+            length = STRTOL(pp + 2, NULL, 0);
+         else {
+            if (!argv[2])
+               exit_with_usage();
+            length = strtol(argv[2], (char **)NULL, 0);
+            argv++;
+            argc--;
+         }
+      } ei (!STRNCMP(pp, "-n", 2)) {
+         if (pp[2] && STRNCMP("ame", pp + 2, 3))
+            varname = pp + 2;
+         else {
+            if (!argv[2])
+               exit_with_usage();
+            varname = (CS)argv[2];
+            argv++;
+            argc--;
+         }
+      } ei (!STRNCMP(pp, "-R", 2)) {
+         CS pw = pp + 2;
+         if (pw[0] == ZERO) {
+            pw = (CS)argv[2];
+            argv++;
+            argc--;
+         }
+         if (!pw)
+            exit_with_usage();
+         if (!STRNCMP(pw, "always", 6)) {
+            (void)enable_color();
+            color = 1;
+         } ei (!STRNCMP(pw, "never", 5))
+            color = 0;
+         ei (!STRNCMP(pw, "auto", 4))
+            color = enable_color();
+         else
+            exit_with_usage();
+      } ei (!strcmp(argv[1], "--")) {  // end of options
+         argv++;
+         argc--;
+         break;
+      } ei (pp[0] == '-' && pp[1])   // unknown option
+         exit_with_usage();
+      else
+         break;            // not an option
+
+      argv++;            // advance to next argument
+      argc--;
+   }
+
+   if (hextype != (HEX_CINCLUDE | HEX_BITS)) {
+      // Allow at most one bit to be set in hextype
+      if (hextype & (hextype - 1))
+         errorExit(1, S"only one of -b, -e, -u, -p, -i can be used");
+   }
+
+  if (!colsgiven || (!cols && hextype != HEX_POSTSCRIPT))
+    switch (hextype) {
+      case HEX_POSTSCRIPT:   cols = 30; break;
+      case HEX_CINCLUDE:   cols = 12; break;
+      case HEX_CINCLUDE | HEX_BITS:
+      case HEX_BITS:      cols = 6; break;
+      case HEX_NORMAL:
+      case HEX_LITTLEENDIAN:
+      default:         cols = 16; break;
+      }
+
+  if (octspergrp < 0)
+    switch (hextype) {
+      case HEX_CINCLUDE | HEX_BITS:
+      case HEX_BITS:      octspergrp = 1; break;
+      case HEX_NORMAL:      octspergrp = 2; break;
+      case HEX_LITTLEENDIAN:   octspergrp = 4; break;
+      case HEX_POSTSCRIPT:
+      case HEX_CINCLUDE:
+      default:         octspergrp = 0; break;
+      }
+
+  if ((hextype == HEX_POSTSCRIPT && cols < 0) 
+        || (hextype != HEX_POSTSCRIPT && cols < 1) 
+        || ((hextype == HEX_NORMAL || hextype == HEX_BITS || hextype == HEX_LITTLEENDIAN)
+                         && (cols > COLS))
+   ) {
+      fprintf(stderr, "%s: invalid number of columns (max. %d).\n", pnameP, COLS);
+      exit(1);
+   }
+
+   if (octspergrp < 1 || octspergrp > cols)
+      octspergrp = cols;
+   ei (hextype == HEX_LITTLEENDIAN && (octspergrp & (octspergrp-1)))
+      errorExit(1, S"number of octets per group must be a power of 2 with -e.");
+
+   if (argc > 3)
+      exit_with_usage();
+
+   if (argc == 1 || (argv[1][0] == '-' && !argv[1][1]))
+      BIN_ASSIGN(fp = stdin, !revert);
+   else {
+      if ((fp = fopen(argv[1], BIN_READ(!revert))) == NULL) {
+         fprintf(stderr,"%s: ", pnameP);
+         perror(argv[1]);
+         return 2;
+      }
+   }
+
+   if (argc < 3 || (argv[2][0] == '-' && !argv[2][1]))
+      BIN_ASSIGN(fpo = stdout, revert);
+   else {
+      int fd;
+      int mode = revert ? O_WRONLY : (O_TRUNC|O_WRONLY);
+
+      if (((fd = OPEN(argv[2], mode | BIN_CREAT(revert), 0666)) < 0) 
+           || (fpo = fdopen(fd, BIN_WRITE(revert))) == NULL
+      ) {
+        fprintf(stderr, "%s: ", pnameP);
+        perror(argv[2]);
+        return 3;
+      }
+      rewind(fpo);
+   }
+
+   if (revert) {
+      switch (hextype) {
+      case HEX_NORMAL:
+      case HEX_POSTSCRIPT:
+      case HEX_BITS:
+         return huntype(fp, fpo, cols, hextype, negseek ? -seekoff : seekoff);
+         break;
+      default:
+         errorExit(-1, S"Sorry, cannot revert this type of hexdump");
+      }
+   } 
+
+   if (seekoff || negseek || !relseek) {
+      if (relseek)
+         e = fseek(fp, negseek ? -seekoff : seekoff, SEEK_CUR);
+      else
+         e = fseek(fp, negseek ? -seekoff : seekoff, negseek ? SEEK_END : SEEK_SET);
+      if (e < 0 && negseek)
+         errorExit(4, S"Sorry, cannot seek.");
+      if (e >= 0)
+         seekoff = ftell(fp);
+      else {
+         long s = seekoff;
+
+         while (s--) {
+            if (getc_or_die(fp) == EOF) {
+               errorExit(4, S"Sorry, cannot seek.");
+            }
+         } 
+      }
+   }
+
+   if (hextype & HEX_CINCLUDE) {
+      // A user-set variable name overrides fp == stdin
+      if (!varname && fp != stdin)
+         varname = (CS)argv[1];
+
+      if (varname) {
+         FPRINTF_OR_DIE((fpo, "unsigned char %s", isdigit((unsigned char)varname[0]) ? "__" : ""));
+         for (e = 0; (c = varname[e]) != 0; e++)
+            putc_or_die(isalnum((unsigned char)c) ? CONDITIONAL_CAPITALIZE(c) : '_', fpo);
+         fputs_or_die(S"[] = {\n", fpo);
+      }
+
+      p = 0;
+      while ((length < 0 || p < length) && (c = getc_or_die(fp)) != EOF) {
+        if ((hextype & HEX_BITS) != 0) {
+            if (p == 0)
+               fputs_or_die(S"  ", fpo);
+            ei (p % cols == 0)
+               fputs_or_die(S",\n  ", fpo);
+            else
+               fputs_or_die(S", ", fpo);
+
+            FPRINTF_OR_DIE((fpo, "0b"));
+            for (int j = 7; j >= 0; j--)
+               putc_or_die((c & (1 << j)) ? '1' : '0', fpo);
+            p++;
+          } else {
+            FPRINTF_OR_DIE(
+               (fpo, 
+                (hexx == hexxa) ? "%s0x%02x" : "%s0X%02X", 
+                   (p % cols) ? ", " : (!p ? "  " : ",\n  "), c)
+            );
+            p++;
+          }
+      }
+
+      if (p)
+         fputs_or_die(S"\n", fpo);
+
+      if (varname != NULL) {
+         fputs_or_die(S"};\n", fpo);
+         FPRINTF_OR_DIE((fpo, "unsigned int %s", isdigit((unsigned char)varname[0]) ? "__" : ""));
+         for (e = 0; (c = varname[e]) != 0; e++)
+            putc_or_die(isalnum((unsigned char)c) ? CONDITIONAL_CAPITALIZE(c) : '_', fpo);
+         FPRINTF_OR_DIE((fpo, "_%s = %d;\n", capitalize ? "LEN" : "len", p));
+      }
+
+      fclose_or_die(fp, fpo);
+      return 0;
+   }
+
+   if (hextype == HEX_POSTSCRIPT) {
+      p = cols;
+      while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
+         putc_or_die(hexx[(e >> 4) & 0xf], fpo);
+         putc_or_die(hexx[e & 0xf], fpo);
+         n++;
+         if (cols > 0 && !--p) {
+            putc_or_die('\n', fpo);
+            p = cols;
+         }
+      }
+      if (cols == 0 || p < cols)
+         putc_or_die('\n', fpo);
+      fclose_or_die(fp, fpo);
+      return 0;
+   }
+
+   // hextype: HEX_NORMAL or HEX_BITS or HEX_LITTLEENDIAN 
+   if (hextype != HEX_BITS) {
+      grplen = octspergrp + octspergrp + 1;   /* chars per octet group */
+   } else   // hextype == HEX_BITS
+      grplen = 8 * octspergrp + 1;
+
+   while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
+      if (p == 0) {
+         addrlen = SPRINTF(
+            l, decimal_offset ? S"%08ld:" : S"%08lx:", ((Ulong)(n + seekoff + displayoff))
+         );
+         for (c = addrlen; c < LLEN_NO_COLOR; l[c++] = ' ')
+            {}
+      }
+      x = hextype == HEX_LITTLEENDIAN ? p ^ (octspergrp-1) : p;
+      c = addrlen + 1 + (grplen * x) / octspergrp;
+      if (hextype == HEX_NORMAL || hextype == HEX_LITTLEENDIAN) {
+         if (color) {
+            cur_color = get_color_char(e);
+            colors[c] = cur_color;
+            colors[c+1] = cur_color;
+         }
+
+         l[c]   = hexx[(e >> 4) & 0xf];
+         l[++c] = hexx[e & 0xf];
+      } else {// hextype == HEX_BITS */
+         for (i = 7; i >= 0; i--)
+            l[c++] = (e & (1 << i)) ? '1' : '0';
+      }
+      if (e)
+         nonzero++;
+         // When changing this update definition of LLEN and LLEN_NO_COLOR above.
+      if (hextype == HEX_LITTLEENDIAN)
+         // last group will be fully used, round up 
+         c = grplen * ((cols + octspergrp - 1) / octspergrp);
+      else
+         c = (grplen * cols - 1) / octspergrp;
+
+      if (hextype == HEX_LITTLEENDIAN)
+         c -= 1;
+
+      c += addrlen + 3 + p;
+      if (color)
+         colors[c] = cur_color;
+      l[c++] = (e > 31 && e < 127) ? e : '.';
+         n++;
+      if (++p == cols) {
+         l[c++] = '\n';
+         l[c] = '\0';
+
+         xxdline(fpo, l, color ? colors : NULL, autoskip ? nonzero : 1);
+         memset(colors, 0, c);
+         nonzero = 0;
+         p = 0;
+      }
+   }
+   if (p) {
+      l[c++] = '\n';
+      l[c] = '\0';
+      if (color) {
+         x = p;
+         if (hextype == HEX_LITTLEENDIAN) {
+            int fill = octspergrp - (p % octspergrp);
+            if (fill == octspergrp) fill = 0;
+
+            c = addrlen + 1 + (grplen * (x - (octspergrp-fill))) / octspergrp;
+
+            for (i = 0; i < fill;i++) {
+               colors[c] = COLOR_RED;
+               l[c++] = ' '; /* empty space */
+               x++;
+               p++;
+            }
+         }
+
+         if (hextype != HEX_BITS) {
+            c = addrlen + 1 + (grplen * x) / octspergrp;
+            c += cols - p;
+            c += (cols - p) / octspergrp;
+
+            for (i = cols - p; i > 0;i--) {
+               colors[c] = COLOR_RED;
+               l[c++] = ' ';
+            }
+         }
+         xxdline(fpo, l, colors, 1);
+      } else
+         xxdline(fpo, l, NULL, 1);
+   } ei (autoskip)
+      xxdline(fpo, l, color ? colors : NULL, -1);   // last chance to flush out suppressed lines
+
+   fclose_or_die(fp, fpo);
+   return 0;
 }
 
 //}}}

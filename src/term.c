@@ -1767,8 +1767,8 @@ accept_modifiers_for_function_keys(void) {
       if (s && eeRegexec(&regmatch, s, (ColNr)0)) {
          Unt len = STRLEN(s);
          Byte *ns = alloc(len + 3);
-         mch_memmove(ns, s, len - 1);
-         mch_memmove(ns + len - 1, ";*~", 4);
+         MEMMOVE(ns, s, len - 1);
+         MEMMOVE(ns + len - 1, ";*~", 4);
          eeglFree(s);
          recognizedCodeS[i].code = ns;
          recognizedCodeS[i].len += 2;
@@ -1881,19 +1881,19 @@ termPutStrIntoTypebuf(
             return FAIL;
 
       // Careful: del_typebuf() and insertIntoTypebuf() may have reallocated typeBufG.c[]!
-      mch_memmove(typeBufG.c + typeBufG.currPos + offset, string, (Unt)new_slen);
+      MEMMOVE(typeBufG.c + typeBufG.currPos + offset, string, (Unt)new_slen);
    } else {
       if (extra < 0)
          // remove matched characters
-         mch_memmove(buffer + offset, buffer + offset - extra,
+         MEMMOVE(buffer + offset, buffer + offset - extra,
                      (Unt)(*bufLen + offset + extra));
       ei (extra > 0) {
          //Insert the extra space we need. If there is insufficient space, return -1.
          if (*bufLen + extra + new_slen >= bufsize)
             return FAIL;
-         mch_memmove(buffer + offset + extra, buffer + offset, (Unt)(*bufLen - offset));
+         MEMMOVE(buffer + offset + extra, buffer + offset, (Unt)(*bufLen - offset));
       }
-      mch_memmove(buffer + offset, string, (Unt)new_slen);
+      MEMMOVE(buffer + offset, string, (Unt)new_slen);
       *bufLen = *bufLen + extra + new_slen;
    }
    return OK;
@@ -3998,7 +3998,7 @@ term_replace_keycodes(CS ta_buf, int ta_len, int len_arg) {
          Unt key = ta_buf[i + 3];
 
          // Try to use the modifier to modify the key.  In any case drop the modifier.
-         mch_memmove(ta_buf + i + 1, ta_buf + i + 4, (Unt)(len - i - 3));
+         MEMMOVE(ta_buf + i + 1, ta_buf + i + 4, (Unt)(len - i - 3));
          len -= 3;
          if (key < 0x80)
             key = mergeModifierKey(key, &modifiers);
@@ -4006,7 +4006,7 @@ term_replace_keycodes(CS ta_buf, int ta_len, int len_arg) {
       } ei (ta_buf[i] == CSI && len - i > 2) {
          c = TERMCAP2KEY(ta_buf[i + 1], ta_buf[i + 2]);
          if (c == K_DEL || c == K_KDEL || c == K_BS) {
-            mch_memmove(ta_buf + i + 1, ta_buf + i + 3, (Unt)(len - i - 2));
+            MEMMOVE(ta_buf + i + 1, ta_buf + i + 3, (Unt)(len - i - 2));
             if (c == K_DEL || c == K_KDEL)
                ta_buf[i] = DEL;
             else

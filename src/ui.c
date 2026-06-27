@@ -8390,7 +8390,7 @@ limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer) {
    }
 
    scrollback->len -= todo;
-   mch_memmove(
+   MEMMOVE(
          scrollback->c, (ScrollbackLine *)scrollback->c + todo, sizeof(ScrollbackLine) * scrollback->len
    );
    if (update_buffer) {
@@ -9020,7 +9020,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
       ga_clear(gap);
       return 1;
    }
-   mch_memmove((char *)gap->c + gap->len, frag.str, frag.len);
+   MEMMOVE((char *)gap->c + gap->len, frag.str, frag.len);
    gap->len += (int)frag.len;
    if (!frag.final)
       return 1;
@@ -9904,12 +9904,12 @@ term_swap_diff(void) {
 
       // need to copy cell properties into temp memory
       if (temp) {
-         mch_memmove(temp, term->scrollback.c, size);
-         mch_memmove(term->scrollback.c, temp + bot_start, sizeof(ScrollbackLine) * bot_rows);
-         mch_memmove((ScrollbackLine *)term->scrollback.c + bot_rows,
+         MEMMOVE(temp, term->scrollback.c, size);
+         MEMMOVE(term->scrollback.c, temp + bot_start, sizeof(ScrollbackLine) * bot_rows);
+         MEMMOVE((ScrollbackLine *)term->scrollback.c + bot_rows,
              temp + top_rows,
              sizeof(ScrollbackLine) * (line_count - top_rows - bot_rows));
-         mch_memmove((ScrollbackLine *)term->scrollback.c + line_count - top_rows,
+         MEMMOVE((ScrollbackLine *)term->scrollback.c + line_count - top_rows,
              temp,
              sizeof(ScrollbackLine) * top_rows
          );
@@ -10213,7 +10213,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
          fg = cellattr->fg;
          bg = cellattr->bg;
          int len = utfCharLen(p);
-         mch_memmove(mbs, p, len);
+         MEMMOVE(mbs, p, len);
          mbs[len] = ZERO;
          p += len;
       } else {
@@ -10713,11 +10713,11 @@ ui_inBytendo(CS s, int len) {
    CS new = alloc(newlen);
 
    if (ta_str) {
-      mch_memmove(new, ta_str + ta_off, (Unt)(ta_len - ta_off));
-      mch_memmove(new + ta_len - ta_off, s, (Unt)len);
+      MEMMOVE(new, ta_str + ta_off, (Unt)(ta_len - ta_off));
+      MEMMOVE(new + ta_len - ta_off, s, (Unt)len);
       eeglFree(ta_str);
    } else 
-      { mch_memmove(new, s, (Unt)len); }
+      { MEMMOVE(new, s, (Unt)len); }
    ta_str = new;
    ta_len = newlen;
    ta_off = 0;
@@ -11166,7 +11166,7 @@ get_input_buf(void) {
    if (gap) {
       // Add one to avoid a zero size.
       gap->c = alloc(inbufcount + 1);
-      mch_memmove(gap->c, inbuf, (Unt)inbufcount);
+      MEMMOVE(gap->c, inbuf, (Unt)inbufcount);
       gap->len = inbufcount;
    }
    trash_input_buf();
@@ -11183,11 +11183,11 @@ set_input_buf(CS p, Boole overwrite) {
 
    if (gap->c != NULL) {
       if (overwrite || inbufcount + gap->len >= INBUFLEN) {
-         mch_memmove(inbuf, gap->c, gap->len);
+         MEMMOVE(inbuf, gap->c, gap->len);
          inbufcount = gap->len;
       } else {
-         mch_memmove(inbuf + gap->len, inbuf, inbufcount);
-         mch_memmove(inbuf, gap->c, gap->len);
+         MEMMOVE(inbuf + gap->len, inbuf, inbufcount);
+         MEMMOVE(inbuf, gap->c, gap->len);
          inbufcount += gap->len;
       }
       eeglFree(gap->c);
@@ -11235,11 +11235,11 @@ read_from_input_buf(CS buf, long maxlen) {
       fill_input_buf(true);
    if (maxlen > inbufcount)
       maxlen = inbufcount;
-   mch_memmove(buf, inbuf, (Unt)maxlen);
+   MEMMOVE(buf, inbuf, (Unt)maxlen);
    inbufcount -= maxlen;
    // check "maxlen" to avoid clang warning
    if (inbufcount > 0 && maxlen > 0)
-      mch_memmove(inbuf, inbuf + maxlen, (Unt)inbufcount);
+      MEMMOVE(inbuf, inbuf + maxlen, (Unt)inbufcount);
    return (int)maxlen;
 }
 
@@ -11263,13 +11263,13 @@ fill_input_buf(Boole exit_on_error) {
          unconverted = INBUFLEN - inbufcount;
       else
          unconverted = restlen;
-      mch_memmove(inbuf + inbufcount, rest, unconverted);
+      MEMMOVE(inbuf + inbufcount, rest, unconverted);
       
       if (unconverted == restlen)
          EE_CLEAR(rest);
       else {
          restlen -= unconverted;
-         mch_memmove(rest, rest + unconverted, restlen);
+         MEMMOVE(rest, rest + unconverted, restlen);
       }
       inbufcount += unconverted;
    } else
@@ -11323,7 +11323,7 @@ fill_input_buf(Boole exit_on_error) {
               || (len >= 7 && STRNCMP(inbuf + inbufcount, "\033[67;5u", 7) == 0))
          ) {
             // remove everything typed before the CTRL-C
-            mch_memmove(inbuf, inbuf + inbufcount, (Unt)(len));
+            MEMMOVE(inbuf, inbuf + inbufcount, (Unt)(len));
             inbufcount = 0;
             gotInterruptG = true;
          }

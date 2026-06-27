@@ -206,7 +206,7 @@ int u_savesub(LineNr lnum);
 int u_savedel(LineNr lnum, long nlines);
 int undo_allowed(void);
 int u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload);
-void u_compute_hash(CS hash);
+void u_compute_hash(Byte hash[32]);
 void u_write_undo(CS name, Boole forceit, Book *book, Byte *hash);
 void u_read_undo(CS name, Byte *hash, CS orig_name);
 void u_undo(int count);

@@ -1791,7 +1791,7 @@ oneright(void) {
       CS ptr = ml_get_cursor();
       coladvance(getviscol() + ((*ptr != TAB
                     && bookIsCharPrintable((*mb_ptr2char)(ptr)))
-             ? ptr2cells(ptr) : 1));
+             ? bookPtr2Cells(ptr) : 1));
       curPor->setCursWant = true;
       // Return OK if the cursor moved, FAIL otherwise (at window edge).
       return (prevpos.col != curPor->cursor.col
@@ -1836,7 +1836,7 @@ oneleft(void) {
       if (curPor->cursor.coladd == 1) {
          // Adjust for multi-wide char (not a TAB)
          CS ptr = ml_get_cursor();
-         if (*ptr != TAB && bookIsCharPrintable((*mb_ptr2char)(ptr)) && ptr2cells(ptr) > 1)
+         if (*ptr != TAB && bookIsCharPrintable((*mb_ptr2char)(ptr)) && bookPtr2Cells(ptr) > 1)
             curPor->cursor.coladd = 0;
       }
 
@@ -2474,10 +2474,10 @@ ins_bs(int c, int mode, int* inserted_space_p) {
          if (len > 0 && ptr[len - 1] == ' ') {
             CS newp = alloc(curBook->mem.lineLen - 1);
 
-            mch_memmove(newp, ptr, len - 1);
+            MEMMOVE(newp, ptr, len - 1);
             newp[len - 1] = ZERO;
             if (curBook->mem.lineLen > len + 1)
-               mch_memmove(newp + len, ptr + len + 1, curBook->mem.lineLen - len - 1);
+               MEMMOVE(newp + len, ptr + len + 1, curBook->mem.lineLen - len - 1);
 
             if ((curBook->mem.flags & ML_LINE_DIRTY) != 0)
                eeglFree(curBook->mem.cachedLine);
@@ -2682,7 +2682,7 @@ bracketed_paste(PasteMode mode, int drop, ArrayList *gap) {
          case PASTE_EX:
             // add one for the ZERO that is going to be appended
             if (gap != NULL && ga_grow(gap, idx + 1) == OK) {
-               mch_memmove((char *)gap->c + gap->len, buf, (Unt)idx);
+               MEMMOVE((char *)gap->c + gap->len, buf, (Unt)idx);
                gap->len += idx;
             }
             break;
@@ -3012,8 +3012,8 @@ ins_tab(void) {
 
             int col = ptr - curBook->mem.cachedLine;
             if (col > 0)
-               mch_memmove(newp, ptr - col, col);
-            mch_memmove(newp + col, ptr + i, curBook->mem.lineLen - col - i);
+               MEMMOVE(newp, ptr - col, col);
+            MEMMOVE(newp + col, ptr + i, curBook->mem.lineLen - col - i);
 
             if ((curBook->mem.flags & ML_LINE_DIRTY) != 0)
                eeglFree(curBook->mem.cachedLine);
@@ -4265,8 +4265,8 @@ prepend_startcol_text(Text* dest, Text* src, int startcol) {
    dest->c = alloc(new_length + 1);  // +1 for ZERO
    CS line = ml_get(curPor->cursor.lnum);
 
-   mch_memmove(dest->c, line + startcol, prepend_len);
-   mch_memmove(dest->c + prepend_len, src->c, src->len);
+   MEMMOVE(dest->c, line + startcol, prepend_len);
+   MEMMOVE(dest->c + prepend_len, src->c, src->len);
    dest->c[new_length] = ZERO;
    return OK;
 }
@@ -7428,9 +7428,9 @@ ins_compl_show_filename(void) {
    // We need the tail that fits.  With double-byte encoding going back from the end is very slow,
    // thus go from the start and keep the text that fits in "space" between "s" and "e".
    for (s = e = compl_shown_match->fName; *e != ZERO; MB_PTR_ADV(e)) {
-      space -= ptr2cells(e);
+      space -= bookPtr2Cells(e);
       while (space < 0) {
-         space += ptr2cells(s);
+         space += bookPtr2Cells(s);
          MB_PTR_ADV(s);
       }
    }

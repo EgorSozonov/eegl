@@ -1604,7 +1604,7 @@ restore_v_event(Bag* v_event, SaveVEvent* sve) {
 //The first character represents the major mode, the following ones the minor ones.
 void
 get_mode(CS buf) {
-   int      i = 0;
+   int i = 0;
 
    if (time_for_testing == 93784) {
       // Testing the two-character code.
@@ -1625,11 +1625,11 @@ get_mode(CS buf) {
       buf[i] = 'r';
       i++;
       if (stateG == MODE_ASKMORE) {
-          buf[i] = 'm';
-          i++;
+         buf[i] = 'm';
+         i++;
       } ei (stateG == MODE_CONFIRM) {
-          buf[i] = '?';
-          i++; 
+         buf[i] = '?';
+         i++; 
       } 
    } ei (stateG == MODE_EXTERNCMD) {
       buf[i] = '!';
@@ -2844,7 +2844,7 @@ add_to_showcmd(Unt c) {
    extra_len = (int)STRLEN(p);
    overflow = old_len + extra_len - SHOWCMD_COLS;
    if (overflow > 0)
-      mch_memmove(showcmd_buf, showcmd_buf + overflow, old_len - overflow + 1);
+      MEMMOVE(showcmd_buf, showcmd_buf + overflow, old_len - overflow + 1);
    STRCAT(showcmd_buf, p);
 
    if (char_avail())
@@ -10659,7 +10659,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
                // Need to escape K_SPECIAL.
                CS escaped = copyStr_escape_csi(tb + j);
                newlen = (int)STRLEN(escaped);
-               mch_memmove(tb + j, escaped, newlen);
+               MEMMOVE(tb + j, escaped, newlen);
                j += newlen;
                eeglFree(escaped);
             }
@@ -11515,7 +11515,7 @@ setEntry(int from, int to) {
 
    // insert new entry at position "a"
    entries = (LangmapEntry *)(langmapTable.c) + a;
-   mch_memmove(entries + 1, entries, (langmapTable.len - a) * sizeof(LangmapEntry));
+   MEMMOVE(entries + 1, entries, (langmapTable.len - a) * sizeof(LangmapEntry));
    ++langmapTable.len;
    entries[0].from = from;
    entries[0].to = to;
@@ -12141,7 +12141,7 @@ foldCreate(LineNr start, LineNr end) {
       if (end_rel < fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1)
           end_rel = fp[cont - 1].fd_top + fp[cont - 1].fd_len - 1;
       // Move contained folds to inside new fold.
-      mch_memmove(fold_ga.c, fp, sizeof(Fold) * cont);
+      MEMMOVE(fold_ga.c, fp, sizeof(Fold) * cont);
       fold_ga.len += cont;
       i += cont;
 
@@ -12151,7 +12151,7 @@ foldCreate(LineNr start, LineNr end) {
    }
    // Move remaining entries to after the new fold.
    if (i < gap->len)
-      mch_memmove(fp + 1, (Fold *)gap->c + i, sizeof(Fold) * (gap->len - i));
+      MEMMOVE(fp + 1, (Fold *)gap->c + i, sizeof(Fold) * (gap->len - i));
    gap->len = gap->len + 1 - cont;
 
    // insert new fold
@@ -12726,7 +12726,7 @@ deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
       deleteFoldRecurse(&fp->fd_nested);
       --gap->len;
       if (idx < gap->len)
-          mch_memmove(fp, fp + 1, sizeof(Fold) * (gap->len - idx));
+          MEMMOVE(fp, fp + 1, sizeof(Fold) * (gap->len - idx));
    } else {
    // Move nested folds one level up, to overwrite the fold that is
    // deleted.
@@ -12747,9 +12747,9 @@ deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
 
        // move the existing folds down to make room
        if (idx + 1 < gap->len)
-          mch_memmove(fp + moved, fp + 1, sizeof(Fold) * (gap->len - (idx + 1)));
+          MEMMOVE(fp + moved, fp + 1, sizeof(Fold) * (gap->len - (idx + 1)));
        // move the contained folds one level up
-       mch_memmove(fp, nfp, (Unt)(sizeof(Fold) * moved));
+       MEMMOVE(fp, nfp, (Unt)(sizeof(Fold) * moved));
        eeglFree(nfp);
        gap->len += moved - 1;
    }
@@ -13169,7 +13169,7 @@ get_foldtext(
                p += len - 1;
             } ei (*p == TAB)
                *p = ' ';
-            ei (ptr2cells(p) > 1)
+            ei (bookPtr2Cells(p) > 1)
                break;
          }
          if (*p != ZERO) {
@@ -13845,7 +13845,7 @@ foldInsert(ArrayList* gap, int i) {
       return FAIL;
    Fold* fp = (Fold*)gap->c + i;
    if (gap->len > 0 && i < gap->len)
-      mch_memmove(fp + 1, fp, sizeof(Fold) * (gap->len - i));
+      MEMMOVE(fp + 1, fp, sizeof(Fold) * (gap->len - i));
    ++gap->len;
    ga_init2(&fp->fd_nested, sizeof(Fold), 10);
    return OK;

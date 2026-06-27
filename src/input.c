@@ -5,6 +5,8 @@
 
 #include "eegl.h"
 
+#include <wchar.h>
+
 // These buffers are used for storing:
 // - stuffed characters: A command that is translated into another command.
 // - redo characters: will redo the last change.
@@ -247,7 +249,7 @@ get_keystroke(void) {
                modMaskG = buf[2];
             len -= 3;
             if (len > 0)
-               mch_memmove(buf, buf + 3, (Unt)len);
+               MEMMOVE(buf, buf + 3, (Unt)len);
             continue;
           }
           break;
@@ -349,7 +351,7 @@ add_buff(
       internalErrMsg(e_add_to_internal_buffer_that_was_already_read_from);
       return;
    } ei (buf->bh_index != 0) {
-      mch_memmove(buf->first.next->b_str,
+      MEMMOVE(buf->first.next->b_str,
          buf->first.next->b_str + buf->bh_index,
          (buf->first.next->b_strlen - buf->bh_index) + 1);
       buf->first.next->b_strlen -= buf->bh_index;
@@ -973,12 +975,12 @@ insertIntoTypebuf(
    if (offset == 0 && addlen <= typeBufG.currPos) {
       //Easy case: there is room in front of typeBufG.c[typeBufG.currPos]
       typeBufG.currPos -= addlen;
-      mch_memmove(typeBufG.c + typeBufG.currPos, str, (Unt)addlen);
+      MEMMOVE(typeBufG.c + typeBufG.currPos, str, (Unt)addlen);
    } ei (typeBufG.validLen == 0 && typeBufG.len >= addlen + 3 * (MAXMAPLEN + 4)) {
       //Book is empty and string fits in the existing buffer.
       //Leave some space before and after, if possible.
       typeBufG.currPos = (typeBufG.len - addlen - 3 * (MAXMAPLEN + 4)) / 2;
-      mch_memmove(typeBufG.c + typeBufG.currPos, str, (Unt)addlen);
+      MEMMOVE(typeBufG.c + typeBufG.currPos, str, (Unt)addlen);
    } else {
       int extra;
 
@@ -999,19 +1001,19 @@ insertIntoTypebuf(
       typeBufG.len = newlen;
 
       // copy the old chars, before the insertion point
-      mch_memmove(s1 + newoff, typeBufG.c + typeBufG.currPos, (Unt)offset);
+      MEMMOVE(s1 + newoff, typeBufG.c + typeBufG.currPos, (Unt)offset);
       // copy the new chars
-      mch_memmove(s1 + newoff + offset, str, (Unt)addlen);
+      MEMMOVE(s1 + newoff + offset, str, (Unt)addlen);
       // copy the old chars, after the insertion point, including the ZERO at the end
-      mch_memmove(s1 + newoff + offset + addlen,
+      MEMMOVE(s1 + newoff + offset + addlen,
                     typeBufG.c + typeBufG.currPos + offset,
                       (Unt)(typeBufG.validLen - offset + 1));
       if (typeBufG.c != typeBufG_init)
          eeglFree(typeBufG.c);
       typeBufG.c = s1;
 
-      mch_memmove(s2 + newoff, typeBufG.noremap + typeBufG.currPos, (Unt)offset);
-      mch_memmove(
+      MEMMOVE(s2 + newoff, typeBufG.noremap + typeBufG.currPos, (Unt)offset);
+      MEMMOVE(
          s2 + newoff + offset + addlen, typeBufG.noremap + typeBufG.currPos + offset,
          (Unt)(typeBufG.validLen - offset)
       );
@@ -1115,19 +1117,19 @@ del_typebuf(int len, int offset) {
       i = typeBufG.currPos + offset;
       // Leave some extra room at the end to avoid reallocation.
       if (typeBufG.currPos > MAXMAPLEN) {
-         mch_memmove(typeBufG.c + MAXMAPLEN, typeBufG.c + typeBufG.currPos, (Unt)offset);
-         mch_memmove(
+         MEMMOVE(typeBufG.c + MAXMAPLEN, typeBufG.c + typeBufG.currPos, (Unt)offset);
+         MEMMOVE(
             typeBufG.noremap + MAXMAPLEN, typeBufG.noremap + typeBufG.currPos, (Unt)offset
          );
          typeBufG.currPos = MAXMAPLEN;
       }
       // adjust typeBufG.c (include the ZERO at the end)
-      mch_memmove(
+      MEMMOVE(
          typeBufG.c + typeBufG.currPos + offset, typeBufG.c + i + len, 
          (Unt)(typeBufG.validLen - offset + 1)
       );
       // adjust typeBufG.noremap[]
-      mch_memmove(
+      MEMMOVE(
          typeBufG.noremap + typeBufG.currPos + offset, typeBufG.noremap + i + len, 
          (Unt)(typeBufG.validLen - offset)
       );
@@ -2825,7 +2827,7 @@ vGetOrPeek(Boole advance) {
                    ) {
                       // this looks nice when typing a dead character map
                       if (stateG & MODE_INSERT
-                           && ptr2cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
+                           && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
                       ) {
                          edit_putchar(typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false);
                          setcursor(); // put cursor back where it belongs
@@ -2850,7 +2852,7 @@ vGetOrPeek(Boole advance) {
                    //There is no actual command line for get_number().
                    if ((stateG & MODE_COMMLINE)
                          && getCommlineInfo()->commBuf != NULL
-                         && ptr2cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
+                         && bookPtr2Cells(typeBufG.c + typeBufG.currPos + typeBufG.validLen - 1) == 1
                    ) {
                       putcmdline(typeBufG.c[typeBufG.currPos + typeBufG.validLen - 1], false);
                       showing_partial = true;
@@ -3059,7 +3061,7 @@ fixInputBuffer(OUT CS buf, int len) {
             || (p[0] == K_SPECIAL && (i < 2 || p[1] != KS_EXTRA || p[2] != (int)KE_CURSORHOLD))
             // timeout may generate K_CURSORHOLD
       ) {
-         mch_memmove(p + 3, p + 1, (Unt)i);
+         MEMMOVE(p + 3, p + 1, (Unt)i);
          p[2] = K_THIRD(p[0]);
          p[1] = K_SECOND(p[0]);
          p[0] = K_SPECIAL;
@@ -3226,6 +3228,322 @@ reset_last_used_map(MapBlock* mp) {
    last_used_sid = -1;
 }
 
+//Return the number of character cells string "s[len]" will take on the
+//screen, counting TABs as two characters: "^I".
+int
+eeglStrNsize(CS s, int len) {
+   int size = 0;
+
+   while (*s != ZERO && --len >= 0) {
+      int l = utfCharLen(s);
+
+      size += bookPtr2Cells(s);
+      s += l;
+      len -= l - 1;
+   }
+
+   return size;
+}
+
+//Return the number of character cells string "s" will take on the screen,
+//counting TABs as two characters: "^I".
+int
+eeglStrSize(CS s) {
+   return eeglStrNsize(s, (int)MAXCOL);
+}
+
+//return true if 'c' is a valid file-name character or a wildcard character
+//Assume characters above 0x100 are valid (multi-byte).
+//Explicitly interpret ']' as a wildcard character as mch_has_wildcard("]") returns false.
+int
+eeIsFnameChar_or_wc(Unt c) {
+   Byte buf[2] = {(Byte)c, ZERO};
+   return eeIsFnameChar(c) || c == ']' || mch_has_wildcard(buf);
+}
+
+//Return true if line "lnum" ends in a white character.
+private int
+ends_in_white(LineNr lnum) {
+   CS s = ml_get(lnum);
+   if (*s == ZERO)
+      return false;
+   Unt l = ml_get_len(lnum) - 1;
+   return SPACE_OR_TAB(s[l]);
+}
+
+//Return true if the two comment leaders given are the same.  "lnum" is
+//the first line.  White-space is ignored.  Note that the whole of
+//'leader1' must match 'leader2_len' characters from 'leader2' -- webb
+private int
+same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS leader2_flags){
+   int idx1 = 0, idx2 = 0;
+
+   if (leader1_len == 0)
+      return (leader2_len == 0);
+
+   // If first leader has 'f' flag, the lines can be joined only if the
+   // second line does not have a leader.
+   // If first leader has 'e' flag, the lines can never be joined.
+   // If first leader has 's' flag, the lines can only be joined if there is
+   // some text after it and the second line has the 'm' flag.
+   if (leader1_flags) {
+      for (CS p = leader1_flags; *p && *p != ':'; ++p) {
+         if (*p == COM_FIRST)
+            return (leader2_len == 0);
+         if (*p == COM_END)
+            return false;
+         if (*p == COM_START) {
+            int line_len = ml_get_len(lnum);
+            if (line_len <= leader1_len  || leader2_flags == NULL || leader2_len == 0)
+               return false;
+            for (p = leader2_flags; *p && *p != ':'; ++p) {
+               if (*p == COM_MIDDLE)
+                  return true;
+            } 
+            return false;
+         }
+      }
+   }
+
+   // Get current line and next line, compare the leaders.
+   // The first line has to be saved, only one line can be locked at a time.
+   CS line1 = copySubstr(ml_get(lnum), ml_get_len(lnum));
+   for (idx1 = 0; SPACE_OR_TAB(line1[idx1]); ++idx1)
+      {} 
+      
+   CS line2 = ml_get(lnum + 1);
+   for (idx2 = 0; idx2 < leader2_len; ++idx2) {
+      if (!SPACE_OR_TAB(line2[idx2])) {
+         if (line1[idx1++] != line2[idx2])
+            break;
+      } else {
+         while (SPACE_OR_TAB(line1[idx1]))
+           ++idx1;
+      } 
+   }
+   eeglFree(line1);
+   return (idx2 == leader2_len && idx1 == leader1_len);
+}
+
+// getwhitecols: return the number of whitespace columns (bytes) at the start of a given line
+int
+getwhitecols_curline(void) {
+   return getwhitecols(ml_get_curline());
+}
+
+//Format "line_count" lines, starting at the cursor position.
+//When "line_count" is negative, format until the end of the paragraph.
+//Lines after the cursor line are saved for undo, caller must have saved the first line.
+void
+format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
+   int is_not_par;      // current line not part of parag.
+   int next_is_not_par;   // next line not part of paragraph
+   int is_end_par;      // at end of paragraph
+   int prev_is_end_par = false;// prev. line not part of parag.
+   int next_is_start_par = false;
+   int leader_len = 0;      // leader len of current line
+   int next_leader_len;   // leader len of next line
+   CS leader_flags = NULL;   // flags for leader of current line
+   CS next_leader_flags = NULL; // flags for leader of next line
+   int doCommentsList = 0;   // format comments with 'n' or '2'
+   int advance = true;
+   int second_indent = -1;   // indent for second line (comment aware)
+   int first_par_line = true;
+   int smd_save;
+   long count;
+   int need_set_indent = true;   // set indent of next paragraph
+   LineNr first_line = curPor->cursor.lnum;
+   int force_format = false;
+   int old_State = stateG;
+
+   // length of a line to force formatting: 3 * 'tw'
+   int max_len = comp_textwidth(true) * 3;
+
+   // check for 'q', '2', 'n' and 'w' in 'formatoptions'
+   Boole doComments = has_format_option(FO_Q_COMS); // format comments?
+   Boole do_second_indent = has_format_option(FO_Q_SECOND);
+   Boole do_number_indent = has_format_option(FO_Q_NUMBER);
+   Boole do_trail_white = has_format_option(FO_WHITE_PAR);
+
+   // Get info about the previous and current line.
+   if (curPor->cursor.lnum > 1)
+      is_not_par = fmt_check_par(
+            curPor->cursor.lnum - 1 , OUT &leader_len, OUT &leader_flags, doComments
+      );
+   else
+      is_not_par = true;
+   next_is_not_par = fmt_check_par(
+         curPor->cursor.lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments
+   );
+   is_end_par = (is_not_par || next_is_not_par);
+   if (!is_end_par && do_trail_white)
+      is_end_par = !ends_in_white(curPor->cursor.lnum - 1);
+
+   curPor->cursor.lnum--;
+   for (count = line_count; count != 0 && !gotInterruptG; --count) {
+      // Advance to next paragraph.
+      if (advance) {
+         curPor->cursor.lnum++;
+         prev_is_end_par = is_end_par;
+         is_not_par = next_is_not_par;
+         leader_len = next_leader_len;
+         leader_flags = next_leader_flags;
+      }
+
+      // The last line to be formatted.
+      if (count == 1 || curPor->cursor.lnum == curBook->mem.lineCount) {
+         next_is_not_par = true;
+         next_leader_len = 0;
+         next_leader_flags = NULL;
+      } else {
+         next_is_not_par = fmt_check_par(
+               curPor->cursor.lnum + 1, OUT &next_leader_len, OUT &next_leader_flags, doComments
+         );
+         if (do_number_indent)
+            next_is_start_par = (get_number_indent(curPor->cursor.lnum + 1) > 0);
+      }
+      advance = true;
+      is_end_par = (is_not_par || next_is_not_par || next_is_start_par);
+      if (!is_end_par && do_trail_white)
+         is_end_par = !ends_in_white(curPor->cursor.lnum);
+
+      // Skip lines that are not in a paragraph.
+      if (is_not_par) {
+         if (line_count < 0)
+         break;
+      } else {
+          // For the first line of a paragraph, check indent of second line.
+          // Don't do this for comments and empty lines.
+         if (first_par_line
+             && (do_second_indent || do_number_indent)
+             && prev_is_end_par
+             && curPor->cursor.lnum < curBook->mem.lineCount
+         )  {
+           if (do_second_indent && !LINEEMPTY(curPor->cursor.lnum + 1)) {
+               if (leader_len == 0 && next_leader_len == 0) {
+                  // no comment found
+                  second_indent = get_indent_lnum(curPor->cursor.lnum + 1);
+               }
+               else {
+                  second_indent = next_leader_len;
+                  doCommentsList = 1;
+               }
+            } ei (do_number_indent) {
+               if (leader_len == 0 && next_leader_len == 0) { // no comment found
+                  second_indent = get_number_indent(curPor->cursor.lnum);
+               } else { // get_number_indent() is now "comment aware"...
+                  second_indent = get_number_indent(curPor->cursor.lnum);
+                  doCommentsList = 1;
+               }
+            }
+         }
+
+         // When the comment leader changes, it's the end of the paragraph.
+         if (curPor->cursor.lnum >= curBook->mem.lineCount
+             || !same_leader(curPor->cursor.lnum,
+                  leader_len, leader_flags,
+                     next_leader_len, next_leader_flags)
+         ) {
+            //Special case: If the next line starts with a line comment and this line has a line 
+            //comment after some text, the paragraf doesn't really end.
+            if (next_leader_flags == NULL
+               || STRNCMP(next_leader_flags, "://", 3) != 0
+               || check_linecomment(ml_get_curline()) == MAXCOL)
+            is_end_par = true;
+         }
+
+         //If we have got to the end of a paragraph, or the line is
+         //getting long, format it.
+         if (is_end_par || force_format) {
+            if (need_set_indent) {
+               int      indent = 0; // amount of indent needed
+
+               // Replace indent in first line of a paragraph with minimal
+               // number of tabs and spaces, according to current options.
+               // For the very first formatted line keep the current indent.
+               if (curPor->cursor.lnum == first_line)
+                  indent = get_indent();
+               else {
+                 if (jugIsIndentationExpressionBased()) {
+                     indent = curBook->o.indentExpr ? get_expr_indent() : get_indent();
+                 } else
+                     indent = get_indent();
+               }
+               (void)set_indent(indent, SIN_CHANGED);
+            }
+
+            // put cursor on last non-space
+            stateG = MODE_NORMAL;   // don't go past end-of-line
+            coladvance((ColNr)MAXCOL);
+            while (curPor->cursor.col && isSpace(gchar_cursor()))
+               dec_cursor();
+
+            // do the formatting, without 'showmode'
+            stateG = MODE_INSERT;   // for openLine()
+            smd_save = p_smd;
+            p_smd = false;
+
+            insertchar0(
+                  ZERO, INSCHAR_FORMAT + (doComments ? INSCHAR_DO_COM : 0)
+                     + (doComments && doCommentsList ? INSCHAR_COM_LIST : 0)
+                     + (avoid_fex ? INSCHAR_NO_FEX : 0),
+                  second_indent
+            );
+
+            stateG = old_State;
+            p_smd = smd_save;
+            // Cursor and mouse shape shapes may have been updated (e.g. by
+            // :normal) in insertchar0(), so they need to be updated here.
+            ui_cursor_shape();
+            second_indent = -1;
+            // at end of par.: need to set indent of next par.
+            need_set_indent = is_end_par;
+            if (is_end_par) {
+               // When called with a negative line count, break at the end of the paragraph.
+               if (line_count < 0)
+                  break;
+               first_par_line = true;
+            }
+            force_format = false;
+         }
+
+         // When still in same paragraph, join the lines together.  But
+         // first delete the leader from the second line.
+         if (!is_end_par) {
+            advance = false;
+            curPor->cursor.lnum++;
+            curPor->cursor.col = 0;
+            if (line_count < 0 && u_save_cursor() == FAIL)
+               break;
+            if (next_leader_len > 0) {
+               (void)del_bytes((long)next_leader_len, false, false);
+               mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-next_leader_len, 0);
+            } ei (second_indent > 0) { // the "leader" for FO_Q_SECOND
+               int indent = getwhitecols_curline();
+
+               if (indent > 0) {
+                  (void)del_bytes(indent, false, false);
+                   mark_col_adjust(curPor->cursor.lnum, (ColNr)0, 0L, (long)-indent, 0);
+               }
+            }
+            curPor->cursor.lnum--;
+            if (jugJoinLinesUnderCursor(2, true, false, false, false) == FAIL) {
+               beep_flush();
+               break;
+            }
+            first_par_line = false;
+            // If the line is getting long, format it next time
+            if (ml_get_curline_len() > max_len)
+               force_format = true;
+            else
+               force_format = false;
+         }
+      }
+      line_breakcheck();
+   }
+}
+
+
 //{{{multibyte characters
 
 //The encoding used in the core is set with 'encoding'.  When 'encoding' is
@@ -3271,34 +3589,8 @@ reset_last_used_map(MapBlock* mp) {
 //
 //The eeglinfo file is a special case: Only text is converted, not file names.
 
-#define WINBYTE BYTE
-
-#include <wchar.h>
 
 int mb_ptr2cells_len(CS p, int size);
-
-// Lookup table to quickly get the length in bytes of a UTF-8 character from the first byte of a 
-// UTF-8 string. Bytes which are illegal when used as the first byte have a 1.
-// The ZERO byte has length 1.
-private Byte utf8LenTable[256] = {
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-   1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,
-   3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
-};
-
-// Like utf8LenTable above, but using a zero for illegal lead bytes.
-private Byte utf8LenTable_zero[256] = {
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,
-   3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0
-};
-
 
 //Set up for using multi-byte characters. Called in three cases:
 //- by main() to initialize
@@ -3340,522 +3632,6 @@ inpGetClassForBook(CS p, Book* book) {
    }
    return utf_class_buf(mb_ptr2char(p), book);
 }
-
-typedef struct {
-   long first;
-   long last;
-} Interval;
-
-// Return true if "c" is in the sorted "table[size / sizeof(Interval)]".
-private Boole
-intable(Interval* table, Unt size, Unt c) {
-   // first quick check for Latin1 etc. characters
-   if ((long)c < table[0].first)
-      return false;
-
-   // binary search in table
-   int bot = 0;
-   int top = (int)(size / sizeof(Interval) - 1);
-   while (top >= bot) {
-      int mid = (bot + top) / 2;
-      if ((Unt)table[mid].last < c)
-         bot = mid + 1;
-      ei ((Unt)table[mid].first > c)
-         top = mid - 1;
-      else
-         return true;
-   }
-   return false;
-}
-
-// Sorted list of non-overlapping intervals of East Asian Ambiguous
-// characters, generated with ../runtime/tools/unicode.vim.
-private Interval ambiguous[] = {
-   {0x00a1, 0x00a1},
-   {0x00a4, 0x00a4},
-   {0x00a7, 0x00a8},
-   {0x00aa, 0x00aa},
-   {0x00ad, 0x00ae},
-   {0x00b0, 0x00b4},
-   {0x00b6, 0x00ba},
-   {0x00bc, 0x00bf},
-   {0x00c6, 0x00c6},
-   {0x00d0, 0x00d0},
-   {0x00d7, 0x00d8},
-   {0x00de, 0x00e1},
-   {0x00e6, 0x00e6},
-   {0x00e8, 0x00ea},
-   {0x00ec, 0x00ed},
-   {0x00f0, 0x00f0},
-   {0x00f2, 0x00f3},
-   {0x00f7, 0x00fa},
-   {0x00fc, 0x00fc},
-   {0x00fe, 0x00fe},
-   {0x0101, 0x0101},
-   {0x0111, 0x0111},
-   {0x0113, 0x0113},
-   {0x011b, 0x011b},
-   {0x0126, 0x0127},
-   {0x012b, 0x012b},
-   {0x0131, 0x0133},
-   {0x0138, 0x0138},
-   {0x013f, 0x0142},
-   {0x0144, 0x0144},
-   {0x0148, 0x014b},
-   {0x014d, 0x014d},
-   {0x0152, 0x0153},
-   {0x0166, 0x0167},
-   {0x016b, 0x016b},
-   {0x01ce, 0x01ce},
-   {0x01d0, 0x01d0},
-   {0x01d2, 0x01d2},
-   {0x01d4, 0x01d4},
-   {0x01d6, 0x01d6},
-   {0x01d8, 0x01d8},
-   {0x01da, 0x01da},
-   {0x01dc, 0x01dc},
-   {0x0251, 0x0251},
-   {0x0261, 0x0261},
-   {0x02c4, 0x02c4},
-   {0x02c7, 0x02c7},
-   {0x02c9, 0x02cb},
-   {0x02cd, 0x02cd},
-   {0x02d0, 0x02d0},
-   {0x02d8, 0x02db},
-   {0x02dd, 0x02dd},
-   {0x02df, 0x02df},
-   {0x0300, 0x036f},
-   {0x0391, 0x03a1},
-   {0x03a3, 0x03a9},
-   {0x03b1, 0x03c1},
-   {0x03c3, 0x03c9},
-   {0x0401, 0x0401},
-   {0x0410, 0x044f},
-   {0x0451, 0x0451},
-   {0x2010, 0x2010},
-   {0x2013, 0x2016},
-   {0x2018, 0x2019},
-   {0x201c, 0x201d},
-   {0x2020, 0x2022},
-   {0x2024, 0x2027},
-   {0x2030, 0x2030},
-   {0x2032, 0x2033},
-   {0x2035, 0x2035},
-   {0x203b, 0x203b},
-   {0x203e, 0x203e},
-   {0x2074, 0x2074},
-   {0x207f, 0x207f},
-   {0x2081, 0x2084},
-   {0x20ac, 0x20ac},
-   {0x2103, 0x2103},
-   {0x2105, 0x2105},
-   {0x2109, 0x2109},
-   {0x2113, 0x2113},
-   {0x2116, 0x2116},
-   {0x2121, 0x2122},
-   {0x2126, 0x2126},
-   {0x212b, 0x212b},
-   {0x2153, 0x2154},
-   {0x215b, 0x215e},
-   {0x2160, 0x216b},
-   {0x2170, 0x2179},
-   {0x2189, 0x2189},
-   {0x2190, 0x2199},
-   {0x21b8, 0x21b9},
-   {0x21d2, 0x21d2},
-   {0x21d4, 0x21d4},
-   {0x21e7, 0x21e7},
-   {0x2200, 0x2200},
-   {0x2202, 0x2203},
-   {0x2207, 0x2208},
-   {0x220b, 0x220b},
-   {0x220f, 0x220f},
-   {0x2211, 0x2211},
-   {0x2215, 0x2215},
-   {0x221a, 0x221a},
-   {0x221d, 0x2220},
-   {0x2223, 0x2223},
-   {0x2225, 0x2225},
-   {0x2227, 0x222c},
-   {0x222e, 0x222e},
-   {0x2234, 0x2237},
-   {0x223c, 0x223d},
-   {0x2248, 0x2248},
-   {0x224c, 0x224c},
-   {0x2252, 0x2252},
-   {0x2260, 0x2261},
-   {0x2264, 0x2267},
-   {0x226a, 0x226b},
-   {0x226e, 0x226f},
-   {0x2282, 0x2283},
-   {0x2286, 0x2287},
-   {0x2295, 0x2295},
-   {0x2299, 0x2299},
-   {0x22a5, 0x22a5},
-   {0x22bf, 0x22bf},
-   {0x2312, 0x2312},
-   {0x2460, 0x24e9},
-   {0x24eb, 0x254b},
-   {0x2550, 0x2573},
-   {0x2580, 0x258f},
-   {0x2592, 0x2595},
-   {0x25a0, 0x25a1},
-   {0x25a3, 0x25a9},
-   {0x25b2, 0x25b3},
-   {0x25b6, 0x25b7},
-   {0x25bc, 0x25bd},
-   {0x25c0, 0x25c1},
-   {0x25c6, 0x25c8},
-   {0x25cb, 0x25cb},
-   {0x25ce, 0x25d1},
-   {0x25e2, 0x25e5},
-   {0x25ef, 0x25ef},
-   {0x2605, 0x2606},
-   {0x2609, 0x2609},
-   {0x260e, 0x260f},
-   {0x261c, 0x261c},
-   {0x261e, 0x261e},
-   {0x2640, 0x2640},
-   {0x2642, 0x2642},
-   {0x2660, 0x2661},
-   {0x2663, 0x2665},
-   {0x2667, 0x266a},
-   {0x266c, 0x266d},
-   {0x266f, 0x266f},
-   {0x269e, 0x269f},
-   {0x26bf, 0x26bf},
-   {0x26c6, 0x26cd},
-   {0x26cf, 0x26d3},
-   {0x26d5, 0x26e1},
-   {0x26e3, 0x26e3},
-   {0x26e8, 0x26e9},
-   {0x26eb, 0x26f1},
-   {0x26f4, 0x26f4},
-   {0x26f6, 0x26f9},
-   {0x26fb, 0x26fc},
-   {0x26fe, 0x26ff},
-   {0x273d, 0x273d},
-   {0x2776, 0x277f},
-   {0x2b56, 0x2b59},
-   {0x3248, 0x324f},
-   {0xe000, 0xf8ff},
-   {0xfe00, 0xfe0f},
-   {0xfffd, 0xfffd},
-   {0x1f100, 0x1f10a},
-   {0x1f110, 0x1f12d},
-   {0x1f130, 0x1f169},
-   {0x1f170, 0x1f18d},
-   {0x1f18f, 0x1f190},
-   {0x1f19b, 0x1f1ac},
-   {0xe0100, 0xe01ef},
-   {0xf0000, 0xffffd},
-   {0x100000, 0x10fffd}
-};
-
-// mb_char2cells() with different argument type for libvterm.
-int
-utf_uint2cells(Unt c) {
-   if (c >= 0x100 && utf_iscomposing((int)c))
-      return 0;
-   return mb_char2cells((int)c);
-}
-
-//For UTF-8 character "c" return 2 for a double-width character, 1 for others.
-//Return 4 or 6 for an unprintable character.
-//Is only correct for characters >= 0x80.
-int
-mb_char2cells(int c) {
-   // Sorted list of non-overlapping intervals of East Asian double width
-   // characters, generated with ../runtime/tools/unicode.vim.
-   static Interval doublewidth[] = {
-      {0x1100, 0x115f},
-      {0x231a, 0x231b},
-      {0x2329, 0x232a},
-      {0x23e9, 0x23ec},
-      {0x23f0, 0x23f0},
-      {0x23f3, 0x23f3},
-      {0x25fd, 0x25fe},
-      {0x2614, 0x2615},
-      {0x2630, 0x2637},
-      {0x2648, 0x2653},
-      {0x267f, 0x267f},
-      {0x268a, 0x268f},
-      {0x2693, 0x2693},
-      {0x26a1, 0x26a1},
-      {0x26aa, 0x26ab},
-      {0x26bd, 0x26be},
-      {0x26c4, 0x26c5},
-      {0x26ce, 0x26ce},
-      {0x26d4, 0x26d4},
-      {0x26ea, 0x26ea},
-      {0x26f2, 0x26f3},
-      {0x26f5, 0x26f5},
-      {0x26fa, 0x26fa},
-      {0x26fd, 0x26fd},
-      {0x2705, 0x2705},
-      {0x270a, 0x270b},
-      {0x2728, 0x2728},
-      {0x274c, 0x274c},
-      {0x274e, 0x274e},
-      {0x2753, 0x2755},
-      {0x2757, 0x2757},
-      {0x2795, 0x2797},
-      {0x27b0, 0x27b0},
-      {0x27bf, 0x27bf},
-      {0x2b1b, 0x2b1c},
-      {0x2b50, 0x2b50},
-      {0x2b55, 0x2b55},
-      {0x2e80, 0x2e99},
-      {0x2e9b, 0x2ef3},
-      {0x2f00, 0x2fd5},
-      {0x2ff0, 0x303e},
-      {0x3041, 0x3096},
-      {0x3099, 0x30ff},
-      {0x3105, 0x312f},
-      {0x3131, 0x318e},
-      {0x3190, 0x31e5},
-      {0x31ef, 0x321e},
-      {0x3220, 0x3247},
-      {0x3250, 0xa48c},
-      {0xa490, 0xa4c6},
-      {0xa960, 0xa97c},
-      {0xac00, 0xd7a3},
-      {0xf900, 0xfaff},
-      {0xfe10, 0xfe19},
-      {0xfe30, 0xfe52},
-      {0xfe54, 0xfe66},
-      {0xfe68, 0xfe6b},
-      {0xff01, 0xff60},
-      {0xffe0, 0xffe6},
-      {0x16fe0, 0x16fe3},
-      {0x16ff0, 0x16ff1},
-      {0x17000, 0x187f7},
-      {0x18800, 0x18cd5},
-      {0x18cff, 0x18d08},
-      {0x1aff0, 0x1aff3},
-      {0x1aff5, 0x1affb},
-      {0x1affd, 0x1affe},
-      {0x1b000, 0x1b122},
-      {0x1b132, 0x1b132},
-      {0x1b150, 0x1b152},
-      {0x1b155, 0x1b155},
-      {0x1b164, 0x1b167},
-      {0x1b170, 0x1b2fb},
-      {0x1d300, 0x1d356},
-      {0x1d360, 0x1d376},
-      {0x1f004, 0x1f004},
-      {0x1f0cf, 0x1f0cf},
-      {0x1f18e, 0x1f18e},
-      {0x1f191, 0x1f19a},
-      {0x1f200, 0x1f202},
-      {0x1f210, 0x1f23b},
-      {0x1f240, 0x1f248},
-      {0x1f250, 0x1f251},
-      {0x1f260, 0x1f265},
-      {0x1f300, 0x1f320},
-      {0x1f32d, 0x1f335},
-      {0x1f337, 0x1f37c},
-      {0x1f37e, 0x1f393},
-      {0x1f3a0, 0x1f3ca},
-      {0x1f3cf, 0x1f3d3},
-      {0x1f3e0, 0x1f3f0},
-      {0x1f3f4, 0x1f3f4},
-      {0x1f3f8, 0x1f43e},
-      {0x1f440, 0x1f440},
-      {0x1f442, 0x1f4fc},
-      {0x1f4ff, 0x1f53d},
-      {0x1f54b, 0x1f54e},
-      {0x1f550, 0x1f567},
-      {0x1f57a, 0x1f57a},
-      {0x1f595, 0x1f596},
-      {0x1f5a4, 0x1f5a4},
-      {0x1f5fb, 0x1f64f},
-      {0x1f680, 0x1f6c5},
-      {0x1f6cc, 0x1f6cc},
-      {0x1f6d0, 0x1f6d2},
-      {0x1f6d5, 0x1f6d7},
-      {0x1f6dc, 0x1f6df},
-      {0x1f6eb, 0x1f6ec},
-      {0x1f6f4, 0x1f6fc},
-      {0x1f7e0, 0x1f7eb},
-      {0x1f7f0, 0x1f7f0},
-      {0x1f90c, 0x1f93a},
-      {0x1f93c, 0x1f945},
-      {0x1f947, 0x1f9ff},
-      {0x1fa70, 0x1fa7c},
-      {0x1fa80, 0x1fa89},
-      {0x1fa8f, 0x1fac6},
-      {0x1face, 0x1fadc},
-      {0x1fadf, 0x1fae9},
-      {0x1faf0, 0x1faf8},
-      {0x20000, 0x2fffd},
-      {0x30000, 0x3fffd}
-   };
-
-   if (c >= 0x100) {
-      if (!utf_printable(c))
-         return 6;      // unprintable, displays <xxxx>
-      if (intable(doublewidth, sizeof(doublewidth), c))
-         return 2;
-   }
-   // Characters below 0x100 are influenced by 'isprint' option
-   ei (c >= 0x80 && !bookIsCharPrintable(c))
-      return 4;      // unprintable, displays <xx>
-
-
-   return 1;
-}
-
-int
-mb_ptr2cells(CS p) {
-   // Need to convert to a character number.
-   if (*p >= 0x80) {
-      int c = mb_ptr2char(p);
-      // An illegal byte is displayed as <xx>.
-      if (utf_ptr2len(p) == 1 || c == ZERO)
-         return 4;
-      // If the char is ASCII it must be an overlong sequence.
-      if (c < 0x80)
-         return char2cells(c);
-      return mb_char2cells(c);
-   }
-   return 1;
-}
-
-int
-mb_ptr2cells_len(CS p, int size) {
-   // Need to convert to a wide character.
-   if (size > 0 && *p >= 0x80) {
-      if (utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p])
-          return 1;  // truncated
-      int c = mb_ptr2char(p);
-      // An illegal byte is displayed as <xx>.
-      if (utf_ptr2len(p) == 1 || c == ZERO)
-          return 4;
-      // If the char is ASCII it must be an overlong sequence.
-      if (c < 0x80)
-          return char2cells(c);
-      return mb_char2cells(c);
-    }
-    return 1;
-}
-
-//Return the number of cells occupied by string "p".
-//Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
-int
-mb_string2cells(CS p, int len) {
-   int clen = 0;
-
-   for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
-      clen += mb_ptr2cells(p + i);
-   return clen;
-}
-
-//Convert a UTF-8 byte sequence to a character number.
-//If the sequence is illegal or truncated by a ZERO the first byte is returned.
-//For an overlong sequence this may return zero.
-//Do not include composing characters, of course.
-Unt
-mb_ptr2char(Byte* p) {
-   if (p[0] < 0x80)   // be quick for ASCII
-      return (Unt)p[0];
-
-   int len = utf8LenTable_zero[p[0]];
-   if (len > 1 && (p[1] & 0xc0) == 0x80) {
-      if (len == 2)
-         return ((p[0] & 0x1f) << 6) + (p[1] & 0x3f);
-      if ((p[2] & 0xc0) == 0x80) {
-         if (len == 3)
-         return ((p[0] & 0x0f) << 12) + ((p[1] & 0x3f) << 6) + (p[2] & 0x3f);
-         if ((p[3] & 0xc0) == 0x80) {
-            if (len == 4) {
-               return ((p[0] & 0x07) << 18) + ((p[1] & 0x3f) << 12)
-                  + ((p[2] & 0x3f) << 6) + (p[3] & 0x3f);
-           } 
-           if ((p[4] & 0xc0) == 0x80) {
-               if (len == 5) {
-                  return ((p[0] & 0x03) << 24) + ((p[1] & 0x3f) << 18)
-                     + ((p[2] & 0x3f) << 12) + ((p[3] & 0x3f) << 6)
-                     + (p[4] & 0x3f);
-               } 
-               if ((p[5] & 0xc0) == 0x80 && len == 6) {
-                 return ((p[0] & 0x01) << 30) + ((p[1] & 0x3f) << 24)
-                    + ((p[2] & 0x3f) << 18) + ((p[3] & 0x3f) << 12)
-                    + ((p[4] & 0x3f) << 6) + (p[5] & 0x3f);
-               } 
-            }
-         }
-      }
-   }
-   // Illegal value, just return the first byte
-   return p[0];
-}
-
-//Convert a UTF-8 byte sequence to a wide character.
-//String is assumed to be terminated by ZERO or after "n" bytes, whichever comes first.
-//The function is safe in the sense that it never accesses memory beyond the
-//first "n" bytes of "s".
-//
-//On success, return decoded codepoint, advance "s" to the beginning of next character and 
-//decrease "n" accordingly.
-//
-//If end of string was reached, return 0 and, if "n" > 0, advance "s" past ZERO byte.
-//
-//If byte sequence is illegal or incomplete, returns UNT and does not advance "s".
-private Unt
-utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
-   Unt      c;
-
-   if (*n == 0) // end of buffer
-      return 0;
-
-   int k = utf8LenTable_zero[**s];
-
-   if (k == 1) {
-      // ASCII character or ZERO
-      (*n)--;
-      return *(*s)++;
-   }
-
-   if ((Unt)k <= *n) {
-      //We have a multibyte sequence and it isn't truncated by buffer limits so mb_ptr2char() is 
-      //safe to use. Or the first byte is illegal (k=0), and it's also safe to use mb_ptr2char().
-      c = mb_ptr2char(*s);
-
-      //On failure, mb_ptr2char() returns the first byte, so here we check equality with the first 
-      //byte. The only non-ASCII character which equals the first byte of its own UTF-8 
-      //representation is U+00C3 (UTF-8: 0xC3 0x83), so need to check that special case too.
-      //It's safe even if n=1, else we would have k=2 > n.
-      if (c != (int)(**s) || (c == 0xC3 && (*s)[1] == 0x83)) {
-          // byte sequence was successfully decoded
-          *s += k;
-          *n -= k;
-          return c;
-      }
-   }
-
-   // byte sequence is incomplete or illegal
-   return UNT;
-}
-
-//Get character at **pp and advance *pp to the next character.
-//Note: composing characters are skipped!
-Unt
-inpAdvanceMultibyte(OUT CS* pp) {
-   Unt c = mb_ptr2char(*pp);
-   *pp += utfCharLen(*pp);
-   return c;
-}
-
-//Get character at **pp and advance *pp to the next character.
-//Note: composing characters are returned as separate characters.
-Unt
-mb_cptr2char_adv(OUT CS* pp) {
-   Unt c = mb_ptr2char(*pp);
-   *pp += utf_ptr2len(*pp);
-   return c;
-}
-
 #ifdef PROTO
 //Check if the character pointed to by "p2" is a composing character when it
 //comes after "p1".  For Arabic sometimes "ab" is replaced with "c", which
@@ -3929,655 +3705,6 @@ utfc_ptr2char_len(
 
    return c;
 }
-
-// Get the length of a UTF-8 byte sequence, excluding any following composing characters.
-// Return 0 for "". Return 1 for an illegal byte sequence.
-Unt
-utf_ptr2len(CS p) {
-   if (*p == ZERO)
-      return 0;
-   Unt len = utf8LenTable[*p];
-   for (Unt i = 1; i < len; ++i) {
-      if ((p[i] & 0xc0) != 0x80)
-         return 1;
-   } 
-   return len;
-}
-
-//Return length of UTF-8 character obtained from the first byte. "b" must be between 0 and 255!
-//Return 1 for an invalid first byte value.
-Unt
-utf_byte2len(int b) {
-   return utf8LenTable[b];
-}
-
-//Return length of UTF-8 character, obtained from the first byte.
-//"b" must be between 0 and 255! Return 0 for an invalid first byte value.
-Unt
-utf_byte2len_zero(int b) {
-   return utf8LenTable_zero[b];
-}
-
-//Get the length of UTF-8 byte sequence "p[size]". Do not include any following composing 
-//characters. Return 1 for "". 1 for an illegal byte sequence (also in incomplete byte seq.).
-//number > "size" for an incomplete byte sequence. Never return 0.
-Unt
-utf_ptr2len_len(Byte const* p, int size) {
-   Unt len = utf8LenTable[*p];
-   if (len == 1)
-      return 1;   // ZERO, ascii or illegal lead byte
-   Unt m;
-   if ((int)len > size)
-      m = size;   // incomplete byte sequence.
-   else
-      m = len;
-   for (Unt i = 1; i < m; ++i) {
-      if ((p[i] & 0xc0) != 0x80)
-         return 1;
-   } 
-   return len;
-}
-
-// Return the number of bytes the UTF-8 encoding of character "c" takes.
-// This does not include composing characters.
-Unt
-mb_char2len(Unt c) {
-   if (c < 0x80)
-      return 1;
-   if (c < 0x800)
-      return 2;
-   if (c < 0x10000)
-      return 3;
-   if (c < 0x200000)
-      return 4;
-   if (c < 0x4000000)
-      return 5;
-   return 6;
-}
-
-// Convert Unicode character "c" to UTF-8 string in "buf[]". Returns the number of bytes.
-int
-mb_char2bytes(Unt c, CS buf) {
-   if (c < 0x80)   { // 7 bits
-      buf[0] = c;
-      return 1;
-   }
-   if (c < 0x800) {    // 11 bits
-      buf[0] = 0xc0 + (c >> 6);
-      buf[1] = 0x80 + (c & 0x3f);
-      return 2;
-   }
-   if (c < 0x10000) {      // 16 bits
-      buf[0] = 0xe0 + (c >> 12);
-      buf[1] = 0x80 + ((c >> 6) & 0x3f);
-      buf[2] = 0x80 + (c & 0x3f);
-      return 3;
-   }
-   if (c < 0x200000) {     // 21 bits
-      buf[0] = 0xf0 + (c >> 18);
-      buf[1] = 0x80 + ((c >> 12) & 0x3f);
-      buf[2] = 0x80 + ((c >> 6) & 0x3f);
-      buf[3] = 0x80 + (c & 0x3f);
-      return 4;
-   }
-   if (c < 0x4000000) {     // 26 bits
-      buf[0] = 0xf8 + (c >> 24);
-      buf[1] = 0x80 + ((c >> 18) & 0x3f);
-      buf[2] = 0x80 + ((c >> 12) & 0x3f);
-      buf[3] = 0x80 + ((c >> 6) & 0x3f);
-      buf[4] = 0x80 + (c & 0x3f);
-      return 5;
-   }
-   // 31 bits
-   buf[0] = 0xfc + (c >> 30);
-   buf[1] = 0x80 + ((c >> 24) & 0x3f);
-   buf[2] = 0x80 + ((c >> 18) & 0x3f);
-   buf[3] = 0x80 + ((c >> 12) & 0x3f);
-   buf[4] = 0x80 + ((c >> 6) & 0x3f);
-   buf[5] = 0x80 + (c & 0x3f);
-   return 6;
-}
-
-// utf_iscomposing() with different argument type for libvterm.
-int
-utf_iscomposing_uint(Unt c) {
-   return utf_iscomposing(c);
-}
-
-//Return true if "c" is a composing UTF-8 character.  This means it will be
-//drawn on top of the preceding character. Based on code from Markus Kuhn.
-Boole
-utf_iscomposing(Unt c) {
-   // Sorted list of non-overlapping intervals.
-   // Generated by ../runtime/tools/unicode.vim.
-   static Interval combining[] = {
-      {0x0300, 0x036f},
-      {0x0483, 0x0489},
-      {0x0591, 0x05bd},
-      {0x05bf, 0x05bf},
-      {0x05c1, 0x05c2},
-      {0x05c4, 0x05c5},
-      {0x05c7, 0x05c7},
-      {0x0610, 0x061a},
-      {0x064b, 0x065f},
-      {0x0670, 0x0670},
-      {0x06d6, 0x06dc},
-      {0x06df, 0x06e4},
-      {0x06e7, 0x06e8},
-      {0x06ea, 0x06ed},
-      {0x0711, 0x0711},
-      {0x0730, 0x074a},
-      {0x07a6, 0x07b0},
-      {0x07eb, 0x07f3},
-      {0x07fd, 0x07fd},
-      {0x0816, 0x0819},
-      {0x081b, 0x0823},
-      {0x0825, 0x0827},
-      {0x0829, 0x082d},
-      {0x0859, 0x085b},
-      {0x0897, 0x089f},
-      {0x08ca, 0x08e1},
-      {0x08e3, 0x0902},
-      {0x093a, 0x093a},
-      {0x093c, 0x093c},
-      {0x0941, 0x0948},
-      {0x094d, 0x094d},
-      {0x0951, 0x0957},
-      {0x0962, 0x0963},
-      {0x0981, 0x0981},
-      {0x09bc, 0x09bc},
-      {0x09c1, 0x09c4},
-      {0x09cd, 0x09cd},
-      {0x09e2, 0x09e3},
-      {0x09fe, 0x09fe},
-      {0x0a01, 0x0a02},
-      {0x0a3c, 0x0a3c},
-      {0x0a41, 0x0a42},
-      {0x0a47, 0x0a48},
-      {0x0a4b, 0x0a4d},
-      {0x0a51, 0x0a51},
-      {0x0a70, 0x0a71},
-      {0x0a75, 0x0a75},
-      {0x0a81, 0x0a82},
-      {0x0abc, 0x0abc},
-      {0x0ac1, 0x0ac5},
-      {0x0ac7, 0x0ac8},
-      {0x0acd, 0x0acd},
-      {0x0ae2, 0x0ae3},
-      {0x0afa, 0x0aff},
-      {0x0b01, 0x0b01},
-      {0x0b3c, 0x0b3c},
-      {0x0b3f, 0x0b3f},
-      {0x0b41, 0x0b44},
-      {0x0b4d, 0x0b4d},
-      {0x0b55, 0x0b56},
-      {0x0b62, 0x0b63},
-      {0x0b82, 0x0b82},
-      {0x0bc0, 0x0bc0},
-      {0x0bcd, 0x0bcd},
-      {0x0c00, 0x0c00},
-      {0x0c04, 0x0c04},
-      {0x0c3c, 0x0c3c},
-      {0x0c3e, 0x0c40},
-      {0x0c46, 0x0c48},
-      {0x0c4a, 0x0c4d},
-      {0x0c55, 0x0c56},
-      {0x0c62, 0x0c63},
-      {0x0c81, 0x0c81},
-      {0x0cbc, 0x0cbc},
-      {0x0cbf, 0x0cbf},
-      {0x0cc6, 0x0cc6},
-      {0x0ccc, 0x0ccd},
-      {0x0ce2, 0x0ce3},
-      {0x0d00, 0x0d01},
-      {0x0d3b, 0x0d3c},
-      {0x0d41, 0x0d44},
-      {0x0d4d, 0x0d4d},
-      {0x0d62, 0x0d63},
-      {0x0d81, 0x0d81},
-      {0x0dca, 0x0dca},
-      {0x0dd2, 0x0dd4},
-      {0x0dd6, 0x0dd6},
-      {0x0e31, 0x0e31},
-      {0x0e34, 0x0e3a},
-      {0x0e47, 0x0e4e},
-      {0x0eb1, 0x0eb1},
-      {0x0eb4, 0x0ebc},
-      {0x0ec8, 0x0ece},
-      {0x0f18, 0x0f19},
-      {0x0f35, 0x0f35},
-      {0x0f37, 0x0f37},
-      {0x0f39, 0x0f39},
-      {0x0f71, 0x0f7e},
-      {0x0f80, 0x0f84},
-      {0x0f86, 0x0f87},
-      {0x0f8d, 0x0f97},
-      {0x0f99, 0x0fbc},
-      {0x0fc6, 0x0fc6},
-      {0x102d, 0x1030},
-      {0x1032, 0x1037},
-      {0x1039, 0x103a},
-      {0x103d, 0x103e},
-      {0x1058, 0x1059},
-      {0x105e, 0x1060},
-      {0x1071, 0x1074},
-      {0x1082, 0x1082},
-      {0x1085, 0x1086},
-      {0x108d, 0x108d},
-      {0x109d, 0x109d},
-      {0x135d, 0x135f},
-      {0x1712, 0x1714},
-      {0x1732, 0x1733},
-      {0x1752, 0x1753},
-      {0x1772, 0x1773},
-      {0x17b4, 0x17b5},
-      {0x17b7, 0x17bd},
-      {0x17c6, 0x17c6},
-      {0x17c9, 0x17d3},
-      {0x17dd, 0x17dd},
-      {0x180b, 0x180d},
-      {0x180f, 0x180f},
-      {0x1885, 0x1886},
-      {0x18a9, 0x18a9},
-      {0x1920, 0x1922},
-      {0x1927, 0x1928},
-      {0x1932, 0x1932},
-      {0x1939, 0x193b},
-      {0x1a17, 0x1a18},
-      {0x1a1b, 0x1a1b},
-      {0x1a56, 0x1a56},
-      {0x1a58, 0x1a5e},
-      {0x1a60, 0x1a60},
-      {0x1a62, 0x1a62},
-      {0x1a65, 0x1a6c},
-      {0x1a73, 0x1a7c},
-      {0x1a7f, 0x1a7f},
-      {0x1ab0, 0x1ace},
-      {0x1b00, 0x1b03},
-      {0x1b34, 0x1b34},
-      {0x1b36, 0x1b3a},
-      {0x1b3c, 0x1b3c},
-      {0x1b42, 0x1b42},
-      {0x1b6b, 0x1b73},
-      {0x1b80, 0x1b81},
-      {0x1ba2, 0x1ba5},
-      {0x1ba8, 0x1ba9},
-      {0x1bab, 0x1bad},
-      {0x1be6, 0x1be6},
-      {0x1be8, 0x1be9},
-      {0x1bed, 0x1bed},
-      {0x1bef, 0x1bf1},
-      {0x1c2c, 0x1c33},
-      {0x1c36, 0x1c37},
-      {0x1cd0, 0x1cd2},
-      {0x1cd4, 0x1ce0},
-      {0x1ce2, 0x1ce8},
-      {0x1ced, 0x1ced},
-      {0x1cf4, 0x1cf4},
-      {0x1cf8, 0x1cf9},
-      {0x1dc0, 0x1dff},
-      {0x20d0, 0x20f0},
-      {0x2cef, 0x2cf1},
-      {0x2d7f, 0x2d7f},
-      {0x2de0, 0x2dff},
-      {0x302a, 0x302d},
-      {0x3099, 0x309a},
-      {0xa66f, 0xa672},
-      {0xa674, 0xa67d},
-      {0xa69e, 0xa69f},
-      {0xa6f0, 0xa6f1},
-      {0xa802, 0xa802},
-      {0xa806, 0xa806},
-      {0xa80b, 0xa80b},
-      {0xa825, 0xa826},
-      {0xa82c, 0xa82c},
-      {0xa8c4, 0xa8c5},
-      {0xa8e0, 0xa8f1},
-      {0xa8ff, 0xa8ff},
-      {0xa926, 0xa92d},
-      {0xa947, 0xa951},
-      {0xa980, 0xa982},
-      {0xa9b3, 0xa9b3},
-      {0xa9b6, 0xa9b9},
-      {0xa9bc, 0xa9bd},
-      {0xa9e5, 0xa9e5},
-      {0xaa29, 0xaa2e},
-      {0xaa31, 0xaa32},
-      {0xaa35, 0xaa36},
-      {0xaa43, 0xaa43},
-      {0xaa4c, 0xaa4c},
-      {0xaa7c, 0xaa7c},
-      {0xaab0, 0xaab0},
-      {0xaab2, 0xaab4},
-      {0xaab7, 0xaab8},
-      {0xaabe, 0xaabf},
-      {0xaac1, 0xaac1},
-      {0xaaec, 0xaaed},
-      {0xaaf6, 0xaaf6},
-      {0xabe5, 0xabe5},
-      {0xabe8, 0xabe8},
-      {0xabed, 0xabed},
-      {0xfb1e, 0xfb1e},
-      {0xfe00, 0xfe0f},
-      {0xfe20, 0xfe2f},
-      {0x101fd, 0x101fd},
-      {0x102e0, 0x102e0},
-      {0x10376, 0x1037a},
-      {0x10a01, 0x10a03},
-      {0x10a05, 0x10a06},
-      {0x10a0c, 0x10a0f},
-      {0x10a38, 0x10a3a},
-      {0x10a3f, 0x10a3f},
-      {0x10ae5, 0x10ae6},
-      {0x10d24, 0x10d27},
-      {0x10d69, 0x10d6d},
-      {0x10eab, 0x10eac},
-      {0x10efc, 0x10eff},
-      {0x10f46, 0x10f50},
-      {0x10f82, 0x10f85},
-      {0x11001, 0x11001},
-      {0x11038, 0x11046},
-      {0x11070, 0x11070},
-      {0x11073, 0x11074},
-      {0x1107f, 0x11081},
-      {0x110b3, 0x110b6},
-      {0x110b9, 0x110ba},
-      {0x110c2, 0x110c2},
-      {0x11100, 0x11102},
-      {0x11127, 0x1112b},
-      {0x1112d, 0x11134},
-      {0x11173, 0x11173},
-      {0x11180, 0x11181},
-      {0x111b6, 0x111be},
-      {0x111c9, 0x111cc},
-      {0x111cf, 0x111cf},
-      {0x1122f, 0x11231},
-      {0x11234, 0x11234},
-      {0x11236, 0x11237},
-      {0x1123e, 0x1123e},
-      {0x11241, 0x11241},
-      {0x112df, 0x112df},
-      {0x112e3, 0x112ea},
-      {0x11300, 0x11301},
-      {0x1133b, 0x1133c},
-      {0x11340, 0x11340},
-      {0x11366, 0x1136c},
-      {0x11370, 0x11374},
-      {0x113bb, 0x113c0},
-      {0x113ce, 0x113ce},
-      {0x113d0, 0x113d0},
-      {0x113d2, 0x113d2},
-      {0x113e1, 0x113e2},
-      {0x11438, 0x1143f},
-      {0x11442, 0x11444},
-      {0x11446, 0x11446},
-      {0x1145e, 0x1145e},
-      {0x114b3, 0x114b8},
-      {0x114ba, 0x114ba},
-      {0x114bf, 0x114c0},
-      {0x114c2, 0x114c3},
-      {0x115b2, 0x115b5},
-      {0x115bc, 0x115bd},
-      {0x115bf, 0x115c0},
-      {0x115dc, 0x115dd},
-      {0x11633, 0x1163a},
-      {0x1163d, 0x1163d},
-      {0x1163f, 0x11640},
-      {0x116ab, 0x116ab},
-      {0x116ad, 0x116ad},
-      {0x116b0, 0x116b5},
-      {0x116b7, 0x116b7},
-      {0x1171d, 0x1171d},
-      {0x1171f, 0x1171f},
-      {0x11722, 0x11725},
-      {0x11727, 0x1172b},
-      {0x1182f, 0x11837},
-      {0x11839, 0x1183a},
-      {0x1193b, 0x1193c},
-      {0x1193e, 0x1193e},
-      {0x11943, 0x11943},
-      {0x119d4, 0x119d7},
-      {0x119da, 0x119db},
-      {0x119e0, 0x119e0},
-      {0x11a01, 0x11a0a},
-      {0x11a33, 0x11a38},
-      {0x11a3b, 0x11a3e},
-      {0x11a47, 0x11a47},
-      {0x11a51, 0x11a56},
-      {0x11a59, 0x11a5b},
-      {0x11a8a, 0x11a96},
-      {0x11a98, 0x11a99},
-      {0x11c30, 0x11c36},
-      {0x11c38, 0x11c3d},
-      {0x11c3f, 0x11c3f},
-      {0x11c92, 0x11ca7},
-      {0x11caa, 0x11cb0},
-      {0x11cb2, 0x11cb3},
-      {0x11cb5, 0x11cb6},
-      {0x11d31, 0x11d36},
-      {0x11d3a, 0x11d3a},
-      {0x11d3c, 0x11d3d},
-      {0x11d3f, 0x11d45},
-      {0x11d47, 0x11d47},
-      {0x11d90, 0x11d91},
-      {0x11d95, 0x11d95},
-      {0x11d97, 0x11d97},
-      {0x11ef3, 0x11ef4},
-      {0x11f00, 0x11f01},
-      {0x11f36, 0x11f3a},
-      {0x11f40, 0x11f40},
-      {0x11f42, 0x11f42},
-      {0x11f5a, 0x11f5a},
-      {0x13440, 0x13440},
-      {0x13447, 0x13455},
-      {0x1611e, 0x16129},
-      {0x1612d, 0x1612f},
-      {0x16af0, 0x16af4},
-      {0x16b30, 0x16b36},
-      {0x16f4f, 0x16f4f},
-      {0x16f8f, 0x16f92},
-      {0x16fe4, 0x16fe4},
-      {0x1bc9d, 0x1bc9e},
-      {0x1cf00, 0x1cf2d},
-      {0x1cf30, 0x1cf46},
-      {0x1d167, 0x1d169},
-      {0x1d17b, 0x1d182},
-      {0x1d185, 0x1d18b},
-      {0x1d1aa, 0x1d1ad},
-      {0x1d242, 0x1d244},
-      {0x1da00, 0x1da36},
-      {0x1da3b, 0x1da6c},
-      {0x1da75, 0x1da75},
-      {0x1da84, 0x1da84},
-      {0x1da9b, 0x1da9f},
-      {0x1daa1, 0x1daaf},
-      {0x1e000, 0x1e006},
-      {0x1e008, 0x1e018},
-      {0x1e01b, 0x1e021},
-      {0x1e023, 0x1e024},
-      {0x1e026, 0x1e02a},
-      {0x1e08f, 0x1e08f},
-      {0x1e130, 0x1e136},
-      {0x1e2ae, 0x1e2ae},
-      {0x1e2ec, 0x1e2ef},
-      {0x1e4ec, 0x1e4ef},
-      {0x1e5ee, 0x1e5ef},
-      {0x1e8d0, 0x1e8d6},
-      {0x1e944, 0x1e94a},
-      {0xe0100, 0xe01ef}
-   };
-
-   return intable(combining, sizeof(combining), c);
-}
-
-//Return true for characters that can be displayed in a normal way.
-//Only for characters of 0x100 and above!
-Boole
-utf_printable(Unt c) {
-   // Sorted list of non-overlapping intervals.
-   // 0xd800-0xdfff is reserved for UTF-16, actually illegal.
-   static Interval nonprint[] = {
-      {0x070f, 0x070f}, {0x180b, 0x180e}, {0x200b, 0x200f}, {0x202a, 0x202e},
-      {0x2060, 0x206f}, {0xd800, 0xdfff}, {0xfeff, 0xfeff}, {0xfff9, 0xfffb},
-      {0xfffe, 0xffff}
-   };
-
-   return !intable(nonprint, sizeof(nonprint), c);
-}
-
-// Sorted list of non-overlapping intervals of all Emoji characters,
-// based on http://unicode.org/emoji/charts/emoji-list.html
-// Generated by ../runtime/tools/unicode.vim.
-// Excludes 0x00a9 and 0x00ae because they are considered latin1.
-private Interval emoji_all[] = {
-    {0x203c, 0x203c},
-    {0x2049, 0x2049},
-    {0x2122, 0x2122},
-    {0x2139, 0x2139},
-    {0x2194, 0x2199},
-    {0x21a9, 0x21aa},
-    {0x231a, 0x231b},
-    {0x2328, 0x2328},
-    {0x23cf, 0x23cf},
-    {0x23e9, 0x23f3},
-    {0x23f8, 0x23fa},
-    {0x24c2, 0x24c2},
-    {0x25aa, 0x25ab},
-    {0x25b6, 0x25b6},
-    {0x25c0, 0x25c0},
-    {0x25fb, 0x25fe},
-    {0x2600, 0x2604},
-    {0x260e, 0x260e},
-    {0x2611, 0x2611},
-    {0x2614, 0x2615},
-    {0x2618, 0x2618},
-    {0x261d, 0x261d},
-    {0x2620, 0x2620},
-    {0x2622, 0x2623},
-    {0x2626, 0x2626},
-    {0x262a, 0x262a},
-    {0x262e, 0x262f},
-    {0x2638, 0x263a},
-    {0x2640, 0x2640},
-    {0x2642, 0x2642},
-    {0x2648, 0x2653},
-    {0x265f, 0x2660},
-    {0x2663, 0x2663},
-    {0x2665, 0x2666},
-    {0x2668, 0x2668},
-    {0x267b, 0x267b},
-    {0x267e, 0x267f},
-    {0x2692, 0x2697},
-    {0x2699, 0x2699},
-    {0x269b, 0x269c},
-    {0x26a0, 0x26a1},
-    {0x26a7, 0x26a7},
-    {0x26aa, 0x26ab},
-    {0x26b0, 0x26b1},
-    {0x26bd, 0x26be},
-    {0x26c4, 0x26c5},
-    {0x26c8, 0x26c8},
-    {0x26ce, 0x26cf},
-    {0x26d1, 0x26d1},
-    {0x26d3, 0x26d4},
-    {0x26e9, 0x26ea},
-    {0x26f0, 0x26f5},
-    {0x26f7, 0x26fa},
-    {0x26fd, 0x26fd},
-    {0x2702, 0x2702},
-    {0x2705, 0x2705},
-    {0x2708, 0x270d},
-    {0x270f, 0x270f},
-    {0x2712, 0x2712},
-    {0x2714, 0x2714},
-    {0x2716, 0x2716},
-    {0x271d, 0x271d},
-    {0x2721, 0x2721},
-    {0x2728, 0x2728},
-    {0x2733, 0x2734},
-    {0x2744, 0x2744},
-    {0x2747, 0x2747},
-    {0x274c, 0x274c},
-    {0x274e, 0x274e},
-    {0x2753, 0x2755},
-    {0x2757, 0x2757},
-    {0x2763, 0x2764},
-    {0x2795, 0x2797},
-    {0x27a1, 0x27a1},
-    {0x27b0, 0x27b0},
-    {0x27bf, 0x27bf},
-    {0x2934, 0x2935},
-    {0x2b05, 0x2b07},
-    {0x2b1b, 0x2b1c},
-    {0x2b50, 0x2b50},
-    {0x2b55, 0x2b55},
-    {0x3030, 0x3030},
-    {0x303d, 0x303d},
-    {0x3297, 0x3297},
-    {0x3299, 0x3299},
-    {0x1f004, 0x1f004},
-    {0x1f0cf, 0x1f0cf},
-    {0x1f170, 0x1f171},
-    {0x1f17e, 0x1f17f},
-    {0x1f18e, 0x1f18e},
-    {0x1f191, 0x1f19a},
-    {0x1f1e6, 0x1f1ff},
-    {0x1f201, 0x1f202},
-    {0x1f21a, 0x1f21a},
-    {0x1f22f, 0x1f22f},
-    {0x1f232, 0x1f23a},
-    {0x1f250, 0x1f251},
-    {0x1f300, 0x1f321},
-    {0x1f324, 0x1f393},
-    {0x1f396, 0x1f397},
-    {0x1f399, 0x1f39b},
-    {0x1f39e, 0x1f3f0},
-    {0x1f3f3, 0x1f3f5},
-    {0x1f3f7, 0x1f4fd},
-    {0x1f4ff, 0x1f53d},
-    {0x1f549, 0x1f54e},
-    {0x1f550, 0x1f567},
-    {0x1f56f, 0x1f570},
-    {0x1f573, 0x1f57a},
-    {0x1f587, 0x1f587},
-    {0x1f58a, 0x1f58d},
-    {0x1f590, 0x1f590},
-    {0x1f595, 0x1f596},
-    {0x1f5a4, 0x1f5a5},
-    {0x1f5a8, 0x1f5a8},
-    {0x1f5b1, 0x1f5b2},
-    {0x1f5bc, 0x1f5bc},
-    {0x1f5c2, 0x1f5c4},
-    {0x1f5d1, 0x1f5d3},
-    {0x1f5dc, 0x1f5de},
-    {0x1f5e1, 0x1f5e1},
-    {0x1f5e3, 0x1f5e3},
-    {0x1f5e8, 0x1f5e8},
-    {0x1f5ef, 0x1f5ef},
-    {0x1f5f3, 0x1f5f3},
-    {0x1f5fa, 0x1f64f},
-    {0x1f680, 0x1f6c5},
-    {0x1f6cb, 0x1f6d2},
-    {0x1f6d5, 0x1f6d7},
-    {0x1f6dc, 0x1f6e5},
-    {0x1f6e9, 0x1f6e9},
-    {0x1f6eb, 0x1f6ec},
-    {0x1f6f0, 0x1f6f0},
-    {0x1f6f3, 0x1f6fc},
-    {0x1f7e0, 0x1f7eb},
-    {0x1f7f0, 0x1f7f0},
-    {0x1f90c, 0x1f93a},
-    {0x1f93c, 0x1f945},
-    {0x1f947, 0x1f9ff},
-    {0x1fa70, 0x1fa7c},
-    {0x1fa80, 0x1fa88},
-    {0x1fa90, 0x1fabd},
-    {0x1fabf, 0x1fac5},
-    {0x1face, 0x1fadb},
-    {0x1fae0, 0x1fae8},
-    {0x1faf0, 0x1faf8}
-};
-
 // Get class of a Unicode character.
 // 0: white space
 // 1: punctuation
@@ -4585,6 +3712,35 @@ private Interval emoji_all[] = {
 int
 utf_class(int c) {
    return utf_class_buf(c, curBook);
+}
+
+//If the cursor moves on an trail byte, set the cursor on the lead byte.
+//Thus it moves left if necessary. Return true when the cursor was adjusted.
+void
+mb_adjust_cursor(void) {
+   mb_adjustpos(curBook, &curPor->cursor);
+}
+
+//Adjust position "*lp" to point to the first byte of a multi-byte character.
+//If it points to a tail byte it's moved backwards to the head byte.
+void
+mb_adjustpos(Book* book, Pos *lp) {
+   CS p;
+
+   if (lp->col > 0 || lp->coladd > 1) {
+      p = memGetLine(book, lp->lnum, false);
+      if (*p == ZERO || memGetBookLen(book, lp->lnum) < lp->col)
+          lp->col = 0;
+      else
+          lp->col -= mb_head_off(p, p + lp->col);
+   }
+}
+
+void
+f_charclass(Arr(Var) argvars, Var* returnVar UNUSED) {
+   if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
+      return;
+   returnVar->number = mb_get_class(argvars[0].string);
 }
 
 int
@@ -4682,7 +3838,7 @@ utf_class_buf(Unt c, Book* book) {
    }
 
    // emoji
-   if (intable(emoji_all, sizeof(emoji_all), c))
+   if (strInEmojiTable(c))
       return 3;
 
    // binary search in table
@@ -4700,383 +3856,72 @@ utf_class_buf(Unt c, Book* book) {
    return 2;
 }
 
+typedef struct { // copy from strings.c
+   long first;
+   long last;
+} Interval;
+
+//For UTF-8 character "c" return 2 for a double-width character, 1 for others.
+//Return 4 or 6 for an unprintable character.
+//Is only correct for characters >= 0x80.
 int
-utf_ambiguous_width(Unt c) {
-    return c >= 0x80 && (intable(ambiguous, sizeof(ambiguous), c)
-       || intable(emoji_all, sizeof(emoji_all), c));
-}
-
-//Code for Unicode case-dependent operations.  Based on notes in
-//http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
-//This code uses simple case folding, not full case folding.
-//Last updated for Unicode 5.2.
-
-//The following tables are built by ../runtime/tools/unicode.vim.
-//They must be in numeric order, because we use binary search.
-//An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
-//range from 0x41 to 0x5a inclusive, stepping by 1, are changed to folded/upper/lower by adding 32.
-typedef struct {
-   Unt rangeStart;
-   Unt rangeEnd;
-   int step;
-   int offset;
-} ConvertStruct;
-
-private ConvertStruct foldCase[] = {
-   {0x41,0x5a,1,32},
-   {0xb5,0xb5,-1,775},
-   {0xc0,0xd6,1,32},
-   {0xd8,0xde,1,32},
-   {0x100,0x12e,2,1},
-   {0x132,0x136,2,1},
-   {0x139,0x147,2,1},
-   {0x14a,0x176,2,1},
-   {0x178,0x178,-1,-121},
-   {0x179,0x17d,2,1},
-   {0x17f,0x17f,-1,-268},
-   {0x181,0x181,-1,210},
-   {0x182,0x184,2,1},
-   {0x186,0x186,-1,206},
-   {0x187,0x187,-1,1},
-   {0x189,0x18a,1,205},
-   {0x18b,0x18b,-1,1},
-   {0x18e,0x18e,-1,79},
-   {0x18f,0x18f,-1,202},
-   {0x190,0x190,-1,203},
-   {0x191,0x191,-1,1},
-   {0x193,0x193,-1,205},
-   {0x194,0x194,-1,207},
-   {0x196,0x196,-1,211},
-   {0x197,0x197,-1,209},
-   {0x198,0x198,-1,1},
-   {0x19c,0x19c,-1,211},
-   {0x19d,0x19d,-1,213},
-   {0x19f,0x19f,-1,214},
-   {0x1a0,0x1a4,2,1},
-   {0x1a6,0x1a6,-1,218},
-   {0x1a7,0x1a7,-1,1},
-   {0x1a9,0x1a9,-1,218},
-   {0x1ac,0x1ac,-1,1},
-   {0x1ae,0x1ae,-1,218},
-   {0x1af,0x1af,-1,1},
-   {0x1b1,0x1b2,1,217},
-   {0x1b3,0x1b5,2,1},
-   {0x1b7,0x1b7,-1,219},
-   {0x1b8,0x1bc,4,1},
-   {0x1c4,0x1c4,-1,2},
-   {0x1c5,0x1c5,-1,1},
-   {0x1c7,0x1c7,-1,2},
-   {0x1c8,0x1c8,-1,1},
-   {0x1ca,0x1ca,-1,2},
-   {0x1cb,0x1db,2,1},
-   {0x1de,0x1ee,2,1},
-   {0x1f1,0x1f1,-1,2},
-   {0x1f2,0x1f4,2,1},
-   {0x1f6,0x1f6,-1,-97},
-   {0x1f7,0x1f7,-1,-56},
-   {0x1f8,0x21e,2,1},
-   {0x220,0x220,-1,-130},
-   {0x222,0x232,2,1},
-   {0x23a,0x23a,-1,10795},
-   {0x23b,0x23b,-1,1},
-   {0x23d,0x23d,-1,-163},
-   {0x23e,0x23e,-1,10792},
-   {0x241,0x241,-1,1},
-   {0x243,0x243,-1,-195},
-   {0x244,0x244,-1,69},
-   {0x245,0x245,-1,71},
-   {0x246,0x24e,2,1},
-   {0x345,0x345,-1,116},
-   {0x370,0x372,2,1},
-   {0x376,0x376,-1,1},
-   {0x37f,0x37f,-1,116},
-   {0x386,0x386,-1,38},
-   {0x388,0x38a,1,37},
-   {0x38c,0x38c,-1,64},
-   {0x38e,0x38f,1,63},
-   {0x391,0x3a1,1,32},
-   {0x3a3,0x3ab,1,32},
-   {0x3c2,0x3c2,-1,1},
-   {0x3cf,0x3cf,-1,8},
-   {0x3d0,0x3d0,-1,-30},
-   {0x3d1,0x3d1,-1,-25},
-   {0x3d5,0x3d5,-1,-15},
-   {0x3d6,0x3d6,-1,-22},
-   {0x3d8,0x3ee,2,1},
-   {0x3f0,0x3f0,-1,-54},
-   {0x3f1,0x3f1,-1,-48},
-   {0x3f4,0x3f4,-1,-60},
-   {0x3f5,0x3f5,-1,-64},
-   {0x3f7,0x3f7,-1,1},
-   {0x3f9,0x3f9,-1,-7},
-   {0x3fa,0x3fa,-1,1},
-   {0x3fd,0x3ff,1,-130},
-   {0x400,0x40f,1,80},
-   {0x410,0x42f,1,32},
-   {0x460,0x480,2,1},
-   {0x48a,0x4be,2,1},
-   {0x4c0,0x4c0,-1,15},
-   {0x4c1,0x4cd,2,1},
-   {0x4d0,0x52e,2,1},
-   {0x531,0x556,1,48},
-   {0x10a0,0x10c5,1,7264},
-   {0x10c7,0x10cd,6,7264},
-   {0x13f8,0x13fd,1,-8},
-   {0x1c80,0x1c80,-1,-6222},
-   {0x1c81,0x1c81,-1,-6221},
-   {0x1c82,0x1c82,-1,-6212},
-   {0x1c83,0x1c84,1,-6210},
-   {0x1c85,0x1c85,-1,-6211},
-   {0x1c86,0x1c86,-1,-6204},
-   {0x1c87,0x1c87,-1,-6180},
-   {0x1c88,0x1c88,-1,35267},
-   {0x1c89,0x1c89,-1,1},
-   {0x1c90,0x1cba,1,-3008},
-   {0x1cbd,0x1cbf,1,-3008},
-   {0x1e00,0x1e94,2,1},
-   {0x1e9b,0x1e9b,-1,-58},
-   {0x1e9e,0x1e9e,-1,-7615},
-   {0x1ea0,0x1efe,2,1},
-   {0x1f08,0x1f0f,1,-8},
-   {0x1f18,0x1f1d,1,-8},
-   {0x1f28,0x1f2f,1,-8},
-   {0x1f38,0x1f3f,1,-8},
-   {0x1f48,0x1f4d,1,-8},
-   {0x1f59,0x1f5f,2,-8},
-   {0x1f68,0x1f6f,1,-8},
-   {0x1f88,0x1f8f,1,-8},
-   {0x1f98,0x1f9f,1,-8},
-   {0x1fa8,0x1faf,1,-8},
-   {0x1fb8,0x1fb9,1,-8},
-   {0x1fba,0x1fbb,1,-74},
-   {0x1fbc,0x1fbc,-1,-9},
-   {0x1fbe,0x1fbe,-1,-7173},
-   {0x1fc8,0x1fcb,1,-86},
-   {0x1fcc,0x1fcc,-1,-9},
-   {0x1fd3,0x1fd3,-1,-7235},
-   {0x1fd8,0x1fd9,1,-8},
-   {0x1fda,0x1fdb,1,-100},
-   {0x1fe3,0x1fe3,-1,-7219},
-   {0x1fe8,0x1fe9,1,-8},
-   {0x1fea,0x1feb,1,-112},
-   {0x1fec,0x1fec,-1,-7},
-   {0x1ff8,0x1ff9,1,-128},
-   {0x1ffa,0x1ffb,1,-126},
-   {0x1ffc,0x1ffc,-1,-9},
-   {0x2126,0x2126,-1,-7517},
-   {0x212a,0x212a,-1,-8383},
-   {0x212b,0x212b,-1,-8262},
-   {0x2132,0x2132,-1,28},
-   {0x2160,0x216f,1,16},
-   {0x2183,0x2183,-1,1},
-   {0x24b6,0x24cf,1,26},
-   {0x2c00,0x2c2f,1,48},
-   {0x2c60,0x2c60,-1,1},
-   {0x2c62,0x2c62,-1,-10743},
-   {0x2c63,0x2c63,-1,-3814},
-   {0x2c64,0x2c64,-1,-10727},
-   {0x2c67,0x2c6b,2,1},
-   {0x2c6d,0x2c6d,-1,-10780},
-   {0x2c6e,0x2c6e,-1,-10749},
-   {0x2c6f,0x2c6f,-1,-10783},
-   {0x2c70,0x2c70,-1,-10782},
-   {0x2c72,0x2c75,3,1},
-   {0x2c7e,0x2c7f,1,-10815},
-   {0x2c80,0x2ce2,2,1},
-   {0x2ceb,0x2ced,2,1},
-   {0x2cf2,0xa640,31054,1},
-   {0xa642,0xa66c,2,1},
-   {0xa680,0xa69a,2,1},
-   {0xa722,0xa72e,2,1},
-   {0xa732,0xa76e,2,1},
-   {0xa779,0xa77b,2,1},
-   {0xa77d,0xa77d,-1,-35332},
-   {0xa77e,0xa786,2,1},
-   {0xa78b,0xa78b,-1,1},
-   {0xa78d,0xa78d,-1,-42280},
-   {0xa790,0xa792,2,1},
-   {0xa796,0xa7a8,2,1},
-   {0xa7aa,0xa7aa,-1,-42308},
-   {0xa7ab,0xa7ab,-1,-42319},
-   {0xa7ac,0xa7ac,-1,-42315},
-   {0xa7ad,0xa7ad,-1,-42305},
-   {0xa7ae,0xa7ae,-1,-42308},
-   {0xa7b0,0xa7b0,-1,-42258},
-   {0xa7b1,0xa7b1,-1,-42282},
-   {0xa7b2,0xa7b2,-1,-42261},
-   {0xa7b3,0xa7b3,-1,928},
-   {0xa7b4,0xa7c2,2,1},
-   {0xa7c4,0xa7c4,-1,-48},
-   {0xa7c5,0xa7c5,-1,-42307},
-   {0xa7c6,0xa7c6,-1,-35384},
-   {0xa7c7,0xa7c9,2,1},
-   {0xa7cb,0xa7cb,-1,-42343},
-   {0xa7cc,0xa7d0,4,1},
-   {0xa7d6,0xa7da,2,1},
-   {0xa7dc,0xa7dc,-1,-42561},
-   {0xa7f5,0xa7f5,-1,1},
-   {0xab70,0xabbf,1,-38864},
-   {0xfb05,0xfb05,-1,1},
-   {0xff21,0xff3a,1,32},
-   {0x10400,0x10427,1,40},
-   {0x104b0,0x104d3,1,40},
-   {0x10570,0x1057a,1,39},
-   {0x1057c,0x1058a,1,39},
-   {0x1058c,0x10592,1,39},
-   {0x10594,0x10595,1,39},
-   {0x10c80,0x10cb2,1,64},
-   {0x10d50,0x10d65,1,32},
-   {0x118a0,0x118bf,1,32},
-   {0x16e40,0x16e5f,1,32},
-   {0x1e900,0x1e921,1,34}
-};
-
-//Generic conversion function for case operations.
-//Return the converted equivalent of "a", which is a UCS-4 character.  Use
-//the given conversion "table".  Uses binary search on "table".
-private Unt
-utf_convert(Unt a, ConvertStruct table[], int tableSize) {
-   int entries = tableSize / sizeof(ConvertStruct);
-   int start = 0;
-   int end = entries;
-   while (start < end) {
-      // need to search further
-      int mid = (end + start) / 2;
-      if (table[mid].rangeEnd < a)
-         start = mid + 1;
-      else
-         end = mid;
+mb_char2cells(int c) {
+   if (c >= 0x100) {
+      if (!utf_printable(c))
+         return 6;      // unprintable, displays <xxxx>
+      if (strInDoubleWidthTable(c))
+         return 2;
    }
-   if (start < entries
-          && table[start].rangeStart <= a
-          && a <= table[start].rangeEnd
-          && (a - table[start].rangeStart) % table[start].step == 0)
-      return (Unt)((int)a + table[start].offset);
-   else
-      return a;
+   // Characters below 0x100 are influenced by 'isprint' option
+   ei (c >= 0x80 && !bookIsCharPrintable(c))
+      return 4;      // unprintable, displays <xx>
+
+
+   return 1;
 }
 
-//Return the folded-case equivalent of "a", which is a UCS-4 character. Uses simple case folding.
-Unt
-utf_fold(Unt a) {
-   if (a < 0x80)
-      // be fast for ASCII
-      return a >= 0x41 && a <= 0x5a ? a + 32 : a;
-   return utf_convert(a, foldCase, (int)sizeof(foldCase));
-}
+// Translate a string into allocated memory, replacing special chars with printable chars.
+CS
+sanitizeStr(CS s) {
+   int      l, c;
+   Byte   hexbuf[11];
 
-//Return the upper-case equivalent of "a", which is a UCS-4 character.  Use simple case folding.
-Unt
-utf_toupper(Unt a) {
-   // Use ASCII style toupper().
-   if (a < 128)
-      return TOUPPER_ASC(a);
-
-   //If towupper() is available and handles Unicode, use it.
-   return towupper(a);
-}
-
-Boole
-utf_islower(Unt a){
-   // German sharp s is lower case but has no upper case equivalent.
-   return (utf_toupper(a) != a) || a == 0xdf;
-}
-
-//Return the lower-case equivalent of "a", which is a UCS-4 character. Use simple case folding.
-Unt
-utf_tolower(Unt a) {
-   // Use ASCII style tolower().
-   if (a < 128)
-      return TOLOWER_ASC(a);
-
-   // If towlower() is available and handles Unicode, use it.
-   return towlower(a);
-}
-
-Boole
-utf_isupper(Unt a) {
-   return (utf_tolower(a) != a);
-}
-
-private int
-utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2){
-   Unt c1, c2;
-   int cdiff;
-   Byte buffer[6];
-
-   for (;;) {
-      c1 = utf_safe_read_char_adv(&s1, &n1);
-      c2 = utf_safe_read_char_adv(&s2, &n2);
-
-      if (c1 <= 0 || c2 <= 0)
-          break;
-
-      if (c1 == c2)
-          continue;
-
-      cdiff = utf_fold(c1) - utf_fold(c2);
-      if (cdiff != 0)
-         return cdiff;
+   // Compute the length of the result, taking account of unprintable multi-byte characters
+   int len = 0;
+   CS p = s;
+   while (*p != ZERO) {
+      if ((l = utfCharLen(p)) > 1) {
+         c = mb_ptr2char(p);
+         p += l;
+         if (bookIsCharPrintable(c))
+            len += l;
+         else {
+           transchar_hex(hexbuf, c);
+           len += (int)STRLEN(hexbuf);
+         }
+      } else {
+         l = byte2cells(*p++);
+         if (l > 0)
+            len += l;
+         else
+            len += 4;   // illegal byte sequence
+      }
    }
-
-   //some string ended or has an incomplete/illegal character sequence
-
-   if (c1 == 0 || c2 == 0) {
-      //some string ended. shorter string is smaller
-      if (c1 == 0 && c2 == 0)
-          return 0;
-      return c1 == 0 ? -1 : 1;
+   CS res = alloc(len + 1);
+   *res = ZERO;
+   p = s;
+   while (*p != ZERO) {
+      if ((l = utfCharLen(p)) > 1) {
+         c = mb_ptr2char(p);
+         if (bookIsCharPrintable(c))
+            STRNCAT(res, p, l);   // append printable multi-byte char
+         else
+            transchar_hex(res + STRLEN(res), c);
+         p += l;
+      } else
+         STRCAT(res, transchar_byte(*p++));
    }
-
-   //Continue with bytewise comparison to produce some result that
-   //would make comparison operations involving this function transitive.
-   //
-   //If only one string had an error, comparison should be made with
-   //folded version of the other string. In this case it is enough
-   //to fold just one character to determine the result of comparison.
-   if (c1 != UNT && c2 == UNT) {
-      n1 = mb_char2bytes(utf_fold(c1), buffer);
-      s1 = buffer;
-   } ei (c1 == UNT && c2 != UNT) {
-      n2 = mb_char2bytes(utf_fold(c2), buffer);
-      s2 = buffer;
-   }
-
-   while (n1 > 0 && n2 > 0 && *s1 != ZERO && *s2 != ZERO) {
-      cdiff = (int)(*s1) - (int)(*s2);
-      if (cdiff != 0)
-         return cdiff;
-
-      s1++;
-      s2++;
-      n1--;
-      n2--;
-   }
-
-   if (n1 > 0 && *s1 == ZERO)
-      n1 = 0;
-   if (n2 > 0 && *s2 == ZERO)
-      n2 = 0;
-
-   if (n1 == 0 && n2 == 0)
-      return 0;
-   return n1 == 0 ? -1 : 1;
-}
-
-//Version of strnicmp() that handles multi-byte characters.
-//Needed for Big5, Shift-JIS and UTF-8 encoding. Return zero if s1 and s2 are equal (ignoring case),
-//the difference between two characters otherwise.
-int
-caseInsensitiveCompareNChars2(CS s1, CS s2, Unt n1, Unt n2) {
-   if (n1 == n2)
-      return caseInsensitiveCompareNChars(s1, s2, n1);
-   else
-      return utf_strnicmp(s1, s2, n1, n2);
-}
-
-int
-caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
-   return utf_strnicmp(s1, s2, nn, nn);
+   return res;
 }
 
 //"g8": show bytes of the UTF-8 char under the cursor.
@@ -5111,386 +3956,6 @@ show_utf8(void) {
    }
 
    msg(IObuff);
-}
-
-//Return offset from "p" to the start of a character, including composing
-//characters. "base" must be the start of the C string.
-int
-mb_head_off(CS base, CS p) {
-   CS q;
-   CS s;
-   int len;
-
-   if (*p < 0x80)      // be quick for ASCII
-      return 0;
-
-   // Skip backwards over trailing bytes: 10xx.xxxx. Skip backwards again if on a composing char.
-   for (q = p; ; --q) {
-      // Move s to the last byte of this char.
-      for (s = q; (s[1] & 0xc0) == 0x80; ++s)
-         {}
-      // Move q to the first byte of this char.
-      while (q > base && (*q & 0xc0) == 0x80)
-         --q;
-      // Check for illegal sequence. Do allow an illegal byte after where we started.
-      len = utf8LenTable[*q];
-      if (len != (int)(s - q + 1) && len != (int)(p - q + 1))
-         return 0;
-
-      if (q <= base)
-         break;
-
-      Unt c = mb_ptr2char(q);
-      if (utf_iscomposing(c))
-         continue;
-
-      break;
-   }
-
-   return (int)(p - q);
-}
-
-// Whether space is NOT allowed before/after 'c'.
-int
-utf_eat_space(int cc){
-    return ((cc >= 0x2000 && cc <= 0x206F)   // General punctuations
-       || (cc >= 0x2e00 && cc <= 0x2e7f)   // Supplemental punctuations
-       || (cc >= 0x3000 && cc <= 0x303f)   // CJK symbols and punctuations
-       || (cc >= 0xff01 && cc <= 0xff0f)   // Full width ASCII punctuations
-       || (cc >= 0xff1a && cc <= 0xff20)   // ..
-       || (cc >= 0xff3b && cc <= 0xff40)   // ..
-       || (cc >= 0xff5b && cc <= 0xff65));   // ..
-}
-
-// Whether line break is allowed before "cc".
-Boole
-utf_allow_break_before(Unt cc) {
-   static const Unt BOL_prohibition_punct[] = {
-      '!',
-      '%', //(
-      ')',
-      ',',
-      ':',
-      ';',
-      '>',
-      '?', //[
-      ']', //{
-      '}',
-      0x2019, // ’ right single quotation mark
-      0x201d, // ” right double quotation mark
-      0x2020, // † dagger
-      0x2021, // ‡ double dagger
-      0x2026, // … horizontal ellipsis
-      0x2030, // ‰ per mille sign
-      0x2031, // ‱ per ten thousand sign
-      0x203c, // ‼ double exclamation mark
-      0x2047, // ⁇ double question mark
-      0x2048, // ⁈ question exclamation mark
-      0x2049, // ⁉ exclamation question mark
-      0x2103, // ℃ degree celsius
-      0x2109, // ℉ degree fahrenheit
-      0x3001, // 、 ideographic comma
-      0x3002, // 。 ideographic full stop
-      0x3009, // 〉 right angle bracket
-      0x300b, // 》 right double angle bracket
-      0x300d, // 」 right corner bracket
-      0x300f, // 』 right white corner bracket
-      0x3011, // 】 right black lenticular bracket
-      0x3015, // 〕 right tortoise shell bracket
-      0x3017, // 〗 right white lenticular bracket
-      0x3019, // 〙 right white tortoise shell bracket
-      0x301b, // 〛 right white square bracket
-      0xff01, // ！ fullwidth exclamation mark
-      0xff09, // ） fullwidth right parenthesis
-      0xff0c, // ， fullwidth comma
-      0xff0e, // ． fullwidth full stop
-      0xff1a, // ： fullwidth colon
-      0xff1b, // ； fullwidth semicolon
-      0xff1f, // ？ fullwidth question mark
-      0xff3d, // ］ fullwidth right square bracket
-      0xff5d, // ｝ fullwidth right curly bracket
-   };
-
-   int first = 0;
-   int last  = ARRAY_LENGTH(BOL_prohibition_punct) - 1;
-   int mid   = 0;
-
-   while (first < last) {
-      mid = (first + last)/2;
-
-      if (cc == BOL_prohibition_punct[mid])
-         return false;
-      ei (cc > BOL_prohibition_punct[mid])
-         first = mid + 1;
-      else
-         last = mid - 1;
-   }
-
-   return cc != BOL_prohibition_punct[first];
-}
-
-//Whether line break is allowed after "cc".
-private Boole
-utf_allow_break_after(Unt cc) {
-   static const Unt EOL_prohibition_punct[] = {
-      '(', //)
-      '<',
-      '[', //]
-      '`',
-      '{', //}
-      //0x2014, // — em dash
-      0x2018, // ‘ left single quotation mark
-      0x201c, // “ left double quotation mark
-      //0x2053, // ～ swung dash
-      0x3008, // 〈 left angle bracket
-      0x300a, // 《 left double angle bracket
-      0x300c, // 「 left corner bracket
-      0x300e, // 『 left white corner bracket
-      0x3010, // 【 left black lenticular bracket
-      0x3014, // 〔 left tortoise shell bracket
-      0x3016, // 〖 left white lenticular bracket
-      0x3018, // 〘 left white tortoise shell bracket
-      0x301a, // 〚 left white square bracket
-      0xff08, // （ fullwidth left parenthesis
-      0xff3b, // ［ fullwidth left square bracket
-      0xff5b, // ｛ fullwidth left curly bracket
-   };
-
-   int first = 0;
-   int last  = ARRAY_LENGTH(EOL_prohibition_punct) - 1;
-   int mid   = 0;
-
-   while (first < last) {
-      mid = (first + last)/2;
-
-      if (cc == EOL_prohibition_punct[mid])
-         return false;
-      ei (cc > EOL_prohibition_punct[mid])
-         first = mid + 1;
-      else
-         last = mid - 1;
-    }
-
-    return cc != EOL_prohibition_punct[first];
-}
-
-//Whether line break is allowed between "cc" and "ncc".
-int
-utf_allow_break(Unt cc, Unt ncc) {
-   // don't break between two-letter punctuations
-   if (cc == ncc
-       && (cc == 0x2014 // em dash
-         || cc == 0x2026)) // horizontal ellipsis
-      return false;
-
-   return utf_allow_break_after(cc) && utf_allow_break_before(ncc);
-}
-
-// Copy a character from "*fp" to "*tp" and advance the pointers.
-void
-mb_copy_char(OUT CS* fp, OUT CS* tp) {
-   int l = utfCharLen(*fp);
-
-   mch_memmove(*tp, *fp, (Unt)l);
-   *tp += l;
-   *fp += l;
-}
-
-//Return the offset from "p" to the first byte of a character.  When "p" is at the start of a 
-//character 0 is returned, otherwise the offset to the next character.  Can start anywhere in a 
-//stream of bytes.
-int
-mb_off_next(CS base, CS p) {
-   int head_off = mb_head_off(base, p);
-
-   if (head_off == 0)
-      return 0;
-
-   return utfCharLen(p - head_off) - head_off;
-}
-
-//Return the offset from "p" to the last byte of the character it points
-//into.  Can start anywhere in a stream of bytes.
-//Composing characters are not included.
-int
-mb_tail_off(CS base, CS p) {
-   if (*p == ZERO)
-      return 0;
-
-   // Find the last character that is 10xx.xxxx
-   int i;
-   for (i = 0; (p[i + 1] & 0xc0) == 0x80; ++i)
-       ;
-   // Check for illegal sequence.
-   int j;
-   for (j = 0; p - j > base; ++j) {
-      if ((p[-j] & 0xc0) != 0x80)
-         break;
-   } 
-   if (utf8LenTable[p[-j]] != i + j + 1)
-      return 0;
-   return i;
-}
-
-// Find the next illegal byte sequence.
-void
-utf_find_illegal(void) {
-   Pos   pos = curPor->cursor;
-   CS p;
-   CS tofree = NULL;
-
-   curPor->cursor.coladd = 0;
-   for (;;) {
-      p = ml_get_cursor();
-      while (*p != ZERO){
-         // Illegal means that there are not enough trail bytes (checked by
-         // utf_ptr2len()) or too many of them (overlong sequence).
-         Unt len = utf_ptr2len(p);
-         if (*p >= 0x80 && (len == 1 || mb_char2len(mb_ptr2char(p)) != len)) {
-            curPor->cursor.col += (ColNr)(p - ml_get_cursor());
-            goto theend;
-         }
-         p += len;
-      }
-      if (curPor->cursor.lnum == curBook->mem.lineCount)
-         break;
-      ++curPor->cursor.lnum;
-      curPor->cursor.col = 0;
-   }
-
-   // didn't find it: don't move and beep
-   curPor->cursor = pos;
-   beep_flush();
-
-theend:
-   eeglFree(tofree);
-}
-
-//Return true if string "s" is a valid utf-8 string. When "end" is NULL stop at the first 
-//ZERO. Otherwise stop at "end".
-int
-utf_valid_string(CS s, CS end) {
-   CS p = s;
-
-   while (end == NULL ? *p != ZERO : p < end) {
-      int l = utf8LenTable_zero[*p];
-      if (l == 0)
-          return false;   // invalid lead byte
-      if (end != NULL && p + l > end)
-          return false;   // incomplete byte sequence
-      ++p;
-      while (--l > 0)
-          if ((*p++ & 0xc0) != 0x80)
-         return false;   // invalid trail byte
-   }
-   return true;
-}
-
-//If the cursor moves on an trail byte, set the cursor on the lead byte.
-//Thus it moves left if necessary. Return true when the cursor was adjusted.
-void
-mb_adjust_cursor(void) {
-   mb_adjustpos(curBook, &curPor->cursor);
-}
-
-//Adjust position "*lp" to point to the first byte of a multi-byte character.
-//If it points to a tail byte it's moved backwards to the head byte.
-void
-mb_adjustpos(Book* book, Pos *lp) {
-   CS p;
-
-   if (lp->col > 0 || lp->coladd > 1) {
-      p = memGetLine(book, lp->lnum, false);
-      if (*p == ZERO || memGetBookLen(book, lp->lnum) < lp->col)
-          lp->col = 0;
-      else
-          lp->col -= mb_head_off(p, p + lp->col);
-   }
-}
-
-// Return a pointer to the character before "*p", if there is one.
-CS
-mb_prevptr(CS line, CS p) {   // start of the string
-   if (p > line)
-      MB_PTR_BACK(line, p);
-   return p;
-}
-
-//Return the character length of "str". Each multi-byte character (with
-//following composing characters) counts as one.
-int
-mb_charlen(CS str) {
-   if (!str)
-      return 0;
-
-   int count;
-   CS p = str;
-   for (count = 0; *p != ZERO; count++)
-      p += utfCharLen(p);
-
-   return count;
-}
-
-// Like mb_charlen() but for a string with specified length.
-int
-mb_charlen_len(CS str, int len) {
-   CS p = str;
-   int count;
-
-   for (count = 0; *p != ZERO && p < str + len; count++)
-      p += utfCharLen(p);
-
-   return count;
-}
-
-//Try to un-escape a multi-byte character.
-//Used for the "to" and "from" part of a mapping.
-//Return the un-escaped string if it is a multi-byte character, and advance
-//"pp" to just after the bytes that formed it. Return NULL if no multi-byte char was found.
-CS
-mb_unescape(OUT CS* pp) {
-   static Byte   buf[6];
-   int n;
-   int m = 0;
-   CS str = *pp;
-
-   // Must translate K_SPECIAL KS_SPECIAL KE_FILLER to K_SPECIAL and CSI
-   // KS_EXTRA KE_CSI to CSI.
-   // Maximum length of a utf-8 character is 4 bytes.
-   for (n = 0; str[n] != ZERO && m < 4; ++n) {
-      if (str[n] == K_SPECIAL && str[n + 1] == KS_SPECIAL && str[n + 2] == KE_FILLER) {
-         buf[m++] = K_SPECIAL;
-         n += 2;
-      } ei ((str[n] == K_SPECIAL) && str[n + 1] == KS_EXTRA && str[n + 2] == (int)KE_CSI) {
-         buf[m++] = CSI;
-         n += 2;
-      } ei (str[n] == K_SPECIAL) {
-         break;      // a special key can't be a multibyte char
-      } else {
-          buf[m++] = str[n];
-      } 
-      buf[m] = ZERO;
-
-      //Return a multi-byte character if it's found.  An illegal sequence will result in a 1 here.
-      if (utfCharLen(buf) > 1) {
-         *pp = str + n + 1;
-         return buf;
-      }
-
-      // Bail out quickly for ASCII.
-      if (buf[0] < 128)
-         break;
-    }
-    return NULL;
-}
-
-#include <langinfo.h>
-
-void
-f_charclass(Arr(Var) argvars, Var* returnVar UNUSED) {
-   if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
-      return;
-   returnVar->number = mb_get_class(argvars[0].string);
 }
 
 //}}}

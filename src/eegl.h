@@ -22,9 +22,6 @@ typedef double _Float64x;
 
 // ============ the header file puzzle: order matters =========
 
-// for INT_MAX, LONG_MAX et al.
-#include <limits.h>
-
 //{{{config.h
 
 // Defined to the size of an int
@@ -152,7 +149,6 @@ typedef void (*sighandler_T) SIGPROTOARG;
 #define DFLT_MAXMEM   (12*1024)    // use up to 12 Mbytes for a buffer
 #endif
 
-#define mch_memmove(to, from, len) memmove((char *)(to), (char *)(from), len)
 
 #ifndef PROTO
 #define mch_rename(src, dst) rename(src, dst)
@@ -218,14 +214,6 @@ typedef void (*sighandler_T) SIGPROTOARG;
 
 // length of a buffer to store a number in ASCII (64 bits binary + NUL)
 #define NUMBUFLEN 65
-
-// flags for strings.c:readLongNumber()
-#define STR2NR_BIN  0x01
-#define STR2NR_HEX  0x04
-#define STR2NR_ALL (STR2NR_BIN + STR2NR_HEX)
-
-#define STR2NR_FORCE 0x80   // only when ONE of the above is used
-#define STR2NR_QUOTE 0x10   // ignore embedded single quotes
 
 typedef unsigned char Byte;
 
@@ -795,13 +783,6 @@ enum key_extra{
 
 #define LTOREQ_POS(a, b) (LT_POS(a, b) || EQUAL_POS(a, b))
 
-#define declStruct(T) typedef struct T T
-
-// EE_ISWHITE() differs from isspace() because it doesn't include <CR> and <LF> and the like.
-#define SPACE_OR_TAB(x)   ((x) == ' ' || (x) == '\t')
-#define IS_WHITE_OR_ZERO(x)   ((x) == ' ' || (x) == '\t' || (x) == ZERO)
-#define IS_WHITE_NL_OR_ZERO(x)   ((x) == ' ' || (x) == '\t' || (x) == '\n' || (x) == ZERO)
-
 // LINEEMPTY() - return TRUE if the line is empty
 #define LINEEMPTY(p) (*ml_get(p) == ZERO)
 
@@ -926,27 +907,25 @@ enum key_extra{
    
 //}}} 
 
-// The is*() and to*() functions declared in <ctype.h> have
-// undefined behavior for values other than EOF outside the range of
-// unsigned char.  If plain char is signed, a call with a negative
-// value has undefined behavior.  These macros cast the argument to
-// unsigned char.  (Most implementations behave more or less sanely
-// with negative values, and most character values in practice are
-// positive, but we want to avoid undefined behavior anyway.)
-#define SAFE_isalnum(c)  (isalnum ((unsigned char)(c)))
-#define SAFE_isalpha(c)  (isalpha ((unsigned char)(c)))
-#define SAFE_isblank(c)  (isblank ((unsigned char)(c)))
-#define SAFE_iscntrl(c)  (iscntrl ((unsigned char)(c)))
-#define SAFE_isdigit(c)  (isdigit ((unsigned char)(c)))
-#define SAFE_isgraph(c)  (isgraph ((unsigned char)(c)))
-#define SAFE_islower(c)  (islower ((unsigned char)(c)))
-#define SAFE_isprint(c)  (isprint ((unsigned char)(c)))
-#define SAFE_ispunct(c)  (ispunct ((unsigned char)(c)))
-#define SAFE_isspace(c)  (isspace ((unsigned char)(c)))
-#define SAFE_isupper(c)  (isupper ((unsigned char)(c)))
+//The is*() and to*() functions declared in <ctype.h> have undefined behavior for values other 
+//than EOF outside the range of unsigned char. If plain char is signed, a call with a negative
+//value has undefined behavior. These macros cast the argument to unsigned char. (Most 
+//implementations behave more or less sanely with negative values, and most character values in 
+//practice are positive, but we want to avoid undefined behavior anyway)
+#define SAFE_isalnum(c)  (isalnum((unsigned char)(c)))
+#define SAFE_isalpha(c)  (isalpha((unsigned char)(c)))
+#define SAFE_isblank(c)  (isblank((unsigned char)(c)))
+#define SAFE_iscntrl(c)  (iscntrl((unsigned char)(c)))
+#define SAFE_isdigit(c)  (isdigit((unsigned char)(c)))
+#define SAFE_isgraph(c)  (isgraph((unsigned char)(c)))
+#define SAFE_islower(c)  (islower((unsigned char)(c)))
+#define SAFE_isprint(c)  (isprint((unsigned char)(c)))
+#define SAFE_ispunct(c)  (ispunct((unsigned char)(c)))
+#define SAFE_isspace(c)  (isspace((unsigned char)(c)))
+#define SAFE_isupper(c)  (isupper((unsigned char)(c)))
 #define SAFE_isxdigit(c) (isxdigit((unsigned char)(c)))
-#define SAFE_tolower(c)  (tolower ((unsigned char)(c)))
-#define SAFE_toupper(c)  (toupper ((unsigned char)(c)))
+#define SAFE_tolower(c)  (tolower((unsigned char)(c)))
+#define SAFE_toupper(c)  (toupper((unsigned char)(c)))
 
 //toupper() and tolower() that use the current locale.
 //On some systems toupper()/tolower() only work on lower/uppercase characters, first use islower() 
@@ -963,10 +942,6 @@ enum key_extra{
 #define TOLOWER_LOC      SAFE_tolower
 #endif
 
-// toupper() and tolower() for ASCII only and ignore the current locale.
-#define TOUPPER_ASC(c)   (((c) < 'a' || (c) > 'z') ? (c) : (c) - ('a' - 'A'))
-#define TOLOWER_ASC(c)   (((c) < 'A' || (c) > 'Z') ? (c) : (c) + ('a' - 'A'))
-
 //MB_ISLOWER() and MB_ISUPPER() are to be used on multi-byte characters.  But
 //don't use them for negative values!
 #define MB_ISLOWER(c)   eeIsLower(c)
@@ -974,16 +949,6 @@ enum key_extra{
 #define MB_TOLOWER(c)   eeglToLower(c)
 #define MB_TOUPPER(c)   eeglToUpper(c)
 #define MB_CASEFOLD(c)  (utf_fold(c))
-
-//Use our own isdigit() replacement, because isdigit() crashes for numbers below 0 and above 255
-#define EE_ISDIGIT(c) ((unsigned)(c) - '0' < 10)
-
-//Like isalpha() but reject non-ASCII characters. Can't be used with a
-//special key (negative value).
-#define ASCII_ISLOWER(c) ((unsigned)(c) - 'a' < 26)
-#define ASCII_ISUPPER(c) ((unsigned)(c) - 'A' < 26)
-#define ASCII_ISALPHA(c) (ASCII_ISUPPER(c) || ASCII_ISLOWER(c))
-#define ASCII_ISALNUM(c) (ASCII_ISALPHA(c) || EE_ISDIGIT(c))
 
 
 // Returns empty string if it is NULL.
@@ -1194,9 +1159,6 @@ enum key_extra{
 #define nameBuffTextG (Text){nameBuffG, MAXPATHL}
 
 //}}}
-
-typedef struct Arena Arena;
-
 //{{{:::generics
 
 //To add a new generic type, add it and its constructor here.
@@ -1370,13 +1332,6 @@ LIST_TY(Unt)
 // directions
 #define FORWARD   1
 #define BACKWARD 20
-
-// return values for functions
-#if !(defined(OK) && (OK == 1))
-# define OK         1
-#endif
-#define FAIL        0
-#define NOTDONE     2   // not OK or FAIL but skipped
 
 // flags for books
 #define BF_RECOVERED   0x01  // book has been recovered
@@ -2154,14 +2109,11 @@ typedef enum {
 //destination and mess up the screen.
 #define PERROR(msg)          (void)showErrFmtMsg("%s: %s", (char *)(msg), strerror(errno))
 
-typedef long   LineNr;    // line number type
-typedef int   ColNr;      // column number type
 typedef unsigned short DisplayTick;   // display tick type
 
 // MAXCOL used to be INT_MAX, but with 64 bit ints that results in running
 // out of memory when trying to allocate a very long line.
 #define MAXCOL  0x7fffffffL    // maximum column number
-#define MAXLNUM LONG_MAX       // maximum (invalid) line number
 
 #define SHOWCMD_COLS 10        // columns needed by shown command
 
@@ -2586,8 +2538,6 @@ EXTERN long p_wd;    //@writedelay
 //{{{:::structs
 //{{{ basics
 
-typedef long      LineNr;
-
 typedef off_T FileSize;
 
 //{{{ Slice
@@ -2608,36 +2558,8 @@ DEFINE_SLICE_HEADER(Ulong)
 
 //}}}
 
-
-// Strings with length
-typedef struct Text {
-   CS c; //non-ZERO bytes followed by a ZERO (possibly outside of slice but in 
-              //allocated memory). @c is non-null if len > 0.
-   Unt  len;  //length of the slice
-} Text;
-
-// String builder with possible free space at the tail
-typedef struct {
-   CS c; //ZERO-terminated bytes, perhaps with ZEROes inside of it, too.
-              //If len > 0, then c is non-null and points to (len + free + 1) bytes, and also 
-              //.c[len + free] = ZERO
-   Unt len;   //Length of the already filled part
-   Unt cap;   //Total capacity. Can all be filled with any bytes
-} Sbuf;
-
-
 EXTERN Sbuf globalStringOptionsG;      //Storage for all the global string options
 
-// Mutable directory name. Always ends in a slash (unless empty). Can be appended or shortened
-// (corresponds to descending into a sub-directory or coming back up). see string.c
-typedef struct {
-   CS c;
-   Int len;
-   Int cap;
-   Arena* a;
-} DirName;
-
-declStruct(ChunkyString); // see string.c
 
 // Position in file or book.
 typedef struct {
@@ -2651,18 +2573,6 @@ typedef struct {
    LineNr   lnum;   // line number
    ColNr   col;   // column number
 } PosNoVirt;
-
-// Structure used for growing arrays.
-// This is used to store information that only grows, is deleted all at
-// once, and needs to be accessed by index.  See ga_clear() and ga_grow().
-typedef struct ArrayList {
-   int       len;          // current number of items used
-   int       cap;          // maximum number of items possible
-   int       ga_itemsize;       // sizeof(item)
-   int       ga_growsize;       // number of items to grow each time
-   void* c;          // pointer to the first item
-} ArrayList;
-
 #define GA_EMPTY    {0, 0, 0, 0, NULL}
 
 // On rare systems "char" is unsigned, sometimes we really want a signed 8-bit value.
@@ -2696,19 +2606,6 @@ declStruct(Callback);
 
 //}}}
 //{{{data structures
-
-typedef struct {
-   Unt key; // index into text
-   Int value;
-} DictStringIntItem;
-
-typedef struct {
-   Unt dict[129]; // Indices into @hashes and @c. 0th element is 0, last element is size 
-   Arr(Unt) hashes; // len == dict[128]
-   Arr(DictStringIntItem) c; // len == dict[128]
-   Arr(Byte const) text; 
-   Unt textLen;
-} DictStringInt128;
 
 
 #define get(needle, d) _Generic((needle),\
@@ -3788,16 +3685,6 @@ typedef struct EeSet {
 } EeSet;
 
 typedef Ulong Hash;      // Type for hi_hash
-
-#ifdef LLONG_MIN
-# define VARNUM_MIN      LLONG_MIN
-# define VARNUM_MAX      LLONG_MAX
-# define UVARNUM_MAX      ULLONG_MAX
-#else
-# define VARNUM_MIN      LONG_LONG_MIN
-# define VARNUM_MAX      LONG_LONG_MAX
-# define UVARNUM_MAX      ULONG_LONG_MAX
-#endif
 
 
 //Struct that holds both a normal function name and a PartiallyApplied, as used for a callback 
@@ -5504,12 +5391,6 @@ typedef struct {
    int tn_hf_idx;
    FileSearchCtx* searchCtx;
 } TagName;
-
-typedef struct {
-   Unt total[2];
-   Unt state[8];
-   Byte buffer[64];
-} ContextSha256;
 
 // types for expressions.
 typedef enum {
@@ -7237,6 +7118,9 @@ EXTERN int wayland_display_fd; // Wayland display file descriptor; set by waylan
 
 EXTERN Byte e_interrupted[]
    INIT(= "Interrupted");
+
+
+EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 
 EXTERN Byte e_backslash_should_be_followed_by[]
    INIT(= "E10: \\ should be followed by /, ? or &");

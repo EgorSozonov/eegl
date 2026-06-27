@@ -195,6 +195,8 @@ memory.c:memGetLine()
 //Change cursor appearance on mode change
 term.c:term_cursor_mode
 
+//save a book
+bookWrite()
 
 
 //// ideas

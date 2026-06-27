@@ -428,7 +428,7 @@ changed_common(
             if (curBook->changeListLen == JUMPLISTSIZE) {
                // changelist is full: remove oldest entry
                curBook->changeListLen = JUMPLISTSIZE - 1;
-               mch_memmove(curBook->changeList, curBook->changeList + 1,
+               MEMMOVE(curBook->changeList, curBook->changeList + 1,
                        sizeof(Pos) * (JUMPLISTSIZE - 1));
                FOR_ALL_TAB_PORTALS(tp, po) {
                   // Correct position in changelist for other portals into this book.
@@ -808,15 +808,15 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
 
    // Copy bytes before the cursor.
    if (col > 0)
-      mch_memmove(newp, oldp, (Unt)col);
+      MEMMOVE(newp, oldp, (Unt)col);
 
    // Copy bytes after the changed character(s).
    CS p = newp + col;
    if (oldLineLen > col + oldCharLen)
-      mch_memmove(p + newCharLen, oldp + col + oldCharLen, (Unt)(oldLineLen - col - oldCharLen));
+      MEMMOVE(p + newCharLen, oldp + col + oldCharLen, (Unt)(oldLineLen - col - oldCharLen));
 
    // Insert or overwrite the new character.
-   mch_memmove(p, targetLine, charlen);
+   MEMMOVE(p, targetLine, charlen);
    int i = charlen;
 
    // Fill with spaces when necessary.
@@ -854,9 +854,9 @@ ins_str(CS s, Unt slen) {
 
    CS newp = alloc(oldlen + slen + 1);
    if (col > 0)
-      mch_memmove(newp, oldp, (Unt)col);
-   mch_memmove(newp + col, s, slen);
-   mch_memmove(newp + col + slen, oldp + col, (Unt)(oldlen - col + 1));
+      MEMMOVE(newp, oldp, (Unt)col);
+   MEMMOVE(newp + col, s, slen);
+   MEMMOVE(newp + col + slen, oldp + col, (Unt)(oldlen - col + 1));
    ml_replace(lnum, newp, false);
    inserted_bytes(lnum, col, (int)slen);
    curPor->cursor.col += (ColNr)slen;
@@ -968,15 +968,15 @@ del_bytes(
       newp = oldp;             // use same allocated memory
    else {                   // need to allocate a new line
       newp = alloc(newlen + 1);
-      mch_memmove(newp, oldp, (Unt)col);
+      MEMMOVE(newp, oldp, (Unt)col);
    }
-   mch_memmove(newp + col, oldp + col + count, (Unt)movelen);
+   MEMMOVE(newp + col, oldp + col + count, (Unt)movelen);
    if (alloc_newp)
       ml_replace(lnum, newp, false);
    else {
       // Also move any following text properties.
       if (oldlen + 1 < curBook->mem.lineLen)
-         mch_memmove(newp + newlen + 1, oldp + oldlen + 1, (Unt)curBook->mem.lineLen - oldlen - 1);
+         MEMMOVE(newp + newlen + 1, oldp + oldlen + 1, (Unt)curBook->mem.lineLen - oldlen - 1);
       curBook->mem.lineLen -= count;
       curBook->mem.lineTextLen = 0;
    }
@@ -1489,14 +1489,14 @@ openLine(
 
                      while (old_size < repl_size && p > leader) {
                         MB_PTR_BACK(leader, p);
-                        old_size += ptr2cells(p);
+                        old_size += bookPtr2Cells(p);
                      }
                      l = lead_repl_len - (int)(endp - p);
                      if (l != 0)
-                        mch_memmove(endp + l, endp, (Unt)((leader + lead_len) - endp));
+                        MEMMOVE(endp + l, endp, (Unt)((leader + lead_len) - endp));
                      lead_len += l;
                   }
-                  mch_memmove(p, lead_repl, (Unt)lead_repl_len);
+                  MEMMOVE(p, lead_repl, (Unt)lead_repl_len);
                   if (p + lead_repl_len > leader + lead_len)
                      p[lead_repl_len] = ZERO;
 
@@ -1506,11 +1506,11 @@ openLine(
 
                      if (l > 1) {
                         p -= l;
-                        if (ptr2cells(p) > 1) {
+                        if (bookPtr2Cells(p) > 1) {
                            p[1] = ' ';
                            --l;
                         }
-                        mch_memmove(p + 1, p + l + 1, (Unt)((leader + lead_len) - (p + l + 1)));
+                        MEMMOVE(p + 1, p + l + 1, (Unt)((leader + lead_len) - (p + l + 1)));
                         lead_len -= l;
                         *p = ' ';
                      } ei (!SPACE_OR_TAB(*p))
@@ -1533,13 +1533,13 @@ openLine(
                         break;
                   }
                   if (i != lead_repl_len) {
-                     mch_memmove(
+                     MEMMOVE(
                         p + lead_repl_len, p + i, (Unt)(lead_len - i - (p - leader))
                      );
                      lead_len += lead_repl_len - i;
                   }
                   }
-                  mch_memmove(p, lead_repl, (Unt)lead_repl_len);
+                  MEMMOVE(p, lead_repl, (Unt)lead_repl_len);
 
                   // Replace any remaining non-white chars in the old leader by spaces. 
                   // Keep Tabs, the indent must remain the same.
@@ -1548,18 +1548,18 @@ openLine(
                         // Don't put a space before a TAB.
                         if (p + 1 < leader + lead_len && p[1] == TAB) {
                            --lead_len;
-                           mch_memmove(p, p + 1, (leader + lead_len) - p);
+                           MEMMOVE(p, p + 1, (leader + lead_len) - p);
                        } else {
                            int l = utfCharLen(p);
 
                            if (l > 1) {
-                              if (ptr2cells(p) > 1) {
+                              if (bookPtr2Cells(p) > 1) {
                                 // Replace a double-wide char with
                                 // two spaces
                                 --l;
                                 *p++ = ' ';
                              }
-                             mch_memmove(p + 1, p + l, (leader + lead_len) - p);
+                             MEMMOVE(p + 1, p + l, (leader + lead_len) - p);
                              lead_len -= l - 1;
                            }
                            *p = ' ';
@@ -2095,7 +2095,7 @@ shift_block(Operator *oper, int amount) {
 
       new_line_len = bd.textcol + tabs + spaces + (oldlen - (bd.textstart - oldp));
       newp = alloc(new_line_len + 1);
-      mch_memmove(newp, oldp, (Unt)bd.textcol);
+      MEMMOVE(newp, oldp, (Unt)bd.textcol);
       newlen = bd.textcol;
       memset(newp + newlen, TAB, (Unt)tabs);
       newlen += tabs;
@@ -2185,7 +2185,7 @@ shift_block(Operator *oper, int amount) {
       new_line_len = fixedlen + fill + (oldlen - (non_white - oldp));
 
       newp = alloc(new_line_len + 1);
-      mch_memmove(newp, oldp, fixedlen);
+      MEMMOVE(newp, oldp, fixedlen);
       newlen = fixedlen;
       memset(newp + newlen, ' ', (Unt)fill);
       STRCPY(newp + newlen + fill, non_white);
@@ -2264,7 +2264,7 @@ block_insert(
                              + count + 1);
 
       // copy up to shifted part
-      mch_memmove(newp, oldp, (Unt)offset);
+      MEMMOVE(newp, oldp, (Unt)offset);
       oldp += offset;
 
       // insert pre-padding
@@ -2272,7 +2272,7 @@ block_insert(
       startcol = offset + spaces;
 
       // copy the new text
-      mch_memmove(newp + startcol, s, slen);
+      MEMMOVE(newp + startcol, s, slen);
       offset += (int)slen;
 
       if (spaces > 0 && !bdp->is_short) {
@@ -2476,7 +2476,7 @@ op_delete(Operator* oper) {
          CS oldp = ml_get(lnum);
          CS newp = alloc(ml_get_len(lnum) + 1 - n);
          // copy up to deleted part
-         mch_memmove(newp, oldp, (Unt)bd.textcol);
+         MEMMOVE(newp, oldp, (Unt)bd.textcol);
          // insert spaces
          memset(newp + bd.textcol, ' ', (Unt)(bd.startspaces + bd.endspaces));
          // copy the part after the deleted part
@@ -2722,7 +2722,7 @@ op_replace(Operator *oper, Unt c) {
          newp = alloc(oldlen + 1 + n);
          memset(newp, ZERO, (Unt)(oldlen + 1 + n));
          // copy up to deleted part
-         mch_memmove(newp, oldp, (Unt)bd.textcol);
+         MEMMOVE(newp, oldp, (Unt)bd.textcol);
          newlen = bd.textcol;
          // insert pre-spaces
          memset(newp + newlen, ' ', (Unt)bd.startspaces);
@@ -3253,11 +3253,11 @@ op_change(Operator *oper) {
                   oldp = ml_get(linenr);
                   newp = alloc(ml_get_len(linenr) + vpos.coladd + ins_len + 1);
                   // copy up to block start
-                  mch_memmove(newp, oldp, (Unt)bd.textcol);
+                  MEMMOVE(newp, oldp, (Unt)bd.textcol);
                   newlen = bd.textcol;
                   memset(newp + newlen, ' ', (Unt)vpos.coladd);
                   newlen += vpos.coladd;
-                  mch_memmove(newp + newlen, ins_text, ins_len);
+                  MEMMOVE(newp + newlen, ins_text, ins_len);
                   STRCPY(newp + newlen + ins_len, oldp + bd.textcol);
                   ml_replace(linenr, newp, false);
                   // Shift the properties for linenr as edit() would do.
@@ -3607,7 +3607,7 @@ jugJoinLinesUnderCursor(
       int spaces_removed;
 
       cend -= currsize;
-      mch_memmove(cend, curr, (Unt)currsize);
+      MEMMOVE(cend, curr, (Unt)currsize);
 
       if (spaces[t] > 0) {
          cend -= spaces[t];
@@ -6723,7 +6723,7 @@ set_indent(
        *s++ = ' ';
        --todo;
    }
-   mch_memmove(s, p, (Unt)line_len);
+   MEMMOVE(s, p, (Unt)line_len);
 
    // Replace the line (unless undo fails).
    if (!(flags & SIN_UNDO) || u_savesub(curPor->cursor.lnum) == OK) {
@@ -7302,8 +7302,8 @@ c_retab(Invocation *eap) {
                  }
                  new_line = alloc(new_len);
                  if (start_col > 0)
-                    mch_memmove(new_line, ptr, (Unt)start_col);
-                 mch_memmove(new_line + start_col + len, ptr + col, (Unt)(old_len - col + 1));
+                    MEMMOVE(new_line, ptr, (Unt)start_col);
+                 MEMMOVE(new_line + start_col + len, ptr + col, (Unt)(old_len - col + 1));
                  ptr = new_line + start_col;
                  for (col = 0; col < len; col++)
                     ptr[col] = (col < num_tabs) ? '\t' : ' ';

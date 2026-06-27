@@ -3486,7 +3486,7 @@ c_substitute(Invocation* invo) {
                      eeglFree(text_props);
                      text_props = ALLOC_MULT(TextProp, text_prop_count);
 
-                     mch_memmove(text_props, propStart, text_prop_count * sizeof(TextProp));
+                     MEMMOVE(text_props, propStart, text_prop_count * sizeof(TextProp));
                      // After joining the text prop columns will increase.
                      for (int pi = 0; pi < text_prop_count; ++pi)
                         text_props[pi].col += regmatch.startpos[0].col + sublen - 1;
@@ -3515,7 +3515,7 @@ c_substitute(Invocation* invo) {
                if (needed_len > (int)new_start_len) {
                   new_start_len = needed_len + 50;
                   p1 = allocZeroed(new_start_len);
-                  mch_memmove(p1, new_start, (Unt)(len + 1));
+                  MEMMOVE(p1, new_start, (Unt)(len + 1));
                   eeglFree(new_start);
                   new_start = p1;
                }
@@ -3523,7 +3523,7 @@ c_substitute(Invocation* invo) {
             }
 
             //copy the text up to the part that matched
-            mch_memmove(new_end, sub_firstline + copycol, (Unt)copy_len);
+            MEMMOVE(new_end, sub_firstline + copycol, (Unt)copy_len);
             new_end += copy_len;
 
             if ((int)new_start_len - copy_len < sublen)
@@ -6835,12 +6835,12 @@ parse_command_modifiers(
             //  "'<,'>mods" -> "mods *+
             //  Use "*" instead of "'<,'>" to avoid the command getting
             //  longer, in case it was allocated.
-            mch_memmove(orig_cmd, cmd_start, len);
+            MEMMOVE(orig_cmd, cmd_start, len);
             STRCPY(orig_cmd + len, " *+");
          } else {
-            mch_memmove(cmd_start - 5, cmd_start, invo->comm - cmd_start);
+            MEMMOVE(cmd_start - 5, cmd_start, invo->comm - cmd_start);
             invo->comm -= 5;
-            mch_memmove(invo->comm - 1, ":'<,'>", 6);
+            MEMMOVE(invo->comm - 1, ":'<,'>", 6);
          }
       } else
          // No modifiers, move the pointer back. Special case: change empty command to "+".
@@ -8357,9 +8357,9 @@ repl_commline(
    //Copy what came after the expanded part.
    //Copy the next commands, if there are any.
    Unt newCommlineLen = src - *commline;   // length of part before replacement
-   mch_memmove(newCommline, *commline, newCommlineLen);
+   MEMMOVE(newCommline, *commline, newCommlineLen);
 
-   mch_memmove(newCommline + newCommlineLen, repl, repllen);
+   MEMMOVE(newCommline + newCommlineLen, repl, repllen);
    newCommlineLen += repllen;      // remember the end of the string
    STRCPY(newCommline + newCommlineLen, src + srclen);
    src = newCommline + newCommlineLen;   // remember where to continue
@@ -9584,8 +9584,10 @@ c_tabs(Invocation* invo UNUSED) {
          msg_putchar(' ');
          if (bookSpName(po->book) != NULL)
             copySubstrToAllocation(OUT IObuff, (Text){bookSpName(po->book), IOSIZE - 1});
-         else
-            home_replace(po->book, po->book->currFileName, IObuff, IOSIZE, true);
+         ei (po->book->kind == BOOK_HELP) { 
+            strPrintShortName(po->book->currFileName, IObuff, IOSIZE);
+         } else
+            home_replace(po->book->currFileName, IObuff, IOSIZE, true);
          msg_outtrans(IObuff);
          out_flush();       // output one line at a time
          ui_breakcheck();
@@ -11423,7 +11425,7 @@ expand_sfile(CS arg) {
          resultlen += (repllen - srclen);
          CS newres = alloc(resultlen + 1);
          len = p - result;
-         mch_memmove(newres, result, len);
+         MEMMOVE(newres, result, len);
          STRCPY(newres + len, repl);
          len += repllen;
          STRCPY(newres + len, p + srclen);
@@ -12132,7 +12134,7 @@ has_prop_w_flags(LineNr lnum, int flags) {
 
    for (int i = 0; i < proplen; ++i) {
       TextProp prop;
-      mch_memmove(OUT &prop, props + i * sizeof prop, sizeof prop);
+      MEMMOVE(OUT &prop, props + i * sizeof prop, sizeof prop);
       if ((prop.flags & flags) != 0)
          return true;
    }
@@ -12282,7 +12284,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
                 ((curBook->mem.flags & ML_EMPTY) ? UH_EMPTYBUF : 0);
 
       // save named marks and Visual marks for undo
-      mch_memmove(uhp->uh_namedm, curBook->namedMarks, sizeof(Pos) * NMARKS);
+      MEMMOVE(uhp->uh_namedm, curBook->namedMarks, sizeof(Pos) * NMARKS);
       uhp->uh_visual = curBook->visual;
 
       curBook->undo.newHead = uhp;
@@ -12428,9 +12430,9 @@ nomem:
 
 //Compute the hash for the current buffer text into hash[UNDO_HASH_SIZE].
 void
-u_compute_hash(CS hash) {
-   ContextSha256   ctx;
-   LineNr      lnum;
+u_compute_hash(OUT Byte hash[UNDO_HASH_SIZE]) {
+   ContextSha256 ctx;
+   LineNr lnum;
 
    sha256_start(&ctx);
    for (lnum = 1; lnum <= curBook->mem.lineCount; ++lnum)
@@ -13688,7 +13690,7 @@ u_undoredo(Boole undo) {
    setpcmark();
 
    //save marks before undo/redo
-   mch_memmove(namedm, curBook->namedMarks, sizeof(Pos) * NMARKS);
+   MEMMOVE(namedm, curBook->namedMarks, sizeof(Pos) * NMARKS);
    visualinfo = curBook->visual;
    curBook->opStart.lnum = curBook->mem.lineCount;
    curBook->opStart.col = 0;

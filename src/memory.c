@@ -7,8 +7,8 @@
 
 #ifndef PROTO
 #include <sys/resource.h>
-#endif
 #include <sys/sysinfo.h>
+#endif
 int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
@@ -595,7 +595,7 @@ free_all_mem(void) {
 CS
 eeMemsave(Byte *p, Unt len) {
    Byte *ret = alloc(len);
-   mch_memmove(ret, p, len);
+   MEMMOVE(ret, p, len);
    return ret;
 }
 
@@ -998,7 +998,7 @@ ml_open(Book *book) {
    b0p->b0_magic_int = (int)B0_MAGIC_INT;
    b0p->b0_magic_short = (short)B0_MAGIC_SHORT;
    b0p->b0_magic_char = B0_MAGIC_CHAR;
-   mch_memmove(b0p->b0_version, "EEGL ", 4);
+   MEMMOVE(b0p->b0_version, "EEGL ", 4);
    STRNCPY(b0p->b0_version + 4, mainProgramVersion(), 6);
    longToChar((long)mfp->pageSize, b0p->b0_page_size);
 
@@ -1271,7 +1271,7 @@ set_b0_fname(Block0 *b0p, Book *book) {
       //directory path with "~user". This helps when editing the same file on different machines 
       //over a network. First replace home dir path with "~/" with home_replace().
       //Then insert the user name to get "~user/".
-      home_replace(NULL, book->fullFileName, b0p->b0_fname, B0_FNAME_SIZE_CRYPT, true);
+      home_replace(book->fullFileName, b0p->b0_fname, B0_FNAME_SIZE_CRYPT, true);
       if (b0p->b0_fname[0] == '~') {
          flen = STRLEN(b0p->b0_fname);
          // If there is no user name or it is too long, don't use "~/"
@@ -1282,8 +1282,8 @@ set_b0_fname(Block0 *b0p, Book *book) {
                b0p->b0_fname, (Text){book->fullFileName, B0_FNAME_SIZE_CRYPT - 1}
             );
          } else {
-            mch_memmove(b0p->b0_fname + ulen + 1, b0p->b0_fname + 1, flen);
-            mch_memmove(b0p->b0_fname + 1, uname, ulen);
+            MEMMOVE(b0p->b0_fname + ulen + 1, b0p->b0_fname + 1, flen);
+            MEMMOVE(b0p->b0_fname + 1, uname, ulen);
          }
       }
       
@@ -1471,7 +1471,7 @@ ml_recover(Boole checkext) {
       p = alloc(mfp->pageSize);
       if (p == NULL)
           goto theend;
-      mch_memmove(p, hdr->bh_data, previous_page_size);
+      MEMMOVE(p, hdr->bh_data, previous_page_size);
       eeglFree(hdr->bh_data);
       hdr->bh_data = p;
       b0p = (Block0 *)(hdr->bh_data);
@@ -1484,13 +1484,13 @@ ml_recover(Boole checkext) {
           goto theend;
    }
 
-   home_replace(NULL, mfp->fName, nameBuffG, MAXPATHL, true);
+   home_replace(mfp->fName, nameBuffG, MAXPATHL, true);
    smsg(_("Using swap file \"%s\""), nameBuffG);
 
    if (bookSpName(curBook) != NULL)
       copySubstrToAllocation(nameBuffG, (Text){bookSpName(curBook), MAXPATHL - 1});
    else
-      home_replace(NULL, curBook->fullFileName, nameBuffG, MAXPATHL, true);
+      home_replace(curBook->fullFileName, nameBuffG, MAXPATHL, true);
    smsg(_("Original file \"%s\""), nameBuffG);
    msg_putchar('\n');
 
@@ -2151,7 +2151,7 @@ addTextPropsForAppend(
          if (newLineContent == NULL)
             return;
          if (*len > 0) {
-            mch_memmove(newLineContent, *lineContent, *len);
+            MEMMOVE(newLineContent, *lineContent, *len);
          }
          newPropCount = 0;
       }
@@ -2160,13 +2160,13 @@ addTextPropsForAppend(
       CS props;
       count = get_text_props(OUT &props, book, lnum, false);
       for (n = 0; n < count; ++n) {
-         mch_memmove(&prop, props + n * sizeof(TextProp), sizeof(TextProp));
+         MEMMOVE(&prop, props + n * sizeof(TextProp), sizeof(TextProp));
          if (prop.flags & TEXT_PROP_CONT_NEXT) {
             if (round == 2) {
                prop.flags |= TEXT_PROP_CONT_PREV;
                prop.col = 1;
                prop.len = *len;  // not exactly the right length
-               mch_memmove(
+               MEMMOVE(
                  newLineContent + *len + newPropCount * sizeof(TextProp), 
                  &prop, 
                  sizeof(TextProp)
@@ -2292,7 +2292,7 @@ insertLineText(
          } else {
             lineSentinel = ((block->c[oldLineInd]) & c_MASK);
          }
-         mch_memmove(
+         MEMMOVE(
             (char *)block + block->startByte,
             (char *)block + block->startByte + len,
             (Unt)(lineSentinel - (block->startByte + len))
@@ -2308,7 +2308,7 @@ insertLineText(
 
       if (len > 1) {
          // copy the text into the block unless it's empty
-         mch_memmove((char *)block + block->c[newLineInd], newContent, (Unt)len);
+         MEMMOVE((char *)block + block->c[newLineInd], newContent, (Unt)len);
       } else {
          *((char*)block + block->c[newLineInd]) = ZERO;
       }
@@ -2403,7 +2403,7 @@ insertLineText(
             rightBlock->c[0] |= DB_MARKED;
 
          if (len > 0) {
-            mch_memmove((char *)rightBlock + rightBlock->startByte, newContent, (Unt)len);
+            MEMMOVE((char *)rightBlock + rightBlock->startByte, newContent, (Unt)len);
          }
          ++lineCount_right;
       }
@@ -2411,7 +2411,7 @@ insertLineText(
       if (lines_moved) {
          rightBlock->startByte -= data_moved;
          rightBlock->freeSpace -= total_moved;
-         mch_memmove((char *)rightBlock + rightBlock->startByte,
+         MEMMOVE((char *)rightBlock + rightBlock->startByte,
             (char *)leftBlock + leftBlock->startByte,
             (Unt)data_moved
          );
@@ -2437,7 +2437,7 @@ insertLineText(
           if (flags & ML_APPEND_MARK)
              leftBlock->c[lineCount_left] |= DB_MARKED;
           if (len > 0) {
-             mch_memmove((char *)leftBlock + leftBlock->startByte, newContent, (Unt)len);
+             MEMMOVE((char *)leftBlock + leftBlock->startByte, newContent, (Unt)len);
           }
           ++lineCount_left;
       }
@@ -2487,7 +2487,7 @@ insertLineText(
          // block not full, add one entry
          if (pp->pointerCount < pp->pointerCountMax) {
             if (idx + 1 < (int)pp->pointerCount) {
-                mch_memmove(&pp->c[idx + 2], &pp->c[idx + 1], (Unt)(pp->pointerCount - idx - 1) * sizeof(PtrEntry));
+                MEMMOVE(&pp->c[idx + 2], &pp->c[idx + 1], (Unt)(pp->pointerCount - idx - 1) * sizeof(PtrEntry));
             }
             ++pp->pointerCount;
             pp->c[idx].lineCount = lineCount_left;
@@ -2533,7 +2533,7 @@ insertLineText(
             //if block 1 becomes full the tree is given an extra level The pointers from block 1 
             //are moved into the new block. block 1 is updated to point to the new block
             //then continue to split the new block
-            mch_memmove(pp_new, pp, (Unt)page_size);
+            MEMMOVE(pp_new, pp, (Unt)page_size);
             pp->pointerCount = 1;
             pp->c[0].blockId = newBlock->bh_bnum;
             pp->c[0].lineCount = book->mem.lineCount;
@@ -2550,7 +2550,7 @@ insertLineText(
          //If there are none, the new entry will be in the new block.
          total_moved = pp->pointerCount - idx - 1;
          if (total_moved) {
-            mch_memmove(
+            MEMMOVE(
                &pp_new->c[0],
                &pp->c[idx + 1],
                (Unt)(total_moved) * sizeof(PtrEntry)
@@ -2762,8 +2762,8 @@ ml_replace_len(
          // Need to copy over text properties, stored after the text.
          newline = alloc(len + (int)textproplen);
          if (newline != NULL) {
-            mch_memmove(newline, line, len);
-            mch_memmove(newline + len, curBook->mem.cachedLine + oldtextlen, textproplen);
+            MEMMOVE(newline, line, len);
+            MEMMOVE(newline + len, curBook->mem.cachedLine + oldtextlen, textproplen);
             eeglFree(line);
             line = newline;
             len += (ColNr)textproplen;
@@ -2808,7 +2808,7 @@ adjustTextPropsForDeletion(
    int      found;
 
    for (int done_del = 0; done_del < del_props_len; done_del += sizeof(TextProp)) {
-      mch_memmove(&prop_del, del_props + done_del, sizeof(TextProp));
+      MEMMOVE(&prop_del, del_props + done_del, sizeof(TextProp));
       if ((above && (prop_del.flags & TEXT_PROP_CONT_PREV)
              && !(prop_del.flags & TEXT_PROP_CONT_NEXT))
           || (!above && (prop_del.flags & TEXT_PROP_CONT_NEXT) 
@@ -2843,14 +2843,14 @@ adjustTextPropsForDeletion(
             int flag = above ? TEXT_PROP_CONT_NEXT : TEXT_PROP_CONT_PREV;
             TextProp  prop_this;
 
-            mch_memmove(&prop_this, text + textlen + done_this, sizeof(TextProp));
+            MEMMOVE(&prop_this, text + textlen + done_this, sizeof(TextProp));
             if ((prop_this.flags & flag)
                && prop_del.id == prop_this.id
                && prop_del.type == prop_this.type
             ){
                found = true;
                prop_this.flags &= ~flag;
-               mch_memmove(text + textlen + done_this, &prop_this, sizeof(TextProp));
+               MEMMOVE(text + textlen + done_this, &prop_this, sizeof(TextProp));
                break;
             }
          }
@@ -2959,7 +2959,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
             mf_free(mfp, hdr);
          else {
             if (count != idx)   // move entries after the deleted one
-                mch_memmove(&pp->c[idx], &pp->c[idx + 1], (Unt)(count - idx) * sizeof(PtrEntry));
+                MEMMOVE(&pp->c[idx], &pp->c[idx + 1], (Unt)(count - idx) * sizeof(PtrEntry));
             mf_put(mfp, hdr, true, false);
 
             book->mem.ml_stack_top = stack_idx;   // truncate stack
@@ -2977,7 +2977,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
    } else {
       // delete the text by moving the next lines forwards
       int text_start = block->startByte;
-      mch_memmove(
+      MEMMOVE(
          block + text_start + line_size, block + text_start, (Unt)(line_start - text_start)
       );
 
@@ -3187,7 +3187,7 @@ flushLine(Book *book) {
             count = book->mem.lockedHigh - book->mem.lockedLow + 1;
             if (extra != 0 && idx < count - 1) {
                 // move text of following lines
-                mch_memmove((char *)block + block->startByte - extra,
+                MEMMOVE((char *)block + block->startByte - extra,
                   (char *)block + block->startByte,
                   (Unt)(start - block->startByte));
 
@@ -3202,7 +3202,7 @@ flushLine(Book *book) {
             block->startByte -= extra;
 
             // copy new line into the data block
-            mch_memmove(old_line - extra, new_line, (Unt)new_len);
+            MEMMOVE(old_line - extra, new_line, (Unt)new_len);
             book->mem.flags |= (ML_LOCKED_DIRTY | ML_LOCKED_POS);
             // The else case is already covered by the insert and delete
             if (book->hasTextprop) {
@@ -3451,7 +3451,7 @@ ml_add_stack(Book* book) {
 
       InfoPtr* newstack = ALLOC_MULT(InfoPtr, book->mem.ml_stack_size + STACK_INCR);
       if (top > 0)
-         mch_memmove(newstack, book->mem.ml_stack, (Unt)top * sizeof(InfoPtr));
+         MEMMOVE(newstack, book->mem.ml_stack, (Unt)top * sizeof(InfoPtr));
       eeglFree(book->mem.ml_stack);
       book->mem.ml_stack = newstack;
       book->mem.ml_stack_size += STACK_INCR;
@@ -3678,7 +3678,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
                name = alloc(STRLEN(fname) + len + STRLEN(_("\" already exists!")) + 5);
                if (!name) {
                   STRCPY(name, _("Swap file \""));
-                  home_replace(NULL, fname, name + len, 1000, true);
+                  home_replace(fname, name + len, 1000, true);
                   STRCAT(name, _("\" already exists!"));
                }
                dialog_result = do_dialog(
@@ -3969,7 +3969,7 @@ updateChunk(Book* book, LineNr line, long len, int updtype){
          int end_idx;
          int textEnd;
 
-         mch_memmove(book->mem.ml_chunksize + curix + 1,
+         MEMMOVE(book->mem.ml_chunksize + curix + 1,
             book->mem.ml_chunksize + curix,
             (book->mem.ml_usedchunks - curix) *
             sizeof(MemChunkSize)
@@ -4057,7 +4057,7 @@ updateChunk(Book* book, LineNr line, long len, int updtype){
          curchnk = book->mem.ml_chunksize + curix;
       } ei (curix == 0 && curchnk->mlcs_numlines <= 0) {
          book->mem.ml_usedchunks--;
-         mch_memmove(
+         MEMMOVE(
             book->mem.ml_chunksize, book->mem.ml_chunksize + 1,
             book->mem.ml_usedchunks * sizeof(MemChunkSize)
          );
@@ -4073,7 +4073,7 @@ updateChunk(Book* book, LineNr line, long len, int updtype){
       curchnk[-1].mlcs_totalsize += curchnk->mlcs_totalsize;
       book->mem.ml_usedchunks--;
       if (curix < book->mem.ml_usedchunks)
-          mch_memmove(book->mem.ml_chunksize + curix,
+          MEMMOVE(book->mem.ml_chunksize + curix,
             book->mem.ml_chunksize + curix + 1,
             (book->mem.ml_usedchunks - curix) *
             sizeof(MemChunkSize));

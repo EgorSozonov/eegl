@@ -11477,7 +11477,7 @@ drawMenuItem(
    for ( ; ; MB_PTR_ADV(p)) {
       if (!s)
          s = p;
-      w = ptr2cells(p);
+      w = bookPtr2Cells(p);
       if (*p != ZERO && *p != TAB && *totwidth_ptr + w <= pum_width) {
          width += w;
          continue;
@@ -12093,7 +12093,7 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
                break;
             }
          }
-         item->cells += ptr2cells(p);
+         item->cells += bookPtr2Cells(p);
          p += utfCharLen(p);
       }
       item->bytelen = p - item->start;
@@ -12141,7 +12141,7 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
                     p < item->start + item->bytelen;
                     p += utfCharLen(p)
                ) {
-                  if ((cells += ptr2cells(p)) > BALLOON_MIN_WIDTH)
+                  if ((cells += bookPtr2Cells(p)) > BALLOON_MIN_WIDTH)
                      break;
                } 
                thislen = p - (item->start + skip);

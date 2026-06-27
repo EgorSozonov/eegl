@@ -1841,14 +1841,14 @@ save_chartab(CS chartab) {
    if (!synBookS->o.isKeyword)
       return;
 
-   mch_memmove(chartab, synBookS->charsForKeywords, (Unt)32);
-   mch_memmove(synBookS->charsForKeywords, syntPortS->ownSyntax->b_syn_chartab, (Unt)32);
+   MEMMOVE(chartab, synBookS->charsForKeywords, (Unt)32);
+   MEMMOVE(synBookS->charsForKeywords, syntPortS->ownSyntax->b_syn_chartab, (Unt)32);
 }
 
 private void
 restoreKeywordChars(CS chartab) {
    if (synBookS->o.isKeyword)
-      mch_memmove(synBookS->charsForKeywords, chartab, (Unt)32);
+      MEMMOVE(synBookS->charsForKeywords, chartab, (Unt)32);
 }
 
 // Return true if the line-continuation pattern matches in line "lnum".
@@ -3748,15 +3748,15 @@ syn_cmd_iskeyword(Invocation* invo, int syncing UNUSED) {
          msg_outtrans((CS)_("syntax iskeyword not set"));
    } else {
       if (STRNICMP(arg, "clear", 5) == 0) {
-         mch_memmove(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
+         MEMMOVE(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
          curPor->book->o.isKeyword = null;
       } else {
-         mch_memmove(save_chartab, curBook->charsForKeywords, (Unt)32);
+         MEMMOVE(save_chartab, curBook->charsForKeywords, (Unt)32);
          CS save_isk = curBook->o.isKeyword;
          curBook->o.isKeyword = copyStr(arg);
 
-         mch_memmove(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
-         mch_memmove(curBook->charsForKeywords, save_chartab, (Unt)32);
+         MEMMOVE(curPor->ownSyntax->b_syn_chartab, curBook->charsForKeywords, (Unt)32);
+         MEMMOVE(curBook->charsForKeywords, save_chartab, (Unt)32);
          curPor->book->o.isKeyword = null;
          curBook->o.isKeyword = save_isk;
       }
@@ -3848,7 +3848,7 @@ syn_remove_pattern( SyntaxBlock   *block, int      idx) {
    if (spp->sp_flags & HL_FOLD)
       --block->b_syn_folditems;
    syn_clear_pattern(block, idx);
-   mch_memmove(spp, spp + 1, sizeof(SyntaxPattern) * (block->syntaxPatterns.len - idx - 1));
+   MEMMOVE(spp, spp + 1, sizeof(SyntaxPattern) * (block->syntaxPatterns.len - idx - 1));
    --block->syntaxPatterns.len;
 }
 
@@ -4741,7 +4741,7 @@ syn_cmd_include(Invocation* invo, int syncing UNUSED) {
    // Everything that's left, up to the next command, should be the filename to include.
    invo->argFlags |= (commandFlagExpandWildcards() | commandFlagNoSpacesInExtra());
    separateNextCommand(invo, false);
-   if (*invo->arg == '<' || *invo->arg == '$' || !fiIsRelative(invo->arg)) {
+   if (*invo->arg == '<' || *invo->arg == '$' || !strIsRelative(invo->arg)) {
       //For an absolute path, "$EEGL/..." or "<sfile>.." we ":source" the
       //file.  Need to expand the file name first.  In other cases ":runtime!" is used.
       source = true;
@@ -4854,7 +4854,7 @@ syn_cmd_keyword(Invocation* invo, int syncing UNUSED) {
                   }
                   int l = utfCharLen(p + 1);
 
-                  mch_memmove(p, p + 1, l);
+                  MEMMOVE(p, p + 1, l);
                   p += l;
                }
             }
