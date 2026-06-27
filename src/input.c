@@ -3262,7 +3262,7 @@ eeIsFnameChar_or_wc(Unt c) {
 }
 
 //Return true if line "lnum" ends in a white character.
-private int
+int
 ends_in_white(LineNr lnum) {
    CS s = ml_get(lnum);
    if (*s == ZERO)
@@ -3274,7 +3274,7 @@ ends_in_white(LineNr lnum) {
 //Return true if the two comment leaders given are the same.  "lnum" is
 //the first line.  White-space is ignored.  Note that the whole of
 //'leader1' must match 'leader2_len' characters from 'leader2' -- webb
-private int
+int
 same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS leader2_flags){
    int idx1 = 0, idx2 = 0;
 
@@ -3542,7 +3542,6 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
       line_breakcheck();
    }
 }
-
 
 //{{{multibyte characters
 
@@ -3876,9 +3875,17 @@ mb_char2cells(int c) {
    ei (c >= 0x80 && !bookIsCharPrintable(c))
       return 4;      // unprintable, displays <xx>
 
-
    return 1;
 }
+
+// mb_char2cells() with different argument type for libvterm.
+int
+utf_uint2cells(Unt c) {
+   if (c >= 0x100 && utf_iscomposing((int)c))
+      return 0;
+   return mb_char2cells(c);
+}
+
 
 // Translate a string into allocated memory, replacing special chars with printable chars.
 CS
@@ -3919,7 +3926,7 @@ sanitizeStr(CS s) {
             transchar_hex(res + STRLEN(res), c);
          p += l;
       } else
-         STRCAT(res, transchar_byte(*p++));
+         STRCAT(res, bookTranscharByte(*p++));
    }
    return res;
 }
@@ -3956,6 +3963,92 @@ show_utf8(void) {
    }
 
    msg(IObuff);
+}
+
+//Translate any special characters in buf[bufsize] in-place.
+//The result is a string with only printable characters, but if there is not
+//enough room, not all characters will be translated.
+void
+trans_characters(CS buf, int bufsize) {
+   int len;      // length of string needing translation
+   int room;      // room in buffer after string
+   CS trs;      // translated character
+   int trs_len;   // length of trs[]
+
+   len = (int)STRLEN(buf);
+   room = bufsize - len;
+   while (*buf != 0) {
+      // Assume a multi-byte character doesn't need translation.
+      if ((trs_len = utfCharLen(buf)) > 1)
+         len -= trs_len;
+      else {
+         trs = bookTranscharByte(*buf);
+         trs_len = (int)STRLEN(trs);
+         if (trs_len > 1) {
+            room -= trs_len - 1;
+            if (room <= 0)
+               return;
+            MEMMOVE(buf + trs_len, buf + 1, (Unt)len);
+         }
+         MEMMOVE(buf, trs, (Unt)trs_len);
+         --len;
+      }
+      buf += trs_len;
+   }
+}
+
+int
+mb_ptr2cells(CS p) {
+   // Need to convert to a character number.
+   if (*p >= 0x80) {
+      int c = mb_ptr2char(p);
+      // An illegal byte is displayed as <xx>.
+      if (utf_ptr2len(p) == 1 || c == ZERO)
+         return 4;
+      // If the char is ASCII it must be an overlong sequence.
+      if (c < 0x80)
+         return bookChar2Cells(c);
+      return mb_char2cells(c);
+   }
+   return 1;
+}
+
+int
+mb_ptr2cells_len(CS p, int size) {
+   // Need to convert to a wide character.
+   if (size > 0 && *p >= 0x80) {
+      if (utfNeedTruncate(p, size))
+          return 1;  // truncated
+      int c = mb_ptr2char(p);
+      // An illegal byte is displayed as <xx>.
+      if (utf_ptr2len(p) == 1 || c == ZERO)
+          return 4;
+      // If the char is ASCII it must be an overlong sequence.
+      if (c < 0x80)
+          return bookChar2Cells(c);
+      return mb_char2cells(c);
+    }
+    return 1;
+}
+
+//Return the number of cells occupied by string "p".
+//Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
+int
+mb_string2cells(CS p, int len) {
+   int clen = 0;
+
+   for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
+      clen += mb_ptr2cells(p + i);
+   return clen;
+}
+
+// Find the start of the next word.
+// Return a pointer to the first char of the word. Also stop at a ZERO.
+CS
+findWordStart(CS ptr) {
+   while (*ptr != ZERO && *ptr != '\n' && mb_get_class(ptr) <= 1)
+      ptr += utfCharLen(ptr);
+   return ptr;
 }
 
 //}}}

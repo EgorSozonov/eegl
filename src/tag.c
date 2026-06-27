@@ -964,12 +964,10 @@ do_tags(Invocation *eap UNUSED) {
             continue;
 
          msg_putchar('\n');
-         eeSnprintf(IObuff, IOSIZE, "%c%2d %2d %-15s %5ld  ",
-         i == tagstackidx ? '>' : ' ',
-         i + 1,
-         tagstack[i].cur_match + 1,
-         tagstack[i].tagname,
-         tagstack[i].fmark.mark.lnum);
+         eeSnprintf(
+            IObuff, IOSIZE, "%c%2d %2d %-15s " FMT_UNT "  ", i == tagstackidx ? '>' : ' ',
+            i + 1, tagstack[i].cur_match + 1, tagstack[i].tagname, tagstack[i].fmark.mark.lnum
+         );
          msg_outtrans(IObuff);
          msgOuttransDeco(name, tagstack[i].fmark.fnum == curBook->fiNum ? getDecoFlags(HLF_D) : 0);
          eeglFree(name);
@@ -3271,7 +3269,9 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 //{{{Cscope integration
 
+#ifndef PROTO
 #include <sys/stat.h> // for fstat, stat, S_ISDIR
+#endif
 
 #define CSCOPE_SUCCESS 0
 #define CSCOPE_FAILURE -1

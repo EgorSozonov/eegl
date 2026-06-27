@@ -1377,7 +1377,7 @@ insertchar0(
       // when @formatexpr isn't set or it returns non-zero.
       Boole do_internal = true;
       ColNr virtcol = get_nolist_virtcol()
-                 + char2cells(c != ZERO ? c : gchar_cursor());
+                 + bookChar2Cells(c != ZERO ? c : gchar_cursor());
 
       if (curBook->o.formatExpr && (flags & INSCHAR_NO_FEX) == 0
          && (force_format || virtcol > (ColNr)textwidth)
@@ -8781,6 +8781,550 @@ setCompletionCallbacks(OptionChange *cha) {
       return FAIL;
 
    return OK;
+}
+
+//}}}
+//{{{text formatting
+
+private int   did_add_space = false;   // auto_format() added an extra space under the cursor
+
+#define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
+
+//Return true if format option 'x' is in effect.
+Boole
+has_format_option(int x) {
+   return curBook->o.formatOptions && firstOccurrence(curBook->o.formatOptions, x) != NULL;
+}
+
+//Write a character at the current cursor position. It is directly written into the block.
+private void
+pchar_cursor(int c) {
+   *(memGetLine(curBook, curPor->cursor.lnum, true) + curPor->cursor.col) = c;
+}
+
+//Format text at the current insert position.
+//If the INSCHAR_COM_LIST flag is present, then the value of second_indent
+//will be the comment leader length sent to openLine().
+void
+internal_format(
+   int textwidth,
+   int second_indent,
+   int flags,
+   int format_only,
+   Unt c // character to be inserted (can be ZERO)
+){
+   int cc;
+   int skip_pos;
+   int save_char = ZERO;
+   int haveto_redraw = false;
+   int fo_ins_blank = has_format_option(FO_INS_BLANK);
+   int fo_multibyte = has_format_option(FO_MBYTE_BREAK);
+   int fo_rigor_tw  = has_format_option(FO_RIGOROUS_TW);
+   int fo_white_par = has_format_option(FO_WHITE_PAR);
+   int first_line = true;
+   ColNr   leader_len;
+   int no_leader = false;
+   int doComments = (flags & INSCHAR_DO_COM);
+   int safe_tw = trim_to_int(8 * (Long)textwidth);
+   int has_bri = curPor->o.breakIndent;
+
+   // make sure win_lbr_chartabsize() counts correctly
+   curPor->o.breakIndent = false;
+
+   // When 'ai' is off we don't want a space under the cursor to be
+   // deleted.  Replace it with an 'x' temporarily.
+   if (!curBook->o.autoIndent) {
+      cc = gchar_cursor();
+      if (SPACE_OR_TAB(cc)) {
+         save_char = cc;
+         pchar_cursor('x');
+      }
+   }
+
+   // Repeat breaking lines, until the current line is not too long.
+   while (!gotInterruptG) {
+      int startcol;      // Cursor column at entry
+      int wantcol;      // column at textwidth border
+      int foundcol;      // column for start of spaces
+      ColNr len;
+      ColNr virtcol;
+      ColNr col;
+      int wcc;         // counter for whitespace chars
+      int did_do_comment = false;
+      int first_pass;
+
+      //Cursor is currently at the end of line. No need to format
+      //if line length is less than textwidth (8 * textwidth for utf safety)
+      if (curPor->cursor.col < safe_tw) {
+         virtcol = get_nolist_virtcol() + bookChar2Cells(c != ZERO ? c : gchar_cursor());
+         if (virtcol <= (ColNr)textwidth)
+            break;
+      }
+
+      if (no_leader)
+         doComments = false;
+      ei (!(flags & INSCHAR_FORMAT) && has_format_option(FO_WRAP_COMS))
+         doComments = true;
+
+      // Don't break until after the comment leader
+      if (doComments) {
+         CS line = ml_get_curline();
+
+         leader_len = get_leader_len(line, NULL, false, true);
+      } else
+         leader_len = 0;
+
+     //If the line doesn't start with a comment leader, then don't
+     //start one in a following broken line.  Avoids that a %word
+     //moved to the start of the next line causes all following lines to start with %.
+     if (leader_len == 0)
+         no_leader = true;
+     if (!(flags & INSCHAR_FORMAT) && leader_len == 0 && !has_format_option(FO_WRAP))
+         break;
+     if ((startcol = curPor->cursor.col) == 0)
+         break;
+
+      // find column of textwidth border
+      coladvance((ColNr)textwidth);
+      wantcol = curPor->cursor.col;
+
+      // If startcol is large (a long line), formatting takes too much
+      // time. The algorithm is O(n^2), it walks from the end of the
+      // line to textwidth border every time for each line break.
+      //
+      // Ceil to 8 * textwidth to optimize.
+      curPor->cursor.col = startcol < safe_tw ? startcol : safe_tw;
+
+      foundcol = 0;
+      skip_pos = 0;
+      first_pass = true;
+
+      // Find position to break at. Stop at first entered white when 'formatoptions' has 'v'
+      while ((!fo_ins_blank && !has_format_option(FO_INS_VI))
+             || (flags & INSCHAR_FORMAT)
+             || curPor->cursor.lnum != insertStartG.lnum
+             || curPor->cursor.col >= insertStartG.col
+      ){
+        if (first_pass && c != ZERO) {
+            cc = c;
+            first_pass = false;
+         } else
+            cc = gchar_cursor();
+         if (WHITECHAR(cc)) {
+
+            // find start of sequence of blanks
+            wcc = 0;
+            while (curPor->cursor.col > 0 && WHITECHAR(cc)) {
+               dec_cursor();
+               cc = gchar_cursor();
+
+               // Increment count of how many whitespace chars in this
+               // group; we only need to know if it's more than one.
+               if (wcc < 2)
+                  wcc++;
+           }
+           
+           if (curPor->cursor.col == 0 && WHITECHAR(cc))
+               break;      // only spaces in front of text
+
+            // Don't break after a period when 'formatoptions' has 'p' and
+            // there are less than two spaces.
+            if (has_format_option(FO_PERIOD_ABBR) && cc == '.' && wcc < 2)
+               continue;
+
+            // Don't break until after the comment leader
+            if (curPor->cursor.col < leader_len)
+               break;
+            if (has_format_option(FO_ONE_LETTER)) {
+               // do not break after one-letter words
+               if (curPor->cursor.col == 0)
+                  break;   // one-letter word at begin
+               // do not break "#a b" when 'tw' is 2
+               if (curPor->cursor.col <= leader_len)
+                  break;
+               col = curPor->cursor.col;
+               dec_cursor();
+               cc = gchar_cursor();
+
+               if (WHITECHAR(cc))
+                  continue;   // one-letter, continue
+               curPor->cursor.col = col;
+            }
+
+            inc_cursor();
+
+            foundcol = curPor->cursor.col;
+            if (curPor->cursor.col <= (ColNr)wantcol)
+                break;
+         } ei ((cc >= 0x100 || !utf_allow_break_before(cc)) && fo_multibyte){
+            Unt ncc;
+            int allow_break;
+
+            // Break after or before a multi-byte character.
+            if (curPor->cursor.col != startcol) {
+               // Don't break until after the comment leader
+               if (curPor->cursor.col < leader_len)
+                  break;
+               col = curPor->cursor.col;
+               inc_cursor();
+               ncc = gchar_cursor();
+
+               allow_break = utf_allow_break(cc, ncc);
+
+               // If we have already checked this position, skip!
+               if (curPor->cursor.col != skip_pos && allow_break) {
+               foundcol = curPor->cursor.col;
+               if (curPor->cursor.col <= (ColNr)wantcol)
+                   break;
+               }
+               curPor->cursor.col = col;
+            }
+
+            if (curPor->cursor.col == 0)
+               break;
+
+            ncc = cc;
+            col = curPor->cursor.col;
+
+            dec_cursor();
+            cc = gchar_cursor();
+
+            if (WHITECHAR(cc))
+                continue;      // break with space
+            // Don't break until after the comment leader.
+            if (curPor->cursor.col < leader_len)
+                break;
+
+            curPor->cursor.col = col;
+            skip_pos = curPor->cursor.col;
+
+            allow_break = (utf_allow_break(cc, ncc));
+
+            // Must handle this to respect line break prohibition.
+            if (allow_break) {
+               foundcol = curPor->cursor.col;
+            }
+            if (curPor->cursor.col <= (ColNr)wantcol) {
+               int ncc_allow_break = utf_allow_break_before(ncc);
+
+               if (allow_break)
+                  break;
+               if (!ncc_allow_break && !fo_rigor_tw) {
+                  //Enable at most 1 punct hang outside of textwidth.
+                  if (curPor->cursor.col == startcol) {
+                     //We are inserting a non-breakable char, postpone
+                     //line break check to next insert.
+                     break;
+                  }
+
+                  //Neither cc nor ncc is ZERO if we are here, so it's safe to inc_cursor.
+                  col = curPor->cursor.col;
+
+                  inc_cursor();
+                  cc  = ncc;
+                  ncc = gchar_cursor();
+                  //handle insert
+                  ncc = (ncc != ZERO) ? ncc : c;
+
+                  allow_break = (utf_allow_break(cc, ncc));
+
+                  if (allow_break) {
+                     // Break only when we are not at end of line.
+                     break;
+                  }
+                  curPor->cursor.col = col;
+               }
+            }
+         }
+         if (curPor->cursor.col == 0)
+            break;
+         dec_cursor();
+      }
+
+      if (foundcol == 0) {     // no spaces, cannot break line
+         curPor->cursor.col = startcol;
+         break;
+      }
+
+      //adjust startcol for spaces that will be deleted and
+      //characters that will remain on top line
+      curPor->cursor.col = foundcol;
+      while ((cc = gchar_cursor(), WHITECHAR(cc)) && (!fo_white_par || curPor->cursor.col < startcol))
+         inc_cursor();
+      startcol -= curPor->cursor.col;
+      if (startcol < 0)
+         startcol = 0;
+
+      // put cursor after pos. to break line
+      if (!fo_white_par)
+         curPor->cursor.col = foundcol;
+
+      // Split the line just before the margin.
+      // Only insert/delete lines, but don't really redraw the window.
+      openLine(OPENLINE_DELSPACES + OPENLINE_MARKFIX
+             + (fo_white_par ? OPENLINE_KEEPTRAIL : 0)
+             + (doComments ? OPENLINE_DO_COM : 0)
+             + OPENLINE_FORMAT
+             + ((flags & INSCHAR_COM_LIST) ? OPENLINE_COM_LIST : 0),
+          ((flags & INSCHAR_COM_LIST) ? second_indent : old_indent)
+      );
+      if (!(flags & INSCHAR_COM_LIST))
+          old_indent = 0;
+
+      // If a comment leader was inserted, may also do this on a following line.
+      if (did_do_comment)
+          no_leader = false;
+
+      if (first_line) {
+          if (!(flags & INSCHAR_COM_LIST)) {
+             //This section is for auto-wrap of numeric lists. When not in insert mode (i.e. 
+             //format_lines()), the INSCHAR_COM_LIST flag will be set and openLine() will handle 
+             //it (as seen above). The code here (and in get_number_indent()) will recognize 
+             //comments if needed...
+             if (second_indent < 0 && has_format_option(FO_Q_NUMBER))
+                 second_indent = get_number_indent(curPor->cursor.lnum - 1);
+             if (second_indent >= 0) {
+               if (leader_len > 0 && second_indent - leader_len > 0) {
+                   int padding = second_indent - leader_len;
+
+                   //We started at the first_line of a numbered list that has a comment. the 
+                   //openLine() function has inserted the proper comment leader and positioned
+                   //the cursor at the end of the split line. Now we add the additional whitespace 
+                   //needed after the comment leader for the numbered list.
+                   for (int i = 0; i < padding; i++)
+                      ins_str((CS)" ", 1);
+                } else {
+                   (void)set_indent(second_indent, SIN_CHANGED);
+                }
+             }
+          }
+          first_line = false;
+      }
+
+      // Check if cursor is not past the ZERO off the line, cindent
+      // may have added or removed indent.
+      curPor->cursor.col += startcol;
+      len = ml_get_curline_len();
+      if (curPor->cursor.col > len)
+         curPor->cursor.col = len;
+
+      haveto_redraw = true;
+      set_can_cindent(true);
+      // moved the cursor, don't autoindent or cindent now
+      didAindentG = false;
+      didSindentG = false;
+      can_si = false;
+      can_si_back = false;
+      line_breakcheck();
+   }
+
+   if (save_char != ZERO)      // put back space after cursor
+      pchar_cursor(save_char);
+
+   curPor->o.breakIndent = has_bri;
+   if (!format_only && haveto_redraw) {
+      update_topline();
+      drawCurBookLater(UPD_VALID);
+   }
+}
+
+//Blank lines, and lines containing only the comment leader, are left untouched by the formatting.
+//The function returns true in this case.  It also returns true when a line starts with the end 
+//of a comment ('e' in comment flags), so that this line is skipped, and not joined to the
+//previous line.  A new paragraph starts after a blank line, or when the
+//comment leader changes -- webb.
+int
+fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
+   CS flags = NULL;
+
+   CS ptr = ml_get(lnum);
+   *leader_len = doComments ? get_leader_len(ptr, leader_flags, false, true) : 0;
+
+   if (*leader_len > 0) {
+      // Search for 'e' flag in comment leader flags.
+      flags = *leader_flags;
+      while (*flags && *flags != ':' && *flags != COM_END)
+          ++flags;
+   }
+
+   return (*skipwhite(ptr + *leader_len) == ZERO
+       || (*leader_len > 0 && *flags == COM_END)
+       || startPS(lnum, ZERO, false));
+}
+
+//Return true when a paragraph starts in line "lnum".  Return false when the
+//previous line is in the same paragraph.  Used for auto-formatting.
+private int
+paragraph_start(LineNr lnum) {
+   int leader_len = 0;      // leader len of current line
+   CS leader_flags = NULL;   // flags for leader of current line
+   int next_leader_len;   // leader len of next line
+   CS next_leader_flags;   // flags for leader of next line
+   int doComments;      // format comments
+
+   if (lnum <= 1)
+      return true;      // start of the file
+
+   CS p = ml_get(lnum - 1);
+   if (*p == ZERO)
+      return true;      // after empty line
+
+   doComments = has_format_option(FO_Q_COMS);
+   if (  // after non-paragraph line
+         fmt_check_par(lnum - 1, OUT &leader_len, OUT &leader_flags, doComments)
+         // "lnum" is not a paragraph line
+         || fmt_check_par(lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments)
+         // missing trailing space in previous line.
+         || (has_format_option(FO_WHITE_PAR) && !ends_in_white(lnum - 1))
+         // numbered item starts in "lnum".
+         || (has_format_option(FO_Q_NUMBER) && get_number_indent(lnum) > 0)
+         // change of comment leader.
+         ||  !same_leader(lnum - 1, leader_len, leader_flags, next_leader_len, next_leader_flags)
+   ){
+      return true;      
+   } 
+
+   return false;
+}
+
+//Called after inserting or deleting text: When 'formatoptions' includes the
+//'a' flag format from the current line until the end of the paragraph.
+//Keep the cursor at the same position relative to the text.
+//The caller must have saved the cursor line for undo, following ones will be saved here.
+void
+auto_format(
+    int trailblank,   // when true also format with trailing blank
+    int prev_line   // may start in previous line
+){
+   if (!has_format_option(FO_AUTO))
+      return;
+
+   Pos pos = curPor->cursor;
+   CS old = ml_get_curline();
+
+   // may remove added space
+   check_auto_format(false);
+
+   //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
+   //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single 
+   //character before the cursor. Otherwise the line would be broken and when typing another 
+   //non-white next they are not joined back together.
+   int wasatend = (pos.col == ml_get_curline_len());
+   if (*old != ZERO && !trailblank && wasatend) {
+      dec_cursor();
+      int cc = gchar_cursor();
+      if (!WHITECHAR(cc) && curPor->cursor.col > 0 && has_format_option(FO_ONE_LETTER))
+         dec_cursor();
+      cc = gchar_cursor();
+      if (WHITECHAR(cc)) {
+         curPor->cursor = pos;
+         return;
+      }
+      curPor->cursor = pos;
+   }
+
+   //With the 'c' flag in @formatoptions and 't' missing: only format comments.
+   if (has_format_option(FO_WRAP_COMS) && !has_format_option(FO_WRAP)
+            && get_leader_len(old, NULL, false, true) == 0
+   )
+      return;
+
+   //May start formatting in a previous line, so that after "x" a word is moved to the previous 
+   //line if it fits there now.  Only when this is not the start of a paragraph.
+   if (prev_line && !paragraph_start(curPor->cursor.lnum)) {
+      --curPor->cursor.lnum;
+   if (u_save_cursor() == FAIL)
+       return;
+   }
+
+   //Do the formatting and restore the cursor position.  "saved_cursor" will
+   //be adjusted for the text formatting.
+   saved_cursor = pos;
+   format_lines((LineNr)-1, false);
+   curPor->cursor = saved_cursor;
+   saved_cursor.lnum = 0;
+
+   if (curPor->cursor.lnum > curBook->mem.lineCount) {
+      // "cannot happen"
+      curPor->cursor.lnum = curBook->mem.lineCount;
+      coladvance((ColNr)MAXCOL);
+   } else
+      check_cursor_col();
+
+   //Insert mode: If the cursor is now after the end of the line while it
+   //previously wasn't, the line was broken.  Because of the rule above we
+   //need to add a space when 'w' is in 'formatoptions' to keep a paragraph formatted.
+   if (!wasatend && has_format_option(FO_WHITE_PAR)) {
+      CS new = ml_get_curline();
+      ColNr   len = ml_get_curline_len();
+      if (curPor->cursor.col == len) {
+         CS pnew = copySubstr(new, len + 2);
+         pnew[len] = ' ';
+         pnew[len + 1] = ZERO;
+         ml_replace(curPor->cursor.lnum, pnew, false);
+         // remove the space later
+         did_add_space = true;
+      } else
+         // may remove added space
+         check_auto_format(false);
+   }
+
+   check_cursor();
+}
+
+//When an extra space was added to continue a paragraph for auto-formatting,
+//delete it now.  The space must be under the cursor, just after the insert position.
+void
+check_auto_format(int end_insert){      // true when ending Insert mode
+   if (!did_add_space)
+      return;
+
+   Unt c = ' ';
+   Unt cc = gchar_cursor();
+   if (!WHITECHAR(cc))
+      // Somehow the space was removed already.
+      did_add_space = false;
+   else {
+      if (!end_insert) {
+         inc_cursor();
+         c = gchar_cursor();
+         dec_cursor();
+      }
+      if (c != ZERO) {
+         // The space is no longer at the end of the line, delete it.
+         del_char(false);
+         did_add_space = false;
+      }
+   }
+}
+
+//Find out textwidth to be used for formatting:
+// if 'textwidth' option is set, use it
+// ei 'wrapmargin' option is set, use curPor->width - 'wrapmargin'
+// if invalid value, use 0.
+// Set default to window width (maximum 79) for "gq" operator.
+int
+comp_textwidth(int ff) {  // force formatting (for "gq" command)
+   int textwidth = curBook->o.textWidth;
+   if (textwidth == 0 && curBook->o.wrapMargin) {
+      //The width is the portal width minus 'wrapmargin' minus all the
+      //things that add to the margin.
+      textwidth = curPor->width - curBook->o.wrapMargin;
+      if (curBook == commPortBookG)
+          textwidth -= 1;
+      if (isSigncolumnOn(curPor))
+         textwidth -= 1;
+      if (curPor->o.relativeNumber)
+         textwidth -= 8;
+   }
+   if (textwidth < 0)
+      textwidth = 0;
+   if (ff && textwidth == 0) {
+      textwidth = curPor->width - 1;
+      if (textwidth > 79)
+          textwidth = 79;
+   }
+   return textwidth;
 }
 
 //}}}

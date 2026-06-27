@@ -69,6 +69,9 @@ private SearchPattern prevSearchPatternsP[2] = {
     {(Text){NULL, 0}, true, false, {'/', 0, 0, 0L}}   // last used substitute pat
 };
 
+// copy of prevSearchPatternsP[], for keeping the search patterns while executing autocmds
+private SearchPattern saved_spats[2];
+
 private int last_idx = 0;   // index in prevSearchPatternsP[] for RE_LAST
 
 private Byte lastc[2] = {ZERO, ZERO};   // last character searched for
@@ -77,21 +80,19 @@ private int last_t_cmd = true;      // last search t_cmd
 private Byte lastc_bytes[MB_MAXBYTES + 1];
 private int lastc_bytelen = 1;   // >1 for multi-byte char
 
-// copy of prevSearchPatternsP[], for keeping the search patterns while executing autocmds
-private SearchPattern saved_spats[ARRAY_LENGTH(prevSearchPatternsP)];
 private Text mrPatternSaved = (Text){NULL, 0};
 private int saved_spats_last_idx = 0;
 private Boole saved_spatsHlsearch = true;
 
 // allocated copy of pattern used by search_regcomp()
-private Text mrPatternP = (Text){null, 0};
+private Text mrPatternP = (Text){.c = null, .len = 0};
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
 typedef struct {
-   FILE* fp;     // File pointer
-   CS name;      // Full name of file
-   LineNr lnum;  // Line we were up to in file
-   int matched;  // Found a match in this file
+   FILE* fp;     //File pointer
+   CS name;      //Full name of file
+   LineNr lnum;  //Line we were up to in file
+   int matched;  //Found a match in this file
 } SearchedFile;
 
 //translate search pattern for compileRegexp()
@@ -113,7 +114,7 @@ search_regcomp(
    int options,
    OUT RegMultilineMatch* regmatch   // return: pattern and ignore-case flag
 ){
-   int      magic;
+   int magic;
    anyRegexEmsgG = false;
 
    // If no pattern given, use a previously defined pattern.
@@ -2307,8 +2308,8 @@ find_pattern_in_path(
    LineNr   start_lnum,   // first line to start searching
    LineNr   end_lnum,   // last line for searching
    int      forceit,   // If true, always switch to the found path
-   int      silent)      // Do not print messages when ACTION_EXPAND
-{
+   int      silent      // Do not print messages when ACTION_EXPAND
+){
    SearchedFile* bigger;      // When we need more space
    int      max_path_depth = 50;
    long   match_count = 1;
@@ -2866,7 +2867,7 @@ show_pat_in_path(
       if (action == ACTION_SHOW_ALL) {
           SPRINTF(IObuff, "%3ld: ", count);   // show match nr
           msg_puts(IObuff);
-          SPRINTF(IObuff, "%4ld", *lnum);   // show line nr
+          SPRINTF(IObuff, FMT_UNT, *lnum);   // show line nr
                      // Highlight line numbers
           msgPutsDeco(IObuff, getDecoFlags(HLF_N));
           msg_puts(S" ");

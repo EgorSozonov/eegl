@@ -7929,6 +7929,22 @@ xxdline(FILE* fp, CS l, CS colors, int nz) {
       zero_seen = 4;
 }
 
+private Byte
+get_color_char(int e) {
+   if (e > 31 && e < 127)
+      return COLOR_GREEN;
+
+   ei (e == 9 || e == 10 || e == 13)
+      return COLOR_YELLOW;
+   ei (e == 0)
+      return COLOR_WHITE;
+   ei (e == 255)
+      return COLOR_BLUE;
+   else
+      return COLOR_RED;
+   return 0;
+}
+
 int
 xxdMain(int argc, char* argv[]) {
    FILE *fp, *fpo;
@@ -8094,8 +8110,8 @@ xxdMain(int argc, char* argv[]) {
          errorExit(1, S"only one of -b, -e, -u, -p, -i can be used");
    }
 
-  if (!colsgiven || (!cols && hextype != HEX_POSTSCRIPT))
-    switch (hextype) {
+   if (!colsgiven || (!cols && hextype != HEX_POSTSCRIPT)) {
+      switch (hextype) {
       case HEX_POSTSCRIPT:   cols = 30; break;
       case HEX_CINCLUDE:   cols = 12; break;
       case HEX_CINCLUDE | HEX_BITS:
@@ -8104,9 +8120,10 @@ xxdMain(int argc, char* argv[]) {
       case HEX_LITTLEENDIAN:
       default:         cols = 16; break;
       }
+   } 
 
-  if (octspergrp < 0)
-    switch (hextype) {
+   if (octspergrp < 0) {
+      switch (hextype) {
       case HEX_CINCLUDE | HEX_BITS:
       case HEX_BITS:      octspergrp = 1; break;
       case HEX_NORMAL:      octspergrp = 2; break;
@@ -8115,8 +8132,9 @@ xxdMain(int argc, char* argv[]) {
       case HEX_CINCLUDE:
       default:         octspergrp = 0; break;
       }
+   } 
 
-  if ((hextype == HEX_POSTSCRIPT && cols < 0) 
+   if ((hextype == HEX_POSTSCRIPT && cols < 0) 
         || (hextype != HEX_POSTSCRIPT && cols < 1) 
         || ((hextype == HEX_NORMAL || hextype == HEX_BITS || hextype == HEX_LITTLEENDIAN)
                          && (cols > COLS))
@@ -8268,7 +8286,7 @@ xxdMain(int argc, char* argv[]) {
    while ((length < 0 || n < length) && (e = getc_or_die(fp)) != EOF) {
       if (p == 0) {
          addrlen = SPRINTF(
-            l, decimal_offset ? S"%08ld:" : S"%08lx:", ((Ulong)(n + seekoff + displayoff))
+            l, decimal_offset ? FMT_ULONG : FMT_ULONG_HEX, ((Ulong)(n + seekoff + displayoff))
          );
          for (c = addrlen; c < LLEN_NO_COLOR; l[c++] = ' ')
             {}
@@ -8328,7 +8346,7 @@ xxdMain(int argc, char* argv[]) {
 
             for (i = 0; i < fill;i++) {
                colors[c] = COLOR_RED;
-               l[c++] = ' '; /* empty space */
+               l[c++] = ' '; // empty space
                x++;
                p++;
             }
@@ -8353,5 +8371,6 @@ xxdMain(int argc, char* argv[]) {
    fclose_or_die(fp, fpo);
    return 0;
 }
+
 
 //}}}

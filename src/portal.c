@@ -7721,7 +7721,7 @@ highlightCurrentLine(Portal* po) {
    int       sign_id = 0;
    CS sign_name = popup_get_sign_name(po);
 
-   markDeleteSigns(po->book, (CS)"PopUpMenu");
+   llDeleteSigns(po->book, (CS)"PopUpMenu");
 
    if ((po->pup.flags & POPF_CURSORLINE) != 0) {
       scrollToCurrent(po);
@@ -7998,7 +7998,7 @@ applyParams(Portal* po, Bag* params, int create) {
       if (po->pup.firstLine > po->book->mem.lineCount)
           po->cursor.lnum = po->book->mem.lineCount;
       ei (po->cursor.lnum < po->pup.firstLine
-         || po->cursor.lnum >= po->pup.firstLine + po->height)
+         || po->cursor.lnum >= (int)(po->pup.firstLine + po->height))
           po->cursor.lnum = po->pup.firstLine;
       po->topLine = po->pup.firstLine;
       po->cacheState &= ~VALID_BOTLINE;
@@ -10538,7 +10538,7 @@ update_popups(void (*portUpdate)(Portal* po)) {
             --sb_thumb_height;  // scrolled, no full thumb
          if (sb_thumb_height == 0)
             sb_thumb_height = 1;
-         if (linecount <= po->height || po->height == 0)
+         if (linecount <= (int)po->height || po->height == 0)
             // it just fits, avoid divide by zero
             sb_thumb_top = 0;
          else
@@ -11813,7 +11813,7 @@ pum_set_selected(int n, int repeat UNUSED) {
                //'previewheight' lines.
                if (repeat == 0 && use_popup == USEPOPUP_NONE) {
                   lnum = MIN(lnum, p_pvh);
-                  if (curPor->height < lnum) {
+                  if ((int)curPor->height < lnum) {
                       portSetHeight((int)lnum, curPor);
                       resized = true;
                   }

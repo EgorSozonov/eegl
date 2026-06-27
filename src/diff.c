@@ -4633,7 +4633,7 @@ private int xdl_fall_back_diff(XdfEnv *diff_env, XpParam const *xpp,
              int line1, int count1, int line2, int count2);
 
 // Do not call this function directly, use XDL_ALLOC_GROW instead
-private void* xdl_alloc_grow_helper(void* p, long nr, long* alloc, Unt size);
+private void* xdl_alloc_grow_helper(void* p, Long nr, Long* alloc, Unt size);
 
 private int xdl_prepare_env(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe);
 private void xdl_free_env(XdfEnv *xe);
@@ -5945,9 +5945,9 @@ xdl_fall_back_diff(
 }
 
 private void*
-xdl_alloc_grow_helper(void* p, long nr, long* alloc, Unt size) {
+xdl_alloc_grow_helper(void* p, Long nr, Long* alloc, Unt size) {
    void* tmp = NULL;
-   Unt n = ((LONG_MAX - 16) / 2 >= (*alloc)) ? 2 * (*alloc) + 16 : LONG_MAX;
+   Unt n = (*alloc <= ((Long)LONG_MAX - 16) / 2) ? (2*(*alloc) + 16) : UNT;
    if (nr > (long)n)
       n = nr;
    if (SIZE_MAX / size >= n)
@@ -6377,7 +6377,7 @@ private int xdl_optimize_ctxs(Classifier* cf, XdFile* xdf1, XdFile* xdf2) {
 //recursively, until no unique line pairs can be found; these line ranges
 //are handled by the well-known Myers algorithm.
 
-#define NON_UNIQUE ULONG_MAX
+#define NON_UNIQUE UNT
 
 //This is a hash mapping from line hash to line numbers in the first and second file.
 declStruct(Entry);

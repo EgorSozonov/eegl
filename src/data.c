@@ -5625,7 +5625,7 @@ string_slice(CS str, Long first, Long last, int exclusive) {
    if (start_byte < 0)
       start_byte = 0; // first index very negative: use zero
    Long   end_byte;
-   if ((last == -1 && !exclusive) || last == LONG_MAX)
+   if ((last == -1 && !exclusive) || last == (Long)LONG_MAX)
       end_byte = (long)slen;
    else {
       end_byte = char_idx2byte(str, slen, last);
@@ -11173,6 +11173,29 @@ op_formatexpr(Operator* oper) {
       op_format(oper, false);
 }
 
+int
+fex_format(LineNr lnum, long count, int c) {  // character to be inserted
+   ScriptPos   save_sctx = scriptPosG;
+
+   // Set v:lnum to the first line number and v:count to the number of lines.
+   // Set v:char to the character to be inserted (can be ZERO).
+   set_EeglVar_nr(VV_LNUM, lnum);
+   set_EeglVar_nr(VV_COUNT, count);
+   set_EeglVar_char(c);
+
+   // Make a copy, the option could be changed while calling it.
+   CS fex = copyStr(curBook->o.formatExpr);
+   scriptPosG = curBook->o.scriptLocs[PORT_foldExpr];
+
+   // Evaluate the function.
+   int r = (int)eval_to_number(fex, true);
+
+   set_EeglVar_string(VV_CHAR, NULL, -1);
+   eeglFree(fex);
+   scriptPosG = save_sctx;
+
+   return r;
+}
 
 //}}}
 //{{{json

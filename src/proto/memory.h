@@ -1,8 +1,4 @@
 /* src/memory.c */
-Arena *createArena(void);
-void *allocateOnArena(Unt allocSize, Arena *a);
-void deleteArena(Arena *ar);
-void arenaTryFree(void *start, Unt len, Arena *a);
 void eeMemProfileDump(void);
 int alloc_does_fail(Unt size);
 void *alloc(Unt size);
@@ -21,6 +17,7 @@ void eeglFree(void *x);
 void eeglFreeString(CS x);
 Ulong mch_total_mem(int special);
 void mch_free_mem(void);
+CS toFullFileName(Text fileName, DirName *dn);
 void mch_exit(int r);
 int ml_open(Book *book);
 void ml_setname(Book *book);

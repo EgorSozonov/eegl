@@ -3,17 +3,141 @@
 
 //## strings.c: utility functions for string manipulation 
  
-//#include "eegl.h"
 
 #include <string.h>
+#include <strings.h>
+#ifdef FREESTANDING
 #include "base.h"
-#include "proto/strings.h"
-#ifndef PROTO
-#include <wchar.h>   //for towupper() and towlower()
-#include <ctype.h>   //for islower()
-#include <stdlib.h>  //for atol()
+#define alloc malloc
+#else
+#include "eegl.h"
 #endif
 
+#ifndef PROTO
+#include <wchar.h>   //for towupper() and towlower()
+#include <wctype.h>  //for towlower()
+#include <ctype.h>   //for islower()
+#include <stdlib.h>  //for atol()
+#include <sys/stat.h>
+#endif
+
+//{{{ Arena
+
+#define CHUNK_QUANT 32768
+
+typedef struct ArenaChunk ArenaChunk;
+
+struct ArenaChunk { // :ArenaChunk
+   Unt size;
+   ArenaChunk* next;
+   char memory[]; // flexible array member
+};
+
+struct Arena { // :Arena
+   ArenaChunk* firstChunk;
+   ArenaChunk* currChunk;
+   int currInd;
+};
+
+Arena*
+createArena() { //:createArena
+   Arena* result = malloc(sizeof(Arena));
+
+   Unt firstChunkSize = (CHUNK_QUANT - 32);
+   ArenaChunk* firstChunk = malloc(firstChunkSize);
+   if (!result || !firstChunk)
+      { abort(); }
+
+   firstChunk->size = firstChunkSize - sizeof(ArenaChunk);
+   firstChunk->next = null;
+   result->firstChunk = firstChunk;
+   result->currChunk = firstChunk;
+   result->currInd = 0;
+   return result;
+}
+
+private Unt
+calculateChunkSize(Unt allocSize) { //:calculateChunkSize
+// Calculates memory for a new chunk. Memory is quantized and is always 32 bytes less
+// 32 for any possible padding malloc might use internally,
+// so that the total allocation size is a good even number of OS memory pages
+   Unt fullMemory = sizeof(ArenaChunk) + allocSize + 32;
+   // struct header + main memory chunk + space for malloc bookkeep
+
+   int mallocMemory = fullMemory < CHUNK_QUANT
+                  ? CHUNK_QUANT
+                  : (fullMemory % CHUNK_QUANT > 0
+                     ? (fullMemory/CHUNK_QUANT + 1)*CHUNK_QUANT
+                     : fullMemory);
+
+   return mallocMemory - 32;
+}
+
+void*
+allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
+// Allocate memory in the arena, malloc'ing a new chunk if needed
+   if ((Unt)a->currInd + allocSize >= a->currChunk->size) {
+      if (a->currChunk->next != null && a->currChunk->next->size < allocSize) {
+         // the next chunk is big enough, so we skip the rest of this chunk and move on
+#ifdef DEBUG 
+         printf("reusing cleared memory from the arena!");
+#endif 
+         a->currChunk = a->currChunk->next;
+         a->currInd = 0;
+      } else { // we need to allocate new chunk
+
+         Unt newSize = calculateChunkSize(allocSize);
+         ArenaChunk* newChunk = malloc(newSize);
+         if (!newChunk) {
+            perror("malloc error when allocating arena chunk");
+            exit(EXIT_FAILURE);
+         };
+         // sizeof counts everything but the flexible array member, that's why we subtract it
+         newChunk->size = newSize - sizeof(ArenaChunk);
+         newChunk->next = a->currChunk->next; // if the arena has a (small) tail, don't lose it
+
+         a->currChunk->next = newChunk;
+         a->currChunk = newChunk;
+         a->currInd = 0;
+      }
+
+   }
+   void* result = (void*)(a->currChunk->memory + (a->currInd));
+   a->currInd += allocSize;
+   if (allocSize % 4 != 0)  {
+      a->currInd += (4 - (allocSize % 4));
+   }
+   return result;
+}
+
+void
+deleteArena(Arena* ar) { //:deleteArena
+// Returns memory of the arena to the OS
+   ArenaChunk* curr = ar->firstChunk;
+   while (curr != null) {
+      ArenaChunk* nextToFree = curr->next;
+      free(curr);
+      curr = nextToFree;
+   }
+   free(ar);
+}
+
+//private void
+//clearArena(Arena* a) { //:clearArena
+//// Clears the memory of the arena for reuse. Does not free memory.
+//   a->currChunk = a->firstChunk;
+//   a->currInd = 0;
+//}
+
+void
+arenaTryFree(void* start, Unt len, Arena* a) {
+// If this memory span is at the very end of this arena, then free it by rewinding
+   if ((void*)&(a->currChunk->memory) + (a->currInd - len) == start) {
+      a->currInd -= len;
+   }
+}
+
+//}}}
 //{{{charset (utf-8)
 
 #define URL_SLASH      1      // path_is_url() has found "://"
@@ -41,37 +165,6 @@ private Byte utf8LenTable_zero[256] = {
    3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0
 };
 
-// Translate any special characters in buf[bufsize] in-place.
-// The result is a string with only printable characters, but if there is not
-// enough room, not all characters will be translated.
-void
-trans_characters(CS buf, int bufsize) {
-   int len;      // length of string needing translation
-   int room;      // room in buffer after string
-   CS trs;      // translated character
-   int trs_len;   // length of trs[]
-
-   len = (int)STRLEN(buf);
-   room = bufsize - len;
-   while (*buf != 0) {
-      // Assume a multi-byte character doesn't need translation.
-      if ((trs_len = utfCharLen(buf)) > 1)
-         len -= trs_len;
-      else {
-         trs = transchar_byte(*buf);
-         trs_len = (int)STRLEN(trs);
-         if (trs_len > 1) {
-            room -= trs_len - 1;
-            if (room <= 0)
-               return;
-            MEMMOVE(buf + trs_len, buf + 1, (Unt)len);
-         }
-         MEMMOVE(buf, trs, (Unt)trs_len);
-         --len;
-      }
-      buf += trs_len;
-   }
-}
 
 //Convert a UTF-8 byte sequence to a character number.
 //If the sequence is illegal or truncated by a ZERO the first byte is returned.
@@ -418,19 +511,19 @@ parseLong(OUT CS* pp) {
 long
 parseLong_quoted(OUT CS* pp) {
    CS str = *pp;
-   long   retval = 0;
+   Long retval = 0;
 
    if (*str == '-')
       ++str;
    while (EE_ISDIGIT(*str)) {
-      if (retval >= LONG_MAX / 10 - 10)
+      if (retval >= (Long)(LONG_MAX / 10 - 10))
          retval = LONG_MAX;
       else
-         retval = retval * 10 - '0' + *str;
+         retval = retval * 10  + (*str - '0');
       ++str;
    } 
    if (**pp == '-') {
-      if (retval == LONG_MAX)
+      if (retval == (Long)LONG_MAX)
          retval = LONG_MIN;
       else
          retval = -retval;
@@ -564,8 +657,8 @@ readLongNumber(
             un = 10 * un + digit;
          else {
             un = ULONG_MAX;
-            if (overflow != NULL)
-                *overflow = true;
+            if (overflow)
+               *overflow = true;
          }
          ++ptr;
          if (n++ == maxlen)
@@ -648,23 +741,12 @@ backslash_halve(CS p) {
    } 
 }
 
-// backslash_halve() plus save the result in allocated memory.
+//backslash_halve() plus save the result in allocated memory.
 CS
 backslash_halve_save(CS p) {
    CS res = copyStr(p);
    backslash_halve(res);
    return res;
-}
-
-// Like transchar_buf(), but called with a byte instead of a character.  Checks
-// for an illegal UTF-8 byte.
-CS
-transchar_byte(Unt c) {
-   if (c >= 0x80) {
-      transchar_nonprint(translateScratch, c);
-      return translateScratch;
-   }
-   return transchar_buf(c);
 }
 
 //Convert non-printable character to two or more printable characters in "charbuf[]". 
@@ -683,52 +765,6 @@ transchar_nonprint(CS charbuf, int c) {
       transchar_hex(charbuf, c);
    }
 }
-
-int
-mb_ptr2cells(CS p) {
-   // Need to convert to a character number.
-   if (*p >= 0x80) {
-      int c = mb_ptr2char(p);
-      // An illegal byte is displayed as <xx>.
-      if (utf_ptr2len(p) == 1 || c == ZERO)
-         return 4;
-      // If the char is ASCII it must be an overlong sequence.
-      if (c < 0x80)
-         return char2cells(c);
-      return mb_char2cells(c);
-   }
-   return 1;
-}
-
-int
-mb_ptr2cells_len(CS p, int size) {
-   // Need to convert to a wide character.
-   if (size > 0 && *p >= 0x80) {
-      if (utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p])
-          return 1;  // truncated
-      int c = mb_ptr2char(p);
-      // An illegal byte is displayed as <xx>.
-      if (utf_ptr2len(p) == 1 || c == ZERO)
-          return 4;
-      // If the char is ASCII it must be an overlong sequence.
-      if (c < 0x80)
-          return char2cells(c);
-      return mb_char2cells(c);
-    }
-    return 1;
-}
-
-//Return the number of cells occupied by string "p".
-//Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
-int
-mb_string2cells(CS p, int len) {
-   int clen = 0;
-
-   for (int i = 0; (len < 0 || i < len) && p[i] != ZERO; i += utfCharLen(p + i))
-      clen += mb_ptr2cells(p + i);
-   return clen;
-}
-
 //Convert a UTF-8 byte sequence to a wide character.
 //String is assumed to be terminated by ZERO or after "n" bytes, whichever comes first.
 //The function is safe in the sense that it never accesses memory beyond the
@@ -802,6 +838,11 @@ utf_byte2len(int b) {
 Unt
 utf_byte2len_zero(int b) {
    return utf8LenTable_zero[b];
+}
+
+Boole
+utfNeedTruncate(CS p, int size) {
+   return utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p];
 }
 
 //Get the length of UTF-8 byte sequence "p[size]". Do not include any following composing 
@@ -1290,6 +1331,160 @@ intable(Arr(Interval) table, Unt size, Unt c) {
    return false;
 }
 
+// Sorted list of non-overlapping intervals of all Emoji characters,
+// based on http://unicode.org/emoji/charts/emoji-list.html
+// Generated by ../runtime/tools/unicode.vim.
+// Excludes 0x00a9 and 0x00ae because they are considered latin1.
+private Interval emoji_all[] = {
+    {0x203c, 0x203c},
+    {0x2049, 0x2049},
+    {0x2122, 0x2122},
+    {0x2139, 0x2139},
+    {0x2194, 0x2199},
+    {0x21a9, 0x21aa},
+    {0x231a, 0x231b},
+    {0x2328, 0x2328},
+    {0x23cf, 0x23cf},
+    {0x23e9, 0x23f3},
+    {0x23f8, 0x23fa},
+    {0x24c2, 0x24c2},
+    {0x25aa, 0x25ab},
+    {0x25b6, 0x25b6},
+    {0x25c0, 0x25c0},
+    {0x25fb, 0x25fe},
+    {0x2600, 0x2604},
+    {0x260e, 0x260e},
+    {0x2611, 0x2611},
+    {0x2614, 0x2615},
+    {0x2618, 0x2618},
+    {0x261d, 0x261d},
+    {0x2620, 0x2620},
+    {0x2622, 0x2623},
+    {0x2626, 0x2626},
+    {0x262a, 0x262a},
+    {0x262e, 0x262f},
+    {0x2638, 0x263a},
+    {0x2640, 0x2640},
+    {0x2642, 0x2642},
+    {0x2648, 0x2653},
+    {0x265f, 0x2660},
+    {0x2663, 0x2663},
+    {0x2665, 0x2666},
+    {0x2668, 0x2668},
+    {0x267b, 0x267b},
+    {0x267e, 0x267f},
+    {0x2692, 0x2697},
+    {0x2699, 0x2699},
+    {0x269b, 0x269c},
+    {0x26a0, 0x26a1},
+    {0x26a7, 0x26a7},
+    {0x26aa, 0x26ab},
+    {0x26b0, 0x26b1},
+    {0x26bd, 0x26be},
+    {0x26c4, 0x26c5},
+    {0x26c8, 0x26c8},
+    {0x26ce, 0x26cf},
+    {0x26d1, 0x26d1},
+    {0x26d3, 0x26d4},
+    {0x26e9, 0x26ea},
+    {0x26f0, 0x26f5},
+    {0x26f7, 0x26fa},
+    {0x26fd, 0x26fd},
+    {0x2702, 0x2702},
+    {0x2705, 0x2705},
+    {0x2708, 0x270d},
+    {0x270f, 0x270f},
+    {0x2712, 0x2712},
+    {0x2714, 0x2714},
+    {0x2716, 0x2716},
+    {0x271d, 0x271d},
+    {0x2721, 0x2721},
+    {0x2728, 0x2728},
+    {0x2733, 0x2734},
+    {0x2744, 0x2744},
+    {0x2747, 0x2747},
+    {0x274c, 0x274c},
+    {0x274e, 0x274e},
+    {0x2753, 0x2755},
+    {0x2757, 0x2757},
+    {0x2763, 0x2764},
+    {0x2795, 0x2797},
+    {0x27a1, 0x27a1},
+    {0x27b0, 0x27b0},
+    {0x27bf, 0x27bf},
+    {0x2934, 0x2935},
+    {0x2b05, 0x2b07},
+    {0x2b1b, 0x2b1c},
+    {0x2b50, 0x2b50},
+    {0x2b55, 0x2b55},
+    {0x3030, 0x3030},
+    {0x303d, 0x303d},
+    {0x3297, 0x3297},
+    {0x3299, 0x3299},
+    {0x1f004, 0x1f004},
+    {0x1f0cf, 0x1f0cf},
+    {0x1f170, 0x1f171},
+    {0x1f17e, 0x1f17f},
+    {0x1f18e, 0x1f18e},
+    {0x1f191, 0x1f19a},
+    {0x1f1e6, 0x1f1ff},
+    {0x1f201, 0x1f202},
+    {0x1f21a, 0x1f21a},
+    {0x1f22f, 0x1f22f},
+    {0x1f232, 0x1f23a},
+    {0x1f250, 0x1f251},
+    {0x1f300, 0x1f321},
+    {0x1f324, 0x1f393},
+    {0x1f396, 0x1f397},
+    {0x1f399, 0x1f39b},
+    {0x1f39e, 0x1f3f0},
+    {0x1f3f3, 0x1f3f5},
+    {0x1f3f7, 0x1f4fd},
+    {0x1f4ff, 0x1f53d},
+    {0x1f549, 0x1f54e},
+    {0x1f550, 0x1f567},
+    {0x1f56f, 0x1f570},
+    {0x1f573, 0x1f57a},
+    {0x1f587, 0x1f587},
+    {0x1f58a, 0x1f58d},
+    {0x1f590, 0x1f590},
+    {0x1f595, 0x1f596},
+    {0x1f5a4, 0x1f5a5},
+    {0x1f5a8, 0x1f5a8},
+    {0x1f5b1, 0x1f5b2},
+    {0x1f5bc, 0x1f5bc},
+    {0x1f5c2, 0x1f5c4},
+    {0x1f5d1, 0x1f5d3},
+    {0x1f5dc, 0x1f5de},
+    {0x1f5e1, 0x1f5e1},
+    {0x1f5e3, 0x1f5e3},
+    {0x1f5e8, 0x1f5e8},
+    {0x1f5ef, 0x1f5ef},
+    {0x1f5f3, 0x1f5f3},
+    {0x1f5fa, 0x1f64f},
+    {0x1f680, 0x1f6c5},
+    {0x1f6cb, 0x1f6d2},
+    {0x1f6d5, 0x1f6d7},
+    {0x1f6dc, 0x1f6e5},
+    {0x1f6e9, 0x1f6e9},
+    {0x1f6eb, 0x1f6ec},
+    {0x1f6f0, 0x1f6f0},
+    {0x1f6f3, 0x1f6fc},
+    {0x1f7e0, 0x1f7eb},
+    {0x1f7f0, 0x1f7f0},
+    {0x1f90c, 0x1f93a},
+    {0x1f93c, 0x1f945},
+    {0x1f947, 0x1f9ff},
+    {0x1fa70, 0x1fa7c},
+    {0x1fa80, 0x1fa88},
+    {0x1fa90, 0x1fabd},
+    {0x1fabf, 0x1fac5},
+    {0x1face, 0x1fadb},
+    {0x1fae0, 0x1fae8},
+    {0x1faf0, 0x1faf8}
+};
+
+
 Boole
 strInEmojiTable(Unt c) {
    return intable(emoji_all, sizeof(emoji_all), c);
@@ -1424,7 +1619,7 @@ strInDoubleWidthTable(Unt c) {
       {0x30000, 0x3fffd}
    };
 
-   return intable(doublewidth, sizeof(doublewidth), c));
+   return intable(doublewidth, sizeof(doublewidth), c);
 }
 
 // Sorted list of non-overlapping intervals of East Asian Ambiguous
@@ -1610,14 +1805,6 @@ private Interval ambiguous[] = {
    {0xf0000, 0xffffd},
    {0x100000, 0x10fffd}
 };
-
-// mb_char2cells() with different argument type for libvterm.
-int
-utf_uint2cells(Unt c) {
-   if (c >= 0x100 && utf_iscomposing((int)c))
-      return 0;
-   return mb_char2cells((int)c);
-}
 
 //Get character at **pp and advance *pp to the next character.
 //Note: composing characters are skipped!
@@ -1861,40 +2048,6 @@ mb_tail_off(CS base, CS p) {
    if (utf8LenTable[p[-j]] != i + j + 1)
       return 0;
    return i;
-}
-
-// Find the next illegal byte sequence.
-void
-utf_find_illegal(void) {
-   Pos   pos = curPor->cursor;
-   CS p;
-   CS tofree = NULL;
-
-   curPor->cursor.coladd = 0;
-   for (;;) {
-      p = ml_get_cursor();
-      while (*p != ZERO){
-         // Illegal means that there are not enough trail bytes (checked by
-         // utf_ptr2len()) or too many of them (overlong sequence).
-         Unt len = utf_ptr2len(p);
-         if (*p >= 0x80 && (len == 1 || mb_char2len(mb_ptr2char(p)) != len)) {
-            curPor->cursor.col += (ColNr)(p - ml_get_cursor());
-            goto theend;
-         }
-         p += len;
-      }
-      if (curPor->cursor.lnum == curBook->mem.lineCount)
-         break;
-      ++curPor->cursor.lnum;
-      curPor->cursor.col = 0;
-   }
-
-   // didn't find it: don't move and beep
-   curPor->cursor = pos;
-   beep_flush();
-
-theend:
-   eeglFree(tofree);
 }
 
 //Return true if string "s" is a valid utf-8 string. When "end" is NULL stop at the first 
@@ -2376,159 +2529,6 @@ utf_printable(Unt c) {
    return !intable(nonprint, sizeof(nonprint), c);
 }
 
-// Sorted list of non-overlapping intervals of all Emoji characters,
-// based on http://unicode.org/emoji/charts/emoji-list.html
-// Generated by ../runtime/tools/unicode.vim.
-// Excludes 0x00a9 and 0x00ae because they are considered latin1.
-private Interval emoji_all[] = {
-    {0x203c, 0x203c},
-    {0x2049, 0x2049},
-    {0x2122, 0x2122},
-    {0x2139, 0x2139},
-    {0x2194, 0x2199},
-    {0x21a9, 0x21aa},
-    {0x231a, 0x231b},
-    {0x2328, 0x2328},
-    {0x23cf, 0x23cf},
-    {0x23e9, 0x23f3},
-    {0x23f8, 0x23fa},
-    {0x24c2, 0x24c2},
-    {0x25aa, 0x25ab},
-    {0x25b6, 0x25b6},
-    {0x25c0, 0x25c0},
-    {0x25fb, 0x25fe},
-    {0x2600, 0x2604},
-    {0x260e, 0x260e},
-    {0x2611, 0x2611},
-    {0x2614, 0x2615},
-    {0x2618, 0x2618},
-    {0x261d, 0x261d},
-    {0x2620, 0x2620},
-    {0x2622, 0x2623},
-    {0x2626, 0x2626},
-    {0x262a, 0x262a},
-    {0x262e, 0x262f},
-    {0x2638, 0x263a},
-    {0x2640, 0x2640},
-    {0x2642, 0x2642},
-    {0x2648, 0x2653},
-    {0x265f, 0x2660},
-    {0x2663, 0x2663},
-    {0x2665, 0x2666},
-    {0x2668, 0x2668},
-    {0x267b, 0x267b},
-    {0x267e, 0x267f},
-    {0x2692, 0x2697},
-    {0x2699, 0x2699},
-    {0x269b, 0x269c},
-    {0x26a0, 0x26a1},
-    {0x26a7, 0x26a7},
-    {0x26aa, 0x26ab},
-    {0x26b0, 0x26b1},
-    {0x26bd, 0x26be},
-    {0x26c4, 0x26c5},
-    {0x26c8, 0x26c8},
-    {0x26ce, 0x26cf},
-    {0x26d1, 0x26d1},
-    {0x26d3, 0x26d4},
-    {0x26e9, 0x26ea},
-    {0x26f0, 0x26f5},
-    {0x26f7, 0x26fa},
-    {0x26fd, 0x26fd},
-    {0x2702, 0x2702},
-    {0x2705, 0x2705},
-    {0x2708, 0x270d},
-    {0x270f, 0x270f},
-    {0x2712, 0x2712},
-    {0x2714, 0x2714},
-    {0x2716, 0x2716},
-    {0x271d, 0x271d},
-    {0x2721, 0x2721},
-    {0x2728, 0x2728},
-    {0x2733, 0x2734},
-    {0x2744, 0x2744},
-    {0x2747, 0x2747},
-    {0x274c, 0x274c},
-    {0x274e, 0x274e},
-    {0x2753, 0x2755},
-    {0x2757, 0x2757},
-    {0x2763, 0x2764},
-    {0x2795, 0x2797},
-    {0x27a1, 0x27a1},
-    {0x27b0, 0x27b0},
-    {0x27bf, 0x27bf},
-    {0x2934, 0x2935},
-    {0x2b05, 0x2b07},
-    {0x2b1b, 0x2b1c},
-    {0x2b50, 0x2b50},
-    {0x2b55, 0x2b55},
-    {0x3030, 0x3030},
-    {0x303d, 0x303d},
-    {0x3297, 0x3297},
-    {0x3299, 0x3299},
-    {0x1f004, 0x1f004},
-    {0x1f0cf, 0x1f0cf},
-    {0x1f170, 0x1f171},
-    {0x1f17e, 0x1f17f},
-    {0x1f18e, 0x1f18e},
-    {0x1f191, 0x1f19a},
-    {0x1f1e6, 0x1f1ff},
-    {0x1f201, 0x1f202},
-    {0x1f21a, 0x1f21a},
-    {0x1f22f, 0x1f22f},
-    {0x1f232, 0x1f23a},
-    {0x1f250, 0x1f251},
-    {0x1f300, 0x1f321},
-    {0x1f324, 0x1f393},
-    {0x1f396, 0x1f397},
-    {0x1f399, 0x1f39b},
-    {0x1f39e, 0x1f3f0},
-    {0x1f3f3, 0x1f3f5},
-    {0x1f3f7, 0x1f4fd},
-    {0x1f4ff, 0x1f53d},
-    {0x1f549, 0x1f54e},
-    {0x1f550, 0x1f567},
-    {0x1f56f, 0x1f570},
-    {0x1f573, 0x1f57a},
-    {0x1f587, 0x1f587},
-    {0x1f58a, 0x1f58d},
-    {0x1f590, 0x1f590},
-    {0x1f595, 0x1f596},
-    {0x1f5a4, 0x1f5a5},
-    {0x1f5a8, 0x1f5a8},
-    {0x1f5b1, 0x1f5b2},
-    {0x1f5bc, 0x1f5bc},
-    {0x1f5c2, 0x1f5c4},
-    {0x1f5d1, 0x1f5d3},
-    {0x1f5dc, 0x1f5de},
-    {0x1f5e1, 0x1f5e1},
-    {0x1f5e3, 0x1f5e3},
-    {0x1f5e8, 0x1f5e8},
-    {0x1f5ef, 0x1f5ef},
-    {0x1f5f3, 0x1f5f3},
-    {0x1f5fa, 0x1f64f},
-    {0x1f680, 0x1f6c5},
-    {0x1f6cb, 0x1f6d2},
-    {0x1f6d5, 0x1f6d7},
-    {0x1f6dc, 0x1f6e5},
-    {0x1f6e9, 0x1f6e9},
-    {0x1f6eb, 0x1f6ec},
-    {0x1f6f0, 0x1f6f0},
-    {0x1f6f3, 0x1f6fc},
-    {0x1f7e0, 0x1f7eb},
-    {0x1f7f0, 0x1f7f0},
-    {0x1f90c, 0x1f93a},
-    {0x1f93c, 0x1f945},
-    {0x1f947, 0x1f9ff},
-    {0x1fa70, 0x1fa7c},
-    {0x1fa80, 0x1fa88},
-    {0x1fa90, 0x1fabd},
-    {0x1fabf, 0x1fac5},
-    {0x1face, 0x1fadb},
-    {0x1fae0, 0x1fae8},
-    {0x1faf0, 0x1faf8}
-};
-
 
 //}}}
 //{{{directory name
@@ -2573,16 +2573,6 @@ removeSubDir(OUT DirName* restrict dn) {
    } else {
       return false; 
    }
-}
-
-// Copy full dir name to an allocation outside the arena & glue a file name to its end.
-CS
-toFullFileName(Text fileName, DirName* dn) {
-   CS theString = alloc(dn->len + fileName.len + 1);
-   memcpy(theString, dn->c, dn->len);
-   memcpy(theString + dn->len, fileName.c, fileName.len);
-   theString[dn->len + fileName.len] = ZERO;
-   return theString;
 }
 
 //}}}
@@ -2747,15 +2737,6 @@ eq_CString_CString(CS a, CS b) {
 Text
 skipTo(Text inp, CS t) {
    return (Text){.c = t, .len = inp.len - (t - inp.c)};
-}
-
-// Find the start of the next word.
-// Return a pointer to the first char of the word. Also stop at a ZERO.
-CS
-findWordStart(CS ptr) {
-   while (*ptr != ZERO && *ptr != '\n' && mb_get_class(ptr) <= 1)
-      ptr += utfCharLen(ptr);
-   return ptr;
 }
 
 //"asdf,bcjk"  => "asdf,bcjk"
@@ -4416,574 +4397,6 @@ concat_fnames(CS fname1, CS fname2, Boole sep){
 }
 
 //}}}
-//{{{text formatting
-
-private int   did_add_space = false;   // auto_format() added an extra space under the cursor
-
-#define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
-
-//Return true if format option 'x' is in effect.
-Boole
-has_format_option(int x) {
-   return curBook->o.formatOptions && firstOccurrence(curBook->o.formatOptions, x) != NULL;
-}
-
-//Write a character at the current cursor position. It is directly written into the block.
-private void
-pchar_cursor(int c) {
-   *(memGetLine(curBook, curPor->cursor.lnum, true) + curPor->cursor.col) = c;
-}
-
-//Format text at the current insert position.
-//If the INSCHAR_COM_LIST flag is present, then the value of second_indent
-//will be the comment leader length sent to openLine().
-void
-internal_format(
-   int textwidth,
-   int second_indent,
-   int flags,
-   int format_only,
-   Unt c // character to be inserted (can be ZERO)
-){
-   int cc;
-   int skip_pos;
-   int save_char = ZERO;
-   int haveto_redraw = false;
-   int fo_ins_blank = has_format_option(FO_INS_BLANK);
-   int fo_multibyte = has_format_option(FO_MBYTE_BREAK);
-   int fo_rigor_tw  = has_format_option(FO_RIGOROUS_TW);
-   int fo_white_par = has_format_option(FO_WHITE_PAR);
-   int first_line = true;
-   ColNr   leader_len;
-   int no_leader = false;
-   int doComments = (flags & INSCHAR_DO_COM);
-   int safe_tw = trim_to_int(8 * (Long)textwidth);
-   int has_bri = curPor->o.breakIndent;
-
-   // make sure win_lbr_chartabsize() counts correctly
-   curPor->o.breakIndent = false;
-
-   // When 'ai' is off we don't want a space under the cursor to be
-   // deleted.  Replace it with an 'x' temporarily.
-   if (!curBook->o.autoIndent) {
-      cc = gchar_cursor();
-      if (SPACE_OR_TAB(cc)) {
-         save_char = cc;
-         pchar_cursor('x');
-      }
-   }
-
-   // Repeat breaking lines, until the current line is not too long.
-   while (!gotInterruptG) {
-      int startcol;      // Cursor column at entry
-      int wantcol;      // column at textwidth border
-      int foundcol;      // column for start of spaces
-      ColNr len;
-      ColNr virtcol;
-      ColNr col;
-      int wcc;         // counter for whitespace chars
-      int did_do_comment = false;
-      int first_pass;
-
-      //Cursor is currently at the end of line. No need to format
-      //if line length is less than textwidth (8 * textwidth for utf safety)
-      if (curPor->cursor.col < safe_tw) {
-         virtcol = get_nolist_virtcol() + char2cells(c != ZERO ? c : gchar_cursor());
-         if (virtcol <= (ColNr)textwidth)
-            break;
-      }
-
-      if (no_leader)
-         doComments = false;
-      ei (!(flags & INSCHAR_FORMAT) && has_format_option(FO_WRAP_COMS))
-         doComments = true;
-
-      // Don't break until after the comment leader
-      if (doComments) {
-         CS line = ml_get_curline();
-
-         leader_len = get_leader_len(line, NULL, false, true);
-      } else
-         leader_len = 0;
-
-     //If the line doesn't start with a comment leader, then don't
-     //start one in a following broken line.  Avoids that a %word
-     //moved to the start of the next line causes all following lines to start with %.
-     if (leader_len == 0)
-         no_leader = true;
-     if (!(flags & INSCHAR_FORMAT) && leader_len == 0 && !has_format_option(FO_WRAP))
-         break;
-     if ((startcol = curPor->cursor.col) == 0)
-         break;
-
-      // find column of textwidth border
-      coladvance((ColNr)textwidth);
-      wantcol = curPor->cursor.col;
-
-      // If startcol is large (a long line), formatting takes too much
-      // time. The algorithm is O(n^2), it walks from the end of the
-      // line to textwidth border every time for each line break.
-      //
-      // Ceil to 8 * textwidth to optimize.
-      curPor->cursor.col = startcol < safe_tw ? startcol : safe_tw;
-
-      foundcol = 0;
-      skip_pos = 0;
-      first_pass = true;
-
-      // Find position to break at. Stop at first entered white when 'formatoptions' has 'v'
-      while ((!fo_ins_blank && !has_format_option(FO_INS_VI))
-             || (flags & INSCHAR_FORMAT)
-             || curPor->cursor.lnum != insertStartG.lnum
-             || curPor->cursor.col >= insertStartG.col
-      ){
-        if (first_pass && c != ZERO) {
-            cc = c;
-            first_pass = false;
-         } else
-            cc = gchar_cursor();
-         if (WHITECHAR(cc)) {
-
-            // find start of sequence of blanks
-            wcc = 0;
-            while (curPor->cursor.col > 0 && WHITECHAR(cc)) {
-               dec_cursor();
-               cc = gchar_cursor();
-
-               // Increment count of how many whitespace chars in this
-               // group; we only need to know if it's more than one.
-               if (wcc < 2)
-                  wcc++;
-           }
-           
-           if (curPor->cursor.col == 0 && WHITECHAR(cc))
-               break;      // only spaces in front of text
-
-            // Don't break after a period when 'formatoptions' has 'p' and
-            // there are less than two spaces.
-            if (has_format_option(FO_PERIOD_ABBR) && cc == '.' && wcc < 2)
-               continue;
-
-            // Don't break until after the comment leader
-            if (curPor->cursor.col < leader_len)
-               break;
-            if (has_format_option(FO_ONE_LETTER)) {
-               // do not break after one-letter words
-               if (curPor->cursor.col == 0)
-                  break;   // one-letter word at begin
-               // do not break "#a b" when 'tw' is 2
-               if (curPor->cursor.col <= leader_len)
-                  break;
-               col = curPor->cursor.col;
-               dec_cursor();
-               cc = gchar_cursor();
-
-               if (WHITECHAR(cc))
-                  continue;   // one-letter, continue
-               curPor->cursor.col = col;
-            }
-
-            inc_cursor();
-
-            foundcol = curPor->cursor.col;
-            if (curPor->cursor.col <= (ColNr)wantcol)
-                break;
-         } ei ((cc >= 0x100 || !utf_allow_break_before(cc)) && fo_multibyte){
-            Unt ncc;
-            int allow_break;
-
-            // Break after or before a multi-byte character.
-            if (curPor->cursor.col != startcol) {
-               // Don't break until after the comment leader
-               if (curPor->cursor.col < leader_len)
-                  break;
-               col = curPor->cursor.col;
-               inc_cursor();
-               ncc = gchar_cursor();
-
-               allow_break = utf_allow_break(cc, ncc);
-
-               // If we have already checked this position, skip!
-               if (curPor->cursor.col != skip_pos && allow_break) {
-               foundcol = curPor->cursor.col;
-               if (curPor->cursor.col <= (ColNr)wantcol)
-                   break;
-               }
-               curPor->cursor.col = col;
-            }
-
-            if (curPor->cursor.col == 0)
-               break;
-
-            ncc = cc;
-            col = curPor->cursor.col;
-
-            dec_cursor();
-            cc = gchar_cursor();
-
-            if (WHITECHAR(cc))
-                continue;      // break with space
-            // Don't break until after the comment leader.
-            if (curPor->cursor.col < leader_len)
-                break;
-
-            curPor->cursor.col = col;
-            skip_pos = curPor->cursor.col;
-
-            allow_break = (utf_allow_break(cc, ncc));
-
-            // Must handle this to respect line break prohibition.
-            if (allow_break) {
-               foundcol = curPor->cursor.col;
-            }
-            if (curPor->cursor.col <= (ColNr)wantcol) {
-               int ncc_allow_break = utf_allow_break_before(ncc);
-
-               if (allow_break)
-                  break;
-               if (!ncc_allow_break && !fo_rigor_tw) {
-                  //Enable at most 1 punct hang outside of textwidth.
-                  if (curPor->cursor.col == startcol) {
-                     //We are inserting a non-breakable char, postpone
-                     //line break check to next insert.
-                     break;
-                  }
-
-                  //Neither cc nor ncc is ZERO if we are here, so it's safe to inc_cursor.
-                  col = curPor->cursor.col;
-
-                  inc_cursor();
-                  cc  = ncc;
-                  ncc = gchar_cursor();
-                  //handle insert
-                  ncc = (ncc != ZERO) ? ncc : c;
-
-                  allow_break = (utf_allow_break(cc, ncc));
-
-                  if (allow_break) {
-                     // Break only when we are not at end of line.
-                     break;
-                  }
-                  curPor->cursor.col = col;
-               }
-            }
-         }
-         if (curPor->cursor.col == 0)
-            break;
-         dec_cursor();
-      }
-
-      if (foundcol == 0) {     // no spaces, cannot break line
-         curPor->cursor.col = startcol;
-         break;
-      }
-
-      //adjust startcol for spaces that will be deleted and
-      //characters that will remain on top line
-      curPor->cursor.col = foundcol;
-      while ((cc = gchar_cursor(), WHITECHAR(cc)) && (!fo_white_par || curPor->cursor.col < startcol))
-         inc_cursor();
-      startcol -= curPor->cursor.col;
-      if (startcol < 0)
-         startcol = 0;
-
-      // put cursor after pos. to break line
-      if (!fo_white_par)
-         curPor->cursor.col = foundcol;
-
-      // Split the line just before the margin.
-      // Only insert/delete lines, but don't really redraw the window.
-      openLine(OPENLINE_DELSPACES + OPENLINE_MARKFIX
-             + (fo_white_par ? OPENLINE_KEEPTRAIL : 0)
-             + (doComments ? OPENLINE_DO_COM : 0)
-             + OPENLINE_FORMAT
-             + ((flags & INSCHAR_COM_LIST) ? OPENLINE_COM_LIST : 0),
-          ((flags & INSCHAR_COM_LIST) ? second_indent : old_indent)
-      );
-      if (!(flags & INSCHAR_COM_LIST))
-          old_indent = 0;
-
-      // If a comment leader was inserted, may also do this on a following line.
-      if (did_do_comment)
-          no_leader = false;
-
-      if (first_line) {
-          if (!(flags & INSCHAR_COM_LIST)) {
-             //This section is for auto-wrap of numeric lists. When not in insert mode (i.e. 
-             //format_lines()), the INSCHAR_COM_LIST flag will be set and openLine() will handle 
-             //it (as seen above). The code here (and in get_number_indent()) will recognize 
-             //comments if needed...
-             if (second_indent < 0 && has_format_option(FO_Q_NUMBER))
-                 second_indent = get_number_indent(curPor->cursor.lnum - 1);
-             if (second_indent >= 0) {
-               if (leader_len > 0 && second_indent - leader_len > 0) {
-                   int padding = second_indent - leader_len;
-
-                   //We started at the first_line of a numbered list that has a comment. the 
-                   //openLine() function has inserted the proper comment leader and positioned
-                   //the cursor at the end of the split line. Now we add the additional whitespace 
-                   //needed after the comment leader for the numbered list.
-                   for (int i = 0; i < padding; i++)
-                      ins_str((CS)" ", 1);
-                } else {
-                   (void)set_indent(second_indent, SIN_CHANGED);
-                }
-             }
-          }
-          first_line = false;
-      }
-
-      // Check if cursor is not past the ZERO off the line, cindent
-      // may have added or removed indent.
-      curPor->cursor.col += startcol;
-      len = ml_get_curline_len();
-      if (curPor->cursor.col > len)
-         curPor->cursor.col = len;
-
-      haveto_redraw = true;
-      set_can_cindent(true);
-      // moved the cursor, don't autoindent or cindent now
-      didAindentG = false;
-      didSindentG = false;
-      can_si = false;
-      can_si_back = false;
-      line_breakcheck();
-   }
-
-   if (save_char != ZERO)      // put back space after cursor
-      pchar_cursor(save_char);
-
-   curPor->o.breakIndent = has_bri;
-   if (!format_only && haveto_redraw) {
-      update_topline();
-      drawCurBookLater(UPD_VALID);
-   }
-}
-
-//Blank lines, and lines containing only the comment leader, are left untouched by the formatting.
-//The function returns true in this case.  It also returns true when a line starts with the end 
-//of a comment ('e' in comment flags), so that this line is skipped, and not joined to the
-//previous line.  A new paragraph starts after a blank line, or when the
-//comment leader changes -- webb.
-int
-fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
-   CS flags = NULL;
-
-   CS ptr = ml_get(lnum);
-   *leader_len = doComments ? get_leader_len(ptr, leader_flags, false, true) : 0;
-
-   if (*leader_len > 0) {
-      // Search for 'e' flag in comment leader flags.
-      flags = *leader_flags;
-      while (*flags && *flags != ':' && *flags != COM_END)
-          ++flags;
-   }
-
-   return (*skipwhite(ptr + *leader_len) == ZERO
-       || (*leader_len > 0 && *flags == COM_END)
-       || startPS(lnum, ZERO, false));
-}
-
-//Return true when a paragraph starts in line "lnum".  Return false when the
-//previous line is in the same paragraph.  Used for auto-formatting.
-private int
-paragraph_start(LineNr lnum) {
-   int leader_len = 0;      // leader len of current line
-   CS leader_flags = NULL;   // flags for leader of current line
-   int next_leader_len;   // leader len of next line
-   CS next_leader_flags;   // flags for leader of next line
-   int doComments;      // format comments
-
-   if (lnum <= 1)
-      return true;      // start of the file
-
-   CS p = ml_get(lnum - 1);
-   if (*p == ZERO)
-      return true;      // after empty line
-
-   doComments = has_format_option(FO_Q_COMS);
-   if (  // after non-paragraph line
-         fmt_check_par(lnum - 1, OUT &leader_len, OUT &leader_flags, doComments)
-         // "lnum" is not a paragraph line
-         || fmt_check_par(lnum, OUT &next_leader_len, OUT &next_leader_flags, doComments)
-         // missing trailing space in previous line.
-         || (has_format_option(FO_WHITE_PAR) && !ends_in_white(lnum - 1))
-         // numbered item starts in "lnum".
-         || (has_format_option(FO_Q_NUMBER) && get_number_indent(lnum) > 0)
-         // change of comment leader.
-         ||  !same_leader(lnum - 1, leader_len, leader_flags, next_leader_len, next_leader_flags)
-   ){
-      return true;      
-   } 
-
-   return false;
-}
-
-//Called after inserting or deleting text: When 'formatoptions' includes the
-//'a' flag format from the current line until the end of the paragraph.
-//Keep the cursor at the same position relative to the text.
-//The caller must have saved the cursor line for undo, following ones will be saved here.
-void
-auto_format(
-    int trailblank,   // when true also format with trailing blank
-    int prev_line   // may start in previous line
-){
-   if (!has_format_option(FO_AUTO))
-      return;
-
-   Pos pos = curPor->cursor;
-   CS old = ml_get_curline();
-
-   // may remove added space
-   check_auto_format(false);
-
-   //Don't format in Insert mode when the cursor is on a trailing blank, the user might insert 
-   //normal text next. Also skip formatting when "1" is in 'formatoptions' and there is a single 
-   //character before the cursor. Otherwise the line would be broken and when typing another 
-   //non-white next they are not joined back together.
-   int wasatend = (pos.col == ml_get_curline_len());
-   if (*old != ZERO && !trailblank && wasatend) {
-      dec_cursor();
-      int cc = gchar_cursor();
-      if (!WHITECHAR(cc) && curPor->cursor.col > 0 && has_format_option(FO_ONE_LETTER))
-         dec_cursor();
-      cc = gchar_cursor();
-      if (WHITECHAR(cc)) {
-         curPor->cursor = pos;
-         return;
-      }
-      curPor->cursor = pos;
-   }
-
-   //With the 'c' flag in @formatoptions and 't' missing: only format comments.
-   if (has_format_option(FO_WRAP_COMS) && !has_format_option(FO_WRAP)
-            && get_leader_len(old, NULL, false, true) == 0
-   )
-      return;
-
-   //May start formatting in a previous line, so that after "x" a word is moved to the previous 
-   //line if it fits there now.  Only when this is not the start of a paragraph.
-   if (prev_line && !paragraph_start(curPor->cursor.lnum)) {
-      --curPor->cursor.lnum;
-   if (u_save_cursor() == FAIL)
-       return;
-   }
-
-   //Do the formatting and restore the cursor position.  "saved_cursor" will
-   //be adjusted for the text formatting.
-   saved_cursor = pos;
-   format_lines((LineNr)-1, false);
-   curPor->cursor = saved_cursor;
-   saved_cursor.lnum = 0;
-
-   if (curPor->cursor.lnum > curBook->mem.lineCount) {
-      // "cannot happen"
-      curPor->cursor.lnum = curBook->mem.lineCount;
-      coladvance((ColNr)MAXCOL);
-   } else
-      check_cursor_col();
-
-   //Insert mode: If the cursor is now after the end of the line while it
-   //previously wasn't, the line was broken.  Because of the rule above we
-   //need to add a space when 'w' is in 'formatoptions' to keep a paragraph formatted.
-   if (!wasatend && has_format_option(FO_WHITE_PAR)) {
-      CS new = ml_get_curline();
-      ColNr   len = ml_get_curline_len();
-      if (curPor->cursor.col == len) {
-         CS pnew = copySubstr(new, len + 2);
-         pnew[len] = ' ';
-         pnew[len + 1] = ZERO;
-         ml_replace(curPor->cursor.lnum, pnew, false);
-         // remove the space later
-         did_add_space = true;
-      } else
-         // may remove added space
-         check_auto_format(false);
-   }
-
-   check_cursor();
-}
-
-//When an extra space was added to continue a paragraph for auto-formatting,
-//delete it now.  The space must be under the cursor, just after the insert position.
-void
-check_auto_format(int end_insert){      // true when ending Insert mode
-   if (!did_add_space)
-      return;
-
-   Unt c = ' ';
-   Unt cc = gchar_cursor();
-   if (!WHITECHAR(cc))
-      // Somehow the space was removed already.
-      did_add_space = false;
-   else {
-      if (!end_insert) {
-         inc_cursor();
-         c = gchar_cursor();
-         dec_cursor();
-      }
-      if (c != ZERO) {
-         // The space is no longer at the end of the line, delete it.
-         del_char(false);
-         did_add_space = false;
-      }
-   }
-}
-
-//Find out textwidth to be used for formatting:
-// if 'textwidth' option is set, use it
-// ei 'wrapmargin' option is set, use curPor->width - 'wrapmargin'
-// if invalid value, use 0.
-// Set default to window width (maximum 79) for "gq" operator.
-int
-comp_textwidth(int ff) {  // force formatting (for "gq" command)
-   int textwidth = curBook->o.textWidth;
-   if (textwidth == 0 && curBook->o.wrapMargin) {
-      //The width is the portal width minus 'wrapmargin' minus all the
-      //things that add to the margin.
-      textwidth = curPor->width - curBook->o.wrapMargin;
-      if (curBook == commPortBookG)
-          textwidth -= 1;
-      if (isSigncolumnOn(curPor))
-         textwidth -= 1;
-      if (curPor->o.relativeNumber)
-         textwidth -= 8;
-   }
-   if (textwidth < 0)
-      textwidth = 0;
-   if (ff && textwidth == 0) {
-      textwidth = curPor->width - 1;
-      if (textwidth > 79)
-          textwidth = 79;
-   }
-   return textwidth;
-}
-
-int
-fex_format(LineNr lnum, long count, int c) {  // character to be inserted
-   ScriptPos   save_sctx = scriptPosG;
-
-   // Set v:lnum to the first line number and v:count to the number of lines.
-   // Set v:char to the character to be inserted (can be ZERO).
-   set_EeglVar_nr(VV_LNUM, lnum);
-   set_EeglVar_nr(VV_COUNT, count);
-   set_EeglVar_char(c);
-
-   // Make a copy, the option could be changed while calling it.
-   CS fex = copyStr(curBook->o.formatExpr);
-   scriptPosG = curBook->o.scriptLocs[PORT_foldExpr];
-
-   // Evaluate the function.
-   int r = (int)eval_to_number(fex, true);
-
-   set_EeglVar_string(VV_CHAR, NULL, -1);
-   eeglFree(fex);
-   scriptPosG = save_sctx;
-
-   return r;
-}
-
-//}}}
 //{{{simple formats
 
 //private Short
@@ -5034,22 +4447,6 @@ parse_hex_digit(int c) {
       : (c >= 'a' && c <= 'f') ? c - 'a' + 10
       : (c >= 'A' && c <= 'F') ? c - 'A' + 10
       : -1;
-}
-
-Byte
-get_color_char(int e) {
-   if (e > 31 && e < 127)
-      return COLOR_GREEN;
-
-   ei (e == 9 || e == 10 || e == 13)
-      return COLOR_YELLOW;
-   ei (e == 0)
-      return COLOR_WHITE;
-   ei (e == 255)
-      return COLOR_BLUE;
-   else
-      return COLOR_RED;
-   return 0;
 }
 
 //}}}

@@ -505,7 +505,7 @@ getBookInfo(Book* book) {
    if (book->signList) {
       // List of signs placed in this book
       List* signs = list_alloc();
-      markGetBookSigns(book, signs);
+      llGetBookSigns(book, signs);
       bagAddList(bag, S"signs", signs);
    }
 
@@ -676,7 +676,7 @@ private Boole chartab_initialized = false;
 #define RESET_CHARTAB(book, c) (book)->charsForKeywords[(unsigned)(c) >> 3] &= ~(1 << ((c) & 0x7))
 #define GET_CHARTAB(book, c) ((book)->charsForKeywords[(unsigned)(c) >> 3] & (1 << ((c) & 0x7)))
 
-// table used below, see bookInitCharsForKeywordsForCurbook() for an explanation
+// table used below, see bookInitCharsForKeywords() for an explanation
 private Byte g_chartab[256];
 
 // Flags for g_chartab[].
@@ -894,9 +894,9 @@ byte2cells(Unt b) {
 //"c" can be a special key (negative number) in which case 3 or 4 is returned.
 //A TAB is counted as two cells: "^I" or four: "<09>".
 int
-char2cells(Unt c) {
+bookChar2Cells(Unt c) {
    if (IS_SPECIAL(c))
-      return char2cells(K_SECOND(c)) + 2;
+      return bookChar2Cells(K_SECOND(c)) + 2;
    if (c >= 0x80) {
       // UTF-8: above 0x80 need to check the value
       return mb_char2cells(c);
@@ -913,6 +913,17 @@ bookPtr2Cells(CS p) {
    if (*p >= 0x80)
       return mb_ptr2cells(p);
    return (g_chartab[*p] & CT_CELL_MASK);
+}
+
+//Like transchar_buf(), but called with a byte instead of a character. Check
+//for an illegal UTF-8 byte.
+CS
+bookTranscharByte(Unt c) {
+   if (c >= 0x80) {
+      transchar_nonprint(translateScratch, c);
+      return translateScratch;
+   }
+   return transchar_buf(c);
 }
 
 //Return the number of characters 'c' will take on the screen, taking into account the size of a tab
@@ -1634,7 +1645,7 @@ bookGetVirtualColInVirtualMode(
          Unt c = mb_ptr2char(ptr + pos->col);
 
          if (c != TAB && bookIsCharPrintable(c)) {
-            endadd = (ColNr)(char2cells(c) - 1);
+            endadd = (ColNr)(bookChar2Cells(c) - 1);
             if (coladd > endadd)   // past end of line
                endadd = 0;
             else
@@ -2471,7 +2482,7 @@ freeAttachedData(Book* book, int free_options) {     // free options as well
       remove_listeners(book);
    }
    uc_clear(&book->userCommands);      // clear local user commands
-   markDeleteSigns(book, S"*");   // delete any signs
+   llDeleteSigns(book, S"*");   // delete any signs
    ga_clear_strings(&book->textPropText);
    mapClearAllMappingsInMode(book, MAP_ALL_MODES, true, false);  // clear local mappings
    mapClearAllMappingsInMode(book, MAP_ALL_MODES, true, true);   // clear local abbrevs

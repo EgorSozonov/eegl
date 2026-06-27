@@ -349,7 +349,7 @@ msgOneChar(CS p, char flags) {
       msgOuttransLenDeco((Text){p, l}, flags);
       return p + l;
    }
-   msgPutsDeco(transchar_byte(*p), flags);
+   msgPutsDeco(bookTranscharByte(*p), flags);
    return p + 1;
 }
 
@@ -405,12 +405,12 @@ msgOuttransLenDeco(Text slice, char flags) {
                printWithDecoAndMaxLen(plain_start, (int)(str - plain_start), flags);
             plain_start = str + mb_l;
             msgPutsDeco(transchar_buf(c), flags == 0 ? getDecoFlags(HLF_8) : flags);
-            retval += char2cells(c);
+            retval += bookChar2Cells(c);
          }
          len -= mb_l - 1;
          str += mb_l;
       } else {
-         s = transchar_byte(*str);
+         s = bookTranscharByte(*str);
          if (s[1] != ZERO) {
             // unprintable char: print the printable chars so far and the
             // translation of the unprintable char.
@@ -484,7 +484,7 @@ msg_outtrans_special(
          text = str2special(&str, from, false);
       if (text[0] != ZERO && text[1] == ZERO)
          // single-byte character or illegal byte
-         text = transchar_byte((Byte)text[0]);
+         text = bookTranscharByte((Byte)text[0]);
       len = eeglStrSize((CS)text);
       if (maxlen > 0 && retval + len >= maxlen)
          break;
@@ -693,7 +693,7 @@ msg_prt_line(CS s, int list) {
             --s;
          } ei (c != ZERO && (n = byte2cells(c)) > 1) {
             n_extra = n - 1;
-            p_extra = transchar_byte(c);
+            p_extra = bookTranscharByte(c);
             c_extra = ZERO;
             c_final = ZERO;
             c = *p_extra++;

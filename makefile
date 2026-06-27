@@ -910,7 +910,6 @@ BASIC_SRC_NO_DIR = \
 	juggle.c \
 	location.c \
 	main.c \
-	mark.c \
 	memory.c \
 	message.c \
 	normal.c \
@@ -982,7 +981,6 @@ OBJ_COMMON = \
 	$(OBJDIR)/insert.o \
 	$(OBJDIR)/juggle.o \
 	$(OBJDIR)/location.o \
-	$(OBJDIR)/mark.o \
 	$(OBJDIR)/normal.o \
 	$(OBJDIR)/option.o \
 	$(OBJDIR)/persist.o \
@@ -1893,8 +1891,6 @@ $(OBJDIR)/juggle.o: src/juggle.c src/eegl.h \
 $(OBJDIR)/location.o: src/location.c src/eegl.h \
  src/generic.h src/commands.h
 $(OBJDIR)/main.o: src/main.c src/eegl.h \
- src/generic.h src/commands.h
-$(OBJDIR)/mark.o: src/mark.c src/eegl.h \
  src/generic.h src/commands.h
 $(OBJDIR)/memory.o: src/memory.c src/eegl.h \
  src/generic.h src/commands.h

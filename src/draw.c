@@ -2853,7 +2853,7 @@ set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
                   multispace_len = 0;
                   while (*s != ZERO && *s != ',') {
                      c1 = get_encoded_char_adv(&s);
-                     if (char2cells(c1) > 1)
+                     if (bookChar2Cells(c1) > 1)
                         return field_value_err(
                            OUT errb, e_wrong_character_width_for_field_str, tab[i].name.c
                         );
@@ -2884,7 +2884,7 @@ set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
                   lead_multispace_len = 0;
                   while (*s != ZERO && *s != ',') {
                      c1 = get_encoded_char_adv(&s);
-                     if (char2cells(c1) > 1) {
+                     if (bookChar2Cells(c1) > 1) {
                         return field_value_err(
                            OUT errb, e_wrong_character_width_for_field_str, tab[i].name.c
                         );
@@ -2915,7 +2915,7 @@ set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
                );
             }
             c1 = get_encoded_char_adv(&s);
-            if (char2cells(c1) > 1)
+            if (bookChar2Cells(c1) > 1)
                return field_value_err(
                      OUT errb, e_wrong_character_width_for_field_str, tab[i].name.c
                );
@@ -2926,13 +2926,13 @@ set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
                   );
                } 
                c2 = get_encoded_char_adv(&s);
-               if (char2cells(c2) > 1)
+               if (bookChar2Cells(c2) > 1)
                   return field_value_err(
                      OUT errb, e_wrong_character_width_for_field_str, tab[i].name.c
                   );
                if (!(*s == ',' || *s == ZERO)) {
                   c3 = get_encoded_char_adv(&s);
-                  if (char2cells(c3) > 1)
+                  if (bookChar2Cells(c3) > 1)
                      return field_value_err(
                          OUT errb, e_wrong_character_width_for_field_str, tab[i].name.c
                      );
@@ -4030,7 +4030,7 @@ updatePortalFinish(Portal* po, UpdatePortalInfo u) {
          j = diff_check_fill(po, po->bottomLine);
          if (j > 0 && !po->bottFill) {
             // Display filler lines at the end of the file.
-            Unt filler = (char2cells(fillCharsG.diff) > 1) ? '-' : fillCharsG.diff;
+            Unt filler = (bookChar2Cells(fillCharsG.diff) > 1) ? '-' : fillCharsG.diff;
             if (row + j > (int)po->height)
                j = po->height - row;
             drawVoidAtPortalEnd(po, filler, filler, true, row, row + (int)j, HLF_DED);
@@ -5273,7 +5273,7 @@ private void
 showbreakAndFiller(Portal* po, DrawCtx* m) {
    if (m->filler_todo > 0) {
       // Draw "deleted" diff line(s).
-      if (char2cells(fillCharsG.diff) > 1) {
+      if (bookChar2Cells(fillCharsG.diff) > 1) {
          m->c_extra = '-';
          m->c_final = ZERO;
       } else {

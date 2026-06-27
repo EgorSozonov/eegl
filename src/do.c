@@ -6273,8 +6273,8 @@ doOneCommand(
          invo.addr_count = 1;
       } else {
          invo.line1 = invo.line2;
-         if (invo.line2 >= LONG_MAX - (n - 1))
-            invo.line2 = LONG_MAX;  // avoid overflow
+         if (invo.line2 >= (Long)LONG_MAX - (n - 1))
+            invo.line2 = (Long)LONG_MAX;  // avoid overflow
          else
             invo.line2 += n - 1;
          ++invo.addr_count;
@@ -7922,7 +7922,7 @@ doGetCommandAddress(
             if (i == '-')
                 lnum -= n;
             else {
-               if (lnum >= 0 && n >= LONG_MAX - lnum) {
+               if (lnum >= 0 && n >= (Long)LONG_MAX - lnum) {
                   emsg(_(e_line_number_out_of_range));
                   cmd = NULL;
                   goto error;
@@ -12722,7 +12722,6 @@ serialize_uep(BufInfo* bi, UndoEntry* uep) {
 
 private UndoEntry *
 unserialize_uep(BufInfo *bi, int *error, CS file_name) {
-   int      i;
    UndoLine   *array = NULL;
    CS line;
 
@@ -12736,7 +12735,7 @@ unserialize_uep(BufInfo *bi, int *error, CS file_name) {
    uep->ue_lcount = undo_read_4c(bi);
    uep->ue_size = undo_read_4c(bi);
    if (uep->ue_size > 0) {
-      if (uep->ue_size < LONG_MAX / (int)sizeof(CS))
+      if (uep->ue_size < (Long)LONG_MAX / (int)sizeof(CS))
          array = U_ALLOC_LINE(sizeof(UndoLine) * uep->ue_size);
       if (array == NULL) {
          *error = true;
@@ -12746,7 +12745,7 @@ unserialize_uep(BufInfo *bi, int *error, CS file_name) {
    }
    uep->ue_array = array;
 
-   for (i = 0; i < uep->ue_size; ++i) {
+   for (int i = 0; i < uep->ue_size; ++i) {
       int line_len = undo_read_4c(bi);
       if (line_len >= 0)
          line = readStringFromFile(bi, (Unt)line_len);
@@ -13129,7 +13128,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    // sequence numbers of the headers.
    // When there are no headers uhp_table is NULL.
    if (num_head > 0) {
-      if (num_head < LONG_MAX / (long)sizeof(UndoHeader *))
+      if (num_head < (Long)LONG_MAX / (Long)sizeof(UndoHeader *))
          uhp_table = U_ALLOC_LINE(num_head * sizeof(UndoHeader *));
       if (uhp_table == NULL)
          goto error;

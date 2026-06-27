@@ -13,8 +13,6 @@ int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 int lstat(const char* restrict, struct stat* restrict);
 
-
-
 //when a block with a negative number is flushed to the file, it gets
 //a positive number. Because the reference to the block is still the negative
 //number, we remember the translation to the new positive number in the
@@ -26,123 +24,7 @@ typedef struct {
    BlockId   nt_new_bnum;      // new, positive, number
 } NrTranslation;
 
-
 //{{{allocations
-//{{{ Arena
-
-#define CHUNK_QUANT 32768
-
-typedef struct ArenaChunk ArenaChunk;
-
-struct ArenaChunk { // :ArenaChunk
-   Unt size;
-   ArenaChunk* next;
-   char memory[]; // flexible array member
-};
-
-struct Arena { // :Arena
-   ArenaChunk* firstChunk;
-   ArenaChunk* currChunk;
-   int currInd;
-};
-
-Arena*
-createArena() { //:createArena
-   Arena* result = malloc(sizeof(Arena));
-
-   Unt firstChunkSize = (CHUNK_QUANT - 32);
-   ArenaChunk* firstChunk = malloc(firstChunkSize);
-   if (!result || !firstChunk)
-      { abort(); }
-
-   firstChunk->size = firstChunkSize - sizeof(ArenaChunk);
-   firstChunk->next = null;
-   result->firstChunk = firstChunk;
-   result->currChunk = firstChunk;
-   result->currInd = 0;
-   return result;
-}
-
-private Unt
-calculateChunkSize(Unt allocSize) { //:calculateChunkSize
-// Calculates memory for a new chunk. Memory is quantized and is always 32 bytes less
-// 32 for any possible padding malloc might use internally,
-// so that the total allocation size is a good even number of OS memory pages
-   Unt fullMemory = sizeof(ArenaChunk) + allocSize + 32;
-   // struct header + main memory chunk + space for malloc bookkeep
-
-   int mallocMemory = fullMemory < CHUNK_QUANT
-                  ? CHUNK_QUANT
-                  : (fullMemory % CHUNK_QUANT > 0
-                     ? (fullMemory/CHUNK_QUANT + 1)*CHUNK_QUANT
-                     : fullMemory);
-
-   return mallocMemory - 32;
-}
-
-void*
-allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
-// Allocate memory in the arena, malloc'ing a new chunk if needed
-   if ((Unt)a->currInd + allocSize >= a->currChunk->size) {
-      if (a->currChunk->next != null && a->currChunk->next->size < allocSize) {
-         // the next chunk is big enough, so we skip the rest of this chunk and move on
-         lo("reusing cleared memory from the arena!");
-         a->currChunk = a->currChunk->next;
-         a->currInd = 0;
-      } else { // we need to allocate new chunk
-
-         Unt newSize = calculateChunkSize(allocSize);
-         ArenaChunk* newChunk = malloc(newSize);
-         if (!newChunk) {
-            perror("malloc error when allocating arena chunk");
-            exit(EXIT_FAILURE);
-         };
-         // sizeof counts everything but the flexible array member, that's why we subtract it
-         newChunk->size = newSize - sizeof(ArenaChunk);
-         newChunk->next = a->currChunk->next; // if the arena has a (small) tail, don't lose it
-
-         a->currChunk->next = newChunk;
-         a->currChunk = newChunk;
-         a->currInd = 0;
-      }
-
-   }
-   void* result = (void*)(a->currChunk->memory + (a->currInd));
-   a->currInd += allocSize;
-   if (allocSize % 4 != 0)  {
-      a->currInd += (4 - (allocSize % 4));
-   }
-   return result;
-}
-
-void
-deleteArena(Arena* ar) { //:deleteArena
-// Returns memory of the arena to the OS
-   ArenaChunk* curr = ar->firstChunk;
-   while (curr != null) {
-      ArenaChunk* nextToFree = curr->next;
-      free(curr);
-      curr = nextToFree;
-   }
-   free(ar);
-}
-
-//private void
-//clearArena(Arena* a) { //:clearArena
-//// Clears the memory of the arena for reuse. Does not free memory.
-//   a->currChunk = a->firstChunk;
-//   a->currInd = 0;
-//}
-
-void
-arenaTryFree(void* start, Unt len, Arena* a) {
-// If this memory span is at the very end of this arena, then free it by rewinding
-   if ((void*)&(a->currChunk->memory) + (a->currInd - len) == start) {
-      a->currInd -= len;
-   }
-}
-
-//}}}
 
 #if defined(MEM_PROFILE) || defined(PROTO)
 
@@ -356,7 +238,7 @@ lalloc(Unt size, Boole message) {
 
    //Loop when out of memory: Try to release some memfile blocks and
    //if some blocks are released call malloc again.
-   void   *p;          // pointer to new storage space
+   void* p;          // pointer to new storage space
    for (;;) {
       if ((p = malloc(size)) != NULL) {
          // 1. No check for available memory: Just return.
@@ -671,6 +553,16 @@ mch_free_mem(void){
 }
 #endif
 
+// Copy full dir name to an allocation outside the arena & glue a file name to its end.
+CS
+toFullFileName(Text fileName, DirName* dn) {
+   CS theString = alloc(dn->len + fileName.len + 1);
+   memcpy(theString, dn->c, dn->len);
+   memcpy(theString + dn->len, fileName.c, fileName.len);
+   theString[dn->len + fileName.len] = ZERO;
+   return theString;
+}
+
 //}}}
 //{{{resource cleanup at exit
 
@@ -944,7 +836,7 @@ private int b0_magic_wrong(Block0 *);
 private int compareFnameWithInode(CS, CS, long);
 private void longToChar(long, Byte *);
 private long charToLong(CS);
-private void updateChunk(Book *book, long line, long len, int updtype);
+private void updateChunk(Book *book, LineNr line, Long len, int updtype);
 
 //Open a new memline for "book". Return FAIL for failure, OK otherwise.
 int
@@ -2601,7 +2493,7 @@ insertLineText(
    }//}}}
 
    // The line was inserted below 'lnum'
-   updateChunk(book, lnum + 1, (long)textLen, ML_CHNK_ADDLINE);
+   updateChunk(book, lnum + 1, (Long)textLen, ML_CHNK_ADDLINE);
 
    if (book->writeToChannel)
       channel_write_new_lines(book);
@@ -3211,7 +3103,7 @@ flushLine(Book *book) {
                 extra -= new_len - (int)STRLEN(new_line) - 1;
             }
             if (extra != 0)
-               updateChunk(book, lnum, (long)extra, ML_CHNK_UPDLINE);
+               updateChunk(book, lnum, (Long)extra, ML_CHNK_UPDLINE);
          } else {
             //Cannot do it in one data block: Delete and append. Append first, because deleteLine()
             //cannot delete the last line in a book, which causes trouble for a book
@@ -3892,7 +3784,7 @@ ml_setflags(Book* book) {
 //ML_CHNK_DELLINE: Subtract len from parent chunk, possibly deleting it
 //ML_CHNK_UPDLINE: Add len to parent chunk, as a signed entity.
 private void
-updateChunk(Book* book, LineNr line, long len, int updtype){
+updateChunk(Book* book, LineNr line, Long len, int updtype){
    static Book* ml_upd_lastbuf = NULL;
    static LineNr ml_upd_lastline;
    static LineNr ml_upd_lastcurline;

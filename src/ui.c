@@ -7598,7 +7598,7 @@ may_move_terminal_to_buffer(Terminal* term, int redraw) {
             po->cursor.lnum = term->book->mem.lineCount;
             po->cursor.col = 0;
             po->cacheState = 0;
-            if (po->cursor.lnum >= po->height) {
+            if (po->cursor.lnum >= (int)po->height) {
                LineNr min_topline = po->cursor.lnum - po->height + 1;
 
                if (po->topLine < min_topline)

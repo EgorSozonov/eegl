@@ -2240,7 +2240,7 @@ finish_eeglinfo_registers(void) {
 
    for (Unt i = 0; i < NUM_REGISTERS; ++i) {
       if (y_read_regs[i].y_array != NULL) {
-         for (Unt j = 0; j < y_read_regs[i].y_size; j++)
+         for (int j = 0; j < y_read_regs[i].y_size; j++)
             eeglFree(y_read_regs[i].y_array[j].c);
          eeglFree(y_read_regs[i].y_array);
       }
@@ -2921,7 +2921,7 @@ copy_eeglinfo_marks(
             if (line[1] != ZERO) {
                unsigned u;
 
-               sscanf((char *)line + 2, "%ld %u", &pos.lnum, &u);
+               sscanf((char *)line + 2, FMT_INT " %u", &pos.lnum, &u);
                pos.col = u;
                switch (line[1]) {
                case '"': curBook->lastCursor = pos; break;

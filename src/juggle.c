@@ -4,7 +4,6 @@
 //## juggle.c: low-level operations and operators for changing text
 
 #include "eegl.h"
-#include <inttypes.h> // for PRIu64
 
 #define TABSIZE_MAX 16
 

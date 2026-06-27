@@ -2717,7 +2717,7 @@ setEeglinfo(OptionChange* cha) {
             if (cha->errb.c) {
                eeSnprintf(
                    cha->errb.c, cha->errb.len, _(e_missing_number_after_angle_str_angle),
-                   transchar_byte(*(s - 1))
+                   bookTranscharByte(*(s - 1))
                );
                errmsg = cha->errb.c;
             } else

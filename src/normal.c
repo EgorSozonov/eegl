@@ -3336,6 +3336,40 @@ invokeEdit(
       restart_edit = restartEditSaved;
 }
 
+// Find the next illegal byte sequence.
+private void
+utf_find_illegal(void) {
+   Pos pos = curPor->cursor;
+   CS p;
+   CS tofree = NULL;
+
+   curPor->cursor.coladd = 0;
+   for (;;) {
+      p = ml_get_cursor();
+      while (*p != ZERO){
+         // Illegal means that there are not enough trail bytes (checked by
+         // utf_ptr2len()) or too many of them (overlong sequence).
+         Unt len = utf_ptr2len(p);
+         if (*p >= 0x80 && (len == 1 || mb_char2len(mb_ptr2char(p)) != len)) {
+            curPor->cursor.col += (ColNr)(p - ml_get_cursor());
+            goto theend;
+         }
+         p += len;
+      }
+      if (curPor->cursor.lnum == curBook->mem.lineCount)
+         break;
+      ++curPor->cursor.lnum;
+      curPor->cursor.col = 0;
+   }
+
+   // didn't find it: don't move and beep
+   curPor->cursor = pos;
+   beep_flush();
+
+theend:
+   eeglFree(tofree);
+}
+
 //}}}
 //{{{normal and visual mode actions
 
@@ -3550,9 +3584,9 @@ nv_scroll_line(ActionArg* aArg) {
 
 // For overflow detection, add a digit safely to a long value.
 private int
-appendDigitLong(OUT long* value, int digit) {
-   long x = *value;
-   if (x > ((LONG_MAX - (long)digit) / 10))
+appendDigitLong(OUT Long* value, int digit) {
+   Long x = *value;
+   if (x > (Long)((LONG_MAX - (long)digit) / 10))
       return FAIL;
    *value = x * 10 + (long)digit;
    return OK;
@@ -3573,7 +3607,7 @@ nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
       return false;
       
    Unt nchar = *nchar_arg;
-   long n = (Long)nchar - '0';
+   Long n = (Long)nchar - '0';
 
    for (;;) {
       ++no_mapping;
@@ -5687,6 +5721,7 @@ nv_gi_cmd(ActionArg* aArg) {
    aArg->cmdchar = 'i';
    nv_edit(aArg);
 }
+
 
 // Commands starting with "g".
 private void
@@ -8859,7 +8894,7 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
 
    //Scroll up if the cursor is off the bottom of the screen a bit.
    //Otherwise put it at 1/2 of the screen.
-   if (line_count >= curPor->height && line_count > min_scroll)
+   if (line_count >= (int)curPor->height && line_count > min_scroll)
       scroll_cursor_halfway(false, true);
    ei (line_count > 0) {
       if (doSmoothly)
@@ -8995,7 +9030,7 @@ scroll_cursor_halfway(int atend, int prefer_above) {
       }
    }
    curPor->topFill = topfill;
-   if (old_topline > curPor->topLine + curPor->height)
+   if (old_topline > (int)(curPor->topLine + curPor->height))
       curPor->bottFill = false;
    check_topfill(curPor, false);
    curPor->cacheState &= ~(VALID_WROW|VALID_CROW|VALID_BOTLINE|VALID_BOTLINE_AP);
@@ -14354,7 +14389,7 @@ put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off) {
       }
       if (fp->fd_nested.len > 0) {
             // open nested folds while this fold is open ignore errors
-            if (fprintf(fd, "%ld", fp->fd_top + off) < 0
+            if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
                   || put_eol(fd) == FAIL
                   || put_line(fd, S"sil! normal! zo") == FAIL)
                return FAIL;
@@ -14382,7 +14417,7 @@ put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off) {
 //Write the open or close command to "fd". Return FAIL when writing failed.
 private int
 put_fold_open_close(FILE *fd, Fold *fp, LineNr off) {
-   if (fprintf(fd, "%ld", fp->fd_top + off) < 0
+   if (fprintf(fd, FMT_INT, fp->fd_top + off) < 0
        || put_eol(fd) == FAIL
        || fprintf(fd, "sil! normal! z%c", fp->fd_flags == FD_CLOSED ? 'c' : 'o') < 0
        || put_eol(fd) == FAIL

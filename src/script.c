@@ -3281,7 +3281,7 @@ redrawPortalStatusLine_matches(
             s += l - 1;
             len += l;
          } else {
-            STRCPY(builder + len, transchar_byte(*s));
+            STRCPY(builder + len, bookTranscharByte(*s));
             len += (int)STRLEN(builder + len);
          }
       }
