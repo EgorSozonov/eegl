@@ -23,7 +23,6 @@ LIBS	= -lm -ltinfo -lwayland-client
 #
 # Edit this file for adjusting to your system. You should not need to edit any
 # other file for machine specific things!
-# The name of this file MUST be Makefile (note the uppercase 'M').
 #{{{ config
 
 

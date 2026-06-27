@@ -5256,8 +5256,8 @@ get_mapclear_arg(Expand *xp UNUSED, int idx){
 
 // Function given to expandGeneric() to obtain an environment variable name.
 private CS
-getEnvKey(Expand* xp UNUSED, int      idx) {
-   extern CS* environ;
+getEnvKey(Expand* xp UNUSED, int  idx) {
+   extern char** environ;
 
    CS str = (CS)environ[idx];
    if (!str)

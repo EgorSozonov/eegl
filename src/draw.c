@@ -4048,11 +4048,6 @@ updatePortalFinish(Portal* po, UpdatePortalInfo u) {
          drawVoidAtPortalEnd(po, fillCharsG.eob, ' ', false, row, po->height, HLF_NONE);
   }
 
-#ifdef SYN_TIME_LIMIT
-   disable_regexp_timeout();
-   redrawtime_limit_set = false;
-#endif
-
    // Reset the type of redrawing required, the portal has been updated.
    po->redrawType = 0;
    po->topFillOld = po->topFill;
@@ -4646,11 +4641,6 @@ updatePortal(Portal* po) {
    // reset gotInterruptG, otherwise regexp won't work
    int save_gotInterrupt = gotInterruptG;
    gotInterruptG = 0;
-#ifdef SYN_TIME_LIMIT
-   // Set the time limit to 'redrawtime'.
-   redrawtime_limit_set = true;
-   init_regexp_timeout(p_rdt);
-#endif
    portFoldS.fi_level = 0;
    updatePortalFinish(
          po, 
@@ -6500,14 +6490,10 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   syntaxDeco = EMPTY_DECO;
                } else
                   anyEmsgG = *m->anyEmsgSave;
-# ifdef SYN_TIME_LIMIT
-               if (port->ownSyntax->redrawTime)
-                  m->syntaxHilitingOn = false;
-# endif
 
-                // Need to get the line again, a multi-line regexp may have made it invalid
-                m->line = memGetLine(port->book, c->lnum, false);
-                m->ptr = m->line + m->bufferLen;
+               // Need to get the line again, a multi-line regexp may have made it invalid
+               m->line = memGetLine(port->book, c->lnum, false);
+               m->ptr = m->line + m->bufferLen;
             }
          }
          // Combine text property hilite into syntax hilite.
@@ -7024,11 +7010,7 @@ drawLineOnScreen(
    if (drawingOnlyNumberCol == 0) { // normal line, with content
       //To speed up the loop below, set hasExtraHiliting when there is linebreak,
       //trailing white space and/or syntax processing to be done.
-      if (syntax_present(port) && !port->ownSyntax->b_syn_error
-# ifdef SYN_TIME_LIMIT
-         && !port->ownSyntax->redrawTime
-# endif
-      ){
+      if (syntax_present(port) && !port->ownSyntax->b_syn_error){
          // Prepare for syntax hiliting in this line. When there is an error, stop hiliting
          *m.anyEmsgSave = anyEmsgG;
          anyEmsgG = false;
@@ -7037,13 +7019,8 @@ drawLineOnScreen(
             port->ownSyntax->b_syn_error = true;
          else {
             anyEmsgG = *m.anyEmsgSave;
-#ifdef SYN_TIME_LIMIT
-            if (!port->ownSyntax->redrawTime)
-#endif
-            {
-                m.syntaxHilitingOn = true;
-                c.hasExtraHiliting = true;
-            }
+            m.syntaxHilitingOn = true;
+            c.hasExtraHiliting = true;
          }
       }
 

@@ -8590,7 +8590,7 @@ void
 c_autocmd(Invocation* invo) {
    //Disallow autocommands from .exrc and .vimrc in current directory for security reasons.
    if (invo->id == C_autocmd)
-      do_autocmd(invo, invo->arg, invo->forceit);
+      do_autocmd(invo->arg, invo->forceit);
    else
       do_augroup(invo->arg, invo->forceit);
 }

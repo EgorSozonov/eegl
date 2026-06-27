@@ -477,141 +477,6 @@ channel_open_unix(CS path) {
    return channel;
 }
 
-// Open a socket channel to "hostname":"port".
-// "waittime" is the time in msec to wait for the connection.
-// When negative wait forever.
-// Return the channel for success. NULL for failure.
-private Channel*
-channel_open(CS hostname, int port, int waittime){
-   int         sd = -1;
-#ifdef FEAT_IPV6
-   int         err;
-   struct addrinfo   hints;
-   struct addrinfo   *res = NULL;
-   struct addrinfo   *addr = NULL;
-#else
-   struct sockaddr_in   server;
-   struct hostent   *host = NULL;
-#endif
-
-   Channel* channel = add_channel();
-   if (!channel) {
-      ch_error(NULL, "Cannot allocate channel.");
-      return NULL;
-   }
-
-   //Get the server internet address and put into addr structure fill in the
-   //socket address structure and connect to server.
-#ifdef FEAT_IPV6
-   CLEAR_FIELD(hints);
-   hints.ai_family = AF_UNSPEC;
-   hints.ai_socktype = SOCK_STREAM;
-# if defined(__ANDROID__)
-   hints.ai_flags = AI_ADDRCONFIG;
-# elif defined(AI_ADDRCONFIG) && defined(AI_V4MAPPED)
-   hints.ai_flags = AI_ADDRCONFIG | AI_V4MAPPED;
-# endif
-   //Set port number manually in order to prevent name resolution services
-   //from being invoked in the environment where AI_NUMERICSERV is not defined.
-   if ((err = getaddrinfo((char*)hostname, NULL, &hints, &res)) != 0) {
-      ch_error(channel, "in getaddrinfo() in channel_open()");
-      showErrFmtMsg(_(e_getaddrinfo_in_channel_open_str), gai_strerror(err));
-      channel_free(channel);
-      return NULL;
-   }
-
-   for (addr = res; addr != NULL; addr = addr->ai_next) {
-      CS dst = hostname;
-# ifdef HAVE_INET_NTOP
-      const void  *src = NULL;
-      char       buf[NUMBUFLEN];
-# endif
-
-      if (addr->ai_family == AF_INET6) {
-         struct sockaddr_in6 *sai = (struct sockaddr_in6 *)addr->ai_addr;
-
-         sai->sin6_port = htons(port);
-# ifdef HAVE_INET_NTOP
-         src = &sai->sin6_addr;
-# endif
-      } ei (addr->ai_family == AF_INET) {
-         struct sockaddr_in *sai = (struct sockaddr_in *)addr->ai_addr;
-
-         sai->sin_port = htons(port);
-# ifdef HAVE_INET_NTOP
-         src = &sai->sin_addr;
-#endif
-      }
-# ifdef HAVE_INET_NTOP
-      if (src) {
-         dst = (CS)inet_ntop(addr->ai_family, src, buf, sizeof(buf));
-         if (!dst)
-            dst = hostname;
-         ei (STRCMP(hostname, dst) != 0)
-            ch_log(channel, "Resolved %s to %s", hostname, dst);
-      }
-# endif
-
-      ch_log(channel, "Trying to connect to %s port %d", dst, port);
-
-      // On Mac a zero timeout almost never works.  Waiting for
-      // one millisecond already helps a lot.  Later Mac systems (using IPv6)
-      // need more time, 15 milliseconds appears to work well.
-      // Let's do it for all systems, because we don't know why this is
-      // needed.
-      if (waittime == 0)
-         waittime = 15;
-
-      sd = channel_connect(channel, addr->ai_addr, (int)addr->ai_addrlen, &waittime);
-      if (sd >= 0)
-         break;
-   }
-
-   freeaddrinfo(res);
-#else
-   CLEAR_FIELD(server);
-   server.sin_family = AF_INET;
-   server.sin_port = htons(port);
-   if ((host = gethostbyname(hostname)) == NULL) {
-      error(channel, "in gethostbyname() in channel_open()");
-      PERROR(_(e_gethostbyname_in_channel_open));
-      channel_free(channel);
-      return NULL;
-   }
-   {
-   char *p;
-
-   // When using host->h_addr_list[0] directly ubsan warns for it to not
-   // be aligned.  First copy the pointer to avoid that.
-   memcpy(&p, &host->h_addr_list[0], sizeof(p));
-   memcpy((char *)&server.sin_addr, p, host->h_length);
-   }
-
-   ch_log(channel, "Trying to connect to %s port %d", hostname, port);
-
-   //On Mac a zero timeout almost never works.  At least wait one
-   //millisecond. Let's do it for all systems, because we don't know why this is needed.
-   if (waittime == 0)
-      waittime = 1;
-
-   sd = channel_connect(channel, (struct sockaddr *)&server, sizeof(server), &waittime);
-#endif
-
-   if (sd < 0) {
-      channel_free(channel);
-      return NULL;
-   }
-
-   ch_log(channel, "Connection made");
-
-   channel->fds[PART_SOCK].ch_fd = (Socket)sd;
-   channel->ch_hostname = copyStr((CS)hostname);
-   channel->ch_port = port;
-   channel->ch_to_be_closed |= (1U << PART_SOCK);
-
-   return channel;
-}
-
 private void
 setCallback(Callback* cbp, Callback* callback) {
    evFreeCallback(cbp);
@@ -793,17 +658,10 @@ channel_set_options(Channel* channel, JobOptions* opt) {
 // Implement ch_open().
 private Channel *
 channel_open_func(Arr(Var) argvars) {
-   Byte   *p;
-   char   *rest;
-   int      port = 0;
-   int      is_ipv6 = false;
-   int      isUnixSocket = false;
-   JobOptions    opt;
-   Channel   *channel = NULL;
+   JobOptions opt;
 
    CS address = tv_get_string(&argvars[0]);
-   if (argvars[1].tag != VAR_UNKNOWN
-          && check_for_nonnull_dict_arg(argvars, 1) == FAIL)
+   if (argvars[1].tag != VAR_UNKNOWN && check_for_nonnull_dict_arg(argvars, 1) == FAIL)
       return NULL;
 
    if (*address == ZERO) {
@@ -811,58 +669,26 @@ channel_open_func(Arr(Var) argvars) {
       return NULL;
    }
 
-   if (!STRNCMP(address, "unix:", 5)) {
-      isUnixSocket = true;
+   if (STRNCMP(address, "unix:", 5) == 0) {
       address += 5;
-   } ei (*address == '[') {
-      // ipv6 address
-      is_ipv6 = true;
-      p = firstOccurrence(address + 1, ']');
-      if (p == NULL || *++p != ':') {
-         showErrFmtMsg(_(e_invalid_argument_str), address);
-         return NULL;
-      }
    } else {
-      // ipv4 address
-      p = firstOccurrence(address, ':');
-      if (p) {
-         showErrFmtMsg(_(e_invalid_argument_str), address);
-         return NULL;
-      }
-   }
-
-   if (!isUnixSocket) {
-      port = strtol((char *)(p + 1), &rest, 10);
-      if (port <= 0 || port >= 65536 || *rest != ZERO) {
-         showErrFmtMsg(_(e_invalid_argument_str), address);
-         return NULL;
-      }
-      if (is_ipv6) {
-         // strip '[' and ']'
-         ++address;
-         *(p - 1) = ZERO;
-      } else
-         *p = ZERO;
-   }
+      showErrFmtMsg(_(e_invalid_argument_str), address);
+      return null;
+   } 
 
    // parse options
    CLEAR_POINTER(&opt);
    opt.mode = CH_MODE_JSON;
    opt.jo_timeout = 2000;
-   if (get_job_options(&argvars[1], OUT &opt,
-          JO_MODE_ALL + JO_CB_ALL + JO_TIMEOUT_ALL
-         + (isUnixSocket? 0 : JO_WAITTIME), 0) == FAIL)
+   if (get_job_options(&argvars[1], OUT &opt, JO_MODE_ALL + JO_CB_ALL + JO_TIMEOUT_ALL, 0) == FAIL)
       goto theend;
    if (opt.jo_timeout < 0) {
       emsg(_(e_invalid_argument));
       goto theend;
    }
 
-   if (isUnixSocket)
-      channel = channel_open_unix(address);
-   else
-      channel = channel_open(address, port, opt.jo_waittime);
-   if (channel != NULL) {
+   Channel* channel = channel_open_unix(address);
+   if (channel) {
       opt.set = JO_ALL;
       channel_set_options(channel, &opt);
    }
@@ -3469,11 +3295,11 @@ channel_any_readahead(void) {
 // Mark references to lists used in channels.
 int
 set_ref_in_channel(int copyID) {
-   int      abort = false;
-   Channel   *channel;
-   Var   tv;
+   int abort = false;
+   Channel* channel;
+   Var tv;
 
-   for (channel = first_channel; !abort && channel != NULL; channel = channel->next) {
+   for (channel = first_channel; !abort && channel; channel = channel->next) {
       if (channel_still_useful(channel)) {
          tv.tag = VAR_CHANNEL;
          tv.channel = channel;
@@ -3485,7 +3311,7 @@ set_ref_in_channel(int copyID) {
 
 // Return the "part" to write to for "channel".
 private ChannelFdKind
-channel_part_send(Channel *channel) {
+channel_part_send(Channel* channel) {
    if (channel->fds[PART_SOCK].ch_fd == INVALID_FD)
       return PART_IN;
    return PART_SOCK;
@@ -3493,7 +3319,7 @@ channel_part_send(Channel *channel) {
 
 // Return the default "part" to read from for "channel".
 private ChannelFdKind
-channel_part_read(Channel *channel) {
+channel_part_read(Channel* channel) {
    if (channel->fds[PART_SOCK].ch_fd == INVALID_FD)
       return PART_OUT;
    return PART_SOCK;
@@ -3501,7 +3327,7 @@ channel_part_read(Channel *channel) {
 
 // Return the mode of "channel"/"part" If "channel" is invalid returns CH_MODE_JSON.
 private ChannelMode
-channel_get_mode(Channel *channel, ChannelFdKind part) {
+channel_get_mode(Channel* channel, ChannelFdKind part) {
    if (!channel)
       return CH_MODE_JSON;
    return channel->fds[part].ch_mode;

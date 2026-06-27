@@ -265,15 +265,17 @@
 [ ] keymodel? (p_km)
 [ ] alloc_type?
 [ ] regex match syntax coloring ?
+[-] SYN_TIME_LIMIT (no reason, syntax coloring is fast now)
 [-] tuples (too complex for a simple dynamic scripting language)
 [-] EVENT_OPTIONSET (too hard)
 [-] TEXTCHANGED, TEXTCHANGEDI, TEXTCHANGEDP, TEXTCHANGEDT (superfluous and slow)
 [-] spelling (will be done with external program)
-[ ] cellToDecoration (decoration conversions between VTerm format and "internal" format)
+[-] cellToDecoration (decoration conversions between VTerm format and "internal" format)
 [-] KS_RBG, KS_RFG (requesting color theme from the terminal emulator - useless)
 [-] KS_XON (terminal freezing - harmful) and KS_BC (backspace - obsolete)
 [-] command piping (superfluous, and without it, substitution may be written as `s|inp|outp|g`)
-[ ] cindent (smartindent is enough)
+[-] connecting over the internet (a huge security risk & unneeded)
+[-] cindent (smartindent is enough)
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 

@@ -16,7 +16,8 @@
 //The current implementation remembers all file names ever used.
 
 #include "eegl.h"
-#include <sys/stat.h> // for stat
+#include <fcntl.h>      // Definition of AT_* constants for utimensat()
+#include <sys/stat.h> // for stat,  utimensat() (modification time changin')
 
 private int text_prop_type_valid(Book* book, TextProp* prop);
 //{{{builtins. Book related builtin functions
@@ -708,7 +709,7 @@ bookInitCharsForKeywords(Book* book) {
    CLEAR_FIELD(book->charsForKeywords);
 
    // Walk through the 'isident', 'iskeyword', 'isfname' and 'isprint' options.
-   for (int i = 0; i < 3; ++i) {
+   for (Unt i = 0; i < 3; ++i) {
       CS p;
       if (i == 0)
          p = p_isi;      // first round: 'isident'
@@ -935,10 +936,9 @@ char2cells(Unt c) {
 //A TAB is counted as two cells: "^I" or four: "<09>".
 int
 ptr2cells(CS p) {
-   // For UTF-8 we need to look at more bytes if the first byte is >= 0x80.
+   //For UTF-8 we need to look at more bytes if the first byte is >= 0x80.
    if (*p >= 0x80)
       return mb_ptr2cells(p);
-   // For DBCS we can tell the cell count from the first byte.
    return (g_chartab[*p] & CT_CELL_MASK);
 }
 
@@ -5835,8 +5835,6 @@ bookCompare(const void* s0, const void* s1) {
 
 //{{{bookwrite: functions for writing a book
 
-#include <fcntl.h>      // Definition of AT_* constants for utimensat()
-#include <sys/stat.h>   // for utimensat(), modification time changin'
 
 #define SMALLBUFSIZE   256   // size of emergency write book
 
@@ -5886,16 +5884,16 @@ check_mtime(Book* book, FileStat *st) {
 }
 
 private void
-set_file_time(
+updateFileTime(
    CS fname,
-   Tyme  atime,       // access time
-   Tyme  mtime)       // modification time
-{
+   Tyme  atime,      // access time
+   Tyme  mtime       // modification time
+){
    ProfTime newTimes[2];
    newTimes[0] = (ProfTime){.tv_sec = atime, .tv_nsec = 0};
    newTimes[1] = (ProfTime){.tv_sec = mtime, .tv_nsec = 0};
 
-   // first arg is 0 because the path is absolute. Last arg is just absence of flags
+   //first arg is 0 because the path is absolute. Last arg is just absence of flags
    utimensat(0, (char*)fname, newTimes, 0);
 }
 
@@ -6505,11 +6503,11 @@ endOfName:
                      }
                   }
 
-                  if (close(bfd) < 0 && errmsg == NULL)
+                  if (close(bfd) < 0 && !errmsg)
                      errmsg = (CS)_(e_close_error_for_backup_file_add_bang_to_write_anyway);
                   if (writeInfo.bw_len < 0)
                      errmsg = (CS)_(e_cant_read_file_for_backup_add_bang_to_write_anyway);
-                  set_file_time(backup, stOld.st_atime, stOld.st_mtime);
+                  updateFileTime(backup, stOld.st_atime, stOld.st_mtime);
                   mch_copy_xattr(fname, backup);
                   break;
                }

@@ -18,9 +18,7 @@ typedef int64_t Long;
 typedef uint64_t Ulong;
 typedef unsigned char Byte;
 typedef Arr(Byte) CS;
-#define EXTRA_H
-#include "../generic.h"
-#undef EXTRA
+#include "../base.h"
 
 #include "../actions.h"
 

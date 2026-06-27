@@ -77,8 +77,6 @@ Unt utf_ptr2len(CS p);
 Unt utf_byte2len(int b);
 Unt utf_byte2len_zero(int b);
 Unt utf_ptr2len_len(Byte const *p, int size);
-Unt utfCharLen(CS p);
-Unt utfCharLen_len(Byte *p, int size);
 Unt mb_char2len(Unt c);
 int mb_char2bytes(Unt c, CS buf);
 int utf_iscomposing_uint(Unt c);

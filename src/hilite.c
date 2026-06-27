@@ -1864,8 +1864,7 @@ syn_match_linecont(LineNr lnum) {
    save_chartab(bookKeywordChars);
    regmatch.rmm_ic = synBlockS->lineContinIgnoreCase;
    regmatch.regprog = synBlockS->lineContinProg;
-   int r = syn_regexec(&regmatch, lnum, (ColNr)0,
-      IF_SYN_TIME(&synBlockS->b_syn_linecont_time));
+   int r = syn_regexec(&regmatch, lnum, (ColNr)0, IF_SYN_TIME(&synBlockS->b_syn_linecont_time));
    synBlockS->lineContinProg = regmatch.regprog;
    restoreKeywordChars(bookKeywordChars);
    return r;
@@ -3553,7 +3552,7 @@ syn_regexec(
    RegMultilineMatch   *rmp,
    LineNr   lnum,
    ColNr   col,
-   syn_Time  *st UNUSED
+   syn_Time* st UNUSED
 ) {
    int      r;
    int      timed_out = false;
@@ -6170,12 +6169,7 @@ syn_get_foldlevel(Portal *po, long lnum) {
    int cur_level;
 
    // Return quickly when there are no fold items at all.
-   if (po->ownSyntax->b_syn_folditems != 0
-       && !po->ownSyntax->b_syn_error
-# ifdef SYN_TIME_LIMIT
-       && !po->ownSyntax->redrawTime
-# endif
-   ){
+   if (po->ownSyntax->b_syn_folditems != 0 && !po->ownSyntax->b_syn_error){
       syntaxStartLine(po, lnum);
 
       // Start with the fold level at the start of the line.

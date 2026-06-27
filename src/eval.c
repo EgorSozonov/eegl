@@ -10194,7 +10194,7 @@ f_empty(Var* argvars, Var* returnVar) {
 //"environ()" function
 private void
 f_environ(Var* argvars UNUSED, Var* returnVar) {
-   extern CS* environ;
+   extern char** environ;
 
    allocReturnDict(returnVar);
 
@@ -10203,7 +10203,7 @@ f_environ(Var* argvars UNUSED, Var* returnVar) {
 
    for (int i = 0; ; ++i) {
       CS entry;
-      if ((entry = environ[i]) == NULL)
+      if ((entry = (CS)environ[i]) == NULL)
          return;
       entry = copyStr(entry);
       CS value; 

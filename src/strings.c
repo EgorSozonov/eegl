@@ -3,7 +3,10 @@
 
 //## strings.c: utility functions for string manipulation 
  
-#include "eegl.h"
+//#include "eegl.h"
+
+#include <string.h>
+#include "base.h"
 
 //{{{charset (utf-8)
 
@@ -780,6 +783,79 @@ toStringChunky(ChunkyString* chunky) {
       i += p->len;
    }
    return contiguous;
+}
+
+//}}}
+//{{{unicode
+
+// Return the number of bytes the UTF-8 encoding of the character at "p" takes.
+// This includes following composing characters.
+Unt
+utfCharLen(CS p) {
+   int      b0 = *p;
+   if (b0 == ZERO)
+      return 0;
+   if (b0 < 0x80 && p[1] < 0x80)   // be quick for ASCII
+      return 1;
+      
+   // Skip over first UTF-8 char, stopping at a ZERO byte.
+   Unt len = utf_ptr2len(p);
+
+   // Check for illegal byte.
+   if (len == 1 && b0 >= 0x80)
+      return 1;
+
+   // Check for composing characters.  We can handle only the first 6, but
+   // skip all of them (otherwise the cursor would get stuck).
+   for (;;) {
+      if (p[len] < 0x80 || !UTF_COMPOSINGLIKE(p + prevlen, p + len))
+          return len;
+
+      // Skip over composing char
+      len += utf_ptr2len(p + len);
+   }
+}
+
+//Return the number of bytes the UTF-8 encoding of the character at "p[size]" takes.
+//This includes following composing characters.
+//Return 0 for an empty string. Return 1 for an illegal char or an incomplete byte sequence.
+Unt
+utfCharLen_len(Byte* p, int size) {
+   int len;
+
+   if (size < 1 || *p == ZERO)
+      return 0;
+   if (p[0] < 0x80 && (size == 1 || p[1] < 0x80)) // be quick for ASCII
+      return 1;
+
+   // Skip over first UTF-8 char, stopping at a ZERO byte.
+   len = utf_ptr2len_len(p, size);
+
+   // Check for illegal byte and incomplete byte sequence.
+   if ((len == 1 && p[0] >= 0x80) || len > size)
+      return 1;
+
+   //Check for composing characters.  We can handle only the first six, but
+   //skip all of them (otherwise the cursor would get stuck).
+   while (len < size) {
+      int len_next_char;
+
+      if (p[len] < 0x80)
+         break;
+
+      //Next character length should not go beyond size to ensure that
+      //UTF_COMPOSINGLIKE(...) does not read beyond size.
+      len_next_char = utf_ptr2len_len(p + len, size - len);
+      if (len_next_char > size - len)
+         break;
+
+      if (!UTF_COMPOSINGLIKE(p + prevlen, p + len))
+         break;
+
+      // Skip over composing char
+      len += len_next_char;
+   }
+   return len;
 }
 
 //}}}
