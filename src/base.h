@@ -4,7 +4,9 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h> //va_list etc
 
 #define private static
 #define OUT
@@ -126,6 +128,7 @@ typedef struct {
 #define STRNCMP(d, s, n)   strncmp((char *)(d), (char *)(s), (Unt)(n))
 #define SPRINTF(a, fmt, ...) sprintf((char* restrict)a, (const char* restrict)fmt, ##__VA_ARGS__)
 #define SNPRINTF(a, b, fmt, ...) snprintf((char* restrict)(a), b, (char*)(fmt), ##__VA_ARGS__)
+#define VSNPRINTF(a, len, fmt, ...) vsnprintf((char* restrict)(a), len, (char*)(fmt), ##__VA_ARGS__)
 #define caseInsensitiveCompare(d, s)       strcasecmp((char *)(d), (char *)(s))
 #define STRCOLL(d, s)      strcoll((char *)(d), (char *)(s))
 #define STRTOD(a, b)       strtod((char*)a, (char**) b)
@@ -729,6 +732,8 @@ enum key_extra{
 
 #define UTF_COMPOSINGLIKE(p1, p2)  utf_iscomposing(mb_ptr2char(p2))
 
+#define MB_COPY_CHAR(f, t) do { mb_copy_char(&(f), &(t)); } while (0)
+
 //}}}
 //{{{arena
 
@@ -741,4 +746,6 @@ void* allocateOnArena(Unt, Arena*);
 //}}}
 
 
+//Max chars in a path name including ZERO, see linux/limits.h
+#define MAXPATHL   4096
 typedef struct stat FileStat;

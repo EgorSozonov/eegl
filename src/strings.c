@@ -6,9 +6,11 @@
 
 #include <string.h>
 #include <strings.h>
-#ifdef FREESTANDING
+#ifdef FREESTANDING_STRINGS
 #include "base.h"
+#include "proto/strings.h"
 #define alloc malloc
+void eeglFree(void* a) { if (a) { free(a); }}
 #else
 #include "eegl.h"
 #endif
@@ -79,8 +81,8 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
    if ((Unt)a->currInd + allocSize >= a->currChunk->size) {
       if (a->currChunk->next != null && a->currChunk->next->size < allocSize) {
          // the next chunk is big enough, so we skip the rest of this chunk and move on
-#ifdef DEBUG 
-         printf("reusing cleared memory from the arena!");
+#ifndef FREESTANDING_STRINGS 
+         lo("reusing cleared memory from the arena!");
 #endif 
          a->currChunk = a->currChunk->next;
          a->currInd = 0;
@@ -2941,72 +2943,6 @@ splitBySpace(CS inp) {
    return split;
 }
 
-//Escape "string" for use as a shell argument with system().
-//This uses single quotes.
-//Escape a newline, depending on the 'shell' option. When "do_special" is true also replace 
-//"!", "%", "#" and things starting
-//with "<" like "<cfile>".
-//When "do_newline" is false do not escape newline unless it is csh shell.
-//Return the result in allocated memory, NULL if we have run out.
-CS
-copyStr_shellescape(CS string, int do_special, int do_newline) {
-   Unt l;
-
-   // First count the number of extra bytes required.
-   Unt length = STRLEN(string) + 3;  // two quotes and a trailing ZERO
-   CS p; 
-   for (p = string; *p != ZERO; MB_PTR_ADV(p)) {
-      if (*p == '\'') {
-         length += 3;      // ' => '\''
-      }
-      if ((*p == '\n' && do_newline) || (*p == '!' && do_special)) {
-         ++length;         // insert backslash
-      }
-      if (do_special && find_commline_var(p, &l) >= 0) {
-         ++length;         // insert backslash
-         p += l - 1;
-      }
-   }
-
-   // Allocate memory for the result and fill it.
-   CS escaped_string = alloc(length);
-   CS d = escaped_string;
-
-   // add opening quote
-   *d++ = '\'';
-
-   for (p = string; *p != ZERO; ) {
-      if (*p == '\'') {
-         *d++ = '\'';
-         *d++ = '\\';
-         *d++ = '\'';
-         *d++ = '\'';
-         ++p;
-         continue;
-      }
-      if ((*p == '\n' && do_newline) || (*p == '!' && do_special)) {
-         *d++ = '\\';
-         *d++ = *p++;
-         continue;
-      }
-      if (do_special && find_commline_var(p, &l) >= 0) {
-         *d++ = '\\';      // insert backslash
-         memcpy(d, p, l);   // copy the var
-         d += l;
-         p += l;
-         continue;
-      }
-
-      MB_COPY_CHAR(p, d);
-   }
-
-   // add terminating quote and finish with a ZERO
-      *d++ = '\'';
-   *d = ZERO;
-
-    return escaped_string;
-}
-
 //Like copyStr(), but make all characters uppercase.
 //This uses ASCII lower-to-upper case translation, language independent.
 CS
@@ -3372,7 +3308,7 @@ string_count(CS haystack, CS needle, int ic) {
    if (ic) {
       Unt len = STRLEN(needle);
       while (*p != ZERO) {
-         if (MB_STRNICMP(p, needle, len) == 0) {
+         if (caseInsensitiveCompareNChars(p, needle, len) == 0) {
             ++n;
             p += len;
          } else
@@ -3431,7 +3367,7 @@ string_count(CS haystack, CS needle, int ic) {
 // understand this.
 #ifndef PROTO
 
-// Like eeVsnprintf() but append to the string.
+// Like vsnprintf() but append to the string.
 int
 eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
    va_list   ap;
@@ -3444,7 +3380,7 @@ eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
    else
       space = str_m - len;
    va_start(ap, fmt);
-   str_l = eeVsnprintf(str + len, space, fmt, ap);
+   str_l = VSNPRINTF(str + len, space, fmt, ap);
    va_end(ap);
    return str_l;
 }
@@ -3453,7 +3389,7 @@ int
 eeSnprintf0(CS str, Unt str_m, const char *fmt, ...) {
    va_list   ap;
    va_start(ap, fmt);
-   int str_l = eeVsnprintf(str, str_m, fmt, ap);
+   int str_l = VSNPRINTF(str, str_m, fmt, ap);
    va_end(ap);
    return str_l;
 }
@@ -3468,7 +3404,7 @@ Unt
 eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
-   int str_l = eeVsnprintf(str, str_m, fmt, ap);
+   int str_l = VSNPRINTF(str, str_m, fmt, ap);
    va_end(ap);
 
    if (str_l < 0) {
@@ -3476,11 +3412,6 @@ eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...) {
       return 0;
    }
    return ((Unt)str_l >= str_m) ? str_m - 1 : (Unt)str_l;
-}
-
-int
-eeVsnprintf(CS str, Unt   str_m, char const* fmt, va_list ap) {
-   return eeVarPrintf0(str, str_m, fmt, ap, NULL);
 }
 
 #endif // PROTO
@@ -3617,44 +3548,42 @@ encodeBase64(void const* binaryData_, int inputLen) {
    return encoded;
 }
 
-ArrayList
-decodeBase64(Arr(Byte const) base64, int inputLen) {
+//Return true if input argument is malformed
+Boole
+decodeBase64(OUT ArrayList* ret, Text base64) {
    ArrayList decoded = {.len = 0, .cap = 0};
 
-   if (inputLen == 0)
-      return decoded;
-
-   if (inputLen % 4 != 0) {
-      // Invalid input length
-      showErrFmtMsg(_(e_invalid_argument_str), base64);
-      return decoded;
-   }
+   if (base64.len == 0 || (base64.len % 4 != 0)) {
+      *ret = decoded;
+      return false;
+   } 
 
    initBase64Table();
 
-   int decodedLen = (inputLen / 4) * 3;
-   if (base64[inputLen - 1] == '=')
+   Unt decodedLen = (base64.len / 4) * 3; // decodedLen >= 3
+   if (base64.c[base64.len - 1] == '=')
       decodedLen--;
-   if (base64[inputLen - 2] == '=')
+   if (base64.c[base64.len - 2] == '=')
       decodedLen--;
    if (decodedLen == 0) {
-      return decoded;
+      *ret = decoded;
+      return false;
    }
       
    decoded.c = alloc(decodedLen);   
    decoded.cap = decodedLen;
 
-   int i, j;
-   for (i = 0, j = 0; i < inputLen;) {
-      Unt sextetA = base64DecodingTableG[base64[i++]];
-      Unt sextetB = base64DecodingTableG[base64[i++]];
-      Unt sextetC = base64DecodingTableG[base64[i++]];
-      Unt sextetD = base64DecodingTableG[base64[i++]];
+   Unt i, j;
+   for (i = 0, j = 0; i < base64.len;) {
+      Unt sextetA = base64DecodingTableG[base64.c[i++]];
+      Unt sextetB = base64DecodingTableG[base64.c[i++]];
+      Unt sextetC = base64DecodingTableG[base64.c[i++]];
+      Unt sextetD = base64DecodingTableG[base64.c[i++]];
 
       if (sextetA == 0xFF || sextetB == 0xFF || sextetC == 0xFF || sextetD == 0xFF) {
          // Invalid character
-         showErrFmtMsg(_(e_invalid_argument_str), base64);
-         return decoded;
+         *ret = decoded;
+         return false;
       }
 
       Unt triple = (sextetA << 18) | (sextetB << 12) | (sextetC << 6) | sextetD;
@@ -3674,17 +3603,18 @@ decodeBase64(Arr(Byte const) base64, int inputLen) {
       if (j == decodedLen) {
          // Check for invalid padding bytes (based on the
          // "Base64 Malleability in Practice" ACM paper).
-         if ((base64[inputLen - 2] == '=' && ((sextetB & 0xF) != 0))
-            || ((base64[inputLen - 1] == '=') && ((sextetC & 0x3) != 0))
+         if ((base64.c[base64.len - 2] == '=' && ((sextetB & 0xF) != 0))
+            || ((base64.c[base64.len - 1] == '=') && ((sextetC & 0x3) != 0))
          ) {
-            showErrFmtMsg(_(e_invalid_argument_str), base64);
             ga_clear(&decoded);
-            return decoded;
+            *ret = decoded;
+            return false;
          }
       }
    }
    decoded.len = decodedLen;
-   return decoded;
+   *ret = decoded;
+   return true;
 }
 
 //}}}

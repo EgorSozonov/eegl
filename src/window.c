@@ -4078,7 +4078,7 @@ vwl_log_handler(char const* fmt, va_list args) {
    CS prefix = _("wayland protocol error -> ");
    Unt len = STRLEN(prefix);
    copySubstrToAllocation(buf, (Text){prefix, len});
-   eeVsnprintf(buf + len, 4096 - len, fmt, args);
+   VSNPRINTF(buf + len, 4096 - len, fmt, args);
 
    // Remove newline that libwayland puts
    buf[STRLEN(buf) - 1] = ZERO;

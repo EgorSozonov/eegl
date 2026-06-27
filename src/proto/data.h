@@ -351,6 +351,7 @@ int eeVarPrintf0(CS str, Unt str_m, char const *fmt, va_list ap_start, Var *tvs)
 void op_format(Operator *oper, int keep_cursor);
 void op_formatexpr(Operator *oper);
 int fex_format(LineNr lnum, long count, int c);
+CS copyStr_shellescape(CS string, int do_special, int do_newline);
 CS json_encode(Var *val, int options);
 CS json_encode_nr_expr(int nr, Var *val, int options);
 CS json_encode_lsp_msg(Var *val);

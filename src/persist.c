@@ -1293,7 +1293,7 @@ removable(CS name) {
       doCutPathFromListOfPaths(OUT &p, OUT part, 51, S", ");
       if (part[0] == 'r') {
          n = STRLEN(part + 1);
-         if (MB_STRNICMP(part + 1, name, n) == 0) {
+         if (caseInsensitiveCompareNChars(part + 1, name, n) == 0) {
             retval = true;
             break;
          }

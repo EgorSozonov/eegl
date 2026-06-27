@@ -15328,7 +15328,7 @@ int
 scriptCheckScriptPrefix(CS p) {
    //Use caseInsensitiveCompareNChars() because in Turkish comparing the "I" may not work with
    //the standard library function.
-   if (p[0] == '<' && (MB_STRNICMP(p + 1, "SID>", 4) == 0 || MB_STRNICMP(p + 1, "SNR>", 4) == 0))
+   if (p[0] == '<' && (caseInsensitiveCompareNChars(p + 1, "SID>", 4) == 0 || caseInsensitiveCompareNChars(p + 1, "SNR>", 4) == 0))
       return 5;
    if (p[0] == 's' && p[1] == ':')
       return 2;

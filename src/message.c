@@ -921,7 +921,7 @@ smsg0(char const* s, ...) {
    va_list arglist;
 
    va_start(arglist, s);
-   eeVsnprintf(IObuff, IOSIZE, s, arglist);
+   VSNPRINTF(IObuff, IOSIZE, s, arglist);
    va_end(arglist);
    return msg(IObuff);
 }
@@ -937,7 +937,7 @@ smsgDeco0(char flags, const char *s, ...) {
    va_list arglist;
 
    va_start(arglist, s);
-   eeVsnprintf(IObuff, IOSIZE, s, arglist);
+   VSNPRINTF(IObuff, IOSIZE, s, arglist);
    va_end(arglist);
    return msgDeco(IObuff, flags);
 }
@@ -953,7 +953,7 @@ smsgDecoKeep0(char flags, const char *s, ...) {
    va_list arglist;
 
    va_start(arglist, s);
-   eeVsnprintf(IObuff, IOSIZE, s, arglist);
+   VSNPRINTF(IObuff, IOSIZE, s, arglist);
    va_end(arglist);
    return msgAndKeep(IObuff, flags, true);
 }
@@ -1287,7 +1287,7 @@ showErrFmtMsg0(char const* s, ...) {
    va_list ap;
 
    va_start(ap, s);
-   eeVsnprintf(IObuff, IOSIZE, s, ap);
+   VSNPRINTF(IObuff, IOSIZE, s, ap);
    va_end(ap);
    return emsgImpl(IObuff);
 }
@@ -1335,7 +1335,7 @@ internalErrFmtMsg0(const char *s, ...) {
       va_list ap;
 
       va_start(ap, s);
-      eeVsnprintf(IObuff, IOSIZE, s, ap);
+      VSNPRINTF(IObuff, IOSIZE, s, ap);
       va_end(ap);
       emsgImpl(IObuff);
    }
@@ -1376,9 +1376,9 @@ emsg_invreg(int name) {
 // Give an error message which contains %s for "name[len]".
 void
 emsg_namelen(CS msg, CS name, int len) {
-    CS copy = copySubstr(name, len);
-    showErrFmtMsg(msg, copy);
-    eeglFree(copy);
+   CS copy = copySubstr(name, len);
+   showErrFmtMsg(msg, copy);
+   eeglFree(copy);
 }
 
 //}}}

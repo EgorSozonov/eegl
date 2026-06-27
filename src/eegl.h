@@ -63,7 +63,6 @@ typedef double _Float64x;
 
 #include <ctype.h>
 #include <sys/types.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <inttypes.h> // for PRIu64
 
@@ -142,8 +141,6 @@ typedef void (*sighandler_T) SIGPROTOARG;
 //Unix has plenty of memory, use large buffers
 #define CMDBUFFSIZE 1024   // size of the command processing buffer
 
-//Max chars in a path name including ZERO, see linux/limits.h
-#define MAXPATHL   4096
 
 #ifndef DFLT_MAXMEM
 #define DFLT_MAXMEM   (12*1024)    // use up to 12 Mbytes for a buffer
@@ -548,7 +545,6 @@ typedef Byte Byte;
 
 
 
-#define MB_COPY_CHAR(f, t) do { mb_copy_char(&(f), &(t)); } while (0)
 #define MB_CHARLEN(p)       (mb_charlen(p))
 #define MB_CHAR2LEN(c)       (mb_char2len(c))
 #define MB_CHAR2BYTES(c, b) do { (b) += mb_char2bytes((c), (b)); } while (0)
@@ -754,7 +750,6 @@ LIST_TY(Unt)
 
 #include <inttypes.h>
 #include <wctype.h>
-#include <stdarg.h>
 
 // for offsetof()
 #ifndef PROTO
@@ -1628,8 +1623,6 @@ typedef enum {
 
 # define caseInsensitiveCompareMaxCol(d, s)    \
    caseInsensitiveCompareNChars((Byte *)(d), (Byte *)(s), (int)MAXCOL)
-# define MB_STRNICMP(d, s, n)   caseInsensitiveCompareNChars((Byte *)(d), (Byte *)(s), (int)(n))
-# define MB_STRNICMP2(d, s, n1, n2)   caseInsensitiveCompareNChars2((Byte *)(d), (Byte *)(s), (n1), (n2))
 
 
 #define eeStrpbrk(s, cs) (CS)strpbrk((char *)(s), (char *)(cs))
@@ -5738,8 +5731,7 @@ int eeSnprintf0(CS, Unt, char const* , ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
 Unt eeSnprintfSafelen0(CS, Unt, char const*, ...) ATTRIBUTE_FORMAT_PRINTF(3, 4);
 #define eeSnprintfSafelen(a, b, fmt, ...) eeSnprintfSafelen0(a, b, (char const*)fmt, ##__VA_ARGS__)
 
-int eeVsnprintf(CS str, Unt str_m, char const* fmt, va_list ap)
-   ATTRIBUTE_FORMAT_PRINTF(3, 0);
+
 int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
    ATTRIBUTE_FORMAT_PRINTF(3, 0);
 #define eeVarPrintf(a, b, fmt, ...) eeVarPrintf0((char*)a, b, (char const*)fmt, ##__VA_ARGS__)

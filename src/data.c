@@ -11197,6 +11197,73 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
    return r;
 }
 
+//Escape "string" for use as a shell argument with system().
+//This uses single quotes.
+//Escape a newline, depending on the 'shell' option. When "do_special" is true also replace 
+//"!", "%", "#" and things starting
+//with "<" like "<cfile>".
+//When "do_newline" is false do not escape newline unless it is csh shell.
+//Return the result in allocated memory, NULL if we have run out.
+CS
+copyStr_shellescape(CS string, int do_special, int do_newline) {
+   Unt l;
+
+   // First count the number of extra bytes required.
+   Unt length = STRLEN(string) + 3;  // two quotes and a trailing ZERO
+   CS p; 
+   for (p = string; *p != ZERO; MB_PTR_ADV(p)) {
+      if (*p == '\'') {
+         length += 3;      // ' => '\''
+      }
+      if ((*p == '\n' && do_newline) || (*p == '!' && do_special)) {
+         ++length;         // insert backslash
+      }
+      if (do_special && find_commline_var(p, &l) >= 0) {
+         ++length;         // insert backslash
+         p += l - 1;
+      }
+   }
+
+   // Allocate memory for the result and fill it.
+   CS escaped_string = alloc(length);
+   CS d = escaped_string;
+
+   // add opening quote
+   *d++ = '\'';
+
+   for (p = string; *p != ZERO; ) {
+      if (*p == '\'') {
+         *d++ = '\'';
+         *d++ = '\\';
+         *d++ = '\'';
+         *d++ = '\'';
+         ++p;
+         continue;
+      }
+      if ((*p == '\n' && do_newline) || (*p == '!' && do_special)) {
+         *d++ = '\\';
+         *d++ = *p++;
+         continue;
+      }
+      if (do_special && find_commline_var(p, &l) >= 0) {
+         *d++ = '\\';      // insert backslash
+         memcpy(d, p, l);   // copy the var
+         d += l;
+         p += l;
+         continue;
+      }
+
+      MB_COPY_CHAR(p, d);
+   }
+
+   // add terminating quote and finish with a ZERO
+      *d++ = '\'';
+   *d = ZERO;
+
+    return escaped_string;
+}
+
+
 //}}}
 //{{{json
 

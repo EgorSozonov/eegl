@@ -1265,7 +1265,7 @@ search_for_exact_line(
             return OK;
       } ei (*p != ZERO) {  // ignore empty lines
          // expanding lines or words
-         if ((p_ic ? MB_STRNICMP(p, pat, ins_compl_len())
+         if ((p_ic ? caseInsensitiveCompareNChars(p, pat, ins_compl_len())
                   : STRNCMP(p, pat, ins_compl_len())) == 0)
          return OK;
       }
@@ -2559,7 +2559,7 @@ find_pattern_in_path(
                //compare the first "len" chars from "ptr"
                startp = skipwhite(p);
                if (p_ic)
-                  matched = !MB_STRNICMP(startp, ptr, len);
+                  matched = !caseInsensitiveCompareNChars(startp, ptr, len);
                else
                   matched = !STRNCMP(startp, ptr, len);
                if (matched && define_matched && whole && eeIsWordc(startp[len]))

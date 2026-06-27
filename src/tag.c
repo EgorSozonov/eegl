@@ -1641,7 +1641,7 @@ findtags_parse_line(
           // No match yet and are at the end of the binary search.
           return TAG_MATCH_STOP;
       } ei (st->state == TS_SKIP_BACK) {
-         if (MB_STRNICMP(tagpp->tagname, st->orgpat->head, cmplen) != 0)
+         if (caseInsensitiveCompareNChars(tagpp->tagname, st->orgpat->head, cmplen) != 0)
             st->state = TS_STEP_FORWARD;
          else
             // Have to skip back more.  Restore the curr_offset
@@ -1649,7 +1649,7 @@ findtags_parse_line(
             sinfo_p->curr_offset = sinfo_p->curr_offset_used;
           return TAG_MATCH_NEXT;
       } ei (st->state == TS_STEP_FORWARD) {
-          if (MB_STRNICMP(tagpp->tagname, st->orgpat->head, cmplen) != 0) {
+          if (caseInsensitiveCompareNChars(tagpp->tagname, st->orgpat->head, cmplen) != 0) {
          if ((FileSize)ftello(st->fp) > sinfo_p->match_offset)
              return TAG_MATCH_STOP;   // past last match
          else
@@ -1657,7 +1657,7 @@ findtags_parse_line(
           }
       } else
           // skip this match if it can't match
-          if (MB_STRNICMP(tagpp->tagname, st->orgpat->head, cmplen) != 0)
+          if (caseInsensitiveCompareNChars(tagpp->tagname, st->orgpat->head, cmplen) != 0)
          return TAG_MATCH_NEXT;
 
       // Can be a matching tag, isolate the file name and command.
@@ -1709,7 +1709,7 @@ findtags_match_tag(
    else {
       if (st->orgpat->regmatch.rm_ic) {
           match =
-         (MB_STRNICMP(tagpp->tagname, st->orgpat->pat, cmplen) == 0);
+         (caseInsensitiveCompareNChars(tagpp->tagname, st->orgpat->pat, cmplen) == 0);
           if (match)
          margs->match_no_ic =
              (STRNCMP(tagpp->tagname, st->orgpat->pat, cmplen) == 0);

@@ -9765,15 +9765,17 @@ base64_encode(Blob* blob) {
 
 // Decode the base64 string "data" into "blob"
 private void
-base64_decode(Byte const* base64, Blob* blob) {
-   int base64Len = STRLEN(base64);
-   ArrayList mbResult = decodeBase64(base64, base64Len);
-   
-   if (mbResult.len > 0) {
-      blob->c = mbResult;
+base64_decode(CS base64, Blob* blob) {
+   ArrayList mbResult;
+   if (decodeBase64(OUT &mbResult, mbText(base64))) {
+      if (mbResult.len > 0) {
+         blob->c = mbResult;
+      } else {
+         ga_clear(&blob->c);
+      } 
    } else {
-      ga_clear(&blob->c);
-   } 
+      showErrFmtMsg(_(e_invalid_argument_str), base64);
+   }
 }
 
 //"base64_decode(string)" function

@@ -1454,7 +1454,7 @@ cstrncmp(Byte *s1, Byte *s2, int *n) {
 
       n2 = p - s2;
 
-      result = MB_STRNICMP2(s1, s2, *n, n2);
+      result = caseInsensitiveCompareNChars2(s1, s2, *n, n2);
       if (result == 0 && n2 < *n)
          *n = n2;
    }

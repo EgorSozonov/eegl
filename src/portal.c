@@ -11297,7 +11297,7 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
             }
          }
       } else {
-         if (matchedLen < 0 && MB_STRNICMP(ptr, leader, leaderLen) == 0)
+         if (matchedLen < 0 && caseInsensitiveCompareNChars(ptr, leader, leaderLen) == 0)
             matchedLen = (int)leaderLen;
          if (matchedLen > 0) {
             newDeco = decorationsG[isSelect ? HLF_PMSI : HLF_PMNI];
