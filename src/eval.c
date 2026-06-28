@@ -564,7 +564,6 @@ clear_evalarg(EvalCtx* evalarg, Invocation* invo) {
    }
 
    ga_clear_strings(etga);
-   EE_CLEAR(evalarg->eval_tofree_lambda);
 }
 
 // Skip over an expression at "*pp". Return FAIL for an error, OK otherwise.
@@ -10313,6 +10312,7 @@ execute_cmds_from_string(CS str) {
    doCommand(NULL, get_str_line, (void *)&str,
       DOCMD_NOWAIT|DOCMD_VERBOSE|DOCMD_REPEAT|DOCMD_KEYTYPED);
 }
+
 #endif
 
 //}}}
@@ -10325,8 +10325,8 @@ get_list_line(
    Unt c UNUSED,
    void* cookie,
    int indent UNUSED,
-   GetlineAlgo options UNUSED)
-{
+   GetlineAlgo options UNUSED
+) {
    ListItem **p = (ListItem **)cookie;
    ListItem *item = *p;
    Byte buf[NUMBUFLEN];
@@ -10399,7 +10399,7 @@ execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
    if (cmd)
       executeCommLine(cmd);
    else {
-      ListItem   *item;
+      ListItem* item;
 
       CHECK_LIST_MATERIALIZE(list);
       item = list->first;

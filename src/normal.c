@@ -4021,7 +4021,7 @@ nv_colon(ActionArg* aArg) {
    int flags = aArg->oper->opTy != OP_NOP ? DOCMD_KEEPLINE : 0;
    
    int commResult = (isCmdkey) 
-      ? do_cmdkey_command(aArg->cmdchar, flags) : doCommand(NULL, getexline, NULL, flags);
+      ? do_cmdkey_command(aArg->cmdchar, flags) : doCommand(NULL, scrGetTypedCommand, NULL, flags);
 
    if (commResult == FAIL) {
       // The command failed, do not execute the operator.

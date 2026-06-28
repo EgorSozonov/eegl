@@ -23,8 +23,7 @@ private Boole wasBookChangedNotTerm(Book *book);
 private void mayPrint(Invocation* invo);
 private void closePortalInternal(Portal* port, Tab* t);
 
-private void
-doOneCommand(OUT CS* commline, Unt flags, LineGetter fgetline, void* cookie); 
+private void doOneCommand(OUT CS* commline, Unt flags, LineGetter fgetline, void* cookie);
 //}}}
 //{{{sortin' and filterin'
 
@@ -5040,7 +5039,7 @@ getline_peek(
    // When "fgetline" is "get_loop_line()" use the "cookie" to find the
    // cookie that's originally used to obtain the lines.  This may be nested several levels.
    LineGetter gp = fgetline;
-   if (gp == &getsourceline)
+   if (gp == &scrGetSourceLine)
       return source_nextline(cookie);
    return NULL;
 }
@@ -5145,16 +5144,13 @@ doCommand(
    static int recursive = 0;      // recursive depth
    int msg_didout_before_start = 0;
    int count = 0;      // line number count
-   int did_inc_isRedrawingDisabledG = false;
+   Boole did_inc_isRedrawingDisabledG = false;
    int retval = OK;
-   CS fname = NULL;      // function or script name
-   LineNr* breakpoint = NULL;   // ptr to breakpoint field in cookie
-   int* dbg_tick = NULL;   // ptr to dbg_tick field in cookie
    DebugStuff debug_saved;   // saved things for debug mode
    MsgList** saved_msg_list = NULL;
    MsgList* private_msg_list = NULL;
 
-   // "fgetline" and "cookie" passed to doOneCommand()
+   //"fgetline" and "cookie" passed to doOneCommand()
    LineGetter commGetLine;
    void* commCookie;
    //For every pair of doCommand()/doOneCommand() calls, use an extra memory location for storing 
@@ -5165,43 +5161,33 @@ doCommand(
    saved_msg_list = msg_list;
    msg_list = &private_msg_list;
 
-
-   // Get the function or script name and the address where the next breakpoint
-   // line and the debug tick for a function or script are stored.
-   if (fgetline == &getsourceline) {
-      fname = SOURCING_NAME;
-   }
-
-   // Initialize "force_abort"  and "suppress_errthrow" at the top level.
+   //Initialize "force_abort"  and "suppress_errthrow" at the top level.
    if (!recursive) {
       force_abort = false;
       suppress_errthrow = false;
    }
 
-   // If requested, store and reset the global values controlling the
-   // exception handling (used when debugging).  Otherwise clear it to avoid
-   // a bogus compiler warning when the optimizer uses inline functions...
+   //If requested, store and reset the global values controlling the
+   //exception handling (used when debugging). Otherwise clear it to avoid
+   //a bogus compiler warning when the optimizer uses inline functions...
    if (flags & DOCMD_EXCRESET)
       saveDbgStuff(&debug_saved);
    else
       CLEAR_FIELD(debug_saved);
 
 
-   // "did_throw" will be set to true if an exception will be thrown
+   //"did_throw" will be set to true if an exception will be thrown
    did_throw = false;
-   // "anyEmsgG" will be set to true when emsg() is used, in which case we
-   // cancel the whole command line, and any if/endif or loop.
-   // If force_abort is set, we cancel everything.
+   //"anyEmsgG" will be set to true when emsg() is used, in which case we cancel the whole command 
+   //line, and any if/endif or loop. If force_abort is set, we cancel everything.
    anyEmsgG = false;
 
-   // keyWasTypedG is only set when calling vgetc(). Reset it here when not calling vgetc() (
-   // sourced command lines).
-   if ((flags & DOCMD_KEYTYPED) == 0 && fgetline != &getexline)
+   //keyWasTypedG is only set when calling vgetc(). Reset it here when not calling vgetc() 
+   //(sourced command lines).
+   if ((flags & DOCMD_KEYTYPED) == 0 && fgetline != &scrGetTypedCommand)
       keyWasTypedG = false;
 
-   //Continue executing command lines:
-   //- when inside an ":if", ":while" or ":for"
-   //- when repeating until there are no more lines (for ":source")
+   //Continue executing command lines: when repeating until there are no more lines (for ":source")
    CS nextCommline = commline;
    do {
       // stop skipping cmds for an error msg after all endif/while/for
@@ -5211,26 +5197,22 @@ doCommand(
 
       // 2. If no line given, get an allocated line with fgetline().
       if (!nextCommline) {
-        //Need to set msg_didout for the first line after an ":if",
-        //otherwise the ":if" will be overwritten.
-        if (count == 1 && fgetline ==  &getexline)
-           msg_didout = true;
-        if (fgetline == NULL 
-              || (nextCommline = 
-                    fgetline(':', cookie,  0, GETLINE_CONCAT_CONT)) == NULL
-        ) {
-            // Don't call wait_return() for aborted command line.  The NULL
-            // returned for the end of a sourced file or executed function
-            // doesn't do this.
-            if (keyWasTypedG && !(flags & DOCMD_REPEAT))
-                need_wait_return = false;
+         //Need to set msg_didout for the first line after an ":if",
+         //otherwise the ":if" will be overwritten.
+         if (count == 1 && fgetline ==  &scrGetTypedCommand)
+            msg_didout = true;
+         if (!fgetline || (nextCommline = fgetline(':', cookie,  0, GETLINE_CONCAT_CONT)) == NULL) {
+            //Don't call wait_return() for aborted command line. The NULL
+            //returned for the end of a sourced file or executed function doesn't do this.
+            if (keyWasTypedG && (flags & DOCMD_REPEAT) == 0)
+               need_wait_return = false;
             retval = FAIL;
             break;
          }
          used_getline = true;
 
          // Keep the first typed line. Clear it when more lines are typed.
-         if (flags & DOCMD_KEEPLINE) {
+         if ((flags & DOCMD_KEEPLINE) != 0) {
             eeglFree(repeatCommlineG);
             if (count == 0)
                repeatCommlineG = copyStr(nextCommline);
@@ -5238,7 +5220,6 @@ doCommand(
                repeatCommlineG = NULL;
          }
       }
-
       // 3. Make a copy of the command so we can mess with it.
       ei (!commlineCopy) {
          nextCommline = copyStr(nextCommline);
@@ -5248,13 +5229,11 @@ doCommand(
       commGetLine = fgetline;
       commCookie = cookie;
 
-      did_endif = false;
-
       if (count++ == 0) {
          //All output from the commands is put below each other, without waiting for a return. 
          //Don't do this when executing commands from a script or when being called recursive 
          //(e.g. for ":e +command file").
-         if (!(flags & DOCMD_NOWAIT) && !recursive) {
+         if ((flags & DOCMD_NOWAIT) == 0 && !recursive) {
             msg_didout_before_start = msg_didout;
             msg_didany = false; // no output yet
             msg_start();
@@ -5265,35 +5244,24 @@ doCommand(
          }
       }
 
-      if ((p_verbose >= 15 && SOURCING_NAME) || p_verbose >= 16)
+      if ((p_verbose == 15 && SOURCING_NAME) || p_verbose >= 16)
          msg_verbose_cmd(SOURCING_LNUM, commlineCopy);
 
       //2. Execute one command.
       //   "commlineCopy" can change, e.g. for '%' and '#' expansion.
       ++recursive;
       doOneCommand(OUT &commlineCopy, flags, commGetLine, commCookie);
+      nextCommline = null;
       --recursive;
 
-      if (nextCommline == NULL) {
-          EE_CLEAR(commlineCopy);
+      EE_CLEAR(commlineCopy);
 
-         // If the command was typed, remember it for the ':' register.
-         // Do this AFTER executing the command to make :@: work.
-         if (fgetline == &getexline && newLastCommlineG) {
-            eeglFreeString(lastCommlineG);
-            lastCommlineG = newLastCommlineG;
-            newLastCommlineG = NULL;
-         }
-      } else {
-          // need to copy the command after the '|' to commlineCopy, for the next doOneCommand()
-          STRMOVE(commlineCopy, nextCommline);
-          nextCommline = commlineCopy;
-      }
-
-      // Check for the next breakpoint after a watchexpression
-      if (breakpoint && has_watchexpr()) {
-         *breakpoint = dbg_find_breakpoint(false, fname, SOURCING_LNUM);
-         *dbg_tick = debug_tick;
+      //If the command was typed, remember it for the ':' register.
+      //Do this AFTER executing the command to make :@: work.
+      if (fgetline == &scrGetTypedCommand && newLastCommlineG) {
+         eeglFreeString(lastCommlineG);
+         lastCommlineG = newLastCommlineG;
+         newLastCommlineG = NULL;
       }
 
       //If the outermost try conditional (across function calls and sourced
@@ -5302,21 +5270,15 @@ doCommand(
       //force_abort to get the non-EH compatible abortion behavior for the rest of the script.
       if (!anyEmsgG && !gotInterruptG && !did_throw)
          force_abort = false;
-
-    }
-    //Continue executing command lines when:
-    //- no CTRL-C typed, no aborting error, no exception thrown or try
-    //  conditionals need to be checked for executing finally clauses or
-    //  catching an interrupt exception
-    //- didn't get an error message or lines are not typed
-    //- there is a command after '|', inside a :if, :while, :for or :try, or
-    //  looping for ":source" command or function call.
-    while (!(gotInterruptG
-               || (anyEmsgG && force_abort)
-               || did_throw
-            )
-       && !(anyEmsgG && used_getline && fgetline == &getexline)
-       && (nextCommline || (flags & DOCMD_REPEAT))
+   }
+   //Continue executing command lines when:
+   //- no CTRL-C typed, no aborting error, no exception thrown or try conditionals need to be 
+   //checked for executing finally clauses or catching an interrupt exception
+   //- didn't get an error message or lines are not typed
+   //- looping for ":source" command.
+   while (!gotInterruptG && (!anyEmsgG || !force_abort) && !did_throw
+       && (!anyEmsgG || !used_getline || fgetline != &scrGetTypedCommand)
+       && (nextCommline || (flags & DOCMD_REPEAT) != 0)
    ); // do while
 
    eeglFree(commlineCopy);
@@ -5334,23 +5296,21 @@ doCommand(
    ei (gotInterruptG || (anyEmsgG && force_abort))
       suppress_errthrow = true;
 
-   if (fgetline == &getsourceline) {
+   if (fgetline == &scrGetSourceLine) {
    } else {
       // Go to debug mode when returning from a function in which we are single-stepping.
-      if (fgetline ==  &getsourceline && ex_nesting_level + 1 <= debug_break_level
-      )
-         do_debug(fgetline ==  &getsourceline
+      if (fgetline ==  &scrGetSourceLine)
+         do_debug(fgetline ==  &scrGetSourceLine
              ? (CS)_("End of sourced file")
              : (CS)_("End of function")
          );
    }
 
    // Restore the exception environment (done after returning from the debugger).
-   if (flags & DOCMD_EXCRESET)
+   if ((flags & DOCMD_EXCRESET) != 0)
       restore_DebugStuff(&debug_saved);
 
    msg_list = saved_msg_list;
-
 
    //If there was too much output to fit on the command line, ask the user to
    //hit return before redrawing the screen. With the ":global" command we do
@@ -5361,9 +5321,8 @@ doCommand(
       --no_wait_return;
       msg_scroll = false;
 
-      // When just finished an ":if"-":else" which was typed, no need to
-      // wait for hit-return.  Also for an error situation.
-      if (retval == FAIL || (did_endif && keyWasTypedG && !anyEmsgG)) {
+      // When error, no need to wait for hit-return. Also for an error situation.
+      if (retval == FAIL ) {
          need_wait_return = false;
          msg_didany = false;      // don't wait when restarting edit
       } ei (need_wait_return) {
@@ -5373,8 +5332,6 @@ doCommand(
          wait_return(false);
       }
    }
-
-   did_endif = false;  // in case doCommand used recursively
 
    return retval;
 }
@@ -5405,7 +5362,6 @@ doOneCommand(
    CLEAR_FIELD(invo);
    invo.line1 = 1;
    invo.line2 = 1;
-   ++ex_nesting_level;
    // When the last file has not been edited :q has to be typed twice.
    if (quitmore
        // avoid that an autocommand, e.g. QuitPre, does this
@@ -5416,19 +5372,19 @@ doOneCommand(
 
    //Reset browse, confirm, etc..  They are restored when returning, for recursive calls.
    CommandModifier saveCommModifier = commModifierG;
-
+   CS errorMsg = null;
+   Boole did_set_expr_line = false;
    //"#!anything" is handled like a comment.
    if ((*commline)[0] == '#' && (*commline)[1] == '!')
       goto doend;
    if (isComment(*commline)) {
-      *commline = null;
-      _bp(true); 
+      *commline = skipLine(*commline);
+      if ((*commline)[0] == ZERO)
+         *commline = null;
       goto doend; 
    }
 
    int save_reg_executing = reg_executing;
-   CS errorMsg = null;
-   Boole did_set_expr_line = false;
    int save_pending_end_reg_executing = pending_end_reg_executing;
    LineNr lnum;
    Long n;
@@ -5925,10 +5881,6 @@ doOneCommand(
          errorMsg = invo.errmsg;
    }
 
-   // Set flag that any command was executed, used by ex_vim9script().
-   // Not if this was a command that wasn't executed or :endif.
-   if (sourcing_a_script(&invo) && scriptPosG.sid > 0)
-      SCRIPT_ITEM(scriptPosG.sid)->sn_state = SN_STATE_HAD_COMMAND;
 
 doend:
    if (curPor->cursor.lnum == 0) {  // can happen with zero line number
@@ -5955,7 +5907,6 @@ doend:
    reg_executing = save_reg_executing;
    pending_end_reg_executing = save_pending_end_reg_executing;
 
-   --ex_nesting_level;
    eeglFree(invo.commlineToFree);
 }
 
@@ -9823,7 +9774,7 @@ c_at(Invocation* invo) {
    // Execute from the typeahead buffer.
    // Continue until the stuff buffer is empty and all added characters have been consumed.
    while (!stuff_empty() || typeBufG.validLen > prev_len)
-      (void)doCommand(NULL, getexline, NULL, DOCMD_NOWAIT|DOCMD_VERBOSE);
+      (void)doCommand(NULL, scrGetTypedCommand, NULL, DOCMD_NOWAIT|DOCMD_VERBOSE);
 
    executingFromRegG = save_efr;
 }

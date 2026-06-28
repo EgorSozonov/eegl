@@ -16,12 +16,12 @@
 #define TYPEBASED_CallbackPtr Callback
 #define OPTION(oName, oVar, oType, oDefaultValue, flagsArg, setterArg, expanderArg) \
     {.fullName = (CS)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
-       .c = {.reference = GLUE(ref, TYPEBASED_##oType)(&oVar)},\
+       .c = {.reference = GLUE(ref, TYPEBASED_##oType)(&oVar) },\
        .setter = setterArg, .expander = expanderArg,\
        .flags = flagsArg | P_GLOBAL, .scriptPos = {0, 0, 0} },
 #endif
 
-#ifdef LOCAL_OPTION_DEFS
+#ifdef PORTAL_OPTION_DEFS
 #define TYPEBASED_Boole Boole
 #define TYPEBASED_long Num
 #define TYPEBASED_CS Str
@@ -30,13 +30,27 @@
 #define TYPEBASED_CallbackPtr Callback
 #define OPTION(oName, oVar, oType, oDefaultValue, flagsArg, setterArg, expanderArg) \
     {.fullName = (CS)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
-       .setter = setterArg, .expander = expanderArg, \
-       .flags = flagsArg, .scriptPos = {0, 0, 0} },
+    .c = {.local = {.offset = offsetof(PortalOptions, oVar) }}, \
+    .setter = setterArg, .expander = expanderArg, \
+    .flags = flagsArg, .scriptPos = {0, 0, 0} },
 #endif
 
+#ifdef BOOK_OPTION_DEFS
+#define TYPEBASED_Boole Boole
+#define TYPEBASED_long Num
+#define TYPEBASED_CS Str
+#define TYPEBASED_Byte Enum
+#define TYPEBASED_Unt Flag
+#define TYPEBASED_CallbackPtr Callback
+#define OPTION(oName, oVar, oType, oDefaultValue, flagsArg, setterArg, expanderArg) \
+    {.fullName = (CS)oName, .defaultValue = GLUE(opt, TYPEBASED_##oType)(oDefaultValue),\
+    .c = {.local = {.offset = offsetof(BookOptions, oVar) }}, \
+    .setter = setterArg, .expander = expanderArg, \
+    .flags = flagsArg, .scriptPos = {0, 0, 0} },
+#endif
 
 #ifdef OPTIONS_ENUM
-#ifdef OPTIONS_DEF_BOOK
+#ifdef OPTIONS_LIST_BOOK
 #define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
     BOOK_##oFieldName,
 #else
@@ -110,7 +124,7 @@
 #endif
 
 
-#ifdef OPTIONS_DEF_GLOBAL 
+#ifdef OPTIONS_LIST_GLOBAL 
 
 OPTION("autocomplete", p_ac, Boole, false, 0, null, null)
 OPTION("autocompletedelay", p_acl, long, 0, 0, null, null)
@@ -269,7 +283,7 @@ OPTION("wltimeoutlen", p_wtm, long, 500, 0, &did_set_wltimeoutlen, NULL)
    
 #endif 
 
-#ifdef OPTIONS_DEF_PORTAL
+#ifdef OPTIONS_LIST_PORTAL
 
 OPTION("breakindent", breakIndent, Boole, false, 0, null, null)
 OPTION("breakindentopt", breakIndentOpt, CS, null, 0, setBreakindentOpt, expandBreakindentOpt)
@@ -316,7 +330,7 @@ OPTION("termwinsize", termWinSize, CS, null, P_REDRAW_PORT, &did_set_termwinsize
    
 #endif 
 
-#ifdef OPTIONS_DEF_BOOK 
+#ifdef OPTIONS_LIST_BOOK 
 
 OPTION("autoindent", autoIndent, Boole, false, 0, null, null)
 OPTION("backupcopy", backupCopy, Unt, BKC_AUTO, P_ONECOMMA|P_NODUP, 

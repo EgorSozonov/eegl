@@ -252,21 +252,21 @@ createCommandIndices() {
 #define OPTIONS_NAMES
 
 CS OPT_GLOBAL_NAMES[] = {
-#define OPTIONS_DEF_GLOBAL
+#define OPTIONS_LIST_GLOBAL
 #include "../defoption.h"
-#undef OPTIONS_DEF_GLOBAL
+#undef OPTIONS_LIST_GLOBAL
 };
 
 CS OPT_PORTAL_NAMES[] = {
-#define OPTIONS_DEF_PORTAL
+#define OPTIONS_LIST_PORTAL
 #include "../defoption.h"
-#undef OPTIONS_DEF_PORTAL
+#undef OPTIONS_LIST_PORTAL
 };
 
 CS OPT_BOOK_NAMES[] = {
-#define OPTIONS_DEF_BOOK
+#define OPTIONS_LIST_BOOK
 #include "../defoption.h"
-#undef OPTIONS_DEF_BOOK
+#undef OPTIONS_LIST_BOOK
 };
 
 #undef OPTIONS_NAMES

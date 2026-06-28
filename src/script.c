@@ -21,10 +21,10 @@ private ScriptPos* acp_scriptCtx(AutoPatComm* acp);
 //}}}
 //{{{script files
 
-// Cookie used by getsourceline().
+// Cookie used by scrGetSourceLine().
 //
 // It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
-// getsourceline(). This is passed to do_cmdline().
+// scrGetSourceLine(). This is passed to do_cmdline().
 typedef struct {
    FILE* fp;      // opened file for sourcing
    CS nextline;   // if not NULL: line that was read ahead
@@ -1053,9 +1053,7 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
    int save_stickyCommandModifiersG = stickyCommandModifiersG;
    int trigger_source_post = false;
    FnCallEntry funccalp_entry;
-   int save_debug_break_level = debug_break_level;
    ScriptItem* si = NULL;
-   ESTACK_CHECK_DECLARATION;
 
    CLEAR_FIELD(cookie);
    if (!fname) {
@@ -1129,8 +1127,6 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
    cookie.fname = fname_exp;
    cookie.dbg_tick = debug_tick;
 
-   cookie.level = ex_nesting_level;
-
    if (time_fd)
       time_push(&tv_rel, &tv_start);
 
@@ -1200,10 +1196,10 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
    estack_push(ETYPE_SCRIPT, si->sn_name, 0);
    ESTACK_CHECK_SETUP;
 
-   firstline = getsourceline(0, (void *)&cookie, 0, true);
+   firstline = scrGetSourceLine(0, (void *)&cookie, 0, true);
 
-   //Call doCommand, which will call getsourceline() to get the lines.
-   doCommand(firstline, &getsourceline, (void *)&cookie, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_REPEAT);
+   //Call doCommand, which will call scrGetSourceLine() to get the lines.
+   doCommand(firstline, &scrGetSourceLine, (void *)&cookie, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_REPEAT);
    retval = OK;
 
    if (gotInterruptG)
@@ -1225,10 +1221,6 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
 
    if (!gotInterruptG)
       trigger_source_post = true;
-
-   //After a "finish" in debug mode, need to break at first command of next sourced file.
-   if (save_debug_break_level > ex_nesting_level && debug_break_level == ex_nesting_level)
-      ++debug_break_level;
 
 almosttheend:
    // Get "si" again, "script_items" may have been reallocated.
@@ -1353,7 +1345,7 @@ free_autoload_scriptnames(void) {
 
 LineNr
 get_sourced_lnum(LineGetter fgetline, void *cookie) {
-   return fgetline == getsourceline
+   return fgetline == scrGetSourceLine
       ? ((SourceCookie *)cookie)->sourcing_lnum
       : SOURCING_LNUM;
 }
@@ -1543,13 +1535,13 @@ get_one_sourceline(SourceCookie *sp) {
 //
 //Return a pointer to the line in allocated memory. Return NULL for end-of-file or some error.
 CS
-getsourceline(
+scrGetSourceLine(
    Unt c UNUSED,
-   void *cookie,
+   void* cookie,
    int indent UNUSED,
    GetlineAlgo options
 ){
-   SourceCookie   *sp = (SourceCookie *)cookie;
+   SourceCookie* sp = (SourceCookie *)cookie;
    CS line;
    CS p;
    Boole do_bar_cont = options == GETLINE_CONCAT_CONTBAR;
@@ -1650,7 +1642,7 @@ getsourceline(
 // Return true if sourcing a script either from a file or a buffer. Otherwise return false.
 int
 sourcing_a_script(Invocation* invo) {
-   return (invo->ea_getline == &getsourceline);
+   return (invo->ea_getline == &scrGetSourceLine);
 }
 
 //Find the path of a script below the "autoload" directory.
@@ -2093,13 +2085,11 @@ do_debug(Byte *comm){
                debug_break_level = -1;
                break;
             case CMD_NEXT:
-               debug_break_level = ex_nesting_level;
                break;
             case CMD_STEP:
                debug_break_level = 9999;
                break;
             case CMD_FINISH:
-               debug_break_level = ex_nesting_level - 1;
                break;
             case CMD_QUIT:
                gotInterruptG = true;
@@ -2139,7 +2129,7 @@ do_debug(Byte *comm){
          // don't debug this command
          n = debug_break_level;
          debug_break_level = -1;
-         (void)doCommand(cmdline, getexline, NULL, DOCMD_VERBOSE|DOCMD_EXCRESET);
+         (void)doCommand(cmdline, scrGetTypedCommand, NULL, DOCMD_VERBOSE|DOCMD_EXCRESET);
          debug_break_level = n;
       }
       lines_left = visibleRowsG - 1;
@@ -2294,13 +2284,6 @@ dbg_check_breakpoint(Invocation* invo) {
           debug_skipped = true;
           debug_skipped_name = debug_breakpoint_name;
           debug_breakpoint_name = NULL;
-      }
-   } ei (ex_nesting_level <= debug_break_level) {
-      if (!invo->skip)
-          do_debug(invo->comm);
-      else {
-          debug_skipped = true;
-          debug_skipped_name = NULL;
       }
    }
 }
@@ -9235,13 +9218,13 @@ correct_cmdspos(int idx, int cells) {
 
 // Get a command line for the ":" action
 CS
-getexline(
+scrGetTypedCommand(
    Unt  c,      // normally ':', NUL for ":append"
-   void   *cookie UNUSED,
-   int      indent,      // indent for inside conditionals
+   void* cookie UNUSED,
+   int indent,      // indent for inside conditionals
    GetlineAlgo options
 ){
-   // When executing a register, remove ':' that's in front of each line.
+   //When executing a register, remove ':' that's in front of each line.
    if (executingFromRegG && vpeekc() == ':')
       (void)vgetc();
    return getCommline(c, 1L, indent, options);
@@ -13652,31 +13635,29 @@ remove_funccal(void) {
 //Call a user function.
 private FnError
 call_user_func(
-   UserFunc   *fp,      // pointer to function
-   int      argcount,   // nr of args
-   Var   *argvars,   // arguments
-   Var   *returnVar,      // return value
-   FnExe   *funcexe,   // context
-   Bag* selfdict)   // Dictionary for "self"
-{
-   ScriptPos   save_scriptPosG;
-   int      save_stickyCommandModifiersG = stickyCommandModifiersG;
-   FnCall   *fc;
-   int      save_anyEmsgG;
+   UserFunc* fp,   //pointer to function
+   int argcount,   //nr of args
+   Var* argvars,   //arguments
+   Var* returnVar, //return value
+   FnExe* funcexe, //context
+   Bag* selfdict   //Dictionary for "self"
+){
+   ScriptPos save_scriptPosG;
+   int save_stickyCommandModifiersG = stickyCommandModifiersG;
+   FnCall* fc;
+   int save_anyEmsgG;
    FnError retval = FCERR_NONE;
-   int      default_arg_err = false;
+   int default_arg_err = false;
    DictItem   *v;
-   int      fixvar_idx = 0;   // index in fc_fixvar[]
-   int      i;
-   int      ai;
-   int      islambda = false;
-   Byte   numbuf[NUMBUFLEN];
-   Byte   *name;
+   int fixvar_idx = 0;   // index in fc_fixvar[]
+   int i;
+   int ai;
+   int islambda = false;
+   Byte numbuf[NUMBUFLEN];
+   Byte* name;
    Unt   namelen;
    Var   *tv_to_free[MAX_FUNC_ARGS];
    int      tv_to_free_len = 0;
-   ESTACK_CHECK_DECLARATION;
-
 
    // If depth of calling is getting too high, don't execute the function.
    if (funcdepth_increment() == FAIL) {
@@ -13690,7 +13671,6 @@ call_user_func(
    fc = create_funccal(fp, returnVar);
    if (!fc)
       return FCERR_OTHER;
-   fc->fc_level = ex_nesting_level;
    // Check if this function has a breakpoint.
    fc->fc_breakpoint = dbg_find_breakpoint(false, fp->uf_name, (LineNr)0);
    fc->fc_dbg_tick = debug_tick;
@@ -13784,21 +13764,21 @@ call_user_func(
 
          namelen = STRLEN(name);
       } else {
-          if ((fp->uf_flags & FC_NOARGS) != 0)
-         // Bail out if no a: arguments used (in lambda).
-         break;
+         if ((fp->uf_flags & FC_NOARGS) != 0)
+            // Bail out if no a: arguments used (in lambda).
+            break;
 
-          // "..." argument a:1, a:2, etc.
-          namelen = eeSnprintf(numbuf, sizeof(numbuf), "%d", ai + 1);
-          name = numbuf;
+         // "..." argument a:1, a:2, etc.
+         namelen = eeSnprintf(numbuf, sizeof(numbuf), "%d", ai + 1);
+         name = numbuf;
       }
       if (fixvar_idx < FIXVAR_CNT && namelen <= VAR_SHORT_LEN) {
-          v = &fc->fc_fixvar[fixvar_idx++].var;
-          v->flags = DI_FLAGS_RO | DI_FLAGS_FIX;
-          STRCPY(v->key, name);
+         v = &fc->fc_fixvar[fixvar_idx++].var;
+         v->flags = DI_FLAGS_RO | DI_FLAGS_FIX;
+         STRCPY(v->key, name);
       } else {
          v = dictitem_alloc(mbText(name));
-         if (v == NULL)
+         if (!v)
             break;
          v->flags |= DI_FLAGS_RO | DI_FLAGS_FIX;
       }
@@ -13809,23 +13789,23 @@ call_user_func(
       v->c.lock = VAR_FIXED;
 
       if (isdefault)
-          // Need to free this later, no matter where it's stored.
-          tv_to_free[tv_to_free_len++] = &v->c;
+         // Need to free this later, no matter where it's stored.
+         tv_to_free[tv_to_free_len++] = &v->c;
 
       if (addlocal) {
-          // Named arguments should be accessed without the "a:" prefix in
-          // lambda expressions. Add to the l: dict.
-          copy_tv(OUT &v->c, &v->c);
-          hash_add(&fc->localVars.hashTable, textOfDi(v), S"local variable");
+         // Named arguments should be accessed without the "a:" prefix in
+         // lambda expressions. Add to the l: dict.
+         copy_tv(OUT &v->c, &v->c);
+         hash_add(&fc->localVars.hashTable, textOfDi(v), S"local variable");
       } else
-          hash_add(&fc->argVars.hashTable, textOfDi(v), S"add variable");
+         hash_add(&fc->argVars.hashTable, textOfDi(v), S"add variable");
 
       if (ai >= 0 && ai < MAX_FUNC_ARGS) {
-          ListItem *li = &fc->fc_l_listitems[ai];
+         ListItem *li = &fc->fc_l_listitems[ai];
 
-          li->c = argvars[i];
-          li->c.lock = VAR_FIXED;
-          list_append(&fc->arguments, li);
+         li->c = argvars[i];
+         li->c.lock = VAR_FIXED;
+         list_append(&fc->arguments, li);
       }
    }
 
@@ -13848,9 +13828,9 @@ call_user_func(
          msg_puts(S"(");
          for (i = 0; i < argcount; ++i) {
             if (i > 0)
-                msg_puts(S", ");
+               msg_puts(S", ");
             if (argvars[i].tag == VAR_NUMBER)
-                msg_outnum((long)argvars[i].number);
+               msg_outnum((long)argvars[i].number);
             else {
                // Do not want errors such as E724 here.
                ++emsg_off;
@@ -13942,13 +13922,13 @@ call_user_func(
 
    if (p_verbose >= 12 && SOURCING_NAME != NULL) {
       ++no_wait_return;
-   verbose_enter_scroll();
+      verbose_enter_scroll();
 
-   smsg(_("continuing in %s"), SOURCING_NAME);
-   msg_puts(S"\n");   // don't overwrite this either
+      smsg(_("continuing in %s"), SOURCING_NAME);
+      msg_puts(S"\n");   // don't overwrite this either
 
-   verbose_leave_scroll();
-   --no_wait_return;
+      verbose_leave_scroll();
+      --no_wait_return;
    }
 
    anyEmsgG |= save_anyEmsgG;
@@ -13981,8 +13961,8 @@ call_user_func_check(
    Var    *argvars,
    Var    *returnVar,
    FnExe   *funcexe,
-   Bag       *selfdict)
-{
+   Bag       *selfdict
+) {
     FnError error = FCERR_NONE;
 
    if (fp->uf_flags & FC_RANGE && funcexe->fe_doesrange != NULL)
@@ -14042,7 +14022,7 @@ restore_funccal(void) {
 
 FnCall *
 get_current_funccal(void) {
-    return currentCallS;
+   return currentCallS;
 }
 
 //Return true when currently at the script level:
@@ -15765,12 +15745,6 @@ func_breakpoint(void *cookie) {
 int *
 func_dbg_tick(void *cookie) {
    return &((FnCall *)cookie)->fc_dbg_tick;
-}
-
-// Return the nesting level for a funccall cookie.
-int
-func_level(void *cookie) {
-   return ((FnCall *)cookie)->fc_level;
 }
 
 //Return true when a function was ended by a ":return" command.
@@ -17980,7 +17954,6 @@ applyAutocommGroup(
    int did_save_redobuff = false;
    SaveRedo save_redo;
    int save_keyWasTypedG = keyWasTypedG;
-   ESTACK_CHECK_DECLARATION;
 
    // Quickly return if there are no autocommands for this event or autocommands are blocked.
    if (event == NUM_EVENTS || firstAutopatS[(int)event] == NULL || autocommsBlockedS > 0)

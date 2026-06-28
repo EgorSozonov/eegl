@@ -153,13 +153,6 @@ struct Option { //:Option
 #define refCallback(x) (OptionRef){.tag = OPTION_CALLBACK, .callback = x}
 #define portal() (OptionRef){.tag = OPTION_PORTAL_LOCAL, .num = null}
 
-// The following is needed to make the gen_opt_test.vim script work.
-// {"
-
-typedef struct {
-   Unt offsetInStruct; // offsetof the option in BookLocal / PortalLocal 
-   Unt optIndex;       // index in the sorted PORTAL_OPTIONS/BUFFER_OPTIONS
-} OptionLocator;
 
 #define FOR_GLOBAL(o) \
    for (Option* o = OPTIONS_GLOBAL; o < OPTIONS_GLOBAL + OPTION_GLOBAL_COUNT; o++)
@@ -1228,8 +1221,9 @@ optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
 //Get the value for the numeric or string option in a nice format into nameBuffG[].
 private void
 toString(Option* o, SetScope scope) {
+   _bp(true);
    OptionRef ref = getRefInScope(o, scope);
-   if (ref.tag != OPTION_NUM || ref.tag == OPTION_FLAGS || ref.tag == OPTION_ENUM) {
+   if (ref.tag == OPTION_NUM || ref.tag == OPTION_FLAGS || ref.tag == OPTION_ENUM) {
       long wc = 0;
       if (wildcharUseKeyname(ref, &wc))
          STRCPY(nameBuffG, get_special_key_name((int)wc, 0));
@@ -1457,7 +1451,7 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
    else
       msg_puts(S"  ");
    msg_puts(o->fullName);
-   if (!(o->defaultValue.tag == OPTION_BOOLE)) {
+   if (o->defaultValue.tag != OPTION_BOOLE) {
       msg_putchar('=');
       // put value string in nameBuffG
       toString(o, setScope);
@@ -2134,9 +2128,9 @@ copyOptionVal(OUT Sbuf* buf, CS val) {
    return valueInBuffer;
 }
 
-//Copy the options from one PortLocal to another.
+//Copy the options from one PortalOptions to another.
 void
-copyPortOpt(PortLocal* t, PortLocal* s) {
+copyPortOpt(PortalOptions* t, PortalOptions* s) {
    Unt neededCap = s->stringOptions.cap;
    //If target buffer is big enouth enough, reuse it. Otherwise, free and allocate new one
    if (t->stringOptions.cap < neededCap) {
@@ -2148,18 +2142,18 @@ copyPortOpt(PortLocal* t, PortLocal* s) {
    }
 
 #define OPTIONS_COPY
-#define OPTIONS_DEF_PORTAL
+#define OPTIONS_LIST_PORTAL
 #include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
+#undef OPTIONS_LIST_PORTAL
 #undef OPTIONS_COPY
 
    // Copy the script context so that we know where the value was last set.
    MEMMOVE(t->scriptLocs, s->scriptLocs, sizeof(t->scriptLocs));
 }
 
-// Free the allocated memory inside a PortLocal.
+// Free the allocated memory inside a PortalOptions.
 void
-optClearPortOptions(PortLocal* t) {
+optClearPortOptions(PortalOptions* t) {
    free(t->stringOptions.c);
 }
 
@@ -3498,37 +3492,37 @@ expandCompleteopt(OptExpand* args, OUT ExpandMatch* matches) {
 
 private Option OPTIONS_GLOBAL[] = {
 #define GLOBAL_OPTION_DEFS
-#define OPTIONS_DEF_GLOBAL
+#define OPTIONS_LIST_GLOBAL
 #include "defoption.h"
-#undef OPTIONS_DEF_GLOBAL
+#undef OPTIONS_LIST_GLOBAL
 #undef GLOBAL_OPTION_DEFS
 };
 
 private Option OPTIONS_PORTAL[] = {
-#define LOCAL_OPTION_DEFS
-#define OPTIONS_DEF_PORTAL
+#define PORTAL_OPTION_DEFS
+#define OPTIONS_LIST_PORTAL
 #include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
-#undef LOCAL_OPTION_DEFS
+#undef OPTIONS_LIST_PORTAL
+#undef PORTAL_OPTION_DEFS
 };
 
 // Set portal options to their default values
 void
-initPortalOptions(PortLocal* o) {
+initPortalOptions(PortalOptions* o) {
 #define OPTIONS_INIT_PORTAL
-#define OPTIONS_DEF_PORTAL
+#define OPTIONS_LIST_PORTAL
 #include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
+#undef OPTIONS_LIST_PORTAL
 #undef OPTIONS_INIT_PORTAL
 
 }
 
 private Option OPTIONS_BOOK[] = {
-#define LOCAL_OPTION_DEFS
-#define OPTIONS_DEF_BOOK
+#define BOOK_OPTION_DEFS
+#define OPTIONS_LIST_BOOK
 #include "defoption.h"
-#undef OPTIONS_DEF_BOOK
-#undef LOCAL_OPTION_DEFS
+#undef OPTIONS_LIST_BOOK
+#undef BOOK_OPTION_DEFS
 };
 
 //}}}
@@ -3665,16 +3659,16 @@ updateStringRef(OptionChange* cha) {
       if (cha->buf == &curBook->o.stringOptions) {
       
 #define COPY_STRINGS_TO_BOOK
-#define OPTIONS_DEF_BOOK
+#define OPTIONS_LIST_BOOK
 #include "defoption.h"
-#undef OPTIONS_DEF_BOOK
+#undef OPTIONS_LIST_BOOK
 #undef COPY_STRINGS_TO_BOOK
       } else {
       
 #define COPY_STRINGS_TO_PORTAL
-#define OPTIONS_DEF_PORTAL
+#define OPTIONS_LIST_PORTAL
 #include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
+#undef OPTIONS_LIST_PORTAL
 #undef COPY_STRINGS_TO_PORTAL
 
       }
@@ -4068,11 +4062,11 @@ optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
 
 // ":get". Print the value of an option
 void
-c_get(Invocation *invo) {
+c_get(Invocation* invo) {
    SetScope scope;
-   if (invo->id == C_set) {
+   if (invo->id == C_get) {
       scope = SET_LOCAL;
-   } ei (invo->id == C_setglobal) {
+   } ei (invo->id == C_getGlobal) {
       scope = SET_GLOBAL; 
    } 
       
@@ -4099,7 +4093,9 @@ c_get(Invocation *invo) {
       emsg(errmsg);
       return;
    } 
-   
+   if ((o->flags & P_GLOBAL) != 0) {
+      scope = SET_GLOBAL;
+   }
    
    // print value
    if (didShow)
@@ -4251,8 +4247,8 @@ getRefInScope(Option* o, SetScope setScope) {
    switch (setScope) {
    case SET_LOCAL: {
       void* offsetPtr = (o->flags & P_BOOK) != 0 
-         ? (void*)(&curBook->o) + o->c.local.offset
-         : (void*)(&curPor->o) + o->c.local.offset;
+         ? ((void*)(&curBook->o) + o->c.local.offset)
+         : ((void*)(&curPor->o) + o->c.local.offset);
       switch (o->defaultValue.tag) {
       case OPTION_NUM:  return refNum((long*)offsetPtr);
       case OPTION_ENUM: return refEnum((Byte*)offsetPtr);
@@ -4272,7 +4268,7 @@ getRefInScope(Option* o, SetScope setScope) {
       case OPTION_FLAGS: return refFlag(&o->c.local.val.flags);
       case OPTION_CALLBACK: return refCallback(&o->c.local.val.callback);
       }
-   }
+      }
    }
    return (OptionRef){};
 }
@@ -4283,13 +4279,13 @@ copyGlobalToBookImpl(OUT Book* book) {
    Unt totalLen = calcLocalStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
    //Sbuf buf UNUSED = sbuf(newCap);
-   BookLocal* t = &book->o;
+   BookOptions* t = &book->o;
    t->stringOptions = sbuf(newCap);
 
 #define COPY_GLOBAL_TO_BOOK
-#define OPTIONS_DEF_BOOK
+#define OPTIONS_LIST_BOOK
 #include "defoption.h"
-#undef OPTIONS_DEF_BOOK
+#undef OPTIONS_LIST_BOOK
 #undef COPY_GLOBAL_TO_BOOK
 
    for (Unt i = 0; i < OPTION_BOOK_COUNT; i++) {

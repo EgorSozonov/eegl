@@ -2198,7 +2198,6 @@ typedef struct {
 #define optBoole(x) (OptionValue){.tag = OPTION_BOOLE, .boole = (x)}
 #define optFlag(x) (OptionValue){.tag = OPTION_FLAGS, .flags = (x)}
 #define optCallback(x) (OptionValue){.tag = OPTION_CALLBACK, .callback = (x)}
-#define optGlobalOfBook(fieldName) optGetBufOpt(offsetof(BookLocal, fieldName))
 
 // For modifying
 typedef struct {
@@ -2321,9 +2320,9 @@ typedef struct taggy {
 typedef enum {
 
 #define OPTIONS_ENUM
-#define OPTIONS_DEF_PORTAL
+#define OPTIONS_LIST_PORTAL
 #include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
+#undef OPTIONS_LIST_PORTAL
 #undef OPTIONS_ENUM
 
 } PortOption;
@@ -2335,9 +2334,9 @@ EXTERN Sbuf portalStringOptionsG;      //Storage for all the string options
 typedef struct {
 
 #define OPTIONS_FIELDS
-#define OPTIONS_DEF_PORTAL
+#define OPTIONS_LIST_PORTAL
 #include "defoption.h"
-#undef OPTIONS_DEF_PORTAL
+#undef OPTIONS_LIST_PORTAL
 #undef OPTIONS_FIELDS
 
    Boole foldEnableSave;  // @foldenable saved for diff mode
@@ -2349,7 +2348,7 @@ typedef struct {
    int cursorBindSaved;   // @cursorbind state saved for diff mode
    ScriptPos scriptLocs[OPTION_PORTAL_COUNT];   // script locations for portal-local options
    Sbuf stringOptions;      //Storage for all the string options
-} PortLocal;
+} PortalOptions;
 
 
 //Portal info stored with a book.
@@ -2363,7 +2362,7 @@ struct PortInfo {
    PortInfo* prev;   // previous entry or NULL for first entry
    Portal* portal;   // pointer to portal that did set wi_fpos
    Pos wi_fpos;   // last cursor position in the file
-   PortLocal opt;      // portal-local options
+   PortalOptions opt;      // portal-local options
    Boole isOptChanged;   // TRUE when wi_opt has useful values
    Boole foldManual;   // copy of Portal.foldManual
    ArrayList folds;   // clone of Portal.folds
@@ -2672,32 +2671,32 @@ typedef CS (*LineGetter)(Unt, void *, int, GetlineAlgo);
 
 // An invocation of a Command
 struct Invocation {
-   CS comm;      // the name of the command (except for :make)
-   CommIndex id;      // the index for the command
-   CS arg;      // argument of the command
-   CS*  commline;   // pointer to pointer of allocated cmdline
-   CS commlineToFree; // free later
-   long   argFlags;      // flags for the command
-   Boole skip;      // don't execute the command, only parse it
-   Boole forceit;   // TRUE if ! present
-   int addr_count;   // the number of addresses given
-   LineNr line1;      // the first line number
-   LineNr line2;      // the second line number or count
-   CommandAddress addressKind;   // kind of the count/range
-   Unt flags;      // extra flags after count: EXFLAG_
-   CS higherOrderComm;   // +command arg to be used in edited file
-   LineNr higherOrderLnum;   // the line number in an edited file
-   int append;      // TRUE with ":w >>file" command
-   int usefilter;   // TRUE with ":w !command" and ":r!command"
-   int amount;      // number of '>' or '<' for shift command
-   int regname;   // register name (NUL if none)
-   Unt force_bin;   // 0, FORCE_BIN or FORCE_NOBIN
-   Boole read_edit;   // ++edit argument
-   Unt bad_char;   // BAD_KEEP, BAD_DROP or replacement byte
-   Unt useridx;   // user command index
-   CS errmsg;   // returned error message
+   CS comm;         //the name of the command (except for :make)
+   CommIndex id;    //the index for the command
+   CS arg;          //argument of the command
+   CS*  commline;     //pointer to pointer of allocated cmdline
+   CS commlineToFree; //free later
+   long   argFlags;   //flags for the command
+   Boole skip;      //don't execute the command, only parse it
+   Boole forceit;   //TRUE if ! present
+   int addr_count;  //the number of addresses given
+   LineNr line1;    //the first line number
+   LineNr line2;    //the second line number or count
+   CommandAddress addressKind; //kind of the count/range
+   Unt flags;       //extra flags after count: EXFLAG_
+   CS higherOrderComm; //+command arg to be used in edited file
+   LineNr higherOrderLnum; //the line number in an edited file
+   int append;      //TRUE with ":w >>file" command
+   int usefilter;   //TRUE with ":w !command" and ":r!command"
+   int amount;      //number of '>' or '<' for shift command
+   int regname;     //register name (NUL if none)
+   Unt force_bin;   //0, FORCE_BIN or FORCE_NOBIN
+   Boole read_edit; //++edit argument
+   Unt bad_char;    //BAD_KEEP, BAD_DROP or replacement byte
+   Unt useridx;     //user command index
+   CS errmsg;       //returned error message
    LineGetter ea_getline;
-   void* cookie;   // argument for getline()
+   void* cookie;    //argument for getline()
 };
 
 typedef struct {
@@ -3467,7 +3466,6 @@ struct FnCall {
    Var   *fc_returnVar;   // return value
    LineNr fc_breakpoint;   // next line with breakpoint or zero
    int fc_dbg_tick;   // debug_tick when breakpoint was set
-   int fc_level;   // top nesting level of executed function
 
    ArrayList fc_defer;   // functions to be called on return
 
@@ -3579,7 +3577,6 @@ typedef struct {
 #define SN_STATE_NEW         0   // newly loaded script, nothing done
 #define SN_STATE_NOT_LOADED  1   // script located but not loaded
 #define SN_STATE_RELOAD      2   // script loaded before, nothing done
-#define SN_STATE_HAD_COMMAND 9   // a command was executed
 
 // Struct passed through eval() functions.
 // See EVALARG_EVALUATE for a fixed value with eval_flags set to EVAL_EVALUATE.
@@ -3607,8 +3604,6 @@ typedef struct {
    // set when "arg" points into the last entry of "eval_tofree_ga"
    int eval_using_cmdline;
 
-   // pointer to the lines concatenated for a lambda.
-   Byte* eval_tofree_lambda;
 } EvalCtx;
 
 // Flag for expression evaluation.
@@ -4220,9 +4215,9 @@ typedef struct {
 typedef enum {
 
 #define OPTIONS_ENUM
-#define OPTIONS_DEF_BOOK
+#define OPTIONS_LIST_BOOK
 #include "defoption.h"
-#undef OPTIONS_DEF_BOOK
+#undef OPTIONS_LIST_BOOK
 #undef OPTIONS_ENUM
 
 } BookOption;
@@ -4232,9 +4227,9 @@ EXTERN Sbuf bookStringOptionsG;      //Storage for all the string options
 // They're here because their value depends on the type or contents of the file being edited
 typedef struct {
 #define OPTIONS_FIELDS
-#define OPTIONS_DEF_BOOK
+#define OPTIONS_LIST_BOOK
 #include "defoption.h"
-#undef OPTIONS_DEF_BOOK
+#undef OPTIONS_LIST_BOOK
 #undef OPTIONS_FIELDS
    
    
@@ -4250,7 +4245,7 @@ typedef struct {
    Boole initialized;   //set when all options were initialized
    ScriptPos scriptLocs[OPTION_BOOK_COUNT]; // script locations for all book-local options
    Sbuf stringOptions;      //Storage for all the string options
-} BookLocal;
+} BookOptions;
 
 //}}} end of book-local options
 
@@ -4366,7 +4361,7 @@ struct Book { //:Book
    int scanned;       // ^N/^P have scanned this book
 
    Byte kind;         // BOOK_ constants
-   BookLocal o;
+   BookOptions o;
    
    Boole hasLocationEntry;
    LineNr noEolLnum; //non-zero lnum when last line of next binary
@@ -4744,7 +4739,7 @@ struct Portal { //:Portal
 
    //Options local to a portal.
    //They are local because they influence the layout of the portal or depend on the portal layout.
-   PortLocal o;
+   PortalOptions o;
 
    BreakIndent breakIndent;
    long scbindPos;
@@ -5847,7 +5842,6 @@ EXTERN CS emsg_assert_fails_msg INIT(= NULL);
 EXTERN long emsg_assert_fails_lnum INIT(= 0);
 EXTERN CS emsg_assert_fails_context INIT(= NULL);
 
-EXTERN int did_endif INIT(= FALSE);    // just had ":endif"
 EXTERN int anyEmsgG; // incremented by emsg() when a message is displayed or thrown
 EXTERN int uncaught_emsg; // number of times emsg() was called and did show a message
 EXTERN int called_emsg;          // always incremented by emsg()
@@ -5884,7 +5878,6 @@ EXTERN ArrayList   exestack INIT5(0, 0, sizeof(Estack), 50, NULL);
 // Script context being sourced or was sourced to define the current function.
 EXTERN ScriptPos scriptPosG INIT3(0, 0, 0);
 
-EXTERN int   ex_nesting_level INIT(= 0);   // nesting level
 EXTERN int   debug_break_level INIT(= -1);   // break below this level
 EXTERN int   debug_did_msg INIT(= FALSE);   // did "debug mode" message
 EXTERN int   debug_tick INIT(= 0);      // breakpoint change count
@@ -6541,7 +6534,7 @@ EXTERN ListItem range_list_item;
 EXTERN EvalCtx EVALARG_EVALUATE
 # ifdef MAIN_C
    = {EVAL_EVALUATE, 0, NULL, NULL, GA_EMPTY, GA_EMPTY, NULL,
-          {0, 0, (int)sizeof(Byte *), 20, NULL}, 0, NULL}
+          {0, 0, (int)sizeof(Byte *), 20, NULL}, 0}
 # endif
    ;
    
