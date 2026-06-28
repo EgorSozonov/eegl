@@ -86,6 +86,7 @@ Boole eq_CString_CString(CS a, CS b);
 Text skipTo(Text inp, CS t);
 CS skipToComma(CS s);
 CS skip_to_option_part(CS p);
+CS skipLine(CS s);
 CS copyStr(CS string);
 CS copySubstr(CS string, Unt len);
 Sbuf sbuf(Unt cap);

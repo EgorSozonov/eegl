@@ -8012,7 +8012,6 @@ fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
    //Expand symlink in the file name, so that we put the swap file with the
    //actual file instead of with the symlink.
    Text variablePart = (Text){.c = fnameBuf + swapDirG.len, .len = variableLen};
-   _bp(true);
    if (resolveSymlink(OUT &variablePart, (Unt)(MAXPATHL - swapDirG.len - 1)) == FAIL) {
       return null;
    }

@@ -815,22 +815,6 @@ set_normal_colors(void) {
    }
 }
 
-// Combine special decos (e.g., for spelling) with other decos (e.g., for syntax hiliting).
-// Since we expect there to be few spelling mistakes we don't cache the result.
-// Return the resulting decos.
-Decoration
-combineDecorations(Decoration overlay, Decoration base) {
-   if ((base.flags & DECO_UNDERLINE) != 0 && (overlay.flags & DECO_UNDERCURL) != 0) {
-      return base;
-   } ei((base.flags & DECO_UNDERCURL) != 0 && (overlay.flags & DECO_UNDERLINE) != 0) { 
-      base.flags = (base.flags & ~DECO_UNDERCURL) | DECO_UNDERLINE;
-   } else {
-      base.flags |= overlay.flags;
-   }
-   base.under = overlay.under;
-   return base;
-}
-
 // Return "1" if hilite group "id" has deco "flag". Return NULL otherwise.
 //private CS
 //hiliteHasFlag(HiliteGroup* g, Byte flag){

@@ -47,8 +47,6 @@ int check_fname(void);
 int bookWrite_all(Book *book, int forceit);
 int executeCommLine(CS cmd);
 void handle_did_throw(void);
-int getline_equal(LineGetter fgetline, void *cookie, LineGetter func);
-void *getline_cookie(LineGetter fgetline, void *cookie);
 CS getline_peek(LineGetter fgetline, void *cookie);
 int doCommand(CS commline, LineGetter fgetline, void *cookie, Unt flags);
 CS ex_errmsg(CS msg, CS arg);

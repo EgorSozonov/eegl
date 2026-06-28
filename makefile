@@ -817,7 +817,7 @@ ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLA
 
 
 LINT_FLAGS = -DLINT -I. $(PRE_DEFS) -Dinline= -D__extension__= -Dalloca=alloca
-LINT_FLAGS_CPROTO = -DLINT -Isrc -Isrc/proto -Dinline= #-D__extension__= -Dalloca=alloca
+LINT_FLAGS_CPROTO = -DLINT -Isrc -Isrc/proto #-Dinline= -D__extension__= -Dalloca=alloca
 
 LINT_EXTRA = -D"__attribute__(x)="
 

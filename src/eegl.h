@@ -1494,13 +1494,13 @@ typedef enum AutoEvent AutoEvent;
 #define HLF_LNB     52 //LineNrBelow
 
 typedef enum {
-   EXTRA_DECO_NONE,
-   EXTRA_DECO_INVERT,
-   EXTRA_DECO_ALTERED_BG,
-   EXTRA_DECO_UNDER,
-   EXTRA_DECO_UNDERCURL,
-   EXTRA_DECO_UNDERDASH
-} ExtraDeco;
+   OVERLAY_DECO_NONE,
+   OVERLAY_DECO_INVERT,
+   OVERLAY_DECO_ALTERED_BG,
+   OVERLAY_DECO_UNDER,
+   OVERLAY_DECO_UNDERCURL,
+   OVERLAY_DECO_UNDERDASH
+} OverlayDeco;
 
 // Boolean constants
 #ifndef TRUE
@@ -1509,8 +1509,7 @@ typedef enum {
 #endif
 #define MAYBE   2   // sometimes used for a variant on TRUE
 
-//If "--log logfile" was used or ch_logfile() was called then log some or all
-//terminal output.
+//If "--log logfile" was used or ch_logfile() was called then log some or all terminal output.
 # define MAY_WANT_TO_LOG_THIS if (ch_log_output == FALSE) ch_log_output = TRUE;
 
 // Operator IDs; The order must correspond to opchars[] in ops.c!
@@ -2595,7 +2594,7 @@ typedef struct {
             // found match (may continue in next line)
    Book* book;       // the book to search for a match
    LineNr lnum;       // the line to search for a match
-   ExtraDeco extra; // decoration to be used for a match
+   OverlayDeco extra; // decoration to be used for a match
    Short currHiId;   // decorations currently active in drawLineOnScreen()
    LineNr first_lnum; // first lnum to search for multi-line pat
    ColNr startcol;   // in win_line() points to char where HL starts
@@ -2671,25 +2670,6 @@ typedef enum {
 
 typedef CS (*LineGetter)(Unt, void *, int, GetlineAlgo);
 
-typedef struct {
-   short flags[CSTACK_LEN];   // CSF_ flags
-   char pending[CSTACK_LEN];   // CSTP_: what's pending in ":finally"
-   union {
-      void* csp_rv[CSTACK_LEN];   // return typeval for pending return
-      void* csp_ex[CSTACK_LEN];   // exception for pending throw
-   } pend;
-   ForInfo* forInfo[CSTACK_LEN]; // info used by ":for"
-   int cs_line[CSTACK_LEN];   // line nr of ":while"/":for" line
-   int cs_block_id[CSTACK_LEN];    // block ID stack
-   int cs_script_var_len[CSTACK_LEN];   // value of sn_var_vals.len
-                  // when entering the block
-   int ind;         // current entry, or -1 if none
-   int loopLevel;      // nr of nested ":while"s and ":for"s
-   int tryLevel;      // nr of nested ":try"s
-   EMsgList* cs_emsg_silent_list;   // saved values of "emsg_silent"
-   char loopFlags;      // the CSL_ flags
-} CondStack;
-
 // An invocation of a Command
 struct Invocation {
    CS comm;      // the name of the command (except for :make)
@@ -2718,7 +2698,6 @@ struct Invocation {
    CS errmsg;   // returned error message
    LineGetter ea_getline;
    void* cookie;   // argument for getline()
-   CondStack* cstack;   // condition stack for ":if" etc.
 };
 
 typedef struct {
@@ -3611,9 +3590,6 @@ typedef struct {
    // copied from Invocation when "getline" is "getsourceline". Can be NULL.
    LineGetter eval_getline;
    void* eval_cookie;       // argument for eval_getline()
-
-   // used when executing commands from a script, NULL otherwise
-   CondStack* eval_cstack;
 
    // Used to collect lines while parsing them, so that they can be
    // concatenated later.  Used when "eval_ga.ga_itemsize" is not zero.
@@ -6564,7 +6540,7 @@ EXTERN ListItem range_list_item;
 // Passed to an eval() function to enable evaluation.
 EXTERN EvalCtx EVALARG_EVALUATE
 # ifdef MAIN_C
-   = {EVAL_EVALUATE, 0, NULL, NULL, NULL, GA_EMPTY, GA_EMPTY, NULL,
+   = {EVAL_EVALUATE, 0, NULL, NULL, GA_EMPTY, GA_EMPTY, NULL,
           {0, 0, (int)sizeof(Byte *), 20, NULL}, 0, NULL}
 # endif
    ;

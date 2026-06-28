@@ -8965,12 +8965,7 @@ copy_first_char_to_tv(CS input, Var* output) {
 //Implementation of map() and filter() for a String. Apply "expr" to every
 //character in string "str" and return the result in "returnVar".
 void
-string_filter_map(
-   CS str,
-   FilterMap filtermap,
-   Var* expr,
-   Var* returnVar
-) {
+string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar) {
    CS p;
    Var   tv;
    ArrayList   ga;
@@ -9173,9 +9168,9 @@ f_str2list(Arr(Var) argvars, OUT Var* returnVar) {
 
 void
 f_str2nr(Var* argvars, Var* returnVar) {
-   int      base = 10;
-   Long   n;
-   int      what = 0;
+   int base = 10;
+   Long n;
+   int what = 0;
 
    if (argvars[1].tag != VAR_UNKNOWN) {
       base = (int)tv_get_number(&argvars[1]);
@@ -9204,7 +9199,7 @@ f_str2nr(Var* argvars, Var* returnVar) {
 void
 f_strgetchar(Var* argvars, Var* returnVar) {
    Boole error = false;
-   int      byteidx = 0;
+   int byteidx = 0;
    returnVar->number = -1;
    CS str = convertVarToStringSingleUse(&argvars[0]);
    if (!str)
@@ -9247,7 +9242,7 @@ f_stridx(Var* argvars, Var* returnVar) {
          haystack += start_idx;
    }
 
-   CS pos   = (CS)strstr((char *)haystack, (char *)needle);
+   CS pos = (CS)strstr((char *)haystack, (char *)needle);
    if (pos)
       returnVar->number = (Long)(pos - save_haystack);
 }
@@ -9291,7 +9286,7 @@ f_strcharlen(Arr(Var) argvars, OUT Var* returnVar) {
 
 void
 f_strchars(Arr(Var) argvars, OUT Var* returnVar) {
-   Long      skipcc = false;
+   Long skipcc = false;
    if (argvars[1].tag != VAR_UNKNOWN) {
       Boole error = false;
       skipcc = varGetNumberChk(argvars + 1, OUT &error);
@@ -9452,7 +9447,6 @@ f_strridx(Arr(Var) argvars, OUT Var* returnVar) {
          lastmatch = rest;
       }
    }
-
    returnVar->number = lastmatch ? (Long)(lastmatch - haystack) : -1;
 }
 
@@ -9576,7 +9570,7 @@ f_trim(Arr(Var) argvars, OUT Var* returnVar) {
    if (check_for_opt_string_arg(argvars, 1) == FAIL)
       return;
 
-    if (argvars[1].tag == VAR_STRING) {
+   if (argvars[1].tag == VAR_STRING) {
       mask = convertVarToString(&argvars[1], buffer1);
       if (*mask == ZERO)
          mask = NULL;
@@ -9621,7 +9615,7 @@ f_trim(Arr(Var) argvars, OUT Var* returnVar) {
          prev = tail;
          MB_PTR_BACK(head, prev);
          Unt c1 = mb_ptr2char(prev);
-         if (mask == NULL) {
+         if (!mask) {
             if (c1 > ' ' && c1 != 0xa0)
                 break;
          } else {

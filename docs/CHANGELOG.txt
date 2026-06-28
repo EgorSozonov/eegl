@@ -276,6 +276,7 @@
 [-] command piping (superfluous, and without it, substitution may be written as `s|inp|outp|g`)
 [-] connecting over the internet (a huge security risk & unneeded)
 [-] cindent (smartindent is enough)
+[-] scripting capabilities in commands (:if, :try etc). They will be in Wren only
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 

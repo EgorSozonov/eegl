@@ -757,7 +757,7 @@ start_search_hl(void) {
 
    end_search_hl();  // just in case it wasn't called before
    last_pat_prog(&screenSearchP.rm);
-   screenSearchP.extra = EXTRA_DECO_INVERT;
+   screenSearchP.extra = OVERLAY_DECO_INVERT;
 }
 
 // Clean up for @hlsearch hiliting.
@@ -4961,25 +4961,25 @@ redrawPortRangeLater(Portal* po, LineNr first, LineNr last) {
 //}}}
 //{{{draw line (mid-level code)
 
-#define MB_FILLER_CHAR '<'  // character used when a double-width character doesn't fit.
+#define MB_FILLER_CHAR '<'  //character used when a double-width character doesn't fit.
 
 private void
-overlayDeco(OUT Decoration* baseDeco, ExtraDeco extraDeco) {
-   switch (extraDeco) {
-   case EXTRA_DECO_INVERT: baseDeco->flags |= DECO_INVERSE; return;
-   case EXTRA_DECO_UNDER: baseDeco->flags |= DECO_UNDERLINE; return;
-   case EXTRA_DECO_UNDERCURL: baseDeco->flags |= DECO_UNDERCURL; return;
-   case EXTRA_DECO_UNDERDASH: baseDeco->flags |= DECO_UNDERDASH; return;
-   case EXTRA_DECO_ALTERED_BG: baseDeco->flags |= DECO_ALTERED_BG; return;
+overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco) {
+   switch (overlayingDeco) {
+   case OVERLAY_DECO_INVERT: baseDeco->flags |= DECO_INVERSE; return;
+   case OVERLAY_DECO_UNDER: baseDeco->flags |= DECO_UNDERLINE; return;
+   case OVERLAY_DECO_UNDERCURL: baseDeco->flags |= DECO_UNDERCURL; return;
+   case OVERLAY_DECO_UNDERDASH: baseDeco->flags |= DECO_UNDERDASH; return;
+   case OVERLAY_DECO_ALTERED_BG: baseDeco->flags |= DECO_ALTERED_BG; return;
    default: return;
    }
 }
 
-// Used when 'cursorlineopt' contains "screenline": compute the margins between
-// which the hiliting is used.
+//Used when @cursorlineopt contains "screenline": compute the margins between
+//which the hiliting is used.
 private void
 computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
-   // cache previous calculations depending on virtCol
+   //cache previous calculations depending on virtCol
    static int saved_virtCol;
    static Portal* prev_wp;
    static int prev_width1;
@@ -5010,7 +5010,6 @@ computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
    prev_width1 = width1;
    saved_virtCol = po->virtCol;
 }
-
 
 // structure with variables passed between drawLineOnScreen() and other functions
 typedef struct {
@@ -5049,12 +5048,12 @@ typedef struct {
    int cul_screenline;
    Decoration charDeco;   // decorations for the next character
 
-   int countExtraBytes;   // number of extra bytes
-   Arr(Byte) extraBytes; // only used when c_extra and c_final are ZERO
+   int countExtraBytes;   // number of extra bytes (for virtual text)
+   CS extraBytes; // virtual text. This is only used when c_extra and c_final are ZERO
    CS p_extra_free;  // extraBytes buffer that needs to be freed
    Decoration extraDeco; // decorations for extraBytes, should be combined with portalDeco if needed
    int toSkipBeforeDeco;    // chars to skip before using extraDeco
-   Unt c_extra;   // extra chars, all the same
+   Unt c_extra;   // extra chars, virtual text
    Unt c_final;   // final char, mandatory if set
    int extra_for_textprop; // countExtraBytes set for textprop
    int start_extra_for_textprop; // extra_for_textprop was just set
@@ -5235,7 +5234,7 @@ breakIndent(Portal* po, DrawCtx* m) {
       // After the showbreak, draw the breakindent
       m->drawState = WL_BRI - 1;
 
-    // draw 'breakindent': indent wrapped text accordingly
+   // draw 'breakindent': indent wrapped text accordingly
    if (m->drawState == WL_BRI - 1) {
       m->drawState = WL_BRI;
       // if m->need_showbreak is set, breakindent also applies
@@ -5250,10 +5249,8 @@ breakIndent(Portal* po, DrawCtx* m) {
          m->c_extra = ' ';
          m->c_final = ZERO;
          m->countExtraBytes = getBreakindentForPort(po, memGetLine(po->book, m->lnum, false));
-         if (m->row == m->startrow) {
-            if (m->countExtraBytes < 0)
-                m->countExtraBytes = 0;
-         }
+         if (m->row == m->startrow && m->countExtraBytes < 0)
+             m->countExtraBytes = 0;
 
          // Correct start of hilited area for 'breakindent',
          if (m->fromcol >= m->vcol && m->fromcol < m->vcol + m->countExtraBytes)
@@ -5302,7 +5299,7 @@ showbreakAndFiller(Portal* po, DrawCtx* m) {
       m->charDeco = getFullDecoration(HLF_AT);
       // combine @showbreak with @cursorline
       if (m->cursorlineDeco.hiId != SHORT)
-         overlayDeco(OUT &m->charDeco, EXTRA_DECO_ALTERED_BG);
+         overlayDeco(OUT &m->charDeco, OVERLAY_DECO_ALTERED_BG);
    }
 
    if (po->skipCol == 0 || m->startrow > 0 || !po->o.wrap || !po->breakIndent.showBreak)
@@ -5342,10 +5339,10 @@ textprop_size_after_trunc(
    return strsize;
 }
 
-// Take care of padding, right-align and truncation of virtual text after a line. if "numDecoCells" 
-// is not NULL then "countExtraBytes" and "extraBytes" are adjusted for any padding, right-align and 
-// truncation. Otherwise only the size is computed. When "numDecoCells" is NULL returns the number 
-// of screen cells used. Otherwise returns true when drawing continues on the next line.
+//Take care of padding, right-align and truncation of virtual text after a line. if "numDecoCells" 
+//is not NULL then "countExtraBytes" and "extraBytes" are adjusted for any padding, right-align and 
+//truncation. Otherwise only the size is computed. When "numDecoCells" is NULL returns the number 
+//of screen cells used. Otherwise returns true when drawing continues on the next line.
 int
 text_prop_position(
    Portal* po,
@@ -5609,7 +5606,7 @@ drawLineOnScreen_continue(DrawCtx* m) {
 
 private void
 applyCursorlineHilite(DrawCtx* m) {
-   overlayDeco(OUT &m->lineDeco, EXTRA_DECO_ALTERED_BG);
+   overlayDeco(OUT &m->lineDeco, OVERLAY_DECO_ALTERED_BG);
 }
 
 
@@ -5661,7 +5658,7 @@ typedef struct {
    int numDecoCells;
    int textPropAbove;
    int didLineDeco;
-   Boole resetExtraDeco;
+   Boole resetOverlayDeco;
    long vcol_prev;
    Decoration multiDeco;
    
@@ -5680,12 +5677,9 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
       && m->drawState == WL_LINE
       && (!sc->decoPriority || (sc->textPropFlags & PT_FLAG_OVERRIDE) != 0)
    ){
-      if (m->lineDeco.hiId != SHORT)
-         m->charDeco = combineDecorations(m->lineDeco, m->extraDeco);
-      else
-         m->charDeco = m->extraDeco;
-      if (sc->resetExtraDeco) {
-         sc->resetExtraDeco = false;
+      m->charDeco = m->extraDeco;
+      if (sc->resetOverlayDeco) {
+         sc->resetOverlayDeco = false;
          m->extraDeco = EMPTY_DECO;
       }
    }
@@ -6005,7 +5999,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
    sc.mb_c = 0;      // decoded multi-byte character
    sc.textPropFlags = 0;
    sc.decoPriority = false;   // charDeco has priority
-   sc.resetExtraDeco = false;
+   sc.resetOverlayDeco = false;
    int characterCombiner[MAX_COMBINED_SYMBOLS];      // composing UTF-8 chars
    sc.characterCombiner = (Arr(int))characterCombiner;
    
@@ -6054,7 +6048,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                 m->countExtraBytes = 1;
                 m->c_extra = commPortTypeG;
                 m->c_final = ZERO;
-                m->charDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_AT));
+                m->charDeco = getFullDecoration(HLF_AT);
             }
          }
          if (m->drawState == WL_SIGN - 1 && m->countExtraBytes == 0) {
@@ -6182,7 +6176,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                sc.textPropFlags = 0;
                text_prop_type = NULL;
                text_prop_id = 0;
-               sc.resetExtraDeco = false;
+               sc.resetOverlayDeco = false;
             }
             if (countActiveTextProps > 0 && m->countExtraBytes == 0) {
                int used_tpi = -1;
@@ -6197,7 +6191,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                sort_text_props(port->book, c->textProps, c->textPropIndices, countActiveTextProps);
 
                for (pi = 0; pi < countActiveTextProps; ++pi) {
-                  int       tpi = c->textPropIndices[pi];
+                  int tpi = c->textPropIndices[pi];
                   TextProp* t = c->textProps + tpi;
                   PropType* pt = text_prop_type_by_id( port->book, t->type);
 
@@ -6213,25 +6207,24 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                             ) == 0
                          && m->col >= (int)port->width)
                   ){
-                      if (t->col == MAXCOL
+                     if (t->col == MAXCOL
                           && *m->ptr == ZERO
                           && ((port->o.list && sc.listCharEndOfLine != UNT
                                 && (t->flags & TEXT_PROP_ALIGN_ABOVE) == 0)
                                 || (m->ptr == m->line
-                                 && !didLine
-                                 && (t->flags & TEXT_PROP_ALIGN_BELOW))
+                                       && !didLine
+                                       && (t->flags & TEXT_PROP_ALIGN_BELOW))
                              )
-                      ) {
-                        // skip this prop, first display the '$' after
-                        // the line or display an empty line
+                     ) {
+                        //skip this prop, first display the '$' after
+                        //the line or display an empty line
                         sc.textPropFollows = true;
                         continue;
-                      }
+                     }
 
                      if (pt->hilite > 0)
-                        usedDeco = getFullDecoration(pt->hilite);
+                        textPropDeco = getFullDecoration(pt->hilite);
                      text_prop_type = pt;
-                     textPropDeco = combineDecorations(textPropDeco, usedDeco);
                      if (used_tpi >= 0 && c->textProps[used_tpi].id < 0)
                         other_tpi = used_tpi;
                      sc.textPropFlags = pt->flags;
@@ -6263,15 +6256,15 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      m->countExtraBytes = (int)STRLEN(p);
                      m->extra_for_textprop = true;
                      m->start_extra_for_textprop = true;
-                     m->extraDeco = combineDecorations(m->portalDeco, usedDeco);
+                     m->extraDeco = usedDeco;
                      sc.numDecoCells = mb_charlen(p);
                      textPropDeco = EMPTY_DECO;
                      textPropDeco_comb = EMPTY_DECO;
                      if (*m->ptr == ZERO)
-                        // don't combine char deco after EOL
+                        //don't combine char deco after EOL
                         sc.textPropFlags &= ~PT_FLAG_COMBINE;
                      if (above || below || right || !wrap) {
-                        // no @showbreak before "below" text property or after "above" or "right" 
+                        //no @showbreak before "below" text property or after "above" or "right" 
                         // text property
                         m->need_showbreak = false;
                         m->dont_use_showbreak = true;
@@ -6309,8 +6302,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      }
                   }
 
-                  // If the text didn't reach until the first portal
-                  // column we need to skip cells.
+                  //If the text didn't reach until the first portal column we need to skip cells.
                   if (m->cellsToSkip > 0) {
                      if (m->countExtraBytes > m->cellsToSkip) {
                         m->countExtraBytes -= m->cellsToSkip;
@@ -6321,7 +6313,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                         sc.skippedCells += m->cellsToSkip;
                         m->cellsToSkip = 0;
                      } else {
-                        // the whole text is left of the portal, drop it and advance to the next one
+                        //the whole text is left of the portal, drop it and advance to the next one
                         m->cellsToSkip -= m->countExtraBytes;
                         sc.skippedCells += m->countExtraBytes;
                         m->countExtraBytes = 0;
@@ -6330,9 +6322,9 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                      }
                   }
 
-                  // If another text prop follows the condition below at
-                  // the last portal column must know.
-                  // If this is an "above" text prop and @wrap is off, then we must wrap anyway
+                  //If another text prop follows the condition below at the last portal column 
+                  //must know.
+                  //If this is an "above" text prop and @wrap is off, then we must wrap anyway
                   sc.textPropAbove = above;
                   sc.textPropFollows = sc.textPropFollows 
                      || (other_tpi != -1
@@ -6349,14 +6341,14 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   && ((*m->ptr != ZERO && m->ptr[utfCharLen(m->ptr)] == ZERO)
                       || (!port->o.wrap && m->col == (int)port->width - 1))
             ){
-                //When at last-but-one character and a text property follows after it, we may 
-                //need to flush the line after displaying that character.
-                //Or when not wrapping and at the rightmost column.
+               //When at last-but-one character and a text property follows after it, we may 
+               //need to flush the line after displaying that character.
+               //Or when not wrapping and at the rightmost column.
 
-                int only_below_follows = !port->o.wrap && m->col == (int)port->width - 1;
-                // TODO: Store "after"/"right"/"below" text properties in order
-                //       in the buffer so only `textProps[textPropCount - 1]`
-                //       needs to be checked for following "below" virtual text
+               int only_below_follows = !port->o.wrap && m->col == (int)port->width - 1;
+               //TODO: Store "after"/"right"/"below" text properties in order
+               //      in the buffer so only `textProps[textPropCount - 1]`
+               //      needs to be checked for following "below" virtual text
                for (int i = m->textPropNext; i < c->textPropCount; ++i) {
                   if (c->textProps[i].col == MAXCOL
                      && (!only_below_follows || (c->textProps[i].flags & TEXT_PROP_ALIGN_BELOW))
@@ -6405,7 +6397,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             );
             m->ptr = m->line + (m->bufferLen);  // "line" may have been changed
 
-            // Check if ComplMatchIns hilite is needed.
+            //Check if ComplMatchIns hilite is needed.
             if ((stateG & MODE_INSERT) && ins_compl_win_active(port)
                    && (c->inCurLine || ins_compl_lnum_in_range(c->lnum))
             ){
@@ -6413,8 +6405,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   c->lnum, (int)(m->ptr - m->line)
                );
                if (insMatchDeco.hiId != SHORT) {
-                  m->searchHiId = 
-                     combineDecorations(getFullDecoration(m->searchHiId), insMatchDeco).hiId;
+                  m->searchHiId = insMatchDeco.hiId;
                } 
             }
          }
@@ -6440,8 +6431,8 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                    c->changeStart, c->changeEnd
                );
             }
-            // When there is extra text (e.g. virtual text) it gets the
-            // diff hiliting for the line, but not for changed text.
+            //When there is extra text (e.g. virtual text) it gets the
+            //diff hiliting for the line, but not for changed text.
             if (m->diff_hlf == HLF_CHD 
                   && m->ptr - m->line >= *c->changeStart 
                   && m->countExtraBytes == 0
@@ -6468,14 +6459,14 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             }
             // Get syntax decoration.
             if (m->syntaxHilitingOn) {
-               // Get the syntax decoration for the character. If there is an error, disable syntax 
-               // hiliting
+               //Get the syntax decoration for the character. If there is an error, disable syntax 
+               //hiliting
                *m->anyEmsgSave = anyEmsgG;
                anyEmsgG = false;
 
                m->bufferLen = (long)(m->ptr - m->line);
                if (m->bufferLen == prevSyntaxCol)
-                  // at same column again
+                  //at same column again
                   syntaxDeco = prevCharDeco;
                else {
                   syntaxDeco = syntGetDeco((ColNr)m->bufferLen, false);
@@ -6495,51 +6486,46 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                m->ptr = m->line + m->bufferLen;
             }
          }
-         // Combine text property hilite into syntax hilite.
          if (text_prop_type) {
-            if (sc.textPropFlags & PT_FLAG_COMBINE)
-               syntaxDeco = combineDecorations(syntaxDeco, textPropDeco);
-            else
-               syntaxDeco = textPropDeco;
+            syntaxDeco = textPropDeco;
             textPropDeco_comb = syntaxDeco;
          }
 
-         // Decide which of the hilite decorations to use.
+         //Decide which of the hilite decorations to use.
          sc.decoPriority = true;
          if (sc.areaDeco.hiId != SHORT) {
-            m->charDeco = combineDecorations(m->lineDeco, sc.areaDeco);
-            if (!highlight_match)
-               // let search hilite show in Visual area if possible
-               m->charDeco = combineDecorations(getFullDecoration(m->searchHiId), m->charDeco);
-            m->charDeco = combineDecorations(syntaxDeco, m->charDeco);
+            if (highlight_match)
+               m->charDeco = sc.areaDeco;
+            else 
+               //let search hilite show in Visual area if possible
+               m->charDeco = getFullDecoration(m->searchHiId);
          } ei (m->searchHiId != 0) {
-            m->charDeco = combineDecorations(m->lineDeco, getFullDecoration(m->searchHiId));
-            m->charDeco = combineDecorations(syntaxDeco, m->charDeco);
+            m->charDeco = getFullDecoration(m->searchHiId);
          } ei (m->lineDeco.hiId != SHORT 
              && ((m->fromcol == -10 && m->tocol == MAXCOL)
                   || m->vcol < m->fromcol
                   || sc.vcol_prev < c->fromcol_prev
                   || m->vcol >= m->tocol)
          ){
-            // Use m->lineDeco when not in the Visual or 'incsearch' area
-            // (areaDeco may be empty when "noInvertCursor" is set).
-            m->charDeco = combineDecorations(syntaxDeco, m->lineDeco);
+            //Use m->lineDeco when not in the Visual or 'incsearch' area
+            //(areaDeco may be empty when "noInvertCursor" is set).
+            m->charDeco = m->lineDeco;
             sc.decoPriority = false;
          } else {
             m->charDeco = syntaxDeco;
             sc.decoPriority = false;
          }
-         // override with text property hilite when "override" is true
-         if (text_prop_type && (sc.textPropFlags & PT_FLAG_OVERRIDE))
-            m->charDeco = combineDecorations(m->charDeco, textPropDeco);
+         //override with text property hilite when "override" is true
+         if (text_prop_type && (sc.textPropFlags & PT_FLAG_OVERRIDE) != 0)
+            m->charDeco = textPropDeco;
       }
 
-      // combine decoration with 'portcolor'
+      //combine decoration with @portcolor
       if (m->portalDeco.hiId != SHORT) {
          if (m->charDeco.hiId == SHORT)
             m->charDeco = m->portalDeco;
          else
-            m->charDeco = combineDecorations(m->portalDeco, m->charDeco);
+            m->charDeco = m->charDeco;
       }
 
       //Get the next character to put on the screen.
@@ -6564,7 +6550,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          } else {
             currSymb = *m->extraBytes;
             sc.mb_c = currSymb;
-            // If the UTF-8 character is more than one byte: Decode it into "mb_c".
+            //If the UTF-8 character is more than one byte: Decode it into "mb_c".
             multibLength = utfCharLen(m->extraBytes);
             sc.mb_utf8 = false;
             if (multibLength > m->countExtraBytes)
@@ -6585,8 +6571,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                sc.mb_utf8 = false;
                sc.multiDeco = getFullDecoration(HLF_AT);
                if (m->cursorlineDeco.hiId != SHORT)
-                  sc.multiDeco = combineDecorations(sc.multiDeco, m->cursorlineDeco);
-               sc.multiDeco = combineDecorations(m->portalDeco, sc.multiDeco);
+                  overlayDeco(OUT &sc.multiDeco, OVERLAY_DECO_ALTERED_BG);
 
                // put the pointer back to output the double-width
                // character at the start of the next line.
@@ -6600,8 +6585,8 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
          }
          --m->countExtraBytes;
          if (m->countExtraBytes <= 0) {
-            // Only restore searchHiId and areaDeco after "countExtraBytes" in
-            // the next screen line is also done.
+            //Only restore searchHiId and areaDeco after "countExtraBytes" in
+            //the next screen line is also done.
             if (m->saved_n_extra <= 0) {
                if (m->searchHiId == SHORT)
                   m->searchHiId = searchDecoSaved;
@@ -6610,7 +6595,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
                if (m->extra_for_textprop)
                   // m->extraDeco should be used at this position but not any further.
-                  sc.resetExtraDeco = true;
+                  sc.resetOverlayDeco = true;
             }
 
             m->extra_for_textprop = false;
@@ -6672,7 +6657,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             m->c_final = ZERO;
             if (sc.areaDeco.hiId == SHORT && m->searchHiId == 0) {
                sc.numDecoCells = m->countExtraBytes + 1;
-               m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
+               m->extraDeco = getFullDecoration(HLF_8);
                sc.charDecoSaved = m->charDeco; // save current deco
             }
          } ei (multibLength == 0)  // at the ZERO at end-of-line
@@ -6685,7 +6670,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             sc.mb_c = currSymb;
             sc.mb_utf8 = false;
             multibLength = 1;
-            sc.multiDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_AT));
+            sc.multiDeco = getFullDecoration(HLF_AT);
             // Put pointer back so that the character will be displayed at the start of next line
             m->ptr--;
          } ei (*m->ptr != ZERO)
@@ -6700,7 +6685,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             currSymb = ' ';
             if (sc.areaDeco.hiId == SHORT && m->searchHiId == 0) {
                sc.numDecoCells = m->countExtraBytes + 1;
-               m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_AT));
+               m->extraDeco = getFullDecoration(HLF_AT);
             }
             sc.mb_c = currSymb;
             sc.mb_utf8 = false;
@@ -6744,7 +6729,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   currSymb = (currSymb == ' ') ? listCharsG.space : listCharsG.nbsp;
                if (sc.areaDeco.hiId == SHORT && m->searchHiId == 0) {
                   sc.numDecoCells = 1;
-                  m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
+                  m->extraDeco = getFullDecoration(HLF_8);
                }
                sc.mb_c = currSymb;
                if (mb_char2len(currSymb) > 1) {
@@ -6776,7 +6761,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 
                if (!sc.decoPriority) {
                   sc.numDecoCells = 1;
-                  m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
+                  m->extraDeco = getFullDecoration(HLF_8);
                }
                sc.mb_c = currSymb;
                if (mb_char2len(currSymb) > 1) {
@@ -6813,7 +6798,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                   m->c_extra = listCharsG.tab2;
                   m->c_final = listCharsG.tab3;
                   sc.numDecoCells = tab_len + 1;
-                  m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
+                  m->extraDeco = getFullDecoration(HLF_8);
                   sc.mb_c = currSymb;
                   if (mb_char2len(currSymb) > 1) {
                      sc.mb_utf8 = true;
@@ -6854,7 +6839,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                sc.listCharEndOfLine = UNT;
                m->ptr--;       // put it back at the ZERO
                if (!sc.decoPriority) {
-                  m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_AT));
+                  m->extraDeco = getFullDecoration(HLF_AT);
                   sc.numDecoCells = 1;
                }
                sc.mb_c = currSymb;
@@ -6874,9 +6859,10 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                currSymb = *m->extraBytes++;
                if (!sc.decoPriority) {
                   sc.numDecoCells = m->countExtraBytes + 1;
-                  m->extraDeco = combineDecorations(m->portalDeco, getFullDecoration(HLF_8));
-                  if (text_prop_type && sc.textPropFlags & PT_FLAG_OVERRIDE)
-                     m->extraDeco = combineDecorations(textPropDeco, m->extraDeco);
+                  if (text_prop_type && (sc.textPropFlags & PT_FLAG_OVERRIDE) != 0)
+                     m->extraDeco = textPropDeco;
+                  else 
+                     m->extraDeco = getFullDecoration(HLF_8);
                }
                sc.mb_utf8 = false;   // don't draw as UTF-8
             } ei (VIsual_active
@@ -6928,7 +6914,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
                if (m->portalDeco.hiId != SHORT) {
                   m->charDeco = m->portalDeco;
                   if (m->lineDeco.hiId != SHORT)
-                     m->charDeco = combineDecorations(m->charDeco, m->lineDeco);
+                     m->charDeco = m->lineDeco;
                }
             }
          }
@@ -7104,7 +7090,7 @@ drawLineOnScreen(
          if (m.fromcol == m.tocol && search_match_endcol)
             m.tocol = m.fromcol + 1;
          c.areaHiliting = true;
-         overlayDeco(OUT &c.visualDeco, EXTRA_DECO_INVERT);
+         overlayDeco(OUT &c.visualDeco, OVERLAY_DECO_INVERT);
       }
    }
 

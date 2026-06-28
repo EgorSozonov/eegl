@@ -2,7 +2,6 @@
 int highlight_link_id(Short hiId);
 void initHilite(int reset);
 void doHilite(CS line, Boole forceit, Boole init);
-Decoration combineDecorations(Decoration overlay, Decoration base);
 Short hiliteGroupByName(Text name);
 Decoration decosByHiliteName(CS name);
 Boole hiliteExists(Text name);

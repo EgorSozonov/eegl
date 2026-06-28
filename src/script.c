@@ -899,7 +899,7 @@ cmd_source(Byte *fname, Invocation* invo) {
       // - after ":argdo", ":windo" or ":bufdo"
       // - another command follows
       // - inside a loop
-      openscript( fname, global_busy || listcmd_busy || invo->cstack->ind >= 0);
+      openscript(fname, global_busy || listcmd_busy);
 
    // ":source" read commands
    ei (scriptRunFile(fname, NULL) == FAIL) {
@@ -953,7 +953,6 @@ source_nextline(void *cookie) {
    return ((SourceCookie *)cookie)->nextline;
 }
 
-# define USE_FOPEN_NOINH
 //Special function to open a file without handle inheritance. When possible the handle is closed 
 //on exec().
 private FILE *
@@ -1042,12 +1041,7 @@ may_load_script(int sid, int *loaded) {
 //Return FAIL if file could not be opened, OK otherwise.
 //If a ScriptItem was found or created, "*retSid" is set to the SID.
 private int
-scriptRunFileInternal(
-   CS fname,
-   OUT int* ret_sid,
-   Invocation* invo,
-   Boole      clearvars
-){
+scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearvars){
    SourceCookie cookie;
    CS fname_not_fixed = NULL;
    CS fname_exp = NULL;
@@ -1065,7 +1059,7 @@ scriptRunFileInternal(
 
    CLEAR_FIELD(cookie);
    if (!fname) {
-      // sourcing lines from a buffer
+      //sourcing lines from a book
       fname_exp = initCurBookForSourcing(OUT &cookie, invo);
       if (!fname_exp)
          return FAIL;
@@ -1104,14 +1098,10 @@ scriptRunFileInternal(
    applyAutocomms(EVENT_SOURCEPRE, fname_exp, fname_exp, false, curBook);
 
    if (!cookie.sourceFromCurBook) {
-#ifdef USE_FOPEN_NOINH
       cookie.fp = fopen_noinh_readbin(fname_exp);
-#else
-      cookie.fp = fopen((char *)fname_exp, READBIN);
-#endif
    }
 
-   if (cookie.fp == NULL && !cookie.sourceFromCurBook) {
+   if (!cookie.fp && !cookie.sourceFromCurBook) {
       if (p_verbose > 0) {
          verbose_enter();
          if (SOURCING_NAME == NULL)
@@ -1212,7 +1202,7 @@ scriptRunFileInternal(
 
    firstline = getsourceline(0, (void *)&cookie, 0, true);
 
-   // Call doCommand, which will call getsourceline() to get the lines.
+   //Call doCommand, which will call getsourceline() to get the lines.
    doCommand(firstline, &getsourceline, (void *)&cookie, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_REPEAT);
    retval = OK;
 
@@ -1267,13 +1257,13 @@ theend:
       //If the original name is in the script list we add the ID of the
       //script that was actually sourced.
       if (SCRIPT_ID_VALID(not_fixed_sid) && not_fixed_sid != sid)
-          SCRIPT_ITEM(not_fixed_sid)->sn_sourced_sid = sid;
-    }
+         SCRIPT_ITEM(not_fixed_sid)->sn_sourced_sid = sid;
+   }
 
-    eeglFree(fname_not_fixed);
-    eeglFree(fname_exp);
-    stickyCommandModifiersG = save_stickyCommandModifiersG;
-    return retval;
+   eeglFree(fname_not_fixed);
+   eeglFree(fname_exp);
+   stickyCommandModifiersG = save_stickyCommandModifiersG;
+   return retval;
 }
 
 int
@@ -1660,45 +1650,7 @@ getsourceline(
 // Return true if sourcing a script either from a file or a buffer. Otherwise return false.
 int
 sourcing_a_script(Invocation* invo) {
-   return (getline_equal(invo->ea_getline, invo->cookie, getsourceline));
-}
-
-// ":finish": Mark a sourced file as finished.
-void
-c_finish(Invocation* invo) {
-   if (sourcing_a_script(invo))
-      do_finish(invo, false);
-   else
-      emsg(_(e_finish_used_outside_of_sourced_file));
-}
-
-//Mark a sourced file as finished.  Possibly makes the ":finish" pending.
-//Also called for a pending finish at the ":endtry" or after returning from
-//an extra doCommand().  "reanimate" is used in the latter case.
-void
-do_finish(Invocation* invo, int reanimate) {
-   if (reanimate)
-      ((SourceCookie *)getline_cookie(invo->ea_getline, invo->cookie))->finished = false;
-
-    // Cleanup (and inactivate) conditionals, but stop when a try conditional
-    // not in its finally clause (which then is to be executed next) is found.
-    // In this case, make the ":finish" pending for execution at the ":endtry".
-    // Otherwise, finish normally.
-   int idx = cleanup_conditionals(invo->cstack, 0, true);
-   if (idx >= 0) {
-      invo->cstack->pending[idx] = CSTP_FINISH;
-      report_make_pending(CSTP_FINISH, NULL);
-   } else
-      ((SourceCookie *)getline_cookie(invo->ea_getline, invo->cookie))->finished = true;
-}
-
-
-//Return true when a sourced file had the ":finish" command: Don't give error
-//message for missing ":endif". Return false when not sourcing a file.
-int
-sourceFileIsFinished(LineGetter fgetline, void* cookie) {
-   return (getline_equal(fgetline, cookie, getsourceline)
-       && ((SourceCookie *)getline_cookie( fgetline, cookie))->finished);
+   return (invo->ea_getline == &getsourceline);
 }
 
 //Find the path of a script below the "autoload" directory.
@@ -4677,17 +4629,12 @@ setContextByCommandName(
    case C_final:
    case C_const:
    case C_let:
-   case C_if:
-   case C_elseif:
-   case C_while:
-   case C_for:
    case C_echo:
    case C_echon:
    case C_execute:
    case C_echomsg:
    case C_echoerr:
    case C_call:
-   case C_return:
    case C_lexpr:
    case C_laddexpr:
    case C_lgetexpr:
@@ -9289,7 +9236,7 @@ correct_cmdspos(int idx, int cells) {
 // Get a command line for the ":" action
 CS
 getexline(
-   Unt      c,      // normally ':', NUL for ":append"
+   Unt  c,      // normally ':', NUL for ":append"
    void   *cookie UNUSED,
    int      indent,      // indent for inside conditionals
    GetlineAlgo options
@@ -12593,26 +12540,6 @@ isFunctionComm(CS* comm) {
    return false;
 }
 
-//Called when defining a function: The context may be needed for script
-//variables declared in a block that is visible now but not when the function
-//is compiled or called later.
-private void
-function_using_block_scopes(UserFunc *fp, CondStack *cstack) {
-   if (cstack == NULL || cstack->ind < 0)
-      return;
-
-   int count = cstack->ind + 1;
-   fp->uf_block_ids = ALLOC_MULT(int, count);
-   MEMMOVE(fp->uf_block_ids, cstack->cs_block_id, sizeof(int) * count);
-   fp->uf_block_depth = count;
-
-   // Set flag in each block to indicate a function was defined.  This
-   // is used to keep the variable when leaving the block, see
-   // hide_script_var().
-   for (int i = 0; i <= cstack->ind; ++i)
-      cstack->flags[i] |= CSF_FUNC_DEF;
-}
-
 //Read the body of a function, put every line in "newlines". This stops at "endfunction".
 //"newlines" must already have been initialized. "invo->id" is C_block
 private int
@@ -12926,156 +12853,6 @@ theend:
    return ret;
 }
 
-//Handle the body of a lambda.  *arg points to the "{", process statements until the matching "}".
-//When not evaluating "newargs" is NULL.
-//When successful "returnVar" is set to a funcref.
-private int
-lambda_function_body(
-   Byte       **arg,
-   Var    *returnVar,
-   EvalCtx   *evalarg,
-   ArrayList    *newargs,
-   ArrayList    *default_args
-) {
-   int      evaluate = (evalarg->eval_flags & EVAL_EVALUATE);
-   ArrayList   *gap = &evalarg->eval_ga;
-   ArrayList   *freegap = &evalarg->eval_freega;
-   UserFunc   *ufunc = NULL;
-   Invocation   invo;
-   ArrayList   newlines;
-   Byte   *commline = NULL;
-   int      ret = FAIL;
-   PartiallyApplied   *pt;
-   int      lnum_save = -1;
-   LineNr   sourcing_lnum_top = SOURCING_LNUM;
-   Byte   *line_arg = NULL;
-
-   *arg = skipwhite(*arg + 1);
-   if (**arg == '|' || !endsComm(*arg)) {
-      showErrFmtMsg(_(e_trailing_characters_str), *arg);
-      return FAIL;
-   }
-
-   // When there is a line break use what follows for the lambda body.
-   // Makes lambda body initializers work for object and enum member variables.
-   if (**arg == '\n')
-      line_arg = *arg + 1;
-
-   CLEAR_FIELD(invo);
-   invo.id = C_block;
-   invo.forceit = false;
-   invo.commline = &commline;
-   invo.skip = !evaluate;
-   invo.ea_getline = evalarg->eval_getline;
-   invo.cookie = evalarg->eval_cookie;
-
-   ga_init2(&newlines, sizeof(CS), 10);
-   if (get_function_body(&invo, &newlines, line_arg, &evalarg->eval_tofree_ga) == FAIL)
-      goto erret;
-
-   // When inside a lambda must add the function lines to evalarg.eval_ga.
-   evalarg->eval_break_count += newlines.len;
-   if (gap->ga_itemsize > 0) {
-      int   idx;
-      Byte   *last;
-      Unt  plen;
-      Byte  *pnl;
-
-      for (idx = 0; idx < newlines.len; ++idx) {
-         Byte  *p = ((Byte **)newlines.c)[idx];
-         if (!p)
-            // comment line in the lambda body
-            continue;
-
-         p = skipwhite(p);
-
-         if (ga_grow(gap, 1) == FAIL || ga_grow(freegap, 1) == FAIL)
-            goto erret;
-
-         // Going to concatenate the lines after parsing.  For an empty or
-         // comment line use an empty string.
-         // Insert NL characters at the start of each line, the string will
-         // be split again later in .get_lambda_tv().
-         if (*p == ZERO || isComment(p)) {
-            p = (CS)"";
-            plen = 0;
-          } else
-            plen = STRLEN(p);
-         pnl = copySubstr((CS)"\n", plen + 1);
-         if (pnl != NULL)
-            MEMMOVE(pnl + 1, p, plen + 1);
-         ((Byte **)gap->c)[gap->len++] = pnl;
-         ((Byte **)freegap->c)[freegap->len++] = pnl;
-      }
-      if (ga_grow(gap, 1) == FAIL || ga_grow(freegap, 1) == FAIL)
-          goto erret;
-      // nothing is following the "}"
-      last = S"}";
-      plen = 1;
-      pnl = copySubstr((CS)"\n", plen + 1);
-      MEMMOVE(pnl + 1, last, plen + 1);
-      ((Byte **)gap->c)[gap->len++] = pnl;
-      ((Byte **)freegap->c)[freegap->len++] = pnl;
-   }
-
-   *arg = S"";
-
-   if (!evaluate) {
-      ret = OK;
-      goto erret;
-   }
-
-   Text name = get_lambda_name();
-   ufunc = alloc_ufunc(name.c, name.len);
-   if (ufunc == NULL)
-      goto erret;
-   if (hash_add(&userDefinedFnsS, (Text){ufunc->uf_name, ufunc->uf_namelen}, S"add function") 
-         == FAIL
-   )
-      goto erret;
-   ufunc->uf_flags = FC_LAMBDA;
-   ufunc->refcount = 1;
-   ufunc->args = *newargs;
-   newargs->c = NULL;
-   ufunc->defaultArgs = *default_args;
-   default_args->c = NULL;
-
-   // error messages are for the first function line
-   lnum_save = SOURCING_LNUM;
-   SOURCING_LNUM = sourcing_lnum_top;
-
-   pt = ALLOC_CLEAR_ONE(PartiallyApplied);
-   if (pt == NULL)
-      goto erret;
-   pt->fn = ufunc;
-   pt->refcount = 1;
-
-   ufunc->lines = newlines;
-   newlines.c = NULL;
-   ufunc->scriptCtx = scriptPosG;
-   ufunc->scriptCtx.lineNr += sourcing_lnum_top;
-
-   function_using_block_scopes(ufunc, evalarg->eval_cstack);
-
-   returnVar->partial = pt;
-   returnVar->tag = VAR_PARTIAL;
-   ufunc = NULL;
-   ret = OK;
-
-erret:
-   if (lnum_save >= 0)
-      SOURCING_LNUM = lnum_save;
-   ga_clear_strings(&newlines);
-   if (newargs != NULL)
-      ga_clear_strings(newargs);
-   ga_clear_strings(default_args);
-   if (ufunc != NULL) {
-      func_clear(ufunc, true);
-      func_free(ufunc, true);
-   }
-   return ret;
-}
-
 //Parse a lambda expression and get a Funcref from "*arg" into "returnVar". "arg" points to the 
 //opening brace in "{arg -> expr}" or the opening paren in "(arg) => expr"
 //Return OK or FAIL, or NOTDONE for dict or {expr}.
@@ -13150,17 +12927,6 @@ get_lambda_tv(
 
    *arg = skipwhite_and_linebreak(*arg, evalarg);
 
-   // Recognize opening brace as the start of a function body.
-   if (equal_arrow && **arg == '{') {
-      if (evalarg == NULL)
-         // cannot happen?
-         goto theend;
-      SOURCING_LNUM = start_lnum;  // used for where lambda is defined
-      if (lambda_function_body(arg, returnVar, evalarg, pnewargs,
-               &default_args) == FAIL)
-          goto errret;
-      goto theend;
-   }
    if (default_args.len > 0) {
       emsg(_(e_cannot_use_default_values_in_lambda));
       goto errret;
@@ -13248,7 +13014,6 @@ get_lambda_tv(
       // Use the line number of the arguments.
       fp->scriptCtx.lineNr += start_lnum;
 
-      function_using_block_scopes(fp, evalarg->eval_cstack);
 
       pt->fn = fp;
       pt->refcount = 1;
@@ -13258,7 +13023,6 @@ get_lambda_tv(
       hash_add(&userDefinedFnsS, (Text){fp->uf_name, fp->uf_namelen}, S"add lambda");
    }
 
-theend:
    eval_lavars_used = old_eval_lavars;
    eeglFree(tofree2);
 
@@ -14121,17 +13885,7 @@ call_user_func(
    if (default_arg_err && (fp->uf_flags & FC_ABORT || trylevel > 0 )) {
       anyEmsgG = true;
       retval = FCERR_FAILED;
-   } ei (islambda) {
-      Byte *p = *(Byte **)fp->lines.c + 7;
-
-      //A Lambda always has the command "return {expr}". It is much faster
-      //to evaluate {expr} directly.
-      ++ex_nesting_level;
-      (void)eval1(&p, returnVar, &EVALARG_EVALUATE);
-      --ex_nesting_level;
-   } else
-      // call doCommand() to execute the lines
-      doCommand(NULL, get_func_line, (void *)fc, DOCMD_NOWAIT|DOCMD_VERBOSE|DOCMD_REPEAT);
+   }
 
    // Invoke functions added with ":defer".
    applyDeferred(currentCallS);
@@ -15858,7 +15612,7 @@ c_call(Invocation* invo) {
 
    //When inside :try we need to check for following "| catch" or "| endtry".
    //Not when there was an error, but do check if an exception was thrown.
-   if ((!aborting() || did_throw) && (!failed || invo->cstack->tryLevel > 0)) {
+   if ((!aborting() || did_throw) && (!failed)) {
       // Check for trailing illegal characters and a following command.
       arg = skipwhite(arg);
       if (!endsComm(arg)) {
@@ -15874,72 +15628,6 @@ c_call(Invocation* invo) {
 end:
    bagUnref(fudi.bag);
    eeglFree(tofree);
-}
-
-//Return from a function. Possibly make the return pending. Also called for a pending return 
-//at the ":endtry" or after returning from an extra doCommand().  "reanimate" is used in the 
-//latter case.  "is_cmd" is set when called due to a ":return" command.  "returnVar" may point to 
-//a Var with the return returnVar.  Return true when the return can be carried out,
-//false when the return gets pending.
-int
-do_return(
-   Invocation* invo,
-   int reanimate,
-   int is_cmd,
-   void* returnVar
-){
-   if (reanimate) // Undo the return.
-      currentCallS->fc_returned = false;
-
-   CondStack   *cstack = invo->cstack;
-   //Cleanup (and inactivate) conditionals, but stop when a try conditional not in its finally 
-   //clause (which then is to be executed next) is found. In this case, make the ":return" 
-   //pending for execution at the ":endtry". Otherwise, return normally.
-   int idx = cleanup_conditionals(invo->cstack, 0, true);
-   if (idx >= 0) {
-      cstack->pending[idx] = CSTP_RETURN;
-
-      if (!is_cmd && !reanimate)
-          // A pending return again gets pending.  "returnVar" points to an
-          // allocated variable with the returnVar of the original ":return"'s
-          // argument if present or is NULL else.
-          cstack->pend.csp_rv[idx] = returnVar;
-      else {
-         // When undoing a return in order to make it pending, get the stored return returnVar.
-         if (reanimate)
-            returnVar = currentCallS->fc_returnVar;
-
-         if (returnVar) {
-            // Store the value of the pending return.
-            if ((cstack->pend.csp_rv[idx] = allocVar()) != NULL)
-               *(Var *)cstack->pend.csp_rv[idx] = *(Var *)returnVar;
-            else
-               emsg(_(e_out_of_memory));
-         } else
-            cstack->pend.csp_rv[idx] = NULL;
-
-         if (reanimate) {
-            //The pending return value could be overwritten by a ":return" without argument in a 
-            //finally clause; reset the default return value.
-            currentCallS->fc_returnVar->tag = VAR_NUMBER;
-            currentCallS->fc_returnVar->number = 0;
-         }
-      }
-      report_make_pending(CSTP_RETURN, returnVar);
-   } else {
-      currentCallS->fc_returned = true;
-
-      //If the return is carried out now, store the return value.  For
-      //a return immediately after reanimation, the value is already there.
-      if (!reanimate && returnVar) {
-         clearVar(currentCallS->fc_returnVar);
-         *currentCallS->fc_returnVar = *(Var *)returnVar;
-         if (!is_cmd)
-            eeglFree(returnVar);
-      }
-   }
-
-   return idx < 0;
 }
 
 // Free the variable with a pending return value.
@@ -15974,47 +15662,6 @@ get_return_cmd(void* returnVar) {
    }
    eeglFree(tofree);
    return copySubstr(IObuff, IObufflen);
-}
-
-//Get next function line. Called by doCommand() to get the next line.
-//Return allocated string, or NULL for end of function.
-CS
-get_func_line(Unt c UNUSED, void* cookie, int indent UNUSED, GetlineAlgo options UNUSED) {
-   FnCall   *fcp = (FnCall *)cookie;
-   UserFunc   *fp = fcp->fn;
-   CS retval;
-   ArrayList   *gap;  // growarray with function lines
-
-   // If breakpoints have been added/deleted need to check for it.
-   if (fcp->fc_dbg_tick != debug_tick) {
-      fcp->fc_breakpoint = dbg_find_breakpoint(false, fp->uf_name, SOURCING_LNUM);
-      fcp->fc_dbg_tick = debug_tick;
-   }
-
-   gap = &fp->lines;
-   if (((fp->uf_flags & FC_ABORT) && anyEmsgG && !aborted_in_try()) || fcp->fc_returned)
-      retval = NULL;
-   else {
-      // Skip NULL lines (continuation lines).
-      while (fcp->lineNr < gap->len && ((Byte **)(gap->c))[fcp->lineNr] == NULL)
-         ++fcp->lineNr;
-      if (fcp->lineNr >= gap->len)
-         retval = NULL;
-      else {
-         retval = copyStr(((Byte **)(gap->c))[fcp->lineNr++]);
-         SOURCING_LNUM = fcp->lineNr;
-      }
-   }
-
-    // Did we encounter a breakpoint?
-   if (fcp->fc_breakpoint != 0 && fcp->fc_breakpoint <= SOURCING_LNUM) {
-      dbg_breakpoint(fp->uf_name, SOURCING_LNUM);
-      // Find next breakpoint.
-      fcp->fc_breakpoint = dbg_find_breakpoint(false, fp->uf_name, SOURCING_LNUM);
-      fcp->fc_dbg_tick = debug_tick;
-   }
-
-    return retval;
 }
 
 //Return true if the currently active function should be ended, because a

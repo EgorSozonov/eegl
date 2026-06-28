@@ -11292,7 +11292,6 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
          for (int i = 0; i < ga->len; i++) {
             if (char_pos == ((Unt *)ga->c)[i]) {
                newDeco = decorationsG[isSelect ? HLF_PMSI : HLF_PMNI];
-               newDeco = combineDecorations(decorationsG[hiId], newDeco);
                break;
             }
          }
@@ -11301,14 +11300,13 @@ computeTextDeco(CS text, Short hiId, Decoration userDeco) {
             matchedLen = (int)leaderLen;
          if (matchedLen > 0) {
             newDeco = decorationsG[isSelect ? HLF_PMSI : HLF_PMNI];
-            newDeco = combineDecorations(decorationsG[hiId], newDeco);
             matchedLen--;
          }
       }
 
-      newDeco = combineDecorations(getFullDecoration(HLF_PNI), newDeco);
+      newDeco = getFullDecoration(HLF_PNI);
       if (userDeco.hiId != SHORT)
-         newDeco = combineDecorations(newDeco, userDeco);
+         newDeco = userDeco;
 
       int charCells = mb_ptr2cells(ptr);
       for (int i = 0; i < charCells; i++)
@@ -11373,9 +11371,7 @@ combineUserDecos(int idx, int type, Decoration defaultDeco) {
       displayedItemsS[idx].kindDeco
    };
 
-   return userDecos[type].hiId != SHORT 
-      ? combineDecorations(defaultDeco, userDecos[type])
-      : defaultDeco;
+   return userDecos[type].hiId != SHORT ? userDecos[type] : defaultDeco;
 }
 
 // Display text with proper decorations in the popup menu.

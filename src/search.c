@@ -3567,7 +3567,7 @@ update_search_hl(
             match->currHiId = match->currHiId;
             // Hilite the match were the cursor is using the CurSearch group.
             if (match == search_hl && match->has_cursor) {
-               match->extra = EXTRA_DECO_INVERT;
+               match->extra = OVERLAY_DECO_INVERT;
             }
          } ei (col == match->endcol) {
             match->currHiId = SHORT;

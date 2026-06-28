@@ -23,6 +23,8 @@ private Boole wasBookChangedNotTerm(Book *book);
 private void mayPrint(Invocation* invo);
 private void closePortalInternal(Portal* port, Tab* t);
 
+private void
+doOneCommand(OUT CS* commline, Unt flags, LineGetter fgetline, void* cookie); 
 //}}}
 //{{{sortin' and filterin'
 
@@ -274,14 +276,14 @@ c_sort(Invocation* invo) {
    CS p;
    CS s;
    CS s2;
-   Byte   c;         // temporary character storage
-   int      unique = false;
-   long   deleted;
-   ColNr   start_col;
-   ColNr   end_col;
-   int      sort_what = 0;
-   int      format_found = 0;
-   int      change_occurred = false; // Book contents changed.
+   Byte c;         // temporary character storage
+   int unique = false;
+   long deleted;
+   ColNr start_col;
+   ColNr end_col;
+   int sort_what = 0;
+   int format_found = 0;
+   int change_occurred = false; // Book contents changed.
 
    // Sorting one line is really quick!
    if (count <= 1)
@@ -2439,8 +2441,7 @@ startEditingFile(
    if (oldbuf && !auto_buf) {
       int msg_scroll_save = msg_scroll;
 
-      // Obey the 'O' flag in 'cpoptions': overwrite any previous file
-      // message.
+      //Obey the 'O' flag in 'cpoptions': overwrite any previous file message.
       if (!isExitingG && p_verbose == 0)
          msg_scroll = false;
       if (!msg_scroll)   // wait a bit when overwriting an error msg
@@ -2452,9 +2453,9 @@ startEditingFile(
       fileinfo(false, true, false);
 
       msg_scrolled_ign = false;
-    }
+   }
 
-    curBook->lastUsed = eeTime();
+   curBook->lastUsed = eeTime();
 
    if (command)
       doCommand(command, NULL, NULL, DOCMD_VERBOSE);
@@ -2541,13 +2542,10 @@ c_append(Invocation* invo) {
       } else {
          int save_State = stateG;
 
-         // Set stateG to avoid the cursor shape to be set to MODE_INSERT
-         // state when getline() returns.
+         //Set stateG to avoid the cursor shape to be set to MODE_INSERT
+         //state when getline() returns.
          stateG = MODE_COMMLINE;
-         theline = invo->ea_getline(
-             invo->cstack->loopLevel > 0 ? -1 :
-             ZERO, invo->cookie, indent, true
-         );
+         theline = invo->ea_getline(ZERO, invo->cookie, indent, true);
          stateG = save_State;
       }
       lines_left = visibleRowsG - 1;
@@ -4838,7 +4836,6 @@ bookWrite_all(Book *book, int forceit) {
 private int quitmore = 0;
 private int ex_pressedreturn = false;
 
-private void doOneCommand(CS*, int, CondStack *, LineGetter fgetline, void* cookie);
 private void append_command(CS cmd);
 
 private void do_exbuffer(Invocation* invo);
@@ -4879,32 +4876,8 @@ private void   close_redir(void);
 
 private Byte dollar_command[2] = {'$', ZERO};
 
-
-// Struct for storing a line inside a while/for loop
-typedef struct {
-   CS line;     // command line
-   LineNr lnum;      // sourcing_lnum of the line
-} LoopComm;
-
-// Structure used to store info for line position in a while or for loop.
-// This is required, because doOneCommand() may invoke ex_function(), which
-// reads more lines that may come from the while/for loop.
-typedef struct {
-   ArrayList* lines_gap;      // growarray with line info
-   int current_line;      // last read line from growarray
-   int repeating;      // true when looping a second time
-   // When "repeating" is false use "getline" and "cookie" to get lines
-   LineGetter lc_getline;
-   void* cookie;
-} LoopCookie;
-
-private CS get_loop_line(Unt c, void *cookie, int indent, GetlineAlgo options);
-private int   store_loop_line(ArrayList *gap, CS line);
-private void   free_commlines(ArrayList *gap);
-
 // Struct to save a few things while debugging.  Used in doCommand() only.
 typedef struct {
-   int trylevel;
    int force_abort;
    Exception* caught_stack;
    CS vv_exception;
@@ -4913,32 +4886,27 @@ typedef struct {
    int gotInterruptG;
    int did_throw;
    Boole need_rethrow;
-   int check_cstack;
    Exception* current_exception;
 } DebugStuff;
 
 private void
 saveDbgStuff(DebugStuff* dsp) {
-   dsp->trylevel   = trylevel;      trylevel = 0;
    dsp->force_abort   = force_abort;      force_abort = false;
    dsp->caught_stack   = caught_stack;      caught_stack = NULL;
    dsp->vv_exception   = v_exception(NULL);
    dsp->vv_throwpoint   = v_throwpoint(NULL);
 
    // Necessary for debugging an inactive ":catch", ":finally", ":endtry"
-   dsp->anyEmsgG   = anyEmsgG;      anyEmsgG     = false;
-   dsp->gotInterruptG   = gotInterruptG;      gotInterruptG        = false;
-   dsp->did_throw   = did_throw;      did_throw    = false;
-   dsp->need_rethrow   = need_rethrow;      need_rethrow = false;
-   dsp->check_cstack   = check_cstack;      
-   check_cstack = false;
+   dsp->anyEmsgG     = anyEmsgG;      anyEmsgG     = false;
+   dsp->gotInterruptG = gotInterruptG; gotInterruptG  = false;
+   dsp->did_throw    = did_throw;      did_throw    = false;
+   dsp->need_rethrow = need_rethrow;   need_rethrow = false;
    dsp->current_exception = current_exception;   current_exception = NULL;
 }
 
 private void
 restore_DebugStuff(DebugStuff* dsp) {
    suppress_errthrow = false;
-   trylevel = dsp->trylevel;
    force_abort = dsp->force_abort;
    caught_stack = dsp->caught_stack;
    (void)v_exception(dsp->vv_exception);
@@ -4947,7 +4915,6 @@ restore_DebugStuff(DebugStuff* dsp) {
    gotInterruptG = dsp->gotInterruptG;
    did_throw = dsp->did_throw;
    need_rethrow = dsp->need_rethrow;
-   check_cstack = dsp->check_cstack;
    current_exception = dsp->current_exception;
 }
 
@@ -5064,116 +5031,17 @@ handle_did_throw(void) {
    estack_pop();
 }
 
-//Obtain a line when inside a ":while" or ":for" loop.
-private CS
-get_loop_line(Unt c, void* cookie, int indent, GetlineAlgo options) {
-   LoopCookie* cp = (LoopCookie *)cookie;
-   CS line;
-
-   if (cp->current_line + 1 >= cp->lines_gap->len) {
-      if (cp->repeating)
-          return NULL;   // trying to read past ":endwhile"/":endfor"
-
-      // First time inside the ":while"/":for": get line normally.
-      if (!cp->lc_getline)
-         line = getCommline(c, 0L, indent, 0);
-      else
-         line = (cp->lc_getline)(c, cp->cookie, indent, options);
-      if (line && store_loop_line(cp->lines_gap, line) == OK)
-         ++cp->current_line;
-
-      return line;
-   }
-
-   keyWasTypedG = false;
-   ++cp->current_line;
-   LoopComm* wp = (LoopComm *)(cp->lines_gap->c) + cp->current_line;
-   SOURCING_LNUM = wp->lnum;
-   return copyStr(wp->line);
-}
-
-// Store a line in "gap" so that a ":while" loop can execute it again.
-private int
-store_loop_line(ArrayList *gap, CS line) {
-   if (ga_grow(gap, 1) == FAIL)
-      return FAIL;
-   ((LoopComm *)(gap->c))[gap->len].line = copyStr(line);
-   ((LoopComm *)(gap->c))[gap->len].lnum = SOURCING_LNUM;
-   ++gap->len;
-   return OK;
-}
-
-// Free the lines stored for a ":while" or ":for" loop.
-private void
-free_commlines(ArrayList *gap) {
-   while (gap->len > 0) {
-      eeglFree(((LoopComm *)(gap->c))[gap->len - 1].line);
-      --gap->len;
-   }
-}
-
-//If "fgetline" is get_loop_line(), return true if the getline it uses equals
-//"func". Otherwise return true when "fgetline" equals "func".
-int
-getline_equal(
-   LineGetter fgetline,
-   void* cookie,      // argument for fgetline()
-   LineGetter func
-){
-   //When "fgetline" is "get_loop_line()" use the "cookie" to find the 
-   //function that's originally used to obtain the lines.  This may be
-   //nested several levels.
-   LineGetter gp = fgetline;
-   LoopCookie* cp = (LoopCookie *)cookie;
-   while (gp == get_loop_line) {
-      gp = cp->lc_getline;
-      cp = cp->cookie;
-   }
-   return gp == func;
-}
-
-//If "fgetline" is get_loop_line(), return the cookie used by the original
-//getline function.  Otherwise return "cookie".
-void*
-getline_cookie(
-   LineGetter fgetline,
-   void* cookie     // argument for fgetline()
-) {
-   //When "fgetline" is "get_loop_line()" use the "cookie" to find the
-   //cookie that's originally used to obtain the lines. This may be nested several levels.
-   LineGetter gp = fgetline;
-   LoopCookie* cp = (LoopCookie *)cookie;
-   while (gp == get_loop_line) {
-      gp = cp->lc_getline;
-      cp = cp->cookie;
-   }
-   return cp;
-}
-
 //Get the next line source line without advancing.
 CS
 getline_peek(
    LineGetter fgetline,
    void* cookie      // argument for fgetline()
 ){
-   LoopComm      *wp;
-
    // When "fgetline" is "get_loop_line()" use the "cookie" to find the
-   // cookie that's originally used to obtain the lines.  This may be nested
-   // several levels.
+   // cookie that's originally used to obtain the lines.  This may be nested several levels.
    LineGetter gp = fgetline;
-   LoopCookie* cp = (LoopCookie *)cookie;
-   while (gp == get_loop_line) {
-      if (cp->current_line + 1 < cp->lines_gap->len) {
-         // executing lines a second time, use the stored copy
-         wp = (LoopComm *)(cp->lines_gap->c) + cp->current_line + 1;
-         return wp->line;
-      }
-      gp = cp->lc_getline;
-      cp = cp->cookie;
-   }
    if (gp == &getsourceline)
-      return source_nextline(cp);
+      return source_nextline(cookie);
    return NULL;
 }
 
@@ -5273,30 +5141,22 @@ doCommand(
    Unt flags
 ){
    CS commlineCopy = NULL;   // copy of cmd line
-   int      used_getline = false;   // used "fgetline" to obtain command
-   static int   recursive = 0;      // recursive depth
-   int      msg_didout_before_start = 0;
-   int      count = 0;      // line number count
-   int      did_inc_isRedrawingDisabledG = false;
-   int      retval = OK;
-   CondStack   cstack;         // conditional stack
-   ArrayList   lines_ga;      // keep lines for ":while"/":for"
-   int      current_line = 0;   // active line in lines_ga
-   int      current_line_before = 0;
+   int used_getline = false;   // used "fgetline" to obtain command
+   static int recursive = 0;      // recursive depth
+   int msg_didout_before_start = 0;
+   int count = 0;      // line number count
+   int did_inc_isRedrawingDisabledG = false;
+   int retval = OK;
    CS fname = NULL;      // function or script name
-   LineNr   *breakpoint = NULL;   // ptr to breakpoint field in cookie
-   int      *dbg_tick = NULL;   // ptr to dbg_tick field in cookie
+   LineNr* breakpoint = NULL;   // ptr to breakpoint field in cookie
+   int* dbg_tick = NULL;   // ptr to dbg_tick field in cookie
    DebugStuff debug_saved;   // saved things for debug mode
-   int      initial_trylevel;
-   MsgList   **saved_msg_list = NULL;
-   MsgList   *private_msg_list = NULL;
+   MsgList** saved_msg_list = NULL;
+   MsgList* private_msg_list = NULL;
 
    // "fgetline" and "cookie" passed to doOneCommand()
    LineGetter commGetLine;
    void* commCookie;
-   LoopCookie commLoopCookie;
-   void* real_cookie;
-   static int callDepth = 0;      // recursiveness
    //For every pair of doCommand()/doOneCommand() calls, use an extra memory location for storing 
    //error messages to be converted to an exception. This ensures that the do_errthrow() call in 
    //doOneCommand() does not combine the messages stored by an earlier invocation of doOneCommand()
@@ -5305,40 +5165,11 @@ doCommand(
    saved_msg_list = msg_list;
    msg_list = &private_msg_list;
 
-   // It's possible to create an endless loop with ":execute", catch that
-   // here.  The value of 200 allows nested function calls, ":source", etc.
-   // Allow 200 or 'maxfuncdepth', whatever is larger.
-   if (callDepth >= 200 && callDepth >= p_mfd) {
-      emsg(_(e_command_too_recursive));
-      // When converting to an exception, we do not include the command name
-      // since this is not an error of the specific command.
-      do_errthrow((CondStack *)NULL, (CS)NULL);
-      msg_list = saved_msg_list;
-      return FAIL;
-   }
-   ++callDepth;
-
-   CLEAR_FIELD(cstack);
-   cstack.ind = -1;
-   ga_init2(&lines_ga, sizeof(LoopComm), 10);
-
-   real_cookie = getline_cookie(fgetline, cookie);
-
-   // Inside a function use a higher nesting level.
-   int isGetlineAFn = getline_equal(fgetline, cookie, &get_func_line);
-   if (isGetlineAFn && ex_nesting_level == func_level(real_cookie))
-      ++ex_nesting_level;
 
    // Get the function or script name and the address where the next breakpoint
    // line and the debug tick for a function or script are stored.
-   if (isGetlineAFn) {
-      fname = func_name(real_cookie);
-      breakpoint = func_breakpoint(real_cookie);
-      dbg_tick = func_dbg_tick(real_cookie);
-   } ei (getline_equal(fgetline, cookie, &getsourceline)) {
+   if (fgetline == &getsourceline) {
       fname = SOURCING_NAME;
-      breakpoint = source_breakpoint(real_cookie);
-      dbg_tick = source_dbg_tick(real_cookie);
    }
 
    // Initialize "force_abort"  and "suppress_errthrow" at the top level.
@@ -5355,7 +5186,6 @@ doCommand(
    else
       CLEAR_FIELD(debug_saved);
 
-   initial_trylevel = trylevel;
 
    // "did_throw" will be set to true if an exception will be thrown
    did_throw = false;
@@ -5366,7 +5196,7 @@ doCommand(
 
    // keyWasTypedG is only set when calling vgetc(). Reset it here when not calling vgetc() (
    // sourced command lines).
-   if (!(flags & DOCMD_KEYTYPED) && !getline_equal(fgetline, cookie, getexline))
+   if ((flags & DOCMD_KEYTYPED) == 0 && fgetline != &getexline)
       keyWasTypedG = false;
 
    //Continue executing command lines:
@@ -5374,73 +5204,20 @@ doCommand(
    //- when repeating until there are no more lines (for ":source")
    CS nextCommline = commline;
    do {
-      isGetlineAFn = getline_equal(fgetline, cookie, get_func_line);
-
       // stop skipping cmds for an error msg after all endif/while/for
-      if (!nextCommline && !force_abort && cstack.ind < 0 
-            && !(isGetlineAFn && func_has_abort(real_cookie))
-      ) {
+      if (!nextCommline && !force_abort ) {
          anyEmsgG = false;
-      }
-
-      //1. If repeating a line in a loop, get a line from lines_ga.
-      //2. If no line given: Get an allocated line with fgetline().
-      //3. If a line is given: Make a copy, so we can mess with it.
-      //4. If repeating, get a previous line from lines_ga.
-      if (cstack.loopLevel > 0 && current_line < lines_ga.len) {
-         // Each '|' separated command is stored separately in lines_ga, to
-         // be able to jump to it.  Don't use nextCommline now.
-         EE_CLEAR(commlineCopy);
-
-         // Check if a function has returned or, unless it has an unclosed
-         // try conditional, aborted.
-         if (isGetlineAFn) {
-            if (func_has_ended(real_cookie)) {
-               retval = FAIL;
-               break;
-            }
-         }
-
-         // Check if a sourced file hit a ":finish" command.
-         if (sourceFileIsFinished(fgetline, cookie)) {
-            retval = FAIL;
-            break;
-         }
-
-         // If breakpoints have been added/deleted need to check for it.
-         if (breakpoint && dbg_tick && *dbg_tick != debug_tick) {
-            *breakpoint = dbg_find_breakpoint(
-                  getline_equal(fgetline, cookie, &getsourceline), fname, SOURCING_LNUM
-            );
-            *dbg_tick = debug_tick;
-         }
-
-         nextCommline = ((LoopComm *)(lines_ga.c))[current_line].line;
-         SOURCING_LNUM = ((LoopComm *)(lines_ga.c))[current_line].lnum;
-
-         // Did we encounter a breakpoint?
-         if (breakpoint && *breakpoint != 0 && *breakpoint <= SOURCING_LNUM) {
-            dbg_breakpoint(fname, SOURCING_LNUM);
-            // Find next breakpoint.
-            *breakpoint = dbg_find_breakpoint(
-                getline_equal(fgetline, cookie, &getsourceline), fname, SOURCING_LNUM
-            );
-            *dbg_tick = debug_tick;
-         }
       }
 
       // 2. If no line given, get an allocated line with fgetline().
       if (!nextCommline) {
         //Need to set msg_didout for the first line after an ":if",
         //otherwise the ":if" will be overwritten.
-        if (count == 1 && getline_equal(fgetline, cookie, getexline))
+        if (count == 1 && fgetline ==  &getexline)
            msg_didout = true;
         if (fgetline == NULL 
               || (nextCommline = 
-                    fgetline(
-                       ':', cookie,  cstack.ind < 0 ? 0 : (cstack.ind + 1) * 2, 
-                       GETLINE_CONCAT_CONT
-                 )) == NULL
+                    fgetline(':', cookie,  0, GETLINE_CONCAT_CONT)) == NULL
         ) {
             // Don't call wait_return() for aborted command line.  The NULL
             // returned for the end of a sourced file or executed function
@@ -5468,34 +5245,8 @@ doCommand(
       }
       commlineCopy = nextCommline;
 
-      //Inside a while/for loop, and when the command looks like a ":while"
-      //or ":for", the line is stored, because we may need it later when looping.
-      //
-      //When there is a '|' and another command, it is stored separately,
-      //because we need to be able to jump back to it from an :endwhile/:endfor.
-      //
-      //Pass a different "fgetline" function to doOneCommand() below,
-      //that it stores lines in or reads them from "lines_ga".  Makes it
-      //possible to define a function inside a while/for loop and handles line continuation.
-      if ((cstack.loopLevel > 0 || has_loop_cmd(nextCommline))) {
-         commGetLine = &get_loop_line;
-         commCookie = (void *)&commLoopCookie;
-         commLoopCookie.lines_gap = &lines_ga;
-         commLoopCookie.current_line = current_line;
-         commLoopCookie.lc_getline = fgetline;
-         commLoopCookie.cookie = cookie;
-         commLoopCookie.repeating = (current_line < lines_ga.len);
-
-         // Save the current line when encountering it the first time.
-         if (current_line == lines_ga.len && store_loop_line(&lines_ga, nextCommline) == FAIL) {
-            retval = FAIL;
-            break;
-         }
-         current_line_before = current_line;
-      } else {
-         commGetLine = fgetline;
-         commCookie = cookie;
-      }
+      commGetLine = fgetline;
+      commCookie = cookie;
 
       did_endif = false;
 
@@ -5517,24 +5268,18 @@ doCommand(
       if ((p_verbose >= 15 && SOURCING_NAME) || p_verbose >= 16)
          msg_verbose_cmd(SOURCING_LNUM, commlineCopy);
 
-      //2. Execute one '|' separated command.
-      //   doOneCommand() will return NULL if there is no trailing '|'.
+      //2. Execute one command.
       //   "commlineCopy" can change, e.g. for '%' and '#' expansion.
       ++recursive;
-      doOneCommand(&commlineCopy, flags, &cstack, commGetLine, commCookie);
+      doOneCommand(OUT &commlineCopy, flags, commGetLine, commCookie);
       --recursive;
-
-      if (commCookie == (void *)&commLoopCookie)
-          // Use "current_line" from "commLoopCookie", it may have been
-          // incremented when defining a function.
-          current_line = commLoopCookie.current_line;
 
       if (nextCommline == NULL) {
           EE_CLEAR(commlineCopy);
 
          // If the command was typed, remember it for the ':' register.
          // Do this AFTER executing the command to make :@: work.
-         if (getline_equal(fgetline, cookie, getexline) && newLastCommlineG) {
+         if (fgetline == &getexline && newLastCommlineG) {
             eeglFreeString(lastCommlineG);
             lastCommlineG = newLastCommlineG;
             newLastCommlineG = NULL;
@@ -5545,103 +5290,18 @@ doCommand(
           nextCommline = commlineCopy;
       }
 
-
-      // reset anyEmsgG for a function that is not aborted by an error
-      if (anyEmsgG && !force_abort
-               && getline_equal(fgetline, cookie, &get_func_line)
-               && !func_has_abort(real_cookie)) {
-          anyEmsgG = false;
-      }
-
-      if (cstack.loopLevel > 0) {
-          ++current_line;
-
-          /*
-           * An ":endwhile", ":endfor" and ":continue" is handled here.
-           * If we were executing commands, jump back to the ":while" or
-           * ":for".
-           * If we were not executing commands, decrement loopLevel.
-           */
-         if (cstack.loopFlags & (CSL_HAD_CONT | CSL_HAD_ENDLOOP)) {
-            cstack.loopFlags &= ~(CSL_HAD_CONT | CSL_HAD_ENDLOOP);
-
-            // Jump back to the matching ":while" or ":for".  Be careful
-            // not to use a cs_line[] from an entry that isn't a ":while"
-            // or ":for": It would make "current_line" invalid and can
-            // cause a crash.
-            if (!anyEmsgG && !gotInterruptG && !did_throw
-               && cstack.ind >= 0
-               && (cstack.flags[cstack.ind] & (CSF_WHILE | CSF_FOR))
-               && cstack.cs_line[cstack.ind] >= 0
-               && (cstack.flags[cstack.ind] & CSF_ACTIVE)
-            ){
-               current_line = cstack.cs_line[cstack.ind]; // remember we jumped there
-               cstack.loopFlags |= CSL_HAD_LOOP;
-               line_breakcheck();      // check if CTRL-C typed
-
-               // Check for the next breakpoint at or after the ":while" or ":for".
-               if (breakpoint && lines_ga.len > current_line) {
-                  *breakpoint = dbg_find_breakpoint(
-                     getline_equal(fgetline, cookie, &getsourceline), fname,
-                     ((LoopComm *)lines_ga.c)[current_line].lnum-1
-                  );
-                  *dbg_tick = debug_tick;
-               }
-            } else {
-               // can only get here with ":endwhile" or ":endfor"
-               if (cstack.ind >= 0)
-                  rewind_conditionals(
-                        &cstack, cstack.ind - 1, CSF_WHILE | CSF_FOR, &cstack.loopLevel
-                  );
-            }
-         }
-         //For a ":while" or ":for" we need to remember the line number.
-         ei (cstack.loopFlags & CSL_HAD_LOOP) {
-            cstack.loopFlags &= ~CSL_HAD_LOOP;
-            cstack.cs_line[cstack.ind] = current_line_before;
-         }
-      }
-
       // Check for the next breakpoint after a watchexpression
       if (breakpoint && has_watchexpr()) {
          *breakpoint = dbg_find_breakpoint(false, fname, SOURCING_LNUM);
          *dbg_tick = debug_tick;
       }
 
-      // When not inside any ":while" loop, clear remembered lines.
-      if (cstack.loopLevel == 0) {
-         if (lines_ga.len > 0) {
-            SOURCING_LNUM = ((LoopComm *)lines_ga.c)[lines_ga.len - 1].lnum;
-            free_commlines(&lines_ga);
-         }
-         current_line = 0;
-      }
-
-      // A ":finally" makes anyEmsgG, gotInterruptG, and did_throw pending for being restored at the
-      // ":endtry".  Reset them here and set the ACTIVE and FINALLY flags, so that the finally 
-      // clause gets executed. This includes the case where a missing ":endif", ":endwhile" or
-      // ":endfor" was detected by the ":finally" itself.
-      if (cstack.loopFlags & CSL_HAD_FINA) {
-          cstack.loopFlags &= ~CSL_HAD_FINA;
-          report_make_pending(cstack.pending[cstack.ind]
-             & (CSTP_ERROR | CSTP_INTERRUPT | CSTP_THROW),
-             did_throw ? (void *)current_exception : NULL);
-          anyEmsgG = gotInterruptG = did_throw = false;
-          cstack.flags[cstack.ind] |= CSF_ACTIVE | CSF_FINALLY;
-      }
-
-      // Update global "trylevel" for recursive calls to doCommand() from within this loop.
-      trylevel = initial_trylevel + cstack.tryLevel;
-
       //If the outermost try conditional (across function calls and sourced
       //files) is aborted because of an error, an interrupt, or an uncaught
       //exception, cancel everything.  If it is left normally, reset
       //force_abort to get the non-EH compatible abortion behavior for the rest of the script.
-      if (trylevel == 0 && !anyEmsgG && !gotInterruptG && !did_throw)
+      if (!anyEmsgG && !gotInterruptG && !did_throw)
          force_abort = false;
-
-      // Convert an interrupt to an exception if appropriate.
-      (void)do_intthrow(&cstack);
 
     }
     //Continue executing command lines when:
@@ -5651,119 +5311,38 @@ doCommand(
     //- didn't get an error message or lines are not typed
     //- there is a command after '|', inside a :if, :while, :for or :try, or
     //  looping for ":source" command or function call.
-    while (!((gotInterruptG
+    while (!(gotInterruptG
                || (anyEmsgG && force_abort)
                || did_throw
             )
-             && cstack.tryLevel == 0
-           )
-       && !(anyEmsgG
-           // Keep going when inside try/catch, so that the error can be dealt with, except when it
-           // is a syntax error, it may cause the :endtry to be missed.
-           && (cstack.tryLevel == 0 || anySyntaxEmsgS)
-           && used_getline && getline_equal(fgetline, cookie, getexline)
-       )
-       && (nextCommline
-         || cstack.ind >= 0
-         || (flags & DOCMD_REPEAT))
+       && !(anyEmsgG && used_getline && fgetline == &getexline)
+       && (nextCommline || (flags & DOCMD_REPEAT))
    ); // do while
 
    eeglFree(commlineCopy);
    anySyntaxEmsgS = false;
-   free_commlines(&lines_ga);
-   ga_clear(&lines_ga);
 
-   if (cstack.ind >= 0) {
-      // If a sourced file or executed function ran to its end, report the unclosed conditional.
-      if (!gotInterruptG && !did_throw && !aborting()
-         && ((getline_equal(fgetline, cookie, &getsourceline)
-            && !sourceFileIsFinished(fgetline, cookie))
-             || (getline_equal(fgetline, cookie, &get_func_line)
-                      && !func_has_ended(real_cookie)))
-      ) {
-         if (cstack.flags[cstack.ind] & CSF_TRY)
-            emsg(_(e_missing_endtry));
-         ei (cstack.flags[cstack.ind] & CSF_WHILE)
-            emsg(_(e_missing_endwhile));
-         ei (cstack.flags[cstack.ind] & CSF_FOR)
-            emsg(_(e_missing_endfor));
-         else
-            emsg(_(e_missing_endif));
-      }
-
-      /*
-       * Reset "trylevel" in case of a ":finish" or ":return" or a missing
-       * ":endtry" in a sourced file or executed function.  If the try
-       * conditional is in its finally clause, ignore anything pending.
-       * If it is in a catch clause, finish the caught exception.
-       * Also cleanup any "forInfo" structures.
-       */
-      do {
-         int idx = cleanup_conditionals(&cstack, 0, true);
-
-         if (idx >= 0)
-            --idx;       // remove try block not in its finally clause
-         rewind_conditionals(&cstack, idx, CSF_WHILE | CSF_FOR,
-                        &cstack.loopLevel);
-      }    while (cstack.ind >= 0);
-      trylevel = initial_trylevel;
-   }
-
-   // If a missing ":endtry", ":endwhile", ":endfor", or ":endif" or a memory
-   // lack was reported above and the error message is to be converted to an
-   // exception, do this now after rewinding the cstack.
-   do_errthrow(&cstack, getline_equal(fgetline, cookie, &get_func_line)
-             ? (CS)"endfunction" : (CS)NULL);
-
-   if (trylevel == 0) {
-      // Just in case did_throw got set but current_exception wasn't.
-      if (current_exception == NULL)
-          did_throw = false;
-
-      /*
-       * When an exception is being thrown out of the outermost try
-       * conditional, discard the uncaught exception, disable the conversion
-       * of interrupts or errors to exceptions, and ensure that no more
-       * commands are executed.
-       */
-      if (did_throw)
-         handle_did_throw();
-      /*
-       * On an interrupt or an aborting error not converted to an exception,
-       * disable the conversion of errors to exceptions.  (Interrupts are not
-       * converted anymore, here.) This enables also the interrupt message
-       * when force_abort is set and anyEmsgG unset in case of an interrupt
-       * from a finally clause after an error.
-       */
-      ei (gotInterruptG || (anyEmsgG && force_abort))
-         suppress_errthrow = true;
-   }
-
-   //The current cstack will be freed when doCommand() returns. An uncaught exception will have to
-   //be rethrown in the previous cstack. If a function has just returned or a script file was just 
-   //finished and the previous cstack belongs to the same function or, respectively, script file, 
-   //it will have to be checked for finally clauses to be executed due to the ":return" or 
-   //":finish".  This is done in doOneCommand().
+   //When an exception is being thrown out of the outermost try conditional, discard the 
+   //uncaught exception, disable the conversion of interrupts or errors to exceptions, and 
+   //ensure that no more commands are executed.
    if (did_throw)
-      need_rethrow = true;
-   if ((getline_equal(fgetline, cookie, &getsourceline)
-            && ex_nesting_level > source_level(real_cookie))
-       || (getline_equal(fgetline, cookie, &get_func_line)
-            && ex_nesting_level > func_level(real_cookie) + 1)
-   ){
-      if (!did_throw)
-         check_cstack = true;
+      handle_did_throw();
+   //On an interrupt or an aborting error not converted to an exception, disable the conversion 
+   //of errors to exceptions. (Interrupts are not converted anymore, here.) This enables also 
+   //the interrupt message when force_abort is set and anyEmsgG unset in case of an interrupt
+   //from a finally clause after an error.
+   ei (gotInterruptG || (anyEmsgG && force_abort))
+      suppress_errthrow = true;
+
+   if (fgetline == &getsourceline) {
    } else {
-      // When leaving a function, reduce nesting level.
-      if (getline_equal(fgetline, cookie, get_func_line))
-          --ex_nesting_level;
       // Go to debug mode when returning from a function in which we are single-stepping.
-      if ((getline_equal(fgetline, cookie, &getsourceline)
-             || getline_equal(fgetline, cookie, get_func_line))
-         && ex_nesting_level + 1 <= debug_break_level)
-          do_debug(getline_equal(fgetline, cookie, &getsourceline)
+      if (fgetline ==  &getsourceline && ex_nesting_level + 1 <= debug_break_level
+      )
+         do_debug(fgetline ==  &getsourceline
              ? (CS)_("End of sourced file")
-             : (CS)_("End of function"));
+             : (CS)_("End of function")
+         );
    }
 
    // Restore the exception environment (done after returning from the debugger).
@@ -5772,22 +5351,10 @@ doCommand(
 
    msg_list = saved_msg_list;
 
-   // Cleanup if "cs_emsg_silent_list" remains.
-   if (cstack.cs_emsg_silent_list) {
-      EMsgList* elem;
-      EMsgList* temp;
 
-      for (elem = cstack.cs_emsg_silent_list; elem; elem = temp) {
-          temp = elem->next;
-          eeglFree(elem);
-      }
-   }
-
-   /*
-    * If there was too much output to fit on the command line, ask the user to
-    * hit return before redrawing the screen. With the ":global" command we do
-    * this only once after the command is finished.
-    */
+   //If there was too much output to fit on the command line, ask the user to
+   //hit return before redrawing the screen. With the ":global" command we do
+   //this only once after the command is finished.
    if (did_inc_isRedrawingDisabledG) {
       if (isRedrawingDisabledG > 0)
          --isRedrawingDisabledG;
@@ -5809,7 +5376,6 @@ doCommand(
 
    did_endif = false;  // in case doCommand used recursively
 
-   --callDepth;
    return retval;
 }
 
@@ -5831,85 +5397,75 @@ doCommand(
 private void
 doOneCommand(
    OUT CS* commline,
-   int flags,
-   CondStack* cstack,
+   Unt flags,
    LineGetter fgetline,
    void* cookie      // argument for fgetline()
 ){
-   CS p;
-   LineNr   lnum;
-   long   n;
-   CS   errorMsg = null;
-   CS after_modifier = NULL;
-   Invocation   invo;         // command arguments
-   CommandModifier  saveCommModifier;
-   int      save_reg_executing = reg_executing;
-   int      save_pending_end_reg_executing = pending_end_reg_executing;
-   int      ni;         // set when Not Implemented
-   CS cmd;
-   int      may_have_range;
-   int      did_set_expr_line = false;
-   int      sourcing = flags & DOCMD_VERBOSE;
-   int      did_append_cmd = false;
-
+   Invocation invo;         // command arguments
    CLEAR_FIELD(invo);
    invo.line1 = 1;
    invo.line2 = 1;
    ++ex_nesting_level;
    // When the last file has not been edited :q has to be typed twice.
    if (quitmore
-          // avoid that a function call in 'statusline' does this
-          && !getline_equal(fgetline, cookie, get_func_line)
-          // avoid that an autocommand, e.g. QuitPre, does this
-          && !getline_equal(fgetline, cookie, &getnextac)) {
+       // avoid that an autocommand, e.g. QuitPre, does this
+       && fgetline != &getnextac
+   ) {
       --quitmore;
    } 
 
    //Reset browse, confirm, etc..  They are restored when returning, for recursive calls.
-   saveCommModifier = commModifierG;
+   CommandModifier saveCommModifier = commModifierG;
 
-   // "#!anything" is handled like a comment.
+   //"#!anything" is handled like a comment.
    if ((*commline)[0] == '#' && (*commline)[1] == '!')
       goto doend;
    if (isComment(*commline)) {
+      *commline = null;
+      _bp(true); 
       goto doend; 
    }
 
+   int save_reg_executing = reg_executing;
+   CS errorMsg = null;
+   Boole did_set_expr_line = false;
+   int save_pending_end_reg_executing = pending_end_reg_executing;
+   LineNr lnum;
+   Long n;
+   Unt sourcing = flags & DOCMD_VERBOSE;
+   
    //1. Skip comment lines and leading white space and colons.
    //2. Handle command modifiers.
-   // The "invo" structure holds the arguments that can be used.
+   //The "invo" structure holds the arguments that can be used.
    invo.comm = *commline;
    invo.commline = commline;
    invo.ea_getline = fgetline;
    invo.cookie = cookie;
-   invo.cstack = cstack;
    if (parse_command_modifiers(&invo, OUT &errorMsg, &commModifierG, false) == FAIL)
       goto doend;
    applyCommModifiers(&commModifierG);
-   after_modifier = invo.comm;
+   CS after_modifier = invo.comm;
 
-   invo.skip = anyEmsgG || gotInterruptG || did_throw 
-      || (cstack->ind >= 0 && !(cstack->flags[cstack->ind] & CSF_ACTIVE));
+   invo.skip = anyEmsgG || gotInterruptG || did_throw;
 
    //3. Skip over the range to find the command.  Let "p" point to after it.
    //
    //We need the command to know what kind of range it uses.
-   cmd = invo.comm;
+   CS cmd = invo.comm;
    
-   may_have_range = true;
+   Boole may_have_range = true;
    if (may_have_range)
       invo.comm = skip_range(invo.comm, true, NULL);
 
-   p = findCommand(&invo, NULL, NULL);
+   CS p = findCommand(&invo, NULL, NULL);
 
    invo.comm = cmd;
 
-   // May go to debug mode.  If this happens and the ">quit" debug command is
-   // used, throw an interrupt exception and skip the next command.
+   //May go to debug mode.  If this happens and the ">quit" debug command is
+   //used, throw an interrupt exception and skip the next command.
    dbg_check_breakpoint(&invo);
    if (!invo.skip && gotInterruptG) {
       invo.skip = true;
-      (void)do_intthrow(cstack);
    }
 
    //4. parse a range specifier of the form: addr [,addr] [;addr] ..
@@ -5923,11 +5479,10 @@ doOneCommand(
    //[+-NUM]..
    //NUM
    //
-   //The invo.comm pointer is updated to point to the first character following the
-   //range spec. If an initial address is found, but no second, the upper bound
-   //is equal to the lower.
+   //The invo.comm pointer is updated to point to the first character following the range spec. 
+   //If an initial address is found, but no second, the upper bound is equal to the lower.
 
-   // invo.addressKind for user commands is set by find_ucmd
+   //invo.addressKind for user commands is set by find_ucmd
    if (!IS_USER_COMMAND(invo.id)) {
       if (invo.id != COUNT_COMMANDS)
          invo.addressKind = commands[(int)invo.id].addressKind;
@@ -5936,7 +5491,7 @@ doOneCommand(
 
       // :wincmd range depends on the argument.
       if (invo.id == C_wincmd && p)
-          getPortCommAddressType(skipwhite(p), &invo);
+         getPortCommAddressType(skipwhite(p), &invo);
       if (invo.id == C_ll && isLocationListBook(curBook))
          invo.addressKind = ADDR_OTHER;
    }
@@ -5946,7 +5501,7 @@ doOneCommand(
    ei (parse_cmd_address(&invo, OUT &errorMsg, false) == FAIL)
       goto doend;
 
-   // 5. Parse the command.
+   //5. Parse the command.
    //Skip ':' and any white space
    invo.comm = skipwhite(invo.comm);
    while (*invo.comm == ':')
@@ -5955,13 +5510,13 @@ doOneCommand(
    //If we got a line, but no command, then go to the line.
    if (*invo.comm == ZERO || isComment(invo.comm)) {
       if (invo.skip)       // skip this if inside :if
-          goto doend;
+         goto doend;
       errorMsg = ex_range_without_command(&invo);
       goto doend;
    }
 
-   // If this looks like an undefined user command and there are CmdUndefined
-   // autocommands defined, trigger the matching autocommands.
+   //If this looks like an undefined user command and there are CmdUndefined
+   //autocommands defined, trigger the matching autocommands.
    if (p && invo.id == COUNT_COMMANDS && !invo.skip
        && ASCII_ISUPPER(*invo.comm)
        && has_cmdundefined()
@@ -5974,8 +5529,7 @@ doOneCommand(
       p = copySubstr(invo.comm, p - invo.comm);
       ret = applyAutocomms(EVENT_CMDUNDEFINED, p, p, true, NULL);
       eeglFree(p);
-      // If the autocommands did something and didn't cause an error, try
-      // finding the command again.
+      //If the autocommands did something and didn't cause an error, try finding the command again
       p = (ret && !aborting()) ? findCommand(&invo, NULL, NULL) : invo.comm;
    }
 
@@ -5984,12 +5538,13 @@ doOneCommand(
          errorMsg = _(e_ambiguous_use_of_user_defined_command);
       goto doend;
    }
-   // Check for wrong commands.
+   //Check for wrong commands.
    if (*p == '!' && invo.comm[1] == 0151 && invo.comm[0] == 78 && !IS_USER_COMMAND(invo.id)) {
       errorMsg = uc_fun_cmd();
       goto doend;
    }
 
+   Boole did_append_cmd = false;
    if (invo.id == COUNT_COMMANDS) {
       if (!invo.skip) {
          STRCPY(IObuff, _(e_not_an_editor_command));
@@ -6007,11 +5562,11 @@ doOneCommand(
       goto doend;
    }
 
-   ni = (!IS_USER_COMMAND(invo.id) && (commands[invo.id].fn == c_ni
+   int ni = (!IS_USER_COMMAND(invo.id) && (commands[invo.id].fn == c_ni
 #ifdef HAVE_EX_SCRIPT_NI
         || commands[invo.id].fn == ex_script_ni
 #endif
-        ));
+        ));// set when Not Implemented
 
    // forced commands
    if (*p == '!' && invo.id != C_substitute) {
@@ -6183,7 +5738,6 @@ doOneCommand(
        || invo.id == C_global
        || invo.id == C_vglobal
        || invo.usefilter
-       || inside_block(&invo)
     ) {
       for (p = invo.arg; *p; ++p) {
           // Remove one backslash before a newline
@@ -6274,21 +5828,6 @@ doOneCommand(
    //Also make an exception for commands that handle a trailing command themselves.
    if (invo.skip) {
       switch (invo.id) {
-      // commands that need evaluation
-      case C_while:
-      case C_endwhile:
-      case C_for:
-      case C_endfor:
-      case C_if:
-      case C_elseif:
-      case C_else:
-      case C_endif:
-      case C_try:
-      case C_catch:
-      case C_finally:
-      case C_endtry:
-           break;
-
       // Commands that handle '|' themselves.  Check: A command should
       // either have the TRLBAR flag, appear in this list or appear in
       // the list at ":help :bar".
@@ -6332,13 +5871,11 @@ doOneCommand(
       case C_noautocmd:
       case C_noswapfile:
       case C_psearch:
-      case C_return:
       case C_rightbelow:
       case C_silent:
       case C_substitute:
       case C_syntax:
       case C_tab:
-      case C_throw:
       case C_tilde:
       case C_topleft:
       case C_unlet:
@@ -6377,15 +5914,6 @@ doOneCommand(
       invo.arg = skipwhite(p);
    }
 
-   // The :try command saves the emsg_silent flag, reset it here when
-   // ":silent! try" was used, it should only apply to :try itself.
-   if (invo.id == C_try && commModifierG.cmod_did_esilent > 0) {
-      emsg_silent -= commModifierG.cmod_did_esilent;
-      if (emsg_silent < 0)
-          emsg_silent = 0;
-      commModifierG.cmod_did_esilent = 0;
-   }
-
    //7. Execute the command.
    if (IS_USER_COMMAND(invo.id)) {
       //Execute a user-defined command.
@@ -6399,28 +5927,8 @@ doOneCommand(
 
    // Set flag that any command was executed, used by ex_vim9script().
    // Not if this was a command that wasn't executed or :endif.
-   if (sourcing_a_script(&invo)
-       && scriptPosG.sid > 0
-       && invo.id != C_endif
-       && (cstack->ind < 0
-          || (cstack->flags[cstack->ind] & CSF_ACTIVE))
-   )
+   if (sourcing_a_script(&invo) && scriptPosG.sid > 0)
       SCRIPT_ITEM(scriptPosG.sid)->sn_state = SN_STATE_HAD_COMMAND;
-
-   //If the command just executed called doCommand(), any throw or ":return"
-   //or ":finish" encountered there must also check the cstack of the still
-   //active doCommand() that called this doOneCommand().  Rethrow an uncaught
-   //exception, or reanimate a returned function or finished script file and
-   //return or finish it again.
-   if (need_rethrow)
-      do_throw(cstack);
-   ei (check_cstack) {
-      if (sourceFileIsFinished(fgetline, cookie))
-         do_finish(&invo, true);
-      ei (getline_equal(fgetline, cookie, get_func_line)  && current_func_returned())
-         do_return(&invo, true, false, NULL);
-   }
-   need_rethrow = check_cstack = false;
 
 doend:
    if (curPor->cursor.lnum == 0) {  // can happen with zero line number
@@ -6438,9 +5946,6 @@ doend:
       }
       emsg(errorMsg);
    }
-   do_errthrow(cstack,
-       (invo.id != COUNT_COMMANDS && !IS_USER_COMMAND(invo.id))
-         ? commands[(int)invo.id].name : (CS)NULL);
 
    if (did_set_expr_line)
       set_expr_line(NULL, NULL);
@@ -7174,11 +6679,6 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
                    // "varname->func()" is an expression.
                : (*swp == '-' && swp[1] == '>'))
          ) {
-            if (*invo->comm == '{' && endsComm(skipwhite(invo->comm + 1))) {
-               // "{" by itself is the start of a block.
-               invo->id = C_block;
-               return invo->comm + 1;
-            }
             invo->id = C_eval;
             return invo->comm;
          }
@@ -7333,10 +6833,6 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
       if (!p || p == invo->comm)
          invo->id = COUNT_COMMANDS;
    }
-
-   // ":fina" means ":finally"
-   if (invo->id == C_final && p - invo->comm == 4)
-      invo->id = C_finally;
 
    return p;
 }

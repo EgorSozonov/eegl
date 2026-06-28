@@ -2763,6 +2763,16 @@ skip_to_option_part(CS p) {
    return p;
 }
 
+CS
+skipLine(CS s) {
+   CS p;
+   for (p = s; *p != ZERO && *p != '\n'; p++)
+      {}
+   if (*p == '\n')
+      p++;
+   return p;
+}
+
 #define USING_FLOAT_STUFF
 
 // Copy "string" into newly allocated memory.
