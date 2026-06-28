@@ -1717,41 +1717,6 @@ theend:
    return retval;
 }
 
-//Isolate one part of a string option where parts are separated with "sep_chars".
-//The part is copied into "buf[maxlen]". "*option" is advanced to the next part.
-//The length is returned.
-int
-doCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
-   int len = 0;
-   CS p = *option;
-
-   // skip '.' at start of option part, for 'suffixes'
-   if (*p == '.') {
-      buf[len] = *p;
-      len++;
-      p++;
-   } 
-   while (*p != ZERO && firstOccurrence((CS)sep_chars, *p) == NULL) {
-      //Skip backslash before a separator character and space.
-      if (p[0] == '\\' && firstOccurrence((CS)sep_chars, p[1]) != NULL)
-         ++p;
-      if (len < maxlen - 1) {
-         buf[len] = *p;
-         len++;
-      } 
-      ++p;
-   }
-   buf[len] = ZERO;
-
-   if (*p != ZERO && *p != ',')   // skip non-standard separator
-      ++p;
-   p = skip_to_option_part(p);   // p points to next file name
-
-   *option = p;
-   return len;
-}
-
-
 // Handle ":wnext", ":wNext" and ":wprevious" commands.
 void
 c_wnext(Invocation* invo){
@@ -4162,7 +4127,7 @@ c_drop(Invocation* invo) {
 // and the pointer to it in "nulp".
 private CS
 skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
-   int      c;
+   int c;
 
    if (eeIsIdentifierChar(*p)) {
       // ":vimgrep pattern fname"
@@ -8374,8 +8339,7 @@ repl_commline(
    return src;
 }
 
-// Check for '|' to separate commands and '//' to start comments.
-// If "keep_backslash" is true do not remove any backslash.
+//Check for '//' to start comments. If "keep_backslash" is true, do not remove any backslash.
 void
 separateNextCommand(Invocation* invo, int keep_backslash) {
    for (CS p = skip_grep_pat(invo) ; *p; MB_PTR_ADV(p)) {
@@ -8387,7 +8351,7 @@ separateNextCommand(Invocation* invo, int keep_backslash) {
          if (*p == ZERO)      // stop at ZERO after CTRL-V
             break;
       }
-      // Skip over `=expr` when wildcards are expanded.
+      //Skip over `=expr` when wildcards are expanded.
       ei (p[0] == '`' && p[1] == '=' && (invo->argFlags & XFILE)) {
          p += 2;
          (void)skip_expr(&p, NULL);
@@ -8395,12 +8359,12 @@ separateNextCommand(Invocation* invo, int keep_backslash) {
             break;
       }
 
-      // Check for '//': start of comment or '|': next command :redir @" doesn't either.
+      //Check for '//': start of comment or '|': next command :redir @" doesn't either.
       ei ((isComment(p) && !(invo->argFlags & NOTRLCOM))
          || (*p == '|' && invo->id != C_append && invo->id != C_change && invo->id != C_insert)
          || *p == '\n'
       ){
-         // We remove the '\' before the '|', unless CTRLV is used AND 'b' is present in 'cpoptions'.
+         //We remove the '\' before the '|', unless CTRLV is used AND 'b' is present in 'cpoptions'.
          if (*(p - 1) == '\\') {
             if (!keep_backslash) {
                 STRMOVE(p - 1, p);   // remove the '\'
@@ -11368,7 +11332,7 @@ evalVars(
       } ei (!skip_mod) {
          valid |= modify_fname(src, tilde_file, usedlen, &result, &resultbuf, &resultlen);
          if (!result) {
-            *errorMsg = E;
+            *errorMsg = S""; 
             return NULL;
          }
       }
@@ -11662,16 +11626,14 @@ doExpandEnv(
 //Expand env vars. Return number of bytes written
 Unt
 doExpandEnvVarsWithEscaped(
-   OUT Text dst, // where to put the result. Length must be sufficient!
-   CS srcArg,    // input string e.g. "$HOME/eegl.hlp"
-   Boole one,    // "srcp" is one file name
-   CS startstr   // start again after this (can be NULL)
+   OUT Text dst, //where to put the result. Length must be sufficient!
+   CS srcArg,    //input string e.g. "$HOME/eegl.help"
+   Boole one,    //"srcp" is one file name
+   CS startstr   //start again after this (can be NULL)
 ) {
    CS tail;
    int c;
    CS var;
-   Boole copyChar;
-   Boole mustfree;   // var was allocated, need to free it later
    int at_start = true; // at start of a name
    int startstr_len = 0;
    CS wr = dst.c;
@@ -11695,9 +11657,9 @@ doExpandEnvVarsWithEscaped(
          wr += lenSkipped;
          continue;
       }
-      copyChar = true;
+      Boole copyChar = true;
       if ((*src == '$') || (*src == '~' && at_start)) {
-         mustfree = false;
+         Boole mustfree = false;   // var was allocated, need to free it later
 
          //The variable name is copied into dst temporarily, because it may
          //be a string in read-only memory and a ZERO needs to be appended.

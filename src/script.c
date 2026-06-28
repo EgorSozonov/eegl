@@ -450,7 +450,7 @@ doInPath(
    while (*p != ZERO && ((flags & DIP_ALL) || !did_one)) {
 
       // Copy the path from 'runtimepath' to builder[].
-      doCutPathFromListOfPaths(OUT &p, OUT builder, MAXPATHL, S",");
+      strCutPathFromListOfPaths(OUT &p, OUT builder, MAXPATHL, S",");
       Unt buflen = STRLEN(builder);
 
       // Skip after or non-after directories.
@@ -474,7 +474,7 @@ doInPath(
          CS np = name;
          while (*np != ZERO && ((flags & DIP_ALL) || !did_one)) {
             // Append the pattern from "name" to builder[].
-            doCutPathFromListOfPaths(OUT &np, OUT tail, (int)(MAXPATHL - (tail - builder)), S"\t ");
+            strCutPathFromListOfPaths(OUT &np, OUT tail, (int)(MAXPATHL - (tail - builder)), S"\t ");
 
             if (p_verbose > 10) {
                verbose_enter();
@@ -3413,8 +3413,8 @@ get_next_or_prev_match(int mode, Expand *xp) {
 // Start the command-line expansion and get the matches.
 private CS
 expandOne_start(int mode, OUT Expand* xp, CS str, Unt options){
-   int      non_suf_match;      // number without matching suffix
-   int      i;
+   int non_suf_match;      // number without matching suffix
+   int i;
    Byte   *ss = NULL;
 
    // Do the expansion.
@@ -3423,15 +3423,15 @@ expandOne_start(int mode, OUT Expand* xp, CS str, Unt options){
       //problem is that there was no match, causing the pattern to be added, which has illegal 
       //characters.
       if (!(options & WILD_SILENT) && (options & WILD_LIST_NOTFOUND))
-          showErrFmtMsg(_(e_no_match_str_2), str);
+         showErrFmtMsg(_(e_no_match_str_2), str);
    } ei (xp->files.len == 0) {
       if (!(options & WILD_SILENT))
-          showErrFmtMsg(_(e_no_match_str_2), str);
+         showErrFmtMsg(_(e_no_match_str_2), str);
    } else {
-      // Escape the matches for use on the command line.
+      //Escape the matches for use on the command line.
       expandEscape(xp, str, options, OUT &xp->files);
 
-      // Check for matching suffixes in file names.
+      //Check for matching suffixes in file names.
       if (mode != WILD_ALL && mode != WILD_ALL_KEEP && mode != WILD_LONGEST) {
          if (xp->files.len)
             non_suf_match = xp->files.len;
@@ -3444,7 +3444,7 @@ expandOne_start(int mode, OUT Expand* xp, CS str, Unt options){
             //in expand_wildcards, only need to check the first two.
             non_suf_match = 0;
             for (i = 0; i < 2; ++i) {
-               if (match_suffix(xp->files.c[i]))
+               if (strMatchLowPrioSuffix(xp->files.c[i], p_lpSuff))
                   ++non_suf_match;
             } 
          }
@@ -15328,7 +15328,10 @@ int
 scriptCheckScriptPrefix(CS p) {
    //Use caseInsensitiveCompareNChars() because in Turkish comparing the "I" may not work with
    //the standard library function.
-   if (p[0] == '<' && (caseInsensitiveCompareNChars(p + 1, "SID>", 4) == 0 || caseInsensitiveCompareNChars(p + 1, "SNR>", 4) == 0))
+   if (p[0] == '<' 
+         && (caseInsensitiveCompareNChars(p + 1, S"SID>", 4) == 0 
+            || caseInsensitiveCompareNChars(p + 1, S"SNR>", 4) == 0)
+   )
       return 5;
    if (p[0] == 's' && p[1] == ':')
       return 2;

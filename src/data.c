@@ -9274,11 +9274,11 @@ strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc) {
    CS s = tv_get_string(&argvars[0]);
    Long len = 0;
    
-   Unt (*func_inpAdvanceMultibyte)(OUT CS* pp);
-   func_inpAdvanceMultibyte = skipcc ? inpAdvanceMultibyte : mb_cptr2char_adv;
+   Unt (*func_strAdvanceMultibyte)(OUT CS* pp);
+   func_strAdvanceMultibyte = skipcc ? strAdvanceMultibyte : mb_cptr2char_adv;
    
    while (*s != ZERO) {
-      func_inpAdvanceMultibyte(&s);
+      func_strAdvanceMultibyte(&s);
       ++len;
    }
    returnVar->number = len;

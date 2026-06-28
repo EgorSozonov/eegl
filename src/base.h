@@ -745,7 +745,22 @@ void* allocateOnArena(Unt, Arena*);
 
 //}}}
 
+// Store a key/value (string) pair
+typedef struct {
+   int key;
+   Text value;
+} Kv;
 
 //Max chars in a path name including ZERO, see linux/limits.h
 #define MAXPATHL   4096
 typedef struct stat FileStat;
+
+
+// defines for evalVars()
+#define VALID_PATH      1
+#define VALID_HEAD      2
+
+// Character used as separator in autoload function/variable names.
+#define AUTOLOAD_CHAR '#'
+
+

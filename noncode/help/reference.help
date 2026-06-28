@@ -3647,18 +3647,13 @@ Emulate standard status line with @ruler set >
      :endfunction
 
 
-@@suffixes               Global. String. Default = ".bak,~,.o,.h,.info,.swp,.obj"
+@@lowPrioSuffixes               Global. String. Default = ".bak,~,.o,.h,.info,.swp,.obj"
    
-Files with these suffixes get a lower priority when multiple files
-match a wildcard.  See |suffixes|.  Commas can be used to separate the
-suffixes.  Spaces after the comma are ignored.  A dot is also seen as
-the start of a suffix.  To avoid a dot or comma being recognized as a
-separator, precede it with a backslash (see |option-backslash| about
-including spaces and backslashes).
-See @wildignore for completely ignoring files.
-The use of |:set+=| and |:set-=| is preferred when adding or removing
-suffixes from the list.  This avoids problems when a future version
-uses another default.
+Files with these suffixes get a lower priority when multiple files match a wildcard. See 
+|suffixes|. Commas can be used to separate the suffixes.  Spaces after the comma are ignored.
+A dot is also seen as the start of a suffix.  To avoid a dot or comma being recognized as a
+separator, precede it with a backslash (see |option-backslash| about including spaces and 
+backslashes). See @wildignore for completely ignoring files.
 
 
 @@suffixesadd            Book. String. Default = ".java,.rust"

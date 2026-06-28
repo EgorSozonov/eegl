@@ -1654,7 +1654,6 @@ typedef unsigned short DisplayTick;   // display tick type
 // (this does not account for maximum name lengths and things like "../dir",
 // thus it is not 100% accurate!)
 #define fnamecmp(x, y) STRCMP((Byte *)(x), (Byte *)(y))
-#define fnamencmp(x, y, n) STRNCMP((Byte *)(x), (Byte *)(y), (Unt)(n))
 
 #define USE_INPUT_BUF
 
@@ -1989,8 +1988,8 @@ EXTERN CS p_sps;       //@spellsuggest
 EXTERN Boole p_spr;    //@splitright
 EXTERN Boole p_sb;     //@splitbelow
 EXTERN Boole p_sol;    //@startofline
-EXTERN CS p_su;   //@suffixes
-EXTERN Boole p_sws;  //@swapsync
+EXTERN CS p_lpSuff;    //@lowPrioSuffixes
+EXTERN Boole p_sws;    //@swapsync
 EXTERN Unt p_swb;      //@switchbuf
 // Keep in sync with option.c:p_swb_values
 #define SWB_USEOPEN    0x001
@@ -5228,13 +5227,6 @@ typedef enum {
    POPUP_INFO      // popup menu info
 } PopupKind;
 
-
-// Store a key/value (string) pair
-typedef struct {
-   int key;
-   Text value;
-} Kv;
-
 // Defined as signed, to return -1 on error
 typedef struct {
    int cs_xpixel;
@@ -5355,10 +5347,6 @@ typedef enum {
 #define MOUSE_SETPOS       0x08 //only set current mouse position
 #define MOUSE_MAY_STOP_VIS 0x10 //may stop Visual mode
 #define MOUSE_RELEASED     0x20 //button was released
-
-// defines for evalVars()
-#define VALID_PATH      1
-#define VALID_HEAD      2
 
 // Defines for Eegl variables. These must match eval.c:eeglVars[]!
 #define VV_COUNT         0
@@ -9284,9 +9272,9 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 
 // Note: a NULL argument for eeRealloc() is not portable, don't use it.
 #if defined(MEM_PROFILE)
-#define eeRealloc(ptr, size)  mem_realloc((ptr), (size))
+#define eeRealloc(ptr, size) memReallocWithProfiling((ptr), (size))
 #else
-#define eeRealloc(ptr, size)  realloc((ptr), (size))
+#define eeRealloc(ptr, size) realloc((ptr), (size))
 #endif
 
 //Return byte length of character that starts with byte "b".
@@ -9340,9 +9328,6 @@ EXTERN CS e_printf INIT(= e_insufficient_arguments_for_printf);
 #define GREG_NO_EXPR  1 //Do not allow expression register
 #define GREG_EXPR_SRC 2 //Return expression itself for "=" register
 #define GREG_LIST     4 //Return list
-
-// Character used as separator in autoload function/variable names.
-#define AUTOLOAD_CHAR '#'
 
 // Options for json_encode() and json_decode.
 #define JSON_NO_NONE 1   // v:none item not allowed

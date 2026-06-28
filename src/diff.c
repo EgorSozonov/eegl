@@ -1682,13 +1682,13 @@ c_diffpatch(Invocation* invo) {
    //file contains more than one patch. When we have our own temp dir use that instead, it will 
    //be cleaned up when we exit (any .rej files created). Don't change directory if we can't
    //return to the current.
-   if (mch_dirname(dirbuf, MAXPATHL) != OK || mch_chdir((char *)dirbuf) != 0)
+   if (mch_dirname(dirbuf, MAXPATHL) != OK || mch_chdir(dirbuf) != 0)
       dirbuf[0] = ZERO;
    else {
       if (eeTempDirG)
-         (void)mch_chdir((char *)eeTempDirG);
+         (void)mch_chdir(eeTempDirG);
       else
-         (void)mch_chdir("/tmp");
+         (void)mch_chdir(S"/tmp");
       shorten_fnames(true);
    }
 
@@ -1705,7 +1705,7 @@ c_diffpatch(Invocation* invo) {
    }
 
    if (dirbuf[0] != ZERO) {
-      if (mch_chdir((char *)dirbuf) != 0)
+      if (mch_chdir(dirbuf) != 0)
          emsg(_(e_cannot_go_back_to_previous_directory));
       shorten_fnames(true);
    }

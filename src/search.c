@@ -4591,7 +4591,7 @@ searchFixHelpBook(void) {
    //files. This uses the very first line in the help file.
    CS fname = fiGetShortFiName(curBook->currFileName);
    if (fnamecmp(fname, "help.txt") == 0
-      || (fnamencmp(fname, "help.", 5) == 0
+      || (STRNCMP(fname, "help.", 5) == 0
           && ASCII_ISALPHA(fname[5])
           && ASCII_ISALPHA(fname[6])
           && TOLOWER_ASC(fname[7]) == 'x'
@@ -4640,7 +4640,7 @@ searchFixHelpBook(void) {
                   e2 = lastOccurrence(t2, '.');
                   if (e2 == NULL)
                      continue;
-                  if (e1 - f1 != e2 - f2 || fnamencmp(f1, f2, e1 - f1) != 0)
+                  if (e1 - f1 != e2 - f2 || STRNCMP(f1, f2, e1 - f1) != 0)
                      continue;
                   if (fnamecmp(e1, ".txt") == 0 && fnamecmp(e2, fname + 4) == 0)
                       EE_CLEAR(files.c[i1]);

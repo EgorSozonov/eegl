@@ -676,10 +676,10 @@ private Boole chartab_initialized = false;
 #define RESET_CHARTAB(book, c) (book)->charsForKeywords[(unsigned)(c) >> 3] &= ~(1 << ((c) & 0x7))
 #define GET_CHARTAB(book, c) ((book)->charsForKeywords[(unsigned)(c) >> 3] & (1 << ((c) & 0x7)))
 
-// table used below, see bookInitCharsForKeywords() for an explanation
-private Byte g_chartab[256];
+// table used below, see initCharTable() for an explanation
+private Byte charTableP[256];
 
-// Flags for g_chartab[].
+// Flags for charTableP[].
 #define CT_CELL_MASK   0x07   // mask: nr of display cells (1, 2 or 4)
 #define CT_PRINT_CHAR  0x10   // flag: set for printable chars
 #define CT_ID_CHAR     0x20   // flag: set for ID chars
@@ -687,26 +687,22 @@ private Byte g_chartab[256];
 
 private int inPortalBorder(Portal *po, ColNr vcol);
 
-//Fill g_chartab[]. Also fill curBook->charsForKeywords[] with flags for keyword
+//Fill charTableP[]. Also fill curBook->charsForKeywords[] with flags for keyword
 //characters for current book.
 //
-//Depend on the option settings 'iskeyword', 'isident', 'isfname', and 'isprint'.
+//Depend on the settings @iskeyword, @isident, @isfname
 //
-//- For UTF-8 index with the character (when first byte is up to 0x80 it is
-//  the same as the character, if the first byte is 0x80 and above it depends on further bytes).
-//
-//The contents of g_chartab[]:
-//- The lower two bits, masked by CT_CELL_MASK, give the number of display
-//  cells the character occupies (1 or 2).  Not valid for UTF-8 above 0x80.
-//- CT_PRINT_CHAR bit is set when the character is printable (no need to
-//  translate the character before displaying it).  Note that only DBCS
-//  characters can have 2 display cells and still be printable.
+//The contents of charTableP[]:
+//- The lower two bits of every byte, masked by CT_CELL_MASK, give the number of display
+//  cells the character occupies (1 or 2). Not valid for UTF-8 above 0x80.
+//- CT_PRINT_CHAR bit is set when the character is printable (no need to translate the character 
+//before displaying it).  Note that no characters can have 2 display cells and still be printable.
 //- CT_FNAME_CHAR bit is set when the character can be in a file name.
 //- CT_ID_CHAR bit is set when the character can be in an identifier.
 //
-//Return FAIL if @iskeyword, @isident, @isfname or @isprint option has an error, OK otherwise.
+//Return FAIL if @iskeyword, @isident or @isfname option has an error, OK otherwise.
 private int
-bookInitCharsForKeywords(Book* book) {
+initCharTable(Book* book) {
    //Init word char flags all to false
    CLEAR_FIELD(book->charsForKeywords);
 
@@ -730,32 +726,30 @@ bookInitCharsForKeywords(Book* book) {
 
 int
 bookInitCharsForKeywordsForCurbook(void) {
-   return curBook ? bookInitCharsForKeywords(curBook) : OK;
+   return curBook ? initCharTable(curBook) : OK;
 }
 
 void
-bookInitGlobalCharsForKeywords() {
+bookInitGlobalCharTable() {
    //Set the default size for printable characters:
    //From <Space> to '~' is 1 (printable), others are 2 (not printable).
    //This also inits all 'isident' and 'isfname' flags to false.
    Unt c = 0;
-   while (c < ' ')
-      g_chartab[c++] = 2;
-   while (c <= '~')
-      g_chartab[c++] = 1 + CT_PRINT_CHAR;
-   while (c < 256) {
+   for (; c < ' '; c++)
+      charTableP[c] = 2;
+   for (; c <= '~'; c++)
+      charTableP[c] = 1 + CT_PRINT_CHAR;
+   for (; c < 256; c++) {
       // UTF-8: bytes 0xa0 - 0xff are printable (latin1)
       if (c >= 0xa0)
-         g_chartab[c++] = CT_PRINT_CHAR + 1;
-    else
-      // the rest is unprintable by default
-      g_chartab[c++] = 2;
+         charTableP[c] = CT_PRINT_CHAR + 1;
+       else // the rest is unprintable by default
+         charTableP[c] = 2;
    }
 
    // Assume that every multi-byte char is a filename character.
-   for (c = 1; c < 256; ++c) {
-      if (c >= 0xa0)
-         g_chartab[c] |= CT_FNAME_CHAR;
+   for (c = 0xa0; c < 256; c++) {
+      charTableP[c] |= CT_FNAME_CHAR;
    } 
 }
 
@@ -765,12 +759,12 @@ int
 bookIsCharPrintable_strict(int c) {
    if (c >= 0x100)
       return utf_printable(c);
-   return (c >= 0x100 || (c > 0 && (g_chartab[c] & CT_PRINT_CHAR)));
+   return (c >= 0x100 || (c > 0 && (charTableP[c] & CT_PRINT_CHAR) != 0));
 }
 
 //Parse an "is" option: @iskeyword, @isident, @isfname, @isprint. Return OK/FAIL.
 private int
-parseAnIsOption(CS var, Book* book, Boole only_check) {  // false: refill g_chartab[]
+parseAnIsOption(CS var, Book* book, Boole only_check) {  // false: refill charTableP[]
    CS p = var;
    long c;
    int tilde;
@@ -787,7 +781,7 @@ parseAnIsOption(CS var, Book* book, Boole only_check) {  // false: refill g_char
       if (EE_ISDIGIT(*p))
          c = parseLong(&p);
       else
-         c = inpAdvanceMultibyte(&p);
+         c = strAdvanceMultibyte(&p);
          
       Unt c2 = UNT;
       if (*p == '-' && p[1] != ZERO) {
@@ -795,7 +789,7 @@ parseAnIsOption(CS var, Book* book, Boole only_check) {  // false: refill g_char
          if (EE_ISDIGIT(*p))
             c2 = parseLong(&p);
          else
-            c2 = inpAdvanceMultibyte(&p);
+            c2 = strAdvanceMultibyte(&p);
          c2 = *p++;
       }
       if (c <= 0 || c >= 256 || (c2 < c && c2 != UNT) || c2 >= 256 || !(*p == ZERO || *p == ','))
@@ -822,18 +816,18 @@ parseAnIsOption(CS var, Book* book, Boole only_check) {  // false: refill g_char
             c2 = c;
       }
 
-      while (c <= c2) {
+      for (; c <= c2; c++) {
          if (!do_isalpha || MB_ISLOWER(c) || MB_ISUPPER(c)) {
             if (var == p_isi) {         // (re)set ID flag
                if (tilde)
-                  g_chartab[c] &= ~CT_ID_CHAR;
+                  charTableP[c] &= ~CT_ID_CHAR;
                else
-                  g_chartab[c] |= CT_ID_CHAR;
+                  charTableP[c] |= CT_ID_CHAR;
             } ei (var == p_isf) {        // (re)set fname flag
                if (tilde)
-                  g_chartab[c] &= ~CT_FNAME_CHAR;
+                  charTableP[c] &= ~CT_FNAME_CHAR;
                else
-                  g_chartab[c] |= CT_FNAME_CHAR;
+                  charTableP[c] |= CT_FNAME_CHAR;
             } else {// var == book->o.isKeyword (re)set keyword flag
                if (tilde)
                   RESET_CHARTAB(book, c);
@@ -841,16 +835,15 @@ parseAnIsOption(CS var, Book* book, Boole only_check) {  // false: refill g_char
                   SET_CHARTAB(book, c);
             }
          }
-         ++c;
       }
    }
 
    return OK;
 }
 
-//Catch 22: g_chartab[] can't be initialized before the options are initialized, and initializing 
+//Catch 22: charTableP[] can't be initialized before the options are initialized, and initializing 
 //options may cause transchar() to be called!
-//When chartab_initialized == false don't use g_chartab[].
+//When chartab_initialized == false don't use charTableP[].
 //Does NOT work for multi-byte characters, c must be <= 255.
 //Also doesn't work for the first byte of a multi-byte, "c" must be a character!
 private Byte translateScratch[7];
@@ -887,7 +880,7 @@ int
 byte2cells(Unt b) {
    if (b >= 0x80)
       return 0;
-   return (g_chartab[b] & CT_CELL_MASK);
+   return (charTableP[b] & CT_CELL_MASK);
 }
 
 //Return number of display cells occupied by character "c".
@@ -901,7 +894,7 @@ bookChar2Cells(Unt c) {
       // UTF-8: above 0x80 need to check the value
       return mb_char2cells(c);
    } else {
-      return (g_chartab[c & 0xff] & CT_CELL_MASK);
+      return (charTableP[c & 0xff] & CT_CELL_MASK);
    }
 }
 
@@ -912,7 +905,7 @@ bookPtr2Cells(CS p) {
    //For UTF-8 we need to look at more bytes if the first byte is >= 0x80.
    if (*p >= 0x80)
       return mb_ptr2cells(p);
-   return (g_chartab[*p] & CT_CELL_MASK);
+   return (charTableP[*p] & CT_CELL_MASK);
 }
 
 //Like transchar_buf(), but called with a byte instead of a character. Check
@@ -1055,7 +1048,7 @@ drawLineOnScreentabsize_cts(CharTableSize *cts, ColNr len) {
 //Return true if 'c' is a normal identifier character: Letters and chars from the 'isident' option
 int
 eeIsIdentifierChar(int c) {
-   return (c > 0 && c < 0x100 && (g_chartab[c] & CT_ID_CHAR));
+   return (c > 0 && c < 0x100 && (charTableP[c] & CT_ID_CHAR));
 }
 
 // Like eeIsIdentifierChar() but not using the 'isident' option: letters, numbers and underscore
@@ -1097,7 +1090,7 @@ eeIsWordPtr(CS p) {
 // Assume characters above 0x100 are valid (multi-byte). To be used for commands like "gf".
 int
 eeIsFnameChar(Unt c) {
-   return (c >= 0x100 || (c < UNT_NEG && (g_chartab[c] & CT_FNAME_CHAR)));
+   return (c >= 0x100 || (c < UNT_NEG && (charTableP[c] & CT_FNAME_CHAR)));
 }
 
 //Return true if 'c' is a valid file-name character, including characters left
@@ -1113,7 +1106,7 @@ Boole
 bookIsCharPrintable(Unt c) {
    if (c > 0xFF)
       return utf_printable(c);
-   return (c > 0 && (g_chartab[c] & CT_PRINT_CHAR) != 0);
+   return (c > 0 && (charTableP[c] & CT_PRINT_CHAR) != 0);
 }
 
 //Prepare the structure passed to chartabsize functions.
@@ -1528,7 +1521,7 @@ getvcol(
             if (c >= 0x80)
                incr = mb_ptr2cells(ptr);
             else
-               incr = g_chartab[c] & CT_CELL_MASK;
+               incr = charTableP[c] & CT_CELL_MASK;
 
             //If a double-cell char doesn't fit at the end of a line
             //it wraps to the next line, it's like this char is three cells wide.
@@ -6402,7 +6395,7 @@ bookWrite(
             stNew.st_gid = 0;
 
             // Isolate one directory name, using an entry in 'bdir'.
-            (void)doCutPathFromListOfPaths(OUT &backupDirRemainder, OUT copybuf, WRITEBUFSIZE, S",");
+            (void)strCutPathFromListOfPaths(OUT &backupDirRemainder, OUT copybuf, WRITEBUFSIZE, S",");
 
             p = copybuf + STRLEN(copybuf);
             if (after_pathsep(copybuf, p) && p[-1] == p[-2]
@@ -6527,7 +6520,7 @@ endOfName:
          CS backupDirRemainder = p_bdir;
          while (*backupDirRemainder) {
             //Isolate one directory name and make the backup file name.
-            (void)doCutPathFromListOfPaths(&backupDirRemainder, IObuff, IOSIZE, S",");
+            (void)strCutPathFromListOfPaths(&backupDirRemainder, IObuff, IOSIZE, S",");
 
             p = IObuff + STRLEN(IObuff);
             if (after_pathsep(IObuff, p) && p[-1] == p[-2]) {

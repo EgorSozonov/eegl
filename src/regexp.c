@@ -1471,8 +1471,8 @@ cstrncmp(Byte *s1, Byte *s2, int *n) {
       str2 = s2;
       c1 = c2 = 0;
       while ((int)(str1 - s1) < *n) {
-         c1 = inpAdvanceMultibyte(&str1);
-         c2 = inpAdvanceMultibyte(&str2);
+         c1 = strAdvanceMultibyte(&str1);
+         c2 = strAdvanceMultibyte(&str2);
 
          // Decompose the character if necessary, into 'base' characters.
          // Currently hard-coded for Hebrew, Arabic to be done...

@@ -926,13 +926,13 @@ c_mkrc(Invocation* invo) {
       if (invo->id == C_mksession) {
          Byte currDir[MAXPATHL];    // current directory
          // Change to session file's dir.
-         if (mch_dirname(currDir, MAXPATHL) == FAIL || mch_chdir((char *)currDir) != 0)
+         if (mch_dirname(currDir, MAXPATHL) == FAIL || mch_chdir(currDir) != 0)
             *currDir = ZERO;
          if (*currDir != ZERO) {
             if (eeChdirfile(fname, NULL) == OK)
                shorten_fnames(true);
          } ei (*currDir != ZERO && globaldir) {
-            if (mch_chdir((char *)globaldir) == 0)
+            if (mch_chdir(globaldir) == 0)
                shorten_fnames(true);
          }
 
@@ -940,7 +940,7 @@ c_mkrc(Invocation* invo) {
 
          // restore original dir
          if (*currDir != ZERO && globaldir) {
-            if (mch_chdir((char *)currDir) != 0)
+            if (mch_chdir(currDir) != 0)
                emsg(_(e_cannot_go_back_to_previous_directory));
             shorten_fnames(true);
          }
@@ -1290,7 +1290,7 @@ removable(CS name) {
    Unt  n;
    name = home_replace_save(NULL, name);
    for (CS p = p_eeglinfo; *p; ) {
-      doCutPathFromListOfPaths(OUT &p, OUT part, 51, S", ");
+      strCutPathFromListOfPaths(OUT &p, OUT part, 51, S", ");
       if (part[0] == 'r') {
          n = STRLEN(part + 1);
          if (caseInsensitiveCompareNChars(part + 1, name, n) == 0) {

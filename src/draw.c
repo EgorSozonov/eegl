@@ -2702,7 +2702,7 @@ screen_screenrow(void) {
     return screenCursRowG;
 }
 
-//Call inpAdvanceMultibyte(p) and returns the character.
+//Call strAdvanceMultibyte(p) and returns the character.
 //If "p" starts with "\x", "\u" or "\U" the hex or unicode value is used.
 private int
 get_encoded_char_adv(Byte **p) {
@@ -2723,7 +2723,7 @@ get_encoded_char_adv(Byte **p) {
       *p += 2;
       return num;
    }
-   return inpAdvanceMultibyte(p);
+   return strAdvanceMultibyte(p);
 }
 
 typedef struct {
@@ -6665,7 +6665,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
             transchar_hex(m->extra, sc.mb_c);
             m->extraBytes = m->extra;
             currSymb = *m->extraBytes;
-            sc.mb_c = inpAdvanceMultibyte(&m->extraBytes);
+            sc.mb_c = strAdvanceMultibyte(&m->extraBytes);
             sc.mb_utf8 = (currSymb >= 0x80);
             m->countExtraBytes = (int)STRLEN(m->extraBytes);
             m->c_extra = ZERO;

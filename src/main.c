@@ -648,7 +648,7 @@ private void
 init0(void) {
    estack_init();
    cmdline_init();
-   bookInitGlobalCharsForKeywords();
+   bookInitGlobalCharTable();
 
    CS errMsg = inputInitCharLens();
    if (errMsg) {
@@ -1700,7 +1700,7 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
    arg_idx = 1;
    for (Unt i = 1; i < paramsP->portalCount; ++i) {
       if (cwd)
-         mch_chdir((char *)cwd);
+         mch_chdir(cwd);
       // When argListInd is -1 remove the window (see createPortals()).
       if (curPor->argListInd == -1) {
          ++arg_idx;

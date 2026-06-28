@@ -10,7 +10,8 @@
 #include "base.h"
 #include "proto/strings.h"
 #define alloc malloc
-void eeglFree(void* a) { if (a) { free(a); }}
+#define eeRealloc realloc
+#define eeglFree(a) if (a) { free(a); }
 #else
 #include "eegl.h"
 #endif
@@ -21,6 +22,7 @@ void eeglFree(void* a) { if (a) { free(a); }}
 #include <ctype.h>   //for islower()
 #include <stdlib.h>  //for atol()
 #include <sys/stat.h>
+#include <time.h> // for time()
 #endif
 
 //{{{ Arena
@@ -1811,7 +1813,7 @@ private Interval ambiguous[] = {
 //Get character at **pp and advance *pp to the next character.
 //Note: composing characters are skipped!
 Unt
-inpAdvanceMultibyte(OUT CS* pp) {
+strAdvanceMultibyte(OUT CS* pp) {
    Unt c = mb_ptr2char(*pp);
    *pp += utfCharLen(*pp);
    return c;
@@ -1825,7 +1827,6 @@ mb_cptr2char_adv(OUT CS* pp) {
    *pp += utf_ptr2len(*pp);
    return c;
 }
-
 
 int
 utf_ambiguous_width(Unt c) {
@@ -3620,21 +3621,6 @@ decodeBase64(OUT ArrayList* ret, Text base64) {
 //}}}
 //{{{file path names
 
-//Return true if file names "f1" and "f2" are in the same directory.
-//"f1" may be a short name, "f2" must be a full path.
-int
-same_directory(CS f1, CS f2) {
-   // safety check
-   if (!f1 || !f2)
-      return false;
-      
-   Byte ffname[MAXPATHL];
-   (void)eeFullFileName(f1, ffname, MAXPATHL, false);
-   CS t1 = gettail_sep(ffname);
-   CS t2 = gettail_sep(f2);
-   return (t1 - ffname == t2 - f2 && pathcmp(ffname, f2, (int)(t1 - ffname)) == 0);
-}
-
 
 //If the string between "p" and "pend" ends in "name/", return "pend" minus
 //the length of "name/".  Otherwise return "pend".
@@ -3644,7 +3630,7 @@ remove_tail(CS p, CS pend, CS name) {
    CS newend = pend - len;
 
    if (newend >= p
-          && fnamencmp(newend, name, len - 1) == 0
+          && STRNCMP(newend, name, len - 1) == 0
           && (newend == p || after_pathsep(p, newend)))
       return newend;
    return pend;
@@ -3684,277 +3670,6 @@ strStartsWithUrl(CS fname) {
 
    // "://" must follow
    return path_is_url(p);
-}
-
-//Adjust a filename, according to a string of modifiers.
-//*fnamep must be ZERO terminated when called. When returning, the length is determined by *fnamelen
-//Return VALID_ flags or -1 for failure. When there is an error, *fnamep is set to NULL.
-int
-modify_fname(
-   CS src,      // string with modifiers
-   int tilde_file,   // "~" is a file name, not $HOME
-   Unt* usedlen,   // characters after src that are used
-   OUT CS* fnamep,   // file name so far
-   OUT CS* bufp,      // buffer for allocated file name or NULL
-   Unt* fnamelen   // length of fnamep
-){
-   int      valid = 0;
-   CS s;
-   CS p;
-   Byte   dirname[MAXPATHL];
-   int      c;
-   int      has_fullname = 0;
-   int      has_homerelative = 0;
-
-repeat:
-   // ":p" - full path/file_name
-   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'p') {
-      has_fullname = 1;
-
-      valid |= VALID_PATH;
-      *usedlen += 2;
-
-      // Expand "~/path" for all systems and "~user/path" for Unix
-      if ((*fnamep)[0] == '~' && !(tilde_file && (*fnamep)[1] == ZERO)) {
-         *fnamep = doExpandEnvInMultiplePaths(*fnamep);
-         eeglFree(*bufp);   // free any allocated file name
-         *bufp = *fnamep;
-         if (*fnamep == NULL)
-            return -1;
-      }
-
-      // When "/." or "/.." is used: force expansion to get rid of it.
-      for (p = *fnamep; *p != ZERO; MB_PTR_ADV(p)) {
-         if (*p == '/'
-                && p[1] == '.'
-                && (p[2] == ZERO
-                     || p[2] == '/'
-                     || (p[2] == '.' && (p[3] == ZERO || p[3] == '/'))
-                   )
-         )
-            break;
-      }
-
-      // fiExpandAndCopy() is slow, don't use it when not needed.
-      if (*p != ZERO || !eeIsAbsName(*fnamep)) {
-         *fnamep = fiExpandAndCopy(*fnamep, *p != ZERO);
-         eeglFree(*bufp);   // free any allocated file name
-         *bufp = *fnamep;
-         if (*fnamep == NULL)
-            return -1;
-      }
-
-      // Append a path separator to a directory.
-      if (mch_isdir(*fnamep)) {
-         // Make room for one or two extra characters.
-         *fnamep = copySubstr(*fnamep, STRLEN(*fnamep) + 2);
-         eeglFree(*bufp);   // free any allocated file name
-         *bufp = *fnamep;
-         if (*fnamep == null)
-            return -1;
-         add_pathsep(*fnamep);
-      }
-   }
-
-   // ":." - path relative to the current directory
-   // ":~" - path relative to the home directory
-   while (src[*usedlen] == ':'
-        && ((c = src[*usedlen + 1]) == '.' || c == '~')
-   ){
-      *usedlen += 2;
-      if (c == '8') {
-         continue;
-      }
-      CS pbuf = NULL;
-      // Need full path first (use doExpandEnv() to remove a "~/")
-      if (!has_fullname && !has_homerelative) {
-         if (**fnamep == '~')
-            p = pbuf = doExpandEnvInMultiplePaths(*fnamep);
-         else
-            p = pbuf = fiExpandAndCopy(*fnamep, false);
-      } else
-         p = *fnamep;
-
-      has_fullname = 0;
-
-      if (p) {
-         if (c == '.') {
-            Unt   namelen;
-
-            mch_dirname(dirname, MAXPATHL);
-            if (has_homerelative) {
-               s = copyStr(dirname);
-               home_replace(s, dirname, MAXPATHL, true);
-               eeglFree(s);
-            }
-            namelen = STRLEN(dirname);
-
-            // Do not call shorten_fname() here since it removes the prefix
-            // even though the path does not have a prefix.
-            if (fnamencmp(p, dirname, namelen) == 0) {
-               p += namelen;
-               if (*p == '/') {
-                  while (*p == '/')
-                     ++p;
-                  *fnamep = p;
-                  if (pbuf) {
-                      // free any allocated file name
-                      eeglFree(*bufp);
-                      *bufp = pbuf;
-                      pbuf = NULL;
-                  }
-               }
-            }
-         } else {
-            home_replace(p, dirname, MAXPATHL, true);
-            // Only replace it when it starts with '~'
-            if (*dirname == '~') {
-               s = copyStr(dirname);
-               *fnamep = s;
-               eeglFree(*bufp);
-               *bufp = s;
-               has_homerelative = true;
-            }
-          }
-          eeglFree(pbuf);
-      }
-   }
-
-   CS tail = fiGetShortFiName(*fnamep);
-   *fnamelen = STRLEN(*fnamep);
-
-   // ":h" - head, remove "/file_name", can be repeated
-   // Don't remove the first "/" or "c:\"
-   while (src[*usedlen] == ':' && src[*usedlen + 1] == 'h') {
-      valid |= VALID_HEAD;
-      *usedlen += 2;
-      s = skipInitialSlashes(*fnamep);
-      while (tail > s && after_pathsep(s, tail))
-          MB_PTR_BACK(*fnamep, tail);
-      *fnamelen = tail - *fnamep;
-      if (*fnamelen == 0) {
-         // Result is empty.  Turn it into "." to make ":cd %:h" work.
-         p = copyStr((CS)".");
-         eeglFree(*bufp);
-         *bufp = *fnamep = tail = p;
-         *fnamelen = 1;
-      } else {
-         while (tail > s && !after_pathsep(s, tail))
-            MB_PTR_BACK(*fnamep, tail);
-      }
-   }
-
-   // ":t" - tail, just the basename
-   if (src[*usedlen] == ':' && src[*usedlen + 1] == 't') {
-      *usedlen += 2;
-      *fnamelen -= tail - *fnamep;
-      *fnamep = tail;
-   }
-
-   // ":e" - extension, can be repeated
-   // ":r" - root, without extension, can be repeated
-   while (src[*usedlen] == ':'
-       && (src[*usedlen + 1] == 'e' || src[*usedlen + 1] == 'r')
-   ){
-      // find a '.' in the tail:
-      // - for second :e: before the current fname
-      // - otherwise: The last '.'
-      if (src[*usedlen + 1] == 'e' && *fnamep > tail)
-          s = *fnamep - 2;
-      else
-          s = *fnamep + *fnamelen - 1;
-      for ( ; s > tail; --s) {
-         if (s[0] == '.')
-            break;
-      } 
-      if (src[*usedlen + 1] == 'e') {     // :e
-         if (s > tail) {
-            *fnamelen += (*fnamep - (s + 1));
-            *fnamep = s + 1;
-         } ei (*fnamep <= tail)
-            *fnamelen = 0;
-      } else {           // :r
-         CS limit = *fnamep;
-         if (limit < tail)
-            limit = tail;
-         if (s > limit)   // remove one extension
-            *fnamelen = s - *fnamep;
-      }
-      *usedlen += 2;
-   }
-
-   // ":s?pat?foo?" - substitute
-   // ":gs?pat?foo?" - global substitute
-   if (src[*usedlen] == ':'
-       && (src[*usedlen + 1] == 's'
-      || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
-   ) {
-      CS str;
-      CS pat;
-      CS sub;
-      int sep;
-      int didit = false;
-
-      CS flags = S"";
-      s = src + *usedlen + 2;
-      if (src[*usedlen + 1] == 'g') {
-         flags = (CS)"g";
-         ++s;
-      }
-
-      sep = *s++;
-      if (sep) {
-         // find end of pattern
-         p = firstOccurrence(s, sep);
-         if (p) {
-            pat = copySubstr(s, p - s);
-            if (pat) {
-                s = p + 1;
-                // find end of substitution
-                p = firstOccurrence(s, sep);
-                if (p != NULL) {
-               sub = copySubstr(s, p - s);
-               str = copySubstr(*fnamep, *fnamelen);
-               if (sub != NULL && str != NULL) {
-                   Unt slen;
-
-                   *usedlen = p + 1 - src;
-                   s = do_string_sub(str, *fnamelen, pat, sub, NULL, flags, &slen);
-                   if (s != NULL) {
-                  *fnamep = s;
-                  *fnamelen = slen;
-                  eeglFree(*bufp);
-                  *bufp = s;
-                  didit = true;
-                   }
-               }
-               eeglFree(sub);
-               eeglFree(str);
-                }
-                eeglFree(pat);
-            }
-          }
-          // after using ":s", repeat all the modifiers
-          if (didit)
-         goto repeat;
-      }
-   }
-
-   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'S') {
-      // copyStr_shellescape() needs a ZERO terminated string.
-      c = (*fnamep)[*fnamelen];
-      if (c != ZERO)
-         (*fnamep)[*fnamelen] = ZERO;
-      p = copyStr_shellescape(*fnamep, false, false);
-      if (c != ZERO)
-         (*fnamep)[*fnamelen] = c;
-      eeglFree(*bufp);
-      *bufp = *fnamep = p;
-      *fnamelen = STRLEN(p);
-      *usedlen += 2;
-   }
-
-   return valid;
 }
 
 //Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname"
@@ -4007,143 +3722,8 @@ strPrintShortName(CS src, CS dst, int dstlen) {
       *dst = ZERO;
       return;
    }
-   eeSnprintf(dst, dstlen, "%s", fiGetShortFiName(src));
+   SNPRINTF(dst, dstlen, "%s", fiGetShortFiName(src));
 }
-
-//Replace home directory by "~" in each space or comma separated file name in 'src'.
-//If anything fails (except when out of space) dst equals src.
-void
-home_replace(
-   CS src, //input file name
-   CS dst, //where to put the result
-   int dstlen,  //maximum length of the result
-   Boole one      //if true, only replace one file name, include spaces and commas in the file name.
-){
-   Unt   dirlen = 0, envlen = 0;
-   Unt   len;
-   CS homedir_env;
-   CS homedir_env_orig;
-   CS p;
-
-   if (!src) {
-      *dst = ZERO;
-      return;
-   }
-
-   //We check both the value of the $HOME environment variable and the "real" home directory.
-   if (homedir)
-      dirlen = STRLEN(homedir);
-
-   homedir_env_orig = homedir_env = mch_getenv("HOME");
-   // Empty is the same as not set.
-   if (homedir_env && *homedir_env == ZERO)
-      homedir_env = NULL;
-
-   if (homedir_env && *homedir_env == '~') {
-      Unt usedlen = 0;
-
-      Unt flen = STRLEN(homedir_env);
-      CS fbuf = NULL;
-      (void)modify_fname(S":p", false, &usedlen, &homedir_env, OUT &fbuf, &flen);
-      flen = STRLEN(homedir_env);
-      if (flen > 0 && homedir_env[flen - 1] == '/')
-         // Remove the trailing / that is added to a directory.
-         homedir_env[flen - 1] = ZERO;
-   }
-
-   if (homedir_env != NULL)
-      envlen = STRLEN(homedir_env);
-
-   if (!one)
-      src = skipwhite(src);
-   while (*src && dstlen > 0) {
-      //Here we are at the beginning of a file name. First, check to see if the beginning of the 
-      //file name matches $HOME or the "real" home directory. Check that there is a '/'
-      //after the match (so that if e.g. the file is "/home/pieter/bla", and the home directory 
-      //is "/home/piet", the file does not end up as "~er/bla" (which would seem to indicate the 
-      //file "bla" in user er's home directory)).
-      p = homedir;
-      len = dirlen;
-      for (;;) {
-         if (  len
-            && fnamencmp(src, p, len) == 0
-            && (src[len] == '/'
-                || (!one && (src[len] == ',' || src[len] == ' '))
-                || src[len] == ZERO)
-         ){
-            src += len;
-            if (--dstlen > 0)
-               *dst++ = '~';
-
-            //Do not add directory separator into dst, because dst is expected to just return the 
-            //directory name without the directory separator '/'.
-            break;
-         }
-         if (p == homedir_env)
-            break;
-         p = homedir_env;
-         len = envlen;
-      }
-
-      //if (!one) skip to separator: space or comma
-      while (*src && (one || (*src != ',' && *src != ' ')) && --dstlen > 0)
-         *dst++ = *src++;
-      //skip separator
-      while ((*src == ' ' || *src == ',') && --dstlen > 0)
-          *dst++ = *src++;
-   }
-   //TODO if (dstlen == 0) out of space, what to do???
-
-   *dst = ZERO;
-
-   if (homedir_env != homedir_env_orig)
-      eeglFree(homedir_env);
-}
-
-//Compare two file names and return:
-//FPC_SAME   if they both exist and are the same file.
-//FPC_SAMEX  if they both don't exist and have the same file name.
-//FPC_DIFF   if they both exist and are different files.
-//FPC_NOTX   if they both don't exist.
-//FPC_DIFFX  if one of them doesn't exist.
-//For the first name environment variables are expanded if "expandenv" is true.
-int
-fullpathcmp(
-   CS s1,
-   CS s2,
-   int checkname,      // when both don't exist, check file names
-   int expandenv
-) {
-   Byte exp1[MAXPATHL];
-   Byte full1[MAXPATHL];
-   Byte full2[MAXPATHL];
-   FileStat st1, st2;
-
-   if (expandenv)
-      doExpandEnv(OUT (Text){exp1, MAXPATHL}, s1);
-   else
-      copySubstrToAllocation(exp1, (Text){s1, MAXPATHL - 1});
-   int r1 = stat((char *)exp1, &st1);
-   int r2 = stat((char *)s2, &st2);
-   if (r1 != 0 && r2 != 0) {
-      // if stat() doesn't work, may compare the names
-      if (checkname) {
-         if (fnamecmp(exp1, s2) == 0)
-            return FPC_SAMEX;
-         r1 = eeFullFileName(exp1, full1, MAXPATHL, false);
-         r2 = eeFullFileName(s2, full2, MAXPATHL, false);
-         if (r1 == OK && r2 == OK && fnamecmp(full1, full2) == 0)
-            return FPC_SAMEX;
-      }
-      return FPC_NOTX;
-   }
-   if (r1 != 0 || r2 != 0)
-      return FPC_DIFFX;
-   if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
-      return FPC_SAME;
-   return FPC_DIFF;
-}
-
 //Get the tail of a path: the file name. When the path ends in a path separator, the tail is the 
 //ZERO after it. Fail safe: never return NULL.
 CS
@@ -4273,11 +3853,44 @@ hasEnvVar(CS p) {
    return false;
 }
 
+//Isolate one part of a string option where parts are separated with "sep_chars".
+//The part is copied into "buf[maxlen]". "*option" is advanced to the next part.
+//The length is returned.
+int
+strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
+   int len = 0;
+   CS p = *option;
 
-// Return true if "fname" matches with an entry in 'suffixes'.
+   // skip '.' at start of option part, for 'suffixes'
+   if (*p == '.') {
+      buf[len] = *p;
+      len++;
+      p++;
+   } 
+   while (*p != ZERO && firstOccurrence((CS)sep_chars, *p) == NULL) {
+      //Skip backslash before a separator character and space.
+      if (p[0] == '\\' && firstOccurrence((CS)sep_chars, p[1]) != NULL)
+         ++p;
+      if (len < maxlen - 1) {
+         buf[len] = *p;
+         len++;
+      } 
+      ++p;
+   }
+   buf[len] = ZERO;
+
+   if (*p != ZERO && *p != ',')   // skip non-standard separator
+      ++p;
+   p = skip_to_option_part(p);   // p points to next file name
+
+   *option = p;
+   return len;
+}
+
+//Return true if "fname" matches with an entry in "suffixes".
 Boole
-match_suffix(CS fname){
-   if (!p_su)
+strMatchLowPrioSuffix(CS fname, CS suffixes){
+   if (!suffixes)
       return false;
       
 #define MAXSUFLEN 30       // maximum length of a file suffix
@@ -4285,8 +3898,8 @@ match_suffix(CS fname){
 
    int fnamelen = (int)STRLEN(fname);
    int setsuflen = 0;
-   for (CS setsuf = p_su; *setsuf != ZERO; ) {
-      setsuflen = doCutPathFromListOfPaths(OUT &setsuf, OUT suf_buf, MAXSUFLEN, S".,");
+   for (CS setsuf = suffixes; *setsuf != ZERO; ) {
+      setsuflen = strCutPathFromListOfPaths(OUT &setsuf, OUT suf_buf, MAXSUFLEN, S".,");
       if (setsuflen == 0) {
          CS tail = fiGetShortFiName(fname);
 
@@ -4297,7 +3910,7 @@ match_suffix(CS fname){
          }
       } else {
          if (fnamelen >= setsuflen 
-               && fnamencmp(suf_buf, fname + fnamelen - setsuflen, (Unt)setsuflen) == 0)
+               && STRNCMP(suf_buf, fname + fnamelen - setsuflen, (Unt)setsuflen) == 0)
             break;
          setsuflen = 0;
       }
@@ -4548,19 +4161,6 @@ ga_append(ArrayList *gap, int c) {
    *((char *)gap->c + gap->len) = c;
    ++gap->len;
    return OK;
-}
-
-// Append the text in "gap" below the cursor line and clear "gap".
-void
-append_ga_line(ArrayList *gap) {
-   // Remove trailing CR.
-   if (gap->len > 0
-          && !curBook->o.binary
-          && ((CS)gap->c)[gap->len - 1] == ENTER)
-      --gap->len;
-   ga_append(gap, ZERO);
-   ml_append(curPor->cursor.lnum++, gap->c, 0, false);
-   gap->len = 0;
 }
 
 //}}}
@@ -5010,17 +4610,9 @@ sha256_self_test(void) {
     return failures > 0 ? FAIL : OK;
 }
 
-private unsigned int
+private Unt
 get_some_time(void) {
-# ifdef HAVE_GETTIMEOFDAY
-    TimeVal tv;
-
-    // Using usec makes it less predictable.
-    gettimeofday(&tv, NULL);
-    return (unsigned int)(tv.tv_sec + tv.tv_usec);
-# else
-    return (unsigned int)time(NULL);
-# endif
+   return (Unt)time(NULL);
 }
 
 // Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.

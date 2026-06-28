@@ -1,7 +1,7 @@
 CC ?= gcc
 INTERNAL_CFLAGS = --std=c17 -gdwarf-5 -pthread -Wp,-D_FORTIFY_SOURCE=2 -fno-plt \
       -fstack-clash-protection -fno-stack-protector -fno-semantic-interposition \
-      -fdebug-prefix-map=$(shell pwd)=. -DFREESTANDING_STRINGS
+      -fdebug-prefix-map=$(shell pwd)=.
 
 # The debug flags
 CFLAGS ?=  $(INTERNAL_CFLAGS) -Wall -Wextra -Wfatal-errors -O0 \
@@ -801,7 +801,7 @@ CPP_DEPEND = $(CC) -I$(srcdir) -M$(CPP_MM) \
 NO_ATTR = #-D"__attribute\\(x\\)="
 #
 # Use this for cproto 3 patchlevel 7 or above (use "cproto -V" to check):
-CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" -I./src $(NO_ATTR) # -D"__typeof__\\(x\\)=x"
+CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" -I./src #$(NO_ATTR) # -D"__typeof__\\(x\\)=x"
 
 
 ################################################
@@ -817,7 +817,7 @@ ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLA
 
 
 LINT_FLAGS = -DLINT -I. $(PRE_DEFS) -Dinline= -D__extension__= -Dalloca=alloca
-LINT_FLAGS_CPROTO = -DLINT -Isrc -Isrc/proto -Dinline= -D__extension__= -Dalloca=alloca
+LINT_FLAGS_CPROTO = -DLINT -Isrc -Isrc/proto -Dinline= #-D__extension__= -Dalloca=alloca
 
 LINT_EXTRA = -D"__attribute__(x)="
 

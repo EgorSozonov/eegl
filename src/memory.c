@@ -278,9 +278,10 @@ lalloc_id(Unt size, int message, AllocId id UNUSED) {
 }
 
 #if defined(MEM_PROFILE) || defined(PROTO)
+
 // realloc() with memory profiling.
 void *
-mem_realloc(void *ptr, Unt size) {
+memReallocWithProfiling(void *ptr, Unt size) {
    void *p;
 
    mem_pre_free(&ptr);
@@ -292,6 +293,7 @@ mem_realloc(void *ptr, Unt size) {
 
    return p;
 }
+
 #endif
 
 //Avoid repeating the error message many times (they take 1 second each).
@@ -1361,8 +1363,6 @@ ml_recover(Boole checkext) {
 
       // need to reallocate the memory used to store the data
       p = alloc(mfp->pageSize);
-      if (p == NULL)
-          goto theend;
       MEMMOVE(p, hdr->bh_data, previous_page_size);
       eeglFree(hdr->bh_data);
       hdr->bh_data = p;

@@ -21,7 +21,7 @@ void f_getline(Var *argvars, Var *returnVar);
 void f_setbufline(Var *argvars, Var *returnVar);
 void f_setline(Var *argvars, Var *returnVar);
 int bookInitCharsForKeywordsForCurbook(void);
-void bookInitGlobalCharsForKeywords(void);
+void bookInitGlobalCharTable(void);
 int bookIsCharPrintable_strict(int c);
 CS transchar(Unt c);
 CS transchar_buf(Unt c);

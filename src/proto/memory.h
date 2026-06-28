@@ -9,7 +9,7 @@ void *allocZeroed_id(Unt size, AllocId id);
 void *lallocZeroed(Unt size, Boole message);
 void *lalloc(Unt size, Boole message);
 void *lalloc_id(Unt size, int message, AllocId id);
-void *mem_realloc(void *ptr, Unt size);
+void *memReallocWithProfiling(void *ptr, Unt size);
 void do_outofmem_msg(Unt size);
 void free_all_mem(void);
 CS eeMemsave(Byte *p, Unt len);

@@ -59,10 +59,10 @@ init_homedir(void) {
    if (var) {
       //Change to the directory and get the actual path. This resolves links. Don't do it when 
       //we can't return.
-      if (mch_dirname(nameBuffG, MAXPATHL) == OK && mch_chdir((char *)nameBuffG) == 0) {
-         if (!mch_chdir((char *)var) && mch_dirname(IObuff, IOSIZE) == OK)
+      if (mch_dirname(nameBuffG, MAXPATHL) == OK && mch_chdir(nameBuffG) == 0) {
+         if (!mch_chdir(var) && mch_dirname(IObuff, IOSIZE) == OK)
             var = IObuff;
-         if (mch_chdir((char *)nameBuffG) != 0)
+         if (mch_chdir(nameBuffG) != 0)
             emsg(_(e_cannot_go_back_to_previous_directory));
       }
       homedir = copyStr(var);
@@ -1341,7 +1341,7 @@ expand_wildcards(
    if (files->len > 1 && !gotInterruptG) {
       int non_suf_match = 0;   // number without matching suffix
       for (Unt i = 0; i < files->len; ++i) {
-         if (!match_suffix(files->c[i])) {
+         if (!strMatchLowPrioSuffix(files->c[i], p_lpSuff)) {
             // Move the name without matching suffix to the front of the list.
             CS p = files->c[i];
             for (int j = i; j > non_suf_match; --j)
@@ -1534,7 +1534,7 @@ unix_expandpath(
                 && (dp->d_name[1] != '.' || dp->d_name[2] != ZERO)))
              && ((regmatch.regprog != NULL && eeRegexec(&regmatch,
                              (CS)dp->d_name, (ColNr)0))
-                  || ((flags & EW_NOTWILD) && fnamencmp(path + len, dp->d_name, e - s) == 0))
+                  || ((flags & EW_NOTWILD) && STRNCMP(path + len, dp->d_name, e - s) == 0))
          ) {
             len += eeSnprintf(s, tempLen - len, "%s", dp->d_name);
             if (len + 1 >= tempLen)
@@ -1893,7 +1893,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
          //Only change directory when we are sure we can return to where
          //we are now. After doing "su" chdir(".") might not work.
          if (fd < 0 
-               && (mch_dirname(olddir, MAXPATHL) == FAIL || mch_chdir((char *)olddir) != 0)
+               && (mch_dirname(olddir, MAXPATHL) == FAIL || mch_chdir(olddir) != 0)
          ){
             p = NULL;   // can't get current dir: don't chdir
             retval = FAIL;
@@ -1904,7 +1904,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
                retval = FAIL;
             else {
                copySubstrToAllocation(buf, (Text){fname, p - fname});
-               if (mch_chdir((char *)buf)) {
+               if (mch_chdir(buf)) {
                   //Path does not exist (yet). For a full path fail, will use the path as-is. 
                   //For a relative path use the current directory and append the file name.
                   if (!strIsRelative(fname))
@@ -1933,7 +1933,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
             }
             l = fchdir(fd);
          } else
-            l = mch_chdir((char *)olddir);
+            l = mch_chdir(olddir);
          if (l != 0)
             emsg(_(e_cannot_go_back_to_previous_directory));
       }
@@ -1981,6 +1981,65 @@ eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion e
    return retval;
 }
 
+//Return true if file names "f1" and "f2" are in the same directory.
+//"f1" may be a short name, "f2" must be a full path.
+int
+same_directory(CS f1, CS f2) {
+   // safety check
+   if (!f1 || !f2)
+      return false;
+      
+   Byte ffname[MAXPATHL];
+   (void)eeFullFileName(f1, ffname, MAXPATHL, false);
+   CS t1 = gettail_sep(ffname);
+   CS t2 = gettail_sep(f2);
+   return (t1 - ffname == t2 - f2 && pathcmp(ffname, f2, (int)(t1 - ffname)) == 0);
+}
+
+//Compare two file names and return:
+//FPC_SAME   if they both exist and are the same file.
+//FPC_SAMEX  if they both don't exist and have the same file name.
+//FPC_DIFF   if they both exist and are different files.
+//FPC_NOTX   if they both don't exist.
+//FPC_DIFFX  if one of them doesn't exist.
+//For the first name environment variables are expanded if "expandenv" is true.
+int
+fullpathcmp(
+   CS s1,
+   CS s2,
+   int checkname,      // when both don't exist, check file names
+   int expandenv
+) {
+   Byte exp1[MAXPATHL];
+   Byte full1[MAXPATHL];
+   Byte full2[MAXPATHL];
+   FileStat st1, st2;
+
+   if (expandenv)
+      doExpandEnv(OUT (Text){exp1, MAXPATHL}, s1);
+   else
+      copySubstrToAllocation(exp1, (Text){s1, MAXPATHL - 1});
+   int r1 = stat((char *)exp1, &st1);
+   int r2 = stat((char *)s2, &st2);
+   if (r1 != 0 && r2 != 0) {
+      // if stat() doesn't work, may compare the names
+      if (checkname) {
+         if (fnamecmp(exp1, s2) == 0)
+            return FPC_SAMEX;
+         r1 = eeFullFileName(exp1, full1, MAXPATHL, false);
+         r2 = eeFullFileName(s2, full2, MAXPATHL, false);
+         if (r1 == OK && r2 == OK && fnamecmp(full1, full2) == 0)
+            return FPC_SAMEX;
+      }
+      return FPC_NOTX;
+   }
+   if (r1 != 0 || r2 != 0)
+      return FPC_DIFFX;
+   if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
+      return FPC_SAME;
+   return FPC_DIFF;
+}
+
 //Get name of current directory into buffer "buf" of length "len" bytes.
 //"len" must be at least PATH_MAX. Return OK for success, FAIL for failure.
 int
@@ -2024,6 +2083,367 @@ homeReplaceA(Book* book, CS inputFname, Arena* a){
    }
    return dst;
 }
+
+//Adjust a filename, according to a string of modifiers.
+//*fnamep must be ZERO terminated when called. When returning, the length is determined by *fnamelen
+//Return VALID_ flags or -1 for failure. When there is an error, *fnamep is set to NULL.
+int
+modify_fname(
+   CS src,      // string with modifiers
+   int tilde_file,   // "~" is a file name, not $HOME
+   Unt* usedlen,   // characters after src that are used
+   OUT CS* fnamep,   // file name so far
+   OUT CS* bufp,      // buffer for allocated file name or NULL
+   Unt* fnamelen   // length of fnamep
+){
+   Unt valid = 0;
+   CS s;
+   CS p;
+   Byte dirname[MAXPATHL];
+   Unt c;
+   int has_fullname = 0;
+   int has_homerelative = 0;
+
+repeat:
+   // ":p" - full path/file_name
+   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'p') {
+      has_fullname = 1;
+
+      valid |= VALID_PATH;
+      *usedlen += 2;
+
+      // Expand "~/path" for all systems and "~user/path" for Unix
+      if ((*fnamep)[0] == '~' && !(tilde_file && (*fnamep)[1] == ZERO)) {
+         *fnamep = doExpandEnvInMultiplePaths(*fnamep);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == NULL)
+            return -1;
+      }
+
+      // When "/." or "/.." is used: force expansion to get rid of it.
+      for (p = *fnamep; *p != ZERO; MB_PTR_ADV(p)) {
+         if (*p == '/'
+                && p[1] == '.'
+                && (p[2] == ZERO
+                     || p[2] == '/'
+                     || (p[2] == '.' && (p[3] == ZERO || p[3] == '/'))
+                   )
+         )
+            break;
+      }
+
+      // fiExpandAndCopy() is slow, don't use it when not needed.
+      if (*p != ZERO || !eeIsAbsName(*fnamep)) {
+         *fnamep = fiExpandAndCopy(*fnamep, *p != ZERO);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == NULL)
+            return -1;
+      }
+
+      // Append a path separator to a directory.
+      if (mch_isdir(*fnamep)) {
+         // Make room for one or two extra characters.
+         *fnamep = copySubstr(*fnamep, STRLEN(*fnamep) + 2);
+         eeglFree(*bufp);   // free any allocated file name
+         *bufp = *fnamep;
+         if (*fnamep == null)
+            return -1;
+         add_pathsep(*fnamep);
+      }
+   }
+
+   // ":." - path relative to the current directory
+   // ":~" - path relative to the home directory
+   while (src[*usedlen] == ':'
+        && ((c = src[*usedlen + 1]) == '.' || c == '~')
+   ){
+      *usedlen += 2;
+      if (c == '8') {
+         continue;
+      }
+      CS pbuf = NULL;
+      // Need full path first (use doExpandEnv() to remove a "~/")
+      if (!has_fullname && !has_homerelative) {
+         if (**fnamep == '~')
+            p = pbuf = doExpandEnvInMultiplePaths(*fnamep);
+         else
+            p = pbuf = fiExpandAndCopy(*fnamep, false);
+      } else
+         p = *fnamep;
+
+      has_fullname = 0;
+
+      if (p) {
+         if (c == '.') {
+            Unt   namelen;
+
+            mch_dirname(dirname, MAXPATHL);
+            if (has_homerelative) {
+               s = copyStr(dirname);
+               home_replace(s, dirname, MAXPATHL, true);
+               eeglFree(s);
+            }
+            namelen = STRLEN(dirname);
+
+            // Do not call shorten_fname() here since it removes the prefix
+            // even though the path does not have a prefix.
+            if (STRNCMP(p, dirname, namelen) == 0) {
+               p += namelen;
+               if (*p == '/') {
+                  while (*p == '/')
+                     ++p;
+                  *fnamep = p;
+                  if (pbuf) {
+                      // free any allocated file name
+                      eeglFree(*bufp);
+                      *bufp = pbuf;
+                      pbuf = NULL;
+                  }
+               }
+            }
+         } else {
+            home_replace(p, dirname, MAXPATHL, true);
+            // Only replace it when it starts with '~'
+            if (*dirname == '~') {
+               s = copyStr(dirname);
+               *fnamep = s;
+               eeglFree(*bufp);
+               *bufp = s;
+               has_homerelative = true;
+            }
+          }
+          eeglFree(pbuf);
+      }
+   }
+
+   CS tail = fiGetShortFiName(*fnamep);
+   *fnamelen = STRLEN(*fnamep);
+
+   //":h" - head, remove "/file_name", can be repeated. Don't remove the first "/"
+   while (src[*usedlen] == ':' && src[*usedlen + 1] == 'h') {
+      valid |= VALID_HEAD;
+      *usedlen += 2;
+      s = skipInitialSlashes(*fnamep);
+      while (tail > s && after_pathsep(s, tail))
+          MB_PTR_BACK(*fnamep, tail);
+      *fnamelen = tail - *fnamep;
+      if (*fnamelen == 0) {
+         // Result is empty.  Turn it into "." to make ":cd %:h" work.
+         p = copyStr((CS)".");
+         eeglFree(*bufp);
+         *bufp = *fnamep = tail = p;
+         *fnamelen = 1;
+      } else {
+         while (tail > s && !after_pathsep(s, tail))
+            MB_PTR_BACK(*fnamep, tail);
+      }
+   }
+
+   // ":t" - tail, just the basename
+   if (src[*usedlen] == ':' && src[*usedlen + 1] == 't') {
+      *usedlen += 2;
+      *fnamelen -= tail - *fnamep;
+      *fnamep = tail;
+   }
+
+   //":e" - extension, can be repeated
+   //":r" - root, without extension, can be repeated
+   while (src[*usedlen] == ':'
+       && (src[*usedlen + 1] == 'e' || src[*usedlen + 1] == 'r')
+   ){
+      // find a '.' in the tail:
+      // - for second :e: before the current fname
+      // - otherwise: The last '.'
+      if (src[*usedlen + 1] == 'e' && *fnamep > tail)
+          s = *fnamep - 2;
+      else
+          s = *fnamep + *fnamelen - 1;
+      for ( ; s > tail; --s) {
+         if (s[0] == '.')
+            break;
+      } 
+      if (src[*usedlen + 1] == 'e') {     // :e
+         if (s > tail) {
+            *fnamelen += (*fnamep - (s + 1));
+            *fnamep = s + 1;
+         } ei (*fnamep <= tail)
+            *fnamelen = 0;
+      } else {           // :r
+         CS limit = *fnamep;
+         if (limit < tail)
+            limit = tail;
+         if (s > limit)   // remove one extension
+            *fnamelen = s - *fnamep;
+      }
+      *usedlen += 2;
+   }
+
+   // ":s?pat?foo?" - substitute
+   // ":gs?pat?foo?" - global substitute
+   if (src[*usedlen] == ':'
+       && (src[*usedlen + 1] == 's'
+      || (src[*usedlen + 1] == 'g' && src[*usedlen + 2] == 's'))
+   ) {
+      CS str;
+      CS pat;
+      CS sub;
+      int sep;
+      int didit = false;
+
+      CS flags = S"";
+      s = src + *usedlen + 2;
+      if (src[*usedlen + 1] == 'g') {
+         flags = (CS)"g";
+         ++s;
+      }
+
+      sep = *s++;
+      if (sep) {
+         // find end of pattern
+         p = firstOccurrence(s, sep);
+         if (p) {
+            pat = copySubstr(s, p - s);
+            if (pat) {
+                s = p + 1;
+                // find end of substitution
+                p = firstOccurrence(s, sep);
+                if (p != NULL) {
+               sub = copySubstr(s, p - s);
+               str = copySubstr(*fnamep, *fnamelen);
+               if (sub != NULL && str != NULL) {
+                   Unt slen;
+
+                   *usedlen = p + 1 - src;
+                   s = do_string_sub(str, *fnamelen, pat, sub, NULL, flags, &slen);
+                   if (s != NULL) {
+                  *fnamep = s;
+                  *fnamelen = slen;
+                  eeglFree(*bufp);
+                  *bufp = s;
+                  didit = true;
+                   }
+               }
+               eeglFree(sub);
+               eeglFree(str);
+                }
+                eeglFree(pat);
+            }
+          }
+          // after using ":s", repeat all the modifiers
+          if (didit)
+         goto repeat;
+      }
+   }
+
+   if (src[*usedlen] == ':' && src[*usedlen + 1] == 'S') {
+      // copyStr_shellescape() needs a ZERO terminated string.
+      c = (*fnamep)[*fnamelen];
+      if (c != ZERO)
+         (*fnamep)[*fnamelen] = ZERO;
+      p = copyStr_shellescape(*fnamep, false, false);
+      if (c != ZERO)
+         (*fnamep)[*fnamelen] = c;
+      eeglFree(*bufp);
+      *bufp = *fnamep = p;
+      *fnamelen = STRLEN(p);
+      *usedlen += 2;
+   }
+
+   return valid;
+}
+
+//Replace home directory by "~" in each space or comma separated file name in 'src'.
+//If anything fails (except when out of space) dst equals src.
+void
+home_replace(
+   CS src, //input file name
+   CS dst, //where to put the result
+   int dstlen,  //maximum length of the result
+   Boole one      //if true, only replace one file name, include spaces and commas in the file name.
+){
+   Unt dirlen = 0, envlen = 0;
+   Unt len;
+   CS homedir_env;
+   CS homedir_env_orig;
+   CS p;
+
+   if (!src) {
+      *dst = ZERO;
+      return;
+   }
+
+   //We check both the value of the $HOME environment variable and the "real" home directory.
+   if (homedir)
+      dirlen = STRLEN(homedir);
+
+   homedir_env_orig = homedir_env = mch_getenv("HOME");
+   // Empty is the same as not set.
+   if (homedir_env && *homedir_env == ZERO)
+      homedir_env = NULL;
+
+   if (homedir_env && *homedir_env == '~') {
+      Unt usedlen = 0;
+
+      Unt flen = STRLEN(homedir_env);
+      CS fbuf = NULL;
+      (void)modify_fname(S":p", false, &usedlen, &homedir_env, OUT &fbuf, &flen);
+      flen = STRLEN(homedir_env);
+      if (flen > 0 && homedir_env[flen - 1] == '/')
+         // Remove the trailing / that is added to a directory.
+         homedir_env[flen - 1] = ZERO;
+   }
+
+   if (homedir_env != NULL)
+      envlen = STRLEN(homedir_env);
+
+   if (!one)
+      src = skipwhite(src);
+   while (*src && dstlen > 0) {
+      //Here we are at the beginning of a file name. First, check to see if the beginning of the 
+      //file name matches $HOME or the "real" home directory. Check that there is a '/'
+      //after the match (so that if e.g. the file is "/home/pieter/bla", and the home directory 
+      //is "/home/piet", the file does not end up as "~er/bla" (which would seem to indicate the 
+      //file "bla" in user er's home directory)).
+      p = homedir;
+      len = dirlen;
+      for (;;) {
+         if (  len
+            && STRNCMP(src, p, len) == 0
+            && (src[len] == '/'
+                || (!one && (src[len] == ',' || src[len] == ' '))
+                || src[len] == ZERO)
+         ){
+            src += len;
+            if (--dstlen > 0)
+               *dst++ = '~';
+
+            //Do not add directory separator into dst, because dst is expected to just return the 
+            //directory name without the directory separator '/'.
+            break;
+         }
+         if (p == homedir_env)
+            break;
+         p = homedir_env;
+         len = envlen;
+      }
+
+      //if (!one) skip to separator: space or comma
+      while (*src && (one || (*src != ',' && *src != ' ')) && --dstlen > 0)
+         *dst++ = *src++;
+      //skip separator
+      while ((*src == ' ' || *src == ',') && --dstlen > 0)
+          *dst++ = *src++;
+   }
+   //TODO if (dstlen == 0) out of space, what to do???
+
+   *dst = ZERO;
+
+   if (homedir_env != homedir_env_orig)
+      eeglFree(homedir_env);
+}
+
 
 //}}}
 //{{{ finding files
@@ -2561,7 +2981,7 @@ eeChdir(CS new_dir) {
    eeFindFile_cleanup(searchCtx);
    if (!dir_name)
       return -1;
-   int r = mch_chdir((char *)dir_name);
+   int r = mch_chdir(dir_name);
    eeglFree(dir_name);
    return r;
 }
@@ -2585,7 +3005,7 @@ eeChdirfile(CS fname, char *trigger_autocmd) {
    if (trigger_autocmd != NULL)
       trigger_DirChangedPre((CS)trigger_autocmd, new_dir);
 
-   if (mch_chdir((char *)new_dir) != 0)
+   if (mch_chdir(new_dir) != 0)
       return FAIL;
 
    if (trigger_autocmd != NULL)
@@ -2949,7 +3369,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
                      // Not found or found already, try next suffix.
                      if (*suf == ZERO)
                         break;
-                     filePath.len = len + doCutPathFromListOfPaths(
+                     filePath.len = len + strCutPathFromListOfPaths(
                            OUT &suf, OUT filePath.c + len, (int)(MAXPATHL - len), S","
                      );
                   }
@@ -3353,7 +3773,7 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
       // match for parent directory. So '/home' also matches
       // '/home/rks'. Check for '/' in stopdirs_v[i], else
       // '/home/r' would also match '/home/rks'
-      if (fnamencmp(stopdirs_v[i].c, path, path_len) == 0
+      if (STRNCMP(stopdirs_v[i].c, path, path_len) == 0
          && ((int)stopdirs_v[i].len <= path_len
              || stopdirs_v[i].c[path_len] == '/'))
           return true;
@@ -3550,7 +3970,7 @@ findFileInPathImpl(
                }
                if (*suffix == ZERO)
                   break;
-               nameBuffGlen = l + doCutPathFromListOfPaths(
+               nameBuffGlen = l + strCutPathFromListOfPaths(
                      OUT &suffix, OUT nameBuffG + l, MAXPATHL - l, S","
                );
             }
@@ -3585,7 +4005,7 @@ findFileInPathImpl(
             Byte buf[MAXPATHL];
             // copy next path
             buf[0] = ZERO;
-            doCutPathFromListOfPaths(OUT &dir, OUT buf, MAXPATHL, S" ,");
+            strCutPathFromListOfPaths(OUT &dir, OUT buf, MAXPATHL, S" ,");
 
             // get the stopdir string
             CS r_ptr = eeFindFile_stopdir(buf);
@@ -3911,7 +4331,7 @@ expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files) {
    CS p;
    Unt curdirlen = 0;
    while (*path_option != ZERO) {
-      Unt buflen = doCutPathFromListOfPaths(OUT &path_option, OUT buf, MAXPATHL, S" ,");
+      Unt buflen = strCutPathFromListOfPaths(OUT &path_option, OUT buf, MAXPATHL, S" ,");
 
       if (buf[0] == '.' && (buf[1] == ZERO || buf[1] == '/')) {
 
@@ -4025,7 +4445,7 @@ uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option) {   // pat
       CS dir_end = getLastSlash(path);
 
       len = (int)STRLEN(path);
-      if (fnamencmp(curdir, path, dir_end - path) == 0 && curdir[dir_end - path] == ZERO)
+      if (STRNCMP(curdir, path, dir_end - path) == 0 && curdir[dir_end - path] == ZERO)
          in_curdir[i] = copySubstr(path, len);
 
       // Shorten the filename while maintaining its uniqueness
@@ -4619,7 +5039,7 @@ fiGlobpath(
    // Loop over all entries in {path}.
    while (*path != ZERO) {
       // Copy one item of the path to buf[] and concatenate the file name.
-      pathlen = (Unt)doCutPathFromListOfPaths(OUT &path, OUT buf, MAXPATHL, S",");
+      pathlen = (Unt)strCutPathFromListOfPaths(OUT &path, OUT buf, MAXPATHL, S",");
       Unt seplen = (*buf != ZERO && !after_pathsep(buf, buf + pathlen)) ? 1 : 0;
 
       if (pathlen + seplen + filelen + 1 <= MAXPATHL) {
@@ -4646,13 +5066,13 @@ fiGlobpath(
 private int readdirex_sort;
 
 int
-mch_chdir(char *path) {
+mch_chdir(CS path) {
    if (p_verbose >= 5) {
       verbose_enter();
       smsg("chdir(%s)", path);
       verbose_leave();
    }
-   return chdir(path);
+   return chdir((char*)path);
 }
 
 void
@@ -5778,12 +6198,11 @@ shorten_fname1(CS full_path){
 //Return NULL if not shorter name possible, pointer into "full_path" otherwise.
 CS
 shorten_fname(CS full_path, CS dir_name){
-   CS p;
-
    if (full_path == NULL)
       return NULL;
    int len = (int)STRLEN(dir_name);
-   if (fnamencmp(dir_name, full_path, len) == 0) {
+   CS p;
+   if (STRNCMP(dir_name, full_path, len) == 0) {
       p = full_path + len;
       if (*p == '/')
          ++p;
@@ -6867,7 +7286,7 @@ match_file_list(CS list, CS sfname, CS ffname){
    // try all patterns in 'wildignore'
    CS p = list;
    while (*p) {
-      doCutPathFromListOfPaths(OUT &p, OUT buf, MAXPATHL, S",");
+      strCutPathFromListOfPaths(OUT &p, OUT buf, MAXPATHL, S",");
       CS regpat = file_pat_to_reg_pat(buf, NULL, OUT &allow_dirs);
       int match = match_file_pat(regpat, NULL, ffname, sfname, tail, allow_dirs);
       eeglFree(regpat);

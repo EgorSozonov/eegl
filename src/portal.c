@@ -4286,13 +4286,13 @@ portFixCurrentDir(void) {
       }
       CS dirname = (curPor->localDir) ? curPor->localDir : curtab->localdir;
 
-      if (mch_chdir((char *)dirname) == 0) {
+      if (mch_chdir(dirname) == 0) {
          shorten_fnames(true);
       }
    } ei (globaldir) {
       //Portal doesn't have a local directory and we are not in the global
       //directory: Change to the global directory.
-      (void)mch_chdir((char *)globaldir);
+      (void)mch_chdir(globaldir);
       EE_CLEAR(globaldir);
       shorten_fnames(true);
    }
@@ -6729,7 +6729,7 @@ f_win_execute(Arr(Var) argvars, Var* returnVar) {
    }
    portRestoreNoblock(&switchPort, true);
    if (cwd_status == OK)
-      mch_chdir((char *)cwd);
+      mch_chdir(cwd);
 
    // Update the status line if the cursor moved.
    if (portalIsValid(po) && !EQUAL_POS(curpos, po->cursor))

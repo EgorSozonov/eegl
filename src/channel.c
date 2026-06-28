@@ -3896,6 +3896,19 @@ wait4pid(pid_t child, waitstatus *status) {
     return wait_pid;
 }
 
+// Append the text in "gap" below the cursor line and clear "gap".
+private void
+append_ga_line(ArrayList* gap) {
+   // Remove trailing CR.
+   if (gap->len > 0
+          && !curBook->o.binary
+          && ((CS)gap->c)[gap->len - 1] == ENTER)
+      --gap->len;
+   ga_append(gap, ZERO);
+   ml_append(curPor->cursor.lnum++, gap->c, 0, false);
+   gap->len = 0;
+}
+
 //Don't use system(), use fork()/exec().
 private int
 chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
@@ -5104,7 +5117,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (null_fd >= 0)
          close(null_fd);
 
-      if (options->currentWorkingDir != NULL && mch_chdir((char *)options->currentWorkingDir) != 0)
+      if (options->currentWorkingDir != NULL && mch_chdir(options->currentWorkingDir) != 0)
          _exit(EXEC_FAILED);
 
       // See above for type of argv.

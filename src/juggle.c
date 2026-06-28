@@ -1048,7 +1048,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
          if (!got_com && flags)
             *flags = list;       // remember where flags started
          preList = list;
-         (void)doCutPathFromListOfPaths(OUT &list, OUT part_buf, COM_MAX_LEN, S",");
+         (void)strCutPathFromListOfPaths(OUT &list, OUT part_buf, COM_MAX_LEN, S",");
          string = firstOccurrence(part_buf, ':');
          if (string == NULL)       // missing ':', ignore this part
             continue;
@@ -1353,7 +1353,7 @@ openLine(
             current_flag = *p;
             if (*p == COM_START) {
                 // find start of middle part
-                (void)doCutPathFromListOfPaths(OUT &p, OUT lead_middle, COM_MAX_LEN, S",");
+                (void)strCutPathFromListOfPaths(OUT &p, OUT lead_middle, COM_MAX_LEN, S",");
                 require_blank = false;
             }
 
@@ -1363,7 +1363,7 @@ openLine(
                   require_blank = true;
                ++p;
             }
-            (void)doCutPathFromListOfPaths(OUT &p, OUT lead_middle, COM_MAX_LEN, S",");
+            (void)strCutPathFromListOfPaths(OUT &p, OUT lead_middle, COM_MAX_LEN, S",");
 
             while (*p && p[-1] != ':') {// find end of end flags
                // Check whether we allow automatic ending of comments
@@ -1371,7 +1371,7 @@ openLine(
                   end_comment_pending = UNT; // means we want to set it
                ++p;
             }
-            n = doCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, S",");
+            n = strCutPathFromListOfPaths(OUT &p, OUT lead_end, COM_MAX_LEN, S",");
 
             if (end_comment_pending == UNT)   // we can set it now
                end_comment_pending = lead_end[n - 1];
@@ -3320,7 +3320,7 @@ get_last_leader_offset(CS line, Byte **flags) {
 
          //Get one option part into part_buf[].  Advance list to next one.
          //put string at start of string.
-         (void)doCutPathFromListOfPaths(OUT &list, OUT part_buf, COM_MAX_LEN, S",");
+         (void)strCutPathFromListOfPaths(OUT &list, OUT part_buf, COM_MAX_LEN, S",");
          string = firstOccurrence(part_buf, ':');
          if (!string)   // If everything is fine, this cannot actually happen.
             continue;
@@ -3392,7 +3392,7 @@ get_last_leader_offset(CS line, Byte **flags) {
          for (list = curBook->o.comments; *list; ) {
             CS flags_save = list;
 
-            (void)doCutPathFromListOfPaths(OUT &list, OUT part_buf2, COM_MAX_LEN, S",");
+            (void)strCutPathFromListOfPaths(OUT &list, OUT part_buf2, COM_MAX_LEN, S",");
             if (flags_save == com_flags)
                continue;
             string = firstOccurrence(part_buf2, ':');

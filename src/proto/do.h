@@ -15,7 +15,6 @@ void c_file(Invocation *invo);
 void c_update(Invocation *invo);
 void c_write(Invocation *invo);
 int do_write(Invocation *invo);
-int doCutPathFromListOfPaths(CS *option, CS buf, int maxlen, CS sep_chars);
 void c_wnext(Invocation *invo);
 void do_wqall(Invocation *invo);
 int getfile(int fnum, CS ffname_arg, CS sfname_arg, int setpm, LineNr lnum, Boole forceit);

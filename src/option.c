@@ -2443,7 +2443,7 @@ did_set_completeitemalign(OptionChange* cha) {
    Byte   buffer[10];
    CS p = cha->newVal.string;
    while (*p) {
-      doCutPathFromListOfPaths(OUT &p, OUT buffer, sizeof(buffer), S",");
+      strCutPathFromListOfPaths(OUT &p, OUT buffer, sizeof(buffer), S",");
       if (count >= 3)
           return e_invalid_argument;
 
@@ -3893,7 +3893,7 @@ put_setstring(
             // for each comma separated option part, append value to the option, :set rtp+=value
             if (fprintf(fd, "%s %s+=", cmd, name) < 0)
                goto fail;
-            (void)doCutPathFromListOfPaths(OUT &p, OUT part, size,  S",");
+            (void)strCutPathFromListOfPaths(OUT &p, OUT part, size,  S",");
             if (put_escstr(fd, part, 2) == FAIL || put_eol(fd) == FAIL)
                goto fail;
          }
