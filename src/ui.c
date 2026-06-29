@@ -10533,14 +10533,14 @@ preserve_exit(void) {
 //but something else needs to be done.
 int
 realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) {
-   int      ret;
-   int      result;
-   static int   busy = false;
+   int ret;
+   int result;
+   static int busy = false;
 
-   // Remember at what time we started, so that we know how much longer we
-   // should wait after being interrupted.
-   long   start_msec = msec;
-   Elapsed   start_tv;
+   //Remember at what time we started, so that we know how much longer we
+   //should wait after being interrupted.
+   long start_msec = msec;
+   Elapsed start_tv;
 
    if (msec > 0)
       ELAPSED_INIT(start_tv);

@@ -1073,7 +1073,7 @@ do_filter(
    //The writing and reading of temp files will not be shown.
    ++no_wait_return;      // don't call wait_return() while busy
    if (itmp && bookWrite(curBook, itmp, NULL, line1, line2, invo,
-                  false, false, false, true) == FAIL
+                  false, false, false, true) != OK
    ) {
       msg_putchar('\n');      // keep message from bookWrite()
       --no_wait_return;
@@ -1590,7 +1590,7 @@ do_write(Invocation* invo) {
    Book* altBook = NULL;
    int name_was_missing;
 
-   if (isWritingForbidden())      // check 'write' option
+   if (isWritingForbidden())      // check @modfiable option and p_modifiable command-line flag
       return FAIL;
 
    CS fullFName = invo->arg;
@@ -1699,7 +1699,9 @@ do_write(Invocation* invo) {
 
       retval = bookWrite(curBook, fullFName, fname, invo->line1, invo->line2,
                 invo, invo->append, invo->forceit, true, false);
-
+      if (retval == NOTDONE) {
+         emsg(_(e_cannot_make_changes_modifiable_is_off));
+      } 
       // After ":saveas fname" reset 'readonly'.
       if (invo->id == C_saveas) {
          if (retval == OK) {
@@ -1770,13 +1772,13 @@ do_wqall(Invocation* invo){
          ) {
             ++error;
          } else {
-            BookRef bufref;
+            BookRef bookRef;
 
-            bookStoreInRef(OUT &bufref, book);
-            if (bookWrite_all(book, invo->forceit) == FAIL)
+            bookStoreInRef(OUT &bookRef, book);
+            if (bookWrite_all(book, invo->forceit) != OK)
                ++error;
             // an autocommand may have deleted the book
-            if (!bookRefValid(&bufref))
+            if (!bookRefValid(&bookRef))
                book = firstBook;
          }
          invo->forceit = save_forceit;    // check_overwrite() may set it
@@ -1792,10 +1794,11 @@ do_wqall(Invocation* invo){
 //Check the @modifiable option. Return true and give a message when it's not set.
 private Boole
 isWritingForbidden(void) {
-   if (curBook->o.modifiable)
+   if (IMMUTABLE) {
+      emsg(_(e_file_not_written_writing_is_disabled_by_write_option));
       return false;
-   emsg(_(e_file_not_written_writing_is_disabled_by_write_option));
-   return true;
+   } 
+   return false;
 }
 
 // Check if a book is read-only (either 'modifiable' option is not set or file is
@@ -1952,7 +1955,7 @@ startEditingFile(
    CS new_name = NULL;
    int did_set_swapcommand = false;
    Book* book;
-   BookRef bufref;
+   BookRef bookRef;
    BookRef curBookSaved;
    CS free_fname = NULL;
    int retval = FAIL;
@@ -2110,10 +2113,10 @@ startEditingFile(
          oldbuf = false;
       } else {              // existing memfile
          oldbuf = true;
-         bookStoreInRef(OUT &bufref, book);
+         bookStoreInRef(OUT &bookRef, book);
          (void)fiCheckBookTimestamp(book);
          // Check if autocommands made the book invalid or changed the current book.
-         if (!bookRefValid(&bufref) || curBook != curBookSaved.c)
+         if (!bookRefValid(&bookRef) || curBook != curBookSaved.c)
             goto theend;
          if (aborting())       // autocmds may abort script processing
             goto theend;
@@ -2185,7 +2188,7 @@ startEditingFile(
 
             // Close the link to the current buffer. This will set oldPort->buffer to NULL.
             u_sync(false);
-            did_decrement = closeBook(oldPort, curBook,
+            did_decrement = bookClose(oldPort, curBook,
                 (flags & ECMD_HIDE) ? 0 : DOBOOK_UNLOAD, false, false);
 
             // Autocommands may have closed the portal.
@@ -2207,7 +2210,7 @@ startEditingFile(
                goto theend;
             }
             if (book == curBook) {    // already in new buffer
-               // closeBook() has decremented the portal count,
+               // bookClose() has decremented the portal count,
                // increment it again here and restore buffer.
                if (did_decrement && bookIsValid(was_curbuf))
                   ++was_curbuf->countPortals;
@@ -2287,7 +2290,7 @@ startEditingFile(
          new_name = copyStr(book->currFileName);
       else
          new_name = NULL;
-      bookStoreInRef(OUT &bufref, book);
+      bookStoreInRef(OUT &bookRef, book);
 
       // If the buffer was used before, store the current contents so that
       // the reload can be undone.  Do not do this if the (empty) buffer is
@@ -2309,7 +2312,7 @@ startEditingFile(
 
       // If autocommands deleted the buffer we were going to re-edit, give
       // up and jump to the end.
-      if (!bookRefValid(&bufref)) {
+      if (!bookRefValid(&bookRef)) {
          delbuf_msg(new_name);   // frees new_name
          goto theend;
       }
@@ -3030,7 +3033,7 @@ c_substitute(Invocation* invo) {
       return;
    }
 
-   if (!subflags.do_count && !curBook->o.modifiable) {
+   if (!subflags.do_count && (!curBook->o.modifiable || !p_modifiable)) {
       // Substitution is not allowed in immutable buffers
       emsg(_(e_cannot_make_changes_modifiable_is_off));
       eeglFree(sub);
@@ -4512,15 +4515,16 @@ autowrite(Book *book, int forceit) {
    if (!(p_aw || p_awa) || book->o.modifiable
         // never autowrite a "nofile" or "nowrite" book
         || bookDontWrite(book)
-        || (!forceit && !book->o.modifiable) || book->fullFileName == NULL)
+        || (!forceit && !book->o.modifiable) || !book->fullFileName
+   )
       return FAIL;
-   BookRef   bufref;
-   bookStoreInRef(OUT &bufref, book);
+   BookRef bookRef;
+   bookStoreInRef(OUT &bookRef, book);
    int r = bookWrite_all(book, forceit);
 
    // Writing may succeed but the book still changed, e.g., when there is a
    // conversion error.  We do want to return FAIL then.
-   if (bookRefValid(&bufref) && doWasBookChanged(book))
+   if (bookRefValid(&bookRef) && doWasBookChanged(book))
       r = FAIL;
    return r;
 }
@@ -4528,20 +4532,18 @@ autowrite(Book *book, int forceit) {
 // Flush all books, except the ones that are readonly or are never written.
 void
 doFlushAllBooks(void) {
-   Book   *book;
-
-   if (!(p_aw || p_awa))
+   if (!p_aw && !p_awa)
       return;
+   Book* book;
    FOR_ALL_BOOKS(book) {
       if (doWasBookChanged(book) && book->o.modifiable && !bookDontWrite(book)) {
-         BookRef   bufref;
-
-         bookStoreInRef(OUT &bufref, book);
+         BookRef bookRef;
+         bookStoreInRef(OUT &bookRef, book);
 
          (void)bookWrite_all(book, false);
 
-         // an autocommand may have deleted the buffer
-         if (!bookRefValid(&bufref))
+         // an autocommand may have deleted the book
+         if (!bookRefValid(&bookRef))
             book = firstBook;
       }
    }
@@ -4551,9 +4553,9 @@ doFlushAllBooks(void) {
 int
 check_changed(Book *book, int flags) {
    int      forceit = (flags & CCGD_FORCEIT);
-   BookRef   bufref;
+   BookRef   bookRef;
 
-   bookStoreInRef(OUT &bufref, book);
+   bookStoreInRef(OUT &bookRef, book);
 
    if (       !forceit
        && doWasBookChanged(book)
@@ -4575,13 +4577,13 @@ check_changed(Book *book, int flags) {
                } 
             } 
          }
-         if (!bookRefValid(&bufref))
+         if (!bookRefValid(&bookRef))
             // Autocommand deleted buffer, oops!  It's not changed now.
             return false;
 
          dialog_changed(book, count > 1);
 
-         if (!bookRefValid(&bufref))
+         if (!bookRefValid(&bookRef))
          // Autocommand deleted buffer, oops!  It's not changed now.
             return false;
          return doWasBookChanged(book);
@@ -4643,9 +4645,9 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
              && !bookDontWrite(buf2)
              && buf2->o.modifiable
          ) {
-            BookRef bufref;
+            BookRef bookRef;
 
-            bookStoreInRef(OUT &bufref, buf2);
+            bookStoreInRef(OUT &bookRef, buf2);
             if (buf2->currFileName && check_overwrite(&invo, buf2,
                     buf2->currFileName, buf2->fullFileName, false) == OK
             )
@@ -4653,7 +4655,7 @@ dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
                (void)bookWrite_all(buf2, false);
 
             // an autocommand may have deleted the buffer
-            if (!bookRefValid(&bufref))
+            if (!bookRefValid(&bookRef))
                buf2 = firstBook;
           }
       }
@@ -4674,14 +4676,11 @@ add_bufnum(int *bufnrs, int *bufnump, int nr) {
    *bufnump = *bufnump + 1;
 }
 
-// true if any buffer was changed and cannot be abandoned. That changed buffer becomes the 
-// current buffer. When "unload" is true the current buffer is unloaded instead of making it
-// hidden.  This is used for ":q!".
+//true if any buffer was changed and cannot be abandoned. That changed buffer becomes the 
+//current buffer. When "unload" is true the current buffer is unloaded instead of making it
+//hidden.  This is used for ":q!".
 int
-check_changed_any(
-    int      hidden,      // Only check hidden buffers
-    int      unload)
-{
+check_changed_any(Boole checkOnlyHidden, Boole unload) {
    int      ret = false;
    Book   *book;
    int      save;
@@ -4704,7 +4703,7 @@ check_changed_any(
    // curBook
    bufnrs[bufnum++] = curBook->fiNum;
 
-   // buffers in current tab
+   //books in current tab
    FOR_ALL_PORTALS(po) {
       if (po->book != curBook)
          add_bufnum(bufnrs, &bufnum, po->book->fiNum);
@@ -4718,7 +4717,7 @@ check_changed_any(
       } 
    } 
 
-   // any other buffer
+   // any other book
    FOR_ALL_BOOKS(book)
       add_bufnum(bufnrs, &bufnum, book->fiNum);
 
@@ -4726,10 +4725,10 @@ check_changed_any(
       book = bookFindFileByBookNr(bufnrs[i]);
       if (!book)
          continue;
-      if ((!hidden || book->countPortals == 0) && doWasBookChanged(book)) {
-         BookRef bufref;
+      if ((!checkOnlyHidden || book->countPortals == 0) && doWasBookChanged(book)) {
+         BookRef bookRef;
 
-         bookStoreInRef(OUT &bufref, book);
+         bookStoreInRef(OUT &bookRef, book);
          if (term_job_running(book->term)) {
             if (term_try_stop_job(book) == FAIL)
                 break;
@@ -4738,7 +4737,7 @@ check_changed_any(
             // longer exists it's not changed, that's OK.
             if (check_changed(book, (p_awa ? CCGD_AW : 0)
                 | CCGD_MULTWIN
-                | CCGD_ALLBOOKS) && bookRefValid(&bufref)
+                | CCGD_ALLBOOKS) && bookRefValid(&bookRef)
             )
                break;       // didn't save - still changes
       }
@@ -4778,14 +4777,13 @@ check_changed_any(
    if (book != curBook) {
       FOR_ALL_TAB_PORTALS(t, po) {
          if (po->book == book) {
-            BookRef bufref;
-
-            bookStoreInRef(OUT &bufref, book);
+            BookRef bookRef;
+            bookStoreInRef(OUT &bookRef, book);
 
             goto_tab_port(t, po);
 
             // Paranoia: did autocomm wipe out the buffer with changes?
-            if (!bookRefValid(&bufref))
+            if (!bookRefValid(&bookRef))
                 goto theend;
             goto buf_found;
          }
@@ -4812,16 +4810,19 @@ check_fname(void) {
    return OK;
 }
 
-// Flush the contents of a buffer, unless it has no file name.
-// Return FAIL for failure, OK otherwise
+//Flush the contents of a book, unless it has no file name.
+//Return FAIL for failure, NOTDONE for refusal, OK otherwise
 int
-bookWrite_all(Book *book, int forceit) {
-   int       retval;
-   Book   *curBookSaved = curBook;
+bookWrite_all(Book* book, Boole forceit) {
+   Book* curBookSaved = curBook;
 
-   retval = (bookWrite(book, book->fullFileName, book->currFileName,
-               (LineNr)1, book->mem.lineCount, NULL,
-                    false, forceit, true, false));
+   int retval = bookWrite(
+      book, book->fullFileName, book->currFileName, (LineNr)1, book->mem.lineCount, NULL,
+      false, forceit, true, false
+   );
+   if (retval == NOTDONE) {
+      emsg(_(e_cannot_make_changes_modifiable_is_off));
+   }
    if (curBook != curBookSaved) {
       msg_source(getDecoFlags(HLF_W));
       msg(_("Warning: Entered other buffer unexpectedly (check autocommands)"));
@@ -5174,7 +5175,6 @@ doCommand(
       saveDbgStuff(&debug_saved);
    else
       CLEAR_FIELD(debug_saved);
-
 
    //"did_throw" will be set to true if an exception will be thrown
    did_throw = false;
@@ -5536,7 +5536,7 @@ doOneCommand(
       invo.argFlags = (long)commands[(int)invo.id].flags;
 
    if (!invo.skip) {
-      if (!curBook->o.modifiable && (invo.argFlags & MODIFY)) {
+      if ((IMMUTABLE) && (invo.argFlags & MODIFY) != 0) {
           // Command not allowed in immutable buffers
           errorMsg = _(e_cannot_make_changes_modifiable_is_off);
           goto doend;
@@ -8592,19 +8592,19 @@ c_exit(Invocation* invo) {
       commPortResultG = Ctrl_C;
       return;
    }
-   // Don't quit while editing the command line.
+   //Don't quit while editing the command line.
    if (text_locked()) {
       text_locked_msg();
       return;
    }
 
-   // we plan to exit if there is only one relevant portal
+   //we plan to exit if there is only one relevant portal
    if (onlyOnePortal())
       isExitingG = true;
 
-   // Write the book for ":wq" or when it was changed.
-   // Trigger QuitPre and ExitPre.
-   // Check if we can exit now, after autocommands have changed things.
+   //Write the book for ":wq" or when it was changed.
+   //Trigger QuitPre and ExitPre.
+   //Check if we can exit now, after autocommands have changed things.
    if (((invo->id == C_wq || doWasCurBookChanged()) && do_write(invo) == FAIL)
        || before_quit_autocmds(curPor, false)
        || (onlyOnePortal() && check_changed_any(invo->forceit, false))
@@ -11503,7 +11503,7 @@ u_savedel(LineNr lnum, long nlines) {
 int
 undo_allowed(void) {
    // Don't allow changes when @modifiable is off.
-   if (!curBook->o.modifiable) {
+   if (IMMUTABLE) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
       return false;
    }

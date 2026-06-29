@@ -48,10 +48,10 @@ private void check_msg_hist(void);
 private void hit_return_msg(void);
 private void homeReplaceDeco(Byte *fname, char flags);
 private void printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags);
-private void toDisplay(Byte *str, int maxlen, char flags, int recurse);
+private void toDisplay(CS str, int maxlen, Byte flags, int recurse);
 private void inc_msg_scrolled(void);
 private void saveToScrollback(Byte **sb_str, Byte *s, char flags, int *sb_col, int finish);
-private void t_puts(int *t_col, Byte *t_s, Byte *s, char flags);
+private void t_puts(int *t_col, Byte *t_s, Byte *s, Byte flags);
 private void toPrintf(Byte *str, int maxlen);
 private int do_more_prompt(int typedChar);
 private void msg_screen_putchar(int c, char flags);
@@ -2331,12 +2331,7 @@ put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum) {
 // The display part of printWithDecoAndMaxLen().
 // May be called recursively to display scroll-back text.
 private void
-toDisplay(
-   Byte   *str,
-   int      maxlen,
-   char      flags,
-   int      recurse
-){
+toDisplay(CS str, int      maxlen, Byte flags, int      recurse){
    Byte   *s = str;
    Byte   *t_s = str;   // string from "t_s" to "s" is still todo
    int      t_col = 0;   // screen cells todo, 0 when "t_s" not used
@@ -2546,19 +2541,14 @@ message_filtered(CS msg) {
 
 // Output any postponed text for printWithDecoAndMaxLen().
 private void
-t_puts(
-   int      *t_col,
-   CS t_s,
-   CS s,
-   char      flags
-){
+t_puts(int* t_col, CS theText, CS sentinel, Byte flags){
    // output postponed text
    msg_didout = true;      // remember that line is not empty
-   drawTextLen(t_s, (int)(s - t_s), msgRowG, msgColG, flags);
+   drawTextLen(theText, (int)(sentinel - theText), msgRowG, msgColG, flags);
    msgColG += *t_col;
    *t_col = 0;
    // If the string starts with a composing character don't increment the column position for it.
-   if (utf_iscomposing(mb_ptr2char(t_s)))
+   if (utf_iscomposing(mb_ptr2char(theText)))
       --msgColG;
    if (msgColG >= visibleColsG) {
       msgColG = 0;

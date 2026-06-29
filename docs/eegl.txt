@@ -25,6 +25,10 @@ safe_vgetc()
 do_cmdkey_command()
 K_COMMAND, K_SCRIPT_COMMAND
 
+
+//enter portal (make it the curPor)
+portal.c:enterPortalWorker
+
 // structs in structs.h
 // common definitions in vim.h
 // features in auto/config.h
@@ -188,6 +192,7 @@ hilite.c:getCurrentDeco()
 
 //actually applying colors, decorations:
 draw.c:startDrawingHilite()
+termApplyUnderColor
 
 // Get pointer to actual line contents for a buffer and line number
 memory.c:memGetLine()

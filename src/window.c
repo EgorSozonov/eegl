@@ -5545,8 +5545,8 @@ wayland_cb_reload(void) {
 
 private int wayland_ct_restore_count = 0;
 
-// Attempt to restore the Wayland display connection. Returns OK if display
-// connection was/is now valid, else FAIL if the display connection is invalid.
+//Attempt to restore the Wayland display connection. Returns OK if display
+//connection was/is now valid, else FAIL if the display connection is invalid.
 int
 wayland_may_restore_connection(void) {
    // No point if we still are already connected properly

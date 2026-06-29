@@ -25,18 +25,6 @@ private CS mediumVersion = (CS)EEGL_VERSION_MEDIUM;
 
 private Byte longVersion[] = EEGL_VERSION_LONG_DATE __DATE__ " " __TIME__ ")";
 
-private CS features[] = {SMAP((CS),
-   "+mouse_sgr",
-   "+wayland",
-   "+xattr",
-   "-xfontset",
-#ifdef FEAT_XTERM_SAVE
-   "+xterm_save",
-#else
-   "-xterm_save",
-#endif
-   NULL
-)};
 
 private int included_patches[] = {   
 // Add new patch number below this line */
@@ -58,13 +46,6 @@ highest_patch(void) {
    // this relies on the highest patch number to be the first entry
    return included_patches[0];
 }
-
-// List all features aligned in columns, dictionary style.
-private void
-list_features(void) {
-   listInColumns((Byte **)features, -1, -1, true);
-}
-
 
 private void
 list_version(void) {
@@ -109,9 +90,6 @@ list_version(void) {
       }
    }
 
-   printMsgWithWrap(_("Features included (+) or not (-):\n"));
-
-   list_features();
    if (msgColG > 0)
       msg_putchar('\n');
 
@@ -360,12 +338,14 @@ libMain(void) {
    no_wait_return = false;
    msg_scroll = false;
 
-   if (wayland_init_client(wayland_display_name) == OK) {
-      TIME_MSG("connected to Wayland display");
+//TODO WAYLAND
+//   if (wayland_init_client(wayland_display_name) == OK) {
+//      TIME_MSG("connected to Wayland display");
+//
+//      if (wayland_cb_init(p_wse) == OK)
+//         TIME_MSG("setup Wayland clipboard");
+//   }
 
-      if (wayland_cb_init(p_wse) == OK)
-         TIME_MSG("setup Wayland clipboard");
-   }
    //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may 
    //change things that the writing end of the pipe doesn't like, e.g., in case stdin and stderr
    //are the same terminal: "cat | eegl -". Using autocommands here may cause trouble...
@@ -496,7 +476,7 @@ libMain(void) {
 
    TIME_MSG("before starting main loop");
 
-   //Call the main command loop.  This never returns.
+   //Call the main command loop. This never returns.
    mainLoop(false);
 
 #endif // NO_EEGL_MAIN
@@ -630,6 +610,8 @@ appMain(int argc, char** argv) {
 
    //Figure out the way to work from the command name argv[0]. "eegldiff" starts diff mode, etc.
    parseCommandName(OUT &paramsP);
+   
+   p_modifiable = true;
 
    // Process command line arguments. File names are put into the global argument list "argListG"
    scanCommandLineArgs(&paramsP);
@@ -903,7 +885,7 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
          validate_cursor();
 
          if (VIsual_active)
-            update_curbuf(UPD_INVERTED); // update inverted part
+            drawUpdateCurBook(UPD_INVERTED); // update inverted part
          ei (mustRedrawG) {
             drawUpdateScreen(0);
          } ei (redrawCommlineG || mustClearCommlineG || redrawModeG)

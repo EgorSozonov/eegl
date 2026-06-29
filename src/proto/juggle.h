@@ -1,13 +1,13 @@
 /* src/juggle.c */
 void change_warning(int col);
 void changed(void);
-void changed_internal(void);
+void jugOnChangeToText(void);
 int trim_to_int(Long x);
 void f_listener_add(Var *argVars, Var *returnVar);
 void f_listener_flush(Var *argVars, Var *returnVar);
 void f_listener_remove(Var *argVars, Var *returnVar);
-void may_invoke_listeners(Book *book, LineNr lnum, LineNr lnume, int added);
-void invoke_listeners(Book *book);
+void may_jugInvokeListenersOnChangedText(Book *book, LineNr lnum, LineNr lnume, int added);
+void jugInvokeListenersOnChangedText(Book *book);
 void remove_listeners(Book *book);
 void changed_bytes(LineNr lnum, ColNr col);
 void inserted_bytes(LineNr lnum, ColNr col, int added);

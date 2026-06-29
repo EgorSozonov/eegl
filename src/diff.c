@@ -1250,7 +1250,7 @@ diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end) {
    return OK;
 }
 
-//Write "book" to file or memory buffer. Return FAIL for failure.
+//Write "book" to file or memory buffer. Return FAIL for failure or NOTDONE for refusal to save.
 private int
 diff_write(Book* book, DiffInp* din, LineNr start, LineNr end) {
    if (din->externalFname == NULL)
@@ -1362,7 +1362,11 @@ diff_try_update(
 
       //Write the first book to a tempfile or MmFile.
       book = curtab->diffbuf[idx_orig];
-      if (diff_write(book, &dio->orig, lnum_start, lnum_end) == FAIL) {
+      int writeResult = diff_write(book, &dio->orig, lnum_start, lnum_end);
+      if (writeResult == NOTDONE) {
+         emsg(_(e_cannot_make_changes_modifiable_is_off));
+      }
+      if (writeResult != OK) {
          if (orig_diff) {
             //Clean up in-progress diff blocks
             curtab->first_diff = orig_diff;

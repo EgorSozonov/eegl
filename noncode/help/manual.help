@@ -18,23 +18,22 @@ return. Option names are in quotes {expandtab} and may also be followed like lin
 ==============================================================================
 *02.1*   Running Eegl for the First Time
 
-To start Eegl, enter this command: >
+To start Eegl, enter this command:
 
    eegl file.txt
 
 In UNIX you can type this at any command prompt.  If you are running Microsoft
 Windows, open a Command Prompt and enter the command.
    In either case, Eegl starts editing a file called file.txt.  Because this
-is a new file, you get a blank window.  This is what your screen will look
-like:
+is a new file, you get a blank window.  This is what your screen will look like:
 
    +---------------------------------------+
-   |#               |
-   |~               |
-   |~               |
-   |~               |
-   |~               |
-   |"file.txt" [New file]         |
+   |#                                      |
+   |~                                      |
+   |~                                      |
+   |~                                      |
+   |~                                      |
+   |"file.txt" [New file]                  |
    +---------------------------------------+
       ('#' is the cursor position.)
 
@@ -47,8 +46,8 @@ information overwrites it.
 
 THE EEGL COMMAND
 
-The eegl command causes the editor to create a new window for viewing and editing.  If you
-use this command: >
+The eegl command causes the editor to create a new window for viewing and editing. If you
+use this command:
 
    vim file.txt
 
@@ -680,10 +679,10 @@ Summary:               *help-summary*  >
    :help E128
 <    takes you to the |:function| command
 
-27) Documentation for packages distributed with Eegl have the form
-     package-<name>. So >
+27) Documentation for packages distributed with Eegl have the form package-<name>. So
+
    :help package-comment
-<
+    
     will bring you to the help section for the included comment plugin and how
     to enable it.
 
@@ -692,7 +691,6 @@ Summary:               *help-summary*  >
 
 Next chapter: |usr_03.txt|  Moving around
 
-Copyright: see |manual-copyright|  vim:tw=78:ts=8:noet:ft=help:norl:
 
 
 
@@ -701,14 +699,14 @@ Copyright: see |manual-copyright|  vim:tw=78:ts=8:noet:ft=help:norl:
 The Eegl portal:
 
    
-   +-------------------------------------------------+
-   |text in the Eegl portal                          |
-   |~                                                |
-   |~                                                |
-   |-- VISUAL --              2f          43,8   17% |
-   +-------------------------------------------------+
-    ^^^^^^^^^^^            ^^^^^^^^       ^^^^^^^^^^
-     'showmode'           'showcmd'         'ruler'
+                +-------------------------------------------------+
+                |text in the Eegl portal                          |
+                |~                                                |
+statusline -->  |~  file.txt [+]                                  |
+                |-- VISUAL --              2f          43,8   17% |
+                +-------------------------------------------------+
+                 ^^^^^^^^^^^            ^^^^^^^^       ^^^^^^^^^^
+                  'showmode'           'showcmd'         'ruler'
         
 
      Next chapter: |usr_03.txt|  Moving around

@@ -622,9 +622,8 @@ add_termcap_entry(CS name, int force) {
    return FAIL;
 }
 
-// Set the terminal name and initialize the terminal options.
-// If "name" is NULL or empty, get the terminal name from the environment.
-// If that fails, use the default terminal name.
+//Set the terminal name and initialize the terminal options. If "name" is NULL or empty, get the 
+//terminal name from the environment. If that fails, use the default terminal name.
 void
 termInitTerminfo(CS name) {
    for (Unt i = 0; i < ARRAY_LENGTH(termCodesG); i++) {
@@ -641,18 +640,18 @@ termInitTerminfo(CS name) {
       termName = DEFAULT_TERM;
    optChangeStringOptionDirect(S"term", termName, 0, 0);
 
-   // Set the default terminal name.
+   //Set the default terminal name.
    optSetStringDefault(S"term", termName);
    optSetStringDefault(S"ttytype", termName);
 
-   // Avoid using "term" here, because the next mch_getenv() may overwrite it.
+   //Avoid using "term" here, because the next mch_getenv() may overwrite it.
    set_termname(termName);
 }
 
-// The number of calls to ui_write is reduced by using "out_buf".
+//The number of calls to ui_write is reduced by using "out_buf".
 #define OUT_SIZE   2047
 
-// add one to allow mch_write() to append a ZERO
+//add one to allow mch_write() to append a ZERO
 private Byte out_buf[OUT_SIZE + 1];
 
 private int out_pos = 0;   // number of chars in out_buf
@@ -994,8 +993,8 @@ get_long_from_buf(CS buffer, Ulong* val) {
 // from buf (between num_bytes and num_bytes*2), or -1 if not enough bytes were available.
 int
 get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
-   int       len = 0;
-   int       i;
+   int len = 0;
+   int i;
    Byte  c;
 
    for (i = 0; i < num_bytes; i++) {
@@ -1006,13 +1005,13 @@ get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
             return -1;
          if (buffer[len++] == (int)KS_ZERO)
             c = ZERO;
-         // else it should be KS_SPECIAL; when followed by KE_FILLER c is
-         // K_SPECIAL, or followed by KE_CSI and c must be CSI.
+         //else it should be KS_SPECIAL; when followed by KE_FILLER c is
+         //K_SPECIAL, or followed by KE_CSI and c must be CSI.
          if (buffer[len++] == (int)KE_CSI)
             c = CSI;
       } ei (c == CSI && buffer[len] == KS_EXTRA && buffer[len + 1] == (int)KE_CSI)
-         // CSI is stored as CSI KS_SPECIAL KE_CSI to avoid confusion with
-         // the start of a special key, see add_to_input_buf_csi().
+         //CSI is stored as CSI KS_SPECIAL KE_CSI to avoid confusion with
+         //the start of a special key, see add_to_input_buf_csi().
          len += 2;
       bytes[i] = c;
    }

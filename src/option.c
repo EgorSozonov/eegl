@@ -1731,10 +1731,6 @@ did_set_ignorecase(OptionChange* cha) {
 
 CS
 setModifiable(OptionChange* cha) {
-   if (cha->newVal.boole) {
-      // @modifiable' option cannot be disabled if it's set
-      return e_cannot_disable_unmodifiable;
-   }
    updateBoolRef(cha);
    return NULL;
 }
@@ -3599,7 +3595,6 @@ copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
    CS wr = bui->c;
    
    for (Option* o = opts; o < opts + count; o++) {
-      _bp(eq(o->fullName, S"errorformat")); 
       if (o->defaultValue.tag == OPTION_STRING 
             && (o->flags & P_NODEFAULT) == 0 
             && (o->defaultValue.string)

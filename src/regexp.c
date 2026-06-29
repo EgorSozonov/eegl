@@ -1,10 +1,10 @@
 //EEGL - the Extensible development Environment for GNU/Linux
 //Licensed under GPLv3, see the LICENSE file (c) Egor Sozonov
 
-//## regexp.c: Handling of regular expressions: compileRegexp(), eeRegexec(), eeRegsub()
+//## regexp.c: Eegl-specific handling of regular expressions: compileRegexp(), eeRegexec(), eeRegsub()
 
-// By default: do not create debugging logs or files related to regular expressions, even when compiling with -DDEBUG.
-// Uncomment the second line to get the regexp debugging.
+//By default: do not create debugging logs or files related to regular expressions, even when 
+//compiling with -DDEBUG. Uncomment the second line to get the regexp debugging.
 #undef DEBUG
 // #define DEBUG
 
@@ -47,25 +47,25 @@ struct RState {
 // Structure used by the NFA matcher.
 struct RegProg {
    // These three members implement RegProg
-   unsigned      regflags;
-   unsigned      re_engine;
-   unsigned      flags;
-   int         re_in_use;
+   Unt regflags;
+   Unt re_engine;
+   Unt flags;
+   int re_in_use;
 
-   RState      *start;      // points into state[]
+   RState* start;      // points into state[]
 
-   int         reganch;   // pattern starts with ^
-   int         regstart;   // char at start of pattern
-   Byte      *input;   // plain text to match with
+   int reganch;   // pattern starts with ^
+   int regstart;   // char at start of pattern
+   Byte* input;   // plain text to match with
 
-   int         has_zend;   // pattern contains \ze
-   int         has_backref;   // pattern contains \1 .. \9
-   int         reghasz;
-   Byte      *pattern;
-   int         nsubexp;   // number of ()
-   int         nstate;
+   int has_zend;   // pattern contains \ze
+   int has_backref;   // pattern contains \1 .. \9
+   int reghasz;
+   Byte* pattern;
+   int nsubexp;   // number of ()
+   int nstate;
    bool hadEol;
-   RState      state[1];   // actually longer..
+   RState state[1];   // actually longer..
 };
 
 
@@ -88,12 +88,12 @@ typedef struct {
 //Sub-match "no" starts at "startp[no]" and ends just before "endp[no]".
 //When there is no match, the pointer is NULL.
 struct RegMatch {
-   RegProg      *regprog;
-   Byte      *startp[NSUBEXP];
-   Byte      *endp[NSUBEXP];
+   RegProg* regprog;
+   Byte* startp[NSUBEXP];
+   Byte* endp[NSUBEXP];
 
-   ColNr      rm_matchcol;   // match start without "\zs"
-   int         rm_ic;
+   ColNr rm_matchcol;   // match start without "\zs"
+   int rm_ic;
 };
 
 #ifdef DEBUG
@@ -132,9 +132,9 @@ private int timeout_nesting = 0;
 
 private sig_atomic_t *saved_timeout_flag;
 
-// The first byte of the BT regexp internal "program" is actually this magic number; the start node
-// begins in the second byte.  It's used to catch the most severe mutilation of the program by the 
-// caller.
+//The first byte of the BT regexp internal "program" is actually this magic number; the start node
+//begins in the second byte.  It's used to catch the most severe mutilation of the program by the 
+//caller.
 
 #define REGMAGIC   0234
 
@@ -161,7 +161,7 @@ private sig_atomic_t *saved_timeout_flag;
 #define MULTI_ONE  1
 #define MULTI_MULT 2
 
-// return values for regmatch()
+//return values for regmatch()
 #define RA_FAIL    1   // something failed, abort
 #define RA_CONT    2   // continue in inner loop
 #define RA_BREAK   3   // break inner loop
@@ -234,26 +234,25 @@ enum {
 };
 
 // Specific version of character class functions. Using a table to keep this fast.
-private short   characterClasses[256];
+private short characterClasses[256];
 
-#define       RI_DIGIT   0x01
-#define       RI_HEX   0x02
-#define       RI_WORD   0x08
-#define       RI_HEAD   0x10
-#define       RI_ALPHA   0x20
-#define       RI_LOWER   0x40
-#define       RI_UPPER   0x80
-#define       RI_WHITE   0x100
+#define RI_DIGIT   0x01
+#define RI_HEX   0x02
+#define RI_WORD   0x08
+#define RI_HEAD   0x10
+#define RI_ALPHA   0x20
+#define RI_LOWER   0x40
+#define RI_UPPER   0x80
+#define RI_WHITE   0x100
 
 private void
 initCharacterClasses(void) {
-   int      i;
    static Boole done = false;
 
    if (done)
       return;
 
-   for (i = 0; i < 256; ++i) {
+   for (int i = 0; i < 256; ++i) {
       if (i >= '0' && i <= '9')
          characterClasses[i] = RI_DIGIT + RI_HEX + RI_WORD;
       ei (i >= 'a' && i <= 'f')
@@ -296,12 +295,12 @@ private Byte* regparse;   // Input-scan pointer.
 private int regnpar;   // () count.
 private int currZParensS;   // \z() count.
 private int re_has_z;   // \z item detected
-private unsigned   regflags;   // RF_ flags for prog
+private unsigned regflags;   // RF_ flags for prog
 
-private Magic   reg_magic;   // magicness of the pattern
+private Magic reg_magic;   // magicness of the pattern
 
-private int   reg_string;   // matching with a string instead of a buffer line
-private int   reg_strict;   // "[abc" is illegal
+private int reg_string;   // matching with a string instead of a buffer line
+private int reg_strict;   // "[abc" is illegal
 
 // META contains all characters that may be magic, except '^' and '$'.
 // META[] is used often enough to justify turning it into a table.
@@ -395,12 +394,12 @@ get_char_class(Byte **pp) {
    if ((*pp)[1] == ':' && ASCII_ISLOWER((*pp)[2])
          && ASCII_ISLOWER((*pp)[3]) && ASCII_ISLOWER((*pp)[4])
    ) {
-      Kv target;
       Kv *entry;
       // this function can be called repeatedly with the same value for "pp"
       // so we cache the last found entry.
       static Kv *last_entry = NULL;
 
+      Kv target;
       target.key = 0;
       target.value.c = *pp + 2;
       target.value.len = 0;   // not used, see cmp_keyvalue_value_n()
@@ -412,7 +411,7 @@ get_char_class(Byte **pp) {
                   ARRAY_LENGTH(char_characterClasses),
                   sizeof(char_characterClasses[0]), cmp_keyvalue_value_n
          );
-      if (entry != NULL) {
+      if (entry) {
          last_entry = entry;
          *pp += entry->value.len + 2;
          return entry->key;
@@ -940,62 +939,60 @@ read_limits(long *minval, long *maxval) {
 
 //}}}
 
-/*
- * eeRegexec and friends
- */
+//eeRegexec and friends
 
 // Global work variables for eeRegexec().
-private void   cleanup_subexpr(void);
-private void   cleanup_zsubexpr(void);
-private int   match_with_backref(LineNr start_lnum, ColNr start_col, LineNr end_lnum, ColNr end_col, int *bytelen);
+private void cleanup_subexpr(void);
+private void cleanup_zsubexpr(void);
+private int  match_with_backref(LineNr start_lnum, ColNr start_col, LineNr end_lnum, ColNr end_col, int *bytelen);
 
 //Sometimes need to save a copy of a line.  Since alloc()/free() is very
 //slow, we keep one allocated piece of memory and only re-allocate it when
 //it's too small.  It's freed in bt_regexec_both() when finished.
-private Byte   *reg_tofree = NULL;
-private unsigned   reg_tofreelen;
+private Byte* reg_tofree = NULL;
+private Unt reg_tofreelen;
 
 //Structure used to store the execution state of the regex 
 //Which ones are set depends on whether a single-line or multi-line match is done:
-//        single-line      multi-line
-//match      &RegMatch      NULL
-//multiMatch      NULL         &RegMultilineMatch
-//reg_startp      match->startp   <invalid>
-//reg_endp      match->endp      <invalid>
-//reg_startpos      <invalid>      multiMatch->startpos
-//reg_endpos      <invalid>      multiMatch->endpos
-//portal      NULL         portal in which to search
-//buf      curBook         book in which to search
-//reg_firstlnum   <invalid>      first line in which to search
-//reg_maxline      0         last line nr
-//reg_line_lbr      false or true      false
+//           single-line      multi-line
+//match       &RegMatch       NULL
+//multiMatch     NULL         &RegMultilineMatch
+//reg_startp  match->startp   <invalid>
+//reg_endp      match->endp   <invalid>
+//reg_startpos  <invalid>     multiMatch->startpos
+//reg_endpos    <invalid>     multiMatch->endpos
+//portal         NULL         portal in which to search
+//book           curBook      book in which to search
+//reg_firstlnum   <invalid>   first line in which to search
+//reg_maxline      0          last line nr
+//reg_line_lbr false or true  false
 typedef struct {
-   RegMatch      *match;
-   RegMultilineMatch      *multiMatch;
+   RegMatch* match;
+   RegMultilineMatch* multiMatch;
 
-   Byte      **reg_startp;
-   Byte      **reg_endp;
-   PosNoVirt      *reg_startpos;
-   PosNoVirt      *reg_endpos;
+   Byte** reg_startp;
+   Byte** reg_endp;
+   PosNoVirt* reg_startpos;
+   PosNoVirt* reg_endpos;
 
    Portal* portal;
    Book* book;
-   LineNr      reg_firstlnum;
-   LineNr      reg_maxline;
-   int         reg_line_lbr;   // "\n" in string is line break
+   LineNr reg_firstlnum;
+   LineNr reg_maxline;
+   int reg_line_lbr;   // "\n" in string is line break
 
    // The current match-position is stord in these variables:
-   LineNr   lnum;   // line number, relative to first line
-   Byte   *line;  // start of current line
-   Byte   *input; // current input, points into "line"
+   LineNr lnum;   // line number, relative to first line
+   Byte* line;  // start of current line
+   Byte* input; // current input, points into "line"
 
-   int   need_clear_subexpr;   // subexpressions still need to be cleared
-   int   need_clear_zsubexpr;   // extmatch subexpressions still need to be cleared
+   int need_clear_subexpr;   // subexpressions still need to be cleared
+   int need_clear_zsubexpr;   // extmatch subexpressions still need to be cleared
 
    // Internal copy of 'ignorecase'.  It is set at each call to eeRegexec().
    // Normally it gets the value of "rm_ic" or "rmm_ic", but when the pattern
    // contains '\c' or '\C' the value is overruled.
-   int         reg_ic;
+   int reg_ic;
 
    // Similar to "reg_ic", but only for 'combining' characters.  Set with \Z
    // flag in the regexp.  Defaults to false, always.
@@ -1540,7 +1537,7 @@ cstrchr(Byte *s, int c) {
 
 typedef void (*AllOrOne)(int *, int);
 
-private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, int flags);
+private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, Unt flags);
 
 private void
 do_upper(int *d, int c) {
@@ -1703,16 +1700,16 @@ clear_submatch_list(StaticList10 *sl) {
 //Return the size of the replacement, including terminating ZERO.
 int
 eeRegsub(
-   RegMatch   *rmp,
-   Byte   *source,
-   Var   *expr,
-   Byte   *dest,
-   int      destlen,
-   int      flags)
-{
-   int      result;
-   Execution   exeSaved;
-   int      isBusyS_save = isBusyS;
+   RegMatch* rmp,
+   Byte* source,
+   Var* expr,
+   Byte* dest,
+   int destlen,
+   int flags
+) {
+   int result;
+   Execution exeSaved;
+   int isBusyS_save = isBusyS;
 
    if (isBusyS)
       // Being called recursively, save the state.
@@ -1768,26 +1765,24 @@ eeRegsub_multi(
 
 // When nesting more than a couple levels it's probably a mistake.
 #define MAX_REGSUB_NESTING 4
-private Byte   *eval_result[MAX_REGSUB_NESTING] = {NULL, NULL, NULL, NULL};
+private Byte* eval_result[MAX_REGSUB_NESTING] = {NULL, NULL, NULL, NULL};
 
 #if defined(EXITFREE) || defined(PROTO)
 void
 free_resub_eval_result(void) {
-    int i;
-
-    for (i = 0; i < MAX_REGSUB_NESTING; ++i)
-   EE_CLEAR(eval_result[i]);
+   for (int i = 0; i < MAX_REGSUB_NESTING; ++i)
+      EE_CLEAR(eval_result[i]);
 }
 # endif
 
 private int
 eeRegsub_both(
    CS source,
-   Var   *expr,
+   Var* expr,
    CS dest,
    int destlen,
-   int flags)
-{
+   Unt flags
+) {
    CS src;
    CS dst;
    CS s;
@@ -1816,7 +1811,7 @@ eeRegsub_both(
    dst = dest;
 
    // When the substitute part starts with "\=" evaluate it as an expression.
-   if (expr != NULL || (source[0] == '\\' && source[1] == '=')) {
+   if (expr || (source[0] == '\\' && source[1] == '=')) {
       // To make sure that the length doesn't change between checking the
       // length and copying the string, and to speed up things, the
       // resulting string is saved from the call with
@@ -1854,12 +1849,12 @@ eeRegsub_both(
          // an array of eval results.
          ++nesting;
 
-         if (expr != NULL) {
-            Var   argv[2];
-            Byte      buf[NUMBUFLEN];
-            Var   returnVar;
-            StaticList10   matchList;
-            FnExe   funcexe;
+         if (expr) {
+            Var argv[2];
+            Byte buf[NUMBUFLEN];
+            Var returnVar;
+            StaticList10 matchList;
+            FnExe funcexe;
 
             returnVar.tag = VAR_STRING;
             returnVar.string = NULL;
@@ -1907,14 +1902,13 @@ eeRegsub_both(
                   *s = ENTER;
                ei (*s == '\\' && s[1] != ZERO) {
                   ++s;
-                  /* Change NL to CR here too, so that this works:
-                   * :s/abc\\\ndef/\="aaa\\\nbbb"/  on text:
-                   *   abc\
-                   *   def
-                   * Not when called from eeRegexec_nl().
-                   */
+                  //Change NL to CR here too, so that this works:
+                  //:s|abc\\\ndef|\="aaa\\\nbbb"|  on text:
+                  //  abcBACKSLASH
+                  //  def
+                  //Not when called from eeRegexec_nl().
                   if (*s == NL && !rsm.sm_line_lbr)
-                      *s = ENTER;
+                     *s = ENTER;
                   had_backslash = true;
                 }
             }
@@ -2031,18 +2025,17 @@ eeRegsub_both(
                mb_char2bytes(cc, dst);
             }
             dst += charlen - 1;
-                int clen = utf_ptr2len(src - 1);
+               int clen = utf_ptr2len(src - 1);
 
-                // If the character length is shorter than "totlen", there
-                // are composing characters; copy them as-is.
+               // If the character length is shorter than "totlen", there
+               // are composing characters; copy them as-is.
                if (clen < totlen) {
                   if (copy) {
                      if (dst + totlen - clen > dest + destlen) {
                         internalErrMsg(S"eeRegsub_both(): not enough space");
                         return 0;
                      }
-                      MEMMOVE(dst + 1, src - 1 + clen,
-                                (Unt)(totlen - clen));
+                     MEMMOVE(dst + 1, src - 1 + clen, (Unt)(totlen - clen));
                   }
                   dst += totlen - clen;
                }
@@ -2063,7 +2056,7 @@ eeRegsub_both(
                }
             } else {
                s = exe.match->startp[no];
-               if (exe.match->endp[no] == NULL)
+               if (!exe.match->endp[no])
                   s = NULL;
                else
                   len = (int)(exe.match->endp[no] - s);
@@ -2120,16 +2113,12 @@ eeRegsub_both(
                      else // just copy
                         cc = c;
 
-                     int l;
-                     int charlen;
-
-                     // Copy composing characters separately, one
-                     // at a time.
-                     l = utf_ptr2len(s) - 1;
+                     //Copy composing characters separately, one at a time.
+                     int l = utf_ptr2len(s) - 1;
 
                      s += l;
                      len -= l;
-                     charlen = mb_char2len(cc);
+                     int charlen = mb_char2len(cc);
                      if (copy) {
                         if (dst + charlen > dest + destlen) {
                            internalErrMsg(S"eeRegsub_both(): not enough space");
@@ -2160,27 +2149,23 @@ exit:
 
 private Byte *
 reg_getline_submatch(LineNr lnum) {
-    Byte *line;
+   Byte* line;
+   reg_getline_common(lnum, RGLF_LINE | RGLF_SUBMATCH, OUT &line, NULL);
 
-    reg_getline_common(lnum, RGLF_LINE | RGLF_SUBMATCH, &line, NULL);
-
-    return line;
+   return line;
 }
 
 private ColNr
 reg_getline_submatch_len(LineNr lnum) {
     ColNr length;
-
-    reg_getline_common(lnum, RGLF_LENGTH | RGLF_SUBMATCH, NULL, &length);
+    reg_getline_common(lnum, RGLF_LENGTH | RGLF_SUBMATCH, NULL, OUT &length);
 
     return length;
 }
 
-/*
- * Used for the submatch() function: get the string from the n'th submatch in
- * allocated memory.
- * Returns NULL when not in a ":s" command and for a non-existing submatch.
- */
+//Used for the submatch() function: get the string from the n'th submatch in
+//allocated memory.
+//Return NULL when not in a ":s" command and for a non-existing submatch.
 Byte *
 reg_submatch(int no) {
    Byte   *retval = NULL;
@@ -2192,7 +2177,7 @@ reg_submatch(int no) {
    if (!can_f_submatch || no < 0)
       return NULL;
 
-   if (rsm.sm_match == NULL) {
+   if (!rsm.sm_match) {
       // First round: compute the length and allocate memory. Second round: copy the text.
       for (round = 1; round <= 2; ++round) {
          lnum = rsm.sm_mmatch->startpos[no].lnum;
@@ -2243,38 +2228,35 @@ reg_submatch(int no) {
          }
       }
    } else {
-   s = rsm.sm_match->startp[no];
-   if (s == NULL || rsm.sm_match->endp[no] == NULL)
-       retval = NULL;
-   else
-       retval = copySubstr(s, rsm.sm_match->endp[no] - s);
+      s = rsm.sm_match->startp[no];
+      if (!s || rsm.sm_match->endp[no] == NULL)
+         retval = NULL;
+      else
+         retval = copySubstr(s, rsm.sm_match->endp[no] - s);
    }
 
     return retval;
 }
 
-/*
- * Used for the submatch() function with the optional non-zero argument: get
- * the list of strings from the n'th submatch in allocated memory with NULs
- * represented in NLs.
- * Returns a list of allocated strings.  Returns NULL when not in a ":s"
- * command, for a non-existing submatch and for any error.
- */
+//Used for the submatch() function with the optional non-zero argument: get
+//the list of strings from the n'th submatch in allocated memory with NULs represented in NLs.
+//Returns a list of allocated strings.  Returns NULL when not in a ":s"
+//command, for a non-existing submatch and for any error.
 List *
 reg_submatch_list(int no) {
-   Byte   *s;
-   LineNr   slnum;
-   LineNr   elnum;
-   ColNr   scol;
-   ColNr   ecol;
-   int      i;
-   int      error = false;
+   Byte* s;
+   LineNr slnum;
+   LineNr elnum;
+   ColNr scol;
+   ColNr ecol;
+   int i;
+   int error = false;
 
    if (!can_f_submatch || no < 0)
       return NULL;
 
    List* list;
-   if (rsm.sm_match == NULL) {
+   if (!rsm.sm_match) {
       slnum = rsm.sm_mmatch->startpos[no].lnum;
       elnum = rsm.sm_mmatch->endpos[no].lnum;
       if (slnum < 0 || elnum < 0)
@@ -2596,7 +2578,7 @@ private int failure_chance(RState *state, int depth);
       
 // Setup to parse the regexp.  Used once to get the length and once to do it.
 private void
-regcomp_start( Byte   *expr, int      flags) {      // see eeRegcomp()
+regcomp_start(Byte* expr, Unt flags) {      // see eeRegcomp()
    initchr(expr);
    if (flags & RE_MAGIC)
       reg_magic = MAGIC_ON;
@@ -2616,8 +2598,8 @@ regcomp_start( Byte   *expr, int      flags) {      // see eeRegcomp()
 // Initialize internal variables before NFA compilation. Return OK on success, FAIL otherwise
 private int
 compile_start(CS expr, Unt flags) {      // see compileRegexp()
-   Unt   postfix_size;
-   int      nstate_max;
+   Unt postfix_size;
+   int nstate_max;
 
    countStatesS = 0;
    stateS = 0;
@@ -2697,8 +2679,8 @@ getAnchor(RState *start, int depth) {
 
 // Figure out if the NFA state list starts with a character which must match at start of the match
 private int
-getRegStart(RState *start, int depth) {
-   RState *p = start;
+getRegStart(RState* start, int depth) {
+   RState* p = start;
 
    if (depth > 4)
       return 0;
@@ -2774,9 +2756,9 @@ getRegStart(RState *start, int depth) {
 private Byte *
 getMatchText(RState *start) {
    RState *p = start;
-   int      len = 0;
-   Byte   *ret;
-   Byte   *s;
+   int len = 0;
+   Byte* ret;
+   Byte* s;
 
    if (p->c != MOPEN)
       return NULL; // just in case
@@ -2806,8 +2788,8 @@ reallocPostfix(void) {
    int nstate_max = (int)(postfixEndS - postfixStartS);
    int new_max;
 
-   // For weird patterns the number of states can be very high. Increasing by
-   // 50% seems a reasonable compromise between memory use and speed.
+   //For weird patterns the number of states can be very high. Increasing by
+   //50% seems a reasonable compromise between memory use and speed.
    new_max = nstate_max * 3 / 2 + 1;
    Unt* new_start = ALLOC_MULT(Unt, new_max);
    MEMMOVE(new_start, postfixStartS, nstate_max * sizeof(int));
@@ -2837,16 +2819,12 @@ recognizeCharClass(Byte *start, Byte *end, int extra_newl) {
 #   define CLASS_o9      0x02
 #   define CLASS_underscore   0x01
 
-   int      newl = false;
-   Byte   *p;
-   int      config = 0;
-
-   if (extra_newl == true)
-      newl = true;
+   int newl = extra_newl == true;
 
    if (*end != ']')
       return FAIL;
-   p = start;
+   Byte* p = start;
+   int config = 0;
    if (*p == '^') {
       config |= CLASS_not;
       p++;
@@ -2913,44 +2891,42 @@ recognizeCharClass(Byte *start, Byte *end, int extra_newl) {
 
    switch (config) {
    case CLASS_o9:
-       return extra_newl + DIGIT;
+      return extra_newl + DIGIT;
    case CLASS_not |  CLASS_o9:
-       return extra_newl + NDIGIT;
+      return extra_newl + NDIGIT;
    case CLASS_af | CLASS_AF | CLASS_o9:
-       return extra_newl + HEX;
+      return extra_newl + HEX;
    case CLASS_not | CLASS_af | CLASS_AF | CLASS_o9:
-       return extra_newl + NHEX;
+      return extra_newl + NHEX;
    case CLASS_az | CLASS_AZ | CLASS_o9 | CLASS_underscore:
-       return extra_newl + WORD;
+      return extra_newl + WORD;
    case CLASS_not | CLASS_az | CLASS_AZ | CLASS_o9 | CLASS_underscore:
-       return extra_newl + NWORD;
+      return extra_newl + NWORD;
    case CLASS_az | CLASS_AZ | CLASS_underscore:
-       return extra_newl + HEAD;
+      return extra_newl + HEAD;
    case CLASS_not | CLASS_az | CLASS_AZ | CLASS_underscore:
-       return extra_newl + NHEAD;
+      return extra_newl + NHEAD;
    case CLASS_az | CLASS_AZ:
-       return extra_newl + ALPHA;
+      return extra_newl + ALPHA;
    case CLASS_not | CLASS_az | CLASS_AZ:
-       return extra_newl + NALPHA;
+      return extra_newl + NALPHA;
    case CLASS_az:
       return extra_newl + LOWER_IC;
    case CLASS_not | CLASS_az:
-       return extra_newl + NLOWER_IC;
+      return extra_newl + NLOWER_IC;
    case CLASS_AZ:
-       return extra_newl + UPPER_IC;
+      return extra_newl + UPPER_IC;
    case CLASS_not | CLASS_AZ:
-       return extra_newl + NUPPER_IC;
+      return extra_newl + NUPPER_IC;
    }
    return FAIL;
 }
 
-/*
- * Produce the bytes for equivalence class "c".
- * Currently only handles latin1, latin9 and utf-8.
- * Emits bytes in postfix notation: 'a,b,OR,c,OR' is equivalent to 'a OR b OR c'
- *
- * NOTE! When changing this function, also update reg_equi_class()
- */
+//Produce the bytes for equivalence class "c".
+//Currently only handles latin1, latin9 and utf-8.
+//Emits bytes in postfix notation: 'a,b,OR,c,OR' is equivalent to 'a OR b OR c'
+//
+//NOTE! When changing this function, also update reg_equi_class()
 private int
 nfa_emit_equi_class(int c) {
 #define EMIT2(c)    EMIT(c); EMIT(CONCAT);
@@ -3298,234 +3274,233 @@ nfa_emit_equi_class(int c) {
       EMIT2(0x1e09) EMIT2(0xa793) EMIT2(0xa794)
       return OK;
 
-    case 'd': case 0x10f: case 0x111: case 0x257: case 0x1d6d:
-    case 0x1d81: case 0x1d91: case 0x1e0b: case 0x1e0d: case 0x1e0f:
-    case 0x1e11: case 0x1e13:
-       EMIT2('d') EMIT2(0x10f) EMIT2(0x111)
-       EMIT2(0x257) EMIT2(0x1d6d) EMIT2(0x1d81)
-       EMIT2(0x1d91) EMIT2(0x1e0b) EMIT2(0x1e0d)
-       EMIT2(0x1e0f) EMIT2(0x1e11) EMIT2(0x1e13)
-       return OK;
+   case 'd': case 0x10f: case 0x111: case 0x257: case 0x1d6d:
+   case 0x1d81: case 0x1d91: case 0x1e0b: case 0x1e0d: case 0x1e0f:
+   case 0x1e11: case 0x1e13:
+      EMIT2('d') EMIT2(0x10f) EMIT2(0x111)
+      EMIT2(0x257) EMIT2(0x1d6d) EMIT2(0x1d81)
+      EMIT2(0x1d91) EMIT2(0x1e0b) EMIT2(0x1e0d)
+      EMIT2(0x1e0f) EMIT2(0x1e11) EMIT2(0x1e13)
+      return OK;
 
-    case 'e': case e_grave: case e_acute: case e_circumflex:
-    case e_diaeresis: case 0x113: case 0x115: case 0x117:
-    case 0x119: case 0x11b: case 0x205: case 0x207:
-    case 0x229: case 0x247: case 0x1d92: case 0x1e15:
-    case 0x1e17: case 0x1e19: case 0x1e1b: case 0x1e1d:
-    case 0x1eb9: case 0x1ebb: case 0x1ebd: case 0x1ebf:
-    case 0x1ec1: case 0x1ec3: case 0x1ec5: case 0x1ec7:
-       EMIT2('e') EMIT2(e_grave) EMIT2(e_acute)
-       EMIT2(e_circumflex) EMIT2(e_diaeresis)
-       EMIT2(0x113) EMIT2(0x115)
-       EMIT2(0x117) EMIT2(0x119) EMIT2(0x11b)
-       EMIT2(0x205) EMIT2(0x207) EMIT2(0x229)
-       EMIT2(0x247) EMIT2(0x1d92) EMIT2(0x1e15)
-       EMIT2(0x1e17) EMIT2(0x1e19) EMIT2(0x1e1b)
-       EMIT2(0x1e1d) EMIT2(0x1eb9) EMIT2(0x1ebb)
-       EMIT2(0x1ebd) EMIT2(0x1ebf) EMIT2(0x1ec1)
-       EMIT2(0x1ec3) EMIT2(0x1ec5) EMIT2(0x1ec7)
-       return OK;
+   case 'e': case e_grave: case e_acute: case e_circumflex:
+   case e_diaeresis: case 0x113: case 0x115: case 0x117:
+   case 0x119: case 0x11b: case 0x205: case 0x207:
+   case 0x229: case 0x247: case 0x1d92: case 0x1e15:
+   case 0x1e17: case 0x1e19: case 0x1e1b: case 0x1e1d:
+   case 0x1eb9: case 0x1ebb: case 0x1ebd: case 0x1ebf:
+   case 0x1ec1: case 0x1ec3: case 0x1ec5: case 0x1ec7:
+      EMIT2('e') EMIT2(e_grave) EMIT2(e_acute)
+      EMIT2(e_circumflex) EMIT2(e_diaeresis)
+      EMIT2(0x113) EMIT2(0x115)
+      EMIT2(0x117) EMIT2(0x119) EMIT2(0x11b)
+      EMIT2(0x205) EMIT2(0x207) EMIT2(0x229)
+      EMIT2(0x247) EMIT2(0x1d92) EMIT2(0x1e15)
+      EMIT2(0x1e17) EMIT2(0x1e19) EMIT2(0x1e1b)
+      EMIT2(0x1e1d) EMIT2(0x1eb9) EMIT2(0x1ebb)
+      EMIT2(0x1ebd) EMIT2(0x1ebf) EMIT2(0x1ec1)
+      EMIT2(0x1ec3) EMIT2(0x1ec5) EMIT2(0x1ec7)
+      return OK;
 
-    case 'f': case 0x192: case 0x1d6e: case 0x1d82:
-    case 0x1e1f: case 0xa799:
-       EMIT2('f') EMIT2(0x192) EMIT2(0x1d6e) EMIT2(0x1d82)
-       EMIT2(0x1e1f) EMIT2(0xa799)
-       return OK;
+   case 'f': case 0x192: case 0x1d6e: case 0x1d82:
+   case 0x1e1f: case 0xa799:
+      EMIT2('f') EMIT2(0x192) EMIT2(0x1d6e) EMIT2(0x1d82)
+      EMIT2(0x1e1f) EMIT2(0xa799)
+      return OK;
 
-    case 'g': case 0x11d: case 0x11f: case 0x121: case 0x123:
-    case 0x1e5: case 0x1e7: case 0x1f5: case 0x260: case 0x1d83:
-    case 0x1e21: case 0xa7a1:
-       EMIT2('g') EMIT2(0x11d) EMIT2(0x11f) EMIT2(0x121)
-       EMIT2(0x123) EMIT2(0x1e5) EMIT2(0x1e7)
-       EMIT2(0x1f5) EMIT2(0x260) EMIT2(0x1d83)
-       EMIT2(0x1e21) EMIT2(0xa7a1)
-       return OK;
+   case 'g': case 0x11d: case 0x11f: case 0x121: case 0x123:
+   case 0x1e5: case 0x1e7: case 0x1f5: case 0x260: case 0x1d83:
+   case 0x1e21: case 0xa7a1:
+      EMIT2('g') EMIT2(0x11d) EMIT2(0x11f) EMIT2(0x121)
+      EMIT2(0x123) EMIT2(0x1e5) EMIT2(0x1e7)
+      EMIT2(0x1f5) EMIT2(0x260) EMIT2(0x1d83)
+      EMIT2(0x1e21) EMIT2(0xa7a1)
+      return OK;
 
-    case 'h': case 0x125: case 0x127: case 0x21f: case 0x1e23:
-    case 0x1e25: case 0x1e27: case 0x1e29: case 0x1e2b:
-    case 0x1e96: case 0x2c68: case 0xa795:
-       EMIT2('h') EMIT2(0x125) EMIT2(0x127) EMIT2(0x21f)
-       EMIT2(0x1e23) EMIT2(0x1e25) EMIT2(0x1e27)
-       EMIT2(0x1e29) EMIT2(0x1e2b) EMIT2(0x1e96)
-       EMIT2(0x2c68) EMIT2(0xa795)
-       return OK;
+   case 'h': case 0x125: case 0x127: case 0x21f: case 0x1e23:
+   case 0x1e25: case 0x1e27: case 0x1e29: case 0x1e2b:
+   case 0x1e96: case 0x2c68: case 0xa795:
+      EMIT2('h') EMIT2(0x125) EMIT2(0x127) EMIT2(0x21f)
+      EMIT2(0x1e23) EMIT2(0x1e25) EMIT2(0x1e27)
+      EMIT2(0x1e29) EMIT2(0x1e2b) EMIT2(0x1e96)
+      EMIT2(0x2c68) EMIT2(0xa795)
+      return OK;
 
-    case 'i': case i_grave: case i_acute: case i_circumflex:
-    case i_diaeresis: case 0x129: case 0x12b: case 0x12d:
-    case 0x12f: case 0x1d0: case 0x209: case 0x20b:
-    case 0x268: case 0x1d96: case 0x1e2d: case 0x1e2f:
-    case 0x1ec9: case 0x1ecb:
-       EMIT2('i') EMIT2(i_grave) EMIT2(i_acute)
-       EMIT2(i_circumflex) EMIT2(i_diaeresis)
-       EMIT2(0x129) EMIT2(0x12b) EMIT2(0x12d)
-       EMIT2(0x12f) EMIT2(0x1d0) EMIT2(0x209)
-       EMIT2(0x20b) EMIT2(0x268) EMIT2(0x1d96)
-       EMIT2(0x1e2d) EMIT2(0x1e2f) EMIT2(0x1ec9)
-       EMIT2(0x1ecb) EMIT2(0x1ecb)
-       return OK;
+   case 'i': case i_grave: case i_acute: case i_circumflex:
+   case i_diaeresis: case 0x129: case 0x12b: case 0x12d:
+   case 0x12f: case 0x1d0: case 0x209: case 0x20b:
+   case 0x268: case 0x1d96: case 0x1e2d: case 0x1e2f:
+   case 0x1ec9: case 0x1ecb:
+      EMIT2('i') EMIT2(i_grave) EMIT2(i_acute)
+      EMIT2(i_circumflex) EMIT2(i_diaeresis)
+      EMIT2(0x129) EMIT2(0x12b) EMIT2(0x12d)
+      EMIT2(0x12f) EMIT2(0x1d0) EMIT2(0x209)
+      EMIT2(0x20b) EMIT2(0x268) EMIT2(0x1d96)
+      EMIT2(0x1e2d) EMIT2(0x1e2f) EMIT2(0x1ec9)
+      EMIT2(0x1ecb) EMIT2(0x1ecb)
+      return OK;
 
-    case 'j': case 0x135: case 0x1f0: case 0x249:
-       EMIT2('j') EMIT2(0x135) EMIT2(0x1f0) EMIT2(0x249)
-       return OK;
+   case 'j': case 0x135: case 0x1f0: case 0x249:
+      EMIT2('j') EMIT2(0x135) EMIT2(0x1f0) EMIT2(0x249)
+      return OK;
 
-    case 'k': case 0x137: case 0x199: case 0x1e9: case 0x1d84:
-    case 0x1e31: case 0x1e33: case 0x1e35: case 0x2c6a: case 0xa741:
-       EMIT2('k') EMIT2(0x137) EMIT2(0x199) EMIT2(0x1e9)
-       EMIT2(0x1d84) EMIT2(0x1e31) EMIT2(0x1e33)
-       EMIT2(0x1e35) EMIT2(0x2c6a) EMIT2(0xa741)
-       return OK;
+   case 'k': case 0x137: case 0x199: case 0x1e9: case 0x1d84:
+   case 0x1e31: case 0x1e33: case 0x1e35: case 0x2c6a: case 0xa741:
+      EMIT2('k') EMIT2(0x137) EMIT2(0x199) EMIT2(0x1e9)
+      EMIT2(0x1d84) EMIT2(0x1e31) EMIT2(0x1e33)
+      EMIT2(0x1e35) EMIT2(0x2c6a) EMIT2(0xa741)
+      return OK;
 
-    case 'l': case 0x13a: case 0x13c: case 0x13e: case 0x140:
-    case 0x142: case 0x19a: case 0x1e37: case 0x1e39: case 0x1e3b:
-    case 0x1e3d: case 0x2c61:
-       EMIT2('l') EMIT2(0x13a) EMIT2(0x13c)
-       EMIT2(0x13e) EMIT2(0x140) EMIT2(0x142)
-       EMIT2(0x19a) EMIT2(0x1e37) EMIT2(0x1e39)
-       EMIT2(0x1e3b) EMIT2(0x1e3d) EMIT2(0x2c61)
-       return OK;
+   case 'l': case 0x13a: case 0x13c: case 0x13e: case 0x140:
+   case 0x142: case 0x19a: case 0x1e37: case 0x1e39: case 0x1e3b:
+   case 0x1e3d: case 0x2c61:
+      EMIT2('l') EMIT2(0x13a) EMIT2(0x13c)
+      EMIT2(0x13e) EMIT2(0x140) EMIT2(0x142)
+      EMIT2(0x19a) EMIT2(0x1e37) EMIT2(0x1e39)
+      EMIT2(0x1e3b) EMIT2(0x1e3d) EMIT2(0x2c61)
+      return OK;
 
-    case 'm': case 0x1d6f: case 0x1e3f: case 0x1e41: case 0x1e43:
-       EMIT2('m') EMIT2(0x1d6f) EMIT2(0x1e3f)
-       EMIT2(0x1e41) EMIT2(0x1e43)
-       return OK;
+   case 'm': case 0x1d6f: case 0x1e3f: case 0x1e41: case 0x1e43:
+      EMIT2('m') EMIT2(0x1d6f) EMIT2(0x1e3f)
+      EMIT2(0x1e41) EMIT2(0x1e43)
+      return OK;
 
-    case 'n': case n_virguilla: case 0x144: case 0x146: case 0x148:
-    case 0x149: case 0x1f9: case 0x1d70: case 0x1d87: case 0x1e45:
-    case 0x1e47: case 0x1e49: case 0x1e4b: case 0xa7a5:
-       EMIT2('n') EMIT2(n_virguilla)
-       EMIT2(0x144) EMIT2(0x146) EMIT2(0x148)
-       EMIT2(0x149) EMIT2(0x1f9) EMIT2(0x1d70)
-       EMIT2(0x1d87) EMIT2(0x1e45) EMIT2(0x1e47)
-       EMIT2(0x1e49) EMIT2(0x1e4b) EMIT2(0xa7a5)
-       return OK;
+   case 'n': case n_virguilla: case 0x144: case 0x146: case 0x148:
+   case 0x149: case 0x1f9: case 0x1d70: case 0x1d87: case 0x1e45:
+   case 0x1e47: case 0x1e49: case 0x1e4b: case 0xa7a5:
+      EMIT2('n') EMIT2(n_virguilla)
+      EMIT2(0x144) EMIT2(0x146) EMIT2(0x148)
+      EMIT2(0x149) EMIT2(0x1f9) EMIT2(0x1d70)
+      EMIT2(0x1d87) EMIT2(0x1e45) EMIT2(0x1e47)
+      EMIT2(0x1e49) EMIT2(0x1e4b) EMIT2(0xa7a5)
+      return OK;
 
-    case 'o': case o_grave: case o_acute: case o_circumflex:
-    case o_virguilla: case o_diaeresis: case o_slash:
-    case 0x14d: case 0x14f: case 0x151: case 0x1a1:
-    case 0x1d2: case 0x1eb: case 0x1ed: case 0x1ff:
-    case 0x20d: case 0x20f: case 0x22b: case 0x22d:
-    case 0x22f: case 0x231: case 0x275: case 0x1e4d:
-    case 0x1e4f: case 0x1e51: case 0x1e53: case 0x1ecd:
-    case 0x1ecf: case 0x1ed1: case 0x1ed3: case 0x1ed5:
-    case 0x1ed7: case 0x1ed9: case 0x1edb: case 0x1edd:
-    case 0x1edf: case 0x1ee1: case 0x1ee3:
-       EMIT2('o') EMIT2(o_grave) EMIT2(o_acute)
-       EMIT2(o_circumflex) EMIT2(o_virguilla)
-       EMIT2(o_diaeresis) EMIT2(o_slash)
-       EMIT2(0x14d) EMIT2(0x14f) EMIT2(0x151)
-       EMIT2(0x1a1) EMIT2(0x1d2) EMIT2(0x1eb)
-       EMIT2(0x1ed) EMIT2(0x1ff) EMIT2(0x20d)
-       EMIT2(0x20f) EMIT2(0x22b) EMIT2(0x22d)
-       EMIT2(0x22f) EMIT2(0x231) EMIT2(0x275)
-       EMIT2(0x1e4d) EMIT2(0x1e4f) EMIT2(0x1e51)
-       EMIT2(0x1e53) EMIT2(0x1ecd) EMIT2(0x1ecf)
-       EMIT2(0x1ed1) EMIT2(0x1ed3) EMIT2(0x1ed5)
-       EMIT2(0x1ed7) EMIT2(0x1ed9) EMIT2(0x1edb)
-       EMIT2(0x1edd) EMIT2(0x1edf) EMIT2(0x1ee1)
-       EMIT2(0x1ee3)
-       return OK;
+   case 'o': case o_grave: case o_acute: case o_circumflex:
+   case o_virguilla: case o_diaeresis: case o_slash:
+   case 0x14d: case 0x14f: case 0x151: case 0x1a1:
+   case 0x1d2: case 0x1eb: case 0x1ed: case 0x1ff:
+   case 0x20d: case 0x20f: case 0x22b: case 0x22d:
+   case 0x22f: case 0x231: case 0x275: case 0x1e4d:
+   case 0x1e4f: case 0x1e51: case 0x1e53: case 0x1ecd:
+   case 0x1ecf: case 0x1ed1: case 0x1ed3: case 0x1ed5:
+   case 0x1ed7: case 0x1ed9: case 0x1edb: case 0x1edd:
+   case 0x1edf: case 0x1ee1: case 0x1ee3:
+      EMIT2('o') EMIT2(o_grave) EMIT2(o_acute)
+      EMIT2(o_circumflex) EMIT2(o_virguilla)
+      EMIT2(o_diaeresis) EMIT2(o_slash)
+      EMIT2(0x14d) EMIT2(0x14f) EMIT2(0x151)
+      EMIT2(0x1a1) EMIT2(0x1d2) EMIT2(0x1eb)
+      EMIT2(0x1ed) EMIT2(0x1ff) EMIT2(0x20d)
+      EMIT2(0x20f) EMIT2(0x22b) EMIT2(0x22d)
+      EMIT2(0x22f) EMIT2(0x231) EMIT2(0x275)
+      EMIT2(0x1e4d) EMIT2(0x1e4f) EMIT2(0x1e51)
+      EMIT2(0x1e53) EMIT2(0x1ecd) EMIT2(0x1ecf)
+      EMIT2(0x1ed1) EMIT2(0x1ed3) EMIT2(0x1ed5)
+      EMIT2(0x1ed7) EMIT2(0x1ed9) EMIT2(0x1edb)
+      EMIT2(0x1edd) EMIT2(0x1edf) EMIT2(0x1ee1)
+      EMIT2(0x1ee3)
+      return OK;
 
     case 'p': case 0x1a5: case 0x1d71: case 0x1d7d: case 0x1d88:
     case 0x1e55: case 0x1e57:
-       EMIT2('p') EMIT2(0x1a5) EMIT2(0x1d71) EMIT2(0x1d7d)
-       EMIT2(0x1d88) EMIT2(0x1e55) EMIT2(0x1e57)
-       return OK;
+      EMIT2('p') EMIT2(0x1a5) EMIT2(0x1d71) EMIT2(0x1d7d)
+      EMIT2(0x1d88) EMIT2(0x1e55) EMIT2(0x1e57)
+      return OK;
 
-    case 'q': case 0x24b: case 0x2a0:
-       EMIT2('q') EMIT2(0x24b) EMIT2(0x2a0)
-       return OK;
+   case 'q': case 0x24b: case 0x2a0:
+      EMIT2('q') EMIT2(0x24b) EMIT2(0x2a0)
+      return OK;
 
-    case 'r': case 0x155: case 0x157: case 0x159: case 0x211:
-    case 0x213: case 0x24d: case 0x27d: case 0x1d72: case 0x1d73:
-    case 0x1d89: case 0x1e59: case 0x1e5b: case 0x1e5d: case 0x1e5f:
-    case 0xa7a7:
-       EMIT2('r') EMIT2(0x155) EMIT2(0x157) EMIT2(0x159)
-       EMIT2(0x211) EMIT2(0x213) EMIT2(0x24d) EMIT2(0x27d)
-       EMIT2(0x1d72) EMIT2(0x1d73) EMIT2(0x1d89) EMIT2(0x1e59)
-       EMIT2(0x1e5b) EMIT2(0x1e5d) EMIT2(0x1e5f) EMIT2(0xa7a7)
-       return OK;
+   case 'r': case 0x155: case 0x157: case 0x159: case 0x211:
+   case 0x213: case 0x24d: case 0x27d: case 0x1d72: case 0x1d73:
+   case 0x1d89: case 0x1e59: case 0x1e5b: case 0x1e5d: case 0x1e5f:
+   case 0xa7a7:
+      EMIT2('r') EMIT2(0x155) EMIT2(0x157) EMIT2(0x159)
+      EMIT2(0x211) EMIT2(0x213) EMIT2(0x24d) EMIT2(0x27d)
+      EMIT2(0x1d72) EMIT2(0x1d73) EMIT2(0x1d89) EMIT2(0x1e59)
+      EMIT2(0x1e5b) EMIT2(0x1e5d) EMIT2(0x1e5f) EMIT2(0xa7a7)
+      return OK;
 
-    case 's': case 0x15b: case 0x15d: case 0x15f: case 0x161:
-    case 0x219: case 0x23f: case 0x1d74: case 0x1d8a: case 0x1e61:
-    case 0x1e63: case 0x1e65: case 0x1e67: case 0x1e69: case 0xa7a9:
-       EMIT2('s') EMIT2(0x15b) EMIT2(0x15d) EMIT2(0x15f)
-       EMIT2(0x161) EMIT2(0x219) EMIT2(0x23f) EMIT2(0x1d74)
-       EMIT2(0x1d8a) EMIT2(0x1e61) EMIT2(0x1e63) EMIT2(0x1e65)
-       EMIT2(0x1e67) EMIT2(0x1e69) EMIT2(0xa7a9)
-       return OK;
+   case 's': case 0x15b: case 0x15d: case 0x15f: case 0x161:
+   case 0x219: case 0x23f: case 0x1d74: case 0x1d8a: case 0x1e61:
+   case 0x1e63: case 0x1e65: case 0x1e67: case 0x1e69: case 0xa7a9:
+      EMIT2('s') EMIT2(0x15b) EMIT2(0x15d) EMIT2(0x15f)
+      EMIT2(0x161) EMIT2(0x219) EMIT2(0x23f) EMIT2(0x1d74)
+      EMIT2(0x1d8a) EMIT2(0x1e61) EMIT2(0x1e63) EMIT2(0x1e65)
+      EMIT2(0x1e67) EMIT2(0x1e69) EMIT2(0xa7a9)
+      return OK;
 
-    case 't': case 0x163: case 0x165: case 0x167: case 0x1ab:
-    case 0x1ad: case 0x21b: case 0x288: case 0x1d75: case 0x1e6b:
-    case 0x1e6d: case 0x1e6f: case 0x1e71: case 0x1e97: case 0x2c66:
-       EMIT2('t') EMIT2(0x163) EMIT2(0x165) EMIT2(0x167)
-       EMIT2(0x1ab) EMIT2(0x1ad) EMIT2(0x21b) EMIT2(0x288)
-       EMIT2(0x1d75) EMIT2(0x1e6b) EMIT2(0x1e6d) EMIT2(0x1e6f)
-       EMIT2(0x1e71) EMIT2(0x1e97) EMIT2(0x2c66)
-       return OK;
+   case 't': case 0x163: case 0x165: case 0x167: case 0x1ab:
+   case 0x1ad: case 0x21b: case 0x288: case 0x1d75: case 0x1e6b:
+   case 0x1e6d: case 0x1e6f: case 0x1e71: case 0x1e97: case 0x2c66:
+      EMIT2('t') EMIT2(0x163) EMIT2(0x165) EMIT2(0x167)
+      EMIT2(0x1ab) EMIT2(0x1ad) EMIT2(0x21b) EMIT2(0x288)
+      EMIT2(0x1d75) EMIT2(0x1e6b) EMIT2(0x1e6d) EMIT2(0x1e6f)
+      EMIT2(0x1e71) EMIT2(0x1e97) EMIT2(0x2c66)
+      return OK;
 
-    case 'u': case u_grave: case u_acute: case u_circumflex:
-    case u_diaeresis: case 0x169: case 0x16b: case 0x16d:
-    case 0x16f: case 0x171: case 0x173: case 0x1b0: case 0x1d4:
-    case 0x1d6: case 0x1d8: case 0x1da: case 0x1dc: case 0x215:
-    case 0x217: case 0x289: case 0x1d7e: case 0x1d99: case 0x1e73:
-    case 0x1e75: case 0x1e77: case 0x1e79: case 0x1e7b:
-    case 0x1ee5: case 0x1ee7: case 0x1ee9: case 0x1eeb:
-    case 0x1eed: case 0x1eef: case 0x1ef1:
-       EMIT2('u') EMIT2(u_grave) EMIT2(u_acute)
-       EMIT2(u_circumflex) EMIT2(u_diaeresis)
-       EMIT2(0x169) EMIT2(0x16b)
-       EMIT2(0x16d) EMIT2(0x16f) EMIT2(0x171)
-       EMIT2(0x173) EMIT2(0x1d6) EMIT2(0x1d8)
-       EMIT2(0x215) EMIT2(0x217) EMIT2(0x1b0)
-       EMIT2(0x1d4) EMIT2(0x1da) EMIT2(0x1dc)
-       EMIT2(0x289) EMIT2(0x1e73) EMIT2(0x1d7e)
-       EMIT2(0x1d99) EMIT2(0x1e75) EMIT2(0x1e77)
-       EMIT2(0x1e79) EMIT2(0x1e7b) EMIT2(0x1ee5)
-       EMIT2(0x1ee7) EMIT2(0x1ee9) EMIT2(0x1eeb)
-       EMIT2(0x1eed) EMIT2(0x1eef) EMIT2(0x1ef1)
-       return OK;
+   case 'u': case u_grave: case u_acute: case u_circumflex:
+   case u_diaeresis: case 0x169: case 0x16b: case 0x16d:
+   case 0x16f: case 0x171: case 0x173: case 0x1b0: case 0x1d4:
+   case 0x1d6: case 0x1d8: case 0x1da: case 0x1dc: case 0x215:
+   case 0x217: case 0x289: case 0x1d7e: case 0x1d99: case 0x1e73:
+   case 0x1e75: case 0x1e77: case 0x1e79: case 0x1e7b:
+   case 0x1ee5: case 0x1ee7: case 0x1ee9: case 0x1eeb:
+   case 0x1eed: case 0x1eef: case 0x1ef1:
+      EMIT2('u') EMIT2(u_grave) EMIT2(u_acute)
+      EMIT2(u_circumflex) EMIT2(u_diaeresis)
+      EMIT2(0x169) EMIT2(0x16b)
+      EMIT2(0x16d) EMIT2(0x16f) EMIT2(0x171)
+      EMIT2(0x173) EMIT2(0x1d6) EMIT2(0x1d8)
+      EMIT2(0x215) EMIT2(0x217) EMIT2(0x1b0)
+      EMIT2(0x1d4) EMIT2(0x1da) EMIT2(0x1dc)
+      EMIT2(0x289) EMIT2(0x1e73) EMIT2(0x1d7e)
+      EMIT2(0x1d99) EMIT2(0x1e75) EMIT2(0x1e77)
+      EMIT2(0x1e79) EMIT2(0x1e7b) EMIT2(0x1ee5)
+      EMIT2(0x1ee7) EMIT2(0x1ee9) EMIT2(0x1eeb)
+      EMIT2(0x1eed) EMIT2(0x1eef) EMIT2(0x1ef1)
+      return OK;
 
-    case 'v': case 0x28b: case 0x1d8c: case 0x1e7d: case 0x1e7f:
+   case 'v': case 0x28b: case 0x1d8c: case 0x1e7d: case 0x1e7f:
        EMIT2('v') EMIT2(0x28b) EMIT2(0x1d8c) EMIT2(0x1e7d)
        EMIT2(0x1e7f)
        return OK;
 
-    case 'w': case 0x175: case 0x1e81: case 0x1e83: case 0x1e85:
-    case 0x1e87: case 0x1e89: case 0x1e98:
+   case 'w': case 0x175: case 0x1e81: case 0x1e83: case 0x1e85:
+   case 0x1e87: case 0x1e89: case 0x1e98:
        EMIT2('w') EMIT2(0x175) EMIT2(0x1e81) EMIT2(0x1e83)
        EMIT2(0x1e85) EMIT2(0x1e87) EMIT2(0x1e89) EMIT2(0x1e98)
        return OK;
 
-    case 'x': case 0x1e8b: case 0x1e8d:
-       EMIT2('x') EMIT2(0x1e8b) EMIT2(0x1e8d)
-       return OK;
+   case 'x': case 0x1e8b: case 0x1e8d:
+      EMIT2('x') EMIT2(0x1e8b) EMIT2(0x1e8d)
+      return OK;
 
-    case 'y': case y_acute: case y_diaeresis: case 0x177:
-    case 0x1b4: case 0x233: case 0x24f: case 0x1e8f:
-    case 0x1e99: case 0x1ef3: case 0x1ef5: case 0x1ef7:
-    case 0x1ef9:
-       EMIT2('y') EMIT2(y_acute) EMIT2(y_diaeresis)
-       EMIT2(0x177) EMIT2(0x1b4) EMIT2(0x233) EMIT2(0x24f)
-       EMIT2(0x1e8f) EMIT2(0x1e99) EMIT2(0x1ef3)
-       EMIT2(0x1ef5) EMIT2(0x1ef7) EMIT2(0x1ef9)
-       return OK;
+   case 'y': case y_acute: case y_diaeresis: case 0x177:
+   case 0x1b4: case 0x233: case 0x24f: case 0x1e8f:
+   case 0x1e99: case 0x1ef3: case 0x1ef5: case 0x1ef7:
+   case 0x1ef9:
+      EMIT2('y') EMIT2(y_acute) EMIT2(y_diaeresis)
+      EMIT2(0x177) EMIT2(0x1b4) EMIT2(0x233) EMIT2(0x24f)
+      EMIT2(0x1e8f) EMIT2(0x1e99) EMIT2(0x1ef3)
+      EMIT2(0x1ef5) EMIT2(0x1ef7) EMIT2(0x1ef9)
+      return OK;
 
-    case 'z': case 0x17a: case 0x17c: case 0x17e: case 0x1b6:
-    case 0x1d76: case 0x1d8e: case 0x1e91: case 0x1e93:
-    case 0x1e95: case 0x2c6c:
-       EMIT2('z') EMIT2(0x17a) EMIT2(0x17c) EMIT2(0x17e)
-       EMIT2(0x1b6) EMIT2(0x1d76) EMIT2(0x1d8e) EMIT2(0x1e91)
-       EMIT2(0x1e93) EMIT2(0x1e95) EMIT2(0x2c6c)
-       return OK;
+   case 'z': case 0x17a: case 0x17c: case 0x17e: case 0x1b6:
+   case 0x1d76: case 0x1d8e: case 0x1e91: case 0x1e93:
+   case 0x1e95: case 0x2c6c:
+      EMIT2('z') EMIT2(0x17a) EMIT2(0x17c) EMIT2(0x17e)
+      EMIT2(0x1b6) EMIT2(0x1d76) EMIT2(0x1d8e) EMIT2(0x1e91)
+      EMIT2(0x1e93) EMIT2(0x1e95) EMIT2(0x2c6c)
+      return OK;
 
-    // default: character itself
+      // default: character itself
    }
 
-    EMIT2(c);
-    return OK;
+   EMIT2(c);
+   return OK;
 #undef EMIT2
 }
-
 
 //Return true if the back reference is legal. We must have seen the close brace.
 //TODO: Should also check that we don't refer to something that is repeated
@@ -5030,13 +5005,13 @@ alloc_state(int c, RState *out, RState *out1) {
 
 // Initialize a Frag struct and return it.
 private Frag
-frag(RState *start, StateList *out) {
+frag(RState* start, StateList* out) {
    return (Frag){.start = start, .out = out};
 }
 
 // Create singleton list containing just outp.
 private StateList *
-list1( RState   **outp) {
+list1(RState** outp) {
    StateList* l = (StateList *)outp;
    l->next = NULL;
    return l;
@@ -5044,9 +5019,8 @@ list1( RState   **outp) {
 
 // Patch the list of states at out to point to start.
 private void
-patch(StateList *l, RState *s) {
+patch(StateList* l, RState* s) {
    StateList *next;
-
    for (; l; l = next) {
       next = l->next;
       l->s = s;
@@ -5056,10 +5030,8 @@ patch(StateList *l, RState *s) {
 
 // Join the two lists l1 and l2, returning the combination.
 private StateList *
-concat(StateList *l1, StateList *l2) {
-   StateList *oldl1;
-
-   oldl1 = l1;
+concat(StateList* l1, StateList* l2) {
+   StateList* oldl1 = l1;
    while (l1->next)
       l1 = l1->next;
    l1->next = l2;
@@ -5108,7 +5080,7 @@ st_error(Unt *postfix UNUSED, Unt* end UNUSED, Unt* p UNUSED) {
 
 // Push an item onto the stack.
 private void
-addFrag(Frag s, Frag **fr, Frag* sentinel) {
+addFrag(Frag s, Frag** fr, Frag* sentinel) {
    Frag* stackp = *fr;
    if (stackp >= sentinel)
       return;
@@ -5118,7 +5090,7 @@ addFrag(Frag s, Frag **fr, Frag* sentinel) {
 
 // Pop an item from the stack.
 private Frag
-removeLastFrag(Frag **p, Frag *stack) {
+removeLastFrag(Frag** p, Frag* stack) {
    (*p)--;
    Frag* stackp = *p;
    if (stackp < stack)
@@ -5128,16 +5100,16 @@ removeLastFrag(Frag **p, Frag *stack) {
 
 // Estimate the maximum byte length of anything matching "state". If unknown or unlimited, return -1
 private int
-nfa_max_width(RState *startstate, int depth) {
-   int          l, r;
-   RState       *state = startstate;
-   int          len = 0;
+nfa_max_width(RState* startstate, int depth) {
+   int l, r;
+   RState* state = startstate;
+   int len = 0;
 
    // detect looping in a SPLIT
    if (depth > 4)
       return -1;
 
-   while (state != NULL) {
+   while (state) {
       switch (state->c) {
       case END_INVISIBLE:
       case END_INVISIBLE_NEG:
@@ -5325,9 +5297,9 @@ nfa_max_width(RState *startstate, int depth) {
 
 // Count the number of states in a postfix form.
 private int
-countStatesInPostfix(Unt *postfix, Unt *end) {
+countStatesInPostfix(Unt* postfix, Unt* end) {
    int count = 0;
-   if (postfix == NULL)
+   if (!postfix)
       return 0;
 
    for (Unt* p = postfix; p < end; ++p) {
@@ -5419,9 +5391,9 @@ countStatesInPostfix(Unt *postfix, Unt *end) {
 
 // Convert a postfix form into its equivalent NFA. Return the start state on success, NULL otherwise
 private RState *
-buildAutomaton(Arr(Unt) postfix, Unt *end) {
-   Unt      mopen;
-   Unt      mclose;
+buildAutomaton(Arr(Unt) postfix, Unt* end) {
+   Unt mopen;
+   Unt mclose;
    Frag e1;
    Frag e2;
    Frag e;
@@ -5451,8 +5423,7 @@ buildAutomaton(Arr(Unt) postfix, Unt *end) {
       switch (*p) {
       case CONCAT:
          // Concatenation. Pay attention: this operator does not exist in the r.e. itself
-         // (it is implicit, really).  It is added when r.e. is parsed to postfix form in 
-         // parse().
+         // (it is implicit, really).  It is added when r.e. is parsed to postfix form in parse().
          e2 = POP();
          e1 = POP();
          patch(e1.out, e2.start);
@@ -5464,7 +5435,7 @@ buildAutomaton(Arr(Unt) postfix, Unt *end) {
          e2 = POP();
          e1 = POP();
          s = alloc_state(SPLIT, e1.start, e2.start);
-         if (s == NULL)
+         if (!s)
             goto theend;
          PUSH(frag(s, concat(e1.out, e2.out)));
          break;
@@ -5542,7 +5513,7 @@ buildAutomaton(Arr(Unt) postfix, Unt *end) {
          break;
 
       case OPT_CHARS: {
-         int    n;
+         int n;
          // \%[abc] implemented as:
          //    SPLIT
          //    +-CHAR(a)
@@ -5612,11 +5583,11 @@ buildAutomaton(Arr(Unt) postfix, Unt *end) {
          if (before)
             n = *++p; // get the count
 
-         // The \@= operator: match the preceding atom with zero width.
-         // The \@! operator: no match for the preceding atom.
-         // The \@<= operator: match for the preceding atom.
-         // The \@<! operator: no match for the preceding atom.
-         // Surrounds the preceding atom with START_INVISIBLE and END_INVISIBLE, similarly to MOPEN
+         //The \@= operator: match the preceding atom with zero width.
+         //The \@! operator: no match for the preceding atom.
+         //The \@<= operator: match for the preceding atom.
+         //The \@<! operator: no match for the preceding atom.
+         //Surrounds the preceding atom with START_INVISIBLE and END_INVISIBLE, similarly to MOPEN
 
          e = POP();
          s1 = alloc_state(end_state, NULL, NULL);
@@ -5835,7 +5806,7 @@ private void
 addOptimizationHints(RegProg* prog) {
    for (int i = 0; i < prog->nstate; ++i) {
       Unt c = prog->state[i].c;
-      if (c == START_INVISIBLE
+      if (  c == START_INVISIBLE
          || c == START_INVISIBLE_NEG
          || c == START_INVISIBLE_BEFORE
          || c == START_INVISIBLE_BEFORE_NEG
@@ -5877,27 +5848,27 @@ addOptimizationHints(RegProg* prog) {
 /////////////////////////////////////////////////////////////////
 
 typedef struct {
-   int       in_use; // number of subexpr with useful info
+   int in_use; // number of subexpr with useful info
 
    // When REG_MULTI is true list.multi is used, otherwise list.line.
    union {
       struct multipos {
-         LineNr   start_lnum;
-         LineNr   end_lnum;
-         ColNr   start_col;
-         ColNr   end_col;
+         LineNr start_lnum;
+         LineNr end_lnum;
+         ColNr start_col;
+         ColNr end_col;
       } multi[NSUBEXP];
       struct linepos {
-         Byte   *start;
-         Byte   *end;
+         Byte* start;
+         Byte* end;
       } line[NSUBEXP];
    } list;
    ColNr   orig_start_col;  // list.multi[0].start_col without \zs
 } Submatch;
 
 typedef struct {
-   Submatch   norm; // \( .. \) matches
-   Submatch   synt; // \z( .. \) matches
+   Submatch norm; // \( .. \) matches
+   Submatch synt; // \z( .. \) matches
 } Submatches;
 
 // PostponedMatch stores a Postponed Invisible Match.

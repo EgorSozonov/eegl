@@ -10105,7 +10105,7 @@ openCommPort(void) {
 
       // closePortal() autocommands may have already deleted the buffer.
       if (newbuf_status == OK && bookRefValid(&bufref) && bufref.c != curBook)
-         closeBook(NULL, bufref.c, DOBOOK_WIPE, false, false);
+         bookClose(NULL, bufref.c, DOBOOK_WIPE, false, false);
 
       commPortTypeG = 0;
       commPortPortG = NULL;
@@ -10272,7 +10272,7 @@ openCommPort(void) {
       //closePortal() may have already wiped the buffer when 'bh' is
       //set to 'wipe', autocommands may have closed other portals
       if (bookRefValid(&bufref) && bufref.c != curBook)
-         closeBook(NULL, bufref.c, DOBOOK_WIPE, false, false);
+         bookClose(NULL, bufref.c, DOBOOK_WIPE, false, false);
 
       portRestoreSize(&portSizes);
       skipPortFixCursorG = false;

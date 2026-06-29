@@ -238,7 +238,7 @@ skipForPopup(int row, int col) {
 
 // Get the character to use in a separator between vertically split portals. 
 // Get its decrations into "*deco".
-private int
+private Unt
 fillchar_vsep(OUT Decoration* deco) {
    *deco = getFullDecoration(HLF_C);
    return (deco->flags == 0 && fillCharsG.vert == ' ') ? '|' : fillCharsG.vert;
@@ -638,23 +638,18 @@ screen_comp_differs(int off, int* characterCombiner) {
 //Note: only outputs within one row, message is truncated at screen boundary!
 //Note: if screenLinesP[], row and/or col is invalid, nothing is done.
 void
-drawText(
-   CS text,
-   Unt row,
-   Unt col,
-   Byte decoFlags
-){
+drawText(CS text, Unt row, Unt col, Byte decoFlags){
    drawTextLen(text, -1, row, col, decoFlags);
 }
 
-// Like drawText(), but output "text[len]".  When "len" is -1 output up to a ZERO.
+// Like drawText(), but output "text[len]".  When "len" is -1, output up to a ZERO.
 void
 drawTextLen(
    CS text,
    int textlen,
    Unt row,
    int col,
-   char flagsArg
+   Byte flagsArg
 ) {
    Byte flags = flagsArg;
    CS ptr = text;
@@ -669,8 +664,8 @@ drawTextLen(
    int force_redraw_next = false;
    int need_redraw;
 
-   // Safety check. The check for negative row and column is to fix issue
-   // #4102. TODO: find out why row/col could be negative.
+   //Safety check. The check for negative row and column is to fix issue
+   //#4102. TODO: find out why row/col could be negative.
    if (!screenLinesP
          || (int)row >= screenLinesRowsG || row == UNT 
          || (int)col >= screenLinesColsG || col < 0)
@@ -680,9 +675,7 @@ drawTextLen(
    while ((int)col < screenLinesColsG && (len < 0 || (int)(ptr - text) < len) && *ptr != ZERO) {
       c = *ptr;
       // check if this is the first byte of a multibyte
-      mbyte_blen = len > 0
-              ? utfCharLen_len(ptr, (int)((text + len) - ptr))
-              : utfCharLen(ptr);
+      mbyte_blen = len > 0 ? utfCharLen_len(ptr, (int)((text + len) - ptr)) : utfCharLen(ptr);
       u8c = len >= 0
             ? utfc_ptr2char_len(ptr, characterCombiner, (int)((text + len) - ptr))
             : utfc_ptr2char(ptr, characterCombiner);
@@ -717,6 +710,7 @@ drawTextLen(
 
          screenLinesP[off] = c;
          screenDecosP[off].flags = flags;
+         screenDecosP[off].hiId = 0;
          screenColS[off] = -1;
          if (c < 0x80 && characterCombiner[0] == 0)
             screenLinesUCG[off] = 0;
@@ -729,9 +723,10 @@ drawTextLen(
             }
          }
          if (mbyte_cells == 2) {
-             screenLinesP[off + 1] = 0;
-             screenDecosP[off + 1].flags = flags;
-             screenColS[off + 1] = -1;
+            screenLinesP[off + 1] = 0;
+            screenDecosP[off + 1].flags = flags;
+            screenDecosP[off + 1].hiId = 0;
+            screenColS[off + 1] = -1;
          }
          singleChar(off, row, col);
       }
@@ -740,7 +735,7 @@ drawTextLen(
       ptr += mbyte_blen;
       if (clear_next_cell) {
          // This only happens at the end, display one space next. Keep the decorations from before
-         ptr = (CS)" ";
+         ptr = S" ";
          len = -1;
          flags = screenDecosP[off].flags;
       }
@@ -791,9 +786,10 @@ startDrawingHilite(Short hiId) {
       out_str(termCodesG[KS_UCS]);
       
    if (((activeDecoP.flags & DECO_UNDERLINE) != 0
-            || ((activeDecoP.flags & DECO_UNDERCURL) && *termCodesG[KS_UCS] == ZERO))
+         || ((activeDecoP.flags & DECO_UNDERCURL) != 0 && *termCodesG[KS_UCS] == ZERO))
        && *termCodesG[KS_US] != ZERO
    ) {
+      _bp(true);
       out_str(termCodesG[KS_US]);
    } 
    
@@ -808,8 +804,9 @@ startDrawingHilite(Short hiId) {
       termApplyFgColor(fullDeco.fg);
    if ((fullDeco.fieldPresence & HI_HAS_BG) != 0)
       termApplyBgColor(fullDeco.bg);
-   if ((fullDeco.fieldPresence & HI_HAS_UNDER) != 0)
+   if ((fullDeco.fieldPresence & HI_HAS_UNDER) != 0) {
       termApplyUnderColor(fullDeco.under);
+   } 
 }
 
 void
@@ -818,7 +815,7 @@ drawStopHilite(void) {
       return;
    }
    
-   int do_ME = false;       // output KS_ME code
+   Boole do_ME = false;       // output KS_ME code
 
    // Often all ending-codes are equal to KS_ME. Avoid outputting the same sequence several times
    int is_under = (activeDecoP.flags & (DECO_UNDERCURL));
@@ -831,8 +828,10 @@ drawStopHilite(void) {
    if ((activeDecoP.flags & DECO_UNDERLINE) != 0 || (is_under && *termCodesG[KS_UCE] == ZERO)) {
       if (STRCMP(termCodesG[KS_UE], termCodesG[KS_ME]) == 0)
          do_ME = true;
-      else
+      else {
          out_str(termCodesG[KS_UE]);
+         
+      } 
    }
    if ((activeDecoP.flags & DECO_ITALIC) != 0) {
       if (STRCMP(termCodesG[KS_CZR], termCodesG[KS_ME]) == 0)
@@ -845,7 +844,6 @@ drawStopHilite(void) {
 
    termApplyFgColor(defaultFgColorG);
    termApplyBgColor(defaultBgColorG);
-   termApplyUnderColor(defaultUnderlColorG);
    activeDecoP = defaultDecoP;
 }
 
@@ -3071,7 +3069,7 @@ private void updatePortal(Portal* po);
 private void redraw_custom_statusline(Portal* po);
 private int  didUpdateOnePortal;
 
-//Based on the current value of curPor->topLine, transfer a screenfull
+//Based on the current value of curPor->topLine, transfer a screenful
 //of stuff from Filemem to screenLinesP[], and update curPor->bottomLine.
 //Return OK when the screen was updated, FAIL if it was not done.
 int
@@ -3095,7 +3093,7 @@ drawUpdateScreen(Unt type_arg) {
    // Before updating the screen, notify any listeners of changed text.
    Book* book;
    FOR_ALL_BOOKS(book)
-       invoke_listeners(book);
+      jugInvokeListenersOnChangedText(book);
    }
 
    // May have postponed updating diffs.
@@ -3106,22 +3104,22 @@ drawUpdateScreen(Unt type_arg) {
       if (type < mustRedrawG)       // use maximal type
          type = mustRedrawG;
 
-      // mustRedrawG is reset here, so that when we run into some weird reason to redraw while 
-      // busy redrawing (e.g., asynchronous scrolling), or update_topline() in updatePortal()
-      // will cause a scroll, the screen will be redrawn later or in updatePortal().
+      //mustRedrawG is reset here, so that when we run into some weird reason to redraw while 
+      //busy redrawing (e.g., asynchronous scrolling), or update_topline() in updatePortal()
+      //will cause a scroll, the screen will be redrawn later or in updatePortal().
       mustRedrawG = 0;
    }
 
-   // May need to update lines[].
+   //May need to update lines[].
    if (curPor->validLines == 0 && type < UPD_NOT_VALID && !termDoUpdatePortal(curPor))
       type = UPD_NOT_VALID;
 
-   // Postpone the redrawing when it's not needed and when being called recursively.
+   //Postpone the redrawing when it's not needed and when being called recursively.
    if (!redrawing() || updating_screen) {
       redraw_later(type);      // remember type for next time
       mustRedrawG = type;
       if (type > UPD_INVERTED_ALL)
-          curPor->validLines = 0;   // don't use lines[].height now
+         curPor->validLines = 0;   // don't use lines[].height now
       return FAIL;
    }
    updating_screen = true;
@@ -3143,8 +3141,8 @@ drawUpdateScreen(Unt type_arg) {
           } else {
             check_for_delay(false);
             if (screen_ins_lines(0, 0, msg_scrolled, (int)visibleRowsG, 0, NULL) == FAIL) {
-                type = UPD_NOT_VALID;
-                redraw_as_cleared();
+               type = UPD_NOT_VALID;
+               redraw_as_cleared();
             }
             FOR_ALL_PORTALS(po) {
                if (msg_scrolled > -1 && po->portalRow < msg_scrolled) {
@@ -3164,8 +3162,8 @@ drawUpdateScreen(Unt type_arg) {
             }
             if (!no_update)
                redrawCommlineG = true;
-          }
-          needRedrawTabpanelG = true;
+         }
+         needRedrawTabpanelG = true;
       }
       msg_scrolled = 0;
       need_wait_return = false;
@@ -3197,17 +3195,17 @@ drawUpdateScreen(Unt type_arg) {
       update_curswant();
    if (curPor->redrawType < type
        && !((type == UPD_VALID
-          && curPor->lines[0].isValid
-          && curPor->topFill == curPor->topFillOld
-          && curPor->bottFill == curPor->bottFillOld
-          && curPor->topLine == curPor->lines[0].bookLnum)
-      || (type == UPD_INVERTED
-          && VIsual_active
-          && curPor->prevVisualEnd == curPor->cursor.lnum
-          && curPor->prevVisualMode == VIsual_mode
-          && (curPor->cacheState & VALID_VIRTCOL)
-          && curPor->oldCursWant == curPor->cursWant)
-      )
+                && curPor->lines[0].isValid
+                && curPor->topFill == curPor->topFillOld
+                && curPor->bottFill == curPor->bottFillOld
+                && curPor->topLine == curPor->lines[0].bookLnum)
+             || (type == UPD_INVERTED
+                && VIsual_active
+                && curPor->prevVisualEnd == curPor->cursor.lnum
+                && curPor->prevVisualMode == VIsual_mode
+                && (curPor->cacheState & VALID_VIRTCOL)
+                && curPor->oldCursWant == curPor->cursWant)
+           )
    ) {
       curPor->redrawType = type;
    } 
@@ -3219,7 +3217,7 @@ drawUpdateScreen(Unt type_arg) {
    //be done once.
    FOR_ALL_PORTALS(po) {
       if (po->book->needsRedraw) {
-         Portal   *wwp;
+         Portal* wwp;
 
          // Check if we already did this buffer.
          for (wwp = firstPor; wwp != po; wwp = wwp->next) {
@@ -3232,10 +3230,10 @@ drawUpdateScreen(Unt type_arg) {
    }
 
    if (pum_redraw_in_same_position())
-      // Avoid flicker if the popup menu is going to be redrawn in the same position.
+      //Avoid flicker if the popup menu is going to be redrawn in the same position.
       pum_will_redraw = true;
 
-   // Go from top to bottom through the portals, redrawing the ones that need it
+   //Go from top to bottom through the portals, redrawing the ones that need it
    didUpdateOnePortal = false;
    screenSearchP.rm.regprog = NULL;
    FOR_ALL_PORTALS(po) {
@@ -3244,7 +3242,7 @@ drawUpdateScreen(Unt type_arg) {
          updatePortal(po);
       }
 
-      // redraw status line after the portal to minimize cursor movement
+      //redraw status line after the portal to minimize cursor movement
       if (po->statusLineNeedsRedraw) {
          cursor_off();
          redrawPortalStatusLine(po, true); // any popup menu will be redrawn below
@@ -3293,13 +3291,12 @@ drawUpdateScreen(Unt type_arg) {
 //If inversion is possible we use it. Else '=' characters are used.
 //If "ignore_pum" is true, also redraw statusline when the popup menu is displayed.
 void
-redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
-   Unt fillchar;
+redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
    Decoration deco;
    static Boole busy = false;
 
-   // It's possible to get here recursively when 'statusline' (indirectly)
-   // invokes ":redrawstatus".  Simply ignore the call then.
+   //It's possible to get here recursively when 'statusline' (indirectly)
+   //invokes ":redrawstatus". Simply ignore the call then.
    if (busy)
       return;
    busy = true;
@@ -3310,21 +3307,15 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
    if (po->statusHeight == 0) {
       // no status line, can only be last portal
       redrawCommlineG = true;
-   } ei (!redrawing()
-       // don't update status line when popup menu is visible and may be
-       // drawn over it, unless it will be redrawn later
-       || (!ignore_pum && pum_visible()))
-    {
-      // Don't redraw right now, do it later.
+   } ei (!redrawing() //don't update status line when popup menu is visible and may be drawn over 
+                      //it, unless it will be redrawn later
+       || (!ignore_pum && pum_visible())
+   ) { //Don't redraw right now, do it later.
       po->statusLineNeedsRedraw = true;
-   } ei (po->o.statusLine) {
-      // redraw custom status line
+   } ei (po->o.statusLine) { // redraw custom status line
       redraw_custom_statusline(po);
    } else {
-      int   nameBufflen;
-      int   n;         // scratch value
-
-      fillchar = statusLineNextChar(OUT &deco, po);
+      Unt fillchar = statusLineNextChar(OUT &deco, po);
 
       drawGetTranslatedBookName(po->book);
       CS p = nameBuffG;
@@ -3336,33 +3327,32 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
              || !po->book->o.modifiable)
          && plen < MAXPATHL - 1
       ){
-          *(p + plen++) = ' ';   // replace ZERO with space
-          *(p + plen) = ZERO;    // ZERO terminate the string
+         *(p + plen++) = ' ';   // replace ZERO with space
+         *(p + plen) = ZERO;    // ZERO terminate the string
       }
       if (bookIsHelp(po->book))
-          plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Help]"));
+         plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Help]"));
       if (po->isPreview)
-          plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Preview]"));
-      if (doWasBookChanged(po->book) && !bt_terminal(po->book))
-          plen += eeSnprintf(p + plen, MAXPATHL - plen, "[+]");
+         plen += eeSnprintf(p + plen, MAXPATHL - plen, "%s", _("[Preview]"));
+      if (doWasBookChanged(po->book) && !bt_terminal(po->book)) {
+         plen += eeSnprintf(p + plen, MAXPATHL - plen, "[+]");
+      } 
       if (!po->book->o.modifiable)
-          plen += eeSnprintf(p + plen, MAXPATHL - plen, "[-]");
+         plen += eeSnprintf(p + plen, MAXPATHL - plen, "[-]");
 
       int this_ru_col = rulerColP - (visibleColsG - po->width);
-      n = (po->width + 1) / 2;
+      int n = (po->width + 1) / 2;// scratch value
       if (this_ru_col < n)
-          this_ru_col = n;
+         this_ru_col = n;
       if (this_ru_col <= 1) {
          p = S"<";      // No room for file name!
          plen = 1;
       } else {
-         int   i;
-
          // Count total number of display cells.
          plen = mb_string2cells(p, -1);
 
-         // Find first character that will fit.
-         // Going from start to end is much faster for DBCS.
+         // Find first character that will fit. Going from start to end is much faster.
+         int i;
          for (i = 0; p[i] != ZERO && plen >= this_ru_col - 1; i += utfCharLen(p + i))
             plen -= mb_ptr2cells(p + i);
          if (i > 0) {
@@ -3375,7 +3365,9 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
       drawText(p, row, po->portalCol, deco.flags);
       fillRowsWithTwoChars(row, row + 1, plen + po->portalCol,
             this_ru_col + po->portalCol, fillchar, fillchar, deco);
-      if ((nameBufflen = get_keymap_str(po, (CS)"<%s>", nameBuffG, MAXPATHL)) > 0
+            
+      int nameBufflen;
+      if ((nameBufflen = get_keymap_str(po, S"<%s>", nameBuffG, MAXPATHL)) > 0
             && (this_ru_col - plen) > (nameBufflen + 1))
          drawText(
             nameBuffG, row, (int)(this_ru_col - nameBufflen - 1 + po->portalCol), deco.flags
@@ -3385,22 +3377,21 @@ redrawPortalStatusLine(Portal* po, int ignore_pum UNUSED) {
 
       // Draw the 'showcmd' information if 'showcmdloc' == "statusline".
       if (p_sloc == SHOW_COMM_STATUSLINE) {
-          n = this_ru_col - plen - 2;          // perform the calculation here so we only do it once
-          int   width = MIN(10, n);
+         n = this_ru_col - plen - 2;          // perform the calculation here so we only do it once
+         int width = MIN(10, n);
 
-         if (width > 0)
-            drawTextLen(showcmd_buf, width, row,
-                  po->portalCol + this_ru_col - width - 1, deco.flags
+         if (width > 0) {
+            drawTextLen(
+               showcmd_buf, width, row, po->portalCol + this_ru_col - width - 1, deco.flags
             );
+         } 
       }
    }
 
    // May need to draw the character below the vertical separator.
    if (po->vsepWidth != 0 && po->statusHeight != 0 && redrawing()) {
-      if (stl_connected(po))
-         fillchar = statusLineNextChar(OUT &deco, po);
-      else
-         fillchar = fillchar_vsep(OUT &deco);
+      Unt fillchar = stl_connected(po) 
+         ? statusLineNextChar(OUT &deco, po) : fillchar_vsep(OUT &deco);
       screen_putchar(fillchar, row, P_ENDCOL(po), deco.flags);
    }
    busy = false;
@@ -3448,9 +3439,9 @@ after_updating_screen(int may_resize_shell UNUSED) {
     term_check_channel_closed_recently();
 }
 
-// Update all portals into the current buffer.
+// Update all portals into the current book.
 void
-update_curbuf(Unt type) {
+drawUpdateCurBook(Unt type) {
    drawCurBookLater(type);
    drawUpdateScreen(type);
 }
@@ -4559,7 +4550,7 @@ updatePortal(Portal* po) {
             po->oldCursorLcol = toc;
          }
       } else {
-         // Use the line numbers of the old Visual area.
+         //Use the line numbers of the old Visual area.
          if (po->prevVisualEnd < po->oldVisualLnum) {
             from = po->prevVisualEnd;
             to = po->oldVisualLnum;
@@ -4569,12 +4560,12 @@ updatePortal(Portal* po) {
          }
       }
 
-      // There is no need to update lines above the top of the portal.
+      //There is no need to update lines above the top of the portal.
       if (from < po->topLine)
          from = po->topLine;
 
-      // If we know the value of bottomLine, use it to restrict the update to
-      // the lines that are visible in the portal.
+      //If we know the value of bottomLine, use it to restrict the update to
+      //the lines that are visible in the portal.
       if (po->cacheState & VALID_BOTLINE) {
          if (from >= po->bottomLine)
             from = po->bottomLine - 1;
@@ -4582,11 +4573,10 @@ updatePortal(Portal* po) {
             to = po->bottomLine - 1;
       }
 
-      // Find the minimal part to be updated. Watch out for scrolling that made entries in lines[]
-      // invalid. E.g., CTRL-U makes the first half of lines[] invalid and sets topEnd; need to 
-      // redraw from topEnd to the "to" line. A middle mouse click with a Visual selection may 
-      // change the text above the Visual area and reset isValid, do count these for midEnd 
-      // (in srow).
+      //Find the minimal part to be updated. Watch out for scrolling that made entries in lines[]
+      //invalid. E.g., CTRL-U makes the first half of lines[] invalid and sets topEnd; need to 
+      //redraw from topEnd to the "to" line. A middle mouse click with a Visual selection may 
+      //change the text above the Visual area and reset isValid, do count these for midEnd (in srow)
       if (midStart > 0) {
          lnum = po->topLine;
          idx = 0;
@@ -4609,12 +4599,12 @@ updatePortal(Portal* po) {
          srow += midStart;
          midEnd = po->height;
          for ( ; idx < po->validLines; ++idx) {     // find end
-         if (po->lines[idx].isValid && po->lines[idx].bookLnum >= to + 1) {
-            // Only update until first row of this line
-            midEnd = srow;
-            break;
-         }
-         srow += po->lines[idx].height;
+            if (po->lines[idx].isValid && po->lines[idx].bookLnum >= to + 1) {
+               // Only update until first row of this line
+               midEnd = srow;
+               break;
+            }
+            srow += po->lines[idx].height;
          }
       }
    }

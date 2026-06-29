@@ -1718,14 +1718,14 @@ wipeLlBook(LocationStack* stack) {
       // can happen when curPor is going to be closed e.g. curPor->book
       // was already closed in closePortal(), and we are now closing the
       // portal related location list buffer from win_free_mem()
-      // but closeBook() calls CHECK_CURBOOK() macro and requires curPor->book == curBook
+      // but bookClose() calls CHECK_CURBOOK() macro and requires curPor->book == curBook
       if (curPor->book == NULL) {
          curPor->book = curBook;
          buf_was_null = true;
       }
 
       // If the location buffer is not loaded in any portal, then wipe the buffer.
-      closeBook(NULL, llBook, DOBOOK_WIPE, false, false);
+      bookClose(NULL, llBook, DOBOOK_WIPE, false, false);
       stack->bufNum = INVALID_LL_BUFNR;
       if (buf_was_null)
           curPor->book = NULL;
@@ -5601,7 +5601,7 @@ unloadDummyBook(Book* book, CS dirname_start) {
    if (curBook == book)      // safety check
       return;
 
-   closeBook(NULL, book, DOBOOK_UNLOAD, false, true);
+   bookClose(NULL, book, DOBOOK_UNLOAD, false, true);
 
    // When autocommands/'autochdir' option changed directory: go back.
    restore_start_dir(dirname_start);

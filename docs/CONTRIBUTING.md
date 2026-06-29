@@ -24,33 +24,41 @@ does not cause us trouble with trademarks or patents. There is no CLA to sign.
 
 ## Source code layout
 
-Entrypoint is in main.c.
+Entrypoint is in main.c at project root.
 
-Actions (the keys you enter in normal and visual modes) are declared in actions.h and implemented
+All the modules are in src/. Every module exports an API in src/proto/, generated with the
+"make proto" command. Every module imports src/eegl.h to get a (huge) list of global definitions,
+including the APIs of every other module.
+
+Low-level text memory manipulation, as well as the concept of "books" (open files) are in book.c
+
+The displays of books, named "portals", are in portal.c.
+
+Actions (the keys user enters in normal and visual modes) are declared in actions.h and implemented
 mostly in normal.c.
 
-Commands (the things you enter into the command line like `:vimgrep`) are declared in commands.h
+Commands (the things user enters into the command line like `:vimgrep`) are declared in commands.h
 and implemented mostly in normal.c
 
 The expression-evaluating core is in eval.c
 
 Processing keys from user is done mostly in getchar.c
 
-Code folds are defined in fold.c
+Code folds are defined in normal.c
 
-Quickfix and location lists are defined in quickfix.c
+Quickfix and location lists are defined in location.c
 
 Low-level memory work is in memory.c
 
 Options like `runtimepath` are declared in optiondefs.h
 
-Helpful macros are defined in eegl.h searchable via ":::macros"
+Helpful macros are defined in eegl.h and searchable via ":::macros"
 
-Global structs are defined in eegl.h searchable via ":::structs"
+Global structs are defined in eegl.h and searchable via ":::structs"
 
-Generic types are defined in eegl.h searchable via ":::generics"
+Generic types are defined in eegl.h and searchable via ":::generics"
 
-Generic functions are defined in generic.h
+Generic data structure methods are defined in generic.h
 
 
 ## Abbreviations

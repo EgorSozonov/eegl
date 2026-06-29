@@ -95,7 +95,7 @@ changed(void) {
          } else
             need_wait_return = save_need_wait_return;
       }
-      changed_internal();
+      jugOnChangeToText();
    }
    ++CHANGEDTICK(curBook);
 
@@ -118,7 +118,8 @@ check_status(Book* book) {
 
 //Internal part of changed(), no user interaction. Also used for recovery.
 void
-changed_internal(void) {
+jugOnChangeToText(void) {
+   _bp(true);
    curBook->wasModified = true;
    ml_setflags(curBook);
    check_status(curBook);
@@ -149,7 +150,7 @@ checkRecordedChanges(
       if (prev_lnum >= lnum || prev_lnum > lnume || prev_lnume >= lnum) {
           // the current change is going to make the line number in
           // the older change invalid, flush now
-          invoke_listeners(curBook);
+          jugInvokeListenersOnChangedText(curBook);
           break;
       }
    }
@@ -237,7 +238,7 @@ f_listener_flush(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
       if (book == NULL)
          return;
    }
-   invoke_listeners(book);
+   jugInvokeListenersOnChangedText(book);
 }
 
 
@@ -265,7 +266,7 @@ f_listener_remove(Arr(Var) argVars, OUT Var* returnVar) {
          next = lnr->next;
          if (lnr->id == id) {
             if (textlock > 0) {
-               // in invoke_listeners(), clear ID and delete later
+               // in jugInvokeListenersOnChangedText(), clear ID and delete later
                lnr->id = 0;
                return;
             }
@@ -280,13 +281,13 @@ f_listener_remove(Arr(Var) argVars, OUT Var* returnVar) {
 
 //Called before inserting a line above "lnum"/"lnum3" or deleting line "lnum" to "lnume".
 void
-may_invoke_listeners(Book* book, LineNr lnum, LineNr lnume, int added) {
+may_jugInvokeListenersOnChangedText(Book* book, LineNr lnum, LineNr lnume, int added) {
    checkRecordedChanges(book, lnum, lnume, added);
 }
 
 //Called when a sequence of changes is done: invoke listeners added with listener_add().
 void
-invoke_listeners(Book* book) {
+jugInvokeListenersOnChangedText(Book* book) {
    Listener   *lnr;
    Var   returnVar;
    Var   argv[6];
@@ -305,8 +306,7 @@ invoke_listeners(Book* book) {
       return;
    recursive = true;
 
-   // Block messages on channels from being handled, so that they don't make
-   // text changes here.
+   //Block messages on channels from being handled, so that they don't make text changes here.
    ++updating_screen;
 
    argv[0].tag = VAR_NUMBER;
@@ -347,9 +347,9 @@ invoke_listeners(Book* book) {
          prev = lnr;
    }
 
-    --textlock;
-    list_unref(book->recordedChanges);
-    book->recordedChanges = NULL;
+   --textlock;
+   list_unref(book->recordedChanges);
+   book->recordedChanges = NULL;
 
    if (save_updating_screen)
       updating_screen = true;
@@ -2358,7 +2358,7 @@ op_delete(Operator* oper) {
    if (oper->empty)
       return u_save_cursor();
 
-   if (!curBook->o.modifiable) {
+   if (IMMUTABLE) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
       return FAIL;
    }
@@ -6929,7 +6929,7 @@ op_reindent(Operator *oper, int (*how)(void)) {
    LineNr start_lnum = curPor->cursor.lnum;
 
    //Don't even try when @modifiable is off.
-   if (!curBook->o.modifiable) {
+   if (IMMUTABLE) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
       return;
    }

@@ -3,7 +3,8 @@
 
 //## main.c: the entrypoint of Eegl
 
-#define EXTERN // this makes all the global vars defined here, see src/eegl.h
+#define EXTERN // this makes all the global vars be defined here, see src/eegl.h
+#define MAIN_C // more initialization of globals, see src/eegl.h
 
 #include "eegl.h"
 

@@ -421,7 +421,7 @@ free_all_mem(void) {
       BookRef    bufref;
       bookStoreInRef(OUT &bufref, book);
       Book* nextBook = book->next;
-      closeBook(NULL, book, DOBUF_WIPE, false, false);
+      bookClose(NULL, book, DOBUF_WIPE, false, false);
       if (bookRefValid(&bufref))
          book = nextBook;   // didn't work, try next one
       else
@@ -1592,7 +1592,7 @@ ml_recover(Boole checkext) {
       //Recovering an empty file results in two lines and the first line is
       //empty. Don't set the modified flag then.
       if (!(curBook->mem.lineCount == 2 && *ml_get(1) == ZERO)) {
-         changed_internal();
+         jugOnChangeToText();
          ++CHANGEDTICK(curBook);
       }
    } else {
@@ -1602,7 +1602,7 @@ ml_recover(Boole checkext) {
          i = STRCMP(p, ml_get(idx + lnum));
          eeglFree(p);
          if (i != 0) {
-            changed_internal();
+            jugOnChangeToText();
             ++CHANGEDTICK(curBook);
             break;
          }
@@ -2522,7 +2522,7 @@ appendFlush(
 
    // When inserting above recorded changes: flush the changes before changing
    // the text.  Then flush the cached line, it may become invalid.
-   may_invoke_listeners(book, lnum + 1, lnum + 1, 1);
+   may_jugInvokeListenersOnChangedText(book, lnum + 1, lnum + 1, 1);
    if (book->mem.ml_line_lnum != 0)
       flushLine(book);
    return insertLineText(book, lnum, newContent, len, flags);
@@ -2927,7 +2927,7 @@ ml_deleteBufLine(Book* book, LineNr lnum) {
       return FAIL;
 
    // When inserting above recorded changes: flush the changes before changing the text.
-   may_invoke_listeners(book, lnum, lnum + 1, -1);
+   may_jugInvokeListenersOnChangedText(book, lnum, lnum + 1, -1);
 
    return deleteLine(book, lnum, 0);
 }
@@ -2940,7 +2940,7 @@ ml_delete_flags(LineNr lnum, int flags) {
       return FAIL;
 
    // When inserting above recorded changes: flush the changes before changing the text.
-   may_invoke_listeners(curBook, lnum, lnum + 1, -1);
+   may_jugInvokeListenersOnChangedText(curBook, lnum, lnum + 1, -1);
 
    return deleteLine(curBook, lnum, flags);
 }

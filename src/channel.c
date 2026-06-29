@@ -597,11 +597,11 @@ channel_set_options(Channel* channel, JobOptions* opt) {
             msg = opt->jo_message[PART_OUT];
          book = chaFindBook(opt->name[PART_OUT], false, msg);
       }
-      if (book != NULL) {
+      if (book) {
          if (opt->set & JO_OUT_MODIFIABLE)
             channel->fds[PART_OUT].ch_nomodifiable = !opt->jo_modifiable[PART_OUT];
 
-         if (!book->o.modifiable && !channel->fds[PART_OUT].ch_nomodifiable) {
+         if ((IMMUTABLE) && !channel->fds[PART_OUT].ch_nomodifiable) {
             emsg(_(e_cannot_make_changes_modifiable_is_off));
          } else {
             ch_log(channel, "writing out to book '%s'", book->fullFileName);
@@ -639,7 +639,7 @@ channel_set_options(Channel* channel, JobOptions* opt) {
       if (book) {
          if (opt->set & JO_ERR_MODIFIABLE)
             channel->fds[PART_ERR].ch_nomodifiable = !opt->jo_modifiable[PART_ERR];
-         if (!book->o.modifiable && !channel->fds[PART_ERR].ch_nomodifiable) {
+         if ((IMMUTABLE) && !channel->fds[PART_ERR].ch_nomodifiable) {
             emsg(_(e_cannot_make_changes_modifiable_is_off));
          } else {
             ch_log(channel, "writing err to buffer '%s'", book->fullFileName);

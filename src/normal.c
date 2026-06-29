@@ -2900,11 +2900,10 @@ display_showcmd(void) {
          redrawPortalStatusLine(curPor, false);
    } else { // @showcmdloc is "last" or empty
       if (!showcmd_is_clear)
-          drawText(showcmd_buf, (int)visibleRowsG - 1, shownCommandColG, 0);
+         drawText(showcmd_buf, (int)visibleRowsG - 1, shownCommandColG, 0);
 
-      // clear the rest of an old message by outputting up to SHOWCMD_COLS
-      // spaces
-      drawText((CS)"          " + len, (int)visibleRowsG - 1, shownCommandColG + len, 0);
+      //clear the rest of an old message by outputting up to SHOWCMD_COLS spaces
+      drawText(S"          " + len, (int)visibleRowsG - 1, shownCommandColG + len, 0);
    }
 
     setcursor();       // put cursor back where it belongs
@@ -6364,7 +6363,7 @@ nv_edit(ActionArg* aArg) {
       clearop(aArg->oper);
       term_enter_job_mode();
       return;
-   } ei (!curBook->o.modifiable) {
+   } ei (IMMUTABLE) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
       clearop(aArg->oper);
       if (aArg->cmdchar == K_PS)
@@ -13020,7 +13019,7 @@ setSmallMaybe(ArrayList* gap) {
 //portal by adding markers.
 private void
 foldCreateMarkers(LineNr start, LineNr end) {
-   if (!curBook->o.modifiable) {
+   if (IMMUTABLE) {
       emsg(_(e_cannot_make_changes_modifiable_is_off));
       return;
    }

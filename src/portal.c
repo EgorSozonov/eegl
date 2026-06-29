@@ -989,7 +989,7 @@ splitPortal_ins(
       need_status = STATUS_HEIGHT;
    }
 
-   if (flags & WSP_VERT) {
+   if ((flags & WSP_VERT) != 0) {
       int   wmw1;
       int   minwidth;
 
@@ -2259,7 +2259,7 @@ closeLastPortalInTab(Portal* port, int free_buf, Tab* prev_curtab) {
 
 //Close the book of "port" and unload it if "action" is DOBOOK_UNLOAD.
 //"action" can also be zero (do nothing) or DOBUF_WIPE.
-//"abort_if_last" is passed to closeBook(): abort closing if all other portals are closed.
+//"abort_if_last" is passed to bookClose(): abort closing if all other portals are closed.
 private void
 closePortalBook(Portal* port, int action, int abort_if_last) {
    // Free independent synblock before the book is freed.
@@ -2277,7 +2277,7 @@ closePortalBook(Portal* port, int action, int abort_if_last) {
       bookStoreInRef(OUT &bufref, curBook);
       
       port->locked = true;
-      closeBook(port, port->book, action, abort_if_last, true);
+      bookClose(port, port->book, action, abort_if_last, true);
       if (doesPortalExistInAnyTab(port))
           port->locked = false;
       // Make sure curBook is valid. It could become invalid if 'bufhidden' is "wipe" (can it now?)
@@ -2839,7 +2839,7 @@ closePortal_othertab(Portal* port, int free_buf, Tab *t) {
 
    if (port->book)
       // Close the link to the buffer.
-      closeBook(port, port->book, free_buf ? DOBOOK_UNLOAD : 0, false, true);
+      bookClose(port, port->book, free_buf ? DOBOOK_UNLOAD : 0, false, true);
 
    // Careful: Autocommands may have closed the tab or made it the current tab
    for (ptp = firstTabG; ptp != NULL && ptp != t; ptp = ptp->next)
@@ -4294,7 +4294,7 @@ enterPortalWorker(Portal* po, Unt flags) {
    if (curPor_invalid == 0)
       leavingPortal(curPor);
 
-   if (curPor_invalid == 0 && (flags & WEE_TRIGGER_LEAVE_AUTOCMDS)) {
+   if (curPor_invalid == 0 && (flags & WEE_TRIGGER_LEAVE_AUTOCMDS) != 0) {
       //Be careful: If autocommands delete the portal, return now.
       if (po->book != curBook) {
          applyAutocomms(EVENT_BUFLEAVE, NULL, NULL, false, curBook);
@@ -4331,7 +4331,7 @@ enterPortalWorker(Portal* po, Unt flags) {
       curPor->cursor.coladd = 0;
    changed_line_abv_curs();
    // Now it is OK to parse messages again, which may be needed in autocommands.
-   if (flags & WEE_ALLOW_PARSE_MESSAGES) {
+   if ((flags & WEE_ALLOW_PARSE_MESSAGES) != 0) {
       --dont_parse_messages;
       did_decrement = true;
    }
@@ -4340,14 +4340,13 @@ enterPortalWorker(Portal* po, Unt flags) {
 
    enteringPortal(curPor);
    // Careful: autocommands may close the portal and make "po" invalid
-   if (flags & WEE_TRIGGER_NEW_AUTOCMDS)
+   if ((flags & WEE_TRIGGER_NEW_AUTOCMDS) != 0)
       applyAutocomms(EVENT_PORTNEW, NULL, NULL, false, curBook);
-   if (flags & WEE_TRIGGER_ENTER_AUTOCMDS) {
+   if ((flags & WEE_TRIGGER_ENTER_AUTOCMDS) != 0) {
       applyAutocomms(EVENT_PORTENTER, NULL, NULL, false, curBook);
       if (isOtherBook)
          applyAutocomms(EVENT_BUFENTER, NULL, NULL, false, curBook);
    }
-
    curPor->statusLineNeedsRedraw = true;
    if (bt_terminal(curPor->book))
       // terminal is likely in another mode
@@ -4439,23 +4438,22 @@ allocPortal(Portal* after, int hidden) {
    }
    init_var_dict(newPort->internalVars, &newPort->wVar, VAR_SCOPE);
 
-   // Don't execute autocommands while the portal is not properly
-   // initialized yet.  gui_create_scrollbar() may trigger a FocusGained event.
+   //Don't execute autocommands while the portal is not properly
+   //initialized yet.  gui_create_scrollbar() may trigger a FocusGained event.
    block_autocmds();
 
-   // link the portal in the portal list
+   //link the portal in the portal list
    if (!hidden)
       append(after, newPort);
    newPort->portalCol = TPL_LCOL();
    newPort->width = COLUMNS_WITHOUT_TPL();
 
-   // position the display and the cursor at the top of the file.
+   //position the display and the cursor at the top of the file.
    newPort->topLine = 1;
    newPort->topFill = 0;
    newPort->bottomLine = 2;
    newPort->cursor.lnum = 1;
    newPort->scbindPos = 1;
-
 
    // We won't calculate fraction until resizing the portal
    newPort->fraction = 0;
@@ -4476,8 +4474,8 @@ freePortal(Portal* po, Tab* t) { // tab "po" is in, NULL for current
 
    alist_unlink(po->argList);
 
-   // Don't execute autocommands while the portal is halfway being deleted.
-   // gui_mch_destroy_scrollbar() may trigger a FocusGained event.
+   //Don't execute autocommands while the portal is halfway being deleted.
+   //gui_mch_destroy_scrollbar() may trigger a FocusGained event.
    block_autocmds();
 
    optClearPortOptions(&po->o);
@@ -4561,15 +4559,15 @@ portUnlisted(Portal* po) {
    return is_autoCommPort(po) || PORTAL_IS_POPUP(po);
 }
 
-// Free a popup portal. This does not take the portal out of the portal list
-// and assumes there is only one toplevel frame, no splits.
+//Free a popup portal. This does not take the portal out of the portal list
+//and assumes there is only one toplevel frame, no splits.
 void
 portFreePopup(Portal* port) {
    if (port->book) {
       if (bt_popup(port->book))
          closePortalBook(port, DOBOOK_WIPE_REUSE, false);
       else
-         closeBook(port, port->book, 0, false, false);
+         bookClose(port, port->book, 0, false, false);
    }
    // the timer may have been cleared, making the pointer invalid
    if (timer_valid(port->pup.timer))
@@ -4912,15 +4910,14 @@ frame_setheight(Frame *curfrp, int height) {
          );
       }
 
-      // Compute the number of lines we will take from others frames (can be negative!).
+      //Compute the number of lines we will take from others frames (can be negative!).
       take = height - curfrp->height;
 
-      // If there is not enough room, also reduce the height of a portal
-      // with 'portFixHeight' set.
+      //If there is not enough room, also reduce the height of a portal with 'portFixHeight' set.
       if (height > room + room_cmdline - room_reserved)
          room_reserved = room + room_cmdline - height;
-      // If there is only a 'portFixHeight' portal and making the
-      // portal smaller, need to make the other portal taller.
+      //If there is only a 'portFixHeight' portal and making the
+      //portal smaller, need to make the other portal taller.
       if (take < 0 && room - (int)curfrp->height < room_reserved)
           room_reserved = 0;
 
@@ -4932,11 +4929,11 @@ frame_setheight(Frame *curfrp, int height) {
          topframeG->height += room_cmdline;
       }
 
-      // set the current frame to the new height
+      //set the current frame to the new height
       frame_new_height(curfrp, height, false, false, true);
 
-      // First take lines from the frames after the current frame.  If
-      // that is not enough, takes lines from frames above the current frame.
+      //First take lines from the frames after the current frame.  If
+      //that is not enough, takes lines from frames above the current frame.
       for (run = 0; run < 2; ++run) {
          if (run == 0)
             fr = curfrp->next;   // 1st run: start with next portal
@@ -4977,7 +4974,7 @@ portSetWidth(int width, Portal* po) {
    // Always keep current portal at least one column wide
    if (po == curPor) {
       if (width < MIN_PORTAL_WIDTH)
-          width = MIN_PORTAL_WIDTH;
+         width = MIN_PORTAL_WIDTH;
    } ei (width < 0)
       width = 0;
 
@@ -5000,7 +4997,6 @@ private void
 frame_setwidth(Frame* curfrp, int width) {
    int room;      // total number of lines available
    int take;      // number of lines taken from other portals
-   int run;
    Frame* fr;
    int w;
    int room_reserved;
@@ -5027,7 +5023,7 @@ frame_setwidth(Frame* curfrp, int width) {
       //1: compute room available, if it's not enough try resizing the
       //   containing frame.
       //2: compute the room available and adjust the width to it.
-      for (run = 1; run <= 2; ++run) {
+      for (int run = 1; run <= 2; ++run) {
          room = 0;
          room_reserved = 0;
          FOR_ALL_FRAMES(fr, curfrp->parent->child) {
@@ -5066,7 +5062,7 @@ frame_setwidth(Frame* curfrp, int width) {
 
       // First take lines from the frames right of the current frame.  If
       // that is not enough, takes lines from frames left of the current frame.
-      for (run = 0; run < 2; ++run) {
+      for (int run = 0; run < 2; ++run) {
          if (run == 0)
            fr = curfrp->next;   // 1st run: start with next portal
          else
@@ -5178,7 +5174,7 @@ portDragStatusLine(Portal* dragwin, int offset) {
       fr = curfr->next;   // next frame gets smaller
 
    // Now make the other frames smaller.
-   while (fr != NULL && offset > 0) {
+   while (fr && offset > 0) {
       n = frame_minheight(fr, NULL);
       if ((int)fr->height - offset <= n) {
          offset -= fr->height - n;
@@ -5201,9 +5197,9 @@ portDragStatusLine(Portal* dragwin, int offset) {
 // Separator line of dragwin is dragged "offset" lines right (negative is left).
 void
 portDragVsepLine(Portal *dragwin, int offset) {
-   int      room;
-   int      left;   // if true, drag separator line left, otherwise right
-   int      n;
+   int room;
+   int left;   // if true, drag separator line left, otherwise right
+   int n;
 
    Frame* fr = dragwin->frame;
    if (fr == topframeG)      // only one portal (cannot happen?)
@@ -5294,9 +5290,9 @@ portDragVsepLine(Portal *dragwin, int offset) {
 void
 set_fraction(Portal* po) {
    if (po->height > 1)
-      // When cursor is in the first line the percentage is computed as if
-      // it's halfway that line.  Thus with two lines it is 25%, with three
-      // lines 17%, etc.  Similarly for the last line: 75%, 83%, etc.
+      //When cursor is in the first line the percentage is computed as if
+      //it's halfway that line.  Thus with two lines it is 25%, with three
+      //lines 17%, etc.  Similarly for the last line: 75%, 83%, etc.
       po->fraction = ((long)po->cursorRow * FRACTION_MULT + FRACTION_MULT / 2) / (long)po->height;
 }
 
@@ -5305,7 +5301,7 @@ set_fraction(Portal* po) {
 // frame or to other portal.
 private void
 portalNewHeight(Portal* po, int height) {
-   Unt      prevHeight = po->height;
+   Unt prevHeight = po->height;
 
    //Don't want a negative height.  Happens when splitting a tiny portal.
    //Will equalize heights soon to fix it.
@@ -5629,9 +5625,9 @@ plinesUpToCol(Portal *wp, LineNr lnum, long column) {
 
 void
 scroll_to_fraction(Portal* po, int prevHeight) {
-   LineNr   lnum;
-   int      sline, line_size;
-   int      height = po->height;
+   LineNr lnum;
+   int sline, line_size;
+   int height = po->height;
 
    // Don't change topLine in any of these cases:
    // - portal height is 0
@@ -5660,8 +5656,8 @@ scroll_to_fraction(Portal* po, int prevHeight) {
       }
 
       if (sline < 0) {
-         // Cursor line would go off top of screen if cursorRow was this high.
-         // Make cursor line the first line in the portal. If not enough room, use skipCol.
+         //Cursor line would go off top of screen if cursorRow was this high.
+         //Make cursor line the first line in the portal. If not enough room, use skipCol.
          po->cursorRow = line_size;
          if (po->cursorRow >= (int)po->height && (po->width - normalPortalColumnOffset(po)) > 0) {
             po->skipCol += po->width - normalPortalColumnOffset(po);

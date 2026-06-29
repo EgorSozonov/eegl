@@ -265,7 +265,7 @@ done:
 
 // "append(lnum, string/list)" function
 void
-f_append(Var *argvars, Var *returnVar) {
+f_append(Var *argvars, OUT Var* returnVar) {
    int      anyEmsgSaved = anyEmsgG;
    LineNr lnum = tv_get_lnum(&argvars[0]);
    if (anyEmsgG == anyEmsgSaved)
@@ -274,7 +274,7 @@ f_append(Var *argvars, Var *returnVar) {
 
 // Set or append lines to a book.
 private void
-setOrAppendLines(Arr(Var) argvars, Var *returnVar, Boole append) {
+setOrAppendLines(Arr(Var) argvars, OUT Var* returnVar, Boole append) {
    int anyEmsgSaved = anyEmsgG;
 
    Book* book = daGetBook(&argvars[0], false);
@@ -289,43 +289,43 @@ setOrAppendLines(Arr(Var) argvars, Var *returnVar, Boole append) {
 
 // "appendbufline(book, lnum, string/list)" function
 void
-f_appendbufline(Var *argvars, Var *returnVar) {
+f_appendbufline(Var *argvars, OUT Var* returnVar) {
    setOrAppendLines(argvars, returnVar, true);
 }
 
 // "bufadd(expr)" function
 void
-f_bufadd(Var *argvars, Var *returnVar) {
+f_bufadd(Var *argvars, OUT Var* returnVar) {
    CS name = tv_get_string(&argvars[0]);
    returnVar->number = bookOpen(*name == ZERO ? NULL : name, 0);
 }
 
 void
-f_bufexists(Var *argvars, Var *returnVar) {
+f_bufexists(Var *argvars, OUT Var* returnVar) {
    returnVar->number = (findBook(&argvars[0]) != NULL);
 }
 
 void
-f_buflisted(Var *argvars, Var *returnVar) {
+f_buflisted(Var *argvars, OUT Var* returnVar) {
    Book* book = findBook(&argvars[0]);
    returnVar->number = (book && book->o.bookListed);
 }
 
 void
-f_bufload(Arr(Var) argvars, Var *returnVar UNUSED) {
+f_bufload(Arr(Var) argvars, OUT Var* returnVar UNUSED) {
    Book* book = evGetBookArg(argvars);
    if (book)
       bookEnsureLoaded(book);
 }
 
 void
-f_bufloaded(Var *argvars, Var *returnVar) {
+f_bufloaded(Var *argvars, OUT Var* returnVar) {
    Book* book = findBook(&argvars[0]);
    returnVar->number = (book && book->mem.mfile);
 }
 
 void
-f_bufname(Var *argvars, Var *returnVar) {
+f_bufname(Var *argvars, OUT Var* returnVar) {
    Var* tv = &argvars[0];
    Book* book = (tv->tag == VAR_UNKNOWN) ? curBook : daGetBookFromArg(tv);
    returnVar->tag = VAR_STRING;
@@ -333,19 +333,17 @@ f_bufname(Var *argvars, Var *returnVar) {
 }
 
 void
-f_bufnr(Var *argvars, Var *returnVar) {
+f_bufnr(Var *argvars, OUT Var* returnVar) {
    Boole error = false;
-   CS name;
-
    Book* book = (argvars[0].tag == VAR_UNKNOWN) ? curBook : daGetBookFromArg(&argvars[0]);
 
    // If the book isn't found and the second argument is not 0, create a new book.
+   CS name;
    if (!book
         && argvars[1].tag != VAR_UNKNOWN
         && varGetNumberChk(&argvars[1], OUT &error) != 0
         && !error
         && (name = convertVarToStringSingleUse(&argvars[0])) != NULL
-        && !error
    )
       book = bookNew(name, NULL, (LineNr)1, 0);
 
@@ -356,7 +354,7 @@ f_bufnr(Var *argvars, Var *returnVar) {
 }
 
 private void
-bufPortalCommon(Var *argvars, Var *returnVar, int get_nr) {
+bufPortalCommon(Var* argvars, Var* returnVar, int get_nr) {
    Portal   *po;
    int      winnr = 0;
    Book* book = daGetBookFromArg(&argvars[0]);
@@ -370,18 +368,18 @@ bufPortalCommon(Var *argvars, Var *returnVar, int get_nr) {
 
 // "bufwinid(nr)" function
 void
-f_bufwinid(Var *argvars, Var *returnVar) {
+f_bufwinid(Var *argvars, Var* returnVar) {
    bufPortalCommon(argvars, returnVar, false);
 }
 
 // "bufwinnr(nr)" function
 void
-f_bufwinnr(Var *argvars, Var *returnVar){
+f_bufwinnr(Var *argvars, OUT Var* returnVar){
    bufPortalCommon(argvars, returnVar, true);
 }
 
 void
-f_deletebufline(Var *argvars, Var *returnVar) {
+f_deletebufline(Var *argvars, OUT Var* returnVar) {
    LineNr   last;
    LineNr   lnum;
    long   count;
@@ -515,7 +513,7 @@ getBookInfo(Book* book) {
 }
 
 void
-f_getbufinfo(Var *argvars, Var *returnVar) {
+f_getbufinfo(Var *argvars, OUT Var* returnVar) {
    Book   *book = NULL;
    Book   *argbuf = NULL;
    int      filtered = false;
@@ -622,18 +620,18 @@ getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist) {
 }
 
 void
-f_getbufline(Var *argvars, Var *returnVar) {
+f_getbufline(Var *argvars, OUT Var* returnVar) {
    getBookLineIntoVar(argvars, returnVar, true);
 }
 
 void
-f_getbufoneline(Var *argvars, Var *returnVar) {
+f_getbufoneline(Var *argvars, OUT Var* returnVar) {
    getBookLineIntoVar(argvars, returnVar, false);
 }
 
 //"getline(lnum, [end])" function
 void
-f_getline(Var *argvars, Var *returnVar) {
+f_getline(Var *argvars, OUT Var* returnVar) {
    LineNr   end;
    int      retlist;
    LineNr lnum = tv_get_lnum(argvars);
@@ -649,12 +647,12 @@ f_getline(Var *argvars, Var *returnVar) {
 }
 
 void
-f_setbufline(Var *argvars, Var *returnVar) {
+f_setbufline(Var *argvars, OUT Var* returnVar) {
    setOrAppendLines(argvars, returnVar, false);
 }
 
 void
-f_setline(Var *argvars, Var *returnVar) {
+f_setline(Var *argvars, OUT Var* returnVar) {
    int      anyEmsgSaved = anyEmsgG;
 
    LineNr lnum = tv_get_lnum(&argvars[0]);
@@ -1721,19 +1719,6 @@ private int freeCallCountS = 0;
 private int   top_file_num = 1;   // highest file number
 private ArrayList recycledFileNumberS = GA_EMPTY;   // file numbers to recycle
 
-private void
-trigger_undo_ftplugin(Book* book, Portal* port) {
-   portalLayout_lock();
-   book->locked++;
-   port->locked = true;
-   // b:undo_ftplugin may be set, undo it
-   executeCommLine(S"if exists('b:undo_ftplugin') | :legacy :exe \
-       b:undo_ftplugin | endif");
-   book->locked--;
-   port->locked = false;
-   portalLayout_unlock();
-}
-
 // Calculate the percentage that `part` is of the `whole`.
 private int
 calc_percentage(long part, long whole) {
@@ -1843,7 +1828,7 @@ bookOpenFromInvo(
    if (ml_open(curBook) == FAIL) {
       // There MUST be a memfile, otherwise we can't do anything
       // If we can't create one for the current book, take another book
-      closeBook(NULL, curBook, 0, false, false);
+      bookClose(NULL, curBook, 0, false, false);
       FOR_ALL_BOOKS(curBook) {
          if (curBook->mem.mfile)
             break;
@@ -2074,10 +2059,10 @@ canUnloadBook(Book* book) {
 //
 //Return true when we got to the end and countPortals was decremented.
 int
-closeBook(
+bookClose(
    Portal* port,      // if not NULL, set lastCursor
    Book* book,
-   int action,
+   Unt action,
    int abort_if_last,
    int ignore_abort
 ){
@@ -2555,15 +2540,14 @@ handle_swap_exists(BookRef *oldCurBook) {
       // book. If that book is gone or the same as the current one, open a new, empty book.
       swap_exists_action = SEA_NONE;   // don't want it again
       swap_exists_did_quit = true;
-      closeBook(curPor, curBook, DOBOOK_UNLOAD, false, false);
-      if (oldCurBook == NULL || !bookRefValid(oldCurBook)
-                        || oldCurBook->c == curBook) {
-          // Block autocommands here because curPor->book is NULL.
-          block_autocmds();
-          book = bookNew(NULL, NULL, 1L, BLN_CURBOOK | BLN_LISTED);
-          unblock_autocmds();
+      bookClose(curPor, curBook, DOBOOK_UNLOAD, false, false);
+      if (!oldCurBook || !bookRefValid(oldCurBook) || oldCurBook->c == curBook) {
+         // Block autocommands here because curPor->book is NULL.
+         block_autocmds();
+         book = bookNew(NULL, NULL, 1L, BLN_CURBOOK | BLN_LISTED);
+         unblock_autocmds();
       } else
-          book = oldCurBook->c;
+         book = oldCurBook->c;
       if (book) {
          int old_msg_silent = msg_silent;
 
@@ -2577,11 +2561,11 @@ handle_swap_exists(BookRef *oldCurBook) {
       // new aborting error, interrupt, or uncaught exception.
       leave_cleanup(&cs);
    } ei (swap_exists_action == SEA_RECOVER) {
-      // Reset the error/interrupt/exception state here so that
-      // aborting() returns false when closing a book.
+      //Reset the error/interrupt/exception state here so that
+      //aborting() returns false when closing a book.
       enter_cleanup(&cs);
 
-      // User selected Recover at ATTENTION prompt.
+      //User selected Recover at ATTENTION prompt.
       msg_scroll = true;
       ml_recover(false);
       msg_puts(S"\n");   // don't overwrite the last message
@@ -2596,10 +2580,7 @@ swap_exists_action = SEA_NONE;
 
 // Make the current book empty. Used when it is wiped out and it's the last book.
 private int
-emptyCurBook(
-   int portCloseOthers,
-   int forceit,
-   int action) {
+emptyCurBook(int portCloseOthers, Boole forceit, Unt action) {
    int retval;
    Book* book = curBook;
    BookRef bookRef;
@@ -2620,7 +2601,7 @@ emptyCurBook(
    // startEditingFile() may create a new book, then we have to delete the old one. But 
    // startEditingFile() may have done that already, check if the book still exists.
    if (book != curBook && bookRefValid(&bookRef) && book->countPortals == 0)
-      closeBook(NULL, book, action, false, false);
+      bookClose(NULL, book, action, false, false);
    if (!portCloseOthers)
       needFileinfoG = false;
    return retval;
@@ -2792,7 +2773,7 @@ bookDo(
             break;
       } 
       if (!bp && book == curBook)
-         return emptyCurBook(true, (flags & DOBOOK_FORCEIT), action);
+         return emptyCurBook(true, (flags & DOBOOK_FORCEIT) != 0, action);
 
       // If the deleted book is the current one, close the current portal (unless it's the only 
       // portal). Repeat this so long as we end up in a portal with this book.
@@ -2806,10 +2787,10 @@ bookDo(
 
       // If the book to be deleted is not the current one, delete it here.
       if (book != curBook) {
-          closePortalsInto(book, false);
-          if (book != curBook && bookRefValid(&bookRef) && book->countPortals <= 0)
-             closeBook(NULL, book, action, false, false);
-          return OK;
+         closePortalsInto(book, false);
+         if (book != curBook && bookRefValid(&bookRef) && book->countPortals <= 0)
+            bookClose(NULL, book, action, false, false);
+         return OK;
       }
 
       //Deleting the current book: Need to find another book to go to. There should be another, 
@@ -2901,7 +2882,7 @@ bookDo(
    if (!book) {
       // Autocommands must have wiped out all other books. Only option
       // now is to make the current book empty.
-      return emptyCurBook(false, (flags & DOBOOK_FORCEIT), action);
+      return emptyCurBook(false, (flags & DOBOOK_FORCEIT) != 0, action);
    }
 
    // make "book" the current book
@@ -3073,7 +3054,7 @@ bookSetCurBook(Book* book, int action) {
                 && ((stateG & MODE_INSERT) == 0 || curBook->countPortals <= 1)
          )
             u_sync(false);
-         closeBook(
+         bookClose(
             prevbuf == curPor->book ? curPor : NULL, prevbuf,
             unload ? action : 0,
             false, false
@@ -3234,7 +3215,7 @@ Book*
 bookNew(
    CS ffname_arg, // full path of fname or relative
    CS sfname_arg, // short fname or NULL
-   LineNr lnum,      // preferred cursor line
+   LineNr lnum,   // preferred cursor line
    Unt flags
 ) {                    // BLN_ defines
    CS fullFName = ffname_arg;
@@ -3251,10 +3232,11 @@ bookNew(
    if (!sfname || stat((char *)sfname, &st) < 0)
       st.st_dev = (Device)-1;
       
-   Book* book;
+   Book* book = null;
+   // found existing book with this file
    if (fullFName && (flags & (BLN_DUMMY | BLN_NEW)) == 0 
          && (book = booklistFindName_stat(fullFName, &st)) != NULL
-   ) { // found existing book with this file
+   ) {
       eeglFree(fullFName);
       if (lnum != 0)
          bookSetPosInPort(book, (flags & BLN_NOCURWIN) ? NULL : curPor, lnum, (ColNr)0, false);
@@ -3278,16 +3260,13 @@ bookNew(
    //Otherwise: Need to allocate a new book structure.
    //
    //This is the ONLY place where a new book structure is allocated!
-   //(A spell file book is allocated in spell.c, but that's not a normal book)
-   book = NULL;
    if ((flags & BLN_CURBOOK) != 0 && isCurBookReusable()) {
       BookRef bookRef;
       book = curBook;
       
       bookStoreInRef(OUT &bookRef, book);
-      trigger_undo_ftplugin(book, curPor);
-      // It's like this book is deleted.  Watch out for autocommands that
-      // change curBook! If that happens, allocate a new book anyway.
+      //It's like this book is deleted. Watch out for autocommands that
+      //change curBook! If that happens, allocate a new book anyway.
       bookFreeAll(book, BFA_WIPE | BFA_DEL);
       if (aborting()) {    // autocmds may abort script processing
          eeglFree(fullFName);
@@ -3296,7 +3275,7 @@ bookNew(
       if (!bookRefValid(&bookRef))
          book = NULL;      // book was deleted; allocate a new book
    }
-   if (book != curBook || curBook == NULL) {
+   if (book != curBook || !curBook) {
       book = ALLOC_CLEAR_ONE(Book);
       
       // init b: variables
@@ -3334,7 +3313,7 @@ bookNew(
 
       // Init the options.
       book->o.initialized = false;
-      book->o.modifiable = (flags & BLN_MODIFIABLE);
+      book->o.modifiable = (flags & BLN_MODIFIABLE) != 0;
       optsCopyToBook(book, BCO_ENTER);
    } else {
       // put the new book at the end of the book list
@@ -4193,7 +4172,7 @@ setfname(Book* book, CS ffname_arg, CS sfname_arg, Boole message) {   // give me
             return FAIL;
          }
          // delete from the list
-         closeBook(NULL, obook, DOBOOK_WIPE, false, false);
+         bookClose(NULL, obook, DOBOOK_WIPE, false, false);
       }
       sfname = copyStr(sfname);
       if (!fullFName || !sfname) {
@@ -5648,25 +5627,22 @@ bookSetBooklisted(Boole on) {
 
 //Read the file for "book" again and check if the contents changed.
 //Return true if it changed or this could not be checked.
-int
-buf_contents_changed(Book* book){
-   Boole differ = true;
-   LineNr lnum;
-   AutocommSave aco;
-   Invocation invo;
-
+Boole
+bookContentsChanged(Book* book){
    // Allocate a book without putting it in the book list.
    Book* new = bookNew(NULL, NULL, (LineNr)1, BLN_DUMMY);
    if (!new)
       return true;
 
    // Force the 'binary' option to be equal.
+   Invocation invo;
    if (prep_exarg(&invo, book) == FAIL) {
       bookWipe(new, false);
       return true;
    }
 
    // Set curPor/curBook to book and save a few things.
+   AutocommSave aco;
    auCommPrepareBook(&aco, new);
    if (curBook != new) {
       // Failed to find a portal for "new".
@@ -5676,6 +5652,7 @@ buf_contents_changed(Book* book){
 
    //We don't want to trigger autocommands now, they may have nasty side-effects like wiping books
    block_autocmds();
+   Boole differ = true;
    if (ml_open(curBook) == OK
        && readfile(
              book->fullFileName, book->currFileName, (LineNr)0, (LineNr)0, (LineNr)MAXLNUM,
@@ -5685,7 +5662,7 @@ buf_contents_changed(Book* book){
       // compare the two files line by line
       if (book->mem.lineCount == curBook->mem.lineCount) {
          differ = false;
-         for (lnum = 1; lnum <= curBook->mem.lineCount; ++lnum) {
+         for (LineNr lnum = 1; lnum <= curBook->mem.lineCount; ++lnum) {
             if (STRCMP(memGetLine(book, lnum, false), ml_get(lnum)) != 0) {
                 differ = true;
                 break;
@@ -5713,10 +5690,10 @@ bookWipe(Book* book, int aucmd) { // When true, trigger autocommands.
    if (book->fiNum == top_file_num - 1)
       --top_file_num;
 
-   if (!aucmd)          // Don't trigger BufDelete autocommands here.
+   if (aucmd == 0)          // Don't trigger BufDelete autocommands here.
       block_autocmds();
 
-   closeBook(NULL, book, DOBOOK_WIPE, false, true);
+   bookClose(NULL, book, DOBOOK_WIPE, false, true);
 
    if (!aucmd)
       unblock_autocmds();
@@ -5739,7 +5716,7 @@ printMsgWithWrap(CS s) {
 
 //List string items nicely aligned in columns. When "size" is < 0 then the last entry is marked 
 //with NULL. The entry with index "current" is inclosed in [].
-void
+private void
 listInColumns(Arr(CS) items, int size, int current, Boole useHilite) {
    Unt cur_row = 1;
    Unt itemCount = 0;
@@ -5821,8 +5798,8 @@ bookCompare(const void* s0, const void* s1) {
 
 // Structure to pass arguments from bookWrite() to writeBytes().
 typedef struct {
-   int fd;      // file descriptor
    CS bw_buf;   // buffer with data to be written
+   int fd;      // file descriptor
    int bw_len;      // length of data
    Book* tgt;   // book being written
    int bw_first;   // first write call
@@ -5834,7 +5811,7 @@ typedef struct {
 private int
 writeBytes(BwInfo* ip) {
    CS buf = ip->bw_buf;   // data to write
-   int      len = ip->bw_len;   // length of data
+   int len = ip->bw_len;   // length of data
 
    if (ip->fd < 0)
       // Only checking conversion, which is OK if we get here.
@@ -5933,7 +5910,7 @@ determineBackupFilename(CS fname, CS dname){
 //
 //This function must NOT use nameBuffG (because it's called by autowrite()).
 //
-//return FAIL for failure, OK otherwise
+//return FAIL for failure, NOTDONE for refusing to write, OK otherwise
 int
 bookWrite(
    Book* book,
@@ -5942,32 +5919,29 @@ bookWrite(
    LineNr start,
    LineNr end,
    Invocation* invo,      // for forced 'ff', can be NULL!
-   int append,      // append to the file
-   int forceit,
-   int reset_changed,
-   int filtering
+   Boole append,      // append to the file
+   Boole forceit,
+   Boole reset_changed,
+   Boole filtering
 ) {
+   if (IMMUTABLE) { //immutable books may not be saved. They are readonly
+      return FAIL;
+   }
+   
    int fd;
    CS backup = NULL;
-   int  backup_copy = false; // copy the original file?
+   int backup_copy = false; // copy the original file?
    CS s;
-   CS ptr;
    Byte c;
-   int len;
-   LineNr lnum;
-   long nchars;
    CS errmsg = NULL;
    int errmsg_allocated = false;
    CS errnum = NULL;
-   CS buffer;
    Byte smallbuf[SMALLBUFSIZE];
    CS backup_ext;
    int bufsize;
    long perm;          // file permissions
    int retval = OK;
-   int newfile = false;       // true if file doesn't exist yet
    int msg_save = msg_scroll;
-   int overwriting;       // true if writing over original
    int no_eol = false;       // no end-of-line written
    int device = false;       // writing to a device
    int prev_gotInterruptG = gotInterruptG;
@@ -5982,10 +5956,6 @@ bookWrite(
    Unt bkc = book->o.backupCopy;
    Pos orig_start = book->opStart;
    Pos orig_end = book->opEnd;
-   
-   if (!p_modifiable || !book->o.modifiable) { //immutable books may not be saved. They are readonly
-      return FAIL;
-   }
    
    if (!fname || *fname == ZERO)   // safety check
       return FAIL;
@@ -6029,10 +5999,7 @@ bookWrite(
    CS fullFName = fname;             // remember full fname
    fname = sfname;
 
-   if (book->fullFileName && fnamecmp(fullFName, book->fullFileName) == 0)
-      overwriting = true;
-   else
-      overwriting = false;
+   Boole overwriting = (book->fullFileName && fnamecmp(fullFName, book->fullFileName) == 0);
 
    if (isExitingG)
       termSetMode(TMODE_COOK);       // when exiting allow typeahead now
@@ -6210,7 +6177,7 @@ bookWrite(
       filemess(book, fname, S"", 0);   // show that we are busy
    msg_scroll = false;          // always overwrite the file message now
 
-   buffer = tryBigAlloc(WRITEBUFSIZE);
+   CS buffer = tryBigAlloc(WRITEBUFSIZE);
    if (buffer == NULL) { // can't allocate big buffer, use small
                          // one (to be able to write when out of memory)
       buffer = smallbuf;
@@ -6223,6 +6190,7 @@ bookWrite(
    stOld.st_dev = 0;
    stOld.st_ino = 0;
    perm = -1;
+   Boole newfile = false;       // true if file doesn't exist yet
    if (stat((char *)fname, &stOld) < 0)
       newfile = true;
    else {
@@ -6688,7 +6656,7 @@ endOfName:
    errmsg = NULL;
 
    writeInfo.bw_buf = buffer;
-   nchars = 0;
+   Long nchars = 0;
 
    // use "++bin", "++nobin" or 'binary'
    if (invo && invo->force_bin != 0)
@@ -6711,10 +6679,11 @@ endOfName:
    writeInfo.bw_len = bufsize;
    s = buffer;
    
-   len = 0; // main loop of writing data
+   int len = 0; // main loop of writing data
+   LineNr lnum;
    for (lnum = start; lnum <= end; ++lnum) {
       // The next while loop is done once for each character written. Keep it fast!
-      ptr = memGetLine(book, lnum, false) - 1;
+      CS ptr = memGetLine(book, lnum, false) - 1;
       if (write_undo_file)
          sha256_update(&sha_ctx, ptr + 1, (Unt)(STRLEN(ptr + 1) + 1));
       while ((c = *++ptr) != ZERO) {
@@ -8079,12 +8048,12 @@ f_argc(Var* argvars, Var* returnVar) {
 }
 
 void
-f_argidx(Var *argvars UNUSED, Var *returnVar) {
+f_argidx(Var *argvars UNUSED, OUT Var* returnVar) {
    returnVar->number = curPor->argListInd;
 }
 
 void
-f_arglistid(Var *argvars, Var *returnVar) {
+f_arglistid(Var *argvars, OUT Var* returnVar) {
    Portal   *po;
 
    returnVar->number = -1;
@@ -8095,7 +8064,7 @@ f_arglistid(Var *argvars, Var *returnVar) {
 
 // Get the argument list for a given portal
 private void
-get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, Var *returnVar) {
+get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, OUT Var* returnVar) {
    allocReturnList(returnVar);
    if (arglist) {
       for (Unt idx = 0; idx < argcount; ++idx)
@@ -8105,7 +8074,7 @@ get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, Var *returnVar) {
 
 // "argv(nr)" function
 void
-f_argv(Var *argvars, Var *returnVar) {
+f_argv(Var *argvars, OUT Var* returnVar) {
    ArgFileEntry   *arglist = NULL;
    Unt argcount = 0;
 
@@ -8233,7 +8202,7 @@ getBookNrFromArg(Var *arg, Book** book) {
 
 //prop_add({lnum}, {col}, {props})
 void
-f_prop_add(Var *argvars, Var *returnVar) {
+f_prop_add(Var *argvars, OUT Var* returnVar) {
    LineNr start_lnum = tv_get_number(&argvars[0]);
    ColNr start_col = tv_get_number(&argvars[1]);
    if (check_for_dict_arg(argvars, 2) == FAIL)
@@ -8410,7 +8379,7 @@ theend:
 //Second argument is a List where each item is a List with the following
 //entries: [lnum, start_col, end_col]
 void
-f_prop_add_list(Var *argvars, Var *returnVar UNUSED) {
+f_prop_add_list(Var *argvars, OUT Var* returnVar UNUSED) {
    Book   *book = curBook;
    int      id = 0;
    ListItem   *li;
@@ -8990,7 +8959,7 @@ text_prop_type_valid(Book* book, TextProp *prop) {
 
 //prop_clear({lnum} [, {lnum_end} [, {bufnr}]])
 void
-f_prop_clear(Var *argvars, Var *returnVar UNUSED) {
+f_prop_clear(Var *argvars, OUT Var* returnVar UNUSED) {
    Book    *book = curBook;
    int       did_clear = false;
 
@@ -9028,7 +8997,7 @@ f_prop_clear(Var *argvars, Var *returnVar UNUSED) {
 
 //prop_find({props} [, {direction}])
 void
-f_prop_find(Var *argvars, Var *returnVar) {
+f_prop_find(Var *argvars, OUT Var* returnVar) {
    Pos       *cursor = &curPor->cursor;
    Book       *book = curBook;
    int      start_pos_has_prop = 0;
@@ -9301,7 +9270,7 @@ errret:
 
 //prop_list({lnum} [, {bufnr}])
 void
-f_prop_list(Var *argvars, Var *returnVar) {
+f_prop_list(Var *argvars, OUT Var* returnVar) {
    LineNr   lnum;
    Book* book = curBook;
    int      add_lnum = false;
@@ -9383,7 +9352,7 @@ errret:
 
 // prop_remove({props} [, {lnum} [, {lnum_end}]])
 void
-f_prop_remove(Var *argvars, Var *returnVar) {
+f_prop_remove(Var *argvars, OUT Var* returnVar) {
    LineNr   start = 1;
    LineNr   end = 0;
    LineNr   lnum;
@@ -9658,19 +9627,19 @@ prop_type_set(Var *argvars, int add) {
 
 //prop_type_add({name}, {props})
 void
-f_prop_type_add(Var *argvars, Var *returnVar UNUSED) {
+f_prop_type_add(Var *argvars, OUT Var* returnVar UNUSED) {
    prop_type_set(argvars, true);
 }
 
 //prop_type_change({name}, {props})
 void
-f_prop_type_change(Var *argvars, Var *returnVar UNUSED) {
+f_prop_type_change(Var *argvars, OUT Var* returnVar UNUSED) {
    prop_type_set(argvars, false);
 }
 
 //prop_type_delete({name} [, {bufnr}])
 void
-f_prop_type_delete(Var *argvars, Var *returnVar UNUSED) {
+f_prop_type_delete(Var *argvars, OUT Var* returnVar UNUSED) {
    Book   *book = NULL;
 
    CS name = tv_get_string(&argvars[0]);
@@ -9706,7 +9675,7 @@ f_prop_type_delete(Var *argvars, Var *returnVar UNUSED) {
 
 //prop_type_get({name} [, {props}])
 void
-f_prop_type_get(Var *argvars, Var *returnVar) {
+f_prop_type_get(Var *argvars, OUT Var* returnVar) {
    CS name = tv_get_string(&argvars[0]);
    if (*name == ZERO) {
       showErrFmtMsg(_(e_invalid_argument_str), "\"\"");
@@ -9751,7 +9720,7 @@ list_types(EeSet *ht, List *l) {
 
 // prop_type_list([{bufnr}])
 void
-f_prop_type_list(Var *argvars, Var *returnVar) {
+f_prop_type_list(Var *argvars, OUT Var* returnVar) {
    allocReturnList(returnVar);
 
    Book* book = NULL;

@@ -976,7 +976,7 @@ LIST_TY(Unt)
 #define WILD_IGNORE_COMPLETESLASH   0x400
 #define WILD_NOERROR         0x800  // sets EW_NOERROR
 #define WILD_BUFLASTUSED    0x1000
-#define BOOK_DIFF_FILTER     0x2000
+#define BOOK_DIFF_FILTER    0x2000
 #define WILD_KEEP_SOLE_ITEM 0x4000
 #define WILD_MAY_EXPAND_PATTERN 0x8000
 #define WILD_FUNC_TRIGGER  0x10000 // called from wildtrigger()
@@ -1623,6 +1623,7 @@ typedef enum {
 # define caseInsensitiveCompareMaxCol(d, s)    \
    caseInsensitiveCompareNChars((Byte *)(d), (Byte *)(s), (int)MAXCOL)
 
+#define IMMUTABLE !curBook->o.modifiable || !p_modifiable
 
 #define eeStrpbrk(s, cs) (CS)strpbrk((char *)(s), (char *)(cs))
 
@@ -1668,7 +1669,6 @@ typedef unsigned short DisplayTick;   // display tick type
 #define INIT4(a, b, c, d) = {a, b, c, d}
 #define INIT5(a, b, c, d, e) = {a, b, c, d, e}
 #define INIT6(a, b, c, d, e, f) = {a, b, c, d, e, f}
-#define MAIN_C
 # endif
 #else // all other files
 #define EXTERN extern
@@ -1951,7 +1951,7 @@ EXTERN long p_mmp;     // @maxmempattern
 EXTERN CS p_mopt; // @messagesopt
 EXTERN long p_msc;     // @maxsearchcount
 EXTERN CS p_msm;  // @mkspellmem
-EXTERN int p_modifiable; // @modifiable
+EXTERN Boole p_modifiable; // command-line option "-R" (or "-M" - same thing)
 EXTERN long p_mouset;  // @mousetime
 EXTERN CS p_nf;   // @nrformats
 EXTERN CS p_opfunc; // @operatorfunc
@@ -3781,12 +3781,12 @@ typedef struct {
    void (*nativeCb)(Arr(Byte));
    Callback ch_callback;   // call when a msg is not handled
 
-   BookRef   bookref;   // book to read from or write to
-   int      ch_nomodifiable; // TRUE when book can be not 'modifiable'
-   int      ch_nomod_error;   // TRUE when e_modifiable was given
-   int      ch_buf_append;   // write appended lines instead top-bot
-   LineNr   ch_buf_top;   // next line to send
-   LineNr   ch_buf_bot;   // last line to send
+   BookRef bookref;   // book to read from or write to
+   int ch_nomodifiable; // TRUE when book can be not 'modifiable'
+   int ch_nomod_error;   // TRUE when e_modifiable was given
+   int ch_buf_append;   // write appended lines instead top-bot
+   LineNr ch_buf_top;   // next line to send
+   LineNr ch_buf_bot;   // last line to send
 } ChannelFd;
 
 struct Channel {
@@ -3825,38 +3825,38 @@ struct Channel {
    int  copyId;
 };
 
-#define JO_MODE          0x0001   // channel mode
-#define JO_IN_MODE       0x0002   // stdin mode
+#define JO_MODE           0x0001   // channel mode
+#define JO_IN_MODE        0x0002   // stdin mode
 #define JO_OUT_MODE       0x0004   // stdout mode
 #define JO_ERR_MODE       0x0008   // stderr mode
 #define JO_CALLBACK       0x0010   // channel callback
-#define JO_OUT_CALLBACK       0x0020   // stdout callback
-#define JO_ERR_CALLBACK       0x0040   // stderr callback
-#define JO_CLOSE_CALLBACK   0x0080   // "close_cb"
+#define JO_OUT_CALLBACK   0x0020   // stdout callback
+#define JO_ERR_CALLBACK   0x0040   // stderr callback
+#define JO_CLOSE_CALLBACK 0x0080   // "close_cb"
 #define JO_WAITTIME       0x0100   // only for ch_open()
-#define JO_TIMEOUT       0x0200   // all timeouts
-#define JO_OUT_TIMEOUT       0x0400   // stdout timeouts
-#define JO_ERR_TIMEOUT       0x0800   // stderr timeouts
-#define JO_PART          0x1000   // "part"
-#define JO_ID          0x2000   // "id"
-#define JO_STOPONEXIT       0x4000   // "stoponexit"
-#define JO_EXIT_CB       0x8000   // "exit_cb"
-#define JO_OUT_IO       0x10000   // "out_io"
-#define JO_ERR_IO       0x20000   // "err_io" (JO_OUT_IO << 1)
-#define JO_IN_IO       0x40000   // "in_io" (JO_OUT_IO << 2)
+#define JO_TIMEOUT        0x0200   // all timeouts
+#define JO_OUT_TIMEOUT    0x0400   // stdout timeouts
+#define JO_ERR_TIMEOUT    0x0800   // stderr timeouts
+#define JO_PART           0x1000   // "part"
+#define JO_ID             0x2000   // "id"
+#define JO_STOPONEXIT     0x4000   // "stoponexit"
+#define JO_EXIT_CB        0x8000   // "exit_cb"
+#define JO_OUT_IO         0x10000   // "out_io"
+#define JO_ERR_IO         0x20000   // "err_io" (JO_OUT_IO << 1)
+#define JO_IN_IO          0x40000   // "in_io" (JO_OUT_IO << 2)
 #define JO_OUT_NAME       0x80000   // "out_name"
 #define JO_ERR_NAME       0x100000   // "err_name" (JO_OUT_NAME << 1)
-#define JO_IN_NAME       0x200000   // "in_name" (JO_OUT_NAME << 2)
-#define JO_IN_TOP       0x400000   // "in_top"
-#define JO_IN_BOT       0x800000   // "in_bot"
-#define JO_OUT_BUF       0x1000000   // "out_buf"
-#define JO_ERR_BUF       0x2000000   // "err_buf" (JO_OUT_BUF << 1)
-#define JO_IN_BUF       0x4000000   // "in_buf" (JO_OUT_BUF << 2)
-#define JO_CHANNEL       0x8000000   // "channel"
-#define JO_BLOCK_WRITE       0x10000000   // "block_write"
-#define JO_OUT_MODIFIABLE   0x20000000   // "out_modifiable"
-#define JO_ERR_MODIFIABLE   0x40000000   // "err_modifiable" (JO_OUT_ << 1)
-#define JO_ALL          0x7fffffff
+#define JO_IN_NAME        0x200000   // "in_name" (JO_OUT_NAME << 2)
+#define JO_IN_TOP         0x400000   // "in_top"
+#define JO_IN_BOT         0x800000   // "in_bot"
+#define JO_OUT_BUF        0x1000000   // "out_buf"
+#define JO_ERR_BUF        0x2000000   // "err_buf" (JO_OUT_BUF << 1)
+#define JO_IN_BUF         0x4000000   // "in_buf" (JO_OUT_BUF << 2)
+#define JO_CHANNEL        0x8000000   // "channel"
+#define JO_BLOCK_WRITE    0x10000000   // "block_write"
+#define JO_OUT_MODIFIABLE 0x20000000   // "out_modifiable"
+#define JO_ERR_MODIFIABLE 0x40000000   // "err_modifiable" (JO_OUT_ << 1)
+#define JO_ALL            0x7fffffff
 
 #define JO2_OUT_MSG       0x0001   // "out_msg"
 #define JO2_ERR_MSG       0x0002   // "err_msg" (JO_OUT_ << 1)
@@ -4662,7 +4662,6 @@ struct Portal { //:Portal
    
    int scroll; // scroll height
 
-   int statusHeight; //number of status lines (0 or 1)
    int portalCol;    //Leftmost column of portal in window
    Unt width;        //Width of portal, excluding separation.
    int vsepWidth;    //Number of separator columns (0 or 1).
@@ -5981,7 +5980,6 @@ EXTERN int countDecosG; // length of decorationsG
 EXTERN Boole skip_term_loop INIT(= false);
 EXTERN VTermColor defaultFgColorG INIT(= 7);
 EXTERN VTermColor defaultBgColorG INIT(= 0);
-EXTERN VTermColor defaultUnderlColorG INIT(= 1);
 EXTERN Boole currentlyBoldG INIT(= false);
 
 EXTERN Boole autocmd_busy INIT(= false);   // Is apply_autocmds() busy?
@@ -6850,7 +6848,7 @@ EXTERN Byte e_use_bang_to_write_partial_buffer[]
 EXTERN Byte e_no_file_name_for_buffer_nr[]
    INIT(= "E141: No file name for buffer %ld");
 EXTERN Byte e_file_not_written_writing_is_disabled_by_write_option[]
-   INIT(= "E142: File not written: Writing is disabled by 'write' option");
+   INIT(= "E142: File not written: Writing is disabled by @modifiable option or -R or -M arg");
 EXTERN Byte e_autocommands_unexpectedly_deleted_new_buffer_str[]
    INIT(= "E143: Autocommands unexpectedly deleted new buffer %s");
 EXTERN Byte e_non_numeric_argument_to_z[]
@@ -9210,8 +9208,6 @@ EXTERN Byte e_duplicate_type_var_name_str[]
    INIT(= "E1561: Duplicate type variable name: %s");
 EXTERN Byte e_diff_anchors_with_hidden_windows[]
    INIT(= "E1562: Diff anchors cannot be used with hidden diff portals");
-EXTERN Byte e_cannot_disable_unmodifiable[]
-   INIT(= "E1563: The 'modifiable' option cannot be disabled once it's set");
 EXTERN Byte e_use_get_not_set_for_reading_options[]
    INIT(= "E1564: Use :get, not :set, for reading option values");
 EXTERN Byte e_argument_must_not_be_negative[]

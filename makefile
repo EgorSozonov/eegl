@@ -1080,26 +1080,20 @@ indices: src/commands.h src/actions.h
 COMPILE = $(CC) -c -iquote $(srcdir) $(ALL_FLAGS)
 CClink = $(CC)
 
-# MAIN.
-# Link the target for normal use or debugging.
+# MAIN. LINK the target for normal use or debugging.
 # A shell script is used to try linking without unnecessary libraries.
 $(EEGLTARGET): $(OBJ)
-	#@LINK="$(CClink) $(LDFLAGS) \
-	#	-o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)" \
-	#	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
-	#	PROG="eegl" \
-	#	bash link.sh
 	$(CClink) $(LDFLAGS) -o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)
-	@echo '                                 '
-	@echo '                    .^^~-.       '
-	@echo '                    / ,__`)      '
-	@echo "                   |   \o/|'--.  "
-	@echo "    BUILD SUCCESS!  \     /___ \ "
-	@echo "                     \    '---\/ "
-	@echo '                    /     \      '
-	@echo '                   / ,  ,  \     '
-	@echo "                   \`-'--'--'    "
-	@echo "                                 "
+	@echo "                               "
+	@echo "         .^^~-.                "
+	@echo '         / ,__`)               '
+	@echo "        |   \o/|'--.           "
+	@echo "  BUILD  \     /___ \ SUCCESS! "
+	@echo "         |     '---\/          "
+	@echo "         /     \               "
+	@echo "        / ,  ,  \              "
+	@echo "        \`-'--'--'             "
+	@echo "                               "
 
 # Build the language specific files if they were unpacked.
 # Generate the converted .mo files separately, it's no problem if this fails.

@@ -6671,7 +6671,7 @@ fiCheckBookTimestamp(
          }
          //Check if the file contents really changed to avoid giving a warning when only the 
          //timestamp was set (e.g., checked out of CVS).  Always warn when the buffer was changed.
-         ei (orig_size != book->origSize || buf_contents_changed(book)) {
+         ei (orig_size != book->origSize || bookContentsChanged(book)) {
             reason = S"changed";
             reasonlen = STRLEN_LITERAL("changed");
          } ei (orig_mode != book->origMode) {
