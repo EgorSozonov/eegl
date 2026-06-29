@@ -48,7 +48,7 @@ private void frame_append(Frame *after, Frame *fr);
 private void frame_insert(Frame *before, Frame *fr);
 private void frame_remove(Frame *fr);
 private void frame_add_height(Frame *fr, int n);
-private void last_status_rec(Frame *fr, int statusline);
+private void last_status_rec(Frame *fr);
 private void frame_flatten(Frame *fr);
 private void restoreFrame(Portal* po, Byte dir, Frame *unflat_altfr);
 
@@ -123,7 +123,7 @@ Boole
 portalLayout_locked(CommIndex cmd) {
    if (split_disallowed > 0 || close_disallowed > 0) {
       if (close_disallowed == 0 && cmd == C_tabnew)
-         emsg(_(e_cannot_split_portal_when_closing_buffer));
+         emsg(_(e_cannot_split_portal_when_closing_book));
       else
          emsg(_(e_not_allowed_to_change_portal_layout_in_this_autocmd));
       return true;
@@ -890,7 +890,7 @@ check_split_disallowed(Portal* po) {
       return FAIL;
    }
    if (po->book->lockedSplit) {
-      emsg(_(e_cannot_split_portal_when_closing_buffer));
+      emsg(_(e_cannot_split_portal_when_closing_book));
       return FAIL;
    }
    return OK;
@@ -954,7 +954,6 @@ splitPortal_ins(
    Portal* oldPortal;
    int      new_size = size;
    int      i;
-   int      need_status = 0;
    int      do_equal = false;
    int      needed;
    int      available;
@@ -980,27 +979,17 @@ splitPortal_ins(
    else
       oldPortal = curPor;
 
-   // add a status line when splitting the first portal
-   if (ONLY_ONE_PORTAL && oldPortal->statusHeight == 0) {
-      if (!(flags & WSP_FORCE_ROOM) && VISIBLE_HEIGHT(oldPortal) <= MIN_PORTAL_HEIGHT) {
-         emsg(_(e_not_enough_room));
-         goto theend;
-      }
-      need_status = STATUS_HEIGHT;
-   }
-
    if ((flags & WSP_VERT) != 0) {
-      int   wmw1;
-      int   minwidth;
-
       layout = FR_ROW;
 
       //Check if we are able to split the current portal and compute its width.
       // Current portal requires at least 1 space.
-      wmw1 = MIN_PORTAL_WIDTH;
+      int wmw1 = MIN_PORTAL_WIDTH;
       needed = wmw1 + 1;
       if (flags & WSP_ROOM)
          needed += p_wiw - wmw1;
+         
+      int minwidth;
       if (flags & (WSP_BOT | WSP_TOP)) {
          minwidth = frame_minwidth(topframeG, NOPORT);
          available = topframeG->width;
@@ -1023,7 +1012,7 @@ splitPortal_ins(
          available = oldPortal->frame->width;
          needed += minwidth;
       }
-      if (!(flags & WSP_FORCE_ROOM) && available < needed) {
+      if ((flags & WSP_FORCE_ROOM) == 0&& available < needed) {
          emsg(_(e_not_enough_room));
          goto theend;
       }
@@ -1069,11 +1058,11 @@ splitPortal_ins(
       if (flags & WSP_ROOM)
           needed += p_wh - wmh1;
       if (flags & (WSP_BOT | WSP_TOP)) {
-          minheight = frame_minheight(topframeG, NOPORT) + need_status;
+          minheight = frame_minheight(topframeG, NOPORT);
           available = topframeG->height;
           needed += minheight;
       } ei (p_ea) {
-         minheight = frame_minheight(oldPortal->frame, NOPORT) + need_status;
+         minheight = frame_minheight(oldPortal->frame, NOPORT);
          prevfrp = oldPortal->frame;
          for (fr = oldPortal->frame->parent; fr != NULL; fr = fr->parent) {
             if (fr->layout == FR_COL) {
@@ -1087,7 +1076,7 @@ splitPortal_ins(
          available = topframeG->height;
          needed += minheight;
       } else {
-          minheight = frame_minheight(oldPortal->frame, NOPORT) + need_status;
+          minheight = frame_minheight(oldPortal->frame, NOPORT);
           available = oldPortal->frame->height;
           needed += minheight;
       }
@@ -1096,10 +1085,6 @@ splitPortal_ins(
           goto theend;
       }
       oldPortal_height = oldPortal->height;
-      if (need_status) {
-          oldPortal->statusHeight = STATUS_HEIGHT;
-          oldPortal_height -= STATUS_HEIGHT;
-      }
       if (new_size == 0)
           new_size = oldPortal_height / 2;
       if (new_size > available - minheight - STATUS_HEIGHT)
@@ -1111,8 +1096,8 @@ splitPortal_ins(
       if (oldPortal_height - new_size - STATUS_HEIGHT < MIN_PORTAL_HEIGHT)
           do_equal = true;
 
-      // We don't like to take lines for the new portal from a
-      // 'portfixheight' portal.  Take them from a portal above or below instead, if possible.
+      //We don't like to take lines for the new portal from a
+      //'portfixheight' portal.  Take them from a portal above or below instead, if possible.
       if (oldPortal->o.portFixHeight) {
          // Set fraction now so that the cursor keeps the same relative
          // vertical position using the old height.
@@ -1121,8 +1106,6 @@ splitPortal_ins(
 
          portSetHeight(oldPortal->height + new_size + STATUS_HEIGHT, oldPortal);
          oldPortal_height = oldPortal->height;
-         if (need_status)
-            oldPortal_height -= STATUS_HEIGHT;
       }
 
       // Only make all portals the same height if one of them (except oldPortal)
@@ -1195,13 +1178,13 @@ splitPortal_ins(
    } else {
    curfrp = oldPortal->frame;
    if (flags & WSP_BELOW)
-       before = false;
+      before = false;
    ei (flags & WSP_ABOVE)
-       before = true;
+      before = true;
    ei (flags & WSP_VERT)
-       before = !p_spr;
+      before = !p_spr;
    else
-       before = !p_sb;
+      before = !p_sb;
    }
    if (curfrp->parent == NULL || curfrp->parent->layout != layout) {
       // Need to create a new frame in the tree to make a branch.
@@ -1244,20 +1227,14 @@ splitPortal_ins(
    if (flags & WSP_VERT) {
       po->scroll = curPor->scroll;
 
-      if (need_status) {
-         portalNewHeight(oldPortal, oldPortal->height - 1);
-         oldPortal->statusHeight = need_status;
-      }
-      if (flags & (WSP_TOP | WSP_BOT)) {
+      if ((flags & (WSP_TOP | WSP_BOT)) != 0) {
          // set height and row of new portal to full height
          po->portalRow = 0;
          portalNewHeight(po, curfrp->height - 1);
-         po->statusHeight = 1;
       } else {
          // height and row of new portal is same as current portal
          po->portalRow = oldPortal->portalRow;
          portalNewHeight(po, VISIBLE_HEIGHT(oldPortal));
-         po->statusHeight = oldPortal->statusHeight;
       }
       fr->height = curfrp->height;
 
@@ -1265,44 +1242,42 @@ splitPortal_ins(
       // one column for the vertical separator
       portalNewWidth(po, new_size);
       if (before)
-          po->vsepWidth = 1;
+         po->vsepWidth = 1;
       else {
-          po->vsepWidth = oldPortal->vsepWidth;
-          oldPortal->vsepWidth = 1;
+         po->vsepWidth = oldPortal->vsepWidth;
+         oldPortal->vsepWidth = 1;
       }
       if (flags & (WSP_TOP | WSP_BOT)) {
-          if (flags & WSP_BOT)
-         frame_add_vsep(curfrp);
-          // Set width of neighbor frame
-          frameNewWidth(curfrp, curfrp->width
+         if (flags & WSP_BOT)
+            frame_add_vsep(curfrp);
+         // Set width of neighbor frame
+         frameNewWidth(curfrp, curfrp->width
               - (new_size + ((flags & WSP_TOP) != 0)), flags & WSP_TOP, false);
-      }
-      else
-          portalNewWidth(oldPortal, oldPortal->width - (new_size + 1));
+      } else
+         portalNewWidth(oldPortal, oldPortal->width - (new_size + 1));
       if (before) {  // new portal left of current one
-          po->portalCol = oldPortal->portalCol;
-          oldPortal->portalCol += new_size + 1;
+         po->portalCol = oldPortal->portalCol;
+         oldPortal->portalCol += new_size + 1;
       } else      // new portal right of current one
-          po->portalCol = oldPortal->portalCol + oldPortal->width + 1;
+         po->portalCol = oldPortal->portalCol + oldPortal->width + 1;
       frame_fix_width(oldPortal);
       frame_fix_width(po);
    } else {
       // width and column of new portal is same as current portal
       if (flags & (WSP_TOP | WSP_BOT)) {
-          po->portalCol = firstPor->portalCol;
-          portalNewWidth(po, topframeG->width);
-          po->vsepWidth = 0;
+         po->portalCol = firstPor->portalCol;
+         portalNewWidth(po, topframeG->width);
+         po->vsepWidth = 0;
       } else {
-          po->portalCol = oldPortal->portalCol;
-          portalNewWidth(po, oldPortal->width);
-          po->vsepWidth = oldPortal->vsepWidth;
+         po->portalCol = oldPortal->portalCol;
+         portalNewWidth(po, oldPortal->width);
+         po->vsepWidth = oldPortal->vsepWidth;
       }
       fr->width = curfrp->width;
 
       // "new_size" of the current portal goes to the new portal, use
       // one row for the status line
       portalNewHeight(po, new_size);
-      int old_status_height = oldPortal->statusHeight;
       if (flags & (WSP_TOP | WSP_BOT)) {
          int new_height = curfrp->height - new_size;
 
@@ -1314,35 +1289,22 @@ splitPortal_ins(
          portalNewHeight(oldPortal, oldPortal_height - (new_size + STATUS_HEIGHT));
       if (before) {   // new portal above current one
          po->portalRow = oldPortal->portalRow;
-         po->statusHeight = STATUS_HEIGHT;
          oldPortal->portalRow += po->height + STATUS_HEIGHT;
       } else {     // new portal below current one
          po->portalRow = oldPortal->portalRow + VISIBLE_HEIGHT(oldPortal) + STATUS_HEIGHT;
-         po->statusHeight = old_status_height;
-         if (!(flags & WSP_BOT))
-            oldPortal->statusHeight = STATUS_HEIGHT;
       }
       frame_fix_height(po);
       frame_fix_height(oldPortal);
    }
 
-   if (flags & (WSP_TOP | WSP_BOT))
+   if ((flags & (WSP_TOP | WSP_BOT)) != 0)
       computePosPortal();
 
-    // Both portals need redrawing.  Update all status lines, in case they
-    // show something related to the portal count or position.
+    //Both portals need redrawing.  Update all status lines, in case they
+    //show something related to the portal count or position.
     redrawPortLater(po, UPD_NOT_VALID);
     redrawPortLater(oldPortal, UPD_NOT_VALID);
     status_redraw_all();
-
-   if (need_status) {
-      msgRowG = visibleRowsG - 1;
-      msgColG = shownCommandColG;
-      msg_clr_eos_force();   // Old command/ruler may still be there
-      computeColumnsForRulerAndCommand();
-      msgRowG = visibleRowsG - 1;
-      msgColG = 0;   // put position back at start of line
-   }
 
    // equalize the portal sizes.
    if (do_equal || dir != 0) {
@@ -1355,7 +1317,7 @@ splitPortal_ins(
    } 
 
    // Don't change the portal height/width to 'winheight' / 'winwidth' if a size was given.
-   if (flags & WSP_VERT) {
+   if ((flags & WSP_VERT) != 0) {
       i = p_wiw;
       if (size != 0)
          p_wiw = size;
@@ -1381,9 +1343,9 @@ theend:
 }
 
 
-// Initialize portal "newp" from portal "oldp". Used when splitting a portal and when creating a 
-// new tab. The portals will both edit the same book. WSP_NEWLOC may be specified in flags to 
-// prevent the location list from being copied.
+//Initialize portal "newp" from portal "oldp". Used when splitting a portal and when creating a 
+//new tab. The portals will both edit the same book. WSP_NEWLOC may be specified in flags to 
+//prevent the location list from being copied.
 private void
 init(Portal* newp, Portal* oldp, Unt flags UNUSED) {
    newp->book = oldp->book;
@@ -1530,7 +1492,7 @@ makePortals(Unt count, Boole vertical) {
          / (MIN_PORTAL_WIDTH + 1);
    } else {
       // Each portal needs at least MIN_PORTAL_HEIGHT lines and a status line.
-      maxcountTentative = (VISIBLE_HEIGHT(curPor) + curPor->statusHeight
+      maxcountTentative = (VISIBLE_HEIGHT(curPor) + STATUS_HEIGHT
                  - (p_wh - MIN_PORTAL_HEIGHT)) / (MIN_PORTAL_HEIGHT + STATUS_HEIGHT);
    }
 
@@ -1540,7 +1502,7 @@ makePortals(Unt count, Boole vertical) {
 
    // add status line now, otherwise first portal will be too big
    if (count > 1)
-      last_status(true);
+      last_status();
 
    // Don't execute autocommands while creating the portals.  Must do that
    // when putting the books in the portals.
@@ -1627,9 +1589,6 @@ exchangePortal(long prenum) {
       else
          frame_append(fr2, po->frame);
    }
-   temp = curPor->statusHeight;
-   curPor->statusHeight = po->statusHeight;
-   po->statusHeight = temp;
    temp = curPor->vsepWidth;
    curPor->vsepWidth = po->vsepWidth;
    po->vsepWidth = temp;
@@ -1702,9 +1661,7 @@ rotatePortals(int upwards, int count) {
       }
 
       // exchange status height and vsep width of old and new last portal
-      n = po1->statusHeight;
-      po1->statusHeight = po0->statusHeight;
-      po0->statusHeight = n;
+      n = STATUS_HEIGHT;
       frame_fix_height(po0);
       frame_fix_height(po1);
       n = po1->vsepWidth;
@@ -1725,7 +1682,7 @@ rotatePortals(int upwards, int count) {
 //Returns FAIL for failure, OK otherwise.
 int
 splitPortalmove(Portal* po, int size, Unt flags) {
-   int      height = po->height;
+   int height = po->height;
 
    if (ONLY_ONE_PORTAL)
       return OK;   // nothing to do
@@ -1738,7 +1695,7 @@ splitPortalmove(Portal* po, int size, Unt flags) {
    Byte dir;
    portRemoveFrame(po, OUT &dir, NULL, OUT &unflat_altfr);
    removePortal(po, NULL);
-   last_status(false);       // may need to remove last status line
+   last_status();       // may need to remove last status line
    computePosPortal();   // recompute portal positions
 
    // Split a portal on the desired side and put "po" there.
@@ -1750,8 +1707,8 @@ splitPortalmove(Portal* po, int size, Unt flags) {
       return FAIL;
    }
 
-   // If splitting horizontally, try to preserve height.
-   // Note that splitPortal_ins autocommands may have immediately closed "po"!
+   //If splitting horizontally, try to preserve height.
+   //Note that splitPortal_ins autocommands may have immediately closed "po"!
    if (size == 0 && !(flags & WSP_VERT) && portalIsValid(po)) {
       portSetHeight(height, po);
       if (p_ea) {
@@ -1767,8 +1724,6 @@ splitPortalmove(Portal* po, int size, Unt flags) {
 //portal. Only works within the same frame!
 void
 portMoveAfter(Portal* port0, Portal* port1) {
-   int height;
-
    // check if the arguments are reasonable
    if (port0 == port1)
       return;
@@ -1776,15 +1731,12 @@ portMoveAfter(Portal* port0, Portal* port1) {
    // check if there is something to do
    if (port1->next != port0) {
       if (port0->frame->parent != port1->frame->parent) {
-          internalErrMsg((CS)"Trying to move a portal into another frame");
-          return;
+         internalErrMsg((CS)"Trying to move a portal into another frame");
+         return;
       }
 
       // may need to move the status line/vertical separator of the last portal
       if (port0 == lastPor) {
-         height = port0->prev->statusHeight;
-         port0->prev->statusHeight = port0->statusHeight;
-         port0->statusHeight = height;
          if (port0->prev->vsepWidth == 1) {
             // Remove the vertical separator from the last-but-one portal,
             // add it to the last portal.  Adjust the frame widths.
@@ -1794,9 +1746,6 @@ portMoveAfter(Portal* port0, Portal* port1) {
             port0->frame->width += 1;
          }
       } ei (port1 == lastPor) {
-         height = port0->statusHeight;
-         port0->statusHeight = port1->statusHeight;
-         port1->statusHeight = height;
          if (port0->vsepWidth == 1) {
             // Remove the vertical separator from port0, add it to the last
             // portal, port1.  Adjust the frame widths.
@@ -1908,8 +1857,8 @@ equalizeHeightRec(
                       new_size = p_wiw;
                } else
                   // These portals don't use up room.
-                  totalPortCount -= (n + (fr->next == NULL ? extra_sep : 0)) 
-                                    / (MIN_PORTAL_WIDTH + 1);
+                  totalPortCount -= 
+                     (n + (fr->next == NULL ? extra_sep : 0)) / (MIN_PORTAL_WIDTH + 1);
                room -= new_size - n;
                if (room < 0) {
                   new_size += room;
@@ -2165,8 +2114,8 @@ closePortalsInto(Book* book, Boole keep_curPor)  {     // don't close "curPor"
 
    for (po = firstPor; po && !ONLY_ONE_PORTAL; ) {
       if (po->book == book && (!keep_curPor || po != curPor)
-         && !(portalLocked(po) || po->book->locked > 0))
-      {
+         && !(portalLocked(po) || po->book->locked > 0)
+      ) {
          if (closePortal(po, false) == FAIL)
             // If closing the portal fails give up, to avoid looping forever.
             break;
@@ -2386,7 +2335,7 @@ closePortal(Portal* port, int free_buf) {
    if (portalIsValid(port) && port->book == NULL && !portalIsPopup(port) && lastPortal()) {
       // Autocommands have closed all portals, quit now.  Restore
       // curPor->book, otherwise writing eeglinfo may fail.
-      if (curPor->book == NULL)
+      if (!curPor->book)
          curPor->book = curBook;
       exitEegl(0);
    }
@@ -2451,9 +2400,9 @@ closePortal(Portal* port, int free_buf) {
    }
 
    //If last portal has a status line now and we don't want one, remove the
-   //status line.  Do this before portEqualizeHeight(), because it may change the
+   //status line. Do this before portEqualizeHeight(), because it may change the
    //height of a portal
-   last_status(false);
+   last_status();
 
    if (p_ea && (p_ead == EAD_BOTH || p_ead == dir))
       // If the frame of the closed portal contains the new current portal,
@@ -2492,7 +2441,7 @@ closePortal(Portal* port, int free_buf) {
             ++diffcount;
       } 
       if (diffcount == 1)
-         executeCommLine((CS)"diffoff!");
+         executeCommLine(S"diffoff!");
    }
 
    redraw_all_later(UPD_NOT_VALID);
@@ -2823,7 +2772,7 @@ closePortal_othertab(Portal* port, int free_buf, Tab *t) {
    // Trigger WinClosed just before starting to free portal-related resources.
    // If the buffer is NULL, it isn't safe to trigger autocommands,
    // and closePortal() should have already triggered WinClosed.
-   if (port->book != NULL) {
+   if (port->book) {
       triggerPortalClosed(port);
       // autocmd may have freed the portal already.
       if (!doesPortalExistInAnyTab(port))
@@ -3000,7 +2949,7 @@ portRemoveFrame(
    } else {
       // When 'portfixwidth' is set, try to find another frame in the column
       // (as close to the closed frame as possible) to distribute the width to.
-      if (fr2->port != NULL && fr2->port->o.portFixWidth) {
+      if (fr2->port && fr2->port->o.portFixWidth) {
          fr = frp_close->prev;
          frp3 = frp_close->next;
          while (fr || frp3) {
@@ -3105,10 +3054,6 @@ restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr) {
    if (po->vsepWidth == 0 && fr->parent->layout == FR_ROW && fr->prev)
       frame_add_vsep(fr->prev);
 
-   //Statuslines above may have been lost.  Restore them.
-   if (po->statusHeight == 0 && fr->parent->layout == FR_COL && fr->prev)
-      frame_add_statusline(fr->prev);
-
    //Restore the lost room that was redistributed to the altframe.  Also
    //adjusts portal sizes to fit restored statuslines/separators, if needed.
    if (dir == EAD_VERTICAL) {
@@ -3183,7 +3128,7 @@ getAltFrame(Portal* port, Tab* t) {     // tab "port" is in, NULL for current
    return target_fr;
 }
 
-// Return the tabpage that will be used if the current one is closed.
+// Return the tab that will be used if the current one is closed.
 private Tab *
 altTab(void) {
    // Use the last accessed tab, if possible.
@@ -3254,7 +3199,7 @@ frame_new_height(
    }
    if (topfrp->port) {
       // Simple case: just one portal.
-      portalNewHeight(topfrp->port, height - topfrp->port->statusHeight);
+      portalNewHeight(topfrp->port, height - STATUS_HEIGHT);
    } ei (topfrp->layout == FR_ROW) {
       do {
          // All frames in this row get the same new height.
@@ -3375,18 +3320,15 @@ frame_fixed_width(Frame* fr) {
 //Add a status line to portals at the bottom of "fr". Note: Does not check if there is room!
 private void
 frame_add_statusline(Frame* fr) {
-   Portal* po;
 
    if (fr->layout == FR_LEAF) {
-      po = fr->port;
-      po->statusHeight = STATUS_HEIGHT;
    } ei (fr->layout == FR_ROW) {
       // Handle all the frames in the row.
       FOR_ALL_FRAMES(fr, fr->child)
          frame_add_statusline(fr);
    } else { // fr->layout == FR_COL
       // Only need to handle the last frame in the column.
-      for (fr = fr->child; fr->next != NULL; fr = fr->next)
+      for (fr = fr->child; fr->next; fr = fr->next)
           ;
       frame_add_statusline(fr);
    }
@@ -3520,7 +3462,7 @@ frame_fix_width(Portal* po) {
 //Set frame height from the portal it contains.
 private void
 frame_fix_height(Portal* po) {
-   po->frame->height = VISIBLE_HEIGHT(po) + po->statusHeight;
+   po->frame->height = VISIBLE_HEIGHT(po) + STATUS_HEIGHT;
 }
 
 //Compute the minimal height for frame "topfrp".
@@ -3534,10 +3476,10 @@ frame_minheight(Frame* topfrp, Portal* next_curPor) {
 
    if (topfrp->port) {
       if (topfrp->port == next_curPor)
-         m = p_wh + topfrp->port->statusHeight;
+         m = p_wh + STATUS_HEIGHT;
       else {
          // portal: minimal height of the portal plus status line
-         m = MIN_PORTAL_HEIGHT + topfrp->port->statusHeight;
+         m = MIN_PORTAL_HEIGHT + STATUS_HEIGHT;
       }
    } ei (topfrp->layout == FR_ROW) {
       // get the minimal height from each frame in this row
@@ -3594,8 +3536,8 @@ frame_minwidth(Frame* topfrp, Portal* next_curPor) {   // use p_wh and p_wiw for
 }
 
 //Try to close all portals except current one.
-//Buffers in the other portals become hidden if 'hidden' is set, or '!' is
-//used and the buffer was modified.
+//Books in the other portals become hidden if 'hidden' is set, or '!' is
+//used and the book was modified.
 //
 //Used by ":bdel" and ":only".
 void
@@ -3653,7 +3595,7 @@ loadTab(Tab* t) {
    curPor = curtab->curPor;
 }
 
-//Allocate the first portal and put an empty buffer in it. Called from main().
+//Allocate the first portal and put an empty book in it. Called from main().
 //Return FAIL when something goes wrong (out of memory).
 int
 portAllocFirst(void) {
@@ -3683,7 +3625,7 @@ portAllocPopup(void) {
    return po;
 }
 
-// Initialize portal "po" to display buffer "buf".
+// Initialize portal "po" to display book "book".
 void
 initPopupPortal(Portal* po, Book* book) {
    po->book = book;
@@ -3695,16 +3637,16 @@ initPopupPortal(Portal* po, Book* book) {
 }
 
 //Allocate the first portal or the first portal in a new tab.
-//When "oldPortal" is NULL create an empty buffer for it.
+//When "oldPortal" is NULL create an empty book for it.
 //When "oldPortal" is not NULL copy info from it to the new portal.
 //Return FAIL when something goes wrong (out of memory).
 private int
 allocateFirstPortal(Portal* oldPortal) {
    curPor = allocPortal(NULL, false);
-   if (curPor == NULL)
+   if (!curPor)
       return FAIL;
    if (!oldPortal) {
-      // Very first portal, need to create an empty buffer for it and
+      // Very first portal, need to create an empty book for it and
       // initialize from scratch.
       curBook = bookNew(NULL, NULL, 1L, BLN_LISTED);
       if (!curPor || !curBook)
@@ -3791,7 +3733,7 @@ freeTab(Tab *t) {
 }
 
 // Create a new Tab with one portal.
-// It will edit the current buffer, like after ":split". When "after" is 0 put it just after the 
+// It will edit the current book, like after ":split". When "after" is 0 put it just after the 
 // current Tab. Otherwise put it just before tab "after".
 // Does not trigger WinNewPre, since the portal structures are not completely setup yet and could 
 // cause dereferencing NULL pointers Return FAIL or OK.
@@ -3847,7 +3789,7 @@ portNewTab(int after) {
       portComputeScroll(curPor);
 
       newTab->topframe = topframeG;
-      last_status(false);
+      last_status();
 
       lastUsedTabG = prev_tp;
 
@@ -3892,7 +3834,7 @@ portMakeTabs(Unt maxcount) {
       count = 16;
 
    // Abstain from executing autocommands while creating the tabs. Must do that when opening 
-   // portals into the buffers
+   // portals into the books
    block_autocmds();
 
    for (todo = count - 1; todo > 0; --todo) {
@@ -4045,7 +3987,7 @@ enterTab(Tab* t, Book* oldCurBuf, Boole trigger_enter_autocmds, Boole trigger_le
         | (trigger_leave_autocmds ? WEE_TRIGGER_LEAVE_AUTOCMDS : 0));
    prevPor = next_prevPor;
 
-   last_status(false);      // status line may appear or disappear
+   last_status();      // status line may appear or disappear
    computePosPortal();      // recompute portalRow for all portals
    diff_need_scrollbind = true;
 
@@ -4215,9 +4157,9 @@ moveTab(Unt nr) {
 
 
  // Go to another portal.
- // When jumping to another buffer, stop Visual mode.  Do this before changing portals so we can 
+ // When jumping to another book, stop Visual mode.  Do this before changing portals so we can 
  // yank the selection into the '*' register. (note: this may trigger ModeChanged autocommand!)
- // When jumping to another portal on the same buffer, adjust its cursor position to keep the same 
+ // When jumping to another portal on the same book, adjust its cursor position to keep the same 
  // Visual area.
 void
 gotoPortal(Portal* po) {
@@ -4310,7 +4252,7 @@ enterPortalWorker(Portal* po, Unt flags) {
          return false;
    }
 
-   // sync undo before leaving the current buffer
+   // sync undo before leaving the current book
    if ((flags & WEE_UNDO_SYNC) && curBook != po->book)
       u_sync(false);
 
@@ -4365,7 +4307,7 @@ enterPortalWorker(Portal* po, Unt flags) {
    if (curPor->width < p_wiw && !curPor->o.portFixWidth)
       portSetWidth((int)p_wiw, curPor);
 
-   setmouse();         // in case jumped to/from help buffer
+   setmouse();         // in case jumped to/from help book
 
    // Change directories when the 'acd' option is set.
    DO_AUTOCHDIR;
@@ -4373,7 +4315,7 @@ enterPortalWorker(Portal* po, Unt flags) {
    return did_decrement;
 }
 
-//Jump to the first open portal into buffer "buf", if one exists.
+//Jump to the first open portal into book "book", if one exists.
 //Return a pointer to the portal found, otherwise NULL.
 Portal *
 portTryFindOpenBook(Book* book) {
@@ -4791,7 +4733,7 @@ frame_comp_pos(Frame* topfrp, int* row, int* col) {
           po->statusLineNeedsRedraw = true;
       }
       // WinBar will not show if the portal height is zero
-      h = VISIBLE_HEIGHT(po) + po->statusHeight;
+      h = VISIBLE_HEIGHT(po) + STATUS_HEIGHT;
       *row += h > (int)topfrp->height ? (int)topfrp->height : h;
       *col += po->width + po->vsepWidth;
    } else {
@@ -4827,7 +4769,7 @@ portSetHeight(int height, Portal* port) {
          height = 1;
    }
 
-   frame_setheight(port->frame, height + port->statusHeight);
+   frame_setheight(port->frame, height + STATUS_HEIGHT);
 
    // recompute the portal positions
    computePosPortal();
@@ -4893,7 +4835,7 @@ frame_setheight(Frame *curfrp, int height) {
          else {
             room_cmdline = visibleRowsG - commlineHeightG - (lastPor->portalRow
                         + VISIBLE_HEIGHT(lastPor)
-                        + lastPor->statusHeight);
+                        + STATUS_HEIGHT);
             if (room_cmdline < 0)
                 room_cmdline = 0;
          }
@@ -5794,59 +5736,30 @@ frame_add_height(Frame *fr, int n) {
 
 // Add or remove a status line for the bottom portal(s), according to the value of 'laststatus'.
 void
-last_status(int morePorts) {  // pretend there are two or more portals
+last_status() {  // pretend there are two or more portals
    // Don't make a difference between horizontal or vertical split.
-   last_status_rec(topframeG, last_stl_height(morePorts) > 0);
+   last_status_rec(topframeG);
 }
 
 private void
-last_status_rec(Frame *fr, int statusline) {
+last_status_rec(Frame *fr) {
    Frame   *fp;
    Portal   *po;
    if (fr->layout == FR_LEAF) {
       po = fr->port;
-   if (po->statusHeight != 0 && !statusline) {
-      // remove status line
-      portalNewHeight(po, po->height + 1);
-      po->statusHeight = 0;
-      computeColumnsForRulerAndCommand();
-   } ei (po->statusHeight == 0 && statusline) {
-      // Find a frame to take a line from.
-      fp = fr;
-      while (fp->height <= frame_minheight(fp, NULL)) {
-         if (fp == topframeG) {
-            emsg(_(e_not_enough_room));
-            return;
-         }
-         // In a column of frames: go to frame above.  If already at
-         // the top or in a row of frames: go to parent.
-         if (fp->parent->layout == FR_COL && fp->prev != NULL)
-            fp = fp->prev;
-         else
-            fp = fp->parent;
-      }
-      po->statusHeight = 1;
-      if (fp != fr) {
-         frame_new_height(fp, fp->height - 1, false, false, false);
-         frame_fix_height(po);
-         computePosPortal();
-      } else
-         portalNewHeight(po, po->height - 1);
-      computeColumnsForRulerAndCommand();
-      redraw_all_later(UPD_SOME_VALID);
-   }
+      
    // Set prevHeight when difference is due to 'laststatus'.
    if (abs((int)po->height - (int)po->prevHeight) == 1)
        po->prevHeight = po->height;
    } ei (fr->layout == FR_ROW) {
       // vertically split portals, set status line for each one
       FOR_ALL_FRAMES(fp, fr->child)
-         last_status_rec(fp, statusline);
+         last_status_rec(fp);
    } else {
       // horizontally split portal, set status line for last one
       for (fp = fr->child; fp->next != NULL; fp = fp->next)
          {} 
-      last_status_rec(fp, statusline);
+      last_status_rec(fp);
    }
 }
 

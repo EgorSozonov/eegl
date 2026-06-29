@@ -457,7 +457,7 @@ get_keymap_str(
 // Return the row for drawing the statusline and the ruler of portal "po".
 private int
 statusline_row(Portal* po) {
-   if (po->frame->width == (Unt)po->statusHeight && !portalIsPopup(po))
+   if (po->frame->width == STATUS_HEIGHT && !portalIsPopup(po))
       return po->portalRow;
    return po->portalRow + po->height;
 }
@@ -489,8 +489,7 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // true or false
    
    int row = statusline_row(po);
    Unt fillchar = statusLineNextChar(OUT &deco, po);
-   int in_status_line = po->statusHeight != 0;
-   int maxwidth = in_status_line ? po->width : visibleColsG;
+   int maxwidth = po->width;
    Byte oname;
    if (draw_ruler) {
       stl = p_ruf ? p_ruf : S"";
@@ -510,20 +509,13 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // true or false
       if (col < (maxwidth + 1) / 2)
          col = (maxwidth + 1) / 2;
       maxwidth -= col;
-      if (!in_status_line) {
-         row = visibleRowsG - 1;
-         --maxwidth;   // writing in last column may cause scrolling
-         fillchar = ' ';
-         deco = EMPTY_DECO;
-      }
    } else {
       oname = STATLINE_STATUSLINE;
       stl = po->o.statusLine;
       opt_scope = OPT_LOCAL;
    }
 
-   if (in_status_line)
-      col += po->portalCol;
+   col += po->portalCol;
 
    if (maxwidth <= 0)
       goto theend;
@@ -1722,20 +1714,18 @@ insertLinesIntoPortal(
    //to avoid messing what is after the portal. If this fails and there are following portals, 
    //don't do anything to avoid messing up those portals, better just redraw.
    Boole did_delete = false;
-   if (po->next || po->statusHeight) {
-      if (screen_del_lines(0, po->portalRow + po->height - line_count,
-                 line_count, (int)visibleRowsG, false, 0, NULL) == OK
-      ) {
-         did_delete = true;
-      } ei (po->next) {
-         return FAIL;
-      } 
-   }
+   if (screen_del_lines(0, po->portalRow + po->height - line_count,
+              line_count, (int)visibleRowsG, false, 0, NULL) == OK
+   ) {
+      did_delete = true;
+   } ei (po->next) {
+      return FAIL;
+   } 
    // if no lines deleted, blank the lines that will end up below the portal
    if (!did_delete) {
       po->statusLineNeedsRedraw = true;
       redrawCommlineG = true;
-      int nextrow = po->portalRow + po->height + po->statusHeight;
+      int nextrow = po->portalRow + po->height + STATUS_HEIGHT;
       int lastrow = nextrow + line_count;
       if (lastrow > visibleRowsG)
          lastrow = visibleRowsG;
@@ -1784,15 +1774,12 @@ deleteLinesFromPortal(
                (int)visibleRowsG, false, clearHiId, NULL) == FAIL)
       return FAIL;
 
-   //If there are portals or status lines below, try to put them at the
-   //correct place. If we can't do that, they have to be redrawn.
-   if (po->next || po->statusHeight || commlineRowG < visibleRowsG - 1) {
-      if (screen_ins_lines(0, po->portalRow + po->height - line_count,
-                  line_count, (int)visibleRowsG, clearHiId, NULL) == FAIL
-      ){
-         po->statusLineNeedsRedraw = true;
-         markFollowingPortalsForRedraw(po->next);
-      }
+   //Try to put the status lines at the correct place. If we can't do that, they have to be redrawn.
+   if (screen_ins_lines(0, po->portalRow + po->height - line_count,
+               line_count, (int)visibleRowsG, clearHiId, NULL) == FAIL
+   ){
+      po->statusLineNeedsRedraw = true;
+      markFollowingPortalsForRedraw(po->next);
    }
    // If this is the last portal and there is no status line, redraw the command line later
    else
@@ -2274,20 +2261,12 @@ skip_showmode(void) {
 }
 
 private void
-redrawRuler(Portal* po, int always, int ignore_pum) {
+redrawRuler(Portal* po, int always) {
    int empty_line = false;
 
    //Check if cursor.lnum is valid, since redrawRuler() may be called
    //after deleting lines, before cursor.lnum is corrected.
    if (po->cursor.lnum > po->book->mem.lineCount)
-      return;
-
-   //Don't draw the ruler while doing insert-completion, it might overwrite the (long) mode message
-   if ((po == lastPor && lastPor->statusHeight == 0 && editSubmodeMsgG)
-         // Don't draw the ruler when the popup menu is visible, it may overlap.
-         // Except when the popup menu will be redrawn anyway.
-         || (!ignore_pum && pum_visible())
-   )
       return;
 
    if (p_ruf) {
@@ -2326,18 +2305,10 @@ redrawRuler(Portal* po, int always, int ignore_pum) {
 
       cursor_off();
       Decoration deco;
-      if (po->statusHeight) {
-         row = statusline_row(po);
-         fillchar = statusLineNextChar(OUT &deco, po);
-         off = po->portalCol;
-         width = po->width;
-      } else {
-         row = visibleRowsG - 1;
-         fillchar = ' ';
-         deco = EMPTY_DECO;
-         width = visibleColsG;
-         off = 0;
-      }
+      row = statusline_row(po);
+      fillchar = statusLineNextChar(OUT &deco, po);
+      off = po->portalCol;
+      width = po->width;
 
       // In list mode virtcol needs to be recomputed
       virtcol = po->virtCol;
@@ -2362,8 +2333,6 @@ redrawRuler(Portal* po, int always, int ignore_pum) {
       //On the last line, don't print in the last column (scrolls the screen up on some terminals).
       rel_poslen = get_rel_pos(po, rel_pos, RULER_BUF_LEN);
       int n1 = bufferlen + eeglStrSize(rel_pos); //scratch value
-      if (po->statusHeight == 0)   // can't use last char of screen
-         ++n1;
 
       this_ru_col = rulerColP - (visibleColsG - width);
       // Never use more than half the portal/screen width, leave the other half for the filename.
@@ -2416,7 +2385,6 @@ showmode(void) {
    int      do_mode;
    char     flags;
    int      nwr_save;
-   int      show_ruler_with_pum = false;
 
    do_mode = p_smd && msg_silent == 0
        && ((stateG & MODE_INSERT)
@@ -2487,10 +2455,6 @@ showmode(void) {
                msgPutsDeco(_(p), flags);
             }
             msgPutsDeco((CS)" --", flags);
-            // Ensure ruler is shown when a popup is visible and only the mode name
-            // is displayed. Without this, the ruler may disappear during insert-mode
-            // completion when 'shortmess' includes 'c'.
-            show_ruler_with_pum = true;
          }
 
          need_clear = true;
@@ -2518,11 +2482,6 @@ showmode(void) {
    // In Visual mode the size of the selected area must be redrawn.
    if (VIsual_active)
    clear_showcmd();
-
-   // If the last portal has no status line, the ruler is after the mode
-   // message and must be redrawn
-   if (redrawing() && lastPor->statusHeight == 0)
-      redrawRuler(lastPor, true, show_ruler_with_pum);
 
    redrawCommlineG = false;
    redrawModeG = false;
@@ -3155,7 +3114,7 @@ drawUpdateScreen(Unt type_arg) {
                      po->redrawType = UPD_REDRAW_TOP;
                   } else {
                      po->redrawType = UPD_NOT_VALID;
-                     if (po->portalRow + po->height + po->statusHeight <= (Unt)msg_scrolled)
+                     if (po->portalRow + po->height + STATUS_HEIGHT <= (Unt)msg_scrolled)
                         po->statusLineNeedsRedraw = true;
                   }
                }
@@ -3304,10 +3263,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
    int row = statusline_row(po);
 
    po->statusLineNeedsRedraw = false;
-   if (po->statusHeight == 0) {
-      // no status line, can only be last portal
-      redrawCommlineG = true;
-   } ei (!redrawing() //don't update status line when popup menu is visible and may be drawn over 
+   if (!redrawing() //don't update status line when popup menu is visible and may be drawn over 
                       //it, unless it will be redrawn later
        || (!ignore_pum && pum_visible())
    ) { //Don't redraw right now, do it later.
@@ -3373,7 +3329,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
             nameBuffG, row, (int)(this_ru_col - nameBufflen - 1 + po->portalCol), deco.flags
          );
 
-      redrawRuler(po, true, ignore_pum);
+      redrawRuler(po, true);
 
       // Draw the 'showcmd' information if 'showcmdloc' == "statusline".
       if (p_sloc == SHOW_COMM_STATUSLINE) {
@@ -3389,7 +3345,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
    }
 
    // May need to draw the character below the vertical separator.
-   if (po->vsepWidth != 0 && po->statusHeight != 0 && redrawing()) {
+   if (po->vsepWidth != 0 && redrawing()) {
       Unt fillchar = stl_connected(po) 
          ? statusLineNextChar(OUT &deco, po) : fillchar_vsep(OUT &deco);
       screen_putchar(fillchar, row, P_ENDCOL(po), deco.flags);
@@ -3423,10 +3379,10 @@ showruler(int always) {
       curPor->statusLineNeedsRedraw = true;
       return;
    }
-   if (curPor->o.statusLine && curPor->statusHeight)
+   if (curPor->o.statusLine)
       redraw_custom_statusline(curPor);
    else
-      redrawRuler(curPor, always, false);
+      redrawRuler(curPor, always);
 
    if (needRedrawTabpanelG)
       draw_tabpanel();
@@ -4140,7 +4096,7 @@ updatePortal(Portal* po) {
    }
 
    // Portal frame is zero-height: nothing to draw.
-   if (po->height == 0 || (po->frame->width == (Unt)po->statusHeight && !portalIsPopup(po))) {
+   if (po->height == 0 || (po->frame->width == STATUS_HEIGHT && !portalIsPopup(po))) {
       po->redrawType = 0;
       return;
    }
@@ -4867,10 +4823,8 @@ void
 status_redraw_all(void) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
-      if (po->statusHeight) {
-         po->statusLineNeedsRedraw = true;
-         redraw_later(UPD_VALID);
-      }
+      po->statusLineNeedsRedraw = true;
+      redraw_later(UPD_VALID);
    } 
 }
 
@@ -4878,11 +4832,12 @@ status_redraw_all(void) {
 void
 drawAllStatusLinesOfCurBookLater(void) {
    Portal* po;
-   FOR_ALL_PORTALS(po)
-   if (po->statusHeight != 0 && po->book == curBook) {
-      po->statusLineNeedsRedraw = true;
-      redraw_later(UPD_VALID);
-   }
+   FOR_ALL_PORTALS(po) {
+      if (po->book == curBook) {
+         po->statusLineNeedsRedraw = true;
+         redraw_later(UPD_VALID);
+      }
+   } 
 }
 
 // Redraw all status lines that need to be redrawn.

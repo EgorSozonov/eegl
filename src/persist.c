@@ -291,7 +291,7 @@ portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor) {
          ++n;
 
          // restore height when not full height
-         if (wp->height + wp->statusHeight < topframeG->width
+         if (wp->height + STATUS_HEIGHT < topframeG->width
                 && (fprintf(fd,
                  "exe '%dresize ' . ((&lines * %ld + %ld) / %ld)",
                    n, (long)wp->height, visibleRowsG / 2, visibleRowsG) < 0

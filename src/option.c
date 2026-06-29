@@ -3182,10 +3182,8 @@ setBufType(OptionChange* cha) {
    
 argumentIsValid:
    *(cha->ref.enume) = v;
-   if (curPor->statusHeight) {
-      curPor->statusLineNeedsRedraw = true;
-      redraw_later(UPD_VALID);
-   }
+   curPor->statusLineNeedsRedraw = true;
+   redraw_later(UPD_VALID);
    needRedrawTabpanelG = true;
    return NULL;
 }

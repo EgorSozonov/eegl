@@ -708,6 +708,72 @@ statusline -->  |~  file.txt [+]                                  |
                  ^^^^^^^^^^^            ^^^^^^^^       ^^^^^^^^^^
                   'showmode'           'showcmd'         'ruler'
         
+        
+Definitions                                             *definitions* *jargon*
+
+- book: Contains lines of text, usually from a file.
+- screen: The whole area that Eegl uses to display things.
+- portal: A view into a book.  There can be multiple portals for one book.
+- frame: portals are kept in a tree of frames.  Each frame contains a column,
+  row, or portal ("leaf" frame).
+
+A screen contains one or more portals, separated by status lines and with the
+command line at the bottom.
+
+        +-------------------------------+
+ screen | window 1      | window 2      |
+        |               |               |
+        |               |               |
+        |= status line =|= status line =|
+        | window 3                      |
+        |                               |
+        |                               |
+        |==== status line ==============|
+        |command line                   |
+        +-------------------------------+
+<
+The command line is also used for messages.  It scrolls up the screen when
+there is not enough room in the command line.
+
+A difference is made between four types of lines:
+
+- book lines:  The lines in the book.  This is the same as the
+                 lines as they are read from/written to a file.  They
+                 can be thousands of characters long.
+- logical lines: The buffer lines with folding applied.  Buffer lines
+                 in a closed fold are changed to a single logical line:
+                 "+-- 99 lines folded".  They can be thousands of
+                 characters long.
+- portal lines:  The lines displayed in a portal: A range of logical
+                 lines with wrapping, line breaks, etc.  applied.  They
+                 can only be as long as the width of the portal allows,
+                 longer lines are wrapped or truncated.
+- screen lines:  The lines of the screen that Eegl uses.  Consists of
+                 the window lines of all windows, with status lines
+                 and the command line added.  They can only be as long
+                 as the width of the screen allows.  When the command
+                 line gets longer it wraps and lines are scrolled to
+                 make room.
+
+>
+  buffer lines    logical lines   window lines    screen lines
+  -----------------------------------------------------------------------
+  1. one          1. one          1. +-- folded   1.  +-- folded
+  2. two          2. +-- folded   2. five         2.  five
+  3. three        3. five         3. six          3.  six
+  4. four         4. six          4. seven        4.  seven
+  5. five         5. seven                        5.  === status line ===
+  6. six                                          6.  aaa
+  7. seven                                        7.  bbb
+                                                  8.  ccc ccc c
+  1. aaa          1. aaa          1. aaa          9.  cc
+  2. bbb          2. bbb          2. bbb          10. ddd
+  3. ccc ccc ccc  3. ccc ccc ccc  3. ccc ccc c    11. ~
+  4. ddd          4. ddd          4. cc           12. === status line ===
+                                  5. ddd          13. (command line)
+                                  6. ~
+        
+        
 
      Next chapter: |usr_03.txt|  Moving around
  Previous chapter: |usr_01.txt|  About the manuals

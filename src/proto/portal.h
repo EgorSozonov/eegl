@@ -89,7 +89,7 @@ int plines_m_win(Portal *wp, LineNr first, LineNr last, int max);
 void scroll_to_fraction(Portal *po, int prevHeight);
 void portComputeScroll(Portal *po);
 void command_height(void);
-void last_status(int morePorts);
+void last_status(void);
 int last_stl_height(int morePorts);
 int min_rows(void);
 Unt minRowsForAllTabs(void);

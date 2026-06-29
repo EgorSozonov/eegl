@@ -5812,7 +5812,7 @@ f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
    if (po) {
       int top_off = 0;
       int left_off = 0;
-      Unt height = po->height + po->statusHeight;
+      Unt height = po->height + STATUS_HEIGHT;
 
       if (PORTAL_IS_POPUP(po)) {
          top_off = popup_top_extra(po);

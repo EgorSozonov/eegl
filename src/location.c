@@ -3463,7 +3463,7 @@ gotoLocationPortal(LocationStack* stack, int resize, int sz, int vertsplit) {
       if (vertsplit) {
          if (sz != (int)port->width)
             portSetHeight(sz, curPor);
-      } ei (sz != (int)port->height && port->height + port->statusHeight < commlineRowG)
+      } ei (sz != (int)port->height && port->height + STATUS_HEIGHT < commlineRowG)
          portSetHeight(sz, curPor);
    }
 

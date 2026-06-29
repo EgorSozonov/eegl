@@ -3282,7 +3282,7 @@ check_for_opt_string_or_number_arg(Var* args, int idx) {
        || check_for_string_or_number_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
-//Give an error and return FAIL unless "args[idx]" is a buffer number.
+//Give an error and return FAIL unless "args[idx]" is a book number.
 //Book number can be a number or a string.
 int
 check_for_buffer_arg(Var* args, int idx) {
@@ -3449,9 +3449,7 @@ check_for_list_or_or_blob_arg(Arr(Var) args, int idx) {
 //Give an error and return FAIL unless "args[idx]" is a list or a dict
 int
 check_for_list_or_dict_arg(Arr(Var) args, int idx) {
-   if (args[idx].tag != VAR_LIST
-       && args[idx].tag != VAR_BAG)
-    {
+   if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BAG) {
       showErrFmtMsg(_(e_list_or_tuple_or_dict_required_for_argument_nr), idx + 1);
       return FAIL;
    }
@@ -3461,14 +3459,11 @@ check_for_list_or_dict_arg(Arr(Var) args, int idx) {
 //Give an error and return FAIL unless "args[idx]" is a list or dict or a blob.
 int
 check_for_list_or_dict_or_blob_arg(Arr(Var) args, int idx) {
-   if (args[idx].tag != VAR_LIST
-       && args[idx].tag != VAR_BAG
-       && args[idx].tag != VAR_BLOB)
-    {
-   showErrFmtMsg(_(e_list_dict_or_blob_required_for_argument_nr), idx + 1);
-   return FAIL;
-    }
-    return OK;
+   if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BAG && args[idx].tag != VAR_BLOB) {
+      showErrFmtMsg(_(e_list_dict_or_blob_required_for_argument_nr), idx + 1);
+      return FAIL;
+   }
+   return OK;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list, a dict, a blob or a string
@@ -3775,7 +3770,6 @@ typval_compare(
       }
       n1 = res;
    }
-
    // If one of the two variables is a float, compare as a float.
    // When using "=~" or "!~", always compare as string.
    ei ((tv1->tag == VAR_FLOAT || tv2->tag == VAR_FLOAT)
@@ -3816,10 +3810,10 @@ typval_compare(
 
       n1 = varGetNumberChk(tv1, OUT &error);
       if (!error)
-          n2 = varGetNumberChk(tv2, OUT &error);
+         n2 = varGetNumberChk(tv2, OUT &error);
       if (error) {
-          clearVar(tv1);
-          return FAIL;
+         clearVar(tv1);
+         return FAIL;
       }
       switch (type) {
       case EXPR_IS:
@@ -3866,8 +3860,8 @@ typval_compare_list(
    Var    *tv1,
    Var    *tv2,
    ExprType  type,
-   Boole       ic,
-   int       *res
+   Boole ic,
+   OUT int* res
 ) {
    int       val = 0;
 
@@ -4072,7 +4066,7 @@ typval_tostring(Var *arg, int quotes) {
    CS ret = NULL;
 
    if (!arg)
-      return copyStr((CS)"(does not exist)");
+      return copyStr(S"(does not exist)");
    if (!quotes && arg->tag == VAR_STRING) {
       ret = copyStr(arg->string == NULL ? E : arg->string);
    } else {
@@ -4089,12 +4083,8 @@ typval_tostring(Var *arg, int quotes) {
 int
 tv_islocked(Var *tv) {
     return (tv->lock & VAR_LOCKED)
-      || (tv->tag == VAR_LIST
-         && tv->list != NULL
-         && (tv->list->lock & VAR_LOCKED))
-      || (tv->tag == VAR_BAG
-         && tv->bag != NULL
-         && (tv->bag->lock & VAR_LOCKED));
+      || (tv->tag == VAR_LIST && tv->list && (tv->list->lock & VAR_LOCKED))
+      || (tv->tag == VAR_BAG && tv->bag && (tv->bag->lock & VAR_LOCKED));
 }
 
 private int
@@ -4159,11 +4149,9 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
    }
 
    // For VAR_FUNC and VAR_PARTIAL compare the function name, bound dict and arguments.
-   if ((tv1->tag == VAR_FUNC
-      || (tv1->tag == VAR_PARTIAL && tv1->partial != NULL))
-       && (tv2->tag == VAR_FUNC
-      || (tv2->tag == VAR_PARTIAL && tv2->partial != NULL)))
-    {
+   if ((tv1->tag == VAR_FUNC || (tv1->tag == VAR_PARTIAL && tv1->partial)) 
+         && (tv2->tag == VAR_FUNC || (tv2->tag == VAR_PARTIAL && tv2->partial))
+   ) {
       ++recursive_cnt;
       r = func_equal(tv1, tv2, ic);
       --recursive_cnt;

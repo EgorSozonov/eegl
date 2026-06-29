@@ -109,7 +109,7 @@ private void
 check_status(Book* book) {
    Portal   *po;
    FOR_ALL_PORTALS(po) {
-      if (po->book == book && po->statusHeight) {
+      if (po->book == book) {
          po->statusLineNeedsRedraw = true;
          drawSetMustRedraw(UPD_VALID);
       }

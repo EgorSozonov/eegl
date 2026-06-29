@@ -3252,11 +3252,6 @@ redrawPortalStatusLine_matches(
             }
             wild_menu_showing = WM_SCROLLED;
          } else {
-            // Create status line if needed by setting 'laststatus' to 2.
-            // Set 'winminheight' to zero to avoid that the portal is resized.
-            if (lastPor->statusHeight == 0) {
-               last_status(false);
-            }
             wild_menu_showing = WM_SHOWN;
          }
       }
@@ -7535,9 +7530,8 @@ may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state) {
 
    validate_cursor();
 
-   // May redraw the status line to show the cursor position.
-   if (curPor->statusHeight > 0)
-      curPor->statusLineNeedsRedraw = true;
+   // redraw the status line to show the cursor position.
+   curPor->statusLineNeedsRedraw = true;
 
    drawUpdateScreen(UPD_SOME_VALID);
    highlight_match = false;
@@ -9677,7 +9671,7 @@ compute_cmdrow(void) {
    if (msg_scrolled != 0 && !updating_screen)
       commlineRowG = visibleRowsG - 1;
    else
-      commlineRowG = lastPor->portalRow + lastPor->height + lastPor->statusHeight;
+      commlineRowG = lastPor->portalRow + lastPor->height + STATUS_HEIGHT;
 }
 
 void

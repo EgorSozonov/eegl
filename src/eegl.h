@@ -8624,8 +8624,8 @@ EXTERN Byte e_cannot_change_arglist_recursively[]
    INIT(= "E1156: Cannot change the argument list recursively");
 EXTERN Byte e_missing_return_type[]
    INIT(= "E1157: Missing return type");
-EXTERN Byte e_cannot_split_portal_when_closing_buffer[]
-   INIT(= "E1159: Cannot split a portal when closing the buffer");
+EXTERN Byte e_cannot_split_portal_when_closing_book[]
+   INIT(= "E1159: Cannot split a portal when closing the book");
 EXTERN Byte e_cannot_use_default_for_variable_arguments[]
    INIT(= "E1160: Cannot use a default for variable arguments");
 EXTERN Byte e_cannot_json_encode_str[]

@@ -5364,7 +5364,7 @@ c_bookAll(Invocation* invo) {
          wpnext = po->next;
          if ((po->book->countPortals > 1
             || ((commModifierG.cmod_split & WSP_VERT)
-                ? (po->height + po->statusHeight < visibleRowsG - commlineHeightG )
+                ? (po->height + STATUS_HEIGHT < visibleRowsG - commlineHeightG )
                 : po->width != visibleColsG)
             || (had_tab > 0 && po != firstPor))
              && !ONLY_ONE_PORTAL
