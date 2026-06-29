@@ -5662,8 +5662,8 @@ typedef enum {
 #include "proto/input.h"
 #include "proto/insert.h"
 #include "proto/location.h"
-#include "proto/main.h"
 #include "proto/memory.h"
+#include "proto/motor.h"
 
 // These prototypes cannot be produced automatically.
 int smsg0(char const*, ...) ATTRIBUTE_COLD ATTRIBUTE_FORMAT_PRINTF(1, 2);

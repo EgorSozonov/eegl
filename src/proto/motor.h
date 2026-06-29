@@ -1,8 +1,9 @@
-/* src/main.c */
+/* src/motor.c */
 int highest_patch(void);
 void c_version(Invocation *invo);
 void maybe_intro_message(void);
 void c_intro(Invocation *invo);
+int appMain(int argc, char **argv);
 int is_not_a_term(void);
 int is_not_a_term_or_gui(void);
 void free_vbuf(void);

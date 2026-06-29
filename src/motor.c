@@ -1,11 +1,16 @@
 //EEGL - the Extensible development Environment for GNU/Linux
 //Licensed under GPLv3, see the LICENSE file (c) Egor Sozonov
 
-//## main.c: the entrypoint of Eegl
-
-#define EXTERN
+//## motor.c: the appliation runner of Eegl
 
 #include "eegl.h"
+
+// Various parameters passed between main() and other functions.
+private MainParams paramsP;
+
+private void* virtualBuf = null;      // buffer for setvbuf()
+
+private CS start_dir = NULL;   // current working dir on startup
 
 //{{{the intro screen and version info about the current build
 
@@ -266,7 +271,7 @@ private void mainerr(Unt, CS);
 private void earlyArgScan(MainParams* paramsP);
 private void init0(void);
 private void init1(OUT MainParams*);
-private int eeglMain1(void);
+private int libMain(void);
 #ifndef NO_EEGL_MAIN
 private void usage(void);
 private void parseCommandName(MainParams *paramsP);
@@ -298,154 +303,10 @@ private CS main_errors[] = {
 #define ME_INVALID_ARG      5
 };
 
-#ifndef PROTO      // don't want a prototype for main()
-
-// Various parameters passed between main() and other functions.
-private MainParams paramsP;
-
-private void* virtualBuf = null;      // buffer for setvbuf()
-
-#ifndef NO_EEGL_MAIN   // skip this for unittests
-
-private CS start_dir = NULL;   // current working dir on startup
-
-int 
-main(int argc, char** argv) {
-   // Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
-   // Thus emsg2() cannot be called!
-   mch_early_init();
-
-   // Many variables are in "paramsP" so that we can pass them to invoked functions without a lot 
-   // of arguments.  "argc" and "argv" are also copied, so that they can be changed.
-   CLEAR_FIELD(paramsP);
-   paramsP.argc = argc;
-   paramsP.argv = argv;
-   paramsP.want_full_screen = true;
-   paramsP.use_debug_break_level = -1;
-   paramsP.portalCount = UNT;
-
-   autocmd_init();
-
-#ifdef MEM_PROFILE
-   atexit(eeMemProfileDump);
-#endif
-
-   // Various initializations #0 shared with tests.
-   init0();
-
-   // Need to find "--startuptime" and "--log" before actually parsing arguments.
-   for (int i = 1; i < argc - 1; ++i) {
-      if (caseInsensitiveCompare(argv[i], "--startuptime") == 0 && time_fd == NULL) {
-         time_fd = fopen(argv[i + 1], "a");
-         TIME_MSG("--- EEGL RISING ---");
-      }
-      if (caseInsensitiveCompare(argv[i], "--log") == 0)
-         ch_logfile((CS)(argv[i + 1]), (CS)"ao");
-   }
-
-#ifdef CLEAN_RUNTIMEPATH
-   // Need to find "--clean" before actually parsing arguments.
-   for (i = 1; i < argc; ++i) {
-      if (caseInsensitiveCompare(argv[i], "--clean") == 0) {
-          paramsP.clean = true;
-          break;
-      }
-   } 
-#endif
-   // Various initializations #1 shared with tests.
-   init1(OUT &paramsP);
-
-   //Figure out the way to work from the command name argv[0]. "eegldiff" starts diff mode, etc.
-   parseCommandName(OUT &paramsP);
-
-   // Process command line arguments. File names are put into the global argument list "argListG"
-   scanCommandLineArgs(&paramsP);
-   TIME_MSG("parsing arguments");
-
-   // On some systems, when we compile with the GUI, we always use it.  On Mac
-   // there is no terminal version, and on Portals we can't fork one off with :gui.
-   if (GARGCOUNT > 0) {
-      paramsP.fname = alist_name(&GARGLIST[0]);
-   }
-
-   TIME_MSG("expanding arguments");
-
-   if (paramsP.diff_mode && paramsP.portalCount == UNT)
-      paramsP.portalCount = 0;   // open up to 3 portals
-
-   // Don't redraw until much later.
-   ++isRedrawingDisabledG;
-
-   // When listing swap file names, don't do cursor positioning et. al.
-   if (recoveryModeG && paramsP.fname == NULL)
-      paramsP.want_full_screen = false;
-
-   //uiInit() sets up the terminal (window) for use. This must be done after resetting 
-   //fullScreenG, otherwise it may move the cursor. Note that we may use mch_exit() before uiInit()!
-   uiInit();
-   TIME_MSG("shell init");
-
-   // Print a warning if stdout is not a terminal.
-   check_tty(&paramsP);
-
-   if (silentModeG) {
-      // Ensure output works usefully without a tty: buffer lines instead of fully buffered.
-      virtualBuf = malloc(BUFSIZ);
-      setvbuf(stdout, virtualBuf, _IOLBF, BUFSIZ);
-   }
-
-   //This message comes before term inits, but after setting "silentModeG"
-   //when the input is not a tty. Omit the message with --not-a-term.
-   if (GARGCOUNT > 1 && !silentModeG && !is_not_a_term())
-      printf((char*)_("%d files to edit\n"), GARGCOUNT);
-
-   initHilite(true); // set the default hilite groups
-   drawInit();
-   if (paramsP.want_full_screen && !silentModeG) {
-      //set terminal name and get terminal capabilities (will set fullScreenG)
-      termInitTerminfo(paramsP.term);
-      screen_start();      // don't know where cursor is now
-      TIME_MSG("Termcap init");
-   }
-
-   //Set the default values for the options that use visibleRowsG and visibleColsG.
-   ui_get_shellsize();      // inits Rows and Columns
-   portalInitSize();
-   //Set the @diff option now, so that it can be checked for in an init.vim
-   //file. There is no book yet, though.
-   if (paramsP.diff_mode)
-      diff_win_options(firstPor, false);
-
-   commlineRowG = visibleRowsG - commlineHeightG;
-   msgRowG = commlineRowG;
-   screenalloc(false);      // allocate screen buffers
-   optInit1();
-   TIME_MSG("inits 0");
-
-   msg_scroll = true;
-   no_wait_return = true;
-
-   TIME_MSG("init hilite");
-
-   termInitProps(true);
-
-   //Set the break level after the terminal is initialized.
-   debug_break_level = paramsP.use_debug_break_level;
-
-   //Execute --comm arguments.
-   executePreCommands(&paramsP);
-
-   //Source startup scripts.
-   sourceStartupScripts(&paramsP);
-
-   return eeglMain1();
-}
-#endif // NO_EEGL_MAIN
-#endif // PROTO
 
 // It is defined when NO_EEGL_MAIN is defined, but then it's empty.
-private int
-eeglMain1(void) {
+int
+libMain(void) {
 #ifndef NO_EEGL_MAIN
    //Decide about portal layout for diff mode after reading init.vim.
    if (paramsP.diff_mode && paramsP.portalLayout == 0) {
@@ -644,7 +505,7 @@ eeglMain1(void) {
 }
 
 // Initialization #1 shared by main() and some tests.
-private void
+void
 init0(void) {
    estack_init();
    cmdline_init();
@@ -665,7 +526,7 @@ init0(void) {
 }
 
 // Initialization #1 shared by main() and some tests.
-private void
+void
 init1(OUT MainParams* paramsP) {
    //Setup to use the current locale (for ctype() and many other things).
    //NOTE: Translated messages with encodings other than latin1 will not work until 
@@ -719,6 +580,138 @@ init1(OUT MainParams* paramsP) {
    // initialize location lists. don't send an error message when memory allocation fails.
    // do it when the user tries to access a location list
    llInitStacksOnce();
+}
+
+int
+appMain(int argc, char** argv) {
+   // Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
+   // Thus emsg2() cannot be called!
+   mch_early_init();
+
+   // Many variables are in "paramsP" so that we can pass them to invoked functions without a lot 
+   // of arguments.  "argc" and "argv" are also copied, so that they can be changed.
+   CLEAR_FIELD(paramsP);
+   paramsP.argc = argc;
+   paramsP.argv = argv;
+   paramsP.want_full_screen = true;
+   paramsP.use_debug_break_level = -1;
+   paramsP.portalCount = UNT;
+
+   autocmd_init();
+
+#ifdef MEM_PROFILE
+   atexit(eeMemProfileDump);
+#endif
+
+   // Various initializations #0 shared with tests.
+   init0();
+
+   // Need to find "--startuptime" and "--log" before actually parsing arguments.
+   for (int i = 1; i < argc - 1; ++i) {
+      if (caseInsensitiveCompare(argv[i], "--startuptime") == 0 && time_fd == NULL) {
+         time_fd = fopen(argv[i + 1], "a");
+         TIME_MSG("--- EEGL RISING ---");
+      }
+      if (caseInsensitiveCompare(argv[i], "--log") == 0)
+         ch_logfile((CS)(argv[i + 1]), (CS)"ao");
+   }
+
+#ifdef CLEAN_RUNTIMEPATH
+   // Need to find "--clean" before actually parsing arguments.
+   for (i = 1; i < argc; ++i) {
+      if (caseInsensitiveCompare(argv[i], "--clean") == 0) {
+          paramsP.clean = true;
+          break;
+      }
+   } 
+#endif
+   // Various initializations #1 shared with tests.
+   init1(OUT &paramsP);
+
+   //Figure out the way to work from the command name argv[0]. "eegldiff" starts diff mode, etc.
+   parseCommandName(OUT &paramsP);
+
+   // Process command line arguments. File names are put into the global argument list "argListG"
+   scanCommandLineArgs(&paramsP);
+   TIME_MSG("parsing arguments");
+
+   // On some systems, when we compile with the GUI, we always use it.  On Mac
+   // there is no terminal version, and on Portals we can't fork one off with :gui.
+   if (GARGCOUNT > 0) {
+      paramsP.fname = alist_name(&GARGLIST[0]);
+   }
+
+   TIME_MSG("expanding arguments");
+
+   if (paramsP.diff_mode && paramsP.portalCount == UNT)
+      paramsP.portalCount = 0;   // open up to 3 portals
+
+   // Don't redraw until much later.
+   ++isRedrawingDisabledG;
+
+   // When listing swap file names, don't do cursor positioning et. al.
+   if (recoveryModeG && paramsP.fname == NULL)
+      paramsP.want_full_screen = false;
+
+   //uiInit() sets up the terminal (window) for use. This must be done after resetting 
+   //fullScreenG, otherwise it may move the cursor. Note that we may use mch_exit() before uiInit()!
+   uiInit();
+   TIME_MSG("shell init");
+
+   // Print a warning if stdout is not a terminal.
+   check_tty(&paramsP);
+
+   if (silentModeG) {
+      // Ensure output works usefully without a tty: buffer lines instead of fully buffered.
+      virtualBuf = malloc(BUFSIZ);
+      setvbuf(stdout, virtualBuf, _IOLBF, BUFSIZ);
+   }
+
+   //This message comes before term inits, but after setting "silentModeG"
+   //when the input is not a tty. Omit the message with --not-a-term.
+   if (GARGCOUNT > 1 && !silentModeG && !is_not_a_term())
+      printf((char*)_("%d files to edit\n"), GARGCOUNT);
+
+   initHilite(true); // set the default hilite groups
+   drawInit();
+   if (paramsP.want_full_screen && !silentModeG) {
+      //set terminal name and get terminal capabilities (will set fullScreenG)
+      termInitTerminfo(paramsP.term);
+      screen_start();      // don't know where cursor is now
+      TIME_MSG("Termcap init");
+   }
+
+   //Set the default values for the options that use visibleRowsG and visibleColsG.
+   ui_get_shellsize();      // inits Rows and Columns
+   portalInitSize();
+   //Set the @diff option now, so that it can be checked for in an init.vim
+   //file. There is no book yet, though.
+   if (paramsP.diff_mode)
+      diff_win_options(firstPor, false);
+
+   commlineRowG = visibleRowsG - commlineHeightG;
+   msgRowG = commlineRowG;
+   screenalloc(false);      // allocate screen buffers
+   optInit1();
+   TIME_MSG("inits 0");
+
+   msg_scroll = true;
+   no_wait_return = true;
+
+   TIME_MSG("init hilite");
+
+   termInitProps(true);
+
+   //Set the break level after the terminal is initialized.
+   debug_break_level = paramsP.use_debug_break_level;
+
+   //Execute --comm arguments.
+   executePreCommands(&paramsP);
+
+   //Source startup scripts.
+   sourceStartupScripts(&paramsP);
+
+   return libMain();
 }
 
 // Return true when the --not-a-term argument was found.

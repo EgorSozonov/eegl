@@ -28,7 +28,7 @@ LIBS	= -lm -ltinfo -lwayland-client
 
 VIEWNAME	= view
 
-srcdir = 
+srcdir = src
 
 TAGPRG		= ctags
 
@@ -779,28 +779,6 @@ TRANSSOURCE = ../lang
 
 ###
 
-
-### Command to create dependencies based on #include "..."
-### prototype headers are ignored due to -DPROTO, system
-### headers #include <...> are ignored if we use the -MM option, as ### e.g. provided by gcc-cpp.
-CPP_DEPEND = $(CC) -I$(srcdir) -M$(CPP_MM) \
-		`echo "$(DEPEND_FLAGS)" $(DEPEND_FLAGS_FILTER)`
-
-#     This is for cproto 3 patchlevel 8 or below
-#     __inline, __attribute__ and __extension__ are not recognized by cproto
-#     G_IMPLEMENT_INLINES is to avoid functions defined in glib/gutils.h.
-#NO_ATTR = -D__inline= -D__inline__= -DG_IMPLEMENT_INLINES \
-#	  -D"__attribute__\\(x\\)=" -D"__asm__\\(x\\)=" \
-#	  -D__extension__= -D__restrict="" \
-#	  -D__gnuc_va_list=char -D__builtin_va_list=char
-#
-#     This is for cproto 3 patchlevel 9 or above (currently 4.6, 4.7g)
-#     __inline and __attribute__ are now recognized by cproto
-#     __attribute() is not recognized and used in X11/Intrinsic.h
-#     -D"foo()=" is not supported by all compilers so do not use it
-NO_ATTR = #-D"__attribute\\(x\\)="
-#
-# Use this for cproto 3 patchlevel 7 or above (use "cproto -V" to check):
 CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" -I./src #$(NO_ATTR) # -D"__typeof__\\(x\\)=x"
 
 
@@ -810,7 +788,7 @@ CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" -I./src #$(NO_ATTR) # -D"__typeof__\\(x\\)=
 
 SHELL = /usr/bin/bash
 
-PRE_DEFS = -Isrc/proto
+PRE_DEFS = -iquote=src/proto
 
 ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLAGS) \
    $(ABORT_FLAGS)
@@ -909,9 +887,9 @@ BASIC_SRC_NO_DIR = \
 	insert.c \
 	juggle.c \
 	location.c \
-	main.c \
 	memory.c \
 	message.c \
+	motor.c \
 	normal.c \
 	option.c \
 	persist.c \
@@ -981,6 +959,7 @@ OBJ_COMMON = \
 	$(OBJDIR)/insert.o \
 	$(OBJDIR)/juggle.o \
 	$(OBJDIR)/location.o \
+	$(OBJDIR)/motor.o \
 	$(OBJDIR)/normal.o \
 	$(OBJDIR)/option.o \
 	$(OBJDIR)/persist.o \
@@ -1061,10 +1040,10 @@ PRO_AUTO = \
 	juggle.h \
 	list.h \
 	location.h \
-	main.h \
 	mark.h \
 	memory.h \
 	message.h \
+	motor.h \
 	normal.h \
 	option.h \
 	unix.h \
@@ -1098,7 +1077,7 @@ indices: src/commands.h src/actions.h
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
-COMPILE = $(CC) -c -I$(srcdir) $(ALL_FLAGS)
+COMPILE = $(CC) -c -iquote $(srcdir) $(ALL_FLAGS)
 CClink = $(CC)
 
 # MAIN.
@@ -1791,7 +1770,8 @@ clean: testclean
 	fi
 	cd libs/wayland; $(MAKE) clean
 
-LINKEDFILES = ../*.[chm] ../*.cc ../*.in ../*.sh ../*.xs ../*.xbm ../gui_gtk_res.xml ../toolcheck ../proto ../libvterm ../vimtutor ../install-sh ../Make_all.mak
+LINKEDFILES = ../*.[chm] ../*.cc ../*.in ../*.sh ../*.xs ../*.xbm ../gui_gtk_res.xml ../toolcheck \
+   ../proto ../libvterm ../vimtutor ../install-sh ../Make_all.mak
 
 
 distclean: clean scratch
@@ -1815,9 +1795,6 @@ lintinstall:
 ###########################################################################
 
 .c.o:
-	$(COMPILE) $<
-
-os/.c.o:
 	$(COMPILE) $<
 
 
@@ -1852,6 +1829,9 @@ $(OBJDIR)/ui.o: src/ui.c
 
 $(OBJDIR)/window.o: src/window.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
+
+$(OBJDIR)/main.o: main.c
+	$(COMPILE) -o $@ $<
 
 $(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
@@ -1889,7 +1869,7 @@ $(OBJDIR)/juggle.o: src/juggle.c src/eegl.h \
  src/generic.h src/commands.h
 $(OBJDIR)/location.o: src/location.c src/eegl.h \
  src/generic.h src/commands.h
-$(OBJDIR)/main.o: src/main.c src/eegl.h \
+$(OBJDIR)/motor.o: src/motor.c src/eegl.h \
  src/generic.h src/commands.h
 $(OBJDIR)/memory.o: src/memory.c src/eegl.h \
  src/generic.h src/commands.h
@@ -1931,6 +1911,7 @@ $(OBJDIR)/message_test.o: src/message_test.c src/main.c src/eegl.h \
  src/generic.h src/commands.h src/message.c
 $(OBJDIR)/channel.o: src/channel.c src/eegl.h src/generic.h 
 $(OBJDIR)/window.o: src/window.c src/eegl.h src/generic.h src/commands.h
+$(OBJDIR)/main.o: main.c src/eegl.h
  
 $(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 $(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
