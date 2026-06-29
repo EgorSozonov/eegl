@@ -53,7 +53,6 @@ int goto_tabpage_lastused(void);
 void goto_tab_port(Tab *t, Portal *po);
 void moveTab(Unt nr);
 void gotoPortal(Portal *po);
-Portal *portHorizNeighbor(Tab *t, Portal *po, int left, long count);
 void enterPortal(Portal *po, int undo_sync);
 void portFixCurrentDir(void);
 Portal *portTryFindOpenBook(Book *book);

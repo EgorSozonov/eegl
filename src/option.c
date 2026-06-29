@@ -1221,7 +1221,6 @@ optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
 //Get the value for the numeric or string option in a nice format into nameBuffG[].
 private void
 toString(Option* o, SetScope scope) {
-   _bp(true);
    OptionRef ref = getRefInScope(o, scope);
    if (ref.tag == OPTION_NUM || ref.tag == OPTION_FLAGS || ref.tag == OPTION_ENUM) {
       long wc = 0;
@@ -3600,6 +3599,7 @@ copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
    CS wr = bui->c;
    
    for (Option* o = opts; o < opts + count; o++) {
+      _bp(eq(o->fullName, S"errorformat")); 
       if (o->defaultValue.tag == OPTION_STRING 
             && (o->flags & P_NODEFAULT) == 0 
             && (o->defaultValue.string)

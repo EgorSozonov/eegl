@@ -58,7 +58,7 @@ private Arr(Unt) lineStartsP = null;
 // One screen line to be displayed.  Points into screenLinesP.
 private CS currScreenLineS = null;
 
-private Arr(Unt) screenLinesCG[MAX_COMBINED_SYMBOLS];      // for composing characters
+private Arr(Unt) screenLinesCG; //for composing characters. Blocks of MAX_COMBINED_SYMBOLS nums
 
 
 //Using Unicode characters, the character in ScreenLinesUC[] contains the Unicode for 
@@ -173,11 +173,13 @@ drawVoidAtPortalEnd(
 //Only to be used when screenLinesUCG[offFrom] != 0.
 private int
 comp_char_differs(int offFrom, int offTo) {
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      if (screenLinesCG[i][offFrom] != screenLinesCG[i][offTo])
+   for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+      if (screenLinesCG[MAX_COMBINED_SYMBOLS*offFrom + i] 
+            != screenLinesCG[MAX_COMBINED_SYMBOLS*offTo + i]
+      )
          return true;
-      if (screenLinesCG[i][offFrom] == 0)
-         break;
+      if (screenLinesCG[MAX_COMBINED_SYMBOLS*offFrom + i] == 0)
+         return false;
    }
    return false;
 }
@@ -311,8 +313,10 @@ screen_line(
          screenLinesP[offTo] = screenLinesP[offFrom];
          screenLinesUCG[offTo] = screenLinesUCG[offFrom];
          if (screenLinesUCG[offFrom] != 0) {
-            for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i)
-               screenLinesCG[i][offTo] = screenLinesCG[i][offFrom];
+            for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+               screenLinesCG[MAX_COMBINED_SYMBOLS*offTo + i] 
+                  = screenLinesCG[MAX_COMBINED_SYMBOLS*offFrom + i];
+            } 
          }
          screenDecosP[offTo] = screenDecosP[offFrom];
          singleChar(offTo, row, col + coloff);
@@ -369,7 +373,7 @@ screen_line(
                
                if (c >= 0x80) {
                    screenLinesUCG[offTo] = c;
-                   screenLinesCG[0][offTo] = 0;
+                   screenLinesCG[MAX_COMBINED_SYMBOLS*offTo] = 0;
                } else
                    screenLinesUCG[offTo] = 0;
                singleChar(offTo, row, col + coloff);
@@ -589,9 +593,9 @@ private int
 utfc_char2bytes(int off, CS buf) {
    int len = mb_char2bytes(screenLinesUCG[off], buf);
    for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      if (screenLinesCG[i][off] == 0)
+      if (screenLinesCG[MAX_COMBINED_SYMBOLS*off + i] == 0)
           break;
-      len += mb_char2bytes(screenLinesCG[i][off], buf + len);
+      len += mb_char2bytes(screenLinesCG[MAX_COMBINED_SYMBOLS*off + i], buf + len);
    }
    return len;
 }
@@ -620,8 +624,8 @@ screen_getbytes(int row, int col, Byte* bytes, OUT Byte* decoFlags) {
 // composing characters in "characterCombiner". Only to be used when screenLinesUCG[off] != 0.
 private int
 screen_comp_differs(int off, int* characterCombiner) {
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      if (screenLinesCG[i][off] != (Unt)characterCombiner[i])
+   for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+      if (screenLinesCG[MAX_COMBINED_SYMBOLS*off + i] != (Unt)characterCombiner[i])
          return true;
       if (characterCombiner[i] == 0)
          break;
@@ -718,8 +722,8 @@ drawTextLen(
             screenLinesUCG[off] = 0;
          else {
             screenLinesUCG[off] = u8c;
-            for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-               screenLinesCG[i][off] = characterCombiner[i];
+            for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+               screenLinesCG[MAX_COMBINED_SYMBOLS*off + i] = characterCombiner[i];
                if (characterCombiner[i] == 0)
                   break;
             }
@@ -1038,7 +1042,7 @@ fillRowsWithTwoChars(
             screenLinesP[off] = c;
             if (c >= 0x80) {
                screenLinesUCG[off] = c;
-               screenLinesCG[0][off] = 0;
+               screenLinesCG[MAX_COMBINED_SYMBOLS*off] = 0;
             } else
                screenLinesUCG[off] = 0;
             screenDecosP[off].flags = deco.flags;
@@ -1116,7 +1120,6 @@ void
 screenalloc(Boole doclear) {
    int new_row, old_row;
    Portal* po;
-   Unt* new_screenLinesCG[MAX_COMBINED_SYMBOLS];
    static int entered = false;      // avoid recursiveness
    static int done_outofmem_msg = false;   // did outofmem message
    int retry_count = 0;
@@ -1160,7 +1163,7 @@ retry:
    Tab* t; 
    FOR_ALL_TAB_PORTALS(t, po)
       freePortalLsizes(po);
-   for (int i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
+   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].port)
           freePortalLsizes(autoCommPortG[i].port);
    } 
@@ -1175,15 +1178,15 @@ retry:
    } 
 
    Arr(Byte) newScreenLines = LALLOC_MULT(Byte, (visibleRowsG + 1) * visibleColsG);
-   memset(new_screenLinesCG, 0, sizeof(Unt *) * MAX_COMBINED_SYMBOLS);
+   
+   //array of  blocks of MAX_COMBINED_SYMBOLS
+   Arr(Unt) new_screenLinesCG = 
+      LALLOC_CLEAR_MULT(Unt, MAX_COMBINED_SYMBOLS * (visibleRowsG + 1) * visibleColsG);
    Arr(Unt) new_screenLinesUCG = LALLOC_MULT(Unt, (visibleRowsG + 1) * visibleColsG);
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      new_screenLinesCG[i] = LALLOC_CLEAR_MULT(Unt, (visibleRowsG + 1) * visibleColsG);
-   } 
    Arr(Decoration) newScreenDecos = LALLOC_MULT(Decoration, (visibleRowsG + 1) * visibleColsG);
    // Clear screenColS to avoid a warning for uninitialized memory in jump_to_mouse().
    Arr(ColNr) newScreenCols = LALLOC_CLEAR_MULT(ColNr, (visibleRowsG + 1) * visibleColsG);
-   Arr(Unt) newLineOffsets = LALLOC_MULT(unsigned, visibleRowsG);
+   Arr(Unt) newLineStarts = LALLOC_MULT(unsigned, visibleRowsG);
    Arr(Boole) newLineWraps = LALLOC_MULT(Boole, visibleRowsG);
    Arr(Unt) new_tabInds = LALLOC_MULT(Unt, visibleColsG);
    Arr(Short) newPopupMask = LALLOC_MULT(Short, visibleRowsG * visibleColsG);
@@ -1193,7 +1196,7 @@ retry:
    FOR_ALL_TAB_PORTALS(t, po) {
       allocLinesPortal(po);
    }
-   for (int i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
+   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].port && autoCommPortG[i].port->lines == NULL) {
          allocLinesPortal(autoCommPortG[i].port);
       }
@@ -1210,17 +1213,14 @@ retry:
    } 
 
    found_null = false;
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      if (new_screenLinesCG[i] == NULL) {
-         found_null = true;
-         break;
-      }
-   } 
+   if (!new_screenLinesCG) {
+      found_null = true;
+   }
    if (!newScreenLines
        || (!new_screenLinesUCG || found_null)
        || !newScreenDecos
        || !newScreenCols
-       || !newLineOffsets
+       || !newLineStarts
        || !newLineWraps
        || !new_tabInds
        || !newPopupMask
@@ -1236,11 +1236,10 @@ retry:
       }
       EE_CLEAR(newScreenLines);
       EE_CLEAR(new_screenLinesUCG);
-      for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i)
-         EE_CLEAR(new_screenLinesCG[i]);
+      EE_CLEAR(new_screenLinesCG);
       EE_CLEAR(newScreenDecos);
       EE_CLEAR(newScreenCols);
-      EE_CLEAR(newLineOffsets);
+      EE_CLEAR(newLineStarts);
       EE_CLEAR(newLineWraps);
       EE_CLEAR(new_tabInds);
       EE_CLEAR(newPopupMask);
@@ -1250,7 +1249,7 @@ retry:
       done_outofmem_msg = false;
 
       for (new_row = 0; new_row < visibleRowsG; ++new_row) {
-         newLineOffsets[new_row] = new_row * visibleColsG;
+         newLineStarts[new_row] = new_row * visibleColsG;
          newLineWraps[new_row] = false;
 
          (void)memset(
@@ -1259,11 +1258,11 @@ retry:
          (void)memset(
             new_screenLinesUCG + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(Unt)
          );
-         for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-             (void)memset(
-                 new_screenLinesCG[i] + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(Unt)
-             );
-         } 
+         (void)memset(
+             new_screenLinesCG + MAX_COMBINED_SYMBOLS * new_row * visibleColsG, 
+             0, 
+             MAX_COMBINED_SYMBOLS * (Unt)visibleColsG * sizeof(Unt) 
+         );
          (void)memset(
                newScreenDecos + new_row * visibleColsG, 0, (Unt)visibleColsG * sizeof(char)
          );
@@ -1282,26 +1281,28 @@ retry:
                
                // When switching to utf-8, don't copy characters, they may be invalid now.
                if (screenLinesUCG) {
-                  MEMMOVE(newScreenLines + newLineOffsets[new_row],
+                  MEMMOVE(newScreenLines + newLineStarts[new_row],
                      screenLinesP + lineStartsP[old_row], (Unt)len * sizeof(Byte)
                   );
                } 
                if (screenLinesUCG) {
-                  MEMMOVE(new_screenLinesUCG + newLineOffsets[new_row],
+                  MEMMOVE(
+                     new_screenLinesUCG + newLineStarts[new_row],
                      screenLinesUCG + lineStartsP[old_row],
-                     (Unt)len * sizeof(Unt));
-                  for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-                     MEMMOVE(new_screenLinesCG[i] + newLineOffsets[new_row],
-                        screenLinesCG[i] + lineStartsP[old_row], (Unt)len * sizeof(Unt)
-                     );
-                  } 
+                     (Unt)len * sizeof(Unt)
+                  );
+                  MEMMOVE(
+                     new_screenLinesCG + MAX_COMBINED_SYMBOLS * newLineStarts[new_row],
+                     screenLinesCG + MAX_COMBINED_SYMBOLS * lineStartsP[old_row], 
+                     (Unt)len * sizeof(Unt) * MAX_COMBINED_SYMBOLS
+                  );
                }
                MEMMOVE(
-                  newScreenDecos + newLineOffsets[new_row],
+                  newScreenDecos + newLineStarts[new_row],
                   screenDecosP + lineStartsP[old_row], (Unt)len
                );
                MEMMOVE(
-                  newScreenCols + newLineOffsets[new_row],
+                  newScreenCols + newLineStarts[new_row],
                   screenDecosP + lineStartsP[old_row], (Unt)len * sizeof(ColNr)
                );
             }
@@ -1315,14 +1316,13 @@ retry:
 
    free_screenlines();
 
-   // NOTE: this may result in all pointers to become NULL.
+   // NOTE: this may result in all pointers nullifying.
    screenLinesP = newScreenLines;
    screenLinesUCG = new_screenLinesUCG;
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i)
-      screenLinesCG[i] = new_screenLinesCG[i];
+   screenLinesCG = new_screenLinesCG;
    screenDecosP = newScreenDecos;
    screenColS = newScreenCols;
-   lineStartsP = newLineOffsets;
+   lineStartsP = newLineStarts;
    lineWrapsP = newLineWraps;
    tabIndsG = new_tabInds;
    popupMaskG = newPopupMask;
@@ -1358,9 +1358,7 @@ retry:
 void
 free_screenlines(void) {
    EE_CLEAR(screenLinesUCG);
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      EE_CLEAR(screenLinesCG[i]);
-   } 
+   EE_CLEAR(screenLinesCG);
    EE_CLEAR(screenLinesP);
    EE_CLEAR(screenDecosP);
    EE_CLEAR(screenColS);
@@ -1468,15 +1466,12 @@ linecopy(int to, int from, Portal* po) {
 
    MEMMOVE(screenLinesP + offTo, screenLinesP + offFrom, po->width * sizeof(Byte));
 
-   MEMMOVE(screenLinesUCG + offTo, screenLinesUCG + offFrom,
-      po->width * sizeof(Unt));
-   for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      MEMMOVE(
-         screenLinesCG[i] + offTo, 
-         screenLinesCG[i] + offFrom, 
-         po->width * sizeof(Unt)
-      );
-   } 
+   MEMMOVE(screenLinesUCG + offTo, screenLinesUCG + offFrom, po->width * sizeof(Unt));
+   MEMMOVE(
+      screenLinesCG + MAX_COMBINED_SYMBOLS*offTo, 
+      screenLinesCG + MAX_COMBINED_SYMBOLS*offFrom, 
+      MAX_COMBINED_SYMBOLS * po->width * sizeof(Unt)
+   );
    MEMMOVE( screenDecosP + offTo, screenDecosP + offFrom, po->width);
    MEMMOVE(screenColS + offTo, screenColS + offFrom, po->width * sizeof(ColNr));
 }
@@ -3481,8 +3476,8 @@ text_to_screenline(Portal* po, CS text, int col) {
       } else {
          // Non-basic multilingual plane character: display as ? or fullwidth ?.
          screenLinesUCG[idx] = u8c;
-         for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-            screenLinesCG[i][idx] = characterCombiner[i];
+         for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+            screenLinesCG[MAX_COMBINED_SYMBOLS*idx + i] = characterCombiner[i];
             if (characterCombiner[i] == 0)
                 break;
          }
@@ -3633,7 +3628,7 @@ fold_line(
       int c = fillCharsG.fold;
       if (c >= 0x80) {
          screenLinesUCG[off + col] = c;
-         screenLinesCG[0][off + col] = 0;
+         screenLinesCG[MAX_COMBINED_SYMBOLS*(off + col)] = 0;
          screenLinesP[off + col] = 0x80; // avoid storing zero
       } else {
          screenLinesUCG[off + col] = 0;
@@ -4658,11 +4653,9 @@ updatePortal(Portal* po) {
 int
 redraw_asap(int type) {
    int cols = screenLinesColsG;
-   int r;
    int ret = 0;
-   int i;
    Unt* screenlineUC = NULL;   // copy from screenLinesUCG[]
-   Unt* screenlineC[MAX_COMBINED_SYMBOLS];   // copy from screenLinesCG[][]
+   Arr(Unt) screenlineC;   // copy from screenLinesCG[][]
 
    redraw_later(type);
    if (msg_scrolled
@@ -4672,18 +4665,16 @@ redraw_asap(int type) {
 
    // Allocate space to save the text displayed in the command line area.
    int rows = screenLinesRowsG - commlineRowG;
-   Arr(Byte) screenline = LALLOC_MULT(Byte, rows * cols);   // copy from screenLinesP[]
-   Arr(Unt) screenDecosP = LALLOC_MULT(Unt, rows * cols); // copy from screenDecosP[]
+   Arr(Byte) screenline = LALLOC_MULT(Byte, rows * cols); //copy from screenLinesP[]
+   Arr(Unt) screenDecosP = LALLOC_MULT(Unt, rows * cols); //copy from screenDecosP[]
    if (!screenline)
       ret = 2;
    screenlineUC = LALLOC_MULT(Unt, rows * cols);
-   for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-      screenlineC[i] = LALLOC_MULT(Unt, rows * cols);
-   }
+   screenlineC = LALLOC_MULT(Unt, MAX_COMBINED_SYMBOLS * rows * cols);
 
    if (ret != 2) {
       //Save the text displayed in the command line area.
-      for (r = 0; r < rows; ++r) {
+      for (int r = 0; r < rows; ++r) {
          MEMMOVE(
             screenline + r * cols, 
             screenLinesP + lineStartsP[commlineRowG + r], 
@@ -4699,31 +4690,29 @@ redraw_asap(int type) {
             screenLinesUCG + lineStartsP[commlineRowG + r],
             (Unt)cols * sizeof(Unt)
          );
-         for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-            MEMMOVE(
-                screenlineC[i] + r * cols, 
-                screenLinesCG[i] + lineStartsP[commlineRowG + r], 
-                (Unt)cols * sizeof(Unt)
-            );
-         } 
+         MEMMOVE(
+             screenlineC + MAX_COMBINED_SYMBOLS * r * cols, 
+             screenLinesCG + MAX_COMBINED_SYMBOLS * lineStartsP[commlineRowG + r], 
+             MAX_COMBINED_SYMBOLS * (Unt)cols * sizeof(Unt)
+         );
       }
 
       drawUpdateScreen(0);
       ret = 3;
 
       if (mustRedrawG == 0) {
-         int   off = (int)(currScreenLineS - screenLinesP);
+         int off = (int)(currScreenLineS - screenLinesP);
 
          // Restore the text displayed in the command line area.
-         for (r = 0; r < rows; ++r) {
+         for (int r = 0; r < rows; ++r) {
             MEMMOVE(currScreenLineS, screenline + r * cols, (Unt)cols * sizeof(Byte));
             MEMMOVE(screenDecosP + off, screenDecosP + r * cols, (Unt)cols * sizeof(Unt));
             MEMMOVE(screenLinesUCG + off, screenlineUC + r * cols, (Unt)cols * sizeof(Unt));
-            for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-               MEMMOVE(
-                  screenLinesCG[i] + off, screenlineC[i] + r * cols, (Unt)cols * sizeof(Unt)
-               );
-            } 
+            MEMMOVE(
+               screenLinesCG + MAX_COMBINED_SYMBOLS * off, 
+               screenlineC + MAX_COMBINED_SYMBOLS * r * cols, 
+               MAX_COMBINED_SYMBOLS * (Unt)cols * sizeof(Unt)
+            );
             screen_line(commlineRowG + r, 0, cols, cols, -1, 0);
          }
          ret = 4;
@@ -4733,8 +4722,7 @@ redraw_asap(int type) {
    eeglFree(screenline);
    eeglFree(screenDecosP);
    eeglFree(screenlineUC);
-   for (i = 0; i < MAX_COMBINED_SYMBOLS; ++i)
-      eeglFree(screenlineC[i]);
+   eeglFree(screenlineC);
 
    // Show the intro message when appropriate.
    maybe_intro_message();
@@ -4751,8 +4739,8 @@ void
 redraw_after_callback(int call_drawUpdateScreen, int do_message) {
    ++redrawingForCallbackS;
 
-   if (stateG == MODE_HITRETURN || stateG == MODE_ASKMORE
-       || stateG == MODE_SETWSIZE || stateG == MODE_EXTERNCMD
+   if (   stateG == MODE_HITRETURN || stateG == MODE_ASKMORE
+       || stateG == MODE_SETWSIZE  || stateG == MODE_EXTERNCMD
        || stateG == MODE_CONFIRM
    ) {
       if (do_message)
@@ -4770,7 +4758,7 @@ redraw_after_callback(int call_drawUpdateScreen, int do_message) {
          // Redraw in the same position, so that the user can continue editing the command.
          redrawCommlineEx(false);
       }
-   } ei (stateG & (MODE_NORMAL | MODE_INSERT | MODE_TERMINAL)) {
+   } ei ((stateG & (MODE_NORMAL | MODE_INSERT | MODE_TERMINAL)) != 0) {
       update_topline();
       validate_cursor();
 
@@ -5832,8 +5820,8 @@ drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int curr
          screenLinesUCG[m->off] = sc->mb_c;
          if ((currSymb & 0xff) == 0)
             screenLinesP[m->off] = 0x80;   // avoid storing zero
-         for (int i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
-            screenLinesCG[i][m->off] = sc->characterCombiner[i];
+         for (Unt i = 0; i < MAX_COMBINED_SYMBOLS; ++i) {
+            screenLinesCG[MAX_COMBINED_SYMBOLS * m->off + i] = sc->characterCombiner[i];
             if (sc->characterCombiner[i] == 0)
                return false;
          }
@@ -7489,11 +7477,11 @@ drawMsgSetCharAtOffset(Unt c, int off, ScreenCell cell) {
    } else {
       // composing chars
       for (Unt i = 0; i + 1 < MAX_COMBINED_SYMBOLS; ++i) {
-         screenLinesCG[i][off] = cell.chars[i + 1];
+         screenLinesCG[MAX_COMBINED_SYMBOLS * off + i] = cell.chars[i + 1];
          if (cell.chars[i + 1] == 0)
             break;
       }
-      if (c >= 0x80 || (MAX_COMBINED_SYMBOLS > 0 && screenLinesCG[0][off] != 0)) {
+      if (c >= 0x80 || (MAX_COMBINED_SYMBOLS > 0 && screenLinesCG[MAX_COMBINED_SYMBOLS * off] != 0)) {
           screenLinesP[off] = ' ';
           screenLinesUCG[off] = c;
       } else {
@@ -7536,7 +7524,7 @@ drawGetLinesWithOffset(Unt row) {
 
 Unt
 drawGetScreenComposingChar(int offset, Unt composeInd) {
-   return screenLinesCG[composeInd][offset];
+   return screenLinesCG[MAX_COMBINED_SYMBOLS * offset + composeInd];
 }
 
 Unt

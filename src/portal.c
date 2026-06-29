@@ -25,7 +25,7 @@ private Frame *getAltFrame(Portal* port, Tab *t);
 private Tab *altTab(void);
 private Portal* frameToPort(Frame* fr);
 private int frameHasPortal(Frame *fr, Portal* po);
-private void frame_new_height(Frame *topfrp, int height, int topfirst, int wfh, int set_ch);
+private void frame_new_height(Frame *topfrp, int height, Boole topfirst, Boole wfh, Boole set_ch);
 private int frame_fixed_height(Frame *fr);
 private int frame_fixed_width(Frame *fr);
 private void frame_add_statusline(Frame *fr);
@@ -47,8 +47,6 @@ private void append(Portal *after, Portal* po);
 private void frame_append(Frame *after, Frame *fr);
 private void frame_insert(Frame *before, Frame *fr);
 private void frame_remove(Frame *fr);
-private void gotoPortal_ver(int up, long count);
-private void gotoPortal_hor(int left, long count);
 private void frame_add_height(Frame *fr, int n);
 private void last_status_rec(Frame *fr, int statusline);
 private void frame_flatten(Frame *fr);
@@ -180,6 +178,130 @@ switchBufGotoPortalIntoBuf(Book* book) {
       po = buf_jump_open_tab(book);
 
    return po;
+}
+
+//Get the left or right neighbor portal of the specified portal.
+//  left - true for the left neighbor
+//  count - nth neighbor portal
+//Return the specified portal if the neighbor is not found.
+private Portal *
+horizNeighbor(Tab* t, Portal* po, Boole left, long count) {
+   if (portalIsPopup(po))
+      // popups don't have neighbors.
+      return NULL;
+      
+   Frame* foundfr = po->frame;
+   
+   Frame* fr;
+   Frame* nfr;
+   while (count--) {
+      // First go upwards in the tree of frames until we find a left or right neighbor.
+      fr = foundfr;
+      for (;;) {
+         if (fr == t->topframe)
+            goto end;
+         if (left)
+            nfr = fr->prev;
+         else
+            nfr = fr->next;
+         if (fr->parent->layout == FR_ROW && nfr != NULL)
+            break;
+         fr = fr->parent;
+      }
+
+      // Now go downwards to find the leftmost or rightmost frame in it.
+      for (;;) {
+         if (nfr->layout == FR_LEAF) {
+            foundfr = nfr;
+            break;
+         }
+         fr = nfr->child;
+         if (nfr->layout == FR_COL) {
+            // Find the frame at the cursor row.
+            while (fr->next
+               && frameToPort(fr)->portalRow + fr->height <= (Unt)po->portalRow + po->cursorRow
+            )
+               fr = fr->next;
+         }
+         if (nfr->layout == FR_ROW && left) {
+            while (fr->next)
+               fr = fr->next;
+         } 
+         nfr = fr;
+      }
+   }
+end:
+   return foundfr ? foundfr->port : NULL;
+}
+
+//Get the above or below neighbor portal of the specified portal.
+//  up - true for the above neighbor
+//  count - nth neighbor portal
+//Return the specified portal if the neighbor is not found.
+private Portal *
+vertNeighbor(Tab* t, Portal* po, Boole up, long count) {
+   if (portalIsPopup(po))
+      // popups don't have neighbors.
+      return NULL;
+   Frame* foundfr = po->frame;
+   while (count--) {
+      //First go upwards in the tree of frames until we find an upwards or downwards neighbor.
+      Frame* fr = foundfr;
+      Frame   *nfr;
+      for (;;) {
+         if (fr == t->topframe)
+            goto end;
+         if (up)
+            nfr = fr->prev;
+         else
+            nfr = fr->next;
+         if (fr->parent->layout == FR_COL && nfr != NULL)
+            break;
+         fr = fr->parent;
+      }
+
+      //Now go downwards to find the bottom or top frame in it.
+      for (;;) {
+         if (nfr->layout == FR_LEAF) {
+            foundfr = nfr;
+            break;
+         }
+         fr = nfr->child;
+         if (nfr->layout == FR_ROW) {
+            // Find the frame at the cursor row.
+            while (fr->next
+                  && frameToPort(fr)->portalCol + fr->width <= (Unt)po->portalCol + po->cursorCol)
+               fr = fr->next;
+         }
+         if (nfr->layout == FR_COL && up) {
+            while (fr->next)
+               fr = fr->next;
+         } 
+         nfr = fr;
+      }
+    }
+end:
+   return foundfr ? foundfr->port : NULL;
+}
+
+// Move to left or right portal.
+private void
+gotoPortal_hor(Boole goLeft, long count) {
+   if (portErrorIfTermPopup())
+      return;
+   Portal* port = horizNeighbor(curtab, curPor, goLeft, count);
+   if (port)
+      gotoPortal(port);
+}
+
+// Move to portal above or below "count" times.
+private void
+gotoPortal_ver(Boole goUp, long count) {
+   if (portErrorIfTermPopup())
+      return;
+   Portal* port = vertNeighbor(curtab, curPor, goUp, count);
+   if (port)
+      gotoPortal(port);
 }
 
 // All CTRL-W portal commands are handled here, called from normal_cmd().
@@ -1187,7 +1309,7 @@ splitPortal_ins(
          new_height -= STATUS_HEIGHT;
          if (flags & WSP_BOT)
             frame_add_statusline(curfrp);
-         frame_new_height(curfrp, new_height, flags & WSP_TOP, false, false);
+         frame_new_height(curfrp, new_height, (flags & WSP_TOP) != 0, false, false);
       } else
          portalNewHeight(oldPortal, oldPortal_height - (new_size + STATUS_HEIGHT));
       if (before) {   // new portal above current one
@@ -2802,14 +2924,14 @@ portFreeAll(void) {
       tabClose();
 
    Unt dummy;
-   for (int i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
+   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].port) {
-          (void)freePortalMem(autoCommPortG[i].port, &dummy, NULL);
-          autoCommPortG[i].port = NULL;
+         (void)freePortalMem(autoCommPortG[i].port, &dummy, NULL);
+         autoCommPortG[i].port = NULL;
       }
    }
 
-   while (firstPor != NULL)
+   while (firstPor)
       (void)freePortalMem(firstPor, &dummy, NULL);
 
    // No portal should be used after this. Set curPor to NULL to crash instead of using freed memory
@@ -2830,17 +2952,16 @@ portRemoveFrame(
    Frame* fr;
    Frame* frp3;
    Frame* frp_close = port->frame;
-   int      row, col;
 
    // If there is only one portal there is nothing to remove.
-   if (t == NULL ? ONLY_ONE_PORTAL : t->firstPor == t->lastPor)
+   if ((t ? t->firstPor == t->lastPor : ONLY_ONE_PORTAL))
       return NULL;
 
    // Save the position of the containing frame (which will also contain the
    // altframe) before we remove anything, to recompute portal positions later.
    Portal* po = frameToPort(frp_close->parent);
-   row = po->portalRow;
-   col = po->portalCol;
+   int row = po->portalRow;
+   int col = po->portalCol;
 
    // Remove the portal from its frame.
    Frame* fr2 = getAltFrame(port, t);
@@ -2892,7 +3013,7 @@ portRemoveFrame(
                fr = fr->prev;
             }
             if (frp3) {
-               if (frp3->port != NULL && !frp3->port->o.portFixWidth) {
+               if (frp3->port && !frp3->port->o.portFixWidth) {
                   fr2 = frp3;
                   po = frp3->port;
                   break;
@@ -2905,8 +3026,8 @@ portRemoveFrame(
       *dirp = EAD_HORIZONTAL;
    }
 
-   // If the altframe wasn't adjacent and left/above, resizing it will have
-   // changed portal positions within the parent frame.  Recompute them.
+   //If the altframe wasn't adjacent and left/above, resizing it will have
+   //changed portal positions within the parent frame.  Recompute them.
    if (fr2 != frp_close->prev)
       frame_comp_pos(frp_close->parent, &row, &col);
 
@@ -2975,21 +3096,21 @@ restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr) {
    Frame* fr = po->frame;
 
    // Put "po"'s frame back where it was.
-   if (fr->prev != NULL)
+   if (fr->prev)
       frame_append(fr->prev, fr);
    else
       frame_insert(fr->next, fr);
 
-   // Vertical separators to the left may have been lost.  Restore them.
+   //Vertical separators to the left may have been lost.  Restore them.
    if (po->vsepWidth == 0 && fr->parent->layout == FR_ROW && fr->prev)
       frame_add_vsep(fr->prev);
 
-   // Statuslines above may have been lost.  Restore them.
+   //Statuslines above may have been lost.  Restore them.
    if (po->statusHeight == 0 && fr->parent->layout == FR_COL && fr->prev)
       frame_add_statusline(fr->prev);
 
-   // Restore the lost room that was redistributed to the altframe.  Also
-   // adjusts portal sizes to fit restored statuslines/separators, if needed.
+   //Restore the lost room that was redistributed to the altframe.  Also
+   //adjusts portal sizes to fit restored statuslines/separators, if needed.
    if (dir == EAD_VERTICAL) {
       frame_new_height(
          unflat_altfr, unflat_altfr->height - fr->height, unflat_altfr == fr->next, false, false
@@ -3072,7 +3193,7 @@ altTab(void) {
    // Use the next tab, if possible.
    Boole forward = curtab->next != NULL && (p_tcl != TCL_LEFT || curtab == firstTabG);
 
-   Tab   *t = NULL;
+   Tab* t = NULL;
    if (forward)
       t = curtab->next;
    else {
@@ -3094,11 +3215,11 @@ frameToPort(Frame *fr) {
 
 // Return true if frame "fr" contains portal "po".
 private int
-frameHasPortal(Frame *fr, Portal* po) {
+frameHasPortal(Frame* fr, Portal* po) {
    if (fr->layout == FR_LEAF)
       return fr->port == po;
 
-   Frame   *p;
+   Frame* p;
    FOR_ALL_FRAMES(p, fr->child) {
       if (frameHasPortal(p, po))
          return true;
@@ -3116,14 +3237,13 @@ private void
 frame_new_height(
    Frame* topfrp,
    int height,
-   int topfirst,   // resize topmost contained frame first
-   int wfh,  // obey @portfixheight when there is a choice; may cause the height not to be set
-   int set_ch      // set @commheight to resize topframe
+   Boole topfirst,   // resize topmost contained frame first
+   Boole wfh,  // obey @portfixheight when there is a choice; may cause the height not to be set
+   Boole set_ch      // set @commheight to resize topframe
 ){
-   Frame   *fr;
-   int h;
+   Frame* fr;
 
-   if (topfrp->parent == NULL && set_ch) {
+   if (!topfrp->parent && set_ch) {
       // topframe: update the command line height, with side effects.
       int new_ch = MAX(min_set_ch, commlineHeightG + topfrp->height - height);
       int save_ch = min_set_ch;
@@ -3146,7 +3266,7 @@ frame_new_height(
                break;
             }
          }
-      } while (fr != NULL);
+      } while (fr);
    } else {   // layout == FR_COL
       // Complicated case: Resize a column of frames.  Resize the bottom
       // frame first, frames above that when needed.
@@ -3161,7 +3281,7 @@ frame_new_height(
          }
       if (!topfirst) {
          // Find the bottom frame of this column
-         while (fr->next != NULL)
+         while (fr->next)
             fr = fr->next;
          if (wfh)
          // Advance back for frames with one portal with 'wfh' set.
@@ -3173,22 +3293,22 @@ frame_new_height(
       if (extra_lines < 0) {
          // reduce height of contained frames, bottom or top frame first
          while (fr) {
-            h = frame_minheight(fr, NULL);
+            int h = frame_minheight(fr, NULL);
             if ((int)fr->height + extra_lines < h) {
-                extra_lines += fr->height - h;
-                frame_new_height(fr, h, topfirst, wfh, set_ch);
+               extra_lines += fr->height - h;
+               frame_new_height(fr, h, topfirst, wfh, set_ch);
             } else {
-                frame_new_height(fr, fr->height + extra_lines, topfirst, wfh, set_ch);
-                break;
+               frame_new_height(fr, fr->height + extra_lines, topfirst, wfh, set_ch);
+               break;
             }
             if (topfirst) {
-               do
+               do {
                   fr = fr->next;
-               while (wfh && fr != NULL && frame_fixed_height(fr));
+               } while (wfh && fr && frame_fixed_height(fr));
             } else {
                do
                   fr = fr->prev;
-               while (wfh && fr != NULL && frame_fixed_height(fr));
+               while (wfh && fr && frame_fixed_height(fr));
             }
             // Increase "height" if we could not reduce enough frames.
             if (!fr)
@@ -3204,9 +3324,9 @@ frame_new_height(
 
 // Return true if height of frame "fr" should not be changed because of the 'portfixheight' option.
 private int
-frame_fixed_height(Frame *fr) {
+frame_fixed_height(Frame* fr) {
    // frame with one portal: fixed height if 'portfixheight' set.
-   if (fr->port != NULL)
+   if (fr->port)
       return fr->port->o.portFixHeight;
 
    if (fr->layout == FR_ROW) {
@@ -3290,7 +3410,7 @@ frameNewWidth(
       // Simple case: just one portal.
       po = topfrp->port;
       // Find out if there are any portals right of this one.
-      for (fr = topfrp; fr->parent != NULL; fr = fr->parent) {
+      for (fr = topfrp; fr->parent; fr = fr->parent) {
          if (fr->parent->layout == FR_ROW && fr->next != NULL)
             break;
       } 
@@ -3299,7 +3419,7 @@ frameNewWidth(
       portalNewWidth(po, width - po->vsepWidth);
    } ei (topfrp->layout == FR_COL) {
       do {
-          // All frames in this column get the same new width.
+         // All frames in this column get the same new width.
          FOR_ALL_FRAMES(fr, topfrp->child) {
             frameNewWidth(fr, width, leftfirst, wfw);
             if ((int)fr->width > width) {
@@ -3308,7 +3428,7 @@ frameNewWidth(
                break;
             }
          }
-      } while (fr != NULL);
+      } while (fr);
    } else {   // layout == FR_ROW
       // Complicated case: Resize a row of frames.  Resize the rightmost
       // frame first, frames left of it when needed.
@@ -3341,18 +3461,17 @@ frameNewWidth(
              extra_cols += fr->width - w;
              frameNewWidth(fr, w, leftfirst, wfw);
          } else {
-             frameNewWidth(fr, fr->width + extra_cols,
-                              leftfirst, wfw);
+             frameNewWidth(fr, fr->width + extra_cols, leftfirst, wfw);
              break;
          }
          if (leftfirst) {
-            do
+            do {
                fr = fr->next;
-            while (wfw && fr != NULL && frame_fixed_width(fr));
+            } while (wfw && fr && frame_fixed_width(fr));
          } else {
-            do
+            do {
                fr = fr->prev;
-            while (wfw && fr != NULL && frame_fixed_width(fr));
+            } while (wfw && fr && frame_fixed_width(fr));
          }
          // Increase "width" if we could not reduce enough frames.
          if (!fr)
@@ -3375,9 +3494,9 @@ frame_add_vsep(Frame* fr) {
    if (fr->layout == FR_LEAF) {
       po = fr->port;
       if (po->vsepWidth == 0) {
-          if (po->width > 0)   // don't make it negative
-         --po->width;
-          po->vsepWidth = 1;
+         if (po->width > 0)   // don't make it negative
+            --po->width;
+         po->vsepWidth = 1;
       }
    } ei (fr->layout == FR_COL) {
       // Handle all the frames in the column.
@@ -3408,8 +3527,8 @@ frame_fix_height(Portal* po) {
 //When "next_curPor" isn't NULL, use p_wh for this portal.
 //When "next_curPor" is NOPORT, don't use at least one line for the current portal.
 private Unt
-frame_minheight(Frame *topfrp, Portal *next_curPor) {
-   Frame   *fr;
+frame_minheight(Frame* topfrp, Portal* next_curPor) {
+   Frame* fr;
    Unt m;
    Unt n;
 
@@ -3442,11 +3561,8 @@ frame_minheight(Frame *topfrp, Portal *next_curPor) {
 //When "next_curPor" isn't NULL, use p_wiw for this portal.
 //When "next_curPor" is NOPORT, don't use at least one column for the current portal.
 private int
-frame_minwidth(
-   Frame* topfrp,
-   Portal* next_curPor   // use p_wh and p_wiw for next_curPor
-){
-   Frame   *fr;
+frame_minwidth(Frame* topfrp, Portal* next_curPor) {   // use p_wh and p_wiw for next_curPor
+   Frame* fr;
    int m, n;
 
    if (topfrp->port) {
@@ -3471,7 +3587,7 @@ frame_minwidth(
       // Add up the minimal widths for all frames in this row.
       m = 0;
       FOR_ALL_FRAMES(fr, topfrp->child)
-          m += frame_minwidth(fr, next_curPor);
+         m += frame_minwidth(fr, next_curPor);
    }
 
    return m;
@@ -3587,11 +3703,11 @@ allocateFirstPortal(Portal* oldPortal) {
    curPor = allocPortal(NULL, false);
    if (curPor == NULL)
       return FAIL;
-   if (oldPortal == NULL) {
+   if (!oldPortal) {
       // Very first portal, need to create an empty buffer for it and
       // initialize from scratch.
       curBook = bookNew(NULL, NULL, 1L, BLN_LISTED);
-      if (curPor == NULL || curBook == NULL)
+      if (!curPor || !curBook)
           return FAIL;
       curPor->book = curBook;
       curPor->ownSyntax = &(curBook->syntax);
@@ -3607,7 +3723,7 @@ allocateFirstPortal(Portal* oldPortal) {
    }
 
    neframe(curPor);
-   if (curPor->frame == NULL)
+   if (!curPor->frame)
       return FAIL;
    topframeG = curPor->frame;
    topframeG->width = COLUMNS_WITHOUT_TPL();
@@ -3619,13 +3735,10 @@ allocateFirstPortal(Portal* oldPortal) {
 // Create a frame for portal "po".
 private void
 neframe(Portal* po) {
-    Frame *fr = ALLOC_CLEAR_ONE(Frame);
-
-    po->frame = fr;
-   if (fr == NULL)
-   return;
-    fr->layout = FR_LEAF;
-    fr->port = po;
+   Frame *fr = ALLOC_CLEAR_ONE(Frame);
+   fr->layout = FR_LEAF;
+   fr->port = po;
+   po->frame = fr;
 }
 
 // Initialize the portal and frame size to the maximum.
@@ -3658,12 +3771,10 @@ alloc_tab(void) {
 
 void
 freeTab(Tab *t) {
-   int idx;
-
    diff_clear(t);
    while (t->firstPopupPort)
       popupCloseTab(t, t->firstPopupPort->id, true);
-   for (idx = 0; idx < SNAP_COUNT; ++idx)
+   for (int idx = 0; idx < SNAP_COUNT; ++idx)
       clearSnapshot(t, idx);
    vars_clear(&t->vars->hashTable);   // free all t: variables
    hash_init(&t->vars->hashTable);
@@ -3760,7 +3871,7 @@ portNewTab(int after) {
 // Return OK if a new tab was created, FAIL otherwise.
 private int
 mayOpenTab(void) {
-   int      n = (commModifierG.cmod_tab == 0) ? postponed_split_tab : commModifierG.cmod_tab;
+   int n = (commModifierG.cmod_tab == 0) ? postponed_split_tab : commModifierG.cmod_tab;
 
    if (n == 0)
       return FAIL;
@@ -3773,8 +3884,8 @@ mayOpenTab(void) {
 // Create up to "maxcount" tabs with empty portals. Returns the number of resulting tabs
 int
 portMakeTabs(Unt maxcount) {
-   int      count = maxcount;
-   int      todo;
+   int count = maxcount;
+   int todo;
 
    // Limit to 16 tabs.
    if (count > 16)
@@ -3852,7 +3963,7 @@ getTab(int n) {
    if (n == 0)
       return curtab;
 
-   int      i = 1;
+   int i = 1;
    Tab* t;
    for (t = firstTabG; t != NULL && i != n; t = t->next)
       ++i;
@@ -3911,9 +4022,9 @@ leaveTab(NULLABLE Book   *newCurBook, int      trigger_leave_autocmds) {
 //Only trigger *Leave autocommands when trigger_leave_autocmds is true.
 private void
 enterTab(Tab* t, Book* oldCurBuf, Boole trigger_enter_autocmds, Boole trigger_leave_autocmds) {
-   int      old_off = t->firstPor->portalRow;
-   Portal   *next_prevPor = t->prevPor;
-   Tab   *last_tab = curtab;
+   int old_off = t->firstPor->portalRow;
+   Portal* next_prevPor = t->prevPor;
+   Tab* last_tab = curtab;
 
    loadTab(t);
 
@@ -4133,136 +4244,6 @@ gotoPortal(Portal* po) {
    enterPortal(po, true);
 }
 
-
-//Get the above or below neighbor portal of the specified portal.
-//  up - true for the above neighbor
-//  count - nth neighbor portal
-//Return the specified portal if the neighbor is not found.
-private Portal *
-vertNeighbor(Tab *t, Portal* po, int up, long count) {
-   if (portalIsPopup(po))
-      // popups don't have neighbors.
-      return NULL;
-   Frame* foundfr = po->frame;
-   while (count--) {
-      //First go upwards in the tree of frames until we find an upwards or downwards neighbor.
-      Frame* fr = foundfr;
-      Frame   *nfr;
-      for (;;) {
-         if (fr == t->topframe)
-            goto end;
-         if (up)
-            nfr = fr->prev;
-         else
-            nfr = fr->next;
-         if (fr->parent->layout == FR_COL && nfr != NULL)
-            break;
-         fr = fr->parent;
-      }
-
-      //Now go downwards to find the bottom or top frame in it.
-      for (;;) {
-         if (nfr->layout == FR_LEAF) {
-            foundfr = nfr;
-            break;
-         }
-         fr = nfr->child;
-         if (nfr->layout == FR_ROW) {
-            // Find the frame at the cursor row.
-            while (fr->next
-                  && frameToPort(fr)->portalCol + fr->width <= (Unt)po->portalCol + po->cursorCol)
-               fr = fr->next;
-         }
-         if (nfr->layout == FR_COL && up)
-         while (fr->next)
-             fr = fr->next;
-         nfr = fr;
-      }
-    }
-end:
-   return foundfr != NULL ? foundfr->port : NULL;
-}
-
-// Move to portal above or below "count" times.
-private void
-gotoPortal_ver(
-    int      up,      // true to go to port above
-    long   count)
-{
-   if (portErrorIfTermPopup())
-      return;
-   Portal* port = vertNeighbor(curtab, curPor, up, count);
-   if (port != NULL)
-   gotoPortal(port);
-}
-
-//Get the left or right neighbor portal of the specified portal.
-//  left - true for the left neighbor
-//  count - nth neighbor portal
-//Return the specified portal if the neighbor is not found.
-Portal *
-portHorizNeighbor(Tab *t, Portal* po, int left, long count) {
-   Frame   *fr;
-   Frame   *nfr;
-   Frame   *foundfr;
-
-   if (portalIsPopup(po))
-      // popups don't have neighbors.
-      return NULL;
-   foundfr = po->frame;
-   while (count--) {
-      // First go upwards in the tree of frames until we find a left or right neighbor.
-      fr = foundfr;
-      for (;;) {
-         if (fr == t->topframe)
-            goto end;
-         if (left)
-            nfr = fr->prev;
-         else
-            nfr = fr->next;
-         if (fr->parent->layout == FR_ROW && nfr != NULL)
-            break;
-         fr = fr->parent;
-      }
-
-      // Now go downwards to find the leftmost or rightmost frame in it.
-      for (;;) {
-         if (nfr->layout == FR_LEAF) {
-            foundfr = nfr;
-            break;
-         }
-         fr = nfr->child;
-         if (nfr->layout == FR_COL) {
-            // Find the frame at the cursor row.
-            while (fr->next
-               && frameToPort(fr)->portalRow + fr->height <= (Unt)po->portalRow + po->cursorRow
-            )
-               fr = fr->next;
-         }
-         if (nfr->layout == FR_ROW && left) {
-            while (fr->next)
-               fr = fr->next;
-         } 
-         nfr = fr;
-      }
-   }
-end:
-   return foundfr != NULL ? foundfr->port : NULL;
-}
-
-// Move to left or right portal.
-private void
-gotoPortal_hor(
-   int      left,      // true to go to left port
-   long   count)
-{
-   if (portErrorIfTermPopup())
-      return;
-   Portal* port = portHorizNeighbor(curtab, curPor, left, count);
-   if (port)
-      gotoPortal(port);
-}
-
 //Make portal "po" the current portal
 void
 enterPortal(Portal* po, int undo_sync) {
@@ -4278,9 +4259,8 @@ portFixCurrentDir(void) {
    if (curPor->localDir || curtab->localdir) {
       // Portal or tab has a local directory: Save current directory as
       // global directory (unless that was done already) and change to the local directory
-      if (globaldir == NULL) {
+      if (!globaldir) {
          Byte cwd[MAXPATHL];
-
          if (mch_dirname(cwd, MAXPATHL) == OK)
             globaldir = copyStr(cwd);
       }
@@ -4304,9 +4284,9 @@ portFixCurrentDir(void) {
 //Return true when dont_parse_messages was decremented.
 private int
 enterPortalWorker(Portal* po, Unt flags) {
-   int      isOtherBook = false;
-   int      curPor_invalid = (flags & WEE_CURWIN_INVALID);
-   int      did_decrement = false;
+   int isOtherBook = false;
+   int curPor_invalid = (flags & WEE_CURWIN_INVALID);
+   int did_decrement = false;
 
    if (po == curPor && curPor_invalid == 0)   // nothing to do
       return false;
@@ -4397,8 +4377,8 @@ enterPortalWorker(Portal* po, Unt flags) {
 //Jump to the first open portal into buffer "buf", if one exists.
 //Return a pointer to the portal found, otherwise NULL.
 Portal *
-portTryFindOpenBook(Book *book) {
-   Portal   *po = NULL;
+portTryFindOpenBook(Book* book) {
+   Portal* po = null;
 
    if (curPor->book == book)
       po = curPor;
@@ -4416,21 +4396,22 @@ portTryFindOpenBook(Book *book) {
 //Jump to the first open portal in any tab that contains book "book", if one exists. First search 
 //in the portals present in the current tab. Return a pointer to the found portal, otherwise NULL.
 Portal *
-buf_jump_open_tab(Book *book) {
-   Portal   *po = portTryFindOpenBook(book);
+buf_jump_open_tab(Book* book) {
+   Portal* po = portTryFindOpenBook(book);
    if (po)
       return po;
 
-   Tab   *t;
+   Tab* t;
    FOR_ALL_TABS(t) {
       if (t != curtab) {
-          FOR_ALL_PORTALS_IN_TAB(t, po)
-         if (po->book == book)
-             break;
+         FOR_ALL_PORTALS_IN_TAB(t, po) {
+            if (po->book == book)
+               break;
+         } 
          if (po) {
             goto_tab_port(t, po);
             if (curPor != po)
-                po = NULL;   // something went wrong
+               po = NULL;   // something went wrong
             break;
           }
       }
@@ -4442,7 +4423,7 @@ private int lastPortIdS = MIN_PORT_ID - 1;
 
 // Allocate a portal structure and link it in the portal list when "hidden" is false.
 private Portal *
-allocPortal(Portal *after, int hidden) {
+allocPortal(Portal* after, int hidden) {
    // allocate portal structure and linesizes arrays
    Portal* newPort = ALLOC_CLEAR_ONE(Portal);
    allocLinesPortal(newPort);
@@ -4451,7 +4432,7 @@ allocPortal(Portal *after, int hidden) {
 
    // init w: variables
    newPort->internalVars = allocBag_id(aid_newwin_wvars);
-   if (newPort->internalVars == NULL) {
+   if (!newPort->internalVars) {
       freePortalLsizes(newPort);
       eeglFree(newPort);
       return NULL;
@@ -4507,13 +4488,13 @@ freePortal(Portal* po, Tab* t) { // tab "po" is in, NULL for current
 
    {
 
-      if (prevPor == po)
-         prevPor = NULL;
-      Tab   *search;
-      FOR_ALL_TABS(search) {
-         if (search->prevPor == po)
-            search->prevPor = NULL;
-      } 
+   if (prevPor == po)
+      prevPor = NULL;
+   Tab* search;
+   FOR_ALL_TABS(search) {
+      if (search->prevPor == po)
+         search->prevPor = NULL;
+   } 
    }
    freePortalLsizes(po);
 
@@ -4533,7 +4514,7 @@ freePortal(Portal* po, Tab* t) { // tab "po" is in, NULL for current
             // If there already is an entry with "portal" set to NULL it must be removed, it 
             // would never be used. Skip "wip" itself, otherwise Coverity complains.
             FOR_ALL_BOOK_PORTINFOS(book, wip2) {
-               if (wip2 != wip && wip2->portal == NULL) {
+               if (wip2 != wip && !wip2->portal) {
                   if (wip2->next)
                      wip2->next->prev = wip2->prev;
                   if (!wip2->prev)
@@ -4599,17 +4580,13 @@ portFreePopup(Portal* port) {
 
 // Append portal "po" in the portal list after "after".
 private void
-append(Portal *after, Portal* po) {
-   Portal   *before;
-
-   if (after == NULL)       // after NULL is in front of the first
-      before = firstPor;
-   else
-      before = after->next;
+append(Portal* after, Portal* po) {
+   // after NULL is in front of the first
+   Portal* before = after ? after->next : firstPor;
 
    po->next = before;
    po->prev = after;
-   if (after == NULL)
+   if (!after)
       firstPor = po;
    else
       after->next = po;
@@ -4621,7 +4598,7 @@ append(Portal *after, Portal* po) {
 
 // Remove a portal from the portal list.
 void
-removePortal( Portal* port, Tab* t) { // tab "port" is in, NULL for current
+removePortal(Portal* port, Tab* t) { // tab "port" is in, NULL for current
    if (port->prev)
       port->prev->next = port->next;
    ei (!t)
@@ -4639,7 +4616,7 @@ removePortal( Portal* port, Tab* t) { // tab "port" is in, NULL for current
 
 // Append frame "fr" in a frame list after frame "after".
 private void
-frame_append(Frame *after, Frame *frame) {
+frame_append(Frame* after, Frame* frame) {
    frame->next = after->next;
    after->next = frame;
    if (frame->next)
@@ -4649,11 +4626,11 @@ frame_append(Frame *after, Frame *frame) {
 
 // Insert frame "fr" in a frame list before frame "before".
 private void
-frame_insert(Frame *before, Frame *fr) {
+frame_insert(Frame* before, Frame* fr) {
    fr->next = before;
    fr->prev = before->prev;
    before->prev = fr;
-   if (fr->prev != NULL)
+   if (fr->prev)
       fr->prev->next = fr;
    else
       fr->parent->child = fr;
@@ -4661,12 +4638,12 @@ frame_insert(Frame *before, Frame *fr) {
 
 // Remove a frame from a frame list.
 private void
-frame_remove(Frame *fr) {
-   if (fr->prev != NULL)
+frame_remove(Frame* fr) {
+   if (fr->prev)
       fr->prev->next = fr->next;
    else
       fr->parent->child = fr->next;
-   if (fr->next != NULL)
+   if (fr->next)
       fr->next->prev = fr->prev;
 }
 
@@ -4691,7 +4668,7 @@ freePortalLsizes(Portal* po) {
 // first to avoid this function updating firstPor->portalCol first.
 void
 shell_new_rows(void) {
-   int      h = (int)ROWS_AVAIL;
+   int h = (int)ROWS_AVAIL;
 
    if (!firstPor)   // not initialized yet
       return;
@@ -4749,7 +4726,6 @@ shell_new_columns(void) {
 // Save the size of all portals into "gap".
 void
 portalSaveSizes(OUT ArrayList *gap) {
-
    ga_init2(gap, sizeof(int), 1);
    if (ga_grow(gap, portCount() * 2 + 1) == FAIL)
       return;
@@ -4757,7 +4733,7 @@ portalSaveSizes(OUT ArrayList *gap) {
    // first entry is the total lines available for portals
    ((int *)gap->c)[gap->len++] = ROWS_AVAIL - last_stl_height(false);
 
-   Portal   *po;
+   Portal* po;
    FOR_ALL_PORTALS(po) {
       ((int *)gap->c)[gap->len++] = po->width + po->vsepWidth;
       ((int *)gap->c)[gap->len++] = po->height;
@@ -4768,8 +4744,8 @@ portalSaveSizes(OUT ArrayList *gap) {
 // and total lines available for portals didn't change. Does not free the growarray.
 void
 portRestoreSize(ArrayList *gap) {
-    Portal   *po;
-    int      i, j;
+    Portal* po;
+    int i, j;
 
    if (portCount() * 2 + 1 == (Unt)gap->len
        && ((int *)gap->c)[0] == ROWS_AVAIL - last_stl_height(false)
@@ -4792,8 +4768,8 @@ portRestoreSize(ArrayList *gap) {
 // Return the row just after the last portal.
 void
 computePosPortal(void) {
-   int      row = 0;
-   int      col = TPL_LCOL();
+   int row = 0;
+   int col = TPL_LCOL();
    frame_comp_pos(topframeG, &row, &col);
 }
 
@@ -4801,11 +4777,11 @@ computePosPortal(void) {
 // "*row" and "*col" are the top-left position of the frame.  They are updated
 // to the bottom-right position plus one.
 private void
-frame_comp_pos(Frame *topfrp, int *row, int *col) {
-   Frame   *fr;
-   int      startcol;
-   int      startrow;
-   int      h;
+frame_comp_pos(Frame* topfrp, int* row, int* col) {
+   Frame* fr;
+   int startcol;
+   int startrow;
+   int h;
 
    Portal* po = topfrp->port;
    if (po) {
@@ -4874,13 +4850,13 @@ portSetHeight(int height, Portal* port) {
 // At the top level we can also use change the command line height.
 private void
 frame_setheight(Frame *curfrp, int height) {
-   int      room;      // total number of lines available
-   int      take;      // number of lines taken from other portals
-   int      room_cmdline;   // lines available from cmdline
-   int      run;
-   Frame   *fr;
-   int      h;
-   int      room_reserved;
+   int room;      // total number of lines available
+   int take;      // number of lines taken from other portals
+   int room_cmdline;   // lines available from cmdline
+   int run;
+   Frame* fr;
+   int h;
+   int room_reserved;
 
    // If the height already is the desired value, nothing to do.
    if ((int)curfrp->height == height)
@@ -4895,7 +4871,7 @@ frame_setheight(Frame *curfrp, int height) {
       // one.  First check for the minimal height of these.
       h = frame_minheight(curfrp->parent, NULL);
       if (height < h)
-          height = h;
+         height = h;
       frame_setheight(curfrp->parent, height);
    } else {
       // Column of frames: try to change only frames in this column.
@@ -4968,10 +4944,7 @@ frame_setheight(Frame *curfrp, int height) {
             fr = curfrp->prev;   // 2nd run: start with prev portal
          while (fr != NULL && take != 0) {
             h = frame_minheight(fr, NULL);
-            if (room_reserved > 0
-               && fr->port
-               && fr->port->o.portFixHeight)
-            {
+            if (room_reserved > 0 && fr->port && fr->port->o.portFixHeight) {
                if (room_reserved >= (int)fr->height)
                   room_reserved -= fr->height;
                else {
@@ -5024,13 +4997,13 @@ portSetWidth(int width, Portal* po) {
 //
 // Set current portal width and take care of repositioning other portals to fit around it.
 private void
-frame_setwidth(Frame *curfrp, int width) {
-   int      room;      // total number of lines available
-   int      take;      // number of lines taken from other portals
-   int      run;
-   Frame   *fr;
-   int      w;
-   int      room_reserved;
+frame_setwidth(Frame* curfrp, int width) {
+   int room;      // total number of lines available
+   int take;      // number of lines taken from other portals
+   int run;
+   Frame* fr;
+   int w;
+   int room_reserved;
 
    // If the width already is the desired value, nothing to do.
    if (curfrp->width == (Unt)width)
@@ -5130,10 +5103,9 @@ frame_setwidth(Frame *curfrp, int width) {
 
 // Status line of dragwin is dragged "offset" lines down (negative is up).
 void
-portDragStatusLine(Portal *dragwin, int offset) {
-   int      room;
-   int      up;   // if true, drag status line up, otherwise down
-   int      n;
+portDragStatusLine(Portal* dragwin, int offset) {
+   Boole up;   // if true, drag status line up, otherwise down
+   int n;
 
    Frame* fr = dragwin->frame;
    Frame* curfr = fr;
@@ -5157,6 +5129,7 @@ portDragStatusLine(Portal *dragwin, int offset) {
           fr = fr->parent;
    }
 
+   int room;
    if (offset < 0) { // drag up
       up = true;
       offset = -offset;
@@ -6370,6 +6343,7 @@ portFindByNrOrId(Var *vp) {
    return portFindByNr(vp, NULL);
 }
 
+
 // Find portal specified by "po" in tab "tvp". Return the tab in 'ptp'
 Portal *
 find_tabwin(
@@ -6478,9 +6452,9 @@ getPortalIdInTab(Tab* t, Var* argvar) {
             ei (STRCMP(endp, "k") == 0)
                tPort = vertNeighbor(t, tPort, true, count);
             ei (STRCMP(endp, "h") == 0)
-               tPort = portHorizNeighbor(t, tPort, true, count);
+               tPort = horizNeighbor(t, tPort, true, count);
             ei (STRCMP(endp, "l") == 0)
-               tPort = portHorizNeighbor(t, tPort, false, count);
+               tPort = horizNeighbor(t, tPort, false, count);
             else
                invalid_arg = true;
          } else

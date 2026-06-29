@@ -304,7 +304,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] sane discriminated unions in options.c instead of byte casting 
 [+] move @signcolumn option from string to bool
 [-] ml_get_alloc_lines (some weird crap that made separate allocations for every text line)
-[ ] draw.c:screenLinesCG: change array layout to improve cache locality
+[+] draw.c:screenLinesCG: change array layout to improve cache locality
 [ ] auto-replace >=, <=, != with single Unicode chars (new book-local option)
 [ ] "rX", char replacing, shoult not set the "modified" flag on a buffer if previous char was same
 [+] prevent saving of immutable books. The "modifiable" flag should have actual power
@@ -313,7 +313,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down
 [ ] Replace terminfo use with shelling out to infocmp and parsing the result
 [ ] Growable strings (search for `TODO growable string`)
-[ ] Remove internet connectivity (channel.c) to massively increase security
+[+] Remove internet connectivity (channel.c) to massively increase security
 [ ] Replace the "messages" mess with popup portals
 [ ] function to reformat minified JSON into human-readable form? Maybe just use jq? And just
    a general way to create auto-updateable views of buffers?
@@ -322,6 +322,13 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Replace VimScript with Wren
 [ ] Code OSC 52 instead of Wayland clipboard, which is insecure and unsupported on Gnome
+[ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
+   to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 
+   Then when they are saved with .txt, .json, .yaml or without file extension, they stay that way.
+   But if they are saved with another extension, they get isCode = true and the IsCodeChange fires.
+   The existing @errorformat should be repurposed as a global option that the autocommand can 
+   choose to use. But we need separate commands to set the errorformat property for a book, also 
+   to set isCode.
 
    [[[Bugs to fix]]]
 

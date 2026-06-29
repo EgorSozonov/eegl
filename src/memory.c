@@ -5342,7 +5342,7 @@ garbage_collect(int testing) {
    FOR_ALL_TAB_PORTALS(tab, wp)
       abort = abort || set_ref_in_item(&wp->wVar.c, copyID,  NULL, NULL);
    //portal-local variables in autocmd portals
-   for (int i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
+   for (Unt i = 0; i < AUCMD_PORTAL_COUNT; ++i) {
       if (autoCommPortG[i].port) {
          abort = abort || set_ref_in_item( &autoCommPortG[i].port->wVar.c, copyID, NULL, NULL);
       } 

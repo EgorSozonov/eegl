@@ -1050,8 +1050,104 @@ Minimum value is 12, maximum value is 10000.
 
 @@comments               Book. String. Default = "s1:/*,mb:*,ex:*/,://,b:#,:%,:XCOMM,n:>,fb:-"
    
-A comma-separated list of strings that can start a comment line.  See
+A comma-separated list of colon separated strings that can start a comment line.  See
 |format-comments|.  See |option-backslash| about using backslashes to insert a space.
+
+  Each part defines a type of comment string.  A part consists of: {flags}:{string}
+
+{string} is the literal text that must appear.
+
+{flags}:
+  n	Nested comment.  Nesting with mixed parts is allowed.  If 'comments' is "n:),n:>", a line 
+      starting with "> ) >" is a comment.
+  b	Blank (<Space>, <Tab> or <EOL>) required after {string}.
+  f	Only the first line has the comment string. Do not repeat comment on the next line, but 
+      preserve indentation (e.g., a bullet-list).
+  s	Start of three-piece comment
+  m	Middle of a three-piece comment
+  e	End of a three-piece comment
+
+  l	Left align. Used together with 's' or 'e', the leftmost character of start or end will 
+      line up with the leftmost character from the middle. This is the default and can be omitted. 
+      See below for more details.
+
+  r	Right align. Same as above but rightmost instead of leftmost. See below for more details.
+
+  O	Don't consider this comment for the "O" command.
+
+  x	Allows three-piece comments to be ended by just typing the last character of the end-comment 
+      string as the first action on a new line when the middle-comment string has been inserted 
+      automatically. See below for more details.
+
+  {digits}
+	When together with 's' or 'e': add {digit} amount of offset to an automatically inserted middle 
+   or end comment leader. The offset begins from a left alignment. See below for more details.
+
+  -{digits}
+	Like {digits} but reduce the indent. This only works when there is
+	some indent for the start or end part that can be removed.
+
+When a string has none of the 'f', 's', 'm' or 'e' flags, Eegl assumes the comment string repeats 
+at the start of each line.  The {flags} field may be empty.
+
+Any blank space in the text before and after the {string} is part of the {string}, so do not 
+include leading or trailing blanks unless the blanks are a required part of the comment string.
+
+When one comment leader is part of another, specify the part after the whole.
+For example, to include both "-" and "->", use >
+
+	:set comments=f:->,f:-
+
+A three-piece comment must always be given as start,middle,end, with no other parts in between. An
+example of a three-piece comment is 
+
+	sr:/*,mb:*,ex:*/
+
+for C-comments.  To avoid recognizing "*ptr" as a comment, the middle string includes the 'b' flag.
+For three-piece comments, Vim checks the text after the start and middle strings for the end 
+string. If Eegl finds the end string, the comment does not continue on the next line. Three-piece 
+comments must have a middle string because otherwise Eegl can't recognize the middle lines.
+
+Notice the use of the "x" flag in the above three-piece comment definition. When you hit Return in 
+a C-comment, Eegl will insert the middle comment leader for the new line: " * ". To close this 
+comment you just have to type "/" before typing anything else on the new line. This will replace 
+the middle-comment leader with the end-comment leader and apply any specified
+alignment, leaving just `" */"`. There is no need to hit Backspace first.
+
+When there is a match with a middle part, but there also is a matching end part which is longer, 
+the end part is used. This makes a C style comment work without requiring the middle part to end 
+with a space.
+
+Here is an example of alignment flags at work to make a comment stand out
+(kind of looks like a 1 too). Consider comment string: 
+
+	:set comments=sr:/***,m:**,ex-2:******/
+
+                                   /*** ~
+                                     **<--right aligned from "r" flag ~
+                                     ** ~
+ offset 2 spaces for the "-2" flag-->** ~
+                                   ******/ ~
+                                   
+In this case, the first comment was typed, then return was pressed 4 times,
+then "/" was pressed to end the comment.
+
+Here are some finer points of three part comments. There are three times when alignment and offset
+flags are taken into consideration: opening a new line after a start-comment, opening a new line 
+before an end-comment, and automatically ending a three-piece comment. The end alignment flag has a
+backwards perspective; the result is that the same alignment flag used with "s" and "e" will result 
+in the same indent for the starting and ending pieces. Only one alignment per comment part is 
+meant to be used, but an offset number will override the "r" and "l" flag.
+
+Other examples: 
+   "b:*"	Includes lines starting with "*", but not if the "*" is followed by a non-blank. This 
+         avoids a pointer dereference like "*str" to be recognized as a comment.
+   "n:>"	Includes a line starting with ">", ">>", ">>>", etc.
+   "fb:-"	Format a list that starts with "- ".
+
+By default, "b:#" is included. This means that a line that starts with "#include" is not 
+recognized as a comment line. But a line that starts with "# define" is recognized. This is 
+a compromise.
 
 
 @@commentstring          Book. String. Default = "//%s"
