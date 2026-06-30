@@ -6005,7 +6005,7 @@ wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
       redrawcmd();
    } else {
       // restore 'laststatus' and 'winminheight'
-      last_status(false);
+      last_status();
       drawUpdateScreen(UPD_VALID);   // redraw the screen NOW
       redrawcmd();
    }
@@ -10114,7 +10114,7 @@ openCommPort(void) {
    );
    curBook->o.modifiable = true;
    curPor->o.foldEnable = false;
-   RESET_BINDING(curPor);
+   curPor->o.diff = false;
 
    // Don't allow switching to another buffer.
    ++curBookLock;
@@ -17732,7 +17732,7 @@ auCommRestoreBook(AutocommSave* aco)  {    // structure holding saved values
 
       // The portal is marked as unused, but it is not freed, it can be used again.
       autoCommPortG[aco->use_autoCommPort_idx].isPortUsed = false;
-      last_status(false);       // may need to remove last status line
+      last_status();       // may need to remove last status line
 
       if (!areTabAndPortalValid(curtab))
          //no valid portal in current tab

@@ -309,11 +309,9 @@ OPTION("portfixwidth", portFixWidth, Boole, false, P_RSTAT, null, null)
 OPTION("smoothscroll", smoothScroll, Boole, false, P_REDRAW_PORT, &did_set_smoothscroll, NULL)
 OPTION("cursorline", cursorLine, Boole, true, P_REDRAW_PORT|P_HLONLY, null, null)
 OPTION("statusline", statusLine, CS, 
-      "%n\\:%f%r%m\\ \\|%l\\:%c\\/%L\\L\\|\\ %{strftime('%H:%M')}",
+      "%n\\:%f%m\\ \\|%l\\:%c\\/%L\\L\\|\\ %{strftime('%H:%M')}",
       P_RSTAT, &did_set_statusline, NULL)
-OPTION("scrollbind", scrollBind, Boole, false, 0, &did_set_scrollbind, NULL)
 OPTION("wrap", wrap, Boole, true, P_REDRAW_PORT, &did_set_wrap, NULL)
-OPTION("cursorbind", cursorBind, Boole, false, 0, null, null)
 OPTION("signcolumn", signColumn, Boole, true, P_RCLR, null, null)
 OPTION("sidescrolloff", sideScrollOff, long, 0, P_RBUF, &setSideScrollOff, null)
 OPTION("scrolloff", scrollOff, long, 3, P_RALL, &setScrollOff, null)

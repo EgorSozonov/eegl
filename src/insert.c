@@ -398,11 +398,10 @@ edit(Unt commChar, int startln, long count){
       //Also shows mode, ruler and positions cursor.
       redrawInInsertMode(true);
 
-      if (curPor->o.scrollBind)
+      if (curPor->o.diff) {
          normPostProcessScrollbind(true);
-
-      if (curPor->o.cursorBind)
          do_check_cursorbind();
+      } 
       if (count <= 1)
          update_curswant();
       old_topline = curPor->topLine;

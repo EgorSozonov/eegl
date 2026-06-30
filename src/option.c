@@ -1692,6 +1692,13 @@ did_set_diff(OptionChange* cha) {
    
    if (curPor->o.foldMethod == FOLD_DIFF)
       foldUpdateAll(curPor);
+      
+   //when @scrollbind is set: snapshot the current position to avoid a jump
+   //at the end of normal_cmd()
+   if (cha->newVal.boole)
+      return null;
+   normPostProcessScrollbind(false);
+   curPor->scbindPos = curPor->topLine;
    return NULL;
 }
 
@@ -1749,20 +1756,6 @@ did_set_numberwidth(OptionChange* cha) {
    curPor->lineCountSaved = 0; // trigger a redraw
 
    return errmsg;
-}
-
-// Process the updated @scrollbind value.
-private CS
-did_set_scrollbind(OptionChange* cha) {
-   updateBoolRef(cha);
-   //when @scrollbind is set: snapshot the current position to avoid a jump
-   //at the end of normal_cmd()
-   if (!curPor->o.scrollBind)
-      return NULL;
-
-   normPostProcessScrollbind(false);
-   curPor->scbindPos = curPor->topLine;
-   return NULL;
 }
 
 //Process the new @maxsearchcount option value.

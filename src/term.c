@@ -1137,9 +1137,9 @@ set_shellsize_inner(int width, int height, int mustset) {
          screenalloc(false);
          repeat_message();
       } else {
-         if (curPor->o.scrollBind)
+         if (curPor->o.diff)
             normPostProcessScrollbind(true);
-         if (stateG & MODE_COMMLINE) {
+         if ((stateG & MODE_COMMLINE) != 0) {
             drawUpdateScreen(UPD_NOT_VALID);
             redrawCommline();
          } else {

@@ -459,35 +459,28 @@ private int
 statusline_row(Portal* po) {
    if (po->frame->width == STATUS_HEIGHT && !portalIsPopup(po))
       return po->portalRow;
-   return po->portalRow + po->height;
+   return po->portalRow + po->height - 1;
 }
 
 // Redraw the status line or ruler of portal "po".
 private void
-redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // true or false
-   static int entered = false;
-   Decoration deco;
+redrawStatusLineOrRuler(Portal* po, Boole draw_ruler) {
+   static int busy = false;
    int col = 0;
-   int width;
    int n;
-   int len;
    CS stl;
    CS p;
    int opt_scope = 0;
-   StatusLineHilite* hilites;
-   StatusLineHilite* labels;
-   Portal* ewp;
-   int p_crb_save;
-
    // There is a tiny chance that this gets called recursively: When redrawing a status line 
    // triggers redrawing the ruler. Avoid trouble by forbidding recursion.
-   if (entered || !po)
+   if (busy || !po)
       return;
       
-   Byte builder[MAXPATHL];
-   entered = true;
+   Byte buf[MAXPATHL];
+   busy = true;
    
    int row = statusline_row(po);
+   Decoration deco;
    Unt fillchar = statusLineNextChar(OUT &deco, po);
    int maxwidth = po->width;
    Byte oname;
@@ -520,40 +513,44 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // true or false
    if (maxwidth <= 0)
       goto theend;
 
-   // Temporarily reset 'cursorbind', we don't want a side effect from moving
-   // the cursor away and back.
-   ewp = po == NULL ? curPor : po;
-   p_crb_save = ewp->o.cursorBind;
-   ewp->o.cursorBind = false;
+   //Temporarily reset @diff, we don't want a side effect from moving
+   //the cursor away and back.
+   Portal* ewp = po ? po : curPor;
+   Boole diffSaved = ewp->o.diff;
+   ewp->o.diff = false;
 
    //Make a copy, because the statusline may include a function call that
    //might change the option value and free the memory.
    stl = copyStr(stl);
-   width = bookRenderStatusLine(
-      ewp, builder, sizeof(builder), stl ? stl : S"", oname, opt_scope,
+   
+   Arr(StatusLineHilite) hilites;
+   Arr(StatusLineHilite) labels;
+   int width = bookRenderStatusLine(
+      ewp, OUT buf, sizeof(buf), stl ? stl : S"", oname, opt_scope,
       fillchar, maxwidth, OUT &hilites, OUT &labels
    );
    eeglFree(stl);
-   ewp->o.cursorBind = p_crb_save;
+   ewp->o.diff = diffSaved;
 
    // Make all characters printable.
-   p = sanitizeStr(builder);
+   p = sanitizeStr(buf);
+   int len;
    if (p) {
-      len = eeSnprintf(builder, sizeof(builder), "%s", p);
+      len = eeSnprintf(buf, sizeof(buf), "%s", p);
       eeglFree(p);
    }  else
-      len = (int)STRLEN(builder);
+      len = (int)STRLEN(buf);
 
    // fill up with "fillchar"
-   while (width < maxwidth && len < (int)sizeof(builder) - 1) {
-      len += (*mb_char2bytes)(fillchar, builder + len);
+   while (width < maxwidth && len < (int)sizeof(buf) - 1) {
+      len += mb_char2bytes(fillchar, buf + len);
       ++width;
    }
-   builder[len] = ZERO;
+   buf[len] = ZERO;
 
    // Draw each snippet with the specified hiliting.
    Decoration currDeco = deco;
-   p = builder;
+   p = buf;
    for (n = 0; hilites[n].start; n++) {
       len = (int)(hilites[n].start - p);
       drawTextLen(p, len, row, col, currDeco.flags);
@@ -565,17 +562,17 @@ redrawStatusLineOrRuler(Portal* po, int draw_ruler) {  // true or false
    drawText(p, row, col, currDeco.flags);
 
 theend:
-    entered = false;
+   busy = false;
 }
 
 
 // Output a single character directly to the screen and update screenLinesP.
 void
 screen_putchar(int c, Unt row, Unt col, char decoFlags) {
-   Byte builder[MB_MAXBYTES + 1];
+   Byte buf[MB_MAXBYTES + 1];
 
-   builder[mb_char2bytes(c, builder)] = ZERO;
-   drawText(builder, row, col, decoFlags);
+   buf[mb_char2bytes(c, buf)] = ZERO;
+   drawText(buf, row, col, decoFlags);
 }
 
 //Convert the character at screen position "off" to a sequence of bytes.
@@ -781,7 +778,6 @@ startDrawingHilite(Short hiId) {
          || ((activeDecoP.flags & DECO_UNDERCURL) != 0 && *termCodesG[KS_UCS] == ZERO))
        && *termCodesG[KS_US] != ZERO
    ) {
-      _bp(true);
       out_str(termCodesG[KS_US]);
    } 
    
@@ -3254,7 +3250,7 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
    Decoration deco;
    static Boole busy = false;
 
-   //It's possible to get here recursively when 'statusline' (indirectly)
+   //It's possible to get here recursively if the @statusline expression (indirectly)
    //invokes ":redrawstatus". Simply ignore the call then.
    if (busy)
       return;
@@ -3272,7 +3268,6 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
       redraw_custom_statusline(po);
    } else {
       Unt fillchar = statusLineNextChar(OUT &deco, po);
-
       drawGetTranslatedBookName(po->book);
       CS p = nameBuffG;
       int plen = (int)STRLEN(p);
@@ -3356,16 +3351,14 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
 // Redraw the status line according to 'statusline' and take care of any errors encountered.
 private void
 redraw_custom_statusline(Portal* po) {
-   static int entered = false;
+   static Boole busy = false;
 
-   // When called recursively return.  This can happen when the statusline
-   // contains an expression that triggers a redraw.
-   if (entered)
+   //Do not recurse. This can happen when the statusline contains an expr that triggers a redraw
+   if (busy)
       return;
-   entered = true;
-
+   busy = true;
    redrawStatusLineOrRuler(po, false);
-   entered = false;
+   busy = false;
 }
 
 //Show current status info in ruler and various other places
@@ -3438,10 +3431,10 @@ text_to_screenline(Portal* po, CS text, int col) {
    return col;
 }
 
-// Copy "builder[len]" to screenLinesP["off"] and set decoration flags to "flags".
+// Copy "buf[len]" to screenLinesP["off"] and set decoration flags to "flags".
 private void
-copyTextWithDecos(int off, CS builder, int len, char flags) {
-   MEMMOVE(screenLinesP + off, builder, (Unt)len);
+copyTextWithDecos(int off, CS buf, int len, char flags) {
+   MEMMOVE(screenLinesP + off, buf, (Unt)len);
    memset(screenLinesUCG + off, 0, sizeof(Unt) * (Unt)len);
    for (int i = 0; i < len; ++i)
       screenDecosP[off + i].flags = flags;
@@ -3490,7 +3483,7 @@ fold_line(
    LineNr lnum,
    int row
 ){
-   Byte builder[1];
+   Byte buf[1];
    Pos *top, *bot;
    LineNr lnume = lnum + fold_count - 1;
    int off = (int)(currScreenLineS - screenLinesP);
@@ -3555,13 +3548,13 @@ fold_line(
          }
       }
 
-      eeSnprintf(builder, sizeof(builder), fmt, w, num);
-      copyTextWithDecos(off + col, builder, len, getDecoFlags(HLF_FL));
+      eeSnprintf(buf, sizeof(buf), fmt, w, num);
+      copyTextWithDecos(off + col, buf, len, getDecoFlags(HLF_FL));
       col += len;
    }
 
    // 4. Compose the folded-line string with 'foldtext', if set.
-   CS text = get_foldtext(po, lnum, lnume, foldinfo, builder);
+   CS text = get_foldtext(po, lnum, lnume, foldinfo, buf);
 
    int txtcol = col;   // remember where text starts
 
@@ -3584,7 +3577,7 @@ fold_line(
       col++;
    }
 
-   if (text != builder)
+   if (text != buf)
       eeglFree(text);
 
    // 6. set hiliting for the Visual area an other text.

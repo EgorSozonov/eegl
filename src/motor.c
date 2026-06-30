@@ -246,21 +246,21 @@ c_intro(Invocation* invo UNUSED){
 #define EDIT_QF     4       // start in quickfix mode
 
 private void mainerr(Unt, CS);
-private void earlyArgScan(MainParams* paramsP);
+private void earlyArgScan(MainParams*);
 private void init0(void);
 private void init1(OUT MainParams*);
 private int libMain(void);
 #ifndef NO_EEGL_MAIN
 private void usage(void);
-private void parseCommandName(MainParams *paramsP);
-private void scanCommandLineArgs(MainParams *paramsP);
-private void check_tty(MainParams *paramsP);
+private void parseCommandName(MainParams*);
+private void scanCommandLineArgs(MainParams*);
+private void check_tty(MainParams *);
 private void readStdin(void);
-private void createPortals(MainParams *paramsP);
-private void editBuffers(MainParams* paramsP, CS cwd);
-private void executePreCommands(MainParams *paramsP);
-private void exeCommands(MainParams *paramsP);
-private void sourceStartupScripts(MainParams *paramsP);
+private void createPortals(MainParams *);
+private void editBuffers(MainParams*, CS );
+private void executePreCommands(MainParams*);
+private void exeCommands(MainParams*);
+private void sourceStartupScripts(MainParams*);
 private void check_swap_exists_action(void);
 private void set_progpath(CS argv0);
 #endif
@@ -458,9 +458,8 @@ libMain(void) {
    //modify the 'clipboard' setting have run; i.e. just before entering the main loop.
    reset_reg_var();
 
-   // When a startup script or session file setup for diff'ing and
-   // scrollbind, sync the scrollbind now.
-   if (curPor->o.diff && curPor->o.scrollBind) {
+   //When a startup script or session file setup for diffing and scrollbind, sync the scrollbind now
+   if (curPor->o.diff) {
       update_topline();
       check_scrollbind((LineNr)0, 0L);
       TIME_MSG("diff scrollbinding");
@@ -507,7 +506,7 @@ init0(void) {
 
 // Initialization #1 shared by main() and some tests.
 void
-init1(OUT MainParams* paramsP) {
+init1(OUT MainParams* par) {
    //Setup to use the current locale (for ctype() and many other things).
    //NOTE: Translated messages with encodings other than latin1 will not work until 
    //optInit0() has been called!
@@ -519,14 +518,14 @@ init1(OUT MainParams* paramsP) {
    init_homedir();      // find real value of $HOME
    TIME_MSG("inits 0");
 
-   swapDirG = fiInitSwapDir((CS)paramsP->argv[0]);
+   swapDirG = fiInitSwapDir((CS)par->argv[0]);
 
    // Do a first scan of the arguments in "argv[]":
    //   -display or --display
    //   --server...
    //   --socketid
    //   --windowid
-   earlyArgScan(paramsP);
+   earlyArgScan(par);
 
    clip_init();      // Initialise clipboard stuff
    TIME_MSG("clipboard setup");
@@ -551,7 +550,7 @@ init1(OUT MainParams* paramsP) {
    set_lang_var();
 
    // set v:argv
-   set_argv_var(paramsP->argv, paramsP->argc);
+   set_argv_var(par->argv, par->argc);
 
    init_signs();
    
@@ -568,7 +567,7 @@ appMain(int argc, char** argv) {
    // Thus emsg2() cannot be called!
    mch_early_init();
 
-   // Many variables are in "paramsP" so that we can pass them to invoked functions without a lot 
+   // Many variables are in "par" so that we can pass them to invoked functions without a lot 
    // of arguments.  "argc" and "argv" are also copied, so that they can be changed.
    CLEAR_FIELD(paramsP);
    paramsP.argc = argc;
@@ -1079,9 +1078,9 @@ exitEegl(int exitval) {
 //
 //Also find the --server... arguments and --socketid and --windowid
 private void
-earlyArgScan(MainParams* paramsP) {
-   int      argc = paramsP->argc;
-   char   **argv = paramsP->argv;
+earlyArgScan(MainParams* par) {
+   int      argc = par->argc;
+   char   **argv = par->argv;
    int      i;
 
    for (i = 1; i < argc; i++) {
@@ -1111,13 +1110,13 @@ getNumericArg(
 //If the next characters are "view" we start in readonly mode.
 //If the next characters are "diff" or "eegldiff" we start in diff mode.
 private void
-parseCommandName(MainParams* paramsP) {
+parseCommandName(MainParams* par) {
    CS initstr;
 
-   initstr = fiGetShortFiName((CS)paramsP->argv[0]);
+   initstr = fiGetShortFiName((CS)par->argv[0]);
 
    set_EeglVar_string(VV_PROGNAME, initstr, -1);
-   set_progpath((CS)paramsP->argv[0]);
+   set_progpath((CS)par->argv[0]);
 
    if (STRNICMP(initstr, "view", 4) == 0) {
       optSetByName(S"modifiable", optBoole(false), SET_GLOBAL);
@@ -1129,15 +1128,15 @@ parseCommandName(MainParams* paramsP) {
 
    // Catch "eegldiff" and "viewdiff".
    if (caseInsensitiveCompare(initstr, "diff") == 0) {
-      paramsP->diff_mode = true;
+      par->diff_mode = true;
    }
 }
 
 //{{{ Scan the command line arguments.
 private void
-scanCommandLineArgs(MainParams *paramsP) {
-   int      argc = paramsP->argc;
-   char   **argv = paramsP->argv;
+scanCommandLineArgs(MainParams *par) {
+   int      argc = par->argc;
+   char   **argv = par->argv;
    int      argv_idx;      // index in argv[n][]
    int      had_minmin = false;   // found "--" argument
    int      want_argument;      // option argument with argument
@@ -1150,13 +1149,13 @@ scanCommandLineArgs(MainParams *paramsP) {
    while (argc > 0) {
       //"+" or "+{number}" or "+/{pat}" or "+{command}" argument.
       if (argv[0][0] == '+' && !had_minmin) {
-         if (paramsP->n_commands >= MAX_ARG_CMDS)
+         if (par->n_commands >= MAX_ARG_CMDS)
             mainerr(ME_EXTRA_CMD, NULL);
          argv_idx = -1;       // skip to next argument
          if (argv[0][1] == ZERO)
-            paramsP->commands[paramsP->n_commands++] = (CS)"$";
+            par->commands[par->n_commands++] = (CS)"$";
          else
-            paramsP->commands[paramsP->n_commands++] = (CS)&(argv[0][1]);
+            par->commands[par->n_commands++] = (CS)&(argv[0][1]);
       }
       // Optional argument.
       ei (argv[0][0] == '-' && !had_minmin) {
@@ -1164,9 +1163,9 @@ scanCommandLineArgs(MainParams *paramsP) {
          c = argv[0][argv_idx++];
          switch (c) {
          case ZERO:      // "eegl -"  read from stdin. "ex -" silent mode
-            if (paramsP->edit_type != EDIT_NONE)
+            if (par->edit_type != EDIT_NONE)
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
-            paramsP->edit_type = EDIT_STDIN;
+            par->edit_type = EDIT_STDIN;
             read_cmd_fd = 2;   // read from stderr instead of stdin
             argv_idx = -1;      // skip to next argument
             break;
@@ -1195,18 +1194,18 @@ scanCommandLineArgs(MainParams *paramsP) {
                 msg_didout = false;
                 mch_exit(0);
             } ei (STRNICMP(argv[0] + argv_idx, "clean", 5) == 0) {
-                paramsP->altInitFile = (CS)"DEFAULTS";
-                paramsP->clean = true;
+                par->altInitFile = (CS)"DEFAULTS";
+                par->clean = true;
                 optChangeAndReportError(S"eeglinfofile", optStr("NONE"), SET_GLOBAL);
             } ei (STRNICMP(argv[0] + argv_idx, "literal", 7) == 0) {
             } ei (STRNICMP(argv[0] + argv_idx, "nofork", 6) == 0) {
             } ei (STRNICMP(argv[0] + argv_idx, "not-a-term", 10) == 0)
-                paramsP->not_a_term = true;
+                par->not_a_term = true;
             ei (STRNICMP(argv[0] + argv_idx, "gui-dialog-file", 15) == 0) {
                 want_argument = true;
                 argv_idx += 15;
             } ei (STRNICMP(argv[0] + argv_idx, "ttyfail", 7) == 0)
-                paramsP->tty_fail = true;
+                par->tty_fail = true;
             ei (STRNICMP(argv[0] + argv_idx, "comm", 3) == 0) {
                 want_argument = true;
                 argv_idx += 3;
@@ -1253,33 +1252,33 @@ scanCommandLineArgs(MainParams *paramsP) {
             break;
 
          case 'n':      // "-n" no swap file
-            paramsP->no_swap_file = true;
+            par->no_swap_file = true;
             break;
 
          case 'p':      // "-p[N]" open N tabs
             // default is 0: open portal for each file
-            paramsP->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
-            paramsP->portalLayout = WIN_TABS;
+            par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
+            par->portalLayout = WIN_TABS;
             break;
 
          case 'o':      // "-o[N]" open N horizontal split windows
             // default is 0: open window for each file
-            paramsP->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
-            paramsP->portalLayout = WIN_HOR;
+            par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
+            par->portalLayout = WIN_HOR;
             break;
 
          case 'O':   // "-O[N]" open N vertical split windows
             // default is 0: open window for each file
-            paramsP->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
-            paramsP->portalLayout = WIN_VER;
+            par->portalCount = getNumericArg((CS)argv[0], &argv_idx, 0);
+            par->portalLayout = WIN_VER;
             break;
 
          case 'q':      // "-q" QuickFix mode
-            if (paramsP->edit_type != EDIT_NONE) 
+            if (par->edit_type != EDIT_NONE) 
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
-            paramsP->edit_type = EDIT_QF;
+            par->edit_type = EDIT_QF;
             if (argv[0][argv_idx]) {     // "-q{errorfile}"
-               paramsP->use_ef = (CS)argv[0] + argv_idx;
+               par->use_ef = (CS)argv[0] + argv_idx;
                argv_idx = -1;
             } ei (argc > 1)      // "-q {errorfile}"
                want_argument = true;
@@ -1300,21 +1299,21 @@ scanCommandLineArgs(MainParams *paramsP) {
             break;
 
          case 't':      // "-t {tag}" or "-t{tag}" jump to tag
-            if (paramsP->edit_type != EDIT_NONE)
+            if (par->edit_type != EDIT_NONE)
                mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
-            paramsP->edit_type = EDIT_TAG;
+            par->edit_type = EDIT_TAG;
             if (argv[0][argv_idx]) {     // "-t{tag}"
-               paramsP->tagname = (CS)argv[0] + argv_idx;
+               par->tagname = (CS)argv[0] + argv_idx;
                argv_idx = -1;
             } else            // "-t {tag}"
                 want_argument = true;
             break;
 
          case 'D':      // "-D"      Debugging
-            paramsP->use_debug_break_level = 9999;
+            par->use_debug_break_level = 9999;
             break;
          case 'd':      // "-d"      'diff'
-            paramsP->diff_mode = true;
+            par->diff_mode = true;
             break;
          case 'V':      // "-V{N}"   Verbose level
             // default is 10: a little bit verbose
@@ -1338,9 +1337,9 @@ scanCommandLineArgs(MainParams *paramsP) {
 
          case 'c':      // "-c{command}" or "-c {command}" execute command
             if (argv[0][argv_idx] != ZERO) {
-               if (paramsP->n_commands >= MAX_ARG_CMDS)
+               if (par->n_commands >= MAX_ARG_CMDS)
                   mainerr(ME_EXTRA_CMD, NULL);
-               paramsP->commands[paramsP->n_commands++] = (CS)argv[0] + argv_idx;
+               par->commands[par->n_commands++] = (CS)argv[0] + argv_idx;
                argv_idx = -1;
                break;
             }
@@ -1372,7 +1371,7 @@ scanCommandLineArgs(MainParams *paramsP) {
             switch (c) {
             case 'c':   // "-c {command}" execute command
             case 'S':   // "-S {file}" execute Vim script
-               if (paramsP->n_commands >= MAX_ARG_CMDS)
+               if (par->n_commands >= MAX_ARG_CMDS)
                   mainerr(ME_EXTRA_CMD, NULL);
                if (c == 'S') {
                   Arr(char) fName;
@@ -1389,18 +1388,18 @@ scanCommandLineArgs(MainParams *paramsP) {
                      fName = argv[0];
                   text = alloc(STRLEN(fName) + 4);
                   sprintf((char *)text, "so %s", fName);
-                  paramsP->cmds_tofree[paramsP->n_commands] = true;
-                  paramsP->commands[paramsP->n_commands++] = text;
+                  par->cmds_tofree[par->n_commands] = true;
+                  par->commands[par->n_commands++] = text;
                } else
-                  paramsP->commands[paramsP->n_commands++] = (CS)argv[0];
+                  par->commands[par->n_commands++] = (CS)argv[0];
                break;
 
             case '-':
                if (argv[-1][2] == 'c') {
                   // "--comm {command}" execute command
-                  if (paramsP->n_pre_commands >= MAX_ARG_CMDS)
+                  if (par->n_pre_commands >= MAX_ARG_CMDS)
                      mainerr(ME_EXTRA_CMD, NULL);
-                  paramsP->pre_commands[paramsP->n_pre_commands++] = (CS)argv[0];
+                  par->pre_commands[par->n_pre_commands++] = (CS)argv[0];
                }
 
                // "--startuptime <file>" already handled
@@ -1408,7 +1407,7 @@ scanCommandLineArgs(MainParams *paramsP) {
                break;
 
             case 'q':   // "-q {errorfile}" QuickFix mode
-               paramsP->use_ef = (CS)argv[0];
+               par->use_ef = (CS)argv[0];
                break;
 
             case 'i':   // "-i {eeglinfo}" use for eeglinfo
@@ -1436,17 +1435,17 @@ scripterror:
                break;
 
             case 't':   // "-t {tag}"
-                paramsP->tagname = (CS)argv[0];
+                par->tagname = (CS)argv[0];
                 break;
 
             case 'T':   // "-T {terminal}" terminal name
                //The -T term argument is always available and when
                //HAVE_TERMLIB is supported it overrides the environment variable TERM.
-               paramsP->term = (CS)argv[0];
+               par->term = (CS)argv[0];
                break;
 
             case 'u':   // "-u {vimrc}" Eegl inits file
-                paramsP->altInitFile = (CS)argv[0];
+                par->altInitFile = (CS)argv[0];
                 break;
 
             case 'w': // "-w {scriptout}" append to script file
@@ -1469,16 +1468,16 @@ scripterror:
          argv_idx = -1;       // skip to next argument
 
          // Check for only one type of editing.
-         if (paramsP->edit_type != EDIT_NONE && paramsP->edit_type != EDIT_FILE)
+         if (par->edit_type != EDIT_NONE && par->edit_type != EDIT_FILE)
             mainerr(ME_TOO_MANY_ARGS, (CS)argv[0]);
-         paramsP->edit_type = EDIT_FILE;
+         par->edit_type = EDIT_FILE;
 
          // Add the file to the global argument list.
          if (ga_grow(&argListG.al_ga, 1) == FAIL)
             mch_exit(2);
          text = copyStr((CS)argv[0]); 
          if (
-            paramsP->diff_mode && mch_isdir(text) 
+            par->diff_mode && mch_isdir(text) 
             && GARGCOUNT > 0 
             && !mch_isdir(alist_name(&GARGLIST[0]))
          ) {
@@ -1503,9 +1502,9 @@ scripterror:
    }
 
    // If there is a "+123" or "-c" command, set v:swapcommand to the first one.
-   if (paramsP->n_commands > 0) {
-      text = alloc(STRLEN(paramsP->commands[0]) + 3);
-      sprintf((char *)text, ":%s\r", paramsP->commands[0]);
+   if (par->n_commands > 0) {
+      text = alloc(STRLEN(par->commands[0]) + 3);
+      sprintf((char *)text, ":%s\r", par->commands[0]);
       set_EeglVar_string(VV_SWAPCOMMAND, text, -1);
       eeglFree(text);
    }
@@ -1515,17 +1514,17 @@ scripterror:
 
 // Print a warning if stdout is not a terminal.
 private void
-check_tty(MainParams* paramsP) {
+check_tty(MainParams* par) {
    int      input_isatty;      // is active input a terminal?
 
    input_isatty = mch_input_isatty();
-   if (paramsP->want_full_screen && (!stdout_isatty || !input_isatty) && !paramsP->not_a_term) {
+   if (par->want_full_screen && (!stdout_isatty || !input_isatty) && !par->not_a_term) {
       if (!stdout_isatty)
          mch_errmsg(_("Eegl: Warning: Output is not to a terminal\n"));
       if (!input_isatty)
          mch_errmsg(_("Eegl: Warning: Input is not from a terminal\n"));
       out_flush();
-      if (paramsP->tty_fail && (!stdout_isatty || !input_isatty))
+      if (par->tty_fail && (!stdout_isatty || !input_isatty))
          exit(1);
       if (scriptin[0] == NULL)
          ui_delay(2005L, true);
@@ -1561,28 +1560,28 @@ readStdin(void) {
 // Create the requested number of portals and edit buffers in them.
 // Also do recovery if "recoveryModeG" set.
 private void
-createPortals(MainParams *paramsP) {
+createPortals(MainParams* par) {
    int dorewind;
 
    //Create the number of portals that was requested.
-   if (paramsP->portalCount == UNT)   // was not set
-      paramsP->portalCount = 1;
-   if (paramsP->portalCount == 0)
-      paramsP->portalCount = GARGCOUNT;
-   if (paramsP->portalCount > 1) {
-   // Don't change the portals if there was a command in .vimrc that already split some portals
-   if (paramsP->portalLayout == 0)
-       paramsP->portalLayout = WIN_HOR;
-   if (paramsP->portalLayout == WIN_TABS) {
-       paramsP->portalCount = portMakeTabs(paramsP->portalCount);
-       TIME_MSG("making tabs");
-   } ei (firstPor->next == NULL) {
-       paramsP->portalCount = makePortals(paramsP->portalCount, paramsP->portalLayout == WIN_VER);
-       TIME_MSG("making portals");
+   if (par->portalCount == UNT)   // was not set
+      par->portalCount = 1;
+   if (par->portalCount == 0)
+      par->portalCount = GARGCOUNT;
+   if (par->portalCount > 1) {
+      // Don't change the portals if there was a command in .vimrc that already split some portals
+      if (par->portalLayout == 0)
+          par->portalLayout = WIN_HOR;
+      ei (par->portalLayout == WIN_TABS) {
+          par->portalCount = portMakeTabs(par->portalCount);
+          TIME_MSG("making tabs");
+      } ei (!firstPor->next) {
+          par->portalCount = portMakePortals(par->portalCount, par->portalLayout == WIN_VER);
+          TIME_MSG("making portals");
+      } else
+         par->portalCount = portCount();
    } else
-      paramsP->portalCount = portCount();
-   } else
-      paramsP->portalCount = 1;
+      par->portalCount = 1;
 
    if (recoveryModeG) {         // do recover
       msg_scroll = true;      // scroll message up
@@ -1598,11 +1597,11 @@ createPortals(MainParams *paramsP) {
       dorewind = true;
       for (int done = 0; done < 1000; done++) {
          if (dorewind) {
-            if (paramsP->portalLayout == WIN_TABS)
+            if (par->portalLayout == WIN_TABS)
                gotoTabById(1);
             else
                curPor = firstPor;
-         } ei (paramsP->portalLayout == WIN_TABS) {
+         } ei (par->portalLayout == WIN_TABS) {
             if (curtab->next == NULL)
                break;
             gotoTabById(0);
@@ -1645,7 +1644,7 @@ createPortals(MainParams *paramsP) {
             break;
          }
       }
-      if (paramsP->portalLayout == WIN_TABS)
+      if (par->portalLayout == WIN_TABS)
          gotoTabById(1);
       else
          curPor = firstPor;
@@ -1655,10 +1654,10 @@ createPortals(MainParams *paramsP) {
    }
 }
 
-//If opened more than one portal, start editing files in the other portals. makePortals() has 
+//If opened more than one portal, start editing files in the other portals. portMakePortals() has 
 //already opened the portals.
 private void
-editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
+editBuffers(MainParams* par, CS cwd) {        // current working dir
    int      arg_idx;      // index in argument list
    int      advance = true;
 
@@ -1673,7 +1672,7 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
    }
 
    arg_idx = 1;
-   for (Unt i = 1; i < paramsP->portalCount; ++i) {
+   for (Unt i = 1; i < par->portalCount; ++i) {
       if (cwd)
          mch_chdir(cwd);
       // When argListInd is -1 remove the window (see createPortals()).
@@ -1684,7 +1683,7 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
          continue;
       }
       if (advance) {
-         if (paramsP->portalLayout == WIN_TABS) {
+         if (par->portalLayout == WIN_TABS) {
             if (curtab->next == NULL)   // just checking
                break;
             gotoTabById(0);
@@ -1728,7 +1727,7 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
       }
    }
 
-   if (paramsP->portalLayout == WIN_TABS)
+   if (par->portalLayout == WIN_TABS)
       gotoTabById(1);
    --autocmd_no_enter;
 
@@ -1746,16 +1745,16 @@ editBuffers(MainParams* paramsP, CS cwd) {        // current working dir
 
    --autocmd_no_leave;
    TIME_MSG("editing files in windows");
-   if (paramsP->portalCount > 1 && paramsP->portalLayout != WIN_TABS)
+   if (par->portalCount > 1 && par->portalLayout != WIN_TABS)
       portEqualizeHeight(curPor, false, EAD_BOTH);   // adjust heights
 }
 
 // Execute the commands from --comm arguments "comms[cnt]".
 private void
-executePreCommands(MainParams* paramsP) {
-   Arr(CS) comms = paramsP->pre_commands;
-   int      cnt = paramsP->n_pre_commands;
-   int      i;
+executePreCommands(MainParams* par) {
+   Arr(CS) comms = par->pre_commands;
+   int cnt = par->n_pre_commands;
+   int i;
    ESTACK_CHECK_DECLARATION;
 
    if (cnt <= 0)
@@ -1776,22 +1775,22 @@ executePreCommands(MainParams* paramsP) {
 
 // Execute "+", "-c" and "-S" arguments.
 private void
-exeCommands(MainParams* paramsP) {
+exeCommands(MainParams* par) {
    ESTACK_CHECK_DECLARATION;
 
    // We start commands on line 0, make "eegl +/pat file" match a
    // pattern on line 1.  But don't move the cursor when an autocommand with g`" was used.
    msg_scroll = true;
-   if (paramsP->tagname == NULL && curPor->cursor.lnum <= 1)
+   if (par->tagname == NULL && curPor->cursor.lnum <= 1)
       curPor->cursor.lnum = 0;
    estack_push(ETYPE_ARGS, S"command line", 0);
    ESTACK_CHECK_SETUP;
    scriptPosG.sid = SID_CARG;
    scriptPosG.seq = 0;
-   for (int i = 0; i < paramsP->n_commands; ++i) {
-      executeCommLine(paramsP->commands[i]);
-      if (paramsP->cmds_tofree[i])
-          eeglFree(paramsP->commands[i]);
+   for (int i = 0; i < par->n_commands; ++i) {
+      executeCommLine(par->commands[i]);
+      if (par->cmds_tofree[i])
+          eeglFree(par->commands[i]);
    }
    ESTACK_CHECK_NOW;
    estack_pop();
@@ -1802,23 +1801,23 @@ exeCommands(MainParams* paramsP) {
    msg_scroll = false;
 
    // When started with "-q errorfile" jump to first error again.
-   if (paramsP->edit_type == EDIT_QF)
+   if (par->edit_type == EDIT_QF)
       llJump(NULL, 0, 0, false);
    TIME_MSG("executing command arguments");
 }
 
 // Source startup scripts.
 private void
-sourceStartupScripts(MainParams* paramsP) {
+sourceStartupScripts(MainParams* par) {
    // If -u argument given, use only the initializations from that file and nothing else.
-   if (paramsP->altInitFile) {
-      if (STRCMP(paramsP->altInitFile, "DEFAULTS") == 0) {
+   if (par->altInitFile) {
+      if (STRCMP(par->altInitFile, "DEFAULTS") == 0) {
          if (scriptRunFile((CS)EE_DEFAULTS_FILE, NULL) != OK)
             emsg(_(e_failed_to_source_defaults));
-      } ei (STRCMP(paramsP->altInitFile, "NONE") == 0 || STRCMP(paramsP->altInitFile, "NORC") == 0) {
+      } ei (STRCMP(par->altInitFile, "NONE") == 0 || STRCMP(par->altInitFile, "NORC") == 0) {
       } else {
-         if (scriptRunFile(paramsP->altInitFile, NULL) != OK)
-            showErrFmtMsg(_(e_cannot_read_from_str_2), paramsP->altInitFile);
+         if (scriptRunFile(par->altInitFile, NULL) != OK)
+            showErrFmtMsg(_(e_cannot_read_from_str_2), par->altInitFile);
       }
    } ei (!silentModeG) {
       //Get system wide defaults, if the file name is defined.

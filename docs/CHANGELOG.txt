@@ -258,6 +258,7 @@
 [-] p_udir @undodir - fixed, now same as swap file dir
 [-] @portcolor
 [-] @cursorcolumn (superfluous)
+[-] @cursorbind, @scrollbind (synchronized with @diff, because that's the only reason to use them)
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany

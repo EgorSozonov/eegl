@@ -2311,12 +2311,9 @@ normal_end:
 
    mb_adjust_cursor();
 
-   if (curPor->o.scrollBind && toplevel) {
+   if (curPor->o.diff && toplevel) {
       validate_cursor();   // may need to update leftCol
       normPostProcessScrollbind(true);
-   }
-
-   if (curPor->o.cursorBind && toplevel) {
       validate_cursor();   // may need to update leftCol
       do_check_cursorbind();
    }
@@ -2502,7 +2499,7 @@ find_ident_under_cursor(OUT CS* text, int find_type) {
 // However: Uses @iskeyword from the current portal.
 int
 find_ident_at_pos(
-   Portal* wp,
+   Portal* po,
    LineNr lnum,
    ColNr startcol,
    OUT CS* text,
@@ -2518,7 +2515,7 @@ find_ident_at_pos(
 
    // if i == 0: try to find an identifier
    // if i == 1: try to find any non-white text
-   CS ptr = memGetLine(wp->book, lnum, false);
+   CS ptr = memGetLine(po->book, lnum, false);
    for (i = (find_type & FIND_IDENT) ? 0 : 1;   i < 2; ++i) {
       // 1. skip to start of identifier/text
       col = startcol;
@@ -2920,13 +2917,13 @@ normPostProcessScrollbind(int check) {
    static Book* old_buf = NULL;
    static ColNr old_leftcol = 0;
 
-   if (check && curPor->o.scrollBind) {
+   if (check && curPor->o.diff) {
       // If the ":syncbind" command was just used, don't scroll, only reset the values.
       if (did_syncbind)
           did_syncbind = false;
       ei (curPor == old_curPor) {
          //Synchronize other portals, as necessary according to
-         //@scrollbind. Don't do this after an ":edit" command, except when @diff is set.
+         //@diff. Don't do this after an ":edit" command, except when @diff is set.
          if ((curPor->book == old_buf || curPor->o.diff)
            && (curPor->topLine != old_topline
               || curPor->topFill != old_topfill
@@ -2936,10 +2933,10 @@ normPostProcessScrollbind(int check) {
          }
       } ei ((p_sbo & SCR_JUMP) != 0) {// jump flag set in @scrollopt
           //When switching between portals, make sure that the relative vertical offset is valid 
-          //for the new portal. The relative offset is invalid whenever another @scrollbind portal
+          //for the new portal. The relative offset is invalid whenever another scrollbound portal
           //has scrolled to a point that would force the current portal to scroll past the 
           //beginning or end of its buffer. When the resync is performed, some of the other 
-          //@scrollbind portals may need to jump so that the current portal's relative position is
+          //scrollbound portals may need to jump so that the current portal's relative position is
           //visible on-screen.
           check_scrollbind(curPor->topLine - curPor->scbindPos, 0L);
       }
@@ -2953,7 +2950,7 @@ normPostProcessScrollbind(int check) {
    old_leftcol = curPor->leftCol;
 }
 
-// Synchronize any portals that have @scrollbind set, based on the
+// Synchronize any portals that have diff set, based on the
 // number of rows by which the current portal has changed
 // (1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
 void
@@ -2974,8 +2971,8 @@ check_scrollbind(LineNr topline_diff, long leftcol_diff) {
    VIsual_active = 0;
    FOR_ALL_PORTALS(curPor) {
       curBook = curPor->book;
-      // skip original portal and portals without @scrollbind
-      if (curPor == old_curPor || !curPor->o.scrollBind)
+      // skip original portal and portals without scrollbind
+      if (curPor == old_curPor || !curPor->o.diff)
           continue;
 
       // do the vertical scroll
@@ -3970,14 +3967,14 @@ nv_zet(ActionArg* aArg) {
 
     // Redraw when 'foldenable' changed
    if (old_fen != curPor->o.foldEnable)     {
-      Portal* wp;
+      Portal* po;
 
-      if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
+      if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
          // Adjust @foldenable in diff-synced portals.
-         FOR_ALL_PORTALS(wp) {
-            if (wp != curPor && wp->o.foldMethod == FOLD_DIFF && wp->o.scrollBind) {
-                wp->o.foldEnable = curPor->o.foldEnable;
-                didChangePortalSetting(wp);
+         FOR_ALL_PORTALS(po) {
+            if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
+                po->o.foldEnable = curPor->o.foldEnable;
+                didChangePortalSetting(po);
             }
          }
       }
@@ -4060,10 +4057,10 @@ nv_clear(ActionArg* aArg) {
    // Clear all syntax states to force resyncing.
    synFreeBlock(curPor->ownSyntax);
    {
-   Portal *wp;
+   Portal *po;
 
-   FOR_ALL_PORTALS(wp)
-      wp->ownSyntax->redrawTime = false;
+   FOR_ALL_PORTALS(po)
+      po->ownSyntax->redrawTime = false;
    }
    redraw_later(UPD_CLEAR);
 }
@@ -9343,12 +9340,9 @@ do_check_cursorbind(void) {
    VIsual_active = 0;
    FOR_ALL_PORTALS(curPor) {
       curBook = curPor->book;
-      // skip original portal and portals without @cursorbind
-      if (curPor != old_curPor && curPor->o.cursorBind) {
-         if (curPor->o.diff)
-            curPor->cursor.lnum = diff_get_corresponding_line(oldCurBook, line);
-         else
-            curPor->cursor.lnum = line;
+      // skip original portal and portals without @diff
+      if (curPor != old_curPor && curPor->o.diff) {
+         curPor->cursor.lnum = diff_get_corresponding_line(oldCurBook, line);
          curPor->cursor.col = col;
          curPor->cursor.coladd = coladd;
          curPor->cursWant = curswant;
@@ -9360,8 +9354,8 @@ do_check_cursorbind(void) {
          restart_edit = 'a';
          check_cursor();
 
-         // Avoid a scroll here for the cursor position, 'scrollbind' is more important.
-         if (!curPor->o.scrollBind)
+         // Avoid a scroll here for the cursor position, scrollbinding is more important.
+         if (!curPor->o.diff)
             validate_cursor();
 
          restart_edit = restart_edit_save;
@@ -9369,8 +9363,8 @@ do_check_cursorbind(void) {
          mb_adjust_cursor();
          redraw_later(UPD_VALID);
 
-         // Only scroll when 'scrollbind' hasn't done this.
-         if (!curPor->o.scrollBind)
+         // Only scroll when @diff hasn't done this.
+         if (!curPor->o.diff)
             update_topline();
          curPor->statusLineNeedsRedraw = true;
       }
@@ -11740,10 +11734,10 @@ typedef struct {
 
 private int checkCloseRec(ArrayList *gap, LineNr lnum, int level);
 private int foldFind(ArrayList *gap, LineNr lnum, Fold **fpp);
-private int foldLevelWin(Portal *wp, LineNr lnum);
-private void checkupdate(Portal *wp);
-private void setFoldRepeat(LineNr lnum, long count, int do_open);
-private LineNr setManualFold(LineNr lnum, int opening, int recurse, int *donep);
+private int foldLevelWin(Portal *po, LineNr lnum);
+private void checkupdate(Portal *po);
+private void setFoldRepeat(LineNr lnum, Long count, Boole do_open);
+private LineNr setManualFold(LineNr lnum, Boole opening, Boole recurse, OUT Unt* donep);
 private void foldOpenNested(Fold *fpr);
 private void deleteFoldEntry(ArrayList *gap, int idx, int recursive);
 private void foldMarkAdjustRecurse(
@@ -11753,7 +11747,7 @@ private int getDeepestNestingRecurse(ArrayList *gap);
 private Boole check_closed(
    Portal *po, Fold *fp, OUT Boole *use_levelp, int level, OUT Boole* maybe_smallp, LineNr lnum_off
 );
-private void checkSmall(Portal *wp, Fold *fp, LineNr lnum_off);
+private void checkSmall(Portal *po, Fold *fp, LineNr lnum_off);
 private void setSmallMaybe(ArrayList *gap);
 private void foldCreateMarkers(LineNr start, LineNr end);
 private void foldAddMarker(LineNr lnum, CS marker, int markerlen);
@@ -11775,9 +11769,9 @@ private LineNr prev_lnum = 0;
 private int prev_lnum_lvl = -1;
 
 // Flags used for "done" argument of setManualFold.
-#define DONE_NOTHING   0
-#define DONE_ACTION   1   // did close or open a fold
-#define DONE_FOLD   2   // did find a fold
+#define DONE_NOTHING 0
+#define DONE_ACTION  1 //did close or open a fold
+#define DONE_FOLD    2 //did find a fold
 
 private int foldstartmarkerlen;
 private CS foldendmarker;
@@ -11952,7 +11946,7 @@ foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop) {
 
 //Close fold for current portal at line "lnum". Repeat "count" times.
 void
-closeFold(LineNr lnum, long count) {
+closeFold(LineNr lnum, Long count) {
    setFoldRepeat(lnum, count, false);
 }
 
@@ -11968,11 +11962,11 @@ void
 opFoldRange(
    LineNr first,
    LineNr last,
-   int opening,   // true to open, false to close
-   int recurse,   // true to do it recursively
-   int had_visual   // true when Visual selection used
+   Boole opening,   // true to open, false to close
+   Boole recurse,   // true to do it recursively
+   Boole had_visual   // true when Visual selection used
 ){
-   int done = DONE_NOTHING;   // avoid error messages
+   Unt done = DONE_NOTHING;   // avoid error messages
    LineNr lnum_next;
    for (LineNr lnum = first; lnum <= last; lnum = lnum_next + 1) {
       lnum_next = lnum;
@@ -11993,7 +11987,7 @@ opFoldRange(
 
 //Open fold for current portal at line "lnum". Repeat "count" times.
 void
-openFold(LineNr lnum, long count) {
+openFold(LineNr lnum, Long count) {
    setFoldRepeat(lnum, count, true);
 }
 
@@ -12006,13 +12000,13 @@ openFoldRecurse(LineNr lnum) {
 //Open folds until the cursor line is not in a closed fold.
 void
 foldOpenCursor(void) {
-   int done;
+   Unt done;
 
    checkupdate(curPor);
    if (hasAnyFolding(curPor)) {
       for (;;) {
          done = DONE_NOTHING;
-         (void)setManualFold(curPor->cursor.lnum, true, false, &done);
+         (void)setManualFold(curPor->cursor.lnum, true, false, OUT &done);
          if (!(done & DONE_ACTION))
             break;
       }
@@ -12020,31 +12014,31 @@ foldOpenCursor(void) {
 }
 
 private void
-newFoldLevelForPortal(Portal* wp) {
-   checkupdate(wp);
-   if (wp->foldManual) {
+newFoldLevelForPortal(Portal* po) {
+   checkupdate(po);
+   if (po->foldManual) {
       // Set all flags for the first level of folds to FD_LEVEL.  Following
       // manual open/close will then change the flags to FD_OPEN or
       // FD_CLOSED for those folds that don't use 'foldlevel'.
-      Fold* fp = (Fold *)wp->folds.c;
-      for (int i = 0; i < wp->folds.len; ++i)
+      Fold* fp = (Fold *)po->folds.c;
+      for (int i = 0; i < po->folds.len; ++i)
          fp[i].fd_flags = FD_LEVEL;
-      wp->foldManual = false;
+      po->foldManual = false;
    }
-   didChangePortalSetting(wp);
+   didChangePortalSetting(po);
 }
 
 //Set new foldlevel for current portal.
 void
 newFoldLevel(void) {
    newFoldLevelForPortal(curPor);
-   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
-      Portal* wp;
+   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
+      Portal* po;
       // Set the same foldlevel in other portals in diff mode.
-      FOR_ALL_PORTALS(wp) {
-         if (wp != curPor && wp->o.foldMethod == FOLD_DIFF && wp->o.scrollBind) {
-            wp->o.foldLevel = curPor->o.foldLevel;
-            newFoldLevelForPortal(wp);
+      FOR_ALL_PORTALS(po) {
+         if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
+            po->o.foldLevel = curPor->o.foldLevel;
+            newFoldLevelForPortal(po);
          }
       }
    }
@@ -12294,7 +12288,7 @@ clearFolding(Portal* po) {
 //calling foldMarkAdjust().
 //The changes in lines from top to bot (inclusive).
 void
-foldUpdate(Portal* wp, LineNr top, LineNr bot) {
+foldUpdate(Portal* po, LineNr top, LineNr bot) {
    Fold   *fp;
 
    if (disable_fold_update > 0)
@@ -12303,7 +12297,7 @@ foldUpdate(Portal* wp, LineNr top, LineNr bot) {
       // will update later
       return;
 
-   if (wp->folds.len > 0) {
+   if (po->folds.len > 0) {
       LineNr   maybe_small_start = top;
       LineNr   maybe_small_end = bot;
 
@@ -12312,8 +12306,8 @@ foldUpdate(Portal* wp, LineNr top, LineNr bot) {
           maybe_small_start = bot;
           maybe_small_end = top;
       }
-      (void)foldFind(&wp->folds, maybe_small_start, &fp);
-      while (fp < (Fold *)wp->folds.c + wp->folds.len
+      (void)foldFind(&po->folds, maybe_small_start, &fp);
+      while (fp < (Fold *)po->folds.c + po->folds.len
          && fp->fd_top <= maybe_small_end) {
           fp->fd_small = MAYBE;
           ++fp;
@@ -12324,7 +12318,7 @@ foldUpdate(Portal* wp, LineNr top, LineNr bot) {
 
    // reset gotInterruptG here, otherwise it won't work
    gotInterruptG = false;
-   foldUpdateIEMS(wp, top, bot);
+   foldUpdateIEMS(po, top, bot);
    gotInterruptG |= save_gotInterruptG;
 }
 
@@ -12560,15 +12554,15 @@ foldFind(ArrayList* gap, LineNr lnum, Fold **fpp) {
    return false;
 }
 
-//Return fold level at line number "lnum" in portal "wp".
+//Return fold level at line number "lnum" in portal "po".
 private int
-foldLevelWin(Portal *wp, LineNr lnum) {
+foldLevelWin(Portal *po, LineNr lnum) {
    Fold   *fp;
    LineNr   lnum_rel = lnum;
    int      level =  0;
 
    // Recursively search for a fold that contains "lnum".
-   ArrayList* gap = &wp->folds;
+   ArrayList* gap = &po->folds;
    for (;;) {
       if (!foldFind(gap, lnum_rel, &fp))
          break;
@@ -12582,25 +12576,22 @@ foldLevelWin(Portal *wp, LineNr lnum) {
 }
 
 // checkupdate()
-//Check if the folds in portal "wp" are invalid and update them if needed.
+//Check if the folds in portal "po" are invalid and update them if needed.
 private void
-checkupdate(Portal* wp) {
-   if (!wp->foldNeedsRecomputation)
+checkupdate(Portal* po) {
+   if (!po->foldNeedsRecomputation)
       return;
 
-   foldUpdate(wp, (LineNr)1, (LineNr)MAXLNUM); // will update all
-   wp->foldNeedsRecomputation = false;
+   foldUpdate(po, (LineNr)1, (LineNr)MAXLNUM); // will update all
+   po->foldNeedsRecomputation = false;
 }
 
 //Open or close fold for current portal at line "lnum". Repeat "count" times.
 private void
-setFoldRepeat(LineNr lnum, long count, int do_open) {
-   int      done;
-   long   n;
-
-   for (n = 0; n < count; ++n) {
-      done = DONE_NOTHING;
-      (void)setManualFold(lnum, do_open, false, &done);
+setFoldRepeat(LineNr lnum, Long count, Boole do_open) {
+   for (Long n = 0; n < count; ++n) {
+      Unt done = DONE_NOTHING;
+      (void)setManualFold(lnum, do_open, false, OUT &done);
       if (!(done & DONE_ACTION)) {
           // Only give an error message when no fold could be opened.
           if (n == 0 && !(done & DONE_FOLD))
@@ -12610,19 +12601,19 @@ setFoldRepeat(LineNr lnum, long count, int do_open) {
    }
 }
 
-//Open or close the fold in portal "wp" which contains "lnum". "donep", when not NULL, points to 
+//Open or close the fold in portal "po" which contains "lnum". "donep", when not NULL, points to 
 //flag that is set to DONE_FOLD when some fold was found and to DONE_ACTION when some fold was 
 //opened or closed. When "donep" is NULL give an error message when no fold was found for
-//"lnum", but only if "wp" is "curPor".
+//"lnum", but only if "po" is "curPor".
 //Return the line number of the next line that could be closed.
 //It's only valid when "opening" is true!
 private LineNr
 setManualFoldPort(
-   Portal   *wp,
-   LineNr   lnum,
-   int      opening,    // true when opening, false when closing
-   int      recurse,    // true when closing/opening recursive
-   int* donep
+   Portal* po,
+   LineNr lnum,
+   Boole opening,    // true when opening, false when closing
+   Boole recurse,    // true when closing/opening recursive
+   OUT Unt* donep
 ){
    Fold   *fp;
    Fold   *fp2;
@@ -12635,10 +12626,10 @@ setManualFoldPort(
    LineNr   off = 0;
    int      done = 0;
 
-   checkupdate(wp);
+   checkupdate(po);
 
    //Find the fold, open or close it.
-   ArrayList* gap = &wp->folds;
+   ArrayList* gap = &po->folds;
    for (;;) {
       if (!foldFind(gap, lnum, &fp)) {
          // If there is a following fold, continue there next time.
@@ -12657,7 +12648,7 @@ setManualFoldPort(
       // Change from level-dependent folding to manual.
       if (use_level || fp->fd_flags == FD_LEVEL) {
          use_level = true;
-         if (level >= wp->o.foldLevel)
+         if (level >= po->o.foldLevel)
             fp->fd_flags = FD_CLOSED;
          else
             fp->fd_flags = FD_OPEN;
@@ -12696,17 +12687,17 @@ setManualFoldPort(
          found->fd_flags = FD_CLOSED;
          done |= DONE_ACTION;
       }
-      wp->foldManual = true;
-      if (done & DONE_ACTION) 
-         didChangePortalSetting(wp);
+      po->foldManual = true;
+      if ((done & DONE_ACTION) != 0)
+         didChangePortalSetting(po);
       done |= DONE_FOLD;
-   } ei (donep == NULL && wp == curPor)
+   } ei (!donep && po == curPor)
       emsg(_(e_no_fold_found));
 
    if (donep)
       *donep |= done;
 
-    return next;
+   return next;
 }
 
 //Open or close the fold in the current portal which contains "lnum".
@@ -12714,25 +12705,23 @@ setManualFoldPort(
 private LineNr
 setManualFold(
    LineNr lnum,
-   int opening,    // true when opening, false when closing
-   int recurse,    // true when closing/opening recursive
-   int* donep
+   Boole opening,    // true when opening, false when closing
+   Boole recurse,    // true when closing/opening recursive
+   OUT Unt* donep
 ) {
-   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.scrollBind) {
-      Portal       *wp;
-      LineNr    dlnum;
-
+   if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
       //Do the same operation in other portals in diff mode. Calculate line number from the diffs
-      FOR_ALL_PORTALS(wp) {
-         if (wp != curPor && wp->o.foldMethod == FOLD_DIFF && wp->o.scrollBind) {
-            dlnum = diff_lnum_win(curPor->cursor.lnum, wp);
+      Portal* po;
+      FOR_ALL_PORTALS(po) {
+         if (po != curPor && po->o.foldMethod == FOLD_DIFF && po->o.diff) {
+            LineNr dlnum = diff_lnum_win(curPor->cursor.lnum, po);
             if (dlnum != 0)
-               (void)setManualFoldPort(wp, dlnum, opening, recurse, NULL);
+               (void)setManualFoldPort(po, dlnum, opening, recurse, NULL);
          }
       }
    }
 
-   return setManualFoldPort(curPor, lnum, opening, recurse, donep);
+   return setManualFoldPort(curPor, lnum, opening, recurse, OUT donep);
 }
 
 //Open all nested folds in fold "fpr" recursively.
@@ -12804,11 +12793,11 @@ deleteFoldRecurse(ArrayList *gap) {
 //make sure that line2 does not get smaller than line1
 void
 foldMarkAdjust(
-    Portal   *wp,
-    LineNr   line1,
-    LineNr   line2,
-    long   amount,
-    long   amount_after
+    Portal* po,
+    LineNr line1,
+    LineNr line2,
+    long amount,
+    long amount_after
 ) {
    // If deleting marks from line1 to line2, but not deleting all those
    // lines, set line2 so that only deleted lines have their folds removed.
@@ -12820,7 +12809,7 @@ foldMarkAdjust(
    // just above the line.
    if ((stateG & MODE_INSERT) && amount == (LineNr)1 && line2 == MAXLNUM)
        --line1;
-   foldMarkAdjustRecurse(&wp->folds, line1, line2, amount, amount_after);
+   foldMarkAdjustRecurse(&po->folds, line1, line2, amount, amount_after);
 }
 
 // foldMarkAdjustRecurse()
@@ -13125,7 +13114,7 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 //Otherwise the result is in allocated memory.
 CS
 get_foldtext(
-   Portal* wp,
+   Portal* po,
    LineNr lnum,
    LineNr lnume,
    FoldInfo* foldinfo,
@@ -13138,7 +13127,7 @@ get_foldtext(
    static Portal    *last_wp = NULL;
    static LineNr last_lnum = 0;
 
-   if (last_wp != wp || last_wp == NULL || last_lnum > lnum || last_lnum == 0)
+   if (last_wp != po || last_wp == NULL || last_lnum > lnum || last_lnum == 0)
       // portal changed, try evaluating foldtext setting once again
       got_fdt_error = false;
 
@@ -13146,7 +13135,7 @@ get_foldtext(
        // a previous error should not abort evaluating 'foldexpr'
        anyEmsgG = false;
 
-   if (wp->o.foldText) {
+   if (po->o.foldText) {
        Byte dashes[MAX_LEVEL + 2];
        int level;
        CS p;
@@ -13170,12 +13159,12 @@ get_foldtext(
            Portal   *save_curPor = curPor;
            ScriptPos  saved_sctx = scriptPosG;
 
-           curPor = wp;
-           curBook = wp->book;
-           scriptPosG = wp->o.scriptLocs[PORT_foldText];
+           curPor = po;
+           curBook = po->book;
+           scriptPosG = po->o.scriptLocs[PORT_foldText];
 
            ++emsg_off; // handle exceptions, but don't display errors
-           text = eval_to_string_safe(wp->o.foldText, true);
+           text = eval_to_string_safe(po->o.foldText, true);
            --emsg_off;
 
            if (text == NULL || anyEmsgG)
@@ -13186,7 +13175,7 @@ get_foldtext(
            scriptPosG = saved_sctx;
       }
       last_lnum = lnum;
-      last_wp   = wp;
+      last_wp   = po;
       set_EeglVar_string(VV_FOLDDASHES, NULL, -1);
 
       if (!anyEmsgG && save_anyEmsgG)
@@ -13331,7 +13320,7 @@ private void foldlevelDiff(FoldLine *flp);
 private void foldlevelExpr(FoldLine *flp);
 private void foldlevelMarker(FoldLine *flp);
 
-//Update the folding for portal "wp", at least from lines "top" to "bot".
+//Update the folding for portal "po", at least from lines "top" to "bot".
 //Return true if any folds did change.
 private void
 foldUpdateIEMS(Portal* po, LineNr top, LineNr bot) {
@@ -14363,16 +14352,16 @@ foldlevelMarker(FoldLine *flp) {
 
 //{{{ functions for storing the fold state in a View
 
-private int put_foldopen_recurse(FILE *fd, Portal *wp, ArrayList *gap, LineNr off);
+private int put_foldopen_recurse(FILE *fd, Portal *po, ArrayList *gap, LineNr off);
 private int put_fold_open_close(FILE *fd, Fold *fp, LineNr off);
 
-//Write commands to "fd" to restore the manual folds in portal "wp".
+//Write commands to "fd" to restore the manual folds in portal "po".
 //Return FAIL if writing fails.
 int
-put_folds(FILE* fd, Portal* wp) {
+put_folds(FILE* fd, Portal* po) {
    // If some folds are manually opened/closed, need to restore that.
-   if (wp->foldManual)
-      return put_foldopen_recurse(fd, wp, &wp->folds, (LineNr)0);
+   if (po->foldManual)
+      return put_foldopen_recurse(fd, po, &po->folds, (LineNr)0);
 
    return OK;
 }

@@ -2711,7 +2711,7 @@ find_pattern_in_path(
                if (action == ACTION_SPLIT) {
                   if (splitPortal(0, 0) == FAIL)
                      break;
-                  RESET_BINDING(curPor);
+                  curPor->o.diff = false;
                }
                if (depth == -1) {
                   // match in current file
@@ -4538,9 +4538,8 @@ prepare_help_buffer(void) {
 
    curBook->o.binary = false;   // reset 'bin' before reading file
    curPor->o.relativeNumber = false;   // no relative line numbers
-   RESET_BINDING(curPor);   // no scroll or cursor binding
    curPor->o.foldEnable = false;   // No folding in the help portal
-   curPor->o.diff = false;   // No 'diff'
+   curPor->o.diff = false;   // No 'diff', no scroll or cursor binding
 
    bookSetBooklisted(false);
 }

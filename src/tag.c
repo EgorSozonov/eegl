@@ -2649,7 +2649,7 @@ jumpto_tag(
             --isRedrawingDisabledG;
          goto erret;
       }
-      RESET_BINDING(curPor);
+      curPor->o.diff = false;
    }
 
    if (keep_help) {
@@ -4101,12 +4101,12 @@ cs_find_common(
          ) {
             if (postponed_split != 0) {
                (void)splitPortal(postponed_split > 0 ? postponed_split : 0, postponed_split_flags);
-               RESET_BINDING(curPor);
+               curPor->o.diff = false;
                postponed_split = 0;
             }
 
             applyAutocomms(
-               EVENT_QUICKFIXCMDPOST, (CS)"cscope", curBook->currFileName, true, curBook
+               EVENT_QUICKFIXCMDPOST, S"cscope", curBook->currFileName, true, curBook
             );
             if (use_ll) {
                // In the location list portal, use the displayed location list. Otherwise, use the

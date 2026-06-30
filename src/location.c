@@ -2488,7 +2488,7 @@ open_new_file_port(LocationStack* llRef) {
    if (splitPortal(0, flags) == FAIL)
       return FAIL;      // not enough room for portal
    p_swb = 0;   // don't split again
-   RESET_BINDING(curPor);
+   curPor->o.diff = false;
    return OK;
 }
 
@@ -3483,7 +3483,6 @@ setPortalOptions() {
    optChangeAndReportError(
       S"bufhdden", (OptionValue){.tag = OPTION_STRING, .string = S"hide"}, SET_LOCAL
    );
-   RESET_BINDING(curPor);
    curPor->o.diff = false;
    optChangeAndReportError(
       S"foldmethod", (OptionValue){.tag = OPTION_STRING, .string = S"manual"}, SET_LOCAL
@@ -3516,7 +3515,7 @@ openNewPortal(LocationStack* stack, int height) {
    if (splitPortal(height, flags) == FAIL)
       return FAIL;      // not enough room for portal
       
-   RESET_BINDING(curPor);
+   curPor->o.diff = false;
 
    //For the location list portal, create a reference to the
    //location list stack from the portal 'port'.

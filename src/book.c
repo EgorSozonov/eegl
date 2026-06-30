@@ -2903,7 +2903,7 @@ bookDo(
    bookSetCurBook(book, action);
 
    if (action == DOBOOK_SPLIT)
-      RESET_BINDING(curPor);   // reset 'scrollbind' and 'cursorbind'
+      curPor->o.diff = false;   // disable scrollbinding and cursorbinding
 
    if (aborting())       // autocmds may abort script processing
       return FAIL;
@@ -3463,7 +3463,7 @@ booklistGetFile(
             tabNew();
          ei (splitPortal(0, (p_swb & SWB_VSPLIT) ? WSP_VERT : 0) == FAIL)
             return FAIL;
-         RESET_BINDING(curPor);
+         curPor->o.diff = false;
       }
    }
 
@@ -4416,51 +4416,40 @@ private int* stlSeparatorLocationsP = NULL;
 int
 bookRenderStatusLine(
    Portal* po,
-   CS out,      // string book to write into != nameBuffG
+   OUT CS out,      // string book to write into != nameBuffG
    Unt outlen,      // length of out[]
    CS fmt,
    Byte oname,      // one of STATLINE_* constants
    int opt_scope,   // scope for "oname"
    int fillchar,
    int maxwidth,
-   OUT StatusLineHilite** hltab,   // return: hilite decorations (can be NULL)
-   OUT StatusLineHilite** labels   // return: tab numbers (can be NULL)
+   OUT Arr(StatusLineHilite)* hltab,   // return: hilite decorations (can be NULL)
+   OUT Arr(StatusLineHilite)* labels   // return: tab numbers (can be NULL)
 ){
-   LineNr   lnum;
-   ColNr   len;
-   Unt   outputlen;   // length of out[] used (excluding the ZERO)
    CS p;
    CS s;
-   int byteval;
    int save_VIsual_active;
-   int empty_line;
    long l;
-   long n;
    int prevchar_isflag;
    int prevchar_isitem;
    int itemisflag;
    int fillable;
    CS str;
-   long   num;
-   int      width;
-   int      itemcnt;
-   int      curitem;
-   int      groupdepth;
-   int      evaldepth;
-   int      minwid;
-   int      maxwid;
-   int      zeropad;
-   Byte   base;
-   Byte   opt;
+   long num;
+   int minwid;
+   int maxwid;
+   int zeropad;
+   Byte base;
+   Byte opt;
 #define TMPLEN 70
-   Byte   buf_tmp[TMPLEN];
+   Byte buf_tmp[TMPLEN];
    CS usefmt = fmt;
    StatusLineHilite *sp;
    int save_redraw_not_allowed = redraw_not_allowed;
    int save_keyWasTypedG = keyWasTypedG;
    // TODO: find out why using called_emsg_before makes tests fail, does it matter?
    // int   called_emsg_before = called_emsg;
-   int      anyEmsgSaved = anyEmsgG;
+   int anyEmsgSaved = anyEmsgG;
 
    // When inside drawUpdateScreen() we do not want redrawing a statusline,
    // ruler, title, etc. to trigger another redraw, it may cause an endless loop.
@@ -4498,7 +4487,7 @@ bookRenderStatusLine(
 
    // The cursor in portals other than the current one isn't always
    // up-to-date, esp. because of autocommands and timers.
-   lnum = po->cursor.lnum;
+   LineNr lnum = po->cursor.lnum;
    if (lnum > po->book->mem.lineCount) {
       lnum = po->book->mem.lineCount;
       po->cursor.lnum = lnum;
@@ -4507,23 +4496,25 @@ bookRenderStatusLine(
    // Get line & check if empty (cursorpos will show "0-1").  Note that
    // p will become invalid when getting another book line.
    p = memGetLine(po->book, lnum, false);
-   empty_line = (*p == ZERO);
+   Boole empty_line = (*p == ZERO);
 
    // Get the byte value now, in case we need it below. This is more efficient
    // than making a copy of the line.
-   len = memGetBookLen(po->book, lnum);
+   ColNr len = memGetBookLen(po->book, lnum);
+   
+   Unt byteval;
    if (po->cursor.col > len) {
       // Line may have changed since checking the cursor column, or the lnum was adjusted above
       po->cursor.col = len;
       po->cursor.coladd = 0;
       byteval = 0;
    } else
-      byteval = (*mb_ptr2char)(p + po->cursor.col);
+      byteval = mb_ptr2char(p + po->cursor.col);
 
-   groupdepth = 0;
-   evaldepth = 0;
+   int groupdepth = 0;
+   int evaldepth = 0;
    p = out;
-   curitem = 0;
+   int curitem = 0;
    prevchar_isflag = true;
    prevchar_isitem = false;
    for (s = usefmt; *s != ZERO; ) {
@@ -4598,6 +4589,7 @@ bookRenderStatusLine(
             Short groupEndHiId = 0;
 
             // remove group if all items are empty and hilite group doesn't change
+            Long n;
             for (n = stlGroupItemP[groupdepth] - 1; n >= 0; n--) {
                if (statusItemsP[n].StatusTag == Highlight) {
                   groupStartUserId = groupEndHiId = statusItemsP[n].minWidth;
@@ -4625,9 +4617,9 @@ bookRenderStatusLine(
             }
          }
          if (l > statusItemsP[stlGroupItemP[groupdepth]].maxWidth) {
-            // truncate, remove n bytes of text at the start
-            // Find the first character that should be included.
-            n = 0;
+            //truncate, remove n bytes of text at the start
+            //Find the first character that should be included.
+            Long n = 0;
             while (l >= statusItemsP[stlGroupItemP[groupdepth]].maxWidth) {
                l -= bookPtr2Cells(t + n);
                n += utfCharLen(t + n);
@@ -4650,7 +4642,7 @@ bookRenderStatusLine(
             }
          } ei (abs(statusItemsP[stlGroupItemP[groupdepth]].minWidth) > l) {
             // fill
-            n = statusItemsP[stlGroupItemP[groupdepth]].minWidth;
+            Long n = statusItemsP[stlGroupItemP[groupdepth]].minWidth;
             if (n < 0) {
                // fill by appending characters
                n = 0 - n;
@@ -4700,7 +4692,7 @@ bookRenderStatusLine(
          if (*s == STL_TABCLOSENR) {
             if (minwid == 0) {
                // %X ends the close label, go back to the previously define tab label nr.
-               for (n = curitem - 1; n >= 0; --n) {
+               for (Long n = curitem - 1; n >= 0; --n) {
                   if (statusItemsP[n].StatusTag == TabPage && statusItemsP[n].minWidth >= 0) {
                       minwid = statusItemsP[n].minWidth;
                       break;
@@ -4788,9 +4780,8 @@ bookRenderStatusLine(
             s++;
          itemisflag = true;
          CS t = p;
-         while ((*s != '}' || (reevaluate && s[-1] != '%'))
-                    && *s != ZERO && p + 1 < out + outlen)
-         *p++ = *s++;
+         while ((*s != '}' || (reevaluate && s[-1] != '%')) && *s != ZERO && p + 1 < out + outlen)
+            *p++ = *s++;
          if (*s != '}')   // missing '}' or out of space
             break;
          s++;
@@ -4829,8 +4820,8 @@ bookRenderStatusLine(
             }
          }
 
-          // If the output of the expression needs to be evaluated
-          // replace the %{} block with the result of evaluation
+          //If the output of the expression needs to be evaluated
+          //replace the %{} block with the result of evaluation
           if (reevaluate && str && *str != ZERO
              && strchr((const char *)str, '%') != NULL
              && evaldepth < MAX_STL_EVAL_DEPTH
@@ -4938,13 +4929,6 @@ bookRenderStatusLine(
          num = byteval;
          if (num == NL)
             num = 0;
-         break;
-
-      case STL_ROFLAG:
-      case STL_ROFLAG_ALT:
-         itemisflag = true;
-         if (!po->book->o.modifiable)
-            str = (CS)((opt == STL_ROFLAG_ALT) ? S",RO" : _("[RO]"));
          break;
 
       case STL_HELPFLAG:
@@ -5079,7 +5063,7 @@ bookRenderStatusLine(
          *t++ = '*';
          *t++ = nbase == 16 ? base : (Byte)(nbase == 8 ? 'o' : 'd');
          *t = ZERO;
-
+         Long n;
          for (n = num, l = 1; n >= nbase; n /= nbase)
             l++;
          if (opt == STL_VIRTCOL_ALT)
@@ -5108,13 +5092,13 @@ bookRenderStatusLine(
       curitem++;
    }
    *p = ZERO;
-   outputlen = (Unt)(p - out);
-   itemcnt = curitem;
+   Unt outputlen = (Unt)(p - out);  // length of out[] used (excluding the ZERO)
+   int itemcnt = curitem;
 
    if (usefmt != fmt)
       eeglFree(usefmt);
 
-   width = eeglStrSize(out);
+   int width = eeglStrSize(out);
    if (maxwidth > 0 && width > maxwidth) {
       //Result is too long, must truncate somewhere.
       l = 0;
@@ -5159,7 +5143,7 @@ bookRenderStatusLine(
       } else {
          CS end = out + outputlen;
 
-         n = 0;
+         Long n = 0;
          while (width >= maxwidth) {
             width -= bookPtr2Cells(s + n);
             n += utfCharLen(s + n);
@@ -7512,7 +7496,7 @@ do_argfile(Invocation* invo, int argn){
    if (isSplitCommand || commModifierG.cmod_tab != 0) {
       if (splitPortal(0, 0) == FAIL)
          return;
-      RESET_BINDING(curPor);
+      curPor->o.diff = false;
    } else {
       // if 'hidden' set, only check for changed file when re-editing the same book
       Boole sameFile = false;

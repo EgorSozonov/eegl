@@ -1147,7 +1147,7 @@ diff_redraw(int dofold)  {    // also recompute the folds
      }
   }
 
-  if (other != NULL && curPor->o.scrollBind) {
+  if (other && curPor->o.diff) {
       if (used_max_fill_curPor)
          //The current portal was set to use the maximum number of filler
          //lines, may need to reduce them.
@@ -1746,7 +1746,7 @@ c_diffpatch(Invocation* invo) {
 
          // check that split worked and editing tmp_new
          if (curPor != old_curPor && portalIsValid(old_curPor)) {
-            // Set 'diff', 'scrollbind' on and 'wrap' off.
+            // Set @diff' and 'wrap' off.
             diff_win_options(curPor, true);
             diff_win_options(old_curPor, true);
 
@@ -1800,7 +1800,7 @@ c_diffsplit(Invocation* invo) {
    if (curPor == old_curPor)      // split didn't work
       return;
 
-   // Set 'diff', 'scrollbind' on and 'wrap' off.
+   // Set @diff and @wrap off.
    diff_win_options(curPor, true);
    if (portalIsValid(old_curPor)) {
       diff_win_options(old_curPor, true);
@@ -1815,7 +1815,7 @@ c_diffsplit(Invocation* invo) {
 //Set options to show diffs for the current portal.
 void
 c_diffthis(Invocation* invo UNUSED) {
-   // Set 'diff', 'scrollbind' on and 'wrap' off.
+   // Set @diff' on and @wrap off.
    diff_win_options(curPor, true);
 }
 
@@ -1844,13 +1844,6 @@ diff_win_options(Portal* po, int addbuf) {     // Add book to diff.
    newFoldLevel();
    curPor = old_curPor;
 
-   //Use @scrollbind and @cursorbind when available
-   if (!po->o.diff)
-      po->o.scrollBindSave = po->o.scrollBind;
-   po->o.scrollBind = true;
-   if (!po->o.diff)
-      po->o.cursorBindSaved = po->o.cursorBind;
-   po->o.cursorBind = true;
    if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
       if (!po->o.diff)
          po->o.wrapSaved = po->o.wrap;
@@ -1896,10 +1889,6 @@ c_diffoff(Invocation* invo) {
           set_diff_option(po, false);
 
          if (po->o.diffSaved) {
-            if (po->o.scrollBind)
-                po->o.scrollBind = po->o.scrollBindSave;
-            if (po->o.cursorBind)
-                po->o.cursorBind = po->o.cursorBindSaved;
             if ((diff_flags & DIFF_FOLLOWWRAP) == 0) {
                if (!po->o.wrap && po->o.wrapSaved) {
                   po->o.wrap = true;

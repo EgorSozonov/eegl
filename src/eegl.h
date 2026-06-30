@@ -551,9 +551,6 @@ typedef Byte Byte;
 
 # define DO_AUTOCHDIR do { } while (0)
 
-#define RESET_BINDING(po)  do { \
-   (po)->o.scrollBind = FALSE; (po)->o.cursorBind = FALSE; } while (0)
-
 # define PLINES_NOFILL(x) plines_nofill(x)
 # define PLINES_WIN_NOFILL(w, l, h) plines_win_nofill((w), (l), (h))
 
@@ -1759,8 +1756,6 @@ typedef int Socket;
 #define STL_OFFSET_X     'O'      // - in hexadecimal
 #define STL_BYTEVAL      'b'      // byte value of character
 #define STL_BYTEVAL_X    'B'      // - in hexadecimal
-#define STL_ROFLAG       'r'      // readonly flag
-#define STL_ROFLAG_ALT   'R'      // - other display
 #define STL_HELPFLAG     'h'      // window is showing a help file
 #define STL_HELPFLAG_ALT 'H'      // - other display
 #define STL_FILETYPE     'y'      // 'filetype'
@@ -2342,10 +2337,8 @@ typedef struct {
    Boole foldEnableSave;  // @foldenable saved for diff mode
    int foldLevelSaved;
    Byte foldMethodSaved;  // @foldmethod saved for diff mode
-   int scrollBindSave;   // @scrollbind saved for diff mode
    int diffSaved; // options were saved for starting diff mode
    int wrapSaved;   // @wrap state saved for diff mode
-   int cursorBindSaved;   // @cursorbind state saved for diff mode
    ScriptPos scriptLocs[OPTION_PORTAL_COUNT];   // script locations for portal-local options
    Sbuf stringOptions;      //Storage for all the string options
 } PortalOptions;

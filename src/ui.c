@@ -11903,16 +11903,15 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
 // default tabpanel drawing behavior if 'tabpanel' option is NOT empty.
 private void
 drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
-   int      p_crb_save;
    Byte buf[IOSIZE];
    StatusLineHilite* hilites;
    StatusLineHilite* labels;
    Decoration currDeco;
    int n;
 
-   //Temporarily reset 'cursorbind', we don't want a side effect from moving the cursor away & back
-   p_crb_save = tapa->currPort->o.cursorBind;
-   tapa->currPort->o.cursorBind = false;
+   //Temporarily reset @diff, we don't want a side effect from moving the cursor away & back
+   Boole diffSaved = tapa->currPort->o.diff;
+   tapa->currPort->o.diff = false;
 
    // Make a copy, because the statusline may include a function call that
    // might change the option value and free the memory.
@@ -11924,7 +11923,7 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    );
 
    eeglFree(p);
-   tapa->currPort->o.cursorBind = p_crb_save;
+   tapa->currPort->o.diff = diffSaved;
 
    currDeco = getFullDecoration(0);
    p = buf;

@@ -110,6 +110,7 @@ check_status(Book* book) {
    Portal   *po;
    FOR_ALL_PORTALS(po) {
       if (po->book == book) {
+         _bp(true);
          po->statusLineNeedsRedraw = true;
          drawSetMustRedraw(UPD_VALID);
       }
@@ -119,7 +120,6 @@ check_status(Book* book) {
 //Internal part of changed(), no user interaction. Also used for recovery.
 void
 jugOnChangeToText(void) {
-   _bp(true);
    curBook->wasModified = true;
    ml_setflags(curBook);
    check_status(curBook);

@@ -3227,7 +3227,7 @@ c_substitute(Invocation* invo) {
                stateG = MODE_CONFIRM;
                setmouse();      // disable mouse in xterm
                curPor->cursor.col = regmatch.startpos[0].col;
-               if (curPor->o.cursorBind)
+               if (curPor->o.diff)
                   do_check_cursorbind();
 
 
@@ -4023,9 +4023,7 @@ prepare_tagpreview(
       return false;
    curPor->isPreview = true;
    curPor->o.portFixHeight = true;
-   RESET_BINDING(curPor);       // don't take over 'scrollbind'
-               // and 'cursorbind'
-   curPor->o.diff = false;       // no 'diff'
+   curPor->o.diff = false;       // no 'diff', don't take over scrollbinding and cursorbinding
    return true;
 }
 
@@ -4387,8 +4385,8 @@ c_listDo(Invocation* invo) {
       if (invo->id == C_windo) {
          validate_cursor();   // cursor may have moved
 
-         // required when @scrollbind has been set
-         if (curPor->o.scrollBind)
+         //scrollbinding is required when @diff has been set
+         if (curPor->o.diff)
             normPostProcessScrollbind(true);
       }
 
@@ -8889,10 +8887,9 @@ c_splitview(Invocation* invo) {
              invo->addr_count > 0 ? (int)invo->line2 : 0, *invo->comm == 'v' ? WSP_VERT : 0
           ) != FAIL
    ) {
-      // Reset 'scrollbind' when editing another file, but keep it when
-      // doing ":split" without arguments.
+      //Disable @diff when editing another file, but keep it when doing ":split" without arguments.
       if (*invo->arg != ZERO)
-          RESET_BINDING(curPor);
+          curPor->o.diff = false;
       else
           normPostProcessScrollbind(false);
       do_exedit(invo, old_curPor);
@@ -9237,7 +9234,7 @@ c_swapname(Invocation* invo UNUSED) {
       msg(curBook->mem.mfile->fName);
 }
 
-//":syncbind" forces all 'scrollbind' portals to have the same relative offset.
+//":syncbind" forces all scrollbound portals to have the same relative offset.
 //(1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
 void
 c_syncbind(Invocation* invo UNUSED) {
@@ -9251,10 +9248,10 @@ c_syncbind(Invocation* invo UNUSED) {
    setpcmark();
 
    // determine max topline
-   if (curPor->o.scrollBind) {
+   if (curPor->o.diff) {
       topline = curPor->topLine;
       FOR_ALL_PORTALS(po) {
-         if (po->o.scrollBind && po->book) {
+         if (po->o.diff && po->book) {
             y = po->book->mem.lineCount - curPor->o.scrollOff;
             if (topline > y)
                topline = y;
@@ -9267,9 +9264,9 @@ c_syncbind(Invocation* invo UNUSED) {
    }
 
 
-   // Set all scrollbind portals to the same topline.
+   // Set all scrollbound portals to the same topline.
    FOR_ALL_PORTALS(curPor) {
-      if (curPor->o.scrollBind) {
+      if (curPor->o.diff) {
          curBook = curPor->book;
          y = topline - curPor->topLine;
          if (y > 0)
@@ -9284,7 +9281,7 @@ c_syncbind(Invocation* invo UNUSED) {
    }
    curPor = save_curPor;
    curBook = save_curbuf;
-   if (curPor->o.scrollBind) {
+   if (curPor->o.diff) {
       did_syncbind = true;
       checkpcmark();
       if (old_linenr != curPor->cursor.lnum) {
