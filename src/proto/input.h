@@ -99,7 +99,7 @@ Unt jump_to_mouse(Unt flags, Boole *inclusive, Unt which_button);
 void nv_mousescroll(ActionArg *cap);
 void nv_mouse(ActionArg *cap);
 void reset_held_button(void);
-int check_termcode_mouse(CS key_name, Unt *modifiers);
+int termTryParseTermcode_mouse(CS key_name, Unt *modifiers);
 int mouse_comp_pos(Portal *port, int *rowp, int *colp, LineNr *lnump, int *plines_cache);
 Portal *mouseFindPortal(int *rowp, int *colp, MouseFindKind popup);
 int vcol2col(Portal *po, LineNr lnum, int vcol, ColNr *coladdp);

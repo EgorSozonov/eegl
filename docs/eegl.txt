@@ -209,6 +209,12 @@ bookWrite()
 //paste, delete text
 jugExecuteVisualOperator
 
+//clipboard: pasting
+window.c:do_put => window.c:clip_get_selection
+
+//Termcodes in response from the emulator
+termTryParseTermcode
+
 
 //// ideas
 //////////

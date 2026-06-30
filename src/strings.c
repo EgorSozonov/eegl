@@ -3506,14 +3506,14 @@ startsWith(CS longerStr, CS shorterStr) {
 //}}}
 //{{{base64
 
-// Base64 character set
+//Base64 character set
 private const Byte base64Table[] = 
    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-// Base64 decoding table (initialized in initBase64Table() below)
+//Base64 decoding table (initialized in initBase64Table() below)
 private Byte base64DecodingTableG[256];
 
-// Initialize the base64 decoding table
+//Initialize the base64 decoding table
 private void
 initBase64Table(void) {
    static Boole wasInitialized = false;
@@ -3525,7 +3525,7 @@ initBase64Table(void) {
    memset(base64DecodingTableG, 0xFF, sizeof(base64DecodingTableG));
 
    // Initialize the index for the base64 alphabets
-   for (Unt i = 0; i < sizeof(base64Table) - 1; i++)
+   for (Unt i = 0; i < STRLEN_LITERAL(base64Table); i++)
       base64DecodingTableG[base64Table[i]] = (Byte)i;
 
    // base64 padding character
@@ -3559,9 +3559,9 @@ encodeBase64(void const* binaryData_, int inputLen) {
    return encoded;
 }
 
-//Return true if input argument is malformed
+//Return false if input argument is malformed
 Boole
-decodeBase64(OUT ArrayList* ret, Text base64) {
+decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
    ArrayList decoded = {.len = 0, .cap = 0};
 
    if (base64.len == 0 || (base64.len % 4 != 0)) {
@@ -3626,6 +3626,64 @@ decodeBase64(OUT ArrayList* ret, Text base64) {
    decoded.len = decodedLen;
    *ret = decoded;
    return true;
+}
+
+//Return false if input argument is malformed
+Boole
+decodeBase64(OUT CS* ret, Text base64) {
+   if (base64.len == 0 || (base64.len % 4 != 0)) {
+      goto malformedInput;
+   } 
+   Unt unpaddedLen = base64.len;
+   Unt decodedFromUnpaddedLen = base64.len / 4 * 3; // decodedLen >= 3
+   Unt decodedFromPaddedLen = 0;
+   if (base64.c[base64.len - 1] == '=') {
+      decodedFromPaddedLen++;
+      decodedFromUnpaddedLen -= 3;
+      unpaddedLen -= 4;
+      if (base64.c[base64.len - 2] == '=') {
+         decodedFromPaddedLen++;
+      } 
+   } 
+   
+   initBase64Table();
+   
+   *ret = alloc(decodedFromPaddedLen + decodedFromUnpaddedLen + 1);
+   ret[decodedFromPaddedLen + decodedFromUnpaddedLen] = ZERO;
+
+   Unt i, j;
+   for (i = 0, j = 0; i < unpaddedLen;) {
+   //TODO SIMD
+      Unt sextetA = base64DecodingTableG[base64.c[i++]];
+      Unt sextetB = base64DecodingTableG[base64.c[i++]];
+      Unt sextetC = base64DecodingTableG[base64.c[i++]];
+      Unt sextetD = base64DecodingTableG[base64.c[i++]];
+
+      if (sextetA == 0xFF || sextetB == 0xFF || sextetC == 0xFF || sextetD == 0xFF) {
+         // Invalid character
+         goto malformedInput;
+      }
+
+      Unt triple = (sextetA << 18) | (sextetB << 12) | (sextetC << 6) | sextetD;
+
+      (*ret)[j++] = (triple >> 16) & 0xFF;
+      (*ret)[j++] = (triple >> 8) & 0xFF;
+      (*ret)[j++] = triple  & 0xFF;
+   }
+   if (decodedFromPaddedLen == 1) {
+      (*ret)[j] = base64DecodingTableG[base64.c[i++]] << 2;
+      (*ret)[j] += base64DecodingTableG[base64.c[i]] >> 6;
+   } ei (decodedFromPaddedLen == 2) {
+      (*ret)[j] = base64DecodingTableG[base64.c[i++]] << 2;
+      (*ret)[j++] += base64DecodingTableG[base64.c[i++]] >> 4; //6 bits from first byte & 2 from snd
+      (*ret)[j] = ((Byte)(base64DecodingTableG[base64.c[i++]] & 16)) << 4; //4 bits from snd and from third
+      (*ret)[j] += base64DecodingTableG[base64.c[i++]] << 2;
+   }
+   return true;
+   
+malformedInput:
+   *ret = null;
+   return false;
 }
 
 //}}}

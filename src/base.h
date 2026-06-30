@@ -311,30 +311,30 @@ typedef struct {
 #define KS_HOR_SCROLLBAR 248
 
 //These are used for DEC mouse
-#define KS_NETTERM_MOUSE   247
-#define KS_DEC_MOUSE      246
+#define KS_NETTERM_MOUSE 247
+#define KS_DEC_MOUSE     246
 
 //Used for tearing off a menu.
-#define KS_TEAROFF      244
+#define KS_TEAROFF       244
 
 // Used for JSB term mouse.
-#define KS_JSBTERM_MOUSE   243
+#define KS_JSBTERM_MOUSE 243
 
 // Used a termcap entry that produces a normal character.
-#define KS_KEY         242
+#define KS_KEY           242
 
 // Used for click in a tabs label
-#define KS_TABLINE      240
+#define KS_TABLINE       240
 
 // Used for menu in a tab line.
-#define KS_TABMENU      239
+#define KS_TABMENU       239
 
 // Used for the urxvt mouse.
-#define KS_URXVT_MOUSE      238
+#define KS_URXVT_MOUSE   238
 
 // Used for the sgr mouse.
-#define KS_SGR_MOUSE      237
-#define KS_SGR_MOUSE_RELEASE   236
+#define KS_SGR_MOUSE          237
+#define KS_SGR_MOUSE_RELEASE  236
 
 //Filler used after KS_SPECIAL and others
 #define KE_FILLER      ('X')

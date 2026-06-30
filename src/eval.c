@@ -9756,7 +9756,7 @@ base64_encode(Blob* blob) {
 private void
 base64_decode(CS base64, Blob* blob) {
    ArrayList mbResult;
-   if (decodeBase64(OUT &mbResult, mbText(base64))) {
+   if (decodeBase64ToArrayList(OUT &mbResult, mbText(base64))) {
       if (mbResult.len > 0) {
          blob->c = mbResult;
       } else {

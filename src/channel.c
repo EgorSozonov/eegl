@@ -4034,7 +4034,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
          //There is no type cast for the argv, because the type may be different on different 
          //machines. This may cause a warning message with strict compilers, don't worry about it.
          //Call _exit() instead of exit() to avoid closing the connection
-         //to the X/Wayland server (esp. with GTK, which uses atexit()).
+         //to the Wayland server (esp. with GTK, which uses atexit()).
          execvp((char*)argv[0], (char**)argv);
          _exit(EXEC_FAILED);       // exec failed, return failure code
       } else {        // parent

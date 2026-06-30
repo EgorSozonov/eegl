@@ -338,13 +338,12 @@ libMain(void) {
    no_wait_return = false;
    msg_scroll = false;
 
-//TODO WAYLAND
-//   if (wayland_init_client(wayland_display_name) == OK) {
-//      TIME_MSG("connected to Wayland display");
-//
-//      if (wayland_cb_init(p_wse) == OK)
-//         TIME_MSG("setup Wayland clipboard");
-//   }
+   if (wayland_init_client(wayland_display_name) == OK) {
+      TIME_MSG("connected to Wayland display");
+
+      if (wayland_cb_init(p_wse) == OK)
+         TIME_MSG("setup Wayland clipboard");
+   }
 
    //If "-" argument given: Read file from stdin. Do this before starting Raw mode, because it may 
    //change things that the writing end of the pipe doesn't like, e.g., in case stdin and stderr

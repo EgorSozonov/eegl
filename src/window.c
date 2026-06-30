@@ -1540,6 +1540,8 @@ do_put(
    // Adjust register name for "unnamed" in 'clipboard'.
    clipGetDefaultRegister(&regname);
    (void)may_get_selection(regname);
+   
+   termGetClipboard();
 
    curBook->opStart = curPor->cursor;   // default for '[ mark
    curBook->opEnd = curPor->cursor;   // default for '] mark
@@ -1561,7 +1563,7 @@ do_put(
    // For special registers '%' (file name), '#' (alternate file name) and
    // ':' (last command line), etc. we have to create a fake yank register.
    // For compiled code "expr_result" holds the expression result.
-   Text insertText = (Text){E, 0};
+   Text insertText = (Text){null, 0};
    if (regname == '=' && expr_result)
       insertText.c = expr_result;
    ei (get_spec_reg(regname, &insertText.c, &allocated, true) && insertText.c == NULL)
@@ -2327,7 +2329,7 @@ dis_msg(
 // Put a string into a register.  When the register is not empty, the string is appended.
 private void
 str_to_reg(
-   YankReg   *yReg,      // pointer to yank register
+   OUT YankReg   *yReg,      // pointer to yank register
    int      yank_type,   // MCHAR, MLINE, MBLOCK, MAUTO
    CS str,      // string to put in register
    long   len,      // length of string
@@ -2457,7 +2459,7 @@ dnd_yank_drag_data(CS str, long len) {
    YankReg* curr = y_current;
    y_current = &y_regs[TILDE_REGISTER];
    free_yank_all();
-   str_to_reg(y_current, MCHAR, str, len, 0L, false);
+   str_to_reg(OUT y_current, MCHAR, str, len, 0L, false);
    y_current = curr;
 }
 
@@ -2682,7 +2684,7 @@ write_reg_contents_lst(
       &yank_type) == FAIL)
    return;
 
-   str_to_reg(y_current, yank_type, (CS)strings, -1, block_len, true);
+   str_to_reg(OUT y_current, yank_type, (CS)strings, -1, block_len, true);
    finish_write_reg(name, old_y_previous, old_y_current);
 }
 
@@ -2738,7 +2740,7 @@ write_reg_contents_ex(
    if (init_write_reg(name, &old_y_previous, &old_y_current, must_append, &yank_type) == FAIL)
       return;
 
-   str_to_reg(y_current, yank_type, str, len, block_len, false);
+   str_to_reg(OUT y_current, yank_type, str, len, block_len, false);
    finish_write_reg(name, old_y_previous, old_y_current);
 }
 
@@ -3387,7 +3389,7 @@ private void
 clip_yank_selection(int type, CS str, long len, ClipBoard* cbd) {
    YankReg* yReg = (cbd == &clipboard) ? getYRegister(PLUS_REGISTER) : getYRegister(STAR_REGISTER);
    freeSelection(cbd);
-   str_to_reg(yReg, type, str, len, -1, false);
+   str_to_reg(OUT yReg, type, str, len, -1, false);
 }
 
 //Copy the currently selected area into the '*' register so it will be available for pasting.
@@ -3597,7 +3599,7 @@ clip_get_selection(ClipBoard* cbd) {
    } ei (!is_clipboard_needs_update()) {
       freeSelection(cbd);
 
-      // Try to get selected text from another portal
+      // Try to get selected text from another window
       clip_gen_request_selection(cbd);
    }
 }

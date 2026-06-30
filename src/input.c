@@ -59,7 +59,7 @@ private int keyNoremapG = 0;       // remapping flags
 // in typeBufG.noremap[], which is the same length as typeBufG.c[] and
 // contains RM_NONE for the characters that are not to be remapped.
 // typeBufG.noremap[typeBufG.currPos] is the first valid flag.
-// (typeBufG has been put in globals.h, because check_termcode() needs it).
+// (typeBufG has been put in globals.h, because termTryParseTermcode() needs it).
 #define RM_YES      0   // noremap: remap
 #define RM_NONE     1   // noremap: don't remap
 #define RM_SCRIPT   2   // noremap: remap local script mappings
@@ -190,7 +190,7 @@ get_keystroke(void) {
       cursor_on();
       out_flush();
 
-      // Leave some room for check_termcode() to insert a key code into (max
+      // Leave some room for termTryParseTermcode() to insert a key code into (max
       // 5 chars plus ZERO).  And fixInputBuffer() can triple the number of bytes.
       maxlen = (buflen - 6 - len) / 3;
       if (!buf)
@@ -217,7 +217,7 @@ get_keystroke(void) {
           ++waited;       // keep track of the waiting time
 
       // Incomplete termcode and not timed out yet: get more characters
-      if ((count = check_termcode(1, buf, buflen, &len)) < 0
+      if ((count = termTryParseTermcode(1, buf, buflen, &len)) < 0
              && (!p_ttimeout || waited * 100L < (p_ttm < 0 ? p_tm : p_ttm))
       )
          continue;
@@ -933,7 +933,7 @@ noremap_keys(void) {
 }
 
 // Insert a string in position 'offset' in the typeahead buffer (for "@r"
-// and ":normal" command, vGetOrPeek() and check_termcode()).
+// and ":normal" command, vGetOrPeek() and termTryParseTermcode()).
 //
 // If "noremap" is REMAP_YES, new string can be mapped again.
 // If "noremap" is REMAP_NONE, new string cannot be mapped again.
@@ -2387,13 +2387,13 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
            if ((typeBufG.mappedLen == 0 
                      || (typeBufG.noremap[typeBufG.currPos] == RM_YES))
                   && !timedout) {
-              fin.keylen = check_termcode(fin.maxMLen + 1, NULL, 0, NULL);
+              fin.keylen = termTryParseTermcode(fin.maxMLen + 1, NULL, 0, NULL);
            } else {
               fin.keylen = 0;
            } 
 
-           // If no termcode matched but 'pastetoggle' matched partially
-           // it's like an incomplete key sequence.
+           //If no termcode matched but 'pastetoggle' matched partially
+           //it's like an incomplete key sequence.
            if (fin.keylen == 0 && savedKeylen == KEYLEN_INCOMPLETE_KEYCODE && !timedout)
               fin.keylen = KEYLEN_INCOMPLETE_KEYCODE;
 
@@ -2675,10 +2675,9 @@ vGetOrPeek(Boole advance) {
            }
       } else {
             for (;;) { //{{{inner loop
-
-               // Loop until we either find a matching mapped key, or we are sure that it is not
-               // a mapped key. If a mapped key sequence is found we go back to the start to try
-               // re-mapping.
+               //Loop until we either find a matching mapped key, or we are sure that it is not
+               //a mapped key. If a mapped key sequence is found we go back to the start to try
+               //re-mapping.
                long   wait_time;
                int   keylen = 0;
                int   showcmd_idx;
@@ -3046,7 +3045,7 @@ ingestChar(CS buf, int maxlen, long wait_time) {  // "wait_time" milliseconds
    return count;
 }
 
-// Fix typed characters for use by vgetc() and check_termcode(). "buf[]" must have room to triple 
+// Fix typed characters for use by vgetc() and termTryParseTermcode(). "buf[]" must have room to triple 
 // the number of bytes! Return the new length.
 private int
 fixInputBuffer(OUT CS buf, int len) {
@@ -5001,27 +5000,27 @@ get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag) {
    return (int)KE_IGNORE;       // not recognized, ignore it
 }
 
-# define HMT_NORMAL   1
-# define HMT_NETTERM   2
-# define HMT_DEC   4
-# define HMT_JSBTERM   8
-# define HMT_PTERM   16
-# define HMT_URXVT   32
-# define HMT_GPM   64
-# define HMT_SGR   128
-# define HMT_SGR_REL   256
-private int has_mouse_termcode = 0;
+#define HMT_NORMAL    1
+#define HMT_NETTERM   2
+#define HMT_DEC       4
+#define HMT_JSBTERM   8
+#define HMT_PTERM    16
+#define HMT_URXVT    32
+#define HMT_GPM      64
+#define HMT_SGR     128
+#define HMT_SGR_REL 256
+private Unt haveMouseTermcodeP = 0;
 
 void
 set_mouse_termcode(Unt n, CS s) {
    Byte name[2] = {n, KE_FILLER};
-   add_termcode(name, s, false);
+   termAddRecognizedTermcode(name, s, false);
    if (n == KS_SGR_MOUSE)
-      has_mouse_termcode |= HMT_SGR;
+      haveMouseTermcodeP |= HMT_SGR;
    ei (n == KS_SGR_MOUSE_RELEASE)
-      has_mouse_termcode |= HMT_SGR_REL;
+      haveMouseTermcodeP |= HMT_SGR_REL;
    else
-      has_mouse_termcode |= HMT_NORMAL;
+      haveMouseTermcodeP |= HMT_NORMAL;
 }
 
 void
@@ -5029,18 +5028,18 @@ del_mouse_termcode(Unt n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
    Byte name[2] = {n, KE_FILLER};
    del_termcode(name);
    if (n == KS_SGR_MOUSE)
-      has_mouse_termcode &= ~HMT_SGR;
+      haveMouseTermcodeP &= ~HMT_SGR;
    ei (n == KS_SGR_MOUSE_RELEASE)
-      has_mouse_termcode &= ~HMT_SGR_REL;
+      haveMouseTermcodeP &= ~HMT_SGR_REL;
    else
-      has_mouse_termcode &= ~HMT_NORMAL;
+      haveMouseTermcodeP &= ~HMT_NORMAL;
 }
 
-//setmouse() - switch mouse on/off depending on current mode and 'mouse'
+//switch mouse on/off depending on current mode and 'mouse'
 void
 setmouse(void) {
    // Should be outside proc, but may break MOUSESHAPE be quick when mouse is off
-   if (has_mouse_termcode == 0)
+   if (haveMouseTermcodeP == 0)
       return;
 
    // don't switch mouse on when not in raw mode (Ex mode)
@@ -5498,7 +5497,7 @@ reset_held_button(void) {
 //Check if typeBufG 'tp' contains a terminal mouse code and returns the
 //modifiers found in typeBufG in 'modifiers'.
 int
-check_termcode_mouse(CS key_name, OUT Unt* modifiers){
+termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
    Unt mouse_code = 0;
    int is_click, is_drag;
    int is_release, release_is_ambiguous;

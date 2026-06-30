@@ -1,5 +1,4 @@
 /* src/term.c */
-VTermColor termgui_mch_get_rgb(VTermColor color);
 void termInitProps(Boole all);
 void f_terminalprops(Var *argvars, Var *returnVar);
 int set_termname(CS termName);
@@ -54,16 +53,17 @@ void termSetCursorShape(int shape, int blink);
 void scroll_region_set(Portal *wp, int off);
 void scroll_region_reset(void);
 void clear_termcodes(void);
-void add_termcode(CS name, CS string, Boole isAtcFromTerm);
+void termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm);
 CS find_termcode(CS name);
-CS get_termcode(int i);
+CS get_termcode(Unt i);
 int get_termcode_len(int idx);
 void del_termcode(CS name);
 void set_mouse_topline(Portal *po);
 int is_mouse_topline(Portal *po);
 int termPutStrIntoTypebuf(int offset, int slen, CS string, int new_slen, CS buffer, int bufsize, int *bufLen);
 Unt decode_modifiers(int n);
-int check_termcode(int max_offset, CS buffer, int bufsize, int *bufLen);
+void termGetClipboard(void);
+int termTryParseTermcode(int max_offset, CS buffer, int bufsize, int *bufLen);
 void get_stty(void);
 int get_tty_info(int fd, TtyInfo *info);
 void mch_termSetMode(TermInputMode tmode);

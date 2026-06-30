@@ -1385,7 +1385,7 @@ doAppendRedir(CS buf, int buflen, NULLABLE CS opt, CS fname) {
 void
 do_fixdel(Invocation* invo UNUSED) {
     CS p = find_termcode(S"kb");
-    add_termcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, false);
+    termAddRecognizedTermcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, false);
 }
 
 private void
