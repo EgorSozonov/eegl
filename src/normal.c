@@ -72,7 +72,6 @@ private void nv_redo_or_register(ActionArg* aArg);
 private void nv_Undo(ActionArg* aArg);
 private void nv_tilde(ActionArg* aArg);
 private void nv_operator(ActionArg* aArg);
-private void set_op_var(int optype);
 private void nv_home(ActionArg* aArg);
 private void nv_pipe(ActionArg* aArg);
 private void nv_bck_word(ActionArg* aArg);
@@ -2095,27 +2094,27 @@ waitForMsg(void) {
    emsg_on_display = false;
 }
 
-// Execute an action in Normal mode.
+//Execute an action in Normal mode.
 void
 normalAction(Operator* oper, Boole toplevel) { // true when called from main()
-   ActionArg   cmdArg;         // command arguments
-   Unt      c;
-   int      ctrl_w = false;      // got CTRL-W command
-   int      old_col = curPor->cursWant;
-   int      need_flushbuf = false;   // need to call out_flush()
-   Pos   old_pos;      // cursor position before command
-   int      mapped_len;
+   ActionArg action;
+   Unt c;
+   int ctrl_w = false;      // got CTRL-W command
+   int old_col = curPor->cursWant;
+   int need_flushbuf = false;   // need to call out_flush()
+   Pos old_pos;      // cursor position before command
+   int mapped_len;
    static int   old_mapped_len = 0;
-   int      idx;
-   int      set_prevcount = false;
-   int      save_did_cursorhold = did_cursorhold;
+   int idx;
+   int set_prevcount = false;
+   int save_did_cursorhold = did_cursorhold;
 
-   CLEAR_FIELD(cmdArg);   // also resets cmdArg.retval
-   cmdArg.oper = oper;
+   CLEAR_FIELD(action);   // also resets action.retval
+   action.oper = oper;
 
    // Use a count remembered from before entering an operator.  After typing
    // "3d" we return from normalAction() and come back here, the "3" is remembered in "opcount".
-   cmdArg.opcount = opcount;
+   action.opcount = opcount;
 
    // If there is an operator pending, then the command we take this time
    // will terminate it. Finish_op tells us to finish the operation before
@@ -2129,15 +2128,15 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
 
    // When not finishing an operator and no register name typed, reset the count.
    if (!finish_op && !oper->regname) {
-      cmdArg.opcount = 0;
+      action.opcount = 0;
       set_prevcount = true;
    }
 
    // Restore counts from before receiving K_CURSORHOLD.  This means after
    // typing "3", handling K_CURSORHOLD and then typing "2" we get "32", not "3 * 2".
    if (oper->prev_opcount > 0 || oper->prev_count0 > 0) {
-      cmdArg.opcount = oper->prev_opcount;
-      cmdArg.count0 = oper->prev_count0;
+      action.opcount = oper->prev_opcount;
+      action.count0 = oper->prev_count0;
       oper->prev_opcount = 0;
       oper->prev_count0 = 0;
    }
@@ -2149,7 +2148,7 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
   // Set v:count here, when called from main() and not a stuffed command, so that v:count can be
   // used in an expression mapping  when there is no count. Do set it for redo.
   if (toplevel && readbuf1_empty())
-      setVCountPrevCount(&cmdArg, &set_prevcount);
+      setVCountPrevCount(&action, &set_prevcount);
 
    // Get the command character from the user.
    c = safe_vgetc();
@@ -2174,17 +2173,17 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
    need_flushbuf = add_to_showcmd(c);
 
    // Get the command count
-   c = normalCmdGetCount(&cmdArg, c, toplevel, set_prevcount, &ctrl_w, &need_flushbuf);
+   c = normalCmdGetCount(&action, c, toplevel, set_prevcount, &ctrl_w, &need_flushbuf);
 
    // Find the command character in the table of actions.
    // For CTRL-W we already got nchar when looking for a count.
    if (ctrl_w) {
-      cmdArg.nchar = c;
-      cmdArg.cmdchar = Ctrl_W;
+      action.nchar = c;
+      action.cmdchar = Ctrl_W;
    } else
-      cmdArg.cmdchar = c;
+      action.cmdchar = c;
 
-   idx = findAction(cmdArg.cmdchar);
+   idx = findAction(action.cmdchar);
 
    if (idx < 0) {
       // Not a known command: beep.
@@ -2199,36 +2198,34 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
    // In Visual/Select mode, a few keys are handled in a special way.
    if (VIsual_active) {
          // may stop Select/Visual mode
-         if ((actions[idx].cmd_flags & NV_STS)
-            && !(modMaskG & MOD_MASK_SHIFT)
-         ) {
-             end_visual_mode();
-             drawCurBookLater(UPD_INVERTED);
+         if ((actions[idx].cmd_flags & NV_STS) != 0 && !(modMaskG & MOD_MASK_SHIFT)) {
+            end_visual_mode();
+            drawCurBookLater(UPD_INVERTED);
          }
 
          // Keys that work different when 'keymodel' contains "startsel"
-         if (actions[idx].cmd_flags & NV_SS) {
-              unshift_special(&cmdArg);
-              idx = findAction(cmdArg.cmdchar);
-              if (idx < 0) {
-                  // Just in case
-                  clearopbeep(oper);
-                  goto normal_end;
-              }
+         if ((actions[idx].cmd_flags & NV_SS) != 0) {
+            unshift_special(&action);
+            idx = findAction(action.cmdchar);
+            if (idx < 0) {
+               // Just in case
+               clearopbeep(oper);
+               goto normal_end;
+            }
          } ei ((actions[idx].cmd_flags & NV_SSS) && (modMaskG & MOD_MASK_SHIFT))
          { modMaskG &= ~MOD_MASK_SHIFT; }
    }
 
    // Get additional characters if we need them.
-   if (needsMoreChars(&cmdArg, actions[idx].cmd_flags))
-      idx = getMoreChars(idx, &cmdArg, &need_flushbuf);
+   if (needsMoreChars(&action, actions[idx].cmd_flags))
+      idx = getMoreChars(idx, &action, &need_flushbuf);
 
    // Flush the showcmd characters onto the screen so we can see them while
    // the command is being executed.  Only do this when the shown command was
    // actually displayed, otherwise this will slow down a lot when executing mappings.
    if (need_flushbuf)
        out_flush();
-   if (cmdArg.cmdchar != K_IGNORE) {
+   if (action.cmdchar != K_IGNORE) {
        if (ex_normal_busy)
          did_cursorhold = save_did_cursorhold;
        else
@@ -2237,12 +2234,12 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
 
    stateG = MODE_NORMAL;
     
-   if (cmdArg.nchar == ESC || cmdArg.extra_char == ESC) {
+   if (action.nchar == ESC || action.extra_char == ESC) {
       clearop(oper);
       goto normal_end;
    }
 
-   if (cmdArg.cmdchar != K_IGNORE) {
+   if (action.cmdchar != K_IGNORE) {
       msg_didout = false;    // don't scroll screen up for normal command
       msgColG = 0;
    }
@@ -2251,19 +2248,19 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
 
    // Some keys start Select/Visual mode.
    if (!VIsual_active) {
-      if (actions[idx].cmd_flags & NV_SS) {
-          start_selection();
-          unshift_special(&cmdArg);
-          idx = findAction(cmdArg.cmdchar);
+      if ((actions[idx].cmd_flags & NV_SS) != 0) {
+         start_selection();
+         unshift_special(&action);
+         idx = findAction(action.cmdchar);
       } ei ((actions[idx].cmd_flags & NV_SSS) && (modMaskG & MOD_MASK_SHIFT)) {
-          start_selection();
-          modMaskG &= ~MOD_MASK_SHIFT;
+         start_selection();
+         modMaskG &= ~MOD_MASK_SHIFT;
       }
    }
 
    // Execute the action! Call the action function found in the actions table.
-   cmdArg.arg = actions[idx].cmd_arg;
-   (actions[idx].fn)(&cmdArg);
+   action.arg = actions[idx].cmd_arg;
+   (actions[idx].fn)(&action);
 
    // If we didn't start or finish an operator, reset oper->regname, unless we need it later. 
    if (!finish_op && !oper->opTy && (idx < 0 || !(actions[idx].cmd_flags & NV_KEEPREG))) {
@@ -2276,11 +2273,11 @@ normalAction(Operator* oper, Boole toplevel) { // true when called from main()
       old_mapped_len = typebuf_maplen();
 
    // If an operation is pending, handle it.  But not for K_IGNORE or K_MOUSEMOVE.
-   if (cmdArg.cmdchar != K_IGNORE && cmdArg.cmdchar != K_MOUSEMOVE)
-      visualOperator(&cmdArg, old_col, false);
+   if (action.cmdchar != K_IGNORE && action.cmdchar != K_MOUSEMOVE)
+      jugExecuteVisualOperator(&action, old_col, false);
 
    // Wait for a moment when a message is displayed that will be overwritten by the mode message.
-   if (needToWaitForMsg(&cmdArg, &old_pos))
+   if (needToWaitForMsg(&action, &old_pos))
       waitForMsg();
 
    // Finish up after executing a Normal mode action.
@@ -2299,15 +2296,15 @@ normal_end:
    }
    // Redraw the cursor with another shape, if we were in Operator-pending
    // mode or did a replace action.
-   if (prev_finish_op || cmdArg.cmdchar == 'r' || (cmdArg.cmdchar == 'g' && cmdArg.nchar == 'r')) {
+   if (prev_finish_op || action.cmdchar == 'r' || (action.cmdchar == 'g' && action.nchar == 'r')) {
       ui_cursor_shape();      // may show different cursor shape
    }
 
-   if (oper->opTy == OP_NOP && oper->regname == 0 && cmdArg.cmdchar != K_CURSORHOLD)
+   if (oper->opTy == OP_NOP && oper->regname == 0 && action.cmdchar != K_CURSORHOLD)
       clear_showcmd();
 
    checkpcmark();      // check if we moved since setting pcmark
-   eeglFree(cmdArg.searchbuf);
+   eeglFree(action.searchbuf);
 
    mb_adjust_cursor();
 
@@ -2327,7 +2324,7 @@ normal_end:
    // May switch from Visual to Select mode after CTRL-O action.
    if (oper->opTy == OP_NOP
        && (restart_edit != 0 && !VIsual_active && old_mapped_len == 0)
-       && !(cmdArg.retval & CA_COMMAND_BUSY)
+       && !(action.retval & CA_COMMAND_BUSY)
        && stuff_empty()
        && oper->regname == 0
    ) {
@@ -2336,7 +2333,7 @@ normal_end:
    }
 
    // Save count before an operator for next time.
-   opcount = cmdArg.opcount;
+   opcount = action.opcount;
 }
 
 // Set v:count and v:count1 according to "aArg".
@@ -2377,7 +2374,7 @@ callYankDoAutocmd(int regname) {
 }
 
 // End Visual mode.
-// This or next function should ALWAYS be called to end Visual mode, except from visualOperator()
+// This or next function should ALWAYS be called to end Visual mode, except from jugExecuteVisualOperator()
 void
 end_visual_mode(void) {
    VIsual_select_exclu_adj = false;
@@ -4088,7 +4085,7 @@ nv_Zet(ActionArg* aArg) {
 
    switch (aArg->nchar) {
    // "ZZ": equivalent to ":x".
-   case 'Z':   executeCommLine((CS)"x");
+   case 'Z':   executeCommLine(S"x");
          break;
 
          // "ZQ": equivalent to ":q!" (Elvis compatible).
@@ -5307,18 +5304,15 @@ nv_abbrev(ActionArg* aArg) {
 // Translate a command into another command.
 private void
 nvOperatorAliases(ActionArg* aArg) {
-   static CS substitutions[8] = {SMAP((CS),
-         "dl", "dh",
-         "d$", "c$",
-         "cl", "cc",
-         "y$", ":s\r"
+   static CS aliases = S"DCsSY&";
+   static CS replacements[8] = {SMAP((CS),
+         "d$", "c$", "cl", "cc", "y$", ":s\r"
    )};
-   static CS aliases = S"xXDCsSY&";
 
    if (!checkclearopq(aArg->oper)) {
        if (aArg->count0)
           stuffnumReadbuff(aArg->count0);
-       stuffReadbuff(substitutions[(int)(firstOccurrence(aliases, aArg->cmdchar) - aliases)]);
+       stuffReadbuff(replacements[(int)(firstOccurrence(aliases, aArg->cmdchar) - aliases)]);
    }
    aArg->opcount = 0;
 }
@@ -6083,7 +6077,19 @@ nv_tilde(ActionArg* aArg) {
       nv_operator(aArg);
 }
 
-// Handle an operator action. The actual work is done by visualOperator().
+// Set v:operator to the characters for "optype".
+private void
+set_op_var(int optype) {
+
+   if (optype == OP_NOP)
+      set_EeglVar_string(VV_OP, NULL, 0);
+   else {
+      Byte opchars[3] = { get_op_char(optype), get_extra_op_char(optype), ZERO};
+      set_EeglVar_string(VV_OP, opchars, -1);
+   }
+}
+
+//Handle an operator action. The actual work is done by jugExecuteVisualOperator().
 private void
 nv_operator(ActionArg* aArg) {
    Unt opTy = get_op_type(aArg->cmdchar, aArg->nchar);
@@ -6101,26 +6107,11 @@ nv_operator(ActionArg* aArg) {
    }
 }
 
-// Set v:operator to the characters for "optype".
-private void
-set_op_var(int optype) {
-   Byte opchars[3];
-
-   if (optype == OP_NOP)
-      set_EeglVar_string(VV_OP, NULL, 0);
-   else {
-      opchars[0] = get_op_char(optype);
-      opchars[1] = get_extra_op_char(optype);
-      opchars[2] = ZERO;
-      set_EeglVar_string(VV_OP, opchars, -1);
-   }
-}
-
 // Handle linewise operator "dd", "yy", etc.
 //
 // "_" is is a strange motion command that helps make operators more logical. It is actually 
-// implemented, but not documented in the real Vi.  This motion command actually refers to 
-// "the current line".  Commands like "dd" and "yy" are really an alternate form of "d_" and "y_".
+// implemented, but not documented in the real Vi. This motion command actually refers to 
+// "the current line". Commands like "dd" and "yy" are really an alternate form of "d_" and "y_".
 // It does accept a count, so "d3_" works to delete 3 lines.
 void
 a_linewiseOperator(ActionArg* aArg) {
@@ -6380,7 +6371,7 @@ nv_edit(ActionArg* aArg) {
       aArg->cmdchar = 'd';
       aArg->nchar = ZERO;
       nv_operator(aArg);
-      visualOperator(aArg, 0, false);
+      jugExecuteVisualOperator(aArg, 0, false);
       aArg->cmdchar = K_PS;
 
       if (*ml_get_cursor() != ZERO) {
@@ -6522,7 +6513,7 @@ nv_object(ActionArg* aArg) {
       flag = current_block(aArg->oper, aArg->count1, include, '<', '>');
       break;
    case 't': // "at" = a tag block (xml and html)
-      // Do not adjust oper->end in visualOperator()
+      // Do not adjust oper->end in jugExecuteVisualOperator()
       // otherwise there are different results for 'dit'
       // (note leading whitespace in last line):
       // 1) <b>      2) <b>
@@ -6690,7 +6681,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
       // overwrites if the old contents is being put.
       was_visual = true;
       regname = aArg->oper->regname;
-      adjust_clip_reg(&regname);
+      clipGetDefaultRegister(&regname);
       if (regname == 0 || regname == '"'
           || EE_ISDIGIT(regname) || regname == '-'
           || (regname == '*' || regname == '+')
@@ -6710,7 +6701,7 @@ nv_put_opt(ActionArg* aArg, int fix_indent) {
       ++msg_silent;
       
       nv_operator(aArg);
-      visualOperator(aArg, 0, false);
+      jugExecuteVisualOperator(aArg, 0, false);
       
       empty = (curBook->mem.flags & ML_EMPTY);
       --msg_silent;
@@ -6888,10 +6879,10 @@ n_start_visual_mode(int c) {
 // Handle actions that are operators in Visual mode.
 private void
 vVisualOperators(ActionArg* aArg) {
-   static Byte trans[] = "YyDdCcxdXdAAIIrr";
+   static Byte trans[] = "YyDdCcxdXdAAIIrr"; // Y => y, D => d etc
 
-   // Uppercase means linewise, except in block mode, then "D" deletes till
-   // the end of the line, and "C" replaces till EOL
+   //Uppercase means linewise, except in block mode, then "D" deletes till
+   //the end of the line, and "C" replaces till EOL
    if (SAFE_isupper(aArg->cmdchar)) {
       if (VIsual_mode != Ctrl_V) {
          VIsual_mode_orig = VIsual_mode;

@@ -298,6 +298,7 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] :close closes the program if there are no more portals
 [+] :get to get option values (complementing :set)
 [ ] :commands to get the list of previous commands (what is Ctrl-F by default)
+[+] "d" action does not clobber the clipboard (but still saves text to the "1" or "-" register)
 [+] "==" for strings in scripts is always case-sensitive. Doesn't depend on any options anymore!
 [~] `"10abc" + 2` is not 12 anymore, but an evaluation error - will be corrected by Wren
 [ ] Correct tab handling (insert tabs only at the beginning of a line)

@@ -7474,7 +7474,7 @@ reset_reg_var(void) {
 
    // Adjust the register according to 'clipboard', so that when
    // "unnamed" is present it becomes '*' or '+' instead of '"'.
-   adjust_clip_reg(OUT &regname);
+   clipGetDefaultRegister(OUT &regname);
    set_reg_var(regname);
 }
 

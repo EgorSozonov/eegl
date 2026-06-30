@@ -462,17 +462,55 @@ statusline_row(Portal* po) {
    return po->portalRow + po->height - 1;
 }
 
+private void
+startDrawingHilite(Short hiId) {
+   if (!fullScreenG)
+      return;
+   activeDecoP = getFullDecoration(hiId);
+   Decoration fullDeco = getFullDecoration(activeDecoP.hiId);
+      
+   if ((activeDecoP.flags & DECO_BOLD) != 0 && *termCodesG[KS_MD] != ZERO)
+      out_str(termCodesG[KS_MD]);
+   ei ((activeDecoP.flags & DECO_BOLD) != 0 && (fullDeco.fieldPresence & HI_HAS_FG) != 0)
+      // If the Normal FG color has BOLD flag and the new HL has a FG color defined, clear BOLD
+      out_str(termCodesG[KS_ME]);
+      
+   if ((activeDecoP.flags & DECO_UNDERCURL) && *termCodesG[KS_UCS] != ZERO)
+      out_str(termCodesG[KS_UCS]);
+      
+   if (((activeDecoP.flags & DECO_UNDERLINE) != 0
+         || ((activeDecoP.flags & DECO_UNDERCURL) != 0 && *termCodesG[KS_UCS] == ZERO))
+       && *termCodesG[KS_US] != ZERO
+   ) {
+      out_str(termCodesG[KS_US]);
+   } 
+   
+   if ((activeDecoP.flags & DECO_ITALIC) && *termCodesG[KS_CZH] != ZERO)
+      out_str(termCodesG[KS_CZH]);
+      
+   if ((activeDecoP.flags & DECO_INVERSE) && *termCodesG[KS_MR] != ZERO)
+      out_str(termCodesG[KS_MR]);
+
+   // Output the color or start string after bold etc., in case the bold overrides the color setting
+   if ((fullDeco.fieldPresence & HI_HAS_FG) != 0)
+      termApplyFgColor(fullDeco.fg);
+   if ((fullDeco.fieldPresence & HI_HAS_BG) != 0)
+      termApplyBgColor(fullDeco.bg);
+   if ((fullDeco.fieldPresence & HI_HAS_UNDER) != 0) {
+      termApplyUnderColor(fullDeco.under);
+   } 
+}
+
 // Redraw the status line or ruler of portal "po".
 private void
-redrawStatusLineOrRuler(Portal* po, Boole draw_ruler) {
+statusLineOrRuler(Portal* po, Boole draw_ruler) {
    static int busy = false;
    int col = 0;
-   int n;
    CS stl;
    CS p;
    int opt_scope = 0;
-   // There is a tiny chance that this gets called recursively: When redrawing a status line 
-   // triggers redrawing the ruler. Avoid trouble by forbidding recursion.
+   //There is a tiny chance that this gets called recursively: When redrawing a status line 
+   //triggers redrawing the ruler. Avoid trouble by forbidding recursion.
    if (busy || !po)
       return;
       
@@ -513,24 +551,23 @@ redrawStatusLineOrRuler(Portal* po, Boole draw_ruler) {
    if (maxwidth <= 0)
       goto theend;
 
-   //Temporarily reset @diff, we don't want a side effect from moving
-   //the cursor away and back.
-   Portal* ewp = po ? po : curPor;
-   Boole diffSaved = ewp->o.diff;
-   ewp->o.diff = false;
+   //Temporarily reset @diff, we don't want a side effect from moving the cursor away and back.
+   Portal* tgtPo = po ? po : curPor;
+   Boole diffSaved = tgtPo->o.diff;
+   tgtPo->o.diff = false;
 
    //Make a copy, because the statusline may include a function call that
    //might change the option value and free the memory.
    stl = copyStr(stl);
    
-   Arr(StatusLineHilite) hilites;
+   startDrawingHilite(deco.hiId);
    Arr(StatusLineHilite) labels;
    int width = bookRenderStatusLine(
-      ewp, OUT buf, sizeof(buf), stl ? stl : S"", oname, opt_scope,
-      fillchar, maxwidth, OUT &hilites, OUT &labels
+      tgtPo, OUT buf, sizeof(buf), stl ? stl : S"", oname, opt_scope,
+      fillchar, maxwidth, OUT &labels
    );
    eeglFree(stl);
-   ewp->o.diff = diffSaved;
+   tgtPo->o.diff = diffSaved;
 
    // Make all characters printable.
    p = sanitizeStr(buf);
@@ -548,18 +585,10 @@ redrawStatusLineOrRuler(Portal* po, Boole draw_ruler) {
    }
    buf[len] = ZERO;
 
-   // Draw each snippet with the specified hiliting.
-   Decoration currDeco = deco;
+   // Draw each snippet
    p = buf;
-   for (n = 0; hilites[n].start; n++) {
-      len = (int)(hilites[n].start - p);
-      drawTextLen(p, len, row, col, currDeco.flags);
-      col += eeglStrNsize(p, len);
-      p = hilites[n].start;
-
-      currDeco = getFullDecoration(hilites[n].hiId);
-   }
-   drawText(p, row, col, currDeco.flags);
+   drawTextLen(p, len, row, col, deco.flags);
+   col += eeglStrNsize(p, len);
 
 theend:
    busy = false;
@@ -756,45 +785,6 @@ end_search_hl(void) {
 
    eeRegFree(screenSearchP.rm.regprog);
    screenSearchP.rm.regprog = NULL;
-}
-
-private void
-startDrawingHilite(Short hiId) {
-   if (!fullScreenG)
-      return;
-   activeDecoP = getFullDecoration(hiId);
-   Decoration fullDeco = getFullDecoration(activeDecoP.hiId);
-      
-   if ((activeDecoP.flags & DECO_BOLD) != 0 && *termCodesG[KS_MD] != ZERO)
-      out_str(termCodesG[KS_MD]);
-   ei ((activeDecoP.flags & DECO_BOLD) != 0 && (fullDeco.fieldPresence & HI_HAS_FG) != 0)
-      // If the Normal FG color has BOLD flag and the new HL has a FG color defined, clear BOLD
-      out_str(termCodesG[KS_ME]);
-      
-   if ((activeDecoP.flags & DECO_UNDERCURL) && *termCodesG[KS_UCS] != ZERO)
-      out_str(termCodesG[KS_UCS]);
-      
-   if (((activeDecoP.flags & DECO_UNDERLINE) != 0
-         || ((activeDecoP.flags & DECO_UNDERCURL) != 0 && *termCodesG[KS_UCS] == ZERO))
-       && *termCodesG[KS_US] != ZERO
-   ) {
-      out_str(termCodesG[KS_US]);
-   } 
-   
-   if ((activeDecoP.flags & DECO_ITALIC) && *termCodesG[KS_CZH] != ZERO)
-      out_str(termCodesG[KS_CZH]);
-      
-   if ((activeDecoP.flags & DECO_INVERSE) && *termCodesG[KS_MR] != ZERO)
-      out_str(termCodesG[KS_MR]);
-
-   // Output the color or start string after bold etc., in case the bold overrides the color setting
-   if ((fullDeco.fieldPresence & HI_HAS_FG) != 0)
-      termApplyFgColor(fullDeco.fg);
-   if ((fullDeco.fieldPresence & HI_HAS_BG) != 0)
-      termApplyBgColor(fullDeco.bg);
-   if ((fullDeco.fieldPresence & HI_HAS_UNDER) != 0) {
-      termApplyUnderColor(fullDeco.under);
-   } 
 }
 
 void
@@ -2266,7 +2256,7 @@ redrawRuler(Portal* po, int always) {
       return;
 
    if (p_ruf) {
-      redrawStatusLineOrRuler(po, true);
+      statusLineOrRuler(po, true);
       return;
    }
 
@@ -3357,7 +3347,7 @@ redraw_custom_statusline(Portal* po) {
    if (busy)
       return;
    busy = true;
-   redrawStatusLineOrRuler(po, false);
+   statusLineOrRuler(po, false);
    busy = false;
 }
 

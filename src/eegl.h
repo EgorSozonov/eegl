@@ -877,10 +877,10 @@ LIST_TY(Unt)
 #define BF_SYN_SET    0x200  // 'syntax' option was set
 #define BF_NO_SEA     0x400  // no swap_exists_action (ATTENTION prompt)
 
-// Mask to check for flags that prevent normal writing
+//Mask to check for flags that prevent normal writing
 #define BF_WRITE_MASK   (BF_NOTEDITED + BF_NEW + BF_READERR)
 
-// Completion context kindss for xp_context when doing command line completion
+//Completion context kinds for xp_context when doing command line completion
 #define EXPAND_UNSUCCESSFUL   2048
 #define EXPAND_OK             1024
 #define EXPAND_NOTHING           0
@@ -946,7 +946,7 @@ LIST_TY(Unt)
 #define EXPAND_PATTERN_IN_BUF   61
 #define EXPAND_RETAB            62
 
-// Values for nextwild() and ExpandOne().  See ExpandOne() for meaning.
+//Values for nextwild() and ExpandOne().  See ExpandOne() for meaning.
 #define WILD_FREE                1
 #define WILD_EXPAND_FREE         2
 #define WILD_EXPAND_KEEP         3
@@ -1509,37 +1509,38 @@ typedef enum {
 //If "--log logfile" was used or ch_logfile() was called then log some or all terminal output.
 # define MAY_WANT_TO_LOG_THIS if (ch_log_output == FALSE) ch_log_output = TRUE;
 
-// Operator IDs; The order must correspond to opchars[] in ops.c!
-#define OP_NOP           0   //no pending operation
-#define OP_DELETE        1   //"d"  delete operator
-#define OP_YANK          2   //"y"  yank operator
-#define OP_CHANGE        3   //"c"  change operator
-#define OP_LSHIFT        4   //"<"  left shift operator
-#define OP_RSHIFT        5   //">"  right shift operator
-#define OP_FILTER        6   //"!"  filter operator
-#define OP_TILDE         7   //"g~" switch case operator
-#define OP_INDENT        8   //"="  indent operator
-#define OP_FORMAT        9   //"gq" format operator
-#define OP_COLON        10   //":"  colon operator
-#define OP_UPPER        11   //"gU" make upper case operator
-#define OP_LOWER        12   //"gu" make lower case operator
-#define OP_JOIN         13   //"J"  join operator, only for Visual mode
-#define OP_JOIN_NS      14   //"gJ"  join operator, only for Visual mode
-#define OP_ROT13        15   //"g?" rot-13 encoding
-#define OP_REPLACE      16   //"r"  replace chars, only for Visual mode
-#define OP_INSERT       17   //"I"  Insert column, only for Visual mode
-#define OP_APPEND       18   //"A"  Append column, only for Visual mode
-#define OP_FOLD         19   //"zf" define a fold
-#define OP_FOLDOPEN     20  //"zo" open folds
-#define OP_FOLDOPENREC  21  //"zO" open folds recursively
-#define OP_FOLDCLOSE    22  //"zc" close folds
-#define OP_FOLDCLOSEREC 23 //"zC" close folds recursively
-#define OP_FOLDDEL      24 //"zd" delete folds
-#define OP_FOLDDELREC   25 //"zD" delete folds recursively
-#define OP_FORMAT2      26 //"gw" format operator, keeps cursor pos
-#define OP_FUNCTION     27 //"g@" call 'operatorfunc'
-#define OP_ADD          28 //"<C-A>" Add to the number or alphabetic character
-#define OP_SUB          29 //"<C-X>" Subtract from the number or alphabetic character
+// Operator IDs; The order must correspond to juggle.c:opchars!
+#define OP_NOP           0 //no pending operation
+#define OP_DELETE        1 //"d"  delete operator
+#define OP_YANK          2 //"y"  yank operator
+#define OP_CHANGE        3 //"c"  change operator
+#define OP_CUT           4 //"x"  cut operator
+#define OP_LSHIFT        5 //"<"  left shift operator
+#define OP_RSHIFT        6 //">"  right shift operator
+#define OP_FILTER        7 //"!"  filter operator
+#define OP_TILDE         8 //"g~" switch case operator
+#define OP_INDENT        9 //"="  indent operator
+#define OP_FORMAT       10 //"gq" format operator
+#define OP_COLON        11 //":"  colon operator
+#define OP_UPPER        12 //"gU" make upper case operator
+#define OP_LOWER        13 //"gu" make lower case operator
+#define OP_JOIN         14 //"J"  join operator, only for Visual mode
+#define OP_JOIN_NS      15 //"gJ"  join operator, only for Visual mode
+#define OP_ROT13        16 //"g?" rot-13 encoding
+#define OP_REPLACE      17 //"r"  replace chars, only for Visual mode
+#define OP_INSERT       18 //"I"  Insert column, only for Visual mode
+#define OP_APPEND       19 //"A"  Append column, only for Visual mode
+#define OP_FOLD         20 //"zf" define a fold
+#define OP_FOLDOPEN     21 //"zo" open folds
+#define OP_FOLDOPENREC  22 //"zO" open folds recursively
+#define OP_FOLDCLOSE    23 //"zc" close folds
+#define OP_FOLDCLOSEREC 24 //"zC" close folds recursively
+#define OP_FOLDDEL      25 //"zd" delete folds
+#define OP_FOLDDELREC   26 //"zD" delete folds recursively
+#define OP_FORMAT2      27 //"gw" format operator, keeps cursor pos
+#define OP_FUNCTION     28 //"g@" call 'operatorfunc'
+#define OP_ADD          29 //"<C-A>" Add to the number or alphabetic character
+#define OP_SUB          30 //"<C-X>" Subtract from the number or alphabetic character
 
 // Motion types, used for operators and for yank/delete registers.
 #define MCHAR   0      //character-wise movement/register
@@ -1553,7 +1554,7 @@ typedef enum {
 #define MIN_LINES       2  //minimal lines for screen
 #define MIN_COMMHEIGHT  1  //minimal height for command line
 #define STATUS_HEIGHT   1  //height of a status line under a window
-#define VISIBLE_HEIGHT(wp)   ((wp)->height)
+#define VISIBLE_HEIGHT(wp) ((wp)->height)
 #define QF_WINHEIGHT   10  //default height for quickfix window
 
 // Buffer sizes

@@ -49,7 +49,7 @@ void clip_may_clear_selection(int row1, int row2);
 void clip_scroll_selection(int rows);
 void clip_copy_modeless_selection(void);
 int may_get_selection(int regname);
-void adjust_clip_reg(int *rp);
+void clipGetDefaultRegister(int *rp);
 int wayland_init_client(CS display);
 void wayland_uninit_client(void);
 int wayland_client_is_connected(int quiet);

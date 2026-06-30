@@ -11900,14 +11900,11 @@ draw_tabpanel_default(int tplmode, Tabpanel* tapa) {
    *tapa->pcol = tapa->col_end;
 }
 
-// default tabpanel drawing behavior if 'tabpanel' option is NOT empty.
+// default tabpanel drawing behavior if @tabpanel option is NOT empty.
 private void
 drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    Byte buf[IOSIZE];
-   StatusLineHilite* hilites;
-   StatusLineHilite* labels;
    Decoration currDeco;
-   int n;
 
    //Temporarily reset @diff, we don't want a side effect from moving the cursor away & back
    Boole diffSaved = tapa->currPort->o.diff;
@@ -11917,9 +11914,10 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
    // might change the option value and free the memory.
    CS p = copyStr(tapa->user_defined);
 
+   Arr(StatusLineHilite) labels;
    bookRenderStatusLine(tapa->currPort, buf, sizeof(buf),
       p, STATLINE_TABPANEL, opt_scope,
-      TPL_FILLCHAR, tapa->col_end - tapa->col_start, OUT &hilites, OUT &labels
+      TPL_FILLCHAR, tapa->col_end - tapa->col_start, OUT &labels
    );
 
    eeglFree(p);
@@ -11927,14 +11925,6 @@ drawTabpanelUserdefined(int tplmode, Tabpanel* tapa) {
 
    currDeco = getFullDecoration(0);
    p = buf;
-   for (n = 0; hilites[n].start; n++) {
-      drawTextLen_for_tabpanel(tplmode, p, (int)(hilites[n].start - p), currDeco, tapa);
-      p = hilites[n].start;
-      if (hilites[n].hiId == SHORT)
-         currDeco = getFullDecoration(0);
-      else
-         currDeco = decorationsG[hilites[n].hiId];
-   }
    drawTextLen_for_tabpanel(tplmode, p, (int)STRLEN(p), currDeco, tapa);
 
    // fill the tailing area of current row.

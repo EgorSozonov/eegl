@@ -97,7 +97,7 @@ Boole fNameMatchesCurBook(CS fullFName);
 void buf_setino(Book *book);
 void fileinfo(Boole fullname, Boole shorthelp, Boole dont_truncate);
 int col_print(CS buf, Unt buflen, int col, int vcol);
-int bookRenderStatusLine(Portal *po, CS out, Unt outlen, CS fmt, Byte oname, int opt_scope, int fillchar, int maxwidth, StatusLineHilite **hltab, StatusLineHilite **labels);
+int bookRenderStatusLine(Portal *po, CS out, Unt outlen, CS fmt, Byte oname, int opt_scope, Unt fillchar, int maxwidth, StatusLineHilite **labels);
 int get_rel_pos(Portal *po, CS buf, int buflen);
 void fname_expand(CS *fullFName, CS *sfname);
 void c_bookAll(Invocation *invo);

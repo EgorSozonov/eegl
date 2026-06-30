@@ -67,6 +67,9 @@ normal.c:normalAction -> findAction
 // WHEN command
 normal.c:nv_colon -> do.c doCommand -> findCommand
 
+//operator registers are set in
+normalAction
+
 // searching for help files
 help.c
 
@@ -202,6 +205,9 @@ term.c:term_cursor_mode
 
 //save a book
 bookWrite()
+
+//paste, delete text
+jugExecuteVisualOperator
 
 
 //// ideas

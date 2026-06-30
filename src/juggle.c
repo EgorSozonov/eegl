@@ -110,7 +110,6 @@ check_status(Book* book) {
    Portal   *po;
    FOR_ALL_PORTALS(po) {
       if (po->book == book) {
-         _bp(true);
          po->statusLineNeedsRedraw = true;
          drawSetMustRedraw(UPD_VALID);
       }
@@ -1814,9 +1813,9 @@ del_lines(long nlines,   int undo) {
 // implementation of various operators: op_shift, op_delete, op_tilde, op_change, op_yank, jugJoinLinesUnderCursor
 
 private void shift_block(Operator *oper, int amount);
-private void   mb_adjust_opend(Operator *oper);
-private int   do_addsub(int opTy, Pos *pos, int length, LineNr prenum1);
-private void   pbyte(Pos lp, int c);
+private void mb_adjust_opend(Operator *oper);
+private int do_addsub(int opTy, Pos *pos, int length, LineNr prenum1);
+private void pbyte(Pos lp, int c);
 #define PBYTE(lp, c) pbyte(lp, c)
 
 
@@ -1831,6 +1830,7 @@ private Byte opchars[][3] = {
    {'d', ZERO, OPF_CHANGE},      // OP_DELETE
    {'y', ZERO, 0},               // OP_YANK
    {'c', ZERO, OPF_CHANGE},      // OP_CHANGE
+   {'x', ZERO, OPF_CHANGE},      // OP_CUT
    {'<', ZERO, OPF_LINES | OPF_CHANGE},   // OP_LSHIFT
    {'>', ZERO, OPF_LINES | OPF_CHANGE},   // OP_RSHIFT
    {'!', ZERO, OPF_LINES | OPF_CHANGE},   // OP_FILTER
@@ -1886,15 +1886,15 @@ get_op_type(Unt char1, Unt char2) {
 }
 
 // Return true if operator "op" always works on whole lines.
-private int
+private Boole
 op_on_lines(int op) {
-   return opchars[op][2] & OPF_LINES;
+   return (opchars[op][2] & OPF_LINES) != 0;
 }
 
 // Return true if operator "op" changes text.
-int
+Boole
 op_is_change(int op) {
-   return opchars[op][2] & OPF_CHANGE;
+   return (opchars[op][2] & OPF_CHANGE) != 0;
 }
 
 // Get first operator command character. Returns 'g' or 'z' if there is another command character.
@@ -2340,16 +2340,14 @@ gchar_cursor(void) {
    return mb_ptr2char(ml_get_cursor());
 }
 
-
 // Handle a delete operation. Return FAIL if undo failed, OK otherwise.
 int
 op_delete(Operator* oper) {
-   int         n;
+   int n;
    LineNr      lnum;
-   Byte      *ptr;
    BlockDef   bd;
-   LineNr      old_lcount = curBook->mem.lineCount;
-   int         did_yank = false;
+   LineNr old_lcount = curBook->mem.lineCount;
+   int did_yank = false;
 
    if (curBook->mem.flags & ML_EMPTY)       // nothing to do
       return OK;
@@ -2363,27 +2361,13 @@ op_delete(Operator* oper) {
       return FAIL;
    }
 
-   adjust_clip_reg(&oper->regname);
+   if (oper->opTy == OP_DELETE) { //Deletion ("d" action) saves text only to numbered registers
+      oper->regname = '_';
+   } else {
+      clipGetDefaultRegister(&oper->regname);
+   }
 
    mb_adjust_opend(oper);
-
-   //Imitate the strange Vi behaviour: If the delete spans more than one
-   //line and motion_type == MCHAR and the result is a blank line, make the
-   //delete linewise.  Don't do this for the change command or Visual mode.
-   if (   oper->motion_type == MCHAR
-       && !oper->is_VIsual
-       && !oper->block_mode
-       && oper->line_count > 1
-       && oper->motion_force == ZERO
-       && oper->opTy == OP_DELETE
-   ) {
-      ptr = ml_get(oper->end.lnum) + oper->end.col;
-      if (*ptr != ZERO)
-         ptr += oper->inclusive;
-      ptr = skipwhite(ptr);
-      if (*ptr == ZERO && inindent(0))
-         oper->motion_type = MLINE;
-   }
 
    // Check for trying to delete (e.g. "D") in an empty line. Note: For the change operator it is ok
    if (   oper->motion_type == MCHAR
@@ -2398,8 +2382,8 @@ op_delete(Operator* oper) {
       return OK;
    }
 
-   // Copy whatever we're about to delete to the register. If a yank register was specified, put 
-   // the deleted text into that register. For the black hole register '_' don't yank anything.
+   //Copy whatever we're about to delete to the register. If a yank register was specified, put 
+   //the deleted text into that register. For the black hole register, '_' don't yank anything.
    if (oper->regname != '_') {
       if (oper->regname != 0) {
          // check for read-only register
@@ -2407,7 +2391,7 @@ op_delete(Operator* oper) {
             beep_flush();
             return OK;
          }
-         get_yank_register(oper->regname, true); // yank into specif'd reg.
+         get_yank_register(oper->regname, true); // yank into specified register
          if (op_yank(oper, true, false) == OK)   // yank without message
             did_yank = true;
       } else
@@ -4705,7 +4689,7 @@ is_ex_cmdchar(ActionArg* cap) {
 //Handle an operator after Visual mode or when the movement is finished.
 //"clipbYank" is true when yanking text for the clipboard.
 void
-visualOperator(ActionArg* cap, int old_col, int clipbYank) {
+jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank) {
    Operator* oper = cap->oper;
    Pos old_cursor;
    int restart_edit_save;
@@ -4716,7 +4700,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
    //Yank the visual area into the GUI selection register before we operate
    //on it and lose it forever.
    //Don't do it if a specific register was specified, so that ""x"*P works.
-   //This could call visualOperator() recursively, but that's OK
+   //This could call jugExecuteVisualOperator() recursively, but that's OK
    //because clipbYank will be true for the nested call.
    if (      oper->opTy != OP_NOP
           && !clipbYank
@@ -5048,6 +5032,7 @@ visualOperator(ActionArg* cap, int old_col, int clipbYank) {
          break;
 
       case OP_DELETE:
+      case OP_CUT:
          VIsual_reselect = false;       // don't reselect now
          (void)op_delete(oper);
          // save cursor line for undo if it wasn't saved yet

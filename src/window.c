@@ -1538,7 +1538,7 @@ do_put(
    Pos   orig_end = curBook->opEnd;
 
    // Adjust register name for "unnamed" in 'clipboard'.
-   adjust_clip_reg(&regname);
+   clipGetDefaultRegister(&regname);
    (void)may_get_selection(regname);
 
    curBook->opStart = curPor->cursor;   // default for '[ mark
@@ -2202,7 +2202,7 @@ c_display(Invocation* invo) {
       // Adjust register name for "unnamed" in 'clipboard'.
       // When it's a clipboard register, fill it with the current contents
       // of the clipboard.
-      adjust_clip_reg(&name);
+      clipGetDefaultRegister(&name);
       (void)may_get_selection(name);
 
       if (i == -1) {
@@ -3579,7 +3579,7 @@ clip_get_selection(ClipBoard* cbd) {
       ca.cmdchar = 'y';
       ca.count1 = 1;
       ca.retval = CA_NO_ADJ_OP_END;
-      visualOperator(&ca, 0, true);
+      jugExecuteVisualOperator(&ca, 0, true);
 
       // restore things
       set_y_previous(old_y_previous);
@@ -3662,8 +3662,7 @@ may_set_selection(void){
 
 //Adjust the register name pointed to with "rp" for the clipboard being used always.
 void
-adjust_clip_reg(OUT int* rp){
-   //If no reg. specified, use '*' or '+' reg, respectively. "unnamedplus" prevails.
+clipGetDefaultRegister(OUT int* rp){
    if (*rp == 0) {
       *rp = '+';
    }

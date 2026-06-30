@@ -4401,7 +4401,6 @@ typedef struct {
 private Unt countStatusItems = 20; // Initial value, grows as needed.
 private Arr(StatusItem) statusItemsP = NULL;
 private int* stlGroupItemP = NULL;
-private StatusLineHilite* statusHilitesS = NULL;
 private StatusLineHilite* stl_tabtab = NULL;
 private int* stlSeparatorLocationsP = NULL;
 
@@ -4421,9 +4420,8 @@ bookRenderStatusLine(
    CS fmt,
    Byte oname,      // one of STATLINE_* constants
    int opt_scope,   // scope for "oname"
-   int fillchar,
+   Unt fillchar,
    int maxwidth,
-   OUT Arr(StatusLineHilite)* hltab,   // return: hilite decorations (can be NULL)
    OUT Arr(StatusLineHilite)* labels   // return: tab numbers (can be NULL)
 ){
    CS p;
@@ -4461,14 +4459,13 @@ bookRenderStatusLine(
       stlGroupItemP = ALLOC_MULT(int, countStatusItems);
 
       // Allocate one more, because the last element is used to indicate the end of the list
-      statusHilitesS  = ALLOC_MULT(StatusLineHilite, countStatusItems + 1);
       stl_tabtab = ALLOC_MULT(StatusLineHilite, countStatusItems + 1);
 
       stlSeparatorLocationsP = ALLOC_MULT(int, countStatusItems);
    }
 
-   // When the format starts with "%!" then evaluate it as an expression and
-   // use the result as the actual format string.
+   //When the format starts with "%!" then evaluate it as an expression and
+   //use the result as the actual format string.
    if (fmt[0] == '%' && fmt[1] == '!') {
       Var tv;
       tv.tag = VAR_NUMBER;
@@ -4482,7 +4479,7 @@ bookRenderStatusLine(
       unletImpl(S"g:statusline_winid", true);
    }
 
-   if (fillchar == 0)
+   if (fillchar == ZERO)
       fillchar = ' ';
 
    // The cursor in portals other than the current one isn't always
@@ -4493,13 +4490,13 @@ bookRenderStatusLine(
       po->cursor.lnum = lnum;
    }
 
-   // Get line & check if empty (cursorpos will show "0-1").  Note that
-   // p will become invalid when getting another book line.
+   //Get line & check if empty (cursorpos will show "0-1").  Note that
+   //p will become invalid when getting another book line.
    p = memGetLine(po->book, lnum, false);
    Boole empty_line = (*p == ZERO);
 
-   // Get the byte value now, in case we need it below. This is more efficient
-   // than making a copy of the line.
+   //Get the byte value now, in case we need it below. This is more efficient
+   //than making a copy of the line.
    ColNr len = memGetBookLen(po->book, lnum);
    
    Unt byteval;
@@ -4527,30 +4524,28 @@ bookRenderStatusLine(
          int *new_groupitem = eeRealloc(stlGroupItemP, sizeof(int) * newLen);
          stlGroupItemP = new_groupitem;
 
-         StatusLineHilite* new_hlrec = 
-             eeRealloc(statusHilitesS, sizeof(StatusLineHilite) * (newLen + 1));
-         statusHilitesS = new_hlrec;
-         new_hlrec = eeRealloc(stl_tabtab, sizeof(StatusLineHilite) * (newLen + 1));
+         Arr(StatusLineHilite) new_hlrec = 
+            eeRealloc(stl_tabtab, sizeof(StatusLineHilite) * (newLen + 1));
          stl_tabtab = new_hlrec;
 
-         int *new_separator_locs = eeRealloc(stlSeparatorLocationsP, sizeof(int) * newLen);
+         int* new_separator_locs = eeRealloc(stlSeparatorLocationsP, sizeof(int) * newLen);
          stlSeparatorLocationsP = new_separator_locs;
          countStatusItems = newLen;
       }
 
       if (*s != '%')
-          prevchar_isflag = prevchar_isitem = false;
+         prevchar_isflag = prevchar_isitem = false;
 
       // Handle up to the next '%' or the end.
       while (*s != ZERO && *s != '%' && p + 1 < out + outlen)
-          *p++ = *s++;
+         *p++ = *s++;
       if (*s == ZERO || p + 1 >= out + outlen)
-          break;
+         break;
 
       // Handle one '%' item.
       s++;
       if (*s == ZERO)  // ignore trailing %
-          break;
+         break;
       if (*s == '%') {
          if (p + 1 >= out + outlen)
             break;
@@ -4631,7 +4626,7 @@ bookRenderStatusLine(
 
             // Fill up space left over by half a double-wide char.
             while (++l < statusItemsP[stlGroupItemP[groupdepth]].minWidth)
-                MB_CHAR2BYTES(fillchar, p);
+               MB_CHAR2BYTES(fillchar, p);
 
             // correct the start of the items for the truncation
             for (l = stlGroupItemP[groupdepth] + 1; l < curitem; l++) {
@@ -4860,8 +4855,7 @@ bookRenderStatusLine(
           break;
 
       case STL_COLUMN:
-          num = (stateG & MODE_INSERT) == 0 && empty_line
-                         ? 0 : (int)po->cursor.col + 1;
+          num = (stateG & MODE_INSERT) == 0 && empty_line ? 0 : (int)po->cursor.col + 1;
           break;
 
       case STL_VIRTCOL:
@@ -5202,21 +5196,6 @@ bookRenderStatusLine(
 
           width = maxwidth;
       }
-   }
-
-   // Store the info about hiliting.
-   if (hltab) {
-      *hltab = statusHilitesS;
-      sp = statusHilitesS;
-      for (l = 0; l < itemcnt; l++) {
-         if (statusItemsP[l].StatusTag == Highlight) {
-            sp->start = statusItemsP[l].start;
-            sp->hiId = statusItemsP[l].minWidth;
-            sp++;
-         }
-      }
-      sp->start = NULL;
-      sp->hiId = 0;
    }
 
    // Store the info about tab labels.

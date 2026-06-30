@@ -39,7 +39,7 @@ typedef void (*nv_func_T)(ActionArg *cap);
 #define NV_SSS	    0x20	// may start selection with shift modifier
 #define NV_STS	    0x40	// may stop selection without shift modif.
 #define NV_RL	    0x80	// 'rightleft' modifies command
-#define NV_KEEPREG  0x100	// don't clear regname
+#define NV_KEEPREG 0x100	// don't clear regname
 #define NV_NCW	    0x200	// not allowed in command-line window
 
 //Generally speaking, every Normal mode command should either clear any pending operator (with 
@@ -185,7 +185,7 @@ private const int actions[] =
    ACTION('u',		nv_undo,	0,			0),
    ACTION('v',		nv_visual,	0,			FALSE),
    ACTION('w',		nv_wordcmd,	0,			FALSE),
-   ACTION('x',		nv_abbrev,	NV_KEEPREG,		0),
+   ACTION('x',		nv_operator,	NV_KEEPREG,		0),
    ACTION('y',		nv_operator,	0,			0),
    ACTION('z',		nv_zet,		NV_NCH_ALW,		0),
    ACTION('{',		nv_findpar,	0,			BACKWARD),
