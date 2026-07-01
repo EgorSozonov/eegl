@@ -278,6 +278,7 @@
 [-] connecting over the internet (a huge security risk & unneeded)
 [-] cindent (smartindent is enough)
 [-] scripting capabilities in commands (:if, :try etc). They will be in Wren only
+[-] request of terminal version - useless
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 
@@ -321,9 +322,9 @@ tag.c:do_tag (weird matches is static, also newMatches?)
    a general way to create auto-updateable views of buffers?
 [+] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
-[ ] Transition to pure 256-color palette and removal of double-width symbols
+[+] Transition to pure 256-color palette and removal of double-width symbols
 [ ] Replace VimScript with Wren
-[ ] Code OSC 52 instead of Wayland clipboard, which is insecure and unsupported on Gnome
+[ ] Intern the code of unibillium and get rid of the "tinfo" dependency
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
    to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 
    Then when they are saved with .txt, .json, .yaml or without file extension, they stay that way.

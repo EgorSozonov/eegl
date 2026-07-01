@@ -1541,8 +1541,6 @@ do_put(
    clipGetDefaultRegister(&regname);
    (void)may_get_selection(regname);
    
-   termGetClipboard();
-
    curBook->opStart = curPor->cursor;   // default for '[ mark
    curBook->opEnd = curPor->cursor;   // default for '] mark
 
@@ -5624,6 +5622,61 @@ wayland_set_display(CS display) {
 
 exit:
    set_EeglVar_string(VV_WAYLAND_DISPLAY, (Byte*)display, -1);
+}
+
+//}}}
+//{{{new clipboard
+
+private int
+copy0() {
+    const char *text_to_copy = "Hello from my C program!";
+
+    // Open a pipe to wl-copy
+    FILE *fp = popen("wl-copy", "w");
+    if (fp == NULL) {
+        perror("Failed to run wl-copy");
+        return 1;
+    }
+
+    // Write the text into the pipe
+    fputs(text_to_copy, fp);
+
+    // Close the pipe and check status
+    int status = pclose(fp);
+    if (status != 0) {
+        fprintf(stderr, "wl-copy exited with error\n");
+    } else {
+        printf("Successfully copied text to Wayland clipboard.\n");
+    }
+
+    return 0;
+}
+
+private int
+paste0() {
+   char buffer[128];
+
+   // Open a pipe to read from wl-paste
+   FILE *fp = popen("wl-paste", "r");
+   if (fp == NULL) {
+       perror("Failed to run wl-paste");
+       return 1;
+   }
+
+   // Read the output from the command a chunk at a time
+   printf("Clipboard contents:\n");
+   while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+       printf("%s", buffer);
+   }
+   printf("\n");
+
+   // Close the pipe
+   int status = pclose(fp);
+   if (status != 0) {
+       fprintf(stderr, "wl-paste exited with error\n");
+   }
+
+   return 0;
 }
 
 //}}}

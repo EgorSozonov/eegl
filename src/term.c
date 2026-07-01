@@ -14,11 +14,6 @@ private CS TC_CURSOR_SHAPES[] = {
    S"\033[6 q"  //bar cursor
 };
 private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
-private CS TC_CLIPBOARD_COPY = S"\033]52;c;%%\007"; // c => p for the other clipboard
-private CS TC_CLIPBOARD_PASTE_REQUEST = S"\033]52;c;?\007";
-private CS TC_CLIPBOARD_PASTE_RESPONSE = S"\033]52;c;";
-
-private CS clipResponseP;
 
 //{{{forward declarations
 
@@ -85,12 +80,6 @@ typedef struct {
 
 #define TERMREQUEST_INIT {STATUS_GET, -1}
 
-// Request a paste from the system clipboard
-private TermRequest clipboardPaste = TERMREQUEST_INIT;
-
-// Request Terminal Version status:
-private TermRequest crv_status = TERMREQUEST_INIT;
-
 // Request Cursor position report:
 private TermRequest u7_status = TERMREQUEST_INIT;
 
@@ -107,8 +96,6 @@ private TermRequest cursorStyleRequestS = TERMREQUEST_INIT;
 private TermRequest winPositionRequestS = TERMREQUEST_INIT;
 
 private TermRequest* requestsP[] = {
-   &clipboardPaste,
-   &crv_status,
    &u7_status,
    &xcc_status,
    &cursorBlinkingRequestS,
@@ -310,7 +297,7 @@ get_term_entries(OUT int* height, OUT int* width) {
       ), SMAP1((CS),
       "TI", KS_CTI, "RK", KS_CRK, "TE", KS_CTE, "Sb", KS_CSB, "Sf", KS_CSF,
       "AB", KS_CAB, "AF", KS_CAF, "AU", KS_CAU, "le", KS_LE,  "nd", KS_ND,  "op", KS_OP,  
-      "RV", KS_CRV, "XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS
+      "XM", KS_CXM, "vs", KS_VS,  "VS", KS_CVS
       ), SMAP1((CS),
       "SC", KS_CSC, "EC", KS_CEC, "ts", KS_TS,  "fs", KS_FS,  "WP", KS_CWP, "WS", KS_CWS, 
       "u7", KS_U7,  "BE", KS_CBE, "BD", KS_CBD, "CF", KS_CF
@@ -407,13 +394,6 @@ set_termname(CS termName) {
    else
       termCodesG[KS_CCS] = S"";
 
-   //Special case: "kitty" may not have a "RV" entry in terminfo, but we need
-   //to request the version for several other things to work.
-   if (strstr((char *)termName, "kitty") != NULL
-         && (termCodesG[KS_CRV] == NULL || *termCodesG[KS_CRV] == ZERO)
-   )
-      termCodesG[KS_CRV] = S"\033[>c";
-
    //Any "stty" settings override the default for t_kb from the termcap.
    //This is in os_unix.c, because it depends a lot on the version of unix that is being used.
    //Don't do this when the GUI is active, it uses "t_kb" and "t_kD" directly.
@@ -470,8 +450,6 @@ set_termname(CS termName) {
    ttest(true);   // make sure we have a valid set of terminal codes
 
    fullScreenG = true;      // we can use termcap codes from now on
-   LOG_TR1("setting crv_status to STATUS_GET");
-   crv_status.progress = STATUS_GET;   // Get terminal version later
    write_t_8u_state = false;
 
    //Initialize the terminal with the appropriate termcap codes.
@@ -511,8 +489,6 @@ set_termname(CS termName) {
          }
       }
    }
-
-   may_req_termresponse();
 
    return OK;
 }
@@ -648,8 +624,6 @@ termInitTerminfo(CS name) {
 
    //Avoid using "term" here, because the next mch_getenv() may overwrite it.
    set_termname(termName);
-   //OSC52 code for response with clipboard content
-   termAddRecognizedTermcode(S"os", TC_CLIPBOARD_PASTE_RESPONSE, false);
 }
 
 //The number of calls to ui_write is reduced by using "out_buf".
@@ -1286,7 +1260,6 @@ termSetMode(TermInputMode tmode) {
           setmouse();      // may switch mouse on
       out_flush();
    }
-   may_req_termresponse();
 }
 
 void
@@ -1308,11 +1281,6 @@ starttermcap(void) {
    out_flush();
    termcap_active = true;
    screen_start();         // don't know where cursor is now
-   may_req_termresponse();
-   //Immediately check for a response.  If t_Co changes, we don't
-   //want to redraw with wrong colors first.
-   if (crv_status.progress == STATUS_SENT)
-       handleUnansweredRequests();
 }
 
 void
@@ -1360,33 +1328,6 @@ termStopTerminfo(void) {
    out_str_t_TE(); // stop "raw" mode, modifyOtherKeys and Kitty keyboard protocol
    screen_start(); // don't know where cursor is now
    out_flush();
-}
-
-//Request version string (for xterm) when needed.
-//Only do this after switching to raw mode, otherwise the result will be echoed.
-//Only do this after startup has finished, to avoid that the response comes
-//while executing "-c !cmd" or even after "-c quit".
-//Only do this after termcap mode has been started, otherwise the codes for
-//the cursor keys may be wrong.
-//Only do this when 'esckeys' is on, otherwise the response causes trouble in Insert mode.
-//On Unix only do it when both output and input are a tty (avoid writing
-//request to terminal while reading from a file).
-//The result is caught in termTryParseTermcode().
-void
-may_req_termresponse(void) {
-   if (crv_status.progress == STATUS_GET
-       && can_get_termresponse()
-       && starting == 0
-       && termCodesG[KS_CRV] != S""
-   ) {
-      MAY_WANT_TO_LOG_THIS;
-      LOG_TR1("Sending CRV request");
-      out_str(termCodesG[KS_CRV]);
-      requestSent(&crv_status);
-      // check for the characters now, otherwise they might be eaten by get_keystroke()
-      out_flush();
-      (void)vpeekc_nomap();
-   }
 }
 
 //Send sequences to the terminal and check with t_u7 how the cursor moves, to find out properties
@@ -1862,46 +1803,47 @@ is_mouse_topline(Portal* po) {
    return orig_topline == po->topLine && orig_topfill == po->topFill;
 }
 
-//If "buffer" is NULL put "string[new_slen]" in typeBufG; "bufLen" is not used.
-//If "buffer" is not NULL put "string[new_slen]" in "buf[bufsize]" and adjust "bufLen".
-//Remove "slen" bytes. Return FAIL for error.
+//Put "newText" into typeBufG. Remove "slen" bytes. Return FAIL for error.
 int
-termPutStrIntoTypebuf(
+termPutStrIntoTypeBuf(int offset, int slen, Text newText){
+   int extra = newText.len - slen;
+   newText.c[newText.len] = ZERO;
+   if (extra < 0)
+      //remove matched chars, taking care of noremap
+      del_typebuf(-extra, offset);
+   ei (extra > 0)
+      //insert the extra space we need
+      if (insertIntoTypebuf(newText.c + slen, REMAP_YES, offset, false, false) == FAIL)
+         return FAIL;
+
+   // Careful: del_typebuf() and insertIntoTypebuf() may have reallocated typeBufG.c[]!
+   MEMMOVE(typeBufG.c + typeBufG.currPos + offset, newText.c, (Unt)newText.len);
+   return OK;
+}
+
+//Put "string[new_slen]" into "buf[bufsize]" and adjust "bufLen".
+//Remove "slen" bytes. Return FAIL for error.
+private int
+termPutStrIntoBuf(
    int offset,
    int slen,
-   CS string,
-   int new_slen,
-   CS buffer,
-   int bufsize,
+   Text newText,
+   OUT Text buffer,
    OUT int* bufLen
 ){
-   int extra = new_slen - slen;
-   string[new_slen] = ZERO;
-   if (!buffer) {
-      if (extra < 0)
-         //remove matched chars, taking care of noremap
-         del_typebuf(-extra, offset);
-      ei (extra > 0)
-         //insert the extra space we need
-         if (insertIntoTypebuf(string + slen, REMAP_YES, offset, false, false) == FAIL)
-            return FAIL;
-
-      // Careful: del_typebuf() and insertIntoTypebuf() may have reallocated typeBufG.c[]!
-      MEMMOVE(typeBufG.c + typeBufG.currPos + offset, string, (Unt)new_slen);
-   } else {
-      if (extra < 0)
-         // remove matched characters
-         MEMMOVE(buffer + offset, buffer + offset - extra,
-                     (Unt)(*bufLen + offset + extra));
-      ei (extra > 0) {
-         //Insert the extra space we need. If there is insufficient space, return -1.
-         if (*bufLen + extra + new_slen >= bufsize)
-            return FAIL;
-         MEMMOVE(buffer + offset + extra, buffer + offset, (Unt)(*bufLen - offset));
-      }
-      MEMMOVE(buffer + offset, string, (Unt)new_slen);
-      *bufLen = *bufLen + extra + new_slen;
+   int extra = newText.len - slen;
+   newText.c[newText.len - 1] = ZERO;
+   if (extra < 0)
+      // remove matched characters
+      MEMMOVE(buffer.c + offset, buffer.c + offset - extra, (Unt)(*bufLen + offset + extra));
+   ei (extra > 0) {
+      //Insert the extra space we need. If there is insufficient space, return -1.
+      if (*bufLen + extra + newText.len >= buffer.len)
+         return FAIL;
+      MEMMOVE(buffer.c + offset + extra, buffer.c + offset, (Unt)(*bufLen - offset));
    }
+   MEMMOVE(buffer.c + offset, newText.c, (Unt)newText.len);
+   *bufLen = *bufLen + extra + newText.len;
    return OK;
 }
 
@@ -1925,7 +1867,7 @@ decode_modifiers(int n) {
 }
 
 private int
-modifiers2keycode(Unt modifiers, Unt* key, CS string) {
+modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
    int new_slen = 0;
 
    if (modifiers == 0)
@@ -1962,173 +1904,10 @@ handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED) {
    }
 }
 
-//Handle a response to termCodesG[KS_CRV]: {lead}{first}{x};{vers};{y}c
-//Xterm and alike use '>' for {first}. Rxvt sends "{lead}?1;2c".
-private void
-handle_version_response(int first, int* arg, int argc) {
-   //The xterm version.  It is set to zero when it can't be an actual xterm version.
-   int version = arg[1];
-
-   LOG_TRN("Received CRV response: %s", tp);
-   crv_status.progress = STATUS_GOT;
-   did_cursorhold = true;
-
-   //Reset terminal properties that are set based on the termresponse.
-   //Mainly useful for tests that send the termresponse multiple times.
-   //For testing all props can be reset.
-   termInitProps(reset_term_props_on_termresponse);
-
-   //Screen sends 40500.
-   //rxvt sends its version number: "20703" is 2.7.3.
-   //Ignore it for when the user has set 'term' to xterm, even though it's an rxvt.
-   if (version > 20000)
-      version = 0;
-
-   // Figure out more if the response is CSI > 99 ; 99 ; 99 c
-   if (first == '>' && argc == 3) {
-      // mintty 2.9.5 sends 77;20905;0c. (77 is ASCII 'M' for mintty.)
-      if (arg[0] == 77) {
-         // mintty can do SGR mouse reporting
-         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-      }
-
-      // libvterm sends 0;100;0
-      // Konsole sends 0;115;0 and works the same way
-      if ((version == 100 || version == 115) && arg[0] == 0 && arg[2] == 0) {
-         // Libvterm can handle SGR mouse reporting.
-         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-      }
-
-      if (version == 95) {
-         //Mac Terminal.app sends 1;95;0
-         if (arg[0] == 1 && arg[2] == 0) {
-            term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-         }
-         //iTerm2 sends 0;95;0
-         ei (arg[0] == 0 && arg[2] == 0) {
-            // iTerm2 can do SGR mouse reporting
-            term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-         }
-      }
-
-      //screen sends 83;40500;0 83 is 'S' in ASCII.
-      if (arg[0] == 83) {
-         //screen supports SGR mouse codes since 4.7.0
-         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-      }
-
-      //If no recognized terminal has set mouse behavior, assume xterm.
-      if (term_props[TPR_MOUSE].status == TPR_UNKNOWN) {
-         term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-      }
-
-      //Detect terminals that set $TERM to something like
-      //"xterm-256color" but are not fully xterm compatible.
-      //
-      //Gnome terminal sends 1;3801;0, 1;4402;0 or 1;2501;0.
-      //Newer Gnome-terminal sends 65;6001;1.
-      //xfce4-terminal sends 1;2802;0.
-      //screen sends 83;40500;0
-      //Assuming any version number over 2500 is not an
-      //xterm (without the limit for rxvt and screen).
-
-      if (version == 136 && arg[2] == 0) {
-         // PuTTY sends 0;136;0
-         if (arg[0] == 0) {
-            // supports sgr-like mouse reporting.
-            term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-         }
-         // vandyke SecureCRT sends 1;136;0
-      }
-
-      //Kitty up to 9.x sends 1;400{version};{secondary-version}
-      if (arg[0] == 1 && arg[1] >= 4000 && arg[1] <= 4009) {
-          term_props[TPR_KITTY].status = TPR_YES;
-          term_props[TPR_KITTY].setByTermResponse = true;
-
-          //Kitty can handle SGR mouse reporting.
-          term_props[TPR_MOUSE].status = TPR_MOUSE_SGR;
-      }
-
-      //GNU screen sends 83;30600;0, 83;40500;0, etc.
-      //30600/40500 is a version number of GNU screen. DA2 support is added
-      //on 3.6.  DCS string has a special meaning to GNU screen, but xterm
-      //compatibility checking does not detect GNU screen.
-      if (arg[0] == 83 && arg[1] >= 30600) {
-          term_props[TPR_CURSOR_STYLE].status = TPR_NO;
-          term_props[TPR_CURSOR_BLINK].status = TPR_NO;
-      }
-
-      //Getting the cursor style is only supported properly by xterm since
-      //version 279 (otherwise it returns 0x18).
-      if (version < 279)
-          term_props[TPR_CURSOR_STYLE].status = TPR_NO;
-
-      //Take action on the detected properties.
-
-      write_t_8u_state = OK;  // can output t_8u now
-
-      int need_flush = false;
-
-      //Only request the cursor style if t_SH and t_RS are
-      //set. Only supported properly by xterm since version
-      //279 (otherwise it returns 0x18).
-      //Only when getting the cursor style was detected to work.
-      //Not for Terminal.app, it can't handle t_RS, it echoes the characters to the screen.
-      if (cursorStyleRequestS.progress == STATUS_GET
-         && term_props[TPR_CURSOR_STYLE].status == TPR_YES
-         && termCodesG[KS_CSH] != S""
-         && termCodesG[KS_CRS] != S""
-      ) {
-          MAY_WANT_TO_LOG_THIS;
-          LOG_TR1("Sending cursor style request");
-          out_str(termCodesG[KS_CRS]);
-          requestSent(&cursorStyleRequestS);
-          need_flush = true;
-      }
-
-      //Only request the cursor blink mode if t_RC set. Not
-      //for Gnome terminal, it can't handle t_RC, it
-      //echoes the characters to the screen. Only when getting the cursor style was detected to work.
-      if (cursorBlinkingRequestS.progress == STATUS_GET
-         && term_props[TPR_CURSOR_BLINK].status == TPR_YES
-         && termCodesG[KS_CRC] != S""
-      ) {
-         MAY_WANT_TO_LOG_THIS;
-         LOG_TR1("Sending cursor blink mode request");
-         out_str(termCodesG[KS_CRC]);
-         requestSent(&cursorBlinkingRequestS);
-         need_flush = true;
-      }
-
-      if (need_flush)
-          out_flush();
-   }
-}
-
-void
-termGetClipboard() {
-   //_bp(true);
-   //CS testRes = null;
-   //Boole res = decodeBase64(OUT &testRes, (Text){S"eQ==", 4});
-   //printf("%d | %s\n", res, testRes);
-
-   out_str(TC_CLIPBOARD_PASTE_REQUEST);
-   requestSent(&clipboardPaste);
-   out_flush();
-   Boole did_send = true;
-      
-   if (did_send) {
-      //check for the characters now, otherwise they might be eaten by get_keystroke()
-      out_flush();
-      (void)vpeekc_nomap();
-   }
-}
-
 //Add "key" to "buf" and return the number of bytes used.
 //Handle special keys and multi-byte characters.
 private int
-add_key_to_buf(Unt key, CS buffer) {
+add_key_to_buf(Unt key, OUT CS buffer) {
    int idx = 0;
 
    if (IS_SPECIAL(key)) {
@@ -2142,13 +1921,12 @@ add_key_to_buf(Unt key, CS buffer) {
 
 // Shared between handle_key_with_modifier() and handle_csi_function_key().
 private int
-put_key_modifiers_in_typeBuf(
+putKeyModifiersIntoTypeBuf(
    Unt key_arg,
    Unt modifiers_arg,
    int csi_len,
    int offset,
-   CS buffer,
-   int bufsize,
+   NULLABLE OUT Text buffer,
    int* bufLen
 ) {
    //Some keys need adjustment when the Ctrl modifier is used.
@@ -2159,14 +1937,19 @@ put_key_modifiers_in_typeBuf(
 
    //Produce modifiers with K_SPECIAL KS_MODIFIER {mod}
    Byte string[MAX_KEY_CODE_LEN + 1];
-   int new_slen = modifiers2keycode(modifiers, &key, string);
+   int new_slen = modifiers2keycode(modifiers, &key, OUT string);
 
    //Add the bytes for the key.
-   new_slen += add_key_to_buf(key, string + new_slen);
+   new_slen += add_key_to_buf(key, OUT string + new_slen);
 
-   string[new_slen] = ZERO;
-   if (termPutStrIntoTypebuf(offset, csi_len, string, new_slen, buffer, bufsize, bufLen) == FAIL)
-      return -1;
+   Text newText = (Text){string, new_slen};
+   if (buffer.len > 0) {
+      if (termPutStrIntoBuf(offset, csi_len, newText, OUT buffer, bufLen) == FAIL)
+         return -1;
+   } else {
+      if (termPutStrIntoTypeBuf(offset, csi_len, newText) == FAIL)
+         return -1;
+   }
    return new_slen - csi_len + offset;
 }
 
@@ -2180,10 +1963,9 @@ handle_key_with_modifier(
    int   trail,
    int   csi_len,
    int   offset,
-   CS buffer,
-   int   bufsize,
-   int   *bufLen)
-{
+   NULLABLE OUT Text buffer,
+   int   *bufLen
+) {
    Unt key = trail == 'u' ? arg[0] : arg[2];
    Unt modifiers = decode_modifiers(arg[1]);
 
@@ -2197,8 +1979,8 @@ handle_key_with_modifier(
    if (key == ESC)
       key = K_ESC;
 
-   return put_key_modifiers_in_typeBuf(
-         key, modifiers, csi_len, offset, buffer, bufsize, bufLen
+   return putKeyModifiersIntoTypeBuf(
+         key, modifiers, csi_len, offset, buffer, bufLen
    );
 }
 
@@ -2208,10 +1990,9 @@ handle_key_without_modifier(
    int arg[static 3],
    int csiLen,
    int offset,
-   CS buffer,
-   int   bufsize,
-   int   *bufLen)
-{
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen
+) {
    Byte  string[MAX_KEY_CODE_LEN + 1];
    int newSlen;
 
@@ -2223,9 +2004,9 @@ handle_key_without_modifier(
       string[2] = KE_ESC;
       newSlen = 3;
    } else
-      newSlen = add_key_to_buf(arg[0], string);
-
-   if (termPutStrIntoTypebuf(offset, csiLen, string, newSlen, buffer, bufsize, bufLen) == FAIL)
+      newSlen = add_key_to_buf(arg[0], OUT string);
+   Text newText = (Text){string, newSlen};
+   if (termPutStrIntoBuf(offset, csiLen, newText, OUT buffer, OUT bufLen) == FAIL)
       return -1;
    return newSlen - csiLen + offset;
 }
@@ -2236,16 +2017,15 @@ handle_key_without_modifier(
 // Return 0 when not recognized, a positive number when recognized.
 private int
 handle_csi_function_key(
-   int   argc,
+   int argc,
    int arg[static 3],
-   int   trail,
-   int   csi_len,
+   int trail,
+   int csi_len,
    OUT CS key_name,
-   int   offset,
-   CS buffer,
-   int   bufsize,
-   int   *bufLen)
-{
+   int offset,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen
+) {
    key_name[0] = 'k';
    switch (trail) {
    case 'A': key_name[1] = 'u'; break;  // K_UP
@@ -2267,7 +2047,7 @@ handle_csi_function_key(
 
    int key = TERMCAP2KEY(key_name[0], key_name[1]);
    int modifiers = argc == 2 ? decode_modifiers(arg[1]) : 0;
-   put_key_modifiers_in_typeBuf(key, modifiers, csi_len, offset, buffer, bufsize, bufLen);
+   putKeyModifiersIntoTypeBuf(key, modifiers, csi_len, offset, OUT buffer, bufLen);
    return csi_len;
 }
 
@@ -2296,9 +2076,8 @@ handleControlSequenceIntroducer(
    int len,
    CS argp,
    int offset,
-   CS buffer,
-   int bufsize,
-   int* bufLen,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen,
    CS key_name,
    int* slen
 ){
@@ -2370,7 +2149,7 @@ handleControlSequenceIntroducer(
    //   {lead}1;{modifier}[ABCDEFHPQRS]
    ei (first == -1 && ASCII_ISUPPER(trail) && (argc == 0 || (argc == 2 && arg[0] == 1))) {
       int res = handle_csi_function_key(argc, arg, trail,
-                  csi_len, OUT key_name, offset, buffer, bufsize, bufLen);
+                  csi_len, OUT key_name, offset, OUT buffer, OUT bufLen);
       return res <= 0 ? res : len + res;
    }
 
@@ -2385,24 +2164,12 @@ handleControlSequenceIntroducer(
       *slen = csi_len;
    }
 
-   // Version string: Eat it when there is at least one digit and it ends in 'c'
-   ei (termCodesG[KS_CRV] != S"" && ap > argp + 1 && trail == 'c') {
-      handle_version_response(first, arg, argc);
-
-      *slen = csi_len;
-      set_EeglVar_string(VV_TERMRESPONSE, tp, *slen);
-      applyAutocomms(EVENT_TERMRESPONSE, NULL, NULL, false, curBook);
-      applyAutocomms(EVENT_TERMRESPONSEALL, (CS)"version", NULL, false, curBook);
-      key_name[0] = (int)KS_EXTRA;
-      key_name[1] = (int)KE_IGNORE;
-   }
-
-    // Check blinking cursor from xterm:
-    // {lead}?12;1$y       set
-    // {lead}?12;2$y       not set
-    //
-    // {lead} can be <Esc>[ or CSI
-    ei (cursorBlinkingRequestS.progress == STATUS_SENT
+   // Check blinking cursor from xterm:
+   // {lead}?12;1$y       set
+   // {lead}?12;2$y       not set
+   //
+   // {lead} can be <Esc>[ or CSI
+   ei (cursorBlinkingRequestS.progress == STATUS_SENT
        && first == '?'
        && ap == argp + 6
        && arg[0] == 12
@@ -2453,29 +2220,16 @@ handleControlSequenceIntroducer(
    // Even though we only handle four modifiers and the {modifier} value should be 16 or lower, we
    // accept all modifier values to avoid the raw sequence to be passed through.
    ei ((arg[0] == 27 && argc == 3 && trail == '~') || (argc == 2 && trail == 'u')) {
-      return len + handle_key_with_modifier(arg, trail, csi_len, offset, buffer, bufsize, bufLen);
+      return len + handle_key_with_modifier(arg, trail, csi_len, offset, OUT buffer, bufLen);
    }
 
    // Key without modifier (Kitty sends this for Esc): {lead}{key}u
    ei (argc == 1 && trail == 'u') {
-      return len + handle_key_without_modifier(arg, csi_len, offset, buffer, bufsize, bufLen);
+      return len + handle_key_without_modifier(arg, csi_len, offset, OUT buffer, bufLen);
    }
 
    // else: Unknown CSI sequence.  We could drop it, but then the user can't create a map for it.
    return 0;
-}
-
-private void
-readAndDecodeClipboard(CS input) {
-   Unt len = 0;
-   //Some terminal emulators terminate OSC with a bell, some with `ESC backslash`.
-   for (; input[len] != ZERO && input[len] != BELL && input[len] != ESC; len++) 
-      {}
-
-   CS testRes;
-   Boole decoded = decodeBase64(OUT &testRes, (Text){input, len});
-   _bp(true);
-   printf("%s\n", testRes);
 }
 
 //Check for key code response from xterm:
@@ -2589,12 +2343,12 @@ handleXKeys(Unt key) {
 //Check from typeBufG.c[typeBufG.currPos] to typeBufG.c[typeBufG.currPos + "max_offset"].
 //Return 0 for no match, -1 for partial match, > 0 for full match.
 //Return KEYLEN_REMOVED when a key code was deleted.
-//With a match, the match is removed, the replacement code is inserted in typeBufG.tb_buf[] and 
-//the number of characters in typeBufG.tb_buf[] is returned.
-//When "buffer" is not NULL, buffer[bufsize] is used instead of typeBufG.tb_buf[].
+//With a match, the match is removed, the replacement code is inserted into typeBufG.c[] and 
+//the number of characters in typeBufG.c[] is returned.
+//When "buffer" is not empty, it is used instead of typeBufG.c[].
 //"bufLen" is then the length of the string in buffer[] and is updated for inserts and deletes.
 int
-termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
+termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
    CS readPos;
    int slen = 0;
    int modslen;
@@ -2618,10 +2372,10 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
    //mapped. Stop at max_offset, because characters after that cannot be used for mapping, and
    //with @r commands typeBufG.c[] can become very long. This is used often, KEEP IT FAST!
    for (offset = 0; offset < max_offset; ++offset) {
-      if (buffer) {
+      if (buffer.len > 0) {
          if (offset >= *bufLen)
             break;
-         readPos = buffer + offset;
+         readPos = buffer.c + offset;
          len = *bufLen - offset;
       } else {
          if (offset >= typeBufG.validLen)
@@ -2655,7 +2409,6 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
 
       {
       int  mouseIndexFound = -1;
-      _bp(readPos[0] == ESC && readPos[1] == ']' && readPos[2] == '5' && readPos[3] == '2');
       
       Unt idx;
       for (idx = 0; idx < recognizedLen; ++idx) {
@@ -2730,8 +2483,8 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
          //When there is a modifier the * matches a number.
          //When there is no modifier the ;* or * is omitted.
          if (recoTc.modlen > 0 && mouseIndexFound < 0) {
-             modslen = recoTc.modlen;
-             if (STRNCMP(recoTc.code, readPos, (Unt)(MIN(len, modslen))) == 0) {
+            modslen = recoTc.modlen;
+            if (STRNCMP(recoTc.code, readPos, (Unt)(MIN(len, modslen))) == 0) {
                if (len <= modslen)   // got a partial sequence
                   return -1;      // need to get more chars
 
@@ -2806,7 +2559,7 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
                    && firstOccurrence(S"0123456789>?ABCDEFHPQRS", *argp) != NULL
          ){
             int resp = handleControlSequenceIntroducer(
-                  readPos, len, argp, offset, buffer, bufsize, bufLen, keyName, &slen
+                  readPos, len, argp, offset, OUT buffer, bufLen, keyName, &slen
             );
             if (resp != 0) {
       #ifdef DEBUG_TERMRESPONSE
@@ -2838,9 +2591,6 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
       ) {
          if (termTryParseTermcode_mouse(keyName, &modifiers) == -1)
             return -1;
-      } ei (keyName[0] == 'o' && keyName[1] == 's') {
-         readAndDecodeClipboard(readPos + STRLEN_LITERAL(TC_CLIPBOARD_PASTE_RESPONSE));
-         return 1;
       }
 
       //Handle FocusIn/FocusOut event sequences reported by XTerm. (CSI I/CSI O)
@@ -2865,7 +2615,7 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
       key = handleXKeys(TERMCAP2KEY(keyName[0], keyName[1]));
 
       // Add any modifier codes to our string.
-      new_slen = modifiers2keycode(modifiers, &key, string);
+      new_slen = modifiers2keycode(modifiers, &key, OUT string);
 
       // Finally, add the special key code to our string
       keyName[0] = KEY2TERMCAP0(key);
@@ -2881,9 +2631,14 @@ termTryParseTermcode(int max_offset, CS buffer, int bufsize, OUT int* bufLen){
          string[new_slen++] = keyName[0];
          string[new_slen++] = keyName[1];
       }
-      if (termPutStrIntoTypebuf(offset, slen, string, new_slen, buffer, bufsize, bufLen
-          ) == FAIL)
-         return -1;
+      Text newText = (Text){string, new_slen};
+      if (buffer.len > 0) {
+         if (termPutStrIntoBuf(offset, slen, newText, OUT buffer, OUT bufLen) == FAIL)
+            return -1;
+      } else {
+         if (termPutStrIntoTypeBuf(offset, slen, newText) == FAIL)
+            return -1;
+      }
       return retval == 0 ? (len + new_slen - slen + offset) : retval;
    }
 

@@ -18249,7 +18249,6 @@ BYPASS_AU:
    return retval;
 }
 
-private CS old_termresponse = NULL;
 private CS old_termu7resp = NULL;
 private CS old_termblinkresp = NULL;
 private CS old_termrbgresp = NULL;
@@ -18262,7 +18261,6 @@ void
 block_autocmds(void) {
    // Remember the value of v:termresponse.
    if (autocommsBlockedS == 0) {
-      old_termresponse = get_EeglVar_str(VV_TERMRESPONSE);
       old_termu7resp = get_EeglVar_str(VV_TERMU7RESP);
       old_termblinkresp = get_EeglVar_str(VV_TERMBLINKRESP);
       old_termrbgresp = get_EeglVar_str(VV_TERMRBGRESP);
@@ -18280,10 +18278,6 @@ unblock_autocmds(void) {
    // trigger the autocommands now.  Esp. useful when executing a shell
    // command during startup (vimdiff).
    if (autocommsBlockedS == 0) {
-      if (get_EeglVar_str(VV_TERMRESPONSE) != old_termresponse) {
-          applyAutocomms(EVENT_TERMRESPONSE, NULL, NULL, false, curBook);
-          applyAutocomms(EVENT_TERMRESPONSEALL, S"version", NULL, false, curBook);
-      }
       if (get_EeglVar_str(VV_TERMU7RESP) != old_termu7resp) {
           applyAutocomms(EVENT_TERMRESPONSEALL, S"ambiguouswidth", NULL, false, curBook);
       }

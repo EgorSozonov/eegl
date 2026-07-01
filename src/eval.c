@@ -5437,7 +5437,6 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("statusmsg",    VAR_STRING), false},
    {VV_NAME("shell_error",    VAR_NUMBER), true},
    {VV_NAME("this_session",    VAR_STRING), false},
-   {VV_NAME("version",       VAR_NUMBER), true},
    {VV_NAME("lnum",       VAR_NUMBER),  false},
    {VV_NAME("termresponse",    VAR_STRING),  true},
    {VV_NAME("fname",       VAR_STRING),  true},
@@ -5449,8 +5448,8 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("fname_new",    VAR_STRING),  true},
    {VV_NAME("fname_diff",    VAR_STRING), true},
    {VV_NAME("cmdarg",       VAR_STRING),  true},
-   
    {VV_NAME("foldstart",    VAR_NUMBER),  false},
+   
    {VV_NAME("foldend",       VAR_NUMBER),  false},
    {VV_NAME("folddashes",    VAR_STRING),  false},
    {VV_NAME("foldlevel",    VAR_NUMBER),  false},
@@ -5470,8 +5469,8 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("beval_bufnr",    VAR_NUMBER),  true},
    {VV_NAME("beval_winnr",    VAR_NUMBER),  true},
    {VV_NAME("beval_winid",    VAR_NUMBER),  true},
-   
    {VV_NAME("beval_lnum",    VAR_NUMBER),  true},
+   
    {VV_NAME("beval_col",    VAR_NUMBER),  true},
    {VV_NAME("beval_text",    VAR_STRING),  true},
    {VV_NAME("scrollstart",    VAR_STRING),  false},
@@ -5490,15 +5489,9 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("windowid",    VAR_NUMBER),  true},
    {VV_NAME("progpath",    VAR_STRING),  true},
    {VV_NAME("completed_item",    VAR_BAG),  false},
-   {VV_NAME("option_new",    VAR_STRING),  true},
-   
-   {VV_NAME("option_old",    VAR_STRING),  true},
-   {VV_NAME("option_oldlocal",    VAR_STRING),  true},
-   {VV_NAME("option_oldglobal", VAR_STRING),  true},
-   {VV_NAME("option_command",    VAR_STRING),  true},
-   {VV_NAME("option_type",    VAR_STRING),  true},
    {VV_NAME("errors",       VAR_LIST),  false},
    {VV_NAME("false",       VAR_BOOL),  true},
+   
    {VV_NAME("true",       VAR_BOOL),  true},
    {VV_NAME("none",       VAR_SPECIAL),  true},
    {VV_NAME("null",       VAR_SPECIAL),  true},
@@ -5512,7 +5505,6 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("t_func",       VAR_NUMBER),  true},
    {VV_NAME("t_list",       VAR_NUMBER),  true},
    {VV_NAME("t_dict",       VAR_NUMBER),  true},
-   
    {VV_NAME("t_float",       VAR_NUMBER),  true},
    {VV_NAME("t_bool",       VAR_NUMBER),  true},
    {VV_NAME("t_none",       VAR_NUMBER),  true},
@@ -5520,6 +5512,7 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("t_channel",    VAR_NUMBER),  true},
    {VV_NAME("t_blob",       VAR_NUMBER),  true},
    {VV_NAME("termrfgresp",    VAR_STRING),  true},
+   
    {VV_NAME("termrbgresp",    VAR_STRING),  true},
    {VV_NAME("termu7resp",    VAR_STRING),  true},
    {VV_NAME("termstyleresp",    VAR_STRING),  true},
@@ -5533,13 +5526,11 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("colornames",       VAR_BAG),  true},
    {VV_NAME("sizeofint",    VAR_NUMBER),  true},
    {VV_NAME("sizeoflong",    VAR_NUMBER),  true},
-   
    {VV_NAME("sizeofpointer",    VAR_NUMBER),  true},
    {VV_NAME("maxcol",       VAR_NUMBER),  true},
    {VV_NAME("t_enum",       VAR_NUMBER),  true},
    {VV_NAME("t_enumvalue",    VAR_NUMBER), true},
    {VV_NAME("stacktrace",    VAR_LIST), true},
-   {VV_NAME("t_tuple",       VAR_NUMBER), true},
    {VV_NAME("wayland_display",  VAR_STRING),  true},
 };
 

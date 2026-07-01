@@ -177,7 +177,7 @@ get_inserted(void) {
 Unt
 get_keystroke(void) {
    CS buf = S"";
-   int buflen = 150;
+   Unt buflen = 150;
    int maxlen;
    int len = 0;
    int count;
@@ -217,7 +217,7 @@ get_keystroke(void) {
           ++waited;       // keep track of the waiting time
 
       // Incomplete termcode and not timed out yet: get more characters
-      if ((count = termTryParseTermcode(1, buf, buflen, &len)) < 0
+      if ((count = termTryParseTermcode(1, OUT (Text){buf, buflen}, OUT &len)) < 0
              && (!p_ttimeout || waited * 100L < (p_ttm < 0 ? p_tm : p_ttm))
       )
          continue;
@@ -256,7 +256,7 @@ get_keystroke(void) {
       }
       if (utf8CharLens[c] > len)
          continue;   // more bytes to get
-      buf[len >= buflen ? buflen - 1 : len] = ZERO;
+      buf[len >= (int)buflen ? (int)buflen - 1 : len] = ZERO;
       c = mb_ptr2char(buf);
       if (c == extraInterruptCharG)
           c = ESC;
@@ -2137,13 +2137,14 @@ checkSimplifyModifier(int const maxOffset) {
       } else {
          len = mb_char2bytes(cModified, new_string);
       }
+      Text newText = (Text){new_string, len};
       if (modifier == 0) { // all the modifier keys have been handled
-         if (termPutStrIntoTypebuf(offset, 4, new_string, len, NULL, 0, NULL) == FAIL) {
+         if (termPutStrIntoTypeBuf(offset, 4, newText) == FAIL) {
             return -1;
          }
       } else {
          input[2] = modifier;
-         if (termPutStrIntoTypebuf(offset + 3, 1, new_string, len, NULL, 0, NULL) == FAIL) {
+         if (termPutStrIntoTypeBuf(offset + 3, 1, newText) == FAIL) {
             return -1;
          }
       }
@@ -2387,7 +2388,7 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
            if ((typeBufG.mappedLen == 0 
                      || (typeBufG.noremap[typeBufG.currPos] == RM_YES))
                   && !timedout) {
-              fin.keylen = termTryParseTermcode(fin.maxMLen + 1, NULL, 0, NULL);
+              fin.keylen = termTryParseTermcode(fin.maxMLen + 1, (Text){NULL, 0}, NULL);
            } else {
               fin.keylen = 0;
            } 

@@ -234,14 +234,12 @@ called `options[]`.
 
 ## The TUI ##
 
-Most of the TUI code is implemented like it was a clever terminal.  Typing a
-character, moving a scrollbar, clicking the mouse, etc. are all translated
-into events which are written in the input buffer.  These are read by the
-main code, just like reading from a terminal.  The code for this is scattered
-through [`gui.c`](https://github.com/vim/vim/blob/master/src/gui.c).
+Most of the TUI code is implemented like it was a clever terminal. Typing a character, moving a 
+scrollbar, clicking the mouse, etc. are all translated into events which are written in the 
+input buffer. These are read by the main code, just like reading from a terminal.
 For example, `gui_send_mouse_event()` for a mouse click and `gui_menu_cb()` for
-a menu action.  Key hits are handled by the system-specific GUI code, which
-calls `add_to_input_buf()` to send the key code.
+a menu action.  Key hits are handled by the system-specific GUI code, which calls 
+`add_to_input_buf()` to send the key code.
 
 Updating the GUI window is done by writing codes in the output buffer, just
 like writing to a terminal.  When the buffer gets full or is flushed,
@@ -249,14 +247,9 @@ like writing to a terminal.  When the buffer gets full or is flushed,
 system-specific GUI code will be called to do the work.
 
 
-## Debugging the GUI ##
+## Building ##
 
-Remember to prevent that gvim forks and the debugger thinks Vim has exited,
-add the `-f` argument.  In gdb: `run -f -g`.
-
-When stepping through display updating code, the focus event is triggered
-when going from the debugger to Vim and back.  To avoid this, recompile with
-some code in `gui_focus_change()` disabled.
+Dependencies: glibc, ncurses and wl-clipboard.
 
 
 ## Contributing ##

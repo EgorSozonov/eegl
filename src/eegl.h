@@ -5313,107 +5313,106 @@ typedef enum {
 #define MOUSE_RELEASED     0x20 //button was released
 
 // Defines for Eegl variables. These must match eval.c:eeglVars[]!
-#define VV_COUNT         0
-#define VV_COUNT1        1
-#define VV_PREVCOUNT     2
-#define VV_ERRMSG        3
-#define VV_WARNINGMSG    4
-#define VV_STATUSMSG     5
-#define VV_SHELL_ERROR   6
-#define VV_THIS_SESSION  7
-#define VV_VERSION       8
-#define VV_LNUM          9
-#define VV_TERMRESPONSE 10
-#define VV_FNAME        11
-#define VV_LANG         12
-#define VV_LC_TIME      13
-#define VV_CTYPE        14
-#define VV_FNAME_IN     15
-#define VV_FNAME_OUT    16
-#define VV_FNAME_NEW    17
-#define VV_FNAME_DIFF   18
-#define VV_CMDARG       19
-#define VV_FOLDSTART    20
-#define VV_FOLDEND      21
-#define VV_FOLDDASHES   22
-#define VV_FOLDLEVEL    23
-#define VV_PROGNAME     24
-#define VV_SEND_SERVER  25
-#define VV_DYING        26
-#define VV_EXCEPTION    27
-#define VV_THROWPOINT   28
-#define VV_REG          29
-#define VV_CMDBANG      30
-#define VV_INSERTMODE   31
-#define VV_VAL          32
-#define VV_KEY          33
-#define VV_PROFILING    34
-#define VV_FCS_REASON   35
-#define VV_FCS_CHOICE   36
-#define VV_BEVAL_BUFNR  37
-#define VV_BEVAL_WINNR  38
-#define VV_BEVAL_WINID  39
-#define VV_BEVAL_LNUM   40
-#define VV_BEVAL_COL    41
-#define VV_BEVAL_TEXT   42
-#define VV_SCROLLSTART  43
-#define VV_SWAPNAME     44
-#define VV_SWAPCHOICE   45
-#define VV_SWAPCOMMAND  46
-#define VV_CHAR         47
-#define VV_MOUSE_WIN    48
-#define VV_MOUSE_WINID  49
-#define VV_MOUSE_LNUM   50
-#define VV_MOUSE_COL    51
-#define VV_OP           52
-#define VV_SEARCHFORWARD 53
-#define VV_HLSEARCH     54
-#define VV_OLDFILES     55
-#define VV_WINDOWID     56
-#define VV_PROGPATH     57
-#define VV_COMPLETED_ITEM 58
-#define VV_ERRORS       65
-#define VV_FALSE        66
-#define VV_TRUE         67
-#define VV_NONE         68
-#define VV_NULL         69
-#define VV_NUMBERMAX    70
-#define VV_NUMBERMIN    71
-#define VV_NUMBERSIZE   72
-#define VV_EE_DID_ENTER 73
-#define VV_TESTING      74
-#define VV_TYPE_NUMBER  75
-#define VV_TYPE_STRING  76
-#define VV_TYPE_FUNC    77
-#define VV_TYPE_LIST    78
-#define VV_TYPE_DICT    79
-#define VV_TYPE_FLOAT   80
-#define VV_TYPE_BOOL    81
-#define VV_TYPE_NONE    82
-#define VV_TYPE_JOB     83
-#define VV_TYPE_CHANNEL 84
-#define VV_TYPE_BLOB    85
-#define VV_TERMRFGRESP  86
-#define VV_TERMRBGRESP  87
-#define VV_TERMU7RESP   88
-#define VV_TERMSTYLERESP 89
-#define VV_TERMBLINKRESP 90
-#define VV_EVENT        91
-#define VV_VERSIONLONG  92
-#define VV_ECHOSPACE    93
-#define VV_ARGV         94
-#define VV_COLLATE      95
-#define VV_EXITING      96
-#define VV_COLORNAMES   97
-#define VV_SIZEOFINT    98
-#define VV_SIZEOFLONG   99
-#define VV_SIZEOFPOINTER 100
-#define VV_MAXCOL      101
-#define VV_TYPE_ENUM   102
-#define VV_TYPE_ENUMVALUE  103
-#define VV_STACKTRACE      104
-#define VV_WAYLAND_DISPLAY 105
-#define EV_LEN         107 // number of v: vars
+#define VV_COUNT          0
+#define VV_COUNT1         1
+#define VV_PREVCOUNT      2
+#define VV_ERRMSG         3
+#define VV_WARNINGMSG     4
+#define VV_STATUSMSG      5
+#define VV_SHELL_ERROR    6
+#define VV_THIS_SESSION   7
+#define VV_VERSION        8
+#define VV_LNUM           9
+#define VV_FNAME         10
+#define VV_LANG          11
+#define VV_LC_TIME       12
+#define VV_CTYPE         13
+#define VV_FNAME_IN      14
+#define VV_FNAME_OUT     15
+#define VV_FNAME_NEW     16
+#define VV_FNAME_DIFF    17
+#define VV_CMDARG        18
+#define VV_FOLDSTART     19
+#define VV_FOLDEND       20
+#define VV_FOLDDASHES    21
+#define VV_FOLDLEVEL     22
+#define VV_PROGNAME      23
+#define VV_SEND_SERVER   24
+#define VV_DYING         25
+#define VV_EXCEPTION     26
+#define VV_THROWPOINT    27
+#define VV_REG           28
+#define VV_CMDBANG       29
+#define VV_INSERTMODE    30
+#define VV_VAL           31
+#define VV_KEY           32
+#define VV_PROFILING     33
+#define VV_FCS_REASON    34
+#define VV_FCS_CHOICE    35
+#define VV_BEVAL_BUFNR   36
+#define VV_BEVAL_WINNR   37
+#define VV_BEVAL_WINID   38
+#define VV_BEVAL_LNUM    39
+#define VV_BEVAL_COL     40
+#define VV_BEVAL_TEXT    41
+#define VV_SCROLLSTART   42
+#define VV_SWAPNAME      43
+#define VV_SWAPCHOICE    44
+#define VV_SWAPCOMMAND   45
+#define VV_CHAR          46
+#define VV_MOUSE_WIN     47
+#define VV_MOUSE_WINID   48
+#define VV_MOUSE_LNUM    49
+#define VV_MOUSE_COL     50
+#define VV_OP            51
+#define VV_SEARCHFORWARD 52
+#define VV_HLSEARCH      53
+#define VV_OLDFILES      54
+#define VV_WINDOWID      55
+#define VV_PROGPATH      56
+#define VV_COMPLETED_ITEM 57
+#define VV_ERRORS        58
+#define VV_FALSE         59 
+#define VV_TRUE          60
+#define VV_NONE          61
+#define VV_NULL          62
+#define VV_NUMBERMAX     63
+#define VV_NUMBERMIN     64
+#define VV_NUMBERSIZE    65
+#define VV_EE_DID_ENTER  66
+#define VV_TESTING       67
+#define VV_TYPE_NUMBER   68
+#define VV_TYPE_STRING   69
+#define VV_TYPE_FUNC     70
+#define VV_TYPE_LIST     71
+#define VV_TYPE_DICT     72
+#define VV_TYPE_FLOAT    73
+#define VV_TYPE_BOOL     74
+#define VV_TYPE_NONE     75
+#define VV_TYPE_JOB      76
+#define VV_TYPE_CHANNEL  77
+#define VV_TYPE_BLOB     78
+#define VV_TERMRFGRESP   79
+#define VV_TERMRBGRESP   80
+#define VV_TERMU7RESP    81
+#define VV_TERMSTYLERESP 82
+#define VV_TERMBLINKRESP 83
+#define VV_EVENT         84
+#define VV_VERSIONLONG   85
+#define VV_ECHOSPACE     86
+#define VV_ARGV          87
+#define VV_COLLATE       88
+#define VV_EXITING       89
+#define VV_COLORNAMES    90
+#define VV_SIZEOFINT     91
+#define VV_SIZEOFLONG    92
+#define VV_SIZEOFPOINTER 93
+#define VV_MAXCOL        94
+#define VV_TYPE_ENUM     95
+#define VV_TYPE_ENUMVALUE 96
+#define VV_STACKTRACE    97
+#define VV_WAYLAND_DISPLAY 98
+#define EV_LEN           99 // number of v: vars
 
 // used for v_number in VAR_BOOL and VAR_SPECIAL
 #define VVAL_FALSE  0L   // VAR_BOOL
@@ -5606,16 +5605,15 @@ typedef enum {
 #define KS_CWP   57 //set window position in pixels. EMPTY
 #define KS_CGP   58 //get window position. EMPTY
 #define KS_CWS   59 //set window size in characters. EMPTY
-#define KS_CRV   60 //request version string. \e[>c
-#define KS_CXM   61 //enable/disable mouse reporting. \e[?1006;1000%?%p1%{1}%=%th%el%;
-#define KS_CSV   62 //scroll region vertical. EMPTY
-#define KS_OP    63 //original color pair. \e[39;49m
-#define KS_U7    64 //request cursor position. \e[6n
-#define KS_CBE   65 //enable bracketed paste mode. BE. \e[?2004h
-#define KS_CBD   66 //disable bracketed paste mode. BD. \e[?2004l
-#define KS_FD    67 //disable focus event tracking. EMPTY
-#define KS_FE    68 //enable focus event tracking. EMPTY
-#define KS_CF    69 //set terminal alternate font. EMPTY
+#define KS_CXM   60 //enable/disable mouse reporting. \e[?1006;1000%?%p1%{1}%=%th%el%;
+#define KS_CSV   61 //scroll region vertical. EMPTY
+#define KS_OP    62 //original color pair. \e[39;49m
+#define KS_U7    63 //request cursor position. \e[6n
+#define KS_CBE   64 //enable bracketed paste mode. BE. \e[?2004h
+#define KS_CBD   65 //disable bracketed paste mode. BD. \e[?2004l
+#define KS_FD    66 //disable focus event tracking. EMPTY
+#define KS_FE    67 //enable focus event tracking. EMPTY
+#define KS_CF    68 //set terminal alternate font. EMPTY
 
 #define KS_LAST  KS_CF
 

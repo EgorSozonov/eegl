@@ -210,7 +210,7 @@ bookWrite()
 jugExecuteVisualOperator
 
 //clipboard: pasting
-window.c:do_put => window.c:clip_get_selection
+window.c:do_put => window.c:clip_get_selection => window.c:clip_wl_request_selection
 
 //Termcodes in response from the emulator
 termTryParseTermcode

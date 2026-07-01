@@ -444,10 +444,6 @@ libMain(void) {
    // 'autochdir' has been postponed
    DO_AUTOCHDIR;
 
-   //Requesting the termresponse is postponed until here, so that a "-c q"
-   //argument doesn't make it appear in the shell Eegl was started from.
-   may_req_termresponse();
-
    set_EeglVar_nr(VV_EE_DID_ENTER, 1L);
    applyAutocomms(EVENT_EEGLENTER, NULL, NULL, false, curBook);
    TIME_MSG("EeglEnter autocommands");
@@ -591,7 +587,7 @@ appMain(int argc, char** argv) {
          TIME_MSG("--- EEGL RISING ---");
       }
       if (caseInsensitiveCompare(argv[i], "--log") == 0)
-         ch_logfile((CS)(argv[i + 1]), (CS)"ao");
+         ch_logfile((CS)(argv[i + 1]), S"ao");
    }
 
 #ifdef CLEAN_RUNTIMEPATH
