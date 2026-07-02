@@ -1999,27 +1999,26 @@ f_getcharmod(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->number = modMaskG;
 }
 
-# define MAX_REPEAT_PARSE 8
+#define MAX_REPEAT_PARSE 8
 
-// Process messages that have been queued for clientserver. Also check if any jobs have ended.
-// These functions can call arbitrary Vim script and should only be called when it is safe
+//Process messages that have been queued for clientserver. Also check if any jobs have ended.
+//These functions can call arbitrary scripts and should only be called when it is safe
 void
 parse_queued_messages(void) {
    int old_curPor_id;
    int old_curbuf_fnum;
-   int i;
    int save_may_garbage_collect = may_garbage_collect;
    static int entered = 0;
-   int       was_safe = get_was_safe_state();
+   int was_safe = get_was_safe_state();
 
-   // Do not handle messages while redrawing, because it may cause buffers to
-   // change or be wiped while they are being redrawn.
-   // Also bail out when parsing messages was explicitly disabled.
+   //Do not handle messages while redrawing, because it may cause buffers to
+   //change or be wiped while they are being redrawn.
+   //Also bail out when parsing messages was explicitly disabled.
    if (updating_screen || dont_parse_messages)
       return;
 
    // If memory allocation fails during startup we'll exit but curBook or curPor could be NULL.
-   if (curBook == NULL || curPor == NULL)
+   if (!curBook || !curPor)
       return;
 
    old_curbuf_fnum = curBook->fiNum;
@@ -2034,17 +2033,16 @@ parse_queued_messages(void) {
    may_garbage_collect = false;
 
    // Loop when a job ended, but don't keep looping forever.
-   for (i = 0; i < MAX_REPEAT_PARSE; ++i) {
-
-      // Write any buffer lines still to be written.
+   for (Unt i = 0; i < MAX_REPEAT_PARSE; ++i) {
+      //Write any buffer lines still to be written.
       channel_write_any_lines();
 
-      // Process the messages queued on channels.
+      //Process the messages queued on channels.
       channel_parse_messages();
-      // Check if any jobs have ended.  If so, repeat the above to handle
-      // changes, e.g. stdin may have been closed.
+      //Check if any jobs have ended.  If so, repeat the above to handle
+      //changes, e.g. stdin may have been closed.
       if (job_check_ended())
-          continue;
+         continue;
       free_unused_terminals();
 
 #ifdef SIGUSR1
@@ -2056,19 +2054,19 @@ parse_queued_messages(void) {
       break;
    }
 
-    // When not nested we'll go back to waiting for a typed character.  If it
-    // was safe before then this triggers a SafeStateAgain autocommand event.
-    if (entered == 1 && was_safe)
-       may_trigger_safestateagain();
+   // When not nested we'll go back to waiting for a typed character.  If it
+   // was safe before then this triggers a SafeStateAgain autocommand event.
+   if (entered == 1 && was_safe)
+      may_trigger_safestateagain();
 
-    may_garbage_collect = save_may_garbage_collect;
+   may_garbage_collect = save_may_garbage_collect;
 
-    // If the current portal or buffer changed we need to bail out of the
-    // waiting loop.  E.g. when a job exit callback closes the terminal portal.
-    if (curPor->id != old_curPor_id || curBook->fiNum != old_curbuf_fnum)
-       ins_char_typebuf(K_IGNORE, 0);
+   // If the current portal or buffer changed we need to bail out of the
+   // waiting loop.  E.g. when a job exit callback closes the terminal portal.
+   if (curPor->id != old_curPor_id || curBook->fiNum != old_curbuf_fnum)
+      ins_char_typebuf(K_IGNORE, 0);
 
-    --entered;
+   --entered;
 }
 
 
@@ -4387,9 +4385,9 @@ do_mouse(
    start_visual.lnum = 0;
 
    // Check for clicking in the tab panel.
-   if (mouseRowG < (int)firstPor->portalRow + (int)topframeG->width
-      && (mouseColG < firstPor->portalCol 
-         || mouseColG >= (int)firstPor->portalCol + (int)topframeG->width)
+   if (mouseRowG < (int)firstPor->windowRow + (int)topframeG->width
+      && (mouseColG < firstPor->windowCol 
+         || mouseColG >= (int)firstPor->windowCol + (int)topframeG->width)
    ) {
       if (is_drag) {
          if (in_tabpanel) {
@@ -4437,13 +4435,13 @@ do_mouse(
 
    if (tabIndsG) { // only when initialized
       // Check for clicking in the tab line.
-      if (mouseRowG == 0 && firstPor->portalRow > 0) {
+      if (mouseRowG == 0 && firstPor->windowRow > 0) {
          if (is_drag) {
             return false;
          }
 
          //click in a tab selects that tab
-         if (is_click && commPortTypeG == 0 && mouseColG < firstPor->portalCol + (int)topframeG->width) {
+         if (is_click && commPortTypeG == 0 && mouseColG < firstPor->windowCol + (int)topframeG->width) {
             c1 = tabIndsG[mouseColG];
             if (c1 < CLOSING_TAB) {
                if ((modMaskG & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK) {
@@ -5133,7 +5131,7 @@ retnomove:
          drawCurBookLater(UPD_INVERTED);   // delete the inversion
       }
       // Continue a modeless selection in another portal.
-      if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->portalRow))
+      if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->windowRow))
          return IN_OTHER_WIN;
       // Continue a modeless selection in a popup portal or dragging it.
       if (isInsidePopup) {
@@ -5268,7 +5266,7 @@ retnomove:
    } ei (on_status_line && which_button == MOUSE_LEFT) {
       if (dragPortalS) {
          //Drag the status line
-         count = row - dragPortalS->portalRow - dragPortalS->height + 1 - on_status_line;
+         count = row - dragPortalS->windowRow - dragPortalS->height + 1 - on_status_line;
          portDragStatusLine(dragPortalS, count);
          did_drag |= count;
       }
@@ -5276,7 +5274,7 @@ retnomove:
    } ei (on_sep_line && which_button == MOUSE_LEFT) {
       if (dragPortalS) {
          // Drag the separator column
-         count = col - dragPortalS->portalCol - dragPortalS->width + 1 - on_sep_line;
+         count = col - dragPortalS->windowCol - dragPortalS->width + 1 - on_sep_line;
          portDragVsepLine(dragPortalS, count);
          did_drag |= count;
       }
@@ -5289,7 +5287,7 @@ retnomove:
       }
 
       // Continue a modeless selection in another portal.
-      if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->portalRow))
+      if (commPortTypeG != 0 && (row < 0 || row < commPortPortG->windowRow))
          return IN_OTHER_WIN;
       if (isInsidePopup) {
          if (popupDragPortG != NULL) {
@@ -5302,8 +5300,8 @@ retnomove:
          return IN_OTHER_WIN;
       }
 
-      row -= curPor->portalRow;
-      col -= curPor->portalCol;
+      row -= curPor->windowRow;
+      col -= curPor->windowCol;
 
       //When clicking beyond the end of the portal, scroll the screen.
       //Scroll by however many rows outside the portal we are.
@@ -5367,9 +5365,9 @@ retnomove:
 
    if (prevRow >= 0 
          && prevCol >= 0
-         && prevRow >= curPor->portalRow
-         && (Unt)prevRow < curPor->portalRow + curPor->height
-         && prevCol >= curPor->portalCol 
+         && prevRow >= curPor->windowRow
+         && (Unt)prevRow < curPor->windowRow + curPor->height
+         && prevCol >= curPor->windowCol 
          && (Unt)prevCol < P_ENDCOL(curPor)
          && drawHasLines()
    ) {
@@ -5546,7 +5544,7 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
              && orig_mouse_row == mouseRowG
              && (is_mouse_topline(curPor)
             // Double click in tabs line also works when portal contents changes.
-            || (mouseRowG == 0 && firstPor->portalRow > 0))
+            || (mouseRowG == 0 && firstPor->windowRow > 0))
          )
             ++orig_num_clicks;
          else
@@ -5721,28 +5719,28 @@ mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED) {
    if (popup != IGNORE_POPUP) {
       popup_reset_handled(POPUP_HANDLED_1);
       while ((po = find_next_popup(true, POPUP_HANDLED_1)) != NULL) {
-         if ((int)*rowp >= po->portalRow && (int)*rowp < po->portalRow + popup_height(po)
-                && (int)*colp >= po->portalCol && (int)*colp < po->portalCol + popup_width(po))
+         if ((int)*rowp >= po->windowRow && (int)*rowp < po->windowRow + popup_height(po)
+                && (int)*colp >= po->windowCol && (int)*colp < po->windowCol + popup_width(po))
             pwp = po;
       }
       if (pwp) {
          if (popup == FAIL_POPUP)
             return NULL;
-         *rowp -= pwp->portalRow;
-         *colp -= pwp->portalCol;
+         *rowp -= pwp->windowRow;
+         *colp -= pwp->windowCol;
          return pwp;
       }
    }
 
    Frame* fp = topframeG;
 
-   if (*colp < firstPor->portalCol
-          || *colp >= firstPor->portalCol + (int)fp->width
-          || *rowp < firstPor->portalRow)
+   if (*colp < firstPor->windowCol
+          || *colp >= firstPor->windowCol + (int)fp->width
+          || *rowp < firstPor->windowRow)
       return NULL;
 
-   *rowp -= firstPor->portalRow;
-   *colp -= firstPor->portalCol;
+   *rowp -= firstPor->windowRow;
+   *colp -= firstPor->windowCol;
    for (;;) {
       if (fp->layout == FR_LEAF)
          break;

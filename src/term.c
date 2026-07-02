@@ -1366,7 +1366,7 @@ check_terminal_behavior(void) {
       drawStopHilite();
       term_windgoto(1, 0);
       out_str(S"  ");
-      line_was_clobbered(1);
+      drawLineWasClobbered(1);
    }
 
    if (xcc_status.progress == STATUS_GET && visibleRowsG > 2) {
@@ -1393,7 +1393,7 @@ check_terminal_behavior(void) {
       drawStopHilite();
       term_windgoto(2, 0);
       out_str(S"           ");
-      line_was_clobbered(2);
+      drawLineWasClobbered(2);
    }
 
    if (did_send) {
@@ -1544,9 +1544,9 @@ termSetCursorShape(int shape, int blink) {
 //portal, excluding the vertical separator.
 void
 scroll_region_set(Portal* wp, int off) {
-   OUT_STR(TGOTO( termCodesG[KS_CS], wp->portalRow + wp->height - 1, wp->portalRow + off));
+   OUT_STR(TGOTO( termCodesG[KS_CS], wp->windowRow + wp->height - 1, wp->windowRow + off));
    if (termCodesG[KS_CSV] != S"" && wp->width != visibleColsG)
-      OUT_STR(TGOTO(termCodesG[KS_CSV], wp->portalCol + wp->width - 1, wp->portalCol));
+      OUT_STR(TGOTO(termCodesG[KS_CSV], wp->windowCol + wp->width - 1, wp->windowCol));
    screen_start();          // don't know where cursor is now
 }
 
@@ -1746,19 +1746,6 @@ find_termcode(CS name) {
    return NULL;
 }
 
-CS
-get_termcode(Unt i) {
-   if (i >= recognizedLen)
-      return NULL;
-   return &recognizedTermcodesP[i].name[0];
-}
-
-//Length of the terminal code at index 'idx'.
-int
-get_termcode_len(int idx) {
-   return recognizedTermcodesP[idx].len;
-}
-
 void
 del_termcode(CS name) {
    if (!recognizedTermcodesP)   // nothing there yet
@@ -1824,7 +1811,7 @@ termPutStrIntoTypeBuf(int offset, int slen, Text newText){
 //Put "string[new_slen]" into "buf[bufsize]" and adjust "bufLen".
 //Remove "slen" bytes. Return FAIL for error.
 private int
-termPutStrIntoBuf(
+putStrIntoBuf(
    int offset,
    int slen,
    Text newText,
@@ -1845,6 +1832,21 @@ termPutStrIntoBuf(
    MEMMOVE(buffer.c + offset, newText.c, (Unt)newText.len);
    *bufLen = *bufLen + extra + newText.len;
    return OK;
+}
+
+private int
+putStr(
+   int offset,
+   int slen,
+   Text newText,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen
+) {
+   if (buffer.len > 0) {
+      return putStrIntoBuf(offset, slen, newText, buffer, bufLen);
+   } else {
+      return termPutStrIntoTypeBuf(offset, slen, newText);
+   }
 }
 
 // Decode a modifier number as xterm provides it into MOD_MASK bits.
@@ -1943,13 +1945,9 @@ putKeyModifiersIntoTypeBuf(
    new_slen += add_key_to_buf(key, OUT string + new_slen);
 
    Text newText = (Text){string, new_slen};
-   if (buffer.len > 0) {
-      if (termPutStrIntoBuf(offset, csi_len, newText, OUT buffer, bufLen) == FAIL)
-         return -1;
-   } else {
-      if (termPutStrIntoTypeBuf(offset, csi_len, newText) == FAIL)
-         return -1;
-   }
+   
+   if (putStr(offset, csi_len, newText, OUT buffer, bufLen) == FAIL)
+      return -1;
    return new_slen - csi_len + offset;
 }
 
@@ -2006,7 +2004,7 @@ handle_key_without_modifier(
    } else
       newSlen = add_key_to_buf(arg[0], OUT string);
    Text newText = (Text){string, newSlen};
-   if (termPutStrIntoBuf(offset, csiLen, newText, OUT buffer, OUT bufLen) == FAIL)
+   if (putStr(offset, csiLen, newText, OUT buffer, OUT bufLen) == FAIL)
       return -1;
    return newSlen - csiLen + offset;
 }
@@ -2632,13 +2630,9 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
          string[new_slen++] = keyName[1];
       }
       Text newText = (Text){string, new_slen};
-      if (buffer.len > 0) {
-         if (termPutStrIntoBuf(offset, slen, newText, OUT buffer, OUT bufLen) == FAIL)
-            return -1;
-      } else {
-         if (termPutStrIntoTypeBuf(offset, slen, newText) == FAIL)
-            return -1;
-      }
+      
+      if (putStr(offset, slen, newText, OUT buffer, OUT bufLen) == FAIL)
+         return -1;
       return retval == 0 ? (len + new_slen - slen + offset) : retval;
    }
 

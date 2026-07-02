@@ -7932,8 +7932,8 @@ textpos2screenpos(
 
       ColNr off = normalPortalColumnOffset(po);
       if (is_folded) {
-         row += po->portalRow + 1;
-         coloff = po->portalCol + 1 + off;
+         row += po->windowRow + 1;
+         coloff = po->windowCol + 1 + off;
       } else {
          getvcol(po, pos, &scol, &ccol, &ecol);
 
@@ -7953,8 +7953,8 @@ textpos2screenpos(
          if (col >= (int)po->width)
             col = -1;
          if (col >= 0 && row >= 0 && row < (int)po->height) {
-            coloff = col - scol + po->portalCol + 1;
-            row += po->portalRow + 1;
+            coloff = col - scol + po->windowCol + 1;
+            row += po->windowRow + 1;
          } else
             // character is out of the portal
             row = scol = ccol = ecol = 0;

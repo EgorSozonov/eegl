@@ -87,14 +87,14 @@ private void redrawInInsertMode(Boole ready);
 
 //}}}
 
-private ColNr   insertStartG_textlen;   // length of line when insert started
-private ColNr   insertStartG_blank_vcol;   // vcol for first inserted blank
-private Boole   update_insertStartOrigS = true; // set insertStartOrigG to insertStartG
+private ColNr insertStartG_textlen;   // length of line when insert started
+private ColNr insertStartG_blank_vcol;   // vcol for first inserted blank
+private Boole update_insertStartOrigS = true; // set insertStartOrigG to insertStartG
 
-private Text last_insert = {null, 0}; //text of the previous insert, K_SPECIAL and CSI are escaped
-private int   last_insert_skip; // nr of chars in front of previous insert
-private int   new_insert_skip;  // nr of chars in front of current insert
-private int   did_restart_edit; // "restart_edit" when calling edit()
+private Text lastInsertP = {null, 0}; //text of the previous insert, K_SPECIAL and CSI are escaped
+private int last_insert_skip; // nr of chars in front of previous insert
+private int new_insert_skip;  // nr of chars in front of current insert
+private int did_restart_edit; // "restart_edit" when calling edit()
 
 private int can_cindent; // may do cindenting on this line
 
@@ -1134,8 +1134,8 @@ edit_putchar(int c, Boole needDoHilite) {
    update_topline();   // just in case topLine isn't valid
    validate_cursor();
    char decoFl = needDoHilite ? getDecoFlags(HLF_8) : 0;
-   pc_row = curPor->portalRow + curPor->cursorRow;
-   pc_col = curPor->portalCol;
+   pc_row = curPor->windowRow + curPor->cursorRow;
+   pc_col = curPor->windowCol;
    pc_status = PC_STATUS_UNSET;
    pc_col += curPor->cursorCol;
 
@@ -1608,12 +1608,12 @@ stop_insert(
 
    //Save the inserted text for later redo with ^@ and CTRL-A.
    //Don't do it when "restart_edit" was set and nothing was inserted,
-   //otherwise CTRL-O w and then <Left> will clear "last_insert".
+   //otherwise CTRL-O w and then <Left> will clear "lastInsertP".
    Text inserted = get_inserted();
    int added = inserted.c == NULL ? 0 : (int)inserted.len - new_insert_skip;
    if (did_restart_edit == 0 || added > 0) {
-      eeglFree(last_insert.c);
-      last_insert = inserted;             // structure copy
+      eeglFree(lastInsertP.c);
+      lastInsertP = inserted;             // structure copy
       last_insert_skip = added < 0 ? 0 : new_insert_skip;
    } else
       eeglFree(inserted.c);
@@ -1707,24 +1707,25 @@ stop_insert(
 //Set the last inserted text to a single character. Used for the replace command.
 void
 set_last_insert(Unt c) {
-   eeglFree(last_insert.c);
-   last_insert.c = alloc(MB_MAXBYTES * 3 + 5);
+   eeglFree(lastInsertP.c);
+   lastInsertP.c = alloc(MB_MAXBYTES * 3 + 5);
 
-   CS s = last_insert.c;
+   CS s = lastInsertP.c;
    // Use the CTRL-V only when entering a special char
    if (c < ' ' || c == DEL)
       *s++ = Ctrl_V;
    s = add_char2buf(c, s);
    *s++ = ESC;
    *s = ZERO;
-   last_insert.len = (Unt)(s - last_insert.c);
+   lastInsertP.len = (Unt)(s - lastInsertP.c);
+   
    last_insert_skip = 0;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
 void
 free_last_insert(void) {
-   EE_CLEAR_STRING(last_insert);
+   EE_CLEAR_STRING(lastInsertP);
 }
 #endif
 
@@ -1954,13 +1955,13 @@ cursor_down(long n, int upd_topline) {      // When true: update topline
    return OK;
 }
 
-//Stuff the last inserted text in the read buffer. Last_insert actually is a copy of the redo 
+//Stuff the last inserted text in the read buffer. lastInsertP actually is a copy of the redo 
 //buffer, so we first have to remove the command.
 int
 stuff_inserted(
-   int       c,      // Command character to be inserted
-   long    count,   // Repeat this many times
-   int       no_esc   // Don't add an ESC at the end
+   Unt c,      // Command character to be inserted
+   Long count,   // Repeat this many times
+   int no_esc   // Don't add an ESC at the end
 ){
    Byte last = ' ';
 
@@ -2027,9 +2028,9 @@ Text
 get_last_insert(void){
    Text insert = {null, 0};
 
-   if (last_insert.c) {
-      insert.c = last_insert.c + last_insert_skip;
-      insert.len = (Unt)(last_insert.len - last_insert_skip);
+   if (lastInsertP.c) {
+      insert.c = lastInsertP.c + last_insert_skip;
+      insert.len = (Unt)(lastInsertP.len - last_insert_skip);
    }
 
    return insert;

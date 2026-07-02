@@ -3565,16 +3565,6 @@ static void catch_sigusr1 SIGPROTOARG;
 static void catch_sigpwr SIGPROTOARG;
 #endif
 
-#if defined(HAVE_STACK_LIMIT) || defined(PROTO)
-static char* stack_limit = NULL;
-
-#if defined(_THREAD_SAFE) && defined(HAVE_PTHREAD_NP_H)
-# include <pthread.h>
-# include <pthread_np.h>
-#endif
-
-#endif
-
 static struct signalinfo {
    int       sig;   // Signal number, eg. SIGSEGV etc
    char    *name;   // Signal name (not Byte!).
@@ -3700,68 +3690,6 @@ private long int get_signal_stack_size(void) {
    return SIGSTKSZ;
 }
 
-
-//}}}
-//{{{stack limit
-
-#if defined(HAVE_STACK_LIMIT)
-# define HAVE_CHECK_STACK_GROWTH
-//Support for checking for an almost-out-of-stack-space situation.
-
-//Return a pointer to an item on the stack. Used to find out if the stack grows up or down.
-private Boole stackGrowsDownwards;
-
-//Find out if the stack grows upwards or downwards.
-//"p" points to a variable on the stack of the caller.
-private void
-check_stack_growth(char *p) {
-   int      i;
-   stackGrowsDownwards = (p > (char *)&i);
-}
-
-//Find out until how var the stack can grow without getting into trouble.
-//Called when starting up and when switching to the signal stack in deathtrap().
-private void
-get_stack_limit(void) {
-   struct rlimit rlp;
-   int         i;
-   long      lim;
-
-   // Set the stack limit to 15/16 of the allowable size.  Skip this when the
-   // limit doesn't fit in a long (rlim_cur might be "long long").
-   if (getrlimit(RLIMIT_STACK, &rlp) == 0
-       && rlp.rlim_cur < ((rlim_t)1 << (sizeof(Ulong) * 8 - 1))
-       && rlp.rlim_cur != RLIM_INFINITY
-   ){
-   lim = (long)rlp.rlim_cur;
-#if defined(_THREAD_SAFE) && defined(HAVE_PTHREAD_NP_H)
-   {
-       pthread_attr_t  attr;
-       Unt       size;
-
-      pthread_attr_init(&attr);
-      if (pthread_attr_get_np(pthread_self(), &attr) == 0) {
-         pthread_attr_getstacksize(&attr, &size);
-         if (lim > (long)size)
-             lim = (long)size;
-      }
-      pthread_attr_destroy(&attr);
-   }
-#endif
-   if (stackGrowsDownwards) {
-      stack_limit = (char *)((long)&i - (lim / 16L * 15L));
-      if (stack_limit >= (char *)&i)
-         // overflow, set to 1/16 of current stack position
-         stack_limit = (char *)((long)&i / 16L);
-   } else {
-       stack_limit = (char *)((long)&i + (lim / 16L * 15L));
-       if (stack_limit <= (char *)&i)
-      stack_limit = NULL;   // overflow
-   }
-   }
-}
-
-#endif
 
 //}}}
 
@@ -4477,10 +4405,6 @@ mch_early_init(void) {
 
    check_stack_growth((char *)&i);
 
-# ifdef HAVE_STACK_LIMIT
-    get_stack_limit();
-# endif
-
 #endif
 
    //Setup an alternative stack for signals. Helps to catch signals when running out of stack 
@@ -4669,12 +4593,6 @@ deathtrap SIGDEFARG(sigarg) {
    // Set the v:dying variable.
    set_EeglVar_nr(VV_DYING, (long)entered);
    v_dying = entered;
-
-#ifdef HAVE_STACK_LIMIT
-   // Since we are now using the signal stack, need to reset the stack
-   // limit.  Otherwise using a regexp will fail.
-   get_stack_limit();
-#endif
 
 #if 0
    // This is for opening gdb the moment Eegl crashes.
@@ -5949,13 +5867,11 @@ job_any_running(void) {
 }
 #endif
 
-
-
-// NOTE: Must call job_cleanup() only once right after the status of "job"
-// changed to JOB_ENDED (i.e. after job_status() returned "dead" first or
-// mch_detect_ended_job() returned non-NULL).
-// If the job is no longer used it will be removed from the list of jobs, and deleted a bit later.
-void
+//NOTE: Must call job_cleanup() only once right after the status of "job"
+//changed to JOB_ENDED (i.e. after job_status() returned "dead" first or
+//mch_detect_ended_job() returned non-NULL).
+//If the job is no longer used it will be removed from the list of jobs, and deleted a bit later.
+private void
 job_cleanup(Job* job) {
    if (job->jv_status != JOB_ENDED)
       return;

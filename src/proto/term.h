@@ -54,8 +54,6 @@ void scroll_region_reset(void);
 void clear_termcodes(void);
 void termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm);
 CS find_termcode(CS name);
-CS get_termcode(Unt i);
-int get_termcode_len(int idx);
 void del_termcode(CS name);
 void set_mouse_topline(Portal *po);
 int is_mouse_topline(Portal *po);

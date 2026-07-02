@@ -3149,12 +3149,12 @@ startSelection(int col, int row, int repeated_click) {
    cb->state       = SELECT_IN_PROGRESS;
    if (po && PORTAL_IS_POPUP(po)) {
       //Click in a popup portal restricts selection to that portal, excluding the border.
-      cb->min_col = po->portalCol + po->pup.border[3];
-      cb->max_col = po->portalCol + popup_width(po) - po->pup.border[1] - po->pup.hasScrollbar;
+      cb->min_col = po->windowCol + po->pup.border[3];
+      cb->max_col = po->windowCol + popup_width(po) - po->pup.border[1] - po->pup.hasScrollbar;
       if (cb->max_col > screenLinesColsG)
          cb->max_col = screenLinesColsG;
-      cb->min_row = po->portalRow + po->pup.border[0];
-      cb->max_row = po->portalRow + popup_height(po) - 1 - po->pup.border[2];
+      cb->min_row = po->windowRow + po->pup.border[0];
+      cb->max_row = po->windowRow + popup_height(po) - 1 - po->pup.border[2];
    } else {
       cb->min_col = 0;
       cb->max_col = screenLinesColsG;

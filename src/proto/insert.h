@@ -19,7 +19,7 @@ void cursor_up_inner(Portal *po, long n);
 int cursor_up(long n, Boole upd_topline);
 void cursor_down_inner(Portal *wp, long n);
 int cursor_down(long n, int upd_topline);
-int stuff_inserted(int c, long count, int no_esc);
+int stuff_inserted(Unt c, Long count, int no_esc);
 Text get_last_insert(void);
 CS get_last_insert_save(void);
 int bracketed_paste(PasteMode mode, int drop, ArrayList *gap);

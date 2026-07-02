@@ -72,7 +72,6 @@ void mch_clear_job(Job *job);
 int get_job_options(Var *tv, JobOptions *opt, int supported, int supported2);
 void job_free_all(void);
 int job_any_running(void);
-void job_cleanup(Job *job);
 int set_ref_in_job(int copyID);
 void job_unref(Job *job);
 int free_unused_jobs_contents(int copyID, int mask);

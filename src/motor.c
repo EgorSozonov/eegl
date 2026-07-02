@@ -218,13 +218,13 @@ do_intro_line(int row, CS mesg, int add_version){
          clen += bookPtr2Cells(p + l);
          l += utfCharLen(p + l) - 1;
       }
-      drawTextLen(p, l, row, col + firstPor->portalCol, *p == '<' ? getDecoFlags(HLF_8) : 0);
+      drawTextLen(p, l, row, col + firstPor->windowCol, *p == '<' ? getDecoFlags(HLF_8) : 0);
       col += clen;
    }
 
    // Add the version number to the version line.
    if (add_version)
-      drawText(vers, row, col + firstPor->portalCol, 0);
+      drawText(vers, row, col + firstPor->windowCol, 0);
 }
 
 // ":intro": clear screen, display intro screen and wait for return.
@@ -441,7 +441,7 @@ libMain(void) {
    redraw_all_later(UPD_NOT_VALID);
    no_wait_return = false;
 
-   // 'autochdir' has been postponed
+   //'autochdir' has been postponed
    DO_AUTOCHDIR;
 
    set_EeglVar_nr(VV_EE_DID_ENTER, 1L);
@@ -508,14 +508,14 @@ init1(OUT MainParams* par) {
    init_locale();
    TIME_MSG("locale set");
    
-   // Set the default values for the options.
-   // First find out the home directory, needed to expand "~" in options.
+   //Set the default values for the options.
+   //First find out the home directory, needed to expand "~" in options.
    init_homedir();      // find real value of $HOME
    TIME_MSG("inits 0");
 
    swapDirG = fiInitSwapDir((CS)par->argv[0]);
 
-   // Do a first scan of the arguments in "argv[]":
+   //Do a first scan of the arguments in "argv[]":
    //   -display or --display
    //   --server...
    //   --socketid
@@ -529,10 +529,10 @@ init1(OUT MainParams* par) {
    stdout_isatty = (isatty(1) != FAIL);
    TIME_MSG("window checked");
 
-   // Initialize global values of all options
+   //Initialize global values of all options
    optInit0();
    
-   // Allocate the first portal and book. Can't do anything without it, exit when it fails.
+   //Allocate the first portal and book. Can't do anything without it, exit when it fails.
    if (portAllocFirst() == FAIL)
       mch_exit(0);
 
@@ -558,12 +558,12 @@ init1(OUT MainParams* par) {
 
 int
 appMain(int argc, char** argv) {
-   // Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
-   // Thus emsg2() cannot be called!
+   //Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
+   //Thus emsg2() cannot be called!
    mch_early_init();
 
-   // Many variables are in "par" so that we can pass them to invoked functions without a lot 
-   // of arguments.  "argc" and "argv" are also copied, so that they can be changed.
+   //Many variables are in "par" so that we can pass them to invoked functions without a lot 
+   //of arguments. "argc" and "argv" are also copied, so that they can be changed.
    CLEAR_FIELD(paramsP);
    paramsP.argc = argc;
    paramsP.argv = argv;

@@ -4895,7 +4895,7 @@ bookRenderStatusLine(
 
       case STL_KEYMAP:
          fillable = false;
-         if (get_keymap_str(po, S"<%s>", buf_tmp, TMPLEN) > 0)
+         if (drawGetKeymapStr(po, OUT (Text){buf_tmp, TMPLEN}) > 0)
             str = buf_tmp;
          break;
       case STL_PAGENUM:

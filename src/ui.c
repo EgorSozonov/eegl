@@ -7002,7 +7002,7 @@ update_cursor(Terminal *term, int redraw) {
    } else {
       // do not use the portal cursor position
       position_cursor(curPor, &curBook->term->cursorPos);
-      windgoto(curPor->portalRow + curPor->cursorRow, curPor->portalCol + curPor->cursorCol);
+      windgoto(curPor->windowRow + curPor->cursorRow, curPor->windowCol + curPor->cursorCol);
    }
    if (redraw) {
       if (term->book == curBook && term->tl_cursor_visible)
@@ -7049,8 +7049,8 @@ write_to_term(Book *book, CS msg, Channel* channel) {
 private int
 sendMouse(VTerm *vterm, int button, int pressed) {
    VTermModifier   mod = VTERM_MOD_NONE;
-   int row = mouseRowG - curPor->portalRow;
-   int col = mouseColG - curPor->portalCol;
+   int row = mouseRowG - curPor->windowRow;
+   int col = mouseColG - curPor->windowCol;
 
    if (portalIsPopup(curPor)) {
       row -= popup_top_extra(curPor);
@@ -7818,9 +7818,9 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
          row -= popup_top_extra(curPor);
          col -= popup_left_extra(curPor);
       }
-      if (row < curPor->portalRow
-         || row >= (int)(curPor->portalRow + curPor->height)
-         || col < curPor->portalCol
+      if (row < curPor->windowRow
+         || row >= (int)(curPor->windowRow + curPor->height)
+         || col < curPor->windowCol
          || col >= (int)P_ENDCOL(curPor)
          || dragging_outside
       ) {
@@ -8797,7 +8797,7 @@ termUpdatePortal(Portal* po) {
          pos.col = 0;
 
       screen_line(
-         po->portalRow + pos.row, po->portalCol, pos.col, po->width, -1, 
+         po->windowRow + pos.row, po->windowCol, pos.col, po->width, -1, 
          portalIsPopup(po) ? SLF_POPUP : 0
       );
    }
@@ -9097,8 +9097,8 @@ parse_csi(
    if (po) {
        // We roughly estimate the position of the terminal portal inside
        // the Eegl portal by assuming a 10 x 7 character cell.
-       x += po->portalCol * 7;
-       y += po->portalRow * 10;
+       x += po->windowCol * 7;
+       y += po->windowRow * 10;
    }
 
    Byte buf[100];

@@ -35,9 +35,6 @@ TAGPRG		= ctags
 CPP		?= gcc -E
 CPP_MM		= M
 DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
-X_PRE_LIBS	=  -lSM -lICE -lXpm
-X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
-X_LIBS		= -lXt -lX11
 
 OBJDIR ?= .b
 
@@ -223,9 +220,6 @@ VIEWNAME	= view
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
-X_PRE_LIBS	=  -lSM -lICE -lXpm
-X_EXTRA_LIBS	=  -lXdmcp -lSM -lICE
-X_LIBS		= -lXt -lX11
 
 XDIFF_OBJS_USED	= $(XDIFF_OBJS)
 
@@ -802,9 +796,6 @@ LINT_EXTRA = -D"__attribute__(x)="
 DEPEND_FLAGS = -DPROTO -DDEPEND $(LINT_FLAGS)
 
 ALL_LIBS = \
-	   $(X_PRE_LIBS) \
-	   $(X_LIBS) \
-	   $(X_EXTRA_LIBS) \
 	   $(LIBS) \
 	   $(EXTRA_LIBS) \
 	   $(PROFILE_LIBS) \

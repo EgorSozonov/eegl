@@ -9503,9 +9503,9 @@ c_sleep(Invocation* invo) {
    long   len;
 
    if (cursor_valid()) {
-      n = curPor->portalRow + curPor->cursorRow - msg_scrolled;
+      n = curPor->windowRow + curPor->cursorRow - msg_scrolled;
       if (n >= 0)
-         windgoto(n, curPor->portalCol + curPor->cursorCol);
+         windgoto(n, curPor->windowCol + curPor->cursorCol);
    }
 
    len = invo->line2;

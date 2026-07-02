@@ -1008,7 +1008,7 @@ LIST_TY(Unt)
 #define COLUMNS_WITHOUT_TPL() (visibleColsG - tabpanel_width())
 #define TPL_LCOL()  tabpanel_leftcol()
 
-#define P_ENDCOL(wp)  ((wp)->portalCol + (wp)->width)
+#define P_ENDCOL(wp)  ((wp)->windowCol + (wp)->width)
 
 // Values for the find_pattern_in_path() function args 'type' and 'action':
 #define FIND_ANY    1
@@ -4599,7 +4599,7 @@ typedef struct {
 } Ruler; // row, col shown in status line
 
 // Structure which contains all information that belongs to a portal
-// All row numbers are relative to the start of the portal, except portalRow.
+// All row numbers are relative to the start of the portal, except windowRow.
 struct Portal { //:Portal
    int      id;        // unique portal ID
    Book* book;   // book we are a portal into
@@ -4647,16 +4647,16 @@ struct Portal { //:Portal
    Unt lastWidth;        //last known value for w_width
    Unt lastHeight;       //last known value for w_height
 
-   // Layout of the portal in the window.
-   // May need to add "msg_scrolled" to "portalRow" in rare situations.
-   int portalRow;    //first row of portal in window
+   //Layout of the portal in the window.
+   //May need to add "msg_scrolled" to "windowRow" in rare situations.
+   int windowRow;    //first row of portal in window
    Unt height;       //number of rows in portal, excluding status/command line(s)
    int prevPortRow;  //previous portrow used for 'splitkeep'
    Unt prevHeight;   //previous height used for 'splitkeep'
    
    int scroll; // scroll height
 
-   int portalCol;    //Leftmost column of portal in window
+   int windowCol;    //Leftmost column of portal in window
    Unt width;        //Width of portal, excluding separation.
    int vsepWidth;    //Number of separator columns (0 or 1).
 
@@ -4691,8 +4691,8 @@ struct Portal { //:Portal
                                // above the line
 #define WFLAG_WCOL_OFF_ADDED 1 // popup border and padding were added to cursorCol
 #define WFLAG_WROW_OFF_ADDED 2 // popup border and padding were added to cursorRow
-   // The cursor position in the portal. This is related to positions in 
-   // the portal, not in the display or book, thus cursorRow is relative to portalRow.
+   //The cursor position in the portal. This is related to positions in 
+   //the portal, not in the display or book, thus cursorRow is relative to windowRow.
    int cursorRow, cursorCol; // cursor position in portal
 
    // Info about the lines currently in the portal is remembered to avoid recomputing it every 

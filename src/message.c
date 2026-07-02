@@ -2151,7 +2151,7 @@ do_more_prompt(int typedChar) {
                   lastChunk = moveToStartOfScreenLine(lastChunk->sb_prev);
             }
 
-            if (toscroll == -1 && screen_ins_lines(0, 0, 1, (int)visibleRowsG, 0, NULL) == OK) {
+            if (toscroll == -1 && drawInsertLines(0, 0, 1, (int)visibleRowsG, 0, NULL) == OK) {
                //display line at top
                (void)disp_sb_line(0, mp, false);
             } else {

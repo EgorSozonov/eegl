@@ -9671,7 +9671,7 @@ compute_cmdrow(void) {
    if (msg_scrolled != 0 && !updating_screen)
       commlineRowG = visibleRowsG - 1;
    else
-      commlineRowG = lastPor->portalRow + lastPor->height + STATUS_HEIGHT;
+      commlineRowG = lastPor->windowRow + lastPor->height + STATUS_HEIGHT;
 }
 
 void
