@@ -1388,14 +1388,14 @@ init(Portal* newp, Portal* oldp, Unt flags UNUSED) {
 
 //Initialize portal "newp" from portal "old". Only the essential things are copied.
 private void
-initg_some(Portal *newp, Portal *oldp) {
+initg_some(Portal* newp, Portal* oldp) {
    // Use the same argument list.
    newp->argList = oldp->argList;
    ++newp->argList->al_refcount;
    newp->argListInd = oldp->argListInd;
 
    // copy options from existing portal
-   portCopyOptions(newp, oldp);
+   optCopyBetweenPortals(newp, oldp);
 }
 
 // Return true if "port" is a global popup or a popup in the current tab
@@ -2069,7 +2069,7 @@ enteringPortal(Portal* port) {
 
    // When switching to a prompt book that was in Insert mode, don't stop
    // Insert mode, it may have been set in leavingPortal().
-      if (port->book->promptInsert != ZERO)
+   if (port->book->promptInsert != ZERO)
       stop_insert_mode = false;
 
    // When entering the prompt portal restart Insert mode if we were in Insert
@@ -2079,7 +2079,8 @@ enteringPortal(Portal* port) {
 }
 
 private void
-initEmptyPortal(Portal* po) {
+initEmptyPortal(OUT Portal* po) {
+   optCopyGlobalToPortal(OUT po);
    redrawPortLater(po, UPD_NOT_VALID);
    po->validLines = 0;
    po->cursor.lnum = 1;
@@ -8640,9 +8641,7 @@ updateNotificationColor(Portal* po, PopupKind type) {
 
 private void
 initPopupBook(Book* book) {
-   optSetStringOptionDirectInBook(
-       book, S"booktype", S"popup", OPT_LOCAL, 0
-   );
+   optSetStringOptionDirectInBook( book, S"booktype", S"popup", OPT_LOCAL, 0);
    book->o.swapFile = false;   // no swap file
    book->o.bookListed = false;    // unlisted book
    book->locked = true;   // prevent deleting the book
@@ -8940,11 +8939,10 @@ f_popup_beval(Arr(Var) argvars, OUT Var* returnVar) {
 //Careful: The callback may make "po" invalid!
 private void
 invokeCallback(Portal* po, Var *result) {
-   Var   returnVar;
-   Var   argv[3];
-
+   Var returnVar;
    returnVar.tag = VAR_UNKNOWN;
 
+   Var argv[3];
    argv[0].tag = VAR_NUMBER;
    argv[0].number = (Long)po->id;
 

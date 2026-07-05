@@ -5,7 +5,7 @@
  
 #include "eegl.h"
 
-// used for @hlsearch hilite matching
+//used for @hlsearch hilite matching
 private Match screenSearchP;
 
 //{{{low level
@@ -452,7 +452,7 @@ private int
 statusline_row(Portal* po) {
    if (po->frame->width == STATUS_HEIGHT && !portalIsPopup(po))
       return po->windowRow;
-   return po->windowRow + po->height;
+   return po->windowRow + po->height - 1;
 }
 
 private void
@@ -1879,7 +1879,6 @@ drawInsertLines(
    int cursor_col = 0;
    int type;
    int can_ce = can_clear(termCodesG[KS_CE]);
-   _bp(true);
    //FAIL if
    //- there is no valid screen
    //- the line count is less than one
@@ -3290,7 +3289,6 @@ redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
             ++plen;
          }
       }
-      _bp(true);
       drawText(p, row, po->windowCol, deco.flags);
       fillRowsWithTwoChars(
          row, row + 1, plen + po->windowCol, this_ru_col + po->windowCol, fillchar, fillchar, deco

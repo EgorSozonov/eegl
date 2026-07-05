@@ -55,7 +55,7 @@
     BOOK_##oFieldName,
 #else
 #define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
-    PORT_##oFieldName,
+    PORTAL_##oFieldName,
 #endif
 #endif
 
@@ -68,7 +68,7 @@
 #define TYPEBASED_Unt flags
 #define TYPEBASED_CallbackPtr callback
 #define OPTION(oName, oFieldName, oType, oDefaultValue, flags, setter, expander) \
-    o->oFieldName = OPTIONS_PORTAL[PORT_##oFieldName].defaultValue.TYPEBASED_##oType;
+    o->oFieldName = OPTIONS_PORTAL[PORTAL_##oFieldName].defaultValue.TYPEBASED_##oType;
 #endif
 
 #ifdef OPTIONS_COPY
@@ -96,6 +96,22 @@
    TYPEBASED_##oType(t->oFieldName, BOOK_##oFieldName)
    
 #endif
+
+#ifdef COPY_GLOBAL_TO_PORTAL
+
+#define TYPEBASED_CS(f, localInd) \
+   f = copyOptionVal(&t->stringOptions, OPTIONS_PORTAL[localInd].c.local.val.string);
+#define TYPEBASED_Boole(f, localInd) f = OPTIONS_PORTAL[localInd].c.local.val.boole;
+#define TYPEBASED_long(f, localInd) f = OPTIONS_PORTAL[localInd].c.local.val.num;
+#define TYPEBASED_Byte(f, localInd) f = OPTIONS_PORTAL[localInd].c.local.val.enume;
+#define TYPEBASED_Unt(f, localInd) f = OPTIONS_PORTAL[localInd].c.local.val.flags;
+#define TYPEBASED_CallbackPtr(f, localInd) \
+   evCopyCallback(f, OPTIONS_PORTAL[localInd].c.local.val.callback);
+#define OPTION(oName, oFieldName, oType, oDefaultValue, flags, postCb, completeCb) \
+   TYPEBASED_##oType(t->oFieldName, PORTAL_##oFieldName)
+   
+#endif
+
 
 #ifdef COPY_STRINGS_TO_BOOK
 

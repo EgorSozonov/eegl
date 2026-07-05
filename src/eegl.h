@@ -4601,28 +4601,28 @@ typedef struct {
 // Structure which contains all information that belongs to a portal
 // All row numbers are relative to the start of the portal, except windowRow.
 struct Portal { //:Portal
-   int      id;        // unique portal ID
-   Book* book;   // book we are a portal into
-   Portal* prev;     // link to previous portal
-   Portal* next;     // link to next portal
-   SyntaxBlock* ownSyntax;  // for :ownsyntax
-   int locked;    // don't let autocommands close the portal
-   Frame* frame;   // frame containing this portal
-   Pos   cursor;       // cursor position in book
-   ColNr cursWant; // The column we'd like to be at. This is used to try to stay in the same 
-                       // column for up/down cursor motions.
-   Boole setCursWant; // If set, then update w_curswant the next time through cursupdate() 
-                           // to the current virtual column
-   LineNr lastCursorLine;  // where last time 'cursorline' was drawn
-                // the next seven are used to update the Visual highlighting
-   Byte prevVisualMode;  // last known VIsual_mode
-   LineNr prevVisualEnd;  // last known end of visual part
-   ColNr oldCursorFcol;  // first column for block visual part
-   ColNr oldCursorLcol;  // last column for block visual part
-   LineNr oldVisualLnum;  // last known start of visual part
-   ColNr oldVisualCol;  // last known start of visual part
-   ColNr oldCursWant;   // last known value of Curswant
-   LineNr lastCursorLnumRnu; // cursor lnum when 'rnu' was last redrawn
+   int id;         //unique portal ID
+   Book* book;     //book we are a portal into
+   Portal* prev;   //link to previous portal
+   Portal* next;   //link to next portal
+   SyntaxBlock* ownSyntax;  //for :ownsyntax
+   int locked;     //don't let autocommands close the portal
+   Frame* frame;   //frame containing this portal
+   Pos   cursor;   //cursor position in book
+   ColNr cursWant; //The column we'd like to be at. This is used to try to stay in the same 
+                   //column for up/down cursor motions.
+   Boole setCursWant;    //If set, then update w_curswant the next time through cursupdate() 
+                         //to the current virtual column
+   LineNr lastCursorLine;//where last time 'cursorline' was drawn
+                         //the next seven are used to update the Visual highlighting
+   Byte prevVisualMode;  //last known VIsual_mode
+   LineNr prevVisualEnd; //last known end of visual part
+   ColNr oldCursorFcol;  //first column for block visual part
+   ColNr oldCursorLcol;  //last column for block visual part
+   LineNr oldVisualLnum; //last known start of visual part
+   ColNr oldVisualCol;   //last known start of visual part
+   ColNr oldCursWant;    //last known value of Curswant
+   LineNr lastCursorLnumRnu; //cursor lnum when 'rnu' was last redrawn
 
    //"topLine", "leftCol" and "skipcol" specify the offsets for displaying the book.
    LineNr topLine;      //book line number of the line at the top of the portal
@@ -4664,8 +4664,8 @@ struct Portal { //:Portal
    int needFixCursor;//if TRUE cursor may be invalid
 
    PortalPopup pup;
-   Boole isPreview;   // is this the preview portal of the tab?
-   Unt flags;        // WFLAG_ flags
+   Boole isPreview;  //is this the preview portal of the tab?
+   Unt flags;        //WFLAG_ flags
 
 ///////////////////////////////////////////////////////////////////
 // === start of cached values ===
@@ -4746,32 +4746,32 @@ struct Portal { //:Portal
 
    // the jumplist contains old cursor positions
    FileMarkExt   jumpList[JUMPLISTSIZE];
-   int jumpListLen;      // number of active entries
-   int jumpListInd;      // current position
-   int changeListInd;   // current position in b_changelist
-   MatchItem* firstMatch;      // head of match list
-   int nextMatchId;   // next match ID
+   int jumpListLen;   //number of active entries
+   int jumpListInd;   //current position
+   int changeListInd; //current position in b_changelist
+   MatchItem* firstMatch; //head of match list
+   int nextMatchId;   //next match ID
 
    // the tagstack grows from 0 upwards:
    // entry 0: older
    // entry 1: newer
    // entry 2: newest
-   Taggy   tagStack[TAGSTACKSIZE];   // the tag stack
-   Unt      tagStackInd;          // idx just below active entry
-   Unt      tagStackLen;          // number of tags on stack
+   Taggy tagStack[TAGSTACKSIZE]; //the tag stack
+   Unt tagStackInd;              //idx just below active entry
+   Unt tagStackLen;              //number of tags on stack
 
    // fraction is the fractional row of the cursor within the window, from
    // 0 at the top row to FRACTION_MULT at the last row.
    // prev_fraction_row was the actual cursor row when fraction was last calculated.
-   int      fraction;
-   int      prevFraction;
+   int fraction;
+   int prevFraction;
 
-   LineNr   lineCountSaved;   // line count when ml_nrwidth_width was computed.
-   long   numWidthCached;      // 'numberwidth' option cached
-   int      charsInLineCount;   // nr of chars to print line count.
+   LineNr lineCountSaved; //line count when ml_nrwidth_width was computed.
+   long numWidthCached;   //@numberwidth option cached
+   int charsInLineCount;  //nr of chars to print line count.
 
-   // Location list reference used in the portal into a location list.
-   // In an ordinary portal, locationStackRef is NULL.
+   //Location list reference used in the portal into a location list.
+   //In an ordinary portal, locationStackRef is NULL.
    LocationStack* locationStackRef;
 };
 
@@ -4913,36 +4913,36 @@ struct JsReader {
    int (*js_fill)(JsReader *);
             //function to fill the buffer or NULL; returns TRUE when the buffer was filled
    void* js_cookie;   // can be used by js_fill
-   int      js_cookie_arg;   // can be used by js_fill
+   int js_cookie_arg;   // can be used by js_fill
 };
 
 // Maximum number of commands from + or -c arguments.
 #define MAX_ARG_CMDS 10
 
 // values for "portalLayout"
-#define WIN_HOR     1       // "-o" horizontally split portals
-#define WIN_VER     2       // "-O" vertically split portals
-#define WIN_TABS    3       // "-p" portals on tabs
+#define WIN_HOR  1 //"-o" horizontally split portals
+#define WIN_VER  2 //"-O" vertically split portals
+#define WIN_TABS 3 //"-p" portals on tabs
 
 // Struct for various parameters passed between main() and other functions.
 typedef struct {
-   int      argc;
+   int argc;
    Arr(Arr(char)) argv;
 
    CS fname;         // first file to edit
 
    CS altInitFile;      // alternative init file name from -u argument
-   int      clean;         // --clean argument
+   int clean;         // --clean argument
 
-   int      n_commands;           // no. of commands from + or -c
-   CS commands[MAX_ARG_CMDS];     // commands from + or -c arg.
-   Byte cmds_tofree[MAX_ARG_CMDS];   // commands that need free()
-   int      n_pre_commands;           // no. of commands from --cmd
-   CS pre_commands[MAX_ARG_CMDS]; // commands from --cmd argument
+   int n_commands;                 //no. of commands from + or -c
+   CS commands[MAX_ARG_CMDS];      //commands from + or -c arg.
+   Byte cmds_tofree[MAX_ARG_CMDS]; //commands that need free()
+   int n_pre_commands;             //no. of commands from --cmd
+   CS pre_commands[MAX_ARG_CMDS];  //commands from --cmd argument
 
-   int      edit_type;      // type of editing to do
-   CS tagname;      // tag from -t argument
-   CS use_ef;      // 'errorfile' from -q argument
+   int edit_type; //type of editing to do
+   CS tagname;    //tag from -t argument
+   CS use_ef;     //@errorfile from -q argument
 
    int want_full_screen;
    int not_a_term;      // no warning for missing term?
@@ -5048,29 +5048,29 @@ typedef enum {
 // Used by block_prep, op_delete and op_yank for blockwise operators.
 // Also op_change, op_shift, op_insert, op_replace - AKelly
 typedef struct BlockDef {
-   int      startspaces;   // 'extra' cols before first char
-   int      endspaces;   // 'extra' cols after last char
-   int      textlen;   // chars in block
-   Byte   *textstart;   // pointer to 1st char (partially) in block
-   ColNr   textcol;   // index of chars (partially) in block
-   ColNr   start_vcol;   // start col of 1st char wholly inside block
-   ColNr   end_vcol;   // start col of 1st char wholly after block
-   int      is_short;   // TRUE if line is too short to fit in block
-   int      is_MAX;      // TRUE if curswant==MAXCOL when starting
-   int      is_oneChar;   // TRUE if block within one character
-   int      pre_whitesp;   // screen cols of ws before block
-   int      pre_whitesp_c;   // chars of ws before block
-   ColNr   end_char_vcols;   // number of vcols of post-block char
-   ColNr   start_char_vcols; // number of vcols of pre-block char
+   int startspaces;   // 'extra' cols before first char
+   int endspaces;   // 'extra' cols after last char
+   int textlen;   // chars in block
+   Byte* textstart;   // pointer to 1st char (partially) in block
+   ColNr textcol;   // index of chars (partially) in block
+   ColNr start_vcol;   // start col of 1st char wholly inside block
+   ColNr end_vcol;   // start col of 1st char wholly after block
+   int is_short;   // TRUE if line is too short to fit in block
+   int is_MAX;      // TRUE if curswant==MAXCOL when starting
+   int is_oneChar;   // TRUE if block within one character
+   int pre_whitesp;   // screen cols of ws before block
+   int pre_whitesp_c;   // chars of ws before block
+   ColNr end_char_vcols;   // number of vcols of post-block char
+   ColNr start_char_vcols; // number of vcols of pre-block char
 } BlockDef;
 
 // Each yank register has an array of pointers to lines.
 typedef struct {
    Arr(Text) y_array;
-   LineNr   y_size;      // number of lines in y_array
-   Byte   y_type;      // MLINE, MCHAR or MBLOCK
-   ColNr   y_width;   // only set if y_type == MBLOCK
-   Tyme   y_time_set;
+   LineNr y_size;      // number of lines in y_array
+   Byte y_type;      // MLINE, MCHAR or MBLOCK
+   ColNr y_width;   // only set if y_type == MBLOCK
+   Tyme y_time_set;
 } YankReg;
 
 // Optional extra arguments for searchit().
@@ -5099,8 +5099,8 @@ typedef struct {
 
 #define WRITEBUFSIZE   8192   // size of normal write buffer
 
-// Magicness of a pattern, used by regexp code.
-// The order and values matter:
+//Magicness of a pattern, used by regexp code.
+//The order and values matter:
 //  magic <= MAGIC_OFF includes MAGIC_NONE
 //  magic >= MAGIC_ON  includes MAGIC_ALL
 typedef enum {
@@ -5115,7 +5115,7 @@ typedef enum {
 // Struct passed to get_v_event() and restore_v_event().
 typedef struct {
    int sve_did_save;
-   EeSet   sve_hashtab;
+   EeSet sve_hashtab;
 } SaveVEvent;
 
 // Enum used by filter(), map(), mapnew() and foreach()
@@ -5130,8 +5130,8 @@ typedef enum {
 typedef struct {
    Portal* curPor;
    Tab* currTab;
-   int      samePortal;       // VIsual_active was not reset
-   int      isVisualActive;
+   int samePortal;       // VIsual_active was not reset
+   int isVisualActive;
 } SwitchPort;
 
 // Argument for lbr_chartabsize().
@@ -5139,10 +5139,10 @@ typedef struct {
    Portal* cts_win;
    Byte* cts_line;      // start of the line
    Byte* cts_ptr;      // current position in line
-   int      cts_bri_size;      // cached size of 'breakindent', or -1 if not computed yet
-   int      cts_text_prop_count;   // number of text props; when zero cts_text_props is not used
+   int cts_bri_size;      // cached size of 'breakindent', or -1 if not computed yet
+   int cts_text_prop_count;   // number of text props; when zero cts_text_props is not used
    TextProp* cts_text_props;   // text props (allocated)
-   char   cts_has_prop_with_text;   // TRUE if a property inserts text
+   char cts_has_prop_with_text;   // TRUE if a property inserts text
    int cts_cur_text_width;   // width of current inserted text
    int cts_prop_lines;      // nr of properties above or below
    int cts_first_char;      // width text props above the line
@@ -5286,9 +5286,9 @@ typedef enum {
 } AllocId;
 
 // Values for "do_profiling".
-#define PROF_NONE    0   // profiling not started
-#define PROF_YES     1   // profiling busy
-#define PROF_PAUSED  2   // profiling paused
+#define PROF_NONE   0 //profiling not started
+#define PROF_YES    1 //profiling busy
+#define PROF_PAUSED 2 //profiling paused
 
 // Codes for mouse button events in lower three bits:
 #define MOUSE_LEFT    0x00

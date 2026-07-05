@@ -13152,7 +13152,7 @@ get_foldtext(
 
            curPor = po;
            curBook = po->book;
-           scriptPosG = po->o.scriptLocs[PORT_foldText];
+           scriptPosG = po->o.scriptLocs[PORTAL_foldText];
 
            ++emsg_off; // handle exceptions, but don't display errors
            text = eval_to_string_safe(po->o.foldText, true);

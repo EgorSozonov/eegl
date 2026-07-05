@@ -5073,34 +5073,33 @@ mf_need_trans(MemFile* mfp) {
 // The "fname" must be in allocated memory, and is consumed (also when an error occurs).
 private void
 mf_do_open(MemFile* mfp, CS fname, Unt flags) {      // flags for open()
-
    mfp->fName = fname;
 
-   // Get the full path name before the open fname cannot be nameBuffG, because it must 
-   // have been allocated.
+   //Get the full path name before the open fname cannot be nameBuffG, because it must 
+   //have been allocated.
    mf_set_ffname(mfp);
 
    //Extra security check: When creating a swap file it really shouldn't
    //exist yet. If there is a symbolic link, this is most likely an attack.
    FileStat sb;
-   if ((flags & O_CREAT) && lstat((char *)mfp->fName, &sb) >= 0) {
+   if ((flags & O_CREAT) != 0 && lstat((char *)mfp->fName, &sb) >= 0) {
       mfp->fd = -1;
       emsg(_(e_swap_file_already_exists_symlink_attack));
    } else {
-      // try to open the file
+      //try to open the file
       flags |= O_EXTRA | O_NOFOLLOW;
       mfp->mf_flags = flags;
       mfp->fd = openRw((char *)mfp->fName, flags);
    }
 
-   // If the file cannot be opened, use memory only
+   //If the file cannot be opened, use memory only
    if (mfp->fd < 0) {
       EE_CLEAR(mfp->fName);
       EE_CLEAR(mfp->fullFName);
    } else {
       int fdflags = fcntl(mfp->fd, F_GETFD);
       if (fdflags >= 0 && (fdflags & FD_CLOEXEC) == 0)
-          (void)fcntl(mfp->fd, F_SETFD, fdflags | FD_CLOEXEC);
+         (void)fcntl(mfp->fd, F_SETFD, fdflags | FD_CLOEXEC);
    }
 }
 

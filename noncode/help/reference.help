@@ -1026,7 +1026,7 @@ matter, include the keyword both the uppercase and lowercase: "if,If,IF".
 Number of screen lines to use for the command-line.  A larger value
 helps avoiding |hit-enter| prompts.
 The value of this option is stored with the tab, so that each tab
-page can have a different value.
+can have a different value.
 
 
 @@commportheight         Global. Numeric. Default =  7

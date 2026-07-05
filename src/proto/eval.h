@@ -207,7 +207,6 @@ void exception_state_save(ExceptionState *estate);
 void exception_state_restore(ExceptionState *estate);
 void exception_state_clear(void);
 void report_make_pending(int pending, void *value);
-int cmd_is_name_only(CS arg);
 void c_eval(Invocation *invo);
 void enter_cleanup(Cleanup *csp);
 void leave_cleanup(Cleanup *csp);

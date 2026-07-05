@@ -3,8 +3,8 @@ bin/*
 # Unixen: object and executable files.
 *.swn
 *.swo
-# Dwarf debug info files
-*.dwo
+
+a.txt
 
 *.o
 

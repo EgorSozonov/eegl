@@ -1237,7 +1237,8 @@ toString(Option* o, SetScope scope) {
          STRCPY(nameBuffG, S"false");
       }
    } ei (ref.tag == OPTION_STRING) {   // P_STRING
-      if (*ref.string != null) {
+      _bp(true);
+      if (*ref.string) {
          if ((o->flags & P_EXPAND) != 0)
             home_replace(*ref.string, nameBuffG, MAXPATHL, false);
          else
@@ -2085,13 +2086,6 @@ printSingleOption(
       if ((len <= INC - GAP && run == 0) || (len > INC - GAP && run == 1))
          items[*item_count++] = o;
    }
-}
-
-//Copy options from one portal to another. Used when portal splittin'
-void
-portCopyOptions(Portal* to, Portal* from) {
-   copyPortOpt(&to->o, &from->o);
-   afterCopyPortOpt(to);
 }
 
 //After copying portal options: update variables depending on options.
@@ -3649,6 +3643,7 @@ updateStringRef(OptionChange* cha) {
 #include "defoption.h"
 #undef OPTIONS_LIST_BOOK
 #undef COPY_STRINGS_TO_BOOK
+
       } else {
       
 #define COPY_STRINGS_TO_PORTAL
@@ -4264,7 +4259,6 @@ private void
 copyGlobalToBookImpl(OUT Book* book) {
    Unt totalLen = calcLocalStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
-   //Sbuf buf UNUSED = sbuf(newCap);
    BookOptions* t = &book->o;
    t->stringOptions = sbuf(newCap);
 
@@ -4278,10 +4272,42 @@ copyGlobalToBookImpl(OUT Book* book) {
       t->scriptLocs[i] = OPTIONS_BOOK[i].scriptPos;
    }
    
-   
    inSetCustomCompletionCbForBook(book);
    inSetOmniCbForBook(book);
    inSetTagCbForBook(book);
+}
+
+//Copy all book options from global to a specific book
+private void
+copyGlobalToPortalImpl(OUT PortalOptions* t) {
+   Unt totalLen = calcLocalStringsLength(OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
+   Unt newCap = calcNewBufferCap(totalLen);
+   t->stringOptions = sbuf(newCap);
+   
+#define COPY_GLOBAL_TO_PORTAL
+#define OPTIONS_LIST_PORTAL
+#include "defoption.h"
+#undef OPTIONS_LIST_PORTAL
+#undef COPY_GLOBAL_TO_PORTAL
+
+   for (Unt i = 0; i < OPTION_PORTAL_COUNT; i++) {
+      t->scriptLocs[i] = OPTIONS_PORTAL[i].scriptPos;
+   }
+}
+
+//Copy options from one portal to another
+void
+optCopyBetweenPortals(OUT Portal* to, Portal* from) {
+   copyGlobalToPortalImpl(&to->o);
+   copyPortOpt(&to->o, &from->o);
+   afterCopyPortOpt(to);
+}
+
+//Copy options from one portal to another
+void
+optCopyGlobalToPortal(OUT Portal* to) {
+   copyGlobalToPortalImpl(&to->o);
+   afterCopyPortOpt(to);
 }
 
 //Free the memory for the callback options of a book.

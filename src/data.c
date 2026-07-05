@@ -11167,7 +11167,7 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
 
    // Make a copy, the option could be changed while calling it.
    CS fex = copyStr(curBook->o.formatExpr);
-   scriptPosG = curBook->o.scriptLocs[PORT_foldExpr];
+   scriptPosG = curBook->o.scriptLocs[PORTAL_foldExpr];
 
    // Evaluate the function.
    int r = (int)eval_to_number(fex, true);

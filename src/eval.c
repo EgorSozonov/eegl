@@ -1146,7 +1146,7 @@ eval_foldexpr(Portal *wp, int *cp) {
    ScriptPos saved_sctx = scriptPosG;
 
    CS arg = skipwhite(wp->o.foldExpr);
-   scriptPosG = wp->o.scriptLocs[PORT_foldExpr];
+   scriptPosG = wp->o.scriptLocs[PORTAL_foldExpr];
 
    ++emsg_off;
    ++textlock;
@@ -5405,8 +5405,8 @@ skipForLines(void *fi_void, EvalCtx *evalarg) {
 //}}}
 //{{{eval variables: functions for dealing with variables
 
-private DictItem   globvars_var;      // variable used for g:
-private Bag      globvardict;      // Dictionary with g: variables
+private DictItem globvars_var;      // variable used for g:
+private Bag globvardict;      // Dictionary with g: variables
 #define globvarht globvardict.hashTable
 
 //Array to hold the value of v: variables.
@@ -5418,7 +5418,6 @@ private Bag      globvardict;      // Dictionary with g: variables
 #define VV_RO       2   // read-only
 
 #define VV_NAME(s, t)  (CS)s, {{t, 0, {0}}, 0, 0, {0}}
-
 
 typedef struct  {
    CS name;     //name of variable, without v:
@@ -5433,105 +5432,105 @@ private EeglVar eeglVars[EV_LEN] = {
    {VV_NAME("count1",       VAR_NUMBER), true},
    {VV_NAME("prevcount",    VAR_NUMBER), true},
    {VV_NAME("errmsg",       VAR_STRING), false},
-   {VV_NAME("warningmsg",    VAR_STRING), false},
+   {VV_NAME("warningmsg",   VAR_STRING), false},
    {VV_NAME("statusmsg",    VAR_STRING), false},
-   {VV_NAME("shell_error",    VAR_NUMBER), true},
-   {VV_NAME("this_session",    VAR_STRING), false},
-   {VV_NAME("lnum",       VAR_NUMBER),  false},
-   {VV_NAME("termresponse",    VAR_STRING),  true},
-   {VV_NAME("fname",       VAR_STRING),  true},
-   {VV_NAME("lang",       VAR_STRING),  true},
-   {VV_NAME("lc_time",       VAR_STRING),  true},
-   {VV_NAME("ctype",       VAR_STRING),  true},
-   {VV_NAME("fname_in",    VAR_STRING),  true},
-   {VV_NAME("fname_out",    VAR_STRING),  true},
-   {VV_NAME("fname_new",    VAR_STRING),  true},
-   {VV_NAME("fname_diff",    VAR_STRING), true},
-   {VV_NAME("cmdarg",       VAR_STRING),  true},
-   {VV_NAME("foldstart",    VAR_NUMBER),  false},
+   {VV_NAME("shell_error",  VAR_NUMBER), true},
+   {VV_NAME("this_session", VAR_STRING), false},
+   {VV_NAME("lnum",         VAR_NUMBER), false},
+   {VV_NAME("termresponse", VAR_STRING), true},
+   {VV_NAME("fname",        VAR_STRING), true},
+   {VV_NAME("lang",         VAR_STRING), true},
+   {VV_NAME("lc_time",      VAR_STRING), true},
+   {VV_NAME("ctype",        VAR_STRING), true},
+   {VV_NAME("fname_in",     VAR_STRING), true},
+   {VV_NAME("fname_out",    VAR_STRING), true},
+   {VV_NAME("fname_new",    VAR_STRING), true},
+   {VV_NAME("fname_diff",   VAR_STRING), true},
+   {VV_NAME("cmdarg",       VAR_STRING), true},
+   {VV_NAME("foldstart",    VAR_NUMBER), false},
    
-   {VV_NAME("foldend",       VAR_NUMBER),  false},
-   {VV_NAME("folddashes",    VAR_STRING),  false},
-   {VV_NAME("foldlevel",    VAR_NUMBER),  false},
-   {VV_NAME("progname",    VAR_STRING),  true},
-   {VV_NAME("servername",    VAR_STRING),  true},
-   {VV_NAME("dying",       VAR_NUMBER),  true},
-   {VV_NAME("exception",    VAR_STRING),  true},
-   {VV_NAME("throwpoint",    VAR_STRING),  true},
-   {VV_NAME("register",    VAR_STRING),  true},
-   {VV_NAME("cmdbang",       VAR_NUMBER),  true},
-   {VV_NAME("insertmode",    VAR_STRING),  true},
-   {VV_NAME("val",       VAR_UNKNOWN),  true},
-   {VV_NAME("key",       VAR_UNKNOWN),  true},
-   {VV_NAME("profiling",    VAR_NUMBER),  true},
-   {VV_NAME("fcs_reason",    VAR_STRING),  true},
-   {VV_NAME("fcs_choice",    VAR_STRING),  false},
-   {VV_NAME("beval_bufnr",    VAR_NUMBER),  true},
-   {VV_NAME("beval_winnr",    VAR_NUMBER),  true},
-   {VV_NAME("beval_winid",    VAR_NUMBER),  true},
-   {VV_NAME("beval_lnum",    VAR_NUMBER),  true},
+   {VV_NAME("foldend",      VAR_NUMBER), false},
+   {VV_NAME("folddashes",   VAR_STRING), false},
+   {VV_NAME("foldlevel",    VAR_NUMBER), false},
+   {VV_NAME("progname",     VAR_STRING), true},
+   {VV_NAME("servername",   VAR_STRING), true},
+   {VV_NAME("dying",        VAR_NUMBER), true},
+   {VV_NAME("exception",    VAR_STRING), true},
+   {VV_NAME("throwpoint",   VAR_STRING), true},
+   {VV_NAME("register",     VAR_STRING), true},
+   {VV_NAME("cmdbang",      VAR_NUMBER), true},
+   {VV_NAME("insertmode",   VAR_STRING), true},
+   {VV_NAME("val",          VAR_UNKNOWN), true},
+   {VV_NAME("key",          VAR_UNKNOWN), true},
+   {VV_NAME("profiling",    VAR_NUMBER), true},
+   {VV_NAME("fcs_reason",   VAR_STRING), true},
+   {VV_NAME("fcs_choice",   VAR_STRING), false},
+   {VV_NAME("beval_bufnr",  VAR_NUMBER), true},
+   {VV_NAME("beval_winnr",  VAR_NUMBER), true},
+   {VV_NAME("beval_winid",  VAR_NUMBER), true},
+   {VV_NAME("beval_lnum",   VAR_NUMBER), true},
    
-   {VV_NAME("beval_col",    VAR_NUMBER),  true},
-   {VV_NAME("beval_text",    VAR_STRING),  true},
-   {VV_NAME("scrollstart",    VAR_STRING),  false},
-   {VV_NAME("swapname",    VAR_STRING),  true},
-   {VV_NAME("swapchoice",    VAR_STRING),  false},
-   {VV_NAME("swapcommand",    VAR_STRING),  true},
-   {VV_NAME("char",       VAR_STRING),  false},
-   {VV_NAME("mouse_win",    VAR_NUMBER),  false},
-   {VV_NAME("mouse_winid",    VAR_NUMBER),  false},
-   {VV_NAME("mouse_lnum",    VAR_NUMBER),  false},
-   {VV_NAME("mouse_col",    VAR_NUMBER),  false},
-   {VV_NAME("operator",    VAR_STRING),  true},
-   {VV_NAME("searchforward",    VAR_NUMBER),  false},
-   {VV_NAME("hlsearch",    VAR_NUMBER),  false},
-   {VV_NAME("oldfiles",    VAR_LIST),  false},
-   {VV_NAME("windowid",    VAR_NUMBER),  true},
-   {VV_NAME("progpath",    VAR_STRING),  true},
-   {VV_NAME("completed_item",    VAR_BAG),  false},
-   {VV_NAME("errors",       VAR_LIST),  false},
-   {VV_NAME("false",       VAR_BOOL),  true},
+   {VV_NAME("beval_col",    VAR_NUMBER), true},
+   {VV_NAME("beval_text",   VAR_STRING), true},
+   {VV_NAME("scrollstart",  VAR_STRING), false},
+   {VV_NAME("swapname",     VAR_STRING), true},
+   {VV_NAME("swapchoice",   VAR_STRING), false},
+   {VV_NAME("swapcommand",  VAR_STRING), true},
+   {VV_NAME("char",         VAR_STRING), false},
+   {VV_NAME("mouse_win",    VAR_NUMBER), false},
+   {VV_NAME("mouse_winid",  VAR_NUMBER), false},
+   {VV_NAME("mouse_lnum",   VAR_NUMBER), false},
+   {VV_NAME("mouse_col",    VAR_NUMBER), false},
+   {VV_NAME("operator",     VAR_STRING), true},
+   {VV_NAME("searchforward", VAR_NUMBER), false},
+   {VV_NAME("hlsearch",     VAR_NUMBER), false},
+   {VV_NAME("oldfiles",     VAR_LIST), false},
+   {VV_NAME("windowid",     VAR_NUMBER), true},
+   {VV_NAME("progpath",     VAR_STRING), true},
+   {VV_NAME("completed_item", VAR_BAG), false},
+   {VV_NAME("errors",       VAR_LIST), false},
+   {VV_NAME("false",        VAR_BOOL), true},
    
-   {VV_NAME("true",       VAR_BOOL),  true},
-   {VV_NAME("none",       VAR_SPECIAL),  true},
-   {VV_NAME("null",       VAR_SPECIAL),  true},
-   {VV_NAME("numbermax",    VAR_NUMBER),  true},
-   {VV_NAME("numbermin",    VAR_NUMBER),  true},
-   {VV_NAME("numbersize",    VAR_NUMBER),  true},
-   {VV_NAME("eegl_did_enter",    VAR_NUMBER),  true},
-   {VV_NAME("testing",       VAR_NUMBER),  false},
-   {VV_NAME("t_number",    VAR_NUMBER),  true},
-   {VV_NAME("t_string",    VAR_NUMBER),  true},
-   {VV_NAME("t_func",       VAR_NUMBER),  true},
-   {VV_NAME("t_list",       VAR_NUMBER),  true},
-   {VV_NAME("t_dict",       VAR_NUMBER),  true},
-   {VV_NAME("t_float",       VAR_NUMBER),  true},
-   {VV_NAME("t_bool",       VAR_NUMBER),  true},
-   {VV_NAME("t_none",       VAR_NUMBER),  true},
-   {VV_NAME("t_job",       VAR_NUMBER),  true},
-   {VV_NAME("t_channel",    VAR_NUMBER),  true},
-   {VV_NAME("t_blob",       VAR_NUMBER),  true},
-   {VV_NAME("termrfgresp",    VAR_STRING),  true},
+   {VV_NAME("true",         VAR_BOOL), true},
+   {VV_NAME("none",         VAR_SPECIAL), true},
+   {VV_NAME("null",         VAR_SPECIAL), true},
+   {VV_NAME("numbermax",    VAR_NUMBER), true},
+   {VV_NAME("numbermin",    VAR_NUMBER), true},
+   {VV_NAME("numbersize",   VAR_NUMBER), true},
+   {VV_NAME("eegl_did_enter", VAR_NUMBER), true},
+   {VV_NAME("testing",      VAR_NUMBER), false},
+   {VV_NAME("t_number",     VAR_NUMBER), true},
+   {VV_NAME("t_string",     VAR_NUMBER), true},
+   {VV_NAME("t_func",       VAR_NUMBER), true},
+   {VV_NAME("t_list",       VAR_NUMBER), true},
+   {VV_NAME("t_dict",       VAR_NUMBER), true},
+   {VV_NAME("t_float",      VAR_NUMBER), true},
+   {VV_NAME("t_bool",       VAR_NUMBER), true},
+   {VV_NAME("t_none",       VAR_NUMBER), true},
+   {VV_NAME("t_job",        VAR_NUMBER), true},
+   {VV_NAME("t_channel",    VAR_NUMBER), true},
+   {VV_NAME("t_blob",       VAR_NUMBER), true},
+   {VV_NAME("termrfgresp",  VAR_STRING), true},
    
-   {VV_NAME("termrbgresp",    VAR_STRING),  true},
-   {VV_NAME("termu7resp",    VAR_STRING),  true},
-   {VV_NAME("termstyleresp",    VAR_STRING),  true},
-   {VV_NAME("termblinkresp",    VAR_STRING),  true},
-   {VV_NAME("event",       VAR_BAG),  true},
-   {VV_NAME("versionlong",    VAR_NUMBER),  true},
-   {VV_NAME("echospace",    VAR_NUMBER),  true},
-   {VV_NAME("argv",       VAR_LIST),  true},
-   {VV_NAME("collate",       VAR_STRING),  true},
-   {VV_NAME("exiting",       VAR_SPECIAL),  true},
-   {VV_NAME("colornames",       VAR_BAG),  true},
-   {VV_NAME("sizeofint",    VAR_NUMBER),  true},
-   {VV_NAME("sizeoflong",    VAR_NUMBER),  true},
-   {VV_NAME("sizeofpointer",    VAR_NUMBER),  true},
-   {VV_NAME("maxcol",       VAR_NUMBER),  true},
-   {VV_NAME("t_enum",       VAR_NUMBER),  true},
-   {VV_NAME("t_enumvalue",    VAR_NUMBER), true},
-   {VV_NAME("stacktrace",    VAR_LIST), true},
-   {VV_NAME("wayland_display",  VAR_STRING),  true},
+   {VV_NAME("termrbgresp",  VAR_STRING), true},
+   {VV_NAME("termu7resp",   VAR_STRING), true},
+   {VV_NAME("termstyleresp", VAR_STRING), true},
+   {VV_NAME("termblinkresp", VAR_STRING), true},
+   {VV_NAME("event",        VAR_BAG), true},
+   {VV_NAME("versionlong",  VAR_NUMBER), true},
+   {VV_NAME("echospace",    VAR_NUMBER), true},
+   {VV_NAME("argv",         VAR_LIST), true},
+   {VV_NAME("collate",      VAR_STRING), true},
+   {VV_NAME("exiting",      VAR_SPECIAL), true},
+   {VV_NAME("colornames",   VAR_BAG), true},
+   {VV_NAME("sizeofint",    VAR_NUMBER), true},
+   {VV_NAME("sizeoflong",   VAR_NUMBER), true},
+   {VV_NAME("sizeofpointer", VAR_NUMBER), true},
+   {VV_NAME("maxcol",       VAR_NUMBER), true},
+   {VV_NAME("t_enum",       VAR_NUMBER), true},
+   {VV_NAME("t_enumvalue",  VAR_NUMBER), true},
+   {VV_NAME("stacktrace",   VAR_LIST), true},
+   {VV_NAME("wayland_display", VAR_STRING), true},
 };
 
 // Type values for type().
@@ -15221,20 +15220,20 @@ report_make_pending(int pending, void *value) {
 //If something pending in a finally clause is resumed at the ":endtry", report
 //it if required by the 'verbose' option or when debugging.
 private void
-report_resume_pending(int pending, void *value) {
+report_resume_pending(int pending, void* value) {
    if (p_verbose >= 14 || debug_break_level > 0) {
       if (debug_break_level <= 0)
-          verbose_enter();
+         verbose_enter();
       report_pending(RP_RESUME, pending, value);
       if (debug_break_level <= 0)
-          verbose_leave();
+         verbose_leave();
     }
 }
 
 //If something pending in a finally clause is discarded, report it if required
-//by the 'verbose' option or when debugging.
+//by the @verbose or when debugging.
 private void
-report_discard_pending(int pending, void *value) {
+report_discard_pending(int pending, void* value) {
    if (p_verbose >= 14 || debug_break_level > 0) {
       if (debug_break_level <= 0)
          verbose_enter();
@@ -15246,41 +15245,6 @@ report_discard_pending(int pending, void *value) {
 
 //}}}
 //{{{if, else
-
-//Return true if "arg" is only a variable, register, environment variable,
-//option name or string.
-int
-cmd_is_name_only(CS arg) {
-   Byte  *p = arg;
-   Byte  *alias = NULL;
-   int       name_only = false;
-
-   if (*p == '@') {
-      ++p;
-      if (*p != ZERO)
-         ++p;
-   } ei (*p == '\'' || *p == '"') {
-      int       r;
-
-      if (*p == '"')
-         r = evalStringLiteral(&p, NULL, false, false);
-      else
-         r = evalRawString(&p, NULL, false, false);
-      if (r == FAIL)
-          return false;
-   } else {
-      if (*p == '&') {
-         ++p;
-         if (STRNCMP("l:", p, 2) == 0 || STRNCMP("g:", p, 2) == 0)
-            p += 2;
-      } ei (*p == '$')
-         ++p;
-      (void)get_name_len(&p, &alias, false, false);
-   }
-   name_only = endsComm(skipwhite(p));
-   eeglFree(alias);
-   return name_only;
-}
 
 //":eval".
 void
