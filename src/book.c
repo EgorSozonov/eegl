@@ -6403,7 +6403,7 @@ endOfName:
                   // copy the file.
                   writeInfo.fd = bfd;
                   writeInfo.bw_buf = copybuf;
-                  while ((writeInfo.bw_len = read_eintr(fd, copybuf, WRITEBUFSIZE)) > 0) {
+                  while ((writeInfo.bw_len = fiReadEintr(fd, copybuf, WRITEBUFSIZE)) > 0) {
                      if (writeBytes(&writeInfo) == FAIL) {
                         errmsg = (CS)_(e_cant_write_to_backup_file_add_bang_to_override);
                         break;
@@ -6782,7 +6782,7 @@ endOfName:
                ) {
                   // copy the file.
                   writeInfo.bw_buf = smallbuf;
-                  while ((writeInfo.bw_len = read_eintr(fd, smallbuf, SMALLBUFSIZE)) > 0) {
+                  while ((writeInfo.bw_len = fiReadEintr(fd, smallbuf, SMALLBUFSIZE)) > 0) {
                      if (writeBytes(&writeInfo) == FAIL)
                         break;
                   } 

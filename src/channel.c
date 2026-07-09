@@ -3832,6 +3832,7 @@ append_ga_line(ArrayList* gap) {
           && !curBook->o.binary
           && ((CS)gap->c)[gap->len - 1] == ENTER)
       --gap->len;
+   _bp(true); 
    ga_append(gap, ZERO);
    ml_append(curPor->cursor.lnum++, gap->c, 0, false);
    gap->len = 0;
@@ -3846,8 +3847,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
    pid_t  wait_pid = 0;
    int status = -1;
    int retval = -1;
-   Byte   **argv = NULL;
-   Byte   *tofree2 = NULL;
+   Byte* tofree2 = NULL;
    int i;
    int pty_master_fd = -1;       // for pty's
    int fd_toshell[2];      // for pipes
@@ -3857,16 +3857,15 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
    int p_more_save;
 
    out_flush();
-   if (options & SHELL_COOKED)
+   if ((options & SHELL_COOKED) != 0)
       termSetMode(TMODE_COOK);      // set to normal mode
    if (tmode == TMODE_RAW)
       // The shell may have messed with the mode, always set it later.
       cur_tmode = TMODE_UNKNOWN;
 
-   if (unix_build_argv(cmd, &argv, extraArg, &tofree2) == FAIL)
-      goto error;
+   Arr(CS) argv = unix_build_argv(cmd, extraArg, OUT &tofree2);
 
-   if ((options & (SHELL_READ|SHELL_WRITE))) {
+   if ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
       pipe_error = (pipe(fd_toshell) < 0);
       if (!pipe_error) {            // pipe create OK
          pipe_error = (pipe(fd_fromshell) < 0);
@@ -3901,17 +3900,15 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
 
          if (ch_log_active()) {
             lo("closing channel log in the child process");
-            ch_logfile((CS)"", (CS)"");
+            ch_logfile(S"", S"");
          }
 
          if (!(options & SHELL_SHOW_MSG) || (options & SHELL_EXPAND)) {
-            int fd;
-
             //Don't want to show any message from the shell. Can't just close stdout and stderr 
             //though, because some systems will break if you try to write to them after that, so 
             //we must use dup() to replace them with something else -- webb
             //Connect stdin to /dev/null too, so ":n `cat`" doesn't hang while waiting for input.
-            fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
+            int fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
             fclose(stdin);
             fclose(stdout);
             fclose(stderr);
@@ -3929,7 +3926,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                // Don't need this now that we've duplicated it
                close(fd);
             }
-         } ei ((options & (SHELL_READ|SHELL_WRITE))) {
+         } ei ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
             //Create our own process group, so that the child and all its children can be 
             //kill()ed. Don't do this when using pipes, because stdin is not a tty, we would 
             //lose /dev/tty.
@@ -3976,24 +3973,19 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
          //This is also used to pipe stdin/stdout to/from the external command.
          if ((options & (SHELL_READ|SHELL_WRITE))) {
 # define BUFLEN 100      // length for buffer, pseudo tty limit is 128
-            Byte      buffer[BUFLEN + 1];
-            int       buffer_off = 0;   // valid bytes in buffer[]
-            Byte      ta_buf[BUFLEN + 1];   // TypeAHead
-            int       ta_len = 0;      // valid bytes in ta_buf[]
-            int       len;
-            int       old_State;
-            int       toshell_fd;
-            int       fromshell_fd;
-            ArrayList    ga;
-            int       noread_cnt;
-            Elapsed   start_tv;
+            Byte buffer[BUFLEN + 1];
+            int buffer_off = 0;   // valid bytes in buffer[]
+            Byte ta_buf[BUFLEN + 1];   // TypeAHead
+            int ta_len = 0;      // valid bytes in ta_buf[]
+            int len;
+            int old_State;
+            int noread_cnt;
+            Elapsed start_tv;
 
-            {
-                close(fd_toshell[0]);
-                close(fd_fromshell[1]);
-                toshell_fd = fd_toshell[1];
-                fromshell_fd = fd_fromshell[0];
-            }
+            close(fd_toshell[0]);
+            close(fd_fromshell[1]);
+            int toshell_fd = fd_toshell[1];
+            int fromshell_fd = fd_fromshell[0];
 
             //Write to the child if there are typed characters. Read from the child if there are 
             //characters available.
@@ -4011,15 +4003,15 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
             old_State = stateG;
             stateG = MODE_EXTERNCMD;   // don't redraw at window resize
 
-            if ((options & SHELL_WRITE) && toshell_fd >= 0) {
+            if ((options & SHELL_WRITE) != 0 && toshell_fd >= 0) {
                // Fork a process that will write the lines to the external program.
                if ((wpid = fork()) == -1) {
                   msg_puts(_("\nCannot fork\n"));
                } ei (wpid == 0) { // child
-                  LineNr    lnum = curBook->opStart.lnum;
-                  Unt       written = 0;
-                  Byte       *lp = ml_get(lnum);
-                  Unt       lplen = (Unt)ml_get_len(lnum);
+                  LineNr lnum = curBook->opStart.lnum;
+                  Unt written = 0;
+                  Byte* lp = ml_get(lnum);
+                  Unt lplen = (Unt)ml_get_len(lnum);
 
                   close(fromshell_fd);
                   for (;;) {
@@ -4060,8 +4052,9 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                }
             }
 
-            if (options & SHELL_READ)
-               ga_init2(&ga, 1, BUFLEN);
+            ArrayList shellResponse;
+            if ((options & SHELL_READ) != 0)
+               ga_init2(&shellResponse, 1, BUFLEN);
 
             noread_cnt = 0;
             ELAPSED_INIT(start_tv);
@@ -4086,49 +4079,49 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                      ELAPSED_INIT(start_tv);
                      len = ui_inchar(ta_buf, BUFLEN, 10L, 0);
                   }
-                 if (ta_len > 0 || len > 0) {
-                   //For pipes:
-                   //Check for CTRL-C: send interrupt signal to child.
-                   //Check for CTRL-D: EOF, close pipe to child.
-                   if (len == 1 && (pty_master_fd < 0 || cmd != NULL)) {
-                      //Send SIGINT to the child's group or all processes in our group.
-                      may_send_sigint(ta_buf[ta_len], pid, wpid);
+                  if (ta_len > 0 || len > 0) {
+                    //For pipes:
+                    //Check for CTRL-C: send interrupt signal to child.
+                    //Check for CTRL-D: EOF, close pipe to child.
+                    if (len == 1 && (pty_master_fd < 0 || cmd != NULL)) {
+                       //Send SIGINT to the child's group or all processes in our group.
+                       may_send_sigint(ta_buf[ta_len], pid, wpid);
 
-                      if (pty_master_fd < 0 && toshell_fd >= 0 && ta_buf[ta_len] == Ctrl_D) {
-                         close(toshell_fd);
-                         toshell_fd = -1;
-                      }
-                   }
-
-                  // Remove Eegl-specific codes from the input.
-                  len = term_replace_keycodes(ta_buf, ta_len, len);
-
-                  //For pipes: echo the typed characters. For a pty this does not seem to work.
-                  if (pty_master_fd < 0) {
-                     for (i = ta_len; i < ta_len + len; ++i) {
-                        if (ta_buf[i] == '\n' || ta_buf[i] == '\b')
-                           msg_putchar(ta_buf[i]);
-                        else
-                           msgTranslatedSlice((Text){ta_buf + i, 1});
+                       if (pty_master_fd < 0 && toshell_fd >= 0 && ta_buf[ta_len] == Ctrl_D) {
+                          close(toshell_fd);
+                          toshell_fd = -1;
+                       }
                      }
-                     windgoto(msgRowG, msgColG);
-                     out_flush();
-                  }
 
-                  ta_len += len;
+                     // Remove Eegl-specific codes from the input.
+                     len = term_replace_keycodes(ta_buf, ta_len, len);
 
-                  //Write the characters to the child, unless EOF has been typed for pipes. Write 
-                  //one character at a time, to avoid losing too much typeahead.
-                  //When writing buffer lines, drop the typed characters (only check for CTRL-C).
-                  if (options & SHELL_WRITE)
-                      ta_len = 0;
-                  ei (toshell_fd >= 0) {
-                     len = write(toshell_fd, (char *)ta_buf, (Unt)1);
-                     if (len > 0) {
-                        ta_len -= len;
-                        MEMMOVE(ta_buf, ta_buf + len, ta_len);
+                     //For pipes: echo the typed characters. For a pty this does not seem to work.
+                     if (pty_master_fd < 0) {
+                        for (i = ta_len; i < ta_len + len; ++i) {
+                           if (ta_buf[i] == '\n' || ta_buf[i] == '\b')
+                              msg_putchar(ta_buf[i]);
+                           else
+                              msgTranslatedSlice((Text){ta_buf + i, 1});
+                        }
+                        windgoto(msgRowG, msgColG);
+                        out_flush();
                      }
-                  }
+
+                     ta_len += len;
+
+                     //Write the characters to the child, unless EOF has been typed for pipes. Write 
+                     //one character at a time, to avoid losing too much typeahead.
+                     //When writing buffer lines, drop the typed characters (only check for CTRL-C).
+                     if ((options & SHELL_WRITE) != 0)
+                        ta_len = 0;
+                     ei (toshell_fd >= 0) {
+                        len = write(toshell_fd, (char *)ta_buf, (Unt)1);
+                        if (len > 0) {
+                           ta_len -= len;
+                           MEMMOVE(ta_buf, ta_buf + len, ta_len);
+                        }
+                     }
                   }
                }
 
@@ -4146,22 +4139,22 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                //TODO: This should handle escape sequences, compatible to some terminal (vt52?).
                ++noread_cnt;
                while (realWaitForChar(fromshell_fd, 10L, NULL, NULL)) {
-                  len = read_eintr(
-                        fromshell_fd, buffer + buffer_off, (Unt)(BUFLEN - buffer_off)
+                  len = fiReadEintr(
+                        fromshell_fd, OUT buffer + buffer_off, (Unt)(BUFLEN - buffer_off)
                   );
                   if (len <= 0)          // end of file or error
                      goto finished;
 
                   noread_cnt = 0;
-                  if (options & SHELL_READ) {
+                  if ((options & SHELL_READ) != 0) {
                      // Do ZERO -> NL translation, append NL separated lines to the current buffer
                      for (i = 0; i < len; ++i) {
                         if (buffer[i] == NL)
-                           append_ga_line(&ga);
+                           append_ga_line(OUT &shellResponse);
                         ei (buffer[i] == ZERO)
-                           ga_append(&ga, NL);
+                           ga_append(&shellResponse, NL);
                         else
-                           ga_append(&ga, buffer[i]);
+                           ga_append(&shellResponse, buffer[i]);
                       }
                   } else {
                      buffer[len] = ZERO;
@@ -4172,13 +4165,13 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                   cursor_on();
                   out_flush();
                   if (gotInterruptG)
-                      break;
+                     break;
 
                   if (wait_pid == 0) {
-                      long   msec = ELAPSED_FUNC(start_tv);
+                     long msec = ELAPSED_FUNC(start_tv);
 
-                     // Avoid that we keep looping here without checking for a CTRL-C for a long time.
-                     // Don't break out too often to avoid losing typeahead.
+                     //Avoid that we keep looping here without checking for a CTRL-C for a long time.
+                     //Don't break out too often to avoid losing typeahead.
                      if (msec > 2000) {
                         noread_cnt = 5;
                         break;
@@ -4213,14 +4206,14 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
             }
       finished:
             p_more = p_more_save;
-            if (options & SHELL_READ) {
-               if (ga.len > 0) {
-                  append_ga_line(&ga);
+            if ((options & SHELL_READ) != 0) {
+               if (shellResponse.len > 0) {
+                  append_ga_line(&shellResponse);
                   // remember that the NL was missing
                   curBook->noEolLnum = curPor->cursor.lnum;
                } else
                   curBook->noEolLnum = 0;
-               ga_clear(&ga);
+               ga_clear(&shellResponse);
             }
 
             // Give all typeahead that wasn't used back to ui_inchar().
@@ -4228,14 +4221,14 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                ui_inBytendo(ta_buf, ta_len);
             stateG = old_State;
             if (toshell_fd >= 0)
-                close(toshell_fd);
+               close(toshell_fd);
             close(fromshell_fd);
          } else {
             long delay_msec = 1;
 
             if (tmode == TMODE_RAW)
-                // Possibly disables modifyOtherKeys, so that the system can recognize CTRL-C.
-                out_str_t_TE();
+               // Possibly disables modifyOtherKeys, so that the system can recognize CTRL-C.
+               out_str_t_TE();
 
             //Similar to the loop above, but only handle X and Wayland events, no I/O.
             for (;;) {
@@ -4303,7 +4296,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
          } else
             msg_puts(_("\nCommand terminated\n"));
       }
-    }
+   }
 
 error:
    if (!did_termSetMode) {
@@ -6588,13 +6581,12 @@ job_to_string_buf(OUT CS builder, Var* varp) {
 
 //Parse "cmd" and return the result in "argvp" which is an allocated array of pointers, the last 
 //one is NULL. The "shellName" and "shcf_tofree" must be later freed by the caller.
-int
-unix_build_argv(CS cmd, Byte*** argvp, CS extraArg, CS* shcf_tofree) {
+Arr(CS)
+unix_build_argv(CS cmd, CS extraArg, OUT CS* shcf_tofree) {
    Byte** argv = NULL;
    int argc;
 
-   mch_parse_cmd(S"bash", true, &argv, &argc);
-   *argvp = argv;
+   Arr(CS) retVal = null;
 
    if (cmd) {
       if (extraArg)
@@ -6616,15 +6608,13 @@ unix_build_argv(CS cmd, Byte*** argvp, CS extraArg, CS* shcf_tofree) {
       argv[argc++] = cmd;
    }
    argv[argc] = NULL;
-   return OK;
+   return retVal;
 }
 
 //Parse "cmd" and put the white-separated parts into "argv". "argv" is an allocated array with 
 //"argc" entries and room for 4 more.
 private void
 mch_parse_cmd(CS cmd, int use_shcf, Byte*** argv, int *argc) {
-   CS d;
-
    //Do this loop twice:
    //1: find number of arguments
    //2: separate them and build argv[]
@@ -6636,7 +6626,7 @@ mch_parse_cmd(CS cmd, int use_shcf, Byte*** argv, int *argc) {
          if (i == 2)
             (*argv)[*argc] = p;
          ++*argc;
-         d = p;
+         CS d = p;
          while (*p != ZERO && (inquote || (*p != ' ' && *p != TAB))) {
             if (p[0] == '"')
                // quotes surrounding an argument and are dropped

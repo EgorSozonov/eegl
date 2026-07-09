@@ -100,7 +100,7 @@ CS eeTempName(int extra_char, int keep);
 int match_file_pat(CS pattern, RegProg **prog, CS fname, CS sfname, CS tail, Boole allow_dirs);
 int match_file_list(CS list, CS sfname, CS ffname);
 CS file_pat_to_reg_pat(CS pat, CS pat_end, Boole *allow_dirs);
-long read_eintr(int fd, void *buf, Unt bufsize);
+Long fiReadEintr(int fd, void *buf, Unt bufsize);
 long write_eintr(int fd, void *buf, Unt bufsize);
 CS get_cmd_output(CS cmd, CS infile, Unt flags, int *ret_len);
 void f_system(Var *argvars, Var *returnVar);

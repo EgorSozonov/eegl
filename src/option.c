@@ -1237,7 +1237,6 @@ toString(Option* o, SetScope scope) {
          STRCPY(nameBuffG, S"false");
       }
    } ei (ref.tag == OPTION_STRING) {   // P_STRING
-      _bp(true);
       if (*ref.string) {
          if ((o->flags & P_EXPAND) != 0)
             home_replace(*ref.string, nameBuffG, MAXPATHL, false);

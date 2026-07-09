@@ -1673,7 +1673,7 @@ get_b0_dict(CS fname, Bag *bag) {
    Block0 b0;
    int fd;
    if ((fd = open((char *)fname, O_RDONLY | O_EXTRA, 0)) >= 0) {
-      if (read_eintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
+      if (fiReadEintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
          if (ml_check_b0_id(&b0) == FAIL)
             bagAddString(bag, S"error", S"Not a swap file");
          ei (b0_magic_wrong(&b0))
@@ -1712,7 +1712,7 @@ swapfile_unchanged(CS fname) {
    if (fd < 0)
       return false;
    Block0   b0;
-   if (read_eintr(fd, OUT &b0, sizeof(b0)) != sizeof(b0)) {
+   if (fiReadEintr(fd, OUT &b0, sizeof(b0)) != sizeof(b0)) {
       close(fd);
       return false;
    }
@@ -3498,7 +3498,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
          // Try to read block 0 from the swap file to get the original file name (and inode number)
          int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
          if (fd >= 0) {
-            if (read_eintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
+            if (fiReadEintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
                // If the swapfile has the same directory as the
                // buffer don't compare the directory names, they can have a different mountpoint.
                if (b0.b0_flags & B0_SAME_DIR) {
@@ -4121,7 +4121,7 @@ swapfile_info(CS fname) {
    int fd = open((char *)fname, O_RDONLY | O_EXTRA, 0);
    Block0   b0;
    if (fd >= 0) {
-      if (read_eintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
+      if (fiReadEintr(fd, &b0, sizeof(b0)) == sizeof(b0)) {
          if (STRNCMP(b0.b0_version, "EEGL 3.0", 7) == 0) {
             msg_puts(_("         [from Eegl version 3.0]"));
          } ei (ml_check_b0_id(&b0) == FAIL) {
@@ -4875,7 +4875,7 @@ mf_read(MemFile* mfp, BlockHeader* hp) {
       PERROR(_(e_seek_error_in_swap_file_read));
       return FAIL;
    }
-   if ((unsigned)read_eintr(mfp->fd, hp->bh_data, size) != size) {
+   if ((unsigned)fiReadEintr(mfp->fd, hp->bh_data, size) != size) {
       PERROR(_(e_read_error_in_swap_file));
       return FAIL;
    }

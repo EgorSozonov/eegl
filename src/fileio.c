@@ -5681,7 +5681,7 @@ readfile(
             } else {
                //Read bytes from the file.
                long read_size = size;
-               size = read_eintr(fd, ptr, read_size);
+               size = fiReadEintr(fd, ptr, read_size);
                // Did we reach end of file?
             }
 
@@ -6472,7 +6472,7 @@ eeCopyfile(CS from, CS to){
 
    CS buf = alloc(WRITEBUFSIZE);
    int n;
-   while ((n = read_eintr(fd_in, buf, WRITEBUFSIZE)) > 0) {
+   while ((n = fiReadEintr(fd_in, buf, WRITEBUFSIZE)) > 0) {
       if (write_eintr(fd_out, buf, n) != n) {
          errmsg = _(e_error_writing_to_str);
          break;
@@ -7429,12 +7429,12 @@ file_pat_to_reg_pat(
 }
 
 //Version of read() that retries when interrupted by EINTR (possibly by a SIGWINCH).
-long
-read_eintr(int fd, void* buf, Unt bufsize) {
-   long ret;
+Long
+fiReadEintr(int fd, OUT void* buf, Unt bufsize) {
+   Long ret;
 
    for (;;) {
-      ret = eeReadFromFile(fd, buf, bufsize);
+      ret = read(fd, (char*)buf, bufsize);
       if (ret >= 0 || errno != EINTR)
          break;
    }

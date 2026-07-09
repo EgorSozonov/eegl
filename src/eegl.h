@@ -1655,7 +1655,6 @@ typedef unsigned short DisplayTick;   // display tick type
 
 #define USE_INPUT_BUF
 
-#define eeReadFromFile(fd, buf, count)   read((fd), (char *)(buf), (Unt) (count))
 #define eeWriteToFile(fd, buf, count)  write((fd), (char *)(buf), (Unt) (count))
 
 //EXTERN is only defined in main.c. That's where global variables are actually defined

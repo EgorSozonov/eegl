@@ -882,14 +882,13 @@ do_bang(
    Boole do_out
 ) {
    CS arg = invo->arg;   // command
-   LineNr      line1 = invo->line1;   // start of range
-   LineNr      line2 = invo->line2;   // end of range
+   LineNr line1 = invo->line1;   // start of range
+   LineNr line2 = invo->line2;   // end of range
    CS newcmd = NULL;      // the new command
    Boole free_newcmd = false;    // need to free() newcmd
    CS t;
    CS p;
-   int         len;
-   int         scroll_save = msg_scroll;
+   int scroll_save = msg_scroll;
 
    if (addr_count == 0) {     // :!
       msg_scroll = false;       // don't scroll here
@@ -903,8 +902,8 @@ do_bang(
 
    //Skip leading white space to avoid a strange error with some shells.
    CS trailarg = skipwhite(arg);
-    do {
-      len = (int)STRLEN(trailarg) + 1;
+   do {
+      int len = (int)STRLEN(trailarg) + 1;
       if (newcmd)
           len += (int)STRLEN(newcmd);
       if (ins_prevcmd) {
@@ -926,25 +925,24 @@ do_bang(
       newcmd = t;
 
       //Scan the rest of the argument for '!', which is replaced by the
-      //previous command.  "\!" is replaced by "!" (this is vi compatible).
+      //previous command.  "\!" is replaced by "!"
       trailarg = NULL;
       while (*p) {
-          if (*p == '!') {
-         if (p > newcmd && p[-1] == '\\')
-             STRMOVE(p - 1, p);
-         else {
-             trailarg = p;
-             *trailarg++ = ZERO;
-             ins_prevcmd = true;
-             break;
+         if (*p == '!') {
+            if (p > newcmd && p[-1] == '\\')
+               STRMOVE(p - 1, p);
+            else {
+               trailarg = p;
+               *trailarg++ = ZERO;
+               ins_prevcmd = true;
+               break;
+            }
          }
-          }
-          ++p;
+         ++p;
       }
    } while (trailarg);
 
-   // Only set "prevcmd" if there is a command to run, otherwise keep te one
-   // we have.
+   // Only set "prevcmd" if there is a command to run, otherwise keep te one we have.
    if (STRLEN(newcmd) > 0) {
       eeglFree(prevcmd);
       prevcmd = newcmd;
@@ -1262,7 +1260,7 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
 
    if (autocmd_busy) {
       if (msg_silent == 0)
-          redraw_later_clear();
+         redraw_later_clear();
    } else {
       //For ":sh" there is no need to call wait_return(), just redraw.
       //Otherwise there is probably text on the screen that the user wants
@@ -12274,7 +12272,7 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
             goto theend;
          } else {
             Byte mbuf[UF_START_MAGIC_LEN];
-            int len = read_eintr(fd, mbuf, UF_START_MAGIC_LEN);
+            int len = fiReadEintr(fd, mbuf, UF_START_MAGIC_LEN);
             close(fd);
             
             if (len < UF_START_MAGIC_LEN || memcmp(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0) {

@@ -314,7 +314,6 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [ ] finish implementing @smoothscroll?
 [ ] "gg" to a line should open all folds this line is in
 [ ] ":ls" should open a popup where jk moves the cursor up/down while hl move the buffers up/down
-[ ] Replace terminfo use with shelling out to infocmp and parsing the result
 [ ] Growable strings (search for `TODO growable string`)
 [+] Remove internet connectivity (channel.c) to massively increase security
 [ ] Replace the "messages" mess with popup portals
@@ -332,6 +331,10 @@ tag.c:do_tag (weird matches is static, also newMatches?)
    The existing @errorformat should be repurposed as a global option that the autocommand can 
    choose to use. But we need separate commands to set the errorformat property for a book, also 
    to set isCode.
+[ ] Replace terminfo use with parsing the terminfo file directly
+[ ] Replace clipboard with shelling out to wl-copy and wl-paste
+[ ] Add MUSL and make the program statically-linked
+
 
    [[[Bugs to fix]]]
 

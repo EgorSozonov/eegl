@@ -100,7 +100,7 @@ void f_startJob(Var *argvars, Var *returnVar);
 void f_job_status(Var *argvars, Var *returnVar);
 void f_job_stop(Var *argvars, Var *returnVar);
 void job_to_string_buf(CS builder, Var *varp);
-int unix_build_argv(CS cmd, Byte ***argvp, CS extraArg, CS *shcf_tofree);
+CS *unix_build_argv(CS cmd, CS extraArg, CS *shcf_tofree);
 void ch_logfile(CS fname, CS opt);
 int ch_log_active(void);
 void f_ch_log(Var *argvars, Var *returnVar);

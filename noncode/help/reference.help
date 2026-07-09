@@ -3130,9 +3130,9 @@ When diff mode is active there always is vertical scroll binding, even when "ver
 
 @@shellcmdflag           Global. String. Default: "-c";
    
-Flag passed to the shell to execute "!" and ":!" commands; e.g., "bash.exe -c ls".
+Flag passed to the shell to execute "!" and ":!" commands; e.g., "bash -c ls".
 It can consist of more than one flag.  Each white space separated
-part is passed as an argument to the shell command.
+part is passed as an argument to the shell command. There must be no quotes.
 See |option-backslash| about including spaces and backslashes.
 
 

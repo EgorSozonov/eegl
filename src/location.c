@@ -100,7 +100,7 @@ struct LocationStack {
 
 private LocationStack *mainStackG;   // points to mainStackG_actual if memory allocation is successful.
 
-private LocationStack locationStacksS[COUNT_LOC_LISTS];
+private LocationStack locationStacksP[COUNT_LOC_LISTS];
 private Unt lastUsedLlIdS = 0;   // Last used location list id
 
 private Boole isMakeRunningS = false; // if a "make" job is in progress, then listId, else -1
@@ -1775,7 +1775,7 @@ ll_free_all(LocationStack** pqi) {
 // Free all the location lists in the stack.
 //private void
 //freeAllLocLists(int stackInd) {
-//   freeAList_list_stack_items(locationStacksS + stackInd);
+//   freeAList_list_stack_items(locationStacksP + stackInd);
 //}
 
 //Delay freeing of location list stacks when the location code is running.
@@ -1930,7 +1930,7 @@ allocateLocList(int n) {
 void
 llInitStacksOnce(void) {
    for (int i = 0; i < COUNT_LOC_LISTS; i++) {
-      LocationStack* st = locationStacksS + i;
+      LocationStack* st = locationStacksP + i;
       st->bufNum = INVALID_LL_BUFNR;
       st->lists = allocateLocList(STACK_CAPACITY);
       st->listcount = 0;
@@ -1943,12 +1943,12 @@ llInitStacksOnce(void) {
 private LocationStack*
 identifyStackByLetter(char letter) {
    switch (letter) {
-   case 'm': return locationStacksS + LOC_LIST_MAKE;
-   case 'g': return locationStacksS + LOC_LIST_GREP;
-   case 'h': return locationStacksS + LOC_LIST_HELP;
-   case 't': return locationStacksS + LOC_LIST_TAGS;
-   case 'b': return locationStacksS + LOC_LIST_BOOKMARKS;
-   case 'c': return locationStacksS + LOC_LIST_CSCOPE;
+   case 'm': return locationStacksP + LOC_LIST_MAKE;
+   case 'g': return locationStacksP + LOC_LIST_GREP;
+   case 'h': return locationStacksP + LOC_LIST_HELP;
+   case 't': return locationStacksP + LOC_LIST_TAGS;
+   case 'b': return locationStacksP + LOC_LIST_BOOKMARKS;
+   case 'c': return locationStacksP + LOC_LIST_CSCOPE;
    default: return NULL;
    }
 }
@@ -2846,7 +2846,7 @@ LocationStack*
 getLocationStack(int ind) {
    if (ind < 0 || ind >= COUNT_LOC_LISTS)
       return NULL;
-   return locationStacksS + ind;   
+   return locationStacksP + ind;   
 }
 
 // Jump to an entry and try to use an existing portal.
@@ -3305,7 +3305,7 @@ llAdjustEntries(
       return;
       
    for (Unt i = 0; i < COUNT_LOC_LISTS; i++) {
-      LocationStack* st = locationStacksS + i;
+      LocationStack* st = locationStacksP + i;
       for (Unt lInd = 0; lInd < st->listcount; ++lInd) {
          LocationList* ll = getList(st, lInd);
 
@@ -4086,9 +4086,9 @@ getGrepAutocommand(CommIndex id) {
 // @makeef contains "##". Return NULL for error.
 private Arr(Byte)
 buildErrorFileName(void) {
-   static int   start = -1;
-   static int   off = 0;
-   FileStat   sb;
+   static int start = -1;
+   static int off = 0;
+   FileStat sb;
 
    CS name;
    if (!p_mef) {
@@ -4115,7 +4115,7 @@ buildErrorFileName(void) {
          off += 19;
 
       name = alloc_id(STRLEN(p_mef) + 30, aid_ll_mef_name);
-      if (name == NULL)
+      if (!name)
          break;
       STRCPY(name, p_mef);
       sprintf((char *)name + (p - p_mef), "%d%d", start, off);
@@ -4130,8 +4130,8 @@ buildErrorFileName(void) {
    return name;
 }
 
-// Form the complete command line to invoke 'make'/'grep'. Quote the command
-// using 'shellquote' and append 'shellpipe'. Echo the fully formed command.
+//Form the complete command line to invoke 'make'/'grep'. Quote and append @shellpipe. Echo the 
+//fully formed command.
 private CS
 buildFullShellCommand(CS makecmd, CS fname) {
    Unt len = STRLEN(makecmd) + 1;
@@ -4209,7 +4209,7 @@ c_elgrep(Invocation* invo) {
       return;
    }
 
-   LocationStack* stack = locationStacksS + LOC_LIST_GREP;
+   LocationStack* stack = locationStacksP + LOC_LIST_GREP;
 
    if (eeglProcessArgs(invo, OUT &args) == FAIL)
       goto theend;
@@ -4317,11 +4317,11 @@ c_grep(Invocation* invo) {
    if (invo->id == C_grepadd)
       newlist = false;
       
-   LocationStack* stack = locationStacksS + LOC_LIST_GREP;
+   LocationStack* stack = locationStacksP + LOC_LIST_GREP;
    int res = llInitFromFile(stack, fname, errorformat, newlist, copyCommandTitle(*invo->commline));
 
-   // Remember the current location list identifier, so that we can
-   // check for autocommands changing the current list.
+   //Remember the current location list identifier, so that we can
+   //check for autocommands changing the current list.
    Unt llIdSaved = getCurrent(stack)->id;
    if (auName)
       applyAutocomms(EVENT_QUICKFIXCMDPOST, auName, curBook->currFileName, true, curBook);
@@ -4373,7 +4373,7 @@ makeFinished() {
       .tag = SOURCE_LIST, .List = (ListSource){.c = makeInProgressS->first}
    };
    initAndUpdateTick(
-      source, OUT locationStacksS + LOC_LIST_MAKE, curBook->o.errorFormat, true, S"make"
+      source, OUT locationStacksP + LOC_LIST_MAKE, curBook->o.errorFormat, true, S"make"
    );
    
    if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
@@ -5369,7 +5369,7 @@ c_vimgrep(Invocation* invo) {
    )
       return;
 
-   LocationStack* stack = locationStacksS + LOC_LIST_GREP;
+   LocationStack* stack = locationStacksP + LOC_LIST_GREP;
 
    VimGrepArgs args;
    if (vimgrepProcessArgs(invo, OUT &args) == FAIL)
@@ -6561,7 +6561,7 @@ llSetRef(int copyId) {
       
    Boole abort = false;
    for (int i = 0; i < COUNT_LOC_LISTS; i++) {
-      abort = abort || markReferencesInStack(locationStacksS + i, copyId);
+      abort = abort || markReferencesInStack(locationStacksP + i, copyId);
       if (abort)
          return true;
    }
@@ -6638,7 +6638,7 @@ c_lbook(Invocation* invo) {
    }
 
    // Must come after autocommands.
-   stack = locationStacksS + LOC_LIST_GREP;
+   stack = locationStacksP + LOC_LIST_GREP;
 
    if (processCbookArgs(invo, OUT &book, &line1, &line2) == FAIL)
       return;
@@ -6710,7 +6710,7 @@ trigger_cexpr_autocmd(int id) {
 
 int
 cexpr_core(Invocation* invo, Var *tv) {
-   LocationStack* stack = locationStacksS + LOC_LIST_GREP;
+   LocationStack* stack = locationStacksP + LOC_LIST_GREP;
 
    if ((tv->tag == VAR_STRING && tv->string) || (tv->tag == VAR_LIST && tv->list)) {
       CS auName = cexpr_get_auname(invo->id);
@@ -6859,7 +6859,7 @@ c_helpgrep(Invocation* invo) {
       return;
    }
 
-   LocationStack* stack = locationStacksS + LOC_LIST_HELP;
+   LocationStack* stack = locationStacksP + LOC_LIST_HELP;
 
    incrementLlBusyness();
 

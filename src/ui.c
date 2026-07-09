@@ -23,7 +23,7 @@
 //dirtyRowStart and dirtyRowEnd.  Once in a while, if the terminal portal is visible, 
 //the screen contents is drawn.
 //
-//When the job ends the text is put in a buffer.  Redrawing then happens from that buffer, 
+//When the job ends, the text is put in a buffer. Redrawing then happens from that buffer, 
 //decorations come from the scrollback buffer scrollback.
 //When the buffer is changed it is turned into a normal buffer, the decorations in scrollback 
 //are no longer used.
@@ -6070,7 +6070,7 @@ vterm_state_focus_out(VTermState *state) {
 //}}}
 //{{{auxiliary functions
 
-// flags for term_start()
+// flags for startSubterminal()
 #define TERM_START_NOJOB   1
 #define TERM_START_FORCEIT 2
 #define TERM_START_SYSTEM  4
@@ -6144,7 +6144,7 @@ struct Terminal {
    int tl_cursor_shape;  // 1: block, 2: underline, 3: bar
    Byte* tl_cursor_color; // NULL or allocated
 
-   Ulong* palette; // array of 16 colors specified by term_start, can be NULL
+   Ulong* palette; // array of 16 colors specified by startSubterminal, can be NULL
    int tl_using_altscreen;
    ArrayList oscBuilder;       // incomplete OSC string
 };
@@ -6164,7 +6164,7 @@ private Terminal *in_terminal_loop = NULL;
 #define FOR_ALL_TERMS(term)   \
     for ((term) = first_term; (term) != NULL; (term) = (term)->next)
 
-private int term_and_job_init(
+private int initSubtermAndJob(
       Terminal *term, Var *argvar, Byte **argv, JobOptions *opt, JobOptions *orig_opt
 );
 private int create_pty_only(Terminal *term, JobOptions *opt);
@@ -6346,8 +6346,8 @@ closeFailedTerminalBook(Book* book, Book* old_curBook) {
 //Start a terminal portal and return its book. Use either "argvar" or "argv", the other must be 
 //NULL. When "flags" has TERM_START_NOJOB only create the buffer, term and open the portal.
 //Return NULL when failed.
-Book*
-term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
+private Book*
+startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
    Invocation splitInvo;
    Portal* old_curPor = curPor;
    Book* curBookSaved = NULL; 
@@ -6566,7 +6566,7 @@ term_start(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
    if (!argv && argvar->tag == VAR_STRING && argvar->string && STRCMP(argvar->string, "NONE") == 0)
       res = create_pty_only(term, opt);
    else
-      res = term_and_job_init(term, argvar, argv, opt, &orig_opt);
+      res = initSubtermAndJob(term, argvar, argv, opt, &orig_opt);
 
    newBook = curBook;
    if (res == OK) {
@@ -6699,12 +6699,10 @@ c_terminal(Invocation* invo) {
    }
 
    if (opt_shell) {
-      Byte** argv = NULL;
       CS tofree2 = NULL;
-
-      // :term ++shell command
-      if (unix_build_argv(cmd, &argv, null, &tofree2) == OK)
-         term_start(NULL, argv, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
+      //:term ++shell command
+      Arr(CS) argv = unix_build_argv(cmd, null, &tofree2);
+      startSubterminal(NULL, argv, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
       eeglFree(argv);
       eeglFree(tofree2);
       goto theend;
@@ -6712,7 +6710,7 @@ c_terminal(Invocation* invo) {
    argvar[0].tag = VAR_STRING;
    argvar[0].string = cmd;
    argvar[1].tag = VAR_UNKNOWN;
-   term_start(argvar, NULL, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
+   startSubterminal(argvar, NULL, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
 
 theend:
    eeglFree(opt.jo_eof_chars);
@@ -6721,7 +6719,7 @@ theend:
 private CS
 get_terminaloname(Expand* xp UNUSED, int idx) {
    // Note: Keep this in sync with c_terminal.
-   static char *(p_termopt_values[]) = {
+   static CS p_termopt_values[] = { SMAP((CS),
       "close",
       "noclose",
       "open",
@@ -6734,11 +6732,11 @@ get_terminaloname(Expand* xp UNUSED, int idx) {
       "cols=",
       "eof=",
       "type=",
-      "api=",
-   };
+      "api="
+   )};
 
    if (idx < (int)ARRAY_LENGTH(p_termopt_values))
-      return (CS)p_termopt_values[idx];
+      return p_termopt_values[idx];
    return NULL;
 }
 
@@ -6746,14 +6744,14 @@ private CS
 get_termkill_name(Expand *xp UNUSED, int idx) {
    // These are platform-specific values used for job_stop(). They are defined
    // in each platform's mch_signal_job(). Just use a unified auto-complete list for simplicity.
-   static char *(p_termkill_values[]) = {
+   static CS p_termkill_values[] = { SMAP((CS),
       "term",
       "hup",
       "quit",
       "int",
       "kill",
-      "winch",
-   };
+      "winch"
+   )};
 
    if (idx < (int)ARRAY_LENGTH(p_termkill_values))
       return (Byte*)p_termkill_values[idx];
@@ -9689,7 +9687,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
       }
    } else
       // Create a new terminal portal.
-      book = term_start(&argvars[0], NULL, &opt, TERM_START_NOJOB);
+      book = startSubterminal(&argvars[0], NULL, &opt, TERM_START_NOJOB);
 
    if (!book || !book->term) {
       goto theend;
@@ -10314,9 +10312,9 @@ f_term_setkill(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 // "term_start(command, options)" function
 void
 f_term_start(Arr(Var) argvars, Var* returnVar) {
-   JobOptions   opt;
-
+   JobOptions opt;
    init_job_options(OUT &opt);
+   
    if (argvars[1].tag != VAR_UNKNOWN
        && get_job_options(&argvars[1], OUT &opt,
             JO_TIMEOUT_ALL + JO_STOPONEXIT
@@ -10330,7 +10328,7 @@ f_term_start(Arr(Var) argvars, Var* returnVar) {
    )
       return;
 
-   Book* book = term_start(&argvars[0], NULL, &opt, 0);
+   Book* book = startSubterminal(&argvars[0], NULL, &opt, 0);
    if (book && book->term)
       returnVar->number = book->fiNum;
 }
@@ -10340,11 +10338,11 @@ f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_wait()");
    if (!book)
       return;
-   if (book->term->job == NULL) {
+   if (!book->term->job) {
       lo("term_wait(): no job to wait for");
       return;
    }
-   if (book->term->job->jv_channel == NULL)
+   if (!book->term->job->jv_channel)
       // channel is closed, nothing to do
       return;
 
@@ -10360,10 +10358,10 @@ f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
 
          ui_delay(10L, false);
          if (!bookIsValid(book))
-            // If the terminal is closed when the channel is closed the buffer disappears.
+            //If the terminal is closed when the channel is closed, the book disappears.
             break;
-         if (book->term == NULL || book->term->isChannelClosing)
-            // came here from a close callback, only wait one time
+         if (!book->term || book->term->isChannelClosing)
+            //came here from a close callback, only wait one time
             break;
       }
 
@@ -10402,7 +10400,7 @@ term_send_eof(Channel* ch) {
 // Create a new terminal of "rows" by "cols" cells. Start job for "cmd".
 // Store the pointers in "term". When "argv" is not NULL then "argvar" is not used. OK or FAIL.
 private int
-term_and_job_init(
+initSubtermAndJob(
 	Terminal* term,
 	Var* argvar,
 	Byte** argv,
