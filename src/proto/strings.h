@@ -1,4 +1,7 @@
 /* src/strings.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 Arena *createArena(void);
 void *allocateOnArena(Unt allocSize, Arena *a);
 void deleteArena(Arena *ar);
@@ -89,8 +92,9 @@ CS skip_to_option_part(CS p);
 CS skipLine(CS s);
 CS copyStr(CS string);
 CS copySubstr(CS string, Unt len);
-Sbuf sbuf(Unt cap);
-void concatToBuf(Text s, Sbuf *buf);
+Polystring polystring(Unt cap);
+void appendToBuf(Text s, Polystring *buf);
+void appendToBufWithSufficientSpace(Text s, Polystring *buf);
 CS copySubstrA(CS string, Unt len, Arena *a);
 Text copyText(Text slice);
 CS copyStrA(CS string, Arena *a);

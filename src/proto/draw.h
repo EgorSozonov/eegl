@@ -1,4 +1,7 @@
 /* src/draw.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void drawInit(void);
 Decoration getPortcolorDeco(Portal *po);
 int screen_get_current_line_off(void);

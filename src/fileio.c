@@ -4894,11 +4894,11 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
 
    // execute the shell command
    lo("mch_expand_wildcards [%s]", command.c);
-   int shellResult = call_shell(command.c, extraArg, shellOpts);
+   PolyWithStatus shellResult = call_shell(command.c, extraArg, shellOpts);
 
    eeglFree(command.c);
 
-   if (shellResult != 0) {           // chCallShell() failed
+   if (shellResult.status != 0) { //chCallShell() failed
       mch_remove(tempname);
       eeglFree(tempname);
    
@@ -7768,8 +7768,8 @@ read_string(FILE* fd, int cnt) {
 //{{{shell interaction
 
 // Call shell. Call chCallShell
-int
-call_shell(CS cmd, NULLABLE CS extraArg, int opt) {
+PolyWithStatus
+call_shell(CS cmd, NULLABLE CS extraArg, Unt opt) {
    if (p_verbose > 3) {
       verbose_enter();
       smsg(_("Calling shell to execute: \"%s\""), cmd ? cmd : S"bash");
@@ -7781,11 +7781,11 @@ call_shell(CS cmd, NULLABLE CS extraArg, int opt) {
    // The external command may update a tags file, clear cached tags.
    tag_freematch();
 
-   int retval = chCallShell(cmd, extraArg, opt);
+   PolyWithStatus retval = chCallShell(cmd, extraArg, opt);
    // Check the portal size, in case it changed while executing the external command.
    shell_resized_check();
 
-   set_EeglVar_nr(VV_SHELL_ERROR, (long)retval);
+   set_EeglVar_nr(VV_SHELL_ERROR, (long)retval.status);
    return retval;
 }
 

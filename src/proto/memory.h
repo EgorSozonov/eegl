@@ -1,4 +1,7 @@
 /* src/memory.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void eeMemProfileDump(void);
 int alloc_does_fail(Unt size);
 void *alloc(Unt size);

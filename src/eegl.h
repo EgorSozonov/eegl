@@ -740,6 +740,22 @@ LIST_TY(Unt)
 )(a, b)
 
 //}}}
+//{{{reference counting
+
+//These macros must only be defined for structs where the first value is an Unt holding the refcount
+#define getRefCount(a) _Generic((a),\
+   Job*: _getRefCount\
+)(a)
+
+#define incRefCount(a) _Generic((a),\
+   Job*: _incRefCount\
+)(a)
+
+#define decRefCount(a) _Generic((a),\
+   Job*: _decRefCount\
+)(a)
+
+//}}}
 //}}}
 
 #include <errno.h>
@@ -752,7 +768,6 @@ LIST_TY(Unt)
 #ifndef PROTO
 #include <stddef.h>
 #endif
-
 
 #include <sys/select.h>
 
@@ -862,20 +877,20 @@ LIST_TY(Unt)
 #define BACKWARD 20
 
 // flags for books
-#define BF_RECOVERED   0x01  // book has been recovered
-#define BF_CHECK_RO    0x02  // need to check readonly when loading file into book (set by ":e",
-                             // may be reset by ":book")
-#define BF_NEVERLOADED 0x04  // file has never been loaded into book,
-                             // many variables still need to be set
-#define BF_NOTEDITED   0x08  // Set when file name is changed after starting to edit, reset when 
-                             // file is written out.
-#define BF_NEW         0x10  // file didn't exist when editing started
-#define BF_NEW_W       0x20  // Warned for BF_NEW and file created
-#define BF_READERR     0x40  // got errors while reading the file 
-#define BF_DUMMY       0x80  // dummy book, only used internally
-#define BF_PRESERVED  0x100  // ":preserve" was used
-#define BF_SYN_SET    0x200  // 'syntax' option was set
-#define BF_NO_SEA     0x400  // no swap_exists_action (ATTENTION prompt)
+#define BF_RECOVERED   0x01 //book has been recovered
+#define BF_CHECK_RO    0x02 //need to check readonly when loading file into book (set by ":e",
+                            //may be reset by ":book")
+#define BF_NEVERLOADED 0x04 //file has never been loaded into book,
+                            //many variables still need to be set
+#define BF_NOTEDITED   0x08 //Set when file name is changed after starting to edit, reset when 
+                            //file is written out.
+#define BF_NEW         0x10 //file didn't exist when editing started
+#define BF_NEW_W       0x20 //Warned for BF_NEW and file created
+#define BF_READERR     0x40 //got errors while reading the file 
+#define BF_DUMMY       0x80 //dummy book, only used internally
+#define BF_PRESERVED  0x100 //":preserve" was used
+#define BF_SYN_SET    0x200 //'syntax' option was set
+#define BF_NO_SEA     0x400 //no swap_exists_action (ATTENTION prompt)
 
 //Mask to check for flags that prevent normal writing
 #define BF_WRITE_MASK   (BF_NOTEDITED + BF_NEW + BF_READERR)
@@ -979,26 +994,26 @@ LIST_TY(Unt)
 #define WILD_FUNC_TRIGGER  0x10000 // called from wildtrigger()
 
 // Flags for expand_wildcards()
-#define EW_DIR          0x01    // include directory names
-#define EW_FILE         0x02   // include file names
-#define EW_NOTFOUND     0x04  // include not found names
-#define EW_ADDSLASH     0x08  // append slash to directory name
-#define EW_KEEPALL      0x10   // keep all matches
-#define EW_SILENT       0x20    // don't print "1 returned" from shell
-#define EW_EXEC         0x40   // executable files
-#define EW_PATH         0x80   // search in 'path' too
-#define EW_ICASE       0x100    // ignore case
-#define EW_NOERROR     0x200  // no error for bad regexp
-#define EW_NOTWILD     0x400  // add match with literal name if exists
-#define EW_KEEPDOLLAR  0x800 // do not escape $, $var is expanded
+#define EW_DIR          0x01  //include directory names
+#define EW_FILE         0x02  //include file names
+#define EW_NOTFOUND     0x04  //include not found names
+#define EW_ADDSLASH     0x08  //append slash to directory name
+#define EW_KEEPALL      0x10  //keep all matches
+#define EW_SILENT       0x20  //don't print "1 returned" from shell
+#define EW_EXEC         0x40  //executable files
+#define EW_PATH         0x80  //search in 'path' too
+#define EW_ICASE       0x100  //ignore case
+#define EW_NOERROR     0x200  //no error for bad regexp
+#define EW_NOTWILD     0x400  //add match with literal name if exists
+#define EW_KEEPDOLLAR  0x800  //do not escape $, $var is expanded
 // Note: mostly EW_NOTFOUND and EW_SILENT are mutually exclusive: EW_NOTFOUND
 // is used when executing commands and EW_SILENT for interactive expanding.
-#define EW_ALLLINKS   0x1000  // also links not pointing to existing file
-#define EW_SHELLCMD   0x2000  // called from expand_shellcmd(), don't check if executable in $PATH
-#define EW_DODOT      0x4000  // also files starting with a dot
-#define EW_EMPTYOK    0x8000  // no matches is not an error
-#define EW_NOTENV    0x10000 // do not expand environment variables
-#define EW_CDPATH    0x20000 // search in 'cdpath' too
+#define EW_ALLLINKS   0x1000  //also links not pointing to existing file
+#define EW_SHELLCMD   0x2000  //called from expand_shellcmd(), don't check if executable in $PATH
+#define EW_DODOT      0x4000  //also files starting with a dot
+#define EW_EMPTYOK    0x8000  //no matches is not an error
+#define EW_NOTENV    0x10000  //do not expand environment variables
+#define EW_CDPATH    0x20000  //search in 'cdpath' too
 
 // Flags for find_file_*() functions.
 #define FINDFILE_FILE  0  // only files
@@ -1022,45 +1037,45 @@ LIST_TY(Unt)
 #define ACTION_EXPAND   5
 
 // Values for 'options' argument in do_search() and searchit()
-#define SEARCH_REV    0x01  // go in reverse of previous dir.
-#define SEARCH_ECHO   0x02  // echo the search command and handle options
-#define SEARCH_MSG    0x0c  // give messages (yes, it's not 0x04)
-#define SEARCH_NFMSG  0x08  // give all messages except not found
-#define SEARCH_OPT    0x10  // interpret optional flags
-#define SEARCH_HIS    0x20  // put search pattern in history
-#define SEARCH_END    0x40  // put cursor at end of match
-#define SEARCH_NOOF   0x80  // don't add offset to position
-#define SEARCH_START 0x100  // start search without col offset
-#define SEARCH_MARK  0x200  // set previous context mark
-#define SEARCH_KEEP  0x400  // keep previous search pattern
-#define SEARCH_PEEK  0x800  // peek for typed char, cancel search
-#define SEARCH_COL  0x1000  // start at specified column instead of zero
+#define SEARCH_REV    0x01  //go in reverse of previous dir.
+#define SEARCH_ECHO   0x02  //echo the search command and handle options
+#define SEARCH_MSG    0x0c  //give messages (yes, it's not 0x04)
+#define SEARCH_NFMSG  0x08  //give all messages except not found
+#define SEARCH_OPT    0x10  //interpret optional flags
+#define SEARCH_HIS    0x20  //put search pattern in history
+#define SEARCH_END    0x40  //put cursor at end of match
+#define SEARCH_NOOF   0x80  //don't add offset to position
+#define SEARCH_START 0x100  //start search without col offset
+#define SEARCH_MARK  0x200  //set previous context mark
+#define SEARCH_KEEP  0x400  //keep previous search pattern
+#define SEARCH_PEEK  0x800  //peek for typed char, cancel search
+#define SEARCH_COL  0x1000  //start at specified column instead of zero
 
 // Values for find_ident_under_cursor()
-#define FIND_IDENT   1 // find identifier (word)
-#define FIND_STRING  2 // find any string (WORD)
-#define FIND_EVAL    4 // include "->", "[]" and "."
-#define FIND_NOERROR 8 // no error when no word found
+#define FIND_IDENT   1 //find identifier (word)
+#define FIND_STRING  2 //find any string (WORD)
+#define FIND_EVAL    4 //include "->", "[]" and "."
+#define FIND_NOERROR 8 //no error when no word found
 
 // Values for file_name_in_line()
-#define FNAME_MESS   1 // give error message
-#define FNAME_EXP    2 // expand to path
-#define FNAME_HYP    4 // check for hypertext link
-#define FNAME_INCL   8 // apply 'includeexpr'
-#define FNAME_REL   16 // ".." and "./" are relative to the (current)
-                       // file instead of the current directory
-#define FNAME_UNESC 32 // remove backslashes used for escaping
+#define FNAME_MESS   1 //give error message
+#define FNAME_EXP    2 //expand to path
+#define FNAME_HYP    4 //check for hypertext link
+#define FNAME_INCL   8 //apply 'includeexpr'
+#define FNAME_REL   16 //".." and "./" are relative to the (current)
+                       //file instead of the current directory
+#define FNAME_UNESC 32 //remove backslashes used for escaping
 
 // Values for buflist_getfile()
-#define GETF_SETMARK 0x01   // set pcmark before jumping
-#define GETF_ALT     0x02   // jumping to alternate file (not buf num)
-#define GETF_SWITCH  0x04   // respect 'switchbuf' settings when jumping
+#define GETF_SETMARK 0x01   //set pcmark before jumping
+#define GETF_ALT     0x02   //jumping to alternate file (not buf num)
+#define GETF_SWITCH  0x04   //respect 'switchbuf' settings when jumping
 
 // Return values of getfile()
-#define GETFILE_ERROR       1   // normal error
-#define GETFILE_NOT_WRITTEN 2   // "not written" error
-#define GETFILE_SAME_FILE   0   // success, same file
-#define GETFILE_OPEN_OTHER (-1)   // success, opened another file
+#define GETFILE_ERROR       1   //normal error
+#define GETFILE_NOT_WRITTEN 2   //"not written" error
+#define GETFILE_SAME_FILE   0   //success, same file
+#define GETFILE_OPEN_OTHER (-1) //success, opened another file
 #define GETFILE_UNUSED       8
 #define GETFILE_SUCCESS(x)  ((x) <= 0)
 
@@ -1103,15 +1118,15 @@ LIST_TY(Unt)
 #define NODE_OTHER    2  //non-writable thing (e.g., block device)
 
 // Values for readfile() flags
-#define READ_NEW        0x01   //read a file into a new book
-#define READ_FILTER     0x02   //read filter output
-#define READ_STDIN      0x04   //read from stdin
-#define READ_BOOK       0x08   //read from curBook (converting stdin)
-#define READ_DUMMY      0x10   //reading into a dummy book
-#define READ_KEEP_UNDO  0x20   //keep undo info
-#define READ_FIFO       0x40   //read from fifo or socket
-#define READ_NOWINENTER 0x80   //do not trigger BufWinEnter
-#define READ_NOFILE    0x100   //do not read a file, do trigger BufReadCmd
+#define READ_NEW        0x01 //read a file into a new book
+#define READ_FILTER     0x02 //read filter output
+#define READ_STDIN      0x04 //read from stdin
+#define READ_BOOK       0x08 //read from curBook (converting stdin)
+#define READ_DUMMY      0x10 //reading into a dummy book
+#define READ_KEEP_UNDO  0x20 //keep undo info
+#define READ_FIFO       0x40 //read from fifo or socket
+#define READ_NOWINENTER 0x80 //do not trigger BufWinEnter
+#define READ_NOFILE    0x100 //do not read a file, do trigger BufReadCmd
 
 // Values for change_indent()
 #define INDENT_SET   1 //set indent
@@ -1119,31 +1134,31 @@ LIST_TY(Unt)
 #define INDENT_DEC   3 //decrease indent
 
 // Values for flags argument for findmatchlimit()
-#define FM_BACKWARD   0x01   // search backwards
-#define FM_FORWARD    0x02   // search forwards
-#define FM_BLOCKSTOP  0x04   // stop at start/end of block
-#define FM_SKIPCOMM   0x08   // skip comments
+#define FM_BACKWARD  0x01   //search backwards
+#define FM_FORWARD   0x02   //search forwards
+#define FM_BLOCKSTOP 0x04   //stop at start/end of block
+#define FM_SKIPCOMM  0x08   //skip comments
 
 // Values for action argument for bookDo() and closeBook()
-#define DOBOOK_GOTO       0   // go to specified book
-#define DOBOOK_SPLIT      1   // split portal and go to specified book
-#define DOBOOK_UNLOAD     2   // unload specified book(s)
-#define DOBOOK_DEL        3   // delete specified book(s) from buflist
+#define DOBOOK_GOTO      0  //go to specified book
+#define DOBOOK_SPLIT     1  //split portal and go to specified book
+#define DOBOOK_UNLOAD    2  //unload specified book(s)
+#define DOBOOK_DEL       3  //delete specified book(s) from buflist
 
 
-#define DOBOOK_WIPE       4   // delete specified book(s) really
-#define DOBOOK_WIPE_REUSE 5   // like DOBUF_WIPE and keep number for reuse
+#define DOBOOK_WIPE       4 //delete specified book(s) really
+#define DOBOOK_WIPE_REUSE 5 //like DOBUF_WIPE and keep number for reuse
 
 // Values for flags argument of bookDo()
-#define DOBOOK_FORCEIT   1   // :cmd!
-#define DOBOOK_NOPOPUP   2   // skip popup portal books
-#define DOBOOK_SKIPHELP  4   // skip or keep help books depending on kind of the starting book
+#define DOBOOK_FORCEIT  1  //:cmd!
+#define DOBOOK_NOPOPUP  2  //skip popup portal books
+#define DOBOOK_SKIPHELP 4  //skip or keep help books depending on kind of the starting book
 
 // Values for start argument for bookDo()
-#define DOBOOK_CURRENT 0   // "count" book from current book
-#define DOBOOK_FIRST   1   // "count" book from first book
-#define DOBOOK_LAST    2   // "count" book from last book
-#define DOBOOK_MOD     3   // "count" mod. book from current book
+#define DOBOOK_CURRENT 0   //"count" book from current book
+#define DOBOOK_FIRST   1   //"count" book from first book
+#define DOBOOK_LAST    2   //"count" book from last book
+#define DOBOOK_MOD     3   //"count" mod. book from current book
 
 // Values for sub_cmd and which_pat argument for search_regcomp()
 // Also used for which_pat argument for searchit()
@@ -1225,40 +1240,40 @@ LIST_TY(Unt)
 #define INSCHAR_COM_LIST 16   //format comments with list/2nd line indent
 
 // flags for openLine()
-#define OPENLINE_DELSPACES    0x01    // delete spaces after cursor
-#define OPENLINE_DO_COM       0x02    // format comments
-#define OPENLINE_KEEPTRAIL    0x04    // keep trailing spaces
-#define OPENLINE_MARKFIX      0x08    // fix mark positions
-#define OPENLINE_COM_LIST     0x10    // format comments with list/2nd line indent
-#define OPENLINE_FORMAT       0x20    // formatting long comment
-#define OPENLINE_FORCE_INDENT 0x40    // use second_line_indent without indent logic
+#define OPENLINE_DELSPACES    0x01 //delete spaces after cursor
+#define OPENLINE_DO_COM       0x02 //format comments
+#define OPENLINE_KEEPTRAIL    0x04 //keep trailing spaces
+#define OPENLINE_MARKFIX      0x08 //fix mark positions
+#define OPENLINE_COM_LIST     0x10 //format comments with list/2nd line indent
+#define OPENLINE_FORMAT       0x20 //formatting long comment
+#define OPENLINE_FORCE_INDENT 0x40 //use second_line_indent without indent logic
 
 // Values for do_tag().
-#define DT_TAG     1   // jump to newer position or same tag again
-#define DT_POP     2   // jump to older position
-#define DT_NEXT    3   // jump to next match of same tag
-#define DT_PREV    4   // jump to previous match of same tag
-#define DT_FIRST   5   // jump to first match of same tag
-#define DT_LAST    6   // jump to first match of same tag
-#define DT_SELECT  7   // jump to selection from list
-#define DT_HELP    8   // like DT_TAG, but no wildcards
-#define DT_JUMP    9   // jump to new tag or selection from list
-#define DT_CSCOPE 10   // cscope find command (like tjump)
-#define DT_LTAG   11   // tag using location list
-#define DT_FREE   99   // free cached matches
+#define DT_TAG     1   //jump to newer position or same tag again
+#define DT_POP     2   //jump to older position
+#define DT_NEXT    3   //jump to next match of same tag
+#define DT_PREV    4   //jump to previous match of same tag
+#define DT_FIRST   5   //jump to first match of same tag
+#define DT_LAST    6   //jump to first match of same tag
+#define DT_SELECT  7   //jump to selection from list
+#define DT_HELP    8   //like DT_TAG, but no wildcards
+#define DT_JUMP    9   //jump to new tag or selection from list
+#define DT_CSCOPE 10   //cscope find command (like tjump)
+#define DT_LTAG   11   //tag using location list
+#define DT_FREE   99   //free cached matches
 
 // flags for find_tags().
-#define TAG_HELP         1   // only search for help tags
-#define TAG_NAMES        2   // only return name of tag
-#define TAG_REGEXP       4   // use tag pattern as regexp
-#define TAG_NOIC         8   // don't always ignore case
-#define TAG_CSCOPE      16   // cscope tag
-#define TAG_VERBOSE     32   // message verbosity
-#define TAG_INS_COMP    64   // Currently doing insert completion
-#define TAG_KEEP_LANG  128   // keep current language
-#define TAG_NO_TAGFUNC 256   // do not use 'tagfunc'
+#define TAG_HELP         1   //only search for help tags
+#define TAG_NAMES        2   //only return name of tag
+#define TAG_REGEXP       4   //use tag pattern as regexp
+#define TAG_NOIC         8   //don't always ignore case
+#define TAG_CSCOPE      16   //cscope tag
+#define TAG_VERBOSE     32   //message verbosity
+#define TAG_INS_COMP    64   //Currently doing insert completion
+#define TAG_KEEP_LANG  128   //keep current language
+#define TAG_NO_TAGFUNC 256   //do not use 'tagfunc'
 
-#define TAG_MANY       300   // When finding many tags (for completion), find up to this many tags
+#define TAG_MANY       300   //When finding many tags (for completion), find up to this many tags
 
 //Types of dialogs passed to do_dialog().
 #define EE_GENERIC   0
@@ -1276,15 +1291,15 @@ LIST_TY(Unt)
 #define EE_DISCARDALL 6
 
 // arguments for win_split()
-#define WSP_ROOM        0x01    //require enough room
-#define WSP_VERT        0x02    //split/equalize vertically
-#define WSP_HOR         0x04    //equalize horizontally
-#define WSP_TOP         0x08    //portal at top-left of shell
-#define WSP_BOT         0x10    //portal at bottom-right of shell
-#define WSP_HELP        0x20    //creating the help portal
-#define WSP_BELOW       0x40    //put new portal below/right
-#define WSP_ABOVE       0x80    //put new portal above/left
-#define WSP_NEWLOC     0x100    //don't copy location list
+#define WSP_ROOM        0x01 //require enough room
+#define WSP_VERT        0x02 //split/equalize vertically
+#define WSP_HOR         0x04 //equalize horizontally
+#define WSP_TOP         0x08 //portal at top-left of shell
+#define WSP_BOT         0x10 //portal at bottom-right of shell
+#define WSP_HELP        0x20 //creating the help portal
+#define WSP_BELOW       0x40 //put new portal below/right
+#define WSP_ABOVE       0x80 //put new portal above/left
+#define WSP_NEWLOC     0x100 //don't copy location list
 #define WSP_FORCE_ROOM 0x200 //ignore "not enough room" errors
 
 // flags for check_changed()
@@ -1314,49 +1329,49 @@ LIST_TY(Unt)
 #define SEA_READONLY 4   //no dialog, mark book as read-only
 
 // Special values for current_sctx.sc_sid.
-#define SID_CMDARG    (-2)   // for "--cmd" argument
-#define SID_CARG      (-3)   // for "-c" argument
-#define SID_ENV       (-4)   // for sourcing environment variable
-#define SID_ERROR     (-5)   // option was reset because of an error
-#define SID_NONE      (-6)   // don't set scriptID
-#define SID_WINLAYOUT (-7)   // changing window size
+#define SID_CMDARG    (-2)   //for "--cmd" argument
+#define SID_CARG      (-3)   //for "-c" argument
+#define SID_ENV       (-4)   //for sourcing environment variable
+#define SID_ERROR     (-5)   //option was reset because of an error
+#define SID_NONE      (-6)   //don't set scriptID
+#define SID_WINLAYOUT (-7)   //changing window size
 
 // Events for autocommands. Must be kept in sync with "autocmd.c:autoEvents".
 enum AutoEvent {
-   EVENT_BUFADD = 0,      // after adding a book to the book list
-   EVENT_BUFCREATE,       // UNUSED: BufCreate == BufAdd
-   EVENT_BUFDELETE,       // deleting a book from the book list
-   EVENT_BUFENTER,        // after entering a book
-   EVENT_BUFFILEPOST,     // after renaming a book
-   EVENT_BUFFILEPRE,      // before renaming a book
-   EVENT_BUFHIDDEN,       // just after book becomes hidden
-   EVENT_BUFLEAVE,        // before leaving a book
-   EVENT_BUFNEW,          // after creating any book
-   EVENT_BUFNEWFILE,      // when creating a book for a new file
-   EVENT_BUFREAD,         // UNUSED: BufRead == BufReadPost
-   EVENT_BUFREADCMD,      // read book using command
-   EVENT_BUFREADPOST,     // after reading a book
-   EVENT_BUFREADPRE,      // before reading a book
-   EVENT_BUFUNLOAD,       // just before unloading a book
-   EVENT_BUFWINENTER,     // after showing a book in a portal
-   EVENT_BUFWINLEAVE,     // just after book removed from portal
-   EVENT_BUFWIPEOUT,      // just before really deleting a book
-   EVENT_BUFWRITE,        // UNUSED: BufWrite == BufWritePost
-   EVENT_BUFWRITECMD,     // write book using command
-   EVENT_BUFWRITEPOST,    // after writing a book
-   EVENT_BUFWRITEPRE,     // before writing a book
-   EVENT_CMDUNDEFINED,    // command undefined
-   EVENT_COMMPORTENTER,   // after entering the command portal
-   EVENT_COMMPORTLEAVE,   // before leaving the command portal
-   EVENT_COMPLETECHANGED, // after completion popup menu changed
-   EVENT_COMPLETEDONE,    // after finishing insert complete
-   EVENT_COMPLETEDONEPRE, // idem, before clearing info
-   EVENT_CURSORHOLD,      // cursor in same position for a while
-   EVENT_CURSORHOLDI,     // idem, in Insert mode
-   EVENT_DIFFUPDATED,     // after diffs were updated
-   EVENT_DIRCHANGED,      // after user changed directory
-   EVENT_DIRCHANGEDPRE,   // before directory changes
-   EVENT_EXITPRE,         // before exiting
+   EVENT_BUFADD = 0,      //after adding a book to the book list
+   EVENT_BUFCREATE,       //UNUSED: BufCreate == BufAdd
+   EVENT_BUFDELETE,       //deleting a book from the book list
+   EVENT_BUFENTER,        //after entering a book
+   EVENT_BUFFILEPOST,     //after renaming a book
+   EVENT_BUFFILEPRE,      //before renaming a book
+   EVENT_BUFHIDDEN,       //just after book becomes hidden
+   EVENT_BUFLEAVE,        //before leaving a book
+   EVENT_BUFNEW,          //after creating any book
+   EVENT_BUFNEWFILE,      //when creating a book for a new file
+   EVENT_BUFREAD,         //UNUSED: BufRead == BufReadPost
+   EVENT_BUFREADCMD,      //read book using command
+   EVENT_BUFREADPOST,     //after reading a book
+   EVENT_BUFREADPRE,      //before reading a book
+   EVENT_BUFUNLOAD,       //just before unloading a book
+   EVENT_BUFWINENTER,     //after showing a book in a portal
+   EVENT_BUFWINLEAVE,     //just after book removed from portal
+   EVENT_BUFWIPEOUT,      //just before really deleting a book
+   EVENT_BUFWRITE,        //UNUSED: BufWrite == BufWritePost
+   EVENT_BUFWRITECMD,     //write book using command
+   EVENT_BUFWRITEPOST,    //after writing a book
+   EVENT_BUFWRITEPRE,     //before writing a book
+   EVENT_CMDUNDEFINED,    //command undefined
+   EVENT_COMMPORTENTER,   //after entering the command portal
+   EVENT_COMMPORTLEAVE,   //before leaving the command portal
+   EVENT_COMPLETECHANGED, //after completion popup menu changed
+   EVENT_COMPLETEDONE,    //after finishing insert complete
+   EVENT_COMPLETEDONEPRE, //idem, before clearing info
+   EVENT_CURSORHOLD,      //cursor in same position for a while
+   EVENT_CURSORHOLDI,     //idem, in Insert mode
+   EVENT_DIFFUPDATED,     //after diffs were updated
+   EVENT_DIRCHANGED,      //after user changed directory
+   EVENT_DIRCHANGEDPRE,   //before directory changes
+   EVENT_EXITPRE,         //before exiting
    EVENT_FILEAPPENDCMD,   //append to a file using command
    EVENT_FILEAPPENDPOST,  //after appending to a file
    EVENT_FILEAPPENDPRE,   //before appending to a file
@@ -1412,10 +1427,10 @@ enum AutoEvent {
    EVENT_TERMRESPONSEALL, //after setting terminal response vars
    EVENT_TEXTYANKPOST,    //after some text was yanked
    EVENT_USER,            //user defined autocommand
-   EVENT_EEGLENTER,        //after starting Eegl
-   EVENT_EEGLLEAVE,        //before exiting Eegl
-   EVENT_EEGLLEAVEPRE,     //before exiting Eegl and writing .eeglinfo
-   EVENT_EEGLRESIZED,      //after Eegl window was resized
+   EVENT_EEGLENTER,       //after starting Eegl
+   EVENT_EEGLLEAVE,       //before exiting Eegl
+   EVENT_EEGLLEAVEPRE,    //before exiting Eegl and writing .eeglinfo
+   EVENT_EEGLRESIZED,     //after Eegl window was resized
    EVENT_WINCLOSED,       //after closing a portal
    EVENT_PORTENTER,       //after entering a portal
    EVENT_PORTLEAVE,       //before leaving a portal
@@ -1429,9 +1444,9 @@ enum AutoEvent {
 
 typedef enum AutoEvent AutoEvent;
 
-#define AUGROUP_DEFAULT  (4000000000) // default autocomm group
-#define AUGROUP_ERROR    (4000000001) // erroneous autocomm group
-#define AUGROUP_ALL      (4000000002) // all autocomm groups
+#define AUGROUP_DEFAULT  (4000000000) //default autocomm group
+#define AUGROUP_ERROR    (4000000001) //erroneous autocomm group
+#define AUGROUP_ALL      (4000000002) //all autocomm groups
 
 //Values for index in highlight_attr[]. When making changes, also update HL_FLAGS below!
 //And update the default value of 'highlight': HIGHLIGHT_INIT in option.c
@@ -1477,18 +1492,17 @@ typedef enum AutoEvent AutoEvent;
 #define HLF_TPL     37 //tabpanel
 #define HLF_TPLS    38 //tabpanel selected
 #define HLF_TPLF    39 //tabpanel filler
-#define HLF_MC      41 //'colorcolumn'
-#define HLF_QFL     42 //location portal line currently selected
-#define HLF_ST      43 //status lines of terminal windows
-#define HLF_STNC    44 //status lines of not-current terminal portals
-#define HLF_TERMR   45 //status lines of not-current terminal portals
-#define HLF_TERMG   46 //status lines of not-current terminal portals
-#define HLF_TERMB   47 //status lines of not-current terminal portals
-#define HLF_MSG     48 //message area
-#define HLF_8       49 //Meta & special keys listed with ":map", text that is displayed different
-#define HLF_N       50 //line number for ":number" and ":#" commands
-#define HLF_LNA     51 //LineNrAbove
-#define HLF_LNB     52 //LineNrBelow
+#define HLF_QFL     40 //location portal line currently selected
+#define HLF_ST      41 //status lines of terminal windows
+#define HLF_STNC    42 //status lines of not-current terminal portals
+#define HLF_TERMR   43 //status lines of not-current terminal portals
+#define HLF_TERMG   44 //status lines of not-current terminal portals
+#define HLF_TERMB   45 //status lines of not-current terminal portals
+#define HLF_MSG     46 //message area
+#define HLF_8       47 //Meta & special keys listed with ":map", text that is displayed different
+#define HLF_N       48 //line number for ":number" and ":#" commands
+#define HLF_LNA     49 //LineNrAbove
+#define HLF_LNB     50 //LineNrBelow
 
 typedef enum {
    OVERLAY_DECO_NONE,
@@ -2080,7 +2094,7 @@ DEFINE_SLICE_HEADER(Ulong)
 
 //}}}
 
-EXTERN Sbuf globalStringOptionsG;      //Storage for all the global string options
+EXTERN Polystring globalStringOptionsG;      //Storage for all the global string options
 
 
 // Position in file or book.
@@ -2123,7 +2137,6 @@ declStruct(Callback);
 //}}}
 //{{{data structures
 
-
 #define get(needle, d) _Generic((needle),\
    CS: _Generic((d),\
                DictStringInt128*: get_DictStringInt128\
@@ -2153,6 +2166,11 @@ typedef struct {
    CS c;
    int len;
 } ErrBuilder;
+
+typedef struct {
+   Polystring c;
+   int status;
+} PolyWithStatus;
 
 
 //}}}
@@ -2323,7 +2341,7 @@ typedef enum {
 } PortOption;
 
 
-EXTERN Sbuf portalStringOptionsG;      //Storage for all the string options
+EXTERN Polystring portalStringOptionsG;      //Storage for all the string options
 
 //All portal-local options. Also used in PortInfo.
 typedef struct {
@@ -2340,7 +2358,7 @@ typedef struct {
    int diffSaved; // options were saved for starting diff mode
    int wrapSaved;   // @wrap state saved for diff mode
    ScriptPos scriptLocs[OPTION_PORTAL_COUNT];   // script locations for portal-local options
-   Sbuf stringOptions;      //Storage for all the string options
+   Polystring stringOptions;      //Storage for all the string options
 } PortalOptions;
 
 
@@ -2967,9 +2985,9 @@ typedef struct {
 // Argument list: Array of file names.
 // Used for the global argument list and the argument lists local to a window.
 typedef struct {
-   ArrayList   al_ga;      // growarray with the array of file names
-   int      al_refcount;   // number of windows using this arglist
-   int      id;      // id of this arglist
+   ArrayList al_ga;      // growarray with the array of file names
+   int al_refcount;   // number of windows using this arglist
+   int id;      // id of this arglist
 } EeArgList;
 
 //For each argument remember the file name as it was given, and the book number that contains 
@@ -3318,7 +3336,7 @@ struct List {
    List* copyList;   // copied list used by deepcopy()
    List* usedNext;   // next list in used lists list
    List* usedPrev;   // previous list in used lists list
-   int refcount;   // reference count
+   Unt refCount;   // reference count
    int len;      // number of items
    int withItems;   // number of items following this struct that should not be freed
    int copyId;   // ID used by deepcopy()
@@ -3364,7 +3382,7 @@ typedef struct {
 struct Bag {
    Byte lock;   // zero, VAR_LOCKED, VAR_FIXED
    Byte scope;   // zero, VAR_SCOPE, VAR_DEF_SCOPE
-   int refcount;   // reference count
+   Unt refCount;   // reference count
    int copyId;   // ID used by deepcopy()
    EeSet hashTable;   // hashtab that refers to the items
    TypeSpec* ty;   // current type, allocated by alloc_type()
@@ -3376,7 +3394,7 @@ struct Bag {
 // Structure to hold info about a blob.
 struct Blob {
    ArrayList c; // growarray with the data
-   int refcount; // reference count
+   Unt refCount; // reference count
    char lock;    // zero, VAR_LOCKED, VAR_FIXED
 };
 
@@ -3398,17 +3416,17 @@ struct UserFunc {
    ArrayList   defaultArgs;   // default argument expressions
    int uf_args_visible; // normally uf_args.len, less when compiling default argument expression.
 
-   Byte   *uf_va_name;   // name from "...name" or NULL
-   TypeSpec   *uf_va_type;   // type from "...name: type" or NULL
-   int      uf_block_depth;   // nr of entries in uf_block_ids
-   int      *uf_block_ids;   // blocks a :def function is defined inside
+   Byte* uf_va_name;   // name from "...name" or NULL
+   TypeSpec* uf_va_type;   // type from "...name: type" or NULL
+   int uf_block_depth;   // nr of entries in uf_block_ids
+   int* uf_block_ids;   // blocks a :def function is defined inside
 
    ArrayList   lines;   // function lines
 
    int      uf_debug_tick;   // when last checked for a breakpoint in this function.
    int      uf_has_breakpoint;  // TRUE when a breakpoint has been set in this function.
    ScriptPos scriptCtx;   // SCTX where function was defined, used for s: variables;
-   int      refcount;   // reference count, see func_name_refcount()
+   Unt      refCount;   // reference count, see func_name_refcount()
 
    FnCall   *uf_scoped;   // l: local variables for closure
 
@@ -3466,8 +3484,8 @@ struct FnCall {
             // list pointed to by previous_funccal.
 
    // for closure
-   int      refcount;   // number of user functions that reference this funccal
-   int      copyId;   // for garbage collection
+   Unt refCount;   // number of user functions that reference this funccal
+   int copyId;   // for garbage collection
    ArrayList   fc_ufuncs;   // list of UserFunc* which keep a reference to "fc_func"
 };
 
@@ -3622,20 +3640,8 @@ typedef struct {
                       //error that a variable is not callable.
 } FnExe;
 
-// Structure to hold the variables declared in a loop that are possibly used in a closure.
-declStruct(LoopVars);
-struct LoopVars {
-   LoopVars* lvs_next;   // linked list at "first_loopvars"
-   LoopVars* lvs_prev;
-
-   ArrayList lvs_ga;     // contains the variables
-   int lvs_refcount;     // nr of closures referencing this loopvars
-   int lvs_min_refcount; // nr of closures on this loopvars
-   int lvs_copyID;       // for garbage collection
-};
-
 struct PartiallyApplied {
-   int refcount; //reference count
+   Unt refCount; //reference count
    Boole isAuto; //when TRUE the partial is for using dict.member in handle_subscript()
    CS name;      //function name; when NULL use pt_func->uf_name
    UserFunc* fn; //function pointer; when NULL lookup function with pt_name
@@ -3751,19 +3757,19 @@ typedef struct timeval Elapsed;
 
 // The per-fd info for a channel.
 typedef struct {
-   Socket   ch_fd;       // socket/stdin/stdout/stderr, -1 if not used
+   Socket ch_fd;       // socket/stdin/stdout/stderr, -1 if not used
 
-   ChannelMode   ch_mode;
-   JobIoMode   ch_io;
-   int      ch_timeout;   // request timeout in msec
+   ChannelMode ch_mode;
+   JobIoMode ch_io;
+   int ch_timeout;   // request timeout in msec
 
-   ReadChunk   head;   // header for circular raw read queue
-   JsonQ   ch_json_head;   // header for circular json read queue
-   ArrayList   ch_block_ids;   // list of IDs that channel_read_json_block() is waiting for
+   ReadChunk head;   // header for circular raw read queue
+   JsonQ ch_json_head;   // header for circular json read queue
+   ArrayList ch_block_ids;   // list of IDs that channel_read_json_block() is waiting for
    // When ch_wait_len is non-zero use deadline to wait for incomplete message to be complete. 
    // The value is the length of the incomplete message when the deadline was set.  If it gets 
    // longer (something was received) the deadline is reset.
-   Unt   ch_wait_len;
+   Unt ch_wait_len;
    TimeVal deadline;
    int ch_block_write; // for testing: 0 when not used, -1 when write
                        // does not block, 1 simulate blocking
@@ -3783,39 +3789,36 @@ typedef struct {
 } ChannelFd;
 
 struct Channel {
-   Channel   *next;
-   Channel   *prev;
+   Channel* next;
+   Channel* prev;
 
-   int      id;      // ID of the channel
-   int      lastMsgId;   // ID of the last message
-
+   int id;      // ID of the channel
+   int lastMsgId;   // ID of the last message
+   CS socketName;      //Unix domain socket name
    ChannelFd fds[PART_COUNT]; // info for socket, out, err and in
-   int      writeTextMode; // write book lines with CR, not NL
+   int writeTextMode; // write book lines with CR, not NL
 
-   CS ch_hostname;   // only for socket, allocated
-   int      ch_port;   // only for socket
-
-   int      ch_to_be_closed; // bitset of readable fds to be closed.
+   Boole ch_to_be_closed; // bitset of readable fds to be closed.
             // When all readable fds have been closed, set to (1 << PART_COUNT).
-   int      ch_to_be_freed; // When TRUE channel must be freed when it's safe to invoke callbacks
-   int      error;   // When TRUE an error was reported.  Avoids giving pages full of error 
-                        // messages when the other side has exited, only mention the first error 
-                        // until the connection works again.
+   Boole ch_to_be_freed; // When TRUE, channel must be freed when it's safe to invoke callbacks
+   int error;   //When TRUE an error was reported.  Avoids giving pages full of error 
+                //messages when the other side has exited, only mention the first error 
+                //until the connection works again.
 
-   Callback   ch_callback;   // call when any msg is not handled
-   Callback   ch_close_cb;   // call when channel is closed
-   int      ch_drop_never;
-   int      ch_keep_open;   // do not close on read error
-   int      ch_nonblock;
+   Callback ch_callback;   // call when any msg is not handled
+   Callback ch_close_cb;   // call when channel is closed
+   int ch_drop_never;
+   int ch_keep_open;   // do not close on read error
+   int ch_nonblock;
 
    Job* job;   // Job that uses this channel; this does not count as a reference to avoid a 
                   // circular reference, the job refers to the channel.
-   int  ch_job_killed;   // TRUE when there was a job and it was killed or we know it died.
-   int  ch_anonymous_pipe;  // ConPTY
-   int  isBeingKilled;       // TerminateJobObject() was called
+   int ch_job_killed;   // TRUE when there was a job and it was killed or we know it died.
+   int ch_anonymous_pipe;  // ConPTY
+   int isBeingKilled;       // TerminateJobObject() was called
 
-   int  refcount;   // reference count
-   int  copyId;
+   Unt refCount;   // reference count
+   int copyId;
 };
 
 #define JO_MODE           0x0001   // channel mode
@@ -3965,28 +3968,7 @@ typedef enum {
    JOB_FINISHED,   // job done and cleanup done
 } JobStatus;
 
-// Structure to hold info about an async shell Job
-struct Job {
-   Job   *jv_next;
-   Job   *jv_prev;
-   pid_t   jv_pid;
-   JobStatus jv_status;
-   Byte   *jv_tty_in;   // controlling tty input, allocated
-   Byte   *jv_tty_out;   // controlling tty output, allocated
-   Byte   *jv_stoponexit;   // allocated
-   Byte   *jv_termsig;   // allocated
-   int      jv_exitval;
-   void (*nativeCb)(void); // native C function to call when the job finishes
-   Callback   jv_exit_cb;
-
-   Book* inBook;   // book from "in-name"
-
-   int      jv_refcount;   // reference count
-   int      jv_copyID;
-
-   Channel* jv_channel;   // channel for I/O, reference counted
-   Byte   **jv_argv;   // command line used to start the job
-};
+typedef pid_t ProId;
 
 //}}}
 //{{{garbage collection
@@ -4215,7 +4197,7 @@ typedef enum {
 
 } BookOption;
 
-EXTERN Sbuf bookStringOptionsG;      //Storage for all the string options
+EXTERN Polystring bookStringOptionsG;      //Storage for all the string options
 
 // They're here because their value depends on the type or contents of the file being edited
 typedef struct {
@@ -4237,7 +4219,7 @@ typedef struct {
    
    Boole initialized;   //set when all options were initialized
    ScriptPos scriptLocs[OPTION_BOOK_COUNT]; // script locations for all book-local options
-   Sbuf stringOptions;      //Storage for all the string options
+   Polystring stringOptions;      //Storage for all the string options
 } BookOptions;
 
 //}}} end of book-local options
@@ -5174,7 +5156,7 @@ typedef struct {
    Boole wasValueChecked;
    //Option value changed.  Used for the @filetype and @syntax options.
    Boole wasValueChanged;
-   Sbuf* buf; // Buffer for all the string options
+   Polystring* buf; // Buffer for all the string options
    ErrBuilder errb;
 } OptionChange;
 

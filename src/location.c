@@ -90,7 +90,7 @@ struct LocationStack {
    // When a location list portal reference this list, refcount
    // will be 2. Otherwise, refcount will be 1. When refcount
    // reaches 0, the list is freed.
-   int refcount;
+   Unt refCount;
    Unt listcount;       // current number of lists
    Unt currList;       // current error list
    Unt cap;        // maximum number of lists
@@ -1763,8 +1763,8 @@ ll_free_all(LocationStack** pqi) {
       return;
    }
 
-   stack->refcount--;
-   if (stack->refcount < 1) {
+   stack->refCount--;
+   if (stack->refCount < 1) {
       // No references to this location list. If the location portal buffer is loaded, then wipe it
       wipeLlBook(stack);
 
@@ -3520,7 +3520,7 @@ openNewPortal(LocationStack* stack, int height) {
    //For the location list portal, create a reference to the
    //location list stack from the portal 'port'.
    curPor->locationStackRef = stack;
-   stack->refcount++;
+   stack->refCount++;
 
    if (oldPort != curPor)
       oldPort = NULL;  // don't store info when in another portal
@@ -3882,7 +3882,7 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
       bagAddNumber(d, S"id", (long)ll->id);
       bagAddNumber(d, S"start_idx", start_idx);
       bagAddNumber(d, S"end_idx", end_idx);
-      ++d->refcount;
+      ++d->refCount;
       args[0].tag = VAR_BAG;
       args[0].bag = d;
 
@@ -3890,7 +3890,7 @@ callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_
       if (call_callback(cb, 0, &returnVar, 1, args) != FAIL) {
          if (returnVar.tag == VAR_LIST) {
             qftf_list = returnVar.list;
-            qftf_list->refcount++;
+            qftf_list->refCount++;
          }
          clearVar(&returnVar);
       }
@@ -5719,7 +5719,7 @@ getList_from_lines(Bag* specifics, DictItem* di, OUT Bag* retBag) {
    LocationStack* stack = ALLOC_CLEAR_ONE_ID(LocationStack, aid_ll_module);
 	if (!stack)
       return FAIL;
-   stack->refcount++;
+   stack->refCount++;
    stack->bufNum = INVALID_LL_BUFNR;
    stack->lists = allocateLocList(STACK_CAPACITY);
    if (stack->lists == NULL) {

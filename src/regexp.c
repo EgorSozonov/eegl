@@ -2298,7 +2298,7 @@ reg_submatch_list(int no) {
       list_free(list);
       return NULL;
     }
-    ++list->refcount;
+    ++list->refCount;
     return list;
 }
 

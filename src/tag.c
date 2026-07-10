@@ -1071,7 +1071,7 @@ find_tagfunc_tags(
    if (buf_ffname)
       bagAddString(d, S"buf_ffname", buf_ffname);
 
-    ++d->refcount;
+    ++d->refCount;
     args[2].tag = VAR_BAG;
     args[2].bag = d;
 
@@ -1087,7 +1087,7 @@ find_tagfunc_tags(
     result = call_callback(curBook->o.tagFn, 0, &returnVar, 3, args);
     curPor->cursor = save_pos;   // restore the cursor position
     check_cursor();         // make sure cursor position is valid
-    --d->refcount;
+    --d->refCount;
 
    if (result == FAIL)
       return FAIL;
@@ -3293,7 +3293,7 @@ typedef struct csi {
    CS fname;     //cscope db name
    CS ppath;     //path to prepend (the -P option)
    CS flags;     //additional cscope flags/options (e.g, -p2)
-   pid_t pid;    //PID of the connected cscope process.
+   ProId pid;    //PID of the connected cscope process.
    dev_t st_dev; //ID of dev containing cscope db
    ino_t st_ino; //inode number of cscope db
 
@@ -4811,7 +4811,7 @@ cs_release_csp(int i, int freefnpp) {
    {
    int waitpid_errno;
    int pstat;
-   pid_t pid;
+   ProId pid;
 
    struct sigaction sa, old;
 

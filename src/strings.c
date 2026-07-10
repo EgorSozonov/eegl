@@ -2794,25 +2794,45 @@ copySubstr(CS string, Unt len) {
    return p;
 }
 
-Sbuf
-sbuf(Unt cap) {
+Polystring
+polystring(Unt cap) {
    if (cap > 0) {
-      CS c = malloc(cap + 1);
+      CS c = alloc(cap + 1);
       c[cap] = ZERO;
-      return (Sbuf){.c = c, .len = 0, .cap = cap};
+      return (Polystring){.c = c, .len = 0, .cap = cap};
    } else {
-      return (Sbuf){.c = null, .len = 0, .cap = 0};
+      return (Polystring){.c = null, .len = 0, .cap = 0};
    }
 }
 
-//Write a string to buffer. Precondition: the buffer has sufficient space
+//Append a string to polystring.
 void
-concatToBuf(Text s, OUT Sbuf* buf) {
-   if (s.len > 0) {
-      memcpy(buf->c + buf->len, s.c, s.len);
-      buf->c[buf->len + s.len] = ZERO;
-      buf->len += s.len + 1;
+appendToBuf(Text s, OUT Polystring* buf) {
+   if (s.len == 0) {
+      return;
+   } 
+   if (s.len + buf->len > buf->cap) {
+      Unt newCap = MAX(buf->cap * 2, buf->cap + 2*s.len);
+      CS newCont = alloc(newCap);
+      if (buf->len > 0) {
+         memcpy(newCont, buf->c, buf->len);
+         eeglFree(buf->c);
+      } 
+      buf->c = newCont;
+      buf->cap = newCap;
    }
+   memcpy(buf->c + buf->len, s.c, s.len);
+   buf->c[buf->len + s.len] = ZERO;
+   buf->len += s.len + 1;
+}
+
+
+//Write a string to buffer. Preconditions: string is not empty, the buffer has sufficient space
+void
+appendToBufWithSufficientSpace(Text s, OUT Polystring* buf) {
+   memcpy(buf->c + buf->len, s.c, s.len);
+   buf->c[buf->len + s.len] = ZERO;
+   buf->len += s.len + 1;
 }
 
 // Copy up to "len" bytes of "string" into the arena and terminate with a ZERO.

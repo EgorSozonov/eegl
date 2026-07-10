@@ -196,21 +196,20 @@ private char *(hiliteGroupStrings[]) = {
    "TabpanelSelected link=None",   // HLF_TPLS  tabpanel selected
    "TabpanelFill link=None",       // HLF_TPLF  tabpanel filler
    "CursorLine  bg=444",             // HLF_CUL  'cursorline'
-   "ColorColumn link=None",        // HLF_MC   'colorcolumn'
    "LocationPortalSelected link=PmenuSelectedItem", //HLF_QFL   location portal line currently 
                                                     //selected
    "TerminalStatusLine link=None", // 50 HLF_ST    status lines of terminal portals
    "TerminalNoncurrentStatusLine link=None", //HLF_STNC  status lines of not-current terminal 
                                                //portals
-   "TerminalRed fg=regular1",        // HLF_TERMR  status lines of not-current terminal portals
-   "TerminalGreen fg=bright2",       // HLF_TERMG  status lines of not-current terminal portals
-   "TerminalBlue fg=bright4",        // HLF_TERMB  status lines of not-current terminal portals
-   "MessageArea link=None",        // HLF_MSG   message area
-   "MetaSpecialKeys link=None",    // HLF_8 Meta & special keys listed with ":map", text that is 
-                                     // displayed different
-   "LineNr fg=regular3",             // HLF_N   line number for ":number" and ":#" commands
-   "LineNrAbove link=None",        // HLF_LNA  LineNrAbove
-   "LineNrBelow link=None",        // HLF_LNB  LineNrBelow
+   "TerminalRed fg=regular1",      //HLF_TERMR  status lines of not-current terminal portals
+   "TerminalGreen fg=bright2",     //HLF_TERMG  status lines of not-current terminal portals
+   "TerminalBlue fg=bright4",      //HLF_TERMB  status lines of not-current terminal portals
+   "MessageArea link=None",        //HLF_MSG   message area
+   "MetaSpecialKeys link=None",    //HLF_8 Meta & special keys listed with ":map", text that is 
+                                   //   displayed different
+   "LineNr fg=regular3",           //HLF_N   line number for ":number" and ":#" commands
+   "LineNrAbove link=None",        //HLF_LNA  LineNrAbove
+   "LineNrBelow link=None",        //HLF_LNB  LineNrBelow
    "Directory fg=bright6",
    "CursorLineNr deco=bold fg=regular3",
    "MoreMsg deco=bold fg=143",
@@ -263,19 +262,19 @@ private DictStringInt128* hiNames;
 private Arena* a;
 
 
-// Return the name of a hilite group.
+//Return the name of a hilite group.
 private Text
 hiliteGroupName(Short hiId) {
    return hilites[hiId].name;
 }
 
-// Return the ID of the link in a hilite group.
+//Return the ID of the link in a hilite group.
 int
 highlight_link_id(Short hiId) {
    return hilites[hiId].link;
 }
 
-// Store group names from hiliteGroupStrings into hiNames. Initialize names of hilite groups
+//Store group names from hiliteGroupStrings into hiNames. Initialize names of hilite groups
 private void
 initializeGroups(void) {
    Int count = 0;

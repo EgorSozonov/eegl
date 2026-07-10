@@ -631,6 +631,22 @@ mch_exit(int r) {
    exit(r);
 }
 
+void
+_incRefCount(void* a) {
+   (*((Unt*)a))++;
+}
+
+void
+_decRefCount(void* a) {
+   (*((Unt*)a))--;
+}
+
+Unt
+_getRefCount(void* a) {
+   return *((Unt*)a);
+}
+
+
 //}}}
 //{{{memline
 
@@ -5364,9 +5380,7 @@ garbage_collect(int testing) {
       // named functions (matters for closures)
       || set_ref_in_functions(copyID)
       // function call arguments, if v:testing is set.
-      || set_ref_in_func_args(copyID)
-      // loopvars keep variables for loop blocks
-      || set_ref_in_loopvars(copyID);
+      || set_ref_in_func_args(copyID);
 
     // v: vars
     abort = abort 
@@ -5626,33 +5640,26 @@ set_ref_in_item_partial(
 
    for (int i = 0; i < pt->argc; ++i)
       abort = abort || set_ref_in_item(&pt->argv[i], copyID, ht_stack, list_stack);
-   // pt_loopvars is handled in set_ref_in_loopvars()
 
    return abort;
 }
 
 // Mark the job "pt" with "copyID". Also see set_ref_in_item().
 private Boole
-set_ref_in_item_job(
-   Job* job,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-) {
-   Var    dtv;
-
-   if (job == NULL || job->jv_copyID == copyID)
+set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack) {
+   if (!job || chJobGetCopyId(job) == copyID)
       return false;
 
-   job->jv_copyID = copyID;
-   if (job->jv_channel != NULL) {
+   chJobSetCopyId(job, copyID);
+   Var dtv;
+   if (chJobGetChannel(job)) {
       dtv.tag = VAR_CHANNEL;
-      dtv.channel = job->jv_channel;
+      dtv.channel = chJobGetChannel(job);
       set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
    }
-   if (job->jv_exit_cb.cb_partial != NULL) {
+   if (chJobGetExitCb(job).cb_partial != NULL) {
       dtv.tag = VAR_PARTIAL;
-      dtv.partial = job->jv_exit_cb.cb_partial;
+      dtv.partial = chJobGetExitCb(job).cb_partial;
       set_ref_in_item(&dtv, copyID, ht_stack, list_stack);
    }
 
@@ -5661,15 +5668,10 @@ set_ref_in_item_job(
 
 // Mark the channel "ch" with "copyID". Also see set_ref_in_item().
 private Boole
-set_ref_in_item_channel(
-   Channel* ch,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-) {
+set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack) {
    Var    dtv;
 
-   if (ch == NULL || ch->copyId == copyID)
+   if (!ch || ch->copyId == copyID)
       return false;
 
    ch->copyId = copyID;
@@ -5708,12 +5710,7 @@ set_ref_in_item_channel(
 //
 // Return true if setting references failed somehow.
 int
-set_ref_in_item(
-   Var* tv,
-   int copyID,
-   HtStack** ht_stack,
-   ListStack** list_stack
-){
+set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack){
    Boole abort = false;
 
    switch (tv->tag) {

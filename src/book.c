@@ -189,7 +189,7 @@ updateLinesFromVars(
       CHECK_LIST_MATERIALIZE(l);
       li = l->first;
    } else
-      line = typval_tostring(lines, false);
+      line = daStringOfVar(lines, false);
 
    // default result is zero == OK
    for (;;) {
@@ -198,7 +198,7 @@ updateLinesFromVars(
          if (!li)
             break;
          eeglFree(line);
-         line = typval_tostring(&li->c, false);
+         line = daStringOfVar(&li->c, false);
          li = li->next;
       }
 

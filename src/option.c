@@ -576,8 +576,8 @@ checkIllegalPathNames(Option* o, OptionRef ref) {
    );
 }
 
-private Sbuf*
-getSbuf(Option* o, SetScope setScope) {
+private Polystring*
+getPolystring(Option* o, SetScope setScope) {
    if (setScope == SET_GLOBAL) {
       if ((o->flags & P_GLOBAL) != 0) {
          return &globalStringOptionsG;
@@ -621,7 +621,7 @@ setStringImpl(
       cha.setScope = setScope;
       cha.oldVal.string = oldVal;
       cha.newVal.string = newVal;
-      cha.buf = getSbuf(o, setScope);
+      cha.buf = getPolystring(o, setScope);
       if (setter) { // normal option updatin'
          //Invoke the option specific callback to validate and apply the new option value.
          errmsg = setter(&cha);
@@ -2099,7 +2099,7 @@ afterCopyPortOpt(Portal* po) {
 }
 
 private CS
-copyOptionVal(OUT Sbuf* buf, CS val) {
+copyOptionVal(OUT Polystring* buf, CS val) {
    if (!val)
       return null;  // no need to allocate memory
    int len = STRLEN(val) + 1;
@@ -3571,10 +3571,10 @@ calcLocalStringsLength(Arr(Option) opts, Unt count) {
 
 //String defaults -> a global buffer
 private void
-copyDefaultsToGlobalStringValues(OUT Sbuf* bui, Arr(Option) opts, Unt count) {
+copyDefaultsToGlobalStringValues(OUT Polystring* bui, Arr(Option) opts, Unt count) {
    Unt totalLen = calcDefaultStringValuesLen(opts, count);
    Unt newCap = calcNewBufferCap(totalLen);
-   *bui = sbuf(newCap);
+   *bui = polystring(newCap);
    
    CS wr = bui->c;
    
@@ -3659,7 +3659,7 @@ updateStringRef(OptionChange* cha) {
       if (cha->buf == &globalStringOptionsG) {
          Unt totalLen = calcGlobalStringValuesLen() + newLen - oldLen;
          Unt newCap = calcNewBufferCap(totalLen);
-         Sbuf buf = sbuf(newCap);
+         Polystring buf = polystring(newCap);
          
          CS wr = buf.c;
          Option* o UNUSED;
@@ -3691,7 +3691,7 @@ updateStringRef(OptionChange* cha) {
          
          Unt totalLen = calcLocalStringsLength(opts, count) + newLen - oldLen;
          Unt newCap = calcNewBufferCap(totalLen);
-         Sbuf buf = sbuf(newCap);
+         Polystring buf = polystring(newCap);
          CS wr = buf.c;
          
          for (Unt i = 0; i < count; i++) {
@@ -4259,7 +4259,7 @@ copyGlobalToBookImpl(OUT Book* book) {
    Unt totalLen = calcLocalStringsLength(OPTIONS_BOOK, OPTION_BOOK_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
    BookOptions* t = &book->o;
-   t->stringOptions = sbuf(newCap);
+   t->stringOptions = polystring(newCap);
 
 #define COPY_GLOBAL_TO_BOOK
 #define OPTIONS_LIST_BOOK
@@ -4281,7 +4281,7 @@ private void
 copyGlobalToPortalImpl(OUT PortalOptions* t) {
    Unt totalLen = calcLocalStringsLength(OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
    Unt newCap = calcNewBufferCap(totalLen);
-   t->stringOptions = sbuf(newCap);
+   t->stringOptions = polystring(newCap);
    
 #define COPY_GLOBAL_TO_PORTAL
 #define OPTIONS_LIST_PORTAL

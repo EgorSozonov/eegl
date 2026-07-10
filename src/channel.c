@@ -42,8 +42,35 @@ private volatile SigAtomic deadlySignalS = 0;      // The signal we caught
 #define fd_write(sd, buf, len) write(sd, buf, len)
 #define fd_close(sd) close(sd)
 
+// Structure to hold info about an async shell Job
+struct Job {
+   Unt refCount; //reference count
+   Job* next;
+   Job* prev;
+   ProId pid;
+   JobStatus status;
+   Arr(Byte) ttyIn;    //controlling tty input, allocated
+   Arr(Byte) ttyOut;   //controlling tty output, allocated
+   Arr(Byte) jv_stoponexit;//allocated
+   Arr(Byte) jv_termsig;   //allocated
+   int exitVal;
+   void (*nativeCb)(void); //native C function to call when the job finishes
+   Callback exitCb;
+
+   Book* inBook;   //book from "in-name"
+
+   int copyId;
+
+   Channel* channel; //channel for I/O, reference-counted
+   Arr(CS) argv;   //command line used to start the job
+};
+
+
 #define FOR_ALL_CHANNELS(ch) \
     for ((ch) = first_channel; (ch) != NULL; (ch) = (ch)->next)
+    
+#define FOR_ALL_JOBS(job) \
+    for ((job) = firstJobS; (job) != NULL; (job) = (job)->next)
 
 // Whether we are inside channel_parse_messages() or another situation where it
 // is safe to invoke callbacks.
@@ -97,7 +124,7 @@ add_channel(void) {
    }
    first_channel = channel;
 
-   channel->refcount = 1;
+   channel->refCount = 1;
    return channel;
 }
 
@@ -202,7 +229,7 @@ channel_may_free(Channel *channel) {
 // Return true when the channel is no longer referenced.
 int
 channel_unref(Channel* channel) {
-   if (channel && --channel->refcount <= 0)
+   if (channel && --channel->refCount <= 0)
       return channel_may_free(channel);
    return false;
 }
@@ -471,8 +498,7 @@ channel_open_unix(CS path) {
    ch_log(channel, "Connection made");
 
    channel->fds[PART_SOCK].ch_fd = (Socket)sd;
-   channel->ch_hostname = copyStr((CS)path);
-   channel->ch_port = 0;
+   channel->socketName = copyStr((CS)path);
    channel->ch_to_be_closed |= (1U << PART_SOCK);
 
    return channel;
@@ -747,7 +773,7 @@ channel_set_pipes(Channel *channel, Socket in, Socket out, Socket err) {
 // Set the job the channel is associated with and associated options.
 // This does not keep a refcount, when the job is freed job is cleared.
 void
-channel_set_job(Channel *channel, Job* job, JobOptions *options) {
+channel_set_job(Channel* channel, Job* job, JobOptions* options) {
    channel->job = job;
    channel_set_options(channel, options);
 
@@ -844,17 +870,15 @@ can_write_buf_line(Channel* channel) {
    tval.tv_sec = 0;
    tval.tv_usec = 0;
    for (;;) {
-       ret = select((int)in_part->ch_fd + 1, NULL, &wfds, NULL, &tval);
-#  ifdef EINTR
-       SOCK_ERRNO;
-       if (ret == -1 && errno == EINTR)
-      continue;
-#  endif
+      ret = select((int)in_part->ch_fd + 1, NULL, &wfds, NULL, &tval);
+      SOCK_ERRNO;
+      if (ret == -1 && errno == EINTR)
+         continue;
       if (ret <= 0 || in_part->ch_block_write == 1) {
          if (ret > 0)
-             ch_log(channel, "FAKED Input not ready for writing");
+            ch_log(channel, "FAKED Input not ready for writing");
          else
-             ch_log(channel, "Input not ready for writing");
+            ch_log(channel, "Input not ready for writing");
          return false;
       }
       break;
@@ -2198,14 +2222,8 @@ channelInfoIntoDict(Channel *channel, OUT Bag *dict) {
    bagAddNumber(dict, S"id", channel->id);
    bagAddString(dict, S"status", channel_status(channel, -1));
 
-   if (channel->ch_hostname != NULL) {
-      if (channel->ch_port) {
-          bagAddString(dict, S"hostname", (CS)channel->ch_hostname);
-          bagAddNumber(dict, S"port", channel->ch_port);
-      }
-      else
-          // Unix-domain socket.
-          bagAddString(dict, S"path", (CS)channel->ch_hostname);
+   if (channel->socketName) {
+      bagAddString(dict, S"path", (CS)channel->socketName);
       channel_part_info(channel, dict, S"sock", PART_SOCK);
    } else {
       channel_part_info(channel, dict, S"out", PART_OUT);
@@ -2232,27 +2250,25 @@ channel_close(Channel *channel, int invoke_close_cb) {
       term_channel_closing(channel);
       // Invoke callbacks and flush buffers before the close callback.
       if (channel->ch_close_cb.name != NULL)
-          ch_log(channel, "Invoking callbacks and flushing buffers before closing");
+         ch_log(channel, "Invoking callbacks and flushing buffers before closing");
       for (part = PART_SOCK; part < PART_IN; ++part) {
-          if (channel->ch_close_cb.name != NULL 
-                || channel->fds[part].bookref.c != NULL) {
-            // Increment the refcount to avoid the channel being freed
-            // halfway.
-            ++channel->refcount;
+         if (channel->ch_close_cb.name || channel->fds[part].bookref.c) {
+            //Increment the refcount to avoid the channel being freed halfway.
+            ++channel->refCount;
             if (channel->ch_close_cb.name == NULL)
                 ch_log(channel, "flushing %s buffers before closing", chanFdNames[part]);
             while (may_invoke_callback(channel, part))
                {} 
-            --channel->refcount;
-          }
+            --channel->refCount;
+         }
       }
 
-      if (channel->ch_close_cb.name != NULL) {
-         Var   argv[1];
-         Var   returnVar;
+      if (channel->ch_close_cb.name) {
+         Var argv[1];
+         Var returnVar;
 
          // Increment the refcount to avoid the channel being freed halfway.
-         ++channel->refcount;
+         ++channel->refCount;
          ch_log(channel, "Invoking close callback %s", (char *)channel->ch_close_cb.name);
          argv[0].tag = VAR_CHANNEL;
          argv[0].channel = channel;
@@ -2274,7 +2290,7 @@ channel_close(Channel *channel, int invoke_close_cb) {
                  drop_messages(channel, part);
           } 
 
-          --channel->refcount;
+          --channel->refCount;
       }
    }
 
@@ -2332,7 +2348,7 @@ channel_clear_one(Channel *channel, ChannelFdKind part) {
 void
 channel_clear(Channel* channel) {
    ch_log(channel, "Clearing channel");
-   EE_CLEAR(channel->ch_hostname);
+   EE_CLEAR(channel->socketName);
    channel_clear_one(channel, PART_SOCK);
    channel_clear_one(channel, PART_OUT);
    channel_clear_one(channel, PART_ERR);
@@ -2421,11 +2437,9 @@ channel_wait(Channel* channel, Socket fd, int timeout) {
       maxfd = channel_fill_wfds(maxfd, &wfds);
 
       ret = select(maxfd, &rfds, &wfds, NULL, &tval);
-# ifdef EINTR
       SOCK_ERRNO;
       if (ret == -1 && errno == EINTR)
          continue;
-# endif
       if (ret > 0) {
          if (FD_ISSET(fd, &rfds))
             return CW_READY;
@@ -2692,7 +2706,7 @@ get_channel_arg(Var* tv, int check_open, int reading, ChannelFdKind part) {
 
    if (tv->tag == VAR_JOB) {
       if (tv->job)
-         channel = tv->job->jv_channel;
+         channel = tv->job->channel;
    } ei (tv->tag == VAR_CHANNEL) {
       channel = tv->channel;
    } else {
@@ -2718,8 +2732,8 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
    Channel   *channel;
    ChannelFdKind   part = PART_COUNT;
    JobOptions   opt;
-   int      id = -1;
-   Var   *listtv = NULL;
+   int id = -1;
+   Var* listtv = NULL;
 
    // return an empty string by default
    returnVar->tag = VAR_STRING;
@@ -3073,12 +3087,12 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
 // common for "ch_evalraw()" and "ch_sendraw()"
 private void
 ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
-   Byte   buf[NUMBUFLEN];
-   int      len;
-   Channel   *channel;
-   ChannelFdKind   part_read;
-   JobOptions    opt;
-   int      timeout;
+   Byte buf[NUMBUFLEN];
+   int len;
+   Channel* channel;
+   ChannelFdKind part_read;
+   JobOptions opt;
+   int timeout;
 
    // return an empty string by default
    returnVar->tag = VAR_STRING;
@@ -3221,14 +3235,14 @@ channel_parse_messages(void) {
          if (channel->ch_to_be_freed || channel->isBeingKilled) {
             channel_free_contents(channel);
             if (channel->job != NULL)
-                channel->job->jv_channel = NULL;
+                channel->job->channel = NULL;
 
             // free the channel and then start over
             channel_free_channel(channel);
             channel = first_channel;
             continue;
          }
-         if (channel->refcount == 0 && !channel_still_useful(channel)) {
+         if (channel->refCount == 0 && !channel_still_useful(channel)) {
             // channel is no longer useful, free it
             channel_free(channel);
             channel = first_channel;
@@ -3238,9 +3252,9 @@ channel_parse_messages(void) {
       }
 
       if (channel->fds[part].ch_fd != INVALID_FD || channel_has_readahead(channel, part)) {
-         // Increase the refcount, in case the handler causes the channel
-         // to be unreferenced or closed.
-         ++channel->refcount;
+         //Increase the refcount, in case the handler causes the channel to be unreferenced or 
+         //closed
+         ++channel->refCount;
          r = may_invoke_callback(channel, part);
          if (r == OK)
             ret = true;
@@ -3373,24 +3387,22 @@ f_ch_close_in(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 void
 f_ch_getbufnr(Arr(Var) argvars, Var* returnVar) {
-   Channel   *channel;
-
    returnVar->number = -1;
 
-   channel = get_channel_arg(&argvars[0], false, false, 0);
-   if (channel == NULL)
+   Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
+   if (!channel)
       return;
 
-   Byte   *what = tv_get_string(&argvars[1]);
-    int      part;
+   Byte* what = tv_get_string(&argvars[1]);
+   int part;
    if (STRCMP(what, "err") == 0)
-   part = PART_ERR;
-    ei (STRCMP(what, "out") == 0)
-   part = PART_OUT;
-    ei (STRCMP(what, "in") == 0)
-   part = PART_IN;
-    else
-   part = PART_SOCK;
+      part = PART_ERR;
+   ei (STRCMP(what, "out") == 0)
+      part = PART_OUT;
+   ei (STRCMP(what, "in") == 0)
+      part = PART_IN;
+   else
+      part = PART_SOCK;
    if (channel->fds[part].bookref.c != NULL)
    returnVar->number =
        channel->fds[part].bookref.c->fiNum;
@@ -3398,17 +3410,14 @@ f_ch_getbufnr(Arr(Var) argvars, Var* returnVar) {
 
 void
 f_ch_getjob(Arr(Var) argvars, Var* returnVar) {
-    Channel *channel;
-
-
-   channel = get_channel_arg(&argvars[0], false, false, 0);
-   if (channel == NULL)
+   Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
+   if (channel)
       return;
 
    returnVar->tag = VAR_JOB;
    returnVar->job = channel->job;
    if (channel->job != NULL)
-      ++channel->job->jv_refcount;
+      incRefCount(channel->job);
 }
 
 void
@@ -3463,30 +3472,27 @@ f_ch_sendraw(Arr(Var) argvars, Var* returnVar) {
 
 void
 f_ch_setoptions(Arr(Var) argvars, Var* returnVar UNUSED) {
-   Channel   *channel;
-   JobOptions   opt;
-
-   channel = get_channel_arg(&argvars[0], false, false, 0);
-   if (channel == NULL)
+   Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
+   if (!channel)
       return;
+      
+   JobOptions opt;
    CLEAR_POINTER(&opt);
-   if (get_job_options(&argvars[1], OUT &opt,
-             JO_CB_ALL + JO_TIMEOUT_ALL + JO_MODE_ALL, 0) == OK)
-   channel_set_options(channel, &opt);
-    free_job_options(&opt);
+   if (get_job_options(&argvars[1], OUT &opt, JO_CB_ALL + JO_TIMEOUT_ALL + JO_MODE_ALL, 0) == OK)
+      channel_set_options(channel, &opt);
+   free_job_options(&opt);
 }
 
 void
 f_ch_status(Arr(Var) argvars, Var* returnVar) {
-   Channel   *channel;
    JobOptions   opt;
-   int      part = -1;
+   int part = -1;
 
    // return an empty string by default
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
-   channel = get_channel_arg(&argvars[0], false, false, 0);
+   Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
 
    if (argvars[1].tag != VAR_UNKNOWN) {
       CLEAR_POINTER(&opt);
@@ -3526,14 +3532,12 @@ build_argv_from_string(CS cmd, Byte ***argv, int *argc) {
 // "argv[argc]" is set to NULL; Return FAIL when out of memory.
 int
 build_argv_from_list(List *l, Byte*** argv, int *argc) {
-   ListItem  *li;
-   Byte   *s;
-
    // Pass argv[] to chCallShell().
    *argv = ALLOC_MULT(CS, l->len + 1);
    *argc = 0;
+   ListItem* li;
    FOR_ALL_LIST_ITEMS(l, li) {
-      s = convertVarToStringSingleUse(&li->c);
+      CS s = convertVarToStringSingleUse(&li->c);
       if (!s) {
          for (int i = 0; i < *argc; ++i) {
             EE_CLEAR((*argv)[i]);
@@ -3788,7 +3792,7 @@ unblock_signals(sigset_t *set) {
 
 // Send SIGINT to a child process if "c" is an interrupt character.
 private void
-may_send_sigint(Unt c, pid_t pid UNUSED, pid_t wpid UNUSED) {
+may_send_sigint(Unt c, ProId pid UNUSED, ProId wpid) {
    if (c == Ctrl_C || c == extraInterruptCharG) {
       kill(-pid, SIGINT);
    if (wpid > 0)
@@ -3797,9 +3801,9 @@ may_send_sigint(Unt c, pid_t pid UNUSED, pid_t wpid UNUSED) {
 }
 
 // Wait for process "child" to end. Return "child" if it exited properly, <= 0 on error.
-private pid_t
-wait4pid(pid_t child, waitstatus *status) {
-   pid_t wait_pid = 0;
+private ProId
+wait4pid(ProId child, waitstatus *status) {
+   ProId wait_pid = 0;
    long delay_msec = 1;
 
    while (wait_pid != child) {
@@ -3839,14 +3843,13 @@ append_ga_line(ArrayList* gap) {
 }
 
 //Don't use system(), use fork()/exec().
-private int
-chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
-   TermInputMode   tmode = cur_tmode;
-   pid_t  pid;
-   pid_t  wpid = 0;
-   pid_t  wait_pid = 0;
+private PolyWithStatus
+callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
+   TermInputMode tmode = cur_tmode;
+   ProId  pid;
+   ProId  wpid = 0;
+   ProId  wait_pid = 0;
    int status = -1;
-   int retval = -1;
    Byte* tofree2 = NULL;
    int i;
    int pty_master_fd = -1;       // for pty's
@@ -3855,6 +3858,8 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
    int pipe_error = false;
    int did_termSetMode = false;   // termSetMode(TMODE_RAW) called
    int p_more_save;
+   Polystring shellResponse = {};
+   PolyWithStatus retVal = { .status = 0, .c = shellResponse };
 
    out_flush();
    if ((options & SHELL_COOKED) != 0)
@@ -3888,7 +3893,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
          UNBLOCK_SIGNALS(&curset);
 
          msg_puts(_("\nCannot fork\n"));
-         if ((options & (SHELL_READ|SHELL_WRITE))) {
+         if ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
             close(fd_toshell[0]);
             close(fd_toshell[1]);
             close(fd_fromshell[0]);
@@ -3941,19 +3946,17 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
 
             //stderr is only redirected when using the GUI, so that a program like gpg can still 
             //access the terminal to get a passphrase using stderr.
-            {
-               // set up stdin for the child
-               close(fd_toshell[1]);
-               close(0);
-               (void)dup(fd_toshell[0]);
-               close(fd_toshell[0]);
+            //set up stdin for the child
+            close(fd_toshell[1]);
+            close(0);
+            (void)dup(fd_toshell[0]);
+            close(fd_toshell[0]);
 
-               // set up stdout for the child
-               close(fd_fromshell[0]);
-               close(1);
-               (void)dup(fd_fromshell[1]);
-               close(fd_fromshell[1]);
-            }
+            // set up stdout for the child
+            close(fd_fromshell[0]);
+            close(1);
+            (void)dup(fd_fromshell[1]);
+            close(fd_fromshell[1]);
          }
 
          //There is no type cast for the argv, because the type may be different on different 
@@ -4021,11 +4024,12 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                         // NL -> ZERO translation
                         len = write(toshell_fd, "", (Unt)1);
                      else {
-                        Byte   *s = firstOccurrence(lp + written, NL);
-
-                        len = write(toshell_fd, (char *)lp + written,
-                              s == NULL ? lplen - written
-                                 : (Unt)(s - (lp + written)));
+                        CS s = firstOccurrence(lp + written, NL);
+                        len = write(
+                           toshell_fd, 
+                           (char *)lp + written,
+                           s ? (Unt)(s - (lp + written)) : lplen - written 
+                        );
                      }
                      if (len == (int)(lplen - written)) {
                         // Finished a line, add a NL, unless this line should not have one.
@@ -4084,13 +4088,13 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                     //Check for CTRL-C: send interrupt signal to child.
                     //Check for CTRL-D: EOF, close pipe to child.
                     if (len == 1 && (pty_master_fd < 0 || cmd != NULL)) {
-                       //Send SIGINT to the child's group or all processes in our group.
-                       may_send_sigint(ta_buf[ta_len], pid, wpid);
+                        //Send SIGINT to the child's group or all processes in our group.
+                        may_send_sigint(ta_buf[ta_len], pid, wpid);
 
-                       if (pty_master_fd < 0 && toshell_fd >= 0 && ta_buf[ta_len] == Ctrl_D) {
-                          close(toshell_fd);
-                          toshell_fd = -1;
-                       }
+                        if (pty_master_fd < 0 && toshell_fd >= 0 && ta_buf[ta_len] == Ctrl_D) {
+                           close(toshell_fd);
+                           toshell_fd = -1;
+                        }
                      }
 
                      // Remove Eegl-specific codes from the input.
@@ -4129,7 +4133,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                   // CTRL-C sends a signal to the child, we ignore it ourselves
                   kill(-pid, SIGINT);
                   if (wpid > 0)
-                      kill(wpid, SIGINT);
+                     kill(wpid, SIGINT);
                   gotInterruptG = false;
                }
 
@@ -4190,7 +4194,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                //Check if the child still exists, before checking for
                //typed characters (otherwise we would lose typeahead).
                wait_pid = waitpid(pid, &status, WNOHANG);
-               if ((wait_pid == (pid_t)-1 && errno == ECHILD)
+               if ((wait_pid == (ProId)-1 && errno == ECHILD)
                    || (wait_pid == pid && WIFEXITED(status))
                ) {
                   // Don't break the loop yet, try reading more
@@ -4238,7 +4242,7 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
                   gotInterruptG = false;
                }
                wait_pid = waitpid(pid, &status, WNOHANG);
-               if ((wait_pid == (pid_t)-1 && errno == ECHILD) || (wait_pid == pid && WIFEXITED(status))) {
+               if ((wait_pid == (ProId)-1 && errno == ECHILD) || (wait_pid == pid && WIFEXITED(status))) {
                   wait_pid = pid;
                   break;
                }
@@ -4281,15 +4285,15 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
 
          if (WIFEXITED(status)) {
             // LINTED avoid "bitwise operation on signed value"
-            retval = WEXITSTATUS(status);
-            if (retval != 0 && !emsg_silent) {
-               if (retval == EXEC_FAILED) {
+            int retStatus = WEXITSTATUS(status);
+            if (retStatus != 0 && !emsg_silent) {
+               if (retStatus == EXEC_FAILED) {
                   msg_puts(_("\nCannot execute shell "));
                   msg_outtrans(S"bash");
                   msg_putchar('\n');
-               } ei (!(options & SHELL_SILENT)) {
+               } ei ((options & SHELL_SILENT) == 0) {
                   msg_puts(_("\nshell returned "));
-                  msg_outnum((long)retval);
+                  msg_outnum((long)retStatus);
                   msg_putchar('\n');
                }
             }
@@ -4298,22 +4302,18 @@ chCallShell_fork(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
       }
    }
 
-error:
-   if (!did_termSetMode) {
-      if (tmode == TMODE_RAW)
-         termSetMode(TMODE_RAW);   // set to raw mode
-   } 
+   if (!did_termSetMode && tmode == TMODE_RAW)
+      termSetMode(TMODE_RAW);
    eeglFree(argv);
    eeglFree(tofree2);
 
-   return retval;
+   return retVal;
 }
 
-
-int
+PolyWithStatus
 chCallShell(CS cmd, CS extraArg, Unt options) {   // SHELL_*, see eegl.h
    lo("executing shell command: %s", cmd);
-   return chCallShell_fork(cmd, extraArg, options);
+   return callShellImpl(cmd, extraArg, options);
 }
 
 int
@@ -4321,7 +4321,7 @@ mch_create_pty_channel(Job* job, JobOptions* options) {
    int pty_master_fd = -1;
    int pty_slave_fd = -1;
 
-   open_pty(&pty_master_fd, &pty_slave_fd, &job->jv_tty_out, &job->jv_tty_in);
+   open_pty(&pty_master_fd, &pty_slave_fd, &job->ttyOut, &job->ttyIn);
    if (pty_master_fd < 0 || pty_slave_fd < 0)
       return FAIL;
    close(pty_slave_fd);
@@ -4331,9 +4331,9 @@ mch_create_pty_channel(Job* job, JobOptions* options) {
       close(pty_master_fd);
       return FAIL;
    }
-   if (job->jv_tty_out != NULL)
-      ch_log(channel, "using pty %s on fd %d", job->jv_tty_out, pty_master_fd);
-   job->jv_channel = channel;  // refcount was set by add_channel()
+   if (job->ttyOut != NULL)
+      ch_log(channel, "using pty %s on fd %d", job->ttyOut, pty_master_fd);
+   job->channel = channel;  // refcount was set by add_channel()
    channel->ch_keep_open = true;
 
    // Only set the pty_master_fd for stdout, do not duplicate it for stderr,
@@ -4813,40 +4813,75 @@ set_default_child_environment(int is_terminal) {
 //}}}
 //{{{job runnin' and controllin'
 
-#define FOR_ALL_JOBS(job) \
-    for ((job) = firstJobS; (job) != NULL; (job) = (job)->jv_next)
+int
+chJobGetCopyId(Job* job) {
+   return job->copyId;
+}
+
+void
+chJobSetCopyId(Job* job, int newVal) {
+   job->copyId = newVal;
+}
+
+Channel*
+chJobGetChannel(Job* job) {
+   return job->channel;
+}
+
+Callback
+chJobGetExitCb(Job* job) {
+   return job->exitCb;
+}
+
+JobStatus
+chJobGetStatus(Job* job) {
+   return job->status;
+}
+
+void
+chJobSetStatus(Job* job, JobStatus newVal) {
+   job->status = newVal;
+}
     
+Arr(Byte)
+chJobGetTty(Job* job, Boole out) {
+   if (out) {
+      return job->ttyOut;
+   } else {
+      return job->ttyIn;
+   }
+}
     
 private void
 mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
-   pid_t   pid;
-   int      fd_in[2] = {-1, -1};   // for stdin
-   int      fd_out[2] = {-1, -1};   // for stdout
-   int      fd_err[2] = {-1, -1};   // for stderr
-   int      pty_master_fd = -1;
-   int      pty_slave_fd = -1;
-   Channel   *channel = NULL;
-   int      use_null_for_in = options->ioMode[PART_IN] == JIO_NULL;
-   int      use_null_for_out = options->ioMode[PART_OUT] == JIO_NULL;
-   int      use_null_for_err = options->ioMode[PART_ERR] == JIO_NULL;
-   int      use_file_for_in = options->ioMode[PART_IN] == JIO_FILE;
-   int      use_file_for_out = options->ioMode[PART_OUT] == JIO_FILE;
-   int      use_file_for_err = options->ioMode[PART_ERR] == JIO_FILE;
-   int      use_buffer_for_in = options->ioMode[PART_IN] == JIO_BUFFER;
-   int      use_out_for_err = options->ioMode[PART_ERR] == JIO_OUT;
+   ProId   pid;
+   int fd_in[2] = {-1, -1};   // for stdin
+   int fd_out[2] = {-1, -1};   // for stdout
+   int fd_err[2] = {-1, -1};   // for stderr
+   int pty_master_fd = -1;
+   int pty_slave_fd = -1;
+   Channel* channel = NULL;
+   int use_null_for_in = options->ioMode[PART_IN] == JIO_NULL;
+   int use_null_for_out = options->ioMode[PART_OUT] == JIO_NULL;
+   int use_null_for_err = options->ioMode[PART_ERR] == JIO_NULL;
+   int use_file_for_in = options->ioMode[PART_IN] == JIO_FILE;
+   int use_file_for_out = options->ioMode[PART_OUT] == JIO_FILE;
+   int use_file_for_err = options->ioMode[PART_ERR] == JIO_FILE;
+   int use_buffer_for_in = options->ioMode[PART_IN] == JIO_BUFFER;
+   int use_out_for_err = options->ioMode[PART_ERR] == JIO_OUT;
    SIGSET_DECL(curset)
 
    if (use_out_for_err && use_null_for_out)
       use_null_for_err = true;
 
    // default is to fail
-   job->jv_status = JOB_FAILED;
+   job->status = JOB_FAILED;
 
    if (options->jo_pty
           && (!(use_file_for_in || use_null_for_in)
             || !(use_file_for_out || use_null_for_out)
             || !(use_out_for_err || use_file_for_err || use_null_for_err))) {
-      open_pty(&pty_master_fd, &pty_slave_fd, &job->jv_tty_out, &job->jv_tty_in);
+      open_pty(&pty_master_fd, &pty_slave_fd, &job->ttyOut, &job->ttyIn);
    } 
 
    // TODO: without the channel feature connect the child to /dev/null?
@@ -4860,8 +4895,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
          goto failed;
       }
    } ei (!use_null_for_in && (pty_master_fd < 0 || use_buffer_for_in) && pipe(fd_in) < 0) {
-      // When writing buffer lines to the input don't use the pty, so that the pipe can be closed 
-      // when all lines were written.
+      //When writing buffer lines to the input don't use the pty, so that the pipe can be closed 
+      //when all lines were written.
       goto failed;
    } 
 
@@ -4895,14 +4930,14 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
    if (!use_null_for_in || !use_null_for_out || !use_null_for_err) {
       if (options->set & JO_CHANNEL) {
          channel = options->jo_channel;
-         if (channel != NULL)
-            ++channel->refcount;
+         if (channel)
+            ++channel->refCount;
       } else
          channel = add_channel();
-      if (channel == NULL)
+      if (!channel)
          goto failed;
-      if (job->jv_tty_out != NULL)
-         ch_log(channel, "using pty %s on fd %d", job->jv_tty_out, pty_master_fd);
+      if (job->ttyOut)
+         ch_log(channel, "using pty %s on fd %d", job->ttyOut, pty_master_fd);
    }
 
    BLOCK_SIGNALS(&curset);
@@ -5046,9 +5081,9 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
    // parent
    UNBLOCK_SIGNALS(&curset);
 
-   job->jv_pid = pid;
-   job->jv_status = JOB_STARTED;
-   job->jv_channel = channel;  // refcount was set above
+   job->pid = pid;
+   job->status = JOB_STARTED;
+   job->channel = channel;  // refcount was set above
 
    if (pty_master_fd >= 0)
       close(pty_slave_fd); // not used in the parent
@@ -5118,43 +5153,43 @@ failed:
 private CS
 mch_job_status(Job* job) {
    int status = -1;
-   pid_t wait_pid = 0;
+   ProId wait_pid = 0;
 
-   wait_pid = waitpid(job->jv_pid, &status, WNOHANG);
+   wait_pid = waitpid(job->pid, &status, WNOHANG);
    if (wait_pid == -1) {
       int waitpid_errno = errno;
-      if (waitpid_errno == ECHILD && mch_process_running(job->jv_pid))
+      if (waitpid_errno == ECHILD && mch_process_running(job->pid))
           // The process is alive, but it was probably reparented (for
           // example by ptrace called by a debugger like lldb or gdb).
           // Note: This assumes that process IDs are not reused.
           return S"run";
 
       // process must have exited
-      if (job->jv_status < JOB_ENDED)
-         ch_log(job->jv_channel, "Job no longer exists: %s", strerror(waitpid_errno));
+      if (job->status < JOB_ENDED)
+         ch_log(job->channel, "Job no longer exists: %s", strerror(waitpid_errno));
       goto return_dead;
    }
    if (wait_pid == 0)
       return S"run";
    if (WIFEXITED(status)) {
       // LINTED avoid "bitwise operation on signed value"
-      job->jv_exitval = WEXITSTATUS(status);
-      if (job->jv_status < JOB_ENDED)
-         ch_log(job->jv_channel, "Job exited with %d", job->jv_exitval);
+      job->exitVal = WEXITSTATUS(status);
+      if (job->status < JOB_ENDED)
+         ch_log(job->channel, "Job exited with %d", job->exitVal);
       goto return_dead;
    }
    if (WIFSIGNALED(status)) {
-      job->jv_exitval = -1;
+      job->exitVal = -1;
       job->jv_termsig = get_signal_name(WTERMSIG(status));
-      if (job->jv_status < JOB_ENDED && job->jv_termsig != NULL)
-          ch_log(job->jv_channel, "Job terminated by signal \"%s\"", job->jv_termsig);
+      if (job->status < JOB_ENDED && job->jv_termsig != NULL)
+          ch_log(job->channel, "Job terminated by signal \"%s\"", job->jv_termsig);
       goto return_dead;
    }
    return S"run";
 
 return_dead:
-   if (job->jv_status < JOB_ENDED) {
-      job->jv_status = JOB_ENDED;
+   if (job->status < JOB_ENDED) {
+      job->status = JOB_ENDED;
    } 
    return S"dead";
 }
@@ -5182,10 +5217,10 @@ mch_signal_job(Job* job, CS how) {
       return FAIL;
 
    // Never kill ourselves!
-   if (job->jv_pid != 0) {
+   if (job->pid != 0) {
       // TODO: have an option to only kill the process, not the group?
-      kill(-job->jv_pid, sig);
-      kill(job->jv_pid, sig);
+      kill(-job->pid, sig);
+      kill(job->pid, sig);
    }
 
    return OK;
@@ -5202,22 +5237,22 @@ mch_detect_ended_job(Job* job_list) {
    if (dontCheckJobEndedS > 0)
       return NULL;
 
-   pid_t wait_pid = waitpid(-1, &status, WNOHANG);
+   ProId wait_pid = waitpid(-1, &status, WNOHANG);
    if (wait_pid <= 0)
       // no process ended
       return NULL;
-   for (Job* job = job_list; job; job = job->jv_next) {
-      if (job->jv_pid == wait_pid) {
+   for (Job* job = job_list; job; job = job->next) {
+      if (job->pid == wait_pid) {
          if (WIFEXITED(status))
             // LINTED avoid "bitwise operation on signed value"
-            job->jv_exitval = WEXITSTATUS(status);
+            job->exitVal = WEXITSTATUS(status);
          ei (WIFSIGNALED(status)) {
-            job->jv_exitval = -1;
+            job->exitVal = -1;
             job->jv_termsig = get_signal_name(WTERMSIG(status));
          }
-         if (job->jv_status < JOB_ENDED) {
-            ch_log(job->jv_channel, "Job ended");
-            job->jv_status = JOB_ENDED;
+         if (job->status < JOB_ENDED) {
+            ch_log(job->channel, "Job ended");
+            job->status = JOB_ENDED;
          }
          return job;
       }
@@ -5300,7 +5335,7 @@ part_from_char(int c) {
 void
 mch_clear_job(Job* job) {
    // call waitpid because child process may become zombie
-   (void)waitpid(job->jv_pid, NULL, WNOHANG);
+   (void)waitpid(job->pid, NULL, WNOHANG);
 }
 
 
@@ -5653,13 +5688,13 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             }
             opt->set1 |= JO2_ENV;
             opt->env = item->bag;
-            if (opt->env != NULL)
-               ++opt->env->refcount;
+            if (opt->env)
+               ++opt->env->refCount;
          } ei (STRCMP(hi->hi_key, "cwd") == 0) {
             if (!(supported2 & JO2_CWD))
                break;
             opt->currentWorkingDir = convertVarToString(item, opt->cwdText);
-            if (opt->currentWorkingDir == NULL || !mch_isdir(opt->currentWorkingDir)
+            if (!opt->currentWorkingDir || !mch_isdir(opt->currentWorkingDir)
                   || mch_access(opt->currentWorkingDir, X_OK) != 0
             ){
                showErrFmtMsg(_(e_invalid_value_for_argument_str), "cwd");
@@ -5735,40 +5770,38 @@ private Job* firstJobS = NULL;
 
 private void
 job_free_contents(Job* job) {
-   int i;
-
-   ch_log(job->jv_channel, "Freeing job");
-   if (job->jv_channel) {
+   ch_log(job->channel, "Freeing job");
+   if (job->channel) {
       //The link from the channel to the job doesn't count as a reference, thus don't decrement 
       //the refcount of the job. The reference from the job to the channel does count the 
       //reference, decrement it and NULL the reference.  We don't set job_killed, unreferencing the
       //job doesn't mean it stops running.
-      job->jv_channel->job = NULL;
-      channel_unref(job->jv_channel);
+      job->channel->job = NULL;
+      channel_unref(job->channel);
    }
    mch_clear_job(job);
 
-   eeglFree(job->jv_tty_in);
-   eeglFree(job->jv_tty_out);
+   eeglFree(job->ttyIn);
+   eeglFree(job->ttyOut);
    eeglFree(job->jv_stoponexit);
    eeglFree(job->jv_termsig);
-   evFreeCallback(&job->jv_exit_cb);
-   if (job->jv_argv) {
-      for (i = 0; job->jv_argv[i] != NULL; i++)
-          eeglFree(job->jv_argv[i]);
-      eeglFree(job->jv_argv);
+   evFreeCallback(&job->exitCb);
+   if (job->argv) {
+      for (int i = 0; job->argv[i] != NULL; i++)
+         eeglFree(job->argv[i]);
+      eeglFree(job->argv);
    }
 }
 
 // Remove "job" from the list of jobs.
 private void
 job_unlink(Job* job) {
-   if (job->jv_next != NULL)
-      job->jv_next->jv_prev = job->jv_prev;
-   if (job->jv_prev == NULL)
-      firstJobS = job->jv_next;
+   if (job->next)
+      job->next->prev = job->prev;
+   if (!job->prev)
+      firstJobS = job->next;
    else
-      job->jv_prev->jv_next = job->jv_next;
+      job->prev->next = job->next;
 }
 
 private void
@@ -5792,7 +5825,7 @@ private Arr(Job) jobs_to_free = NULL;
 private void
 job_free_later(Job* job) {
    job_unlink(job);
-   job->jv_next = jobs_to_free;
+   job->next = jobs_to_free;
    jobs_to_free = job;
 }
 
@@ -5802,7 +5835,7 @@ free_jobs_to_free_later(void) {
 
    while (jobs_to_free) {
       job = jobs_to_free;
-      jobs_to_free = job->jv_next;
+      jobs_to_free = job->next;
       job_free_contents(job);
       eeglFree(job);
    }
@@ -5822,19 +5855,19 @@ job_free_all(void) {
 // true if we need to check if the process of "job" has ended.
 private int
 job_need_end_check(Job* job) {
-   return job->jv_status == JOB_STARTED && (job->jv_stoponexit || job->jv_exit_cb.name);
+   return job->status == JOB_STARTED && (job->jv_stoponexit || job->exitCb.name);
 }
 
 // true if the channel of "job" is still useful.
 private int
 job_channel_still_useful(Job* job) {
-   return job->jv_channel != NULL && channel_still_useful(job->jv_channel);
+   return job->channel != NULL && channel_still_useful(job->channel);
 }
 
 // true if the channel of "job" is closeable.
 private int
 job_channel_can_close(Job* job) {
-   return job->jv_channel != NULL && channel_can_close(job->jv_channel);
+   return job->channel != NULL && channel_can_close(job->channel);
 }
 
 // Return true if the job should not be freed yet.  Do not free the job when
@@ -5866,42 +5899,43 @@ job_any_running(void) {
 //If the job is no longer used it will be removed from the list of jobs, and deleted a bit later.
 private void
 job_cleanup(Job* job) {
-   if (job->jv_status != JOB_ENDED)
+   if (job->status != JOB_ENDED)
       return;
 
    // Ready to cleanup the job.
-   job->jv_status = JOB_FINISHED;
+   job->status = JOB_FINISHED;
 
    // When only channel-in is kept open, close explicitly.
-   if (job->jv_channel)
-      ch_close_part(job->jv_channel, PART_IN);
+   if (job->channel)
+      ch_close_part(job->channel, PART_IN);
 
    if (job->nativeCb) { // call the native callback first
       (*job->nativeCb)();
    }
-   if (job->jv_exit_cb.name) { // call the script callback
+   if (job->exitCb.name) { // call the script callback
       Var argv[3];
       Var returnVar;
 
       // Invoke the exit callback. Make sure the refcount is > 0.
-      ch_log(job->jv_channel, "Invoking exit callback %s", job->jv_exit_cb.name);
-      ++job->jv_refcount;
+      
+      ch_log(job->channel, "Invoking exit callback %s", job->exitCb.name);
+      incRefCount(job);
       argv[0].tag = VAR_JOB;
       argv[0].job = job;
       argv[1].tag = VAR_NUMBER;
-      argv[1].number = job->jv_exitval;
-      call_callback(&job->jv_exit_cb, -1, &returnVar, 2, argv);
+      argv[1].number = job->exitVal;
+      call_callback(&job->exitCb, -1, &returnVar, 2, argv);
       clearVar(&returnVar);
-      --job->jv_refcount;
+      decRefCount(job);
       channel_need_redraw = true;
    }
 
-   if (job->jv_channel && job->jv_channel->ch_anonymous_pipe)
-      job->jv_channel->isBeingKilled = true;
+   if (job->channel && job->channel->ch_anonymous_pipe)
+      job->channel->isBeingKilled = true;
 
    //Do not free the job in case the close callback of the associated channel
    //isn't invoked yet and may get information by job_info().
-   if (job->jv_refcount == 0 && !job_channel_still_useful(job))
+   if (job->refCount == 0 && !job_channel_still_useful(job))
       //The job was already unreferenced and the associated channel was
       //detached, now that it ended it can be freed. However, a caller might
       //still use it, thus free it a bit later.
@@ -5914,7 +5948,7 @@ set_ref_in_job(int copyID) {
    int abort = false;
    Var tv;
 
-   for (Job* job = firstJobS; !abort && job != NULL; job = job->jv_next) {
+   for (Job* job = firstJobS; !abort && job != NULL; job = job->next) {
       if (job_still_useful(job)) {
          tv.tag = VAR_JOB;
          tv.job = job;
@@ -5927,7 +5961,7 @@ set_ref_in_job(int copyID) {
 // Dereference "job".  Note that after this "job" may have been freed.
 void
 job_unref(Job* job) {
-   if (!job || --job->jv_refcount > 0)
+   if (!job || --job->refCount > 0)
       return;
 
    //Do not free the job if there is a channel where the close callback may get the job info.
@@ -5938,13 +5972,13 @@ job_unref(Job* job) {
    //"stoponexit" flag or an exit callback.
    if (!job_need_end_check(job)) {
       job_free(job);
-   } ei (job->jv_channel != NULL) {
+   } ei (job->channel != NULL) {
       //Do remove the link to the channel, otherwise it hangs
       //around until Eegl exits. See job_free() for refcount.
-      ch_log(job->jv_channel, "detaching channel from job");
-      job->jv_channel->job = NULL;
-      channel_unref(job->jv_channel);
-      job->jv_channel = NULL;
+      ch_log(job->channel, "detaching channel from job");
+      job->channel->job = NULL;
+      channel_unref(job->channel);
+      job->channel = NULL;
    }
 }
 
@@ -5954,7 +5988,7 @@ free_unused_jobs_contents(int copyID, int mask) {
    Job* job;
 
    FOR_ALL_JOBS(job) {
-      if ((job->jv_copyID & mask) != (copyID & mask) && !job_still_useful(job)) {
+      if ((job->copyId & mask) != (copyID & mask) && !job_still_useful(job)) {
          // Free the channel and ordinary items it contains, but don't
          // recurse into Lists, Dictionaries etc.
          job_free_contents(job);
@@ -5969,8 +6003,8 @@ free_unused_jobs(int copyID, int mask) {
    Job* job_next;
 
    for (Job* job = firstJobS; job; job = job_next) {
-      job_next = job->jv_next;
-      if ((job->jv_copyID & mask) != (copyID & mask) && !job_still_useful(job)) {
+      job_next = job->next;
+      if ((job->copyId & mask) != (copyID & mask) && !job_still_useful(job)) {
          // Free the job struct itself.
          job_free_job(job);
       }
@@ -5981,12 +6015,12 @@ free_unused_jobs(int copyID, int mask) {
 Job *
 job_alloc(void) {
    Job* job = ALLOC_CLEAR_ONE(Job);
-   job->jv_refcount = 1;
-   job->jv_stoponexit = copyStr((CS)"term");
+   job->refCount = 1;
+   job->jv_stoponexit = copyStr(S"term");
 
    if (firstJobS) {
-      firstJobS->jv_prev = job;
-      job->jv_next = firstJobS;
+      firstJobS->prev = job;
+      job->next = firstJobS;
    }
    firstJobS = job;
    return job;
@@ -5994,20 +6028,20 @@ job_alloc(void) {
 
 void
 job_set_options(Job* job, JobOptions* opt) {
-   if (opt->set & JO_STOPONEXIT) {
+   if ((opt->set & JO_STOPONEXIT) != 0) {
       eeglFree(job->jv_stoponexit);
-      if (opt->jo_stoponexit == NULL || *opt->jo_stoponexit == ZERO)
+      if (!opt->jo_stoponexit || *opt->jo_stoponexit == ZERO)
          job->jv_stoponexit = NULL;
       else
          job->jv_stoponexit = copyStr(opt->jo_stoponexit);
    }
    if (opt->set & JO_EXIT_CB) {
-      evFreeCallback(&job->jv_exit_cb);
-      if (opt->exitCb.name == NULL || *opt->exitCb.name == ZERO) {
-         job->jv_exit_cb.name = NULL;
-         job->jv_exit_cb.cb_partial = NULL;
+      evFreeCallback(&job->exitCb);
+      if (!opt->exitCb.name || *opt->exitCb.name == ZERO) {
+         job->exitCb.name = NULL;
+         job->exitCb.cb_partial = NULL;
       } else
-         evCopyCallback(&job->jv_exit_cb, &opt->exitCb);
+         evCopyCallback(&job->exitCb, &opt->exitCb);
    }
 }
 
@@ -6017,7 +6051,7 @@ job_stop_on_exit(void) {
    Job* job;
 
    FOR_ALL_JOBS(job) {
-      if (job->jv_status == JOB_STARTED && job->jv_stoponexit != NULL)
+      if (job->status == JOB_STARTED && job->jv_stoponexit != NULL)
           mch_signal_job(job, job->jv_stoponexit);
    } 
 }
@@ -6031,8 +6065,8 @@ has_pending_job(void) {
    FOR_ALL_JOBS(job) {
       //Only should check if the channel has been closed, if the channel is
       //open the job won't exit.
-      if ((job->jv_status == JOB_STARTED && !job_channel_still_useful(job))
-             || (job->jv_status == JOB_FINISHED && job_channel_can_close(job))
+      if ((job->status == JOB_STARTED && !job_channel_still_useful(job))
+             || (job->status == JOB_FINISHED && job_channel_can_close(job))
       )
          return true;
    }
@@ -6086,7 +6120,7 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
 
    Job* job = job_alloc();
 
-   job->jv_status = JOB_FAILED;
+   job->status = JOB_FAILED;
    ga_init2(&ga, sizeof(char*), 20);
 
    if (opt_arg)
@@ -6149,7 +6183,7 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
    job_set_options(job, &opt);
 
    if (argv_arg) {
-      // Make a copy of argv_arg for job->jv_argv.
+      // Make a copy of argv_arg for job->argv.
       for (i = 0; argv_arg[i] != NULL; i++)
          argc++;
       argv = ALLOC_MULT(CS, argc + 1);
@@ -6182,7 +6216,7 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
 
    job->nativeCb = opt_arg->finishNativeCb;
    //Save the command used to start the job.
-   job->jv_argv = argv;
+   job->argv = argv;
 
    if (term_job)
       *term_job = job;
@@ -6202,11 +6236,11 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
    }
    mch_job_start(argv, job, &opt, term_job != NULL);
    // If the channel is reading from a buffer, write lines now.
-   if (job->jv_channel != NULL)
-      channel_write_in(job->jv_channel);
+   if (job->channel)
+      channel_write_in(job->channel);
 
 theend:
-   if (argv != NULL && argv != job->jv_argv) {
+   if (argv && argv != job->argv) {
       for (i = 0; argv[i] != NULL; i++)
          eeglFree(argv[i]);
       eeglFree(argv);
@@ -6221,14 +6255,14 @@ CS
 job_status(Job* job) {
    CS result;
 
-   if (job->jv_status >= JOB_ENDED)
+   if (job->status >= JOB_ENDED)
       // No need to check, dead is dead.
       result = S"dead";
-   ei (job->jv_status == JOB_FAILED)
+   ei (job->status == JOB_FAILED)
       result = S"fail";
    else {
       result = mch_job_status(job);
-      if (job->jv_status == JOB_ENDED)
+      if (job->status == JOB_ENDED)
          job_cleanup(job);
    }
    return result;
@@ -6251,21 +6285,21 @@ job_stop(Job* job, Arr(Var) argvars, CS type) {
          return 0;
       }
    }
-   if (job->jv_status == JOB_FAILED) {
-      ch_log(job->jv_channel, "Job failed to start, job_stop() skipped");
+   if (job->status == JOB_FAILED) {
+      ch_log(job->channel, "Job failed to start, job_stop() skipped");
       return 0;
    }
-   if (job->jv_status == JOB_ENDED) {
-      ch_log(job->jv_channel, "Job has already ended, job_stop() skipped");
+   if (job->status == JOB_ENDED) {
+      ch_log(job->channel, "Job has already ended, job_stop() skipped");
       return 0;
    }
-   ch_log(job->jv_channel, "Stopping job with '%s'", (char *)arg);
+   ch_log(job->channel, "Stopping job with '%s'", (char *)arg);
    if (mch_signal_job(job, arg) == FAIL)
       return 0;
 
    //Assume that only "kill" will kill the job.
-   if (job->jv_channel != NULL && STRCMP(arg, "kill") == 0)
-      job->jv_channel->isBeingKilled = true;
+   if (job->channel != NULL && STRCMP(arg, "kill") == 0)
+      job->channel->isBeingKilled = true;
 
    //We don't try freeing the job, obviously the caller still has a reference to it.
    return 1;
@@ -6453,9 +6487,9 @@ f_job_getchannel(Arr(Var) argvars, OUT Var* returnVar) {
       return;
 
    returnVar->tag = VAR_CHANNEL;
-   returnVar->channel = job->jv_channel;
-   if (job->jv_channel != NULL)
-      ++job->jv_channel->refcount;
+   returnVar->channel = job->channel;
+   if (job->channel != NULL)
+      ++job->channel->refCount;
 }
 
 private void
@@ -6464,28 +6498,28 @@ job_info(Job* job, Bag* bag) {
 
    DictItem* item = dictitem_alloc(tConst("channel"));
    item->c.tag = VAR_CHANNEL;
-   item->c.channel = job->jv_channel;
-   if (job->jv_channel != NULL)
-      ++job->jv_channel->refcount;
+   item->c.channel = job->channel;
+   if (job->channel)
+      ++job->channel->refCount;
    if (bagAdd(bag, item) == FAIL)
       dictitem_free(item);
 
-   Long nr = job->jv_pid;
+   Long nr = job->pid;
    bagAddNumber(bag, S"process", nr);
-   bagAddString(bag, S"tty_in", job->jv_tty_in);
-   bagAddString(bag, S"tty_out", job->jv_tty_out);
+   bagAddString(bag, S"tty_in", job->ttyIn);
+   bagAddString(bag, S"tty_out", job->ttyOut);
 
-   bagAddNumber(bag, S"exitval", job->jv_exitval);
-   bagAddString(bag, S"exit_cb", job->jv_exit_cb.name);
+   bagAddNumber(bag, S"exitval", job->exitVal);
+   bagAddString(bag, S"exit_cb", job->exitCb.name);
    bagAddString(bag, S"stoponexit", job->jv_stoponexit);
    bagAddString(bag, S"termsig", job->jv_termsig);
 
    List* l = list_alloc();
 
    bagAddList(bag, S"cmd", l);
-   if (job->jv_argv != NULL) {
-      for (int i = 0; job->jv_argv[i] != NULL; i++)
-          list_append_string(l, (CS)job->jv_argv[i], -1);
+   if (job->argv) {
+      for (int i = 0; job->argv[i]; i++)
+         list_append_string(l, (CS)job->argv[i], -1);
    } 
 }
 
@@ -6567,13 +6601,13 @@ job_to_string_buf(OUT CS builder, Var* varp) {
       eeSnprintf(builder, NUMBUFLEN, "no process");
       return;
    }
-   CS status = (CS)(job->jv_status == JOB_FAILED 
+   CS status = (CS)(job->status == JOB_FAILED 
       ? "fail"
-         : job->jv_status >= JOB_ENDED 
+         : job->status >= JOB_ENDED 
             ? "dead"
                : "run"
    );
-   eeSnprintf(builder, NUMBUFLEN, "process %ld %s", (long)job->jv_pid, status);
+   eeSnprintf(builder, NUMBUFLEN, "process %ld %s", (long)job->pid, status);
 }
 
 //}}}

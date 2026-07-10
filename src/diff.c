@@ -1612,7 +1612,6 @@ diff_file_internal(DiffIo *diffio) {
 private int
 diff_file(DiffIo* dio) {
    CS cmd;
-   Unt len;
    CS tmp_orig = dio->orig.externalFname;
    CS tmp_new = dio->new.externalFname;
    CS tmp_diff = dio->dio_diff.dout_fname;
@@ -1626,17 +1625,17 @@ diff_file(DiffIo* dio) {
       if (dio->dio_internal)
          return diff_file_internal(dio);
 
-   len = STRLEN(tmp_orig) + STRLEN(tmp_new) + STRLEN(tmp_diff) + (p_srr ? STRLEN(p_srr) : 0) + 27;
+   Unt len = 
+      STRLEN(tmp_orig) + STRLEN(tmp_new) + STRLEN(tmp_diff) + (p_srr ? STRLEN(p_srr) : 0) + 27;
    cmd = alloc(len);
 
-   // We don't want $DIFF_OPTIONS to get in the way.
+   //We don't want $DIFF_OPTIONS to get in the way.
    if (getenv("DIFF_OPTIONS"))
-      eeSetenv((CS)"DIFF_OPTIONS", (CS)"");
+      eeSetenv(S"DIFF_OPTIONS", S"");
 
-    // Build the diff command and execute it.  Always use -a, binary
-    // differences are of no use.  Ignore errors, diff returns
-    // non-zero when differences have been found.
-    eeSnprintf(cmd, len, "diff %s%s%s%s%s%s%s%s %s",
+   //Build the diff command and execute it. Always use -a, binary differences are of no use. 
+   //Ignore errors, diff returns non-zero when differences have been found.
+   eeSnprintf(cmd, len, "diff %s%s%s%s%s%s%s%s %s",
        diff_a_works == false ? "" : "-a ",
        "",
        (diff_flags & DIFF_IWHITE) ? "-b " : "",
@@ -1644,13 +1643,15 @@ diff_file(DiffIo* dio) {
        (diff_flags & DIFF_IWHITEEOL) ? "-Z " : "",
        (diff_flags & DIFF_IBLANK) ? "-B " : "",
        (diff_flags & DIFF_ICASE) ? "-i " : "",
-       tmp_orig, tmp_new);
-    doAppendRedir(cmd, (int)len, p_srr, tmp_diff);
-    block_autocmds();   // avoid ShellCmdPost stuff
-    (void)call_shell(cmd, null, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
-    unblock_autocmds();
-    eeglFree(cmd);
-    return OK;
+       tmp_orig, tmp_new
+   );
+   doAppendRedir(cmd, (int)len, p_srr, tmp_diff);
+   block_autocmds();   // avoid ShellCmdPost stuff
+    
+   (void)call_shell(cmd, null, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
+   unblock_autocmds();
+   eeglFree(cmd);
+   return OK;
 }
 
 //Create a new version of a file from the current book and a diff file.

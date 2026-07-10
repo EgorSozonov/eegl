@@ -6153,7 +6153,7 @@ struct Terminal {
 #define TMODE_LOOP 2       // CTRL-W N used
 
 // List of all active terminals.
-private Terminal *first_term = NULL;
+private Terminal *fstTermP = NULL;
 
 // Terminal active in terminal_loop().
 private Terminal *in_terminal_loop = NULL;
@@ -6162,7 +6162,7 @@ private Terminal *in_terminal_loop = NULL;
 #define KEY_BUF_LEN 200
 
 #define FOR_ALL_TERMS(term)   \
-    for ((term) = first_term; (term) != NULL; (term) = (term)->next)
+    for ((term) = fstTermP; (term) != NULL; (term) = (term)->next)
 
 private int initSubtermAndJob(
       Terminal *term, Var *argvar, Byte **argv, JobOptions *opt, JobOptions *orig_opt
@@ -6448,8 +6448,8 @@ startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
    }
 
    // Link the new terminal in the list of active terminals.
-   term->next = first_term;
-   first_term = term;
+   term->next = fstTermP;
+   fstTermP = term;
 
    applyAutocomms(EVENT_BUFFILEPRE, NULL, NULL, false, curBook);
 
@@ -6576,7 +6576,7 @@ startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
 
       //Make sure we don't get stuck on sending keys to the job, it leads to
       //a deadlock if the job is waiting for Eegl to read.
-      channel_set_nonblock(term->job->jv_channel, PART_IN);
+      channel_set_nonblock(chJobGetChannel(term->job), PART_IN);
 
       if (curBookSaved) {
          --curBook->countPortals;
@@ -6870,10 +6870,10 @@ free_terminal(Book* book) {
       return;
 
    // Unlink the terminal form the list of terminals.
-   if (first_term == term)
-      first_term = term->next;
+   if (fstTermP == term)
+      fstTermP = term->next;
    else {
-      for (Terminal* tp = first_term; tp->next != NULL; tp = tp->next) {
+      for (Terminal* tp = fstTermP; tp->next != NULL; tp = tp->next) {
          if (tp->next == term) {
             tp->next = term->next;
             break;
@@ -6882,9 +6882,8 @@ free_terminal(Book* book) {
    }
 
    if (term->job) {
-      if (term->job->jv_status != JOB_ENDED
-            && term->job->jv_status != JOB_FINISHED
-            && term->job->jv_status != JOB_FAILED)
+      JobStatus status = chJobGetStatus(term->job);
+      if (status != JOB_ENDED && status != JOB_FINISHED && status != JOB_FAILED)
          job_stop(term->job, NULL, S"kill");
       job_unref(term->job);
    }
@@ -6930,7 +6929,7 @@ get_tty_part(Terminal *term UNUSED) {
    ChannelFdKind   parts[3] = {PART_IN, PART_OUT, PART_ERR};
 
    for (int i = 0; i < 3; ++i) {
-      int fd = term->job->jv_channel->fds[parts[i]].ch_fd;
+      int fd = chJobGetChannel(term->job)->fds[parts[i]].ch_fd;
 
       if (mch_isatty(fd))
          return parts[i];
@@ -6946,7 +6945,7 @@ term_forward_output(Terminal *term) {
    Unt curlen = vterm_output_read(vterm, buf, KEY_BUF_LEN);
 
    if (curlen > 0)
-      channel_send(term->job->jv_channel, get_tty_part(term), buf, (int)curlen, NULL);
+      channel_send(chJobGetChannel(term->job), get_tty_part(term), buf, (int)curlen, NULL);
 }
 
 // Write job output "msg[len]" to the vterm.
@@ -7030,7 +7029,7 @@ write_to_term(Book *book, CS msg, Channel* channel) {
       // Don't use drawUpdateScreen() when editing the command line, it gets
       // cleared.
       // TODO: only update once in a while.
-      ch_log(term->job->jv_channel, "updating screen");
+      ch_log(chJobGetChannel(term->job), "updating screen");
       if (book == curBook && (stateG & MODE_COMMLINE) == 0) {
          drawUpdateScreen(UPD_VALID_NO_UPDATE);
          if (needRedrawTabpanelG) 
@@ -7295,20 +7294,20 @@ term_convert_key(Terminal *term, Unt c, int modmask, CS buf) {
 // Return true if the job for "term" is still running. If "check_job_status" is true update the 
 // job status. NOTE: "term" may be freed by callbacks.
 private int
-term_job_running_check(Terminal *term, int check_job_status) {
+term_job_running_check(Terminal* term, int check_job_status) {
    // Also consider the job finished when the channel is closed, to avoid a
    // race condition when updating the title.
-   if (!term || !term->job || !channel_is_open(term->job->jv_channel))
+   if (!term || !term->job || !channel_is_open(chJobGetChannel(term->job)))
       return false;
 
-   Job *job = term->job;
+   Job* job = term->job;
 
    // Careful: Checking the job status may invoke callbacks, which close
    // the book and terminate "term".  However, "job" will not be freed yet.
    if (check_job_status)
       job_status(job);
-   return (job->jv_status == JOB_STARTED
-          || (job->jv_channel != NULL && job->jv_channel->ch_keep_open));
+   return (chJobGetStatus(job) == JOB_STARTED
+          || (chJobGetChannel(job) && chJobGetChannel(job)->ch_keep_open));
 }
 
 // Return true if the job for "term" is still running.
@@ -7326,12 +7325,12 @@ term_job_running_not_none(Terminal *term) {
 // Return true if "term" has an active channel and used ":term NONE".
 int
 term_none_open(Terminal *term) {
-   // Also consider the job finished when the channel is closed, to avoid a
-   // race condition when updating the title.
-   return term != NULL
-      && term->job != NULL
-      && channel_is_open(term->job->jv_channel)
-      && term->job->jv_channel->ch_keep_open;
+   //Also consider the job finished when the channel is closed, to avoid a
+   //race condition when updating the title.
+   return term
+      && term->job
+      && channel_is_open(chJobGetChannel(term->job))
+      && chJobGetChannel(term->job)->ch_keep_open;
 }
 
 // Used to confirm whether we would like to kill a terminal. Return OK when the user confirms to 
@@ -7378,7 +7377,7 @@ term_try_stop_job(Book* book) {
       // Call job_status() to update jv_status. It may cause the job to be
       // cleaned up but it won't be freed.
       job_status(job);
-      if (job->jv_status >= JOB_ENDED)
+      if (chJobGetStatus(job) >= JOB_ENDED)
          return OK;
 
       ui_delay(10L, true);
@@ -7460,8 +7459,9 @@ update_snapshot(Terminal* term) {
    CellDeco fillDeco, newFillDeco;
    CellDeco* p;
 
-   ch_log(term->job == NULL ? NULL : term->job->jv_channel,
-              "Adding terminal portal snapshot to buffer");
+   ch_log(
+      term->job ? chJobGetChannel(term->job) : null, "Adding terminal portal snapshot to buffer"
+   );
 
    // First remove the lines that were appended before, they might be outdated.
    cleanup_scrollback(term);
@@ -7843,7 +7843,7 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    len = term_convert_key(term, c, modmask, msg);
    if (len > 0)
       // TODO: if FAIL is returned, stop?
-      channel_send(term->job->jv_channel, get_tty_part(term), (CS)msg, (int)len, NULL);
+      channel_send(chJobGetChannel(term->job), get_tty_part(term), (CS)msg, (int)len, NULL);
 
    return OK;
 }
@@ -7851,14 +7851,10 @@ send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
 // Handle CTRL-W "": send register contents to the job.
 private void
 term_paste_register(Unt prev_c) {
-   ListItem   *item;
-   long   reglen = 0;
-   int      type;
+   Long reglen = 0;
 
-   if (add_to_showcmd(prev_c)) {
-      if (add_to_showcmd('"'))
-         out_flush();
-   } 
+   if (add_to_showcmd(prev_c) && add_to_showcmd('"'))
+      out_flush();
 
    Unt c = term_vgetc();
    clear_showcmd();
@@ -7878,13 +7874,14 @@ term_paste_register(Unt prev_c) {
    if (!l)
       return;
 
-   type = get_reg_type(c, &reglen);
+   int type = get_reg_type(c, &reglen);
+   
+   ListItem* item;
    FOR_ALL_LIST_ITEMS(l, item) {
       CS s = tv_get_string(&item->c);
-      channel_send(curBook->term->job->jv_channel, PART_IN, s, (int)STRLEN(s), NULL);
-
+      channel_send(chJobGetChannel(curBook->term->job), PART_IN, s, (int)STRLEN(s), NULL);
       if (item->next || type == MLINE)
-         channel_send(curBook->term->job->jv_channel, PART_IN, S"\r", 1, NULL);
+         channel_send(chJobGetChannel(curBook->term->job), PART_IN, S"\r", 1, NULL);
    }
    list_free(l);
 }
@@ -8022,7 +8019,7 @@ terminal_loop(int blocking) {
    Unt raw_c;
    Unt termwinkey = 0;
    int ret;
-   int tty_fd = curBook->term->job->jv_channel->fds[get_tty_part(curBook->term)].ch_fd;
+   int tty_fd = chJobGetChannel(curBook->term->job)->fds[get_tty_part(curBook->term)].ch_fd;
    Boole restoreCursor = false;
 
    // Remember the terminal we are sending keys to.  However, the terminal might be closed while 
@@ -8628,7 +8625,7 @@ may_close_term_popup(void) {
 // Called when a channel is going to be closed, before invoking the close callback.
 void
 term_channel_closing(Channel* ch) {
-   for (Terminal* term = first_term; term != NULL; term = term->next) {
+   for (Terminal* term = fstTermP; term != NULL; term = term->next) {
       if (term->job == ch->job && !term->isChannelClosed)
           term->isChannelClosing = true;
    } 
@@ -8641,7 +8638,7 @@ term_channel_closed(Channel* ch) {
    Terminal* next_term;
    int did_one = false;
 
-   for (term = first_term; term != NULL; term = next_term) {
+   for (term = fstTermP; term != NULL; term = next_term) {
       next_term = term->next;
       if (term->job == ch->job && !term->isChannelClosed) {
          term->isChannelClosed = true;
@@ -8657,7 +8654,7 @@ term_channel_closed(Channel* ch) {
          }
 
          if (term_after_channel_closed(term))
-            next_term = first_term;
+            next_term = fstTermP;
       }
    }
 
@@ -8680,13 +8677,13 @@ void
 term_check_channel_closed_recently(void) {
    Terminal* next_term;
 
-   for (Terminal* term = first_term; term != NULL; term = next_term) {
+   for (Terminal* term = fstTermP; term != NULL; term = next_term) {
       next_term = term->next;
       if (term->isChannelRecentlyClosed) {
          term->isChannelRecentlyClosed = false;
          if (term_after_channel_closed(term))
             // start over, the list may have changed
-            next_term = first_term;
+            next_term = fstTermP;
       }
    }
 }
@@ -8771,7 +8768,7 @@ termUpdatePortal(Portal* po) {
    if (term->rows != newrows || term->cols != newcols) {
       term->vterm_size_changed = true;
       vterm_set_size(vterm, newrows, newcols);
-      ch_log(term->job->jv_channel, "Resizing terminal to %d lines", newrows);
+      ch_log(chJobGetChannel(term->job), "Resizing terminal to %d lines", newrows);
       term_report_winsize(term, newrows, newcols);
 
       //Updating the terminal size will cause the snapshot to be cleared.
@@ -9006,7 +9003,7 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
    Terminal* term = (Terminal *)user;
    JsReader reader;
    Var   tv;
-   Channel* channel = term->job == NULL ? NULL : term->job->jv_channel;
+   Channel* channel = term->job ? chJobGetChannel(term->job) : null;
    ArrayList* gap = &term->oscBuilder;
 
    // We recognize only OSC 5 1 ; {command} and OSC 7 ; {command}
@@ -9101,7 +9098,7 @@ parse_csi(
 
    Byte buf[100];
    len = eeSnprintf(buf, 100, "\x1b[3;%d;%dt", x, y);
-   channel_send(term->job->jv_channel, get_tty_part(term), buf, len, NULL);
+   channel_send(chJobGetChannel(term->job), get_tty_part(term), buf, len, NULL);
    return 1;
 }
 
@@ -9220,7 +9217,7 @@ int
 set_ref_in_term(int copyID) {
    int      abort = false;
 
-   for (Terminal* term = first_term; !abort && term; term = term->next) {
+   for (Terminal* term = fstTermP; !abort && term; term = term->next) {
       if (term->job) {
          Var tv;
          tv.tag = VAR_JOB;
@@ -9979,8 +9976,8 @@ f_term_getjob(Arr(Var) argvars, Var* returnVar) {
 
    returnVar->tag = VAR_JOB;
    returnVar->job = book->term->job;
-   if (returnVar->job != NULL)
-      ++returnVar->job->jv_refcount;
+   if (returnVar->job)
+      incRefCount(returnVar->job);
 }
 
 private int
@@ -10120,19 +10117,19 @@ f_term_gettty(Arr(Var) argvars, Var* returnVar) {
       return;
       
    CS p = NULL;
-   int      num = 0;
+   int num = 0;
    returnVar->tag = VAR_STRING;
    if (argvars[1].tag != VAR_UNKNOWN)
       num = tv_get_bool(&argvars[1]);
 
    switch (num) {
    case 0:
-      if (book->term->job != NULL)
-         p = book->term->job->jv_tty_out;
+      if (book->term->job)
+         p = chJobGetTty(book->term->job, true);
       break;
    case 1:
-      if (book->term->job != NULL)
-         p = book->term->job->jv_tty_in;
+      if (book->term->job)
+         p = chJobGetTty(book->term->job, false);
       break;
    default:
       showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[1]));
@@ -10145,7 +10142,7 @@ f_term_gettty(Arr(Var) argvars, Var* returnVar) {
 // "term_list()" function
 void
 f_term_list(Arr(Var) argvars UNUSED, Var* returnVar) {
-   if (first_term == NULL)
+   if (!fstTermP)
       return;
 
    allocReturnList(returnVar);
@@ -10160,12 +10157,9 @@ f_term_list(Arr(Var) argvars UNUSED, Var* returnVar) {
 // "term_scrape(book, row)" function
 void
 f_term_scrape(Arr(Var) argvars, Var* returnVar) {
-   VTermScreen       *screen = NULL;
-   VTermPos       pos;
-   List       *l;
-   Terminal       *term;
+   VTermScreen* screen = NULL;
    CS p;
-   ScrollbackLine       *line;
+   ScrollbackLine* line;
 
    allocReturnList(returnVar);
 
@@ -10173,14 +10167,15 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    if (!book)
       return;
       
-   term = book->term;
+   Terminal* term = book->term;
 
-   l = returnVar->list;
+   List* l = returnVar->list;
+   VTermPos pos;
    pos.row = get_row_number(&argvars[1], term);
 
    if (term->vterm != NULL) {
       screen = vterm_obtain_screen(term->vterm);
-      if (screen == NULL)  // can't really happen
+      if (!screen)  // can't really happen
          return;
       p = NULL;
       line = NULL;
@@ -10188,17 +10183,16 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
       LineNr   lnum = pos.row + term->scrollbackScrolled;
 
       if (lnum < 0 || lnum >= term->scrollback.len)
-          return;
+         return;
       p = memGetLine(book, lnum + 1, false);
       line = (ScrollbackLine *)term->scrollback.c + lnum;
    }
 
    for (pos.col = 0; pos.col < term->cols; ) {
-      Bag      *dcell;
       VTermDeco deco;
-      VTermColor   fg, bg;
+      VTermColor fg, bg;
       Byte colorBuf[4];
-      Byte mbs[MB_MAXBYTES * MAX_COMBINED_SYMBOLS + 1];
+      Byte mbs[MB_MAXBYTES*MAX_COMBINED_SYMBOLS + 1];
       int off = 0;
       int i;
 
@@ -10229,7 +10223,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
          fg = cell.deco.fg;
          bg = cell.deco.bg;
       }
-      dcell = allocBag();
+      Bag* dcell = allocBag();
       listAppendBag(l, dcell);
 
       bagAddString(dcell, S"chars", mbs);
@@ -10253,14 +10247,14 @@ f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
       return;
 
    CS msg = convertVarToStringSingleUse(&argvars[1]);
-   if (msg == NULL)
+   if (!msg)
       return;
    Terminal* term = book->term;
-   if (term->vterm == NULL)
+   if (!term->vterm)
       return;
 
    while (*msg != ZERO) {
-      int c;
+      Unt c;
 
       if (*msg == K_SPECIAL && msg[1] != ZERO && msg[2] != ZERO) {
          c = TO_SPECIAL(msg[1], msg[2]);
@@ -10342,18 +10336,18 @@ f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
       lo("term_wait(): no job to wait for");
       return;
    }
-   if (!book->term->job->jv_channel)
+   if (!chJobGetChannel(book->term->job))
       // channel is closed, nothing to do
       return;
 
    // Get the job status, this will detect a job that finished.
-   if (!book->term->job->jv_channel->ch_keep_open
+   if (!chJobGetChannel(book->term->job)->ch_keep_open
        && STRCMP(job_status(book->term->job), "dead") == 0
    ){
       // The job is dead, keep reading channel I/O until the channel is
       // closed. book->term may become NULL if the terminal was closed while waiting.
       lo("term_wait(): waiting for channel to close");
-      while (book->term != NULL && !book->term->isChannelClosed) {
+      while (book->term && !book->term->isChannelClosed) {
          term_flush_messages();
 
          ui_delay(10L, false);
@@ -10415,9 +10409,10 @@ initSubtermAndJob(
    // This may change a string in "argvar".
    term->job = startJob(argvar, argv, opt, &term->job);
    if (term->job)
-      ++term->job->jv_refcount;
+      incRefCount(term->job);
 
-   return term->job && term->job->jv_channel && term->job->jv_status != JOB_FAILED ? OK : FAIL;
+   return term->job && chJobGetChannel(term->job) && chJobGetStatus(term->job) != JOB_FAILED 
+      ? OK : FAIL;
 }
 
 private int
@@ -10426,12 +10421,10 @@ create_pty_only(Terminal* term, JobOptions* opt) {
       return FAIL;
 
    term->job = job_alloc();
-   if (term->job == NULL)
-      return FAIL;
-   ++term->job->jv_refcount;
+   incRefCount(term->job);
 
    // behave like the job is already finished
-   term->job->jv_status = JOB_FINISHED;
+   chJobSetStatus(term->job, JOB_FINISHED);
 
    return mch_create_pty_channel(term->job, opt);
 }
@@ -10448,14 +10441,14 @@ term_free_vterm(Terminal* term) {
 private void
 term_report_winsize(Terminal* term, int rows, int cols) {
    // Use an ioctl() to report the new portal size to the job.
-   if (!term->job || term->job->jv_channel == NULL)
+   if (!term->job || !chJobGetChannel(term->job))
       return;
 
    int fd = -1;
    int part;
 
    for (part = PART_OUT; part < PART_COUNT; ++part) {
-      fd = term->job->jv_channel->fds[part].ch_fd;
+      fd = chJobGetChannel(term->job)->fds[part].ch_fd;
       if (mch_isatty(fd))
          break;
    }
@@ -10524,7 +10517,6 @@ preserve_exit(void) {
 //Wait "msec" msec until a character is available from file descriptor "fd".
 //"msec" == 0 will check for characters once.
 //"msec" == -1 will block until a character is available.
-//When a GUI is being used, this will not be used for input -- webb
 //Or when a Linux GPM mouse event is waiting.
 //Or when a clientserver message is on the queue.
 //"interrupted" (if not NULL) is set to true when no character is available
@@ -10533,7 +10525,7 @@ int
 realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) {
    int ret;
    int result;
-   static int busy = false;
+   static Boole busy = false;
 
    //Remember at what time we started, so that we know how much longer we
    //should wait after being interrupted.
@@ -10555,9 +10547,8 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       // These are static because they can take 8 Kbyte each and cause the
       // signal stack to run out with -O3.
       static fd_set   rfds, wfds, efds;
-      int      maxfd;
-      long      towait = msec;
-
+      int maxfd;
+      Long towait = msec;
 
       if (towait >= 0) {
          tv.tv_sec = towait / 1000;
@@ -10566,7 +10557,7 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       } else
          tvp = NULL;
 
-      //Select on ready for reading and exceptional condition (end of file).
+   //Select on ready for reading and exceptional condition (end of file).
    select_eintr:
       FD_ZERO(&rfds);
       FD_ZERO(&wfds);
@@ -10595,7 +10586,6 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       ei (interrupted != NULL && ret > 0)
          *interrupted = true;
 
-# ifdef EINTR
       if (ret == -1 && errno == EINTR) {
 
          // Check whether window has been resized, EINTR may be caused by SIGWINCH.
@@ -10609,7 +10599,6 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
          // external command after the process has finished.
          goto select_eintr;
       }
-# endif
 
       //Technically we should first call wl_display_prepare_read() before
       //polling the fd, then read and dispatch after we poll. However that is

@@ -3811,7 +3811,7 @@ f_setmatches(Var *argvars, Var* returnVar) {
                       return;
 
                   list_append_tv(s, &di->c);
-                  s->refcount++;
+                  s->refCount++;
                } else
                   break;
             }

@@ -2657,30 +2657,30 @@ debuggy_find(
          Var* tv = eval_expr_no_emsg(bp);
          if (tv) {
             if (bp->dbg_val == NULL) {
-                debug_oldval = typval_tostring(NULL, true);
+                debug_oldval = daStringOfVar(NULL, true);
                 bp->dbg_val = tv;
-                debug_newval = typval_tostring(bp->dbg_val, true);
+                debug_newval = daStringOfVar(bp->dbg_val, true);
                 line = true;
             } else {
                // Use "==" instead of "is" for strings, that is what we always have done.
                ExprType type = tv->tag == VAR_STRING ? EXPR_EQUAL : EXPR_IS;
 
-               if (typval_compare(tv, bp->dbg_val, type, false) == OK && tv->number == false) {
+               if (daCompareVars(tv, bp->dbg_val, type, false) == OK && tv->number == false) {
                   Var *v;
 
                   line = true;
-                  debug_oldval = typval_tostring(bp->dbg_val, true);
-                  // Need to evaluate again, typval_compare() overwrites "tv".
+                  debug_oldval = daStringOfVar(bp->dbg_val, true);
+                  // Need to evaluate again, daCompareVars() overwrites "tv".
                   v = eval_expr_no_emsg(bp);
-                  debug_newval = typval_tostring(v, true);
+                  debug_newval = daStringOfVar(v, true);
                   freeVar(bp->dbg_val);
                   bp->dbg_val = v;
                }
                freeVar(tv);
             }
          } ei (bp->dbg_val != NULL) {
-            debug_oldval = typval_tostring(bp->dbg_val, true);
-            debug_newval = typval_tostring(NULL, true);
+            debug_oldval = daStringOfVar(bp->dbg_val, true);
+            debug_newval = daStringOfVar(NULL, true);
             freeVar(bp->dbg_val);
             bp->dbg_val = NULL;
             line = true;
@@ -12375,7 +12375,7 @@ register_closure(UserFunc *fp) {
       return OK;
    funccal_unref(fp->uf_scoped, fp, false);
    fp->uf_scoped = currentCallS;
-   currentCallS->refcount++;
+   currentCallS->refCount++;
 
    if (ga_grow(&currentCallS->fc_ufuncs, 1) == FAIL)
       return FAIL;
@@ -12456,7 +12456,7 @@ register_cfunc(cfunc_T cb, cfunc_free_T cb_free, void *state) {
    if (!fp)
       return NULL;
 
-   fp->refcount = 1;
+   fp->refCount = 1;
    fp->uf_varargs = true;
    fp->uf_flags = FC_CFUNC | FC_LAMBDA;
    fp->uf_calls = 0;
@@ -12972,7 +12972,7 @@ get_lambda_tv(
          // No a: variables are used for sure.
          flags |= FC_NOARGS;
 
-      fp->refcount = 1;
+      fp->refCount = 1;
       fp->args = newargs;
       ga_init(&fp->defaultArgs);
 
@@ -12993,7 +12993,7 @@ get_lambda_tv(
 
 
       pt->fn = fp;
-      pt->refcount = 1;
+      pt->refCount = 1;
       returnVar->partial = pt;
       returnVar->tag = VAR_PARTIAL;
 
@@ -13381,13 +13381,13 @@ free_funccal_contents(FnCall *fc) {
 //Unless it is still in use by a closure.
 private void
 cleanup_function_call(FnCall *fc) {
-    int   may_free_fc = fc->refcount <= 0;
+    int   may_free_fc = fc->refCount <= 0;
     int   free_fc = true;
 
     currentCallS = fc->fc_caller;
 
     // Free all l: variables if not referred.
-   if (may_free_fc && fc->localVars.refcount == DO_NOT_FREE_CNT)
+   if (may_free_fc && fc->localVars.refCount == DO_NOT_FREE_CNT)
       vars_clear(&fc->localVars.hashTable);
    else
       free_fc = false;
@@ -13395,7 +13395,7 @@ cleanup_function_call(FnCall *fc) {
     // If the a:000 list and the l: and a: dicts are not referenced and
     // there is no closure using it, we can free the FnCall and what's
     // in it.
-   if (may_free_fc && fc->argVars.refcount == DO_NOT_FREE_CNT)
+   if (may_free_fc && fc->argVars.refCount == DO_NOT_FREE_CNT)
       vars_clear_ext(&fc->argVars.hashTable, false);
    else {
       int       todo;
@@ -13415,7 +13415,7 @@ cleanup_function_call(FnCall *fc) {
       }
    }
 
-   if (may_free_fc && fc->arguments.refcount == DO_NOT_FREE_CNT)
+   if (may_free_fc && fc->arguments.refCount == DO_NOT_FREE_CNT)
       fc->arguments.first = NULL;
    else {
       ListItem *li;
@@ -13479,11 +13479,11 @@ funccal_unref(FnCall *fc, UserFunc *fp, int force) {
    if (!fc)
       return;
 
-   if (--fc->refcount <= 0 
+   if (--fc->refCount <= 0 
          && (force || (
-         fc->arguments.refcount == DO_NOT_FREE_CNT
-         && fc->localVars.refcount == DO_NOT_FREE_CNT
-         && fc->argVars.refcount == DO_NOT_FREE_CNT))
+         fc->arguments.refCount == DO_NOT_FREE_CNT
+         && fc->localVars.refCount == DO_NOT_FREE_CNT
+         && fc->argVars.refCount == DO_NOT_FREE_CNT))
    ) {
       for (FnCall** pfc = &previous_funccal; *pfc; pfc = &(*pfc)->fc_caller) {
          if (fc == *pfc) {
@@ -13687,7 +13687,7 @@ call_user_func(
       v->flags = DI_FLAGS_RO | DI_FLAGS_FIX;
       hash_add(&fc->localVars.hashTable, textOfDi(v), S"set self dictionary");
       v->c = (Var){.tag = VAR_BAG, .lock = 0, .bag = selfdict};
-      ++selfdict->refcount;
+      ++selfdict->refCount;
    }
 
    //Init a: variables, unless none found (in lambda).
@@ -13711,7 +13711,7 @@ call_user_func(
       v->c = (Var){.tag = VAR_LIST, .lock = VAR_FIXED, .list = &fc->arguments };
    }
    CLEAR_FIELD(fc->arguments);
-   fc->arguments.refcount = DO_NOT_FREE_CNT;
+   fc->arguments.refCount = DO_NOT_FREE_CNT;
    fc->arguments.lock = VAR_FIXED;
 
    //Set a:firstline to "firstline" and a:lastline to "lastline".
@@ -13981,7 +13981,7 @@ call_user_func_check(
       ++fp->uf_calls;
       error = call_user_func(fp, argcount, argvars, returnVar, funcexe,
                   (fp->uf_flags & FC_DICT) ? selfdict : NULL);
-      if (--fp->uf_calls <= 0 && fp->refcount <= 0)
+      if (--fp->uf_calls <= 0 && fp->refCount <= 0)
           // Function was unreferenced while being used, free it now.
           func_clear_free(fp, false);
       if (did_save_redo)
@@ -14056,7 +14056,7 @@ delete_scrifntions(int sid) {
                   // Function is executing, don't free it but do remove
                   // it from the hashtable.
                   if (func_remove(fp))
-                      fp->refcount--;
+                      fp->refCount--;
                } else {
                   func_clear(fp, true);
                   // When clearing a function another function can be
@@ -15195,11 +15195,11 @@ c_delfunction(Invocation* invo) {
       //refcount of 1 for the entry in the hashtable.  When deleting
       //it and the refcount is more than one, it should be kept. A numbered function and lambda 
       //should be kept if the refcount is one or more.
-      if (fp->refcount > (func_name_refcount(fp->uf_name) ? 0 : 1)) {
+      if (fp->refCount > (func_name_refcount(fp->uf_name) ? 0 : 1)) {
          //Function is still referenced somewhere.  Don't free it but
          //do remove it from the hashtable.
          if (func_remove(fp))
-            fp->refcount--;
+            fp->refCount--;
       } else
          func_clear_free(fp, false);
    }
@@ -15224,7 +15224,7 @@ func_unref(CS name) {
 //Also when it becomes one and uf_partial points to the function.
 void
 func_ptr_unref(UserFunc* fp) {
-   if (fp && (--fp->refcount <= 0) && fp->uf_calls == 0)
+   if (fp && (--fp->refCount <= 0) && fp->uf_calls == 0)
       // Only delete it when it's not being used. Otherwise it's done when "uf_calls" becomes 0
       func_clear_free(fp, false);
 }
@@ -15237,7 +15237,7 @@ func_ref(CS name) {
       return;
    UserFunc* fp = find_func(name, false);
    if (fp)
-      ++fp->refcount;
+      ++fp->refCount;
    ei (numbered_function(name))
       // Only give an error for a numbered function.
       // Fail silently, when named or lambda function isn't found.
@@ -15248,7 +15248,7 @@ func_ref(CS name) {
 void
 func_ptr_ref(UserFunc *fp) {
    if (fp)
-      ++fp->refcount;
+      ++fp->refCount;
 }
 
 //Return true if items in "fc" do not have "copyID". That means they are not
@@ -15551,7 +15551,7 @@ c_call(Invocation* invo) {
 
    //Increase refcount on dictionary, it could get deleted when evaluating the arguments
    if (fudi.bag)
-      ++fudi.bag->refcount;
+      ++fudi.bag->refCount;
 
    // If it is the name of a variable of type VAR_FUNC or VAR_PARTIAL use its
    // contents. For VAR_PARTIAL get its partial, unless we already have one
@@ -15690,7 +15690,7 @@ make_partial(Bag* selfdict_in, Var* returnVar) {
    if (fp && (fp->uf_flags & FC_DICT)) {
       PartiallyApplied   *pt = ALLOC_CLEAR_ONE(PartiallyApplied);
       if (pt) {
-         pt->refcount = 1;
+         pt->refCount = 1;
          pt->self = selfdict;
          pt->isAuto = true;
          selfdict = NULL;
@@ -15795,7 +15795,7 @@ get_funccal(void) {
 // NULL if there is no current funccal.
 EeSet *
 get_funccal_local_ht(void) {
-   if (!currentCallS || currentCallS->localVars.refcount == 0)
+   if (!currentCallS || currentCallS->localVars.refCount == 0)
       return NULL;
    return &get_funccal()->localVars.hashTable;
 }
@@ -15803,7 +15803,7 @@ get_funccal_local_ht(void) {
 // Return the l: scope variable. Return NULL if there is no current funccal.
 DictItem *
 get_funccal_local_var(void) {
-   if (!currentCallS || currentCallS->localVars.refcount == 0)
+   if (!currentCallS || currentCallS->localVars.refCount == 0)
       return NULL;
    return &get_funccal()->argVarsVar;
 }
@@ -15812,7 +15812,7 @@ get_funccal_local_var(void) {
 //Return NULL if there is no current funccal.
 EeSet *
 get_funccal_args_ht(void) {
-   if (currentCallS == NULL || currentCallS->localVars.refcount == 0)
+   if (currentCallS == NULL || currentCallS->localVars.refCount == 0)
       return NULL;
    return &get_funccal()->argVars.hashTable;
 }
@@ -15820,7 +15820,7 @@ get_funccal_args_ht(void) {
 // Return the a: scope variable. Return NULL if there is no current funccal.
 DictItem *
 get_funccal_args_var(void) {
-   if (currentCallS == NULL || currentCallS->localVars.refcount == 0)
+   if (currentCallS == NULL || currentCallS->localVars.refCount == 0)
       return NULL;
    return &get_funccal()->argVarsVar;
 }
@@ -15828,7 +15828,7 @@ get_funccal_args_var(void) {
 // List function variables, if there is a function.
 void
 list_func_vars(int *first) {
-   if (currentCallS != NULL && currentCallS->localVars.refcount > 0)
+   if (currentCallS != NULL && currentCallS->localVars.refCount > 0)
       list_hashtable_vars(&currentCallS->localVars.hashTable, S"l:", false, first);
 }
 
@@ -16257,10 +16257,10 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
             emsg_funcname( e_cannot_redefine_function_str_it_is_in_use, name);
             goto errret_keep;
          }
-         if (fp->refcount > 1) {
+         if (fp->refCount > 1) {
             // This function is referenced somewhere, don't redefine it but
             // create a new one.
-            --fp->refcount;
+            --fp->refCount;
             fp->uf_flags |= FC_REMOVED;
             fp = NULL;
             overwrite = true;
@@ -16352,7 +16352,7 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
          free_fp = true;
          goto erret;
       }
-      fp->refcount = 1;
+      fp->refCount = 1;
    }
 
    fp->lines = newlines;

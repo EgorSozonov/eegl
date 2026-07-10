@@ -1,4 +1,7 @@
 /* src/message.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 CS msg_strtrunc(CS s, int force);
 void trunc_string(Byte *s, Byte *builder, int room_in, int buflen);
 void msg_start(void);

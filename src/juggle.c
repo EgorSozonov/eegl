@@ -174,7 +174,7 @@ may_record_change(
 
    if (curBook->recordedChanges == NULL) {
       curBook->recordedChanges = list_alloc();
-      ++curBook->recordedChanges->refcount;
+      ++curBook->recordedChanges->refCount;
       curBook->recordedChanges->lock = VAR_FIXED;
    }
 

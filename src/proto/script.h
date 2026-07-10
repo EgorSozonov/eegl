@@ -1,4 +1,7 @@
 /* src/script.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void estack_init(void);
 Estack *estack_push(CallFrame type, CS name, long lnum);
 Estack *estack_push_ufunc(UserFunc *ufunc, long lnum);

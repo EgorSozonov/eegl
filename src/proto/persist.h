@@ -1,4 +1,7 @@
 /* src/persist.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 CS get_users(Expand *xp, int idx);
 int match_user(CS name);
 void free_homedir(void);

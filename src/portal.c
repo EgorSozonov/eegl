@@ -2540,7 +2540,7 @@ makePortInfoDict(
    int skipcol
 ) {
    Bag* d = allocBag();
-   d->refcount = 1;
+   d->refCount = 1;
 
    // not actually looping, for breaking out on error
    while (1) {
@@ -2653,7 +2653,7 @@ checkWhichPortalsResized(
             bagUnref(d);
             break;
          }
-         --d->refcount;
+         --d->refCount;
 
          tot_width += abs(width);
          tot_height += abs(height);
@@ -2672,7 +2672,7 @@ checkWhichPortalsResized(
          if (bagAddBag(v_event, S"all", alldict) == FAIL)
             bagUnref(alldict);
          else
-            --alldict->refcount;
+            --alldict->refCount;
       }
    }
 }
@@ -2708,7 +2708,7 @@ may_trigger_win_scrolled_resized(void) {
    if (trigger_scroll) {
       // Create the dict with entries for v:event before making the snapshot.
       scroll_dict = allocBag();
-      scroll_dict->refcount = 1;
+      scroll_dict->refCount = 1;
       checkWhichPortalsResized(NULL, NULL, NULL, NULL, scroll_dict);
    }
 
@@ -7785,7 +7785,7 @@ apply_general_options(Portal* po, Bag* dict) {
       }
       if (ok) {
          po->pup.mask = di->c.list;
-         ++po->pup.mask->refcount;
+         ++po->pup.mask->refCount;
          EE_CLEAR(po->pup.maskCells);
       } else {
          showErrFmtMsg(_(e_invalid_value_for_argument_str), "mask");

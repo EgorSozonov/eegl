@@ -1,4 +1,7 @@
 /* src/normal.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 int findsent(int dir, long count);
 int normFindNextParagraf(Boole *pincl, int dir, long count, int what, int both);
 int startPS(LineNr lnum, int para, int both);

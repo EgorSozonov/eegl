@@ -1,4 +1,7 @@
 /* src/fileio.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void init_homedir(void);
 int file_is_readable(CS fname);
 void f_chdir(Var *argvars, Var *returnVar);
@@ -111,7 +114,7 @@ int get2c(FILE *fd);
 int get3c(FILE *fd);
 int get4c(FILE *fd);
 CS read_string(FILE *fd, int cnt);
-int call_shell(CS cmd, CS extraArg, int opt);
+PolyWithStatus call_shell(CS cmd, CS extraArg, Unt opt);
 long mch_getperm(CS name);
 int mch_setperm(CS name, long perm);
 void mch_copy_xattr(CS from_file, CS to_file);

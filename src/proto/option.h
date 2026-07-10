@@ -1,4 +1,7 @@
 /* src/option.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void optSetStringDefault(CS name, CS val);
 void optFreeAllOptions(void);
 void optInit1(void);

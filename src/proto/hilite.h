@@ -1,4 +1,7 @@
 /* src/hilite.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 int highlight_link_id(Short hiId);
 void initHilite(int reset);
 void doHilite(CS line, Boole forceit, Boole init);

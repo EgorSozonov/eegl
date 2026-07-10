@@ -279,6 +279,7 @@
 [-] cindent (smartindent is enough)
 [-] scripting capabilities in commands (:if, :try etc). They will be in Wren only
 [-] request of terminal version - useless
+[-] EINTR ifdefs
 
 tag.c:do_tag (weird matches is static, also newMatches?)
 

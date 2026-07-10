@@ -4047,7 +4047,7 @@ vwl_display_dispatch(WaylandDisplay *display) {
 private int
 vwl_display_dispatch_any(WaylandDisplay* display) {
    if (display->proxy == NULL)
-   return -1;
+      return -1;
 
    while (wl_display_prepare_read(display->proxy) == -1) {
       // Dispatch any queued events so that we can start reading

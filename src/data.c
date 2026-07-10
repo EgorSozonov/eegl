@@ -145,13 +145,13 @@ returnVar_list_set(OUT Var* returnVar, List *l) {
    returnVar->tag = VAR_LIST;
    returnVar->list = l;
    if (l)
-      ++l->refcount;
+      ++l->refCount;
 }
 
 // Unreference a list: decrement the reference count and free it when it becomes zero.
 void
 list_unref(List* l) {
-   if (l && --l->refcount <= 0)
+   if (l && --l->refCount <= 0)
       list_free(l);
 }
 
@@ -477,7 +477,7 @@ listAppendBag(List *list, Bag* bag) {
 
    li->c = (Var){.tag = VAR_BAG, .lock = 0, .bag = bag};
    list_append(list, li);
-   ++bag->refcount;
+   ++bag->refCount;
    return OK;
 }
 
@@ -488,7 +488,7 @@ list_append_list(List *list1, List *list2) {
       
    li->c = (Var){.tag = VAR_LIST, .lock = 0, .list = list2};
    list_append(list1, li);
-   ++list2->refcount;
+   ++list2->refCount;
    return OK;
 }
 
@@ -745,7 +745,7 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
    } else {
       if (value_check_lock(l->lock, text(N_("flatten() argument")), true))
          return;
-      ++l->refcount;
+      ++l->refCount;
    }
 
     list_flatten(l, NULL, l->len, maxdepth);
@@ -852,7 +852,7 @@ list_concat(List *l1, List *l2, Var *tv) {
    tv->lock = 0;
    tv->list = l;
    if (!l1)
-      ++l->refcount;
+      ++l->refCount;
 
    // append all items from the second list
    return list_extend(l, l2, NULL);
@@ -958,7 +958,7 @@ list_copy(List *orig, int deep, int top, int copyID) {
          copy_tv(OUT &ni->c, &item->c);
       list_append(copy, ni);
    }
-   ++copy->refcount;
+   ++copy->refCount;
    if (item) {
      list_unref(copy);
      copy = NULL;
@@ -1252,7 +1252,7 @@ init_static_list(StaticList10 *sl) {
    CLEAR_POINTER(sl);
    l->first = &sl->items[0];
    l->lv_u.mat.last = &sl->items[9];
-   l->refcount = DO_NOT_FREE_CNT;
+   l->refCount = DO_NOT_FREE_CNT;
    l->lock = VAR_FIXED;
    sl->list.len = 10;
 
@@ -3649,24 +3649,24 @@ copy_tv(OUT Var* to, Var* from) {
    case VAR_NUMBER:
    case VAR_BOOL:
    case VAR_SPECIAL:
-       to->number = from->number;
-       break;
+      to->number = from->number;
+      break;
    case VAR_FLOAT:
-       to->floatt = from->floatt;
-       break;
+      to->floatt = from->floatt;
+      break;
    case VAR_JOB:
-       to->job = from->job;
-       if (to->job != NULL)
-      ++to->job->jv_refcount;
-       break;
+      to->job = from->job;
+      if (to->job)
+         incRefCount(to->job);
+      break;
    case VAR_CHANNEL:
-       to->channel = from->channel;
-       if (to->channel != NULL)
-      ++to->channel->refcount;
-       break;
+      to->channel = from->channel;
+      if (to->channel)
+         ++to->channel->refCount;
+      break;
    case VAR_STRING:
    case VAR_FUNC:
-      if (from->string == NULL)
+      if (!from->string)
          to->string = NULL;
       else {
          to->string = copyStr(from->string);
@@ -3679,15 +3679,15 @@ copy_tv(OUT Var* to, Var* from) {
          to->partial = NULL;
       else {
          to->partial = from->partial;
-         ++to->partial->refcount;
+         ++to->partial->refCount;
       }
       break;
    case VAR_BLOB:
-      if (from->blob == NULL)
+      if (!from->blob)
          to->blob = NULL;
       else {
          to->blob = from->blob;
-         ++to->blob->refcount;
+         ++to->blob->refCount;
       }
       break;
    case VAR_LIST:
@@ -3695,15 +3695,15 @@ copy_tv(OUT Var* to, Var* from) {
          to->list = NULL;
       else {
          to->list = from->list;
-         ++to->list->refcount;
+         ++to->list->refCount;
       }
       break;
    case VAR_BAG:
-      if (from->bag == NULL)
+      if (!from->bag)
          to->bag = NULL;
       else {
          to->bag = from->bag;
-         ++to->bag->refcount;
+         ++to->bag->refCount;
       }
       break;
    case VAR_VOID:
@@ -3711,22 +3711,22 @@ copy_tv(OUT Var* to, Var* from) {
       break;
    case VAR_UNKNOWN:
    case VAR_ANY:
-       internal_error_no_abort((CS)"copy_tv(UNKNOWN)");
-       break;
+      internal_error_no_abort(S"copy_tv(UNKNOWN)");
+      break;
    }
 }
 
 //Compare "tv1" and "tv2". Put the result in "tv1".  Caller should clear "tv2".
 int
-typval_compare(
-   Var   *tv1,   // first operand
-   Var   *tv2,   // second operand
-   ExprType   type,   // operator
+daCompareVars(
+   Var* tv1,   // first operand
+   Var* tv2,   // second operand
+   ExprType type,   // operator
    Boole ignoreCase
 ) {
-   Long   n1, n2;
-   int      res = 0;
-   int      type_is = type == EXPR_IS || type == EXPR_ISNOT;
+   Long n1, n2;
+   int res = 0;
+   int type_is = type == EXPR_IS || type == EXPR_ISNOT;
 
    if (type_is && tv1->tag != tv2->tag) {
       //For "is" a different type always means false, for "isnot" it means true.
@@ -3736,7 +3736,7 @@ typval_compare(
        && tv1->tag != tv2->tag
        && (type == EXPR_EQUAL || type == EXPR_NEQUAL)
    ) {
-      n1 = typval_compare_null(tv1, tv2);
+      n1 = daCompareVars_null(tv1, tv2);
       if (n1 == MAYBE) {
          clearVar(tv1);
          return FAIL;
@@ -3744,19 +3744,19 @@ typval_compare(
       if (type == EXPR_NEQUAL)
          n1 = !n1;
    } ei (tv1->tag == VAR_BLOB || tv2->tag == VAR_BLOB) {
-      if (typval_compare_blob(tv1, tv2, type, &res) == FAIL) {
+      if (daCompareVars_blob(tv1, tv2, type, &res) == FAIL) {
          clearVar(tv1);
          return FAIL;
       }
       n1 = res;
    } ei (tv1->tag == VAR_LIST || tv2->tag == VAR_LIST) {
-      if (typval_compare_list(tv1, tv2, type, ignoreCase, &res) == FAIL) {
+      if (daCompareVars_list(tv1, tv2, type, ignoreCase, &res) == FAIL) {
          clearVar(tv1);
          return FAIL;
       }
       n1 = res;
    } ei (tv1->tag == VAR_BAG || tv2->tag == VAR_BAG) {
-      if (typval_compare_dict(tv1, tv2, type, ignoreCase, &res) == FAIL) {
+      if (daCompareVars_dict(tv1, tv2, type, ignoreCase, &res) == FAIL) {
           clearVar(tv1);
           return FAIL;
       }
@@ -3764,7 +3764,7 @@ typval_compare(
    } ei (tv1->tag == VAR_FUNC || tv2->tag == VAR_FUNC
       || tv1->tag == VAR_PARTIAL || tv2->tag == VAR_PARTIAL
    ) {
-      if (typval_compare_func(tv1, tv2, type, ignoreCase, &res) == FAIL) {
+      if (daCompareVars_func(tv1, tv2, type, ignoreCase, &res) == FAIL) {
           clearVar(tv1);
           return FAIL;
       }
@@ -3839,7 +3839,7 @@ typval_compare(
       if (type == EXPR_NEQUAL)
          n1 = !n1;
    } else {
-      if (typval_compare_string(tv1, tv2, type, ignoreCase, &res) == FAIL) {
+      if (daCompareVars_string(tv1, tv2, type, ignoreCase, &res) == FAIL) {
          clearVar(tv1);
          return FAIL;
       }
@@ -3856,7 +3856,7 @@ typval_compare(
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
 int
-typval_compare_list(
+daCompareVars_list(
    Var    *tv1,
    Var    *tv2,
    ExprType  type,
@@ -3887,7 +3887,7 @@ typval_compare_list(
 
 //Compare v:null with another type.  Return true if the value is NULL.
 int
-typval_compare_null(Var *tv1, Var *tv2) {
+daCompareVars_null(Var *tv1, Var *tv2) {
    if ((tv1->tag == VAR_SPECIAL && tv1->number == VVAL_NULL)
        || (tv2->tag == VAR_SPECIAL && tv2->number == VVAL_NULL)
    ) {
@@ -3920,8 +3920,8 @@ typval_compare_null(Var *tv1, Var *tv2) {
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
 int
-typval_compare_blob(Var* tv1, Var* tv2, ExprType type, int* res) {
-   int       val = 0;
+daCompareVars_blob(Var* tv1, Var* tv2, ExprType type, int* res) {
+   int val = 0;
 
    if (type == EXPR_IS || type == EXPR_ISNOT) {
       val = (tv1->tag == tv2->tag
@@ -3947,7 +3947,7 @@ typval_compare_blob(Var* tv1, Var* tv2, ExprType type, int* res) {
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
 int
-typval_compare_dict(
+daCompareVars_dict(
    Var* tv1,
    Var* tv2,
    ExprType  type,
@@ -3978,7 +3978,7 @@ typval_compare_dict(
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
 int
-typval_compare_func(
+daCompareVars_func(
    Var* tv1,
    Var* tv2,
    ExprType type,
@@ -4015,7 +4015,7 @@ typval_compare_func(
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
 int
-typval_compare_string(
+daCompareVars_string(
    Var* tv1,
    Var* tv2,
    ExprType type,
@@ -4060,7 +4060,7 @@ typval_compare_string(
 //Convert any type to a string, never give an error.
 //When "quotes" is true add quotes to a string. Return an allocated string.
 CS
-typval_tostring(Var *arg, int quotes) {
+daStringOfVar(Var *arg, int quotes) {
    CS tofree;
    Byte numbuf[NUMBUFLEN];
    CS ret = NULL;
@@ -4617,8 +4617,6 @@ private Bag* first_dict = NULL;
 Bag *
 allocBag(void) {
    Bag* d = ALLOC_CLEAR_ONE(Bag);
-   if (!d)
-      return NULL;
 
    // Add the dict to the list of dicts for garbage collection.
    if (first_dict)
@@ -4630,7 +4628,7 @@ allocBag(void) {
    hash_init(&d->hashTable);
    d->lock = 0;
    d->scope = 0;
-   d->refcount = 0;
+   d->refCount = 0;
    d->copyId = 0;
    return d;
 }
@@ -4659,11 +4657,11 @@ allocReturnDict(Var* returnVar) {
 
 // Set a dictionary as the return value
 void
-returnVar_dict_set(Var* returnVar, Bag *d) {
+returnVar_dict_set(Var* returnVar, Bag* b) {
    returnVar->tag = VAR_BAG;
-   returnVar->bag = d;
-   if (d)
-      ++d->refcount;
+   returnVar->bag = b;
+   if (b)
+      ++b->refCount;
 }
 
 //Return the character "str[index]" where "index" is the character index,
@@ -4789,7 +4787,7 @@ bagAddList(Bag* d, CS key, List* list) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_LIST;
    item->c.list = list;
-   ++list->refcount;
+   ++list->refCount;
    if (bagAdd(d, item) == FAIL) {
       dictitem_free(item);
       return FAIL;
@@ -4877,7 +4875,7 @@ bagAddBag(Bag* d, CS key, Bag* dict) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_BAG;
    item->c.bag = dict;
-   ++dict->refcount;
+   ++dict->refCount;
    if (bagAdd(d, item) == FAIL) {
       dictitem_free(item);
       return FAIL;
@@ -5113,7 +5111,7 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
       }
       if (evaluate) {
          if (tvkey.tag == VAR_FLOAT) {
-            tvkey.string = typval_tostring(&tvkey, true);
+            tvkey.string = daStringOfVar(&tvkey, true);
             tvkey.tag = VAR_STRING;
          }
          keyStr = convertVarToString(&tvkey, buf);
@@ -5548,7 +5546,7 @@ bagToList(Arr(Var) argvars, Var* returnVar, dict2List what) {
          li->c.list = l2;
          if (l2 == NULL)
              break;
-         ++l2->refcount;
+         ++l2->refCount;
 
          if (list_append_string(l2, di->key, -1) == FAIL
             || list_append_tv(l2, &di->c) == FAIL)
@@ -5629,11 +5627,10 @@ string_slice(CS str, Long first, Long last, int exclusive) {
 
 // Unreference a Dictionary: decrement the reference count and free it when it becomes zero.
 void
-bagUnref(Bag *d) {
-   if (d && --d->refcount <= 0)
-      dict_free(d);
+bagUnref(Bag* b) {
+   if (b && --b->refCount <= 0)
+      dict_free(b);
 }
-
 
 // Go through the list of dicts and free items without the copyID. true if anything was freed.
 int
@@ -5791,7 +5788,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
       }
    }
 
-   ++copy->refcount;
+   ++copy->refCount;
    if (todo > 0) {
       bagUnref(copy);
       copy = NULL;
@@ -6941,37 +6938,35 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
       break;
 
    case VAR_JOB:
-      if (argvars[0].job != NULL)
-         retval = argvars[0].job->jv_refcount - 1;
+      if (argvars[0].job)
+         retval = getRefCount(argvars[0].job) - 1;
       break;
    case VAR_CHANNEL:
-      if (argvars[0].channel != NULL)
-         retval = argvars[0].channel->refcount - 1;
+      if (argvars[0].channel)
+         retval = argvars[0].channel->refCount - 1;
       break;
    case VAR_FUNC:
-      if (argvars[0].string != NULL) {
-         UserFunc *fp;
-
-         fp = find_func(argvars[0].string, false);
+      if (argvars[0].string) {
+         UserFunc* fp = find_func(argvars[0].string, false);
          if (fp)
-            retval = fp->refcount;
+            retval = fp->refCount;
       }
       break;
    case VAR_PARTIAL:
       if (argvars[0].partial != NULL)
-         retval = argvars[0].partial->refcount - 1;
+         retval = argvars[0].partial->refCount - 1;
       break;
    case VAR_BLOB:
       if (argvars[0].blob != NULL)
-         retval = argvars[0].blob->refcount - 1;
+         retval = argvars[0].blob->refCount - 1;
       break;
    case VAR_LIST:
       if (argvars[0].list != NULL)
-         retval = argvars[0].list->refcount - 1;
+         retval = argvars[0].list->refCount - 1;
       break;
    case VAR_BAG:
       if (argvars[0].bag != NULL)
-         retval = argvars[0].bag->refcount - 1;
+         retval = argvars[0].bag->refCount - 1;
       break;
    }
 
@@ -7275,7 +7270,7 @@ returnVar_blob_set(Var* returnVar, Blob *b) {
    returnVar->tag = VAR_BLOB;
    returnVar->blob = b;
    if (b != NULL)
-      ++b->refcount;
+      ++b->refCount;
 }
 
 int
@@ -7311,7 +7306,7 @@ blob_free(Blob *b) {
 // Unreference a blob: decrement the reference count and free it when it becomes zero.
 void
 blob_unref(Blob *b) {
-   if (b && --b->refcount <= 0)
+   if (b && --b->refCount <= 0)
       blob_free(b);
 }
 
@@ -7416,7 +7411,7 @@ string2blob(CS str) {
    if (*skipwhite(s) != ZERO)
       goto failed;  // text after final digit
 
-   ++blob->refcount;
+   ++blob->refCount;
    return blob;
 
 failed:
@@ -7627,7 +7622,7 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    }
    p = (CS)b->c.c;
    MEMMOVE((CS)newblob->c.c, p + idx, (Unt)(end - idx + 1));
-   ++newblob->refcount;
+   ++newblob->refCount;
    returnVar->tag = VAR_BLOB;
    returnVar->blob = newblob;
 
@@ -8186,15 +8181,15 @@ fuzzy_match_in_list(
             Var   argv[2];
 
             // Invoke the supplied callback (if any) to get the dict item
-            li->c.bag->refcount++;
+            li->c.bag->refCount++;
             argv[0].tag = VAR_BAG;
             argv[0].bag = li->c.bag;
             argv[1].tag = VAR_UNKNOWN;
-            if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL) {
-               if (returnVar.tag == VAR_STRING) {
-                  itemstr = returnVar.string;
-                  itemstr_allocate = true;
-               }
+            if (call_callback(item_cb, -1, &returnVar, 1, argv) != FAIL 
+                  && returnVar.tag == VAR_STRING
+            ) {
+               itemstr = returnVar.string;
+               itemstr_allocate = true;
             }
             bagUnref(li->c.bag);
          }

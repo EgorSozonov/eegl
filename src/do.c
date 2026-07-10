@@ -985,20 +985,17 @@ theend:
 
 //do_filter: filter lines through a command given by the user
 //
-//We mostly use temp files and the call_shell() routine here. This would
-//normally be done using pipes on a Unix machine, but this is more portable
-//to non-unix machines. The call_shell() routine needs to be able
-//to deal with redirection somehow, and should handle things like looking
-//at the PATH env. variable, and adding reasonable extensions to the
-//command name given by the user. All reasonable versions of call_shell() do this.
-//Alternatively, if on Unix and redirecting input or output, but not both,
-//and the @shelltemp option isn't set, use pipes.
-//We use input redirection if do_in is true.
-//We use output redirection if do_out is true.
+//We mostly use temp files and the call_shell() routine here. This would normally be done using 
+//pipes on a Unix machine, but this is more portable to non-unix machines. The call_shell() 
+//routine needs to be able to deal with redirection somehow, and should handle things like looking
+//at the PATH env. variable, and adding reasonable extensions to the command name given by the 
+//user. All reasonable versions of call_shell() do this. Alternatively, if on Unix and redirecting 
+//input or output, but not both, and the @shelltemp option isn't set, use pipes.
+//We use input redirection if do_in is true. We use output redirection if do_out is true.
 private void
 do_filter(
-   LineNr   line1,
-   LineNr   line2,
+   LineNr line1,
+   LineNr line2,
    Invocation* invo,      // for forced 'ff' and 'fenc'
    CS cmd,
    Boole do_in,
@@ -1006,15 +1003,15 @@ do_filter(
 ) {
    CS itmp = NULL;
    CS otmp = NULL;
-   LineNr   linecount;
-   LineNr   read_linecount;
-   Pos   cursor_save;
+   LineNr linecount;
+   LineNr read_linecount;
+   Pos cursor_save;
    Book* curBookSaved = curBook;
-   int      shell_flags = 0;
-   Pos   orig_start = curBook->opStart;
-   Pos   orig_end = curBook->opEnd;
-   int      save_cmod_flags = commModifierG.cmod_flags;
-   int      stmp = p_stmp;
+   Unt shell_flags = 0;
+   Pos orig_start = curBook->opStart;
+   Pos orig_end = curBook->opEnd;
+   int save_cmod_flags = commModifierG.cmod_flags;
+   int stmp = p_stmp;
 
    if (*cmd == ZERO)       // no filter command
       return;
@@ -1044,7 +1041,6 @@ do_filter(
    if (do_out)
       shell_flags |= SHELL_DOOUT;
 
-
    if (!do_in && do_out && !stmp) {
       // Use a pipe to fetch stdout of the command, do not use a temp file.
       shell_flags |= SHELL_READ;
@@ -1060,12 +1056,11 @@ do_filter(
       curBook->opStart.lnum = line1;
       curBook->opEnd.lnum = line2;
       curPor->cursor.lnum = line2;
-    } else
-   if ((do_in && (itmp = eeTempName('i', false)) == NULL)
-      || (do_out && (otmp = eeTempName('o', false)) == NULL))
-   {
-       emsg(_(e_cant_get_temp_file_name));
-       goto filterend;
+   } else if ((do_in && (itmp = eeTempName('i', false)) == NULL)
+      || (do_out && (otmp = eeTempName('o', false)) == NULL)
+   ) {
+      emsg(_(e_cant_get_temp_file_name));
+      goto filterend;
    }
 
    //The writing and reading of temp files will not be shown.
@@ -1113,12 +1108,10 @@ do_filter(
 
    //When call_shell() fails wait_return() is called to give the user a
    //chance to read the error messages. Otherwise errors are ignored, so you
-   //can see the error messages from the command that appear on stdout; use
-   //'u' to fix the text
-   //Switch to cooked mode when not redirecting stdin, avoids that something
-   //like ":r !cat" hangs.
+   //can see the error messages from the command that appear on stdout; use 'u' to fix the text
+   //Switch to cooked mode when not redirecting stdin, avoids that something like ":r !cat" hangs.
    //Pass on the SHELL_DOOUT flag when the output is being redirected.
-   if (call_shell(cmd_buf, null, SHELL_FILTER | SHELL_COOKED | shell_flags)) {
+   if (call_shell(cmd_buf, null, SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
       redraw_later_clear();
       wait_return(false);
    }
@@ -1127,8 +1120,8 @@ do_filter(
    did_check_timestamps = false;
    need_check_timestamps = true;
 
-   // When interrupting the shell command, it may still have produced some
-   // useful output.  Reset gotInterruptG here, so that readfile() won't cancel reading.
+   //When interrupting the shell command, it may still have produced some
+   //useful output. Reset gotInterruptG here, so that readfile() won't cancel reading.
    ui_breakcheck();
    gotInterruptG = false;
 
@@ -1147,7 +1140,7 @@ do_filter(
 
       read_linecount = curBook->mem.lineCount - read_linecount;
 
-      if (shell_flags & SHELL_READ) {
+      if ((shell_flags & SHELL_READ) != 0) {
          curBook->opStart.lnum = line2 + 1;
          curBook->opEnd.lnum = curPor->cursor.lnum;
          appended_lines_mark(line2, read_linecount);

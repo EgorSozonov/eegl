@@ -1,4 +1,7 @@
 /* src/portal.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void portalLayout_lock(void);
 void portalLayout_unlock(void);
 Boole portalLayout_locked(CommIndex cmd);

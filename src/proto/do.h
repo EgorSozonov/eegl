@@ -1,4 +1,7 @@
 /* src/do.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 void do_ascii(Invocation *invo);
 void c_align(Invocation *invo);
 void c_sort(Invocation *invo);

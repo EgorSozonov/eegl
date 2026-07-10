@@ -1,4 +1,7 @@
 /* src/eval.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 int checkIfNameReserved(CS name, int is_objm_access);
 Long num_divide(Long n1, Long n2, Boole *failed);
 Long num_modulus(Long n1, Long n2, Boole *failed);

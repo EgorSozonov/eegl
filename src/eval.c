@@ -217,9 +217,6 @@ private LvalRoot* lvalRootS = null;
 
 #define NAMESPACE_CHAR   S"abglstvw"
 
-// Double linked list of LoopVars in use.
-private LoopVars* firstLoopvarS = NULL;
-
 private int eval2(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
 private int eval3(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
 private int eval4(OUT CS* arg, Var* returnVar, EvalCtx *evalarg);
@@ -1308,7 +1305,7 @@ get_lval_dict_item(
    // a NULL dict is equivalent with an empty dict
    if (lp->var->bag == NULL) {
       lp->var->bag = allocBag();
-      ++lp->var->bag->refcount;
+      ++lp->var->bag->refCount;
    }
    lp->bag = lp->var->bag;
 
@@ -1890,7 +1887,7 @@ tv_op_blob(Var* tv1, Var* tv2, CS op) {
 
    if (tv1->blob == NULL) {
       tv1->blob = tv2->blob;
-      ++tv1->blob->refcount;
+      ++tv1->blob->refCount;
       return OK;
    }
 
@@ -1916,7 +1913,7 @@ tv_op_list(Var* tv1, Var* tv2, CS op) {
 
    if (tv1->list == NULL) {
       tv1->list = tv2->list;
-      ++tv1->list->refcount;
+      ++tv1->list->refCount;
    } else
       list_extend(tv1->list, tv2->list, NULL);
 
@@ -2845,7 +2842,7 @@ eval4(Byte **arg, Var* returnVar, EvalCtx *evalarg) {
 
          // use the line of the comparison for messages
          SOURCING_LNUM = comp_lnum;
-         ret = typval_compare(returnVar, &var2, type, ic);
+         ret = daCompareVars(returnVar, &var2, type, ic);
          clearVar(&var2);
          return ret;
       }
@@ -4002,7 +3999,7 @@ partial_unref(PartiallyApplied *pt) {
    if (!pt)
       return;
 
-   if (--pt->refcount <= 0)
+   if (--pt->refCount <= 0)
       partial_free(pt);
 }
 
@@ -4848,7 +4845,7 @@ handle_subscript(
          if (returnVar->tag == VAR_BAG) {
             selfdict = returnVar->bag;
             if (selfdict)
-               ++selfdict->refcount;
+               ++selfdict->refCount;
          } else
             selfdict = NULL;
          if (eval_index(arg, returnVar, evalarg, verbose) == FAIL) {
@@ -4909,7 +4906,7 @@ item_copy(
       ei (copyID != 0 && from->list->copyId == copyID) {
          // use the copy made earlier
          to->list = from->list->copyList;
-         ++to->list->refcount;
+         ++to->list->refCount;
       } else
          to->list = list_copy(from->list, deep, top, copyID);
       if (to->list == NULL)
@@ -4926,7 +4923,7 @@ item_copy(
       ei (copyID != 0 && from->bag->copyId == copyID) {
          // use the copy made earlier
          to->bag = from->bag->dv_copydict;
-         ++to->bag->refcount;
+         ++to->bag->refCount;
       } else
          to->bag = dict_copy(from->bag, deep, top, copyID);
       if (to->bag == NULL)
@@ -5372,21 +5369,6 @@ eval_next_line(CS arg, EvalCtx* evalarg) {
    if (arg)
       evalarg->eval_using_cmdline = false;
    return skipwhite(line);
-}
-
-
-//For garbage collecting: set references in all variables referenced by all loopvars.
-int
-set_ref_in_loopvars(int copyID) {
-   for (LoopVars* loopvars = firstLoopvarS; loopvars; loopvars = loopvars->lvs_next) {
-      Var* stack = loopvars->lvs_ga.c;
-
-      for (int i = 0; i < loopvars->lvs_ga.len; ++i) {
-         if (set_ref_in_item(stack + i, copyID, NULL, NULL))
-            return true;  // abort
-      } 
-   }
-   return false;
 }
 
 //}}}
@@ -6320,7 +6302,7 @@ letVars(
          ltv.tag = VAR_LIST;
          ltv.lock = 0;
          ltv.list = l;
-         l->refcount = 1;
+         l->refCount = 1;
 
          arg = letOne(skipwhite(arg + 1), &ltv, false, flags | ASSIGN_UNPACK, S"]", op);
          clearVar(&ltv);
@@ -7103,7 +7085,7 @@ item_lock(Var *tv, int deep, int lock, int check_refcount) {
        break;
 
    case VAR_BLOB:
-      if ((b = tv->blob) != NULL && !(check_refcount && b->refcount > 1)) {
+      if ((b = tv->blob) != NULL && !(check_refcount && b->refCount > 1)) {
          if (lock)
             b->lock |= VAR_LOCKED;
          else
@@ -7111,7 +7093,7 @@ item_lock(Var *tv, int deep, int lock, int check_refcount) {
       }
       break;
    case VAR_LIST:
-      if ((l = tv->list) != NULL && !(check_refcount && l->refcount > 1)) {
+      if ((l = tv->list) != NULL && !(check_refcount && l->refCount > 1)) {
          if (lock)
             l->lock |= VAR_LOCKED;
          else
@@ -7128,7 +7110,7 @@ item_lock(Var *tv, int deep, int lock, int check_refcount) {
       }
       break;
    case VAR_BAG:
-      if ((d = tv->bag) != NULL && !(check_refcount && d->refcount > 1)) {
+      if ((d = tv->bag) != NULL && !(check_refcount && d->refCount > 1)) {
          if (lock)
             d->lock |= VAR_LOCKED;
          else
@@ -7428,7 +7410,7 @@ set_EeglVar_list(int idx, List *val) {
    eeglVars[idx].entry.c.tag = VAR_LIST;
    eeglVars[idx].entry.c.list = val;
    if (val)
-      ++val->refcount;
+      ++val->refCount;
 }
 
 // Set Dictionary v: variable to "val".
@@ -7440,7 +7422,7 @@ set_EeglVar_dict(int idx, Bag *val) {
    if (!val)
       return;
 
-   ++val->refcount;
+   ++val->refCount;
    bagSetItemsRo(val);
 }
 
@@ -7611,19 +7593,19 @@ eval_variable(
          if (ht != &globvarht) {
             if (tv->tag == VAR_BAG && tv->bag == NULL) {
                tv->bag = allocBag();
-               ++tv->bag->refcount;
+               ++tv->bag->refCount;
                tv->bag->ty = alloc_type(type);
                if (sv)
                    sv->sv_flags |= SVFLAG_ASSIGNED;
             } ei (tv->tag == VAR_LIST && tv->list == NULL) {
                tv->list = list_alloc();
-               ++tv->list->refcount;
+               ++tv->list->refCount;
                tv->list->ty = alloc_type(type);
                if (sv)
                   sv->sv_flags |= SVFLAG_ASSIGNED;
             } ei (tv->tag == VAR_BLOB && tv->blob == NULL) {
                tv->blob = blob_alloc();
-               ++tv->blob->refcount;
+               ++tv->blob->refCount;
                if (sv)
                   sv->sv_flags |= SVFLAG_ASSIGNED;
             }
@@ -7906,7 +7888,7 @@ init_var_dict(Bag* bag, DictItem* dict_var, int scope) {
    hash_init(&bag->hashTable);
    bag->lock = 0;
    bag->scope = scope;
-   bag->refcount = DO_NOT_FREE_CNT;
+   bag->refCount = DO_NOT_FREE_CNT;
    bag->copyId = 0;
    dict_var->c.bag = bag;
    dict_var->c.tag = VAR_BAG;
@@ -7919,7 +7901,7 @@ init_var_dict(Bag* bag, DictItem* dict_var, int scope) {
 void
 unref_var_dict(Bag* dict) {
    // Now the dict needs to be freed if no one else is using it, go back to normal reference counting.
-   dict->refcount -= DO_NOT_FREE_CNT - 1;
+   dict->refCount -= DO_NOT_FREE_CNT - 1;
    bagUnref(dict);
 }
 
@@ -8793,7 +8775,7 @@ get_callback(Var* arg) {
    CLEAR_FIELD(res);
    if (arg->tag == VAR_PARTIAL && arg->partial) {
       res.cb_partial = arg->partial;
-      ++res.cb_partial->refcount;
+      ++res.cb_partial->refCount;
       res.name = partial_name(res.cb_partial);
    } else {
       if (arg->tag == VAR_STRING && arg->string && SAFE_isdigit(*arg->string))
@@ -8827,7 +8809,7 @@ putCallback(OUT Var* tv, Callback* cb) {
    if (cb->cb_partial) {
       tv->tag = VAR_PARTIAL;
       tv->partial = cb->cb_partial;
-      ++tv->partial->refcount;
+      ++tv->partial->refCount;
    } else {
       tv->tag = VAR_FUNC;
       tv->string = copyStr(cb->name);
@@ -8861,7 +8843,7 @@ evCopyCallback(OUT Callback* dest, Callback* src) {
    if (dest->cb_partial) {
       dest->name = src->name;
       dest->needsFreeing = false;
-      ++dest->cb_partial->refcount;
+      ++dest->cb_partial->refCount;
    } else {
       dest->name = copyStr(src->name);
       dest->needsFreeing = true;
@@ -10151,11 +10133,11 @@ f_empty(Var* argvars, Var* returnVar) {
       break;
 
    case VAR_BLOB:
-      n = argvars[0].blob == NULL || argvars[0].blob->c.len == 0;
+      n = !argvars[0].blob || argvars[0].blob->c.len == 0;
       break;
 
    case VAR_JOB:
-      n = argvars[0].job == NULL || argvars[0].job->jv_status != JOB_STARTED;
+      n = !argvars[0].job || chJobGetStatus(argvars[0].job) != JOB_STARTED;
       break;
    case VAR_CHANNEL:
       n = argvars[0].channel == NULL || !channel_is_open(argvars[0].channel);
@@ -10351,7 +10333,7 @@ execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
       if (list == NULL || list->len == 0)
          // empty list, no commands, empty output
          return;
-      ++list->refcount;
+      ++list->refCount;
    } ei (argvars[arg_off].tag == VAR_JOB || argvars[arg_off].tag == VAR_CHANNEL) {
       showErrFmtMsg(_(e_using_invalid_value_as_string_str), vartype_name(argvars[arg_off].tag));
       return;
@@ -10395,7 +10377,7 @@ execute_common(Arr(Var) argvars, Var* returnVar, int arg_off) {
       item = list->first;
       doCommand(NULL, get_list_line, (void *)&item,
                DOCMD_NOWAIT|DOCMD_VERBOSE|DOCMD_REPEAT|DOCMD_KEYTYPED);
-      --list->refcount;
+      --list->refCount;
    }
    stickyCommandModifiersG = save_stickyCommandModifiersG;
 
@@ -10798,16 +10780,16 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
             if (dict_idx > 0) {
                // The dict is bound explicitly, auto is false.
                pt->self = argvars[dict_idx].bag;
-               ++pt->self->refcount;
+               ++pt->self->refCount;
             } ei (arg_pt) {
                // If the dict was bound automatically the result is also bound automatically.
                pt->self = arg_pt->self;
                pt->isAuto = arg_pt->isAuto;
                if (pt->self)
-                  ++pt->self->refcount;
+                  ++pt->self->refCount;
             }
 
-            pt->refcount = 1;
+            pt->refCount = 1;
             if (arg_pt && arg_pt->fn) {
                pt->fn = arg_pt->fn;
                func_ptr_ref(pt->fn);
@@ -11553,7 +11535,7 @@ f_getreg(Arr(Var) argvars, Var* returnVar) {
       if (returnVar->list == NULL)
          allocReturnList(returnVar);
       else
-         ++returnVar->list->refcount;
+         ++returnVar->list->refCount;
    } else {
       returnVar->tag = VAR_STRING;
       returnVar->string = get_reg_contents(regname, arg2 ? GREG_EXPR_SRC : 0);
@@ -14922,7 +14904,7 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
 
    excp->stacktrace = stacktrace_create();
    if (excp->stacktrace)
-      excp->stacktrace->refcount = 1;
+      excp->stacktrace->refCount = 1;
 
    if (p_verbose >= 13 || debug_break_level > 0) {
    int   save_msg_silent = msg_silent;

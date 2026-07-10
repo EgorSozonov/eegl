@@ -47,14 +47,13 @@ typedef struct Text {
    Unt  len;  //length of the slice
 } Text;
 
-// String builder with possible free space at the tail
+// String builder containing multiple ZERO-terminated strings with free space at the tail
 typedef struct {
-   CS c; //ZERO-terminated bytes, perhaps with ZEROes inside of it, too.
-              //If len > 0, then c is non-null and points to (len + free + 1) bytes, and also 
-              //.c[len + free] = ZERO
-   Unt len;   //Length of the already filled part
-   Unt cap;   //Total capacity. Can all be filled with any bytes
-} Sbuf;
+   CS c;    //ZERO-terminated bytes, perhaps with ZEROes inside of it, too.
+            //If len > 0, then c is non-null and points to (cap + 1) bytes, and .c[cap] = ZERO
+   Unt len; //Length of the already filled part. Includes the final ZERO!
+   Unt cap; //Total capacity. Can all be filled with any bytes
+} Polystring;
 
 // Structure used for growing arrays.
 // This is used to store information that only grows, is deleted all at

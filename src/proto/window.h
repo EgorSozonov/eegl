@@ -1,4 +1,7 @@
 /* src/window.c */
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 YankReg *get_y_regs(void);
 YankReg *get_y_current(void);
 YankReg *get_y_previous(void);
