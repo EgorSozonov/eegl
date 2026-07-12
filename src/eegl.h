@@ -1940,94 +1940,90 @@ EXTERN CS p_lcs;    // @listchars
 EXTERN ListChars listCharsG;     // @listchars characters
 EXTERN CS p_fcs;    //@fillchars
 EXTERN FillChars fillCharsG;     // @fillchars characters
-EXTERN Boole p_intro;  //@intro
-EXTERN Boole p_lrm;     // @langremap
-EXTERN Boole p_lz;       // @lazyredraw
-EXTERN Boole p_more;     // @more
+EXTERN Boole p_intro;//@intro
+EXTERN Boole p_lrm;  //@langremap
+EXTERN Boole p_lz;   //@lazyredraw
+EXTERN Boole p_more; //@more
 EXTERN Boole makeOpenWhenDoneG; // @makeOpenWhenDone
-EXTERN CS p_mef;    // @makeef
-EXTERN long p_mfd;     // @maxfuncdepth
-EXTERN long p_mm;      // @maxmem
-EXTERN long p_mmp;     // @maxmempattern
-EXTERN CS p_mopt; // @messagesopt
-EXTERN long p_msc;     // @maxsearchcount
-EXTERN CS p_msm;  // @mkspellmem
+EXTERN CS p_mef;     //@makeef
+EXTERN long p_mfd;   //@maxfuncdepth
+EXTERN long p_mm;    //@maxmem
+EXTERN long p_mmp;   //@maxmempattern
+EXTERN CS p_mopt;    //@messagesopt
+EXTERN long p_msc;   //@maxsearchcount
 EXTERN Boole p_modifiable; // command-line option "-R" (or "-M" - same thing)
-EXTERN long p_mouset;  // @mousetime
-EXTERN CS p_nf;   // @nrformats
-EXTERN CS p_opfunc; // @operatorfunc
-EXTERN CS p_pex;    // @patchexpr
-EXTERN CS p_cdpath; // @cdpath
-EXTERN long p_rdt;     // @redrawtime
-EXTERN long p_pvh;     // @previewheight
-EXTERN CS p_ruf;  // @rulerformat
-EXTERN CS p_qftf; // @quickfixtextfunc
+EXTERN long p_mouset;//@mousetime
+EXTERN CS p_nf;      //@nrformats
+EXTERN CS p_opfunc;  //@operatorfunc
+EXTERN CS p_pex;     //@patchexpr
+EXTERN CS p_cdpath;  //@cdpath
+EXTERN long p_rdt;   //@redrawtime
+EXTERN long p_pvh;   //@previewheight
+EXTERN CS p_ruf;     //@rulerformat
+EXTERN CS p_qftf;    //@quickfixtextfunc
 #define runtimePath (CS)"~/.config/eegl/runtime/"
-EXTERN long p_sj;      // @scrolljump
-#define SCR_VER  1 // keep in sync with scrolloptValues
+EXTERN long p_sj;    //@scrolljump
+#define SCR_VER  1   //keep in sync with scrolloptValues
 #define SCR_HOR  2
 #define SCR_JUMP 3
-EXTERN Unt p_sbo;  // @scrollopt
+EXTERN Unt p_sbo;    //@scrollopt
 
-EXTERN CS p_ef;   // @errorfile
-EXTERN CS p_sp;   //@shellpipe
-EXTERN CS p_srr;  //@shellredir
-EXTERN Boole p_stmp;   //@shelltemp
-EXTERN CS p_sbr;  //@showbreak
-EXTERN Byte p_sloc; //@showcmdloc
+EXTERN CS p_ef;      //@errorfile
+EXTERN CS p_sbr;     //@showbreak
+EXTERN Byte p_sloc;  //@showcmdloc
 #define SHOW_COMM_LAST       1 //last screnline
 #define SHOW_COMM_STATUSLINE 2 //portal statusline
 
-EXTERN Boole p_sft;    //@showfulltag
-EXTERN Boole p_smd;    //@showmode
-EXTERN long  p_ss;     //@sidescroll
-EXTERN Boole p_scs;    //@smartcase
-EXTERN Boole p_swf;    //@swapfile
-EXTERN CS p_sps;       //@spellsuggest
-EXTERN Boole p_spr;    //@splitright
-EXTERN Boole p_sb;     //@splitbelow
-EXTERN Boole p_sol;    //@startofline
-EXTERN CS p_lpSuff;    //@lowPrioSuffixes
-EXTERN Boole p_sws;    //@swapsync
-EXTERN Unt p_swb;      //@switchbuf
+EXTERN Boole p_sft;  //@showfulltag
+EXTERN Boole p_smd;  //@showmode
+EXTERN long  p_ss;   //@sidescroll
+EXTERN Boole p_scs;  //@smartcase
+EXTERN Boole p_swf;  //@swapfile
+EXTERN CS p_sps;     //@spellsuggest
+EXTERN Boole p_spr;  //@splitright
+EXTERN Boole p_sb;   //@splitbelow
+EXTERN Boole p_sol;  //@startofline
+EXTERN CS p_lpSuff;  //@lowPrioSuffixes
+EXTERN Boole p_sws;  //@swapsync
+EXTERN Unt p_swb;    //@switchbuf
 // Keep in sync with option.c:p_swb_values
-#define SWB_USEOPEN    0x001
-#define SWB_USETAB     0x002
-#define SWB_SPLIT      0x004
-#define SWB_NEWTAB     0x008
-#define SWB_VSPLIT     0x010
-#define SWB_USELAST    0x020
+#define SWB_USEOPEN  0x001
+#define SWB_USETAB   0x002
+#define SWB_SPLIT    0x004
+#define SWB_NEWTAB   0x008
+#define SWB_VSPLIT   0x010
+#define SWB_USELAST  0x020
 
-EXTERN CS p_tpl;  //@tabpanel
-EXTERN Boole p_stpl;    //@showtabpanel
-EXTERN CS p_tplo; //@tabpanelopt
+EXTERN CS p_tpl;     //@tabpanel
+EXTERN Boole p_stpl; //@showtabpanel
+EXTERN CS p_tplo;    //@tabpanelopt
 
-EXTERN Byte p_tcl;  //@tabclose
-EXTERN Boole   p_tbs;    //@tagbsearch
+EXTERN Byte p_tcl;    //@tabclose
+EXTERN Boole   p_tbs; //@tagbsearch
 #define TC_FOLLOWIC    0x01
 #define TC_IGNORE      0x02
 #define TC_MATCH       0x04
 #define TC_FOLLOWSCS   0x08
 #define TC_SMART       0x10
-EXTERN Boole p_tgst;     //@tagstack
-EXTERN CS p_tenc;   //@termencoding
-EXTERN long p_twsl;    //@termwinscroll
-EXTERN int p_tx;       //@textmode
-EXTERN long p_tw;      //@textwidth
-EXTERN Boole p_timeout;  //@timeout
-EXTERN long p_tm;      //@timeoutlen
+EXTERN Boole p_tgst;  //@tagstack
+EXTERN CS p_tenc;     //@termencoding
+EXTERN long p_twsl;   //@termwinscroll
+EXTERN int p_tx;      //@textmode
+EXTERN long p_tw;     //@textwidth
+EXTERN Boole p_timeout;//@timeout
+EXTERN long p_tm;     //@timeoutlen
 EXTERN Boole p_ttimeout; //@ttimeout
-EXTERN long   p_ttm;     //@ttimeoutlen
+EXTERN long   p_ttm;  //@ttimeoutlen
 EXTERN long   p_ttyscroll; //@ttyscroll
 EXTERN unsigned ttym_flags;
-EXTERN long   p_ul;      //@undolevels
-EXTERN long   p_ur;      //@undoreload
-EXTERN long   p_ut;      //@updatetime
+EXTERN long   p_ul;   //@undolevels
+EXTERN long   p_ur;   //@undoreload
+EXTERN long   p_ut;   //@updatetime
 EXTERN CS p_eeglinfo; //@eeglinfo
 EXTERN CS p_eeglinfofile; //@eeglinfofile
-EXTERN long p_verbose; //@verbose
-EXTERN CS p_vfile;   // @verbosefile
-EXTERN Unt p_wop;   //@wildoptions
+EXTERN long p_verbose;//@verbose
+EXTERN CS p_vfile;    // @verbosefile
+EXTERN Unt p_wop;     //@wildoptions
 
 //Sync with option.c:p_wop_values
 #define WILDOPT_EXACT   1
@@ -2035,8 +2031,8 @@ EXTERN Unt p_wop;   //@wildoptions
 #define WILDOPT_PUM     4
 #define WILDOPT_TAGFILE 8
 
-EXTERN CS p_wig;   //@wildignore
-EXTERN CS p_ww;    //@whichwrap
+EXTERN CS p_wig;     //@wildignore
+EXTERN CS p_ww;      //@whichwrap
 EXTERN long p_wc;    //@wildchar
 EXTERN long p_wcm;   //@wildcharm
 EXTERN Boole p_wic;  //@wildignorecase

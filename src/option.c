@@ -3782,11 +3782,6 @@ optInit0() {
 
    setDefaultValuesForAllOptions(0);
 
-#ifdef CLEAN_RUNTIMEPATH
-   if (clean_arg)
-      set_init_clean_rtp();
-#endif
-
    //curBook->o.initialized = true;
 
    
@@ -4611,10 +4606,8 @@ void
 init_locale(void) {
    setlocale(LC_ALL, "");
 
-# if defined(LC_NUMERIC)
-   // Make sure strtod() uses a decimal point, not a comma.
+   //Make sure strtod() uses a decimal point, not a comma. Not necessary, just in case
    setlocale(LC_NUMERIC, "C");
-# endif
 
    {
    int   mustfree = false;
@@ -4673,13 +4666,9 @@ c_language(Invocation* invo) {
           p = (CS)"Unknown";
       smsg(_("Current %slanguage: \"%s\""), whatstr, p);
    } else {
-      {
-          loc = setlocale(what, (char *)name);
-# if defined(LC_NUMERIC)
-          // Make sure strtod() uses a decimal point, not a comma.
-          setlocale(LC_NUMERIC, "C");
-# endif
-      }
+      loc = setlocale(what, (char *)name);
+      //Make sure strtod() uses a point, not a comma. Not necessary on MUSL but just in case
+      setlocale(LC_NUMERIC, "C");
       if (!loc)
           showErrFmtMsg(_(e_cannot_set_language_to_str), name);
       else {
@@ -4723,7 +4712,7 @@ private Arr(CS)
 getLocalesFromEnv(OUT Unt* countOfLocales) {
    //Find all available locales by running command "locale -a".  If this
    //doesn't work we won't have completion.
-   CS localeList = get_cmd_output((CS)"locale -a", NULL, SHELL_SILENT, NULL);
+   CS localeList = fiGetShellOutput(S"locale -a", NULL, SHELL_SILENT, NULL);
    if (!localeList)
       return NULL;
 

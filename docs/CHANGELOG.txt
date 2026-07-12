@@ -260,6 +260,10 @@
 [-] @cursorcolumn (superfluous)
 [-] @cursorbind, @scrollbind (synchronized with @diff, because that's the only reason to use them)
 [-] @shellcmdflag p_shcf (fixed at "-c")
+[-] @shellredir p_srr
+[-] @shellpipe p_sp
+[-] @shelltemp p_stmp
+[-] @mkspellmem, p_msm
 [ ] s: variables
 [ ] need_highlight_changed?
 [ ] p_writeany

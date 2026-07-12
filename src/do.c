@@ -1008,7 +1008,6 @@ do_filter(
    Pos orig_start = curBook->opStart;
    Pos orig_end = curBook->opEnd;
    int save_cmod_flags = commModifierG.cmod_flags;
-   int stmp = p_stmp;
 
    if (!cmd || cmd[0] == ZERO)       // no filter command
       return;
@@ -1037,16 +1036,16 @@ do_filter(
    if (do_out)
       shell_flags |= SHELL_DOOUT;
 
-   if (!do_in && do_out && !stmp) {
+   if (!do_in && do_out) {
       // Use a pipe to fetch stdout of the command, do not use a temp file.
       shell_flags |= SHELL_READ;
       curPor->cursor.lnum = line2;
-   } ei (do_in && !do_out && !stmp) {
+   } ei (do_in && !do_out) {
       // Use a pipe to write stdin of the command, do not use a temp file.
       shell_flags |= SHELL_WRITE;
       curBook->opStart.lnum = line1;
       curBook->opEnd.lnum = line2;
-   } ei (do_in && do_out && !stmp) {
+   } ei (do_in && do_out) {
       //Use a pipe to write stdin and fetch stdout of the command, do not use a temp file.
       shell_flags |= SHELL_READ|SHELL_WRITE;
       curBook->opStart.lnum = line1;
@@ -1085,11 +1084,10 @@ do_filter(
    windgoto((int)visibleRowsG - 1, 0);
    cursor_on();
 
-   //When not redirecting the output the command can write anything to the screen. If @shellredir
-   //is equal to ">", screen may be messed up by stderr output of external command. Clear the 
+   //When not redirecting the output the command can write anything to the screen. Clear the 
    //screen later. If do_in is false, this could be something like ":r !cat", which may
    //also mess up the screen, clear it later.
-   if (!do_out || (p_srr && STRCMP(p_srr, ">") == 0) || !do_in)
+   if (!do_out || !do_in)
       redraw_later_clear();
 
    if (do_out) {
@@ -1306,15 +1304,15 @@ prompt_for_number(int *mouse_used) {
 //Create a shell command from a command string, input redirection file and
 //output redirection file.
 //Return an allocated string with the shell command, or NULL for failure.
-Multistring
+CS
 make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
    Ulong len = (Ulong)STRLEN(cmd) + 3;      // "()" + ZERO
 
    if (inputFName) {
-      len += (Ulong)STRLEN(inputFName) + 9;   // " { < " + " } "
+      len += (Ulong)STRLEN(inputFName) + 9;   // " { < " + " } " + ZERO
    }
    if (outputFName)
-      len += (Ulong)STRLEN(outputFName) + (Ulong)(p_srr ? STRLEN(p_srr) : 0) + 2; // "  "
+      len += (Ulong)STRLEN(outputFName) + 2; // "  "
 
    CS stringBuild = alloc(len);
 
@@ -1329,33 +1327,7 @@ make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
       STRCAT(stringBuild, inputFName);
    }
     
-   if (outputFName)
-      doAppendRedir(stringBuild, (int)len, p_srr, outputFName);
-
    return stringBuild;
-}
-
-//Append output redirection for file "fname" to the end of string buffer "buf[buflen]"
-//Work with the @shellredir and @shellpipe.
-void
-doAppendRedir(OUT Multistring* mu, NULLABLE CS opt, CS fname) {
-   if (!opt)
-      return;
-
-   CS end = buf + STRLEN(buf);
-   // find "%s"
-   CS p;
-   for (p = opt; (p = firstOccurrence(p, '%')) != NULL; ++p) {
-      if (p[1] == 's') // found %s
-         break;
-      if (p[1] == '%') // skip %%
-         ++p;
-   }
-   
-   if (p) {
-      eeSnprintf(end, (Unt)(buflen - (end - buf)), (char *)opt, (char *)fname);
-   } else
-      eeSnprintf(end, (Unt)(buflen - (end - buf)), " %s %s", (char *)opt, (char *)fname);
 }
 
 //Implementation of ":fixdel", also used by get_stty().

@@ -4135,14 +4135,8 @@ buildErrorFileName(void) {
 private CS
 buildFullShellCommand(CS makecmd, CS fname) {
    Unt len = STRLEN(makecmd) + 1;
-   if (p_sp)
-      len += (unsigned)STRLEN(p_sp) + (unsigned)STRLEN(fname) + 3;
    CS cmd = alloc_id(len, aid_ll_makecmd);
    SPRINTF(cmd, "%s", (char *)makecmd);
-
-   // If @shellpipe empty: don't redirect to 'errorfile'.
-   if (p_sp)
-      doAppendRedir(cmd, len, p_sp, fname);
 
    // Display the fully formed command.  Output a newline if there's something
    // else than the :make command that was typed (in which case the cursor is in column 0).
@@ -4306,9 +4300,7 @@ c_grep(Invocation* invo) {
       return;
    }
 
-   // let the shell know if we are redirecting output or not
-   do_shell(comm, p_sp ? SHELL_DOOUT : 0);
-   do_shell(comm, SHELL_DOOUT);
+   do_shell(comm, 0);
 
    incrementLlBusyness();
 

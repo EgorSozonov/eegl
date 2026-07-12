@@ -159,19 +159,17 @@ backslashes instead for compatibility with version 3.0 where the options can
 be separated by either commas or spaces.
 Comma-separated options like @backupdir and @tags will also require commas
 to be escaped with two backslashes, whereas this is not needed for
-non-comma-separated ones like @makeprg.
+non-comma-separated ones like @makeprog.
 When setting options using |:let| and |literal-string|, you need to use one
 fewer layer of backslash.
 A few examples: >
-   :set makeprg=make\ file       results in "make file"
-   :let &makeprg='make file'       (same as above)
-   :set makeprg=make\\\ file       results in "make\ file"
+   :set makeprog=make\ file       results in "make file"
+   :set makeprog=make\\\ file       results in "make\ file"
    :set tags=tags\ /usr/tags       results in "tags" and "/usr/tags"
    :set tags=tags\\\ file       results in "tags file"
-   :let &tags='tags\ file'       (same as above)
 
-   :set makeprg=make,file       results in "make,file"
-   :set makeprg=make\\,file       results in "make\,file"
+   :set makeprog=make,file       results in "make,file"
+   :set makeprog=make\\,file       results in "make\,file"
    :set tags=tags,file          results in "tags" and "file"
    :set tags=tags\\,file       results in "tags\,file"
    :let &tags='tags\,file'       (same as above)
@@ -352,17 +350,19 @@ You can set the local value with ":setlocal".  That book or portal will then
 use the local value, while other books and portals continue using the global
 value.
 
-For example, you have two portals, both on C source code.  They use the global
-@@makeprg option.  If you do this in one of the two windows: >
-   :set makeprg=gmake
+For example, you have two portals, both on C source code. They use the global @makeprog option. If
+you do this in one of the two windows:
+
+   :set makeprog=gmake
+   
 then the other window will switch to the same value.  There is no need to set
-the @makeprg option in the other C source window too.
+the @makeprog option in the other C source window too.
 However, if you start editing a Perl file in a new window, you want to use
-another @makeprg for it, without changing the value used for the C source
+another @makeprog for it, without changing the value used for the C source
 files.  You use this command: >
-   :setlocal makeprg=perlmake
+   :setlocal makeprog=perlmake
 You can switch back to using the global value by making the local value empty: >
-   :setlocal makeprg=
+   :setlocal makeprog=
 This only works for a string option.  For a number or boolean option you need
 to use the "<" flag, like this: >
    :setlocal autoread<
@@ -2775,13 +2775,10 @@ the $VIMRUNTIME/pack/dist/opt/matchit directory. |add-local-help|
 
 @@maxfuncdepth           Global. Numeric. Default = 128
    
-Maximum depth of function calls for user functions.  This normally
-catches endless recursion.  When using a recursive function with
-more depth, set @maxfuncdepth to a bigger number.  But this will use
-more memory, there is the danger of failing when memory is exhausted.
-Increasing this limit above 200 also changes the maximum for Ex
-command recursion, see |E169|.
-See also |:function|.
+Maximum depth of function calls for user functions. This normally catches endless recursion. When 
+using a recursive function with more depth, set @maxfuncdepth to a bigger number.  But this will use
+more memory, there is the danger of failing when memory is exhausted. Increasing this limit above 
+200 also changes the maximum for command recursion, see |E169|. See also |:function|.
 Also used for maximum depth of callback functions.
 
 
@@ -2803,8 +2800,7 @@ behaves like CTRL-C was typed.
 Running into the limit often means that the pattern is very
 inefficient or too complex.  This may already happen with the pattern
 "\(.\)*" on a very long line.  ".*" works much better.
-Might also happen on redraw, when syntax rules try to match a complex
-text structure.
+Might also happen on redraw, when syntax rules try to match a complex text structure.
 Eegl may run out of memory before hitting the @maxmempattern limit, in
 which case you get an "Out of memory" error instead.
 
@@ -2814,8 +2810,7 @@ which case you get an "Out of memory" error instead.
 Maximum number of matches shown for the search count status |shm-S|
 When the number of matches exceeds this value, Eegl shows ">" instead
 of the exact count to keep searching fast.
-Note: larger values may impact performance.
-The value must be between 1 and 9999.
+Note: larger values may impact performance. The value must be between 1 and 9999.
 
 
 @@messagesopt            Global. String. Default = "hit-enter,history:500"
@@ -2837,43 +2832,6 @@ history:{n}   Determines how many entries are remembered in the
       |:messages| history.  The maximum value is 10000.
       Setting it to zero clears the message history.
       This item must always be present.
-
-
-@@mkspellmem             Global. String (Kilobytes). Default = "460000,2000,500"
-   
-Parameters for |:mkspell|. This tunes when to start compressing the
-word tree.  Compression can be slow when there are many words, but
-it's needed to avoid running out of memory. The amount of memory used
-per word depends very much on how similar the words are, that's why
-this tuning is complicated.
-
-There are three numbers, separated by commas:
-   {start},{inc},{added}
-
-For most languages the uncompressed word tree fits in memory. {start}
-gives the amount of memory in Kbyte that can be used before any
-compression is done.  It should be a bit smaller than the amount of
-memory that is available to Eegl.
-
-When going over the {start} limit the {inc} number specifies the
-amount of memory in Kbyte that can be allocated before another
-compression is done.  A low number means compression is done after
-less words are added, which is slow.  A high number means more memory will be allocated.
-
-After doing compression, {added} times 1024 words can be added before
-the {inc} limit is ignored and compression is done when any extra
-amount of memory is needed.  A low number means there is a smaller
-chance of hitting the {inc} limit, less memory is used but it's
-slower.
-
-The languages for which these numbers are important are Italian and
-Hungarian.  The default works for when you have about 512 Mbyte.  If
-you have 1 Gbyte you could use: 
-
-   :set mkspellmem=900000,3000,800
-   
-If you have less than 512 Mbyte |:mkspell| may fail for some
-languages, no matter what you set @mkspellmem to.
 
 
 @@modifiable             Book. Boolean. Default = on
@@ -3126,36 +3084,6 @@ The following words are available:
             
 Also see |scroll-binding|.
 When diff mode is active there always is vertical scroll binding, even when "ver" is absent.
-
-
-@@shellpipe              Global. String. Default = "2>&1 | tee"
-
-String to be used to put the output of the ":make" command in the error file. See also 
-|:make_makeprg|. See |option-backslash| about including spaces and backslashes. The name of the 
-temporary file can be represented by "%s" if necessary (the file name is appended automatically if 
-no %s appears in the value of this option). The default is ">%s 2>&1". The output is directly 
-saved in a file and not echoed to the screen. The default is "| tee". The stdout of the compiler 
-is saved in a file and echoed to the screen. This means that stderr is also included.
-The initialization of this option is done after reading the ".vimrc" and the other initializations,
-so that when the @shell option is set there, the @shellpipe option changes automatically, unless 
-it was explicitly set before. When @shellpipe is set to an empty string, no redirection of the
-":make" output will be done. This is useful if you use a @makeprg that writes to @makeef by itself.
-If you want no piping, but do want to include the @makeef, set @shellpipe to a single space.
-Don't forget to precede the space with a backslash: ":set sp=\ ". In the future pipes may be used 
-for filtering and this option will become obsolete (at least for Unix). Note: When using a pipe 
-like "| tee", you'll lose the exit code of the shell command.  This might be configurable by your 
-shell, look for the pipefail option (for bash and zsh, use ":set -o pipefail").
-
-
-@@shellredir             Global. String. Default = ">%s 2>&1"
-   
-String to be used to put the output of a filter command in a temporary file.  See also |:!|.  
-See |option-backslash| about including spaces and backslashes. The name of the temporary file can 
-be represented by "%s" if necessary (the file name is appended automatically if no %s appears in 
-the value of this option). This means that stderr is also included. The initialization of this 
-option is done after reading the init file and the other initializations, so that when the @shell 
-option is set there, the @shellredir option changes automatically unless it was explicitly set 
-before. In the future pipes may be used for filtering and this option will become obsolete.
 
 
 @@shelltemp              Global. Boolean. Default = on

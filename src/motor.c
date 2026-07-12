@@ -590,15 +590,6 @@ appMain(int argc, char** argv) {
          ch_logfile((CS)(argv[i + 1]), S"ao");
    }
 
-#ifdef CLEAN_RUNTIMEPATH
-   // Need to find "--clean" before actually parsing arguments.
-   for (i = 1; i < argc; ++i) {
-      if (caseInsensitiveCompare(argv[i], "--clean") == 0) {
-          paramsP.clean = true;
-          break;
-      }
-   } 
-#endif
    // Various initializations #1 shared with tests.
    init1(OUT &paramsP);
 

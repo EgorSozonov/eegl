@@ -3919,20 +3919,10 @@ callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
                (void)dup(fd); // To replace stdout (fd 1)
                (void)dup(fd); // To replace stderr (fd 2)
 
-               // Don't need this now that we've duplicated it
+               //Don't need this now that we've duplicated it
                close(fd);
             }
          } ei ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
-            //Create our own process group, so that the child and all its children can be 
-            //kill()ed. Don't do this when using pipes, because stdin is not a tty, we would 
-            //lose /dev/tty.
-            if (p_stmp) {
-               (void)setsid();
-               // When doing "!xterm&" and 'shell' is bash: the shell will exit and send SIGHUP 
-               // to all processes in its group, killing the just started process. Ignore SIGHUP
-               // to avoid that. (suggested by Simon Schubert)
-               mch_signal(SIGHUP, SIG_IGN);
-            }
             set_default_child_environment(false);
 
             //stderr is only redirected when using the GUI, so that a program like gpg can still 

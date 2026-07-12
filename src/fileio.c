@@ -1373,7 +1373,7 @@ expand_backtick(OUT ExpandMatch* matches, CS pat, Unt flags) {  // EW_* flags
    if (*cmd == '=')       // `={expr}`: Expand expression
       buf = eval_to_string(cmd + 1, true, false);
    else
-      buf = get_cmd_output(cmd, NULL, (flags & EW_SILENT) ? SHELL_SILENT : 0, NULL);
+      buf = fiGetShellOutput(cmd, NULL, (flags & EW_SILENT) ? SHELL_SILENT : 0, NULL);
    eeglFree(cmd);
    if (!buf)
       return -1;
@@ -7464,22 +7464,18 @@ write_eintr(int fd, void *buf, Unt bufsize) {
 # define SEEK_END 2
 #endif
 
-//Get the stdout of an external command.
+//Get the stdout of an external command from a temp file.
 //If "ret_len" is NULL replace ZERO characters with NL.  When "ret_len" is not
 //NULL store the length there. Return an allocated string, or NULL for error.
 CS
-get_cmd_output(
+fiGetShellOutput(
    CS cmd,
-   CS infile,   // optional input file name
-   Unt flags,      // can be SHELL_SILENT
+   NULLABLE CS infile, // optional input file name
+   Unt flags,          // can be SHELL_SILENT
    OUT int* ret_len
 ) {
-   CS tempname;
-   int len;
-   int i = 0;
-   FILE   *fd;
-
    // get a name for the temp file
+   CS tempname;
    if ((tempname = eeTempName('o', false)) == NULL) {
       emsg(_(e_cant_get_temp_file_name));
       return NULL;
@@ -7498,31 +7494,33 @@ get_cmd_output(
    eeglFree(command);
 
    //read the names from the file into memory
-   fd = fopen((char *)tempname, READBIN);
+   FILE* fd = fopen((char *)tempname, READBIN);
 
-   // Not being able to seek means we can't read the file.
-   if (fd == NULL
+   //Not being able to seek means we can't read the file.
+   int tempFileLen;
+   if (!fd
        || fseek(fd, 0L, SEEK_END) == -1
-       || (len = ftell(fd)) == -1      // get size of temp file
-       || fseek(fd, 0L, SEEK_SET) == -1)   // back to the start
-    {
+       || (tempFileLen = ftell(fd)) == -1 //get size of temp file
+       || fseek(fd, 0L, SEEK_SET) == -1   //back to the start
+   ) {
       showErrFmtMsg(_(e_cannot_read_from_str_2), tempname);
       if (fd)
          fclose(fd);
       goto done;
    }
 
-   CS buf = alloc(len + 1);
+   CS buf = alloc(tempFileLen + 1);
    fclose(fd);
    mch_remove(tempname);
-   if (i != len) {
+   if (tempFileLen == 0) {
       showErrFmtMsg(_(e_cant_read_file_str), tempname);
       EE_CLEAR(buf);
-   } ei (ret_len == NULL) {
+   } ei (!ret_len) {
       // Change ZERO into SOH, otherwise the string is truncated.
-      for (i = 0; i < len; ++i)
+      for (int i = 0; i < tempFileLen; ++i) {
          if (buf[i] == ZERO)
             buf[i] = 1;
+      } 
 
       buf[len] = ZERO;   // make sure the buf is terminated
    } else
@@ -7533,9 +7531,8 @@ done:
    return buf;
 }
 
-
 private void
-get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
+fiGetShellOutput_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
    CS res = NULL;
    Byte   *p;
    Byte   *infile = NULL;
@@ -7609,21 +7606,18 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
       flags += SHELL_COOKED;
 
    if (retlist) {
-      int      len;
-      ListItem   *li;
       CS s = NULL;
-      CS start;
       CS end;
-      int      i;
 
-      res = get_cmd_output(tv_get_string(&argvars[0]), infile, flags, OUT &len);
-      if (res == NULL)
+      int len;
+      res = fiGetShellOutput(tv_get_string(&argvars[0]), infile, flags, OUT &len);
+      if (!res)
          goto errret;
 
       list = list_alloc();
 
-      for (i = 0; i < len; ++i) {
-         start = res + i;
+      for (int i = 0; i < len; ++i) {
+         CS start = res + i;
          while (i < len && res[i] != NL)
             ++i;
          end = res + i;
@@ -7634,7 +7628,7 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
             *p = *start == ZERO ? NL : *start;
          *p = ZERO;
 
-         li = listitem_alloc();
+         ListItem* li = listitem_alloc();
          li->c = (Var){.tag = VAR_STRING, .lock = 0, .string = s};
          list_append(list, li);
       }
@@ -7642,7 +7636,7 @@ get_cmd_output_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
       returnVar_list_set(returnVar, list);
       list = NULL;
    } else {
-      res = get_cmd_output(tv_get_string(&argvars[0]), infile, flags, NULL);
+      res = fiGetShellOutput(tv_get_string(&argvars[0]), infile, flags, NULL);
       returnVar->string = res;
       res = NULL;
    }
@@ -7660,12 +7654,12 @@ errret:
 
 void
 f_system(Var* argvars, Var* returnVar) {
-   get_cmd_output_as_returnVar(argvars, returnVar, false);
+   fiGetShellOutput_as_returnVar(argvars, returnVar, false);
 }
 
 void
 f_systemlist(Var* argvars, Var* returnVar) {
-   get_cmd_output_as_returnVar(argvars, returnVar, true);
+   fiGetShellOutput_as_returnVar(argvars, returnVar, true);
 }
 
 //Expand envs and program name to determine the swapfile dir, e.g. "/home/usern/.local/state/eegl/"

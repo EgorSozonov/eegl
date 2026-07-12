@@ -102,7 +102,7 @@ int match_file_list(CS list, CS sfname, CS ffname);
 CS file_pat_to_reg_pat(CS pat, CS pat_end, Boole *allow_dirs);
 Long fiReadEintr(int fd, void *buf, Unt bufsize);
 long write_eintr(int fd, void *buf, Unt bufsize);
-CS get_cmd_output(CS cmd, CS infile, Unt flags, int *ret_len);
+CS fiGetShellOutput(CS cmd, CS infile, Unt flags, int *ret_len);
 void f_system(Var *argvars, Var *returnVar);
 void f_systemlist(Var *argvars, Var *returnVar);
 Text fiInitSwapDir(CS progName);
