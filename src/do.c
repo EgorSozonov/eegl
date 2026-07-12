@@ -884,7 +884,7 @@ do_bang(
    CS arg = invo->arg;   // command
    LineNr line1 = invo->line1;   // start of range
    LineNr line2 = invo->line2;   // end of range
-   CS newcmd = NULL;      // the new command
+   CS newcmd = NULL;
    Boole free_newcmd = false;    // need to free() newcmd
    CS t;
    CS p;
@@ -905,20 +905,20 @@ do_bang(
    do {
       int len = (int)STRLEN(trailarg) + 1;
       if (newcmd)
-          len += (int)STRLEN(newcmd);
+         len += (int)STRLEN(newcmd);
       if (ins_prevcmd) {
-          if (!prevcmd_is_set()) {
-         eeglFree(newcmd);
-         return;
-          }
-          len += (int)STRLEN(prevcmd);
+         if (!prevcmd_is_set()) {
+            eeglFree(newcmd);
+            return;
+         }
+         len += (int)STRLEN(prevcmd);
       }
       t = alloc(len);
       *t = ZERO;
       if (newcmd)
-          STRCAT(t, newcmd);
+         STRCAT(t, newcmd);
       if (ins_prevcmd)
-          STRCAT(t, prevcmd);
+         STRCAT(t, prevcmd);
       p = t + STRLEN(t);
       STRCAT(t, trailarg);
       eeglFree(newcmd);
@@ -951,7 +951,7 @@ do_bang(
 
    if (bangredo) {     // put cmd in redo buffer for ! command
       if (!prevcmd_is_set())
-          goto theend;
+         goto theend;
 
       //If % or # appears in the command, it must have been escaped.
       //Reescape them, so that redoing them does not substitute them by the buffername.
@@ -985,11 +985,11 @@ theend:
 
 //do_filter: filter lines through a command given by the user
 //
-//We mostly use temp files and the call_shell() routine here. This would normally be done using 
-//pipes on a Unix machine, but this is more portable to non-unix machines. The call_shell() 
+//We mostly use temp files and the fiCallShell() routine here. This would normally be done using 
+//pipes on a Unix machine, but this is more portable to non-unix machines. The fiCallShell() 
 //routine needs to be able to deal with redirection somehow, and should handle things like looking
 //at the PATH env. variable, and adding reasonable extensions to the command name given by the 
-//user. All reasonable versions of call_shell() do this. Alternatively, if on Unix and redirecting 
+//user. All reasonable versions of fiCallShell() do this. Alternatively, if on Unix and redirecting 
 //input or output, but not both, and the @shelltemp option isn't set, use pipes.
 //We use input redirection if do_in is true. We use output redirection if do_out is true.
 private void
@@ -1003,9 +1003,6 @@ do_filter(
 ) {
    CS itmp = NULL;
    CS otmp = NULL;
-   LineNr linecount;
-   LineNr read_linecount;
-   Pos cursor_save;
    Book* curBookSaved = curBook;
    Unt shell_flags = 0;
    Pos orig_start = curBook->opStart;
@@ -1013,15 +1010,15 @@ do_filter(
    int save_cmod_flags = commModifierG.cmod_flags;
    int stmp = p_stmp;
 
-   if (*cmd == ZERO)       // no filter command
+   if (!cmd || cmd[0] == ZERO)       // no filter command
       return;
 
    // Temporarily disable lockmarks since that's needed to propagate changed
    // regions of the book for foldUpdate(), linecount, etc.
    commModifierG.cmod_flags &= ~CMOD_LOCKMARKS;
 
-   cursor_save = curPor->cursor;
-   linecount = line2 - line1 + 1;
+   Pos cursor_save = curPor->cursor;
+   LineNr linecount = line2 - line1 + 1;
    curPor->cursor.lnum = line1;
    curPor->cursor.col = 0;
    changed_line_abv_curs();
@@ -1035,8 +1032,7 @@ do_filter(
    //5. * Delete the original lines to be filtered
    //6. * Remove the temp files
    //
-   //When writing the input with a pipe or when catching the output with a
-   //pipe only need to do 3.
+   //When writing the input with a pipe or when catching the output with a pipe, only need to do 3
 
    if (do_out)
       shell_flags |= SHELL_DOOUT;
@@ -1089,29 +1085,28 @@ do_filter(
    windgoto((int)visibleRowsG - 1, 0);
    cursor_on();
 
-   //When not redirecting the output the command can write anything to the
-   //screen. If 'shellredir' is equal to ">", screen may be messed up by
-   //stderr output of external command. Clear the screen later.
-   //If do_in is false, this could be something like ":r !cat", which may
+   //When not redirecting the output the command can write anything to the screen. If @shellredir
+   //is equal to ">", screen may be messed up by stderr output of external command. Clear the 
+   //screen later. If do_in is false, this could be something like ":r !cat", which may
    //also mess up the screen, clear it later.
    if (!do_out || (p_srr && STRCMP(p_srr, ">") == 0) || !do_in)
       redraw_later_clear();
 
    if (do_out) {
       if (u_save(line2, (LineNr)(line2 + 1)) == FAIL) {
-          eeglFree(cmd_buf);
-          goto error;
+         eeglFree(cmd_buf);
+         goto error;
       }
       drawCurBookLater(UPD_VALID);
    }
-   read_linecount = curBook->mem.lineCount;
+   LineNr read_linecount = curBook->mem.lineCount;
 
-   //When call_shell() fails wait_return() is called to give the user a
+   //When fiCallShell() fails wait_return() is called to give the user a
    //chance to read the error messages. Otherwise errors are ignored, so you
    //can see the error messages from the command that appear on stdout; use 'u' to fix the text
    //Switch to cooked mode when not redirecting stdin, avoids that something like ":r !cat" hangs.
    //Pass on the SHELL_DOOUT flag when the output is being redirected.
-   if (call_shell(cmd_buf, null, SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
+   if (fiCallShell(cmd_buf, SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
       redraw_later_clear();
       wait_return(false);
    }
@@ -1234,13 +1229,13 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
          }
       }
    } 
-   // This windgoto is required for when the '\n' resulted in a "delete line
-   // 1" command to the terminal.
+   //This windgoto is required for when the '\n' resulted in a 
+   //"delete line 1" command to the terminal.
    if (!termIsScreenBeingSwapped())
       windgoto(msgRowG, msgColG);
    cursor_on();
    
-   (void)call_shell(cmd, null, SHELL_COOKED | flags);
+   (void)fiCallShell(cmd, SHELL_COOKED | flags);
    did_check_timestamps = false;
    need_check_timestamps = true;
 
@@ -1311,13 +1306,8 @@ prompt_for_number(int *mouse_used) {
 //Create a shell command from a command string, input redirection file and
 //output redirection file.
 //Return an allocated string with the shell command, or NULL for failure.
-CS
-make_filter_cmd(
-   CS cmd,      // command
-   CS inputFName,      // NULL or name of input file
-   CS outputFName      // NULL or name of output file
-){
-
+Multistring
+make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
    Ulong len = (Ulong)STRLEN(cmd) + 3;      // "()" + ZERO
 
    if (inputFName) {
@@ -1346,23 +1336,22 @@ make_filter_cmd(
 }
 
 //Append output redirection for file "fname" to the end of string buffer "buf[buflen]"
-//Works with the @shellredir and @shellpipe options.
-//The caller must make sure that there is enough room:
-//  STRLEN(opt) + STRLEN(fname) + 3
+//Work with the @shellredir and @shellpipe.
 void
-doAppendRedir(CS buf, int buflen, NULLABLE CS opt, CS fname) {
+doAppendRedir(OUT Multistring* mu, NULLABLE CS opt, CS fname) {
    if (!opt)
       return;
-   CS p;
 
    CS end = buf + STRLEN(buf);
    // find "%s"
+   CS p;
    for (p = opt; (p = firstOccurrence(p, '%')) != NULL; ++p) {
       if (p[1] == 's') // found %s
          break;
       if (p[1] == '%') // skip %%
          ++p;
    }
+   
    if (p) {
       eeSnprintf(end, (Unt)(buflen - (end - buf)), (char *)opt, (char *)fname);
    } else
@@ -11310,8 +11299,8 @@ veryfast_breakcheck(void) {
 //
 // All data is allocated and will all be freed when the book is unloaded.
 
-// Uncomment the next line for including the u_check() function.  This warns
-// for errors in the debug information.
+//Uncomment the next line for including the u_check() function.  This warns
+//for errors in the debug information.
 // #define U_DEBUG 1
 #define UH_MAGIC 0x18dade   // value for uh_magic when in use
 #define UE_MAGIC 0xabc123   // value for ue_magic when in use

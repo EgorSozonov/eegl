@@ -6610,11 +6610,11 @@ c_terminal(Invocation* invo) {
 
    init_job_options(&opt);
 
-   CS cmd = invo->arg;
-   while (*cmd == '+' && *(cmd + 1) == '+') {
-      cmd += 2;
-      CS p = skiptowhite(cmd);
-      CS ep = firstOccurrence(cmd, '=');
+   CS shellComm = invo->arg;
+   while (*shellComm == '+' && *(shellComm + 1) == '+') {
+      shellComm += 2;
+      CS p = skiptowhite(shellComm);
+      CS ep = firstOccurrence(shellComm, '=');
       if (ep) {
          if (ep < p)
             p = ep;
@@ -6624,8 +6624,8 @@ c_terminal(Invocation* invo) {
 
 // Note: Keep this in sync with get_terminaloname.
 
-# define OPTARG_HAS(name) ((int)(p - cmd) == sizeof(name) - 1 \
-                && STRNICMP(cmd, name, sizeof(name) - 1) == 0)
+# define OPTARG_HAS(name) ((int)(p - shellComm) == sizeof(name) - 1 \
+                && STRNICMP(shellComm, name, sizeof(name) - 1) == 0)
                 
       if (OPTARG_HAS("close"))
          opt.jo_term_finish = 'c';
@@ -6644,30 +6644,29 @@ c_terminal(Invocation* invo) {
       ei (OPTARG_HAS("kill") && ep != NULL) {
          opt.set1 |= JO2_TERM_KILL;
          opt.jo_term_kill = ep + 1;
-         p = skiptowhite(cmd);
+         p = skiptowhite(shellComm);
       } ei (OPTARG_HAS("api")) {
          opt.set1 |= JO2_TERM_API;
          if (ep) {
             opt.jo_term_api = ep + 1;
-            p = skiptowhite(cmd);
+            p = skiptowhite(shellComm);
          } else
             opt.jo_term_api = NULL;
       } ei (OPTARG_HAS("rows") && ep != NULL && SAFE_isdigit(ep[1])) {
          opt.set1 |= JO2_TERM_ROWS;
          opt.jo_term_rows = atoi((char *)ep + 1);
-         p = skiptowhite(cmd);
-      } ei (OPTARG_HAS("cols") && ep != NULL && SAFE_isdigit(ep[1])) {
+         p = skiptowhite(shellComm);
+      } ei (OPTARG_HAS("cols") && ep && SAFE_isdigit(ep[1])) {
          opt.set1 |= JO2_TERM_COLS;
          opt.jo_term_cols = atoi((char *)ep + 1);
-         p = skiptowhite(cmd);
-      } ei (OPTARG_HAS("eof") && ep != NULL) {
+         p = skiptowhite(shellComm);
+      } ei (OPTARG_HAS("eof") && ep) {
          CS buf = NULL;
-         CS keys;
 
          eeglFree(opt.jo_eof_chars);
-         p = skiptowhite(cmd);
+         p = skiptowhite(shellComm);
          *p = ZERO;
-         keys = replace_termcodes(
+         CS keys = replace_termcodes(
             ep + 1, &buf, 0, REPTERM_FROM_PART | REPTERM_DO_LT | REPTERM_SPECIAL, NULL, false
          );
          opt.set1 |= JO2_EOF_CHARS;
@@ -6677,13 +6676,13 @@ c_terminal(Invocation* invo) {
       } else {
          if (*p)
             *p = ZERO;
-         showErrFmtMsg(_(e_invalidDecorationStr), cmd);
+         showErrFmtMsg(_(e_invalidDecorationStr), shellComm);
          goto theend;
       }
 # undef OPTARG_HAS
-      cmd = skipwhite(p);
+      shellComm = skipwhite(p);
    }
-   if (*cmd == ZERO) {
+   if (*shellComm == ZERO) {
       // default to close when the shell exits
       if (opt.jo_term_finish == ZERO)
          opt.jo_term_finish = TL_FINISH_CLOSE;
@@ -6698,21 +6697,24 @@ c_terminal(Invocation* invo) {
       opt.jo_in_bot = invo->line2;
    }
 
+   ShellArgs args = {.c = &shellComm, .len = 1, .buf = {.c = shellComm, .len = STRLEN(shellComm) }};      
+   args.buf.cap = args.buf.len;
    if (opt_shell) {
       CS tofree2 = NULL;
       //:term ++shell command
-      Arr(CS) argv = unix_build_argv(cmd, null, &tofree2);
+      unix_build_argv(OUT &args);
       startSubterminal(NULL, argv, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
       eeglFree(argv);
       eeglFree(tofree2);
       goto theend;
    }
    argvar[0].tag = VAR_STRING;
-   argvar[0].string = cmd;
+   argvar[0].string = shellComm.buf.c;
    argvar[1].tag = VAR_UNKNOWN;
    startSubterminal(argvar, NULL, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
 
 theend:
+   eeglFree(shellComm.buf.c);
    eeglFree(opt.jo_eof_chars);
 }
 
@@ -10397,7 +10399,7 @@ private int
 initSubtermAndJob(
 	Terminal* term,
 	Var* argvar,
-	Byte** argv,
+	Arr(CS) argv,
 	JobOptions* opt,
 	JobOptions* orig_opt UNUSED
 ) {
@@ -10453,7 +10455,7 @@ term_report_winsize(Terminal* term, int rows, int cols) {
          break;
    }
    if (part < PART_COUNT && mch_report_winsize(fd, rows, cols) == OK)
-      mch_signal_job(term->job, (CS)"winch");
+      mch_signal_job(term->job, S"winch");
 }
 
 
@@ -10546,7 +10548,7 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       TimeVal* tvp;
       // These are static because they can take 8 Kbyte each and cause the
       // signal stack to run out with -O3.
-      static fd_set   rfds, wfds, efds;
+      static fd_set rfds, wfds, efds;
       int maxfd;
       Long towait = msec;
 

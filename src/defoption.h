@@ -233,7 +233,6 @@ OPTION("rulerformat", p_ruf, CS, null, P_RSTAT, &setRulerFormat, NULL)
 OPTION("scrolljump", p_sj, long, 1, 0, &setScrollJump, null) 
 OPTION("scrollopt", p_sbo, Unt, SCR_VER|SCR_JUMP, P_ONECOMMA|P_NODUP, 
    &setScrollopt, &expand_set_scrollopt)
-OPTION("shellcmdflag", p_shcf, CS, "-c", 0, null, null)
 OPTION("shellpipe", p_sp, CS, " 2>&1 | tee", 0, null, null) 
 OPTION("shellredir", p_srr, CS, ">%s 2>&1", 0, null, null)
 OPTION("shelltemp", p_stmp, Boole, true, 0, null, null)

@@ -25,10 +25,10 @@ typedef double _Float64x;
 //{{{config.h
 
 // Defined to the size of an int
-#define EE_SIZEOF_INT 4
+#define SIZEOF_INT 4
 
 // Defined to the size of a long
-#define EE_SIZEOF_LONG 8
+#define SIZEOF_LONG 8
 
 // Defined to the size of off_t
 #define SIZEOF_OFF_T 8
@@ -203,7 +203,6 @@ typedef void (*sighandler_T) SIGPROTOARG;
 # define UNUSED __attribute__((unused))
 #endif
 
-#include <locale.h>
 
 #define FMT_LONG PRI64
 #define FMT_ULONG PRIu64
@@ -225,21 +224,13 @@ typedef unsigned char Byte;
 #define PRINTF_HEX_ULONG      "0x%lx"
 #define PRINTF_DECIMAL_ULONG  SCANF_DECIMAL_ULONG
 
-//Only systems which use configure will have SIZEOF_OFF_T and EE_SIZEOF_LONG defined, which is 
-//ok since those are the same systems which can have varying sizes for off_t.  The other 
-//systems will continue to use "%ld" to print off_t since off_t is simply a typedef to long for 
-//them.
-#if defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T > EE_SIZEOF_LONG)
-# define LONG_LONG_OFF_T
-#endif
-
 //We use 64-bit file functions here, if available.  E.g. ftello() returns
 //off_t instead of long, which helps if long is 32 bit and off_t is 64 bit.
 //We assume that when fseeko() is available then ftello() is too.
 #ifdef PROTO
-typedef long off_T;
+typedef long FileOffset;
 #else
-typedef off_t off_T;
+typedef off_t FileOffset;
 #endif
 
 //The characters and attributes cached for the screen.
@@ -743,6 +734,7 @@ LIST_TY(Unt)
 //{{{reference counting
 
 //These macros must only be defined for structs where the first value is an Unt holding the refcount
+//The function implementations are in memory.c
 #define getRefCount(a) _Generic((a),\
    Job*: _getRefCount\
 )(a)
@@ -1102,7 +1094,7 @@ LIST_TY(Unt)
 #define REMAP_SCRIPT 4294967294   //remap script-local mappings only
 #define REMAP_SKIP   4294967293   //no remapping for first char
 
-// Values for channel:mch_call_shell() second argument
+// Values for channel:callShellImpl() second argument
 #define SHELL_FILTER     1  //filtering text
 #define SHELL_EXPAND     2  //expanding wildcards
 #define SHELL_COOKED     4  //set term to cooked mode
@@ -1978,7 +1970,6 @@ EXTERN long p_sj;      // @scrolljump
 EXTERN Unt p_sbo;  // @scrollopt
 
 EXTERN CS p_ef;   // @errorfile
-EXTERN CS p_shcf; //@shellcmdflag
 EXTERN CS p_sp;   //@shellpipe
 EXTERN CS p_srr;  //@shellredir
 EXTERN Boole p_stmp;   //@shelltemp
@@ -2074,7 +2065,10 @@ EXTERN long p_wd;    //@writedelay
 //{{{:::structs
 //{{{ basics
 
-typedef off_T FileSize;
+//off_t is a signed integer data type used to represent file sizes, positions, and offsets. It is 
+//defined by the POSIX standard. Because it is signed, it can also hold negative values, which are 
+//useful for relative file positioning operations.
+//typedef off_T FileOffset;
 
 //{{{ Slice
 
@@ -2099,20 +2093,20 @@ EXTERN Polystring globalStringOptionsG;      //Storage for all the global string
 
 // Position in file or book.
 typedef struct {
-   LineNr   lnum;  // line number
-   ColNr   col;    // column number
-   ColNr   coladd; // extra virtual column
+   LineNr lnum;  //line number
+   ColNr col;    //column number
+   ColNr coladd; //extra virtual column
 } Pos;
 
 // Same, but without coladd.
 typedef struct {
-   LineNr   lnum;   // line number
-   ColNr   col;   // column number
+   LineNr lnum;   // line number
+   ColNr col;   // column number
 } PosNoVirt;
 #define GA_EMPTY    {0, 0, 0, 0, NULL}
 
 // On rare systems "char" is unsigned, sometimes we really want a signed 8-bit value.
-typedef signed char   SignedByte;
+typedef signed char SignedByte;
 
 //}}}
 //{{{ forward decls
@@ -2646,8 +2640,8 @@ struct MatchItem {
 //}}}
 //{{{command line
 
-// For conditional commands a stack is kept of nested conditionals. When cs_idx < 0, there is no 
-// conditional command.
+//For conditional commands a stack is kept of nested conditionals. When cs_idx < 0, there is no 
+//conditional command.
 #define CSTACK_LEN   50
 
 // Struct used by those that are using an item in a list.
@@ -4255,7 +4249,7 @@ struct Book { //:Book
    dev_t devNum;      // device number
    ino_t inode;      // inode number
    int fiNum;    // book number for this file.
-   Byte keyContainer[EE_SIZEOF_INT * 2 + 1]; // key used for buf_hashtab, holds fiNum as hex string
+   Byte keyContainer[SIZEOF_INT * 2 + 1]; // key used for buf_hashtab, holds fiNum as hex string
    Text key; // points into keyContainer
 
    Boole wasModified; // 'modified': Set to TRUE if something in the
@@ -4283,7 +4277,7 @@ struct Book { //:Book
    long modifiedTimeNs;   // nanoseconds of last change time
    long readTime;   // last change time when reading
    long readTimeNs;  // nanoseconds of last read time
-   FileSize origSize;   // size of original file in bytes
+   FileOffset origSize;   // size of original file in bytes
    int origMode;   // mode of original file
    Tyme lastUsed;   // time when the book was last used; used for eeglinfo
 
@@ -6186,7 +6180,7 @@ EXTERN Byte utf8CharLens[256];
 //                before typing the motion command.
 //"motion_force"  Last motion_force  from visualOperator()
 //"debug_mode"    Debug mode.
-EXTERN int stateG INIT(= MODE_NORMAL);
+EXTERN Unt stateG INIT(= MODE_NORMAL);
 
 EXTERN Boole debug_mode INIT(= false);
 

@@ -1,7 +1,4 @@
 /* src/regexp.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void init_regexp_timeout(long msec);
 void disable_regexp_timeout(void);
 int re_multiline(RegProg *prog);

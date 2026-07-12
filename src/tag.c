@@ -40,11 +40,11 @@ typedef enum {
 
 //Binary search file offsets in a tags file
 typedef struct {
-   FileSize   low_offset;   // offset for first char of first line that could match
-   FileSize   high_offset;   // offset of char after last line that could match
-   FileSize   curr_offset;   // Current file offset in search range
-   FileSize   curr_offset_used; // curr_offset used when skipping back
-   FileSize   match_offset;   // Where the binary search found a tag
+   FileOffset   low_offset;   // offset for first char of first line that could match
+   FileOffset   high_offset;   // offset of char after last line that could match
+   FileOffset   curr_offset;   // Current file offset in search range
+   FileOffset   curr_offset_used; // curr_offset used when skipping back
+   FileOffset   match_offset;   // Where the binary search found a tag
    int   low_char;      // first char at low_offset
    int   high_char;      // first char at high_offset
 } TagSearchInfo;
@@ -1382,7 +1382,7 @@ findtags_apply_tfu(FindTags *st, CS pat, CS buf_ffname) {
 private tags_read_status_T
 findtags_get_next_line(FindTags *st, TagSearchInfo* sinfo_p) {
    int      eof;
-   FileSize   offset;
+   FileOffset   offset;
 
    // For binary search: compute the next offset to use.
    if (st->state == TS_BINARY) {
@@ -1489,7 +1489,7 @@ findtags_start_state_handler(
 {
    int      use_cscope = (st->flags & TAG_CSCOPE);
    int      noic = (st->flags & TAG_NOIC);
-   FileSize   filesize;
+   FileOffset   filesize;
 
    // The header ends when the line sorts below "!_TAG_".  When case is
    // folded lower case letters sort before "_".
@@ -1650,7 +1650,7 @@ findtags_parse_line(
           return TAG_MATCH_NEXT;
       } ei (st->state == TS_STEP_FORWARD) {
           if (caseInsensitiveCompareNChars(tagpp->tagname, st->orgpat->head, cmplen) != 0) {
-         if ((FileSize)ftello(st->fp) > sinfo_p->match_offset)
+         if ((FileOffset)ftello(st->fp) > sinfo_p->match_offset)
              return TAG_MATCH_STOP;   // past last match
          else
              return TAG_MATCH_NEXT;   // before first match
@@ -3948,7 +3948,7 @@ cs_create_connection(int i) {
       cmd = alloc(cmdlen);
 
       // run the cscope command
-      eeSnprintf(cmd, cmdlen, "/bin/sh -c \"exec %s -dl -f %s", prog, csinfo[i].fname);
+      eeSnprintf(cmd, cmdlen, "/usr/bin/bash -c \"exec %s -dl -f %s", prog, csinfo[i].fname);
       if (csinfo[i].ppath != NULL) {
          len = (int)STRLEN(cmd);
          eeSnprintf(cmd + len, cmdlen - len, " -P%s", csinfo[i].ppath);
@@ -3965,9 +3965,8 @@ cs_create_connection(int i) {
 
       // Change our process group to avoid cscope receiving SIGWINCH.
       (void)setsid();
-      build_argv_from_string(cmd, OUT &argv, &argc);
 
-      if (execvp((char*)argv[0], (char**)argv) == -1)
+      if (execvp(cmd, (char*)argv[0], (char**)argv) == -1)
          PERROR(_("cs_create_connection exec failed"));
 
       exit(127);

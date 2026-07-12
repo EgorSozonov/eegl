@@ -1635,22 +1635,27 @@ diff_file(DiffIo* dio) {
 
    //Build the diff command and execute it. Always use -a, binary differences are of no use. 
    //Ignore errors, diff returns non-zero when differences have been found.
-   eeSnprintf(cmd, len, "diff %s%s%s%s%s%s%s%s %s",
-       diff_a_works == false ? "" : "-a ",
-       "",
-       (diff_flags & DIFF_IWHITE) ? "-b " : "",
-       (diff_flags & DIFF_IWHITEALL) ? "-w " : "",
-       (diff_flags & DIFF_IWHITEEOL) ? "-Z " : "",
-       (diff_flags & DIFF_IBLANK) ? "-B " : "",
-       (diff_flags & DIFF_ICASE) ? "-i " : "",
-       tmp_orig, tmp_new
-   );
-   doAppendRedir(cmd, (int)len, p_srr, tmp_diff);
+   Multistring shellArg = {};
+   if (diff_a_works != 0)
+      appendToMulti(tConst("-a"), OUT &shellArg);
+   if ((diff_flags & DIFF_IWHITE) != 0)
+      appendToMulti(tConst("-b"), OUT &shellArg);
+   if ((diff_flags & DIFF_IWHITEALL) != 0)
+      appendToMulti(tConst("-w"), OUT &shellArg);
+   if ((diff_flags & DIFF_IWHITEEOL) != 0)
+      appendToMulti(tConst("-Z"), OUT &shellArg);
+   if ((diff_flags & DIFF_IBLANK) != 0)
+      appendToMulti(tConst("-B"), OUT &shellArg);
+   if ((diff_flags & DIFF_ICASE) != 0)
+      appendToMulti(tConst("-i"), OUT &shellArg);
+   appendToMulti(mbText(tmp_orig), OUT &shellArg);
+   appendToMulti(mbText(tmp_new), OUT &shellArg);
+   doAppendRedir(OUT &shellArg, (int)len, p_srr, tmp_diff);
    block_autocmds();   // avoid ShellCmdPost stuff
     
-   (void)call_shell(cmd, null, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
+   (void)fiCallShell(shellArg, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
    unblock_autocmds();
-   eeglFree(cmd);
+   freeMultistring(&shellArg);
    return OK;
 }
 
@@ -1705,7 +1710,7 @@ c_diffpatch(Invocation* invo) {
       // cooked mode to allow the user to respond to prompts.
       eeSnprintf(builder, buflen, "patch -o %s %s < %s", tmp_new, tmp_orig, esc_name);
       block_autocmds();   // Avoid ShellCmdPost stuff
-      (void)call_shell(builder, null, SHELL_FILTER | SHELL_COOKED);
+      (void)fiCallShell(builder, SHELL_FILTER | SHELL_COOKED);
       unblock_autocmds();
    }
 

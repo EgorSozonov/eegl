@@ -1,7 +1,4 @@
 /* src/do.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void do_ascii(Invocation *invo);
 void c_align(Invocation *invo);
 void c_sort(Invocation *invo);
@@ -11,8 +8,8 @@ void free_prev_shellcmd(void);
 void do_bang(int addr_count, Invocation *invo, Boole forceit, Boole do_in, Boole do_out);
 void do_shell(CS cmd, Unt flags);
 int prompt_for_number(int *mouse_used);
-CS make_filter_cmd(CS cmd, CS inputFName, CS outputFName);
-void doAppendRedir(CS buf, int buflen, CS opt, CS fname);
+Multistring make_filter_cmd(CS cmd, CS inputFName, CS outputFName);
+void doAppendRedir(Multistring *mu, CS opt, CS fname);
 void do_fixdel(Invocation *invo);
 void c_file(Invocation *invo);
 void c_update(Invocation *invo);

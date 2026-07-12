@@ -1,7 +1,4 @@
 /* src/data.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void list_add_watch(List *l, ListWatch *lw);
 void list_rem_watch(List *l, ListWatch *lwrem);
 List *list_alloc(void);
@@ -175,7 +172,7 @@ Bag *allocBag(void);
 Bag *allocBag_id(AllocId id);
 Bag *allocBag_lock(int lock);
 void allocReturnDict(Var *returnVar);
-void returnVar_dict_set(Var *returnVar, Bag *d);
+void returnVar_dict_set(Var *returnVar, Bag *b);
 CS char_from_string(CS str, Long index);
 Text textOfDi(DictItem *di);
 Text textOfDi16(DictItem16 *di);
@@ -217,7 +214,7 @@ void f_values(Var *argvars, Var *returnVar);
 void bagSetItemsRo(Bag *di);
 void f_has_key(Var *argvars, Var *returnVar);
 CS string_slice(CS str, Long first, Long last, int exclusive);
-void bagUnref(Bag *d);
+void bagUnref(Bag *b);
 int dict_free_nonref(int copyID);
 void hashtab_free_contents(EeSet *ht);
 void dict_free_items(int copyID);

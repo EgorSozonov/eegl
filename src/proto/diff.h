@@ -1,7 +1,4 @@
 /* src/diff.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void diffDeleteBook(Book *book);
 void diffBookAdjust(Portal *port);
 void diffAddBook(Book *book);

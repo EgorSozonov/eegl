@@ -3548,6 +3548,10 @@ freeSelection(ClipBoard* cbd) {
 //Get the selected text and put it in register '*' or '+'.
 private void
 clip_get_selection(ClipBoard* cbd) {
+   Multistring mu = {};
+   appendToMulti(tConst("wl-paste"), OUT &mu);
+   PolyWithStatus fromShell = fiCallShell(&mu, 0);
+   _bp(true);
    if (cbd->owned) {
       if ((cbd == &clipboard && getYRegister(PLUS_REGISTER)->y_array != NULL)
             || (cbd == &clipboard && getYRegister(STAR_REGISTER)->y_array != NULL)

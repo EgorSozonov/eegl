@@ -1,7 +1,4 @@
 /* src/strings.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 Arena *createArena(void);
 void *allocateOnArena(Unt allocSize, Arena *a);
 void deleteArena(Arena *ar);
@@ -94,7 +91,10 @@ CS copyStr(CS string);
 CS copySubstr(CS string, Unt len);
 Polystring polystring(Unt cap);
 void appendToBuf(Text s, Polystring *buf);
+void appendToMulti(Text s, Multistring *mu);
 void appendToBufWithSufficientSpace(Text s, Polystring *buf);
+void freeMultistring(Multistring *mu);
+void freePolystring(Polystring *poly);
 CS copySubstrA(CS string, Unt len, Arena *a);
 Text copyText(Text slice);
 CS copyStrA(CS string, Arena *a);

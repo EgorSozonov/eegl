@@ -3821,7 +3821,7 @@ fname_match(RegMatch* rmp, CS name){
 // Find a file in the book list by book number.
 Book*
 bookFindFileByBookNr(int nr){
-   Byte key[EE_SIZEOF_INT * 2 + 1];
+   Byte key[SIZEOF_INT * 2 + 1];
 
    if (nr == 0)
       nr = curPor->altFnum;

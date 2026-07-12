@@ -2826,6 +2826,40 @@ appendToBuf(Text s, OUT Polystring* buf) {
    buf->len += s.len + 1;
 }
 
+//Append a string to a multistring
+void
+appendToMulti(Text s, OUT Multistring* mu) {
+   if (s.len == 0) {
+      return;
+   } 
+   
+   if (s.len + mu->buf.len > mu->buf.cap) {
+      Unt newCap = MAX(mu->buf.cap * 2, mu->buf.cap + 2*s.len);
+      CS newCont = alloc(newCap);
+      if (mu->buf.len > 0) {
+         memcpy(newCont, mu->buf.c, mu->buf.len);
+         eeglFree(mu->buf.c);
+      } 
+      mu->buf.c = newCont;
+      mu->buf.cap = newCap;
+   }
+   if (mu->len == mu->cap) {
+      Unt newCap = 2*mu->cap;
+      Arr(CS) newCont = alloc(newCap);
+      if (mu->len > 0) {
+         memcpy(newCont, mu->c, mu->len);
+         eeglFree(mu->c);
+      }
+      mu->c = newCont;
+      mu->cap = newCap;
+   }
+   memcpy(buf->c + buf->len, s.c, s.len);
+   mu->buf.c[mu->buf.len + s.len] = ZERO;
+   mu->buf.len += s.len + 1;
+   mu->c[mu->len] = buf->c + buf->len;
+   mu->len++;
+}
+
 
 //Write a string to buffer. Preconditions: string is not empty, the buffer has sufficient space
 void
@@ -2833,6 +2867,17 @@ appendToBufWithSufficientSpace(Text s, OUT Polystring* buf) {
    memcpy(buf->c + buf->len, s.c, s.len);
    buf->c[buf->len + s.len] = ZERO;
    buf->len += s.len + 1;
+}
+
+void
+freeMultistring(OUT Multistring* mu) {
+   eeglFree(mu->c);
+   eeglFree(mu->buf.c);
+}
+
+void
+freePolystring(OUT Polystring* poly) {
+   eeglFree(poly->c);
 }
 
 // Copy up to "len" bytes of "string" into the arena and terminate with a ZERO.
@@ -3402,14 +3447,11 @@ string_count(CS haystack, CS needle, int ic) {
 int
 eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
    va_list   ap;
-   int      str_l;
-   Unt   len = STRLEN(str);
-   Unt   space;
+   int str_l;
+   Unt len = STRLEN(str);
+   Unt space;
 
-   if (str_m <= len)
-      space = 0;
-   else
-      space = str_m - len;
+   Unt space = (str_m <= len) ? 0 : str_m - len;
    va_start(ap, fmt);
    str_l = VSNPRINTF(str + len, space, fmt, ap);
    va_end(ap);

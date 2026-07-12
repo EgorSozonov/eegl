@@ -1,7 +1,4 @@
 /* src/fileio.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void init_homedir(void);
 int file_is_readable(CS fname);
 void f_chdir(Var *argvars, Var *returnVar);
@@ -71,7 +68,7 @@ void fiGlobpath(CS path, CS file, ExpandMatch *matches, Unt expand_options, Bool
 int mch_chdir(CS path);
 void filemess(Book *book, CS name, CS s, int attr);
 int readfile(CS fname, CS sfname, LineNr from, LineNr lines_to_skip, LineNr lines_to_read, Invocation *invo, Unt flags);
-int read_blob(FILE *fd, Var *returnVar, FileSize offset, FileSize size_arg);
+int read_blob(FILE *fd, Var *returnVar, FileOffset offset, FileOffset size_arg);
 int write_blob(FILE *fd, Blob *blob);
 int is_dev_fd_file(CS fname);
 int prep_exarg(Invocation *invo, Book *book);
@@ -80,7 +77,7 @@ int check_file_readonly(CS fname, Unt perm);
 int eeFsync(int fd);
 int set_rw_fname(CS fname, CS sfname);
 void msg_add_fname(Book *book, CS fname);
-void msg_add_lines(int insert_space, long lnum, FileSize nchars);
+void msg_add_lines(int insert_space, long lnum, FileOffset nchars);
 void msg_add_eol(void);
 int time_differs(FileStat *st, long mtime, long mtime_ns);
 CS shorten_fname1(CS full_path);
@@ -114,7 +111,7 @@ int get2c(FILE *fd);
 int get3c(FILE *fd);
 int get4c(FILE *fd);
 CS read_string(FILE *fd, int cnt);
-PolyWithStatus call_shell(CS cmd, CS extraArg, Unt opt);
+PolyWithStatus fiCallShell(Multistring *cmd, Unt opt);
 long mch_getperm(CS name);
 int mch_setperm(CS name, long perm);
 void mch_copy_xattr(CS from_file, CS to_file);

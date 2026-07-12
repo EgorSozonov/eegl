@@ -1,7 +1,4 @@
 /* src/memory.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void eeMemProfileDump(void);
 int alloc_does_fail(Unt size);
 void *alloc(Unt size);
@@ -22,6 +19,9 @@ Ulong mch_total_mem(int special);
 void mch_free_mem(void);
 CS toFullFileName(Text fileName, DirName *dn);
 void mch_exit(int r);
+void _incRefCount(void *a);
+void _decRefCount(void *a);
+Unt _getRefCount(void *a);
 int ml_open(Book *book);
 void ml_setname(Book *book);
 void memOpenSwapFiles(void);

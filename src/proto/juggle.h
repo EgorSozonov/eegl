@@ -1,7 +1,4 @@
 /* src/juggle.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void change_warning(int col);
 void changed(void);
 void jugOnChangeToText(void);

@@ -1,7 +1,4 @@
 /* src/eval.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 int checkIfNameReserved(CS name, int is_objm_access);
 Long num_divide(Long n1, Long n2, Boole *failed);
 Long num_modulus(Long n1, Long n2, Boole *failed);
@@ -67,7 +64,6 @@ void c_execute(Invocation *invo);
 CS find_option_end(CS *arg, int *scope);
 void lastSetMsg(ScriptPos script_ctx);
 CS do_string_sub(CS str, Unt len, CS pat, CS sub, Var *expr, Byte *flags, Unt *ret_len);
-int set_ref_in_loopvars(int copyID);
 void skipForLines(void *fi_void, EvalCtx *evalarg);
 void evalvars_clear(void);
 int garbage_collect_globvars(int copyID);

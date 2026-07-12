@@ -341,7 +341,12 @@ endif
 
 ## Debugging flags
 
+DEBUG - general debugging
+U_DEBUG - debugging of undo functionality
 DEBUG_GLYPH_COMBINE - debug combining Unicode characters
+MEM_PROFILE - memory issues profiling
+FEAT_PROFILE - script profiling?
+REGEXP_LOGGING - regexp engine logging
 
 ## Contributing new runtime files
 

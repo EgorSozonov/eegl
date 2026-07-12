@@ -1,7 +1,4 @@
 /* src/motor.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 int highest_patch(void);
 void c_version(Invocation *invo);
 void maybe_intro_message(void);

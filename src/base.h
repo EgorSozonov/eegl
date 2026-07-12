@@ -55,6 +55,13 @@ typedef struct {
    Unt cap; //Total capacity. Can all be filled with any bytes
 } Polystring;
 
+typedef struct {
+   Arr(CS) c;      //array of args
+   Unt len;        //num of args in .c
+   Unt cap;        //capacity of .c
+   Polystring buf; //container where .c points into
+} Multistring;
+
 // Structure used for growing arrays.
 // This is used to store information that only grows, is deleted all at
 // once, and needs to be accessed by index.  See ga_clear() and ga_grow().

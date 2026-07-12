@@ -97,7 +97,6 @@ private void init_signal_stack(void);
 private void catch_int_signal(void);
 private void catch_signals(void (*func_deadly)(int), void (*func_other)(int));
 private void open_pty(int *pty_master_fd, int *pty_slave_fd, Byte **name1, Byte **name2);
-private void mch_parse_cmd(CS cmd, int use_shcf, Byte*** argv, int *argc);
 private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text buf);
 
 //}}}
@@ -3516,21 +3515,9 @@ channel_to_string_buf(OUT CS builder, Var* varp) {
       eeSnprintf(builder, NUMBUFLEN, "channel %s", status);
 }
 
-//Build "argv[argc]" from the string "cmd". "argv[argc]" is set to NULL;
-void
-build_argv_from_string(CS cmd, Byte ***argv, int *argc) {
-   // Make a copy, parsing will modify "cmd".
-   CS cmd_copy = copyStr(cmd);
-   mch_parse_cmd(cmd_copy, false, argv, argc);
-   for (int i = 0; i < *argc; i++)
-      (*argv)[i] = copyStr((CS)(*argv)[i]);
-   (*argv)[*argc] = NULL;
-   eeglFree(cmd_copy);
-}
-
 // Build "argv[argc]" from the list "l".
 // "argv[argc]" is set to NULL; Return FAIL when out of memory.
-int
+private int
 build_argv_from_list(List *l, Byte*** argv, int *argc) {
    // Pass argv[] to chCallShell().
    *argv = ALLOC_MULT(CS, l->len + 1);
@@ -3842,9 +3829,13 @@ append_ga_line(ArrayList* gap) {
    gap->len = 0;
 }
 
+private Multistring
+shellArgsNew() {
+}
+
 //Don't use system(), use fork()/exec().
 private PolyWithStatus
-callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
+callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
    TermInputMode tmode = cur_tmode;
    ProId  pid;
    ProId  wpid = 0;
@@ -3852,12 +3843,11 @@ callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
    int status = -1;
    Byte* tofree2 = NULL;
    int i;
-   int pty_master_fd = -1;       // for pty's
+   int pty_master_fd = -1; // for pty's
    int fd_toshell[2];      // for pipes
    int fd_fromshell[2];
    int pipe_error = false;
    int did_termSetMode = false;   // termSetMode(TMODE_RAW) called
-   int p_more_save;
    Polystring shellResponse = {};
    PolyWithStatus retVal = { .status = 0, .c = shellResponse };
 
@@ -3867,8 +3857,9 @@ callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
    if (tmode == TMODE_RAW)
       // The shell may have messed with the mode, always set it later.
       cur_tmode = TMODE_UNKNOWN;
-
-   Arr(CS) argv = unix_build_argv(cmd, extraArg, OUT &tofree2);
+      
+   ShellArgs shellArgs = shellArgsNew();
+   Arr(CS) argv = unix_build_argv(cmd, OUT &shellArgs);
 
    if ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
       pipe_error = (pipe(fd_toshell) < 0);
@@ -3981,7 +3972,6 @@ callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
             Byte ta_buf[BUFLEN + 1];   // TypeAHead
             int ta_len = 0;      // valid bytes in ta_buf[]
             int len;
-            int old_State;
             int noread_cnt;
             Elapsed start_tv;
 
@@ -4001,9 +3991,9 @@ callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
             //before all the output has been printed.
             //
             //Currently this busy loops! This can probably dead-lock when the write blocks!
-            p_more_save = p_more;
+            Boole p_more_save = p_more;
             p_more = false;
-            old_State = stateG;
+            Unt modeSaved = stateG;
             stateG = MODE_EXTERNCMD;   // don't redraw at window resize
 
             if ((options & SHELL_WRITE) != 0 && toshell_fd >= 0) {
@@ -4223,7 +4213,7 @@ callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
             // Give all typeahead that wasn't used back to ui_inchar().
             if (ta_len)
                ui_inBytendo(ta_buf, ta_len);
-            stateG = old_State;
+            stateG = modeSaved;
             if (toshell_fd >= 0)
                close(toshell_fd);
             close(fromshell_fd);
@@ -4305,15 +4295,15 @@ callShellImpl(CS cmd, CS extraArg, Unt options){   // SHELL_*, see eegl.h
    if (!did_termSetMode && tmode == TMODE_RAW)
       termSetMode(TMODE_RAW);
    eeglFree(argv);
-   eeglFree(tofree2);
+   eeglFree(shellArgs.c);
 
    return retVal;
 }
 
 PolyWithStatus
-chCallShell(CS cmd, CS extraArg, Unt options) {   // SHELL_*, see eegl.h
+chCallShell(Multistring* cmd, Unt options) {   // SHELL_*, see eegl.h
    lo("executing shell command: %s", cmd);
-   return callShellImpl(cmd, extraArg, options);
+   return callShellImpl(cmd, options);
 }
 
 int
@@ -6110,7 +6100,6 @@ job_check_ended(void) {
 // Return NULL when out of memory.
 Job*
 startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job) {
-   CS cmd = NULL;
    Byte** argv = NULL;
    int argc = 0;
    int i;
@@ -6192,13 +6181,8 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
       argv[argc] = NULL;
    } ei (argvars[0].tag == VAR_STRING) {
       // Command is a string.
-      cmd = argvars[0].string;
-      if (cmd == NULL || *skipwhite(cmd) == ZERO) {
-         emsg(_(e_invalid_argument));
-         goto theend;
-      }
-
-      build_argv_from_string(cmd, &argv, &argc);
+      
+      emsg(_(e_invalid_argument));
    } ei (argvars[0].tag != VAR_LIST || argvars[0].list == NULL || argvars[0].list->len < 1){
       emsg(_(e_invalid_argument));
       goto theend;
@@ -6603,9 +6587,7 @@ job_to_string_buf(OUT CS builder, Var* varp) {
    }
    CS status = (CS)(job->status == JOB_FAILED 
       ? "fail"
-         : job->status >= JOB_ENDED 
-            ? "dead"
-               : "run"
+      : (job->status >= JOB_ENDED ? "dead" : "run")
    );
    eeSnprintf(builder, NUMBUFLEN, "process %ld %s", (long)job->pid, status);
 }
@@ -6613,95 +6595,17 @@ job_to_string_buf(OUT CS builder, Var* varp) {
 //}}}
 //{{{command-line arguments
 
-//Parse "cmd" and return the result in "argvp" which is an allocated array of pointers, the last 
-//one is NULL. The "shellName" and "shcf_tofree" must be later freed by the caller.
-Arr(CS)
-unix_build_argv(CS cmd, CS extraArg, OUT CS* shcf_tofree) {
-   Byte** argv = NULL;
-   int argc;
-
-   Arr(CS) retVal = null;
-
-   if (cmd) {
-      if (extraArg)
-         argv[argc++] = extraArg;
-
-      //Break @shellcmdflag into space-separated parts. This doesn't
-      //handle quoted strings, they are very unlikely to appear.
-      *shcf_tofree = alloc((p_shcf ? STRLEN(p_shcf) : 0) + 1);
-      CS s = *shcf_tofree;
-      CS p = p_shcf;
-      while (*p != ZERO) {
-         argv[argc++] = s;
-         while (*p && *p != ' ' && *p != TAB)
-            *s++ = *p++;
-         *s++ = ZERO;
-         p = skipwhite(p);
-      }
-
-      argv[argc++] = cmd;
-   }
-   argv[argc] = NULL;
-   return retVal;
+//Construct an array of strings that spell out `bash -c "bla bla"`
+void
+unix_build_argv(OUT Polystring* shellArgs, CS cmd) {
+   if (!cmd)
+      return;
+      
+   Unt count = 1;
+   appendToBuf(tConst("bash"), OUT shellArgs);
+   appendToBuf(tConst("-c"), OUT shellArgs);
+   appendToBuf(text(cmd), OUT shellArgs);
 }
-
-//Parse "cmd" and put the white-separated parts into "argv". "argv" is an allocated array with 
-//"argc" entries and room for 4 more.
-private void
-mch_parse_cmd(CS cmd, int use_shcf, Byte*** argv, int *argc) {
-   //Do this loop twice:
-   //1: find number of arguments
-   //2: separate them and build argv[]
-   for (int i = 1; i <= 2; ++i) {
-      CS p = skipwhite(cmd);
-      Boole inquote = false;
-      *argc = 0;
-      while (*p != ZERO) {
-         if (i == 2)
-            (*argv)[*argc] = p;
-         ++*argc;
-         CS d = p;
-         while (*p != ZERO && (inquote || (*p != ' ' && *p != TAB))) {
-            if (p[0] == '"')
-               // quotes surrounding an argument and are dropped
-               inquote = !inquote;
-            else {
-               if (rem_backslash(p)) {
-                  // First pass: skip over "\ " and "\"". Second pass: Remove the backslash.
-                  ++p;
-               }
-               if (i == 2)
-                  *d++ = *p;
-            }
-            ++p;
-         }
-         if (*p == ZERO) {
-            if (i == 2)
-               *d++ = ZERO;
-            break;
-         }
-         if (i == 2)
-            *d++ = ZERO;
-         p = skipwhite(p + 1);
-      }
-      if (*argv == NULL) {
-         if (use_shcf && p_shcf) {
-            // Account for possible multiple args in p_shcf.
-            p = p_shcf;
-            for (;;) {
-               p = skiptowhite(p);
-               if (*p == ZERO)
-                  break;
-               ++*argc;
-               p = skipwhite(p);
-            }
-         }
-
-         *argv = ALLOC_MULT(CS, *argc + 4);
-      }
-   }
-}
-
 
 //}}}
 //{{{logging

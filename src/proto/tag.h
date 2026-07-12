@@ -1,7 +1,4 @@
 /* src/tag.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 CS did_set_tagfunc(OptionChange *cha);
 void free_tagfunc_option(void);
 int set_ref_in_tagfunc(int copyID);

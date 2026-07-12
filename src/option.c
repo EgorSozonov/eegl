@@ -6,6 +6,8 @@
 #define IN_OPTION_C
 #include "eegl.h"
 
+#include <locale.h> // for LC_MESSAGES et al
+
 //{{{info & types
 
 //Code to handle user-settable options. Checklist for adding a new option:
@@ -4563,7 +4565,6 @@ do_spelllang_source(void) {
 //}}}
 //{{{ locale: functions for language/locale configuration
 
-# define HAVE_GET_LOCALE_VAL
 private CS
 get_locale_val(int what) {
    // Obtain the locale value from the libraries.
@@ -4575,95 +4576,34 @@ get_locale_val(int what) {
 //Reject NULL, empty string, "C", "C.UTF-8" and others.
 private int
 is_valid_mess_lang(Byte *lang) {
-    return lang && ASCII_ISALPHA(lang[0]) && ASCII_ISALPHA(lang[1]);
+   return lang && ASCII_ISALPHA(lang[0]) && ASCII_ISALPHA(lang[1]);
 }
 
 //Obtain the current messages language.  Used to set the default for @helplang. 
 //May return NULL or an empty string.
 CS
 get_mess_lang(void) {
-   CS p;
-
-#ifdef HAVE_GET_LOCALE_VAL
-# if defined(LC_MESSAGES)
-   p = get_locale_val(LC_MESSAGES);
-# else
-   // LC_COLLATE is the best guess, LC_TIME
-   // and LC_MONETARY may be set differently for a Japanese working in the US.
-   p = get_locale_val(LC_COLLATE);
-# endif
-#else
-   p = mch_getenv(S"LC_ALL");
-   if (!is_valid_mess_lang(p)) {
-      p = mch_getenv(S"LC_MESSAGES");
-      if (!is_valid_mess_lang(p))
-         p = mch_getenv(S"LANG");
-   }
-#endif
-    return is_valid_mess_lang(p) ? p : NULL;
+   CS p = get_locale_val(LC_MESSAGES);
+   return is_valid_mess_lang(p) ? p : NULL;
 }
-
-// Complicated #if; matches with where get_mess_env() is used below.
-#if (!(defined(LC_MESSAGES))) || (!defined(LC_MESSAGES))
-   
-// Get the language used for messages from the environment.
-private CS
-get_mess_env(void) {
-   CS p = mch_getenv((CS)"LC_ALL");
-   if (p && *p != ZERO)
-      return p;
-
-   p = mch_getenv((CS)"LC_MESSAGES");
-   if (p && *p != ZERO)
-      return p;
-
-   p = mch_getenv((CS)"LANG");
-   if (p && EE_ISDIGIT(*p))
-      p = NULL;      // ignore something like "1043"
-# ifdef HAVE_GET_LOCALE_VAL
-    if (p == NULL || *p == ZERO)
-   p = get_locale_val(LC_CTYPE);
-# endif
-    return p;
-}
-#endif
-
 
 //Set the "v:lang" variable according to the current locale setting.
 //Also do "v:lc_time"and "v:ctype".
 void
 set_lang_var(void) {
-    CS loc;
+   CS loc = get_locale_val(LC_CTYPE);
+   set_EeglVar_string(VV_CTYPE, loc, -1);
 
-# ifdef HAVE_GET_LOCALE_VAL
-    loc = get_locale_val(LC_CTYPE);
-# else
-    // setlocale() not supported: use the default value
-    loc = (CS)"C";
-# endif
-    set_EeglVar_string(VV_CTYPE, loc, -1);
+   // When LC_MESSAGES isn't defined use the value from $LC_MESSAGES, fall
+   // back to LC_CTYPE if it's empty.
+   loc = get_locale_val(LC_MESSAGES);
+   set_EeglVar_string(VV_LANG, loc, -1);
 
-    // When LC_MESSAGES isn't defined use the value from $LC_MESSAGES, fall
-    // back to LC_CTYPE if it's empty.
-# if defined(HAVE_GET_LOCALE_VAL) && defined(LC_MESSAGES)
-    loc = get_locale_val(LC_MESSAGES);
-# else
-    loc = get_mess_env();
-# endif
-    set_EeglVar_string(VV_LANG, loc, -1);
+   loc = get_locale_val(LC_TIME);
+   set_EeglVar_string(VV_LC_TIME, loc, -1);
 
-# ifdef HAVE_GET_LOCALE_VAL
-    loc = get_locale_val(LC_TIME);
-# endif
-    set_EeglVar_string(VV_LC_TIME, loc, -1);
-
-# ifdef HAVE_GET_LOCALE_VAL
-    loc = get_locale_val(LC_COLLATE);
-# else
-    // setlocale() not supported: use the default value
-    loc = (CS)"C";
-# endif
-    set_EeglVar_string(VV_COLLATE, loc, -1);
+   loc = get_locale_val(LC_COLLATE);
+   set_EeglVar_string(VV_COLLATE, loc, -1);
 }
 
 //Setup to use the current locale (for ctype() and many other things).
@@ -4699,11 +4639,7 @@ c_language(Invocation* invo) {
    CS name;
    int      what = LC_ALL;
    CS whatstr = S"";
-# ifdef LC_MESSAGES
 #  define EE_LC_MESSAGES LC_MESSAGES
-# else
-#  define EE_LC_MESSAGES 6789
-# endif
 
    name = invo->arg;
 
@@ -4732,21 +4668,11 @@ c_language(Invocation* invo) {
    }
 
    if (*name == ZERO) {
-# ifndef LC_MESSAGES
-      if (what == EE_LC_MESSAGES)
-          p = get_mess_env();
-      else
-# endif
           p = (CS)setlocale(what, NULL);
       if (p == NULL || *p == ZERO)
           p = (CS)"Unknown";
       smsg(_("Current %slanguage: \"%s\""), whatstr, p);
    } else {
-# ifndef LC_MESSAGES
-      if (what == EE_LC_MESSAGES)
-         loc = "";
-      else
-# endif
       {
           loc = setlocale(what, (char *)name);
 # if defined(LC_NUMERIC)

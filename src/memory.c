@@ -483,9 +483,9 @@ eeMemsave(Byte *p, Unt len) {
    return ret;
 }
 
-// Replacement for free() that ignores NULL pointers. Also skip free() when exiting for sure, this
-// helps when we caught a deadly signal that was caused by a crash in free().
-// If you want to set NULL after calling this function, you should use EE_CLEAR() instead.
+//Replacement for free() that ignores NULL pointers. Also skip free() when exiting for sure, this
+//helps when we caught a deadly signal that was caused by a crash in free().
+//If you want to set NULL after calling this function, you should use EE_CLEAR() instead.
 void
 eeglFree(void* x) {
    if (x && !really_exiting) {
@@ -1266,7 +1266,7 @@ ml_recover(Boole checkext) {
    int has_error;
    int top;
    int txt_start;
-   FileSize size;
+   FileOffset size;
    Boole serious_error = true;
    int orig_file_status = NOTDONE;
 
@@ -1371,7 +1371,7 @@ ml_recover(Boole checkext) {
           msg_end();
           goto theend;
       }
-      if ((size = lseek(mfp->fd, (FileSize)0L, SEEK_END)) <= 0)
+      if ((size = lseek(mfp->fd, (FileOffset)0L, SEEK_END)) <= 0)
           mfp->mf_blocknr_max = 0;       // no file or empty file
       else
           mfp->mf_blocknr_max = (BlockId)(size / mfp->pageSize);
@@ -4287,7 +4287,7 @@ private void mf_ins_free(MemFile *, BlockHeader *);
 private BlockHeader* mf_rem_free(MemFile *);
 private int mf_read(MemFile*, BlockHeader *);
 private int mf_write(MemFile*, BlockHeader *);
-private int mf_write_block(MemFile* mfp, BlockHeader *hp, FileSize offset, unsigned size);
+private int mf_write_block(MemFile* mfp, BlockHeader *hp, FileOffset offset, unsigned size);
 private int mf_trans_add(MemFile*, BlockHeader *);
 private void mf_do_open(MemFile*, CS, Unt);
 private void mf_hash_init(MfHashTable*);
@@ -4324,7 +4324,7 @@ private int mf_hash_grow(MfHashTable*);
 //return value: identifier for this memory block file.
 MemFile *
 mf_open(CS fname, Unt flags) {
-   FileSize      size;
+   FileOffset      size;
 #if defined(STATFS) && !defined(__minix)
 # define USE_FSTATFS
    struct STATFS   stf;
@@ -4368,7 +4368,7 @@ mf_open(CS fname, Unt flags) {
 #endif
 
    if (mfp->fd < 0 || (flags & (O_TRUNC|O_EXCL))
-        || (size = lseek(mfp->fd, (FileSize)0L, SEEK_END)) <= 0)
+        || (size = lseek(mfp->fd, (FileOffset)0L, SEEK_END)) <= 0)
       mfp->mf_blocknr_max = 0;   // no file or empty file
    else
       mfp->mf_blocknr_max = (BlockId)((size + mfp->pageSize - 1)
@@ -4885,7 +4885,7 @@ mf_read(MemFile* mfp, BlockHeader* hp) {
       return FAIL;
 
    Unt page_size = mfp->pageSize;
-   FileSize offset = (FileSize)page_size * hp->bh_bnum;
+   FileOffset offset = (FileOffset)page_size * hp->bh_bnum;
    Unt size = page_size * hp->pageCount;
    if (lseek(mfp->fd, offset, SEEK_SET) != offset) {
       PERROR(_(e_seek_error_in_swap_file_read));
@@ -4902,7 +4902,7 @@ mf_read(MemFile* mfp, BlockHeader* hp) {
 // write a block to disk. Return FAIL for failure, OK otherwise
 private int
 mf_write(MemFile* mfp, BlockHeader* hp) {
-   FileSize offset;       // offset in the file
+   FileOffset offset;       // offset in the file
    BlockId nr;       // block nr which is being written
    BlockHeader* hp2;
    Unt page_count; // number of pages written
@@ -4930,7 +4930,7 @@ mf_write(MemFile* mfp, BlockHeader* hp) {
       } else
          hp2 = hp;
 
-      offset = (FileSize)page_size * nr;
+      offset = (FileOffset)page_size * nr;
       if (hp2 == NULL)       // freed block, fill with dummy data
           page_count = 1;
       else
@@ -4981,7 +4981,7 @@ mf_write(MemFile* mfp, BlockHeader* hp) {
 // Write block "hp" with data size "size" to file "mfp->fd".
 // Take care of encryption. Return FAIL or OK.
 private int
-mf_write_block(MemFile* mfp, BlockHeader* hp, FileSize offset UNUSED, unsigned size) {
+mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset offset UNUSED, unsigned size) {
    Arr(Byte) data = hp->bh_data;
    int result = OK;
 

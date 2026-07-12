@@ -2320,7 +2320,7 @@ reg_submatch_list(int no) {
 //To disable all of this when compiling Eegl for debugging, undefine DEBUG in this file
 #ifdef DEBUG
 # define REGEXP_ERROR_LOG   "parseBranchexp_error.log"
-# define ENABLE_LOG
+# define REGEXP_LOGGING
 # define REGEXP_DUMP_LOG   "parseBranchexp_dump.log"
 # define REGEXP_RUN_LOG   "parseBranchexp_run.log"
 # define REGEXP_DEBUG_LOG   "parseBranchexp_debug.log"
@@ -4855,7 +4855,7 @@ nfa_set_code(int c) {
 
 }
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
 private FILE *log_fd;
 private Byte e_log_open_failed[] = N_("Could not open temporary log file for writing, displaying on stderr... ");
 
@@ -4968,7 +4968,7 @@ dump(RegProg *prog) {
 
    fclose(debugf);
 }
-#endif       // ENABLE_LOG
+#endif       // REGEXP_LOGGING
 #endif       // DEBUG
 
 //}}}
@@ -5906,7 +5906,7 @@ typedef struct {
    int          has_pim;   // true when any state has a PIM
 } nfa_List;
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
 private void log_subexpr(Submatch *sub);
 
 private void
@@ -6127,7 +6127,7 @@ nfa_did_time_out(void) {
    return false;
 }
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
 private void
 open_debug_log(int result) {
     log_fd = fopen(REGEXP_RUN_LOG, "a");
@@ -6340,7 +6340,7 @@ addstate(
    Submatch      *sub;
    Submatches      *subs = subs_arg;
    static Submatches   temp_subs;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    int         did_print = false;
 #endif
    static int      depth = 0;
@@ -6440,7 +6440,7 @@ addstate(
          }
          if (!add_here || found) {
    skip_add:
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
             nfa_set_code(state->c);
             fprintf(log_fd, 
                "> Not adding state %d to list %d. char %d: %s pim: %s has_pim: %d found: %d\n",
@@ -6496,13 +6496,13 @@ addstate(
       copy_sub(&thread->subs.norm, &subs->norm);
       if (exe.nfa_has_zsubexpr)
          copy_sub(&thread->subs.synt, &subs->synt);
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
       report_state("Adding", &thread->subs.norm, state, l->id, pim);
       did_print = true;
 #endif
    }
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    if (!did_print)
       report_state("Processing", &subs->norm, state, l->id, pim);
 #endif
@@ -7051,7 +7051,7 @@ recursiveMatch(
       }
    }
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    if (log_fd != stderr)
       fclose(log_fd);
    log_fd = NULL;
@@ -7101,7 +7101,7 @@ recursiveMatch(
    }
    mustEndAtS = save_mustEndAtS;
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    open_debug_log(result);
 #endif
 
@@ -7394,7 +7394,7 @@ match(
    if (list[0].t == NULL || list[1].t == NULL)
       goto theend;
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    log_fd = fopen(REGEXP_RUN_LOG, "a");
    if (log_fd == NULL) {
       emsg(_(e_log_open_failed));
@@ -7413,7 +7413,7 @@ match(
     nextlist = &list[1];
     nextlist->n = 0;
     nextlist->has_pim = false;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
     fprintf(log_fd, "(---) STARTSTATE first\n");
 #endif
     thislist->id = exe.nfa_listid + 1;
@@ -7461,7 +7461,7 @@ match(
       thislist->id = exe.nfa_listid;
       nextlist->id = exe.nfa_listid + 1;
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    fprintf(log_fd, "------------------------------------------\n");
    fprintf(log_fd, ">>> Reginput is \"%s\"\n", exe.input);
    fprintf(log_fd, ">>> Advanced one character... Current char is %c (code %d) \n", curc, (int)curc);
@@ -7497,7 +7497,7 @@ match(
        nfa_set_code(t->state->c);
        fprintf(debug, "%s, ", code);
 #endif
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
        {
       int col;
 
@@ -7530,7 +7530,7 @@ match(
          copy_sub(&submatch->norm, &t->subs.norm);
          if (exe.nfa_has_zsubexpr)
              copy_sub(&submatch->synt, &t->subs.synt);
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
          log_subsexpr(&t->subs);
 #endif
          // Found the left-most longest match, do not look at any other
@@ -7553,7 +7553,7 @@ match(
       // match().  For a look-behind match only when it ends
       // in the position in "mustEndAtS".
       // Submatches are stored in *m, and used in the parent call.
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
       if (mustEndAtS != NULL) {
          if (REG_MULTI)
             fprintf(log_fd, "Current lnum: %d, endp lnum: %d; current col: %d, endp col: %d\n",
@@ -7582,7 +7582,7 @@ match(
           if (exe.nfa_has_zsubexpr)
          copy_sub(&m->synt, &t->subs.synt);
       }
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
       fprintf(log_fd, "Match found:\n");
       log_subsexpr(m);
 #endif
@@ -7600,7 +7600,7 @@ match(
       case START_INVISIBLE_BEFORE_FIRST:
       case START_INVISIBLE_BEFORE_NEG:
       case START_INVISIBLE_BEFORE_NEG_FIRST: {
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
           fprintf(log_fd, "Failure chance invisible: %d, what follows: %d\n",
              failure_chance(t->state->out, 0),
              failure_chance(t->state->out1->out, 0));
@@ -7677,7 +7677,7 @@ match(
 
       case START_PATTERN: {
       RState *skip = NULL;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
       int       skip_lid = 0;
 #endif
 
@@ -7685,23 +7685,23 @@ match(
       // output state is not going to be added to the list.
       if (state_in_list(nextlist, t->state->out1->out, &t->subs)) {
           skip = t->state->out1->out;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
           skip_lid = nextlist->id;
 #endif
       } ei (state_in_list(nextlist, t->state->out1->out->out, &t->subs)) {
           skip = t->state->out1->out->out;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
           skip_lid = nextlist->id;
 #endif
       }
       ei (state_in_list(thislist, t->state->out1->out->out, &t->subs)) {
           skip = t->state->out1->out->out;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
           skip_lid = thislist->id;
 #endif
       }
       if (skip != NULL) {
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
           nfa_set_code(skip->c);
           fprintf(log_fd, "> Not trying to match pattern, output state %d is already in list %d. char %d: %s\n",
              abs(skip->id), skip_lid, skip->c, code);
@@ -7722,7 +7722,7 @@ match(
       if (result) {
           int bytelen;
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
           fprintf(log_fd, "START_PATTERN matches:\n");
           log_subsexpr(m);
 #endif
@@ -7738,7 +7738,7 @@ match(
          } else
             bytelen = (int)(m->norm.list.line[0].end - exe.input);
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
          fprintf(log_fd, "START_PATTERN length: %d\n", bytelen);
 #endif
          if (bytelen == 0) {
@@ -8000,7 +8000,7 @@ match(
                c1 = state->val;
                state = state->out; // advance to RANGE_MAX
                c2 = state->val;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
                fprintf(log_fd, "RANGE_MIN curc=%d c1=%d c2=%d\n", curc, c1, c2);
 #endif
                if (curc >= c1 && curc <= c2) {
@@ -8438,7 +8438,7 @@ match(
          // without advancing and before the end of the line.
          if (pim != NULL && (clen == 0 || match_follows(add_state, 0))) {
             if (pim->result == PIM_TODO) {
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
                fprintf(log_fd, "\n");
                fprintf(log_fd, "==================================\n");
                fprintf(log_fd, "Postponed recursive match()\n");
@@ -8459,7 +8459,7 @@ match(
                }
             } else {
             result = (pim->result == PIM_MATCH);
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
             fprintf(log_fd, "\n");
             fprintf(log_fd, "Using previous recursive match() result, result == %d\n", pim->result);
             fprintf(log_fd, "MATCH = %s\n", result == true ? "OK" : "false");
@@ -8530,7 +8530,7 @@ match(
                       < mustEndAtS->se_u.pos.col))
              : exe.input < mustEndAtS->se_u.ptr)))
    ){
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
        fprintf(log_fd, "(---) STARTSTATE\n");
 #endif
       // Inline optimized code for addstate() if we know the state is the first MOPEN.
@@ -8546,7 +8546,7 @@ match(
                // character that must appear at the start.
                if (skip_to_start(prog->regstart, &col) == FAIL)
                    break;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
                fprintf(log_fd, "  Skipping ahead %d bytes to regstart\n",
                   col - ((ColNr)(exe.input - exe.line) + clen));
 #endif
@@ -8558,7 +8558,7 @@ match(
                if (c != prog->regstart 
                      && (!exe.reg_ic || MB_CASEFOLD(c) != MB_CASEFOLD(prog->regstart))
                ) {
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
                    fprintf(log_fd, "  Skipping start state, regstart does not match\n");
 #endif
                    add = false;
@@ -8585,7 +8585,7 @@ match(
       }
    }
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    fprintf(log_fd, ">>> Thislist had %d states available: ", thislist->n); {
       int i;
 
@@ -8613,7 +8613,7 @@ nextchar:
          break;
    }
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    if (log_fd != stderr)
       fclose(log_fd);
    log_fd = NULL;
@@ -8644,14 +8644,14 @@ parseBranchtry(
    Submatches   subs, m;
    RState* start = prog->start;
    int result;
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    FILE* f;
 #endif
 
    exe.input = exe.line + col;
    timedOutS = timed_out;
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    f = fopen(REGEXP_RUN_LOG, "a");
    if (f) {
       fprintf(f, "\n\n\t=======================================================\n");
@@ -8901,7 +8901,7 @@ compile(CS expr, int flags) {
     // In order to build the NFA, we parse the input regexp twice:
     // 1. first pass to count size (so we can allocate space)
     // 2. second to emit code
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    {
    FILE *f = fopen(REGEXP_RUN_LOG, "a");
 
@@ -8941,7 +8941,7 @@ compile(CS expr, int flags) {
    prog->regstart = getRegStart(prog->start, 0);
    prog->input = getMatchText(prog->start);
 
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    dumpPostfix(expr, OK);
    dump(prog);
 #endif
@@ -8960,7 +8960,7 @@ out:
 
 fail:
    EE_CLEAR(prog);
-#ifdef ENABLE_LOG
+#ifdef REGEXP_LOGGING
    dumpPostfix(expr, FAIL);
 #endif
 #ifdef DEBUG
@@ -9063,7 +9063,7 @@ matchManyLines(
 }
 
 #ifdef DEBUG
-# undef ENABLE_LOG
+# undef REGEXP_LOGGING
 #endif
 
 

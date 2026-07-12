@@ -1,7 +1,4 @@
 /* src/input.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 CS get_recorded(void);
 Text get_inserted(void);
 Unt get_keystroke(void);

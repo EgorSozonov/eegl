@@ -1,7 +1,4 @@
 /* src/insert.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 int edit(Unt commChar, int startln, long count);
 void edit_putchar(int c, Boole needDoHilite);
 void set_insstart(LineNr lnum, int col);

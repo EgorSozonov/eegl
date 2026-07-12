@@ -1,7 +1,4 @@
 /* src/term.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void termInitProps(Boole all);
 void f_terminalprops(Var *argvars, Var *returnVar);
 int set_termname(CS termName);

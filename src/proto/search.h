@@ -1,7 +1,4 @@
 /* src/search.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 int search_regcomp(Text pat, CS *used_pat, int pat_save, int pat_use, int options, RegMultilineMatch *regmatch);
 CS get_search_pat(void);
 void save_re_pat(int idx, Text pat, int magic);

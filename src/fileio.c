@@ -367,7 +367,7 @@ f_getfsize(Var *argvars, Var* returnVar) {
          returnVar->number = (Long)st.st_size;
 
          // non-perfect check for overflow
-         if ((FileSize)returnVar->number != (FileSize)st.st_size)
+         if ((FileOffset)returnVar->number != (FileOffset)st.st_size)
             returnVar->number = -2;
       }
    } else
@@ -722,14 +722,14 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
    long cnt    = 0;
    CS p;         // position in @buf
    CS start;         // start of current line
-   FileSize offset = 0;
-   FileSize size = -1;
+   FileOffset offset = 0;
+   FileOffset size = -1;
 
    if (argvars[1].tag != VAR_UNKNOWN) {
       if (always_blob) {
-         offset = (FileSize)tv_get_number(&argvars[1]);
+         offset = (FileOffset)tv_get_number(&argvars[1]);
          if (argvars[2].tag != VAR_UNKNOWN)
-            size = (FileSize)tv_get_number(&argvars[2]);
+            size = (FileOffset)tv_get_number(&argvars[2]);
       } else {
          if (STRCMP(tv_get_string(&argvars[1]), "b") == 0)
             binary = true;
@@ -4888,13 +4888,10 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
    if ((flags & EW_SILENT) == 0)
       shellOpts |= SHELL_SHOW_MSG;
 
-   //Using zsh -G: If a pattern has no matches, it is just deleted from the argument list, 
-   //otherwise zsh gives an error message and doesn't expand any other pattern.
-   CS extraArg = null;
 
    // execute the shell command
    lo("mch_expand_wildcards [%s]", command.c);
-   PolyWithStatus shellResult = call_shell(command.c, extraArg, shellOpts);
+   PolyWithStatus shellResult = fiCallShell(command.c, shellOpts);
 
    eeglFree(command.c);
 
@@ -5183,7 +5180,7 @@ readfile(
    ColNr   len;
    long   size = 0;
    CS p;
-   FileSize   filesize = 0;
+   FileOffset   filesize = 0;
    int      skip_read = false;
    ContextSha256 sha_ctx;
    int      read_undo_file = false;
@@ -5570,7 +5567,7 @@ readfile(
       if (read_buffer) {
          read_buf_lnum = 1;
          read_buf_col = 0;
-      } ei (read_stdin || lseek(fd, (FileSize)0L, SEEK_SET) != 0) {
+      } ei (read_stdin || lseek(fd, (FileOffset)0L, SEEK_SET) != 0) {
          // Can't rewind the file, give up.
          error = true;
          goto failed;
@@ -5994,11 +5991,11 @@ skip_to_eol(FILE *fpi, int c) {
 
 // Read blob from file "fd". Caller has allocated a blob in "returnVar". Return OK or FAIL.
 int
-read_blob(FILE* fd, Var* returnVar, FileSize offset, FileSize size_arg) {
+read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg) {
    Blob* blob = returnVar->blob;
    struct stat st;
    int whence;
-   FileSize   size = size_arg;
+   FileOffset   size = size_arg;
 
    if (fstat(fileno(fd), &st) < 0)
       return FAIL;  // can't read the file, error
@@ -6153,7 +6150,7 @@ msg_add_fname(Book* book, CS fname){
 
 //Append line and character count to IObuff.
 void
-msg_add_lines(int insert_space, long lnum, FileSize nchars) {
+msg_add_lines(int insert_space, long lnum, FileOffset nchars) {
    int  len = (int)STRLEN(IObuff);
    eeSnprintf(
       IObuff + len, IOSIZE - (Unt)len, _("%s%ldLines, %ldB"), insert_space ? " " : "", 
@@ -6612,7 +6609,7 @@ fiCheckBookTimestamp(
       RELOAD_DETECT
    }      reload = RELOAD_NONE;
    int      can_reload = false;
-   FileSize   orig_size = book->origSize;
+   FileOffset   orig_size = book->origSize;
    int      orig_mode = book->origMode;
    static int   busy = false;
    int      n;
@@ -7495,7 +7492,7 @@ get_cmd_output(
 
    //Call the shell to execute the command (errors are ignored). Don't check timestamps here.
    ++no_check_timestamps;
-   call_shell(command, null, SHELL_DOOUT | SHELL_EXPAND | flags);
+   fiCallShell(command, SHELL_DOOUT | SHELL_EXPAND | flags);
    --no_check_timestamps;
 
    eeglFree(command);
@@ -7769,20 +7766,21 @@ read_string(FILE* fd, int cnt) {
 
 // Call shell. Call chCallShell
 PolyWithStatus
-call_shell(CS cmd, NULLABLE CS extraArg, Unt opt) {
+fiCallShell(Multistring* cmd, Unt opt) {
    if (p_verbose > 3) {
       verbose_enter();
-      smsg(_("Calling shell to execute: \"%s\""), cmd ? cmd : S"bash");
+      //TODO msg print out the full multistring
+      smsg(_("Calling shell to execute: ..."));
       msgPutcharDeco('\n', 0);
       cursor_on();
       verbose_leave();
    }
 
-   // The external command may update a tags file, clear cached tags.
+   //The external command may update a tags file, clear cached tags.
    tag_freematch();
 
-   PolyWithStatus retval = chCallShell(cmd, extraArg, opt);
-   // Check the portal size, in case it changed while executing the external command.
+   PolyWithStatus retval = chCallShell(cmd, opt);
+   //Check the portal size, in case it changed while executing the external command.
    shell_resized_check();
 
    set_EeglVar_nr(VV_SHELL_ERROR, (long)retval.status);

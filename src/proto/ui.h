@@ -1,7 +1,4 @@
 /* src/ui.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 void init_job_options(JobOptions *opt);
 void c_terminal(Invocation *invo);
 int expand_terminal_opt(CS pat, Expand *xp, RegMatch *rmp, ExpandMatch *matches);

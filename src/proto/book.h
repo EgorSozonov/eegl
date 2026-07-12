@@ -1,7 +1,4 @@
 /* src/book.c */
-void _incRefCount(void *a);
-void _decRefCount(void *a);
-Unt _getRefCount(void *a);
 Boole setRefInBooks(int copyID);
 Book *bookFindByName(CS name, Boole curtab_only);
 Book *findBook(Var *avar);
