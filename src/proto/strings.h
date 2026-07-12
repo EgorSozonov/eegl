@@ -92,6 +92,7 @@ CS copySubstr(CS string, Unt len);
 Polystring polystring(Unt cap);
 void appendToBuf(Text s, Polystring *buf);
 void appendToMulti(Text s, Multistring *mu);
+void appendNullToMulti(Multistring *mu);
 void appendToBufWithSufficientSpace(Text s, Polystring *buf);
 void freeMultistring(Multistring *mu);
 void freePolystring(Polystring *poly);

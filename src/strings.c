@@ -2844,6 +2844,26 @@ appendToMulti(Text s, OUT Multistring* mu) {
       mu->buf.cap = newCap;
    }
    if (mu->len == mu->cap) {
+      Unt newCap = 2*mu->cap + 4; //+4 for the initial case where cap = 0
+      Arr(CS) newCont = alloc(newCap);
+      if (mu->len > 0) {
+         memcpy(newCont, mu->c, mu->len*sizeof(CS));
+         eeglFree(mu->c);
+      }
+      mu->c = newCont;
+      mu->cap = newCap;
+   }
+   memcpy(mu->buf.c + mu->buf.len, s.c, s.len);
+   mu->buf.c[mu->buf.len + s.len] = ZERO;
+   mu->c[mu->len] = mu->buf.c + mu->buf.len;
+   mu->buf.len += s.len + 1; //1 for the ZERO
+   mu->len++;
+}
+
+//Append a string to a multistring
+void
+appendNullToMulti(OUT Multistring* mu) {
+   if (mu->len == mu->cap) {
       Unt newCap = 2*mu->cap;
       Arr(CS) newCont = alloc(newCap);
       if (mu->len > 0) {
@@ -2853,13 +2873,9 @@ appendToMulti(Text s, OUT Multistring* mu) {
       mu->c = newCont;
       mu->cap = newCap;
    }
-   memcpy(buf->c + buf->len, s.c, s.len);
-   mu->buf.c[mu->buf.len + s.len] = ZERO;
-   mu->buf.len += s.len + 1;
-   mu->c[mu->len] = buf->c + buf->len;
+   mu->c[mu->len] = null;
    mu->len++;
 }
-
 
 //Write a string to buffer. Preconditions: string is not empty, the buffer has sufficient space
 void
@@ -2873,6 +2889,7 @@ void
 freeMultistring(OUT Multistring* mu) {
    eeglFree(mu->c);
    eeglFree(mu->buf.c);
+   mu->len = 0;
 }
 
 void
@@ -3446,14 +3463,12 @@ string_count(CS haystack, CS needle, int ic) {
 // Like vsnprintf() but append to the string.
 int
 eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
-   va_list   ap;
-   int str_l;
+   va_list ap;
    Unt len = STRLEN(str);
-   Unt space;
 
    Unt space = (str_m <= len) ? 0 : str_m - len;
    va_start(ap, fmt);
-   str_l = VSNPRINTF(str + len, space, fmt, ap);
+   int str_l = VSNPRINTF(str + len, space, fmt, ap);
    va_end(ap);
    return str_l;
 }

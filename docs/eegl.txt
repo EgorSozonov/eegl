@@ -107,7 +107,7 @@ main.c -> create_windows -> arglistIngest -> bufferOpen -> buflistNew
 ex_cmds -> do_ecmd -> window.c enterWinExt
 
 // shell calling
-fileio.c:call_shell
+channel.c:callShellImpl
 
 // paste without indenting
 insert.c:bracketed_paste

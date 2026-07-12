@@ -3531,7 +3531,6 @@ clip_gen_request_selection(ClipBoard *cbd){
 //It will be used for unnamed cut/pasting is 'clipboard' contains "unnamed",
 //otherwise you will need to do <"+p>. "
 //If not under X, it is synonymous with the selection register '*'.
-
 private void
 freeSelection(ClipBoard* cbd) {
    YankReg* yReg = get_y_current();
@@ -3548,9 +3547,7 @@ freeSelection(ClipBoard* cbd) {
 //Get the selected text and put it in register '*' or '+'.
 private void
 clip_get_selection(ClipBoard* cbd) {
-   Multistring mu = {};
-   appendToMulti(tConst("wl-paste"), OUT &mu);
-   PolyWithStatus fromShell = fiCallShell(&mu, 0);
+   PolyWithStatus fromShell = chCallShell(tConst("wl-paste"), 0);
    _bp(true);
    if (cbd->owned) {
       if ((cbd == &clipboard && getYRegister(PLUS_REGISTER)->y_array != NULL)

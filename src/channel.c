@@ -3829,19 +3829,16 @@ append_ga_line(ArrayList* gap) {
    gap->len = 0;
 }
 
-private Multistring
-shellArgsNew() {
-}
+//{{{shell interaction
 
 //Don't use system(), use fork()/exec().
 private PolyWithStatus
-callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
+callShellImpl(Text cmd, Unt options){   // SHELL_*, see eegl.h
    TermInputMode tmode = cur_tmode;
    ProId  pid;
    ProId  wpid = 0;
    ProId  wait_pid = 0;
    int status = -1;
-   Byte* tofree2 = NULL;
    int i;
    int pty_master_fd = -1; // for pty's
    int fd_toshell[2];      // for pipes
@@ -3857,9 +3854,8 @@ callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
    if (tmode == TMODE_RAW)
       // The shell may have messed with the mode, always set it later.
       cur_tmode = TMODE_UNKNOWN;
-      
-   ShellArgs shellArgs = shellArgsNew();
-   Arr(CS) argv = unix_build_argv(cmd, OUT &shellArgs);
+   _bp(true);     
+   Multistring argv = chBuildArgv(cmd);
 
    if ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
       pipe_error = (pipe(fd_toshell) < 0);
@@ -3944,7 +3940,7 @@ callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
          //machines. This may cause a warning message with strict compilers, don't worry about it.
          //Call _exit() instead of exit() to avoid closing the connection
          //to the Wayland server (esp. with GTK, which uses atexit()).
-         execvp((char*)argv[0], (char**)argv);
+         execvp((char*)argv.c[0], (char**)argv.c);
          _exit(EXEC_FAILED);       // exec failed, return failure code
       } else {        // parent
          //While child is running, ignore terminating signals.
@@ -4067,7 +4063,7 @@ callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
                     //For pipes:
                     //Check for CTRL-C: send interrupt signal to child.
                     //Check for CTRL-D: EOF, close pipe to child.
-                    if (len == 1 && (pty_master_fd < 0 || cmd != NULL)) {
+                    if (len == 1) {
                         //Send SIGINT to the child's group or all processes in our group.
                         may_send_sigint(ta_buf[ta_len], pid, wpid);
 
@@ -4284,17 +4280,35 @@ callShellImpl(CS cmd, Unt options){   // SHELL_*, see eegl.h
 
    if (!did_termSetMode && tmode == TMODE_RAW)
       termSetMode(TMODE_RAW);
-   eeglFree(argv);
-   eeglFree(shellArgs.c);
+   freeMultistring(OUT &argv);
 
    return retVal;
 }
 
+// Call shell. Call chCallShell
 PolyWithStatus
-chCallShell(Multistring* cmd, Unt options) {   // SHELL_*, see eegl.h
-   lo("executing shell command: %s", cmd);
-   return callShellImpl(cmd, options);
+chCallShell(Text shellComm, Unt opt) {
+   if (p_verbose > 3) {
+      verbose_enter();
+      //TODO msg print out the full multistring
+      smsg(_("Calling shell to execute: %s"), shellComm.c);
+      msgPutcharDeco('\n', 0);
+      cursor_on();
+      verbose_leave();
+   }
+
+   //The external command may update a tags file, clear cached tags.
+   tag_freematch();
+
+   PolyWithStatus retval = callShellImpl(shellComm, opt);
+   //Check the portal size, in case it changed while executing the external command.
+   shell_resized_check();
+
+   set_EeglVar_nr(VV_SHELL_ERROR, (long)retval.status);
+   return retval;
 }
+
+//}}}
 
 int
 mch_create_pty_channel(Job* job, JobOptions* options) {
@@ -6089,10 +6103,9 @@ job_check_ended(void) {
 // When "argv_arg" is NULL then "argvars" is used. The returned job has a refcount of one.
 // Return NULL when out of memory.
 Job*
-startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job) {
+startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** term_job) {
    Byte** argv = NULL;
    int argc = 0;
-   int i;
    ArrayList   ga;
    JobOptions   opt;
    ChannelFdKind   part;
@@ -6161,13 +6174,11 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
 
    job_set_options(job, &opt);
 
-   if (argv_arg) {
+   if (argv_arg->len > 0) {
       // Make a copy of argv_arg for job->argv.
-      for (i = 0; argv_arg[i] != NULL; i++)
-         argc++;
-      argv = ALLOC_MULT(CS, argc + 1);
-      for (i = 0; i < argc; i++)
-         argv[i] = copyStr((CS)argv_arg[i]);
+      argv = ALLOC_MULT(CS, argv_arg->len + 1);
+      for (Unt i = 0; i < argv_arg->len; i++)
+         argv[i] = copyStr(argv_arg->c[i]);
       argv[argc] = NULL;
    } ei (argvars[0].tag == VAR_STRING) {
       // Command is a string.
@@ -6199,7 +6210,7 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
       ArrayList ga;
 
       ga_init2(&ga, sizeof(char), 200);
-      for (i = 0; i < argc; ++i) {
+      for (int i = 0; i < argc; ++i) {
          if (i > 0)
             ga_concat(&ga, (CS)"  ");
          ga_concat(&ga, (CS)argv[i]);
@@ -6215,7 +6226,7 @@ startJob(Arr(Var) argvars, Byte** argv_arg, JobOptions* opt_arg, Job** term_job)
 
 theend:
    if (argv && argv != job->argv) {
-      for (i = 0; argv[i] != NULL; i++)
+      for (Unt i = 0; argv[i]; i++)
          eeglFree(argv[i]);
       eeglFree(argv);
    }
@@ -6586,15 +6597,17 @@ job_to_string_buf(OUT CS builder, Var* varp) {
 //{{{command-line arguments
 
 //Construct an array of strings that spell out `bash -c "bla bla"`
-void
-unix_build_argv(OUT Polystring* shellArgs, CS cmd) {
-   if (!cmd)
-      return;
+Multistring
+chBuildArgv(Text cmd) {
+   if (cmd.len == 0)
+      return (Multistring){};
       
-   Unt count = 1;
-   appendToBuf(tConst("bash"), OUT shellArgs);
-   appendToBuf(tConst("-c"), OUT shellArgs);
-   appendToBuf(text(cmd), OUT shellArgs);
+   Multistring shellArgs;
+   appendToMulti(tConst("bash"), OUT &shellArgs);
+   appendToMulti(tConst("-c"), OUT &shellArgs);
+   appendToMulti(cmd, OUT &shellArgs);
+   appendNullToMulti(OUT &shellArgs);
+   return shellArgs;
 }
 
 //}}}

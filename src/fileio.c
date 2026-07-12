@@ -4891,7 +4891,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
 
    // execute the shell command
    lo("mch_expand_wildcards [%s]", command.c);
-   PolyWithStatus shellResult = fiCallShell(command.c, shellOpts);
+   PolyWithStatus shellResult = chCallShell(command.c, shellOpts);
 
    eeglFree(command.c);
 
@@ -7488,7 +7488,7 @@ fiGetShellOutput(
 
    //Call the shell to execute the command (errors are ignored). Don't check timestamps here.
    ++no_check_timestamps;
-   fiCallShell(command, SHELL_DOOUT | SHELL_EXPAND | flags);
+   chCallShell(command, SHELL_DOOUT | SHELL_EXPAND | flags);
    --no_check_timestamps;
 
    eeglFree(command);
@@ -7522,9 +7522,9 @@ fiGetShellOutput(
             buf[i] = 1;
       } 
 
-      buf[len] = ZERO;   // make sure the buf is terminated
+      buf[tempFileLen] = ZERO;   // make sure the buf is terminated
    } else
-      *ret_len = len;
+      *ret_len = tempFileLen;
 
 done:
    eeglFree(tempname);
@@ -7753,32 +7753,6 @@ read_string(FILE* fd, int cnt) {
    }
    str[i] = ZERO;
    return str;
-}
-
-//}}}
-//{{{shell interaction
-
-// Call shell. Call chCallShell
-PolyWithStatus
-fiCallShell(Multistring* cmd, Unt opt) {
-   if (p_verbose > 3) {
-      verbose_enter();
-      //TODO msg print out the full multistring
-      smsg(_("Calling shell to execute: ..."));
-      msgPutcharDeco('\n', 0);
-      cursor_on();
-      verbose_leave();
-   }
-
-   //The external command may update a tags file, clear cached tags.
-   tag_freematch();
-
-   PolyWithStatus retval = chCallShell(cmd, opt);
-   //Check the portal size, in case it changed while executing the external command.
-   shell_resized_check();
-
-   set_EeglVar_nr(VV_SHELL_ERROR, (long)retval.status);
-   return retval;
 }
 
 //}}}

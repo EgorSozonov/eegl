@@ -111,7 +111,6 @@ int get2c(FILE *fd);
 int get3c(FILE *fd);
 int get4c(FILE *fd);
 CS read_string(FILE *fd, int cnt);
-PolyWithStatus fiCallShell(Multistring *cmd, Unt opt);
 long mch_getperm(CS name);
 int mch_setperm(CS name, long perm);
 void mch_copy_xattr(CS from_file, CS to_file);

@@ -3918,7 +3918,6 @@ cs_create_connection(int i) {
       goto err_closing;
    } ei (csinfo[i].pid == 0) {  // child: run cscope.
       CS* argv = NULL;
-      int argc = 0;
 
       if (dup2(to_cs[0], STDIN_FILENO) == -1)
          PERROR("cs_create_connection 1");
@@ -3966,7 +3965,7 @@ cs_create_connection(int i) {
       // Change our process group to avoid cscope receiving SIGWINCH.
       (void)setsid();
 
-      if (execvp(cmd, (char*)argv[0], (char**)argv) == -1)
+      if (execvp((char*)argv[0], (char**)argv) == -1)
          PERROR(_("cs_create_connection exec failed"));
 
       exit(127);

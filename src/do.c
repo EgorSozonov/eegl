@@ -985,11 +985,11 @@ theend:
 
 //do_filter: filter lines through a command given by the user
 //
-//We mostly use temp files and the fiCallShell() routine here. This would normally be done using 
-//pipes on a Unix machine, but this is more portable to non-unix machines. The fiCallShell() 
-//routine needs to be able to deal with redirection somehow, and should handle things like looking
+//We mostly use temp files and the chCallShell() function here. This would normally be done using 
+//pipes on a Unix machine, but this is more portable to non-unix machines. The chCallShell() 
+//fn needs to be able to deal with redirection somehow, and should handle things like looking
 //at the PATH env. variable, and adding reasonable extensions to the command name given by the 
-//user. All reasonable versions of fiCallShell() do this. Alternatively, if on Unix and redirecting 
+//user. All reasonable versions of chCallShell() do this. Alternatively, if on Unix and redirecting 
 //input or output, but not both, and the @shelltemp option isn't set, use pipes.
 //We use input redirection if do_in is true. We use output redirection if do_out is true.
 private void
@@ -1099,12 +1099,12 @@ do_filter(
    }
    LineNr read_linecount = curBook->mem.lineCount;
 
-   //When fiCallShell() fails wait_return() is called to give the user a
+   //When chCallShell() fails wait_return() is called to give the user a
    //chance to read the error messages. Otherwise errors are ignored, so you
    //can see the error messages from the command that appear on stdout; use 'u' to fix the text
    //Switch to cooked mode when not redirecting stdin, avoids that something like ":r !cat" hangs.
    //Pass on the SHELL_DOOUT flag when the output is being redirected.
-   if (fiCallShell(cmd_buf, SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
+   if (chCallShell(cmd_buf, SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
       redraw_later_clear();
       wait_return(false);
    }
@@ -1233,7 +1233,7 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
       windgoto(msgRowG, msgColG);
    cursor_on();
    
-   (void)fiCallShell(cmd, SHELL_COOKED | flags);
+   (void)chCallShell(cmd, SHELL_COOKED | flags);
    did_check_timestamps = false;
    need_check_timestamps = true;
 

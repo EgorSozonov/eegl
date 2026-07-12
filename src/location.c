@@ -4133,7 +4133,7 @@ buildErrorFileName(void) {
 //Form the complete command line to invoke 'make'/'grep'. Quote and append @shellpipe. Echo the 
 //fully formed command.
 private CS
-buildFullShellCommand(CS makecmd, CS fname) {
+buildFullShellCommand(CS makecmd) {
    Unt len = STRLEN(makecmd) + 1;
    CS cmd = alloc_id(len, aid_ll_makecmd);
    SPRINTF(cmd, "%s", (char *)makecmd);
@@ -4294,7 +4294,7 @@ c_grep(Invocation* invo) {
       return;
    mch_remove(fname);       // in case it's not unique
 
-   CS comm = buildFullShellCommand(invo->arg, fname);
+   CS comm = buildFullShellCommand(invo->arg);
    if (!comm) {
       eeglFree(fname);
       return;

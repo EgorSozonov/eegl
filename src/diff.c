@@ -1660,13 +1660,11 @@ diff_file(DiffIo* dio) {
    wr[0] = ZERO;
    
    block_autocmds();   // avoid ShellCmdPost stuff
-   Multistring shellArg = {};
-   appendToMulti((Text){shellComm, len}, OUT &shellArg);
    
-   (void)fiCallShell(&shellArg, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
+   (void)chCallShell(shellComm, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
    unblock_autocmds();
    
-   freeMultistring(&shellArg);
+   eeglFree(shellComm);
    return OK;
 }
 
@@ -1697,7 +1695,7 @@ c_diffpatch(Invocation* invo) {
           fullname != NULL ? fullname : invo->arg, true, true
    );
    Unt buflen = STRLEN(tmp_orig) + STRLEN(esc_name) + STRLEN(tmp_new) + 16;
-   CS builder = alloc(buflen);
+   CS buf = alloc(buflen);
 
    //Temporarily chdir to /tmp, to avoid patching files in the current directory when the patch 
    //file contains more than one patch. When we have our own temp dir use that instead, it will 
@@ -1717,11 +1715,12 @@ c_diffpatch(Invocation* invo) {
       // Use 'patchexpr' to generate the new file.
       eval_patch(tmp_orig, fullname ? fullname : invo->arg, tmp_new);
    } else {
-      // Build the patch command and execute it.  Ignore errors.  Switch to
-      // cooked mode to allow the user to respond to prompts.
-      eeSnprintf(builder, buflen, "patch -o %s %s < %s", tmp_new, tmp_orig, esc_name);
+      //Build the patch command and execute it.  Ignore errors.  Switch to
+      //cooked mode to allow the user to respond to prompts.
+      eeSnprintf(buf, buflen, "patch -o %s %s < %s", tmp_new, tmp_orig, esc_name);
       block_autocmds();   // Avoid ShellCmdPost stuff
-      (void)fiCallShell(builder, SHELL_FILTER | SHELL_COOKED);
+      
+      (void)chCallShell(buf, SHELL_FILTER | SHELL_COOKED);
       unblock_autocmds();
    }
 
@@ -1735,12 +1734,12 @@ c_diffpatch(Invocation* invo) {
    redraw_later(UPD_CLEAR);
 
    // Delete any .orig or .rej file created.
-   STRCPY(builder, tmp_new);
-   STRCAT(builder, ".orig");
-   mch_remove(builder);
-   STRCPY(builder, tmp_new);
-   STRCAT(builder, ".rej");
-   mch_remove(builder);
+   STRCPY(buf, tmp_new);
+   STRCAT(buf, ".orig");
+   mch_remove(buf);
+   STRCPY(buf, tmp_new);
+   STRCAT(buf, ".rej");
+   mch_remove(buf);
 
    // Only continue if the output file was created.
    if (stat((char *)tmp_new, &st) < 0 || st.st_size == 0)
@@ -1788,7 +1787,7 @@ theend:
       mch_remove(tmp_new);
    eeglFree(tmp_new);
    eeglFree(newname);
-   eeglFree(builder);
+   eeglFree(buf);
    eeglFree(fullname);
    eeglFree(esc_name);
 }
@@ -3006,7 +3005,7 @@ diff_change_parse(DiffLine* diffline, DifflineChange* change, int* change_start,
    //lines are identical (in diff_check_with_linestatus). If so, we mark them
    //as add. We don't do that for inline diff here for simplicity.
    for (Unt i = 0; i < DB_COUNT; i++) {
-      if (i == diffline->bufidx)
+      if (i == (Unt)diffline->bufidx)
          continue;
       if (change->dc_start[i] != change->dc_end[i]
          || change->dc_end_lnum_off[i] != change->dc_start_lnum_off[i]
@@ -3029,12 +3028,10 @@ diff_find_change_simple(
    Portal* po,
    LineNr lnum,
    DiffBlock* dp,
-   int idx,
-   int* startp,   // first char of the change
-   int* endp      // last char of the change
+   Unt idx,
+   OUT int* startp,   // first char of the change
+   OUT int* endp      // last char of the change
 ){
-   CS line_org;
-   CS line_new;
    int si_org, si_new;
    int ei_org, ei_new;
    int added = true;
@@ -3042,7 +3039,7 @@ diff_find_change_simple(
    CS p2;
    int l;
 
-   CS line_org = (diff_flags & DIFF_INLINE_NONE) == 0 
+   CS line_org = ((diff_flags & DIFF_INLINE_NONE) == 0 )
       ? copyStr(memGetLine(po->book, lnum, false)) //Copy, the next ml_get() will invalidate it
       : null; //We only care about the return value, not the actual string comparisons.
 
@@ -3057,7 +3054,7 @@ diff_find_change_simple(
          if ((diff_flags & DIFF_INLINE_NONE) != 0)
             break; // early terminate as we only care about the return value
 
-         line_new = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, false);
+         CS line_new = memGetLine(curtab->diffbuf[i], dp->lnum[i] + off, false);
 
          //Search for start of difference
          si_org = si_new = 0;
@@ -3501,7 +3498,7 @@ diff_find_change(Portal* po, LineNr lnum, DiffLine* diffline){
       int   change_end = -1;   // last col of changed area
       int   ret;
 
-      ret = diff_find_change_simple(po, lnum, dp, idx, &change_start, &change_end);
+      ret = diff_find_change_simple(po, lnum, dp, idx, OUT &change_start, OUT &change_end);
 
       // convert from inclusive end to exclusive end per diffline's contract
       change_end += 1;

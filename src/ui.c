@@ -6165,7 +6165,7 @@ private Terminal *in_terminal_loop = NULL;
     for ((term) = fstTermP; (term) != NULL; (term) = (term)->next)
 
 private int initSubtermAndJob(
-      Terminal *term, Var *argvar, Byte **argv, JobOptions *opt, JobOptions *orig_opt
+      Terminal *term, Var *argvar, Multistring* argv, JobOptions *opt, JobOptions *orig_opt
 );
 private int create_pty_only(Terminal *term, JobOptions *opt);
 private void term_report_winsize(Terminal *term, int rows, int cols);
@@ -6347,7 +6347,7 @@ closeFailedTerminalBook(Book* book, Book* old_curBook) {
 //NULL. When "flags" has TERM_START_NOJOB only create the buffer, term and open the portal.
 //Return NULL when failed.
 private Book*
-startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
+startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
    Invocation splitInvo;
    Portal* old_curPor = curPor;
    Book* curBookSaved = NULL; 
@@ -6456,7 +6456,7 @@ startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
    if (opt->jo_term_name != NULL) {
       eeglFree(curBook->fullFileName);
       curBook->fullFileName = copyStr(opt->jo_term_name);
-   } ei (argv) {
+   } ei (argv->len > 0) {
       eeglFree(curBook->fullFileName);
       curBook->fullFileName = copyStr(S"!system");
    } else {
@@ -6519,11 +6519,10 @@ startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
       return curBook;
 
    // Remember the command for the session file.
-   if (opt->jo_term_norestore || argv != NULL)
+   if (opt->jo_term_norestore || argv->len > 0)
       term->command = copyStr(S"NONE");
    ei (argvar->tag == VAR_STRING) {
       CS cmd = argvar->string;
-
       if (cmd && STRCMP(cmd, "bash") != 0)
          term->command = copyStr(cmd);
    } ei (argvar->tag == VAR_LIST && argvar->list != NULL && argvar->list->len > 0) {
@@ -6563,7 +6562,7 @@ startSubterminal(Var* argvar, Byte** argv, JobOptions* opt, Unt flags){
 
    // System dependent: setup the vterm and maybe start the job in it.
    int res;
-   if (!argv && argvar->tag == VAR_STRING && argvar->string && STRCMP(argvar->string, "NONE") == 0)
+   if (argv->len == 0 && argvar->tag == VAR_STRING && argvar->string && eq(argvar->string, S"NONE"))
       res = create_pty_only(term, opt);
    else
       res = initSubtermAndJob(term, argvar, argv, opt, &orig_opt);
@@ -6697,24 +6696,22 @@ c_terminal(Invocation* invo) {
       opt.jo_in_bot = invo->line2;
    }
 
-   ShellArgs args = {.c = &shellComm, .len = 1, .buf = {.c = shellComm, .len = STRLEN(shellComm) }};      
+   Multistring args = {};
    args.buf.cap = args.buf.len;
    if (opt_shell) {
-      CS tofree2 = NULL;
       //:term ++shell command
-      unix_build_argv(OUT &args);
-      startSubterminal(NULL, argv, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
-      eeglFree(argv);
-      eeglFree(tofree2);
+      args = chBuildArgv(shellComm);
+      startSubterminal(NULL, &args, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
+      freeMultistring(&args);
       goto theend;
    }
    argvar[0].tag = VAR_STRING;
-   argvar[0].string = shellComm.buf.c;
+   argvar[0].string = shellComm;
    argvar[1].tag = VAR_UNKNOWN;
    startSubterminal(argvar, NULL, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
 
 theend:
-   eeglFree(shellComm.buf.c);
+   eeglFree(shellComm);
    eeglFree(opt.jo_eof_chars);
 }
 
@@ -10399,7 +10396,7 @@ private int
 initSubtermAndJob(
 	Terminal* term,
 	Var* argvar,
-	Arr(CS) argv,
+	Multistring* argv,
 	JobOptions* opt,
 	JobOptions* orig_opt UNUSED
 ) {
