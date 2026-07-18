@@ -23,7 +23,7 @@
 # define BLOCK_SIGNALS(set)   block_signals(set)
 # define UNBLOCK_SIGNALS(set)   unblock_signals(set)
 
-private int dontCheckJobEndedS = 0;
+private int dontCheckJobEndedP = 0;
 
 typedef int waitstatus;
 
@@ -113,7 +113,7 @@ add_channel(void) {
    ch_log(channel, "Created channel");
 
    for (part = PART_SOCK; part < PART_COUNT; ++part) {
-      channel->fds[part].ch_fd = INVALID_FD;
+      channel->fds[part].fd = INVALID_FD;
       channel->fds[part].ch_timeout = 2000;
    }
 
@@ -154,13 +154,13 @@ channel_still_useful(Channel *channel) {
 
    // If there is no callback then nobody can get readahead.  If the fd is
    // closed and there is no readahead then the callback won't be called.
-   has_sock_msg = channel->fds[PART_SOCK].ch_fd != INVALID_FD
+   has_sock_msg = channel->fds[PART_SOCK].fd != INVALID_FD
       || channel->fds[PART_SOCK].head.next != NULL
       || channel->fds[PART_SOCK].ch_json_head.jq_next != NULL;
-   has_out_msg = channel->fds[PART_OUT].ch_fd != INVALID_FD
+   has_out_msg = channel->fds[PART_OUT].fd != INVALID_FD
         || channel->fds[PART_OUT].head.next != NULL
         || channel->fds[PART_OUT].ch_json_head.jq_next != NULL;
-   has_err_msg = channel->fds[PART_ERR].ch_fd != INVALID_FD
+   has_err_msg = channel->fds[PART_ERR].fd != INVALID_FD
         || channel->fds[PART_ERR].head.next != NULL
         || channel->fds[PART_ERR].ch_json_head.jq_next != NULL;
    return (channel->ch_callback.name && (has_sock_msg || has_out_msg || has_err_msg))
@@ -496,7 +496,7 @@ channel_open_unix(CS path) {
 
    ch_log(channel, "Connection made");
 
-   channel->fds[PART_SOCK].ch_fd = (Socket)sd;
+   channel->fds[PART_SOCK].fd = (Socket)sd;
    channel->socketName = copyStr((CS)path);
    channel->ch_to_be_closed |= (1U << PART_SOCK);
 
@@ -725,7 +725,7 @@ theend:
 
 void
 ch_close_part(Channel *channel, ChannelFdKind part) {
-   Socket *fd = &channel->fds[part].ch_fd;
+   Socket *fd = &channel->fds[part].fd;
 
    if (*fd == INVALID_FD)
       return;
@@ -735,9 +735,9 @@ ch_close_part(Channel *channel, ChannelFdKind part) {
    else {
       // When using a pty the same FD is set on multiple parts, only
       // close it when the last reference is closed.
-      if ((part == PART_IN || channel->fds[PART_IN].ch_fd != *fd)
-         && (part == PART_OUT || channel->fds[PART_OUT].ch_fd != *fd)
-         && (part == PART_ERR || channel->fds[PART_ERR].ch_fd != *fd)
+      if ((part == PART_IN || channel->fds[PART_IN].fd != *fd)
+         && (part == PART_OUT || channel->fds[PART_OUT].fd != *fd)
+         && (part == PART_ERR || channel->fds[PART_ERR].fd != *fd)
       ){
           fd_close(*fd);
       }
@@ -752,19 +752,19 @@ void
 channel_set_pipes(Channel *channel, Socket in, Socket out, Socket err) {
    if (in != INVALID_FD) {
       ch_close_part(channel, PART_IN);
-      channel->fds[PART_IN].ch_fd = in;
+      channel->fds[PART_IN].fd = in;
       // Do not end the job when all output channels are closed, wait until the job ended.
       if (mch_isatty(in))
           channel->ch_to_be_closed |= (1U << PART_IN);
    }
    if (out != INVALID_FD) {
       ch_close_part(channel, PART_OUT);
-      channel->fds[PART_OUT].ch_fd = out;
+      channel->fds[PART_OUT].fd = out;
       channel->ch_to_be_closed |= (1U << PART_OUT);
    }
    if (err != INVALID_FD) {
       ch_close_part(channel, PART_ERR);
-      channel->fds[PART_ERR].ch_fd = err;
+      channel->fds[PART_ERR].fd = err;
       channel->ch_to_be_closed |= (1U << PART_ERR);
    }
 }
@@ -851,7 +851,7 @@ private int
 can_write_buf_line(Channel* channel) {
    ChannelFd *in_part = &channel->fds[PART_IN];
 
-   if (in_part->ch_fd == INVALID_FD)
+   if (in_part->fd == INVALID_FD)
    return false;  // pipe was closed
 
    // for testing: block every other attempt to write
@@ -865,11 +865,11 @@ can_write_buf_line(Channel* channel) {
    int      ret;
 
    FD_ZERO(&wfds);
-   FD_SET((int)in_part->ch_fd, &wfds);
+   FD_SET((int)in_part->fd, &wfds);
    tval.tv_sec = 0;
    tval.tv_usec = 0;
    for (;;) {
-      ret = select((int)in_part->ch_fd + 1, NULL, &wfds, NULL, &tval);
+      ret = select((int)in_part->fd + 1, NULL, &wfds, NULL, &tval);
       SOCK_ERRNO;
       if (ret == -1 && errno == EINTR)
          continue;
@@ -986,7 +986,7 @@ channel_write_new_lines(Book* book) {
       int       written = 0;
 
       if (in_part->bookref.c == book && in_part->ch_buf_append) {
-         if (in_part->ch_fd == INVALID_FD)
+         if (in_part->fd == INVALID_FD)
             continue;  // pipe was closed
          found_one = true;
          for (lnum = in_part->ch_buf_bot; lnum < book->mem.lineCount; ++lnum) {
@@ -1873,17 +1873,16 @@ channel_use_json_head(Channel* channel, ChannelFdKind part) {
 // be another one.
 private int
 may_invoke_callback(Channel* channel, ChannelFdKind part) {
-   Byte   *msg = NULL;
-   Var   *listtv = NULL;
-   Var   argv[CH_JSON_MAX_ARGS];
-   int      seq_nr = -1;
+   Byte* msg = NULL;
+   Var* listtv = NULL;
+   Var argv[CH_JSON_MAX_ARGS];
+   int seq_nr = -1;
    ChannelFd* fdData = &channel->fds[part];
    ChannelMode ch_mode = fdData->ch_mode;
    CbNode* cbhead = &fdData->ch_cb_head;
    CbNode* cbitem;
    Callback* callback = NULL;
-   Byte   *p;
-   int      called_otc;      // one time callbackup
+   Byte* p;
 
    // Use a message-specific callback, part callback or channel callback
    for (cbitem = cbhead->cq_next; cbitem != NULL; cbitem = cbitem->cq_next) {
@@ -1929,7 +1928,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
       }
 
       if (ch_mode == CH_MODE_LSP) {
-         Bag   *d = listtv->bag;
+         Bag* d = listtv->bag;
          seq_nr = 0;
          if (d) {
             DictItem* di = bagFind(d, tConst("id"));
@@ -1985,7 +1984,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
             if (nl)
                 break;
             if (channel_collapse(channel, part, true) == FAIL) {
-               if (fdData->ch_fd == INVALID_FD && node->len > 0)
+               if (fdData->fd == INVALID_FD && node->len > 0)
                   break;
                return false; // incomplete message
             }
@@ -2024,7 +2023,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
       argv[1].string = msg;
    }
 
-   called_otc = false;
+   Boole called_otc = false; //one-time callbackup
    if (seq_nr > 0) {
       // JSON or LSP mode: invoke the one-time callback with the matching nr
       int lsp_req_msg = false;
@@ -2049,13 +2048,13 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 
    if (seq_nr > 0 && (ch_mode != CH_MODE_LSP || called_otc)) {
       if (!called_otc) {
-          // If the 'drop' channel attribute is set to 'never' or if
-          // ch_evalexpr() is waiting for this response message, then don't drop this message.
+          //If the 'drop' channel attribute is set to 'never' or if
+          //ch_evalexpr() is waiting for this response message, then don't drop this message.
           if (channel->ch_drop_never) {
-            // message must be read with ch_read()
+            //message must be read with ch_read()
             channel_push_json(channel, part, listtv);
 
-            // Change the type to avoid the value being freed.
+            //Change the type to avoid the value being freed.
             listtv->tag = VAR_NUMBER;
             freeVar(listtv);
             listtv = NULL;
@@ -2076,8 +2075,8 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
       }
       if (nativeCallback != NULL && msg != NULL) {
          (*nativeCallback)(msg);
-      } ei (callback != NULL) {
-         if (cbitem != NULL)
+      } ei (callback) {
+         if (cbitem)
             invoke_one_time_callback(channel, cbhead, cbitem, argv);
          else {
             // invoke the channel callback
@@ -2088,7 +2087,7 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
    } else
       ch_log(channel, "Dropping message %d", seq_nr);
 
-   if (listtv != NULL)
+   if (listtv)
       freeVar(listtv);
    eeglFree(msg);
 
@@ -2099,18 +2098,18 @@ may_invoke_callback(Channel* channel, ChannelFdKind part) {
 // Return true when channel "channel" is open for writing to. false for invalid "channel".
 int
 channel_can_write_to(Channel* channel) {
-   return channel != NULL && (channel->fds[PART_SOCK].ch_fd != INVALID_FD
-           || channel->fds[PART_IN].ch_fd != INVALID_FD);
+   return channel 
+      && (channel->fds[PART_SOCK].fd != INVALID_FD || channel->fds[PART_IN].fd != INVALID_FD);
 }
 #endif
 
 // Return true when channel "channel" is open for reading or writing. false for invalid "channel".
 int
 channel_is_open(Channel *channel) {
-    return channel != NULL && (channel->fds[PART_SOCK].ch_fd != INVALID_FD
-           || channel->fds[PART_IN].ch_fd != INVALID_FD
-           || channel->fds[PART_OUT].ch_fd != INVALID_FD
-           || channel->fds[PART_ERR].ch_fd != INVALID_FD);
+    return channel != NULL && (channel->fds[PART_SOCK].fd != INVALID_FD
+           || channel->fds[PART_IN].fd != INVALID_FD
+           || channel->fds[PART_OUT].fd != INVALID_FD
+           || channel->fds[PART_ERR].fd != INVALID_FD);
 }
 
 // Return a pointer indicating the readahead.  Can only be compared between
@@ -2145,12 +2144,12 @@ channel_status(Channel *channel, int req_part) {
    if (!channel)
       return S"fail";
    if (req_part == PART_OUT) {
-      if (channel->fds[PART_OUT].ch_fd != INVALID_FD)
+      if (channel->fds[PART_OUT].fd != INVALID_FD)
          return S"open";
       if (channel_has_readahead(channel, PART_OUT))
          has_readahead = true;
    } ei (req_part == PART_ERR) {
-      if (channel->fds[PART_ERR].ch_fd != INVALID_FD)
+      if (channel->fds[PART_ERR].fd != INVALID_FD)
          return S"open";
       if (channel_has_readahead(channel, PART_ERR))
          has_readahead = true;
@@ -2183,7 +2182,7 @@ channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part) {
 
    STRCPY(namebuf + tail, "status");
    CS status;
-   if (chanpart->ch_fd != INVALID_FD)
+   if (chanpart->fd != INVALID_FD)
       status = S"open";
    ei (channel_has_readahead(channel, part))
       status = S"buffered";
@@ -2394,10 +2393,10 @@ channel_fill_wfds(int maxfd_arg, fd_set *wfds) {
    FOR_ALL_CHANNELS(ch) {
       ChannelFd  *in_part = &ch->fds[PART_IN];
 
-      if (in_part->ch_fd != INVALID_FD && is_channel_write_remaining(in_part)) {
-         FD_SET((int)in_part->ch_fd, wfds);
-         if ((int)in_part->ch_fd >= maxfd)
-            maxfd = (int)in_part->ch_fd + 1;
+      if (in_part->fd != INVALID_FD && is_channel_write_remaining(in_part)) {
+         FD_SET((int)in_part->fd, wfds);
+         if ((int)in_part->fd >= maxfd)
+            maxfd = (int)in_part->fd + 1;
       }
    }
    return maxfd;
@@ -2469,7 +2468,7 @@ ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *f
    if (part == PART_OUT || part == PART_ERR) {
       ChannelFdKind other = part == PART_OUT ? PART_ERR : PART_OUT;
 
-      if (channel->fds[part].ch_fd == channel->fds[other].ch_fd)
+      if (channel->fds[part].fd == channel->fds[other].fd)
           ch_close_part(channel, other);
    }
    ch_close_part(channel, part);
@@ -2490,12 +2489,12 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
    int readlen = 0;
    int use_socket = false;
 
-   Socket fd = channel->fds[part].ch_fd;
+   Socket fd = channel->fds[part].fd;
    if (fd == INVALID_FD) {
       ch_error(channel, "channel_read() called while %s part is closed", chanFdNames[part]);
       return;
    }
-   use_socket = fd == channel->fds[PART_SOCK].ch_fd;
+   use_socket = fd == channel->fds[PART_SOCK].fd;
 
    // Allocate a buffer to read into.
    if (!buf) {
@@ -2534,7 +2533,7 @@ channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, i
    CS buf;
    CS msg;
    ChannelMode   mode = channel->fds[part].ch_mode;
-   Socket   fd = channel->fds[part].ch_fd;
+   Socket   fd = channel->fds[part].fd;
    Byte* nl;
    ReadChunk   *node;
 
@@ -2675,7 +2674,7 @@ channel_read_json_block(
          } ei (timeout > timeout_arg)
              timeout = timeout_arg;
          }
-         fd = chanpart->ch_fd;
+         fd = chanpart->fd;
          if (fd == INVALID_FD || channel_wait(channel, fd, timeout) != CW_READY) {
             if (timeout == timeout_arg) {
                if (fd != INVALID_FD)
@@ -2794,7 +2793,7 @@ theend:
 void
 channel_set_nonblock(Channel *channel, ChannelFdKind part) {
    ChannelFd* fds = &channel->fds[part];
-   int      fd = fds->ch_fd;
+   int      fd = fds->fd;
 
    if (fd == INVALID_FD)
       return;
@@ -2817,7 +2816,7 @@ channel_send(
    ChannelFd* fds = &channel->fds[part];
    int did_use_queue = false;
 
-   Socket fd = fds->ch_fd;
+   Socket fd = fds->fd;
    if (fd == INVALID_FD) {
       if (!channel->error && fun != NULL) {
          ch_error(channel, "%s(): write while not connected", fun);
@@ -3136,7 +3135,7 @@ channel_select_setup(
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
-         Socket fd = channel->fds[part].ch_fd;
+         Socket fd = channel->fds[part].fd;
 
          if (fd != INVALID_FD) {
             if (channel->ch_keep_open) {
@@ -3173,7 +3172,7 @@ channel_select_check(int ret_in, void *rfds_in, void *wfds_in) {
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
-         Socket fd = channel->fds[part].ch_fd;
+         Socket fd = channel->fds[part].fd;
 
          if (ret > 0 && fd != INVALID_FD && FD_ISSET(fd, rfds)) {
             channel_read(channel, part, "channel_select_check");
@@ -3186,9 +3185,9 @@ channel_select_check(int ret_in, void *rfds_in, void *wfds_in) {
       }
 
       in_part = &channel->fds[PART_IN];
-      if (ret > 0 && in_part->ch_fd != INVALID_FD && FD_ISSET(in_part->ch_fd, wfds)) {
-         // Clear the flag first, ch_fd may change in channel_write_input().
-         FD_CLR(in_part->ch_fd, wfds);
+      if (ret > 0 && in_part->fd != INVALID_FD && FD_ISSET(in_part->fd, wfds)) {
+         // Clear the flag first, fd may change in channel_write_input().
+         FD_CLR(in_part->fd, wfds);
          channel_write_input(channel);
          --ret;
       }
@@ -3250,7 +3249,7 @@ channel_parse_messages(void) {
          }
       }
 
-      if (channel->fds[part].ch_fd != INVALID_FD || channel_has_readahead(channel, part)) {
+      if (channel->fds[part].fd != INVALID_FD || channel_has_readahead(channel, part)) {
          //Increase the refcount, in case the handler causes the channel to be unreferenced or 
          //closed
          ++channel->refCount;
@@ -3326,7 +3325,7 @@ set_ref_in_channel(int copyID) {
 // Return the "part" to write to for "channel".
 private ChannelFdKind
 channel_part_send(Channel* channel) {
-   if (channel->fds[PART_SOCK].ch_fd == INVALID_FD)
+   if (channel->fds[PART_SOCK].fd == INVALID_FD)
       return PART_IN;
    return PART_SOCK;
 }
@@ -3334,7 +3333,7 @@ channel_part_send(Channel* channel) {
 // Return the default "part" to read from for "channel".
 private ChannelFdKind
 channel_part_read(Channel* channel) {
-   if (channel->fds[PART_SOCK].ch_fd == INVALID_FD)
+   if (channel->fds[PART_SOCK].fd == INVALID_FD)
       return PART_OUT;
    return PART_SOCK;
 }
@@ -3815,468 +3814,405 @@ wait4pid(ProId child, waitstatus *status) {
     return wait_pid;
 }
 
-// Append the text in "gap" below the cursor line and clear "gap".
-private void
-append_ga_line(ArrayList* gap) {
-   // Remove trailing CR.
-   if (gap->len > 0
-          && !curBook->o.binary
-          && ((CS)gap->c)[gap->len - 1] == ENTER)
-      --gap->len;
-   _bp(true); 
-   ga_append(gap, ZERO);
-   ml_append(curPor->cursor.lnum++, gap->c, 0, false);
-   gap->len = 0;
-}
-
 //{{{shell interaction
+
+private void
+writeFromCurBookToShell(int fromShell, int toShell) {
+   LineNr lnum = curBook->opStart.lnum;
+   Unt written = 0;
+   CS lp = ml_get(lnum);
+   Unt lplen = (Unt)ml_get_len(lnum);
+
+   close(fromShell);
+   for (;;) {
+      int len;
+      if (lplen == 0)
+         len = 0;
+      ei (lp[written] == NL)
+         // NL -> ZERO translation
+         len = write(toShell, "", (Unt)1);
+      else {
+         CS s = firstOccurrence(lp + written, NL);
+         len = write(
+            toShell, 
+            (char *)lp + written,
+            s ? (Unt)(s - (lp + written)) : lplen - written 
+         );
+      }
+      if (len == (int)(lplen - written)) {
+         // Finished a line, add a NL, unless this line should not have one.
+         if (lnum != curBook->opEnd.lnum
+               || (lnum != curBook->noEolLnum && (lnum != curBook->mem.lineCount))
+         )
+             (void)write(toShell, "\n", (Unt)1);
+         ++lnum;
+         if (lnum > curBook->opEnd.lnum) {
+            // finished all the lines, close pipe
+            close(toShell);
+            break;
+         }
+         lp = ml_get(lnum);
+         lplen = ml_get_len(lnum);
+         written = 0;
+      } ei (len > 0)
+         written += (Unt)len;
+   }
+}
 
 //Don't use system(), use fork()/exec().
 private PolyWithStatus
-callShellImpl(Text cmd, Unt options){   // SHELL_*, see eegl.h
+callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
    TermInputMode tmode = cur_tmode;
-   ProId  pid;
-   ProId  wpid = 0;
-   ProId  wait_pid = 0;
+   ProId wpid = 0;
+   ProId wait_pid = 0;
    int status = -1;
-   int i;
    int pty_master_fd = -1; // for pty's
    int fd_toshell[2];      // for pipes
    int fd_fromshell[2];
-   int pipe_error = false;
+   Boole pipeError = false;
    int did_termSetMode = false;   // termSetMode(TMODE_RAW) called
-   Polystring shellResponse = {};
-   PolyWithStatus retVal = { .status = 0, .c = shellResponse };
+   PolyWithStatus retVal = {};
 
    out_flush();
-   if ((options & SHELL_COOKED) != 0)
+   if ((opt & SHELL_COOKED) != 0)
       termSetMode(TMODE_COOK);      // set to normal mode
    if (tmode == TMODE_RAW)
       // The shell may have messed with the mode, always set it later.
       cur_tmode = TMODE_UNKNOWN;
-   _bp(true);     
    Multistring argv = chBuildArgv(cmd);
 
-   if ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
-      pipe_error = (pipe(fd_toshell) < 0);
-      if (!pipe_error) {            // pipe create OK
-         pipe_error = (pipe(fd_fromshell) < 0);
-         if (pipe_error) {            // pipe create failed
+   if ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
+      pipeError = (pipe(fd_toshell) < 0);
+      if (!pipeError) {            // pipe create OK
+         pipeError = (pipe(fd_fromshell) < 0);
+         if (pipeError) {            // pipe create failed
             close(fd_toshell[0]);
             close(fd_toshell[1]);
          }
       }
-      if (pipe_error) {
+      if (pipeError) {
          msg_puts(_("\nCannot create pipes\n"));
          out_flush();
       }
    }
 
-   if (!pipe_error) {        // pty or pipe opened or not used
-      SIGSET_DECL(curset)
-      BLOCK_SIGNALS(&curset);
-      pid = fork();   // maybe we should use vfork()
-      if (pid == -1) {
-         UNBLOCK_SIGNALS(&curset);
+   if (pipeError)
+      goto skipIfError;
+   
+   SIGSET_DECL(curset)
+   BLOCK_SIGNALS(&curset);
+   ProId pid = fork();   // maybe we should use vfork()
+   if (pid == -1) {
+      UNBLOCK_SIGNALS(&curset);
 
-         msg_puts(_("\nCannot fork\n"));
-         if ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
-            close(fd_toshell[0]);
-            close(fd_toshell[1]);
-            close(fd_fromshell[0]);
-            close(fd_fromshell[1]);
-         }
-      } ei (pid == 0) {  // child
-         reset_signals();      // handle signals normally
-         UNBLOCK_SIGNALS(&curset);
-
-         if (ch_log_active()) {
-            lo("closing channel log in the child process");
-            ch_logfile(S"", S"");
-         }
-
-         if (!(options & SHELL_SHOW_MSG) || (options & SHELL_EXPAND)) {
-            //Don't want to show any message from the shell. Can't just close stdout and stderr 
-            //though, because some systems will break if you try to write to them after that, so 
-            //we must use dup() to replace them with something else -- webb
-            //Connect stdin to /dev/null too, so ":n `cat`" doesn't hang while waiting for input.
-            int fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
-            fclose(stdin);
-            fclose(stdout);
-            fclose(stderr);
-
-            //If any of these open()'s and dup()'s fail, we just continue anyway. It's not fatal, 
-            //and on most systems it will make no difference at all. On a few it will cause the 
-            //execvp() to exit with a non-zero status even when the completion could be done, 
-            //which is nothing too serious. If the open() or dup() failed we'd just do the same 
-            //thing ourselves anyway -- webb
-            if (fd >= 0) {
-               (void)dup(fd); // To replace stdin  (fd 0)
-               (void)dup(fd); // To replace stdout (fd 1)
-               (void)dup(fd); // To replace stderr (fd 2)
-
-               //Don't need this now that we've duplicated it
-               close(fd);
-            }
-         } ei ((options & (SHELL_READ|SHELL_WRITE)) != 0) {
-            set_default_child_environment(false);
-
-            //stderr is only redirected when using the GUI, so that a program like gpg can still 
-            //access the terminal to get a passphrase using stderr.
-            //set up stdin for the child
-            close(fd_toshell[1]);
-            close(0);
-            (void)dup(fd_toshell[0]);
-            close(fd_toshell[0]);
-
-            // set up stdout for the child
-            close(fd_fromshell[0]);
-            close(1);
-            (void)dup(fd_fromshell[1]);
-            close(fd_fromshell[1]);
-         }
-
-         //There is no type cast for the argv, because the type may be different on different 
-         //machines. This may cause a warning message with strict compilers, don't worry about it.
-         //Call _exit() instead of exit() to avoid closing the connection
-         //to the Wayland server (esp. with GTK, which uses atexit()).
-         execvp((char*)argv.c[0], (char**)argv.c);
-         _exit(EXEC_FAILED);       // exec failed, return failure code
-      } else {        // parent
-         //While child is running, ignore terminating signals.
-         //Do catch CTRL-C, so that "gotInterruptG" is set.
-         catch_signals(SIG_IGN, SIG_ERR);
-         catch_int_signal();
-         UNBLOCK_SIGNALS(&curset);
-         ++dontCheckJobEndedS;
-         //For the GUI we redirect stdin, stdout and stderr to our window.
-         //This is also used to pipe stdin/stdout to/from the external command.
-         if ((options & (SHELL_READ|SHELL_WRITE))) {
-# define BUFLEN 100      // length for buffer, pseudo tty limit is 128
-            Byte buffer[BUFLEN + 1];
-            int buffer_off = 0;   // valid bytes in buffer[]
-            Byte ta_buf[BUFLEN + 1];   // TypeAHead
-            int ta_len = 0;      // valid bytes in ta_buf[]
-            int len;
-            int noread_cnt;
-            Elapsed start_tv;
-
-            close(fd_toshell[0]);
-            close(fd_fromshell[1]);
-            int toshell_fd = fd_toshell[1];
-            int fromshell_fd = fd_fromshell[0];
-
-            //Write to the child if there are typed characters. Read from the child if there are 
-            //characters available.
-            //  Repeat the reading a few times if more characters are
-            //  available. Need to check for typed keys now and then, but
-            //  not too often (delays when no chars are available).
-            //This loop is quit if no characters can be read from the pty (waitForChar detected 
-            //special condition), or there are no characters available and the child has exited.
-            //Only check if the child has exited when there is no more output. The child may exit 
-            //before all the output has been printed.
-            //
-            //Currently this busy loops! This can probably dead-lock when the write blocks!
-            Boole p_more_save = p_more;
-            p_more = false;
-            Unt modeSaved = stateG;
-            stateG = MODE_EXTERNCMD;   // don't redraw at window resize
-
-            if ((options & SHELL_WRITE) != 0 && toshell_fd >= 0) {
-               // Fork a process that will write the lines to the external program.
-               if ((wpid = fork()) == -1) {
-                  msg_puts(_("\nCannot fork\n"));
-               } ei (wpid == 0) { // child
-                  LineNr lnum = curBook->opStart.lnum;
-                  Unt written = 0;
-                  Byte* lp = ml_get(lnum);
-                  Unt lplen = (Unt)ml_get_len(lnum);
-
-                  close(fromshell_fd);
-                  for (;;) {
-                     if (lplen == 0)
-                        len = 0;
-                     ei (lp[written] == NL)
-                        // NL -> ZERO translation
-                        len = write(toshell_fd, "", (Unt)1);
-                     else {
-                        CS s = firstOccurrence(lp + written, NL);
-                        len = write(
-                           toshell_fd, 
-                           (char *)lp + written,
-                           s ? (Unt)(s - (lp + written)) : lplen - written 
-                        );
-                     }
-                     if (len == (int)(lplen - written)) {
-                        // Finished a line, add a NL, unless this line should not have one.
-                        if (lnum != curBook->opEnd.lnum
-                              || (lnum != curBook->noEolLnum && (lnum != curBook->mem.lineCount))
-                        )
-                            (void)write(toshell_fd, "\n", (Unt)1);
-                        ++lnum;
-                        if (lnum > curBook->opEnd.lnum) {
-                           // finished all the lines, close pipe
-                           close(toshell_fd);
-                           break;
-                        }
-                        lp = ml_get(lnum);
-                        lplen = ml_get_len(lnum);
-                        written = 0;
-                     } ei (len > 0)
-                        written += (Unt)len;
-                  }
-                  _exit(0);
-               } else { // parent
-                  close(toshell_fd);
-                  toshell_fd = -1;
-               }
-            }
-
-            ArrayList shellResponse;
-            if ((options & SHELL_READ) != 0)
-               ga_init2(&shellResponse, 1, BUFLEN);
-
-            noread_cnt = 0;
-            ELAPSED_INIT(start_tv);
-            for (;;) {
-               //Check if keys have been typed, write them to the child if there are any.
-               //Don't do this if we are expanding wild cards (would eat typeahead).
-               //Don't do this when filtering and terminal is in cooked mode, the shell command 
-               //will handle the I/O.  Avoids that a typed password is echoed for ssh or gpg 
-               //command. Don't get characters when the child has already finished (wait_pid == 0).
-               //Don't read characters unless we didn't get output for a
-               //while (noread_cnt > 4), avoids that ":r !ls" eats typeahead.
-               len = 0;
-               if (!(options & SHELL_EXPAND)
-                   && ((options & (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
-                        != (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
-                   && wait_pid == 0
-                   && (ta_len > 0 || noread_cnt > 4)
-               ){
-                  if (ta_len == 0) {
-                     // Get extra characters when we don't have any. Reset the counter and timer.
-                     noread_cnt = 0;
-                     ELAPSED_INIT(start_tv);
-                     len = ui_inchar(ta_buf, BUFLEN, 10L, 0);
-                  }
-                  if (ta_len > 0 || len > 0) {
-                    //For pipes:
-                    //Check for CTRL-C: send interrupt signal to child.
-                    //Check for CTRL-D: EOF, close pipe to child.
-                    if (len == 1) {
-                        //Send SIGINT to the child's group or all processes in our group.
-                        may_send_sigint(ta_buf[ta_len], pid, wpid);
-
-                        if (pty_master_fd < 0 && toshell_fd >= 0 && ta_buf[ta_len] == Ctrl_D) {
-                           close(toshell_fd);
-                           toshell_fd = -1;
-                        }
-                     }
-
-                     // Remove Eegl-specific codes from the input.
-                     len = term_replace_keycodes(ta_buf, ta_len, len);
-
-                     //For pipes: echo the typed characters. For a pty this does not seem to work.
-                     if (pty_master_fd < 0) {
-                        for (i = ta_len; i < ta_len + len; ++i) {
-                           if (ta_buf[i] == '\n' || ta_buf[i] == '\b')
-                              msg_putchar(ta_buf[i]);
-                           else
-                              msgTranslatedSlice((Text){ta_buf + i, 1});
-                        }
-                        windgoto(msgRowG, msgColG);
-                        out_flush();
-                     }
-
-                     ta_len += len;
-
-                     //Write the characters to the child, unless EOF has been typed for pipes. Write 
-                     //one character at a time, to avoid losing too much typeahead.
-                     //When writing buffer lines, drop the typed characters (only check for CTRL-C).
-                     if ((options & SHELL_WRITE) != 0)
-                        ta_len = 0;
-                     ei (toshell_fd >= 0) {
-                        len = write(toshell_fd, (char *)ta_buf, (Unt)1);
-                        if (len > 0) {
-                           ta_len -= len;
-                           MEMMOVE(ta_buf, ta_buf + len, ta_len);
-                        }
-                     }
-                  }
-               }
-
-               if (gotInterruptG) {
-                  // CTRL-C sends a signal to the child, we ignore it ourselves
-                  kill(-pid, SIGINT);
-                  if (wpid > 0)
-                     kill(wpid, SIGINT);
-                  gotInterruptG = false;
-               }
-
-               //Check if the child has any characters to be printed. Read them and write them to 
-               //our window. Repeat this as long as there is something to do, avoid the 10ms wait
-               //for mch_inchar(), or sending typeahead characters to the external process.
-               //TODO: This should handle escape sequences, compatible to some terminal (vt52?).
-               ++noread_cnt;
-               while (realWaitForChar(fromshell_fd, 10L, NULL, NULL)) {
-                  len = fiReadEintr(
-                        fromshell_fd, OUT buffer + buffer_off, (Unt)(BUFLEN - buffer_off)
-                  );
-                  if (len <= 0)          // end of file or error
-                     goto finished;
-
-                  noread_cnt = 0;
-                  if ((options & SHELL_READ) != 0) {
-                     // Do ZERO -> NL translation, append NL separated lines to the current buffer
-                     for (i = 0; i < len; ++i) {
-                        if (buffer[i] == NL)
-                           append_ga_line(OUT &shellResponse);
-                        ei (buffer[i] == ZERO)
-                           ga_append(&shellResponse, NL);
-                        else
-                           ga_append(&shellResponse, buffer[i]);
-                      }
-                  } else {
-                     buffer[len] = ZERO;
-                     msg_puts(buffer);
-                  }
-
-                  windgoto(msgRowG, msgColG);
-                  cursor_on();
-                  out_flush();
-                  if (gotInterruptG)
-                     break;
-
-                  if (wait_pid == 0) {
-                     long msec = ELAPSED_FUNC(start_tv);
-
-                     //Avoid that we keep looping here without checking for a CTRL-C for a long time.
-                     //Don't break out too often to avoid losing typeahead.
-                     if (msec > 2000) {
-                        noread_cnt = 5;
-                        break;
-                     }
-                  }
-               }
-
-               // If we already detected the child has finished, continue
-               // reading output for a short while.  Some text may be buffered.
-               if (wait_pid == pid) {
-                  if (noread_cnt < 5)
-                     continue;
-                  break;
-               }
-
-               //Check if the child still exists, before checking for
-               //typed characters (otherwise we would lose typeahead).
-               wait_pid = waitpid(pid, &status, WNOHANG);
-               if ((wait_pid == (ProId)-1 && errno == ECHILD)
-                   || (wait_pid == pid && WIFEXITED(status))
-               ) {
-                  // Don't break the loop yet, try reading more
-                  // characters from "fromshell_fd" first.  When using
-                  // pipes there might still be something to read and
-                  // then we'll break the loop at the "break" above.
-                  wait_pid = pid;
-               } else
-                  wait_pid = 0;
-
-                // Handle Wayland events such as sending data as the source client.
-                wayland_client_update();
-            }
-      finished:
-            p_more = p_more_save;
-            if ((options & SHELL_READ) != 0) {
-               if (shellResponse.len > 0) {
-                  append_ga_line(&shellResponse);
-                  // remember that the NL was missing
-                  curBook->noEolLnum = curPor->cursor.lnum;
-               } else
-                  curBook->noEolLnum = 0;
-               ga_clear(&shellResponse);
-            }
-
-            // Give all typeahead that wasn't used back to ui_inchar().
-            if (ta_len)
-               ui_inBytendo(ta_buf, ta_len);
-            stateG = modeSaved;
-            if (toshell_fd >= 0)
-               close(toshell_fd);
-            close(fromshell_fd);
-         } else {
-            long delay_msec = 1;
-
-            if (tmode == TMODE_RAW)
-               // Possibly disables modifyOtherKeys, so that the system can recognize CTRL-C.
-               out_str_t_TE();
-
-            //Similar to the loop above, but only handle X and Wayland events, no I/O.
-            for (;;) {
-               if (gotInterruptG) {
-                  // CTRL-C sends a signal to the child, we ignore it ourselves
-                  kill(-pid, SIGINT);
-                  gotInterruptG = false;
-               }
-               wait_pid = waitpid(pid, &status, WNOHANG);
-               if ((wait_pid == (ProId)-1 && errno == ECHILD) || (wait_pid == pid && WIFEXITED(status))) {
-                  wait_pid = pid;
-                  break;
-               }
-
-               // Handle Wayland events such as sending data as the source client.
-               wayland_client_update();
-
-               // Wait for 1 to 10 msec. 1 is faster but gives the child
-               // less time, gradually wait longer.
-               mch_delay(delay_msec, MCH_DELAY_IGNOREINPUT | MCH_DELAY_SETTMODE);
-               if (++delay_msec > 10)
-                  delay_msec = 10;
-            }
-
-            if (tmode == TMODE_RAW)
-               // possibly enables modifyOtherKeys again
-               out_str_t_TI();
-         }
-
-         //Wait until our child has exited.
-         //Ignore wait() returning pids of other children and returning because of some signal 
-         //like SIGWINCH. Don't wait if wait_pid was already set above, indicating the
-         //child already exited.
-         if (wait_pid != pid)
-            (void)wait4pid(pid, &status);
-
-         // Make sure the child that writes to the external program is dead.
-         if (wpid > 0) {
-            kill(wpid, SIGKILL);
-            wait4pid(wpid, NULL);
-         }
-
-         --dontCheckJobEndedS;
-
-         //Set to raw mode right now, otherwise a CTRL-C after catch_signals() will kill Eegl.
-         if (tmode == TMODE_RAW)
-            termSetMode(TMODE_RAW);
-         did_termSetMode = true;
-         set_signals();
-
-         if (WIFEXITED(status)) {
-            // LINTED avoid "bitwise operation on signed value"
-            int retStatus = WEXITSTATUS(status);
-            if (retStatus != 0 && !emsg_silent) {
-               if (retStatus == EXEC_FAILED) {
-                  msg_puts(_("\nCannot execute shell "));
-                  msg_outtrans(S"bash");
-                  msg_putchar('\n');
-               } ei ((options & SHELL_SILENT) == 0) {
-                  msg_puts(_("\nshell returned "));
-                  msg_outnum((long)retStatus);
-                  msg_putchar('\n');
-               }
-            }
-         } else
-            msg_puts(_("\nCommand terminated\n"));
+      msg_puts(_("\nCannot fork\n"));
+      if ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
+         close(fd_toshell[0]);
+         close(fd_toshell[1]);
+         close(fd_fromshell[0]);
+         close(fd_fromshell[1]);
       }
+      goto skipIfError;
+   } 
+   
+   if (pid == 0) {   //child
+      reset_signals(); //handle signals normally
+      UNBLOCK_SIGNALS(&curset);
+
+      if (ch_log_active()) {
+         lo("closing channel log in the child process");
+         ch_logfile(S"", S"");
+      }
+
+      if ((opt & SHELL_SHOW_MSG) == 0 || (opt & SHELL_EXPAND) != 0) {
+         //Don't want to show any message from the shell. Can't just close stdout and stderr 
+         //though, because some systems will break if you try to write to them after that, so 
+         //we must use dup() to replace them with something else -- webb
+         //Connect stdin to /dev/null too, so ":n `cat`" doesn't hang while waiting for input.
+         int fd = open("/dev/null", O_RDWR | O_EXTRA, 0);
+         fclose(stdin);
+         fclose(stdout);
+         fclose(stderr);
+
+         //If any of these open()'s and dup()'s fail, we just continue anyway. It's not fatal, 
+         //and on most systems it will make no difference at all. On a few it will cause the 
+         //execvp() to exit with a non-zero status even when the completion could be done, 
+         //which is nothing too serious. If the open() or dup() failed we'd just do the same 
+         //thing ourselves anyway -- webb
+         if (fd >= 0) {
+            (void)dup(fd); // To replace stdin  (fd 0)
+            (void)dup(fd); // To replace stdout (fd 1)
+            (void)dup(fd); // To replace stderr (fd 2)
+
+            //Don't need this now that we've duplicated it
+            close(fd);
+         }
+      } ei ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
+         set_default_child_environment(false);
+
+         //stderr is only redirected when using the GUI, so that a program like gpg can still 
+         //access the terminal to get a passphrase using stderr.
+         //set up stdin for the child
+         close(fd_toshell[1]);
+         close(0);
+         (void)dup(fd_toshell[0]);
+         close(fd_toshell[0]);
+
+         // set up stdout for the child
+         close(fd_fromshell[0]);
+         close(1);
+         (void)dup(fd_fromshell[1]);
+         close(fd_fromshell[1]);
+      }
+
+      //There is no type cast for the argv, because the type may be different on different 
+      //machines. This may cause a warning message with strict compilers, don't worry about it.
+      //Call _exit() instead of exit() to avoid closing the connection
+      //to the Wayland server (esp. with GTK, which uses atexit()).
+      execvp((char*)argv.c[0], (char**)argv.c);
+      _exit(EXEC_FAILED);       // exec failed, return failure code
+   } else {        // parent
+      //While child is running, ignore terminating signals.
+      //But do catch CTRL-C, so that "gotInterruptG" is set.
+      catch_signals(SIG_IGN, SIG_ERR);
+      catch_int_signal();
+      UNBLOCK_SIGNALS(&curset);
+      ++dontCheckJobEndedP;
+      
+      //Pipe stdin/stdout to/from the external command.
+# define BUFLEN 100      // length for buffer, pseudo tty limit is 128
+      Byte buffer[BUFLEN + 1];
+      int buffer_off = 0;   // valid bytes in buffer[]
+      Byte ta_buf[BUFLEN + 1];   // TypeAHead
+      int typeAheadLen = 0;      // valid bytes in ta_buf[]
+      int len;
+
+      close(fd_toshell[0]);
+      close(fd_fromshell[1]);
+      int toShell = fd_toshell[1];
+      int fromShell = fd_fromshell[0];
+
+      //Write to the child if there are typed characters. Read from the child if there are 
+      //characters available. Repeat the reading a few times if more characters are available. 
+      //Need to check for typed keys now and then, but not too often (delays when no chars are 
+      //available). This loop is quit if no characters can be read from the pty (waitForChar 
+      //detected special condition), or there are no characters available and the child has exited.
+      //Only check if the child has exited when there is no more output. The child may exit 
+      //before all the output has been printed.
+      //
+      //Currently this busy loops! This can probably dead-lock when the write blocks!
+      Boole p_more_save = p_more;
+      p_more = false;
+      Unt modeSaved = stateG;
+      stateG = MODE_EXTERNCMD;   // don't redraw at window resize
+
+      // Fork a process that will write the lines to the external program.
+      if ((opt & SHELL_WRITE) != 0) { 
+         if ((wpid = fork()) == -1) {
+            msg_puts(_("\nCannot fork\n"));
+         } ei (wpid == 0) { // child
+            writeFromCurBookToShell(fromShell, toShell);
+            _exit(0);
+         } else { // parent
+            close(toShell);
+            toShell = -1;
+         }
+      } 
+
+      int unreadCnt = 0;
+      Elapsed start_tv;
+      ELAPSED_INIT(start_tv);
+      for (;;) {
+         //Check if keys have been typed, write them to the child if there are any.
+         //Don't do this if we are expanding wild cards (would eat typeahead).
+         //Don't do this when filtering and terminal is in cooked mode, the shell command 
+         //will handle the I/O.  Avoids that a typed password is echoed for ssh or gpg 
+         //command. Don't get characters when the child has already finished (wait_pid == 0).
+         //Don't read characters unless we didn't get output for a
+         //while (unreadCnt > 4), avoids that ":r !ls" eats typeahead.
+         
+         len = 0;
+         if ((opt & SHELL_EXPAND) == 0
+             && ((opt & (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
+                  != (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
+             && wait_pid == 0
+             && (typeAheadLen > 0 || unreadCnt > 4)
+         ){
+            if (typeAheadLen == 0) {
+               // Get extra characters when we don't have any. Reset the counter and timer.
+               unreadCnt = 0;
+               ELAPSED_INIT(start_tv);
+               len = ui_inchar(ta_buf, BUFLEN, 10L, 0);
+            }
+            if (typeAheadLen > 0 || len > 0) {
+              //For pipes:
+              //Check for CTRL-C: send interrupt signal to child.
+              //Check for CTRL-D: EOF, close pipe to child.
+              if (len == 1) {
+                  //Send SIGINT to the child's group or all processes in our group.
+                  may_send_sigint(ta_buf[typeAheadLen], pid, wpid);
+
+                  if (pty_master_fd < 0 && toShell >= 0 && ta_buf[typeAheadLen] == Ctrl_D) {
+                     close(toShell);
+                     toShell = -1;
+                  }
+               }
+
+               // Remove Eegl-specific codes from the input.
+               len = term_replace_keycodes(ta_buf, typeAheadLen, len);
+
+               //For pipes: echo the typed characters. For a pty this does not seem to work.
+               if (pty_master_fd < 0) {
+                  for (int i = typeAheadLen; i < typeAheadLen + len; ++i) {
+                     if (ta_buf[i] == '\n' || ta_buf[i] == '\b')
+                        msg_putchar(ta_buf[i]);
+                     else
+                        msgTranslatedSlice((Text){ta_buf + i, 1});
+                  }
+                  windgoto(msgRowG, msgColG);
+                  out_flush();
+               }
+
+               typeAheadLen += len;
+
+               //Write the characters to the child, unless EOF has been typed for pipes. Write 
+               //one character at a time, to avoid losing too much typeahead.
+               //When writing buffer lines, drop the typed characters (only check for CTRL-C).
+               if ((opt & SHELL_WRITE) != 0)
+                  typeAheadLen = 0;
+               ei (toShell >= 0) {
+                  len = write(toShell, (char *)ta_buf, (Unt)1);
+                  if (len > 0) {
+                     typeAheadLen -= len;
+                     MEMMOVE(ta_buf, ta_buf + len, typeAheadLen);
+                  }
+               }
+            }
+         }
+
+         if (gotInterruptG) {
+            // CTRL-C sends a signal to the child, we ignore it ourselves
+            kill(-pid, SIGINT);
+            if (wpid > 0)
+               kill(wpid, SIGINT);
+            gotInterruptG = false;
+         }
+
+         //Check if the child has any characters to be printed. Read them and store them in 
+         //a polystring. Repeat this as long as there is something to do, avoid the 10ms wait
+         //for mch_inchar(), or sending typeahead characters to the external process.
+         //TODO: This should handle escape sequences, compatible to some terminal (vt52?).
+         ++unreadCnt;
+         while (realWaitForChar(fromShell, 10L, NULL, NULL)) {
+            len = fiReadEintr(
+                  fromShell, OUT buffer + buffer_off, (Unt)(BUFLEN - buffer_off)
+            );
+            if (len <= 0)          // end of file or error
+               goto finished;
+
+            unreadCnt = 0;
+            int prev = 0;
+            _bp(true);
+            for (Unt i = 0; i < (Unt)len; ++i) {
+               if (buffer[i] == NL || buffer[i] == ZERO) {
+                  appendToPoly((Text){buffer + prev, i - prev}, OUT &retVal.c);
+                  prev = i;
+               }
+            }
+
+            windgoto(msgRowG, msgColG);
+            cursor_on();
+            out_flush();
+            if (gotInterruptG)
+               break;
+
+            if (wait_pid == 0) {
+               Long msec = ELAPSED_FUNC(start_tv);
+
+               //Avoid that we keep looping here without checking for a CTRL-C for a long time.
+               //Don't break out too often to avoid losing typeahead.
+               if (msec > 2000) {
+                  unreadCnt = 5;
+                  break;
+               }
+            }
+         }
+
+         // If we already detected the child has finished, continue
+         // reading output for a short while.  Some text may be buffered.
+         if (wait_pid == pid) {
+            if (unreadCnt < 5)
+               continue;
+            break;
+         }
+
+         //Check if the child still exists, before checking for
+         //typed characters (otherwise we would lose typeahead).
+         wait_pid = waitpid(pid, &status, WNOHANG);
+         if ((wait_pid == (ProId)-1 && errno == ECHILD)
+             || (wait_pid == pid && WIFEXITED(status))
+         ) {
+            //Don't break the loop yet, try reading more characters from "fromShell" first. 
+            //When using pipes there might still be something to read and then we'll break the 
+            //loop at the "break" above.
+            wait_pid = pid;
+         } else
+            wait_pid = 0;
+
+         //Handle Wayland events such as sending data as the source client.
+         wayland_client_update();
+      }
+finished:
+      p_more = p_more_save;
+
+      // Give all typeahead that wasn't used back to ui_inchar().
+      if (typeAheadLen != 0)
+         ui_inBytendo(ta_buf, typeAheadLen);
+      stateG = modeSaved;
+      if (toShell >= 0)
+         close(toShell);
+      close(fromShell);
+
+      //Wait until our child has exited.
+      //Ignore wait() returning pids of other children and returning because of some signal 
+      //like SIGWINCH. Don't wait if wait_pid was already set above, indicating the
+      //child already exited.
+      if (wait_pid != pid)
+         (void)wait4pid(pid, &status);
+
+      // Make sure the child that writes to the external program is dead.
+      if (wpid > 0) {
+         kill(wpid, SIGKILL);
+         wait4pid(wpid, NULL);
+      }
+
+      --dontCheckJobEndedP;
+
+      //Set to raw mode right now, otherwise a CTRL-C after catch_signals() will kill Eegl.
+      if (tmode == TMODE_RAW)
+         termSetMode(TMODE_RAW);
+      did_termSetMode = true;
+      set_signals();
+
+      if (WIFEXITED(status)) {
+         //LINTED avoid "bitwise operation on signed value"
+         int retStatus = WEXITSTATUS(status);
+         if (retStatus != 0 && !emsg_silent) {
+            if (retStatus == EXEC_FAILED) {
+               msg_puts(_("\nCannot execute shell "));
+               msg_outtrans(S"bash");
+               msg_putchar('\n');
+            } ei ((opt & SHELL_SILENT) == 0) {
+               msg_puts(_("\nshell returned "));
+               msg_outnum((long)retStatus);
+               msg_putchar('\n');
+            }
+         }
+      } else
+         msg_puts(_("\nCommand terminated\n"));
    }
+   
+skipIfError: 
 
    if (!did_termSetMode && tmode == TMODE_RAW)
       termSetMode(TMODE_RAW);
@@ -5224,11 +5160,11 @@ mch_signal_job(Job* job, CS how) {
 
 private Job *
 mch_detect_ended_job(Job* job_list) {
-   int      status = -1;
+   int status = -1;
 
    // Do not do this when waiting for a shell command to finish, we would get
    // the exit value here (and discard it), the exit value obtained there would then be wrong.
-   if (dontCheckJobEndedS > 0)
+   if (dontCheckJobEndedP > 0)
       return NULL;
 
    ProId wait_pid = waitpid(-1, &status, WNOHANG);

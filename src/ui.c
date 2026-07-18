@@ -6700,7 +6700,7 @@ c_terminal(Invocation* invo) {
    args.buf.cap = args.buf.len;
    if (opt_shell) {
       //:term ++shell command
-      args = chBuildArgv(shellComm);
+      args = chBuildArgv(text(shellComm));
       startSubterminal(NULL, &args, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
       freeMultistring(&args);
       goto theend;
@@ -6928,7 +6928,7 @@ get_tty_part(Terminal *term UNUSED) {
    ChannelFdKind   parts[3] = {PART_IN, PART_OUT, PART_ERR};
 
    for (int i = 0; i < 3; ++i) {
-      int fd = chJobGetChannel(term->job)->fds[parts[i]].ch_fd;
+      int fd = chJobGetChannel(term->job)->fds[parts[i]].fd;
 
       if (mch_isatty(fd))
          return parts[i];
@@ -8018,7 +8018,7 @@ terminal_loop(int blocking) {
    Unt raw_c;
    Unt termwinkey = 0;
    int ret;
-   int tty_fd = chJobGetChannel(curBook->term->job)->fds[get_tty_part(curBook->term)].ch_fd;
+   int tty_fd = chJobGetChannel(curBook->term->job)->fds[get_tty_part(curBook->term)].fd;
    Boole restoreCursor = false;
 
    // Remember the terminal we are sending keys to.  However, the terminal might be closed while 
@@ -10447,7 +10447,7 @@ term_report_winsize(Terminal* term, int rows, int cols) {
    int part;
 
    for (part = PART_OUT; part < PART_COUNT; ++part) {
-      fd = chJobGetChannel(term->job)->fds[part].ch_fd;
+      fd = chJobGetChannel(term->job)->fds[part].fd;
       if (mch_isatty(fd))
          break;
    }

@@ -1661,7 +1661,7 @@ diff_file(DiffIo* dio) {
    
    block_autocmds();   // avoid ShellCmdPost stuff
    
-   (void)chCallShell(shellComm, SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
+   (void)chCallShell(text(shellComm), SHELL_FILTER|SHELL_SILENT|SHELL_DOOUT);
    unblock_autocmds();
    
    eeglFree(shellComm);
@@ -1720,7 +1720,7 @@ c_diffpatch(Invocation* invo) {
       eeSnprintf(buf, buflen, "patch -o %s %s < %s", tmp_new, tmp_orig, esc_name);
       block_autocmds();   // Avoid ShellCmdPost stuff
       
-      (void)chCallShell(buf, SHELL_FILTER | SHELL_COOKED);
+      (void)chCallShell(text(buf), SHELL_FILTER | SHELL_COOKED);
       unblock_autocmds();
    }
 

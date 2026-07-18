@@ -36,7 +36,7 @@ CPP		?= gcc -E
 CPP_MM		= M
 DEPEND_FLAGS_FILTER = | sed 's+-I */+-isystem /+g'
 
-OBJDIR ?= .b
+OBJDIR ?= ../.b/eegl
 
 WAYLAND_SRC	= libs/wayland/ext-data-control-v1.c \
         libs/wayland/xdg-shell.c       libs/wayland/primary-selection-unstable-v1.c
@@ -538,7 +538,7 @@ SANITIZER_LIBS = $(SANITIZER_FLAGS)
 
 
 ### Names of the programs and targets  {{{1
-EEGLTARGET	= bin/eegl
+EEGLTARGET	= ../bin/eegl
 VIEWTARGET	= $(VIEWNAME)$(LNKEXT)
 EEGLDIFFNAME	= eegldiff
 VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)

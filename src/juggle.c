@@ -3025,24 +3025,23 @@ op_insert(Operator *oper, long count1) {
        && LT_POS(curBook->opStartOrig, t1))
    oper->start = curBook->opStartOrig;
 
-   // If user has moved off this line, we don't know what to do, so do
-   // nothing.
+   // If user has moved off this line, we don't know what to do, so do nothing.
    // Also don't repeat the insert when Insert mode ended with CTRL-C.
    if (curPor->cursor.lnum != oper->start.lnum || gotInterruptG)
       return;
 
    if (oper->block_mode) {
-      int         ins_len;
-      Byte         *firstline, *ins_text;
+      int ins_len;
+      Byte *firstline, *ins_text;
       BlockDef   bd2;
-      int         did_indent = false;
-      Unt         len;
-      Unt         add;
+      int did_indent = false;
+      Unt len;
+      Unt add;
       // offset when cursor was moved in insert mode
-      int         offset = 0;
+      int offset = 0;
 
-      // If indent kicked in, the firstline might have changed
-      // but only do that, if the indent actually increased.
+      //If indent kicked in, the firstline might have changed.
+      //but only do that if the indent actually increased.
       ind_post_col = (ColNr)getwhitecols_curline();
       if (curBook->opStart.col > ind_pre_col && ind_post_col > ind_pre_col) {
           bd.textcol += ind_post_col - ind_pre_col;
@@ -3057,17 +3056,16 @@ op_insert(Operator *oper, long count1) {
       if (oper->start.lnum == curBook->opStartOrig.lnum && !bd.is_MAX && !did_indent) {
           int t = getviscol2(curBook->opStartOrig.col, curBook->opStartOrig.coladd);
 
-          if (oper->opTy == OP_INSERT
+         if (oper->opTy == OP_INSERT
+             && oper->start.col + oper->start.coladd 
+                != curBook->opStartOrig.col + curBook->opStartOrig.coladd
+         ) {
+            oper->start.col = curBook->opStartOrig.col;
+            pre_textlen -= t - oper->start_vcol;
+            oper->start_vcol = t;
+         } ei (oper->opTy == OP_APPEND
              && oper->start.col + oper->start.coladd
-                != curBook->opStartOrig.col + curBook->opStartOrig.coladd)
-          {
-         oper->start.col = curBook->opStartOrig.col;
-         pre_textlen -= t - oper->start_vcol;
-         oper->start_vcol = t;
-          } ei (oper->opTy == OP_APPEND
-             && oper->start.col + oper->start.coladd
-                >= curBook->opStartOrig.col
-                        + curBook->opStartOrig.coladd
+                >= curBook->opStartOrig.col + curBook->opStartOrig.coladd
          ) {
             oper->start.col = curBook->opStartOrig.col;
             // reset pre_textlen to the value of OP_INSERT
@@ -3078,12 +3076,12 @@ op_insert(Operator *oper, long count1) {
          }
       }
 
-      // Spaces and tabs in the indent may have changed to other spaces and
-      // tabs.  Get the starting column again and correct the length.
-      // Don't do this when "$" used, end-of-line will have changed.
+      //Spaces and tabs in the indent may have changed to other spaces and tabs. Get the 
+      //starting column again and correct the length.
+      //Don't do this when "$" used, end-of-line will have changed.
       //
-      // if indent was added and the inserted text was after the indent,
-      // correct the selection for the new indent.
+      //if indent was added and the inserted text was after the indent,
+      //correct the selection for the new indent.
       if (did_indent && bd.textcol - ind_post_col > 0) {
           oper->start.col += ind_post_col - ind_pre_col;
           oper->start_vcol += ind_post_vcol - ind_pre_vcol;
@@ -3108,10 +3106,8 @@ op_insert(Operator *oper, long count1) {
           bd.textlen = bd2.textlen;
       }
 
-      /*
-       * Subsequent calls to ml_get() flush the firstline data - take a
-       * copy of the required string.
-       */
+      //Subsequent calls to ml_get() flush the firstline data - take a
+      //copy of the required string.
       firstline = ml_get(oper->start.lnum);
       len = ml_get_len(oper->start.lnum);
       add = bd.textcol;
@@ -3152,8 +3148,6 @@ op_insert(Operator *oper, long count1) {
 //return true if edit() returns because of a CTRL-O command
 int
 op_change(Operator *oper) {
-   ColNr      l;
-   int         retval;
    LineNr      linenr;
    long      pre_textlen = 0;
    long      pre_indent = 0;
@@ -3161,7 +3155,7 @@ op_change(Operator *oper) {
    Byte      *ins_text, *newp, *oldp;
    BlockDef   bd;
 
-   l = oper->start.col;
+   ColNr l = oper->start.col;
    if (oper->motion_type == MLINE) {
       l = 0;
       can_si = may_do_si();   // Like opening a new line, do smart indent
@@ -3195,17 +3189,15 @@ op_change(Operator *oper) {
     int save_finish_op = finish_op;
     finish_op = false;
 
-    retval = edit(ZERO, false, (LineNr)1);
+    int retval = edit(ZERO, false, (LineNr)1);
 
     finish_op = save_finish_op;
 
    //In Visual block mode, handle copying the new text to all lines of the block.
    //Don't repeat the insert when Insert mode ended with CTRL-C.
    if (oper->block_mode && oper->start.lnum != oper->end.lnum && !gotInterruptG) {
-      int   ins_len;
-
-      // Auto-indenting may have changed the indent.  If the cursor was past
-      // the indent, exclude that indent change from the inserted text.
+      //Auto-indenting may have changed the indent.  If the cursor was past
+      //the indent, exclude that indent change from the inserted text.
       firstline = ml_get(oper->start.lnum);
       if (bd.textcol > (ColNr)pre_indent) {
          long new_indent = (long)getwhitecols(firstline);
@@ -3214,7 +3206,7 @@ op_change(Operator *oper) {
          bd.textcol += new_indent - pre_indent;
       }
 
-      ins_len = (int)ml_get_len(oper->start.lnum) - pre_textlen;
+      int ins_len = (int)ml_get_len(oper->start.lnum) - pre_textlen;
       if (ins_len > 0) {
          // Subsequent calls to ml_get() flush the firstline data - take a
          // copy of the inserted text.
@@ -3403,7 +3395,6 @@ get_last_leader_offset(CS line, Byte **flags) {
    return result;
 }
 
-
 //If "process" is true and the line begins with a comment leader (possibly
 //after some white space), return a pointer to the text after it. Put a boolean
 //value indicating whether the line ends with an unclosed comment in "is_comment".
@@ -3412,12 +3403,7 @@ get_last_leader_offset(CS line, Byte **flags) {
 //include_space - whether to also skip space following the comment leader,
 //is_comment - will indicate whether the current line ends with an unclosed comment.
 CS
-skip_comment(
-   Byte   *line,
-   int      process,
-   int        include_space,
-   int      *is_comment
-) {
+skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment) {
    CS comment_flags = NULL;
    int    lead_len;
    int    leader_offset = get_last_leader_offset(line, &comment_flags);
@@ -3473,10 +3459,10 @@ skip_comment(
 int
 jugJoinLinesUnderCursor(
    long count,
-   int insert_space,
-   int save_undo,
-   int use_formatoptions,
-   int setmark
+   Boole insert_space,
+   Boole save_undo,
+   Boole use_formatoptions,
+   Boole setmark
 ) {
    CS curr = NULL;
    CS curr_start = NULL;
@@ -3490,12 +3476,12 @@ jugJoinLinesUnderCursor(
    int ret = OK;
    int* comments = NULL;
    int remove_comments = (use_formatoptions == true) && has_format_option(FO_REMOVE_COMS);
-   int prev_was_comment;
    int propcount = 0;   // number of props over all joined lines
    int props_remaining;
 
    if (save_undo && u_save((LineNr)(curPor->cursor.lnum - 1),
-             (LineNr)(curPor->cursor.lnum + count)) == FAIL)
+             (LineNr)(curPor->cursor.lnum + count)) == FAIL
+   )
       return FAIL;
 
    // Allocate an array to store the number of spaces inserted before each
@@ -3504,15 +3490,16 @@ jugJoinLinesUnderCursor(
    CS spaces = lallocZeroed(count, true);
    if (remove_comments) {
       comments = lallocZeroed(count * sizeof(int), true);
-      if (comments == NULL) {
+      if (!comments) {
           eeglFree(spaces);
           return FAIL;
       }
-    }
+   }
 
-    //Don't move anything yet, just compute the final line length
-    //and setup the array of space strings lengths. This loops forward over the joined lines.
-    for (t = 0; t < count; ++t) {
+   //Don't move anything yet, just compute the final line length
+   //and setup the array of space strings lengths. This loops forward over the joined lines.
+   Boole prev_was_comment;
+   for (t = 0; t < count; ++t) {
       curr = curr_start = ml_get((LineNr)(curPor->cursor.lnum + t));
       propcount += count_props((LineNr) (curPor->cursor.lnum + t), t > 0, t + 1 == count);
       if (t == 0 && setmark && (commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
@@ -3521,14 +3508,13 @@ jugJoinLinesUnderCursor(
          curPor->book->opStart.col  = (ColNr)STRLEN(curr);
       }
       if (remove_comments) {
-          // We don't want to remove the comment leader if the
-          // previous line is not a comment.
-          if (t > 0 && prev_was_comment) {
-            CS new_curr = skip_comment(curr, true, insert_space, &prev_was_comment);
+         // We don't want to remove the comment leader if the previous line is not a comment.
+         if (t > 0 && prev_was_comment) {
+            CS new_curr = skip_comment(curr, true, insert_space, OUT &prev_was_comment);
             comments[t] = (int)(new_curr - curr);
             curr = new_curr;
          } else
-            curr = skip_comment(curr, false, insert_space, &prev_was_comment);
+            curr = skip_comment(curr, false, insert_space, OUT &prev_was_comment);
       }
 
       if (insert_space && t > 0) {

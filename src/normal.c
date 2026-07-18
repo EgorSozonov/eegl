@@ -13020,7 +13020,7 @@ foldAddMarker(LineNr lnum, CS marker, int markerlen) {
    if (!cms)
       return;
    CS p = STRSTR(curBook->o.commentString, "%s");
-   int      line_is_comment = false;
+   Boole lineIsComment = false;
 
    // Allocate a new line: old-line + 'cms'-start + marker + 'cms'-end
    CS line = ml_get(lnum);
@@ -13030,12 +13030,12 @@ foldAddMarker(LineNr lnum, CS marker, int markerlen) {
        return;
 
    // Check if the line ends with an unclosed comment
-   (void)skip_comment(line, false, false, &line_is_comment);
+   (void)skip_comment(line, false, false, OUT &lineIsComment);
    CS newline = alloc(line_len + markerlen + STRLEN(cms) + 1);
    STRCPY(OUT newline, line);
    
    // Append the marker to the end of the line
-   if (!p || line_is_comment)
+   if (!p || lineIsComment)
       copySubstrToAllocation(newline + line_len, (Text){marker, markerlen});
    else {
       STRCPY(newline + line_len, cms);

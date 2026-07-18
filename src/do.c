@@ -1104,7 +1104,7 @@ do_filter(
    //can see the error messages from the command that appear on stdout; use 'u' to fix the text
    //Switch to cooked mode when not redirecting stdin, avoids that something like ":r !cat" hangs.
    //Pass on the SHELL_DOOUT flag when the output is being redirected.
-   if (chCallShell(cmd_buf, SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
+   if (chCallShell(text(cmd_buf), SHELL_FILTER | SHELL_COOKED | shell_flags).status != 0) {
       redraw_later_clear();
       wait_return(false);
    }
@@ -1233,7 +1233,7 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
       windgoto(msgRowG, msgColG);
    cursor_on();
    
-   (void)chCallShell(cmd, SHELL_COOKED | flags);
+   (void)chCallShell(text(cmd), SHELL_COOKED | flags);
    did_check_timestamps = false;
    need_check_timestamps = true;
 

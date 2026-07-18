@@ -2807,7 +2807,7 @@ polystring(Unt cap) {
 
 //Append a string to polystring.
 void
-appendToBuf(Text s, OUT Polystring* buf) {
+appendToPoly(Text s, OUT Polystring* buf) {
    if (s.len == 0) {
       return;
    } 
@@ -2832,26 +2832,32 @@ appendToMulti(Text s, OUT Multistring* mu) {
    if (s.len == 0) {
       return;
    } 
-   
+   Long bufferShift = 0; //by how much the buffer moved after reallocation
    if (s.len + mu->buf.len > mu->buf.cap) {
       Unt newCap = MAX(mu->buf.cap * 2, mu->buf.cap + 2*s.len);
       CS newCont = alloc(newCap);
       if (mu->buf.len > 0) {
          memcpy(newCont, mu->buf.c, mu->buf.len);
          eeglFree(mu->buf.c);
+         bufferShift = (uintptr_t)newCont - (uintptr_t)mu->buf.c;
       } 
       mu->buf.c = newCont;
       mu->buf.cap = newCap;
    }
    if (mu->len == mu->cap) {
       Unt newCap = 2*mu->cap + 4; //+4 for the initial case where cap = 0
-      Arr(CS) newCont = alloc(newCap);
+      Arr(CS) newCont = alloc(newCap*sizeof(CS));
       if (mu->len > 0) {
          memcpy(newCont, mu->c, mu->len*sizeof(CS));
          eeglFree(mu->c);
       }
       mu->c = newCont;
       mu->cap = newCap;
+   }
+   if (bufferShift != 0) {
+      for (Unt i = 0; i < mu->len; i++) {
+         mu->c[i] = (CS)((uintptr_t)mu->c[i] + bufferShift);
+      }
    }
    memcpy(mu->buf.c + mu->buf.len, s.c, s.len);
    mu->buf.c[mu->buf.len + s.len] = ZERO;
@@ -2875,14 +2881,6 @@ appendNullToMulti(OUT Multistring* mu) {
    }
    mu->c[mu->len] = null;
    mu->len++;
-}
-
-//Write a string to buffer. Preconditions: string is not empty, the buffer has sufficient space
-void
-appendToBufWithSufficientSpace(Text s, OUT Polystring* buf) {
-   memcpy(buf->c + buf->len, s.c, s.len);
-   buf->c[buf->len + s.len] = ZERO;
-   buf->len += s.len + 1;
 }
 
 void

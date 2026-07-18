@@ -3747,7 +3747,7 @@ typedef struct timeval Elapsed;
 
 // The per-fd info for a channel.
 typedef struct {
-   Socket ch_fd;       // socket/stdin/stdout/stderr, -1 if not used
+   Socket fd;       // socket/stdin/stdout/stderr, -1 if not used
 
    ChannelMode ch_mode;
    JobIoMode ch_io;
@@ -4305,7 +4305,7 @@ struct Book { //:Book
    ArrayList   userCommands;
    // start and end of an operator, also used for '[ and ']
    Pos opStart;
-   Pos opStartOrig;  // used for Insstart_orig
+   Pos opStartOrig;  // used for juggle.c:op_insert
    Pos opEnd;
 
    int haveReadEeglinfoMarks;   // Have we read eeglinfo marks yet?

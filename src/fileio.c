@@ -4891,7 +4891,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
 
    // execute the shell command
    lo("mch_expand_wildcards [%s]", command.c);
-   PolyWithStatus shellResult = chCallShell(command.c, shellOpts);
+   PolyWithStatus shellResult = chCallShell(command, shellOpts);
 
    eeglFree(command.c);
 
@@ -7488,7 +7488,7 @@ fiGetShellOutput(
 
    //Call the shell to execute the command (errors are ignored). Don't check timestamps here.
    ++no_check_timestamps;
-   chCallShell(command, SHELL_DOOUT | SHELL_EXPAND | flags);
+   chCallShell(text(command), SHELL_DOOUT | SHELL_EXPAND | flags);
    --no_check_timestamps;
 
    eeglFree(command);
