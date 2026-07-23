@@ -32,6 +32,7 @@
 #include <stdarg.h>
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
+#include <sys/select.h>
 
 # define XT_TRACE_DELAY   50   // delay for xterm tracing
 
@@ -10513,57 +10514,53 @@ preserve_exit(void) {
    exitEegl(1);
 }
 
-//Wait "msec" msec until a character is available from file descriptor "fd".
+//Wait "msec" milliseconds until a character is available from file descriptor "fd".
 //"msec" == 0 will check for characters once.
 //"msec" == -1 will block until a character is available.
-//Or when a Linux GPM mouse event is waiting.
-//Or when a clientserver message is on the queue.
+//Or when a Linux GPM mouse event is waiting. Or when a clientserver message is on the queue.
 //"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
 int
-realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) {
-   int ret;
-   int result;
+uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
    static Boole busy = false;
 
    //Remember at what time we started, so that we know how much longer we
    //should wait after being interrupted.
-   long start_msec = msec;
+   Long start_msec = msec;
    Elapsed start_tv;
-
    if (msec > 0)
       ELAPSED_INIT(start_tv);
 
-   // Handle being called recursively.  This may happen for the session
-   // manager stuff, it may save the file, which does a breakcheck.
+   //Handle being called recursively. This may happen for the session
+   //manager stuff, it may save the file, which does a breakcheck.
    if (busy)
       return 0;
 
+   int result;
    for (;;) {
       int finished = true; // default is to 'loop' just once
       TimeVal tv;
-      TimeVal* tvp;
-      // These are static because they can take 8 Kbyte each and cause the
-      // signal stack to run out with -O3.
+      TimeVal* timePtr;
+      //These are static because they can take 8 Kbyte each and cause the
+      //signal stack to run out with -O3.
       static fd_set rfds, wfds, efds;
-      int maxfd;
       Long towait = msec;
 
       if (towait >= 0) {
          tv.tv_sec = towait / 1000;
          tv.tv_usec = (towait % 1000) * (1000000/1000);
-         tvp = &tv;
+         timePtr = &tv;
       } else
-         tvp = NULL;
+         timePtr = NULL;
 
-   //Select on ready for reading and exceptional condition (end of file).
-   select_eintr:
+      //Select on ready for reading and exceptional condition (end of file).
+      select_eintr:
       FD_ZERO(&rfds);
       FD_ZERO(&wfds);
       FD_ZERO(&efds);
       FD_SET(fd, &rfds);
       FD_SET(fd, &efds);
-      maxfd = fd;
+      int maxfd = fd;
 
       if (wayland_may_restore_connection()) {
          FD_SET(wayland_display_fd, &rfds);
@@ -10572,24 +10569,21 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
             maxfd = wayland_display_fd;
       }
 
-      maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &tvp);
-      if (interrupted != NULL)
+      maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &timePtr);
+      if (interrupted)
          *interrupted = false;
 
-      ret = select(
-         maxfd + 1, SELECT_TYPE_ARG234 &rfds, SELECT_TYPE_ARG234 &wfds, SELECT_TYPE_ARG234 &efds, tvp
-      );
+      int ret = select(maxfd + 1, (fd_set*)&rfds, (fd_set*)&wfds, (fd_set*)&efds, timePtr);
       result = ret > 0 && FD_ISSET(fd, &rfds);
       if (result)
          --ret;
-      ei (interrupted != NULL && ret > 0)
+      ei (interrupted && ret > 0)
          *interrupted = true;
 
       if (ret == -1 && errno == EINTR) {
-
          // Check whether window has been resized, EINTR may be caused by SIGWINCH.
          if (doResizeG) {
-            lo("calling handleShellResize() in realWaitForChar()");
+            lo("calling handleShellResize() in uiRealWaitForChar()");
             handleShellResize();
          }
 
@@ -10613,9 +10607,9 @@ realWaitForChar(int fd, long msec, int* check_for_gpm UNUSED, int* interrupted) 
       if (finished || msec == 0)
          break;
 
-      // We're going to loop around again, find out for how long
+      //We're going to loop around again, find out for how long
       if (msec > 0) {
-         // Compute remaining wait time.
+         //Compute remaining wait time.
          msec = start_msec - ELAPSED_FUNC(start_tv);
          if (msec <= 0)
             break;   // waited long enough
@@ -10631,7 +10625,7 @@ private void
 mch_write(CS s, int len) {
    (void)write(1, (char *)s, len);
    if (p_wd)      // Unix is too fast, slow down a bit more
-      realWaitForChar(read_cmd_fd, p_wd, NULL, NULL);
+      uiRealWaitForChar(read_cmd_fd, p_wd, NULL);
 }
 
 //Called when Eegl is going to sleep or execute a shell command. We can't respond to requests for 
@@ -10831,7 +10825,7 @@ inchar_loop(
    int maxlen,
    long wtime,       // don't use "time", MIPS cannot handle it
    int changeCnt,
-   int (*wait_func)(long wtime, int *interrupted, int ignore_input),
+   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
    int (*resize_func)(int check_only)
 ){
    int len;
@@ -10957,7 +10951,7 @@ inchar_loop(
 private int
 ui_wait_for_chars_or_timer(
    long wtime,
-   int (*wait_func)(long wtime, int *interrupted, int ignore_input),
+   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
    int *interrupted,
    int ignore_input
 ){
@@ -11003,11 +10997,11 @@ ui_wait_for_chars_or_timer(
 //"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
 private int
-waitForCharOrMouse(long msec, int *interrupted, int ignore_input) {
+waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input) {
    if (!ignore_input && input_available())       // something in inbuf[]
       return 1;
 
-   int avail = realWaitForChar(read_cmd_fd, msec, NULL, interrupted);
+   int avail = uiRealWaitForChar(read_cmd_fd, msec, OUT interrupted);
    return avail;
 }
 
@@ -11020,7 +11014,7 @@ waitForCharOrMouse(long msec, int *interrupted, int ignore_input) {
 //Return true when a character is available.
 //When a GUI is being used, this will never get called -- webb
 int
-waitForChar(long msec, int *interrupted, int ignore_input) {
+waitForChar(long msec, OUT int* interrupted, Boole ignore_input) {
    return ui_wait_for_chars_or_timer(msec, waitForCharOrMouse, interrupted, ignore_input) == OK;
 }
 

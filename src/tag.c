@@ -4811,16 +4811,12 @@ cs_release_csp(int i, int freefnpp) {
    int pstat;
    ProId pid;
 
-   struct sigaction sa, old;
+   SignalAction sa, old;
 
    // Use sigaction() to limit the waiting time to two seconds.
    sigemptyset(&sa.sa_mask);
    sa.sa_handler = sig_handler;
-#  ifdef SA_NODEFER
    sa.sa_flags = SA_NODEFER;
-#  else
-   sa.sa_flags = 0;
-#  endif
    sigaction(SIGALRM, &sa, &old);
    alarm(2); // 2 sec timeout
 
@@ -4831,20 +4827,17 @@ cs_release_csp(int i, int freefnpp) {
    // cancel pending alarm if still there and restore signal
    alarm(0);
    sigaction(SIGALRM, &old, NULL);
-   //If the cscope process is still running: kill it.
-   //Safety check: If the PID would be zero here, the entire X session
-   //would be killed.  -1 and 1 are dangerous as well.
+   //If the cscope process is still running: kill it. Safety check: If the PID would be zero here, 
+   //the entire Wayland session would be killed. -1 and 1 are dangerous as well.
    if (pid < 0 && csinfo[i].pid > 1) {
-# ifdef ECHILD
       int alive = true;
 
       if (waitpid_errno == ECHILD) {
-         //When using 'vim -g', vim is forked and cscope process is
-         //no longer a child process but a sibling.  So waitpid()
-         //fails with errno being ECHILD (No child processes).
-         //Don't send SIGKILL to cscope immediately but wait
-         //(polling) for it to exit normally as result of sending
-         //the "q" command, hence giving it a chance to clean up its temporary files.
+         //When using 'vim -g', vim is forked and cscope process is no longer a child process but 
+         //a sibling. So waitpid() fails with errno being ECHILD (No child processes).
+         //Don't send SIGKILL to cscope immediately but wait (polling) for it to exit normally as 
+         //result of sending the "q" command, hence giving it a chance to clean up its temporary 
+         //files.
          int waited;
 
          sleep(0);
@@ -4857,12 +4850,10 @@ cs_release_csp(int i, int freefnpp) {
             mch_delay(50L, 0); // sleep 50 ms
          }
       }
-      if (alive)
-# endif
-       {
-      kill(csinfo[i].pid, SIGKILL);
-      (void)waitpid(csinfo[i].pid, &pstat, 0);
-       }
+      if (alive) {
+         kill(csinfo[i].pid, SIGKILL);
+         (void)waitpid(csinfo[i].pid, &pstat, 0);
+      }
    }
    }
 

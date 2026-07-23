@@ -8,6 +8,7 @@
 #ifndef PROTO
 // for shm_open:
 #include <sys/mman.h>
+#include <sys/select.h>
 #include <fcntl.h>
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
@@ -3547,8 +3548,8 @@ freeSelection(ClipBoard* cbd) {
 //Get the selected text and put it in register '*' or '+'.
 private void
 clip_get_selection(ClipBoard* cbd) {
+   PolyWithStatus fromShell = chCallShell(tConst("wl-paste"), SHELL_READ);
    _bp(true);
-   PolyWithStatus fromShell = chCallShell(tConst("wl-paste"), 0);
    if (cbd->owned) {
       if ((cbd == &clipboard && getYRegister(PLUS_REGISTER)->y_array != NULL)
             || (cbd == &clipboard && getYRegister(STAR_REGISTER)->y_array != NULL)

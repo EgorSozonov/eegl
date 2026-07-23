@@ -6123,7 +6123,7 @@ delete_timer(void) {
 # else // PROF_NSEC
 
 // Implement timeout with setitimer()
-private struct sigaction      prev_sigaction;
+private SignalAction      prev_sigaction;
 private volatile sig_atomic_t   timeout_flag        = false;
 private int         timer_active        = false;
 private int         timer_handler_active = false;
@@ -6175,10 +6175,10 @@ start_timeout(long msec) {
    struct itimerval   interval = {
        {0, 0},                // Do not repeat.
        {msec / 1000, (msec % 1000) * 1000}};   // Timeout interval
-   struct sigaction   handle_alarm;
-   int         ret;
-   sigset_t      sigs;
-   sigset_t      saved_sigs;
+   SignalAction handle_alarm;
+   int ret;
+   SignalSet sigs;
+   SignalSet saved_sigs;
 
    // This is really the caller's responsibility, but let's make sure the
    // previous timer has been stopped.

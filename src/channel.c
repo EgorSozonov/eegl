@@ -12,14 +12,16 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/resource.h>
+#include <sys/poll.h>
 #endif
 
+typedef sigset_t SignalSet;
 
 # define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
                          // 127, some shells use that already
 # define OPEN_NULL_FAILED 123 // Exit code if /dev/null can't be opened
 
-# define SIGSET_DECL(set)   sigset_t set;
+# define SIGSET_DECL(set)   SignalSet set;
 # define BLOCK_SIGNALS(set)   block_signals(set)
 # define UNBLOCK_SIGNALS(set)   unblock_signals(set)
 
@@ -311,9 +313,6 @@ channel_connect(
    int      sd = -1;
 
    while (true) {
-      long   elapsed_msec = 0;
-      int   waitnow;
-      int   ret;
 
       if (sd >= 0)
           sock_close(sd);
@@ -337,19 +336,15 @@ channel_connect(
       // Try connecting to the server.
       ch_log(channel, "Connecting...");
 
-      ret = connect(sd, server_addr, server_addrlen);
+      int ret = connect(sd, server_addr, server_addrlen);
       if (ret == 0)
          // The connection could be established.
          break;
 
       SOCK_ERRNO;
-      if (*waittime < 0 || (errno != EWOULDBLOCK
-         && errno != ECONNREFUSED
-#ifdef EINPROGRESS
-         && errno != EINPROGRESS
-#endif
-         ))
-      {
+      if (*waittime < 0 
+            || (errno != EWOULDBLOCK && errno != ECONNREFUSED && errno != EINPROGRESS)
+      ) {
          ch_error(channel, "channel_connect: Connect failed with errno %d", errno);
          PERROR(_(e_cannot_connect_to_port));
          sock_close(sd);
@@ -360,31 +355,25 @@ channel_connect(
          return -1;
       }
 
-      // Limit the waittime to 50 msec.  If it doesn't work within this
-      // time we close the socket and try creating it again.
-      waitnow = *waittime > 50 ? 50 : *waittime;
+      //Limit the waittime to 50 msec.  If it doesn't work within this
+      //time we close the socket and try creating it again.
+      int waitnowMs = *waittime > 50 ? 50 : *waittime;
 
-      // If connect() didn't finish then try using select() to wait for the connection to be made.
+      long elapsed_msec = 0;
+      // If connect() didn't finish then try using poll() to wait for the connection to be made.
       {
-          TimeVal   tv;
-          fd_set      rfds;
-          fd_set      wfds;
-          int         so_error = 0;
-          socklen_t      so_error_len = sizeof(so_error);
-          TimeVal   start_tv;
-          TimeVal   end_tv;
-          FD_ZERO(&rfds);
-          FD_SET(sd, &rfds);
-          FD_ZERO(&wfds);
-          FD_SET(sd, &wfds);
+         TimeVal   tv;
+         int         so_error = 0;
+         socklen_t      so_error_len = sizeof(so_error);
+         TimeVal start_tv;
+         TimeVal end_tv;
+         PollFd pollFd = {.fd = sd, .events = , .revents = };
 
-          tv.tv_sec = waitnow / 1000;
-          tv.tv_usec = (waitnow % 1000) * 1000;
-          gettimeofday(&start_tv, NULL);
-          ch_log(channel,
-               "Waiting for connection (waiting %d msec)...", waitnow);
+         tv.tv_usec = (waitnow % 1000) * 1000;
+         gettimeofday(&start_tv, NULL);
+         ch_log(channel, "Waiting for connection (waiting %d msec)...", waitnowMs);
 
-         ret = select(sd + 1, &rfds, &wfds, NULL, &tv);
+         ret = poll(&pollFd, 1, waitnowMs);
          if (ret < 0) {
             SOCK_ERRNO;
             ch_error(channel, "channel_connect: Connect failed with errno %d", errno);
@@ -393,29 +382,28 @@ channel_connect(
             return -1;
          }
 
-         // See socket(7) for the behavior
-         // After putting the socket in non-blocking mode, connect() will return EINPROGRESS, 
-         // select() will not wait (as if writing is possible), need to use getsockopt() to check 
-         // if the socket is actually able to connect. We detect a failure to connect when either 
-         // read and write fds are set.  Use getsockopt() to find out what kind of failure.
-         if (FD_ISSET(sd, &rfds) || FD_ISSET(sd, &wfds)) {
+         //See socket(7) for the behavior
+         //After putting the socket in non-blocking mode, connect() will return EINPROGRESS, 
+         //select() will not wait (as if writing is possible), need to use getsockopt() to check 
+         //if the socket is actually able to connect. We detect a failure to connect when either 
+         //read and write fds are set. Use getsockopt() to find out what kind of failure.
+         if ((pollFd.revents & POLLIN) != 0 || (pollFd.revents & POLLIN) != 0)
+         //if (FD_ISSET(sd, &rfds) || FD_ISSET(sd, &wfds)) {
             ret = getsockopt(sd, SOL_SOCKET, SO_ERROR, &so_error, &so_error_len);
             if (ret < 0 || (so_error != 0
                && so_error != EWOULDBLOCK
                && so_error != ECONNREFUSED
-# ifdef EINPROGRESS
                && so_error != EINPROGRESS
-# endif
-               ))
-            {
-                ch_error(channel, "channel_connect: Connect failed with errno %d", so_error);
-                PERROR(_(e_cannot_connect_to_port));
-                sock_close(sd);
-                return -1;
+               )
+            ) {
+               ch_error(channel, "channel_connect: Connect failed with errno %d", so_error);
+               PERROR(_(e_cannot_connect_to_port));
+               sock_close(sd);
+               return -1;
             } ei (errno == ECONNREFUSED) {
-                ch_error(channel, "channel_connect: Connection refused");
-                sock_close(sd);
-                return -1;
+               ch_error(channel, "channel_connect: Connection refused");
+               sock_close(sd);
+               return -1;
             }
          }
 
@@ -429,10 +417,9 @@ channel_connect(
       }
 
       if (*waittime > 1 && elapsed_msec < *waittime) {
-         // The port isn't ready but we also didn't get an error.
-         // This happens when the server didn't open the socket
-         // yet.  Select() may return early, wait until the remaining
-         // "waitnow"  and try again.
+         //The port isn't ready but we also didn't get an error. This happens when the server 
+         //didn't open the socket yet. Select() may return early, wait until the remaining
+         //"waitnow"  and try again.
          waitnow -= elapsed_msec;
          *waittime -= elapsed_msec;
          if (waitnow > 0) {
@@ -2857,15 +2844,11 @@ channel_send(
       else {
          res = fd_write(fd, (char *)buf, len);
       }
-      if (res < 0 && (errno == EWOULDBLOCK
-#ifdef EAGAIN
-            || errno == EAGAIN
-#endif
-             ))
-          res = 0; // nothing got written
+      if (res < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+         res = 0; // nothing got written
 
       if (res >= 0 && fds->ch_nonblocking) {
-         WriteQueue *entry = wq->next;
+         WriteQueue* entry = wq->next;
 
          if (did_use_queue)
             ch_log(channel, "Sent %d bytes now", res);
@@ -2894,8 +2877,8 @@ channel_send(
             }
             ch_log(channel, "Adding %d bytes to the write queue", len);
 
-            // Append the not written bytes of the argument to the write buffer. Limit entries to 
-            // 4000 bytes.
+            //Append the unwritten bytes of the argument to the write buffer. Limit entries to 
+            //4000 bytes.
             if (wq->prev && wq->prev->wq_ga.len + len < 4000) {
                WriteQueue *last = wq->prev;
 
@@ -2924,7 +2907,7 @@ channel_send(
             }
          }
       } ei (res != len) {
-         if (!channel->error && fun != NULL) {
+         if (!channel->error && fun) {
             ch_error(channel, "%s(): write failed", fun);
             showErrFmtMsg(_(e_str_write_failed), fun);
          }
@@ -2939,20 +2922,20 @@ channel_send(
 
 // Common for "ch_sendexpr()" and "ch_sendraw()". Return the channel if the caller should read the 
 // response. Sets "part_read" to the read fd. Otherwise returns NULL.
-private Channel *
+private Channel*
 send_common(
    Var* argvars,
    CS text,
    int len,
    int id,
    int eval,
-   JobOptions    *opt,
+   JobOptions* opt,
    char* fun,
    ChannelFdKind* part_read
 ) {
    CLEAR_POINTER(opt);
    Channel* channel = get_channel_arg(&argvars[0], true, false, 0);
-   if (channel == NULL)
+   if (!channel)
       return NULL;
    ChannelFdKind part_send = channel_part_send(channel);
    *part_read = channel_part_read(channel);
@@ -2963,16 +2946,15 @@ send_common(
    // Set the callback. An empty callback means no callback and not reading
    // the response. With "ch_evalexpr()" and "ch_evalraw()" a callback is not
    // allowed.
-   if (opt->jo_callback.name != NULL && *opt->jo_callback.name != ZERO) {
+   if (opt->jo_callback.name && *opt->jo_callback.name != ZERO) {
       if (eval) {
-          showErrFmtMsg(_(e_cannot_use_callback_with_str), fun);
-          return NULL;
+         showErrFmtMsg(_(e_cannot_use_callback_with_str), fun);
+         return NULL;
       }
       channel_set_req_callback(channel, *part_read, &opt->jo_callback, id);
    }
 
-   if (channel_send(channel, part_send, text, len, fun) == OK
-                  && opt->jo_callback.name == NULL)
+   if (channel_send(channel, part_send, text, len, fun) == OK && opt->jo_callback.name == NULL)
       return channel;
    return NULL;
 }
@@ -2983,17 +2965,17 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
    CS text;
    Var* listtv;
    int id;
-   ChannelMode   ch_mode;
-   JobOptions    opt;
-   int      timeout;
-   int      callback_present = false;
+   ChannelMode ch_mode;
+   JobOptions opt;
+   int timeout;
+   int callback_present = false;
 
    // return an empty string by default
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 
    Channel* channel = get_channel_arg(&argvars[0], true, false, 0);
-   if (channel == NULL)
+   if (!channel)
       return;
    ChannelFdKind part_send = channel_part_send(channel);
 
@@ -3030,14 +3012,14 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
          else
             di->c.number = id;
       } else {
-          // When sending an expression, if the message has an 'id' item,
-          // then use it.
-          id = 0;
-          if (di != NULL)
-         id = di->c.number;
+         // When sending an expression, if the message has an 'id' item,
+         // then use it.
+         id = 0;
+         if (di)
+            id = di->c.number;
       }
       if (!bagHasKey(d, tConst("jsonrpc")))
-          bagAddString(d, (CS)"jsonrpc", (CS)"2.0");
+         bagAddString(d, (CS)"jsonrpc", (CS)"2.0");
       text = json_encode_lsp_msg(&argvars[1]);
    } else {
       id = ++channel->lastMsgId;
@@ -3064,19 +3046,19 @@ ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval) {
          } else {
             List *list = listtv->list;
 
-            // Move the item from the list and then change the type to
-            // avoid the value being freed.
+            //Move the item from the list and then change the type to
+            //avoid the value being freed.
             *returnVar = list->lv_u.mat.last->c;
             list->lv_u.mat.last->c.tag = VAR_NUMBER;
             freeVar(listtv);
          }
       }
-    }
-    free_job_options(&opt);
+   }
+   free_job_options(&opt);
    if (ch_mode == CH_MODE_LSP && !eval && callback_present) {
-      // if ch_sendexpr() is used to send a LSP message and a callback
-      // function is specified, then return the generated identifier for the
-      // message.  The user can use this to cancel the request (if needed).
+      //if ch_sendexpr() is used to send a LSP message and a callback function is specified, then 
+      //return the generated identifier for the message. The user can use this to cancel the 
+      //request (if needed).
       if (returnVar->bag)
          bagAddNumber(returnVar->bag, S"id", id);
    }
@@ -3106,11 +3088,11 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
    }
    channel = send_common(argvars, text, len, 0, eval, &opt,
                eval ? "ch_evalraw" : "ch_sendraw", &part_read);
-   if (channel != NULL && eval) {
-      if (opt.set & JO_TIMEOUT)
-          timeout = opt.jo_timeout;
+   if (channel && eval) {
+      if ((opt.set & JO_TIMEOUT) != 0)
+         timeout = opt.jo_timeout;
       else
-          timeout = channel_get_timeout(channel, part_read);
+         timeout = channel_get_timeout(channel, part_read);
       returnVar->string = channel_read_block(channel, part_read, timeout, true, NULL);
    }
    free_job_options(&opt);
@@ -3127,11 +3109,11 @@ channel_select_setup(
    TimeVal *tv,
    TimeVal **tvp
 ) {
-   int      maxfd = maxfd_in;
-   Channel   *channel;
-   fd_set   *rfds = rfds_in;
-   fd_set   *wfds = wfds_in;
-   ChannelFdKind   part;
+   int maxfd = maxfd_in;
+   Channel* channel;
+   fd_set* rfds = rfds_in;
+   fd_set* wfds = wfds_in;
+   ChannelFdKind part;
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
@@ -3201,21 +3183,21 @@ channel_select_check(int ret_in, void *rfds_in, void *wfds_in) {
 // and during a blocking wait for ch_evalexpr(). Return true when something was done.
 int
 channel_parse_messages(void) {
-   Channel   *channel = first_channel;
-   int      ret = false;
-   int      r;
+   Channel* channel = first_channel;
+   int ret = false;
+   int r;
    ChannelFdKind   part = PART_SOCK;
    static int   recursive = 0;
    Elapsed   start_tv;
 
-   // The code below may invoke callbacks, which might call us back.
-   // In a recursive call channels will not be closed.
+   //The code below may invoke callbacks, which might call us back.
+   //In a recursive call channels will not be closed.
    ++recursive;
    ++safe_to_invoke_callback;
 
    ELAPSED_INIT(start_tv);
 
-   // Only do this message when another message was given, otherwise we get lots of them.
+   //Only do this message when another message was given, otherwise we get lots of them.
    if ((did_repeated_msg & REPEATED_MSG_LOOKING) == 0) {
       lo("looking for messages on channels");
       // now we should also give the message for SafeState
@@ -3223,16 +3205,16 @@ channel_parse_messages(void) {
    }
    while (channel != NULL) {
       if (recursive == 1) {
-          if (channel_can_close(channel)) {
-         channel->ch_to_be_closed = (1U << PART_COUNT);
-         channel_close_now(channel);
-         // channel may have been freed, start over
-         channel = first_channel;
-         continue;
-          }
+         if (channel_can_close(channel)) {
+            channel->ch_to_be_closed = (1U << PART_COUNT);
+            channel_close_now(channel);
+            // channel may have been freed, start over
+            channel = first_channel;
+            continue;
+         }
          if (channel->ch_to_be_freed || channel->isBeingKilled) {
             channel_free_contents(channel);
-            if (channel->job != NULL)
+            if (channel->job)
                 channel->job->channel = NULL;
 
             // free the channel and then start over
@@ -3545,15 +3527,8 @@ build_argv_from_list(List *l, Byte*** argv, int *argc) {
 private char* signal_stack;
 private void sigcont_handler SIGPROTOARG;
 private void deathtrap SIGPROTOARG;
-
-
-#if defined(SIGUSR1)
 static void catch_sigusr1 SIGPROTOARG;
-#endif
-
-#if defined(SIGPWR)
 static void catch_sigpwr SIGPROTOARG;
-#endif
 
 static struct signalinfo {
    int       sig;   // Signal number, eg. SIGSEGV etc
@@ -3562,57 +3537,26 @@ static struct signalinfo {
 } signalInfos[] = {
     {SIGHUP,       "HUP",   true},
     {SIGQUIT,       "QUIT",   true},
-#ifdef SIGILL
     {SIGILL,       "ILL",   true},
-#endif
-#ifdef SIGTRAP
     {SIGTRAP,       "TRAP",   true},
-#endif
-#ifdef SIGABRT
     {SIGABRT,       "ABRT",   true},
-#endif
-#ifdef SIGEMT
-    {SIGEMT,       "EMT",   true},
-#endif
-#ifdef SIGFPE
     {SIGFPE,       "FPE",   true},
-#endif
-#ifdef SIGBUS
     {SIGBUS,       "BUS",   true},
-#endif
-#if defined(SIGSEGV)
     {SIGSEGV,       "SEGV",   true},
-#endif
-#ifdef SIGSYS
     {SIGSYS,       "SYS",   true},
-#endif
-#ifdef SIGALRM
     {SIGALRM,       "ALRM",   false},   // Perl's alarm() can trigger it
-#endif
     {SIGTERM,       "TERM",   true},
-#if defined(SIGVTALRM)
     {SIGVTALRM,       "VTALRM",   true},
-#endif
-#if defined(SIGPROF) && !defined(WE_ARE_PROFILING)
+#if !defined(WE_ARE_PROFILING)
     // With profiling this makes Eegl exit. WE_ARE_PROFILING is defined in Makefile.
     {SIGPROF,       "PROF",   true},
 #endif
-#ifdef SIGXCPU
     {SIGXCPU,       "XCPU",   true},
-#endif
-#ifdef SIGXFSZ
     {SIGXFSZ,       "XFSZ",   true},
-#endif
-#ifdef SIGUSR1
     {SIGUSR1,       "USR1",   false},
-#endif
-#if defined(SIGUSR2)
     // Used for sysmouse handling
     {SIGUSR2,       "USR2",   true},
-#endif
-#ifdef SIGPIPE
     {SIGPIPE,       "PIPE",   false},
-#endif
     {-1,       "Unknown!", false}
 };
 
@@ -3699,29 +3643,19 @@ set_signals(void) {
    // at this point (set after menus are displayed), but gui.starting is set.
    mch_signal(SIGTSTP, ignore_sigtstp ? SIG_IGN : sig_tstp);
    mch_signal(SIGCONT, sigcont_handler);
-#ifdef SIGPIPE
    //We want to ignore breaking of PIPEs.
    mch_signal(SIGPIPE, SIG_IGN);
-#endif
 
-#ifdef SIGINT
    catch_int_signal();
-#endif
 
-#ifdef SIGUSR1
    //Call user's handler on SIGUSR1
    mch_signal(SIGUSR1, catch_sigusr1);
-#endif
 
    //Ignore alarm signals (Perl's alarm() generates it).
-#ifdef SIGALRM
    mch_signal(SIGALRM, SIG_IGN);
-#endif
 
-#ifdef SIGPWR
    //Catch SIGPWR (power failure?) to preserve the swap files, so that no work will be lost.
    mch_signal(SIGPWR, catch_sigpwr);
-#endif
 
    //Arrange for other signals to gracefully shutdown Eegl.
    catch_signals(deathtrap, SIG_ERR);
@@ -3732,14 +3666,10 @@ init_signal_stack(void) {
    if (signal_stack == NULL)
       return;
 
-# ifdef HAVE_SS_BASE
-    sigstk.ss_base = signal_stack;
-# else
-    sigstk.ss_sp = signal_stack;
-# endif
-    sigstk.ss_size = get_signal_stack_size();
-    sigstk.ss_flags = 0;
-    (void)sigaltstack(&sigstk, NULL);
+   sigstk.ss_sp = signal_stack;
+   sigstk.ss_size = get_signal_stack_size();
+   sigstk.ss_flags = 0;
+   (void)sigaltstack(&sigstk, NULL);
 }
 
 private CS
@@ -3760,8 +3690,8 @@ get_signal_name(int sig) {
 }
 
 private void
-block_signals(sigset_t *set) {
-   sigset_t   newset;
+block_signals(SignalSet* set) {
+   SignalSet newset;
    sigemptyset(&newset);
    for (int i = 0; signalInfos[i].sig != -1; i++)
       sigaddset(&newset, signalInfos[i].sig);
@@ -3772,7 +3702,7 @@ block_signals(sigset_t *set) {
 }
 
 private void
-unblock_signals(sigset_t *set) {
+unblock_signals(SignalSet* set) {
    sigprocmask(SIG_SETMASK, set, NULL);
 }
 
@@ -3793,22 +3723,18 @@ wait4pid(ProId child, waitstatus *status) {
    long delay_msec = 1;
 
    while (wait_pid != child) {
-      // When compiled with Python threads are probably used, in which case wait() sometimes hangs
-      // for no obvious reason.  Use waitpid() instead and loop (like the GUI). Also needed for 
-      // other interfaces, they might call system().
+      //When compiled with Python threads are probably used, in which case wait() sometimes hangs
+      //for no obvious reason.  Use waitpid() instead and loop (like the GUI). Also needed for 
+      //other interfaces, they might call system().
       wait_pid = waitpid(child, status, WNOHANG);
       if (wait_pid == 0) {
-         // Wait for 1 to 10 msec before trying again.
+         //Wait for 1 to 10 msec before trying again.
          mch_delay(delay_msec, MCH_DELAY_IGNOREINPUT | MCH_DELAY_SETTMODE);
          if (++delay_msec > 10)
             delay_msec = 10;
          continue;
       }
-      if (wait_pid <= 0
-# ifdef ECHILD
-         && errno == ECHILD
-# endif
-      )
+      if (wait_pid <= 0 && errno == ECHILD)
          break;
     }
     return wait_pid;
@@ -3867,10 +3793,9 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
    ProId wait_pid = 0;
    int status = -1;
    int pty_master_fd = -1; // for pty's
-   int fd_toshell[2];      // for pipes
-   int fd_fromshell[2];
-   Boole pipeError = false;
-   int did_termSetMode = false;   // termSetMode(TMODE_RAW) called
+   int pipeToShell[2];      // for pipes
+   int pipeFromShell[2];
+   Boole did_termSetMode = false;   // termSetMode(TMODE_RAW) called
    PolyWithStatus retVal = {};
 
    out_flush();
@@ -3880,25 +3805,24 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
       // The shell may have messed with the mode, always set it later.
       cur_tmode = TMODE_UNKNOWN;
    Multistring argv = chBuildArgv(cmd);
+   _bp(true);
 
    if ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
-      pipeError = (pipe(fd_toshell) < 0);
+      Boole pipeError = (pipe(pipeToShell) < 0);
       if (!pipeError) {            // pipe create OK
-         pipeError = (pipe(fd_fromshell) < 0);
+         pipeError = (pipe(pipeFromShell) < 0);
          if (pipeError) {            // pipe create failed
-            close(fd_toshell[0]);
-            close(fd_toshell[1]);
+            close(pipeToShell[0]);
+            close(pipeToShell[1]);
          }
       }
       if (pipeError) {
          msg_puts(_("\nCannot create pipes\n"));
          out_flush();
+         goto skipIfError;
       }
    }
 
-   if (pipeError)
-      goto skipIfError;
-   
    SIGSET_DECL(curset)
    BLOCK_SIGNALS(&curset);
    ProId pid = fork();   // maybe we should use vfork()
@@ -3907,10 +3831,10 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
 
       msg_puts(_("\nCannot fork\n"));
       if ((opt & (SHELL_READ|SHELL_WRITE)) != 0) {
-         close(fd_toshell[0]);
-         close(fd_toshell[1]);
-         close(fd_fromshell[0]);
-         close(fd_fromshell[1]);
+         close(pipeToShell[0]);
+         close(pipeToShell[1]);
+         close(pipeFromShell[0]);
+         close(pipeFromShell[1]);
       }
       goto skipIfError;
    } 
@@ -3953,16 +3877,16 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
          //stderr is only redirected when using the GUI, so that a program like gpg can still 
          //access the terminal to get a passphrase using stderr.
          //set up stdin for the child
-         close(fd_toshell[1]);
+         close(pipeToShell[1]);
          close(0);
-         (void)dup(fd_toshell[0]);
-         close(fd_toshell[0]);
+         (void)dup(pipeToShell[0]);
+         close(pipeToShell[0]);
 
          // set up stdout for the child
-         close(fd_fromshell[0]);
+         close(pipeFromShell[0]);
          close(1);
-         (void)dup(fd_fromshell[1]);
-         close(fd_fromshell[1]);
+         (void)dup(pipeFromShell[1]);
+         close(pipeFromShell[1]);
       }
 
       //There is no type cast for the argv, because the type may be different on different 
@@ -3987,10 +3911,10 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
       int typeAheadLen = 0;      // valid bytes in ta_buf[]
       int len;
 
-      close(fd_toshell[0]);
-      close(fd_fromshell[1]);
-      int toShell = fd_toshell[1];
-      int fromShell = fd_fromshell[0];
+      close(pipeToShell[0]);
+      close(pipeFromShell[1]);
+      int toShell = pipeToShell[1];
+      int fromShell = pipeFromShell[0];
 
       //Write to the child if there are typed characters. Read from the child if there are 
       //characters available. Repeat the reading a few times if more characters are available. 
@@ -4023,18 +3947,17 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
       Elapsed start_tv;
       ELAPSED_INIT(start_tv);
       for (;;) {
-         //Check if keys have been typed, write them to the child if there are any.
-         //Don't do this if we are expanding wild cards (would eat typeahead).
-         //Don't do this when filtering and terminal is in cooked mode, the shell command 
-         //will handle the I/O.  Avoids that a typed password is echoed for ssh or gpg 
-         //command. Don't get characters when the child has already finished (wait_pid == 0).
-         //Don't read characters unless we didn't get output for a
+         //Check if keys have been typed, write them to the child if there are any. Don't do this 
+         //if we are expanding wild cards (would eat typeahead). Don't do this when filtering and 
+         //terminal is in cooked mode, the shell command will handle the I/O.  Avoids that a typed 
+         //password is echoed for ssh or gpg command. Don't get characters when the child has 
+         //already finished (wait_pid == 0). Don't read characters unless we didn't get output for a
          //while (unreadCnt > 4), avoids that ":r !ls" eats typeahead.
          
          len = 0;
          if ((opt & SHELL_EXPAND) == 0
              && ((opt & (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
-                  != (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
+                     != (SHELL_READ|SHELL_WRITE|SHELL_COOKED))
              && wait_pid == 0
              && (typeAheadLen > 0 || unreadCnt > 4)
          ){
@@ -4103,7 +4026,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
          //for mch_inchar(), or sending typeahead characters to the external process.
          //TODO: This should handle escape sequences, compatible to some terminal (vt52?).
          ++unreadCnt;
-         while (realWaitForChar(fromShell, 10L, NULL, NULL)) {
+         while (uiRealWaitForChar(fromShell, 10L, NULL)) {
             len = fiReadEintr(
                   fromShell, OUT buffer + buffer_off, (Unt)(BUFLEN - buffer_off)
             );
@@ -4112,7 +4035,6 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
 
             unreadCnt = 0;
             int prev = 0;
-            _bp(true);
             for (Unt i = 0; i < (Unt)len; ++i) {
                if (buffer[i] == NL || buffer[i] == ZERO) {
                   appendToPoly((Text){buffer + prev, i - prev}, OUT &retVal.c);
@@ -4277,16 +4199,17 @@ mch_create_pty_channel(Job* job, JobOptions* options) {
 //In cooked mode we should get SIGINT, no need to check.
 void
 chBreakcheck(Boole force) {
-   if ((mch_cur_tmode == TMODE_RAW || force) && realWaitForChar(read_cmd_fd, 0L, NULL, NULL)) {
+   if ((mch_cur_tmode == TMODE_RAW || force) && uiRealWaitForChar(read_cmd_fd, 0L, NULL)) {
       fill_input_buf(false);
    } 
 }
 
+
 SigHandler
 mch_signal(int sig, SigHandler func) {
    // Modern implementation: use sigaction().
-   struct sigaction   sa, old;
-   sigset_t curset;
+   SignalAction sa, old;
+   SignalSet curset;
 
    if (sigprocmask(SIG_BLOCK, NULL, &curset) == -1)
       return SIG_ERR;
@@ -4295,7 +4218,7 @@ mch_signal(int sig, SigHandler func) {
 
    if (func == SIG_HOLD) {
       if (blocked)
-          return SIG_HOLD;
+         return SIG_HOLD;
 
       sigemptyset(&curset);
       sigaddset(&curset, sig);
@@ -4323,13 +4246,6 @@ mch_signal(int sig, SigHandler func) {
 
 void
 mch_early_init(void) {
-#ifdef HAVE_CHECK_STACK_GROWTH
-   int         i;
-
-   check_stack_growth((char *)&i);
-
-#endif
-
    //Setup an alternative stack for signals. Helps to catch signals when running out of stack 
    //space. Use of sigaltstack() is preferred, it's more portable. Ignore any errors.
    signal_stack = alloc(get_signal_stack_size());
@@ -4348,11 +4264,9 @@ mch_process_running(long pid) {
    // If there is no error the process must be running.
    if (kill(pid, 0) == 0)
       return true;
-#ifdef ESRCH
    // If the error is ESRCH then the process is not running.
    if (errno == ESRCH)
       return false;
-#endif
    // If the process is running and owned by another user we get EPERM.  With
    // other errors the process might be running, assuming it is then.
    return true;
@@ -4363,26 +4277,20 @@ mch_process_running(long pid) {
 //When successful both file descriptors are stored and the allocated pty name
 //is stored in both "*name1" and "*name2".
 private void
-open_pty(int *pty_master_fd, int *pty_slave_fd, Byte **name1, Byte **name2) {
-   char   *tty_name;
-
-   if (name1 != NULL)
+open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2) {
+   if (name1)
       *name1 = NULL;
-   if (name2 != NULL)
+   if (name2)
       *name2 = NULL;
 
+   char* tty_name;
    *pty_master_fd = openpty(&tty_name);       // open pty
    if (*pty_master_fd < 0)
       return;
 
-   // Leaving out O_NOCTTY may lead to waitpid() always returning
-   // 0 on Mac OS X 10.7 thereby causing freezes. Let's assume
-   // adding O_NOCTTY always works when defined.
-#ifdef O_NOCTTY
+   //O_NOCTTY flag stands for "No Controlling Terminal" and is used inside the open() system call
+   //to prevent a terminal device from becoming the controlling terminal of the calling process. 
    *pty_slave_fd = open(tty_name, O_RDWR | O_NOCTTY | O_EXTRA, 0);
-#else
-   *pty_slave_fd = open(tty_name, O_RDWR | O_EXTRA, 0);
-#endif
    if (*pty_slave_fd < 0) {
       close(*pty_master_fd);
       *pty_master_fd = -1;
@@ -4404,7 +4312,6 @@ may_core_dump(void) {
 
 //}}}
 //{{{signal handlers
-
 
 //We need correct prototypes for a signal function, otherwise mean compilers
 //will barf when the second argument to signal() is ``wrong''.
@@ -4428,16 +4335,13 @@ catch_sigint SIGDEFARG(sigarg) {
    gotInterruptG = true;
 }
 
-#if defined(SIGUSR1)
 private void
 catch_sigusr1 SIGDEFARG(sigarg) {
     // this is not required on all systems, but it doesn't hurt anybody
     mch_signal(SIGUSR1, catch_sigusr1);
     got_sigusr1 = true;
 }
-#endif
 
-#if defined(SIGPWR)
 private void
 catch_sigpwr SIGDEFARG(sigarg) {
    // this is not required on all systems, but it doesn't hurt anybody
@@ -4447,17 +4351,6 @@ catch_sigpwr SIGDEFARG(sigarg) {
    //harm.
    ml_sync_all(false, false);
 }
-#endif
-
-#ifdef SET_SIG_ALARM
-//signal function for alarm().
-//private void
-//sig_alarm SIGDEFARG(sigarg) {
-//   // doesn't do anything, just to break a system call
-//   sig_alarm_called = true;
-//}
-#endif
-
 
 //This function handles deadly signals.
 //It tries to preserve any swap files and exit properly.
@@ -4489,21 +4382,15 @@ deathtrap SIGDEFARG(sigarg) {
    // here.  This avoids that a non-reentrant function is interrupted, e.g.,
    // free().  Calling free() again may then cause a crash.
    if (entered == 0
-       && (0
-      || sigarg == SIGHUP
-      || sigarg == SIGQUIT
-      || sigarg == SIGTERM
-#ifdef SIGPWR
-      || sigarg == SIGPWR
-#endif
-#ifdef SIGUSR1
-      || sigarg == SIGUSR1
-#endif
-#ifdef SIGUSR2
-      || sigarg == SIGUSR2
-#endif
-      )
-          && !eeHandleSignal(sigarg))
+       && ( sigarg == SIGHUP
+         || sigarg == SIGQUIT
+         || sigarg == SIGTERM
+         || sigarg == SIGPWR
+         || sigarg == SIGUSR1
+         || sigarg == SIGUSR2
+         )
+          && !eeHandleSignal(sigarg)
+   )
       return;
 
    // Remember how often we have been called.
@@ -4630,7 +4517,7 @@ private void
 catch_signals(void (*func_deadly)(int), void (*func_other)(int)) {
    for (int i = 0; signalInfos[i].sig != -1; i++) {
       if (signalInfos[i].deadly) {
-         struct sigaction sa;
+         SignalAction sa;
 
          // Setup to use the alternate stack for the signal function.
          sa.sa_handler = func_deadly;
@@ -4674,9 +4561,7 @@ eeHandleSignal(int sig) {
       if (!blocked)
          return true;   // exit!
       got_signal = sig;
-#ifdef SIGPWR
       if (sig != SIGPWR)
-#endif
          gotInterruptG = true;    // break any loops
       break;
     }
@@ -4937,10 +4822,8 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (pty_slave_fd >= 0) {
          // push stream discipline modules
          setup_slavepty(pty_slave_fd);
-#  ifdef TIOCSCTTY
          // Try to become controlling tty (probably doesn't work, unless run by root)
          ioctl(pty_slave_fd, TIOCSCTTY, (char *)NULL);
-#  endif
       }
 
       // set up stdin for the child
@@ -4993,7 +4876,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
       if (null_fd >= 0)
          close(null_fd);
 
-      if (options->currentWorkingDir != NULL && mch_chdir(options->currentWorkingDir) != 0)
+      if (options->currentWorkingDir && mch_chdir(options->currentWorkingDir) != 0)
          _exit(EXEC_FAILED);
 
       // See above for type of argv.
@@ -5274,7 +5157,7 @@ mch_clear_job(Job* job) {
 //If an option value is invalid, return FAIL.
 int
 get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
-   Var   *item;
+   Var* item;
    CS val;
    EeSetItem* hi;
    ChannelFdKind part;
@@ -5323,9 +5206,9 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                 || STRCMP(hi->hi_key, "err_io") == 0
          ) {
             if (!(supported & JO_OUT_IO))
-                break;
+               break;
             if (handle_io(item, part_from_char(*hi->hi_key), opt) == FAIL)
-                return FAIL;
+               return FAIL;
          } ei (STRCMP(hi->hi_key, "in_name") == 0
              || STRCMP(hi->hi_key, "out_name") == 0
              || STRCMP(hi->hi_key, "err_name") == 0
@@ -5495,8 +5378,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             if (!(supported2 & JO2_EOF_CHARS))
                break;
             opt->set1 |= JO2_EOF_CHARS;
-            opt->jo_eof_chars = convertVarToString(item,
-                               opt->jo_eof_chars_buf);
+            opt->jo_eof_chars = convertVarToString(item, opt->jo_eof_chars_buf);
             if (opt->jo_eof_chars == NULL) {
                showErrFmtMsg(_(e_invalid_value_for_argument_str), "eof_chars");
                return FAIL;
@@ -5517,7 +5399,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
          } ei (STRCMP(hi->hi_key, "term_cols") == 0) {
             Boole error = false;
 
-            if (!(supported2 & JO2_TERM_COLS))
+            if ((supported2 & JO2_TERM_COLS) == 0)
                break;
             opt->set1 |= JO2_TERM_COLS;
             opt->jo_term_cols = varGetNumberChk(item, OUT &error);
@@ -5528,7 +5410,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "vertical") == 0) {
-            if (!(supported2 & JO2_VERTICAL))
+            if ((supported2 & JO2_VERTICAL) == 0)
                break;
             opt->set1 |= JO2_VERTICAL;
             opt->vertical = tv_get_bool(item);
@@ -5538,7 +5420,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             opt->set1 |= JO2_CURPOR;
             opt->curPor = tv_get_bool(item);
          } ei (STRCMP(hi->hi_key, "bufnr") == 0) {
-            if (!(supported2 & JO2_CURPOR))
+            if ((supported2 & JO2_CURPOR) == 0)
                break;
             opt->set1 |= JO2_BUFNR;
             int nr = tv_get_number(item);
@@ -5556,22 +5438,21 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "hidden") == 0) {
-            if (!(supported2 & JO2_HIDDEN))
+            if ((supported2 & JO2_HIDDEN) == 0)
                break;
             opt->set1 |= JO2_HIDDEN;
             opt->jo_hidden = tv_get_bool(item);
          } ei (STRCMP(hi->hi_key, "norestore") == 0) {
-            if (!(supported2 & JO2_NORESTORE))
+            if ((supported2 & JO2_NORESTORE) == 0)
                break;
             opt->set1 |= JO2_NORESTORE;
             opt->jo_term_norestore = tv_get_bool(item);
          } ei (STRCMP(hi->hi_key, "term_kill") == 0) {
-            if (!(supported2 & JO2_TERM_KILL))
+            if ((supported2 & JO2_TERM_KILL) == 0)
                break;
             opt->set1 |= JO2_TERM_KILL;
-            opt->jo_term_kill = convertVarToString(item,
-                               opt->jo_term_kill_buf);
-            if (opt->jo_term_kill == NULL) {
+            opt->jo_term_kill = convertVarToString(item, opt->jo_term_kill_buf);
+            if (!opt->jo_term_kill) {
                showErrFmtMsg(_(e_invalid_value_for_argument_str), "term_kill");
                return FAIL;
             }
@@ -5605,12 +5486,12 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                 break;
             opt->set1 |= JO2_TERM_API;
             opt->jo_term_api = convertVarToString(item, opt->jo_term_api_buf);
-            if (opt->jo_term_api == NULL) {
+            if (!opt->jo_term_api) {
                 showErrFmtMsg(_(e_invalid_value_for_argument_str), "term_api");
                 return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "env") == 0) {
-            if (!(supported2 & JO2_ENV))
+            if ((supported2 & JO2_ENV) == 0)
                 break;
             if (item->tag != VAR_BAG) {
                 showErrFmtMsg(_(e_invalid_value_for_argument_str), "env");
@@ -5621,7 +5502,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             if (opt->env)
                ++opt->env->refCount;
          } ei (STRCMP(hi->hi_key, "cwd") == 0) {
-            if (!(supported2 & JO2_CWD))
+            if ((supported2 & JO2_CWD) == 0)
                break;
             opt->currentWorkingDir = convertVarToString(item, opt->cwdText);
             if (!opt->currentWorkingDir || !mch_isdir(opt->currentWorkingDir)
@@ -5632,27 +5513,27 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
             }
             opt->set1 |= JO2_CWD;
          } ei (STRCMP(hi->hi_key, "waittime") == 0) {
-            if (!(supported & JO_WAITTIME))
+            if ((supported & JO_WAITTIME) == 0)
                break;
             opt->set |= JO_WAITTIME;
             opt->jo_waittime = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "timeout") == 0) {
-            if (!(supported & JO_TIMEOUT))
+            if ((supported & JO_TIMEOUT) == 0)
                break;
             opt->set |= JO_TIMEOUT;
             opt->jo_timeout = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "out_timeout") == 0) {
-            if (!(supported & JO_OUT_TIMEOUT))
+            if ((supported & JO_OUT_TIMEOUT) == 0)
                break;
             opt->set |= JO_OUT_TIMEOUT;
             opt->jo_out_timeout = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "err_timeout") == 0) {
-            if (!(supported & JO_ERR_TIMEOUT))
+            if ((supported & JO_ERR_TIMEOUT) == 0)
                break;
             opt->set |= JO_ERR_TIMEOUT;
             opt->jo_err_timeout = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "part") == 0) {
-            if (!(supported & JO_PART))
+            if ((supported & JO_PART) == 0)
                break;
             opt->set |= JO_PART;
             val = tv_get_string(item);
@@ -5665,12 +5546,12 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "id") == 0) {
-            if (!(supported & JO_ID))
+            if ((supported & JO_ID) == 0)
                break;
             opt->set |= JO_ID;
             opt->id = tv_get_number(item);
          } ei (STRCMP(hi->hi_key, "stoponexit") == 0) {
-            if (!(supported & JO_STOPONEXIT))
+            if ((supported & JO_STOPONEXIT) == 0)
                break;
             opt->set |= JO_STOPONEXIT;
             opt->jo_stoponexit = convertVarToString(item, opt->jo_stoponexit_buf);
@@ -5679,7 +5560,7 @@ get_job_options(Var* tv, OUT JobOptions* opt, int supported, int supported2) {
                return FAIL;
             }
          } ei (STRCMP(hi->hi_key, "block_write") == 0) {
-            if (!(supported & JO_BLOCK_WRITE))
+            if ((supported & JO_BLOCK_WRITE) == 0)
                break;
             opt->set |= JO_BLOCK_WRITE;
             opt->jo_block_write = tv_get_number(item);
@@ -6093,11 +5974,11 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
          book = bookFindByName(opt.name[PART_IN], false);
       if (!book)
           goto theend;
-      if (book->mem.mfile == NULL) {
-         Byte   numbuf[NUMBUFLEN];
+      if (!book->mem.mfile) {
+         Byte numbuf[NUMBUFLEN];
          CS s;
 
-         if (opt.set & JO_IN_BUF) {
+         if ((opt.set & JO_IN_BUF) != 0) {
             sprintf((char *)numbuf, "%d", opt.ioText[PART_IN]);
             s = numbuf;
          } else
@@ -6120,7 +6001,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
       // Command is a string.
       
       emsg(_(e_invalid_argument));
-   } ei (argvars[0].tag != VAR_LIST || argvars[0].list == NULL || argvars[0].list->len < 1){
+   } ei (argvars[0].tag != VAR_LIST || !argvars[0].list || argvars[0].list->len < 1){
       emsg(_(e_invalid_argument));
       goto theend;
    } else {

@@ -33,9 +33,6 @@ typedef double _Float64x;
 // Defined to the size of off_t
 #define SIZEOF_OFF_T 8
 
-// Define to a typecast for select() arguments 2, 3 and 4.
-#define SELECT_TYPE_ARG234 (fd_set *)
-
 // Define to nanoseconds field of struct stat
 #define ST_MTIM_NSEC st_mtim.tv_nsec
 
@@ -80,6 +77,8 @@ typedef double _Float64x;
 #define SIGDUMMYARG   0
 
 typedef void (*sighandler_T) SIGPROTOARG;
+typedef struct sigaction SignalAction;
+typedef struct pollfd PollFd;
 
 #include <dirent.h>
 
@@ -761,7 +760,6 @@ LIST_TY(Unt)
 #include <stddef.h>
 #endif
 
-#include <sys/select.h>
 
 // ================ end of the header file puzzle ===============
 
