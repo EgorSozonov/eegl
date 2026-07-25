@@ -1,4 +1,4 @@
-//Automatically generated code by the script src/indices/indexGenerator.c
+//Automatically generated code by the `make indices` command.
 typedef struct {CS name; Unt index;} NameIndex;
 static NameIndex const NAME_INDICES[194] = {
 {(Byte*)"autocomplete", 0},

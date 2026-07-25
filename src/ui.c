@@ -10555,41 +10555,37 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
 
       //Select on ready for reading and exceptional condition (end of file).
       select_eintr:
-      FD_ZERO(&rfds);
-      FD_ZERO(&wfds);
-      FD_ZERO(&efds);
-      FD_SET(fd, &rfds);
-      FD_SET(fd, &efds);
-      int maxfd = fd;
+      
+      PollFd pollFd = {.fd = sd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0};
 
-      if (wayland_may_restore_connection()) {
-         FD_SET(wayland_display_fd, &rfds);
+      //if (wayland_may_restore_connection()) {
+      //   FD_SET(wayland_display_fd, &rfds);
 
-         if (maxfd < wayland_display_fd)
-            maxfd = wayland_display_fd;
-      }
+      //   if (maxfd < wayland_display_fd)
+      //      maxfd = wayland_display_fd;
+      //}
 
-      maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &timePtr);
+      //maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &timePtr);
       if (interrupted)
          *interrupted = false;
 
-      int ret = select(maxfd + 1, (fd_set*)&rfds, (fd_set*)&wfds, (fd_set*)&efds, timePtr);
-      result = ret > 0 && FD_ISSET(fd, &rfds);
+      int ret = poll(&pollFd, 1, towait);
+      result = ret > 0 && (pollFd.revents & POLLIN) != 0;
       if (result)
          --ret;
       ei (interrupted && ret > 0)
          *interrupted = true;
 
       if (ret == -1 && errno == EINTR) {
-         // Check whether window has been resized, EINTR may be caused by SIGWINCH.
+         //Check whether window has been resized, EINTR may be caused by SIGWINCH.
          if (doResizeG) {
             lo("calling handleShellResize() in uiRealWaitForChar()");
             handleShellResize();
          }
 
-         // Interrupted by a signal, need to try again. We ignore msec here, because we do want to 
-         // check even after a timeout if characters are available.  Needed for reading output of an
-         // external command after the process has finished.
+         //Interrupted by a signal, need to try again. We ignore msec here, because we do want to 
+         //check even after a timeout if characters are available. Needed for reading output of an
+         //external command after the process has finished.
          goto select_eintr;
       }
 

@@ -18,15 +18,15 @@ typedef int64_t Long;
 typedef uint64_t Ulong;
 typedef unsigned char Byte;
 typedef Arr(Byte) CS;
-#include "../base.h"
+#include "base.h"
 
-#include "../actions.h"
+#include "actions.h"
 
 #define DECLARE_COMMANDS_ENUM
-#include "../commands.h"
+#include "commands.h"
 #undef DECLARE_COMMANDS_ENUM
 #define DECLARE_COMMANDS_FOR_INDEXING
-#include "../commands.h"
+#include "commands.h"
 #undef DECLARE_COMMANDS_FOR_INDEXING
 
 
@@ -50,7 +50,7 @@ createActionIndices() {
    }
    
    fprintf(tgt, "%s",
-      "//Automatically generated code by the src/indices/indexGenerator.c script.\n"
+      "//Automatically generated code by the `make indices` command.\n"
       "//\n"
       "//Table giving the index in actions[] to lookup based on the action character\n"
       "//\n"
@@ -199,7 +199,7 @@ createCommandIndices() {
    
    
    fprintf(tgt, "%s",
-      "// Automatically generated code by the script src/indices/indexGenerator.c\n"
+      "//Automatically generated code by the `make indices` command.\n"
       "// Table giving the index of the first command in commands[] to lookup\n"
       "// based on the first letter of the command.\n"
       "static const unsigned short commandIndices0[26] =\n"
@@ -253,19 +253,19 @@ createCommandIndices() {
 
 CS OPT_GLOBAL_NAMES[] = {
 #define OPTIONS_LIST_GLOBAL
-#include "../defoption.h"
+#include "defoption.h"
 #undef OPTIONS_LIST_GLOBAL
 };
 
 CS OPT_PORTAL_NAMES[] = {
 #define OPTIONS_LIST_PORTAL
-#include "../defoption.h"
+#include "defoption.h"
 #undef OPTIONS_LIST_PORTAL
 };
 
 CS OPT_BOOK_NAMES[] = {
 #define OPTIONS_LIST_BOOK
-#include "../defoption.h"
+#include "defoption.h"
 #undef OPTIONS_LIST_BOOK
 };
 
@@ -321,7 +321,7 @@ createOptionIndices() {
    qsort(nameIndices, count, sizeof(NameIndex), &nameIndexComparer);
    
    fprintf(tgt, "%s",
-      "//Automatically generated code by the script src/indices/indexGenerator.c\n"
+      "//Automatically generated code by the `make indices` command.\n"
       "typedef struct {CS name; Unt index;} NameIndex;\n"
    ); 
    fprintf(tgt, "static NameIndex const NAME_INDICES[%d] = {\n", count);
@@ -375,6 +375,7 @@ createOptionIndices() {
       perror("Couldn't open src/indices/optionCounts.h for writing");
       exit(1);
    }
+   fprintf(tgt, "//Automatically generated code by the `make indices` command.\n\n");
    fprintf(tgt, "#define OPTION_GLOBAL_COUNT %d\n", countGlobal);
    fprintf(tgt, "#define OPTION_PORTAL_COUNT %d\n", countPortal);
    fprintf(tgt, "#define OPTION_BOOK_COUNT %d\n", countBook);

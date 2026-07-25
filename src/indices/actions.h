@@ -1,4 +1,4 @@
-//Automatically generated code by the src/indices/indexGenerator.c script.
+//Automatically generated code by the `make indices` command.
 //
 //Table giving the index in actions[] to lookup based on the action character
 //

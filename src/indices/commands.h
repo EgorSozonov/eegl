@@ -1,4 +1,4 @@
-// Automatically generated code by the script src/indices/indexGenerator.c
+//Automatically generated code by the `make indices` command.
 // Table giving the index of the first command in commands[] to lookup
 // based on the first letter of the command.
 static const unsigned short commandIndices0[26] =

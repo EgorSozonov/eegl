@@ -855,7 +855,7 @@ DEST_MAN_TR_U = $(DEST_MAN_TOP)/tr.UTF-8$(MAN1DIR)
 
 
 # get the list of tests
-include noncode/tests/Make_all.mak
+include tests/Make_all.mak
 
 #	     BASIC_SRC: files that are always used
 #	       GUI_SRC: extra GUI files for current configuration
@@ -1061,7 +1061,7 @@ tools: $(TOOLS)
 # tables. This only needs to be run when command has been added or changed.
 # If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
-	$(CC) -I$(srcdir) $(INDICES_FLAGS) src/indices/indexGenerator.c -o $(OBJDIR)/indexGenerator
+	$(CC) -iquote src $(INDICES_FLAGS) devdeps/indexGenerator.c -o $(OBJDIR)/indexGenerator
 	$(OBJDIR)/indexGenerator actions
 	$(OBJDIR)/indexGenerator commands
 	$(OBJDIR)/indexGenerator options
@@ -1091,11 +1091,11 @@ $(EEGLTARGET): $(OBJ)
 languages:
 	@if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
 		cd $(PODIR); \
-		  CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) originals; \
+		  CC="$(CC)" make prefix=$(DESTDIR)$(prefix) originals; \
 	fi
 	-@if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
 		cd $(PODIR); \
-		  CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) converted; \
+		  CC="$(CC)" make prefix=$(DESTDIR)$(prefix) converted; \
 	fi
 
 # Update the *.po files for changes in the sources.  Only run manually.
@@ -1172,7 +1172,7 @@ scripttests:
 	-if test $(EEGLTARGET) != eegl -a ! -r eegl; then \
 		ln -s $(EEGLTARGET) eegl; \
 	fi
-	cd noncode/tests;\
+	cd tests;\
    $(MAKE) -f Makefile VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 testtiny:
