@@ -33,7 +33,7 @@ private void add_##n (T newItem, _GL(L, T) * st) {\
 #define ADD_LIST_ONCE
 #endif
 
-// Insert a function overload into the first available slot.
+//Insert a function overload into the first available slot.
 #if     !defined( ADD_LIST_0 )
 #define ADD_LIST_0          
 ADD_LIST_OVERLOAD(0, ADD_LIST_TY)
@@ -62,7 +62,7 @@ ADD_LIST_OVERLOAD(7, ADD_LIST_TY)
 #error Sorry, too many "add to list" function overloads!
 #endif
 
-// Undef so that the user doesn't have to.
+//Undef so that the user doesn't have to.
 #undef ADD_LIST_TY
 #endif
 

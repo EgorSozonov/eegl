@@ -106,6 +106,7 @@ private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text b
 //}}}
 //{{{auxiliary
 
+
 // Allocate a new channel. The refcount is set to 1.
 // The channel isn't actually used until it is opened.
 Channel*
@@ -227,9 +228,14 @@ channel_may_free(Channel *channel) {
    return false;
 }
 
-// Decrement the reference count on "channel" and maybe free it when it goes
-// down to zero.  Don't free it if there is a pending action.
-// Return true when the channel is no longer referenced.
+private LIST_CREATE(PollFd)
+#define ADD_LIST_TY PollFd  //which method to instantiate ("add" for the "list" type)
+#include "generic.h"        //actual code generation, including adding it to the _Generic
+
+//Decrement the reference count on "channel" and maybe free it when it goes
+//down to zero.  Don't free it if there is a pending action.
+//Return true when the channel is no longer referenced.
+
 int
 channel_unref(Channel* channel) {
    if (channel && --channel->refCount <= 0)
@@ -239,7 +245,7 @@ channel_unref(Channel* channel) {
 
 int
 free_unused_channels_contents(int copyID, int mask) {
-   int      did_free = false;
+   int did_free = false;
 
    // This is invoked from the garbage collector, which only runs at a safe point.
    ++safe_to_invoke_callback;
@@ -247,8 +253,8 @@ free_unused_channels_contents(int copyID, int mask) {
    Channel* ch;
    FOR_ALL_CHANNELS(ch) {
       if (!channel_still_useful(ch) && (ch->copyId & mask) != (copyID & mask)) {
-          // Free the channel and ordinary items it contains, but don't
-          // recurse into Lists, Dictionaries etc.
+          //Free the channel and ordinary items it contains, but don't
+          //recurse into Lists, Dictionaries etc.
           channel_free_contents(ch);
           did_free = true;
       }
@@ -261,10 +267,10 @@ free_unused_channels_contents(int copyID, int mask) {
 void
 free_unused_channels(int copyID, int mask) {
    Channel* next;
-   for (Channel* ch = first_channel; ch != NULL; ch = next) {
+   for (Channel* ch = first_channel; ch; ch = next) {
       next = ch->next;
       if (!channel_still_useful(ch) && (ch->copyId & mask) != (copyID & mask))
-         // Free the channel struct itself.
+         //Free the channel struct itself.
          channel_free_channel(ch);
    }
 }
@@ -385,11 +391,10 @@ channel_connect(
 
          //See socket(7) for the behavior
          //After putting the socket in non-blocking mode, connect() will return EINPROGRESS, 
-         //select() will not wait (as if writing is possible), need to use getsockopt() to check 
+         //poll() will not wait (as if writing is possible), need to use getsockopt() to check 
          //if the socket is actually able to connect. We detect a failure to connect when either 
          //read and write fds are set. Use getsockopt() to find out what kind of failure.
          if ((pollFd.revents & (POLLIN|POLLOUT)) != 0)
-         //if (FD_ISSET(sd, &rfds) || FD_ISSET(sd, &wfds)) {
             ret = getsockopt(sd, SOL_SOCKET, SO_ERROR, &so_error, &so_error_len);
             if (ret < 0 || (so_error != 0
                && so_error != EWOULDBLOCK
@@ -419,7 +424,7 @@ channel_connect(
 
       if (*waittime > 1 && elapsed_msec < *waittime) {
          //The port isn't ready but we also didn't get an error. This happens when the server 
-         //didn't open the socket yet. Select() may return early, wait until the remaining
+         //didn't open the socket yet. poll() may return early, wait until the remaining
          //"waitnow"  and try again.
          waitnow -= elapsed_msec;
          *waittime -= elapsed_msec;
@@ -856,7 +861,7 @@ can_write_buf_line(Channel* channel) {
    tval.tv_sec = 0;
    tval.tv_usec = 0;
    for (;;) {
-      ret = select((int)in_part->fd + 1, NULL, &wfds, NULL, &tval);
+      ret = poll((int)in_part->fd + 1, NULL, &wfds, NULL, &tval);
       SOCK_ERRNO;
       if (ret == -1 && errno == EINTR)
          continue;
@@ -2362,32 +2367,25 @@ private int
 is_channel_write_remaining(ChannelFd* in_part) {
    Book* book = in_part->bookref.c;
 
-   if (in_part->ch_writeque.next != NULL)
+   if (in_part->ch_writeque.next)
       return true;
-   if (book == NULL)
+   if (!book)
       return false;
    return in_part->ch_buf_append
        ? (in_part->ch_buf_bot < book->mem.lineCount)
-       : (in_part->ch_buf_top <= in_part->ch_buf_bot
-             && in_part->ch_buf_top <= book->mem.lineCount);
+       : (in_part->ch_buf_top <= in_part->ch_buf_bot && in_part->ch_buf_top <= book->mem.lineCount);
 }
 
 //Add write fds where we are waiting for writing to be possible.
-private int
-channel_fill_wfds(int maxfd_arg, fd_set *wfds) {
-   int maxfd = maxfd_arg;
+private void
+channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds) {
    Channel* ch;
-
    FOR_ALL_CHANNELS(ch) {
       ChannelFd* inPart = &ch->fds[PART_IN];
-
       if (inPart->fd != INVALID_FD && is_channel_write_remaining(inPart)) {
-         FD_SET((int)inPart->fd, wfds);
-         if ((int)inPart->fd >= maxfd)
-            maxfd = (int)inPart->fd + 1;
+         add((PollFd){inPart->fd, .events = POLLOUT, .revents = 0}, OUT pollFds);
       }
    }
-   return maxfd;
 }
 
 typedef enum {
@@ -2422,7 +2420,7 @@ channel_wait(Channel* channel, Socket fd, int timeout) {
       FD_ZERO(&wfds);
       maxfd = channel_fill_wfds(maxfd, &wfds);
 
-      ret = select(maxfd, &rfds, &wfds, NULL, &tval);
+      ret = poll(maxfd, &rfds, &wfds, NULL, &tval);
       SOCK_ERRNO;
       if (ret == -1 && errno == EINTR)
          continue;
@@ -2490,7 +2488,7 @@ channel_read(Channel *channel, ChannelFdKind part, char *func) {
    }
 
    //Keep on reading for as long as there is something to read.
-   //Use select() or poll() to avoid blocking on a message that is exactly MAXMSGSIZE long.
+   //Use poll() to avoid blocking on a message that is exactly MAXMSGSIZE long.
    for (;;) {
       if (channel_wait(channel, fd, 0) != CW_READY)
          break;
@@ -2815,7 +2813,7 @@ channel_send(
    }
 
    if (channel->ch_nonblock && !fds->ch_nonblocking)
-   channel_set_nonblock(channel, part);
+      channel_set_nonblock(channel, part);
 
    if (ch_log_active()) {
       ch_log_literal(S"SEND ", channel, part, OUT (Text){buf_arg, len_arg});
@@ -2823,18 +2821,18 @@ channel_send(
    }
 
    for (;;) {
-      WriteQueue    *wq = &fds->ch_writeque;
+      WriteQueue* wq = &fds->ch_writeque;
       CS buf;
-      int       len;
+      int len;
 
-      if (wq->next != NULL) {
+      if (wq->next) {
           // first write what was queued
           buf = wq->next->wq_ga.c;
           len = wq->next->wq_ga.len;
           did_use_queue = true;
       } else {
          if (len_arg == 0)
-            // nothing to write, called from channel_select_check()
+            //nothing to write, called from chCheckPollResult()
             return OK;
          buf = buf_arg;
          len = len_arg;
@@ -3104,9 +3102,7 @@ ch_raw_common(Var* argvars, OUT Var* returnVar, int eval) {
 // The "fd_set" type is hidden to avoid problems with the function proto.
 int
 channel_select_setup(
-   int maxfd_in,
-   void* rfds_in,
-   void* wfds_in,
+   OUT LPollFd* pollFds,
    TimeVal* tv,
    TimeVal** tvp
 ) {
@@ -3118,21 +3114,20 @@ channel_select_setup(
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
-         Socket fd = channel->fds[part].fd;
+         PollFd fd = channel->fds[part].fd;
 
-         if (fd != INVALID_FD) {
+         if (fd.fd != INVALID_FD) {
             if (channel->ch_keep_open) {
                //For unknown reason select() returns immediately for a keep-open channel. 
                //Instead of adding it to the rfds add a short timeout and check, like polling.
+               //TODO does poll() need this?
                if (*tvp == NULL || tv->tv_sec > 0 || tv->tv_usec > KEEP_OPEN_TIME * 1000) {
                   *tvp = tv;
                   tv->tv_sec = 0;
                   tv->tv_usec = KEEP_OPEN_TIME * 1000;
                }
             } else {
-               FD_SET((int)fd, rfds);
-               if (maxfd < (int)fd)
-                  maxfd = (int)fd;
+               add(fd, OUT pollFds);
             }
          }
       }
@@ -3145,7 +3140,7 @@ channel_select_setup(
 
 //The "fd_set" type is hidden to avoid problems with the function proto.
 int
-channel_select_check(int ret_in, void *rfds_in, void *wfds_in) {
+chCheckPollResult(int ret_in, OUT LPollFd* fds) {
    int ret = ret_in;
    Channel* channel;
    fd_set* rfds = rfds_in;
@@ -3155,10 +3150,11 @@ channel_select_check(int ret_in, void *rfds_in, void *wfds_in) {
 
    FOR_ALL_CHANNELS(channel) {
       for (part = PART_SOCK; part < PART_IN; ++part) {
-         Socket fd = channel->fds[part].fd;
+         PollFd fd = channel->fds[part].fd;
 
-         if (ret > 0 && fd != INVALID_FD && FD_ISSET(fd, rfds)) {
-            channel_read(channel, part, "channel_select_check");
+         if (ret > 0 && fd != INVALID_FD && (fd.revents & POLLIN) != 0) {
+            channel_read(channel, part, "chCheckPollResult");
+            remove(fd, fds)
             FD_CLR(fd, rfds);
             --ret;
          } ei (fd != INVALID_FD && channel->ch_keep_open) {
@@ -3168,7 +3164,7 @@ channel_select_check(int ret_in, void *rfds_in, void *wfds_in) {
       }
 
       in_part = &channel->fds[PART_IN];
-      if (ret > 0 && in_part->fd != INVALID_FD && FD_ISSET(in_part->fd, wfds)) {
+      if (ret > 0 && in_part->fd != INVALID_FD && (in_part->fd.revents & POLLOUT) != 0) {
          //Clear the flag first, fd may change in channel_write_input().
          FD_CLR(in_part->fd, wfds);
          channel_write_input(channel);

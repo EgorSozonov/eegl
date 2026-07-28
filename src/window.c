@@ -3709,7 +3709,7 @@ clip_wl_receive_data(ClipBoard* cbd, CS mime_type, int fd) {
    poll_data:
          tv.tv_sec = 0;
          tv.tv_usec = p_wtm * 1000;
-         if (select(fd + 1, &rfds, NULL, NULL, &tv) > 0)
+         if (poll(fd + 1, &rfds, NULL, NULL, &tv) > 0)
             continue;
          }
          break;
@@ -3792,8 +3792,8 @@ clip_wl_request_selection(ClipBoard* cbd) {
 //Write data from either the clip or plus register, depending on the given
 //selection, to the file descriptor that the receiving client will read from.
 private void
-clip_wl_send_data(const char* mime_type, int fd, WaylandSelection selection) {
-   ClipBoard       *cbd;
+clip_wl_send_data(char const* mime_type, int fd, WaylandSelection selection) {
+   ClipBoard* cbd;
    Ulong length;
    CS string;
    Long written = 0;
@@ -3829,9 +3829,7 @@ clip_wl_send_data(const char* mime_type, int fd, WaylandSelection selection) {
    if (STRCMP(mime_type, EE_ATOM_NAME) == 0)
       did_motion_type = false;
 
-   while ((total < (Unt)length || skip_len_check) 
-         && select(fd + 1, NULL, &wfds, NULL, &tv) > 0
-   ) {
+   while ((total < (Unt)length || skip_len_check) && poll(fd + 1, NULL, &wfds, NULL, &tv) > 0) {
       // First byte sent is motion type for Eegl-specific formats
       if (!did_motion_type) {
          if (total == 1) {
@@ -3935,8 +3933,8 @@ vwl_display_flush(WaylandDisplay *display) {
    //all the data. Poll in order to check if the display fd is writable; if
    //not, then wait until it is and continue writing or until we timeout.
    while (errno = 0, (ret = wl_display_flush(display->proxy)) == -1 && errno == EAGAIN) {
-         if (select(display->fd + 1, NULL, &wfds, NULL, &tv) <= 0)
-            return FAIL;
+      if (poll(display->fd + 1, NULL, &wfds, NULL, &tv) <= 0)
+         return FAIL;
       tv.tv_sec   = 0;
       tv.tv_usec   = p_wtm * 1000;
    }
@@ -4030,7 +4028,7 @@ vwl_display_dispatch(WaylandDisplay *display) {
    }
 
    // Poll until there is data to read from the display fd.
-   if (select(display->fd + 1, &rfds, NULL, NULL, &tv) <= 0) {
+   if (poll(display->fd + 1, &rfds, NULL, NULL, &tv) <= 0) {
       wl_display_cancel_read(display->proxy);
       return -1;
    }

@@ -3745,7 +3745,7 @@ typedef struct timeval Elapsed;
 
 // The per-fd info for a channel.
 typedef struct {
-   Socket fd;       // socket/stdin/stdout/stderr, -1 if not used
+   PollFd fd;       // socket/stdin/stdout/stderr, -1 if not used
 
    ChannelMode ch_mode;
    JobIoMode ch_io;

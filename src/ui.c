@@ -10592,12 +10592,12 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       //Technically we should first call wl_display_prepare_read() before
       //polling the fd, then read and dispatch after we poll. However that is
       //only needed for multi threaded environments to prevent deadlocks so we are fine.
-      if (ret > 0 && FD_ISSET(wayland_display_fd, &rfds))
+      if (ret > 0 && (wayland_display_fd.revents & POLLIN) != 0)
           wayland_client_update();
 
       // also call when ret == 0, we may be polling a keep-open channel
       if (ret >= 0)
-         (void)channel_select_check(ret, &rfds, &wfds);
+         (void)chCheckPollResult(ret, &rfds, &wfds);
 
 
       if (finished || msec == 0)

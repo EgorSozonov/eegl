@@ -13,6 +13,9 @@ LDFLAGS ?= -L/usr/lib -Wl,-z,relro,-z,now
 
 LIBS	= -lm -ltinfo -lwayland-client
 
+
+.RECIPEPREFIX = /
+
 #
 # Compiling Eegl, summary:
 #
@@ -47,9 +50,7 @@ WAYLAND_FLAGS  =
 
 
 
-CHANNEL_SRC	= channel.c
 CHANNEL_OBJ	= $(OBJDIR)/channel.o
-TERM_TEST	= test_libvterm
 
 CROSS_COMPILING = 
 COMPILEDBY	= 
@@ -70,8 +71,6 @@ exec_prefix	= ${prefix}
 ### Prefix for location of data files
 BINDIR		= ${exec_prefix}/bin
 
-### For autoconf 2.60 and later (avoid a warning)
-datarootdir	= ${prefix}/share
 
 ### Prefix for location of data files
 DATADIR		= ${datarootdir}
@@ -88,10 +87,6 @@ MAKEMO		= yes
 MSGFMT		= msgfmt
 MSGFMTCMD	= OLD_PO_FILE_INPUT=yes msgfmt --no-convert -v
 MSGFMT_DESKTOP	= eegl.desktop
-
-
-# Make sure that "make first" will run "make all" once configure has done its
-# work.  This is needed when using the Makefile in the top directory. first: all
 
 #}}}
 #
@@ -133,43 +128,13 @@ MSGFMT_DESKTOP	= eegl.desktop
 #	- you want to remove features to make Eegl smaller
 #
 # 3. "make"  {{{1
-#	Will first run ./configure with the options in this file. Then it will
-#	start make again on this Makefile to do the compiling. You can also do
-#	this in two steps with:
-#		make config
-#		make
-#	The configure script is created with "make autoconf".  It can detect
-#	different features of your system and act accordingly.  However, it is
-#	not correct for all systems.  Check this:
-#	- If you have X windows, but configure could not find it or reported
-#	  another include/library directory then you wanted to use, you have
-#	  to set CONF_OPT_X below.  You might also check the installation of
-#	  xmkmf.
-#	- If you have --enable-gui=motif and have Motif on your system, but
-#	  configure reports "checking for location of gui... <not found>", you
-#	  have to set GUI_INC_LOC and GUI_LIB_LOC below.
-#	If you changed something, do this to run configure again:
-#		make reconfig
-#
-#	- If you get error messages, find out what is wrong and try to correct
-#	  it in this Makefile. You may need to do "make reconfig" when you
-#	  change anything that configure uses (e.g. switching from an old C
-#	  compiler to an ANSI C compiler). Only when auto/configure does
-#	  something wrong you may need to change one of the other files. If
-#	  you find a clean way to fix the problem, consider sending a note to
-#	  the author of autoconf (bug-gnu-utils@prep.ai.mit.edu) or Eegl
-#	  (vim-dev@vim.org). Don't bother to do that when you made a hack
-#	  solution for a non-standard system.
-#
 # 4. "make test"  {{{1
-#	This is optional.  This will run Eegl scripts on a number of test
-#	files, and compare the produced output with the expected output.
-#	If all is well, you will get the "ALL DONE" message in the end.  If a
-#	test fails you get "TEST FAILURE".  See below (search for "/^test").
-#
+# This is optional.  This will run Eegl scripts on a number of test files, and compare the 
+# produced output with the expected output. If all is well, you will get the "ALL DONE" message 
+# in the end. If a test fails, you get "TEST FAILURE".  See below (search for "/^test").
 # 5. "make install"  {{{1
-#	If the new Eegl seems to be working OK you can install it and the
-#	documentation in the appropriate location. The default is
+# If the new Eegl seems to be working OK you can install it and the documentation in the 
+# appropriate location. The default is
 #	"/usr/local".  Change "prefix" below to change the location.
 #	Note that any existing executable is removed or overwritten.  If you
 #	want to keep it you will have to make a backup copy first.
@@ -214,24 +179,13 @@ VIEWNAME = view
 
 #{{{what used to be auto/config.mk
 
-EXNAME = eegl
 VIEWNAME	= view
 
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
 
-XDIFF_OBJS_USED	= $(XDIFF_OBJS)
 
-
-CHANNEL_SRC	= channel.c
-CHANNEL_OBJ	= $(OBJDIR)/channel.o
-TERM_TEST	= test_libvterm
-
-
-CROSS_COMPILING = 
-
-COMPILEDBY	= 
 
 INSTALLVIMDIFF	= installvimdiff
 INSTALL_LANGS	= install-languages
@@ -251,9 +205,6 @@ exec_prefix	= ${prefix}
 
 ### Prefix for location of data files
 BINDIR		= ${exec_prefix}/bin
-
-### For autoconf 2.60 and later (avoid a warning)
-datarootdir	= ${prefix}/share
 
 ### Prefix for location of data files
 DATADIR		= ${datarootdir}
@@ -285,40 +236,6 @@ first: all
 # Use this one if you distribute a modified version of Eegl.
 #CONF_ARGS6 = --with-modified-by="John Doe"
 
-# Uncomment one of these lines if you have that GUI but don't want to use it.
-# The automatic check will use another one that can be found.
-# Gnome is disabled by default, because it may cause trouble.
-
-# Uncomment one of these lines to select a specific GUI to use.
-# When using "yes" or nothing, configure will use the first one found: GTK+,
-# or Motif.
-#
-# GTK versions that are known not to work 100% are rejected.
-# Use "--disable-gtktest" to accept them anyway.
-# For GTK 1 use Eegl 7.2.
-#
-# GNOME means GTK with Gnome support.  If using GTK and --enable-gnome-check
-# is used then GNOME will automatically be used if it is found.  If you have
-# GNOME, but do not want to use it (e.g., want a GTK-only version), then use
-# --enable-gui=gtk or leave out --enable-gnome-check.
-#
-# GNOME makes sense only for GTK+ 2.  Avoid use of --enable-gnome-check with
-# GTK+ 3 build, as the functionality of GNOME is already incorporated into
-# GTK+ 3.
-#
-
-# DARWIN - detecting Mac OS X
-# Uncomment this line when you want to compile a Unix version of Eegl on
-# Darwin.  None of the Mac specific options or files will be used.
-#CONF_OPT_DARWIN = --disable-darwin
-
-# Select the architecture supported.  Default is to build for the current
-# platform.  Use "both" for a universal binary.  That probably doesn't work
-# when including Perl, Python, etc.
-# NOTE: ppc probably doesn't work anymore,
-#CONF_OPT_DARWIN = --with-mac-arch=intel
-#CONF_OPT_DARWIN = --with-mac-arch=ppc
-#CONF_OPT_DARWIN = --with-mac-arch=both
 
 # Uncomment the next line to fail if one of the requested language interfaces
 # cannot be configured.  Without this Eegl will be build anyway, without
@@ -339,10 +256,6 @@ first: all
 
 # MULTIBYTE - To edit multi-byte characters.
 # This is now always enabled.
-
-# When building with "huge" features, right-left and Arabic
-# features are enabled.  Use this to disable them.
-CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 
 # NLS - National Language Support
 # Uncomment this when you do not want to support translated messages, even
@@ -372,36 +285,9 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 # though you have /dev/sysmouse and includes.
 #CONF_OPT_SYSMOUSE = --disable-sysmouse
 
-# libcanberra - For sound support.  Default is on for huge features.
-# Uncomment one of the two to chose otherwise.
-# CONF_OPT_CANBERRA = --enable-canberra
-# CONF_OPT_CANBERRA = --disable-canberra
-
-
-# FEATURES - For creating Eegl with more or less features
-# Uncomment one of these lines when you want to include few to many features.
-# The default is "huge" for most systems.
-#CONF_OPT_FEAT = --with-features=tiny
-#CONF_OPT_FEAT = --with-features=normal
-#CONF_OPT_FEAT = --with-features=huge
 
 # COMPILED BY - For including a specific e-mail address for ":version".
 #CONF_OPT_COMPBY = "--with-compiledby=John Doe <JohnDoe@yahoo.com>"
-
-# X WINDOWS DISABLE - For creating a plain Eegl without any X11 related fancies
-# (otherwise Eegl configure will try to include xterm titlebar access)
-# Also disable the GUI above, otherwise it will be included anyway.
-# When both GUI and X11 have been disabled this may save about 15% of the
-# code and make Eegl startup quicker.
-#CONF_OPT_X = --without-x
-
-# X WINDOWS DIRECTORY - specify X directories
-# If configure can't find you X stuff, or if you have multiple X11 derivatives
-# installed, you may wish to specify which one to use.
-# Select nothing to let configure choose.
-# This here selects openwin (as found on sun).
-#XROOT = /usr/openwin
-#CONF_OPT_X = --x-include=$(XROOT)/include --x-libraries=$(XROOT)/lib
 
 # X11 Session Management Protocol support
 # Eegl will try to use XSMP to catch the user logging out if there are unsaved
@@ -446,9 +332,6 @@ CONF_OPT_MULTIBYTE = --disable-rightleft --disable-arabic
 #You may want to set the EF_PROTECT_BELOW environment variable to check the
 # other side of allocated memory.
 #EXTRA_LIBS = /usr/local/lib/libefence.a
-
-# Autoconf binary.
-AUTOCONF ?= autoconf
 
 
 # VALGRIND - remove the # to use valgrind for memory leaks and access errors.
@@ -503,8 +386,8 @@ LINT_OPTIONS = -beprxzF
 # PROFILE_FLAGS=-g -O0 --coverage -DWE_ARE_PROFILING -DUSE_GCOV_FLUSH
 
 
-#Uncomment the next lines to compile Eegl on GCC with the address sanitizer (asan) and
-#with the undefined sanitizer.
+#Uncomment the next lines to compile Eegl on GCC with the address sanitizer (asan) and with the 
+#undefined sanitizer.
 #You should also use -DEXITFREE to avoid false reports.
 #May make Eegl twice as slow.  Errors are reported on stderr.
 #More at: https://code.google.com/p/address-sanitizer/
@@ -796,11 +679,11 @@ LINT_EXTRA = -D"__attribute__(x)="
 DEPEND_FLAGS = -DPROTO -DDEPEND $(LINT_FLAGS)
 
 ALL_LIBS = \
-	   $(LIBS) \
-	   $(EXTRA_LIBS) \
-	   $(PROFILE_LIBS) \
-	   $(SANITIZER_LIBS) \
-	   $(LEAK_LIBS)
+/    $(LIBS) \
+/    $(EXTRA_LIBS) \
+/    $(PROFILE_LIBS) \
+/    $(SANITIZER_LIBS) \
+/    $(LEAK_LIBS)
 
 # abbreviations
 DEST_BIN = $(DESTDIR)$(BINDIR)
@@ -831,27 +714,8 @@ DEST_MAN_TOP = $(DESTDIR)$(MANDIR)
 # directory first.
 # FreeBSD uses ".../man/xx.ISO8859-1/man1" for latin1, use that one too.
 DEST_MAN = $(DEST_MAN_TOP)$(MAN1DIR)
-DEST_MAN_DA = $(DEST_MAN_TOP)/da$(MAN1DIR)
-DEST_MAN_DA_I = $(DEST_MAN_TOP)/da.ISO8859-1$(MAN1DIR)
-DEST_MAN_DA_U = $(DEST_MAN_TOP)/da.UTF-8$(MAN1DIR)
-DEST_MAN_DE = $(DEST_MAN_TOP)/de$(MAN1DIR)
-DEST_MAN_DE_I = $(DEST_MAN_TOP)/de.ISO8859-1$(MAN1DIR)
-DEST_MAN_DE_U = $(DEST_MAN_TOP)/de.UTF-8$(MAN1DIR)
-DEST_MAN_FR = $(DEST_MAN_TOP)/fr$(MAN1DIR)
-DEST_MAN_FR_I = $(DEST_MAN_TOP)/fr.ISO8859-1$(MAN1DIR)
-DEST_MAN_FR_U = $(DEST_MAN_TOP)/fr.UTF-8$(MAN1DIR)
-DEST_MAN_IT = $(DEST_MAN_TOP)/it$(MAN1DIR)
-DEST_MAN_IT_I = $(DEST_MAN_TOP)/it.ISO8859-1$(MAN1DIR)
-DEST_MAN_IT_U = $(DEST_MAN_TOP)/it.UTF-8$(MAN1DIR)
-DEST_MAN_JA_U = $(DEST_MAN_TOP)/ja$(MAN1DIR)
-DEST_MAN_PL = $(DEST_MAN_TOP)/pl$(MAN1DIR)
-DEST_MAN_PL_I = $(DEST_MAN_TOP)/pl.ISO8859-2$(MAN1DIR)
-DEST_MAN_PL_U = $(DEST_MAN_TOP)/pl.UTF-8$(MAN1DIR)
 DEST_MAN_RU = $(DEST_MAN_TOP)/ru.KOI8-R$(MAN1DIR)
 DEST_MAN_RU_U = $(DEST_MAN_TOP)/ru.UTF-8$(MAN1DIR)
-DEST_MAN_TR = $(DEST_MAN_TOP)/tr$(MAN1DIR)
-DEST_MAN_TR_I = $(DEST_MAN_TOP)/tr.ISO8859-9$(MAN1DIR)
-DEST_MAN_TR_U = $(DEST_MAN_TOP)/tr.UTF-8$(MAN1DIR)
 
 
 # get the list of tests
@@ -865,33 +729,33 @@ include tests/Make_all.mak
 #	       ALL_SRC: source files used for make depend and make lint
 
 BASIC_SRC_NO_DIR = \
-	book.c \
+/ book.c \
    channel.c \
-	data.c \
-	diff.c \
-	do.c \
-	draw.c \
-	eval.c \
-	fileio.c \
-	hilite.c \
-	input.c \
-	insert.c \
-	juggle.c \
-	location.c \
-	memory.c \
-	message.c \
-	motor.c \
-	normal.c \
-	option.c \
-	persist.c \
-	portal.c \
-	regexp.c \
-	script.c \
-	search.c \
-	strings.c \
-	tag.c \
-	term.c \
-	ui.c \
+/ data.c \
+/ diff.c \
+/ do.c \
+/ draw.c \
+/ eval.c \
+/ fileio.c \
+/ hilite.c \
+/ input.c \
+/ insert.c \
+/ juggle.c \
+/ location.c \
+/ memory.c \
+/ message.c \
+/ motor.c \
+/ normal.c \
+/ option.c \
+/ persist.c \
+/ portal.c \
+/ regexp.c \
+/ script.c \
+/ search.c \
+/ strings.c \
+/ tag.c \
+/ term.c \
+/ ui.c \
    window.c
 
 BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
@@ -900,10 +764,10 @@ BASIC_SRC = $(addprefix src/, $(BASIC_SRC_NO_DIR))
 SRC =	$(BASIC_SRC) $(WAYLAND_SRC)
 
 EXTRA_SRC = src/channel.c \
-	    $(GRESOURCE_SRC)
+/     $(GRESOURCE_SRC)
 
 $(WAYLAND_SRC):
-	cd libs/wayland; $(MAKE)
+/ cd libs/wayland; $(MAKE)
 
 # Needed for parallel jobs to work
 libs/wayland/ext-data-control-v1.h: libs/wayland/ext-data-control-v1.c
@@ -929,126 +793,121 @@ RUN_UNITTESTS = run_json_test run_kword_test run_memfile_test run_message_test
 ALL_LOCAL_SRC = $(BASIC_SRC) $(UNITTEST_SRC) $(EXTRA_SRC) $(WAYLAND_SRC)
 ALL_SRC = $(ALL_LOCAL_SRC)
 
-# Which files to check with lint.  Select one of these three lines.  ALL_SRC
-# checks more, but may not work well for checking a GUI that wasn't configured.
-# The perl sources also don't work well with lint.
-LINT_SRC = $(BASIC_SRC) $(CHANNEL_SRC)
-#LINT_SRC = $(SRC)
-#LINT_SRC = $(ALL_SRC)
-#LINT_SRC = $(BASIC_SRC)
+# Which files to check with lint.  Select one of these three lines. 
+LINT_SRC = $(ALL_SRC)
 
 OBJ_COMMON = \
-	$(OBJDIR)/book.o \
-	$(OBJDIR)/data.o \
-	$(OBJDIR)/diff.o \
-	$(OBJDIR)/do.o \
-	$(OBJDIR)/draw.o \
-	$(OBJDIR)/eval.o \
-	$(OBJDIR)/fileio.o \
-	$(OBJDIR)/hilite.o \
-	$(OBJDIR)/input.o \
-	$(OBJDIR)/insert.o \
-	$(OBJDIR)/juggle.o \
-	$(OBJDIR)/location.o \
-	$(OBJDIR)/motor.o \
-	$(OBJDIR)/normal.o \
-	$(OBJDIR)/option.o \
-	$(OBJDIR)/persist.o \
-	$(OBJDIR)/portal.o \
-	$(OBJDIR)/regexp.o \
-	$(OBJDIR)/script.o \
-	$(OBJDIR)/search.o \
-	$(OBJDIR)/tag.o \
-	$(OBJDIR)/term.o \
-	$(OBJDIR)/ui.o \
-	$(OBJDIR)/window.o \
-   $(WAYLAND_OBJ) \
-	$(CHANNEL_OBJ)
+ $(OBJDIR)/book.o \
+ $(OBJDIR)/data.o \
+ $(OBJDIR)/diff.o \
+ $(OBJDIR)/do.o \
+ $(OBJDIR)/draw.o \
+ $(OBJDIR)/eval.o \
+ $(OBJDIR)/fileio.o \
+ $(OBJDIR)/hilite.o \
+ $(OBJDIR)/input.o \
+ $(OBJDIR)/insert.o \
+ $(OBJDIR)/juggle.o \
+ $(OBJDIR)/location.o \
+ $(OBJDIR)/motor.o \
+ $(OBJDIR)/normal.o \
+ $(OBJDIR)/option.o \
+ $(OBJDIR)/persist.o \
+ $(OBJDIR)/portal.o \
+ $(OBJDIR)/regexp.o \
+ $(OBJDIR)/script.o \
+ $(OBJDIR)/search.o \
+ $(OBJDIR)/tag.o \
+ $(OBJDIR)/term.o \
+ $(OBJDIR)/ui.o \
+ $(OBJDIR)/window.o \
+ $(WAYLAND_OBJ) \
+ $(CHANNEL_OBJ)
 
 # The files included by tests are not in OBJ_COMMON.
 OBJ_MAIN = \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/main.o \
-	$(OBJDIR)/memory.o \
-	$(OBJDIR)/message.o
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/main.o \
+/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/message.o
 
 OBJ = $(OBJ_COMMON) $(OBJ_MAIN)
 
 OBJ_JSON_TEST = \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/memory.o \
-	$(OBJDIR)/message.o \
-	$(OBJDIR)/json_test.o
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/message.o \
+/ $(OBJDIR)/json_test.o
 
 JSON_TEST_OBJ = $(OBJ_COMMON) $(OBJ_JSON_TEST)
 
 OBJ_KWORD_TEST = \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/memory.o \
-	$(OBJDIR)/message.o \
-	$(OBJDIR)/kword_test.o
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/message.o \
+/ $(OBJDIR)/kword_test.o
 
 KWORD_TEST_OBJ = $(OBJ_COMMON) $(OBJ_KWORD_TEST)
 
 OBJ_MEMFILE_TEST = \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/message.o \
-	$(OBJDIR)/memfile_test.o
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/message.o \
+/ $(OBJDIR)/memfile_test.o
 
 MEMFILE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MEMFILE_TEST)
 
 OBJ_MESSAGE_TEST = \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/strings.o \
-	$(OBJDIR)/memory.o \
-	$(OBJDIR)/message_test.o
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/strings.o \
+/ $(OBJDIR)/memory.o \
+/ $(OBJDIR)/message_test.o
 
 MESSAGE_TEST_OBJ = $(OBJ_COMMON) $(OBJ_MESSAGE_TEST)
 
 ALL_OBJ = $(OBJ_COMMON) \
-	  $(OBJ_MAIN) \
-	  $(OBJ_JSON_TEST) \
-	  $(OBJ_KWORD_TEST) \
-	  $(OBJ_MEMFILE_TEST) \
-	  $(OBJ_MESSAGE_TEST)
+/   $(OBJ_MAIN) \
+/   $(OBJ_JSON_TEST) \
+/   $(OBJ_KWORD_TEST) \
+/   $(OBJ_MEMFILE_TEST) \
+/   $(OBJ_MESSAGE_TEST)
 
 
 PRO_AUTO = \
-	alloc.h \
-	book.h \
-	change.h \
-	channel.h \
-	dict.h \
-	diff.h \
-	do.h \
-	draw.h \
-	eval.h \
-	fileio.h \
-	hilite.h \
-	input.h \
-	insert.h \
-	juggle.h \
-	list.h \
-	location.h \
-	mark.h \
-	memory.h \
-	message.h \
-	motor.h \
-	normal.h \
-	option.h \
-	unix.h \
-	persist.h \
-	portal.h \
-	regexp.h \
-	script.h \
-	search.h \
-	sound.h \
-	strings.h \
-	tag.h \
-	term.h \
-	ui.h \
-	window.h
+/ alloc.h \
+/ book.h \
+/ change.h \
+/ channel.h \
+/ dict.h \
+/ diff.h \
+/ do.h \
+/ draw.h \
+/ eval.h \
+/ fileio.h \
+/ hilite.h \
+/ input.h \
+/ insert.h \
+/ juggle.h \
+/ list.h \
+/ location.h \
+/ mark.h \
+/ memory.h \
+/ message.h \
+/ motor.h \
+/ normal.h \
+/ option.h \
+/ unix.h \
+/ persist.h \
+/ portal.h \
+/ regexp.h \
+/ script.h \
+/ search.h \
+/ sound.h \
+/ strings.h \
+/ tag.h \
+/ term.h \
+/ ui.h \
+/ window.h
 
 # Default target is making the executable and tools
 all: $(EEGLTARGET) $(TOOLS) languages
@@ -1061,10 +920,10 @@ tools: $(TOOLS)
 # tables. This only needs to be run when command has been added or changed.
 # If this fails because you don't have Eegl yet, first build and install Eegl without changes.
 indices: src/commands.h src/actions.h
-	$(CC) -iquote src $(INDICES_FLAGS) devdeps/indexGenerator.c -o $(OBJDIR)/indexGenerator
-	$(OBJDIR)/indexGenerator actions
-	$(OBJDIR)/indexGenerator commands
-	$(OBJDIR)/indexGenerator options
+/ $(CC) -iquote src $(INDICES_FLAGS) dev/indexGenerator.c -o $(OBJDIR)/indexGenerator
+/ $(OBJDIR)/indexGenerator actions
+/ $(OBJDIR)/indexGenerator commands
+/ $(OBJDIR)/indexGenerator options
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
@@ -1074,33 +933,33 @@ CClink = $(CC)
 # MAIN. LINK the target for normal use or debugging.
 # A shell script is used to try linking without unnecessary libraries.
 $(EEGLTARGET): $(OBJ)
-	$(CClink) $(LDFLAGS) -o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)
-	@echo "                               "
-	@echo "         .^^~-.                "
-	@echo '         / ,__`)               '
-	@echo "        |   \o/|'--.           "
-	@echo "  BUILD  \     /___ \ SUCCESS! "
-	@echo "         |     '---\/          "
-	@echo "         /     \               "
-	@echo "        / ,  ,  \              "
-	@echo "        \`-'--'--'             "
-	@echo "                               "
+/ $(CClink) $(LDFLAGS) -o $(EEGLTARGET) $(OBJ) $(ALL_LIBS)
+/ @echo "                               "
+/ @echo "         .^^~-.                "
+/ @echo '         / ,__`)               '
+/ @echo "        |   \o/|'--.           "
+/ @echo "  BUILD  \     /___ \ SUCCESS! "
+/ @echo "         |     '---\/          "
+/ @echo "         /     \               "
+/ @echo "        / ,  ,  \              "
+/ @echo "        \`-'--'--'             "
+/ @echo "                               "
 
 # Build the language specific files if they were unpacked.
 # Generate the converted .mo files separately, it's no problem if this fails.
 languages:
-	@if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
-		cd $(PODIR); \
-		  CC="$(CC)" make prefix=$(DESTDIR)$(prefix) originals; \
-	fi
-	-@if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
-		cd $(PODIR); \
-		  CC="$(CC)" make prefix=$(DESTDIR)$(prefix) converted; \
-	fi
+/ @if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
+/ 	cd $(PODIR); \
+/ 	  CC="$(CC)" make prefix=$(DESTDIR)$(prefix) originals; \
+/ fi
+/ -@if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
+/ 	cd $(PODIR); \
+/ 	  CC="$(CC)" make prefix=$(DESTDIR)$(prefix) converted; \
+/ fi
 
 # Update the *.po files for changes in the sources.  Only run manually.
 update-po:
-	cd $(PODIR); CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) update-po
+/ cd $(PODIR); CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) update-po
 
 # Generate function prototypes.  This is not needed to compile Eegl, but if
 # you want to use it, cproto is out there on the net somewhere -- Webb
@@ -1119,41 +978,41 @@ CPROTO = cproto $(CPROTO_FLAGS) $(LINT_FLAGS_CPROTO)
 PROTO_RESULTS := $(addprefix src/proto/,$(patsubst %.c,%.h,$(BASIC_SRC_NO_DIR)))
 
 src/proto/%.h: src/%.c
-	$(CPROTO) $< > $@
+/ $(CPROTO) $< > $@
 
 proto: $(PROTO_RESULTS) $(addprefix src/proto/,$(PRO_MANUAL))
 
 notags:
-	-rm -f tags
+/ -rm -f tags
 
 # Note: tags is made for the currently configured version.
 # You can ignore error messages for missing files.
 tags TAGS: notags
-	$(TAGPRG) $(TAGS_FILES)
+/ $(TAGPRG) $(TAGS_FILES)
 
 # Build the cscope database.
 # This may search more files than necessary.
 .PHONY: cscope csclean all indices update-po
 
 csclean:
-	-rm -vf cscope.out
+/ -rm -vf cscope.out
 cscope.out:
-	cscope -bv ./*.[ch] src/proto/*.h
+/ cscope -bv ./*.[ch] src/proto/*.h
 cscope: csclean cscope.out  ;
 
 # Make a hilite file for types.  Requires Exuberant ctags and awk
 types: types.vim
 types.vim: $(TAGS_FILES)
-	ctags --c-kinds=gstu -o- $(TAGS_FILES) |\
-		awk 'BEGIN{printf("syntax keyword Type\t")}\
-			{printf("%s ", $$1)}END{print ""}' > $@
-	echo "syn keyword Constant OK FAIL TRUE FALSE MAYBE" >> $@
+/ ctags --c-kinds=gstu -o- $(TAGS_FILES) |\
+/ 	awk 'BEGIN{printf("syntax keyword Type\t")}\
+/ 		{printf("%s ", $$1)}END{print ""}' > $@
+/ echo "syn keyword Constant OK FAIL TRUE FALSE MAYBE" >> $@
 
 # TESTING
 #
 # Execute the test scripts and the unittests.
 # Do the scripttests first, so that the summary shows last.
-test check: unittests $(TERM_TEST) scripttests
+test check: unittests scripttests
 
 # Execute the test scripts.  Run these after compiling Eegl, before installing.
 # This doesn't depend on $(EEGLTARGET), because that won't work when configure
@@ -1165,27 +1024,27 @@ test check: unittests $(TERM_TEST) scripttests
 # get "TEST FAILURE".
 #
 scripttests:
-	$(MAKE) -f Makefile $(EEGLTARGET)
-	if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
-		cd $(PODIR); $(MAKE) -f Makefile check VIMPROG=../$(EEGLTARGET); \
-	fi
-	-if test $(EEGLTARGET) != eegl -a ! -r eegl; then \
-		ln -s $(EEGLTARGET) eegl; \
-	fi
-	cd tests;\
+/ $(MAKE) -f Makefile $(EEGLTARGET)
+/ if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
+/ 	cd $(PODIR); $(MAKE) -f Makefile check VIMPROG=../$(EEGLTARGET); \
+/ fi
+/ -if test $(EEGLTARGET) != eegl -a ! -r eegl; then \
+/ 	ln -s $(EEGLTARGET) eegl; \
+/ fi
+/ cd tests;\
    $(MAKE) -f Makefile VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 testtiny:
-	cd tests; $(MAKE) -f Makefile tiny VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
+/ cd tests; $(MAKE) -f Makefile tiny VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 # Run benchmarks.
 benchmark:
-	cd tests; \
-		$(MAKE) -f Makefile benchmarkclean; \
-		$(MAKE) -f Makefile benchmark VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
+/ cd tests; \
+/ 	$(MAKE) -f Makefile benchmarkclean; \
+/ 	$(MAKE) -f Makefile benchmark VIMPROG=../$(EEGLTARGET) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 unittesttargets:
-	$(MAKE) -f Makefile $(UNITTEST_TARGETS)
+/ $(MAKE) -f Makefile $(UNITTEST_TARGETS)
 
 VIMTESTTARGET = $(EEGLTARGET)
 
@@ -1193,21 +1052,21 @@ VIMTESTTARGET = $(EEGLTARGET)
 unittest unittests: $(RUN_UNITTESTS)
 
 run_json_test: $(JSON_TEST_TARGET)
-	$(VALGRIND) ./$(JSON_TEST_TARGET) || exit 1; echo $* passed;
+/ $(VALGRIND) ./$(JSON_TEST_TARGET) || exit 1; echo $* passed;
 
 run_kword_test: $(KWORD_TEST_TARGET)
-	$(VALGRIND) ./$(KWORD_TEST_TARGET) || exit 1; echo $* passed;
+/ $(VALGRIND) ./$(KWORD_TEST_TARGET) || exit 1; echo $* passed;
 
 run_memfile_test: $(MEMFILE_TEST_TARGET)
-	$(VALGRIND) ./$(MEMFILE_TEST_TARGET) || exit 1; echo $* passed;
+/ $(VALGRIND) ./$(MEMFILE_TEST_TARGET) || exit 1; echo $* passed;
 
 run_message_test: $(MESSAGE_TEST_TARGET)
-	$(VALGRIND) ./$(MESSAGE_TEST_TARGET) || exit 1; echo $* passed;
+/ $(VALGRIND) ./$(MESSAGE_TEST_TARGET) || exit 1; echo $* passed;
 
 # Run individual OLD style test.
 # These do not depend on the executable, compile it when needed.
 $(SCRIPTS_TINY):
-	cd tests; rm -f $@.out; $(MAKE) -f Makefile $@.out VIMPROG=../$(VIMTESTTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
+/ cd tests; rm -f $@.out; $(MAKE) -f Makefile $@.out VIMPROG=../$(VIMTESTTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 # Run individual NEW style test.
 # These do not depend on the executable, compile it when needed.
@@ -1216,50 +1075,50 @@ $(SCRIPTS_TINY):
 # A partial match also works:
 #	export TEST_FILTER=wipe_buffer
 $(NEW_TESTS) test_vim9:
-	cd tests; $(MAKE) $@ VIMPROG=../$(VIMTESTTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
+/ cd tests; $(MAKE) $@ VIMPROG=../$(VIMTESTTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
 newtests:
-	cd tests; rm -f $@.res test.log messages; $(MAKE) -f Makefile newtestssilent VIMPROG=../$(VIMTESTTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
-	@if test -f tests/test.log; then \
-		cat tests/test.log; \
-	fi
-	cat tests/messages
+/ cd tests; rm -f $@.res test.log messages; $(MAKE) -f Makefile newtestssilent VIMPROG=../$(VIMTESTTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
+/ @if test -f tests/test.log; then \
+/ 	cat tests/test.log; \
+/ fi
+/ cat tests/messages
 
 testclean:
-	cd tests; $(MAKE) -f Makefile clean
-	if test -d $(PODIR); then \
-		cd $(PODIR); $(MAKE) checkclean; \
-	fi
+/ cd tests; $(MAKE) -f Makefile clean
+/ if test -d $(PODIR); then \
+/ 	cd $(PODIR); $(MAKE) checkclean; \
+/ fi
 
 # Unittests
 # It's build just like Eegl to satisfy all dependencies.
 $(JSON_TEST_TARGET): $(JSON_TEST_OBJ)
-	@LINK="$(CClink) $(LDFLAGS) \
-		-o $(JSON_TEST_TARGET) $(JSON_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
-		PROG="json_test" \
-		sh $(srcdir)/link.sh
+/ @LINK="$(CClink) $(LDFLAGS) \
+/ 	-o $(JSON_TEST_TARGET) $(JSON_TEST_OBJ) $(ALL_LIBS)" \
+/ 	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
+/ 	PROG="json_test" \
+/ 	sh $(srcdir)/link.sh
 
 $(KWORD_TEST_TARGET): $(KWORD_TEST_OBJ)
-	@LINK="$(CClink) $(LDFLAGS) \
-		-o $(KWORD_TEST_TARGET) $(KWORD_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
-		PROG="kword_test" \
-		sh $(srcdir)/link.sh
+/ @LINK="$(CClink) $(LDFLAGS) \
+/ 	-o $(KWORD_TEST_TARGET) $(KWORD_TEST_OBJ) $(ALL_LIBS)" \
+/ 	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
+/ 	PROG="kword_test" \
+/ 	sh $(srcdir)/link.sh
 
 $(MEMFILE_TEST_TARGET): $(MEMFILE_TEST_OBJ)
-	@LINK="$(CClink) $(LDFLAGS) \
-		-o $(MEMFILE_TEST_TARGET) $(MEMFILE_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
-		PROG="memfile_test" \
-		sh $(srcdir)/link.sh
+/ @LINK="$(CClink) $(LDFLAGS) \
+/ 	-o $(MEMFILE_TEST_TARGET) $(MEMFILE_TEST_OBJ) $(ALL_LIBS)" \
+/ 	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
+/ 	PROG="memfile_test" \
+/ 	sh $(srcdir)/link.sh
 
 $(MESSAGE_TEST_TARGET): $(MESSAGE_TEST_OBJ)
-	@LINK="$(CClink) $(LDFLAGS) \
-		-o $(MESSAGE_TEST_TARGET) $(MESSAGE_TEST_OBJ) $(ALL_LIBS)" \
-		MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
-		PROG="message_test" \
-		sh $(srcdir)/link.sh
+/ @LINK="$(CClink) $(LDFLAGS) \
+/ 	-o $(MESSAGE_TEST_TARGET) $(MESSAGE_TEST_OBJ) $(ALL_LIBS)" \
+/ 	MAKE="$(MAKE)" LINK_AS_NEEDED=yes \
+/ 	PROG="message_test" \
+/ 	sh $(srcdir)/link.sh
 
 # install targets
 
@@ -1268,7 +1127,7 @@ install: $(GUI_INSTALL)
 install_normal: installvim installtools $(INSTALL_LANGS) install-icons
 
 installvim: installvimbin installtutorbin \
-		installruntime installlinks installmanlinks
+/ 	installruntime installlinks installmanlinks
 
 #
 # Avoid overwriting an existing executable, somebody might be running it and
@@ -1280,20 +1139,20 @@ installvim: installvimbin installtutorbin \
 # install".
 #
 installvimbin: $(EEGLTARGET) $(DESTDIR)$(exec_prefix) $(DEST_BIN)
-	-if test -f $(DEST_BIN)/$(EEGLTARGET); then \
-	  mv -f $(DEST_BIN)/$(EEGLTARGET) $(DEST_BIN)/eegl.rm; \
-	  rm -f $(DEST_BIN)/eegl.rm; \
-	fi
-	$(INSTALL_PROG) $(EEGLTARGET) $(DEST_BIN)
-	strip $(DEST_BIN)/$(EEGLTARGET)
-	chmod $(BINMOD) $(DEST_BIN)/$(EEGLTARGET)
+/ -if test -f $(DEST_BIN)/$(EEGLTARGET); then \
+/   mv -f $(DEST_BIN)/$(EEGLTARGET) $(DEST_BIN)/eegl.rm; \
+/   rm -f $(DEST_BIN)/eegl.rm; \
+/ fi
+/ $(INSTALL_PROG) $(EEGLTARGET) $(DEST_BIN)
+/ strip $(DEST_BIN)/$(EEGLTARGET)
+/ chmod $(BINMOD) $(DEST_BIN)/$(EEGLTARGET)
 # may create a link to the new executable from /usr/bin/vi
-	-$(LINKIT)
+/ -$(LINKIT)
 
 # Long list of arguments for the shell script that installs the manual pages
 # for one language.
 INSTALLMANARGS = $(VIMLOC) $(SCRIPTLOC) $(VIMRCLOC) $(HELPSOURCE) $(MANMOD) \
-		eegl $(EEGLDIFFNAME) $(EEEGLNAME)
+/ 	eegl $(EEGLDIFFNAME) $(EEEGLNAME)
 
 # Install most of the runtime files
 installruntime: installrtbase installmacros installpack installtutor installspell
@@ -1301,307 +1160,307 @@ installruntime: installrtbase installmacros installpack installtutor installspel
 # Install the help files; first adjust the contents for the final location.
 # Also install most of the other runtime files.
 installrtbase: $(HELPSOURCE)/vim.1 $(DEST_VIM) $(EEGLTARGET) $(DEST_RT) \
-		$(DEST_HELP) $(DEST_PRINT) $(DEST_COL) \
-		$(DEST_SYN) $(DEST_SYN)/modula2 $(DEST_SYN)/modula2/opt $(DEST_SYN)/shared \
-		$(DEST_IND) $(DEST_FTP) \
-		$(DEST_AUTO) $(DEST_AUTO)/dist $(DEST_AUTO)/xml \
-		$(DEST_AUTO)/rust $(DEST_AUTO)/cargo \
-		$(DEST_IMPORT) $(DEST_IMPORT)/dist \
-		$(DEST_PLUG) \
-	       	$(DEST_TUTOR) $(DEST_TUTOR)/en $(DEST_TUTOR)/it $(DEST_TUTOR)/sr \
-		$(DEST_TUTOR)/ru \
-		$(DEST_SPELL) $(DEST_COMP)
-	-$(SHELL) ./installman.sh install $(DEST_MAN) "" $(INSTALLMANARGS)
+/ 	$(DEST_HELP) $(DEST_PRINT) $(DEST_COL) \
+/ 	$(DEST_SYN) $(DEST_SYN)/modula2 $(DEST_SYN)/modula2/opt $(DEST_SYN)/shared \
+/ 	$(DEST_IND) $(DEST_FTP) \
+/ 	$(DEST_AUTO) $(DEST_AUTO)/dist $(DEST_AUTO)/xml \
+/ 	$(DEST_AUTO)/rust $(DEST_AUTO)/cargo \
+/ 	$(DEST_IMPORT) $(DEST_IMPORT)/dist \
+/ 	$(DEST_PLUG) \
+/        	$(DEST_TUTOR) $(DEST_TUTOR)/en $(DEST_TUTOR)/it $(DEST_TUTOR)/sr \
+/ 	$(DEST_TUTOR)/ru \
+/ 	$(DEST_SPELL) $(DEST_COMP)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN) "" $(INSTALLMANARGS)
 # Generate the help tags with ":helptags" to handle all languages.
 # Move the distributed tags file aside and restore it, to avoid it being
 # different from the repository.
-	cd $(HELPSOURCE); if test -z "$(CROSS_COMPILING)" -a -f tags; then \
-		mv -f tags tags.dist; fi
-	@echo generating help tags
-	-@BUILD_DIR=`pwd`; cd $(HELPSOURCE); if test -z "$(CROSS_COMPILING)"; then \
-		$(MAKE) VIMPROG="$$BUILD_DIR/$(EEGLTARGET)" vimtags; fi
-	cd $(HELPSOURCE); \
-		files=`ls *.txt tags`; \
-		files="$$files `ls *.??x tags-?? 2>/dev/null || true`"; \
-		cp $$files  $(DEST_HELP); \
-		cd $(DEST_HELP); \
-		chmod $(HELPMOD) $$files
-	cp  $(HELPSOURCE)/*.pl $(DEST_HELP)
-	chmod $(SCRIPTMOD) $(DEST_HELP)/*.pl
-	cd $(HELPSOURCE); if test -f tags.dist; then mv -f tags.dist tags; fi
+/ cd $(HELPSOURCE); if test -z "$(CROSS_COMPILING)" -a -f tags; then \
+/ 	mv -f tags tags.dist; fi
+/ @echo generating help tags
+/ -@BUILD_DIR=`pwd`; cd $(HELPSOURCE); if test -z "$(CROSS_COMPILING)"; then \
+/ 	$(MAKE) VIMPROG="$$BUILD_DIR/$(EEGLTARGET)" vimtags; fi
+/ cd $(HELPSOURCE); \
+/ 	files=`ls *.txt tags`; \
+/ 	files="$$files `ls *.??x tags-?? 2>/dev/null || true`"; \
+/ 	cp $$files  $(DEST_HELP); \
+/ 	cd $(DEST_HELP); \
+/ 	chmod $(HELPMOD) $$files
+/ cp  $(HELPSOURCE)/*.pl $(DEST_HELP)
+/ chmod $(SCRIPTMOD) $(DEST_HELP)/*.pl
+/ cd $(HELPSOURCE); if test -f tags.dist; then mv -f tags.dist tags; fi
 # install the menu files
-	cp $(SCRIPTSOURCE)/menu.vim $(SYS_MENU_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_MENU_FILE)
-	cp $(SCRIPTSOURCE)/synmenu.vim $(SYS_SYNMENU_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_SYNMENU_FILE)
-	cp $(SCRIPTSOURCE)/delmenu.vim $(SYS_DELMENU_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_DELMENU_FILE)
+/ cp $(SCRIPTSOURCE)/menu.vim $(SYS_MENU_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_MENU_FILE)
+/ cp $(SCRIPTSOURCE)/synmenu.vim $(SYS_SYNMENU_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_SYNMENU_FILE)
+/ cp $(SCRIPTSOURCE)/delmenu.vim $(SYS_DELMENU_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_DELMENU_FILE)
 # install the defaults/evim/mswin file
-	cp $(SCRIPTSOURCE)/defaults.vim $(VIM_DEFAULTS_FILE)
-	chmod $(VIMSCRIPTMOD) $(VIM_DEFAULTS_FILE)
-	cp $(SCRIPTSOURCE)/evim.vim $(EVIM_FILE)
-	chmod $(VIMSCRIPTMOD) $(EVIM_FILE)
-	cp $(SCRIPTSOURCE)/mswin.vim $(MSWIN_FILE)
-	chmod $(VIMSCRIPTMOD) $(MSWIN_FILE)
+/ cp $(SCRIPTSOURCE)/defaults.vim $(VIM_DEFAULTS_FILE)
+/ chmod $(VIMSCRIPTMOD) $(VIM_DEFAULTS_FILE)
+/ cp $(SCRIPTSOURCE)/evim.vim $(EVIM_FILE)
+/ chmod $(VIMSCRIPTMOD) $(EVIM_FILE)
+/ cp $(SCRIPTSOURCE)/mswin.vim $(MSWIN_FILE)
+/ chmod $(VIMSCRIPTMOD) $(MSWIN_FILE)
 # install the bugreport file
-	cp $(SCRIPTSOURCE)/bugreport.vim $(SYS_BUGR_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_BUGR_FILE)
+/ cp $(SCRIPTSOURCE)/bugreport.vim $(SYS_BUGR_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_BUGR_FILE)
 # install the example vimrc files
-	cp $(SCRIPTSOURCE)/vimrc_example.vim $(DEST_SCRIPT)
-	chmod $(VIMSCRIPTMOD) $(DEST_SCRIPT)/vimrc_example.vim
-	cp $(SCRIPTSOURCE)/gvimrc_example.vim $(DEST_SCRIPT)
-	chmod $(VIMSCRIPTMOD) $(DEST_SCRIPT)/gvimrc_example.vim
+/ cp $(SCRIPTSOURCE)/vimrc_example.vim $(DEST_SCRIPT)
+/ chmod $(VIMSCRIPTMOD) $(DEST_SCRIPT)/vimrc_example.vim
+/ cp $(SCRIPTSOURCE)/gvimrc_example.vim $(DEST_SCRIPT)
+/ chmod $(VIMSCRIPTMOD) $(DEST_SCRIPT)/gvimrc_example.vim
 # install the file type detection files
-	cp $(SCRIPTSOURCE)/filetype.vim $(SYS_FILETYPE_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_FILETYPE_FILE)
-	cp $(SCRIPTSOURCE)/ftoff.vim $(SYS_FTOFF_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_FTOFF_FILE)
-	cp $(SCRIPTSOURCE)/scripts.vim $(SYS_SCRIPTS_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_SCRIPTS_FILE)
-	cp $(SCRIPTSOURCE)/ftplugin.vim $(SYS_FTPLUGIN_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_FTPLUGIN_FILE)
-	cp $(SCRIPTSOURCE)/ftplugof.vim $(SYS_FTPLUGOF_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_FTPLUGOF_FILE)
-	cp $(SCRIPTSOURCE)/indent.vim $(SYS_INDENT_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_INDENT_FILE)
-	cp $(SCRIPTSOURCE)/indoff.vim $(SYS_INDOFF_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_INDOFF_FILE)
-	cp $(SCRIPTSOURCE)/optwin.vim $(SYS_OPTWIN_FILE)
-	chmod $(VIMSCRIPTMOD) $(SYS_OPTWIN_FILE)
+/ cp $(SCRIPTSOURCE)/filetype.vim $(SYS_FILETYPE_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_FILETYPE_FILE)
+/ cp $(SCRIPTSOURCE)/ftoff.vim $(SYS_FTOFF_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_FTOFF_FILE)
+/ cp $(SCRIPTSOURCE)/scripts.vim $(SYS_SCRIPTS_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_SCRIPTS_FILE)
+/ cp $(SCRIPTSOURCE)/ftplugin.vim $(SYS_FTPLUGIN_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_FTPLUGIN_FILE)
+/ cp $(SCRIPTSOURCE)/ftplugof.vim $(SYS_FTPLUGOF_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_FTPLUGOF_FILE)
+/ cp $(SCRIPTSOURCE)/indent.vim $(SYS_INDENT_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_INDENT_FILE)
+/ cp $(SCRIPTSOURCE)/indoff.vim $(SYS_INDOFF_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_INDOFF_FILE)
+/ cp $(SCRIPTSOURCE)/optwin.vim $(SYS_OPTWIN_FILE)
+/ chmod $(VIMSCRIPTMOD) $(SYS_OPTWIN_FILE)
 # install README and LICENCE files
-	cp ../README.txt $(DEST_RT)
-	chmod $(HELPMOD) $(DEST_RT)/README.txt
-	cp ../LICENSE $(DEST_RT)
-	chmod $(HELPMOD) $(DEST_RT)/LICENSE
+/ cp ../README.txt $(DEST_RT)
+/ chmod $(HELPMOD) $(DEST_RT)/README.txt
+/ cp ../LICENSE $(DEST_RT)
+/ chmod $(HELPMOD) $(DEST_RT)/LICENSE
 # install the print resource files
-	cd $(PRINTSOURCE); cp *.ps $(DEST_PRINT)
-	cd $(DEST_PRINT); chmod $(FILEMOD) *.ps
+/ cd $(PRINTSOURCE); cp *.ps $(DEST_PRINT)
+/ cd $(DEST_PRINT); chmod $(FILEMOD) *.ps
 # install the colorscheme files
-	cd $(COLSOURCE); cp -r *.vim lists tools README.txt $(DEST_COL)
-	cd $(DEST_COL); chmod $(DIRMOD) lists tools
-	cd $(DEST_COL); chmod $(HELPMOD) *.vim README.txt lists/*.vim tools/*.vim
+/ cd $(COLSOURCE); cp -r *.vim lists tools README.txt $(DEST_COL)
+/ cd $(DEST_COL); chmod $(DIRMOD) lists tools
+/ cd $(DEST_COL); chmod $(HELPMOD) *.vim README.txt lists/*.vim tools/*.vim
 # install the syntax files
-	cd $(SYNSOURCE); cp *.vim README.txt $(DEST_SYN)
-	cd $(DEST_SYN); chmod $(HELPMOD) *.vim README.txt
-	cd $(SYNSOURCE)/shared; cp *.vim README.txt $(DEST_SYN)/shared
-	cd $(DEST_SYN)/shared; chmod $(HELPMOD) *.vim README.txt
-	cd $(SYNSOURCE)/modula2/opt; cp *.vim $(DEST_SYN)/modula2/opt
-	cd $(DEST_SYN)/modula2/opt; chmod $(HELPMOD) *.vim
+/ cd $(SYNSOURCE); cp *.vim README.txt $(DEST_SYN)
+/ cd $(DEST_SYN); chmod $(HELPMOD) *.vim README.txt
+/ cd $(SYNSOURCE)/shared; cp *.vim README.txt $(DEST_SYN)/shared
+/ cd $(DEST_SYN)/shared; chmod $(HELPMOD) *.vim README.txt
+/ cd $(SYNSOURCE)/modula2/opt; cp *.vim $(DEST_SYN)/modula2/opt
+/ cd $(DEST_SYN)/modula2/opt; chmod $(HELPMOD) *.vim
 # install the indent files
-	cd $(INDSOURCE); cp *.vim README.txt $(DEST_IND)
-	cd $(DEST_IND); chmod $(HELPMOD) *.vim README.txt
+/ cd $(INDSOURCE); cp *.vim README.txt $(DEST_IND)
+/ cd $(DEST_IND); chmod $(HELPMOD) *.vim README.txt
 # install the standard autoload files
-	cd $(AUTOSOURCE); cp *.vim README.txt $(DEST_AUTO)
-	cd $(DEST_AUTO); chmod $(HELPMOD) *.vim README.txt
-	cd $(AUTOSOURCE)/dist; cp *.vim $(DEST_AUTO)/dist
-	cd $(DEST_AUTO)/dist; chmod $(HELPMOD) *.vim
-	cd $(AUTOSOURCE)/xml; cp *.vim $(DEST_AUTO)/xml
-	cd $(DEST_AUTO)/xml; chmod $(HELPMOD) *.vim
-	cd $(AUTOSOURCE)/cargo; cp *.vim $(DEST_AUTO)/cargo
-	cd $(DEST_AUTO)/cargo; chmod $(HELPMOD) *.vim
-	cd $(AUTOSOURCE)/rust; cp *.vim $(DEST_AUTO)/rust
-	cd $(DEST_AUTO)/rust; chmod $(HELPMOD) *.vim
+/ cd $(AUTOSOURCE); cp *.vim README.txt $(DEST_AUTO)
+/ cd $(DEST_AUTO); chmod $(HELPMOD) *.vim README.txt
+/ cd $(AUTOSOURCE)/dist; cp *.vim $(DEST_AUTO)/dist
+/ cd $(DEST_AUTO)/dist; chmod $(HELPMOD) *.vim
+/ cd $(AUTOSOURCE)/xml; cp *.vim $(DEST_AUTO)/xml
+/ cd $(DEST_AUTO)/xml; chmod $(HELPMOD) *.vim
+/ cd $(AUTOSOURCE)/cargo; cp *.vim $(DEST_AUTO)/cargo
+/ cd $(DEST_AUTO)/cargo; chmod $(HELPMOD) *.vim
+/ cd $(AUTOSOURCE)/rust; cp *.vim $(DEST_AUTO)/rust
+/ cd $(DEST_AUTO)/rust; chmod $(HELPMOD) *.vim
 # install the standard import files
-	cd $(IMPORTSOURCE)/dist; cp *.vim $(DEST_IMPORT)/dist
-	cd $(DEST_IMPORT)/dist; chmod $(HELPMOD) *.vim
+/ cd $(IMPORTSOURCE)/dist; cp *.vim $(DEST_IMPORT)/dist
+/ cd $(DEST_IMPORT)/dist; chmod $(HELPMOD) *.vim
 # install the standard plugin files
-	cd $(PLUGSOURCE); cp *.vim README.txt $(DEST_PLUG)
-	cd $(DEST_PLUG); chmod $(HELPMOD) *.vim README.txt
+/ cd $(PLUGSOURCE); cp *.vim README.txt $(DEST_PLUG)
+/ cd $(DEST_PLUG); chmod $(HELPMOD) *.vim README.txt
 # install the ftplugin files
-	cd $(FTPLUGSOURCE); cp *.vim README.txt logtalk.dict $(DEST_FTP)
-	cd $(DEST_FTP); chmod $(HELPMOD) *.vim README.txt logtalk.dict
+/ cd $(FTPLUGSOURCE); cp *.vim README.txt logtalk.dict $(DEST_FTP)
+/ cd $(DEST_FTP); chmod $(HELPMOD) *.vim README.txt logtalk.dict
 # install the compiler files
-	cd $(COMPSOURCE); cp *.vim README.txt $(DEST_COMP)
-	cd $(DEST_COMP); chmod $(HELPMOD) *.vim README.txt
+/ cd $(COMPSOURCE); cp *.vim README.txt $(DEST_COMP)
+/ cd $(DEST_COMP); chmod $(HELPMOD) *.vim README.txt
 
 installmacros: $(DEST_VIM) $(DEST_RT) $(DEST_MACRO)
-	cp -r $(MACROSOURCE)/* $(DEST_MACRO)
-	chmod $(DIRMOD) `find $(DEST_MACRO) -type d -print`
-	chmod $(FILEMOD) `find $(DEST_MACRO) -type f -print`
-	chmod $(SCRIPTMOD) $(DEST_MACRO)/less.sh
+/ cp -r $(MACROSOURCE)/* $(DEST_MACRO)
+/ chmod $(DIRMOD) `find $(DEST_MACRO) -type d -print`
+/ chmod $(FILEMOD) `find $(DEST_MACRO) -type f -print`
+/ chmod $(SCRIPTMOD) $(DEST_MACRO)/less.sh
 # When using CVS some CVS directories might have been copied.
 # Also delete AAPDIR and *.info files.
-	cvs=`find $(DEST_MACRO) \( -name CVS -o -name AAPDIR -o -name "*.info" \) -print`; \
-	      if test -n "$$cvs"; then \
-		 rm -rf $$cvs; \
-	      fi
+/ cvs=`find $(DEST_MACRO) \( -name CVS -o -name AAPDIR -o -name "*.info" \) -print`; \
+/       if test -n "$$cvs"; then \
+/ 	 rm -rf $$cvs; \
+/       fi
 
 installpack: $(DEST_VIM) $(DEST_RT) $(DEST_PACK)
-	cp -r $(PACKSOURCE)/* $(DEST_PACK)
-	chmod $(DIRMOD) `find $(DEST_PACK) -type d -print`
-	chmod $(FILEMOD) `find $(DEST_PACK) -type f -print`
+/ cp -r $(PACKSOURCE)/* $(DEST_PACK)
+/ chmod $(DIRMOD) `find $(DEST_PACK) -type d -print`
+/ chmod $(FILEMOD) `find $(DEST_PACK) -type f -print`
 
 # install the tutor files
 installtutorbin: $(DEST_BIN)
-	cp scripts/vimtutor $(DEST_BIN)/eegltutor
-	chmod $(SCRIPTMOD) $(DEST_BIN)/eegltutor
+/ cp scripts/vimtutor $(DEST_BIN)/eegltutor
+/ chmod $(SCRIPTMOD) $(DEST_BIN)/eegltutor
 
 
 installtutor: $(DEST_RT) $(DEST_TUTOR)/en $(DEST_TUTOR)/it $(DEST_TUTOR)/sr $(DEST_TUTOR)/ru
-	-cp $(TUTORSOURCE)/README* $(TUTORSOURCE)/tutor* $(DEST_TUTOR)
-	-cp $(TUTORSOURCE)/en/* $(DEST_TUTOR)/en/
-	-cp $(TUTORSOURCE)/it/* $(DEST_TUTOR)/it/
-	-cp $(TUTORSOURCE)/ru/* $(DEST_TUTOR)/ru/
-	-cp $(TUTORSOURCE)/sr/* $(DEST_TUTOR)/sr/
-	-rm -f $(DEST_TUTOR)/*.info
-	chmod $(HELPMOD) $(DEST_TUTOR)/*
-	chmod $(DIRMOD) $(DEST_TUTOR)/en
-	chmod $(DIRMOD) $(DEST_TUTOR)/it
-	chmod $(DIRMOD) $(DEST_TUTOR)/ru
-	chmod $(DIRMOD) $(DEST_TUTOR)/sr
+/ -cp $(TUTORSOURCE)/README* $(TUTORSOURCE)/tutor* $(DEST_TUTOR)
+/ -cp $(TUTORSOURCE)/en/* $(DEST_TUTOR)/en/
+/ -cp $(TUTORSOURCE)/it/* $(DEST_TUTOR)/it/
+/ -cp $(TUTORSOURCE)/ru/* $(DEST_TUTOR)/ru/
+/ -cp $(TUTORSOURCE)/sr/* $(DEST_TUTOR)/sr/
+/ -rm -f $(DEST_TUTOR)/*.info
+/ chmod $(HELPMOD) $(DEST_TUTOR)/*
+/ chmod $(DIRMOD) $(DEST_TUTOR)/en
+/ chmod $(DIRMOD) $(DEST_TUTOR)/it
+/ chmod $(DIRMOD) $(DEST_TUTOR)/ru
+/ chmod $(DIRMOD) $(DEST_TUTOR)/sr
 
 # install the runtime tools
-	cp -r $(TOOLSSOURCE)/* $(DEST_TOOLS)
+/ cp -r $(TOOLSSOURCE)/* $(DEST_TOOLS)
 # When using CVS some CVS directories might have been copied.
-	cvs=`find $(DEST_TOOLS) \( -name CVS -o -name AAPDIR \) -print`; \
-	      if test -n "$$cvs"; then \
-		 rm -rf $$cvs; \
-	      fi
-	-chmod $(FILEMOD) $(DEST_TOOLS)/*
+/ cvs=`find $(DEST_TOOLS) \( -name CVS -o -name AAPDIR \) -print`; \
+/       if test -n "$$cvs"; then \
+/ 	 rm -rf $$cvs; \
+/       fi
+/ -chmod $(FILEMOD) $(DEST_TOOLS)/*
 # replace the path in some tools
-	awkpath=`which nawk` && sed -e "s+/usr/bin/nawk+$$awkpath+" $(TOOLSSOURCE)/mve.awk >$(DEST_TOOLS)/mve.awk; if test -z "$$awkpath"; then \
-		awkpath=`which gawk` && sed -e "s+/usr/bin/nawk+$$awkpath+" $(TOOLSSOURCE)/mve.awk >$(DEST_TOOLS)/mve.awk; if test -z "$$awkpath"; then \
-		awkpath=`which awk` && sed -e "s+/usr/bin/nawk+$$awkpath+" $(TOOLSSOURCE)/mve.awk >$(DEST_TOOLS)/mve.awk; fi; fi
-	-chmod $(SCRIPTMOD) `grep -l "^#!" $(DEST_TOOLS)/*`
+/ awkpath=`which nawk` && sed -e "s+/usr/bin/nawk+$$awkpath+" $(TOOLSSOURCE)/mve.awk >$(DEST_TOOLS)/mve.awk; if test -z "$$awkpath"; then \
+/ 	awkpath=`which gawk` && sed -e "s+/usr/bin/nawk+$$awkpath+" $(TOOLSSOURCE)/mve.awk >$(DEST_TOOLS)/mve.awk; if test -z "$$awkpath"; then \
+/ 	awkpath=`which awk` && sed -e "s+/usr/bin/nawk+$$awkpath+" $(TOOLSSOURCE)/mve.awk >$(DEST_TOOLS)/mve.awk; fi; fi
+/ -chmod $(SCRIPTMOD) `grep -l "^#!" $(DEST_TOOLS)/*`
 
 
 # install the language specific files, if they were unpacked
 install-languages: languages $(DEST_LANG) $(DEST_KMAP) $(DEST_RT)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_DA) "-da" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_DA_I) "-da" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_DA_U) "-da.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_DE) "-de" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_DE_I) "-de" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_DE_U) "-de.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_FR) "-fr" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_FR_I) "-fr" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_FR_U) "-fr.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_IT) "-it" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_IT_I) "-it" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_IT_U) "-it.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_JA_U) "-ja.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_PL) "-pl" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_PL_I) "-pl" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_PL_U) "-pl.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_RU) "-ru" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_RU_U) "-ru.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_TR) "-tr" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_TR_I) "-tr" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh install $(DEST_MAN_TR_U) "-tr.UTF-8" $(INSTALLMANARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_JA_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_RU) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_RU_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR_U) $(INSTALLMLARGS)
-	if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
-	   cd $(PODIR); $(MAKE) prefix=$(DESTDIR)$(prefix) LOCALEDIR=$(DEST_LANG) \
-	   FILEMOD=$(FILEMOD) install; \
-	fi
-	if test -d $(LANGSOURCE); then \
-	   cp $(LANGSOURCE)/README.txt $(LANGSOURCE)/*.vim $(DEST_LANG); \
-	   chmod $(FILEMOD) $(DEST_LANG)/README.txt $(DEST_LANG)/*.vim; \
-	fi
-	if test -d $(KMAPSOURCE); then \
-	   cp $(KMAPSOURCE)/README.txt $(KMAPSOURCE)/*.vim $(DEST_KMAP); \
-	   chmod $(FILEMOD) $(DEST_KMAP)/README.txt $(DEST_KMAP)/*.vim; \
-	fi
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_DA) "-da" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_DA_I) "-da" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_DA_U) "-da.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_DE) "-de" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_DE_I) "-de" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_DE_U) "-de.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_FR) "-fr" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_FR_I) "-fr" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_FR_U) "-fr.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_IT) "-it" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_IT_I) "-it" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_IT_U) "-it.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_JA_U) "-ja.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_PL) "-pl" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_PL_I) "-pl" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_PL_U) "-pl.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_RU) "-ru" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_RU_U) "-ru.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_TR) "-tr" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_TR_I) "-tr" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh install $(DEST_MAN_TR_U) "-tr.UTF-8" $(INSTALLMANARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DA) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DA_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DA_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DE) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DE_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DE_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_FR) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_FR_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_FR_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_IT) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_IT_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_IT_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_JA_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_PL) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_PL_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_PL_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_RU) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_RU_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_TR) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_TR_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_TR_U) $(INSTALLMLARGS)
+/ if test -n "$(MAKEMO)" -a -f $(PODIR)/Makefile; then \
+/    cd $(PODIR); $(MAKE) prefix=$(DESTDIR)$(prefix) LOCALEDIR=$(DEST_LANG) \
+/    FILEMOD=$(FILEMOD) install; \
+/ fi
+/ if test -d $(LANGSOURCE); then \
+/    cp $(LANGSOURCE)/README.txt $(LANGSOURCE)/*.vim $(DEST_LANG); \
+/    chmod $(FILEMOD) $(DEST_LANG)/README.txt $(DEST_LANG)/*.vim; \
+/ fi
+/ if test -d $(KMAPSOURCE); then \
+/    cp $(KMAPSOURCE)/README.txt $(KMAPSOURCE)/*.vim $(DEST_KMAP); \
+/    chmod $(FILEMOD) $(DEST_KMAP)/README.txt $(DEST_KMAP)/*.vim; \
+/ fi
 # Installing translated README and LICENSE files
-	if test -d $(TRANSSOURCE) ; then \
-	  if test -n "$(LANG)" ; then \
-	    lngusr=$${LANG%%.*} ; \
-	  elif test -n "$(LANGUAGE)" ; then \
-	    lngusr=$${LANGUAGE%%:*} ; \
-	  elif test -n "$(LC_MESSAGES)" ; then \
-	    lngusr=$${LC_MESSAGES%%.*} ; \
-	  fi; \
-	  if test "$$lngusr" = "zh_TW" -o "$$lngusr" = "zh_CN" -o "$$lngusr" = "pt_BR" ; then \
-	    lngusr=`echo $$lngusr | tr '[:upper:]' '[:lower:]'` ; \
-	  elif test -n "$$lngusr" -a "$$lngusr" != "C" -a "$$lngusr" != "POSIX" ; then \
-	    lngusr=$${lngusr%%_*} ; \
-	  fi ; \
-	  if test -f $(TRANSSOURCE)/README.$$lngusr.txt ; then \
-	    cp $(TRANSSOURCE)/README.$$lngusr.txt $(DEST_RT) ; \
-	    chmod $(HELPMOD) $(DEST_RT)/README.$$lngusr.txt ; \
-	  fi ; \
-	  if test -f $(TRANSSOURCE)/LICENSE.$$lngusr.txt ; then \
-	    cp $(TRANSSOURCE)/LICENSE.$$lngusr.txt $(DEST_RT) ; \
-	    chmod $(HELPMOD) $(DEST_RT)/LICENSE.$$lngusr.txt ; \
-	  fi ; \
-	fi
+/ if test -d $(TRANSSOURCE) ; then \
+/   if test -n "$(LANG)" ; then \
+/     lngusr=$${LANG%%.*} ; \
+/   elif test -n "$(LANGUAGE)" ; then \
+/     lngusr=$${LANGUAGE%%:*} ; \
+/   elif test -n "$(LC_MESSAGES)" ; then \
+/     lngusr=$${LC_MESSAGES%%.*} ; \
+/   fi; \
+/   if test "$$lngusr" = "zh_TW" -o "$$lngusr" = "zh_CN" -o "$$lngusr" = "pt_BR" ; then \
+/     lngusr=`echo $$lngusr | tr '[:upper:]' '[:lower:]'` ; \
+/   elif test -n "$$lngusr" -a "$$lngusr" != "C" -a "$$lngusr" != "POSIX" ; then \
+/     lngusr=$${lngusr%%_*} ; \
+/   fi ; \
+/   if test -f $(TRANSSOURCE)/README.$$lngusr.txt ; then \
+/     cp $(TRANSSOURCE)/README.$$lngusr.txt $(DEST_RT) ; \
+/     chmod $(HELPMOD) $(DEST_RT)/README.$$lngusr.txt ; \
+/   fi ; \
+/   if test -f $(TRANSSOURCE)/LICENSE.$$lngusr.txt ; then \
+/     cp $(TRANSSOURCE)/LICENSE.$$lngusr.txt $(DEST_RT) ; \
+/     chmod $(HELPMOD) $(DEST_RT)/LICENSE.$$lngusr.txt ; \
+/   fi ; \
+/ fi
 
 $(HELPSOURCE)/eegl.1 $(MACROSOURCE) $(TOOLSSOURCE):
-	@echo Runtime files not found.
-	@echo You need to unpack the runtime archive before running "make install".
-	test -f error
+/ @echo Runtime files not found.
+/ @echo You need to unpack the runtime archive before running "make install".
+/ test -f error
 
 $(DESTDIR)$(exec_prefix) $(DEST_BIN) \
-		$(DEST_VIM) $(DEST_RT) $(DEST_HELP) \
-		$(DEST_PRINT) $(DEST_COL) $(DEST_SYN) $(DEST_SYN)/shared \
-		$(DEST_SYN)/modula2 $(DEST_SYN)/modula2/opt \
-		$(DEST_IND) $(DEST_FTP) \
-		$(DEST_LANG) $(DEST_KMAP) $(DEST_COMP) $(DEST_MACRO) \
-		$(DEST_PACK) $(DEST_TOOLS) \
-		$(DEST_TUTOR) $(DEST_TUTOR)/en $(DEST_TUTOR)/it \
-		$(DEST_TUTOR)/sr $(DEST_TUTOR)/ru \
-		$(DEST_SPELL) \
-		$(DEST_AUTO) $(DEST_AUTO)/dist $(DEST_AUTO)/xml \
-		$(DEST_AUTO)/cargo $(DEST_AUTO)/rust \
-		$(DEST_IMPORT) $(DEST_IMPORT)/dist $(DEST_PLUG):
-	mkdir -p $@
-	-chmod $(DIRMOD) $@
+/ 	$(DEST_VIM) $(DEST_RT) $(DEST_HELP) \
+/ 	$(DEST_PRINT) $(DEST_COL) $(DEST_SYN) $(DEST_SYN)/shared \
+/ 	$(DEST_SYN)/modula2 $(DEST_SYN)/modula2/opt \
+/ 	$(DEST_IND) $(DEST_FTP) \
+/ 	$(DEST_LANG) $(DEST_KMAP) $(DEST_COMP) $(DEST_MACRO) \
+/ 	$(DEST_PACK) $(DEST_TOOLS) \
+/ 	$(DEST_TUTOR) $(DEST_TUTOR)/en $(DEST_TUTOR)/it \
+/ 	$(DEST_TUTOR)/sr $(DEST_TUTOR)/ru \
+/ 	$(DEST_SPELL) \
+/ 	$(DEST_AUTO) $(DEST_AUTO)/dist $(DEST_AUTO)/xml \
+/ 	$(DEST_AUTO)/cargo $(DEST_AUTO)/rust \
+/ 	$(DEST_IMPORT) $(DEST_IMPORT)/dist $(DEST_PLUG):
+/ mkdir -p $@
+/ -chmod $(DIRMOD) $@
 
 # Create links from various names to vim.  This is only done when the links
 # (or executables with the same name) don't exist yet.
 installlinks: $(DEST_BIN)/$(VIEWTARGET) \
-			$(DEST_BIN)/$(REEGLTARGET) \
-			$(DEST_BIN)/$(RVIEWTARGET) \
-			$(INSTALLVIMDIFF)
+/ 		$(DEST_BIN)/$(REEGLTARGET) \
+/ 		$(DEST_BIN)/$(RVIEWTARGET) \
+/ 		$(INSTALLVIMDIFF)
 
 installvimdiff: $(DEST_BIN)/$(VIMDIFFTARGET)
 
 $(DEST_BIN)/$(VIEWTARGET): $(DEST_BIN)
-	cd $(DEST_BIN); ln -s $(EEGLTARGET) $(VIEWTARGET)
+/ cd $(DEST_BIN); ln -s $(EEGLTARGET) $(VIEWTARGET)
 
 
 $(DEST_BIN)/$(EEGLDIFFTARGET): $(DEST_BIN)
-	cd $(DEST_BIN); ln -s $(EEGLTARGET) $(VIMDIFFTARGET)
+/ cd $(DEST_BIN); ln -s $(EEGLTARGET) $(VIMDIFFTARGET)
 
 # Create links for the manual pages with various names to Eegl. This is only
 # done when the links (or manpages with the same name) don't exist yet.
@@ -1609,178 +1468,178 @@ $(DEST_BIN)/$(EEGLDIFFTARGET): $(DEST_BIN)
 INSTALLMLARGS = eegl $(EEGLDIFFNAME) $(EEEGLNAME)
 
 installmanlinks:
-	-$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh install "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN) $(INSTALLMLARGS)
 
 uninstall: uninstall_runtime
-	-rm -f $(DEST_BIN)/$(EEGLTARGET)
-	-rm -f $(DEST_BIN)/vimtutor
-	-rm -f $(DEST_BIN)/$(REEGLTARGET) $(DEST_BIN)/$(RVIEWTARGET)
-	-rm -f $(DEST_BIN)/$(RGEEGLTARGET) $(DEST_BIN)/$(RGVIEWTARGET)
-	-rm -f $(DEST_BIN)/$(VIMDIFFTARGET) $(DEST_BIN)/$(GVIMDIFFTARGET)
-	-rm -f $(DEST_BIN)/$(EEEGLTARGET) $(DEST_BIN)/$(EVIEWTARGET)
+/ -rm -f $(DEST_BIN)/$(EEGLTARGET)
+/ -rm -f $(DEST_BIN)/vimtutor
+/ -rm -f $(DEST_BIN)/$(REEGLTARGET) $(DEST_BIN)/$(RVIEWTARGET)
+/ -rm -f $(DEST_BIN)/$(RGEEGLTARGET) $(DEST_BIN)/$(RGVIEWTARGET)
+/ -rm -f $(DEST_BIN)/$(VIMDIFFTARGET) $(DEST_BIN)/$(GVIMDIFFTARGET)
+/ -rm -f $(DEST_BIN)/$(EEEGLTARGET) $(DEST_BIN)/$(EVIEWTARGET)
 
 # Note: the "rmdir" will fail if any files were added after "make install"
 uninstall_runtime:
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_JA_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_RU) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_RU_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR_I) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR_U) "" $(INSTALLMANARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DA_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_DE_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_FR_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_IT_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_JA_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_PL_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_RU) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_RU_U) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR_I) $(INSTALLMLARGS)
-	-$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
-		$(DEST_MAN_TR_U) $(INSTALLMLARGS)
-	-rm -f $(DEST_HELP)/*.txt $(DEST_HELP)/tags $(DEST_HELP)/*.pl
-	-rm -f $(DEST_HELP)/*.??x $(DEST_HELP)/tags-??
-	-rm -f $(SYS_MENU_FILE) $(SYS_SYNMENU_FILE) $(SYS_DELMENU_FILE)
-	-rm -f $(SYS_BUGR_FILE) $(VIM_DEFAULTS_FILE) $(EVIM_FILE) $(MSWIN_FILE)
-	-rm -f $(DEST_SCRIPT)/gvimrc_example.vim $(DEST_SCRIPT)/vimrc_example.vim
-	-rm -f $(SYS_FILETYPE_FILE) $(SYS_FTOFF_FILE) $(SYS_SCRIPTS_FILE)
-	-rm -f $(SYS_INDOFF_FILE) $(SYS_INDENT_FILE)
-	-rm -f $(SYS_FTPLUGOF_FILE) $(SYS_FTPLUGIN_FILE)
-	-rm -f $(SYS_OPTWIN_FILE)
-	-rm -f $(DEST_COL)/*.vim $(DEST_COL)/README.txt
-	-rm -rf $(DEST_COL)/tools
-	-rm -f $(DESKTOPPATH)/vim.desktop $(DESKTOPPATH)/gvim.desktop
-	-rm -f $(ICON16PATH)/gvim.png $(ICON32PATH)/gvim.png $(ICON48PATH)/gvim.png
-	-rm -rf $(DEST_COL)/lists
-	-rm -f $(DEST_SYN)/shared/*.vim $(DEST_SYN)/shared/README.txt
-	-rm -f $(DEST_SYN)/modula2/opt/*.vim
-	-rm -f $(DEST_SYN)/*.vim $(DEST_SYN)/README.txt
-	-rm -f $(DEST_IND)/*.vim $(DEST_IND)/README.txt
-	-rm -rf $(DEST_MACRO)
-	-rm -rf $(DEST_PACK)
-	-rm -rf $(DEST_TUTOR)/en
-	-rm -rf $(DEST_TUTOR)/it
-	-rm -rf $(DEST_TUTOR)/ru
-	-rm -rf $(DEST_TUTOR)/sr
-	-rm -rf $(DEST_TUTOR)
-	-rm -rf $(DEST_SPELL)
-	-rm -rf $(DEST_TOOLS)
-	-rm -rf $(DEST_LANG)
-	-rm -rf $(DEST_KMAP)
-	-rm -rf $(DEST_COMP)
-	-rm -f $(DEST_PRINT)/*.ps
-	-rmdir $(DEST_HELP) $(DEST_PRINT) $(DEST_COL) $(DEST_SYN)/shared
-	-rmdir $(DEST_SYN)/modula2/opt $(DEST_SYN)/modula2
-	-rmdir $(DEST_SYN) $(DEST_IND)
-	-rm -rf $(DEST_FTP)/*.vim $(DEST_FTP)/README.txt $(DEST_FTP)/logtalk.dict
-	-rm -f $(DEST_AUTO)/*.vim $(DEST_AUTO)/README.txt
-	-rm -f $(DEST_AUTO)/dist/*.vim $(DEST_AUTO)/xml/*.vim $(DEST_AUTO)/cargo/*.vim $(DEST_AUTO)/rust/*.vim
-	-rm -f $(DEST_IMPORT)/dist/*.vim
-	-rm -f $(DEST_PLUG)/*.vim $(DEST_PLUG)/README.txt
-	-rmdir $(DEST_FTP) $(DEST_AUTO)/dist $(DEST_AUTO)/xml $(DEST_AUTO)/cargo $(DEST_AUTO)/rust $(DEST_AUTO)
-	-rmdir $(DEST_IMPORT)/dist $(DEST_IMPORT)
-	-rm -f $(DEST_RT)/README.??.txt
-	-rm -f $(DEST_RT)/README.??_??.txt
-	-rm -f $(DEST_RT)/LICENSE.??.txt
-	-rm -f $(DEST_RT)/LICENSE.??_??.txt
-	-rm -f $(DEST_RT)/README.txt $(DEST_RT)/LICENSE
-	-rmdir $(DEST_PLUG) $(DEST_RT)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA_I) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_DA_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE_I) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_DE_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR_I) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_FR_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT_I) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_IT_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_JA_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL_I) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_PL_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_RU) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_RU_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR_I) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installman.sh uninstall $(DEST_MAN_TR_U) "" $(INSTALLMANARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DA) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DA_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DA_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DE) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DE_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_DE_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_FR) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_FR_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_FR_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_IT) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_IT_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_IT_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_JA_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_PL) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_PL_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_PL_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_RU) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_RU_U) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_TR) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_TR_I) $(INSTALLMLARGS)
+/ -$(SHELL) ./installml.sh uninstall "$(GUI_MAN_TARGETS)" \
+/ 	$(DEST_MAN_TR_U) $(INSTALLMLARGS)
+/ -rm -f $(DEST_HELP)/*.txt $(DEST_HELP)/tags $(DEST_HELP)/*.pl
+/ -rm -f $(DEST_HELP)/*.??x $(DEST_HELP)/tags-??
+/ -rm -f $(SYS_MENU_FILE) $(SYS_SYNMENU_FILE) $(SYS_DELMENU_FILE)
+/ -rm -f $(SYS_BUGR_FILE) $(VIM_DEFAULTS_FILE) $(EVIM_FILE) $(MSWIN_FILE)
+/ -rm -f $(DEST_SCRIPT)/gvimrc_example.vim $(DEST_SCRIPT)/vimrc_example.vim
+/ -rm -f $(SYS_FILETYPE_FILE) $(SYS_FTOFF_FILE) $(SYS_SCRIPTS_FILE)
+/ -rm -f $(SYS_INDOFF_FILE) $(SYS_INDENT_FILE)
+/ -rm -f $(SYS_FTPLUGOF_FILE) $(SYS_FTPLUGIN_FILE)
+/ -rm -f $(SYS_OPTWIN_FILE)
+/ -rm -f $(DEST_COL)/*.vim $(DEST_COL)/README.txt
+/ -rm -rf $(DEST_COL)/tools
+/ -rm -f $(DESKTOPPATH)/vim.desktop $(DESKTOPPATH)/gvim.desktop
+/ -rm -f $(ICON16PATH)/gvim.png $(ICON32PATH)/gvim.png $(ICON48PATH)/gvim.png
+/ -rm -rf $(DEST_COL)/lists
+/ -rm -f $(DEST_SYN)/shared/*.vim $(DEST_SYN)/shared/README.txt
+/ -rm -f $(DEST_SYN)/modula2/opt/*.vim
+/ -rm -f $(DEST_SYN)/*.vim $(DEST_SYN)/README.txt
+/ -rm -f $(DEST_IND)/*.vim $(DEST_IND)/README.txt
+/ -rm -rf $(DEST_MACRO)
+/ -rm -rf $(DEST_PACK)
+/ -rm -rf $(DEST_TUTOR)/en
+/ -rm -rf $(DEST_TUTOR)/it
+/ -rm -rf $(DEST_TUTOR)/ru
+/ -rm -rf $(DEST_TUTOR)/sr
+/ -rm -rf $(DEST_TUTOR)
+/ -rm -rf $(DEST_SPELL)
+/ -rm -rf $(DEST_TOOLS)
+/ -rm -rf $(DEST_LANG)
+/ -rm -rf $(DEST_KMAP)
+/ -rm -rf $(DEST_COMP)
+/ -rm -f $(DEST_PRINT)/*.ps
+/ -rmdir $(DEST_HELP) $(DEST_PRINT) $(DEST_COL) $(DEST_SYN)/shared
+/ -rmdir $(DEST_SYN)/modula2/opt $(DEST_SYN)/modula2
+/ -rmdir $(DEST_SYN) $(DEST_IND)
+/ -rm -rf $(DEST_FTP)/*.vim $(DEST_FTP)/README.txt $(DEST_FTP)/logtalk.dict
+/ -rm -f $(DEST_AUTO)/*.vim $(DEST_AUTO)/README.txt
+/ -rm -f $(DEST_AUTO)/dist/*.vim $(DEST_AUTO)/xml/*.vim $(DEST_AUTO)/cargo/*.vim $(DEST_AUTO)/rust/*.vim
+/ -rm -f $(DEST_IMPORT)/dist/*.vim
+/ -rm -f $(DEST_PLUG)/*.vim $(DEST_PLUG)/README.txt
+/ -rmdir $(DEST_FTP) $(DEST_AUTO)/dist $(DEST_AUTO)/xml $(DEST_AUTO)/cargo $(DEST_AUTO)/rust $(DEST_AUTO)
+/ -rmdir $(DEST_IMPORT)/dist $(DEST_IMPORT)
+/ -rm -f $(DEST_RT)/README.??.txt
+/ -rm -f $(DEST_RT)/README.??_??.txt
+/ -rm -f $(DEST_RT)/LICENSE.??.txt
+/ -rm -f $(DEST_RT)/LICENSE.??_??.txt
+/ -rm -f $(DEST_RT)/README.txt $(DEST_RT)/LICENSE
+/ -rmdir $(DEST_PLUG) $(DEST_RT)
 #	This will fail when other Eegl versions are installed, no worries.
-	-rmdir $(DEST_VIM)
+/ -rmdir $(DEST_VIM)
 
-# Clean up all the files that have been produced, except configure's.
+#Clean up all the files that have been produced, except configure's.
 clean: testclean
-	-rm -f *.o core $(EEGLTARGET).core $(EEGLTARGET) vim
-	-rm $(OBJDIR)/*
-	-rm $(OBJDIR)/os/*
-	-rm -f conftest* *~ auto/link.sed
-	-rm -f tests/opt_test.vim
-	-rm -f $(UNITTEST_TARGETS)
-	-rm -rf libs/libvterm/.libs libs/libvterm/src/.libs \
+/ -rm -f *.o core $(EEGLTARGET).core $(EEGLTARGET) vim
+/ -rm $(OBJDIR)/*
+/ -rm $(OBJDIR)/os/*
+/ -rm -f conftest* *~ auto/link.sed
+/ -rm -f tests/opt_test.vim
+/ -rm -f $(UNITTEST_TARGETS)
+/ -rm -rf libs/libvterm/.libs libs/libvterm/src/.libs \
                 libs/libvterm/t/.libs libs/libvterm/src/*.o \
                 libs/libvterm/src/*.lo \
                 libs/libvterm/t/*.o libvterm/t/*.lo libvterm/t/harness libvterm/libvterm.la
-	if test -d $(PODIR); then \
-		cd $(PODIR); $(MAKE) prefix=$(DESTDIR)$(prefix) clean; \
-	fi
-	cd libs/wayland; $(MAKE) clean
+/ if test -d $(PODIR); then \
+/ 	cd $(PODIR); $(MAKE) prefix=$(DESTDIR)$(prefix) clean; \
+/ fi
+/ cd libs/wayland; $(MAKE) clean
 
 LINKEDFILES = ../*.[chm] ../*.cc ../*.in ../*.sh ../*.xs ../*.xbm ../gui_gtk_res.xml ../toolcheck \
    ../proto ../libvterm ../vimtutor ../install-sh ../Make_all.mak
 
 
 distclean: clean scratch
-	-rm -f tags
+/ -rm -f tags
 
 dist: distclean
-	@echo
-	@echo Making the distribution has to be done in the top directory
+/ @echo
+/ @echo Making the distribution has to be done in the top directory
 
 
 # Run lint.  Clean up the *.ln files that are sometimes left behind.
 lint:
-	$(LINT) $(LINT_OPTIONS) $(LINT_FLAGS) $(LINT_EXTRA) $(LINT_SRC)
-	-rm -f *.ln
+/ $(LINT) $(LINT_OPTIONS) $(LINT_FLAGS) $(LINT_EXTRA) $(LINT_SRC)
+/ -rm -f *.ln
 
 # Check dosinst.c with lint.
 lintinstall:
-	$(LINT) $(LINT_OPTIONS) -DWIN32 -DUNIX_LINT dosinst.c
-	-rm -f dosinst.ln
+/ $(LINT) $(LINT_OPTIONS) -DWIN32 -DUNIX_LINT dosinst.c
+/ -rm -f dosinst.ln
 
 ###########################################################################
 
 .c.o:
-	$(COMPILE) $<
+/ $(COMPILE) $<
 
 
 # All the object files are put in the "$(OBJDIR)" directory.  Since not all make
@@ -1790,42 +1649,42 @@ lintinstall:
 $(OBJDIR): $(OBJDIR)/.dirstamp
 
 $(OBJDIR)/.dirstamp:
-	mkdir -p $(OBJDIR)
-	touch $(OBJDIR)/.dirstamp
+/ mkdir -p $(OBJDIR)
+/ touch $(OBJDIR)/.dirstamp
 
 # All object files depend on the objects directory, so that parallel make
 # works.  Can't depend on the directory itself, its timestamp changes all the time.
 $(ALL_OBJ): $(OBJDIR)/.dirstamp
 
 $(OBJDIR)/%.o: src/%.c
-	$(COMPILE) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/diff.o: src/diff.c
-	$(COMPILE) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/option.o: src/option.c
-	$(COMPILE) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/regexp.o: src/regexp.c
-	$(COMPILE) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/ui.o: src/ui.c
-	$(COMPILE) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/window.o: src/window.c
-	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
+/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 $(OBJDIR)/main.o: main.c
-	$(COMPILE) -o $@ $<
+/ $(COMPILE) -o $@ $<
 
 $(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
-	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
+/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $< 
 
 $(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
-	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
+/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 $(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
-	$(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
+/ $(COMPILE) $(WAYLAND_FLAGS) -o $@ $<
 
 
 ###############################################################################
