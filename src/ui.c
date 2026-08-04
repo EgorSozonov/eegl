@@ -32,7 +32,7 @@
 #include <stdarg.h>
 int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
-#include <sys/select.h>
+#include <poll.h> //for poll
 
 # define XT_TRACE_DELAY   50   // delay for xterm tracing
 
@@ -10556,7 +10556,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       //Select on ready for reading and exceptional condition (end of file).
       select_eintr:
       
-      PollFd pollFd = {.fd = sd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0};
+      PollFd pollFd = (PollFd){.fd = sd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0};
 
       //if (wayland_may_restore_connection()) {
       //   FD_SET(wayland_display_fd, &rfds);

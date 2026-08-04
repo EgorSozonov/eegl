@@ -374,7 +374,7 @@ channel_connect(
          socklen_t so_error_len = sizeof(so_error);
          TimeVal start_tv;
          TimeVal end_tv;
-         PollFd pollFd = {.fd = sd, .events = POLLIN|POLLOUT, .revents = 0};
+         PollFd pollFd = (PollFd){.fd = sd, .events = POLLIN|POLLOUT, .revents = 0};
 
          tv.tv_usec = (waitnow % 1000) * 1000;
          gettimeofday(&start_tv, NULL);
@@ -4195,7 +4195,6 @@ chBreakcheck(Boole force) {
       fill_input_buf(false);
    } 
 }
-
 
 SigHandler
 mch_signal(int sig, SigHandler func) {

@@ -1431,18 +1431,18 @@ $(HELPSOURCE)/eegl.1 $(MACROSOURCE) $(TOOLSSOURCE):
 / test -f error
 
 $(DESTDIR)$(exec_prefix) $(DEST_BIN) \
-/ 	$(DEST_VIM) $(DEST_RT) $(DEST_HELP) \
-/ 	$(DEST_PRINT) $(DEST_COL) $(DEST_SYN) $(DEST_SYN)/shared \
-/ 	$(DEST_SYN)/modula2 $(DEST_SYN)/modula2/opt \
-/ 	$(DEST_IND) $(DEST_FTP) \
-/ 	$(DEST_LANG) $(DEST_KMAP) $(DEST_COMP) $(DEST_MACRO) \
-/ 	$(DEST_PACK) $(DEST_TOOLS) \
-/ 	$(DEST_TUTOR) $(DEST_TUTOR)/en $(DEST_TUTOR)/it \
-/ 	$(DEST_TUTOR)/sr $(DEST_TUTOR)/ru \
-/ 	$(DEST_SPELL) \
-/ 	$(DEST_AUTO) $(DEST_AUTO)/dist $(DEST_AUTO)/xml \
-/ 	$(DEST_AUTO)/cargo $(DEST_AUTO)/rust \
-/ 	$(DEST_IMPORT) $(DEST_IMPORT)/dist $(DEST_PLUG):
+    $(DEST_VIM) $(DEST_RT) $(DEST_HELP) \
+    $(DEST_PRINT) $(DEST_COL) $(DEST_SYN) $(DEST_SYN)/shared \
+    $(DEST_SYN)/modula2 $(DEST_SYN)/modula2/opt \
+    $(DEST_IND) $(DEST_FTP) \
+    $(DEST_LANG) $(DEST_KMAP) $(DEST_COMP) $(DEST_MACRO) \
+    $(DEST_PACK) $(DEST_TOOLS) \
+    $(DEST_TUTOR) $(DEST_TUTOR)/en $(DEST_TUTOR)/it \
+    $(DEST_TUTOR)/sr $(DEST_TUTOR)/ru \
+    $(DEST_SPELL) \
+    $(DEST_AUTO) $(DEST_AUTO)/dist $(DEST_AUTO)/xml \
+    $(DEST_AUTO)/cargo $(DEST_AUTO)/rust \
+    $(DEST_IMPORT) $(DEST_IMPORT)/dist $(DEST_PLUG):
 / mkdir -p $@
 / -chmod $(DIRMOD) $@
 
