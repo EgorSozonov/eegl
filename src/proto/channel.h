@@ -26,8 +26,6 @@ int channel_in_blocking_wait(void);
 Channel *get_channel_arg(Var *tv, int check_open, int reading, ChannelFdKind part);
 void channel_set_nonblock(Channel *channel, ChannelFdKind part);
 int channel_send(Channel *channel, ChannelFdKind part, CS buf_arg, int len_arg, char *fun);
-int channel_select_setup(int maxfd_in, void *rfds_in, void *wfds_in, TimeVal *tv, TimeVal **tvp);
-int channel_select_check(int ret_in, void *rfds_in, void *wfds_in);
 int channel_parse_messages(void);
 int channel_any_readahead(void);
 int set_ref_in_channel(int copyID);

@@ -1,0 +1,25 @@
+# Maintainer: Egor Sozonov
+# Contributor: Egor Sozonov
+
+pkgname=(eegl)
+pkgver=0.1
+pkgrel=1
+pkgdesc='Text editor and integrated development environment' 
+arch=(x86_64)
+url='https://github.com/EgorSozonov/eegl'
+license=(BSD-3-Clause)
+depends=() 
+optdepends=('wl-clipboard: system clipboard') 
+makedepends=(git make musl)
+source=(git+https://github.com/EgorSozonov/eegl#tag=$pkgver)
+options=(!debug !strip)
+sha256sums=('SKIP')
+
+build() {
+   BIN=. make 
+}
+
+package() {
+   install -D projer "$pkgdir/usr/bin/eegl"
+}
+

@@ -1760,3 +1760,8 @@ $(OBJDIR)/main.o: main.c src/eegl.h
 $(OBJDIR)/ext-data-control-v1.o: libs/wayland/ext-data-control-v1.c
 $(OBJDIR)/xdg-shell.o: libs/wayland/xdg-shell.c
 $(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstable-v1.c
+
+#}}}
+
+package: ##Create a package for Arch Linux by building a specific version
+/ build/package.sh $(APP) $(OBJDIR) $(VERSION)

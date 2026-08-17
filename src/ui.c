@@ -10556,21 +10556,17 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       //Select on ready for reading and exceptional condition (end of file).
       select_eintr:
       
-      PollFd pollFd = (PollFd){.fd = sd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0};
-
-      //if (wayland_may_restore_connection()) {
-      //   FD_SET(wayland_display_fd, &rfds);
-
-      //   if (maxfd < wayland_display_fd)
-      //      maxfd = wayland_display_fd;
-      //}
+      PollFd pollFds[2] = {
+         (PollFd){.fd = fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
+         (PollFd){.fd = wayland_display_fd, .events = POLLIN|POLLOUT|POLLPRI, .revents = 0},
+      };
 
       //maxfd = channel_select_setup(maxfd, &rfds, &wfds, &tv, &timePtr);
       if (interrupted)
          *interrupted = false;
 
-      int ret = poll(&pollFd, 1, towait);
-      result = ret > 0 && (pollFd.revents & POLLIN) != 0;
+      int ret = poll(pollFds, 1, towait);
+      result = ret > 0 && (pollFds[0].revents & POLLIN) != 0;
       if (result)
          --ret;
       ei (interrupted && ret > 0)
@@ -10592,7 +10588,7 @@ uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
       //Technically we should first call wl_display_prepare_read() before
       //polling the fd, then read and dispatch after we poll. However that is
       //only needed for multi threaded environments to prevent deadlocks so we are fine.
-      if (ret > 0 && (wayland_display_fd.revents & POLLIN) != 0)
+      if (ret > 0 && (pollFds[1].revents & POLLIN) != 0)
           wayland_client_update();
 
       // also call when ret == 0, we may be polling a keep-open channel
