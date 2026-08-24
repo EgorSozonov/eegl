@@ -5,7 +5,7 @@
 
 #include "eegl.h"
 #include <float.h>
-public int stat(const char* restrict path, struct stat* restrict buf);
+pub int stat(const char* restrict path, struct stat* restrict buf);
 int mkdir(const char* pathname, mode_t mode);
 
 private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
@@ -28,7 +28,7 @@ private void doOneCommand(OUT CS* commline, Unt flags, LineGetter fgetline, void
 //{{{sortin' and filterin'
 
 // ":ascii" and "ga".
-public void
+pub void
 do_ascii(Invocation* invo UNUSED){
    int cval;
    Byte buf1[20];
@@ -89,7 +89,7 @@ do_ascii(Invocation* invo UNUSED){
 }
 
 //":left", ":center" and ":right": align text.
-public void
+pub void
 c_align(Invocation* invo) {
    int      len;
    int      indent = 0;
@@ -263,7 +263,7 @@ sort_compare(const void *s1, const void *s2) {
 }
 
 // ":sort".
-public void
+pub void
 c_sort(Invocation* invo) {
    RegMatch   regmatch;
    int      len;
@@ -500,7 +500,7 @@ sortend:
 }
 
 // ":uniq".
-public void
+pub void
 c_uniq(Invocation* invo) {
    RegMatch   regmatch;
    int      len;
@@ -687,7 +687,7 @@ uniqend:
 
 // :move command - move lines line1-line2 to line dest
 // return FAIL for failure, OK otherwise
-public int
+pub int
 do_move(LineNr line1, LineNr line2, LineNr dest) {
    CS str;
    LineNr l;
@@ -854,7 +854,7 @@ doCopy(LineNr line1, LineNr line2, LineNr n) {
 private CS prevcmd = NULL;   // the previous command
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_prev_shellcmd(void) {
     eeglFree(prevcmd);
 }
@@ -873,7 +873,7 @@ prevcmd_is_set(void) {
 //Handle the ":!cmd" command.   Also for ":r !cmd" and ":w !cmd"
 //Bangs in the argument are replaced with the previously entered command.
 //Remember the argument.
-public void
+pub void
 do_bang(
    int addr_count,
    Invocation* invo,
@@ -1206,7 +1206,7 @@ filterend:
 }
 
 //Call a shell to execute a command. When "cmd" is NULL, start an interactive shell.
-public void
+pub void
 do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
    int keep_termcap = !termcap_active;
 
@@ -1263,7 +1263,7 @@ do_shell(CS cmd, Unt flags) {   // may be SHELL_DOOUT when output is redirected
 
 //Ask the user to enter a number.
 //When "mouse_used" is not NULL allow using the mouse and in that case return the line number.
-public int
+pub int
 prompt_for_number(int *mouse_used) {
    int      save_commlineRowG;
    int      save_State;
@@ -1304,7 +1304,7 @@ prompt_for_number(int *mouse_used) {
 //Create a shell command from a command string, input redirection file and
 //output redirection file.
 //Return an allocated string with the shell command, or NULL for failure.
-public CS
+pub CS
 make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
    Ulong len = (Ulong)STRLEN(cmd) + 3;      // "()" + ZERO
 
@@ -1334,7 +1334,7 @@ make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
 // <BS>    resulting <Del>
 //  ^?      ^H
 //not ^?   ^?
-public void
+pub void
 do_fixdel(Invocation* invo UNUSED) {
     CS p = find_termcode(S"kb");
     termAddRecognizedTermcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, false);
@@ -1413,7 +1413,7 @@ renameBook(CS new_fname) {
 //{{{writin' to files
 
 // ":file[!] [fname]".
-public void
+pub void
 c_file(Invocation* invo) {
    // ":0file" removes the file name.  Check for illegal uses ":3file", "0file name", etc.
    if (invo->addr_count > 0 && (*invo->arg != ZERO || invo->line2 > 0 || invo->addr_count > 1)) {
@@ -1432,14 +1432,14 @@ c_file(Invocation* invo) {
 }
 
 // ":update".
-public void
+pub void
 c_update(Invocation* invo) {
    if (doWasCurBookChanged())
       (void)do_write(invo);
 }
 
 // ":write" and ":saveas".
-public void
+pub void
 c_write(Invocation* invo) {
    if (invo->id == C_saveas) {
       // :saveas does not take a range, uses all lines.
@@ -1534,7 +1534,7 @@ check_overwrite(
 //If "*invo->arg == ZERO" write to current file.
 //
 //Return FAIL for failure, OK otherwise.
-public int
+pub int
 do_write(Invocation* invo) {
    CS fname = NULL;      // init to shut up gcc
    int retval = FAIL;
@@ -1673,7 +1673,7 @@ theend:
 }
 
 // Handle ":wnext", ":wNext" and ":wprevious" commands.
-public void
+pub void
 c_wnext(Invocation* invo){
    int      i;
    if (invo->comm[1] == 'n')
@@ -1690,7 +1690,7 @@ c_wnext(Invocation* invo){
 //{{{editing files
 
 // ":wall", ":wqall" and ":xall": Write all changed files (and exit).
-public void
+pub void
 do_wqall(Invocation* invo){
    int error = 0;
    int save_forceit = invo->forceit;
@@ -1805,7 +1805,7 @@ check_readonly(OUT Boole* forceit, Book* book) {
 //GETFILE_NOT_WRITTEN for "not written" error,
 //GETFILE_SAME_FILE for success
 //GETFILE_OPEN_OTHER for successfully opening another file.
-public int
+pub int
 getfile(
    int fnum,
    CS ffname_arg,
@@ -1889,7 +1889,7 @@ getfile(
 //       of the previous book for "oldPort" is stored.
 //
 //return FAIL for failure, OK otherwise
-public int
+pub int
 startEditingFile(
    int fnum,
    CS fullFName,
@@ -2447,7 +2447,7 @@ delbuf_msg(CS name) {
 private int append_indent = 0;       // autoindent for first line
 
 // ":insert" and ":append", also used by ":change"
-public void
+pub void
 c_append(Invocation* invo) {
    CS theline;
    int did_undo = false;
@@ -2571,7 +2571,7 @@ c_append(Invocation* invo) {
 }
 
 //":change"
-public void
+pub void
 c_change(Invocation* invo) {
    if (invo->line2 >= invo->line1 && u_save(invo->line1 - 1, invo->line2 + 1) == FAIL)
       return;
@@ -2597,7 +2597,7 @@ c_change(Invocation* invo) {
 }
 
 // "z" family of commands
-public void
+pub void
 c_z(Invocation* invo) {
    long bigness;
    CS kind;
@@ -2734,7 +2734,7 @@ private typedef struct {
 } SubstitutionState;
 
 // Skip over the "sub" part in :s/pat/sub/ where "delimiter" is the separating character.
-public CS
+pub CS
 skip_substitute(CS start, int delimiter) {
    CS p = start;
 
@@ -2767,7 +2767,7 @@ check_regexp_delim(int c) {
 // The usual escapes are supported as described in the regexp docs.
 // :S is the case-sensitive variant
 // The & repeats previous substitute command
-public void
+pub void
 c_substitute(Invocation* invo) {
    LineNr lnum;
    long i = 0;
@@ -3689,7 +3689,7 @@ outofmem:
 
 // Give message for number of substitutions. Can also be used after a ":global" command.
 // Return true if a message was given.
-public int
+pub int
 do_sub_msg(int       count_only) {    // used 'n' flag for ":s"
    // Only report substitutions when:
    // - command was typed by user, or number of changed lines > 0
@@ -3726,20 +3726,20 @@ do_sub_msg(int       count_only) {    // used 'n' flag for ":s"
 }
 
 // Get the previous substitute pattern.
-public CS
+pub CS
 get_old_sub(void) {
    return prevSubstS;
 }
 
 // Set the previous substitute pattern.  "val" must be allocated.
-public void
+pub void
 set_old_sub(CS val) {
    eeglFree(prevSubstS);
    prevSubstS = val;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_old_sub(void) {
    eeglFree(prevSubstS);
 }
@@ -3771,7 +3771,7 @@ global_exe_one(CS cmd, LineNr lnum) {
 // This is implemented in two passes: first we scan the file for the pattern and set a mark for 
 // each line that (not) matches. Secondly we execute the command for each line that has a mark. 
 // This is required because after deleting lines we do not know where to search for the next match.
-public void
+pub void
 c_global(Invocation* invo) {
    LineNr lnum;      // line number according to old situation
    int ndone = 0;
@@ -3879,7 +3879,7 @@ c_global(Invocation* invo) {
 }
 
 // Execute "cmd" on lines marked with ml_setmarked().
-public void
+pub void
 global_exe(CS cmd) {
    LineNr old_lcount;   // mem.lineCount before the command
    Book    *old_buf = curBook;   // remember what buffer we started in
@@ -3931,7 +3931,7 @@ global_exe(CS cmd) {
 
 // Set up for a tagpreview. Make the preview portal the current portal.
 // Return true when it was created.
-public int
+pub int
 prepare_tagpreview(
    int      undo_sync,       // sync undo when leaving the portal
    int      use_previewpopup,   // use popup if 'previewpopup' set
@@ -3981,7 +3981,7 @@ prepare_tagpreview(
 
 
 // Make the user happy.
-public void
+pub void
 c_smile(Invocation* invo UNUSED) {
    static char *code[] = {
    "\34 \4o\14$\4ox\30 \2o\30$\1ox\25 \2o\36$\1o\11 \1o\1$\3 \2$\1 \1o\1$x\5 \1o\1 \1$\1 \2o\10 "
@@ -4016,7 +4016,7 @@ c_smile(Invocation* invo UNUSED) {
 }
 
 // ":drop" Open the first argument in a portal, and the argument list is redefined.
-public void
+pub void
 c_drop(Invocation* invo) {
    int      split = false;
    Portal   *po;
@@ -4131,13 +4131,13 @@ skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp) {
 // If "flags" is not NULL put the flags in it: VGR_GLOBAL, VGR_NOJUMP.
 // If "s" is not NULL terminate the pattern with a ZERO.
 // Return a pointer to the char just past the pattern plus flags.
-public CS
+pub CS
 skipEeglGrepPat(CS p, Byte **s, Unt *flags) {
    return skipEeglGrepPat_ext(p, s, flags, NULL, NULL);
 }
 
 // List v:oldfiles in a nice way.
-public void
+pub void
 c_oldfiles(Invocation* invo) {
    List* l = get_EeglVar_list(VV_OLDFILES);
    if (!l) {
@@ -4198,7 +4198,7 @@ c_oldfiles(Invocation* invo) {
 }
 
 //":argdo", ":windo", ":bufdo", ":tabdo", ":ldo"
-public void
+pub void
 c_listDo(Invocation* invo) {
    int i;
    Portal* po;
@@ -4384,7 +4384,7 @@ c_listDo(Invocation* invo) {
 }
 
 // ":compiler[!] {name}"
-public void
+pub void
 c_compiler(Invocation* invo) {
    CS old_cur_comp = NULL;
    CS p;
@@ -4440,7 +4440,7 @@ c_compiler(Invocation* invo) {
 }
 
 // ":checktime [buffer]"
-public void
+pub void
 c_checktime(Invocation* invo){
    Book   *book;
    int      save_no_check_timestamps = no_check_timestamps;
@@ -4460,7 +4460,7 @@ c_checktime(Invocation* invo){
 
 // If 'autowrite' option set, try to write the file. Careful: autocommands may make "book" invalid!
 // return FAIL for failure, OK otherwise
-public int
+pub int
 autowrite(Book *book, int forceit) {
    if (!(p_aw || p_awa) || book->o.modifiable
         // never autowrite a "nofile" or "nowrite" book
@@ -4480,7 +4480,7 @@ autowrite(Book *book, int forceit) {
 }
 
 // Flush all books, except the ones that are readonly or are never written.
-public void
+pub void
 doFlushAllBooks(void) {
    if (!p_aw && !p_awa)
       return;
@@ -4500,7 +4500,7 @@ doFlushAllBooks(void) {
 }
 
 // Return true if buffer was changed and cannot be abandoned. For flags use the CCGD_ values.
-public int
+pub int
 check_changed(Book *book, int flags) {
    int      forceit = (flags & CCGD_FORCEIT);
    BookRef   bookRef;
@@ -4548,7 +4548,7 @@ check_changed(Book *book, int flags) {
 }
 
 // Ask the user what to do when abandoning a changed buffer. Must check 'write' option first!
-public void
+pub void
 dialog_changed(Book* book, int checkall) {  // may abandon all changed buffers
    Byte buff[DIALOG_MSG_SIZE];
    int ret;
@@ -4629,7 +4629,7 @@ add_bufnum(int *bufnrs, int *bufnump, int nr) {
 //true if any buffer was changed and cannot be abandoned. That changed buffer becomes the 
 //current buffer. When "unload" is true the current buffer is unloaded instead of making it
 //hidden.  This is used for ":q!".
-public int
+pub int
 check_changed_any(Boole checkOnlyHidden, Boole unload) {
    int      ret = false;
    Book   *book;
@@ -4751,7 +4751,7 @@ theend:
 }
 
 //return FAIL if there is no file name, OK if there is one give error message for FAIL
-public int
+pub int
 check_fname(void) {
    if (curBook->fullFileName == NULL) {
       emsg(_(e_no_file_name));
@@ -4762,7 +4762,7 @@ check_fname(void) {
 
 //Flush the contents of a book, unless it has no file name.
 //Return FAIL for failure, NOTDONE for refusal, OK otherwise
-public int
+pub int
 bookWrite_all(Book* book, Boole forceit) {
    Book* curBookSaved = curBook;
 
@@ -4915,7 +4915,7 @@ msg_verbose_cmd(LineNr lnum, CS cmd) {
 }
 
 // Execute a simple command line.  Used for translated commands like "*".
-public int
+pub int
 executeCommLine(CS cmd) {
    return doCommand(cmd, NULL, NULL, DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
 }
@@ -4928,7 +4928,7 @@ do_cmd_argument(CS cmd) {
 }
 
 // Handle when "did_throw" is set after executing commands.
-public void
+pub void
 handle_did_throw(void) {
    CS p = NULL;
    MsgList* messages = NULL;
@@ -4982,7 +4982,7 @@ handle_did_throw(void) {
 }
 
 //Get the next line source line without advancing.
-public CS
+pub CS
 getline_peek(
    LineGetter fgetline,
    void* cookie      // argument for fgetline()
@@ -5083,7 +5083,7 @@ current_tab_nr(Tab *tab) {
 // DOCMD_KEEPLINE - Store first typed line (for repeating with ".").
 //
 // return FAIL if commline could not be executed, OK otherwise
-public int
+pub int
 doCommand(
    CS commline,
    LineGetter fgetline,
@@ -5867,7 +5867,7 @@ private Byte ex_error_buf[MSG_BUF_LEN];
 
 //Return an error message with argument included. Use a static buffer, only the last error will be 
 //kept. "msg" will be translated, caller should use N_().
-public CS
+pub CS
 ex_errmsg(CS msg, CS arg) {
    eeSnprintf(ex_error_buf, MSG_BUF_LEN, _(msg), arg);
    return ex_error_buf;
@@ -5878,7 +5878,7 @@ ex_errmsg(CS msg, CS arg) {
 private char exmode_plus[] = "+";
 
 // Handle a range without a command. Returns an error message on failure.
-public CS
+pub CS
 ex_range_without_command(Invocation* invo) {
    CS errorMsg = NULL;
 
@@ -5933,7 +5933,7 @@ checkforcmd_opt(
 
 //Check for a command with optional tail.
 //If there is a match advance "pp" to the argument and return true.
-public int
+pub int
 checkforcmd(
    OUT CS* pp,      // start of command
    CS cmd,      // name of command
@@ -5944,7 +5944,7 @@ checkforcmd(
 
 //Check for a command with optional tail, not followed by "(" or ".".
 //If there is a match advance "pp" to the argument and return true.
-public int
+pub int
 checkforcmd_noparen(
     OUT CS* pp,      // start of command
     CS cmd,      // name of command
@@ -5965,7 +5965,7 @@ checkforcmd_noparen(
 //- set msg_silent for ":silent"
 //- set 'eventignore' to "all" for ":noautocmd"
 //Return FAIL when the command is not to be executed. May set "errorMsg" to an error message.
-public int
+pub int
 parse_command_modifiers(
    Invocation* invo,
    OUT CS* errorMsg,
@@ -6226,7 +6226,7 @@ parse_command_modifiers(
 }
 
 //Apply the command modifiers. Save current state into commModifierG, call undoCommModifier() later
-public void
+pub void
 applyCommModifiers(CommandModifier* cmod) {
    if (cmod->cmod_verbose > 0) {
       if (cmod->cmod_verbose_save == 0)
@@ -6257,7 +6257,7 @@ applyCommModifiers(CommandModifier* cmod) {
 }
 
 //Undo and free contents of "cmod".
-public void
+pub void
 undoCommModifier(CommandModifier *cmod) {
    if (cmod->cmod_verbose_save > 0) {
       p_verbose = cmod->cmod_verbose_save - 1;
@@ -6296,7 +6296,7 @@ undoCommModifier(CommandModifier *cmod) {
 
 //Parse the address range, if any, in "invo". May set the last search pattern, unless "silent" 
 //is true. Return FAIL and set "errorMsg" or return OK.
-public int
+pub int
 parse_cmd_address(Invocation* invo, CS* errorMsg, int silent) {
    int      address_count = 1;
    LineNr   lnum;
@@ -6467,7 +6467,7 @@ append_command(CS cmd) {
 
 //If "start" points "&opt", "&l:opt", "&g:opt" or "$ENV" return a pointer to
 //the name.  Otherwise just return "start".
-public CS
+pub CS
 skip_option_env_lead(CS start) {
    CS name = start;
    if (*start == '&') {
@@ -6508,7 +6508,7 @@ oneLetterCommand(CS p, OUT CommIndex *idx) {
 }
 
 //true if "cmd" starts with "123->", a number followed by a method call.
-public int
+pub int
 number_method(CS cmd) {
    CS p = skipdigits(cmd);
    return p > cmd && (p = skipwhite(p))[0] == '-' && p[1] == '>';
@@ -6522,7 +6522,7 @@ number_method(CS cmd) {
 //"let".  Sets invo->id to the command while returning "invo->comm".
 //
 //Return NULL for an ambiguous user command.
-public CS
+pub CS
 findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
    int len;
    int i;
@@ -6772,7 +6772,7 @@ private CommModeInfo modeInfoTable[] = {
 };   // modeInfoTable
 
 //Return length of a command modifier (including optional count). Return 0 when it's not a modifier.
-public int
+pub int
 modifier_len(CS cmd) {
    CS p = cmd;
    if (EE_ISDIGIT(*cmd))
@@ -6793,7 +6793,7 @@ modifier_len(CS cmd) {
 //Return > 0 if the command "name" exists.
 //Return 2 if there is an exact match.
 //Return 3 if there is an ambiguous match.
-public int
+pub int
 cmd_exists(CS name) {
    int full = false;
 
@@ -6824,7 +6824,7 @@ cmd_exists(CS name) {
    return (invo.id == COUNT_COMMANDS ? 0 : (full ? 2 : 1));
 }
 
-public void
+pub void
 f_fullcommand(Var *argvars, Var *returnVar) {
    int      save_cmod_flags = commModifierG.cmod_flags;
 
@@ -6856,7 +6856,7 @@ theend:
    commModifierG.cmod_flags = save_cmod_flags;
 }
 
-public CommIndex
+pub CommIndex
 commandGetInd(CS cmd, int len) {
    CommIndex idx;
    if (!oneLetterCommand(cmd, OUT &idx)) {
@@ -6869,7 +6869,7 @@ commandGetInd(CS cmd, int len) {
    return idx;
 }
 
-public long
+pub long
 commandGetFlags(CommIndex idx) {
    return (long)commands[(int)idx].flags;
 }
@@ -6881,7 +6881,7 @@ commandGetFlags(CommIndex idx) {
 //
 //Also skip white space and ":" characters after the range.
 //Return the "cmd" pointer advanced to beyond the range.
-public CS
+pub CS
 skip_range(
    CS cmd_start,
    int skip_star,   // skip "*" used for Visual range
@@ -6993,7 +6993,7 @@ default_address(Invocation* invo) {
 //error is encountered. This may set the last used search pattern.
 //
 //Return MAXLNUM when no address was found.
-public LineNr
+pub LineNr
 doGetCommandAddress(
    Invocation   *invo UNUSED,
    OUT CS* ptr,
@@ -7369,7 +7369,7 @@ get_flags(Invocation* invo) {
 }
 
 //Function called for command which is Not Implemented.  NI!
-public void
+pub void
 c_ni(Invocation* invo) {
    if (!invo->skip)
       invo->errmsg = _(e_sorry_command_is_not_available_in_this_version);
@@ -7554,7 +7554,7 @@ replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline) {
 
 //Expand file name in a command argument. When an error is detected, "errorMsg" is set to a 
 //non-NULL pointer. Return FAIL for failure, OK otherwise.
-public int
+pub int
 expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg){
    CS repl;
    Unt srclen;
@@ -7737,7 +7737,7 @@ repl_commline(
 }
 
 //Check for '//' to start comments. If "keep_backslash" is true, do not remove any backslash.
-public void
+pub void
 separateNextCommand(Invocation* invo, int keep_backslash) {
    for (CS p = skip_grep_pat(invo) ; *p; MB_PTR_ADV(p)) {
       if (*p == Ctrl_V) {
@@ -7802,7 +7802,7 @@ getargcmd(OUT CS* argp) {
 }
 
 //Find end of "+command" argument.  Skip over "\ " and "\\".
-public CS
+pub CS
 skip_cmd_arg(CS p, int rembs) {   // true to halve the number of backslashes
    while (*p && !isSpace(*p)) {
       if (*p == '\\' && p[1] != ZERO) {
@@ -7816,7 +7816,7 @@ skip_cmd_arg(CS p, int rembs) {   // true to halve the number of backslashes
    return p;
 }
 
-public int
+pub int
 get_bad_opt(CS p, Invocation* invo) {
    if (caseInsensitiveCompare(p, "keep") == 0)
       invo->bad_char = BAD_KEEP;
@@ -7913,7 +7913,7 @@ get_argoname(Expand* xp UNUSED, int idx) {
 }
 
 // Command-line expansion for ++opt=name.
-public int
+pub int
 expand_argopt(
    CS pat,
    Expand    *xp,
@@ -7947,7 +7947,7 @@ expand_argopt(
 //}}}
 //{{{misc 1
 
-public void
+pub void
 c_autocmd(Invocation* invo) {
    //Disallow autocommands from .exrc and .vimrc in current directory for security reasons.
    if (invo->id == C_autocmd)
@@ -7957,7 +7957,7 @@ c_autocmd(Invocation* invo) {
 }
 
 // ":doautocmd": Apply the automatic commands to the current book.
-public void
+pub void
 c_doautocmd(Invocation* invo) {
    CS arg = invo->arg;
    Boole did_aucmd;
@@ -7968,7 +7968,7 @@ c_doautocmd(Invocation* invo) {
 //:[N]bunload[!] [N] [bookname] unload book
 //:[N]bdelete[!] [N] [bookname] delete book from book list
 //:[N]bwipeout[!] [N] [bookname] delete book really
-public void
+pub void
 c_bunload(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
@@ -7980,7 +7980,7 @@ c_bunload(Invocation* invo) {
 
 //:[N]book [N]   to book N
 //:[N]sbook [N]  to book N
-public void
+pub void
 c_book(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
@@ -8004,7 +8004,7 @@ do_exbuffer(Invocation* invo) {
 
 //:[N]bmodified [N]   to next mod. book
 //:[N]sbmodified [N]   to next mod. book
-public void
+pub void
 c_bmodified(Invocation* invo) {
    bookGoto(invo, DOBOOK_MOD, FORWARD, (int)invo->line2);
    if (invo->higherOrderComm)
@@ -8013,7 +8013,7 @@ c_bmodified(Invocation* invo) {
 
 //:[N]bnext [N]   to next book
 //:[N]sbnext [N]   split and to next book
-public void
+pub void
 c_bnext(Invocation* invo){
    if (portErrorIfPopup(true))
       return;
@@ -8027,7 +8027,7 @@ c_bnext(Invocation* invo){
 //:[N]bprevious [N]   to previous book
 //:[N]sbNext [N]   split and to previous book
 //:[N]sbprevious [N]   split and to previous book
-public void
+pub void
 c_bprevious(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
@@ -8041,7 +8041,7 @@ c_bprevious(Invocation* invo) {
 //:bfirst      to first book
 //:sbrewind      split and to first book
 //:sbfirst      split and to first book
-public void
+pub void
 c_brewind(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
@@ -8053,7 +8053,7 @@ c_brewind(Invocation* invo) {
 
 //:blast      to last book
 //:sblast      split and to last book
-public void
+pub void
 c_blast(Invocation* invo) {
    if (portErrorIfPopup(true))
       return;
@@ -8064,13 +8064,13 @@ c_blast(Invocation* invo) {
 }
 
 // Check if "c" ends a Command.
-public int
+pub int
 endsComm(CS c) {
    return *c == ZERO || isComment(c) || *c == '\n';
 }
 
 //Return the next command, after the first '|' or '\n'. NULL if not found.
-public CS
+pub CS
 find_nextcmd(CS p) {
    while (*p != '\n') {
       if (*p == ZERO)
@@ -8081,7 +8081,7 @@ find_nextcmd(CS p) {
 }
 
 // Function given to expandGeneric() to obtain the list of command names.
-public CS
+pub CS
 get_command_name(Expand *xp UNUSED, int idx) {
    if (idx >= (int)COUNT_COMMANDS)
       return expand_user_command_name(idx);
@@ -8091,7 +8091,7 @@ get_command_name(Expand *xp UNUSED, int idx) {
    return commands[idx].name;
 }
 
-public void
+pub void
 c_hilite(Invocation* invo) {
    if (*invo->arg == ZERO && invo->comm[2] == '!')
       msg(_("Greetings, Eegl user!"));
@@ -8101,7 +8101,7 @@ c_hilite(Invocation* invo) {
 
 // Call this function if we thought we were going to exit, but we won't
 // (because of an error). May need to restore the terminal mode.
-public void
+pub void
 not_exiting(void) {
    isExitingG = false;
    termSetMode(TMODE_RAW);
@@ -8133,7 +8133,7 @@ before_quit_autocmds(Portal *po, int quit_all) {
 //":quit": quit current portal, quit Eegl if the last portal is closed.
 //":{nr}quit": quit portal {nr}
 //Also used when closing a terminal portal that's the last one.
-public void
+pub void
 c_quit(Invocation* invo) {
     Portal   *po;
 
@@ -8183,14 +8183,14 @@ c_quit(Invocation* invo) {
 }
 
 // ":cquit".
-public void
+pub void
 c_cquit(Invocation* invo UNUSED) {
    // this does not always pass on the exit code to the Manx compiler. why?
    exitEegl(invo->addr_count > 0 ? (int)invo->line2 : EXIT_FAILURE);
 }
 
 //Do preparations for "qall" and "wqall". Return FAIL when quitting should be aborted.
-public int
+pub int
 before_quit_all(Invocation* invo) {
    if (commPortTypeG != 0) {
       if (invo->forceit)
@@ -8213,7 +8213,7 @@ before_quit_all(Invocation* invo) {
 }
 
 // ":qall": try to quit all portals
-public void
+pub void
 c_quit_all(Invocation* invo) {
    if (before_quit_all(invo) == FAIL)
       return;
@@ -8224,7 +8224,7 @@ c_quit_all(Invocation* invo) {
 }
 
 // ":close": close current portal; if it is the last one, close the program
-public void
+pub void
 c_close(Invocation* invo) {
    if (commPortTypeG != 0)
       commPortResultG = Ctrl_C;
@@ -8254,7 +8254,7 @@ private Callback findFnCb;
 
 
 // ":pclose": Close any preview portal.
-public void
+pub void
 c_pclose(Invocation* invo UNUSED) {
    Portal* port;
 
@@ -8385,7 +8385,7 @@ theend:
 }
 
 //":tabclose": close current tab, unless it is the last one. ":tabclose N": close tab N.
-public void
+pub void
 c_tabclose(Invocation* invo) {
    if (commPortTypeG != 0) {
       commPortResultG = K_IGNORE;
@@ -8417,7 +8417,7 @@ c_tabclose(Invocation* invo) {
 }
 
 // ":tabonly": close all tabs except the current one
-public void
+pub void
 c_tabonly(Invocation* invo) {
    if (commPortTypeG != 0) {
       commPortResultG = K_IGNORE;
@@ -8456,7 +8456,7 @@ c_tabonly(Invocation* invo) {
 }
 
 // Close the current tab
-public void
+pub void
 tabClose() {
    if (portalLayout_locked(C_tabclose))
       return;
@@ -8472,7 +8472,7 @@ tabClose() {
 }
 
 //Close tab "p", which is not the current tab. Note that autocommands may make "t" invalid.
-public void
+pub void
 tabCloseOther(Tab *t) {
    int      done = 0;
    trigger_tabclosedpre(t, true);
@@ -8492,7 +8492,7 @@ tabCloseOther(Tab *t) {
 }
 
 // ":only".
-public void
+pub void
 c_only(Invocation* invo) {
    if (portalLayout_locked(C_only))
       return;
@@ -8510,7 +8510,7 @@ c_only(Invocation* invo) {
    portCloseOthers(true);
 }
 
-public void
+pub void
 c_hide(Invocation* invo UNUSED) {
    // ":hide" or ":hide | cmd": hide current portal
    if (invo->skip)
@@ -8536,7 +8536,7 @@ c_hide(Invocation* invo UNUSED) {
 }
 
 // ":exit", ":xit" and ":wq": Write file and quit the current portal.
-public void
+pub void
 c_exit(Invocation* invo) {
    if (commPortTypeG != 0) {
       commPortResultG = Ctrl_C;
@@ -8570,7 +8570,7 @@ c_exit(Invocation* invo) {
 }
 
 // ":print", ":list", ":number".
-public void
+pub void
 c_print(Invocation* invo) {
    if (curBook->mem.flags & ML_EMPTY)
       emsg(_(e_empty_buffer));
@@ -8590,26 +8590,26 @@ c_print(Invocation* invo) {
    ex_no_reprint = true;
 }
 
-public void
+pub void
 c_goto(Invocation* invo) {
    goto_byte(invo->line2);
 }
 
 // ":shell".
-public void
+pub void
 c_shell(Invocation* invo UNUSED) {
    do_shell(NULL, 0);
 }
 
 // ":preserve".
-public void
+pub void
 c_preserve(Invocation* invo UNUSED) {
    curBook->flags |= BF_PRESERVED;
    ml_preserve(curBook, true);
 }
 
 // ":recover".
-public void
+pub void
 c_recover(Invocation* invo) {
    // Set recoveryModeG right away to avoid the ATTENTION prompt.
    recoveryModeG = true;
@@ -8624,7 +8624,7 @@ c_recover(Invocation* invo) {
 }
 
 // Command modifier used in a wrong way.  Also for other commands that can't appear at the toplevel
-public void
+pub void
 c_wrongmodifier(Invocation* invo) {
    invo->errmsg = ex_errmsg(e_invalid_command_str, invo->comm);
 }
@@ -8673,7 +8673,7 @@ call_findfunc(CS pat, int cmdcomplete) {
 //Find file names matching "pat" using @findfunc and return it in "files".
 //Used for expanding the :find, :sfind and :tabfind command argument.
 //Return OK on success and FAIL otherwise.
-public int
+pub int
 expand_findfunc(CS pat, OUT ExpandMatch* matches) {
    List* l = call_findfunc(pat, VVAL_TRUE);
    if (!l)
@@ -8729,7 +8729,7 @@ findFnFindFile(CS findarg, int findarg_len, int count) {
 }
 
 //Setter for the @findfunc option. Return NULL on success or an error message on failure.
-public CS
+pub CS
 setFindFn(OptionChange* cha) {
    int   retval;
 
@@ -8759,14 +8759,14 @@ setFindFn(OptionChange* cha) {
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 doFreeFindFnOption(void) {
    evFreeCallback(&findFnCb);
 }
 # endif
 
 // Mark the global @findfunc callback with "copyID" so that it is not garbage collected.
-public int
+pub int
 set_ref_in_findfunc(int copyID UNUSED) {
    int abort = memSetRefInCallback(&findFnCb, copyID);
    return abort;
@@ -8783,7 +8783,7 @@ set_ref_in_findfunc(int copyID UNUSED) {
 //:tabedit [+command] file   open new Tab and edit "file"
 //:tabnew [[+command] file]   just like :tabedit
 //:tabfind [+command] file   open new Tab and find "file"
-public void
+pub void
 c_splitview(Invocation* invo) {
    Portal* old_curPor = curPor;
    CS fname = null;
@@ -8852,7 +8852,7 @@ theend:
 }
 
 // Open a new tab.
-public void
+pub void
 tabNew(void) {
    Invocation   invo;
    CLEAR_FIELD(invo);
@@ -8863,7 +8863,7 @@ tabNew(void) {
 }
 
 // :tabnext command
-public void
+pub void
 c_tabnext(Invocation* invo) {
    int tabId;
 
@@ -8910,7 +8910,7 @@ c_tabnext(Invocation* invo) {
    }
 }
 
-public void
+pub void
 c_tabmove(Invocation* invo) {
    int tabId = getTabRelatedArg(invo);
    if (invo->errmsg == NULL)
@@ -8918,7 +8918,7 @@ c_tabmove(Invocation* invo) {
 }
 
 // :tabs command: List tabs and their contents.
-public void
+pub void
 c_tabs(Invocation* invo UNUSED) {
    Portal* po;
    int tabcount = 1;
@@ -8959,7 +8959,7 @@ c_tabs(Invocation* invo UNUSED) {
 //{{{misc2
 
 //":mode": Set screen mode. If no argument given, just get the screen size and redraw.
-public void
+pub void
 c_mode(Invocation* invo) {
    if (*invo->arg == ZERO)
       shell_resized();
@@ -8968,7 +8968,7 @@ c_mode(Invocation* invo) {
 }
 
 // ":resize". set, increment or decrement current portal height
-public void
+pub void
 c_resize(Invocation* invo) {
    int      n;
    Portal   *po = curPor;
@@ -8996,7 +8996,7 @@ c_resize(Invocation* invo) {
 }
 
 // ":find [+command] <file>" command.
-public void
+pub void
 c_find(Invocation* invo) {
    if (!portCheckCanSetCurBookForceIt(invo->forceit))
       return;
@@ -9041,7 +9041,7 @@ c_find(Invocation* invo) {
 }
 
 // ":open" simulation: for now works just like ":visual".
-public void
+pub void
 c_open(Invocation* invo) {
    RegMatch   regmatch;
    CS p;
@@ -9076,7 +9076,7 @@ c_open(Invocation* invo) {
 }
 
 // ":edit", ":badd", ":balt", ":visual".
-public void
+pub void
 c_edit(Invocation* invo) {
    CS fullFName = invo->id == C_enew ? NULL : invo->arg;
 
@@ -9103,7 +9103,7 @@ c_edit(Invocation* invo) {
 }
 
 //":edit <file>" command and alike.
-public void
+pub void
 do_exedit(Invocation* invo, Portal* old_curPor) {      // curPor before doing a split or NULL
    if ((invo->id != C_pedit && portErrorIfPopup(false)) || portErrorIfTermPopup())
       return;
@@ -9178,7 +9178,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      // curPor before doing a 
    ex_no_reprint = true;
 }
 
-public void
+pub void
 c_swapname(Invocation* invo UNUSED) {
    if (curBook->mem.mfile == NULL || curBook->mem.mfile->fName == NULL)
       msg(_("No swap file"));
@@ -9188,7 +9188,7 @@ c_swapname(Invocation* invo UNUSED) {
 
 //":syncbind" forces all scrollbound portals to have the same relative offset.
 //(1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
-public void
+pub void
 c_syncbind(Invocation* invo UNUSED) {
    Portal   *po;
    Portal   *save_curPor = curPor;
@@ -9243,7 +9243,7 @@ c_syncbind(Invocation* invo UNUSED) {
    }
 }
 
-public void
+pub void
 c_read(Invocation* invo) {
    if (invo->usefilter) {        // :r!cmd
       do_bang(1, invo, false, false, true);
@@ -9275,7 +9275,7 @@ c_read(Invocation* invo) {
 private CS prev_dir = NULL;
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_cd_dir(void) {
    EE_CLEAR(prev_dir);
    EE_CLEAR(globaldir);
@@ -9295,7 +9295,7 @@ get_prevdir(CdScopeKind scope) {
 //Deal with the side effects of changing the current directory.
 //When 'scope' is CDSCOPE_TABPAGE then this was after an ":tcd" command.
 //When 'scope' is CDSCOPE_WINDOW then this was after an ":lcd" command.
-public void
+pub void
 post_chdir(CdScopeKind scope) {
    if (scope != CDSCOPE_WINDOW)
       // Clear tab local directory for both :cd and :tcd
@@ -9325,7 +9325,7 @@ post_chdir(CdScopeKind scope) {
 }
 
 // Trigger DirChangedPre for "acmd_fname" with directory "new_dir".
-public void
+pub void
 trigger_DirChangedPre(CS acmd_fname, CS new_dir) {
    Bag       *v_event;
    SaveVEvent  save_v_event;
@@ -9343,7 +9343,7 @@ trigger_DirChangedPre(CS acmd_fname, CS new_dir) {
 //scope == CDSCOPE_TABPAGE: changes the tab-local directory
 //Otherwise: change the global directory
 //Return true if the directory is successfully changed.
-public int
+pub int
 changedir_func(CS new_dir, CdScopeKind scope){
    CS pdir = NULL;
    int      dir_differs;
@@ -9409,7 +9409,7 @@ changedir_func(CS new_dir, CdScopeKind scope){
 }
 
 // ":cd", ":tcd", ":lcd", ":chdir" ":tchdir" and ":lchdir".
-public void
+pub void
 c_cd(Invocation* invo) {
    CS new_dir = invo->arg;
    CdScopeKind   scope = CDSCOPE_GLOBAL;
@@ -9425,7 +9425,7 @@ c_cd(Invocation* invo) {
 }
 
 // ":pwd".
-public void
+pub void
 c_pwd(Invocation* invo UNUSED) {
    if (mch_dirname(nameBuffG, MAXPATHL) == OK) {
       if (p_verbose > 0) {
@@ -9443,13 +9443,13 @@ c_pwd(Invocation* invo UNUSED) {
 }
 
 // ":=".
-public void
+pub void
 c_equal(Invocation* invo) {
    smsg("%ld", (long)invo->line2);
    mayPrint(invo);
 }
 
-public void
+pub void
 c_sleep(Invocation* invo) {
    int      n;
    long   len;
@@ -9473,7 +9473,7 @@ c_sleep(Invocation* invo) {
 
 // Sleep for "msec" milliseconds, but keep checking for a CTRL-C every second.
 // Hide the cursor if "hide_cursor" is true.
-public void
+pub void
 do_sleep(long msec, int hide_cursor) {
    long   done = 0;
    long   wait_now;
@@ -9521,7 +9521,7 @@ do_sleep(long msec, int hide_cursor) {
       cursor_unsleep();
 }
 
-public void
+pub void
 c_wincmd(Invocation* invo) {
    int      xchar = ZERO;
    CS p;
@@ -9551,7 +9551,7 @@ c_wincmd(Invocation* invo) {
 }
 
 // ":winpos".
-public void
+pub void
 c_portPos(Invocation* invo) {
    int      x, y;
    CS arg = invo->arg;
@@ -9574,7 +9574,7 @@ c_portPos(Invocation* invo) {
 }
 
 // Handle commands that work like operators: ":delete", ":yank", ":>" and ":<"
-public void
+pub void
 c_operators(Invocation* invo) {
    Operator   oper;
 
@@ -9618,7 +9618,7 @@ c_operators(Invocation* invo) {
 }
 
 // ":put".
-public void
+pub void
 c_put(Invocation* invo) {
    // ":0put" works like ":1put!".
    if (invo->line2 == 0) {
@@ -9631,7 +9631,7 @@ c_put(Invocation* invo) {
 }
 
 // ":iput".
-public void
+pub void
 c_iput(Invocation* invo) {
    // ":0iput" works like ":1iput!".
    if (invo->line2 == 0) {
@@ -9647,7 +9647,7 @@ c_iput(Invocation* invo) {
 }
 
 // Handle ":copy" and ":move".
-public void
+pub void
 c_copymove(Invocation* invo) {
    long n = doGetCommandAddress(invo, &invo->arg, invo->addressKind, false, false, false, 1);
    if (invo->arg == NULL) {      // error detected
@@ -9681,7 +9681,7 @@ mayPrint(Invocation* invo) {
 }
 
 // ":join".
-public void
+pub void
 c_join(Invocation* invo) {
    curPor->cursor.lnum = invo->line1;
    if (invo->line1 == invo->line2) {
@@ -9699,7 +9699,7 @@ c_join(Invocation* invo) {
 }
 
 // ":[addr]@r" or ":[addr]*r": execute register
-public void
+pub void
 c_at(Invocation* invo) {
    int prev_len = typeBufG.validLen;
 
@@ -9729,13 +9729,13 @@ c_at(Invocation* invo) {
 }
 
 // ":!".
-public void
+pub void
 c_bang(Invocation* invo) {
    do_bang(invo->addr_count, invo, invo->forceit, true, true);
 }
 
 // ":undo".
-public void
+pub void
 c_undo(Invocation* invo) {
    if (invo->addr_count == 1)       // :undo 123
       undo_time(invo->line2, false, false, true);
@@ -9743,7 +9743,7 @@ c_undo(Invocation* invo) {
       u_undo(1);
 }
 
-public void
+pub void
 c_wundo(Invocation* invo) {
    Byte hash[UNDO_HASH_SIZE];
 
@@ -9751,7 +9751,7 @@ c_wundo(Invocation* invo) {
    u_write_undo(invo->arg, invo->forceit, curBook, hash);
 }
 
-public void
+pub void
 c_rundo(Invocation* invo) {
    Byte hash[UNDO_HASH_SIZE];
 
@@ -9760,13 +9760,13 @@ c_rundo(Invocation* invo) {
 }
 
 // ":redo".
-public void
+pub void
 c_redo(Invocation* invo UNUSED) {
    u_redo(1);
 }
 
 // ":earlier" and ":later".
-public void
+pub void
 c_later(Invocation* invo) {
    long   count = 0;
    int      sec = false;
@@ -9793,7 +9793,7 @@ c_later(Invocation* invo) {
 }
 
 // ":redir": start/stop redirection.
-public void
+pub void
 c_redir(Invocation* invo) {
    CS mode;
    CS fname;
@@ -9879,13 +9879,13 @@ c_redir(Invocation* invo) {
 }
 
 // ":redraw": force redraw, with clear for ":redraw!".
-public void
+pub void
 c_redraw(Invocation* invo) {
    redraw_cmd(invo->forceit);
 }
 
 // ":redraw": force redraw, with clear if "clear" is true.
-public void
+pub void
 redraw_cmd(int clear) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
@@ -9917,7 +9917,7 @@ redraw_cmd(int clear) {
 }
 
 // ":redrawstatus": force redraw of status line(s)
-public void
+pub void
 c_redrawstatus(Invocation* invo) {
    if (invo->forceit)
       status_redraw_all();
@@ -9942,7 +9942,7 @@ c_redrawstatus(Invocation* invo) {
 }
 
 // ":redrawtabpanel": force redraw of the tabpanel
-public void
+pub void
 c_redrawtabpanel(Invocation* invo UNUSED) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
@@ -9970,7 +9970,7 @@ close_redir(void) {
    }
 }
 
-public int
+pub int
 eeMkdir_emsg(CS name, int prot UNUSED) {
    if (eeMkdir(name, prot) != 0) {
       showErrFmtMsg(_(e_cannot_create_directory_str), name);
@@ -9980,7 +9980,7 @@ eeMkdir_emsg(CS name, int prot UNUSED) {
 }
 
 //Open a file for writing for a command, with some checks. Return file descriptor, NULL on failure
-public FILE *
+pub FILE *
 doOpenCommandsFile(CS fname, int forceit, CS mode) { //"w" for create new file or "a" for append
    FILE* fd;
 
@@ -10001,7 +10001,7 @@ doOpenCommandsFile(CS fname, int forceit, CS mode) { //"w" for create new file o
 }
 
 // ":mark" and ":k".
-public void
+pub void
 c_mark(Invocation* invo) {
    if (*invo->arg == ZERO) {     // No argument?
       emsg(_(e_argument_required));
@@ -10021,7 +10021,7 @@ c_mark(Invocation* invo) {
 }
 
 // Update topLine, leftCol and the cursor position.
-public void
+pub void
 update_topline_cursor(void) {
    check_cursor();      // put cursor on valid line
    update_topline();
@@ -10031,7 +10031,7 @@ update_topline_cursor(void) {
 }
 
 //Save the current stateG and go to Normal mode. Return true if the typeahead could be saved.
-public int
+pub int
 save_current_state(SaveState* sst) {
    sst->save_msg_scroll = msg_scroll;
    sst->save_restart_edit = restart_edit;
@@ -10051,7 +10051,7 @@ save_current_state(SaveState* sst) {
    return sst->tabuf.typebuf_valid;
 }
 
-public void
+pub void
 restore_current_state(SaveState* sst) {
    // Restore the previous typeahead.
    restore_typeahead(&sst->tabuf, false);
@@ -10071,7 +10071,7 @@ restore_current_state(SaveState* sst) {
 }
 
 // ":normal[!] {commands}": Execute normal mode commands.
-public void
+pub void
 c_normal(Invocation* invo) {
    SaveState saveState;
    int      l;
@@ -10142,7 +10142,7 @@ c_normal(Invocation* invo) {
 }
 
 // ":startinsert", ":startreplace" and ":startgreplace"
-public void
+pub void
 c_startinsert(Invocation* invo) {
    if (invo->forceit) {
       // cursor line can be zero on startup
@@ -10172,7 +10172,7 @@ c_startinsert(Invocation* invo) {
 }
 
 // ":stopinsert"
-public void
+pub void
 c_stopinsert(Invocation* invo UNUSED) {
    restart_edit = 0;
    stop_insert_mode = true;
@@ -10184,7 +10184,7 @@ c_stopinsert(Invocation* invo UNUSED) {
 }
 
 // Execute normal mode command "cmd". "remap" can be REMAP_NONE or REMAP_YES.
-public void
+pub void
 exec_normal_cmd(CS cmd, int remap, int silent) {
    // Stuff the argument into the typeahead buffer.
    insertIntoTypebuf(cmd, remap, 0, true, silent);
@@ -10193,7 +10193,7 @@ exec_normal_cmd(CS cmd, int remap, int silent) {
 
 // Execute normalAction() until there is no typeahead left.
 // When "use_vpeekc" is true use vpeekc() to check for available chars.
-public void
+pub void
 exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
    Operator   oper;
    int      c;
@@ -10223,7 +10223,7 @@ exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
    }
 }
 
-public void
+pub void
 c_checkpath(Invocation* invo) {
    find_pattern_in_path(NULL, 0, 0, false, false, CHECK_PATH, 1L,
       invo->forceit ? ACTION_SHOW_ALL : ACTION_SHOW,
@@ -10231,14 +10231,14 @@ c_checkpath(Invocation* invo) {
 }
 
 // ":psearch"
-public void
+pub void
 c_psearch(Invocation* invo) {
    g_do_tagpreview = p_pvh;
    c_findpat(invo);
    g_do_tagpreview = 0;
 }
 
-public void
+pub void
 c_findpat(Invocation* invo) {
    int      whole = true;
    CS p;
@@ -10329,14 +10329,14 @@ tagCmd(Invocation* invo, CS name) {
 
 
 // ":ptag", ":ptselect", ":ptjump", ":ptnext", etc.
-public void
+pub void
 c_ptag(Invocation* invo) {
    g_do_tagpreview = p_pvh;  // will be reset to 0 in tagCmd()
    tagCmd(invo, commands[invo->id].name + 1);
 }
 
 // ":pedit"
-public void
+pub void
 c_pedit(Invocation* invo) {
    Portal   *curPor_save = curPor;
    prepare_preview_window();
@@ -10348,7 +10348,7 @@ c_pedit(Invocation* invo) {
 }
 
 // ":pbook"
-public void
+pub void
 c_pbuffer(Invocation* invo) {
    Portal   *curPor_save = curPor;
    prepare_preview_window();
@@ -10384,7 +10384,7 @@ back_to_current_window(Portal *curPor_save) {
 }
 
 // ":stag", ":stselect" and ":stjump".
-public void
+pub void
 c_stag(Invocation* invo) {
    postponed_split = -1;
    postponed_split_flags = commModifierG.cmod_split;
@@ -10395,12 +10395,12 @@ c_stag(Invocation* invo) {
 }
 
 // ":tag", ":tselect", ":tjump", ":tnext", etc.
-public void
+pub void
 c_tag(Invocation* invo) {
    tagCmd(invo, commands[invo->id].name);
 }
 
-public enum {
+pub enum {
    SPEC_PERC = 0,
    SPEC_HASH,
    SPEC_CWORD,       // cursor word
@@ -10421,7 +10421,7 @@ public enum {
 // Check "str" for starting with a special commline variable.
 // If found return one of the SPEC_ values and set "*usedlen" to the length of
 // the variable.  Otherwise return -1 and "*usedlen" is unchanged.
-public int
+pub int
 find_commline_var(CS src, Unt *usedlen) {
    // must be sorted by the 'value' field because it is used by bsearch()!
    static Kv spec_str_tab[] = {
@@ -10494,7 +10494,7 @@ find_commline_var(CS src, Unt *usedlen) {
 // Returns an allocated string if a valid match was found.
 // Returns NULL if no match was found.   "usedlen" then still contains the
 // number of characters to skip.
-public CS
+pub CS
 evalVars(
    OUT LineNr* lnump,      // line number for :e command, or NULL
    OUT CS* errorMsg,   // pointer to error message
@@ -10750,7 +10750,7 @@ evalVars(
 
 // Expand the <sfile> string in "arg".
 // Return an allocated string, or NULL for any error.
-public CS
+pub CS
 expand_sfile(CS arg) {
    Unt resultlen = STRLEN(arg);
    CS result = copySubstr(arg, resultlen);
@@ -10803,7 +10803,7 @@ expand_sfile(CS arg) {
 //{{{dialogs
 
 // Make a dialog message in "buff[DIALOG_MSG_SIZE]". "format" must contain "%s".
-public void
+pub void
 dialog_msg(CS buff, CS format, CS fname) {
    if (!fname)
       fname = _("Untitled");
@@ -10821,7 +10821,7 @@ private int filetype_indent = false;
 // plugin off: load ftplugof.vim
 // indent on: load filetype.vim and indent.vim
 // indent off: load indoff.vim
-public void
+pub void
 c_filetype(Invocation* invo) {
    CS arg = invo->arg;
    int plugin = false;
@@ -10884,31 +10884,31 @@ c_filetype(Invocation* invo) {
       showErrFmtMsg(_(e_invalid_argument_str), arg);
 }
 
-public void
+pub void
 setHlsearch(Boole flag) {
    hiliteSearchG = flag;
    set_EeglVar_nr(VV_HLSEARCH, hiliteSearchG && p_hls);
 }
 
 // ":nohlsearch"
-public void
+pub void
 c_nohlsearch(Invocation* invo UNUSED) {
    setHlsearch(false);
    redraw_all_later(UPD_SOME_VALID);
 }
 
-public void
+pub void
 c_fold(Invocation* invo) {
    if (foldManualAllowed(true))
       foldCreate(invo->line1, invo->line2);
 }
 
-public void
+pub void
 c_foldopen(Invocation* invo) {
    opFoldRange(invo->line1, invo->line2, invo->id == C_foldopen, invo->forceit, false);
 }
 
-public void
+pub void
 c_folddo(Invocation* invo) {
    start_global_changes();
 
@@ -10924,22 +10924,22 @@ c_folddo(Invocation* invo) {
    end_global_changes();
 }
 
-public int
+pub int
 get_pressedreturn(void) {
    return ex_pressedreturn;
 }
 
-public void
+pub void
 set_pressedreturn(int val) {
    ex_pressedreturn = val;
 }
 
-public int
+pub int
 commandFlagNoSpacesInExtra() {
    return NOSPC_IN_EXTRA;
 }
 
-public int
+pub int
 commandFlagExpandWildcards() {
    return XFILE;
 }
@@ -10950,7 +10950,7 @@ commandFlagExpandWildcards() {
 //get characters from any buffers but directly from the user.
 //
 //return the 'y' or 'n'
-public int
+pub int
 ask_yesno(CS str, int direct) {
    int r = ' ';
    int save_State = stateG;
@@ -10990,7 +10990,7 @@ ask_yesno(CS str, int direct) {
 
 //Call doExpandEnv() and store the result in an allocated string.
 //This is not very memory efficient, this expects the result to be freed again soon.
-public CS
+pub CS
 doExpandEnvInMultiplePaths(CS src) {
    return doExpandEnvInFilePaths(src, false);
 }
@@ -10998,7 +10998,7 @@ doExpandEnvInMultiplePaths(CS src) {
 //Call doExpandEnv() and store the result in an allocated string.
 //This is not very memory efficient, this expects the result to be freed again soon.
 //When "singleFileName", handle the string as one file name, only expand "~" at the start.
-public CS
+pub CS
 doExpandEnvInFilePaths(CS src, Boole singleFileName) {
    CS p = alloc(MAXPATHL);
    doExpandEnvVarsWithEscaped(OUT (Text){p, MAXPATHL}, src, singleFileName, NULL);
@@ -11009,7 +11009,7 @@ doExpandEnvInFilePaths(CS src, Boole singleFileName) {
 //"~/" is also expanded, using $HOME.   For Unix "~user/" is expanded.
 //Skip over "\ ", "\~" and "\$".
 //If anything fails no expansion is done and dst equals src.
-public Unt
+pub Unt
 doExpandEnv(
    OUT Text dst, // where to put the result
    NULLABLE CS src  // input string e.g. "$HOME/eegl.hlp"
@@ -11020,7 +11020,7 @@ doExpandEnv(
 }
 
 //Expand env vars. Return number of bytes written
-public Unt
+pub Unt
 doExpandEnvVarsWithEscaped(
    OUT Text dst, //where to put the result. Length must be sufficient!
    CS srcArg,    //input string e.g. "$HOME/eegl.help"
@@ -11129,7 +11129,7 @@ doExpandEnvVarsWithEscaped(
 //Eegl's version of getenv(). Special handling of $HOME, $EEGL and $EEGLRUNTIME.
 //"mustfree" is set to true when the returned string is allocated.  It must be
 //initialized to false by the caller.
-public NULLABLE CS
+pub NULLABLE CS
 eeglGetEnv(CS name) {
    CS p = mch_getenv(name);
    if (p && *p == ZERO)       // empty is the same as not set
@@ -11138,13 +11138,13 @@ eeglGetEnv(CS name) {
 }
 
 //Remove environment variable "name" and take care of side effects.
-public void
+pub void
 eeUnsetenv(CS var) {
    unsetenv((char *)var);
 }
 
 //Set environment variable "name" and take care of side effects.
-public void
+pub void
 eeSetenv_ext(CS name, CS val) {
    eeSetenv(name, val);
    if (caseInsensitiveCompare(name, "HOME") == 0)
@@ -11152,7 +11152,7 @@ eeSetenv_ext(CS name, CS val) {
 }
 
 //Our portable version of setenv.
-public void
+pub void
 eeSetenv(CS name, CS val) {
    mch_setenv(name, val, 1);
    //When setting $EEGLRUNTIME adjust the directory to find message
@@ -11178,7 +11178,7 @@ eeSetenv(CS name, CS val) {
 
 private int breakcheck_count = 0;
 
-public void
+pub void
 line_breakcheck(void) {
    if (++breakcheck_count >= BREAKCHECK_SKIP) {
       breakcheck_count = 0;
@@ -11187,7 +11187,7 @@ line_breakcheck(void) {
 }
 
 //Like line_breakcheck() but check 10 times less often.
-public void
+pub void
 fast_breakcheck(void) {
    if (++breakcheck_count >= BREAKCHECK_SKIP * 10) {
       breakcheck_count = 0;
@@ -11196,7 +11196,7 @@ fast_breakcheck(void) {
 }
 
 //Like line_breakcheck() but check 100 times less often.
-public void
+pub void
 veryfast_breakcheck(void) {
    if (++breakcheck_count >= BREAKCHECK_SKIP * 100) {
       breakcheck_count = 0;
@@ -11391,7 +11391,7 @@ u_check(int newhead_may_be_NULL) {
 
 //Save the current line for both the "u" and "U" command. Careful: may trigger autocommands that 
 //reload the book. Return OK or FAIL.
-public int
+pub int
 u_save_cursor(void) {
    return (u_save((LineNr)(curPor->cursor.lnum - 1), (LineNr)(curPor->cursor.lnum + 1)));
 }
@@ -11399,7 +11399,7 @@ u_save_cursor(void) {
 //Save the lines between "top" and "bot" for both the "u" and "U" command. "top" may be 0 and 
 //"bot" may be curBook->mem.lineCount + 1. Careful: may trigger autocommands that reload the 
 //book. Return FAIL when lines could not be saved, OK otherwise.
-public int
+pub int
 u_save(LineNr top, LineNr bot) {
    if (undo_off)
       return OK;
@@ -11416,7 +11416,7 @@ u_save(LineNr top, LineNr bot) {
 //Save the line "lnum" (used by ":s" and "~" command). The line is replaced, so the new bottom line
 //is lnum + 1. Careful: may trigger autocommands that reload the book.
 //Return FAIL when lines could not be saved, OK otherwise.
-public int
+pub int
 u_savesub(LineNr lnum) {
    if (undo_off)
       return OK;
@@ -11439,7 +11439,7 @@ u_inssub(LineNr lnum) {
 //The lines are deleted, so the new bottom line is lnum, unless the book becomes empty.
 //Careful: may trigger autocommands that reload the book.
 //Return FAIL when lines could not be saved, OK otherwise.
-public int
+pub int
 u_savedel(LineNr lnum, long nlines) {
    if (undo_off)
       return OK;
@@ -11449,7 +11449,7 @@ u_savedel(LineNr lnum, long nlines) {
 }
 
 //true when undo is allowed.  Otherwise give an error message and return false.
-public int
+pub int
 undo_allowed(void) {
    // Don't allow changes when @modifiable is off.
    if (IMMUTABLE) {
@@ -11506,7 +11506,7 @@ has_prop_w_flags(LineNr lnum, int flags) {
 //"reload" is true when saving for a book reload.
 //Careful: may trigger autocommands that reload the book.
 //Return FAIL when lines could not be saved, OK otherwise.
-public int
+pub int
 u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
    LineNr   lnum;
    long   i;
@@ -11787,7 +11787,7 @@ nomem:
 # define UHP_SAVE_NR      1
 
 //Compute the hash for the current buffer text into hash[UNDO_HASH_SIZE].
-public void
+pub void
 u_compute_hash(OUT Byte hash[UNDO_HASH_SIZE]) {
    ContextSha256 ctx;
    LineNr lnum;
@@ -12168,7 +12168,7 @@ unserialize_visualinfo(BufInfo *bi, VisualInfo *info) {
 //"book" must never be null, book->fullFileName is used to obtain the original file permissions.
 //"forceit" is true for ":wundo!", false otherwise.
 //"hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
-public void
+pub void
 u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
    UndoHeader* uhp;
    CS file_name;
@@ -12348,7 +12348,7 @@ theend:
 //a bit more verbose.
 //Otherwise use curBook->fullFileName to generate the undo file name.
 //"hash[UNDO_HASH_SIZE]" must be the hash value of the buffer text.
-public void
+pub void
 u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
    CS file_name;
    UndoLine line_ptr;
@@ -12624,7 +12624,7 @@ theend:
    return;
 }
 
-public void
+pub void
 u_undo(int count) {
    //If we get an undo command while executing a macro, we behave like the
    //original vi. If this happens twice in one macro the result will not be compatible.
@@ -12637,7 +12637,7 @@ u_undo(int count) {
    u_doit(count);
 }
 
-public void
+pub void
 u_redo(int count) {
    undo_undoes = false;
    u_doit(count);
@@ -12707,7 +12707,7 @@ u_doit(int startcount) {
 //seconds.
 //When "file" is true use "step" as a number of file writes.
 //When "absolute" is true use "step" as the sequence number to jump to. "sec" must be false then.
-public void
+pub void
 undo_time(long step, int sec, int file, int absolute) {
    long target;
    long closest;
@@ -13328,7 +13328,7 @@ u_undo_end(
 }
 
 // u_sync: stop adding to the current entry list
-public void
+pub void
 u_sync(int force) {  // Also sync when no_u_sync is set.
    // Skip it when already synced or syncing is disabled.
    if (curBook->undo.synced || (!force && no_u_sync > 0))
@@ -13342,7 +13342,7 @@ u_sync(int force) {  // Also sync when no_u_sync is set.
 }
 
 //":undolist": List the leaves of the undo tree
-public void
+pub void
 c_undolist(Invocation* invo UNUSED) {
    ArrayList   ga;
    UndoHeader   *uhp;
@@ -13438,7 +13438,7 @@ c_undolist(Invocation* invo UNUSED) {
 }
 
 //":undojoin": continue adding to the last entry list
-public void
+pub void
 c_undojoin(Invocation* invo UNUSED) {
    if (curBook->undo.newHead == NULL)
       return;          // nothing changed before
@@ -13457,7 +13457,7 @@ c_undojoin(Invocation* invo UNUSED) {
 
 //Called after writing or reloading the file and setting wasModified to false.
 //Now an undo means that the buffer is modified.
-public void
+pub void
 u_unchanged(Book* book) {
    u_unch_branch(book->undo.oldHead);
    book->didWarnReadonly = false;
@@ -13465,7 +13465,7 @@ u_unchanged(Book* book) {
 
 //After reloading a buffer which was saved for 'undoreload': Find the first
 //line that was changed and set the cursor there.
-public void
+pub void
 u_find_first_changed(void) {
    UndoHeader   *uhp = curBook->undo.newHead;
    LineNr   lnum;
@@ -13497,7 +13497,7 @@ u_find_first_changed(void) {
 }
 
 //Increase the write count, store it in the last undo header, what would be used for "u".
-public void
+pub void
 u_update_save_nr(Book* book) {
    ++book->undo.saveNrLast;
    book->undo.saveNrCurr = book->undo.saveNrLast;
@@ -13676,7 +13676,7 @@ u_blockfree(Book* book) {
 }
 
 //Free all allocated memory blocks for the 'book'. and invalidate the undo buffer
-public void
+pub void
 invalidateUndoBufferAndFreeBlocks(Book* book) {
    u_blockfree(book);
    invalidateUndoBuffer(book);
@@ -13701,7 +13701,7 @@ u_saveline(LineNr lnum) {
 
 //clear the line saved for the "U" command
 //(this is used externally for crossing a line while in insert mode)
-public void
+pub void
 u_clearline(void) {
    if (curBook->undo.line.ul_line == NULL)
       return;
@@ -13714,7 +13714,7 @@ u_clearline(void) {
 
 //Implementation of the "U" command. We allow the cursor to be in another line.
 //Careful: may trigger autocommands that reload the book.
-public void
+pub void
 u_undoline(void) {
    if (undo_off)
       return;
@@ -13750,7 +13750,7 @@ u_undoline(void) {
 //Check if the 'modified' flag is set. "nofile" and "scratch" type buffers are 
 //considered to always be unchanged. Also considers a buffer changed when a terminal portal 
 //contains a running job.
-public Boole
+pub Boole
 doWasBookChanged(Book* book) {
    if (term_job_running_not_none(book->term))
       return true;
@@ -13758,7 +13758,7 @@ doWasBookChanged(Book* book) {
 }
 
 //Return true if any book has changes. Also books that haven't been written.
-public Boole
+pub Boole
 doWasAnyBookChanged(void) {
    Book *book;
    FOR_ALL_BOOKS(book) {
@@ -13776,7 +13776,7 @@ wasBookChangedNotTerm(Book* book) {
    return (!bookDontWrite(book) || bt_prompt(book)) && book->wasModified;
 }
 
-public int
+pub int
 doWasCurBookChanged(void) {
    return doWasBookChanged(curBook);
 }
@@ -13813,7 +13813,7 @@ evalTree(Book* book, UndoHeader* first_uhp, List* list) {
 }
 
 //"undofile(name)" function
-public void
+pub void
 f_undofile(Var* argvars, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    CS fname = tv_get_string(&argvars[0]);
@@ -13831,7 +13831,7 @@ f_undofile(Var* argvars, Var* returnVar) {
 }
 
 //Reset undofile option and delete the undofile
-public void
+pub void
 u_undofile_reset_and_delete(Book* book) {
    if (!book->o.undoFile)
       return;
@@ -13848,7 +13848,7 @@ u_undofile_reset_and_delete(Book* book) {
 }
 
 //"undotree(expr)" function
-public void
+pub void
 f_undotree(Var* argvars, Var* returnVar) {
    allocReturnDict(returnVar);
 

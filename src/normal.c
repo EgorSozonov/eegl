@@ -122,7 +122,7 @@ private int skip_chars(int, int);
 // by the "dir" argument.  The cursor is positioned on the start of the next
 // sentence when found.  If the next sentence is found, return OK.  Return FAIL
 // otherwise.  See ":h sentence" for the precise definition of a "sentence" text object.
-public int
+pub int
 findsent(int dir, long count) {
    Pos   pos, tpos;
    Pos   prev_pos;
@@ -237,7 +237,7 @@ findsent(int dir, long count) {
 // If 'what' is '{' or '}' we go to the next section.
 // If 'both' is true also stop at '}'.
 // Return true if the next paragraph or section was found.
-public int
+pub int
 normFindNextParagraf(
    OUT Boole* pincl,       // Return: true if last char is to be included
    int dir,
@@ -300,7 +300,7 @@ normFindNextParagraf(
 // startPS: return true if line 'lnum' is the start of a section or paragraph.
 // If 'para' is '{' or '}' only check for sections.
 // If 'both' is true also stop at '}'
-public int
+pub int
 startPS(LineNr lnum, int para, int both) {
    CS s = ml_get(lnum);
    return (*s == para || *s == '\f' || (both && *s == '}'));
@@ -348,7 +348,7 @@ cls(void) {
 //
 // Return FAIL if the cursor was already at the end of the file.
 // If eol is true, last word stops at end of line (for operators).
-public int
+pub int
 fwd_word(
    long   count,
    int      bigword,    // "W", "E" or "B"
@@ -399,7 +399,7 @@ fwd_word(
 // bck_word() - move backward 'count' words
 // If stop is true and we are already on the start of a word, move one less.
 // Return FAIL if top of the file was reached.
-public int
+pub int
 bck_word(long count, int bigword, int stop) {
    int      sclass;       // starting class
 
@@ -439,7 +439,7 @@ bck_word(long count, int bigword, int stop) {
 //
 // If stop is true and we are already on the end of a word, move one less.
 // If empty is true stop on an empty line.
-public int
+pub int
 end_word(long count, int bigword, int stop, int      empty) {
    int      sclass;       // starting class
 
@@ -481,7 +481,7 @@ end_word(long count, int bigword, int stop, int      empty) {
 }
 
 // Move back to the end of the word. Return FAIL if start of the file was reached.
-public int
+pub int
 bckend_word(
    long   count,
    int      bigword,    // true for "B"
@@ -570,7 +570,7 @@ findsent_forward(long count, int at_start_sent) {  // cursor is at start of sent
 
 // Find word under cursor, cursor at end.
 // Used while an operator is pending, and in Visual mode.
-public int
+pub int
 current_word(
    Operator* oper,
    long   count,
@@ -690,7 +690,7 @@ current_word(
 
 // Find sentence(s) under the cursor, cursor at end.
 // When Visual active, extend it by one or more sentences.
-public int
+pub int
 current_sent(Operator *oper, long count, int include) {
    int      start_blank;
    int      c;
@@ -999,7 +999,7 @@ in_html_tag(int end_tag) {
 }
 
 // Find tag block under the cursor, cursor at end.
-public int
+pub int
 current_tagblock(Operator* oper, long count_arg, Boole includeWhiteSpace){
    long count = count_arg;
    long n;
@@ -1165,7 +1165,7 @@ theend:
    return retval;
 }
 
-public int
+pub int
 current_par(
    Operator   *oper,
    long   count,
@@ -1359,7 +1359,7 @@ find_prev_quote(
 }
 
 // Find quote under the cursor, cursor at end. Return true if found, else false.
-public int
+pub int
 current_quote(
    Operator* oper,
    long count,
@@ -1566,7 +1566,7 @@ abort_search:
 //{{{common code
 
 //Return true if in the current mode we need to use virtual.
-public int
+pub int
 virtual_active(void) {
    // While an operator is being executed we return "virtual_op", because
    // VIsual_active has already been reset, thus we can't check for "block" being used.
@@ -1576,7 +1576,7 @@ virtual_active(void) {
 }
 
 //Return the dictionary of v:event. Save and clear the value in case it already has items.
-public Bag *
+pub Bag *
 get_v_event(SaveVEvent *sve) {
    Bag* v_event = get_EeglVar_dict(VV_EVENT);
 
@@ -1590,7 +1590,7 @@ get_v_event(SaveVEvent *sve) {
    return v_event;
 }
 
-public void
+pub void
 restore_v_event(Bag* v_event, SaveVEvent* sve) {
    dict_free_contents(v_event);
    if (sve->sve_did_save)
@@ -1601,7 +1601,7 @@ restore_v_event(Bag* v_event, SaveVEvent* sve) {
 
 //Return the current mode as a string in "buf[MODE_MAX_LENGTH]", ZERO terminated.
 //The first character represents the major mode, the following ones the minor ones.
-public void
+pub void
 get_mode(CS buf) {
    int i = 0;
 
@@ -1676,7 +1676,7 @@ get_mode(CS buf) {
 }
 
 //Fire a ModeChanged autocmd event if appropriate.
-public void
+pub void
 may_trigger_modechanged(void) {
    Bag* v_event;
    SaveVEvent  save_v_event;
@@ -1708,7 +1708,7 @@ may_trigger_modechanged(void) {
 
 // MODE_VISUAL, MODE_OP_PENDING stateG are never set, they are
 // equal to MODE_NORMAL stateG with a condition. Return the real stateG.
-public int
+pub int
 get_real_state(void) {
    if (stateG & MODE_NORMAL) {
       if (VIsual_active) {
@@ -1775,7 +1775,7 @@ checkTextLocked(Operator* oper) {
 
 // If text is locked, "curBookLock" or "allBookLock" is set:
 // Give an error message, possibly beep and return true. "oper" may be NULL.
-public int
+pub int
 check_text_or_curbuf_locked(Operator *oper) {
    if (checkTextLocked(oper))
       return true;
@@ -2095,7 +2095,7 @@ waitForMsg(void) {
 }
 
 //Execute an action in Normal mode.
-public void
+pub void
 normalAction(Operator* oper, Boole toplevel) { // true when called from main()
    ActionArg action;
    Unt c;
@@ -2350,7 +2350,7 @@ setVCountPrevCount(ActionArg* aArg, int *set_prevcount) {
 }
 
 // Check if highlighting for Visual mode is possible, give a warning message if not.
-public void
+pub void
 check_visual_highlight(void) {
    static Boole did_check = false;
    if (fullScreenG) {
@@ -2375,14 +2375,14 @@ callYankDoAutocmd(int regname) {
 
 // End Visual mode.
 // This or next function should ALWAYS be called to end Visual mode, except from jugExecuteVisualOperator()
-public void
+pub void
 end_visual_mode(void) {
    VIsual_select_exclu_adj = false;
    end_visual_mode_keep_button();
    reset_held_button();
 }
 
-public void
+pub void
 end_visual_mode_keep_button(void) {
    //If we are using the clipboard, then remember what was selected in case we need to paste it 
    //somewhere while we still own the selection. Only do this when the clipboard is already owned.
@@ -2413,7 +2413,7 @@ end_visual_mode_keep_button(void) {
 }
 
 // Reset VIsual_active and VIsual_reselect.
-public void
+pub void
 reset_VIsual_and_resel(void) {
    if (VIsual_active) {
       end_visual_mode();
@@ -2423,7 +2423,7 @@ reset_VIsual_and_resel(void) {
 }
 
 // Reset VIsual_active and VIsual_reselect if it's set.
-public void
+pub void
 reset_VIsual(void) {
    if (VIsual_active) {
       end_visual_mode();
@@ -2432,7 +2432,7 @@ reset_VIsual(void) {
    }
 }
 
-public void
+pub void
 restore_visual_mode(void) {
    if (VIsual_mode_orig != ZERO) {
        curBook->visual.vi_mode = VIsual_mode_orig;
@@ -2486,7 +2486,7 @@ checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir){
 // Return the length of the text, or zero if no text is found.
 // If text is found, a pointer to the text is put in "*text".  This
 // points into the current buffer line and is not always ZERO terminated.
-public int
+pub int
 find_ident_under_cursor(OUT CS* text, int find_type) {
     return find_ident_at_pos(curPor, curPor->cursor.lnum,
             curPor->cursor.col, text, NULL, find_type);
@@ -2494,7 +2494,7 @@ find_ident_under_cursor(OUT CS* text, int find_type) {
 
 // Like find_ident_under_cursor(), but for any portal and any position.
 // However: Uses @iskeyword from the current portal.
-public int
+pub int
 find_ident_at_pos(
    Portal* po,
    LineNr lnum,
@@ -2599,7 +2599,7 @@ prepareForRedo(ActionArg* aArg) {
 
 // Prepare for redo of any action.
 // Note that only the last argument can be a multi-byte char.
-public void
+pub void
 prep_redo(
    int regname,
    long num,
@@ -2613,7 +2613,7 @@ prep_redo(
 }
 
 // Prepare for redo of any action with extra count after "cmd2".
-public void
+pub void
 prep_redo_num2(
     int       regname,
     long    num1,
@@ -2668,7 +2668,7 @@ checkclearopq(Operator* oper) {
    return true;
 }
 
-public void
+pub void
 clearop(Operator *oper) {
    oper->opTy = OP_NOP;
    oper->regname = 0;
@@ -2677,7 +2677,7 @@ clearop(Operator *oper) {
    motion_force = ZERO;
 }
 
-public void
+pub void
 clearopbeep(Operator *oper) {
    clearop(oper);
    beep_flush();
@@ -2698,7 +2698,7 @@ unshift_special(ActionArg* aArg) {
 }
 
 // If the mode is currently displayed clear the command line or update the command displayed.
-public void
+pub void
 may_clear_cmdline(void) {
    if (isModeDisplayedG)
       mustClearCommlineG = true;   // unshow visual mode later
@@ -2714,7 +2714,7 @@ private int showcmd_visual = false;
 
 private void display_showcmd(void);
 
-public void
+pub void
 clear_showcmd(void) {
    if (VIsual_active && !char_avail()) {
       int      cursor_bot = LT_POS(VIsual, curPor->cursor);
@@ -2791,7 +2791,7 @@ clear_showcmd(void) {
 
 // Add 'c' to string of shown action chars.
 // Return true if output has been written (and setcursor() has been called).
-public int
+pub int
 add_to_showcmd(Unt c) {
    CS p;
    int old_len;
@@ -2849,7 +2849,7 @@ add_to_showcmd(Unt c) {
    return true;
 }
 
-public void
+pub void
 add_to_showcmd_c(Unt c) {
    if (!add_to_showcmd(c))
    setcursor();
@@ -2869,12 +2869,12 @@ del_from_showcmd(int len) {
 
 //push_showcmd() and pop_showcmd() are used when waiting for the user to type
 //something and there is a partial mapping.
-public void
+pub void
 push_showcmd(void) {
    STRCPY(old_showcmd_buf, showcmd_buf);
 }
 
-public void
+pub void
 pop_showcmd(void) {
    STRCPY(showcmd_buf, old_showcmd_buf);
    display_showcmd();
@@ -2906,7 +2906,7 @@ display_showcmd(void) {
 // When "check" is false, prepare for actions that scroll the portal.
 // When "check" is true, take care of scroll-binding after the portal has
 // scrolled.  Called from normal_cmd() and edit().
-public void
+pub void
 normPostProcessScrollbind(int check) {
    static Portal* old_curPor = NULL;
    static LineNr old_topline = 0;
@@ -2950,7 +2950,7 @@ normPostProcessScrollbind(int check) {
 // Synchronize any portals that have diff set, based on the
 // number of rows by which the current portal has changed
 // (1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
-public void
+pub void
 check_scrollbind(LineNr topline_diff, long leftcol_diff) {
    Portal   *old_curPor = curPor;
    Book   *oldCurBook = curBook;
@@ -3042,7 +3042,7 @@ isIdent(CS line, int offset) {
 //When "locally" is true in the current function ("gd"), otherwise in the
 //current file ("gD").
 //When "thisblock" is true check the {} block scope. Return FAIL when not found.
-public int
+pub int
 find_decl(
    CS ptr,
    int len,
@@ -3169,7 +3169,7 @@ find_decl(
 }
 
 // Get visually selected text, within one line only. Return FAIL if more than one line selected.
-public int
+pub int
 get_visual_text(
    ActionArg* aArg,
    OUT CS* pp,       // return: start of selected text
@@ -3249,7 +3249,7 @@ normal_search(
 }
 
 // Start selection for Shift-movement keys.
-public void
+pub void
 start_selection(void) {
    // if 'selectmode' contains "key", start Select mode
    n_start_visual_mode('v');
@@ -3273,7 +3273,7 @@ adjust_cursor(Operator *oper) {
 
 //Move position "*pp" back one character for 'selection' == "exclusive".
 //Return true when backed up to the previous line.
-public int
+pub int
 unadjust_for_sel_inner(Pos *pp) {
    ColNr   cs, ce;
    VIsual_select_exclu_adj = false;
@@ -3297,7 +3297,7 @@ unadjust_for_sel_inner(Pos *pp) {
 }
 
 // Move the cursor for the "A" action.
-public void
+pub void
 set_cursor_for_append_to_line(void) {
    curPor->setCursWant = true;
    curPor->cursor.col += (ColNr)STRLEN(ml_get_cursor());
@@ -3450,7 +3450,7 @@ nv_gd(Operator* oper, int nchar, int      thisblock) {  // 1 for "1gd" and "1gD"
 // 'dist' must be positive.
 //
 // Return OK if able to move cursor, FAIL otherwise.
-public int
+pub int
 nv_screengo(Operator* oper, Unt dir, long dist) {
    int linelen = linetabsize_no_outer(curPor, curPor->cursor.lnum);
    int retval = OK;
@@ -3569,7 +3569,7 @@ nv_screengo(Operator* oper, Unt dir, long dist) {
 }
 
 // Handle CTRL-E and CTRL-Y actions: scroll a line up or down. aArg->arg must be true for CTRL-E.
-public void
+pub void
 nv_scroll_line(ActionArg* aArg) {
    if (!checkclearop(aArg->oper))
       scroll_redraw(aArg->arg, aArg->count1);
@@ -4097,7 +4097,7 @@ nv_Zet(ActionArg* aArg) {
 }
 
 // Call nv_ident() as if "c1" was used, with "c2" as next character.
-public void
+pub void
 do_nv_ident(int c1, int c2) {
     Operator   oa;
     ActionArg   ca;
@@ -5555,7 +5555,7 @@ nv_gv_cmd(ActionArg* aArg UNUSED) {
 }
 
 // "g0", "g^" : Like "0" and "^" but for screen lines. "gm": middle of "g0" and "g$".
-public void
+pub void
 nv_g_home_m_cmd(ActionArg* aArg) {
    int i;
    Boole flag = false;
@@ -6113,7 +6113,7 @@ nv_operator(ActionArg* aArg) {
 // implemented, but not documented in the real Vi. This motion command actually refers to 
 // "the current line". Commands like "dd" and "yy" are really an alternate form of "d_" and "y_".
 // It does accept a count, so "d3_" works to delete 3 lines.
-public void
+pub void
 a_linewiseOperator(ActionArg* aArg) {
    aArg->oper->motion_type = MLINE;
    if (cursor_down(aArg->count1 - 1L, aArg->oper->opTy == OP_NOP) == FAIL)
@@ -6952,7 +6952,7 @@ private void topline_back(LineOffset *lp);
 private void botline_forw(LineOffset *lp);
 
 // Get the number of screen lines skipped with "po->skipCol".
-public int
+pub int
 adjust_plines_for_skipcol(Portal *po) {
    if (po->skipCol == 0)
       return 0;
@@ -7057,7 +7057,7 @@ redraw_for_cursorcolumn(Portal* po) {
 //is -1 calculate the padding.
 //Return the number of columns of overlap with buffer text, excluding the extra padding on the 
 //ledge.
-public int
+pub int
 sms_marker_overlap(Portal* po, int extra2) {
    if (extra2 == -1)
       extra2 = normalPortalColumnOffset(po);
@@ -7100,7 +7100,7 @@ reset_skipcol(void) {
 
 // Update curPor->topLine and redraw if necessary. Used to update the screen before printing a 
 // message
-public void
+pub void
 update_topline_redraw(void) {
    update_topline();
    if (mustRedrawG)
@@ -7108,7 +7108,7 @@ update_topline_redraw(void) {
 }
 
 // Update curPor->topLine to move the cursor onto the screen.
-public void
+pub void
 update_topline(void) {
    // Cursor is updated instead when this is true for 'splitkeep'.
    if (skipUpdateToplineG)
@@ -7342,14 +7342,14 @@ update_curswant_force(void) {
 }
 
 // Update cursWant if setCursWant is set.
-public void
+pub void
 update_curswant(void) {
    if (curPor->setCursWant)
       update_curswant_force();
 }
 
 // Check if the cursor has moved.  Set the cacheState flag accordingly.
-public void
+pub void
 check_cursor_moved(Portal *po) {
    if (po->cursor.lnum != po->lastKnownCursor.lnum) {
       po->cacheState &= ~(
@@ -7380,12 +7380,12 @@ check_cursor_moved(Portal *po) {
 // Call this function when some portal settings have changed, which require the cursor position, 
 // botline and topline to be recomputed and the portal to be redrawn.  E.g, when changing the 
 // 'wrap' option or folding.
-public void
+pub void
 didChangePortalSettingCurPor(void) {
    didChangePortalSetting(curPor);
 }
 
-public void
+pub void
 didChangePortalSetting(Portal *po) {
    po->validLines = 0;
    changed_line_abv_curs_win(po);
@@ -7394,7 +7394,7 @@ didChangePortalSetting(Portal *po) {
 }
 
 // Call didChangePortalSetting() for every portal containing "buf".
-public void
+pub void
 didChangePortalSettingBuf(Book *book) {
    Tab* t;
    Portal* po;
@@ -7405,7 +7405,7 @@ didChangePortalSettingBuf(Book *book) {
 }
 
 // Call didChangePortalSetting() for every portal.
-public void
+pub void
 didChangePortalSettingAll(void) {
    Tab* t;
    Portal* po;
@@ -7414,7 +7414,7 @@ didChangePortalSettingAll(void) {
 }
 
 // Set po->topLine to a certain number.
-public void
+pub void
 set_topline(Portal* po, LineNr lnum) {
    LineNr prev_topline = po->topLine;
 
@@ -7438,14 +7438,14 @@ set_topline(Portal* po, LineNr lnum) {
 // the change is before the cursor. If the line length changed the number of screen lines might 
 // change, requiring updating topLine.  That may also invalidate w_crow. Need to take care of 
 // bottomLine separately!
-public void
+pub void
 changed_cline_bef_curs(void) {
    curPor->cacheState &= ~(
           VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW |VALID_CHEIGHT|VALID_TOPLINE
    );
 }
 
-public void
+pub void
 changed_cline_bef_curs_win(Portal *po) {
    po->cacheState &= ~(
           VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW |VALID_CHEIGHT|VALID_TOPLINE
@@ -7454,19 +7454,19 @@ changed_cline_bef_curs_win(Portal *po) {
 
 // Call this function when the length of a line (in screen characters) above the cursor have 
 // changed. Need to take care of bottomLine separately!
-public void
+pub void
 changed_line_abv_curs(void) {
     curPor->cacheState &= 
        ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW |VALID_CHEIGHT|VALID_TOPLINE);
 }
 
-public void
+pub void
 changed_line_abv_curs_win(Portal *po) {
     po->cacheState &= ~(VALID_WROW|VALID_WCOL|VALID_VIRTCOL|VALID_CROW|VALID_CHEIGHT|VALID_TOPLINE);
 }
 
 // Display of line has changed for "book", invalidate cursor position and bottomLine.
-public void
+pub void
 normInvalidateDisplayOfChangedBookLine(Book* book) {
    Portal *po;
    FOR_ALL_PORTALS(po) {
@@ -7480,36 +7480,36 @@ normInvalidateDisplayOfChangedBookLine(Book* book) {
 }
 
 // Make sure the value of curPor->bottomLine is valid.
-public void
+pub void
 validate_botline(void) {
    validate_botline_win(curPor);
 }
 
 // Make sure the value of po->bottomLine is valid.
-public void
+pub void
 validate_botline_win(Portal *po) {
    if (!(po->cacheState & VALID_BOTLINE))
       comp_botline(po);
 }
 
 // Mark curPor->bottomLine as invalid (because of some change in the book).
-public void
+pub void
 invalidate_botline(void) {
    curPor->cacheState &= ~(VALID_BOTLINE|VALID_BOTLINE_AP);
 }
 
-public void
+pub void
 invalidate_botline_win(Portal *po) {
    po->cacheState &= ~(VALID_BOTLINE|VALID_BOTLINE_AP);
 }
 
-public void
+pub void
 approximate_botline_win( Portal   *po) {
    po->cacheState &= ~VALID_BOTLINE;
 }
 
 // true if curPor->cursorRow and curPor->cursorCol are valid.
-public int
+pub int
 cursor_valid(void) {
    check_cursor_moved(curPor);
    return ((curPor->cacheState & (VALID_WROW|VALID_WCOL)) == (VALID_WROW|VALID_WCOL));
@@ -7517,7 +7517,7 @@ cursor_valid(void) {
 
 // Validate cursor position.  Makes sure cursorRow and cursorCol are valid.
 // topLine must be valid, you may need to call update_topline() first!
-public void
+pub void
 validate_cursor(void) {
    check_cursor_lnum();
    check_cursor_moved(curPor);
@@ -7597,13 +7597,13 @@ curs_rows(Portal* po) {
 }
 
 // Validate curPor->virtCol only.
-public void
+pub void
 validate_virtcol(void) {
    validate_virtcol_win(curPor);
 }
 
 // Validate po->virtCol only.
-public void
+pub void
 validate_virtcol_win(Portal* po) {
    check_cursor_moved(po);
 
@@ -7617,7 +7617,7 @@ validate_virtcol_win(Portal* po) {
 }
 
 // Validate curPor->cursorLineHeight only.
-public void
+pub void
 validate_cheight(void) {
    check_cursor_moved(curPor);
 
@@ -7633,7 +7633,7 @@ validate_cheight(void) {
 }
 
 // Validate cursorCol and virtCol only.
-public void
+pub void
 validate_cursor_col(void) {
    validate_virtcol();
 
@@ -7661,7 +7661,7 @@ validate_cursor_col(void) {
 
 // Compute offset of a portal, occupied by absolute or relative line number,
 // fold column and sign column (these don't move when scrolling horizontally).
-public int
+pub int
 normalPortalColumnOffset(Portal *po) {
     return number_width(po) + 1 + (po != commPortPortG ? 0 : 1) + (isSigncolumnOn(po) ? 2 : 0);
                          // ^ for the line number column
@@ -7669,7 +7669,7 @@ normalPortalColumnOffset(Portal *po) {
 
 // Compute curPor->cursorCol and curPor->virtCol.
 // Also update curPor->cursorRow and curPor->cursorLineRow. Also update curPor->leftCol.
-public void
+pub void
 curs_columns(int may_scroll) { // when true, may scroll horizontally
    int diff;
    int off_left, off_right;
@@ -7905,7 +7905,7 @@ curs_columns(int may_scroll) { // when true, may scroll horizontally
 
 // Compute the screen position of text character at "pos" in portal "po"
 // The resulting values are one-based, 0 when character is not visible.
-public void
+pub void
 textpos2screenpos(
    Portal* po,
    Pos* pos,
@@ -7967,7 +7967,7 @@ textpos2screenpos(
 }
 
 // "screenpos({winid}, {lnum}, {col})" function
-public void
+pub void
 f_screenpos(Var* argvars, Var* returnVar) {
    Pos   pos;
    int      row = 0;
@@ -8014,7 +8014,7 @@ virtcol2col(Portal* po, LineNr lnum, int vcol) {
 }
 
 // "virtcol2col({winid}, {lnum}, {col})" function
-public void
+pub void
 f_virtcol2col(Var* argvars, Var* returnVar) {
    returnVar->number = -1;
 
@@ -8109,7 +8109,7 @@ private void cursor_correct_sms(void) {
 }
 
 // Scroll "count" lines up or down, and redraw.
-public void
+pub void
 scroll_redraw(int up, long count) {
    LineNr prev_topline = curPor->topLine;
    int prev_skipcol = curPor->skipCol;
@@ -8156,7 +8156,7 @@ scroll_redraw(int up, long count) {
 }
 
 // Scroll the current portal down by "line_count" logical lines.  "CTRL-Y"
-public void
+pub void
 scrolldown(long line_count, int byfold) {  // true: count a closed fold as one line
    long done = 0;   // total # of physical lines done
    int wrow;
@@ -8261,7 +8261,7 @@ scrolldown(long line_count, int byfold) {  // true: count a closed fold as one l
 }
 
 // Scroll the current portal up by "line_count" logical lines.  "CTRL-E"
-public void
+pub void
 scrollup(long line_count, int byfold) {  // true: count a closed fold as one line
    int      doSmoothly = curPor->o.wrap && curPor->o.smoothScroll;
 
@@ -8349,7 +8349,7 @@ scrollup(long line_count, int byfold) {  // true: count a closed fold as one lin
 }
 
 //After changing the cursor column: make sure that curPor->skipCol is valid for 'smoothscroll'
-public void
+pub void
 adjust_skipcol(void) {
    if (!curPor->o.wrap
          || !curPor->o.smoothScroll
@@ -8427,7 +8427,7 @@ adjust_skipcol(void) {
 }
 
 // Don't end up with too many filler lines in the portal.
-public void
+pub void
 check_topfill(Portal* po, int down) {  // when true scroll down when not enough space
    if (po->topFill <= 0)
       return;
@@ -8446,7 +8446,7 @@ check_topfill(Portal* po, int down) {  // when true scroll down when not enough 
 }
 
 // Scroll the screen one line down, but don't do it if it would move the cursor off the screen.
-public void
+pub void
 scrolldown_clamp(void) {
    int end_row;
    int can_fill = (curPor->topFill < diff_check_fill(curPor, curPor->topLine));
@@ -8484,7 +8484,7 @@ scrolldown_clamp(void) {
 }
 
 // Scroll the screen one line up, but don't do it if it would move the cursor off the screen.
-public void
+pub void
 scrollup_clamp(void) {
    if (curPor->topLine == curBook->mem.lineCount && curPor->topFill == 0)
       return;
@@ -8674,7 +8674,7 @@ scroll_cursor_top(int min_scroll, int always) {
 
 // Set emptyRowCount and fillerRowCount for portal "po", having used up "used"
 // screen lines for text lines.
-public void
+pub void
 normSetEmptyRowCount(Portal* po, int used) {
    po->fillerRowCount = 0;
    if (used == 0)
@@ -8696,7 +8696,7 @@ normSetEmptyRowCount(Portal* po, int used) {
 // Recompute topline to put the cursor at the bottom of the portal.
 // When scrolling scroll at least "min_scroll" lines.
 // If "set_topbot" is true, set topline and botline first (for "zb"). This is messy stuff!!!
-public void
+pub void
 scroll_cursor_bot(int min_scroll, int set_topbot) {
    int      used;
    int      scrolled = 0;
@@ -8906,7 +8906,7 @@ scroll_cursor_bot(int min_scroll, int set_topbot) {
 
 // Recompute topline to put the cursor halfway the portal
 // If "atend" is true, also put it halfway at the end of the file.
-public void
+pub void
 scroll_cursor_halfway(int atend, int prefer_above) {
    int above = 0;
    ColNr skipcol = 0;
@@ -9027,7 +9027,7 @@ scroll_cursor_halfway(int atend, int prefer_above) {
 // Correct the cursor position so that it is in a part of the screen at least 'scrolloff' lines 
 // from the top and bottom, if possible. If not possible, put it at the same position as 
 // scroll_cursor_halfway(). When called topline must be valid!
-public void
+pub void
 cursor_correct(void) {
    int      above = 0;       // screen lines above topline
    LineNr   topline;
@@ -9224,7 +9224,7 @@ scrollSmoothly(int dir, long count, long *curscount) {
 // to reveal end of book lines for half-page scrolling with CTRL-D and CTRL-U.
 //
 // Return FAIL for failure, OK otherwise.
-public int
+pub int
 pagescroll(int dir, long count, int half) {
    int      nochange = true;
    int      buflen = curBook->mem.lineCount;
@@ -9308,7 +9308,7 @@ pagescroll(int dir, long count, int half) {
    return nochange;
 }
 
-public void
+pub void
 do_check_cursorbind(void) {
    static Portal* prev_curPor = NULL;
    static Pos   prev_cursor = {0, 0, 0};
@@ -9398,18 +9398,18 @@ private int      map_locked = 0;
       ? (c1) : ((c1) ^ 0x80))
 
 //Get the start of the hashed map list for "state" and first character "c".
-public MapBlock*
+pub MapBlock*
 getMappingTableList(int state, int c) {
    return mappingTable[MAP_HASH(state, c)];
 }
 
 // Get the book-local hashed map list for "state" and first character "c".
-public MapBlock *
+pub MapBlock *
 getBufMappingTableList(int state, int c) {
    return curBook->localMappings[MAP_HASH(state, c)];
 }
 
-public int
+pub int
 isMappingTableValid(void) {
    return mappingTable_valid;
 }
@@ -9712,7 +9712,7 @@ listMappings(
 //    2 for no match
 //    4 for out of mem
 //    5 for entry not unique
-public int
+pub int
 do_map(int maptype, CS arg, Unt mode, int abbrev){ // not a mapping but an abbreviation
    CS keys;
    MapBlock* foundMapping;
@@ -10189,7 +10189,7 @@ isMapLocked(void) {
    return false;
 }
 
-public void
+pub void
 mapClearAllMappingsInMode(
    Book* book,      // book for local mappings
    int      modeClearFrom,      // mode in which to delete
@@ -10244,7 +10244,7 @@ mapClearAllMappingsInMode(
    }
 }
 
-public int
+pub int
 mode_str2flags(CS modechars) {
    int      mode = 0;
 
@@ -10268,7 +10268,7 @@ mode_str2flags(CS modechars) {
 
 //Return true if a map exists that has "str" in the rhs for mode "modechars".
 //Recognize termcap codes in "str". Also check mappings local to the current book.
-public int
+pub int
 map_to_exists(CS str, CS modechars, int abbr) {
     CS buffer;
     CS rhs = replace_termcodes(str, OUT &buffer, 0, REPTERM_DO_LT, NULL, false);
@@ -10279,7 +10279,7 @@ map_to_exists(CS str, CS modechars, int abbr) {
 
 //Return true if a map exists that has "str" in the rhs for mode "mode".
 //Also checks mappings local to the current book.
-public Boole
+pub Boole
 map_to_exists_mode(CS rhs, int mode, int abbr) {
    MapBlock   *mp;
    int      hash;
@@ -10368,7 +10368,7 @@ translateMapping(CS str) {
 }
 
 //Work out what to complete when doing command line completion of mapping or abbreviation names.
-public CS
+pub CS
 set_context_in_map_cmd(
    Expand* xp,
    CS cmd,
@@ -10432,7 +10432,7 @@ set_context_in_map_cmd(
 //Find all mapping/abbreviation names that match regexp "regmatch"'.
 //For command line expansion of ":[un]map" and ":[un]abbrev" in all modes.
 //Return OK if matches found, FAIL otherwise.
-public int
+pub int
 expandMappings(
    CS pat,
    RegMatch* regmatch,
@@ -10565,7 +10565,7 @@ expandMappings(
 //Then there must be white space before the abbr.
 //
 //return true if there is an abbreviation, false if not
-public Boole
+pub Boole
 check_abbr(Unt c, CS ptr, int col, int mincol) {
    int len;
    int scol;      // starting column of the abbr.
@@ -10717,7 +10717,7 @@ check_abbr(Unt c, CS ptr, int col, int mincol) {
 
 //Evaluate the RHS of a mapping or abbreviations and take care of escaping special characters.
 //Careful: after this "mp" will be invalid if the mapping was deleted.
-public CS
+pub CS
 eval_map_expr(MapBlock   *mp, int c) { // ZERO or typed character for abbreviation
    ScriptId   save_sctx_sid = scriptPosG.sid;
 
@@ -10757,7 +10757,7 @@ eval_map_expr(MapBlock   *mp, int c) { // ZERO or typed character for abbreviati
 
 //Copy "p" to allocated memory, escaping K_SPECIAL and CSI so that the result
 //can be put in the typeahead buffer.
-public CS
+pub CS
 copyStr_escape_csi(CS p) {
    //Need a buffer to hold up to 3 times as much. 4 in case of an illegal utf-8 byte:
    //0xc0 -> 0xc3 0x80 -> 0xc3 K_SPECIAL KS_SPECIAL KE_FILLER
@@ -10783,7 +10783,7 @@ copyStr_escape_csi(CS p) {
 
 //Remove escaping from CSI and K_SPECIAL characters. Reverse of copyStr_escape_csi(). 
 //Work in-place.
-public void
+pub void
 eeUnescapeCsi(CS p) {
    CS s = p;
    CS d = p;
@@ -10803,7 +10803,7 @@ eeUnescapeCsi(CS p) {
 
 //Write map commands for the current mappings to an .exrc file.
 //Return FAIL on error, OK otherwise.
-public int
+pub int
 makemap(FILE* fd, NULLABLE Book* book) {     // the book for local mappings or NULL
    MapBlock* mp;
    Byte c1, c2, c3;
@@ -10930,7 +10930,7 @@ makemap(FILE* fd, NULLABLE Book* book) {     // the book for local mappings or N
 
 //write escape string to file. "what": 0 for :map lhs, 1 for :map rhs, 2 for :set
 //return FAIL for failure, OK otherwise
-public int
+pub int
 put_escstr(FILE* fd, CS strstart, int what) {
    CS str = strstart;
    Unt      c;
@@ -11025,7 +11025,7 @@ put_escstr(FILE* fd, CS strstart, int what) {
 }
 
 // Check all mappings for the presence of special key codes. Used after ":set term=xxx".
-public void
+pub void
 check_map_keycodes(void) {
    MapBlock   *mp;
    CS p;
@@ -11091,7 +11091,7 @@ check_map_keycodes(void) {
 
 //Check the string "keys" against the lhs of all mappings. Return pointer to rhs of mapping 
 //(mapblock->m_str). NULL when no mapping found.
-public CS
+pub CS
 norCheckMapping(
    CS keys,
    int mode,
@@ -11152,7 +11152,7 @@ norCheckMapping(
 }
 
 // "hasmapto()" function
-public void
+pub void
 f_hasmapto(Var* argvars, Var* returnVar) {
    CS mode;
    Byte buffer[NUMBUFLEN];
@@ -11274,7 +11274,7 @@ getMapArg(Var* argvars, Var* returnVar, int exact) {
    eeglFree(alt_keysBuffer);
 }
 
-public void
+pub void
 f_maplist(Arr(Var) argvars, Var* returnVar) {
    Bag* d;
    MapBlock* mp;
@@ -11325,12 +11325,12 @@ f_maplist(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-public void
+pub void
 f_maparg(Var* argvars, Var* returnVar) {
    getMapArg(argvars, returnVar, true);
 }
 
-public void
+pub void
 f_mapcheck(Var *argvars, Var* returnVar) {
    getMapArg(argvars, returnVar, false);
 }
@@ -11380,7 +11380,7 @@ getMapModeString(CS mode_string, int abbr) {
 }
 
 // "mapset()" function
-public void
+pub void
 f_mapset(Var *argvars, Var* returnVar UNUSED) {
    CS which;
    Byte buffer[NUMBUFLEN];
@@ -11482,7 +11482,7 @@ f_mapset(Var *argvars, Var* returnVar UNUSED) {
 
 //Add a mapping "map" for mode "mode". When "nore" is true use MAPTYPE_NOREMAP.
 //Need to put string in allocated memory, because do_map() will modify it.
-public void
+pub void
 add_map(CS map, int mode, int nore) {
    CS s = copyStr(map);
    (void)do_map(nore ? MAPTYPE_NOREMAP : MAPTYPE_MAP, s, mode, false);
@@ -11541,7 +11541,7 @@ setEntry(int from, int to) {
 }
 
 // Apply @langmap' to multi-byte character "c" and return the result.
-public int
+pub int
 langmap_adjust_mb(int c) {
    LangmapEntry *entries = (LangmapEntry *)(langmapTable.c);
    int a = 0;
@@ -11561,7 +11561,7 @@ langmap_adjust_mb(int c) {
    return c;  // no entry found, return "c" unmodified
 }
 
-public void
+pub void
 langmap_init(void) {
    for (int i = 0; i < 256; i++)
       langmap_mapchar[i] = i;    // we init with a one-to-one map
@@ -11569,7 +11569,7 @@ langmap_init(void) {
 }
 
 // Called when langmap option is set; the language map can be changed at any time!
-public CS
+pub CS
 setLangmap(OptionChange* args) {
    CS new = args->newVal.string;
    if (!new) {
@@ -11669,31 +11669,31 @@ mappingImpl(Invocation* invo, Boole isabbrev) {
 }
 
 // ":abbreviate" and friends.
-public void
+pub void
 c_abbreviate(Invocation* invo) {
    mappingImpl(invo, true);   // almost the same as mapping
 }
 
 // ":map" and friends.
-public void
+pub void
 c_map(Invocation* invo) {
    mappingImpl(invo, false);
 }
 
 // ":unmap" and friends.
-public void
+pub void
 c_unmap(Invocation* invo) {
    mappingImpl(invo, false);
 }
 
 // ":mapclear" and friends.
-public void
+pub void
 c_mapclear(Invocation* invo) {
    mapClear(invo->comm, invo->arg, invo->forceit, false);
 }
 
 // ":abclear" and friends.
-public void
+pub void
 c_abclear(Invocation* invo) {
    mapClear(invo->comm, invo->arg, true, true);
 }
@@ -11774,7 +11774,7 @@ private int foldendmarkerlen;
 // copyFoldingState()
 
 //Copy that folding state from portal "wp_from" to portal "wp_to".
-public void
+pub void
 copyFoldingState(Portal* wp_from, Portal* wp_to) {
    wp_to->foldManual = wp_from->foldManual;
    wp_to->foldNeedsRecomputation = wp_from->foldNeedsRecomputation;
@@ -11782,7 +11782,7 @@ copyFoldingState(Portal* wp_from, Portal* wp_to) {
 }
 
 //Return true if there may be folded lines in portal "po".
-public int
+pub int
 hasAnyFolding(Portal* po) {
    //very simple now, but can become more complex later
    return po->o.foldEnable;
@@ -11792,12 +11792,12 @@ hasAnyFolding(Portal* po) {
 //Return true if line "lnum" in the current portal is part of a closed fold.
 //When returning true, *firstp and *lastp are set to the first and last
 //lnum of the sequence of folded lines (skipped when NULL).
-public Boole
+pub Boole
 getFolds(LineNr lnum, OUT LineNr *firstp, OUT LineNr *lastp) {
    return getFoldsPortal(curPor, lnum, OUT firstp, OUT lastp, true, NULL);
 }
 
-public Boole
+pub Boole
 getFoldsPortal(
    Portal* po,
    LineNr lnum,
@@ -11915,7 +11915,7 @@ getFoldLevel(LineNr lnum) {
 //Return true if line is folded.
 //Return false if line is not folded.
 //Return MAYBE if the line is folded when next to a folded line.
-public int
+pub int
 lineFolded(Portal *po, LineNr lnum) {
    return foldedCount(po, lnum, NULL) != 0;
 }
@@ -11926,7 +11926,7 @@ lineFolded(Portal *po, LineNr lnum) {
 //Doesn't use caching from the displayed portal.
 //Returns number of folded lines from "lnum", or 0 if line is not folded.
 //When "infop" is not NULL, fills *infop with the fold level info.
-public long
+pub long
 foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop) {
    LineNr last;
 
@@ -11936,7 +11936,7 @@ foldedCount(Portal* po, LineNr lnum, OUT FoldInfo* infop) {
 }
 
 //Close fold for current portal at line "lnum". Repeat "count" times.
-public void
+pub void
 closeFold(LineNr lnum, Long count) {
    setFoldRepeat(lnum, count, false);
 }
@@ -11949,7 +11949,7 @@ closeFoldRecurse(LineNr lnum) {
 
 //Open or Close folds for current portal in lines "first" to "last".
 //Used for "zo", "zO", "zc" and "zC" in Visual mode.
-public void
+pub void
 opFoldRange(
    LineNr first,
    LineNr last,
@@ -11977,7 +11977,7 @@ opFoldRange(
 }
 
 //Open fold for current portal at line "lnum". Repeat "count" times.
-public void
+pub void
 openFold(LineNr lnum, Long count) {
    setFoldRepeat(lnum, count, true);
 }
@@ -11989,7 +11989,7 @@ openFoldRecurse(LineNr lnum) {
 }
 
 //Open folds until the cursor line is not in a closed fold.
-public void
+pub void
 foldOpenCursor(void) {
    Unt done;
 
@@ -12020,7 +12020,7 @@ newFoldLevelForPortal(Portal* po) {
 }
 
 //Set new foldlevel for current portal.
-public void
+pub void
 newFoldLevel(void) {
    newFoldLevelForPortal(curPor);
    if (curPor->o.foldMethod == FOLD_DIFF && curPor->o.diff) {
@@ -12036,7 +12036,7 @@ newFoldLevel(void) {
 }
 
 //Apply @foldlevel to all folds that don't contain the cursor.
-public void
+pub void
 foldCheckClose(void) {
    //@foldclose can only be "all" right now
    checkupdate(curPor);
@@ -12066,7 +12066,7 @@ checkCloseRec(ArrayList* gap, LineNr lnum, int level) {
 
 //Return true if it's allowed to manually create or delete a fold.
 //Give an error message and return false if not.
-public int
+pub int
 foldManualAllowed(int create) {
    if (curPor->o.foldMethod == FOLD_MARKER && curPor->o.foldMarker)
       return true;
@@ -12078,7 +12078,7 @@ foldManualAllowed(int create) {
 }
 
 //Create a fold from line "start" to line "end" (inclusive) in the current portal.
-public void
+pub void
 foldCreate(LineNr start, LineNr end) {
    ArrayList* gap;
    ArrayList fold_ga;
@@ -12195,7 +12195,7 @@ foldCreate(LineNr start, LineNr end) {
 //Delete a fold at line "start" in the current portal.
 //When "end" is not 0, delete all folds from "start" to "end".
 //When "recursive" is true delete recursively.
-public void
+pub void
 deleteFold(LineNr start, LineNr end, int recursive, int had_visual){ //is Visual selection used?
    ArrayList   *gap;
    Fold   *fp;
@@ -12268,7 +12268,7 @@ deleteFold(LineNr start, LineNr end, int recursive, int had_visual){ //is Visual
 }
 
 //Remove all folding for portal "po".
-public void
+pub void
 clearFolding(Portal* po) {
    deleteFoldRecurse(&po->folds);
    po->foldNeedsRecomputation = false;
@@ -12278,7 +12278,7 @@ clearFolding(Portal* po) {
 //Note that inserted/deleted lines must have already been taken care of by
 //calling foldMarkAdjust().
 //The changes in lines from top to bot (inclusive).
-public void
+pub void
 foldUpdate(Portal* po, LineNr top, LineNr bot) {
    Fold   *fp;
 
@@ -12317,7 +12317,7 @@ foldUpdate(Portal* po, LineNr top, LineNr bot) {
 //Used when a fold setting changes or after reloading the buffer.
 //The actual updating is postponed until fold info is used, to avoid doing
 //every time a setting is changed or a syntax item is added.
-public void
+pub void
 foldUpdateAll(Portal* po) {
    po->foldNeedsRecomputation = true;
    redrawPortLater(po, UPD_NOT_VALID);
@@ -12435,7 +12435,7 @@ foldMoveTo(Boole updown, Unt dir,  long count) {
 }
 
 //Init the fold info in a new portal.
-public void
+pub void
 normInitFoldForPortal(Portal* newPort) {
    ga_init2(&newPort->folds, sizeof(Fold), 10);
 }
@@ -12443,7 +12443,7 @@ normInitFoldForPortal(Portal* newPort) {
 //Find an entry in the po->lines[] array for buffer line "lnum".
 //Only valid entries are considered (for entries where isValid is false the
 //line number can be wrong). Return index of entry or -1 if not found.
-public int
+pub int
 find_wl_entry(Portal* po, LineNr lnum) {
     for (int i = 0; i < po->validLines; ++i) {
        if (po->lines[i].isValid) {
@@ -12457,7 +12457,7 @@ find_wl_entry(Portal* po, LineNr lnum) {
 }
 
 //Adjust the Visual area to include any fold at the start or end completely.
-public void
+pub void
 foldAdjustVisual(void) {
    if (!VIsual_active || !hasAnyFolding(curPor))
       return;
@@ -12490,7 +12490,7 @@ foldAdjustCursor(void) {
 // Internal functions for "Fold"
 //Will "clone" (i.e deep copy) a ArrayList of folds.
 //Return FAIL if the operation cannot be completed, otherwise OK.
-public void
+pub void
 cloneFoldArrayList(ArrayList* from, ArrayList* to) {
    ga_init2(to, from->ga_itemsize, from->ga_growsize);
    if (from->len == 0 || ga_grow(to, from->len) == FAIL)
@@ -12771,7 +12771,7 @@ deleteFoldEntry(ArrayList *gap, int idx, int recursive) {
 }
 
 //Delete nested folds in a fold.
-public void
+pub void
 deleteFoldRecurse(ArrayList *gap) {
     for (int i = 0; i < gap->len; ++i)
        deleteFoldRecurse(&(((Fold *)(gap->c))[i].fd_nested));
@@ -12782,7 +12782,7 @@ deleteFoldRecurse(ArrayList *gap) {
 //
 //We are adjusting the folds in the range from line1 til line2,
 //make sure that line2 does not get smaller than line1
-public void
+pub void
 foldMarkAdjust(
     Portal* po,
     LineNr line1,
@@ -13103,7 +13103,7 @@ foldDelMarker(LineNr lnum, CS marker, int markerlen) {
 //Return the text for a closed fold at line "lnum", with last line "lnume".
 //When 'foldtext' isn't set puts the result in "buffer[FOLD_TEXT_LEN]".
 //Otherwise the result is in allocated memory.
-public CS
+pub CS
 get_foldtext(
    Portal* po,
    LineNr lnum,
@@ -14016,7 +14016,7 @@ truncate_fold(Fold* fp, LineNr end) {
 #define valid_fold(fp, gap) ((gap)->len > 0 && (fp) < ((Fold *)(gap)->c + (gap)->len))
 #define fold_index(fp, gap) ((Unt)((fp) - ((Fold *)(gap)->c)))
 
-public void
+pub void
 foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest) {
    Fold *fp;
    LineNr range_len = line2 - line1 + 1;
@@ -14348,7 +14348,7 @@ private int put_fold_open_close(FILE *fd, Fold *fp, LineNr off);
 
 //Write commands to "fd" to restore the manual folds in portal "po".
 //Return FAIL if writing fails.
-public int
+pub int
 put_folds(FILE* fd, Portal* po) {
    // If some folds are manually opened/closed, need to restore that.
    if (po->foldManual)
@@ -14426,24 +14426,24 @@ foldclosed_both(Var* argvars, Var* returnVar, int end) {
    returnVar->number = -1;
 }
 
-public void
+pub void
 f_foldclosed(Var *argvars, Var* returnVar) {
    foldclosed_both(argvars, returnVar, false);
 }
 
-public void
+pub void
 f_foldclosedend(Var *argvars, Var* returnVar) {
    foldclosed_both(argvars, returnVar, true);
 }
 
-public void
+pub void
 f_foldlevel(Var *argvars UNUSED, Var* returnVar) {
    LineNr lnum = tv_get_lnum(argvars);
    if (lnum >= 1 && lnum <= curBook->mem.lineCount)
       returnVar->number = getFoldLevel(lnum);
 }
 
-public void
+pub void
 f_foldtext(Var *argvars UNUSED, Var* returnVar) {
    LineNr   lnum;
    CS s;
@@ -14492,7 +14492,7 @@ f_foldtext(Var *argvars UNUSED, Var* returnVar) {
 }
 
 //"foldtextresult(lnum)" function
-public void
+pub void
 f_foldtextresult(Var *argvars UNUSED, Var* returnVar) {
    Byte buffer[FOLD_TEXT_LEN];
    FoldInfo  foldinfo;

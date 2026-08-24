@@ -112,7 +112,7 @@ private Callback tfu_cb;       // 'tagfunc' callback function
 //Read the 'tagfunc' option value and convert that to a callback value.
 //Invoked when the 'tagfunc' option is set. The option value can be a name of
 //a function (string), or function(<name>) or funcref(<name>) or a lambda.
-public CS
+pub CS
 did_set_tagfunc(OptionChange *cha) {
    evFreeCallback(&tfu_cb);
    evFreeCallback(curBook->o.tagFn);
@@ -129,14 +129,14 @@ did_set_tagfunc(OptionChange *cha) {
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_tagfunc_option(void) {
    evFreeCallback(&tfu_cb);
 }
 # endif
 
 //Mark the global 'tagfunc' callback with "copyID" so that it is not garbage collected.
-public int
+pub int
 set_ref_in_tagfunc(int copyID UNUSED) {
    int abort = memSetRefInCallback(&tfu_cb, copyID);
 
@@ -163,7 +163,7 @@ set_ref_in_tagfunc(int copyID UNUSED) {
 //type == DT_FREE:   free cached matches
 //
 //for cscope, returns true if we jumped to tag or aborted, false otherwise
-public int
+pub int
 do_tag(
    CS tag,      // tag (pattern) to jump to
    Unt type,
@@ -932,7 +932,7 @@ add_llist_tags(CS tag, ExpandMatch matches) {
 }
 
 //Free cached tags.
-public void
+pub void
 tag_freematch(void) {
    EE_CLEAR(tagmatchname);
 }
@@ -947,7 +947,7 @@ taglen_advance(int l) {
 }
 
 // Print the tag stack
-public void
+pub void
 do_tags(Invocation *eap UNUSED) {
    int      i;
    CS name;
@@ -2090,7 +2090,7 @@ findtags_copy_matches(FindTags* st, OUT ExpandMatch* targetMatches) {
 //TAG_KEEP_LANG  keep language
 //TAG_CSCOPE     use cscope results for tags
 //TAG_NO_TAGFUNC do not call the 'tagfunc' function
-public int
+pub int
 find_tags(
    CS pat,         // pattern to search for
    Unt flags,
@@ -2258,7 +2258,7 @@ found_tagfile_cb(CS fname, void* cookie UNUSED) {
 
 #if defined(EXITFREE) || defined(PROTO)
    void
-public free_tag_stuff(void) {
+pub free_tag_stuff(void) {
    ga_clear_strings(&tag_fnames);
    if (curPor != NULL)
       do_tag(NULL, DT_FREE, 0, 0, 0);
@@ -2270,7 +2270,7 @@ public free_tag_stuff(void) {
 
 //Get the next name of a tag file from the tag file list. For help files, use "tags" file only.
 //Return FAIL if no more tag file names, OK otherwise.
-public int
+pub int
 get_tagfname(
    TagName   *tnp,   // holds status info
    int      first,   // true when first file name is wanted
@@ -2372,7 +2372,7 @@ get_tagfname(
 }
 
 //Free the contents of a TagName that was filled by get_tagfname().
-public void
+pub void
 tagname_free(TagName *tnp) {
    eeglFree(tnp->tn_tags);
    eeFindFile_cleanup(tnp->searchCtx);
@@ -2907,13 +2907,13 @@ find_extra(OUT CS* pp) {
 }
 
 //Free a single entry in a tag stack
-public void
+pub void
 tagstack_clear_entry(Taggy* item) {
    EE_CLEAR(item->tagname);
    EE_CLEAR(item->user_data);
 }
 
-public int
+pub int
 expand_tags(Boole expandTagNames, CS pat, OUT ExpandMatch* matches) {
    Unt   name_buf_size = 100;
    Tagline   tagline;
@@ -2997,7 +2997,7 @@ add_tag_field(
 
 //Add the tags matching the specified pattern "pat" to the list "list"
 //as a dictionary. Use "buf_fname" for priority, unless NULL.
-public int
+pub int
 get_tags(List* list, CS pat, CS buf_fname) {
    CS p;
    CS full_fname;
@@ -3103,7 +3103,7 @@ get_tag_details(Taggy *tag, OUT Bag* retBag) {
 }
 
 //Return the tag stack entries of the specified window 'wp' in dictionary 'retBag'.
-public void
+pub void
 get_tagstack(Portal* wp, Bag* retBag) {
    bagAddNumber(retBag, S"length", wp->tagStackLen);
    bagAddNumber(retBag, S"curidx", wp->tagStackInd + 1);
@@ -3224,7 +3224,7 @@ tagstack_set_curidx(Portal* po, int curidx) {
 //  'a' for append
 //  'r' for replace
 //  't' for truncate
-public int
+pub int
 set_tagstack(Portal *wp, Bag *d, Unt action) {
    // not allowed to alter the tag stack entries from inside tagfunc
    if (tfu_in_use) {
@@ -3367,7 +3367,7 @@ private enum {
 } expand_what;
 
 //Function given to expandGeneric() to obtain the cscope command expansion.
-public CS
+pub CS
 get_cscope_name(Expand* xp UNUSED, int idx) {
    int current_idx;
    int i;
@@ -3416,7 +3416,7 @@ get_cscope_name(Expand* xp UNUSED, int idx) {
 }
 
 //Handle command line completion for :cscope command.
-public void
+pub void
 set_context_in_cscope_cmd(Expand* xp, CS arg, CommIndex id) {
    // Default: expand subcommands
    xp->context = EXPAND_CSCOPE;
@@ -3471,19 +3471,19 @@ do_cscope_general(Invocation* invo, int make_split) { // whether to split window
 }
 
 //Implementation of ":cscope" and ":lcscope"
-public void
+pub void
 c_cscope(Invocation* invo) {
    do_cscope_general(invo, false);
 }
 
 //Implementation of ":scscope". Same as c_cscope(), but splits window, too.
-public void
+pub void
 c_scscope(Invocation* invo) {
    do_cscope_general(invo, true);
 }
 
 //Implementation of ":cstag"
-public void
+pub void
 c_cstag(Invocation* invo) {
    int ret = false;
 
@@ -3541,7 +3541,7 @@ c_cstag(Invocation* invo) {
 //from the cscope output. should only be called from find_tags()
 //
 //return true if eof, false otherwise
-public int
+pub int
 cs_fgets(CS buf, int size) {
    CS p;
    if ((p = cs_manage_matches(NULL, NULL, -1, Get)) == NULL)
@@ -3552,13 +3552,13 @@ cs_fgets(CS buf, int size) {
 }
 
 // Called only from do_tag(), when popping the tag stack.
-public void
+pub void
 cs_free_tags(void) {
    cs_manage_matches(NULL, NULL, -1, Free);
 }
 
 // Called from do_tag().
-public void
+pub void
 cs_print_tags(void) {
    cs_manage_matches(NULL, NULL, -1, Print);
 }
@@ -4989,7 +4989,7 @@ cs_show(Invocation* invo UNUSED) {
 
 
 //Only called when Eegl exits to quit any cscope sessions.
-public void
+pub void
 cs_end(void) {
    for (int i = 0; i < csinfo_size; i++)
       cs_release_csp(i, true);
@@ -4999,7 +4999,7 @@ cs_end(void) {
 
 //"cscope_connection([{num} , {dbpath} [, {prepend}]])" function
 //Check the existence of a cscope connection.
-public void
+pub void
 f_cscope_connection(Var *argvars UNUSED, Var *returnVar UNUSED) {
    int      num = 0;
    CS dbpath = NULL;

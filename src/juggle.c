@@ -23,7 +23,7 @@ private Boole cin_is_cinword(CS line);
 //If we have undone all changes, "wasModified" will be false, but "didWarnReadonly" will be true.
 //"col" is the column for the message; non-zero when in insert mode and 'showmode' is on.
 //Careful: may trigger autocommands that reload the book.
-public void
+pub void
 change_warning(int col) {
    static CS w_readonly = S"W10: Warning: Changing a readonly file";
 
@@ -67,7 +67,7 @@ change_warning(int col) {
 //mark the area of the display to be redrawn.
 //
 //Careful: may trigger autocommands that reload the book.
-public void
+pub void
 changed(void) {
    if (!curBook->wasModified) {
       int   save_msg_scroll = msg_scroll;
@@ -118,7 +118,7 @@ check_status(Book* book) {
 }
 
 //Internal part of changed(), no user interaction. Also used for recovery.
-public void
+pub void
 jugOnChangeToText(void) {
    curBook->wasModified = true;
    ml_setflags(curBook);
@@ -189,14 +189,14 @@ may_record_change(
 }
 
 // Return something that fits into an int.
-public int
+pub int
 trim_to_int(Long x) {
    return x > INT_MAX ? INT_MAX : x < INT_MIN ? INT_MIN : x;
 }
 
 
 //listener_add() function
-public void
+pub void
 f_listener_add(Arr(Var) argVars, OUT Var* returnVar) {
    Listener* lnr;
    Book* book = curBook;
@@ -229,7 +229,7 @@ f_listener_add(Arr(Var) argVars, OUT Var* returnVar) {
    returnVar->number = lnr->id;
 }
 
-public void
+pub void
 f_listener_flush(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
    Book* book = curBook;
 
@@ -252,7 +252,7 @@ remove_listener(Book* book, Listener *lnr, Listener *prev) {
    eeglFree(lnr);
 }
 
-public void
+pub void
 f_listener_remove(Arr(Var) argVars, OUT Var* returnVar) {
    Listener* lnr;
    Listener* next;
@@ -280,13 +280,13 @@ f_listener_remove(Arr(Var) argVars, OUT Var* returnVar) {
 }
 
 //Called before inserting a line above "lnum"/"lnum3" or deleting line "lnum" to "lnume".
-public void
+pub void
 may_jugInvokeListenersOnChangedText(Book* book, LineNr lnum, LineNr lnume, int added) {
    checkRecordedChanges(book, lnum, lnume, added);
 }
 
 //Called when a sequence of changes is done: invoke listeners added with listener_add().
-public void
+pub void
 jugInvokeListenersOnChangedText(Book* book) {
    Listener   *lnr;
    Var   returnVar;
@@ -359,7 +359,7 @@ jugInvokeListenersOnChangedText(Book* book) {
 }
 
 //Remove all listeners associated with "book".
-public void
+pub void
 remove_listeners(Book* book) {
    Listener* next;
    for (Listener* lnr = book->listener; lnr != NULL; lnr = next) {
@@ -601,7 +601,7 @@ changedOneline(Book* book, LineNr lnum) {
 //- mark the book changed by calling changed()
 //- invalidates cached values
 //Careful: may trigger autocommands that reload the book.
-public void
+pub void
 changed_bytes(LineNr lnum, ColNr col) {
    changedOneline(curBook, lnum);
    changed_common(lnum, col, lnum + 1, 0L);
@@ -622,7 +622,7 @@ changed_bytes(LineNr lnum, ColNr col) {
 
 //Like changed_bytes() but also adjust text properties for "added" bytes.
 //When "added" is negative text was deleted.
-public void
+pub void
 inserted_bytes(LineNr lnum, ColNr col, int added UNUSED) {
    if (curBook->hasTextprop && added != 0)
       adjustPropColumns(lnum, col, added, 0);
@@ -633,13 +633,13 @@ inserted_bytes(LineNr lnum, ColNr col, int added UNUSED) {
 //Appended "count" lines below line "lnum" in the current book.
 //Must be called AFTER the change and after markAdjust().
 //Takes care of marking the book to be redrawn and sets the changed flag.
-public void
+pub void
 appended_lines(LineNr lnum, long count) {
    changed_lines(lnum + 1, 0, lnum + 1, count);
 }
 
 //Like appended_lines(), but adjust marks first.
-public void
+pub void
 appended_lines_mark(LineNr lnum, long count) {
    markAdjust(lnum + 1, (LineNr)MAXLNUM, count, 0L, true);
    changed_lines(lnum + 1, 0, lnum + 1, count);
@@ -648,7 +648,7 @@ appended_lines_mark(LineNr lnum, long count) {
 //Deleted "count" lines at line "lnum" in the current book.
 //Must be called AFTER the change and after markAdjust().
 //Take care of marking the book to be redrawn and sets the changed flag.
-public void
+pub void
 deleted_lines(LineNr lnum, long count) {
    changed_lines(lnum, 0, lnum + count, -count);
 }
@@ -656,7 +656,7 @@ deleted_lines(LineNr lnum, long count) {
 //Like deleted_lines(), but adjust marks first.
 //Make sure the cursor is on a valid line before calling, a GUI callback may
 //be triggered to display the cursor.
-public void
+pub void
 deleted_lines_mark(LineNr lnum, long count) {
    markAdjust(lnum, (LineNr)(lnum + count - 1), (long)MAXLNUM, -count, true);
    changed_lines(lnum, 0, lnum + count, -count);
@@ -664,7 +664,7 @@ deleted_lines_mark(LineNr lnum, long count) {
 
 //Mark the area to be redrawn after a change.
 //Consider also calling normInvalidateDisplayOfChangedBookLine().
-public void
+pub void
 changed_lines_buf(
    Book* book,
    LineNr lnum,       // first line with change
@@ -702,7 +702,7 @@ changed_lines_buf(
 //(BEFORE the change). When only inserting lines, "lnum" and "lnume" are equal.
 //Takes care of calling changed() and updating b_mod_*.
 //Careful: may trigger autocommands that reload the book.
-public void
+pub void
 changed_lines(
    LineNr lnum,    // first line with change
    ColNr col,      // column in first line with change
@@ -730,7 +730,7 @@ changed_lines(
 
 // Called when the changed flag must be reset for book "book". When "always_inc_changedtick" is 
 // true b:changedtick is incremented also when the changed flag was off.
-public void
+pub void
 unchanged(Book* book, int always_inc_changedtick) {
    if (book->wasModified) {
       book->wasModified = false;
@@ -744,14 +744,14 @@ unchanged(Book* book, int always_inc_changedtick) {
 
 //Insert string "p" at the cursor position.  Stops at a ZERO.
 //Handles Replace mode and multi-byte characters.
-public void
+pub void
 ins_bytes(CS p) {
    ins_bytes_len(p, (int)STRLEN(p));
 }
 
 //Insert string "p" with length "len" at the cursor position.
 //Handle Replace mode and multi-byte characters.
-public void
+pub void
 ins_bytes_len(CS p, int len) {
    int n;
    for (int i = 0; i < len; i += n) {
@@ -775,19 +775,19 @@ insertOrReplaceChar(Unt c, Boole replace) {
 //Insert a single character at the cursor position.
 //Caller must have prepared for undo.
 //For multi-byte characters we get the whole character, the caller must convert bytes to character
-public void
+pub void
 insertChar(Unt c) {
    insertOrReplaceChar(c, false);
 }
 
 //Replace a single character at the cursor position. Caller must have prepared for undo.
 //For multi-byte characters we get the whole character, the caller must convert bytes to character
-public void
+pub void
 replaceChar(Unt c) {
    insertOrReplaceChar(c, true);
 }
 
-public void
+pub void
 opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
    LineNr   lnum = curPor->cursor.lnum;
 
@@ -840,7 +840,7 @@ opInsertCharBytes(CS targetLine, int charlen, Boole replace) {
 
 //Insert a string at the cursor position. Note: Does NOT handle Replace mode.
 //Caller must have prepared for undo.
-public void
+pub void
 ins_str(CS s, Unt slen) {
    LineNr lnum = curPor->cursor.lnum;
 
@@ -866,7 +866,7 @@ ins_str(CS s, Unt slen) {
 //Caller must have prepared for undo.
 //
 //return FAIL for failure, OK otherwise
-public int
+pub int
 del_char(Boole fixpos) {
    // Make sure the cursor is at the start of a character.
    mb_adjust_cursor();
@@ -876,7 +876,7 @@ del_char(Boole fixpos) {
 }
 
 //Like del_bytes(), but delete characters instead of bytes.
-public int
+pub int
 del_chars(long count, Boole fixpos) {
    long   bytes = 0;
    CS p = ml_get_cursor();
@@ -893,7 +893,7 @@ del_chars(long count, Boole fixpos) {
 //Caller must have prepared for undo.
 //
 //Return FAIL for failure, OK otherwise.
-public int
+pub int
 del_bytes(
    long   count,
    Boole      fixpos_arg,
@@ -988,7 +988,7 @@ del_bytes(
 
 // insertLine - simply insert a line below or above the current line. Applies autoindent
 // Return OK for success, FAIL for failure
-public int
+pub int
 insertLine(
    int      dir // FORWARD or BACKWARD
 ){
@@ -1017,7 +1017,7 @@ insertLine(
 //set to point to the flags of the recognized comment leader.
 //"backward" must be true for the "O" command.
 //If "include_space" is set, include trailing whitespace while calculating the length.
-public int
+pub int
 get_leader_len(CS line, Byte** flags, int backward, int include_space) {
    if (!curBook->o.comments) {
       return 0;
@@ -1157,7 +1157,7 @@ get_leader_len(CS line, Byte** flags, int backward, int include_space) {
 // new line.
 //
 //Return OK for success, FAIL for failure
-public int
+pub int
 openLine(
    Unt flags,
    int second_line_indent
@@ -1754,7 +1754,7 @@ theend:
 //If "fixpos" is true fix the cursor position when done.
 //
 //Return FAIL for failure, OK otherwise.
-public int
+pub int
 truncate_line(int fixpos) {
    LineNr   lnum = curPor->cursor.lnum;
    ColNr   col = curPor->cursor.col;
@@ -1775,7 +1775,7 @@ truncate_line(int fixpos) {
 }
 
 //Delete "nlines" lines at the cursor. Saves the lines for undo first if "undo" is true.
-public void
+pub void
 del_lines(long nlines,   int undo) {
    long   n;
    LineNr   first = curPor->cursor.lnum;
@@ -1861,7 +1861,7 @@ private Byte opchars[][3] = {
 };
 
 // Translate an action name into an operator type. Must only be called with a valid operator name!
-public Unt
+pub Unt
 get_op_type(Unt char1, Unt char2) {
    if (char1 == 'r')      // ignore second character
       return OP_REPLACE;
@@ -1893,25 +1893,25 @@ op_on_lines(int op) {
 }
 
 // Return true if operator "op" changes text.
-public Boole
+pub Boole
 op_is_change(int op) {
    return (opchars[op][2] & OPF_CHANGE) != 0;
 }
 
 // Get first operator command character. Returns 'g' or 'z' if there is another command character.
-public int
+pub int
 get_op_char(int optype) {
    return opchars[optype][0];
 }
 
 // Get second operator command character.
-public int
+pub int
 get_extra_op_char(int optype) {
    return opchars[optype][1];
 }
 
 // op_shift - handle a shift operation
-public void
+pub void
 op_shift(Operator *oper, int curs_top, int amount) {
    if (u_save((LineNr)(oper->start.lnum - 1), (LineNr)(oper->end.lnum + 1)) == FAIL)
       return;
@@ -2005,7 +2005,7 @@ get_new_sw_indent(
 //'vartabstop' is not empty, use 'vartabstop'; else use 'tabstop'. The Eegl documentation says 
 //nothing about 'softtabstop' or 'varsofttabstop' affecting the shiftwidth, and neither affects the
 //shiftwidth in current versions of Eegl, so they are not considered here.
-public void
+pub void
 shift_line(
    int   left,         // true if shift is to the left
    int   round,         // true if new indent is to be to a tabstop
@@ -2324,7 +2324,7 @@ getviscol2(ColNr col, ColNr coladd) {
    return (int)x;
 }
 
-public Unt
+pub Unt
 gchar_pos(Pos *pos) {
    // When searching columns is sometimes put at the end of a line.
    if (pos->col == MAXCOL)
@@ -2336,13 +2336,13 @@ gchar_pos(Pos *pos) {
    return mb_ptr2char(ptr);
 }
 
-public Unt
+pub Unt
 gchar_cursor(void) {
    return mb_ptr2char(ml_get_cursor());
 }
 
 // Handle a delete operation. Return FAIL if undo failed, OK otherwise.
-public int
+pub int
 op_delete(Operator* oper) {
    int n;
    LineNr      lnum;
@@ -2912,7 +2912,7 @@ swapchars(Unt opTy, Pos* pos, int length) {
 //if opTy == OP_LOWER: make lowercase,
 //if opTy == OP_ROT13: do rot13 encoding, else swap case of character at 'pos'.
 //Return true when something actually changed.
-public Boole
+pub Boole
 swapchar(Unt opTy, Pos* pos) {
    Unt c = gchar_pos(pos);
 
@@ -2949,7 +2949,7 @@ swapchar(Unt opTy, Pos* pos) {
 }
 
 // op_insert - Insert and append operators for Visual mode.
-public void
+pub void
 op_insert(Operator *oper, long count1) {
    long      pre_textlen = 0;
    ColNr      ind_pre_col = 0, ind_post_col;
@@ -3147,7 +3147,7 @@ op_insert(Operator *oper, long count1) {
 
 //op_change - handle a change operation
 //return true if edit() returns because of a CTRL-O command
-public int
+pub int
 op_change(Operator *oper) {
    LineNr      linenr;
    long      pre_textlen = 0;
@@ -3255,7 +3255,7 @@ op_change(Operator *oper) {
 
 //When the cursor is on the ZERO past the end of the line and it should not be
 //there, move it left.
-public void
+pub void
 adjust_cursor_eol(void) {
    int adj_cursor = (curPor->cursor.col > 0
             && gchar_cursor() == ZERO
@@ -3403,7 +3403,7 @@ get_last_leader_offset(CS line, Byte **flags) {
 //process - if false, will only check whether the line ends with an unclosed comment,
 //include_space - whether to also skip space following the comment leader,
 //is_comment - will indicate whether the current line ends with an unclosed comment.
-public CS
+pub CS
 skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment) {
    CS comment_flags = NULL;
    int    lead_len;
@@ -3457,7 +3457,7 @@ skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment)
 //to set those marks.
 //
 //return FAIL for failure, OK otherwise
-public int
+pub int
 jugJoinLinesUnderCursor(
    long count,
    Boole insert_space,
@@ -3647,7 +3647,7 @@ theend:
 //for yank and tilde:
 //- textlen includes the first/last char to be wholly yanked
 //- start/endspaces is the number of columns of the first/last yanked char that are to be yanked.
-public void
+pub void
 block_prep(
    Operator* oper,
    OUT BlockDef* bdp,
@@ -3768,7 +3768,7 @@ block_prep(
 }
 
 //Get block text from "start" to "end"
-public void
+pub void
 jugCharwiseBlockPrep(
    Pos start,
    Pos end,
@@ -3832,7 +3832,7 @@ jugCharwiseBlockPrep(
 }
 
 //Handle the add/subtract operator.
-public void
+pub void
 op_addsub(
    Operator* oper,
    LineNr prenum1,       // Amount of add/subtract
@@ -4228,7 +4228,7 @@ theend:
    return didChange;
 }
 
-public void
+pub void
 clear_oparg(Operator *oper) {
     CLEAR_POINTER(oper);
 }
@@ -4286,7 +4286,7 @@ line_count_info(
 //In Visual mode, give some info about the selected region.  (In this case,
 //the *_count_cursor variables store running totals for the selection.)
 //When "dict" is not NULL store the info there instead of showing it.
-public void
+pub void
 cursor_pos_info(Bag* dict) {
    CS p;
    Byte buf1[50];
@@ -4537,7 +4537,7 @@ op_colon(Operator *oper) {
 private Callback opfunc_cb;
 
 //Process the 'operatorfunc' option value. Return OK or FAIL.
-public CS
+pub CS
 did_set_operatorfunc(OptionChange *cha) {
    if (optSetCallback(OUT &opfunc_cb, cha->newVal.string) == FAIL)
       return e_invalid_argument;
@@ -4546,14 +4546,14 @@ did_set_operatorfunc(OptionChange *cha) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 opsFreeOperatorFnOption(void) {
    evFreeCallback(&opfunc_cb);
 }
 #endif
 
 // Mark the global 'operatorfunc' callback with "copyID" so that it is not garbage collected.
-public int
+pub int
 set_ref_in_opfunc(int copyID) {
    return memSetRefInCallback(&opfunc_cb, copyID);
 }
@@ -4675,7 +4675,7 @@ is_ex_cmdchar(ActionArg* cap) {
 
 //Handle an operator after Visual mode or when the movement is finished.
 //"clipbYank" is true when yanking text for the clipboard.
-public void
+pub void
 jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank) {
    Operator* oper = cap->oper;
    Pos old_cursor;
@@ -5194,7 +5194,7 @@ pbyte(Pos lp, int c) {
 }
 
 //flush map and typeahead buffers and give a warning for an error
-public void
+pub void
 beep_flush(void) {
    if (emsg_silent == 0) {
       flush_buffers(FLUSH_MINIMAL);
@@ -5238,7 +5238,7 @@ eeLocaltime(
 }
 
 // Return the current time in seconds.  Calls time(), unless test_settime() was used.
-public Tyme
+pub Tyme
 eeTime(void) {
    return time_for_testing == 0 ? time(NULL) : time_for_testing;
 }
@@ -5247,7 +5247,7 @@ eeTime(void) {
 //Requires strftime(), otherwise returns "(unknown)".
 //If "thetime" is invalid returns "(invalid)".  Never returns NULL.
 //When "add_newline" is true add a newline like ctime() does. Use a static buffer.
-public CS
+pub CS
 get_ctime(Tyme thetime, int add_newline) {
    static Byte buf[100];  // hopefully enough for every language
    Tm tmval;
@@ -5271,7 +5271,7 @@ get_ctime(Tyme thetime, int add_newline) {
 
 
 // "localtime()" function
-public void
+pub void
 f_localtime(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
    returnVar->number = (Long)time(NULL);
 }
@@ -5292,7 +5292,7 @@ list2proftime(Var *arg, ProfTime *tm) {
 
 
 // "reltime()" function
-public void
+pub void
 f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
    ProfTime   res;
    ProfTime   start;
@@ -5321,7 +5321,7 @@ f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
    list_append_number(returnVar->list, (Long)n2);
 }
 
-public void
+pub void
 f_reltimefloat(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
    ProfTime   tm;
 
@@ -5332,7 +5332,7 @@ f_reltimefloat(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
       returnVar->floatt = profile_float(&tm);
 }
 
-public void
+pub void
 f_reltimestr(Arr(Var) argVars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
@@ -5348,7 +5348,7 @@ f_reltimestr(Arr(Var) argVars, OUT Var* returnVar) {
 
 
 //"strftime({format}[, {time}])" function
-public void
+pub void
 f_strftime(Arr(Var) argVars, OUT Var* returnVar) {
    Tm tmval;
    Tyme seconds;
@@ -5375,7 +5375,7 @@ f_strftime(Arr(Var) argVars, OUT Var* returnVar) {
 }
 
 // "strptime({format}, {timestring})" function
-public void
+pub void
 f_strptime(Var* argVars, Var* returnVar) {
    Tm tmval;
 
@@ -5395,7 +5395,7 @@ private Timer* firstTimerS = NULL;
 private long lastTimerIdS = 0;
 
 //Return time left, in "msec", until "due".  Negative if past "due".
-public long
+pub long
 proftime_time_left(ProfTime *due, ProfTime *now) {
    if (now->tv_sec > due->tv_sec)
       return 0;
@@ -5431,7 +5431,7 @@ free_timer(Timer* timer) {
 }
 
 // Create a timer and return it. Caller should set the callback.
-public Timer*
+pub Timer*
 create_timer(long msec, int repeat) {
    Timer* timer = ALLOC_CLEAR_ONE(Timer);
    long   prev_id = lastTimerIdS;
@@ -5450,7 +5450,7 @@ create_timer(long msec, int repeat) {
 }
 
 // (Re)start a timer.
-public void
+pub void
 timer_start(Timer *timer) {
    profile_setlimit(timer->tr_interval, &timer->due);
    timer->tr_paused = false;
@@ -5480,7 +5480,7 @@ timer_callback(Timer *timer) {
 
 // Call timers that are due. Return the time in msec until the next timer is due.
 // Return -1 if there are no pending timers.
-public long
+pub long
 check_due_timer(void) {
    Timer* timer_next;
    long this_due;
@@ -5615,7 +5615,7 @@ find_timer(long id) {
 
 
 // Stop a timer and delete it.
-public void
+pub void
 stop_timer(Timer *timer) {
    if (timer->tr_firing)
       // Free the timer after the callback returns.
@@ -5676,7 +5676,7 @@ add_timer_info_all(OUT Var* returnVar) {
 }
 
 // Mark references in partials of timers.
-public int
+pub int
 set_ref_in_timer(int copyID) {
    int abort = false;
    Var   tv;
@@ -5695,7 +5695,7 @@ set_ref_in_timer(int copyID) {
 }
 
 //Return true if "timer" exists in the list of timers.
-public int
+pub int
 timer_valid(Timer *timer) {
    if (!timer)
       return false;
@@ -5709,7 +5709,7 @@ timer_valid(Timer *timer) {
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 timer_free_all(void) {
    while (firstTimerS != NULL) {
       Timer *timer = firstTimerS;
@@ -5720,7 +5720,7 @@ timer_free_all(void) {
 # endif
 
 // "timer_info([timer])" function
-public void
+pub void
 f_timer_info(Arr(Var) argVars, OUT Var* returnVar) {
    Timer *timer = NULL;
 
@@ -5738,7 +5738,7 @@ f_timer_info(Arr(Var) argVars, OUT Var* returnVar) {
 }
 
 // "timer_pause(timer, paused)" function
-public void
+pub void
 f_timer_pause(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
    if (argVars[0].tag != VAR_NUMBER) {
       emsg(_(e_number_expected));
@@ -5753,7 +5753,7 @@ f_timer_pause(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
 }
 
 // "timer_start(time, callback [, options])" function
-public void
+pub void
 f_timer_start(Arr(Var) argVars, OUT Var* returnVar) {
    int repeat = 0;
    Bag* dict;
@@ -5786,7 +5786,7 @@ f_timer_start(Arr(Var) argVars, OUT Var* returnVar) {
 }
 
 // "timer_stop(timer)" function
-public void
+pub void
 f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
    if (check_for_number_arg(argVars, 0) == FAIL)
       return;
@@ -5797,7 +5797,7 @@ f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
 }
 
 // "timer_stopall()" function
-public void
+pub void
 f_timer_stopall(Arr(Var) argVars UNUSED, OUT Var* returnVar UNUSED) {
    stop_all_timers();
 }
@@ -5806,7 +5806,7 @@ private TimeVal   prev_timeval;
 
 //Save the previous time before doing something that could nest.
 //set "*tv_rel" to the time elapsed so far.
-public void
+pub void
 time_push(void *tv_rel, void *tv_start) {
    *((TimeVal *)tv_rel) = prev_timeval;
    gettimeofday(&prev_timeval, NULL);
@@ -5822,7 +5822,7 @@ time_push(void *tv_rel, void *tv_start) {
 //Compute the previous time after doing something that could nest.
 //Subtract "*tp" from prev_timeval;
 //Note: The arguments are (void *) to avoid trouble with systems that don't have TimeVal.
-public void
+pub void
 time_pop(void   *tp) {  // actually (TimeVal *)
    prev_timeval.tv_usec -= ((TimeVal *)tp)->tv_usec;
    prev_timeval.tv_sec -= ((TimeVal *)tp)->tv_sec;
@@ -5840,7 +5840,7 @@ time_diff(TimeVal *then, TimeVal *now) {
    fprintf(time_fd, "%03ld.%03ld", msec, usec >= 0 ? usec : usec + 1000L);
 }
 
-public void
+pub void
 time_msg(
    CS mesg,
    void* tv_start  // only for scriptRunFile: start time; actually (TimeVal *)
@@ -5871,7 +5871,7 @@ time_msg(
 }
 
 // Read 8 bytes from "fd" and turn them into a Tyme, MSB first. Returns -1 when encountering EOF.
-public Tyme
+pub Tyme
 get8ctime(FILE *fd) {
    Tyme   n = 0;
 
@@ -5884,7 +5884,7 @@ get8ctime(FILE *fd) {
 }
 
 // Write Tyme to file "fd" in 8 bytes. Returns FAIL when the write failed.
-public int
+pub int
 put_time(FILE *fd, Tyme the_time) {
    Byte buf[8];
 
@@ -5893,7 +5893,7 @@ put_time(FILE *fd, Tyme the_time) {
 }
 
 // Write Tyme to "buf[8]".
-public void
+pub void
 time_to_bytes(Tyme the_time, CS buf) {
    int      c;
    int      i;
@@ -5917,7 +5917,7 @@ time_to_bytes(Tyme the_time, CS buf) {
 }
 
 // Put timestamp "tt" in "buf[buflen]" in a nice format.
-public void
+pub void
 add_time(CS buf, Unt buflen, Tyme tt) {
    Tm tmval;
    Tm* curtime;
@@ -5941,13 +5941,13 @@ add_time(CS buf, Unt buflen, Tyme tt) {
 }
 
 // Store the current time in "tm".
-public void
+pub void
 profile_start(ProfTime *tm){
    PROF_GET_TIME(tm);
 }
 
 // Put the time "msec" past now in "tm".
-public void
+pub void
 profile_setlimit(long msec, ProfTime *tm) {
    if (msec <= 0)   // no limit
       profile_zero(tm);
@@ -5960,7 +5960,7 @@ profile_setlimit(long msec, ProfTime *tm) {
 }
 
 // Return true if the current time is past "tm".
-public int
+pub int
 profile_passed_limit(ProfTime *tm) {
    if (tm->tv_sec == 0)    // timer was not set
       return false;
@@ -5972,7 +5972,7 @@ profile_passed_limit(ProfTime *tm) {
 
 
 // Compute the elapsed time from "tm" till now and store in "tm".
-public void
+pub void
 profile_end(ProfTime *tm) {
    ProfTime now;
 
@@ -5986,7 +5986,7 @@ profile_end(ProfTime *tm) {
 }
 
 // Subtract the time "tm2" from "tm".
-public void
+pub void
 profile_sub(ProfTime *tm, ProfTime *tm2){
    tm->tv_fsec -= tm2->tv_fsec;
    tm->tv_sec -= tm2->tv_sec;
@@ -5997,20 +5997,20 @@ profile_sub(ProfTime *tm, ProfTime *tm2){
 }
 
 // Return a float that represents the time in "tm".
-public double
+pub double
 profile_float(ProfTime *tm){
    return (double)tm->tv_sec + (double)tm->tv_fsec / (double)TV_FSEC_SEC;
 }
 
 // Set the time in "tm" to zero.
-public void
+pub void
 profile_zero(ProfTime *tm) {
    tm->tv_fsec = 0;
    tm->tv_sec = 0;
 }
 
 //Return a string that represents the time in "tm". Use a static buffer!
-public CS
+pub CS
 profile_msg(ProfTime *tm){
    static Byte buf[50];
 
@@ -6021,7 +6021,7 @@ profile_msg(ProfTime *tm){
 #ifndef PROTO  // proto is defined in eegl.h
 # ifdef ELAPSED_TIMEVAL
 // Return time in msec since "start_tv".
-public long
+pub long
 elapsed(TimeVal *start_tv) {
    TimeVal  now_tv;
    gettimeofday(&now_tv, NULL);
@@ -6031,7 +6031,7 @@ elapsed(TimeVal *start_tv) {
 
 # ifdef ELAPSED_TICKCOUNT
 // Return time in msec since "start_tick".
-public long
+pub long
 elapsed(DWORD start_tick) {
    DWORD   now = GetTickCount();
 
@@ -6053,7 +6053,7 @@ set_flag(union sigval _unused UNUSED) {
 }
 
 // Stop any active timeout.
-public void
+pub void
 stop_timeout(void) {
    static struct itimerspec disarm = {{0, 0}, {0, 0}};
 
@@ -6078,7 +6078,7 @@ stop_timeout(void) {
 //
 // This function is not expected to fail, but if it does it will still return a
 // valid flag pointer; the flag will remain stuck as false .
-public volatile sig_atomic_t *
+pub volatile sig_atomic_t *
 start_timeout(long msec) {
    struct itimerspec interval = {
        {0, 0},               // Do not repeat.
@@ -6112,7 +6112,7 @@ start_timeout(long msec) {
 }
 
 // To be used before fork/exec: delete any created timer.
-public void
+pub void
 delete_timer(void) {
    if (!timer_created)
       return;
@@ -6140,7 +6140,7 @@ set_flag SIGDEFARG(sigarg) {
 }
 
 // Stop any active timeout.
-public void
+pub void
 stop_timeout(void) {
    static struct itimerval disarm = {{0, 0}, {0, 0}};
    int             ret;
@@ -6171,7 +6171,7 @@ stop_timeout(void) {
 //
 //This function is not expected to fail, but if it does it will still return a valid flag pointer;
 //the flag will remain stuck as false.
-public volatile sig_atomic_t*
+pub volatile sig_atomic_t*
 start_timeout(long msec) {
    struct itimerval   interval = {
        {0, 0},                // Do not repeat.
@@ -6235,7 +6235,7 @@ start_timeout(long msec) {
 //{{{cursor movement
 
 //Get the screen position of the cursor.
-public int
+pub int
 getviscol(void) {
    ColNr   x;
    bookGetVirtualColInVirtualMode(curPor, &curPor->cursor, OUT &x, NULL, NULL);
@@ -6244,7 +6244,7 @@ getviscol(void) {
 
 //Go to column "wcol", and add/insert white space as necessary to get the cursor in that column.
 //The caller must have saved the cursor line for undo!
-public int
+pub int
 coladvance_force(ColNr wcol) {
    int rc = coladvance2(&curPor->cursor, true, false, wcol);
 
@@ -6262,7 +6262,7 @@ coladvance_force(ColNr wcol) {
 //tune the cursor position. Note that all virtual positions off the end of a line should share
 //a curPor->cursor.col value (n.b. this is equal to STRLEN(line)), beginning at coladd 0.
 //return OK if desired column is reached, FAIL if not
-public int
+pub int
 coladvance(ColNr wantcol) {
    int rc = getvpos(&curPor->cursor, wantcol);
 
@@ -6278,7 +6278,7 @@ coladvance(ColNr wantcol) {
 
 //Return in "pos" the position of the cursor advanced to screen column "wantcol".
 //return OK if desired column is reached, FAIL if not
-public int
+pub int
 getvpos(Pos *pos, ColNr wantcol) {
    return coladvance2(pos, false, virtual_active(), wantcol);
 }
@@ -6445,7 +6445,7 @@ coladvance2(
 }
 
 //Increment the cursor position.  See inc() for return values.
-public int
+pub int
 inc_cursor(void) {
    return inc(&curPor->cursor);
 }
@@ -6454,7 +6454,7 @@ inc_cursor(void) {
 //Return 1 when going to the next line.
 //Return 2 when moving forward onto a ZERO at the end of the line).
 //Return -1 when at the end of file. 0 otherwise.
-public int
+pub int
 inc(Pos *lp) {
    // when searching position may be set to end of a line
    if (lp->col != MAXCOL) {
@@ -6475,7 +6475,7 @@ inc(Pos *lp) {
 }
 
 //incl(lp): same as inc(), but skip the ZERO at the end of non-empty lines
-public int
+pub int
 incl(Pos *lp) {
    int r;
    if ((r = inc(lp)) >= 1 && lp->col)
@@ -6483,7 +6483,7 @@ incl(Pos *lp) {
    return r;
 }
 
-public int
+pub int
 dec_cursor(void) {
    return dec(&curPor->cursor);
 }
@@ -6492,7 +6492,7 @@ dec_cursor(void) {
 //
 //Decrement the line pointer 'p' crossing line boundaries as necessary.
 //Return 1 when crossing a line, -1 when at start of file, 0 otherwise.
-public int
+pub int
 dec(Pos *lp) {
    CS p;
 
@@ -6527,7 +6527,7 @@ dec(Pos *lp) {
 }
 
 //decl(lp): same as dec(), but skip the ZERO at the end of non-empty lines
-public int
+pub int
 decl(Pos *lp) {
    int r;
 
@@ -6538,7 +6538,7 @@ decl(Pos *lp) {
 
 //Make sure "pos.lnum" and "pos.col" are valid in "buf".
 //This allows for the col to be on the ZERO byte.
-public void
+pub void
 check_pos(Book* book, Pos *pos) {
    if (pos->lnum > book->mem.lineCount)
       pos->lnum = book->mem.lineCount;
@@ -6554,7 +6554,7 @@ check_pos(Book* book, Pos *pos) {
 //{{{indentation-related functions
 
 //Return the effective shiftwidth value for current book
-public long
+pub long
 get_sw_value(Book *book) {
    return get_sw_value_col(book, 0, false);
 }
@@ -6570,7 +6570,7 @@ get_sw_value_pos(Book* book, Pos *pos, int left) {
 }
 
 //Idem, using the first non-black in the current line.
-public long
+pub long
 get_sw_value_indent(Book* book, int left) {
    Pos pos = curPor->cursor;
 
@@ -6579,25 +6579,25 @@ get_sw_value_indent(Book* book, int left) {
 }
 
 //Idem, using virtual column "col".
-public long
+pub long
 get_sw_value_col(Book* book, ColNr col UNUSED, int left UNUSED) {
    return book->o.shiftWidth;
 }
 
 //Count the size (in portal cells) of the indent in the current line.
-public int
+pub int
 get_indent(void) {
    return get_indent_str(ml_get_curline(), (int)curBook->o.shiftWidth);
 }
 
 //Count the size (in portal cells) of the indent in line "lnum".
-public int
+pub int
 get_indent_lnum(LineNr lnum) {
    return get_indent_str(ml_get(lnum), (int)curBook->o.shiftWidth);
 }
 
 //Count the size (in portal cells) of the indent in line "lnum" of book "book".
-public int
+pub int
 get_indent_buf(Book* book, LineNr lnum) {
    return get_indent_str(memGetLine(book, lnum, false), (int)book->o.shiftWidth);
 }
@@ -6624,7 +6624,7 @@ get_indent_str(CS ptr, int ts) {// if true, count a tab as ^I
 //  SIN_INSERT:   insert the indent in front of the line.
 //  SIN_UNDO:   save line for undo before changing it.
 //Return true if the line was changed.
-public int
+pub int
 set_indent(
    int      size,          // measured in spaces
    int      flags
@@ -6734,7 +6734,7 @@ set_indent(
 //Return the indent of the current line after a number.  Return -1 if no
 //number was found.  Used for 'n' in 'formatoptions': numbered list.
 //Since a pattern is used it can actually handle more than numbers.
-public int
+pub int
 get_number_indent(LineNr lnum) {
    ColNr   col;
    Pos   pos;
@@ -6771,7 +6771,7 @@ get_number_indent(LineNr lnum) {
 
 //Return appropriate space number for breakindent, taking influencing parameters into account. 
 //Portal must be specified, since it is not necessarily always the current one.
-public int
+pub int
 getBreakindentForPort(Portal* po, CS line) {
    static int       prev_indent = 0;   // cached indent value
    static long       prev_ts     = 0L;   // cached tabstop value
@@ -6877,7 +6877,7 @@ getBreakindentForPort(Portal* po, CS line) {
 
 //When extra == 0: Return true if the cursor is before or on the first non-blank in the line.
 //When extra == 1: Return true if the cursor is before the first non-blank in the line.
-public int
+pub int
 inindent(int extra) {
    Byte   *ptr;
    ColNr   col;
@@ -6891,7 +6891,7 @@ inindent(int extra) {
 }
 
 //op_reindent - handle reindenting a block of lines.
-public void
+pub void
 op_reindent(Operator *oper, int (*how)(void)) {
    long   i = 0;
    Byte   *l;
@@ -6960,19 +6960,19 @@ op_reindent(Operator *oper, int (*how)(void)) {
 }
 
 // true if lines starting with '#' should be left aligned.
-public int
+pub int
 preprocs_left(void) {
    return curBook->o.smartIndent;
 }
 
 // true if the conditions are OK for smart indenting.
-public int
+pub int
 may_do_si(void) {
    return curBook->o.smartIndent && !curBook->o.indentExpr;
 }
 
 // Try to do some very smart auto-indenting. Used when inserting a "normal" character.
-public void
+pub void
 ins_try_si(int c) {
    Pos   *pos, old_pos;
    CS ptr;
@@ -7042,7 +7042,7 @@ ins_try_si(int c) {
 // type == INDENT_DEC   decrease indent (for CTRL-D)
 // type == INDENT_SET   set indent to "amount"
 // if round is true, round the indent to 'shiftwidth' (only with _INC and _Dec).
-public void
+pub void
 opChangeIndent(
    int type,
    int amount,
@@ -7172,7 +7172,7 @@ emsg_text_too_long(void) {
 }
 
 // ":retab".
-public void
+pub void
 c_retab(Invocation *eap) {
    LineNr   lnum;
    int      got_tab = false;
@@ -7325,7 +7325,7 @@ c_retab(Invocation *eap) {
 }
 
 // Get indent level from @indentexpr
-public int
+pub int
 get_expr_indent(void) {
    int      indent = -1;
    ScriptPos save_sctx = scriptPosG;
@@ -7389,19 +7389,19 @@ fixthisline(int (*get_the_indent)(void)) {
 
 
 // true if current book has expression-based indenting.
-public Boole
+pub Boole
 jugIsIndentationExpressionBased(void) {
    return curBook->o.indentExpr != null;
 }
 
 // Fix indent for 'expr' indentation
-public void
+pub void
 fix_indent(void) {
    if (jugIsIndentationExpressionBased())
       do_expr_indent();
 }
 
-public void
+pub void
 f_indent(Arr(Var) argVars, OUT Var* returnVar) {
    LineNr lnum = tv_get_lnum(argVars);
    if (lnum >= 1 && lnum <= curBook->mem.lineCount)
@@ -7485,7 +7485,7 @@ skipStringLiteral(CS p) {
 
 
 // true if "line[col]" is inside a C string.
-public int
+pub int
 is_pos_in_string(CS line, ColNr col) {
    CS p;
 
@@ -7494,7 +7494,7 @@ is_pos_in_string(CS line, ColNr col) {
    return !((ColNr)(p - line) <= col);
 }
 
-public Pos*
+pub Pos*
 find_start_comment(int ind_maxcomment)   {// XXX
    Pos* pos;
    int cur_maxcomment = ind_maxcomment;
@@ -7518,7 +7518,7 @@ find_start_comment(int ind_maxcomment)   {// XXX
 }
 
 // Do expression indenting on the current line.
-public void
+pub void
 do_expr_indent(void) {
    if (*curBook->o.indentExpr != ZERO)
       fixthisline(&get_expr_indent);

@@ -8,9 +8,9 @@
 #include <sys/stat.h> // for stat, fstat etc
 #endif
 
-public ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
+pub ssize_t listxattr(const char*, char*, size_t); //from sys/xattr.h
 ssize_t getxattr(const char*, const char*, void*, size_t);
-public int setxattr(const char*, const char*, const void*, size_t, int);
+pub int setxattr(const char*, const char*, const void*, size_t, int);
 
 #define SHELL_SPECIAL (CS)"\t \"&'$;<>()\\|"
 #define SWAP_DIR S"~/.local/state/"
@@ -49,7 +49,7 @@ private Boole recursivelyDeleteDir(CS name);
 // - go to that directory
 // - do mch_dirname() to get the real name of that directory.
 // This also works with mounts and links.
-public void
+pub void
 init_homedir(void) {
    // In case we are called a second time (when 'encoding' changes).
    EE_CLEAR(homedir);
@@ -70,7 +70,7 @@ init_homedir(void) {
 }
 
 //Return true if "fname" is a readable file.
-public int
+pub int
 file_is_readable(CS fname){
    int fd;
 
@@ -85,7 +85,7 @@ file_is_readable(CS fname){
 }
 
 //"chdir(dir)" function
-public void
+pub void
 f_chdir(Var* argvars, Var* returnVar) {
    CdScopeKind scope = CDSCOPE_GLOBAL;
 
@@ -124,7 +124,7 @@ f_chdir(Var* argvars, Var* returnVar) {
       EE_CLEAR(returnVar->string);
 }
 
-public void
+pub void
 f_delete(Var* argvars, Var* returnVar) {
    Byte nbuf[NUMBUFLEN];
 
@@ -156,13 +156,13 @@ f_delete(Var* argvars, Var* returnVar) {
 }
 
 // "executable()" function
-public void
+pub void
 f_executable(Var *argvars, Var* returnVar) {
    // Check in $PATH and also check directly if there is a directory name.
    returnVar->number = mch_can_exe(tv_get_string(&argvars[0]), NULL, true);
 }
 
-public void
+pub void
 f_exepath(Var *argvars, Var* returnVar) {
    CS p = NULL;
    (void)mch_can_exe(tv_get_string(&argvars[0]), OUT &p, true);
@@ -171,13 +171,13 @@ f_exepath(Var *argvars, Var* returnVar) {
 }
 
 // "filereadable()" function
-public void
+pub void
 f_filereadable(Var *argvars, Var* returnVar) {
    returnVar->number = file_is_readable(tv_get_string(&argvars[0]));
 }
 
 //Return 0 for not writable, 1 for writable file, 2 for a dir which we have rights to write into.
-public void
+pub void
 f_filewritable(Var *argvars, Var* returnVar) {
    returnVar->number = filewritable(tv_get_string(&argvars[0]));
 }
@@ -245,19 +245,19 @@ findfilendir(Arr(Var) argvars, Var* returnVar, int find_what){
 }
 
 //"finddir({fname}[, {path}[, {count}]])" function
-public void
+pub void
 f_finddir(Var *argvars, Var* returnVar){
    findfilendir(argvars, returnVar, FINDFILE_DIR);
 }
 
 //"findfile({fname}[, {path}[, {count}]])" function
-public void
+pub void
 f_findfile(Var *argvars, Var* returnVar){
    findfilendir(argvars, returnVar, FINDFILE_FILE);
 }
 
 // "fnamemodify({fname}, {mods})" function
-public void
+pub void
 f_fnamemodify(Var *argvars, Var* returnVar) {
    CS fname;
    CS mods;
@@ -295,7 +295,7 @@ f_fnamemodify(Var *argvars, Var* returnVar) {
 //If both 'winnr and 'tabnr' are specified and 'winnr' is -1 then return the
 //directory of the specified tab.  Otherwise return the directory of the specified portal in the 
 //specified tab. If the portal or the tab doesn't exist then return NULL.
-public void
+pub void
 f_getcwd(Var *argvars, Var* returnVar) {
    Portal   *wp = NULL;
    Tab   *tp = NULL;
@@ -325,7 +325,7 @@ f_getcwd(Var *argvars, Var* returnVar) {
 }
 
 //Convert "st" to file permission string.
-public CS
+pub CS
 getfpermst(FileStat *st, CS perm){
    Byte flags[] = "rwx";
    for (int i = 0; i < 9; i++) {
@@ -338,7 +338,7 @@ getfpermst(FileStat *st, CS perm){
 }
 
 //"getfperm({fname})" function
-public void
+pub void
 f_getfperm(Var *argvars, Var* returnVar) {
    FileStat   st;
    CS perm = NULL;
@@ -354,7 +354,7 @@ f_getfperm(Var *argvars, Var* returnVar) {
 }
 
 //"getfsize({fname})" function
-public void
+pub void
 f_getfsize(Var *argvars, Var* returnVar) {
    CS fname;
    FileStat   st;
@@ -375,7 +375,7 @@ f_getfsize(Var *argvars, Var* returnVar) {
 }
 
 // "getftime({fname})" function
-public void
+pub void
 f_getftime(Var *argvars, Var* returnVar) {
    CS fname;
    FileStat   st;
@@ -388,7 +388,7 @@ f_getftime(Var *argvars, Var* returnVar) {
 }
 
 // Convert "st" to file type string.
-public CS
+pub CS
 getftypest(FileStat *st){
    char    *t;
 
@@ -412,7 +412,7 @@ getftypest(FileStat *st){
 }
 
 // "getftype({fname})" function
-public void
+pub void
 f_getftype(Var *argvars, Var* returnVar) {
    FileStat   st;
    CS type = NULL;
@@ -426,7 +426,7 @@ f_getftype(Var *argvars, Var* returnVar) {
 }
 
 // "glob()" function
-public void
+pub void
 f_glob(Var *argvars, Var* returnVar) {
    int options = WILD_SILENT|WILD_USE_NL;
    Expand expand = {};
@@ -466,7 +466,7 @@ f_glob(Var *argvars, Var* returnVar) {
       returnVar->string = NULL;
 }
 
-public void
+pub void
 f_glob2regpat(Var *argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
 
@@ -475,7 +475,7 @@ f_glob2regpat(Var *argvars, Var* returnVar) {
    returnVar->string = (pat == NULL) ? NULL : file_pat_to_reg_pat(pat, NULL, NULL);
 }
 
-public void
+pub void
 f_globpath(Var *argvars, Var* returnVar) {
    Unt flags = WILD_IGNORE_COMPLETESLASH;
    Byte buf1[NUMBUFLEN];
@@ -513,13 +513,13 @@ f_globpath(Var *argvars, Var* returnVar) {
 }
 
 // "isdirectory()" function
-public void
+pub void
 f_isdirectory(Var *argvars, Var* returnVar) {
    returnVar->number = mch_isdir(tv_get_string(&argvars[0]));
 }
 
 // "isabsolutepath()" function
-public void
+pub void
 f_isabsolutepath(Var *argvars, Var* returnVar) {
    returnVar->number = strIsRelative(tv_get_string_strict(&argvars[0])) ? 0 : 1;
 }
@@ -548,7 +548,7 @@ mkdir_recurse(CS dir, Unt prot, Byte** created) {
    return r;
 }
 
-public void
+pub void
 f_mkdir(Var* argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    Unt prot = 7*64 + 5*8 + 5;
@@ -609,7 +609,7 @@ f_mkdir(Var* argvars, Var* returnVar) {
 }
 
 // "pathshorten()" function
-public void
+pub void
 f_pathshorten(Var *argvars, Var* returnVar) {
    int trim_len = 1;
 
@@ -658,7 +658,7 @@ readdirex_dict_arg(Var *argvars, int *cmp) {
    return OK;
 }
 
-public void
+pub void
 f_readdir(Var *argvars, Var* returnVar) {
    int      ret;
    CS p;
@@ -682,7 +682,7 @@ f_readdir(Var *argvars, Var* returnVar) {
    ga_clear_strings(&ga);
 }
 
-public void
+pub void
 f_readdirex(Var *argvars, Var* returnVar) {
    int      ret;
    ArrayList   ga;
@@ -905,18 +905,18 @@ read_file_or_blob(Var *argvars, Var* returnVar, int always_blob) {
 }
 
 // "readblob()" function
-public void
+pub void
 f_readblob(Var* argvars, Var* returnVar) {
    read_file_or_blob(argvars, returnVar, true);
 }
 
 // "readfile()" function
-public void
+pub void
 f_readfile(Var* argvars, Var* returnVar) {
    read_file_or_blob(argvars, returnVar, false);
 }
 
-public void
+pub void
 f_resolve(Var *argvars, Var* returnVar) {
    CS p = tv_get_string(&argvars[0]);
    CS cpy;
@@ -1064,7 +1064,7 @@ fail:
    returnVar->tag = VAR_STRING;
 }
 
-public void
+pub void
 f_tempname(Var *argvars UNUSED, Var* returnVar) {
    static int   x = 'A';
 
@@ -1083,7 +1083,7 @@ f_tempname(Var *argvars UNUSED, Var* returnVar) {
    } while (x == 'I' || x == 'O');
 }
 
-public void
+pub void
 f_writefile(Var* argvars, Var* returnVar){
    int      binary = false;
    int      append = false;
@@ -1180,21 +1180,21 @@ f_writefile(Var* argvars, Var* returnVar){
 
 
 // "browse(save, title, initdir, default)" function
-public void
+pub void
 f_browse(Var *argvars UNUSED, Var* returnVar){
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
 }
 
 // "browsedir(title, initdir)" function
-public void
+pub void
 f_browsedir(Var *argvars UNUSED, Var* returnVar){
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
 }
 
 // "filecopy()" function
-public void
+pub void
 f_filecopy(Var *argvars, Var* returnVar){
    FileStat   st;
 
@@ -1227,7 +1227,7 @@ dir_of_file_exists(CS fname){
 }
 
 //If fname is not a full path, make it one. Return pointer to copied, allocated memory.
-public CS
+pub CS
 fiExpandAndCopy(NULLABLE CS fname, int force) { // force expansion, even when it already looks full
    if (!fname)
       return NULL;
@@ -1242,7 +1242,7 @@ fiExpandAndCopy(NULLABLE CS fname, int force) { // force expansion, even when it
 }
 
 // return true if "fname" exists.
-public int
+pub int
 eeFexists(CS fname){
    FileStat st;
 
@@ -1253,7 +1253,7 @@ eeFexists(CS fname){
 
 //Invoke expand_wildcards() for one pattern.
 //Expand items like "%:h" before the expansion. Return OK or FAIL.
-public int
+pub int
 expand_wildcards_eval(
    Arr(CS) pattern,      // pointer to input pattern
    Unt         flags,  // EW_DIR, etc.
@@ -1300,7 +1300,7 @@ expand_wildcards_eval(
 
 //Expand wildcards. Call gen_expand_wildcards() and removes files matching 'wildignore'.
 //Return OK or FAIL. When FAIL then "num_files" won't be set.
-public int
+pub int
 expand_wildcards(
    int num_pat, // number of input patterns
    Arr(CS) pat, // array of input patterns
@@ -1709,7 +1709,7 @@ has_special_wildchar(CS p){
 //Return FAIL when no single file was found. In this case "num_file" is not set, and "file" may 
 //contain an error message. Return OK when some files found. "num_file" is set to the number of
 //matches, "file" to the array of matches.
-public int
+pub int
 gen_expand_wildcards(
    int num_pat,   // number of input patterns
    Arr(CS) pat,   // array of input patterns
@@ -1824,7 +1824,7 @@ gen_expand_wildcards(
 //EW_NOTFOUND   add even when it doesn't exist
 //EW_ADDSLASH   add slash after directory name
 //EW_ALLLINKS   add symlink also when the referred file does not exist
-public void
+pub void
 addFile(OUT ExpandMatch* matches, CS fName, Unt flags){
    FileStat   sb;
 
@@ -1966,7 +1966,7 @@ mch_FullName(CS fname, OUT CS buf, int len, Boole force) {     // also expand wh
 
 //Get absolute file name into buffer "buf[len]". Urls are copied as is, otherwise env vars expanded
 //Return OK/FAIL
-public int
+pub int
 eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion even if absolute
    *buf = ZERO;
 
@@ -1983,7 +1983,7 @@ eeFullFileName(CS fname, OUT CS buf, int len, Boole force) { //force expansion e
 
 //Return true if file names "f1" and "f2" are in the same directory.
 //"f1" may be a short name, "f2" must be a full path.
-public int
+pub int
 same_directory(CS f1, CS f2) {
    // safety check
    if (!f1 || !f2)
@@ -2003,7 +2003,7 @@ same_directory(CS f1, CS f2) {
 //FPC_NOTX   if they both don't exist.
 //FPC_DIFFX  if one of them doesn't exist.
 //For the first name environment variables are expanded if "expandenv" is true.
-public int
+pub int
 fullpathcmp(
    CS s1,
    CS s2,
@@ -2042,7 +2042,7 @@ fullpathcmp(
 
 //Get name of current directory into buffer "buf" of length "len" bytes.
 //"len" must be at least PATH_MAX. Return OK for success, FAIL for failure.
-public int
+pub int
 mch_dirname(CS buf, int len) {
    if (getcwd((char *)buf, len) == NULL) {
       STRCPY(buf, strerror(errno));
@@ -2054,7 +2054,7 @@ mch_dirname(CS buf, int len) {
 
 //Like home_replace, store the replaced string in allocated memory.
 //When something fails, src is returned.
-public CS
+pub CS
 home_replace_save(Book* book, CS inputFname){
    int len = 3;         // space for "~/" and trailing ZERO
    if (inputFname)      // just in case
@@ -2070,7 +2070,7 @@ home_replace_save(Book* book, CS inputFname){
 
 //Like home_replace, store the replaced string in allocated memory.
 //When something fails, src is returned.
-public CS
+pub CS
 homeReplaceA(Book* book, CS inputFname, Arena* a){
    int len = 3;         // space for "~/" and trailing ZERO
    if (inputFname)      // just in case
@@ -2087,7 +2087,7 @@ homeReplaceA(Book* book, CS inputFname, Arena* a){
 //Adjust a filename, according to a string of modifiers.
 //*fnamep must be ZERO terminated when called. When returning, the length is determined by *fnamelen
 //Return VALID_ flags or -1 for failure. When there is an error, *fnamep is set to NULL.
-public int
+pub int
 modify_fname(
    CS src,      // string with modifiers
    int tilde_file,   // "~" is a file name, not $HOME
@@ -2356,7 +2356,7 @@ repeat:
 
 //Replace home directory by "~" in each space or comma separated file name in 'src'.
 //If anything fails (except when out of space) dst equals src.
-public void
+pub void
 home_replace(
    CS src, //input file name
    CS dst, //where to put the result
@@ -2479,7 +2479,7 @@ home_replace(
 //  Also we use an allocated search context here, these functions are NOT thread-safe!
 
 // type for the directory search stack
-public declStruct (DirSearchStack);
+pub declStruct (DirSearchStack);
 struct DirSearchStack {
    DirSearchStack* ffs_prev;
 
@@ -2531,7 +2531,7 @@ private typedef struct Visited {
 //the third search we can use the visited list of the first search. For the
 //second search we must start from a empty visited list.
 //The struct ff_visited_list_hdr is used to manage a linked list of already visited lists.
-public declStruct(VisitedList);
+pub declStruct(VisitedList);
 struct VisitedList {
    VisitedList* next;
 
@@ -2598,7 +2598,7 @@ private Text fileExpansionS = {NULL, 0};       // used for expanding filenames
 
 private void *ff_fn_search_context = NULL;
 
-public Byte *
+pub Byte *
 eeFindfirst(Byte *path, Byte *filename, int level) {
     ff_fn_search_context =
    eeFindFile_init(path, filename, NULL, level, true, false,
@@ -2609,7 +2609,7 @@ eeFindfirst(Byte *path, Byte *filename, int level) {
    return eeFindnext()
 }
 
-public CS
+pub CS
 eeFindnext(void) {
     Byte *ret = eeFindFile(ff_fn_search_context);
 
@@ -2666,7 +2666,7 @@ eeFindnext(void) {
 //If you don't have a search context from a previous call, "search_ctx_arg" must be NULL.
 //
 //This function silently ignores a few errors, eeFindFile() will have limited functionality then.
-public FileSearchCtx*
+pub FileSearchCtx*
 eeFindFile_init(
    CS path,
    Text filename,
@@ -2969,7 +2969,7 @@ error_return:
 }
 
 //Change directory to "new_dir". Search @cdpath for relative directory names.
-public int
+pub int
 eeChdir(CS new_dir) {
    CS file_to_find = NULL;
    FileSearchCtx* searchCtx = NULL;
@@ -2987,7 +2987,7 @@ eeChdir(CS new_dir) {
 }
 
 //Change to a file's directory. Caller must call shorten_fnames()! Return OK or FAIL.
-public int
+pub int
 eeChdirfile(CS fname, char *trigger_autocmd) {
    Byte old_dir[MAXPATHL];
    Byte new_dir[MAXPATHL];
@@ -3014,7 +3014,7 @@ eeChdirfile(CS fname, char *trigger_autocmd) {
 }
 
 //Get the stopdir string.  Check that ';' is not escaped.
-public CS
+pub CS
 eeFindFile_stopdir(CS buf) {
    CS r_ptr = buf;
    CS r_ptr_end = NULL;       // points to ZERO at end of string "r_ptr"
@@ -3041,7 +3041,7 @@ eeFindFile_stopdir(CS buf) {
 }
 
 //Clean up the given search context. Can handle a NULL pointer.
-public void
+pub void
 eeFindFile_cleanup(FileSearchCtx* ctx) {
    if (!ctx)
       return;
@@ -3057,7 +3057,7 @@ eeFindFile_cleanup(FileSearchCtx* ctx) {
 //If the passed search_context is NULL, NULL is returned.
 //The search algorithm is depth first. To change this replace the stack with a list (don't forget 
 //to leave partly searched directories on the top of the list).
-public CS
+pub CS
 eeFindFile(FileSearchCtx* search_ctx_arg) {
    Text   rest_of_wildcards;
    DirSearchStack   *stackp;
@@ -3801,7 +3801,7 @@ ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v) {
 //FNAME_MESS       give error message when not found
 //
 //Use nameBuffG[]! Return an allocated string for the file name. NULL for error.
-public CS
+pub CS
 findFileInPath(
    Text fname,
    Unt  options,
@@ -3818,7 +3818,7 @@ findFileInPath(
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_findfile(void){
     EE_CLEAR_STRING(fileExpansionS);
 }
@@ -4039,7 +4039,7 @@ theend:
 //Get the file name at the cursor.
 //If Visual mode is active, use the selected text if it's in one line.
 //Return the name in allocated memory, NULL for failure.
-public CS
+pub CS
 grab_file_name(long count, OUT LineNr* file_lnum) {
    Unt options = FNAME_MESS|FNAME_EXP|FNAME_REL|FNAME_UNESC;
 
@@ -4070,7 +4070,7 @@ grab_file_name(long count, OUT LineNr* file_lnum) {
 //FNAME_EXP    expand to path
 //FNAME_HYP    check for hypertext link
 //FNAME_INCL   apply @includeexpr
-public CS
+pub CS
 file_name_at_cursor(int options, long count, OUT LineNr* file_lnum) {
     return file_name_in_line(ml_get_curline(),
             curPor->cursor.col, options, count, curBook->fullFileName,
@@ -4078,7 +4078,7 @@ file_name_at_cursor(int options, long count, OUT LineNr* file_lnum) {
 }
 
 //Return the name of the file under or after ptr[col]. Otherwise like file_name_at_cursor().
-public CS
+pub CS
 file_name_in_line(
    CS line,
    int col,
@@ -4188,7 +4188,7 @@ eval_includeexpr(CS ptr, int len) {
 }
 
 //Return the name of the file ptr[len] in 'path'. Otherwise like file_name_at_cursor().
-public CS
+pub CS
 find_file_name_in_path(
    CS ptr,
    int len,
@@ -4567,7 +4567,7 @@ expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags) {      // EW_* f
 //Convert a file name into a canonical form. It simplifies a file name into its simplest form by 
 //stripping out unneeded components, if any. The resulting file name is simplified in place and 
 //will either be the same length as that supplied, or shorter.
-public Unt
+pub Unt
 simplify_filename(CS filename) {
    int components = 0;
    CS tail;
@@ -4725,7 +4725,7 @@ simplify_filename(CS filename) {
 }
 
 //Return true if the string "p" contains a wildcard that mch_expandpath() can expand.
-public int
+pub int
 mch_has_exp_wildcard(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
@@ -4738,7 +4738,7 @@ mch_has_exp_wildcard(CS p) {
 }
 
 //Return true if the string "p" contains a wildcard. Don't recognize '~' at the end as a wildcard.
-public int
+pub int
 mch_has_wildcard(CS p){
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
@@ -4774,7 +4774,7 @@ save_patterns(int num_pat, Arr(CS) pat, OUT ExpandMatch* files) {
    return OK;
 }
 
-public void
+pub void
 f_simplify(Var* argvars, Var* returnVar) {
    CS p = tv_get_string_strict(&argvars[0]);
    returnVar->string = copyStr(p);
@@ -5015,7 +5015,7 @@ notfound:
 
 //Expand "file" for all comma-separated directories in "path".
 //Add the matches to "matches". Caller must init "matches". 
-public void
+pub void
 fiGlobpath(
    CS path,
    CS file,
@@ -5062,7 +5062,7 @@ fiGlobpath(
 
 private int readdirex_sort;
 
-public int
+pub int
 mch_chdir(CS path) {
    if (p_verbose >= 5) {
       verbose_enter();
@@ -5072,7 +5072,7 @@ mch_chdir(CS path) {
    return chdir((char*)path);
 }
 
-public void
+pub void
 filemess(Book* book, CS name, CS s, int attr){
    int msg_scroll_save;
    int prevMsgCol = msgColG;
@@ -5150,7 +5150,7 @@ errorExit(int ret, CS msg) {
 //READ_FIFO   read from fifo/socket instead of a file
 //
 //return FAIL for failure, NOTDONE for directory (failure), or OK
-public int
+pub int
 readfile(
    CS fname,
    CS sfname,
@@ -5891,7 +5891,7 @@ failed:
       curBook->opEnd.col = 0;
    }
 
-public afterRecovery: 
+pub afterRecovery: 
    msg_scroll = msg_save;
 
    // Get the marks before executing autocommands, so they can be used there.
@@ -5990,7 +5990,7 @@ skip_to_eol(FILE *fpi, int c) {
 //{{{blob i/o
 
 // Read blob from file "fd". Caller has allocated a blob in "returnVar". Return OK or FAIL.
-public int
+pub int
 read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg) {
    Blob* blob = returnVar->blob;
    struct stat st;
@@ -6032,7 +6032,7 @@ read_blob(FILE* fd, Var* returnVar, FileOffset offset, FileOffset size_arg) {
 }
 
 // Write "blob" to file "fd". Return OK or FAIL.
-public int
+pub int
 write_blob(FILE* fd, Blob* blob) {
    if (fwrite(blob->c.c, 1, blob->c.len, fd) < (Unt)blob->c.len) {
       emsg(_(e_error_while_writing));
@@ -6048,7 +6048,7 @@ write_blob(FILE* fd, Blob* blob) {
 //Return true if the file name argument is of the form "/dev/fd/\d\+", which is the name of files 
 //used for process substitution output by some shells on some operating systems, e.g., bash on 
 //SunOS. Do not accept "/dev/fd/[012]", opening these may hang Eegl.
-public int
+pub int
 is_dev_fd_file(CS fname) {
    return STRNCMP(fname, "/dev/fd/", 8) == 0
        && EE_ISDIGIT(fname[8])
@@ -6059,7 +6059,7 @@ is_dev_fd_file(CS fname) {
 
 //Fill "*invo" to force the 'binary' option to be equal to the book "book". 
 //Used for calling readfile(). Return OK or FAIL.
-public int
+pub int
 prep_exarg(Invocation* invo, Book* book){
    invo->comm = alloc(15);
    invo->bad_char = book->badChar;
@@ -6070,7 +6070,7 @@ prep_exarg(Invocation* invo, Book* book){
 }
 
 // Set default or forced @binary.
-public void
+pub void
 set_file_options(Invocation* invo) {
    // set or reset @binary
    if (invo && invo->force_bin != 0) {
@@ -6085,13 +6085,13 @@ set_file_options(Invocation* invo) {
 }
 
 // Return true if a file appears to be read-only from the file permissions.
-public int
+pub int
 check_file_readonly(CS fname, Unt perm) {  // known permissions on file
    return ( (perm & 0222) == 0 || mch_access(fname, W_OK));
 }
 
 //Call fsync() with Mac-specific exception. Return fsync() result: zero for success.
-public int
+pub int
 eeFsync(int fd){
    int r = fsync(fd);
    return r;
@@ -6099,7 +6099,7 @@ eeFsync(int fd){
 
 //Set the name of the current book. Use when the book doesn't have a
 //name and a ":r" or ":w" command with a file name is used.
-public int
+pub int
 set_rw_fname(CS fname, CS sfname){
    Book* book = curBook;
 
@@ -6135,7 +6135,7 @@ set_rw_fname(CS fname, CS sfname){
 }
 
 //Put file name into IObuff with quotes.
-public void
+pub void
 msg_add_fname(Book* book, CS fname){
    if (!fname)
       fname = S"-stdin-";
@@ -6149,7 +6149,7 @@ msg_add_fname(Book* book, CS fname){
 }
 
 //Append line and character count to IObuff.
-public void
+pub void
 msg_add_lines(int insert_space, long lnum, FileOffset nchars) {
    int  len = (int)STRLEN(IObuff);
    eeSnprintf(
@@ -6159,12 +6159,12 @@ msg_add_lines(int insert_space, long lnum, FileOffset nchars) {
 }
 
 //Append message for missing line separator to IObuff.
-public void
+pub void
 msg_add_eol(void){
    STRCAT(IObuff, _("[Incomplete last line]"));
 }
 
-public int
+pub int
 time_differs(FileStat* st, long mtime, long mtime_ns UNUSED){
    return
 #ifdef ST_MTIM_NSEC
@@ -6179,7 +6179,7 @@ time_differs(FileStat* st, long mtime, long mtime_ns UNUSED){
 
 //Try to find a shortname by comparing the fullname with the current directory.
 //Return "full_path" or pointer into "full_path" if shortened.
-public CS
+pub CS
 shorten_fname1(CS full_path){
    Byte dirname[MAXPATHL];
    CS p = full_path;
@@ -6193,7 +6193,7 @@ shorten_fname1(CS full_path){
 
 //Try to find a shortname by comparing the fullname with the current directory.
 //Return NULL if not shorter name possible, pointer into "full_path" otherwise.
-public CS
+pub CS
 shorten_fname(CS full_path, CS dir_name){
    if (full_path == NULL)
       return NULL;
@@ -6216,7 +6216,7 @@ shorten_fname(CS full_path, CS dir_name){
 //names a bit, if safe to do so.
 //When "force" is false: Only try to shorten absolute file names.
 //For books that have buftype "nofile" or "scratch": never change the file name.
-public void
+pub void
 shorten_buf_fname(Book* book, CS dirname, int force) {
    if (book->currFileName
        && !bt_nofilename(book)
@@ -6236,7 +6236,7 @@ shorten_buf_fname(Book* book, CS dirname, int force) {
 }
 
 // Shorten filenames for all books.
-public void
+pub void
 shorten_fnames(Boole force){
    Byte dirname[MAXPATHL];
 
@@ -6259,7 +6259,7 @@ shorten_fnames(Boole force){
 //different name and ends in 'ext'. "ext" MUST be at most 4 characters long if it starts with a 
 //dot, 3 characters otherwise. Space for the returned name is allocated, must be freed later.
 //Return NULL when out of memory.
-public CS
+pub CS
 fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '.' to file name
    CS retval;
    CS s;
@@ -6333,7 +6333,7 @@ fiAppendFileExtension(CS fname, CS ext, Boole prepend_dot) {  // may prepend a '
 //Like fgets(), but if the file line is too long, it is truncated and the rest of the line is 
 //thrown away. Return true for end-of-file. If the line is truncated then buf[size - 2] 
 //will not be ZERO.
-public int
+pub int
 eeFgets(CS buf, int size, FILE *fp){
 #define FGETS_SIZE 200
    Byte tbuilder[FGETS_SIZE];
@@ -6355,7 +6355,7 @@ eeFgets(CS buf, int size, FILE *fp){
 //rename() only works if both files are on the same file system, this
 //function will (attempts to?) copy the file across if rename fails -- webb
 //Return -1 for failure, 0 for success.
-public int
+pub int
 eeRename(CS from, CS to){
    int      n;
    int      ret;
@@ -6499,7 +6499,7 @@ private int already_warned = false;
 //Postpone the check if there are characters in the stuff buffer, a global
 //command is being executed, a mapping is being executed or an autocommand is busy.
 //Return true if some message was written (screen should be redrawn and cursor positioned).
-public int
+pub int
 check_timestamps( int      focus) {     // called for GUI focus event
    Book* book;
    int      didit = 0;
@@ -6593,7 +6593,7 @@ move_lines(Book* frombuf, Book* tobuf) {
 //return 1 if a changed book was found.
 //return 2 if a message has been displayed.
 //return 0 otherwise.
-public int
+pub int
 fiCheckBookTimestamp(
    Book* book
 ){
@@ -6824,7 +6824,7 @@ fiCheckBookTimestamp(
 //Reload a book that is already loaded. Used when the file was changed outside of Eegl.
 //"orig_mode" is book->origMode before the need for reloading was detected.
 //book->origMode may have been reset already.
-public void
+pub void
 buf_reload(Book* book, int orig_mode, int reload_options){
    Invocation invo;
    Pos   old_cursor;
@@ -6959,7 +6959,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
    // Careful: autocommands may have made "book" invalid!
 }
 
-public void
+pub void
 buf_store_time(Book *book, FileStat *st, CS fname UNUSED){
    book->modifiedTime = (long)st->st_mtime;
 #ifdef ST_MTIM_NSEC
@@ -6975,7 +6975,7 @@ buf_store_time(Book *book, FileStat *st, CS fname UNUSED){
 
 //Adjust the line with missing eol, used for the next write.
 //Used for do_filter(), when the input lines for the filter are deleted.
-public void
+pub void
 write_lnum_adjust(LineNr offset){
    if (curBook->noEolLnum != 0)   // only if there is a missing eol
       curBook->noEolLnum += offset;
@@ -7036,7 +7036,7 @@ readdir_core(ArrayList   *gap, int withattr UNUSED, int sort) {
 
 //return true if "name" is a directory, NOT a symlink to a directory
 //return false if "name" is not a directory. return false for error
-public int
+pub int
 mch_isrealdir(CS name) {
    struct stat statb;
 
@@ -7049,7 +7049,7 @@ mch_isrealdir(CS name) {
 
 //true if "name" is a directory or a symlink to a directory
 //false if "name" is not a directory. false for error
-public Boole
+pub Boole
 mch_isdir(CS name) {
    struct stat statb;
 
@@ -7064,7 +7064,7 @@ mch_isdir(CS name) {
 //NODE_NORMAL: file or directory (or doesn't exist)
 //NODE_WRITABLE: writable device, socket, fifo, etc.
 //NODE_OTHER: non-writable things
-public int
+pub int
 mch_nodetype(CS name) {
    struct stat   st;
 
@@ -7138,7 +7138,7 @@ eeClosetempdir(void) {
 }
 
 // Delete the temp directory and all files it contains.
-public void
+pub void
 eeDelTempDir(void) {
    if (!eeTempDirG)
       return;
@@ -7174,7 +7174,7 @@ eeSettempdir(CS tempdir){
 //
 //The returned pointer is to allocated memory.
 //The returned pointer is NULL if no valid name was found.
-public CS
+pub CS
 eeTempName(
    int extra_char UNUSED,  // char to use in the name instead of '?'
    int keep UNUSED
@@ -7234,7 +7234,7 @@ eeTempName(
 //Try matching a filename with a "pattern" ("prog" is NULL), or use the precompiled regprog "prog"
 //("pattern" is NULL). That avoids calling compileRegexp() often. Used for autocommands and 
 //'wildignore'. Return true if there is a match, false otherwise.
-public int
+pub int
 match_file_pat(
    CS pattern,      // pattern to match with
    RegProg** prog,         // pre-compiled regprog or NULL
@@ -7273,7 +7273,7 @@ match_file_pat(
 
 //Return true if a file matches with a pattern in "list". "list" is a comma-separated list of 
 //patterns, like 'wildignore'. "sfname" is the short file name or NULL, "ffname" the long file name
-public int
+pub int
 match_file_list(CS list, CS sfname, CS ffname){
    Byte buf[MAXPATHL];
    Boole allow_dirs;
@@ -7297,7 +7297,7 @@ match_file_list(CS list, CS sfname, CS ffname){
 //and return the result in allocated memory. If there is a directory path separator to be matched, 
 //then true is put in allow_dirs, otherwise false is put there -- webb.
 //Handle backslashes before special characters, like "\*" and "\ ".
-public CS
+pub CS
 file_pat_to_reg_pat(
    CS pat,
    CS pat_end,   // first char after pattern or NULL
@@ -7426,7 +7426,7 @@ file_pat_to_reg_pat(
 }
 
 //Version of read() that retries when interrupted by EINTR (possibly by a SIGWINCH).
-public Long
+pub Long
 fiReadEintr(int fd, OUT void* buf, Unt bufsize) {
    Long ret;
 
@@ -7439,7 +7439,7 @@ fiReadEintr(int fd, OUT void* buf, Unt bufsize) {
 }
 
 //Version of write() that retries when interrupted by EINTR (possibly by a SIGWINCH).
-public long
+pub long
 write_eintr(int fd, void *buf, Unt bufsize) {
    long    ret = 0;
    long    wlen;
@@ -7467,7 +7467,7 @@ write_eintr(int fd, void *buf, Unt bufsize) {
 //Get the stdout of an external command from a temp file.
 //If "ret_len" is NULL replace ZERO characters with NL.  When "ret_len" is not
 //NULL store the length there. Return an allocated string, or NULL for error.
-public CS
+pub CS
 fiGetShellOutput(
    CS cmd,
    NULLABLE CS infile, // optional input file name
@@ -7652,19 +7652,19 @@ errret:
       list_free(list);
 }
 
-public void
+pub void
 f_system(Var* argvars, Var* returnVar) {
    fiGetShellOutput_as_returnVar(argvars, returnVar, false);
 }
 
-public void
+pub void
 f_systemlist(Var* argvars, Var* returnVar) {
    fiGetShellOutput_as_returnVar(argvars, returnVar, true);
 }
 
 //Expand envs and program name to determine the swapfile dir, e.g. "/home/usern/.local/state/eegl/"
 //Return a fresh allocation
-public Text
+pub Text
 fiInitSwapDir(CS progName) {
    Unt swapLen = doExpandEnvVarsWithEscaped(OUT nameBuffTextG, SWAP_DIR, true, null); 
    CS shortProgName = fiGetShortFiName(progName);
@@ -7678,7 +7678,7 @@ fiInitSwapDir(CS progName) {
 //{{{low-level functions
 
 // Return 0 for not writable, 1 for writable file, 2 for a dir which we have rights to write into.
-public int
+pub int
 filewritable(CS fname) {
    int retval = 0;
    int perm = mch_getperm(fname);
@@ -7692,7 +7692,7 @@ filewritable(CS fname) {
 
 
 // Read 2 bytes from "fd" and turn them into an int, MSB first. Return -1 when encountering EOF.
-public int
+pub int
 get2c(FILE* fd) {
    int n = getc(fd);
    if (n == EOF) return -1;
@@ -7702,7 +7702,7 @@ get2c(FILE* fd) {
 }
 
 // Read 3 bytes from "fd" and turn them into an int, MSB first. Returns -1 when encountering EOF.
-public int
+pub int
 get3c(FILE* fd) {
    int n = getc(fd);
    if (n == EOF) return -1;
@@ -7715,7 +7715,7 @@ get3c(FILE* fd) {
 }
 
 // Read 4 bytes from "fd" and turn them into an int, MSB first. Returns -1 when encountering EOF.
-public int
+pub int
 get4c(FILE* fd) {
    // Use unsigned rather than int otherwise result is undefined when left-shift sets the 
    // most-significant bit
@@ -7737,7 +7737,7 @@ get4c(FILE* fd) {
 
 // Read a string of length "cnt" from "fd" into allocated memory.
 // Return NULL when unable to read that many bytes.
-public CS
+pub CS
 read_string(FILE* fd, int cnt) {
    CS str = alloc(cnt + 1);
 
@@ -7759,7 +7759,7 @@ read_string(FILE* fd, int cnt) {
 //{{{security interaction
 
 // Get file permissions for 'name'. Return -1 when it doesn't exist.
-public long
+pub long
 mch_getperm(CS name) {
    struct stat statb;
 
@@ -7770,13 +7770,13 @@ mch_getperm(CS name) {
 }
 
 // Set file permission for "name" to "perm". FAIL for failure, OK otherwise.
-public int
+pub int
 mch_setperm(CS name, long perm) {
    return (chmod((char *)name, (mode_t)perm) == 0 ? OK : FAIL);
 }
 
 // Copy extended attributes from_file to to_file
-public void
+pub void
 mch_copy_xattr(CS from_file, CS to_file) {
    if (!from_file)
       return;
@@ -7836,7 +7836,7 @@ mch_copy_xattr(CS from_file, CS to_file) {
 
       val = alloc(max_vallen + 1);
    }
-public exitWithError:
+pub exitWithError:
    eeglFree(xattr_buf);
    eeglFree(val);
 
@@ -7845,7 +7845,7 @@ public exitWithError:
 }
 
 // Set file permission for open file "fd" to "perm". FAIL for failure, OK otherwise.
-public int
+pub int
 mch_fsetperm(int fd, long perm) {
    return (fchmod(fd, (mode_t)perm) == 0 ? OK : FAIL);
 }
@@ -7863,7 +7863,7 @@ executable_file(CS name) {
 //Return true if "name" can be found in $PATH and executed, false if not.
 //If "use_path" is false only check if "name" is executable.
 //Return -1 if unknown.
-public int
+pub int
 mch_can_exe(CS name, Arr(CS) path, int use_path) {
    Unt   bufsize;
    Unt   buflen;
@@ -7968,7 +7968,7 @@ resolveSymlink(OUT Text* result, Unt cap) {
 }
 
 //Make swap file name out of the file name. Return pointer to allocated memory or NULL.
-public CS
+pub CS
 fiBuildSwapOrUndoFname(CS fname, Boole isUndo) {
    Byte fnameBuf[MAXPATHL];
    memcpy(OUT fnameBuf, swapDirG.c, swapDirG.len);
@@ -8058,18 +8058,18 @@ private CS hexx = hexxa;
 #define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
 
 #define COLOR_PROLOGUE(color) \
-public l_colored[c++] = '\033'; \
+pub l_colored[c++] = '\033'; \
 l_colored[c++] = '['; \
-public l_colored[c++] = '1'; \
+pub l_colored[c++] = '1'; \
 l_colored[c++] = ';'; \
-public l_colored[c++] = '3'; \
+pub l_colored[c++] = '3'; \
 l_colored[c++] = (color); \
-public l_colored[c++] = 'm';
+pub l_colored[c++] = 'm';
 
 #define COLOR_EPILOGUE \
-public l_colored[c++] = '\033'; \
+pub l_colored[c++] = '\033'; \
 l_colored[c++] = '['; \
-public l_colored[c++] = '0'; \
+pub l_colored[c++] = '0'; \
 l_colored[c++] = 'm';
 
 #define COLOR_RED '1'
@@ -8329,7 +8329,7 @@ get_color_char(int e) {
    return 0;
 }
 
-public int
+pub int
 xxdMain(int argc, char* argv[]) {
    FILE *fp, *fpo;
    int c, e, p = 0, relseek = 1, negseek = 0, revert = 0, i, x;

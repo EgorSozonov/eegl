@@ -424,14 +424,14 @@ get_char_class(Byte **pp) {
 //This doesn't work well recursively.  In case it happens anyway, the first
 //set timeout will prevail, nested ones are ignored.
 //The caller must make sure there is a matching disable_regexp_timeout() call!
-public void
+pub void
 init_regexp_timeout(long msec) {
    if (timeout_nesting == 0)
       timeout_flag = start_timeout(msec);
    ++timeout_nesting;
 }
 
-public void
+pub void
 disable_regexp_timeout(void) {
    if (timeout_nesting == 0)
       internalErrMsg(S"disable_regexp_timeout() called without active timer");
@@ -442,7 +442,7 @@ disable_regexp_timeout(void) {
 }
 
 // Return true if compiled regular expression "prog" can match a line break.
-public int
+pub int
 re_multiline(RegProg* prog){
    return (prog->regflags & RF_HASNL);
 }
@@ -527,13 +527,13 @@ skip_anyof(Byte *p) {
 //Stop at end of "startp" or where "delim" is found ('/', '?', etc).
 //Take care of characters with a backslash in front of it.
 //Skip strings inside [ and ].
-public Byte *
+pub Byte *
 skip_regexp(Byte* startp, int delim, int magic) {
    return skip_regexp_ex(startp, delim, magic, NULL, NULL, NULL);
 }
 
 // Call skip_regexp() and when the delimiter does not match give an error and return NULL.
-public Byte *
+pub Byte *
 skip_regexp_err(Byte* startp, int delim, int magic) {
    Byte *p = skip_regexp(startp, delim, magic);
 
@@ -549,7 +549,7 @@ skip_regexp_err(Byte* startp, int delim, int magic) {
 //"\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
 //If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
 //If "magic_val" is not NULL, returns the effective magicness of the pattern
-public Byte *
+pub Byte *
 skip_regexp_ex(
    Byte* startp,
    int dirc,
@@ -1136,7 +1136,7 @@ make_extmatch(void){
 }
 
 // Add a reference to an extmatch.
-public RegExternalMatch *
+pub RegExternalMatch *
 ref_extmatch(RegExternalMatch *em){
    if (em)
       em->refcnt++;
@@ -1144,7 +1144,7 @@ ref_extmatch(RegExternalMatch *em){
 }
 
 // Remove a reference to an extmatch.  If there are no references left, free the info.
-public void
+pub void
 unref_extmatch(RegExternalMatch *em) {
    if (em && --em->refcnt <= 0) {
       for (int i = 0; i < NSUBEXP; ++i)
@@ -1559,7 +1559,7 @@ do_lower(int *d, int c) {
 //user to keep his hands off of "magic".
 //
 //The tildes are parsed once before the first call to eeRegsub().
-public CS
+pub CS
 regtilde(CS source) {
    Byte   *newsub = source;
    Byte   *p;
@@ -1698,7 +1698,7 @@ clear_submatch_list(StaticList10 *sl) {
 //eeRegexec()/eeRegexec_multi() and eeRegsub()! It would make the back references invalid!
 //
 //Return the size of the replacement, including terminating ZERO.
-public int
+pub int
 eeRegsub(
    RegMatch* rmp,
    Byte* source,
@@ -1730,7 +1730,7 @@ eeRegsub(
     return result;
 }
 
-public int
+pub int
 eeRegsub_multi(
    RegMultilineMatch   *rmp,
    LineNr   lnum,
@@ -1768,7 +1768,7 @@ eeRegsub_multi(
 private Byte* eval_result[MAX_REGSUB_NESTING] = {NULL, NULL, NULL, NULL};
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_resub_eval_result(void) {
    for (int i = 0; i < MAX_REGSUB_NESTING; ++i)
       EE_CLEAR(eval_result[i]);
@@ -2166,7 +2166,7 @@ reg_getline_submatch_len(LineNr lnum) {
 //Used for the submatch() function: get the string from the n'th submatch in
 //allocated memory.
 //Return NULL when not in a ":s" command and for a non-existing submatch.
-public Byte *
+pub Byte *
 reg_submatch(int no) {
    Byte   *retval = NULL;
    Byte   *s;
@@ -2242,7 +2242,7 @@ reg_submatch(int no) {
 //the list of strings from the n'th submatch in allocated memory with NULs represented in NLs.
 //Returns a list of allocated strings.  Returns NULL when not in a ":s"
 //command, for a non-existing submatch and for any error.
-public List *
+pub List *
 reg_submatch_list(int no) {
    Byte* s;
    LineNr slnum;
@@ -4623,13 +4623,13 @@ parse(Unt paren, OUT Boole* hadEol) {  // REG_NOPAREN, REG_PAREN, REG_NPAREN or 
 
 // Used at the debug prompt: disable the timeout so that expression evaluation can used patterns.
 // Must be followed by calling restore_timeout_for_debugging().
-public void
+pub void
 save_timeout_for_debugging(void) {
    saved_timeout_flag = (sig_atomic_t *)timeout_flag;
    timeout_flag = &dummy_timeout_flag;
 }
 
-public void
+pub void
 restore_timeout_for_debugging(void) {
    timeout_flag = saved_timeout_flag;
 }
@@ -9072,7 +9072,7 @@ matchManyLines(
 
 // Compile a regular expression into internal code. Returns the program in allocated memory.
 // Use eeRegFree() to free the memory. Returns NULL for an error.
-public RegProg *
+pub RegProg *
 compileRegexp(CS expr_arg, Unt flags) {
    CS expr = expr_arg;
 
@@ -9094,21 +9094,21 @@ compileRegexp(CS expr_arg, Unt flags) {
 }
 
 // Check if during the previous call to eeRegcomp the EOL item "$" has been found.
-public Boole
+pub Boole
 regexContainsEol(RegProg* prog) {
    return prog->hadEol;
 }
 
 
 // Free a compiled regexp program, returned by compileRegexp().
-public void
+pub void
 eeRegFree(RegProg* prog) {
    if (prog != NULL)
       freeBranch(prog);
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_regexp_stuff(void) {
    ga_clear(&regstack);
    ga_clear(&backpos);
@@ -9162,7 +9162,7 @@ eeRegexec_string(
 }
 
 // Note: "*prog" may be freed and changed. Return true if there is a match, false if not.
-public Boole
+pub Boole
 eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
    RegMatch regmatch;
    regmatch.regprog = *prog;
@@ -9173,14 +9173,14 @@ eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
 }
 
 // Note: "rmp->regprog" may be freed and changed. Return true if there is a match, false if not.
-public Boole
+pub Boole
 eeRegexec(RegMatch* rmp, Byte *line, ColNr col) {
    return eeRegexec_string(rmp, line, col, false);
 }
 
 // Like eeRegexec(), but consider a "\n" in "line" to be a line break.
 // Note: "rmp->regprog" may be freed and changed. Return true if there is a match, false if not.
-public int
+pub int
 eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col) {
    return eeRegexec_string(rmp, line, col, true);
 }
@@ -9191,7 +9191,7 @@ eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col) {
 // Uses curBook for line count and 'iskeyword'.
 //
 // Return zero if there is no match.  Return number of lines contained in the match otherwise.
-public Long
+pub Long
 eeRegexec_multi(
    RegMultilineMatch *rmp,
    Portal* port, // portal in which to search or NULL

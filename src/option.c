@@ -168,7 +168,7 @@ private struct Option { //:Option
 //}}}
 //{{{forward declarations
 
-public declStruct(Option);
+pub declStruct(Option);
 
 private void setDefaultValuesForAllOptions(SetScope scope);
 private Option* findOption(CS arg);
@@ -439,7 +439,7 @@ setDefault(Option* o, SetScope setScope){
    setScriptPos(o, setScope, scriptPosG);
 }
 
-public void
+pub void
 optSetStringDefault(CS name, CS val) {
    optSetStringDefault_esc(name, val, false);
 }
@@ -448,7 +448,7 @@ optSetStringDefault(CS name, CS val) {
 
 //Free all options.
 
-public void
+pub void
 optFreeAllOptions(void) {
    free(globalStringOptionsG);
    free(bookStringOptionsG);
@@ -474,7 +474,7 @@ parseCursorShape(CS input) {
 }
 
 // Initialize the options, part two: After getting visibleRowsG and visibleColsG and setting 'term'
-public void
+pub void
 optInit1(void) {
    didset_options();
    //'scroll' defaults to half the portal height. Need to calculate and set it now
@@ -994,7 +994,7 @@ parseAndSet(SetScope setScope, OUT CS* arg) {
    return parseAndSetImpl(o, *arg, (o->flags & P_GLOBAL) != 0 ? SET_GLOBAL : setScope);
 }
 
-public CS
+pub CS
 optSetByName(CS name, OptionValue newVal, SetScope setScope) {
    Option* o = findOption(name);
    if (!o) {
@@ -1005,7 +1005,7 @@ optSetByName(CS name, OptionValue newVal, SetScope setScope) {
 
 //Convert a key name or string into a key value. Used for @termwinkey, @wildchar and @wildcharm 
 //options. When "multi_byte" is true, allow for multi-byte characters.
-public Unt
+pub Unt
 stringToChar(CS arg, Boole multi_byte) {
    if (*arg == '<' && arg[1] != ZERO)
       return find_key_option(arg + 1, true);
@@ -1052,7 +1052,7 @@ expandEnvVarsInStringOption(Option* o, CS newVal) {
 }
 
 //Get the script context of global option "name".
-public ScriptPos*
+pub ScriptPos*
 optGetScriptPos(CS name) {
    Option* o = findOption(name);
 
@@ -1088,7 +1088,7 @@ check_redraw(Unt flags) {
 
 //Get the value for an option.
 //"flagsp" (if not NULL) is set to the option flags (P_xxxx).
-public OptionValue
+pub OptionValue
 optGetValue(OUT Unt* flagsp, CS name, int scope) {
    Option* o = findOption(name);
    if (!o) {        // option not in the table
@@ -1115,13 +1115,13 @@ optGetValue(OUT Unt* flagsp, CS name, int scope) {
    return retVal;
 }
 
-public Boole
+pub Boole
 optIsFnOption(Unt flags) {
    return (flags & P_FUNC) > 0;
 }
 
 // Set option "varname" to the value of "varp" for the current buffer/portal.
-public void
+pub void
 optSetFromVar(CS varname, Var *varp) {
    Byte   nbuf[NUMBUFLEN];
    Boole error = false;
@@ -1190,7 +1190,7 @@ matchString(
 }
 
 // Expansion handler for `:set=` or `:set+=` when the option has a custom expansion handler.
-public int
+pub int
 optExpandForSet(Expand* xp, RegMatch* regmatch, OUT ExpandMatch* matches){
    if (!expandOptionS || expandOptionS->expander) {
       //Not supposed to reach this. This function is only for options with
@@ -1249,7 +1249,7 @@ toString(Option* o, SetScope scope) {
 }
 
 //Return true when option "name" has been set.
-public Boole
+pub Boole
 optWasSet(CS name) {
    Option* o = findOption(name);
    if (!o)
@@ -1465,7 +1465,7 @@ showoneopt(Option* o, SetScope setScope) {   // OPT_LOCAL or OPT_GLOBAL
 
 //Generate set commands for the local fold options only. Used when
 //[sessionoptions] or [viewoptions] contains "folds" but not "options".
-public int
+pub int
 makefoldset(FILE *fd) {
    if (put_setnum(fd, S"set", S"foldmethod", refNum((long*)&curPor->o.foldMethod)) == FAIL
        || put_setstring(fd, S"set", S"foldexpr", refStr(&curPor->o.foldExpr), 0) == FAIL
@@ -1567,7 +1567,7 @@ did_set_balloonevalterm(OptionChange* cha) {
 }
 
 //Process the updated @binary option value.
-public CS
+pub CS
 optSetBinary(OptionChange* cha) {
    if (cha->setScope != SET_LOCAL) {
       return e_unknown_option;
@@ -1738,7 +1738,7 @@ did_set_ignorecase(OptionChange* cha) {
    return NULL;
 }
 
-public CS
+pub CS
 setModifiable(OptionChange* cha) {
    updateBoolRef(cha);
    return NULL;
@@ -2029,7 +2029,7 @@ setNonNegative(OptionChange* cha) {
 }
 
 // Call optChangeValue() and when an error is returned report it.
-public void
+pub void
 optChangeAndReportError(
    CS name,
    OptionValue newValue,
@@ -2090,7 +2090,7 @@ printSingleOption(
 }
 
 //After copying portal options: update variables depending on options.
-public void
+pub void
 afterCopyPortOpt(Portal* po) {
    // Set leftCol or skipCol to zero.
    if (po->o.wrap)
@@ -2112,7 +2112,7 @@ copyOptionVal(OUT Polystring* buf, CS val) {
 }
 
 //Copy the options from one PortalOptions to another.
-public void
+pub void
 copyPortOpt(PortalOptions* t, PortalOptions* s) {
    Unt neededCap = s->stringOptions.cap;
    //If target buffer is big enouth enough, reuse it. Otherwise, free and allocate new one
@@ -2135,7 +2135,7 @@ copyPortOpt(PortalOptions* t, PortalOptions* s) {
 }
 
 // Free the allocated memory inside a PortalOptions.
-public void
+pub void
 optClearPortOptions(PortalOptions* t) {
    free(t->stringOptions.c);
 }
@@ -2207,7 +2207,7 @@ expand1(OUT Expand* xp, Option* o, CS argend) {
    return;
 }
 
-public void
+pub void
 optInitExpandContextForSet(
    OUT Expand* xp,
    CS arg,
@@ -2291,7 +2291,7 @@ optInitExpandContextForSet(
 }
 
 //Expansion handler for :set= when we just want to fill in with the existing value.
-public int
+pub int
 optExpandOldOption(OUT ExpandMatch* matches) {
    matches->len = 0;
 
@@ -2323,7 +2323,7 @@ wildcharUseKeyname(OptionRef ref, long* wcp) {
 }
 
 //Reset the flag indicating option "name" was set.
-public int
+pub int
 reset_optWasSet(CS name) {
    Option* o = findOption(name);
    if (!o)
@@ -2335,7 +2335,7 @@ reset_optWasSet(CS name) {
 
 //Return the effective 'sidescrolloff' value for the current portal, using the
 //global value when appropriate.
-public long
+pub long
 get_sidescrolloff_value(void) {
    return curPor->o.sideScrollOff;
 }
@@ -2343,7 +2343,7 @@ get_sidescrolloff_value(void) {
 //Set the callback function value for an option that accepts a function name,
 //lambda, et al. (e.g. @operatorfunc, @tagfunc, etc.)
 //Return OK if the option is successfully set to a function, otherwise return FAIL.
-public int
+pub int
 optSetCallback(OUT Callback* cb, CS new) {
    if (!new || *new == ZERO) {
       evFreeCallback(cb);
@@ -2380,7 +2380,7 @@ optSetCallback(OUT Callback* cb, CS new) {
 }
 
 //Process the new @showtabpanel value.
-public CS
+pub CS
 setShowTabpanel(OptionChange* cha) {
    updateBoolRef(cha);
    shell_new_columns();
@@ -3168,7 +3168,7 @@ setBufType(OptionChange* cha) {
    }
    return e_invalid_argument;
    
-public argumentIsValid:
+pub argumentIsValid:
    *(cha->ref.enume) = v;
    curPor->statusLineNeedsRedraw = true;
    redraw_later(UPD_VALID);
@@ -3488,7 +3488,7 @@ private Option OPTIONS_PORTAL[] = {
 };
 
 // Set portal options to their default values
-public void
+pub void
 initPortalOptions(PortalOptions* o) {
 #define OPTIONS_INIT_PORTAL
 #define OPTIONS_LIST_PORTAL
@@ -3608,7 +3608,7 @@ copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha) {
    }
 }
 
-public void
+pub void
 updateStringRef(OptionChange* cha) {
    CS const new = cha->newVal.string;
    Unt newLen = STRLEN(new) + 1;
@@ -3765,7 +3765,7 @@ expandEnvVarsInDefaults(void) {
 
 //Initialize the options, first part.
 //Called only once from main(), just after creating the first book.
-public void
+pub void
 optInit0() {
    langmap_init();
    
@@ -3934,7 +3934,7 @@ put_setbool(
 //(fresh value = value used for a new buffer or portal for a local option).
 //
 //Return FAIL on error, OK otherwise.
-public int
+pub int
 writeOptionsAsSet(FILE *fd UNUSED) {
    Option   *p;
 
@@ -4011,7 +4011,7 @@ setDefaultValuesForAllOptions(SetScope setScope) {
 //Set all portal-local and buffer-local options to the Eegl default.
 //local-global options will use the global value.
 //When "doBook" is false, don't set book-local options.
-public void
+pub void
 optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
    Portal* curPorSaved = curPor;
 
@@ -4038,7 +4038,7 @@ optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
 }
 
 // ":get". Print the value of an option
-public void
+pub void
 c_get(Invocation* invo) {
    SetScope scope;
    if (invo->id == C_get) {
@@ -4116,7 +4116,7 @@ theend:
 //OPT_LOCAL      for ":set"
 //
 //Return FAIL if an error is detected, OK otherwise.
-public void
+pub void
 c_set(Invocation* invo) {
    SetScope setScope = (invo->id == C_setglobal) ? SET_GLOBAL : SET_LOCAL;
    
@@ -4188,7 +4188,7 @@ findOption(CS arg) {
 }
 
 // Get portal- or book-local options.
-public Bag*
+pub Bag*
 getBookOrPortOptions(Boole bufopt) {
    Bag* b = allocBag();
    Option* o UNUSED;
@@ -4292,7 +4292,7 @@ copyGlobalToPortalImpl(OUT PortalOptions* t) {
 }
 
 //Copy options from one portal to another
-public void
+pub void
 optCopyBetweenPortals(OUT Portal* to, Portal* from) {
    copyGlobalToPortalImpl(&to->o);
    copyPortOpt(&to->o, &from->o);
@@ -4300,14 +4300,14 @@ optCopyBetweenPortals(OUT Portal* to, Portal* from) {
 }
 
 //Copy options from one portal to another
-public void
+pub void
 optCopyGlobalToPortal(OUT Portal* to) {
    copyGlobalToPortalImpl(&to->o);
    afterCopyPortOpt(to);
 }
 
 //Free the memory for the callback options of a book.
-public void
+pub void
 optFreeBookCallbacks(Book* book){
    evFreeCallback(book->o.completeFn);
    evFreeCallback(book->o.omniFn);
@@ -4322,7 +4322,7 @@ optFreeBookCallbacks(Book* book){
 //flags:
 //BCO_ENTER   We will enter the book "book".
 //BCO_ALWAYS  Always copy the options, but only set initialized when appropriate.
-public void
+pub void
 optsCopyToBook(OUT Book* book, Unt flags) {
    Boole shouldCopy = !book->o.initialized && (flags & BCO_ENTER) != 0;
    if (shouldCopy || (flags & BCO_ALWAYS) != 0) {
@@ -4337,7 +4337,7 @@ optsCopyToBook(OUT Book* book, Unt flags) {
       book->o.initialized = true;
 }
 
-public int
+pub int
 optExpandOption(
    Expand* xp UNUSED,
    RegMatch* regmatch,
@@ -4379,7 +4379,7 @@ optExpandOption(
    return OK;
 }
 
-public Boole
+pub Boole
 optImmutableMode() {
    return !(OPTIONS_BOOK[BOOK_modifiable].c.local.val.boole);
 }
@@ -4426,7 +4426,7 @@ changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid)
 //The string is copied into allocated memory.
 //When "set_sid" is 0, set the scriptID to scriptPosG.sid. 
 //When "set_sid" is SID_NONE don't set the scriptID. Otherwise set the scriptID to "set_sid".
-public void
+pub void
 optChangeStringOptionDirect(
    CS name,
    CS val,
@@ -4445,7 +4445,7 @@ optChangeStringOptionDirect(
 
 //Like optChangeStringOptionDirect(), but for a portal-local option in "wp".
 //Block autocommands to avoid the old curPor becoming invalid.
-public void
+pub void
 optSetStringOptionDirectInPort(
    OUT Portal* po,
    CS name,
@@ -4466,7 +4466,7 @@ optSetStringOptionDirectInPort(
 
 //Like optChangeStringOptionDirect(), but for a book-local option in "book".
 //Block autocommands to avoid the old curBook becoming invalid.
-public void
+pub void
 optSetStringOptionDirectInBook(
    Book* book,
    CS name,
@@ -4576,7 +4576,7 @@ is_valid_mess_lang(Byte *lang) {
 
 //Obtain the current messages language.  Used to set the default for @helplang. 
 //May return NULL or an empty string.
-public CS
+pub CS
 get_mess_lang(void) {
    CS p = get_locale_val(LC_MESSAGES);
    return is_valid_mess_lang(p) ? p : NULL;
@@ -4584,7 +4584,7 @@ get_mess_lang(void) {
 
 //Set the "v:lang" variable according to the current locale setting.
 //Also do "v:lc_time"and "v:ctype".
-public void
+pub void
 set_lang_var(void) {
    CS loc = get_locale_val(LC_CTYPE);
    set_EeglVar_string(VV_CTYPE, loc, -1);
@@ -4602,7 +4602,7 @@ set_lang_var(void) {
 }
 
 //Setup to use the current locale (for ctype() and many other things).
-public void
+pub void
 init_locale(void) {
    setlocale(LC_ALL, "");
 
@@ -4626,7 +4626,7 @@ init_locale(void) {
 }
 
 //":language":  Set the language (locale).
-public void
+pub void
 c_language(Invocation* invo) {
    char* loc;
    CS name;
@@ -4736,7 +4736,7 @@ init_locales(void) {
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_locales(void) {
    if (!locales)
       return;
@@ -4749,7 +4749,7 @@ free_locales(void) {
 # endif
 
 //Function given to expandGeneric() to obtain the possible arguments of the ":language" command.
-public CS
+pub CS
 get_lang_arg(Expand* xp UNUSED, int idx) {
    switch (idx) {
    case 0: return S"messages";
@@ -4763,7 +4763,7 @@ get_lang_arg(Expand* xp UNUSED, int idx) {
 }
 
 //Function given to expandGeneric() to obtain the available locales.
-public CS
+pub CS
 get_locales(Expand* xp UNUSED, int idx) {
    init_locales();
    return locales ? locales[idx] : null;

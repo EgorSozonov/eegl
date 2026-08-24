@@ -133,7 +133,7 @@ char_before_cursor(void) {
 //and lets the caller handle the Normal-mode command.
 //
 //Return true if a CTRL-O command caused the return (insert mode pending).
-public int
+pub int
 edit(Unt commChar, int startln, long count){
                    // if set, insert at start of line
    Unt c = 0;
@@ -1126,7 +1126,7 @@ private Byte charDecoFlagsP;
 private int  pc_row;
 private int  pc_col;
 
-public void
+pub void
 edit_putchar(int c, Boole needDoHilite) {
    if (!drawHasLines())
       return;
@@ -1148,7 +1148,7 @@ edit_putchar(int c, Boole needDoHilite) {
 }
 
 // Set the insert start position for when using a prompt book.
-public void
+pub void
 set_insstart(LineNr lnum, int col) {
    insertStartG.lnum = lnum;
    insertStartG.col = col;
@@ -1159,7 +1159,7 @@ set_insstart(LineNr lnum, int col) {
 }
 
 // Undo the previous edit_putchar().
-public void
+pub void
 edit_unputchar(void) {
    if (pc_status != PC_STATUS_UNSET && pc_row >= msg_scrolled) {
       if (pc_status == PC_STATUS_RIGHT)
@@ -1172,7 +1172,7 @@ edit_unputchar(void) {
 }
 
 // Truncate the space at the end of a line.  This is to be used only in insert mode
-public void
+pub void
 truncate_spaces(CS line, Unt len) {
    // find start of trailing white space
    for (int i = (int)len - 1; i >= 0 && SPACE_OR_TAB(line[i]); i--) {
@@ -1182,7 +1182,7 @@ truncate_spaces(CS line, Unt len) {
 
 // Backspace the cursor until the given column. May also be used when not in insert mode at all.
 // Will attempt not to go before "col" even when there is a composing character.
-public void
+pub void
 backspace_until_column(int col) {
    while ((int)curPor->cursor.col > col) {
       curPor->cursor.col--;
@@ -1221,7 +1221,7 @@ del_char_after_col(int limit_col UNUSED) {
 //For Unicode a character > 255 may be returned.
 //If "noReduceKeys" is true do not change any modifyOtherKeys ESC sequence into a normal key, 
 //return ESC.
-public int
+pub int
 get_literal(int noReduceKeys) {
    Unt nc;
    int hex = false;
@@ -1337,7 +1337,7 @@ insertRegular(Unt c, Boole allow_modmask, Boole ctrlv) {       // c was typed af
 //     beside INSCHAR_FORMAT (above), is also looking for these:
 //      INSCHAR_DO_COM   - format comments
 //      INSCHAR_COM_LIST - format comments with num list or 2nd line indent
-public void
+pub void
 insertchar0(
    Unt c,         // character to insert or ZERO
    Unt flags,         // INSCHAR_FORMAT, etc.
@@ -1525,7 +1525,7 @@ redo_literal(int c) {
 
 //start_arrow() is called when an arrow key is used in insert mode.
 //For undo/redo it resembles hitting the <ESC> key.
-public void
+pub void
 start_arrow(Pos* end_insert_pos) {    // can be NULL
    start_arrow_common(end_insert_pos, true);
 }
@@ -1565,7 +1565,7 @@ check_spell_redraw(void) {
 //stop_arrow() is called before a change is made in insert mode.
 //If an arrow key has been used, start a new insertion. Return FAIL if undo is impossible, 
 //shouldn't insert then.
-public int
+pub int
 stop_arrow(void) {
    if (arrow_used) {
       insertStartG = curPor->cursor;   // new insertion starts here
@@ -1705,7 +1705,7 @@ stop_insert(
 }
 
 //Set the last inserted text to a single character. Used for the replace command.
-public void
+pub void
 set_last_insert(Unt c) {
    eeglFree(lastInsertP.c);
    lastInsertP.c = alloc(MB_MAXBYTES * 3 + 5);
@@ -1723,7 +1723,7 @@ set_last_insert(Unt c) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_last_insert(void) {
    EE_CLEAR_STRING(lastInsertP);
 }
@@ -1731,7 +1731,7 @@ free_last_insert(void) {
 
 //Add character "c" to buffer "s". Escape the special meaning of K_SPECIAL
 //and CSI.  Handle multi-byte characters. Return a pointer to after the added bytes.
-public CS
+pub CS
 add_char2buf(Unt c, CS s) {
    Byte temp[MB_MAXBYTES + 1];
 
@@ -1754,7 +1754,7 @@ add_char2buf(Unt c, CS s) {
 //if flags & BL_SOL   move to first non-white if startofline is set,
 //            otherwise keep "curswant" column
 //if flags & BL_FIX   don't leave the cursor on a ZERO.
-public void
+pub void
 beginline(Unt flags) {
    if ((flags & BL_SOL) != 0 && !p_sol)
       coladvance(curPor->cursWant);
@@ -1782,7 +1782,7 @@ beginline(Unt flags) {
 //Move one char {right,left,down,up}.
 //Doesn't move onto the ZERO past the end of the line, unless it is allowed.
 //Return OK when successful, FAIL when we hit a line of file boundary.
-public int
+pub int
 oneright(void) {
    if (virtual_active()) {
       Pos prevpos = curPor->cursor;
@@ -1815,7 +1815,7 @@ oneright(void) {
    return OK;
 }
 
-public int
+pub int
 oneleft(void) {
    if (virtual_active()) {
       int v = getviscol();
@@ -1859,7 +1859,7 @@ oneleft(void) {
 }
 
 //Move the cursor up "n" lines in portal "wp". Take care of closed folds.
-public void
+pub void
 cursor_up_inner(Portal* po, long n) {
    LineNr lnum = po->cursor.lnum;
 
@@ -1888,7 +1888,7 @@ cursor_up_inner(Portal* po, long n) {
    po->cursor.lnum = lnum;
 }
 
-public int
+pub int
 cursor_up(long   n, Boole upd_topline){       // When true: update topline
    // This fails if the cursor is already in the first line or the count is
    // larger than the line number and '-' is in 'cpoptions'
@@ -1907,7 +1907,7 @@ cursor_up(long   n, Boole upd_topline){       // When true: update topline
 }
 
 //Move the cursor down "n" lines in window "wp". Take care of closed folds.
-public void
+pub void
 cursor_down_inner(Portal* wp, long n) {
    LineNr lnum = wp->cursor.lnum;
    LineNr line_count = wp->book->mem.lineCount;
@@ -1935,7 +1935,7 @@ cursor_down_inner(Portal* wp, long n) {
 }
 
 //Cursor down a number of logical lines.
-public int
+pub int
 cursor_down(long n, int upd_topline) {      // When true: update topline
    LineNr lnum = curPor->cursor.lnum;
    LineNr line_count = curPor->book->mem.lineCount;
@@ -1957,7 +1957,7 @@ cursor_down(long n, int upd_topline) {      // When true: update topline
 
 //Stuff the last inserted text in the read buffer. lastInsertP actually is a copy of the redo 
 //buffer, so we first have to remove the command.
-public int
+pub int
 stuff_inserted(
    Unt c,      // Command character to be inserted
    Long count,   // Repeat this many times
@@ -2024,7 +2024,7 @@ stuff_inserted(
    return OK;
 }
 
-public Text
+pub Text
 get_last_insert(void){
    Text insert = {null, 0};
 
@@ -2038,7 +2038,7 @@ get_last_insert(void){
 
 //Get last inserted string, and remove trailing <Esc>. Return pointer to allocated memory 
 //(must be freed) or NULL.
-public CS
+pub CS
 get_last_insert_save(void){
    Text   insert = get_last_insert();
 
@@ -2638,7 +2638,7 @@ ins_bs(int c, int mode, int* inserted_space_p) {
 
 //Handle receiving P_PS: start paste mode. Insert the following text up to P_PE literally.
 //When "drop" is true then consume the text and drop it.
-public int
+pub int
 bracketed_paste(PasteMode mode, int drop, ArrayList *gap) {
    Unt c;
    Byte buf[NUMBUFLEN + MB_MAXBYTES];
@@ -3057,7 +3057,7 @@ ins_eol(Unt c) {
 
 //Handle CTRL-E and CTRL-Y in Insert mode: copy char from other line.
  //Return the char to be inserted, or ZERO if none found.
-public int
+pub int
 ins_copychar(LineNr lnum) {
    if (lnum < 1 || lnum > curBook->mem.lineCount) {
       return ZERO;
@@ -3112,7 +3112,7 @@ ins_ctrl_ey(Unt tc) {
 }
 
 // Get the value that virtCol would have when 'list' is off.
-public ColNr
+pub ColNr
 get_nolist_virtcol(void) {
    // check validity of cursor in current book
    if (!curPor->book
@@ -3125,13 +3125,13 @@ get_nolist_virtcol(void) {
    return curPor->virtCol;
 }
 
-public void
+pub void
 set_can_cindent(int val) {
     can_cindent = val;
 }
 
 // Trigger "event" and take care of fixing undo.
-public int
+pub int
 ins_applyAutocomms(AutoEvent event) {
    Long   tick = CHANGEDTICK(curBook);
    int r = applyAutocomms(event, NULL, NULL, false, curBook);
@@ -3409,7 +3409,7 @@ private int ins_compl_make_cyclic(void);
 
 
 // CTRL-X pressed in Insert mode.
-public void
+pub void
 ins_ctrl_x(void) {
    if (!ctrl_x_mode_cmdline()) {
       // if the next ^X<> won't ADD nothing, then reset compl_cont_status
@@ -3435,7 +3435,7 @@ private int ctrl_x_mode_normal(void)
     { return ctrl_x_mode == CTRL_X_NORMAL; }
 private int ctrl_x_mode_scroll(void)
     { return ctrl_x_mode == CTRL_X_SCROLL; }
-public int ctrl_x_mode_whole_line(void)
+pub int ctrl_x_mode_whole_line(void)
     { return ctrl_x_mode == CTRL_X_WHOLE_LINE; }
 private int ctrl_x_mode_files(void)
     { return ctrl_x_mode == CTRL_X_FILES; }
@@ -3464,31 +3464,31 @@ private int ctrl_x_mode_register(void)
     { return ctrl_x_mode == CTRL_X_REGISTER; }
 
 // Whether other than default completion has been selected.
-public int
+pub int
 ctrl_x_mode_not_default(void) {
    return ctrl_x_mode != CTRL_X_NORMAL;
 }
 
 // Whether CTRL-X was typed without a following character, not including when in CTRL-X CTRL-V mode
-public int
+pub int
 ctrl_x_mode_not_defined_yet(void) {
    return ctrl_x_mode == CTRL_X_NOT_DEFINED_YET;
 }
 
 // Return true if currently in "normal" or "adding" insert completion matches state
-public int
+pub int
 compl_status_adding(void) {
    return compl_cont_status & CONT_ADDING;
 }
 
 // Return true if the completion pattern includes start of line, just for word-wise expansion
-public int
+pub int
 compl_status_sol(void) {
    return compl_cont_status & CONT_SOL;
 }
 
 // Return true if ^X^P/^X^N will do a local completion (i.e. use complete=.)
-public int
+pub int
 compl_status_local(void) {
    return compl_cont_status & CONT_LOCAL;
 }
@@ -3537,7 +3537,7 @@ has_compl_option(int dict_opt) {
 }
 
 // Is the character "c" a valid key to go to or keep us in CTRL-X mode? Depends on the current mode
-public int
+pub int
 eeIsCtrlXKey(Unt c) {
    // Always allow ^R - let its results then be checked
    if (c == Ctrl_R && ctrl_x_mode != CTRL_X_REGISTER)
@@ -3740,7 +3740,7 @@ ins_compl_infercase_gettext(
 // This is like addMatchToList(), but if 'ic' and 'inf' are set, then the case of the originally 
 // typed text is used, and the case of the completed text is inferred, ie this tries to work out
 // what case you probably wanted the rest of the word to be in -- webb
-public Unt
+pub Unt
 ins_compl_add_infercase(
    CS str_arg,
    int len,
@@ -3978,7 +3978,7 @@ ins_compl_insert_bytes(CS p, int len) {
 
 //Check if the column is within the currently inserted completion text
 //column range. If it is, return a special hilite decoration. -1 means normal item.
-public Decoration
+pub Decoration
 getDecorationIfColumnIsWithinCompletion(LineNr lnum, int col) {
    if (curBook->o.completeOpt & COT_FUZZY)
       return (Decoration){.hiId = SHORT};
@@ -4010,7 +4010,7 @@ ins_compl_has_multiple(void) {
 //Return true if the given line number falls within the range of a multi-line completion, i.e. 
 //between the starting line (compl_lnum) and current cursor line. Always return false for 
 //single-line completions.
-public int
+pub int
 ins_compl_lnum_in_range(LineNr lnum) {
    if (!ins_compl_has_multiple())
       return false;
@@ -4511,7 +4511,7 @@ ins_compl_build_pum(void) {
 
 // Show the popup menu for the list of matches.
 // Also adjusts "compl_shown_match" to an entry that is actually displayed.
-public void
+pub void
 ins_compl_show_pum(void) {
    int i;
    int cur = -1;
@@ -4564,7 +4564,7 @@ ins_compl_show_pum(void) {
 #define DICT_EXACT   (2)  //"dict" is the exact name of a file
 
 // Get current completion leader
-public CS
+pub CS
 ins_compl_leader(void) {
    return compl_leader.c ? compl_leader.c : compl_orig_text.c;
 }
@@ -4851,13 +4851,13 @@ ins_compl_clear(void){
 }
 
 // Return true when Insert completion is active.
-public int
+pub int
 ins_compl_active(void) {
    return compl_started;
 }
 
 // Return True when wp is the actual completion window
-public int
+pub int
 ins_compl_win_active(Portal *wp) {
     return ins_compl_active() && wp == compl_curr_win
    && wp->book == compl_curr_buf;
@@ -4876,7 +4876,7 @@ ins_compl_init_get_longest(void) {
 }
 
 // Return true when insert completion is interrupted.
-public int
+pub int
 ins_compl_interrupted(void) {
    return compl_interrupted || InsertCompletionime_slice_expired;
 }
@@ -4894,7 +4894,7 @@ ins_compl_col(void) {
 }
 
 // Return the length in bytes of the text being completed
-public int
+pub int
 ins_compl_len(void) {
    return compl_length;
 }
@@ -5589,7 +5589,7 @@ copyCompletionCbs(OUT Callback* dest, Callback* src) {
 //Parse the @thesaurusfunc value and set the callback function.
 //Invoked when the 'thesaurusfunc' option is set. The option value can be a
 //name of a function (string), or function(<name>) or funcref(<name>) or a lambda expression.
-public CS
+pub CS
 did_set_thesaurusfunc(OptionChange* cha) {
    int retval;
    updateStringRef(cha);
@@ -5607,7 +5607,7 @@ did_set_thesaurusfunc(OptionChange* cha) {
 
 //Mark the global 'completefunc' 'omnifunc' and 'thesaurusfunc' callbacks with
 //"copyID" so that they are not garbage collected.
-public int
+pub int
 set_ref_in_insexpand_funcs(int copyID) {
    return memSetRefInCallback(&completeFnS, copyID)
                  || memSetRefInCallback(&omniFnS, copyID)
@@ -5883,7 +5883,7 @@ set_completion(ColNr startcol, List *list) {
    out_flush();
 }
 
-public void
+pub void
 f_complete(Arr(Var) argvars, Var* returnVar UNUSED) {
    if ((stateG & MODE_INSERT) == 0) {
       emsg(_(e_complete_can_only_be_used_in_insert_mode));
@@ -5902,12 +5902,12 @@ f_complete(Arr(Var) argvars, Var* returnVar UNUSED) {
    }
 }
 
-public void
+pub void
 f_complete_add(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = ins_compl_add_tv(&argvars[0], 0, false);
 }
 
-public void
+pub void
 f_complete_check(Arr(Var) argvars UNUSED, Var* returnVar) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
@@ -5935,7 +5935,7 @@ add_match_to_list( Var  *returnVar, CS str, int len, int pos) {
    return OK;
 }
 
-public void
+pub void
 f_complete_match(Arr(Var) argvars, Var* returnVar) {
    LineNr lnum;
    ColNr col;
@@ -6190,7 +6190,7 @@ get_complete_info(List *what_list, Bag *retdict) {
    }
 }
 
-public void
+pub void
 f_complete_info(Arr(Var) argvars, Var* returnVar) {
    List   *what_list = NULL;
 
@@ -6223,7 +6223,7 @@ may_advance_cpt_index(CS cpt) {
 }
 
 // Return value of process_next_cpt_value()
-public enum {
+pub enum {
    INS_COMPL_CPT_OK = 1,
    INS_COMPL_CPT_CONT,
    INS_COMPL_CPT_END
@@ -7682,7 +7682,7 @@ check_elapsed_time(void) {
 //mode.  Also, when compl_pending is not zero, show a completion as soon as possible. -- webb
 //"frequency" specifies out of how many calls we actually check.
 //"in_compl_func" is true when called from complete_check(), don't set compl_curr_match.
-public void
+pub void
 ins_compl_check_keys(int frequency, Boole in_compl_func) {
    static int   count = 0;
    // Don't check when reading keys from a script, :normal or feedkeys().
@@ -8475,7 +8475,7 @@ quote_meta(CS dest, CS src, int len) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_insexpand_stuff(void) {
    EE_CLEAR_STRING(compl_orig_text);
    evFreeCallback(&completeFnS);
@@ -8672,7 +8672,7 @@ cpt_compl_refresh(void) {
 }
 
 // Function given to expandGeneric() to obtain the list of :disassemble arguments.
-public CS
+pub CS
 get_disassemble_argument(Expand* xp, int idx) {
    if (idx == 0)
       return S"debug";
@@ -8692,7 +8692,7 @@ copyGlobalToBookLocalCb(Callback* globcb, Callback* bookCb) {
 //Parse the @completefunc option value and set the callback function. Invoked when @completefunc 
 //is set. The option value can be a name of a function (string), or function(<name>) or 
 //funcref(<name>) or a lambda expression.
-public CS
+pub CS
 setCompletefunc(OptionChange* cha) {
    CS new = cha->newVal.string;
    if (!new || *new == ZERO)
@@ -8706,13 +8706,13 @@ setCompletefunc(OptionChange* cha) {
 }
 
 // Copy the global @omnifunc callback function to the book-local @omnifunc callback for "book".
-public void
+pub void
 inSetOmniCbForBook(Book* book) {
    copyGlobalToBookLocalCb(&omniFnS, book->o.omniFn);
 }
 
 //Copy the global @tagfunc callback function to the book-local 'tagfunc' callback for 'book'.
-public void
+pub void
 inSetTagCbForBook(Book* book) {
    evFreeCallback(book->o.tagFn);
    if (thesaurusCbS.name && *thesaurusCbS.name != ZERO)
@@ -8721,7 +8721,7 @@ inSetTagCbForBook(Book* book) {
 
 //Copy global custom 'complete' F{func} callbacks into the given book's local
 //callback array. Clear any existing book-local callbacks first.
-public void
+pub void
 inSetCustomCompletionCbForBook(Book* book) {
    evFreeCallback(book->o.completeFn);
    if (customCompleteFnS.name && *customCompleteFnS.name != ZERO)
@@ -8731,7 +8731,7 @@ inSetCustomCompletionCbForBook(Book* book) {
 //Parse the @omnifunc option value and set the callback function.
 //Invoked when the @omnifunc option is set. The option value can be a
 //name of a function (string), or function(<name>) or funcref(<name>) or a lambda expression.
-public CS
+pub CS
 setOmnifunc(OptionChange* cha) {
    if (!cha->newVal.string || *cha->newVal.string == ZERO)
       return e_invalid_argument;
@@ -8745,7 +8745,7 @@ setOmnifunc(OptionChange* cha) {
 
 //Parse @complete option and initialize F{func} callbacks. Free any existing callbacks and 
 //allocate new ones. Only F{func} entries are processed; others are ignored.
-public Unt
+pub Unt
 setCompletionCallbacks(OptionChange *cha) {
    if (!curBook)
       return FAIL;
@@ -8791,7 +8791,7 @@ private int   did_add_space = false;   // auto_format() added an extra space und
 #define WHITECHAR(cc) (SPACE_OR_TAB(cc) && (!utf_iscomposing(mb_ptr2char(ml_get_cursor() + 1))))
 
 //Return true if format option 'x' is in effect.
-public Boole
+pub Boole
 has_format_option(int x) {
    return curBook->o.formatOptions && firstOccurrence(curBook->o.formatOptions, x) != NULL;
 }
@@ -8805,7 +8805,7 @@ pchar_cursor(int c) {
 //Format text at the current insert position.
 //If the INSCHAR_COM_LIST flag is present, then the value of second_indent
 //will be the comment leader length sent to openLine().
-public void
+pub void
 internal_format(
    int textwidth,
    int second_indent,
@@ -9133,7 +9133,7 @@ internal_format(
 //of a comment ('e' in comment flags), so that this line is skipped, and not joined to the
 //previous line.  A new paragraph starts after a blank line, or when the
 //comment leader changes -- webb.
-public int
+pub int
 fmt_check_par(LineNr lnum, OUT int* leader_len, OUT CS* leader_flags, int doComments) {
    CS flags = NULL;
 
@@ -9191,7 +9191,7 @@ paragraph_start(LineNr lnum) {
 //'a' flag format from the current line until the end of the paragraph.
 //Keep the cursor at the same position relative to the text.
 //The caller must have saved the cursor line for undo, following ones will be saved here.
-public void
+pub void
 auto_format(
     int trailblank,   // when true also format with trailing blank
     int prev_line   // may start in previous line
@@ -9274,7 +9274,7 @@ auto_format(
 
 //When an extra space was added to continue a paragraph for auto-formatting,
 //delete it now.  The space must be under the cursor, just after the insert position.
-public void
+pub void
 check_auto_format(int end_insert){      // true when ending Insert mode
    if (!did_add_space)
       return;
@@ -9303,7 +9303,7 @@ check_auto_format(int end_insert){      // true when ending Insert mode
 // ei 'wrapmargin' option is set, use curPor->width - 'wrapmargin'
 // if invalid value, use 0.
 // Set default to window width (maximum 79) for "gq" operator.
-public int
+pub int
 comp_textwidth(int ff) {  // force formatting (for "gq" command)
    int textwidth = curBook->o.textWidth;
    if (textwidth == 0 && curBook->o.wrapMargin) {

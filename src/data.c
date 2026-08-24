@@ -23,14 +23,14 @@ private List      *first_list = NULL;   // list of all lists
 private void list_free_item(List *l, ListItem *item);
 
 // Add a watcher to a list.
-public void
+pub void
 list_add_watch(List *l, ListWatch *lw) {
    lw->next = l->watcher;
    l->watcher = lw;
 }
 
 // Remove a watcher from a list. No warning when it isn't found...
-public void
+pub void
 list_rem_watch(List* l, ListWatch* lwrem) {
    ListWatch* lw;
    ListWatch** lwp = &l->watcher;
@@ -65,7 +65,7 @@ registerForGc(List* l) {
 }
 
 // Allocate an empty header for a list. Caller should take care of the reference count.
-public List *
+pub List *
 list_alloc(void) {
    List* l = ALLOC_CLEAR_ONE(List);
    registerForGc(l);
@@ -73,7 +73,7 @@ list_alloc(void) {
 }
 
 // list_alloc() with an ID for alloc_fail().
-public List *
+pub List *
 list_alloc_id(AllocId id UNUSED) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
       return NULL;
@@ -82,7 +82,7 @@ list_alloc_id(AllocId id UNUSED) {
 
 // Allocate space for a list, plus "count" items. This uses one allocation for efficiency.
 // The reference count is not set. Next list_set_item() must be called for each item.
-public List *
+pub List *
 list_alloc_with_items(int count) {
    List* l = (List *)allocZeroed(sizeof(List) + count * sizeof(ListItem));
 
@@ -115,14 +115,14 @@ list_alloc_with_items(int count) {
 
 // Set item "idx" for a list previously allocated with list_alloc_with_items().
 // The contents of "tv" is moved into the list item. Each item must be set exactly once.
-public void
+pub void
 list_set_item(List *l, int idx, Var *tv) {
    ListItem* li = (ListItem *)(l + 1) + idx;
    li->c = *tv;
 }
 
 // Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
-public void
+pub void
 allocReturnList(OUT Var* returnVar) {
    returnVar->lock = 0;
    returnVar_list_set(OUT returnVar, list_alloc());
@@ -130,7 +130,7 @@ allocReturnList(OUT Var* returnVar) {
 
 // Allocate an empty list for a return value, with reference count set. Return OK or FAIL.
 // Uses an allocation id for testing.
-public int
+pub int
 allocReturnList_id(Var* returnVar, AllocId id) {
    if (id == alloc_fail_id && alloc_does_fail(sizeof(List)))
       return FAIL;
@@ -140,7 +140,7 @@ allocReturnList_id(Var* returnVar, AllocId id) {
 
 
 // Set a list as the return value.  Increments the reference count.
-public void
+pub void
 returnVar_list_set(OUT Var* returnVar, List *l) {
    returnVar->tag = VAR_LIST;
    returnVar->list = l;
@@ -149,7 +149,7 @@ returnVar_list_set(OUT Var* returnVar, List *l) {
 }
 
 // Unreference a list: decrement the reference count and free it when it becomes zero.
-public void
+pub void
 list_unref(List* l) {
    if (l && --l->refCount <= 0)
       list_free(l);
@@ -172,7 +172,7 @@ list_free_contents(List* l) {
 
 // Go through the list of lists and free items without the copyID. But don't free a list that has 
 // a watcher (used in a for loop), these are not referenced anywhere.
-public int
+pub int
 list_free_nonref(int copyID) {
    int did_free = false;
 
@@ -201,7 +201,7 @@ list_free_list(List* l) {
    eeglFree(l);
 }
 
-public void
+pub void
 list_free_items(int copyID) {
    List* ll_next;
    for (List* ll = first_list; ll != NULL; ll = ll_next) {
@@ -214,7 +214,7 @@ list_free_items(int copyID) {
    }
 }
 
-public void
+pub void
 list_free(List* l) {
    if (in_free_unref_items)
       return;
@@ -224,7 +224,7 @@ list_free(List* l) {
 }
 
 // Allocate a list item. It is not initialized, don't forget to set lock.
-public ListItem *
+pub ListItem *
 listitem_alloc(void) {
    return ALLOC_ONE(ListItem);
 }
@@ -240,21 +240,21 @@ list_free_item(List *l, ListItem *item) {
 
 // Free a list item, unless it was allocated together with the list itself.
 // Also clears the value.  Does not notify watchers.
-public void
+pub void
 listitem_free(List* l, ListItem* item) {
     clearVar(&item->c);
     list_free_item(l, item);
 }
 
 // Remove a list item from a List and free it.  Also clears the value.
-public void
+pub void
 listitem_remove(List* l, ListItem* item) {
     list_remove(l, item, item);
     listitem_free(l, item);
 }
 
 // Get the number of items in a list.
-public long
+pub long
 list_len(List* l) {
    if (!l)
       return 0L;
@@ -262,7 +262,7 @@ list_len(List* l) {
 }
 
 // Return true when two lists have exactly the same values.
-public int
+pub int
 list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
 
    if (l1 == l2)
@@ -292,7 +292,7 @@ list_equal(List* l1, List* l2, int ic) {  // ignore case for strings
 
 // Locate item with index "n" in list "l" and return it. A negative index is counted from the end;
 // -1 is the last item. Return NULL when "n" is out of range.
-public ListItem *
+pub ListItem *
 list_find(List* l, long n) {
    ListItem* item;
    long   idx;
@@ -360,7 +360,7 @@ list_find(List* l, long n) {
 }
 
 // Get list item "l[idx]" as a number.
-public long
+pub long
 list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to true when something wrong
    if (l && l->first == &range_list_item) {
       long n = idx;
@@ -389,7 +389,7 @@ list_find_nr(List* l, long idx, OUT Boole* errorp) {  // set to true when someth
 }
 
 // Get list item "l[idx - 1]" as a string.  Returns NULL for failure.
-public CS
+pub CS
 list_find_str(List *l, long idx) {
    ListItem* li = list_find(l, idx - 1);
    if (!li) {
@@ -401,7 +401,7 @@ list_find_str(List *l, long idx) {
 
 // Like list_find() but when a negative index is used that is not found use
 // zero and set "idx" to zero.  Used for first index of a range.
-public ListItem *
+pub ListItem *
 list_find_index(List *l, long *idx) {
    ListItem *li = list_find(l, *idx);
 
@@ -416,7 +416,7 @@ list_find_index(List *l, long *idx) {
 }
 
 // Locate "item" list "l" and return its index. Returns -1 when "item" is not in the list.
-public long
+pub long
 list_idx_of_item(List *l, ListItem *item) {
    if (!l)
       return -1;
@@ -432,7 +432,7 @@ list_idx_of_item(List *l, ListItem *item) {
 }
 
 // Append item "item" to the end of list "l".
-public void
+pub void
 list_append(List* l, ListItem* item) {
    CHECK_LIST_MATERIALIZE(l);
    if (l->lv_u.mat.last == NULL) {
@@ -450,7 +450,7 @@ list_append(List* l, ListItem* item) {
 
 // Append Var "tv" to the end of list "l". "tv" is copied. 
 // Return FAIL when out of memory or the tag is wrong.
-public int
+pub int
 list_append_tv(List* l, Var* newVal) {
    ListItem* newItem = listitem_alloc();
       
@@ -471,7 +471,7 @@ list_append_tv_move(List* l, Var* tv) {
 }
 
 // Add a dictionary to a list.  Used by getqflist(). Return FAIL when out of memory.
-public int
+pub int
 listAppendBag(List *list, Bag* bag) {
    ListItem   *li = listitem_alloc();
 
@@ -482,7 +482,7 @@ listAppendBag(List *list, Bag* bag) {
 }
 
 // Append list2 to list1. Return FAIL when out of memory.
-public int
+pub int
 list_append_list(List *list1, List *list2) {
    ListItem   *li = listitem_alloc();
       
@@ -494,7 +494,7 @@ list_append_list(List *list1, List *list2) {
 
 // Make a copy of "str" and append it as an item to list "l".
 // When "len" >= 0 use "str[len]". Returns FAIL when out of memory.
-public int
+pub int
 list_append_string(List *l, CS str, int len) {
    ListItem *li = listitem_alloc();
       
@@ -510,7 +510,7 @@ list_append_string(List *l, CS str, int len) {
 
 
 // Append "n" to list "l". Return FAIL when out of memory.
-public int
+pub int
 list_append_number(List* l, Long n) {
    ListItem* li = listitem_alloc();
    li->c = (Var){.tag = VAR_NUMBER, .lock = 0, .number = n};   
@@ -520,7 +520,7 @@ list_append_number(List* l, Long n) {
 
 // Insert Var "tv" in list "l" before "item". If "item" is NULL, append at the end.
 // Return FAIL when out of memory or the type is wrong.
-public int
+pub int
 list_insert_tv(List *l, Var *tv, ListItem *item) {
    ListItem* ni = listitem_alloc();
    copy_tv(OUT &ni->c, tv);
@@ -528,7 +528,7 @@ list_insert_tv(List *l, Var *tv, ListItem *item) {
    return OK;
 }
 
-public void
+pub void
 list_insert(List *l, ListItem *ni, ListItem *item) {
    CHECK_LIST_MATERIALIZE(l);
    if (!item)
@@ -552,7 +552,7 @@ list_insert(List *l, ListItem *ni, ListItem *item) {
 
 // Get the list item in "l" with index "n1".  "n1" is adjusted if needed.
 // Return NULL if there is no such item.
-public ListItem *
+pub ListItem *
 check_range_index_one(List* l, long* n1, int quiet) {
    long orig_n1 = *n1;
    ListItem* li = list_find_index(l, n1);
@@ -568,7 +568,7 @@ check_range_index_one(List* l, long* n1, int quiet) {
 // Check that "n2" can be used as the second index in a range of list "l".
 // If "n1" or "n2" is negative it is changed to the positive index.
 // "li1" is the item for item "n1". Return OK or FAIL.
-public int
+pub int
 check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
    if (*n2 < 0) {
       ListItem   *ni = list_find(l, *n2);
@@ -598,7 +598,7 @@ check_range_index_two(List* l, long* n1, ListItem* li1, long* n2, int quiet) {
 // true then replace all items after "idx1".
 // "op" is the operator, normally "=" but can be "+=" and the like.
 // "varname" is used for error messages. Return OK or FAIL.
-public int
+pub int
 list_assign_range(
    List* dest,
    List* src,
@@ -752,19 +752,19 @@ flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy) {
 }
 
 // "flatten(list[, {maxdepth}])" function
-public void
+pub void
 f_flatten(Arr(Var) argvars, Var* returnVar) {
    flatten_common(argvars, returnVar, false);
 }
 
 // "flattennew(list[, {maxdepth}])" function
-public void
+pub void
 f_flattennew(Arr(Var) argvars, Var* returnVar) {
    flatten_common(argvars, returnVar, true);
 }
 
 // "items(list)" function Caller must have already checked that argvars[0] is a List.
-public void
+pub void
 list2items(Arr(Var) argvars, Var* returnVar) {
    List* l = argvars[0].list;
 
@@ -789,7 +789,7 @@ list2items(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "items(string)" function. Precond: Caller must have already checked that argvars[0] is a String.
-public void
+pub void
 string2items(Arr(Var) argvars, Var* returnVar) {
    CS p = argvars[0].string;
    allocReturnList(returnVar);
@@ -814,7 +814,7 @@ string2items(Arr(Var) argvars, Var* returnVar) {
 // Extend "l1" with "l2".  "l1" must not be NULL.
 // If "bef" is NULL append at the end, otherwise insert before this item.
 // Return FAIL when out of memory.
-public int
+pub int
 list_extend(List *l1, List *l2, ListItem *bef) {
    ListItem   *item;
    int      todo;
@@ -844,7 +844,7 @@ list_extend(List *l1, List *l2, ListItem *bef) {
 }
 
 // Concatenate lists "l1" and "l2" into a new list, stored in "tv". Return FAIL when out of memory.
-public int
+pub int
 list_concat(List *l1, List *l2, Var *tv) {
    // make a copy of the first list.
    List* l = l1 ? list_copy(l1, false, true, 0) : list_alloc();
@@ -858,7 +858,7 @@ list_concat(List *l1, List *l2, Var *tv) {
    return list_extend(l, l2, NULL);
 }
 
-public List *
+pub List *
 list_slice(List *ol, long n1, long n2) {
    List   *l = list_alloc();
    for (ListItem* item = list_find(ol, n1); n1 <= n2; ++n1) {
@@ -871,7 +871,7 @@ list_slice(List *ol, long n1, long n2) {
    return l;
 }
 
-public int
+pub int
 list_slice_or_index(
    List* list,
    int range,
@@ -926,7 +926,7 @@ list_slice_or_index(
 // Make a copy of list "orig".  Shallow if "deep" is false.
 // The refcount of the new list is set to 1.
 // See item_copy() for "top" and "copyID". Return NULL when out of memory.
-public List *
+pub List *
 list_copy(List *orig, int deep, int top, int copyID) {
    ListItem   *ni;
 
@@ -970,7 +970,7 @@ list_copy(List *orig, int deep, int top, int copyID) {
 //Remove items "item" to "item2" from list "l".
 //Do not free the listitem or the value!
 //This used to be called list_remove, but that conflicts with a Sun header file.
-public void
+pub void
 list_remove(List* l, ListItem* item, ListItem* item2) {
    ListItem* ip;
 
@@ -996,7 +996,7 @@ list_remove(List* l, ListItem* item, ListItem* item2) {
 }
 
 // Return an allocated string with the string representation of a list. May return NULL.
-public CS
+pub CS
 list2string(Var* tv, int copyID, int restore_copyID) {
    if (tv->list == NULL)
       return NULL;
@@ -1089,7 +1089,7 @@ list_join_inner(
 // Join list "l" into a string in "*gap", using separator "sep".
 // When "echo_style" is true use String as echoed, otherwise as inside a List.
 // Return FAIL or OK.
-public int
+pub int
 list_join(
     ArrayList* gap,
     List* l,
@@ -1119,7 +1119,7 @@ list_join(
    return retval;
 }
 
-public void
+pub void
 f_join(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
 
@@ -1145,7 +1145,7 @@ f_join(Arr(Var) argvars, Var* returnVar) {
 
 // Allocate a variable for a List and fill it from "*arg".
 // "*arg" points to the "[". Return OK or FAIL.
-public int
+pub int
 eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
    int evaluate = evalarg == NULL ? false : evalarg->eval_flags & EVAL_EVALUATE;
    List* l = NULL;
@@ -1211,7 +1211,7 @@ failret:
 }
 
 // Write "list" of strings to file "fd".
-public int
+pub int
 write_list(FILE* fd, List* list, int binary) {
    ListItem   *li;
    int c;
@@ -1244,7 +1244,7 @@ write_list(FILE* fd, List* list, int binary) {
 }
 
 // Initialize a static list with 10 items.
-public void
+pub void
 init_static_list(StaticList10 *sl) {
    List* l = &sl->list;
    int i;
@@ -1270,7 +1270,7 @@ init_static_list(StaticList10 *sl) {
    }
 }
 
-public void
+pub void
 f_list2str(Arr(Var) argvars, Var* returnVar) {
    ListItem   *li;
    ArrayList   ga;
@@ -1725,19 +1725,19 @@ theend:
 }
 
 // "sort({list})" function
-public void
+pub void
 f_sort(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, true);
 }
 
 // "uniq({list})" function
-public void
+pub void
 f_uniq(Arr(Var) argvars, Var* returnVar) {
    do_sort_uniq(argvars, returnVar, false);
 }
 
 // Handle one item for map(), filter(), foreach(). Set v:val to "tv". Caller must set v:key.
-public int
+pub int
 filter_map_one(
    Var   *tv,         // original value
    Var   *expr,       // callback
@@ -1959,22 +1959,22 @@ filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap) {
    anyEmsgG |= save_anyEmsgG;
 }
 
-public void
+pub void
 f_filter(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_FILTER);
 }
 
-public void
+pub void
 f_map(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_MAP);
 }
 
-public void
+pub void
 f_mapnew(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_MAPNEW);
 }
 
-public void
+pub void
 f_foreach(Arr(Var) argvars, Var* returnVar) {
    filter_map(argvars, returnVar, FILTERMAP_FOREACH);
 }
@@ -1993,7 +1993,7 @@ list_add(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "add(object, item)" function
-public void
+pub void
 f_add(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = 1; // Default: Failed
 
@@ -2033,7 +2033,7 @@ list_count(List *l, Var *needle, long idx, int ic) {
    return n;
 }
 
-public void
+pub void
 f_count(Arr(Var) argvars, Var* returnVar) {
    long   n = 0;
    int      ic = false;
@@ -2129,14 +2129,14 @@ extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new) {
 }
 
 // "extend(list, list [, idx])" function. "extend(dict, dict [, action])" function
-public void
+pub void
 f_extend(Arr(Var) argvars, Var* returnVar) {
    CS errmsg = (CS)N_("extend() argument");
    extend(argvars, returnVar, errmsg, false);
 }
 
 // "extendnew(list, list [, idx])" function. "extendnew(dict, dict [, action])" function
-public void
+pub void
 f_extendnew(Arr(Var) argvars, Var* returnVar) {
    CS errmsg = (CS)N_("extendnew() argument");
    extend(argvars, returnVar, errmsg, true);
@@ -2176,7 +2176,7 @@ list_insert_func(Arr(Var) argvars, Var* returnVar) {
    }
 }
 
-public void
+pub void
 f_insert(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_BLOB)
       blob_insert_func(argvars, returnVar);
@@ -2186,7 +2186,7 @@ f_insert(Arr(Var) argvars, Var* returnVar) {
       list_insert_func(argvars, returnVar);
 }
 
-public void
+pub void
 f_remove(Arr(Var) argvars, Var* returnVar) {
    CS arg_errmsg = (CS)N_("remove() argument");
 
@@ -2226,7 +2226,7 @@ list_reverse(List *l, Var* returnVar) {
 }
 
 // "reverse({list})" function
-public void
+pub void
 f_reverse(Arr(Var) argvars, Var* returnVar) {
    if (check_for_string_or_list_or_blob_arg(argvars, 0) == FAIL)
       return;
@@ -2324,7 +2324,7 @@ list_reduce(
 //"reduce(list, { accumulator, element -> value } [, initial])" function
 //"reduce(blob, { accumulator, element -> value } [, initial])"
 //"reduce(string, { accumulator, element -> value } [, initial])"
-public void
+pub void
 f_reduce(Arr(Var) argvars, Var* returnVar) {
    CS funcName;
 
@@ -2350,7 +2350,7 @@ f_reduce(Arr(Var) argvars, Var* returnVar) {
       blob_reduce(argvars, &argvars[1], returnVar);
 }
 
-public void
+pub void
 f_slice(Arr(Var) argvars, Var* returnVar) {
    if (check_can_index(&argvars[0], true, false) != OK)
       return;
@@ -2363,7 +2363,7 @@ f_slice(Arr(Var) argvars, Var* returnVar) {
 }
 
 // Same as ga_grow() but uses an allocation id for testing.
-public int
+pub int
 ga_grow_id(ArrayList *gap, int n, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
       return FAIL;
@@ -2403,7 +2403,7 @@ private int hash_may_resize(EeSet *ht, int minitems);
 
 #if 0 // currently not used
 // Create an empty hash table. Return NULL when out of memory.
-public EeSet *
+pub EeSet *
 hash_create(void) {
    EeSet *ht;
 
@@ -2415,7 +2415,7 @@ hash_create(void) {
 #endif
 
 // Initialize an empty hash table.
-public void
+pub void
 hash_init(EeSet* ht) {
    // This zeroes all "ht_" entries and all the "hi_key" in "smallArray".
    CLEAR_POINTER(ht);
@@ -2424,7 +2424,7 @@ hash_init(EeSet* ht) {
 }
 
 // If "ht->flags" has HTFLAGS_FROZEN then give an error message using "command" and return true.
-public int
+pub int
 check_hashtab_frozen(EeSet* ht, CS command) {
    if ((ht->flags & HTFLAGS_FROZEN) == 0)
       return false;
@@ -2435,7 +2435,7 @@ check_hashtab_frozen(EeSet* ht, CS command) {
 
 // Free the array of a hash table.  Does not free the items it contains!
 // If "ht" is not freed then you should call hash_init() next!
-public void
+pub void
 hash_clear(EeSet* ht) {
    if (ht->array != ht->smallArray)
       eeglFree(ht->array);
@@ -2444,7 +2444,7 @@ hash_clear(EeSet* ht) {
 // Free the array of a hash table and all the keys it contains.  The keys must have been allocated.
 // "off" is the offset from the start of the allocate memory to the location of the key (it's 
 // always positive).
-public void
+pub void
 hash_clear_all(EeSet* ht, int off) {
    EeSetItem   *hi;
 
@@ -2462,13 +2462,13 @@ hash_clear_all(EeSet* ht, int off) {
 // If the item was not found, then HASHITEM_EMPTY() is true.  The pointer is then the place where
 // the key would be added. WARNING: The returned pointer becomes invalid when the hashtable is 
 // changed (adding, setting or removing an item)!
-public EeSetItem *
+pub EeSetItem *
 hash_find(EeSet* ht, Text key) {
    return hash_lookup(ht, key, calcHash(key));
 }
 
 // Like hash_find(), but caller computes "hash".
-public EeSetItem *
+pub EeSetItem *
 hash_lookup(EeSet* ht, Text key, Hash hash) {
    Hash   perturb;
 
@@ -2519,7 +2519,7 @@ hash_lookup(EeSet* ht, Text key, Hash hash) {
 
 // Print the efficiency of hashtable lookups. Useful when trying different hash algorithms.
 // Called when exiting.
-public void
+pub void
 hash_debug_results(void) {
 # ifdef HT_DEBUG
    fprintf(stderr, "\r\n\r\n\r\n\r\n");
@@ -2532,7 +2532,7 @@ hash_debug_results(void) {
 
 //Add item with key "key" to hashtable "ht". "command" is used for the error message when the 
 //hashtab if frozen. Return FAIL when out of memory or the key is already present.
-public int
+pub int
 hash_add(EeSet* ht, Text key, CS command) {
    Hash hash = calcHash(key);
 
@@ -2549,7 +2549,7 @@ hash_add(EeSet* ht, Text key, CS command) {
 // Add item "hi" with "key" to hashtable "ht". "key" must not be NULL and "hi" must have been 
 // obtained with hash_lookup() and point to an empty item. "hi" is invalid after this!
 // Return OK or FAIL (out of memory).
-public int
+pub int
 hash_add_item(EeSet* ht, EeSetItem* hi, Text newItem, Hash hash) {
    // If resizing failed before and it fails again we can't add an item.
    if (ht->flags & HTFLAGS_ERROR)
@@ -2574,7 +2574,7 @@ hash_add_item(EeSet* ht, EeSetItem* hi, Text newItem, Hash hash) {
 // set anyway (the key is part of an item with that key).
 // The caller must take care of freeing the old item.
 // "hi" is invalid after this!
-public void
+pub void
 hash_set(EeSetItem *hi, Byte *key) {
    hi->hi_key = key;
 }
@@ -2583,7 +2583,7 @@ hash_set(EeSetItem *hi, Byte *key) {
 //Remove item "hi" from  hashtable "ht". "hi" must have been obtained with hash_lookup().
 //"command" is used for the error message when the hashtab if frozen.
 //The caller must take care of freeing the item itself.
-public int
+pub int
 hash_remove(EeSet* ht, EeSetItem* hi, CS command) {
    if (check_hashtab_frozen(ht, command))
       return FAIL;
@@ -2597,14 +2597,14 @@ hash_remove(EeSet* ht, EeSetItem* hi, CS command) {
 
 // Lock a hashtable: prevent that array changes. Don't use this when items are to be added!
 // Must call hash_unlock() later.
-public void
+pub void
 hash_lock(EeSet *ht) {
     ++ht->ht_locked;
 }
 
 // Lock a hashtable at the specified number of entries.
 // Caller must make sure no more than "size" entries will be added. Must call hash_unlock() later.
-public void
+pub void
 hash_lock_size(EeSet *ht, int size) {
     (void)hash_may_resize(ht, size);
     ++ht->ht_locked;
@@ -2612,7 +2612,7 @@ hash_lock_size(EeSet *ht, int size) {
 
 // Unlock a hashtable: allow array changes again. Table will be resized (shrink) when necessary.
 // This must balance a call to hash_lock().
-public void
+pub void
 hash_unlock(EeSet* ht) {
    --ht->ht_locked;
    (void)hash_may_resize(ht, 0);
@@ -2736,7 +2736,7 @@ hash_may_resize(EeSet* ht, int minitems) {     // minimal number of items
 //Get the hash number for a key. If you think you know a better hash function: Compile with 
 //HT_DEBUG set and run a script that uses hashtables a lot. Eegl will then print statistics when 
 //exiting. Try that with the current hash algorithm and yours. The lower the percentage the better.
-public Hash
+pub Hash
 calcHash(Text const key) {
    Hash hash;
    if ((hash = key.c[0]) == ZERO)
@@ -2754,12 +2754,12 @@ calcHash(Text const key) {
 //{{{ExpandMatch and Fuzzy
 
 //"al" must be an arraylist of CS!
-public ExpandMatch
+pub ExpandMatch
 expandMatchOfArrayList(ArrayList al) {
    return (ExpandMatch){.c = al.c, .len = al.len};
 }
 
-public void
+pub void
 addExpandMatch(CS m, OUT ExpandMatch* t) {
    if (t->len == t->cap) {
       Arr(CS) newContent = allocateArray(t->cap*2, CS, t->a);
@@ -2778,12 +2778,12 @@ addExpandMatch(CS m, OUT ExpandMatch* t) {
 
 //Return true if "type" is NULL, any or unknown.
 //This also works for const (comparing with &t_any and &t_unknown doesn't).
-public int
+pub int
 type_any_or_unknown(TypeSpec *type) {
    return type == NULL || type->tag == VAR_ANY   || type->tag == VAR_UNKNOWN;
 }
 
-public Arr(char)
+pub Arr(char)
 vartype_name(VarTag type) {
    switch (type) {
    case VAR_UNKNOWN: break;
@@ -2806,7 +2806,7 @@ vartype_name(VarTag type) {
 }
 
 // Allocate memory for a variable type-value, and make it empty (0 or NULL value)
-public Var *
+pub Var *
 allocVar(void) {
    return ALLOC_CLEAR_ONE(Var);
 }
@@ -2814,7 +2814,7 @@ allocVar(void) {
 //Allocate memory for a variable type-value, and assign a string to it.
 //The string "s" must have been allocated, it is consumed.
 //Return NULL for out of memory, the variable otherwise.
-public Var *
+pub Var *
 allocStringVar(CS s) {
    Var* returnVar = allocVar();
    returnVar->tag = VAR_STRING;
@@ -2823,7 +2823,7 @@ allocStringVar(CS s) {
 }
 
 //Free the memory for a variable type-value.
-public void
+pub void
 freeVar(Var* varp) {
    if (!varp)
       return;
@@ -2866,7 +2866,7 @@ freeVar(Var* varp) {
 }
 
 //Free the memory for a variable value and set the value to NULL or 0.
-public void
+pub void
 clearVar(Var* varp) {
    if (varp == NULL)
    return;
@@ -2919,7 +2919,7 @@ clearVar(Var* varp) {
 }
 
 //Set the value of a variable to NULL without freeing items.
-public void
+pub void
 initVarToNull(OUT Var* varp) {
    if (varp)
       CLEAR_POINTER(varp);
@@ -2982,18 +2982,18 @@ convertToBoolOrNumber(
 //Get the numeric value of a variable. If it is a String variable, use readLongNumber(). For 
 //incompatible types, return 0. varGetNumberChk() is similar to tv_get_number(), but informs the
 //caller of incompatible types: set *denote to true if "denote" is not NULL or return -1 otherwise.
-public Long
+pub Long
 tv_get_number(Var* varp) {
    return varGetNumberChk(varp, null);   // return 0L on error
 }
 
-public Long
+pub Long
 varGetNumberChk(Var* varp, OUT Boole* denote) {
    return convertToBoolOrNumber(varp, OUT denote);
 }
 
 //Get the boolean value of "varp". This is like varGetNumberChk(),
-public Boole
+pub Boole
 tv_get_bool(Var* varp) {
    return convertToBoolOrNumber(varp, NULL);
 }
@@ -3046,13 +3046,13 @@ convertToDouble(Var* varp, OUT Boole* error) {
    return 0;
 }
 
-public double
+pub double
 tv_get_float(Var* varp) {
     return convertToDouble(varp, NULL);
 }
 
 // Give an error and return FAIL unless "args[idx]" is unknown
-public int
+pub int
 check_for_unknown_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_UNKNOWN) {
       showErrFmtMsg(_(e_too_many_arguments), idx + 1);
@@ -3062,7 +3062,7 @@ check_for_unknown_arg(Arr(Var) args, int idx) {
 }
 
 // Give an error and return FAIL unless "args[idx]" is a string.
-public int
+pub int
 check_for_string_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_STRING) {
       showErrFmtMsg(_(e_string_required_for_argument_nr), idx + 1);
@@ -3072,7 +3072,7 @@ check_for_string_arg(Var* args, int idx) {
 }
 
 // Give an error and return FAIL unless "args[idx]" is a non-empty string.
-public int
+pub int
 check_for_nonempty_string_arg(Var* args, int idx) {
    if (check_for_string_arg(args, idx) == FAIL)
       return FAIL;
@@ -3084,13 +3084,13 @@ check_for_nonempty_string_arg(Var* args, int idx) {
 }
 
 //Check for an optional string argument at 'idx'
-public int
+pub int
 check_for_opt_string_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN || check_for_string_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a number.
-public int
+pub int
 check_for_number_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_NUMBER) {
       showErrFmtMsg(_(e_number_required_for_argument_nr), idx + 1);
@@ -3100,13 +3100,13 @@ check_for_number_arg(Arr(Var) args, int idx) {
 }
 
 //Check for an optional number argument at 'idx'
-public int
+pub int
 check_for_opt_number_arg(Var* args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN || check_for_number_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a float or a number.
-public int
+pub int
 check_for_float_or_nr_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_FLOAT && args[idx].tag != VAR_NUMBER) {
       showErrFmtMsg(_(e_float_or_number_required_for_argument_nr), idx + 1);
@@ -3116,7 +3116,7 @@ check_for_float_or_nr_arg(Var* args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a bool.
-public int
+pub int
 check_for_bool_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_BOOL
        && !(args[idx].tag == VAR_NUMBER
@@ -3139,7 +3139,7 @@ checkVarsForBoolOrNumber(Arr(Var) args, int idx) {
 }
 
 //Check for an optional bool argument at 'idx'. Return FAIL if the type is wrong.
-public int
+pub int
 check_for_opt_bool_arg(Var* args, int idx) {
    if (args[idx].tag == VAR_UNKNOWN)
       return OK;
@@ -3147,7 +3147,7 @@ check_for_opt_bool_arg(Var* args, int idx) {
 }
 
 //Check for an optional bool or number argument at 'idx'. Return FAIL if the type is wrong.
-public int
+pub int
 check_for_opt_bool_or_number_arg(Var* args, int idx) {
    if (args[idx].tag == VAR_UNKNOWN)
       return OK;
@@ -3155,7 +3155,7 @@ check_for_opt_bool_or_number_arg(Var* args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a blob.
-public int
+pub int
 check_for_blob_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_blob_required_for_argument_nr), idx + 1);
@@ -3165,7 +3165,7 @@ check_for_blob_arg(Var* args, int idx) {
 }
 
 // Give an error and return FAIL unless "args[idx]" is a list.
-public int
+pub int
 confirmVarIsList(Var* arg, int idx) {
    if (arg[idx].tag != VAR_LIST) {
       showErrFmtMsg(_(e_list_required_for_argument_nr), idx + 1);
@@ -3175,7 +3175,7 @@ confirmVarIsList(Var* arg, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a non-NULL list.
-public int
+pub int
 confirmVarIsNonnullList(Var* args, int idx) {
    if (confirmVarIsList(args, idx) == FAIL)
       return FAIL;
@@ -3188,14 +3188,14 @@ confirmVarIsNonnullList(Var* args, int idx) {
 }
 
 //Check for an optional list argument at 'idx'
-public int
+pub int
 confirmVarIsOptionalList(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || confirmVarIsList(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a dict.
-public int
+pub int
 check_for_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_BAG) {
       showErrFmtMsg(_(e_dict_required_for_argument_nr), idx + 1);
@@ -3205,7 +3205,7 @@ check_for_dict_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a non-NULL dict.
-public int
+pub int
 check_for_nonnull_dict_arg(Arr(Var) args, int idx) {
    if (check_for_dict_arg(args, idx) == FAIL)
       return FAIL;
@@ -3218,21 +3218,21 @@ check_for_nonnull_dict_arg(Arr(Var) args, int idx) {
 }
 
 // Check for an optional dict argument at 'idx'
-public int
+pub int
 check_for_oself_arg(Arr(Var) args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_dict_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Check for an optional non-NULL dict argument at 'idx'
-public int
+pub int
 check_for_opt_nonnull_dict_arg(Var* args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_nonnull_dict_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a channel or a job.
-public int
+pub int
 check_for_chan_or_job_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_CHANNEL && args[idx].tag != VAR_JOB) {
       showErrFmtMsg(_(e_chan_or_job_required_for_argument_nr), idx + 1);
@@ -3242,14 +3242,14 @@ check_for_chan_or_job_arg(Var* args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is an optional channel or a job.
-public int
+pub int
 check_for_opt_chan_or_job_arg(Var* args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_chan_or_job_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a job.
-public int
+pub int
 check_for_job_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_JOB) {
       showErrFmtMsg(_(e_job_required_for_argument_nr), idx + 1);
@@ -3259,14 +3259,14 @@ check_for_job_arg(Var* args, int idx) {
 }
 
 // Check for an optional job argument at 'idx'.
-public int
+pub int
 check_for_opt_job_arg(Arr(Var) args, int idx) {
     return (args[idx].tag == VAR_UNKNOWN
        || check_for_job_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 // Give an error and return FAIL unless "args[idx]" is a string or a number.
-public int
+pub int
 check_for_string_or_number_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_NUMBER) {
       showErrFmtMsg(_(e_string_or_number_required_for_argument_nr), idx + 1);
@@ -3276,7 +3276,7 @@ check_for_string_or_number_arg(Arr(Var) args, int idx) {
 }
 
 //Check for an optional string or number argument at 'idx'.
-public int
+pub int
 check_for_opt_string_or_number_arg(Var* args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_string_or_number_arg(args, idx) != FAIL) ? OK : FAIL;
@@ -3284,13 +3284,13 @@ check_for_opt_string_or_number_arg(Var* args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a book number.
 //Book number can be a number or a string.
-public int
+pub int
 check_for_buffer_arg(Var* args, int idx) {
    return check_for_string_or_number_arg(args, idx);
 }
 
 //Check for an optional buffer argument at 'idx'
-public int
+pub int
 check_for_opt_buffer_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_buffer_arg(args, idx) != FAIL) ? OK : FAIL;
@@ -3298,20 +3298,20 @@ check_for_opt_buffer_arg(Arr(Var) args, int idx) {
 
 //Give an error and return FAIL unless "args[idx]" is a line number.
 //Line number can be a number or a string.
-public int
+pub int
 check_for_lnum_arg(Arr(Var) args, int idx) {
    return check_for_string_or_number_arg(args, idx);
 }
 
 //Check for an optional line number argument at 'idx'
-public int
+pub int
 check_for_opt_lnum_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_lnum_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string or a blob.
-public int
+pub int
 check_for_string_or_blob_arg(Var* args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_string_or_blob_required_for_argument_nr), idx + 1);
@@ -3321,7 +3321,7 @@ check_for_string_or_blob_arg(Var* args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string or a list.
-public int
+pub int
 check_for_string_or_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_LIST) {
       showErrFmtMsg(_(e_string_or_list_required_for_argument_nr), idx + 1);
@@ -3341,14 +3341,14 @@ check_for_string_or_list_or_blob_arg(Arr(Var) args, int idx) {
 }
 
 //Check for an optional string or list argument at 'idx'
-public int
+pub int
 check_for_opt_string_or_list_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_string_or_list_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string or a dict.
-public int
+pub int
 check_for_string_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING && args[idx].tag != VAR_BAG) {
    showErrFmtMsg(_(e_string_or_dict_required_for_argument_nr), idx + 1);
@@ -3358,7 +3358,7 @@ check_for_string_or_dict_arg(Arr(Var) args, int idx) {
 }
 
 // Give an error and return FAIL unless "args[idx]" is a string or a number or a list.
-public int
+pub int
 check_for_string_or_number_or_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_NUMBER
@@ -3370,14 +3370,14 @@ check_for_string_or_number_or_list_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is an optional string or number or a list
-public int
+pub int
 check_for_opt_string_or_number_or_list_arg(Arr(Var) args, int idx) {
    return (args[idx].tag == VAR_UNKNOWN
        || check_for_string_or_number_or_list_arg(args, idx) != FAIL) ? OK : FAIL;
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string, a number, a list or a blob
-public int
+pub int
 check_for_repeat_func_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_NUMBER
@@ -3391,7 +3391,7 @@ check_for_repeat_func_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a string, a list or a dict.
-public int
+pub int
 check_for_string_list_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_STRING
        && args[idx].tag != VAR_LIST
@@ -3404,7 +3404,7 @@ check_for_string_list_or_dict_arg(Arr(Var) args, int idx) {
 }
 
 // Give an error and return FAIL unless "args[idx]" is a string or a function reference.
-public int
+pub int
 check_for_string_or_func_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_PARTIAL
        && args[idx].tag != VAR_FUNC
@@ -3417,7 +3417,7 @@ check_for_string_or_func_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list or a blob.
-public int
+pub int
 check_for_list_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_list_or_blob_required_for_argument_nr), idx + 1);
@@ -3427,7 +3427,7 @@ check_for_list_or_blob_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list.
-public int
+pub int
 check_for_list_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST) {
       showErrFmtMsg(_(e_list_or_tuple_required_for_argument_nr), idx + 1);
@@ -3437,7 +3437,7 @@ check_for_list_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list or a blob.
-public int
+pub int
 check_for_list_or_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_list_or_tuple_or_blob_required_for_argument_nr), idx + 1);
@@ -3447,7 +3447,7 @@ check_for_list_or_or_blob_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list or a dict
-public int
+pub int
 check_for_list_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BAG) {
       showErrFmtMsg(_(e_list_or_tuple_or_dict_required_for_argument_nr), idx + 1);
@@ -3457,7 +3457,7 @@ check_for_list_or_dict_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list or dict or a blob.
-public int
+pub int
 check_for_list_or_dict_or_blob_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST && args[idx].tag != VAR_BAG && args[idx].tag != VAR_BLOB) {
       showErrFmtMsg(_(e_list_dict_or_blob_required_for_argument_nr), idx + 1);
@@ -3467,7 +3467,7 @@ check_for_list_or_dict_or_blob_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is a list, a dict, a blob or a string
-public int
+pub int
 check_for_list_dict_blob_or_string_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_LIST
        && args[idx].tag != VAR_BAG
@@ -3481,7 +3481,7 @@ check_for_list_dict_blob_or_string_arg(Arr(Var) args, int idx) {
 }
 
 //Give an error and return FAIL unless "args[idx]" is an optional buffer number or a dict.
-public int
+pub int
 check_for_opt_buffer_or_dict_arg(Arr(Var) args, int idx) {
    if (args[idx].tag != VAR_UNKNOWN
        && args[idx].tag != VAR_STRING
@@ -3502,14 +3502,14 @@ check_for_opt_buffer_or_dict_arg(Arr(Var) args, int idx) {
 //If the String variable has never been set, return an empty string.
 //Never returns NULL;
 //convertVarToStringSingleUse() and convertVarToString() are similar, but return NULL on error.
-public CS
+pub CS
 tv_get_string(Var* varp) {
    static Byte mybuf[NUMBUFLEN];
    return tv_get_string_buf(varp, mybuf);
 }
 
 //Like tv_get_string() but don't allow number to string conversion for Vim9.
-public CS
+pub CS
 tv_get_string_strict(Var* varp) {
    static Byte mybuf[NUMBUFLEN];
    CS res =  convertVarToString_strict(varp, mybuf, false);
@@ -3517,25 +3517,25 @@ tv_get_string_strict(Var* varp) {
    return res != NULL ? res : (CS)"";
 }
 
-public CS
+pub CS
 tv_get_string_buf(Var* varp, CS buf) {
     CS res = convertVarToString(varp, buf);
     return res ? res : S"";
 }
 
 //Careful: This uses a single, static buffer. YOU CAN ONLY USE IT ONCE!
-public CS
+pub CS
 convertVarToStringSingleUse(Var* varp) {
    static Byte mybuf[NUMBUFLEN];
    return convertVarToString(varp, mybuf);
 }
 
-public CS
+pub CS
 convertVarToString(Var* varp, CS buf) {
    return convertVarToString_strict(varp, buf, false);
 }
 
-public CS
+pub CS
 convertVarToString_strict(Var* varp, CS buf, int strict) {
    switch (varp->tag) {
    case VAR_NUMBER:
@@ -3591,7 +3591,7 @@ convertVarToString_strict(Var* varp, CS buf, int strict) {
 }
 
 // Turn a var into a string. Similar to tv_get_string_buf() but uses string() on Bag, List, etc.
-public CS
+pub CS
 tv_stringify(Var* varp, CS buf) {
    if (varp->tag == VAR_LIST
        || varp->tag == VAR_BAG
@@ -3614,7 +3614,7 @@ tv_stringify(Var* varp, CS buf) {
 
 //Return true if typeval "tv" and its value are set to be locked (immutable).
 //Also give an error message, using "name" or _("name") when use_gettext is true.
-public int
+pub int
 tv_check_lock(Var* tv, Text name, Boole use_gettext) {
    int   lock = 0;
 
@@ -3641,7 +3641,7 @@ tv_check_lock(Var* tv, Text name, Boole use_gettext) {
 //Copy the values from Var "from" to Var "to". When needed allocates string or increases reference 
 //count. Does not make a copy of a list, blob or dict but copies the reference!
 //It is OK for "from" and "to" to point to the same item. This is used to make a copy later.
-public void
+pub void
 copy_tv(OUT Var* to, Var* from) {
    to->tag = from->tag;
    to->lock = 0;
@@ -3717,7 +3717,7 @@ copy_tv(OUT Var* to, Var* from) {
 }
 
 //Compare "tv1" and "tv2". Put the result in "tv1".  Caller should clear "tv2".
-public int
+pub int
 daCompareVars(
    Var* tv1,   // first operand
    Var* tv2,   // second operand
@@ -3855,7 +3855,7 @@ daCompareVars(
 //Compare "tv1" to "tv2" as lists according to "type" and "ic".
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
-public int
+pub int
 daCompareVars_list(
    Var    *tv1,
    Var    *tv2,
@@ -3886,7 +3886,7 @@ daCompareVars_list(
 
 
 //Compare v:null with another type.  Return true if the value is NULL.
-public int
+pub int
 daCompareVars_null(Var *tv1, Var *tv2) {
    if ((tv1->tag == VAR_SPECIAL && tv1->number == VVAL_NULL)
        || (tv2->tag == VAR_SPECIAL && tv2->number == VVAL_NULL)
@@ -3919,7 +3919,7 @@ daCompareVars_null(Var *tv1, Var *tv2) {
 //Compare "tv1" to "tv2" as blobs according to "type".
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
-public int
+pub int
 daCompareVars_blob(Var* tv1, Var* tv2, ExprType type, int* res) {
    int val = 0;
 
@@ -3946,7 +3946,7 @@ daCompareVars_blob(Var* tv1, Var* tv2, ExprType type, int* res) {
 //Compare "tv1" to "tv2" as dictionaries according to "type" and "ic".
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
-public int
+pub int
 daCompareVars_dict(
    Var* tv1,
    Var* tv2,
@@ -3977,7 +3977,7 @@ daCompareVars_dict(
 //Compare "tv1" to "tv2" as funcrefs according to "type" and "ic".
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
-public int
+pub int
 daCompareVars_func(
    Var* tv1,
    Var* tv2,
@@ -4014,7 +4014,7 @@ daCompareVars_func(
 //Compare "tv1" to "tv2" as strings according to "type" and "ic".
 //Put the result, false or true, in "res".
 //Return FAIL and give an error message when the comparison can't be done.
-public int
+pub int
 daCompareVars_string(
    Var* tv1,
    Var* tv2,
@@ -4059,7 +4059,7 @@ daCompareVars_string(
 }
 //Convert any type to a string, never give an error.
 //When "quotes" is true add quotes to a string. Return an allocated string.
-public CS
+pub CS
 daStringOfVar(Var *arg, int quotes) {
    CS tofree;
    Byte numbuf[NUMBUFLEN];
@@ -4080,7 +4080,7 @@ daStringOfVar(Var *arg, int quotes) {
 
 //Return true if internal var is locked: Either that value is locked itself
 //or it refers to a List or Bag that is locked.
-public int
+pub int
 tv_islocked(Var *tv) {
     return (tv->lock & VAR_LOCKED)
       || (tv->tag == VAR_LIST && tv->list && (tv->list->lock & VAR_LOCKED))
@@ -4128,7 +4128,7 @@ func_equal(Var *tv1, Var *tv2, int ic) {      // ignore case
 //Return true if "tv1" and "tv2" have the same value.
 //Compares the items just like "==" would compare them, but strings and
 //numbers are different.  Floats and numbers are also different.
-public int
+pub int
 tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
    Byte buf1[NUMBUFLEN], buf2[NUMBUFLEN];
    CS s1;
@@ -4216,7 +4216,7 @@ tv_equal(Var* tv1, Var* tv2, int ic) {      // ignore case
 //"arg" points to the '&' or '+' before the option name.
 //"arg" is advanced to character after the option name.
 //Return OK or FAIL.
-public int
+pub int
 eval_option(
    Byte** arg,
    Var* returnVar,   // when NULL, only check if option exists
@@ -4263,7 +4263,7 @@ eval_option(
 }
 
 //Allocate a variable for a number constant. Also deals with "0z" for blob. Return OK or FAIL.
-public int
+pub int
 eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
    int get_float = false;
 
@@ -4357,7 +4357,7 @@ eval_number(CS* arg, Var* returnVar, int evaluate, int want_string) {
 //If the memory is allocated "tofree" is set to it, otherwise NULL.
 //"numbuf" is used for a number.
 //Puts quotes around strings, so that they can be parsed back by eval(). May return NULL.
-public CS
+pub CS
 tv2string(
    Var* tv,
    Byte** tofree,
@@ -4371,7 +4371,7 @@ tv2string(
 //"arg" is pointing to the '$'.  It is advanced to after the name.
 //If the environment variable was not set, silently assume it is empty.
 //Return FAIL if the name is invalid.
-public int
+pub int
 eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
    CS string = NULL;
    int cc;
@@ -4412,7 +4412,7 @@ eval_env_var(OUT CS* arg, Var* returnVar, int evaluate) {
 
 //Get the lnum from the first argument.
 //Also accepts ".", "$", etc., but that only works for the current buffer. Return -1 on error.
-public LineNr
+pub LineNr
 tv_get_lnum(Arr(Var) argvars) {
    int      anyEmsgG_before = anyEmsgG;
 
@@ -4428,7 +4428,7 @@ tv_get_lnum(Arr(Var) argvars) {
 }
 
 //Get the lnum from the first argument. Also accept "$", then "book" is used. Return 0 on error.
-public LineNr
+pub LineNr
 daGetLnumFromBookOrVar(Var* argvars, Book* book) {
    if (argvars[0].tag == VAR_STRING
           && argvars[0].string != NULL
@@ -4441,7 +4441,7 @@ daGetLnumFromBookOrVar(Var* argvars, Book* book) {
 }
 
 //Get book by number or pattern.
-public Book *
+pub Book *
 daGetBook(Var* tv, Boole curtab_only) {
    CS name = tv->string;
 
@@ -4464,7 +4464,7 @@ daGetBook(Var* tv, Boole curtab_only) {
 }
 
 //Like daGetBook() but give an error message is the type is wrong.
-public Book *
+pub Book *
 daGetBookFromArg(Var* tv) {
    ++emsg_off;
    Book* book = daGetBook(tv, false);
@@ -4481,7 +4481,7 @@ daGetBookFromArg(Var* tv) {
 //Check if "type1" and "type2" are exactly the same.
 //"flags" can have ETYPE_ARG_UNKNOWN, which means that an unknown argument
 //type in "type1" is accepted.
-public int
+pub int
 equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
    int i;
 
@@ -4521,7 +4521,7 @@ equal_type(TypeSpec *type1, TypeSpec *type2, int flags) {
     return true;
 }
 
-public ExprType
+pub ExprType
 get_compare_type(CS p, int* len, int* type_is) {
    ExprType   type = EXPR_UNKNOWN;
    int      i;
@@ -4572,7 +4572,7 @@ get_compare_type(CS p, int* len, int* type_is) {
 //Return true when "tv" is not falsy: non-zero, non-empty string, non-empty
 //list, etc.  Mostly like what JavaScript does, except that empty list and
 //empty dictionary are false.
-public int
+pub int
 tv2bool(Var* tv) {
    switch (tv->tag) {
    case VAR_NUMBER:
@@ -4614,7 +4614,7 @@ tv2bool(Var* tv) {
 private Bag* first_dict = NULL;
 
 // Allocate an empty header for a dictionary. Caller should take care of the reference count.
-public Bag *
+pub Bag *
 allocBag(void) {
    Bag* d = ALLOC_CLEAR_ONE(Bag);
 
@@ -4634,14 +4634,14 @@ allocBag(void) {
 }
 
 //allocBag() with an ID for alloc_fail().
-public Bag *
+pub Bag *
 allocBag_id(AllocId id UNUSED) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
       return NULL;
    return allocBag();
 }
 
-public Bag *
+pub Bag *
 allocBag_lock(int lock) {
    Bag *d = allocBag();
    d->lock = lock;
@@ -4649,14 +4649,14 @@ allocBag_lock(int lock) {
 }
 
 // Allocate an empty dict for a return value. Return OK or FAIL.
-public void
+pub void
 allocReturnDict(Var* returnVar) {
    Bag* b = allocBag_lock(0);
    returnVar_dict_set(returnVar, b);
 }
 
 // Set a dictionary as the return value
-public void
+pub void
 returnVar_dict_set(Var* returnVar, Bag* b) {
    returnVar->tag = VAR_BAG;
    returnVar->bag = b;
@@ -4667,7 +4667,7 @@ returnVar_dict_set(Var* returnVar, Bag* b) {
 //Return the character "str[index]" where "index" is the character index,
 //including composing characters.
 //If "index" is out of range NULL is returned.
-public CS
+pub CS
 char_from_string(CS str, Long index) {
    Unt       nbyte = 0;
    Long       nchar = index;
@@ -4705,23 +4705,23 @@ char_from_string(CS str, Long index) {
    return copySubstr(str + nbyte, utfCharLen(str + nbyte));
 }
 
-public Text
+pub Text
 textOfDi(DictItem* di) {
    return (Text){.c = di->key, .len = di->len};
 }
 
-public Text
+pub Text
 textOfDi16(DictItem16* di) {
    return (Text){.c = di->key, .len = di->len};
 }
 
-public Text
+pub Text
 textOfItem(EeSetItem* si) {
    return (Text){.c = si->hi_key, .len = si->len};
 }
 
 // Add item "item" to Bag "b". Return FAIL when wrong bag or when key already exists.
-public int
+pub int
 bagAdd(Bag* b, DictItem* item) {
    if (dictWrongFuncName(b, &item->c, textOfDi(item)))
       return FAIL;
@@ -4742,19 +4742,19 @@ bagAddNumber_special(Bag* b, CS key, Long nr, VarTag vartype) {
 }
 
 // Add a number entry to a Bag. Return FAIL when out of memory or when key already exists.
-public int
+pub int
 bagAddNumber(Bag* d, CS key, Long nr) {
    return bagAddNumber_special(d, key, nr, VAR_NUMBER);
 }
 
 // Add a special entry to a Bag. FAIL when out of memory or when key already exists.
-public int
+pub int
 bagAdd_bool(Bag* d, CS key, Long nr) {
    return bagAddNumber_special(d, key, nr, VAR_BOOL);
 }
 
 // Add a string entry to Bag. Return FAIL when out of memory or when key already exists.
-public int
+pub int
 bagAddString(Bag* d, CS key, CS str) {
    return bagAddString_len(d, key, str, -1);
 }
@@ -4762,7 +4762,7 @@ bagAddString(Bag* d, CS key, CS str) {
 //Add a string entry to Bag. "str" will be copied to allocated memory.
 //When "len" is -1 use the whole string, otherwise only this many bytes.
 //Return FAIL when out of memory and when key already exists.
-public int
+pub int
 bagAddString_len(Bag *d, CS key, CS str, int len) {
    CS val = NULL;
    DictItem* item = dictitem_alloc(mbText(key));
@@ -4782,7 +4782,7 @@ bagAddString_len(Bag *d, CS key, CS str, int len) {
 }
 
 // Add a list entry to dictionary "d". Return FAIL when out of memory and when key already exists.
-public int
+pub int
 bagAddList(Bag* d, CS key, List* list) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_LIST;
@@ -4796,7 +4796,7 @@ bagAddList(Bag* d, CS key, List* list) {
 }
 
 // Add a Var entry to dictionary "d". Return FAIL when out of memory and when key already exists.
-public int
+pub int
 bagAddVar(Bag* b, CS key, Var* tv) {
    DictItem* item = dictitem_alloc(mbText(key));
    copy_tv(OUT &item->c, tv);
@@ -4808,7 +4808,7 @@ bagAddVar(Bag* b, CS key, Var* tv) {
 }
 
 // Add a callback to dictionary "d". Return FAIL when out of memory and when key already exists.
-public int
+pub int
 bagAddCallback(Bag* d, CS key, Callback* cb) {
    DictItem* item = dictitem_alloc(mbText(key));
    putCallback(OUT &item->c, cb);
@@ -4820,7 +4820,7 @@ bagAddCallback(Bag* d, CS key, Callback* cb) {
 }
 
 // Add a function entry to dictionary "d". FAIL when out of memory or when key already exists.
-public int
+pub int
 bagAddFn(Bag* d, CS key, UserFunc* fp) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_FUNC;
@@ -4836,7 +4836,7 @@ bagAddFn(Bag* d, CS key, UserFunc* fp) {
 // Initialize "iter" for iterating over dictionary items with bagIterateNext().
 // If "var" is not a Bag or an empty Bag then there will be nothing to iterate over, no error 
 // is given. NOTE: The dictionary must not change until iterating is finished!
-public void
+pub void
 bagIterateStart(Var* var, DictIterator* iter) {
    if (var->tag != VAR_BAG || var->bag == NULL)
       iter->dit_todo = 0;
@@ -4851,7 +4851,7 @@ bagIterateStart(Var* var, DictIterator* iter) {
 //Iterate over the items referred to by "iter". It should be initialized with bagIterateStart().
 //Return a pointer to the key. "*tv_result" is set to point to the value for that key.
 //If there are no more items, NULL is returned.
-public CS
+pub CS
 bagIterateNext(DictIterator* iter, Var** tv_result) {
    if (iter->dit_todo == 0)
       return NULL;
@@ -4870,7 +4870,7 @@ bagIterateNext(DictIterator* iter, Var** tv_result) {
 
 // Add a dict entry to dictionary "d".
 // Return FAIL when out of memory and when key already exists.
-public int
+pub int
 bagAddBag(Bag* d, CS key, Bag* dict) {
    DictItem* item = dictitem_alloc(mbText(key));
    item->c.tag = VAR_BAG;
@@ -4884,13 +4884,13 @@ bagAddBag(Bag* d, CS key, Bag* dict) {
 }
 
 // Get the number of items in a Dictionary.
-public Ulong
+pub Ulong
 bagSize(Bag* b) {
    return b ? (Long)b->hashTable.count : 0L;
 }
 
 // Find item "key[len]" in Dictionary "d". If "len" is negative use strlen(key). NULL when not found
-public DictItem*
+pub DictItem*
 bagFind(Bag* b, Text const key) {
 #define AKEYLEN 200
    Byte   buf[AKEYLEN];
@@ -4915,14 +4915,14 @@ bagFind(Bag* b, Text const key) {
 }
 
 // Return true if "key" is present in Dictionary "d".
-public int
+pub int
 bagHasKey(Bag* b, Text key) {
    return bagFind(b, key) != NULL;
 }
 
 // Get a Var item from a dictionary and copy it into "returnVar".
 // Return FAIL if the entry doesn't exist or out of memory.
-public int
+pub int
 bagGetVar(Bag *d, Text key, Var* returnVar) {
    DictItem* di = bagFind(d, key);
    if (!di)
@@ -4934,7 +4934,7 @@ bagGetVar(Bag *d, Text key, Var* returnVar) {
 //Get a string item from a dictionary. When "save" is true allocate memory for it. When false 
 //a shared buffer is used, can only be used once! Return NULL if the entry doesn't exist or out 
 //of memory.
-public CS
+pub CS
 bagGetString(Bag* d, Text key, Boole save) {
    DictItem* di = bagFind(d, key);
    if (!di)
@@ -4946,13 +4946,13 @@ bagGetString(Bag* d, Text key, Boole save) {
 }
 
 //Get a number item from a dictionary. Return 0 if the entry doesn't exist.
-public Long
+pub Long
 bagGetNumber(Bag *d, Text key) {
     return bagGetNumber_def(d, key, 0);
 }
 
 //Get a number item from a dictionary. Return "def" if the entry doesn't exist.
-public Long
+pub Long
 bagGetNumber_def(Bag* b, Text const key, int def) {
    DictItem* di = bagFind(b, key);
    if (!di)
@@ -4962,7 +4962,7 @@ bagGetNumber_def(Bag* b, Text const key, int def) {
 
 //Get a number item from a dictionary. Return 0 if the entry doesn't exist.
 //Give an error if the entry is not a number.
-public Long
+pub Long
 bagGetNumber_check(Bag* b, Text const key) {
    DictItem* di = bagFind(b, key);
    if (!di)
@@ -4975,7 +4975,7 @@ bagGetNumber_check(Bag* b, Text const key) {
 }
 
 //Get a bool item (number or true/false) from a dictionary. Return "def" if the entry doesn't exist.
-public Boole
+pub Boole
 bagGetBool(Bag *d, Text key, Boole def) {
    DictItem* di = bagFind(d, key);
    if (!di)
@@ -4984,7 +4984,7 @@ bagGetBool(Bag *d, Text key, Boole def) {
 }
 
 //Return an allocated string with the string representation of a Dictionary. May return NULL.
-public CS
+pub CS
 bagToString(Var* tv, int copyID, int restore_copyID) {
    ArrayList   ga;
    Boole first = true;
@@ -5062,7 +5062,7 @@ get_literal_key_tv(Arr(CS) arg, Var *tv) {
 //Allocate a variable for a Dictionary and fill it from "*arg". "*arg" points to the opening brace.
 //"literal" is true for #{key: val}
 //Return OK or FAIL, or NOTDONE for {expr}.
-public int
+pub int
 bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
    int evaluate = evalarg == NULL ? false : (evalarg->eval_flags & EVAL_EVALUATE);
    Bag   *d = NULL;
@@ -5183,7 +5183,7 @@ failret:
 // Evaluate a literal dictionary: #{key: val, key: val} "*arg" points to the "#".
 // On return, "*arg" points to the character after the Bag.
 // Return OK or FAIL.  Returns NOTDONE for {expr}.
-public int
+pub int
 bagEvalLiteral(OUT CS* arg, Var* returnVar, EvalCtx *evalarg) {
    int      ret = OK;
 
@@ -5214,7 +5214,7 @@ dictitem_copy(DictItem* org) {
 // When "action" is "move" then move items instead of copying.
 // Otherwise duplicate keys are ignored ("action" is "keep").
 // "funcName" is used for reporting where an error occurred.
-public void
+pub void
 bagExtend(Bag* d1, Bag* d2, CS action) {
    DictItem* di1;
    Text arg_errmsg = tConst("extend() argument");
@@ -5272,13 +5272,13 @@ bagExtend(Bag* d1, Bag* d2, CS action) {
 }
 
 // Return the dictitem that an entry in a hashtable points to.
-public DictItem *
+pub DictItem *
 bagLookup(EeSetItem* hi) {
    return HI2DI(hi);
 }
 
 // Return true when two bags have exactly the same key/values.
-public int
+pub int
 bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
    EeSetItem   *hi;
    DictItem   *item2;
@@ -5309,7 +5309,7 @@ bagEqual(Bag* d1, Bag* d2, int ic) {      // ignore case for strings
 }
 
 // Count the number of times item "needle" occurs in Bag "d". Case is ignored if "ic" is true.
-public long
+pub long
 bagCount(Bag* d, Var* needle, int ic) {
    if (!d)
       return 0;
@@ -5330,7 +5330,7 @@ bagCount(Bag* d, Var* needle, int ic) {
 
 // extend() a Bag. Append Bag argvars[1] to Bag argvars[0] and return the
 // resulting Bag in "returnVar".  "is_new" is true for extendnew().
-public void
+pub void
 bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
    int   i;
 
@@ -5388,7 +5388,7 @@ bagExtend_func(Var* argvars, CS arg_errmsg, int is_new, Var* returnVar) {
 
 // Implementation of map(), filter(), foreach() for a Bag.  Apply "expr" to
 // every item in Bag "d" and return the result in "returnVar".
-public void
+pub void
 bagFilterMap(
    Bag* d,
    FilterMap filtermap,
@@ -5463,7 +5463,7 @@ bagFilterMap(
 }
 
 // "remove({dict})" function
-public void
+pub void
 bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    if (argvars[2].tag != VAR_UNKNOWN) {
       showErrFmtMsg(_(e_too_many_arguments_for_function_str), "remove()");
@@ -5556,7 +5556,7 @@ bagToList(Arr(Var) argvars, Var* returnVar, dict2List what) {
 }
 
 // "items(dict)" function
-public void
+pub void
 f_items(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_STRING)
       string2items(argvars, returnVar);
@@ -5566,18 +5566,18 @@ f_items(Arr(Var) argvars, Var* returnVar) {
       bagToList(argvars, returnVar, DICT2LIST_ITEMS);
 }
 
-public void
+pub void
 f_keys(Arr(Var) argvars, Var* returnVar) {
    bagToList(argvars, returnVar, DICT2LIST_KEYS);
 }
 
-public void
+pub void
 f_values(Arr(Var) argvars, Var* returnVar) {
    bagToList(argvars, returnVar, DICT2LIST_VALUES);
 }
 
 // Make each item in the bag readonly (not the value of the item).
-public void
+pub void
 bagSetItemsRo(Bag* di) {
    int      todo = (int)di->hashTable.count;
    EeSetItem   *hi;
@@ -5591,7 +5591,7 @@ bagSetItemsRo(Bag* di) {
    }
 }
 
-public void
+pub void
 f_has_key(Arr(Var) argvars, Var* returnVar) {
    if (check_for_dict_arg(argvars, 0) == FAIL || argvars[0].bag == NULL)
       return;
@@ -5602,7 +5602,7 @@ f_has_key(Arr(Var) argvars, Var* returnVar) {
 //Return the slice "str[first : last]" using character indexes.  Composing
 //characters are included. "exclusive" is true for slice().
 //Return NULL when the result is empty.
-public CS
+pub CS
 string_slice(CS str, Long first, Long last, int exclusive) {
    if (!str)
       return NULL;
@@ -5626,14 +5626,14 @@ string_slice(CS str, Long first, Long last, int exclusive) {
 }
 
 // Unreference a Dictionary: decrement the reference count and free it when it becomes zero.
-public void
+pub void
 bagUnref(Bag* b) {
    if (b && --b->refCount <= 0)
       dict_free(b);
 }
 
 // Go through the list of dicts and free items without the copyID. true if anything was freed.
-public int
+pub int
 dict_free_nonref(int copyID) {
    Boole did_free = false;
 
@@ -5651,7 +5651,7 @@ dict_free_nonref(int copyID) {
 
 // Clear hashtab "ht" and dict items it contains.
 // If "ht" is not freed then you should call hash_init() next!
-public void
+pub void
 hashtab_free_contents(EeSet* ht) {
    EeSetItem   *hi;
    DictItem   *di;
@@ -5698,7 +5698,7 @@ dict_free(Bag* d) {
    }
 }
 
-public void
+pub void
 dict_free_items(int copyID) {
    Bag* dd_next;
 
@@ -5711,7 +5711,7 @@ dict_free_items(int copyID) {
 }
 
 // Free a Dictionary, including all non-container items it contains. Ignore the reference count.
-public void
+pub void
 dict_free_contents(Bag *d) {
    hashtab_free_contents(&d->hashTable);
    free_type(d->ty);
@@ -5720,7 +5720,7 @@ dict_free_contents(Bag *d) {
 
 // Allocate a Dictionary item. The "key" is copied to the new item.
 // Note that the type and value of the item "c" still needs to be initialized after this!
-public DictItem *
+pub DictItem *
 dictitem_alloc(Text value) {
    DictItem* di = alloc(offsetof(DictItem, key) + value.len + 1);
    di->len = value.len;
@@ -5733,7 +5733,7 @@ dictitem_alloc(Text value) {
 
 //Remove item "item" from Bag "bag" and free it.
 //"command" is used for the error message when the hashtab if frozen.
-public void
+pub void
 dictitem_remove(Bag* bag, DictItem* item, CS command) {
    EeSetItem* hi = hash_find(&bag->hashTable, (Text){.c = item->key, .len = item->len});
    if (HASHITEM_EMPTY(hi))
@@ -5744,7 +5744,7 @@ dictitem_remove(Bag* bag, DictItem* item, CS command) {
 }
 
 // Free a dict item.  Also clears the value.
-public void
+pub void
 dictitem_free(DictItem *item) {
    clearVar(&item->c);
    if (item->flags & DI_FLAGS_ALLOC)
@@ -5753,7 +5753,7 @@ dictitem_free(DictItem *item) {
 
 // Make a copy of dict "d".  Shallow if "deep" is false. The refcount of the new dict is set to 1.
 // See item_copy() for "top" and "copyID". Return NULL when out of memory.
-public Bag *
+pub Bag *
 dict_copy(Bag* orig, int deep, int top, int copyID) {
    if (!orig)
       return NULL;
@@ -5799,7 +5799,7 @@ dict_copy(Bag* orig, int deep, int top, int copyID) {
 
 // Check for adding a function to g: or or l:.
 // If the name is wrong give an error message and return true.
-public int
+pub int
 dictWrongFuncName(Bag* b, Var* tv, Text name) {
    return (b == get_globvar_dict() || &b->hashTable == get_funccal_local_ht())
        && (tv->tag == VAR_FUNC || tv->tag == VAR_PARTIAL)
@@ -5815,7 +5815,7 @@ dictWrongFuncName(Bag* b, Var* tv, Text name) {
 // This uses strtod().  setlocale(LC_NUMERIC, "C") has been used to make sure
 // this always uses a decimal point.
 // Return the length of the text that was consumed.
-public int
+pub int
 string2float(CS text, OUT double* value, Boole skip_quotes) {
    CS s = text;
    double f;
@@ -5875,7 +5875,7 @@ get_float_arg(Arr(Var) argvars, OUT double* f) {
 }
 
 // "abs(expr)" function
-public void
+pub void
 f_abs(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_FLOAT) {
       returnVar->tag = VAR_FLOAT;
@@ -5892,7 +5892,7 @@ f_abs(Arr(Var) argvars, Var* returnVar) {
     }
 }
 
-public void
+pub void
 f_acos(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -5903,7 +5903,7 @@ f_acos(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_asin(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -5914,7 +5914,7 @@ f_asin(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_atan(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
    returnVar->tag = VAR_FLOAT;
@@ -5924,7 +5924,7 @@ f_atan(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_atan2(Arr(Var) argvars, Var* returnVar) {
    double   fx = 0.0, fy = 0.0;
 
@@ -5936,7 +5936,7 @@ f_atan2(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "ceil({float})" function
-public void
+pub void
 f_ceil(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -5947,7 +5947,7 @@ f_ceil(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_cos(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -5958,7 +5958,7 @@ f_cos(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_cosh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -5969,7 +5969,7 @@ f_cosh(Arr(Var) argvars, Var* returnVar) {
    returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_exp(Arr(Var) argvars, Var* returnVar) {
     double   f = 0.0;
    returnVar->tag = VAR_FLOAT;
@@ -5980,7 +5980,7 @@ f_exp(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "float2nr({float})" function
-public void
+pub void
 f_float2nr(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -5996,7 +5996,7 @@ f_float2nr(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "floor({float})" function
-public void
+pub void
 f_floor(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6007,7 +6007,7 @@ f_floor(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_fmod(Arr(Var) argvars, Var* returnVar) {
    double   fx = 0.0, fy = 0.0;
 
@@ -6019,20 +6019,20 @@ f_fmod(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "isinf()" function
-public void
+pub void
 f_isinf(Arr(Var) argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_FLOAT && isinf(argvars[0].floatt))
       returnVar->number = argvars[0].floatt > 0.0 ? 1 : -1;
 }
 
 // "isnan()" function
-public void
+pub void
 f_isnan(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = argvars[0].tag == VAR_FLOAT && isnan(argvars[0].floatt);
 }
 
 //"log()" the logarithm function
-public void
+pub void
 f_log(Arr(Var) argvars, Var* returnVar) {
     double   f = 0.0;
 
@@ -6043,7 +6043,7 @@ f_log(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_log10(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6054,7 +6054,7 @@ f_log10(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_pow(Arr(Var) argvars, Var* returnVar) {
     double   fx = 0.0, fy = 0.0;
 
@@ -6065,7 +6065,7 @@ f_pow(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_sqrt(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6076,7 +6076,7 @@ f_sqrt(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_str2float(Arr(Var) argvars, Var* returnVar) {
    Boole skip_quotes = argvars[1].tag != VAR_UNKNOWN && tv_get_bool(&argvars[1]);
 
@@ -6091,7 +6091,7 @@ f_str2float(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_FLOAT;
 }
 
-public void
+pub void
 f_tan(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6103,7 +6103,7 @@ f_tan(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "tanh()" function
-public void
+pub void
 f_tanh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6115,7 +6115,7 @@ f_tanh(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "trunc({float})" function
-public void
+pub void
 f_trunc(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6128,7 +6128,7 @@ f_trunc(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "round({float})" function
-public void
+pub void
 f_round(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6139,7 +6139,7 @@ f_round(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_sin(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6150,7 +6150,7 @@ f_sin(Arr(Var) argvars, Var* returnVar) {
       returnVar->floatt = 0.0;
 }
 
-public void
+pub void
 f_sinh(Arr(Var) argvars, Var* returnVar) {
    double   f = 0.0;
 
@@ -6432,7 +6432,7 @@ assert_append_cmd_or_arg(ArrayList *gap, Arr(Var) argvars, CS cmd) {
 }
 
 //"assert_equal(expected, actual[, msg])" function
-public void
+pub void
 f_assert_equal(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equal_common(argvars, ASSERT_EQUAL);
 }
@@ -6530,19 +6530,19 @@ assert_equalfile(Arr(Var) argvars) {
 }
 
 //"assert_equalfile(fname-one, fname-two[, msg])" function
-public void
+pub void
 f_assert_equalfile(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equalfile(argvars);
 }
 
 //"assert_notequal(expected, actual[, msg])" function
-public void
+pub void
 f_assert_notequal(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_equal_common(argvars, ASSERT_NOTEQUAL);
 }
 
 //"assert_exception(string[, msg])" function
-public void
+pub void
 f_assert_exception(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
 
@@ -6564,7 +6564,7 @@ f_assert_exception(Arr(Var) argvars, Var* returnVar) {
 }
 
 //"assert_fails(cmd [, error[, msg]])" function
-public void
+pub void
 f_assert_fails(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
    int      save_trylevel = trylevel;
@@ -6711,7 +6711,7 @@ theend:
 }
 
 //"assert_false(actual[, msg])" function
-public void
+pub void
 f_assert_false(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_bool(argvars, false);
 }
@@ -6755,7 +6755,7 @@ assert_inrange(Arr(Var) argvars) {
 }
 
 //"assert_inrange(lower, upper[, msg])" function
-public void
+pub void
 f_assert_inrange(Arr(Var) argvars, Var* returnVar) {
    if (check_for_float_or_nr_arg(argvars, 0) == FAIL
           || check_for_float_or_nr_arg(argvars, 1) == FAIL
@@ -6768,19 +6768,19 @@ f_assert_inrange(Arr(Var) argvars, Var* returnVar) {
 }
 
 //"assert_match(pattern, actual[, msg])" function
-public void
+pub void
 f_assert_match(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_match_common(argvars, ASSERT_MATCH);
 }
 
 //"assert_notmatch(pattern, actual[, msg])" function
-public void
+pub void
 f_assert_notmatch(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_match_common(argvars, ASSERT_NOTMATCH);
 }
 
 //"assert_report(msg)" function
-public void
+pub void
 f_assert_report(Arr(Var) argvars, Var* returnVar) {
    ArrayList   ga;
    prepare_assert_error(OUT &ga);
@@ -6791,13 +6791,13 @@ f_assert_report(Arr(Var) argvars, Var* returnVar) {
 }
 
 //"assert_true(actual[, msg])" function
-public void
+pub void
 f_assert_true(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = assert_bool(argvars, true);
 }
 
 //"test_alloc_fail(id, countdown, repeat)" function
-public void
+pub void
 f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED) {
     if (argvars[0].tag != VAR_NUMBER
        || argvars[0].number <= 0
@@ -6816,11 +6816,11 @@ f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED) {
    }
 }
 
-public void
+pub void
 f_test_autochdir(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
-public void
+pub void
 f_test_feedinput(Arr(Var) argvars, Var* returnVar UNUSED) {
 #ifdef USE_INPUT_BUF
    CS val = convertVarToStringSingleUse(&argvars[0]);
@@ -6832,7 +6832,7 @@ f_test_feedinput(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 //"test_getvalue({name})" function
-public void
+pub void
 f_test_getvalue(Arr(Var) argvars, Var* returnVar) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
@@ -6846,7 +6846,7 @@ f_test_getvalue(Arr(Var) argvars, Var* returnVar) {
 }
 
 //"test_option_not_set({name})" function
-public void
+pub void
 f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
@@ -6857,7 +6857,7 @@ f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 //"test_override({name}, {val})" function
-public void
+pub void
 f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
    CS name = S"";
    static int save_starting = -1;
@@ -6922,7 +6922,7 @@ f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 //"test_refcount({expr})" function
-public void
+pub void
 f_test_refcount(Arr(Var) argvars, Var* returnVar) {
    int retval = -1;
 
@@ -6974,7 +6974,7 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = retval;
 }
 
-public void
+pub void
 f_test_garbagecollect_now(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
     // This is dangerous, any Lists and Dicts used internally may be freed while still in use.
     if (!get_EeglVar_nr(VV_TESTING))
@@ -6983,12 +6983,12 @@ f_test_garbagecollect_now(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    garbage_collect(true);
 }
 
-public void
+pub void
 f_test_garbagecollect_soon(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    may_garbage_collect = true;
 }
 
-public void
+pub void
 f_test_ignore_error(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
@@ -6996,63 +6996,63 @@ f_test_ignore_error(Arr(Var) argvars, Var* returnVar UNUSED) {
    ignore_error_for_testing(tv_get_string(&argvars[0]));
 }
 
-public void
+pub void
 f_test_null_blob(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_BLOB;
    returnVar->blob = NULL;
 }
 
-public void
+pub void
 f_test_null_channel(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_CHANNEL;
    returnVar->channel = NULL;
 }
 
-public void
+pub void
 f_test_null_dict(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar_dict_set(returnVar, NULL);
 }
 
-public void
+pub void
 f_test_null_job(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_JOB;
    returnVar->job = NULL;
 }
 
-public void
+pub void
 f_test_null_list(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar_list_set(returnVar, NULL);
 }
 
-public void
+pub void
 f_test_null_function(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_FUNC;
    returnVar->string = NULL;
 }
 
-public void
+pub void
 f_test_null_partial(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_PARTIAL;
    returnVar->partial = NULL;
 }
 
-public void
+pub void
 f_test_null_string(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 }
 
-public void
+pub void
 f_test_unknown(Arr(Var) argvars UNUSED, Var* returnVar) {
     returnVar->tag = VAR_UNKNOWN;
 }
 
-public void
+pub void
 f_test_void(Arr(Var) argvars UNUSED, Var* returnVar) {
     returnVar->tag = VAR_VOID;
 }
 
-public void
+pub void
 f_test_setmouse(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (argvars[0].tag != VAR_NUMBER || argvars[1].tag != VAR_NUMBER) {
       emsg(_(e_invalid_argument));
@@ -7063,7 +7063,7 @@ f_test_setmouse(Arr(Var) argvars, Var* returnVar UNUSED) {
    mouseColG = (time_t)tv_get_number(&argvars[1]) - 1;
 }
 
-public void
+pub void
 f_test_settime(Arr(Var) argvars, Var* returnVar UNUSED) {
    time_for_testing = (time_t)tv_get_number(&argvars[0]);
 }
@@ -7072,7 +7072,7 @@ f_test_settime(Arr(Var) argvars, Var* returnVar UNUSED) {
 //{{{indexing and slices
 
 // Check if "var" can have an [index] or [sli:ce]
-public int
+pub int
 check_can_index(Var* var, int evaluate, int verbose) {
    switch (var->tag) {
    case VAR_FUNC:
@@ -7113,7 +7113,7 @@ check_can_index(Var* var, int evaluate, int verbose) {
 // "var2" is the second index, NULL for [expr] and [expr: ]
 // "exclusive" is true for slice(): second index is exclusive, use character index for string.
 // Alternatively, "key" is not NULL, then key[keylen] is the dict index.
-public int
+pub int
 eval_index_inner(
    Var* returnVar,
    int is_range,
@@ -7244,7 +7244,7 @@ eval_index_inner(
 // Blob support by Yasuhiro Matsumoto
 
 // Allocate an empty blob. Caller should take care of the reference count.
-public Blob *
+pub Blob *
 blob_alloc(void) {
    Blob *blob = ALLOC_CLEAR_ONE_ID(Blob, aid_blob_alloc);
    if (blob)
@@ -7253,7 +7253,7 @@ blob_alloc(void) {
 }
 
 // Allocate an empty blob for a return value, with reference count set. Returns OK or FAIL.
-public int
+pub int
 returnVar_blob_alloc(Var* returnVar) {
    Blob   *b = blob_alloc();
 
@@ -7265,7 +7265,7 @@ returnVar_blob_alloc(Var* returnVar) {
 }
 
 // Set a blob as the return value.
-public void
+pub void
 returnVar_blob_set(Var* returnVar, Blob *b) {
    returnVar->tag = VAR_BLOB;
    returnVar->blob = b;
@@ -7273,7 +7273,7 @@ returnVar_blob_set(Var* returnVar, Blob *b) {
       ++b->refCount;
 }
 
-public int
+pub int
 blob_copy(Blob *from, Var *to) {
    to->tag = VAR_BLOB;
    to->lock = 0;
@@ -7297,21 +7297,21 @@ blob_copy(Blob *from, Var *to) {
    return OK;
 }
 
-public void
+pub void
 blob_free(Blob *b) {
    ga_clear(&b->c);
    eeglFree(b);
 }
 
 // Unreference a blob: decrement the reference count and free it when it becomes zero.
-public void
+pub void
 blob_unref(Blob *b) {
    if (b && --b->refCount <= 0)
       blob_free(b);
 }
 
 // Get the length of data.
-public long
+pub long
 blob_len(Blob *b) {
    if (!b)
       return 0L;
@@ -7319,19 +7319,19 @@ blob_len(Blob *b) {
 }
 
 // Get byte "idx" in blob "b". Caller must check that "idx" is valid.
-public int
+pub int
 blob_get(Blob *b, int idx) {
    return ((Byte*)b->c.c)[idx];
 }
 
 // Store one byte "byte" in blob "blob" at "idx". Caller must make sure that "idx" is valid.
-public void
+pub void
 blob_set(Blob* blob, int idx, int byte) {
    ((Byte*)blob->c.c)[idx] = byte;
 }
 
 // Store one byte "byte" in blob "blob" at "idx". Append one byte if needed.
-public void
+pub void
 blob_set_append(Blob *blob, int idx, int byte) {
    ArrayList *gap = &blob->c;
 
@@ -7345,7 +7345,7 @@ blob_set_append(Blob *blob, int idx, int byte) {
 }
 
 // Return true when two blobs have exactly the same values.
-public int
+pub int
 blob_equal(Blob   *b1, Blob   *b2) {
    int       i;
    int       len1 = blob_len(b1);
@@ -7364,7 +7364,7 @@ blob_equal(Blob   *b1, Blob   *b2) {
 }
 
 // Convert a blob to a readable form: "0z00112233.44556677.8899"
-public CS
+pub CS
 blob2string(Blob *blob, Byte **tofree, Byte *numbuf) {
    int      i;
    ArrayList    ga;
@@ -7390,7 +7390,7 @@ blob2string(Blob *blob, Byte **tofree, Byte *numbuf) {
 
 // Convert a string variable, in the format of blob2string(), to a blob. Return NULL when 
 // the conversion failed.
-public Blob*
+pub Blob*
 string2blob(CS str) {
    Blob  *blob = blob_alloc();
    if (!blob)
@@ -7493,7 +7493,7 @@ blob_index(
    return OK;
 }
 
-public int
+pub int
 blob_slice_or_index(
    Blob      *blob,
    int      is_range,
@@ -7511,7 +7511,7 @@ blob_slice_or_index(
 }
 
 // Check if "n1"- is a valid index for a blobl with length "bloblen".
-public int
+pub int
 check_blob_index(long bloblen, Long n1, int quiet) {
    if (n1 < 0 || n1 > bloblen) {
       if (!quiet)
@@ -7522,7 +7522,7 @@ check_blob_index(long bloblen, Long n1, int quiet) {
 }
 
 // Check if "n1"-"n2" is a valid range for a blob with length "bloblen".
-public int
+pub int
 check_blob_range(long bloblen, Long n1, Long n2, int quiet) {
    if (n2 < 0 || n2 >= bloblen || n2 < n1) {
       if (!quiet)
@@ -7534,7 +7534,7 @@ check_blob_range(long bloblen, Long n1, Long n2, int quiet) {
 
 //Set bytes "n1" to "n2" (inclusive) in "dest" to the value of "src". Caller must make sure 
 //"src" is a blob. Returns FAIL if the number of bytes does not match.
-public int
+pub int
 blob_set_range(Blob *dest, long n1, long n2, Var *src) {
    if (n2 - n1 + 1 != blob_len(src->blob)) {
       emsg(_(e_blob_value_does_not_have_right_number_of_bytes));
@@ -7549,7 +7549,7 @@ blob_set_range(Blob *dest, long n1, long n2, Var *src) {
 }
 
 // "add(blob, item)" function
-public void
+pub void
 blob_add(Arr(Var) argvars, Var* returnVar) {
    Blob   *b = argvars[0].blob;
    Boole error = false;
@@ -7570,7 +7570,7 @@ blob_add(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "remove({blob}, {idx} [, {end}])" function
-public void
+pub void
 blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    Blob* b = argvars[0].blob;
    Boole error = false;
@@ -7633,7 +7633,7 @@ blob_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
 
 //Implementation of map() and filter() for a Blob.  Apply "expr" to every
 //number in Blob "blob_arg" and return the result in "returnVar".
-public void
+pub void
 blob_filter_map(
    Blob* blob_arg,
    FilterMap filtermap,
@@ -7701,7 +7701,7 @@ blob_filter_map(
 }
 
 // "insert(blob, {item} [, {idx}])" function
-public void
+pub void
 blob_insert_func(Arr(Var) argvars, Var* returnVar) {
    Blob   *b = argvars[0].blob;
    long   before = 0;
@@ -7746,7 +7746,7 @@ blob_insert_func(Arr(Var) argvars, Var* returnVar) {
 
 // Implementation of reduce() for Blob "argvars[0]" using the function "expr"
 // starting with the optional initial value "argvars[2]" and return the result in "returnVar".
-public void
+pub void
 blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
    Blob* b = argvars[0].blob;
    int called_emsg_start = called_emsg;
@@ -7787,7 +7787,7 @@ blob_reduce(Var* argvars, Var* expr, Var* returnVar) {
    }
 }
 
-public void
+pub void
 blob_reverse(Blob* b, Var* returnVar) {
    int len = blob_len(b);
 
@@ -7800,7 +7800,7 @@ blob_reverse(Blob* b, Var* returnVar) {
    returnVar_blob_set(returnVar, b);
 }
 
-public void
+pub void
 f_blob2list(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
@@ -7813,7 +7813,7 @@ f_blob2list(Arr(Var) argvars, Var* returnVar) {
       list_append_number(l, blob_get(blob, i));
 }
 
-public void
+pub void
 f_list2blob(Arr(Var) argvars, Var* returnVar) {
    if (returnVar_blob_alloc(returnVar) == FAIL)
       return;
@@ -7894,7 +7894,7 @@ string_from_blob(Blob *blob, long *start_idx) {
 }
 
 //"blob2str()" function Converts a blob to a string, ensuring valid UTF-8 encoding.
-public void
+pub void
 f_blob2str(Arr(Var) argvars, OUT Var* returnVar) {
    if (check_for_blob_arg(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
       return;
@@ -7919,7 +7919,7 @@ f_blob2str(Arr(Var) argvars, OUT Var* returnVar) {
 }
 
 // "str2blob()" function
-public void
+pub void
 f_str2blob(Arr(Var) argvars, OUT Var* returnVar) {
    if (confirmVarIsList(argvars, 0) == FAIL || check_for_oself_arg(argvars, 1) == FAIL)
       return;
@@ -8008,7 +8008,7 @@ private typedef struct {
    int startpos;
 } FuzzyItem;
 
-public void
+pub void
 addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t) {
    if (t->len == t->cap) {
       Arr(FuzzyMatch) newContent = allocateArray(t->cap*2, FuzzyMatch, t->a);
@@ -8024,7 +8024,7 @@ addFuzzyMatch(FuzzyMatch m, OUT Fuzzy* t) {
 
 //Return true if "pat_arg" matches "str". Also returns the match score in
 //"outScore" and the matching character positions in "matches".
-public int
+pub int
 fuzzy_match(
    CS str,
    CS pat_arg,
@@ -8387,12 +8387,12 @@ done:
    evFreeCallback(&cb);
 }
 
-public void
+pub void
 f_matchfuzzy(Arr(Var) argvars, OUT Var* returnVar) {
    do_fuzzymatch(argvars, returnVar, false);
 }
 
-public void
+pub void
 f_matchfuzzypos(Arr(Var) argvars, OUT Var* returnVar) {
     do_fuzzymatch(argvars, returnVar, true);
 }
@@ -8412,7 +8412,7 @@ fuzzyMatchStr_compare(const void *s0, const void *s1) {
 }
 
 //Sort fuzzy matches by score
-public void
+pub void
 fuzzySortByScore(OUT Fuzzy* fuzzy) {
    // Sort the list by the descending order of the match score
    qsort((void *)fuzzy->c, (Unt)fuzzy->len, sizeof(FuzzyMatch), fuzzyMatchStr_compare);
@@ -8447,7 +8447,7 @@ sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz) {
 }
 
 //Fuzzy match 'pat' in 'str'. Return 0 if there is no match. Otherwise, return the match score.
-public int
+pub int
 fuzzyMatchStr(CS str, CS pat) {
    int      score = FUZZY_SCORE_NONE;
    Unt   matchpos[FUZZY_MATCH_MAX_LEN];
@@ -8462,7 +8462,7 @@ fuzzyMatchStr(CS str, CS pat) {
 
 //Fuzzy match the position of string 'pat' in string 'str'.
 //Return a dynamic array of matching positions. If there is no match, return NULL.
-public ArrayList *
+pub ArrayList *
 fuzzyMatchStr_with_pos(CS str, CS pat) {
    int          score = FUZZY_SCORE_NONE;
    ArrayList       *match_positions = NULL;
@@ -8497,7 +8497,7 @@ fuzzyMatchStr_with_pos(CS str, CS pat) {
 }
 
 // Find the end of the word. Assumes it starts inside a word. Return a pointer to after the word
-public CS
+pub CS
 find_word_end(CS ptr) {
    int start_class = mb_get_class(ptr);
    if (start_class > 1) {
@@ -8512,7 +8512,7 @@ find_word_end(CS ptr) {
 
 
 // Find the end of the line, omitting CR and NL at the end. Returns a pointer to just after the line.
-public CS
+pub CS
 find_line_end(CS ptr) {
    CS s = ptr + STRLEN(ptr);
    while (s > ptr && (s[-1] == ENTER || s[-1] == NL))
@@ -8530,7 +8530,7 @@ find_line_end(CS ptr) {
 //- `*score` contains the match score.
 //
 //If no match is found, `*ptr` is updated to the end of the line.
-public int
+pub int
 fuzzyMatchStr_in_line(
    Byte   **ptr,
    CS pat,
@@ -8590,7 +8590,7 @@ fuzzyMatchStr_in_line(
 //Search for the next fuzzy match in the specified buffer. Attempt to find the next occurrence of 
 //the given pattern in the buffer, starting from the current position. Handle line wrapping and 
 //direction of search. Return true if a match is found, otherwise false.
-public int
+pub int
 search_for_fuzzy_match(
    Book* book,
    Pos* pos,
@@ -8678,7 +8678,7 @@ search_for_fuzzy_match(
 }
 
 //Free an array of fuzzy string matches "fuzmatch[count]".
-public void
+pub void
 fuzmatch_str_free(FuzzyMatch *fuzmatch, int count) {
    if (!fuzmatch)
       return;
@@ -8691,7 +8691,7 @@ fuzmatch_str_free(FuzzyMatch *fuzmatch, int count) {
 //Copy a list of fuzzy matches into a string list after sorting the matches by
 //the fuzzy score. Free the memory allocated for 'fuzzy'.
 //Return OK on success and FAIL on memory allocation failure.
-public int
+pub int
 defuzz(
    OUT ExpandMatch* matches,
    Fuzzy fuzzy,
@@ -8947,7 +8947,7 @@ copy_first_char_to_tv(CS input, Var* output) {
 
 //Implementation of map() and filter() for a String. Apply "expr" to every
 //character in string "str" and return the result in "returnVar".
-public void
+pub void
 string_filter_map(CS str, FilterMap filtermap, Var* expr, Var* returnVar) {
    CS p;
    Var   tv;
@@ -9078,17 +9078,17 @@ byteidx_common(Var* argvars, Var* returnVar, Boole comp) {
    returnVar->number = (Long)(t - str);
 }
 
-public void
+pub void
 f_byteidx(Arr(Var) argvars, OUT Var* returnVar) {
    byteidx_common(argvars, returnVar, false);
 }
 
-public void
+pub void
 f_byteidxcomp(Var* argvars, Var* returnVar) {
    byteidx_common(argvars, returnVar, true);
 }
 
-public void
+pub void
 f_charidx(Var* argvars, Var* returnVar) {
    returnVar->number = -1;
 
@@ -9139,7 +9139,7 @@ f_charidx(Var* argvars, Var* returnVar) {
    returnVar->number = len > 0 ? len - 1 : 0;
 }
 
-public void
+pub void
 f_str2list(Arr(Var) argvars, OUT Var* returnVar) {
    allocReturnList(returnVar);
 
@@ -9149,7 +9149,7 @@ f_str2list(Arr(Var) argvars, OUT Var* returnVar) {
       list_append_number(returnVar->list, mb_ptr2char(p));
 }
 
-public void
+pub void
 f_str2nr(Var* argvars, Var* returnVar) {
    int base = 10;
    Long n;
@@ -9179,7 +9179,7 @@ f_str2nr(Var* argvars, Var* returnVar) {
    returnVar->number = isneg ? -n : n;
 }
 
-public void
+pub void
 f_strgetchar(Var* argvars, Var* returnVar) {
    Boole error = false;
    int byteidx = 0;
@@ -9203,7 +9203,7 @@ f_strgetchar(Var* argvars, Var* returnVar) {
    }
 }
 
-public void
+pub void
 f_stridx(Var* argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    int start_idx;
@@ -9230,7 +9230,7 @@ f_stridx(Var* argvars, Var* returnVar) {
       returnVar->number = (Long)(pos - save_haystack);
 }
 
-public void
+pub void
 f_string(Arr(Var) argvars, OUT Var* returnVar) {
    CS tofree;
    Byte numBuf[NUMBUFLEN];
@@ -9242,7 +9242,7 @@ f_string(Arr(Var) argvars, OUT Var* returnVar) {
       returnVar->string = copyStr(returnVar->string);
 }
 
-public void
+pub void
 f_strlen(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->number = (Long)(STRLEN(tv_get_string(&argvars[0])));
 }
@@ -9262,12 +9262,12 @@ strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc) {
    returnVar->number = len;
 }
 
-public void
+pub void
 f_strcharlen(Arr(Var) argvars, OUT Var* returnVar) {
    strchar_common(argvars, returnVar, true);
 }
 
-public void
+pub void
 f_strchars(Arr(Var) argvars, OUT Var* returnVar) {
    Long skipcc = false;
    if (argvars[1].tag != VAR_UNKNOWN) {
@@ -9284,7 +9284,7 @@ f_strchars(Arr(Var) argvars, OUT Var* returnVar) {
    strchar_common(argvars, returnVar, skipcc);
 }
 
-public void
+pub void
 f_strdisplaywidth(Arr(Var) argvars, OUT Var* returnVar) {
    int col = 0;
    returnVar->number = -1;
@@ -9296,13 +9296,13 @@ f_strdisplaywidth(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->number = (Long)(linetabsize_col(col, s) - col);
 }
 
-public void
+pub void
 f_strwidth(Var* argvars, OUT Var* returnVar) {
    CS s = tv_get_string_strict(argvars);
    returnVar->number = (Long)(mb_string2cells(s, -1));
 }
 
-public void
+pub void
 f_strcharpart(Arr(Var) argvars, OUT Var* returnVar) {
    int nbyte = 0;
    int skipcc = false;
@@ -9358,7 +9358,7 @@ f_strcharpart(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->string = copySubstr(p + nbyte, len);
 }
 
-public void
+pub void
 f_strpart(Arr(Var) argvars, OUT Var* returnVar) {
    Boole error = false;
 
@@ -9397,7 +9397,7 @@ f_strpart(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->string = copySubstr(p + n, len);
 }
 
-public void
+pub void
 f_strridx(Arr(Var) argvars, OUT Var* returnVar) {
    Byte buf[NUMBUFLEN];
 
@@ -9433,28 +9433,28 @@ f_strridx(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->number = lastmatch ? (Long)(lastmatch - haystack) : -1;
 }
 
-public void
+pub void
 f_strtrans(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = sanitizeStr(tv_get_string(&argvars[0]));
 }
 
 // "tolower(string)" function
-public void
+pub void
 f_tolower(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = strlow_save(tv_get_string(&argvars[0]));
 }
 
 // "toupper(string)" function
-public void
+pub void
 f_toupper(Arr(Var) argvars, OUT Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = strup_save(tv_get_string(&argvars[0]));
 }
 
 // "tr(string, fromstr, tostr)" function
-public void
+pub void
 f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    CS p;
    int  first = true;
@@ -9535,7 +9535,7 @@ error:
 }
 
 // "trim({expr})" function
-public void
+pub void
 f_trim(Arr(Var) argvars, OUT Var* returnVar) {
    Byte buffer0[NUMBUFLEN];
    Byte buffer1[NUMBUFLEN];
@@ -9713,7 +9713,7 @@ parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_err) {
    return OK;
 }
 
-public enum {
+pub enum {
    TYPE_UNKNOWN = -1,
    TYPE_INT,
    TYPE_LONGINT,
@@ -10257,7 +10257,7 @@ infinity_str(Unt positive, char fmt_spec, int force_sign, int space_for_positive
    return table[idx];
 }
 
-public int
+pub int
 eeVarPrintf0(
    CS str,
    Unt str_m,
@@ -11076,7 +11076,7 @@ error:
 }
 
 //Implementation of the format operator 'gq'.
-public void
+pub void
 op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
    long old_line_count = curBook->mem.lineCount;
 
@@ -11139,7 +11139,7 @@ op_format(Operator* oper, int keep_cursor){ //keep cursor on same text char
 }
 
 // Implementation of the format operator 'gq' for when using 'formatexpr'.
-public void
+pub void
 op_formatexpr(Operator* oper) {
    if (oper->is_VIsual)
       // When there is no change: need to remove the Visual selection
@@ -11150,7 +11150,7 @@ op_formatexpr(Operator* oper) {
       op_format(oper, false);
 }
 
-public int
+pub int
 fex_format(LineNr lnum, long count, int c) {  // character to be inserted
    ScriptPos   save_sctx = scriptPosG;
 
@@ -11181,7 +11181,7 @@ fex_format(LineNr lnum, long count, int c) {  // character to be inserted
 //with "<" like "<cfile>".
 //When "do_newline" is false do not escape newline unless it is csh shell.
 //Return the result in allocated memory, NULL if we have run out.
-public CS
+pub CS
 copyStr_shellescape(CS string, int do_special, int do_newline) {
    Unt l;
 
@@ -11264,7 +11264,7 @@ json_encode_gap(ArrayList* gap, Var* val, int options) {
 
 //Encode "val" into a JSON format string. The result is in allocated memory.
 //The result is empty when encoding fails. "options" can contain JSON_NO_NONE and JSON_NL.
-public CS
+pub CS
 json_encode(Var* val, int options) {
    ArrayList ga;
 
@@ -11278,7 +11278,7 @@ json_encode(Var* val, int options) {
 //Encode ["nr", "val"] into a JSON format string in allocated memory.
 //"options" can contain JSON_NO_NONE and JSON_NL.
 //Return NULL when out of memory.
-public CS
+pub CS
 json_encode_nr_expr(int nr, Var* val, int options) {
    Var   listtv;
    Var   nrtv;
@@ -11301,7 +11301,7 @@ json_encode_nr_expr(int nr, Var* val, int options) {
 }
 
 //Encode "val" into a JSON format string prefixed by the LSP HTTP header. NULL when out of memory.
-public CS
+pub CS
 json_encode_lsp_msg(Var* val) {
    ArrayList   ga;
 
@@ -12095,7 +12095,7 @@ json_decode_all(OUT Var* res, JsReader* reader) {
 // Decode the JSON from "reader" and store the result in "res".
 // Return FAIL for a decoding error. Return MAYBE for an incomplete message. Consume the message 
 // anyway.
-public int
+pub int
 json_decode(OUT Var* res, JsReader* reader) {
    // We find the end once, to avoid calling strlen() many times.
    reader->js_end = reader->js_buf + STRLEN(reader->js_buf);
@@ -12111,7 +12111,7 @@ json_decode(OUT Var* res, JsReader* reader) {
 // Return MAYBE if the message is truncated, need to read more. This only works reliable if the 
 // message contains an object, array or string. A number might be truncated without knowing. Does 
 // not advance the reader.
-public int
+pub int
 json_find_end(JsReader* reader) {
    int used_save = reader->js_used;
    int ret;
@@ -12124,7 +12124,7 @@ json_find_end(JsReader* reader) {
    return ret;
 }
 
-public void
+pub void
 f_json_decode(Arr(Var) argvars, Var* returnVar) {
    JsReader reader;
    reader.js_buf = tv_get_string(argvars);
@@ -12133,7 +12133,7 @@ f_json_decode(Arr(Var) argvars, Var* returnVar) {
    json_decode_all(OUT returnVar, &reader);
 }
 
-public void
+pub void
 f_json_encode(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = json_encode(argvars, 0);

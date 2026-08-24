@@ -41,7 +41,7 @@ private CS extra_patches[] = {
    NULL
 };
 
-public int
+pub int
 highest_patch(void) {
    // this relies on the highest patch number to be the first entry
    return included_patches[0];
@@ -103,7 +103,7 @@ list_version(void) {
 }
 
 
-public void
+pub void
 c_version(Invocation* invo) {
    //Ignore a ":version 9.99" command.
    if (*invo->arg == ZERO) {
@@ -117,7 +117,7 @@ private void do_intro_line(int row, CS mesg, int add_version);
 private void intro_message(int colon);
 
 // Show the intro message when not editing a file.
-public void
+pub void
 maybe_intro_message(void) {
    if (CURBOOK_EMPTY() && !curBook->currFileName && !firstPor->next && p_intro)
       intro_message(false);
@@ -228,7 +228,7 @@ do_intro_line(int row, CS mesg, int add_version){
 }
 
 // ":intro": clear screen, display intro screen and wait for return.
-public void
+pub void
 c_intro(Invocation* invo UNUSED){
    screenclear();
    draw_tabpanel();
@@ -283,7 +283,7 @@ private CS main_errors[] = {
 
 
 // It is defined when NO_EEGL_MAIN is defined, but then it's empty.
-public int
+pub int
 libMain(void) {
 #ifndef NO_EEGL_MAIN
    //Decide about portal layout for diff mode after reading init.vim.
@@ -479,7 +479,7 @@ libMain(void) {
 }
 
 // Initialization #1 shared by main() and some tests.
-public void
+pub void
 init0(void) {
    estack_init();
    cmdline_init();
@@ -500,7 +500,7 @@ init0(void) {
 }
 
 // Initialization #1 shared by main() and some tests.
-public void
+pub void
 init1(OUT MainParams* par) {
    //Setup to use the current locale (for ctype() and many other things).
    //NOTE: Translated messages with encodings other than latin1 will not work until 
@@ -556,7 +556,7 @@ init1(OUT MainParams* par) {
    llInitStacksOnce();
 }
 
-public int
+pub int
 appMain(int argc, char** argv) {
    //Do any system-specific initialisations.  These can NOT use IObuff or nameBuffG.  
    //Thus emsg2() cannot be called!
@@ -682,19 +682,19 @@ appMain(int argc, char** argv) {
 }
 
 // Return true when the --not-a-term argument was found.
-public int
+pub int
 is_not_a_term(void) {
    return paramsP.not_a_term;
 }
 
 // Return true when the --not-a-term argument was found or the GUI is in use.
-public int
+pub int
 is_not_a_term_or_gui(void) {
    return paramsP.not_a_term;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_vbuf(void) {
    if (virtualBuf) {
       setvbuf(stdout, NULL, _IONBF, 0);
@@ -718,7 +718,7 @@ isSafeNow(void) {
 }
 
 // Trigger SafeState if currently in a safe state, that is "safe" is true and there is no typeahead
-public void
+pub void
 may_trigger_safestate(Boole safe) {
    Boole is_safe = safe && isSafeNow();
    if (wasSafeP != is_safe)
@@ -731,21 +731,21 @@ may_trigger_safestate(Boole safe) {
 
 // Something changed which causes the state possibly to be unsafe, e.g. a
 // character was typed.  It will remain unsafe until the next call to may_trigger_safestate().
-public void
+pub void
 state_no_longer_safe(CS reason) {
    if (wasSafeP)
       lo("SafeState: reset: %s", reason);
    wasSafeP = false;
 }
 
-public Boole
+pub Boole
 get_was_safe_state(void) {
    return wasSafeP;
 }
 
 // Invoked when leaving code that invokes callbacks.  Then trigger
 // SafeStateAgain, if it was safe when starting to wait for a character.
-public void
+pub void
 may_trigger_safestateagain(void) {
    if (!wasSafeP)     {
       // If the safe state was reset in state_no_longer_safe(), e.g. because
@@ -768,7 +768,7 @@ may_trigger_safestateagain(void) {
 }
 
 //Return true if there is any typeahead, pending operator or command.
-public int
+pub int
 work_pending(void) {
    return op_pending() || !isSafeNow();
 }
@@ -776,7 +776,7 @@ work_pending(void) {
 //Main loop: Execute Normal mode commands until exiting Eegl.
 //Also used to handle commands in the command-line portal, until the portal is closed.
 //Also used to handle ":visual" command after ":global": execute Normal mode commands.
-public void
+pub void
 mainLoop(Boole inCommPort) {  // true when working in the command-line window
    Operator oper;      // operator arguments
    Operator* operPrev = currOperatorG; //operator arguments
@@ -950,7 +950,7 @@ mainLoop(Boole inCommPort) {  // true when working in the command-line window
 
 // Exit properly. This is the only way to exit Eegl after startup has succeeded. We are certain 
 // to exit here, no way to abort it.
-public void
+pub void
 exitEegl(int exitval) {
    isExitingG = true;
    lo("Exiting...");
@@ -1836,7 +1836,7 @@ mainerr(
    mch_exit(1);
 }
 
-public void
+pub void
 mainerr_arg_missing(CS str) {
    mainerr(ME_ARG_MISSING, str);
 }
@@ -1850,7 +1850,7 @@ main_msg(CS s) {
    mch_msg("\n");
 }
 
-public CS
+pub CS
 mainProgramVersion() {
    return programVersion;
 }
@@ -1947,7 +1947,7 @@ check_swap_exists_action(void) {
 #endif // NO_EEGL_MAIN
 
 
-public void __attribute__((noinline))
+pub void __attribute__((noinline))
 __bp() { // breakpoints for debugger
    ;
 }

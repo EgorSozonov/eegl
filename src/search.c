@@ -105,7 +105,7 @@ private typedef struct {
 //options & SEARCH_HIS: put search string in history
 //options & SEARCH_KEEP: keep previous search pattern
 //return FAIL if failed, OK otherwise.
-public int
+pub int
 search_regcomp(
    Text pat,
    Arr(CS) used_pat,
@@ -160,12 +160,12 @@ search_regcomp(
 }
 
 // Get search pattern used by search_regcomp().
-public CS
+pub CS
 get_search_pat(void) {
    return mrPatternP.c;
 }
 
-public void
+pub void
 save_re_pat(int idx, Text pat, int magic) {
    if (prevSearchPatternsP[idx].pat.c == pat.c)
       return;
@@ -185,7 +185,7 @@ save_re_pat(int idx, Text pat, int magic) {
 //Used before/after executing autocommands and user functions.
 private int saveLevelS = 0;
 
-public void
+pub void
 save_search_patterns(void) {
    if (saveLevelS++ != 0)
       return;
@@ -204,7 +204,7 @@ save_search_patterns(void) {
    saved_spatsHlsearch = hiliteSearchG;
 }
 
-public void
+pub void
 restore_search_patterns(void) {
    if (--saveLevelS != 0)
       return;
@@ -221,7 +221,7 @@ restore_search_patterns(void) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-public void
+pub void
 free_search_patterns(void) {
    for (int i = 0; i < (int)ARRAY_LENGTH(prevSearchPatternsP); ++i) {
       EE_CLEAR(prevSearchPatternsP[i].pat);
@@ -246,7 +246,7 @@ private int saved_search_match_lines;
 //It's similar to but different from save_search_patterns() and
 //restore_search_patterns(), because the search pattern must be restored when
 //canceling incremental searching even if it's called inside user functions.
-public void
+pub void
 save_last_search_pattern(void) {
    if (++did_save_last_search_spat != 1)
       // nested call, nothing to do
@@ -260,7 +260,7 @@ save_last_search_pattern(void) {
    savedHlsearch = hiliteSearchG;
 }
 
-public void
+pub void
 restore_last_search_pattern(void) {
    if (--did_save_last_search_spat > 0)
       // nested call, nothing to do
@@ -292,20 +292,20 @@ restore_incsearch_state(void) {
    search_match_lines  = saved_search_match_lines;
 }
 
-public Text
+pub Text
 last_search_pattern(void) {
    return prevSearchPatternsP[RE_SEARCH].pat;
 }
 
 //Return true when case should be ignored for search pattern "pat".
 //Use the 'ignorecase' and 'smartcase' options.
-public int
+pub int
 ignorecase(CS pat) {
    return ignorecase_opt(pat, p_ic, p_scs);
 }
 
 //As ignorecase() but pass the "ic" and "scs" flags.
-public int
+pub int
 ignorecase_opt(CS pat, int ic_in, int scs) {
    int      ic = ic_in;
 
@@ -316,7 +316,7 @@ ignorecase_opt(CS pat, int ic_in, int scs) {
 }
 
 // Return true if pattern "pat" has an uppercase character.
-public int
+pub int
 pat_has_uppercase(CS pat) {
    CS p = pat;
    Magic magic_val = MAGIC_ON;
@@ -353,22 +353,22 @@ pat_has_uppercase(CS pat) {
    return false;
 }
 
-public CS
+pub CS
 last_csearch(void) {
    return lastc_bytes;
 }
 
-public int
+pub int
 last_csearch_forward(void) {
    return lastcdir == FORWARD;
 }
 
-public int
+pub int
 last_csearch_until(void) {
    return last_t_cmd == true;
 }
 
-public void
+pub void
 set_last_csearch(int c, CS s, int len) {
    *lastc = c;
    lastc_bytelen = len;
@@ -378,23 +378,23 @@ set_last_csearch(int c, CS s, int len) {
       CLEAR_FIELD(lastc_bytes);
 }
 
-public void
+pub void
 set_csearch_direction(int cdir) {
    lastcdir = cdir;
 }
 
-public void
+pub void
 set_csearch_until(int t_cmd) {
    last_t_cmd = t_cmd;
 }
 
-public Text
+pub Text
 last_search_pat(void) {
    return prevSearchPatternsP[last_idx].pat;
 }
 
 // Reset search direction to forward.  For "gd" and "gD" commands.
-public void
+pub void
 reset_search_dir(void) {
    prevSearchPatternsP[0].off.dir = '/';
    set_vv_searchforward();
@@ -402,7 +402,7 @@ reset_search_dir(void) {
 
 //Set the last search pattern.  For ":let @/ =" and eeglinfo.
 //Also set the saved search pattern, so that this works in an autocommand.
-public void
+pub void
 set_last_search_pat(
    CS s,
    int idx,
@@ -442,7 +442,7 @@ set_last_search_pat(
 
 //Get a regexp program for the last used search pattern. This is used for hiliting all matches 
 //in a portal. Values returned in regmatch->regprog and regmatch->rmm_ic.
-public void
+pub void
 last_pat_prog(RegMultilineMatch* regmatch) {
    if (prevSearchPatternsP[RE_SEARCH].pat.len == 0) {
       regmatch->regprog = NULL;
@@ -470,7 +470,7 @@ last_pat_prog(RegMultilineMatch* regmatch) {
 //
 //Return FAIL (zero) for failure, non-zero for success.
 //Return the index of the first matching subpattern plus one; one if there was none.
-public int
+pub int
 searchit(
    Portal* port, // portal to search in; can be NULL for a buffer without a portal!
    Book* book,
@@ -827,7 +827,7 @@ searchit(
    return submatch + 1;
 }
 
-public void
+pub void
 set_search_direction(int cdir) {
    prevSearchPatternsP[0].off.dir = cdir;
 }
@@ -872,7 +872,7 @@ first_submatch(RegMultilineMatch *rp) {
 //makes the movement linewise without moving the match position.
 //
 //Return 0 for failure, 1 for found, 2 for found and line offset added.
-public int
+pub int
 do_search(
    Operator* oap,   // can be NULL
    int dirc,   // '/' or '?'
@@ -1222,7 +1222,7 @@ end_do_search:
 //contain the position of the match found.    Blank lines match only if
 //ADDING is set.  If p_ic is set then the pattern must be in lowercase.
 //Return OK for success, or FAIL if no line found.
-public int
+pub int
 search_for_exact_line(
    Book* book,
    Pos* pos,
@@ -1278,7 +1278,7 @@ search_for_exact_line(
 //Search for a character in a line.  If "t_cmd" is false, move to the
 //position of the character, otherwise move to just before the char.
 //Do this "cap->count1" times. Return FAIL or OK.
-public int
+pub int
 searchc(ActionArg* cap, int t_cmd) {
    int c = cap->nchar;   // char to search for
    int dir = cap->arg;   // true for searching forward
@@ -1362,7 +1362,7 @@ searchc(ActionArg* cap, int t_cmd) {
 
 
 //findmatch - find the matching paren or brace
-public Pos*
+pub Pos*
 findmatch(Operator *oap, int initc) {
    return findmatchlimit(oap, initc, 0, 0);
 }
@@ -1485,7 +1485,7 @@ find_mps_values(
 //    FM_SKIPCOMM   skip comments (not implemented yet!)
 //
 //"oap" is only used to set oap->motion_type for a linewise motion, it can be NULL
-public Pos*
+pub Pos*
 findmatchlimit(
    Operator* oap,
    Unt initc,
@@ -1919,7 +1919,7 @@ findmatchlimit(
 }
 
 //Check if line[] contains a / / comment. Return MAXCOL if not, otherwise return the column.
-public int
+pub int
 check_linecomment(CS line) {
    CS p = line;
    while ((p = firstOccurrence(p, '/')) != NULL) {
@@ -2001,7 +2001,7 @@ is_zero_width(
 
 //Find next search match under cursor, cursor at end.
 //Used while an operator is pending, and in Visual mode.
-public int
+pub int
 current_search(long   count, Boole forward) {  // true for forward, false for backward
    Pos start_pos;   // start position of the pattern match
    Pos end_pos;   // end position of the pattern match
@@ -2111,7 +2111,7 @@ current_search(long   count, Boole forward) {  // true for forward, false for ba
 }
 
 // return true if line 'lnum' is empty or has white chars only.
-public int
+pub int
 linewhite(LineNr lnum) {
    CS p = skipwhite(ml_get(lnum));
    return (*p == ZERO);
@@ -2295,7 +2295,7 @@ get_line_and_copy(LineNr lnum, CS buf) {
 
 //Find identifiers or defines in included files.
 //If p_ic && compl_status_sol() then ptr must be in lowercase.
-public void
+pub void
 find_pattern_in_path(
    CS ptr,      // pointer to search pattern
    int      dir UNUSED,   // direction of expansion
@@ -2895,19 +2895,19 @@ show_pat_in_path(
 }
 
 // Return the last used search pattern at "idx".
-public SearchPattern *
+pub SearchPattern *
 getPrevSearchPattern(int idx) {
    return &prevSearchPatternsP[idx];
 }
 
 //Return the last used search pattern index.
-public int
+pub int
 getPrevSearchOrSubstPattern(void) {
    return last_idx;
 }
 
 // "searchcount()" function
-public void
+pub void
 f_searchcount(Var *argvars, Var* returnVar) {
    Pos pos = curPor->cursor;
    CS pattern = NULL;
@@ -3203,7 +3203,7 @@ match_delete(Portal* po, int id, int perr) {
 }
 
 // Delete all matches in the match list of portal 'po'.
-public void
+pub void
 clear_matches(Portal* po) {
    while (po->firstMatch) {
       MatchItem* m = po->firstMatch->next;
@@ -3226,7 +3226,7 @@ get_match(Portal* po, int id) {
 }
 
 // Init for calling prepare_search_hl().
-public void
+pub void
 searchInitHilite(Portal* po, Match* search_hl) {
    // Setup for match and @hlsearch hiliting.  Disable any previous match
    MatchItem* cur = po->firstMatch;
@@ -3394,7 +3394,7 @@ next_search_hl(
 }
 
 // Advance to the match in portal "po" line "lnum" or past it.
-public void
+pub void
 prepare_search_hl(Portal* po, Match* search_hl, LineNr lnum) {
    Match* match;      // points to search_hl or a match
    Boole pos_inprogress;   // marks that position match search is in progress
@@ -3460,7 +3460,7 @@ check_cur_search_hl(Portal* po, Match* match) {
 
 //Prepare for 'hlsearch' and match hiliting in one portal line.
 //Return true if there is such hiliting and set "searchHiId" to the current hilite decoration.
-public Boole
+pub Boole
 searchPrepareHiliteLine(
    Portal* po,
    LineNr lnum,
@@ -3531,7 +3531,7 @@ searchPrepareHiliteLine(
 // for start/end of next match. When another match, have to check for start again. Watch out for 
 // matching an empty string! "onLastCol" is set to true with non-zero searchDeco and the next 
 // column is endcol. Return the updated searchDeco.
-public Short
+pub Short
 update_search_hl(
    Portal* po,
    LineNr lnum,
@@ -3632,7 +3632,7 @@ update_search_hl(
    return searchHiId;
 }
 
-public int
+pub int
 get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol) {
    long prevcol = curcol;
    Boole prevcol_hl_flag = false;
@@ -3669,7 +3669,7 @@ get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol) {
 }
 
 // Get hiliting for the char after the text in "char_attr" from 'hlsearch' or match hiliting
-public void
+pub void
 get_search_match_hl(Portal* po, Match* search_hl, long col, OUT Short* charHiId) {
    MatchItem* cur = po->firstMatch;         // points to the match list
    Boole isPopup = PORTAL_IS_POPUP(po);  // flag to indicate whether search_hl has been processed or not
@@ -3709,14 +3709,14 @@ matchadd_dict_arg(Var* tv, OUT Portal** port) {
    return OK;
 }
 
-public void
+pub void
 f_clearmatches(Var* argvars, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (port)
       clear_matches(port);
 }
 
-public void
+pub void
 f_getmatches(Var *argvars, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (!port)
@@ -3754,7 +3754,7 @@ f_getmatches(Var *argvars, Var* returnVar UNUSED) {
    }
 }
 
-public void
+pub void
 f_setmatches(Var *argvars, Var* returnVar) {
    List   *l;
    ListItem   *li;
@@ -3835,7 +3835,7 @@ f_setmatches(Var *argvars, Var* returnVar) {
    }
 }
 
-public void
+pub void
 f_matchadd(Var *argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    int prio = 10;   // default priority
@@ -3869,7 +3869,7 @@ f_matchadd(Var *argvars, Var* returnVar) {
 }
 
 // "matchaddpos()" function
-public void
+pub void
 f_matchaddpos(Var *argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
    int prio = 10;
@@ -3911,7 +3911,7 @@ f_matchaddpos(Var *argvars, Var* returnVar) {
    returnVar->number = match_add(port, group, NULL, prio, id, l);
 }
 
-public void
+pub void
 f_matcharg(Var* argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
@@ -3929,7 +3929,7 @@ f_matcharg(Var* argvars, Var* returnVar) {
    }
 }
 
-public void
+pub void
 f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED) {
    Portal* port = getOptionalPortal(argvars, 1);
    if (!port)
@@ -3940,7 +3940,7 @@ f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED) {
 
 //":[N]match {group} {pattern}"
 //called when skipping commands to find the next command.
-public void
+pub void
 c_match(Invocation* invo) {
    CS g = NULL;
    int c;
@@ -4000,7 +4000,7 @@ c_match(Invocation* invo) {
 //{{{help file searchin'
 
 // ":help": open a read-only portal on a help file
-public void
+pub void
 c_help(Invocation* invo) {
    CS arg;
    int      n;
@@ -4150,7 +4150,7 @@ erret:
 }
 
 // ":helpclose": Close one help portal
-public void
+pub void
 c_helpclose(Invocation* invo UNUSED) {
    Portal *port;
 
@@ -4164,7 +4164,7 @@ c_helpclose(Invocation* invo UNUSED) {
 
 //In an argument search for a language specifiers in the form "@xx".
 //Change the "@" to ZERO if found, and return a pointer to "xx". NULL if not found.
-public CS
+pub CS
 check_help_lang(CS arg) {
    int len = (int)STRLEN(arg);
 
@@ -4186,7 +4186,7 @@ check_help_lang(CS arg) {
 //  - Match starting with "+" is worse (feature instead of command)
 //Assumption is made that the matched_string passed has already been found to
 //match some string for which help is requested.  webb.
-public int
+pub int
 help_heuristic(
    CS matched_string,
    int offset,         // offset for match
@@ -4239,7 +4239,7 @@ helpCompare(const void *s1, const void *s2) {
 //the number of matches in num_matches.
 //The matches will be sorted with a "best" match algorithm.
 //When "keep_lang" is true try keeping the language of the current buffer.
-public int
+pub int
 find_help_tags(
    CS arg,
    int keep_lang,
@@ -4470,7 +4470,7 @@ find_help_tags(
 
 // Cleanup matches for help tags: Remove "@ab" if the top of 'helplang' is "ab" and the language 
 // of the first tag matches it.  Otherwise remove "@en" if "en" is the only language.
-public void
+pub void
 cleanup_help_tags(OUT ExpandMatch* matches) {
    int len;
    Byte buf[4];
@@ -4517,7 +4517,7 @@ cleanup_help_tags(OUT ExpandMatch* matches) {
 }
 
 // Called when starting to edit a book for a help file.
-public void
+pub void
 prepare_help_buffer(void) {
    curBook->kind = BOOK_HELP;
    optSetByName(S"booktype", optEnum(BOOK_HELP), SET_LOCAL);
@@ -4545,7 +4545,7 @@ prepare_help_buffer(void) {
 }
 
 // After reading a help file: May cleanup a help book when syntax highlighting is not used.
-public void
+pub void
 searchFixHelpBook(void) {
    CS line;
    int in_example = false;
@@ -4690,13 +4690,13 @@ searchFixHelpBook(void) {
 }
 
 // ":exusage"
-public void
+pub void
 c_exusage(Invocation* invo UNUSED) {
    executeCommLine(S"help ex-cmd-index");
 }
 
 // ":usage"
-public void
+pub void
 c_usage(Invocation* invo UNUSED) {
    executeCommLine(S"help normal-index");
 }
@@ -4988,7 +4988,7 @@ helptagsCb(CS fname, void* cookie) {
 }
 
 // ":helptags"
-public void
+pub void
 c_helptags(Invocation* invo) {
    Expand expand;
    CS dirname;

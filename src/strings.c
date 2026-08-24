@@ -43,7 +43,7 @@ private struct Arena { // :Arena
    int currInd;
 };
 
-public Arena*
+pub Arena*
 createArena() { //:createArena
    Arena* result = malloc(sizeof(Arena));
 
@@ -77,7 +77,7 @@ calculateChunkSize(Unt allocSize) { //:calculateChunkSize
    return mallocMemory - 32;
 }
 
-public void*
+pub void*
 allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
 // Allocate memory in the arena, malloc'ing a new chunk if needed
    if ((Unt)a->currInd + allocSize >= a->currChunk->size) {
@@ -114,7 +114,7 @@ allocateOnArena(Unt allocSize, Arena* a) { //:allocateOnArena
    return result;
 }
 
-public void
+pub void
 deleteArena(Arena* ar) { //:deleteArena
 // Returns memory of the arena to the OS
    ArenaChunk* curr = ar->firstChunk;
@@ -133,7 +133,7 @@ deleteArena(Arena* ar) { //:deleteArena
 //   a->currInd = 0;
 //}
 
-public void
+pub void
 arenaTryFree(void* start, Unt len, Arena* a) {
 // If this memory span is at the very end of this arena, then free it by rewinding
    if ((void*)&(a->currChunk->memory) + (a->currInd - len) == start) {
@@ -174,7 +174,7 @@ private Byte utf8LenTable_zero[256] = {
 //If the sequence is illegal or truncated by a ZERO the first byte is returned.
 //For an overlong sequence this may return zero.
 //Do not include composing characters, of course.
-public Unt
+pub Unt
 mb_ptr2char(Byte* p) {
    if (p[0] < 0x80)   // be quick for ASCII
       return (Unt)p[0];
@@ -214,7 +214,7 @@ mb_ptr2char(Byte* p) {
 //Convert the string "str[orglen]" to do ignore-case comparing. Uses the current locale.
 //When "buf" is NULL, return an allocated string (NULL for out-of-memory).
 //Otherwise put the result in "buf[bufLen]".
-public CS
+pub CS
 str_foldcase(
    CS str,
    Unt orglen,
@@ -287,14 +287,14 @@ str_foldcase(
 
 //Convert the lower 4 bits of byte "c" to its hex character.
 //Lower case letters are used to avoid the confusion of <F1> being 0xf1 or function key 1.
-public Unt
+pub Unt
 nr2hex(Unt c) {
    if ((c & 0xf) <= 9)
       return (c & 0xf) + '0';
    return (c & 0xf) - 10 + 'a';
 }
 
-public void
+pub void
 transchar_hex(CS buf, int c) {
    buf[0] = '<';
    int i = 0;
@@ -309,7 +309,7 @@ transchar_hex(CS buf, int c) {
 }
 
 // Skip over ' ' and '\t'.
-public CS
+pub CS
 skipwhite(CS q) {
    CS p = q;
    for (; SPACE_OR_TAB(*p); p++)
@@ -318,7 +318,7 @@ skipwhite(CS q) {
 }
 
 // Skip over ' '
-public CS
+pub CS
 skipSpace(CS q) {
    CS p = q;
 
@@ -328,7 +328,7 @@ skipSpace(CS q) {
 }
 
 // skip over ' ', '\t' and '\n'.
-public CS
+pub CS
 skipwhite_and_nl(CS q) {
    CS p = q;
 
@@ -337,13 +337,13 @@ skipwhite_and_nl(CS q) {
    return p;
 }
 
-public int
+pub int
 getwhitecols(CS p) {
    return skipwhite(p) - p;
 }
 
 // skip over digits
-public CS
+pub CS
 skipdigits(CS q) {
    CS p = q;
 
@@ -359,7 +359,7 @@ eeIsBDigit(int c) {
 }
 
 // skip over binary digits
-public CS
+pub CS
 skipbin(CS q) {
    CS p = q;
 
@@ -369,7 +369,7 @@ skipbin(CS q) {
 }
 
 // skip over digits and hex characters
-public CS
+pub CS
 skiphex(CS q) {
    CS p = q;
 
@@ -380,7 +380,7 @@ skiphex(CS q) {
 
 
 // skip to bin digit (or ZERO after the string)
-public CS
+pub CS
 skiptobin(CS q) {
    CS p = q;
    while (*p != ZERO && !eeIsBDigit(*p))   // skip to next digit
@@ -389,7 +389,7 @@ skiptobin(CS q) {
 }
 
 // skip to digit (or ZERO after the string)
-public CS
+pub CS
 skiptodigit(CS q) {
    CS p = q;
 
@@ -399,7 +399,7 @@ skiptodigit(CS q) {
 }
 
 // skip to hex character (or ZERO after the string)
-public CS
+pub CS
 skiptohex(CS q) {
    CS p = q;
 
@@ -411,19 +411,19 @@ skiptohex(CS q) {
 //Variant of isdigit() that can handle characters > 0x100.
 //We don't use isdigit() here, because on some systems it also considers
 //superscript 1 to be a digit. Use the EE_ISDIGIT() macro for simple arguments.
-public int
+pub int
 eeIsDigit(int c) {
    return (c >= '0' && c <= '9');
 }
 
 //Variant of isxdigit() that can handle characters > 0x100. We don't use isxdigit() here, because 
 //on some systems it also considers superscript 1 to be a digit.
-public int
+pub int
 eeIsXDigit(Unt c) {
    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-public Boole
+pub Boole
 eeIsLower(Unt c) {
    if (c <= '@')
       return false;
@@ -434,7 +434,7 @@ eeIsLower(Unt c) {
    return islower(c) != 0;
 }
 
-public int
+pub int
 eeIsUpper(Unt c) {
    if (c <= '@')
       return false;
@@ -444,12 +444,12 @@ eeIsUpper(Unt c) {
    return isupper(c) != 0;
 }
 
-public int
+pub int
 eeglIsAlfa(int c) {
    return eeIsLower(c) || eeIsUpper(c);
 }
 
-public int
+pub int
 eeglToUpper(Unt c) {
    if (c <= '@')
       return c;
@@ -459,7 +459,7 @@ eeglToUpper(Unt c) {
       return TOUPPER_ASC(c);
 }
 
-public int
+pub int
 eeglToLower(Unt c) {
    if (c <= '@')
       return c;
@@ -470,7 +470,7 @@ eeglToLower(Unt c) {
 }
 
 // skiptowhite: skip over text until ' ' or '\t' or ZERO.
-public CS
+pub CS
 skiptowhite(CS p) {
    while (*p != ' ' && *p != '\t' && *p != ZERO)
       ++p;
@@ -478,7 +478,7 @@ skiptowhite(CS p) {
 }
 
 // skiptowhite_esc: Like skiptowhite(), but also skip escaped chars
-public CS
+pub CS
 skiptowhite_esc(CS p) {
    while (*p != ' ' && *p != '\t' && *p != ZERO) {
       if ((*p == '\\' || *p == Ctrl_V) && *(p + 1) != ZERO)
@@ -489,7 +489,7 @@ skiptowhite_esc(CS p) {
 }
 
 // "a b c d" -> "d"
-public CS
+pub CS
 skipToLastSpace(CS p) {
    CS lastSpace = null;
    for (; *p != ZERO; p++) {
@@ -500,7 +500,7 @@ skipToLastSpace(CS p) {
 }
 
 // Get a number from a string and skip over it.
-public long
+pub long
 parseLong(OUT CS* pp) {
    CS p = *pp;
    long retval = atol((char *)p);
@@ -512,7 +512,7 @@ parseLong(OUT CS* pp) {
 }
 
 // Get a number from a string and skip over it. Allow for embedded single quotes.
-public long
+pub long
 parseLong_quoted(OUT CS* pp) {
    CS str = *pp;
    Long retval = 0;
@@ -537,7 +537,7 @@ parseLong_quoted(OUT CS* pp) {
 }
 
 // Return true if "lbuf" is empty or only contains blanks.
-public int
+pub int
 eeIsBlankLine(CS lbuf) {
    CS p = skipwhite(lbuf);
    return (*p == ZERO || *p == '\r' || *p == '\n');
@@ -560,7 +560,7 @@ eeIsBlankLine(CS lbuf) {
 //If "what" contains STR2NR_QUOTE ignore embedded single quotes
 //If maxlen > 0, check at a maximum maxlen chars.
 //If strict is true, check the number strictly. return *len = 0 if fail.
-public void
+pub void
 readLongNumber(
    CS start,
    OUT int* prep,    // type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
@@ -708,7 +708,7 @@ readLongNumber(
 
 //Return the value of a single hex character.
 //Only valid when the argument is '0' - '9', 'A' - 'F' or 'a' - 'f'.
-public int
+pub int
 hex2nr(int c) {
    if (c >= 'a' && c <= 'f')
       return c - 'a' + 10;
@@ -718,7 +718,7 @@ hex2nr(int c) {
 }
 
 // Convert two hex characters to a byte. Return -1 if one of the characters is not hex.
-public int
+pub int
 hexhex2nr(CS p) {
    if (!eeIsXDigit(p[0]) || !eeIsXDigit(p[1]))
       return -1;
@@ -731,13 +731,13 @@ hexhex2nr(CS p) {
 //Assume a file name doesn't start with a space.
 //For multi-byte names, never remove a backslash before a non-ascii
 //character, assume that all multi-byte characters are valid file name characters.
-public int
+pub int
 rem_backslash(CS filename) {
    return (filename[0] == '\\' && filename[1] != ZERO);
 }
 
 // Halve the number of backslashes in a file name argument.
-public void
+pub void
 backslash_halve(CS p) {
    for ( ; *p; ++p) {
       if (rem_backslash(p))
@@ -746,7 +746,7 @@ backslash_halve(CS p) {
 }
 
 //backslash_halve() plus save the result in allocated memory.
-public CS
+pub CS
 backslash_halve_save(CS p) {
    CS res = copyStr(p);
    backslash_halve(res);
@@ -756,7 +756,7 @@ backslash_halve_save(CS p) {
 //Convert non-printable character to two or more printable characters in "charbuf[]". 
 //"charbuf" needs to be able to hold five bytes.
 //Does NOT work for multi-byte characters, c must be <= 255.
-public void
+pub void
 transchar_nonprint(CS charbuf, int c) {
    if (c == NL)
       c = ZERO;      // we use newline in place of a ZERO
@@ -818,7 +818,7 @@ utf_safe_read_char_adv(OUT CS* s, OUT Unt* n){
 
 // Get the length of a UTF-8 byte sequence, excluding any following composing characters.
 // Return 0 for "". Return 1 for an illegal byte sequence.
-public Unt
+pub Unt
 utf_ptr2len(CS p) {
    if (*p == ZERO)
       return 0;
@@ -832,19 +832,19 @@ utf_ptr2len(CS p) {
 
 //Return length of UTF-8 character obtained from the first byte. "b" must be between 0 and 255!
 //Return 1 for an invalid first byte value.
-public Unt
+pub Unt
 utf_byte2len(int b) {
    return utf8LenTable[b];
 }
 
 //Return length of UTF-8 character, obtained from the first byte.
 //"b" must be between 0 and 255! Return 0 for an invalid first byte value.
-public Unt
+pub Unt
 utf_byte2len_zero(int b) {
    return utf8LenTable_zero[b];
 }
 
-public Boole
+pub Boole
 utfNeedTruncate(CS p, int size) {
    return utf_ptr2len_len(p, size) < (Unt)utf8LenTable[*p];
 }
@@ -852,7 +852,7 @@ utfNeedTruncate(CS p, int size) {
 //Get the length of UTF-8 byte sequence "p[size]". Do not include any following composing 
 //characters. Return 1 for "". 1 for an illegal byte sequence (also in incomplete byte seq.).
 //number > "size" for an incomplete byte sequence. Never return 0.
-public Unt
+pub Unt
 utf_ptr2len_len(Byte const* p, int size) {
    Unt len = utf8LenTable[*p];
    if (len == 1)
@@ -871,7 +871,7 @@ utf_ptr2len_len(Byte const* p, int size) {
 
 // Return the number of bytes the UTF-8 encoding of character "c" takes.
 // This does not include composing characters.
-public Unt
+pub Unt
 mb_char2len(Unt c) {
    if (c < 0x80)
       return 1;
@@ -887,7 +887,7 @@ mb_char2len(Unt c) {
 }
 
 // Convert Unicode character "c" to UTF-8 string in "buf[]". Returns the number of bytes.
-public int
+pub int
 mb_char2bytes(Unt c, CS buf) {
    if (c < 0x80)   { // 7 bits
       buf[0] = c;
@@ -930,19 +930,19 @@ mb_char2bytes(Unt c, CS buf) {
 }
 
 // utf_iscomposing() with different argument type for libvterm.
-public int
+pub int
 utf_iscomposing_uint(Unt c) {
    return utf_iscomposing(c);
 }
 
-public Boole
+pub Boole
 utf_islower(Unt a){
    // German sharp s is lower case but has no upper case equivalent.
    return (utf_toupper(a) != a) || a == 0xdf;
 }
 
 //Return the lower-case equivalent of "a", which is a UCS-4 character. Use simple case folding.
-public Unt
+pub Unt
 utf_tolower(Unt a) {
    // Use ASCII style tolower().
    if (a < 128)
@@ -952,7 +952,7 @@ utf_tolower(Unt a) {
    return towlower(a);
 }
 
-public Boole
+pub Boole
 utf_isupper(Unt a) {
    return (utf_tolower(a) != a);
 }
@@ -1273,7 +1273,7 @@ utf_convert(Unt a, ConvertStruct table[], int tableSize) {
 }
 
 //Return the folded-case equivalent of "a", which is a UCS-4 character. Uses simple case folding.
-public Unt
+pub Unt
 utf_fold(Unt a) {
    if (a < 0x80)
       // be fast for ASCII
@@ -1282,7 +1282,7 @@ utf_fold(Unt a) {
 }
 
 //Return the upper-case equivalent of "a", which is a UCS-4 character.  Use simple case folding.
-public Unt
+pub Unt
 utf_toupper(Unt a) {
    // Use ASCII style toupper().
    if (a < 128)
@@ -1295,7 +1295,7 @@ utf_toupper(Unt a) {
 //Version of strnicmp() that handles multi-byte characters.
 //Needed for Big5, Shift-JIS and UTF-8 encoding. Return zero if s1 and s2 are equal (ignoring case),
 //the difference between two characters otherwise.
-public int
+pub int
 caseInsensitiveCompareNChars2(CS s1, CS s2, Unt n1, Unt n2) {
    if (n1 == n2)
       return caseInsensitiveCompareNChars(s1, s2, n1);
@@ -1303,7 +1303,7 @@ caseInsensitiveCompareNChars2(CS s1, CS s2, Unt n1, Unt n2) {
       return utf_strnicmp(s1, s2, n1, n2);
 }
 
-public int
+pub int
 caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
    return utf_strnicmp(s1, s2, nn, nn);
 }
@@ -1489,12 +1489,12 @@ private Interval emoji_all[] = {
 };
 
 
-public Boole
+pub Boole
 strInEmojiTable(Unt c) {
    return intable(emoji_all, sizeof(emoji_all), c);
 }
 
-public Boole
+pub Boole
 strInDoubleWidthTable(Unt c) {
    // Sorted list of non-overlapping intervals of East Asian double width
    // characters, generated with ../runtime/tools/unicode.vim.
@@ -1812,7 +1812,7 @@ private Interval ambiguous[] = {
 
 //Get character at **pp and advance *pp to the next character.
 //Note: composing characters are skipped!
-public Unt
+pub Unt
 strAdvanceMultibyte(OUT CS* pp) {
    Unt c = mb_ptr2char(*pp);
    *pp += utfCharLen(*pp);
@@ -1821,14 +1821,14 @@ strAdvanceMultibyte(OUT CS* pp) {
 
 //Get character at **pp and advance *pp to the next character.
 //Note: composing characters are returned as separate characters.
-public Unt
+pub Unt
 mb_cptr2char_adv(OUT CS* pp) {
    Unt c = mb_ptr2char(*pp);
    *pp += utf_ptr2len(*pp);
    return c;
 }
 
-public int
+pub int
 utf_ambiguous_width(Unt c) {
     return c >= 0x80 && (intable(ambiguous, sizeof(ambiguous), c)
        || intable(emoji_all, sizeof(emoji_all), c));
@@ -1836,7 +1836,7 @@ utf_ambiguous_width(Unt c) {
 
 //Return offset from "p" to the start of a character, including composing
 //characters. "base" must be the start of the C string.
-public int
+pub int
 mb_head_off(CS base, CS p) {
    CS q;
    CS s;
@@ -1872,7 +1872,7 @@ mb_head_off(CS base, CS p) {
 }
 
 // Whether space is NOT allowed before/after 'c'.
-public int
+pub int
 utf_eat_space(int cc){
     return ((cc >= 0x2000 && cc <= 0x206F)   // General punctuations
        || (cc >= 0x2e00 && cc <= 0x2e7f)   // Supplemental punctuations
@@ -1884,7 +1884,7 @@ utf_eat_space(int cc){
 }
 
 // Whether line break is allowed before "cc".
-public Boole
+pub Boole
 utf_allow_break_before(Unt cc) {
    static const Unt BOL_prohibition_punct[] = {
       '!',
@@ -1996,7 +1996,7 @@ utf_allow_break_after(Unt cc) {
 }
 
 //Whether line break is allowed between "cc" and "ncc".
-public int
+pub int
 utf_allow_break(Unt cc, Unt ncc) {
    // don't break between two-letter punctuations
    if (cc == ncc
@@ -2008,7 +2008,7 @@ utf_allow_break(Unt cc, Unt ncc) {
 }
 
 // Copy a character from "*fp" to "*tp" and advance the pointers.
-public void
+pub void
 mb_copy_char(OUT CS* fp, OUT CS* tp) {
    int l = utfCharLen(*fp);
 
@@ -2020,7 +2020,7 @@ mb_copy_char(OUT CS* fp, OUT CS* tp) {
 //Return the offset from "p" to the first byte of a character.  When "p" is at the start of a 
 //character 0 is returned, otherwise the offset to the next character.  Can start anywhere in a 
 //stream of bytes.
-public int
+pub int
 mb_off_next(CS base, CS p) {
    int head_off = mb_head_off(base, p);
 
@@ -2033,7 +2033,7 @@ mb_off_next(CS base, CS p) {
 //Return the offset from "p" to the last byte of the character it points
 //into.  Can start anywhere in a stream of bytes.
 //Composing characters are not included.
-public int
+pub int
 mb_tail_off(CS base, CS p) {
    if (*p == ZERO)
       return 0;
@@ -2055,7 +2055,7 @@ mb_tail_off(CS base, CS p) {
 
 //Return true if string "s" is a valid utf-8 string. When "end" is NULL stop at the first 
 //ZERO. Otherwise stop at "end".
-public int
+pub int
 utf_valid_string(CS s, CS end) {
    CS p = s;
 
@@ -2074,7 +2074,7 @@ utf_valid_string(CS s, CS end) {
 }
 
 // Return a pointer to the character before "*p", if there is one.
-public CS
+pub CS
 mb_prevptr(CS line, CS p) {   // start of the string
    if (p > line)
       MB_PTR_BACK(line, p);
@@ -2083,7 +2083,7 @@ mb_prevptr(CS line, CS p) {   // start of the string
 
 //Return the character length of "str". Each multi-byte character (with
 //following composing characters) counts as one.
-public int
+pub int
 mb_charlen(CS str) {
    if (!str)
       return 0;
@@ -2097,7 +2097,7 @@ mb_charlen(CS str) {
 }
 
 // Like mb_charlen() but for a string with specified length.
-public int
+pub int
 mb_charlen_len(CS str, int len) {
    CS p = str;
    int count;
@@ -2112,7 +2112,7 @@ mb_charlen_len(CS str, int len) {
 //Used for the "to" and "from" part of a mapping.
 //Return the un-escaped string if it is a multi-byte character, and advance
 //"pp" to just after the bytes that formed it. Return NULL if no multi-byte char was found.
-public CS
+pub CS
 mb_unescape(OUT CS* pp) {
    static Byte   buf[6];
    int n;
@@ -2153,7 +2153,7 @@ mb_unescape(OUT CS* pp) {
 
 //Return true if "c" is a composing UTF-8 character.  This means it will be
 //drawn on top of the preceding character. Based on code from Markus Kuhn.
-public Boole
+pub Boole
 utf_iscomposing(Unt c) {
    // Sorted list of non-overlapping intervals.
    // Generated by ../runtime/tools/unicode.vim.
@@ -2519,7 +2519,7 @@ utf_iscomposing(Unt c) {
 
 //Return true for characters that can be displayed in a normal way.
 //Only for characters of 0x100 and above!
-public Boole
+pub Boole
 utf_printable(Unt c) {
    // Sorted list of non-overlapping intervals.
    // 0xd800-0xdfff is reserved for UTF-16, actually illegal.
@@ -2537,7 +2537,7 @@ utf_printable(Unt c) {
 //{{{directory name
 
 // Append a sub-directory name to DirName. Ensure that the underlying array end with a slash.
-public void
+pub void
 appendSubDir(CS subDir, OUT DirName* dn) {
    Int const rawLen = STRLEN(subDir);
    if (rawLen == 0) {
@@ -2565,7 +2565,7 @@ appendSubDir(CS subDir, OUT DirName* dn) {
 }
 
 // Remove one subdirectory from DirName. Return false if impossible (because it's already empty)
-public Boole
+pub Boole
 removeSubDir(OUT DirName* restrict dn) {
    CS p = (CS)dn->c + dn->len - 2;
    for (; *p != '/' && p >= dn->c; p--)
@@ -2583,7 +2583,7 @@ removeSubDir(OUT DirName* restrict dn) {
 
 // Linked lists of array chars living in an Arena. Very useful for file path construction
 
-public declStruct(ChunkString);
+pub declStruct(ChunkString);
 
 private struct ChunkString {
    Arr(Byte const) c;
@@ -2598,7 +2598,7 @@ private struct ChunkyString {
    Arena* a;
 };
 
-public ChunkyString*
+pub ChunkyString*
 createChunkyString(Arr(Byte const) c, Arena* a) {
    ChunkyString* result = allocate(ChunkyString, a);
    Int len = strlen((Arr(char))c);
@@ -2610,7 +2610,7 @@ createChunkyString(Arr(Byte const) c, Arena* a) {
    return result;
 }
 
-public void
+pub void
 appendToChunkyString(Arr(Byte const) c, ChunkyString* chunky) {
    Int len = strlen((Arr(char))c);
    ChunkString* penult = chunky->last;
@@ -2621,7 +2621,7 @@ appendToChunkyString(Arr(Byte const) c, ChunkyString* chunky) {
 }
 
 // Linearize a chunky string into a contiguous ZERO-terminated string in the same arena
-public CS
+pub CS
 toStringChunky(ChunkyString* chunky) {
    CS contiguous = allocateArray(chunky->len + 1, Byte, chunky->a);
    contiguous[chunky->len] = ZERO;
@@ -2638,7 +2638,7 @@ toStringChunky(ChunkyString* chunky) {
 
 // Return the number of bytes the UTF-8 encoding of the character at "p" takes.
 // This includes following composing characters.
-public Unt
+pub Unt
 utfCharLen(CS p) {
    int b0 = *p;
    if (b0 == ZERO)
@@ -2667,7 +2667,7 @@ utfCharLen(CS p) {
 //Return the number of bytes the UTF-8 encoding of the character at "p[size]" takes.
 //This includes following composing characters.
 //Return 0 for an empty string. Return 1 for an illegal char or an incomplete byte sequence.
-public Unt
+pub Unt
 utfCharLen_len(Byte* p, int size) {
    int len;
 
@@ -2709,27 +2709,27 @@ utfCharLen_len(Byte* p, int size) {
 //}}}
 //{{{basic string manipulation
 
-public Text
+pub Text
 mbText(NULLABLE CS b) {
    return b ? (Text){b, STRLEN(b)} : (Text){null, 0};
 }
 
-public Text
+pub Text
 text(CS b) {
    return (Text){b, STRLEN(b)};
 }
 
-public Boole
+pub Boole
 eq_Text_Text(Text a, Text b) {
    return a.len == b.len && memcmp(a.c, b.c, a.len) == 0;
 }
 
-public Boole
+pub Boole
 eq_Text_CString(Text a, CS b) {
    return a.len == STRLEN(b) && memcmp(a.c, b, a.len) == 0;
 }
 
-public Boole
+pub Boole
 eq_CString_CString(CS a, CS b) {
    Unt len = STRLEN(a);
    return len == STRLEN(b) && memcmp(a, b, len + 1) == 0;
@@ -2737,14 +2737,14 @@ eq_CString_CString(CS a, CS b) {
 
 //Move input text forward to some position within it.
 //Precond: "t" points into "inp"
-public Text
+pub Text
 skipTo(Text inp, CS t) {
    return (Text){.c = t, .len = inp.len - (t - inp.c)};
 }
 
 //"asdf,bcjk"  => "asdf,bcjk"
 // ^                   ^
-public CS
+pub CS
 skipToComma(CS s) {
    for (; *s != ZERO && *s != ','; s++)
       {}
@@ -2754,7 +2754,7 @@ skipToComma(CS s) {
 //Skip to next part of an option argument: Skip space and comma.
 //"asdf,  bcjk"  => "asdf,  bcjk"
 //     ^                    ^
-public CS
+pub CS
 skip_to_option_part(CS p) {
    if (*p == ',')
       ++p;
@@ -2763,7 +2763,7 @@ skip_to_option_part(CS p) {
    return p;
 }
 
-public CS
+pub CS
 skipLine(CS s) {
    CS p;
    for (p = s; *p != ZERO && *p != '\n'; p++)
@@ -2776,7 +2776,7 @@ skipLine(CS s) {
 #define USING_FLOAT_STUFF
 
 // Copy "string" into newly allocated memory.
-public CS
+pub CS
 copyStr(CS string) {
    Unt len = STRLEN(string) + 1;
    CS p = alloc(len);
@@ -2786,7 +2786,7 @@ copyStr(CS string) {
 
 //Copy up to "len" bytes of "string" into newly allocated memory and terminate with a ZERO.
 //The allocated memory always has size "len + 1", also when "string" is shorter.
-public CS
+pub CS
 copySubstr(CS string, Unt len) {
    CS p = alloc(len + 1);
    STRNCPY(p, string, len);
@@ -2794,7 +2794,7 @@ copySubstr(CS string, Unt len) {
    return p;
 }
 
-public Polystring
+pub Polystring
 polystring(Unt cap) {
    if (cap > 0) {
       CS c = alloc(cap + 1);
@@ -2806,7 +2806,7 @@ polystring(Unt cap) {
 }
 
 //Append a string to polystring.
-public void
+pub void
 appendToPoly(Text s, OUT Polystring* buf) {
    if (s.len == 0) {
       return;
@@ -2827,7 +2827,7 @@ appendToPoly(Text s, OUT Polystring* buf) {
 }
 
 //Append a string to a multistring
-public void
+pub void
 appendToMulti(Text s, OUT Multistring* mu) {
    if (s.len == 0) {
       return;
@@ -2867,7 +2867,7 @@ appendToMulti(Text s, OUT Multistring* mu) {
 }
 
 //Append a string to a multistring
-public void
+pub void
 appendNullToMulti(OUT Multistring* mu) {
    if (mu->len == mu->cap) {
       Unt newCap = 2*mu->cap;
@@ -2883,21 +2883,21 @@ appendNullToMulti(OUT Multistring* mu) {
    mu->len++;
 }
 
-public void
+pub void
 freeMultistring(OUT Multistring* mu) {
    eeglFree(mu->c);
    eeglFree(mu->buf.c);
    mu->len = 0;
 }
 
-public void
+pub void
 freePolystring(OUT Polystring* poly) {
    eeglFree(poly->c);
 }
 
 // Copy up to "len" bytes of "string" into the arena and terminate with a ZERO.
 // The allocated memory always has size "len + 1", even when "string" is shorter.
-public CS
+pub CS
 copySubstrA(CS string, Unt len, Arena* a) {
    CS p = allocateArray(len + 1, Byte, a);
    p[len] = ZERO;
@@ -2906,7 +2906,7 @@ copySubstrA(CS string, Unt len, Arena* a) {
 }
 
 // Copy a text into newly allocated memory and terminate with a ZERO.
-public Text
+pub Text
 copyText(Text slice) {
    CS retVal = alloc(slice.len + 1);
    STRNCPY(retVal, slice.c, slice.len);
@@ -2914,7 +2914,7 @@ copyText(Text slice) {
    return text(retVal);
 }
 
-public CS
+pub CS
 copyStrA(CS string, Arena* a) {
    Unt len = STRLEN(string) + 1;
    CS p = allocateArray(len + 1, Byte, a);
@@ -2923,13 +2923,13 @@ copyStrA(CS string, Arena* a) {
 }
 
 // Same as copyStr(), but any characters found in esc_chars are preceded by a backslash.
-public CS
+pub CS
 copyStr_escaped(CS string, CS escChars) {
    return copyStr_escaped_ext(string, escChars, '\\', false, null);
 }
 
 // Same as copyStr(), but any characters found in esc_chars are preceded by a backslash.
-public CS
+pub CS
 copyStrEscapedA(CS string, CS escChars, Arena* a) {
    return copyStr_escaped_ext(string, escChars, '\\', false, a);
 }
@@ -2937,7 +2937,7 @@ copyStrEscapedA(CS string, CS escChars, Arena* a) {
 //Same as copyStr_escaped(), but when "bsl" is true also escape characters where rem_backslash() 
 //would remove the backslash. Escape the characters with "cc".
 //If "a" is non-null, allocation is within it, otherwise it's separate allocations
-public CS
+pub CS
 copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
    int l;
 
@@ -2972,7 +2972,7 @@ copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a) {
     return escaped_string;
 }
 
-public Arr(CS)
+pub Arr(CS)
 splitByCharIntoArray(CS inp, Byte delimiter, OUT Unt* len) {
    Unt count = 1;
    for (Unt i = 0; inp[i] != ZERO; i++) {
@@ -3000,7 +3000,7 @@ splitByCharIntoArray(CS inp, Byte delimiter, OUT Unt* len) {
 }
 
 // "a b c" -> ["a" "b" "c"]
-public ArrayList
+pub ArrayList
 splitBySpace(CS inp) {
    ArrayList split;
    ga_init(&split);
@@ -3036,7 +3036,7 @@ splitBySpace(CS inp) {
 
 //Like copyStr(), but make all characters uppercase.
 //This uses ASCII lower-to-upper case translation, language independent.
-public CS
+pub CS
 copyStr_up(CS string) {
    CS p1 = copyStr(string);
    asciiToUpper(p1);
@@ -3045,7 +3045,7 @@ copyStr_up(CS string) {
 
 //Like copySubstr(), but make all characters uppercase.
 //This uses ASCII lower-to-upper case translation, language independent.
-public CS
+pub CS
 copySubstr_up(CS string, Unt len) {
    CS p1 = copySubstr(string, len);
    asciiToUpper(p1);
@@ -3054,13 +3054,13 @@ copySubstr_up(CS string, Unt len) {
 
 //Eegl has its own isspace() function, because on some machines isspace()
 //can't handle characters above 128.
-public int
+pub int
 isSpace(int x) {
    return ((x >= 9 && x <= 13) || x == ' ');
 }
 
 //ASCII lower-to-upper case translation, language independent.
-public void
+pub void
 asciiToUpper(CS p) {
    if (!p)
       return;
@@ -3074,7 +3074,7 @@ asciiToUpper(CS p) {
 
 //Make string "s" all upper-case and return it in allocated memory.
 //Handle multi-byte characters as well as possible.
-public CS
+pub CS
 strup_save(CS orig) {
    CS p;
    CS res = p = copyStr(orig);
@@ -3108,7 +3108,7 @@ strup_save(CS orig) {
 }
 
 //Skip from starting quote to ending quote, including skipping escaped quotes
-public Text
+pub Text
 skipQuoted(Text s) {
    CS const sentinel = s.c + s.len;
    for (CS a = s.c + 1; a < sentinel; a++) {
@@ -3121,7 +3121,7 @@ skipQuoted(Text s) {
 }
 
 //Skip from starting apostrofe to ending apostrofe, including skipping escaped quotes
-public Text
+pub Text
 skipSingleQuoted(Text s) {
    CS const sentinel = s.c + s.len;
    for (CS a = s.c + 1; a < sentinel; a++) {
@@ -3135,7 +3135,7 @@ skipSingleQuoted(Text s) {
 
 //Make string "s" all lower-case and return it in allocated memory.
 //Handles multi-byte characters as well as possible.
-public CS
+pub CS
 strlow_save(CS orig) {
    CS res = copyStr(orig);
       
@@ -3168,7 +3168,7 @@ strlow_save(CS orig) {
 }
 
 //delete spaces at the end of a string
-public void
+pub void
 del_trailing_spaces(CS ptr) {
    CS q = ptr + STRLEN(ptr);
    while (--q > ptr && SPACE_OR_TAB(q[0]) && q[-1] != '\\' && q[-1] != Ctrl_V)
@@ -3177,7 +3177,7 @@ del_trailing_spaces(CS ptr) {
 
 //Like strncpy(), but always terminate the result with one ZERO.
 //"to" must be "len + 1" long!
-public void
+pub void
 copySubstrToAllocation(OUT CS to, Text from) {
    STRNCPY(to, from.c, from.len);
    to[from.len] = ZERO;
@@ -3185,7 +3185,7 @@ copySubstrToAllocation(OUT CS to, Text from) {
 
 //Like strcat(), but make sure the result fits in "tosize" bytes and is
 //always ZERO terminated. "from" and "to" may overlap.
-public void
+pub void
 concatenateStrings(CS to, CS from, Unt tosize) {
    Unt tolen = STRLEN(to);
    Unt fromlen = STRLEN(from);
@@ -3200,7 +3200,7 @@ concatenateStrings(CS to, CS from, Unt tosize) {
 //Compare two ASCII strings, for length "len", ignoring case, ignoring locale (mostly matters 
 //for Turkish locale where i I might be different). return 0 for match, < 0 for smaller, > 0 for 
 //bigger
-public int
+pub int
 compareAscii(CS s1, CS s2, Unt len) {
    int i = 0;
    while (len > 0) {
@@ -3218,7 +3218,7 @@ compareAscii(CS s1, CS s2, Unt len) {
 
 //Search for first occurrence of "c" in "string". Version of strchr() that handles strings with 
 //characters from 128 to 255 correctly. Don't return a pointer to the ZERO at the string end
-public CS
+pub CS
 firstOccurrence(CS string, Unt c) {
    CS p = string;
    if (c >= 0x80) {
@@ -3242,7 +3242,7 @@ firstOccurrence(CS string, Unt c) {
 }
 
 //Search for first occurrence of byte "b" in "string". do not return a pointer to the ZERO at the end of the string.
-public CS
+pub CS
 firstByteOccurrence(CS string, Byte b) {
    for (CS p = string; *p != ZERO; p++) {
       if (*p == b) {
@@ -3255,7 +3255,7 @@ firstByteOccurrence(CS string, Byte b) {
 //Version of strchr() that only works for bytes and handles unsigned char
 //strings with characters above 128 correctly. It also doesn't return a
 //pointer to the ZERO at the end of the string.
-public CS
+pub CS
 eeStrbyte(CS string, Unt c) {
    for (CS p = string; *p != ZERO; p++) {
       if (*p == c)
@@ -3268,7 +3268,7 @@ eeStrbyte(CS string, Unt c) {
 //strings with characters from 128 to 255 correctly.  It also doesn't return a pointer to the 
 //ZERO at the end of the string. Return NULL if not found. Does not handle multi-byte char 
 //for "c"!
-public CS
+pub CS
 lastOccurrence(CS string, int c) {
    CS retval = NULL;
    for (CS p = string; *p != ZERO; MB_PTR_ADV(p)) {
@@ -3285,7 +3285,7 @@ lastOccurrence(CS string, int c) {
 #  ifdef eeStrpbrk
 #   undef eeStrpbrk
 #  endif
-public CS
+pub CS
 eeStrpbrk(CS s, CS charset) {
    while (*s) {
       if (firstOccurrence(charset, *s) != NULL)
@@ -3303,13 +3303,13 @@ stringComparer(void const *s1, void const*s2) {
     return STRCMP(*(char **)s1, *(char **)s2);
 }
 
-public void
+pub void
 sortStrings(Arr(CS) files, int count) {
    qsort((void *)files, (Unt)count, sizeof(CS), stringComparer);
 }
 
 // Return true if string "s" contains a non-ASCII character (128 or higher). false for null
-public int
+pub int
 has_non_ascii(CS s) {
    if (s) {
       for (CS p = s; *p != ZERO; ++p) {
@@ -3321,7 +3321,7 @@ has_non_ascii(CS s) {
 }
 
 // Concatenate two strings and return the result in allocated memory.
-public CS
+pub CS
 concat_str(CS str0, CS str1) {
    Unt l = str0 ? STRLEN(str0) : 0;
 
@@ -3337,7 +3337,7 @@ concat_str(CS str0, CS str1) {
 }
 
 // Reverse text into allocated memory. Return the allocated string
-public CS
+pub CS
 reverse_text(CS s) {
    Unt len = STRLEN(s);
    CS rev = alloc(len + 1);
@@ -3354,7 +3354,7 @@ reverse_text(CS s) {
 
 //Return string "str" in ' quotes, doubling ' characters. If "str" is NULL an empty string is 
 //assumed. If "function" is true make it function('string').
-public CS
+pub CS
 string_quote(CS str, int function) {
    CS p;
 
@@ -3388,7 +3388,7 @@ string_quote(CS str, int function) {
 }
 
 // Count the number of times "needle" occurs in string "haystack". Case is ignored if "ic" is true.
-public long
+pub long
 string_count(CS haystack, CS needle, int ic) {
    long   n = 0;
    CS p = haystack;
@@ -3459,7 +3459,7 @@ string_count(CS haystack, CS needle, int ic) {
 #ifndef PROTO
 
 // Like vsnprintf() but append to the string.
-public int
+pub int
 eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
    va_list ap;
    Unt len = STRLEN(str);
@@ -3471,7 +3471,7 @@ eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...) {
    return str_l;
 }
 
-public int
+pub int
 eeSnprintf0(CS str, Unt str_m, const char *fmt, ...) {
    va_list   ap;
    va_start(ap, fmt);
@@ -3486,7 +3486,7 @@ eeSnprintf0(CS str, Unt str_m, const char *fmt, ...) {
 //This means that you cannot rely on it's return value for the destination
 //length because the destination may be shorter than the source. This function
 //guarantees the returned length will never be greater than the destination length.
-public Unt
+pub Unt
 eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
@@ -3507,7 +3507,7 @@ eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...) {
 //If going over the end return "str_len".
 //If "idx" is negative count from the end, -1 is the last character.
 //When going over the start return -1.
-public long
+pub long
 char_idx2byte(CS str, Unt str_len, Long idx) {
    Long nchar = idx;
    Unt   nbyte = 0;
@@ -3530,7 +3530,7 @@ char_idx2byte(CS str, Unt str_len, Long idx) {
    return (long)nbyte;
 }
 
-public CS
+pub CS
 concatStrArray(Arr(CS) arr, Unt len, Text separator, Arena* a) {
    Unt totalLen = 0;
    for (Unt i = 0; i < len; i++) {
@@ -3555,7 +3555,7 @@ concatStrArray(Arr(CS) arr, Unt len, Text separator, Arena* a) {
 
 //Return pointer into string where the file extension starts. If no dot is found in the last
 //12 bytes, then return the whole string. Precondition: file name must be non-null
-public CS
+pub CS
 fileExtension(Text fName) {
    CS c = fName.c + fName.len - 1;
    int i = 0;
@@ -3569,7 +3569,7 @@ fileExtension(Text fName) {
 }
 
 // Does longerStr start with shorterStr?
-public Boole
+pub Boole
 startsWith(CS longerStr, CS shorterStr) {
    CS l = longerStr;
    CS s = shorterStr;
@@ -3609,7 +3609,7 @@ initBase64Table(void) {
    wasInitialized = true;
 }
 
-public CS
+pub CS
 encodeBase64(void const* binaryData_, int inputLen) {
    Unt encodedLen = ((inputLen + 2) / 3) * 4;
    char const* binaryData = binaryData_;
@@ -3635,7 +3635,7 @@ encodeBase64(void const* binaryData_, int inputLen) {
 }
 
 //Return false if input argument is malformed
-public Boole
+pub Boole
 decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
    ArrayList decoded = {.len = 0, .cap = 0};
 
@@ -3704,7 +3704,7 @@ decodeBase64ToArrayList(OUT ArrayList* ret, Text base64) {
 }
 
 //Return false if input argument is malformed
-public Boole
+pub Boole
 decodeBase64(OUT CS* ret, Text base64) {
    if (base64.len == 0 || (base64.len % 4 != 0)) {
       goto malformedInput;
@@ -3756,7 +3756,7 @@ decodeBase64(OUT CS* ret, Text base64) {
    }
    return true;
    
-public malformedInput:
+pub malformedInput:
    *ret = null;
    return false;
 }
@@ -3767,7 +3767,7 @@ public malformedInput:
 
 //If the string between "p" and "pend" ends in "name/", return "pend" minus
 //the length of "name/".  Otherwise return "pend".
-public CS
+pub CS
 remove_tail(CS p, CS pend, CS name) {
    int      len = (int)STRLEN(name) + 1;
    CS newend = pend - len;
@@ -3781,19 +3781,19 @@ remove_tail(CS p, CS pend, CS name) {
 
 //true if "afterSep" points to just after a path separator.
 //Take care of multi-byte characters.
-public Boole
+pub Boole
 after_pathsep(CS fileName, CS afterSep) {
    return afterSep > fileName && afterSep[-1] == '/' && mb_head_off(fileName, afterSep - 1) == 0;
 }
 
 //Check if the "://" of a URL is at the pointer.
-public Boole
+pub Boole
 path_is_url(CS p) {
    return (STRNCMP(p, "://", (Unt)3) == 0);
 }
 
 //Check if "fname" starts with "name://".
-public Boole
+pub Boole
 strStartsWithUrl(CS fname) {
    // We accept alphabetic characters and a dash in scheme part.
    // RFC 3986 allows for more, but it increases the risk of matching non-URL text.
@@ -3818,7 +3818,7 @@ strStartsWithUrl(CS fname) {
 //Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname"
 //"trim_len" specifies how many characters to keep for each directory.
 //Must be 1 or more. It's done in-place.
-public void
+pub void
 shorten_dir_len(CS str, int trim_len) {
    int skip = false;
    int dirchunk_len = 0;
@@ -3853,13 +3853,13 @@ shorten_dir_len(CS str, int trim_len) {
 }
 
 //Shorten the path of a file from "~/foo/../.bar/fname" to "~/f/../.b/fname" It's done in-place.
-public void
+pub void
 shorten_dir(CS str){
    shorten_dir_len(str, 1);
 }
 
 //Remove the path from a filename completely.
-public void
+pub void
 strPrintShortName(CS src, CS dst, int dstlen) {
    if (!src) {
       *dst = ZERO;
@@ -3869,7 +3869,7 @@ strPrintShortName(CS src, CS dst, int dstlen) {
 }
 //Get the tail of a path: the file name. When the path ends in a path separator, the tail is the 
 //ZERO after it. Fail safe: never return NULL.
-public CS
+pub CS
 fiGetShortFiName(CS fname){
    if (!fname)
       return S"";
@@ -3886,7 +3886,7 @@ fiGetShortFiName(CS fname){
 //Get pointer to tail of "fname", including path separators.
 //Take care of "//". Always return a valid pointer.
 // "/etc/a" -> "/a", "/etc" -> "/etc"
-public CS
+pub CS
 gettail_sep(CS fname){
    CS p = skipInitialSlashes(fname);   // don't remove the '/' from "c:/file"
    CS t = fiGetShortFiName(fname);
@@ -3896,7 +3896,7 @@ gettail_sep(CS fname){
 }
 
 //get the next path component (just after the next path separator).
-public CS
+pub CS
 getnextcomp(CS fname){
    while (*fname && *fname != '/')
       MB_PTR_ADV(fname);
@@ -3907,7 +3907,7 @@ getnextcomp(CS fname){
 
 
 //Get a pointer to one character past the initial slashes of a path name
-public CS
+pub CS
 skipInitialSlashes(CS path){
    CS retval = path;
    for (; *retval == '/'; ++retval)
@@ -3917,21 +3917,21 @@ skipInitialSlashes(CS path){
 }
 
 
-public Boole
+pub Boole
 strIsRelative(CS fname) {
    return (*fname != '/' && *fname != '~');
 }
 
 
 //true if "name" is a full (absolute) path name or URL.
-public int
+pub int
 eeIsAbsName(CS name){
    return (strStartsWithUrl(name) != 0 || !strIsRelative(name));
 }
 
 //Compare path "p[]" to "q[]". If "maxlen" >= 0 compare "p[maxlen]" to "q[maxlen]"
 //Return value like strcmp(p, q), but consider path separators.
-public int
+pub int
 pathcmp(CS p, CS q, int maxlen) {
    int i, j;
    Unt c1, c2;
@@ -3985,7 +3985,7 @@ pathcmp(CS p, CS q, int maxlen) {
 }
 
 // Return true if "p" contains what looks like an environment variable. Allowing for escaping.
-public Boole
+pub Boole
 hasEnvVar(CS p) {
    for ( ; *p; MB_PTR_ADV(p)) {
       if (*p == '\\' && p[1] != ZERO)
@@ -3999,7 +3999,7 @@ hasEnvVar(CS p) {
 //Isolate one part of a string option where parts are separated with "sep_chars".
 //The part is copied into "buf[maxlen]". "*option" is advanced to the next part.
 //The length is returned.
-public int
+pub int
 strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
    int len = 0;
    CS p = *option;
@@ -4031,7 +4031,7 @@ strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars){
 }
 
 //Return true if "fname" matches with an entry in "suffixes".
-public Boole
+pub Boole
 strMatchLowPrioSuffix(CS fname, CS suffixes){
    if (!suffixes)
       return false;
@@ -4062,7 +4062,7 @@ strMatchLowPrioSuffix(CS fname, CS suffixes){
 }
 
 //Add a path separator to a file name, unless it already ends in a path separator.
-public void
+pub void
 add_pathsep(CS p){
    if (*p != ZERO && !after_pathsep(p, p + STRLEN(p)))
       STRCAT(p, "/");
@@ -4071,7 +4071,7 @@ add_pathsep(CS p){
 
 //Concatenate file names fname1 and fname2 into allocated memory.
 //Only add a '/' or '\\' when 'sep' is true and it is necessary.
-public CS
+pub CS
 concat_fnames(CS fname1, CS fname2, Boole sep){
    CS dest = alloc(STRLEN(fname1) + STRLEN(fname2) + 2);
 
@@ -4097,7 +4097,7 @@ concat_fnames(CS fname1, CS fname2, Boole sep){
 
 //Return true if "val" is a valid name: only consists of alphanumeric ASCII
 //characters or characters in "allowed".
-public int
+pub int
 valid_name(CS val, CS allowed) {
    for (CS s = val; *s != ZERO; ++s) {
       if (!ASCII_ISALNUM(*s) && firstOccurrence((CS)allowed, *s) == NULL)
@@ -4108,26 +4108,26 @@ valid_name(CS val, CS allowed) {
 
 //Return true if character "c" can be used in a variable or function name.
 //Do not include '{' or '}' for magic braces.
-public int
+pub int
 isValidForScriptName(int c) {
    return ASCII_ISALNUM(c) || c == '_' || c == ':' || c == AUTOLOAD_CHAR;
 }
 
 //Return true if character "c" can be used as the first character in a
 //variable or function name (excluding '{' and '}').
-public int
+pub int
 isValidForScriptName1(int c) {
    return ASCII_ISALPHA(c) || c == '_';
 }
 
 //Return true if character "c" can be used as the first character of a dictionary key.
-public int
+pub int
 isValidForFirstCharDictKey(int c) {
    return ASCII_ISALNUM(c) || c == '_';
 }
 
 //If "c" is a hex digit, return the value. Otherwise return -1.
-public int
+pub int
 parse_hex_digit(int c) {
    return (c >= '0' && c <= '9') ? c - '0'
       : (c >= 'a' && c <= 'f') ? c - 'a' + 10
@@ -4139,14 +4139,14 @@ parse_hex_digit(int c) {
 //{{{arrayList
 
 // Clear an allocated growing array.
-public void
+pub void
 ga_clear(ArrayList* gap) {
     eeglFree(gap->c);
     ga_init(gap);
 }
 
 // Clear a growing array that contains a list of strings.
-public void
+pub void
 ga_clear_strings(ArrayList* gap) {
    int i;
 
@@ -4158,7 +4158,7 @@ ga_clear_strings(ArrayList* gap) {
 }
 
 // Copy a growing array that contains a list of strings.
-public int
+pub int
 ga_copy_strings(ArrayList *from, ArrayList *to) {
    ga_init2(to, sizeof(CS), 1);
    if (ga_grow(to, from->len) == FAIL)
@@ -4174,14 +4174,14 @@ ga_copy_strings(ArrayList *from, ArrayList *to) {
 }
 
 // Initialize a growing array. Don't forget to set ga_itemsize and ga_growsize! Or use ga_init2()
-public void
+pub void
 ga_init(ArrayList* gap) {
    gap->c = NULL;
    gap->cap = 0;
    gap->len = 0;
 }
 
-public void
+pub void
 ga_init2(ArrayList *gap, Unt itemsize, int growsize) {
    ga_init(gap);
    gap->ga_itemsize = (int)itemsize;
@@ -4189,14 +4189,14 @@ ga_init2(ArrayList *gap, Unt itemsize, int growsize) {
 }
 
 // Make room in growing array "gap" for at least "n" items. FAIL for failure, OK otherwise.
-public int
+pub int
 ga_grow(ArrayList *gap, int n) {
    if (gap->cap - gap->len < n)
       return ga_grow_inner(gap, n);
    return OK;
 }
 
-public int
+pub int
 ga_grow_inner(ArrayList* gap, int n) {
    Unt old_len;
    Unt new_len;
@@ -4222,7 +4222,7 @@ ga_grow_inner(ArrayList* gap, int n) {
 //For an ArrayList that contains a list of strings: concatenate all the
 //strings with a separating "sep".
 //Return NULL when out of memory.
-public CS
+pub CS
 ga_concat_strings(ArrayList *gap, char *sep) {
    int i;
    int len = 0;
@@ -4248,7 +4248,7 @@ ga_concat_strings(ArrayList *gap, char *sep) {
 
 // Make a copy of string "p" and add it to "gap". When out of memory, 
 // nothing changes and FAIL is returned.
-public int
+pub int
 ga_copy_string(ArrayList *gap, CS p) {
    CS cp = copyStr(p);
 
@@ -4262,7 +4262,7 @@ ga_copy_string(ArrayList *gap, CS p) {
 }
 
 // Add string "p" to "gap". When out of memory, FAIL is returned (caller may want to free "p").
-public int
+pub int
 ga_add_string(ArrayList *gap, CS p) {
    if (ga_grow(gap, 1) == FAIL)
       return FAIL;
@@ -4274,7 +4274,7 @@ ga_add_string(ArrayList *gap, CS p) {
 // Concatenate a string to a growarray which contains bytes.
 // When "s" is NULL memory allocation fails does not do anything.
 // Note: Does NOT copy the ZERO at the end!
-public void
+pub void
 ga_concat(ArrayList *gap, CS s) {
    if (s == NULL || *s == ZERO)
       return;
@@ -4286,7 +4286,7 @@ ga_concat(ArrayList *gap, CS s) {
 }
 
 // Concatenate 'len' bytes from string 's' to a growarray. When "s" is NULL do not do anything.
-public void
+pub void
 ga_concat_len(ArrayList *gap, CS s, Unt len) {
    if (s == NULL || *s == ZERO || len == 0)
       return;
@@ -4297,7 +4297,7 @@ ga_concat_len(ArrayList *gap, CS s, Unt len) {
 }
 
 // Append one byte to a growarray which contains bytes.
-public int
+pub int
 ga_append(ArrayList *gap, int c) {
    if (ga_grow(gap, 1) == FAIL)
       return FAIL;
@@ -4314,7 +4314,7 @@ ga_append(ArrayList *gap, int c) {
 //  - The list is divided into blocks of increasing size (1, 2, 4, 8, ...).
 //  - Each pair of blocks is merged in sorted order.
 //  - Merged blocks are reconnected to build the sorted list.
-public void *
+pub void *
 mergesort_list(
    void *head,
    void *(*get_next)(void *),
@@ -4451,7 +4451,7 @@ mergesort_list(
     (b)[(i) + 3] = (Byte)((n)      );   \
 }
 
-public void
+pub void
 sha256_start(ContextSha256* ctx) {
    ctx->total[0] = 0;
    ctx->total[1] = 0;
@@ -4597,7 +4597,7 @@ sha256_process(ContextSha256 *ctx, Byte data[64]) {
    ctx->state[7] += H;
 }
 
-public void
+pub void
 sha256_update(ContextSha256 *ctx, CS input, Unt length) {
    Unt left, fill;
 
@@ -4638,7 +4638,7 @@ private Byte sha256_padding[64] = {
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-public void
+pub void
 sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
    Unt last, padn;
    Unt high, low;
@@ -4668,7 +4668,7 @@ sha256_finish(ContextSha256 *ctx, Byte digest[32]) {
 
 // Return hex digest of "buf[buf_len]" in a static array.
 // if "salt" is not NULL also do "salt[salt_len]".
-public CS
+pub CS
 sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
    Byte  sha256sum[32];
    static Byte    hexit[65];
@@ -4689,7 +4689,7 @@ sha256_bytes(CS buf, int buf_len, CS salt, int salt_len) {
 }
 
 // Return sha256(buf) as 64 hex chars in static array.
-public CS
+pub CS
 sha256_key(CS buf, CS salt, int salt_len){
    // No passwd means don't encrypt
    if (!buf || *buf == ZERO)
@@ -4713,7 +4713,7 @@ private char *sha_self_test_vector[] = {
 };
 
 // Perform a test on the SHA256 algorithm. Return FAIL or OK.
-public int
+pub int
 sha256_self_test(void) {
    int i, j;
    char output[65];
@@ -4759,7 +4759,7 @@ get_some_time(void) {
 }
 
 // Fill "header[header_len]" with random_data. Also "salt[salt_len]" when "salt" is not NULL.
-public void
+pub void
 sha2_seed(CS header, int header_len, CS salt, int salt_len) {
    static Byte random_data[1000];
    Byte sha256sum[32];
@@ -4788,7 +4788,7 @@ sha2_seed(CS header, int header_len, CS salt, int salt_len) {
 //{{{searchin 'n' sortin'
 
 // Return index of key in a sorted array, or -1 if not found.
-public int
+pub int
 binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr) {
    if (end <= start) {
       return -1;
@@ -4822,13 +4822,13 @@ binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr) {
 //{{{key-value pair
 
 // compare two Kv structs by case sensitive value
-public int
+pub int
 cmp_keyvalue_value(const void *a, const void *b) {
    return STRCMP(((Kv*)a)->value.c, ((Kv*)b)->value.c);
 }
 
 // compare two Kv structs by value with length
-public int
+pub int
 cmp_keyvalue_value_n(const void *a, const void *b) {
    Kv *kv1 = (Kv *)a;
    Kv *kv2 = (Kv *)b;
@@ -4837,7 +4837,7 @@ cmp_keyvalue_value_n(const void *a, const void *b) {
 }
 
 // compare two Kv structs by case insensitive value
-public int
+pub int
 cmp_keyvalue_value_i(const void *a, const void *b) {
     Kv *kv1 = (Kv *)a;
     Kv *kv2 = (Kv *)b;
@@ -4846,7 +4846,7 @@ cmp_keyvalue_value_i(const void *a, const void *b) {
 }
 
 // compare two Kv structs by case insensitive ASCII value with value.length
-public int
+pub int
 cmp_keyvalue_value_ni(const void *a, const void *b) {
     Kv *kv1 = (Kv *)a;
     Kv *kv2 = (Kv *)b;
@@ -4951,7 +4951,7 @@ initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict) {
    arenaTryFree((void*)temp, size*4, a);
 }
 
-public DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values, Int size, Arena* a) {
+pub DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values, Int size, Arena* a) {
    Arr(Unt) temp;
    DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
 
@@ -4968,7 +4968,7 @@ public DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) valu
 }
 
 // Create a dictionary where values are just indices of names
-public DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size, Arena* a) {
+pub DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size, Arena* a) {
    Arr(Unt) temp;
    DictStringInt128* dict = initDict0(text, size, a, OUT &temp);
 
@@ -5012,25 +5012,25 @@ public DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, In
    ifNotFound;
 
 
-public Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
+pub Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
    dictGetterFn(return true, return false);
 }
 
-public Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
+pub Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack) {
    dictGetterFn(return haystack->c[i].value, return -1); // TODO throw exception
 }
 
-public Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack) {
+pub Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack) {
    dictGetterFn_Text(return haystack->c[i].value, return -1); // TODO throw exception
 }
 
-public Int getOrDefault_DictStringInt128(
+pub Int getOrDefault_DictStringInt128(
    Arr(Byte const) needle, Int defaultValue, DictStringInt128* restrict haystack
 ) {
    dictGetterFn(return haystack->c[i].value, return defaultValue);
 }
 
-public Int getOrDefault_Text_DictStringInt128(
+pub Int getOrDefault_Text_DictStringInt128(
    Text needle, Int defaultValue, DictStringInt128* restrict haystack
 ) {
    Unt needleHash = hashOfText(needle);
@@ -5047,7 +5047,7 @@ public Int getOrDefault_Text_DictStringInt128(
    return defaultValue;
 }
 
-public Int getKv_Text_DictStringInt128(
+pub Int getKv_Text_DictStringInt128(
    OUT Unt* key, Text needle, DictStringInt128* restrict haystack
 ) {
    Unt needleHash = hashOfText(needle);

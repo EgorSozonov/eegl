@@ -72,7 +72,7 @@ init_users(void) {
 }
 
 //Function given to expandGeneric() to obtain user names.
-public CS
+pub CS
 get_users(Expand *xp UNUSED, int idx) {
    init_users();
    if (idx < ga_users.len)
@@ -84,7 +84,7 @@ get_users(Expand *xp UNUSED, int idx) {
 //0 if name does not match any user name.
 //1 if name partially matches the beginning of a user name.
 //2 is name fully matches a user name.
-public int
+pub int
 match_user(CS name) {
    int i;
    int n = (int)STRLEN(name);
@@ -104,12 +104,12 @@ match_user(CS name) {
 
 #if defined(EXITFREE) || defined(PROTO)
 
-public void
+pub void
 free_homedir(void) {
    eeglFree(homedir);
 }
 
-public void
+pub void
 free_users(void) {
    ga_clear_strings(&ga_users);
 }
@@ -118,7 +118,7 @@ free_users(void) {
 
 //Get user name from machine-specific function. Return the user name in "buf[len]".
 //Return OK or FAIL.
-public int
+pub int
 get_user_name(CS builder, int len) {
    if (!username) {
       if (mch_get_uname(getuid(), builder, len) == FAIL)
@@ -836,7 +836,7 @@ fail:
 //Generate a script that can be used to restore the current editing session.
 //Save the value of v:this_session before running :mksession in order to make
 //automagic session save fully transparent.  Return true on success.
-public int
+pub int
 write_session_file(CS filename) {
    // Build a command line to create a script that restores the current
    // session if executed.  Escape the filename to avoid nasty surprises.
@@ -879,7 +879,7 @@ write_session_file(CS filename) {
 
 
 // ":mkvimrc",  and ":mksession".
-public void
+pub void
 c_mkrc(Invocation* invo) {
    int failed = false;
    int using_vdir = false;   // using 'viewdir'?
@@ -971,7 +971,7 @@ c_mkrc(Invocation* invo) {
       if (eeFullFileName(fname, tbuf, MAXPATHL, false) == OK)
          set_EeglVar_string(VV_THIS_SESSION, tbuf, -1);
    }
-public theEnd:
+pub theEnd:
 
    eeglFree(viewFile);
 
@@ -980,7 +980,7 @@ public theEnd:
 
 //Write end-of-line character(s) for ":mkexrc", ":mkvimrc" and ":mksession".
 //Return FAIL for a write error.
-public int
+pub int
 put_eol(FILE *fd) {
    if (putc('\n', fd) < 0)
       return FAIL;
@@ -988,7 +988,7 @@ put_eol(FILE *fd) {
 }
 
 //Write a line to "fd". Return FAIL for a write error.
-public int
+pub int
 put_line(FILE *fd, CS s) {
    if (FPUTS(s, fd) < 0 || put_eol(fd) == FAIL)
       return FAIL;
@@ -1057,7 +1057,7 @@ find_eeglinfo_parameter(int type) {
 //Find the parameter represented by the given character (eg ', :, ", or /), and return its 
 //associated value in the 'eeglinfo' string. Only works for number parameters, not for 'r' or 'n'.
 //If the parameter is not specified in the string or there is no following number, return -1.
-public int
+pub int
 get_eeglinfo_parameter(int type) {
    CS p = find_eeglinfo_parameter(type);
    if (p && EE_ISDIGIT(*p))
@@ -2977,7 +2977,7 @@ copy_eeglinfo_marks(
 
 //Read marks for the current book from the eeglinfo file, when we support
 //book marks and the book has a name.
-public void
+pub void
 check_marks_read(void) {
    if (!curBook->haveReadEeglinfoMarks && get_eeglinfo_parameter('\'') > 0 && curBook->fullFileName)
       read_eeglinfo(NULL, EIF_WANT_MARKS | EIF_ONLY_CURBOOK);
@@ -3396,7 +3396,7 @@ do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags) {
 
 //read_eeglinfo() -- Read the eeglinfo file.  Registers etc. which are already
 //set are not over-written unless "flags" includes EIF_FORCEIT. -- webb
-public int
+pub int
 read_eeglinfo(
    CS file,       // file name or NULL to use default name
    Unt flags       // EIF_WANT_INFO et al.
@@ -3441,7 +3441,7 @@ read_eeglinfo(
 //merge of current info and old info is done. This allows multiple vims to
 //run simultaneously, without losing any marks etc. If "forceit" is true, then the old file is not
 //read in, and only internal info is written to the file.
-public void
+pub void
 write_eeglinfo(CS file, Boole forceit) {
    FILE* fp_out = NULL;   // output eeglinfo file
    CS tempname = NULL;   // name of temp eeglinfo file
