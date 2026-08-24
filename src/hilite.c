@@ -674,12 +674,12 @@ parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line)
       }
    }
    
-public finalize:
+finalize:
    kvs[indKvs] = (HiKeyValue){.start = SHORT};
    keys[indKeys] = (HiKey){.start = SHORT};
    return;
 
-public errorOut: 
+errorOut: 
    keys[0] = (HiKey){.start = SHORT - 1};
 }
 
@@ -1014,7 +1014,7 @@ toDict(Short hiId, int resolveLinks) {
 
    return dict;
 
-public error:
+error:
    eeglFree(dict);
    return NULL;
 }
@@ -1127,7 +1127,7 @@ private typedef struct buf_state {
 // syn_state contains the syntax state stack for the start of one line. Used by array[].
 private typedef struct SyntaxState SyntaxState;
 
-public struct SyntaxState {
+private struct SyntaxState {
    SyntaxState   *next; // next entry in used or free list
    LineNr   lnum;   // line number for this state
    union {
@@ -1152,7 +1152,7 @@ private typedef struct {
 // Each keyword has one keyentry, which is linked in a hash list.
 private typedef struct KeyEntry KeyEntry;
 
-public struct KeyEntry {
+private struct KeyEntry {
    KeyEntry   *next;   // next entry with identical "keyword[]"
    SyntaxInfo syntax;   // struct passed to in_id_list()
    Short* next_list;   // ID list for next match (if non-zero)

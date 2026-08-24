@@ -12044,7 +12044,7 @@ balloonSplitMessage(CS mesg, OUT Arr(PopupItem)* array) {
    ga_clear(&ga);
    return height;
 
-public failed:
+failed:
    ga_clear(&ga);
    return 0;
 }

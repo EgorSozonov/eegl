@@ -500,6 +500,13 @@ typeahead_noflush(int c) {
    TYPEAHEAD_CHAR = c;
 }
 
+// Argument for flush_buffers().
+public typedef enum {
+   FLUSH_MINIMAL,
+   FLUSH_TYPEAHEAD,   // flush current typebuf contents
+   FLUSH_INPUT      // flush typebuf and inchar() input
+} FlushBuffers;
+
 //Remove the contents of the stuff buffer and the mapped characters in the
 //typeahead buffer (used in case of an error). If "flush_typeahead" is true,
 //flush all typeahead characters (used when interrupted by a CTRL-C).
@@ -1211,7 +1218,7 @@ gotchars_add_byte(GotCharsState *state, Byte byte) {
       goto ret_false;
 
    retval = true;
-public ret_false:
+ret_false:
    state->prev_c = c;
    return retval;
 }
@@ -5119,7 +5126,7 @@ jump_to_mouse(
    }
 
    if ((flags & MOUSE_DID_MOVE) && prevRow == mouseRowG && prevCol == mouseColG) {
-public retnomove:
+retnomove:
       // before moving the cursor for a left click which is NOT in a status
       // line, stop Visual mode
       if (on_status_line)

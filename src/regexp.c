@@ -33,9 +33,9 @@
 #define MAX_STATES 100000
 #define TOO_EXPENSIVE (-1)
 
-public declStruct(RState);
+private declStruct(RState);
 // NFA state. Such a state may have no outgoing edge, when it is a MATCH state.
-public struct RState {
+private struct RState {
    Unt         c; // a char
    RState      *out;
    RState      *out1;
@@ -45,7 +45,7 @@ public struct RState {
 };
 
 // Structure used by the NFA matcher.
-public struct RegProg {
+private struct RegProg {
    // These three members implement RegProg
    Unt regflags;
    Unt re_engine;
@@ -87,7 +87,7 @@ private typedef struct {
 //Structure to be used for single-line matching.
 //Sub-match "no" starts at "startp[no]" and ends just before "endp[no]".
 //When there is no match, the pointer is NULL.
-public struct RegMatch {
+private struct RegMatch {
    RegProg* regprog;
    Byte* startp[NSUBEXP];
    Byte* endp[NSUBEXP];
@@ -210,7 +210,7 @@ backslash_trans(Unt c) {
    return c;
 }
 
-public enum {
+private enum {
    CHAR_CLASS_ALNUM = 0,
    CHAR_CLASS_ALPHA,
    CHAR_CLASS_BLANK,
@@ -528,13 +528,13 @@ skip_anyof(Byte *p) {
 //Take care of characters with a backslash in front of it.
 //Skip strings inside [ and ].
 public Byte *
-skip_regexp(Byte   *startp, int      delim, int      magic) {
+skip_regexp(Byte* startp, int delim, int magic) {
    return skip_regexp_ex(startp, delim, magic, NULL, NULL, NULL);
 }
 
 // Call skip_regexp() and when the delimiter does not match give an error and return NULL.
 public Byte *
-skip_regexp_err( Byte   *startp, int      delim, int      magic) {
+skip_regexp_err(Byte* startp, int delim, int magic) {
    Byte *p = skip_regexp(startp, delim, magic);
 
    if (*p != delim) {
@@ -2142,7 +2142,7 @@ eeRegsub_both(
    if (copy)
       *dst = ZERO;
 
-public exit:
+exit:
    return (int)((dst - dest) + 1);
 }
 
@@ -2331,7 +2331,7 @@ reg_submatch_list(int no) {
 
 //{{{ Regex tokens
 
-public enum {
+private enum {
     SPLIT = 4294967295 - 1024,
     MATCH,
     EMPTY,             // matches 0-length
@@ -3931,7 +3931,7 @@ parseAtom(OUT Boole* hadEol) {
       break;
 
    case Magic('['):
-public collection:
+collection:
       //[abc]  uses START_COLL - END_COLL
       //[^abc] uses START_NEG_COLL - END_NEG_COLL
       //Each character is produced as a regular state, using CONCAT to bind them together.
@@ -4232,7 +4232,7 @@ public collection:
    default: {
       int   plen;
 
-public nfa_do_multibyte:
+nfa_do_multibyte:
       //plen is length of current char with composing chars
       if ((int)mb_char2len(c) != (plen = utfCharLen(old_regparse)) || utf_iscomposing(c)) {
          int i = 0;
@@ -5789,7 +5789,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
    patch(e.out, matchstate);
    ret = e.start;
 
-public theend:
+theend:
    eeglFree(stack);
    return ret;
 
@@ -6868,12 +6868,12 @@ private int
 match_backref(
    Submatch   *sub,       // pointers to subexpressions
    int      subidx,
-   int      *bytelen)   // out: length of match in bytes
-{
+   int      *bytelen   // out: length of match in bytes
+){
    int      len;
 
    if (sub->in_use <= subidx) {
-public retempty:
+retempty:
       // backref was not set, match an empty string
       *bytelen = 0;
       return true;
@@ -8595,7 +8595,7 @@ match(
    fprintf(log_fd, "\n");
 #endif
 
-public nextchar:
+nextchar:
       // Advance to the next character, or advance to the next line, or finish.
       if (clen != 0)
          exe.input += clen;
@@ -8619,7 +8619,7 @@ public nextchar:
    log_fd = NULL;
 #endif
 
-public theend:
+theend:
    // Free memory
    eeglFree(list[0].t);
    eeglFree(list[1].t);
@@ -8850,7 +8850,7 @@ parseBranchexec_both(
     regengine.expr = NULL;
 #endif
 
-public theend:
+theend:
    if (retval > 0) {
       // Make sure the end is never before the start. Can happen when \zs and \ze are used.
       if (REG_MULTI) {
@@ -8952,13 +8952,13 @@ compile(CS expr, int flags) {
    regengine.expr = NULL;
 #endif
 
-public out:
+out:
    EE_CLEAR(postfixStartS);
    postfixS = postfixEndS = NULL;
    state_ptr = NULL;
    return (RegProg *)prog;
 
-public fail:
+fail:
    EE_CLEAR(prog);
 #ifdef REGEXP_LOGGING
    dumpPostfix(expr, FAIL);
@@ -9191,7 +9191,7 @@ eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col) {
 // Uses curBook for line count and 'iskeyword'.
 //
 // Return zero if there is no match.  Return number of lines contained in the match otherwise.
-public long
+public Long
 eeRegexec_multi(
    RegMultilineMatch *rmp,
    Portal* port, // portal in which to search or NULL

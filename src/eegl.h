@@ -5462,13 +5462,6 @@ typedef enum {
    PASTE_ONE_CHAR   // return first character
 } PasteMode;
 
-// Argument for flush_buffers().
-typedef enum {
-   FLUSH_MINIMAL,
-   FLUSH_TYPEAHEAD,   // flush current typebuf contents
-   FLUSH_INPUT      // flush typebuf and inchar() input
-} FlushBuffers;
-
 // Argument for prepare_tagpreview()
 typedef enum {
    USEPOPUP_NONE,

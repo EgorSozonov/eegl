@@ -1195,12 +1195,12 @@ eval_list(Byte **arg, Var* returnVar, EvalCtx *evalarg, int do_error) {
    }
 
    if (**arg != ']') {
-   if (do_error)
-       showErrFmtMsg(_(e_missing_end_of_list_rsb_str), *arg);
-public failret:
-   if (evaluate)
-       list_free(l);
-   return FAIL;
+      if (do_error)
+          showErrFmtMsg(_(e_missing_end_of_list_rsb_str), *arg);
+failret:
+      if (evaluate)
+          list_free(l);
+      return FAIL;
    }
 
     *arg += 1;
@@ -1720,7 +1720,7 @@ do_sort_uniq(Arr(Var) argvars, Var* returnVar, int sort) {
     else
    do_uniq(l, &info);
 
-public theend:
+theend:
     sortinfo = old_sortinfo;
 }
 
@@ -1776,7 +1776,7 @@ filter_map_one(
    } ei (filtermap == FILTERMAP_FOREACH)
       clearVar(newtv);
    retval = OK;
-public theend:
+theend:
    clearVar(get_EeglVar_tv(VV_VAL));
    return retval;
 }
@@ -5167,7 +5167,7 @@ bagEval(OUT CS* arg, Var* returnVar, EvalCtx *evalarg, int literal) {
    if (**arg != '}') {
       if (evalarg)
          showErrFmtMsg(_(e_missing_dict_end_str), *arg);
-public failret:
+failret:
       if (d)
          dict_free(d);
       return FAIL;
@@ -6691,7 +6691,7 @@ f_assert_fails(Arr(Var) argvars, Var* returnVar) {
       }
    }
 
-public theend:
+theend:
    trylevel = save_trylevel;
    suppress_errthrow = false;
    in_assert_fails = false;
@@ -7414,7 +7414,7 @@ string2blob(CS str) {
    ++blob->refCount;
    return blob;
 
-public failed:
+failed:
    blob_free(blob);
    return NULL;
 }
@@ -8284,7 +8284,7 @@ fuzzy_match_in_list(
       }
    }
 
-public done:
+done:
    for (int i = 0; i < match_count; i++) {
       if (items[i].itemstr_allocated)
          eeglFree(items[i].itemstr);
@@ -8383,7 +8383,7 @@ do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos) {
    fuzzy_match_in_list(argvars[0].list, tv_get_string(&argvars[1]),
        matchseq, key, &cb, retmatchpos, returnVar->list, max_matches);
 
-public done:
+done:
    evFreeCallback(&cb);
 }
 
@@ -8715,7 +8715,7 @@ defuzz(
    for (Unt i = 0; i < len; i++)
       matches->c[i] = fuzzy.c[i].str;
    
-public theend:
+theend:
    matches->len = len;
    return OK;
 }
@@ -9528,7 +9528,7 @@ f_tr(Arr(Var) argvars, OUT Var* returnVar) {
    
    return;   
    
-public error:
+error:
    showErrFmtMsg(_(e_invalid_argument_str), fromstr);
    ga_clear(&ga);
    return;
@@ -10142,7 +10142,7 @@ parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs UNUSED) {
 
    return OK;
 
-public error:
+error:
    eeglFree((Byte**)*ap_types);
    *ap_types = NULL;
    *num_posarg = 0;
@@ -11065,7 +11065,7 @@ eeVarPrintf0(
    if (tvs != NULL && tvs[num_posarg != 0 ? num_posarg : arg_idx - 1].tag != VAR_UNKNOWN)
       emsg(_(e_too_many_arguments_to_printf));
 
-public error:
+error:
    eeglFree((Byte*)ap_types);
    va_end(ap);
 
@@ -12063,7 +12063,7 @@ json_decode_item(JsReader* reader, Var *res) {
    }
    showErrFmtMsg(_(e_json_decode_error_at_str), p);
 
-public theend:
+theend:
    for (i = 0; i < stack.len; i++)
       clearVar(&(((JsonDecodeItem *)stack.c) + i)->jd_key_tv);
    ga_clear(&stack);

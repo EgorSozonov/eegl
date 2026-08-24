@@ -581,7 +581,7 @@ statusLineOrRuler(Portal* po, Boole draw_ruler) {
    drawTextLen(p, len, row, col, deco.flags);
    col += eeglStrNsize(p, len);
 
-public theend:
+theend:
    busy = false;
 }
 
@@ -1089,7 +1089,7 @@ screenalloc(Boole doclear) {
    int retry_count = 0;
    int found_null;
 
-public retry:
+retry:
    //Allocation of the screen buffers is done only when the size changes and
    //when visibleRowsG and visibleColsG have been set and we have started doing full screen stuff.
    if ((screenTextP

@@ -4303,7 +4303,7 @@ get_leader_for_startcol(InsertCompletion* match, int cached) {
 
       return &adjusted_leader;
    }
-public theend:
+theend:
     return &compl_leader;
 }
 
@@ -4653,7 +4653,7 @@ ins_compl_dictionaries(
    }
    deleteArena(files.a);
 
-public theend:
+theend:
    p_scs = smartCaseSaved;
    eeRegFree(regmatch.regprog);
    eeglFree(buf);
@@ -5705,7 +5705,7 @@ expand_by_function(int type, CS base, Callback* cb) {
    ei (matchdict)
       ins_compl_add_dict(matchdict);
 
-public theend:
+theend:
    // Restore stateG, it might have been changed.
    stateG = save_State;
 
@@ -6373,7 +6373,7 @@ process_next_cpt_value(
           status = INS_COMPL_CPT_CONT;
    }
 
-public done:
+done:
    *InsertCompletionype_arg = insertCompletionType;
    return status;
 }
@@ -6516,7 +6516,7 @@ fuzzy_longest_match(void) {
       eeglFree(prefix);
    }
 
-public end:
+end:
    eeglFree(compl_best_matches);
    compl_best_matches = NULL;
    complCountBestS = 0;

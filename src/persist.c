@@ -827,7 +827,7 @@ makeopens(FILE   *fd, Byte   *currDir) {  // Current directory name
       goto fail;
 
    ret = OK;
-public fail:
+fail:
    hash_clear_all(&terminal_bufs, 0);
    return ret;
 }
@@ -1439,7 +1439,7 @@ read_eeglinfo_history(Vir* virp, int writing) {
    eeglinfo_history[type][eeglinfo_hisidx[type]].hisnum = 0;
    eeglinfo_hisidx[type]++;
 
-public done:
+done:
    eeglFree(val);
    return eeglinfo_readline(virp);
 }
@@ -3609,7 +3609,7 @@ write_eeglinfo(CS file, Boole forceit) {
           mch_remove(tempname);
    }
 
-public end:
+end:
    eeglFree(fname);
    eeglFree(tempname);
 }

@@ -723,7 +723,7 @@ expandRuntimeDirInternal(
          pat.c, "*.vim"
       );
 
-public expand:
+expand:
       if ((flags & DIP_NORTP) == 0)
          fiGlobpath(runtimePath, buf, OUT matches, gloflags, expand_dirs);
 
@@ -1003,7 +1003,7 @@ initCurBookForSourcing(OUT SourceCookie* sp, Invocation* invo) {
 
    return fname;
 
-public errret:
+errret:
    eeglFree(fname);
    eeglFree(line);
    ga_clear_strings(&sp->buflines);
@@ -1222,7 +1222,7 @@ scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearv
    if (!gotInterruptG)
       trigger_source_post = true;
 
-public almosttheend:
+almosttheend:
    // Get "si" again, "script_items" may have been reallocated.
    si = SCRIPT_ITEM(sid);
 
@@ -1241,7 +1241,7 @@ public almosttheend:
    if (trigger_source_post)
       applyAutocomms(EVENT_SOURCEPOST, fname_exp, fname_exp, false, curBook);
 
-public theend:
+theend:
    if (sid > 0 && ret_sid && fname_not_fixed && fname_exp) {
       int not_fixed_sid = find_script_by_name(fname_not_fixed);
 
@@ -6296,7 +6296,7 @@ concat_pattern_with_buffer_match(Text pat, Pos* end_match_pos, Boole lowercase) 
    match[pat.len + match_len] = ZERO;
    return match;
 
-public cleanup:
+cleanup:
     eeglFree(match);
     return NULL;
 }
@@ -6422,7 +6422,7 @@ expandPatternInBook(
    }
    return OK;
 
-public cleanup:
+cleanup:
     return FAIL;
 }
 
@@ -8213,7 +8213,7 @@ cmdline_browse_history(
    beep_flush();
    res = COMMLINE_UNCHANGED;
 
-public done:
+done:
    *currComm = lookfor;
    *hiscnt_p = hiscnt;
    return res;
@@ -8933,7 +8933,7 @@ getCommandWorker(
          may_do_incsearch_highlighting(firstc, count, &is_state);
    }
 
-public returncmd:
+returncmd:
 
    // We could have reached here without having a chance to clean up wild menu
    // if certain special keys like <Esc> or <C-\> were used as wildchar. Make
@@ -8986,7 +8986,7 @@ public returncmd:
    ui_cursor_shape();      // may show different cursor shape
    sb_text_end_cmdline();
 
-public theend:
+theend:
     {
       Byte *p = commInfo.commBuf;
 
@@ -11474,7 +11474,7 @@ c_command(Invocation* invo) {
                 (CS)_(e_complete_used_without_allowing_arguments), true, true);
    }
 
-public theend:
+theend:
    eeglFree(compl_arg);
 }
 
@@ -12110,7 +12110,7 @@ private typedef struct {
 } Deferral;
 
 // Struct used by trans_function_name()
-public struct FuncDict {
+private struct FuncDict {
    Bag* bag;   // Dictionary used
    CS newKey;   // new key in "dict" in allocated memory
    DictItem* item;      // Dictionary item used
@@ -12359,7 +12359,7 @@ get_function_args(
    *argp = p;
    return OK;
 
-public err_ret:
+err_ret:
    if (newargs != NULL)
       ga_clear_strings(newargs);
    if (!skip && default_args != NULL)
@@ -12822,7 +12822,7 @@ get_function_body(
    if (!anyEmsgG)
       ret = OK;
 
-public theend:
+theend:
    eeglFree(skip_until);
    eeglFree(heredoc_trimmed);
    eeglFree(heredoc_ga.c);
@@ -13005,7 +13005,7 @@ get_lambda_tv(
 
    return OK;
 
-public errret:
+errret:
    ga_clear_strings(&newargs);
    ga_clear_strings(&newlines);
    ga_clear_strings(&default_args);
@@ -14459,7 +14459,7 @@ call_func(
    if (error == FCERR_NONE)
       ret = OK;
 
-public theend:
+theend:
    //Report an error unless the argument evaluation or function call has been
    //cancelled due to an aborting error, an interrupt, or an exception.
    if (!aborting())
@@ -14838,7 +14838,7 @@ trans_function_name_ext(
    name[lead + extra + len] = ZERO;
    *pp = end;
 
-public theend:
+theend:
    clear_lval(OUT &lv);
    return name;
 }
@@ -15445,7 +15445,7 @@ add_defer(CS name, int argcount_arg, Arr(Var) argvars) {
    }
    ret = OK;
 
-public theend:
+theend:
     while (--argcount >= 0)
    clearVar(&argvars[argcount]);
     return ret;
@@ -15599,7 +15599,7 @@ c_call(Invocation* invo) {
    // Must be after using "arg", it may point into memory cleared here.
    clear_evalarg(&evalarg, invo);
 
-public end:
+end:
    bagUnref(fudi.bag);
    eeglFree(tofree);
 }
@@ -16375,24 +16375,24 @@ define_function(Invocation* invo, ArrayList* lines_to_free) {
    fp->scriptCtx.lineNr += sourcing_lnum_top;
    goto ret_free;
 
-public erret:
+erret:
    if (fp) {
       // these were set to "newargs" and "default_args", which are cleared below
       ga_init(&fp->args);
       ga_init(&fp->defaultArgs);
    }
-public errret_2:
+errret_2:
    if (fp) {
       EE_CLEAR(fp->uf_va_name);
       EE_CLEAR(fp->uf_name_exp);
    }
    if (free_fp)
       EE_CLEAR(fp);
-public errret_keep:
+errret_keep:
    ga_clear_strings(&newargs);
    ga_clear_strings(&default_args);
    ga_clear_strings(&newlines);
-public ret_free:
+ret_free:
    ga_clear_strings(&argtypes);
    ga_clear(&arg_objm);
    eeglFree(fudi.newKey);
@@ -16616,7 +16616,7 @@ private AutoPat *firstAutopatS[NUM_EVENTS] = { NULL };
 private AutoPat *lastAutopatS[NUM_EVENTS] = { NULL };
 
 //struct used to keep status while executing autocommands for an event.
-public struct AutoPatComm {
+private struct AutoPatComm {
    AutoPat* curpat;   // next AutoPat to examine
    AutoComm* nextComm;   // next AutoComm to execute
    Unt group;      // group being used
@@ -16728,7 +16728,7 @@ show_autocmd(AutoPat* ap, AutoEvent event) {
       }
    }
 
-public theend:
+theend:
    --autocmd_busy;
 }
 
@@ -18636,7 +18636,7 @@ au_exists(CS arg) {
       }
    } 
 
-public theend:
+theend:
    eeglFree(arg_save);
    return retval;
 }

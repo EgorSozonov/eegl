@@ -11,7 +11,7 @@
 #include "eegl.h"
 public int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 
-public struct DiffBlock {
+private struct DiffBlock {
    DiffBlock* df_next;
    LineNr   lnum[DB_COUNT];   // line number in book
    LineNr   count[DB_COUNT];   // nr of inserted/changed lines
@@ -1406,7 +1406,7 @@ diff_try_update(DiffIo* dio, int iOrig, NULLABLE Invocation* invo) {
       }
    }
 
-public theend:
+theend:
    eeglFree(dio->orig.externalFname);
    eeglFree(dio->new.externalFname);
    eeglFree(dio->dio_diff.outFname);
@@ -1478,7 +1478,7 @@ c_diffupdate(Invocation* invo) {  // "invo" can be NULL
    // force updating cursor position on screen
    curPor->lastKnownCursor.lnum = 0;
 
-public theend:
+theend:
    // A redraw is needed if there were diffs and they were cleared, or there
    // are diffs now, which means they got updated.
    if (curtab->first_diff || curtab->first_diff) {
@@ -1779,7 +1779,7 @@ c_diffpatch(Invocation* invo) {
       }
    }
 
-public theend:
+theend:
    if (tmp_orig)
       mch_remove(tmp_orig);
    eeglFree(tmp_orig);
@@ -2157,7 +2157,7 @@ diff_read(
       notset = true;
    }
 
-public done:
+done:
    if (!dio->dio_internal)
       eeglFree(hunk);
 
@@ -3452,7 +3452,7 @@ diff_find_change_inline_diff(DiffBlock* dp) {
       dp->changes.len += 1;
    }
 
-public done:
+done:
    diff_algorithm = save_diff_algorithm;
 
    dp->has_changes = true;
@@ -3920,7 +3920,7 @@ c_diffgetput(Invocation* invo) {
       auCommRestoreBook(&aco);
    }
 
-public theend:
+theend:
    isBusyP = false;
    if (needUpdateP)
       c_diffupdate(NULL);
@@ -4500,7 +4500,7 @@ f_diff(Var* argvars, Var* returnVar) {
       returnVar->string = copyStr((CS)dio.dio_diff.dout_ga.c);
    }
 
-public done:
+done:
    clear_diffin(&dio.new);
    if (dio.dio_outfmt == DIO_OUTPUT_INDICES)
       clear_diffout(&dio.dio_diff);
@@ -6124,7 +6124,7 @@ private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam c
 
    return 0;
 
-public abort:
+abort:
    eeglFree(ha);
    eeglFree(rindex);
    eeglFree(rchg);
@@ -6771,7 +6771,7 @@ scanA(HistIndex* index, int line1, int count1) {
       *rec_chain = rec;
       LINE_MAP(index, ptr) = rec;
 
-public continue_scan:
+continue_scan:
       ; // no op
    }
 
@@ -6918,7 +6918,7 @@ find_lcs(
    else
       ret = 0;
 
-public cleanup:
+cleanup:
    free_index(&index);
    return ret;
 }
@@ -6928,7 +6928,7 @@ histogram_diff(XpParam const* xpp, XdfEnv* env, int line1, int count1, int line2
    DRegion lcs;
    int lcs_found;
    int diffResult;
-public redo:
+redo:
    diffResult = -1;
 
    if (count1 <= 0 && count2 <= 0)
@@ -6977,7 +6977,7 @@ public redo:
          goto redo;
       }
    }
-public out:
+out:
    return diffResult;
 }
 

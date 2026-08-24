@@ -4,6 +4,7 @@
 //## memory.c: low-level functions for managing memory, including the text
 
 #include "eegl.h"
+//#include "proto/input.public.h"
 
 #ifndef PROTO
 #include <sys/resource.h>
@@ -179,7 +180,7 @@ tryBigAlloc(Unt size) {
          break;
    }
 
-public success:
+success:
 #ifdef MEM_PROFILE
    mem_post_alloc(&p, size);
 #endif
@@ -262,7 +263,7 @@ lalloc(Unt size, Boole message) {
       do_outofmem_msg(size);
    mch_exit(2);
    
-public success:
+success:
 #ifdef MEM_PROFILE
    mem_post_alloc(&p, size);
 #endif
@@ -653,7 +654,7 @@ _getRefCount(void* a) {
 // When searching for a specific line, we remember what blocks in the tree
 // are the branches leading to that block. This is stored in ml_stack.  Each
 // entry is a pointer to info in a block (may be data block or pointer block)
-public struct InfoPtr {
+private struct InfoPtr {
    BlockId   ip_bnum;   // block number
    LineNr   ip_low;      // lowest lnum in this block
    LineNr   ip_high;   // highest lnum in this block
@@ -716,7 +717,7 @@ private typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 
 //pointer to a block, used in a pointer block
-public struct PtrEntry {
+private struct PtrEntry {
    BlockId   blockId;   // block number
    LineNr   lineCount;   // number of lines in this branch
    LineNr   oldLnum;   // lnum for this block (for recovery)
@@ -724,7 +725,7 @@ public struct PtrEntry {
 };
 
 // A pointer block contains a list of branches in the tree.
-public struct PointerBlock {
+private struct PointerBlock {
    Short id;             // ID for pointer block: PTR_ID
    Short pointerCount;   // number of pointers in this block
    Short pointerCountMax;// maximum value for pointerCount
@@ -743,7 +744,7 @@ public struct PointerBlock {
 //
 //    [id...countLines|...free...[line2 contents\0][line1 \0][line0 \0]]
 //    ^ DataBlock     ^c         ^startByte                             ^ endByte
-public struct DataBlock {
+private struct DataBlock {
    Short   id;      // ID for data block: DATA_ID
    unsigned   freeSpace;   // free space available
    unsigned   startByte;   // byte where text starts
@@ -792,7 +793,7 @@ public struct DataBlock {
 //This block is built up of single bytes, to make it portable across
 //different machines. b0_magic_* is used to check the byte order and size of
 //variables, because the rest of the swap file is not portable.
-public struct Block0 {
+private struct Block0 {
    Byte   b0_id[2];   // id for block 0: BLOCK0_ID0 and BLOCK0_ID1,
             // BLOCK0_ID1_C0, BLOCK0_ID1_C1, etc.
    Byte   b0_version[10];   // Eegl version string
@@ -803,9 +804,9 @@ public struct Block0 {
    Byte   b0_uname[B0_UNAME_SIZE]; // name of user (uid if no name)
    Byte   b0_hname[B0_HNAME_SIZE]; // host name (if it has a name)
    Byte   b0_fname[B0_FNAME_SIZE_ORG]; // name of file being edited
-   long   b0_magic_long;   // check for byte order of long
+   Long   b0_magic_long;   // check for byte order of long
    int    b0_magic_int;   // check for byte order of int
-   short  b0_magic_short;   // check for byte order of short
+   Short  b0_magic_short;   // check for byte order of short
    Byte   b0_magic_char;   // check for last char
 };
 
@@ -959,7 +960,7 @@ ml_open(Book *book) {
 
    return OK;
 
-public error:
+error:
    if (mfp) {
       if (hdr)
          mf_put(mfp, hdr, false, false);
@@ -1058,7 +1059,7 @@ memOpenSwapFile(Book* book) {
       mf_close_file(book, false);
    }
 
-public success:
+success:
    if (!mfp->fName) {
       need_wait_return = true;   // call wait_return() later
       ++no_wait_return;
@@ -1660,7 +1661,7 @@ ml_recover(Boole checkext) {
    }
    drawCurBookLater(UPD_NOT_VALID);
 
-public theend:
+theend:
    eeglFree(fname_used);
    recoveryModeG = false;
    if (mfp) {
@@ -1860,7 +1861,7 @@ ml_preserve(Book* book, int message) {
          status = FAIL;
       book->mem.ml_stack_top = 0;       // stack is invalid now
    }
-public theend:
+theend:
    gotInterruptG |= gotInterruptG_save;
 
    if (message) {
@@ -1957,7 +1958,7 @@ memGetLine(Book* book, LineNr   lnum, Boole  willChange) { // line will be chang
          --recursive;
       }
       flushLine(book);
-public errorret:
+errorret:
       STRCPY(questions, "???");
       book->mem.lineLen = 4;
       book->mem.lineTextLen = book->mem.lineLen;
@@ -2515,7 +2516,7 @@ insertLineText(
       channel_write_new_lines(book);
    ret = OK;
 
-public theend:
+theend:
    eeglFree(tofree);
    return ret;
 }
@@ -2905,8 +2906,8 @@ deleteLine(Book* book, LineNr lnum, int flags) {
    updateChunk(book, lnum, line_size - textprop_len, ML_CHNK_DELLINE);
    ret = OK;
 
-public theend:
-   if (textprop_save != NULL) {
+theend:
+   if (textprop_save) {
       // Adjust text properties in the line above and below.
       if (lnum > 1)
          adjustTextPropsForDeletion(book, lnum - 1, textprop_save, (int)textprop_len, true);
@@ -3335,9 +3336,9 @@ ml_find_line(Book *book, LineNr lnum, int action) {
       mf_put(mfp, hdr, dirty, false);
    }
 
-public error_block:
+error_block:
    mf_put(mfp, hdr, false, false);
-public error_noblock:
+error_noblock:
    // If action is ML_DELETE or ML_INSERT we have to correct the tree for the 
    // incremented/decremented line counts, because there won't be a line inserted/deleted after all
    if (action == ML_DELETE)

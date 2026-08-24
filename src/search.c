@@ -1206,7 +1206,7 @@ do_search(
    curPor->cursor = pos;
    curPor->setCursWant = true;
 
-public end_do_search:
+end_do_search:
    if ((options & SEARCH_KEEP) || (commModifierG.cmod_flags & CMOD_KEEPPATTERNS))
       prevSearchPatternsP[0].off = old_off;
    eeglFree(strcopy);
@@ -2827,7 +2827,7 @@ find_pattern_in_path(
    if (action == ACTION_SHOW || action == ACTION_SHOW_ALL)
       msg_end();
 
-public fpip_end:
+fpip_end:
    eeglFree(file_line);
    eeRegFree(regmatch.regprog);
    eeRegFree(incl_regmatch.regprog);
@@ -2995,7 +2995,7 @@ f_searchcount(Var *argvars, Var* returnVar) {
    bagAddNumber(returnVar->bag, S"incomplete", stat.incomplete);
    bagAddNumber(returnVar->bag, S"maxcount", stat.last_maxcount);
 
-public the_end:
+the_end:
    restore_last_search_pattern();
    restore_incsearch_state();
 }
@@ -3159,7 +3159,7 @@ match_add(
    redrawPortLater(po, rtype);
    return id;
 
-public fail:
+fail:
    eeglFree(m->pattern);
    eeglFree(m->pos);
    eeglFree(m);
@@ -4144,7 +4144,7 @@ c_help(Invocation* invo) {
    if (alt_fnum != 0 && curPor->altFnum == empty_fnum && (commModifierG.cmod_flags & CMOD_KEEPALT) == 0)
       curPor->altFnum = alt_fnum;
 
-public erret:
+erret:
    deleteArena(matches.a);
    eeglFree(tag);
 }

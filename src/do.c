@@ -490,7 +490,7 @@ c_sort(Invocation* invo) {
    curPor->cursor.lnum = invo->line1;
    beginline(BL_WHITE | BL_FIX);
 
-public sortend:
+sortend:
    eeglFree(nrs);
    eeglFree(sortbuf1);
    eeglFree(sortbuf2);
@@ -678,7 +678,7 @@ c_uniq(Invocation* invo) {
    curPor->cursor.lnum = invo->line1;
    beginline(BL_WHITE | BL_FIX);
 
-public uniqend:
+uniqend:
    eeglFree(sortbuf1);
    eeRegFree(regmatch.regprog);
    if (gotInterruptG)
@@ -978,7 +978,7 @@ do_bang(
       applyAutocomms(EVENT_SHELLFILTERPOST, NULL, NULL, false, curBook);
    }
 
-public theend:
+theend:
    if (free_newcmd)
       eeglFree(newcmd);
 }
@@ -1179,14 +1179,14 @@ do_filter(
       } else
          msgmore((long)linecount);
    } else {
-public error:
+error:
       // put cursor back in same position for ":w !cmd"
       curPor->cursor = cursor_save;
       --no_wait_return;
       wait_return(false);
    }
 
-public filterend:
+filterend:
 
    commModifierG.cmod_flags = save_cmod_flags;
    if (curBook != curBookSaved) {
@@ -1667,7 +1667,7 @@ do_write(Invocation* invo) {
           DO_AUTOCHDIR;
    }
 
-public theend:
+theend:
    eeglFree(free_fname);
    return retval;
 }
@@ -2427,7 +2427,7 @@ startEditingFile(
       drawCurBookLater(UPD_NOT_VALID);   // redraw this buffer later
    }
 
-public theend:
+theend:
    if (did_inc_redrawing_disabled && isRedrawingDisabledG > 0)
       --isRedrawingDisabledG;
    if (did_set_swapcommand)
@@ -3635,7 +3635,7 @@ c_substitute(Invocation* invo) {
       changed_lines(first_line, 0, last_line - i, i);
    }
 
-public outofmem:
+outofmem:
    eeglFree(sub_firstline); // may have to free allocated copy of the line
 
    eeglFree(text_props);
@@ -4739,13 +4739,13 @@ check_changed_any(Boole checkOnlyHidden, Boole unload) {
          }
       } 
    } 
-public buf_found:
+buf_found:
 
    // Open the changed buffer in the current portal.
    if (book != curBook)
       bookSetCurBook(book, unload ? DOBOOK_UNLOAD : DOBOOK_GOTO);
 
-public theend:
+theend:
     eeglFree(bufnrs);
     return ret;
 }
@@ -5832,7 +5832,7 @@ doOneCommand(
    }
 
 
-public doend:
+doend:
    if (curPor->cursor.lnum == 0) {  // can happen with zero line number
       curPor->cursor.lnum = 1;
       curPor->cursor.col = 0;
@@ -6430,7 +6430,7 @@ parse_cmd_address(Invocation* invo, CS* errorMsg, int silent) {
    }
    ret = OK;
 
-public theend:
+theend:
    if (need_check_cursor)
       check_cursor();
    return ret;
@@ -6852,7 +6852,7 @@ f_fullcommand(Var *argvars, Var *returnVar) {
    returnVar->string = copyStr(IS_USER_COMMAND(invo.id)
              ? get_user_command_name(invo.useridx, invo.id)
              : commands[invo.id].name);
-public theend:
+theend:
    commModifierG.cmod_flags = save_cmod_flags;
 }
 
@@ -7295,7 +7295,7 @@ doGetCommandAddress(
       }
    } while (*cmd == '/' || *cmd == '?');
 
-public error:
+error:
    *ptr = cmd;
    return lnum;
 }
@@ -8380,7 +8380,7 @@ getTabRelatedArg(Invocation* invo) {
       }
    }
 
-public theend:
+theend:
    return tabId;
 }
 
@@ -8847,7 +8847,7 @@ c_splitview(Invocation* invo) {
       do_exedit(invo, old_curPor);
    }
 
-public theend:
+theend:
    eeglFree(fname);
 }
 
@@ -11761,7 +11761,7 @@ u_savecommon(LineNr top, LineNr bot, LineNr newbot, int reload) {
 #endif
     return OK;
 
-public nomem:
+nomem:
     msg_silent = 0;   // must display the prompt
     if (ask_yesno((CS)_("No undo possible; continue anyway"), true) == 'y') {
        undo_off = true;       // will be reset when character typed
@@ -12332,13 +12332,13 @@ u_write_undo(CS name, Boole forceit, Book* book, Arr(Byte) hash) {
    if (p_fs && fflush(fp) == 0 && eeFsync(fd) != 0)
       write_ok = false;
 
-public write_error:
+write_error:
    fclose(fp);
    if (!write_ok)
       showErrFmtMsg(_(e_write_error_in_undo_file_str), file_name);
 
 
-public theend:
+theend:
    if (file_name != name)
       eeglFree(file_name);
 }
@@ -12606,7 +12606,7 @@ u_read_undo(CS name, Arr(Byte) hash, CS orig_name) {
       smsg(_("Finished reading undo file %s"), file_name);
    goto theend;
 
-public error:
+error:
    eeglFree(line_ptr.ul_line);
    if (uhp_table) {
       for (int i = 0; i < num_read_uhps; i++) {
@@ -12616,7 +12616,7 @@ public error:
       eeglFree(uhp_table);
    }
 
-public theend:
+theend:
    if (fp)
       fclose(fp);
    if (file_name != name)
@@ -12914,7 +12914,7 @@ undo_time(long step, int sec, int file, int absolute) {
          above = true;   // stop above the header
    }
 
-public target_zero:
+target_zero:
    //If we found it: Follow the path to go to where we want to be.
    
    if (!uhp && target != 0) {
@@ -13006,7 +13006,7 @@ public target_zero:
          }
       }
    }
-public theEnd: 
+theEnd: 
    u_undo_end(did_undo, absolute);
 }
 

@@ -83,9 +83,8 @@ private typedef struct {
    long      changedTick;
 } LocationList;
 
-//Quickfix/Location list stack definition
-//Contains a list of location lists (LocationList)
-public struct LocationStack {
+//Quickfix/Location list stack definition. Contains a list of location lists (LocationList)
+private struct LocationStack {
    // Count of references to this list. Used only for location lists.
    // When a location list portal reference this list, refcount
    // will be 2. Otherwise, refcount will be 1. When refcount
@@ -539,10 +538,10 @@ parse_efm_option(CS efm){
 
    goto parse_efm_end;
 
-public parse_efm_error:
+parse_efm_error:
    free_efm_list(&fmtFirst);
 
-public parse_efm_end:
+parse_efm_end:
    eeglFree(fmtstr);
 
    return fmtFirst;
@@ -1268,7 +1267,7 @@ qf_parse_line(
    CS tail = NULL;
    int status;
 
-public restofline:
+restofline:
    // If there was no %> item start at the first pattern
    if (fmt_start == NULL)
       fmt_ptr = fmtFirst;
@@ -2943,7 +2942,7 @@ jumpToNewPortal(
          currentIdx = old_currentIdx;
       }
    }
-public theend:
+theend:
    if (stack) {
       ll->curr = curr;
       ll->currentIdx = currentIdx;
@@ -4261,7 +4260,7 @@ c_elgrep(Invocation* invo) {
       foldUpdateAll(curPor);
    }
 
-public theend:
+theend:
    deleteArena(m.a);
    eeglFree(args.title);
    eeglFree(target_dir);
@@ -5340,7 +5339,7 @@ elckGrepFiles(
 
     status = OK;
 
-public theend:
+theend:
     return status;
 }
 
@@ -5420,7 +5419,7 @@ c_vimgrep(Invocation* invo) {
       foldUpdateAll(curPor);
    }
 
-public theend:
+theend:
    deleteArena(matches.a);
    eeglFree(args.title);
    eeglFree(target_dir);
@@ -5579,7 +5578,7 @@ wipeDummyBook(Book* book, CS dirname_start) {
       return;
     }
 
-public fail:
+fail:
     // Keeping the book, remove the dummy flag.
     book->flags &= ~BF_DUMMY;
 }
@@ -8217,7 +8216,7 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 // Struct to hold the sign properties.
 private typedef struct Sign Sign;
 
-public struct Sign {
+private struct Sign {
    Sign* next; // next sign in list
    int typeNr; // type number of sign
    CS name; // name of sign
@@ -10024,7 +10023,7 @@ sign_define_from_dict(CS name_arg, Bag* bag) {
    if (sign_define_by_name(name, linehl, text, texthl, culhl, numhl, prio) == OK)
       retval = 0;
 
-public cleanup:
+cleanup:
    eeglFree(name);
    eeglFree(linehl);
    eeglFree(text);
@@ -10175,7 +10174,7 @@ f_sign_jump(Var *argvars, Var* returnVar) {
 
    returnVar->number = sign_jump(sign_id, sign_group, book);
 
-public cleanup:
+cleanup:
    eeglFree(sign_group);
 }
 
@@ -10287,7 +10286,7 @@ sign_place_from_dict(
     if (sign_place(&sign_id, group, sign_name, book, lnum, prio) == OK)
         ret_sign_id = sign_id;
 
-public cleanup:
+cleanup:
     eeglFree(group);
 
     return ret_sign_id;
@@ -10414,7 +10413,7 @@ sign_unplace_from_dict(Var *group_tv, Bag *dict) {
    } ei (sign_unplace(sign_id, group, book, 0) == OK)
       retval = 0;
 
-public cleanup:
+cleanup:
    eeglFree(group);
 
    return retval;

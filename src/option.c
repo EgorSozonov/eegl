@@ -125,7 +125,7 @@ private typedef struct {
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
 private typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
-public struct Option { //:Option
+private struct Option { //:Option
    CS fullName;   // full option name
    OptionValue defaultValue; // default value for option
    
@@ -815,7 +815,7 @@ parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope) {
    OptionRef ref = getRefInScope(o, setScope);
    errmsg = setNumericImpl(OUT o, OUT ref, newValue, setScope);
 
-public skip:
+skip:
    return errmsg;
 }
 
@@ -931,7 +931,7 @@ setFromString(OUT Option* o, CS arg, CS newVal, SetScope setScope) {
          check_redraw(o->flags);
    } 
 
-public end:
+end:
    if (!errmsg) {
       did_set_option(o);
    }
@@ -3880,11 +3880,11 @@ put_setstring(
    } ei (put_escstr(fd, *ref.string, 2) == FAIL)
       return FAIL;
        
-public end:
+end:
    if (put_eol(fd) < 0)
       return FAIL;
    return OK;
-public fail:
+fail:
    eeglFree(buffer);
    eeglFree(part);
    return FAIL;
@@ -4095,7 +4095,7 @@ c_get(Invocation* invo) {
    
    return;
    
-public theend:
+theend:
    if (silentModeG && didShow) {
       // After displaying option values in silent mode.
       silentModeG = false;

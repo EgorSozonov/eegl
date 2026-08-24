@@ -45,7 +45,7 @@ private volatile SigAtomic deadlySignalS = 0;      // The signal we caught
 #define fd_close(sd) close(sd)
 
 // Structure to hold info about an async shell Job
-public struct Job {
+private struct Job {
    Unt refCount; //reference count
    Job* next;
    Job* prev;
@@ -710,7 +710,7 @@ channel_open_func(Arr(Var) argvars) {
       opt.set = JO_ALL;
       channel_set_options(channel, &opt);
    }
-public theend:
+theend:
    free_job_options(&opt);
    return channel;
 }
@@ -2770,7 +2770,7 @@ commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob) {
       }
    }
 
-public theend:
+theend:
    free_job_options(&opt);
 }
 
@@ -4076,7 +4076,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
          //Handle Wayland events such as sending data as the source client.
          wayland_client_update();
       }
-public finished:
+finished:
       p_more = p_more_save;
 
       // Give all typeahead that wasn't used back to ui_inchar().
@@ -4934,7 +4934,7 @@ mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal) {
    // success!
    return;
 
-public failed:
+failed:
    channel_unref(channel);
    if (fd_in[0] >= 0)
       close(fd_in[0]);
@@ -4991,7 +4991,7 @@ mch_job_status(Job* job) {
    }
    return S"run";
 
-public return_dead:
+return_dead:
    if (job->status < JOB_ENDED) {
       job->status = JOB_ENDED;
    } 
@@ -6032,7 +6032,7 @@ startJob(Arr(Var) argvars, Multistring* argv_arg, JobOptions* opt_arg, Job** ter
    if (job->channel)
       channel_write_in(job->channel);
 
-public theend:
+theend:
    if (argv && argv != job->argv) {
       for (Unt i = 0; argv[i]; i++)
          eeglFree(argv[i]);

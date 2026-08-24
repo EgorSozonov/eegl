@@ -799,7 +799,7 @@ toPrintf(CS str, int maxlen) {
          }
          bbb = aaa + 1;
       }
-public skipped:
+skipped:
       // primitive way to compute the current column
       if (*aaa == ENTER || *aaa == NL)
          msgColG = 0;
@@ -1565,7 +1565,7 @@ c_messages(Invocation *invo) {
 
 //To be able to scroll back at the "more" and "hit-enter" prompts we need to
 //store the displayed text and remember where screen lines start.
-public struct MsgChunk {
+private struct MsgChunk {
    MsgChunk   *sb_next;
    MsgChunk   *sb_prev;
    char   sb_eol;      // true when line ends after this text

@@ -654,7 +654,7 @@ do_tag(
       break;
    }
 
-public end_do_tag:
+end_do_tag:
    deleteArena(newMatches.a);
    // Only store the new index when using the tagstack and it's valid.
    if (use_tagstack && tagstackidx <= (int)curPor->tagStackLen)
@@ -2224,7 +2224,7 @@ find_tags(
       retval = OK;      // It's OK even when no tag found
    }
 
-public findtag_end:
+findtag_end:
     findtags_state_free(&st);
 
    //Move the matches from the ga_match[] arrays into one list of matches. When retval == FAIL, 
@@ -2803,7 +2803,7 @@ jumpto_tag(
       // something went wrong, still in popup, but it can't have focus
       enterPortal(firstPor, true);
 
-public erret:
+erret:
    g_do_tagpreview = 0; // For next time
    eeglFree(lbuf);
    eeglFree(pbuf);
@@ -3681,7 +3681,7 @@ cs_add_common(
 
    ret = STAT(fname, &statbuf);
    if (ret < 0) {
-public staterr:
+staterr:
       if (p_csverbose)
          cs_stat_emsg(fname);
       goto add_err;
@@ -3745,7 +3745,7 @@ public staterr:
    eeglFree(ppath);
    return CSCOPE_SUCCESS;
 
-public add_err:
+add_err:
    eeglFree(fname2);
    eeglFree(fname);
    eeglFree(ppath);

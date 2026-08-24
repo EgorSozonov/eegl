@@ -1448,7 +1448,7 @@ op_yank(Operator *opArg, int deleting, int mess) {
       yank_do_autocmd(opArg, y_current);
    return OK;
 
-public fail:      // free the allocated lines
+fail:      // free the allocated lines
    free_yank(y_idx + 1);
    y_current = curr;
    return FAIL;
@@ -2127,7 +2127,7 @@ do_put(
       curPor->cursor.col = len;
    }
 
-public end:
+end:
    if (commModifierG.cmod_flags & CMOD_LOCKMARKS) {
       curBook->opStart = orig_start;
       curBook->opEnd = orig_end;
@@ -3854,7 +3854,7 @@ clip_wl_send_data(char const* mime_type, int fd, WaylandSelection selection) {
       tv.tv_sec = 0;
       tv.tv_usec = p_wtm * 1000;
    }
-public exit:
+exit:
    eeglFree(string);
 }
 
@@ -4355,7 +4355,7 @@ wayland_init_client(CS display) {
    wayland_display_fd = vwl_display.fd;
 
    return OK;
-public fail:
+fail:
    // Set v:wayland_display to empty string (but not wayland_display_name)
    wayland_set_display(S"");
    return FAIL;
@@ -4381,7 +4381,7 @@ wayland_client_is_connected(int quiet) {
       goto error;
 
    return true;
-public error:
+error:
    if (!quiet)
       emsg(e_wayland_connection_unavailable);
    return false;
@@ -4609,12 +4609,12 @@ vwl_init_fs_surface(
          goto fail;
    }
    }
-public early_exit:
+early_exit:
    vwl_destroy_fs_surface(store);
    vwl_display_flush(&vwl_display);
 
    return OK;
-public fail:
+fail:
    vwl_destroy_fs_surface(store);
    vwl_display_flush(&vwl_display);
 
@@ -5025,7 +5025,7 @@ vwl_get_data_device_manager(
    if (vwl_gobjects.ext_data_control_manager_v1 != NULL)
       SET_MANAGER(ext_data_control_manager_v1, VWL_DATA_PROTOCOL_EXT, false);
 
-public focus_steal:
+focus_steal:
    if (vwl_focus_stealing_available()) {
       if (vwl_gobjects.wl_data_device_manager != NULL
          && selection == WAYLAND_SELECTION_REGULAR)
@@ -5286,7 +5286,7 @@ vwl_data_device_listener_selection(
       goto exit;
    }
 
-public exit:
+exit:
    // Destroy previous offer if any
    vwl_data_offer_destroy(prev_offer, true);
    ga_clear_strings(&clip_sel->mime_types);
@@ -5484,7 +5484,7 @@ wayland_cb_own_selection(
    }
 
    return OK;
-public fail:
+fail:
    vwl_data_source_destroy(&clip_sel->source, false);
    return FAIL;
 }
@@ -5620,7 +5620,7 @@ wayland_set_display(CS display) {
       wayland_display_name = copyStr((Byte*)display);
    }
 
-public exit:
+exit:
    set_EeglVar_string(VV_WAYLAND_DISPLAY, (Byte*)display, -1);
 }
 

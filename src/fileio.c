@@ -1060,7 +1060,7 @@ f_resolve(Var *argvars, Var* returnVar) {
 
    simplify_filename(returnVar->string);
 
-public fail:
+fail:
    returnVar->tag = VAR_STRING;
 }
 
@@ -2104,7 +2104,7 @@ modify_fname(
    int has_fullname = 0;
    int has_homerelative = 0;
 
-public repeat:
+repeat:
    // ":p" - full path/file_name
    if (src[*usedlen] == ':' && src[*usedlen + 1] == 'p') {
       has_fullname = 1;
@@ -2961,7 +2961,7 @@ eeFindFile_init(
 
    return searchCtx;
 
-public error_return:
+error_return:
    //We clear the search context now! Even when the caller gave us a (perhaps valid) context, we 
    //free it here, as we might have already destroyed it.
    eeFindFile_cleanup(searchCtx);
@@ -3468,7 +3468,7 @@ eeFindFile(FileSearchCtx* search_ctx_arg) {
          break;
    }
 
-public fail:
+fail:
    return NULL;
 }
 
@@ -4032,7 +4032,7 @@ findFileInPathImpl(
       }
     }
 
-public theend:
+theend:
     return file_name;
 }
 
@@ -5007,7 +5007,7 @@ mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* match
 
    return OK;
 
-public notfound:
+notfound:
    if (flags & EW_NOTFOUND)
       return save_patterns(num_pat, pat, OUT matches);
    return FAIL;
@@ -5725,7 +5725,7 @@ readfile(
       }
    }
 
-public failed:
+failed:
    // not an error, max. number of lines reached
    if (error && read_count == 0)
       error = false;
@@ -5941,7 +5941,7 @@ public afterRecovery:
    if (!(recoveryModeG && error))
       retval = OK;
 
-public theend:
+theend:
    if (curBook->mem.mfile != NULL && curBook->mem.mfile->mf_dirty == MF_DIRTY_YES_NOSYNC)
       // OK to sync the swap file now
       curBook->mem.mfile->mf_dirty = MF_DIRTY_YES;
@@ -7526,7 +7526,7 @@ fiGetShellOutput(
    } else
       *ret_len = tempFileLen;
 
-public done:
+done:
    eeglFree(tempname);
    return buf;
 }
@@ -7641,7 +7641,7 @@ fiGetShellOutput_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist) {
       res = NULL;
    }
 
-public errret:
+errret:
    if (infile) {
       mch_remove(infile);
       eeglFree(infile);

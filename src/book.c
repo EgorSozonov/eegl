@@ -6855,9 +6855,9 @@ public endOfName:
    goto nofail;
 
    // Finish up.  We get here either after failure or success.
-public fail:
+fail:
    --no_wait_return;      // may wait for return now
-public nofail:
+nofail:
 
    // Done saving, we accept changed book warnings again
    book->isBeingSaved = false;
@@ -7300,7 +7300,7 @@ do_arglist(
    alist_check_arg_idx();
    retval = OK;
    
-public cleanup:
+cleanup:
    deleteArena(files.a);
    return retval;
 }
@@ -8331,7 +8331,7 @@ addProp(OUT Book* book, Prop prop) {
    changed_lines_buf(book, prop.startLnum, prop.endLnum + 1, 0);
    res = OK;
 
-public theend:
+theend:
    eeglFree(text);
    return res;
 }
@@ -8578,9 +8578,9 @@ prop_add_common(
 
    drawBookLater(book, UPD_VALID);
 
-public theend:
-    eeglFree(text);
-    return id;
+theend:
+   eeglFree(text);
+   return id;
 }
 
 //Fetch the text properties for line "lnum" in book "book".
@@ -9194,7 +9194,7 @@ get_prop_types_from_names(List *l, Book* book, OUT int *num_types) {
    *num_types = i;
    return prop_types;
 
-public errret:
+errret:
    EE_CLEAR(prop_types);
    return NULL;
 }
@@ -9226,7 +9226,7 @@ get_prop_ids_from_list(List *l, OUT int* countIds) {
    *countIds = i;
    return prop_ids;
 
-public errret:
+errret:
    EE_CLEAR(prop_ids);
    return NULL;
 }
@@ -9308,7 +9308,7 @@ f_prop_list(Var *argvars, OUT Var* returnVar) {
              returnVar->list, add_lnum);
    } 
 
-public errret:
+errret:
    EE_CLEAR(prop_types);
    EE_CLEAR(prop_ids);
 }
@@ -9484,7 +9484,7 @@ f_prop_remove(Var *argvars, OUT Var* returnVar) {
           --lst->len;
    }
 
-public cleanup_prop_remove:
+cleanup_prop_remove:
     eeglFree(typeIds);
 }
 

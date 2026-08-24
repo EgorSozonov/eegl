@@ -316,7 +316,7 @@ private typedef struct {
    Boole (*resize)(Short rows, Short cols, void *user);
 } VTermParserCallbacks;
 
-public struct VTermLineInfo {
+private struct VTermLineInfo {
    Unt doublewidth:1;  //DECDWL or DECDHL line
    Unt doubleheight:2; //DECDHL line (1=top 2=bottom)
    Unt continuation:1; //Line is a flow continuation of the previous
@@ -337,7 +337,7 @@ private typedef struct {
    int (*sb_clear)(void* user);
 } VTermStateCallbacks;
 
-public struct VTerm {
+private struct VTerm {
    VTermAllocatorFunctions* allocator;
 
    int rows;
@@ -431,7 +431,7 @@ private typedef struct {
    int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
 
-public struct VTermState {
+private struct VTermState {
    VTerm* vt;
 
    VTermStateCallbacks* callbacks;
@@ -545,7 +545,7 @@ public struct VTermState {
   } selection;
 };
 
-public struct VTermGlyphInfo {
+private struct VTermGlyphInfo {
   Unt* chars;
   int width;
 };
@@ -673,7 +673,7 @@ private void vterm_state_savepen(VTermState* state, int save);
 # define DEBUG_PRINT_UTF8
 #endif
 
-public struct UTF8DecoderData {
+private struct UTF8DecoderData {
   // number of bytes remaining in this codepoint
   int bytes_remaining;
 
@@ -1469,7 +1469,7 @@ vterm_scroll_rect(
 //}}}
 //{{{unicode
 
-public struct interval {
+private struct interval {
   int first;
   int last;
 };
@@ -2386,7 +2386,7 @@ vterm_mouse_button(VTerm *vt, int button, int pressed, VTermModifier mod) {
 
 #undef DEBUG_REFLOW
 
-public struct VTermScreen {
+private struct VTermScreen {
    VTerm* vt;
    VTermState* state;
 
@@ -6084,7 +6084,7 @@ private typedef struct sb_line_S {
 } ScrollbackLine;
 
 // typedef Terminal in eegl.h@@structs
-public struct Terminal {
+private struct Terminal {
    Terminal* next;
 
    VTerm* vterm;
@@ -6711,7 +6711,7 @@ c_terminal(Invocation* invo) {
    argvar[1].tag = VAR_UNKNOWN;
    startSubterminal(argvar, NULL, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
 
-public theend:
+theend:
    eeglFree(shellComm);
    eeglFree(opt.jo_eof_chars);
 }
@@ -8142,7 +8142,7 @@ terminal_loop(int blocking) {
    }
    ret = FAIL;
 
-public theend:
+theend:
    in_terminal_loop = NULL;
    if (restoreCursor)
       prepare_restoreCursor_props();
@@ -9826,7 +9826,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    // looks better without wrapping
    curPor->o.wrap = 0;
 
-public theend:
+theend:
    eeglFree(textline);
    eeglFree(fname_tofree);
    fclose(fd1);

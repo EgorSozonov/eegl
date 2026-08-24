@@ -577,12 +577,7 @@ skip_expr(OUT CS* pp, EvalCtx* evalarg) {
 //"start" is set to the start of the expression, "end" to just after the end.
 //Also when the expression is copied to allocated memory. Return FAIL for an error, OK otherwise.
 public int
-skip_expr_concatenate(
-   Byte** arg,
-   Byte** start,
-   Byte** end,
-   EvalCtx* evalarg
-) {
+skip_expr_concatenate(Byte** arg, Byte** start, Byte** end, EvalCtx* evalarg) {
    Var returnVar;
    int res;
    int save_flags = evalarg == NULL ? 0 : evalarg->eval_flags;
@@ -1042,7 +1037,7 @@ deref_function_name(
       name = NULL;
    }
 
-public theend:
+theend:
    clearVar(&ref);
    if (evalarg)
       evalarg->eval_flags = save_flags;
@@ -1098,13 +1093,9 @@ callEeglFunction(
 //"argv[argc - 1]" for the function arguments."argv[argc]" should have type VAR_UNKNOWN.
 //Return NULL when calling the function fails.
 public void *
-call_func_retstr(
-   Byte      *func,
-   int      argc,
-   Var   *argv
-) {
+call_func_retstr(Byte* func, int argc, Var* argv) {
    Var   returnVar;
-   if (callEeglFunction(func, argc, argv, &returnVar) == FAIL)
+   if (callEeglFunction(func, argc, argv, OUT &returnVar) == FAIL)
       return NULL;
 
    CS retval = copyStr(tv_get_string(&returnVar));
@@ -1116,13 +1107,8 @@ call_func_retstr(
 //call_func_retstr(). Return NULL when there is something wrong.
 //Give an error when the returned value is not a list.
 public void *
-call_func_retlist(
-   Byte      *func,
-   int      argc,
-   Var   *argv)
-{
+call_func_retlist(Byte* func, int argc, Var* argv) {
    Var   returnVar;
-
    if (callEeglFunction(func, argc, argv, OUT &returnVar) == FAIL)
       return NULL;
 
@@ -1220,7 +1206,7 @@ flags_tostring(Unt flags, FlagString* _fstring, CS buf, Unt n) {
    return buf;
 }
 
-public FlagString glv_flag_strings[] = {
+private FlagString glv_flag_strings[] = {
     { GLV_QUIET,      "QUIET" },
     { GLV_NO_AUTOLOAD,      "NO_AUTOLOAD" },
     { GLV_READ_ONLY,      "READ_ONLY" },
@@ -1628,7 +1614,7 @@ getLvalSubscript(Lval* lv, CS p, GetLval arg) {
 
     rc = OK;
 
-public done:
+done:
     clearVar(&var1);
     clearVar(&var2);
     return rc == OK ? p : NULL;
@@ -1648,10 +1634,7 @@ public done:
 //Return a pointer to just after the name, including indexes. When an evaluation error occurs 
 //"retVal->name" is NULL; Return NULL for a parsing error. Still need to free items in "letVal"!
 public CS
-getLval(
-   OUT Lval* retVal,
-   GetLval arg
-) { // flags for findNameEnd()
+getLval( OUT Lval* retVal, GetLval arg) { // flags for findNameEnd()
    DictItem* v = NULL;
    EeSet   *ht = NULL;
    Boole quiet = arg.flags & GLV_QUIET;
@@ -2068,7 +2051,7 @@ tv_op(Var *tv1, Var *tv2, CS op) {
 //{{{loops
 
 // Info used by a ":for" loop.
-public struct ForInfo {
+private struct ForInfo {
    int endsWithSemicolon;   // true if ending in '; var]'
    int fi_varcount;   // nr of variables in [] or zero
    int fi_break_count;   // nr of line breaks encountered
@@ -3704,7 +3687,7 @@ call_func_returnVar(
    funcexe.fe_basetv = basetv;
    ret = get_func_tv(s, -1, returnVar, arg, evalarg, &funcexe);
 
-public theend:
+theend:
    //Clear the funcref afterwards, so that deleting it while
    //evaluating the arguments is possible (see test55).
    if (evaluate)
@@ -6665,7 +6648,7 @@ letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op) {
    if (err)
       emsg(_(err));
 
-public theend:
+theend:
     *p = c1;
     if (oldVal.tag == OPTION_STRING) {
        eeglFree(oldVal.string);
@@ -8184,7 +8167,7 @@ setVarImpl(
 
    retStatus = OK;
 
-public failed:
+failed:
    eeglFree(name_tofree);
    if (freeNewValue)
       clearVar(newValue);
@@ -9852,7 +9835,7 @@ f_call(Arr(Var) argvars, Var* returnVar) {
 
    (void)func_call(func, &argvars[1], partial, selfdict, returnVar);
 
-public done:
+done:
    eeglFree(tofree);
 }
 
@@ -10821,7 +10804,7 @@ common_function(Arr(Var) argvars, Var* returnVar, int is_funcref) {
          }
       }
    }
-public theend:
+theend:
    eeglFree(trans_name);
 }
 
@@ -12614,7 +12597,7 @@ find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type) {
       eeRegFree(regmatch.regprog);
    }
 
-public theend:
+theend:
    if (type == MATCH_POS && l == NULL && returnVar->list)
       // matchstrpos() without a list: drop the second item.
       listitem_remove(returnVar->list, returnVar->list->first->next);
@@ -12758,10 +12741,10 @@ f_matchbufline(Arr(Var) argvars, Var* returnVar) {
       slnum++;
    }
 
-public cleanup:
+cleanup:
    eeRegFree(regmatch.regprog);
 
-public theend:
+theend:
 }
 
 private void
@@ -12840,10 +12823,10 @@ f_matchstrlist(Arr(Var) argvars, Var* returnVar) {
       idx++;
    }
 
-public cleanup:
+cleanup:
    eeRegFree(regmatch.regprog);
 
-public theend:
+theend:
 }
 
 private void
@@ -13160,7 +13143,7 @@ f_rand(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = (Long)result;
    return;
 
-public theend:
+theend:
    showErrFmtMsg(_(e_invalid_argument_str), tv_get_string(&argvars[0]));
    returnVar->tag = VAR_NUMBER;
    returnVar->number = -1;
@@ -13582,7 +13565,7 @@ search_cmn(Arr(Var) argvars, OUT Pos *match_pos, OUT Unt* flagsp) {
       curPor->cursor = save_cursor;
    else
       curPor->setCursWant = true;
-public theend:
+theend:
    wrapSearchG = true;
 
    return retval;
@@ -13675,7 +13658,7 @@ searchpair_cmn(Arr(Var) argvars, Pos *match_pos) {
 
    retval = do_searchpair(spat, mpat, epat, dir, skip, flags, match_pos, lnum_stop, time_limit);
 
-public theend:
+theend:
    wrapSearchG = true;
 
    return retval;
@@ -14279,7 +14262,7 @@ f_split(Arr(Var) argvars, Var* returnVar) {
       eeRegFree(regmatch.regprog);
    }
 
-public theend:
+theend:
 }
 
 // "submatch()" function
@@ -14527,7 +14510,7 @@ f_virtcol(Arr(Var) argvars, Var* returnVar) {
       ++vcol_end;
    }
 
-public theend:
+theend:
    if (argvars[1].tag != VAR_UNKNOWN && tv_get_bool(&argvars[1])) {
       allocReturnList(returnVar);
       list_append_number(returnVar->list, vcol_start);
@@ -14932,11 +14915,11 @@ throw_exception(void *value, ExceptionKind type, CS commName) {
    current_exception = excp;
    return OK;
 
-public nomem:
+nomem:
    eeglFree(excp);
    suppress_errthrow = true;
    emsg(_(e_out_of_memory));
-public fail:
+fail:
    current_exception = NULL;
    return FAIL;
 }

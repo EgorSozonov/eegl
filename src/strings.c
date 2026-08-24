@@ -31,13 +31,13 @@
 
 private typedef struct ArenaChunk ArenaChunk;
 
-public struct ArenaChunk { // :ArenaChunk
+private struct ArenaChunk { // :ArenaChunk
    Unt size;
    ArenaChunk* next;
    char memory[]; // flexible array member
 };
 
-public struct Arena { // :Arena
+private struct Arena { // :Arena
    ArenaChunk* firstChunk;
    ArenaChunk* currChunk;
    int currInd;
@@ -287,8 +287,8 @@ str_foldcase(
 
 //Convert the lower 4 bits of byte "c" to its hex character.
 //Lower case letters are used to avoid the confusion of <F1> being 0xf1 or function key 1.
-public unsigned
-nr2hex(unsigned c) {
+public Unt
+nr2hex(Unt c) {
    if ((c & 0xf) <= 9)
       return (c & 0xf) + '0';
    return (c & 0xf) - 10 + 'a';
@@ -2585,13 +2585,13 @@ removeSubDir(OUT DirName* restrict dn) {
 
 public declStruct(ChunkString);
 
-public struct ChunkString {
+private struct ChunkString {
    Arr(Byte const) c;
    Int len;
    ChunkString* next;
 };
 
-public struct ChunkyString {
+private struct ChunkyString {
    ChunkString first;
    ChunkString* last;
    Int len; 

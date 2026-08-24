@@ -4,6 +4,7 @@
 //## juggle.c: low-level operations and operators for changing text
 
 #include "eegl.h"
+//#include "proto/input.public.h"
 
 #define TABSIZE_MAX 16
 
@@ -1742,7 +1743,7 @@ openLine(
    curPor->cursor.coladd = 0;
 
    retval = OK;      // success!
-public theend:
+theend:
    eeglFree(savedLine);
    eeglFree(nextLine);
    eeglFree(allocated);
@@ -2587,7 +2588,7 @@ op_delete(Operator* oper) {
 
     msgmore(curBook->mem.lineCount - old_lcount);
 
-public setmarks:
+setmarks:
    if ((commModifierG.cmod_flags & CMOD_LOCKMARKS) == 0) {
       if (oper->block_mode) {
          curBook->opEnd.lnum = oper->end.lnum;
@@ -3630,7 +3631,7 @@ jugJoinLinesUnderCursor(
    curPor->cursor.coladd = 0;
    curPor->setCursWant = true;
 
-public theend:
+theend:
    eeglFree(spaces);
    if (remove_comments)
       eeglFree(comments);
@@ -4216,7 +4217,7 @@ do_addsub(
           --curBook->opEnd.col;
    }
 
-public theend:
+theend:
    if (visual)
       curPor->cursor = save_cursor;
    ei (didChange)

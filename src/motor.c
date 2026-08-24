@@ -1402,7 +1402,7 @@ scanCommandLineArgs(MainParams *par) {
 
             case 's':   // "-s {scriptin}" read from script file
                if (scriptin[0] != NULL) {
-public scripterror:
+scripterror:
                   mch_errmsg(_("Attempt to open script file again: \""));
                   mch_errmsg(argv[-1]);
                   mch_errmsg(" ");
