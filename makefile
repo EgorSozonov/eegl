@@ -63,13 +63,13 @@ INSTALL_TOOL_LANGS	= install-tool-languages
 NL		= "\\012"
 
 ### Top directory for everything
-prefix		= /usr/local
+PREFIX ?= /usr
 
 ### Top directory for the binary
-exec_prefix	= ${prefix}
+exec_prefix	= $(PREFIX)/bin
 
 ### Prefix for location of data files
-BINDIR		= ${exec_prefix}/bin
+BINDIR		= $(PREFIX)/bin
 
 
 ### Prefix for location of data files
@@ -87,6 +87,7 @@ MAKEMO		= yes
 MSGFMT		= msgfmt
 MSGFMTCMD	= OLD_PO_FILE_INPUT=yes msgfmt --no-convert -v
 MSGFMT_DESKTOP	= eegl.desktop
+APP = eegl
 
 #}}}
 #
@@ -175,39 +176,18 @@ MSGFMT_DESKTOP	= eegl.desktop
 # Argument for running ctags.
 TAGS_FILES = *.c *.h
 
-VIEWNAME = view
 
 #{{{what used to be auto/config.mk
 
-VIEWNAME	= view
 
 INDICES_FLAGS	= --std=c17 -Wfatal-errors -g3 -O0 -Wno-cpp -Werror=return-type
 
 DEPEND_FLAGS_FILTER = | sed 's;-I */;-isystem /;g'
 
 
-
-INSTALLVIMDIFF	= installvimdiff
-INSTALL_LANGS	= install-languages
-INSTALL_TOOL_LANGS	= install-tool-languages
-
-### sed command to fix quotes while creating pathdef.c
-QUOTESED        = sed -e 's/[\\"]/\\&/g' -e 's/\\"/"/' -e 's/\\";$$/";/' -e 's/  */ /g'
-
 ### Line break character as octal number for "tr"
 NL		= "\\012"
 
-### Top directory for everything
-prefix		= /usr/local
-
-### Top directory for the binary
-exec_prefix	= ${prefix}
-
-### Prefix for location of data files
-BINDIR		= ${exec_prefix}/bin
-
-### Prefix for location of data files
-DATADIR		= ${datarootdir}
 
 
 # Make sure that "make first" will run "make all" once configure has done its
@@ -421,7 +401,7 @@ SANITIZER_LIBS = $(SANITIZER_FLAGS)
 
 
 ### Names of the programs and targets  {{{1
-EEGLTARGET	= ../bin/eegl
+EEGLTARGET	= ../bin/$(APP)
 VIEWTARGET	= $(VIEWNAME)$(LNKEXT)
 EEGLDIFFNAME	= eegldiff
 VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
@@ -439,20 +419,6 @@ VIMDIFFTARGET	= $(EEGLDIFFNAME)$(LNKEXT)
 #
 # Uncomment the next line to install the Eegl executable in "/usr/machine/bin"
 #exec_prefix = /usr/machine
-
-### BINDIR	dir for the executable	 (default "$(exec_prefix)/bin")
-### MANDIR	dir for the manual pages (default "$(prefix)/man")
-### DATADIR	dir for the other files  (default "$(prefix)/lib" or
-#						  "$(prefix)/share")
-# They may be different when using different architectures for the
-# executable and a common directory for the other files.
-#
-# Uncomment the next line to install Eegl in "/usr/bin"
-#BINDIR   = /usr/bin
-# Uncomment the next line to install Eegl manuals in "/usr/share/man/man1"
-#MANDIR   = /usr/share/man
-# Uncomment the next line to install Eegl help files in "/usr/share/vim"
-#DATADIR  = /usr/share
 
 ### DESTDIR	root of the installation tree.  This is prepended to the other
 #		directories.  This directory must exist.
@@ -1764,4 +1730,4 @@ $(OBJDIR)/primary-selection-unstable-v1.o: libs/wayland/primary-selection-unstab
 #}}}
 
 package: ##Create a package for Arch Linux by building a specific version
-/ build/package.sh $(APP) $(OBJDIR) $(VERSION)
+/ package/package.sh $(APP) $(OBJDIR) $(VERSION)
