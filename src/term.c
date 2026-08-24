@@ -6,7 +6,7 @@
 #include "eegl.h"
 #include <termcap.h>
 
-typedef struct termios TermIos;
+private typedef struct termios TermIos;
 
 private CS TC_CURSOR_SHAPES[] = {
    S"\033[2 q", //block cursor
@@ -66,14 +66,14 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
 private CS invoke_tgetent(CS , CS );
 
-typedef enum {
+private typedef enum {
    STATUS_GET,    // send request when switching to RAW mode
    STATUS_SENT,   // did send request, checking for response
    STATUS_GOT,    // received response
    STATUS_FAIL    // timed out
 } RequestProgress;
 
-typedef struct {
+private typedef struct {
    RequestProgress progress;
    Tyme start;   // when request was sent, -1 for never
 } TermRequest;
@@ -112,7 +112,7 @@ private TermRequest* requestsP[] = {
 private int write_t_8u_state = false;
 
 #ifndef PROTO
-extern char *UP, *BC, PC; // in termcap.h
+public extern char *UP, *BC, PC; // in termcap.h
 #endif
 
 # define TGETENT(b, t)   tgetent((char *)(b), (char *)(t))
@@ -142,7 +142,7 @@ private int initial_cursor_blink = false;
 //Each terminfo is a list of TinfoEntry.
 //
 //Entries marked with "guessed" may be wrong.
-typedef struct {
+private typedef struct {
    CS value; // value
    Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
@@ -198,7 +198,7 @@ private int  check_for_codes = false;         // check for key code response
 // Structure and table to store terminal features that can be detected by
 // querying the terminal.  Either by inspecting the termresponse or a more
 // specific request.  Besides this there are:
-typedef struct {
+private typedef struct {
    CS name;
    int setByTermResponse;
    int status;
@@ -225,7 +225,7 @@ private TermProp term_props[TPR_COUNT];
 
 // Initialize the term_props table.
 // When "all" is false only set those that are detected from the version response.
-void
+public void
 termInitProps(Boole all) {
    term_props[TPR_CURSOR_STYLE].name = S"cursor_style";
    term_props[TPR_CURSOR_STYLE].setByTermResponse = false;
@@ -242,7 +242,7 @@ termInitProps(Boole all) {
    }
 }
 
-void
+public void
 f_terminalprops(Var* argvars UNUSED, Var* returnVar) {
    allocReturnDict(returnVar);
    for (Unt i = 0; i < TPR_COUNT; ++i) {
@@ -359,7 +359,7 @@ get_term_entries(OUT int* height, OUT int* width) {
 //Return OK if terminal 'term' was found in a termcap, FAIL otherwise.
 //
 //While doing this, until ttest(), some options may be NULL, be careful.
-int
+public int
 set_termname(CS termName) {
    int termcap_cleared = false;
    int width = 0, height = 0;
@@ -499,7 +499,7 @@ set_termname(CS termName) {
 
 // If supported, delete "cur_term", which caches terminal related entries.
 // Avoid that valgrind reports possibly lost memory.
-void
+public void
 free_cur_term(void) {
    if (cur_term)
       del_curterm(cur_term);
@@ -547,7 +547,7 @@ eeTgetstr(CS s, Byte **pp) {
 //ioctl() fails. It doesn't make sense to call tgetent each time if the "co"
 //and "li" entries never change. But on some systems this works.
 //Errors while getting the entries are ignored.
-void
+public void
 getlinecol(Arr(long) cols, Arr(long) rows) {
    Byte tbuf[TBUFSZ];
 
@@ -567,7 +567,7 @@ getlinecol(Arr(long) cols, Arr(long) rows) {
 // Used for <t_xx> special keys.
 // Give an error message for failure when not sourcing. If force given, replace an existing entry.
 // Return FAIL if the entry was not found, OK if the entry was added.
-int
+public int
 add_termcap_entry(CS name, int force) {
    CS string;
    Byte tbuf[TBUFSZ];
@@ -602,7 +602,7 @@ add_termcap_entry(CS name, int force) {
 
 //Set the terminal name and initialize the terminal options. If "name" is NULL or empty, get the 
 //terminal name from the environment. If that fails, use the default terminal name.
-void
+public void
 termInitTerminfo(CS name) {
    for (Unt i = 0; i < ARRAY_LENGTH(termCodesG); i++) {
       termCodesG[i] = S"";
@@ -639,7 +639,7 @@ private int out_pos = 0;   // number of chars in out_buf
 #define MAX_ESC_SEQ_LEN   80
 
 //flush the output buffer and redraw the cursor.
-void
+public void
 out_flush(void) {
    if (out_pos == 0)
       return;
@@ -660,7 +660,7 @@ out_flush(void) {
 //      Flush it if it becomes full.
 // This should not be used for outputting text on the screen (use functions
 // like msg_puts() and screen_putchar() for that).
-void
+public void
 out_char(unsigned c) {
    if (c == '\n')   // turn LF into CR-LF (CRMOD doesn't seem to do this)
       out_char('\r');
@@ -688,7 +688,7 @@ out_char_nf(int c) {
 //for padding information, and "%i", "%d", etc.
 //This should only be used for writing terminal codes, not for outputting normal text (use
 //functions like msg_puts() and screen_putchar() for that).
-void
+public void
 out_str_nf(CS s) {
    // avoid terminal strings being split up
    if (out_pos > OUT_SIZE - MAX_ESC_SEQ_LEN)
@@ -706,7 +706,7 @@ out_str_nf(CS s) {
 //Use tputs(), the termcap parser. (jw)
 //This should only be used for writing terminal codes, not for outputting
 //normal text (use functions like msg_puts() and screen_putchar() for that).
-void
+public void
 out_str(CS s) {
    if (!s || *s == ZERO)
       return;
@@ -722,33 +722,33 @@ out_str(CS s) {
 }
 
 //cursor positioning using termcap parser. (jw)
-void
+public void
 term_windgoto(int row, int col) {
    OUT_STR(TGOTO(termCodesG[KS_CM], col, row));
 }
 
-void
+public void
 term_cursor_right(int i) {
    OUT_STR(TGOTO(termCodesG[KS_CRI], 0, i));
 }
 
-void
+public void
 term_append_lines(int line_count) {
     OUT_STR(TGOTO(termCodesG[KS_CAL], 0, line_count));
 }
 
-void
+public void
 term_delete_lines(int line_count) {
    OUT_STR(TGOTO(termCodesG[KS_CDL], 0, line_count));
 }
 
-void
+public void
 term_enable_mouse(int enable) {
    int on = enable ? 1 : 0;
    OUT_STR(TGOTO(termCodesG[KS_CXM], 0, on));
 }
 
-void
+public void
 term_set_winpos(int x, int y) {
    // Can't handle a negative value here
    if (x < 0)
@@ -797,7 +797,7 @@ private int winpos_y = -1;
 private int did_request_winpos = 0;
 
 // Try getting the Eegl window position from the terminal. Return OK or FAIL.
-int
+public int
 term_get_winpos(int* x, int* y, Long timeout) {
    int count = 0;
    int prev_winpos_x = winpos_x;
@@ -837,28 +837,28 @@ term_get_winpos(int* x, int* y, Long timeout) {
    return false;
 }
 
-void
+public void
 term_set_winsize(int height, int width) {
    OUT_STR(TGOTO(termCodesG[KS_CWS], width, height));
 }
 
-void
+public void
 termApplyFgColor(Byte n) {
    OUT_STR(TGOTO("\033[38;5;%dm", 0, n));
 }
 
-void
+public void
 termApplyBgColor(Byte n) {
    OUT_STR(TGOTO("\033[48;5;%dm", 0, n));
 }
 
-void
+public void
 termApplyUnderColor(Byte n) {
    OUT_STR(TGOTO("\033[4;58;5;%dm", 0, n));
 }
 
 // Make sure we have a valid set or terminal options. Replace all null entries by empty string
-void
+public void
 ttest(int pairs) {
    //MUST have "cm": cursor motion.
    if (termCodesG[KS_CM] == null)
@@ -937,7 +937,7 @@ ttest(int pairs) {
 #if defined(PROTO)
 // Represent the given Ulong as individual bytes, with the most significant
 // byte first, and store them in dst.
-void
+public void
 add_long_to_buf(Ulong val, CS dst) {
    for (int i = 1; i <= (int)sizeof(Ulong); i++) {
       int shift = 8 * (sizeof(Ulong) - i);
@@ -969,7 +969,7 @@ get_long_from_buf(CS buffer, Ulong* val) {
 // Read the next num_bytes bytes from buffer, and store them in bytes.  Assume
 // that buffer has been through inchar().   Returns the actual number of bytes used
 // from buf (between num_bytes and num_bytes*2), or -1 if not enough bytes were available.
-int
+public int
 get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
    int len = 0;
    int i;
@@ -997,7 +997,7 @@ get_bytes_from_buf(CS buffer, CS bytes, int num_bytes) {
 }
 
 // Check if the new shell size is valid, correct it if it's too small or way too big.
-void
+public void
 check_shellsize(void) {
    // need room for one window and command line
    if (visibleRowsG < minRowsForAllTabs())
@@ -1012,7 +1012,7 @@ check_shellsize(void) {
 }
 
 // Limit visibleRowsG and visibleColsG to avoid an overflow in visibleRowsG * visibleColsG.
-void
+public void
 clampScreenSize(void) {
    if (visibleColsG < MIN_COLUMNS)
       visibleColsG = MIN_COLUMNS;
@@ -1023,7 +1023,7 @@ clampScreenSize(void) {
 }
 
 //Invoked just before the screen structures are going to be (re)allocated.
-void
+public void
 win_new_shellsize(void) {
    static int old_Rows = 0;
    static int old_Columns = 0;
@@ -1043,14 +1043,14 @@ win_new_shellsize(void) {
 
 //Call this function when the Eegl shell has been resized in any way.
 //Will obtain the current size and redraw (also when size didn't change).
-void
+public void
 shell_resized(void){
    set_shellsize(0, 0, false);
 }
 
 //Check if the shell size changed.  Handle a resize.
 //When the size didn't change, nothing happens.
-void
+public void
 shell_resized_check(void) {
    int old_Rows = visibleRowsG;
    int old_Columns = visibleColsG;
@@ -1136,7 +1136,7 @@ set_shellsize_inner(int width, int height, int mustset) {
    out_flush();
 }
 
-void
+public void
 set_shellsize(int width, int height, int mustset) {
    static int busy = false;
    static int do_run = false;
@@ -1167,7 +1167,7 @@ set_shellsize(int width, int height, int mustset) {
 
 //Output termCodesG[KS_CTE], the t_TE termcap entry, and handle expected effects.
 //The code possibly disables modifyOtherKeys and the Kitty keyboard protocol.
-void
+public void
 out_str_t_TE(void) {
    out_str(termCodesG[KS_CTE]);
 
@@ -1189,7 +1189,7 @@ out_str_t_TE(void) {
 private int send_t_RK = false;
 
 //Output termCodesG[KS_TI] and setup for what follows.
-void
+public void
 out_str_t_TI(void) {
    out_str(termCodesG[KS_CTI]);
 
@@ -1198,7 +1198,7 @@ out_str_t_TI(void) {
 }
 
 //Output termCodesG[KS_CBE], but only when t_PS and t_PE are set.
-void
+public void
 out_str_t_BE(void) {
    Byte *p;
 
@@ -1212,7 +1212,7 @@ out_str_t_BE(void) {
 
 //If t_TI was recently sent and there is no typeahead or work to do, now send
 //t_RK. This is postponed to avoid the response arriving in a shell command or after Eegl exits.
-void
+public void
 may_send_t_RK(void) {
    if (send_t_RK && !work_pending() && !ex_normal_busy && !in_feedkeys && !isExitingG) {
       send_t_RK = false;
@@ -1222,7 +1222,7 @@ may_send_t_RK(void) {
 }
 
 //Set the terminal to TMODE_RAW (for Normal mode) or TMODE_COOK (for external commands).
-void
+public void
 termSetMode(TermInputMode tmode) {
    if (!fullScreenG)
       return;
@@ -1262,7 +1262,7 @@ termSetMode(TermInputMode tmode) {
    }
 }
 
-void
+public void
 starttermcap(void) {
    if (!fullScreenG || termcap_active)
       return;
@@ -1283,7 +1283,7 @@ starttermcap(void) {
    screen_start();         // don't know where cursor is now
 }
 
-void
+public void
 termStopTerminfo(void) {
    drawStopHilite();
    reset_cterm_colors();
@@ -1333,7 +1333,7 @@ termStopTerminfo(void) {
 //Send sequences to the terminal and check with t_u7 how the cursor moves, to find out properties
 //of the terminal. Note that this goes out before termCodesG[KS_CRV], so that the result
 //can be used when the termresponse arrives.
-void
+public void
 check_terminal_behavior(void) {
    Boole did_send = false;
 
@@ -1409,7 +1409,7 @@ check_terminal_behavior(void) {
 }
 
 //Return true when saving and restoring the screen.
-int
+public int
 termIsScreenBeingSwapped(void) {
    return (fullScreenG && termCodesG[KS_TI] != S"");
 }
@@ -1417,7 +1417,7 @@ termIsScreenBeingSwapped(void) {
 //By outputting the 'cursor very visible' termcap code, for some windowed
 //terminals this makes the screen scrolled to the correct position.
 //Used when starting Eegl or returning from a shell.
-void
+public void
 scroll_start(void) {
    if (termCodesG[KS_VS] == S"" || termCodesG[KS_CVS] == S"")
       return;
@@ -1435,7 +1435,7 @@ private int cursor_is_off = false;
 private int cursor_is_asleep = false;
 
 //Enable the cursor without checking if it's already enabled.
-void
+public void
 cursor_on_force(void) {
    out_str(termCodesG[KS_VE]);
    cursor_is_off = false;
@@ -1443,14 +1443,14 @@ cursor_on_force(void) {
 }
 
 //Enable the cursor if it's currently off.
-void
+public void
 cursor_on(void) {
    if (cursor_is_off && !cursor_is_asleep)
       cursor_on_force();
 }
 
 // Disable the cursor.
-void
+public void
 cursor_off(void) {
    if (fullScreenG && !cursor_is_off) {
       out_str(termCodesG[KS_VI]);       // disable cursor
@@ -1459,21 +1459,21 @@ cursor_off(void) {
 }
 
 // Disable the cursor and mark it disabled by cursor-less sleep
-void
+public void
 cursor_sleep(void) {
    cursor_is_asleep = true;
    cursor_off();
 }
 
 // Enable the cursor and mark it not disabled by cursor-less sleep
-void
+public void
 cursor_unsleep(void) {
    cursor_is_asleep = false;
    cursor_on();
 }
 
 // Set cursor shape to match Insert or Replace mode.
-void
+public void
 term_cursor_mode(int forced) {
    static int showing_mode = -1;
 
@@ -1496,7 +1496,7 @@ term_cursor_mode(int forced) {
    }
 }
 
-void
+public void
 term_cursor_color(CS color) {
    if (termCodesG[KS_CSC] == S"")
       return;
@@ -1507,7 +1507,7 @@ term_cursor_color(CS color) {
    out_flush();
 }
 
-int
+public int
 blink_state_is_inverted(void) {
    return cursorBlinkingRequestS.progress == STATUS_GOT
       && cursorStyleRequestS.progress == STATUS_GOT
@@ -1515,7 +1515,7 @@ blink_state_is_inverted(void) {
 }
 
 //"shape": 1 = block, 2 = underline, 3 = vertical bar
-void
+public void
 termSetCursorShape(int shape, int blink) {
    if (termCodesG[KS_CSH] != S"") {
       OUT_STR(TGOTO(termCodesG[KS_CSH], 0, shape * 2 - blink));
@@ -1542,7 +1542,7 @@ termSetCursorShape(int shape, int blink) {
 //Set scrolling region for window 'wp'. The region starts 'off' lines from the start of the portal.
 //Also set the vertical scroll region for a vertically split window. Always the full width of the
 //portal, excluding the vertical separator.
-void
+public void
 scroll_region_set(Portal* wp, int off) {
    OUT_STR(TGOTO( termCodesG[KS_CS], wp->windowRow + wp->height - 1, wp->windowRow + off));
    if (termCodesG[KS_CSV] != S"" && wp->width != visibleColsG)
@@ -1551,7 +1551,7 @@ scroll_region_set(Portal* wp, int off) {
 }
 
 //Reset scrolling region to the whole screen.
-void
+public void
 scroll_region_reset(void) {
    OUT_STR(TGOTO(termCodesG[KS_CS], (int)visibleRowsG - 1, 0));
    if (termCodesG[KS_CSV] != S"")
@@ -1562,7 +1562,7 @@ scroll_region_reset(void) {
 
 // List of terminal codes that are currently recognized.
 
-typedef struct {
+private typedef struct {
    Byte name[2];       // termcap name of entry
    CS code;       // terminal code (in allocated memory)
    int len;       // STRLEN(code)
@@ -1576,7 +1576,7 @@ private Unt recognizedLen = 0;       // current number of entries in recognizedT
 
 private int endsInStar(Text code);
 
-void
+public void
 clear_termcodes(void) {
    while (recognizedLen > 0)
       eeglFree(recognizedTermcodesP[--recognizedLen].code);
@@ -1613,7 +1613,7 @@ adjust_modlen(int idx) {
 //The list is kept alphabetical for ":set termcap"
 //"flags" is true when replacing 7-bit by 8-bit controls is desired.
 //"flags" can also be ATC_FROM_TERM for got_code_from_term().
-void
+public void
 termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm) {
    if (!string || *string == ZERO) {
       del_termcode(name);
@@ -1737,7 +1737,7 @@ endsInStar(Text code) {
    return 0;
 }
 
-CS
+public CS
 find_termcode(CS name) {
    for (Unt i = 0; i < recognizedLen; ++i) {
       if (recognizedTermcodesP[i].name[0] == name[0] && recognizedTermcodesP[i].name[1] == name[1])
@@ -1746,7 +1746,7 @@ find_termcode(CS name) {
    return NULL;
 }
 
-void
+public void
 del_termcode(CS name) {
    if (!recognizedTermcodesP)   // nothing there yet
       return;
@@ -1778,20 +1778,20 @@ private int orig_topfill = 0;
 //contents scrolled (e.g., when 'scrolloff' is non-zero).
 
 //Set orig_topline.  Used when jumping to another window, so that a double click still works.
-void
+public void
 set_mouse_topline(Portal* po) {
    orig_topline = po->topLine;
    orig_topfill = po->topFill;
 }
 
 // true if the top line and top fill of window 'wp' matches the saved topline and topfill.
-int
+public int
 is_mouse_topline(Portal* po) {
    return orig_topline == po->topLine && orig_topfill == po->topFill;
 }
 
 //Put "newText" into typeBufG. Remove "slen" bytes. Return FAIL for error.
-int
+public int
 termPutStrIntoTypeBuf(int offset, int slen, Text newText){
    int extra = newText.len - slen;
    newText.c[newText.len] = ZERO;
@@ -1850,7 +1850,7 @@ putStr(
 }
 
 // Decode a modifier number as xterm provides it into MOD_MASK bits.
-Unt
+public Unt
 decode_modifiers(int n) {
    int code = n - 1;
    Unt modifiers = 0;
@@ -2345,7 +2345,7 @@ handleXKeys(Unt key) {
 //the number of characters in typeBufG.c[] is returned.
 //When "buffer" is not empty, it is used instead of typeBufG.c[].
 //"bufLen" is then the length of the string in buffer[] and is updated for inserts and deletes.
-int
+public int
 termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
    CS readPos;
    int slen = 0;
@@ -2646,7 +2646,7 @@ termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen){
 //Even if terminfo claims a backspace key, the user's setting *should* prevail. stty knows more
 //about reality than terminfo does, and if somebody's usual erase key is DEL, they're going to get
 //really annoyed if their erase key starts doing forward deletes for no reason. (Eric Fischer)
-void
+public void
 get_stty(void) {
    TtyInfo info;
    if (get_tty_info(read_cmd_fd, OUT &info) != OK)
@@ -2670,7 +2670,7 @@ mch_tcgetattr(int fd, TermIos* term){
 }
 
 //Obtain the characters that Backspace and Enter produce on "fd". Return OK or FAIL.
-int
+public int
 get_tty_info(int fd, TtyInfo* info) {
    TermIos keys;
 
@@ -2690,7 +2690,7 @@ get_tty_info(int fd, TtyInfo* info) {
    return FAIL;
 }
 
-void
+public void
 mch_termSetMode(TermInputMode tmode) {
    static int first = true;
 
@@ -2743,7 +2743,7 @@ mch_termSetMode(TermInputMode tmode) {
 }
 
 // Set the mouse termcode, depending on the 'term' and 'ttymouse' options.
-void
+public void
 check_mouse_termcode(void) {
    set_mouse_termcode(KS_SGR_MOUSE, S"\233<*M");
    set_mouse_termcode(KS_SGR_MOUSE_RELEASE, S"\233<*m");
@@ -2872,7 +2872,7 @@ private Byte modifier_keys_table[] = {
 //}}}
 //{{{codes and special chars
 
-typedef struct {
+private typedef struct {
    Boole enabled;       // is this entry available?
    int key;          // special key code or ascii value
    Text name;          // name of key
@@ -3036,7 +3036,7 @@ private KeyNameEntry keyNamesTable[] = {
     // NOTE: When adding a long name update MAX_KEY_NAME_LEN.
 };
 
-CS
+public CS
 get_key_name(int i) {
    if (i < 0 || i >= (int)ARRAY_LENGTH(keyNamesTable))
       return NULL;
@@ -3065,7 +3065,7 @@ get_key_name(int i) {
 //  REPTERM_NO_SIMPLIFY   do not simplify <C-H> to 0x08 and set 8th bit for <A-x>
 //
 //"didSimplify" is set when some <C-H> or <A-x> code was simplified, unless it is NULL.
-CS
+public CS
 replace_termcodes(
    CS from,
    CS* bufP,
@@ -3217,7 +3217,7 @@ replace_termcodes(
 }
 
 //Check if there is a special key code for "key" that includes the modifiers specified.
-Unt
+public Unt
 simplify_key(Unt key, Unt* modifiers) {
    if (!(*modifiers & (MOD_MASK_SHIFT | MOD_MASK_CTRL)))
       return key;
@@ -3279,7 +3279,7 @@ gatherTermLeaders(void) {
 
 //Show all recognizedTermcodesP (for ":set termcap")
 //This code looks a lot like showoptions(), but is different. "flags" can have OPT_ONECOLUMN.
-void
+public void
 show_termcodes(Unt flags) {
    int col;
    int item_count;
@@ -3381,7 +3381,7 @@ keyNameEntryComparer(void const* a, void const* b) {
 }
 
 //Return a string which contains the name of the given key when the given modifiers are down.
-CS
+public CS
 get_special_key_name(Unt c, int modifiers) {
    static Byte string[MAX_KEY_NAME_LEN + 1];
    int len;
@@ -3471,7 +3471,7 @@ get_special_key_name(Unt c, int modifiers) {
 //end with ZERO, the name is assumed to end before the first non-idchar).
 //If the name starts with "t_" the next two characters are interpreted as a termcap name.
 //Return the key code, or 0 if not found.
-int
+public int
 get_special_key_code(CS name) {
    // If it's <t_xx> we get the code for xx from the termcap
    if (name[0] == 'z' && name[1] == 'z' && name[2] != ZERO && name[3] != ZERO) {
@@ -3503,7 +3503,7 @@ get_special_key_code(CS name) {
 }
 
 // Show one termcode entry. Output goes into IObuff[]
-int
+public int
 show_one_termcode(CS name, CS code, int printit) {
    int len;
    if (name[0] > '~') {
@@ -3711,7 +3711,7 @@ private const Byte ansi_table[16][3] = {
 
 # define ANSI_INDEX_NONE 0
 
-void
+public void
 ansi_color2rgb(int nr, OUT Byte *r, OUT Byte *g, OUT Byte *b, OUT Byte *ansi_idx) {
    if (nr < 16) {
       *r = ansi_table[nr][0];
@@ -3726,7 +3726,7 @@ ansi_color2rgb(int nr, OUT Byte *r, OUT Byte *g, OUT Byte *b, OUT Byte *ansi_idx
    }
 }
 
-void
+public void
 cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx) {
    int idx;
 
@@ -3760,7 +3760,7 @@ cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx) {
 
 //Replace K_BS by <BS> and K_DEL by <DEL>. Include any modifiers into the key and drop them.
 //Return "len" adjusted for replaced codes.
-int
+public int
 term_replace_keycodes(CS ta_buf, int ta_len, int len_arg) {
    int len = len_arg;
    int i;
@@ -3853,7 +3853,7 @@ nameToModMask(Byte c) {
 
 //Try translating a <> name at "(*srcp)[]", return the key and put modifiers in "modp".
 //"srcp" is advanced to after the <> name. returns 0 if there is no match.
-int
+public int
 termFindSpecialKey(
    OUT Byte** srcp,
    OUT Unt* modp,
@@ -4039,7 +4039,7 @@ may_remove_shift_modifier(Unt modifiers, Unt key) {
 }
 
 //Try to find key "c" in the special key table. Return the index when found, -1 when not found.
-int
+public int
 termFindSpecialKey_in_table(int c) {
    for (int i = 0; i < (int)ARRAY_LENGTH(keyNamesTable); i++) {
       if (c == keyNamesTable[i].key && !keyNamesTable[i].is_alt)
@@ -4053,7 +4053,7 @@ termFindSpecialKey_in_table(int c) {
 //the resulting length.
 //When "escape_ks" is true escape K_SPECIAL bytes in the character.
 //The sequence is not ZERO terminated. This is how characters in a string are encoded.
-int
+public int
 special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst) {
    int dlen = 0;
 
@@ -4080,7 +4080,7 @@ special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst) {
 //Return the number of characters added to "dst[]", zero for no match.
 //If there is a match, "srcp" is advanced to after the <> name.
 //"dst[]" must be big enough to hold the result (up to six characters)!
-int
+public int
 trans_special(
    OUT Byte** srcp,
    CS dst,
@@ -4155,9 +4155,9 @@ trans_special(
 #endif
 
 // These should be in stdlib.h, but it depends on _XOPEN_SOURCE.
-char *ptsname(int);
+public char *ptsname(int);
 int unlockpt(int);
-int grantpt(int);
+public int grantpt(int);
 int posix_openpt(int flags);
 
 private void
@@ -4168,7 +4168,7 @@ initmaster(int f) {
 
 //This causes a hang on some systems, but is required for a properly working
 //pty on others. Needs to be tuned...
-int
+public int
 setup_slavepty(int fd) {
    if (fd < 0)
       return 0;
@@ -4180,7 +4180,7 @@ setup_slavepty(int fd) {
    return 0;
 }
 
-int
+public int
 openpty(char **ttyn) {
    int f;
    static Byte TtyName[32];  // used for opening a new pty-pair
@@ -4204,7 +4204,7 @@ openpty(char **ttyn) {
 }
 
 // Call isatty(fd)
-int
+public int
 mch_isatty(int fd) {
    return isatty(fd);
 }

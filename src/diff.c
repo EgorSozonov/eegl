@@ -9,9 +9,9 @@
 //- Let 'diffexpr' do the work, using files.
 
 #include "eegl.h"
-int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
+public int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 
-struct DiffBlock {
+public struct DiffBlock {
    DiffBlock* df_next;
    LineNr   lnum[DB_COUNT];   // line number in book
    LineNr   count[DB_COUNT];   // nr of inserted/changed lines
@@ -46,30 +46,30 @@ struct DiffBlock {
 // Allocate an array of nr zeroed out elements, return NULL on failure
 #define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
 
-typedef struct s_mmfile {
+private typedef struct s_mmfile {
    Byte* ptr;
    long size;
 } MmFile;
 
-typedef struct s_mmbuffer {
+private typedef struct s_mmbuffer {
    Byte* ptr;
    long size;
 } MmBuffer;
 
-typedef struct s_xpparam {
+private typedef struct s_xpparam {
    unsigned long flags;
    // See Documentation/diff-options.txt
    char **anchors;
    Unt anchors_nr;
 } XpParam;
 
-declStruct(ChaNode);
+public declStruct(ChaNode);
 struct ChaNode {
    ChaNode* next;
    long icurr;
 };
 
-typedef struct s_chastore {
+private typedef struct s_chastore {
    ChaNode *head, *tail;
    long isize, nsize;
    ChaNode *ancur;
@@ -78,16 +78,16 @@ typedef struct s_chastore {
 } ChaStore;
 
 
-typedef long (*FindFn)(
+private typedef long (*FindFn)(
    CS line, long line_len, char* buffer, long buffer_size, void *priv
 );
 
-typedef int (*XdlEmitHunkConsumeFn)(
+private typedef int (*XdlEmitHunkConsumeFn)(
    long start_a, long count_a, long start_b, long count_b, void *cb_data
 );
 
 
-typedef struct s_xdemitconf {
+private typedef struct s_xdemitconf {
    long ctxlen;
    long interhunkctxlen;
    unsigned long flags;
@@ -97,7 +97,7 @@ typedef struct s_xdemitconf {
 } XdEmitConf;
 
 
-typedef struct s_xdemitcb {
+private typedef struct s_xdemitcb {
    void *priv;
    int (*out_hunk)(void *,
          long old_begin, long old_nr,
@@ -106,7 +106,7 @@ typedef struct s_xdemitcb {
    int (*out_line)(void *, MmBuffer *, int);
 } XdEmitCb;
 
-declStruct(Record);
+public declStruct(Record);
 struct Record {
    Record* next;
    CS ptr;
@@ -114,7 +114,7 @@ struct Record {
    unsigned long ha;
 };
 
-typedef struct s_xdfile {
+private typedef struct s_xdfile {
    ChaStore rcha;
    long nrec;
    unsigned int hbits;
@@ -127,7 +127,7 @@ typedef struct s_xdfile {
    unsigned long *ha;
 } XdFile;
 
-typedef struct s_xdfenv {
+private typedef struct s_xdfenv {
    XdFile xdf1, xdf2;
 } XdfEnv;
 
@@ -144,7 +144,7 @@ private int xdl_diff(MmFile *mf1, MmFile *mf2, XpParam* xpp,
 #define LN_DECISION_MAX 255  // pow(2, LN_MAX_BUFS(8)) - 1 = 255
 
 // struct for running the diff linematch algorithm
-declStruct(DiffCmpPath);
+public declStruct(DiffCmpPath);
 struct DiffCmpPath {
     // to keep track of the total score of this path
     int levScore;
@@ -591,32 +591,32 @@ private int diff_a_works = MAYBE; //true when "diff -a" works, false when it
 #define MAX_DIFF_ANCHORS 20
 
 // used for diff input
-typedef struct {
+private typedef struct {
    CS externalFname;  //for external diff
    MmFile mmfile;     //for internal diff
 } DiffInp;
 
 // used for diff DiffResult
-typedef struct {
+private typedef struct {
    CS outFname;       //for external diff
    ArrayList dout_ga; //for internal diff
 } DiffResult;
 
 // used for recording hunks from xdiff
-typedef struct {
+private typedef struct {
    LineNr origLnum;
    long origCount;
    LineNr newLnum;
    long newCount;
 } Hunk;
 
-typedef enum {
+private typedef enum {
    DIO_OUTPUT_INDICES = 0, //default
    DIO_OUTPUT_UNIFIED = 1  //unified diff format
 } OutputFormat;
 
 // two diff inputs and one DiffResult
-typedef struct {
+private typedef struct {
    DiffInp orig;     // original file input
    DiffInp new;      // new file input
    DiffResult dio_diff;     //diff DiffResult
@@ -656,7 +656,7 @@ clear_diffblock(DiffBlock *dp) {
 }
 
 // Called when deleting or unloading a book: No longer make a diff with it.
-void
+public void
 diffDeleteBook(Book* book) {
    Tab* t;
    FOR_ALL_TABS(t) {
@@ -674,7 +674,7 @@ diffDeleteBook(Book* book) {
 }
 
 // Check if the current book should be added to or removed from the list of diff books.
-void
+public void
 diffBookAdjust(Portal* port) {
    if (!port->o.diff) {
       // When there is no portal showing a diff for this book, remove it from the diffs.
@@ -699,7 +699,7 @@ diffBookAdjust(Portal* port) {
 //Call this when a new book is being edited in the current portal where @diff is set.
 //Mark the current book as being part of the diff and requiring updating.
 //This must be done before any autocmd, because a command may use info about the screen contents.
-void
+public void
 diffAddBook(Book* book) {
    if (bookIndex(book) != UNT)
       return;      // It's already there.
@@ -751,7 +751,7 @@ bookIndexInTab(Book* book, Tab* t) {
 }
 
 // Mark the diff info involving book as invalid, it will be updated when info is requested.
-void
+public void
 diff_invalidate(Book* book) {
    Tab* t;
    FOR_ALL_TABS(t) {
@@ -765,7 +765,7 @@ diff_invalidate(Book* book) {
 }
 
 // Called by markAdjust(): update line numbers in "curBook".
-void
+public void
 diff_mark_adjust(LineNr line1, LineNr line2, long amount, long amount_after){
    Tab   *t;
    // Handle all tabs that use the current book in a diff.
@@ -1106,7 +1106,7 @@ checkSanity(Tab* t, DiffBlock *dp) {
 }
 
 //Mark all diff books in the current tab for redraw.
-void
+public void
 diff_redraw(int dofold)  {    // also recompute the folds
    Portal   *po;
    Portal   *other = NULL;
@@ -1406,7 +1406,7 @@ diff_try_update(DiffIo* dio, int iOrig, NULLABLE Invocation* invo) {
       }
    }
 
-theend:
+public theend:
    eeglFree(dio->orig.externalFname);
    eeglFree(dio->new.externalFname);
    eeglFree(dio->dio_diff.outFname);
@@ -1414,7 +1414,7 @@ theend:
 
 //Return true if the options are set to use the internal diff library.
 //Note that if the internal diff failed for one of the books, the external diff will be used anyway.
-int
+public int
 diff_internal(void) {
    return (diff_flags & DIFF_INTERNAL) != 0 && !p_dex;
 }
@@ -1434,7 +1434,7 @@ diff_internal_failed(void) {
 //When using the external "diff" command the books are written to a file,
 //also for unmodified books (the file could have been produced by
 //autocommands, e.g. the netrw plugin).
-void
+public void
 c_diffupdate(Invocation* invo) {  // "invo" can be NULL
    if (isBusyP) {
       needUpdateP = true;
@@ -1478,7 +1478,7 @@ c_diffupdate(Invocation* invo) {  // "invo" can be NULL
    // force updating cursor position on screen
    curPor->lastKnownCursor.lnum = 0;
 
-theend:
+public theend:
    // A redraw is needed if there were diffs and they were cleared, or there
    // are diffs now, which means they got updated.
    if (curtab->first_diff || curtab->first_diff) {
@@ -1671,7 +1671,7 @@ diff_file(DiffIo* dio) {
 //Create a new version of a file from the current book and a diff file.
 //The book is written to a file, also for unmodified books (the file
 //could have been produced by autocommands, e.g. the netrw plugin).
-void
+public void
 c_diffpatch(Invocation* invo) {
    Portal* old_curPor = curPor;
    CS newname = NULL;   // name of patched file book
@@ -1779,7 +1779,7 @@ c_diffpatch(Invocation* invo) {
       }
    }
 
-theend:
+public theend:
    if (tmp_orig)
       mch_remove(tmp_orig);
    eeglFree(tmp_orig);
@@ -1793,7 +1793,7 @@ theend:
 }
 
 //Split the portal and edit another file, setting options to show the diffs.
-void
+public void
 c_diffsplit(Invocation* invo) {
    Portal* old_curPor = curPor;
    BookRef old_curbuf;
@@ -1829,7 +1829,7 @@ c_diffsplit(Invocation* invo) {
 }
 
 //Set options to show diffs for the current portal.
-void
+public void
 c_diffthis(Invocation* invo UNUSED) {
    // Set @diff' on and @wrap off.
    diff_win_options(curPor, true);
@@ -1851,7 +1851,7 @@ set_diff_option(Portal* po, int value) {
 }
 
 //Set options in portal "po" for diff mode.
-void
+public void
 diff_win_options(Portal* po, int addbuf) {     // Add book to diff.
    Portal* old_curPor = curPor;
 
@@ -1892,7 +1892,7 @@ diff_win_options(Portal* po, int addbuf) {     // Add book to diff.
 }
 
 //Set options not to show diffs. For the current portal or all portals. Only in the current tab.
-void
+public void
 c_diffoff(Invocation* invo) {
    int diffwin = false;
 
@@ -2157,7 +2157,7 @@ diff_read(
       notset = true;
    }
 
-done:
+public done:
    if (!dio->dio_internal)
       eeglFree(hunk);
 
@@ -2176,7 +2176,7 @@ diff_copy_entry(DiffBlock* prev, DiffBlock* dp, int iOrig, int iNew) {
 }
 
 //Clear the list of diffblocks for tab "t".
-void
+public void
 diff_clear(Tab* t) {
    DiffBlock* next_p;
    for (DiffBlock* p = t->first_diff; p; p = next_p) {
@@ -2441,7 +2441,7 @@ run_linematch_algorithm(DiffBlock* dp) {
 //
 //Note that it's possible for a changed/added/deleted line to also have filler
 //lines above it. This happens when using linematch or using diff anchors (at the anchored lines).
-int
+public int
 diff_check_with_linestatus(Portal *po, LineNr lnum, OUT LineDiffStatus* linestatus) {
    DiffBlock   *dp;
    int      maxcount;
@@ -2630,7 +2630,7 @@ diff_cmp(CS s1, CS s2){
 }
 
 // Return the number of filler lines above "lnum".
-int
+public int
 diff_check_fill(Portal* po, LineNr lnum){
    // be quick when there are no filler lines
    if ((diff_flags & DIFF_FILLER) == 0)
@@ -2643,7 +2643,7 @@ diff_check_fill(Portal* po, LineNr lnum){
 
 //Set the topline of "towin" to match the position in "fromwin", so that they
 //show the same diff'ed lines.
-void
+public void
 diff_set_topline(Portal* fromPort, Portal* toPort){
    Book* fromBook = fromPort->book;
    LineNr   lnum = fromPort->topLine;
@@ -2774,7 +2774,7 @@ parse_diffanchors(
 }
 
 // This is called when @diffanchors is changed.
-int
+public int
 diffanchors_changed(CS newVal, Boole buflocal) {
    int diffResult = parse_diffanchors(newVal, true, curBook, NULL, NULL);
    if (diffResult == OK && (diff_flags & DIFF_ANCHOR) != 0) {
@@ -2796,7 +2796,7 @@ diffanchors_changed(CS newVal, Boole buflocal) {
 }
 
 // This is called when @diffopt is changed.
-int
+public int
 diffopt_changed(CS newVal) {
    int diff_context_new = 6;
    int linematch_lines_new = 0;
@@ -2907,7 +2907,7 @@ diffopt_changed(CS newVal) {
       if (*p == ',')
           ++p;
    }
-finishedParsing: 
+public finishedParsing: 
 
    diff_algorithm_new |= diff_indent_heuristic;
 
@@ -2937,26 +2937,26 @@ finishedParsing:
 }
 
 //Return true if 'diffopt' contains "horizontal".
-int
+public int
 diffopt_horizontal(void) {
    return (diff_flags & DIFF_HORIZONTAL) != 0;
 }
 
 //Return true if 'diffopt' contains "hiddenoff".
-int
+public int
 diffopt_hiddenoff(void) {
    return (diff_flags & DIFF_HIDDEN_OFF) != 0;
 }
 
 //Return true if 'diffopt' contains "closeoff".
-int
+public int
 diffopt_closeoff(void) {
    return (diff_flags & DIFF_CLOSE_OFF) != 0;
 }
 
 //Called when a line has been updated. Used for updating inline diff in Insert
 //mode without waiting for global diff update later.
-void
+public void
 diff_update_line(LineNr lnum) {
    if ((diff_flags & ALL_INLINE_DIFF) == 0)
       // We only care if we are doing inline-diff where we cache the diff results
@@ -2983,7 +2983,7 @@ private DifflineChange simple_diffline_change; // used for simple inline diff al
 
 // Parse a diffline struct and return the [start,end] byte offsets
 // Return true if this change was added, no other book has it.
-int
+public int
 diff_change_parse(DiffLine* diffline, DifflineChange* change, int* change_start, int* change_end) {
    if (change->dc_start_lnum_off[diffline->bufidx] < diffline->lineoff)
       *change_start = 0;
@@ -3122,7 +3122,7 @@ diff_find_change_simple(
 
 //Mapping used for mapping from temporary mmfile created for inline diff back
 //to original book's line/col.
-typedef struct {
+private typedef struct {
    Long byte_start;
    Long num_bytes;
    int lineoff;
@@ -3452,7 +3452,7 @@ diff_find_change_inline_diff(DiffBlock* dp) {
       dp->changes.len += 1;
    }
 
-done:
+public done:
    diff_algorithm = save_diff_algorithm;
 
    dp->has_changes = true;
@@ -3472,7 +3472,7 @@ done:
 
 // Find the difference within a changed line.
 // Return true if the line was added, no other book has it.
-int
+public int
 diff_find_change(Portal* po, LineNr lnum, DiffLine* diffline){
    Unt idx = bookIndex(po->book);
    if (idx == UNT)   // cannot happen
@@ -3568,7 +3568,7 @@ diff_find_change(Portal* po, LineNr lnum, DiffLine* diffline){
 
 //Return true if line "lnum" is not close to a diff block, this line should be in a fold.
 //Return false if there are no diff blocks at all in this portal.
-int
+public int
 diff_infold(Portal *po, LineNr lnum) {
    int      i;
    Unt idx = UNT;
@@ -3609,7 +3609,7 @@ diff_infold(Portal *po, LineNr lnum) {
 }
 
 //"dp" and "do" commands.
-void
+public void
 nvDiffGetPut(int put, long count) {
    Invocation   ea;
    Byte   buf[30];
@@ -3645,7 +3645,7 @@ valid_diff(DiffBlock *diff) {
 }
 
 // ":diffget", ":diffput"
-void
+public void
 c_diffgetput(Invocation* invo) {
    LineNr lnum;
    int count;
@@ -3920,7 +3920,7 @@ c_diffgetput(Invocation* invo) {
       auCommRestoreBook(&aco);
    }
 
-theend:
+public theend:
    isBusyP = false;
    if (needUpdateP)
       c_diffupdate(NULL);
@@ -3962,7 +3962,7 @@ diff_fold_update(DiffBlock* dp, Unt skip_idx) {
 }
 
 //Return true if book "book" is in diff-mode.
-Boole
+public Boole
 diffIsBookInDiffMode(Book* book) {
    Tab* t;
    FOR_ALL_TABS(t) {
@@ -3974,7 +3974,7 @@ diffIsBookInDiffMode(Book* book) {
 
 //Move "count" times in direction "dir" to the next diff block.
 //Return FAIL if there isn't such a diff block.
-int
+public int
 diff_move_to(int dir, long count) {
    LineNr   lnum = curPor->cursor.lnum;
    DiffBlock   *dp;
@@ -4068,7 +4068,7 @@ diff_get_corresponding_line_int(Book* book, LineNr lnum1) {
 
 //Return the line number in the current portal that is closest to "lnum1" in
 //"buf1" in diff mode.  Checks the line number to be valid.
-LineNr
+public LineNr
 diff_get_corresponding_line(Book* book1, LineNr lnum1) {
    LineNr lnum = diff_get_corresponding_line_int(book1, lnum1);
 
@@ -4080,7 +4080,7 @@ diff_get_corresponding_line(Book* book1, LineNr lnum1) {
 
 //For line "lnum" in the current portal find the equivalent lnum in portal
 //"po", compensating for inserted/deleted lines.
-LineNr
+public LineNr
 diff_lnum_win(LineNr lnum, Portal *po) {
    DiffBlock   *dp;
 
@@ -4239,12 +4239,12 @@ xdiff_out_unified(
    return 0;
 }
 
-void
+public void
 f_diff_filler(Var *argvars UNUSED, Var *returnVar UNUSED) {
    returnVar->number = diff_check_fill(curPor, tv_get_lnum(argvars));
 }
 
-void
+public void
 f_diff_hlID(Var* argvars, Var* returnVar) {
    static LineNr prev_lnum = 0;
    static Long   changedtick = 0;
@@ -4424,7 +4424,7 @@ get_diff_hunk_indices(Hunk* hunk) {
    return hunkBag;
 }
 
-void
+public void
 f_diff(Var* argvars, Var* returnVar) {
    if (confirmVarIsNonnullList(argvars, 0) == FAIL
         || confirmVarIsNonnullList(argvars, 1) == FAIL
@@ -4500,7 +4500,7 @@ f_diff(Var* argvars, Var* returnVar) {
       returnVar->string = copyStr((CS)dio.dio_diff.dout_ga.c);
    }
 
-done:
+public done:
    clear_diffin(&dio.new);
    if (dio.dio_outfmt == DIO_OUTPUT_INDICES)
       clear_diffout(&dio.dio_diff);
@@ -4545,27 +4545,27 @@ private long xdl_mmfile_size(MmFile *mmf);
 #define DEFAULT_CONFLICT_MARKER_SIZE 7
 
 
-typedef struct s_xdchange {
+private typedef struct s_xdchange {
    struct s_xdchange *next;
    long i1, i2;
    long chg1, chg2;
    int ignore;
 } XdChange;
 
-typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
+private typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
             XdEmitConf const *xecfg);
 
 private XdChange *xdl_get_hunk(XdChange **xscr, XdEmitConf const *xecfg);
 private int xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg);
 
-typedef struct s_diffdata {
+private typedef struct s_diffdata {
    long nrec;
    unsigned long const *ha;
    long *rindex;
    CS rchg;
 } DiffData;
 
-typedef struct s_xdg {
+private typedef struct s_xdg {
    long mxcost;
    long snake_cnt;
    long heur_min;
@@ -4590,7 +4590,7 @@ private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 #define XDL_SNAKE_CNT 20
 #define XDL_K_HEUR 4
 
-typedef struct s_xdpsplit {
+private typedef struct s_xdpsplit {
    long i1, i2;
    int min_lo, min_hi;
 } xdpsplit_t;
@@ -4628,7 +4628,7 @@ private void xdl_free_env(XdfEnv *xe);
 #define XDL_MASKBITS(b)      ((1UL << (b)) - 1)
 #define XDL_HASHLONG(v,b)   (XDL_ADDBITS((unsigned long)(v), b) & XDL_MASKBITS(b))
 #define XDL_LE32_PUT(p, v) \
-do { \
+public do { \
    unsigned char *__p = (unsigned char *) (p); \
    *__p++ = (unsigned char) (v); \
    *__p++ = (unsigned char) ((v) >> 8); \
@@ -4636,7 +4636,7 @@ do { \
    *__p = (unsigned char) ((v) >> 24); \
 } while (0)
 #define XDL_LE32_GET(p, v) \
-do { \
+public do { \
    unsigned char const *__p = (unsigned char const *) (p); \
    (v) = (unsigned long) __p[0] | ((unsigned long) __p[1]) << 8 | \
       ((unsigned long) __p[2]) << 16 | ((unsigned long) __p[3]) << 24; \
@@ -5020,7 +5020,7 @@ xget_indent(Record* rec) {
 #define MAX_BLANKS 20
 
 // Characteristics measured about a hypothetical split position.
-typedef struct SplitMeasurement {
+private typedef struct SplitMeasurement {
    //Is the split at the end of the file (aside from any blank lines)?
    int end_of_file;
 
@@ -5042,7 +5042,7 @@ typedef struct SplitMeasurement {
    int post_indent;
 } SplitMeasurement;
 
-typedef struct {
+private typedef struct {
    // The effective indent of this split (smaller is preferred).
    int effective_indent;
 
@@ -5224,7 +5224,7 @@ score_cmp(SplitScore* s1, SplitScore* s2) {
 //
 //Note that loops that are testing for changed lines in xdf->rchg do not need
 //index bounding since the array is prepared with a zero at position -1 and N.
-typedef struct {
+private typedef struct {
    //The index of the first changed line in the group, or the index of
    //the unchanged line above which the (empty) group is located.
    long start;
@@ -5947,7 +5947,7 @@ xdl_alloc_grow_helper(void* p, Long nr, Long* alloc, Unt size) {
 #define XDL_GUESS_NLINES1 256
 #define XDL_GUESS_NLINES2 20
 
-declStruct(XdlClass);
+public declStruct(XdlClass);
 struct XdlClass {
    XdlClass* next;
    Ulong ha;
@@ -5958,7 +5958,7 @@ struct XdlClass {
    long len2;
 };
 
-typedef struct s_xdlclassifier {
+private typedef struct s_xdlclassifier {
    unsigned int hbits;
    long hsize;
    XdlClass **rchash;
@@ -6124,7 +6124,7 @@ private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam c
 
    return 0;
 
-abort:
+public abort:
    eeglFree(ha);
    eeglFree(rindex);
    eeglFree(rchg);
@@ -6359,7 +6359,7 @@ private int xdl_optimize_ctxs(Classifier* cf, XdFile* xdf1, XdFile* xdf2) {
 #define NON_UNIQUE UNT
 
 //This is a hash mapping from line hash to line numbers in the first and second file.
-declStruct(Entry);
+public declStruct(Entry);
 struct Entry {
    Ulong hash;
    //0 = unused entry, 1 = first line, 2 = second, etc.
@@ -6375,7 +6375,7 @@ struct Entry {
    unsigned anchor : 1;
 };
 
-typedef struct {
+private typedef struct {
    int nr;
    int alloc;
    Arr(Entry) entries;
@@ -6673,14 +6673,14 @@ xdl_do_patience_diff(XpParam const *xpp, XdfEnv *env) {
 #define LINE_END_PTR(n) (*line##n + *count##n - 1)
 
 
-declStruct(XdRecord);
+public declStruct(XdRecord);
 struct XdRecord {
    Unt ptr;
    Unt cnt;
    XdRecord* next;
 };
 
-typedef struct {
+private typedef struct {
    XdRecord** records; // an occurrence
    XdRecord** line_map; // map of line to record chain
    ChaStore rcha;
@@ -6700,7 +6700,7 @@ typedef struct {
    XpParam const* xpp;
 } HistIndex;
 
-typedef struct {
+private typedef struct {
    Unt begin1;
    Unt end1;
    Unt begin2;
@@ -6771,7 +6771,7 @@ scanA(HistIndex* index, int line1, int count1) {
       *rec_chain = rec;
       LINE_MAP(index, ptr) = rec;
 
-continue_scan:
+public continue_scan:
       ; // no op
    }
 
@@ -6918,7 +6918,7 @@ find_lcs(
    else
       ret = 0;
 
-cleanup:
+public cleanup:
    free_index(&index);
    return ret;
 }
@@ -6928,7 +6928,7 @@ histogram_diff(XpParam const* xpp, XdfEnv* env, int line1, int count1, int line2
    DRegion lcs;
    int lcs_found;
    int diffResult;
-redo:
+public redo:
    diffResult = -1;
 
    if (count1 <= 0 && count2 <= 0)
@@ -6977,7 +6977,7 @@ redo:
          goto redo;
       }
    }
-out:
+public out:
    return diffResult;
 }
 
@@ -7051,7 +7051,7 @@ xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg) {
    return lxch;
 }
 
-typedef struct {
+private typedef struct {
    long len;
    Byte buf[80];
 } FuncLine;

@@ -137,7 +137,7 @@ get_buffcont(
 
 // Return the contents of the record buffer as a single string and clear the record buffer.
 // K_SPECIAL and CSI in the returned string are escaped.
-CS
+public CS
 get_recorded(void) {
    Unt len;
    CS p = get_buffcont(&recordbuff, true, OUT &len);
@@ -162,7 +162,7 @@ get_recorded(void) {
 
 // Return the contents of the redo buffer as a single string.
 // K_SPECIAL and CSI in the returned string are escaped.
-Text
+public Text
 get_inserted(void) {
    Unt len = 0;
    CS str = get_buffcont(&redobuff, false, &len);
@@ -174,7 +174,7 @@ get_inserted(void) {
 //click for the left button (used at the more prompt). Don't use vgetc(), because it syncs undo 
 //and eats mapped characters. Disadvantage: typeahead is ignored.
 //Translate the interrupt character for Unix to ESC.
-Unt
+public Unt
 get_keystroke(void) {
    CS buf = S"";
    Unt buflen = 150;
@@ -279,7 +279,7 @@ appendDigitInt(int *value, int digit) {
 }
 
 //Get a number from the user. When "mouse_used" is not NULL allow using the mouse.
-int
+public int
 get_number(Boole allowColonToUpdate, int* mouse_used) {
    int   n = 0;
    Unt   c;
@@ -483,19 +483,19 @@ start_stuff(void) {
 }
 
 // Return true if the stuff buffer is empty.
-int
+public int
 stuff_empty(void) {
    return (readbuf1.first.next == NULL && readbuf2.first.next == NULL);
 }
 
 // Return true if readbuf1 is empty.  There may still be redo characters in redbuf2.
-int
+public int
 readbuf1_empty(void) {
    return (readbuf1.first.next == NULL);
 }
 
 // Set a typeahead character that won't be flushed.
-void
+public void
 typeahead_noflush(int c) {
    TYPEAHEAD_CHAR = c;
 }
@@ -503,7 +503,7 @@ typeahead_noflush(int c) {
 //Remove the contents of the stuff buffer and the mapped characters in the
 //typeahead buffer (used in case of an error). If "flush_typeahead" is true,
 //flush all typeahead characters (used when interrupted by a CTRL-C).
-void
+public void
 flush_buffers(FlushBuffers flush_typeahead) {
    initTypebuf();
 
@@ -546,7 +546,7 @@ flush_buffers(FlushBuffers flush_typeahead) {
 
 // The previous contents of the redo buffer is kept in old_redobuffer.
 // This is used for the CTRL-O <.> command in insert mode.
-void
+public void
 ResetRedobuff(void) {
    if (block_redo)
       return;
@@ -557,7 +557,7 @@ ResetRedobuff(void) {
 }
 
 // Discard the contents of the redo buffer and restore the previous redo buffer.
-void
+public void
 CancelRedo(void) {
    if (block_redo)
       return;
@@ -572,7 +572,7 @@ CancelRedo(void) {
 
 // Save redobuff and old_redobuff to save_redobuff and save_old_redobuff.
 // Used before executing autocommands and user functions.
-void
+public void
 saveRedobuff(SaveRedo* save_redo) {
    save_redo->sr_redobuff = redobuff;
    redobuff.first.next = NULL;
@@ -591,7 +591,7 @@ saveRedobuff(SaveRedo* save_redo) {
 
 // Restore redobuff and old_redobuff from save_redobuff and save_old_redobuff.
 // Used after executing autocommands and user functions.
-void
+public void
 restoreRedobuff(SaveRedo* save_redo) {
    freeBuffer(&redobuff);
    redobuff = save_redo->sr_redobuff;
@@ -600,7 +600,7 @@ restoreRedobuff(SaveRedo* save_redo) {
 }
 
 // Append "s" to the redo buffer. K_SPECIAL and CSI should already have been escaped.
-void
+public void
 AppendToRedobuff(CS s) {
    if (!block_redo)
       add_buff(&redobuff, s, -1L);
@@ -608,7 +608,7 @@ AppendToRedobuff(CS s) {
 
 // Append to Redo buffer literally, escaping special characters with CTRL-V.
 // K_SPECIAL and CSI are escaped as well.
-void
+public void
 AppendToRedobuffLit(CS str, int len) {      // "len" = length of "str" or -1 for up to the ZERO
    if (block_redo)
       return;
@@ -645,7 +645,7 @@ AppendToRedobuffLit(CS str, int len) {      // "len" = length of "str" or -1 for
 
 // Append "s" to the redo buffer, leaving 3-byte special key codes unmodified
 // and escaping other K_SPECIAL and CSI bytes.
-void
+public void
 AppendToRedobuffSpec(CS s) {
    if (block_redo)
       return;
@@ -662,40 +662,40 @@ AppendToRedobuffSpec(CS s) {
 
 // Append a character to the redo buffer.
 // Translates special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
-void
+public void
 AppendCharToRedobuff(Unt c) {
    if (!block_redo)
       addCharToBuf(&redobuff, c);
 }
 
 // Append a number to the redo buffer.
-void
+public void
 inpAppendNumberToRedoBuff(long n) {
    if (!block_redo)
       addNumToBuf(&redobuff, n);
 }
 
 // Append string "s" to the stuff buffer. CSI and K_SPECIAL must already have been escaped.
-void
+public void
 stuffReadbuff(CS s) {
    add_buff(&readbuf1, s, -1L);
 }
 
 // Append string "s" to the redo stuff buffer.
 // CSI and K_SPECIAL must already have been escaped.
-void
+public void
 stuffRedoReadbuff(CS s) {
    add_buff(&readbuf2, s, -1L);
 }
 
-void
+public void
 stuffReadbuffLen(CS s, long len) {
    add_buff(&readbuf1, s, len);
 }
 
 // Stuff "s" into the stuff buffer, leaving special key codes unmodified and
 // escaping other K_SPECIAL and CSI bytes. Change CR, LF and ESC into a space.
-void
+public void
 stuffReadbuffSpec(CS s) {
    while (*s != ZERO) {
       if (*s == K_SPECIAL && s[1] != ZERO && s[2] != ZERO) {
@@ -713,20 +713,20 @@ stuffReadbuffSpec(CS s) {
 
 // Append a character to the stuff buffer.
 // Translates special keys, ZERO, CSI, K_SPECIAL and multibyte characters.
-void
+public void
 stuffcharReadbuff(Unt c) {
    addCharToBuf(&readbuf1, c);
 }
 
 // Append a number to the stuff buffer.
-void
+public void
 stuffnumReadbuff(long n) {
    addNumToBuf(&readbuf1, n);
 }
 
 // Stuff a string into the typeahead buffer, such that edit() will insert it
 // literally ("literally" true) or interpret is as typed characters.
-void
+public void
 stuffescaped(CS arg, int literally) {
     int      c;
     CS start;
@@ -821,7 +821,7 @@ copy_redo(int old_redo) {
 // CTRL-O <.> in insert mode
 //
 // return FAIL for failure, OK otherwise
-int
+public int
 start_redo(long count, int old_redo) {
    // init the pointers; return if nothing to redo
    if (read_redo(true, old_redo) == FAIL)
@@ -884,7 +884,7 @@ start_redo(long count, int old_redo) {
 // Repeat the last insert (R, o, O, a, A, i or I command) by stuffing
 // the redo buffer into readbuf2.
 // return FAIL for failure, OK otherwise
-int
+public int
 start_redo_ins(void) {
    if (read_redo(true, false) == FAIL)
       return FAIL;
@@ -906,7 +906,7 @@ start_redo_ins(void) {
    return OK;
 }
 
-void
+public void
 stop_redo_ins(void) {
    block_redo = false;
 }
@@ -927,7 +927,7 @@ initTypebuf(void) {
 }
 
 // true when keys cannot be remapped.
-int
+public int
 noremap_keys(void) {
    return keyNoremapG & (RM_NONE|RM_SCRIPT);
 }
@@ -949,7 +949,7 @@ noremap_keys(void) {
 // If "silent" is true, cmd_silent is set when the characters are obtained.
 //
 // return FAIL for failure, OK otherwise
-int
+public int
 insertIntoTypebuf(
    CS str,
    Unt noremap,
@@ -1065,7 +1065,7 @@ insertIntoTypebuf(
 // Put character "c" back into the typeahead buffer. Can be used for a character obtained by 
 // vgetc() that needs to be put back. Use cmd_silent, keyWasTypedG and keyNoremapG to restore the 
 // flags belonging to the char. Return the length of what was inserted.
-int
+public int
 ins_char_typebuf(int c, int modifiers){
    Byte   buf[MB_MAXBYTES * 3 + 4];
    int len = special_to_buf(c, modifiers, true, buf);
@@ -1081,26 +1081,26 @@ ins_char_typebuf(int c, int modifiers){
 //changed it was reallocated and the old pointer can no longer be used.
 //Or "typeBufG.currPos" may have been changed and we would overwrite characters
 //that was just added.
-int
+public int
 typebuf_changed(int changeCnt){   // old value of typeBufG.changeCnt
    return (changeCnt != 0 && (typeBufG.changeCnt != changeCnt || typebuf_was_filled));
 }
 
 // Return true if there are no untyped characters in the typeahead buffer
 // (untyped = result from a mapping or come from ":normal").
-int
+public int
 typebuf_typed(void) {
    return typeBufG.mappedLen == 0;
 }
 
 // Return the number of characters that are mapped (or not typed).
-int
+public int
 typebuf_maplen(void) {
    return typeBufG.mappedLen;
 }
 
 // remove "len" characters from typeBufG.c[typeBufG.currPos + offset]
-void
+public void
 del_typebuf(int len, int offset) {
    int i;
 
@@ -1162,7 +1162,7 @@ del_typebuf(int len, int offset) {
 }
 
 // stateG for adding bytes to a recording or 'showcmd'.
-typedef struct {
+private typedef struct {
    Byte   buf[MB_MAXBYTES * 3 + 4];
    int      prev_c;
    Unt   buflen;
@@ -1211,7 +1211,7 @@ gotchars_add_byte(GotCharsState *state, Byte byte) {
       goto ret_false;
 
    retval = true;
-ret_false:
+public ret_false:
    state->prev_c = c;
    return retval;
 }
@@ -1252,7 +1252,7 @@ gotchars(CS chars, int len) {
 }
 
 // Record an <Ignore> key.
-void
+public void
 gotchars_ignore(void) {
    Byte nop_buf[3] = { K_SPECIAL, KS_EXTRA, KE_IGNORE };
    gotchars(nop_buf, 3);
@@ -1261,7 +1261,7 @@ gotchars_ignore(void) {
 // Undo the last gotchars() for "len" bytes.  To be used when putting a typed
 // character back into the typeahead buffer, thus gotchars() will be called again.
 // Only affects recorded characters.
-void
+public void
 ungetchars(int len) {
    if (reg_recording == 0)
       return;
@@ -1314,7 +1314,7 @@ free_typeBufG(void) {
 // restored when "file" has been read completely.
 private Typeahead saved_typeBufG[NSCRIPT];
 
-int
+public int
 save_typebuf(void) {
    initTypebuf();
    saved_typeBufG[curscript] = typeBufG;
@@ -1336,7 +1336,7 @@ can_get_old_char(void) {
 }
 
 // Save all 3 kinds of typeahead, so that the user must type at a prompt.
-void
+public void
 save_typeahead(TypeaheadSave *tp) {
    tp->save_typebuf = typeBufG;
    reallocateTypebuf();
@@ -1360,7 +1360,7 @@ save_typeahead(TypeaheadSave *tp) {
 // Restore the typeahead to what it was before calling save_typeahead().
 // The allocated memory is freed, can only be called once!
 // When "overwrite" is false input typed later is kept.
-void
+public void
 restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
     if (tp->typebuf_valid) {
        free_typeBufG();
@@ -1380,7 +1380,7 @@ restore_typeahead(TypeaheadSave* tp, Boole overwrite) {
 }
 
 // Open a new script file for the ":source!" command.
-void
+public void
 openscript(CS name, Boole directly) {
    if (curscript + 1 == NSCRIPT) {
       emsg(_(e_scripts_nested_too_deep));
@@ -1447,7 +1447,7 @@ closeScript(void) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-void
+public void
 close_all_scripts(void) {
     while (scriptin[0] != NULL)
        closeScript();
@@ -1455,14 +1455,14 @@ close_all_scripts(void) {
 #endif
 
 // Return true when reading keys from a script file.
-int
+public int
 using_script(void) {
    return scriptin[curscript] != NULL;
 }
 
 // This function is called just before doing a blocking wait.  Thus after
 // waiting 'updatetime' for a character to arrive.
-void
+public void
 before_blocking(void) {
    updateScript(0);
    if (may_garbage_collect)
@@ -1492,7 +1492,7 @@ updateScript(int c) {
 
 // Convert "c_arg" plus "modifiers" to merge the effect of modifyOtherKeys into
 // the character.  Also for when the Kitty key protocol is used.
-Unt
+public Unt
 mergeModifierKey(Unt cArg, Unt* modifiers) {
     Unt c = cArg;
 
@@ -1586,7 +1586,7 @@ addByteToShowcmd(Byte byte) {
 //Translate escaped K_SPECIAL and CSI bytes to a K_SPECIAL or CSI byte.
 //Collect the bytes of a multibyte character into the whole character.
 //Return the modifiers in the global "modMaskG".
-Unt
+public Unt
 vgetc(void) {
    Unt c, c2;
    Unt n;
@@ -1743,7 +1743,7 @@ vgetc(void) {
    }
 
    lastVgetcRecordedLen = lastRecordedLen;
-afterGotChar:
+public afterGotChar:
    //In the main loop "may_garbage_collect" can be set to do garbage collection in the first next
    //vgetc(). It's disabled after that to avoid internally used Lists and Bags to be freed.
    may_garbage_collect = false;
@@ -1772,7 +1772,7 @@ afterGotChar:
 
 // Like vgetc(), but never return a ZERO when called recursively, get a key
 // directly from the user (ignoring typeahead).
-Unt
+public Unt
 safe_vgetc(void) {
    Unt c = vgetc();
    if (c == ZERO)
@@ -1792,7 +1792,7 @@ plainVgetcNopaste(void) {
 }
 
 //Like safe_vgetc(), but loop to handle K_IGNORE. Also ignore scrollbar events.
-Unt
+public Unt
 plain_vgetc(void) {
    Unt c = plainVgetcNopaste();
    if (c == K_PS) {
@@ -1807,7 +1807,7 @@ plain_vgetc(void) {
 //Check if a character is available, such that vgetc() will not block.
 //If the next character is a special character or multi-byte, the returned character is not valid!.
 //Return ZERO if no character is available.
-Unt
+public Unt
 vpeekc(void) {
    if (can_get_old_char())
       { return old_char; }
@@ -1815,7 +1815,7 @@ vpeekc(void) {
 }
 
 // Like vpeekc(), but don't allow mapping.  Do allow checking for terminal codes.
-int
+public int
 vpeekc_nomap(void) {
     ++no_mapping;
     ++allow_keys;
@@ -1828,7 +1828,7 @@ vpeekc_nomap(void) {
 // Check if any character is available, also half an escape sequence.
 // Trick: when no typeahead found, but there is something in the typeahead
 // buffer, it must be an ESC that is recognized as the start of a key code.
-Unt
+public Unt
 vpeekc_any(void) {
    Unt c = vpeekc();
    if (c == ZERO && typeBufG.validLen > 0)
@@ -1838,7 +1838,7 @@ vpeekc_any(void) {
 
 // Call vpeekc() without causing anything to be mapped.
 // Return true if a character is available, false otherwise.
-int
+public int
 char_avail(void) {
     // When test_override("char_avail", 1) was called pretend there is no
     // typeahead.
@@ -1984,17 +1984,17 @@ getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number) {
        returnVar->number = n;
 }
 
-void
+public void
 f_getchar(Arr(Var) argvars, Var* returnVar) {
    getcharCommon(argvars, returnVar, true);
 }
 
-void
+public void
 f_getcharstr(Arr(Var) argvars, Var* returnVar) {
    getcharCommon(argvars, returnVar, false);
 }
 
-void
+public void
 f_getcharmod(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->number = modMaskG;
 }
@@ -2003,7 +2003,7 @@ f_getcharmod(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 //Process messages that have been queued for clientserver. Also check if any jobs have ended.
 //These functions can call arbitrary scripts and should only be called when it is safe
-void
+public void
 parse_queued_messages(void) {
    int old_curPor_id;
    int old_curbuf_fnum;
@@ -2070,7 +2070,7 @@ parse_queued_messages(void) {
 }
 
 
-typedef enum {
+private typedef enum {
    mrFail,    // failed, break loop
    mrGet,     // get a character from typeahead
    mrRetry,   // try to map again
@@ -2151,7 +2151,7 @@ checkSimplifyModifier(int const maxOffset) {
    return 0;
 }
 
-typedef struct {
+private typedef struct {
    MapBlock* longestFull;
    MapBlock* foundMapping;
    int maxMLen; //max_mlen
@@ -2317,7 +2317,7 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
             }
          }
 
-nextIter:
+public nextIter:
          if (fin.foundMapping->next == NULL) {
             fin.foundMapping = foundMapping1;
             foundMapping1 = NULL;
@@ -2575,7 +2575,7 @@ handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth) {
 //unget one character (can only be done once!)
 //If the character was stuffed, vgetc() will get it next time it is called.
 //Otherwise vgetc() will only get it when the stuff buffer is empty.
-void
+public void
 vungetc(Unt c) {
    old_char = c;
    oldModMask = modMaskG;
@@ -3077,7 +3077,7 @@ fixInputBuffer(OUT CS buf, int len) {
 // Normally the input buffer would be sufficient, but the server_to_input_buf()
 // or feedkeys() may insert characters in the typeahead buffer while we are
 // waiting for input to arrive.
-int
+public int
 input_available(void) {
    return (!eeIsInputBufEmpty()|| typebuf_was_filled);
 }
@@ -3171,7 +3171,7 @@ getCommandNameCb(
 
 // If there was a mapping we get its SID.  Otherwise, use "last_used_sid", it is set when redo'ing.
 // Put this SID in the redo buffer, so that "." will use the same script context.
-void
+public void
 may_add_last_used_map_to_redobuff(void) {
    Byte  buf[3 + 20];
    int buflen;
@@ -3196,7 +3196,7 @@ may_add_last_used_map_to_redobuff(void) {
 }
 
 // return FAIL or OK
-int
+public int
 do_cmdkey_command(Unt key, Unt flags) {
    ScriptPos  save_scriptPosG = {-1, 0, 0};
    if (key == K_SCRIPT_COMMAND && (last_used_map || SCRIPT_ID_VALID(last_used_sid))) {
@@ -3217,7 +3217,7 @@ do_cmdkey_command(Unt key, Unt flags) {
    return res;
 }
 
-void
+public void
 reset_last_used_map(MapBlock* mp) {
    if (last_used_map != mp)
       { return; }
@@ -3228,7 +3228,7 @@ reset_last_used_map(MapBlock* mp) {
 
 //Return the number of character cells string "s[len]" will take on the
 //screen, counting TABs as two characters: "^I".
-int
+public int
 eeglStrNsize(CS s, int len) {
    int size = 0;
 
@@ -3245,7 +3245,7 @@ eeglStrNsize(CS s, int len) {
 
 //Return the number of character cells string "s" will take on the screen,
 //counting TABs as two characters: "^I".
-int
+public int
 eeglStrSize(CS s) {
    return eeglStrNsize(s, (int)MAXCOL);
 }
@@ -3253,14 +3253,14 @@ eeglStrSize(CS s) {
 //return true if 'c' is a valid file-name character or a wildcard character
 //Assume characters above 0x100 are valid (multi-byte).
 //Explicitly interpret ']' as a wildcard character as mch_has_wildcard("]") returns false.
-int
+public int
 eeIsFnameChar_or_wc(Unt c) {
    Byte buf[2] = {(Byte)c, ZERO};
    return eeIsFnameChar(c) || c == ']' || mch_has_wildcard(buf);
 }
 
 //Return true if line "lnum" ends in a white character.
-int
+public int
 ends_in_white(LineNr lnum) {
    CS s = ml_get(lnum);
    if (*s == ZERO)
@@ -3272,7 +3272,7 @@ ends_in_white(LineNr lnum) {
 //Return true if the two comment leaders given are the same.  "lnum" is
 //the first line.  White-space is ignored.  Note that the whole of
 //'leader1' must match 'leader2_len' characters from 'leader2' -- webb
-int
+public int
 same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS leader2_flags){
    int idx1 = 0, idx2 = 0;
 
@@ -3324,7 +3324,7 @@ same_leader(LineNr lnum, int leader1_len, CS leader1_flags, int leader2_len, CS 
 }
 
 // getwhitecols: return the number of whitespace columns (bytes) at the start of a given line
-int
+public int
 getwhitecols_curline(void) {
    return getwhitecols(ml_get_curline());
 }
@@ -3332,7 +3332,7 @@ getwhitecols_curline(void) {
 //Format "line_count" lines, starting at the cursor position.
 //When "line_count" is negative, format until the end of the paragraph.
 //Lines after the cursor line are saved for undo, caller must have saved the first line.
-void
+public void
 format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
    int is_not_par;      // current line not part of parag.
    int next_is_not_par;   // next line not part of paragraph
@@ -3587,7 +3587,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
 //The eeglinfo file is a special case: Only text is converted, not file names.
 
 
-int mb_ptr2cells_len(CS p, int size);
+public int mb_ptr2cells_len(CS p, int size);
 
 //Set up for using multi-byte characters. Called in three cases:
 //- by main() to initialize
@@ -3595,7 +3595,7 @@ int mb_ptr2cells_len(CS p, int size);
 //- by do_set() when 'encoding' has been set.
 //Fill utf8CharLens[] and return NULL when there are no problems. When there is something wrong:
 //Return an error message and don't change anything.
-CS
+public CS
 inputInitCharLens(void) {
    // The cell width depends on the type of multi-byte characters.
    (void)bookInitCharsForKeywordsForCurbook();
@@ -3613,12 +3613,12 @@ inputInitCharLens(void) {
 //1 for punctuation
 //2 for an alphanumeric word character
 //>2 for other word characters, including CJK and emoji
-int
+public int
 mb_get_class(CS p) {
    return inpGetClassForBook(p, curBook);
 }
 
-int
+public int
 inpGetClassForBook(CS p, Book* book) {
    if (utf8CharLens[p[0]] == 1) {
       if (p[0] == ZERO || SPACE_OR_TAB(p[0]))
@@ -3633,7 +3633,7 @@ inpGetClassForBook(CS p, Book* book) {
 //Check if the character pointed to by "p2" is a composing character when it
 //comes after "p1".  For Arabic sometimes "ab" is replaced with "c", which
 //behaves like a composing character.
-int
+public int
 utf_composinglike(CS p1, CS p2) {
    int c2 = mb_ptr2char(p2);
    if (utf_iscomposing(c2))
@@ -3646,7 +3646,7 @@ utf_composinglike(CS p1, CS p2) {
 
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters.
-int
+public int
 utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
    int cc;
    int i = 0;
@@ -3675,7 +3675,7 @@ utfc_ptr2char(CS p, OUT int* pcc) {   // return: composing chars, last one is 0
 
 //Convert a UTF-8 byte string to a wide character. Also get up to MAX_COMBINED_SYMBOLS
 //composing characters. Use no more than p[maxlen].
-int
+public int
 utfc_ptr2char_len(
     CS p,
     OUT int* pcc,   // return: composing chars, last one is 0
@@ -3706,21 +3706,21 @@ utfc_ptr2char_len(
 // 0: white space
 // 1: punctuation
 // 2 or bigger: some class of word character.
-int
+public int
 utf_class(int c) {
    return utf_class_buf(c, curBook);
 }
 
 //If the cursor moves on an trail byte, set the cursor on the lead byte.
 //Thus it moves left if necessary. Return true when the cursor was adjusted.
-void
+public void
 mb_adjust_cursor(void) {
    mb_adjustpos(curBook, &curPor->cursor);
 }
 
 //Adjust position "*lp" to point to the first byte of a multi-byte character.
 //If it points to a tail byte it's moved backwards to the head byte.
-void
+public void
 mb_adjustpos(Book* book, Pos *lp) {
    CS p;
 
@@ -3733,14 +3733,14 @@ mb_adjustpos(Book* book, Pos *lp) {
    }
 }
 
-void
+public void
 f_charclass(Arr(Var) argvars, Var* returnVar UNUSED) {
    if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
       return;
    returnVar->number = mb_get_class(argvars[0].string);
 }
 
-int
+public int
 utf_class_buf(Unt c, Book* book) {
    // sorted list of non-overlapping intervals
    static struct clinterval {
@@ -3853,7 +3853,7 @@ utf_class_buf(Unt c, Book* book) {
    return 2;
 }
 
-typedef struct { // copy from strings.c
+private typedef struct { // copy from strings.c
    long first;
    long last;
 } Interval;
@@ -3861,7 +3861,7 @@ typedef struct { // copy from strings.c
 //For UTF-8 character "c" return 2 for a double-width character, 1 for others.
 //Return 4 or 6 for an unprintable character.
 //Is only correct for characters >= 0x80.
-int
+public int
 mb_char2cells(int c) {
    if (c >= 0x100) {
       if (!utf_printable(c))
@@ -3877,7 +3877,7 @@ mb_char2cells(int c) {
 }
 
 // mb_char2cells() with different argument type for libvterm.
-int
+public int
 utf_uint2cells(Unt c) {
    if (c >= 0x100 && utf_iscomposing((int)c))
       return 0;
@@ -3886,7 +3886,7 @@ utf_uint2cells(Unt c) {
 
 
 // Translate a string into allocated memory, replacing special chars with printable chars.
-CS
+public CS
 sanitizeStr(CS s) {
    int      l, c;
    Byte   hexbuf[11];
@@ -3930,7 +3930,7 @@ sanitizeStr(CS s) {
 }
 
 //"g8": show bytes of the UTF-8 char under the cursor.
-void
+public void
 show_utf8(void) {
    int rlen = 0;
 
@@ -3966,7 +3966,7 @@ show_utf8(void) {
 //Translate any special characters in buf[bufsize] in-place.
 //The result is a string with only printable characters, but if there is not
 //enough room, not all characters will be translated.
-void
+public void
 trans_characters(CS buf, int bufsize) {
    int len;      // length of string needing translation
    int room;      // room in buffer after string
@@ -3995,7 +3995,7 @@ trans_characters(CS buf, int bufsize) {
    }
 }
 
-int
+public int
 mb_ptr2cells(CS p) {
    // Need to convert to a character number.
    if (*p >= 0x80) {
@@ -4011,7 +4011,7 @@ mb_ptr2cells(CS p) {
    return 1;
 }
 
-int
+public int
 mb_ptr2cells_len(CS p, int size) {
    // Need to convert to a wide character.
    if (size > 0 && *p >= 0x80) {
@@ -4031,7 +4031,7 @@ mb_ptr2cells_len(CS p, int size) {
 
 //Return the number of cells occupied by string "p".
 //Stop at a ZERO character.  When "len" >= 0 stop at character "p[len]".
-int
+public int
 mb_string2cells(CS p, int len) {
    int clen = 0;
 
@@ -4042,7 +4042,7 @@ mb_string2cells(CS p, int len) {
 
 // Find the start of the next word.
 // Return a pointer to the first char of the word. Also stop at a ZERO.
-CS
+public CS
 findWordStart(CS ptr) {
    while (*ptr != ZERO && *ptr != '\n' && mb_get_class(ptr) <= 1)
       ptr += utfCharLen(ptr);
@@ -4207,7 +4207,7 @@ find_end_of_word(Pos* pos) {
 //(2) only if click is in same book
 //
 //Return true if start_arrow() should be called for edit mode.
-int
+public int
 do_mouse(
    Operator* oper,  // operator argument, can be NULL
    Unt c,           // K_LEFTMOUSE, etc
@@ -4758,7 +4758,7 @@ do_mouse(
    return moved;
 }
 
-void
+public void
 ins_mouse(int c) {
    Portal* old_curPor = curPor;
    Pos tpos = curPor->cursor;
@@ -4840,7 +4840,7 @@ do_mousescroll(ActionArg* cap) {
 }
 
 //Insert mode implementation for scrolling in direction "dir", which is one of the MSCR_ values.
-void
+public void
 ins_mousescroll(int dir) {
    ActionArg   cap;
    Operator   oa;
@@ -4915,7 +4915,7 @@ ins_mousescroll(int dir) {
 }
 
 //true if "c" is a mouse key.
-Boole
+public Boole
 is_mouse_key(Unt c) {
    return c == K_LEFTMOUSE
       || c == K_LEFTMOUSE_NM
@@ -4971,7 +4971,7 @@ private struct mousetable {
 
 //Look up the given mouse code to return the relevant information in the other
 //arguments.  Return which button is down or was released.
-Unt
+public Unt
 get_mouse_button(Unt code, OUT Boole* is_click, OUT Boole* is_drag) {
    for (int i = 0; mouse_table[i].pseudo_code > 0; i++) {
       if (code == mouse_table[i].pseudo_code) {
@@ -5010,7 +5010,7 @@ get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag) {
 #define HMT_SGR_REL 256
 private Unt haveMouseTermcodeP = 0;
 
-void
+public void
 set_mouse_termcode(Unt n, CS s) {
    Byte name[2] = {n, KE_FILLER};
    termAddRecognizedTermcode(name, s, false);
@@ -5022,7 +5022,7 @@ set_mouse_termcode(Unt n, CS s) {
       haveMouseTermcodeP |= HMT_NORMAL;
 }
 
-void
+public void
 del_mouse_termcode(Unt n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
    Byte name[2] = {n, KE_FILLER};
    del_termcode(name);
@@ -5035,7 +5035,7 @@ del_mouse_termcode(Unt n) {  // KS_MOUSE, KS_NETTERM_MOUSE or KS_DEC_MOUSE
 }
 
 //switch mouse on/off depending on current mode and 'mouse'
-void
+public void
 setmouse(void) {
    // Should be outside proc, but may break MOUSESHAPE be quick when mouse is off
    if (haveMouseTermcodeP == 0)
@@ -5052,7 +5052,7 @@ setmouse(void) {
 private Portal* dragPortalS = NULL;   // portal being dragged
 
 //Reset the portal being dragged.  To be called when switching tab.
-void
+public void
 mouseResetDragPortal(void) {
    dragPortalS = NULL;
 }
@@ -5079,7 +5079,7 @@ mouseResetDragPortal(void) {
 //If flags has MOUSE_DID_MOVE, nothing is done if the mouse didn't move since the last call.
 //
 //If flags has MOUSE_SETPOS, nothing is done, only the current position is remembered.
-Unt
+public Unt
 jump_to_mouse(
    Unt flags,
    OUT Boole* inclusive,   // used for inclusive operator, can be NULL
@@ -5119,7 +5119,7 @@ jump_to_mouse(
    }
 
    if ((flags & MOUSE_DID_MOVE) && prevRow == mouseRowG && prevCol == mouseColG) {
-retnomove:
+public retnomove:
       // before moving the cursor for a left click which is NOT in a status
       // line, stop Visual mode
       if (on_status_line)
@@ -5447,7 +5447,7 @@ do_mousescroll_horiz(Ulong leftcol) {
 
 //Normal and Visual modes implementation for scrolling in direction
 //"cap->arg", which is one of the MSCR_ values.
-void
+public void
 nv_mousescroll(ActionArg* cap) {
    Portal* old_curPor = curPor;
 
@@ -5479,14 +5479,14 @@ nv_mousescroll(ActionArg* cap) {
 }
 
 // Mouse clicks and drags.
-void
+public void
 nv_mouse(ActionArg* cap) {
    (void)do_mouse(cap->oper, cap->cmdchar, BACKWARD, cap->count1, 0);
 }
 
 private int held_button = MOUSE_RELEASE;
 
-void
+public void
 reset_held_button(void) {
     held_button = MOUSE_RELEASE;
 }
@@ -5495,7 +5495,7 @@ reset_held_button(void) {
 
 //Check if typeBufG 'tp' contains a terminal mouse code and returns the
 //modifiers found in typeBufG in 'modifiers'.
-int
+public int
 termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
    Unt mouse_code = 0;
    int is_click, is_drag;
@@ -5613,7 +5613,7 @@ termTryParseTermcode_mouse(CS key_name, OUT Unt* modifiers){
 //caches the plines_win() result from a previous call.  Entry is zero if not
 //computed yet.  There must be no text or setting changes since the entry is put in the cache.
 //Return true if the position is below the last line.
-int
+public int
 mouse_comp_pos(
    Portal* port,
    OUT int* rowp,
@@ -5711,7 +5711,7 @@ mouse_comp_pos(
 //When "popup" is FAIL_POPUP and the position is in a popup portal then return NULL.
 //When "popup" is IGNORE_POPUP, do not even check popup portals.
 //Return NULL when something is wrong.
-Portal*
+public Portal*
 mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED) {
    Portal   *po;
    Portal   *pwp = NULL;
@@ -5768,7 +5768,7 @@ mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED) {
 }
 
 // Convert a virtual (screen) column to a character column. The first column is zero.
-int
+public int
 vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
    CharTableSize   cts;
 
@@ -5789,7 +5789,7 @@ vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
    return (int)(cts.cts_ptr - line);
 }
 
-void
+public void
 f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
    Long winid = 0;
    Long winrow = 0;
@@ -5840,7 +5840,7 @@ f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 
 // Set mouse clicks on or off and possible enable mouse movement events.
-void
+public void
 mch_setmouse(Boole on){
    static int bevalterm_ison = false;
    int xterm_mouse_vers;
@@ -5881,7 +5881,7 @@ mch_setmouse(Boole on){
 }
 
 // Called when @balloonevalterm changed.
-void
+public void
 mch_bevalterm_changed(void) {
    mch_setmouse(mouse_ison);
 }

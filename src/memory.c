@@ -9,15 +9,15 @@
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #endif
-int fstat(int fd, struct stat* statbuf); // from sys/stat.h
+public int fstat(int fd, struct stat* statbuf); // from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
-int lstat(const char* restrict, struct stat* restrict);
+public int lstat(const char* restrict, struct stat* restrict);
 
 //when a block with a negative number is flushed to the file, it gets
 //a positive number. Because the reference to the block is still the negative
 //number, we remember the translation to the new positive number in the
 //double linked trans lists. The structure is the same as the hash lists.
-typedef struct {
+private typedef struct {
    MfHashItem nt_hashitem;      // header for hash table and key
 #define nt_old_bnum nt_hashitem.key   // old, negative, number
 
@@ -79,7 +79,7 @@ mem_pre_free(void **pp) {
 }
 
 // called on exit via atexit()
-void
+public void
 eeMemProfileDump(void) {
    int i, j;
 
@@ -115,7 +115,7 @@ eeMemProfileDump(void) {
 
 #endif // MEM_PROFILE
 
-int
+public int
 alloc_does_fail(Unt size) {
    if (alloc_fail_countdown == 0) {
       if (--alloc_fail_repeat <= 0)
@@ -135,13 +135,13 @@ alloc_does_fail(Unt size) {
 //The normal way to allocate memory. Handles an out-of-memory situation
 //as well as possible, exit the process with cleanup when that doesn't help.
 //This means the return value doesn't need to be checked for null.
-void *
+public void *
 alloc(Unt size) {
    return lalloc(size, true);
 }
 
 //Try to make a big allocation. Quietly return null if unsucessful.
-void*
+public void*
 tryBigAlloc(Unt size) {
    static int releasing = false;  // don't do mf_release_all() recursive
 
@@ -179,7 +179,7 @@ tryBigAlloc(Unt size) {
          break;
    }
 
-success:
+public success:
 #ifdef MEM_PROFILE
    mem_post_alloc(&p, size);
 #endif
@@ -187,7 +187,7 @@ success:
 }
 
 // alloc() with an ID for alloc_fail().
-void *
+public void *
 alloc_id(Unt size, AllocId id UNUSED) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
@@ -195,7 +195,7 @@ alloc_id(Unt size, AllocId id UNUSED) {
 }
 
 // Allocate memory and set all bytes to zero.
-void *
+public void *
 allocZeroed(Unt size) {
    void* p = lalloc(size, true);
    (void)memset(p, 0, size);
@@ -203,7 +203,7 @@ allocZeroed(Unt size) {
 }
 
 // Same as allocZeroed() but with allocation id for testing
-void *
+public void *
 allocZeroed_id(Unt size, AllocId id UNUSED) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
@@ -211,7 +211,7 @@ allocZeroed_id(Unt size, AllocId id UNUSED) {
 }
 
 // Allocate memory like lalloc() and set all bytes to zero.
-void *
+public void *
 lallocZeroed(Unt size, Boole message){
    void* p = lalloc(size, message);
    if (p)
@@ -220,7 +220,7 @@ lallocZeroed(Unt size, Boole message){
 }
 
 // Low-level memory allocation function. This is used often, KEEP IT FAST!
-void *
+public void *
 lalloc(Unt size, Boole message) {
    static int   releasing = false;  // don't do mf_release_all() recursive
 
@@ -262,7 +262,7 @@ lalloc(Unt size, Boole message) {
       do_outofmem_msg(size);
    mch_exit(2);
    
-success:
+public success:
 #ifdef MEM_PROFILE
    mem_post_alloc(&p, size);
 #endif
@@ -270,7 +270,7 @@ success:
 }
 
 // lalloc() with an ID for alloc_fail().
-void *
+public void *
 lalloc_id(Unt size, int message, AllocId id UNUSED) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
@@ -280,7 +280,7 @@ lalloc_id(Unt size, int message, AllocId id UNUSED) {
 #if defined(MEM_PROFILE) || defined(PROTO)
 
 // realloc() with memory profiling.
-void *
+public void *
 memReallocWithProfiling(void *ptr, Unt size) {
    void *p;
 
@@ -298,7 +298,7 @@ memReallocWithProfiling(void *ptr, Unt size) {
 
 //Avoid repeating the error message many times (they take 1 second each).
 //Did_outofmem_msg is reset when a character is read.
-void
+public void
 do_outofmem_msg(Unt size) {
    if (did_outofmem_msg)
       return;
@@ -325,7 +325,7 @@ do_outofmem_msg(Unt size) {
 // NOTE: This is tricky!  Things are freed that functions depend on.  Don't be
 // surprised if Eegl crashes...
 // Some things can't be freed, esp. things local to a library function.
-void
+public void
 free_all_mem(void) {
    //When we cause a crash here it is caught and Eegl tries to exit cleanly.
    //Don't try freeing everything again.
@@ -476,7 +476,7 @@ free_all_mem(void) {
 #endif
 
 // Copy "p[len]" into allocated memory, ignoring ZERO characters.
-CS
+public CS
 eeMemsave(Byte *p, Unt len) {
    Byte *ret = alloc(len);
    MEMMOVE(ret, p, len);
@@ -486,7 +486,7 @@ eeMemsave(Byte *p, Unt len) {
 //Replacement for free() that ignores NULL pointers. Also skip free() when exiting for sure, this
 //helps when we caught a deadly signal that was caused by a crash in free().
 //If you want to set NULL after calling this function, you should use EE_CLEAR() instead.
-void
+public void
 eeglFree(void* x) {
    if (x && !really_exiting) {
 #ifdef MEM_PROFILE
@@ -496,7 +496,7 @@ eeglFree(void* x) {
    }
 }
 
-void
+public void
 eeglFreeString(CS x) {
    if (x && *x != ZERO && !really_exiting) {
 #ifdef MEM_PROFILE
@@ -507,7 +507,7 @@ eeglFreeString(CS x) {
 }
 
 //Return total amount of memory available in Kbyte. Doesn't change when memory has been allocated.
-Ulong
+public Ulong
 mch_total_mem(int special UNUSED) {
    Ulong   mem = 0;
    Ulong   shiftright = 10;  // how much to shift "mem" right for Kbyte
@@ -549,14 +549,14 @@ mch_total_mem(int special UNUSED) {
 
 #if defined(EXITFREE) || defined(PROTO)
 
-void
+public void
 mch_free_mem(void){
    EE_CLEAR(signal_stack);
 }
 #endif
 
 // Copy full dir name to an allocation outside the arena & glue a file name to its end.
-CS
+public CS
 toFullFileName(Text fileName, DirName* dn) {
    CS theString = alloc(dn->len + fileName.len + 1);
    memcpy(theString, dn->c, dn->len);
@@ -589,7 +589,7 @@ exit_scroll(void) {
 
 
 //Low-level resoure cleanup function
-void
+public void
 mch_exit(int r) {
    isExitingG = true;
    termSetMode(TMODE_COOK);
@@ -631,17 +631,17 @@ mch_exit(int r) {
    exit(r);
 }
 
-void
+public void
 _incRefCount(void* a) {
    (*((Unt*)a))++;
 }
 
-void
+public void
 _decRefCount(void* a) {
    (*((Unt*)a))--;
 }
 
-Unt
+public Unt
 _getRefCount(void* a) {
    return *((Unt*)a);
 }
@@ -653,7 +653,7 @@ _getRefCount(void* a) {
 // When searching for a specific line, we remember what blocks in the tree
 // are the branches leading to that block. This is stored in ml_stack.  Each
 // entry is a pointer to info in a block (may be data block or pointer block)
-struct InfoPtr {
+public struct InfoPtr {
    BlockId   ip_bnum;   // block number
    LineNr   ip_low;      // lowest lnum in this block
    LineNr   ip_high;   // highest lnum in this block
@@ -695,12 +695,12 @@ struct InfoPtr {
 
 // Flag that is set when switching off 'swapfile'. It means that all blocks
 // are to be loaded into memory.
-static int   dontReleaseBlocksS = false;
+public static int   dontReleaseBlocksS = false;
 
-typedef struct Block0 Block0;      // contents of the first block
-typedef struct PointerBlock   PointerBlock; // contents of a pointer block
-typedef struct DataBlock   DataBlock;    // contents of a data block
-typedef struct PtrEntry   PtrEntry;         // block/line-count pair
+private typedef struct Block0 Block0;      // contents of the first block
+private typedef struct PointerBlock   PointerBlock; // contents of a pointer block
+private typedef struct DataBlock   DataBlock;    // contents of a data block
+private typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 #define DATA_ID          (('d' << 8) + 'a')   // data block id
 #define PTR_ID          (('p' << 8) + 't')   // pointer block id
@@ -716,7 +716,7 @@ typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 
 //pointer to a block, used in a pointer block
-struct PtrEntry {
+public struct PtrEntry {
    BlockId   blockId;   // block number
    LineNr   lineCount;   // number of lines in this branch
    LineNr   oldLnum;   // lnum for this block (for recovery)
@@ -724,7 +724,7 @@ struct PtrEntry {
 };
 
 // A pointer block contains a list of branches in the tree.
-struct PointerBlock {
+public struct PointerBlock {
    Short id;             // ID for pointer block: PTR_ID
    Short pointerCount;   // number of pointers in this block
    Short pointerCountMax;// maximum value for pointerCount
@@ -743,7 +743,7 @@ struct PointerBlock {
 //
 //    [id...countLines|...free...[line2 contents\0][line1 \0][line0 \0]]
 //    ^ DataBlock     ^c         ^startByte                             ^ endByte
-struct DataBlock {
+public struct DataBlock {
    Short   id;      // ID for data block: DATA_ID
    unsigned   freeSpace;   // free space available
    unsigned   startByte;   // byte where text starts
@@ -792,7 +792,7 @@ struct DataBlock {
 //This block is built up of single bytes, to make it portable across
 //different machines. b0_magic_* is used to check the byte order and size of
 //variables, because the rest of the swap file is not portable.
-struct Block0 {
+public struct Block0 {
    Byte   b0_id[2];   // id for block 0: BLOCK0_ID0 and BLOCK0_ID1,
             // BLOCK0_ID1_C0, BLOCK0_ID1_C1, etc.
    Byte   b0_version[10];   // Eegl version string
@@ -833,7 +833,7 @@ private LineNr   lowest_marked = 0;
 #define ML_SIMPLE(x) ((x) & 0x10)  // DEL, INS or FIND
 
 // argument for updateBlock0()
-typedef enum {
+private typedef enum {
    UB_FNAME = 0, // update timestamp and filename
    UB_SAME_DIR,  // update the B0_SAME_DIR flag
    UB_CRYPT      // update crypt key
@@ -857,7 +857,7 @@ private long charToLong(CS);
 private void updateChunk(Book *book, LineNr line, Long len, int updtype);
 
 //Open a new memline for "book". Return FAIL for failure, OK otherwise.
-int
+public int
 ml_open(Book *book) {
    MemFile   *mfp;
    BlockHeader* hdr = NULL;
@@ -959,7 +959,7 @@ ml_open(Book *book) {
 
    return OK;
 
-error:
+public error:
    if (mfp) {
       if (hdr)
          mf_put(mfp, hdr, false, false);
@@ -971,7 +971,7 @@ error:
 
 //Prepare encryption for "book" for the current key and method.
 //ml_setname() is called when the file name of "book" has been changed. It may rename the swap file.
-void
+public void
 ml_setname(Book* book) {
    int success = false;
    MemFile* mfp = book->mem.mfile;
@@ -1019,7 +1019,7 @@ ml_setname(Book* book) {
 
 //Open a file for the memfile for all books that are not readonly or have been modified.
 //Used when 'updatecount' changes from zero to non-zero.
-void
+public void
 memOpenSwapFiles(void) {
    Book* book;
    FOR_ALL_BOOKS(book) {
@@ -1031,7 +1031,7 @@ memOpenSwapFiles(void) {
 //Open a swap file for an existing memfile, if there is no swap file yet.
 //If we are unable to find a file name, fName will be NULL
 //and the memfile will be in memory only (no recovery possible).
-void
+public void
 memOpenSwapFile(Book* book) {
    MemFile* mfp = book->mem.mfile;
    if (!mfp || mfp->fd >= 0 || !book->o.swapFile 
@@ -1058,7 +1058,7 @@ memOpenSwapFile(Book* book) {
       mf_close_file(book, false);
    }
 
-success:
+public success:
    if (!mfp->fName) {
       need_wait_return = true;   // call wait_return() later
       ++no_wait_return;
@@ -1074,7 +1074,7 @@ success:
 
 //If still need to create a swap file, and starting to edit a not-readonly
 //file, or reading into an existing book, create a swap file now.
-void
+public void
 check_need_swap(int newfile)  {    // reading file into new book
    int old_msg_silent = msg_silent; // might be reset by an E325 message
 
@@ -1084,7 +1084,7 @@ check_need_swap(int newfile)  {    // reading file into new book
 }
 
 // Close memline for book. If 'del_file' is true, delete the swap file
-void
+public void
 ml_close(Book* book, Boole del_file) {
    if (book->mem.mfile == NULL)      // not open
       return;
@@ -1103,7 +1103,7 @@ ml_close(Book* book, Boole del_file) {
 // Close all existing memlines and memfiles. Only used when exiting.
 // When 'del_file' is true, delete the memfiles.
 // But don't delete files that were ":preserve"d when we are POSIX compatible.
-void
+public void
 ml_close_all(Boole del_file) {
    Book* book;
    FOR_ALL_BOOKS(book) {
@@ -1113,7 +1113,7 @@ ml_close_all(Boole del_file) {
 }
 
 // Close all memfiles for not modified books. Only use just before exiting!
-void
+public void
 ml_close_notmod(void) {
    Book* book;
    FOR_ALL_BOOKS(book) {
@@ -1123,7 +1123,7 @@ ml_close_notmod(void) {
 }
 
 // Update the timestamp in the .swp file. Used when the file has been written.
-void
+public void
 ml_timestamp(Book* book) {
    updateBlock0(book, UB_FNAME);
 }
@@ -1249,7 +1249,7 @@ swapfile_process_running(Block0 *b0p, CS swap_fname) {
 
 // Try to recover curBook from the .swp file.
 // If "checkext" is true, check the extension and detect whether it is a swap file.
-void
+public void
 ml_recover(Boole checkext) {
    Book* book = NULL;
    MemFile* mfp = NULL ;
@@ -1660,7 +1660,7 @@ ml_recover(Boole checkext) {
    }
    drawCurBookLater(UPD_NOT_VALID);
 
-theend:
+public theend:
    eeglFree(fname_used);
    recoveryModeG = false;
    if (mfp) {
@@ -1684,7 +1684,7 @@ private int process_still_running;
 
 // Return information found in swapfile "fname" in dictionary "d".
 // This is used by the swapinfo() function.
-void
+public void
 get_b0_dict(CS fname, Bag *bag) {
    Block0 b0;
    int fd;
@@ -1769,7 +1769,7 @@ swapfile_unchanged(CS fname) {
 //If 'check_file' is true, check if original file exists and was not changed.
 //If 'check_char' is true, stop syncing when character becomes available, but
 //always sync at least one block.
-void
+public void
 ml_sync_all(int check_file, int check_char) {
    Book* book;
    FileStat st;
@@ -1812,7 +1812,7 @@ ml_sync_all(int check_file, int check_char) {
 // Sync one book, including negative blocks. After this all the blocks are in the swap file
 // Used for the :preserve command and when the original file has been changed or deleted.
 // when message is true the success of preserving is reported
-void
+public void
 ml_preserve(Book* book, int message) {
    BlockHeader* hdr;
    LineNr lnum;
@@ -1860,7 +1860,7 @@ ml_preserve(Book* book, int message) {
          status = FAIL;
       book->mem.ml_stack_top = 0;       // stack is invalid now
    }
-theend:
+public theend:
    gotInterruptG |= gotInterruptG_save;
 
    if (message) {
@@ -1881,55 +1881,55 @@ theend:
 //
 // On failure an error message is given and IObuff is returned (to avoid
 // having to check for error everywhere).
-CS
+public CS
 ml_get(LineNr lnum) {
    return memGetLine(curBook, lnum, false);
 }
 
 // Return pointer to position "pos".
-CS
+public CS
 ml_get_pos(Pos* pos){
    return (memGetLine(curBook, pos->lnum, false) + pos->col);
 }
 
 // Return pointer to cursor line.
-CS
+public CS
 ml_get_curline(void) {
    return memGetLine(curBook, curPor->cursor.lnum, false);
 }
 
 // Return pointer to cursor position.
-CS
+public CS
 ml_get_cursor(void) {
    return memGetLine(curBook, curPor->cursor.lnum, false) + curPor->cursor.col;
 }
 
 // return length (excluding the ZERO) of the given line
-ColNr
+public ColNr
 ml_get_len(LineNr lnum) {
    return memGetBookLen(curBook, lnum);
 }
 
 // return length (excluding the ZERO) of the text after position "pos"
-ColNr
+public ColNr
 ml_get_pos_len(Pos *pos) {
    return memGetBookLen(curBook, pos->lnum) - pos->col;
 }
 
 // return length (excluding the ZERO) of the cursor line
-ColNr
+public ColNr
 ml_get_curline_len(void) {
    return memGetBookLen(curBook, curPor->cursor.lnum);
 }
 
 // return length (excluding the ZERO) of the cursor position
-ColNr
+public ColNr
 ml_get_cursor_len(void) {
    return memGetBookLen(curBook, curPor->cursor.lnum) - curPor->cursor.col;
 }
 
 // return length (excluding the ZERO) of the given line in the given book
-ColNr
+public ColNr
 memGetBookLen(Book* book, LineNr lnum) {
    CS line = memGetLine(book, lnum, false); if (*line == ZERO)
       return 0;
@@ -1941,7 +1941,7 @@ memGetBookLen(Book* book, LineNr lnum) {
 
 //Return a pointer to a line in a specific book
 //"willChange": if true mark the book dirty (chars in the line are expected to change)
-CS
+public CS
 memGetLine(Book* book, LineNr   lnum, Boole  willChange) { // line will be changed
    BlockHeader* hdr;
    DataBlock   *block;
@@ -1957,7 +1957,7 @@ memGetLine(Book* book, LineNr   lnum, Boole  willChange) { // line will be chang
          --recursive;
       }
       flushLine(book);
-errorret:
+public errorret:
       STRCPY(questions, "???");
       book->mem.lineLen = 4;
       book->mem.lineTextLen = book->mem.lineLen;
@@ -2025,7 +2025,7 @@ errorret:
 }
 
 //Check if a line that was just obtained by a call to ml_get is in allocated memory.
-int
+public int
 ml_line_alloced(void) {
    return (curBook->mem.flags & ML_LINE_DIRTY);
 }
@@ -2515,7 +2515,7 @@ insertLineText(
       channel_write_new_lines(book);
    ret = OK;
 
-theend:
+public theend:
    eeglFree(tofree);
    return ret;
 }
@@ -2553,7 +2553,7 @@ appendFlush(
 //
 //Check: The caller of this function should probably also call appended_lines().
 //return FAIL for failure, OK otherwise
-int
+public int
 ml_append(
    LineNr lnum, // append after this line (can be 0)
    CS newContent, // text of the new line
@@ -2571,7 +2571,7 @@ ml_append(
    }
 }
 
-int
+public int
 ml_append_flags(
    LineNr   lnum,      // append after this line (can be 0)
    CS newContent,      // text of the new line
@@ -2587,7 +2587,7 @@ ml_append_flags(
 
 //Like ml_append() but for an arbitrary book. The buffer must already have a memline.
 //"newfile": true when starting to edit a new file, meaning that oldLnum will be set for recovery.
-int
+public int
 memAppendBook(
    Book* book,
    LineNr lnum,  // append after this line (can be 0)
@@ -2608,7 +2608,7 @@ memAppendBook(
 //Check: The caller of this function should probably also call changed_lines(), unless 
 //drawUpdateScreen(UPD_NOT_VALID) is used.
 //return FAIL for failure, OK otherwise
-int
+public int
 ml_replace(LineNr lnum, CS line, int copy) {
    ColNr len = -1;
 
@@ -2621,7 +2621,7 @@ ml_replace(LineNr lnum, CS line, int copy) {
 //text, excluding ZERO. If "has_props" is true then "line_arg" includes the text properties 
 //and "len_arg" includes the ZERO of the text and text properties. When "copy" is true copy 
 //the text into allocated memory, otherwise "line_arg" must be allocated and will be consumed here.
-int
+public int
 ml_replace_len(
    LineNr lnum,
    CS line_arg,
@@ -2905,7 +2905,7 @@ deleteLine(Book* book, LineNr lnum, int flags) {
    updateChunk(book, lnum, line_size - textprop_len, ML_CHNK_DELLINE);
    ret = OK;
 
-theend:
+public theend:
    if (textprop_save != NULL) {
       // Adjust text properties in the line above and below.
       if (lnum > 1)
@@ -2926,7 +2926,7 @@ theend:
 // deleted_lines() after this.
 //
 // return FAIL for failure, OK otherwise
-int
+public int
 ml_delete(LineNr lnum) {
    return ml_delete_flags(lnum, 0);
 }
@@ -2936,7 +2936,7 @@ ml_delete(LineNr lnum) {
 // Check: The caller of this function should probably also call deleted_lines() after this.
 //
 // return FAIL for failure, OK otherwise
-int
+public int
 ml_deleteBufLine(Book* book, LineNr lnum) {
    flushLine(book);
    if (lnum < 1 || lnum > book->mem.lineCount)
@@ -2949,7 +2949,7 @@ ml_deleteBufLine(Book* book, LineNr lnum) {
 }
 
 // Like ml_delete() but using flags (see deleteLine()).
-int
+public int
 ml_delete_flags(LineNr lnum, int flags) {
    flushLine(curBook);
    if (lnum < 1 || lnum > curBook->mem.lineCount)
@@ -2962,7 +2962,7 @@ ml_delete_flags(LineNr lnum, int flags) {
 }
 
 // set the DB_MARKED flag for line 'lnum'
-void
+public void
 ml_setmarked(LineNr lnum) {
                 // invalid line number
    if (lnum < 1 || lnum > curBook->mem.lineCount || curBook->mem.mfile == NULL)
@@ -2983,7 +2983,7 @@ ml_setmarked(LineNr lnum) {
 }
 
 // find the first line with its DB_MARKED flag set
-LineNr
+public LineNr
 ml_firstmarked(void) {
 
    if (curBook->mem.mfile == NULL)
@@ -3015,7 +3015,7 @@ ml_firstmarked(void) {
 }
 
 // clear all DB_MARKED flags
-void
+public void
 ml_clearmarked(void) {
    if (curBook->mem.mfile == NULL)       // nothing to do
       return;
@@ -3335,9 +3335,9 @@ ml_find_line(Book *book, LineNr lnum, int action) {
       mf_put(mfp, hdr, dirty, false);
    }
 
-error_block:
+public error_block:
    mf_put(mfp, hdr, false, false);
-error_noblock:
+public error_noblock:
    // If action is ML_DELETE or ML_INSERT we have to correct the tree for the 
    // incremented/decremented line counts, because there won't be a line inserted/deleted after all
    if (action == ML_DELETE)
@@ -3437,7 +3437,7 @@ attention_message(Book* book, CS swapName) {
    --no_wait_return;
 }
 
-typedef enum {
+private typedef enum {
    SEA_CHOICE_NONE = 0,
    SEA_CHOICE_READONLY = 1,
    SEA_CHOICE_EDIT = 2,
@@ -3660,7 +3660,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
       fname[n - 1] = 'z' + 1;
    }
    --fname[n - 1];         // ".swo", ".swn", etc.
-endOfName:
+public endOfName:
    return fname;
 }
 
@@ -3773,7 +3773,7 @@ charToLong(CS s) {
 }
 
 //Set the flags in the first block of the swap file: file is modified or not: book->wasModified
-void
+public void
 ml_setflags(Book* book) {
    BlockHeader* hdr;
    Block0* b0p;
@@ -3996,7 +3996,7 @@ updateChunk(Book* book, LineNr line, Long len, int updtype){
 //Find offset for line or line with offset.
 //Find line with offset if "lnum" is 0; return remaining offset in offp
 //Find offset of line if "lnum" > 0. Return -1 if information is not available
-long
+public long
 ml_find_line_or_offset(Book* book, LineNr lnum, long *offp) {
    BlockHeader* hdr;
    DataBlock* block;
@@ -4189,7 +4189,7 @@ swapfile_info(CS fname) {
 }
 
 // Go to byte in book with offset 'cnt'.
-void
+public void
 goto_byte(long cnt) {
    long   boff = cnt;
 
@@ -4217,7 +4217,7 @@ goto_byte(long cnt) {
 //Append the full path to name with path separators made into percent
 //signs, to "dir". An unnamed book is handled as "" (<currentdir>/"")
 //The last character in "dir" must be an extra slash or backslash, it is removed.
-CS
+public CS
 memMakePercentSwapName(CS dir, CS dir_end, CS name) {
    CS d = NULL;
    CS f = fiExpandAndCopy(name ? name : S"", true);
@@ -4322,7 +4322,7 @@ private int mf_hash_grow(MfHashTable*);
 // If fname != NULL and file cannot be opened, fail.
 //
 //return value: identifier for this memory block file.
-MemFile *
+public MemFile *
 mf_open(CS fname, Unt flags) {
    FileOffset      size;
 #if defined(STATFS) && !defined(__minix)
@@ -4401,7 +4401,7 @@ mf_open(CS fname, Unt flags) {
 // Note: "fname" must have been allocated, it is not copied!  If opening the file fails, "fname" 
 // is freed.
 // return value: FAIL if file could not be opened, OK otherwise
-int
+public int
 mf_open_file(MemFile* mfp, CS fname) {
    mf_do_open(mfp, fname, O_RDWR|O_CREAT|O_EXCL); // try to open the file
 
@@ -4413,7 +4413,7 @@ mf_open_file(MemFile* mfp, CS fname) {
 }
 
 // Close a memory file and delete the associated file if 'del_file' is true.
-void
+public void
 mf_close(MemFile* mfp, int del_file) {
    if (!mfp)          // safety check
       return;
@@ -4438,7 +4438,7 @@ mf_close(MemFile* mfp, int del_file) {
 }
 
 // Close the swap file for a memfile.  Used when 'swapfile' is reset.
-void
+public void
 mf_close_file(Book* book, int getlines) {  // get all lines into memory?
    MemFile* mfp = book->mem.mfile;
    if (!mfp || mfp->fd < 0)      // nothing to close
@@ -4466,7 +4466,7 @@ mf_close_file(Book* book, int getlines) {  // get all lines into memory?
 
 // Set new size for a memfile.  Used when block 0 of a swapfile has been read
 // and the size it indicates differs from what was guessed.
-void
+public void
 mf_new_page_size(MemFile* mfp, unsigned new_size) {
    // Correct the memory used for block 0 to the new size, because it will be
    // freed with that size later on.
@@ -4476,7 +4476,7 @@ mf_new_page_size(MemFile* mfp, unsigned new_size) {
 
 // get a new block
 //   negative: true if negative block number desired (data block)
-BlockHeader *
+public BlockHeader *
 mf_new(MemFile* mfp, int negative, int page_count) {
    CS p;
    
@@ -4539,7 +4539,7 @@ mf_new(MemFile* mfp, int negative, int page_count) {
 
 // Get existing block "nr" with "page_count" pages.
 // Note: The caller should first check a negative nr with mf_trans_del()
-BlockHeader *
+public BlockHeader *
 mf_get(MemFile* mfp, BlockId nr, int page_count) {
    if (nr >= mfp->mf_blocknr_max || nr <= mfp->mf_blocknr_min)
       return NULL;
@@ -4585,7 +4585,7 @@ mf_get(MemFile* mfp, BlockId nr, int page_count) {
 //   infile: Block should be in file (needed for recovery)
 //
 //  no return value, function cannot fail
-void
+public void
 mf_put(MemFile* mfp, BlockHeader* hp, int dirty, int infile) {
    Unt flags = hp->bh_flags;
 
@@ -4603,7 +4603,7 @@ mf_put(MemFile* mfp, BlockHeader* hp, int dirty, int infile) {
 }
 
 // block *hp is no longer in used, may put it in the free list of memfile *mfp
-void
+public void
 mf_free(MemFile* mfp, BlockHeader* hp) {
    eeglFree(hp->bh_data);   // free the memory
    mf_rem_hash(mfp, hp);   // get *hp out of the hash list
@@ -4622,7 +4622,7 @@ mf_free(MemFile* mfp, BlockHeader* hp) {
 // MFS_ZERO   Only write block 0.
 //
 //Return FAIL for failure, OK otherwise
-int
+public int
 mf_sync(MemFile* mfp, Unt flags) {
    int gotInterruptG_save = gotInterruptG;
 
@@ -4679,7 +4679,7 @@ mf_sync(MemFile* mfp, Unt flags) {
 
 // For all blocks in memory file *mfp that have a positive block number set the dirty flag. These 
 // are blocks that need to be written to a newly created swapfile.
-void
+public void
 mf_set_dirty(MemFile* mfp) {
    for (BlockHeader* hp = mfp->usedLast; hp; hp = hp->bh_prev) {
       if (hp->bh_bnum > 0)
@@ -4805,7 +4805,7 @@ mf_release(MemFile* mfp, int page_count) {
 //Used in case of out of memory
 //
 //return true if any memory was released
-int
+public int
 mf_release_all(void){
    Book* book;
    MemFile* mfp;
@@ -5042,7 +5042,7 @@ mf_trans_add(MemFile* mfp, BlockHeader* hp) {
 
 // Lookup a translation from the trans lists and delete the entry.
 // Return the positive new number when found, the old number when not found
-BlockId
+public BlockId
 mf_trans_del(MemFile* mfp, BlockId old_nr) {
    NrTranslation* np = (NrTranslation *)mf_hash_find(&mfp->mf_trans, old_nr);
 
@@ -5063,13 +5063,13 @@ mf_trans_del(MemFile* mfp, BlockId old_nr) {
 // Set mfp->fullFName according to mfp->fName and some other things.
 // Only called when creating or renaming the swapfile.   Either way it's a new
 // name so we must work out the full path name.
-void
+public void
 mf_set_ffname(MemFile* mfp) {
    mfp->fullFName = fiExpandAndCopy(mfp->fName, false);
 }
 
 // Make the name of the file used for the memfile a full path. Used before doing a :cd
-void
+public void
 mf_fullname(MemFile* mfp) {
    if (!mfp || !mfp->fName || !mfp->fullFName)
       return;
@@ -5080,7 +5080,7 @@ mf_fullname(MemFile* mfp) {
 }
 
 // true if there are any translations pending for 'mfp'
-int
+public int
 mf_need_trans(MemFile* mfp) {
    return (mfp->fName && mfp->mf_neg_count > 0);
 }
@@ -5274,7 +5274,7 @@ private int current_copyID = 0;
 private int free_unref_items(int copyID);
 
 // Return the next (unique) copy ID. Used for serializing nested structures.
-int
+public int
 get_copyID(void) {
    current_copyID += COPYID_INC;
    return current_copyID;
@@ -5301,7 +5301,7 @@ get_copyID(void) {
 // Perform garbage collection for lists and dicts.
 // When "testing" is true this is called from test_garbagecollect_now().
 // Return true if some memory was freed.
-int
+public int
 garbage_collect(int testing) {
    int copyID;
    int abort = false;
@@ -5463,7 +5463,7 @@ free_unref_items(int copyID) {
 //"list_stack" is used to add lists to be marked.  Can be NULL.
 //
 //Return true if setting references failed somehow.
-int
+public int
 setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack) {
    int      todo;
    int      abort = false;
@@ -5502,7 +5502,7 @@ setRefInSet(EeSet* eeset, int copyID, ListStack   **list_stack) {
 #if defined(PROTO)
 
 // Mark a dict and its items with "copyID". Return true if setting references failed somehow.
-int
+public int
 set_ref_in_dict(Bag* b, int copyID) {
    if (b && b->copyId != copyID) {
       b->copyId = copyID;
@@ -5513,7 +5513,7 @@ set_ref_in_dict(Bag* b, int copyID) {
 #endif
 
 // Mark a list and its items with "copyID". Return true if setting references failed somehow.
-int
+public int
 set_ref_in_list(List *ll, int copyID) {
    if (ll && ll->copyId != copyID) {
       ll->copyId = copyID;
@@ -5526,7 +5526,7 @@ set_ref_in_list(List *ll, int copyID) {
 //"ht_stack" is used to add hashtabs to be marked.  Can be NULL.
 //
 //Return true if setting references failed somehow.
-int
+public int
 set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
    ListItem    *li;
    int       abort = false;
@@ -5555,7 +5555,7 @@ set_ref_in_list_items(List* l, int copyID, HtStack** ht_stack) {
 }
 
 // Mark the partial in callback 'cb' with "copyID".
-Boole
+public Boole
 memSetRefInCallback(Callback* cb, int copyID) {
    if (!cb || !cb->name || *cb->name == ZERO || cb->cb_partial == NULL)
       return false;
@@ -5709,7 +5709,7 @@ set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack**
 // "ht_stack" is used to add hashtabs to be marked. May be NULL.
 //
 // Return true if setting references failed somehow.
-int
+public int
 set_ref_in_item(Var* tv, int copyID, HtStack** ht_stack, ListStack** list_stack){
    Boole abort = false;
 

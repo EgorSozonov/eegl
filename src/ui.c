@@ -30,7 +30,7 @@
 
 #include "eegl.h"
 #include <stdarg.h>
-int fstat(int fd, struct stat* statbuf); //from sys/stat.h
+public int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 #include <poll.h> //for poll
 
@@ -39,33 +39,33 @@ int stat(const char* restrict path, struct stat* restrict buf);
 //{{{vTerm (abstraction over a terminal)
 //{{{types
 
-typedef struct {
+private typedef struct {
    Short row;
    Short col;
 } VTermPos;
 
-typedef struct {
+private typedef struct {
     //libvterm relies on this memory to be zeroed out before it is returned by the allocator
     void *(*malloc)(Unt size);
     void (*free)(void* ptr);
 } VTermAllocatorFunctions;
 
 // Specifies a rectangular screen area.
-typedef struct {
+private typedef struct {
    Short start_row;
    Short end_row;
    Short start_col;
    Short end_col;
 } VTermRect;
 
-typedef struct {
+private typedef struct {
    CS str;
    Unt      len : 30;
    unsigned int  initial : 1;
    unsigned int  final : 1;
 } VTermStringFragment;
 
-typedef struct {
+private typedef struct {
   Short rows, cols;
 
   VTermAllocatorFunctions* allocator;
@@ -75,13 +75,13 @@ typedef struct {
   Unt tmpbuffer_len;  // default: 4096
 } VTermBuilder;
 
-enum {
+public enum {
   VTERM_BASELINE_NORMAL,
   VTERM_BASELINE_RAISE,
   VTERM_BASELINE_LOWER,
 };
 
-typedef struct {
+private typedef struct {
   VTermPos pos;
   int	   buttons;
 #define MOUSE_BUTTON_LEFT 0x01
@@ -95,7 +95,7 @@ typedef struct {
 } VTermMouseState;
 
 
-typedef enum {
+private typedef enum {
    // VTERM_PROP_NONE = 0
    VTERM_PROP_CURSORVISIBLE = 1, // bool
    VTERM_PROP_CURSORBLINK,       // bool
@@ -111,7 +111,7 @@ typedef enum {
    VTERM_N_PROPS
 } VTermProp;
 
-typedef enum {
+private typedef enum {
    VTERM_ATTR_BOLD_MASK       = 1 << 0,
    VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
    VTERM_ATTR_ITALIC_MASK     = 1 << 2,
@@ -121,7 +121,7 @@ typedef enum {
    VTERM_ALL_ATTRS_MASK = (1 << 12) - 1
 } VTermAttrMask;
 
-typedef union {
+private typedef union {
    int number;
    VTermStringFragment string;
    Boole boolean;
@@ -129,7 +129,7 @@ typedef union {
 } VTermValue;
 
 // All fields are optional, NULL when not used.
-typedef struct {
+private typedef struct {
    int (*damage)(VTermRect rect, void* user);
    int (*moverect)(VTermRect dest, VTermRect src, void* user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void* user);
@@ -142,7 +142,7 @@ typedef struct {
    int (*sb_clear)(void* user);
 } VTermScreenCallbacks;
 
-typedef enum {
+private typedef enum {
    VTERM_DAMAGE_CELL,    /* every cell */
    VTERM_DAMAGE_ROW,     /* entire rows */
    VTERM_DAMAGE_SCREEN,  /* entire screen */
@@ -151,7 +151,7 @@ typedef enum {
    VTERM_N_DAMAGES
 } VTermDamageSize;
 
-typedef enum {
+private typedef enum {
    // VTERM_ATTR_NONE = 0
    VTERM_ATTR_BOLD = 1,   // bool:   1, 22
    VTERM_ATTR_UNDERLINE,  // number: 4, 21, 24
@@ -162,7 +162,7 @@ typedef enum {
    VTERM_N_ATTRS
 } VTermAttr;
 
-typedef enum {
+private typedef enum {
    // VTERM_VALUETYPE_NONE = 0 */
    VTERM_VALUETYPE_BOOL = 1,
    VTERM_VALUETYPE_INT,
@@ -172,17 +172,17 @@ typedef enum {
    VTERM_N_VALUETYPES
 } VTermValueType;
 
-declStruct(VTermLineInfo);
+public declStruct(VTermLineInfo);
 
 //Copies of VTermState fields that the 'resize' callback might have reason to edit. 'resize' 
 //callback gets total control of these fields and may free-and-reallocate them if required. They
 //will be copied back from the struct after the callback has returned.
-typedef struct {
+private typedef struct {
    VTermPos pos;                // current cursor position
    VTermLineInfo *lineinfos[2]; // [1] may be NULL
 } VTermStateFields;
 
-enum {
+public enum {
    VTERM_PROP_CURSORSHAPE_BLOCK = 1,
    VTERM_PROP_CURSORSHAPE_UNDERLINE,
    VTERM_PROP_CURSORSHAPE_BAR_LEFT,
@@ -190,7 +190,7 @@ enum {
    VTERM_N_PROP_CURSORSHAPES
 };
 
-enum {
+public enum {
   VTERM_PROP_MOUSE_NONE = 0,
   VTERM_PROP_MOUSE_CLICK,
   VTERM_PROP_MOUSE_DRAG,
@@ -295,15 +295,15 @@ rect_intersects(VTermRect* a, VTermRect* b) {
 #define BUFIDX_PRIMARY   0
 #define BUFIDX_ALTSCREEN 1
 
-declStruct(VTermState);
+public declStruct(VTermState);
 declStruct(VTermScreen);
-declStruct(VTerm);
+public declStruct(VTerm);
 
-typedef void VTermOutputCallback(CS s, Unt len, void *user);
+private typedef void VTermOutputCallback(CS s, Unt len, void *user);
 
-declStruct(VTermGlyphInfo);
+public declStruct(VTermGlyphInfo);
 
-typedef struct {
+private typedef struct {
    int (*text)(Byte *bytes, Unt len, void *user);
    int (*control)(Byte control, void *user);
    int (*escape)(Byte *bytes, Unt len, void *user);
@@ -316,13 +316,13 @@ typedef struct {
    Boole (*resize)(Short rows, Short cols, void *user);
 } VTermParserCallbacks;
 
-struct VTermLineInfo {
+public struct VTermLineInfo {
    Unt doublewidth:1;  //DECDWL or DECDHL line
    Unt doubleheight:2; //DECDHL line (1=top 2=bottom)
    Unt continuation:1; //Line is a flow continuation of the previous
 };
 
-typedef struct {
+private typedef struct {
    int (*putglyph)(VTermGlyphInfo *info, VTermPos pos, void *user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void *user);
    int (*scrollrect)(VTermRect rect, int downward, int rightward, void *user);
@@ -337,7 +337,7 @@ typedef struct {
    int (*sb_clear)(void* user);
 } VTermStateCallbacks;
 
-struct VTerm {
+public struct VTerm {
    VTermAllocatorFunctions* allocator;
 
    int rows;
@@ -408,7 +408,7 @@ struct VTerm {
 };
 
 
-typedef struct {
+private typedef struct {
    int (*control)(Byte control, void* user);
    int (*csi)(CS leader, long args[], int argcount, CS intermed, Byte command, void *user);
    int (*osc)(int command, VTermStringFragment frag, void* user);
@@ -418,7 +418,7 @@ typedef struct {
    int (*sos)(VTermStringFragment frag, void* user);
 } VTermStateFallbacks;
 
-typedef enum {
+private typedef enum {
    VTERM_SELECTION_CLIPBOARD = (1<<0),
    VTERM_SELECTION_PRIMARY   = (1<<1),
    VTERM_SELECTION_SECONDARY = (1<<2),
@@ -426,12 +426,12 @@ typedef enum {
    VTERM_SELECTION_CUT0      = (1<<4), // also CUT1 .. CUT7 by bitshifting
 } VTermSelectionMask;
 
-typedef struct {
+private typedef struct {
    int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void* user);
    int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
 
-struct VTermState {
+public struct VTermState {
    VTerm* vt;
 
    VTermStateCallbacks* callbacks;
@@ -545,14 +545,14 @@ struct VTermState {
   } selection;
 };
 
-struct VTermGlyphInfo {
+public struct VTermGlyphInfo {
   Unt* chars;
   int width;
 };
 
 
 
-enum {
+public enum {
   C1_SS3 = 0x8f,
   C1_DCS = 0x90,
   C1_CSI = 0x9b,
@@ -673,7 +673,7 @@ private void vterm_state_savepen(VTermState* state, int save);
 # define DEBUG_PRINT_UTF8
 #endif
 
-struct UTF8DecoderData {
+public struct UTF8DecoderData {
   // number of bytes remaining in this codepoint
   int bytes_remaining;
 
@@ -809,7 +809,7 @@ struct UTF8DecoderData {
 //}}}
 //{{{keyboard
 
-typedef enum {
+private typedef enum {
   VTERM_MOD_NONE  = 0x00,
   VTERM_MOD_SHIFT = 0x01,
   VTERM_MOD_ALT   = 0x02,
@@ -819,7 +819,7 @@ typedef enum {
 } VTermModifier;
 
 // The order here must match keycodes[] in src/keyboard.c!
-typedef enum {
+private typedef enum {
   VTERM_KEY_NONE,
 
   VTERM_KEY_ENTER,
@@ -933,7 +933,7 @@ vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod) {
    vterm_push_output_sprintf(vt, "%s%c", mod & VTERM_MOD_ALT ? ESC_S : "", c);
 }
 
-typedef struct {
+private typedef struct {
    enum {
       KEYCODE_NONE,
       KEYCODE_LITERAL,
@@ -950,7 +950,7 @@ typedef struct {
 } keycodes_s;
 
 // Order here must be exactly the same as VTermKey enum!
-static keycodes_s keycodes[] = {
+public static keycodes_s keycodes[] = {
   { KEYCODE_NONE,       0, 0 }, // NONE
 
   { KEYCODE_ENTER,      '\r', 0 }, // ENTER
@@ -987,7 +987,7 @@ private keycodes_s keycodes_fn[] = {
   { KEYCODE_CSINUM, '~', 24 }, // F12
 };
 
-static keycodes_s keycodes_kp[] = {
+public static keycodes_s keycodes_kp[] = {
   { KEYCODE_KEYPAD, '0', 'p' }, // KP_0
   { KEYCODE_KEYPAD, '1', 'q' }, // KP_1
   { KEYCODE_KEYPAD, '2', 'r' }, // KP_2
@@ -1119,7 +1119,7 @@ vterm_keyboard_end_paste(VTerm *vt) {
 
 // API functions
 
-static void *
+public static void *
 default_malloc(Unt size) {
    void *ptr = malloc(size);
    memset(ptr, 0, size);
@@ -1469,7 +1469,7 @@ vterm_scroll_rect(
 //}}}
 //{{{unicode
 
-struct interval {
+public struct interval {
   int first;
   int last;
 };
@@ -1479,7 +1479,7 @@ struct interval {
 // sorted list of non-overlapping intervals of non-spacing characters
 // generated by "uniset +cat=Me +cat=Mn +cat=Cf -00AD +1160-11FF +200B c"
 // Replaced by the combining table from Eegl.
-static const struct interval combining[] = {
+public static const struct interval combining[] = {
    {0X0300, 0X036F},
    {0X0483, 0X0489},
    {0X0591, 0X05BD},
@@ -1810,7 +1810,7 @@ private int bisearch(uint32_t ucs, const struct interval* table, int max) {
 
 #ifdef WCWIDTH_FUNCTION
 // use a provided wcwidth() function
-int WCWIDTH_FUNCTION(uint32_t ucs);
+public int WCWIDTH_FUNCTION(uint32_t ucs);
 #else
 # define WCWIDTH_FUNCTION mk_wcwidth
 
@@ -1908,7 +1908,7 @@ vterm_unicode_is_ambiguous(uint32_t codepoint) {
 
 #ifdef IS_COMBINING_FUNCTION
 // Use a provided is_combining() function.
-int IS_COMBINING_FUNCTION(uint32_t codepoint);
+public int IS_COMBINING_FUNCTION(uint32_t codepoint);
 #else
 # define IS_COMBINING_FUNCTION vterm_is_combining
 private int
@@ -1918,7 +1918,7 @@ vterm_is_combining(uint32_t codepoint) {
 #endif
 
 #ifdef GET_SPECIAL_PTY_TYPE_FUNCTION
-int GET_SPECIAL_PTY_TYPE_FUNCTION(void);
+public int GET_SPECIAL_PTY_TYPE_FUNCTION(void);
 #else
 # define GET_SPECIAL_PTY_TYPE_FUNCTION vterm_get_special_pty_type_placeholder
 private int
@@ -1930,7 +1930,7 @@ vterm_get_special_pty_type_placeholder(void) {
 // ################################
 // ### The rest added by Paul Evans
 
-static const struct interval fullwidth[] = {
+public static const struct interval fullwidth[] = {
    { 0x1100, 0x115f },
    { 0x231a, 0x231b },
    { 0x2329, 0x232a },
@@ -2321,7 +2321,7 @@ vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED) {
 //}}}
 //{{{mouse
 
-static void 
+public static void 
 output_mouse(VTermState *state, int code, int pressed, int modifiers, int col, int row) {
    modifiers <<= 2;
 
@@ -2386,7 +2386,7 @@ vterm_mouse_button(VTerm *vt, int button, int pressed, VTermModifier mod) {
 
 #undef DEBUG_REFLOW
 
-struct VTermScreen {
+public struct VTermScreen {
    VTerm* vt;
    VTermState* state;
 
@@ -2434,7 +2434,7 @@ getcell(VTermScreen *screen, int row, int col) {
    return screen->buffer + (screen->cols * row) + col;
 }
 
-static ScreenCell *
+public static ScreenCell *
 alloc_buffer(VTermScreen* screen, int rows, int cols) {
    ScreenCell* new_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * rows * cols);
 
@@ -2447,7 +2447,7 @@ alloc_buffer(VTermScreen* screen, int rows, int cols) {
    return new_buffer;
 }
 
-static void 
+public static void 
 damagerect(VTermScreen* screen, VTermRect rect) {
    VTermRect emit;
 
@@ -2500,7 +2500,7 @@ damagerect(VTermScreen* screen, VTermRect rect) {
      (*screen->callbacks->damage)(emit, screen->cbdata);
 }
 
-static void 
+public static void 
 damagescreen(VTermScreen *screen) {
   VTermRect rect = {0,0,0,0};
   rect.end_row = screen->rows;
@@ -2509,7 +2509,7 @@ damagescreen(VTermScreen *screen) {
   damagerect(screen, rect);
 }
 
-static int 
+public static int 
 putglyph(VTermGlyphInfo* info, VTermPos pos, void *user) {
   VTermScreen *screen = user;
   ScreenCell *cell = getcell(screen, pos.row, pos.col);
@@ -2587,7 +2587,7 @@ moverect_internal(VTermRect dest, VTermRect src, void* user) {
   return 1;
 }
 
-static int 
+public static int 
 moverect_user(VTermRect dest, VTermRect src, void *user) {
   VTermScreen *screen = user;
 
@@ -2605,7 +2605,7 @@ moverect_user(VTermRect dest, VTermRect src, void *user) {
   return 1;
 }
 
-static int 
+public static int 
 erase_internal(VTermRect rect, void *user) {
    VTermScreen *screen = user;
 
@@ -2652,7 +2652,7 @@ erase(VTermRect rect, void *user) {
    return erase_user(rect, user);
 }
 
-static int 
+public static int 
 scrollrect(VTermRect rect, int downward, int rightward, void *user) {
    VTermScreen *screen = user;
 
@@ -2726,7 +2726,7 @@ scrollrect(VTermRect rect, int downward, int rightward, void *user) {
    return 1;
 }
 
-static int 
+public static int 
 movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user) {
   VTermScreen *screen = user;
 
@@ -2765,7 +2765,7 @@ setpenattr(VTermAttr attr, VTermValue* val, void* user) {
    return 0;
 }
 
-static int 
+public static int 
 settermprop(VTermProp prop, VTermValue *val, void *user) {
   VTermScreen *screen = user;
 
@@ -2796,7 +2796,7 @@ settermprop(VTermProp prop, VTermValue *val, void *user) {
 
 // How many cells are non-blank
 // Returns the position of the first blank cell in the trailing blank end
-static int 
+public static int 
 line_popcount(ScreenCell *buffer, int row, int rows UNUSED, int cols) {
   int col = cols - 1;
   while(col >= 0 && buffer[row * cols + col].chars[0] == 0)
@@ -2806,7 +2806,7 @@ line_popcount(ScreenCell *buffer, int row, int rows UNUSED, int cols) {
 
 #define REFLOW (screen->reflow)
 
-static void 
+public static void 
 resize_buffer(
     VTermScreen *screen, int bufidx, int newRows, int newCols, int active, 
     VTermStateFields *statefields
@@ -3049,7 +3049,7 @@ resize_buffer(
    return;
 }
 
-static int 
+public static int 
 resize(Short newRows, Short newCols, VTermStateFields *fields, void *user) {
    VTermScreen *screen = user;
 
@@ -3107,7 +3107,7 @@ resize(Short newRows, Short newCols, VTermStateFields *fields, void *user) {
    return 1;
 }
 
-static int 
+public static int 
 setlineinfo(Short row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* user) {
    VTermScreen *screen = user;
 
@@ -3140,7 +3140,7 @@ setlineinfo(Short row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* use
   return 1;
 }
 
-static int 
+public static int 
 sb_clear(void *user) {
   VTermScreen *screen = user;
 
@@ -3151,7 +3151,7 @@ sb_clear(void *user) {
   return 0;
 }
 
-static VTermStateCallbacks state_cbs = {
+public static VTermStateCallbacks state_cbs = {
   &putglyph, // putglyph
   &movecursor, // movecursor
   &scrollrect, // scrollrect
@@ -3166,7 +3166,7 @@ static VTermStateCallbacks state_cbs = {
 };
 
 //Allocate a new screen and return it. Return NULL when out of memory.
-static VTermScreen *
+public static VTermScreen *
 screen_new(VTerm *vt) {
    VTermState *state = vterm_obtain_state(vt);
    if (!state)
@@ -3455,12 +3455,12 @@ vterm_screen_flush_damage(VTermScreen *screen) {
 
 #undef DEBUG_PARSER
 
-static int
+public static int
 is_intermed(unsigned char c) {
    return c >= 0x20 && c <= 0x2f;
 }
 
-static void 
+public static void 
 do_control(VTerm *vt, unsigned char control) {
    if (vt->parser.callbacks && vt->parser.callbacks->control)
       if ((*vt->parser.callbacks->control)(control, vt->parser.cbdata))
@@ -3853,7 +3853,7 @@ vterm_parser_set_callbacks(VTerm* vt, VTermParserCallbacks* callbacks, void* use
 # define DEBUG_GLYPH_COMBINE
 #endif
 
-static Boole on_resize(Short rows, Short cols, void *user);
+public static Boole on_resize(Short rows, Short cols, void *user);
 
 // Some convenient wrappers to make callback functions easier
 
@@ -3872,7 +3872,7 @@ statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos) {
    DEBUG_LOG3("libvterm: Unhandled putglyph U+%04x at (%d,%d)\n", chars[0], pos.col, pos.row);
 }
 
-static void 
+public static void 
 updatecursor(VTermState *state, VTermPos *oldpos, int cancel_phantom) {
    if (state->pos.col == oldpos->col && state->pos.row == oldpos->row)
       return;
@@ -6076,7 +6076,7 @@ vterm_state_focus_out(VTermState *state) {
 #define TERM_START_FORCEIT 2
 #define TERM_START_SYSTEM  4
 
-typedef struct sb_line_S {
+private typedef struct sb_line_S {
    Unt cols;   // can differ per line
    Arr(CellDeco) sb_cells;   // allocated
    CellDeco sb_fillDeco;   // for short line
@@ -6084,7 +6084,7 @@ typedef struct sb_line_S {
 } ScrollbackLine;
 
 // typedef Terminal in eegl.h@@structs
-struct Terminal {
+public struct Terminal {
    Terminal* next;
 
    VTerm* vterm;
@@ -6278,7 +6278,7 @@ set_term_and_win_size(Terminal *term, JobOptions *opt) {
 }
 
 // Initialize job options for a terminal job. Caller may overrule some of them.
-void
+public void
 init_job_options(JobOptions *opt) {
    CLEAR_POINTER(opt);
 
@@ -6602,7 +6602,7 @@ startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags){
 }
 
 // ":terminal": open a terminal portal and execute a job in it.
-void
+public void
 c_terminal(Invocation* invo) {
    Var argvar[2];
    JobOptions opt;
@@ -6711,7 +6711,7 @@ c_terminal(Invocation* invo) {
    argvar[1].tag = VAR_UNKNOWN;
    startSubterminal(argvar, NULL, &opt, invo->forceit ? TERM_START_FORCEIT : 0);
 
-theend:
+public theend:
    eeglFree(shellComm);
    eeglFree(opt.jo_eof_chars);
 }
@@ -6759,7 +6759,7 @@ get_termkill_name(Expand *xp UNUSED, int idx) {
 }
 
 // Command-line expansion for :terminal [options]
-int
+public int
 expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches) {
    if (xp->input.c > xp->fullInput && *(xp->input.c - 1) == '=') {
       Byte *(*cb)(Expand *, int) = NULL;
@@ -6792,7 +6792,7 @@ expand_terminal_opt(CS pat, Expand* xp, RegMatch* rmp, OUT ExpandMatch* matches)
 
 //Write a :terminal command to the session file to restore the terminal in portal "po".
 //Return FAIL if writing fails.
-int
+public int
 term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
    const int   bufnr = po->book->fiNum;
    Terminal   *term = po->book->term;
@@ -6836,7 +6836,7 @@ term_write_session(FILE* fd, Portal* po, EeSet* terminal_bufs){
 }
 
 // Return true if "buf" has a terminal that should be restored.
-int
+public int
 term_should_restore(Book* book) {
    Terminal* term = book->term;
    return term && (term->command == NULL || STRCMP(term->command, "NONE") != 0);
@@ -6863,7 +6863,7 @@ private Terminal* terminals_to_free = NULL;
 // Called when wiping out a buffer. The actual terminal structure is freed later in 
 // free_unused_terminals(), because callbacks may wipe out a buffer while the terminal is still
 // referenced.
-void
+public void
 free_terminal(Book* book) {
    Terminal* term = book->term;
    if (!term)
@@ -6895,7 +6895,7 @@ free_terminal(Book* book) {
       in_terminal_loop = NULL;
 }
 
-void
+public void
 free_unused_terminals(void) {
    while (terminals_to_free) {
       Terminal* term = terminals_to_free;
@@ -7009,7 +7009,7 @@ update_cursor(Terminal *term, int redraw) {
 }
 
 // Invoked when "msg" output from a job was received.  Write it to the terminal of "buffer"
-void
+public void
 write_to_term(Book *book, CS msg, Channel* channel) {
    Unt   len = STRLEN(msg);
    Terminal* term = book->term;
@@ -7311,19 +7311,19 @@ term_job_running_check(Terminal* term, int check_job_status) {
 }
 
 // Return true if the job for "term" is still running.
-int
+public int
 term_job_running(Terminal *term) {
    return term_job_running_check(term, false);
 }
 
 // Return true if the job for "term" is still running, ignoring the job was "NONE".
-int
+public int
 term_job_running_not_none(Terminal *term) {
    return term_job_running(term) && !term_none_open(term);
 }
 
 // Return true if "term" has an active channel and used ":term NONE".
-int
+public int
 term_none_open(Terminal *term) {
    //Also consider the job finished when the channel is closed, to avoid a
    //race condition when updating the title.
@@ -7335,7 +7335,7 @@ term_none_open(Terminal *term) {
 
 // Used to confirm whether we would like to kill a terminal. Return OK when the user confirms to 
 // kill it. Return FAIL if the user selects otherwise.
-int
+public int
 term_confirm_stop(Book* book) {
    Byte buff[DIALOG_MSG_SIZE];
 
@@ -7349,7 +7349,7 @@ term_confirm_stop(Book* book) {
 
 // Used when exiting: kill the job in "book" if so desired. Return OK when the job finished.
 // Return FAIL when the job is still running.
-int
+public int
 term_try_stop_job(Book* book) {
    int       count;
    CS  how = book->term->tl_kill;
@@ -7610,7 +7610,7 @@ may_move_terminal_to_buffer(Terminal* term, int redraw) {
 
 // Check if any terminal timer expired.  If so, copy text from the terminal to the buffer.
 // Return the time until the next timer will expire.
-int
+public int
 term_check_timers(int next_due_arg, ProfTime *now) {
    Terminal* term;
    int       next_due = next_due_arg;
@@ -7673,14 +7673,14 @@ term_enter_normal_mode(void) {
 }
 
 // Return true if the current portal contains a terminal and we are in Terminal-Normal mode.
-int
+public int
 term_in_normal_mode(void) {
    Terminal *term = curBook->term;
    return term && term->isNormalMode;
 }
 
 // Switch from Terminal-Normal mode to Terminal-Job mode. Restores updating the terminal portal.
-void
+public void
 term_enter_job_mode(void) {
    Terminal   *term = curBook->term;
 
@@ -7696,7 +7696,7 @@ term_enter_job_mode(void) {
 //When "modify_other_keys" is set, then vgetc() should not reduce a key with modifiers into a basic
 //key.  However, we may only find out after calling vgetc().  Therefore vgetorpeek() will call 
 //check_no_reduce_keys() to update "no_reduce_keys" before using it.
-typedef enum {
+private typedef enum {
    NRKS_NONE,   // initial value
    NRKS_CHECK,  // modify_other_keys was off before calling vgetc()
    NRKS_SET,    // no_reduce_keys was incremented in term_vgetc() or
@@ -7714,7 +7714,7 @@ vterm_using_key_protocol(void) {
          || vterm_is_kitty_keyboard(curBook->term->vterm));
 }
 
-void
+public void
 check_no_reduce_keys(void) {
    if (no_reduce_key_state != NRKS_CHECK
        || no_reduce_keys >= 1
@@ -7762,7 +7762,7 @@ private int   mouse_was_outside = false;
 
 // Send key "c" with modifiers "modmask" to terminal. FAIL when the key needs to be handled in 
 // Normal mode. OK when the key was dropped or sent to the terminal.
-int
+public int
 send_keys_to_term(Terminal *term, Unt c, int modmask, int typed) {
    Byte msg[KEY_BUF_LEN];
    Unt len;
@@ -7888,7 +7888,7 @@ term_paste_register(Unt prev_c) {
 
 //Return true when waiting for a character in the terminal, the cursor of the terminal should be 
 //displayed.
-int
+public int
 terminal_is_active(void) {
    return in_terminal_loop != NULL;
 }
@@ -7948,14 +7948,14 @@ term_use_loop_check(int check_job_status) {
 }
 
 // Return true if the current portal contains a terminal and we are sending keys to the job.
-int
+public int
 term_use_loop(void) {
    return term_use_loop_check(false);
 }
 
 // Called when entering a portal with the mouse. If this is a terminal portal, we may 
 // want to change state.
-void
+public void
 term_enterPortaled(void) {
    Terminal *term = curBook->term;
 
@@ -7972,7 +7972,7 @@ term_enterPortaled(void) {
    enter_mouse_row = mouseRowG;
 }
 
-void
+public void
 term_focus_change(int in_focus) {
    Terminal *term = curBook->term;
 
@@ -8013,7 +8013,7 @@ ctrl_to_raw_c(int c) {
 //typahead. Return when the start of a CTRL-W command is typed or anything else that should be 
 //handled as a Normal mode command. Returns OK if a typed character is to be handled in Normal 
 //mode, FAIL if the terminal was closed.
-int
+public int
 terminal_loop(int blocking) {
    Unt c;
    Unt raw_c;
@@ -8142,7 +8142,7 @@ terminal_loop(int blocking) {
    }
    ret = FAIL;
 
-theend:
+public theend:
    in_terminal_loop = NULL;
    if (restoreCursor)
       prepare_restoreCursor_props();
@@ -8168,7 +8168,7 @@ may_toggle_cursor(Terminal *term) {
 
 //Convert the decorations of a vterm cell into a Decoration
 // TODO get rid of it through type unification
-Decoration
+public Decoration
 cellToDecoration(VTermDeco flags, VTermColor fg, VTermColor bg){
    return (Decoration) {
       .fg = fg, .bg = bg, .flags = flags, .hiId = 0
@@ -8609,7 +8609,7 @@ term_after_channel_closed(Terminal* term) {
 
 //If the current portal is a terminal in a popup portal and the job has finished, close the 
 //popup and to back to the previous portal. Otherwise return FAIL.
-int
+public int
 may_close_term_popup(void) {
    if (!portalIsPopup(curPor) || !curBook->term || term_job_running_not_none(curBook->term))
       return FAIL;
@@ -8623,7 +8623,7 @@ may_close_term_popup(void) {
 }
 
 // Called when a channel is going to be closed, before invoking the close callback.
-void
+public void
 term_channel_closing(Channel* ch) {
    for (Terminal* term = fstTermP; term != NULL; term = term->next) {
       if (term->job == ch->job && !term->isChannelClosed)
@@ -8632,7 +8632,7 @@ term_channel_closing(Channel* ch) {
 }
 
 // Called when a channel has been closed. If this was a terminal portal's chan, then finish it up
-void
+public void
 term_channel_closed(Channel* ch) {
    Terminal* term;
    Terminal* next_term;
@@ -8673,7 +8673,7 @@ term_channel_closed(Channel* ch) {
 }
 
 //To be called after resetting updating_screen: handle any terminal where the channel was closed.
-void
+public void
 term_check_channel_closed_recently(void) {
    Terminal* next_term;
 
@@ -8703,14 +8703,14 @@ term_line2screenline(VTermScreen* screen, VTermPos* pos, Unt max_col) {
 
 //Return true if portal "po" is to be redrawn with term_update_window().
 //Return false when there is no terminal running in this portal or it is in Terminal-Normal mode.
-int
+public int
 termDoUpdatePortal(Portal* po) {
    Terminal* term = po->book->term;
    return term && term->vterm && !term->isNormalMode;
 }
 
 // Called to update a portal that contains an active terminal.
-void
+public void
 termUpdatePortal(Portal* po) {
    Terminal* term = po->book->term;
    VTerm   *vterm;
@@ -8799,7 +8799,7 @@ termUpdatePortal(Portal* po) {
 }
 
 //Called after updating all portals: may reset dirty rows.
-void
+public void
 termDidUpdatePortal(Portal* po) {
    Terminal* term = po->book->term;
 
@@ -8811,14 +8811,14 @@ termDidUpdatePortal(Portal* po) {
 }
 
 //Return true if "po" is a terminal portals where the job has finished.
-int
+public int
 term_is_finished(Book* book) {
    return book->term && book->term->vterm == NULL;
 }
 
 //Return true if "po" is a terminal portals where the job has finished or we
 //are in Terminal-Normal mode, thus we show the buffer contents.
-int
+public int
 term_shobuffer(Book* book) {
    Terminal* term = book->term;
 
@@ -8826,7 +8826,7 @@ term_shobuffer(Book* book) {
 }
 
 //The current book is going to be changed. If there is terminal hiliting, remove it now.
-void
+public void
 uiBeforeLeavingTerminal(void) {
    Terminal* term = curBook->term;
 
@@ -8842,7 +8842,7 @@ uiBeforeLeavingTerminal(void) {
 
 //Get the screen decoration for a position in the buffer. Use a negative "col" to get the 
 //filler bg color
-Decoration
+public Decoration
 uiGetDeco(Portal* po, LineNr lnum, int col) {
    Book* book = po->book;
    Terminal* term = book->term;
@@ -9165,7 +9165,7 @@ create_vterm(Terminal* term, int rows, int cols) {
 }
 
 // Called when option 'liteTheme' was set, or when any hilite is changed.
-void
+public void
 term_update_colors_all(void) {
    Terminal* term;
 
@@ -9179,7 +9179,7 @@ term_update_colors_all(void) {
 }
 
 // Return the text to show for the book name and status.
-CS
+public CS
 term_get_status_text(Terminal* term) {
    if (term->tl_status_text)
       return term->tl_status_text;
@@ -9207,13 +9207,13 @@ term_get_status_text(Terminal* term) {
 }
 
 // Clear the cached value of the status text.
-void
+public void
 term_clear_status_text(Terminal* term) {
    EE_CLEAR(term->tl_status_text);
 }
 
 // Mark references in jobs of terminals.
-int
+public int
 set_ref_in_term(int copyID) {
    int      abort = false;
 
@@ -9267,7 +9267,7 @@ dump_term_color(FILE* fd, VTermColor color) {
 //
 // Repeating the previous screen cell:
 //    @{count}
-void
+public void
 f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
    Unt max_height = 0;
    Unt max_width = 0;
@@ -9826,7 +9826,7 @@ term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff) {
    // looks better without wrapping
    curPor->o.wrap = 0;
 
-theend:
+public theend:
    eeglFree(textline);
    eeglFree(fname_tofree);
    fclose(fd1);
@@ -9836,7 +9836,7 @@ theend:
 
 // If the current buffer shows the output of term_dumpdiff(), swap the top and bottom files.
 // Return FAIL when this is not possible.
-int
+public int
 term_swap_diff(void) {
    Terminal* term = curBook->term;
    LineNr line_count;
@@ -9920,19 +9920,19 @@ term_swap_diff(void) {
 }
 
 // "term_dumpdiff(filename, filename, options)" function
-void
+public void
 f_term_dumpdiff(Arr(Var) argvars, Var* returnVar) {
    term_load_dump(argvars, returnVar, true);
 }
 
 // "term_dumpload(filename, options)" function
-void
+public void
 f_term_dumpload(Arr(Var) argvars, Var* returnVar) {
    term_load_dump(argvars, returnVar, false);
 }
 
 // "term_getaltscreen(book)" function
-void
+public void
 f_term_getaltscreen(Var* argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getaltscreen()");
    if (book == NULL)
@@ -9941,7 +9941,7 @@ f_term_getaltscreen(Var* argvars, Var* returnVar) {
 }
 
 // "term_getcursor(book)" function
-void
+public void
 f_term_getcursor(Var* argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getcursor()");
    if (!book)
@@ -9965,7 +9965,7 @@ f_term_getcursor(Var* argvars, Var* returnVar) {
 }
 
 // "term_getjob(book)" function
-void
+public void
 f_term_getjob(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getjob()");
    if (book == NULL) {
@@ -9988,7 +9988,7 @@ get_row_number(Var *tv, Terminal *term) {
 }
 
 // "term_getline(book, row)" function
-void
+public void
 f_term_getline(Arr(Var) argvars, Var* returnVar) {
    Terminal* term;
    int row;
@@ -10026,7 +10026,7 @@ f_term_getline(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_getscrolled(book)" function
-void
+public void
 f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getscrolled()");
    if (!book)
@@ -10035,7 +10035,7 @@ f_term_getscrolled(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_getsize(book)" function
-void
+public void
 f_term_getsize(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_getsize()");
    if (!book)
@@ -10048,7 +10048,7 @@ f_term_getsize(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_setsize(book, rows, cols)" function
-void
+public void
 f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
    Terminal* term;
    Long rows, cols;
@@ -10074,7 +10074,7 @@ f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 // "term_getstatus(book)" function
-void
+public void
 f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
    Terminal* term;
    Byte val[100];
@@ -10096,7 +10096,7 @@ f_term_getstatus(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_gettitle(book)" function
-void
+public void
 f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
 
    returnVar->tag = VAR_STRING;
@@ -10110,7 +10110,7 @@ f_term_gettitle(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_gettty(book)" function
-void
+public void
 f_term_gettty(Arr(Var) argvars, Var* returnVar) {
    Book* book = term_get_buf(argvars, S"term_gettty()");
    if (!book)
@@ -10140,7 +10140,7 @@ f_term_gettty(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_list()" function
-void
+public void
 f_term_list(Arr(Var) argvars UNUSED, Var* returnVar) {
    if (!fstTermP)
       return;
@@ -10155,7 +10155,7 @@ f_term_list(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 // "term_scrape(book, row)" function
-void
+public void
 f_term_scrape(Arr(Var) argvars, Var* returnVar) {
    VTermScreen* screen = NULL;
    CS p;
@@ -10240,7 +10240,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 }
 
 // "term_sendkeys(book, keys)" function
-void
+public void
 f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_sendkeys()");
    if (!book)
@@ -10268,7 +10268,7 @@ f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 // "term_setapi(book, api)" function
-void
+public void
 f_term_setapi(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_setapi()");
    if (!book)
@@ -10280,7 +10280,7 @@ f_term_setapi(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 // "term_setrestore(book, command)" function
-void
+public void
 f_term_setrestore(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_setrestore()");
    if (!book)
@@ -10292,7 +10292,7 @@ f_term_setrestore(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 // "term_setkill(book, how)" function
-void
+public void
 f_term_setkill(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_setkill()");
    if (!book)
@@ -10304,7 +10304,7 @@ f_term_setkill(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 // "term_start(command, options)" function
-void
+public void
 f_term_start(Arr(Var) argvars, Var* returnVar) {
    JobOptions opt;
    init_job_options(OUT &opt);
@@ -10327,7 +10327,7 @@ f_term_start(Arr(Var) argvars, Var* returnVar) {
       returnVar->number = book->fiNum;
 }
 
-void
+public void
 f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
    Book* book = term_get_buf(argvars, S"term_wait()");
    if (!book)
@@ -10377,7 +10377,7 @@ f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 // Called when a channel has sent all the lines to a terminal.
 // Send a CTRL-D to mark the end of the text.
-void
+public void
 term_send_eof(Channel* ch) {
    Terminal* term;
    FOR_ALL_TERMS(term) {
@@ -10458,7 +10458,7 @@ term_report_winsize(Terminal* term, int rows, int cols) {
 
 
 #if defined(PROTO)
-Job*
+public Job*
 term_getjob(Terminal* term) {
    return term ? term->job : NULL;
 }
@@ -10482,7 +10482,7 @@ prepare_to_exit(void) {
 //Preserve files and exit. When called IObuff must contain a message.
 //NOTE: This may be called from deathtrap() in a signal handler, so avoid unsafe
 //functions, such as allocating memory.
-void
+public void
 preserve_exit(void) {
    prepare_to_exit();
 
@@ -10520,7 +10520,7 @@ preserve_exit(void) {
 //Or when a Linux GPM mouse event is waiting. Or when a clientserver message is on the queue.
 //"interrupted" (if not NULL) is set to true when no character is available
 //but something else needs to be done.
-int
+public int
 uiRealWaitForChar(int fd, Long msec, OUT int* interrupted) {
    static Boole busy = false;
 
@@ -10631,7 +10631,7 @@ mch_write(CS s, int len) {
 //}
 
 //Return true if the input comes from a terminal, false otherwise.
-int
+public int
 mch_input_isatty(void) {
    if (isatty(read_cmd_fd))
       return true;
@@ -10647,7 +10647,7 @@ mch_input_isatty(void) {
 //    stuff instead if the GUI is running.
 // 2. Input buffer stuff.
 
-void
+public void
 uiInit(void) {
    visibleColsG = 80;
    visibleRowsG = 24;
@@ -10661,7 +10661,7 @@ uiInit(void) {
    set_signals();
 }
 
-void
+public void
 ui_write(CS s, int len, int console UNUSED) {
    // Don't output anything in silent mode ("ex -s") unless 'verbose' set
    if (!(silentModeG && p_verbose == 0)) {
@@ -10677,7 +10677,7 @@ private CS ta_str = NULL;
 private int ta_off;   // offset for next char to use when ta_str != NULL
 private int ta_len;   // length of ta_str when it's not NULL
 
-void
+public void
 ui_inBytendo(CS s, int len) {
    int newlen = len;
    if (ta_str)
@@ -10733,7 +10733,7 @@ mch_inchar(
 // "changeCnt" is the value of typeBufG.changeCnt iff "buf" points into
 // it (null otherwise).  When typeBufG.changeCnt changes (e.g., when a message is received
 // from a remote client) "buf" can no longer be used.
-int
+public int
 ui_inchar(
    OUT CS buf,
    int maxlen,
@@ -10811,7 +10811,7 @@ ui_inchar(
 //If "wtime" == 0 do not wait for characters.
 //If "wtime" == n wait a short time for characters.
 //If "wtime" == -1 wait forever for characters.
-int
+public int
 inchar_loop(
    OUT CS buf,
    int maxlen,
@@ -11005,7 +11005,7 @@ waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input) {
 //but something else needs to be done.
 //Return true when a character is available.
 //When a GUI is being used, this will never get called -- webb
-int
+public int
 waitForChar(long msec, OUT int* interrupted, Boole ignore_input) {
    return ui_wait_for_chars_or_timer(msec, waitForCharOrMouse, interrupted, ignore_input) == OK;
 }
@@ -11017,14 +11017,14 @@ mch_char_avail(void) {
 }
 
 // Return non-zero if a character is available.
-int
+public int
 ui_char_avail(void) {
    return mch_char_avail();
 }
 
 //Delay for the given number of milliseconds. If ignoreinput is false then we
 //cancel the delay if a key is hit.
-void
+public void
 ui_delay(long msec_arg, int ignoreinput) {
    long msec = msec_arg;
 
@@ -11037,7 +11037,7 @@ ui_delay(long msec_arg, int ignoreinput) {
 //Try to get the current Eegl shell size. Put the result in visibleRowsG and visibleColsG.
 //Use the new sizes as defaults for @columns and @lines. Return OK when size could be 
 //determined, FAIL otherwise.
-int
+public int
 ui_get_shellsize(void) {
    int retval = mch_get_shellsize();
    check_shellsize();
@@ -11047,25 +11047,25 @@ ui_get_shellsize(void) {
 //Set the size of the Eegl shell according to visibleRowsG and visibleColsG, if possible.
 //The mch_set_shellsize() function will try to set the new size. If this is not possible, 
 //it will adjust visibleRowsG and visibleColsG.
-void
+public void
 ui_set_shellsize(int mustset UNUSED) {  // set by the user
    mch_set_shellsize();
 }
 
 // Get the portal position in pixels, if possible. Return FAIL when not possible.
-int
+public int
 uiGetPortPos(int* x, int* y, Long timeout UNUSED) {
    return term_get_winpos(x, y, timeout);
 }
 
-void
+public void
 ui_breakcheck(void) {
    ui_breakcheck_force(false);
 }
 
 // When "force" is true also check when the terminal is not in raw mode.
 // This is useful to read input on channels.
-void
+public void
 ui_breakcheck_force(Boole force) {
    static int recursive = false;
    int save_updating_screen = updating_screen;
@@ -11112,18 +11112,18 @@ private int inbufcount = 0;       // number of chars in inbuf[]
 // trash_input_buf() are functions for manipulating the input buffer.  These
 // are used by the gui_* calls when a GUI is used to handle keyboard input.
 
-int
+public int
 eeIsInputBufFull(void) {
    return (inbufcount >= INBUFLEN);
 }
 
-int
+public int
 eeIsInputBufEmpty(void) {
    return (inbufcount == 0);
 }
 
 #if defined(PROTO)
-int
+public int
 eeglFree_in_input_buf(void) {
    return (INBUFLEN - inbufcount);
 }
@@ -11131,7 +11131,7 @@ eeglFree_in_input_buf(void) {
 
 // Return the current contents of the input buffer and make it empty.
 // The returned pointer must be passed to set_input_buf() later.
-CS
+public CS
 get_input_buf(void) {
    // We use an arraylist to store the data pointer and the length.
    ArrayList* gap = ALLOC_ONE(ArrayList);
@@ -11147,7 +11147,7 @@ get_input_buf(void) {
 
 // Restore the input buffer with a pointer returned from get_input_buf(). The allocated memory is 
 // freed, this only works once! When "overwrite" is false input typed later is kept.
-void
+public void
 set_input_buf(CS p, Boole overwrite) {
    ArrayList   *gap = (ArrayList *)p;
    if (!gap)
@@ -11169,7 +11169,7 @@ set_input_buf(CS p, Boole overwrite) {
 
 // Add the given bytes to the input buffer Special keys start with CSI. A real CSI must have 
 // been translated to CSI KS_EXTRA KE_CSI.  K_SPECIAL doesn't require translation.
-void
+public void
 add_to_input_buf(CS s, int len) {
    if (inbufcount + len > INBUFLEN + MAX_KEY_CODE_LEN)
        return;       // Shouldn't ever happen!
@@ -11179,7 +11179,7 @@ add_to_input_buf(CS s, int len) {
 }
 
 // Add "str[len]" to the input buffer while escaping CSI bytes.
-void
+public void
 add_to_input_buf_csi(CS str, int len) {
    Byte buf[2];
 
@@ -11195,13 +11195,13 @@ add_to_input_buf_csi(CS str, int len) {
 }
 
 // Remove everything from the input buffer.  Called when ^C is found.
-void
+public void
 trash_input_buf(void) {
    inbufcount = 0;
 }
 
 // Read as much data from the input buffer as possible up to maxlen, and store it in buf.
-int
+public int
 read_from_input_buf(CS buf, long maxlen) {
    if (inbufcount == 0)   // if the buffer is empty, fill it
       fill_input_buf(true);
@@ -11215,7 +11215,7 @@ read_from_input_buf(CS buf, long maxlen) {
    return (int)maxlen;
 }
 
-void
+public void
 fill_input_buf(Boole exit_on_error) {
    int try;
    static int   did_read_something = false;
@@ -11307,7 +11307,7 @@ fill_input_buf(Boole exit_on_error) {
 #endif // USE_INPUT_BUF
 
 // Exit because of an input read error.
-void
+public void
 read_error_exit(void) {
    if (silentModeG)   // Normal way to exit for "ex -s"
    exitEegl(0);
@@ -11315,13 +11315,13 @@ read_error_exit(void) {
     preserve_exit();
 }
 
-void
+public void
 ui_cursor_shape(void) {
    ui_cursor_shape_forced(false);
 }
 
 // Check bounds for column number
-Unt
+public Unt
 check_col(Unt col) {
    if ((int)col >= screenLinesColsG)
       return screenLinesColsG - 1;
@@ -11329,7 +11329,7 @@ check_col(Unt col) {
 }
 
 // Check bounds for row number
-Unt
+public Unt
 check_row(Unt row) {
    if ((int)row >= screenLinesRowsG)
       return screenLinesRowsG - 1;
@@ -11337,7 +11337,7 @@ check_row(Unt row) {
 }
 
 // Return length of line "lnum" in screen cells for horizontal scrolling.
-long
+public long
 scroll_line_len(LineNr lnum) {
    CS p = ml_get(lnum);
    ColNr   col = 0;
@@ -11357,7 +11357,7 @@ scroll_line_len(LineNr lnum) {
 // Find the longest visible line number.  This is used for horizontal
 // scrolling.  If this is not possible (or not desired, by setting 'h' in
 // "guioptions") then the current line number is returned.
-LineNr
+public LineNr
 ui_find_longest_lnum(void) {
    LineNr ret = 0;
 
@@ -11390,7 +11390,7 @@ ui_find_longest_lnum(void) {
 }
 
 // Called when focus changed. 
-void
+public void
 ui_focus_change(int in_focus) {  // true if focus gained.
    static time_t   last_time = (time_t)0;
    int need_redraw = false;
@@ -11413,7 +11413,7 @@ ui_focus_change(int in_focus) {  // true if focus gained.
 }
 
 // Report the windows size "rows" and "cols" to tty "fd".
-int
+public int
 mch_report_winsize(int fd, int rows, int cols) {
    int retval = -1;
 
@@ -11453,7 +11453,7 @@ mch_report_winsize(int fd, int rows, int cols) {
 }
 
 // Try to set the window size to visibleRowsG and visibleColsG.
-void
+public void
 mch_set_shellsize(void) {
    if (*termCodesG[KS_CWS] != ZERO) {
       // NOTE: if you get an error here that term_set_winsize() is undefined, check the output of 
@@ -11465,7 +11465,7 @@ mch_set_shellsize(void) {
 }
 
 // Try to get the current terminal cell size. On failure, returns -1x-1
-void
+public void
 mch_calc_cell_size(CellSize* cs_out) {
    // get current tty size.
    struct winsize ws;
@@ -11498,7 +11498,7 @@ mch_calc_cell_size(CellSize* cs_out) {
 //3. from the termcap
 //4. keep using the old values
 //Return OK when size could be determined, FAIL otherwise.
-int
+public int
 mch_get_shellsize(void) {
    long   rows = 0;
    long   columns = 0;
@@ -11595,7 +11595,7 @@ private int tabPanelAlignS = ALIGN_LEFT;
 private int tpl_columns = 20;
 private int tpl_is_vert = false;
 
-typedef struct {
+private typedef struct {
    Portal*po;
    Portal* currPort;
    CS user_defined;
@@ -11607,7 +11607,7 @@ typedef struct {
    Unt col_end;
 } Tabpanel;
 
-int
+public int
 uiValidateTabpanelopt(CS new) {
    if (!new) {
       return OK;
@@ -11651,7 +11651,7 @@ uiValidateTabpanelopt(CS new) {
 }
 
 // Return the width of tabpanel.
-int
+public int
 tabpanel_width(void) {
    if (p_stpl) {
       if (!firstTabG || !firstTabG->next)
@@ -11666,13 +11666,13 @@ tabpanel_width(void) {
 }
 
 // Return the offset of a portal considering the width of tabpanel.
-int
+public int
 tabpanel_leftcol(void) {
    return tabPanelAlignS == ALIGN_RIGHT ? 0 : tabpanel_width();
 }
 
 // draw the tabpanel.
-void
+public void
 draw_tabpanel(void) {
    int saved_keyWasTypedG = keyWasTypedG;
    int saved_gotInterruptG = gotInterruptG;
@@ -11719,7 +11719,7 @@ draw_tabpanel(void) {
 }
 
 // Return tabNr when clicking and dragging in tabpanel. UNT if not found.
-Unt
+public Unt
 get_tabNr_on_tabpanel(void) {
    Unt maxwidth = tabpanel_width();
 

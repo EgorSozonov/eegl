@@ -83,14 +83,14 @@ private void singleChar(Unt off, int row, int col);
 // Ugly global: overrule decoration used by singleChar()
 private VTermDeco screen_charDeco = DECO_NONE;
 
-void
+public void
 drawInit() {
    defaultDecoP = getFullDecoration(0);
    activeDecoP = defaultDecoP;
 }
 
 //If "po" is a popup portal, then get the "Pmenu" hilite decoration.
-Decoration
+public Decoration
 getPortcolorDeco(Portal* po) {
    if (PORTAL_IS_POPUP(po)) {
       if (isInfoPopup(po))
@@ -202,7 +202,7 @@ charNeedsRedraw(int from, int to, int cols) {
 }
 
 //Return the index in screenTextP[] for the current screen line.
-int
+public int
 screen_get_current_line_off(void) {
    return (int)(currScreenLineS - screenTextP);
 }
@@ -218,7 +218,7 @@ blocked_by_popup(int row, int col) {
 }
 
 // Reset the hiliting.  Used before clearing the screen.
-void
+public void
 resetActiveDeco(void) {
    //Use decorations that are very unlikely to appear in text
    activeDecoP.flags = DECO_BOLD | DECO_UNDERLINE | DECO_INVERSE;
@@ -259,7 +259,7 @@ fillchar_vsep(OUT Decoration* deco) {
 //   When false, use "last_vcol" for screenColS[] of the columns to clear.
 //   When true, use an increasing sequence starting from "last_vcol + 1" for
 //   screenColS[] of the columns to clear.
-void
+public void
 screen_line(
    int row,
    int coloff,
@@ -400,7 +400,7 @@ drawVerticalSeparator(Portal* po, int row) {
 
 //Return true if the status line of portal "po" is connected to the status line of the portal 
 //right of it.  If not, then it's a vertical separator. Only call if (po->vsepWidth != 0).
-int
+public int
 stl_connected(Portal* po) {
    Frame* fr = po->frame;
    while (fr->parent) {
@@ -417,7 +417,7 @@ stl_connected(Portal* po) {
 }
 
 //Get the value to show for the language mappings, active @keymap
-int
+public int
 drawGetKeymapStr(Portal* po, OUT Text buf) {       // buffer for the result
    if (po->book->o.b_p_iminsert != B_IMODE_LMAP)
       return 0;
@@ -581,12 +581,12 @@ statusLineOrRuler(Portal* po, Boole draw_ruler) {
    drawTextLen(p, len, row, col, deco.flags);
    col += eeglStrNsize(p, len);
 
-theend:
+public theend:
    busy = false;
 }
 
 // Output a single character directly to the screen and update screenTextP.
-void
+public void
 screen_putchar(int c, Unt row, Unt col, char decoFlags) {
    Byte buf[MB_MAXBYTES + 1];
 
@@ -612,7 +612,7 @@ utfc_char2bytes(int off, CS buf) {
 //Get a single character directly from screenTextP into "bytes", which must
 //have a size of "MB_MAXBYTES + 1".
 //If "deco" is not NULL, return the character's decoration flags into "*deco".
-void
+public void
 screen_getbytes(int row, int col, Byte* bytes, OUT Byte* decoFlags) {
    // safety check
    if (!screenTextP || row >= screenLinesRowsG || col >= screenLinesColsG)
@@ -645,13 +645,13 @@ screen_comp_differs(int off, int* characterCombiner) {
 //decorations 'deco', and update screenTextP[] and screenDecosP[].
 //Note: only outputs within one row, message is truncated at screen boundary!
 //Note: if screenTextP[], row and/or col is invalid, nothing is done.
-void
+public void
 drawText(CS text, Unt row, Unt col, Byte decoFlags){
    drawTextLen(text, -1, row, col, decoFlags);
 }
 
 // Like drawText(), but output "text[len]".  When "len" is -1, output up to a ZERO.
-void
+public void
 drawTextLen(
    CS text,
    int textlen,
@@ -766,7 +766,7 @@ start_search_hl(void) {
 }
 
 // Clean up for @hlsearch hiliting.
-void
+public void
 end_search_hl(void) {
    if (!screenSearchP.rm.regprog)
       return;
@@ -775,7 +775,7 @@ end_search_hl(void) {
    screenSearchP.rm.regprog = NULL;
 }
 
-void
+public void
 drawStopHilite(void) {
    if (activeDecoP.hiId == SHORT) {
       return;
@@ -815,7 +815,7 @@ drawStopHilite(void) {
 
 //Reset the colors for a cterm. Used when leaving Eegl. The machine-specific code may override this
 //again.
-void
+public void
 reset_cterm_colors(void) {
    // set Normal cterm colors
    out_str(termCodesG[KS_OP]);
@@ -875,7 +875,7 @@ singleChar(Unt off, int row, int col) {
 
 // Draw a rectangle of the screen, inverted when "invert" is true.
 // This uses the contents of screenTextP[] and doesn't change it.
-void
+public void
 screen_draw_rectangle(int row, int col, int height, int width, Boole invert) {
    if (!screenTextP)
       return;
@@ -920,7 +920,7 @@ space_to_screenline(int off, Byte decoFlags) {
 //Fill the screen from "start_row" to "end_row" (exclusive), from "start_col" to "end_col" 
 //(exclusive) with character "c1" in first column followed by "c2" in the other columns. 
 //Use decorations "decoFlags".
-void
+public void
 fillRowsWithTwoChars(
    Unt start_row,
    Unt end_row,
@@ -1040,7 +1040,7 @@ fillRowsWithTwoChars(
 }
 
 // Check if there should be a delay. Used before clearing or redrawing the screen or the commline
-void
+public void
 check_for_delay(int check_msg_scroll) {
    if ((emsg_on_display || (check_msg_scroll && msg_scroll))
        && !did_wait_return
@@ -1066,7 +1066,7 @@ clear_tabIndsG(void) {
 //  If "doclear" is true: clear screen if it has been resized.
 //  Returns true if there is a valid screen to write to.
 //  Returns false when starting up and screen not initialized yet.
-Boole
+public Boole
 screen_valid(Boole doclear) {
    screenalloc(doclear);      // allocate screen buffers if size changed
    return (screenTextP != NULL);
@@ -1080,7 +1080,7 @@ screen_valid(Boole doclear) {
 //the shell size. Always use screenLinesRowsG and screenLinesColsG to access items
 //in screenTextP[]. Use visibleRowsG and visibleColsG for positioning text etc. where the
 //final size of the shell is needed.
-void
+public void
 screenalloc(Boole doclear) {
    int new_row, old_row;
    Portal* po;
@@ -1089,7 +1089,7 @@ screenalloc(Boole doclear) {
    int retry_count = 0;
    int found_null;
 
-retry:
+public retry:
    //Allocation of the screen buffers is done only when the size changes and
    //when visibleRowsG and visibleColsG have been set and we have started doing full screen stuff.
    if ((screenTextP
@@ -1319,7 +1319,7 @@ retry:
    }
 }
 
-void
+public void
 free_screenlines(void) {
    EE_CLEAR(screenLinesUCG);
    EE_CLEAR(screenLinesCG);
@@ -1337,7 +1337,7 @@ free_screenlines(void) {
 //Clear the screen. May delay if there is something the user should read. Allocated the screen for
 //resizing if needed. Return true when the screen was actually cleared, false if all display
 //cells were marked for updating.
-int
+public int
 screenclear(void) {
    check_for_delay(false);
    screenalloc(false);          // allocate screen buffers if size changed
@@ -1417,7 +1417,7 @@ lineinvalid(Unt off, int width) {
 }
 
 // To be called when chars were sent to the terminal directly, outputting test on "screen_lnum".
-void
+public void
 drawLineWasClobbered(int screen_lnum) {
    lineinvalid(lineStartsP[screen_lnum], (int)visibleColsG);
 }
@@ -1443,7 +1443,7 @@ linecopy(int to, int from, Portal* po) {
 //Return true if clearing with term string "p" would work.
 //It can't work when the string is empty or it won't set the right background.
 //Don't clear to end-of-line when there are popups, it may cause flicker.
-int
+public int
 can_clear(CS p) {
     return (*p != ZERO 
              && (*termCodesG[KS_UT] != ZERO)
@@ -1453,7 +1453,7 @@ can_clear(CS p) {
 
 //Reset cursor position. Use whenever cursor was moved because of outputting
 //something directly to the screen (shell commands) or a terminal control code.
-void
+public void
 screen_start(void) {
    screenCursRowG = screenCursColG = 9999;
 }
@@ -1461,7 +1461,7 @@ screen_start(void) {
 //Move the cursor to position "row","col" in the screen.
 //This tries to find the most efficient way to move, minimizing the number of
 //characters sent to the terminal.
-void
+public void
 windgoto(int row, int col) {
   int i;
   int plan;
@@ -1639,13 +1639,13 @@ windgoto(int row, int col) {
 }
 
 // Set cursor to its position in the current portal.
-void
+public void
 setcursor(void) {
    setcursor_mayforce(false);
 }
 
 // Set cursor to its position in the current portal. When "force" is true also when not redrawing.
-void
+public void
 setcursor_mayforce(int force) {
    if (force || redrawing()) {
       validate_cursor();
@@ -1658,7 +1658,7 @@ setcursor_mayforce(int force) {
 //If 'invalid' is true the po->lines[].bookLnum is invalidated.
 //If 'mayclear' is true the screen will be cleared if it is faster than scrolling.
 //Return FAIL if the lines are not inserted, OK for success.
-int
+public int
 insertLinesIntoPortal(
    Portal   *po,
    int      row,
@@ -1725,7 +1725,7 @@ insertLinesIntoPortal(
 //If "invalid" is true curPor->lines[] is invalidated.
 //If "mayclear" is true the screen will be cleared if it is faster than scrolling
 //Return OK for success, FAIL if the lines are not deleted.
-int
+public int
 deleteLinesFromPortal(
    Portal   *po,
    int      row,
@@ -1864,7 +1864,7 @@ markFollowingPortalsForRedraw(Portal* po) {
 //"row" and "end" are relative to the start of the region.
 //
 //return FAIL for failure, OK for success.
-int
+public int
 drawInsertLines(
    int off,
    int row,
@@ -2042,7 +2042,7 @@ drawInsertLines(
 //"row" and "end" are relative to the start of the region.
 //
 //Return OK for success, FAIL if the lines are not deleted.
-int
+public int
 screen_del_lines(
    int      off,
    int      row,
@@ -2218,7 +2218,7 @@ screen_del_lines(
 }
 
 // Return true when postponing displaying the mode message: when not redrawing or inside a mapping
-int
+public int
 skip_showmode(void) {
    // Call char_avail() only when we are going to show something, because it
    // takes a bit of time. redrawing() may also call char_avail().
@@ -2352,7 +2352,7 @@ ruler(Portal* po, int always) {
 //If mustClearCommlineG, clear the rest of the cmdline. If not mustClearCommlineG, there may be a 
 //message there that needs to be cleared only if a mode is shown. If redrawModeG is true show or 
 //clear the mode. Return the length of the message (0 if no message).
-int
+public int
 showmode(void) {
    int      length = 0;
    int      do_mode;
@@ -2472,7 +2472,7 @@ msg_pos_mode(void) {
 
 //Delete mode message.  Used when ESC is typed which is expected to end
 //Insert mode (but Insert mode didn't end yet!). Caller should check "isModeDisplayedG".
-void
+public void
 unshowmode(int force) {
    // Don't delete it right now, when not redrawing or inside a mapping.
    if (!redrawing() || (!force && char_avail() && !keyWasTypedG))
@@ -2482,7 +2482,7 @@ unshowmode(int force) {
 }
 
 // Clear the mode message.
-void
+public void
 clearmode(void) {
    int msgRowSaved = msgRowG;
    int saveMsgCol = msgColG;
@@ -2507,7 +2507,7 @@ recording_mode(char flags) {
 
 //Get buffer name for "book" into nameBuffG[].
 //Take care of special book names and translate special characters.
-void
+public void
 drawGetTranslatedBookName(Book* book) {
    if (bookSpName(book))
       copySubstrToAllocation(nameBuffG, (Text){bookSpName(book), MAXPATHL - 1});
@@ -2519,7 +2519,7 @@ drawGetTranslatedBookName(Book* book) {
 }
 
 // Get the character to use in a status line. Write its decorations into "*deco"
-Unt
+public Unt
 statusLineNextChar(OUT Decoration* deco, Portal* po) {
    if (bt_terminal(po->book)) {
       if (po == curPor) {
@@ -2539,7 +2539,7 @@ statusLineNextChar(OUT Decoration* deco, Portal* po) {
 }
 
 // Return true if redrawing should currently be done.
-int
+public int
 redrawing(void) {
    if (disable_redraw_for_testing)
       return 0;
@@ -2550,7 +2550,7 @@ redrawing(void) {
 }
 
 // Return true if printing messages should currently be done.
-int
+public int
 messaging(void) {
    return (!(p_lz && char_avail() && !keyWasTypedG));
 }
@@ -2561,7 +2561,7 @@ messaging(void) {
 
 #define COL_RULER 17       // columns needed by standard ruler
 
-void
+public void
 computeColumnsForRulerAndCommand(void) {
    int last_has_status = last_stl_height(false) > 0;
 
@@ -2587,7 +2587,7 @@ computeColumnsForRulerAndCommand(void) {
 //Return the width of the 'number' and 'relativenumber' column.
 //Caller may need to check if 'number' or 'relativenumber' is set.
 //Otherwise it depends on 'numberwidth' and the line count.
-int
+public int
 number_width(Portal* po) {
    // cursor line shows absolute line number
    LineNr lnum = po->book->mem.lineCount;
@@ -2616,13 +2616,13 @@ number_width(Portal* po) {
 }
 
 // Return the current cursor column. This is the actual position on the screen. First column is 0.
-int
+public int
 screen_screencol(void) {
    return screenCursColG;
 }
 
 // Return the current cursor row. This is the actual position on the screen. First row is 0.
-int
+public int
 screen_screenrow(void) {
     return screenCursRowG;
 }
@@ -2651,7 +2651,7 @@ get_encoded_char_adv(Byte **p) {
    return strAdvanceMultibyte(p);
 }
 
-typedef struct {
+private typedef struct {
    Unt* cp;
    Text   name;
 } CharsTableEntry;
@@ -2700,7 +2700,7 @@ field_value_err(OUT ErrBuilder* errb, CS fmt, CS field) {
 //portal-local value. "is_listchars" is true for "listchars" and false for "fillchars".
 //When "apply" is false do not store the flags, only check for errors.
 //Assume monocell characters. Return error message, NULL if it's OK.
-CS
+public CS
 set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
    int       round, i, entries;
    CS  p;
@@ -2901,19 +2901,19 @@ set_chars_option(CS newVal, Boole is_listchars, OUT ErrBuilder* errb){
 }
 
 // Handle the new value of @fillchars
-CS
+public CS
 drawSetFillChars(CS newVal, OUT ErrBuilder* errb){
    return set_chars_option(newVal, false, errb);
 }
 
 // Handle the new value of @listchars.
-CS
+public CS
 drawSetListChars(CS newVal, OUT ErrBuilder* errb) {
    return set_chars_option(newVal, true, errb);
 }
 
 // Function given to expandGeneric() to obtain possible arguments of the @fillchars
-CS
+public CS
 get_fillchars_name(Expand *xp UNUSED, int idx) {
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(fillCharsTable))
       return NULL;
@@ -2921,7 +2921,7 @@ get_fillchars_name(Expand *xp UNUSED, int idx) {
 }
 
 // Function given to expandGeneric() to obtain possible arguments of the @listchars
-CS
+public CS
 get_listchars_name(Expand *xp UNUSED, int idx) {
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(listCharTable))
       return NULL;
@@ -2931,7 +2931,7 @@ get_listchars_name(Expand *xp UNUSED, int idx) {
 
 //Check the values of @listchars and @fillchars.
 //Return an untranslated error messages if any of them is invalid, NULL otherwise.
-CS
+public CS
 check_chars_options(CS newVal) {
    ErrBuilder errb = {};
    if (drawSetListChars(newVal, &errb))
@@ -3004,7 +3004,7 @@ private int  didUpdateOnePortal;
 //Based on the current value of curPor->topLine, transfer a screenful
 //of stuff from Filemem to screenTextP[], and update curPor->bottomLine.
 //Return OK when the screen was updated, FAIL if it was not done.
-int
+public int
 drawUpdateScreen(Unt type_arg) {
    Unt type = type_arg;
    Portal* po;
@@ -3222,7 +3222,7 @@ drawUpdateScreen(Unt type_arg) {
 //
 //If inversion is possible we use it. Else '=' characters are used.
 //If "ignore_pum" is true, also redraw statusline when the popup menu is displayed.
-void
+public void
 redrawPortalStatusLine(Portal* po, Boole ignore_pum) {
    Decoration deco;
    static Boole busy = false;
@@ -3342,7 +3342,7 @@ statusLineCustom(Portal* po) {
 
 //Show current status info in ruler and various other places
 //If always is false, only show ruler if position has changed.
-void
+public void
 showruler(int always) {
    if (!always && !redrawing())
       return;
@@ -3361,14 +3361,14 @@ showruler(int always) {
 }
 
 // To be called when "updating_screen" was set before and now the postponed side effects may happen
-void
+public void
 after_updating_screen(int may_resize_shell UNUSED) {
     updating_screen = false;
     term_check_channel_closed_recently();
 }
 
 // Update all portals into the current book.
-void
+public void
 drawUpdateCurBook(Unt type) {
    drawCurBookLater(type);
    drawUpdateScreen(type);
@@ -3610,7 +3610,7 @@ fold_line(
    }
 }
 
-typedef struct {
+private typedef struct {
    int topEnd;
    int midStart;
    int midEnd;
@@ -4568,7 +4568,7 @@ updatePortal(Portal* po) {
 
 //Redraw as soon as possible. When the command line is not scrolled, redraw right away and restore
 //what was on the command line. Return a code indicating what happened.
-int
+public int
 redraw_asap(int type) {
    int cols = screenLinesColsG;
    int ret = 0;
@@ -4653,7 +4653,7 @@ redraw_asap(int type) {
 //it belongs. If hiliting was changed a redraw is needed.
 //If "call_drawUpdateScreen" is false don't call drawUpdateScreen() when at the command line.
 //If "redraw_message" is true.
-void
+public void
 redraw_after_callback(int call_drawUpdateScreen, int do_message) {
    ++redrawingForCallbackS;
 
@@ -4699,12 +4699,12 @@ redraw_after_callback(int call_drawUpdateScreen, int do_message) {
 //Redraw the current portal later, with drawUpdateScreen(type).
 //Set mustRedrawG only if not already set to a higher value.
 //E.g. if mustRedrawG is UPD_CLEAR, type UPD_NOT_VALID will do nothing.
-void
+public void
 redraw_later(int type) {
    redrawPortLater(curPor, type);
 }
 
-void
+public void
 redrawPortLater(Portal* po, Unt type) {
    if (!isExitingG && !redraw_not_allowed && po->redrawType < type) {
       po->redrawType = type;
@@ -4717,14 +4717,14 @@ redrawPortLater(Portal* po, Unt type) {
 
 //Force a complete redraw later.  Also resets the hiliting.  To be used
 //after executing a shell command that messes up the screen.
-void
+public void
 redraw_later_clear(void) {
    redraw_all_later(UPD_CLEAR);
    resetActiveDeco();
 }
 
 // Mark all portals to be redrawn later.  Except popup portals.
-void
+public void
 redraw_all_later(Unt type) {
    Portal* po;
    FOR_ALL_PORTALS(po)
@@ -4735,7 +4735,7 @@ redraw_all_later(Unt type) {
 
 #if 0  // not actually used yet, it probably should
 //Mark all portals, including popup portals, to be redrawn.
-void
+public void
 redraw_all_portals_later(int type) {
    redraw_all_later(type);
    popup_redraw_all();      // redraw all popup portals
@@ -4743,19 +4743,19 @@ redraw_all_portals_later(int type) {
 #endif
 
 //Set "mustRedrawG" to "type" unless it already has a higher value or it is currently not allowed.
-void
+public void
 drawSetMustRedraw(Unt type) {
    if (!redraw_not_allowed && mustRedrawG < type)
       mustRedrawG = type;
 }
 
 //Mark all portals that are editing the current buffer to be updated later.
-void
+public void
 drawCurBookLater(int type) {
    drawBookLater(curBook, type);
 }
 
-void
+public void
 drawBookLater(Book* book, int type) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
@@ -4767,7 +4767,7 @@ drawBookLater(Book* book, int type) {
       redrawPortLater(curPor, type);
 }
 
-void
+public void
 drawBookLineLater(Book* book, LineNr lnum) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
@@ -4776,7 +4776,7 @@ drawBookLineLater(Book* book, LineNr lnum) {
    } 
 }
 
-void
+public void
 drawBookAndStatusLater(Book* book, int type) {
    if (wild_menu_showing != 0)
       // Don't redraw while the command line completion is displayed, it would disappear.
@@ -4791,7 +4791,7 @@ drawBookAndStatusLater(Book* book, int type) {
 }
 
 // mark all status lines for redraw; used after first :cd
-void
+public void
 status_redraw_all(void) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
@@ -4801,7 +4801,7 @@ status_redraw_all(void) {
 }
 
 // mark all status lines of the current book for redraw
-void
+public void
 drawAllStatusLinesOfCurBookLater(void) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
@@ -4813,7 +4813,7 @@ drawAllStatusLinesOfCurBookLater(void) {
 }
 
 // Redraw all status lines that need to be redrawn.
-void
+public void
 redraw_statuslines(void) {
    Portal* po;
    FOR_ALL_PORTALS(po) {
@@ -4826,7 +4826,7 @@ redraw_statuslines(void) {
 }
 
 // Redraw all status lines at the bottom of frame "frp".
-void
+public void
 redrawAllStatusLinesInFrame(Frame *fr) {
    if (fr->layout == FR_LEAF)
       fr->port->statusLineNeedsRedraw = true;
@@ -4847,12 +4847,12 @@ redrawAllStatusLinesInFrame(Frame *fr) {
 //from a change command.
 //Note that when also inserting/deleting lines redrawTop and redrawBott
 //may become invalid and the whole portal will have to be redrawn.
-void
+public void
 drawPortLineLater(Portal* po, LineNr lnum) {
    redrawPortRangeLater(po, lnum, lnum);
 }
 
-void
+public void
 redrawPortRangeLater(Portal* po, LineNr first, LineNr last) {
    if (last >= po->topLine && first < po->bottomLine) {
       if (po->redrawTop == 0 || po->redrawTop > first)
@@ -4917,7 +4917,7 @@ computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
 }
 
 // structure with variables passed between drawLineOnScreen() and other functions
-typedef struct {
+private typedef struct {
    Byte drawState;   // what to draw next
 
    LineNr lnum;      // line number to be drawn
@@ -5248,7 +5248,7 @@ textprop_size_after_trunc(
 //is not NULL then "countExtraBytes" and "extraBytes" are adjusted for any padding, right-align and 
 //truncation. Otherwise only the size is computed. When "numDecoCells" is NULL returns the number 
 //of screen cells used. Otherwise returns true when drawing continues on the next line.
-int
+public int
 text_prop_position(
    Portal* po,
    TextProp* t,
@@ -5517,7 +5517,7 @@ applyCursorlineHilite(DrawCtx* m) {
 
 #define VCOL_HLC (m->vcol - m->virtualOffset)
 
-typedef struct {
+private typedef struct {
    Decoration lineDecoSaved; 
    Boole signPresent; 
    LineNr lnum;
@@ -5549,7 +5549,7 @@ typedef struct {
    ColNr leadcol;      // start of leading spaces
 } Subcontext;
 
-typedef struct {
+private typedef struct {
    Boole decoPriority;
    int mb_c; 
    Boole mb_utf8; 
@@ -6838,7 +6838,7 @@ drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port) {
 //line, otherwise it is set to 0.
 //
 //Return the number of last row the line occupies.
-int
+public int
 drawLineOnScreen(
    Portal* port,
    LineNr lnum,
@@ -7284,7 +7284,7 @@ drawLineOnScreen(
 //}}}
 //{{{api functions
 
-void
+public void
 f_screenattr(Arr(Var) argvars, Var* returnVar) {
    Byte flags;
 
@@ -7297,7 +7297,7 @@ f_screenattr(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = flags;
 }
 
-void
+public void
 f_screenchar(Arr(Var) argvars, Var* returnVar) {
    int row = (int)varGetNumberChk(argvars, NULL) - 1;
    int col = (int)varGetNumberChk(argvars + 1, NULL) - 1;
@@ -7312,7 +7312,7 @@ f_screenchar(Arr(Var) argvars, Var* returnVar) {
    returnVar->number = c;
 }
 
-void
+public void
 f_screenchars(Arr(Var) argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
@@ -7332,17 +7332,17 @@ f_screenchars(Arr(Var) argvars, Var* returnVar) {
 }
 
 //"screencol()" function. First column is 1 to be consistent with virtcol().
-void
+public void
 f_screencol(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->number = screen_screencol() + 1;
 }
 
-void
+public void
 f_screenrow(Arr(Var) argvars UNUSED, Var* returnVar) {
    returnVar->number = screen_screenrow() + 1;
 }
 
-void
+public void
 f_screenstring(Arr(Var) argvars, Var* returnVar) {
    Byte buf[MB_MAXBYTES + 1];
 
@@ -7360,7 +7360,7 @@ f_screenstring(Arr(Var) argvars, Var* returnVar) {
 
 
 // Scroll the screen up one line for displaying the next message line.
-void
+public void
 drawMsgScrollUp(void) {
    if (inEchoPortalG)
       return;
@@ -7386,7 +7386,7 @@ drawMsgScrollUp(void) {
    }
 }
 
-void
+public void
 drawMsgSetCharAtOffset(Unt c, int off, ScreenCell cell) {
    if (c == ZERO) {
       screenTextP[off] = ' ';
@@ -7409,42 +7409,42 @@ drawMsgSetCharAtOffset(Unt c, int off, ScreenCell cell) {
    screenDecosP[off] = cellToDecoration(cell.deco.flags, cell.deco.fg, cell.deco.bg);
 }
 
-Byte
+public Byte
 drawGetLineWrap(int row) {
    return lineWrapsP[row];
 }
 
-ColNr
+public ColNr
 drawGetScreenCol(int offset) {
    return screenColS[offset];
 }
 
-ColNr
+public ColNr
 drawGetOffset(int row) {
    return lineStartsP[row];
 }
 
-Boole
+public Boole
 drawHasLines() {
    return screenTextP != null;
 }
 
-Byte
+public Byte
 drawGetLine(int offset) {
    return screenTextP[offset];
 }
 
-CS
+public CS
 drawGetLinesWithOffset(Unt row) {
    return screenTextP + lineStartsP[row];
 }
 
-Unt
+public Unt
 drawGetScreenComposingChar(int offset, Unt composeInd) {
    return screenLinesCG[MAX_COMBINED_SYMBOLS * offset + composeInd];
 }
 
-Unt
+public Unt
 drawGetScreenUnicodeChar(int offset) {
    return screenLinesUCG[offset];
 }

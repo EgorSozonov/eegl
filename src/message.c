@@ -7,7 +7,7 @@
 
 #include "eegl.h"
 
-typedef struct MsgHist MsgHist;
+private typedef struct MsgHist MsgHist;
 struct MsgHist {
    MsgHist* next;
    CS c;
@@ -38,7 +38,7 @@ private int  verbose_did_open = false;
 // Text builder holding one message line, sized up to the longest line ever printed
 private Text longestLineS = (Text){.len = 0, .c = null};
 
-declStruct(MsgChunk);
+public declStruct(MsgChunk);
 private MsgChunk *lastChunkS = NULL; // last displayed text
 
 //{{{forward declarations
@@ -107,7 +107,7 @@ private MsgChunk * disp_sb_line(int row, MsgChunk *smp, int clear_to_eol);
 
 //Truncate a string such that it can be printed without causing a scroll.
 //Return an allocated string or NULL when no truncating is done.
-CS
+public CS
 msg_strtrunc(CS s, int force) {      // always truncate
    CS buf = null;
 
@@ -132,7 +132,7 @@ msg_strtrunc(CS s, int force) {      // always truncate
 }
 
 // Truncate a string "s" to "builder" with cell width "room". "s" and "builder" may be equal
-void
+public void
 trunc_string(
    Byte   *s,
    Byte   *builder,
@@ -218,7 +218,7 @@ trunc_string(
 }
 
 // Prepare for outputting characters in the command line.
-void
+public void
 msg_start(void) {
    int      did_return = false;
 
@@ -272,18 +272,18 @@ msg_start(void) {
 }
 
 // Note that the current msg position is where messages start.
-void
+public void
 msg_starthere(void) {
    lines_left = commlineRowG;
    msg_didany = false;
 }
 
-void
+public void
 msg_putchar(Unt c) {
    msgPutcharDeco(c, 0);
 }
 
-void
+public void
 msgPutcharDeco(Unt c, char flags) {
    Byte   builder[MB_MAXBYTES + 1];
 
@@ -297,7 +297,7 @@ msgPutcharDeco(Unt c, char flags) {
    msgPutsDeco(builder, flags);
 }
 
-void
+public void
 msg_outnum(long n) {
    Byte builder[20];
 
@@ -305,12 +305,12 @@ msg_outnum(long n) {
    msg_puts(builder);
 }
 
-void
+public void
 msg_home_replace(Byte *fname) {
    homeReplaceDeco(fname, 0);
 }
 
-void
+public void
 msg_home_replace_hl(Byte *fname) {
    homeReplaceDeco(fname, getDecoFlags(HLF_D));
 }
@@ -325,23 +325,23 @@ homeReplaceDeco(CS fname, char flags) {
 
 // Output 'len' characters in 'str' (including ZEROSs) with translation if 'len' is -1, 
 // output up to a ZERO character. Return the number of characters it takes on the screen.
-int
+public int
 msg_outtrans(Byte* str) {
    return msgOuttransDeco(str, 0);
 }
 
-int
+public int
 msgOuttransDeco(CS str, Byte flags) {
    return msgOuttransLenDeco(mbText(str), flags);
 }
 
-int
+public int
 msgTranslatedSlice(Text slice) {
     return msgOuttransLenDeco(slice, 0);
 }
 
 // Output one character at "p". Return pointer to the next character. Handle multi-byte characters
-CS
+public CS
 msgOneChar(CS p, char flags) {
    int l;
 
@@ -353,7 +353,7 @@ msgOneChar(CS p, char flags) {
    return p + 1;
 }
 
-int
+public int
 msgOuttransLenDeco(Text slice, char flags) {
    int      retval = 0;
    Arr(Byte) str = slice.c;
@@ -434,7 +434,7 @@ msgOuttransLenDeco(Text slice, char flags) {
    return retval;
 }
 
-void
+public void
 msg_make(CS arg) {
    int       i;
    static CS str = S"eeffoc";
@@ -463,7 +463,7 @@ msg_make(CS arg) {
 //Otherwise characters are not highlighted.
 //This function is used to show mappings, where we want to see how to type
 //the character/string -- webb
-int
+public int
 msg_outtrans_special(
    CS strstart,
    int from,   // true for lhs of a mapping
@@ -497,7 +497,7 @@ msg_outtrans_special(
 
 //Return the lhs or rhs of a mapping, with the key codes turned into printable
 //strings, in an allocated string.
-CS
+public CS
 str2special_save(
    Byte  *str,
    int       replace_spaces,   // true to replace " " with "<Space>".
@@ -517,7 +517,7 @@ str2special_save(
 //Return the printable string for the key codes at "*sp". On illegal byte return a string with only
 //that byte. Used for translating the lhs or rhs of a mapping to printable chars.
 //Advances "sp" to the next code.
-CS
+public CS
 str2special(
    Byte** sp,
    int      replace_spaces,   // true to replace " " with "<Space>".
@@ -580,7 +580,7 @@ str2special(
 }
 
 // Translate a key sequence into special key names.
-void
+public void
 str2specialbuf(Byte *sp, OUT Byte *builder, int len) {
    *builder = ZERO;
    while (*sp) {
@@ -591,7 +591,7 @@ str2specialbuf(Byte *sp, OUT Byte *builder, int len) {
 }
 
 // print line for :print or :list command
-void
+public void
 msg_prt_line(CS s, int list) {
    Unt      c;
    int      col = 0;
@@ -799,7 +799,7 @@ toPrintf(CS str, int maxlen) {
          }
          bbb = aaa + 1;
       }
-skipped:
+public skipped:
       // primitive way to compute the current column
       if (*aaa == ENTER || *aaa == NL)
          msgColG = 0;
@@ -828,13 +828,13 @@ isVerboseFileDefined() {
 //msg(s) - displays the string 's' on the status line
 //When terminal not initialized (yet) mch_errmsg(..) is used.
 //return true if wait_return() not called
-int
+public int
 msg(CS s) {
    return msgAndKeep(s, 0, false);
 }
 
 // Like msg() but keep it silent when 'verbosefile' is set.
-int
+public int
 verb_msg(CS s) {
    verbose_enter();
    int n = msgAndKeep(s, 0, false);
@@ -843,12 +843,12 @@ verb_msg(CS s) {
    return n;
 }
 
-int
+public int
 msgDeco(CS s, char flags) {
    return msgAndKeep(s, flags, false);
 }
 
-int
+public int
 msgAndKeep(
    CS s,
    char      flags,
@@ -908,9 +908,9 @@ msgAndKeep(
 // Note: Caller of smsg() and smsgDeco() must check the resulting string is shorter than IOSIZE!!!
 #ifndef PROTO
 
-int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
+public int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
 
-int
+public int
 smsg0(char const* s, ...) {
    if (!IObuff) {
       // Very early in initialisation and already something wrong, just
@@ -926,7 +926,7 @@ smsg0(char const* s, ...) {
    return msg(IObuff);
 }
 
-int
+public int
 smsgDeco0(char flags, const char *s, ...) {
    if (!IObuff) {
       // Very early in initialisation and already something wrong, just
@@ -942,7 +942,7 @@ smsgDeco0(char flags, const char *s, ...) {
    return msgDeco(IObuff, flags);
 }
 
-int
+public int
 smsgDecoKeep0(char flags, const char *s, ...) {
    if (!IObuff) {
       // Very early in initialisation and already something wrong, just
@@ -966,7 +966,7 @@ private int   last_sourcing_lnum = 0;
 private Byte   *last_sourcing_name = NULL;
 
 // Reset the last used sourcing name/lnum. Makes sure it's displayed again for the next error msg
-void
+public void
 reset_last_sourcing(void) {
    EE_CLEAR(last_sourcing_name);
    last_sourcing_lnum = 0;
@@ -988,7 +988,7 @@ other_sourcing_name(void) {
 //Like msg(), but truncate to a single line if "force" is true. This 
 //truncates in another way as for normal messages. Careful: The string may be changed by 
 //msg_may_trunc()! Returns a pointer to the printed message, if wait_return() not called.
-CS
+public CS
 msgTruncDeco(CS s, char flags) {
    // Add message to history before truncating
    addMsgHistory((CS)s, -1, flags);
@@ -1007,7 +1007,7 @@ msgTruncDeco(CS s, char flags) {
 //Check if message "s" should be truncated at the start (for filenames).
 //Return a pointer to where the truncated message starts.
 //Note: May change the message by replacing a character with '<'.
-CS
+public CS
 msg_may_trunc(CS s) {
    int      n;
    int      room;
@@ -1081,7 +1081,7 @@ get_emsg_lnum(void) {
 //Display name and line number for the source of an error.
 //Remember the file name and line number, so that for the next error the info
 //is only displayed if it changed.
-void
+public void
 msg_source(char flags) {
    static Boole recursive = false;
 
@@ -1133,7 +1133,7 @@ emsg_not_now(void) {
 
 private ArrayList ignore_error_list = GA_EMPTY;
 
-void
+public void
 ignore_error_for_testing(Byte *error) {
    if (ignore_error_list.ga_itemsize == 0)
       ga_init2(&ignore_error_list, sizeof(CS), 1);
@@ -1257,7 +1257,7 @@ emsgImpl(CS s) {
 }
 
 // Print error message "s".  Should already be translated. Return true if wait_return() not called
-int
+public int
 emsg(CS s) {
    // Skip this if not giving error messages at the moment.
    if (emsg_not_now())
@@ -1273,7 +1273,7 @@ emsg(CS s) {
 //"s" should already be translated.
 //Note: caller must not use "IObuff" for "s"!
 //Return true if wait_return() not called.
-int
+public int
 showErrFmtMsg0(char const* s, ...) {
    // Skip this if not giving error messages at the moment.
    if (emsg_not_now())
@@ -1295,7 +1295,7 @@ showErrFmtMsg0(char const* s, ...) {
 
 //Same as emsg(...), but abort on error when ABORT_ON_INTERNAL_ERROR is defined. It is used for 
 //internal errors only, so that they can be detected when fuzzing Eegl.
-void
+public void
 internalErrMsg(CS s) {
    if (emsg_not_now())
       return;
@@ -1318,7 +1318,7 @@ internalErrMsg(CS s) {
 // defined. It is used for internal errors only, so that they can be
 // detected when fuzzing Eegl.
 // Note: caller must not pass 'IObuff' as 1st argument.
-void
+public void
 internalErrFmtMsg0(const char *s, ...) {
    if (emsg_not_now())
       return;
@@ -1348,7 +1348,7 @@ internalErrFmtMsg0(const char *s, ...) {
 #endif
 
 // Give an "Internal error" message.
-void
+public void
 internal_error(CS where) {
    //Give a generic error which is translated. The error itself may not be
    //translated, it almost never shows.
@@ -1358,7 +1358,7 @@ internal_error(CS where) {
 
 //Like internal_error() but do not call abort(), to avoid tests using
 //test_unknown() and test_void() causing Eegl to exit.
-void
+public void
 internal_error_no_abort(CS where) {
    //Give a generic error which is translated. The error itself may not be
    //translated, it almost never shows.
@@ -1368,13 +1368,13 @@ internal_error_no_abort(CS where) {
 
 // emsg3() and emsgn() are in misc2.c to avoid warnings for the prototypes.
 
-void
+public void
 emsg_invreg(int name) {
     showErrFmtMsg(_(e_invalid_register_name_str), transchar_buf(name));
 }
 
 // Give an error message which contains %s for "name[len]".
-void
+public void
 emsg_namelen(CS msg, CS name, int len) {
    CS copy = copySubstr(name, len);
    showErrFmtMsg(msg, copy);
@@ -1423,7 +1423,7 @@ addMsgHistory(
 }
 
 // Delete the first (oldest) message from the history. Return FAIL if there are no messages.
-int
+public int
 delete_first_msg(void) {
    MsgHist *p;
 
@@ -1447,7 +1447,7 @@ check_msg_hist(void) {
 }
 
 
-int
+public int
 messagesopt_changed(CS new) {
    if (!new)
       return OK;
@@ -1509,7 +1509,7 @@ messagesopt_changed(CS new) {
 }
 
 // ":messages" command.
-void
+public void
 c_messages(Invocation *invo) {
    if (STRCMP(invo->arg, "clear") == 0) {
       int keep = invo->addr_count == 0 ? 0 : invo->line2;
@@ -1565,7 +1565,7 @@ c_messages(Invocation *invo) {
 
 //To be able to scroll back at the "more" and "hit-enter" prompts we need to
 //store the displayed text and remember where screen lines start.
-struct MsgChunk {
+public struct MsgChunk {
    MsgChunk   *sb_next;
    MsgChunk   *sb_prev;
    char   sb_eol;      // true when line ends after this text
@@ -1590,7 +1590,7 @@ msg_end_prompt(void) {
 // If "redraw" is true, clear and redraw the screen.
 // If "redraw" is false, just redraw the screen.
 // If "redraw" is -1, don't redraw at all.
-void
+public void
 wait_return(Boole redraw) {
    Unt      c;
    int      oldState;
@@ -1784,7 +1784,7 @@ hit_return_msg(void) {
 }
 
 // Set "msgAfterRedrawG" to "s".  Free the old value and check for NULL pointer.
-void
+public void
 set_keep_msg(Byte *s, char flags) {
    eeglFree(msgAfterRedrawG);
    if (s && msg_silent == 0)
@@ -1795,7 +1795,7 @@ set_keep_msg(Byte *s, char flags) {
    decoAfterRedrawG = flags;
 }
 
-void
+public void
 msgmore(long n) {
    if (global_busy || !messaging()) // no messages now, wait until global is finished
                     // 'lazyredraw' set, don't do messages now
@@ -1825,7 +1825,7 @@ msgmore(long n) {
 
 // If there currently is a message being displayed, set "msgAfterRedrawG" to it, so
 // that it will be displayed again after redraw.
-void
+public void
 set_keep_msg_from_hist(void) {
    if (!msgAfterRedrawG && last_msg_hist && msg_scrolled == 0 && (stateG & MODE_NORMAL))
       set_keep_msg(last_msg_hist->c, last_msg_hist->deco);
@@ -1848,7 +1848,7 @@ set_keep_msg_from_hist(void) {
 // different letter.
 //
 // Return 0 if cancelled, otherwise the nth button (1-indexed).
-int
+public int
 do_dialog(
    int      type UNUSED,
    Byte   *title UNUSED,
@@ -1943,7 +1943,7 @@ display_confirm_msg(void) {
    --confirm_msg_used;
 }
 
-int
+public int
 eeDialog_yesno(
     int      type,
     Byte   *title,
@@ -1959,7 +1959,7 @@ eeDialog_yesno(
    return EE_NO;
 }
 
-int
+public int
 eeDialog_yesnocancel(
     int      type,
     Byte   *title,
@@ -1978,7 +1978,7 @@ eeDialog_yesnocancel(
    return EE_CANCEL;
 }
 
-int
+public int
 eeDialog_yesnoallcancel(
    int      type,
    Byte   *title,
@@ -2218,19 +2218,19 @@ do_more_prompt(int typedChar) {
 
 // Output a string to the screen at position msgRowG, msgColG.
 // Update msgRowG and msgColG for the next message.
-void
+public void
 msg_puts(CS s) {
    msgPutsDeco(s, 0);
 }
 
-void
+public void
 msg_puts_title(CS s) {
    msgPutsDeco(s, getDecoFlags(HLF_T));
 }
 
 //Show a message in such a way that it always fits in the line. Cut out a part in the middle and 
 //replace it with "..." when necessary. Does not handle multi-byte characters!
-void
+public void
 outputShortenedToALine(Text slice, char flags) {
    int slen = slice.len;
    int room = visibleColsG - msgColG;
@@ -2243,7 +2243,7 @@ outputShortenedToALine(Text slice, char flags) {
 }
 
 // Basic function for writing a message with hilite decorations.
-void
+public void
 msgPutsDeco(CS s, char flags) {
    printWithDecoAndMaxLen(s, -1, flags);
 }
@@ -2531,7 +2531,7 @@ toDisplay(CS str, int      maxlen, Byte flags, int      recurse){
 }
 
 // Return true when ":filter pattern" was used and "msg" does not match "pattern".
-int
+public int
 message_filtered(CS msg) {
    if (commModifierG.cmod_filter_regmatch.regprog == NULL)
       return false;
@@ -2561,7 +2561,7 @@ t_puts(int* t_col, CS theText, CS sentinel, Byte flags){
 //If termcap is not active, we may be writing in an alternate console
 //window, cursor positioning may not work correctly (window size may be
 //different) or we just don't know where the cursor is.
-int
+public int
 msg_use_printf(void){
    return (!msg_check_screen()
        || !termcap_active
@@ -2581,7 +2581,7 @@ msg_use_printf(void){
 //Give an error message. To be used when the screen hasn't been initialized yet. When stderr can't 
 //be used, collect error messages until the TUI has started and they can be displayed in a message 
 //box.
-void
+public void
 mch_errmsg(CS errMsg) {
    // Use stderr if it's a tty. When not going to start the GUI also use stderr.
    if (isatty(2)) {
@@ -2615,7 +2615,7 @@ mch_errmsg(CS errMsg) {
 
 // Give a message. To be used when the screen hasn't been initialized yet. When there is no tty, 
 // collect messages until the GUI has started and they can be displayed in a message box.
-void
+public void
 mch_msg(CS str) {
    // Use stdout if we have a tty.  This allows "eegl -h | more" and uses mch_errmsg() when started 
    // from the desktop. When not going to start the GUI also use stdout.
@@ -2657,7 +2657,7 @@ msg_moremsg(int full) {
 }
 
 // Repeat the message for the current mode: MODE_ASKMORE, MODE_EXTERNCMD or MODE_CONFIRM.
-void
+public void
 repeat_message(void) {
    if (stateG == MODE_ASKMORE) {
       msg_moremsg(true);   // display --more-- message again
@@ -2698,7 +2698,7 @@ msg_check_screen(void) {
 
 //Clear from current message position to end of screen.
 //Skip this when ":silent" was used, no need to clear for redirection.
-void
+public void
 msg_clr_eos(void) {
    if (msg_silent == 0)
       msg_clr_eos_force();
@@ -2706,7 +2706,7 @@ msg_clr_eos(void) {
 
 //Clear from current message position to end of screen.
 //Note: msgColG is not updated, so we remember the end of the message for msg_check().
-void
+public void
 msg_clr_eos_force(void) {
    if (inEchoPortalG)
       return;  // messages go into a popup
@@ -2728,7 +2728,7 @@ msg_clr_eos_force(void) {
 }
 
 // Clear the command line.
-void
+public void
 msgClearCommline(void) {
    msgRowG = commlineRowG;
    msgColG = 0;
@@ -2738,7 +2738,7 @@ msgClearCommline(void) {
 // end putting a message on the screen
 // call wait_return() if the message does not fit in the available space
 // return true if wait_return() not called.
-int
+public int
 msg_end(void) {
    //If the string is larger than the portal, or the ruler option is set and we run into it, we 
    //have to redraw the portal. Do not do this if we are abandoning the file or editing the 
@@ -2753,7 +2753,7 @@ msg_end(void) {
 
 //If the written message runs into the shown command or ruler, we have to wait for hit-return and 
 //redraw the portal later.
-void
+public void
 msg_check(void) {
    if (msgRowG == visibleRowsG - 1 && msgColG >= shownCommandColG && !inEchoPortalG) {
       need_wait_return = true;
@@ -2824,20 +2824,20 @@ redir_write(Byte *str, int maxlen) {
    }
 }
 
-int
+public int
 redirecting(void) {
    return redir_fd || isVerboseFileDefined() || redir_reg || redir_vname || redir_execute;
 }
 
 //Before giving verbose message. Must always be called paired with verbose_leave()!
-void
+public void
 verbose_enter(void) {
    if (isVerboseFileDefined())
       ++msg_silent;
 }
 
 //After giving verbose message. Must always be called paired with verbose_enter()!
-void
+public void
 verbose_leave(void) {
    if (isVerboseFileDefined()) {
       if (--msg_silent < 0)
@@ -2846,7 +2846,7 @@ verbose_leave(void) {
 }
 
 //Like verbose_enter() and set msg_scroll when displaying the message.
-void
+public void
 verbose_enter_scroll(void) {
    if (isVerboseFileDefined())
       ++msg_silent;
@@ -2856,7 +2856,7 @@ verbose_enter_scroll(void) {
 }
 
 //Like verbose_leave() and set commlineRowG when displaying the message.
-void
+public void
 verbose_leave_scroll(void) {
    if (isVerboseFileDefined()) {
       if (--msg_silent < 0)
@@ -2866,7 +2866,7 @@ verbose_leave_scroll(void) {
 }
 
 // Called when 'verbosefile' is set: stop writing to the file.
-void
+public void
 verbose_stop(void) {
    if (verbose_fd) {
       fclose(verbose_fd);
@@ -2876,7 +2876,7 @@ verbose_stop(void) {
 }
 
 // Open the file 'verbosefile'. Return FAIL or OK.
-int
+public int
 verbose_open(void) {
    if (verbose_fd == NULL && !verbose_did_open && isVerboseFileDefined() && p_vfile) {
       // Only give the error message once.
@@ -2893,12 +2893,12 @@ verbose_open(void) {
 
 // Give a warning message (for searching). Use 'w' highlighting and may repeat the message 
 // after redrawing
-void
+public void
 give_warning(Byte *message, int hl) {
    give_warning_with_source(message, hl, false);
 }
 
-void
+public void
 give_warning_with_source(Byte *message, int hl, int with_source) {
    // Don't do this for ":silent".
    if (msg_silent != 0)
@@ -2933,7 +2933,7 @@ give_warning_with_source(Byte *message, int hl, int with_source) {
    --no_wait_return;
 }
 
-void
+public void
 give_warning2(Byte *message, Byte *a1, int hl) {
    if (IObuff == NULL) {
       // Very early in initialisation and already something wrong, just give
@@ -2946,7 +2946,7 @@ give_warning2(Byte *message, Byte *a1, int hl) {
 }
 
 // Advance msg cursor to column "col".
-void
+public void
 msg_advance(int col) {
    if (msg_silent != 0) {  // nothing to advance to
       msgColG = col;      // for redirection, may fill it up later
@@ -2959,7 +2959,7 @@ msg_advance(int col) {
 }
 
 // Warn about missing Clipboard Support
-void
+public void
 msg_warn_missing_clipboard(void) {
    if (!global_busy && !did_warn_clipboard) {
       msg(_("W23: Clipboard register not available, using register 0"));
@@ -3142,7 +3142,7 @@ inc_msg_scrolled(void) {
 }
 
 
-typedef enum {
+private typedef enum {
    SB_CLEAR_NONE = 0,
    SB_CLEAR_ALL,
    SB_CLEAR_COMMLINE_BUSY,
@@ -3193,13 +3193,13 @@ saveToScrollback(
 }
 
 // Finished showing messages, clear the scroll-back text on the next message.
-void
+public void
 may_clear_sb_text(void){
    clearScrollBackS = SB_CLEAR_ALL;
 }
 
 // Starting to edit the command line: do not clear messages now.
-void
+public void
 sb_text_start_cmdline(void){
    if (clearScrollBackS == SB_CLEAR_COMMLINE_BUSY)
       // Invoking command line recursively: the previous-level command line
@@ -3213,7 +3213,7 @@ sb_text_start_cmdline(void){
 }
 
 // Redrawing the command line: clear the last unfinished line.
-void
+public void
 sb_text_restart_cmdline(void) {
    MsgChunk *tofree;
 
@@ -3237,14 +3237,14 @@ sb_text_restart_cmdline(void) {
 }
 
 // Ending to edit the command line: clear old lines but the last one later.
-void
+public void
 sb_text_end_cmdline(void) {
    clearScrollBackS = SB_CLEAR_CMDLINE_DONE;
 }
 
 // Clear any text remembered for scrolling back.
 // When "all" is false keep the last line. Called when redrawing the screen.
-void
+public void
 clear_sb_text(int all) {
    MsgChunk   *mp;
    MsgChunk   **lastp;
@@ -3265,7 +3265,7 @@ clear_sb_text(int all) {
 }
 
 // "g<" command.
-void
+public void
 show_sb_text(void) {
    MsgChunk   *mp;
 
@@ -3290,7 +3290,7 @@ moveToStartOfScreenLine(MsgChunk *mps) {
 }
 
 // Mark the last message chunk as finishing the line.
-void
+public void
 msg_sb_eol(void){
    if (lastChunkS)
       lastChunkS->sb_eol = true;

@@ -6,7 +6,7 @@
 #include "eegl.h"
 
 //Pointers to various items in a tag line.
-typedef struct tag_pointers {
+private typedef struct tag_pointers {
    // filled in by parse_tag_line():
    CS tagname;   // start of tag name (skip "file:")
    CS tagname_end;   // char after tag name
@@ -23,14 +23,14 @@ typedef struct tag_pointers {
 } Tagline;
 
 //Return values used when reading lines from a tags file.
-typedef enum {
+private typedef enum {
    TAGS_READ_SUCCESS = 1,
    TAGS_READ_EOF,
    TAGS_READ_IGNORE,
 } tags_read_status_T;
 
 //States used during a tags search
-typedef enum {
+private typedef enum {
    TS_START,      // at start of file
    TS_LINEAR,      // linear searching forward, till EOF
    TS_BINARY,      // binary searching
@@ -39,7 +39,7 @@ typedef enum {
 } tagsearch_state_T;   // Current search state
 
 //Binary search file offsets in a tags file
-typedef struct {
+private typedef struct {
    FileOffset   low_offset;   // offset for first char of first line that could match
    FileOffset   high_offset;   // offset of char after last line that could match
    FileOffset   curr_offset;   // Current file offset in search range
@@ -50,7 +50,7 @@ typedef struct {
 } TagSearchInfo;
 
 //Return values used when matching tags against a pattern.
-typedef enum {
+private typedef enum {
    TAG_MATCH_SUCCESS = 1,
    TAG_MATCH_FAIL,
    TAG_MATCH_STOP,
@@ -58,7 +58,7 @@ typedef enum {
 } tagmatch_status_T;
 
 //Arguments used for matching tags read from a tags file against a pattern.
-typedef struct {
+private typedef struct {
    int   matchoff;      // tag match offset
    int   match_re;      // true if the tag matches a regexp
    int   match_no_ic;      // true if the tag matches with case
@@ -112,7 +112,7 @@ private Callback tfu_cb;       // 'tagfunc' callback function
 //Read the 'tagfunc' option value and convert that to a callback value.
 //Invoked when the 'tagfunc' option is set. The option value can be a name of
 //a function (string), or function(<name>) or funcref(<name>) or a lambda.
-CS
+public CS
 did_set_tagfunc(OptionChange *cha) {
    evFreeCallback(&tfu_cb);
    evFreeCallback(curBook->o.tagFn);
@@ -129,14 +129,14 @@ did_set_tagfunc(OptionChange *cha) {
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-void
+public void
 free_tagfunc_option(void) {
    evFreeCallback(&tfu_cb);
 }
 # endif
 
 //Mark the global 'tagfunc' callback with "copyID" so that it is not garbage collected.
-int
+public int
 set_ref_in_tagfunc(int copyID UNUSED) {
    int abort = memSetRefInCallback(&tfu_cb, copyID);
 
@@ -163,7 +163,7 @@ set_ref_in_tagfunc(int copyID UNUSED) {
 //type == DT_FREE:   free cached matches
 //
 //for cscope, returns true if we jumped to tag or aborted, false otherwise
-int
+public int
 do_tag(
    CS tag,      // tag (pattern) to jump to
    Unt type,
@@ -654,7 +654,7 @@ do_tag(
       break;
    }
 
-end_do_tag:
+public end_do_tag:
    deleteArena(newMatches.a);
    // Only store the new index when using the tagstack and it's valid.
    if (use_tagstack && tagstackidx <= (int)curPor->tagStackLen)
@@ -932,7 +932,7 @@ add_llist_tags(CS tag, ExpandMatch matches) {
 }
 
 //Free cached tags.
-void
+public void
 tag_freematch(void) {
    EE_CLEAR(tagmatchname);
 }
@@ -947,7 +947,7 @@ taglen_advance(int l) {
 }
 
 // Print the tag stack
-void
+public void
 do_tags(Invocation *eap UNUSED) {
    int      i;
    CS name;
@@ -998,7 +998,7 @@ tag_strnicmp(CS s1, CS s2, Unt len) {
 }
 
 //Info about the tag pattern being used.
-typedef struct {
+private typedef struct {
    CS pat;      // the pattern
    int      len;      // length of pat[]
    CS head;      // start of pattern head
@@ -1233,7 +1233,7 @@ find_tagfunc_tags(
 }
 
 // State information used during a tag search
-typedef struct {
+private typedef struct {
    tagsearch_state_T   state;      // tag search state
    int      stop_searching;      // stop when match found or error
    TagPattern   *orgpat;      // holds unconverted pattern info
@@ -2090,7 +2090,7 @@ findtags_copy_matches(FindTags* st, OUT ExpandMatch* targetMatches) {
 //TAG_KEEP_LANG  keep language
 //TAG_CSCOPE     use cscope results for tags
 //TAG_NO_TAGFUNC do not call the 'tagfunc' function
-int
+public int
 find_tags(
    CS pat,         // pattern to search for
    Unt flags,
@@ -2224,7 +2224,7 @@ find_tags(
       retval = OK;      // It's OK even when no tag found
    }
 
-findtag_end:
+public findtag_end:
     findtags_state_free(&st);
 
    //Move the matches from the ga_match[] arrays into one list of matches. When retval == FAIL, 
@@ -2258,7 +2258,7 @@ found_tagfile_cb(CS fname, void* cookie UNUSED) {
 
 #if defined(EXITFREE) || defined(PROTO)
    void
-free_tag_stuff(void) {
+public free_tag_stuff(void) {
    ga_clear_strings(&tag_fnames);
    if (curPor != NULL)
       do_tag(NULL, DT_FREE, 0, 0, 0);
@@ -2270,7 +2270,7 @@ free_tag_stuff(void) {
 
 //Get the next name of a tag file from the tag file list. For help files, use "tags" file only.
 //Return FAIL if no more tag file names, OK otherwise.
-int
+public int
 get_tagfname(
    TagName   *tnp,   // holds status info
    int      first,   // true when first file name is wanted
@@ -2372,7 +2372,7 @@ get_tagfname(
 }
 
 //Free the contents of a TagName that was filled by get_tagfname().
-void
+public void
 tagname_free(TagName *tnp) {
    eeglFree(tnp->tn_tags);
    eeFindFile_cleanup(tnp->searchCtx);
@@ -2803,7 +2803,7 @@ jumpto_tag(
       // something went wrong, still in popup, but it can't have focus
       enterPortal(firstPor, true);
 
-erret:
+public erret:
    g_do_tagpreview = 0; // For next time
    eeglFree(lbuf);
    eeglFree(pbuf);
@@ -2907,13 +2907,13 @@ find_extra(OUT CS* pp) {
 }
 
 //Free a single entry in a tag stack
-void
+public void
 tagstack_clear_entry(Taggy* item) {
    EE_CLEAR(item->tagname);
    EE_CLEAR(item->user_data);
 }
 
-int
+public int
 expand_tags(Boole expandTagNames, CS pat, OUT ExpandMatch* matches) {
    Unt   name_buf_size = 100;
    Tagline   tagline;
@@ -2997,7 +2997,7 @@ add_tag_field(
 
 //Add the tags matching the specified pattern "pat" to the list "list"
 //as a dictionary. Use "buf_fname" for priority, unless NULL.
-int
+public int
 get_tags(List* list, CS pat, CS buf_fname) {
    CS p;
    CS full_fname;
@@ -3103,7 +3103,7 @@ get_tag_details(Taggy *tag, OUT Bag* retBag) {
 }
 
 //Return the tag stack entries of the specified window 'wp' in dictionary 'retBag'.
-void
+public void
 get_tagstack(Portal* wp, Bag* retBag) {
    bagAddNumber(retBag, S"length", wp->tagStackLen);
    bagAddNumber(retBag, S"curidx", wp->tagStackInd + 1);
@@ -3224,7 +3224,7 @@ tagstack_set_curidx(Portal* po, int curidx) {
 //  'a' for append
 //  'r' for replace
 //  't' for truncate
-int
+public int
 set_tagstack(Portal *wp, Bag *d, Unt action) {
    // not allowed to alter the tag stack entries from inside tagfunc
    if (tfu_in_use) {
@@ -3281,7 +3281,7 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 // See ":help cscope-find" for the possible queries.
 
-typedef struct {
+private typedef struct {
    CS name;
    int (*func)(Invocation* invo);
    CS help;
@@ -3289,7 +3289,7 @@ typedef struct {
    int cansplit;      // if supports splitting window
 } CScopeCommand;
 
-typedef struct csi {
+private typedef struct csi {
    CS fname;     //cscope db name
    CS ppath;     //path to prepend (the -P option)
    CS flags;     //additional cscope flags/options (e.g, -p2)
@@ -3301,9 +3301,9 @@ typedef struct csi {
    FILE* to_fp;  //to cscope: FILE.
 } CscopeInfo;
 
-typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
+private typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
 
-typedef enum {
+private typedef enum {
    Store,
    Get,
    Free,
@@ -3367,7 +3367,7 @@ private enum {
 } expand_what;
 
 //Function given to expandGeneric() to obtain the cscope command expansion.
-CS
+public CS
 get_cscope_name(Expand* xp UNUSED, int idx) {
    int current_idx;
    int i;
@@ -3416,7 +3416,7 @@ get_cscope_name(Expand* xp UNUSED, int idx) {
 }
 
 //Handle command line completion for :cscope command.
-void
+public void
 set_context_in_cscope_cmd(Expand* xp, CS arg, CommIndex id) {
    // Default: expand subcommands
    xp->context = EXPAND_CSCOPE;
@@ -3471,19 +3471,19 @@ do_cscope_general(Invocation* invo, int make_split) { // whether to split window
 }
 
 //Implementation of ":cscope" and ":lcscope"
-void
+public void
 c_cscope(Invocation* invo) {
    do_cscope_general(invo, false);
 }
 
 //Implementation of ":scscope". Same as c_cscope(), but splits window, too.
-void
+public void
 c_scscope(Invocation* invo) {
    do_cscope_general(invo, true);
 }
 
 //Implementation of ":cstag"
-void
+public void
 c_cstag(Invocation* invo) {
    int ret = false;
 
@@ -3541,7 +3541,7 @@ c_cstag(Invocation* invo) {
 //from the cscope output. should only be called from find_tags()
 //
 //return true if eof, false otherwise
-int
+public int
 cs_fgets(CS buf, int size) {
    CS p;
    if ((p = cs_manage_matches(NULL, NULL, -1, Get)) == NULL)
@@ -3552,13 +3552,13 @@ cs_fgets(CS buf, int size) {
 }
 
 // Called only from do_tag(), when popping the tag stack.
-void
+public void
 cs_free_tags(void) {
    cs_manage_matches(NULL, NULL, -1, Free);
 }
 
 // Called from do_tag().
-void
+public void
 cs_print_tags(void) {
    cs_manage_matches(NULL, NULL, -1, Print);
 }
@@ -3681,7 +3681,7 @@ cs_add_common(
 
    ret = STAT(fname, &statbuf);
    if (ret < 0) {
-staterr:
+public staterr:
       if (p_csverbose)
          cs_stat_emsg(fname);
       goto add_err;
@@ -3745,7 +3745,7 @@ staterr:
    eeglFree(ppath);
    return CSCOPE_SUCCESS;
 
-add_err:
+public add_err:
    eeglFree(fname2);
    eeglFree(fname);
    eeglFree(ppath);
@@ -4989,7 +4989,7 @@ cs_show(Invocation* invo UNUSED) {
 
 
 //Only called when Eegl exits to quit any cscope sessions.
-void
+public void
 cs_end(void) {
    for (int i = 0; i < csinfo_size; i++)
       cs_release_csp(i, true);
@@ -4999,7 +4999,7 @@ cs_end(void) {
 
 //"cscope_connection([{num} , {dbpath} [, {prepend}]])" function
 //Check the existence of a cscope connection.
-void
+public void
 f_cscope_connection(Var *argvars UNUSED, Var *returnVar UNUSED) {
    int      num = 0;
    CS dbpath = NULL;

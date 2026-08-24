@@ -4,9 +4,9 @@
 //## location.c: location lists (searches, errors from compilation, help greps) & marks (`ma`)
 
 #include "eegl.h"
-int fstat(int fd, struct stat* statbuf);
+public int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);
-int lstat(const char* restrict, struct stat* restrict);
+public int lstat(const char* restrict, struct stat* restrict);
 
 //{{{forward declarations
 
@@ -16,7 +16,7 @@ sign_mark_adjust(LineNr line1, LineNr line2, long amount, long amount_after);
 //}}}
 //{{{location lists
 
-typedef struct DirStack DirStack; 
+private typedef struct DirStack DirStack; 
 struct DirStack {
    DirStack* next;
    CS dirname;
@@ -27,7 +27,7 @@ struct DirStack {
 #define STACK_CAPACITY 20
 
 // For each error the next struct is allocated and linked in a list.
-typedef struct LocLine LocLine;
+private typedef struct LocLine LocLine;
 struct LocLine {
    LocLine* next;   // pointer to next error in the list
    LocLine* prev;   // pointer to previous error in the list
@@ -59,7 +59,7 @@ struct LocLine {
 //Usually the list contains one or more entries. But an empty list can be
 //created using setqflist()/setloclist() with a title and/or user context
 //information and entries can be added later using setqflist()/setloclist().
-typedef struct {
+private typedef struct {
    Unt id;      // Unique identifier for this list
    LocLine* first;   // pointer to the first error
    LocLine* last;   // pointer to the last error
@@ -85,7 +85,7 @@ typedef struct {
 
 //Quickfix/Location list stack definition
 //Contains a list of location lists (LocationList)
-struct LocationStack {
+public struct LocationStack {
    // Count of references to this list. Used only for location lists.
    // When a location list portal reference this list, refcount
    // will be 2. Otherwise, refcount will be 1. When refcount
@@ -111,7 +111,7 @@ private List* makeInProgressS; // the list of messages from a running "make" com
 
 
 // Structure used to hold the info of one part of 'errorformat'
-typedef struct ErrorFormatInfo ErrorFormatInfo;
+private typedef struct ErrorFormatInfo ErrorFormatInfo;
 struct ErrorFormatInfo {
     RegProg* prog;   // pre-formatted part of 'errorformat'
     ErrorFormatInfo       *next;   // pointer to next (NULL if last)
@@ -138,14 +138,14 @@ struct ErrorFormatInfo {
 
 // List of location lists to be deleted.
 // Used to delay the deletion of locations lists by autocmds.
-typedef struct DeletionList DeletionList;
+private typedef struct DeletionList DeletionList;
 struct DeletionList {
     DeletionList* next;
     LocationStack      *stack;
 };
 
 // :vimgrep command arguments
-typedef struct {
+private typedef struct {
    long tomatch;   // maximum number of matches to find
    CS spat;      // search pattern
    Unt flags;      // search modifier
@@ -539,16 +539,16 @@ parse_efm_option(CS efm){
 
    goto parse_efm_end;
 
-parse_efm_error:
+public parse_efm_error:
    free_efm_list(&fmtFirst);
 
-parse_efm_end:
+public parse_efm_end:
    eeglFree(fmtstr);
 
    return fmtFirst;
 }
 
-enum {
+public enum {
    QF_FAIL = 0,
    QF_OK = 1,
    QF_END_OF_INPUT = 2,
@@ -558,7 +558,7 @@ enum {
    QF_ABORT = 6
 };
 
-typedef enum {
+private typedef enum {
    SOURCE_FILENAME, // a proto-source, so to speak - will be turned into SOURCE_FILE after opening
    SOURCE_FILE, // reading locations from file
    SOURCE_BOOK, // reading locations from an Eegl buffer
@@ -566,30 +566,30 @@ typedef enum {
    SOURCE_LIST // reading location from a Var containing a list of strings
 } SourceKind;
 
-typedef struct { // SOURCE_FILENAME
+private typedef struct { // SOURCE_FILENAME
    CS c;
 } FileNameSource;
 
-typedef struct { // SOURCE_FILE
+private typedef struct { // SOURCE_FILE
    FILE* c;
 } FileSource;
 
-typedef struct { // SOURCE_BOOK
+private typedef struct { // SOURCE_BOOK
    Book* c;
    LineNr start;
    LineNr end;
 } BookSource;
 
 
-typedef struct { // SOURCE_STRING
+private typedef struct { // SOURCE_STRING
    CS c;
 } StringSource;
 
-typedef struct { // SOURCE_LIST
+private typedef struct { // SOURCE_LIST
    ListItem* c;
 } ListSource;
 
-typedef struct { // A source can be a file, a Book, a string var or a list vaar
+private typedef struct { // A source can be a file, a Book, a string var or a list vaar
    SourceKind tag;
    union {
       FileNameSource FileName;
@@ -601,7 +601,7 @@ typedef struct { // A source can be a file, a Book, a string var or a list vaar
 } Source;
 
 // State information used to parse lines and add entries to a quickfix/location list.
-typedef struct {
+private typedef struct {
    Source source;
    CS linebuf;
    int      linelen;
@@ -813,7 +813,7 @@ getNextLine(LocationState *state) {
    return QF_OK;
 }
 
-typedef struct {
+private typedef struct {
     CS namebuf;
     int      bnr;
     CS module;
@@ -1268,7 +1268,7 @@ qf_parse_line(
    CS tail = NULL;
    int status;
 
-restofline:
+public restofline:
    // If there was no %> item start at the first pattern
    if (fmt_start == NULL)
       fmt_ptr = fmtFirst;
@@ -1550,7 +1550,7 @@ initWorker(
    }
    emsg(_(e_error_while_reading_errorfile));
    
-error2:
+public error2:
    if (!adding) {
       // Error when creating a new list. Free the new list
       freeAList(ll);
@@ -1559,7 +1559,7 @@ error2:
          --stack->currList;
    }
    
-initEnd:
+public initEnd:
    push(*ll, stack);
    if (ind == stack->currList)
       updateBook(stack, oldLast);
@@ -1582,7 +1582,7 @@ initAndUpdateTick(
 
 //Read the errorfile "errorFName" into memory, line by line, building the error list.
 //Return -1 for error, number of lines for success.
-int
+public int
 llInitFromFile(
    OUT LocationStack* st,
    CS errorFName,
@@ -1699,7 +1699,7 @@ locstack_queue_delreq(LocationStack* stack) {
 }
 
 // Return the global location stack portal buffer number.
-int
+public int
 qf_stack_get_bufnr(void) {
    if (mainStackG == NULL)
       return INVALID_LL_BUFNR;
@@ -1809,7 +1809,7 @@ decrementLlBusyness(void) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-void
+public void
 check_qfBusynessG(void) {
    if (qfBusynessG != 0) {
       showErrFmtMsg("qfBusynessG not zero on exit: %ld", (long)qfBusynessG);
@@ -1927,7 +1927,7 @@ allocateLocList(int n) {
 
 
 // Initialize all location stacks. Should only be called once.
-void
+public void
 llInitStacksOnce(void) {
    for (int i = 0; i < COUNT_LOC_LISTS; i++) {
       LocationStack* st = locationStacksP + i;
@@ -2842,7 +2842,7 @@ jumpToBook(
    return retval;
 }
 
-LocationStack*
+public LocationStack*
 getLocationStack(int ind) {
    if (ind < 0 || ind >= COUNT_LOC_LISTS)
       return NULL;
@@ -2850,7 +2850,7 @@ getLocationStack(int ind) {
 }
 
 // Jump to an entry and try to use an existing portal.
-void
+public void
 llJump(LocationStack* stack, Unt dir, int errornr, Boole forceit){
    jumpToNewPortal(stack, dir, errornr, forceit, false);
 }
@@ -2943,7 +2943,7 @@ jumpToNewPortal(
          currentIdx = old_currentIdx;
       }
    }
-theend:
+public theend:
    if (stack) {
       ll->curr = curr;
       ll->currentIdx = currentIdx;
@@ -3035,7 +3035,7 @@ displayListEntry(LocLine* lline, int ind, int cursel) {
 }
 
 // ":llist": list all locations
-void
+public void
 c_list(Invocation* invo) {
    int i;
    int idx1 = 1;
@@ -3175,7 +3175,7 @@ qf_msg(LocationStack* stack, int which, CS lead) {
 //":mnewer [count]": Down in the location stack.
 //":lolder [count]": Up in the location list stack.
 //":lnewer [count]": Down in the location list stack.
-void
+public void
 c_llAge(Invocation* invo) {
    LocationStack* stack;
 
@@ -3203,7 +3203,7 @@ c_llAge(Invocation* invo) {
 }
 
 // Display the information about all the location lists in the stack
-void
+public void
 qf_history(Invocation* invo) {
    LocationStack* stack = getStackForCommand(invo, false);
 
@@ -3380,7 +3380,7 @@ createMsg(int c, int nr) {
 
 //When "split" is false: Open the entry/result under the cursor.
 //When "split" is true: Open the entry/result under the cursor in a new portal.
-void
+public void
 llViewLocation(int split) {
    LocationStack* stack;
    if (IS_LL_PORTAL(curPor))
@@ -3407,7 +3407,7 @@ llViewLocation(int split) {
 
 //":mwindow": open the location portal if we have errors to display, close it if not. TODO delete
 //":lwindow": open the location list portal if we have locations to display, close it if not.
-void
+public void
 c_cPortal(Invocation* invo) {
    LocationStack* stack;
    if ((stack = getStackForCommand(invo, true)) == NULL)
@@ -3431,7 +3431,7 @@ c_cPortal(Invocation* invo) {
 }
 
 // ":lclose": close the window showing the location list
-void
+public void
 c_lClose(Invocation* invo) {
    LocationStack   *stack;
    if ((stack = getStackForCommand(invo, false)) == NULL)
@@ -3556,7 +3556,7 @@ openNewPortal(LocationStack* stack, int height) {
 }
 
 // ":lopen": open a window that shows the location list.
-void
+public void
 c_lOpen(Invocation* invo) {
    LocationStack* stack;
    int      status = FAIL;
@@ -3618,7 +3618,7 @@ gotoLine(Portal* po, LineNr lnum) {
 }
 
  // :mbottom/:lbottom commands.
-void
+public void
 c_lBottom(Invocation* invo) {
    LocationStack* stack;
    if ((stack = getStackForCommand(invo, true)) == NULL)
@@ -3631,7 +3631,7 @@ c_lBottom(Invocation* invo) {
 
 // Return the line number of the current entry in its location portal.
 // Precondition: it's a location portal.
-LineNr
+public LineNr
 llCurrentEntry(Portal* po) {
    return getCurrent(po->locationStackRef)->currentIdx;
 }
@@ -3707,7 +3707,7 @@ findLlBook(LocationStack* stack) {
 }
 
 // Process the 'quickfixtextfunc' option value. Returns OK or FAIL.
-CS
+public CS
 setQuickfixtextfunc(OptionChange* cha) {
    CS new = cha->newVal.string;
    if (optSetCallback(OUT &locationTextFnS, new) == FAIL)
@@ -4065,7 +4065,7 @@ jumpToFirstEntry(LocationStack* stack, Unt idSave, Boole forceit) {
 }
 
 // Return true when using ":vimgrep" for ":grep".
-int
+public int
 grepIsActuallyInternal(CommIndex id) {
    return (id == C_grep || id == C_grepadd) 
       && curBook->o.grepProg && eq(S"internal", curBook->o.grepProg);
@@ -4186,7 +4186,7 @@ eeglProcessArgs(Invocation* invo, OUT VimGrepArgs* args) {
 
 // Internal grep of all files, the "eegl" or "eegrep" commands.
 // They search all files except the .git subfolder and put the results into a location list
-void
+public void
 c_elgrep(Invocation* invo) {
    VimGrepArgs args;
    LocationList* ll;
@@ -4261,7 +4261,7 @@ c_elgrep(Invocation* invo) {
       foldUpdateAll(curPor);
    }
 
-theend:
+public theend:
    deleteArena(m.a);
    eeglFree(args.title);
    eeglFree(target_dir);
@@ -4269,7 +4269,7 @@ theend:
 }
 
 // Used for ":grep" and ":grepadd"
-void
+public void
 c_grep(Invocation* invo) {
    CS errorformat = curBook->o.errorFormat;
    Boole newlist = true;
@@ -4328,7 +4328,7 @@ c_grep(Invocation* invo) {
 }
 
 // Initialize the location list for the in-progress "make" command
-void initInProgressLl() {
+public void initInProgressLl() {
    if (makeInProgressS) {
       list_free(makeInProgressS);
    }
@@ -4385,7 +4385,7 @@ makeFinished() {
    }
 }
 
-void
+public void
 c_make(Invocation* invo UNUSED) {
    if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
          && aborting()
@@ -4411,7 +4411,7 @@ c_make(Invocation* invo UNUSED) {
 }
 
 // Returns the number of entries in the current location list.
-int
+public int
 llGetSize(Invocation* invo) {
    LocationStack* stack;
    if ((stack = getStackForCommand(invo, false)) == NULL)
@@ -4420,7 +4420,7 @@ llGetSize(Invocation* invo) {
 }
 
 // Returns the number of valid entries in the current location list.
-int
+public int
 llGetValidSize(Invocation* invo){
    LocationStack* stack;
    LocLine   *lline;
@@ -4447,7 +4447,7 @@ llGetValidSize(Invocation* invo){
 }
 
 //Return the current index of the location list. Return 0 if there is an error.
-int
+public int
 llGetCurrIndex(Invocation* invo) {
    LocationStack   *stack;
 
@@ -4459,7 +4459,7 @@ llGetCurrIndex(Invocation* invo) {
 
 //Return the current index in the location list (counting only valid
 //entries). If no valid entries are in the list, then return 1.
-int
+public int
 llGetCurrValidIndex(Invocation* invo) {
    LocationStack* stack;
    int      i, eidx = 0;
@@ -4529,7 +4529,7 @@ nthValidEntry(LocationList* ll, int n, int fdo){
 }
 
 //Location list movement. ":ll", ":lrewind", ":lfirst" and ":llast". ":ldo" and ":lfdo"
-void
+public void
 c_lMove(Invocation* invo) {
    LocationStack* stack;
    int      errornr;
@@ -4568,7 +4568,7 @@ c_lMove(Invocation* invo) {
 
 //":lnext", ":lNext", ":lprevious", ":lnfile", ":lNfile" and ":lpfile".
 //Also, used by ":ldo" and ":lfdo" commands.
-void
+public void
 c_lNext(Invocation* invo) {
    LocationStack* stack;
    if ((stack = getStackForCommand(invo, true)) == NULL)
@@ -4862,7 +4862,7 @@ findNthAdjacentEntry(
 }
 
 // Jump to a location entry in the current file nearest to the current line. ":labove", ":lbelow"
-void
+public void
 c_lBelow(Invocation* invo) {
    LocationStack*stack;
    Unt dir;
@@ -4921,7 +4921,7 @@ cfile_get_auname(CommIndex id){
 }
 
 // ":lfile"/":laddfile" commands.
-void
+public void
 c_lFile(Invocation* invo) {
    Unt   idSave = 0;      // init for gcc
 
@@ -5340,12 +5340,12 @@ elckGrepFiles(
 
     status = OK;
 
-theend:
+public theend:
     return status;
 }
 
 //":vimgrep {pattern} file(s)". ":vimgrepadd {pattern} file(s)"
-void
+public void
 c_vimgrep(Invocation* invo) {
    if (!portCheckCanSetCurBookForceIt(invo->forceit))
       return;
@@ -5420,7 +5420,7 @@ c_vimgrep(Invocation* invo) {
       foldUpdateAll(curPor);
    }
 
-theend:
+public theend:
    deleteArena(matches.a);
    eeglFree(args.title);
    eeglFree(target_dir);
@@ -5579,7 +5579,7 @@ wipeDummyBook(Book* book, CS dirname_start) {
       return;
     }
 
-fail:
+public fail:
     // Keeping the book, remove the dummy flag.
     book->flags &= ~BF_DUMMY;
 }
@@ -5671,7 +5671,7 @@ exportLocList(
 }
 
 // Flags used by getqflist()/getloclist() to determine which fields to return.
-enum {
+public enum {
    QF_GETLIST_NONE    = 0x0,
    QF_GETLIST_TITLE   = 0x1,
    QF_GETLIST_ITEMS   = 0x2,
@@ -6459,7 +6459,7 @@ freeTheStack(LocationStack* stack) {
 // Populate the location list with the items supplied in the list
 // of dictionaries. "title" will be copied to w:quickfix_title.
 // Otherwise create a new list. When "specifics" is not NULL then only set some properties.
-int
+public int
 setLocationList(
    OUT LocationStack* stack,
    List* newContent,
@@ -6546,7 +6546,7 @@ markReferencesInStack(LocationStack* st, int copyId) {
 
 // Mark the context of the quickfix list and the location lists (if present) as "in use". So that 
 // garbage collection doesn't free the context.
-Boole
+public Boole
 llSetRef(int copyId) {
    if (!mainStackG)
       return true;
@@ -6612,7 +6612,7 @@ processCbookArgs(Invocation* invo, OUT Book** outBook, LineNr* line1, LineNr* li
 // ":[range]lbook [booknr]" command.
 // ":[range]laddbook [booknr]" command.
 // ":[range]lgetbook [booknr]" command.
-void
+public void
 c_lbook(Invocation* invo) {
    Book* book = NULL;
    LocationStack   *stack;
@@ -6677,7 +6677,7 @@ c_lbook(Invocation* invo) {
 }
 
 // Return the autocmd name for the :lexpr commands.
-CS
+public CS
 cexpr_get_auname(CommIndex id) {
    switch (id) {
    case C_lexpr:     return S"lexpr";
@@ -6687,7 +6687,7 @@ cexpr_get_auname(CommIndex id) {
    }
 }
 
-int
+public int
 trigger_cexpr_autocmd(int id) {
    CS auName = cexpr_get_auname(id);
 
@@ -6700,7 +6700,7 @@ trigger_cexpr_autocmd(int id) {
    return OK;
 }
 
-int
+public int
 cexpr_core(Invocation* invo, Var *tv) {
    LocationStack* stack = locationStacksP + LOC_LIST_GREP;
 
@@ -6742,7 +6742,7 @@ cexpr_core(Invocation* invo, Var *tv) {
 //":mexpr {expr}", ":mgetexpr {expr}", ":maddexpr {expr}" command.
 //":lexpr {expr}", ":lgetexpr {expr}", ":laddexpr {expr}" command.
 //Also: ":maddexpr", ":mgetexpr", "laddexpr" and "laddexpr".
-void
+public void
 c_lExpr(Invocation* invo) {
    if (trigger_cexpr_autocmd(invo->id) == FAIL)
       return;
@@ -6840,7 +6840,7 @@ searchFilesInDir(LocationList* ll, CS dirname, OUT RegMatch* p_regmatch, CS lang
 }
 
 // ":helpgrep {pattern}"
-void
+public void
 c_helpgrep(Invocation* invo) {
    int updated = false;
 
@@ -6898,7 +6898,7 @@ c_helpgrep(Invocation* invo) {
 }
 
 # if defined(EXITFREE) || defined(PROTO)
-void
+public void
 free_quickfix(void) {
    // Free all global location lists
    for (int i = 0; i < COUNT_LOC_LISTS; i++) {
@@ -6909,7 +6909,7 @@ free_quickfix(void) {
 # endif
 
 // :getloclist m {specifics}
-void
+public void
 f_getloclist(Arr(Var) argvars, OUT Var* returnVar) {
    LocationStack* st = identifyStack(argvars);
    
@@ -6993,7 +6993,7 @@ setLocationListInternal(
    }
 }
 
-void
+public void
 f_setloclist(Var* argvars, Var* returnVar){
    returnVar->number = -1;
    LocationStack* st= identifyStack(argvars);
@@ -7018,14 +7018,14 @@ private CS mark_line(Pos* mp, int lead_len);
 private void show_one_mark(int, Byte *, Pos *, Byte *, int current);
 
 //Set named mark "c" at current cursor position. Return OK on success, FAIL if bad name given.
-int
+public int
 setmark(int c) {
    return setmark_pos(c, &curPor->cursor, curBook->fiNum);
 }
 
 //Set named mark "c" to position "pos". When "c" is upper case use file "fnum".
 //Return OK on success, FAIL if bad name given.
-int
+public int
 setmark_pos(int c, Pos *pos, int fnum) {
    int      i;
 
@@ -7093,7 +7093,7 @@ setmark_pos(int c, Pos *pos, int fnum) {
 }
 
 //Delete every entry referring to file 'fnum' from both the jumplist and the tag stack.
-void
+public void
 mark_forget_file(Portal *wp, int fnum) {
 
    for (int i = wp->jumpListLen - 1; i >= 0; --i) {
@@ -7120,7 +7120,7 @@ mark_forget_file(Portal *wp, int fnum) {
 }
 
 // Set the previous context mark to the current position and add it to the jump list.
-void
+public void
 setpcmark(void) {
    int      i;
    FileMarkExt   *fm;
@@ -7158,7 +7158,7 @@ setpcmark(void) {
 //where ever, then call checkpcmark().  This ensures that the previous
 //context will only be changed if the cursor moved to a different line.
 //If pcmark was deleted (with "dG") the previous mark is restored.
-void
+public void
 checkpcmark(void) {
    if (curPor->prevPrevContextMark.lnum != 0
           && (EQUAL_POS(curPor->prevContextMark, curPor->cursor)
@@ -7168,7 +7168,7 @@ checkpcmark(void) {
 }
 
 // move "count" positions in the jump list (count may be negative)
-Pos *
+public Pos *
 movemark(int count) {
    Pos   *pos;
    FileMarkExt   *jmp;
@@ -7219,7 +7219,7 @@ movemark(int count) {
 }
 
 // Move "count" positions in the changelist (count may be negative).
-Pos *
+public Pos *
 movechangelist(int count) {
    if (curBook->changeListLen == 0)       // nothing to jump to
       return (Pos *)NULL;
@@ -7247,17 +7247,17 @@ movechangelist(int count) {
 //  in another file which can't be gotten. (caller needs to check lnum!)
 //- NULL if there is no mark called 'c'.
 //- -1 if mark is in other file and jumped there (only if changefile is true)
-Pos *
+public Pos *
 markGetBook(Book* book, int c, int changefile) {
    return markGetBookFnum(book, c, changefile, NULL);
 }
 
-Pos *
+public Pos *
 getmark(int c, int changefile) {
    return markGetBookFnum(curBook, c, changefile, NULL);
 }
 
-Pos *
+public Pos *
 markGetBookFnum(Book* book, int c, int changefile, int* fnum) {
    Pos *startp, *endp;
    static Pos pos_copy;
@@ -7358,7 +7358,7 @@ markGetBookFnum(Book* book, int c, int changefile, int* fnum) {
 //Search for the next named mark in the current file.
 //
 //Return pointer to Pos of the next mark or NULL if no mark is found.
-Pos *
+public Pos *
 getnextmark(Pos* startpos, Unt dir, int begin_line) {
    int      i;
    Pos   *result = NULL;
@@ -7417,7 +7417,7 @@ fname2fnum(FileMarkExt* fm) {
 
 //Check all file marks for a name that matches the file name in book. May replace the name with an 
 //fnum. Used for marks that come from the .eeglinfo file.
-void
+public void
 fmarks_check_names(Book* book) {
    if (book->fullFileName == NULL)
       return;
@@ -7448,7 +7448,7 @@ fmarks_check_one(FileMarkExt* fm, CS name, Book* book) {
 
 //Check a if a position from a mark is valid.
 //Give and error message and return FAIL if not.
-int
+public int
 check_mark(Pos* pos) {
    if (!pos) {
       emsg(_(e_unknown_mark));
@@ -7471,7 +7471,7 @@ check_mark(Pos* pos) {
 //clrallmarks() - clear all marks in the book 'book'
 //
 //Used mainly when trashing the entire book during ":e" type commands
-void
+public void
 clrallmarks(Book* book) {
    static int i = -1;
 
@@ -7497,7 +7497,7 @@ clrallmarks(Book* book) {
 
 //Get name of file from a filemark.
 //When it's in the current buffer, return the text at the mark. Returns an allocated string.
-CS
+public CS
 fm_getname(FileMark* fmark, int lead_len) {
    if (fmark->fnum == curBook->fiNum)          // current buffer
       return mark_line(&(fmark->mark), lead_len);
@@ -7525,7 +7525,7 @@ mark_line(Pos* mp, int lead_len) {
 }
 
 // print the marks
-void
+public void
 c_marks(Invocation *invo) {
    CS arg = invo->arg;
    int i;
@@ -7625,7 +7625,7 @@ show_one_mark(
 }
 
 // ":delmarks[!] [marks]"
-void
+public void
 c_delmarks(Invocation* invo) {
    int from, to;
    int i;
@@ -7695,7 +7695,7 @@ c_delmarks(Invocation* invo) {
 }
 
 // print the jumplist
-void
+public void
 c_jumps(Invocation* invo UNUSED) {
    CS name;
 
@@ -7743,7 +7743,7 @@ c_jumps(Invocation* invo UNUSED) {
       msg_puts(S"\n>");
 }
 
-void
+public void
 c_clearjumps(Invocation* invo UNUSED) {
    free_jumplist(curPor);
    curPor->jumpListLen = 0;
@@ -7751,7 +7751,7 @@ c_clearjumps(Invocation* invo UNUSED) {
 }
 
 // print the changelist
-void
+public void
 c_changes(Invocation* invo UNUSED) {
    CS name;
 
@@ -7820,7 +7820,7 @@ c_changes(Invocation* invo UNUSED) {
 //Example: Delete lines 34 and 35: markAdjust(34, 35, MAXLNUM, -2, true);
 //Example: Insert two lines below 55: markAdjust(56, MAXLNUM, 2, 0, true);
 //              or: markAdjust(56, 55, MAXLNUM, 2, true);
-void
+public void
 markAdjust(
    LineNr line1,
    LineNr line2,
@@ -7969,7 +7969,7 @@ markAdjust(
 //"lnum_amount" to the line number and add "col_amount" to the column position.
 //"spaces_removed" is the number of spaces that were removed, matters when the cursor is inside 
 //them
-void
+public void
 mark_col_adjust(
    LineNr lnum,
    ColNr mincol,
@@ -8043,7 +8043,7 @@ mark_col_adjust(
 //When deleting lines, this may create duplicate marks in the jumplist. They will be removed here 
 //for the specified ortal. When "loadfiles" is true first ensure entries have the "fnum" field set
 //(this may be a bit slow).
-void
+public void
 cleanup_jumplist(Portal* wp, int loadfiles) {
    if (loadfiles) {
       // If specified, load all the files from the jump list. This is
@@ -8073,7 +8073,7 @@ cleanup_jumplist(Portal* wp, int loadfiles) {
 }
 
 // Copy the jumplist from portal "from" to portal "to".
-void
+public void
 copy_jumplist(Portal* from, Portal* to) {
    for (int i = 0; i < from->jumpListLen; ++i) {
       to->jumpList[i] = from->jumpList[i];
@@ -8085,20 +8085,20 @@ copy_jumplist(Portal* from, Portal* to) {
 }
 
 // Free items in the jumplist of portal "wp".
-void
+public void
 free_jumplist(Portal *wp) {
    for (int i = 0; i < wp->jumpListLen; ++i)
       eeglFree(wp->jumpList[i].fname);
 }
 
-void
+public void
 set_last_cursor(Portal *port) {
    if (port->book)
       port->book->lastCursor = port->cursor;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-void
+public void
 free_all_marks(void) {
    int      i;
 
@@ -8110,7 +8110,7 @@ free_all_marks(void) {
 #endif
 
 // Return a pointer to the named file marks.
-FileMarkExt *
+public FileMarkExt *
 get_namedfm(void) {
    return namedfm;
 }
@@ -8190,7 +8190,7 @@ get_global_marks(List *l) {
    }
 }
 
-void
+public void
 f_getmarklist(Var *argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
@@ -8215,9 +8215,9 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 
 
 // Struct to hold the sign properties.
-typedef struct Sign Sign;
+private typedef struct Sign Sign;
 
-struct Sign {
+public struct Sign {
    Sign* next; // next sign in list
    int typeNr; // type number of sign
    CS name; // name of sign
@@ -8259,7 +8259,7 @@ private EeSet signGroups; // sign group (SignGroup) hashtable
 private int next_sign_id = 1; // next sign id in the global group
 
 // Initialize data needed for managing signs
-void
+public void
 init_signs(void) {
    hash_init(&signGroups); // sign group hash table
 }
@@ -8593,7 +8593,7 @@ changeSignType(
 
 // Return the decorations of the first sign placed on line 'lnum' in buffer 'buf'. Used when 
 // refreshing the screen. Returns true if a sign is found on 'lnum', false otherwise.
-int
+public int
 markGetSignDecorations(Portal *wp, LineNr lnum, OUT SignHilite* signHilites) {
    CLEAR_POINTER(signHilites);
 
@@ -8795,7 +8795,7 @@ buf_findsigntype_id(Book* book, // buffer whose sign we are searching for
 # endif // FEAT_PROTO
 
 //Delete signs in group 'group' in book. If 'group' is '*', then delete all the signs.
-void
+public void
 llDeleteSigns(Book* book, CS group) {
     // When deleting the last sign need to redraw the windows to remove the
     // sign column. Not when curPor is NULL (this means we're exiting).
@@ -9020,7 +9020,7 @@ sign_define_init_text(Sign *sp, Byte *text) {
 }
 
 // Define a new sign or update an existing sign
-int
+public int
 sign_define_by_name(
    CS name,
    CS linehl,
@@ -9088,13 +9088,13 @@ sign_define_by_name(
 }
 
 // Return true if sign "name" exists.
-int
+public int
 sign_exists_by_name(CS name) {
    return sign_find(name, NULL) != NULL;
 }
 
 // Free the sign specified by 'name'.
-int
+public int
 sign_undefine_by_name(CS name, Boole give_error) {
    Sign *sp_prev = NULL;
    Sign *sp = sign_find(name, &sp_prev);
@@ -9129,7 +9129,7 @@ may_force_numberwidth_recompute(Book* book, int unplace) {
 }
 
 // Place a sign at the specified file location or update a sign.
-int
+public int
 sign_place(
    int *sign_id,
    CS sign_group,
@@ -9517,7 +9517,7 @@ parse_sign_cmd_args(
     return OK;
 }
 
-void
+public void
 c_sign(Invocation* invo) {
     CS arg = invo->arg;
 
@@ -9653,7 +9653,7 @@ sign_getlist(CS name, List* retlist) {
 }
 
 // Returns information about signs placed in a book as list of dicts.
-void
+public void
 llGetBookSigns(Book *book, List *l){
     SignEntry *sign = NULL;
     FOR_ALL_SIGNS_IN_BOOK(book, sign) {
@@ -9795,7 +9795,7 @@ sign_undefine(Sign* sp, Sign* sp_prev) {
 }
 
 // Undefine/free all signs.
-void
+public void
 free_signs(void) {
    while (first_sign)
       sign_undefine(first_sign, NULL);
@@ -9846,7 +9846,7 @@ get_nth_sign_group_name(int idx) {
 }
 
 // Function given to expandGeneric() to obtain the sign command expansion.
-CS
+public CS
 get_sign_name(Expand *xp UNUSED, int idx) {
     switch (expandWhatS) {
     case EXP_SUBCMD:
@@ -9881,7 +9881,7 @@ get_sign_name(Expand *xp UNUSED, int idx) {
 }
 
 // Handle command line completion for :sign command.
-void
+public void
 set_context_in_sign_cmd(Expand* xp, CS arg) {
    CS p;
    CS last;
@@ -10024,7 +10024,7 @@ sign_define_from_dict(CS name_arg, Bag* bag) {
    if (sign_define_by_name(name, linehl, text, texthl, culhl, numhl, prio) == OK)
       retval = 0;
 
-cleanup:
+public cleanup:
    eeglFree(name);
    eeglFree(linehl);
    eeglFree(text);
@@ -10051,7 +10051,7 @@ sign_define_multiple(List* l, List* retlist) {
    }
 }
 
-void
+public void
 f_sign_define(Var *argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_LIST && argvars[1].tag == VAR_UNKNOWN) {
       // Define multiple signs
@@ -10075,7 +10075,7 @@ f_sign_define(Var *argvars, Var* returnVar) {
         name, argvars[1].tag == VAR_BAG ? argvars[1].bag : NULL);
 }
 
-void
+public void
 f_sign_getdefined(Var *argvars, Var* returnVar) {
     if (allocReturnList_id(returnVar, aid_sign_getdefined) == FAIL)
        return;
@@ -10087,7 +10087,7 @@ f_sign_getdefined(Var *argvars, Var* returnVar) {
     sign_getlist(name, returnVar->list);
 }
 
-void
+public void
 f_sign_getplaced(Var *argvars, Var* returnVar) {
    Book* book = NULL;
    LineNr lnum = 0;
@@ -10142,7 +10142,7 @@ f_sign_getplaced(Var *argvars, Var* returnVar) {
    sign_get_placed(book, lnum, sign_id, group, returnVar->list);
 }
 
-void
+public void
 f_sign_jump(Var *argvars, Var* returnVar) {
    returnVar->number = -1;
 
@@ -10175,7 +10175,7 @@ f_sign_jump(Var *argvars, Var* returnVar) {
 
    returnVar->number = sign_jump(sign_id, sign_group, book);
 
-cleanup:
+public cleanup:
    eeglFree(sign_group);
 }
 
@@ -10287,13 +10287,13 @@ sign_place_from_dict(
     if (sign_place(&sign_id, group, sign_name, book, lnum, prio) == OK)
         ret_sign_id = sign_id;
 
-cleanup:
+public cleanup:
     eeglFree(group);
 
     return ret_sign_id;
 }
 
-void
+public void
 f_sign_place(Var *argvars, Var* returnVar) {
    Bag* bag = NULL;
    returnVar->number = -1;
@@ -10308,7 +10308,7 @@ f_sign_place(Var *argvars, Var* returnVar) {
 }
 
 //"sign_placelist()" function.  Place multiple signs.
-void
+public void
 f_sign_placelist(Var *argvars, Var* returnVar) {
    allocReturnList(returnVar);
    if (confirmVarIsList(argvars, 0) == FAIL)
@@ -10343,7 +10343,7 @@ sign_undefine_multiple(List *l, List *retlist) {
     }
 }
 
-void
+public void
 f_sign_undefine(Var *argvars, Var* returnVar) {
    if (argvars[0].tag == VAR_LIST && argvars[1].tag == VAR_UNKNOWN) {
         // Undefine multiple signs
@@ -10414,7 +10414,7 @@ sign_unplace_from_dict(Var *group_tv, Bag *dict) {
    } ei (sign_unplace(sign_id, group, book, 0) == OK)
       retval = 0;
 
-cleanup:
+public cleanup:
    eeglFree(group);
 
    return retval;
@@ -10428,12 +10428,12 @@ get_first_valid_sign(Portal *wp) {
    return sign;
 }
 
-Boole
+public Boole
 isSigncolumnOn(Portal *wp) {
    return get_first_valid_sign(wp) != NULL ? wp->o.signColumn : false;
 }
 
-void
+public void
 f_sign_unplace(Var *argvars, Var* returnVar) {
    Bag *dict = NULL;
    returnVar->number = -1;
@@ -10447,7 +10447,7 @@ f_sign_unplace(Var *argvars, Var* returnVar) {
    returnVar->number = sign_unplace_from_dict(&argvars[0], dict);
 }
 
-void
+public void
 f_sign_unplacelist(Var *argvars, Var* returnVar) {
    allocReturnList(returnVar);
 

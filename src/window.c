@@ -10,7 +10,7 @@
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <fcntl.h>
-int fstat(int fd, struct stat* statbuf); //from sys/stat.h
+public int fstat(int fd, struct stat* statbuf); //from sys/stat.h
 int stat(const char* restrict path, struct stat* restrict buf);
 
 #include <wayland-client.h>
@@ -20,14 +20,14 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
-typedef struct {
+private typedef struct {
    struct wl_seat* proxy;
    char* label;      // Name of seat as text (e.g. seat0, seat1...).
    Unt capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
 } WaylandSeat;
 
 // Global objects
-typedef struct {
+private typedef struct {
    // Data control protocols
    struct ext_data_control_manager_v1* ext_data_control_manager_v1;
    struct wl_data_device_manager* wl_data_device_manager;
@@ -38,7 +38,7 @@ typedef struct {
 } GlobalObjects;
 
 // Struct wrapper for Wayland display and registry
-typedef struct {
+private typedef struct {
    struct wl_display* proxy;
    int fd;   // File descriptor for display
 
@@ -47,7 +47,7 @@ typedef struct {
    } registry;
 } WaylandDisplay;
 
-typedef struct {
+private typedef struct {
    struct wl_shm_pool* pool;
    int fd;
 
@@ -60,7 +60,7 @@ typedef struct {
    int size;
 } BufferStore;
 
-typedef struct {
+private typedef struct {
    void* user_data;
    void (*on_focus)(void *data, Unt serial);
 
@@ -76,7 +76,7 @@ typedef struct {
 } vwl_fs_surface_T; // fs = focus steal
 
 // Wayland protocols for accessing the selection
-typedef enum {
+private typedef enum {
    VWL_DATA_PROTOCOL_NONE,
    VWL_DATA_PROTOCOL_EXT,
    VWL_DATA_PROTOCOL_CORE,
@@ -88,33 +88,33 @@ typedef enum {
 // The `data` member is used to pass other needed stuff around such as a
 // WaylandClipboardSelection pointer.
 
-typedef struct {
+private typedef struct {
    void* proxy;
    void* data; // Is not set when a new offer is created on a
                // data_offer event. Only set when listening to a data offer.
    DataProtocol protocol;
 } DataOffer;
 
-typedef struct {
+private typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataSource;
 
-typedef struct {
+private typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataDevice;
 
-typedef struct {
+private typedef struct {
    void* proxy;
    DataProtocol protocol;
 } vwl_data_device_manager_T;
 
 // LISTENER WRAPPERS
 
-typedef struct {
+private typedef struct {
    void (*data_offer)(DataDevice *device, DataOffer *offer);
 
    // If the protocol that the data device uses doesn't support a specific
@@ -128,16 +128,16 @@ typedef struct {
    void (*finished)(DataDevice *device);
 } vwl_data_device_Listener;
 
-typedef struct {
+private typedef struct {
    void (*send)(DataSource* source, char const* mime_type, int fd);
    void (*cancelled)(DataSource* source);
 } DataSourceListener;
 
-typedef struct {
+private typedef struct {
    void (*offer)(DataOffer *offer, char const* mime_type);
 } DataOfferListener;
 
-typedef struct {
+private typedef struct {
    // What selection this refers to
    WaylandSelection      selection;
 
@@ -162,7 +162,7 @@ typedef struct {
 } WaylandClipboardSelection;
 
 // Holds stuff related to the clipboard/selections
-typedef struct {
+private typedef struct {
    // Do not destroy here, will be destroyed when vwl_disconnect_display() is called.
    WaylandSeat         *seat;
 
@@ -368,7 +368,7 @@ private void   dis_msg(CS p, int skip_esc);
 private void may_set_selection(void);
 private void clip_gen_set_selection(ClipBoard *cbd);
 
-YankReg *
+public YankReg *
 get_y_regs(void) {
    return y_regs;
 }
@@ -378,27 +378,27 @@ getYRegister(int reg) {
    return &y_regs[reg];
 }
 
-YankReg *
+public YankReg *
 get_y_current(void) {
    return y_current;
 }
 
-YankReg *
+public YankReg *
 get_y_previous(void) {
    return y_previous;
 }
 
-void
+public void
 set_y_current(YankReg *yreg) {
    y_current = yreg;
 }
 
-void
+public void
 set_y_previous(YankReg *yreg) {
    y_previous = yreg;
 }
 
-void
+public void
 reset_y_append(void) {
    y_append = false;
 }
@@ -409,7 +409,7 @@ private Byte   *expr_line = NULL;
 private Invocation   *exprInvoS = NULL;
 
 //Get an expression for the "\"=expr1" or "CTRL-R =expr1" Return '=' when OK, ZERO otherwise.
-int
+public int
 get_expr_register(void) {
    CS new_line = getCommline('=', 0L, 0, 0);
    if (!new_line)
@@ -423,7 +423,7 @@ get_expr_register(void) {
 
 //Set the expression for the '=' register. Argument must be an allocated string.
 //"invo" may be used if the next line needs to be checked when evaluating the expression.
-void
+public void
 set_expr_line(CS new_line, Invocation* invo) {
    eeglFree(expr_line);
    expr_line = new_line;
@@ -432,7 +432,7 @@ set_expr_line(CS new_line, Invocation* invo) {
 
 //Get the result of the '=' register expression.
 //Return a pointer to allocated memory, or NULL for failure.
-CS
+public CS
 get_expr_line(void) {
    Byte   *expr_copy;
    Byte   *rv;
@@ -465,7 +465,7 @@ get_expr_line_src(void) {
 
 //Check if 'regname' is a valid name of a yank register.
 //Note: There is no check for 0 (default register), caller should do this
-int
+public int
 valid_yank_reg(int regname, Boole writing) {      // if true check for writable registers
    if (      (regname > 0 && ASCII_ISALNUM(regname))
           || (!writing && firstOccurrence((CS)"/.%:=", regname) != NULL)
@@ -494,7 +494,7 @@ valid_yank_reg(int regname, Boole writing) {      // if true check for writable 
 //If regname is 0 and writing, use register 0. If regname is 0 and reading, use previous register
 //
 //Return true when the register should be inserted literally (selection or clipboard).
-int
+public int
 get_yank_register(int regname, int writing) {
    int       i;
    int       ret = false;
@@ -535,7 +535,7 @@ get_yank_register(int regname, int writing) {
 
 //Obtain the contents of a "normal" register. The register is made empty.
 //The returned pointer has allocated memory, use put_register() later.
-void *
+public void *
 get_register(int      name, int copy) {  // make a copy, if false make register empty.
    YankReg   *reg;
    int      i;
@@ -577,7 +577,7 @@ get_register(int      name, int copy) {  // make a copy, if false make register 
 }
 
 // Put "reg" into register "name".  Free any previous contents and "reg".
-void
+public void
 put_register(int name, void *reg) {
    get_yank_register(name, 0);
    free_yank_all();
@@ -588,7 +588,7 @@ put_register(int name, void *reg) {
    may_set_selection();
 }
 
-void
+public void
 free_register(void *reg) {
     YankReg tmp;
 
@@ -600,7 +600,7 @@ free_register(void *reg) {
 }
 
 // return true if the current yank register has type MLINE
-int
+public int
 yank_register_mline(int regname) {
    if (regname != 0 && !valid_yank_reg(regname, false))
       return false;
@@ -611,7 +611,7 @@ yank_register_mline(int regname) {
 }
 
 // Start or stop recording into a yank register. Return FAIL for failure, OK otherwise.
-int
+public int
 do_record(int c) {
    Byte       *p;
    static int       regname;
@@ -705,12 +705,12 @@ stuff_yank(int regname, CS p) {
 // Last executed register (@ command)
 private int execreg_lastc = ZERO;
 
-int
+public int
 get_execreg_lastc(void) {
    return execreg_lastc;
 }
 
-void
+public void
 set_execreg_lastc(int lastc) {
    execreg_lastc = lastc;
 }
@@ -778,7 +778,7 @@ execreg_line_continuation(Arr(Text) lines, long *idx) {
 //Execute a yank register: copy it into the stuff buffer.
 //
 //Return FAIL for failure, OK otherwise.
-int
+public int
 do_execreg(
     int       regname,
     int       colon,      // insert ':' before each line
@@ -955,7 +955,7 @@ put_in_typeBufG(
 //Used by CTRL-R command and middle mouse button in insert mode.
 //
 //return FAIL for failure, OK otherwise
-int
+public int
 insert_reg(
     int      regname,
     int      literally_arg)   // insert literally, not as if typed
@@ -1015,7 +1015,7 @@ insert_reg(
 }
 
 //If "regname" is a special register, return true and store a pointer to its value in "retVal".
-int
+public int
 get_spec_reg(
    int      regname,
    OUT CS* retVal,
@@ -1103,7 +1103,7 @@ get_spec_reg(
 //insert_reg() can't be used here, because special characters from the
 //register contents will be interpreted as commands.
 //return FAIL for failure, OK otherwise
-int
+public int
 cmdline_paste_reg(
    int regname,
    int literally_arg,   // Insert text literally instead of "as typed"
@@ -1135,7 +1135,7 @@ cmdline_paste_reg(
 }
 
 //Shift the delete registers: "9 is cleared, "8 becomes "9, etc.
-void
+public void
 shift_delete_registers(void) {
    int      n;
 
@@ -1149,7 +1149,7 @@ shift_delete_registers(void) {
    y_regs[1].y_array = NULL;      // set register one to empty
 }
 
-void
+public void
 yank_do_autocmd(Operator* opArg, YankReg *reg) {
    static int recursive = false;
    Byte buf[NUMBUFLEN + 2];
@@ -1212,14 +1212,14 @@ yank_do_autocmd(Operator* opArg, YankReg *reg) {
 }
 
 // set all the yank registers to empty (called from main())
-void
+public void
 init_yank(void) {
    for (int i = 0; i < NUM_REGISTERS; ++i)
       y_regs[i].y_array = NULL;
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-void
+public void
 clear_registers(void) {
    for (int i = 0; i < NUM_REGISTERS; ++i) {
       y_current = &y_regs[i];
@@ -1240,7 +1240,7 @@ free_yank(long n) {
    EE_CLEAR(y_current->y_array);
 }
 
-void
+public void
 free_yank_all(void) {
    free_yank(y_current->y_size);
 }
@@ -1251,7 +1251,7 @@ free_yank_all(void) {
 //one in case of out-of-memory).
 //
 //Return FAIL for failure, OK otherwise.
-int
+public int
 op_yank(Operator *opArg, int deleting, int mess) {
    long      y_idx;      // index in y_array[]
    YankReg      *curr;      // copy of y_current
@@ -1448,7 +1448,7 @@ op_yank(Operator *opArg, int deleting, int mess) {
       yank_do_autocmd(opArg, y_current);
    return OK;
 
-fail:      // free the allocated lines
+public fail:      // free the allocated lines
    free_yank(y_idx + 1);
    y_current = curr;
    return FAIL;
@@ -1510,7 +1510,7 @@ copy_yank_reg(YankReg *reg) {
 //      PUT_CURSEND      leave cursor after end of new text
 //      PUT_LINE      force linewise put (":put")
 //      PUT_BLOCK_INNER     in block mode, do not add trailing spaces
-void
+public void
 do_put(
    int      regname,
    CS expr_result,   // result for regname "=" when compiled
@@ -2127,7 +2127,7 @@ do_put(
       curPor->cursor.col = len;
    }
 
-end:
+public end:
    if (commModifierG.cmod_flags & CMOD_LOCKMARKS) {
       curBook->opStart = orig_start;
       curBook->opEnd = orig_end;
@@ -2144,7 +2144,7 @@ end:
 }
 
 // Return the character name of the register with the given number.
-int
+public int
 get_register_name(int num) {
    if (num == -1)
       return '"';
@@ -2161,13 +2161,13 @@ get_register_name(int num) {
 }
 
 // Return the index of the register "" points to.
-int
+public int
 get_unname_register(void) {
    return y_previous == NULL ? -1 : y_previous - &y_regs[0];
 }
 
 // ":dis" and ":registers": Display the contents of the yank registers.
-void
+public void
 c_display(Invocation* invo) {
    int      i, n;
    long   j;
@@ -2453,7 +2453,7 @@ str_to_reg(
 }
 
 // Replace the contents of the '~' register with str.
-void
+public void
 dnd_yank_drag_data(CS str, long len) {
    YankReg* curr = y_current;
    y_current = &y_regs[TILDE_REGISTER];
@@ -2464,7 +2464,7 @@ dnd_yank_drag_data(CS str, long len) {
 
 
 //Return the type of a register. MAUTO for error. Used for getregtype().
-Byte
+public Byte
 get_reg_type(int regname, long *reglen) {
    switch (regname) {
    case '%':      // file name
@@ -2518,7 +2518,7 @@ getreg_wrap_one_line(CS s, int flags) {
 //  GREG_EXPR_SRC   For the expression register: return expression itself,
 //        not the result of its evaluation.
 //  GREG_LIST   Return a list of lines instead of a single string.
-CS
+public CS
 get_reg_contents(int regname, int flags) {
    LineNr   i;
    Byte   *retval;
@@ -2641,7 +2641,7 @@ finish_write_reg(
 //Note: "maxlen" and "must_append" don't work for the "/" register.
 //Careful: 'str' is modified, you may have to use a copy!
 //If "str" ends in '\n' or '\r', use linewise, otherwise use characterwise.
-void
+public void
 write_reg_contents(
    int      name,
    CS str,
@@ -2651,7 +2651,7 @@ write_reg_contents(
    write_reg_contents_ex(name, str, maxlen, must_append, MAUTO, 0L);
 }
 
-void
+public void
 write_reg_contents_lst(
    int      name,
    Byte   **strings,
@@ -2687,7 +2687,7 @@ write_reg_contents_lst(
    finish_write_reg(name, old_y_previous, old_y_current);
 }
 
-void
+public void
 write_reg_contents_ex(
    int name,
    CS str,
@@ -2791,7 +2791,7 @@ private void clip_wl_selection_cancelled(WaylandSelection selection);
 //Call this to initialise the clipboard. Pass it false if the clipboard code is included, but the 
 //clipboard can not be used, or true if the clipboard can be used. Eg unix may call this with 
 //false, then call it again with true if the GUI starts.
-void
+public void
 clip_init(){
    ClipBoard* cb = &clipboard;
    cb->owned      = false;
@@ -2807,7 +2807,7 @@ clip_init(){
 //lying around.  If the VIsual mode has ended, make a copy of what was
 //selected so we can still give it to others.   Will probably have to make sure
 //this is called whenever VIsual mode is ended.
-void
+public void
 clip_update_selection(ClipBoard *clip){
    Pos start, end;
 
@@ -2865,7 +2865,7 @@ clip_gen_lose_selection(ClipBoard *cbd) {
    clip_wl_lose_selection(cbd);
 }
 
-void
+public void
 clip_lose_selection(ClipBoard* cbd) {
    Boole isVisual = (cbd == &clipboard);
    freeSelection(cbd);
@@ -2892,7 +2892,7 @@ private int clipboard_needs_update = false; // clipboard needs to be updated
 private int clip_did_set_selection = true;
 
 // Save state and reset it.
-void
+public void
 start_global_changes(void) {
    if (++global_change_count > 1)
       return;
@@ -2909,7 +2909,7 @@ is_clipboard_needs_update(void){
    return clipboard_needs_update;
 }
 
-void
+public void
 end_global_changes(void){
    if (--global_change_count > 0)
       // recursive
@@ -2926,7 +2926,7 @@ end_global_changes(void){
 }
 
 // Called when Visual mode is ended: update the selection.
-void
+public void
 clip_auto_select(void){
    clip_copy_selection(&clipboard);
 }
@@ -3041,7 +3041,7 @@ clip_invert_area(
 
 //Start, continue or end a modeless selection.  Used when editing the
 //command-line, in the commline portal and when the mouse is in a popup portal.
-void
+public void
 clip_modeless(int button, int is_click, int is_drag){
    int repeat = ((clipboard.mode == SELECT_MODE_CHAR
       || clipboard.mode == SELECT_MODE_LINE) && (modMaskG & MOD_MASK_2CLICK))
@@ -3339,7 +3339,7 @@ processSelection(int button, int col, int row, Unt repeated_click) {
 }
 
 // Called from outside to clear selected region from the display
-void
+public void
 clip_clear_selection(ClipBoard *cbd){
    if (cbd->state == SELECT_CLEARED)
       return;
@@ -3351,7 +3351,7 @@ clip_clear_selection(ClipBoard *cbd){
 }
 
 // Clear the selection if any lines from "row1" to "row2" are inside of it.
-void
+public void
 clip_may_clear_selection(int row1, int row2){
    if (clipboard.state == SELECT_DONE
           && row2 >= clipboard.start.lnum
@@ -3361,7 +3361,7 @@ clip_may_clear_selection(int row1, int row2){
 
 //Called before the screen is scrolled up or down.  Adjusts the line numbers
 //of the selection.  Call with big number when clearing the screen.
-void
+public void
 clip_scroll_selection(int rows)  {    // negative for scroll down
    if (clipboard.state == SELECT_CLEARED)
       return;
@@ -3393,7 +3393,7 @@ clip_yank_selection(int type, CS str, long len, ClipBoard* cbd) {
 
 //Copy the currently selected area into the '*' register so it will be available for pasting.
 //When "both" is true also copy to the '+' register.
-void
+public void
 clip_copy_modeless_selection() {
    // Can't use screenLinesP unless initialized
    if (!drawHasLines())
@@ -3640,7 +3640,7 @@ clip_convert_selection(OUT Byte** str, OUT Ulong *len, ClipBoard* cbd) {
 
 //When "regname" is a clipboard register, obtain the selection.  If it's not
 //available return zero, otherwise return "regname".
-int
+public int
 may_get_selection(int regname) {
    if (regname == '*') {
       clip_get_selection(&clipboard);
@@ -3663,7 +3663,7 @@ may_set_selection(void){
 }
 
 //Adjust the register name pointed to with "rp" for the clipboard being used always.
-void
+public void
 clipGetDefaultRegister(OUT int* rp){
    if (*rp == 0) {
       *rp = '+';
@@ -3854,7 +3854,7 @@ clip_wl_send_data(char const* mime_type, int fd, WaylandSelection selection) {
       tv.tv_sec = 0;
       tv.tv_usec = p_wtm * 1000;
    }
-exit:
+public exit:
    eeglFree(string);
 }
 
@@ -4345,7 +4345,7 @@ vwl_seat_get_keyboard(WaylandSeat *seat) {
 // Connect to the Wayland display with given name and binds to global objects
 // as needed. If display is NULL then the $WAYLAND_DISPLAY environment variable
 // will be used (handled by libwayland). Returns FAIL on failure and OK on success
-int
+public int
 wayland_init_client(CS display) {
    wayland_set_display(display);
 
@@ -4355,14 +4355,14 @@ wayland_init_client(CS display) {
    wayland_display_fd = vwl_display.fd;
 
    return OK;
-fail:
+public fail:
    // Set v:wayland_display to empty string (but not wayland_display_name)
    wayland_set_display(S"");
    return FAIL;
 }
 
 // Disconnect Wayland client and free up all resources used.
-void
+public void
 wayland_uninit_client(void) {
     wayland_cb_uninit();
     vwl_disconnect_display();
@@ -4371,7 +4371,7 @@ wayland_uninit_client(void) {
 }
 
 // true if Wayland display connection is valid and ready.
-int
+public int
 wayland_client_is_connected(int quiet) {
    if (vwl_display.proxy == NULL)
       goto error;
@@ -4381,14 +4381,14 @@ wayland_client_is_connected(int quiet) {
       goto error;
 
    return true;
-error:
+public error:
    if (!quiet)
       emsg(e_wayland_connection_unavailable);
    return false;
 }
 
 // Flush requests and process new Wayland events, does not poll the display file descriptor.
-int
+public int
 wayland_client_update(void) {
    return vwl_display_dispatch_any(&vwl_display) == -1 ? FAIL : OK;
 }
@@ -4609,12 +4609,12 @@ vwl_init_fs_surface(
          goto fail;
    }
    }
-early_exit:
+public early_exit:
    vwl_destroy_fs_surface(store);
    vwl_display_flush(&vwl_display);
 
    return OK;
-fail:
+public fail:
    vwl_destroy_fs_surface(store);
    vwl_display_flush(&vwl_display);
 
@@ -4693,7 +4693,7 @@ vwl_fs_keyboard_listener_repeat_info(
 }
 
 #define VWL_CODE_DATA_OBJECT_DESTROY(type) \
-do { \
+public do { \
    if (type == NULL || type->proxy == NULL) \
       return; \
     switch (type->protocol) \
@@ -4818,39 +4818,39 @@ private void offer_name##_listener_offer(void *data, \
     dataOfferListener.offer(data, mime_type); \
 }
 
-VWL_FUNC_DATA_DEVICE_DATA_OFFER(
+public VWL_FUNC_DATA_DEVICE_DATA_OFFER(
    ext_data_control_device_v1, ext_data_control_offer_v1)
-VWL_FUNC_DATA_DEVICE_DATA_OFFER(wl_data_device, wl_data_offer)
+public VWL_FUNC_DATA_DEVICE_DATA_OFFER(wl_data_device, wl_data_offer)
 VWL_FUNC_DATA_DEVICE_DATA_OFFER(
    zwp_primary_selection_device_v1, zwp_primary_selection_offer_v1)
 
-VWL_FUNC_DATA_DEVICE_SELECTION(
+public VWL_FUNC_DATA_DEVICE_SELECTION(
    ext_data_control_device_v1, ext_data_control_offer_v1,
    selection, WAYLAND_SELECTION_REGULAR, VWL_DATA_PROTOCOL_EXT)
-VWL_FUNC_DATA_DEVICE_SELECTION(
+public VWL_FUNC_DATA_DEVICE_SELECTION(
    wl_data_device, wl_data_offer, selection,
    WAYLAND_SELECTION_REGULAR, VWL_DATA_PROTOCOL_CORE)
 
-VWL_FUNC_DATA_DEVICE_SELECTION(
+public VWL_FUNC_DATA_DEVICE_SELECTION(
    ext_data_control_device_v1, ext_data_control_offer_v1,
    primary_selection, WAYLAND_SELECTION_PRIMARY, VWL_DATA_PROTOCOL_EXT)
-VWL_FUNC_DATA_DEVICE_SELECTION(
+public VWL_FUNC_DATA_DEVICE_SELECTION(
    zwp_primary_selection_device_v1, zwp_primary_selection_offer_v1,
    primary_selection, WAYLAND_SELECTION_PRIMARY, VWL_DATA_PROTOCOL_PRIMARY)
 
-VWL_FUNC_DATA_DEVICE_FINISHED(ext_data_control_device_v1)
+public VWL_FUNC_DATA_DEVICE_FINISHED(ext_data_control_device_v1)
 
-VWL_FUNC_DATA_SOURCE_SEND(ext_data_control_source_v1)
+public VWL_FUNC_DATA_SOURCE_SEND(ext_data_control_source_v1)
 VWL_FUNC_DATA_SOURCE_SEND(wl_data_source)
-VWL_FUNC_DATA_SOURCE_SEND(zwp_primary_selection_source_v1)
+public VWL_FUNC_DATA_SOURCE_SEND(zwp_primary_selection_source_v1)
 
-VWL_FUNC_DATA_SOURCE_CANCELLED(ext_data_control_source_v1)
+public VWL_FUNC_DATA_SOURCE_CANCELLED(ext_data_control_source_v1)
 VWL_FUNC_DATA_SOURCE_CANCELLED(wl_data_source)
-VWL_FUNC_DATA_SOURCE_CANCELLED(zwp_primary_selection_source_v1)
+public VWL_FUNC_DATA_SOURCE_CANCELLED(zwp_primary_selection_source_v1)
 
-VWL_FUNC_DATA_OFFER_OFFER(ext_data_control_offer_v1)
+public VWL_FUNC_DATA_OFFER_OFFER(ext_data_control_offer_v1)
 VWL_FUNC_DATA_OFFER_OFFER(wl_data_offer)
-VWL_FUNC_DATA_OFFER_OFFER(zwp_primary_selection_offer_v1)
+public VWL_FUNC_DATA_OFFER_OFFER(zwp_primary_selection_offer_v1)
 
 // Listener handlers. Used via VWL_CODE_DATA_OBJECT_ADD_LISTENER macro
 
@@ -4910,7 +4910,7 @@ zwp_primary_selection_offer_v1_listenerObj = {
 
 // `type` is also used as the user data
 #define VWL_CODE_DATA_OBJECT_ADD_LISTENER(type) \
-do { \
+public do { \
    if (type->proxy == NULL) \
       return; \
    type->data = data; \
@@ -5025,7 +5025,7 @@ vwl_get_data_device_manager(
    if (vwl_gobjects.ext_data_control_manager_v1 != NULL)
       SET_MANAGER(ext_data_control_manager_v1, VWL_DATA_PROTOCOL_EXT, false);
 
-focus_steal:
+public focus_steal:
    if (vwl_focus_stealing_available()) {
       if (vwl_gobjects.wl_data_device_manager != NULL
          && selection == WAYLAND_SELECTION_REGULAR)
@@ -5120,7 +5120,7 @@ vwl_clipboard_free_mime_types(WaylandClipboardSelection *clip_sel) {
 
 // Setup required objects to interact with Wayland selections/clipboard on given
 // seat. Returns OK on success and FAIL on failure.
-int
+public int
 wayland_cb_init(CS seat) {
    vwl_clipboard.seat = vwl_get_seat(seat);
 
@@ -5182,7 +5182,7 @@ wayland_cb_init(CS seat) {
 
 // Free up resources used for Wayland selections. Does not destroy global
 // objects such as data device managers.
-void
+public void
 wayland_cb_uninit(void) {
    if (vwl_clipboard.fs_buffer != NULL) {
       vwl_destroy_buffer_store(vwl_clipboard.fs_buffer);
@@ -5286,7 +5286,7 @@ vwl_data_device_listener_selection(
       goto exit;
    }
 
-exit:
+public exit:
    // Destroy previous offer if any
    vwl_data_offer_destroy(prev_offer, true);
    ga_clear_strings(&clip_sel->mime_types);
@@ -5316,7 +5316,7 @@ vwl_data_device_listener_finished(DataDevice *device) {
 //supports sending. If the returned garray has NULL for c or a len of
 //0, then the selection is cleared. If focus stealing is required, a surface
 //will be created to steal focus first.
-ArrayList *
+public ArrayList *
 wayland_cb_get_mime_types(WaylandSelection selection) {
    WaylandClipboardSelection *clip_sel;
 
@@ -5341,7 +5341,7 @@ wayland_cb_get_mime_types(WaylandSelection selection) {
 
 // Receive data from the given selection, and return the fd to read data from.
 // On failure -1 is returned.
-int
+public int
 wayland_cb_receive_data(CS mime_type, WaylandSelection selection) {
    WaylandClipboardSelection *clip_sel;
 
@@ -5412,7 +5412,7 @@ vwl_on_focus_set_selection(void* data, Unt serial) {
 
 // Become the given selection's owner, and advertise to other clients the mime
 // types found in mime_types array. Returns FAIL on failure and OK on success.
-int
+public int
 wayland_cb_own_selection(
    wayland_cb_send_data_func_T send_cb,
    wayland_cb_selection_cancelled_func_T cancelled_cb,
@@ -5484,14 +5484,14 @@ wayland_cb_own_selection(
    }
 
    return OK;
-fail:
+public fail:
    vwl_data_source_destroy(&clip_sel->source, false);
    return FAIL;
 }
 
 // Disown the given selection, so that we are not the source client that other
 // clients receive data from.
-void
+public void
 wayland_cb_lose_selection(WaylandSelection selection) {
    if (selection == WAYLAND_SELECTION_REGULAR)
       vwl_data_source_destroy(&vwl_clipboard.regular.source, false);
@@ -5501,7 +5501,7 @@ wayland_cb_lose_selection(WaylandSelection selection) {
 }
 
 // Return true if the selection is owned by either us or another client.
-int
+public int
 wayland_cb_selection_is_owned(WaylandSelection selection) {
    vwl_display_roundtrip(&vwl_display);
 
@@ -5516,7 +5516,7 @@ wayland_cb_selection_is_owned(WaylandSelection selection) {
 }
 
 // Return true if the Wayland clipboard/selections are ready to use.
-int
+public int
 wayland_cb_is_ready(void) {
    vwl_display_roundtrip(&vwl_display);
 
@@ -5527,7 +5527,7 @@ wayland_cb_is_ready(void) {
 }
 
 // Reload Wayland clipboard, useful if changing seat.
-int
+public int
 wayland_cb_reload(void) {
    // Lose any selections we own
    if (clipboard.owned)
@@ -5546,7 +5546,7 @@ private int wayland_ct_restore_count = 0;
 
 //Attempt to restore the Wayland display connection. Returns OK if display
 //connection was/is now valid, else FAIL if the display connection is invalid.
-int
+public int
 wayland_may_restore_connection(void) {
    // No point if we still are already connected properly
    if (wayland_client_is_connected(true))
@@ -5565,7 +5565,7 @@ wayland_may_restore_connection(void) {
 }
 
 // Disconnect then reconnect Wayland connection
-void
+public void
 c_wlrestore(Invocation *invo) {
    CS display = (!invo->arg || STRLEN(invo->arg) == 0) ? wayland_display_name : invo-> arg;
 
@@ -5620,7 +5620,7 @@ wayland_set_display(CS display) {
       wayland_display_name = copyStr((Byte*)display);
    }
 
-exit:
+public exit:
    set_EeglVar_string(VV_WAYLAND_DISPLAY, (Byte*)display, -1);
 }
 

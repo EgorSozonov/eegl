@@ -33,9 +33,9 @@
 #define MAX_STATES 100000
 #define TOO_EXPENSIVE (-1)
 
-declStruct(RState);
+public declStruct(RState);
 // NFA state. Such a state may have no outgoing edge, when it is a MATCH state.
-struct RState {
+public struct RState {
    Unt         c; // a char
    RState      *out;
    RState      *out1;
@@ -45,7 +45,7 @@ struct RState {
 };
 
 // Structure used by the NFA matcher.
-struct RegProg {
+public struct RegProg {
    // These three members implement RegProg
    Unt regflags;
    Unt re_engine;
@@ -71,7 +71,7 @@ struct RegProg {
 
 // Since the out pointers in the list are always uninitialized, we use the pointers themselves
 // as storage for the StateLists.
-typedef union StateList StateList;
+private typedef union StateList StateList;
 union StateList {
    StateList* next;
    RState* s;
@@ -79,7 +79,7 @@ union StateList {
 
 
 // A partially built NFA without the matching state filled in.
-typedef struct {
+private typedef struct {
    RState *start; // points at the start state.
    StateList   *out; // a list of places that need to be set to the next state for this fragment.
 } Frag;
@@ -87,7 +87,7 @@ typedef struct {
 //Structure to be used for single-line matching.
 //Sub-match "no" starts at "startp[no]" and ends just before "endp[no]".
 //When there is no match, the pointer is NULL.
-struct RegMatch {
+public struct RegMatch {
    RegProg* regprog;
    Byte* startp[NSUBEXP];
    Byte* endp[NSUBEXP];
@@ -210,7 +210,7 @@ backslash_trans(Unt c) {
    return c;
 }
 
-enum {
+public enum {
    CHAR_CLASS_ALNUM = 0,
    CHAR_CLASS_ALPHA,
    CHAR_CLASS_BLANK,
@@ -335,7 +335,7 @@ private Unt   nextchr;   // used for ungetchr() ???
 #define REG_ZPAREN   2   // \z(\)
 #define REG_NPAREN   3   // \%(\)
 
-typedef struct {
+private typedef struct {
    Byte* regparse;
    int prevchr_len;
    int curchr;
@@ -424,14 +424,14 @@ get_char_class(Byte **pp) {
 //This doesn't work well recursively.  In case it happens anyway, the first
 //set timeout will prevail, nested ones are ignored.
 //The caller must make sure there is a matching disable_regexp_timeout() call!
-void
+public void
 init_regexp_timeout(long msec) {
    if (timeout_nesting == 0)
       timeout_flag = start_timeout(msec);
    ++timeout_nesting;
 }
 
-void
+public void
 disable_regexp_timeout(void) {
    if (timeout_nesting == 0)
       internalErrMsg(S"disable_regexp_timeout() called without active timer");
@@ -442,7 +442,7 @@ disable_regexp_timeout(void) {
 }
 
 // Return true if compiled regular expression "prog" can match a line break.
-int
+public int
 re_multiline(RegProg* prog){
    return (prog->regflags & RF_HASNL);
 }
@@ -527,13 +527,13 @@ skip_anyof(Byte *p) {
 //Stop at end of "startp" or where "delim" is found ('/', '?', etc).
 //Take care of characters with a backslash in front of it.
 //Skip strings inside [ and ].
-Byte *
+public Byte *
 skip_regexp(Byte   *startp, int      delim, int      magic) {
    return skip_regexp_ex(startp, delim, magic, NULL, NULL, NULL);
 }
 
 // Call skip_regexp() and when the delimiter does not match give an error and return NULL.
-Byte *
+public Byte *
 skip_regexp_err( Byte   *startp, int      delim, int      magic) {
    Byte *p = skip_regexp(startp, delim, magic);
 
@@ -549,7 +549,7 @@ skip_regexp_err( Byte   *startp, int      delim, int      magic) {
 //"\?" to "?".  If "*newp" is not NULL the expression is changed in-place.
 //If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
 //If "magic_val" is not NULL, returns the effective magicness of the pattern
-Byte *
+public Byte *
 skip_regexp_ex(
    Byte* startp,
    int dirc,
@@ -966,7 +966,7 @@ private Unt reg_tofreelen;
 //reg_firstlnum   <invalid>   first line in which to search
 //reg_maxline      0          last line nr
 //reg_line_lbr false or true  false
-typedef struct {
+private typedef struct {
    RegMatch* match;
    RegMultilineMatch* multiMatch;
 
@@ -1030,7 +1030,7 @@ private int can_f_submatch = false;   // true when submatch() can be used
 // This struct is used for reg_submatch(). Needed for when the
 // substitution string is an expression that contains a call to substitute()
 // and submatch().
-typedef struct {
+private typedef struct {
    RegMatch   *sm_match;
    RegMultilineMatch   *sm_mmatch;
    LineNr   sm_firstlnum;
@@ -1040,7 +1040,7 @@ typedef struct {
 
 private regsubMatch rsm;  // can only be used when can_f_submatch is true
 
-typedef enum {
+private typedef enum {
     RGLF_LINE = 0x01,
     RGLF_LENGTH = 0x02,
     RGLF_SUBMATCH = 0x04
@@ -1136,7 +1136,7 @@ make_extmatch(void){
 }
 
 // Add a reference to an extmatch.
-RegExternalMatch *
+public RegExternalMatch *
 ref_extmatch(RegExternalMatch *em){
    if (em)
       em->refcnt++;
@@ -1144,7 +1144,7 @@ ref_extmatch(RegExternalMatch *em){
 }
 
 // Remove a reference to an extmatch.  If there are no references left, free the info.
-void
+public void
 unref_extmatch(RegExternalMatch *em) {
    if (em && --em->refcnt <= 0) {
       for (int i = 0; i < NSUBEXP; ++i)
@@ -1348,7 +1348,7 @@ re_mult_next(CS what) {
    return OK;
 }
 
-typedef struct {
+private typedef struct {
    int a, b, c;
 } decomp_T;
 
@@ -1535,7 +1535,7 @@ cstrchr(Byte *s, int c) {
 //}}}
 //{{{substitutions
 
-typedef void (*AllOrOne)(int *, int);
+private typedef void (*AllOrOne)(int *, int);
 
 private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, Unt flags);
 
@@ -1559,7 +1559,7 @@ do_lower(int *d, int c) {
 //user to keep his hands off of "magic".
 //
 //The tildes are parsed once before the first call to eeRegsub().
-CS
+public CS
 regtilde(CS source) {
    Byte   *newsub = source;
    Byte   *p;
@@ -1698,7 +1698,7 @@ clear_submatch_list(StaticList10 *sl) {
 //eeRegexec()/eeRegexec_multi() and eeRegsub()! It would make the back references invalid!
 //
 //Return the size of the replacement, including terminating ZERO.
-int
+public int
 eeRegsub(
    RegMatch* rmp,
    Byte* source,
@@ -1730,7 +1730,7 @@ eeRegsub(
     return result;
 }
 
-int
+public int
 eeRegsub_multi(
    RegMultilineMatch   *rmp,
    LineNr   lnum,
@@ -1768,7 +1768,7 @@ eeRegsub_multi(
 private Byte* eval_result[MAX_REGSUB_NESTING] = {NULL, NULL, NULL, NULL};
 
 #if defined(EXITFREE) || defined(PROTO)
-void
+public void
 free_resub_eval_result(void) {
    for (int i = 0; i < MAX_REGSUB_NESTING; ++i)
       EE_CLEAR(eval_result[i]);
@@ -2142,7 +2142,7 @@ eeRegsub_both(
    if (copy)
       *dst = ZERO;
 
-exit:
+public exit:
    return (int)((dst - dest) + 1);
 }
 
@@ -2166,7 +2166,7 @@ reg_getline_submatch_len(LineNr lnum) {
 //Used for the submatch() function: get the string from the n'th submatch in
 //allocated memory.
 //Return NULL when not in a ":s" command and for a non-existing submatch.
-Byte *
+public Byte *
 reg_submatch(int no) {
    Byte   *retval = NULL;
    Byte   *s;
@@ -2242,7 +2242,7 @@ reg_submatch(int no) {
 //the list of strings from the n'th submatch in allocated memory with NULs represented in NLs.
 //Returns a list of allocated strings.  Returns NULL when not in a ":s"
 //command, for a non-existing submatch and for any error.
-List *
+public List *
 reg_submatch_list(int no) {
    Byte* s;
    LineNr slnum;
@@ -2331,7 +2331,7 @@ reg_submatch_list(int no) {
 
 //{{{ Regex tokens
 
-enum {
+public enum {
     SPLIT = 4294967295 - 1024,
     MATCH,
     EMPTY,             // matches 0-length
@@ -2549,7 +2549,7 @@ private int countStatesS;   // Number of states in the NFA.
 private int stateS;   // Index in the state vector, used in alloc_state()
 
 // struct to save start/end pointer/position in for \(\)
-typedef struct{
+private typedef struct{
    union {
       Byte   *ptr;
       PosNoVirt   pos;
@@ -3931,7 +3931,7 @@ parseAtom(OUT Boole* hadEol) {
       break;
 
    case Magic('['):
-collection:
+public collection:
       //[abc]  uses START_COLL - END_COLL
       //[^abc] uses START_NEG_COLL - END_NEG_COLL
       //Each character is produced as a regular state, using CONCAT to bind them together.
@@ -4232,7 +4232,7 @@ collection:
    default: {
       int   plen;
 
-nfa_do_multibyte:
+public nfa_do_multibyte:
       //plen is length of current char with composing chars
       if ((int)mb_char2len(c) != (plen = utfCharLen(old_regparse)) || utf_iscomposing(c)) {
          int i = 0;
@@ -4623,13 +4623,13 @@ parse(Unt paren, OUT Boole* hadEol) {  // REG_NOPAREN, REG_PAREN, REG_NPAREN or 
 
 // Used at the debug prompt: disable the timeout so that expression evaluation can used patterns.
 // Must be followed by calling restore_timeout_for_debugging().
-void
+public void
 save_timeout_for_debugging(void) {
    saved_timeout_flag = (sig_atomic_t *)timeout_flag;
    timeout_flag = &dummy_timeout_flag;
 }
 
-void
+public void
 restore_timeout_for_debugging(void) {
    timeout_flag = saved_timeout_flag;
 }
@@ -5789,7 +5789,7 @@ buildAutomaton(Arr(Unt) postfix, Unt* end) {
    patch(e.out, matchstate);
    ret = e.start;
 
-theend:
+public theend:
    eeglFree(stack);
    return ret;
 
@@ -5847,7 +5847,7 @@ addOptimizationHints(RegProg* prog) {
 // NFA execution code.
 /////////////////////////////////////////////////////////////////
 
-typedef struct {
+private typedef struct {
    int in_use; // number of subexpr with useful info
 
    // When REG_MULTI is true list.multi is used, otherwise list.line.
@@ -5866,13 +5866,13 @@ typedef struct {
    ColNr   orig_start_col;  // list.multi[0].start_col without \zs
 } Submatch;
 
-typedef struct {
+private typedef struct {
    Submatch norm; // \( .. \) matches
    Submatch synt; // \z( .. \) matches
 } Submatches;
 
 // PostponedMatch stores a Postponed Invisible Match.
-typedef struct {
+private typedef struct {
    int      result;      // PIM_*, see below
    RState   *state;      // the invisible match start state
    Submatches   subs;      // submatch info, only party used
@@ -5890,7 +5890,7 @@ typedef struct {
 
 
 // nfa_thread_T contains execution information of a NFA state
-typedef struct {
+private typedef struct {
    RState   *state;
    int      count;
    PostponedMatch   pim;      // if pim.result != PIM_UNUSED: postponed invisible match
@@ -5898,7 +5898,7 @@ typedef struct {
 } nfa_thread_T;
 
 // nfa_List contains the alternative NFA execution states.
-typedef struct {
+private typedef struct {
    nfa_thread_T    *t;      // allocated array of states
    int          n;      // nr of states currently in "t"
    int          len;   // max nr of states in "t"
@@ -6873,7 +6873,7 @@ match_backref(
    int      len;
 
    if (sub->in_use <= subidx) {
-retempty:
+public retempty:
       // backref was not set, match an empty string
       *bytelen = 0;
       return true;
@@ -8595,7 +8595,7 @@ match(
    fprintf(log_fd, "\n");
 #endif
 
-nextchar:
+public nextchar:
       // Advance to the next character, or advance to the next line, or finish.
       if (clen != 0)
          exe.input += clen;
@@ -8619,7 +8619,7 @@ nextchar:
    log_fd = NULL;
 #endif
 
-theend:
+public theend:
    // Free memory
    eeglFree(list[0].t);
    eeglFree(list[1].t);
@@ -8850,7 +8850,7 @@ parseBranchexec_both(
     regengine.expr = NULL;
 #endif
 
-theend:
+public theend:
    if (retval > 0) {
       // Make sure the end is never before the start. Can happen when \zs and \ze are used.
       if (REG_MULTI) {
@@ -8952,13 +8952,13 @@ compile(CS expr, int flags) {
    regengine.expr = NULL;
 #endif
 
-out:
+public out:
    EE_CLEAR(postfixStartS);
    postfixS = postfixEndS = NULL;
    state_ptr = NULL;
    return (RegProg *)prog;
 
-fail:
+public fail:
    EE_CLEAR(prog);
 #ifdef REGEXP_LOGGING
    dumpPostfix(expr, FAIL);
@@ -9072,7 +9072,7 @@ matchManyLines(
 
 // Compile a regular expression into internal code. Returns the program in allocated memory.
 // Use eeRegFree() to free the memory. Returns NULL for an error.
-RegProg *
+public RegProg *
 compileRegexp(CS expr_arg, Unt flags) {
    CS expr = expr_arg;
 
@@ -9094,21 +9094,21 @@ compileRegexp(CS expr_arg, Unt flags) {
 }
 
 // Check if during the previous call to eeRegcomp the EOL item "$" has been found.
-Boole
+public Boole
 regexContainsEol(RegProg* prog) {
    return prog->hadEol;
 }
 
 
 // Free a compiled regexp program, returned by compileRegexp().
-void
+public void
 eeRegFree(RegProg* prog) {
    if (prog != NULL)
       freeBranch(prog);
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-void
+public void
 free_regexp_stuff(void) {
    ga_clear(&regstack);
    ga_clear(&backpos);
@@ -9162,7 +9162,7 @@ eeRegexec_string(
 }
 
 // Note: "*prog" may be freed and changed. Return true if there is a match, false if not.
-Boole
+public Boole
 eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
    RegMatch regmatch;
    regmatch.regprog = *prog;
@@ -9173,14 +9173,14 @@ eeRegexec_prog(OUT RegProg** prog, Boole ignore_case, CS line, ColNr   col){
 }
 
 // Note: "rmp->regprog" may be freed and changed. Return true if there is a match, false if not.
-Boole
+public Boole
 eeRegexec(RegMatch* rmp, Byte *line, ColNr col) {
    return eeRegexec_string(rmp, line, col, false);
 }
 
 // Like eeRegexec(), but consider a "\n" in "line" to be a line break.
 // Note: "rmp->regprog" may be freed and changed. Return true if there is a match, false if not.
-int
+public int
 eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col) {
    return eeRegexec_string(rmp, line, col, true);
 }
@@ -9191,7 +9191,7 @@ eeRegexec_nl(RegMatch *rmp, Byte *line, ColNr col) {
 // Uses curBook for line count and 'iskeyword'.
 //
 // Return zero if there is no match.  Return number of lines contained in the match otherwise.
-long
+public long
 eeRegexec_multi(
    RegMultilineMatch *rmp,
    Portal* port, // portal in which to search or NULL

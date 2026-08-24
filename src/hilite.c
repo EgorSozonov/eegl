@@ -10,7 +10,7 @@
 //Information about a hilite group. The ID of a hilite group is also called group ID.
 //This is module-private info, the publically usable part is written to decorationsG.
 
-typedef struct {
+private typedef struct {
    Unt hiId;
    Text name;
    VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
@@ -26,7 +26,7 @@ typedef struct {
 } HiliteGroup;
 
 // All possible keys, used for parsing
-typedef enum {
+private typedef enum {
    BG,
    FG,
    UNDER,
@@ -35,7 +35,7 @@ typedef enum {
    KEY_PARSE_ERROR
 } HiliteKey;
 
-typedef struct {
+private typedef struct {
    int nameStart; // index into "colorsText"
    int nameLen;
    VTermColor value;
@@ -43,7 +43,7 @@ typedef struct {
 
 
 //Parsed single names like the hilite group name or "clear"
-typedef struct {
+private typedef struct {
    Short start;
    Short end;
 } HiKey;
@@ -54,7 +54,7 @@ keyName(HiKey kv, CS s) {
 }
 
 // Parsed key-value pairs like "fg=blue"
-typedef struct {
+private typedef struct {
    Short start;
    Short keyEnd; // position of the "=". The value starts at (keyEnd + 1)
    Short end;
@@ -121,7 +121,7 @@ private Kv* decoKindIndices[] = {
 
 #define COMBINE_DECORATIONS(d0, d1) ((((d1) & HL_NOCOMBINE) ? (d1) : (d0)) | (d1))
 
-enum {
+public enum {
     BLACK = 0,
     DARKBLUE,
     DARKGREEN,
@@ -269,7 +269,7 @@ hiliteGroupName(Short hiId) {
 }
 
 //Return the ID of the link in a hilite group.
-int
+public int
 highlight_link_id(Short hiId) {
    return hilites[hiId].link;
 }
@@ -322,7 +322,7 @@ initializeGroups(void) {
    hiNames = dictStringInt128NewJustIndices(hiNamesContainer, countGroups, a);
 }
 
-void
+public void
 initHilite(int reset) { // clear group first?
    a = createArena();
 
@@ -674,12 +674,12 @@ parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line)
       }
    }
    
-finalize:
+public finalize:
    kvs[indKvs] = (HiKeyValue){.start = SHORT};
    keys[indKeys] = (HiKey){.start = SHORT};
    return;
 
-errorOut: 
+public errorOut: 
    keys[0] = (HiKey){.start = SHORT - 1};
 }
 
@@ -689,7 +689,7 @@ errorOut:
 // :highlight Foo link=Bar
 // :highlight Foo fg=blue bg=#abcdef
 // "init" is true when building the default hilite groups, false when called in script/commline
-void
+public void
 doHilite(CS line, Boole forceit, Boole init) { //true when called for initializing
    Boole error = false;
 
@@ -821,26 +821,26 @@ set_normal_colors(void) {
 //}
 
 // Lookup a hilite group name and return its ID. If it is not found, SHORT is returned.
-Short
+public Short
 hiliteGroupByName(Text name) {
    return getOrDefault(name, SHORT, hiNames);
 }
 
 // Lookup a hilite group name and return its decos. Return zero if not found.
-Decoration
+public Decoration
 decosByHiliteName(CS name) {
    Short hiId = hiliteGroupByName(mbText(name));
    return hiId != SHORT ? getFullDecoration(hiId) : EMPTY_DECO;
 }
 
 // Return true if hilite group "name" exists.
-Boole
+public Boole
 hiliteExists(Text name) {
    return (hiliteGroupByName(name) < SHORT);
 }
 
 // Return the name of hilite group "id". When not a valid ID return an empty string.
-CS
+public CS
 syn_id2name(Unt id) {
    if (id >= countGroups)
       return S"";
@@ -848,7 +848,7 @@ syn_id2name(Unt id) {
 }
 
 // Translate a group ID to hilite decos. Precondition: "hl_id" must be > 0
-Byte
+public Byte
 decorationByHiliteId(Short hiId) {
    Unt resolvedId = hiResolveLinks(hiId);
    assert(resolvedId < SHORT);
@@ -856,7 +856,7 @@ decorationByHiliteId(Short hiId) {
 }
 
 // Get the colors and decos for a group ID. NOTE: the colors will be regular0 when not set
-Byte
+public Byte
 syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp) {
    Unt resolvedId = hiResolveLinks(hiId);
    assert(resolvedId < SHORT);
@@ -899,7 +899,7 @@ resolveLinksByGroup(HiliteGroup* group) {
 //private HiExpand hiExpandS = {};
 
 // Handle command line completion for :highlight command.
-void
+public void
 setCompletionContextInHiliteCommand(OUT Expand* xp, CS arg) {
    // Default: expand group names
    xp->context = EXPAND_HILITE_GROUP;
@@ -912,7 +912,7 @@ setCompletionContextInHiliteCommand(OUT Expand* xp, CS arg) {
 //{{{ auto-completion (expansion)
 
 // Function given to expandGeneric() to obtain the list of group names.
-Text
+public Text
 getHiliteGroupName(Expand* xp UNUSED, int id) {
    Short hiId = (Short)id;
    if (hiId == SHORT)
@@ -932,13 +932,13 @@ getHiliteGroupName(Expand* xp UNUSED, int id) {
    return hilites[hiId].name;
 }
 
-CS
+public CS
 getHiliteGroupNameAsCString(Expand *xp, int id) {
    return getHiliteGroupName(xp, (Short)id).c;
 }
 
 // Command-line expansion for :hi {group-name} <args>...
-int
+public int
 expandHiliteGroup(
    CS pattern,
    Expand* xp,
@@ -1014,14 +1014,14 @@ toDict(Short hiId, int resolveLinks) {
 
    return dict;
 
-error:
+public error:
    eeglFree(dict);
    return NULL;
 }
 
 // "hlget([name])" function
 // Return the decos of a specific hilite group (if specified) or all the hilite groups
-void
+public void
 f_hlget(Var *argvars, Var *returnVar) {
 
    allocReturnList(returnVar);
@@ -1057,7 +1057,7 @@ f_hlget(Var *argvars, Var *returnVar) {
    }
 }
 
-char
+public char
 getDecoFlags(Short hiId) {
    if (hiId == SHORT) {
       return 0;
@@ -1065,7 +1065,7 @@ getDecoFlags(Short hiId) {
    return hilites[hiId].flags;
 }
 
-Decoration
+public Decoration
 getFullDecoration(Short hiId) {
    Short resolvedId = hiResolveLinks(hiId);
    HiliteGroup* g = hilites + resolvedId;
@@ -1076,7 +1076,7 @@ getFullDecoration(Short hiId) {
    };
 }
 
-Boole
+public Boole
 decoEq(Decoration a, Decoration b) {
    return a.flags == b.flags && a.hiId == b.hiId;
 }
@@ -1085,7 +1085,7 @@ decoEq(Decoration a, Decoration b) {
 //{{{syntax hiliting
 
 // Struct used to store one state of the state stack.
-typedef struct buf_state {
+private typedef struct buf_state {
    int bs_idx;    // index of pattern
    int bs_flags;    // flags for pattern
    int bs_seqnr;    // stores si_seqnr
@@ -1125,9 +1125,9 @@ typedef struct buf_state {
 
 
 // syn_state contains the syntax state stack for the start of one line. Used by array[].
-typedef struct SyntaxState SyntaxState;
+private typedef struct SyntaxState SyntaxState;
 
-struct SyntaxState {
+public struct SyntaxState {
    SyntaxState   *next; // next entry in used or free list
    LineNr   lnum;   // line number for this state
    union {
@@ -1143,16 +1143,16 @@ struct SyntaxState {
 
 
 // struct passed to in_id_list()
-typedef struct {
+private typedef struct {
    int   inc_tag;   // ":syn include" unique tag
    Short   hiId;      // highlight group ID of item
    Short* containedInHiId;   // cont.in group IDs, if non-zero
 } SyntaxInfo;
 
 // Each keyword has one keyentry, which is linked in a hash list.
-typedef struct KeyEntry KeyEntry;
+private typedef struct KeyEntry KeyEntry;
 
-struct KeyEntry {
+public struct KeyEntry {
    KeyEntry   *next;   // next entry with identical "keyword[]"
    SyntaxInfo syntax;   // struct passed to in_id_list()
    Short* next_list;   // ID list for next match (if non-zero)
@@ -1185,7 +1185,7 @@ private CS (spo_name_tab[SPO_COUNT]) = {
 //and for the actually highlighted text (_h_start and _h_end).
 //
 //Note that ordering of members is optimized to reduce padding.
-typedef struct syn_pattern {
+private typedef struct syn_pattern {
    char sp_type;      // see SPTYPE_ defines below
    char syncing;      // this item used for syncing
    Short patternHiId; // highlight group ID of pattern
@@ -1232,7 +1232,7 @@ private int current_trans_id = 0; // idem, transparency removed
 private int current_flags = 0;
 private int current_seqnr = 0;
 
-typedef struct syn_cluster_S {
+private typedef struct syn_cluster_S {
    CS name;      // syntax cluster name
    CS nameUpper; // uppercase of name
    Arr(Short) hiIds;    // IDs in this syntax cluster
@@ -1288,7 +1288,7 @@ private Byte msg_no_items[] = "No Syntax items defined for this buffer";
 //For the current state we need to remember more than just the idx.
 //When matchEndPos.lnum is 0, the items other than si_idx are unknown.
 //(The end positions have the column number of the next char)
-typedef struct state_item {
+private typedef struct state_item {
    int si_idx;         // index of syntax pattern or KEYWORD_IDX
    Short hiId;         // highlight group ID for keywords
    int transparentHiId;      // idem, transparency removed
@@ -1312,7 +1312,7 @@ typedef struct state_item {
                                     // but contained groups
 
 // Struct to reduce the number of arguments to get_syn_options(), it's used very often.
-typedef struct {
+private typedef struct {
    int flags;      // flags for contained and transparent
    int keyword;   // true for ":syn keyword"
    int* sync_idx;   // syntax item for "grouphere" argument, NULL if not allowed
@@ -1388,7 +1388,7 @@ private int in_id_list(StateItem *item, Arr(Short) containsHiId, SyntaxInfo* ssp
 private int push_current_state(int idx);
 private void pop_current_state(void);
 #define IF_SYN_TIME(p) NULL
-typedef int syn_Time;
+private typedef int syn_Time;
 
 private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
@@ -1432,7 +1432,7 @@ private void syn_combine_list(Short **clstr1, Short **clstr2, int list_op);
 //from the screen updating, once for each displayed line.
 //The buffer is remembered in synBookS, because syntGetDeco() doesn't get
 //it.   Careful: curBook and curPor are likely to point to another buffer and portal.
-void
+public void
 syntaxStartLine(Portal *wp, LineNr lnum) {
    SyntaxState   *p;
    SyntaxState   *last_valid = NULL;
@@ -1956,7 +1956,7 @@ syn_update_ends(int startofline) {
 //number of entries SST_MAX_ENTRIES, and the distance is computed.
 
 //Used when syntax items changed to force resyncing everywhere.
-void
+public void
 synFreeBlock(SyntaxBlock *block) {
    SyntaxState   *p;
 
@@ -2039,7 +2039,7 @@ syn_stack_alloc(void) {
 
 //Check for changes in a buffer to affect stored syntax states.  Uses the b_mod_* fields.
 //Called from drawUpdateScreen(), before screen is being updated, once for each displayed buffer.
-void
+public void
 syn_stack_apply_changes(Book* book) {
    Portal   *wp;
 
@@ -2357,7 +2357,7 @@ syn_stack_equal(SyntaxState *sp) {
 //          displayed line
 //          displayed line
 // lnum ->  line below window
-void
+public void
 syntax_end_parsing(Portal *wp, LineNr lnum) {
    SyntaxState   *sp;
 
@@ -2391,7 +2391,7 @@ validate_current_state(void) {
 //Return true if the syntax at start of lnum changed since last time.
 //This will only be called just after syntGetDeco() for the previous
 //line, to check if the next line needs to be redrawn too.
-int
+public int
 syntax_check_changed(LineNr lnum) {
    int      retval = true;
    SyntaxState   *sp;
@@ -2458,7 +2458,7 @@ syn_finish_line(int       syncing) {     // called for syncing
 //"col" is normally 0 for the first use in a line, and increments by one each
 //time. It's allowed to skip characters and to stop before the end of the
 //line, but not going back within the line (only a "col" after a previously used column is allowed).
-Decoration
+public Decoration
 syntGetDeco(
    ColNr col,
    int keep_state   // keep state of char at "col"
@@ -3748,7 +3748,7 @@ syn_cmd_iskeyword(Invocation* invo, int syncing UNUSED) {
 }
 
 // Clear all syntax info for one buffer.
-void
+public void
 syntax_clear(SyntaxBlock *block) {
    block->b_syn_error = false;       // clear previous error
    block->redrawTime = false;       // clear previous timeout
@@ -3792,7 +3792,7 @@ syntax_clear(SyntaxBlock *block) {
 }
 
 // Get rid of ownsyntax for window "wp".
-void
+public void
 reset_synblock(Portal *wp) {
    if (wp->ownSyntax != &wp->book->syntax) {
       syntax_clear(wp->ownSyntax);
@@ -5272,7 +5272,7 @@ clusterByName(CS name) {
 }
 
 // Lookup a syntax cluster name and return its ID. If it is not found, SHORT is returned.
-Short
+public Short
 syntaxClusterByName(Text line) {
    CS name = copySubstr(line.c, line.len);
    if (!name)
@@ -5875,7 +5875,7 @@ in_id_list(
    return !retval;
 }
 
-typedef struct subcommand {
+private typedef struct subcommand {
    CS name;         // subcommand name
    void (*fn)(Invocation *, int);   // function to call
 } Subcommand;
@@ -5904,7 +5904,7 @@ private Subcommand subcommands[] = { SMAP1((CS),
 
 //":syntax". Search the subcommands[] table for the subcommand name, and call a
 //syntax_subcommand() function to do the rest.
-void
+public void
 c_syntax(Invocation* invo) {
    CS arg = invo->arg;
    CS subcmd_end;
@@ -5938,7 +5938,7 @@ c_syntax(Invocation* invo) {
       --emsg_skip;
 }
 
-void
+public void
 c_ownsyntax(Invocation* invo) {
    CS old_value;
    CS new_value;
@@ -5972,7 +5972,7 @@ c_ownsyntax(Invocation* invo) {
    }
 }
 
-int
+public int
 syntax_present(Portal* po) {
    return (po->ownSyntax->syntaxPatterns.len != 0
        || po->ownSyntax->syntaxClusters.len != 0
@@ -5989,7 +5989,7 @@ private enum {
 } expand_what;
 
 // Called when we are done expandin'
-void
+public void
 reset_expand_highlight(void) {
    hiComplIncludeNoneG = 0;
    hiComplIncludeDefaultG = 0;
@@ -5997,7 +5997,7 @@ reset_expand_highlight(void) {
 }
 
 // Handle command line completion for :match and :echohl command: Add "NONE" as hilite group.
-void
+public void
 set_context_in_echohl_cmd(Expand *xp, CS arg) {
    xp->context = EXPAND_HILITE_GROUP;
    xp->input = mbText(arg);
@@ -6005,7 +6005,7 @@ set_context_in_echohl_cmd(Expand *xp, CS arg) {
 }
 
 // Handle command line completion for :syntax command.
-void
+public void
 set_context_in_syntax_cmd(Expand *xp, CS arg) {
    // Default: expand subcommands
    xp->context = EXPAND_SYNTAX;
@@ -6050,7 +6050,7 @@ set_context_in_syntax_cmd(Expand *xp, CS arg) {
 }
 
 // Function given to expandGeneric() to obtain the list syntax names for expansion.
-CS
+public CS
 get_syntax_name(Expand* xp, int idx) {
    switch (expand_what) {
    case EXP_SUBCMD:
@@ -6087,7 +6087,7 @@ get_syntax_name(Expand* xp, int idx) {
 
 
 // Function called for expression evaluation: get syntax ID at file position.
-int
+public int
 syn_get_id(
    Portal   *wp,
    long   lnum,
@@ -6112,7 +6112,7 @@ syn_get_id(
 #if defined(PROTO)
 // Get extra information about the syntax item.  Must be called right after syntGetDeco().
 // Stores the current item sequence nr in "*seqnrp". Returns the current flags.
-int
+public int
 get_syntax_info(int *seqnrp) {
    *seqnrp = current_seqnr;
    return current_flags;
@@ -6122,7 +6122,7 @@ get_syntax_info(int *seqnrp) {
 
 // Return the syntax ID at position "i" in the current stack. The caller must have called 
 // syn_get_id() before to fill the stack. Returns -1 when "i" is out of range.
-int
+public int
 syn_get_stack_item(int i) {
    if (i >= current_state.len) {
       // Need to invalidate the state, because we didn't properly finish it
@@ -6145,7 +6145,7 @@ syn_cur_foldlevel(void) {
 }
 
 // Function called to get folding level for line "lnum" in portal "po".
-int
+public int
 syn_get_foldlevel(Portal *po, long lnum) {
    int level = 0;
    int low_level;
@@ -6182,7 +6182,7 @@ syn_get_foldlevel(Portal *po, long lnum) {
 }
 
 // "synIDtrans(id)" function
-void
+public void
 f_synIDtrans(Arr(Var) argvars UNUSED, Var* returnVar) {
    int id = (int)tv_get_number(&argvars[0]);
 
