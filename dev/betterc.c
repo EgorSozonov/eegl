@@ -229,10 +229,6 @@ append(OUT FileParse* p, ToplevelThing new) {
    p->c[p->len++] = new;
 }
 
-//function = met parens and now see a {
-//constant = didn't meet parens and now see a =
-//type = didn't meet parens and now see a ;
-//typedef = might've met parens and we see a ;
 private void
 tryParseToplevelThing(OUT FileParse* p, OUT CS* inp, AccessLevel accLevel) {
    int parenLvl = 0;
@@ -245,6 +241,11 @@ tryParseToplevelThing(OUT FileParse* p, OUT CS* inp, AccessLevel accLevel) {
 #define startsWithKeyword(kw) startsWith(i, tConst(kw)) && isSpaceOrNewline(i[sizeof(kw) - 1]) \
    && curlyLvl == 0 && parenLvl == 0
    
+   
+   //function = met parens and now see a {
+   //constant = didn't meet parens and now see a =
+   //type = didn't meet parens and now see a ;
+   //typedef = might've met parens and we see a ;
    for (; *i != ZERO; i++) {
       switch (*i) {
       case '{': 
@@ -324,6 +325,8 @@ tryParseToplevelThing(OUT FileParse* p, OUT CS* inp, AccessLevel accLevel) {
       }
    }
    *inp = i;
+   
+#undef startsWithKeyword 
 }
 
 privateComp 
@@ -394,6 +397,41 @@ parseFile(Text source, FilePath fn) {
    return res;
 }
 
+private Unt
+toplevelLen(ToplevelThing* t) {
+   return t->c.len + 2; //+2 for the semicolon & newline char
+}
+
+private void
+toplevelWrite(OUT CS* w, ToplevelThing* t) {
+   if (t->kind == FUNCTION) { //Newline->space for functions to fit in 1 line if they were 2 lines
+      Unt firstNewline;
+      for (firstNewline = 1; firstNewline < t->c.len; firstNewline++) {
+         if (t->c.c[firstNewline] == '\n') {
+            break;
+         }
+      }
+      if (firstNewline < t->c.len - 1) {
+         Unt restLen = t->c.len - firstNewline - 1;
+         memcpy(*w, t->c.c, firstNewline);
+         (*w)[firstNewline] = ' ';
+         *w += firstNewline + 1;
+         
+         memcpy(*w, t->c.c + firstNewline + 1, restLen);
+         *w += restLen;
+         (*w)[0] = ';';
+         (*w)[1] = '\n';
+         *w += 2;
+         return;
+      }
+   }
+   memcpy(*w, t->c.c, t->c.len);
+   *w += t->c.len;
+   (*w)[0] = ';';
+   (*w)[1] = '\n';
+   *w += 2;
+}
+
 //}}}
 //{{{writing
 
@@ -402,7 +440,7 @@ buildPublicHeader(FileParse* r) {
    Unt totalLen = 0;
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC) {
-         totalLen += (r->c[i].c.len + 2); //+2 for the semicolon & newline char
+         totalLen += toplevelLen(r->c + i); 
       }
    }
    
@@ -411,11 +449,7 @@ buildPublicHeader(FileParse* r) {
    CS w = newContent;
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PUBLIC) {
-         memcpy(w, r->c[i].c.c, r->c[i].c.len);
-         w += r->c[i].c.len;
-         w[0] = ';';
-         w[1] = '\n';
-         w += 2;
+         toplevelWrite(OUT &w, r->c + i);
       }
    }
    
@@ -513,11 +547,9 @@ buildFileImpl(FileParse* r, Text existingDecls, Unt beforeLen, Unt afterLen, Unt
    }
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PRIVATE && r->c[i].kind == FUNCTION) {
-         memcpy(w, r->c[i].c.c, r->c[i].c.len);
-         w += r->c[i].c.len;
-         w[0] = ';';
-         w[1] = '\n';
-         w += 2;
+         memcpy(w, "private ", 8);
+         w += 8;
+         toplevelWrite(OUT &w, r->c + i);
       }
    }
    
@@ -547,7 +579,7 @@ buildFileWithForwDecls(FileParse* r) {
    Unt fwDeclLen = 0;
    for (Unt i = 0; i < r->len; i++) {
       if (r->c[i].acc == PRIVATE && r->c[i].kind == FUNCTION) {
-         fwDeclLen += (r->c[i].c.len + 2); //2 = 1 for the semicolon + 1 for newline char
+         fwDeclLen += toplevelLen(r->c + i) + 8; //+8 for the "private "
       }
    }
    
@@ -603,7 +635,6 @@ writeResults(FileParse* r, NULLABLE CS subdir) {
    }
    if (countPrivateFns > 0) {
       //Need to rewrite the source file (.c) to add/update the forward fn declarations
-      //printf("%s\n", buildFileWithForwDecls(r));
       writeForwDecl(r);
    }
 }

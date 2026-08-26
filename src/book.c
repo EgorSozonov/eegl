@@ -22,183 +22,114 @@
 #endif
 
 //{{{@@forward declarations
-void
-findPortalIntoCurBook(void);
-void
-prepareChangeInOtherBook(ChangeOtherBook *cob, Book* book);
-void
-restoreChangeInOtherBook(ChangeOtherBook* cob);
-void
-updateLinesFromVars(
+private void findPortalIntoCurBook(void);
+private void prepareChangeInOtherBook(ChangeOtherBook *cob, Book* book);
+private void restoreChangeInOtherBook(ChangeOtherBook* cob);
+private void updateLinesFromVars(
    Book* book,
    LineNr lnum_arg,
    Boole append,
    Arr(Var) lines,
    Var* returnVar
 );
-void
-setOrAppendLines(Arr(Var) argvars, OUT Var* returnVar, Boole append);
-void
-bufPortalCommon(Var* argvars, Var* returnVar, int get_nr);
-LineNr
-findLnum(Book* book);
-Bag *
-getBookInfo(Book* book);
-void
-getLinesIntoVar(
+private void setOrAppendLines(Arr(Var) argvars, OUT Var* returnVar, Boole append);
+private void bufPortalCommon(Var* argvars, Var* returnVar, int get_nr);
+private LineNr findLnum(Book* book);
+private Bag * getBookInfo(Book* book);
+private void getLinesIntoVar(
    Book   *book,
    LineNr   start,
    LineNr   end,
    int      retlist,
    OUT Var   *returnVar
 );
-void
-getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
-int
-initCharTable(Book* book);
-int
-parseAnIsOption(CS var, Book* book, Boole only_check);
-int
-win_nolbr_chartabsize(CharTableSize* cts, int* headp);
-int                                                                    
-inPortalBorder(Portal *po, ColNr vcol);
-int
-calc_percentage(long part, long whole);
-int
-readBook(
+private void getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
+private int initCharTable(Book* book);
+private int parseAnIsOption(CS var, Book* book, Boole only_check);
+private int win_nolbr_chartabsize(CharTableSize* cts, int* headp);
+private int                                                                     inPortalBorder(Portal *po, ColNr vcol);
+private int calc_percentage(long part, long whole);
+private int readBook(
    int read_stdin,       // read file from stdin, otherwise fifo
    Invocation* invo,          // for forced 'ff' or NULL
    Unt      flags          // extra flags for readfile()
 );
-void
-addBookToHashtable(Book* book);
-void
-removeBookFromHashtable(Book* book);
-Boole
-canUnloadBook(Book* book);
-void
-freeBook(Book* book);
-void
-init_changedtick(Book* book);
-void
-clearPortInfo(Book* book);
-void
-freeAttachedData(Book* book, int free_options);
-int
-emptyCurBook(int portCloseOthers, Boole forceit, Unt action);
-void
-enterBook(Book* book);
-void
-no_write_message_buf(Book* book);
-Boole
-isCurBookReusable(void);
-void
-getLastKnownLineNumber(void);
-Boole
-sameFileInBook(Book* book, CS fullFName, FileStat* stp);
-Book*
-booklistFindName_stat(CS fullFName, FileStat* stp);
-CS
-checkFilenameMatch(RegMatch* rmp, Book* book);
-CS
-fname_match(RegMatch* rmp, CS name);
-int
-wininfo_other_tab_diff(PortInfo* poInfo);
-PortInfo*
-find_wininfo(Book* book, int need_options, Boole skipDiffBook);
-int
-areSameInode(Book* book, FileStat* stp);
-int
-append_arg_number(Portal* po, CS buf, Unt buflen);
-int
-bt_nofileread(Book* book);
-void
-listInColumns(Arr(CS) items, int size, int current, Boole useHilite);
-int
-writeBytes(BwInfo* ip);
-int
-check_mtime(Book* book, FileStat *st);
-void
-updateFileTime(
+private void addBookToHashtable(Book* book);
+private void removeBookFromHashtable(Book* book);
+private Boole canUnloadBook(Book* book);
+private void freeBook(Book* book);
+private void init_changedtick(Book* book);
+private void clearPortInfo(Book* book);
+private void freeAttachedData(Book* book, int free_options);
+private int emptyCurBook(int portCloseOthers, Boole forceit, Unt action);
+private void enterBook(Book* book);
+private void no_write_message_buf(Book* book);
+private Boole isCurBookReusable(void);
+private void getLastKnownLineNumber(void);
+private Boole sameFileInBook(Book* book, CS fullFName, FileStat* stp);
+private Book* booklistFindName_stat(CS fullFName, FileStat* stp);
+private CS checkFilenameMatch(RegMatch* rmp, Book* book);
+private CS fname_match(RegMatch* rmp, CS name);
+private int wininfo_other_tab_diff(PortInfo* poInfo);
+private PortInfo* find_wininfo(Book* book, int need_options, Boole skipDiffBook);
+private int areSameInode(Book* book, FileStat* stp);
+private int append_arg_number(Portal* po, CS buf, Unt buflen);
+private int bt_nofileread(Book* book);
+private void listInColumns(Arr(CS) items, int size, int current, Boole useHilite);
+private int writeBytes(BwInfo* ip);
+private int check_mtime(Book* book, FileStat *st);
+private void updateFileTime(
    CS fname,
    Tyme  atime,      // access time
    Tyme  mtime       // modification time
 );
-CS
-determineBackupFilename(CS fname, CS dname);
-int
-check_arglist_locked(void);
-void
-alist_set(
+private CS determineBackupFilename(CS fname, CS dname);
+private int check_arglist_locked(void);
+private void alist_set(
    EeArgList* al,
    Boole useCurBook,
    Arr(int) fnum_list,
    Unt fnum_len,
    OUT ExpandMatch* files
 );
-CS
-do_one_arg(CS str);
-int
-get_arglist(ArrayList *gap, CS str, Boole escaped);
-void
-alist_check_arg_idx(void);
-void
-alist_add_list(
+private CS do_one_arg(CS str);
+private int get_arglist(ArrayList *gap, CS str, Boole escaped);
+private void alist_check_arg_idx(void);
+private void alist_add_list(
    ExpandMatch files,
    int after,       // where to add: 0 = before first one
    Boole will_edit  // will edit adding argument
 );
-void
-arglist_del_files(ArrayList *alist_ga);
-int
-do_arglist(
+private void arglist_del_files(ArrayList *alist_ga);
+private int do_arglist(
    CS str,
    int what,
    int after UNUSED,   // 0 means before first one
    Boole will_edit   // will edit added argument
 );
-void
-argAllCloseUnusedPortals(ArgAllState *aall);
-void
-openPortalsIntoFiles(ArgAllState *aall, int count);
-void
-openAllArgs(
+private void argAllCloseUnusedPortals(ArgAllState *aall);
+private void openPortalsIntoFiles(ArgAllState *aall, int count);
+private void openAllArgs(
     int   count,
     int   forceit,      // hide books in current portals
     int keep_tabs      // keep current tabs, for ":tab drop file"
 );
-void
-get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, OUT Var* returnVar);
-EeSetItem *
-findPropTypeHash(Text name, Book* book);
-PropType *
-findPropTypeByName(Text name, Book* book);
-PropType *
-lookup_prop_type(Text name, Book* book);
-Unt
-getBookNrFromArg(Var *arg, Book** book);
-int
-addProp(OUT Book* book, Prop prop);
-int
-get_textprop_id(Book* book);
-int
-text_prop_order(int flags);
-int
-text_prop_compare(const void *s0, const void *s1);
-void
-set_text_props(LineNr lnum, CS props, int len);
-int
-compare_pt(void const * s0, void const* s1);
-PropType*
-find_type_by_id(EeSet* ht, PropType*** array, int id);
-void
-prop_fill_dict(Bag* dict, TextProp* prop, Book* book);
-int
-text_prop_type_valid(Book* book, TextProp *prop);
-int
-prop_type_or_id_in_list(int *types_or_ids, int len, int type_or_id);
-void
-get_props_in_line(
+private void get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, OUT Var* returnVar);
+private EeSetItem * findPropTypeHash(Text name, Book* book);
+private PropType * findPropTypeByName(Text name, Book* book);
+private PropType * lookup_prop_type(Text name, Book* book);
+private Unt getBookNrFromArg(Var *arg, Book** book);
+private int addProp(OUT Book* book, Prop prop);
+private int get_textprop_id(Book* book);
+private int text_prop_order(int flags);
+private int text_prop_compare(const void *s0, const void *s1);
+private void set_text_props(LineNr lnum, CS props, int len);
+private int compare_pt(void const * s0, void const* s1);
+private PropType* find_type_by_id(EeSet* ht, PropType*** array, int id);
+private void prop_fill_dict(Bag* dict, TextProp* prop, Book* book);
+private int text_prop_type_valid(Book* book, TextProp *prop);
+private int prop_type_or_id_in_list(int *types_or_ids, int len, int type_or_id);
+private void get_props_in_line(
    Book* book,
    LineNr lnum,
    int* prop_types,
@@ -208,20 +139,13 @@ get_props_in_line(
    List* retlist,
    int add_lnum
 );
-int *
-get_prop_types_from_names(List *l, Book* book, OUT int *num_types);
-int*
-get_prop_ids_from_list(List *l, OUT int* countIds);
-void
-prop_type_set(Var *argvars, int add);
-void
-list_types(EeSet *ht, List *l);
-void
-clear_ht_prop_types(EeSet *ht);
-void
-clearPropTypes(Book* book);
-AdjustRes
-adjust(
+private int * get_prop_types_from_names(List *l, Book* book, OUT int *num_types);
+private int* get_prop_ids_from_list(List *l, OUT int* countIds);
+private void prop_type_set(Var *argvars, int add);
+private void list_types(EeSet *ht, List *l);
+private void clear_ht_prop_types(EeSet *ht);
+private void clearPropTypes(Book* book);
+private AdjustRes adjust(
    TextProp  *prop,
    ColNr       col,
    int       added,
