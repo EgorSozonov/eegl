@@ -21,7 +21,213 @@
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')
 #endif
 
-private int text_prop_type_valid(Book* book, TextProp* prop);
+//{{{@@forward declarations
+void
+findPortalIntoCurBook(void);
+void
+prepareChangeInOtherBook(ChangeOtherBook *cob, Book* book);
+void
+restoreChangeInOtherBook(ChangeOtherBook* cob);
+void
+updateLinesFromVars(
+   Book* book,
+   LineNr lnum_arg,
+   Boole append,
+   Arr(Var) lines,
+   Var* returnVar
+);
+void
+setOrAppendLines(Arr(Var) argvars, OUT Var* returnVar, Boole append);
+void
+bufPortalCommon(Var* argvars, Var* returnVar, int get_nr);
+LineNr
+findLnum(Book* book);
+Bag *
+getBookInfo(Book* book);
+void
+getLinesIntoVar(
+   Book   *book,
+   LineNr   start,
+   LineNr   end,
+   int      retlist,
+   OUT Var   *returnVar
+);
+void
+getBookLineIntoVar(Var* argvars, Var* returnVar, int retlist);
+int
+initCharTable(Book* book);
+int
+parseAnIsOption(CS var, Book* book, Boole only_check);
+int
+win_nolbr_chartabsize(CharTableSize* cts, int* headp);
+int                                                                    
+inPortalBorder(Portal *po, ColNr vcol);
+int
+calc_percentage(long part, long whole);
+int
+readBook(
+   int read_stdin,       // read file from stdin, otherwise fifo
+   Invocation* invo,          // for forced 'ff' or NULL
+   Unt      flags          // extra flags for readfile()
+);
+void
+addBookToHashtable(Book* book);
+void
+removeBookFromHashtable(Book* book);
+Boole
+canUnloadBook(Book* book);
+void
+freeBook(Book* book);
+void
+init_changedtick(Book* book);
+void
+clearPortInfo(Book* book);
+void
+freeAttachedData(Book* book, int free_options);
+int
+emptyCurBook(int portCloseOthers, Boole forceit, Unt action);
+void
+enterBook(Book* book);
+void
+no_write_message_buf(Book* book);
+Boole
+isCurBookReusable(void);
+void
+getLastKnownLineNumber(void);
+Boole
+sameFileInBook(Book* book, CS fullFName, FileStat* stp);
+Book*
+booklistFindName_stat(CS fullFName, FileStat* stp);
+CS
+checkFilenameMatch(RegMatch* rmp, Book* book);
+CS
+fname_match(RegMatch* rmp, CS name);
+int
+wininfo_other_tab_diff(PortInfo* poInfo);
+PortInfo*
+find_wininfo(Book* book, int need_options, Boole skipDiffBook);
+int
+areSameInode(Book* book, FileStat* stp);
+int
+append_arg_number(Portal* po, CS buf, Unt buflen);
+int
+bt_nofileread(Book* book);
+void
+listInColumns(Arr(CS) items, int size, int current, Boole useHilite);
+int
+writeBytes(BwInfo* ip);
+int
+check_mtime(Book* book, FileStat *st);
+void
+updateFileTime(
+   CS fname,
+   Tyme  atime,      // access time
+   Tyme  mtime       // modification time
+);
+CS
+determineBackupFilename(CS fname, CS dname);
+int
+check_arglist_locked(void);
+void
+alist_set(
+   EeArgList* al,
+   Boole useCurBook,
+   Arr(int) fnum_list,
+   Unt fnum_len,
+   OUT ExpandMatch* files
+);
+CS
+do_one_arg(CS str);
+int
+get_arglist(ArrayList *gap, CS str, Boole escaped);
+void
+alist_check_arg_idx(void);
+void
+alist_add_list(
+   ExpandMatch files,
+   int after,       // where to add: 0 = before first one
+   Boole will_edit  // will edit adding argument
+);
+void
+arglist_del_files(ArrayList *alist_ga);
+int
+do_arglist(
+   CS str,
+   int what,
+   int after UNUSED,   // 0 means before first one
+   Boole will_edit   // will edit added argument
+);
+void
+argAllCloseUnusedPortals(ArgAllState *aall);
+void
+openPortalsIntoFiles(ArgAllState *aall, int count);
+void
+openAllArgs(
+    int   count,
+    int   forceit,      // hide books in current portals
+    int keep_tabs      // keep current tabs, for ":tab drop file"
+);
+void
+get_arglist_as_returnVar(ArgFileEntry *arglist, Unt argcount, OUT Var* returnVar);
+EeSetItem *
+findPropTypeHash(Text name, Book* book);
+PropType *
+findPropTypeByName(Text name, Book* book);
+PropType *
+lookup_prop_type(Text name, Book* book);
+Unt
+getBookNrFromArg(Var *arg, Book** book);
+int
+addProp(OUT Book* book, Prop prop);
+int
+get_textprop_id(Book* book);
+int
+text_prop_order(int flags);
+int
+text_prop_compare(const void *s0, const void *s1);
+void
+set_text_props(LineNr lnum, CS props, int len);
+int
+compare_pt(void const * s0, void const* s1);
+PropType*
+find_type_by_id(EeSet* ht, PropType*** array, int id);
+void
+prop_fill_dict(Bag* dict, TextProp* prop, Book* book);
+int
+text_prop_type_valid(Book* book, TextProp *prop);
+int
+prop_type_or_id_in_list(int *types_or_ids, int len, int type_or_id);
+void
+get_props_in_line(
+   Book* book,
+   LineNr lnum,
+   int* prop_types,
+   int prop_types_len,
+   int* prop_ids,
+   int prop_ids_len,
+   List* retlist,
+   int add_lnum
+);
+int *
+get_prop_types_from_names(List *l, Book* book, OUT int *num_types);
+int*
+get_prop_ids_from_list(List *l, OUT int* countIds);
+void
+prop_type_set(Var *argvars, int add);
+void
+list_types(EeSet *ht, List *l);
+void
+clear_ht_prop_types(EeSet *ht);
+void
+clearPropTypes(Book* book);
+AdjustRes
+adjust(
+   TextProp  *prop,
+   ColNr       col,
+   int       added,
+   int       flags
+);
+//}}}
 //{{{builtins. Book related builtin functions
 
 //Mark references in functions of books.
@@ -1688,22 +1894,7 @@ getvcols(
 // Determines how deeply nested %{} blocks will be evaluated in statusline.
 # define MAX_STL_EVAL_DEPTH 100
 
-//{{{@@forward declarations
-
-private void   enterBook(Book* book);
-private void   getLastKnownLineNumber(void);
-private CS checkFilenameMatch(RegMatch *rmp, Book* book);
-private CS fname_match(RegMatch *rmp, Byte *name);
-private Book* booklistFindName_stat(CS fullFName, FileStat *st);
-private int   areSameInode(Book* book, FileStat *stp);
-private int   append_arg_number(Portal *po, CS buf, Unt buflen);
-private void   freeBook(Book *);
-private void   freeAttachedData(Book* book, int free_options);
-private int   bt_nofileread(Book* book);
-private void   no_write_message_buf(Book* book);
-private void clearPropTypes(Book* book);
-
-//}}}
+//{{{book
 
 private typedef dev_t Device;
 
@@ -3673,8 +3864,8 @@ private typedef struct {
    CS match;
 } BufMatch;
 
-pub LIST_TY(BufMatch)
-private LIST_CREATE(BufMatch)
+LIST_TY(BufMatch)
+LIST_CREATE(BufMatch)
 #define ADD_LIST_TY BufMatch
 #include "generic.h"
 
@@ -5754,7 +5945,7 @@ bookCompare(const void* s0, const void* s1) {
    return book0->lastUsed > book1->lastUsed ? -1 : 1;
 }
 
-
+//}}}
 //{{{bookwrite: functions for writing a book
 
 #define SMALLBUFSIZE   256   // size of emergency write book
@@ -9134,22 +9325,21 @@ prop_type_or_id_in_list(int *types_or_ids, int len, int type_or_id) {
 //If 'add_lnum' is true, then add the line number also to the text property dictionary.
 private void
 get_props_in_line(
-   Book      *book,
-   LineNr   lnum,
-   int      *prop_types,
-   int      prop_types_len,
-   int      *prop_ids,
-   int      prop_ids_len,
-   List      *retlist,
-   int      add_lnum)
-{
+   Book* book,
+   LineNr lnum,
+   int* prop_types,
+   int prop_types_len,
+   int* prop_ids,
+   int prop_ids_len,
+   List* retlist,
+   int add_lnum
+) {
    CS text = memGetLine(book, lnum, false);
-   Unt   textlen = memGetBookLen(book, lnum) + 1;
-   int      i;
-   TextProp   prop;
+   Unt textlen = memGetBookLen(book, lnum) + 1;
+   TextProp prop;
 
    int count = (int)((book->mem.lineLen - textlen) / sizeof(TextProp));
-   for (i = 0; i < count; ++i) {
+   for (int i = 0; i < count; ++i) {
       MEMMOVE(&prop, text + textlen + i * sizeof(TextProp),
          sizeof(TextProp));
       if ((prop_types == NULL

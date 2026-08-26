@@ -69,7 +69,7 @@ PREFIX ?= /usr
 exec_prefix	= $(PREFIX)/bin
 
 ### Prefix for location of data files
-BINDIR		= $(PREFIX)/bin
+BINDIR		= $(PREFIX)/share
 
 
 ### Prefix for location of data files
@@ -894,7 +894,7 @@ indices: src/commands.h src/actions.h
 
 better: ##Better C: codegen for headers & generics
 / $(CC) dev/betterc.c -o $(OBJDIR)/betterc
-/ $(OBJDIR)/betterc src/book.c
+/ $(OBJDIR)/betterc -d proto src/book.c
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.

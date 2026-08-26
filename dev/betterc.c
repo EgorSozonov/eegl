@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/stat.h>
 
 //{{{base
 
 #define OUT
+#define NULLABLE
 
 #define pub
 #define private static //full private (affects linking) - for functions
@@ -62,7 +64,7 @@ filePath(CS rawFname) {
    Unt len = strlen(rawFname);
    for (Unt i = len - 1; i < len; i--) {
       if (rawFname[i] == '/') {
-         dirLen = i;
+         dirLen = i + 1;
          break;
       }
    }
@@ -207,6 +209,11 @@ startsWith(CS big, Text prefix) {
    return i == prefix.len;
 }
 
+private _pure Boole
+eq(Text a, Text b) {
+   return a.len == b.len && memcmp(a.c, b.c, a.len) == 0;
+}
+
 //}}}
 //{{{parsing
 
@@ -319,24 +326,27 @@ tryParseToplevelThing(OUT FileParse* p, OUT CS* inp, AccessLevel accLevel) {
    *inp = i;
 }
 
-private Text
-determineExistingForwDecls(CS markerLine) {
-   CS start = skipNormalComment(markerLine) + 1; //+1 for the newline
-   CS p = start;
-   for (; p[0] != ZERO; p++) {
-      if (p[0] == '}' && p[1] == '}' && p[2] == '}') {
-         break;
-      } 
-   }
-   return (Text){.c = start, .len = p - start};
-}
-
 privateComp 
 #define forwDeclMarker "@@"
 privateComp 
 #define forwDeclPrologue "//{{" "{" forwDeclMarker "forward declarations"
 privateComp 
 #define forwDeclEpilogue "//}}" "}"
+
+private Text
+determineExistingForwDecls(CS markerLine) {
+   CS start = skipNormalComment(markerLine) + 1; //+1 for the newline
+   CS p = start;
+   for (; p[0] != ZERO; p++) {
+      if (startsWith(p, tConst(forwDeclEpilogue))) {
+         break;
+      }
+      //if (p[0] == '/' && p[1] == '/' && p[2] == '}' && p[3] == '}' && p[4] == '}') {
+      //   break;
+      //} 
+   }
+   return (Text){.c = start, .len = p - start};
+}
 
 private FileParse
 parseFile(Text source, FilePath fn) {
@@ -415,18 +425,60 @@ buildPublicHeader(FileParse* r) {
    return (Text){newContent, totalLen};
 }
 
+private Boole
+dirExists(CS path) {
+    struct stat statResult;
+
+    // stat() returns 0 on success
+    if (stat(path, OUT &statResult) == 0) {
+        // Check if the path is a directory
+        return S_ISDIR(statResult.st_mode);
+    }
+
+    // Path does not exist or is not accessible
+    return false;
+}
+
+private CS
+determinePublicName(FileParse* r, NULLABLE CS subdir) {
+   CS publicName;
+   if (subdir) {
+      Unt subdirLen = strlen(subdir);
+      Unt len = r->fn.len + 1 + subdirLen;
+      publicName = malloc(len + 1);
+      publicName[len] = ZERO;
+      memcpy(publicName, r->fn.c, r->fn.dirLen);
+      memcpy(publicName + r->fn.dirLen, subdir, subdirLen);
+      
+      //check if dir exists
+      publicName[r->fn.dirLen + subdirLen] = ZERO;
+      if (!dirExists(publicName)) {
+         printf("BetterC error: dir doesn't exist\n");
+         printf("||%s||\n", publicName);
+         exit(1);
+      }
+      
+      publicName[r->fn.dirLen + subdirLen] = '/';
+      memcpy(publicName + r->fn.dirLen + subdirLen + 1, r->fn.c + r->fn.dirLen, r->fn.len - r->fn.dirLen);
+      publicName[len - 1] = 'h';
+   } else {
+      publicName = malloc(r->fn.len + 1);
+      publicName[r->fn.len] = ZERO;
+      memcpy(publicName, r->fn.c, r->fn.len - 1);
+      publicName[r->fn.len - 1] = 'h';
+   }
+   return publicName;
+}
+
 private void
-writePublicHeader(FileParse* r) {
-   CS headerName = malloc(r->fn.len + 1);
-   memcpy(headerName, r->fn.c, r->fn.len - 1);
-   headerName[r->fn.len - 1] = 'h';
-   FILE* out = fopen(headerName, "w");
+writePublicHeader(FileParse* r, CS publicName) {
+   Text publicContent = buildPublicHeader(r);
    
-   Text publicHeader = buildPublicHeader(r);
-   fputs(publicHeader.c, out);
+   FILE* out = fopen(publicName, "w");
+   fputs(publicContent.c, out);
    fclose(out);
-   free(headerName);
-   free(publicHeader.c);
+   free(publicName);
+   free(publicContent.c);
 }
 
 //Return an empty Text. This is the place where forward declarations will be inserted
@@ -517,15 +569,16 @@ buildFileWithForwDecls(FileParse* r) {
 
 private void
 writeForwDecl(FileParse* r) {
-   FILE* out = fopen(r->fn.c, "w");
    CS newContent = buildFileWithForwDecls(r);
+   
+   FILE* out = fopen(r->fn.c, "w");
    fputs(newContent, out);
    fclose(out);
    free(newContent);
 }
 
 private void 
-writeResults(FileParse* r) {
+writeResults(FileParse* r, NULLABLE CS subdir) {
    Unt countPublics = 0;
    Unt countPrivateFns = 0; //functions only, only they need forward declarations
    Unt countInternals = 0;
@@ -545,7 +598,8 @@ writeResults(FileParse* r) {
       //printf("\n");
    }
    if (countPublics > 0) {
-      writePublicHeader(r);
+      CS publicName = determinePublicName(r, subdir);
+      writePublicHeader(r, publicName);
    }
    if (countPrivateFns > 0) {
       //Need to rewrite the source file (.c) to add/update the forward fn declarations
@@ -561,17 +615,50 @@ writeResults(FileParse* r) {
 
 //}}}
 
+private void
+printUsage() {
+      printf("Example usage:\n");
+      printf("betterc source/file.c\n");
+      printf("betterc -d headers source/file.c\n");
+      printf("\n");
+}
+
+privateComp typedef struct {
+   CS fn;
+   NULLABLE CS subdir;
+   Boole correct;
+} CommLine;
+
+//Return subdir if it's specified, or null
+private CommLine
+parseCommLine(int argc, char** argv) {
+   CommLine res = {};
+   if (argc == 1) {
+      printf("BetterC: Must name an input file!\n");
+   } ei (eq(text(argv[1]), tConst("-d")) && argc == 4) {
+      res.subdir = argv[2];
+      res.fn = argv[3];
+      res.correct = true;
+   } ei (argc == 2) {
+      res.fn = argv[2];
+      res.correct = true;
+   } else {
+      printf("BetterC: erroneous arguments\n");
+   }
+   return res;
+}
+
 pub int
 main(int argc, char** argv) {
-   if (argc == 1) {
-      printf("Must name an input file!\n");
+   CommLine commLine = parseCommLine(argc, argv);
+   if (!commLine.correct) { 
+      printUsage();
       return 1;
-   }
+   } 
    
-   FilePath inpFile = filePath(argv[1]);
+   FilePath inpFile = filePath(commLine.fn);
    FileParse parseRes = processSourceFile(inpFile); 
-   printf("Parsed %d toplevels\n", parseRes.len);
-   writeResults(&parseRes);
-   
+   //printf("Parsed %d toplevels\n", parseRes.len);
+   writeResults(&parseRes, commLine.subdir);
 }
 
