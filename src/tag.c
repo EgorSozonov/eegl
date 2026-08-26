@@ -6,7 +6,7 @@
 #include "eegl.h"
 
 //Pointers to various items in a tag line.
-private typedef struct tag_pointers {
+privateComp typedef struct tag_pointers {
    // filled in by parse_tag_line():
    CS tagname;   // start of tag name (skip "file:")
    CS tagname_end;   // char after tag name
@@ -23,14 +23,14 @@ private typedef struct tag_pointers {
 } Tagline;
 
 //Return values used when reading lines from a tags file.
-private typedef enum {
+privateComp typedef enum {
    TAGS_READ_SUCCESS = 1,
    TAGS_READ_EOF,
    TAGS_READ_IGNORE,
 } TagsReadStatus;
 
 //States used during a tags search
-private typedef enum {
+privateComp typedef enum {
    TS_START,      // at start of file
    TS_LINEAR,      // linear searching forward, till EOF
    TS_BINARY,      // binary searching
@@ -39,7 +39,7 @@ private typedef enum {
 } TagSearchState;   // Current search state
 
 //Binary search file offsets in a tags file
-private typedef struct {
+privateComp typedef struct {
    FileOffset   low_offset;   // offset for first char of first line that could match
    FileOffset   high_offset;   // offset of char after last line that could match
    FileOffset   curr_offset;   // Current file offset in search range
@@ -50,7 +50,7 @@ private typedef struct {
 } TagSearchInfo;
 
 //Return values used when matching tags against a pattern.
-private typedef enum {
+privateComp typedef enum {
    TAG_MATCH_SUCCESS = 1,
    TAG_MATCH_FAIL,
    TAG_MATCH_STOP,
@@ -58,7 +58,7 @@ private typedef enum {
 } tagmatch_status_T;
 
 //Arguments used for matching tags read from a tags file against a pattern.
-private typedef struct {
+privateComp typedef struct {
    int   matchoff;      // tag match offset
    int   match_re;      // true if the tag matches a regexp
    int   match_no_ic;      // true if the tag matches with case
@@ -87,20 +87,147 @@ private Byte   *nofile_fname = NULL;   // fname for NOTAGFILE error
 
 
 //{{{@@forward declarations
-
-private void taglen_advance(int l);
-
-private int jumpto_tag(CS lbuf, int forceit, int keep_help);
-private int parse_tag_line(CS lbuf, Tagline *tagp);
-private int test_for_static(Tagline *);
-private int parse_match(CS lbuf, Tagline *tagp);
-private CS tag_full_fname(Tagline *tagp);
-private CS expand_tag_fname(CS fname, CS tag_fname, int expand);
-private int test_for_current(CS, CS, CS, CS);
-private int find_extra(OUT CS* pp);
 private void print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches);
 private int add_llist_tags(CS tag, ExpandMatch matches);
-
+private void taglen_advance(int l);
+private int tag_strnicmp(CS s1, CS s2, Unt len);
+private void prepare_pats(TagPattern *pats, int has_re);
+private int find_tagfunc_tags(
+   Byte   *pat,      // pattern supplied to the user-defined function
+   ArrayList   *ga,      // the tags will be placed here
+   int      *match_count,   // here the number of tags found will be placed
+   int      flags,      // flags from find_tags (TAG_*)
+   Byte   *buf_ffname)   // name of buffer for priority
+;
+private int findtags_state_init(FindTags* st, CS pat, Unt flags, int mincount);
+private void findtags_state_free(FindTags *st);
+private int findtags_in_help_init(FindTags *st);
+private int findtags_apply_tfu(FindTags *st, CS pat, CS buf_ffname);
+private TagsReadStatus findtags_get_next_line(FindTags *st, TagSearchInfo* sinfo_p);
+private int findtags_hdr_parse(FindTags *st);
+private int findtags_start_state_handler(
+   FindTags   *st,
+   int         *sortic,
+   TagSearchInfo   *sinfo_p)
+;
+private tagmatch_status_T findtags_parse_line(
+   FindTags      *st,
+   Tagline         *tagpp,
+   FindTagsMatchArgs   *margs,
+   TagSearchInfo      *sinfo_p)
+;
+private void findtags_matchargs_init(FindTagsMatchArgs *margs, int flags);
+private int findtags_match_tag(
+    FindTags   *st,
+    Tagline      *tagpp,
+    FindTagsMatchArgs *margs)
+;
+private int findtags_add_match(
+   FindTags   *st,
+   Tagline      *tagpp,
+   FindTagsMatchArgs   *margs,
+   Byte      *buf_ffname,
+   Hash      *hash)
+;
+private void findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname);
+private void findtags_in_file(FindTags* st, CS buf_ffname);
+private int findtags_copy_matches(FindTags* st, OUT ExpandMatch* targetMatches);
+private void found_tagfile_cb(CS fname, void* cookie UNUSED);
+private int parse_tag_line(CS lbuf, Tagline* tagp);
+private int test_for_static(Tagline* tagp);
+private Unt matching_line_len(CS lbuf);
+private int parse_match(
+   CS lbuf,       // input: matching line
+   OUT Tagline* tagp)       // output: pointers into the line
+;
+private CS tag_full_fname(Tagline* tagp);
+private int jumpto_tag(
+   CS lbuf_arg,   // line from the tags file for this tag
+   int forceit,   // :ta with !
+   int keep_help)   // keep help flag (false for cscope)
+;
+private CS expand_tag_fname(CS fname, CS tag_fname, int expand);
+private int test_for_current(CS fname, CS fname_end, CS tag_fname, CS buf_ffname);
+private int find_extra(OUT CS* pp);
+private int add_tag_field(
+   Bag* dict,
+   CS field_name,
+   CS start,      // start of the value
+   CS end      // after the value; can be NULL
+);
+private void get_tag_details(Taggy *tag, OUT Bag* retBag);
+private void tagstack_clear(Portal* wp);
+private void tagstack_shift(Portal *wp);
+private void tagstack_push_item(
+   Portal* wp,
+   CS tagname,
+   int cur_fnum,
+   int cur_match,
+   Pos mark,
+   int fnum,
+   Byte  *user_data
+);
+private void tagstack_push_items(Portal* wp, List* l);
+private void tagstack_set_curidx(Portal* po, int curidx);
+private void cs_usage_msg(csid_e x);
+private void do_cscope_general(Invocation* invo, int make_split);
+private int cs_connection(int num, CS dbpath, CS ppath);
+private int cs_add(Invocation* invo UNUSED);
+private void cs_stat_emsg(CS fname);
+private int cs_add_common(
+   CS arg1,       // filename - may contain environment variables
+   CS arg2,       // prepend path - may contain environment variables
+   CS flags
+);
+private int cs_check_for_connections(void);
+private int cs_check_for_tags(void);
+private int cs_cnt_connections(void);
+private void cs_reading_emsg(int idx);
+private int cs_cnt_matches(int idx);
+private CS cs_create_cmd(CS csoption, CS pattern);
+private int cs_create_connection(int i);
+private int cs_find(Invocation* invo);
+private int cs_find_common(
+   CS opt,
+   CS pat,
+   Boole forceit,
+   Boole verbose,
+   Boole   use_ll,
+   CS commline
+);
+private int cs_help(Invocation* invo UNUSED);
+private void clear_csinfo(int i);
+private int cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat *sb UNUSED);
+private CScopeCommand * cs_lookup_cmd(Invocation* invo);
+private int cs_kill(Invocation* invo UNUSED);
+private void cs_kill_execute(int i,                 CS cname);
+private CS cs_make_eegl_style_matches(CS fname, CS slno, CS search, CS tagstr);
+private CS cs_manage_matches(Arr(CS) matches, Arr(CS) contexts, int totmatches, Mcmd cmd);
+private CS cs_parse_results(
+   int cnumber,
+   CS buf,
+   int bufsize,
+   Byte **context,
+   Byte **linenumber,
+   Byte **search
+);
+private void cs_file_results(FILE* f, int* nummatches_a);
+private void cs_fill_results(
+   CS tagstr,
+   int totmatches,
+   int *nummatches_a,
+   Byte ***matches_p,
+   Byte ***cntxts_p,
+   int *matched
+);
+private CS cs_pathcomponents(CS path);
+private void cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches);
+private int cs_read_prompt(int i);
+private void sig_handler SIGDEFARG(sigarg);
+private void cs_release_csp(int i, int freefnpp);
+private int cs_reset(Invocation* invo UNUSED);
+private CS cs_resolve_file(int i, CS name);
+private int cs_show(Invocation* invo UNUSED);
 //}}}
 
 private Byte   *tagmatchname = NULL;   // name of last used tag
@@ -1003,7 +1130,7 @@ tag_strnicmp(CS s1, CS s2, Unt len) {
 }
 
 //Info about the tag pattern being used.
-private typedef struct {
+privateComp typedef struct {
    CS pat;      // the pattern
    int      len;      // length of pat[]
    CS head;      // start of pattern head
@@ -1238,7 +1365,7 @@ find_tagfunc_tags(
 }
 
 // State information used during a tag search
-private typedef struct {
+privateComp typedef struct {
    TagSearchState   state;      // tag search state
    int      stop_searching;      // stop when match found or error
    TagPattern   *orgpat;      // holds unconverted pattern info
@@ -2262,8 +2389,8 @@ found_tagfile_cb(CS fname, void* cookie UNUSED) {
 }
 
 #if defined(EXITFREE) || defined(PROTO)
-   void
-pub free_tag_stuff(void) {
+pub void
+free_tag_stuff(void) {
    ga_clear_strings(&tag_fnames);
    if (curPor != NULL)
       do_tag(NULL, DT_FREE, 0, 0, 0);
@@ -3286,7 +3413,7 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 // See ":help cscope-find" for the possible queries.
 
-private typedef struct {
+privateComp typedef struct {
    CS name;
    int (*func)(Invocation* invo);
    CS help;
@@ -3294,7 +3421,7 @@ private typedef struct {
    int cansplit;      // if supports splitting window
 } CScopeCommand;
 
-private typedef struct csi {
+privateComp typedef struct csi {
    CS fname;     //cscope db name
    CS ppath;     //path to prepend (the -P option)
    CS flags;     //additional cscope flags/options (e.g, -p2)
@@ -3306,9 +3433,9 @@ private typedef struct csi {
    FILE* to_fp;  //to cscope: FILE.
 } CscopeInfo;
 
-private typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
+privateComp typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
 
-private typedef enum {
+privateComp typedef enum {
    Store,
    Get,
    Free,
@@ -3364,7 +3491,7 @@ cs_usage_msg(csid_e x) {
    (void)showErrFmtMsg(_(e_usage_cscope_str), cs_cmds[(int)x].usage);
 }
 
-private enum {
+privateComp enum {
    EXP_CSCOPE_SUBCMD,  //expand ":cscope" sub-commands
    EXP_SCSCOPE_SUBCMD, //expand ":scscope" sub-commands
    EXP_CSCOPE_FIND,    //expand ":cscope find" arguments

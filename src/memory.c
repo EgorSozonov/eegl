@@ -18,7 +18,7 @@ pub int lstat(const char* restrict, struct stat* restrict);
 //a positive number. Because the reference to the block is still the negative
 //number, we remember the translation to the new positive number in the
 //double linked trans lists. The structure is the same as the hash lists.
-private typedef struct {
+privateComp typedef struct {
    MfHashItem nt_hashitem;      // header for hash table and key
 #define nt_old_bnum nt_hashitem.key   // old, negative, number
 
@@ -26,7 +26,104 @@ private typedef struct {
 } NrTranslation;
 
 //{{{@@forward declarations
-
+private void mem_pre_alloc_s(Unt *sizep);
+private void mem_pre_alloc_l(Unt *sizep);
+private void mem_post_alloc(void **pp, Unt size);
+private void mem_pre_free(void **pp);
+private void exit_scroll(void);
+private int ml_check_b0_id(Block0* b0p);
+private void updateBlock0(Book *book, upd_block0_T what);
+private void set_b0_fname(Block0 *b0p, Book *book);
+private void set_b0_dir_flag(Block0* b0p, Book* book);
+private int swapfile_process_running(Block0 *b0p, CS swap_fname);
+private int swapfile_unchanged(CS fname);
+private void addTextPropsForAppend(
+   Book* book,
+   LineNr   lnum,
+   OUT CS* lineContent,
+   OUT int* len,
+   OUT Byte** tofree
+);
+private int insertLineText(
+   Book* book,
+   LineNr lnum,      // append after this line (can be 0)
+   CS newContentArg, // text of the new line
+   ColNr lenArgWithZeroChar,   // length of line, including ZERO, or 0
+   Unt flags      // ML_APPEND_ flags
+);
+private int appendFlush(
+   Book   *book,
+   LineNr   lnum,      // append after this line (can be 0)
+   Arr(Byte) newContent,   // text of the new line
+   ColNr   len,      // length of line, including ZERO, or 0
+   int      flags      // ML_APPEND_ flags
+);
+private void adjustTextPropsForDeletion(
+   Book* book,
+   LineNr lnum,
+   CS del_props,
+   int del_props_len,
+   int above
+);
+private int deleteLine(Book* book, LineNr lnum, int flags);
+private void flushLine(Book *book);
+private BlockHeader * newDataBlock(MemFile *mfp, int negative, int pageCount);
+private BlockHeader * ml_new_ptr(MemFile *mfp);
+private BlockHeader * ml_find_line(Book *book, LineNr lnum, int action);
+private int ml_add_stack(Book* book);
+private void fixBlockStack(Book* book, int count);
+private void attention_message(Book* book, CS swapName);
+private SeaChoice  do_swapexists(Book* book, CS fname);
+private CS findSwapName(Book* book, CS old_fname);
+private int b0_magic_wrong(Block0* b0p);
+private int compareFnameWithInode(CS fname_c, CS nameFromSwap, long ino_block0);
+private void longToChar(long n, CS s);
+private long charToLong(CS s);
+private void updateChunk(Book* book, LineNr line, Long len, int updtype);
+private Tyme swapfile_info(CS fname);
+private void mf_ins_hash(MemFile* mfp, BlockHeader* hp);
+private void mf_rem_hash(MemFile* mfp, BlockHeader* hp);
+private BlockHeader * mf_find_hash(MemFile* mfp, BlockId nr);
+private void mf_ins_used(MemFile* mfp, BlockHeader* hp);
+private void mf_rem_used(MemFile* mfp, BlockHeader* hp);
+private BlockHeader * mf_release(MemFile* mfp, int page_count);
+private BlockHeader * mf_alloc_bhdr(MemFile* mfp, int page_count);
+private void mf_free_bhdr(BlockHeader* hp);
+private void mf_ins_free(MemFile* mfp, BlockHeader* hp);
+private BlockHeader * mf_rem_free(MemFile* mfp);
+private int mf_read(MemFile* mfp, BlockHeader* hp);
+private int mf_write(MemFile* mfp, BlockHeader* hp);
+private int mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset offset UNUSED, unsigned size);
+private int mf_trans_add(MemFile* mfp, BlockHeader* hp);
+private void mf_do_open(MemFile* mfp, CS fname, Unt flags);
+private void mf_hash_init(MfHashTable*  mht);
+private void mf_hash_free(MfHashTable *mht);
+private void mf_hash_free_all(MfHashTable* mht);
+private MfHashItem * mf_hash_find(MfHashTable *mht, BlockId key);
+private void mf_hash_add_item(MfHashTable* mht, MfHashItem* mhi);
+private void mf_hash_rem_item(MfHashTable *mht, MfHashItem *mhi);
+private int mf_hash_grow(MfHashTable *mht);
+private int free_unref_items(int copyID);
+private Boole set_ref_in_item_dict(
+   Bag* bag,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+);
+private Boole set_ref_in_item_list(
+   OUT List* ll,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+);
+private Boole set_ref_in_item_partial(
+   PartiallyApplied* pt,
+   int copyID,
+   HtStack** ht_stack,
+   ListStack** list_stack
+);
+private Boole set_ref_in_item_job(Job* job, int copyID, HtStack** ht_stack, ListStack** list_stack);
+private Boole set_ref_in_item_channel(Channel* ch, int copyID, HtStack** ht_stack, ListStack** list_stack);
 //}}}
 //{{{allocations
 
@@ -701,10 +798,10 @@ private struct InfoPtr {
 // are to be loaded into memory.
 private int dontReleaseBlocksS = false;
 
-private typedef struct Block0 Block0;      // contents of the first block
-private typedef struct PointerBlock   PointerBlock; // contents of a pointer block
-private typedef struct DataBlock   DataBlock;    // contents of a data block
-private typedef struct PtrEntry   PtrEntry;         // block/line-count pair
+privateComp typedef struct Block0 Block0;      // contents of the first block
+privateComp typedef struct PointerBlock   PointerBlock; // contents of a pointer block
+privateComp typedef struct DataBlock   DataBlock;    // contents of a data block
+privateComp typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 #define DATA_ID          (('d' << 8) + 'a')   // data block id
 #define PTR_ID          (('p' << 8) + 't')   // pointer block id
@@ -837,7 +934,7 @@ private LineNr   lowest_marked = 0;
 #define ML_SIMPLE(x) ((x) & 0x10)  // DEL, INS or FIND
 
 // argument for updateBlock0()
-private typedef enum {
+privateComp typedef enum {
    UB_FNAME = 0, // update timestamp and filename
    UB_SAME_DIR,  // update the B0_SAME_DIR flag
    UB_CRYPT      // update crypt key
@@ -3441,7 +3538,7 @@ attention_message(Book* book, CS swapName) {
    --no_wait_return;
 }
 
-private typedef enum {
+privateComp typedef enum {
    SEA_CHOICE_NONE = 0,
    SEA_CHOICE_READONLY = 1,
    SEA_CHOICE_EDIT = 2,
@@ -3664,7 +3761,7 @@ findSwapName(Book* book, CS old_fname) {   // don't give warning for this file n
       fname[n - 1] = 'z' + 1;
    }
    --fname[n - 1];         // ".swo", ".swn", etc.
-pub endOfName:
+endOfName:
    return fname;
 }
 

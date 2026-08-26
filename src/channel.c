@@ -15,7 +15,7 @@
 #include <sys/poll.h>
 #endif
 
-private typedef sigset_t SignalSet;
+privateComp typedef sigset_t SignalSet;
 
 # define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
                          // 127, some shells use that already
@@ -27,7 +27,7 @@ private typedef sigset_t SignalSet;
 
 private int dontCheckJobEndedP = 0;
 
-private typedef int waitstatus;
+privateComp typedef int waitstatus;
 
 // volatile because it is used in signal handler deathtrap().
 private volatile SigAtomic inMchDelayS = false; // sleeping in mch_delay()
@@ -82,27 +82,157 @@ private int safe_to_invoke_callback = 0;
 private Channel *first_channel = NULL;
 private int next_ch_id = 0;
 private int ignore_sigtstp = false;
-private typedef struct sockaddr_un SockAddrUn;
-private typedef struct sockaddr SockAddr;
+privateComp typedef struct sockaddr_un SockAddrUn;
+privateComp typedef struct sockaddr SockAddr;
 
 #define LOG_ALWAYS 9// must be different from true and false
 
 //{{{@@forward declarations
+private void channel_free_contents(Channel* channel);
+private void channel_free_channel(Channel* channel);
+private void channel_free(Channel* channel);
+private int channel_may_free(Channel *channel);
+private LIST_CREATE(PollFd) #define ADD_LIST_TY PollFd  //which method to instantiate ("add" for the "list" type)
+#include "generic.h"        //actual code generation, including adding it to the _Generic
 
-private void channel_read(Channel *channel, ChannelFdKind part, char *func);
-private ChannelMode channel_get_mode(Channel *channel, ChannelFdKind part);
-private int channel_get_timeout(Channel *channel, ChannelFdKind part);
-private ChannelFdKind channel_part_send(Channel *channel);
-private ChannelFdKind channel_part_read(Channel *channel);
+//Decrement the reference count on "channel" and maybe free it when it goes
+//down to zero.  Don't free it if there is a pending action.
+//Return true when the channel is no longer referenced.
+
+pub int
+channel_unref(Channel* channel);
+private int channel_connect(
+   Channel* channel, 
+   SockAddr const* server_addr, 
+   int server_addrlen, 
+   int *waittime
+);
+private Channel* channel_open_unix(CS path);
+private void setCallback(Callback* cbp, Callback* callback);
+private void prepare_buffer(Book* book);
+private Book* chaFindBook(CS name, int err, int msg);
+private void channel_set_options(Channel* channel, JobOptions* opt);
+private Channel * channel_open_func(Arr(Var) argvars);
+private void channel_set_req_callback(Channel* channel, ChannelFdKind part, Callback* callback, int id);
+private void write_buf_line(Book* book, LineNr lnum, Channel* channel);
+private int can_write_buf_line(Channel* channel);
+private void channel_write_input(Channel* channel);
+private void invoke_callback(Channel* channel, Callback* callback, Var* argv);
+private CS channel_get(Channel* channel, ChannelFdKind part, int *outlen);
+private CS channel_get_all(Channel *channel, ChannelFdKind part, int *outlen);
+private int saveMsg(Channel* channel, ChannelFdKind part, CS msg, int len, int prepend, CS logLead);
+private int channel_fill(JsReader* reader);
+private int channel_process_lsp_http_hdr(JsReader* reader);
+private int channel_parse_json(Channel* channel, ChannelFdKind part);
+private void remove_cb_node(CbNode* head, CbNode* node);
+private void remove_json_node(JsonQ* head, JsonQ* node);
+private void channel_add_block_id(ChannelFd* chanpart, int id);
+private void channel_remove_block_id(ChannelFd* chanpart, int id);
+private int channel_has_block_id(ChannelFd* chanpart, int id);
+private int channel_get_json(
+   Channel   *channel,
+   ChannelFdKind   part,
+   int       id,
+   int       without_callback,
+   Var    **returnVar
+);
+private void channel_push_json(Channel* channel, ChannelFdKind part, Var* returnVar);
+private void channel_exe_cmd(Channel *channel, ChannelFdKind part, Var *argv);
+private void invoke_one_time_callback(Channel* channel, CbNode* cbhead, CbNode* item, Var* argv);
+private void appendToBook(Book* book, CS msg, Channel* channel, ChannelFdKind part);
+private void drop_messages(Channel* channel, ChannelFdKind part);
+private int channel_use_json_head(Channel* channel, ChannelFdKind part);
+private int may_invoke_callback(Channel* channel, ChannelFdKind part);
+private void * channel_readahead_pointer(Channel* channel, ChannelFdKind part);
+private int channel_has_readahead(Channel *channel, ChannelFdKind part);
+private CS channel_status(Channel *channel, int req_part);
+private void channel_part_info(Channel *channel, Bag *dict, CS name, ChannelFdKind part);
+private void channelInfoIntoDict(Channel *channel, OUT Bag *dict);
 private void channel_close(Channel *channel, int invoke_close_cb);
-
-private void set_default_child_environment(int is_terminal);
+private void channel_close_in(Channel *channel);
+private void remove_from_writeque(WriteQueue *wq, WriteQueue *entry);
+private void channel_clear_one(Channel *channel, ChannelFdKind part);
+private int is_channel_write_remaining(ChannelFd* in_part);
+private void channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds);
+private channel_wait_result channel_wait(Channel* channel, Socket fd, int timeout);
+private void ch_close_part_on_error(Channel *channel, ChannelFdKind part, int is_err, char *func);
+private void channel_close_now(Channel *channel);
+private void channel_read(Channel *channel, ChannelFdKind part, char *func);
+private CS channel_read_block(Channel *channel, ChannelFdKind part, int timeout, int raw, int *outlen);
+private int channel_read_json_block(
+   Channel* channel,
+   ChannelFdKind part,
+   int timeout_arg,
+   int id,
+   Var** returnVar
+);
+private void commonChannelRead(Var* argvars, Var* returnVar, int raw, int blob);
+private Channel* send_common(
+   Var* argvars,
+   CS text,
+   int len,
+   int id,
+   int eval,
+   JobOptions* opt,
+   char* fun,
+   ChannelFdKind* part_read
+);
+private void ch_expr_common(Arr(Var) argvars, Var* returnVar, int eval);
+private void ch_raw_common(Var* argvars, OUT Var* returnVar, int eval);
+private ChannelFdKind channel_part_send(Channel* channel);
+private ChannelFdKind channel_part_read(Channel* channel);
+private ChannelMode channel_get_mode(Channel* channel, ChannelFdKind part);
+private int channel_get_timeout(Channel *channel, ChannelFdKind part);
+private int build_argv_from_list(List *l, Byte*** argv, int *argc);
+private long int get_signal_stack_size(void);
 private void init_signal_stack(void);
+private CS get_signal_name(int sig);
+private void block_signals(SignalSet* set);
+private void unblock_signals(SignalSet* set);
+private void may_send_sigint(Unt c, ProId pid UNUSED, ProId wpid);
+private ProId wait4pid(ProId child, waitstatus *status);
+private void writeFromCurBookToShell(int fromShell, int toShell);
+private PolyWithStatus callShellImpl(Text cmd, Unt opt);
+private void open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2);
+private void catch_sigint SIGDEFARG(sigarg);
+private void catch_sigusr1 SIGDEFARG(sigarg);
+private void catch_sigpwr SIGDEFARG(sigarg);
+private void deathtrap SIGDEFARG(sigarg);
+private void after_sigcont(void);
+private void sigcont_handler SIGDEFARG(sigarg);
 private void catch_int_signal(void);
 private void catch_signals(void (*func_deadly)(int), void (*func_other)(int));
-private void open_pty(int *pty_master_fd, int *pty_slave_fd, Byte **name1, Byte **name2);
-private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text buf);
-
+private void set_child_environment(
+   long rows,
+   long columns,
+   CS term,
+   int is_terminal UNUSED
+);
+private void set_default_child_environment(int is_terminal);
+private void mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal);
+private CS mch_job_status(Job* job);
+private Job * mch_detect_ended_job(Job* job_list);
+private int handle_mode(Var* item, JobOptions* opt, ChannelMode* modep, int jo);
+private int handle_io(Var* item, ChannelFdKind part, JobOptions* opt);
+private void unref_job_callback(Callback *cb);
+private int part_from_char(int c);
+private void job_free_contents(Job* job);
+private void job_unlink(Job* job);
+private void job_free_job(Job* job);
+private void job_free(Job* job);
+private void job_free_later(Job* job);
+private void free_jobs_to_free_later(void);
+private int job_need_end_check(Job* job);
+private int job_channel_still_useful(Job* job);
+private int job_channel_can_close(Job* job);
+private int job_still_useful(Job* job);
+private void job_cleanup(Job* job);
+private CS buf_prompt_text(Book* book);
+private Job * get_job_arg(Var* tv);
+private void job_info(Job* job, Bag* bag);
+private void job_info_all(List* l);
+private void logLead(CS what, Channel* ch, ChannelFdKind part);
+private void ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder);
 //}}}
 //{{{auxiliary
 
@@ -2388,7 +2518,7 @@ channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds) {
    }
 }
 
-private typedef enum {
+privateComp typedef enum {
    CW_READY,
    CW_NOT_READY,
    CW_ERROR

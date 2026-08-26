@@ -16,24 +16,104 @@ pub int setxattr(const char*, const char*, const void*, size_t, int);
 #define SWAP_DIR S"~/.local/state/"
 
 //{{{@@forward declarations
-
-private int mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch*);
-private int eeCopyfile(CS from, CS to);
-private int readdir_core(ArrayList* gap, int withattr UNUSED, int sort);
-private void uniquefy_paths(OUT ExpandMatch* matches, CS pattern, CS path_option);
-
-private CS
-find_directory_in_path(
-   Text fName, Unt options, CS rel_fname, 
-   OUT Byte** file_to_find, OUT FileSearchCtx** searchCtx
+private void findfilendir(Arr(Var) argvars, Var* returnVar, int find_what);
+private int mkdir_recurse(CS dir, Unt prot, Byte** created);
+private int readdirex_dict_arg(Var *argvars, int *cmp);
+private void read_file_or_blob(Var *argvars, Var* returnVar, int always_blob);
+private int dir_of_file_exists(CS fname);
+private int eeBacktick(CS p);
+private int expand_backtick(OUT ExpandMatch* matches, CS pat, Unt flags);
+private int pstrcmp(const void* a, const void* b);
+private int unix_expandpath(
+   OUT ExpandMatch* fileList,
+   CS path,
+   Unt wildoff,
+   Unt flags,     // EW_* flags
+   int didstar
+);
+private int mch_expandpath(OUT ExpandMatch* matches, CS path, Unt flags);
+private int has_special_wildchar(CS p);
+private int mch_FullName(CS fname, OUT CS buf, int len, Boole force);
+private void findfileFreeVisitedList(FileSearchCtx* search_ctx_arg);
+private void findfileFreeVisitedList_list(VisitedList **list_headp);
+private void ff_free_visited_list(Visited* vl);
+private VisitedList* ff_get_visited_list(Text filename, OUT VisitedList** listHead);
+private int ff_wc_equal(CS s1, CS s2);
+private int checkFirstTimeVisit(Visited** visited_list, Text fname, CS wc_path, Unt wc_pathlen);
+private DirSearchStack * ff_create_stack_element(
+   CS fix_part,
+   Unt   fix_partlen,
+   CS wc_part,
+   Unt   wc_partlen,
+   int level,
+   Boole star_star_empty
+);
+private void ff_push(FileSearchCtx *searchCtx, DirSearchStack *stack_ptr);
+private DirSearchStack * ff_pop(FileSearchCtx* searchCtx);
+private void ff_free_stack_element(DirSearchStack* stack);
+private void ff_clear(FileSearchCtx* searchCtx);
+private int ff_path_in_stoplist(CS path, int path_len, Arr(Text) stopdirs_v);
+private CS find_directory_in_path(
+   Text fName,
+   Unt options,
+   CS rel_fname,   // file name searching relative to
+   OUT Byte** file_to_find,   // in/out: modified copy of file name
+   OUT FileSearchCtx** searchCtx   // in/out: state of the search
 );
 private CS findFileInPathImpl(
-   Text fName, Unt options, Boole first, NULLABLE CS path_option, Unt find_what, CS rel_fname,
-   CS suffixes, OUT Byte** file_to_find, OUT FileSearchCtx** search_ctx_arg
+   Text fName,
+   Unt options,
+   Boole first,      // use count'th matching file name
+   NULLABLE CS path_option,   // path or cdpath
+   Unt find_what,   // FINDFILE_FILE, _DIR or _BOTH
+   CS rel_fname,   // file name we are looking relative to.
+   CS suffixes,   // list of suffixes, 'suffixesadd' option
+   OUT Byte** file_to_find,   // modified copy of file name
+   OUT FileSearchCtx** search_ctx_arg // state of the search
 );
+private CS eval_includeexpr(CS ptr, int len);
+private CS getLastSlash(CS fname);
+private int find_previous_pathsep(CS path, Byte** psep);
+private Boole is_unique(CS maybe_unique, ExpandMatch* matches, Unt i);
+private void expand_path_option(CS curdir, NULLABLE CS path_option, OUT ExpandMatch* files);
+private CS get_path_cutoff(CS fname, OUT ExpandMatch* matches);
+private void uniquefy_paths( OUT ExpandMatch* matches, CS pattern, CS path_option);
 private int expand_in_path(OUT ExpandMatch* matches, CS pattern, Unt flags);
+private int have_wildcard(int num, Arr(CS) file);
+private int save_patterns(int num_pat, Arr(CS) pat, OUT ExpandMatch* files);
+private Text buildShellCommandForWildcardExpansion( CS tempname, int num_pat, Arr(CS) pat, Unt flags);
+private int mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch* matches);
+private void perror_exit(int ret);
+private void errorExit(int ret, CS msg);
+private int getc_or_die(FILE *fpi);
+private void putc_or_die(int c, FILE *fpo);
+private void fputs_or_die(CS s, FILE* fpo);
+private void fclose_or_die(FILE *fpi, FILE *fpo);
+private int skip_to_eol(FILE *fpi, int c);
+private int eeCopyfile(CS from, CS to);
+private int move_lines(Book* frombuf, Book* tobuf);
+private int compare_readdirex_item(const void *p1, const void *p2);
+private int compare_readdir_item(const void *s1, const void *s2);
+private int readdir_core(ArrayList   *gap, int withattr UNUSED, int sort);
 private Boole recursivelyDeleteDir(CS name);
-
+private void eeOpentempdir(void);
+private void eeClosetempdir(void);
+private void eeSettempdir(CS tempdir);
+private void fiGetShellOutput_as_returnVar(Var* argvars, OUT Var* returnVar, int retlist);
+private int executable_file(CS name);
+private int resolveSymlink(OUT Text* result, Unt cap);
+private int huntype(
+  FILE *fpi,
+  FILE *fpo,
+  int cols,
+  int hextype,
+  long base_off
+);
+private void print_colored_line(FILE* fp, CS l, CS colors);
+private void exit_with_usage(void);
+private int enable_color(void);
+private void xxdline(FILE* fp, CS l, CS colors, int nz);
+private Byte get_color_char(int e);
 //}}}
 //{{{file paths: dealing with file names and paths.
 
@@ -1591,7 +1671,7 @@ mch_expandpath(OUT ExpandMatch* matches, CS path, Unt flags){
    return unix_expandpath(OUT matches, path, 0, flags, false);
 }
 
-private typedef DIR* DirPtr;
+privateComp typedef DIR* DirPtr;
 LIST_TY(DirPtr)
 //private LIST_CREATE(DirPtr)
 
@@ -2505,7 +2585,7 @@ struct DirSearchStack {
 };
 
 //type for already visited directories or files.
-private typedef struct Visited {
+privateComp typedef struct Visited {
    struct Visited* next;
 
    // Visited directories are different if the wildcard string are
@@ -2560,7 +2640,7 @@ struct VisitedList {
 //  stopDirs:   array of stop directories for upward search
 //  whatToFind:   FINDFILE_BOTH, FINDFILE_DIR or FINDFILE_FILE
 //  tagFile:   searching for tags file, don't use @suffixesadd
-private typedef struct FileSearchCtx {
+privateComp typedef struct FileSearchCtx {
    DirSearchStack* stack;
    VisitedList* visitedList;
    VisitedList* dirVisitedList;
@@ -5891,7 +5971,7 @@ failed:
       curBook->opEnd.col = 0;
    }
 
-pub afterRecovery: 
+afterRecovery: 
    msg_scroll = msg_save;
 
    // Get the marks before executing autocommands, so they can be used there.
@@ -7836,7 +7916,7 @@ mch_copy_xattr(CS from_file, CS to_file) {
 
       val = alloc(max_vallen + 1);
    }
-pub exitWithError:
+exitWithError:
    eeglFree(xattr_buf);
    eeglFree(val);
 
@@ -8058,19 +8138,19 @@ private CS hexx = hexxa;
 #define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
 
 #define COLOR_PROLOGUE(color) \
-pub l_colored[c++] = '\033'; \
-l_colored[c++] = '['; \
-pub l_colored[c++] = '1'; \
-l_colored[c++] = ';'; \
-pub l_colored[c++] = '3'; \
-l_colored[c++] = (color); \
-pub l_colored[c++] = 'm';
+   l_colored[c++] = '\033'; \
+   l_colored[c++] = '['; \
+   l_colored[c++] = '1'; \
+   l_colored[c++] = ';'; \
+   l_colored[c++] = '3'; \
+   l_colored[c++] = (color); \
+   l_colored[c++] = 'm';
 
 #define COLOR_EPILOGUE \
-pub l_colored[c++] = '\033'; \
-l_colored[c++] = '['; \
-pub l_colored[c++] = '0'; \
-l_colored[c++] = 'm';
+   l_colored[c++] = '\033'; \
+   l_colored[c++] = '['; \
+   l_colored[c++] = '0'; \
+   l_colored[c++] = 'm';
 
 #define COLOR_RED '1'
 #define COLOR_GREEN '2'

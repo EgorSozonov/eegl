@@ -14,77 +14,245 @@
 private Boole isCompletionBusyS = false;
 
 //{{{@@forward declarations
-
+private int char_before_cursor(void);
+private void redrawInInsertMode(Boole ready);
 private void insertStartVisualBlockMode(void);
-private void insertRegular(Unt, Boole, Boole);
+private int decodeModifyOtherKeys(int c);
+private int del_char_after_col(int limit_col UNUSED);
+private void insertRegular(Unt c, Boole allow_modmask, Boole ctrlv);
 private void redo_literal(int c);
-private void start_arrow_common(Pos *end_insert_pos, int change);
+private void start_arrow_with_change(NULLABLE Pos* end_insert_pos, int end_change);
+private void start_arrow_common(NULLABLE Pos* end_insert_pos, int end_change);
 private void check_spell_redraw(void);
-private void stop_insert(Pos *end_insert_pos, int esc, int nomove);
-private Boole  echeck_abbr(Unt);
-private int del_char_after_col(int limit_col);
+private void stop_insert(
+   Pos* end_insert_pos,
+   int esc,         // called by ins_esc()
+   int nomove       // <c-\><c-o>, don't move cursor
+);
+private Boole echeck_abbr(Unt c);
 private void insertRegisterContents(void);
 private void ins_ctrl_g(void);
 private void ins_ctrl_hat(void);
-private int  ins_esc(long *count, int commChar, int nomove);
+private int ins_esc(long* count, int commChar, int nomove);
 private int ins_start_select(int c);
 private void ins_ctrl_o(void);
 private void ins_shift(Unt c, int lastc);
 private void ins_del(void);
-private int  ins_bs(int c, int mode, int *inserted_space_p);
+private void ins_bs_one(void);
+private int ins_bs(int c, int mode, int* inserted_space_p);
 private void ins_left(void);
 private void ins_home(Unt c);
 private void ins_end(Unt c);
 private void ins_s_left(void);
 private void ins_right(void);
 private void ins_s_right(void);
-private void ins_up(int startcol);
+private void ins_up( int      startcol);
 private void ins_pageup(void);
 private void ins_down(int startcol);
 private void ins_pagedown(void);
 private void ins_drop(void);
 private int ins_tab(void);
+private int ins_eol(Unt c);
 private Unt ins_ctrl_ey(Unt tc);
-private void ins_ctrl_x(void);
-private int ctrl_x_mode_normal(void);
-private int ctrl_x_mode_scroll(void);
-private int ctrl_x_mode_files(void);
-private int ctrl_x_mode_tags(void);
-private int ctrl_x_mode_path_patterns(void);
-private int ctrl_x_mode_path_defines(void);
-private int ctrl_x_mode_dictionary(void);
-private int ctrl_x_mode_thesaurus(void);
+private int ctrl_x_mode_normal(void)    ;
+private int ctrl_x_mode_scroll(void)    ;
+private int ctrl_x_mode_files(void)    ;
+private int ctrl_x_mode_tags(void)    ;
+private int ctrl_x_mode_path_patterns(void)    ;
+private int ctrl_x_mode_path_defines(void)    ;
+private int ctrl_x_mode_dictionary(void)    ;
+private int ctrl_x_mode_thesaurus(void)    ;
 private int ctrl_x_mode_cmdline(void);
-private int ctrl_x_mode_function(void);
-private int ctrl_x_mode_omni(void);
-private int ctrl_x_mode_eval(void);
-private int ctrl_x_mode_line_or_eval(void);
-private int ctrl_x_mode_register(void);
+private int ctrl_x_mode_function(void)    ;
+private int ctrl_x_mode_omni(void)    ;
+private int ctrl_x_mode_eval(void)    ;
+private int ctrl_x_mode_line_or_eval(void)    ;
+private int ctrl_x_mode_register(void)    ;
 private void compl_status_clear(void);
+private int compl_dir_forward(void);
+private int compl_shows_dir_forward(void);
+private int compl_shows_dir_backward(void);
 private int has_compl_option(int dict_opt);
+private int match_at_original_text(InsertCompletion *match);
+private int is_first_match(InsertCompletion *match);
 private int ins_compl_accept_char(int c);
+private CS ins_compl_infercase_gettext(
+   CS str,
+   int char_len,
+   int compl_char_len,
+   int min_len,
+   OUT Byte** tofree
+);
+private int cfc_has_mode(void);
+private int is_nearest_active(void);
+private Unt addMatchToList(
+   CS str,
+   int len,
+   CS fname,
+   Byte** cptext,       // extra text for popup menu or NULL
+   Var* user_data UNUSED,  // "user_data" entry or NULL
+   Unt cdir,
+   Unt flags_arg,
+   Boole adup,          // accept duplicate match
+   Arr(Decoration) userDecos,           // user abbreviation/kind decorations
+   int      score
+);
+private int ins_compl_equal(InsertCompletion *match, CS str, int len);
+private void ins_compl_insert_bytes(CS p, int len);
+private Boole ins_compl_has_multiple(void);
+private void ins_compl_longest_match(InsertCompletion* match);
+private void ins_compl_add_matches(OUT ExpandMatch* matches, int icase);
+private int ins_compl_make_cyclic(void);
 private int ins_compl_has_shown_match(void);
 private int ins_compl_long_shown_match(void);
+private void ins_compl_upd_pum(void);
+private void ins_compl_del_pum(void);
 private int pum_wanted(void);
+private int pum_enough_matches(void);
+private Bag * ins_compl_allocBag(InsertCompletion *match);
+private void trigger_complete_changed_event(int cur);
+private void* cp_get_next(void *node);
+private void cp_set_next(void *node, void *next);
+private void* cp_get_prev(void* node);
+private void cp_set_prev(void* node, void* prev);
+private int cp_compare_fuzzy(const void* a, const void* b);
+private int cp_compare_nearest(const void* a, const void* b);
+private Unt prepend_startcol_text(Text* dest, Text* src, int startcol);
+private Text* get_leader_for_startcol(InsertCompletion* match, int cached);
+private void set_fuzzy_score(void);
+private void sort_compl_match_list(int (*compare)(const void *, const void *));
+private int ins_compl_build_pum(void);
 private Unt ins_compl_leader_len(void);
+private void ins_compl_dictionaries(
+   NULLABLE CS dict_start,
+   CS pat,
+   Unt flags,      // DICT_FIRST and/or DICT_EXACT
+   int thesaurus   // Thesaurus completion
+);
+private Unt thesaurus_add_words_in_line(CS fname, OUT CS* buf_arg, Unt dir, CS skip_word);
+private void filterFromFiles(
+   OUT ExpandMatch files,
+   int thesaurus,
+   Unt flags,
+   RegMatch* regmatch,
+   CS buf,
+   OUT Unt* dir
+);
+private void ins_compl_item_free(InsertCompletion* match);
+private void ins_compl_free(void);
 private void ins_compl_clear(void);
 private Boole ins_compl_used_match(void);
 private void ins_compl_init_get_longest(void);
 private int ins_compl_enter_selects(void);
 private ColNr ins_compl_col(void);
+private int ins_compl_has_preinsert(void);
 private int ins_compl_preinsert_effect(void);
 private int ins_compl_bs(void);
+private int ins_compl_need_restart(void);
+private void ins_compl_new_leader(void);
+private int get_compl_len(void);
 private void ins_compl_addleader(int c);
+private void ins_compl_restart(void);
+private void ins_compl_set_original_text(CS str, Unt len);
 private void ins_compl_addfrommatch(void);
-private Boole ins_compl_prep(Unt c);
+private Boole set_ctrl_x_mode(Unt c);
+private void trigger_complete_done_event(int mode, CS word);
+private int ins_compl_stop(Unt c, int prev_mode, int retval);
 private int ins_compl_cancel(void);
+private Boole ins_compl_prep(Unt c);
+private void ins_compl_fixRedoBufForLeader(CS ptr_arg);
+private Book* ins_compl_next_buf(Book* book, Unt flag);
+private Unt copyCompletionCbs(OUT Callback* dest, Callback* src);
+private CS get_complete_funcname(int type);
+private Callback* get_insert_callback(int type);
+private void expand_by_function(int type, CS base, Callback* cb);
+private inline Decoration getUserDecoration(CS hlname);
+private int ins_compl_add_tv(Var* tv, Unt dir, int fast);
+private void ins_compl_add_list(List* list);
+private void ins_compl_add_dict(Bag* dict);
+private void set_completion(ColNr startcol, List *list);
+private Unt add_match_to_list( Var  *returnVar, CS str, int len, int pos);
+private CS ins_compl_mode(void);
+private void ins_compl_update_sequence_numbers(void);
+private void fill_complete_info_dict(Bag *di, InsertCompletion *match, int add_match);
+private void get_complete_info(List *what_list, Bag *retdict);
+private int thesaurus_func_complete(int type);
+private int may_advance_cpt_index(CS cpt);
+private int process_next_cpt_value(
+   OUT InsertionCompletionNext* st,
+   OUT Unt* InsertCompletionype_arg,
+   Pos* start_match_pos,
+   int fuzzy_collect,
+   OUT int* advance_cpt_idx
+);
+private void get_next_include_file_completion(Unt insertCompletionType);
+private void get_next_dict_tsr_completion(int insertCompletionType, CS dict, int dict_f);
+private void get_next_tag_completion(void);
+private void ins_compl_longest_insert(CS prefix);
+private void fuzzy_longest_match(void);
+private void get_next_filename_completion(void);
+private void get_next_cmdline_completion(void);
+private CS ins_compl_get_next_word_or_line(
+   Book* scannedBook,      // buffer being scanned
+   Pos* cur_match_pos,      // current match position
+   int* match_len,
+   int* cont_s_ipos
+);
+private Unt get_next_default_completion(InsertionCompletionNext* st, Pos* start_pos);
+private Callback * get_callback_if_cfn(CS p);
+private void get_register_completion(void);
+private Unt get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini);
+private void strip_caret_numbers_in_place(CS str);
+private int prepare_cpt_compl_funcs(void);
+private void compl_source_start_timer(int source_idx UNUSED);
+private int advance_cpt_sources_index_safe(void);
+private int ins_compl_get_exp(Pos* ini);
+private void ins_compl_update_shown_match(void);
 private void ins_compl_delete(void);
+private void ins_compl_expand_multiple(CS str);
 private void ins_compl_insert(int move_cursor);
+private void ins_compl_show_filename(void);
+private InsertCompletion * find_next_match_in_menu(void);
+private Unt find_next_completion_match(
+   int allow_get_expansion,
+   int todo,      // repeat completion this many times
+   int advance,
+   int* num_matches
+);
+private int ins_compl_next(
+   int allow_get_expansion,
+   int count,      // repeat completion this many times; should be at least 1
+   Boole doInsertMatch   // Insert the newly selected match
+);
+private void check_elapsed_time(void);
+private Unt ins_compl_key2dir(Unt c);
+private Boole ins_compl_pum_key(Unt c);
+private int ins_compl_key2count(Unt c);
+private Boole shouldNewCharInsertTheMatch(int c);
+private Unt get_normal_compl_info(CS line, int startcol, ColNr curs_col);
+private int get_wholeline_compl_info(CS line, ColNr curs_col);
+private int get_filename_compl_info(CS line, int startcol, ColNr curs_col);
+private int get_cmdline_compl_info(CS line, ColNr curs_col);
+private int set_compl_globals(int startcol, ColNr curs_col, int is_cpt_compl);
+private int get_userdefined_compl_info(ColNr curs_col, Callback* cb, int* startcol);
+private Unt compl_get_info(CS line, int startcol, ColNr curs_col, OUT Boole* line_invalid);
+private void ins_compl_continue_search(CS line);
+private Unt ins_compl_start(void);
+private void ins_compl_show_statusmsg(void);
 private Unt ins_complete(Unt c, Boole enable_pum);
 private Boole ins_compl_setup_autocompl(Unt c);
-private int ins_eol(Unt c);
-private void redrawInInsertMode(Boole ready);
-
+private void show_pum(int prev_cursorRow, int prev_leftCol);
+private unsigned quote_meta(CS dest, CS src, int len);
+private void cpt_sources_clear(void);
+private Unt setup_cpt_sources(void);
+private Boole is_cfn_refresh_always(void);
+private void ins_compl_make_linear(void);
+private InsertCompletion * remove_old_matches(void);
+private void get_cfn_completion_matches(Callback *cb UNUSED);
+private void cpt_compl_refresh(void);
+private void copyGlobalToBookLocalCb(Callback* globcb, Callback* bookCb);
+private void pchar_cursor(int c);
+private int paragraph_start(LineNr lnum);
 //}}}
 
 private ColNr insertStartG_textlen;   // length of line when insert started
@@ -3229,7 +3397,7 @@ private CS ctrl_x_mode_names[] = {SMAP((CS),
 )};
 
 // Structure used to store one match for insert completion.
-private typedef struct InsertCompletion InsertCompletion;
+privateComp typedef struct InsertCompletion InsertCompletion;
 struct InsertCompletion {
    InsertCompletion* next;
    InsertCompletion* prev;
@@ -3355,7 +3523,7 @@ private int compl_selected_item = -1;
 private int* compl_fuzzy_scores;
 
 // Define the structure for completion source (in 'cpt' option) information
-private typedef struct CompletionSource {
+privateComp typedef struct CompletionSource {
    int   refreshAlways;  // Whether 'refresh:always' is set for func
    int   startCol;       // Start column returned by func
    int   maxMatches;       // Max items to display from this source
@@ -6223,14 +6391,14 @@ may_advance_cpt_index(CS cpt) {
 }
 
 // Return value of process_next_cpt_value()
-pub enum {
+privateComp enum {
    INS_COMPL_CPT_OK = 1,
    INS_COMPL_CPT_CONT,
    INS_COMPL_CPT_END
 };
 
 //state information used for getting the next set of insert completion matches.
-private typedef struct {
+privateComp typedef struct {
    CS e_cpt_copy;      // copy of 'complete'
    CS e_cpt;         // current entry in "e_cpt_copy"
    Book* scannedBook;      // book being scanned

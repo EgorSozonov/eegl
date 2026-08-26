@@ -9,14 +9,554 @@ int stat(const char* restrict path, struct stat* restrict buf);
 pub int lstat(const char* restrict, struct stat* restrict);
 
 //{{{@@forward declarations
-
-private void
-sign_mark_adjust(LineNr line1, LineNr line2, long amount, long amount_after);
-
+private ArrayList * getTempList(void);
+private void clearArrayList(void);
+private CS convertErrorFormatToRegex(
+   CS efmpat,
+   CS regpat,
+   ErrorFormatInfo* efminfo,
+   int idx,
+   int round
+);
+private CS scanf_fmt_to_regpat(Byte** pefmp, CS efm, int len, CS regpat);
+private CS efm_analyze_prefix(CS efmp, ErrorFormatInfo* efminfo);
+private int ErrorFormatInfoo_regpat(
+   CS efm,
+   int len,
+   ErrorFormatInfo* fmt_ptr,
+   CS regpat
+);
+private void free_efm_list(ErrorFormatInfo** efm_first);
+private int efm_regpat_bufsz(CS efm);
+private int efm_option_part_len(Byte *efm);
+private ErrorFormatInfo * parse_efm_option(CS efm);
+private CS growLineBuffer(LocationState* state, int newsz);
+private int nextStringLine(LocationState *state);
+private int nextListLine(LocationState* state);
+private int nextBufLine(LocationState *state);
+private int nextFileLine(LocationState *state);
+private inline int getNextLine(LocationState *state);
+private int qf_parse_fmt_f(RegMatch* rmp, int midx, Fields* fields, int prefix);
+private int qf_parse_fmt_b(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_n(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_l(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_e(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_c(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_k(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_t(RegMatch* rmp, int midx, Fields* fields);
+private int copy_nonerror_line(CS linebuf, int linelen, Fields* fields);
+private int qf_parse_fmt_m(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_r(RegMatch* rmp, int midx, OUT CS* tail);
+private int qf_parse_fmt_p(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_v(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_s(RegMatch* rmp, int midx, Fields* fields);
+private int qf_parse_fmt_o(RegMatch* rmp, int midx, Fields* fields);
+private int (*parseFormats[FMT_PATTERNS])(RegMatch *, int, Fields *) =;
+private int parseErrorFormatMatch(
+   CS linebuf,
+   int linelen,
+   ErrorFormatInfo* fmt_ptr,
+   RegMatch* regmatch,
+   Fields* fields,
+   int qf_multiline,
+   int qf_multiscan,
+   OUT CS* tail
+);
+private int qf_parse_get_fields(
+   CS linebuf,
+   int linelen,
+   ErrorFormatInfo* fmt_ptr,
+   Fields* fields,
+   int qf_multiline,
+   int qf_multiscan,
+   OUT CS* tail
+);
+private int parse_dir_pfx(int idx, Fields* fields, LocationList *ll);
+private int parse_file_pfx(
+   int idx,
+   Fields* fields,
+   LocationList* ll,
+   CS tail
+);
+private int qf_parse_line_nomatch(CS linebuf, int linelen, Fields* fields);
+private int qf_parse_multiline_pfx(
+   int idx,
+   LocationList* ll,
+   Fields* fields
+);
+private int qf_parse_line(
+   LocationList* ll,
+   CS linebuf,
+   int linelen,
+   ErrorFormatInfo* fmtFirst,
+   Fields* fields
+);
+private int isStackEmpty(LocationStack* stack);
+private int isEmpty(LocationList* ll);
+private int listHasValidEntries(LocationList* ll);
+private LocationList * getList(LocationStack* stack, int idx);
+private int llAllocateFields(Fields *pfields);
+private void freeAList_fields(Fields* pfields);
+private int setupState(
+   Source source,
+   OUT LocationState* locState
+);
+private void cleanupState(LocationState *locState);
+private int processNextLine(LocationList* ll, ErrorFormatInfo* fmtFirst, LocationState* state, Fields* fields);
+private int initWorker(
+   Source source,
+   OUT LocationStack* stack,
+   Unt ind,
+   CS errorformat,
+   Boole newlist,      // true: start a new location list
+   CS title
+);
+private int initAndUpdateTick(
+   Source source, OUT LocationStack* stack, NULLABLE CS errorFormat, Boole startNewList, CS title
+);
+private void storeTitle(LocationList* ll, CS title);
+private CS copyCommandTitle(CS cmd);
+private LocationList * getCurrent(LocationStack* stack);
+private void pop(LocationStack* stack, Boole adjust);
+private void push(LocationList newList, LocationStack* stack);
+private void newLocList(LocationStack* stack, CS title);
+private void locstack_queue_delreq(LocationStack* stack);
+private void wipeLlBook(LocationStack* stack);
+private void freeAList_list_stack_items(LocationStack* stack);
+private void freeAList_lists(LocationStack* stack);
+private void ll_free_all(LocationStack** pqi);
+private void incrementLlBusyness(void);
+private void decrementLlBusyness(void);
+private int addEntry(
+   LocationList* ll,
+   CS dir,      // optional directory name
+   CS fname,      // file name or NULL
+   CS module,   // module name or NULL
+   int bufnum,      // buffer number or zero
+   CS mesg,      // message
+   long lnum,      // source code line number
+   long end_lnum,   // source code end line number
+   int col,      // column
+   int end_col,   // column for end
+   int vis_col,   // using visual column
+   CS pattern,   // search pattern
+   int nr,      // error number
+   int type,      // type character
+   Var* user_data,     // custom user data or NULL
+   Boole valid      // valid entry
+);
+private LocationList * allocateLocList(int n);
+private LocationStack* identifyStackByLetter(char letter);
+private LocationStack* identifyStack(Var* arg);
+private LocationStack* identifyStackByInvo(Invocation* invo);
+private LocationStack * getStackForCommand(Invocation* invo, int print_emsg);
+private int getBookNrForPath(LocationList* ll, CS directory, CS fname);
+private CS pushDir(CS dirbuf, DirStack** stackptr, int is_file_stack);
+private CS popDir(DirStack **stackptr);
+private void qf_clean_dir_stack(DirStack** stackptr);
+private CS guessFilepath(LocationList* ll, CS filename);
+private int isIdValid(LocationStack* st, Unt id);
+private int isEntryPresent(LocationList *ll, LocLine *curr);
+private LocLine * getNextValidEntry(LocationList* ll, LocLine* curr, int* currentIdx, Unt dir);
+private LocLine * getPrevValidEntry(LocationList* ll, LocLine* curr, int* currentIdx, Unt dir);
+private LocLine * get_nth_valid_entry(LocationList* ll, int errornr, Unt dir, int* new_qfidx);
+private LocLine * getNthEntry(LocationList* ll, int errornr, int* new_qfidx);
+private LocLine * getEntry(LocationList* ll, int errornr, Unt dir, OUT int* new_qfidx);
+private Portal * findHelpPortal(void);
+private int jumpToHelpPortal(int newPort, int *openedPortal);
+private Portal * findPortalIntoLocList_with_normal_buf(void);
+private int qf_goto_tabwin_with_file(int fnum);
+private int open_new_file_port(LocationStack* llRef);
+private void gotoPortalIntoLlFile(Portal* usePort, int fNum);
+private void gotoPortalIntoQflFile(int fNum);
+private int jumpToUsablePortal(int fNum, int newPort, int* openedPortal);
+private int jumpAndEditBook(
+   LocationStack* stack,
+   LocLine* curr,
+   int forceit,
+   int prevPortId,
+   int* openedPortal
+);
+private void jumpToEntry(LineNr lNum, int col, Byte visCol, CS pattern);
+private void printMsg(
+   LocationStack* stack,
+   int currentIdx,
+   LocLine* curr,
+   Book* oldCurBook,
+   LineNr old_lnum
+);
+private int jumpOrOpenPortal(LocationStack* stack, LocLine* curr, int newPort, int* openedPortal);
+private int jumpToBook(
+   LocationStack* stack,
+   int currentIdx,
+   LocLine* curr,
+   int forceit,
+   int prevPortId,
+   int* openedPortal,
+   int openfold,
+   int print_message
+);
+private void jumpToNewPortal(
+   LocationStack* stack,
+   Unt dir,
+   int errornr,
+   Boole forceit,
+   Boole newPort
+);
+private void displayListEntry(LocLine* lline, int ind, int cursel);
+private void formatText(ArrayList *gap, CS text);
+private void addRangeInformationToArrayList(ArrayList* gap, LocLine* lline);
+private void qf_msg(LocationStack* stack, int which, CS lead);
+private void freeItems(LocationList* ll);
+private void freeAList(LocationList* ll);
+private void llAdjustEntries(
+   LineNr line1,
+   LineNr line2,
+   long amount, // how much to adjust entries in [line1; line2]. If == MAXLNUM, lines are deleted
+   long amount_after // amount to adjust entries in tail lines (line2; ...)
+);
+private CS createMsg(int c, int nr);
+private void setTitleVar(LocationList* ll);
+private int gotoLocationPortal(LocationStack* stack, int resize, int sz, int vertsplit);
+private void setPortalOptions();
+private int openNewPortal(LocationStack* stack, int height);
+private void gotoLine(Portal* po, LineNr lnum);
+private Boole updatePortalPos(LocationStack* stack, int      old_currentIdx);
+private Boole isLocListPortal(Portal* port, LocationStack* stack);
+private Portal * findPortalIntoLocList(LocationStack* stack);
+private Book* findLlBook(LocationStack* stack);
+private void updateTitleVar(LocationStack* stack);
+private void updateBook(LocationStack* stack, LocLine* oldLast);
+private inline int addLine(
+   Book* book,      // location portal's book
+   LineNr   lnum,
+   LocLine* lline,
+   CS dirname,
+   Boole  firstBookLine,
+   CS qftf_str
+);
+private List * callLocListToText(LocationList *ll, int getLlPortalId, long start_idx, long end_idx);
+private void fillBookWithLocList(LocationList *ll, Book* book, LocLine *oldLast, int getLlPortalId);
+private void updateChangedTick(LocationList* ll);
+private int idToNr(LocationStack* stack, Unt listId);
+private int restoreList(LocationStack* stack, Unt idSave);
+private void jumpToFirstEntry(LocationStack* stack, Unt idSave, Boole forceit);
+private NULLABLE CS getGrepAutocommand(CommIndex id);
+private Arr(Byte) buildErrorFileName(void);
+private CS buildFullShellCommand(CS makecmd);
+private int eeglProcessArgs(Invocation* invo, OUT VimGrepArgs* args);
+private void makeReceiveMessage(Arr(Byte) msg);
+private void makeFinished();
+private int nthValidEntry(LocationList* ll, int n, int fdo);
+private LocLine * findFirstEntryInBuf(LocationList* ll, int bnr, int* errornr);
+private LocLine * qf_find_first_entry_on_line(LocLine* entry, int* errornr);
+private LocLine * qf_find_last_entry_on_line(LocLine* entry, int* errornr);
+private int isEntryAfterPos(LocLine* lline, Pos* pos, int linewise);
+private int qf_entry_before_pos(LocLine *lline, Pos *pos, int linewise);
+private int qf_entry_on_or_after_pos(LocLine* lline, Pos* pos, int linewise);
+private int isEntryOnOrBeforePos(LocLine* lline, Pos* pos, int linewise);
+private LocLine* findEntryAfterPos(
+   int      bnr,
+   Pos      *pos,
+   int      linewise,
+   LocLine   *lline,
+   int      *errornr
+);
+private LocLine * findEntryBeforePos(
+   int bnr,
+   Pos* pos,
+   int linewise,
+   LocLine* lline,
+   int* errornr
+);
+private LocLine * findClosestEntry(
+   LocationList* ll,
+   int bnr,
+   Pos* pos,
+   int dir,
+   int linewise,
+   OUT int* errornr
+);
+private void getNthEntryBelow(LocLine *entry_arg, int n, int linewise, int *errornr);
+private void getNthEntryAbove(LocLine *entry, int n, int linewise, int *errornr);
+private int findNthAdjacentEntry(
+   LocationList* ll,
+   int bnr,
+   Pos* pos,
+   int n,
+   int dir,
+   int linewise
+);
+private CS cfile_get_auname(CommIndex id);
+private CS vgr_get_auname(CommIndex id);
+private void vgr_init_regmatch(RegMultilineMatch* regmatch, CS s);
+private void vgr_display_fname(Byte *fname);
+private Book* vgr_load_dummy_book(CS fname, CS dirname_start, CS dirname_now);
+private int vgr_isIdValid(LocationStack* stack, Unt listId, CS title);
+private int vgr_match_buflines(
+   LocationList* ll,
+   CS fname,
+   Book* book,
+   CS spat,
+   RegMultilineMatch* regmatch,
+   long* tomatch,
+   int duplicate_name,
+   int flags
+);
+private void jumpToFirstMatchAndUpdateDir(
+   LocationStack* stack,
+   Boole forceit,
+   OUT Boole* redrawForDummy,
+   OUT Book* firstMatchBook,
+   CS target_dir
+);
+private int vimgrepProcessArgs(Invocation* invo, OUT VimGrepArgs* args);
+private int existing_swapfile(Book* book);
+private int elckGrepFiles(
+   LocationStack* stack,
+   VimGrepArgs* invos,
+   OUT Boole* redrawForDummy,
+   OUT Book** firstMatchBook,
+   OUT CS* target_dir
+);
+private void restore_start_dir(CS dirname_start);
+private Book* loadDummyBook(
+   CS fname,
+   CS dirname_start,  // in: old directory
+   CS resulting_dir  // out: new directory
+);
+private void wipeDummyBook(Book* book, CS dirname_start);
+private void unloadDummyBook(Book* book, CS dirname_start);
+private int get_qfline_items(LocLine *lline, List *list);
+private int exportLocList(
+   LocationStack* stack,
+   Unt ind,
+   int entryId,
+   OUT List* list
+);
+private int getList_from_lines(Bag* specifics, DictItem* di, OUT Bag* retBag);
+private int getLlPortalId(LocationStack* stack);
+private int qf_getprop_qfbufnr(LocationStack* stack, Bag* retBag);
+private Unt importKeysFromDict(Bag* specifics);
+private int qf_getprop_qfidx(LocationStack* stack, Bag* specifics);
+private int getPropertyDefaults(LocationStack* stack, Unt flags, OUT Bag* retBag);
+private int qf_getprop_title(LocationList* ll, Bag* retBag);
+private int exportToDict(LocationStack* stack, Unt ind, int eidx, OUT Bag* retBag);
+private int exportContext(LocationList* ll, OUT Bag* retBag);
+private int qf_getprop_idx(LocationList* ll, int eidx, Bag* retBag);
+private int qf_getprop_qftf(LocationList* ll, Bag* retBag);
+private int getProperties(LocationStack* stack, Bag* specifics, OUT Bag* retBag);
+private int addEntry_from_dict(LocationList* ll, Bag* d, int first_entry, int* valid_entry);
+private int entry_is_closer_to_target(
+   LocLine* entry,
+   LocLine* other_entry,
+   int target_fnum,
+   int target_lnum,
+   int target_col
+);
+private int addEntries(
+   OUT LocationStack* stack,
+   Unt ind,
+   List* list,
+   CS title,
+   LocListAction action
+);
+private Unt qf_setprop_get_qfidx(
+   LocationStack* stack,
+   Bag* specifics,
+   LocListAction action,
+   OUT Boole* newlist
+);
+private int setTitle(LocationStack* stack, Unt ind, Bag* specifics, DictItem* di);
+private int setItems(LocationStack* stack, Unt ind, DictItem* di, LocListAction action);
+private int setLinesFromList(
+   LocationStack* stack,
+   Unt ind,
+   Bag* specifics,
+   DictItem* di,
+   LocListAction action
+);
+private int setContext(LocationList* ll, DictItem* di);
+private int setCurrentIndex(LocationStack *stack, LocationList *ll, DictItem *di);
+private int setTextFn(LocationList *ll, DictItem *di);
+private int setProperties(LocationStack *stack, Bag *specifics, LocListAction action, CS title);
+private void freeTheStack(LocationStack* stack);
+private Boole checkIfUserDataLocked(LocationStack* stack, int copyID);
+private Boole checkIfContextAndCallbackLocked(LocationStack* stack, int copyID);
+private Boole markReferencesInStack(LocationStack* st, int copyId);
+private inline Arr(Byte) getAutocmdNameForCbuffer(CommIndex id);
+private int processCbookArgs(Invocation* invo, OUT Book** outBook, LineNr* line1, LineNr* line2);
+private void searchInFile(
+   LocationList *ll,
+   CS fname,
+   OUT RegMatch *p_regmatch
+);
+private void searchFilesInDir(LocationList* ll, CS dirname, OUT RegMatch* p_regmatch, CS lang);
+private void setLocationListInternal(
+   LocationStack* stack,
+   Var* listArg,
+   Var* actionArg,
+   Var* specificArg UNUSED,
+   Var* returnVar
+);
+private void fname2fnum(FileMarkExt* fm);
+private void fmarks_check_one(FileMarkExt* fm, CS name, Book* book);
+private CS mark_line(Pos* mp, int lead_len);
+private void show_one_mark(
+   int c,
+   CS arg,
+   Pos* p,
+   CS name_arg,
+   int current   // in current file
+);
+private int add_mark(List* l, CS mname, Pos* pos, int bufnr, CS fname);
+private void get_buf_local_marks(Book *book, List *l);
+private void get_global_marks(List *l);
+private SignGroup * sign_group_ref(CS groupname);
+private void sign_group_unref(CS groupname);
+private int sign_in_group(SignEntry *sign, CS group);
+private int sign_group_for_window(SignEntry *sign, Portal *wp);
+private int sign_group_get_next_signid(Book *book, CS groupname);
+private void insert_sign(
+   Book *book, // buffer to store sign in
+   SignEntry* prev, // previous sign entry
+   SignEntry* next, // next sign entry
+   int id, // sign ID
+   CS group, // sign group; NULL for global group
+   int prio, // sign priority
+   LineNr lnum, // line number which gets the mark
+   int typenr
+);
+private void insert_sign_by_lnum_prio(
+   Book *book, // buffer to store sign in
+   SignEntry *prev, // previous sign entry
+   int id, // sign ID
+   Byte *group, // sign group; NULL for global group
+   int prio, // sign priority
+   LineNr lnum, // line number which gets the mark
+   int typenr
+);
+private Sign * find_sign_by_typenr(int typenr);
+private CS sign_typenr2name(int typenr);
+private Bag* sign_get_info(SignEntry* sign);
+private void sign_sort_by_prio_on_line(Book *book, SignEntry *sign);
+private void addSignToBook(
+   Book* book, // book to store sign in
+   int id, // sign ID
+   CS groupname, // sign group
+   int prio, // sign priority
+   LineNr lnum, // line number which gets the mark
+   int typenr // typenr of sign we are adding
+);
+private LineNr changeSignType(
+   Book* book, // book to store sign in
+   int markId, // sign ID
+   CS group, // sign group
+   int typenr, // typenr of sign we are adding
+   int prio // sign priority
+);
+private LineNr delsign(Book* book, // buffer sign is stored in
+            LineNr atlnum, // sign at this line, 0 - at any line
+            int id, // sign id
+            Byte *group) // sign group
+;
+private int buf_findsign(Book *book, // buffer to store sign in
+             int id, // sign ID
+             CS group) // sign group
+;
+private SignEntry * getsignAtLine(Book* book, // book whose sign we are searching for
+              LineNr lnum, // line number of sign
+              CS groupname // sign group name
+);
+private int findsign_id(Book* book, // book whose sign we are searching for
+            LineNr lnum, // line number of sign
+            CS groupname // sign group name
+);
+private int buf_findsigntype_id(Book* book, // buffer whose sign we are searching for
+                    LineNr lnum, // line number of sign
+                    int typenr // sign type number
+);
+private void sign_list_placed(Book* rbook, CS sign_group);
+private void sign_mark_adjust(
+    LineNr line1,
+    LineNr line2,
+    long amount,
+    long amount_after
+);
+private int sign_cmd_idx(CS begin_cmd, // begin of sign subcmd
+             CS end_cmd // just after sign subcmd
+);
+private Sign* sign_find(CS name, Sign** sp_prev);
+private Sign * alloc_new_sign(CS name);
+private int sign_define_init_text(Sign *sp, Byte *text);
+private void sign_list_by_name(Byte *name);
+private void may_force_numberwidth_recompute(Book* book, int unplace);
+private int sign_unplace(int sign_id, Byte *sign_group, Book* book, LineNr atlnum);
+private void sign_unplace_at_cursor(CS groupname);
+private LineNr sign_jump(int sign_id, Byte *sign_group, Book* book);
+private void sign_define_cmd(Byte *sign_name, Byte *cmdline);
+private void sign_place_cmd(
+   Book* book,
+   LineNr lnum,
+   CS sign_name,
+   int id,
+   CS group,
+   int prio
+);
+private void sign_unplace_cmd(Book* book, LineNr lnum, CS sign_name, int id, CS group);
+private void sign_jump_cmd(
+   Book* book,
+   LineNr lnum,
+   CS sign_name,
+   int id,
+   CS group
+);
+private int parse_sign_cmd_args(
+   int cmd,
+   CS arg,
+   OUT CS* sign_name,
+   int* signid,
+   Byte** group,
+   int *prio,
+   Book** book,
+   LineNr* lnum
+);
+private void sign_getinfo(Sign* sp, Bag* retBag);
+private void sign_getlist(CS name, List* retlist);
+private void getSignsInBook(
+   Book* book,
+   LineNr lnum,
+   int sign_id,
+   CS sign_group,
+   List* retlist
+);
+private void sign_get_placed(
+   Book* book,
+   LineNr lnum,
+   int sign_id,
+   CS sign_group,
+   List* retlist
+);
+private void sign_list_defined(Sign* sp);
+private void sign_undefine(Sign* sp, Sign* sp_prev);
+private CS get_nth_sign_name(int idx);
+private CS get_nth_sign_group_name(int idx);
+private int sign_define_from_dict(CS name_arg, Bag* bag);
+private void sign_define_multiple(List* l, List* retlist);
+private int sign_place_from_dict(
+   Var* id_tv,
+   Var* group_tv,
+   Var* name_tv,
+   Var* buf_tv,
+   Bag* dict
+);
+private void sign_undefine_multiple(List *l, List *retlist);
+private int sign_unplace_from_dict(Var *group_tv, Bag *dict);
+private SignEntry * get_first_valid_sign(Portal *wp);
 //}}}
 //{{{location lists
 
-private typedef struct DirStack DirStack; 
+privateComp typedef struct DirStack DirStack; 
 struct DirStack {
    DirStack* next;
    CS dirname;
@@ -27,7 +567,7 @@ struct DirStack {
 #define STACK_CAPACITY 20
 
 // For each error the next struct is allocated and linked in a list.
-private typedef struct LocLine LocLine;
+privateComp typedef struct LocLine LocLine;
 struct LocLine {
    LocLine* next;   // pointer to next error in the list
    LocLine* prev;   // pointer to previous error in the list
@@ -59,7 +599,7 @@ struct LocLine {
 //Usually the list contains one or more entries. But an empty list can be
 //created using setqflist()/setloclist() with a title and/or user context
 //information and entries can be added later using setqflist()/setloclist().
-private typedef struct {
+privateComp typedef struct {
    Unt id;      // Unique identifier for this list
    LocLine* first;   // pointer to the first error
    LocLine* last;   // pointer to the last error
@@ -110,7 +650,7 @@ private List* makeInProgressS; // the list of messages from a running "make" com
 
 
 // Structure used to hold the info of one part of 'errorformat'
-private typedef struct ErrorFormatInfo ErrorFormatInfo;
+privateComp typedef struct ErrorFormatInfo ErrorFormatInfo;
 struct ErrorFormatInfo {
     RegProg* prog;   // pre-formatted part of 'errorformat'
     ErrorFormatInfo       *next;   // pointer to next (NULL if last)
@@ -137,14 +677,14 @@ struct ErrorFormatInfo {
 
 // List of location lists to be deleted.
 // Used to delay the deletion of locations lists by autocmds.
-private typedef struct DeletionList DeletionList;
+privateComp typedef struct DeletionList DeletionList;
 struct DeletionList {
     DeletionList* next;
     LocationStack      *stack;
 };
 
 // :vimgrep command arguments
-private typedef struct {
+privateComp typedef struct {
    long tomatch;   // maximum number of matches to find
    CS spat;      // search pattern
    Unt flags;      // search modifier
@@ -547,7 +1087,7 @@ parse_efm_end:
    return fmtFirst;
 }
 
-pub enum {
+privateComp enum {
    QF_FAIL = 0,
    QF_OK = 1,
    QF_END_OF_INPUT = 2,
@@ -557,7 +1097,7 @@ pub enum {
    QF_ABORT = 6
 };
 
-private typedef enum {
+privateComp typedef enum {
    SOURCE_FILENAME, // a proto-source, so to speak - will be turned into SOURCE_FILE after opening
    SOURCE_FILE, // reading locations from file
    SOURCE_BOOK, // reading locations from an Eegl buffer
@@ -565,30 +1105,30 @@ private typedef enum {
    SOURCE_LIST // reading location from a Var containing a list of strings
 } SourceKind;
 
-private typedef struct { // SOURCE_FILENAME
+privateComp typedef struct { // SOURCE_FILENAME
    CS c;
 } FileNameSource;
 
-private typedef struct { // SOURCE_FILE
+privateComp typedef struct { // SOURCE_FILE
    FILE* c;
 } FileSource;
 
-private typedef struct { // SOURCE_BOOK
+privateComp typedef struct { // SOURCE_BOOK
    Book* c;
    LineNr start;
    LineNr end;
 } BookSource;
 
 
-private typedef struct { // SOURCE_STRING
+privateComp typedef struct { // SOURCE_STRING
    CS c;
 } StringSource;
 
-private typedef struct { // SOURCE_LIST
+privateComp typedef struct { // SOURCE_LIST
    ListItem* c;
 } ListSource;
 
-private typedef struct { // A source can be a file, a Book, a string var or a list vaar
+privateComp typedef struct { // A source can be a file, a Book, a string var or a list vaar
    SourceKind tag;
    union {
       FileNameSource FileName;
@@ -600,7 +1140,7 @@ private typedef struct { // A source can be a file, a Book, a string var or a li
 } Source;
 
 // State information used to parse lines and add entries to a quickfix/location list.
-private typedef struct {
+privateComp typedef struct {
    Source source;
    CS linebuf;
    int      linelen;
@@ -812,7 +1352,7 @@ getNextLine(LocationState *state) {
    return QF_OK;
 }
 
-private typedef struct {
+privateComp typedef struct {
     CS namebuf;
     int      bnr;
     CS module;
@@ -1512,7 +2052,7 @@ initWorker(
          last_efm = copyStr(efm);
    }
 
-   if (fmtFirst == NULL)   // nothing found
+   if (!fmtFirst)   // nothing found
       goto error2;
 
    // gotInterruptG is reset here, because it was probably set when killing the
@@ -1549,7 +2089,7 @@ initWorker(
    }
    emsg(_(e_error_while_reading_errorfile));
    
-pub error2:
+error2:
    if (!adding) {
       // Error when creating a new list. Free the new list
       freeAList(ll);
@@ -1558,7 +2098,7 @@ pub error2:
          --stack->currList;
    }
    
-pub initEnd:
+initEnd:
    push(*ll, stack);
    if (ind == stack->currList)
       updateBook(stack, oldLast);
@@ -5670,7 +6210,7 @@ exportLocList(
 }
 
 // Flags used by getqflist()/getloclist() to determine which fields to return.
-pub enum {
+privateComp enum {
    QF_GETLIST_NONE    = 0x0,
    QF_GETLIST_TITLE   = 0x1,
    QF_GETLIST_ITEMS   = 0x2,
@@ -8214,7 +8754,7 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 
 
 // Struct to hold the sign properties.
-private typedef struct Sign Sign;
+privateComp typedef struct Sign Sign;
 
 private struct Sign {
    Sign* next; // next sign in list
@@ -9800,7 +10340,7 @@ free_signs(void) {
       sign_undefine(first_sign, NULL);
 }
 
-private enum {
+privateComp enum {
    EXP_SUBCMD, // expand :sign sub-commands
    EXP_DEFINE, // expand :sign define {name} args
    EXP_PLACE, // expand :sign place {id} args

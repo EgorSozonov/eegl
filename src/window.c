@@ -20,14 +20,14 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
-private typedef struct {
+privateComp typedef struct {
    struct wl_seat* proxy;
    char* label;      // Name of seat as text (e.g. seat0, seat1...).
    Unt capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
 } WaylandSeat;
 
 // Global objects
-private typedef struct {
+privateComp typedef struct {
    // Data control protocols
    struct ext_data_control_manager_v1* ext_data_control_manager_v1;
    struct wl_data_device_manager* wl_data_device_manager;
@@ -38,7 +38,7 @@ private typedef struct {
 } GlobalObjects;
 
 // Struct wrapper for Wayland display and registry
-private typedef struct {
+privateComp typedef struct {
    struct wl_display* proxy;
    int fd;   // File descriptor for display
 
@@ -47,7 +47,7 @@ private typedef struct {
    } registry;
 } WaylandDisplay;
 
-private typedef struct {
+privateComp typedef struct {
    struct wl_shm_pool* pool;
    int fd;
 
@@ -60,7 +60,7 @@ private typedef struct {
    int size;
 } BufferStore;
 
-private typedef struct {
+privateComp typedef struct {
    void* user_data;
    void (*on_focus)(void *data, Unt serial);
 
@@ -76,7 +76,7 @@ private typedef struct {
 } vwl_fs_surface_T; // fs = focus steal
 
 // Wayland protocols for accessing the selection
-private typedef enum {
+privateComp typedef enum {
    VWL_DATA_PROTOCOL_NONE,
    VWL_DATA_PROTOCOL_EXT,
    VWL_DATA_PROTOCOL_CORE,
@@ -88,33 +88,33 @@ private typedef enum {
 // The `data` member is used to pass other needed stuff around such as a
 // WaylandClipboardSelection pointer.
 
-private typedef struct {
+privateComp typedef struct {
    void* proxy;
    void* data; // Is not set when a new offer is created on a
                // data_offer event. Only set when listening to a data offer.
    DataProtocol protocol;
 } DataOffer;
 
-private typedef struct {
+privateComp typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataSource;
 
-private typedef struct {
+privateComp typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataDevice;
 
-private typedef struct {
+privateComp typedef struct {
    void* proxy;
    DataProtocol protocol;
 } vwl_data_device_manager_T;
 
 // LISTENER WRAPPERS
 
-private typedef struct {
+privateComp typedef struct {
    void (*data_offer)(DataDevice *device, DataOffer *offer);
 
    // If the protocol that the data device uses doesn't support a specific
@@ -128,16 +128,16 @@ private typedef struct {
    void (*finished)(DataDevice *device);
 } vwl_data_device_Listener;
 
-private typedef struct {
+privateComp typedef struct {
    void (*send)(DataSource* source, char const* mime_type, int fd);
    void (*cancelled)(DataSource* source);
 } DataSourceListener;
 
-private typedef struct {
+privateComp typedef struct {
    void (*offer)(DataOffer *offer, char const* mime_type);
 } DataOfferListener;
 
-private typedef struct {
+privateComp typedef struct {
    // What selection this refers to
    WaylandSelection      selection;
 
@@ -162,7 +162,7 @@ private typedef struct {
 } WaylandClipboardSelection;
 
 // Holds stuff related to the clipboard/selections
-private typedef struct {
+privateComp typedef struct {
    // Do not destroy here, will be destroyed when vwl_disconnect_display() is called.
    WaylandSeat         *seat;
 
@@ -173,116 +173,230 @@ private typedef struct {
 } vwl_clipboard_T;
 
 //{{{@@forward declarations
-
+private YankReg * getYRegister(int reg);
+private CS get_expr_line_src(void);
+private int stuff_yank(int regname, CS p);
+private CS execreg_line_continuation(Arr(Text) lines, long *idx);
+private void put_reedit_in_typeBufG(int silent);
+private int put_in_typeBufG(
+    CS s,
+    int      esc,
+    int      colon,       // add ':' before the line
+    int      silent)
+;
+private void free_yank(long n);
+private int yank_copy_line(BlockDef* bd, long y_idx, int exclude_trailing_space);
+private void copy_yank_reg(YankReg *reg);
+private void dis_msg(
+   Byte   *p,
+   int      skip_esc       // if true, ignore trailing ESC
+);
+private void str_to_reg(
+   OUT YankReg   *yReg,      // pointer to yank register
+   int      yank_type,   // MCHAR, MLINE, MBLOCK, MAUTO
+   CS str,      // string to put in register
+   long   len,      // length of string
+   long   blocklen,   // width of Visual block
+   int      str_list)   // true if str is a CString
+;
+private CS getreg_wrap_one_line(CS s, int flags);
+private int init_write_reg(
+   int      name,
+   YankReg   **old_y_previous,
+   YankReg   **old_y_current,
+   int      must_append,
+   int      *yank_type UNUSED
+);
+private void finish_write_reg(
+   int      name,
+   YankReg   *old_y_previous,
+   YankReg   *old_y_current)
+;
+private int clip_gen_own_selection(ClipBoard *cbd);
 private void clip_own_selection(ClipBoard *cbd);
+private void clip_gen_lose_selection(ClipBoard *cbd);
+private void clip_copy_selection(ClipBoard *clip);
+private int is_clipboard_needs_update(void);
+private int clip_compare_pos(int row1, int col1, int row2, int col2);
+private void clip_invert_rectangle(
+   ClipBoard* cbd,
+   int row_arg,
+   int col_arg,
+   int height_arg,
+   int width_arg,
+   Boole invert
+);
+private void clip_invert_area(
+   ClipBoard* cbd,
+   int      row1,
+   int      col1,
+   int      row2,
+   int      col2,
+   int      how
+);
+private void clip_update_modeless_selection(ClipBoard* cb, int row1, int col1, int row2, int col2);
+private void clip_get_word_boundaries(ClipBoard *cb, int row, int col);
+private int clip_get_line_end(ClipBoard *cbd, int row);
 private void startSelection(int col, int row, int repeated_click);
 private void processSelection(int button, int col, int row, Unt repeated_click);
+private void clip_yank_selection(int type, CS str, long len, ClipBoard* cbd);
+private void clip_gen_set_selection(ClipBoard *cbd);
+private void clip_gen_request_selection(ClipBoard *cbd);
 private void freeSelection(ClipBoard* cbd);
 private void clip_get_selection(ClipBoard* cbd);
-private int   vwl_display_flush(WaylandDisplay *display);
-private void   vwl_callback_done(void *data, struct wl_callback *callback,
-          Unt cb_data);
-private int   vwl_display_roundtrip(WaylandDisplay *display);
-private int   vwl_display_dispatch(WaylandDisplay *display);
-private int vwl_display_dispatch_any(WaylandDisplay *display);
-
-private void   vwl_log_handler(char const* fmt, va_list args); // it MUST be "char"
-private int   vwl_connect_display(CS display);
-private void   vwl_disconnect_display(void);
-
-private void vwl_xdg_wm_base_listener_ping(void *data, struct xdg_wm_base *base, Unt serial);
-private int   vwl_listen_to_registry(void);
-
-private void   vwl_registry_listener_global(
-    void *data, struct wl_registry *registry, Unt name, const char *interface, Unt version
+private int clip_convert_selection(OUT Byte** str, OUT Ulong *len, ClipBoard* cbd);
+private void may_set_selection(void);
+private void clip_wl_receive_data(ClipBoard* cbd, CS mime_type, int fd);
+private void clip_wl_request_selection(ClipBoard* cbd);
+private void clip_wl_send_data(char const* mime_type, int fd, WaylandSelection selection);
+private void clip_wl_selection_cancelled(WaylandSelection selection);
+private int clip_wl_own_selection(ClipBoard* cbd);
+private void clip_wl_lose_selection(ClipBoard *cbd);
+private void clip_wl_set_selection(ClipBoard *cbd UNUSED);
+private int vwl_display_flush(WaylandDisplay *display);
+private void vwl_callback_done(void *data, struct wl_callback *callback, Unt cb_data UNUSED);
+private int vwl_display_roundtrip(WaylandDisplay *display);
+private int vwl_display_dispatch(WaylandDisplay *display);
+private int vwl_display_dispatch_any(WaylandDisplay* display);
+private void vwl_log_handler(char const* fmt, va_list args);
+private int vwl_connect_display(CS display);
+private void vwl_disconnect_display(void);
+private void vwl_xdg_wm_base_listener_ping(
+   void* data UNUSED,
+   struct xdg_wm_base *base,
+   Unt serial
 );
-private void   vwl_registry_listener_global_remove(void *data,
-          struct wl_registry *registry,  Unt name);
-
-private void vwl_add_seat(struct wl_seat *seat);
-private void vwl_seat_listener_name(void *data, struct wl_seat *seat, const char *name);
-private void vwl_seat_listener_capabilities(void *data, struct wl_seat *seat, Unt capabilities);
+private int vwl_listen_to_registry(void);
+private void vwl_registry_listener_global(
+   void* data UNUSED,
+   struct wl_registry  *registry UNUSED,
+   Unt name,
+   const char* interface,
+   Unt version
+);
+private void vwl_registry_listener_global_remove(
+      void* data UNUSED, struct wl_registry* registry UNUSED, Unt name UNUSED
+);
+private void vwl_add_seat(struct wl_seat *seat_proxy);
+private void vwl_seat_listener_name(void* data, struct wl_seat* seat_proxy UNUSED, const char* name);
+private void vwl_seat_listener_capabilities(
+   void      *data,
+   struct wl_seat   *seat_proxy UNUSED,
+   Unt   capabilities
+);
 private void vwl_destroy_seat(WaylandSeat *seat);
-
-private WaylandSeat* vwl_get_seat(CS label);
-private struct wl_keyboard   *vwl_seat_get_keyboard(WaylandSeat *seat);
-
+private WaylandSeat * vwl_get_seat(CS label);
+private struct wl_keyboard * vwl_seat_get_keyboard(WaylandSeat *seat);
 private int vwl_focus_stealing_available(void);
-private void vwl_xdg_surface_listener_configure(void *data,
-          struct xdg_surface *surface, Unt serial);
-
-private void vwl_bs_buffer_listener_release(void *data,
-          struct wl_buffer *buffer);
-private void vwl_destroy_buffer_store(BufferStore *store);
-private BufferStore *vwl_init_buffer_store(int width, int height);
-
+private void vwl_xdg_surface_listener_configure(
+   void          *data UNUSED,
+   struct xdg_surface  *surface,
+   Unt       serial)
+;
+private void vwl_bs_buffer_listener_release(void* data, struct wl_buffer* buffer UNUSED);
+private void vwl_destroy_buffer_store(BufferStore* store);
+private int mch_create_anon_file(void);
+private BufferStore * vwl_init_buffer_store(int width, int height);
 private void vwl_destroy_fs_surface(vwl_fs_surface_T *store);
-private int vwl_init_fs_surface(WaylandSeat *seat,
-          BufferStore *buffer_store,
-          void (*on_focus)(void *, Unt), void *user_data);
-
-private void vwl_fs_keyboard_listener_enter(void *data,
-          struct wl_keyboard *keyboard, Unt serial,
-          struct wl_surface *surface, struct wl_array *keys);
-private void vwl_fs_keyboard_listener_keymap(void *data,
-          struct wl_keyboard *keyboard, Unt format,
-          int fd, Unt size);
-private void vwl_fs_keyboard_listener_leave(void *data,
-          struct wl_keyboard *keyboard, Unt serial,
-          struct wl_surface *surface);
-private void vwl_fs_keyboard_listener_key(void *data,
-          struct wl_keyboard *keyboard, Unt serial,
-          Unt time, Unt key, Unt state);
-private void vwl_fs_keyboard_listener_modifiers(void *data,
-          struct wl_keyboard *keyboard, Unt serial,
-          Unt mods_depressed, Unt mods_latched,
-          Unt mods_locked, Unt group);
-private void   vwl_fs_keyboard_listener_repeat_info(void *data,
-          struct wl_keyboard *keyboard, int32_t rate, int32_t delay);
-
-private void   vwl_gen_data_device_listener_data_offer(void *data,
-          void *offer_proxy);
-private void   vwl_gen_data_device_listener_selection(void *data,
-          void *offer_proxy, WaylandSelection selection,
-          DataProtocol protocol);
-
-private void vwl_data_device_destroy(DataDevice* device, int alloced);
+private int vwl_init_fs_surface(
+   WaylandSeat       *seat,
+   BufferStore* buffer_store,
+   void (*on_focus)(void *, Unt),
+   void *user_data
+);
+private void vwl_fs_keyboard_listener_enter(
+   void      *data,
+   struct wl_keyboard   *keyboard UNUSED,
+   Unt      serial,
+   struct wl_surface   *surface UNUSED,
+   struct wl_array   *keys UNUSED
+);
+private void vwl_fs_keyboard_listener_keymap(
+   void* data UNUSED,
+   struct wl_keyboard   *keyboard UNUSED,
+   Unt      format UNUSED,
+   int         fd,
+   Unt      size UNUSED
+);
+private void vwl_fs_keyboard_listener_leave(
+   void      *data UNUSED,
+   struct wl_keyboard   *keyboard UNUSED,
+   Unt      serial UNUSED,
+   struct wl_surface   *surface UNUSED)
+;
+private void vwl_fs_keyboard_listener_key(
+   void      *data UNUSED,
+   struct wl_keyboard   *keyboard UNUSED,
+   Unt      serial UNUSED,
+   Unt      time UNUSED,
+   Unt      key UNUSED,
+   Unt      state UNUSED)
+;
+private void vwl_fs_keyboard_listener_modifiers(
+    void      *data UNUSED,
+    struct wl_keyboard   *keyboard UNUSED,
+    Unt      serial UNUSED,
+    Unt      mods_depressed UNUSED,
+    Unt      mods_latched UNUSED,
+    Unt      mods_locked UNUSED,
+    Unt      group UNUSED)
+;
+private void vwl_fs_keyboard_listener_repeat_info(
+   void      *data UNUSED,
+   struct wl_keyboard   *keyboard UNUSED,
+   int32_t      rate UNUSED,
+   int32_t      delay UNUSED)
+;
+private void vwl_data_device_destroy(DataDevice *device, int alloced);
 private void vwl_data_offer_destroy(DataOffer *offer, int alloced);
-private void vwl_data_source_destroy(DataSource* source, int alloced);
-
-private void vwl_data_device_add_listener(DataDevice *device, void *data);
+private void vwl_data_source_destroy(DataSource *source, int alloced);
+private void vwl_gen_data_device_listener_data_offer(void *data, void *offer_proxy);
+private void vwl_gen_data_device_listener_selection(
+   void          *data,
+   void          *offer_proxy,
+   WaylandSelection selection,
+   DataProtocol protocol)
+;
+private void vwl_data_device_add_listener(DataDevice* device, void* data);
 private void vwl_data_source_add_listener(DataSource *source, void *data);
 private void vwl_data_offer_add_listener(DataOffer *offer, void *data);
-
-private void   vwl_data_device_set_selection(DataDevice *device,
-          DataSource *source, Unt serial,
-          WaylandSelection selection);
-private void vwl_data_offer_receive(DataOffer *offer, char const* mime_type, int fd);
-private int   vwl_get_data_device_manager(vwl_data_device_manager_T *manager,
-          WaylandSelection selection);
-private void   vwl_get_data_device(vwl_data_device_manager_T *manager,
-          WaylandSeat *seat, DataDevice *device);
-private void   vwl_create_data_source(vwl_data_device_manager_T *manager,
-          DataSource *source);
-private void   vwl_data_source_offer(DataSource *source,
-          const char *mime_type);
-
-private void   vwl_clipboard_free_mime_types(
-          WaylandClipboardSelection *clip_sel);
-private int   vwl_clipboard_selection_is_ready(
-          WaylandClipboardSelection *clip_sel);
-
-private void   vwl_data_device_listener_data_offer(
-          DataDevice *device, DataOffer *offer);
+private void vwl_data_device_set_selection(
+   DataDevice* device,
+   DataSource* source,
+   Unt serial,
+   WaylandSelection selection
+);
+private void vwl_data_offer_receive(DataOffer *offer, const char *mime_type, int fd);
+private int vwl_get_data_device_manager(
+   vwl_data_device_manager_T   *manager,
+   WaylandSelection       selection)
+;
+private void vwl_get_data_device(
+   vwl_data_device_manager_T   *manager,
+   WaylandSeat          *seat,
+   DataDevice       *device)
+;
+private void vwl_create_data_source( vwl_data_device_manager_T   *manager, DataSource* source);
+private void vwl_data_source_offer(DataSource *source, const char *mime_type);
+private void vwl_clipboard_free_mime_types(WaylandClipboardSelection *clip_sel);
+private int vwl_clipboard_selection_is_ready(WaylandClipboardSelection *clip_sel);
+private void vwl_data_device_listener_data_offer(
+   DataDevice   *device,
+   DataOffer    *offer)
+;
 private void vwl_data_offer_listener_offer(DataOffer* offer, char const* mime_type);
-private void vwl_data_device_listener_selection(DataDevice *device,
-          DataOffer *offer, WaylandSelection selection);
+private void vwl_data_device_listener_selection(
+   DataDevice* device,
+   DataOffer    *offer,
+   WaylandSelection selection
+);
 private void vwl_data_device_listener_finished(DataDevice *device);
-private void vwl_data_source_listener_send(DataSource *source, char const* mime_type, int fd);
+private void vwl_data_source_listener_send(DataSource* source, char const* mime_type, int32_t fd);
 private void vwl_data_source_listener_cancelled(DataSource *source);
-private void vwl_on_focus_set_selection(void *data, Unt serial);
+private void vwl_on_focus_set_selection(void* data, Unt serial);
 private void wayland_set_display(CS display);
-
+private int copy0();
+private int paste0();
 //}}}
 
 private vwl_data_device_Listener   vwl_data_device_listener = {
@@ -4693,7 +4807,7 @@ vwl_fs_keyboard_listener_repeat_info(
 }
 
 #define VWL_CODE_DATA_OBJECT_DESTROY(type) \
-pub do { \
+do { \
    if (type == NULL || type->proxy == NULL) \
       return; \
     switch (type->protocol) \
@@ -4776,7 +4890,7 @@ vwl_gen_data_device_listener_selection(
 
 // Boilerplate macros. Each just calls its respective generic callback.
 #define VWL_FUNC_DATA_DEVICE_DATA_OFFER(device_name, offer_name) \
-private void device_name##_listener_data_offer( \
+   private void device_name##_listener_data_offer( \
        void *data, struct device_name *device_proxy UNUSED, \
        struct offer_name *offer_proxy) \
 { \
@@ -4792,65 +4906,64 @@ private void device_name##_listener_data_offer( \
        data, offer_proxy, selection_type, protocol); \
 }
 #define VWL_FUNC_DATA_DEVICE_FINISHED(device_name) \
-private void device_name##_listener_finished( \
+   private void device_name##_listener_finished( \
        void *data, struct device_name *device_proxy UNUSED) \
 { \
     vwl_data_device_listener.finished(data); \
 }
 #define VWL_FUNC_DATA_SOURCE_SEND(source_name) \
-private void source_name##_listener_send(void *data, \
+   private void source_name##_listener_send(void *data, \
        struct source_name *source_proxy UNUSED, \
        char const* mime_type, int fd) \
 { \
     dataSourceListener.send(data, mime_type, fd); \
 }
 #define VWL_FUNC_DATA_SOURCE_CANCELLED(source_name) \
-private void source_name##_listener_cancelled(void *data, \
+   private void source_name##_listener_cancelled(void *data, \
        struct source_name *source_proxy UNUSED) \
 { \
     dataSourceListener.cancelled(data); \
 }
 #define VWL_FUNC_DATA_OFFER_OFFER(offer_name) \
-private void offer_name##_listener_offer(void *data, \
+   private void offer_name##_listener_offer(void *data, \
        struct offer_name *offer_proxy UNUSED, \
        const char *mime_type) \
 { \
     dataOfferListener.offer(data, mime_type); \
 }
 
-pub VWL_FUNC_DATA_DEVICE_DATA_OFFER(
-   ext_data_control_device_v1, ext_data_control_offer_v1)
-pub VWL_FUNC_DATA_DEVICE_DATA_OFFER(wl_data_device, wl_data_offer)
+VWL_FUNC_DATA_DEVICE_DATA_OFFER( ext_data_control_device_v1, ext_data_control_offer_v1)
+VWL_FUNC_DATA_DEVICE_DATA_OFFER(wl_data_device, wl_data_offer)
 VWL_FUNC_DATA_DEVICE_DATA_OFFER(
    zwp_primary_selection_device_v1, zwp_primary_selection_offer_v1)
 
-pub VWL_FUNC_DATA_DEVICE_SELECTION(
+VWL_FUNC_DATA_DEVICE_SELECTION(
    ext_data_control_device_v1, ext_data_control_offer_v1,
    selection, WAYLAND_SELECTION_REGULAR, VWL_DATA_PROTOCOL_EXT)
-pub VWL_FUNC_DATA_DEVICE_SELECTION(
+VWL_FUNC_DATA_DEVICE_SELECTION(
    wl_data_device, wl_data_offer, selection,
    WAYLAND_SELECTION_REGULAR, VWL_DATA_PROTOCOL_CORE)
 
-pub VWL_FUNC_DATA_DEVICE_SELECTION(
+VWL_FUNC_DATA_DEVICE_SELECTION(
    ext_data_control_device_v1, ext_data_control_offer_v1,
    primary_selection, WAYLAND_SELECTION_PRIMARY, VWL_DATA_PROTOCOL_EXT)
-pub VWL_FUNC_DATA_DEVICE_SELECTION(
+VWL_FUNC_DATA_DEVICE_SELECTION(
    zwp_primary_selection_device_v1, zwp_primary_selection_offer_v1,
    primary_selection, WAYLAND_SELECTION_PRIMARY, VWL_DATA_PROTOCOL_PRIMARY)
 
-pub VWL_FUNC_DATA_DEVICE_FINISHED(ext_data_control_device_v1)
+VWL_FUNC_DATA_DEVICE_FINISHED(ext_data_control_device_v1)
 
-pub VWL_FUNC_DATA_SOURCE_SEND(ext_data_control_source_v1)
+VWL_FUNC_DATA_SOURCE_SEND(ext_data_control_source_v1)
 VWL_FUNC_DATA_SOURCE_SEND(wl_data_source)
-pub VWL_FUNC_DATA_SOURCE_SEND(zwp_primary_selection_source_v1)
+VWL_FUNC_DATA_SOURCE_SEND(zwp_primary_selection_source_v1)
 
-pub VWL_FUNC_DATA_SOURCE_CANCELLED(ext_data_control_source_v1)
+VWL_FUNC_DATA_SOURCE_CANCELLED(ext_data_control_source_v1)
 VWL_FUNC_DATA_SOURCE_CANCELLED(wl_data_source)
-pub VWL_FUNC_DATA_SOURCE_CANCELLED(zwp_primary_selection_source_v1)
+VWL_FUNC_DATA_SOURCE_CANCELLED(zwp_primary_selection_source_v1)
 
-pub VWL_FUNC_DATA_OFFER_OFFER(ext_data_control_offer_v1)
+VWL_FUNC_DATA_OFFER_OFFER(ext_data_control_offer_v1)
 VWL_FUNC_DATA_OFFER_OFFER(wl_data_offer)
-pub VWL_FUNC_DATA_OFFER_OFFER(zwp_primary_selection_offer_v1)
+VWL_FUNC_DATA_OFFER_OFFER(zwp_primary_selection_offer_v1)
 
 // Listener handlers. Used via VWL_CODE_DATA_OBJECT_ADD_LISTENER macro
 
@@ -4910,7 +5023,7 @@ zwp_primary_selection_offer_v1_listenerObj = {
 
 // `type` is also used as the user data
 #define VWL_CODE_DATA_OBJECT_ADD_LISTENER(type) \
-pub do { \
+   do { \
    if (type->proxy == NULL) \
       return; \
    type->data = data; \

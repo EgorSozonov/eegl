@@ -1,9 +1,9 @@
-/* src/term.c */
+extern char *UP, *BC, PC;
 void termInitProps(Boole all);
-void f_terminalprops(Var *argvars, Var *returnVar);
+void f_terminalprops(Var* argvars UNUSED, Var* returnVar);
 int set_termname(CS termName);
 void free_cur_term(void);
-void getlinecol(long *cols, long *rows);
+void getlinecol(Arr(long) cols, Arr(long) rows);
 int add_termcap_entry(CS name, int force);
 void termInitTerminfo(CS name);
 void out_flush(void);
@@ -16,7 +16,7 @@ void term_append_lines(int line_count);
 void term_delete_lines(int line_count);
 void term_enable_mouse(int enable);
 void term_set_winpos(int x, int y);
-int term_get_winpos(int *x, int *y, Long timeout);
+int term_get_winpos(int* x, int* y, Long timeout);
 void term_set_winsize(int height, int width);
 void termApplyFgColor(Byte n);
 void termApplyBgColor(Byte n);
@@ -49,35 +49,55 @@ void term_cursor_mode(int forced);
 void term_cursor_color(CS color);
 int blink_state_is_inverted(void);
 void termSetCursorShape(int shape, int blink);
-void scroll_region_set(Portal *wp, int off);
+void scroll_region_set(Portal* wp, int off);
 void scroll_region_reset(void);
 void clear_termcodes(void);
 void termAddRecognizedTermcode(CS name, CS string, Boole isAtcFromTerm);
 CS find_termcode(CS name);
 void del_termcode(CS name);
-void set_mouse_topline(Portal *po);
-int is_mouse_topline(Portal *po);
+void set_mouse_topline(Portal* po);
+int is_mouse_topline(Portal* po);
 int termPutStrIntoTypeBuf(int offset, int slen, Text newText);
 Unt decode_modifiers(int n);
-int termTryParseTermcode(int max_offset, Text buffer, int *bufLen);
+int termTryParseTermcode(int max_offset, NULLABLE OUT Text buffer, OUT int* bufLen);
 void get_stty(void);
-int get_tty_info(int fd, TtyInfo *info);
+int get_tty_info(int fd, TtyInfo* info);
 void mch_termSetMode(TermInputMode tmode);
 void check_mouse_termcode(void);
 CS get_key_name(int i);
-CS replace_termcodes(CS from, CS *bufP, ScriptId sid_arg, Unt flags, Boole *didSimplify, Boole recognizeRawKeycodes);
-Unt simplify_key(Unt key, Unt *modifiers);
+CS replace_termcodes(
+   CS from,
+   CS* bufP,
+   ScriptId sid_arg UNUSED,   // script ID to use for <SID>, or 0 to use scriptPosG
+   Unt flags,
+   OUT Boole* didSimplify,
+   Boole recognizeRawKeycodes
+);
+Unt simplify_key(Unt key, Unt* modifiers);
 void show_termcodes(Unt flags);
 CS get_special_key_name(Unt c, int modifiers);
 int get_special_key_code(CS name);
 int show_one_termcode(CS name, CS code, int printit);
-void ansi_color2rgb(int nr, Byte *r, Byte *g, Byte *b, Byte *ansi_idx);
-void cterm_color2rgb(int nr, Byte *r, Byte *g, Byte *b, Byte *ansi_idx);
+void ansi_color2rgb(int nr, OUT Byte *r, OUT Byte *g, OUT Byte *b, OUT Byte *ansi_idx);
+void cterm_color2rgb(int nr, Byte* r, Byte* g, Byte* b, Byte* ansi_idx);
 int term_replace_keycodes(CS ta_buf, int ta_len, int len_arg);
-int termFindSpecialKey(Byte **srcp, Unt *modp, Unt flags, Boole *didSimplify);
+int termFindSpecialKey(
+   OUT Byte** srcp,
+   OUT Unt* modp,
+   Unt flags,      // FSK_ values
+   OUT Boole* didSimplify // found <C-H> or <A-x>
+);
 int termFindSpecialKey_in_table(int c);
-int special_to_buf(Unt key, Unt modifiers, int escape_ks, CS dst);
-int trans_special(Byte **srcp, CS dst, Unt flags, int escape_ks, Boole *didSimplify);
+int special_to_buf(Unt key, Unt modifiers, int escape_ks, OUT CS dst);
+int trans_special(
+   OUT Byte** srcp,
+   CS dst,
+   Unt flags,      // FSK_ values
+   int escape_ks,   // escape K_SPECIAL bytes in the character
+   OUT Boole* didSimplify  // FSK_SIMPLIFY and found <C-H> or <A-x>
+);
+char *ptsname(int);
+int grantpt(int);
 int setup_slavepty(int fd);
 int openpty(char **ttyn);
 int mch_isatty(int fd);

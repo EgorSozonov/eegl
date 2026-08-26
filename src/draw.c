@@ -9,22 +9,101 @@
 private Match screenSearchP;
 
 //{{{@@forward declarations
-
-
+private int fillRowsWithCharsWithColumnOffset(
+   Portal* po,
+   int c1,
+   int c2,
+   int off,
+   int width,
+   int row,
+   int endrow,
+   Decoration deco
+);
+private Decoration toScreenDeco(Unt hiId);
+private void drawVoidAtPortalEnd(
+   Portal* po,
+   Unt c1,
+   Unt c2,
+   int draw_margin,
+   int row,
+   int endrow,
+   Short hl
+);
+private int comp_char_differs(int offFrom, int offTo);
+private Boole charNeedsRedraw(int from, int to, int cols);
+private int blocked_by_popup(int row, int col);
+private int skipForPopup(int row, int col);
+private Unt fillchar_vsep(OUT Decoration* deco);
+private void drawVerticalSeparator(Portal* po, int row);
+private int statusline_row(Portal* po);
+private void startDrawingHilite(Short hiId);
+private void statusLineOrRuler(Portal* po, Boole draw_ruler);
+private int utfc_char2bytes(int off, CS buf);
+private int screen_comp_differs(int off, int* characterCombiner);
+private void start_search_hl(void);
+private void singleChar(Unt off, int row, int col);
+private void redraw_block(int row, int end, Portal* po);
+private void space_to_screenline(int off, Byte decoFlags);
+private void clear_tabIndsG(void);
+private void redraw_as_cleared(void);
 private int screenclear2(Boole doclear);
+private void lineclear(unsigned off, int width, Unt hiId);
 private void lineinvalid(Unt off, int width);
-private int doPortalLines(Portal *, int , int , int , int , Unt );
-private void lineclear(Unt off, int width, Unt decoId);
+private void linecopy(int to, int from, Portal* po);
+private int doPortalLines(
+   Portal   *po,
+   int row,
+   int line_count,
+   int mayclear,
+   int del,
+   Unt clearHiId
+);
 private void markFollowingPortalsForRedraw(Portal* po);
+private void ruler(Portal* po, int always);
 private void msg_pos_mode(void);
 private void recording_mode(char flags);
-private void singleChar(Unt off, int row, int col);
-
-private void updatePortal(Portal* po);
+private int get_encoded_char_adv(Byte **p);
+private CS field_value_err(OUT ErrBuilder* errb, CS fmt, CS field);
 private void statusLineCustom(Portal* po);
-private int  didUpdateOnePortal;
-
-
+private int text_to_screenline(Portal* po, CS text, int col);
+private void copyTextWithDecos(int off, CS buf, int len, char flags);
+private LineNr get_cursor_rel_lnum(Portal* po, LineNr lnum) ;
+private void fold_line(
+   Portal* po,
+   long fold_count,
+   FoldInfo* foldinfo,
+   LineNr lnum,
+   int row
+);
+private void updatePortalFinish(Portal* po, UpdatePortalInfo u);
+private void updatePortal(Portal* po);
+private void overlayDeco(OUT Decoration* baseDeco, OverlayDeco overlayingDeco);
+private void computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol);
+private int useCursorLineHilite(Portal* po, LineNr lnum);
+private void get_sign_display_info(int nrcol, Portal* po, DrawCtx* m);
+private void handle_lnum_col(
+   Portal* po,
+   DrawCtx* m,
+   int signPresent,
+   Decoration numDeco
+);
+private void breakIndent(Portal* po, DrawCtx* m);
+private void showbreakAndFiller(Portal* po, DrawCtx* m);
+private int textprop_size_after_trunc(
+   Portal* po,
+   Unt flags,       // TEXT_PROP_ALIGN_*
+   int added,
+   int padding,
+   CS text,
+   OUT int* n_used_ptr
+);
+private void wlv_screen_line(Portal* po, DrawCtx* m, int clear_end);
+private void finalizeDrawingLineOnScreen(Portal* po, DrawCtx* m);
+private void drawLineOnScreen_start(OUT DrawCtx* m, int save_extra);
+private void drawLineOnScreen_continue(DrawCtx* m);
+private void applyCursorlineHilite(DrawCtx* m);
+private Boole drawLineSub(DrawCtx* m, Portal* port, Subcontext* c, SubSubcontext* sc, int currSymb);
+private void drawLineLoop(DrawCtx* m, Subcontext* c, Portal* port);
 //}}}
 //{{{low level
 
@@ -2660,7 +2739,7 @@ get_encoded_char_adv(Byte **p) {
    return strAdvanceMultibyte(p);
 }
 
-private typedef struct {
+privateComp typedef struct {
    Unt* cp;
    Text   name;
 } CharsTableEntry;
@@ -3615,7 +3694,7 @@ fold_line(
    }
 }
 
-private typedef struct {
+privateComp typedef struct {
    int topEnd;
    int midStart;
    int midEnd;
@@ -4922,7 +5001,7 @@ computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
 }
 
 // structure with variables passed between drawLineOnScreen() and other functions
-private typedef struct {
+privateComp typedef struct {
    Byte drawState;   // what to draw next
 
    LineNr lnum;      // line number to be drawn
@@ -5522,7 +5601,7 @@ applyCursorlineHilite(DrawCtx* m) {
 
 #define VCOL_HLC (m->vcol - m->virtualOffset)
 
-private typedef struct {
+privateComp typedef struct {
    Decoration lineDecoSaved; 
    Boole signPresent; 
    LineNr lnum;
@@ -5554,7 +5633,7 @@ private typedef struct {
    ColNr leadcol;      // start of leading spaces
 } Subcontext;
 
-private typedef struct {
+privateComp typedef struct {
    Boole decoPriority;
    int mb_c; 
    Boole mb_utf8; 

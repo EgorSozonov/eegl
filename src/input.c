@@ -77,17 +77,59 @@ private MapBlock* last_used_map = NULL;
 private int last_used_sid = -1;
 
 //{{{@@forward declarations
-
-private int read_readbuf(TextHeader *buf, int advance);
+private void freeBuffer(TextHeader* buf);
+private CS get_buffcont(
+   TextHeader* buffer,
+   Boole dozero,       // count == zero is not an error
+   OUT Unt* len       // the length of the returned buffer
+);
+private int appendDigitInt(int *value, int digit);
+private void add_buff(
+   TextHeader* buf,
+   CS s,
+   long slen
+);
+private void deleteBufferTail(TextHeader *buf, int slen);
+private void addNumToBuf(TextHeader *buf, long n);
+private void addCharToBuf(TextHeader *buf, Unt c);
+private int read_readbuffers(int advance);
+private int read_readbuf(TextHeader* buf, int advance);
+private void start_stuff(void);
+private int read_redo(int init, int old_redo);
+private void copy_redo(int old_redo);
 private void initTypebuf(void);
+private int gotchars_add_byte(GotCharsState *state, Byte byte);
+private void gotchars(CS chars, int len);
 private void maySyncUndo(void);
+private void reallocateTypebuf(void);
 private void free_typeBufG(void);
+private int  can_get_old_char(void);
 private void closeScript(void);
 private void updateScript(int c);
-private Unt vGetOrPeek(Boole);
-private int ingestChar(Byte *buf, int maxlen, long wait_time);
+private void addByteToShowcmd(Byte byte);
+private int plainVgetcNopaste(void);
+private void getcharCommon(Arr(Var) argvars, Var* returnVar, Boole allow_number);
+private int atAnInsertCompletionKey(void);
+private int checkSimplifyModifier(int const maxOffset);
+private MatchFinding searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapping);
+private MapResult handleMapping(OUT int* foundKeylen, int timedout, OUT int* mapdepth);
+private void check_end_reg_executing(int advance);
+private Unt vGetOrPeek(Boole advance);
+private int ingestChar(CS buf, int maxlen, long wait_time);
 private int fixInputBuffer(OUT CS buf, int len);
-
+private CS getCommandNameCb(
+   Unt promptc UNUSED,
+   void* cookie UNUSED,
+   int indent UNUSED,
+   GetlineAlgo do_concat UNUSED
+);
+private long time_diff_ms(TimeVal *t1, TimeVal *t2);
+private int get_mouse_class(CS p);
+private void find_start_of_word(Pos*pos);
+private void find_end_of_word(Pos* pos);
+private void do_mousescroll(ActionArg* cap);
+private int get_pseudo_mouse_code(Unt button, Boole is_click, Boole is_drag);
+private int do_mousescroll_horiz(Ulong leftcol);
 //}}}
 //{{{keyboard input
 
@@ -1174,7 +1216,7 @@ del_typebuf(int len, int offset) {
 }
 
 // stateG for adding bytes to a recording or 'showcmd'.
-private typedef struct {
+privateComp typedef struct {
    Byte   buf[MB_MAXBYTES * 3 + 4];
    int      prev_c;
    Unt   buflen;
@@ -1755,7 +1797,7 @@ vgetc(void) {
    }
 
    lastVgetcRecordedLen = lastRecordedLen;
-pub afterGotChar:
+afterGotChar:
    //In the main loop "may_garbage_collect" can be set to do garbage collection in the first next
    //vgetc(). It's disabled after that to avoid internally used Lists and Bags to be freed.
    may_garbage_collect = false;
@@ -2082,7 +2124,7 @@ parse_queued_messages(void) {
 }
 
 
-private typedef enum {
+privateComp typedef enum {
    mrFail,    // failed, break loop
    mrGet,     // get a character from typeahead
    mrRetry,   // try to map again
@@ -2163,7 +2205,7 @@ checkSimplifyModifier(int const maxOffset) {
    return 0;
 }
 
-private typedef struct {
+privateComp typedef struct {
    MapBlock* longestFull;
    MapBlock* foundMapping;
    int maxMLen; //max_mlen
@@ -2329,7 +2371,7 @@ searchForPartialMappings(int foundKeylen, int timedout, Boole isAbstractPlugMapp
             }
          }
 
-pub nextIter:
+nextIter:
          if (fin.foundMapping->next == NULL) {
             fin.foundMapping = foundMapping1;
             foundMapping1 = NULL;
@@ -3866,7 +3908,7 @@ utf_class_buf(Unt c, Book* book) {
    return 2;
 }
 
-private typedef struct { // copy from strings.c
+privateComp typedef struct { // copy from strings.c
    long first;
    long last;
 } Interval;

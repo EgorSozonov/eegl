@@ -6,70 +6,223 @@
 #include "eegl.h"
 
 //{{{@@forward declarations
-
-private void cmd_with_count(CS cmd, CS bufp, Unt bufsize, long prenum);
-private void init(Portal* newp, Portal* oldp, Unt flags);
+private Portal * horizNeighbor(Tab* t, Portal* po, Boole left, long count);
+private Portal * vertNeighbor(Tab* t, Portal* po, Boole up, long count);
+private void gotoPortal_hor(Boole goLeft, long count);
+private void gotoPortal_ver(Boole goUp, long count);
+private void cmd_with_count(
+   CS cmd,
+   CS bufp,
+   Unt   bufsize,
+   long   prenum)
+;
+private int check_split_disallowed(Portal* po);
+private void init(Portal* newp, Portal* oldp, Unt flags UNUSED);
 private void initg_some(Portal* newp, Portal* oldp);
-private void recomputeFramePositions(Frame *topFr, OUT int *row, OUT int *col);
-private void frame_setheight(Frame *curfrp, int height);
-private void frame_setwidth(Frame *curfrp, int width);
-private void exchangePortal(long);
-private void rotatePortals(int, int);
+private Boole portalValidPopup(Portal* port);
+private void exchangePortal(long prenum);
+private void rotatePortals(int upwards, int count);
 private void equalizeHeightRec(
-   Portal* next_curPor, int current, Frame *topfr, Byte dir, int col, int row, int width, int height
+   Portal* next_curPor,   // pointer to current portal to be or NULL
+   int current,   // do only frame with current portal
+   Frame* topfr,      // frame to set size off
+   Byte dir,      // EAD_* constants, see portEqualizeHeight()
+   int col,      // horizontal position for frame
+   int row,      // vertical position for frame
+   int width,      // new width of frame
+   int height      // new height of frame
 );
+private void initEmptyPortal(OUT Portal* po);
+private int closeLastPortalInTab(Portal* port, int free_buf, Tab* prev_curtab);
+private void closePortalBook(Portal* port, int action, int abort_if_last);
 private void triggerPortalNewPre(void);
 private void triggerPortalClosed(Portal* port);
-private Portal *freePortalMem(Portal* port, Byte* dirp, Tab *t);
-private Frame *getAltFrame(Portal* port, Tab *t);
-private Tab *altTab(void);
-private Portal* frameToPort(Frame* fr);
-private int frameHasPortal(Frame *fr, Portal* po);
-private void frame_new_height(Frame *topFr, int height, Boole topfirst, Boole wfh, Boole set_ch);
-private int frame_fixed_height(Frame *fr);
-private int frame_fixed_width(Frame *fr);
-private void frame_add_statusline(Frame *fr);
-private void frameNewWidth(Frame *topFr, int width, int leftfirst, int wfw);
-private void frame_add_vsep(Frame *fr);
-private int frame_minwidth(Frame *topFr, Portal *next_curPor);
+private Bag * makePortInfoDict(
+   int width,
+   int height,
+   int topline,
+   int topfill,
+   int leftcol,
+   int skipcol
+);
+private void checkWhichPortalsResized(
+   int* size_count,
+   Portal** firstScrollPort,
+   Portal** firstResizedPort,
+   List* portlist,
+   OUT Bag* v_event
+);
+private Portal * freePortalMem(
+   Portal* port,
+   OUT Byte* dirp,      // set to EAD_VERTICAL or EAD_HORIZONTAL for direction if @equalalways
+   Tab* t      // tab "port" is in, NULL for current
+);
+private void frame_flatten(Frame* fr);
+private void restoreFrame(Portal* po, Byte dir, Frame* unflat_altfr);
+private Frame* getAltFrame(Portal* port, Tab* t);
+private Tab * altTab(void);
+private Portal* frameToPort(Frame *fr);
+private int frameHasPortal(Frame* fr, Portal* po);
+private void frame_new_height(
+   Frame* topFr,
+   int height,
+   Boole topfirst,   // resize topmost contained frame first
+   Boole wfh,  // obey @portfixheight when there is a choice; may cause the height not to be set
+   Boole set_ch      // set @commheight to resize topframe
+);
+private int frame_fixed_height(Frame* fr);
+private int frame_fixed_width(Frame* fr);
+private void frame_add_statusline(Frame* fr);
+private void frameNewWidth(
+   Frame   *topFr,
+   int      width,
+   int      leftfirst,   // resize leftmost contained frame first
+   int      wfw      // obey 'portfixwidth' when there is a choice;
+            // may cause the width not to be set
+);
+private void frame_add_vsep(Frame* fr);
 private void frame_fix_width(Portal* po);
-private int allocateFirstPortal(Portal *oldPortal);
-private void neframe(Portal* po);
-private Tab *alloc_tab(void);
-private int leaveTab(Book *newCurBook, int trigger_leave_autocmds);
-private void enterTab(Tab*, Book*, Boole, Boole);
 private void frame_fix_height(Portal* po);
-private Unt frame_minheight(Frame *topFr, Portal *next_curPor);
+private Unt frame_minheight(Frame* topFr, Portal* next_curPor);
+private int frame_minwidth(Frame* topFr, Portal* next_curPor);
+private int allocateFirstPortal(Portal* oldPortal);
+private void neframe(Portal* po);
+private Tab * alloc_tab(void);
 private int mayOpenTab(void);
+private int leaveTab(NULLABLE Book   *newCurBook, int      trigger_leave_autocmds);
+private void enterTab(Tab* t, Book* oldCurBuf, Boole trigger_enter_autocmds, Boole trigger_leave_autocmds);
 private int enterPortalWorker(Portal* po, Unt flags);
-private void freePortal(Portal* po, Tab *t);
-private void append(Portal *after, Portal* po);
-private void frame_append(Frame *after, Frame *fr);
-private void frame_insert(Frame *before, Frame *fr);
-private void frame_remove(Frame *fr);
+private Portal * allocPortal(Portal* after, int hidden);
+private void freePortal(Portal* po, Tab* t);
+private void append(Portal* after, Portal* po);
+private void frame_append(Frame* after, Frame* frame);
+private void frame_insert(Frame* before, Frame* fr);
+private void frame_remove(Frame* fr);
+private void recomputeFramePositions(Frame* topFr, OUT int* row, OUT int* col);
+private void frame_setheight(Frame *curfrp, int height);
+private void frame_setwidth(Frame* curfrp, int width);
+private void portalNewHeight(Portal* po, int height);
+private int plinesUpToCol(Portal *wp, LineNr lnum, long column);
+private void portalNewWidth(Portal* po, int width);
 private void frame_add_height(Frame *fr, int n);
 private void last_status_rec(Frame *fr);
-private void frame_flatten(Frame *fr);
-private void restoreFrame(Portal* po, Byte dir, Frame *unflat_altfr);
-
-private int make_snapshot_rec(Frame *fr, Frame **fr1);
+private void check_lnums_both(int do_curPor, int nested);
+private int make_snapshot_rec(Frame *source, OUT Frame **fr);
 private void clearSnapshot(Tab *t, int idx);
 private void clearSnapshot_rec(Frame *fr);
+private Portal * get_snapshot_curPor_rec(Frame *ft);
+private Portal * get_snapshot_curPor(int idx);
 private int check_snapshot_rec(Frame *sn, Frame *fr);
-private Portal *restore_snapshot_rec(Frame *sn, Frame *fr);
-private Portal *get_snapshot_curPor(int idx);
-
-private void portalNewWidth(Portal* po, int newWidth);
-private void portalNewHeight(Portal* po, int newHeight);
-
+private Portal * restore_snapshot_rec(Frame *sn, Frame *fr);
 private int frame_check_height(Frame *topFr, int height);
-private int frame_check_width(Frame *topFr, int width);
-
-private Portal* allocPortal(Portal *after, int hidden);
-
+private int frame_check_width(Frame* topFr, int width);
+private int getPortalId(Var* argvars);
+private void portIdToTabPort(Var* argvars, List* list);
+private int getPortById(Var* argvars);
+private void get_framelayout(Frame* fr, List* l, int outer);
+private int getPortalIdInTab(Tab* t, Var* argvar);
+private Bag * get_win_info(Portal* po, short tpnr, short winnr);
+private Bag * getTabInfo(Tab *t, int tp_idx);
+private int popup_options_one(Bag *dict, CS key);
+private int  set_padding_border(Bag* dict, int* array, CS name, int max_val);
+private void set_moved_values(Portal* po);
+private void set_moved_columns(Portal* po, int flags);
+private void set_mousemoved_values(Portal* po);
+private void update_popup_uses_mouse_move(void);
+private void set_mousemoved_columns(Portal* po, Unt flags);
+private void addTimeout(Portal* po, int time, int close);
+private PopupPosition get_pos_entry(Bag *d, int give_error);
+private void applyMoveParams(Portal* po, Bag* params);
+private void handle_moved_argument(Portal* po, DictItem* di, int mousemoved);
+private void check_highlight(Bag* dict, CS name, OUT CS* pval);
+private void scrollToCurrent(Portal* po);
+private CS popup_get_sign_name(Portal* po);
+private void highlightCurrentLine(Portal* po);
+private int apply_general_options(Portal* po, Bag* dict);
+private int applyParams(Portal* po, Bag* params, int create);
+private void add_popup_strings(Book* book, List* l);
+private void add_popup_dicts(Book* book, List *l);
+private void adjustPosition(Portal* po);
+private int isNotification(PopupKind kind);
+private inline void setBookText(Book* book, Var text);
+private int parse_popup_option(Portal* po, Boole is_preview);
+private void add_border_left_right_padding(Portal* po);
+private Boole popup_terminal_exists(void);
+private void updateNotificationColor(Portal* po, PopupKind type);
+private void initPopupBook(Book* book);
+private void invokeCallback(Portal* po, Var *result);
+private void back_to_prevPor(Portal* po);
+private void popup_close_and_callback(Portal* po, Var *arg);
+private void check_mouse_moved(Portal* po, Portal *mouse_wp);
+private void filter_handle_drag(Portal* po, int c, Var* returnVar);
+private Portal * findPopupPortal(int id);
+private void popup_free(Portal* po);
+private void error_for_popup_portal(void);
+private void get_padding_border(Bag* dict, int* array, CS name);
+private void get_borderhighlight(Bag* dict, Portal* po);
+private void get_borderchars(Bag* bag, Portal* po);
+private void get_moved_list(Bag* bag, Portal* po);
+private int invoke_popup_filter(Portal* po, int c);
+private void popup_update_mask(Portal* po, int width, int height);
+private int popupMaskGed(Portal* po, int width, int height, int screencol, int screenline);
+private void update_popupTransparencyG(Portal* po, int val);
+private int check_popup_unhidden(Portal* po);
+private inline int popup_need_position_adjust(Portal* po);
+private CS get_spaces(int len);
+private int set_ref_in_one_popup(Portal* po, int copyID);
+private void popup_hide_info(void);
+private void mayStartMessagePortalTimer(Portal* po);
 private int popup_closePortal(Portal* port);
+private void computeSize(void);
+private Arr(Decoration) computeTextDeco(CS text, Short hiId, Decoration userDeco);
+private void pum_drawText_withDecos(
+   int row,
+   int col,
+   int cells UNUSED,
+   CS text,
+   int textlen,
+   Arr(Decoration) decos)
+;
+private inline void pum_align_order(int* order);
+private inline CS pum_get_item(int index, int type);
+private inline Decoration combineUserDecos(int idx, int type, Decoration defaultDeco);
+private int displayText(
+   int row,
+   int col,
+   CS text,
+   Decoration deco,
+   Arr(Decoration) decos,
+   int width,        // width already calculated in outer loop
+   int widthLimit,
+   int totwidth,
+   int next_isempty,
+   int selected
+);
+private int drawMenuItem(
+   int row,
+   int col,
+   int idx,
+   int j,         // Current position in order array
+   int* order,    // Order array
+   Short hiId,
+   Decoration deco,
+   int* totwidth_ptr,
+   int next_isempty
+);
+private void pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height);
 private void pum_position_info_popup(Portal* po);
-
+private int pum_set_selected(int n, int repeat UNUSED);
+private int pum_in_same_position(void);
+private void pum_position_at_mouse(int min_width);
+private int can_use_beval(void);
+private void bexpr_eval(
+   BalloonEval* beval,
+   CS bexpr,
+   Portal* po,
+   LineNr lnum,
+   int col,
+   CS text
+);
 //}}}
 //{{{portals
 
@@ -7051,7 +7204,7 @@ private Tab* popupMaskTabS INIT(= NULL);
 #define POPF_INFO_MENU  0x400   // align info popup with popup menu
 #define POPF_POSINVERT  0x800   // vertical position can be inverted
 
-private typedef struct {
+privateComp typedef struct {
    CS pp_name;
    PopupPosition pp_val;
 } PopposEntry;
@@ -11917,7 +12070,7 @@ private Unt balloonArraySizeS;
 # define BALLOON_MIN_WIDTH 50
 # define BALLOON_MIN_HEIGHT 10
 
-private typedef struct {
+privateComp typedef struct {
    CS start;
    int bytelen;
    int cells;

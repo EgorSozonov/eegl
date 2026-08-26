@@ -103,7 +103,6 @@ void bookFreeAll(Book* book, Unt flags);
 void free_wininfo(PortInfo *poInfo);
 void bookGoto(Invocation* invo, int start, int dir, int count);
 void handle_swap_exists(BookRef *oldCurBook);
-swap_exists_action ;
 int bookDo(
    Unt action,
    Unt start,
@@ -219,8 +218,6 @@ int bookWrite(
    Boole reset_changed,
    Boole filtering
 );
-endOfName: 
-            eeglFree(rootname);
 void alist_clear(EeArgList* al);
 void alist_init(EeArgList *al);
 void alist_unlink(EeArgList *al);

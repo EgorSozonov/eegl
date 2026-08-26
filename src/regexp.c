@@ -72,7 +72,7 @@ private struct RegProg {
 
 // Since the out pointers in the list are always uninitialized, we use the pointers themselves
 // as storage for the StateLists.
-private typedef union StateList StateList;
+privateComp typedef union StateList StateList;
 union StateList {
    StateList* next;
    RState* s;
@@ -80,7 +80,7 @@ union StateList {
 
 
 // A partially built NFA without the matching state filled in.
-private typedef struct {
+privateComp typedef struct {
    RState *start; // points at the start state.
    StateList   *out; // a list of places that need to be set to the next state for this fragment.
 } Frag;
@@ -211,7 +211,7 @@ backslash_trans(Unt c) {
    return c;
 }
 
-private enum {
+privateComp enum {
    CHAR_CLASS_ALNUM = 0,
    CHAR_CLASS_ALPHA,
    CHAR_CLASS_BLANK,
@@ -336,7 +336,7 @@ private Unt   nextchr;   // used for ungetchr() ???
 #define REG_ZPAREN   2   // \z(\)
 #define REG_NPAREN   3   // \%(\)
 
-private typedef struct {
+privateComp typedef struct {
    Byte* regparse;
    int prevchr_len;
    int curchr;
@@ -363,7 +363,209 @@ private int   reg_iswordc(int);
 
 //}}}
 //{{{@@forward declarations
-
+private int no_Magic(int x);
+private int toggle_Magic(int x);
+private int re_multi_type(Unt c);
+private Unt backslash_trans(Unt c);
+private void initCharacterClasses(void);
+private int get_char_class(Byte **pp);
+private int get_equi_class(Byte **pp);
+private int get_coll_element(Byte **pp);
+private Byte * skip_anyof(Byte *p);
+private void initchr(Byte *str);
+private void saveParseState(ParseState *ps);
+private void restoreParseState(ParseState *ps);
+private Unt peekchr(void);
+private void skipchr(void);
+private void skipchr_keepstart(void);
+private Unt getchr(void);
+private Long gethexchrs(int maxinputlen);
+private Long getdecchrs(void);
+private int read_limits(long *minval, long *maxval);
+private int reg_iswordc(int c);
+private void reg_getline_common(
+    LineNr      lnum,
+    reg_getline_flags_T   flags,
+    Byte      **line,
+    ColNr      *length)
+;
+private Byte * reg_getline(LineNr lnum);
+private ColNr reg_getline_len(LineNr lnum);
+private RegExternalMatch * make_extmatch(void);
+private int reg_prev_class(void);
+private int reg_match_visual(void);
+private void cleanup_subexpr(void);
+private void cleanup_zsubexpr(void);
+private void reg_nextline(void);
+private int match_with_backref(
+    LineNr start_lnum,
+    ColNr  start_col,
+    LineNr end_lnum,
+    ColNr  end_col,
+    int        *bytelen)
+;
+private int re_mult_next(CS what);
+private void mb_decompose(int c, int *c1, int *c2, int *c3);
+private int cstrncmp(Byte *s1, Byte *s2, int *n);
+private Byte * cstrchr(Byte *s, int c);
+private void do_upper(int *d, int c);
+private void do_lower(int *d, int c);
+private int fill_submatch_list(int argc UNUSED, Var *argv, int argskip, UserFunc *fp);
+private void clear_submatch_list(StaticList10 *sl);
+private int eeRegsub_both(
+   CS source,
+   Var* expr,
+   CS dest,
+   int destlen,
+   Unt flags
+);
+private Byte * reg_getline_submatch(LineNr lnum);
+private ColNr reg_getline_submatch_len(LineNr lnum);
+private void regcomp_start(Byte* expr, Unt flags);
+private int compile_start(CS expr, Unt flags);
+private int getAnchor(RState *start, int depth);
+private int getRegStart(RState* start, int depth);
+private Byte * getMatchText(RState *start);
+private int reallocPostfix(void);
+private Unt recognizeCharClass(Byte *start, Byte *end, int extra_newl);
+private int nfa_emit_equi_class(int c);
+private int seen_endbrace(int refnum);
+private int parseAtom(OUT Boole* hadEol);
+private int parsePiece(OUT Boole* hadEol);
+private int parseOneOrMorePieces(OUT Boole* hadEol);
+private int parseBranch(OUT Boole* hadEol);
+private int parse(Unt paren, OUT Boole* hadEol);
+private void nfa_set_code(int c);
+private void dumpPostfix(Byte *expr, int retval);
+private void printState(FILE *debugf, RState *state);
+private void printStateWorker(FILE *debugf, RState *state, ArrayList *indent);
+private void dump(RegProg *prog);
+private RState * alloc_state(int c, RState *out, RState *out1);
+private Frag frag(RState* start, StateList* out);
+private StateList * list1(RState** outp);
+private void patch(StateList* l, RState* s);
+private StateList * concat(StateList* l1, StateList* l2);
+private void st_error(Unt *postfix UNUSED, Unt* end UNUSED, Unt* p UNUSED);
+private void addFrag(Frag s, Frag** fr, Frag* sentinel);
+private Frag removeLastFrag(Frag** p, Frag* stack);
+private int nfa_max_width(RState* startstate, int depth);
+private int countStatesInPostfix(Unt* postfix, Unt* end);
+private RState * buildAutomaton(Arr(Unt) postfix, Unt* end);
+private void addOptimizationHints(RegProg* prog);
+private void log_subsexpr(Submatches *subs);
+private void log_subexpr(Submatch *sub);
+private char * pim_info(PostponedMatch *pim);
+private void copy_pim(PostponedMatch *to, PostponedMatch *from);
+private void clear_sub(Submatch *sub);
+private void copy_sub(Submatch *to, Submatch *from);
+private void copy_sub_off(Submatch *to, Submatch *from);
+private void copy_ze_off(Submatch *to, Submatch *from);
+private int sub_equal(Submatch *sub1, Submatch *sub2);
+private int nfa_did_time_out(void);
+private void open_debug_log(int result);
+private void report_state(char *action,
+        Submatch *sub,
+        RState *state,
+        int lid,
+        PostponedMatch *pim)
+;
+private int has_state_with_pos(
+    nfa_List      *l,   // runtime state list
+    RState      *state,   // state to update
+    Submatches      *subs,   // pointers to subexpressions
+    PostponedMatch      *pim)   // postponed match or NULL
+;
+private int pim_equal(PostponedMatch *one, PostponedMatch *two);
+private int match_follows(RState *startstate, int depth);
+private int state_in_list(
+    nfa_List      *l,   // runtime state list
+    RState      *state,   // state to update
+    Submatches      *subs   // pointers to subexpressions
+);
+private Submatches * addstate(
+   nfa_List      *l,       // runtime state list
+   RState      *state,       // state to update
+   Submatches      *subs_arg,  // pointers to subexpressions
+   PostponedMatch      *pim,       // postponed look-behind match
+   int         off_arg    // byte offset, when -1 go to next line
+);
+private Submatches * addstate_here(
+   nfa_List      *l,   // runtime state list
+   RState      *state,   // state to update
+   Submatches      *subs,   // pointers to subexpressions
+   PostponedMatch      *pim,   // postponed look-behind match
+   int         *ip)
+;
+private int check_char_class(int class, int c);
+private int match_backref(
+   Submatch   *sub,       // pointers to subexpressions
+   int      subidx,
+   int      *bytelen   // out: length of match in bytes
+);
+private int match_zref(
+   int      subidx,
+   int      *bytelen)   // out: length of match in bytes
+;
+private void nfa_save_listids(RegProg* prog, int *list);
+private void nfa_restore_listids(RegProg* prog, int *list);
+private int nfa_re_num_cmp(Ulong val, int op, Ulong pos);
+private int recursiveMatch(
+   RState* state,
+   PostponedMatch* pim,
+   RegProg* prog,
+   Submatches* submatch,
+   Submatches* m,
+   int** listids,
+   int* listids_len
+);
+private int failure_chance(RState *state, int depth);
+private int skip_to_start(int c, ColNr *colp);
+private long find_input(ColNr *startcol, int regstart, Byte *input);
+private int match(
+   RegProg* prog,
+   RState* start,
+   Submatches* submatch,
+   Submatches* m
+);
+private long parseBranchtry(
+   RegProg* prog,
+   ColNr col,
+   int* timed_out UNUSED   // flag set on timeout or NULL
+);
+private long parseBranchexec_both(
+   Byte   *line,
+   ColNr   startcol,   // column to start looking for match
+   int      *timed_out // flag set on timeout or NULL
+);
+private RegProg * compile(CS expr, int flags);
+private void freeBranch(RegProg *prog);
+private int parseBranchexec_nl(
+   RegMatch   *rmp,
+   Byte   *line,  // string to match against
+   ColNr   col,   // column to start looking for match
+   int      line_lbr
+);
+private void init_regexec_multi(
+   RegMultilineMatch   *rmp,
+   Portal* win,  // portal in which to search or NULL
+   Book* book,  // book in which to search
+   LineNr lnum)   // nr of line to start looking for match
+;
+private long matchManyLines(
+   RegMultilineMatch   *rmp,
+   Portal* port,      // portal in which to search or NULL
+   Book* book,      // book in which to search
+   LineNr   lnum,      // nr of line to start looking for match
+   ColNr   col,      // column to start looking for match
+   int* timed_out   // flag set on timeout or NULL
+);
+private Boole eeRegexec_string(
+   RegMatch   *rmp,
+   CS line,  // string to match against
+   ColNr   col,    // column to start looking for match
+   int      nl
+);
+private Long coll_get_char(void);
 //}}}
 //{{{implementation details
 
@@ -970,7 +1172,7 @@ private Unt reg_tofreelen;
 //reg_firstlnum   <invalid>   first line in which to search
 //reg_maxline      0          last line nr
 //reg_line_lbr false or true  false
-private typedef struct {
+privateComp typedef struct {
    RegMatch* match;
    RegMultilineMatch* multiMatch;
 
@@ -1034,7 +1236,7 @@ private int can_f_submatch = false;   // true when submatch() can be used
 // This struct is used for reg_submatch(). Needed for when the
 // substitution string is an expression that contains a call to substitute()
 // and submatch().
-private typedef struct {
+privateComp typedef struct {
    RegMatch   *sm_match;
    RegMultilineMatch   *sm_mmatch;
    LineNr   sm_firstlnum;
@@ -1044,7 +1246,7 @@ private typedef struct {
 
 private regsubMatch rsm;  // can only be used when can_f_submatch is true
 
-private typedef enum {
+privateComp typedef enum {
     RGLF_LINE = 0x01,
     RGLF_LENGTH = 0x02,
     RGLF_SUBMATCH = 0x04
@@ -1352,7 +1554,7 @@ re_mult_next(CS what) {
    return OK;
 }
 
-private typedef struct {
+privateComp typedef struct {
    int a, b, c;
 } decomp_T;
 
@@ -1539,7 +1741,7 @@ cstrchr(Byte *s, int c) {
 //}}}
 //{{{substitutions
 
-private typedef void (*AllOrOne)(int *, int);
+privateComp typedef void (*AllOrOne)(int *, int);
 
 private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, Unt flags);
 
@@ -2335,7 +2537,7 @@ reg_submatch_list(int no) {
 
 //{{{ Regex tokens
 
-private enum {
+privateComp enum {
     SPLIT = 4294967295 - 1024,
     MATCH,
     EMPTY,             // matches 0-length
@@ -2553,7 +2755,7 @@ private int countStatesS;   // Number of states in the NFA.
 private int stateS;   // Index in the state vector, used in alloc_state()
 
 // struct to save start/end pointer/position in for \(\)
-private typedef struct{
+privateComp typedef struct{
    union {
       Byte   *ptr;
       PosNoVirt   pos;
@@ -5851,7 +6053,7 @@ addOptimizationHints(RegProg* prog) {
 // NFA execution code.
 /////////////////////////////////////////////////////////////////
 
-private typedef struct {
+privateComp typedef struct {
    int in_use; // number of subexpr with useful info
 
    // When REG_MULTI is true list.multi is used, otherwise list.line.
@@ -5870,13 +6072,13 @@ private typedef struct {
    ColNr   orig_start_col;  // list.multi[0].start_col without \zs
 } Submatch;
 
-private typedef struct {
+privateComp typedef struct {
    Submatch norm; // \( .. \) matches
    Submatch synt; // \z( .. \) matches
 } Submatches;
 
 // PostponedMatch stores a Postponed Invisible Match.
-private typedef struct {
+privateComp typedef struct {
    int      result;      // PIM_*, see below
    RState   *state;      // the invisible match start state
    Submatches   subs;      // submatch info, only party used
@@ -5894,7 +6096,7 @@ private typedef struct {
 
 
 // nfa_thread_T contains execution information of a NFA state
-private typedef struct {
+privateComp typedef struct {
    RState   *state;
    int      count;
    PostponedMatch   pim;      // if pim.result != PIM_UNUSED: postponed invisible match
@@ -5902,7 +6104,7 @@ private typedef struct {
 } nfa_thread_T;
 
 // nfa_List contains the alternative NFA execution states.
-private typedef struct {
+privateComp typedef struct {
    nfa_thread_T    *t;      // allocated array of states
    int          n;      // nr of states currently in "t"
    int          len;   // max nr of states in "t"

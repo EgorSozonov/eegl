@@ -39,33 +39,33 @@ int stat(const char* restrict path, struct stat* restrict buf);
 //{{{vTerm (abstraction over a terminal)
 //{{{types
 
-private typedef struct {
+privateComp typedef struct {
    Short row;
    Short col;
 } VTermPos;
 
-private typedef struct {
+privateComp typedef struct {
     //libvterm relies on this memory to be zeroed out before it is returned by the allocator
     void *(*malloc)(Unt size);
     void (*free)(void* ptr);
 } VTermAllocatorFunctions;
 
 // Specifies a rectangular screen area.
-private typedef struct {
+privateComp typedef struct {
    Short start_row;
    Short end_row;
    Short start_col;
    Short end_col;
 } VTermRect;
 
-private typedef struct {
+privateComp typedef struct {
    CS str;
    Unt      len : 30;
    unsigned int  initial : 1;
    unsigned int  final : 1;
 } VTermStringFragment;
 
-private typedef struct {
+privateComp typedef struct {
   Short rows, cols;
 
   VTermAllocatorFunctions* allocator;
@@ -75,13 +75,13 @@ private typedef struct {
   Unt tmpbuffer_len;  // default: 4096
 } VTermBuilder;
 
-pub enum {
+privateComp enum {
   VTERM_BASELINE_NORMAL,
   VTERM_BASELINE_RAISE,
   VTERM_BASELINE_LOWER,
 };
 
-private typedef struct {
+privateComp typedef struct {
   VTermPos pos;
   int	   buttons;
 #define MOUSE_BUTTON_LEFT 0x01
@@ -95,7 +95,7 @@ private typedef struct {
 } VTermMouseState;
 
 
-private typedef enum {
+privateComp typedef enum {
    // VTERM_PROP_NONE = 0
    VTERM_PROP_CURSORVISIBLE = 1, // bool
    VTERM_PROP_CURSORBLINK,       // bool
@@ -111,7 +111,7 @@ private typedef enum {
    VTERM_N_PROPS
 } VTermProp;
 
-private typedef enum {
+privateComp typedef enum {
    VTERM_ATTR_BOLD_MASK       = 1 << 0,
    VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
    VTERM_ATTR_ITALIC_MASK     = 1 << 2,
@@ -121,7 +121,7 @@ private typedef enum {
    VTERM_ALL_ATTRS_MASK = (1 << 12) - 1
 } VTermAttrMask;
 
-private typedef union {
+privateComp typedef union {
    int number;
    VTermStringFragment string;
    Boole boolean;
@@ -129,7 +129,7 @@ private typedef union {
 } VTermValue;
 
 // All fields are optional, NULL when not used.
-private typedef struct {
+privateComp typedef struct {
    int (*damage)(VTermRect rect, void* user);
    int (*moverect)(VTermRect dest, VTermRect src, void* user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void* user);
@@ -142,7 +142,7 @@ private typedef struct {
    int (*sb_clear)(void* user);
 } VTermScreenCallbacks;
 
-private typedef enum {
+privateComp typedef enum {
    VTERM_DAMAGE_CELL,    /* every cell */
    VTERM_DAMAGE_ROW,     /* entire rows */
    VTERM_DAMAGE_SCREEN,  /* entire screen */
@@ -151,7 +151,7 @@ private typedef enum {
    VTERM_N_DAMAGES
 } VTermDamageSize;
 
-private typedef enum {
+privateComp typedef enum {
    // VTERM_ATTR_NONE = 0
    VTERM_ATTR_BOLD = 1,   // bool:   1, 22
    VTERM_ATTR_UNDERLINE,  // number: 4, 21, 24
@@ -162,7 +162,7 @@ private typedef enum {
    VTERM_N_ATTRS
 } VTermAttr;
 
-private typedef enum {
+privateComp typedef enum {
    // VTERM_VALUETYPE_NONE = 0 */
    VTERM_VALUETYPE_BOOL = 1,
    VTERM_VALUETYPE_INT,
@@ -177,12 +177,12 @@ pub declStruct(VTermLineInfo);
 //Copies of VTermState fields that the 'resize' callback might have reason to edit. 'resize' 
 //callback gets total control of these fields and may free-and-reallocate them if required. They
 //will be copied back from the struct after the callback has returned.
-private typedef struct {
+privateComp typedef struct {
    VTermPos pos;                // current cursor position
    VTermLineInfo *lineinfos[2]; // [1] may be NULL
 } VTermStateFields;
 
-pub enum {
+privateComp enum {
    VTERM_PROP_CURSORSHAPE_BLOCK = 1,
    VTERM_PROP_CURSORSHAPE_UNDERLINE,
    VTERM_PROP_CURSORSHAPE_BAR_LEFT,
@@ -190,7 +190,7 @@ pub enum {
    VTERM_N_PROP_CURSORSHAPES
 };
 
-pub enum {
+privateComp enum {
   VTERM_PROP_MOUSE_NONE = 0,
   VTERM_PROP_MOUSE_CLICK,
   VTERM_PROP_MOUSE_DRAG,
@@ -295,15 +295,15 @@ rect_intersects(VTermRect* a, VTermRect* b) {
 #define BUFIDX_PRIMARY   0
 #define BUFIDX_ALTSCREEN 1
 
-pub declStruct(VTermState);
-declStruct(VTermScreen);
-pub declStruct(VTerm);
+privateComp declStruct(VTermState);
+privateComp declStruct(VTermScreen);
+privateComp declStruct(VTerm);
 
-private typedef void VTermOutputCallback(CS s, Unt len, void *user);
+privateComp typedef void VTermOutputCallback(CS s, Unt len, void *user);
 
-pub declStruct(VTermGlyphInfo);
+privateComp declStruct(VTermGlyphInfo);
 
-private typedef struct {
+privateComp typedef struct {
    int (*text)(Byte *bytes, Unt len, void *user);
    int (*control)(Byte control, void *user);
    int (*escape)(Byte *bytes, Unt len, void *user);
@@ -322,7 +322,7 @@ private struct VTermLineInfo {
    Unt continuation:1; //Line is a flow continuation of the previous
 };
 
-private typedef struct {
+privateComp typedef struct {
    int (*putglyph)(VTermGlyphInfo *info, VTermPos pos, void *user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void *user);
    int (*scrollrect)(VTermRect rect, int downward, int rightward, void *user);
@@ -408,7 +408,7 @@ private struct VTerm {
 };
 
 
-private typedef struct {
+privateComp typedef struct {
    int (*control)(Byte control, void* user);
    int (*csi)(CS leader, long args[], int argcount, CS intermed, Byte command, void *user);
    int (*osc)(int command, VTermStringFragment frag, void* user);
@@ -418,7 +418,7 @@ private typedef struct {
    int (*sos)(VTermStringFragment frag, void* user);
 } VTermStateFallbacks;
 
-private typedef enum {
+privateComp typedef enum {
    VTERM_SELECTION_CLIPBOARD = (1<<0),
    VTERM_SELECTION_PRIMARY   = (1<<1),
    VTERM_SELECTION_SECONDARY = (1<<2),
@@ -426,7 +426,7 @@ private typedef enum {
    VTERM_SELECTION_CUT0      = (1<<4), // also CUT1 .. CUT7 by bitshifting
 } VTermSelectionMask;
 
-private typedef struct {
+privateComp typedef struct {
    int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void* user);
    int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
@@ -545,30 +545,18 @@ private struct VTermState {
   } selection;
 };
 
-private struct VTermGlyphInfo {
+privateComp struct VTermGlyphInfo {
   Unt* chars;
   int width;
 };
 
-
-
-pub enum {
+privateComp enum {
   C1_SS3 = 0x8f,
   C1_DCS = 0x90,
   C1_CSI = 0x9b,
   C1_ST  = 0x9c,
   C1_OSC = 0x9d,
 };
-
-//private void vterm_state_push_output_sprintf_CSI(VTermState *vts, const char *format, ...);
-
-private void vterm_screen_free(VTermScreen *screen);
-
-
-private int vterm_unicode_width(uint32_t codepoint);
-private int vterm_unicode_is_combining(uint32_t codepoint);
-private int vterm_unicode_is_ambiguous(uint32_t codepoint);
-private int vterm_get_special_pty_type(void);
 
 //}}}
 //{{{utf8
@@ -636,35 +624,307 @@ fill_utf8(long codepoint, CS str) {
 //}}}
 //}}}
 //{{{@@forward decls
-
-private void vterm_screen_flush_damage(VTermScreen* screen);
-private int vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell);
-private VTermState* vterm_obtain_state(VTerm *vt);
-private void vterm_state_set_callbacks(
-      VTermState* state, VTermStateCallbacks* callbacks, void* user
+private void  rect_expand(VTermRect *dst, VTermRect *src);
+private void  rect_clip(VTermRect *dst, VTermRect *bounds);
+private int rect_equal(VTermRect *a, VTermRect *b);
+private int  rect_contains(VTermRect *big, VTermRect *small);
+private int  rect_intersects(VTermRect* a, VTermRect* b);
+private unsigned int  utf8_seqlen(long codepoint);
+private int  fill_utf8(long codepoint, CS str);
+private int vterm_is_modify_other_keys(VTerm *vt);
+private int  vterm_is_kitty_keyboard(VTerm *vt);
+private void  vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod);
+private void  vterm_keyboard_key(VTerm *vt, VTermKey key, VTermModifier mod);
+private void  vterm_keyboard_start_paste(VTerm *vt);
+private void  vterm_keyboard_end_paste(VTerm *vt);
+private void * default_malloc(Unt size);
+private void default_free(void *ptr);
+private VTerm * vterm_build(VTermBuilder* builder);
+private VTerm * vterm_new_with_allocator(int rows, int cols, VTermAllocatorFunctions* funcs);
+private void  vterm_free(VTerm *vt);
+private void* vterm_allocator_malloc(VTerm* vt, Unt size);
+private void vterm_allocator_free(VTerm *vt, void *ptr);
+private void  vterm_get_size(const VTerm *vt, Unt *rowsp, Unt *colsp);
+private void  vterm_set_size(VTerm *vt, int rows, int cols);
+private void vterm_push_output_bytes(VTerm* vt, Arr(Byte) bytes, Unt len);
+private void vterm_push_output_vsprintf(VTerm *vt, const char* format, va_list args);
+private void vterm_push_output_sprintf(VTerm *vt, const char *format, ...);
+private void vterm_push_output_sprintf_ctrl(VTerm *vt, unsigned char ctrl, const char *fmt, ...);
+private void  vterm_push_output_sprintf_str(VTerm* vt, unsigned char ctrl, int term, const char *fmt, ...);
+private Unt  vterm_output_get_buffer_current(const VTerm *vt);
+private Unt  vterm_output_read(VTerm *vt, CS builder, Unt len);
+private void  vterm_scroll_rect(
+      VTermRect rect,
+      int downward,
+      int rightward,
+      int (*moverect)(VTermRect src, VTermRect dest, void *user),
+      int (*eraserect)(VTermRect rect, void *user),
+      void *user
 );
+private int  bisearch(uint32_t ucs, Interval* table, int max);
+private int  mk_wcwidth(uint32_t ucs);
+private int  vterm_unicode_is_ambiguous(uint32_t codepoint);
+private int vterm_is_combining(uint32_t codepoint);
+private int vterm_get_special_pty_type_placeholder(void);
+private int  vterm_unicode_width(uint32_t codepoint);
+private int  vterm_unicode_is_combining(uint32_t codepoint);
+private int  vterm_get_special_pty_type(void);
+private void  penSetpenattr(
+      VTermState* state, VTermAttr attr, 
+#ifdef DEBUG 
+      VTermValueType type, 
+#endif
+      VTermValue* val
+);
+private void  setpenattr_int(VTermState *state, VTermAttr attr, int number);
+private void  setpenattr_col(VTermState* state, VTermAttr attr, VTermColor color);
+private void  set_pen_col_ansi(VTermState* state, VTermAttr attr, long col);
+private void  vterm_state_set_default_colors(
+      VTermState *state, VTermColor default_fg, VTermColor default_bg
+);
+private void  vterm_state_newpen(VTermState* state);
+private void  vterm_state_resetpen(VTermState* state);
+private void  vterm_state_savepen(VTermState *state, int save);
+private void  vterm_state_get_default_colors(
+      VTermState* state, OUT VTermColor* default_fg, OUT VTermColor* default_bg
+);
+private void  vterm_state_setpen(VTermState* state, long args[], int argcount);
+private int  vterm_state_getpen_color(VTermColor col, int argi, long args[], Boole isFg);
+private int  vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED);
+private void  output_mouse(VTermState *state, int code, int pressed, int modifiers, int col, int row);
+private void  vterm_mouse_move(VTerm *vt, int row, int col, VTermModifier mod);
+private void  vterm_mouse_button(VTerm *vt, int button, int pressed, VTermModifier mod);
+private void  clearcell(VTermScreen* screen, OUT ScreenCell* cell);
+private ScreenCell * getcell(VTermScreen *screen, int row, int col);
+private ScreenCell * alloc_buffer(VTermScreen* screen, int rows, int cols);
+private void  damagerect(VTermScreen* screen, VTermRect rect);
+private void  damagescreen(VTermScreen *screen);
+private int  putglyph(VTermGlyphInfo* info, VTermPos pos, void *user);
+private void  sb_pushline_from_row(VTermScreen* screen, int row);
+private int  moverect_internal(VTermRect dest, VTermRect src, void* user);
+private int  moverect_user(VTermRect dest, VTermRect src, void *user);
+private int  erase_internal(VTermRect rect, void *user);
+private int  erase_user(VTermRect rect, void* user);
+private void  vterm_rect_move(VTermRect *rect, int row_delta, int col_delta);
+private int  erase(VTermRect rect, void *user);
+private int  scrollrect(VTermRect rect, int downward, int rightward, void *user);
+private int  movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user);
+private int  setpenattr(VTermAttr attr, VTermValue* val, void* user);
+private int  settermprop(VTermProp prop, VTermValue *val, void *user);
+private int  line_popcount(ScreenCell *buffer, int row, int rows UNUSED, int cols);
+private void  resize_buffer(
+    VTermScreen *screen, int bufidx, int newRows, int newCols, int active, 
+    VTermStateFields *statefields
+);
+private int  resize(Short newRows, Short newCols, VTermStateFields *fields, void *user);
+private int  setlineinfo(Short row, VTermLineInfo* newinfo, VTermLineInfo* oldinfo, void* user);
+private int  sb_clear(void *user);
+private VTermScreen * screen_new(VTerm *vt);
+private void  vterm_screen_free(VTermScreen *screen);
+private void  vterm_screen_reset(VTermScreen *screen, int hard);
+private Unt  _get_chars(VTermScreen* screen, void* buffer, Unt len, VTermRect rect);
+private Unt  vterm_screen_get_text(VTermScreen* screen, CS str, Unt len, VTermRect rect);
+private int  vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell);
+private VTermScreen * vterm_obtain_screen(VTerm *vt);
+private void  vterm_screen_enable_altscreen(VTermScreen *screen, int altscreen);
+private void  vterm_screen_set_callbacks(VTermScreen *screen, const VTermScreenCallbacks *callbacks, void *user);
+private void  vterm_screen_flush_damage(VTermScreen *screen);
+private int is_intermed(unsigned char c);
+private void  do_control(VTerm *vt, unsigned char control);
+private void  do_csi(VTerm *vt, char command);
+private void  do_escape(VTerm* vt, Byte command);
+private void  string_fragment(VTerm *vt, CS str, Unt len, int final);
+private Unt  vterm_input_write(VTerm *vt, CS bytes, Unt len);
+private void  vterm_parser_set_callbacks(VTerm* vt, VTermParserCallbacks* callbacks, void* user);
+private void  statePutglyph(VTermState* state, Unt chars[], int width, VTermPos pos);
+private void  updatecursor(VTermState *state, VTermPos *oldpos, int cancel_phantom);
+private void  stateErase(VTermState* state, VTermRect rect);
+private VTermState* vterm_state_new(VTerm* vt);
+private void  vterm_state_free(VTermState *state);
+private void  scroll(VTermState* state, VTermRect rect, int downward, int rightward);
+private void  linefeed(VTermState* state);
+private void  grow_combine_buffer(VTermState* state);
+private void  set_col_tabstop(VTermState *state, int col);
+private void  clear_col_tabstop(VTermState* state, int col);
+private int is_col_tabstop(VTermState* state, int col);
+private int is_cursor_in_scrollregion(VTermState* state);
+private void tab(VTermState* state, int count, int direction);
+private void set_lineinfo(VTermState* state, int row, Boole force);
+private int on_text(CS bytes UNUSED, Unt len UNUSED, void* user);
+private int on_control(unsigned char control, void *user);
+private int settermprop_bool(VTermState *state, VTermProp prop, int v);
+private int settermprop_int(VTermState *state, VTermProp prop, int v);
+private int settermprop_string(VTermState *state, VTermProp prop, VTermStringFragment frag);
+private void savecursor(VTermState* state, int save);
+private int on_escape(Arr(Byte) bytes, Unt len, void* user);
+private void set_mode(VTermState* state, int num, int val);
+private void request_dec_mode(VTermState* state, int num);
+private int on_csi(
+   CS leader, 
+   long args[], 
+   int argcount, 
+   CS intermed, 
+   Byte command, 
+   void *user
+);
+private Byte unbase64one(char c);
+private void  osc_selection(VTermState* state, VTermStringFragment frag);
+private int on_osc(int command, VTermStringFragment frag, void* user);
+private void request_status_string(VTermState* state, VTermStringFragment frag);
+private int on_dcs(CS command, Unt commandlen, VTermStringFragment frag, void *user);
+private int on_apc(VTermStringFragment frag, void *user);
+private int on_pm(VTermStringFragment frag, void* user);
+private int on_sos(VTermStringFragment frag, void* user);
+private Boole on_resize(Short rows, Short cols, void* user);
+private VTermState * vterm_obtain_state(VTerm *vt);
 private void vterm_state_reset(VTermState *state, int hard);
-//private void * vterm_state_get_unrecognized_fbdata(VTermState *state);
-private void
-vterm_state_set_unrecognized_fallbacks(
+private void  vterm_state_get_cursorpos(VTermState* state, VTermPos* cursorpos);
+private void vterm_state_get_mousestate(VTermState* state, VTermMouseState* mousestate);
+private void vterm_state_set_callbacks(VTermState* state, VTermStateCallbacks* callbacks, void* user);
+private void vterm_state_set_unrecognized_fallbacks(
       VTermState* state, VTermStateFallbacks* fallbacks, void* user
 );
-private int vterm_state_set_termprop(VTermState *state, VTermProp prop, VTermValue *val);
-private void* vterm_allocator_malloc(VTerm* vt, Unt size);
-private void  vterm_allocator_free(VTerm* vt, void* ptr);
-
-private void vterm_push_output_bytes(VTerm* vt, Arr(Byte) bytes, Unt len);
-private void vterm_push_output_vsprintf(VTerm* vt, const char *format, va_list args);
-private void vterm_push_output_sprintf(VTerm* vt, const char *format, ...);
-private void vterm_push_output_sprintf_ctrl(VTerm* vt, unsigned char ctrl, const char *fmt, ...);
-private void vterm_push_output_sprintf_str(VTerm* vt, unsigned char ctrl, int term, const char *fmt, ...);
-
-private void vterm_state_free(VTermState* state);
-
-private void vterm_state_newpen(VTermState* state);
-private void vterm_state_resetpen(VTermState* state);
-private void vterm_state_savepen(VTermState* state, int save);
-
+private int vterm_state_set_termprop(VTermState* state, VTermProp prop, VTermValue* val);
+private void vterm_state_focus_in(VTermState *state);
+private void vterm_state_focus_out(VTermState *state);
+private int cursor_color_equal(CS lhs_color, CS rhs_color);
+private void cursor_color_copy(OUT CS* to_color, CS from_color);
+private CS cursor_color_get(CS color);
+private Boole parse_termwinsize(Portal *po, OUT Unt* rows, OUT Unt* cols);
+private void set_term_and_win_size(Terminal *term, JobOptions *opt);
+private void setup_job_options(JobOptions *opt, int rows, int cols);
+private int mch_check_messages(void);
+private void term_flush_messages(void);
+private void closeFailedTerminalBook(Book* book, Book* old_curBook);
+private Book* startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags);
+private CS get_terminaloname(Expand* xp UNUSED, int idx);
+private CS get_termkill_name(Expand *xp UNUSED, int idx);
+private void free_scrollback(Terminal* term);
+private ChannelFdKind get_tty_part(Terminal *term UNUSED);
+private void term_forward_output(Terminal *term);
+private void term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg);
+private void position_cursor(Portal *po, VTermPos* pos);
+private void update_cursor(Terminal *term, int redraw);
+private int sendMouse(VTerm *vterm, int button, int pressed);
+private int handleMouseEvent(VTerm *vterm, Unt key);
+private int term_convert_key(Terminal *term, Unt c, int modmask, CS buf);
+private int term_job_running_check(Terminal* term, int check_job_status);
+private void add_scrollback_line_to_buffer(Terminal *term, CS text, Unt len);
+private int equal_celattr(CellDeco *a, CellDeco *b);
+private int add_empty_scrollback(Terminal *term, CellDeco *fillDeco, int lnum);
+private void cleanup_scrollback(Terminal *term);
+private void update_snapshot(Terminal* term);
+private int forAllPortalsAndCurPort(OUT Portal **po, OUT int *did_curPor);
+private void may_move_terminal_to_buffer(Terminal* term, int redraw);
+private void set_terminal_mode(Terminal *term, int normal_mode);
+private void cleanup_vterm(Terminal *term);
+private void term_enter_normal_mode(void);
+private int vterm_using_key_protocol(void);
+private int term_vgetc(void);
+private void term_paste_register(Unt prev_c);
+private void ui_cursor_shape_forced(Boole forced);
+private void may_output_cursor_props(void);
+private void may_set_cursor_props(Terminal *term);
+private void prepare_restoreCursor_props(void);
+private int term_use_loop_check(int check_job_status);
+private Unt raw_c_to_ctrl(Unt c);
+private int ctrl_to_raw_c(int c);
+private void may_toggle_cursor(Terminal *term);
+private void set_dirty_snapshot(Terminal* term);
+private int handle_damage(VTermRect rect, void *user);
+private void term_scroll_up(Terminal* term, int start_row, int count);
+private int handle_moverect(VTermRect dest, VTermRect src, void* user);
+private int handle_movecursor(
+   VTermPos pos,
+   VTermPos oldpos UNUSED,
+   int visible,
+   void *user
+);
+private int handle_settermprop(VTermProp prop, VTermValue* value, void* user);
+private void handleShellResize(void);
+private int handle_resize(int rows, int cols, void *user);
+private void limit_scrollback(Terminal *term, ArrayList* scrollback, int update_buffer);
+private int handle_pushline(int cols, Arr(ScreenCell) cells, void* user);
+private void handle_postponed_scrollback(Terminal *term);
+private int term_after_channel_closed(Terminal* term);
+private void term_line2screenline(VTermScreen* screen, VTermPos* pos, Unt max_col);
+private void handle_drop_command(ListItem* item);
+private int is_permitted_term_api(CS func, CS pat);
+private void handle_call_command(Terminal* term, Channel* channel, ListItem* item);
+private Unt url_decode(const char *src, const Unt len, CS dst);
+private void sync_shell_dir(ArrayList* gap);
+private int parse_osc(int command, VTermStringFragment frag, void *user);
+private int parse_csi(
+   CS leader UNUSED,
+   long args[],
+   int argcount,
+   CS intermed UNUSED,
+   Byte command,
+   void* user
+);
+private void * vterm_malloc(Unt size);
+private void vterm_memfree(void *ptr);
+private int create_vterm(Terminal* term, int rows, int cols);
+private Book * term_get_buf(Var* argvars, CS where);
+private void dump_term_color(FILE* fd, VTermColor color);
+private void dump_is_corrupt(ArrayList* gap);
+private void append_cell(ArrayList* gap, CellDeco* cell);
+private Unt read_dump_file(FILE *fd, VTermPos* cursor_pos);
+private CS get_separator(int text_width, CS fname);
+private void term_load_dump(Arr(Var) argvars, Var* returnVar, int do_diff);
+private int get_row_number(Var *tv, Terminal *term);
+private int initSubtermAndJob(
+	Terminal* term,
+	Var* argvar,
+	Multistring* argv,
+	JobOptions* opt,
+	JobOptions* orig_opt UNUSED
+);
+private int create_pty_only(Terminal* term, JobOptions* opt);
+private void term_free_vterm(Terminal* term);
+private void term_report_winsize(Terminal* term, int rows, int cols);
+private void prepare_to_exit(void);
+private void mch_write(CS s, int len);
+private int resize_func(int check_only);
+private int mch_inchar(
+   OUT CS buf,
+   int maxlen,
+   long wtime,       // don't use "time", MIPS cannot handle it
+   int changeCnt
+);
+private int ui_wait_for_chars_or_timer(
+   long wtime,
+   int (*wait_func)(long wtime, int *interrupted, Boole ignore_input),
+   int *interrupted,
+   int ignore_input
+);
+private int waitForCharOrMouse(Long msec, OUT int *interrupted, Boole ignore_input);
+private int mch_char_avail(void);
+private void fillRowsWithTwoCharsWithTailingArea(
+   int tplmode,
+   int row_start,
+   int row_end,
+   int col_start,
+   int col_end,
+   Decoration deco
+);
+private void drawTextLen_for_tabpanel(
+   Unt tplmode,
+   CS p,
+   Unt len,
+   Decoration deco,
+   Tabpanel* tapa
+);
+private void draw_tabpanel_default(int tplmode, Tabpanel* tapa);
+private void drawTabpanelUserdefined(int tplmode, Tabpanel* tapa);
+private CS startsWithPercentAndBang(Tabpanel* tapa);
+private void do_by_tplmode(
+   Unt tplmode,
+   Unt col_start,
+   Unt col_end,
+   OUT Unt* pcurtab_row,
+   OUT Unt* tabNr
+);
 //}}}
 //{{{encoding
 #define UNICODE_INVALID 0xFFFD
@@ -809,7 +1069,7 @@ private struct UTF8DecoderData {
 //}}}
 //{{{keyboard
 
-private typedef enum {
+privateComp typedef enum {
   VTERM_MOD_NONE  = 0x00,
   VTERM_MOD_SHIFT = 0x01,
   VTERM_MOD_ALT   = 0x02,
@@ -819,7 +1079,7 @@ private typedef enum {
 } VTermModifier;
 
 // The order here must match keycodes[] in src/keyboard.c!
-private typedef enum {
+privateComp typedef enum {
   VTERM_KEY_NONE,
 
   VTERM_KEY_ENTER,
@@ -933,7 +1193,7 @@ vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod) {
    vterm_push_output_sprintf(vt, "%s%c", mod & VTERM_MOD_ALT ? ESC_S : "", c);
 }
 
-private typedef struct {
+privateComp typedef struct {
    enum {
       KEYCODE_NONE,
       KEYCODE_LITERAL,
@@ -1469,7 +1729,7 @@ vterm_scroll_rect(
 //}}}
 //{{{unicode
 
-private typedef struct {
+privateComp typedef struct {
   int first;
   int last;
 } Interval;
@@ -6079,7 +6339,7 @@ vterm_state_focus_out(VTermState *state) {
 #define TERM_START_FORCEIT 2
 #define TERM_START_SYSTEM  4
 
-private typedef struct sb_line_S {
+privateComp typedef struct sb_line_S {
    Unt cols;   // can differ per line
    Arr(CellDeco) sb_cells;   // allocated
    CellDeco sb_fillDeco;   // for short line
@@ -7699,7 +7959,7 @@ term_enter_job_mode(void) {
 //When "modify_other_keys" is set, then vgetc() should not reduce a key with modifiers into a basic
 //key.  However, we may only find out after calling vgetc().  Therefore vgetorpeek() will call 
 //check_no_reduce_keys() to update "no_reduce_keys" before using it.
-private typedef enum {
+privateComp typedef enum {
    NRKS_NONE,   // initial value
    NRKS_CHECK,  // modify_other_keys was off before calling vgetc()
    NRKS_SET,    // no_reduce_keys was incremented in term_vgetc() or
@@ -11598,7 +11858,7 @@ private int tabPanelAlignS = ALIGN_LEFT;
 private int tpl_columns = 20;
 private int tpl_is_vert = false;
 
-private typedef struct {
+privateComp typedef struct {
    Portal*po;
    Portal* currPort;
    CS user_defined;

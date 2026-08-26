@@ -13,11 +13,443 @@
 private Byte wim_flags[4];
 
 //{{{@@forward declarations
-
-private Byte* set_context_in_autocmd(Expand* xp, Byte* arg, int doautocmd);
+private void stacktrace_push_item(
+   List* l,
+   UserFunc* fp,
+   Byte* event,
+   LineNr lnum,
+   CS filepath
+);
+private int get_runtime_cmd_flags(Byte **argp, Unt where_len);
+private void source_callback(Byte *fname, void *cookie);
+private int get_new_scriptitem(int* error);
+private void find_script_callback(Byte *fname, void *cookie);
+private int do_in_path_and_pp(
+   Byte   *path,
+   Byte   *name,
+   int      flags,
+   void   (*callback)(Byte *fname, void *ck),
+   OUT void   *cookie
+);
+private void source_all_matches(Byte *pat);
+private int load_pack_plugin(Byte *fname);
+private void add_pack_plugin(Byte *fname, void *cookie);
+private void expandRuntimeDirInternal(
+   Text pat,
+   Unt flags,
+   Boole keep_ext,
+   OUT ExpandMatch* matches,
+   CS dirnames[]
+);
+private int expand_runtime_cmd(CS pat, OUT ExpandMatch* matches);
+private int expandPackAddDir(CS pat, OUT ExpandMatch* matches);
+private void cmd_source(Byte *fname, Invocation* invo);
+private FILE * fopen_noinh_readbin(CS filename);
+private CS initCurBookForSourcing(OUT SourceCookie* sp, Invocation* invo);
+private int scriptRunFileInternal(CS fname, OUT int* ret_sid, Invocation* invo, Boole clearvars);
+private List * get_script_local_funcs(ScriptId sid);
+private CS get_one_sourceline(SourceCookie *sp);
+private CS scriname_after_autoload(ScriptItem *si);
+private int get_maxbacktrace_level(CS sname);
+private void do_setdebugtracelevel(Byte *arg);
+private void do_checkbacktracelevel(void);
+private void do_showbacktrace(CS comm);
+private Var * eval_expr_no_emsg(Debuggy *bp);
+private int dbg_parsearg(CS arg, ArrayList* gap);
+private void update_has_expr_breakpoint(void);
+private LineNr debuggy_find(
+   int      is_file,    // true for a file, false for a function
+   Byte   *fname,       // file or function name
+   LineNr   after,       // after this line number
+   ArrayList   *gap,       // either &dbg_breakp or &prof_ga
+   int      *fp)       // if not NULL: return forceit
+;
+private int commlineFuzzyCompletionSupported(Expand *xp);
+private int sort_func_compare(const void *s1, const void *s2);
+private void wildescape(Expand* xp, CS str, OUT ExpandMatch* files);
+private int nextwild(
+   OUT Expand* xp,
+   int type,
+   int options,   // extra options for expandWildcard()
+   int escape      // if true, escape the returned matches
+);
+private int createCommlinePum(
+   CommlineInfo* ccline,
+   Expand* xp,
+   int showtail,
+   OUT ExpandMatch* matches
+);
+private int skip_status_match_char(Expand *xp, CS s);
+private int status_match_len(Expand *xp, Byte *s);
+private void redrawPortalStatusLine_matches(
+   Expand   *xp,
+   Unt      match,
+   int      showtail,
+   OUT ExpandMatch* matches
+);
+private CS get_next_or_prev_match(int mode, Expand *xp);
+private CS expandOne_start(int mode, OUT Expand* xp, CS str, Unt options);
+private Byte * find_longest_match(Expand *xp);
+private void showmatches_oneline(
+   Expand   *xp,
+   int      lines,
+   int      linenr,
+   int      maxlen,
+   int      showtail,
+   int      dir_attr,
+   OUT ExpandMatch* matches
+);
+private CS showmatches_gettail(CS s);
+private int expand_showtail(Expand *xp);
+private CS set_cmd_index(CS comm, Invocation* invo, Expand *xp, OUT Unt *context);
+private void set_context_for_wildcard_arg(
+   Invocation* invo,
+   CS arg,
+   int  usefilter,
+   Expand* xp,
+   OUT Unt* context
+);
+private CS set_context_in_argopt(Expand *xp, CS arg);
+private CS set_context_in_terminalopt(Expand *xp, CS arg);
+private CS setContextInFilterComm(Expand *xp, CS arg);
+private Byte * setContextInMatchComm(Expand *xp, Byte *arg);
+private Byte * find_cmd_after_global_cmd(Byte *arg);
+private CS find_cmd_after_substitute_cmd(Byte *arg);
+private Byte * find_cmd_after_isearch_cmd(Expand *xp, Byte *arg);
+private CS set_context_in_unlet_cmd(Expand *xp, CS arg);
+private CS setContextInLangCommand(Expand *xp, CS arg);
+private CS set_context_in_breakadd_cmd(Expand *xp, CS arg, CommIndex id);
+private CS set_context_in_scriptnames_cmd(Expand *xp, Byte *arg);
+private CS set_context_in_filetype_cmd(Expand *xp, CS arg);
+private void set_context_with_pattern(Expand *xp);
+private CS setContextByCommandName(
+   CS comm,
+   CommIndex   id,
+   OUT Expand* xp,
+   CS arg,
+   long argFlags,
+   Unt context,
+   Boole forceit
+);
+private CS set_one_cmd_context(
+   OUT Expand   *xp,
+   CS buff       // buffer for command string
+);
+private int expand_files_and_dirs(
+   Expand   *xp,
+   CS pat,
+   int      flags,
+   int      options,
+   OUT ExpandMatch* matches
+);
+private Byte * get_filetypecmd_arg(Expand *xp UNUSED, int idx);
+private Byte * get_breakadd_arg(Expand *xp UNUSED, int idx);
+private Byte * get_scriptnames_arg(Expand *xp UNUSED, int idx);
+private CS get_retab_arg(Expand *xp UNUSED, int idx);
+private Byte * get_messages_arg(Expand *xp UNUSED, int idx);
+private Byte * get_mapclear_arg(Expand *xp UNUSED, int idx);
+private CS getEnvKey(Expand* xp UNUSED, int  idx);
+private int expandOther(
+   CS pat,
+   Expand* xp,
+   RegMatch* rmp,
+   OUT ExpandMatch* matches
+);
+private Unt map_wildopts_to_ewflags(Unt options);
+private int expandGenericExt(
+   CS pat,
+   Expand* xp,
+   RegMatch* regmatch,
+   CS (*fn)(Expand *, int), // return a string from the list
+   int escaped,
+   int sortStartIdx,
+   OUT ExpandMatch* matches
+);
+private void expandShellCommand_onedir(
+   CS pathed_pattern,    // fully pathed pattern
+   Unt pathlen, // length of the path portion of pathed_pattern (0 if no path).
+   Unt flags,
+   EeSet* ht,
+   OUT ExpandMatch* matches
+);
+private int expandShellCommand(
+   CS filepat,   // pattern to match with command names
+   Unt flagsarg,   // EW_ flags
+   OUT ExpandMatch* matches
+);
+private void * call_user_expand_func( void   *(*user_expand_func)(Byte *, int, Var *), Expand   *xp);
+private int expandUserDefined(
+   CS pat,
+   Expand* xp,
+   RegMatch* regmatch,
+   OUT ExpandMatch* matches
+);
+private int expandUserList(
+   Expand* xp,
+   OUT ExpandMatch* matches
+);
+private int wildmenu_translate_key(
+   CommlineInfo   *cclp,
+   Unt      key,
+   Expand   *xp,
+   int      did_wild_list
+);
+private void cmdline_del(CommlineInfo *cclp, int from);
+private int wildmenu_process_key_menunames(CommlineInfo *cclp, Unt key, Expand *xp);
+private int wildmenu_process_key_filenames(CommlineInfo *cclp, Unt key, Expand *xp);
+private int copy_substring_from_pos(Pos *start, Pos *end, Byte **match, Pos *match_end);
+private int is_regex_match(Byte *pat, Byte *str);
+private CS concat_pattern_with_buffer_match(Text pat, Pos* end_match_pos, Boole lowercase);
+private int expandPatternInBook(
+   CS pat,          // pattern to match
+   Unt dir,         // direction: FORWARD or BACKWARD
+   OUT ExpandMatch* matches
+);
+private HistoryEntry *(history[HIST_COUNT]) =;
+private CS (historyNames[]) =;
+private int get_histtype(Byte *name);
+private int get_history_idx(int histype);
+private int calc_hist_idx(int histype, int num);
+private int clr_history(int histype);
+private Boole del_history_entry(int histype, Byte *str);
+private int del_history_idx(int histype, int idx);
+private void trigger_cmd_autocmd(int typechar, int evt);
+private void abandon_cmdline(void);
+private int empty_pattern(Byte *p, Unt len, int delim);
+private int empty_pattern_magic(Byte *p, Unt len, Magic magic_val);
+private void save_viewstate(viewstate_T *vs);
+private void restore_viewstate(viewstate_T *vs);
+private void init_incsearch_state(IncSearch *is_state);
+private void set_search_match(Pos *t);
+private int incsearchHilitingImpl(
+   int firstc,
+   OUT Unt* searchDelim,
+   OUT IncSearch* is_state,
+   OUT int* skiplen,
+   OUT int* patlen
+);
+private void finish_incsearch_highlighting(
+   int gotesc,
+   IncSearch *is_state,
+   int call_drawUpdateScreen
+);
+private void may_do_incsearch_highlighting(int firstc, long count, OUT IncSearch* is_state);
+private int may_adjust_incsearch_highlighting(
+   Unt firstc,
+   long count,
+   OUT IncSearch* is_state,
+   int c
+);
+private int may_add_char_to_search(int firstc, OUT Unt *c, OUT IncSearch *is_state);
+private int cmdline_handle_ctrl_bsl(int c, int *gotesc);
+private int commline_wildchar_complete(
+   Unt c,
+   int escape,
+   int* did_wild_list,
+   int* wim_index_p,
+   OUT Expand* xp,
+   int* gotesc,
+   int redraw_if_menu_empty,
+   Pos* pre_incsearch_pos
+);
+private int commlineEraseChars(
+   Unt c,
+   int indent,
+   IncSearch *isp
+);
+private void cmdline_toggle_langmap(long *b_im_ptr);
+private int cmdline_insert_reg(int *gotesc UNUSED);
+private void cmdline_left_right_mouse(Unt c, int *ignore_drag_release);
+private int cmdline_browse_history(
+   Unt c,
+   Unt firstc,
+   OUT Text* currComm,
+   int histype,
+   int* hiscnt_p,
+   Expand *xp
+);
+private void init_ccline(int firstc, int indent);
+private Arr(Byte) getCommandWorker(
+   Unt firstc,
+   long count UNUSED,   // only used for incremental search
+   int indent,      // indent for inside conditionals
+   Boole clear_ccline
+);
+private int commlineCharsize(int idx);
+private void set_cmdspos(void);
+private void set_cmdspos_cursor(void);
+private void correct_cmdspos(int idx, int cells);
+private void deallocCommBuf(void);
+private void allocateCommBuf(int len);
+private void draw_cmdline(int start, int len);
+private void saveCommline(CommlineInfo *ccp);
+private void restoreCommline(CommlineInfo *ccp);
+private int cmdline_paste(
+    int regname,
+    int literally,   // Insert text literally instead of "as typed"
+    int remcr      // remove trailing CR
+);
+private void redrawPrompt(void);
+private int ccheck_abbr(int c);
+private CommlineInfo * get_ccline_ptr(void);
+private int getCommlineType(void);
+private CS get_cmdline_str(void);
+private Byte * get_cmdline_completion_pattern(void);
+private CS get_cmdline_completion(void);
+private int set_cmdline_str(Byte *str, int pos);
+private int setCommlinePos(int      pos);
+private Unt openCommPort(void);
+private Kv * get_commandtype(int expand);
+private void uc_list(CS name, Unt name_len);
+private int parse_addr_type_arg(CS value, int vallen, CommandAddress* addr_type_arg);
+private int cmp_addr_type(const void *a, const void *b);
+private int uc_scan_attr(
+   CS attr,
+   Unt len,
+   long* argFlags,
+   long* def,
+   int* flags,
+   int* context,
+   OUT CS* compl_arg,
+   CommandAddress* addr_type_arg
+);
+private int is_ucmd_locked(void);
+private CS uc_split_args(CS arg, Unt *lenp);
+private Unt add_cmd_modifier(
+   CS buf,
+   Unt buflen,
+   CS mod_str,
+   Unt   mod_strlen,
+   int      *multi_mods
+);
+private Unt produceCommModifiers(CS builder, CommandModifier *cmod, int quote);
+private Unt uc_check_code(
+   Byte   *code,
+   Unt   len,
+   Byte   *buf,
+   UserCommand   *comm,      // the user command we're expanding
+   Invocation   *invo,      // ex arguments
+   Byte   **split_buf,
+   Unt   *split_len)
+;
+private CS one_function_arg(
+   CS arg,
+   ArrayList* newargs,
+   int skip
+);
+private CS get_function_line(
+   Invocation      *invo,
+   ArrayList   *lines_to_free,
+   int      indent,
+   GetlineAlgo   getline_options)
+;
+private int get_function_args(
+   Byte   **argp,
+   Byte   endchar,
+   ArrayList   *newargs,
+   int      *varargs,
+   ArrayList   *default_args,
+   int      skip,
+   Invocation   *invo,      // can be NULL
+   ArrayList   *lines_to_free)
+;
+private int register_closure(UserFunc *fp);
+private UserFunc * alloc_ufunc(Byte *name, Unt namelen);
+private CS skip_arrow(
+   CS start,
+   int   equal_arrow,
+   int   *white_error
+);
+private int isFunctionComm(CS* comm);
+private int get_function_body(
+   Invocation       *invo,
+   ArrayList    *newlines,
+   Byte       *line_arg_in,
+   ArrayList    *lines_to_free
+);
+private int eval_fname_sid(Byte *p);
+private UserFunc * find_func_with_prefix(Byte *name, int sid);
+private int cat_func_name(CS builder, Unt bufsize, UserFunc *fp);
+private void add_nr_var(
+   Bag   *dp,
+   DictItem   *v,
+   CS name,
+   Long nr)
+;
+private void free_funccal(FnCall *fc);
+private void free_funccal_contents(FnCall *fc);
+private void cleanup_function_call(FnCall *fc);
+private int numbered_function(Byte *name);
+private void funccal_unref(FnCall *fc, UserFunc *fp, int force);
+private int func_remove(UserFunc *fp);
+private void func_clear_items(UserFunc *fp);
+private void func_clear(UserFunc *fp, int force);
+private int func_free(UserFunc *fp, int force);
+private FnError call_user_func(
+   UserFunc* fp,   //pointer to function
+   int argcount,   //nr of args
+   Var* argvars,   //arguments
+   Var* returnVar, //return value
+   FnExe* funcexe, //context
+   Bag* selfdict   //Dictionary for "self"
+);
+private Boole builtin_function(Text name);
+private int function_list_modified(int prev_changes);
+private int list_func_head(UserFunc *fp, int indent);
+private CS trans_function_name_ext(
+   OUT CS* pp,
+   OUT Boole* is_global,
+   Boole skip,      // only find the end, don't evaluate
+   Unt flags,
+   FuncDict* fdp,      // return: info about dictionary used
+   PartiallyApplied** partial,   // return: partial of a FuncRef
+   OUT TypeSpec** type,      // return: type of funcref
+   OUT UserFunc** ufunc   // return: function
+);
+private Byte * list_functions_matching_pat(Invocation* invo);
+private UserFunc* listOneFunction(Invocation* invo, CS name, CS p, Boole is_global);
+private int can_free_funccal(FnCall *fc, int copyID);
+private int callInner(
+   Invocation* invo,
+   CS name,
+   OUT CS* arg,
+   CS startarg,
+   FnExe* funcexe_init,
+   EvalCtx* evalarg
+);
+private int deferInner(CS name, CS* arg, PartiallyApplied* partial, EvalCtx* evalarg);
+private void applyDeferred(FnCall *funccal);
+private void invoke_funccall_defer(FnCall *fc);
+private FnCall * get_funccal(void);
+private int set_ref_in_funccal(FnCall *fc, int copyID);
+private CS get_deleted_augroup(void);
+private void show_autocmd(AutoPat* ap, AutoEvent event);
+private void au_remove_pat(AutoPat* ap);
+private void au_remove_cmds(AutoPat *ap);
+private void  au_del_cmd(AutoComm* ac);
+private void au_cleanup(void);
+private Unt au_new_group(CS name);
+private void au_del_group(CS name);
+private Unt findGroup(CS name);
+private AutoEvent event_name2nr(CS start, OUT CS* end);
+private CS event_nr2name(AutoEvent event);
+private CS find_end_event(CS arg, Boole have_group);
+private int au_get_grouparg(Byte **argp);
+private int has_cursorhold(void);
+private int applyAutocommGroup(
+   AutoEvent event,
+   CS fname,        // NULL or empty means use actual file name
+   CS fname_io,     // fname to use for <afile> on cmdline, NULL means use fname
+   Boole force,     // when true, ignore autocmd_busy
+   Unt group,       // group ID, or AUGROUP_ALL
+   Book* book,      // book for <abuf>
+   Invocation* invo // command arguments
+);
+private void auto_next_pat(AutoPatComm* apc, int stop_at_last);
+private ScriptPos* acp_scriptCtx(AutoPatComm *acp);
 private CS get_augroup_name(Expand* xp UNUSED, int idx);
-private ScriptPos* acp_scriptCtx(AutoPatComm* acp);
-
+private CS set_context_in_autocmd(Expand* xp, CS arg, int doautocmd);
+private void autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete);
 //}}}
 //{{{script files
 
@@ -25,7 +457,7 @@ private ScriptPos* acp_scriptCtx(AutoPatComm* acp);
 //
 // It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
 // scrGetSourceLine(). This is passed to do_cmdline().
-private typedef struct {
+privateComp typedef struct {
    FILE* fp;      // opened file for sourcing
    CS nextline;   // if not NULL: line that was read ahead
    LineNr sourcing_lnum;   // line number of the source file
@@ -2311,7 +2743,7 @@ dbg_check_skipped(Invocation* invo) {
 }
 
 //The list of breakpoints: dbg_breakp. This is an arraylist of structs.
-private typedef struct {
+privateComp typedef struct {
    int dbg_nr;      // breakpoint number
    int dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
    CS dbg_name;   // function, expression or file name
@@ -4314,7 +4746,7 @@ setContextInLangCommand(Expand *xp, CS arg){
    return NULL;
 }
 
-private enum {
+privateComp enum {
    EXP_FILETYPECMD_ALL,   // expand all :filetype values
    EXP_FILETYPECMD_PLUGIN,   // expand plugin on off
    EXP_FILETYPECMD_INDENT,   // expand indent on off
@@ -4325,7 +4757,7 @@ private enum {
 #define EXPAND_FILETYPECMD_INDENT 0x02
 #define EXPAND_FILETYPECMD_ONOFF  0x04
 
-private enum {
+privateComp enum {
    EXP_BREAKPT_ADD,   // expand ":breakadd" sub-commands
    EXP_BREAKPT_DEL,   // expand ":breakdel" sub-commands
    EXP_PROFDEL      // expand ":profdel" sub-commands
@@ -7141,7 +7573,7 @@ empty_pattern_magic(Byte *p, Unt len, Magic magic_val) {
 }
 
 // Struct to store the viewstate during 'incsearch' highlighting.
-private typedef struct {
+privateComp typedef struct {
    ColNr   vs_curswant;
    ColNr   vs_leftcol;
    ColNr   vs_skipcol;
@@ -7174,7 +7606,7 @@ restore_viewstate(viewstate_T *vs) {
 }
 
 // Struct to store the state of 'incsearch' highlighting.
-private typedef struct {
+privateComp typedef struct {
    Pos   search_start;   // where 'incsearch' starts searching
    Pos   save_cursor;
    int      winid;      // window where this state is valid
@@ -10453,7 +10885,7 @@ f_wildtrigger(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 //}}}
 //{{{user commands
 
-private typedef struct ucmd {
+privateComp typedef struct ucmd {
    CS uc_name;   // The command name
    Unt   uc_namelen;   // The length of the command name (excluding the ZERO)
    Ulong   uc_argt;   // The argument type
@@ -10528,7 +10960,7 @@ private Kv command_complete_tab[] = {
    KEYVALUE_ENTRY(EXPAND_USER_VARS, "var")
 };
 
-private typedef struct {
+privateComp typedef struct {
    CommandAddress key;
    CS fullname;
    Unt fullnamelen;
@@ -12103,7 +12535,7 @@ do_ucmd(Invocation* invo) {
 //{{{user functions
 
 // structure used as item in "fc_defer"
-private typedef struct {
+privateComp typedef struct {
    Arr(Byte) dr_name;   // function name, allocated
    Var dr_argvars[MAX_FUNC_ARGS + 1];
    int argc;
@@ -18238,7 +18670,7 @@ applyAutocommGroup(
 
    au_cleanup();   // may really delete removed patterns/commands now
 
-pub BYPASS_AU:
+BYPASS_AU:
    // When wiping out a buffer make sure all its buffer-local autocommands are deleted.
    if (event == EVENT_BUFWIPEOUT && book != NULL)
       scrRemoveAutocommsFromBook(book);

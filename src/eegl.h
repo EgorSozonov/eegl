@@ -1627,8 +1627,6 @@ typedef enum {
 
 #define IMMUTABLE !curBook->o.modifiable || !p_modifiable
 
-#define eeStrpbrk(s, cs) (CS)strpbrk((char *)(s), (char *)(cs))
-
 #define OUT_STR(s)          out_str((Byte *)(s))
 #define OUT_STR_NF(s)       out_str_nf((Byte *)(s))
 

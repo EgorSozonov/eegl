@@ -1,23 +1,32 @@
-/* src/juggle.c */
 void change_warning(int col);
 void changed(void);
 void jugOnChangeToText(void);
 int trim_to_int(Long x);
-void f_listener_add(Var *argVars, Var *returnVar);
-void f_listener_flush(Var *argVars, Var *returnVar);
-void f_listener_remove(Var *argVars, Var *returnVar);
-void may_jugInvokeListenersOnChangedText(Book *book, LineNr lnum, LineNr lnume, int added);
-void jugInvokeListenersOnChangedText(Book *book);
-void remove_listeners(Book *book);
+void f_listener_add(Arr(Var) argVars, OUT Var* returnVar);
+void f_listener_flush(Arr(Var) argVars, OUT Var* returnVar UNUSED);
+void f_listener_remove(Arr(Var) argVars, OUT Var* returnVar);
+void may_jugInvokeListenersOnChangedText(Book* book, LineNr lnum, LineNr lnume, int added);
+void jugInvokeListenersOnChangedText(Book* book);
+void remove_listeners(Book* book);
 void changed_bytes(LineNr lnum, ColNr col);
-void inserted_bytes(LineNr lnum, ColNr col, int added);
+void inserted_bytes(LineNr lnum, ColNr col, int added UNUSED);
 void appended_lines(LineNr lnum, long count);
 void appended_lines_mark(LineNr lnum, long count);
 void deleted_lines(LineNr lnum, long count);
 void deleted_lines_mark(LineNr lnum, long count);
-void changed_lines_buf(Book *book, LineNr lnum, LineNr lnume, long xtra);
-void changed_lines(LineNr lnum, ColNr col, LineNr lnume, long xtra);
-void unchanged(Book *book, int always_inc_changedtick);
+void changed_lines_buf(
+   Book* book,
+   LineNr lnum,       // first line with change
+   LineNr lnume,       // line below last changed line
+   long xtra       // number of extra lines (negative when deleting)
+);
+void changed_lines(
+   LineNr lnum,    // first line with change
+   ColNr col,      // column in first line with change
+   LineNr lnume,   // line below last changed line
+   long xtra       // number of extra lines (negative when deleting)
+);
+void unchanged(Book* book, int always_inc_changedtick);
 void ins_bytes(CS p);
 void ins_bytes_len(CS p, int len);
 void insertChar(Unt c);
@@ -26,61 +35,99 @@ void opInsertCharBytes(CS targetLine, int charlen, Boole replace);
 void ins_str(CS s, Unt slen);
 int del_char(Boole fixpos);
 int del_chars(long count, Boole fixpos);
-int del_bytes(long count, Boole fixpos_arg, int use_delcombine);
-int insertLine(int dir);
-int get_leader_len(CS line, Byte **flags, int backward, int include_space);
-int openLine(Unt flags, int second_line_indent);
+int del_bytes(
+   long   count,
+   Boole      fixpos_arg,
+   int      use_delcombine UNUSED)       // 'delcombine' option applies
+;
+int insertLine(
+   int      dir // FORWARD or BACKWARD
+);
+int get_leader_len(CS line, Byte** flags, int backward, int include_space);
+int openLine(
+   Unt flags,
+   int second_line_indent
+);
 int truncate_line(int fixpos);
-void del_lines(long nlines, int undo);
+void del_lines(long nlines,   int undo);
 Unt get_op_type(Unt char1, Unt char2);
 Boole op_is_change(int op);
 int get_op_char(int optype);
 int get_extra_op_char(int optype);
 void op_shift(Operator *oper, int curs_top, int amount);
-void shift_line(int left, int round, int amount, Boole call_changed_bytes);
+void shift_line(
+   int   left,         // true if shift is to the left
+   int   round,         // true if new indent is to be to a tabstop
+   int   amount,         // Number of shifts
+   Boole   call_changed_bytes)   // call changed_bytes()
+;
 Unt gchar_pos(Pos *pos);
 Unt gchar_cursor(void);
-int op_delete(Operator *oper);
-Boole swapchar(Unt opTy, Pos *pos);
+int op_delete(Operator* oper);
+Boole swapchar(Unt opTy, Pos* pos);
 void op_insert(Operator *oper, long count1);
 int op_change(Operator *oper);
 void adjust_cursor_eol(void);
-CS skip_comment(CS line, Boole process, Boole include_space, Boole *is_comment);
-int jugJoinLinesUnderCursor(long count, Boole insert_space, Boole save_undo, Boole use_formatoptions, Boole setmark);
-void block_prep(Operator *oper, BlockDef *bdp, LineNr lnum, Boole is_del);
-void jugCharwiseBlockPrep(Pos start, Pos end, BlockDef *bdp, LineNr lnum, int inclusive);
-void op_addsub(Operator *oper, LineNr prenum1, int g_cmd);
+CS skip_comment(CS line, Boole process, Boole include_space, OUT Boole* is_comment);
+int jugJoinLinesUnderCursor(
+   long count,
+   Boole insert_space,
+   Boole save_undo,
+   Boole use_formatoptions,
+   Boole setmark
+);
+void block_prep(
+   Operator* oper,
+   OUT BlockDef* bdp,
+   LineNr lnum,
+   Boole is_del
+);
+void jugCharwiseBlockPrep(
+   Pos start,
+   Pos end,
+   BlockDef* bdp,
+   LineNr lnum,
+   int inclusive
+);
+void op_addsub(
+   Operator* oper,
+   LineNr prenum1,       // Amount of add/subtract
+   int g_cmd          // was g<c-a>/g<c-x>
+);
 void clear_oparg(Operator *oper);
-void cursor_pos_info(Bag *dict);
+void cursor_pos_info(Bag* dict);
 CS did_set_operatorfunc(OptionChange *cha);
 void opsFreeOperatorFnOption(void);
 int set_ref_in_opfunc(int copyID);
-void jugExecuteVisualOperator(ActionArg *cap, int old_col, int clipbYank);
+void jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank);
 void beep_flush(void);
 Tyme eeTime(void);
 CS get_ctime(Tyme thetime, int add_newline);
-void f_localtime(Var *argVars, Var *returnVar);
-void f_reltime(Var *argVars, Var *returnVar);
-void f_reltimefloat(Var *argVars, Var *returnVar);
-void f_reltimestr(Var *argVars, Var *returnVar);
-void f_strftime(Var *argVars, Var *returnVar);
-void f_strptime(Var *argVars, Var *returnVar);
+void f_localtime(Arr(Var) argVars UNUSED, OUT Var* returnVar);
+void f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED);
+void f_reltimefloat(Arr(Var) argVars UNUSED, OUT Var* returnVar);
+void f_reltimestr(Arr(Var) argVars, OUT Var* returnVar);
+void f_strftime(Arr(Var) argVars, OUT Var* returnVar);
+void f_strptime(Var* argVars, Var* returnVar);
 long proftime_time_left(ProfTime *due, ProfTime *now);
-Timer *create_timer(long msec, int repeat);
+Timer* create_timer(long msec, int repeat);
 void timer_start(Timer *timer);
 long check_due_timer(void);
 void stop_timer(Timer *timer);
 int set_ref_in_timer(int copyID);
 int timer_valid(Timer *timer);
 void timer_free_all(void);
-void f_timer_info(Var *argVars, Var *returnVar);
-void f_timer_pause(Var *argVars, Var *returnVar);
-void f_timer_start(Var *argVars, Var *returnVar);
-void f_timer_stop(Var *argVars, Var *returnVar);
-void f_timer_stopall(Var *argVars, Var *returnVar);
+void f_timer_info(Arr(Var) argVars, OUT Var* returnVar);
+void f_timer_pause(Arr(Var) argVars, OUT Var* returnVar UNUSED);
+void f_timer_start(Arr(Var) argVars, OUT Var* returnVar);
+void f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED);
+void f_timer_stopall(Arr(Var) argVars UNUSED, OUT Var* returnVar UNUSED);
 void time_push(void *tv_rel, void *tv_start);
-void time_pop(void *tp);
-void time_msg(CS mesg, void *tv_start);
+void time_pop(void   *tp);
+void time_msg(
+   CS mesg,
+   void* tv_start  // only for scriptRunFile: start time; actually (TimeVal *)
+);
 Tyme get8ctime(FILE *fd);
 int put_time(FILE *fd, Tyme the_time);
 void time_to_bytes(Tyme the_time, CS buf);
@@ -93,9 +140,12 @@ void profile_sub(ProfTime *tm, ProfTime *tm2);
 double profile_float(ProfTime *tm);
 void profile_zero(ProfTime *tm);
 CS profile_msg(ProfTime *tm);
+long elapsed(TimeVal *start_tv);
 void stop_timeout(void);
-volatile sig_atomic_t *start_timeout(long msec);
+volatile sig_atomic_t * start_timeout(long msec);
 void delete_timer(void);
+void stop_timeout(void);
+volatile sig_atomic_t* start_timeout(long msec);
 int getviscol(void);
 int coladvance_force(ColNr wcol);
 int coladvance(ColNr wantcol);
@@ -106,27 +156,35 @@ int incl(Pos *lp);
 int dec_cursor(void);
 int dec(Pos *lp);
 int decl(Pos *lp);
-void check_pos(Book *book, Pos *pos);
+void check_pos(Book* book, Pos *pos);
 long get_sw_value(Book *book);
-long get_sw_value_indent(Book *book, int left);
-long get_sw_value_col(Book *book, ColNr col, int left);
+long get_sw_value_indent(Book* book, int left);
+long get_sw_value_col(Book* book, ColNr col UNUSED, int left UNUSED);
 int get_indent(void);
 int get_indent_lnum(LineNr lnum);
-int get_indent_buf(Book *book, LineNr lnum);
-int set_indent(int size, int flags);
+int get_indent_buf(Book* book, LineNr lnum);
+int set_indent(
+   int      size,          // measured in spaces
+   int      flags
+);
 int get_number_indent(LineNr lnum);
-int getBreakindentForPort(Portal *po, CS line);
+int getBreakindentForPort(Portal* po, CS line);
 int inindent(int extra);
 void op_reindent(Operator *oper, int (*how)(void));
 int preprocs_left(void);
 int may_do_si(void);
 void ins_try_si(int c);
-void opChangeIndent(int type, int amount, int round, Boole call_changed_bytes);
+void opChangeIndent(
+   int type,
+   int amount,
+   int round,
+   Boole call_changed_bytes // call changed_bytes()
+);
 void c_retab(Invocation *eap);
 int get_expr_indent(void);
 Boole jugIsIndentationExpressionBased(void);
 void fix_indent(void);
-void f_indent(Var *argVars, Var *returnVar);
+void f_indent(Arr(Var) argVars, OUT Var* returnVar);
 int is_pos_in_string(CS line, ColNr col);
-Pos *find_start_comment(int ind_maxcomment);
+Pos* find_start_comment(int ind_maxcomment)  ;
 void do_expr_indent(void);

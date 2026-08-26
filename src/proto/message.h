@@ -1,6 +1,11 @@
-/* src/message.c */
+declStruct(MsgChunk);
 CS msg_strtrunc(CS s, int force);
-void trunc_string(Byte *s, Byte *builder, int room_in, int buflen);
+void trunc_string(
+   Byte   *s,
+   Byte   *builder,
+   int      room_in,
+   int      buflen)
+;
 void msg_start(void);
 void msg_starthere(void);
 void msg_putchar(Unt c);
@@ -8,28 +13,52 @@ void msgPutcharDeco(Unt c, char flags);
 void msg_outnum(long n);
 void msg_home_replace(Byte *fname);
 void msg_home_replace_hl(Byte *fname);
-int msg_outtrans(Byte *str);
+int msg_outtrans(Byte* str);
 int msgOuttransDeco(CS str, Byte flags);
 int msgTranslatedSlice(Text slice);
 CS msgOneChar(CS p, char flags);
 int msgOuttransLenDeco(Text slice, char flags);
 void msg_make(CS arg);
-int msg_outtrans_special(CS strstart, int from, int maxlen);
-CS str2special_save(Byte *str, int replace_spaces, int replace_lt);
-CS str2special(Byte **sp, int replace_spaces, int replace_lt);
-void str2specialbuf(Byte *sp, Byte *builder, int len);
+int msg_outtrans_special(
+   CS strstart,
+   int from,   // true for lhs of a mapping
+   int maxlen  // screen columns, 0 for unlimited
+);
+CS str2special_save(
+   Byte  *str,
+   int       replace_spaces,   // true to replace " " with "<Space>".
+            // used for the lhs of mapping and keytrans().
+   int       replace_lt      // true to replace "<" with "<lt>".
+);
+CS str2special(
+   Byte** sp,
+   int      replace_spaces,   // true to replace " " with "<Space>".
+            // used for the lhs of mapping and keytrans().
+   int  replace_lt)   // true to replace "<" with "<lt>".
+;
+void str2specialbuf(Byte *sp, OUT Byte *builder, int len);
 void msg_prt_line(CS s, int list);
 int msg(CS s);
 int verb_msg(CS s);
 int msgDeco(CS s, char flags);
-int msgAndKeep(CS s, char flags, int keep);
+int msgAndKeep(
+   CS s,
+   char      flags,
+   int      keep)       // true: set msgAfterRedrawG if it doesn't scroll
+;
+int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
+int smsg0(char const* s, ...);
+int smsgDeco0(char flags, const char *s, ...);
+int smsgDecoKeep0(char flags, const char *s, ...);
 void reset_last_sourcing(void);
 CS msgTruncDeco(CS s, char flags);
 CS msg_may_trunc(CS s);
 void msg_source(char flags);
 void ignore_error_for_testing(Byte *error);
 int emsg(CS s);
+int showErrFmtMsg0(char const* s, ...);
 void internalErrMsg(CS s);
+void internalErrFmtMsg0(const char *s, ...);
 void internal_error(CS where);
 void internal_error_no_abort(CS where);
 void emsg_invreg(int name);
@@ -41,10 +70,33 @@ void wait_return(Boole redraw);
 void set_keep_msg(Byte *s, char flags);
 void msgmore(long n);
 void set_keep_msg_from_hist(void);
-int do_dialog(int type, Byte *title, Byte *message, Byte *buttons, int dfltbutton, Byte *textfield, int ex_cmd);
-int eeDialog_yesno(int type, Byte *title, Byte *message, int dflt);
-int eeDialog_yesnocancel(int type, Byte *title, Byte *message, int dflt);
-int eeDialog_yesnoallcancel(int type, Byte *title, Byte *message, int dflt);
+int do_dialog(
+   int      type UNUSED,
+   Byte   *title UNUSED,
+   Byte   *message,
+   Byte   *buttons,
+   int      dfltbutton,
+   Byte   *textfield UNUSED,   // IObuff for inputdialog(), NULL otherwise
+   int      ex_cmd)       // when true pressing : accepts default and starts a Command
+;
+int eeDialog_yesno(
+    int      type,
+    Byte   *title,
+    Byte   *message,
+    int      dflt)
+;
+int eeDialog_yesnocancel(
+    int      type,
+    Byte   *title,
+    Byte   *message,
+    int      dflt)
+;
+int eeDialog_yesnoallcancel(
+   int      type,
+   Byte   *title,
+   Byte   *message,
+   int      dflt
+);
 void msg_puts(CS s);
 void msg_puts_title(CS s);
 void outputShortenedToALine(Text slice, char flags);

@@ -6,11 +6,156 @@
 #include "eegl.h"
 
 //{{{@@forward declarations
-
+private void list_fix_watch(List* l, ListItem* item);
+private void registerForGc(List* l);
+private void list_free_contents(List* l);
+private void list_free_list(List* l);
+private void list_free_item(List *l, ListItem *item);
+private int list_append_tv_move(List* l, Var* tv);
+private void list_flatten(List* list, ListItem* first, long maxitems, long maxdepth);
+private void flatten_common(Arr(Var) argvars, Var* returnVar, int make_copy);
+private int list_join_inner(
+    ArrayList* gap,      // to store the result in
+    List* l,
+    CS sep,
+    int echo_style,
+    int restore_copyID,
+    int copyID,
+    ArrayList* join_gap)   // to keep each list item string
+;
+private void listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg);
+private int item_compare(const void *s1, const void *s2);
+private int item_compare2(const void *s1, const void *s2);
+private void do_sort(List *l, SortInfo *info);
+private void do_uniq(List *l, SortInfo *info);
+private int parse_sort_uniq_args(Arr(Var) argvars, SortInfo *info);
+private void do_sort_uniq(Arr(Var) argvars, Var* returnVar, int sort);
+private void list_filter_map(
+   List* l,
+   FilterMap filtermap,
+   CS arg_errmsg,
+   Var* expr,
+   Var* returnVar
+);
+private void filter_map(Arr(Var) argvars, Var* returnVar, FilterMap filtermap);
+private void list_add(Arr(Var) argvars, Var* returnVar);
+private long list_count(List *l, Var *needle, long idx, int ic);
+private void list_extend_func(
+   Var   *argvars,
+   CS arg_errmsg,
+   int      is_new,
+   Var   *returnVar
+);
+private void extend(Arr(Var) argvars, Var* returnVar, CS arg_errmsg, int is_new);
+private void list_insert_func(Arr(Var) argvars, Var* returnVar);
+private void list_reverse(List *l, Var* returnVar);
+private void list_reduce(
+   Var   *argvars,
+   Var   *expr,
+   Var   *returnVar)
+;
+private int hash_may_resize(EeSet* ht, int minitems);
+private Long convertToBoolOrNumber(
+   Var* varp,
+   OUT Boole* denote
+);
+private double convertToDouble(Var* varp, OUT Boole* error);
+private int checkVarsForBoolOrNumber(Arr(Var) args, int idx);
 private int check_for_string_or_list_or_blob_arg(Arr(Var) args, int idx);
-private void dict_free(Bag *d);
+private int func_equal(Var *tv1, Var *tv2, int ic);
+private int bagAddNumber_special(Bag* b, CS key, Long nr, VarTag vartype);
+private CS skip_literal_key(CS key);
+private int get_literal_key_tv(Arr(CS) arg, Var *tv);
+private DictItem * dictitem_copy(DictItem* org);
+private void bagToList(Arr(Var) argvars, Var* returnVar, dict2List what);
+private void dict_free_dict(Bag *d);
+private void dict_free(Bag* d);
+private int get_float_arg(Arr(Var) argvars, OUT double* f);
+private void prepare_assert_error(ArrayList *gap);
+private void ga_concat_esc(ArrayList *gap, CS p, int clen);
+private void ga_concat_shorten_esc(ArrayList *gap, CS str);
+private void fill_assert_error(
+   ArrayList   *gap,
+   Var   *opt_msg_tv,
+   CS exp_str,
+   Var* exp_tv_arg,
+   Var* got_tv_arg,
+   AssertKind assKind
+);
+private int assert_equal_common(Arr(Var) argvars, AssertKind assKind);
+private int assert_match_common(Arr(Var) argvars, AssertKind assKind);
+private int assert_bool(Arr(Var) argvars, int isTrue);
+private void assert_append_cmd_or_arg(ArrayList *gap, Arr(Var) argvars, CS cmd);
+private int assert_equalfile(Arr(Var) argvars);
+private int assert_inrange(Arr(Var) argvars);
+private int blob_slice(
+   Blob      *blob,
+   long      len,
+   Long   n1,
+   Long   n2,
+   int      exclusive,
+   Var   *returnVar)
+;
+private int blob_index(
+   Blob      *blob,
+   int      len,
+   Long   idx,
+   Var   *returnVar)
+;
+private void blob_from_string(CS str, Blob* blob);
+private CS string_from_blob(Blob *blob, long *start_idx);
+private int fuzzy_match_item_compare(const void *s1, const void *s2);
+private void fuzzy_match_in_list(
+   List* l,
+   CS str,
+   int matchseq,
+   CS key,
+   Callback* item_cb,
+   int retmatchpos,
+   List* fmatchlist,
+   long max_matches
+);
+private void do_fuzzymatch(Var* argvars, Var* returnVar, int retmatchpos);
+private int fuzzyMatchStr_compare(const void *s0, const void *s1);
+private int fuzzy_match_func_compare(const void *s1, const void *s2);
+private void sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz);
+private int has_match(Byte *needle, Byte *haystack);
+private double compute_bonus_codepoint(Unt last_c, Unt c);
+private void setup_match_struct(match_struct *match, CS needle, CS haystack);
+private inline void match_row(match_struct const* match, int row, double* curr_D,
+   double* curr_M, double const* last_D, double const* last_M
+);
+private double match_positions(Byte *needle, Byte *haystack, Unt *positions);
+private int copy_first_char_to_tv(CS input, Var* output);
 private void string_reduce(Var* argvars, Var* expr, Var* returnVar);
-
+private void byteidx_common(Var* argvars, Var* returnVar, Boole comp);
+private void strchar_common(Arr(Var) argvars, OUT Var* returnVar, int skipcc);
+private Long tv_nr(Var* tvs, OUT int* idxp);
+private CS tv_str(Var* tvs, int* idxp, Byte** tofree);
+private double tv_float(Var* tvs, int* idxp);
+private void format_overflow_error(CS pstart);
+private int parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_err);
+private int format_typeof(CS type);
+private CS format_typename(CS type);
+private int adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type);
+private int parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs UNUSED);
+private void skip_to_arg(
+    Arr(CS) ap_types,
+    va_list ap_start,
+    va_list* ap,
+    int* arg_idx,
+    int* arg_cur,
+    CS fmt
+);
+private CS infinity_str(Unt positive, char fmt_spec, int force_sign, int space_for_positive);
+private int json_encode_gap(ArrayList* gap, Var* val, int options);
+private void write_string(ArrayList* gap, CS str);
+private int json_encode_item(ArrayList *gap, Var *val, int copyID, int options);
+private void fill_numbuflen(JsReader* reader);
+private void json_skip_white(JsReader* reader);
+private int json_decode_string(JsReader* reader, Var* res, int quote);
+private int json_decode_item(JsReader* reader, Var *res);
+private int json_decode_all(OUT Var* res, JsReader* reader);
 //}}}
 //{{{list
 
@@ -1013,7 +1158,7 @@ list2string(Var* tv, int copyID, int restore_copyID) {
    return (CS)ga.c;
 }
 
-private typedef struct join_S {
+privateComp typedef struct join_S {
    CS s;
    Byte* tofree;
 } Join;
@@ -1380,13 +1525,13 @@ private int item_compare(const void *s1, const void *s2);
 private int item_compare2(const void *s1, const void *s2);
 
 // struct used in the array that's given to qsort()
-private typedef struct {
+privateComp typedef struct {
    ListItem   *item;
    int      idx;
 } SortItem;
 
 // struct storing information about current sort
-private typedef struct {
+privateComp typedef struct {
    int item_compare_ic;
    int item_compare_lc;
    int item_compare_numeric;
@@ -5492,7 +5637,7 @@ bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    dictitem_remove(b, di, S"remove()");
 }
 
-private typedef enum {
+privateComp typedef enum {
    DICT2LIST_KEYS,
    DICT2LIST_VALUES,
    DICT2LIST_ITEMS,
@@ -7997,7 +8142,7 @@ private int has_match(CS needle, CS haystack);
 #define SCORE_MIN (-INFINITY)
 #define SCORE_SCALE 1000
 
-private typedef struct {
+privateComp typedef struct {
    int      idx;      // used for stable sort
    ListItem* item;
    int score;
@@ -8761,7 +8906,7 @@ has_match(Byte *needle, Byte *haystack) {
    return 1;
 }
 
-private typedef struct match_struct {
+privateComp typedef struct match_struct {
    int needle_len;
    int haystack_len;
    int lower_needle[MATCH_MAX_LEN];     // stores codepoints
@@ -9713,7 +9858,7 @@ parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_err) {
    return OK;
 }
 
-pub enum {
+privateComp enum {
    TYPE_UNKNOWN = -1,
    TYPE_INT,
    TYPE_LONGINT,
@@ -11702,13 +11847,13 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
    return MAYBE;
 }
 
-private typedef enum {
+privateComp typedef enum {
    JSON_ARRAY,      // parsing items in an array
    JSON_OBJECT_KEY,   // parsing key of an object
    JSON_OBJECT      // parsing item in an object, after the key
 } JsonDecodeType;
 
-private typedef struct {
+privateComp typedef struct {
    JsonDecodeType jd_type;
    Var jd_tv;   // the list or dict
    Var jd_key_tv;

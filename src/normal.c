@@ -11,18 +11,83 @@ private int VIsual_mode_orig = ZERO;      // saved Visual mode
 // n_*(): functions are called to handle Normal mode actions.
 // v_*(): functions are called to handle Visual mode actions.
 //{{{@@@forward decls
-
-private void   setVCountPrevCount(ActionArg* aArg, int *set_prevcount);
-private void   unshift_special(ActionArg* aArg);
-private void   del_from_showcmd(int);
-
-
+private int cls(void);
+private int skip_chars(int cclass, int dir);
+private void back_in_line(void);
+private void find_first_blank(Pos *posp);
+private void findsent_forward(long count, int at_start_sent);
+private int current_block(
+   Operator* oper,
+   long count,
+   int include,   // true == include white space
+   Unt what,      // '(', '{', etc.
+   Unt other      // ')', '}', etc.
+);
+private int in_html_tag(int end_tag);
+private int find_next_quote(
+   CS line,
+   int col,
+   int  quotechar,
+   Boole escapeWithBackslash   // does backslash escape the quote character?
+);
+private int find_prev_quote(
+   CS line,
+   int col_start,
+   int quotechar,
+   Boole escapeWithBackslash   // does backslash escape the quote character?
+);
+private int findAction(int actionChar);
+private int checkTextLocked(Operator* oper);
+private int normalCmdGetCount(
+   ActionArg* aArg,
+   Unt c,
+   int toplevel,
+   int set_prevcount UNUSED,
+   int* ctrl_w,
+   int* need_flushbuf UNUSED
+);
+private int needsMoreChars(ActionArg* aArg, Short cmd_flags);
+private int getMoreChars(
+   int idx_arg,
+   ActionArg* aArg,
+   int* need_flushbuf UNUSED);
+private int needToWaitForMsg(ActionArg* aArg, Pos *old_pos);
+private void waitForMsg(void);
+private void setVCountPrevCount(ActionArg* aArg, int *set_prevcount);
+private void callYankDoAutocmd(int regname);
+private int checkIsBalloonItem(CS ptr, int* colp, int* bnp, int dir);
+private void prepareForRedo(ActionArg* aArg);
+private int checkclearop(Operator* oper);
+private int checkclearopq(Operator* oper);
+private void unshift_special(ActionArg* aArg);
+private void del_from_showcmd(int len);
+private void display_showcmd(void);
+private Boole isIdent(CS line, int offset);
+private int normal_search(
+   ActionArg* aArg,
+   int dir,
+   Text pat,
+   int opt,      // extra flags for do_search()
+   int* wrapped
+);
+private void adjust_cursor(Operator *oper);
+private void invokeEdit(
+   ActionArg* aArg,
+   int repl,      // "r" action
+   int cmd,
+   int startln
+);
+private void utf_find_illegal(void);
 private void nv_ignore(ActionArg* aArg);
-private void nv_nop(ActionArg* aArg);
+private void nv_nop(ActionArg* aArg UNUSED);
 private void nvError(ActionArg* aArg);
 private void nv_help(ActionArg* aArg);
 private void nvAddSub(ActionArg* aArg);
 private void nvPage(ActionArg* aArg);
+private void nv_gd(Operator* oper, int nchar, int      thisblock);
+private int appendDigitLong(OUT Long* value, int digit);
+private int widthLeft(Portal* po);
+private int nv_z_get_count(ActionArg* aArg, Unt* nchar_arg);
 private void nv_zet(ActionArg* aArg);
 private void nv_colon(ActionArg* aArg);
 private void nv_ctrlg(ActionArg* aArg);
@@ -31,6 +96,17 @@ private void nv_clear(ActionArg* aArg);
 private void nv_ctrlo(ActionArg* aArg);
 private void nv_hat(ActionArg* aArg);
 private void nv_Zet(ActionArg* aArg);
+private int nv_K_getcmd(
+   ActionArg* aArg,
+   CS kp,
+   int kp_help,
+   int kp_ex,
+   Byte** ptr_arg,
+   int n,
+   CS buffer,
+   Unt bufsize,
+   Unt* buflen
+);
 private void nv_ident(ActionArg* aArg);
 private void nv_tagpop(ActionArg* aArg);
 private void nv_scroll(ActionArg* aArg);
@@ -38,12 +114,13 @@ private void nv_right(ActionArg* aArg);
 private void nv_left(ActionArg* aArg);
 private void nv_up(ActionArg* aArg);
 private void nv_down(ActionArg* aArg);
+private void nv_gotofile(ActionArg* aArg);
 private void nv_end(ActionArg* aArg);
 private void nv_dollar(ActionArg* aArg);
 private void nv_search(ActionArg* aArg);
 private void nv_next(ActionArg* aArg);
-private int normal_search(ActionArg* aArg, int dir, Text pat, int opt, int *wrapped);
 private void nv_csearch(ActionArg* aArg);
+private void nv_bracket_block(ActionArg* aArg, Pos* old_pos);
 private void nv_brackets(ActionArg* aArg);
 private void nv_percent(ActionArg* aArg);
 private void nv_brace(ActionArg* aArg);
@@ -53,7 +130,6 @@ private void nv_undo(ActionArg* aArg);
 private void nv_kundo(ActionArg* aArg);
 private void nv_replace(ActionArg* aArg);
 private void nv_cursormark(ActionArg* aArg, int flag, Pos *pos);
-private void vVisualOperators(ActionArg* aArg);
 private void nv_subst(ActionArg* aArg);
 private void nv_abbrev(ActionArg* aArg);
 private void nvOperatorAliases(ActionArg* aArg);
@@ -61,27 +137,31 @@ private void nv_gomark(ActionArg* aArg);
 private void nv_pcmark(ActionArg* aArg);
 private void nv_regname(ActionArg* aArg);
 private void nv_visual(ActionArg* aArg);
-private void n_start_visual_mode(int c);
 private void nv_portal(ActionArg* aArg);
 private void nv_suspend(ActionArg* aArg);
-private void n_swapchar(ActionArg* aArg);
+private void nv_gv_cmd(ActionArg* aArg UNUSED);
+private void gUnderscoreAction(ActionArg* aArg);
+private void nvGDollarAction(ActionArg* aArg);
+private void nv_gi_cmd(ActionArg* aArg);
 private void nv_g_cmd(ActionArg* aArg);
 private void nvDot(ActionArg* aArg);
 private void nv_redo_or_register(ActionArg* aArg);
 private void nv_Undo(ActionArg* aArg);
 private void nv_tilde(ActionArg* aArg);
+private void set_op_var(int optype);
 private void nv_operator(ActionArg* aArg);
 private void nv_home(ActionArg* aArg);
 private void nv_pipe(ActionArg* aArg);
 private void nv_bck_word(ActionArg* aArg);
 private void nv_wordcmd(ActionArg* aArg);
 private void nv_beginline(ActionArg* aArg);
-private void adjust_cursor(Operator *oper);
 private void nv_goto(ActionArg* aArg);
 private void nv_normal(ActionArg* aArg);
-private void nv_esc(ActionArg *oper);
+private void nv_esc(ActionArg* aArg);
 private void nv_edit(ActionArg* aArg);
-private void invokeEdit(ActionArg* aArg, int repl, int cmd, int startln);
+private void nvOpen(ActionArg* aArg);
+private void nv_drop(ActionArg* aArg UNUSED);
+private void nv_cursorhold(ActionArg* aArg);
 private void nv_object(ActionArg* aArg);
 private void nv_record(ActionArg* aArg);
 private void nv_at(ActionArg* aArg);
@@ -89,21 +169,147 @@ private void nv_halfpage(ActionArg* aArg);
 private void nvJoin(ActionArg* aArg);
 private void nv_put(ActionArg* aArg);
 private void nv_put_opt(ActionArg* aArg, int fix_indent);
-private void nvOpen(ActionArg* aArg);
+private void n_swapchar(ActionArg* aArg);
 private void nOpenAction(ActionArg* aArg);
-private void nv_drop(ActionArg* aArg);
-private void nv_cursorhold(ActionArg* aArg);
+private void n_start_visual_mode(int c);
+private void vVisualOperators(ActionArg* aArg);
 private void v_swap_corners(int cmdchar);
-
+private int plines_correct_topline(Portal* po, LineNr lnum, int limit_winheight);
+private void comp_botline(Portal* po);
+private void redraw_for_cursorline(Portal* po);
+private void redraw_for_cursorcolumn(Portal* po);
+private int skipcol_from_plines(Portal* po, int plines_off);
+private void reset_skipcol(void);
+private int scrolljump_value(void);
+private int check_top_offset(void);
 private void update_curswant_force(void);
+private void curs_rows(Portal* po);
+private int virtcol2col(Portal* po, LineNr lnum, int vcol);
+private void cursor_correct_sms(void);
+private void topline_back_winheight(LineOffset* lp, int winheight);
+private void topline_back(LineOffset *lp);
+private void botline_forw(LineOffset* lp);
 private void scroll_cursor_top(int min_scroll, int always);
-
-private void openFoldRecurse(LineNr lnum);
+private int get_scroll_overlap(int dir);
+private int scrollSmoothly(int dir, long count, long *curscount);
+private void validateMappingTable(void);
+private void mapFree(MapBlock** mpp);
+private CS mapModeToChars(int mode);
+private void showMap(MapBlock* mp, int local);
+private MapBlock * addToMap(
+   MapBlock** map_table,
+   MapBlock** abbr_table,
+   CS keys,
+   CS rhs,
+   CS orig_rhs,
+   Unt noremap,
+   int nowait,
+   int silent,
+   int mode,
+   int is_abbr,
+   int expr,
+   ScriptId sid,       // 0 to use scriptPosG
+   LineNr lnum,
+   int simplified
+);
+private void listMappings(
+   int keyround,
+   int abbrev,
+   int haskey,
+   CS keys,
+   int keys_len,
+   int mode,
+   int* did_local
+);
+private int getMapMode(CS* cmdp, Boole forceit);
+private void mapClear(CS cmdp, CS arg, Boole forceit, int abbr);
+private int isMapLocked(void);
+private CS translateMapping(CS str);
+private void mapblock2dict(
+   MapBlock* mp,
+   Bag* bag,
+   NULLABLE CS lhsrawalt,
+   int bookLocal,   // false if not buffer local mapping
+   int abbr       // true if abbreviation
+);
+private void getMapArg(Var* argvars, Var* returnVar, int exact);
+private int getMapModeString(CS mode_string, int abbr);
+private void setEntry(int from, int to);
+private void mappingImpl(Invocation* invo, Boole isabbrev);
+private int getFoldLevel(LineNr lnum);
 private void closeFoldRecurse(LineNr lnum);
-private int foldMoveTo(Boole updown, Unt dir, long count);
-private int getDeepestNesting(void);
+private void openFoldRecurse(LineNr lnum);
+private void newFoldLevelForPortal(Portal* po);
+private int checkCloseRec(ArrayList* gap, LineNr lnum, int level);
+private int foldMoveTo(Boole updown, Unt dir,  long count);
 private void foldAdjustCursor(void);
-
+private int foldFind(ArrayList* gap, LineNr lnum, Fold **fpp);
+private int foldLevelWin(Portal *po, LineNr lnum);
+private void checkupdate(Portal* po);
+private void setFoldRepeat(LineNr lnum, Long count, Boole do_open);
+private LineNr setManualFoldPort(
+   Portal* po,
+   LineNr lnum,
+   Boole opening,    // true when opening, false when closing
+   Boole recurse,    // true when closing/opening recursive
+   OUT Unt* donep
+);
+private LineNr setManualFold(
+   LineNr lnum,
+   Boole opening,    // true when opening, false when closing
+   Boole recurse,    // true when closing/opening recursive
+   OUT Unt* donep
+);
+private void foldOpenNested(Fold* fpr);
+private void deleteFoldEntry(ArrayList *gap, int idx, int recursive);
+private void foldMarkAdjustRecurse(
+   ArrayList   *gap,
+   LineNr   line1,
+   LineNr   line2,
+   long   amount,
+   long   amount_after
+);
+private int getDeepestNesting(void);
+private int getDeepestNestingRecurse(ArrayList* gap);
+private Boole check_closed(
+   Portal* po,
+   Fold* fp,
+   OUT Boole* use_levelp,       // true: outer fold had FD_LEVEL
+   int level,          // folding depth
+   OUT Boole* maybe_smallp,       // true: outer this had fd_small == MAYBE
+   LineNr   lnum_off       // line number offset for fp->fd_top
+);
+private void checkSmall(Portal* po, Fold* fp, LineNr lnum_off);
+private void setSmallMaybe(ArrayList* gap);
+private void foldCreateMarkers(LineNr start, LineNr end);
+private void foldAddMarker(LineNr lnum, CS marker, int markerlen);
+private void deleteFoldMarkers(Fold* fp, int recursive, LineNr lnum_off);
+private void foldDelMarker(LineNr lnum, CS marker, int markerlen);
+private void foldtext_cleanup(CS str);
+private void foldUpdateIEMS(Portal* po, LineNr top, LineNr bot);
+private LineNr foldUpdateIEMSRecurse(
+   ArrayList   *gap,
+   int      level,
+   LineNr   startlnum,
+   FoldLine   *flp,
+   void   (*getlevel)(FoldLine *),
+   LineNr   bot,
+   int      topflags   // flags used by containing fold
+);
+private int foldInsert(ArrayList* gap, int i);
+private void foldSplit(ArrayList* gap, int i, LineNr top, LineNr bot);
+private void foldRemove(ArrayList *gap, LineNr top, LineNr bot);
+private void foldReverseOrder(ArrayList* gap, LineNr start_arg, LineNr end_arg);
+private void truncate_fold(Fold* fp, LineNr end);
+private void foldMerge(Fold *fp1, ArrayList *gap, Fold *fp2);
+private void foldlevelIndent(FoldLine* flp);
+private void foldlevelDiff(FoldLine* flp);
+private void foldlevelExpr(FoldLine *flp);
+private void parseMarker(Portal* po);
+private void foldlevelMarker(FoldLine *flp);
+private int put_foldopen_recurse(FILE* fd, Portal* po, ArrayList* gap, LineNr off);
+private int put_fold_open_close(FILE *fd, Fold *fp, LineNr off);
+private void foldclosed_both(Var* argvars, Var* returnVar, int end);
 //}}}
 
 // Declare actions[].
@@ -6941,7 +7147,7 @@ private int scrolljump_value(void);
 private int check_top_offset(void);
 private void curs_rows(Portal *po);
 
-private typedef struct {
+privateComp typedef struct {
    LineNr lnum; // line number
    int fill;    // filler lines
    int height;  // height of added line
@@ -11498,7 +11704,7 @@ add_map(CS map, int mode, int nore) {
 //same as langmap_mapchar[] for characters >= 256.
 //
 //Use arraylist for 'langmap' chars >= 256
-private typedef struct {
+privateComp typedef struct {
    int from;
    int to;
 } LangmapEntry;
@@ -11705,7 +11911,7 @@ c_abclear(Invocation* invo) {
 //The toplevel folds for each portal are stored in the folds arraylist.
 //Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
 //The info stored in both growarrays is the same: An array of Fold.
-private typedef struct {
+privateComp typedef struct {
    LineNr   fd_top;  // first line of fold; for nested fold relative to parent
    LineNr   fd_len;  // number of lines in the fold
    ArrayList   fd_nested; // array of nested folds
@@ -13280,7 +13486,7 @@ foldtext_cleanup(CS str) {
 
 // Folding by indent, expr, marker and syntax.
 // Define "FoldLine", passed to get fold level for a line.
-private typedef struct {
+privateComp typedef struct {
    Portal* po;
    LineNr lnum;      // current line number
    LineNr off;      // offset between lnum and real line number

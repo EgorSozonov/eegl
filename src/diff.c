@@ -9,7 +9,7 @@
 //- Let 'diffexpr' do the work, using files.
 
 #include "eegl.h"
-pub int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
+int stat(const char* restrict path, struct stat* restrict buf); // from sys/stat.h
 
 private struct DiffBlock {
    DiffBlock* df_next;
@@ -46,17 +46,17 @@ private struct DiffBlock {
 // Allocate an array of nr zeroed out elements, return NULL on failure
 #define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
 
-private typedef struct s_mmfile {
+privateComp typedef struct s_mmfile {
    Byte* ptr;
    long size;
 } MmFile;
 
-private typedef struct s_mmbuffer {
+privateComp typedef struct s_mmbuffer {
    Byte* ptr;
    long size;
 } MmBuffer;
 
-private typedef struct s_xpparam {
+privateComp typedef struct s_xpparam {
    unsigned long flags;
    // See Documentation/diff-options.txt
    char **anchors;
@@ -69,7 +69,7 @@ struct ChaNode {
    long icurr;
 };
 
-private typedef struct s_chastore {
+privateComp typedef struct s_chastore {
    ChaNode *head, *tail;
    long isize, nsize;
    ChaNode *ancur;
@@ -78,16 +78,16 @@ private typedef struct s_chastore {
 } ChaStore;
 
 
-private typedef long (*FindFn)(
+privateComp typedef long (*FindFn)(
    CS line, long line_len, char* buffer, long buffer_size, void *priv
 );
 
-private typedef int (*XdlEmitHunkConsumeFn)(
+privateComp typedef int (*XdlEmitHunkConsumeFn)(
    long start_a, long count_a, long start_b, long count_b, void *cb_data
 );
 
 
-private typedef struct s_xdemitconf {
+privateComp typedef struct s_xdemitconf {
    long ctxlen;
    long interhunkctxlen;
    unsigned long flags;
@@ -97,7 +97,7 @@ private typedef struct s_xdemitconf {
 } XdEmitConf;
 
 
-private typedef struct s_xdemitcb {
+privateComp typedef struct s_xdemitcb {
    void *priv;
    int (*out_hunk)(void *,
          long old_begin, long old_nr,
@@ -114,7 +114,7 @@ struct Record {
    unsigned long ha;
 };
 
-private typedef struct s_xdfile {
+privateComp typedef struct s_xdfile {
    ChaStore rcha;
    long nrec;
    unsigned int hbits;
@@ -127,15 +127,243 @@ private typedef struct s_xdfile {
    unsigned long *ha;
 } XdFile;
 
-private typedef struct s_xdfenv {
+privateComp typedef struct s_xdfenv {
    XdFile xdf1, xdf2;
 } XdfEnv;
 
 //{{{@@forward declarations
-
-private int xdl_diff(MmFile *mf1, MmFile *mf2, XpParam* xpp,
-        XdEmitConf *xecfg, XdEmitCb *ecb);
-
+private Unt line_len(const MmFile *m);
+private int matching_chars_iwhite(const MmFile *s1, const MmFile *s2);
+private int matching_chars(const MmFile *m1, const MmFile *m2);
+private int count_n_matched_chars(MmFile **sp, const Unt n, int iwhite);
+private MmFile fastforward_buf_to_lnum(MmFile s, LineNr lnum);
+private void try_possible_paths(
+    const int      *df_iters,
+    const Unt   *paths,
+    const int      npaths,
+    const int      path_idx,
+    int         *choice,
+    DiffCmpPath   *diffcmppath,
+    const int      *diff_len,
+    const Unt   ndiffs,
+    const MmFile   **diff_blk,
+    int         iwhite)
+;
+private Unt unwrap_indexes(const int *values, const int *diff_len, const Unt ndiffs);
+private void populate_tensor(
+    int         *df_iters,
+    const Unt   ch_dim,
+    DiffCmpPath   *diffcmppath,
+    const int      *diff_len,
+    const Unt   ndiffs,
+    const MmFile   **diff_blk,
+    int         iwhite)
+;
+private Unt linematch_nbuffers(
+   const MmFile** diff_blk,
+   const int* diff_len,
+   const Unt   ndiffs,
+   OUT int** decisions,
+   int iwhite
+);
+private Ulong test_charmatch_paths(DiffCmpPath* node, int lastdecision);
+private void clear_diffblock(DiffBlock *dp);
+private void clearAllBooks(void);
+private Unt bookIndex(Book* book);
+private Unt bookIndexInTab(Book* book, Tab* t);
+private void diff_mark_adjust_tp(
+   Tab* t,
+   Unt idx,
+   LineNr line1,
+   LineNr line2,
+   long amount,
+   long amount_after
+);
+private DiffBlock* diff_alloc_new(Tab* t, DiffBlock* dprev, DiffBlock* dp);
+private void diff_check_unchanged(Tab* t, DiffBlock *dp);
+private int checkSanity(Tab* t, DiffBlock *dp);
+private void clear_diffin(DiffInp* din);
+private void clear_diffout(DiffResult* dout);
+private int diff_write_buffer(Book* book, DiffInp* din, LineNr start, LineNr end);
+private int diff_write(Book* book, DiffInp* din, LineNr start, LineNr end);
+private int lnum_compare(const void *s1, const void *s2);
+private void diff_try_update(DiffIo* dio, int iOrig, NULLABLE Invocation* invo);
+private int diff_internal_failed(void);
+private int check_external_diff(DiffIo *diffio);
+private int diff_file_internal(DiffIo *diffio);
+private int diff_file(DiffIo* dio);
+private void set_diff_option(Portal* po, int value);
+private void diff_read(
+   int      iOrig, // idx of original file
+   int      iNew,  // idx of new file
+   DiffIo* dio      // diff output
+);
+private void diff_copy_entry(DiffBlock* prev, DiffBlock* dp, int iOrig, int iNew);
+private int diff_linematch(DiffBlock *dp);
+private int get_max_diff_length(const DiffBlock* dp);
+private void find_top_diff_block(
+   OUT DiffBlock** thistopdiff,
+   OUT DiffBlock** next_adjacent_blocks,
+   int fromidx,
+   int topline
+);
+private void calculate_topfill_and_topline(
+   int const fromidx,
+   int const toidx,
+   int const from_topline,
+   int const from_topfill,
+   OUT int* topfill,
+   OUT LineNr* topline
+);
+private void apply_linematch_results(DiffBlock* dp, Unt decisions_length, int* decisions);
+private void run_linematch_algorithm(DiffBlock* dp);
+private int diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2);
+private int diff_equal_char(CS p1, CS p2, OUT int* len);
+private int diff_cmp(CS s1, CS s2);
+private int parse_diffanchors(
+   NULLABLE CS diffAnchors,
+   Boole check_only, //will only make sure the syntax is correct.
+   Book* book,
+   LineNr* anchors,
+   OUT Unt* countAnchors
+);
+private int diff_find_change_simple(
+   Portal* po,
+   LineNr lnum,
+   DiffBlock* dp,
+   Unt idx,
+   OUT int* startp,   // first char of the change
+   OUT int* endp      // last char of the change
+);
+private void diff_refine_inline_char_highlight(DiffBlock* dp_orig, ArrayList* linemap, int idx1);
+private void diff_find_change_inline_diff(DiffBlock* dp);
+private int valid_diff(DiffBlock *diff);
+private void diff_fold_update(DiffBlock* dp, Unt skip_idx);
+private LineNr diff_get_corresponding_line_int(Book* book, LineNr lnum1);
+private int parse_diff_ed(CS line, Hunk* hunk);
+private int parse_diff_unified(CS line, Hunk* hunk);
+private int xdiff_out_indices(
+   long start_a,
+   long count_a,
+   long start_b,
+   long count_b,
+   void* priv
+);
+private int xdiff_out_unified(
+   void* priv,
+   MmBuffer* mb,
+   int nbuf
+);
+private int parse_diff_optarg(
+   Var* opts,
+   Unt* diffopts,
+   long* diffalgo,
+   OutputFormat* diff_output_fmt,
+   OUT int* diff_ctxlen
+);
+private void list_to_diffin(List* l, DiffInp* din, int icase);
+private Bag * get_diff_hunk_indices(Hunk* hunk);
+private long xdl_split(    unsigned long const *ha1, long off1, long lim1, unsigned long const *ha2, long off2, long lim2,
+   long *kvdf, long *kvdb, int need_min, xdpsplit_t *spl, Environment *xenv
+);
+private int  xdl_recs_cmp(DiffData* dd1, long off1, long lim1,
+       DiffData* dd2, long off2, long lim2,
+       long* kvdf, long* kvdb, int need_min, Environment* xenv
+);
+private int xdl_do_diff(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe);
+private XdChange* xdl_add_change(XdChange* xscr, long i1, long i2, long chg1, long chg2);
+private int recs_match(Record* rec1, Record* rec2);
+private int xget_indent(Record* rec);
+private void  measure_split(const XdFile* xdf, long split, SplitMeasurement* m);
+private void score_add_split(const SplitMeasurement* m, SplitScore* s);
+private int score_cmp(SplitScore* s1, SplitScore* s2);
+private void group_init(XdFile* xdf, XdlGroup* g);
+private inline int  group_next(XdFile* xdf, XdlGroup* g);
+private inline int group_previous(XdFile* xdf, XdlGroup* g);
+private int group_slide_down(XdFile* xdf, XdlGroup* g);
+private int group_slide_up(XdFile* xdf, XdlGroup* g);
+private void xdl_bug(CS msg);
+private int xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags);
+private int xdl_build_script(XdfEnv* xe, XdChange** xscr);
+private void xdl_free_script(XdChange* xscr);
+private int  xdl_call_hunk_func(
+      XdfEnv* xe UNUSED, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
+);
+private void  xdl_mark_ignorable_lines(XdChange *xscr, XdfEnv *xe, long flags);
+private int xdl_diff(MmFile* mf1, MmFile* mf2, XpParam* xpp, XdEmitConf* xecfg, XdEmitCb* ecb);
+private long xdl_bogosqrt(long n);
+private int xdl_emit_diffrec(CS rec, long size, CS pre, long psize, XdEmitCb* ecb);
+private void* xdl_mmfile_first(MmFile* mmf, long* size);
+private long xdl_mmfile_size(MmFile* mmf);
+private int xdl_cha_init(ChaStore* cha, long isize, long icount);
+private void xdl_cha_free(ChaStore* cha);
+private void* xdl_cha_alloc(ChaStore* cha);
+private long xdl_guess_lines(MmFile* mf, long sample);
+private int xdl_blankline(CS line, long size, long flags);
+private int ends_with_optional_cr(CS l, long s, long i);
+private int xdl_recmatch(CS l1, long s1, CS l2, long s2, long flags);
+private unsigned long xdl_hash_record_with_whitespace(    Byte** data, CS top, long flags
+);
+private Ulong xdl_hash_record(Byte** data, CS top, long flags);
+private Unt xdl_hashbits(Unt size);
+private int  xdl_num_out(CS out, long val);
+private int xdl_format_hunk_hdr(    long s1, long c1, long s2, long c2, CS func, long funclen, XdEmitCb* ecb
+);
+private int xdl_emit_hunk_hdr(
+   long s1, long c1, long s2, long c2, Byte* func, long funclen, XdEmitCb *ecb
+);
+private int xdl_fall_back_diff(
+   XdfEnv* diff_env, XpParam const* xpp, int line1, int count1, int line2, int count2
+);
+private void* xdl_alloc_grow_helper(void* p, Long nr, Long* alloc, Unt size);
+private int xdl_init_classifier(Classifier *cf, long size, long flags);
+private void xdl_free_classifier(Classifier *cf);
+private int xdl_classify_record(unsigned int pass, Classifier *cf, Record **rhash,                 unsigned int hbits, Record *rec);
+private int xdl_prepare_ctx(unsigned int pass, MmFile *mf, long narec, XpParam const *xpp,             Classifier *cf, XdFile *xdf
+);
+private void xdl_free_ctx(XdFile *xdf);
+private int xdl_prepare_env(MmFile *mf1, MmFile *mf2, XpParam const *xpp, XdfEnv *xe);
+private void xdl_free_env(XdfEnv *xe);
+private int  xdl_clean_mmatch(Byte* dis, long i, long s, long e);
+private int xdl_cleanup_records(Classifier *cf, XdFile *xdf1, XdFile *xdf2);
+private int xdl_trim_ends(XdFile *xdf1, XdFile *xdf2);
+private int xdl_optimize_ctxs(Classifier* cf, XdFile* xdf1, XdFile* xdf2);
+private int  is_anchor(XpParam const *xpp, CS line);
+private void insert_record(XpParam const *xpp, int line, DiffMap* map, int pass);
+private int  fill_hashmap(
+      XpParam const *xpp, 
+      XdfEnv *env,
+      DiffMap* diffResult,
+      int line1, 
+      int count1, 
+      int line2, 
+      int count2
+);
+private int binary_search(Entry **sequence, int longest, Entry *entry);
+private int find_longest_common_sequence(DiffMap* map, Entry **res);
+private int  match(DiffMap* map, int line1, int line2);
+private int  walk_common_sequence(
+   DiffMap* map, Entry *first, int line1, int count1, int line2, int count2
+);
+private int fall_back_to_classic_diff(DiffMap* map, int line1, int count1, int line2, int count2);
+private int  patience_diff( XpParam const *xpp, XdfEnv *env, int line1, int count1, int line2, int count2);
+private int xdl_do_patience_diff(XpParam const *xpp, XdfEnv *env);
+private int  cmp_recs(Record *r1, Record *r2);
+private int  scanA(HistIndex* index, int line1, int count1);
+private int try_lcs(HistIndex* index, DRegion* lcs, int b_ptr, int line1, int count1, int line2, int count2);
+private int  fall_back_to_classic_diff1(
+   XpParam const* xpp, XdfEnv* env, int line1, int count1, int line2, int count2
+);
+private inline void  free_index(HistIndex* index);
+private int  find_lcs(
+   XpParam const* xpp, XdfEnv* env, DRegion* lcs, int line1, int count1, int line2, int count2
+);
+private int  histogram_diff(XpParam const* xpp, XdfEnv* env, int line1, int count1, int line2, int count2);
+private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
+private long xdl_get_rec(XdFile *xdf, long ri, Byte** rec);
+private int xdl_emit_record(XdFile *xdf, long ri, CS pre, XdEmitCb* ecb);
+private XdChange * xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg);
+private int xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg);
 //}}}
 
 //{{{linematch algorithm
@@ -591,32 +819,32 @@ private int diff_a_works = MAYBE; //true when "diff -a" works, false when it
 #define MAX_DIFF_ANCHORS 20
 
 // used for diff input
-private typedef struct {
+privateComp typedef struct {
    CS externalFname;  //for external diff
    MmFile mmfile;     //for internal diff
 } DiffInp;
 
 // used for diff DiffResult
-private typedef struct {
+privateComp typedef struct {
    CS outFname;       //for external diff
    ArrayList dout_ga; //for internal diff
 } DiffResult;
 
 // used for recording hunks from xdiff
-private typedef struct {
+privateComp typedef struct {
    LineNr origLnum;
    long origCount;
    LineNr newLnum;
    long newCount;
 } Hunk;
 
-private typedef enum {
+privateComp typedef enum {
    DIO_OUTPUT_INDICES = 0, //default
    DIO_OUTPUT_UNIFIED = 1  //unified diff format
 } OutputFormat;
 
 // two diff inputs and one DiffResult
-private typedef struct {
+privateComp typedef struct {
    DiffInp orig;     // original file input
    DiffInp new;      // new file input
    DiffResult dio_diff;     //diff DiffResult
@@ -2907,7 +3135,7 @@ diffopt_changed(CS newVal) {
       if (*p == ',')
           ++p;
    }
-pub finishedParsing: 
+finishedParsing: 
 
    diff_algorithm_new |= diff_indent_heuristic;
 
@@ -3122,7 +3350,7 @@ diff_find_change_simple(
 
 //Mapping used for mapping from temporary mmfile created for inline diff back
 //to original book's line/col.
-private typedef struct {
+privateComp typedef struct {
    Long byte_start;
    Long num_bytes;
    int lineoff;
@@ -4545,27 +4773,27 @@ private long xdl_mmfile_size(MmFile *mmf);
 #define DEFAULT_CONFLICT_MARKER_SIZE 7
 
 
-private typedef struct s_xdchange {
+privateComp typedef struct s_xdchange {
    struct s_xdchange *next;
    long i1, i2;
    long chg1, chg2;
    int ignore;
 } XdChange;
 
-private typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
+privateComp typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
             XdEmitConf const *xecfg);
 
 private XdChange *xdl_get_hunk(XdChange **xscr, XdEmitConf const *xecfg);
 private int xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg);
 
-private typedef struct s_diffdata {
+privateComp typedef struct s_diffdata {
    long nrec;
    unsigned long const *ha;
    long *rindex;
    CS rchg;
 } DiffData;
 
-private typedef struct s_xdg {
+privateComp typedef struct s_xdg {
    long mxcost;
    long snake_cnt;
    long heur_min;
@@ -4590,7 +4818,7 @@ private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 #define XDL_SNAKE_CNT 20
 #define XDL_K_HEUR 4
 
-private typedef struct s_xdpsplit {
+privateComp typedef struct s_xdpsplit {
    long i1, i2;
    int min_lo, min_hi;
 } xdpsplit_t;
@@ -4628,19 +4856,19 @@ private void xdl_free_env(XdfEnv *xe);
 #define XDL_MASKBITS(b)      ((1UL << (b)) - 1)
 #define XDL_HASHLONG(v,b)   (XDL_ADDBITS((unsigned long)(v), b) & XDL_MASKBITS(b))
 #define XDL_LE32_PUT(p, v) \
-pub do { \
-   unsigned char *__p = (unsigned char *) (p); \
-   *__p++ = (unsigned char) (v); \
-   *__p++ = (unsigned char) ((v) >> 8); \
-   *__p++ = (unsigned char) ((v) >> 16); \
-   *__p = (unsigned char) ((v) >> 24); \
-} while (0)
+   do { \
+      unsigned char *__p = (unsigned char *) (p); \
+      *__p++ = (unsigned char) (v); \
+      *__p++ = (unsigned char) ((v) >> 8); \
+      *__p++ = (unsigned char) ((v) >> 16); \
+      *__p = (unsigned char) ((v) >> 24); \
+   } while (0)
 #define XDL_LE32_GET(p, v) \
-pub do { \
-   unsigned char const *__p = (unsigned char const *) (p); \
-   (v) = (unsigned long) __p[0] | ((unsigned long) __p[1]) << 8 | \
-      ((unsigned long) __p[2]) << 16 | ((unsigned long) __p[3]) << 24; \
-} while (0)
+   do { \
+      unsigned char const *__p = (unsigned char const *) (p); \
+      (v) = (unsigned long) __p[0] | ((unsigned long) __p[1]) << 8 | \
+         ((unsigned long) __p[2]) << 16 | ((unsigned long) __p[3]) << 24; \
+   } while (0)
 
 // Allocate an array of nr elements, return NULL on failure
 #define XDL_ALLOC_ARRAY(p, nr)            \
@@ -5020,7 +5248,7 @@ xget_indent(Record* rec) {
 #define MAX_BLANKS 20
 
 // Characteristics measured about a hypothetical split position.
-private typedef struct SplitMeasurement {
+privateComp typedef struct SplitMeasurement {
    //Is the split at the end of the file (aside from any blank lines)?
    int end_of_file;
 
@@ -5042,7 +5270,7 @@ private typedef struct SplitMeasurement {
    int post_indent;
 } SplitMeasurement;
 
-private typedef struct {
+privateComp typedef struct {
    // The effective indent of this split (smaller is preferred).
    int effective_indent;
 
@@ -5224,7 +5452,7 @@ score_cmp(SplitScore* s1, SplitScore* s2) {
 //
 //Note that loops that are testing for changed lines in xdf->rchg do not need
 //index bounding since the array is prepared with a zero at position -1 and N.
-private typedef struct {
+privateComp typedef struct {
    //The index of the first changed line in the group, or the index of
    //the unchanged line above which the (empty) group is located.
    long start;
@@ -5958,7 +6186,7 @@ struct XdlClass {
    long len2;
 };
 
-private typedef struct s_xdlclassifier {
+privateComp typedef struct s_xdlclassifier {
    unsigned int hbits;
    long hsize;
    XdlClass **rchash;
@@ -6375,7 +6603,7 @@ struct Entry {
    unsigned anchor : 1;
 };
 
-private typedef struct {
+privateComp typedef struct {
    int nr;
    int alloc;
    Arr(Entry) entries;
@@ -6680,7 +6908,7 @@ struct XdRecord {
    XdRecord* next;
 };
 
-private typedef struct {
+privateComp typedef struct {
    XdRecord** records; // an occurrence
    XdRecord** line_map; // map of line to record chain
    ChaStore rcha;
@@ -6700,7 +6928,7 @@ private typedef struct {
    XpParam const* xpp;
 } HistIndex;
 
-private typedef struct {
+privateComp typedef struct {
    Unt begin1;
    Unt end1;
    Unt begin2;
@@ -7051,7 +7279,7 @@ xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg) {
    return lxch;
 }
 
-private typedef struct {
+privateComp typedef struct {
    long len;
    Byte buf[80];
 } FuncLine;

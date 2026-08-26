@@ -57,7 +57,7 @@
 #define P_COLON    0x1000000 //values use colons to create sublists
 #define P_NO_MKRC  0x2000000 //don't include in :mkeeglrc output
 
-private typedef enum {
+privateComp typedef enum {
    PRINT_CHANGED,
    PRINT_NONTERMINAL
 } ToPrint;
@@ -86,15 +86,15 @@ private typedef enum {
 //Type for the hook that is invoked after an option value is changed to apply the new value.
 //
 //Return NULL if the post-application hook ran succesfully, or error message if not.
-private typedef CS (*OptionSetter)(OptionChange* cha);
+privateComp typedef CS (*OptionSetter)(OptionChange* cha);
 
 //Return NULL if the new value is valid and can be applied to the option.
 //Otherwise return an error message.
-private typedef CS (*OptionValidator)(OptionChange* cha);
+privateComp typedef CS (*OptionValidator)(OptionChange* cha);
 
 //Argument for the callback function (OptionExpander) invoked after a string
 //option value is expanded for cmdline completion.
-private typedef struct {
+privateComp typedef struct {
    OptionRef ref;
    // The original option value, escaped.
    OptionValue origValue;
@@ -123,7 +123,7 @@ private typedef struct {
 //Return OK if the expansion succeeded (matches have to be set). Otherwise FAIL.
 //
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
-private typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
+privateComp typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
 private struct Option { //:Option
    CS fullName;   // full option name
@@ -167,49 +167,256 @@ private struct Option { //:Option
    
 //}}}
 //{{{@@forward declarations
-
-pub declStruct(Option);
-
-private void setDefaultValuesForAllOptions(SetScope scope);
-private Option* findOption(CS arg);
-private OptionRef getRefInScope(Option*, SetScope);
-private void check_redraw(Unt flags);
-private int isOptionAtDefault(Option *, OptionRef ref);
-private void toString(Option*, SetScope);
-private void showoneopt(Option *, SetScope setScope);
-private CS setImpl(Option*, OptionValue, SetScope);
-private void set_helplang_default(CS lang);
-private int put_setnum(FILE *fd, CS cmd, CS name, OptionRef ref);
-private int put_setstring(FILE *fd, CS cmd, CS name, OptionRef ref, Ulong flags);
-private int put_setbool(FILE *fd, CS cmd, CS name, Boole value);
-private int checkBreakIndent(CS briopt, Portal* po);
-private CS validateAndSetListOfStrings(OUT OptionChange* cha, Arr(CS) values);
-private int optionCompletionExpand(
-      OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int))
+private int isOptionAtDefault(Option* o, OptionRef ref);
+private void optSetStringDefault_esc(CS name, CS val, Boole escape);
+private CS setBoolImpl(
+   OUT Option* o,
+   Boole newValue,
+   SetScope setScope
 );
-private int wildcharUseKeyname(OptionRef ref, long *wcp);
-
+private CS findUnchangedItemInCommaList(CS origVal, CS newVal, Unt newVallen, Ulong flags);
+private void set_init_default_backupskip(void);
+private void set_init_default_cdpath(void);
+private void setDefault(Option* o, SetScope setScope);
+private Byte parseCursorShape(CS input);
+private void set_helplang_default(CS lang);
+private CS stropt_copy_value( CS arg);
+private CS getNewValOfStringOption(Option* o, OUT CS* argp, OUT CS* origval_arg);
+private Boole checkIllegalPathNames(Option* o, OptionRef ref);
+private Polystring* getPolystring(Option* o, SetScope setScope);
+private CS setStringImpl(
+   Option* o,
+   CS oldVal,    //previous value of the option
+   CS newVal, 
+   SetScope setScope
+);
+private CS parseAndSetEnum(OUT Option* o, CS arg, SetScope setScope);
+private CS parseAndSetFlags(OUT Option* o, CS arg, SetScope setScope);
+private CS parseAndSetCallback(OUT Option* o, CS arg, SetScope setScope);
+private CS changeStringOption(OUT Option* o, CS arg, SetScope scope);
+private CS parseAndSetBool(OUT Option* o, CS newString, SetScope setScope);
+private CS setNumericImpl(
+   OUT Option* o,
+   OUT OptionRef ref,
+   long newValue,
+   SetScope setScope
+);
+private CS parseAndSetNumeric(OUT Option* o, CS arg, SetScope setScope);
+private void did_set_option(Option* o);
+private CS setImpl(Option* o, OptionValue newValue, SetScope setScope);
+private CS setFromString(OUT Option* o, CS arg, CS newVal, SetScope setScope);
+private CS parseAndSetImpl(Option* o, CS arg, SetScope setScope);
+private CS tryFindOptionFromCommand(OUT Option** o, OUT CS* arg);
+private CS parseAndSet(SetScope setScope, OUT CS* arg);
+private CS expandEnvVarsInStringOption(Option* o, CS newVal);
+private void check_redraw(Unt flags);
+private CS escape_option_str_cmdline(CS var);
+private Boole matchString(
+   CS optStr,
+   RegMatch* regmatch,
+   ExpandMatch* matches,
+   Boole isFuzzy,
+   CS fuzzystr,
+   Fuzzy* fuzzy
+);
+private void toString(Option* o, SetScope scope);
+private Unt calcNewBufferCap(Unt oldSize);
+private CS readOptionFlags(OptionChange* cha, Arr(CS) validValues, OUT Unt *flagp);
+private CS validateAndSetListOfStrings(OUT OptionChange* cha, Arr(CS) values);
+private int expandFlagOption(
+   OUT ExpandMatch* matches,
+   OptExpand* args,
+   Arr(CS) const values,
+   Unt const numValues
+);
+private int expand_set_opt_listflag(OUT ExpandMatch* matches, OptExpand *args, CS flags);
+private CS illegal_char(OUT ErrBuilder* errb, Unt c);
+private CS did_set_option_listflag(CS val, CS flags, OUT ErrBuilder* errb);
 private void printOptionGroup(
    Arr(Option*) items, Arr(Option) group, Unt count, Unt printFlags, 
    ToPrint which, int run
 );
-private void
-changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid);
-private void setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos);
-private void didset_options(void);
-private CS expandEnvVarsInStringOption(Option* o, CS val);
-private void do_spelllang_source(void);
+private void showoneopt(Option* o, SetScope setScope);
+private Byte parseEnumValue(CS newVal, Arr(CS) validValues);
+private CS check_stl_option(CS s);
+private CS did_set_balloonevalterm(OptionChange* cha);
+private void resizeOrPlanResizingWindow();
+private CS setVisibleLines(OptionChange* cha);
+private CS setVisibleCols(OptionChange* cha);
+private CS setBookListed(OptionChange* cha);
+private CS setCommHeight(OptionChange* cha);
+private CS did_set_diff(OptionChange* cha);
+private CS did_set_equalalways(OptionChange* cha);
+private CS did_set_foldlevel(OptionChange* cha);
+private CS did_set_hlsearch(OptionChange* cha);
+private CS did_set_ignorecase(OptionChange* cha);
+private CS did_set_numberwidth(OptionChange* cha);
+private CS did_set_maxsearchcount(OptionChange* cha);
+private CS setShiftWidth(OptionChange* cha);
+private CS did_set_smoothscroll(OptionChange* cha);
+private CS did_set_swapfile(OptionChange* cha);
+private CS did_set_termwinscroll(OptionChange* cha);
+private CS did_set_textwidth(OptionChange* cha);
+private CS did_set_undofile(OptionChange* cha);
+private CS did_set_undolevels(OptionChange* cha);
+private CS did_set_wildchar(OptionChange* cha);
+private CS setWinHeight(OptionChange* cha);
+private CS setHelpHeight(OptionChange* cha);
+private CS did_set_winwidth(OptionChange* cha);
+private CS did_set_wlsteal(OptionChange* cha);
+private CS did_set_wltimeoutlen(OptionChange* cha);
+private CS did_set_wrap(OptionChange* cha);
+private CS setTimeoutLen(OptionChange* cha);
+private CS setHistory(OptionChange* cha);
+private CS setScrollJump(OptionChange* cha);
+private CS setScrollOff(OptionChange* cha);
+private CS setSideScrollOff(OptionChange* cha);
+private CS setStrictlyPositive(OptionChange* cha);
+private CS setNonNegative(OptionChange* cha);
 private int find_key_option(CS arg_arg, Boole has_lt);
 private void printSingleOption(
-   Option* o, SetScope setScope, Unt printFlags, ToPrint which, int run,
-   OUT Arr(Option*) items, OUT Unt* item_count
+      Option* o, SetScope setScope, Unt printFlags, ToPrint which, int run,
+      OUT Arr(Option*) items, OUT Unt* item_count
 );
-private CS get_eventignore_name(Expand *xp, int idx);
-private CS check_stl_option(CS s);
-private CS illegal_char_after_chr(OUT ErrBuilder* errb, int c);
+private CS copyOptionVal(OUT Polystring* buf, CS val);
+private void expand1(OUT Expand* xp, Option* o, CS argend);
+private int wildcharUseKeyname(OptionRef ref, long* wcp);
+private CS setFormatListPat(OptionChange* cha);
+private CS (p_cfc_values[]) =;
+private CS setCompletefuzzycollect(OptionChange* cha);
+private int expandCompletefuzzycollect(OptExpand* args, OUT ExpandMatch *matches);
+private CS did_set_completeitemalign(OptionChange* cha);
+private CS did_set_completepopup(OptionChange* cha UNUSED);
+private CS did_set_debug(OptionChange* cha);
+private int expand_set_debug(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_diffanchors(OptionChange* cha);
+private CS setDiffopt(OptionChange* cha);
+private CS(p_dip_algorithm_values[]) =;
+private CS(p_dip_inline_values[]) =;
+private int expandDiffopt(OptExpand* args, OUT ExpandMatch* matches);
+private CS(p_popup_option_align_values[]) =;
+private CS(p_popup_option_border_values[]) =;
+private int expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches);
+private CS setCursorInsert(OptionChange* cha);
+private CS setCursorNormal(OptionChange* cha UNUSED);
+private int expand_set_formatoptions(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_helplang(OptionChange* cha);
+private CS setOptexpr(OptionChange* cha);
+private CS (p_ead_values[]) =;
+private CS setEadirection(OptionChange* cha);
+private int expandEadirection(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_eventignore(OptionChange* cha);
+private CS did_set_verbosefile(OptionChange* cha UNUSED);
+private CS setEeglinfo(OptionChange* cha);
+private CS did_set_whichwrap(OptionChange* cha);
+private int expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches);
+private CS(p_wim_values[]) =;
+private CS did_set_wildmode(OptionChange* cha UNUSED);
+private int expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches);
+private CS(p_wop_values[]) =;
+private CS setWildoptions(OptionChange* cha);
+private int expandWildoptions(OptExpand* args, OUT ExpandMatch* matches);
+private int expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_foldexpr(OptionChange* cha);
+private CS did_set_foldignore(OptionChange* cha UNUSED);
+private CS did_set_foldmarker(OptionChange* cha);
+private CS setFoldMethod(OptionChange* cha);
+private int expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches);
+private CS(p_fdo_values[]) =;
+private CS setFoldopen(OptionChange* cha);
+private int expandFoldopen(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_formatoptions(OptionChange* cha);
+private CS setIsopt(OptionChange* cha);
+private CS did_set_matchpairs(OptionChange* cha);
+private CS (p_mopt_values[]) =;
+private CS did_set_messagesopt(OptionChange* cha);
+private int expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_imactivatekey(OptionChange* cha UNUSED);
+private CS setExpandTriggers(OptionChange* cha);
+private CS did_set_iskeyword(OptionChange* cha);
+private CS parse_status_rulerformat(OptionChange* cha);
+private CS setRulerFormat(OptionChange* cha);
+private CS did_set_tabpanelopt(OptionChange* cha);
+private CS (p_tplo_align_values[]) =;
+private int expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches);
+private CS setScrollopt(OptionChange* cha);
+private int expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches);
+private CS setWlseat(OptionChange* cha UNUSED);
+private CS did_set_showbreak(OptionChange* cha);
+private CS did_set_showcmdloc(OptionChange* cha);
+private int expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_statusline(OptionChange* cha);
+private CS(p_swb_values[]) =;
+private CS setSwitchbook(OptionChange* cha);
+private int expand_set_switchbook(OptExpand* args, OUT ExpandMatch* matches);
+private CS setTabClose(OptionChange* cha);
+private int expand_set_tabclose(OptExpand* args, OUT ExpandMatch* matches);
+private CS setTagcase(OptionChange* cha);
+private int expand_set_tagcase(OptExpand* args, OUT ExpandMatch* matches);
+private CS setTerm(OptionChange* cha);
+private CS did_set_termwinkey(OptionChange* cha);
+private CS did_set_termwinsize(OptionChange* cha);
+private CS setBufType(OptionChange* cha);
+private int expand_set_buftype(OptExpand* args, OUT ExpandMatch* matches);
+private CS setListChars(OptionChange* cha);
+private CS setFillChars(OptionChange* cha);
+private int expand_set_chars_option(OptExpand* args, OUT ExpandMatch* matches);
+private CS did_set_comments(OptionChange* cha);
+private CS did_set_commentstring(OptionChange *cha);
+private CS setBackupCopy(OptionChange* cha);
+private int expand_set_backupcopy(OptExpand* args, OUT ExpandMatch* matches);
+private int checkBreakIndent(
+   CS briopt,  // when NULL: use "po->o.breakIndent"
+   Portal* po       // when NULL: only check "briopt"
+);
+private CS setBreakindentOpt(OptionChange* cha);
+private int expandBreakindentOpt(OptExpand* args, OUT ExpandMatch* matches);
+private CS setComplete(OptionChange* cha);
+private int expandComplete(OptExpand* args, ExpandMatch* matches);
+private CS (completeOptValues[]) =;
+private CS setCompleteopt(OptionChange* cha);
+private int expandCompleteopt(OptExpand* args, OUT ExpandMatch* matches);
+private Unt calcDefaultStringValuesLen(Arr(Option) opts, Unt count);
+private Unt calcGlobalStringValuesLen();
+private Unt calcLocalStringsLength(Arr(Option) opts, Unt count);
+private void copyDefaultsToGlobalStringValues(OUT Polystring* bui, Arr(Option) opts, Unt count);
+private void copyStringOptToBook(OUT CS wr, CS* old, OptionChange* cha);
 private void updateBoolRef(OptionChange* cha);
 private void updateNumRef(OptionChange* cha);
-
+private void didset_options(void);
+private void  expandEnvVarsInDefault(Option* o);
+private void expandEnvVarsInDefaults(void);
+private void printOptions(ToPrint which);
+private int put_setstring(
+   FILE   *fd,
+   CS cmd,
+   CS name,
+   OptionRef ref,
+   Ulong   flags
+);
+private int put_setnum(FILE* fd, CS cmd, CS name, OptionRef ref);
+private int put_setbool(
+   FILE   *fd,
+   CS cmd,
+   CS name,
+   Boole value
+);
+private void setScriptPos(Option* o, SetScope scope, ScriptPos scriptPos);
+private void setDefaultValuesForAllOptions(SetScope setScope);
+private Option* findOption(CS arg);
+private OptionRef getRefInScope(Option* o, SetScope setScope);
+private void copyGlobalToBookImpl(OUT Book* book);
+private void copyGlobalToPortalImpl(OUT PortalOptions* t);
+private CS illegal_char_after_chr(OUT ErrBuilder* errb, int c);
+private void changeStringOptionDirectImpl(Option* o, CS val, SetScope scope, ScriptId setSid);
+private CS optionCompletionExpand_cb(Expand *xp, int idx);
+private int optionCompletionExpand(OUT ExpandMatch* matches, OptExpand* args, CS ((*func)(Expand *, int)));
+private CS get_eventignore_name(Expand *xp, int idx);
+private void do_spelllang_source(void);
+private CS get_locale_val(int what);
+private int is_valid_mess_lang(Byte *lang);
+private Arr(CS) getLocalesFromEnv(OUT Unt* countOfLocales);
+private void init_locales(void);
 //}}}
 //{{{general option code
 
@@ -3168,7 +3375,7 @@ setBufType(OptionChange* cha) {
    }
    return e_invalid_argument;
    
-pub argumentIsValid:
+argumentIsValid:
    *(cha->ref.enume) = v;
    curPor->statusLineNeedsRedraw = true;
    redraw_later(UPD_VALID);

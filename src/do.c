@@ -11,19 +11,146 @@ int mkdir(const char* pathname, mode_t mode);
 private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 
 //{{{@@forward decls
-
-private int linelen(int *has_tab);
-private void 
-do_filter(LineNr line1, LineNr line2, Invocation* invo, CS cmd, Boole do_in, Boole do_out);
+private int linelen(OUT int* has_tab);
+private int string_compare(const void *s1, const void *s2);
+private int sort_compare(const void *s1, const void *s2);
+private void doCopy(LineNr line1, LineNr line2, LineNr n);
+private int prevcmd_is_set(void);
+private void do_filter(
+   LineNr line1,
+   LineNr line2,
+   Invocation* invo,      // for forced 'ff' and 'fenc'
+   CS cmd,
+   Boole do_in,
+   Boole do_out
+);
+private void print_line_no_prefix(LineNr lnum, int list);
+private void print_line(LineNr lnum, int list);
+private int renameBook(CS new_fname);
+private int check_writable(CS fname);
+private int check_overwrite(
+   Invocation* invo,
+   Book* book,
+   CS fname,       // file name to be used (can differ from book->fullFName)
+   CS fullFName,    // full path version of fname
+   Boole other)       // writing under other name
+;
 private Boole isWritingForbidden(void);
 private Boole check_readonly(OUT Boole* forceit, Book* book);
 private void delbuf_msg(CS name);
-private int u_inssub(LineNr lnum);
-private Boole wasBookChangedNotTerm(Book *book);
-private void mayPrint(Invocation* invo);
+private int check_regexp_delim(int c);
+private void global_exe_one(CS cmd, LineNr lnum);
+private CS skipEeglGrepPat_ext(CS p, Byte **s, Unt* flags, Byte** nulp, int *cp);
+private void add_bufnum(int *bufnrs, int *bufnump, int nr);
+private void saveDbgStuff(DebugStuff* dsp);
+private void restore_DebugStuff(DebugStuff* dsp);
+private Boole isSameFile(int fnum, CS fullFName);
+private void msg_verbose_cmd(LineNr lnum, CS cmd);
+private int do_cmd_argument(CS cmd);
+private int compute_buffer_local_count(int addressKind, int lnum, int offset);
+private int getPortNr(Portal* portal);
+private int current_tab_nr(Tab *tab);
+private void doOneCommand(
+   OUT CS* commline,
+   Unt flags,
+   LineGetter fgetline,
+   void* cookie      // argument for fgetline()
+);
+private int checkforcmd_opt(
+   OUT CS* pp,      // start of command
+   CS cmd,      // name of command
+   int len,      // required length
+   int noparen
+);
+private void append_command(CS cmd);
+private int oneLetterCommand(CS p, OUT CommIndex *idx);
+private void addr_error(CommandAddress addressKind);
+private LineNr default_address(Invocation* invo);
+private void address_default_all(Invocation* invo);
+private void get_flags(Invocation* invo);
+private void ex_script_ni(Invocation* invo);
+private CS invalid_range(Invocation* invo);
+private void correct_range(Invocation* invo);
+private CS skip_grep_pat(Invocation* invo);
+private CS replaceMakeProgramName(Invocation* invo, OUT CS p, OUT CS* commline);
+private CS repl_commline(
+   Invocation* invo,
+   CS src,
+   Unt srclen,
+   CS repl,
+   OUT CS* commline
+);
+private CS getargcmd(OUT CS* argp);
+private CS get_bad_name(Expand *xp UNUSED, int idx);
+private int getargopt(Invocation* invo);
+private CS get_argoname(Expand* xp UNUSED, int idx);
+private void do_exbuffer(Invocation* invo);
+private int before_quit_autocmds(Portal *po, int quit_all);
 private void closePortalInternal(Portal* port, Tab* t);
-
-private void doOneCommand(OUT CS* commline, Unt flags, LineGetter fgetline, void* cookie);
+private int getTabRelatedArg(Invocation* invo);
+private List * call_findfunc(CS pat, int cmdcomplete);
+private CS findFnFindFile(CS findarg, int findarg_len, int count);
+private CS get_prevdir(CdScopeKind scope);
+private void mayPrint(Invocation* invo);
+private void close_redir(void);
+private void tagCmd(Invocation* invo, CS name);
+private void prepare_preview_window(void);
+private void back_to_current_window(Portal *curPor_save);
+private void u_check_tree(UndoHeader *uhp, UndoHeader *exp_uh_next, UndoHeader *exp_altPrev);
+private void u_check(int newhead_may_be_NULL);
+private int u_inssub(LineNr lnum);
+private int u_save_line(UndoLine *ul, LineNr lnum);
+private Boole has_prop_w_flags(LineNr lnum, int flags);
+private void corruption_error(char *mesg, CS file_name);
+private void u_free_uhp(UndoHeader *uhp);
+private int writeToUndoFile(BufInfo* bi, Arr(Byte) ptr, Unt len);
+private int undo_write_bytes(BufInfo* bi, Ulong nr, int len);
+private void put_header_ptr(BufInfo *bi, UndoHeader *uhp);
+private int undo_read_4c(BufInfo *bi);
+private int undo_read_2c(BufInfo *bi);
+private int undo_read_byte(BufInfo *bi);
+private time_t undo_read_time(BufInfo *bi);
+private int undo_read(BufInfo *bi, CS buffer, Unt size);
+private CS readStringFromFile(BufInfo *bi, Unt len);
+private int serialize_header(BufInfo* bi, Arr(Byte) hash);
+private int serialize_uhp(BufInfo* bi, UndoHeader* uhp);
+private UndoHeader * unserialize_uhp(BufInfo* bi, CS file_name);
+private int serialize_uep(BufInfo* bi, UndoEntry* uep);
+private UndoEntry * unserialize_uep(BufInfo *bi, int *error, CS file_name);
+private void serialize_pos(BufInfo *bi, Pos pos);
+private void deserializePos(BufInfo *bi, Pos *pos);
+private void serialize_visualinfo(BufInfo *bi, VisualInfo *info);
+private void unserialize_visualinfo(BufInfo *bi, VisualInfo *info);
+private void u_doit(int startcount);
+private void u_undoredo(Boole undo);
+private void u_undo_end(
+   Boole did_undo,  // just did an undo
+   Boole absolute   // used ":undo N"
+);
+private void u_unch_branch(UndoHeader* uhp);
+private UndoEntry * u_get_headentry(void);
+private void u_getbot(void);
+private void u_freeheader(
+   Book* book,
+   UndoHeader* uhp,
+   UndoHeader** uhpp)   // if not NULL reset when freeing this header
+;
+private void freeBranch(
+   Book* book,
+   UndoHeader* uhp,
+   UndoHeader** uhpp   // if not NULL reset when freeing this header
+);
+private void u_freeentries(
+   Book       *book,
+   UndoHeader       *uhp,
+   UndoHeader       **uhpp)   // if not NULL reset when freeing this header
+;
+private void freeEntry(UndoEntry *uep, long n);
+private void invalidateUndoBuffer(Book *book);
+private void u_blockfree(Book* book);
+private void u_saveline(LineNr lnum);
+private Boole wasBookChangedNotTerm(Book* book);
+private void evalTree(Book* book, UndoHeader* first_uhp, List* list);
 //}}}
 //{{{sortin' and filterin'
 
@@ -196,7 +323,7 @@ private int   sort_flt;   // sort on floating number
 private int   sort_abort;   // flag to indicate if sorting has been interrupted
 
 // Struct to store info to be sorted.
-private typedef struct {
+privateComp typedef struct {
    LineNr   lnum;         // line number
    union {
       struct {
@@ -2722,7 +2849,7 @@ private CS prevSubstS = NULL;   // previous substitute pattern
 private Boole globalNeedBeginlineS = false;   // call beginline() after ":g"
 
 // Flags that are kept between calls to :substitute.
-private typedef struct {
+privateComp typedef struct {
    Boole do_all;    // do multiple substitutions per line
    Boole do_ask;    // ask for confirmation
    Boole do_count;  // count only
@@ -4827,7 +4954,7 @@ private void   close_redir(void);
 private Byte dollar_command[2] = {'$', ZERO};
 
 // Struct to save a few things while debugging.  Used in doCommand() only.
-private typedef struct {
+privateComp typedef struct {
    int force_abort;
    Exception* caught_stack;
    CS vv_exception;
@@ -6738,7 +6865,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
    return p;
 }
 
-private typedef struct {
+privateComp typedef struct {
    char   *name;
    int      minlen;
    int      has_count;  // :123verbose  :3tab
@@ -10400,7 +10527,7 @@ c_tag(Invocation* invo) {
    tagCmd(invo, commands[invo->id].name);
 }
 
-pub enum {
+privateComp enum {
    SPEC_PERC = 0,
    SPEC_HASH,
    SPEC_CWORD,       // cursor word
@@ -11281,7 +11408,7 @@ veryfast_breakcheck(void) {
 #define WRITE_BUILDER_SIZE 8192
 
 // Structure passed around between functions.
-private typedef struct {
+privateComp typedef struct {
    Book* bk;
    FILE* file;
 } BufInfo;

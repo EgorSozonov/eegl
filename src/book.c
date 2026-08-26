@@ -226,7 +226,7 @@ findPortalIntoCurBook(void) {
    }
 }
 
-private typedef struct {
+privateComp typedef struct {
    Portal* curPorSave;
    AutocommSave autocommSave;
    Boole usingAco;
@@ -1820,7 +1820,7 @@ getvcols(
 
 //{{{book
 
-private typedef dev_t Device;
+privateComp typedef dev_t Device;
 
 #define FOR_ALL_BOOKS_FROM_LAST(book) \
     for ((book) = lastBook; (book); (book) = (book)->prev)
@@ -1920,7 +1920,7 @@ bookEnsureLoaded(Book* book) {
    auCommPrepareBook(&aco, book);
    if (curBook == book) {
       if (swap_exists_action != SEA_READONLY)
-          swap_exists_action = SEA_NONE; 
+         swap_exists_action = SEA_NONE; 
       bookOpenFromInvo(false, NULL, 0);
       auCommRestoreBook(&aco);
    }
@@ -2594,9 +2594,9 @@ free_wininfo(PortInfo *poInfo) {
 // Go to another book. Handles the result of the ATTENTION dialog.
 pub void
 bookGoto(Invocation* invo, int start, int dir, int count){
-   BookRef   oldCurBook;
-   int      save_sea = swap_exists_action;
-   int      skipHelpAndQuickfix;
+   BookRef oldCurBook;
+   int save_sea = swap_exists_action;
+   int skipHelpAndQuickfix;
 
    switch (invo->id) {
    case C_bnext:
@@ -2689,8 +2689,8 @@ handle_swap_exists(BookRef *oldCurBook) {
       // Restore the error/interrupt/exception state if not discarded by a
       // new aborting error, interrupt, or uncaught exception.
       leave_cleanup(&cs);
-    }
-pub swap_exists_action = SEA_NONE;
+   }
+   swap_exists_action = SEA_NONE;
 }
 
 // Make the current book empty. Used when it is wiped out and it's the last book.
@@ -3783,7 +3783,7 @@ booklistFindPattern(
    return match;
 }
 
-private typedef struct {
+privateComp typedef struct {
    Book* book;
    CS match;
 } BufMatch;
@@ -4498,7 +4498,7 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 }
 
 // Used for building in the status line.
-private typedef struct {
+privateComp typedef struct {
    CS start;
    int minWidth;
    int maxWidth;
@@ -5875,7 +5875,7 @@ bookCompare(const void* s0, const void* s1) {
 #define SMALLBUFSIZE   256   // size of emergency write book
 
 // Structure to pass arguments from bookWrite() to writeBytes().
-private typedef struct {
+privateComp typedef struct {
    CS bw_buf;   // buffer with data to be written
    int fd;      // file descriptor
    int bw_len;      // length of data
@@ -6491,7 +6491,7 @@ bookWrite(
                      EE_CLEAR(backup);
                }
             }
-pub endOfName: 
+endOfName: 
             eeglFree(rootname);
 
             // Try to create the backup file
@@ -7760,7 +7760,7 @@ alist_name(ArgFileEntry *afe) {
 }
 
 // State used by the :all command to open all the files in the argument list in separate portals
-private typedef struct {
+privateComp typedef struct {
    EeArgList* alist;      // argument list to be used
    int   had_tab;
    int   keep_tabs;
@@ -8290,7 +8290,7 @@ f_prop_add(Var *argvars, OUT Var* returnVar) {
              argvars[2].bag, curBook, &argvars[2]);
 }
 
-private typedef struct {
+privateComp typedef struct {
    CS tyName;
    int      id;
    NULLABLE CS text; // if non-empty, the text to display above or before the line
@@ -9854,7 +9854,7 @@ clearPropTypes(Book* book) {
 }
 
 // Struct used to return two values from adjust().
-private typedef struct {
+privateComp typedef struct {
    int dirty;      // if the property was changed
    int mayDrop;   // whether after this change, the prop may be removed
 } AdjustRes;

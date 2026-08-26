@@ -622,8 +622,6 @@ TRANSSOURCE = ../lang
 
 ###
 
-CPROTO_FLAGS = -DPROTO -d -E"$(CPP)" -I./src #$(NO_ATTR) # -D"__typeof__\\(x\\)=x"
-
 
 ################################################
 ##   no changes required below this line      ##
@@ -638,7 +636,6 @@ ALL_FLAGS = $(PRE_DEFS) $(CFLAGS) $(PROFILE_FLAGS) $(SANITIZER_FLAGS) $(LEAK_FLA
 
 
 LINT_FLAGS = -DLINT -I. $(PRE_DEFS) -Dinline= -D__extension__= -Dalloca=alloca
-LINT_FLAGS_CPROTO = -DLINT -Isrc -Isrc/proto #-Dinline= -D__extension__= -Dalloca=alloca
 
 LINT_EXTRA = -D"__attribute__(x)="
 
@@ -891,10 +888,20 @@ indices: src/commands.h src/actions.h
 / $(OBJDIR)/indexGenerator commands
 / $(OBJDIR)/indexGenerator options
 
+BETTERC:=$(OBJDIR)/betterc
 
-better: ##Better C: codegen for headers & generics
-/ $(CC) dev/betterc.c -o $(OBJDIR)/betterc
-/ $(OBJDIR)/betterc -d proto src/book.c
+$(BETTERC): ##Better C: codegen for headers & generics
+/ $(CC) --std=c17 -Wall dev/betterc.c -o $(OBJDIR)/betterc
+
+better: $(BETTERC)
+/ for f in src/*.c; do $(BETTERC) -d proto "$$f"; done
+
+src/proto/%.h: src/%.c $(BETTERC)
+/ $(OBJDIR)/betterc -d proto $<
+
+proto: $(PROTO_RESULTS) $(addprefix src/proto/,$(PRO_MANUAL))
+
+      
 
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
@@ -932,26 +939,8 @@ languages:
 update-po:
 / cd $(PODIR); CC="$(CC)" $(MAKE) prefix=$(DESTDIR)$(prefix) update-po
 
-# Generate function prototypes.  This is not needed to compile Eegl, but if
-# you want to use it, cproto is out there on the net somewhere -- Webb
-
-
-# Filter out arguments that cproto doesn't support.
-# Don't pass "-pthread", "-fwrapv" and similar arguments to cproto, it sees
-# them as a list of individual flags.
-# The -E"gcc -E" argument must be separate to avoid problems with shell
-# quoting.
-# Strip -O2, it may cause cproto to write stderr to the file "2".
-CPROTO = cproto $(CPROTO_FLAGS) $(LINT_FLAGS_CPROTO)
-
-
 
 PROTO_RESULTS := $(addprefix src/proto/,$(patsubst %.c,%.h,$(BASIC_SRC_NO_DIR)))
-
-src/proto/%.h: src/%.c
-/ $(CPROTO) $< > $@
-
-proto: $(PROTO_RESULTS) $(addprefix src/proto/,$(PRO_MANUAL))
 
 notags:
 / -rm -f tags

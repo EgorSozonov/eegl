@@ -26,14 +26,28 @@
 #endif
 
 //{{{@@forward declarations
-
+private Unt calculateChunkSize(Unt allocSize);
+private int eeIsBDigit(int c);
+private Unt utf_safe_read_char_adv(OUT CS* s, OUT Unt* n);
+private int utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2);
+private Unt utf_convert(Unt a, ConvertStruct table[], int tableSize);
+private Boole intable(Arr(Interval) table, Unt size, Unt c);
+private Boole utf_allow_break_after(Unt cc);
+private int stringComparer(void const *s1, void const*s2);
+private void initBase64Table(void);
+private void sha256_process(ContextSha256 *ctx, Byte data[64]);
+private Unt get_some_time(void);
+private Unt hashCode(Byte const* start);
+private Unt hashOfText(Text s);
+private DictStringInt128* initDict0(Arr(Byte const) text, Int size, Arena* a, OUT Arr(Unt)* temp);
+private void initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* dict);
 //}}}
 
 //{{{ Arena
 
 #define CHUNK_QUANT 32768
 
-private typedef struct ArenaChunk ArenaChunk;
+privateComp typedef struct ArenaChunk ArenaChunk;
 
 private struct ArenaChunk { // :ArenaChunk
    Unt size;
@@ -1035,7 +1049,7 @@ utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2){
 //They must be in numeric order, because we use binary search.
 //An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
 //range from 0x41 to 0x5a inclusive, stepping by 1, are changed to folded/upper/lower by adding 32.
-private typedef struct {
+privateComp typedef struct {
    Unt rangeStart;
    Unt rangeEnd;
    int step;
@@ -1312,7 +1326,7 @@ caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
    return utf_strnicmp(s1, s2, nn, nn);
 }
 
-private typedef struct {
+privateComp typedef struct {
    long first;
    long last;
 } Interval;
@@ -3284,11 +3298,6 @@ lastOccurrence(CS string, int c) {
 
 //Eegl's version of strpbrk(), in case it's missing.
 //Don't generate a prototype for this, causes problems when it's not used.
-#ifndef PROTO
-# ifndef HAVE_STRPBRK
-#  ifdef eeStrpbrk
-#   undef eeStrpbrk
-#  endif
 pub CS
 eeStrpbrk(CS s, CS charset) {
    while (*s) {
@@ -3298,8 +3307,6 @@ eeStrpbrk(CS s, CS charset) {
    }
    return NULL;
 }
-# endif
-#endif
 
 // Sort an array of strings.
 private int
@@ -3760,7 +3767,7 @@ decodeBase64(OUT CS* ret, Text base64) {
    }
    return true;
    
-pub malformedInput:
+malformedInput:
    *ret = null;
    return false;
 }

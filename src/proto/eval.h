@@ -1,69 +1,133 @@
-/* src/eval.c */
 int checkIfNameReserved(CS name, int is_objm_access);
-Long num_divide(Long n1, Long n2, Boole *failed);
-Long num_modulus(Long n1, Long n2, Boole *failed);
+Long num_divide(Long n1, Long n2, OUT Boole* failed);
+Long num_modulus(Long n1, Long n2, OUT Boole* failed);
 void evalInitGlobals(void);
 void eval_clear(void);
-void fillEvalArgFromInvo(EvalCtx *evalarg, Invocation *invo, int skip);
-int eval_to_bool(CS arg, Boole *error, Invocation *invo, Boole skip, Boole use_simple_function);
+void fillEvalArgFromInvo(OUT EvalCtx *evalarg, Invocation* invo, int skip);
+int eval_to_bool(
+   CS arg,
+   OUT Boole* error,
+   Invocation* invo,
+   Boole skip,       // only parse, don't execute
+   Boole use_simple_function
+);
 Boole eval_expr_valid_arg(Var *tv);
-int eval_expr_typval(Var *expr, int want_func, Var *argv, int argc, Var *returnVar);
-CS eval_to_string_skip(CS arg, Invocation *invo, int skip);
+int eval_expr_typval(
+   Var    *expr,
+   int       want_func,
+   Var    *argv,
+   int       argc,
+   Var    *returnVar)
+;
+CS eval_to_string_skip(
+   CS arg,
+   Invocation* invo,
+   int      skip)       // only parse, don't execute
+;
 void init_evalarg(EvalCtx *evalarg);
-void clear_evalarg(EvalCtx *evalarg, Invocation *invo);
-int skip_expr(CS *pp, EvalCtx *evalarg);
-int skip_expr_concatenate(Byte **arg, Byte **start, Byte **end, EvalCtx *evalarg);
+void clear_evalarg(EvalCtx* evalarg, Invocation* invo);
+int skip_expr(OUT CS* pp, EvalCtx* evalarg);
+int skip_expr_concatenate(Byte** arg, Byte** start, Byte** end, EvalCtx* evalarg);
 CS typval2string(Var *tv, int join_list);
-CS evalToStringWithInvo(CS arg, Boole join_list, Invocation *invo, Boole use_simple_function);
+CS evalToStringWithInvo(CS arg, Boole join_list, Invocation* invo, Boole use_simple_function);
 CS eval_to_string(CS arg, Boole join_list, Boole use_simple_function);
 CS eval_to_string_safe(CS arg, Boole use_simple_function);
 Long eval_to_number(CS expr, int use_simple_function);
-Var *eval_expr(CS arg, Invocation *invo);
-void *call_func_retstr(Byte *func, int argc, Var *argv);
-void *call_func_retlist(Byte *func, int argc, Var *argv);
+Var* eval_expr(CS arg, Invocation* invo);
+void * call_func_retstr(Byte* func, int argc, Var* argv);
+void * call_func_retlist(Byte* func, int argc, Var* argv);
 int eval_foldexpr(Portal *wp, int *cp);
-CS getLval(Lval *retVal, GetLval arg);
-void clear_lval(Lval *lp);
-Boole letImpl(Lval *lval, Var *returnVar, Boole copy, Unt flags, CS op);
-Boole evalLetVarSimple(CS name, Var *newValue);
+CS getLval( OUT Lval* retVal, GetLval arg);
+void clear_lval(OUT Lval* lp);
+Boole letImpl(
+   OUT Lval* lval,
+   Var* returnVar,
+   Boole copy,
+   Unt flags, // ASSIGN_CONST, ASSIGN_NO_DECL
+   NULLABLE CS op
+);
+Boole evalLetVarSimple(CS name, Var* newValue);
 int tv_op(Var *tv1, Var *tv2, CS op);
-void *eval_for_line(CS arg, Boole *errp, EvalCtx *evalarg);
+void* eval_for_line(CS arg, OUT Boole* errp, EvalCtx* evalarg);
 int next_for_item(void *fi_void, CS arg);
 void free_for_info(void *fi_void);
 int op_pending(void);
-void set_context_for_expression(Expand *xp, CS arg, CommIndex id);
+void set_context_for_expression(Expand   *xp, CS arg, CommIndex   id);
 int pattern_match(CS pat, CS text, int ic);
 Boole isComment(CS c);
 CS skipwhite_and_linebreak(CS arg, EvalCtx *evalarg);
-int eval0(CS arg, Var *returnVar, EvalCtx *evalarg);
-int may_call_simple_func(CS arg, Var *returnVar);
-int eval0_simple_funccal(CS arg, Var *returnVar, EvalCtx *evalarg);
-int eval1(CS *arg, Var *returnVar, EvalCtx *evalarg);
+int eval0(CS arg, Var* returnVar, EvalCtx* evalarg);
+int may_call_simple_func(CS arg, OUT Var* returnVar);
+int eval0_simple_funccal(CS arg, OUT Var* returnVar, EvalCtx* evalarg);
+int eval1(OUT CS* arg, Var* returnVar, OUT EvalCtx* evalarg);
 void eval_addblob(Var *tv1, Var *tv2);
 int eval_addlist(Var *tv1, Var *tv2);
 int eval_leader(Byte **arg);
-int handle_predefined(CS s, int len, Var *returnVar);
-CS partial_name(PartiallyApplied *pt);
+int handle_predefined(CS s, int len, Var* returnVar);
+CS partial_name(PartiallyApplied* pt);
 void partial_unref(PartiallyApplied *pt);
-CS echo_string_core(Var *tv, Byte **tofree, Byte *numbuf, int copyID, int echo_style, int restore_copyID, int composite_val);
-CS echo_string(Var *tv, Byte **tofree, Byte *numbuf, int copyID);
-Pos *var2fpos(Var *varp, int dollar_lnum, int *fnum, int charcol);
-int list2fpos(Var *arg, Pos *posp, int *fnump, ColNr *curswantp, int charcol);
-int readEnvNameAndGetItsLen(CS *arg);
-int get_id_len(CS *arg);
-int get_name_len(Byte **arg, Byte **alias, int evaluate, int verbose);
-Text findNameEnd(Text const arg, Text *expr, Unt flags);
-int handle_subscript(CS *arg, Var *returnVar, EvalCtx *evalarg, int verbose);
-int item_copy(Var *from, Var *to, int deep, int top, int copyID);
-int mch_get_random(CS buf, int len);
-void echo_one(Var *returnVar, int with_space, int *atstart, int *needclr);
-void c_echo(Invocation *invo);
-void c_echohl(Invocation *invo);
+CS echo_string_core(
+   Var   *tv,
+   Byte   **tofree,
+   Byte   *numbuf,
+   int      copyID,
+   int      echo_style,
+   int      restore_copyID,
+   int      composite_val
+);
+CS echo_string(
+    Var   *tv,
+    Byte   **tofree,
+    Byte   *numbuf,
+    int      copyID)
+;
+Pos* var2fpos(
+   Var* varp,
+   int dollar_lnum,   // true when $ is last line
+   int* fnum,      // set to fnum for '0, 'A, etc.
+   int charcol)   // return character column
+;
+int list2fpos(
+   Var* arg,
+   Pos* posp,
+   int* fnump,
+   ColNr* curswantp,
+   int charcol
+);
+int readEnvNameAndGetItsLen(OUT CS* arg);
+int get_id_len(OUT CS* arg);
+int get_name_len(Byte** arg, Byte** alias, int evaluate, int verbose);
+Text findNameEnd(Text const arg, OUT Text* expr, Unt flags);
+int handle_subscript(
+   OUT CS* arg,
+   Var   *returnVar,
+   EvalCtx   *evalarg,
+   int      verbose)   // give error messages
+;
+int item_copy(
+   Var   *from,
+   Var   *to,
+   int      deep,
+   int      top,
+   int      copyID)
+;
+int mch_get_random(OUT CS buf, int len);
+void echo_one(Var* returnVar, int with_space, int *atstart, int *needclr);
+void c_echo(Invocation* invo);
+void c_echohl(Invocation* invo);
 int get_echo_attr(void);
-void c_execute(Invocation *invo);
-CS find_option_end(CS *arg, int *scope);
+void c_execute(Invocation* invo);
+CS find_option_end(OUT CS* arg, OUT int *scope);
 void lastSetMsg(ScriptPos script_ctx);
-CS do_string_sub(CS str, Unt len, CS pat, CS sub, Var *expr, Byte *flags, Unt *ret_len);
+CS do_string_sub(
+   CS str,
+   Unt len,
+   CS pat,
+   CS sub,
+   Var* expr,
+   Byte* flags,
+   Unt* ret_len      // length of returned buffer
+);
 void skipForLines(void *fi_void, EvalCtx *evalarg);
 void evalvars_clear(void);
 int garbage_collect_globvars(int copyID);
@@ -72,43 +136,49 @@ int garbage_collect_scriptvars(int copyID);
 void set_internal_string_var(CS name, CS value);
 void eval_diff(CS origfile, CS newfile, CS outfile);
 void eval_patch(CS origfile, CS diffFile, CS outfile);
-List *eval_spell_expr(CS badword, CS expr);
-void prepareEeglVar(int idx, Var *save_tv);
-void restoreEeglVar(int idx, Var *save_tv);
+List * eval_spell_expr(CS badword, CS expr);
+void prepareEeglVar(int idx, OUT Var* save_tv);
+void restoreEeglVar(int idx, Var* save_tv);
 int is_scoped_variable(CS name);
 CS eval_one_expr_in_str(CS p, ArrayList *gap, int evaluate);
-List *heredoc_get(Invocation *invo, CS cmd, int script_get);
-void c_let(Invocation *invo);
-CS skip_var_list(CS arg, int *var_count, int *semicolon, int silent);
-void list_hashtable_vars(EeSet *ht, CS prefix, int empty, int *first);
-void c_unlet(Invocation *invo);
-void c_lockvar(Invocation *invo);
-void list_unlet_range(List *l, ListItem *li_first, long n1_arg, int has_n2, long n2);
-int unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet *ht, Boole forceit);
+List * heredoc_get(Invocation* invo, CS cmd, int script_get);
+void c_let(Invocation* invo);
+CS skip_var_list(CS arg, OUT int* var_count, OUT int* semicolon, int silent);
+void list_hashtable_vars(EeSet* ht, CS prefix, int empty, int* first);
+void c_unlet(Invocation* invo);
+void c_lockvar(Invocation* invo);
+void list_unlet_range(
+   List* l,
+   ListItem* li_first,
+   long n1_arg,
+   int has_n2,
+   long n2
+);
+int unletVarFromHashTable(CS name, CS nameWithPrefix, EeSet* ht, Boole forceit);
 int unletImpl(CS nameWithPrefix, Boole forceit);
 void item_lock(Var *tv, int deep, int lock, int check_refcount);
 void del_menutrans_vars(void);
 CS cat_prefix_varname(int prefix, CS name);
 CS get_user_var_name(Expand *xp, int idx);
-char *get_var_special_name(int nr);
-Bag *get_globvar_dict(void);
-EeSet *get_globvar_ht(void);
-Bag *getEeglVarDict(void);
-int find_EeglVar(CS name, Unt *flags);
+char * get_var_special_name(int nr);
+Bag* get_globvar_dict(void);
+EeSet * get_globvar_ht(void);
+Bag* getEeglVarDict(void);
+int find_EeglVar(CS name, OUT Unt* flags);
 void set_EeglVar_type(int idx, VarTag tag);
 void set_EeglVar_nr(int idx, Long val);
 CS get_EeglVar_name(int idx);
-Var *get_EeglVar_tv(int idx);
+Var * get_EeglVar_tv(int idx);
 int set_EeglVar_tv(int idx, Var *tv);
 Long get_EeglVar_nr(int idx);
 CS get_EeglVar_str(int idx);
-List *get_EeglVar_list(int idx);
-Bag *get_EeglVar_dict(int idx);
+List * get_EeglVar_list(int idx);
+Bag * get_EeglVar_dict(int idx);
 void set_EeglVar_char(int c);
-void set_vcount(long count, long count1, int set_prevcount);
-void saveEeglVars(EeglVarsSave *evSave);
-void restoreEeglVars(EeglVarsSave *evSave);
-void set_EeglVar_string(int idx, Byte *val, int len);
+void set_vcount( long   count, long   count1, int      set_prevcount);
+void saveEeglVars(EeglVarsSave* evSave);
+void restoreEeglVars(EeglVarsSave* evSave);
+void set_EeglVar_string(int idx, Byte* val, int len);
 void set_EeglVar_list(int idx, List *val);
 void set_EeglVar_dict(int idx, Bag *val);
 void set_argv_var(char **argv, int argc);
@@ -116,30 +186,41 @@ void reset_reg_var(void);
 void set_reg_var(int c);
 CS v_exception(CS oldval);
 CS v_throwpoint(CS oldval);
-CS set_cmdarg(Invocation *invo, CS oldarg);
-int eval_variable_import(CS name, Var *returnVar);
-DictItem *findVar(CS name, Boole noAutoload);
-DictItem *findVar_also_in_script(CS name, EeSet **htp, Boole no_autoload);
-DictItem *findVar_in_ht(EeSet *ht, VarLevel level, Text varname, Boole no_autoload);
-EeSet *get_script_local_ht(void);
+CS set_cmdarg(Invocation* invo, CS oldarg);
+int eval_variable_import(CS name, Var* returnVar);
+DictItem * findVar(CS name, Boole noAutoload);
+DictItem * findVar_also_in_script(CS name, OUT EeSet** htp, Boole no_autoload);
+DictItem * findVar_in_ht(
+   EeSet* ht,
+   VarLevel level,
+   Text varname,
+   Boole no_autoload
+);
+EeSet * get_script_local_ht(void);
 int lookup_scriptitem(Text name, int cmd);
-EeSet *findVarHashTable(Text name, CS *varname);
+EeSet* findVarHashTable(Text name, OUT CS* varname);
 CS get_var_value(CS name);
 void new_script_vars(ScriptId id);
-void init_var_dict(Bag *bag, DictItem *dict_var, int scope);
-void unref_var_dict(Bag *dict);
-void vars_clear(EeSet *ht);
-void vars_clear_ext(EeSet *ht, int free_val);
-void delete_var(EeSet *ht, EeSetItem *hi);
-int before_set_vvar(CS varname, DictItem *di, Var *tv, int copy, int *type_error);
-void set_var(Text name, Var *newValue, Boole copy);
-int var_check_permission(DictItem *di, CS name);
+void init_var_dict(Bag* bag, DictItem* dict_var, int scope);
+void unref_var_dict(Bag* dict);
+void vars_clear(EeSet* ht);
+void vars_clear_ext(EeSet* ht, int free_val);
+void delete_var(EeSet* ht, EeSetItem *hi);
+int before_set_vvar(
+    CS varname,
+    DictItem* di,
+    Var* tv,
+    int copy,
+    int* type_error
+);
+void set_var(Text name, Var* newValue, Boole copy);
+int var_check_permission(DictItem* di, CS name);
 Boole var_check_ro(int flags, Text name, Boole use_gettext);
 int var_check_lock(Unt flags, Text name, Boole use_gettext);
 Boole var_check_fixed(int flags, Text name, Boole use_gettext);
 Boole value_check_lock(int lock, Text name, Boole use_gettext);
 Boole valid_varname(Text varname, Boole autoload);
-void assert_error(ArrayList *gap);
+void assert_error(ArrayList* gap);
 int var_exists(CS var);
 int alloc_redirLvalS(void);
 void clear_redirLvalS(void);
@@ -148,56 +229,77 @@ int var_redir_start(CS name, int append);
 void var_redir_str(CS value, int value_len);
 void var_redir_stop(void);
 CS get_clear_redirArrayList(void);
-void f_mode(Var *argvars, Var *returnVar);
-void f_state(Var *argvars, Var *returnVar);
-void f_gettabvar(Var *argvars, Var *returnVar);
-void f_gettabwinvar(Var *argvars, Var *returnVar);
-void f_getwinvar(Var *argvars, Var *returnVar);
-void f_getbufvar(Var *argvars, Var *returnVar);
-void f_settabvar(Var *argvars, Var *returnVar);
-void f_settabwinvar(Var *argvars, Var *returnVar);
-void f_setwinvar(Var *argvars, Var *returnVar);
-void f_setbufvar(Var *argvars, Var *returnVar);
-Callback get_callback(Var *arg);
-void putCallback(Var *tv, Callback *cb);
-void set_callback(Callback *dest, Callback *src);
-void evCopyCallback(Callback *dest, Callback *src);
-void evFreeCallback(Callback *callback);
+void f_mode(Var* argvars, Var* returnVar);
+void f_state(Var* argvars, Var* returnVar);
+void f_gettabvar(Var* argvars, Var* returnVar);
+void f_gettabwinvar(Arr(Var) argvars, Var* returnVar);
+void f_getwinvar(Arr(Var) argvars, Var* returnVar);
+void f_getbufvar(Arr(Var) argvars, Var* returnVar);
+void f_settabvar(Var* argvars, Var* returnVar UNUSED);
+void f_settabwinvar(Arr(Var) argvars, Var* returnVar UNUSED);
+void f_setwinvar(Arr(Var) argvars, Var* returnVar UNUSED);
+void f_setbufvar(Var* argvars, Var* returnVar UNUSED);
+Callback get_callback(Var* arg);
+void putCallback(OUT Var* tv, Callback* cb);
+void set_callback(Callback* dest, Callback* src);
+void evCopyCallback(OUT Callback* dest, Callback* src);
+void evFreeCallback(Callback* callback);
 CS get_function_name(Expand *xp, int idx);
-CS get_expr_name(Expand *xp, int idx);
+CS get_expr_name(Expand* xp, int idx);
 Unt find_internal_func(CS name);
 int has_internal_func(CS name);
-void internal_func_get_argcount(int idx, int *argcount, int *min_argcount);
+void internal_func_get_argcount(int idx, OUT int *argcount, OUT int *min_argcount);
 int internal_func_is_map(int idx);
 int check_internal_func(int idx, int argcount);
-FnError call_internal_func(CS name, int argcount, Var *argvars, Var *returnVar);
-void call_internal_func_by_idx(int idx, Var *argvars, Var *returnVar);
-FnError call_internal_method(CS name, int argcount, Var *argvars, Var *returnVar, Var *basetv);
-int non_zero_arg(Var *argvars);
-Book *evGetBookArg(Var *arg);
-Portal *getOptionalPortal(Var *argvars, int idx);
+FnError call_internal_func(CS name, int argcount, Var* argvars, Var* returnVar);
+void call_internal_func_by_idx(int idx, Var* argvars, Var* returnVar);
+FnError call_internal_method(
+   CS name,
+   int argcount,
+   Var* argvars,
+   Var* returnVar,
+   Var* basetv
+);
+int non_zero_arg(Var* argvars);
+Book * evGetBookArg(Var* arg);
+Portal* getOptionalPortal(Arr(Var) argvars, int idx);
 void execute_redir_str(CS value, int value_len);
 void execute_cmds_from_string(CS str);
-CS get_list_line(Unt c, void *cookie, int indent, GetlineAlgo options);
-void execute_common(Var *argvars, Var *returnVar, int arg_off);
-void f_exists(Var *argvars, Var *returnVar);
-void f_has(Var *argvars, Var *returnVar);
+CS get_list_line(
+   Unt c UNUSED,
+   void* cookie,
+   int indent UNUSED,
+   GetlineAlgo options UNUSED
+);
+void execute_common(Arr(Var) argvars, Var* returnVar, int arg_off);
+void f_exists(Var* argvars, Var* returnVar);
+void f_has(Arr(Var) argvars, Var* returnVar);
 int dynamic_feature(CS feature);
-void f_hlID(Var *argvars, Var *returnVar);
-void f_hlexists(Var *argvars, Var *returnVar);
-void f_hostname(Var *argvars, Var *returnVar);
-void f_id(Var *argvars, Var *returnVar);
+void f_hlID(Arr(Var) argvars, Var* returnVar);
+void f_hlexists(Arr(Var) argvars, Var* returnVar);
+void f_hostname(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_id(Arr(Var) argvars, Var* returnVar);
 Boole indexof_eval_expr(Var *expr);
-void f_len(Var *argvars, Var *returnVar);
+void f_len(Arr(Var) argvars, Var* returnVar);
 void range_list_materialize(List *list);
-long do_searchpair(CS spat, CS mpat, CS epat, Unt dir, Var *skip, Unt flags, Pos *match_pos, LineNr lnum_stop, long time_limit);
+long do_searchpair(
+   CS spat,       // start pattern
+   CS mpat,       // middle pattern
+   CS epat,       // end pattern
+   Unt dir,       // BACKWARD or FORWARD
+   Var* skip,       // skip expression
+   Unt flags,       // SP_SETPCMARK and other SP_ values
+   Pos* match_pos,
+   LineNr lnum_stop,  // stop at this line if not zero
+   long time_limit // stop after this many msec
+);
 int aborting(void);
 void update_force_abort(void);
 int should_abort(int retcode);
 int aborted_in_try(void);
-int cause_errthrow(CS mesg, int severe, int *ignore);
+int cause_errthrow(CS mesg, int severe, int* ignore);
 void free_global_msglist(void);
-CS get_exception_string(void *value, ExceptionKind type, CS cmdname, int *should_free);
+CS get_exception_string(void* value, ExceptionKind type, CS cmdname, int* should_free);
 int throw_exception(void *value, ExceptionKind type, CS commName);
 void discard_current_exception(void);
 void catch_exception(Exception *excp);
@@ -206,7 +308,7 @@ void exception_state_save(ExceptionState *estate);
 void exception_state_restore(ExceptionState *estate);
 void exception_state_clear(void);
 void report_make_pending(int pending, void *value);
-void c_eval(Invocation *invo);
+void c_eval(Invocation* invo);
 void enter_cleanup(Cleanup *csp);
 void leave_cleanup(Cleanup *csp);
-void c_endfunction(Invocation *invo);
+void c_endfunction(Invocation* invo);

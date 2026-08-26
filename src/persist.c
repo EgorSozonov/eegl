@@ -9,8 +9,88 @@
 #endif
 
 //{{{@@forward declarations
-
-
+private void add_user(Byte *user, int need_copy);
+private void init_users(void);
+private int ses_put_fname(FILE *fd, CS name);
+private int ses_fname(FILE* fd, Book* book, int add_eol);
+private int ses_arglist(FILE* fd, CS cmd, ArrayList* gap, int fullname);
+private Boole portNeedsToBeSaved(Portal* po);
+private Boole ses_do_frame(Frame* fr);
+private Frame* ses_skipframe(Frame* fr);
+private int createPortals(FILE* fd, Frame* fr);
+private int portalSizes(FILE* fd, int restore_size, Portal* tab_firstPor);
+private int put_view_curpos(FILE *fd, Portal *wp, char *spaces);
+private int put_view(
+   FILE* fd,
+   Portal* wp,
+   Tab* tp,
+   int add_edit,        // add ":edit" command to view
+   int current_arg_idx,     // current argument index of the portal, use -1 if unknown
+   EeSet* terminal_bufs // already encountered terminal books, can be NULL
+);
+private VarFlavor getVarFlavor(CS varname);
+private int store_session_globals(FILE *fd);
+private int makeopens(FILE   *fd, Byte   *currDir);
+private CS find_eeglinfo_parameter(int type);
+private CS eeglinfo_filename(CS file);
+private void eeglinfo_writestring(FILE* fd, CS p);
+private int barline_writestring(FILE *fd, CS s, int remaining_start);
+private CS eeglinfo_readstring(Vir* virp, int off);
+private int eeglinfo_readline(Vir* virp);
+private int readEeglinfoBookList(Vir* virp, int writing);
+private Boole removable(CS name);
+private void writeEeglInfoBookList(FILE* fp);
+private int hist_type2char(int type, int use_question);
+private void prepare_eeglinfo_history(int asklen, int writing);
+private int read_eeglinfo_history(Vir* virp, int writing);
+private void handle_eeglinfo_history(ArrayList* values, int writing);
+private void concat_history(int type);
+private int sort_hist(const void *s1, const void *s2);
+private void merge_history(int type);
+private void finish_eeglinfo_history(Vir *virp);
+private void write_eeglinfo_history(FILE *fp, int merge);
+private void write_eeglinfo_barlines(Vir *virp, FILE *fp_out);
+private int barline_parse(Vir* virp, CS text, ArrayList* values);
+private void write_eeglinfo_version(FILE* fp_out);
+private int no_eeglinfo(void);
+private int eeglinfo_error(CS errnum, CS message, Byte *line);
+private int read_eeglinfo_varlist(Vir* virp, int writing);
+private void write_eeglinfo_varlist(FILE* fp);
+private int read_eeglinfo_sub_string(Vir* virp, int force);
+private void write_eeglinfo_sub_string(FILE *fp);
+private int read_eeglinfo_search_pattern(Vir* virp, Boole force);
+private void wvsp_one(
+   FILE* fp,   // file to write to
+   int idx,   // spats[] index
+   CS s,   // search pat
+   int sc   // dir char
+);
+private void write_eeglinfo_search_pattern(FILE* fp);
+private void prepare_eeglinfo_registers(void);
+private void finish_eeglinfo_registers(void);
+private int read_eeglinfo_register(Vir* virp, Boole force);
+private void handle_eeglinfo_register(ArrayList *values, int force);
+private void write_eeglinfo_registers(FILE* fp);
+private void write_one_mark(FILE* fp_out, int c, Pos* pos);
+private void writeBookMarks(Book* book, FILE* fp_out);
+private int skip_for_eeglinfo(Book *book);
+private void write_eeglinfo_marks(FILE* fp_out, ArrayList* buflist);
+private void write_one_filemark(FILE* fp, FileMarkExt* fm, int c1, int c2);
+private void write_eeglinfo_filemarks(FILE* fp);
+private void copy_eeglinfo_marks(
+   Vir* virp,
+   FILE* fp_out,
+   ArrayList* buflist,
+   int eof,
+   int flags
+);
+private int read_eeglinfo_filemark(Vir *virp, int force);
+private void prepare_eeglinfo_marks(void);
+private void finish_eeglinfo_marks(void);
+private void handle_eeglinfo_mark(ArrayList *values, int force);
+private int read_eeglinfo_barline(Vir* virp, Boole force, int writing);
+private int read_eeglinfo_up_to_marks(Vir* virp, Boole forceit, int writing);
+private void do_eeglinfo(FILE* fp_in, FILE* fp_out, Unt flags);
 //}}}
 //{{{users
 
@@ -137,7 +217,7 @@ get_user_name(CS builder, int len) {
 //{{{sessions
 
 // Variable flavor
-private typedef enum {
+privateComp typedef enum {
    VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
    VAR_FLAVOR_SESSION,   // starts with uppercase, some lower
    VAR_FLAVOR_EEGLINFO      // all uppercase
@@ -975,7 +1055,7 @@ c_mkrc(Invocation* invo) {
       if (eeFullFileName(fname, tbuf, MAXPATHL, false) == OK)
          set_EeglVar_string(VV_THIS_SESSION, tbuf, -1);
    }
-pub theEnd:
+theEnd:
 
    eeglFree(viewFile);
 
@@ -1014,20 +1094,20 @@ put_line(FILE *fd, CS s) {
 #define BARTYPE_MARK     4
 
 // Structure used for reading from the eeglinfo file.
-private typedef struct {
+privateComp typedef struct {
    CS line;   // text of the current line
    FILE* vir_fd;   // file descriptor
    int vir_version;   // eeglinfo version detected or -1
    ArrayList vir_barlines;   // lines starting with |
 } Vir;
 
-private typedef enum {
+privateComp typedef enum {
    BVAL_NR,
    BVAL_STRING,
    BVAL_EMPTY
 } BValKind;
 
-private typedef struct {
+privateComp typedef struct {
    BValKind   btag;
    long   bv_nr;
    Byte   *bv_string;

@@ -9,12 +9,96 @@
 #define TABSIZE_MAX 16
 
 //{{{@@forward decls
-
-private int coladvance2(Pos *pos, int addspaces, int finetune, ColNr wcol);
-private void fixthisline(int (*get_the_indent)(void));
+private void check_status(Book* book);
+private void checkRecordedChanges(
+   Book* book,
+   LineNr lnum,
+   LineNr lnume,
+   long xtra
+);
+private void may_record_change(
+    LineNr   lnum,
+    ColNr   col,
+    LineNr   lnume,
+    long   xtra
+);
+private void remove_listener(Book* book, Listener *lnr, Listener *prev);
+private void changed_common(
+   LineNr   lnum,
+   ColNr   col,
+   LineNr   lnume,
+   long   xtra
+);
+private void changedOneline(Book* book, LineNr lnum);
+private void insertOrReplaceChar(Unt c, Boole replace);
+private Boole op_on_lines(int op);
+private Long get_new_sw_indent(
+   int      left,      // true if shift is to the left
+   int      round,      // true if new indent is to be to a tabstop
+   Long   amount,      // Number of shifts
+   Long   sw_val)
+;
+private void shift_block(Operator *oper, int amount);
+private void block_insert(
+   Operator* oper,
+   CS s,
+   Unt slen,
+   int b_insert,
+   OUT BlockDef* bdp)
+;
+private int getviscol2(ColNr col, ColNr coladd);
+private void mb_adjust_opend(Operator *oper);
+private void replaceAndMoveBack(Unt c);
+private int op_replace(Operator *oper, Unt c);
+private void op_tilde(Operator* oper);
+private Boole swapchars(Unt opTy, Pos* pos, int length);
+private int get_last_leader_offset(CS line, Byte **flags);
+private int do_addsub(
+   int opTy,
+   Pos* pos,
+   int length,
+   LineNr prenum1
+);
+private Long line_count_info(
+    CS line,
+    Long* wc,
+    Long* cc,
+    Long limit,
+    int eol_size
+);
+private void op_colon(Operator *oper);
+private void op_function(Operator *oper UNUSED);
+private void get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial);
+private int is_ex_cmdchar(ActionArg* cap);
+private void pbyte(Pos lp, int c);
+private Tm * eeLocaltime(
+   Tyme const* timep,      // timestamp for local representation
+   OUT Tm* result // pointer to caller return buffer
+);
+private int list2proftime(Var *arg, ProfTime *tm);
+private void insert_timer(Timer* timer);
+private void remove_timer(Timer* timer);
+private void free_timer(Timer* timer);
+private void timer_callback(Timer *timer);
+private Timer * find_timer(long id);
+private void stop_all_timers(void);
+private void add_timer_info(OUT Var* returnVar, Timer *timer);
+private void add_timer_info_all(OUT Var* returnVar);
+private void time_diff(TimeVal *then, TimeVal *now);
+private void set_flag(union sigval _unused UNUSED);
+private void set_flag SIGDEFARG(sigarg);
+private int coladvance2(
+   Pos   *pos,
+   int      addspaces,   // change the text to achieve our goal?
+   int      finetune,   // change char offset for the exact column
+   ColNr   wcol_arg   // column to move to (can be negative)
+);
+private long get_sw_value_pos(Book* book, Pos *pos, int left);
 private int get_indent_str(CS ptr, int ts);
+private void emsg_text_too_long(void);
+private void fixthisline(int (*get_the_indent)(void));
 private Boole cin_is_cinword(CS line);
-
+private CS skipStringLiteral(CS p);
 //}}}
 //{{{changes to text
 
@@ -4660,7 +4744,7 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
 }
 
 // Information for redoing the previous Visual selection.
-private typedef struct {
+privateComp typedef struct {
    int mode;   // 'v', 'V', or Ctrl-V
    LineNr lineCount;   // number of lines
    ColNr vcol;   // number of cols or end column
@@ -5213,7 +5297,7 @@ private Byte   tz_cache[64];
 #define FOR_ALL_TIMERS(t) \
     for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
     
-private typedef struct tm Tm; 
+privateComp typedef struct tm Tm; 
 
 //Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
 //latter version preferred for reentrancy.
@@ -6026,16 +6110,6 @@ elapsed(TimeVal *start_tv) {
    TimeVal  now_tv;
    gettimeofday(&now_tv, NULL);
    return (now_tv.tv_sec - start_tv->tv_sec) * 1000L + (now_tv.tv_usec - start_tv->tv_usec) / 1000L;
-}
-# endif
-
-# ifdef ELAPSED_TICKCOUNT
-// Return time in msec since "start_tick".
-pub long
-elapsed(DWORD start_tick) {
-   DWORD   now = GetTickCount();
-
-   return (long)now - (long)start_tick;
 }
 # endif
 #endif

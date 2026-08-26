@@ -246,13 +246,33 @@ c_intro(Invocation* invo UNUSED){
 #define EDIT_QF     4       // start in quickfix mode
 
 //{{{@@forward declarations
-
-private void mainerr(Unt, CS);
-private void earlyArgScan(MainParams*);
-private void init0(void);
-private void init1(OUT MainParams*);
-private int libMain(void);
-
+private void list_version(void);
+private void intro_message(int colon);
+private void do_intro_line(int row, CS mesg, int add_version);
+private int isSafeNow(void);
+private void earlyArgScan(MainParams* par);
+private int getNumericArg(
+   CS p,       // pointer to argument
+   int* idx,       // index in argument, is incremented
+   int def       // default value
+);
+private void parseCommandName(MainParams* par);
+private void scanCommandLineArgs(MainParams *par);
+private void check_tty(MainParams* par);
+private void readStdin(void);
+private void createPortals(MainParams* par);
+private void editBuffers(MainParams* par, CS cwd);
+private void executePreCommands(MainParams* par);
+private void exeCommands(MainParams* par);
+private void sourceStartupScripts(MainParams* par);
+private void mainerr(
+   Unt n,   // one of the ME_ defines
+   NULLABLE CS str   // extra argument
+);
+private void main_msg(CS s);
+private void usage(void);
+private void check_swap_exists_action(void);
+private void set_progpath(CS argv0);
 //}}}
 
 #ifndef NO_EEGL_MAIN

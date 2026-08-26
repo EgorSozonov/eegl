@@ -7,7 +7,7 @@
 
 #include "eegl.h"
 
-private typedef struct MsgHist MsgHist;
+privateComp typedef struct MsgHist MsgHist;
 struct MsgHist {
    MsgHist* next;
    CS c;
@@ -42,32 +42,55 @@ pub declStruct(MsgChunk);
 private MsgChunk *lastChunkS = NULL; // last displayed text
 
 //{{{@@forward declarations
-
-private void addMsgHistory(CS s, int len, char flags);
+private void homeReplaceDeco(CS fname, char flags);
+private CS drawText_mbyte(CS s, int l, char flags);
+private void ensureLength(Unt len);
+private void toPrintf(CS str, int maxlen);
+private Boole isVerboseFileDefined();
+private int other_sourcing_name(void);
+private CS get_emsg_source(void);
+private CS get_emsg_lnum(void);
+private int emsg_not_now(void);
+private int ignore_error(Arr(Byte const) msg);
+private int emsgImpl(CS s);
+private void addMsgHistory(
+   CS s,
+   int      len,      // -1 for undetermined length
+   char      flags
+);
 private void check_msg_hist(void);
+private void msg_end_prompt(void);
 private void hit_return_msg(void);
-private void homeReplaceDeco(Byte *fname, char flags);
-private void printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags);
-private void toDisplay(CS str, int maxlen, Byte flags, int recurse);
-private void inc_msg_scrolled(void);
-private void saveToScrollback(Byte **sb_str, Byte *s, char flags, int *sb_col, int finish);
-private void t_puts(int *t_col, Byte *t_s, Byte *s, Byte flags);
-private void toPrintf(Byte *str, int maxlen);
+private void display_confirm_msg(void);
 private int do_more_prompt(int typedChar);
+private void printWithDecoAndMaxLen(Arr(Byte const) str, int maxlen, char flags);
+private void put_messagePort(Portal *wp, int where, Byte *t_s, Byte *end, LineNr lnum);
+private void toDisplay(CS str, int      maxlen, Byte flags, int      recurse);
+private void t_puts(int* t_col, CS theText, CS sentinel, Byte flags);
 private void msg_screen_putchar(int c, char flags);
 private void msg_moremsg(int full);
-private int  msg_check_screen(void);
-private void redir_write(Byte *s, int maxlen);
-private Byte *msg_show_console_dialog(Byte *message, Byte *buttons, int dfltbutton);
-private int   confirm_msg_used = false;   // displaying confirm_msg
-private Byte   *confirm_msg = NULL;      // ":confirm" message
-private Byte   *confirm_msg_tail;      // tail of confirm_msg
-private void display_confirm_msg(void);
-private int emsg_to_channel_log = false;
-private Boole isVerboseFileDefined();
-private MsgChunk *moveToStartOfScreenLine(MsgChunk *mps);
-private MsgChunk * disp_sb_line(int row, MsgChunk *smp, int clear_to_eol);
-
+private int msg_check_screen(void);
+private void redir_write(Byte *str, int maxlen);
+private int copy_char(
+   Byte   *from,
+   Byte   *to,
+   int      lowercase)   // make character lower case
+;
+private Byte * msg_show_console_dialog(
+   Byte   *message,
+   Byte   *buttons,
+   int      dfltbutton
+);
+private void inc_msg_scrolled(void);
+private void saveToScrollback(
+   Byte   **sb_str,   // start of string
+   Byte   *s,      // just after string
+   char      flags,
+   int      *sb_col,
+   int      finish      // line ends
+);
+private MsgChunk * moveToStartOfScreenLine(MsgChunk *mps);
+private MsgChunk * disp_sb_line(int row, MsgChunk* smp, int clear_to_eol);
 //}}}
 
 //When writing messages to the screen, there are many different situations.
@@ -3142,7 +3165,7 @@ inc_msg_scrolled(void) {
 }
 
 
-private typedef enum {
+privateComp typedef enum {
    SB_CLEAR_NONE = 0,
    SB_CLEAR_ALL,
    SB_CLEAR_COMMLINE_BUSY,

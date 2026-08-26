@@ -6,22 +6,218 @@
 #include "eegl.h"
 
 //{{{@@forward declarations
-
-private Boole printHiliteHeaderWorker(int didHeader, int lineLen, HiliteGroup* group);
-private void printHilite(HiliteGroup* g);
-private void clearHiliteWorker(HiliteGroup* g);
-private void printHiliteHeaderNew(HiliteGroup* group);
+private Text keyName(HiKey kv, CS s);
+private Text keyOf(HiKeyValue kv, CS s);
+private Text valueOf(HiKeyValue kv, CS s);
+private Boole sliceCmpToConst0(Text a, Arr(char) b, Unt len);
+private char *(hiliteGroupStrings[]) =;
+private Text hiliteGroupName(Short hiId);
+private void initializeGroups(void);
+private int setDecoration(Text arg, OUT HiliteGroup* g);
+private Boole getColorByName(OUT VTermColor* res, Text name);
+private Boole setForeground(HiliteGroup* group, Text arg);
+private Boole setBackground(HiliteGroup* group, Text arg);
+private Boole setUnderline(OUT HiliteGroup* group, Text arg);
+private CS printColor(OUT Byte buf[static 4], VTermColor color);
+private void printHilite(HiliteGroup* group);
 private void printHiliteDeco(HiliteGroup* group);
+private int comparerByGroupName(void const* a, void const* b);
+private void printAllHiliteGroups();
+private void printHiliteHeaderNew(HiliteGroup* group);
+private Boole printHiliteHeaderWorker(
+   int didHeader,   // did header already
+   int lineLen,      // length of the part of the line that has been printed already
+   HiliteGroup* group
+);
+private Boole printHiliteHeader(
+   int       didHeader,   // did header already
+   int       lineLen,     // length of the part of the line that has been printed already
+   Short hiId
+);
+private Boole linkHilite(
+   HiliteGroup* group,
+   Text toName
+);
+private HiliteKey parseHiliteKey(Text key);
+private Decoration writeToDecoration(HiliteGroup* restrict g);
+private void  parseHiliteArgs(OUT HiKey keys[static 3], OUT HiKeyValue kvs[static 5], CS line);
+private void clearHiliteWorker(OUT HiliteGroup* g);
 private void set_normal_colors(void);
 private Short hiResolveLinks(Short hiId);
-
+private HiliteGroup* resolveLinksByGroup(HiliteGroup* group);
+private Bag * getDecorationDict(int hlDeco);
+private Bag* toDict(Short hiId, int resolveLinks);
+private CS (spo_name_tab[SPO_COUNT]) =;
+private void clear_syn_state(SyntaxState *p);
+private void clear_current_state(void);
+private void syn_sync(Portal   *wp, LineNr   start_lnum, SyntaxState   *last_valid);
+private void save_chartab(CS chartab);
+private void restoreKeywordChars(CS chartab);
+private int syn_match_linecont(LineNr lnum);
+private void syn_start_line(void);
+private void syn_update_ends(int startofline);
+private void syn_stack_alloc(void);
+private void syn_stack_apply_changes_block(SyntaxBlock *block, Book *book);
+private int syn_stack_cleanup(void);
+private void syn_stack_free_entry(SyntaxBlock *block, SyntaxState *p);
+private SyntaxState * syn_stack_find_entry(LineNr lnum);
+private SyntaxState * store_current_state(void);
+private void load_current_state(SyntaxState *from);
+private int syn_stack_equal(SyntaxState *sp);
+private void invalidate_current_state(void);
+private void validate_current_state(void);
+private int syn_finish_line(int       syncing);
+private Decoration getCurrentDeco(
+   Boole syncing,      // When 1: called for syncing
+   Boole displaying,      // result will be displayed
+   Boole keep_state      // keep syntax stack afterwards
+);
+private int did_match_already(int idx, ArrayList *gap);
+private StateItem * push_next_match(StateItem *currStateItem);
+private void check_state_ends(void);
+private void update_si_attr(int idx);
+private void check_keepend(void);
+private void update_si_end(
+   StateItem   *sip,
+   int  startcol,   // where to start searching for the end
+   Boole force)       // when true overrule a previous end
+;
+private int push_current_state(int idx);
+private void pop_current_state(void);
+private void find_endpos(
+   int      idx,      // index of the pattern
+   PosNoVirt   *startpos,   // where to start looking for an END match
+   PosNoVirt   *m_endpos,   // return: end of match
+   PosNoVirt   *hl_endpos,   // return: end of highlighting
+   long   *flagsp,   // return: flags of matching END
+   PosNoVirt   *end_endpos,   // return: end of end pattern match
+   int      *end_idx,   // return: group ID for end pat. match, or 0
+   RegExternalMatch *start_ext)   // submatches from the start pattern
+;
+private void limit_pos(PosNoVirt* pos, PosNoVirt* limit);
+private void limit_pos_zero( PosNoVirt   *pos, PosNoVirt   *limit);
+private void syn_add_end_off(
+   PosNoVirt   *result,   // returned position
+   RegMultilineMatch   *regmatch,   // start/end of match
+   SyntaxPattern   *spp,      // matched pattern
+   int      idx,      // index of offset
+   int      extra)      // extra chars for offset to start
+;
+private void syn_add_start_off(
+   PosNoVirt   *result,   // returned position
+   RegMultilineMatch   *regmatch,   // start/end of match
+   SyntaxPattern   *spp,
+   int      idx,
+   int      extra       // extra chars for offset to end
+);
+private CS syn_getcurline(void);
+private ColNr syn_getcurline_len(void);
+private int syn_regexec(
+   RegMultilineMatch   *rmp,
+   LineNr   lnum,
+   ColNr   col,
+   syn_Time* st UNUSED
+);
+private Short check_keyword_id(
+   CS line,
+   int startcol,   // position in line to check for keyword
+   int* endcolp,   // return: character after found keyword
+   long* flagsp,   // return: flags of matching keyword
+   Short** next_listp,   // return: next_list of matching keyword
+   StateItem* currStateItem,   // item at the top of the stack
+   int* ccharp UNUSED   // conceal substitution char
+);
+private void caseSubcommand(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_foldlevel(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_spell(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_iskeyword(Invocation* invo, int syncing UNUSED);
+private void syntax_sync_clear(void);
+private void syn_remove_pattern( SyntaxBlock   *block, int      idx);
+private void syn_clear_pattern(SyntaxBlock *block, int i);
+private void syn_clear_cluster(SyntaxBlock *block, int i);
+private void clearSubcommand(Invocation* invo, int syncing);
+private void syn_clear_one(Short hiId, int syncing);
+private void offSubcommand(Invocation* invo UNUSED, int syncing UNUSED);
+private void theOnSubcommand(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_enable(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_reset(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_manual(Invocation* invo, int syncing UNUSED);
+private void callScriptForSubcommand(Invocation* invo, char *name);
+private void syn_cmd_list(Invocation* invo, int syncing) ;
+private void syn_lines_msg(void);
+private void syn_match_msg(void);
+private void syn_list_one(
+   int id,
+   int syncing,       // when true: list syncing items
+   int link_only       // when true; list link-only too
+);
+private void syn_list_flags(Kv *nlist, int nr_entries, int flags, char decoFlags);
+private void syn_list_cluster(int id);
+private void put_id_list(CS name, Short *list, int deco);
+private void put_pattern(CS s, int c, SyntaxPattern   *spp, int deco);
+private int syn_list_keywords(
+   int id,
+   EeSet* ht,
+   int did_header,      // header has already been printed
+   int deco
+);
+private void syn_clear_keyword(int id, EeSet *ht);
+private void clearKeywordTable(EeSet *ht);
+private void add_keyword(
+   CS name,       // name of keyword
+   Unt namelen,    // length of keyword (excluding the ZERO)
+   int id,       // group ID for this keyword
+   Unt flags,       // flags for this keyword
+   Short* containedInHiId, // containedin for this keyword
+   Short* next_list // nextgroup for this keyword
+);
+private CS get_group_name(
+   CS arg,      // start of the argument
+   OUT CS* name_end)   // pointer to end of the name
+;
+private CS get_syn_options(
+   CS start,      // next argument to be checked
+   SynOptArg* opt,      // various things
+   int skip      // true if skipping over command
+);
+private void syn_incl_toplevel(int id, int *flagsp);
+private void syn_cmd_include(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_keyword(Invocation* invo, int syncing UNUSED);
+private void syn_cmd_match( Invocation   *invo, int      syncing);
+private void syn_cmd_region(
+   Invocation   *invo,
+   int      syncing       // true for ":syntax sync region .."
+);
+private int syn_compare_stub(const void *v1, const void *v2);
+private void syn_combine_list(Short **clstr1, Short **clstr2, int list_op);
+private Short clusterByName(CS name);
+private int syn_check_cluster(CS pp, int len);
+private int addCluster(CS name);
+private void syn_cmd_cluster(Invocation* invo, int syncing UNUSED);
+private void init_syn_patterns(void);
+private CS getSyntPattern(CS arg, SyntaxPattern *ci, OUT Boole* hadEol);
+private void syn_cmd_sync(Invocation* invo, int syncing UNUSED);
+private int get_id_list(
+   Byte   **arg,
+   int      keylen,      // length of keyword
+   OUT Arr(Short)* list, // where to store the resulting list. (if not NULL, has no effect)
+   int      skip
+);
+private Short * copy_id_list(Short *list);
+private int in_id_list(
+   StateItem   *currStateItem,   // current item or NULL
+   Arr(Short) list,      // id list
+   SyntaxInfo* ssp,      // group id and ":syn include" tag of group
+   int      flags)      // group flags
+;
+private int syn_cur_foldlevel(void);
 //}}}
 //{{{Hilite groups
 
 //Information about a hilite group. The ID of a hilite group is also called group ID.
 //This is module-private info, the publically usable part is written to decorationsG.
 
-private typedef struct {
+privateComp typedef struct {
    Unt hiId;
    Text name;
    VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
@@ -37,7 +233,7 @@ private typedef struct {
 } HiliteGroup;
 
 // All possible keys, used for parsing
-private typedef enum {
+privateComp typedef enum {
    BG,
    FG,
    UNDER,
@@ -46,7 +242,7 @@ private typedef enum {
    KEY_PARSE_ERROR
 } HiliteKey;
 
-private typedef struct {
+privateComp typedef struct {
    int nameStart; // index into "colorsText"
    int nameLen;
    VTermColor value;
@@ -54,7 +250,7 @@ private typedef struct {
 
 
 //Parsed single names like the hilite group name or "clear"
-private typedef struct {
+privateComp typedef struct {
    Short start;
    Short end;
 } HiKey;
@@ -65,7 +261,7 @@ keyName(HiKey kv, CS s) {
 }
 
 // Parsed key-value pairs like "fg=blue"
-private typedef struct {
+privateComp typedef struct {
    Short start;
    Short keyEnd; // position of the "=". The value starts at (keyEnd + 1)
    Short end;
@@ -121,7 +317,7 @@ private Kv* decoKindIndices[] = {
 
 #define COMBINE_DECORATIONS(d0, d1) ((((d1) & HL_NOCOMBINE) ? (d1) : (d0)) | (d1))
 
-pub enum {
+privateComp enum {
     BLACK = 0,
     DARKBLUE,
     DARKGREEN,
@@ -1085,7 +1281,7 @@ decoEq(Decoration a, Decoration b) {
 //{{{syntax hiliting
 
 // Struct used to store one state of the state stack.
-private typedef struct buf_state {
+privateComp typedef struct buf_state {
    int bs_idx;    // index of pattern
    int bs_flags;    // flags for pattern
    int bs_seqnr;    // stores si_seqnr
@@ -1125,7 +1321,7 @@ private typedef struct buf_state {
 
 
 // syn_state contains the syntax state stack for the start of one line. Used by array[].
-private typedef struct SyntaxState SyntaxState;
+privateComp typedef struct SyntaxState SyntaxState;
 
 private struct SyntaxState {
    SyntaxState   *next; // next entry in used or free list
@@ -1143,14 +1339,14 @@ private struct SyntaxState {
 
 
 // struct passed to in_id_list()
-private typedef struct {
+privateComp typedef struct {
    int   inc_tag;   // ":syn include" unique tag
    Short   hiId;      // highlight group ID of item
    Short* containedInHiId;   // cont.in group IDs, if non-zero
 } SyntaxInfo;
 
 // Each keyword has one keyentry, which is linked in a hash list.
-private typedef struct KeyEntry KeyEntry;
+privateComp typedef struct KeyEntry KeyEntry;
 
 private struct KeyEntry {
    KeyEntry   *next;   // next entry with identical "keyword[]"
@@ -1185,7 +1381,7 @@ private CS (spo_name_tab[SPO_COUNT]) = {
 //and for the actually highlighted text (_h_start and _h_end).
 //
 //Note that ordering of members is optimized to reduce padding.
-private typedef struct syn_pattern {
+privateComp typedef struct syn_pattern {
    char sp_type;      // see SPTYPE_ defines below
    char syncing;      // this item used for syncing
    Short patternHiId; // highlight group ID of pattern
@@ -1232,7 +1428,7 @@ private int current_trans_id = 0; // idem, transparency removed
 private int current_flags = 0;
 private int current_seqnr = 0;
 
-private typedef struct syn_cluster_S {
+privateComp typedef struct syn_cluster_S {
    CS name;      // syntax cluster name
    CS nameUpper; // uppercase of name
    Arr(Short) hiIds;    // IDs in this syntax cluster
@@ -1288,7 +1484,7 @@ private Byte msg_no_items[] = "No Syntax items defined for this buffer";
 //For the current state we need to remember more than just the idx.
 //When matchEndPos.lnum is 0, the items other than si_idx are unknown.
 //(The end positions have the column number of the next char)
-private typedef struct state_item {
+privateComp typedef struct state_item {
    int si_idx;         // index of syntax pattern or KEYWORD_IDX
    Short hiId;         // highlight group ID for keywords
    int transparentHiId;      // idem, transparency removed
@@ -1312,7 +1508,7 @@ private typedef struct state_item {
                                     // but contained groups
 
 // Struct to reduce the number of arguments to get_syn_options(), it's used very often.
-private typedef struct {
+privateComp typedef struct {
    int flags;      // flags for contained and transparent
    int keyword;   // true for ":syn keyword"
    int* sync_idx;   // syntax item for "grouphere" argument, NULL if not allowed
@@ -1388,7 +1584,7 @@ private int in_id_list(StateItem *item, Arr(Short) containsHiId, SyntaxInfo* ssp
 private int push_current_state(int idx);
 private void pop_current_state(void);
 #define IF_SYN_TIME(p) NULL
-private typedef int syn_Time;
+privateComp typedef int syn_Time;
 
 private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
@@ -5875,7 +6071,7 @@ in_id_list(
    return !retval;
 }
 
-private typedef struct subcommand {
+privateComp typedef struct subcommand {
    CS name;         // subcommand name
    void (*fn)(Invocation *, int);   // function to call
 } Subcommand;
@@ -5980,7 +6176,7 @@ syntax_present(Portal* po) {
        || po->ownSyntax->keywordsIgnoreCase.count > 0);
 }
 
-private enum {
+privateComp enum {
    EXP_SUBCMD,       // expand ":syn" sub-commands
    EXP_CASE,       // expand ":syn case" arguments
    EXP_SPELL,       // expand ":syn spell" arguments

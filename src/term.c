@@ -6,7 +6,7 @@
 #include "eegl.h"
 #include <termcap.h>
 
-private typedef struct termios TermIos;
+privateComp typedef struct termios TermIos;
 
 private CS TC_CURSOR_SHAPES[] = {
    S"\033[2 q", //block cursor
@@ -16,9 +16,95 @@ private CS TC_CURSOR_SHAPES[] = {
 private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
 
 //{{{@@forward declarations
-
+private int isEeglXterm(CS name);
+private void applyBuiltinCapability(Arr(TinfoEntry) entries, int len);
+private void get_term_entries(OUT int* height, OUT int* width);
+private CS invoke_tgetent(CS tbuf, CS terminalName);
+private CS eeTgetstr(CS s, Byte **pp);
+private int out_char_nf(int c);
+private int can_get_termresponse(void);
+private void requestSent(TermRequest* status);
+private int termrequest_any_pending(void);
+private int get_long_from_buf(CS buffer, Ulong* val);
+private void set_shellsize_inner(int width, int height, int mustset);
+private void adjust_modlen(int idx);
+private void accept_modifiers_for_function_keys(void);
+private int endsInStar(Text code);
+private void del_termcode_idx(Unt idx);
+private int putStrIntoBuf(
+   int offset,
+   int slen,
+   Text newText,
+   OUT Text buffer,
+   OUT int* bufLen
+);
+private int putStr(
+   int offset,
+   int slen,
+   Text newText,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen
+);
+private int modifiers2keycode(Unt modifiers, Unt* key, OUT CS string);
+private void handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED);
+private int add_key_to_buf(Unt key, OUT CS buffer);
+private int putKeyModifiersIntoTypeBuf(
+   Unt key_arg,
+   Unt modifiers_arg,
+   int csi_len,
+   int offset,
+   NULLABLE OUT Text buffer,
+   int* bufLen
+);
+private int handle_key_with_modifier(
+   int arg[static 3],
+   int   trail,
+   int   csi_len,
+   int   offset,
+   NULLABLE OUT Text buffer,
+   int   *bufLen
+);
+private int handle_key_without_modifier(
+   int arg[static 3],
+   int csiLen,
+   int offset,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen
+);
+private int handle_csi_function_key(
+   int argc,
+   int arg[static 3],
+   int trail,
+   int csi_len,
+   OUT CS key_name,
+   int offset,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen
+);
+private int handleControlSequenceIntroducer(
+   CS tp,
+   int len,
+   CS argp,
+   int offset,
+   NULLABLE OUT Text buffer,
+   OUT int* bufLen,
+   CS key_name,
+   int* slen
+);
+private int handle_dcs(CS tp, CS argp, int len, CS key_name, int* slen);
+private Unt handleXKeys(Unt key);
+private int mch_tcgetattr(int fd, TermIos* term);
+private Unt find_term_bykeys(CS src);
+private void gatherTermLeaders(void);
+private int keyNameEntryComparer(void const* a, void const* b);
+private void req_more_codes_from_term(void);
+private void got_code_from_term(CS code, int len);
+private void handleUnansweredRequests(void);
+private int extractModifiers(Unt key, OUT Unt* modifiers, Boole doSimplify, OUT Boole* didSimplify);
+private int nameToModMask(Byte c);
 private int may_adjust_key_for_ctrl(int modifiers, Unt key);
-
+private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
+private void initmaster(int f);
 //}}}
 //{{{terminal state:
 
@@ -66,14 +152,14 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
 private CS invoke_tgetent(CS , CS );
 
-private typedef enum {
+privateComp typedef enum {
    STATUS_GET,    // send request when switching to RAW mode
    STATUS_SENT,   // did send request, checking for response
    STATUS_GOT,    // received response
    STATUS_FAIL    // timed out
 } RequestProgress;
 
-private typedef struct {
+privateComp typedef struct {
    RequestProgress progress;
    Tyme start;   // when request was sent, -1 for never
 } TermRequest;
@@ -142,7 +228,7 @@ private int initial_cursor_blink = false;
 //Each terminfo is a list of TinfoEntry.
 //
 //Entries marked with "guessed" may be wrong.
-private typedef struct {
+privateComp typedef struct {
    CS value; // value
    Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
@@ -198,7 +284,7 @@ private int  check_for_codes = false;         // check for key code response
 // Structure and table to store terminal features that can be detected by
 // querying the terminal.  Either by inspecting the termresponse or a more
 // specific request.  Besides this there are:
-private typedef struct {
+privateComp typedef struct {
    CS name;
    int setByTermResponse;
    int status;
@@ -1562,7 +1648,7 @@ scroll_region_reset(void) {
 
 // List of terminal codes that are currently recognized.
 
-private typedef struct {
+privateComp typedef struct {
    Byte name[2];       // termcap name of entry
    CS code;       // terminal code (in allocated memory)
    int len;       // STRLEN(code)
@@ -2872,7 +2958,7 @@ private Byte modifier_keys_table[] = {
 //}}}
 //{{{codes and special chars
 
-private typedef struct {
+privateComp typedef struct {
    Boole enabled;       // is this entry available?
    int key;          // special key code or ascii value
    Text name;          // name of key

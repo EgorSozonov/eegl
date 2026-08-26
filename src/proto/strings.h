@@ -1,11 +1,15 @@
-/* src/strings.c */
-Arena *createArena(void);
-void *allocateOnArena(Unt allocSize, Arena *a);
-void deleteArena(Arena *ar);
-void arenaTryFree(void *start, Unt len, Arena *a);
-Unt mb_ptr2char(Byte *p);
-CS str_foldcase(CS str, Unt orglen, CS buf, Unt bufLen);
-unsigned nr2hex(unsigned c);
+Arena* createArena();
+void* allocateOnArena(Unt allocSize, Arena* a);
+void deleteArena(Arena* ar);
+void arenaTryFree(void* start, Unt len, Arena* a);
+Unt mb_ptr2char(Byte* p);
+CS str_foldcase(
+   CS str,
+   Unt orglen,
+   CS buf,
+   Unt bufLen
+);
+Unt nr2hex(Unt c);
 void transchar_hex(CS buf, int c);
 CS skipwhite(CS q);
 CS skipSpace(CS q);
@@ -27,10 +31,20 @@ int eeglToLower(Unt c);
 CS skiptowhite(CS p);
 CS skiptowhite_esc(CS p);
 CS skipToLastSpace(CS p);
-long parseLong(CS *pp);
-long parseLong_quoted(CS *pp);
+long parseLong(OUT CS* pp);
+long parseLong_quoted(OUT CS* pp);
 int eeIsBlankLine(CS lbuf);
-void readLongNumber(CS start, int *prep, int *len, int what, Long *nptr, Ulong *unptr, int maxlen, Boole strict, Boole *overflow);
+void readLongNumber(
+   CS start,
+   OUT int* prep,    // type of number 0 = decimal, 'x' or 'X' is hex, 'b' or 'B' is bin
+   OUT int* len,     // detected length of number
+   int what,     // what numbers to recognize
+   OUT Long* nptr, // signed result
+   OUT Ulong* unptr,  // unsigned result
+   int maxlen,   // max length of string to check
+   Boole strict,   // check strictly
+   Boole* overflow  // when not NULL set to true for overflow
+);
 int hex2nr(int c);
 int hexhex2nr(CS p);
 int rem_backslash(CS filename);
@@ -41,7 +55,7 @@ Unt utf_ptr2len(CS p);
 Unt utf_byte2len(int b);
 Unt utf_byte2len_zero(int b);
 Boole utfNeedTruncate(CS p, int size);
-Unt utf_ptr2len_len(Byte const *p, int size);
+Unt utf_ptr2len_len(Byte const* p, int size);
 Unt mb_char2len(Unt c);
 int mb_char2bytes(Unt c, CS buf);
 int utf_iscomposing_uint(Unt c);
@@ -54,30 +68,32 @@ int caseInsensitiveCompareNChars2(CS s1, CS s2, Unt n1, Unt n2);
 int caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn);
 Boole strInEmojiTable(Unt c);
 Boole strInDoubleWidthTable(Unt c);
-Unt strAdvanceMultibyte(CS *pp);
-Unt mb_cptr2char_adv(CS *pp);
+Unt strAdvanceMultibyte(OUT CS* pp);
+Unt mb_cptr2char_adv(OUT CS* pp);
 int utf_ambiguous_width(Unt c);
 int mb_head_off(CS base, CS p);
 int utf_eat_space(int cc);
 Boole utf_allow_break_before(Unt cc);
 int utf_allow_break(Unt cc, Unt ncc);
-void mb_copy_char(CS *fp, CS *tp);
+void mb_copy_char(OUT CS* fp, OUT CS* tp);
 int mb_off_next(CS base, CS p);
 int mb_tail_off(CS base, CS p);
 int utf_valid_string(CS s, CS end);
 CS mb_prevptr(CS line, CS p);
 int mb_charlen(CS str);
 int mb_charlen_len(CS str, int len);
-CS mb_unescape(CS *pp);
+CS mb_unescape(OUT CS* pp);
 Boole utf_iscomposing(Unt c);
 Boole utf_printable(Unt c);
-void appendSubDir(CS subDir, DirName *dn);
-ChunkyString *createChunkyString(Byte const *c, Arena *a);
-void appendToChunkyString(Byte const *c, ChunkyString *chunky);
-CS toStringChunky(ChunkyString *chunky);
+void appendSubDir(CS subDir, OUT DirName* dn);
+Boole removeSubDir(OUT DirName* restrict dn);
+declStruct(ChunkString);
+ChunkyString* createChunkyString(Arr(Byte const) c, Arena* a);
+void appendToChunkyString(Arr(Byte const) c, ChunkyString* chunky);
+CS toStringChunky(ChunkyString* chunky);
 Unt utfCharLen(CS p);
-Unt utfCharLen_len(Byte *p, int size);
-Text mbText(CS b);
+Unt utfCharLen_len(Byte* p, int size);
+Text mbText(NULLABLE CS b);
 Text text(CS b);
 Boole eq_Text_Text(Text a, Text b);
 Boole eq_Text_CString(Text a, CS b);
@@ -89,18 +105,18 @@ CS skipLine(CS s);
 CS copyStr(CS string);
 CS copySubstr(CS string, Unt len);
 Polystring polystring(Unt cap);
-void appendToPoly(Text s, Polystring *buf);
-void appendToMulti(Text s, Multistring *mu);
-void appendNullToMulti(Multistring *mu);
-void freeMultistring(Multistring *mu);
-void freePolystring(Polystring *poly);
-CS copySubstrA(CS string, Unt len, Arena *a);
+void appendToPoly(Text s, OUT Polystring* buf);
+void appendToMulti(Text s, OUT Multistring* mu);
+void appendNullToMulti(OUT Multistring* mu);
+void freeMultistring(OUT Multistring* mu);
+void freePolystring(OUT Polystring* poly);
+CS copySubstrA(CS string, Unt len, Arena* a);
 Text copyText(Text slice);
-CS copyStrA(CS string, Arena *a);
+CS copyStrA(CS string, Arena* a);
 CS copyStr_escaped(CS string, CS escChars);
-CS copyStrEscapedA(CS string, CS escChars, Arena *a);
-CS copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena *a);
-CS *splitByCharIntoArray(CS inp, Byte delimiter, Unt *len);
+CS copyStrEscapedA(CS string, CS escChars, Arena* a);
+CS copyStr_escaped_ext(CS string, CS esc_chars, Unt cc, Boole bsl, Arena* a);
+Arr(CS) splitByCharIntoArray(CS inp, Byte delimiter, OUT Unt* len);
 ArrayList splitBySpace(CS inp);
 CS copyStr_up(CS string);
 CS copySubstr_up(CS string, Unt len);
@@ -111,26 +127,30 @@ Text skipQuoted(Text s);
 Text skipSingleQuoted(Text s);
 CS strlow_save(CS orig);
 void del_trailing_spaces(CS ptr);
-void copySubstrToAllocation(CS to, Text from);
+void copySubstrToAllocation(OUT CS to, Text from);
 void concatenateStrings(CS to, CS from, Unt tosize);
 int compareAscii(CS s1, CS s2, Unt len);
 CS firstOccurrence(CS string, Unt c);
 CS firstByteOccurrence(CS string, Byte b);
 CS eeStrbyte(CS string, Unt c);
 CS lastOccurrence(CS string, int c);
-void sortStrings(CS *files, int count);
+CS eeStrpbrk(CS s, CS charset);
+void sortStrings(Arr(CS) files, int count);
 int has_non_ascii(CS s);
 CS concat_str(CS str0, CS str1);
 CS reverse_text(CS s);
 CS string_quote(CS str, int function);
 long string_count(CS haystack, CS needle, int ic);
+int eeSnprintfAdd0(CS str, Unt str_m, const char *fmt, ...);
+int eeSnprintf0(CS str, Unt str_m, const char *fmt, ...);
+Unt eeSnprintfSafelen0(CS str, Unt str_m, const char *fmt, ...);
 long char_idx2byte(CS str, Unt str_len, Long idx);
-CS concatStrArray(CS *arr, Unt len, Text separator, Arena *a);
+CS concatStrArray(Arr(CS) arr, Unt len, Text separator, Arena* a);
 CS fileExtension(Text fName);
 Boole startsWith(CS longerStr, CS shorterStr);
-CS encodeBase64(void const *binaryData_, int inputLen);
-Boole decodeBase64ToArrayList(ArrayList *ret, Text base64);
-Boole decodeBase64(CS *ret, Text base64);
+CS encodeBase64(void const* binaryData_, int inputLen);
+Boole decodeBase64ToArrayList(OUT ArrayList* ret, Text base64);
+Boole decodeBase64(OUT CS* ret, Text base64);
 CS remove_tail(CS p, CS pend, CS name);
 Boole after_pathsep(CS fileName, CS afterSep);
 Boole path_is_url(CS p);
@@ -146,7 +166,7 @@ Boole strIsRelative(CS fname);
 int eeIsAbsName(CS name);
 int pathcmp(CS p, CS q, int maxlen);
 Boole hasEnvVar(CS p);
-int strCutPathFromListOfPaths(CS *option, CS buf, int maxlen, CS sep_chars);
+int strCutPathFromListOfPaths(OUT CS* option, OUT CS buf, int maxlen, CS sep_chars);
 Boole strMatchLowPrioSuffix(CS fname, CS suffixes);
 void add_pathsep(CS p);
 CS concat_fnames(CS fname1, CS fname2, Boole sep);
@@ -155,31 +175,47 @@ int isValidForScriptName(int c);
 int isValidForScriptName1(int c);
 int isValidForFirstCharDictKey(int c);
 int parse_hex_digit(int c);
-void ga_clear(ArrayList *gap);
-void ga_clear_strings(ArrayList *gap);
+void ga_clear(ArrayList* gap);
+void ga_clear_strings(ArrayList* gap);
 int ga_copy_strings(ArrayList *from, ArrayList *to);
-void ga_init(ArrayList *gap);
+void ga_init(ArrayList* gap);
 void ga_init2(ArrayList *gap, Unt itemsize, int growsize);
 int ga_grow(ArrayList *gap, int n);
-int ga_grow_inner(ArrayList *gap, int n);
+int ga_grow_inner(ArrayList* gap, int n);
 CS ga_concat_strings(ArrayList *gap, char *sep);
 int ga_copy_string(ArrayList *gap, CS p);
 int ga_add_string(ArrayList *gap, CS p);
 void ga_concat(ArrayList *gap, CS s);
 void ga_concat_len(ArrayList *gap, CS s, Unt len);
 int ga_append(ArrayList *gap, int c);
-void *mergesort_list(void *head, void *(*get_next)(void *), void (*set_next)(void *, void *), void *(*get_prev)(void *), void (*set_prev)(void *, void *), int (*compare)(const void *, const void *));
-void sha256_start(ContextSha256 *ctx);
+void * mergesort_list(
+   void *head,
+   void *(*get_next)(void *),
+   void (*set_next)(void *, void *),
+   void *(*get_prev)(void *),
+   void (*set_prev)(void *, void *),
+   int (*compare)(const void *, const void *)
+);
+void sha256_start(ContextSha256* ctx);
 void sha256_update(ContextSha256 *ctx, CS input, Unt length);
 void sha256_finish(ContextSha256 *ctx, Byte digest[32]);
 CS sha256_bytes(CS buf, int buf_len, CS salt, int salt_len);
 CS sha256_key(CS buf, CS salt, int salt_len);
 int sha256_self_test(void);
 void sha2_seed(CS header, int header_len, CS salt, int salt_len);
-int binarySearch_Unt(Unt key, int start, int end, Unt *arr);
+int binarySearch_Unt(Unt key, int start, int end, Arr(Unt) arr);
 int cmp_keyvalue_value(const void *a, const void *b);
 int cmp_keyvalue_value_n(const void *a, const void *b);
 int cmp_keyvalue_value_i(const void *a, const void *b);
 int cmp_keyvalue_value_ni(const void *a, const void *b);
-DictStringInt128 *dictStringInt128New(Byte const *text, Int *values, Int size, Arena *a);
-DictStringInt128 *dictStringInt128NewJustIndices(Byte const *text, Int size, Arena *a);
+DictStringInt128* dictStringInt128New(Arr(Byte const) text, Arr(Int) values, Int size, Arena* a);
+DictStringInt128* dictStringInt128NewJustIndices(Arr(Byte const) text, Int size, Arena* a);
+Boole containsKey_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack);
+Int get_DictStringInt128(Arr(Byte const) needle, DictStringInt128* restrict haystack);
+Int get_Text_DictStringInt128(Text needle, DictStringInt128* restrict haystack);
+Int getOrDefault_DictStringInt128(    Arr(Byte const) needle, Int defaultValue, DictStringInt128* restrict haystack
+);
+Int getOrDefault_Text_DictStringInt128(    Text needle, Int defaultValue, DictStringInt128* restrict haystack
+);
+Int getKv_Text_DictStringInt128(    OUT Unt* key, Text needle, DictStringInt128* restrict haystack
+);

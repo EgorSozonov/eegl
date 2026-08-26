@@ -1,9 +1,11 @@
-/* src/motor.c */
 int highest_patch(void);
-void c_version(Invocation *invo);
+void c_version(Invocation* invo);
 void maybe_intro_message(void);
-void c_intro(Invocation *invo);
-int appMain(int argc, char **argv);
+void c_intro(Invocation* invo UNUSED);
+int libMain(void);
+void init0(void);
+void init1(OUT MainParams* par);
+int appMain(int argc, char** argv);
 int is_not_a_term(void);
 int is_not_a_term_or_gui(void);
 void free_vbuf(void);
@@ -15,5 +17,5 @@ int work_pending(void);
 void mainLoop(Boole inCommPort);
 void exitEegl(int exitval);
 void mainerr_arg_missing(CS str);
-CS mainProgramVersion(void);
-void __bp(void);
+CS mainProgramVersion();
+void __attribute__((noinline)) __bp();

@@ -5,7 +5,7 @@
 
 #include "eegl.h"
 
-private typedef struct searchstat {
+privateComp typedef struct searchstat {
    int cur;        // current position of found words
    int cnt;        // total count of found words
    int exact_match;// true if matched exactly on specified position
@@ -16,26 +16,95 @@ private typedef struct searchstat {
 } SearchFileStat;
 
 //{{{@@forward declarations
-
-private void set_vv_searchforward(void);
-private int first_submatch(RegMultilineMatch* rp);
-private CS get_line_and_copy(LineNr lnum, CS buf);
-private void show_pat_in_path(CS, int, int, int, FILE *, LineNr *, long);
 private void save_incsearch_state(void);
 private void restore_incsearch_state(void);
-private int check_prevcol(CS linep, int col, int ch, int *prevcol);
-private int find_rawstring_end(CS linep, Pos *startpos, Pos *endpos);
-private void find_mps_values(OUT Unt* initc, OUT Unt* findc, OUT int *backwards, int switchit);
-private int is_zero_width(Text pattern, Boole move, Pos* cur, Unt direction);
-private void cmdline_search_stat(
-   int dirc, Pos *pos, Pos *cursor_pos, int show_top_bot_msg, CS msgbuf, Unt msgbuflen, 
-   int recompute, int maxcount, long timeout
+private void set_vv_searchforward(void);
+private int first_submatch(RegMultilineMatch *rp);
+private int check_prevcol(
+   CS linep,
+   int      col,
+   int      ch,
+   int      *prevcol
 );
-private void update_search_stat(
-   int dirc, Pos *pos, Pos *cursor_pos, SearchFileStat *stat, int recompute, int maxcount, 
+private int find_rawstring_end(CS linep, Pos* startpos, Pos* endpos);
+private void find_mps_values(
+   OUT Unt* initc,
+   OUT Unt* findc,
+   OUT int* backwards,
+   int switchit
+);
+private int is_zero_width(
+   Text pattern,
+   Boole move,
+   Pos* cur,
+   Unt direction
+);
+private void cmdline_search_stat(
+   int dirc,
+   Pos* pos,
+   Pos* cursor_pos,
+   int show_top_bot_msg,
+   CS msgbuf,
+   Unt msgbuflen,
+   int recompute,
+   int maxcount,
    long timeout
 );
-
+private void update_search_stat(
+   int dirc,
+   Pos* pos,
+   Pos* cursor_pos,
+   SearchFileStat* stat,
+   int recompute,
+   int maxcount,
+   long timeout
+);
+private CS get_line_and_copy(LineNr lnum, CS buf);
+private void show_pat_in_path(
+   CS  line,
+   int       type,
+   int       did_show,
+   int       action,
+   FILE* fp,
+   LineNr* lnum,
+   long    count
+);
+private int match_add(
+   Portal* po,
+   CS grp,
+   CS pat,
+   int prio,
+   int id,
+   List* pos_list
+);
+private int match_delete(Portal* po, int id, int perr);
+private MatchItem* get_match(Portal* po, int id);
+private int next_search_hl_pos(
+   OUT Match* match,   // points to a match
+   LineNr lnum,
+   MatchItem* matchItem,   // match item with positions
+   ColNr mincol   // minimal column for a match
+);
+private void next_search_hl(
+   Portal* port,
+   Match* search_hl,
+   Match* match,   // points to search_hl or a match
+   LineNr lnum,
+   ColNr mincol,   // minimal column for a match
+   MatchItem* cur   // to retrieve match positions if any
+);
+private void check_cur_search_hl(Portal* po, Match* match);
+private int matchadd_dict_arg(Var* tv, OUT Portal** port);
+private int helpCompare(const void *s1, const void *s2);
+private void generateHelpTagsForDir(
+   CS dir,              //doc directory
+   CS ext,              // suffix, ".txt", ".itx", ".frx", etc.
+   CS tagfname,         //"tags" for English, "tags-fr" for French.
+   int add_help_tags,   //add "help-tags" tag
+   int ignore_writeerr  //ignore write error
+);
+private void do_helptags(CS dirname, int add_help_tags, int ignore_writeerr);
+private void helptagsCb(CS fname, void* cookie);
 //}}}
 //{{{searches
 
@@ -88,7 +157,7 @@ private Boole saved_spatsHlsearch = true;
 private Text mrPatternP = (Text){.c = null, .len = 0};
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
-private typedef struct {
+privateComp typedef struct {
    FILE* fp;     //File pointer
    CS name;      //Full name of file
    LineNr lnum;  //Line we were up to in file

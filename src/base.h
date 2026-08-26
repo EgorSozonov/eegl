@@ -9,6 +9,7 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 #include <stdarg.h> //va_list etc
 
 #define private static
+#define privateComp
 #define public
 #define OUT
 #define Arr(T) T*

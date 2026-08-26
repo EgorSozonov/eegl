@@ -7,82 +7,395 @@
 
 #define USING_FLOAT_STUFF
 //{{{@@forward declarations
-
-private void f_and(Arr(Var) argvars, Var* returnVar);
-private void f_balloon_gettext(Arr(Var) argvars, Var* returnVar);
-private void f_balloon_show(Arr(Var) argvars, Var* returnVar);
-private void f_balloon_split(Arr(Var) argvars, Var* returnVar);
-private void f_base64_encode(Arr(Var) argvars, Var* returnVar);
-private void f_base64_decode(Arr(Var) argvars, Var* returnVar);
-private void f_bindtextdomain(Arr(Var) argvars, Var* returnVar);
-private void f_byte2line(Arr(Var) argvars, Var* returnVar);
+private int compareNames(const void *s1, const void *s2);
+private int eval1_emsg(Byte **arg, Var* returnVar, Invocation* invo);
+private int partialEvalExp(Var* expr, Var* argv, int argc, Var* returnVar);
+private int eval_expr_func(
+   Var   *expr,
+   Var   *argv,
+   int      argc,
+   Var   *returnVar
+);
+private int eval_expr_string(Var* expr, Var* returnVar);
+private Boole eval_expr_to_bool(Var *expr, OUT Boole* error);
+private void free_eval_tofree_later(EvalCtx *evalarg);
+private Var* evalExprInternal(CS arg, Invocation* invo, int use_simple_function);
+private int evalStringLiteral(Byte **arg, OUT Var* returnVar, Boole evaluate, Boole interpolate);
+private int evalRawString(Byte **arg, Var* returnVar, int evaluate, int interpolate);
+private int eval_interp_string(Byte **arg, Var* returnVar, int evaluate);
+private CS deref_function_name(
+    Byte   **arg,
+    Byte   **tofree,
+    EvalCtx   *evalarg,
+    int      verbose
+);
+private int callEeglFunction(
+   Byte      *func,
+   int      argc,
+   Var   *argv,
+   Var   *returnVar
+);
+private CS flags_tostring(Unt flags, FlagString* _fstring, CS buf, Unt n);
+private void fillLvalFromRoot(Lval *lp, LvalRoot* root);
+private int get_lval_dict_item(
+   OUT Lval   *lp,
+   Text key,
+   GetLval arg,
+   Byte   **key_end,
+   Var   *var1
+);
+private int get_lval_blob(
+   Lval   *lp,
+   Var   *var1,
+   Var   *var2,
+   int      empty1,
+   int      quiet)
+;
+private int get_lval_list(
+   Lval   *lp,
+   Var   *var1,
+   Var   *var2,
+   int      empty1,
+   int      quiet)
+;
+private int dot_allowed_after_type(Text name, VarTag tag, int quiet);
+private Boole index_allowed_after_type(Text name, VarTag tag, int quiet);
+private CS getLvalSubscript(Lval* lv, CS p, GetLval arg);
+private void clear_type_list(ArrayList *gap);
+private int tv_op_blob(Var* tv1, Var* tv2, CS op);
+private int tv_op_list(Var* tv1, Var* tv2, CS op);
+private int tv_op_number(Var* tv1, Var* tv2, CS op);
+private int tv_op_string(Var* tv1, Var* tv2, CS op UNUSED);
+private int tv_op_nr_or_string(Var *tv1, Var *tv2, CS op);
+private int tv_op_float(Var* tv1, Var* tv2, CS op);
+private int eval_func(
+   Byte       **arg,   // points to "(", will be advanced
+   EvalCtx   *evalarg,
+   Text name,
+   Var    *returnVar,
+   int       flags,
+   Var    *basetv)   // "expr" for "expr->name(arg)"
+;
+private CS newline_skip_comments(CS arg);
+private int eval0_retarg(
+   CS arg,
+   Var* returnVar,
+   EvalCtx* evalarg,
+   CS* retarg
+);
+private int eval2(OUT Byte **arg, Var* returnVar, EvalCtx* evalarg);
+private int eval3(Byte **arg, Var* returnVar, EvalCtx *evalarg);
+private int eval4(Byte **arg, Var* returnVar, EvalCtx *evalarg);
+private int eval_shift_number(Var *tv1, Var *tv2, int shift_type);
+private int eval5(Byte **arg, Var* returnVar, EvalCtx *evalarg);
+private int eval_concat_str(Var *tv1, Var *tv2);
+private int eval_addsub_number(Var *tv1, Var *tv2, int op);
+private int eval6(Byte **arg, Var* returnVar, EvalCtx *evalarg);
+private int eval_multdiv_number(Var *tv1, Var *tv2, int op);
+private int eval7(
+   Byte   **arg,
+   Var   *returnVar,
+   EvalCtx   *evalarg,
+   Boole      want_string)  // after "." operator
+;
+private int eval8(
+   OUT CS* arg,
+   Var* returnVar,
+   EvalCtx* evalarg,
+   Boole want_string   // after "." operator
+);
+private void eval9_reg_contents(
+   Byte   **arg,
+   Var   *returnVar,
+   int      evaluate)
+;
+private int eval9_nested_expr(
+   OUT CS* arg,
+   Var* returnVar,
+   EvalCtx* evalarg
+);
+private int eval9_var_func_name(
+   CS* arg,
+   Var* returnVar,
+   EvalCtx* evalarg,
+   int      evaluate,
+   CS* name_start)
+;
+private int eval9(
+   OUT CS* arg,
+   Var   *returnVar,
+   EvalCtx   *evalarg,
+   Boole      want_string)   // after "." operator
+;
+private int eval9_leader(
+   Var* returnVar,
+   int numeric_only,
+   CS start_leader,
+   CS* end_leaderp)
+;
+private int call_func_returnVar(
+   Byte       **arg,
+   EvalCtx   *evalarg,
+   Var    *returnVar,
+   int       evaluate,
+   Bag       *selfdict,
+   Var    *basetv
+);
+private int eval_lambda(
+   Byte   **arg,
+   Var   *returnVar,
+   EvalCtx   *evalarg,
+   Boole verbose   // give error messages
+);
+private int eval_method(
+   Byte   **arg,
+   Var   *returnVar,
+   EvalCtx   *evalarg,
+   Boole verbose   // give error messages
+);
+private int eval_index(
+   Byte   **arg,
+   Var* returnVar,
+   EvalCtx* evalarg,
+   int verbose)   // give error messages
+;
+private void partial_free(PartiallyApplied* pt);
+private CS string_tv2string(Var* tv, Byte** tofree, int echo_style, int composite_val);
+private CS func_tv2string(Var* tv, Byte** tofree, int echo_style);
+private CS method_tv2string(Var* tv, Byte** tofree, int echo_style);
+private CS partial_tv2string(
+    Var   *tv,
+    Byte   **tofree,
+    Byte   *numbuf,
+    int      copyID)
+;
+private CS list_tv2string(
+   Var   *tv,
+   Byte   **tofree,
+   int      copyID,
+   int      restore_copyID
+);
+private CS dict_tv2string(
+   Var   *tv,
+   Byte   **tofree,
+   int      copyID,
+   int      restore_copyID)
+;
+private CS jobchan_tv2string(
+   Var   *tv UNUSED,
+   OUT Byte   **tofree UNUSED,
+   OUT CS numBuf,
+   int      composite_val
+);
+private int buf_byteidx_to_charidx(Book *book, int lnum, int byteidx);
+private Text expandCurlyBraces(Text braces, Text outer);
+private CS eval_next_line(CS arg, EvalCtx* evalarg);
+private void initGlobalAndSpecialVars(void);
+private void listEeglVars(int *first);
+private void list_script_vars(int *first);
+private CS eval_all_expr_in_str(CS str);
+private int letVars(
+    CS arg_start,
+    Var* tv,
+    Boole      copy,      // copy values from "tv", don't move
+    int      semicolon,   // from skip_var_list()
+    int      var_count,   // from skip_var_list()
+    Unt      flags,      // ASSIGN_FINAL, ASSIGN_CONST, etc.
+    CS op
+);
+private CS skip_var_one(CS arg);
+private void list_globVars(int* first);
+private void list_buf_vars(int* first);
+private void list_win_vars(int* first);
+private void list_tabVars(int* first);
+private CS list_arg_vars(Invocation* invo, CS arg, int* first);
+private CS letEnv(CS arg, Var* tv, Unt flags, CS endchars, CS op);
+private CS letOption(CS arg, Var* tv, Unt flags, CS endchars, CS op);
+private CS letRegister(CS arg, Var* tv, Unt flags, CS endchars, CS op);
+private CS letOne(
+   CS arg,    // points to variable name
+   Var* tv,      // value to assign to variable
+   Boole copy,      // copy value from "tv"
+   Unt flags,      // ASSIGN_CONST, ASSIGN_FINAL, etc.
+   CS endchars,   // valid chars after variable name  or NULL
+   CS op      // "+", "-", "."  or NULL
+);
+private void unletOrLock(
+   Invocation* invo,
+   CS argstart,
+   int deep,
+   int (*callback)(Lval *, CommIndex, CS, Boole, int)
+);
+private int unletVar(
+   Lval* lv,
+   CommIndex commandId UNUSED,
+   CS nameEnd,
+   Boole forceIt,
+   int deep UNUSED
+);
+private int do_lock_var(
+   Lval* lp,
+   CommIndex commandId,
+   CS nameEnd,
+   Boole forceIt UNUSED,
+   int deep
+);
+private int eval_variable(
+   Text name,
+   Var* returnVar,      // NULL when only checking existence
+   DictItem** dip,      // non-NULL when typval's dict item is needed
+   int      flags      // EVAL_VAR_ flags
+);
+private void check_vars(Text name);
+private DictItem* findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload);
+private void list_one_var(DictItem *v, CS prefix, int *first);
+private void list_one_var_a(
+   CS prefix,
+   CS name,
+   int type,
+   CS string,
+   int* first  // when true clear rest of screen and set to false
+);
+private int setVarImpl(
+   Text name,
+   ScriptId sid,
+   Var* newValue,
+   Boole      copy,       // make copy of value in "tv"
+   Unt      flags_arg  // ASSIGN_CONST, ASSIGN_FINAL, etc.
+);
+private void getVarFrom(
+   CS varname,
+   Var* returnVar,
+   Var* deftv,       // Default value if not found.
+   VarLevel level,
+   Tab* t,       // can be NULL
+   Portal* port,
+   Book* book // Ignored if htname is not 'b'.
+);
+private void getPortalVar(
+   Var* argvars,
+   Var* returnVar,
+   int off       // 1 for gettabwinvar()
+);
+private void setPortVar(Var* argvars, int off);
+private CS getRedirLval();
+private void may_add_state_char(ArrayList* gap, CS include, int c);
+private Unt find_internal_func_opt(CS name, int implemented);
+private int has_internal_func_name(CS name);
+private CS internal_func_name(int idx);
+private void f_and(Var* argvars, Var* returnVar);
+private void f_balloon_gettext(Var* argvars UNUSED, Var* returnVar);
+private void f_balloon_show(Var* argvars, Var* returnVar UNUSED);
+private void f_balloon_split(Var* argvars, Var* returnVar UNUSED);
+private void* base64_encode(Blob* blob);
+private void base64_decode(CS base64, Blob* blob);
+private void f_base64_decode(Var* argvars, Var* returnVar);
+private void f_base64_encode(Var* argvars, Var* returnVar);
+private void f_bindtextdomain(Var* argvars, Var* returnVar);
+private void f_byte2line(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_call(Arr(Var) argvars, Var* returnVar);
-private void f_changenr(Arr(Var) argvars, Var* returnVar);
+private void f_changenr(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_char2nr(Arr(Var) argvars, Var* returnVar);
+private void get_col(Arr(Var) argvars, Var* returnVar, int charcol);
 private void f_charcol(Arr(Var) argvars, Var* returnVar);
 private void f_col(Arr(Var) argvars, Var* returnVar);
-private void f_confirm(Arr(Var) argvars, Var* returnVar);
+private void f_confirm(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
 private void f_copy(Arr(Var) argvars, Var* returnVar);
-private void f_cursor(Var *argsvars, Var* returnVar);
-private void f_deepcopy(Arr(Var) argvars, Var* returnVar);
-private void f_did_filetype(Arr(Var) argvars, Var* returnVar);
-private void f_echoraw(Arr(Var) argvars, Var* returnVar);
-private void f_empty(Arr(Var) argvars, Var* returnVar);
-private void f_environ(Arr(Var) argvars, Var* returnVar);
-private void f_err_teapot(Arr(Var) argvars, Var* returnVar);
-private void f_escape(Arr(Var) argvars, Var* returnVar);
-private void f_eval(Arr(Var) argvars, Var* returnVar);
-private void f_eventhandler(Arr(Var) argvars, Var* returnVar);
-private void f_execute(Arr(Var) argvars, Var* returnVar);
-private void f_expand(Arr(Var) argvars, Var* returnVar);
-private void f_expandcmd(Arr(Var) argvars, Var* returnVar);
-private void f_feedkeys(Arr(Var) argvars, Var* returnVar);
+private void set_cursorpos(Var* argvars, OUT Var* returnVar, int charcol);
+private void f_cursor(Var* argvars, Var* returnVar);
+private void f_deepcopy(Var* argvars, Var* returnVar);
+private void f_did_filetype(Var* argvars UNUSED, Var* returnVar UNUSED);
+private void f_echoraw(Var* argvars, Var* returnVar UNUSED);
+private void f_empty(Var* argvars, Var* returnVar);
+private void f_environ(Var* argvars UNUSED, Var* returnVar);
+private void f_err_teapot(Arr(Var) argvars, Var* returnVar UNUSED);
+private void f_escape(Var* argvars, Var*  returnVar);
+private void f_eval(Var* argvars, Var* returnVar);
+private void f_eventhandler(Arr(Var) argvars UNUSED, Var* returnVar);
+private CS get_str_line(
+   Unt c UNUSED,
+   void* cookie,
+   int indent UNUSED,
+   GetlineAlgo options UNUSED
+);
+private void f_execute(Var* argvars, Var* returnVar);
+private void f_expand(Var* argvars, Var* returnVar);
+private void f_expandcmd(Var* argvars, Var* returnVar);
+private void f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED);
 private void f_fnameescape(Arr(Var) argvars, Var* returnVar);
-private void f_funcref(Arr(Var) argvars, Var* returnVar);
-private void f_function(Arr(Var) argvars, Var* returnVar);
-private void f_garbagecollect(Arr(Var) argvars, Var* returnVar);
-private void f_get(Arr(Var) argvars, Var* returnVar);
-private void f_getcellpixels(Arr(Var) argvars, Var* returnVar);
-private void f_getchangelist(Arr(Var) argvars, Var* returnVar);
-private void f_getcharpos(Arr(Var) argvars, Var* returnVar);
-private void f_getcharsearch(Arr(Var) argvars, Var* returnVar);
+private void common_function(Arr(Var) argvars, Var* returnVar, int is_funcref);
+private void f_funcref(Var* argvars, Var* returnVar);
+private void f_function(Var* argvars, Var* returnVar);
+private void f_garbagecollect(Var* argvars, Var* returnVar UNUSED);
+private void f_get(Var* argvars, Var*  returnVar);
+private void f_getcellpixels(Var* argvars UNUSED, Var* returnVar);
+private void f_getchangelist(Var* argvars, Var* returnVar);
+private void getpos_both(Arr(Var) argvars, Var* returnVar, int getcurpos, int charcol);
+private void f_getcharpos(Var* argvars, Var* returnVar);
+private void f_getcharsearch(Var* argvars UNUSED, Var* returnVar);
+private void f_getenv(Var* argvars, Var* returnVar);
+private void f_getfontname(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_getjumplist(Var* argvars, Var* returnVar);
+private void f_getpid(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_getcurpos(Arr(Var) argvars, Var* returnVar);
 private void f_getcursorcharpos(Arr(Var) argvars, Var* returnVar);
-private void f_getenv(Arr(Var) argvars, Var* returnVar);
-private void f_getfontname(Arr(Var) argvars, Var* returnVar);
-private void f_getjumplist(Arr(Var) argvars, Var* returnVar);
-private void f_getpid(Arr(Var) argvars, Var* returnVar);
-private void f_getpos(Arr(Var) argvars, Var* returnVar);
-private void f_getreg(Arr(Var) argvars, Var* returnVar);
-private void f_getreginfo(Arr(Var) argvars, Var* returnVar);
+private void f_getpos(Var* argvars, Var* returnVar);
+private CS block_def2str(BlockDef* bd);
+private int getregionpos(
+   Var* argvars,
+   Var* returnVar,
+   Pos* p1,
+   Pos* p2,
+   int* inclusive,
+   int* region_type,
+   Operator   *oper
+);
 private void f_getregion(Arr(Var) argvars, Var* returnVar);
+private void add_regionpos_range(Var* returnVar, Pos p1, Pos p2);
 private void f_getregionpos(Arr(Var) argvars, Var* returnVar);
+private int getreg_get_regname(Arr(Var) argvars);
+private void f_getreg(Arr(Var) argvars, Var* returnVar);
 private void f_getregtype(Arr(Var) argvars, Var* returnVar);
 private void f_gettagstack(Arr(Var) argvars, Var* returnVar);
 private void f_gettext(Arr(Var) argvars, Var* returnVar);
 private void f_haslocaldir(Arr(Var) argvars, Var* returnVar);
+private void index_func_blob(Arr(Var) argvars, Var* returnVar);
+private void index_func_list(Arr(Var) argvars, Var* returnVar);
 private void f_index(Arr(Var) argvars, Var* returnVar);
+private int indexof_blob(Blob *b, long startidx, Var *expr);
+private int indexof_list(List *l, long startidx, Var *expr);
 private void f_indexof(Arr(Var) argvars, Var* returnVar);
 private void f_input(Arr(Var) argvars, Var* returnVar);
 private void f_inputdialog(Arr(Var) argvars, Var* returnVar);
 private void f_inputlist(Arr(Var) argvars, Var* returnVar);
-private void f_inputrestore(Arr(Var) argvars, Var* returnVar);
-private void f_inputsave(Arr(Var) argvars, Var* returnVar);
+private void f_inputrestore(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_inputsave(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_inputsecret(Arr(Var) argvars, Var* returnVar);
-private void f_interrupt(Arr(Var) argvars, Var* returnVar);
+private void f_interrupt(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
 private void f_invert(Arr(Var) argvars, Var* returnVar);
+private void freeLvalRoot(LvalRoot *root);
 private void f_islocked(Arr(Var) argvars, Var* returnVar);
 private void f_keytrans(Arr(Var) argvars, Var* returnVar);
-private void f_last_buffer_nr(Arr(Var) argvars, Var* returnVar);
+private void f_last_buffer_nr(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_line(Arr(Var) argvars, Var* returnVar);
-private void f_line2byte(Arr(Var) argvars, Var* returnVar);
-private void f_match(Arr(Var) argvars, Var* returnVar);
+private void f_line2byte(Arr(Var) argvars UNUSED, Var* returnVar);
+private void find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type);
+private int get_matches_in_str(
+   CS str,
+   RegMatch   *rmp,
+   List   *mlist,
+   int      idx,
+   Boole      submatches,
+   Boole      matchbuf
+);
 private void f_matchbufline(Arr(Var) argvars, Var* returnVar);
+private void f_match(Arr(Var) argvars, Var* returnVar);
 private void f_matchend(Arr(Var) argvars, Var* returnVar);
 private void f_matchlist(Arr(Var) argvars, Var* returnVar);
 private void f_matchstr(Arr(Var) argvars, Var* returnVar);
 private void f_matchstrlist(Arr(Var) argvars, Var* returnVar);
 private void f_matchstrpos(Arr(Var) argvars, Var* returnVar);
+private void max_min(Arr(Var) argvars, Var* returnVar, int domax);
 private void f_max(Arr(Var) argvars, Var* returnVar);
 private void f_min(Arr(Var) argvars, Var* returnVar);
 private void f_nextnonblank(Arr(Var) argvars, Var* returnVar);
@@ -90,63 +403,66 @@ private void f_ngettext(Arr(Var) argvars, Var* returnVar);
 private void f_nr2char(Arr(Var) argvars, Var* returnVar);
 private void f_or(Arr(Var) argvars, Var* returnVar);
 private void f_prevnonblank(Arr(Var) argvars, Var* returnVar);
-private void f_printf(Arr(Var) argvars, Var* returnVar);
-private void f_pum_getpos(Arr(Var) argvars, Var* returnVar);
-private void f_pumvisible(Arr(Var) argvars, Var* returnVar);
-private void f_test_srand_seed(Arr(Var) argvars, Var* returnVar);
+private void f_printf(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_pum_getpos(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_pumvisible(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_test_srand_seed(Arr(Var) argvars, Var* returnVar UNUSED);
+private void init_srand(Unt *x);
 private void f_rand(Arr(Var) argvars, Var* returnVar);
+private void f_srand(Arr(Var) argvars, Var* returnVar);
 private void f_range(Arr(Var) argvars, Var* returnVar);
-private void f_reg_executing(Arr(Var) argvars, Var* returnVar);
-private void f_reg_recording(Arr(Var) argvars, Var* returnVar);
+private void f_getreginfo(Arr(Var) argvars, Var* returnVar);
+private void return_register(int regname, Var* returnVar);
+private void f_reg_executing(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_reg_recording(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_rename(Arr(Var) argvars, Var* returnVar);
+private void repeat_list(List *l, int n, Var* returnVar);
+private void repeat_blob(Var *blob_tv, int n, Var* returnVar);
+private void repeat_string(Var *str_tv, int n, Var* returnVar);
 private void f_repeat(Arr(Var) argvars, Var* returnVar);
+private int get_search_arg(Var *varp, Unt *flagsp);
+private int search_cmn(Arr(Var) argvars, OUT Pos *match_pos, OUT Unt* flagsp);
 private void f_search(Arr(Var) argvars, Var* returnVar);
 private void f_searchdecl(Arr(Var) argvars, Var* returnVar);
+private int searchpair_cmn(Arr(Var) argvars, Pos *match_pos);
 private void f_searchpair(Arr(Var) argvars, Var* returnVar);
 private void f_searchpairpos(Arr(Var) argvars, Var* returnVar);
 private void f_searchpos(Arr(Var) argvars, Var* returnVar);
+private void set_position(Arr(Var) argvars, Var* returnVar, int charpos);
 private void f_setcharpos(Arr(Var) argvars, Var* returnVar);
-private void f_setcharsearch(Arr(Var) argvars, Var* returnVar);
+private void f_setcharsearch(Arr(Var) argvars, Var* returnVar UNUSED);
 private void f_setcursorcharpos(Arr(Var) argvars, Var* returnVar);
-private void f_setenv(Arr(Var) argvars, Var* returnVar);
+private void f_setenv(Arr(Var) argvars, Var* returnVar UNUSED);
 private void f_setfperm(Arr(Var) argvars, Var* returnVar);
 private void f_setpos(Arr(Var) argvars, Var* returnVar);
+private int get_yank_type(Byte **pp, CS yank_type, long *block_len);
 private void f_setreg(Arr(Var) argvars, Var* returnVar);
 private void f_settagstack(Arr(Var) argvars, Var* returnVar);
 private void f_sha256(Arr(Var) argvars, Var* returnVar);
 private void f_shellescape(Arr(Var) argvars, Var* returnVar);
-private void f_shiftwidth(Arr(Var) argvars, Var* returnVar);
+private void f_shiftwidth(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_split(Arr(Var) argvars, Var* returnVar);
-private void f_srand(Arr(Var) argvars, Var* returnVar);
 private void f_submatch(Arr(Var) argvars, Var* returnVar);
 private void f_substitute(Arr(Var) argvars, Var* returnVar);
-private void f_swapfilelist(Arr(Var) argvars, Var* returnVar);
+private void f_swapfilelist(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_swapinfo(Arr(Var) argvars, Var* returnVar);
 private void f_swapname(Arr(Var) argvars, Var* returnVar);
-private void f_synID(Arr(Var) argvars, Var* returnVar);
-private void f_synstack(Arr(Var) argvars, Var* returnVar);
-private void f_tabpagebuflist(Arr(Var) argvars, Var* returnVar);
+private void f_synID(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_synstack(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_tabpagebuflist(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_tagfiles(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_taglist(Arr(Var) argvars, Var* returnVar);
-private void f_tagfiles(Arr(Var) argvars, Var* returnVar);
 private void f_type(Arr(Var) argvars, Var* returnVar);
 private void f_virtcol(Arr(Var) argvars, Var* returnVar);
 private void f_visualmode(Arr(Var) argvars, Var* returnVar);
-private void f_wildmenumode(Arr(Var) argvars, Var* returnVar);
-private void f_wordcount(Arr(Var) argvars, Var* returnVar);
+private void f_wildmenumode(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_wordcount(Arr(Var) argvars UNUSED, Var* returnVar);
 private void f_xor(Arr(Var) argvars, Var* returnVar);
-
-
-private int letVars(
-   CS arg_start, Var   *tv, Boole copy, int semicolon, int var_count, Unt flags, CS op
-);
-private DictItem* findVarAndSetHtable(Text name, OUT EeSet** htp, Boole no_autoload);
-private int setVarImpl(Text name, ScriptId sid, Var* tv_arg, Boole copy, Unt flags_arg);
-private int eval_variable(Text name, Var* returnVar, DictItem   **dip, int flags);
-private void check_vars(Text name);
-private int eval0_retarg(
-   CS arg, Var* returnVar, EvalCtx* evalarg, CS* retarg
-);
-
+private void free_msglist(MsgList* l);
+private void discard_exception(Exception *excp, int was_finished);
+private void report_pending(int action, int pending, void* value);
+private void report_resume_pending(int pending, void* value);
+private void report_discard_pending(int pending, void* value);
 //}}}
 //{{{Vimscript definition
 
@@ -195,7 +511,7 @@ checkIfNameReserved(CS name, int is_objm_access) {
 
 //This specifies optional parameters for getLval(). Arguments may be NULL.
 
-private typedef struct {
+privateComp typedef struct {
    Var* var;    // Base internal var.
    int isArg;   // name is an arg (not a member).
 } LvalRoot;
@@ -1180,7 +1496,7 @@ eval_foldexpr(Portal *wp, int *cp) {
 #define ASSIGN_COMPOUND_OP 0x200  // compound operator e.g. "+="
 
 #ifdef LOG_LOCKVAR
-private typedef struct {
+privateComp typedef struct {
    int       flag;
    char    *str;
 } FlagString;
@@ -1246,7 +1562,7 @@ fillLvalFromRoot(Lval *lp, LvalRoot* root) {
    lp->isRoot = true;
 }
 
-private typedef enum {
+privateComp typedef enum {
    GLV_FAIL,
    GLV_OK,
    GLV_STOP
@@ -5384,7 +5700,7 @@ private Bag globvardict;      // Dictionary with g: variables
 
 #define VV_NAME(s, t)  (CS)s, {{t, 0, {0}}, 0, 0, {0}}
 
-private typedef struct  {
+privateComp typedef struct  {
    CS name;     //name of variable, without v:
    DictItem16 entry; //value and name for key (max 16 chars!)
    Boole isReadonly;
@@ -8862,7 +9178,7 @@ evFreeCallback(Callback* callback) {
 //  - f_max_argc == VARGS
 //  - For varargs, f_argcheck must be NULL terminated. The last non-null
 //    entry in f_argcheck should validate all the remaining args.
-private typedef struct {
+privateComp typedef struct {
    CS f_name;   // function name
    Byte f_min_argc;   // minimal number of arguments
    Byte f_max_argc;   // maximal number of arguments
@@ -12421,7 +12737,7 @@ f_line2byte(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 
-private typedef enum {
+privateComp typedef enum {
    MATCH_END,       // matchend()
    MATCH_MATCH,    // match()
    MATCH_STR,       // matchstr()
