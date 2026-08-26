@@ -891,6 +891,11 @@ indices: src/commands.h src/actions.h
 / $(OBJDIR)/indexGenerator commands
 / $(OBJDIR)/indexGenerator options
 
+
+better: ##Better C: codegen for headers & generics
+/ $(CC) dev/betterc.c -o $(OBJDIR)/betterc
+/ $(OBJDIR)/betterc src/book.c
+
 # The normal command to compile a .c file to its .o file.
 # Without or with ALL_FLAGS.
 COMPILE = $(CC) -c -iquote $(srcdir) $(ALL_FLAGS)
@@ -958,7 +963,7 @@ tags TAGS: notags
 
 # Build the cscope database.
 # This may search more files than necessary.
-.PHONY: cscope csclean all indices update-po
+.PHONY: cscope csclean all indices better update-po
 
 csclean:
 / -rm -vf cscope.out
