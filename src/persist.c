@@ -8,6 +8,10 @@
 #include <sys/stat.h> // for stat, fstat, S_ISDIR
 #endif
 
+//{{{@@forward declarations
+
+
+//}}}
 //{{{users
 
 private CS username = null; // cached result of mch_get_user_name()

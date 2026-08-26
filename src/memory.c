@@ -25,6 +25,9 @@ private typedef struct {
    BlockId   nt_new_bnum;      // new, positive, number
 } NrTranslation;
 
+//{{{@@forward declarations
+
+//}}}
 //{{{allocations
 
 #if defined(MEM_PROFILE) || defined(PROTO)

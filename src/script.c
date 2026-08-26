@@ -12,7 +12,7 @@
 // table to store parsed 'wildmode'
 private Byte wim_flags[4];
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private Byte* set_context_in_autocmd(Expand* xp, Byte* arg, int doautocmd);
 private CS get_augroup_name(Expand* xp UNUSED, int idx);

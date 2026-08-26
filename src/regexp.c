@@ -10,6 +10,7 @@
 
 #include "eegl.h"
 
+
 //{{{header
 
 /*
@@ -359,6 +360,9 @@ private int   cstrncmp(Byte *s1, Byte *s2, int *n);
 private Byte   *cstrchr(Byte *, int);
 private int   re_mult_next(CS what);
 private int   reg_iswordc(int);
+
+//}}}
+//{{{@@forward declarations
 
 //}}}
 //{{{implementation details

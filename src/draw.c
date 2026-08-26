@@ -8,6 +8,24 @@
 //used for @hlsearch hilite matching
 private Match screenSearchP;
 
+//{{{@@forward declarations
+
+
+private int screenclear2(Boole doclear);
+private void lineinvalid(Unt off, int width);
+private int doPortalLines(Portal *, int , int , int , int , Unt );
+private void lineclear(Unt off, int width, Unt decoId);
+private void markFollowingPortalsForRedraw(Portal* po);
+private void msg_pos_mode(void);
+private void recording_mode(char flags);
+private void singleChar(Unt off, int row, int col);
+
+private void updatePortal(Portal* po);
+private void statusLineCustom(Portal* po);
+private int  didUpdateOnePortal;
+
+
+//}}}
 //{{{low level
 
 private Arr(Decoration) screenDecosP = null;
@@ -70,15 +88,6 @@ private Arr(Unt) screenLinesUCG;   // decoded UTF-8 characters
 // The decorations that are actually active for writing to the screen.
 private Decoration activeDecoP;
 private Decoration defaultDecoP;
-
-private int screenclear2(Boole doclear);
-private void lineinvalid(Unt off, int width);
-private int doPortalLines(Portal *, int , int , int , int , Unt );
-private void lineclear(Unt off, int width, Unt decoId);
-private void markFollowingPortalsForRedraw(Portal* po);
-private void msg_pos_mode(void);
-private void recording_mode(char flags);
-private void singleChar(Unt off, int row, int col);
 
 // Ugly global: overrule decoration used by singleChar()
 private VTermDeco screen_charDeco = DECO_NONE;
@@ -2996,10 +3005,6 @@ check_chars_options(CS newVal) {
 
 private FoldInfo portFoldS;   // info for folds
 
-
-private void updatePortal(Portal* po);
-private void statusLineCustom(Portal* po);
-private int  didUpdateOnePortal;
 
 //Based on the current value of curPor->topLine, transfer a screenful
 //of stuff from Filemem to screenTextP[], and update curPor->bottomLine.

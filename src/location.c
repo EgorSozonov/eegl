@@ -8,7 +8,7 @@ pub int fstat(int fd, struct stat* statbuf);
 int stat(const char* restrict path, struct stat* restrict buf);
 pub int lstat(const char* restrict, struct stat* restrict);
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void
 sign_mark_adjust(LineNr line1, LineNr line2, long amount, long amount_after);

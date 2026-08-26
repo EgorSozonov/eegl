@@ -6,7 +6,7 @@
 #include "eegl.h"
 
 #define USING_FLOAT_STUFF
-//{{{forward decls
+//{{{@@forward declarations
 
 private void f_and(Arr(Var) argvars, Var* returnVar);
 private void f_balloon_gettext(Arr(Var) argvars, Var* returnVar);

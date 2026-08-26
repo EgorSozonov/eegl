@@ -5,7 +5,7 @@
 
 #include "eegl.h"
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void cmd_with_count(CS cmd, CS bufp, Unt bufsize, long prenum);
 private void init(Portal* newp, Portal* oldp, Unt flags);

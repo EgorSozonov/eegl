@@ -15,7 +15,7 @@ private typedef struct searchstat {
    int last_maxcount;  // the max count of the last search
 } SearchFileStat;
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void set_vv_searchforward(void);
 private int first_submatch(RegMultilineMatch* rp);

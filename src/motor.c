@@ -14,9 +14,9 @@ private CS start_dir = NULL;   // current working dir on startup
 
 //{{{the intro screen and version info about the current build
 
-// Vim originated from Stevie version 3.6 (Fish disk 217) by GRWalter (Fred)
-// It has been changed beyond recognition since then.
-// Now there is a simple IDE forked off from it, Eegl.
+//Vim originated from Stevie version 3.6 (Fish disk 217) by GRWalter (Fred)
+//It has been changed beyond recognition since then.
+//Now there is a simple IDE forked off from it, Eegl.
 
 private CS programVersion = (CS)EEGL_VERSION_SHORT;
 private CS mediumVersion = (CS)EEGL_VERSION_MEDIUM;
@@ -245,11 +245,16 @@ c_intro(Invocation* invo UNUSED){
 #define EDIT_TAG    3       // tag name argument given, use tagname
 #define EDIT_QF     4       // start in quickfix mode
 
+//{{{@@forward declarations
+
 private void mainerr(Unt, CS);
 private void earlyArgScan(MainParams*);
 private void init0(void);
 private void init1(OUT MainParams*);
 private int libMain(void);
+
+//}}}
+
 #ifndef NO_EEGL_MAIN
 private void usage(void);
 private void parseCommandName(MainParams*);

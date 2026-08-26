@@ -8,7 +8,7 @@
 
 #define TABSIZE_MAX 16
 
-//{{{forward decls
+//{{{@@forward decls
 
 private int coladvance2(Pos *pos, int addspaces, int finetune, ColNr wcol);
 private void fixthisline(int (*get_the_indent)(void));

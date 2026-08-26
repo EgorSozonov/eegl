@@ -87,7 +87,7 @@ private typedef struct sockaddr SockAddr;
 
 #define LOG_ALWAYS 9// must be different from true and false
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void channel_read(Channel *channel, ChannelFdKind part, char *func);
 private ChannelMode channel_get_mode(Channel *channel, ChannelFdKind part);

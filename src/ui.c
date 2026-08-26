@@ -634,7 +634,8 @@ fill_utf8(long codepoint, CS str) {
 #define CSI_ARG_COUNT(a)      (CSI_ARG(a) == CSI_ARG_MISSING || CSI_ARG(a) == 0 ? 1 : CSI_ARG(a))
 
 //}}}
-//{{{forward decls
+//}}}
+//{{{@@forward decls
 
 private void vterm_screen_flush_damage(VTermScreen* screen);
 private int vterm_screen_get_cell(VTermScreen* screen, VTermPos pos, OUT ScreenCell* cell);
@@ -664,7 +665,6 @@ private void vterm_state_newpen(VTermState* state);
 private void vterm_state_resetpen(VTermState* state);
 private void vterm_state_savepen(VTermState* state, int save);
 
-//}}}
 //}}}
 //{{{encoding
 #define UNICODE_INVALID 0xFFFD

@@ -76,6 +76,8 @@ private Unt lastRecordedLen = 0;   // number of last recorded chars
 private MapBlock* last_used_map = NULL;
 private int last_used_sid = -1;
 
+//{{{@@forward declarations
+
 private int read_readbuf(TextHeader *buf, int advance);
 private void initTypebuf(void);
 private void maySyncUndo(void);
@@ -85,6 +87,9 @@ private void updateScript(int c);
 private Unt vGetOrPeek(Boole);
 private int ingestChar(Byte *buf, int maxlen, long wait_time);
 private int fixInputBuffer(OUT CS buf, int len);
+
+//}}}
+//{{{keyboard input
 
 #define TTYM_SGR      0x80
 
@@ -3548,6 +3553,7 @@ format_lines(LineNr   line_count, int avoid_fex) { // don't use 'formatexpr'
    }
 }
 
+//}}}
 //{{{multibyte characters
 
 //The encoding used in the core is set with 'encoding'.  When 'encoding' is

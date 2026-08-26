@@ -10,7 +10,7 @@ int mkdir(const char* pathname, mode_t mode);
 
 private Boole anySyntaxEmsgS; // anyEmsgG set because of a syntax error
 
-//{{{forward decls
+//{{{@@forward decls
 
 private int linelen(int *has_tab);
 private void 

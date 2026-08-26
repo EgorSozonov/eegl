@@ -15,7 +15,7 @@ pub int setxattr(const char*, const char*, const void*, size_t, int);
 #define SHELL_SPECIAL (CS)"\t \"&'$;<>()\\|"
 #define SWAP_DIR S"~/.local/state/"
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private int mch_expand_wildcards(int num_pat, Arr(CS) pat, Unt flags, OUT ExpandMatch*);
 private int eeCopyfile(CS from, CS to);

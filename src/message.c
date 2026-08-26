@@ -41,7 +41,7 @@ private Text longestLineS = (Text){.len = 0, .c = null};
 pub declStruct(MsgChunk);
 private MsgChunk *lastChunkS = NULL; // last displayed text
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void addMsgHistory(CS s, int len, char flags);
 private void check_msg_hist(void);

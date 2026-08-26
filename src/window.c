@@ -172,7 +172,7 @@ private typedef struct {
    BufferStore      *fs_buffer;
 } vwl_clipboard_T;
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void clip_own_selection(ClipBoard *cbd);
 private void startSelection(int col, int row, int repeated_click);

@@ -1688,7 +1688,7 @@ getvcols(
 // Determines how deeply nested %{} blocks will be evaluated in statusline.
 # define MAX_STL_EVAL_DEPTH 100
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void   enterBook(Book* book);
 private void   getLastKnownLineNumber(void);
@@ -9744,6 +9744,7 @@ private typedef struct {
    int dirty;      // if the property was changed
    int mayDrop;   // whether after this change, the prop may be removed
 } AdjustRes;
+
 
 //Adjust the property for "added" bytes (can be negative) inserted at "col".
 //

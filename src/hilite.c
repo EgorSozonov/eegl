@@ -5,6 +5,17 @@
 
 #include "eegl.h"
 
+//{{{@@forward declarations
+
+private Boole printHiliteHeaderWorker(int didHeader, int lineLen, HiliteGroup* group);
+private void printHilite(HiliteGroup* g);
+private void clearHiliteWorker(HiliteGroup* g);
+private void printHiliteHeaderNew(HiliteGroup* group);
+private void printHiliteDeco(HiliteGroup* group);
+private void set_normal_colors(void);
+private Short hiResolveLinks(Short hiId);
+
+//}}}
 //{{{Hilite groups
 
 //Information about a hilite group. The ID of a hilite group is also called group ID.
@@ -60,17 +71,6 @@ private typedef struct {
    Short end;
 } HiKeyValue;
 
-//{{{forward decls
-
-private Boole printHiliteHeaderWorker(int didHeader, int lineLen, HiliteGroup* group);
-private void printHilite(HiliteGroup* g);
-private void clearHiliteWorker(HiliteGroup* g);
-private void printHiliteHeaderNew(HiliteGroup* group);
-private void printHiliteDeco(HiliteGroup* group);
-private void set_normal_colors(void);
-private Short hiResolveLinks(Short hiId);
-
-//}}}
 
 private Text
 keyOf(HiKeyValue kv, CS s) {

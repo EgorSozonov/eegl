@@ -27,7 +27,7 @@ private typedef enum {
    TAGS_READ_SUCCESS = 1,
    TAGS_READ_EOF,
    TAGS_READ_IGNORE,
-} tags_read_status_T;
+} TagsReadStatus;
 
 //States used during a tags search
 private typedef enum {
@@ -36,7 +36,7 @@ private typedef enum {
    TS_BINARY,      // binary searching
    TS_SKIP_BACK,   // skipping backwards
    TS_STEP_FORWARD   // stepping forwards
-} tagsearch_state_T;   // Current search state
+} TagSearchState;   // Current search state
 
 //Binary search file offsets in a tags file
 private typedef struct {
@@ -85,6 +85,9 @@ private char* mt_names[MT_COUNT/2] = {"FSC", "F C", "F  ", "FS ", " SC", "  C", 
 #define NOTAGFILE   99      // return value for jumpto_tag
 private Byte   *nofile_fname = NULL;   // fname for NOTAGFILE error
 
+
+//{{{@@forward declarations
+
 private void taglen_advance(int l);
 
 private int jumpto_tag(CS lbuf, int forceit, int keep_help);
@@ -97,6 +100,8 @@ private int test_for_current(CS, CS, CS, CS);
 private int find_extra(OUT CS* pp);
 private void print_tag_list(int new_tag, int use_tagstack, ExpandMatch matches);
 private int add_llist_tags(CS tag, ExpandMatch matches);
+
+//}}}
 
 private Byte   *tagmatchname = NULL;   // name of last used tag
 
@@ -1234,7 +1239,7 @@ find_tagfunc_tags(
 
 // State information used during a tag search
 private typedef struct {
-   tagsearch_state_T   state;      // tag search state
+   TagSearchState   state;      // tag search state
    int      stop_searching;      // stop when match found or error
    TagPattern   *orgpat;      // holds unconverted pattern info
    Byte     *lbuf;         // line buffer
@@ -1379,7 +1384,7 @@ findtags_apply_tfu(FindTags *st, CS pat, CS buf_ffname) {
 //Returns TAGS_READ_EOF if the end of file is reached.
 //Returns TAGS_READ_IGNORE if the current line should be ignored (used when
 //reached end of a emacs included tags file)
-private tags_read_status_T
+private TagsReadStatus
 findtags_get_next_line(FindTags *st, TagSearchInfo* sinfo_p) {
    int      eof;
    FileOffset   offset;

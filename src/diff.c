@@ -131,7 +131,7 @@ private typedef struct s_xdfenv {
    XdFile xdf1, xdf2;
 } XdfEnv;
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private int xdl_diff(MmFile *mf1, MmFile *mf2, XpParam* xpp,
         XdEmitConf *xecfg, XdEmitCb *ecb);

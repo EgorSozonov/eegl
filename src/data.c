@@ -5,7 +5,7 @@
 
 #include "eegl.h"
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private int check_for_string_or_list_or_blob_arg(Arr(Var) args, int idx);
 private void dict_free(Bag *d);

@@ -7,17 +7,16 @@
 
 private int VIsual_mode_orig = ZERO;      // saved Visual mode
 
-//{{{forward decls
+// nv_*(): functions are called to handle Normal and Visual mode actions.
+// n_*(): functions are called to handle Normal mode actions.
+// v_*(): functions are called to handle Visual mode actions.
+//{{{@@@forward decls
 
 private void   setVCountPrevCount(ActionArg* aArg, int *set_prevcount);
 private void   unshift_special(ActionArg* aArg);
 private void   del_from_showcmd(int);
 
 
-//
-// nv_*(): functions called to handle Normal and Visual mode actions.
-// n_*(): functions called to handle Normal mode actions.
-// v_*(): functions called to handle Visual mode actions.
 private void nv_ignore(ActionArg* aArg);
 private void nv_nop(ActionArg* aArg);
 private void nvError(ActionArg* aArg);

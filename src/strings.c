@@ -25,6 +25,10 @@
 #include <time.h> // for time()
 #endif
 
+//{{{@@forward declarations
+
+//}}}
+
 //{{{ Arena
 
 #define CHUNK_QUANT 32768

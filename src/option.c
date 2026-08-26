@@ -166,7 +166,7 @@ private struct Option { //:Option
    for (Option* o = OPTIONS_BOOK; o < OPTIONS_BOOK + OPTION_BOOK_COUNT; o++)
    
 //}}}
-//{{{forward declarations
+//{{{@@forward declarations
 
 pub declStruct(Option);
 

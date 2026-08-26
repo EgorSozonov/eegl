@@ -15,7 +15,7 @@ private CS TC_CURSOR_SHAPES[] = {
 };
 private CS TC_CURSOR_DEFAULT_SHAPE = S"\033[0 q";
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private int may_adjust_key_for_ctrl(int modifiers, Unt key);
 

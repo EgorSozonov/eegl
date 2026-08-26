@@ -13,7 +13,7 @@
 //Set when doing something for completion that may call edit() recursively, which is not allowed.
 private Boole isCompletionBusyS = false;
 
-//{{{forward declarations
+//{{{@@forward declarations
 
 private void insertStartVisualBlockMode(void);
 private void insertRegular(Unt, Boole, Boole);
