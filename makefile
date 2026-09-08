@@ -1,5 +1,5 @@
 CC ?= gcc
-INTERNAL_CFLAGS = --std=c17 -gdwarf-5 -pthread -Wp,-D_FORTIFY_SOURCE=2 -fno-plt \
+INTERNAL_CFLAGS = --std=c23 -gdwarf-5 -pthread -Wp,-D_FORTIFY_SOURCE=2 -fno-plt \
       -fstack-clash-protection -fno-stack-protector -fno-semantic-interposition \
       -fdebug-prefix-map=$(shell pwd)=.
 
@@ -891,7 +891,7 @@ indices: src/commands.h src/actions.h
 BETTERC:=$(OBJDIR)/betterc
 
 $(BETTERC): ##Better C: codegen for headers & generics
-/ $(CC) --std=c17 -Wall dev/betterc.c -o $(OBJDIR)/betterc
+/ $(CC) --std=c23 -Wall dev/betterc.c -o $(OBJDIR)/betterc
 
 better: $(BETTERC)
 / for f in src/*.c; do $(BETTERC) -d proto "$$f"; done

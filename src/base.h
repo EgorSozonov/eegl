@@ -16,6 +16,7 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 #define ei else if
 #define null 0
 #define NULLABLE
+#define generic(...)
 
 typedef int32_t Int;
 typedef uint32_t Unt;

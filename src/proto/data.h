@@ -1,4 +1,10 @@
-void list_add_watch(List *l, ListWatch *lw);
+
+} L##T;;
+en++;\
+};
+sult;\
+};
+void list_add_watch(List* l, ListWatch* lw);
 void list_rem_watch(List* l, ListWatch* lwrem);
 List * list_alloc(void);
 List * list_alloc_id(AllocId id UNUSED);

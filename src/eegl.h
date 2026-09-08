@@ -693,12 +693,6 @@ typedef Byte Byte;
 
 //{{{List
 
-#define LIST_TY(T) typedef struct {\
-      T* c;\
-      Unt len;\
-      Unt cap;\
-      Arena* a;\
-   } _GL(L, T);
    
 #define LIST_CREATE(T)\
 _GL(L, T) * _GL(createL, T) (int initCapacity, Arena* a) {\

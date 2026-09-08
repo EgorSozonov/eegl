@@ -96,15 +96,6 @@ private void channel_free_contents(Channel* channel);
 private void channel_free_channel(Channel* channel);
 private void channel_free(Channel* channel);
 private int channel_may_free(Channel *channel);
-
-
-
-//Decrement the reference count on "channel" and maybe free it when it goes
-//down to zero.  Don't free it if there is a pending action.
-//Return true when the channel is no longer referenced.
-
-pub int
-channel_unref(Channel* channel);
 private int channel_connect(
    Channel* channel, 
    SockAddr const* server_addr, 
@@ -369,7 +360,6 @@ GEN_add_L(PollFd)
 //Decrement the reference count on "channel" and maybe free it when it goes
 //down to zero.  Don't free it if there is a pending action.
 //Return true when the channel is no longer referenced.
-
 pub int
 channel_unref(Channel* channel) {
    if (channel && --channel->refCount <= 0)

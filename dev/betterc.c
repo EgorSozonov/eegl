@@ -450,7 +450,7 @@ typedef enum {
 } ToplevelKind;
 
 //A toplevel definition (
-typedef struct {
+typedef struct { //:ToplevelThing
    Text c;
    ToplevelKind kind;
    AccessLevel acc;
@@ -826,6 +826,21 @@ append(OUT FileParse* p, ToplevelThing new) {
    p->c[p->len++] = new;
 }
 
+//#define macro()...
+//Here    ^
+private ToplevelThing
+parseMacro(OUT S* inp, AccessLevel accLevel) {
+   S p = *inp + 8; //+8 for `#define `
+   _bp(true);
+   for (; p[0] != ZERO && p[0] != '\n'; p++) {
+      if (p[0] == '\\') {
+         for (; p[0] != ZERO && p[0] != '\n'; p++)
+            {}
+      }
+   }
+   *inp = p;
+   return (ToplevelThing){(Text){*inp - 8, p - (*inp) + 8}, MACRO, accLevel};
+}
 
 //*inp is looking at the first non-space after "pub"/"private"/etc
 private void
@@ -888,7 +903,11 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
          break;
       case '#':
          if (startsWithKeyword("#define")) {
-            i += 8; //CONSUME "#define "
+            append(
+               OUT p,
+               parseMacro(OUT inp, accLevel)
+            ); 
+            return;
          }
          break;
       case 's':
@@ -906,8 +925,6 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
             i += 8; //CONSUME "typedef "
          }
          break;
-      case '\\':
-         //skip newline in macros
       case '/':
          if (i[1] == '/') {
             i = skipNormalComment(i + 2);

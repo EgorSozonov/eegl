@@ -151,6 +151,12 @@ private AdjustRes adjust(
    int       added,
    int       flags
 );
+#define create(a, b) _Generic((a),\
+   LBufMatch*: create_LBufMatch\
+   )(a, b)
+#define add(a, b) _Generic((a),\
+   LBufMatch*: add_LBufMatch\
+   )(a, b)
 //}}}
 //{{{builtins. Book related builtin functions
 

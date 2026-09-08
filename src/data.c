@@ -159,17 +159,61 @@ private int json_decode_all(OUT Var* res, JsReader* reader);
 //}}}
 //{{{list
 
+
+pub
+#define GEN_TYPE_L(acc, T) acc typedef struct {\
+   T* c;\
+   Unt len;\
+   Unt cap;\
+   Arena* a;\
+} L##T;
+
+pub
+#define GEN_add_L(acc, T) acc void add_L##T (T newItem, L##T * l) {\
+   if (l->len < l->cap) {\
+      l->c[l->len] = newItem;\
+   } else {\
+      T* newCont = allocateArray(2*(l->cap), T, l->a);\
+      memcpy(newCont, l->c, l->len*sizeof(T));\
+      newCont[l->len] = newItem;\
+      l->c = newCont;\
+      l->cap *= 2;\
+   }\
+   l->len++;\
+}
+
+pub
+#define GEN_create_L(T)\
+L##T * create_L##T (int initCapacity, Arena* a) {\
+   int capacity = initCapacity < 4 ? 4 : initCapacity;\
+   L##T * result = allocate(L##T, a);\
+   result->cap = capacity;\
+   result->len = 0;\
+   result->a = a;\
+   T* arr = allocateArray(capacity, T, a);\
+   result->c = arr;\
+   return result;\
+}
+   
+
+#define last(l) (l)->c[(l)->len - 1]
+#define sLast(l) (l).c[(l).len - 1]
+
+//}}}
+//{{{vimscript list
+
 // List heads for garbage collection.
-private List      *first_list = NULL;   // list of all lists
+private List* first_list = NULL;   // list of all lists
 
 #define FOR_ALL_WATCHERS(l, lw) \
     for ((lw) = (l)->watcher; (lw) != NULL; (lw) = (lw)->next)
 
-private void list_free_item(List *l, ListItem *item);
+private void
+list_free_item(List* l, ListItem* item);
 
 // Add a watcher to a list.
 pub void
-list_add_watch(List *l, ListWatch *lw) {
+list_add_watch(List* l, ListWatch* lw) {
    lw->next = l->watcher;
    l->watcher = lw;
 }
@@ -181,8 +225,8 @@ list_rem_watch(List* l, ListWatch* lwrem) {
    ListWatch** lwp = &l->watcher;
    FOR_ALL_WATCHERS(l, lw) {
       if (lw == lwrem) {
-          *lwp = lw->next;
-          break;
+         *lwp = lw->next;
+         break;
       }
       lwp = &lw->next;
    }
@@ -191,7 +235,7 @@ list_rem_watch(List* l, ListWatch* lwrem) {
 // Just before removing an item from a list: advance watchers to the next item.
 private void
 list_fix_watch(List* l, ListItem* item) {
-   ListWatch   *lw;
+   ListWatch* lw;
    FOR_ALL_WATCHERS(l, lw) {
       if (lw->c == item)
           lw->c = item->next;
@@ -236,14 +280,13 @@ list_alloc_with_items(int count) {
    if (count <= 0)
       return l;
 
-   ListItem   *li = (ListItem *)(l + 1);
-   int      i;
-
+   ListItem* li = (ListItem *)(l + 1);
+   
    l->len = count;
    l->withItems = count;
    l->first = li;
    l->lv_u.mat.last = li + count - 1;
-   for (i = 0; i < count; ++i) {
+   for (int i = 0; i < count; ++i) {
       if (i == 0)
          li->prev = NULL;
       else
