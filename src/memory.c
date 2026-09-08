@@ -4337,6 +4337,26 @@ memMakePercentSwapName(CS dir, CS dir_end, CS name) {
 }
 
 //}}}
+//{{{reference counting
+
+//These macros must only be defined for structs where the first value is an Unt holding the refcount
+//The function implementations are in memory.c
+pub
+#define getRefCount(a) _Generic((a),\
+   Job*: _getRefCount\
+)(a)
+
+pub
+#define incRefCount(a) _Generic((a),\
+   Job*: _incRefCount\
+)(a)
+
+pub
+#define decRefCount(a) _Generic((a),\
+   Job*: _decRefCount\
+)(a)
+
+//}}}
 //{{{memfile
 
 //memfile.c: Contains the functions for handling blocks of memory which can

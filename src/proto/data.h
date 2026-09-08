@@ -1,8 +1,31 @@
-
+#define GEN_TYPE_L(acc, T) acc typedef struct {\
+   T* c;\
+   Unt len;\
+   Unt cap;\
+   Arena* a;\
 } L##T;;
-en++;\
+#define GEN_add_L(acc, T) acc void add_L##T (T newItem, L##T * l) {\
+   if (l->len < l->cap) {\
+      l->c[l->len] = newItem;\
+   } else {\
+      T* newCont = allocateArray(2*(l->cap), T, l->a);\
+      memcpy(newCont, l->c, l->len*sizeof(T));\
+      newCont[l->len] = newItem;\
+      l->c = newCont;\
+      l->cap *= 2;\
+   }\
+   l->len++;\
 };
-sult;\
+#define GEN_create_L(T)\
+L##T * create_L##T (int initCapacity, Arena* a) {\
+   int capacity = initCapacity < 4 ? 4 : initCapacity;\
+   L##T * result = allocate(L##T, a);\
+   result->cap = capacity;\
+   result->len = 0;\
+   result->a = a;\
+   T* arr = allocateArray(capacity, T, a);\
+   result->c = arr;\
+   return result;\
 };
 void list_add_watch(List* l, ListWatch* lw);
 void list_rem_watch(List* l, ListWatch* lwrem);

@@ -195,9 +195,23 @@ L##T * create_L##T (int initCapacity, Arena* a) {\
    return result;\
 }
    
-
+pub
 #define last(l) (l)->c[(l)->len - 1]
+
+pub
 #define sLast(l) (l).c[(l).len - 1]
+
+//}}}
+//{{{equality
+
+pub
+#define eq(a, b) _Generic((a),\
+   Text: _Generic((b),\
+         Text: eq_Text_Text,\
+         CS: eq_Text_CString\
+      ),\
+   CS: eq_CString_CString\
+)(a, b)
 
 //}}}
 //{{{vimscript list

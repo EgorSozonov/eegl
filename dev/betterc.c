@@ -829,8 +829,8 @@ append(OUT FileParse* p, ToplevelThing new) {
 //#define macro()...
 //Here    ^
 private ToplevelThing
-parseMacro(OUT S* inp, AccessLevel accLevel) {
-   S p = *inp + 8; //+8 for `#define `
+parseMacro(OUT S* inp, S i, AccessLevel accLevel) {
+   S p = i + 8; //+8 for `#define `
    _bp(true);
    for (; p[0] != ZERO && p[0] != '\n'; p++) {
       if (p[0] == '\\') {
@@ -839,7 +839,7 @@ parseMacro(OUT S* inp, AccessLevel accLevel) {
       }
    }
    *inp = p;
-   return (ToplevelThing){(Text){*inp - 8, p - (*inp) + 8}, MACRO, accLevel};
+   return (ToplevelThing){(Text){i, p - i}, MACRO, accLevel};
 }
 
 //*inp is looking at the first non-space after "pub"/"private"/etc
@@ -905,7 +905,7 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
          if (startsWithKeyword("#define")) {
             append(
                OUT p,
-               parseMacro(OUT inp, accLevel)
+               parseMacro(OUT inp, i, accLevel)
             ); 
             return;
          }
@@ -939,20 +939,20 @@ tryParseToplevelThing(OUT FileParse* p, OUT S* inp, AccessLevel accLevel) {
 #undef startsWithKeyword 
 }
 
-private void
-printTokens(GenParser* g, S source) {
-   printf("Tokens:\n");
-   for (Unt i = 0; i < g->tokens->len; i++) {
-      Token t = g->tokens->c[i];
-      switch (t.tp) {
-      case tokArity:       printf("arity "); break;      
-      case tokMethod:      printf("method "); break;      
-      case tokType:        printf("Type "); break;      
-      }
-      fwrite(source + t.startBt, 1, t.lenBts, stdout);
-   }
-   printf("\n");
-}
+//private void
+//printTokens(GenParser* g, S source) {
+//   printf("Tokens:\n");
+//   for (Unt i = 0; i < g->tokens->len; i++) {
+//      Token t = g->tokens->c[i];
+//      switch (t.tp) {
+//      case tokArity:       printf("arity "); break;      
+//      case tokMethod:      printf("method "); break;      
+//      case tokType:        printf("Type "); break;      
+//      }
+//      fwrite(source + t.startBt, 1, t.lenBts, stdout);
+//   }
+//   printf("\n");
+//}
 
 //A `generic(a, b)` or `generic() GEN_` form
 private void
@@ -987,9 +987,6 @@ determineExistingForwDecls(S markerLine) {
       if (startsWith(p, tConst(forwDeclEpilogue))) {
          break;
       }
-      //if (p[0] == '/' && p[1] == '/' && p[2] == '}' && p[3] == '}' && p[4] == '}') {
-      //   break;
-      //} 
    }
    return (Text){.c = start, .len = p - start};
 }
@@ -1132,11 +1129,6 @@ addGeneric(OUT FileParse* r, GenParser g) {
    Text type = glueGenericType(
          g.tokens->c + indTypeStart, g.tokens->len - indTypeStart, r->source.c, r->a
    );
-   
-   
-   printf("method "); 
-   fwrite(r->source.c + methName.c, 1, methName.len, stdout);
-   printf(" type %s\n", type.c); 
    
    Unt ind = get_StringMap(methName, &r->genericMethods);
    if (ind != UNT) {
@@ -1470,9 +1462,6 @@ writeResults(FileParse* r, NULLABLE S subdir) {
       case INTERNAL: countInternals++; break;
       default:
       }
-      
-      //fwrite(thing.c.c, 1, thing.c.len, stdout);
-      //printf("\n");
    }
    if (countPublics > 0) {
       S publicName = determinePublicName(r, false, subdir);
