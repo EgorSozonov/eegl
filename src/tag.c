@@ -6,7 +6,7 @@
 #include "eegl.h"
 
 //Pointers to various items in a tag line.
-privateComp typedef struct tag_pointers {
+comptime typedef struct tag_pointers {
    // filled in by parse_tag_line():
    CS tagname;   // start of tag name (skip "file:")
    CS tagname_end;   // char after tag name
@@ -23,14 +23,14 @@ privateComp typedef struct tag_pointers {
 } Tagline;
 
 //Return values used when reading lines from a tags file.
-privateComp typedef enum {
+comptime typedef enum {
    TAGS_READ_SUCCESS = 1,
    TAGS_READ_EOF,
    TAGS_READ_IGNORE,
 } TagsReadStatus;
 
 //States used during a tags search
-privateComp typedef enum {
+comptime typedef enum {
    TS_START,      // at start of file
    TS_LINEAR,      // linear searching forward, till EOF
    TS_BINARY,      // binary searching
@@ -39,7 +39,7 @@ privateComp typedef enum {
 } TagSearchState;   // Current search state
 
 //Binary search file offsets in a tags file
-privateComp typedef struct {
+comptime typedef struct {
    FileOffset   low_offset;   // offset for first char of first line that could match
    FileOffset   high_offset;   // offset of char after last line that could match
    FileOffset   curr_offset;   // Current file offset in search range
@@ -50,7 +50,7 @@ privateComp typedef struct {
 } TagSearchInfo;
 
 //Return values used when matching tags against a pattern.
-privateComp typedef enum {
+comptime typedef enum {
    TAG_MATCH_SUCCESS = 1,
    TAG_MATCH_FAIL,
    TAG_MATCH_STOP,
@@ -58,7 +58,7 @@ privateComp typedef enum {
 } tagmatch_status_T;
 
 //Arguments used for matching tags read from a tags file against a pattern.
-privateComp typedef struct {
+comptime typedef struct {
    int   matchoff;      // tag match offset
    int   match_re;      // true if the tag matches a regexp
    int   match_no_ic;      // true if the tag matches with case
@@ -1130,7 +1130,7 @@ tag_strnicmp(CS s1, CS s2, Unt len) {
 }
 
 //Info about the tag pattern being used.
-privateComp typedef struct {
+comptime typedef struct {
    CS pat;      // the pattern
    int      len;      // length of pat[]
    CS head;      // start of pattern head
@@ -1365,7 +1365,7 @@ find_tagfunc_tags(
 }
 
 // State information used during a tag search
-privateComp typedef struct {
+comptime typedef struct {
    TagSearchState   state;      // tag search state
    int      stop_searching;      // stop when match found or error
    TagPattern   *orgpat;      // holds unconverted pattern info
@@ -3413,7 +3413,7 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 // See ":help cscope-find" for the possible queries.
 
-privateComp typedef struct {
+comptime typedef struct {
    CS name;
    int (*func)(Invocation* invo);
    CS help;
@@ -3421,7 +3421,7 @@ privateComp typedef struct {
    int cansplit;      // if supports splitting window
 } CScopeCommand;
 
-privateComp typedef struct csi {
+comptime typedef struct csi {
    CS fname;     //cscope db name
    CS ppath;     //path to prepend (the -P option)
    CS flags;     //additional cscope flags/options (e.g, -p2)
@@ -3433,9 +3433,9 @@ privateComp typedef struct csi {
    FILE* to_fp;  //to cscope: FILE.
 } CscopeInfo;
 
-privateComp typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
+comptime typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
 
-privateComp typedef enum {
+comptime typedef enum {
    Store,
    Get,
    Free,
@@ -3491,7 +3491,7 @@ cs_usage_msg(csid_e x) {
    (void)showErrFmtMsg(_(e_usage_cscope_str), cs_cmds[(int)x].usage);
 }
 
-privateComp enum {
+comptime enum {
    EXP_CSCOPE_SUBCMD,  //expand ":cscope" sub-commands
    EXP_SCSCOPE_SUBCMD, //expand ":scscope" sub-commands
    EXP_CSCOPE_FIND,    //expand ":cscope find" arguments

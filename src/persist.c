@@ -217,7 +217,7 @@ get_user_name(CS builder, int len) {
 //{{{sessions
 
 // Variable flavor
-privateComp typedef enum {
+comptime typedef enum {
    VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
    VAR_FLAVOR_SESSION,   // starts with uppercase, some lower
    VAR_FLAVOR_EEGLINFO      // all uppercase
@@ -1094,20 +1094,20 @@ put_line(FILE *fd, CS s) {
 #define BARTYPE_MARK     4
 
 // Structure used for reading from the eeglinfo file.
-privateComp typedef struct {
+comptime typedef struct {
    CS line;   // text of the current line
    FILE* vir_fd;   // file descriptor
    int vir_version;   // eeglinfo version detected or -1
    ArrayList vir_barlines;   // lines starting with |
 } Vir;
 
-privateComp typedef enum {
+comptime typedef enum {
    BVAL_NR,
    BVAL_STRING,
    BVAL_EMPTY
 } BValKind;
 
-privateComp typedef struct {
+comptime typedef struct {
    BValKind   btag;
    long   bv_nr;
    Byte   *bv_string;

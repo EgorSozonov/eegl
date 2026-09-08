@@ -20,14 +20,14 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
-privateComp typedef struct {
+comptime typedef struct {
    struct wl_seat* proxy;
    char* label;      // Name of seat as text (e.g. seat0, seat1...).
    Unt capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
 } WaylandSeat;
 
 // Global objects
-privateComp typedef struct {
+comptime typedef struct {
    // Data control protocols
    struct ext_data_control_manager_v1* ext_data_control_manager_v1;
    struct wl_data_device_manager* wl_data_device_manager;
@@ -38,7 +38,7 @@ privateComp typedef struct {
 } GlobalObjects;
 
 // Struct wrapper for Wayland display and registry
-privateComp typedef struct {
+comptime typedef struct {
    struct wl_display* proxy;
    int fd;   // File descriptor for display
 
@@ -47,7 +47,7 @@ privateComp typedef struct {
    } registry;
 } WaylandDisplay;
 
-privateComp typedef struct {
+comptime typedef struct {
    struct wl_shm_pool* pool;
    int fd;
 
@@ -60,7 +60,7 @@ privateComp typedef struct {
    int size;
 } BufferStore;
 
-privateComp typedef struct {
+comptime typedef struct {
    void* user_data;
    void (*on_focus)(void *data, Unt serial);
 
@@ -76,7 +76,7 @@ privateComp typedef struct {
 } vwl_fs_surface_T; // fs = focus steal
 
 // Wayland protocols for accessing the selection
-privateComp typedef enum {
+comptime typedef enum {
    VWL_DATA_PROTOCOL_NONE,
    VWL_DATA_PROTOCOL_EXT,
    VWL_DATA_PROTOCOL_CORE,
@@ -88,33 +88,33 @@ privateComp typedef enum {
 // The `data` member is used to pass other needed stuff around such as a
 // WaylandClipboardSelection pointer.
 
-privateComp typedef struct {
+comptime typedef struct {
    void* proxy;
    void* data; // Is not set when a new offer is created on a
                // data_offer event. Only set when listening to a data offer.
    DataProtocol protocol;
 } DataOffer;
 
-privateComp typedef struct {
+comptime typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataSource;
 
-privateComp typedef struct {
+comptime typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataDevice;
 
-privateComp typedef struct {
+comptime typedef struct {
    void* proxy;
    DataProtocol protocol;
 } vwl_data_device_manager_T;
 
 // LISTENER WRAPPERS
 
-privateComp typedef struct {
+comptime typedef struct {
    void (*data_offer)(DataDevice *device, DataOffer *offer);
 
    // If the protocol that the data device uses doesn't support a specific
@@ -128,16 +128,16 @@ privateComp typedef struct {
    void (*finished)(DataDevice *device);
 } vwl_data_device_Listener;
 
-privateComp typedef struct {
+comptime typedef struct {
    void (*send)(DataSource* source, char const* mime_type, int fd);
    void (*cancelled)(DataSource* source);
 } DataSourceListener;
 
-privateComp typedef struct {
+comptime typedef struct {
    void (*offer)(DataOffer *offer, char const* mime_type);
 } DataOfferListener;
 
-privateComp typedef struct {
+comptime typedef struct {
    // What selection this refers to
    WaylandSelection      selection;
 
@@ -162,7 +162,7 @@ privateComp typedef struct {
 } WaylandClipboardSelection;
 
 // Holds stuff related to the clipboard/selections
-privateComp typedef struct {
+comptime typedef struct {
    // Do not destroy here, will be destroyed when vwl_disconnect_display() is called.
    WaylandSeat         *seat;
 

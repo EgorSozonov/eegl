@@ -6,7 +6,7 @@
 #include "eegl.h"
 #include <termcap.h>
 
-privateComp typedef struct termios TermIos;
+comptime typedef struct termios TermIos;
 
 private CS TC_CURSOR_SHAPES[] = {
    S"\033[2 q", //block cursor
@@ -152,14 +152,14 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
 private CS invoke_tgetent(CS , CS );
 
-privateComp typedef enum {
+comptime typedef enum {
    STATUS_GET,    // send request when switching to RAW mode
    STATUS_SENT,   // did send request, checking for response
    STATUS_GOT,    // received response
    STATUS_FAIL    // timed out
 } RequestProgress;
 
-privateComp typedef struct {
+comptime typedef struct {
    RequestProgress progress;
    Tyme start;   // when request was sent, -1 for never
 } TermRequest;
@@ -228,7 +228,7 @@ private int initial_cursor_blink = false;
 //Each terminfo is a list of TinfoEntry.
 //
 //Entries marked with "guessed" may be wrong.
-privateComp typedef struct {
+comptime typedef struct {
    CS value; // value
    Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
@@ -284,7 +284,7 @@ private int  check_for_codes = false;         // check for key code response
 // Structure and table to store terminal features that can be detected by
 // querying the terminal.  Either by inspecting the termresponse or a more
 // specific request.  Besides this there are:
-privateComp typedef struct {
+comptime typedef struct {
    CS name;
    int setByTermResponse;
    int status;
@@ -1648,7 +1648,7 @@ scroll_region_reset(void) {
 
 // List of terminal codes that are currently recognized.
 
-privateComp typedef struct {
+comptime typedef struct {
    Byte name[2];       // termcap name of entry
    CS code;       // terminal code (in allocated memory)
    int len;       // STRLEN(code)
@@ -2958,7 +2958,7 @@ private Byte modifier_keys_table[] = {
 //}}}
 //{{{codes and special chars
 
-privateComp typedef struct {
+comptime typedef struct {
    Boole enabled;       // is this entry available?
    int key;          // special key code or ascii value
    Text name;          // name of key

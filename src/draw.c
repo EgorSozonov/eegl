@@ -2739,7 +2739,7 @@ get_encoded_char_adv(Byte **p) {
    return strAdvanceMultibyte(p);
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    Unt* cp;
    Text   name;
 } CharsTableEntry;
@@ -3694,7 +3694,7 @@ fold_line(
    }
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    int topEnd;
    int midStart;
    int midEnd;
@@ -5001,7 +5001,7 @@ computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
 }
 
 // structure with variables passed between drawLineOnScreen() and other functions
-privateComp typedef struct {
+comptime typedef struct {
    Byte drawState;   // what to draw next
 
    LineNr lnum;      // line number to be drawn
@@ -5601,7 +5601,7 @@ applyCursorlineHilite(DrawCtx* m) {
 
 #define VCOL_HLC (m->vcol - m->virtualOffset)
 
-privateComp typedef struct {
+comptime typedef struct {
    Decoration lineDecoSaved; 
    Boole signPresent; 
    LineNr lnum;
@@ -5633,7 +5633,7 @@ privateComp typedef struct {
    ColNr leadcol;      // start of leading spaces
 } Subcontext;
 
-privateComp typedef struct {
+comptime typedef struct {
    Boole decoPriority;
    int mb_c; 
    Boole mb_utf8; 

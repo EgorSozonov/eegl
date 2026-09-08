@@ -323,7 +323,7 @@ private int   sort_flt;   // sort on floating number
 private int   sort_abort;   // flag to indicate if sorting has been interrupted
 
 // Struct to store info to be sorted.
-privateComp typedef struct {
+comptime typedef struct {
    LineNr   lnum;         // line number
    union {
       struct {
@@ -2849,7 +2849,7 @@ private CS prevSubstS = NULL;   // previous substitute pattern
 private Boole globalNeedBeginlineS = false;   // call beginline() after ":g"
 
 // Flags that are kept between calls to :substitute.
-privateComp typedef struct {
+comptime typedef struct {
    Boole do_all;    // do multiple substitutions per line
    Boole do_ask;    // ask for confirmation
    Boole do_count;  // count only
@@ -4954,7 +4954,7 @@ private void   close_redir(void);
 private Byte dollar_command[2] = {'$', ZERO};
 
 // Struct to save a few things while debugging.  Used in doCommand() only.
-privateComp typedef struct {
+comptime typedef struct {
    int force_abort;
    Exception* caught_stack;
    CS vv_exception;
@@ -6865,7 +6865,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
    return p;
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    char   *name;
    int      minlen;
    int      has_count;  // :123verbose  :3tab
@@ -10527,7 +10527,7 @@ c_tag(Invocation* invo) {
    tagCmd(invo, commands[invo->id].name);
 }
 
-privateComp enum {
+comptime enum {
    SPEC_PERC = 0,
    SPEC_HASH,
    SPEC_CWORD,       // cursor word
@@ -11408,7 +11408,7 @@ veryfast_breakcheck(void) {
 #define WRITE_BUILDER_SIZE 8192
 
 // Structure passed around between functions.
-privateComp typedef struct {
+comptime typedef struct {
    Book* bk;
    FILE* file;
 } BufInfo;

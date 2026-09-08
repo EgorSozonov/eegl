@@ -3826,8 +3826,7 @@ nv_z_get_count(ActionArg* aArg, Unt* nchar_arg) {
       } ei (nchar == ENTER)  {
          portSetHeight((int)n, curPor);
          break;
-      } ei (nchar == 'l' || nchar == 'h'
-            || nchar == K_LEFT || nchar == K_RIGHT) {
+      } ei (nchar == 'l' || nchar == 'h' || nchar == K_LEFT || nchar == K_RIGHT) {
          aArg->count1 = n ? n * aArg->count1 : aArg->count1;
          *nchar_arg = nchar;
          return true;
@@ -3867,14 +3866,14 @@ nv_zet(ActionArg* aArg) {
     // If line number given, set cursor.
    if ((firstOccurrence((CS)"+\r\nt.z^-b", nchar) != NULL)
        && aArg->count0
-       && aArg->count0 != curPor->cursor.lnum)
-    {
-   setpcmark();
-   if (aArg->count0 > curBook->mem.lineCount)
-       curPor->cursor.lnum = curBook->mem.lineCount;
-   else
-       curPor->cursor.lnum = aArg->count0;
-   check_cursor_col();
+       && aArg->count0 != curPor->cursor.lnum
+   ) {
+      setpcmark();
+      if (aArg->count0 > curBook->mem.lineCount)
+         curPor->cursor.lnum = curBook->mem.lineCount;
+      else
+         curPor->cursor.lnum = aArg->count0;
+      check_cursor_col();
    }
 
    switch (nchar) {
@@ -4129,9 +4128,9 @@ nv_zet(ActionArg* aArg) {
    // "zm": fold more
    case 'm':  
       if (curPor->o.foldLevel > 0) {
-          curPor->o.foldLevel -= aArg->count1;
-          if (curPor->o.foldLevel < 0)
-         curPor->o.foldLevel = 0;
+         curPor->o.foldLevel -= aArg->count1;
+         if (curPor->o.foldLevel < 0)
+            curPor->o.foldLevel = 0;
       }
       old_fdl = -1;      // force an update
       curPor->o.foldEnable = true;
@@ -4167,7 +4166,7 @@ nv_zet(ActionArg* aArg) {
    default:   clearopbeep(aArg->oper);
    }
 
-    // Redraw when 'foldenable' changed
+   // Redraw when 'foldenable' changed
    if (old_fen != curPor->o.foldEnable)     {
       Portal* po;
 
@@ -4183,9 +4182,9 @@ nv_zet(ActionArg* aArg) {
       didChangePortalSettingCurPor();
    }
 
-    // Redraw when @foldlevel changed.
+   // Redraw when @foldlevel changed.
    if (old_fdl != curPor->o.foldLevel)
-       newFoldLevel();
+      newFoldLevel();
 }
 
 // Handle a ":" action.
@@ -4260,7 +4259,6 @@ nv_clear(ActionArg* aArg) {
    synFreeBlock(curPor->ownSyntax);
    {
    Portal *po;
-
    FOR_ALL_PORTALS(po)
       po->ownSyntax->redrawTime = false;
    }
@@ -4290,14 +4288,17 @@ nv_Zet(ActionArg* aArg) {
 
    switch (aArg->nchar) {
    // "ZZ": equivalent to ":x".
-   case 'Z':   executeCommLine(S"x");
-         break;
+   case 'Z':   
+      executeCommLine(S"x");
+      break;
 
-         // "ZQ": equivalent to ":q!" (Elvis compatible).
-   case 'Q':   executeCommLine((CS)"q!");
-         break;
+   // "ZQ": equivalent to ":q!" (Elvis compatible).
+   case 'Q':   
+      executeCommLine((CS)"q!");
+      break;
 
-   default:   clearopbeep(aArg->oper);
+   default:   
+      clearopbeep(aArg->oper);
    }
 }
 
@@ -4423,10 +4424,12 @@ nv_ident(ActionArg* aArg) {
           return;
    }
 
-   if (ptr == NULL && (n = find_ident_under_cursor(&ptr,
-          (cmdchar == '*' || cmdchar == '#')
-             ? FIND_IDENT|FIND_STRING : FIND_IDENT)) == 0)
-   {
+   if (!ptr 
+         && (n = find_ident_under_cursor(
+               &ptr, 
+               (cmdchar == '*' || cmdchar == '#') ? FIND_IDENT|FIND_STRING : FIND_IDENT)
+            ) == 0
+   ) {
       clearop(aArg->oper);
       return;
    }
@@ -4536,7 +4539,7 @@ nv_ident(ActionArg* aArg) {
          int len = utfCharLen(ptr) - 1;
 
          for (i = 0; i < len && n >= 1; ++i, --n)
-             *p++ = *ptr++;
+            *p++ = *ptr++;
           *p++ = *ptr++;
       }
       *p = ZERO;
@@ -4574,11 +4577,7 @@ nv_tagpop(ActionArg* aArg) {
 // Handle scrolling command 'H', 'L' and 'M'.
 private void
 nv_scroll(ActionArg* aArg) {
-   int used = 0;
    long n;
-   LineNr lnum;
-   int half;
-
    aArg->oper->motion_type = MLINE;
    setpcmark();
 
@@ -4599,11 +4598,13 @@ nv_scroll(ActionArg* aArg) {
             curPor->cursor.lnum -= aArg->count1 - 1;
       }
    } else {
+      LineNr lnum;
+      int used = 0;
       if (aArg->cmdchar == 'M') {
          // Don't count filler lines above the portal.
          used -= diff_check_fill(curPor, curPor->topLine) - curPor->topFill;
          validate_botline();       // make sure emptyRowCount is valid
-         half = (curPor->height - curPor->emptyRowCount + 1) / 2;
+         int half = (curPor->height - curPor->emptyRowCount + 1) / 2;
          for (n = 0; curPor->topLine + n < curBook->mem.lineCount; ++n) {
            // Count half he number of filler lines to be "below this
            // line" and half to be "above the next line".
@@ -7147,7 +7148,7 @@ private int scrolljump_value(void);
 private int check_top_offset(void);
 private void curs_rows(Portal *po);
 
-privateComp typedef struct {
+comptime typedef struct {
    LineNr lnum; // line number
    int fill;    // filler lines
    int height;  // height of added line
@@ -11704,7 +11705,7 @@ add_map(CS map, int mode, int nore) {
 //same as langmap_mapchar[] for characters >= 256.
 //
 //Use arraylist for 'langmap' chars >= 256
-privateComp typedef struct {
+comptime typedef struct {
    int from;
    int to;
 } LangmapEntry;
@@ -11911,7 +11912,7 @@ c_abclear(Invocation* invo) {
 //The toplevel folds for each portal are stored in the folds arraylist.
 //Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
 //The info stored in both growarrays is the same: An array of Fold.
-privateComp typedef struct {
+comptime typedef struct {
    LineNr   fd_top;  // first line of fold; for nested fold relative to parent
    LineNr   fd_len;  // number of lines in the fold
    ArrayList   fd_nested; // array of nested folds
@@ -13486,7 +13487,7 @@ foldtext_cleanup(CS str) {
 
 // Folding by indent, expr, marker and syntax.
 // Define "FoldLine", passed to get fold level for a line.
-privateComp typedef struct {
+comptime typedef struct {
    Portal* po;
    LineNr lnum;      // current line number
    LineNr off;      // offset between lnum and real line number

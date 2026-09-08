@@ -4744,7 +4744,7 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
 }
 
 // Information for redoing the previous Visual selection.
-privateComp typedef struct {
+comptime typedef struct {
    int mode;   // 'v', 'V', or Ctrl-V
    LineNr lineCount;   // number of lines
    ColNr vcol;   // number of cols or end column
@@ -5297,7 +5297,7 @@ private Byte   tz_cache[64];
 #define FOR_ALL_TIMERS(t) \
     for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
     
-privateComp typedef struct tm Tm; 
+comptime typedef struct tm Tm; 
 
 //Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
 //latter version preferred for reentrancy.

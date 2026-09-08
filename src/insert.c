@@ -3397,7 +3397,7 @@ private CS ctrl_x_mode_names[] = {SMAP((CS),
 )};
 
 // Structure used to store one match for insert completion.
-privateComp typedef struct InsertCompletion InsertCompletion;
+comptime typedef struct InsertCompletion InsertCompletion;
 struct InsertCompletion {
    InsertCompletion* next;
    InsertCompletion* prev;
@@ -3523,7 +3523,7 @@ private int compl_selected_item = -1;
 private int* compl_fuzzy_scores;
 
 // Define the structure for completion source (in 'cpt' option) information
-privateComp typedef struct CompletionSource {
+comptime typedef struct CompletionSource {
    int   refreshAlways;  // Whether 'refresh:always' is set for func
    int   startCol;       // Start column returned by func
    int   maxMatches;       // Max items to display from this source
@@ -6391,14 +6391,14 @@ may_advance_cpt_index(CS cpt) {
 }
 
 // Return value of process_next_cpt_value()
-privateComp enum {
+comptime enum {
    INS_COMPL_CPT_OK = 1,
    INS_COMPL_CPT_CONT,
    INS_COMPL_CPT_END
 };
 
 //state information used for getting the next set of insert completion matches.
-privateComp typedef struct {
+comptime typedef struct {
    CS e_cpt_copy;      // copy of 'complete'
    CS e_cpt;         // current entry in "e_cpt_copy"
    Book* scannedBook;      // book being scanned

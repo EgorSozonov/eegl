@@ -47,7 +47,7 @@ private void initDict1(Arena* a, int size, Arr(Unt) temp, OUT DictStringInt128* 
 
 #define CHUNK_QUANT 32768
 
-privateComp typedef struct ArenaChunk ArenaChunk;
+comptime typedef struct ArenaChunk ArenaChunk;
 
 private struct ArenaChunk { // :ArenaChunk
    Unt size;
@@ -1049,7 +1049,7 @@ utf_strnicmp(CS s1, CS s2, Unt n1, Unt n2){
 //They must be in numeric order, because we use binary search.
 //An entry such as {0x41,0x5a,1,32} means that Unicode characters in the
 //range from 0x41 to 0x5a inclusive, stepping by 1, are changed to folded/upper/lower by adding 32.
-privateComp typedef struct {
+comptime typedef struct {
    Unt rangeStart;
    Unt rangeEnd;
    int step;
@@ -1326,7 +1326,7 @@ caseInsensitiveCompareNChars(CS s1, CS s2, Unt nn) {
    return utf_strnicmp(s1, s2, nn, nn);
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    long first;
    long last;
 } Interval;

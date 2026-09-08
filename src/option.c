@@ -57,7 +57,7 @@
 #define P_COLON    0x1000000 //values use colons to create sublists
 #define P_NO_MKRC  0x2000000 //don't include in :mkeeglrc output
 
-privateComp typedef enum {
+comptime typedef enum {
    PRINT_CHANGED,
    PRINT_NONTERMINAL
 } ToPrint;
@@ -86,15 +86,15 @@ privateComp typedef enum {
 //Type for the hook that is invoked after an option value is changed to apply the new value.
 //
 //Return NULL if the post-application hook ran succesfully, or error message if not.
-privateComp typedef CS (*OptionSetter)(OptionChange* cha);
+comptime typedef CS (*OptionSetter)(OptionChange* cha);
 
 //Return NULL if the new value is valid and can be applied to the option.
 //Otherwise return an error message.
-privateComp typedef CS (*OptionValidator)(OptionChange* cha);
+comptime typedef CS (*OptionValidator)(OptionChange* cha);
 
 //Argument for the callback function (OptionExpander) invoked after a string
 //option value is expanded for cmdline completion.
-privateComp typedef struct {
+comptime typedef struct {
    OptionRef ref;
    // The original option value, escaped.
    OptionValue origValue;
@@ -123,7 +123,7 @@ privateComp typedef struct {
 //Return OK if the expansion succeeded (matches have to be set). Otherwise FAIL.
 //
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
-privateComp typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
+comptime typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
 private struct Option { //:Option
    CS fullName;   // full option name

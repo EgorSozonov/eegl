@@ -1216,7 +1216,7 @@ del_typebuf(int len, int offset) {
 }
 
 // stateG for adding bytes to a recording or 'showcmd'.
-privateComp typedef struct {
+comptime typedef struct {
    Byte   buf[MB_MAXBYTES * 3 + 4];
    int      prev_c;
    Unt   buflen;
@@ -2124,7 +2124,7 @@ parse_queued_messages(void) {
 }
 
 
-privateComp typedef enum {
+comptime typedef enum {
    mrFail,    // failed, break loop
    mrGet,     // get a character from typeahead
    mrRetry,   // try to map again
@@ -2205,7 +2205,7 @@ checkSimplifyModifier(int const maxOffset) {
    return 0;
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    MapBlock* longestFull;
    MapBlock* foundMapping;
    int maxMLen; //max_mlen
@@ -3908,7 +3908,7 @@ utf_class_buf(Unt c, Book* book) {
    return 2;
 }
 
-privateComp typedef struct { // copy from strings.c
+comptime typedef struct { // copy from strings.c
    long first;
    long last;
 } Interval;

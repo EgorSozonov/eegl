@@ -1671,18 +1671,11 @@ mch_expandpath(OUT ExpandMatch* matches, CS path, Unt flags){
    return unix_expandpath(OUT matches, path, 0, flags, false);
 }
 
-privateComp typedef DIR* DirPtr;
-LIST_TY(DirPtr)
-//private LIST_CREATE(DirPtr)
+comptime typedef DIR* DirPtr;
+GEN_TYPE_L(DirPtr)
 
-//#define ADD_LIST_TY DirPtr
-//#include "generic.h"
 
-//#define ADD_LIST_TY Int
-//#include "generic.h"
 
-//#define REMOVE_LAST_LIST_TY DirPtr
-//#include "generic.h"
 
 // search for a string like "txt" in a list like "a,b,c,txt"
 //private Boole
@@ -2585,7 +2578,7 @@ struct DirSearchStack {
 };
 
 //type for already visited directories or files.
-privateComp typedef struct Visited {
+comptime typedef struct Visited {
    struct Visited* next;
 
    // Visited directories are different if the wildcard string are
@@ -2640,7 +2633,7 @@ struct VisitedList {
 //  stopDirs:   array of stop directories for upward search
 //  whatToFind:   FINDFILE_BOTH, FINDFILE_DIR or FINDFILE_FILE
 //  tagFile:   searching for tags file, don't use @suffixesadd
-privateComp typedef struct FileSearchCtx {
+comptime typedef struct FileSearchCtx {
    DirSearchStack* stack;
    VisitedList* visitedList;
    VisitedList* dirVisitedList;

@@ -18,7 +18,7 @@ pub int lstat(const char* restrict, struct stat* restrict);
 //a positive number. Because the reference to the block is still the negative
 //number, we remember the translation to the new positive number in the
 //double linked trans lists. The structure is the same as the hash lists.
-privateComp typedef struct {
+comptime typedef struct {
    MfHashItem nt_hashitem;      // header for hash table and key
 #define nt_old_bnum nt_hashitem.key   // old, negative, number
 
@@ -798,10 +798,10 @@ private struct InfoPtr {
 // are to be loaded into memory.
 private int dontReleaseBlocksS = false;
 
-privateComp typedef struct Block0 Block0;      // contents of the first block
-privateComp typedef struct PointerBlock   PointerBlock; // contents of a pointer block
-privateComp typedef struct DataBlock   DataBlock;    // contents of a data block
-privateComp typedef struct PtrEntry   PtrEntry;         // block/line-count pair
+comptime typedef struct Block0 Block0;      // contents of the first block
+comptime typedef struct PointerBlock   PointerBlock; // contents of a pointer block
+comptime typedef struct DataBlock   DataBlock;    // contents of a data block
+comptime typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 #define DATA_ID          (('d' << 8) + 'a')   // data block id
 #define PTR_ID          (('p' << 8) + 't')   // pointer block id
@@ -934,7 +934,7 @@ private LineNr   lowest_marked = 0;
 #define ML_SIMPLE(x) ((x) & 0x10)  // DEL, INS or FIND
 
 // argument for updateBlock0()
-privateComp typedef enum {
+comptime typedef enum {
    UB_FNAME = 0, // update timestamp and filename
    UB_SAME_DIR,  // update the B0_SAME_DIR flag
    UB_CRYPT      // update crypt key
@@ -3538,7 +3538,7 @@ attention_message(Book* book, CS swapName) {
    --no_wait_return;
 }
 
-privateComp typedef enum {
+comptime typedef enum {
    SEA_CHOICE_NONE = 0,
    SEA_CHOICE_READONLY = 1,
    SEA_CHOICE_EDIT = 2,

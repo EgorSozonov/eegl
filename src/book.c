@@ -226,7 +226,7 @@ findPortalIntoCurBook(void) {
    }
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    Portal* curPorSave;
    AutocommSave autocommSave;
    Boole usingAco;
@@ -1820,7 +1820,7 @@ getvcols(
 
 //{{{book
 
-privateComp typedef dev_t Device;
+comptime typedef dev_t Device;
 
 #define FOR_ALL_BOOKS_FROM_LAST(book) \
     for ((book) = lastBook; (book); (book) = (book)->prev)
@@ -3783,15 +3783,14 @@ booklistFindPattern(
    return match;
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    Book* book;
    CS match;
 } BufMatch;
 
-LIST_TY(BufMatch)
-LIST_CREATE(BufMatch)
-#define ADD_LIST_TY BufMatch
-#include "generic.h"
+GEN_TYPE_L(comptime, BufMatch);
+generic(2) GEN_create_L(private, BufMatch);
+generic(2) GEN_add_L(private, BufMatch);
 
 //Find all book names that match. For command line expansion of ":book" and ":sbook".
 //Return OK if matches found, FAIL otherwise.
@@ -4498,7 +4497,7 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 }
 
 // Used for building in the status line.
-privateComp typedef struct {
+comptime typedef struct {
    CS start;
    int minWidth;
    int maxWidth;
@@ -5875,7 +5874,7 @@ bookCompare(const void* s0, const void* s1) {
 #define SMALLBUFSIZE   256   // size of emergency write book
 
 // Structure to pass arguments from bookWrite() to writeBytes().
-privateComp typedef struct {
+comptime typedef struct {
    CS bw_buf;   // buffer with data to be written
    int fd;      // file descriptor
    int bw_len;      // length of data
@@ -7760,7 +7759,7 @@ alist_name(ArgFileEntry *afe) {
 }
 
 // State used by the :all command to open all the files in the argument list in separate portals
-privateComp typedef struct {
+comptime typedef struct {
    EeArgList* alist;      // argument list to be used
    int   had_tab;
    int   keep_tabs;
@@ -8290,7 +8289,7 @@ f_prop_add(Var *argvars, OUT Var* returnVar) {
              argvars[2].bag, curBook, &argvars[2]);
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    CS tyName;
    int      id;
    NULLABLE CS text; // if non-empty, the text to display above or before the line
@@ -9854,7 +9853,7 @@ clearPropTypes(Book* book) {
 }
 
 // Struct used to return two values from adjust().
-privateComp typedef struct {
+comptime typedef struct {
    int dirty;      // if the property was changed
    int mayDrop;   // whether after this change, the prop may be removed
 } AdjustRes;

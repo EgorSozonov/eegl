@@ -5,7 +5,7 @@
 
 #include "eegl.h"
 
-privateComp typedef struct searchstat {
+comptime typedef struct searchstat {
    int cur;        // current position of found words
    int cnt;        // total count of found words
    int exact_match;// true if matched exactly on specified position
@@ -157,7 +157,7 @@ private Boole saved_spatsHlsearch = true;
 private Text mrPatternP = (Text){.c = null, .len = 0};
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
-privateComp typedef struct {
+comptime typedef struct {
    FILE* fp;     //File pointer
    CS name;      //Full name of file
    LineNr lnum;  //Line we were up to in file

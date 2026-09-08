@@ -7,7 +7,7 @@
 
 #include "eegl.h"
 
-privateComp typedef struct MsgHist MsgHist;
+comptime typedef struct MsgHist MsgHist;
 struct MsgHist {
    MsgHist* next;
    CS c;
@@ -3165,7 +3165,7 @@ inc_msg_scrolled(void) {
 }
 
 
-privateComp typedef enum {
+comptime typedef enum {
    SB_CLEAR_NONE = 0,
    SB_CLEAR_ALL,
    SB_CLEAR_COMMLINE_BUSY,

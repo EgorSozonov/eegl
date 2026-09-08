@@ -72,7 +72,7 @@ private struct RegProg {
 
 // Since the out pointers in the list are always uninitialized, we use the pointers themselves
 // as storage for the StateLists.
-privateComp typedef union StateList StateList;
+comptime typedef union StateList StateList;
 union StateList {
    StateList* next;
    RState* s;
@@ -80,7 +80,7 @@ union StateList {
 
 
 // A partially built NFA without the matching state filled in.
-privateComp typedef struct {
+comptime typedef struct {
    RState *start; // points at the start state.
    StateList   *out; // a list of places that need to be set to the next state for this fragment.
 } Frag;
@@ -211,7 +211,7 @@ backslash_trans(Unt c) {
    return c;
 }
 
-privateComp enum {
+comptime enum {
    CHAR_CLASS_ALNUM = 0,
    CHAR_CLASS_ALPHA,
    CHAR_CLASS_BLANK,
@@ -336,7 +336,7 @@ private Unt   nextchr;   // used for ungetchr() ???
 #define REG_ZPAREN   2   // \z(\)
 #define REG_NPAREN   3   // \%(\)
 
-privateComp typedef struct {
+comptime typedef struct {
    Byte* regparse;
    int prevchr_len;
    int curchr;
@@ -1172,7 +1172,7 @@ private Unt reg_tofreelen;
 //reg_firstlnum   <invalid>   first line in which to search
 //reg_maxline      0          last line nr
 //reg_line_lbr false or true  false
-privateComp typedef struct {
+comptime typedef struct {
    RegMatch* match;
    RegMultilineMatch* multiMatch;
 
@@ -1236,7 +1236,7 @@ private int can_f_submatch = false;   // true when submatch() can be used
 // This struct is used for reg_submatch(). Needed for when the
 // substitution string is an expression that contains a call to substitute()
 // and submatch().
-privateComp typedef struct {
+comptime typedef struct {
    RegMatch   *sm_match;
    RegMultilineMatch   *sm_mmatch;
    LineNr   sm_firstlnum;
@@ -1246,7 +1246,7 @@ privateComp typedef struct {
 
 private regsubMatch rsm;  // can only be used when can_f_submatch is true
 
-privateComp typedef enum {
+comptime typedef enum {
     RGLF_LINE = 0x01,
     RGLF_LENGTH = 0x02,
     RGLF_SUBMATCH = 0x04
@@ -1554,7 +1554,7 @@ re_mult_next(CS what) {
    return OK;
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    int a, b, c;
 } decomp_T;
 
@@ -1741,7 +1741,7 @@ cstrchr(Byte *s, int c) {
 //}}}
 //{{{substitutions
 
-privateComp typedef void (*AllOrOne)(int *, int);
+comptime typedef void (*AllOrOne)(int *, int);
 
 private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, Unt flags);
 
@@ -2537,7 +2537,7 @@ reg_submatch_list(int no) {
 
 //{{{ Regex tokens
 
-privateComp enum {
+comptime enum {
     SPLIT = 4294967295 - 1024,
     MATCH,
     EMPTY,             // matches 0-length
@@ -2755,7 +2755,7 @@ private int countStatesS;   // Number of states in the NFA.
 private int stateS;   // Index in the state vector, used in alloc_state()
 
 // struct to save start/end pointer/position in for \(\)
-privateComp typedef struct{
+comptime typedef struct{
    union {
       Byte   *ptr;
       PosNoVirt   pos;
@@ -6053,7 +6053,7 @@ addOptimizationHints(RegProg* prog) {
 // NFA execution code.
 /////////////////////////////////////////////////////////////////
 
-privateComp typedef struct {
+comptime typedef struct {
    int in_use; // number of subexpr with useful info
 
    // When REG_MULTI is true list.multi is used, otherwise list.line.
@@ -6072,13 +6072,13 @@ privateComp typedef struct {
    ColNr   orig_start_col;  // list.multi[0].start_col without \zs
 } Submatch;
 
-privateComp typedef struct {
+comptime typedef struct {
    Submatch norm; // \( .. \) matches
    Submatch synt; // \z( .. \) matches
 } Submatches;
 
 // PostponedMatch stores a Postponed Invisible Match.
-privateComp typedef struct {
+comptime typedef struct {
    int      result;      // PIM_*, see below
    RState   *state;      // the invisible match start state
    Submatches   subs;      // submatch info, only party used
@@ -6096,7 +6096,7 @@ privateComp typedef struct {
 
 
 // nfa_thread_T contains execution information of a NFA state
-privateComp typedef struct {
+comptime typedef struct {
    RState   *state;
    int      count;
    PostponedMatch   pim;      // if pim.result != PIM_UNUSED: postponed invisible match
@@ -6104,7 +6104,7 @@ privateComp typedef struct {
 } nfa_thread_T;
 
 // nfa_List contains the alternative NFA execution states.
-privateComp typedef struct {
+comptime typedef struct {
    nfa_thread_T    *t;      // allocated array of states
    int          n;      // nr of states currently in "t"
    int          len;   // max nr of states in "t"

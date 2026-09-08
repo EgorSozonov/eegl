@@ -15,7 +15,7 @@
 #include <sys/poll.h>
 #endif
 
-privateComp typedef sigset_t SignalSet;
+comptime typedef sigset_t SignalSet;
 
 # define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
                          // 127, some shells use that already
@@ -27,7 +27,7 @@ privateComp typedef sigset_t SignalSet;
 
 private int dontCheckJobEndedP = 0;
 
-privateComp typedef int waitstatus;
+comptime typedef int waitstatus;
 
 // volatile because it is used in signal handler deathtrap().
 private volatile SigAtomic inMchDelayS = false; // sleeping in mch_delay()
@@ -82,18 +82,22 @@ private int safe_to_invoke_callback = 0;
 private Channel *first_channel = NULL;
 private int next_ch_id = 0;
 private int ignore_sigtstp = false;
-privateComp typedef struct sockaddr_un SockAddrUn;
-privateComp typedef struct sockaddr SockAddr;
+comptime typedef struct sockaddr_un SockAddrUn;
+comptime typedef struct sockaddr SockAddr;
 
 #define LOG_ALWAYS 9// must be different from true and false
+
+
+GEN_TYPE_L(comptime, PollFd)
+GEN_add(comptime, PollFd)
 
 //{{{@@forward declarations
 private void channel_free_contents(Channel* channel);
 private void channel_free_channel(Channel* channel);
 private void channel_free(Channel* channel);
 private int channel_may_free(Channel *channel);
-private LIST_CREATE(PollFd) #define ADD_LIST_TY PollFd  //which method to instantiate ("add" for the "list" type)
-#include "generic.h"        //actual code generation, including adding it to the _Generic
+
+
 
 //Decrement the reference count on "channel" and maybe free it when it goes
 //down to zero.  Don't free it if there is a pending action.
@@ -358,9 +362,9 @@ channel_may_free(Channel *channel) {
    return false;
 }
 
-private LIST_CREATE(PollFd)
-#define ADD_LIST_TY PollFd  //which method to instantiate ("add" for the "list" type)
-#include "generic.h"        //actual code generation, including adding it to the _Generic
+GEN_TYPE_L(PollFd)
+GEN_add_L(PollFd)
+
 
 //Decrement the reference count on "channel" and maybe free it when it goes
 //down to zero.  Don't free it if there is a pending action.
@@ -2518,7 +2522,7 @@ channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds) {
    }
 }
 
-privateComp typedef enum {
+comptime typedef enum {
    CW_READY,
    CW_NOT_READY,
    CW_ERROR

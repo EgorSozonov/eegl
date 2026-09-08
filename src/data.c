@@ -1158,7 +1158,7 @@ list2string(Var* tv, int copyID, int restore_copyID) {
    return (CS)ga.c;
 }
 
-privateComp typedef struct join_S {
+comptime typedef struct join_S {
    CS s;
    Byte* tofree;
 } Join;
@@ -1525,13 +1525,13 @@ private int item_compare(const void *s1, const void *s2);
 private int item_compare2(const void *s1, const void *s2);
 
 // struct used in the array that's given to qsort()
-privateComp typedef struct {
+comptime typedef struct {
    ListItem   *item;
    int      idx;
 } SortItem;
 
 // struct storing information about current sort
-privateComp typedef struct {
+comptime typedef struct {
    int item_compare_ic;
    int item_compare_lc;
    int item_compare_numeric;
@@ -5637,7 +5637,7 @@ bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    dictitem_remove(b, di, S"remove()");
 }
 
-privateComp typedef enum {
+comptime typedef enum {
    DICT2LIST_KEYS,
    DICT2LIST_VALUES,
    DICT2LIST_ITEMS,
@@ -8142,7 +8142,7 @@ private int has_match(CS needle, CS haystack);
 #define SCORE_MIN (-INFINITY)
 #define SCORE_SCALE 1000
 
-privateComp typedef struct {
+comptime typedef struct {
    int      idx;      // used for stable sort
    ListItem* item;
    int score;
@@ -8906,7 +8906,7 @@ has_match(Byte *needle, Byte *haystack) {
    return 1;
 }
 
-privateComp typedef struct match_struct {
+comptime typedef struct match_struct {
    int needle_len;
    int haystack_len;
    int lower_needle[MATCH_MAX_LEN];     // stores codepoints
@@ -9858,7 +9858,7 @@ parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_err) {
    return OK;
 }
 
-privateComp enum {
+comptime enum {
    TYPE_UNKNOWN = -1,
    TYPE_INT,
    TYPE_LONGINT,
@@ -11847,13 +11847,13 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
    return MAYBE;
 }
 
-privateComp typedef enum {
+comptime typedef enum {
    JSON_ARRAY,      // parsing items in an array
    JSON_OBJECT_KEY,   // parsing key of an object
    JSON_OBJECT      // parsing item in an object, after the key
 } JsonDecodeType;
 
-privateComp typedef struct {
+comptime typedef struct {
    JsonDecodeType jd_type;
    Var jd_tv;   // the list or dict
    Var jd_key_tv;

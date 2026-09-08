@@ -556,7 +556,7 @@ private SignEntry * get_first_valid_sign(Portal *wp);
 //}}}
 //{{{location lists
 
-privateComp typedef struct DirStack DirStack; 
+comptime typedef struct DirStack DirStack; 
 struct DirStack {
    DirStack* next;
    CS dirname;
@@ -567,7 +567,7 @@ struct DirStack {
 #define STACK_CAPACITY 20
 
 // For each error the next struct is allocated and linked in a list.
-privateComp typedef struct LocLine LocLine;
+comptime typedef struct LocLine LocLine;
 struct LocLine {
    LocLine* next;   // pointer to next error in the list
    LocLine* prev;   // pointer to previous error in the list
@@ -599,7 +599,7 @@ struct LocLine {
 //Usually the list contains one or more entries. But an empty list can be
 //created using setqflist()/setloclist() with a title and/or user context
 //information and entries can be added later using setqflist()/setloclist().
-privateComp typedef struct {
+comptime typedef struct {
    Unt id;      // Unique identifier for this list
    LocLine* first;   // pointer to the first error
    LocLine* last;   // pointer to the last error
@@ -650,7 +650,7 @@ private List* makeInProgressS; // the list of messages from a running "make" com
 
 
 // Structure used to hold the info of one part of 'errorformat'
-privateComp typedef struct ErrorFormatInfo ErrorFormatInfo;
+comptime typedef struct ErrorFormatInfo ErrorFormatInfo;
 struct ErrorFormatInfo {
     RegProg* prog;   // pre-formatted part of 'errorformat'
     ErrorFormatInfo       *next;   // pointer to next (NULL if last)
@@ -677,14 +677,14 @@ struct ErrorFormatInfo {
 
 // List of location lists to be deleted.
 // Used to delay the deletion of locations lists by autocmds.
-privateComp typedef struct DeletionList DeletionList;
+comptime typedef struct DeletionList DeletionList;
 struct DeletionList {
     DeletionList* next;
     LocationStack      *stack;
 };
 
 // :vimgrep command arguments
-privateComp typedef struct {
+comptime typedef struct {
    long tomatch;   // maximum number of matches to find
    CS spat;      // search pattern
    Unt flags;      // search modifier
@@ -1087,7 +1087,7 @@ parse_efm_end:
    return fmtFirst;
 }
 
-privateComp enum {
+comptime enum {
    QF_FAIL = 0,
    QF_OK = 1,
    QF_END_OF_INPUT = 2,
@@ -1097,7 +1097,7 @@ privateComp enum {
    QF_ABORT = 6
 };
 
-privateComp typedef enum {
+comptime typedef enum {
    SOURCE_FILENAME, // a proto-source, so to speak - will be turned into SOURCE_FILE after opening
    SOURCE_FILE, // reading locations from file
    SOURCE_BOOK, // reading locations from an Eegl buffer
@@ -1105,30 +1105,30 @@ privateComp typedef enum {
    SOURCE_LIST // reading location from a Var containing a list of strings
 } SourceKind;
 
-privateComp typedef struct { // SOURCE_FILENAME
+comptime typedef struct { // SOURCE_FILENAME
    CS c;
 } FileNameSource;
 
-privateComp typedef struct { // SOURCE_FILE
+comptime typedef struct { // SOURCE_FILE
    FILE* c;
 } FileSource;
 
-privateComp typedef struct { // SOURCE_BOOK
+comptime typedef struct { // SOURCE_BOOK
    Book* c;
    LineNr start;
    LineNr end;
 } BookSource;
 
 
-privateComp typedef struct { // SOURCE_STRING
+comptime typedef struct { // SOURCE_STRING
    CS c;
 } StringSource;
 
-privateComp typedef struct { // SOURCE_LIST
+comptime typedef struct { // SOURCE_LIST
    ListItem* c;
 } ListSource;
 
-privateComp typedef struct { // A source can be a file, a Book, a string var or a list vaar
+comptime typedef struct { // A source can be a file, a Book, a string var or a list vaar
    SourceKind tag;
    union {
       FileNameSource FileName;
@@ -1140,7 +1140,7 @@ privateComp typedef struct { // A source can be a file, a Book, a string var or 
 } Source;
 
 // State information used to parse lines and add entries to a quickfix/location list.
-privateComp typedef struct {
+comptime typedef struct {
    Source source;
    CS linebuf;
    int      linelen;
@@ -1352,7 +1352,7 @@ getNextLine(LocationState *state) {
    return QF_OK;
 }
 
-privateComp typedef struct {
+comptime typedef struct {
     CS namebuf;
     int      bnr;
     CS module;
@@ -6210,7 +6210,7 @@ exportLocList(
 }
 
 // Flags used by getqflist()/getloclist() to determine which fields to return.
-privateComp enum {
+comptime enum {
    QF_GETLIST_NONE    = 0x0,
    QF_GETLIST_TITLE   = 0x1,
    QF_GETLIST_ITEMS   = 0x2,
@@ -8754,7 +8754,7 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 
 
 // Struct to hold the sign properties.
-privateComp typedef struct Sign Sign;
+comptime typedef struct Sign Sign;
 
 private struct Sign {
    Sign* next; // next sign in list
@@ -10340,7 +10340,7 @@ free_signs(void) {
       sign_undefine(first_sign, NULL);
 }
 
-privateComp enum {
+comptime enum {
    EXP_SUBCMD, // expand :sign sub-commands
    EXP_DEFINE, // expand :sign define {name} args
    EXP_PLACE, // expand :sign place {id} args

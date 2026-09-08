@@ -46,17 +46,17 @@ private struct DiffBlock {
 // Allocate an array of nr zeroed out elements, return NULL on failure
 #define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
 
-privateComp typedef struct s_mmfile {
+comptime typedef struct s_mmfile {
    Byte* ptr;
    long size;
 } MmFile;
 
-privateComp typedef struct s_mmbuffer {
+comptime typedef struct s_mmbuffer {
    Byte* ptr;
    long size;
 } MmBuffer;
 
-privateComp typedef struct s_xpparam {
+comptime typedef struct s_xpparam {
    unsigned long flags;
    // See Documentation/diff-options.txt
    char **anchors;
@@ -69,7 +69,7 @@ struct ChaNode {
    long icurr;
 };
 
-privateComp typedef struct s_chastore {
+comptime typedef struct s_chastore {
    ChaNode *head, *tail;
    long isize, nsize;
    ChaNode *ancur;
@@ -78,16 +78,16 @@ privateComp typedef struct s_chastore {
 } ChaStore;
 
 
-privateComp typedef long (*FindFn)(
+comptime typedef long (*FindFn)(
    CS line, long line_len, char* buffer, long buffer_size, void *priv
 );
 
-privateComp typedef int (*XdlEmitHunkConsumeFn)(
+comptime typedef int (*XdlEmitHunkConsumeFn)(
    long start_a, long count_a, long start_b, long count_b, void *cb_data
 );
 
 
-privateComp typedef struct s_xdemitconf {
+comptime typedef struct s_xdemitconf {
    long ctxlen;
    long interhunkctxlen;
    unsigned long flags;
@@ -97,7 +97,7 @@ privateComp typedef struct s_xdemitconf {
 } XdEmitConf;
 
 
-privateComp typedef struct s_xdemitcb {
+comptime typedef struct s_xdemitcb {
    void *priv;
    int (*out_hunk)(void *,
          long old_begin, long old_nr,
@@ -114,7 +114,7 @@ struct Record {
    unsigned long ha;
 };
 
-privateComp typedef struct s_xdfile {
+comptime typedef struct s_xdfile {
    ChaStore rcha;
    long nrec;
    unsigned int hbits;
@@ -127,7 +127,7 @@ privateComp typedef struct s_xdfile {
    unsigned long *ha;
 } XdFile;
 
-privateComp typedef struct s_xdfenv {
+comptime typedef struct s_xdfenv {
    XdFile xdf1, xdf2;
 } XdfEnv;
 
@@ -819,32 +819,32 @@ private int diff_a_works = MAYBE; //true when "diff -a" works, false when it
 #define MAX_DIFF_ANCHORS 20
 
 // used for diff input
-privateComp typedef struct {
+comptime typedef struct {
    CS externalFname;  //for external diff
    MmFile mmfile;     //for internal diff
 } DiffInp;
 
 // used for diff DiffResult
-privateComp typedef struct {
+comptime typedef struct {
    CS outFname;       //for external diff
    ArrayList dout_ga; //for internal diff
 } DiffResult;
 
 // used for recording hunks from xdiff
-privateComp typedef struct {
+comptime typedef struct {
    LineNr origLnum;
    long origCount;
    LineNr newLnum;
    long newCount;
 } Hunk;
 
-privateComp typedef enum {
+comptime typedef enum {
    DIO_OUTPUT_INDICES = 0, //default
    DIO_OUTPUT_UNIFIED = 1  //unified diff format
 } OutputFormat;
 
 // two diff inputs and one DiffResult
-privateComp typedef struct {
+comptime typedef struct {
    DiffInp orig;     // original file input
    DiffInp new;      // new file input
    DiffResult dio_diff;     //diff DiffResult
@@ -3350,7 +3350,7 @@ diff_find_change_simple(
 
 //Mapping used for mapping from temporary mmfile created for inline diff back
 //to original book's line/col.
-privateComp typedef struct {
+comptime typedef struct {
    Long byte_start;
    Long num_bytes;
    int lineoff;
@@ -4773,27 +4773,27 @@ private long xdl_mmfile_size(MmFile *mmf);
 #define DEFAULT_CONFLICT_MARKER_SIZE 7
 
 
-privateComp typedef struct s_xdchange {
+comptime typedef struct s_xdchange {
    struct s_xdchange *next;
    long i1, i2;
    long chg1, chg2;
    int ignore;
 } XdChange;
 
-privateComp typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
+comptime typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
             XdEmitConf const *xecfg);
 
 private XdChange *xdl_get_hunk(XdChange **xscr, XdEmitConf const *xecfg);
 private int xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg);
 
-privateComp typedef struct s_diffdata {
+comptime typedef struct s_diffdata {
    long nrec;
    unsigned long const *ha;
    long *rindex;
    CS rchg;
 } DiffData;
 
-privateComp typedef struct s_xdg {
+comptime typedef struct s_xdg {
    long mxcost;
    long snake_cnt;
    long heur_min;
@@ -4818,7 +4818,7 @@ private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 #define XDL_SNAKE_CNT 20
 #define XDL_K_HEUR 4
 
-privateComp typedef struct s_xdpsplit {
+comptime typedef struct s_xdpsplit {
    long i1, i2;
    int min_lo, min_hi;
 } xdpsplit_t;
@@ -5248,7 +5248,7 @@ xget_indent(Record* rec) {
 #define MAX_BLANKS 20
 
 // Characteristics measured about a hypothetical split position.
-privateComp typedef struct SplitMeasurement {
+comptime typedef struct SplitMeasurement {
    //Is the split at the end of the file (aside from any blank lines)?
    int end_of_file;
 
@@ -5270,7 +5270,7 @@ privateComp typedef struct SplitMeasurement {
    int post_indent;
 } SplitMeasurement;
 
-privateComp typedef struct {
+comptime typedef struct {
    // The effective indent of this split (smaller is preferred).
    int effective_indent;
 
@@ -5452,7 +5452,7 @@ score_cmp(SplitScore* s1, SplitScore* s2) {
 //
 //Note that loops that are testing for changed lines in xdf->rchg do not need
 //index bounding since the array is prepared with a zero at position -1 and N.
-privateComp typedef struct {
+comptime typedef struct {
    //The index of the first changed line in the group, or the index of
    //the unchanged line above which the (empty) group is located.
    long start;
@@ -6186,7 +6186,7 @@ struct XdlClass {
    long len2;
 };
 
-privateComp typedef struct s_xdlclassifier {
+comptime typedef struct s_xdlclassifier {
    unsigned int hbits;
    long hsize;
    XdlClass **rchash;
@@ -6603,7 +6603,7 @@ struct Entry {
    unsigned anchor : 1;
 };
 
-privateComp typedef struct {
+comptime typedef struct {
    int nr;
    int alloc;
    Arr(Entry) entries;
@@ -6908,7 +6908,7 @@ struct XdRecord {
    XdRecord* next;
 };
 
-privateComp typedef struct {
+comptime typedef struct {
    XdRecord** records; // an occurrence
    XdRecord** line_map; // map of line to record chain
    ChaStore rcha;
@@ -6928,7 +6928,7 @@ privateComp typedef struct {
    XpParam const* xpp;
 } HistIndex;
 
-privateComp typedef struct {
+comptime typedef struct {
    Unt begin1;
    Unt end1;
    Unt begin2;
@@ -7279,7 +7279,7 @@ xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg) {
    return lxch;
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    long len;
    Byte buf[80];
 } FuncLine;

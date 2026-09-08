@@ -511,7 +511,7 @@ checkIfNameReserved(CS name, int is_objm_access) {
 
 //This specifies optional parameters for getLval(). Arguments may be NULL.
 
-privateComp typedef struct {
+comptime typedef struct {
    Var* var;    // Base internal var.
    int isArg;   // name is an arg (not a member).
 } LvalRoot;
@@ -1496,7 +1496,7 @@ eval_foldexpr(Portal *wp, int *cp) {
 #define ASSIGN_COMPOUND_OP 0x200  // compound operator e.g. "+="
 
 #ifdef LOG_LOCKVAR
-privateComp typedef struct {
+comptime typedef struct {
    int       flag;
    char    *str;
 } FlagString;
@@ -1562,7 +1562,7 @@ fillLvalFromRoot(Lval *lp, LvalRoot* root) {
    lp->isRoot = true;
 }
 
-privateComp typedef enum {
+comptime typedef enum {
    GLV_FAIL,
    GLV_OK,
    GLV_STOP
@@ -5700,7 +5700,7 @@ private Bag globvardict;      // Dictionary with g: variables
 
 #define VV_NAME(s, t)  (CS)s, {{t, 0, {0}}, 0, 0, {0}}
 
-privateComp typedef struct  {
+comptime typedef struct  {
    CS name;     //name of variable, without v:
    DictItem16 entry; //value and name for key (max 16 chars!)
    Boole isReadonly;
@@ -9178,7 +9178,7 @@ evFreeCallback(Callback* callback) {
 //  - f_max_argc == VARGS
 //  - For varargs, f_argcheck must be NULL terminated. The last non-null
 //    entry in f_argcheck should validate all the remaining args.
-privateComp typedef struct {
+comptime typedef struct {
    CS f_name;   // function name
    Byte f_min_argc;   // minimal number of arguments
    Byte f_max_argc;   // maximal number of arguments
@@ -12737,7 +12737,7 @@ f_line2byte(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 
-privateComp typedef enum {
+comptime typedef enum {
    MATCH_END,       // matchend()
    MATCH_MATCH,    // match()
    MATCH_STR,       // matchstr()

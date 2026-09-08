@@ -217,7 +217,7 @@ private int syn_cur_foldlevel(void);
 //Information about a hilite group. The ID of a hilite group is also called group ID.
 //This is module-private info, the publically usable part is written to decorationsG.
 
-privateComp typedef struct {
+comptime typedef struct {
    Unt hiId;
    Text name;
    VTermDeco flags;   //flag of text decoration combo (bold, underline etc)
@@ -233,7 +233,7 @@ privateComp typedef struct {
 } HiliteGroup;
 
 // All possible keys, used for parsing
-privateComp typedef enum {
+comptime typedef enum {
    BG,
    FG,
    UNDER,
@@ -242,7 +242,7 @@ privateComp typedef enum {
    KEY_PARSE_ERROR
 } HiliteKey;
 
-privateComp typedef struct {
+comptime typedef struct {
    int nameStart; // index into "colorsText"
    int nameLen;
    VTermColor value;
@@ -250,7 +250,7 @@ privateComp typedef struct {
 
 
 //Parsed single names like the hilite group name or "clear"
-privateComp typedef struct {
+comptime typedef struct {
    Short start;
    Short end;
 } HiKey;
@@ -261,7 +261,7 @@ keyName(HiKey kv, CS s) {
 }
 
 // Parsed key-value pairs like "fg=blue"
-privateComp typedef struct {
+comptime typedef struct {
    Short start;
    Short keyEnd; // position of the "=". The value starts at (keyEnd + 1)
    Short end;
@@ -317,7 +317,7 @@ private Kv* decoKindIndices[] = {
 
 #define COMBINE_DECORATIONS(d0, d1) ((((d1) & HL_NOCOMBINE) ? (d1) : (d0)) | (d1))
 
-privateComp enum {
+comptime enum {
     BLACK = 0,
     DARKBLUE,
     DARKGREEN,
@@ -1281,7 +1281,7 @@ decoEq(Decoration a, Decoration b) {
 //{{{syntax hiliting
 
 // Struct used to store one state of the state stack.
-privateComp typedef struct buf_state {
+comptime typedef struct buf_state {
    int bs_idx;    // index of pattern
    int bs_flags;    // flags for pattern
    int bs_seqnr;    // stores si_seqnr
@@ -1321,7 +1321,7 @@ privateComp typedef struct buf_state {
 
 
 // syn_state contains the syntax state stack for the start of one line. Used by array[].
-privateComp typedef struct SyntaxState SyntaxState;
+comptime typedef struct SyntaxState SyntaxState;
 
 private struct SyntaxState {
    SyntaxState   *next; // next entry in used or free list
@@ -1339,14 +1339,14 @@ private struct SyntaxState {
 
 
 // struct passed to in_id_list()
-privateComp typedef struct {
+comptime typedef struct {
    int   inc_tag;   // ":syn include" unique tag
    Short   hiId;      // highlight group ID of item
    Short* containedInHiId;   // cont.in group IDs, if non-zero
 } SyntaxInfo;
 
 // Each keyword has one keyentry, which is linked in a hash list.
-privateComp typedef struct KeyEntry KeyEntry;
+comptime typedef struct KeyEntry KeyEntry;
 
 private struct KeyEntry {
    KeyEntry   *next;   // next entry with identical "keyword[]"
@@ -1381,7 +1381,7 @@ private CS (spo_name_tab[SPO_COUNT]) = {
 //and for the actually highlighted text (_h_start and _h_end).
 //
 //Note that ordering of members is optimized to reduce padding.
-privateComp typedef struct syn_pattern {
+comptime typedef struct syn_pattern {
    char sp_type;      // see SPTYPE_ defines below
    char syncing;      // this item used for syncing
    Short patternHiId; // highlight group ID of pattern
@@ -1428,7 +1428,7 @@ private int current_trans_id = 0; // idem, transparency removed
 private int current_flags = 0;
 private int current_seqnr = 0;
 
-privateComp typedef struct syn_cluster_S {
+comptime typedef struct syn_cluster_S {
    CS name;      // syntax cluster name
    CS nameUpper; // uppercase of name
    Arr(Short) hiIds;    // IDs in this syntax cluster
@@ -1484,7 +1484,7 @@ private Byte msg_no_items[] = "No Syntax items defined for this buffer";
 //For the current state we need to remember more than just the idx.
 //When matchEndPos.lnum is 0, the items other than si_idx are unknown.
 //(The end positions have the column number of the next char)
-privateComp typedef struct state_item {
+comptime typedef struct state_item {
    int si_idx;         // index of syntax pattern or KEYWORD_IDX
    Short hiId;         // highlight group ID for keywords
    int transparentHiId;      // idem, transparency removed
@@ -1508,7 +1508,7 @@ privateComp typedef struct state_item {
                                     // but contained groups
 
 // Struct to reduce the number of arguments to get_syn_options(), it's used very often.
-privateComp typedef struct {
+comptime typedef struct {
    int flags;      // flags for contained and transparent
    int keyword;   // true for ":syn keyword"
    int* sync_idx;   // syntax item for "grouphere" argument, NULL if not allowed
@@ -1584,7 +1584,7 @@ private int in_id_list(StateItem *item, Arr(Short) containsHiId, SyntaxInfo* ssp
 private int push_current_state(int idx);
 private void pop_current_state(void);
 #define IF_SYN_TIME(p) NULL
-privateComp typedef int syn_Time;
+comptime typedef int syn_Time;
 
 private void syn_stack_apply_changes_block(SyntaxBlock *block, Book* book);
 private void find_endpos(
@@ -6071,7 +6071,7 @@ in_id_list(
    return !retval;
 }
 
-privateComp typedef struct subcommand {
+comptime typedef struct subcommand {
    CS name;         // subcommand name
    void (*fn)(Invocation *, int);   // function to call
 } Subcommand;
@@ -6176,7 +6176,7 @@ syntax_present(Portal* po) {
        || po->ownSyntax->keywordsIgnoreCase.count > 0);
 }
 
-privateComp enum {
+comptime enum {
    EXP_SUBCMD,       // expand ":syn" sub-commands
    EXP_CASE,       // expand ":syn case" arguments
    EXP_SPELL,       // expand ":syn spell" arguments

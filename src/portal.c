@@ -7204,7 +7204,7 @@ private Tab* popupMaskTabS INIT(= NULL);
 #define POPF_INFO_MENU  0x400   // align info popup with popup menu
 #define POPF_POSINVERT  0x800   // vertical position can be inverted
 
-privateComp typedef struct {
+comptime typedef struct {
    CS pp_name;
    PopupPosition pp_val;
 } PopposEntry;
@@ -12070,7 +12070,7 @@ private Unt balloonArraySizeS;
 # define BALLOON_MIN_WIDTH 50
 # define BALLOON_MIN_HEIGHT 10
 
-privateComp typedef struct {
+comptime typedef struct {
    CS start;
    int bytelen;
    int cells;

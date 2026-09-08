@@ -39,33 +39,33 @@ int stat(const char* restrict path, struct stat* restrict buf);
 //{{{vTerm (abstraction over a terminal)
 //{{{types
 
-privateComp typedef struct {
+comptime typedef struct {
    Short row;
    Short col;
 } VTermPos;
 
-privateComp typedef struct {
+comptime typedef struct {
     //libvterm relies on this memory to be zeroed out before it is returned by the allocator
     void *(*malloc)(Unt size);
     void (*free)(void* ptr);
 } VTermAllocatorFunctions;
 
 // Specifies a rectangular screen area.
-privateComp typedef struct {
+comptime typedef struct {
    Short start_row;
    Short end_row;
    Short start_col;
    Short end_col;
 } VTermRect;
 
-privateComp typedef struct {
+comptime typedef struct {
    CS str;
    Unt      len : 30;
    unsigned int  initial : 1;
    unsigned int  final : 1;
 } VTermStringFragment;
 
-privateComp typedef struct {
+comptime typedef struct {
   Short rows, cols;
 
   VTermAllocatorFunctions* allocator;
@@ -75,13 +75,13 @@ privateComp typedef struct {
   Unt tmpbuffer_len;  // default: 4096
 } VTermBuilder;
 
-privateComp enum {
+comptime enum {
   VTERM_BASELINE_NORMAL,
   VTERM_BASELINE_RAISE,
   VTERM_BASELINE_LOWER,
 };
 
-privateComp typedef struct {
+comptime typedef struct {
   VTermPos pos;
   int	   buttons;
 #define MOUSE_BUTTON_LEFT 0x01
@@ -95,7 +95,7 @@ privateComp typedef struct {
 } VTermMouseState;
 
 
-privateComp typedef enum {
+comptime typedef enum {
    // VTERM_PROP_NONE = 0
    VTERM_PROP_CURSORVISIBLE = 1, // bool
    VTERM_PROP_CURSORBLINK,       // bool
@@ -111,7 +111,7 @@ privateComp typedef enum {
    VTERM_N_PROPS
 } VTermProp;
 
-privateComp typedef enum {
+comptime typedef enum {
    VTERM_ATTR_BOLD_MASK       = 1 << 0,
    VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
    VTERM_ATTR_ITALIC_MASK     = 1 << 2,
@@ -121,7 +121,7 @@ privateComp typedef enum {
    VTERM_ALL_ATTRS_MASK = (1 << 12) - 1
 } VTermAttrMask;
 
-privateComp typedef union {
+comptime typedef union {
    int number;
    VTermStringFragment string;
    Boole boolean;
@@ -129,7 +129,7 @@ privateComp typedef union {
 } VTermValue;
 
 // All fields are optional, NULL when not used.
-privateComp typedef struct {
+comptime typedef struct {
    int (*damage)(VTermRect rect, void* user);
    int (*moverect)(VTermRect dest, VTermRect src, void* user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void* user);
@@ -142,7 +142,7 @@ privateComp typedef struct {
    int (*sb_clear)(void* user);
 } VTermScreenCallbacks;
 
-privateComp typedef enum {
+comptime typedef enum {
    VTERM_DAMAGE_CELL,    /* every cell */
    VTERM_DAMAGE_ROW,     /* entire rows */
    VTERM_DAMAGE_SCREEN,  /* entire screen */
@@ -151,7 +151,7 @@ privateComp typedef enum {
    VTERM_N_DAMAGES
 } VTermDamageSize;
 
-privateComp typedef enum {
+comptime typedef enum {
    // VTERM_ATTR_NONE = 0
    VTERM_ATTR_BOLD = 1,   // bool:   1, 22
    VTERM_ATTR_UNDERLINE,  // number: 4, 21, 24
@@ -162,7 +162,7 @@ privateComp typedef enum {
    VTERM_N_ATTRS
 } VTermAttr;
 
-privateComp typedef enum {
+comptime typedef enum {
    // VTERM_VALUETYPE_NONE = 0 */
    VTERM_VALUETYPE_BOOL = 1,
    VTERM_VALUETYPE_INT,
@@ -177,12 +177,12 @@ pub declStruct(VTermLineInfo);
 //Copies of VTermState fields that the 'resize' callback might have reason to edit. 'resize' 
 //callback gets total control of these fields and may free-and-reallocate them if required. They
 //will be copied back from the struct after the callback has returned.
-privateComp typedef struct {
+comptime typedef struct {
    VTermPos pos;                // current cursor position
    VTermLineInfo *lineinfos[2]; // [1] may be NULL
 } VTermStateFields;
 
-privateComp enum {
+comptime enum {
    VTERM_PROP_CURSORSHAPE_BLOCK = 1,
    VTERM_PROP_CURSORSHAPE_UNDERLINE,
    VTERM_PROP_CURSORSHAPE_BAR_LEFT,
@@ -190,7 +190,7 @@ privateComp enum {
    VTERM_N_PROP_CURSORSHAPES
 };
 
-privateComp enum {
+comptime enum {
   VTERM_PROP_MOUSE_NONE = 0,
   VTERM_PROP_MOUSE_CLICK,
   VTERM_PROP_MOUSE_DRAG,
@@ -295,15 +295,15 @@ rect_intersects(VTermRect* a, VTermRect* b) {
 #define BUFIDX_PRIMARY   0
 #define BUFIDX_ALTSCREEN 1
 
-privateComp declStruct(VTermState);
-privateComp declStruct(VTermScreen);
-privateComp declStruct(VTerm);
+comptime declStruct(VTermState);
+comptime declStruct(VTermScreen);
+comptime declStruct(VTerm);
 
-privateComp typedef void VTermOutputCallback(CS s, Unt len, void *user);
+comptime typedef void VTermOutputCallback(CS s, Unt len, void *user);
 
-privateComp declStruct(VTermGlyphInfo);
+comptime declStruct(VTermGlyphInfo);
 
-privateComp typedef struct {
+comptime typedef struct {
    int (*text)(Byte *bytes, Unt len, void *user);
    int (*control)(Byte control, void *user);
    int (*escape)(Byte *bytes, Unt len, void *user);
@@ -322,7 +322,7 @@ private struct VTermLineInfo {
    Unt continuation:1; //Line is a flow continuation of the previous
 };
 
-privateComp typedef struct {
+comptime typedef struct {
    int (*putglyph)(VTermGlyphInfo *info, VTermPos pos, void *user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void *user);
    int (*scrollrect)(VTermRect rect, int downward, int rightward, void *user);
@@ -408,7 +408,7 @@ private struct VTerm {
 };
 
 
-privateComp typedef struct {
+comptime typedef struct {
    int (*control)(Byte control, void* user);
    int (*csi)(CS leader, long args[], int argcount, CS intermed, Byte command, void *user);
    int (*osc)(int command, VTermStringFragment frag, void* user);
@@ -418,7 +418,7 @@ privateComp typedef struct {
    int (*sos)(VTermStringFragment frag, void* user);
 } VTermStateFallbacks;
 
-privateComp typedef enum {
+comptime typedef enum {
    VTERM_SELECTION_CLIPBOARD = (1<<0),
    VTERM_SELECTION_PRIMARY   = (1<<1),
    VTERM_SELECTION_SECONDARY = (1<<2),
@@ -426,7 +426,7 @@ privateComp typedef enum {
    VTERM_SELECTION_CUT0      = (1<<4), // also CUT1 .. CUT7 by bitshifting
 } VTermSelectionMask;
 
-privateComp typedef struct {
+comptime typedef struct {
    int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void* user);
    int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
@@ -545,12 +545,12 @@ private struct VTermState {
   } selection;
 };
 
-privateComp struct VTermGlyphInfo {
+comptime struct VTermGlyphInfo {
   Unt* chars;
   int width;
 };
 
-privateComp enum {
+comptime enum {
   C1_SS3 = 0x8f,
   C1_DCS = 0x90,
   C1_CSI = 0x9b,
@@ -1069,7 +1069,7 @@ private struct UTF8DecoderData {
 //}}}
 //{{{keyboard
 
-privateComp typedef enum {
+comptime typedef enum {
   VTERM_MOD_NONE  = 0x00,
   VTERM_MOD_SHIFT = 0x01,
   VTERM_MOD_ALT   = 0x02,
@@ -1079,7 +1079,7 @@ privateComp typedef enum {
 } VTermModifier;
 
 // The order here must match keycodes[] in src/keyboard.c!
-privateComp typedef enum {
+comptime typedef enum {
   VTERM_KEY_NONE,
 
   VTERM_KEY_ENTER,
@@ -1193,7 +1193,7 @@ vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod) {
    vterm_push_output_sprintf(vt, "%s%c", mod & VTERM_MOD_ALT ? ESC_S : "", c);
 }
 
-privateComp typedef struct {
+comptime typedef struct {
    enum {
       KEYCODE_NONE,
       KEYCODE_LITERAL,
@@ -1729,7 +1729,7 @@ vterm_scroll_rect(
 //}}}
 //{{{unicode
 
-privateComp typedef struct {
+comptime typedef struct {
   int first;
   int last;
 } Interval;
@@ -6339,7 +6339,7 @@ vterm_state_focus_out(VTermState *state) {
 #define TERM_START_FORCEIT 2
 #define TERM_START_SYSTEM  4
 
-privateComp typedef struct sb_line_S {
+comptime typedef struct sb_line_S {
    Unt cols;   // can differ per line
    Arr(CellDeco) sb_cells;   // allocated
    CellDeco sb_fillDeco;   // for short line
@@ -7959,7 +7959,7 @@ term_enter_job_mode(void) {
 //When "modify_other_keys" is set, then vgetc() should not reduce a key with modifiers into a basic
 //key.  However, we may only find out after calling vgetc().  Therefore vgetorpeek() will call 
 //check_no_reduce_keys() to update "no_reduce_keys" before using it.
-privateComp typedef enum {
+comptime typedef enum {
    NRKS_NONE,   // initial value
    NRKS_CHECK,  // modify_other_keys was off before calling vgetc()
    NRKS_SET,    // no_reduce_keys was incremented in term_vgetc() or
@@ -11858,7 +11858,7 @@ private int tabPanelAlignS = ALIGN_LEFT;
 private int tpl_columns = 20;
 private int tpl_is_vert = false;
 
-privateComp typedef struct {
+comptime typedef struct {
    Portal*po;
    Portal* currPort;
    CS user_defined;

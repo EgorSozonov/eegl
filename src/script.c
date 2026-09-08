@@ -457,7 +457,7 @@ private void autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete)
 //
 // It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
 // scrGetSourceLine(). This is passed to do_cmdline().
-privateComp typedef struct {
+comptime typedef struct {
    FILE* fp;      // opened file for sourcing
    CS nextline;   // if not NULL: line that was read ahead
    LineNr sourcing_lnum;   // line number of the source file
@@ -2743,7 +2743,7 @@ dbg_check_skipped(Invocation* invo) {
 }
 
 //The list of breakpoints: dbg_breakp. This is an arraylist of structs.
-privateComp typedef struct {
+comptime typedef struct {
    int dbg_nr;      // breakpoint number
    int dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
    CS dbg_name;   // function, expression or file name
@@ -4746,7 +4746,7 @@ setContextInLangCommand(Expand *xp, CS arg){
    return NULL;
 }
 
-privateComp enum {
+comptime enum {
    EXP_FILETYPECMD_ALL,   // expand all :filetype values
    EXP_FILETYPECMD_PLUGIN,   // expand plugin on off
    EXP_FILETYPECMD_INDENT,   // expand indent on off
@@ -4757,7 +4757,7 @@ privateComp enum {
 #define EXPAND_FILETYPECMD_INDENT 0x02
 #define EXPAND_FILETYPECMD_ONOFF  0x04
 
-privateComp enum {
+comptime enum {
    EXP_BREAKPT_ADD,   // expand ":breakadd" sub-commands
    EXP_BREAKPT_DEL,   // expand ":breakdel" sub-commands
    EXP_PROFDEL      // expand ":profdel" sub-commands
@@ -7573,7 +7573,7 @@ empty_pattern_magic(Byte *p, Unt len, Magic magic_val) {
 }
 
 // Struct to store the viewstate during 'incsearch' highlighting.
-privateComp typedef struct {
+comptime typedef struct {
    ColNr   vs_curswant;
    ColNr   vs_leftcol;
    ColNr   vs_skipcol;
@@ -7606,7 +7606,7 @@ restore_viewstate(viewstate_T *vs) {
 }
 
 // Struct to store the state of 'incsearch' highlighting.
-privateComp typedef struct {
+comptime typedef struct {
    Pos   search_start;   // where 'incsearch' starts searching
    Pos   save_cursor;
    int      winid;      // window where this state is valid
@@ -10885,7 +10885,7 @@ f_wildtrigger(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 //}}}
 //{{{user commands
 
-privateComp typedef struct ucmd {
+comptime typedef struct ucmd {
    CS uc_name;   // The command name
    Unt   uc_namelen;   // The length of the command name (excluding the ZERO)
    Ulong   uc_argt;   // The argument type
@@ -10960,7 +10960,7 @@ private Kv command_complete_tab[] = {
    KEYVALUE_ENTRY(EXPAND_USER_VARS, "var")
 };
 
-privateComp typedef struct {
+comptime typedef struct {
    CommandAddress key;
    CS fullname;
    Unt fullnamelen;
@@ -12535,7 +12535,7 @@ do_ucmd(Invocation* invo) {
 //{{{user functions
 
 // structure used as item in "fc_defer"
-privateComp typedef struct {
+comptime typedef struct {
    Arr(Byte) dr_name;   // function name, allocated
    Var dr_argvars[MAX_FUNC_ARGS + 1];
    int argc;
