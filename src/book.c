@@ -16,11 +16,47 @@
 //The current implementation remembers all file names ever used.
 
 #include "eegl.h"
-#ifndef PROTO
 #include <fcntl.h>      // Definition of AT_* constants for utimensat()
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')
-#endif
 
+//{{{types
+
+typedef struct {
+   Portal* curPorSave;
+   AutocommSave autocommSave;
+   Boole usingAco;
+   int visualActiveSaved;
+} ChangeOtherBook;
+
+// Structure to pass arguments from bookWrite() to writeBytes().
+typedef struct {
+   CS bw_buf;   // buffer with data to be written
+   int fd;      // file descriptor
+   int bw_len;      // length of data
+   Book* tgt;   // book being written
+   int bw_first;   // first write call
+   LineNr bw_start_lnum;   // line number at start of book
+} BwInfo;
+
+// State used by the :all command to open all the files in the argument list in separate portals
+typedef struct {
+   EeArgList* alist;      // argument list to be used
+   int   had_tab;
+   int   keep_tabs;
+   int   forceit;
+
+   int      use_firstPor;   // use first portal for arglist
+   Arr(Byte) opened;   // Array of weight for which args are open:
+           //  0: not opened
+           //  1: opened in other tab
+           //  2: opened in curtab
+           //  3: opened in curtab and curPor
+   int opened_len;   // length of opened[]
+   Portal* new_curPor;
+   Tab* new_curtab;
+} ArgAllState;
+
+//}}}
 //{{{@@forward declarations
 private void findPortalIntoCurBook(void);
 private void prepareChangeInOtherBook(ChangeOtherBook *cob, Book* book);
@@ -104,7 +140,7 @@ private void arglist_del_files(ArrayList *alist_ga);
 private int do_arglist(
    CS str,
    int what,
-   int after UNUSED,   // 0 means before first one
+   int after,   // 0 means before first one
    Boole will_edit   // will edit added argument
 );
 private void argAllCloseUnusedPortals(ArgAllState *aall);
@@ -231,13 +267,6 @@ findPortalIntoCurBook(void) {
       }
    }
 }
-
-comptime typedef struct {
-   Portal* curPorSave;
-   AutocommSave autocommSave;
-   Boole usingAco;
-   int visualActiveSaved;
-} ChangeOtherBook;
 
 //Used before making a change in "book", which is not the current one: Make
 //"book" the current book and find a portal into this book, so that side
@@ -448,7 +477,7 @@ f_buflisted(Var *argvars, OUT Var* returnVar) {
 }
 
 pub void
-f_bufload(Arr(Var) argvars, OUT Var* returnVar UNUSED) {
+f_bufload(Arr(Var) argvars, OUT Var*) {
    Book* book = evGetBookArg(argvars);
    if (book)
       bookEnsureLoaded(book);
@@ -1826,7 +1855,7 @@ getvcols(
 
 //{{{book
 
-comptime typedef dev_t Device;
+typedef dev_t Device;
 
 #define FOR_ALL_BOOKS_FROM_LAST(book) \
     for ((book) = lastBook; (book); (book) = (book)->prev)
@@ -3697,7 +3726,7 @@ booklistFindPattern(
    CS pattern,
    CS pattern_end,   // pointer to first char after pattern
    int unlisted,   // find unlisted books
-   int diffmode UNUSED, // find diff-mode books only
+   int diffmode, // find diff-mode books only
    int curtab_only  // find books in current tab only
 ){
    Book* book;
@@ -3789,7 +3818,7 @@ booklistFindPattern(
    return match;
 }
 
-comptime typedef struct {
+typedef struct {
    Book* book;
    CS match;
 } BufMatch;
@@ -4503,7 +4532,7 @@ col_print(CS buf, Unt  buflen, int col, int vcol){
 }
 
 // Used for building in the status line.
-comptime typedef struct {
+typedef struct {
    CS start;
    int minWidth;
    int maxWidth;
@@ -5878,16 +5907,6 @@ bookCompare(const void* s0, const void* s1) {
 //{{{bookwrite: functions for writing a book
 
 #define SMALLBUFSIZE   256   // size of emergency write book
-
-// Structure to pass arguments from bookWrite() to writeBytes().
-comptime typedef struct {
-   CS bw_buf;   // buffer with data to be written
-   int fd;      // file descriptor
-   int bw_len;      // length of data
-   Book* tgt;   // book being written
-   int bw_first;   // first write call
-   LineNr bw_start_lnum;   // line number at start of book
-} BwInfo;
 
 //Call write() to write a number of bytes to the file.
 //Return FAIL for failure, OK otherwise.
@@ -7373,7 +7392,7 @@ private int
 do_arglist(
    CS str,
    int what,
-   int after UNUSED,   // 0 means before first one
+   int after,   // 0 means before first one
    Boole will_edit   // will edit added argument
 ){
    ArrayList   new_ga;
@@ -7643,7 +7662,7 @@ c_next(Invocation* invo){
 
 // ":argdedupe"
 pub void
-c_argdedupe(Invocation* invo UNUSED){
+c_argdedupe(Invocation*){
    for (int i = 0; i < ARGCOUNT; ++i) {
       // Expand each argument to a full path to catch different paths leading to the same file
       CS firstFullname = fiExpandAndCopy(ARGLIST[i].fname, false);
@@ -7750,8 +7769,8 @@ c_argdelete(Invocation* invo) {
 // Function given to expandGeneric() to obtain the possible arguments of the argedit and argdelete 
 // commands.
 pub CS
-get_arglist_name(Expand *xp UNUSED, int idx) {
-   return (idx >= ARGCOUNT) ? E : alist_name(&ARGLIST[idx]);
+get_arglist_name(Expand*, int idx) {
+   return (idx >= ARGCOUNT) ? S"" : alist_name(&ARGLIST[idx]);
 }
 
 // Get the file name for an argument list entry.
@@ -7763,24 +7782,6 @@ alist_name(ArgFileEntry *afe) {
       return afe->fname;
    return b->currFileName;
 }
-
-// State used by the :all command to open all the files in the argument list in separate portals
-comptime typedef struct {
-   EeArgList* alist;      // argument list to be used
-   int   had_tab;
-   int   keep_tabs;
-   int   forceit;
-
-   int      use_firstPor;   // use first portal for arglist
-   Arr(Byte) opened;   // Array of weight for which args are open:
-           //  0: not opened
-           //  1: opened in other tab
-           //  2: opened in curtab
-           //  3: opened in curtab and curPor
-   int opened_len;   // length of opened[]
-   Portal* new_curPor;
-   Tab* new_curtab;
-} ArgAllState;
 
 // Close all the portals containing files which are not in the argument list.
 // Used by the ":all" command.
@@ -8131,7 +8132,7 @@ f_argc(Var* argvars, Var* returnVar) {
 }
 
 pub void
-f_argidx(Var *argvars UNUSED, OUT Var* returnVar) {
+f_argidx(Var*, OUT Var* returnVar) {
    returnVar->number = curPor->argListInd;
 }
 
@@ -8295,7 +8296,7 @@ f_prop_add(Var *argvars, OUT Var* returnVar) {
              argvars[2].bag, curBook, &argvars[2]);
 }
 
-comptime typedef struct {
+typedef struct {
    CS tyName;
    int      id;
    NULLABLE CS text; // if non-empty, the text to display above or before the line
@@ -8462,12 +8463,12 @@ theend:
 //Second argument is a List where each item is a List with the following
 //entries: [lnum, start_col, end_col]
 pub void
-f_prop_add_list(Var *argvars, OUT Var* returnVar UNUSED) {
-   Book   *book = curBook;
-   int      id = 0;
-   ListItem   *li;
+f_prop_add_list(Var *argvars, OUT Var*) {
+   Book* book = curBook;
+   int id = 0;
+   ListItem* li;
    Boole error = false;
-   int      prev_anyEmsgG = anyEmsgG;
+   int prev_anyEmsgG = anyEmsgG;
    Prop prop;
 
    if (check_for_dict_arg(argvars, 0) == FAIL || confirmVarIsList(argvars, 1) == FAIL)
@@ -9042,9 +9043,9 @@ text_prop_type_valid(Book* book, TextProp *prop) {
 
 //prop_clear({lnum} [, {lnum_end} [, {bufnr}]])
 pub void
-f_prop_clear(Var *argvars, OUT Var* returnVar UNUSED) {
-   Book    *book = curBook;
-   int       did_clear = false;
+f_prop_clear(Var *argvars, OUT Var*) {
+   Book* book = curBook;
+   int did_clear = false;
 
    LineNr start = tv_get_number(&argvars[0]);
    LineNr end = start;
@@ -9709,19 +9710,19 @@ prop_type_set(Var *argvars, int add) {
 
 //prop_type_add({name}, {props})
 pub void
-f_prop_type_add(Var *argvars, OUT Var* returnVar UNUSED) {
+f_prop_type_add(Var *argvars, OUT Var*) {
    prop_type_set(argvars, true);
 }
 
 //prop_type_change({name}, {props})
 pub void
-f_prop_type_change(Var *argvars, OUT Var* returnVar UNUSED) {
+f_prop_type_change(Var *argvars, OUT Var*) {
    prop_type_set(argvars, false);
 }
 
 //prop_type_delete({name} [, {bufnr}])
 pub void
-f_prop_type_delete(Var *argvars, OUT Var* returnVar UNUSED) {
+f_prop_type_delete(Var *argvars, OUT Var*) {
    Book   *book = NULL;
 
    CS name = tv_get_string(&argvars[0]);
@@ -9859,7 +9860,7 @@ clearPropTypes(Book* book) {
 }
 
 // Struct used to return two values from adjust().
-comptime typedef struct {
+typedef struct {
    int dirty;      // if the property was changed
    int mayDrop;   // whether after this change, the prop may be removed
 } AdjustRes;

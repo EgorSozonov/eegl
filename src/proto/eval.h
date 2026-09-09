@@ -235,10 +235,10 @@ void f_gettabvar(Var* argvars, Var* returnVar);
 void f_gettabwinvar(Arr(Var) argvars, Var* returnVar);
 void f_getwinvar(Arr(Var) argvars, Var* returnVar);
 void f_getbufvar(Arr(Var) argvars, Var* returnVar);
-void f_settabvar(Var* argvars, Var* returnVar UNUSED);
-void f_settabwinvar(Arr(Var) argvars, Var* returnVar UNUSED);
-void f_setwinvar(Arr(Var) argvars, Var* returnVar UNUSED);
-void f_setbufvar(Var* argvars, Var* returnVar UNUSED);
+void f_settabvar(Var* argvars, Var*);
+void f_settabwinvar(Arr(Var) argvars, Var*);
+void f_setwinvar(Arr(Var) argvars, Var*);
+void f_setbufvar(Var* argvars, Var*);
 Callback get_callback(Var* arg);
 void putCallback(OUT Var* tv, Callback* cb);
 void set_callback(Callback* dest, Callback* src);
@@ -265,19 +265,14 @@ Book * evGetBookArg(Var* arg);
 Portal* getOptionalPortal(Arr(Var) argvars, int idx);
 void execute_redir_str(CS value, int value_len);
 void execute_cmds_from_string(CS str);
-CS get_list_line(
-   Unt c UNUSED,
-   void* cookie,
-   int indent UNUSED,
-   GetlineAlgo options UNUSED
-);
+CS get_list_line(Unt, void* cookie, int, GetlineAlgo);
 void execute_common(Arr(Var) argvars, Var* returnVar, int arg_off);
 void f_exists(Var* argvars, Var* returnVar);
 void f_has(Arr(Var) argvars, Var* returnVar);
 int dynamic_feature(CS feature);
 void f_hlID(Arr(Var) argvars, Var* returnVar);
 void f_hlexists(Arr(Var) argvars, Var* returnVar);
-void f_hostname(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_hostname(Arr(Var), Var* returnVar);
 void f_id(Arr(Var) argvars, Var* returnVar);
 Boole indexof_eval_expr(Var *expr);
 void f_len(Arr(Var) argvars, Var* returnVar);

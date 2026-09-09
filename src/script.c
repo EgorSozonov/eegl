@@ -142,13 +142,13 @@ private int expand_files_and_dirs(
    int      options,
    OUT ExpandMatch* matches
 );
-private Byte * get_filetypecmd_arg(Expand *xp UNUSED, int idx);
-private Byte * get_breakadd_arg(Expand *xp UNUSED, int idx);
-private Byte * get_scriptnames_arg(Expand *xp UNUSED, int idx);
-private CS get_retab_arg(Expand *xp UNUSED, int idx);
-private Byte * get_messages_arg(Expand *xp UNUSED, int idx);
-private Byte * get_mapclear_arg(Expand *xp UNUSED, int idx);
-private CS getEnvKey(Expand* xp UNUSED, int  idx);
+private Byte * get_filetypecmd_arg(Expand*, int idx);
+private Byte * get_breakadd_arg(Expand*, int idx);
+private Byte * get_scriptnames_arg(Expand*, int idx);
+private CS get_retab_arg(Expand*, int idx);
+private Byte * get_messages_arg(Expand *, int idx);
+private Byte * get_mapclear_arg(Expand *, int idx);
+private CS getEnvKey(Expand* xp, int  idx);
 private int expandOther(
    CS pat,
    Expand* xp,
@@ -258,7 +258,7 @@ private int commlineEraseChars(
    IncSearch *isp
 );
 private void cmdline_toggle_langmap(long *b_im_ptr);
-private int cmdline_insert_reg(int *gotesc UNUSED);
+private int cmdline_insert_reg(int *gotesc);
 private void cmdline_left_right_mouse(Unt c, int *ignore_drag_release);
 private int cmdline_browse_history(
    Unt c,
@@ -271,8 +271,8 @@ private int cmdline_browse_history(
 private void init_ccline(int firstc, int indent);
 private Arr(Byte) getCommandWorker(
    Unt firstc,
-   long count UNUSED,   // only used for incremental search
-   int indent,      // indent for inside conditionals
+   long count,   //only used for incremental search
+   int indent,   //indent for inside conditionals
    Boole clear_ccline
 );
 private int commlineCharsize(int idx);
@@ -447,7 +447,7 @@ private int applyAutocommGroup(
 );
 private void auto_next_pat(AutoPatComm* apc, int stop_at_last);
 private ScriptPos* acp_scriptCtx(AutoPatComm *acp);
-private CS get_augroup_name(Expand* xp UNUSED, int idx);
+private CS get_augroup_name(Expand*, int idx);
 private CS set_context_in_autocmd(Expand* xp, CS arg, int doautocmd);
 private void autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete);
 //}}}
@@ -457,7 +457,7 @@ private void autocommAddOrDelete(Arr(Var) argvars, Var* returnVar, Boole delete)
 //
 // It is used used to store info for each sourced file. It is shared between scriptRunFile() and 
 // scrGetSourceLine(). This is passed to do_cmdline().
-comptime typedef struct {
+typedef struct {
    FILE* fp;      // opened file for sourcing
    CS nextline;   // if not NULL: line that was read ahead
    LineNr sourcing_lnum;   // line number of the source file
@@ -548,7 +548,7 @@ estack_pop(void){
 //"which" is ESTACK_SFILE for <sfile>, ESTACK_STACK for <stack> or
 //ESTACK_SCRIPT for <script>.
 pub CS
-estack_sfile(EstackArg which UNUSED){
+estack_sfile(EstackArg which){
    ArrayList ga;
    Unt len;
    int idx;
@@ -679,7 +679,7 @@ stacktrace_create(void){
 }
 
 pub void
-f_getstacktrace(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getstacktrace(Arr(Var), Var* returnVar) {
     returnVar_list_set(returnVar, stacktrace_create());
 }
 
@@ -1347,14 +1347,13 @@ c_source(Invocation* invo) {
 
 // ":options"
 pub void
-c_options(Invocation   *invo UNUSED) {
+c_options(Invocation*) {
    Byte  buf[500];
-   int multi_mods = 0;
-
    buf[0] = ZERO;
+   int multi_mods = 0;
    (void)add_win_cmd_modifiers(buf, &commModifierG, &multi_mods);
 
-   eeSetenv((CS)"OPTWIN_CMD", buf);
+   eeSetenv(S"OPTWIN_CMD", buf);
    cmd_source((CS)SYS_OPTWIN_FILE, NULL);
 }
 
@@ -1968,9 +1967,9 @@ get_one_sourceline(SourceCookie *sp) {
 //Return a pointer to the line in allocated memory. Return NULL for end-of-file or some error.
 pub CS
 scrGetSourceLine(
-   Unt c UNUSED,
+   Unt,
    void* cookie,
-   int indent UNUSED,
+   int,
    GetlineAlgo options
 ){
    SourceCookie* sp = (SourceCookie *)cookie;
@@ -2743,7 +2742,7 @@ dbg_check_skipped(Invocation* invo) {
 }
 
 //The list of breakpoints: dbg_breakp. This is an arraylist of structs.
-comptime typedef struct {
+typedef struct {
    int dbg_nr;      // breakpoint number
    int dbg_type;   // DBG_FUNC, DBG_FILE or DBG_EXPR
    CS dbg_name;   // function, expression or file name
@@ -2995,7 +2994,7 @@ c_breakdel(Invocation* invo) {
 
 // ":breaklist".
 pub void
-c_breaklist(Invocation* invo UNUSED) {
+c_breaklist(Invocation*) {
    Debuggy *bp;
    if (dbg_breakp.len == 0) {
       msg(_("No breakpoints defined"));
@@ -3470,9 +3469,9 @@ cmdline_pum_active(void){
 
 // Remove the commline completion popup menu (if present), free the list of items and refresh screen
 pub void
-cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw){
-   int   save_keyWasTypedG = keyWasTypedG;
-   int   save_isRedrawingDisabledG = isRedrawingDisabledG;
+cmdline_pum_remove(CommlineInfo *cclp, int defer_redraw){
+   int save_keyWasTypedG = keyWasTypedG;
+   int save_isRedrawingDisabledG = isRedrawingDisabledG;
    if (cclp->input_fn)
       isRedrawingDisabledG = 0;
 
@@ -5526,7 +5525,7 @@ expand_files_and_dirs(
 //Function given to expandGeneric() to obtain the possible arguments of the
 //":filetype {plugin,indent}" command.
 private Byte *
-get_filetypecmd_arg(Expand *xp UNUSED, int idx){
+get_filetypecmd_arg(Expand*, int idx){
    if (idx < 0)
       return NULL;
 
@@ -5553,7 +5552,7 @@ get_filetypecmd_arg(Expand *xp UNUSED, int idx){
 //":breakadd {expr, file, func, here}" command.
 //":breakdel {func, file, here}" command.
 private Byte *
-get_breakadd_arg(Expand *xp UNUSED, int idx) {
+get_breakadd_arg(Expand*, int idx) {
    if (idx >= 0 && idx <= 3) {
       CS opts[] = {SMAP((CS), "expr", "file", "func", "here" )};
 
@@ -5575,7 +5574,7 @@ get_breakadd_arg(Expand *xp UNUSED, int idx) {
 
 // Function given to expandGeneric() to obtain the possible arguments for the ":scriptnames" command
 private Byte *
-get_scriptnames_arg(Expand *xp UNUSED, int idx) {
+get_scriptnames_arg(Expand*, int idx) {
    ScriptItem *si;
 
    if (!SCRIPT_ID_VALID(idx + 1))
@@ -5589,23 +5588,23 @@ get_scriptnames_arg(Expand *xp UNUSED, int idx) {
 //Function given to expandGeneric() to obtain the possible arguments of the
 //":retab {-indentonly}" option.
 private CS
-get_retab_arg(Expand *xp UNUSED, int idx) {
+get_retab_arg(Expand*, int idx) {
    if (idx == 0)
-      return (CS)"-indentonly";
+      return S"-indentonly";
    return NULL;
 }
 
 //Function given to expandGeneric() to obtain the possible arguments of the
 //":messages {clear}" command.
 private Byte *
-get_messages_arg(Expand *xp UNUSED, int idx){
+get_messages_arg(Expand *, int idx){
    if (idx == 0)
-      return (CS)"clear";
+      return S"clear";
    return NULL;
 }
 
 private Byte *
-get_mapclear_arg(Expand *xp UNUSED, int idx){
+get_mapclear_arg(Expand *, int idx){
    if (idx == 0)
       return S"<book>";
    return NULL;
@@ -5613,7 +5612,7 @@ get_mapclear_arg(Expand *xp UNUSED, int idx){
 
 // Function given to expandGeneric() to obtain an environment variable name.
 private CS
-getEnvKey(Expand* xp UNUSED, int  idx) {
+getEnvKey(Expand* xp, int  idx) {
    extern char** environ;
 
    CS str = (CS)environ[idx];
@@ -6418,7 +6417,7 @@ wildmenu_process_key(CommlineInfo *cclp, Unt key, Expand *xp) {
 
 // Free expanded names when finished walking through the matches
 pub void
-wildmenu_cleanup(CommlineInfo *cclp UNUSED) {
+wildmenu_cleanup(CommlineInfo* cclp) {
    int skt = keyWasTypedG;
 
    if (!p_wmnu || wild_menu_showing == 0)
@@ -6576,8 +6575,8 @@ f_getcompletiontype(Arr(Var) argvars, Var* returnVar){
 }
 
 pub void
-f_cmdcomplete_info(Arr(Var) argvars UNUSED, Var* returnVar) {
-   CommlineInfo  *ccline = getCommlineInfo();
+f_cmdcomplete_info(Arr(Var) argvars, Var* returnVar) {
+   CommlineInfo* ccline = getCommlineInfo();
    allocReturnDict(returnVar);
    if (!ccline || !ccline->xpc || !(ccline->xpc->files.c))
       return;
@@ -6922,7 +6921,7 @@ private CS (historyNames[]) = {
 
 // Function given to expandGeneric() to obtain the possible first arguments of the ":history command
 pub CS
-get_history_arg(Expand *xp UNUSED, int idx) {
+get_history_arg(Expand *xp, int idx) {
    CS short_names = (CS)":=@>?/";
    int       short_names_count = (int)STRLEN(short_names);
    int       history_name_count = ARRAY_LENGTH(historyNames) - 1;
@@ -7283,7 +7282,7 @@ del_history_idx(int histype, int idx) {
 }
 
 pub void
-f_histadd(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_histadd(Arr(Var) argvars, Var* returnVar) {
    Byte buf[NUMBUFLEN];
 
    returnVar->number = false;
@@ -7303,11 +7302,9 @@ f_histadd(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 pub void
-f_histdel(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
-   int      n;
-   Byte   *str;
-
-   str = convertVarToStringSingleUse(&argvars[0]);   // NULL on type error
+f_histdel(Arr(Var) argvars, Var* returnVar) {
+   Byte* str = convertVarToStringSingleUse(&argvars[0]);   // NULL on type error
+   int n;
    if (!str)
       n = 0;
    ei (argvars[1].tag == VAR_UNKNOWN)
@@ -7327,11 +7324,8 @@ f_histdel(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 pub void
-f_histget(Arr(Var) argvars UNUSED, Var* returnVar) {
-   Byte  *str;
-
-
-   str = convertVarToStringSingleUse(&argvars[0]);   // NULL on type error
+f_histget(Arr(Var) argvars, Var* returnVar) {
+   Byte* str = convertVarToStringSingleUse(&argvars[0]);   // NULL on type error
    if (!str)
       returnVar->string = NULL;
    else {
@@ -7354,7 +7348,7 @@ f_histget(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 pub void
-f_histnr(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_histnr(Arr(Var) argvars, Var* returnVar) {
    Byte* histname = convertVarToStringSingleUse(&argvars[0]);
    int i = histname == NULL ? HIST_CMD - 1 : get_histtype(histname);
    if (i >= HIST_CMD && i < HIST_COUNT)
@@ -7573,7 +7567,7 @@ empty_pattern_magic(Byte *p, Unt len, Magic magic_val) {
 }
 
 // Struct to store the viewstate during 'incsearch' highlighting.
-comptime typedef struct {
+typedef struct {
    ColNr   vs_curswant;
    ColNr   vs_leftcol;
    ColNr   vs_skipcol;
@@ -7606,7 +7600,7 @@ restore_viewstate(viewstate_T *vs) {
 }
 
 // Struct to store the state of 'incsearch' highlighting.
-comptime typedef struct {
+typedef struct {
    Pos   search_start;   // where 'incsearch' starts searching
    Pos   save_cursor;
    int      winid;      // window where this state is valid
@@ -8423,15 +8417,13 @@ cmdline_toggle_langmap(long *b_im_ptr) {
 
 // Handle the CTRL-R key in the command-line mode and insert the contents of a register
 private int
-cmdline_insert_reg(int *gotesc UNUSED) {
-   int      i;
-   int      c;
-   int      literally = false;
-   int      save_new_cmdpos = new_cmdpos;
+cmdline_insert_reg(int *gotesc) {
+   int save_new_cmdpos = new_cmdpos;
    putcmdline('"', true);
    ++no_mapping;
    ++allow_keys;
-   i = c = plain_vgetc();   // CTRL-R <char>
+   int c = plain_vgetc();    //CTRL-R <char>
+   int i = c;
    if (i == Ctrl_O)
       i = Ctrl_R;      // CTRL-R CTRL-O == CTRL-R CTRL-R
    if (i == Ctrl_R)
@@ -8448,6 +8440,7 @@ cmdline_insert_reg(int *gotesc UNUSED) {
       } else
          c = get_expr_register();
    }
+   Boole literally = false;
    if (c != ESC) {      // use ESC to cancel inserting register
       literally = i == Ctrl_R || (c == '*' || c == '+') ;
       cmdline_paste(c, literally, false);
@@ -8696,7 +8689,7 @@ getCommline(
    Unt firstc,
    long count,   // only used for incremental search
    int indent,   // indent for inside conditionals
-   GetlineAlgo do_concat UNUSED
+   GetlineAlgo
 ){
    return getCommandWorker(firstc, count, indent, true);
 }
@@ -8704,26 +8697,26 @@ getCommline(
 private Arr(Byte)
 getCommandWorker(
    Unt firstc,
-   long count UNUSED,   // only used for incremental search
-   int indent,      // indent for inside conditionals
+   long count,   //only used for incremental search
+   int indent,   //indent for inside conditionals
    Boole clear_ccline
 ) {  // clear commInfo first
-   static int   depth = 0;       // call depth
-   Unt      c = 0;
-   int      i;
-   int      j;
-   int      gotesc = false;      // true when <ESC> just typed
-   int      do_abbr;      // when true check for abbr.
+   static int depth = 0;       // call depth
+   Unt c = 0;
+   int i;
+   int j;
+   int gotesc = false;      // true when <ESC> just typed
+   int do_abbr;      // when true check for abbr.
    Text lookfor = (Text){NULL, 0};   // string to match
-   int      hiscnt;         // current history line in use
-   int      histype;      // history type to be used
-   IncSearch   is_state;
-   int      did_wild_list = false;   // did wild_list() recently
-   int      wim_index = 0;      // index in wim_flags[]
-   int      res;
-   int      save_msg_scroll = msg_scroll;
-   int      save_State = stateG;   // remember stateG when called
-   int      some_key_typed = false;   // one of the keys was typed
+   int hiscnt;         // current history line in use
+   int histype;      // history type to be used
+   IncSearch is_state;
+   int did_wild_list = false;   // did wild_list() recently
+   int wim_index = 0;      // index in wim_flags[]
+   int res;
+   int save_msg_scroll = msg_scroll;
+   int save_State = stateG;   // remember stateG when called
+   int some_key_typed = false;   // one of the keys was typed
    // mouse drag and release events are ignored, unless they are
    // preceded with a mouse down event
    int ignore_drag_release = true;
@@ -9646,7 +9639,7 @@ correct_cmdspos(int idx, int cells) {
 pub CS
 scrGetTypedCommand(
    Unt  c,      // normally ':', NUL for ":append"
-   void* cookie UNUSED,
+   void*,
    int indent,      // indent for inside conditionals
    GetlineAlgo options
 ){
@@ -10289,46 +10282,46 @@ get_cmdline_completion(void) {
 }
 
 pub void
-f_getcmdcomplpat(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdcomplpat(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = get_cmdline_completion_pattern();
 }
 
 pub void
-f_getcmdcompltype(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdcompltype(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = get_cmdline_completion();
 }
 
 pub void
-f_getCommline(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getCommline(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = get_cmdline_str();
 }
 
 pub void
-f_getcmdpos(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdpos(Arr(Var), Var* returnVar) {
    CommlineInfo *p = get_ccline_ptr();
 
    returnVar->number = p != NULL ? p->cmdpos + 1 : 0;
 }
 
 pub void
-f_getcmdprompt(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdprompt(Arr(Var), Var* returnVar) {
    CommlineInfo *p = get_ccline_ptr();
    returnVar->tag = VAR_STRING;
    returnVar->string = p != NULL && p->cmdprompt != NULL ? copyStr(p->cmdprompt) : NULL;
 }
 
 pub void
-f_getcmdscreenpos(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdscreenpos(Arr(Var), Var* returnVar) {
    CommlineInfo *p = get_ccline_ptr();
 
    returnVar->number = p != NULL ? p->cmdspos + 1 : 0;
 }
 
 pub void
-f_getcmdtype(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdtype(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = alloc(2);
    returnVar->string[0] = getCommlineType();
@@ -10733,7 +10726,7 @@ inCommPort(void) {
 //  endmarker
 //Return a pointer to allocated memory with {script} or NULL.
 pub CS
-script_get(Invocation* invo, Byte *comm UNUSED) {
+script_get(Invocation* invo, Byte* comm) {
    List   *l;
    ListItem   *li;
    Byte   *s;
@@ -10862,7 +10855,7 @@ get_user_input(
 }
 
 pub void
-f_wildtrigger(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_wildtrigger(Arr(Var), Var*) {
    if (!(stateG & MODE_COMMLINE) || char_avail() || wild_menu_showing || cmdline_pum_active())
       return;
 
@@ -10885,7 +10878,7 @@ f_wildtrigger(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 //}}}
 //{{{user commands
 
-comptime typedef struct ucmd {
+typedef struct ucmd {
    CS uc_name;   // The command name
    Unt   uc_namelen;   // The length of the command name (excluding the ZERO)
    Ulong   uc_argt;   // The argument type
@@ -10960,7 +10953,7 @@ private Kv command_complete_tab[] = {
    KEYVALUE_ENTRY(EXPAND_USER_VARS, "var")
 };
 
-comptime typedef struct {
+typedef struct {
    CommandAddress key;
    CS fullname;
    Unt fullnamelen;
@@ -11135,7 +11128,7 @@ set_context_in_user_cmd(Expand *xp, CS arg_in) {
 // Set the completion context for the argument of a user defined command.
 pub CS
 set_context_in_user_cmdarg(
-   CS comm UNUSED,
+   CS,
    CS arg,
    long argFlags,
    Unt context,
@@ -11145,7 +11138,7 @@ set_context_in_user_cmdarg(
    if (context == EXPAND_NOTHING)
       return NULL;
 
-   if (argFlags & XFILE) {
+   if ((argFlags & XFILE) != 0) {
       // XFILE: file names are handled before this call
       return NULL;
    }
@@ -11178,7 +11171,7 @@ expand_user_command_name(int idx) {
 
 // Function given to expandGeneric() to obtain the list of user command names.
 pub CS
-get_user_commands(Expand* xp UNUSED, int idx) {
+get_user_commands(Expand*, int idx) {
    // In commPort, the alternative buffer should be used.
    Book* book = prevPor_curPor()->book;
 
@@ -11217,7 +11210,7 @@ get_user_command_name(int idx, int id) {
 
 // Function given to expandGeneric() to obtain the list of user address type names.
 pub CS
-get_user_cmd_addr_type(Expand *xp UNUSED, int idx) {
+get_user_cmd_addr_type(Expand *, int idx) {
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(addr_type_complete_tab))
       return NULL;
    return (CS)addr_type_complete_tab[idx].fullname;
@@ -11225,7 +11218,7 @@ get_user_cmd_addr_type(Expand *xp UNUSED, int idx) {
 
 // Function given to expandGeneric() to obtain the list of user command attributes.
 pub CS
-get_user_cmd_flags(Expand *xp UNUSED, int idx) {
+get_user_cmd_flags(Expand *, int idx) {
    static CS user_cmd_flags[] = {SMAP((CS),
       "addr", "bang", "bar", "buffer", "complete",
       "count", "nargs", "range", "register", "keepscript"
@@ -11238,7 +11231,7 @@ get_user_cmd_flags(Expand *xp UNUSED, int idx) {
 
 // Function given to expandGeneric() to obtain the list of values for -nargs.
 pub CS
-get_user_cmd_nargs(Expand *xp UNUSED, int idx) {
+get_user_cmd_nargs(Expand *, int idx) {
    static CS user_cmd_nargs[] = {SMAP((CS), "0", "1", "*", "?", "+" )};
 
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(user_cmd_nargs))
@@ -11248,7 +11241,7 @@ get_user_cmd_nargs(Expand *xp UNUSED, int idx) {
 
 // Function given to expandGeneric() to obtain the list of values for complete.
 pub CS
-get_user_cmd_complete(Expand *xp UNUSED, int idx) {
+get_user_cmd_complete(Expand *, int idx) {
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(command_complete_tab))
       return NULL;
    return command_complete_tab[idx].value.c;
@@ -11756,7 +11749,7 @@ uc_scan_attr(
 //   long   def,
 //   int      flags,
 //   int      compl,
-//   Byte   *compl_arg UNUSED,
+//   Byte   *,
 //   CommandAddress   addr_type,
 //   int      force
 //){
@@ -11912,7 +11905,7 @@ theend:
 
 // ":comclear" implementation Clear all user commands, global and for current buffer.
 pub void
-c_comclear(Invocation* invo UNUSED) {
+c_comclear(Invocation*) {
    uc_clear(&userComms);
    if (curBook)
       uc_clear(&curBook->userCommands);
@@ -12535,7 +12528,7 @@ do_ucmd(Invocation* invo) {
 //{{{user functions
 
 // structure used as item in "fc_defer"
-comptime typedef struct {
+typedef struct {
    Arr(Byte) dr_name;   // function name, allocated
    Var dr_argvars[MAX_FUNC_ARGS + 1];
    int argc;
@@ -18798,7 +18791,7 @@ acp_scriptCtx(AutoPatComm *acp) {
 //Get next autocommand command. Called by doCommand() to get the next line for ":if".
 //Return allocated string, or NULL for end of autocommands.
 pub CS
-getnextac(Unt c UNUSED, void* cookie, int indent UNUSED, GetlineAlgo options UNUSED) {
+getnextac(Unt, void* cookie, int, GetlineAlgo) {
    CS retval;
 
    // Can be called again after returning the last line.
@@ -18882,7 +18875,7 @@ has_autocmd(AutoEvent event, CS sfname, Book* book) {
 
 //Function given to expandGeneric() to obtain the list of autocommand group names.
 private CS
-get_augroup_name(Expand* xp UNUSED, int idx) {
+get_augroup_name(Expand*, int idx) {
    if (idx == augroups.len)      // add "END" add the end
       return (CS)"END";
    if (idx < 0 || idx >= augroups.len)   // end of list
@@ -18937,12 +18930,12 @@ set_context_in_autocmd(Expand* xp, CS arg, int doautocmd) {  //true for :doauto*
 
 //Function given to expandGeneric() to obtain the list of event names.
 pub CS
-get_event_name(Expand* xp UNUSED, int idx) {
+get_event_name(Expand*, int idx) {
    if (idx < augroups.len) {     // First list group names, if wanted
       if (!include_groups || AUGROUP_NAME(idx) == NULL 
             || AUGROUP_NAME(idx) == get_deleted_augroup()
       )
-         return (CS)"";   // skip deleted entries
+         return S"";   // skip deleted entries
       return AUGROUP_NAME(idx);   // return a name
    }
 
@@ -18955,7 +18948,7 @@ get_event_name(Expand* xp UNUSED, int idx) {
 
 //Function given to expandGeneric() to obtain the list of event names. Don't include groups.
 pub CS
-get_event_name_no_group(Expand* xp UNUSED, int idx, int win) {
+get_event_name_no_group(Expand*, int idx, int win) {
    if (idx < 0 || idx >= NUM_EVENTS)
       return NULL;
 

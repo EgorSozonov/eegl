@@ -7,7 +7,7 @@
 
 #include "eegl.h"
 
-comptime typedef struct MsgHist MsgHist;
+typedef struct MsgHist MsgHist;
 struct MsgHist {
    MsgHist* next;
    CS c;
@@ -1873,18 +1873,17 @@ set_keep_msg_from_hist(void) {
 // Return 0 if cancelled, otherwise the nth button (1-indexed).
 pub int
 do_dialog(
-   int      type UNUSED,
-   Byte   *title UNUSED,
-   Byte   *message,
-   Byte   *buttons,
-   int      dfltbutton,
-   Byte   *textfield UNUSED,   // IObuff for inputdialog(), NULL otherwise
-   int      ex_cmd)       // when true pressing : accepts default and starts a Command
-{
-   int      oldState;
-   int      retval = 0;
+   int,
+   Byte*,
+   Byte* message,
+   Byte* buttons,
+   int dfltbutton,
+   Byte*,   // IObuff for inputdialog(), NULL otherwise
+   int ex_cmd       // when true pressing : accepts default and starts a Command
+){
+   int retval = 0;
    Byte   *hotkeys;
-   int      i;
+   int i;
    TermInputMode   save_tmode;
 
    // Don't output anything in silent mode ("ex -s")
@@ -1892,7 +1891,7 @@ do_dialog(
       return dfltbutton;   // return default option
 
 
-   oldState = stateG;
+   int oldState = stateG;
    stateG = MODE_CONFIRM;
    setmouse();
 
@@ -3165,7 +3164,7 @@ inc_msg_scrolled(void) {
 }
 
 
-comptime typedef enum {
+typedef enum {
    SB_CLEAR_NONE = 0,
    SB_CLEAR_ALL,
    SB_CLEAR_COMMLINE_BUSY,

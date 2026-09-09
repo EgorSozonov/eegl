@@ -209,7 +209,6 @@ arenaTryFree(void* start, Unt len, Arena* a) {
       Arena* a;\
    } L##T;
 
-#define GEN_DECL_create_L(acc, T) acc L##T * create_##L##T(int, Arena*)
 #define GEN_create_L(acc, T) acc L##T * create_##L##T(int initCapacity, Arena* a) {\
       int capacity = initCapacity < 4 ? 4 : initCapacity;\
       L##T* result = allocate(L##T, a);\
@@ -221,7 +220,6 @@ arenaTryFree(void* start, Unt len, Arena* a) {
       return result;\
    }
 
-#define GEN_DECL_add_L(acc, T) acc void add_L##T (L##T *, T)
 #define GEN_add_L(acc, T) acc void add_L##T (L##T * st, T newItem) {\
    if (st->len < st->cap) {\
       st->c[st->len] = newItem;\
@@ -235,12 +233,8 @@ arenaTryFree(void* start, Unt len, Arena* a) {
    st->len++;\
 }
 
-GEN_TYPE_L(comptime, Int);
-generic(2) GEN_DECL_create_L(private, Int);
-generic(2) GEN_DECL_add_L(private, Int);
-
 GEN_TYPE_L(comptime, Text);
-GEN_TYPE_L(comptime, LText);
+//GEN_TYPE_L(comptime, LText);
 
 
 //generic(private, add, L, uint8_t)
@@ -250,12 +244,9 @@ GEN_TYPE_L(comptime, LText);
 #define add(T, X) _Generic((T),\
    LToken*: add_LToken,\
    LText*: add_LText,\
-   LGenericMethod*: add_LGenericMethod,\
-   LInt*: add_LInt\
+   LGenericMethod*: add_LGenericMethod\
    )(T, X)
 
-generic(2) GEN_create_L(private, Int);
-generic(2) GEN_add_L(private, Int);
 
 generic(2) GEN_create_L(private, Text);
 generic(2) GEN_add_L(private, Text);
@@ -740,13 +731,11 @@ genLocalMacroImpl(OUT GenParser* g) {
       || genTypeArgs(OUT g);
 }
 
-//The `GEN_method_...` and `GEN_DECL_method_...` forms which are used for local defs/decls
+//The `GEN_method_...` form which is used for local defs/decls
 private Unt
 genLocalMacro(OUT GenParser* g) {
    g->inp = skipSpaces(g->inp);
-   return
-         (genConsumeKeyword(tConst("GEN_DECL_"), OUT g) || genLocalMacroImpl(OUT g))
-      && (genConsumeKeyword(tConst("GEN_"), OUT g) || genLocalMacroImpl(OUT g));
+   return (genConsumeKeyword(tConst("GEN_"), OUT g) || genLocalMacroImpl(OUT g));
 }
 
 private Unt
@@ -798,7 +787,7 @@ genExternalMacro(OUT GenParser* g) {
 }
 
 //Parse a generic expression
-//Parse `generic() GEN_DECL_add_L(private, Int)` or `generic(private, add, L, Int)` 
+//Parse `generic() GEN_add_L(private, Int)` or `generic(private, add, L, Int)` 
 //We are here    ^
 private void
 genParse(OUT S* inp, OUT GenParser* g) {
@@ -1094,7 +1083,6 @@ glueGenericType(Arr(Token) typeTokens, Unt count, S source, Arena* a) {
    
    S w = result;
    for (Unt i = 0; i < count; i++) {
-      fwrite(source + typeTokens[i].startBt, 1, typeTokens[i].lenBts, stdout);
       memcpy(w, source + typeTokens[i].startBt, typeTokens[i].lenBts);
       w += typeTokens[i].lenBts;
    }

@@ -6,7 +6,7 @@
 #include "eegl.h"
 
 //Pointers to various items in a tag line.
-comptime typedef struct tag_pointers {
+typedef struct tag_pointers {
    // filled in by parse_tag_line():
    CS tagname;   // start of tag name (skip "file:")
    CS tagname_end;   // char after tag name
@@ -23,14 +23,14 @@ comptime typedef struct tag_pointers {
 } Tagline;
 
 //Return values used when reading lines from a tags file.
-comptime typedef enum {
+typedef enum {
    TAGS_READ_SUCCESS = 1,
    TAGS_READ_EOF,
    TAGS_READ_IGNORE,
 } TagsReadStatus;
 
 //States used during a tags search
-comptime typedef enum {
+typedef enum {
    TS_START,      // at start of file
    TS_LINEAR,      // linear searching forward, till EOF
    TS_BINARY,      // binary searching
@@ -39,7 +39,7 @@ comptime typedef enum {
 } TagSearchState;   // Current search state
 
 //Binary search file offsets in a tags file
-comptime typedef struct {
+typedef struct {
    FileOffset   low_offset;   // offset for first char of first line that could match
    FileOffset   high_offset;   // offset of char after last line that could match
    FileOffset   curr_offset;   // Current file offset in search range
@@ -50,7 +50,7 @@ comptime typedef struct {
 } TagSearchInfo;
 
 //Return values used when matching tags against a pattern.
-comptime typedef enum {
+typedef enum {
    TAG_MATCH_SUCCESS = 1,
    TAG_MATCH_FAIL,
    TAG_MATCH_STOP,
@@ -58,7 +58,7 @@ comptime typedef enum {
 } tagmatch_status_T;
 
 //Arguments used for matching tags read from a tags file against a pattern.
-comptime typedef struct {
+typedef struct {
    int   matchoff;      // tag match offset
    int   match_re;      // true if the tag matches a regexp
    int   match_no_ic;      // true if the tag matches with case
@@ -132,7 +132,7 @@ private int findtags_add_match(
 private void findtags_get_all_tags(FindTags* st, FindTagsMatchArgs* margs, CS buf_ffname);
 private void findtags_in_file(FindTags* st, CS buf_ffname);
 private int findtags_copy_matches(FindTags* st, OUT ExpandMatch* targetMatches);
-private void found_tagfile_cb(CS fname, void* cookie UNUSED);
+private void found_tagfile_cb(CS fname, void*);
 private int parse_tag_line(CS lbuf, Tagline* tagp);
 private int test_for_static(Tagline* tagp);
 private Unt matching_line_len(CS lbuf);
@@ -172,7 +172,7 @@ private void tagstack_set_curidx(Portal* po, int curidx);
 private void cs_usage_msg(csid_e x);
 private void do_cscope_general(Invocation* invo, int make_split);
 private int cs_connection(int num, CS dbpath, CS ppath);
-private int cs_add(Invocation* invo UNUSED);
+private int cs_add(Invocation*);
 private void cs_stat_emsg(CS fname);
 private int cs_add_common(
    CS arg1,       // filename - may contain environment variables
@@ -195,11 +195,11 @@ private int cs_find_common(
    Boole   use_ll,
    CS commline
 );
-private int cs_help(Invocation* invo UNUSED);
+private int cs_help(Invocation*);
 private void clear_csinfo(int i);
-private int cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat *sb UNUSED);
+private int cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat* sb);
 private CScopeCommand * cs_lookup_cmd(Invocation* invo);
-private int cs_kill(Invocation* invo UNUSED);
+private int cs_kill(Invocation*);
 private void cs_kill_execute(int i,                 CS cname);
 private CS cs_make_eegl_style_matches(CS fname, CS slno, CS search, CS tagstr);
 private CS cs_manage_matches(Arr(CS) matches, Arr(CS) contexts, int totmatches, Mcmd cmd);
@@ -223,11 +223,11 @@ private void cs_fill_results(
 private CS cs_pathcomponents(CS path);
 private void cs_print_tags_priv(Arr(CS) matches, Arr(CS) cntxts, int num_matches);
 private int cs_read_prompt(int i);
-private void sig_handler SIGDEFARG(sigarg);
+private void sig_handler(int);
 private void cs_release_csp(int i, int freefnpp);
-private int cs_reset(Invocation* invo UNUSED);
+private int cs_reset(Invocation*);
 private CS cs_resolve_file(int i, CS name);
-private int cs_show(Invocation* invo UNUSED);
+private int cs_show(Invocation*);
 //}}}
 
 private Byte   *tagmatchname = NULL;   // name of last used tag
@@ -269,7 +269,7 @@ free_tagfunc_option(void) {
 
 //Mark the global 'tagfunc' callback with "copyID" so that it is not garbage collected.
 pub int
-set_ref_in_tagfunc(int copyID UNUSED) {
+set_ref_in_tagfunc(int copyID) {
    int abort = memSetRefInCallback(&tfu_cb, copyID);
 
    return abort;
@@ -1080,19 +1080,18 @@ taglen_advance(int l) {
 
 // Print the tag stack
 pub void
-do_tags(Invocation *eap UNUSED) {
-   int      i;
-   CS name;
-   Taggy   *tagstack = curPor->tagStack;
-   int      tagstackidx = curPor->tagStackInd;
-   int      tagstacklen = curPor->tagStackLen;
+do_tags(Invocation*) {
+   int i;
+   Taggy* tagstack = curPor->tagStack;
+   int tagstackidx = curPor->tagStackInd;
+   int tagstacklen = curPor->tagStackLen;
 
    // Highlight title
    msg_puts_title(_("\n  # TO tag         FROM line  in file/text"));
    for (i = 0; i < tagstacklen; ++i) {
-      if (tagstack[i].tagname != NULL) {
-         name = fm_getname(&(tagstack[i].fmark), 30);
-         if (name == NULL)       // file name not available
+      if (tagstack[i].tagname) {
+         CS name = fm_getname(&(tagstack[i].fmark), 30);
+         if (!name)       // file name not available
             continue;
 
          msg_putchar('\n');
@@ -1130,7 +1129,7 @@ tag_strnicmp(CS s1, CS s2, Unt len) {
 }
 
 //Info about the tag pattern being used.
-comptime typedef struct {
+typedef struct {
    CS pat;      // the pattern
    int      len;      // length of pat[]
    CS head;      // start of pattern head
@@ -1365,7 +1364,7 @@ find_tagfunc_tags(
 }
 
 // State information used during a tag search
-comptime typedef struct {
+typedef struct {
    TagSearchState   state;      // tag search state
    int      stop_searching;      // stop when match found or error
    TagPattern   *orgpat;      // holds unconverted pattern info
@@ -2378,7 +2377,7 @@ private ArrayList tag_fnames = GA_EMPTY;
 
 //Callback for finding all "tags" and "tags-??" files in doc directories.
 private void
-found_tagfile_cb(CS fname, void* cookie UNUSED) {
+found_tagfile_cb(CS fname, void*) {
    if (ga_grow(&tag_fnames, 1) == FAIL)
       return;
 
@@ -3413,7 +3412,7 @@ set_tagstack(Portal *wp, Bag *d, Unt action) {
 
 // See ":help cscope-find" for the possible queries.
 
-comptime typedef struct {
+typedef struct {
    CS name;
    int (*func)(Invocation* invo);
    CS help;
@@ -3421,7 +3420,7 @@ comptime typedef struct {
    int cansplit;      // if supports splitting window
 } CScopeCommand;
 
-comptime typedef struct csi {
+typedef struct csi {
    CS fname;     //cscope db name
    CS ppath;     //path to prepend (the -P option)
    CS flags;     //additional cscope flags/options (e.g, -p2)
@@ -3433,9 +3432,9 @@ comptime typedef struct csi {
    FILE* to_fp;  //to cscope: FILE.
 } CscopeInfo;
 
-comptime typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
+typedef enum { Add, Find, Help, Kill, Reset, Show } csid_e;
 
-comptime typedef enum {
+typedef enum {
    Store,
    Get,
    Free,
@@ -3500,7 +3499,7 @@ comptime enum {
 
 //Function given to expandGeneric() to obtain the cscope command expansion.
 pub CS
-get_cscope_name(Expand* xp UNUSED, int idx) {
+get_cscope_name(Expand*, int idx) {
    int current_idx;
    int i;
 
@@ -3766,7 +3765,7 @@ cs_connection(int num, CS dbpath, CS ppath) {
 //Add cscope database or a directory name (to look for cscope.out)
 //to the cscope connection list.
 private int
-cs_add(Invocation* invo UNUSED) {
+cs_add(Invocation*) {
    CS flags = NULL;
    CS fname;
    if ((fname = (CS)strtok((char *)NULL, (const char *)" ")) == NULL) {
@@ -4270,7 +4269,7 @@ cs_find_common(
 
 //Print help.
 private int
-cs_help(Invocation* invo UNUSED) {
+cs_help(Invocation*) {
    CScopeCommand *cmdp = cs_cmds;
 
    (void)msg_puts(_("cscope commands:\n"));
@@ -4318,8 +4317,8 @@ clear_csinfo(int i) {
 
 //Insert a new cscope database filename into the filelist.
 private int
-cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat *sb UNUSED) {
-   int       j;
+cs_insert_filelist(CS fname, CS ppath, CS flags, FileStat* sb) {
+   int j;
 
    int i = -1; // can be set to the index of an empty item in csinfo
    for (j = 0; j < csinfo_size; j++) {
@@ -4399,7 +4398,7 @@ cs_lookup_cmd(Invocation* invo) {
 
 // Nuke em.
 private int
-cs_kill(Invocation* invo UNUSED) {
+cs_kill(Invocation*) {
    CS stok;
    int i;
 
@@ -4924,7 +4923,7 @@ cs_read_prompt(int i) {
 #if defined(SIGALRM)
 //Used to catch and ignore SIGALRM below.
 private void
-sig_handler SIGDEFARG(sigarg) {
+sig_handler(int) {
    // do nothing
 }
 #endif
@@ -5006,7 +5005,7 @@ cs_release_csp(int i, int freefnpp) {
 
 //Call cs_kill on all cscope connections then reinits.
 private int
-cs_reset(Invocation* invo UNUSED) {
+cs_reset(Invocation*) {
    Byte buf[20]; // for SPRINTF " (#%d)"
 
    if (csinfo_size == 0)
@@ -5095,7 +5094,7 @@ cs_resolve_file(int i, CS name) {
 
 // Show all cscope connections.
 private int
-cs_show(Invocation* invo UNUSED) {
+cs_show(Invocation*) {
    if (cs_cnt_connections() == 0)
       msg_puts(_("no cscope connections\n"));
    else {
@@ -5132,7 +5131,7 @@ cs_end(void) {
 //"cscope_connection([{num} , {dbpath} [, {prepend}]])" function
 //Check the existence of a cscope connection.
 pub void
-f_cscope_connection(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_cscope_connection(Arr(Var) argvars, Var *returnVar) {
    int      num = 0;
    CS dbpath = NULL;
    CS prepend = NULL;

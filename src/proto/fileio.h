@@ -30,10 +30,10 @@ void f_readdirex(Var *argvars, Var* returnVar);
 void f_readblob(Var* argvars, Var* returnVar);
 void f_readfile(Var* argvars, Var* returnVar);
 void f_resolve(Var *argvars, Var* returnVar);
-void f_tempname(Var *argvars UNUSED, Var* returnVar);
+void f_tempname(Var*, Var* returnVar);
 void f_writefile(Var* argvars, Var* returnVar);
-void f_browse(Var *argvars UNUSED, Var* returnVar);
-void f_browsedir(Var *argvars UNUSED, Var* returnVar);
+void f_browse(Arr(Var), Var* returnVar);
+void f_browsedir(Arr(Var), Var* returnVar);
 void f_filecopy(Var *argvars, Var* returnVar);
 CS fiExpandAndCopy(NULLABLE CS fname, int force);
 int eeFexists(CS fname);
@@ -159,7 +159,7 @@ int set_rw_fname(CS fname, CS sfname);
 void msg_add_fname(Book* book, CS fname);
 void msg_add_lines(int insert_space, long lnum, FileOffset nchars);
 void msg_add_eol(void);
-int time_differs(FileStat* st, long mtime, long mtime_ns UNUSED);
+int time_differs(FileStat* st, long mtime, long mtime_ns);
 CS shorten_fname1(CS full_path);
 CS shorten_fname(CS full_path, CS dir_name);
 void shorten_buf_fname(Book* book, CS dirname, int force);
@@ -172,16 +172,13 @@ int fiCheckBookTimestamp(
    Book* book
 );
 void buf_reload(Book* book, int orig_mode, int reload_options);
-void buf_store_time(Book *book, FileStat *st, CS fname UNUSED);
+void buf_store_time(Book *book, FileStat *st, CS);
 void write_lnum_adjust(LineNr offset);
 int mch_isrealdir(CS name);
 Boole mch_isdir(CS name);
 int mch_nodetype(CS name);
 void eeDelTempDir(void);
-CS eeTempName(
-   int extra_char UNUSED,  // char to use in the name instead of '?'
-   int keep UNUSED
-);
+CS eeTempName(int, int);
 int match_file_pat(
    CS pattern,      // pattern to match with
    RegProg** prog,         // pre-compiled regprog or NULL

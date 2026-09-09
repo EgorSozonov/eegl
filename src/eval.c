@@ -65,7 +65,7 @@ private void clear_type_list(ArrayList *gap);
 private int tv_op_blob(Var* tv1, Var* tv2, CS op);
 private int tv_op_list(Var* tv1, Var* tv2, CS op);
 private int tv_op_number(Var* tv1, Var* tv2, CS op);
-private int tv_op_string(Var* tv1, Var* tv2, CS op UNUSED);
+private int tv_op_string(Var* tv1, Var* tv2, CS);
 private int tv_op_nr_or_string(Var *tv1, Var *tv2, CS op);
 private int tv_op_float(Var* tv1, Var* tv2, CS op);
 private int eval_func(
@@ -182,10 +182,10 @@ private CS dict_tv2string(
    int      restore_copyID)
 ;
 private CS jobchan_tv2string(
-   Var   *tv UNUSED,
-   OUT Byte   **tofree UNUSED,
+   Var* tv,
+   OUT Byte** tofree,
    OUT CS numBuf,
-   int      composite_val
+   int composite_val
 );
 private int buf_byteidx_to_charidx(Book *book, int lnum, int byteidx);
 private Text expandCurlyBraces(Text braces, Text outer);
@@ -228,16 +228,16 @@ private void unletOrLock(
 );
 private int unletVar(
    Lval* lv,
-   CommIndex commandId UNUSED,
+   CommIndex,
    CS nameEnd,
    Boole forceIt,
-   int deep UNUSED
+   int
 );
 private int do_lock_var(
    Lval* lp,
    CommIndex commandId,
    CS nameEnd,
-   Boole forceIt UNUSED,
+   Boole,
    int deep
 );
 private int eval_variable(
@@ -284,59 +284,54 @@ private Unt find_internal_func_opt(CS name, int implemented);
 private int has_internal_func_name(CS name);
 private CS internal_func_name(int idx);
 private void f_and(Var* argvars, Var* returnVar);
-private void f_balloon_gettext(Var* argvars UNUSED, Var* returnVar);
-private void f_balloon_show(Var* argvars, Var* returnVar UNUSED);
-private void f_balloon_split(Var* argvars, Var* returnVar UNUSED);
+private void f_balloon_gettext(Var*, Var* returnVar);
+private void f_balloon_show(Var* argvars, Var*);
+private void f_balloon_split(Var* argvars, Var* returnVar);
 private void* base64_encode(Blob* blob);
 private void base64_decode(CS base64, Blob* blob);
 private void f_base64_decode(Var* argvars, Var* returnVar);
 private void f_base64_encode(Var* argvars, Var* returnVar);
 private void f_bindtextdomain(Var* argvars, Var* returnVar);
-private void f_byte2line(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_byte2line(Arr(Var) argvars, Var* returnVar);
 private void f_call(Arr(Var) argvars, Var* returnVar);
-private void f_changenr(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_changenr(Arr(Var), Var* returnVar);
 private void f_char2nr(Arr(Var) argvars, Var* returnVar);
 private void get_col(Arr(Var) argvars, Var* returnVar, int charcol);
 private void f_charcol(Arr(Var) argvars, Var* returnVar);
 private void f_col(Arr(Var) argvars, Var* returnVar);
-private void f_confirm(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_confirm(Arr(Var) argvars, Var* returnVar);
 private void f_copy(Arr(Var) argvars, Var* returnVar);
 private void set_cursorpos(Var* argvars, OUT Var* returnVar, int charcol);
 private void f_cursor(Var* argvars, Var* returnVar);
 private void f_deepcopy(Var* argvars, Var* returnVar);
-private void f_did_filetype(Var* argvars UNUSED, Var* returnVar UNUSED);
-private void f_echoraw(Var* argvars, Var* returnVar UNUSED);
+private void f_did_filetype(Var*, Var* returnVar);
+private void f_echoraw(Var* argvars, Var*);
 private void f_empty(Var* argvars, Var* returnVar);
-private void f_environ(Var* argvars UNUSED, Var* returnVar);
-private void f_err_teapot(Arr(Var) argvars, Var* returnVar UNUSED);
+private void f_environ(Var*, Var* returnVar);
+private void f_err_teapot(Arr(Var) argvars, Var*);
 private void f_escape(Var* argvars, Var*  returnVar);
 private void f_eval(Var* argvars, Var* returnVar);
-private void f_eventhandler(Arr(Var) argvars UNUSED, Var* returnVar);
-private CS get_str_line(
-   Unt c UNUSED,
-   void* cookie,
-   int indent UNUSED,
-   GetlineAlgo options UNUSED
-);
+private void f_eventhandler(Arr(Var), Var* returnVar);
+private CS get_str_line(Unt, void* cookie, int, GetlineAlgo);
 private void f_execute(Var* argvars, Var* returnVar);
 private void f_expand(Var* argvars, Var* returnVar);
 private void f_expandcmd(Var* argvars, Var* returnVar);
-private void f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED);
+private void f_feedkeys(Arr(Var) argvars, Var*);
 private void f_fnameescape(Arr(Var) argvars, Var* returnVar);
 private void common_function(Arr(Var) argvars, Var* returnVar, int is_funcref);
 private void f_funcref(Var* argvars, Var* returnVar);
 private void f_function(Var* argvars, Var* returnVar);
-private void f_garbagecollect(Var* argvars, Var* returnVar UNUSED);
+private void f_garbagecollect(Var* argvars, Var*);
 private void f_get(Var* argvars, Var*  returnVar);
-private void f_getcellpixels(Var* argvars UNUSED, Var* returnVar);
+private void f_getcellpixels(Var*, Var* returnVar);
 private void f_getchangelist(Var* argvars, Var* returnVar);
 private void getpos_both(Arr(Var) argvars, Var* returnVar, int getcurpos, int charcol);
 private void f_getcharpos(Var* argvars, Var* returnVar);
-private void f_getcharsearch(Var* argvars UNUSED, Var* returnVar);
+private void f_getcharsearch(Var*, Var* returnVar);
 private void f_getenv(Var* argvars, Var* returnVar);
-private void f_getfontname(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_getfontname(Arr(Var), Var* returnVar);
 private void f_getjumplist(Var* argvars, Var* returnVar);
-private void f_getpid(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_getpid(Arr(Var), Var* returnVar);
 private void f_getcurpos(Arr(Var) argvars, Var* returnVar);
 private void f_getcursorcharpos(Arr(Var) argvars, Var* returnVar);
 private void f_getpos(Var* argvars, Var* returnVar);
@@ -368,17 +363,17 @@ private void f_indexof(Arr(Var) argvars, Var* returnVar);
 private void f_input(Arr(Var) argvars, Var* returnVar);
 private void f_inputdialog(Arr(Var) argvars, Var* returnVar);
 private void f_inputlist(Arr(Var) argvars, Var* returnVar);
-private void f_inputrestore(Arr(Var) argvars UNUSED, Var* returnVar);
-private void f_inputsave(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_inputrestore(Arr(Var), Var* returnVar);
+private void f_inputsave(Arr(Var), Var* returnVar);
 private void f_inputsecret(Arr(Var) argvars, Var* returnVar);
-private void f_interrupt(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+private void f_interrupt(Arr(Var), Var*);
 private void f_invert(Arr(Var) argvars, Var* returnVar);
 private void freeLvalRoot(LvalRoot *root);
 private void f_islocked(Arr(Var) argvars, Var* returnVar);
 private void f_keytrans(Arr(Var) argvars, Var* returnVar);
-private void f_last_buffer_nr(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_last_buffer_nr(Arr(Var), Var* returnVar);
 private void f_line(Arr(Var) argvars, Var* returnVar);
-private void f_line2byte(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_line2byte(Arr(Var) argvars, Var* returnVar);
 private void find_some_match(Arr(Var) argvars, Var* returnVar, matchTypeSpec type);
 private int get_matches_in_str(
    CS str,
@@ -403,18 +398,18 @@ private void f_ngettext(Arr(Var) argvars, Var* returnVar);
 private void f_nr2char(Arr(Var) argvars, Var* returnVar);
 private void f_or(Arr(Var) argvars, Var* returnVar);
 private void f_prevnonblank(Arr(Var) argvars, Var* returnVar);
-private void f_printf(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-private void f_pum_getpos(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-private void f_pumvisible(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-private void f_test_srand_seed(Arr(Var) argvars, Var* returnVar UNUSED);
+private void f_printf(Arr(Var), Var*);
+private void f_pum_getpos(Arr(Var), Var* returnVar);
+private void f_pumvisible(Arr(Var), Var* returnVar);
+private void f_test_srand_seed(Arr(Var) argvars, Var*);
 private void init_srand(Unt *x);
 private void f_rand(Arr(Var) argvars, Var* returnVar);
 private void f_srand(Arr(Var) argvars, Var* returnVar);
 private void f_range(Arr(Var) argvars, Var* returnVar);
 private void f_getreginfo(Arr(Var) argvars, Var* returnVar);
 private void return_register(int regname, Var* returnVar);
-private void f_reg_executing(Arr(Var) argvars UNUSED, Var* returnVar);
-private void f_reg_recording(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_reg_executing(Arr(Var), Var* returnVar);
+private void f_reg_recording(Arr(Var), Var* returnVar);
 private void f_rename(Arr(Var) argvars, Var* returnVar);
 private void repeat_list(List *l, int n, Var* returnVar);
 private void repeat_blob(Var *blob_tv, int n, Var* returnVar);
@@ -430,9 +425,9 @@ private void f_searchpairpos(Arr(Var) argvars, Var* returnVar);
 private void f_searchpos(Arr(Var) argvars, Var* returnVar);
 private void set_position(Arr(Var) argvars, Var* returnVar, int charpos);
 private void f_setcharpos(Arr(Var) argvars, Var* returnVar);
-private void f_setcharsearch(Arr(Var) argvars, Var* returnVar UNUSED);
+private void f_setcharsearch(Arr(Var) argvars, Var*);
 private void f_setcursorcharpos(Arr(Var) argvars, Var* returnVar);
-private void f_setenv(Arr(Var) argvars, Var* returnVar UNUSED);
+private void f_setenv(Arr(Var) argvars, Var*);
 private void f_setfperm(Arr(Var) argvars, Var* returnVar);
 private void f_setpos(Arr(Var) argvars, Var* returnVar);
 private int get_yank_type(Byte **pp, CS yank_type, long *block_len);
@@ -440,23 +435,23 @@ private void f_setreg(Arr(Var) argvars, Var* returnVar);
 private void f_settagstack(Arr(Var) argvars, Var* returnVar);
 private void f_sha256(Arr(Var) argvars, Var* returnVar);
 private void f_shellescape(Arr(Var) argvars, Var* returnVar);
-private void f_shiftwidth(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_shiftwidth(Arr(Var) argvars, Var* returnVar);
 private void f_split(Arr(Var) argvars, Var* returnVar);
 private void f_submatch(Arr(Var) argvars, Var* returnVar);
 private void f_substitute(Arr(Var) argvars, Var* returnVar);
-private void f_swapfilelist(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_swapfilelist(Arr(Var), Var* returnVar);
 private void f_swapinfo(Arr(Var) argvars, Var* returnVar);
 private void f_swapname(Arr(Var) argvars, Var* returnVar);
-private void f_synID(Arr(Var) argvars UNUSED, Var* returnVar);
-private void f_synstack(Arr(Var) argvars UNUSED, Var* returnVar);
-private void f_tabpagebuflist(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-private void f_tagfiles(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_synID(Arr(Var) argvars, Var* returnVar);
+private void f_synstack(Arr(Var) argvars, Var* returnVar);
+private void f_tabpagebuflist(Arr(Var) argvars, Var* returnVar);
+private void f_tagfiles(Arr(Var), Var* returnVar);
 private void f_taglist(Arr(Var) argvars, Var* returnVar);
 private void f_type(Arr(Var) argvars, Var* returnVar);
 private void f_virtcol(Arr(Var) argvars, Var* returnVar);
 private void f_visualmode(Arr(Var) argvars, Var* returnVar);
-private void f_wildmenumode(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-private void f_wordcount(Arr(Var) argvars UNUSED, Var* returnVar);
+private void f_wildmenumode(Arr(Var), Var* returnVar);
+private void f_wordcount(Arr(Var), Var* returnVar);
 private void f_xor(Arr(Var) argvars, Var* returnVar);
 private void free_msglist(MsgList* l);
 private void discard_exception(Exception *excp, int was_finished);
@@ -511,7 +506,7 @@ checkIfNameReserved(CS name, int is_objm_access) {
 
 //This specifies optional parameters for getLval(). Arguments may be NULL.
 
-comptime typedef struct {
+typedef struct {
    Var* var;    // Base internal var.
    int isArg;   // name is an arg (not a member).
 } LvalRoot;
@@ -1496,7 +1491,7 @@ eval_foldexpr(Portal *wp, int *cp) {
 #define ASSIGN_COMPOUND_OP 0x200  // compound operator e.g. "+="
 
 #ifdef LOG_LOCKVAR
-comptime typedef struct {
+typedef struct {
    int       flag;
    char    *str;
 } FlagString;
@@ -1562,7 +1557,7 @@ fillLvalFromRoot(Lval *lp, LvalRoot* root) {
    lp->isRoot = true;
 }
 
-comptime typedef enum {
+typedef enum {
    GLV_FAIL,
    GLV_OK,
    GLV_STOP
@@ -2259,7 +2254,7 @@ tv_op_number(Var* tv1, Var* tv2, CS op) {
 
 // Handle "str1 .= str2" Return OK or FAIL.
 private int
-tv_op_string(Var* tv1, Var* tv2, CS op UNUSED) {
+tv_op_string(Var* tv1, Var* tv2, CS) {
    Byte numbuf[NUMBUFLEN];
 
    if (tv2->tag == VAR_FLOAT)
@@ -4509,12 +4504,12 @@ dict_tv2string(
 //otherwise does not put quotes around strings. May return NULL.
 private CS
 jobchan_tv2string(
-   Var   *tv UNUSED,
-   OUT Byte   **tofree UNUSED,
+   Var* tv,
+   OUT Byte** tofree,
    OUT CS numBuf,
-   int      composite_val
+   int composite_val
 ) {
-   Byte   *r = NULL;
+   Byte* r = NULL;
 
    *tofree = NULL;
 
@@ -5700,7 +5695,7 @@ private Bag globvardict;      // Dictionary with g: variables
 
 #define VV_NAME(s, t)  (CS)s, {{t, 0, {0}}, 0, 0, {0}}
 
-comptime typedef struct  {
+typedef struct  {
    CS name;     //name of variable, without v:
    DictItem16 entry; //value and name for key (max 16 chars!)
    Boole isReadonly;
@@ -5843,7 +5838,7 @@ private CS letOne(
      CS arg, Var *tv, Boole copy, Unt flags, CS endchars, CS op
 );
 private int do_lock_var(
-      Lval* lp, CommIndex commandId, CS nameEnd, Boole forceIt UNUSED, int deep
+      Lval* lp, CommIndex commandId, CS nameEnd, Boole forceIt, int deep
 );
 
 private void list_one_var(DictItem *v, CS prefix, int *first);
@@ -7127,10 +7122,10 @@ unletOrLock(
 private int
 unletVar(
    Lval* lv,
-   CommIndex commandId UNUSED,
+   CommIndex,
    CS nameEnd,
    Boole forceIt,
-   int deep UNUSED
+   int
 ) {
    int ret = OK;
    int cc;
@@ -7263,7 +7258,7 @@ do_lock_var(
    Lval* lp,
    CommIndex commandId,
    CS nameEnd,
-   Boole forceIt UNUSED,
+   Boole,
    int deep
 ) {
    Boole lock = commandId == C_lockvar;
@@ -8987,7 +8982,7 @@ f_getbufvar(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_settabvar(Var* argvars, Var* returnVar UNUSED) {
+f_settabvar(Var* argvars, Var*) {
    Tab* t = getTab((int)varGetNumberChk(argvars, NULL));
    CS varname = convertVarToStringSingleUse(&argvars[1]);
    Var* varp = &argvars[2];
@@ -9014,17 +9009,17 @@ f_settabvar(Var* argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_settabwinvar(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_settabwinvar(Arr(Var) argvars, Var*) {
    setPortVar(argvars, 1);
 }
 
 pub void
-f_setwinvar(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_setwinvar(Arr(Var) argvars, Var*) {
    setPortVar(argvars, 0);
 }
 
 pub void
-f_setbufvar(Var* argvars, Var* returnVar UNUSED) {
+f_setbufvar(Var* argvars, Var*) {
    CS varname = convertVarToStringSingleUse(&argvars[1]);
    Book* book = daGetBookFromArg(&argvars[0]);
    Var* varp = &argvars[2];
@@ -9178,7 +9173,7 @@ evFreeCallback(Callback* callback) {
 //  - f_max_argc == VARGS
 //  - For varargs, f_argcheck must be NULL terminated. The last non-null
 //    entry in f_argcheck should validate all the remaining args.
-comptime typedef struct {
+typedef struct {
    CS f_name;   // function name
    Byte f_min_argc;   // minimal number of arguments
    Byte f_max_argc;   // maximal number of arguments
@@ -9969,7 +9964,7 @@ f_and(Var* argvars, Var* returnVar) {
 
 //"balloon_show()" function
 private void
-f_balloon_gettext(Var* argvars UNUSED, Var* returnVar) {
+f_balloon_gettext(Var*, Var* returnVar) {
    returnVar->tag = VAR_STRING;
    if (!balloonEval)
       return;
@@ -9981,8 +9976,8 @@ f_balloon_gettext(Var* argvars UNUSED, Var* returnVar) {
 }
 
 private void
-f_balloon_show(Var* argvars, Var* returnVar UNUSED) {
-   if (balloonEval == NULL)
+f_balloon_show(Var* argvars, Var*) {
+   if (!balloonEval)
       return;
 
 
@@ -10000,7 +9995,7 @@ f_balloon_show(Var* argvars, Var* returnVar UNUSED) {
 }
 
 private void
-f_balloon_split(Var* argvars, Var* returnVar UNUSED) {
+f_balloon_split(Var* argvars, Var* returnVar) {
    allocReturnList(returnVar);
 
    CS msg = convertVarToStringSingleUse(&argvars[0]);
@@ -10101,7 +10096,7 @@ f_bindtextdomain(Var* argvars, Var* returnVar) {
 
 //"byte2line(byte)" function
 private void
-f_byte2line(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_byte2line(Arr(Var) argvars, Var* returnVar) {
    long boff = tv_get_number(&argvars[0]) - 1;  // boff gets -1 on type error
    if (boff < 0)
       returnVar->number = -1;
@@ -10156,7 +10151,7 @@ done:
 }
 
 private void
-f_changenr(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_changenr(Arr(Var), Var* returnVar) {
    returnVar->number = curBook->undo.seqCurr;
 }
 
@@ -10260,7 +10255,7 @@ f_col(Arr(Var) argvars, Var* returnVar) {
 
 //"confirm(message, buttons[, default [, type]])" function
 private void
-f_confirm(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_confirm(Arr(Var) argvars, Var* returnVar) {
    CS buttons = NULL;
    Byte buf[NUMBUFLEN];
    Byte buf2[NUMBUFLEN];
@@ -10387,13 +10382,13 @@ f_deepcopy(Var* argvars, Var* returnVar) {
 }
 
 private void
-f_did_filetype(Var* argvars UNUSED, Var* returnVar UNUSED) {
+f_did_filetype(Var*, Var* returnVar) {
    returnVar->number = curBook->didFiletype;
 }
 
 //"echoraw({expr})" function
 private void
-f_echoraw(Var* argvars, Var* returnVar UNUSED) {
+f_echoraw(Var* argvars, Var*) {
    CS str = convertVarToStringSingleUse(&argvars[0]);
    if (str && *str != ZERO) {
       out_str(str);
@@ -10455,7 +10450,7 @@ f_empty(Var* argvars, Var* returnVar) {
 
 //"environ()" function
 private void
-f_environ(Var* argvars UNUSED, Var* returnVar) {
+f_environ(Var*, Var* returnVar) {
    extern char** environ;
 
    allocReturnDict(returnVar);
@@ -10480,7 +10475,7 @@ f_environ(Var* argvars UNUSED, Var* returnVar) {
 }
 
 private void
-f_err_teapot(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_err_teapot(Arr(Var) argvars, Var*) {
    if (argvars[0].tag != VAR_UNKNOWN) {
       if (argvars[0].tag == VAR_STRING) {
          CS s = tv_get_string_strict(&argvars[0]);
@@ -10526,7 +10521,7 @@ f_eval(Var* argvars, Var* returnVar) {
 }
 
 private void
-f_eventhandler(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_eventhandler(Arr(Var), Var* returnVar) {
    returnVar->number = vgetcBusyG || input_busy;
 }
 
@@ -10553,12 +10548,7 @@ execute_redir_str(CS value, int value_len) {
 //Called by doCommand() to get the next line.
 //Return an allocated string, or NULL when at the end of the string.
 private CS
-get_str_line(
-   Unt c UNUSED,
-   void* cookie,
-   int indent UNUSED,
-   GetlineAlgo options UNUSED
-) {
+get_str_line(Unt, void* cookie, int, GetlineAlgo) {
    CS start = *(Byte **)cookie;
 
    CS p = start;
@@ -10592,12 +10582,7 @@ execute_cmds_from_string(CS str) {
 //Get next line from a list. Called by doCommand() to get the next line.
 //Return allocated string, or NULL for end of function.
 pub CS
-get_list_line(
-   Unt c UNUSED,
-   void* cookie,
-   int indent UNUSED,
-   GetlineAlgo options UNUSED
-) {
+get_list_line(Unt, void* cookie, int, GetlineAlgo) {
    ListItem **p = (ListItem **)cookie;
    ListItem *item = *p;
    Byte buf[NUMBUFLEN];
@@ -10606,7 +10591,7 @@ get_list_line(
       return NULL;
    CS s = convertVarToString(&item->c, buf);
    *p = item->next;
-   return s == NULL ? NULL : copyStr(s);
+   return s ? copyStr(s) : null;
 }
 
 // "execute()" function
@@ -10717,7 +10702,7 @@ f_execute(Var* argvars, Var* returnVar) {
 // "exists()" function
 pub void
 f_exists(Var* argvars, Var* returnVar) {
-   int      n = false;
+   int n = false;
 
    CS p = tv_get_string(&argvars[0]);
    if (*p == '$')  {       // environment variable
@@ -10768,7 +10753,8 @@ f_expand(Var* argvars, Var* returnVar) {
    if (argvars[1].tag != VAR_UNKNOWN
           && argvars[2].tag != VAR_UNKNOWN
           && varGetNumberChk(argvars + 2, OUT &error)
-          && !error)
+          && !error
+   )
       returnVar_list_set(returnVar, NULL);
 
    CS s = tv_get_string(&argvars[0]);
@@ -10848,7 +10834,7 @@ f_expandcmd(Var* argvars, Var* returnVar) {
 
 // "feedkeys()" function
 private void
-f_feedkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_feedkeys(Arr(Var) argvars, Var*) {
    Boole remap = true;
    Boole insert = false;
    Byte nbuf[NUMBUFLEN];
@@ -11135,13 +11121,13 @@ f_function(Var* argvars, Var* returnVar) {
 }
 
 private void
-f_garbagecollect(Var* argvars, Var* returnVar UNUSED) {
+f_garbagecollect(Var* argvars, Var*) {
    // This is postponed until we are back at the toplevel, because we may be
    // using Lists and Dicts internally.  E.g.: ":echo [garbagecollect()]".
    want_garbage_collect = true;
 
    if (argvars[0].tag != VAR_UNKNOWN && tv_get_bool(&argvars[0]) == 1)
-   garbage_collect_at_exit = true;
+      garbage_collect_at_exit = true;
 }
 
 private void
@@ -11263,7 +11249,7 @@ f_get(Var* argvars, Var*  returnVar) {
 
 // "getcellpixels()" function
 private void
-f_getcellpixels(Var* argvars UNUSED, Var* returnVar) {
+f_getcellpixels(Var*, Var* returnVar) {
    allocReturnList(returnVar);
 
    CellSize cs;
@@ -11380,7 +11366,7 @@ f_getcharpos(Var* argvars, Var* returnVar) {
 }
 
 private void
-f_getcharsearch(Var* argvars UNUSED, Var* returnVar) {
+f_getcharsearch(Var*, Var* returnVar) {
    allocReturnDict(returnVar);
    Bag* bag = returnVar->bag;
 
@@ -11407,7 +11393,7 @@ f_getenv(Var* argvars, Var* returnVar) {
 
 // "getfontname()" function
 private void
-f_getfontname(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getfontname(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 }
@@ -11448,7 +11434,7 @@ f_getjumplist(Var* argvars, Var* returnVar) {
 
 // "getpid()" function
 private void
-f_getpid(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getpid(Arr(Var), Var* returnVar) {
    returnVar->number = mch_get_pid();
 }
 
@@ -12229,7 +12215,7 @@ f_hlexists(Arr(Var) argvars, Var* returnVar) {
 
 // "hostname()" function
 pub void
-f_hostname(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_hostname(Arr(Var), Var* returnVar) {
    Byte hostname[256];
 
    mch_get_host_name(hostname, 256);
@@ -12526,7 +12512,7 @@ private ArrayList       ga_userinput = {0, 0, sizeof(TypeaheadSave), 4, NULL};
 
 // "inputrestore()" function
 private void
-f_inputrestore(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_inputrestore(Arr(Var), Var* returnVar) {
    if (ga_userinput.len > 0) {
       --ga_userinput.len;
       restore_typeahead((TypeaheadSave *)(ga_userinput.c) + ga_userinput.len, true);
@@ -12539,7 +12525,7 @@ f_inputrestore(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 // "inputsave()" function
 private void
-f_inputsave(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_inputsave(Arr(Var), Var* returnVar) {
    // Add an entry to the stack of typeahead storage.
    if (ga_grow(&ga_userinput, 1) == OK) {
       save_typeahead((TypeaheadSave *)(ga_userinput.c) + ga_userinput.len);
@@ -12559,7 +12545,7 @@ f_inputsecret(Arr(Var) argvars, Var* returnVar) {
 
 // "interrupt()" function
 private void
-f_interrupt(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_interrupt(Arr(Var), Var*) {
     gotInterruptG = true;
 }
 
@@ -12647,7 +12633,7 @@ f_keytrans(Arr(Var) argvars, Var* returnVar) {
 }
 
 private void
-f_last_buffer_nr(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_last_buffer_nr(Arr(Var), Var* returnVar) {
    int      n = 0;
    Book   *book;
    FOR_ALL_BOOKS(book) {
@@ -12726,7 +12712,7 @@ f_line(Arr(Var) argvars, Var* returnVar) {
 
 // "line2byte(lnum)" function
 private void
-f_line2byte(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_line2byte(Arr(Var) argvars, Var* returnVar) {
    LineNr lnum = tv_get_lnum(argvars);
    if (lnum < 1 || lnum > curBook->mem.lineCount + 1)
       returnVar->number = -1;
@@ -12737,7 +12723,7 @@ f_line2byte(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 
-comptime typedef enum {
+typedef enum {
    MATCH_END,       // matchend()
    MATCH_MATCH,    // match()
    MATCH_STR,       // matchstr()
@@ -13314,7 +13300,7 @@ f_prevnonblank(Arr(Var) argvars, Var* returnVar) {
 //private va_list   ap;
 
 private void
-f_printf(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_printf(Arr(Var), Var*) {
 //   Byte   buf[NUMBUFLEN];
 //   int      saved_anyEmsgG = anyEmsgG;
 //
@@ -13336,15 +13322,15 @@ f_printf(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 private void
-f_pum_getpos(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_pum_getpos(Arr(Var), Var* returnVar) {
    allocReturnDict(returnVar);
    pum_set_event_info(returnVar->bag);
 }
 
 private void
-f_pumvisible(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_pumvisible(Arr(Var), Var* returnVar) {
    if (pum_visible())
-   returnVar->number = 1;
+      returnVar->number = 1;
 }
 
 
@@ -13352,7 +13338,7 @@ private Unt srand_seed_for_testing = 0;
 private int   srand_seed_for_testing_is_used = false;
 
 private void
-f_test_srand_seed(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_srand_seed(Arr(Var) argvars, Var*) {
    if (argvars[0].tag == VAR_UNKNOWN)
       srand_seed_for_testing_is_used = false;
    else {
@@ -13605,12 +13591,12 @@ return_register(int regname, Var* returnVar) {
 }
 
 private void
-f_reg_executing(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_reg_executing(Arr(Var), Var* returnVar) {
     return_register(reg_executing, returnVar);
 }
 
 private void
-f_reg_recording(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_reg_recording(Arr(Var), Var* returnVar) {
     return_register(reg_recording, returnVar);
 }
 
@@ -14206,10 +14192,9 @@ f_setcharpos(Arr(Var) argvars, Var* returnVar) {
 }
 
 private void
-f_setcharsearch(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_setcharsearch(Arr(Var) argvars, Var*) {
    Bag   *d;
    DictItem   *di;
-   Byte   *csearch;
 
    if (check_for_dict_arg(argvars, 0) == FAIL)
       return;
@@ -14217,7 +14202,7 @@ f_setcharsearch(Arr(Var) argvars, Var* returnVar UNUSED) {
    if ((d = argvars[0].bag) == NULL)
       return;
 
-   csearch = bagGetString(d, tConst("char"), false);
+   Byte* csearch = bagGetString(d, tConst("char"), false);
    if (csearch) {
        int pcc[MAX_COMBINED_SYMBOLS];
        int c = utfc_ptr2char(csearch, pcc);
@@ -14244,7 +14229,7 @@ f_setcursorcharpos(Arr(Var) argvars, Var* returnVar) {
 
 //"setenv()" function
 private void
-f_setenv(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_setenv(Arr(Var) argvars, Var*) {
    Byte   namebuf[NUMBUFLEN];
    Byte   valbuf[NUMBUFLEN];
 
@@ -14505,7 +14490,7 @@ f_shellescape(Arr(Var) argvars, Var* returnVar) {
 
 // shiftwidth() function
 private void
-f_shiftwidth(Arr(Var) argvars UNUSED, Var* returnVar){
+f_shiftwidth(Arr(Var) argvars, Var* returnVar){
    returnVar->number = 0;
 
    if (argvars[0].tag != VAR_UNKNOWN) {
@@ -14634,7 +14619,7 @@ f_substitute(Arr(Var) argvars, Var* returnVar) {
 
 // "swapfilelist()" function
 private void
-f_swapfilelist(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_swapfilelist(Arr(Var), Var* returnVar) {
    if (curBook->swapName) {
       returnVar->string = copyStr(curBook->swapName);
    } else {
@@ -14663,8 +14648,8 @@ f_swapname(Arr(Var) argvars, Var* returnVar) {
 
 // "synID(lnum, col, trans)" function
 private void
-f_synID(Arr(Var) argvars UNUSED, Var* returnVar) {
-   int      id = 0;
+f_synID(Arr(Var) argvars, Var* returnVar) {
+   int id = 0;
    Boole transerr = false;
 
    LineNr lnum = tv_get_lnum(argvars);      // -1 on type error
@@ -14681,16 +14666,14 @@ f_synID(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 // "synstack(lnum, col)" function
 private void
-f_synstack(Arr(Var) argvars UNUSED, Var* returnVar) {
-   LineNr lnum;
-   ColNr col;
+f_synstack(Arr(Var) argvars, Var* returnVar) {
    int i;
    int id;
 
    returnVar_list_set(returnVar, NULL);
 
-   lnum = tv_get_lnum(argvars);      // -1 on type error
-   col = (ColNr)tv_get_number(&argvars[1]) - 1;   // -1 on type error
+   LineNr lnum = tv_get_lnum(argvars);      // -1 on type error
+   ColNr col = (ColNr)tv_get_number(&argvars[1]) - 1;   // -1 on type error
 
    if (lnum >= 1 && lnum <= curBook->mem.lineCount
        && col >= 0 && col <= (long)ml_get_len(lnum)
@@ -14708,7 +14691,7 @@ f_synstack(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 private void
-f_tabpagebuflist(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_tabpagebuflist(Arr(Var) argvars, Var* returnVar) {
    Portal* wp = NULL;
 
    if (argvars[0].tag == VAR_UNKNOWN)
@@ -14727,13 +14710,12 @@ f_tabpagebuflist(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 }
 
 private void
-f_tagfiles(Arr(Var) argvars UNUSED, Var* returnVar) {
-   TagName   tn;
-
+f_tagfiles(Arr(Var), Var* returnVar) {
    allocReturnList(returnVar);
    Byte fname[MAXPATHL];
 
    for (int first = true; ; first = false) {
+      TagName tn;
       if (get_tagfname(&tn, first, fname) == FAIL
             || list_append_string(returnVar->list, fname, -1) == FAIL)
          break;
@@ -14853,13 +14835,13 @@ f_visualmode(Arr(Var) argvars, Var* returnVar) {
 }
 
 private void
-f_wildmenumode(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_wildmenumode(Arr(Var), Var* returnVar) {
    if (wild_menu_showing || ((stateG & MODE_COMMLINE) && cmdline_pum_active()))
       returnVar->number = 1;
 }
 
 private void
-f_wordcount(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_wordcount(Arr(Var), Var* returnVar) {
    allocReturnDict(returnVar);
    cursor_pos_info(returnVar->bag);
 }

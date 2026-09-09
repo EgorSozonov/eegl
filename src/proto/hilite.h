@@ -8,7 +8,7 @@ CS syn_id2name(Unt id);
 Byte decorationByHiliteId(Short hiId);
 Byte syn_id2colors(Short hiId, OUT VTermColor* fgp, OUT VTermColor* bgp);
 void setCompletionContextInHiliteCommand(OUT Expand* xp, CS arg);
-Text getHiliteGroupName(Expand* xp UNUSED, int id);
+Text getHiliteGroupName(Expand*, int id);
 CS getHiliteGroupNameAsCString(Expand *xp, int id);
 int expandHiliteGroup(
    CS pattern,
@@ -49,4 +49,4 @@ int syn_get_id(
 int get_syntax_info(int *seqnrp);
 int syn_get_stack_item(int i);
 int syn_get_foldlevel(Portal *po, long lnum);
-void f_synIDtrans(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_synIDtrans(Arr(Var) argvars, Var* returnVar);

@@ -73,7 +73,6 @@ typedef double _Float64x;
 #endif
 
 #define SIGPROTOARG   (int)
-#define SIGDEFARG(s)   (int s UNUSED)
 #define SIGDUMMYARG   0
 
 typedef void (*sighandler_T) SIGPROTOARG;
@@ -195,13 +194,6 @@ typedef struct pollfd PollFd;
 #ifndef SEEK_END
 # define SEEK_END 2
 #endif
-
-// Mark unused function arguments with UNUSED, so that gcc -Wunused-parameter
-// can be used to check for mistakes.
-#ifndef UNUSED
-# define UNUSED __attribute__((unused))
-#endif
-
 
 #define FMT_LONG PRI64
 #define FMT_ULONG PRIu64
@@ -1259,7 +1251,7 @@ typedef Byte Byte;
 // Events for autocommands. Must be kept in sync with "autocmd.c:autoEvents".
 enum AutoEvent {
    EVENT_BUFADD = 0,      //after adding a book to the book list
-   EVENT_BUFCREATE,       //UNUSED: BufCreate == BufAdd
+   EVENT_BUFCREATE,       //NOT USED: BufCreate == BufAdd
    EVENT_BUFDELETE,       //deleting a book from the book list
    EVENT_BUFENTER,        //after entering a book
    EVENT_BUFFILEPOST,     //after renaming a book
@@ -1268,7 +1260,7 @@ enum AutoEvent {
    EVENT_BUFLEAVE,        //before leaving a book
    EVENT_BUFNEW,          //after creating any book
    EVENT_BUFNEWFILE,      //when creating a book for a new file
-   EVENT_BUFREAD,         //UNUSED: BufRead == BufReadPost
+   EVENT_BUFREAD,         //NOT USED: BufRead == BufReadPost
    EVENT_BUFREADCMD,      //read book using command
    EVENT_BUFREADPOST,     //after reading a book
    EVENT_BUFREADPRE,      //before reading a book
@@ -1276,7 +1268,7 @@ enum AutoEvent {
    EVENT_BUFWINENTER,     //after showing a book in a portal
    EVENT_BUFWINLEAVE,     //just after book removed from portal
    EVENT_BUFWIPEOUT,      //just before really deleting a book
-   EVENT_BUFWRITE,        //UNUSED: BufWrite == BufWritePost
+   EVENT_BUFWRITE,        //NOT USED: BufWrite == BufWritePost
    EVENT_BUFWRITECMD,     //write book using command
    EVENT_BUFWRITEPOST,    //after writing a book
    EVENT_BUFWRITEPRE,     //before writing a book
@@ -5532,7 +5524,7 @@ typedef enum {
 //#define Widget int
 //#define XImage int
 
-#include "proto/book.h"
+//#include "proto/book.h"
 #include "proto/data.h"
 #include "proto/diff.h"
 #include "proto/do.h"

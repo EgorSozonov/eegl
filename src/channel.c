@@ -15,10 +15,10 @@
 #include <sys/poll.h>
 #endif
 
-comptime typedef sigset_t SignalSet;
+typedef sigset_t SignalSet;
 
 # define EXEC_FAILED 122 //Exit code when shell didn't execute. Don't use
-                         // 127, some shells use that already
+                         //127, some shells use that already
 # define OPEN_NULL_FAILED 123 // Exit code if /dev/null can't be opened
 
 # define SIGSET_DECL(set)   SignalSet set;
@@ -27,7 +27,7 @@ comptime typedef sigset_t SignalSet;
 
 private int dontCheckJobEndedP = 0;
 
-comptime typedef int waitstatus;
+typedef int waitstatus;
 
 // volatile because it is used in signal handler deathtrap().
 private volatile SigAtomic inMchDelayS = false; // sleeping in mch_delay()
@@ -82,13 +82,13 @@ private int safe_to_invoke_callback = 0;
 private Channel *first_channel = NULL;
 private int next_ch_id = 0;
 private int ignore_sigtstp = false;
-comptime typedef struct sockaddr_un SockAddrUn;
-comptime typedef struct sockaddr SockAddr;
+typedef struct sockaddr_un SockAddrUn;
+typedef struct sockaddr SockAddr;
 
 #define LOG_ALWAYS 9// must be different from true and false
 
 
-GEN_TYPE_L(comptime, PollFd)
+pub GEN_TYPE_L(pub, PollFd);
 GEN_add(comptime, PollFd)
 
 //{{{@@forward declarations
@@ -184,24 +184,24 @@ private void init_signal_stack(void);
 private CS get_signal_name(int sig);
 private void block_signals(SignalSet* set);
 private void unblock_signals(SignalSet* set);
-private void may_send_sigint(Unt c, ProId pid UNUSED, ProId wpid);
+private void may_send_sigint(Unt c, ProId pid, ProId wpid);
 private ProId wait4pid(ProId child, waitstatus *status);
 private void writeFromCurBookToShell(int fromShell, int toShell);
 private PolyWithStatus callShellImpl(Text cmd, Unt opt);
 private void open_pty(int* pty_master_fd, int* pty_slave_fd, Byte** name1, Byte** name2);
-private void catch_sigint SIGDEFARG(sigarg);
-private void catch_sigusr1 SIGDEFARG(sigarg);
-private void catch_sigpwr SIGDEFARG(sigarg);
-private void deathtrap SIGDEFARG(sigarg);
+private void catch_sigint(int);
+private void catch_sigusr1(int);
+private void catch_sigpwr(int);
+private void deathtrap(int);
 private void after_sigcont(void);
-private void sigcont_handler SIGDEFARG(sigarg);
+private void sigcont_handler(int);
 private void catch_int_signal(void);
 private void catch_signals(void (*func_deadly)(int), void (*func_other)(int));
 private void set_child_environment(
    long rows,
    long columns,
    CS term,
-   int is_terminal UNUSED
+   int is_terminal
 );
 private void set_default_child_environment(int is_terminal);
 private void mch_job_start(Byte** argv, Job* job, JobOptions *options, int is_terminal);
@@ -2512,7 +2512,7 @@ channel_fill_wfds(int maxfd_arg, OUT LPollFd* pollFds) {
    }
 }
 
-comptime typedef enum {
+typedef enum {
    CW_READY,
    CW_NOT_READY,
    CW_ERROR
@@ -3466,7 +3466,7 @@ f_ch_canread(Var* argvars, Var* returnVar) {
 }
 
 pub void
-f_ch_close(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_ch_close(Arr(Var) argvars, Var*) {
    Channel* channel = get_channel_arg(&argvars[0], true, false, 0);
    if (channel) {
       channel_close(channel, false);
@@ -3475,7 +3475,7 @@ f_ch_close(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_ch_close_in(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_ch_close_in(Arr(Var) argvars, Var*) {
 
    Channel* channel = get_channel_arg(&argvars[0], true, false, 0);
    if (channel)
@@ -3518,7 +3518,7 @@ f_ch_getjob(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_ch_info(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_ch_info(Arr(Var) argvars, Var* returnVar) {
    Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
    if (channel) {
       allocReturnDict(returnVar);
@@ -3568,7 +3568,7 @@ f_ch_sendraw(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_ch_setoptions(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_ch_setoptions(Arr(Var) argvars, Var*) {
    Channel* channel = get_channel_arg(&argvars[0], false, false, 0);
    if (!channel)
       return;
@@ -3825,7 +3825,7 @@ unblock_signals(SignalSet* set) {
 
 // Send SIGINT to a child process if "c" is an interrupt character.
 private void
-may_send_sigint(Unt c, ProId pid UNUSED, ProId wpid) {
+may_send_sigint(Unt c, ProId pid, ProId wpid) {
    if (c == Ctrl_C || c == extraInterruptCharG) {
       kill(-pid, SIGINT);
    if (wpid > 0)
@@ -4204,7 +4204,7 @@ callShellImpl(Text cmd, Unt opt){   // SHELL_*, see eegl.h
 finished:
       p_more = p_more_save;
 
-      // Give all typeahead that wasn't used back to ui_inchar().
+      //Give all typeahead that wasn't used back to ui_inchar().
       if (typeAheadLen != 0)
          ui_inBytendo(ta_buf, typeAheadLen);
       stateG = modeSaved;
@@ -4219,7 +4219,7 @@ finished:
       if (wait_pid != pid)
          (void)wait4pid(pid, &status);
 
-      // Make sure the child that writes to the external program is dead.
+      //Make sure the child that writes to the external program is dead.
       if (wpid > 0) {
          kill(wpid, SIGKILL);
          wait4pid(wpid, NULL);
@@ -4251,7 +4251,7 @@ finished:
          msg_puts(_("\nCommand terminated\n"));
    }
    
-pub skipIfError: 
+skipIfError: 
 
    if (!did_termSetMode && tmode == TMODE_RAW)
       termSetMode(TMODE_RAW);
@@ -4433,33 +4433,33 @@ may_core_dump(void) {
 //will barf when the second argument to signal() is ``wrong''.
 //Let me try it with a few tricky defines from my own osdef.h   (jw).
 pub void
-sig_winch SIGDEFARG(sigarg) {
+sig_winch(int) {
    // this is not required on all systems, but it doesn't hurt anybody
    mch_signal(SIGWINCH, sig_winch);
    doResizeG = true;
 }
 
 pub void
-sig_tstp SIGDEFARG(sigarg) {
+sig_tstp(int) {
    mch_signal(SIGTSTP, sig_tstp);
 }
 
 private void
-catch_sigint SIGDEFARG(sigarg) {
+catch_sigint(int) {
    // this is not required on all systems, but it doesn't hurt anybody
    mch_signal(SIGINT, catch_sigint);
    gotInterruptG = true;
 }
 
 private void
-catch_sigusr1 SIGDEFARG(sigarg) {
+catch_sigusr1(int) {
     // this is not required on all systems, but it doesn't hurt anybody
     mch_signal(SIGUSR1, catch_sigusr1);
     got_sigusr1 = true;
 }
 
 private void
-catch_sigpwr SIGDEFARG(sigarg) {
+catch_sigpwr(int) {
    // this is not required on all systems, but it doesn't hurt anybody
    mch_signal(SIGPWR, catch_sigpwr);
    //I'm not sure we get the SIGPWR signal when the system is really going down or when the 
@@ -4473,7 +4473,7 @@ catch_sigpwr SIGDEFARG(sigarg) {
 //(partly from Elvis).
 //NOTE: Avoid unsafe functions, such as allocating memory, they can result in a deadlock.
 private void
-deathtrap SIGDEFARG(sigarg) {
+deathtrap(int) {
    static int   entered = 0;       // count the number of times we got here.
                 // Note: when memory has been corrupted this may get an arbitrary value!
    int      i;
@@ -4604,7 +4604,7 @@ private void sigcont_handler SIGPROTOARG;
 
 //signal handler for SIGCONT
 private void
-sigcont_handler SIGDEFARG(sigarg) {
+sigcont_handler(int) {
    // We didn't suspend ourselves, assume we were stopped by a SIGSTOP signal (which can't 
    // be intercepted) and get a SIGCONT. Need to get back to a sane mode. We should redraw, but 
    // we can't really do that in a signal handler, do a redraw later.
@@ -4716,7 +4716,7 @@ set_child_environment(
    long rows,
    long columns,
    CS term,
-   int is_terminal UNUSED
+   int is_terminal
 ) {
    char   envbuf[50];
 
@@ -6322,7 +6322,7 @@ prompt_curpos_editable(void) {
 
 // "prompt_setcallback({buffer}, {callback})" function
 pub void
-f_prompt_setcallback(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_prompt_setcallback(Arr(Var) argvars, Var*) {
    Book* book = daGetBook(&argvars[0], false);
    if (!book)
       return;
@@ -6339,7 +6339,7 @@ f_prompt_setcallback(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 // "prompt_setinterrupt({buffer}, {callback})" function
 pub void
-f_prompt_setinterrupt(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_prompt_setinterrupt(Arr(Var) argvars, Var*) {
    Book* book = daGetBook(&argvars[0], false);
    if (!book)
       return;
@@ -6374,7 +6374,7 @@ f_prompt_getprompt(Arr(Var) argvars, Var* returnVar) {
 
 // "prompt_setprompt({book}, {text})" function
 pub void
-f_prompt_setprompt(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_prompt_setprompt(Arr(Var) argvars, Var*) {
    Book* book = daGetBook(&argvars[0], false);
    if (!book)
       return;
@@ -6470,7 +6470,7 @@ f_job_info(Var* argvars, Var* returnVar) {
 }
 
 pub void
-f_job_setoptions(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_job_setoptions(Arr(Var) argvars, Var*) {
    Job* job = get_job_arg(&argvars[0]);
    if (!job)
       return;
@@ -6677,7 +6677,7 @@ ch_log_literal(CS lead, Channel* ch, ChannelFdKind part, OUT Text builder) {
 }
 
 pub void
-f_ch_log(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_ch_log(Arr(Var) argvars, Var*) {
    Channel	*channel = NULL;
    CS msg = tv_get_string(&argvars[0]);
    if (argvars[1].tag != VAR_UNKNOWN)
@@ -6688,7 +6688,7 @@ f_ch_log(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_ch_logfile(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_ch_logfile(Arr(Var) argvars, Var*) {
    Byte builder[NUMBUFLEN];
    CS fname = tv_get_string(&argvars[0]);
    CS opt = (argvars[1].tag == VAR_STRING) ? tv_get_string_buf(&argvars[1], builder) : S"";

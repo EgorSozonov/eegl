@@ -4,19 +4,19 @@ void eeMemProfileDump(void);
 int alloc_does_fail(Unt size);
 void * alloc(Unt size);
 void* tryBigAlloc(Unt size);
-void * alloc_id(Unt size, AllocId id UNUSED);
+void * alloc_id(Unt size, AllocId id);
 void * allocZeroed(Unt size);
-void * allocZeroed_id(Unt size, AllocId id UNUSED);
+void * allocZeroed_id(Unt size, AllocId id);
 void * lallocZeroed(Unt size, Boole message);
 void * lalloc(Unt size, Boole message);
-void * lalloc_id(Unt size, int message, AllocId id UNUSED);
+void * lalloc_id(Unt size, int message, AllocId id);
 void * memReallocWithProfiling(void *ptr, Unt size);
 void do_outofmem_msg(Unt size);
 void free_all_mem(void);
 CS eeMemsave(Byte *p, Unt len);
 void eeglFree(void* x);
 void eeglFreeString(CS x);
-Ulong mch_total_mem(int special UNUSED);
+Ulong mch_total_mem(int);
 void mch_free_mem(void);
 CS toFullFileName(Text fileName, DirName* dn);
 void mch_exit(int r);
@@ -84,6 +84,15 @@ void ml_setflags(Book* book);
 long ml_find_line_or_offset(Book* book, LineNr lnum, long *offp);
 void goto_byte(long cnt);
 CS memMakePercentSwapName(CS dir, CS dir_end, CS name);
+#define getRefCount(a) _Generic((a),\
+   Job*: _getRefCount\
+)(a);
+#define incRefCount(a) _Generic((a),\
+   Job*: _incRefCount\
+)(a);
+#define decRefCount(a) _Generic((a),\
+   Job*: _decRefCount\
+)(a);
 MemFile * mf_open(CS fname, Unt flags);
 int mf_open_file(MemFile* mfp, CS fname);
 void mf_close(MemFile* mfp, int del_file);

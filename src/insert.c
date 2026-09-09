@@ -18,7 +18,7 @@ private int char_before_cursor(void);
 private void redrawInInsertMode(Boole ready);
 private void insertStartVisualBlockMode(void);
 private int decodeModifyOtherKeys(int c);
-private int del_char_after_col(int limit_col UNUSED);
+private int del_char_after_col(int limit_col);
 private void insertRegular(Unt c, Boole allow_modmask, Boole ctrlv);
 private void redo_literal(int c);
 private void start_arrow_with_change(NULLABLE Pos* end_insert_pos, int end_change);
@@ -90,7 +90,7 @@ private Unt addMatchToList(
    int len,
    CS fname,
    Byte** cptext,       // extra text for popup menu or NULL
-   Var* user_data UNUSED,  // "user_data" entry or NULL
+   Var* user_data,  // "user_data" entry or NULL
    Unt cdir,
    Unt flags_arg,
    Boole adup,          // accept duplicate match
@@ -204,7 +204,7 @@ private void get_register_completion(void);
 private Unt get_next_completion_match(int type, InsertionCompletionNext *st, Pos *ini);
 private void strip_caret_numbers_in_place(CS str);
 private int prepare_cpt_compl_funcs(void);
-private void compl_source_start_timer(int source_idx UNUSED);
+private void compl_source_start_timer(int source_idx);
 private int advance_cpt_sources_index_safe(void);
 private int ins_compl_get_exp(Pos* ini);
 private void ins_compl_update_shown_match(void);
@@ -248,7 +248,7 @@ private Unt setup_cpt_sources(void);
 private Boole is_cfn_refresh_always(void);
 private void ins_compl_make_linear(void);
 private InsertCompletion * remove_old_matches(void);
-private void get_cfn_completion_matches(Callback *cb UNUSED);
+private void get_cfn_completion_matches(Callback* cb);
 private void cpt_compl_refresh(void);
 private void copyGlobalToBookLocalCb(Callback* globcb, Callback* bookCb);
 private void pchar_cursor(int c);
@@ -1362,7 +1362,7 @@ backspace_until_column(int col) {
 // Like del_char(), but make sure not to go before column "limit_col".
 // Only matters when there are composing characters. Return true when something was deleted.
 private int
-del_char_after_col(int limit_col UNUSED) {
+del_char_after_col(int limit_col) {
    if (limit_col >= 0) {
       ColNr ecol = curPor->cursor.col + 1;
 
@@ -3397,7 +3397,7 @@ private CS ctrl_x_mode_names[] = {SMAP((CS),
 )};
 
 // Structure used to store one match for insert completion.
-comptime typedef struct InsertCompletion InsertCompletion;
+typedef struct InsertCompletion InsertCompletion;
 struct InsertCompletion {
    InsertCompletion* next;
    InsertCompletion* prev;
@@ -3523,7 +3523,7 @@ private int compl_selected_item = -1;
 private int* compl_fuzzy_scores;
 
 // Define the structure for completion source (in 'cpt' option) information
-comptime typedef struct CompletionSource {
+typedef struct CompletionSource {
    int   refreshAlways;  // Whether 'refresh:always' is set for func
    int   startCol;       // Start column returned by func
    int   maxMatches;       // Max items to display from this source
@@ -3999,7 +3999,7 @@ addMatchToList(
    int len,
    CS fname,
    Byte** cptext,       // extra text for popup menu or NULL
-   Var* user_data UNUSED,  // "user_data" entry or NULL
+   Var* user_data,  // "user_data" entry or NULL
    Unt cdir,
    Unt flags_arg,
    Boole adup,          // accept duplicate match
@@ -6052,7 +6052,7 @@ set_completion(ColNr startcol, List *list) {
 }
 
 pub void
-f_complete(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_complete(Arr(Var) argvars, Var*) {
    if ((stateG & MODE_INSERT) == 0) {
       emsg(_(e_complete_can_only_be_used_in_insert_mode));
       return;
@@ -6076,7 +6076,7 @@ f_complete_add(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_complete_check(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_complete_check(Arr(Var), Var* returnVar) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
 
@@ -6398,7 +6398,7 @@ comptime enum {
 };
 
 //state information used for getting the next set of insert completion matches.
-comptime typedef struct {
+typedef struct {
    CS e_cpt_copy;      // copy of 'complete'
    CS e_cpt;         // current entry in "e_cpt_copy"
    Book* scannedBook;      // book being scanned
@@ -7233,8 +7233,8 @@ prepare_cpt_compl_funcs(void) {
 
 // Start the timer for the current completion source.
 private void
-compl_source_start_timer(int source_idx UNUSED) {
-   if (compl_autocomplete && cpt_sources_array != NULL) {
+compl_source_start_timer(int source_idx) {
+   if (compl_autocomplete && cpt_sources_array) {
       ELAPSED_INIT(cpt_sources_array[source_idx].matchCollectionStart);
       InsertCompletionime_slice_expired = false;
    }
@@ -8774,7 +8774,7 @@ remove_old_matches(void) {
 //Retrieve completion matches using the callback function "cb" and store the
 //'refresh:always' flag.
 private void
-get_cfn_completion_matches(Callback *cb UNUSED) {
+get_cfn_completion_matches(Callback* cb) {
    int   startcol = cpt_sources_array[cpt_sources_index].startCol;
 
    if (startcol == -2 || startcol == -3)

@@ -94,7 +94,7 @@ private int eeCopyfile(CS from, CS to);
 private int move_lines(Book* frombuf, Book* tobuf);
 private int compare_readdirex_item(const void *p1, const void *p2);
 private int compare_readdir_item(const void *s1, const void *s2);
-private int readdir_core(ArrayList   *gap, int withattr UNUSED, int sort);
+private int readdir_core(ArrayList* gap, int withattr, int sort);
 private Boole recursivelyDeleteDir(CS name);
 private void eeOpentempdir(void);
 private void eeClosetempdir(void);
@@ -1145,7 +1145,7 @@ fail:
 }
 
 pub void
-f_tempname(Var *argvars UNUSED, Var* returnVar) {
+f_tempname(Var*, Var* returnVar) {
    static int   x = 'A';
 
    returnVar->tag = VAR_STRING;
@@ -1261,14 +1261,14 @@ f_writefile(Var* argvars, Var* returnVar){
 
 // "browse(save, title, initdir, default)" function
 pub void
-f_browse(Var *argvars UNUSED, Var* returnVar){
+f_browse(Arr(Var), Var* returnVar){
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
 }
 
 // "browsedir(title, initdir)" function
 pub void
-f_browsedir(Var *argvars UNUSED, Var* returnVar){
+f_browsedir(Arr(Var), Var* returnVar){
    returnVar->string = NULL;
    returnVar->tag = VAR_STRING;
 }
@@ -1671,7 +1671,7 @@ mch_expandpath(OUT ExpandMatch* matches, CS path, Unt flags){
    return unix_expandpath(OUT matches, path, 0, flags, false);
 }
 
-comptime typedef DIR* DirPtr;
+typedef DIR* DirPtr;
 GEN_TYPE_L(DirPtr)
 
 
@@ -2578,7 +2578,7 @@ struct DirSearchStack {
 };
 
 //type for already visited directories or files.
-comptime typedef struct Visited {
+typedef struct Visited {
    struct Visited* next;
 
    // Visited directories are different if the wildcard string are
@@ -2633,7 +2633,7 @@ struct VisitedList {
 //  stopDirs:   array of stop directories for upward search
 //  whatToFind:   FINDFILE_BOTH, FINDFILE_DIR or FINDFILE_FILE
 //  tagFile:   searching for tags file, don't use @suffixesadd
-comptime typedef struct FileSearchCtx {
+typedef struct FileSearchCtx {
    DirSearchStack* stack;
    VisitedList* visitedList;
    VisitedList* dirVisitedList;
@@ -6238,7 +6238,7 @@ msg_add_eol(void){
 }
 
 pub int
-time_differs(FileStat* st, long mtime, long mtime_ns UNUSED){
+time_differs(FileStat* st, long mtime, long mtime_ns){
    return
 #ifdef ST_MTIM_NSEC
    (long)st->ST_MTIM_NSEC != mtime_ns ||
@@ -7033,7 +7033,7 @@ buf_reload(Book* book, int orig_mode, int reload_options){
 }
 
 pub void
-buf_store_time(Book *book, FileStat *st, CS fname UNUSED){
+buf_store_time(Book *book, FileStat *st, CS){
    book->modifiedTime = (long)st->st_mtime;
 #ifdef ST_MTIM_NSEC
    book->modifiedTimeNs = (long)st->ST_MTIM_NSEC;
@@ -7081,8 +7081,8 @@ compare_readdir_item(const void *s1, const void *s2) {
 //If "withattr" is true, retrieve the names and their attributes.
 //If "withattr" is false, retrieve the names only. Return OK for success, FAIL for failure.
 private int
-readdir_core(ArrayList   *gap, int withattr UNUSED, int sort) {
-   int         failed = false;
+readdir_core(ArrayList* gap, int withattr, int sort) {
+   int failed = false;
    ga_init2(gap, sizeof(void *), 20);
 
 #define FREE_ITEM(item)   do { \
@@ -7248,10 +7248,7 @@ eeSettempdir(CS tempdir){
 //The returned pointer is to allocated memory.
 //The returned pointer is NULL if no valid name was found.
 pub CS
-eeTempName(
-   int extra_char UNUSED,  // char to use in the name instead of '?'
-   int keep UNUSED
-) {
+eeTempName(int, int) {
 #ifdef USE_TMPNAM
    Byte itmp[L_tmpnam];   // use tmpnam()
 #else

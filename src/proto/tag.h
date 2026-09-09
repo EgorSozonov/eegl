@@ -1,6 +1,6 @@
 CS did_set_tagfunc(OptionChange *cha);
 void free_tagfunc_option(void);
-int set_ref_in_tagfunc(int copyID UNUSED);
+int set_ref_in_tagfunc(int copyID);
 int do_tag(
    CS tag,      // tag (pattern) to jump to
    Unt type,
@@ -9,7 +9,7 @@ int do_tag(
    Boole verbose   // print "tag not found" message
 );
 void tag_freematch(void);
-void do_tags(Invocation *eap UNUSED);
+void do_tags(Invocation*);
 int find_tags(
    CS pat,         // pattern to search for
    Unt flags,
@@ -29,7 +29,7 @@ int expand_tags(Boole expandTagNames, CS pat, OUT ExpandMatch* matches);
 int get_tags(List* list, CS pat, CS buf_fname);
 void get_tagstack(Portal* wp, Bag* retBag);
 int set_tagstack(Portal *wp, Bag *d, Unt action);
-CS get_cscope_name(Expand* xp UNUSED, int idx);
+CS get_cscope_name(Expand*, int idx);
 void set_context_in_cscope_cmd(Expand* xp, CS arg, CommIndex id);
 void c_cscope(Invocation* invo);
 void c_scscope(Invocation* invo);
@@ -38,4 +38,4 @@ int cs_fgets(CS buf, int size);
 void cs_free_tags(void);
 void cs_print_tags(void);
 void cs_end(void);
-void f_cscope_connection(Var *argvars UNUSED, Var *returnVar UNUSED);
+void f_cscope_connection(Arr(Var) argvars, Var *returnVar);

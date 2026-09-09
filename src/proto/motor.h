@@ -1,7 +1,7 @@
 int highest_patch(void);
 void c_version(Invocation* invo);
 void maybe_intro_message(void);
-void c_intro(Invocation* invo UNUSED);
+void c_intro(Invocation*);
 int libMain(void);
 void init0(void);
 void init1(OUT MainParams* par);

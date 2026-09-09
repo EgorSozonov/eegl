@@ -26,7 +26,7 @@ int grepIsActuallyInternal(CommIndex id);
 void c_elgrep(Invocation* invo);
 void c_grep(Invocation* invo);
 void initInProgressLl();
-void c_make(Invocation* invo UNUSED);
+void c_make(Invocation*);
 int llGetSize(Invocation* invo);
 int llGetValidSize(Invocation* invo);
 int llGetCurrIndex(Invocation* invo);
@@ -70,9 +70,9 @@ void clrallmarks(Book* book);
 CS fm_getname(FileMark* fmark, int lead_len);
 void c_marks(Invocation *invo);
 void c_delmarks(Invocation* invo);
-void c_jumps(Invocation* invo UNUSED);
-void c_clearjumps(Invocation* invo UNUSED);
-void c_changes(Invocation* invo UNUSED);
+void c_jumps(Invocation*);
+void c_clearjumps(Invocation*);
+void c_changes(Invocation*);
 void markAdjust(
    LineNr line1,
    LineNr line2,
@@ -119,7 +119,7 @@ int sign_place(
 void c_sign(Invocation* invo);
 void llGetBookSigns(Book *book, List *l);
 void free_signs(void);
-CS get_sign_name(Expand *xp UNUSED, int idx);
+CS get_sign_name(Expand *, int idx);
 void set_context_in_sign_cmd(Expand* xp, CS arg);
 void f_sign_define(Var *argvars, Var* returnVar);
 void f_sign_getdefined(Var *argvars, Var* returnVar);

@@ -6,7 +6,7 @@
 #include "eegl.h"
 #include <termcap.h>
 
-comptime typedef struct termios TermIos;
+typedef struct termios TermIos;
 
 private CS TC_CURSOR_SHAPES[] = {
    S"\033[2 q", //block cursor
@@ -46,7 +46,7 @@ private int putStr(
    OUT int* bufLen
 );
 private int modifiers2keycode(Unt modifiers, Unt* key, OUT CS string);
-private void handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED);
+private void handle_u7_response(int* arg, CS t, int);
 private int add_key_to_buf(Unt key, OUT CS buffer);
 private int putKeyModifiersIntoTypeBuf(
    Unt key_arg,
@@ -152,14 +152,14 @@ private Unt may_remove_shift_modifier(Unt modifiers, Unt key);
 
 private CS invoke_tgetent(CS , CS );
 
-comptime typedef enum {
+typedef enum {
    STATUS_GET,    // send request when switching to RAW mode
    STATUS_SENT,   // did send request, checking for response
    STATUS_GOT,    // received response
    STATUS_FAIL    // timed out
 } RequestProgress;
 
-comptime typedef struct {
+typedef struct {
    RequestProgress progress;
    Tyme start;   // when request was sent, -1 for never
 } TermRequest;
@@ -228,7 +228,7 @@ private int initial_cursor_blink = false;
 //Each terminfo is a list of TinfoEntry.
 //
 //Entries marked with "guessed" may be wrong.
-comptime typedef struct {
+typedef struct {
    CS value; // value
    Unt c;   // either a KS_xxx code (>= 0), or a K_xxx code.
 } TinfoEntry;
@@ -284,7 +284,7 @@ private int  check_for_codes = false;         // check for key code response
 // Structure and table to store terminal features that can be detected by
 // querying the terminal.  Either by inspecting the termresponse or a more
 // specific request.  Besides this there are:
-comptime typedef struct {
+typedef struct {
    CS name;
    int setByTermResponse;
    int status;
@@ -329,7 +329,7 @@ termInitProps(Boole all) {
 }
 
 pub void
-f_terminalprops(Var* argvars UNUSED, Var* returnVar) {
+f_terminalprops(Var*, Var* returnVar) {
    allocReturnDict(returnVar);
    for (Unt i = 0; i < TPR_COUNT; ++i) {
       Byte value[2] = { term_props[i].status, ZERO };
@@ -1648,7 +1648,7 @@ scroll_region_reset(void) {
 
 // List of terminal codes that are currently recognized.
 
-comptime typedef struct {
+typedef struct {
    Byte name[2];       // termcap name of entry
    CS code;       // terminal code (in allocated memory)
    int len;       // STRLEN(code)
@@ -1974,7 +1974,7 @@ modifiers2keycode(Unt modifiers, Unt* key, OUT CS string) {
 
 // Handle a cursor position report.
 private void
-handle_u7_response(int* arg, CS tp UNUSED, int csi_len UNUSED) {
+handle_u7_response(int* arg, CS t, int) {
    if (arg[0] == 2 && arg[1] >= 2) {
       LOG_TRN("Received U7 status: %s", tp);
       u7_status.progress = STATUS_GOT;
@@ -2958,7 +2958,7 @@ private Byte modifier_keys_table[] = {
 //}}}
 //{{{codes and special chars
 
-comptime typedef struct {
+typedef struct {
    Boole enabled;       // is this entry available?
    int key;          // special key code or ascii value
    Text name;          // name of key
@@ -3155,7 +3155,7 @@ pub CS
 replace_termcodes(
    CS from,
    CS* bufP,
-   ScriptId sid_arg UNUSED,   // script ID to use for <SID>, or 0 to use scriptPosG
+   ScriptId sid_arg,   // script ID to use for <SID>, or 0 to use scriptPosG
    Unt flags,
    OUT Boole* didSimplify,
    Boole recognizeRawKeycodes

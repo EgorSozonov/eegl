@@ -6,7 +6,7 @@ void f_appendbufline(Var *argvars, OUT Var* returnVar);
 void f_bufadd(Var *argvars, OUT Var* returnVar);
 void f_bufexists(Var *argvars, OUT Var* returnVar);
 void f_buflisted(Var *argvars, OUT Var* returnVar);
-void f_bufload(Arr(Var) argvars, OUT Var* returnVar UNUSED);
+void f_bufload(Arr(Var) argvars, OUT Var*);
 void f_bufloaded(Var *argvars, OUT Var* returnVar);
 void f_bufname(Var *argvars, OUT Var* returnVar);
 void f_bufnr(Var *argvars, OUT Var* returnVar);
@@ -139,7 +139,7 @@ int booklistFindPattern(
    CS pattern,
    CS pattern_end,   // pointer to first char after pattern
    int unlisted,   // find unlisted books
-   int diffmode UNUSED, // find diff-mode books only
+   int diffmode, // find diff-mode books only
    int curtab_only  // find books in current tab only
 );
 int bufExpandBufnames(
@@ -238,21 +238,21 @@ void c_last(Invocation* invo);
 void c_argument(Invocation* invo);
 void do_argfile(Invocation* invo, int argn);
 void c_next(Invocation* invo);
-void c_argdedupe(Invocation* invo UNUSED);
+void c_argdedupe(Invocation*);
 void c_argedit(Invocation* invo);
 void c_argadd(Invocation* invo);
 void c_argdelete(Invocation* invo);
-CS get_arglist_name(Expand *xp UNUSED, int idx);
+CS get_arglist_name(Expand*, int idx);
 CS alist_name(ArgFileEntry *afe);
 void c_all(Invocation* invo);
 CS arg_all(void);
 void f_argc(Var* argvars, Var* returnVar);
-void f_argidx(Var *argvars UNUSED, OUT Var* returnVar);
+void f_argidx(Var*, OUT Var* returnVar);
 void f_arglistid(Var *argvars, OUT Var* returnVar);
 void f_argv(Var *argvars, OUT Var* returnVar);
 int findPropTypeIdByName(Text name, Book* book);
 void f_prop_add(Var *argvars, OUT Var* returnVar);
-void f_prop_add_list(Var *argvars, OUT Var* returnVar UNUSED);
+void f_prop_add_list(Var *argvars, OUT Var*);
 int prop_add_common(
    LineNr startLnum,
    ColNr startCol,
@@ -278,13 +278,13 @@ int find_visible_prop(
 );
 void add_text_props(LineNr lnum, TextProp *text_props, int text_prop_count);
 PropType * text_prop_type_by_id(Book* book, int id);
-void f_prop_clear(Var *argvars, OUT Var* returnVar UNUSED);
+void f_prop_clear(Var *argvars, OUT Var*);
 void f_prop_find(Var *argvars, OUT Var* returnVar);
 void f_prop_list(Var *argvars, OUT Var* returnVar);
 void f_prop_remove(Var *argvars, OUT Var* returnVar);
-void f_prop_type_add(Var *argvars, OUT Var* returnVar UNUSED);
-void f_prop_type_change(Var *argvars, OUT Var* returnVar UNUSED);
-void f_prop_type_delete(Var *argvars, OUT Var* returnVar UNUSED);
+void f_prop_type_add(Var *argvars, OUT Var*);
+void f_prop_type_change(Var *argvars, OUT Var*);
+void f_prop_type_delete(Var *argvars, OUT Var*);
 void f_prop_type_get(Var *argvars, OUT Var* returnVar);
 void f_prop_type_list(Var *argvars, OUT Var* returnVar);
 void clear_global_prop_types(void);

@@ -72,7 +72,7 @@ private struct RegProg {
 
 // Since the out pointers in the list are always uninitialized, we use the pointers themselves
 // as storage for the StateLists.
-comptime typedef union StateList StateList;
+typedef union StateList StateList;
 union StateList {
    StateList* next;
    RState* s;
@@ -80,7 +80,7 @@ union StateList {
 
 
 // A partially built NFA without the matching state filled in.
-comptime typedef struct {
+typedef struct {
    RState *start; // points at the start state.
    StateList   *out; // a list of places that need to be set to the next state for this fragment.
 } Frag;
@@ -336,7 +336,7 @@ private Unt   nextchr;   // used for ungetchr() ???
 #define REG_ZPAREN   2   // \z(\)
 #define REG_NPAREN   3   // \%(\)
 
-comptime typedef struct {
+typedef struct {
    Byte* regparse;
    int prevchr_len;
    int curchr;
@@ -410,7 +410,7 @@ private int cstrncmp(Byte *s1, Byte *s2, int *n);
 private Byte * cstrchr(Byte *s, int c);
 private void do_upper(int *d, int c);
 private void do_lower(int *d, int c);
-private int fill_submatch_list(int argc UNUSED, Var *argv, int argskip, UserFunc *fp);
+private int fill_submatch_list(int, Var *argv, int argskip, UserFunc *fp);
 private void clear_submatch_list(StaticList10 *sl);
 private int eeRegsub_both(
    CS source,
@@ -445,7 +445,7 @@ private Frag frag(RState* start, StateList* out);
 private StateList * list1(RState** outp);
 private void patch(StateList* l, RState* s);
 private StateList * concat(StateList* l1, StateList* l2);
-private void st_error(Unt *postfix UNUSED, Unt* end UNUSED, Unt* p UNUSED);
+private void st_error(Unt *postfix, Unt* end, Unt* p);
 private void addFrag(Frag s, Frag** fr, Frag* sentinel);
 private Frag removeLastFrag(Frag** p, Frag* stack);
 private int nfa_max_width(RState* startstate, int depth);
@@ -530,7 +530,7 @@ private int match(
 private long parseBranchtry(
    RegProg* prog,
    ColNr col,
-   int* timed_out UNUSED   // flag set on timeout or NULL
+   int* timed_out // flag set on timeout or NULL
 );
 private long parseBranchexec_both(
    Byte   *line,
@@ -1172,7 +1172,7 @@ private Unt reg_tofreelen;
 //reg_firstlnum   <invalid>   first line in which to search
 //reg_maxline      0          last line nr
 //reg_line_lbr false or true  false
-comptime typedef struct {
+typedef struct {
    RegMatch* match;
    RegMultilineMatch* multiMatch;
 
@@ -1236,7 +1236,7 @@ private int can_f_submatch = false;   // true when submatch() can be used
 // This struct is used for reg_submatch(). Needed for when the
 // substitution string is an expression that contains a call to substitute()
 // and submatch().
-comptime typedef struct {
+typedef struct {
    RegMatch   *sm_match;
    RegMultilineMatch   *sm_mmatch;
    LineNr   sm_firstlnum;
@@ -1246,7 +1246,7 @@ comptime typedef struct {
 
 private regsubMatch rsm;  // can only be used when can_f_submatch is true
 
-comptime typedef enum {
+typedef enum {
     RGLF_LINE = 0x01,
     RGLF_LENGTH = 0x02,
     RGLF_SUBMATCH = 0x04
@@ -1554,7 +1554,7 @@ re_mult_next(CS what) {
    return OK;
 }
 
-comptime typedef struct {
+typedef struct {
    int a, b, c;
 } decomp_T;
 
@@ -1584,21 +1584,21 @@ private decomp_T decomp_table[0xfb4f-0xfb20+1] = {
     {0x5d4, 0x5bc, 0},      // 0xfb34   he+dagesh
     {0x5d5, 0x5bc, 0},      // 0xfb35   vav+dagesh
     {0x5d6, 0x5bc, 0},      // 0xfb36   zayin+dagesh
-    {0xfb37, 0, 0},      // 0xfb37 -- UNUSED
+    {0xfb37, 0, 0},      // 0xfb37 -- NOT USED
     {0x5d8, 0x5bc, 0},      // 0xfb38   tet+dagesh
     {0x5d9, 0x5bc, 0},      // 0xfb39   yud+dagesh
     {0x5da, 0x5bc, 0},      // 0xfb3a   kaf sofit+dagesh
     {0x5db, 0x5bc, 0},      // 0xfb3b   kaf+dagesh
     {0x5dc, 0x5bc, 0},      // 0xfb3c   lamed+dagesh
-    {0xfb3d, 0, 0},      // 0xfb3d -- UNUSED
+    {0xfb3d, 0, 0},      // 0xfb3d -- NOT USED
     {0x5de, 0x5bc, 0},      // 0xfb3e   mem+dagesh
-    {0xfb3f, 0, 0},      // 0xfb3f -- UNUSED
+    {0xfb3f, 0, 0},      // 0xfb3f -- NOT USED
     {0x5e0, 0x5bc, 0},      // 0xfb40   nun+dagesh
     {0x5e1, 0x5bc, 0},      // 0xfb41   samech+dagesh
-    {0xfb42, 0, 0},      // 0xfb42 -- UNUSED
+    {0xfb42, 0, 0},      // 0xfb42 -- NOT USED
     {0x5e3, 0x5bc, 0},      // 0xfb43   pe sofit+dagesh
     {0x5e4, 0x5bc,0},      // 0xfb44   pe+dagesh
-    {0xfb45, 0, 0},      // 0xfb45 -- UNUSED
+    {0xfb45, 0, 0},      // 0xfb45 -- NOT USED
     {0x5e6, 0x5bc, 0},      // 0xfb46   tsadi+dagesh
     {0x5e7, 0x5bc, 0},      // 0xfb47   qof+dagesh
     {0x5e8, 0x5bc, 0},      // 0xfb48   resh+dagesh
@@ -1741,7 +1741,7 @@ cstrchr(Byte *s, int c) {
 //}}}
 //{{{substitutions
 
-comptime typedef void (*AllOrOne)(int *, int);
+typedef void (*AllOrOne)(int *, int);
 
 private int eeRegsub_both(Byte *source, Var *expr, Byte *dest, int destlen, Unt flags);
 
@@ -1852,7 +1852,7 @@ regtilde(CS source) {
 // Put the submatches in "argv[argskip]" which is a list passed into
 // call_func() by eeRegsub_both().
 private int
-fill_submatch_list(int argc UNUSED, Var *argv, int argskip, UserFunc *fp) {
+fill_submatch_list(int, Var *argv, int argskip, UserFunc *fp) {
    ListItem   *li;
    int      i;
    Byte   *s;
@@ -2755,7 +2755,7 @@ private int countStatesS;   // Number of states in the NFA.
 private int stateS;   // Index in the state vector, used in alloc_state()
 
 // struct to save start/end pointer/position in for \(\)
-comptime typedef struct{
+typedef struct{
    union {
       Byte   *ptr;
       PosNoVirt   pos;
@@ -5248,7 +5248,7 @@ concat(StateList* l1, StateList* l2) {
 private Frag empty;
 
 private void
-st_error(Unt *postfix UNUSED, Unt* end UNUSED, Unt* p UNUSED) {
+st_error(Unt *postfix, Unt* end, Unt* p) {
 #ifdef REGEXP_ERROR_LOG
    int *p2;
 
@@ -6053,7 +6053,7 @@ addOptimizationHints(RegProg* prog) {
 // NFA execution code.
 /////////////////////////////////////////////////////////////////
 
-comptime typedef struct {
+typedef struct {
    int in_use; // number of subexpr with useful info
 
    // When REG_MULTI is true list.multi is used, otherwise list.line.
@@ -6072,13 +6072,13 @@ comptime typedef struct {
    ColNr   orig_start_col;  // list.multi[0].start_col without \zs
 } Submatch;
 
-comptime typedef struct {
+typedef struct {
    Submatch norm; // \( .. \) matches
    Submatch synt; // \z( .. \) matches
 } Submatches;
 
 // PostponedMatch stores a Postponed Invisible Match.
-comptime typedef struct {
+typedef struct {
    int      result;      // PIM_*, see below
    RState   *state;      // the invisible match start state
    Submatches   subs;      // submatch info, only party used
@@ -6096,7 +6096,7 @@ comptime typedef struct {
 
 
 // nfa_thread_T contains execution information of a NFA state
-comptime typedef struct {
+typedef struct {
    RState   *state;
    int      count;
    PostponedMatch   pim;      // if pim.result != PIM_UNUSED: postponed invisible match
@@ -6104,7 +6104,7 @@ comptime typedef struct {
 } nfa_thread_T;
 
 // nfa_List contains the alternative NFA execution states.
-comptime typedef struct {
+typedef struct {
    nfa_thread_T    *t;      // allocated array of states
    int          n;      // nr of states currently in "t"
    int          len;   // max nr of states in "t"
@@ -7811,13 +7811,13 @@ match(
              failure_chance(t->state->out, 0),
              failure_chance(t->state->out1->out, 0));
 #endif
-         // Do it directly if there already is a PIM or when
-         // addOptimizationHints() detected it will work better.
+         //Do it directly if there already is a PIM or when
+         //addOptimizationHints() detected it will work better.
          if (t->pim.result != PIM_UNUSED
-         || t->state->c == START_INVISIBLE_FIRST
-         || t->state->c == START_INVISIBLE_NEG_FIRST
-         || t->state->c == START_INVISIBLE_BEFORE_FIRST
-         || t->state->c == START_INVISIBLE_BEFORE_NEG_FIRST
+            || t->state->c == START_INVISIBLE_FIRST
+            || t->state->c == START_INVISIBLE_NEG_FIRST
+            || t->state->c == START_INVISIBLE_BEFORE_FIRST
+            || t->state->c == START_INVISIBLE_BEFORE_NEG_FIRST
          ) {
             int in_use = m->norm.in_use;
 
@@ -8844,7 +8844,7 @@ private long
 parseBranchtry(
    RegProg* prog,
    ColNr col,
-   int* timed_out UNUSED   // flag set on timeout or NULL
+   int* timed_out // flag set on timeout or NULL
 ){
    int i;
    Submatches   subs, m;

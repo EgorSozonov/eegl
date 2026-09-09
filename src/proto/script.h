@@ -3,9 +3,9 @@ Estack * estack_push(CallFrame type, CS name, long lnum);
 Estack* estack_push_ufunc(UserFunc *ufunc, long lnum);
 int estack_top_is_ufunc(UserFunc *ufunc, long lnum);
 Estack* estack_pop(void);
-CS estack_sfile(EstackArg which UNUSED);
+CS estack_sfile(EstackArg which);
 List * stacktrace_create(void);
-void f_getstacktrace(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_getstacktrace(Arr(Var), Var* returnVar);
 void c_runtime(Invocation* invo);
 void set_context_in_runtime_cmd(Expand *xp, CS arg);
 int find_script_by_name(Byte *name);
@@ -39,7 +39,7 @@ int expandRuntimeDir(
    OUT ExpandMatch* matches
 );
 void c_source(Invocation* invo);
-void c_options(Invocation   *invo UNUSED);
+void c_options(Invocation*);
 LineNr * source_breakpoint(void *cookie);
 int * source_dbg_tick(void *cookie);
 int source_level(void *cookie);
@@ -53,9 +53,9 @@ void free_autoload_scriptnames(void);
 LineNr get_sourced_lnum(LineGetter fgetline, void *cookie);
 void f_getscriptinfo(Arr(Var) argvars, Var* returnVar);
 CS scrGetSourceLine(
-   Unt c UNUSED,
+   Unt,
    void* cookie,
-   int indent UNUSED,
+   int,
    GetlineAlgo options
 );
 int sourcing_a_script(Invocation* invo);
@@ -78,7 +78,7 @@ void c_breakadd(Invocation* invo);
 void c_debuggreedy(Invocation* invo);
 int debug_has_expr_breakpoint(void);
 void c_breakdel(Invocation* invo);
-void c_breaklist(Invocation* invo UNUSED);
+void c_breaklist(Invocation*);
 LineNr dbg_find_breakpoint(
    int      file,       // true for a file, false for a function
    Byte   *fname,       // file or function name
@@ -94,7 +94,7 @@ void expandEscape(
 );
 void cmdline_pum_display(void);
 int cmdline_pum_active(void);
-void cmdline_pum_remove(CommlineInfo *cclp UNUSED, int defer_redraw);
+void cmdline_pum_remove(CommlineInfo *cclp, int defer_redraw);
 void cmdline_pum_cleanup(CommlineInfo *cclp);
 int cmdline_compl_startcol(void);
 CS cmdline_compl_pattern(void);
@@ -139,17 +139,17 @@ int expandGeneric(
    OUT ExpandMatch* matches
 );
 int wildmenu_process_key(CommlineInfo *cclp, Unt key, Expand *xp);
-void wildmenu_cleanup(CommlineInfo *cclp UNUSED);
+void wildmenu_cleanup(CommlineInfo* cclp);
 void f_getcompletion(Arr(Var) argvars, Var* returnVar);
 void f_getcompletiontype(Arr(Var) argvars, Var* returnVar);
-void f_cmdcomplete_info(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_cmdcomplete_info(Arr(Var) argvars, Var* returnVar);
 int getHistLen(void);
 Arr(HistoryEntry) get_histentry(int hist_type);
 void set_histentry(int hist_type, HistoryEntry* entry);
 int * get_hisidx(int hist_type);
 int * get_hisnum(int hist_type);
 int hist_char2type(int c);
-CS get_history_arg(Expand *xp UNUSED, int idx);
+CS get_history_arg(Expand *xp, int idx);
 void init_history(void);
 void clear_hist_entry(HistoryEntry *hisptr);
 int in_history(
@@ -165,10 +165,10 @@ void scrAddToHistory(
    int in_map,      // consider maptick when inside a mapping
    int sep      // separator character used (search hist)
 );
-void f_histadd(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_histdel(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-void f_histget(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_histnr(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_histadd(Arr(Var) argvars, Var* returnVar);
+void f_histdel(Arr(Var) argvars, Var* returnVar);
+void f_histget(Arr(Var) argvars, Var* returnVar);
+void f_histnr(Arr(Var) argvars, Var* returnVar);
 void remove_key_from_history(void);
 void c_history(Invocation* invo);
 int parse_pattern_and_range(
@@ -182,7 +182,7 @@ CS getCommline(
    Unt firstc,
    long count,   // only used for incremental search
    int indent,   // indent for inside conditionals
-   GetlineAlgo do_concat UNUSED
+   GetlineAlgo
 );
 Arr(Byte) getcmdline_prompt(
    Unt      firstc,
@@ -200,7 +200,7 @@ int curBookLocked(void);
 int allbuf_locked(void);
 CS scrGetTypedCommand(
    Unt  c,      // normally ':', NUL for ":append"
-   void* cookie UNUSED,
+   void*,
    int indent,      // indent for inside conditionals
    GetlineAlgo options
 );
@@ -223,26 +223,26 @@ CS copyStr_fnameescape(CS fname, Unt what);
 void escape_fname(Byte **pp);
 void tilde_replace(CS orig_pat, ExpandMatch* files);
 CommlineInfo * getCommlineInfo(void);
-void f_getcmdcomplpat(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_getcmdcompltype(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_getCommline(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_getcmdpos(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_getcmdprompt(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_getcmdscreenpos(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_getcmdtype(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_getcmdcomplpat(Arr(Var), Var* returnVar);
+void f_getcmdcompltype(Arr(Var), Var* returnVar);
+void f_getCommline(Arr(Var), Var* returnVar);
+void f_getcmdpos(Arr(Var), Var* returnVar);
+void f_getcmdprompt(Arr(Var), Var* returnVar);
+void f_getcmdscreenpos(Arr(Var), Var* returnVar);
+void f_getcmdtype(Arr(Var), Var* returnVar);
 void f_setcmdline(Arr(Var) argvars, Var* returnVar);
 void f_setcmdpos(Arr(Var) argvars, Var* returnVar);
 int get_cmdline_firstc(void);
 int get_list_range(Byte **str, int *num1, int *num2);
 int inCommPort(void);
-CS script_get(Invocation* invo, Byte *comm UNUSED);
+CS script_get(Invocation* invo, Byte* comm);
 void get_user_input(
     Var   *argvars,
     Var   *returnVar,
     int      inputdialog,
     int      secret
 );
-void f_wildtrigger(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
+void f_wildtrigger(Arr(Var), Var*);
 CS find_ucmd(
    Invocation   *invo,
    Byte   *p,    // end of the command (possibly including count)
@@ -252,7 +252,7 @@ CS find_ucmd(
 );
 CS set_context_in_user_cmd(Expand *xp, CS arg_in);
 CS set_context_in_user_cmdarg(
-   CS comm UNUSED,
+   CS,
    CS arg,
    long argFlags,
    Unt context,
@@ -260,12 +260,12 @@ CS set_context_in_user_cmdarg(
    Boole forceit
 );
 CS expand_user_command_name(int idx);
-CS get_user_commands(Expand* xp UNUSED, int idx);
+CS get_user_commands(Expand*, int idx);
 CS get_user_command_name(int idx, int id);
-CS get_user_cmd_addr_type(Expand *xp UNUSED, int idx);
-CS get_user_cmd_flags(Expand *xp UNUSED, int idx);
-CS get_user_cmd_nargs(Expand *xp UNUSED, int idx);
-CS get_user_cmd_complete(Expand *xp UNUSED, int idx);
+CS get_user_cmd_addr_type(Expand *, int idx);
+CS get_user_cmd_flags(Expand *, int idx);
+CS get_user_cmd_nargs(Expand *, int idx);
+CS get_user_cmd_complete(Expand *, int idx);
 CS cmdcomplete_type_to_str(int expand, CS compl_arg);
 int cmdcomplete_str_to_type(Byte *complete_str);
 CS uc_fun_cmd(void);
@@ -277,7 +277,7 @@ int parse_compl_arg(
    OUT CS* compl_arg
 );
 void c_command(Invocation* invo);
-void c_comclear(Invocation* invo UNUSED);
+void c_comclear(Invocation*);
 void uc_clear(ArrayList *gap);
 void c_delcommand(Invocation* invo);
 Unt add_win_cmd_modifiers(CS builder, CommandModifier* cmod, int* multi_mods);
@@ -503,10 +503,10 @@ int has_modechanged(void);
 void block_autocmds(void);
 void unblock_autocmds(void);
 int areAutocommsBlocked(void);
-CS getnextac(Unt c UNUSED, void* cookie, int indent UNUSED, GetlineAlgo options UNUSED);
+CS getnextac(Unt, void* cookie, int, GetlineAlgo);
 int has_autocmd(AutoEvent event, CS sfname, Book* book);
-CS get_event_name(Expand* xp UNUSED, int idx);
-CS get_event_name_no_group(Expand* xp UNUSED, int idx, int win);
+CS get_event_name(Expand*, int idx);
+CS get_event_name_no_group(Expand*, int idx, int win);
 int has_tabclosedpre(void);
 int autocmd_supported(CS name);
 int au_exists(CS arg);

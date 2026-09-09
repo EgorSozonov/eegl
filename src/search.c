@@ -5,7 +5,7 @@
 
 #include "eegl.h"
 
-comptime typedef struct searchstat {
+typedef struct searchstat {
    int cur;        // current position of found words
    int cnt;        // total count of found words
    int exact_match;// true if matched exactly on specified position
@@ -157,7 +157,7 @@ private Boole saved_spatsHlsearch = true;
 private Text mrPatternP = (Text){.c = null, .len = 0};
 
 // Type used by find_pattern_in_path() to remember which included files have been searched already
-comptime typedef struct {
+typedef struct {
    FILE* fp;     //File pointer
    CS name;      //Full name of file
    LineNr lnum;  //Line we were up to in file
@@ -2367,17 +2367,17 @@ get_line_and_copy(LineNr lnum, CS buf) {
 pub void
 find_pattern_in_path(
    CS ptr,      // pointer to search pattern
-   int      dir UNUSED,   // direction of expansion
-   int      len,      // length of search pattern
-   int      whole,      // match whole words only
-   int      skip_comments,   // don't match inside comments
-   int      type,      // Type of search; are we looking for a type? a macro?
-   long   count,
-   int      action,      // What to do when we find it
-   LineNr   start_lnum,   // first line to start searching
-   LineNr   end_lnum,   // last line for searching
-   int      forceit,   // If true, always switch to the found path
-   int      silent      // Do not print messages when ACTION_EXPAND
+   Unt dir,   // direction of expansion
+   int len,      // length of search pattern
+   int whole,      // match whole words only
+   int skip_comments,   // don't match inside comments
+   int type,      // Type of search; are we looking for a type? a macro?
+   Long count,
+   int action,      // What to do when we find it
+   LineNr start_lnum,   // first line to start searching
+   LineNr end_lnum,   // last line for searching
+   int forceit,   // If true, always switch to the found path
+   int silent      // Do not print messages when ACTION_EXPAND
 ){
    SearchedFile* bigger;      // When we need more space
    int      max_path_depth = 50;
@@ -3779,14 +3779,14 @@ matchadd_dict_arg(Var* tv, OUT Portal** port) {
 }
 
 pub void
-f_clearmatches(Var* argvars, Var* returnVar UNUSED) {
+f_clearmatches(Var* argvars, Var*) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (port)
       clear_matches(port);
 }
 
 pub void
-f_getmatches(Var *argvars, Var* returnVar UNUSED) {
+f_getmatches(Var *argvars, Var* returnVar) {
    Portal* port = getOptionalPortal(argvars, 0);
    if (!port)
       return;
@@ -3999,7 +3999,7 @@ f_matcharg(Var* argvars, Var* returnVar) {
 }
 
 pub void
-f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED) {
+f_matchdelete(Var *argvars, Var* returnVar) {
    Portal* port = getOptionalPortal(argvars, 1);
    if (!port)
       returnVar->number = -1;
@@ -4220,7 +4220,7 @@ erret:
 
 // ":helpclose": Close one help portal
 pub void
-c_helpclose(Invocation* invo UNUSED) {
+c_helpclose(Invocation*) {
    Portal *port;
 
    FOR_ALL_PORTALS(port) {
@@ -4760,13 +4760,13 @@ searchFixHelpBook(void) {
 
 // ":exusage"
 pub void
-c_exusage(Invocation* invo UNUSED) {
+c_exusage(Invocation*) {
    executeCommLine(S"help ex-cmd-index");
 }
 
 // ":usage"
 pub void
-c_usage(Invocation* invo UNUSED) {
+c_usage(Invocation*) {
    executeCommLine(S"help normal-index");
 }
 

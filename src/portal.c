@@ -17,7 +17,7 @@ private void cmd_with_count(
    long   prenum)
 ;
 private int check_split_disallowed(Portal* po);
-private void init(Portal* newp, Portal* oldp, Unt flags UNUSED);
+private void init(Portal* newp, Portal* oldp, Unt);
 private void initg_some(Portal* newp, Portal* oldp);
 private Boole portalValidPopup(Portal* port);
 private void exchangePortal(long prenum);
@@ -178,7 +178,7 @@ private Arr(Decoration) computeTextDeco(CS text, Short hiId, Decoration userDeco
 private void pum_drawText_withDecos(
    int row,
    int col,
-   int cells UNUSED,
+   int,
    CS text,
    int textlen,
    Arr(Decoration) decos)
@@ -211,7 +211,7 @@ private int drawMenuItem(
 );
 private void pum_draw_scrollbar(int row, int i, int thumb_pos, int thumb_height);
 private void pum_position_info_popup(Portal* po);
-private int pum_set_selected(int n, int repeat UNUSED);
+private int pum_set_selected(int n, int repeat);
 private int pum_in_same_position(void);
 private void pum_position_at_mouse(int min_width);
 private int can_use_beval(void);
@@ -1497,7 +1497,7 @@ theend:
 //new tab. The portals will both edit the same book. WSP_NEWLOC may be specified in flags to 
 //prevent the location list from being copied.
 private void
-init(Portal* newp, Portal* oldp, Unt flags UNUSED) {
+init(Portal* newp, Portal* oldp, Unt) {
    newp->book = oldp->book;
    newp->ownSyntax = &(oldp->book->syntax);
    oldp->book->countPortals++;
@@ -6669,7 +6669,7 @@ f_getwininfo(Arr(Var) argvars, Var* returnVar) {
 
 // "getwinpos({timeout})" function
 pub void
-f_getwinpos(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getwinpos(Arr(Var) argvars, Var* returnVar) {
    int x = -1;
    int y = -1;
 
@@ -6687,7 +6687,7 @@ f_getwinpos(Arr(Var) argvars UNUSED, Var* returnVar) {
 
 
 pub void
-f_getwinposx(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getwinposx(Arr(Var), Var* returnVar) {
    returnVar->number = -1;
    int       x, y;
 
@@ -6696,7 +6696,7 @@ f_getwinposx(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 pub void
-f_getwinposy(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
+f_getwinposy(Arr(Var), OUT Var* returnVar) {
    returnVar->number = -1;
    int       x, y;
    if (uiGetPortPos(&x, &y, 100) == OK)
@@ -6704,12 +6704,11 @@ f_getwinposy(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
 }
 
 pub void
-f_tabpagenr(Arr(Var) argvars UNUSED, Var* returnVar) {
-   int      nr = 1;
-   CS arg;
+f_tabpagenr(Arr(Var) argvars, Var* returnVar) {
+   int nr = 1;
 
    if (argvars[0].tag != VAR_UNKNOWN) {
-      arg = convertVarToStringSingleUse(&argvars[0]);
+      CS arg = convertVarToStringSingleUse(&argvars[0]);
       nr = 0;
       if (arg) {
          if (STRCMP(arg, "$") == 0)
@@ -6725,7 +6724,7 @@ f_tabpagenr(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 pub void
-f_tabpagewinnr(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_tabpagewinnr(Arr(Var) argvars, Var* returnVar) {
    Tab* t = getTab((int)tv_get_number(&argvars[0]));
    returnVar->number = t ? getPortalIdInTab(t, &argvars[1]) : 0;
 }
@@ -6959,7 +6958,7 @@ f_win_gettype(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_getcmdwintype(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcmdwintype(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
    returnVar->string = alloc(2);
@@ -6976,7 +6975,7 @@ f_winbufnr(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_wincol(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_wincol(Arr(Var), Var* returnVar) {
    validate_cursor();
    returnVar->number = curPor->cursorCol + 1;
 }
@@ -7004,19 +7003,19 @@ f_winlayout(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_winline(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_winline(Arr(Var), Var* returnVar) {
    validate_cursor();
    returnVar->number = curPor->cursorRow + 1;
 }
 
 pub void
-f_winnr(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_winnr(Arr(Var) argvars, Var* returnVar) {
    int nr = getPortalIdInTab(curtab, &argvars[0]);
    returnVar->number = nr;
 }
 
 pub void
-f_winrestcmd(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_winrestcmd(Arr(Var), Var* returnVar) {
    Portal* po;
    Byte buf[50];
 
@@ -7041,7 +7040,7 @@ f_winrestcmd(Arr(Var) argvars UNUSED, Var* returnVar) {
 }
 
 pub void
-f_winrestview(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_winrestview(Arr(Var) argvars, Var*) {
    if (check_for_nonnull_dict_arg(argvars, 0) == FAIL)
       return;
 
@@ -7079,7 +7078,7 @@ f_winrestview(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_winsaveview(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_winsaveview(Arr(Var), Var* returnVar) {
    allocReturnDict(returnVar);
       
    Bag* dict = returnVar->bag;
@@ -7204,7 +7203,7 @@ private Tab* popupMaskTabS INIT(= NULL);
 #define POPF_INFO_MENU  0x400   // align info popup with popup menu
 #define POPF_POSINVERT  0x800   // vertical position can be inverted
 
-comptime typedef struct {
+typedef struct {
    CS pp_name;
    PopupPosition pp_val;
 } PopposEntry;
@@ -9062,7 +9061,7 @@ createPopup(Arr(Var) argvars, OUT Var* returnVar, PopupKind kind) {
 
 //popup_clear()
 pub void
-f_popup_clear(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_popup_clear(Arr(Var) argvars, Var*) {
    int force = false;
 
    if (argvars[0].tag != VAR_UNKNOWN)
@@ -9365,11 +9364,10 @@ findPopupPortal(int id) {
 
 // popup_close({id})
 pub void
-f_popup_close(Arr(Var) argvars, Var* returnVar UNUSED) {
-   int      id;
-   Portal   *po;
+f_popup_close(Arr(Var) argvars, Var*) {
+   Portal* po;
 
-   id = (int)tv_get_number(argvars);
+   int id = (int)tv_get_number(argvars);
    if (curBook->term == NULL && portErrorIfPopup(true))
       // if the popup contains a terminal, it will become hidden
       return;
@@ -9394,7 +9392,7 @@ popup_hide(Portal* po) {
 
 // popup_hide({id})
 pub void
-f_popup_hide(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_popup_hide(Arr(Var) argvars, Var*) {
    int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (!po)
@@ -9416,7 +9414,7 @@ popup_show(Portal* po) {
 
 //popup_show({id})
 pub void
-f_popup_show(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_popup_show(Arr(Var) argvars, Var*) {
    int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (!po)
@@ -9430,7 +9428,7 @@ f_popup_show(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 //popup_settext({id}, {text})
 pub void
-f_popup_settext(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_popup_settext(Arr(Var) argvars, Var*) {
    int id = (int)tv_get_number(&argvars[0]);
    Portal* po = findPopupPortal(id);
    if (!po || check_for_string_or_list_arg(argvars, 1) == FAIL)
@@ -9443,7 +9441,7 @@ f_popup_settext(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 //popup_setbuf({id}, {bufnr})
 pub void
-f_popup_setbuf(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_popup_setbuf(Arr(Var) argvars, Var* returnVar) {
    returnVar->tag = VAR_BOOL;
    returnVar->number = VVAL_FALSE;
 
@@ -9585,10 +9583,8 @@ close_all_popups(int force) {
 
 // popup_move({id}, {options})
 pub void
-f_popup_move(Arr(Var) argvars, Var* returnVar UNUSED) {
-   int      id;
-
-   id = (int)tv_get_number(argvars);
+f_popup_move(Arr(Var) argvars, Var*) {
+   int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (po == NULL)
       return;  // invalid {id}
@@ -9606,7 +9602,7 @@ f_popup_move(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 // popup_setoptions({id}, {options})
 pub void
-f_popup_setoptions(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_popup_setoptions(Arr(Var) argvars, Var*) {
    int id = (int)tv_get_number(argvars);
    Portal* po = findPopupPortal(id);
    if (!po)
@@ -9663,7 +9659,7 @@ f_popup_getpos(Arr(Var) argvars, Var* returnVar) {
 
 // popup_list()
 pub void
-f_popup_list(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
+f_popup_list(Arr(Var), OUT Var* returnVar) {
    allocReturnList(returnVar);
       
    Portal   *po;
@@ -10753,18 +10749,18 @@ popupFindInfoPortal(void) {
 }
 
 pub void
-f_popup_findecho(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
+f_popup_findecho(Arr(Var), OUT Var* returnVar) {
    returnVar->number = messagePortP ? messagePortP->id : 0;
 }
 
 pub void
-f_popup_findinfo(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
+f_popup_findinfo(Arr(Var), OUT Var* returnVar) {
    Portal* po = popupFindInfoPortal();
    returnVar->number = po == NULL ? 0 : po->id;
 }
 
 pub void
-f_popup_findpreview(Arr(Var) argvars UNUSED, OUT Var* returnVar) {
+f_popup_findpreview(Arr(Var), OUT Var* returnVar) {
    Portal* po = popupFindPreviewPortal();
    returnVar->number = po? po->id : 0;
 }
@@ -11361,7 +11357,7 @@ private void
 pum_drawText_withDecos(
    int row,
    int col,
-   int cells UNUSED,
+   int,
    CS text,
    int textlen,
    Arr(Decoration) decos)
@@ -11719,7 +11715,7 @@ pum_position_info_popup(Portal* po) {
 //"repeat" == 2: don't open preview portal
 //Return true when the window was resized and the location of the popup menu must be recomputed.
 private int
-pum_set_selected(int n, int repeat UNUSED) {
+pum_set_selected(int n, int repeat) {
    int resized = false;
    int context = pum_height / 2;
    int scroll_offset;
@@ -12070,7 +12066,7 @@ private Unt balloonArraySizeS;
 # define BALLOON_MIN_WIDTH 50
 # define BALLOON_MIN_HEIGHT 10
 
-comptime typedef struct {
+typedef struct {
    CS start;
    int bytelen;
    int cells;
@@ -12393,7 +12389,7 @@ get_beval_info(
 
 // Show a balloon with "mesg" or "list". Hide the balloon when both are NULL.
 pub void
-post_balloon(BalloonEval* beval UNUSED, CS mesg, List* list) {
+post_balloon(BalloonEval*, CS mesg, List* list) {
    ui_post_balloon(mesg, list);
 }
 
@@ -12475,12 +12471,8 @@ bexpr_eval(
 
 // Common code, invoked when the cursor is resting for a moment.
 pub void
-general_beval_cb(BalloonEval* beval, int state UNUSED) {
-   Portal   *po;
-   int      col;
-   LineNr   lnum;
-   CS text;
-   CS bexpr;
+general_beval_cb(BalloonEval* beval, int) {
+   int col;
    static Boole recursive = false;
 
    // Don't do anything when 'ballooneval' is off, messages scrolled the
@@ -12494,8 +12486,11 @@ general_beval_cb(BalloonEval* beval, int state UNUSED) {
       return;
    recursive = true;
 
+   CS text;
+   LineNr lnum;
+   Portal* po;
    if (get_beval_info(beval, true, &po, &lnum, &text, &col) == OK) {
-      bexpr = po->book->o.balloonExpr;
+      CS bexpr = po->book->o.balloonExpr;
       if (*bexpr != ZERO) {
          bexpr_eval(beval, bexpr, po, lnum, col, text);
          recursive = false;

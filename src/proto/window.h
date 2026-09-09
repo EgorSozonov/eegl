@@ -64,13 +64,13 @@ void write_reg_contents(
    int must_append)
 ;
 void write_reg_contents_lst(
-   int      name,
-   Byte   **strings,
-   int      maxlen UNUSED,
-   int      must_append,
-   int      yank_type,
-   long   block_len)
-;
+   int name,
+   Byte** strings,
+   int,
+   int must_append,
+   int yank_type,
+   long block_len
+);
 void write_reg_contents_ex(
    int name,
    CS str,

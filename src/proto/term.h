@@ -1,6 +1,6 @@
 extern char *UP, *BC, PC;
 void termInitProps(Boole all);
-void f_terminalprops(Var* argvars UNUSED, Var* returnVar);
+void f_terminalprops(Var*, Var* returnVar);
 int set_termname(CS termName);
 void free_cur_term(void);
 void getlinecol(Arr(long) cols, Arr(long) rows);
@@ -68,7 +68,7 @@ CS get_key_name(int i);
 CS replace_termcodes(
    CS from,
    CS* bufP,
-   ScriptId sid_arg UNUSED,   // script ID to use for <SID>, or 0 to use scriptPosG
+   ScriptId sid_arg,   // script ID to use for <SID>, or 0 to use scriptPosG
    Unt flags,
    OUT Boole* didSimplify,
    Boole recognizeRawKeycodes

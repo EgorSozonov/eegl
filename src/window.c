@@ -20,25 +20,27 @@ int stat(const char* restrict path, struct stat* restrict buf);
 #endif
 
 // Struct that represents a seat. (Should be accessed via vwl_get_seat()).
-comptime typedef struct {
+typedef struct {
    struct wl_seat* proxy;
    char* label;      // Name of seat as text (e.g. seat0, seat1...).
    Unt capabilities;  // Bitmask of the capabilites of the seat (pointer, keyboard, touch)
 } WaylandSeat;
 
+typedef struct xdg_wm_base XdgWmBase;
+
 // Global objects
-comptime typedef struct {
+typedef struct {
    // Data control protocols
    struct ext_data_control_manager_v1* ext_data_control_manager_v1;
    struct wl_data_device_manager* wl_data_device_manager;
    struct wl_shm* wl_shm;
    struct wl_compositor* wl_compositor;
-   struct xdg_wm_base* xdg_wm_base;
+   XdgWmBase* xdg_wm_base;
    struct zwp_primary_selection_device_manager_v1* zwp_primary_selection_device_manager_v1;
 } GlobalObjects;
 
 // Struct wrapper for Wayland display and registry
-comptime typedef struct {
+typedef struct {
    struct wl_display* proxy;
    int fd;   // File descriptor for display
 
@@ -47,7 +49,7 @@ comptime typedef struct {
    } registry;
 } WaylandDisplay;
 
-comptime typedef struct {
+typedef struct {
    struct wl_shm_pool* pool;
    int fd;
 
@@ -60,7 +62,7 @@ comptime typedef struct {
    int size;
 } BufferStore;
 
-comptime typedef struct {
+typedef struct {
    void* user_data;
    void (*on_focus)(void *data, Unt serial);
 
@@ -76,7 +78,7 @@ comptime typedef struct {
 } vwl_fs_surface_T; // fs = focus steal
 
 // Wayland protocols for accessing the selection
-comptime typedef enum {
+typedef enum {
    VWL_DATA_PROTOCOL_NONE,
    VWL_DATA_PROTOCOL_EXT,
    VWL_DATA_PROTOCOL_CORE,
@@ -88,33 +90,33 @@ comptime typedef enum {
 // The `data` member is used to pass other needed stuff around such as a
 // WaylandClipboardSelection pointer.
 
-comptime typedef struct {
+typedef struct {
    void* proxy;
    void* data; // Is not set when a new offer is created on a
                // data_offer event. Only set when listening to a data offer.
    DataProtocol protocol;
 } DataOffer;
 
-comptime typedef struct {
+typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataSource;
 
-comptime typedef struct {
+typedef struct {
    void* proxy;
    void* data;
    DataProtocol protocol;
 } DataDevice;
 
-comptime typedef struct {
+typedef struct {
    void* proxy;
    DataProtocol protocol;
 } vwl_data_device_manager_T;
 
 // LISTENER WRAPPERS
 
-comptime typedef struct {
+typedef struct {
    void (*data_offer)(DataDevice *device, DataOffer *offer);
 
    // If the protocol that the data device uses doesn't support a specific
@@ -128,16 +130,16 @@ comptime typedef struct {
    void (*finished)(DataDevice *device);
 } vwl_data_device_Listener;
 
-comptime typedef struct {
+typedef struct {
    void (*send)(DataSource* source, char const* mime_type, int fd);
    void (*cancelled)(DataSource* source);
 } DataSourceListener;
 
-comptime typedef struct {
+typedef struct {
    void (*offer)(DataOffer *offer, char const* mime_type);
 } DataOfferListener;
 
-comptime typedef struct {
+typedef struct {
    // What selection this refers to
    WaylandSelection      selection;
 
@@ -162,7 +164,7 @@ comptime typedef struct {
 } WaylandClipboardSelection;
 
 // Holds stuff related to the clipboard/selections
-comptime typedef struct {
+typedef struct {
    // Do not destroy here, will be destroyed when vwl_disconnect_display() is called.
    WaylandSeat         *seat;
 
@@ -201,11 +203,11 @@ private void str_to_reg(
 ;
 private CS getreg_wrap_one_line(CS s, int flags);
 private int init_write_reg(
-   int      name,
-   YankReg   **old_y_previous,
-   YankReg   **old_y_current,
-   int      must_append,
-   int      *yank_type UNUSED
+   int name,
+   YankReg** old_y_previous,
+   YankReg** old_y_current,
+   int must_append,
+   int*
 );
 private void finish_write_reg(
    int      name,
@@ -252,48 +254,38 @@ private void clip_wl_send_data(char const* mime_type, int fd, WaylandSelection s
 private void clip_wl_selection_cancelled(WaylandSelection selection);
 private int clip_wl_own_selection(ClipBoard* cbd);
 private void clip_wl_lose_selection(ClipBoard *cbd);
-private void clip_wl_set_selection(ClipBoard *cbd UNUSED);
+private void clip_wl_set_selection(ClipBoard *);
 private int vwl_display_flush(WaylandDisplay *display);
-private void vwl_callback_done(void *data, struct wl_callback *callback, Unt cb_data UNUSED);
+private void vwl_callback_done(void *data, struct wl_callback *callback, Unt);
 private int vwl_display_roundtrip(WaylandDisplay *display);
 private int vwl_display_dispatch(WaylandDisplay *display);
 private int vwl_display_dispatch_any(WaylandDisplay* display);
 private void vwl_log_handler(char const* fmt, va_list args);
 private int vwl_connect_display(CS display);
 private void vwl_disconnect_display(void);
-private void vwl_xdg_wm_base_listener_ping(
-   void* data UNUSED,
-   struct xdg_wm_base *base,
-   Unt serial
-);
+private void vwl_xdg_wm_base_listener_ping(void*, XdgWmBase *base, Unt serial);
 private int vwl_listen_to_registry(void);
 private void vwl_registry_listener_global(
-   void* data UNUSED,
-   struct wl_registry  *registry UNUSED,
+   void*,
+   struct wl_registry* registry,
    Unt name,
    const char* interface,
    Unt version
 );
-private void vwl_registry_listener_global_remove(
-      void* data UNUSED, struct wl_registry* registry UNUSED, Unt name UNUSED
-);
+private void vwl_registry_listener_global_remove(void*, struct wl_registry*, Unt);
 private void vwl_add_seat(struct wl_seat *seat_proxy);
-private void vwl_seat_listener_name(void* data, struct wl_seat* seat_proxy UNUSED, const char* name);
+private void vwl_seat_listener_name(void* data, struct wl_seat*, const char* name);
 private void vwl_seat_listener_capabilities(
-   void      *data,
-   struct wl_seat   *seat_proxy UNUSED,
-   Unt   capabilities
+   void* data,
+   struct wl_seat*,
+   Unt capabilities
 );
 private void vwl_destroy_seat(WaylandSeat *seat);
 private WaylandSeat * vwl_get_seat(CS label);
 private struct wl_keyboard * vwl_seat_get_keyboard(WaylandSeat *seat);
 private int vwl_focus_stealing_available(void);
-private void vwl_xdg_surface_listener_configure(
-   void          *data UNUSED,
-   struct xdg_surface  *surface,
-   Unt       serial)
-;
-private void vwl_bs_buffer_listener_release(void* data, struct wl_buffer* buffer UNUSED);
+private void vwl_xdg_surface_listener_configure(void*, struct xdg_surface* surface, Unt serial);
+private void vwl_bs_buffer_listener_release(void* data, struct wl_buffer*);
 private void vwl_destroy_buffer_store(BufferStore* store);
 private int mch_create_anon_file(void);
 private BufferStore * vwl_init_buffer_store(int width, int height);
@@ -305,48 +297,48 @@ private int vwl_init_fs_surface(
    void *user_data
 );
 private void vwl_fs_keyboard_listener_enter(
-   void      *data,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      serial,
-   struct wl_surface   *surface UNUSED,
-   struct wl_array   *keys UNUSED
+   void* data,
+   struct wl_keyboard*,
+   Unt serial,
+   struct wl_surface*,
+   struct wl_array*
 );
 private void vwl_fs_keyboard_listener_keymap(
-   void* data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      format UNUSED,
-   int         fd,
-   Unt      size UNUSED
+   void*,
+   struct wl_keyboard*,
+   Unt,
+   int fd,
+   Unt
 );
 private void vwl_fs_keyboard_listener_leave(
-   void      *data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      serial UNUSED,
-   struct wl_surface   *surface UNUSED)
-;
+   void      *,
+   struct wl_keyboard   *,
+   Unt,
+   struct wl_surface   *
+);
 private void vwl_fs_keyboard_listener_key(
-   void      *data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      serial UNUSED,
-   Unt      time UNUSED,
-   Unt      key UNUSED,
-   Unt      state UNUSED)
-;
+   void      *,
+   struct wl_keyboard   *,
+   Unt,
+   Unt,
+   Unt,
+   Unt
+);
 private void vwl_fs_keyboard_listener_modifiers(
-    void      *data UNUSED,
-    struct wl_keyboard   *keyboard UNUSED,
-    Unt      serial UNUSED,
-    Unt      mods_depressed UNUSED,
-    Unt      mods_latched UNUSED,
-    Unt      mods_locked UNUSED,
-    Unt      group UNUSED)
-;
+    void      *,
+    struct wl_keyboard   *,
+    Unt,
+    Unt,
+    Unt,
+    Unt,
+    Unt
+);
 private void vwl_fs_keyboard_listener_repeat_info(
-   void      *data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   int32_t      rate UNUSED,
-   int32_t      delay UNUSED)
-;
+   void      *,
+   struct wl_keyboard   *,
+   int32_t,
+   int32_t
+);
 private void vwl_data_device_destroy(DataDevice *device, int alloced);
 private void vwl_data_offer_destroy(DataOffer *offer, int alloced);
 private void vwl_data_source_destroy(DataSource *source, int alloced);
@@ -412,7 +404,7 @@ private DataSourceListener dataSourceListener = {
 
 private DataOfferListener dataOfferListener = {.offer = vwl_data_offer_listener_offer};
 
-private struct xdg_wm_base_listener  vwl_xdg_wm_base_listener = {
+private XdgWmBase_listener  vwl_xdg_wm_base_listener = {
     .ping       = vwl_xdg_wm_base_listener_ping
 };
 
@@ -2712,11 +2704,11 @@ get_reg_contents(int regname, int flags) {
 
 private int
 init_write_reg(
-   int      name,
-   YankReg   **old_y_previous,
-   YankReg   **old_y_current,
-   int      must_append,
-   int      *yank_type UNUSED
+   int name,
+   YankReg** old_y_previous,
+   YankReg** old_y_current,
+   int must_append,
+   int*
 ) {
    if (!valid_yank_reg(name, true)) {     // check for valid reg name
       emsg_invreg(name);
@@ -2767,21 +2759,21 @@ write_reg_contents(
 
 pub void
 write_reg_contents_lst(
-   int      name,
-   Byte   **strings,
-   int      maxlen UNUSED,
-   int      must_append,
-   int      yank_type,
-   long   block_len)
-{
+   int name,
+   Byte** strings,
+   int,
+   int must_append,
+   int yank_type,
+   long block_len
+) {
    YankReg  *old_y_previous, *old_y_current;
 
    if (name == '/' || name == '=') {
       Byte   *s;
 
       if (strings[0] == NULL)
-         s = E;
-      ei (strings[1] != NULL) {
+         s = S"";
+      ei (strings[1]) {
          emsg(_(e_search_pattern_and_expression_register_may_not_contain_two_or_more_lines));
          return;
       } else
@@ -2793,9 +2785,8 @@ write_reg_contents_lst(
    if (name == '_')       // black hole: nothing to do
       return;
 
-   if (init_write_reg(name, &old_y_previous, &old_y_current, must_append,
-      &yank_type) == FAIL)
-   return;
+   if (init_write_reg(name, &old_y_previous, &old_y_current, must_append, &yank_type) == FAIL)
+      return;
 
    str_to_reg(OUT y_current, yank_type, (CS)strings, -1, block_len, true);
    finish_write_reg(name, old_y_previous, old_y_current);
@@ -2810,8 +2801,8 @@ write_reg_contents_ex(
    int yank_type,
    long block_len
 ) {
-   YankReg   *old_y_previous, *old_y_current;
-   long   len = (maxlen >= 0) ? maxlen :  (long)STRLEN(str);
+   YankReg *old_y_previous, *old_y_current;
+   Long len = (maxlen >= 0) ? maxlen :  (long)STRLEN(str);
       
    // Special case: '/' search pattern
    if (name == '/') {
@@ -2820,10 +2811,9 @@ write_reg_contents_ex(
    }
 
    if (name == '#') {
-      Book   *buf;
-
+      Book* buf;
       if (EE_ISDIGIT(*str)) {
-         int   num = atoi((char *)str);
+         int num = atoi((char *)str);
          buf = bookFindFileByBookNr(num);
          if (!buf)
             showErrFmtMsg(_(e_book_nr_does_not_exist), (long)num);
@@ -4015,7 +4005,7 @@ clip_wl_lose_selection(ClipBoard *cbd) {
 //Send the current selection to the clipboard. Do nothing for Wayland because
 //we will fill in the selection only when requested by another client.
 private void
-clip_wl_set_selection(ClipBoard *cbd UNUSED) {
+clip_wl_set_selection(ClipBoard *) {
 }
 
 //}}}
@@ -4061,7 +4051,7 @@ vwl_display_flush(WaylandDisplay *display) {
 
 //Called when compositor is done processing requests/events.
 private void
-vwl_callback_done(void *data, struct wl_callback *callback, Unt cb_data UNUSED) {
+vwl_callback_done(void *data, struct wl_callback *callback, Unt) {
    *((int*)data) = true;
    wl_callback_destroy(callback);
 }
@@ -4269,11 +4259,7 @@ vwl_disconnect_display(void) {
 
 // Tell the compositor we are still responsive.
 private void
-vwl_xdg_wm_base_listener_ping(
-   void* data UNUSED,
-   struct xdg_wm_base *base,
-   Unt serial
-) {
+vwl_xdg_wm_base_listener_ping(void*, XdgWmBase *base, Unt serial) {
     xdg_wm_base_pong(base, serial);
 }
 
@@ -4321,8 +4307,8 @@ vwl_listen_to_registry(void) {
 //Keep in sync with vwl_disconnect_display().
 private void
 vwl_registry_listener_global(
-   void* data UNUSED,
-   struct wl_registry  *registry UNUSED,
+   void*,
+   struct wl_registry* registry,
    Unt name,
    const char* interface,
    Unt version
@@ -4367,9 +4353,7 @@ vwl_registry_listener_global(
 // the user call :wlrestore in order to reset everything. Requests to that
 // global will just be ignored on the compositor side.
 private void
-vwl_registry_listener_global_remove(
-      void* data UNUSED, struct wl_registry* registry UNUSED, Unt name UNUSED
-) {
+vwl_registry_listener_global_remove(void*, struct wl_registry*, Unt) {
 }
 
 // Add a new seat given its proxy to the global grow array
@@ -4399,7 +4383,7 @@ vwl_add_seat(struct wl_seat *seat_proxy) {
 
 // Callback for seat text label/name
 private void
-vwl_seat_listener_name(void* data, struct wl_seat* seat_proxy UNUSED, const char* name) {
+vwl_seat_listener_name(void* data, struct wl_seat*, const char* name) {
    WaylandSeat *seat = data;
    seat->label = (char *)copyStr((CS)name);
 }
@@ -4407,9 +4391,9 @@ vwl_seat_listener_name(void* data, struct wl_seat* seat_proxy UNUSED, const char
 // Callback for seat capabilities
 private void
 vwl_seat_listener_capabilities(
-   void      *data,
-   struct wl_seat   *seat_proxy UNUSED,
-   Unt   capabilities
+   void* data,
+   struct wl_seat*,
+   Unt capabilities
 ) {
    WaylandSeat *seat = data;
    seat->capabilities = capabilities;
@@ -4519,17 +4503,13 @@ vwl_focus_stealing_available(void) {
 
 // Configure xdg_surface
 private void
-vwl_xdg_surface_listener_configure(
-   void          *data UNUSED,
-   struct xdg_surface  *surface,
-   Unt       serial)
-{
+vwl_xdg_surface_listener_configure(void*, struct xdg_surface* surface, Unt serial) {
    xdg_surface_ack_configure(surface, serial);
 }
 
 // Called when compositor isn't using the buffer anymore, we can reuse it again.
 private void
-vwl_bs_buffer_listener_release(void* data, struct wl_buffer* buffer UNUSED) {
+vwl_bs_buffer_listener_release(void* data, struct wl_buffer*) {
    BufferStore* store = data;
    store->available = true;
 }
@@ -4738,17 +4718,17 @@ fail:
 // Called when the keyboard focus is on our surface
 private void
 vwl_fs_keyboard_listener_enter(
-   void      *data,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      serial,
-   struct wl_surface   *surface UNUSED,
-   struct wl_array   *keys UNUSED
+   void* data,
+   struct wl_keyboard*,
+   Unt serial,
+   struct wl_surface*,
+   struct wl_array*
 ) {
    vwl_fs_surface_T *store = data;
 
    store->got_focus = true;
 
-   if (store->on_focus != NULL)
+   if (store->on_focus)
       store->on_focus(store->user_data, serial);
 }
 
@@ -4756,54 +4736,54 @@ vwl_fs_keyboard_listener_enter(
 
 private void
 vwl_fs_keyboard_listener_keymap(
-   void* data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      format UNUSED,
-   int         fd,
-   Unt      size UNUSED
+   void*,
+   struct wl_keyboard*,
+   Unt,
+   int fd,
+   Unt
 ) {
    close(fd);
 }
 
 private void
 vwl_fs_keyboard_listener_leave(
-   void      *data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      serial UNUSED,
-   struct wl_surface   *surface UNUSED)
-{
+   void      *,
+   struct wl_keyboard   *,
+   Unt,
+   struct wl_surface   *
+) {
 }
 
 private void
 vwl_fs_keyboard_listener_key(
-   void      *data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   Unt      serial UNUSED,
-   Unt      time UNUSED,
-   Unt      key UNUSED,
-   Unt      state UNUSED)
-{
+   void      *,
+   struct wl_keyboard   *,
+   Unt,
+   Unt,
+   Unt,
+   Unt
+) {
 }
 
 private void
 vwl_fs_keyboard_listener_modifiers(
-    void      *data UNUSED,
-    struct wl_keyboard   *keyboard UNUSED,
-    Unt      serial UNUSED,
-    Unt      mods_depressed UNUSED,
-    Unt      mods_latched UNUSED,
-    Unt      mods_locked UNUSED,
-    Unt      group UNUSED)
-{
+    void      *,
+    struct wl_keyboard   *,
+    Unt,
+    Unt,
+    Unt,
+    Unt,
+    Unt
+) {
 }
 
 private void
 vwl_fs_keyboard_listener_repeat_info(
-   void      *data UNUSED,
-   struct wl_keyboard   *keyboard UNUSED,
-   int32_t      rate UNUSED,
-   int32_t      delay UNUSED)
-{
+   void      *,
+   struct wl_keyboard   *,
+   int32_t,
+   int32_t
+) {
 }
 
 #define VWL_CODE_DATA_OBJECT_DESTROY(type) \
@@ -4891,7 +4871,7 @@ vwl_gen_data_device_listener_selection(
 // Boilerplate macros. Each just calls its respective generic callback.
 #define VWL_FUNC_DATA_DEVICE_DATA_OFFER(device_name, offer_name) \
    private void device_name##_listener_data_offer( \
-       void *data, struct device_name *device_proxy UNUSED, \
+       void *data, struct device_name *, \
        struct offer_name *offer_proxy) \
 { \
     vwl_gen_data_device_listener_data_offer(data, offer_proxy); \
@@ -4899,34 +4879,34 @@ vwl_gen_data_device_listener_selection(
 #define VWL_FUNC_DATA_DEVICE_SELECTION( \
    device_name, offer_name, type, selection_type, protocol) \
    private void device_name##_listener_##type( \
-      void *data, struct device_name *device_proxy UNUSED, \
-      struct offer_name *offer_proxy UNUSED) \
+      void *data, struct device_name *, \
+      struct offer_name *) \
 { \
     vwl_gen_data_device_listener_selection( \
        data, offer_proxy, selection_type, protocol); \
 }
 #define VWL_FUNC_DATA_DEVICE_FINISHED(device_name) \
    private void device_name##_listener_finished( \
-       void *data, struct device_name *device_proxy UNUSED) \
+       void *data, struct device_name *) \
 { \
     vwl_data_device_listener.finished(data); \
 }
 #define VWL_FUNC_DATA_SOURCE_SEND(source_name) \
    private void source_name##_listener_send(void *data, \
-       struct source_name *source_proxy UNUSED, \
+       struct source_name *, \
        char const* mime_type, int fd) \
 { \
     dataSourceListener.send(data, mime_type, fd); \
 }
 #define VWL_FUNC_DATA_SOURCE_CANCELLED(source_name) \
    private void source_name##_listener_cancelled(void *data, \
-       struct source_name *source_proxy UNUSED) \
+       struct source_name *) \
 { \
     dataSourceListener.cancelled(data); \
 }
 #define VWL_FUNC_DATA_OFFER_OFFER(offer_name) \
    private void offer_name##_listener_offer(void *data, \
-       struct offer_name *offer_proxy UNUSED, \
+       struct offer_name *, \
        const char *mime_type) \
 { \
     dataOfferListener.offer(data, mime_type); \

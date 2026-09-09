@@ -46,17 +46,17 @@ private struct DiffBlock {
 // Allocate an array of nr zeroed out elements, return NULL on failure
 #define XDL_CALLOC_ARRAY(p, nr)   ((p) = xdl_calloc(nr, sizeof(*(p))))
 
-comptime typedef struct s_mmfile {
+typedef struct s_mmfile {
    Byte* ptr;
    long size;
 } MmFile;
 
-comptime typedef struct s_mmbuffer {
+typedef struct s_mmbuffer {
    Byte* ptr;
    long size;
 } MmBuffer;
 
-comptime typedef struct s_xpparam {
+typedef struct s_xpparam {
    unsigned long flags;
    // See Documentation/diff-options.txt
    char **anchors;
@@ -69,7 +69,7 @@ struct ChaNode {
    long icurr;
 };
 
-comptime typedef struct s_chastore {
+typedef struct s_chastore {
    ChaNode *head, *tail;
    long isize, nsize;
    ChaNode *ancur;
@@ -78,16 +78,16 @@ comptime typedef struct s_chastore {
 } ChaStore;
 
 
-comptime typedef long (*FindFn)(
+typedef long (*FindFn)(
    CS line, long line_len, char* buffer, long buffer_size, void *priv
 );
 
-comptime typedef int (*XdlEmitHunkConsumeFn)(
+typedef int (*XdlEmitHunkConsumeFn)(
    long start_a, long count_a, long start_b, long count_b, void *cb_data
 );
 
 
-comptime typedef struct s_xdemitconf {
+typedef struct s_xdemitconf {
    long ctxlen;
    long interhunkctxlen;
    unsigned long flags;
@@ -97,7 +97,7 @@ comptime typedef struct s_xdemitconf {
 } XdEmitConf;
 
 
-comptime typedef struct s_xdemitcb {
+typedef struct s_xdemitcb {
    void *priv;
    int (*out_hunk)(void *,
          long old_begin, long old_nr,
@@ -114,7 +114,7 @@ struct Record {
    unsigned long ha;
 };
 
-comptime typedef struct s_xdfile {
+typedef struct s_xdfile {
    ChaStore rcha;
    long nrec;
    unsigned int hbits;
@@ -127,7 +127,7 @@ comptime typedef struct s_xdfile {
    unsigned long *ha;
 } XdFile;
 
-comptime typedef struct s_xdfenv {
+typedef struct s_xdfenv {
    XdFile xdf1, xdf2;
 } XdfEnv;
 
@@ -287,7 +287,7 @@ private int xdl_change_compact(XdFile* xdf, XdFile* xdfo, long flags);
 private int xdl_build_script(XdfEnv* xe, XdChange** xscr);
 private void xdl_free_script(XdChange* xscr);
 private int  xdl_call_hunk_func(
-      XdfEnv* xe UNUSED, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
+      XdfEnv*, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
 );
 private void  xdl_mark_ignorable_lines(XdChange *xscr, XdfEnv *xe, long flags);
 private int xdl_diff(MmFile* mf1, MmFile* mf2, XpParam* xpp, XdEmitConf* xecfg, XdEmitCb* ecb);
@@ -819,32 +819,32 @@ private int diff_a_works = MAYBE; //true when "diff -a" works, false when it
 #define MAX_DIFF_ANCHORS 20
 
 // used for diff input
-comptime typedef struct {
+typedef struct {
    CS externalFname;  //for external diff
    MmFile mmfile;     //for internal diff
 } DiffInp;
 
 // used for diff DiffResult
-comptime typedef struct {
+typedef struct {
    CS outFname;       //for external diff
    ArrayList dout_ga; //for internal diff
 } DiffResult;
 
 // used for recording hunks from xdiff
-comptime typedef struct {
+typedef struct {
    LineNr origLnum;
    long origCount;
    LineNr newLnum;
    long newCount;
 } Hunk;
 
-comptime typedef enum {
+typedef enum {
    DIO_OUTPUT_INDICES = 0, //default
    DIO_OUTPUT_UNIFIED = 1  //unified diff format
 } OutputFormat;
 
 // two diff inputs and one DiffResult
-comptime typedef struct {
+typedef struct {
    DiffInp orig;     // original file input
    DiffInp new;      // new file input
    DiffResult dio_diff;     //diff DiffResult
@@ -2058,7 +2058,7 @@ c_diffsplit(Invocation* invo) {
 
 //Set options to show diffs for the current portal.
 pub void
-c_diffthis(Invocation* invo UNUSED) {
+c_diffthis(Invocation*) {
    // Set @diff' on and @wrap off.
    diff_win_options(curPor, true);
 }
@@ -3350,7 +3350,7 @@ diff_find_change_simple(
 
 //Mapping used for mapping from temporary mmfile created for inline diff back
 //to original book's line/col.
-comptime typedef struct {
+typedef struct {
    Long byte_start;
    Long num_bytes;
    int lineoff;
@@ -4468,7 +4468,7 @@ xdiff_out_unified(
 }
 
 pub void
-f_diff_filler(Var *argvars UNUSED, Var *returnVar UNUSED) {
+f_diff_filler(Var *argvars, Var *returnVar) {
    returnVar->number = diff_check_fill(curPor, tv_get_lnum(argvars));
 }
 
@@ -4773,27 +4773,27 @@ private long xdl_mmfile_size(MmFile *mmf);
 #define DEFAULT_CONFLICT_MARKER_SIZE 7
 
 
-comptime typedef struct s_xdchange {
+typedef struct s_xdchange {
    struct s_xdchange *next;
    long i1, i2;
    long chg1, chg2;
    int ignore;
 } XdChange;
 
-comptime typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
+typedef int (*emit_func_t)(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb,
             XdEmitConf const *xecfg);
 
 private XdChange *xdl_get_hunk(XdChange **xscr, XdEmitConf const *xecfg);
 private int xdl_emit_diff(XdfEnv *xe, XdChange *xscr, XdEmitCb *ecb, XdEmitConf const *xecfg);
 
-comptime typedef struct s_diffdata {
+typedef struct s_diffdata {
    long nrec;
    unsigned long const *ha;
    long *rindex;
    CS rchg;
 } DiffData;
 
-comptime typedef struct s_xdg {
+typedef struct s_xdg {
    long mxcost;
    long snake_cnt;
    long heur_min;
@@ -4818,7 +4818,7 @@ private int xdl_do_histogram_diff(XpParam const *xpp, XdfEnv *env);
 #define XDL_SNAKE_CNT 20
 #define XDL_K_HEUR 4
 
-comptime typedef struct s_xdpsplit {
+typedef struct s_xdpsplit {
    long i1, i2;
    int min_lo, min_hi;
 } xdpsplit_t;
@@ -5248,7 +5248,7 @@ xget_indent(Record* rec) {
 #define MAX_BLANKS 20
 
 // Characteristics measured about a hypothetical split position.
-comptime typedef struct SplitMeasurement {
+typedef struct SplitMeasurement {
    //Is the split at the end of the file (aside from any blank lines)?
    int end_of_file;
 
@@ -5270,7 +5270,7 @@ comptime typedef struct SplitMeasurement {
    int post_indent;
 } SplitMeasurement;
 
-comptime typedef struct {
+typedef struct {
    // The effective indent of this split (smaller is preferred).
    int effective_indent;
 
@@ -5452,7 +5452,7 @@ score_cmp(SplitScore* s1, SplitScore* s2) {
 //
 //Note that loops that are testing for changed lines in xdf->rchg do not need
 //index bounding since the array is prepared with a zero at position -1 and N.
-comptime typedef struct {
+typedef struct {
    //The index of the first changed line in the group, or the index of
    //the unchanged line above which the (empty) group is located.
    long start;
@@ -5692,7 +5692,7 @@ xdl_free_script(XdChange* xscr) {
 
 private int 
 xdl_call_hunk_func(
-      XdfEnv* xe UNUSED, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
+      XdfEnv*, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg
 ) {
    XdChange *xch, *xche;
 
@@ -6186,7 +6186,7 @@ struct XdlClass {
    long len2;
 };
 
-comptime typedef struct s_xdlclassifier {
+typedef struct s_xdlclassifier {
    unsigned int hbits;
    long hsize;
    XdlClass **rchash;
@@ -6603,7 +6603,7 @@ struct Entry {
    unsigned anchor : 1;
 };
 
-comptime typedef struct {
+typedef struct {
    int nr;
    int alloc;
    Arr(Entry) entries;
@@ -6908,7 +6908,7 @@ struct XdRecord {
    XdRecord* next;
 };
 
-comptime typedef struct {
+typedef struct {
    XdRecord** records; // an occurrence
    XdRecord** line_map; // map of line to record chain
    ChaStore rcha;
@@ -6928,7 +6928,7 @@ comptime typedef struct {
    XpParam const* xpp;
 } HistIndex;
 
-comptime typedef struct {
+typedef struct {
    Unt begin1;
    Unt end1;
    Unt begin2;
@@ -7279,7 +7279,7 @@ xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg) {
    return lxch;
 }
 
-comptime typedef struct {
+typedef struct {
    long len;
    Byte buf[80];
 } FuncLine;

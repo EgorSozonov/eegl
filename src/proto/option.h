@@ -33,7 +33,7 @@ CS setShowTabpanel(OptionChange* cha);
 void initPortalOptions(PortalOptions* o);
 void updateStringRef(OptionChange* cha);
 void optInit0();
-int writeOptionsAsSet(FILE *fd UNUSED);
+int writeOptionsAsSet(FILE *);
 void optSetLocalOptionsToDefault(Portal *wp, Boole doBook);
 void c_get(Invocation* invo);
 void c_set(Invocation* invo);
@@ -43,7 +43,7 @@ void optCopyGlobalToPortal(OUT Portal* to);
 void optFreeBookCallbacks(Book* book);
 void optsCopyToBook(OUT Book* book, Unt flags);
 int optExpandOption(
-   Expand* xp UNUSED,
+   Expand* xp,
    RegMatch* regmatch,
    CS fuzzystr,
    Boole canFuzzy,
@@ -75,5 +75,5 @@ void set_lang_var(void);
 void init_locale(void);
 void c_language(Invocation* invo);
 void free_locales(void);
-CS get_lang_arg(Expand* xp UNUSED, int idx);
-CS get_locales(Expand* xp UNUSED, int idx);
+CS get_lang_arg(Expand*, int idx);
+CS get_locales(Expand*, int idx);

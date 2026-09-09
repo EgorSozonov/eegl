@@ -42,15 +42,16 @@ private int normalCmdGetCount(
    ActionArg* aArg,
    Unt c,
    int toplevel,
-   int set_prevcount UNUSED,
-   int* ctrl_w,
-   int* need_flushbuf UNUSED
+   int set_prevcount,
+   OUT int* ctrl_w,
+   OUT int* need_flushbuf
 );
 private int needsMoreChars(ActionArg* aArg, Short cmd_flags);
 private int getMoreChars(
    int idx_arg,
    ActionArg* aArg,
-   int* need_flushbuf UNUSED);
+   int* need_flushbuf
+);
 private int needToWaitForMsg(ActionArg* aArg, Pos *old_pos);
 private void waitForMsg(void);
 private void setVCountPrevCount(ActionArg* aArg, int *set_prevcount);
@@ -79,7 +80,7 @@ private void invokeEdit(
 );
 private void utf_find_illegal(void);
 private void nv_ignore(ActionArg* aArg);
-private void nv_nop(ActionArg* aArg UNUSED);
+private void nv_nop(ActionArg*);
 private void nvError(ActionArg* aArg);
 private void nv_help(ActionArg* aArg);
 private void nvAddSub(ActionArg* aArg);
@@ -139,7 +140,7 @@ private void nv_regname(ActionArg* aArg);
 private void nv_visual(ActionArg* aArg);
 private void nv_portal(ActionArg* aArg);
 private void nv_suspend(ActionArg* aArg);
-private void nv_gv_cmd(ActionArg* aArg UNUSED);
+private void nv_gv_cmd(ActionArg*);
 private void gUnderscoreAction(ActionArg* aArg);
 private void nvGDollarAction(ActionArg* aArg);
 private void nv_gi_cmd(ActionArg* aArg);
@@ -160,7 +161,7 @@ private void nv_normal(ActionArg* aArg);
 private void nv_esc(ActionArg* aArg);
 private void nv_edit(ActionArg* aArg);
 private void nvOpen(ActionArg* aArg);
-private void nv_drop(ActionArg* aArg UNUSED);
+private void nv_drop(ActionArg*);
 private void nv_cursorhold(ActionArg* aArg);
 private void nv_object(ActionArg* aArg);
 private void nv_record(ActionArg* aArg);
@@ -1999,9 +2000,9 @@ normalCmdGetCount(
    ActionArg* aArg,
    Unt c,
    int toplevel,
-   int set_prevcount UNUSED,
-   int* ctrl_w,
-   int* need_flushbuf UNUSED
+   int set_prevcount,
+   OUT int* ctrl_w,
+   OUT int* need_flushbuf
 ) {
 getcount:
    // Handle a count before a command and compute ca.count0.
@@ -2109,7 +2110,8 @@ private int
 getMoreChars(
    int idx_arg,
    ActionArg* aArg,
-   int* need_flushbuf UNUSED) {
+   int* need_flushbuf
+) {
    int idx = idx_arg;
    Unt c;
    Unt* cp;
@@ -3581,7 +3583,7 @@ nv_ignore(ActionArg* aArg) {
 // Action character that doesn't do anything, but unlike nv_ignore() does
 // start edit().  Used for "startinsert" executed while starting up.
 private void
-nv_nop(ActionArg* aArg UNUSED) {
+nv_nop(ActionArg*) {
 }
 
 // Action character doesn't exist.
@@ -5708,7 +5710,7 @@ nv_suspend(ActionArg* aArg) {
 // "gv": Reselect the previous Visual area.  If Visual already active, exchange previous and 
 // current Visual area.
 private void
-nv_gv_cmd(ActionArg* aArg UNUSED) {
+nv_gv_cmd(ActionArg*) {
    int i;
 
    if (curBook->visual.vi_start.lnum == 0
@@ -6664,7 +6666,7 @@ nvOpen(ActionArg* aArg) {
 }
 
 private void
-nv_drop(ActionArg* aArg UNUSED) {
+nv_drop(ActionArg*) {
    do_put('~', NULL, BACKWARD, 1L, PUT_CURSEND);
 }
 
@@ -7148,7 +7150,7 @@ private int scrolljump_value(void);
 private int check_top_offset(void);
 private void curs_rows(Portal *po);
 
-comptime typedef struct {
+typedef struct {
    LineNr lnum; // line number
    int fill;    // filler lines
    int height;  // height of added line
@@ -11537,7 +11539,7 @@ f_maparg(Var* argvars, Var* returnVar) {
 }
 
 pub void
-f_mapcheck(Var *argvars, Var* returnVar) {
+f_mapcheck(Arr(Var) argvars, Var* returnVar) {
    getMapArg(argvars, returnVar, false);
 }
 
@@ -11587,7 +11589,7 @@ getMapModeString(CS mode_string, int abbr) {
 
 // "mapset()" function
 pub void
-f_mapset(Var *argvars, Var* returnVar UNUSED) {
+f_mapset(Arr(Var) argvars, Var*) {
    CS which;
    Byte buffer[NUMBUFLEN];
    int is_abbr;
@@ -11705,7 +11707,7 @@ add_map(CS map, int mode, int nore) {
 //same as langmap_mapchar[] for characters >= 256.
 //
 //Use arraylist for 'langmap' chars >= 256
-comptime typedef struct {
+typedef struct {
    int from;
    int to;
 } LangmapEntry;
@@ -11912,7 +11914,7 @@ c_abclear(Invocation* invo) {
 //The toplevel folds for each portal are stored in the folds arraylist.
 //Each toplevel fold can contain an array of second level folds in the fd_nested arraylist.
 //The info stored in both growarrays is the same: An array of Fold.
-comptime typedef struct {
+typedef struct {
    LineNr   fd_top;  // first line of fold; for nested fold relative to parent
    LineNr   fd_len;  // number of lines in the fold
    ArrayList   fd_nested; // array of nested folds
@@ -13487,7 +13489,7 @@ foldtext_cleanup(CS str) {
 
 // Folding by indent, expr, marker and syntax.
 // Define "FoldLine", passed to get fold level for a line.
-comptime typedef struct {
+typedef struct {
    Portal* po;
    LineNr lnum;      // current line number
    LineNr off;      // offset between lnum and real line number
@@ -14633,24 +14635,24 @@ foldclosed_both(Var* argvars, Var* returnVar, int end) {
 }
 
 pub void
-f_foldclosed(Var *argvars, Var* returnVar) {
+f_foldclosed(Arr(Var) argvars, Var* returnVar) {
    foldclosed_both(argvars, returnVar, false);
 }
 
 pub void
-f_foldclosedend(Var *argvars, Var* returnVar) {
+f_foldclosedend(Arr(Var) argvars, Var* returnVar) {
    foldclosed_both(argvars, returnVar, true);
 }
 
 pub void
-f_foldlevel(Var *argvars UNUSED, Var* returnVar) {
+f_foldlevel(Arr(Var) argvars, Var* returnVar) {
    LineNr lnum = tv_get_lnum(argvars);
    if (lnum >= 1 && lnum <= curBook->mem.lineCount)
       returnVar->number = getFoldLevel(lnum);
 }
 
 pub void
-f_foldtext(Var *argvars UNUSED, Var* returnVar) {
+f_foldtext(Arr(Var), Var* returnVar) {
    LineNr   lnum;
    CS s;
    CS r;
@@ -14699,7 +14701,7 @@ f_foldtext(Var *argvars UNUSED, Var* returnVar) {
 
 //"foldtextresult(lnum)" function
 pub void
-f_foldtextresult(Var *argvars UNUSED, Var* returnVar) {
+f_foldtextresult(Arr(Var) argvars, Var* returnVar) {
    Byte buffer[FOLD_TEXT_LEN];
    FoldInfo  foldinfo;
    int      fold_count;

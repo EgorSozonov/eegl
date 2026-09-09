@@ -1,5 +1,5 @@
 int stat(const char* restrict path, struct stat* restrict buf);
-void do_ascii(Invocation* invo UNUSED);
+void do_ascii(Invocation*);
 void c_align(Invocation* invo);
 void c_sort(Invocation* invo);
 void c_uniq(Invocation* invo);
@@ -15,7 +15,7 @@ void do_bang(
 void do_shell(CS cmd, Unt flags);
 int prompt_for_number(int *mouse_used);
 CS make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName);
-void do_fixdel(Invocation* invo UNUSED);
+void do_fixdel(Invocation*);
 void c_file(Invocation* invo);
 void c_update(Invocation* invo);
 void c_write(Invocation* invo);
@@ -53,9 +53,9 @@ void global_exe(CS cmd);
 int prepare_tagpreview(
    int      undo_sync,       // sync undo when leaving the portal
    int      use_previewpopup,   // use popup if 'previewpopup' set
-   UsePopup   use_popup)       // use other popup portal
-;
-void c_smile(Invocation* invo UNUSED);
+   UsePopup   use_popup       // use other popup portal
+);
+void c_smile(Invocation*);
 void c_drop(Invocation* invo);
 CS skipEeglGrepPat(CS p, Byte **s, Unt *flags);
 void c_oldfiles(Invocation* invo);
@@ -116,13 +116,13 @@ CS skip_range(
    Unt* ctx)      // pointer to context or NULL
 ;
 LineNr doGetCommandAddress(
-   Invocation   *invo UNUSED,
+   Invocation* invo,
    OUT CS* ptr,
    CommandAddress   addressKind,
    int skip,      // only skip the address, don't use it
    int silent,      // no errors or side effects
    int to_other_file,  // flag: may jump to other file
-   int address_count UNUSED // 1 for first address, >1 after comma
+   int address_count // 1 for first address, >1 after comma
 );
 void c_ni(Invocation* invo);
 int expand_filename(Invocation* invo, OUT CS* commline, OUT CS* errorMsg);
@@ -131,8 +131,8 @@ CS skip_cmd_arg(CS p, int rembs);
 int get_bad_opt(CS p, Invocation* invo);
 int expand_argopt(
    CS pat,
-   Expand    *xp,
-   RegMatch  *rmp,
+   Expand* xp,
+   RegMatch* rmp,
    OUT ExpandMatch* matches
 );
 void c_autocmd(Invocation* invo);
@@ -146,52 +146,52 @@ void c_brewind(Invocation* invo);
 void c_blast(Invocation* invo);
 int endsComm(CS c);
 CS find_nextcmd(CS p);
-CS get_command_name(Expand *xp UNUSED, int idx);
+CS get_command_name(Expand *, int idx);
 void c_hilite(Invocation* invo);
 void not_exiting(void);
 void c_quit(Invocation* invo);
-void c_cquit(Invocation* invo UNUSED);
+void c_cquit(Invocation* invo);
 int before_quit_all(Invocation* invo);
 void c_quit_all(Invocation* invo);
 void c_close(Invocation* invo);
-void c_pclose(Invocation* invo UNUSED);
+void c_pclose(Invocation* invo);
 void c_tabclose(Invocation* invo);
 void c_tabonly(Invocation* invo);
 void tabClose();
 void tabCloseOther(Tab *t);
 void c_only(Invocation* invo);
-void c_hide(Invocation* invo UNUSED);
+void c_hide(Invocation* invo);
 void c_exit(Invocation* invo);
 void c_print(Invocation* invo);
 void c_goto(Invocation* invo);
-void c_shell(Invocation* invo UNUSED);
-void c_preserve(Invocation* invo UNUSED);
+void c_shell(Invocation*);
+void c_preserve(Invocation*);
 void c_recover(Invocation* invo);
 void c_wrongmodifier(Invocation* invo);
 int expand_findfunc(CS pat, OUT ExpandMatch* matches);
 CS setFindFn(OptionChange* cha);
 void doFreeFindFnOption(void);
-int set_ref_in_findfunc(int copyID UNUSED);
+int set_ref_in_findfunc(int copyID);
 void c_splitview(Invocation* invo);
 void tabNew(void);
 void c_tabnext(Invocation* invo);
 void c_tabmove(Invocation* invo);
-void c_tabs(Invocation* invo UNUSED);
+void c_tabs(Invocation*);
 void c_mode(Invocation* invo);
 void c_resize(Invocation* invo);
 void c_find(Invocation* invo);
 void c_open(Invocation* invo);
 void c_edit(Invocation* invo);
 void do_exedit(Invocation* invo, Portal* old_curPor);
-void c_swapname(Invocation* invo UNUSED);
-void c_syncbind(Invocation* invo UNUSED);
+void c_swapname(Invocation*);
+void c_syncbind(Invocation*);
 void c_read(Invocation* invo);
 void free_cd_dir(void);
 void post_chdir(CdScopeKind scope);
 void trigger_DirChangedPre(CS acmd_fname, CS new_dir);
 int changedir_func(CS new_dir, CdScopeKind scope);
 void c_cd(Invocation* invo);
-void c_pwd(Invocation* invo UNUSED);
+void c_pwd(Invocation*);
 void c_equal(Invocation* invo);
 void c_sleep(Invocation* invo);
 void do_sleep(long msec, int hide_cursor);
@@ -207,14 +207,14 @@ void c_bang(Invocation* invo);
 void c_undo(Invocation* invo);
 void c_wundo(Invocation* invo);
 void c_rundo(Invocation* invo);
-void c_redo(Invocation* invo UNUSED);
+void c_redo(Invocation*);
 void c_later(Invocation* invo);
 void c_redir(Invocation* invo);
 void c_redraw(Invocation* invo);
 void redraw_cmd(int clear);
 void c_redrawstatus(Invocation* invo);
-void c_redrawtabpanel(Invocation* invo UNUSED);
-int eeMkdir_emsg(CS name, int prot UNUSED);
+void c_redrawtabpanel(Invocation*);
+int eeMkdir_emsg(CS name, int prot);
 FILE * doOpenCommandsFile(CS fname, int forceit, CS mode);
 void c_mark(Invocation* invo);
 void update_topline_cursor(void);
@@ -222,9 +222,9 @@ int save_current_state(SaveState* sst);
 void restore_current_state(SaveState* sst);
 void c_normal(Invocation* invo);
 void c_startinsert(Invocation* invo);
-void c_stopinsert(Invocation* invo UNUSED);
+void c_stopinsert(Invocation*);
 void exec_normal_cmd(CS cmd, int remap, int silent);
-void exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED);
+void exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop);
 void c_checkpath(Invocation* invo);
 void c_psearch(Invocation* invo);
 void c_findpat(Invocation* invo);
@@ -247,7 +247,7 @@ CS expand_sfile(CS arg);
 void dialog_msg(CS buff, CS format, CS fname);
 void c_filetype(Invocation* invo);
 void setHlsearch(Boole flag);
-void c_nohlsearch(Invocation* invo UNUSED);
+void c_nohlsearch(Invocation*);
 void c_fold(Invocation* invo);
 void c_foldopen(Invocation* invo);
 void c_folddo(Invocation* invo);
@@ -288,8 +288,8 @@ void u_undo(int count);
 void u_redo(int count);
 void undo_time(long step, int sec, int file, int absolute);
 void u_sync(int force);
-void c_undolist(Invocation* invo UNUSED);
-void c_undojoin(Invocation* invo UNUSED);
+void c_undolist(Invocation*);
+void c_undojoin(Invocation* invo);
 void u_unchanged(Book* book);
 void u_find_first_changed(void);
 void u_update_save_nr(Book* book);

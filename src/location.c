@@ -396,7 +396,7 @@ private void setLocationListInternal(
    LocationStack* stack,
    Var* listArg,
    Var* actionArg,
-   Var* specificArg UNUSED,
+   Var* specificArg,
    Var* returnVar
 );
 private void fname2fnum(FileMarkExt* fm);
@@ -556,7 +556,7 @@ private SignEntry * get_first_valid_sign(Portal *wp);
 //}}}
 //{{{location lists
 
-comptime typedef struct DirStack DirStack; 
+typedef struct DirStack DirStack; 
 struct DirStack {
    DirStack* next;
    CS dirname;
@@ -567,7 +567,7 @@ struct DirStack {
 #define STACK_CAPACITY 20
 
 // For each error the next struct is allocated and linked in a list.
-comptime typedef struct LocLine LocLine;
+typedef struct LocLine LocLine;
 struct LocLine {
    LocLine* next;   // pointer to next error in the list
    LocLine* prev;   // pointer to previous error in the list
@@ -599,7 +599,7 @@ struct LocLine {
 //Usually the list contains one or more entries. But an empty list can be
 //created using setqflist()/setloclist() with a title and/or user context
 //information and entries can be added later using setqflist()/setloclist().
-comptime typedef struct {
+typedef struct {
    Unt id;      // Unique identifier for this list
    LocLine* first;   // pointer to the first error
    LocLine* last;   // pointer to the last error
@@ -650,7 +650,7 @@ private List* makeInProgressS; // the list of messages from a running "make" com
 
 
 // Structure used to hold the info of one part of 'errorformat'
-comptime typedef struct ErrorFormatInfo ErrorFormatInfo;
+typedef struct ErrorFormatInfo ErrorFormatInfo;
 struct ErrorFormatInfo {
     RegProg* prog;   // pre-formatted part of 'errorformat'
     ErrorFormatInfo       *next;   // pointer to next (NULL if last)
@@ -677,14 +677,14 @@ struct ErrorFormatInfo {
 
 // List of location lists to be deleted.
 // Used to delay the deletion of locations lists by autocmds.
-comptime typedef struct DeletionList DeletionList;
+typedef struct DeletionList DeletionList;
 struct DeletionList {
     DeletionList* next;
     LocationStack      *stack;
 };
 
 // :vimgrep command arguments
-comptime typedef struct {
+typedef struct {
    long tomatch;   // maximum number of matches to find
    CS spat;      // search pattern
    Unt flags;      // search modifier
@@ -1097,7 +1097,7 @@ comptime enum {
    QF_ABORT = 6
 };
 
-comptime typedef enum {
+typedef enum {
    SOURCE_FILENAME, // a proto-source, so to speak - will be turned into SOURCE_FILE after opening
    SOURCE_FILE, // reading locations from file
    SOURCE_BOOK, // reading locations from an Eegl buffer
@@ -1105,30 +1105,30 @@ comptime typedef enum {
    SOURCE_LIST // reading location from a Var containing a list of strings
 } SourceKind;
 
-comptime typedef struct { // SOURCE_FILENAME
+typedef struct { // SOURCE_FILENAME
    CS c;
 } FileNameSource;
 
-comptime typedef struct { // SOURCE_FILE
+typedef struct { // SOURCE_FILE
    FILE* c;
 } FileSource;
 
-comptime typedef struct { // SOURCE_BOOK
+typedef struct { // SOURCE_BOOK
    Book* c;
    LineNr start;
    LineNr end;
 } BookSource;
 
 
-comptime typedef struct { // SOURCE_STRING
+typedef struct { // SOURCE_STRING
    CS c;
 } StringSource;
 
-comptime typedef struct { // SOURCE_LIST
+typedef struct { // SOURCE_LIST
    ListItem* c;
 } ListSource;
 
-comptime typedef struct { // A source can be a file, a Book, a string var or a list vaar
+typedef struct { // A source can be a file, a Book, a string var or a list vaar
    SourceKind tag;
    union {
       FileNameSource FileName;
@@ -1140,7 +1140,7 @@ comptime typedef struct { // A source can be a file, a Book, a string var or a l
 } Source;
 
 // State information used to parse lines and add entries to a quickfix/location list.
-comptime typedef struct {
+typedef struct {
    Source source;
    CS linebuf;
    int      linelen;
@@ -1352,7 +1352,7 @@ getNextLine(LocationState *state) {
    return QF_OK;
 }
 
-comptime typedef struct {
+typedef struct {
     CS namebuf;
     int      bnr;
     CS module;
@@ -4925,7 +4925,7 @@ makeFinished() {
 }
 
 pub void
-c_make(Invocation* invo UNUSED) {
+c_make(Invocation*) {
    if (applyAutocomms(EVENT_QUICKFIXCMDPRE, S"make", curBook->currFileName, true, curBook) 
          && aborting()
    ) {
@@ -7474,7 +7474,7 @@ setLocationListInternal(
    LocationStack* stack,
    Var* listArg,
    Var* actionArg,
-   Var* specificArg UNUSED,
+   Var* specificArg,
    Var* returnVar
 ){
    static int   recursive = 0;
@@ -8235,7 +8235,7 @@ c_delmarks(Invocation* invo) {
 
 // print the jumplist
 pub void
-c_jumps(Invocation* invo UNUSED) {
+c_jumps(Invocation*) {
    CS name;
 
    cleanup_jumplist(curPor, true);
@@ -8283,7 +8283,7 @@ c_jumps(Invocation* invo UNUSED) {
 }
 
 pub void
-c_clearjumps(Invocation* invo UNUSED) {
+c_clearjumps(Invocation*) {
    free_jumplist(curPor);
    curPor->jumpListLen = 0;
    curPor->jumpListInd = 0;
@@ -8291,7 +8291,7 @@ c_clearjumps(Invocation* invo UNUSED) {
 
 // print the changelist
 pub void
-c_changes(Invocation* invo UNUSED) {
+c_changes(Invocation*) {
    CS name;
 
    // Highlight title
@@ -8754,7 +8754,7 @@ f_getmarklist(Var *argvars, Var* returnVar) {
 
 
 // Struct to hold the sign properties.
-comptime typedef struct Sign Sign;
+typedef struct Sign Sign;
 
 private struct Sign {
    Sign* next; // next sign in list
@@ -10386,7 +10386,7 @@ get_nth_sign_group_name(int idx) {
 
 // Function given to expandGeneric() to obtain the sign command expansion.
 pub CS
-get_sign_name(Expand *xp UNUSED, int idx) {
+get_sign_name(Expand *, int idx) {
     switch (expandWhatS) {
     case EXP_SUBCMD:
        return (CS)cmds[idx];

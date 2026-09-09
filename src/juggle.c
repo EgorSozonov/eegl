@@ -67,7 +67,7 @@ private Long line_count_info(
     int eol_size
 );
 private void op_colon(Operator *oper);
-private void op_function(Operator *oper UNUSED);
+private void op_function(Operator* oper);
 private void get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial);
 private int is_ex_cmdchar(ActionArg* cap);
 private void pbyte(Pos lp, int c);
@@ -85,8 +85,8 @@ private void stop_all_timers(void);
 private void add_timer_info(OUT Var* returnVar, Timer *timer);
 private void add_timer_info_all(OUT Var* returnVar);
 private void time_diff(TimeVal *then, TimeVal *now);
-private void set_flag(union sigval _unused UNUSED);
-private void set_flag SIGDEFARG(sigarg);
+private void set_flag(union sigval);
+private void set_flag(int);
 private int coladvance2(
    Pos   *pos,
    int      addspaces,   // change the text to achieve our goal?
@@ -314,7 +314,7 @@ f_listener_add(Arr(Var) argVars, OUT Var* returnVar) {
 }
 
 pub void
-f_listener_flush(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+f_listener_flush(Arr(Var) argVars, OUT Var*) {
    Book* book = curBook;
 
    if (argVars[0].tag != VAR_UNKNOWN) {
@@ -707,7 +707,7 @@ changed_bytes(LineNr lnum, ColNr col) {
 //Like changed_bytes() but also adjust text properties for "added" bytes.
 //When "added" is negative text was deleted.
 pub void
-inserted_bytes(LineNr lnum, ColNr col, int added UNUSED) {
+inserted_bytes(LineNr lnum, ColNr col, int added) {
    if (curBook->hasTextprop && added != 0)
       adjustPropColumns(lnum, col, added, 0);
 
@@ -978,31 +978,23 @@ del_chars(long count, Boole fixpos) {
 //
 //Return FAIL for failure, OK otherwise.
 pub int
-del_bytes(
-   long   count,
-   Boole      fixpos_arg,
-   int      use_delcombine UNUSED)       // 'delcombine' option applies
-{
-   ColNr   oldlen;
-   ColNr   newlen;
-   LineNr   lnum = curPor->cursor.lnum;
-   ColNr   col = curPor->cursor.col;
-   int      alloc_newp;
-   long   movelen;
-   int      fixpos = fixpos_arg;
+del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine) { //'delcombine' option applies
+   LineNr lnum = curPor->cursor.lnum;
+   ColNr col = curPor->cursor.col;
+   int fixpos = fixpos_arg;
 
    CS oldp = ml_get(lnum);
-   oldlen = (int)ml_get_len(lnum);
+   ColNr oldlen = (int)ml_get_len(lnum);
 
-   // Can't do anything when the cursor is on the ZERO after the line.
+   //Can't do anything when the cursor is on the ZERO after the line.
    if (col >= oldlen)
       return FAIL;
 
-   // If "count" is zero there is nothing to do.
+   //If "count" is zero there is nothing to do.
    if (count == 0)
       return OK;
 
-   // If "count" is negative the caller must be doing something wrong.
+   //If "count" is negative the caller must be doing something wrong.
    if (count < 1) {
       internalErrFmtMsg(e_invalid_count_for_del_bytes_nr, count);
       return FAIL;
@@ -1027,12 +1019,11 @@ del_bytes(
       }
    }
 
-   // When count is too big, reduce it.
-   movelen = (long)oldlen - (long)col - count + 1; // includes trailing ZERO
+   //When count is too big, reduce it.
+   Long movelen = (long)oldlen - (long)col - count + 1; // includes trailing ZERO
    if (movelen <= 1) {
-      // If we just took off the last character of a non-blank line, and
-      // fixpos is true, we don't want to end up positioned at the ZERO,
-      // unless "restart_edit" is set
+      //If we just took off the last character of a non-blank line, and fixpos is true, we don't 
+      //want to end up positioned at the ZERO, unless "restart_edit" is set
       if (col > 0 && fixpos && restart_edit == 0) {
          --curPor->cursor.col;
          curPor->cursor.coladd = 0;
@@ -1041,11 +1032,11 @@ del_bytes(
       count = oldlen - col;
       movelen = 1;
    }
-   newlen = oldlen - count;
+   ColNr newlen = oldlen - count;
 
-   // If the old line has been allocated the deletion can be done in the
-   // existing line. Otherwise a new line has to be allocated
-   alloc_newp = !ml_line_alloced();    // check if oldp was allocated
+   //If the old line has been allocated the deletion can be done in the
+   //existing line. Otherwise a new line has to be allocated
+   int alloc_newp = !ml_line_alloced();    // check if oldp was allocated
    CS newp;
    if (!alloc_newp)
       newp = oldp;             // use same allocated memory
@@ -1073,9 +1064,7 @@ del_bytes(
 // insertLine - simply insert a line below or above the current line. Applies autoindent
 // Return OK for success, FAIL for failure
 pub int
-insertLine(
-   int      dir // FORWARD or BACKWARD
-){
+insertLine(Unt      dir) { // FORWARD or BACKWARD
    Pos oldCursor = curPor->cursor;
    // count white space on current line
    int newIndent = get_indent_lnum(curPor->cursor.lnum);
@@ -4644,7 +4633,7 @@ set_ref_in_opfunc(int copyID) {
 
 //Handle the "g@" operator: call 'operatorfunc'.
 private void
-op_function(Operator *oper UNUSED) {
+op_function(Operator* oper) {
    Var argv[2];
    Pos orig_start = curBook->opStart;
    Pos orig_end = curBook->opEnd;
@@ -4744,7 +4733,7 @@ get_op_vcol(Operator* oper, ColNr redo_VIsual_vcol, int initial) { //adjust posi
 }
 
 // Information for redoing the previous Visual selection.
-comptime typedef struct {
+typedef struct {
    int mode;   // 'v', 'V', or Ctrl-V
    LineNr lineCount;   // number of lines
    ColNr vcol;   // number of cols or end column
@@ -5297,7 +5286,7 @@ private Byte   tz_cache[64];
 #define FOR_ALL_TIMERS(t) \
     for ((t) = firstTimerS; (t) != NULL; (t) = (t)->next)
     
-comptime typedef struct tm Tm; 
+typedef struct tm Tm; 
 
 //Call either localtime(3) or localtime_r(3) from POSIX libc time.h, with the
 //latter version preferred for reentrancy.
@@ -5356,7 +5345,7 @@ get_ctime(Tyme thetime, int add_newline) {
 
 // "localtime()" function
 pub void
-f_localtime(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
+f_localtime(Arr(Var), OUT Var* returnVar) {
    returnVar->number = (Long)time(NULL);
 }
 
@@ -5377,7 +5366,7 @@ list2proftime(Var *arg, ProfTime *tm) {
 
 // "reltime()" function
 pub void
-f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+f_reltime(Arr(Var) argVars, OUT Var* returnVar) {
    ProfTime   res;
    ProfTime   start;
 
@@ -5406,7 +5395,7 @@ f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
 }
 
 pub void
-f_reltimefloat(Arr(Var) argVars UNUSED, OUT Var* returnVar) {
+f_reltimefloat(Arr(Var) argVars, OUT Var* returnVar) {
    ProfTime   tm;
 
    returnVar->tag = VAR_FLOAT;
@@ -5823,7 +5812,7 @@ f_timer_info(Arr(Var) argVars, OUT Var* returnVar) {
 
 // "timer_pause(timer, paused)" function
 pub void
-f_timer_pause(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+f_timer_pause(Arr(Var) argVars, OUT Var*) {
    if (argVars[0].tag != VAR_NUMBER) {
       emsg(_(e_number_expected));
       return;
@@ -5871,7 +5860,7 @@ f_timer_start(Arr(Var) argVars, OUT Var* returnVar) {
 
 // "timer_stop(timer)" function
 pub void
-f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
+f_timer_stop(Arr(Var) argVars, OUT Var*) {
    if (check_for_number_arg(argVars, 0) == FAIL)
       return;
 
@@ -5882,7 +5871,7 @@ f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED) {
 
 // "timer_stopall()" function
 pub void
-f_timer_stopall(Arr(Var) argVars UNUSED, OUT Var* returnVar UNUSED) {
+f_timer_stopall(Arr(Var), OUT Var*) {
    stop_all_timers();
 }
 
@@ -6122,7 +6111,7 @@ private int timer_created = false;
 
 // Callback for when the timer expires.
 private void
-set_flag(union sigval _unused UNUSED) {
+set_flag(union sigval) {
    timeout_flag = true;
 }
 
@@ -6206,7 +6195,7 @@ private volatile sig_atomic_t   alarm_pending        = false;
 
 // Handle SIGALRM for a timeout.
 private void
-set_flag SIGDEFARG(sigarg) {
+set_flag(int) {
    if (alarm_pending)
       alarm_pending = false;
    else
@@ -6654,7 +6643,7 @@ get_sw_value_indent(Book* book, int left) {
 
 //Idem, using virtual column "col".
 pub long
-get_sw_value_col(Book* book, ColNr col UNUSED, int left UNUSED) {
+get_sw_value_col(Book* book, ColNr, int) {
    return book->o.shiftWidth;
 }
 

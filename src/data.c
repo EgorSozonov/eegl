@@ -138,7 +138,7 @@ private int parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_e
 private int format_typeof(CS type);
 private CS format_typename(CS type);
 private int adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type);
-private int parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs UNUSED);
+private int parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs);
 private void skip_to_arg(
     Arr(CS) ap_types,
     va_list ap_start,
@@ -161,7 +161,7 @@ private int json_decode_all(OUT Var* res, JsReader* reader);
 
 
 pub
-#define GEN_TYPE_L(acc, T) acc typedef struct {\
+#define GEN_TYPE_L(acc, T) typedef struct {\
    T* c;\
    Unt len;\
    Unt cap;\
@@ -277,7 +277,7 @@ list_alloc(void) {
 
 // list_alloc() with an ID for alloc_fail().
 pub List *
-list_alloc_id(AllocId id UNUSED) {
+list_alloc_id(AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
       return NULL;
    return (list_alloc());
@@ -1215,7 +1215,7 @@ list2string(Var* tv, int copyID, int restore_copyID) {
    return (CS)ga.c;
 }
 
-comptime typedef struct join_S {
+typedef struct join_S {
    CS s;
    Byte* tofree;
 } Join;
@@ -1582,13 +1582,13 @@ private int item_compare(const void *s1, const void *s2);
 private int item_compare2(const void *s1, const void *s2);
 
 // struct used in the array that's given to qsort()
-comptime typedef struct {
+typedef struct {
    ListItem   *item;
    int      idx;
 } SortItem;
 
 // struct storing information about current sort
-comptime typedef struct {
+typedef struct {
    int item_compare_ic;
    int item_compare_lc;
    int item_compare_numeric;
@@ -4837,7 +4837,7 @@ allocBag(void) {
 
 //allocBag() with an ID for alloc_fail().
 pub Bag *
-allocBag_id(AllocId id UNUSED) {
+allocBag_id(AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(sizeof(List)))
       return NULL;
    return allocBag();
@@ -5694,7 +5694,7 @@ bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    dictitem_remove(b, di, S"remove()");
 }
 
-comptime typedef enum {
+typedef enum {
    DICT2LIST_KEYS,
    DICT2LIST_VALUES,
    DICT2LIST_ITEMS,
@@ -7000,7 +7000,7 @@ f_assert_true(Arr(Var) argvars, Var* returnVar) {
 
 //"test_alloc_fail(id, countdown, repeat)" function
 pub void
-f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_alloc_fail(Arr(Var) argvars, Var* returnVar) {
     if (argvars[0].tag != VAR_NUMBER
        || argvars[0].number <= 0
        || argvars[1].tag != VAR_NUMBER
@@ -7019,11 +7019,11 @@ f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_test_autochdir(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_test_autochdir(Arr(Var), Var*) {
 }
 
 pub void
-f_test_feedinput(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_feedinput(Arr(Var) argvars, Var*) {
 #ifdef USE_INPUT_BUF
    CS val = convertVarToStringSingleUse(&argvars[0]);
    if (val) {
@@ -7049,7 +7049,7 @@ f_test_getvalue(Arr(Var) argvars, Var* returnVar) {
 
 //"test_option_not_set({name})" function
 pub void
-f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_option_not_set(Arr(Var) argvars, Var*) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
 
@@ -7060,7 +7060,7 @@ f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 //"test_override({name}, {val})" function
 pub void
-f_test_override(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_override(Arr(Var) argvars, Var*) {
    CS name = S"";
    static int save_starting = -1;
 
@@ -7177,21 +7177,21 @@ f_test_refcount(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_test_garbagecollect_now(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
-    // This is dangerous, any Lists and Dicts used internally may be freed while still in use.
-    if (!get_EeglVar_nr(VV_TESTING))
-   emsg(_(e_calling_test_garbagecollect_now_while_v_testing_is_not_set));
-    else
-   garbage_collect(true);
+f_test_garbagecollect_now(Arr(Var), Var*) {
+   // This is dangerous, any Lists and Dicts used internally may be freed while still in use.
+   if (!get_EeglVar_nr(VV_TESTING))
+      emsg(_(e_calling_test_garbagecollect_now_while_v_testing_is_not_set));
+   else
+      garbage_collect(true);
 }
 
 pub void
-f_test_garbagecollect_soon(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_test_garbagecollect_soon(Arr(Var), Var*) {
    may_garbage_collect = true;
 }
 
 pub void
-f_test_ignore_error(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_ignore_error(Arr(Var) argvars, Var*) {
    if (check_for_string_arg(argvars, 0) == FAIL)
       return;
 
@@ -7199,63 +7199,63 @@ f_test_ignore_error(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_test_null_blob(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_blob(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_BLOB;
    returnVar->blob = NULL;
 }
 
 pub void
-f_test_null_channel(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_channel(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_CHANNEL;
    returnVar->channel = NULL;
 }
 
 pub void
-f_test_null_dict(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_dict(Arr(Var), Var* returnVar) {
    returnVar_dict_set(returnVar, NULL);
 }
 
 pub void
-f_test_null_job(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_job(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_JOB;
    returnVar->job = NULL;
 }
 
 pub void
-f_test_null_list(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_list(Arr(Var), Var* returnVar) {
    returnVar_list_set(returnVar, NULL);
 }
 
 pub void
-f_test_null_function(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_function(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_FUNC;
    returnVar->string = NULL;
 }
 
 pub void
-f_test_null_partial(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_partial(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_PARTIAL;
    returnVar->partial = NULL;
 }
 
 pub void
-f_test_null_string(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_null_string(Arr(Var), Var* returnVar) {
    returnVar->tag = VAR_STRING;
    returnVar->string = NULL;
 }
 
 pub void
-f_test_unknown(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_unknown(Arr(Var), Var* returnVar) {
     returnVar->tag = VAR_UNKNOWN;
 }
 
 pub void
-f_test_void(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_test_void(Arr(Var), Var* returnVar) {
     returnVar->tag = VAR_VOID;
 }
 
 pub void
-f_test_setmouse(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_setmouse(Arr(Var) argvars, Var*) {
    if (argvars[0].tag != VAR_NUMBER || argvars[1].tag != VAR_NUMBER) {
       emsg(_(e_invalid_argument));
       return;
@@ -7266,7 +7266,7 @@ f_test_setmouse(Arr(Var) argvars, Var* returnVar UNUSED) {
 }
 
 pub void
-f_test_settime(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_test_settime(Arr(Var) argvars, Var*) {
    time_for_testing = (time_t)tv_get_number(&argvars[0]);
 }
 
@@ -8199,7 +8199,7 @@ private int has_match(CS needle, CS haystack);
 #define SCORE_MIN (-INFINITY)
 #define SCORE_SCALE 1000
 
-comptime typedef struct {
+typedef struct {
    int      idx;      // used for stable sort
    ListItem* item;
    int score;
@@ -8963,7 +8963,7 @@ has_match(Byte *needle, Byte *haystack) {
    return 1;
 }
 
-comptime typedef struct match_struct {
+typedef struct match_struct {
    int needle_len;
    int haystack_len;
    int lower_needle[MATCH_MAX_LEN];     // stores codepoints
@@ -10102,7 +10102,7 @@ adjust_types(OUT Byte*** ap_types, int arg, int* num_posarg, CS type) {
 
 
 private int
-parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs UNUSED) {
+parse_fmt_types(Byte*** ap_types, int* num_posarg, CS fmt, Var* tvs) {
    Byte* p = fmt;
    CS arg = NULL;
 
@@ -11904,13 +11904,13 @@ json_decode_string(JsReader* reader, Var* res, int quote) {
    return MAYBE;
 }
 
-comptime typedef enum {
+typedef enum {
    JSON_ARRAY,      // parsing items in an array
    JSON_OBJECT_KEY,   // parsing key of an object
    JSON_OBJECT      // parsing item in an object, after the key
 } JsonDecodeType;
 
-comptime typedef struct {
+typedef struct {
    JsonDecodeType jd_type;
    Var jd_tv;   // the list or dict
    Var jd_key_tv;

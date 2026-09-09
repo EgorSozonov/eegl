@@ -81,9 +81,9 @@ private CS repl_commline(
    OUT CS* commline
 );
 private CS getargcmd(OUT CS* argp);
-private CS get_bad_name(Expand *xp UNUSED, int idx);
+private CS get_bad_name(Expand*, int idx);
 private int getargopt(Invocation* invo);
-private CS get_argoname(Expand* xp UNUSED, int idx);
+private CS get_argoname(Expand*, int idx);
 private void do_exbuffer(Invocation* invo);
 private int before_quit_autocmds(Portal *po, int quit_all);
 private void closePortalInternal(Portal* port, Tab* t);
@@ -156,7 +156,7 @@ private void evalTree(Book* book, UndoHeader* first_uhp, List* list);
 
 // ":ascii" and "ga".
 pub void
-do_ascii(Invocation* invo UNUSED){
+do_ascii(Invocation*){
    int cval;
    Byte buf1[20];
    Byte buf2[20];
@@ -323,7 +323,7 @@ private int   sort_flt;   // sort on floating number
 private int   sort_abort;   // flag to indicate if sorting has been interrupted
 
 // Struct to store info to be sorted.
-comptime typedef struct {
+typedef struct {
    LineNr   lnum;         // line number
    union {
       struct {
@@ -1462,7 +1462,7 @@ make_filter_cmd(CS cmd, NULLABLE CS inputFName, NULLABLE CS outputFName){
 //  ^?      ^H
 //not ^?   ^?
 pub void
-do_fixdel(Invocation* invo UNUSED) {
+do_fixdel(Invocation*) {
     CS p = find_termcode(S"kb");
     termAddRecognizedTermcode(S"kD", p && *p == DEL ? (CS)CTRL_H_STR : DEL_STR, false);
 }
@@ -2849,7 +2849,7 @@ private CS prevSubstS = NULL;   // previous substitute pattern
 private Boole globalNeedBeginlineS = false;   // call beginline() after ":g"
 
 // Flags that are kept between calls to :substitute.
-comptime typedef struct {
+typedef struct {
    Boole do_all;    // do multiple substitutions per line
    Boole do_ask;    // ask for confirmation
    Boole do_count;  // count only
@@ -4062,8 +4062,8 @@ pub int
 prepare_tagpreview(
    int      undo_sync,       // sync undo when leaving the portal
    int      use_previewpopup,   // use popup if 'previewpopup' set
-   UsePopup   use_popup)       // use other popup portal
-{
+   UsePopup   use_popup       // use other popup portal
+){
    if (curPor->isPreview)
       return false;
 
@@ -4109,7 +4109,7 @@ prepare_tagpreview(
 
 // Make the user happy.
 pub void
-c_smile(Invocation* invo UNUSED) {
+c_smile(Invocation*) {
    static char *code[] = {
    "\34 \4o\14$\4ox\30 \2o\30$\1ox\25 \2o\36$\1o\11 \1o\1$\3 \2$\1 \1o\1$x\5 \1o\1 \1$\1 \2o\10 "
    "\1o\44$\1o\7 \2$\1 \2$\1 \2$\1o\1$x\2 \2o\1 \1$\1 \1$\1 \1\"\1$\6 \1o\11$\4 \15$\4 \11$\1o\7 "
@@ -4122,18 +4122,15 @@ c_smile(Invocation* invo UNUSED) {
    "\1o\4$x\24 \1\"\5$\2o\5 \2\"\4$\1o\5$\1o\3 \1o\4$\2\"x\27 \2\"\5$\4o\2 \1\"\3$\1o\11$\3\"x\32 "
    "\2\"\7$\2o\1 \12$x\42 \4\"\13$x\46 \14$x\47 \12$\1\"x\50 \1\"\3$\4\"x"
    };
-   char *p;
-   int n;
-   int i;
 
    msg_start();
    msg_putchar('\n');
-   for (i = 0; i < 2; ++i) {
-      for (p = code[i]; *p != ZERO; ++p) {
+   for (int i = 0; i < 2; ++i) {
+      for (char* p = code[i]; *p != ZERO; ++p) {
          if (*p == 'x')
             msg_putchar('\n');
          else {
-            for (n = *p++; n > 0; --n) {
+            for (int n = *p++; n > 0; --n) {
                msg_putchar(*p);
             } 
          } 
@@ -4954,7 +4951,7 @@ private void   close_redir(void);
 private Byte dollar_command[2] = {'$', ZERO};
 
 // Struct to save a few things while debugging.  Used in doCommand() only.
-comptime typedef struct {
+typedef struct {
    int force_abort;
    Exception* caught_stack;
    CS vv_exception;
@@ -6865,7 +6862,7 @@ findCommand(Invocation* invo, int* full, int (*lookup)(CS, Unt, int cmd)) {
    return p;
 }
 
-comptime typedef struct {
+typedef struct {
    char   *name;
    int      minlen;
    int      has_count;  // :123verbose  :3tab
@@ -7122,24 +7119,23 @@ default_address(Invocation* invo) {
 //Return MAXLNUM when no address was found.
 pub LineNr
 doGetCommandAddress(
-   Invocation   *invo UNUSED,
+   Invocation* invo,
    OUT CS* ptr,
    CommandAddress   addressKind,
    int skip,      // only skip the address, don't use it
    int silent,      // no errors or side effects
    int to_other_file,  // flag: may jump to other file
-   int address_count UNUSED // 1 for first address, >1 after comma
+   int address_count // 1 for first address, >1 after comma
 ){
-   int      c;
-   int      i;
-   long   n;
-   Pos   pos;
-   Pos   *fp;
-   LineNr   lnum;
-   Book   *book;
+   int c;
+   int i;
+   long n;
+   Pos pos;
+   Pos* fp;
+   Book* book;
 
    CS cmd = skipwhite(*ptr);
-   lnum = MAXLNUM;
+   LineNr lnum = MAXLNUM;
    do {
       switch (*cmd) {
       case '.':             // '.' - Cursor position
@@ -7193,8 +7189,8 @@ doGetCommandAddress(
             break;
          case ADDR_LOADED_BUFFERS:
             book = lastBook;
-            while (book->mem.mfile == NULL) {
-               if (book->prev == NULL)
+            while (!book->mem.mfile) {
+               if (!book->prev)
                   break;
                book = book->prev;
             }
@@ -7405,8 +7401,7 @@ doGetCommandAddress(
          else {
             // Relative line addressing: need to adjust for lines in a
             // closed fold after the first address.
-            if (addressKind == ADDR_LINES && (i == '-' || i == '+')
-                            && address_count >= 2)
+            if (addressKind == ADDR_LINES && (i == '-' || i == '+') && address_count >= 2)
                 (void)getFolds(lnum, NULL, OUT &lnum);
             if (i == '-')
                 lnum -= n;
@@ -7958,7 +7953,7 @@ get_bad_opt(CS p, Invocation* invo) {
 
 // Function given to expandGeneric() to obtain the list of bad= names.
 private CS
-get_bad_name(Expand *xp UNUSED, int idx) {
+get_bad_name(Expand*, int idx) {
    // Note: Keep this in sync with getargopt.
    static CS p_bad_values[] = {
       S"?",
@@ -8023,7 +8018,7 @@ getargopt(Invocation* invo) {
 
 // Function given to expandGeneric() to obtain the list of ++opt names.
 private CS
-get_argoname(Expand* xp UNUSED, int idx) {
+get_argoname(Expand*, int idx) {
    // Note: Keep this in sync with getargopt.
    static CS p_opt_values[] = {SMAP((CS),
       "encoding=",
@@ -8043,8 +8038,8 @@ get_argoname(Expand* xp UNUSED, int idx) {
 pub int
 expand_argopt(
    CS pat,
-   Expand    *xp,
-   RegMatch  *rmp,
+   Expand* xp,
+   RegMatch* rmp,
    OUT ExpandMatch* matches
 ) {
    if (xp->input.c > xp->fullInput && *(xp->input.c - 1) == '=') {
@@ -8209,12 +8204,12 @@ find_nextcmd(CS p) {
 
 // Function given to expandGeneric() to obtain the list of command names.
 pub CS
-get_command_name(Expand *xp UNUSED, int idx) {
+get_command_name(Expand *, int idx) {
    if (idx >= (int)COUNT_COMMANDS)
       return expand_user_command_name(idx);
       // the following are not real commands
    if (STRNCMP(commands[idx].name, "{", 1) == 0 || STRNCMP(commands[idx].name, "}", 1) == 0)
-      return (CS)"";
+      return S"";
    return commands[idx].name;
 }
 
@@ -8311,7 +8306,7 @@ c_quit(Invocation* invo) {
 
 // ":cquit".
 pub void
-c_cquit(Invocation* invo UNUSED) {
+c_cquit(Invocation* invo) {
    // this does not always pass on the exit code to the Manx compiler. why?
    exitEegl(invo->addr_count > 0 ? (int)invo->line2 : EXIT_FAILURE);
 }
@@ -8382,7 +8377,7 @@ private Callback findFnCb;
 
 // ":pclose": Close any preview portal.
 pub void
-c_pclose(Invocation* invo UNUSED) {
+c_pclose(Invocation* invo) {
    Portal* port;
 
    // First close any normal portal.
@@ -8624,10 +8619,10 @@ c_only(Invocation* invo) {
    if (portalLayout_locked(C_only))
       return;
    if (invo->addr_count > 0) {
-      Portal   *po;
-      int   wnr = invo->line2;
+      Portal* po;
+      int wnr = invo->line2;
       for (po = firstPor; --wnr > 0; ) {
-         if (po->next == NULL)
+         if (!po->next)
             break;
          else
             po = po->next;
@@ -8638,7 +8633,7 @@ c_only(Invocation* invo) {
 }
 
 pub void
-c_hide(Invocation* invo UNUSED) {
+c_hide(Invocation* invo) {
    // ":hide" or ":hide | cmd": hide current portal
    if (invo->skip)
       return;
@@ -8724,13 +8719,13 @@ c_goto(Invocation* invo) {
 
 // ":shell".
 pub void
-c_shell(Invocation* invo UNUSED) {
+c_shell(Invocation*) {
    do_shell(NULL, 0);
 }
 
 // ":preserve".
 pub void
-c_preserve(Invocation* invo UNUSED) {
+c_preserve(Invocation*) {
    curBook->flags |= BF_PRESERVED;
    ml_preserve(curBook, true);
 }
@@ -8894,7 +8889,7 @@ doFreeFindFnOption(void) {
 
 // Mark the global @findfunc callback with "copyID" so that it is not garbage collected.
 pub int
-set_ref_in_findfunc(int copyID UNUSED) {
+set_ref_in_findfunc(int copyID) {
    int abort = memSetRefInCallback(&findFnCb, copyID);
    return abort;
 }
@@ -9046,7 +9041,7 @@ c_tabmove(Invocation* invo) {
 
 // :tabs command: List tabs and their contents.
 pub void
-c_tabs(Invocation* invo UNUSED) {
+c_tabs(Invocation*) {
    Portal* po;
    int tabcount = 1;
 
@@ -9306,7 +9301,7 @@ do_exedit(Invocation* invo, Portal* old_curPor) {      // curPor before doing a 
 }
 
 pub void
-c_swapname(Invocation* invo UNUSED) {
+c_swapname(Invocation*) {
    if (curBook->mem.mfile == NULL || curBook->mem.mfile->fName == NULL)
       msg(_("No swap file"));
    else
@@ -9316,7 +9311,7 @@ c_swapname(Invocation* invo UNUSED) {
 //":syncbind" forces all scrollbound portals to have the same relative offset.
 //(1998-11-02 16:21:01  R. Edward Ralston <eralston@computer.org>)
 pub void
-c_syncbind(Invocation* invo UNUSED) {
+c_syncbind(Invocation*) {
    Portal   *po;
    Portal   *save_curPor = curPor;
    Book   *save_curbuf = curBook;
@@ -9553,7 +9548,7 @@ c_cd(Invocation* invo) {
 
 // ":pwd".
 pub void
-c_pwd(Invocation* invo UNUSED) {
+c_pwd(Invocation*) {
    if (mch_dirname(nameBuffG, MAXPATHL) == OK) {
       if (p_verbose > 0) {
          CS context = S"global";
@@ -9888,7 +9883,7 @@ c_rundo(Invocation* invo) {
 
 // ":redo".
 pub void
-c_redo(Invocation* invo UNUSED) {
+c_redo(Invocation*) {
    u_redo(1);
 }
 
@@ -10070,7 +10065,7 @@ c_redrawstatus(Invocation* invo) {
 
 // ":redrawtabpanel": force redraw of the tabpanel
 pub void
-c_redrawtabpanel(Invocation* invo UNUSED) {
+c_redrawtabpanel(Invocation*) {
    int save_isRedrawingDisabledG = isRedrawingDisabledG;
    isRedrawingDisabledG = 0;
 
@@ -10098,7 +10093,7 @@ close_redir(void) {
 }
 
 pub int
-eeMkdir_emsg(CS name, int prot UNUSED) {
+eeMkdir_emsg(CS name, int prot) {
    if (eeMkdir(name, prot) != 0) {
       showErrFmtMsg(_(e_cannot_create_directory_str), name);
       return FAIL;
@@ -10300,7 +10295,7 @@ c_startinsert(Invocation* invo) {
 
 // ":stopinsert"
 pub void
-c_stopinsert(Invocation* invo UNUSED) {
+c_stopinsert(Invocation*) {
    restart_edit = 0;
    stop_insert_mode = true;
    // when called from remote_expr in insert mode, make sure insert mode is
@@ -10321,14 +10316,13 @@ exec_normal_cmd(CS cmd, int remap, int silent) {
 // Execute normalAction() until there is no typeahead left.
 // When "use_vpeekc" is true use vpeekc() to check for available chars.
 pub void
-exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop UNUSED) {
-   Operator   oper;
-   int      c;
-
-   // When calling vpeekc() from feedkeys() it will return Ctrl_C when there
-   // is nothing to get, so also check for Ctrl_C.
+exec_normal(int was_typed, int use_vpeekc, int may_use_terminal_loop) {
+   //When calling vpeekc() from feedkeys() it will return Ctrl_C when there
+   //is nothing to get, so also check for Ctrl_C.
+   Operator oper;
    clear_oparg(&oper);
    finish_op = false;
+   Unt c;
    while ((!stuff_empty()
       || ((was_typed || !typebuf_typed()) && typeBufG.validLen > 0)
       || (use_vpeekc && (c = vpeekc()) != ZERO && c != Ctrl_C)) && !gotInterruptG
@@ -11019,7 +11013,7 @@ setHlsearch(Boole flag) {
 
 // ":nohlsearch"
 pub void
-c_nohlsearch(Invocation* invo UNUSED) {
+c_nohlsearch(Invocation*) {
    setHlsearch(false);
    redraw_all_later(UPD_SOME_VALID);
 }
@@ -11408,7 +11402,7 @@ veryfast_breakcheck(void) {
 #define WRITE_BUILDER_SIZE 8192
 
 // Structure passed around between functions.
-comptime typedef struct {
+typedef struct {
    Book* bk;
    FILE* file;
 } BufInfo;
@@ -13470,19 +13464,17 @@ u_sync(int force) {  // Also sync when no_u_sync is set.
 
 //":undolist": List the leaves of the undo tree
 pub void
-c_undolist(Invocation* invo UNUSED) {
+c_undolist(Invocation*) {
    ArrayList   ga;
    UndoHeader   *uhp;
-   int      mark;
-   int      nomark;
-   int      changes = 1;
-   int      len;
+   int changes = 1;
+   int len;
 
    //1: walk the tree to find all leafs, put the info in "ga".
    //2: sort the lines
    //3: display the list
-   mark = ++lastmark;
-   nomark = ++lastmark;
+   int mark = ++lastmark;
+   int nomark = ++lastmark;
    ga_init2(&ga, sizeof(char *), 20);
 
    uhp = curBook->undo.oldHead;
@@ -13566,7 +13558,7 @@ c_undolist(Invocation* invo UNUSED) {
 
 //":undojoin": continue adding to the last entry list
 pub void
-c_undojoin(Invocation* invo UNUSED) {
+c_undojoin(Invocation* invo) {
    if (curBook->undo.newHead == NULL)
       return;          // nothing changed before
    if (curBook->undo.currHead != NULL) {
@@ -13577,9 +13569,8 @@ c_undojoin(Invocation* invo UNUSED) {
       return;          // already unsynced
    if (p_ul < 0)
       return;          // no entries, nothing to do
-   else
-      // Append next change to the last entry
-      curBook->undo.synced = false;
+   // Append next change to the last entry
+   curBook->undo.synced = false;
 }
 
 //Called after writing or reloading the file and setting wasModified to false.

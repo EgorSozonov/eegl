@@ -57,7 +57,7 @@
 #define P_COLON    0x1000000 //values use colons to create sublists
 #define P_NO_MKRC  0x2000000 //don't include in :mkeeglrc output
 
-comptime typedef enum {
+typedef enum {
    PRINT_CHANGED,
    PRINT_NONTERMINAL
 } ToPrint;
@@ -86,15 +86,15 @@ comptime typedef enum {
 //Type for the hook that is invoked after an option value is changed to apply the new value.
 //
 //Return NULL if the post-application hook ran succesfully, or error message if not.
-comptime typedef CS (*OptionSetter)(OptionChange* cha);
+typedef CS (*OptionSetter)(OptionChange* cha);
 
 //Return NULL if the new value is valid and can be applied to the option.
 //Otherwise return an error message.
-comptime typedef CS (*OptionValidator)(OptionChange* cha);
+typedef CS (*OptionValidator)(OptionChange* cha);
 
 //Argument for the callback function (OptionExpander) invoked after a string
 //option value is expanded for cmdline completion.
-comptime typedef struct {
+typedef struct {
    OptionRef ref;
    // The original option value, escaped.
    OptionValue origValue;
@@ -123,7 +123,7 @@ comptime typedef struct {
 //Return OK if the expansion succeeded (matches have to be set). Otherwise FAIL.
 //
 //Note: If returned FAIL or matches->len is 0, matches->c will NOT be freed by caller.
-comptime typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
+typedef int (*OptionExpander)(OptExpand* args, OUT ExpandMatch* matches);
 
 private struct Option { //:Option
    CS fullName;   // full option name
@@ -286,7 +286,7 @@ private CS (p_cfc_values[]) =;
 private CS setCompletefuzzycollect(OptionChange* cha);
 private int expandCompletefuzzycollect(OptExpand* args, OUT ExpandMatch *matches);
 private CS did_set_completeitemalign(OptionChange* cha);
-private CS did_set_completepopup(OptionChange* cha UNUSED);
+private CS did_set_completepopup(OptionChange*);
 private CS did_set_debug(OptionChange* cha);
 private int expand_set_debug(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_diffanchors(OptionChange* cha);
@@ -298,7 +298,7 @@ private CS(p_popup_option_align_values[]) =;
 private CS(p_popup_option_border_values[]) =;
 private int expand_set_popupoption(OptExpand* args, OUT ExpandMatch* matches);
 private CS setCursorInsert(OptionChange* cha);
-private CS setCursorNormal(OptionChange* cha UNUSED);
+private CS setCursorNormal(OptionChange* cha);
 private int expand_set_formatoptions(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_helplang(OptionChange* cha);
 private CS setOptexpr(OptionChange* cha);
@@ -306,19 +306,19 @@ private CS (p_ead_values[]) =;
 private CS setEadirection(OptionChange* cha);
 private int expandEadirection(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_eventignore(OptionChange* cha);
-private CS did_set_verbosefile(OptionChange* cha UNUSED);
+private CS did_set_verbosefile(OptionChange*);
 private CS setEeglinfo(OptionChange* cha);
 private CS did_set_whichwrap(OptionChange* cha);
 private int expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches);
 private CS(p_wim_values[]) =;
-private CS did_set_wildmode(OptionChange* cha UNUSED);
+private CS did_set_wildmode(OptionChange*);
 private int expand_set_wildmode(OptExpand* args, OUT ExpandMatch* matches);
 private CS(p_wop_values[]) =;
 private CS setWildoptions(OptionChange* cha);
 private int expandWildoptions(OptExpand* args, OUT ExpandMatch* matches);
 private int expand_set_eventignore(OptExpand* args, OUT ExpandMatch* matches);
 private CS did_set_foldexpr(OptionChange* cha);
-private CS did_set_foldignore(OptionChange* cha UNUSED);
+private CS did_set_foldignore(OptionChange*);
 private CS did_set_foldmarker(OptionChange* cha);
 private CS setFoldMethod(OptionChange* cha);
 private int expand_set_foldmethod(OptExpand* args, OUT ExpandMatch *matches);
@@ -331,7 +331,7 @@ private CS did_set_matchpairs(OptionChange* cha);
 private CS (p_mopt_values[]) =;
 private CS did_set_messagesopt(OptionChange* cha);
 private int expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS did_set_imactivatekey(OptionChange* cha UNUSED);
+private CS did_set_imactivatekey(OptionChange*);
 private CS setExpandTriggers(OptionChange* cha);
 private CS did_set_iskeyword(OptionChange* cha);
 private CS parse_status_rulerformat(OptionChange* cha);
@@ -341,7 +341,7 @@ private CS (p_tplo_align_values[]) =;
 private int expand_set_tabpanelopt(OptExpand* args, OUT ExpandMatch* matches);
 private CS setScrollopt(OptionChange* cha);
 private int expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches);
-private CS setWlseat(OptionChange* cha UNUSED);
+private CS setWlseat(OptionChange*);
 private CS did_set_showbreak(OptionChange* cha);
 private CS did_set_showcmdloc(OptionChange* cha);
 private int expand_set_showcmdloc(OptExpand* args, OUT ExpandMatch* matches);
@@ -2660,7 +2660,7 @@ did_set_completeitemalign(OptionChange* cha) {
 }
 
 private CS
-did_set_completepopup(OptionChange* cha UNUSED) {
+did_set_completepopup(OptionChange*) {
    if (parse_completepopup(NULL) == FAIL)
       return e_invalid_argument;
 
@@ -2784,7 +2784,7 @@ setCursorInsert(OptionChange* cha) {
 }
 
 private CS
-setCursorNormal(OptionChange* cha UNUSED) {
+setCursorNormal(OptionChange* cha) {
    Byte newShape = parseCursorShape(cha->newVal.string);
    if (newShape >= 3)
       return e_invalid_argument;
@@ -2858,7 +2858,7 @@ did_set_eventignore(OptionChange* cha) {
 }
 
 private CS
-did_set_verbosefile(OptionChange* cha UNUSED) {
+did_set_verbosefile(OptionChange*) {
    verbose_stop();
    if (p_vfile && verbose_open() == FAIL)
       return e_invalid_argument;
@@ -2945,7 +2945,7 @@ expand_set_whichwrap(OptExpand* args, OUT ExpandMatch* matches) {
 private CS(p_wim_values[]) = {SMAP((CS), "full", "longest", "list", "lastused", "noselect")};
 
 private CS
-did_set_wildmode(OptionChange* cha UNUSED) {
+did_set_wildmode(OptionChange*) {
    if (check_opt_wim() == FAIL)
       return e_invalid_argument;
    return NULL;
@@ -2988,7 +2988,7 @@ did_set_foldexpr(OptionChange* cha) {
 }
 
 private CS
-did_set_foldignore(OptionChange* cha UNUSED) {
+did_set_foldignore(OptionChange*) {
    if (curPor->o.foldMethod == FOLD_INDENT)
       foldUpdateAll(curPor);
    return NULL;
@@ -3105,9 +3105,9 @@ expand_set_messagesopt(OptExpand* args, OUT ExpandMatch* matches) {
 #if defined(PROTO)
 
 private CS
-did_set_imactivatekey(OptionChange* cha UNUSED) {
+did_set_imactivatekey(OptionChange*) {
    if (!im_xim_isvalid_imactivate())
-   return e_invalid_argument;
+      return e_invalid_argument;
    return NULL;
 }
 #endif
@@ -3232,10 +3232,10 @@ expand_set_scrollopt(OptExpand* args, OUT ExpandMatch* matches) {
 }
 
 private CS
-setWlseat(OptionChange* cha UNUSED) {
-    //If there isn't any seat named 'wlseat', then let the Wayland clipboard be
-    //unavailable. Ignore errors returned.
-    wayland_cb_reload();
+setWlseat(OptionChange*) {
+   //If there isn't any seat named 'wlseat', then let the Wayland clipboard be
+   //unavailable. Ignore errors returned.
+   wayland_cb_reload();
 
    return NULL;
 }
@@ -3757,7 +3757,7 @@ calcDefaultStringValuesLen(Arr(Option) opts, Unt count) {
 private Unt
 calcGlobalStringValuesLen() {
    Unt totalLen = 0;
-   Option* o UNUSED;
+   Option* o;
    FOR_GLOBAL(o) {
       if (o->defaultValue.tag == OPTION_STRING && (*o->c.reference.string)) {
          totalLen += (STRLEN(*o->c.reference.string) + 1); // +1 for the ZERO
@@ -3871,7 +3871,7 @@ updateStringRef(OptionChange* cha) {
          Polystring buf = polystring(newCap);
          
          CS wr = buf.c;
-         Option* o UNUSED;
+         Option* o;
          FOR_GLOBAL(o) {
             if (*o->c.reference.string == cha->oldVal.string) {
                
@@ -3976,7 +3976,7 @@ pub void
 optInit0() {
    langmap_init();
    
-   Option* o UNUSED;
+   Option* o;
    FOR_BOOK(o) {
       o->flags |= P_BOOK;
    }
@@ -4142,7 +4142,7 @@ put_setbool(
 //
 //Return FAIL on error, OK otherwise.
 pub int
-writeOptionsAsSet(FILE *fd UNUSED) {
+writeOptionsAsSet(FILE *) {
    Option   *p;
 
    //Terminal options are also not written. Do the loop over the options twice: once for 
@@ -4190,7 +4190,7 @@ setDefaultValuesForAllOptions(SetScope setScope) {
    copyDefaultsToGlobalStringValues(OUT &bookStringOptionsG, OPTIONS_BOOK, OPTION_BOOK_COUNT);
    copyDefaultsToGlobalStringValues(OUT &portalStringOptionsG, OPTIONS_PORTAL, OPTION_PORTAL_COUNT);
    
-   Option* o UNUSED;
+   Option* o;
    FOR_GLOBAL(o) {
       if (o->defaultValue.tag != OPTION_STRING && (o->flags & P_NODEFAULT) == 0) {
          setDefault(o, SET_GLOBAL);
@@ -4226,7 +4226,7 @@ optSetLocalOptionsToDefault(Portal *wp, Boole doBook) {
    curBook = curPor->book;
    block_autocmds();
 
-   Option* o UNUSED;
+   Option* o;
    FOR_PORTAL(o) {
       if ((o->flags & P_NODEFAULT) == 0 && !isOptionAtDefault(o, getRefInScope(o, OPT_LOCAL)))
          setDefault(o, SET_LOCAL);
@@ -4398,7 +4398,7 @@ findOption(CS arg) {
 pub Bag*
 getBookOrPortOptions(Boole bufopt) {
    Bag* b = allocBag();
-   Option* o UNUSED;
+   Option* o;
    if (bufopt) { // book-local
       FOR_BOOK(o) {
          if (o->defaultValue.tag == OPTION_STRING)
@@ -4546,7 +4546,7 @@ optsCopyToBook(OUT Book* book, Unt flags) {
 
 pub int
 optExpandOption(
-   Expand* xp UNUSED,
+   Expand* xp,
    RegMatch* regmatch,
    CS fuzzystr,
    Boole canFuzzy,
@@ -4565,7 +4565,7 @@ optExpandOption(
       (void)matchString(names[match], regmatch, matches, doFuzzy, fuzzystr, &fuzzy);
    }
    
-   Option* o UNUSED;
+   Option* o;
    FOR_GLOBAL(o) {
       matchString(xp->fullInput, regmatch, matches, doFuzzy, fuzzystr, &fuzzy);
    }
@@ -4957,7 +4957,7 @@ free_locales(void) {
 
 //Function given to expandGeneric() to obtain the possible arguments of the ":language" command.
 pub CS
-get_lang_arg(Expand* xp UNUSED, int idx) {
+get_lang_arg(Expand*, int idx) {
    switch (idx) {
    case 0: return S"messages";
    case 1: return S"ctype";
@@ -4971,7 +4971,7 @@ get_lang_arg(Expand* xp UNUSED, int idx) {
 
 //Function given to expandGeneric() to obtain the available locales.
 pub CS
-get_locales(Expand* xp UNUSED, int idx) {
+get_locales(Expand*, int idx) {
    init_locales();
    return locales ? locales[idx] : null;
 }

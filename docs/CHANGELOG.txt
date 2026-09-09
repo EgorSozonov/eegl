@@ -328,7 +328,8 @@ tag.c:do_tag (weird matches is static, also newMatches?)
 [+] remove dependency on libattr - migrate to glibc 
 [ ] Frozen options mode? (options cannot be changed after the init script)
 [+] Transition to pure 256-color palette and removal of double-width symbols
-[ ] Replace VimScript with Wren
+[+] Removed UNUSED from function params because with C23 it's not needed
+[ ] Replace VimScript with Eyr
 [ ] Intern the code of unibillium and get rid of the "tinfo" dependency
 [ ] @errorformat is unsuitable for an option: it should be per-filetype. We need a new event type
    to control via autocommands: the IsCodeChange. Scratch buffers are created with isCode = false. 

@@ -73,17 +73,17 @@ int current_search(long   count, Boole forward);
 int linewhite(LineNr lnum);
 void find_pattern_in_path(
    CS ptr,      // pointer to search pattern
-   int      dir UNUSED,   // direction of expansion
-   int      len,      // length of search pattern
-   int      whole,      // match whole words only
-   int      skip_comments,   // don't match inside comments
-   int      type,      // Type of search; are we looking for a type? a macro?
-   long   count,
-   int      action,      // What to do when we find it
-   LineNr   start_lnum,   // first line to start searching
-   LineNr   end_lnum,   // last line for searching
-   int      forceit,   // If true, always switch to the found path
-   int      silent      // Do not print messages when ACTION_EXPAND
+   Unt dir,   // direction of expansion
+   int len,      // length of search pattern
+   int whole,      // match whole words only
+   int skip_comments,   // don't match inside comments
+   int type,      // Type of search; are we looking for a type? a macro?
+   Long count,
+   int action,      // What to do when we find it
+   LineNr start_lnum,   // first line to start searching
+   LineNr end_lnum,   // last line for searching
+   int forceit,   // If true, always switch to the found path
+   int silent      // Do not print messages when ACTION_EXPAND
 );
 SearchPattern * getPrevSearchPattern(int idx);
 int getPrevSearchOrSubstPattern(void);
@@ -111,16 +111,16 @@ Short update_search_hl(
 );
 int get_prevcol_hl_flag(Portal* po, Match* search_hl, long curcol);
 void get_search_match_hl(Portal* po, Match* search_hl, long col, OUT Short* charHiId);
-void f_clearmatches(Var* argvars, Var* returnVar UNUSED);
-void f_getmatches(Var *argvars, Var* returnVar UNUSED);
+void f_clearmatches(Var* argvars, Var*);
+void f_getmatches(Var *argvars, Var* returnVar);
 void f_setmatches(Var *argvars, Var* returnVar);
 void f_matchadd(Var *argvars, Var* returnVar);
 void f_matchaddpos(Var *argvars, Var* returnVar);
 void f_matcharg(Var* argvars, Var* returnVar);
-void f_matchdelete(Var *argvars UNUSED, Var* returnVar UNUSED);
+void f_matchdelete(Var *argvars, Var* returnVar);
 void c_match(Invocation* invo);
 void c_help(Invocation* invo);
-void c_helpclose(Invocation* invo UNUSED);
+void c_helpclose(Invocation*);
 CS check_help_lang(CS arg);
 int help_heuristic(
    CS matched_string,
@@ -135,6 +135,6 @@ int find_help_tags(
 void cleanup_help_tags(OUT ExpandMatch* matches);
 void prepare_help_buffer(void);
 void searchFixHelpBook(void);
-void c_exusage(Invocation* invo UNUSED);
-void c_usage(Invocation* invo UNUSED);
+void c_exusage(Invocation*);
+void c_usage(Invocation*);
 void c_helptags(Invocation* invo);

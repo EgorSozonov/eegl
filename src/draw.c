@@ -2739,7 +2739,7 @@ get_encoded_char_adv(Byte **p) {
    return strAdvanceMultibyte(p);
 }
 
-comptime typedef struct {
+typedef struct {
    Unt* cp;
    Text   name;
 } CharsTableEntry;
@@ -3002,7 +3002,7 @@ drawSetListChars(CS newVal, OUT ErrBuilder* errb) {
 
 // Function given to expandGeneric() to obtain possible arguments of the @fillchars
 pub CS
-get_fillchars_name(Expand *xp UNUSED, int idx) {
+get_fillchars_name(Expand *, int idx) {
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(fillCharsTable))
       return NULL;
    return fillCharsTable[idx].name.c;
@@ -3010,7 +3010,7 @@ get_fillchars_name(Expand *xp UNUSED, int idx) {
 
 // Function given to expandGeneric() to obtain possible arguments of the @listchars
 pub CS
-get_listchars_name(Expand *xp UNUSED, int idx) {
+get_listchars_name(Expand *, int idx) {
    if (idx < 0 || idx >= (int)ARRAY_LENGTH(listCharTable))
       return NULL;
 
@@ -3446,7 +3446,7 @@ showruler(int always) {
 
 // To be called when "updating_screen" was set before and now the postponed side effects may happen
 pub void
-after_updating_screen(int may_resize_shell UNUSED) {
+after_updating_screen(int) {
     updating_screen = false;
     term_check_channel_closed_recently();
 }
@@ -3694,7 +3694,7 @@ fold_line(
    }
 }
 
-comptime typedef struct {
+typedef struct {
    int topEnd;
    int midStart;
    int midEnd;
@@ -5001,7 +5001,7 @@ computeHilitingMargins(Portal* po, OUT int* leftCol, OUT int* rightCol) {
 }
 
 // structure with variables passed between drawLineOnScreen() and other functions
-comptime typedef struct {
+typedef struct {
    Byte drawState;   // what to draw next
 
    LineNr lnum;      // line number to be drawn
@@ -5601,7 +5601,7 @@ applyCursorlineHilite(DrawCtx* m) {
 
 #define VCOL_HLC (m->vcol - m->virtualOffset)
 
-comptime typedef struct {
+typedef struct {
    Decoration lineDecoSaved; 
    Boole signPresent; 
    LineNr lnum;
@@ -5633,7 +5633,7 @@ comptime typedef struct {
    ColNr leadcol;      // start of leading spaces
 } Subcontext;
 
-comptime typedef struct {
+typedef struct {
    Boole decoPriority;
    int mb_c; 
    Boole mb_utf8; 
@@ -7417,12 +7417,12 @@ f_screenchars(Arr(Var) argvars, Var* returnVar) {
 
 //"screencol()" function. First column is 1 to be consistent with virtcol().
 pub void
-f_screencol(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_screencol(Arr(Var), Var* returnVar) {
    returnVar->number = screen_screencol() + 1;
 }
 
 pub void
-f_screenrow(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_screenrow(Arr(Var), Var* returnVar) {
    returnVar->number = screen_screenrow() + 1;
 }
 

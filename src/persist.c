@@ -157,7 +157,7 @@ init_users(void) {
 
 //Function given to expandGeneric() to obtain user names.
 pub CS
-get_users(Expand *xp UNUSED, int idx) {
+get_users(Expand*, int idx) {
    init_users();
    if (idx < ga_users.len)
       return ((Byte **)ga_users.c)[idx];
@@ -217,7 +217,7 @@ get_user_name(CS builder, int len) {
 //{{{sessions
 
 // Variable flavor
-comptime typedef enum {
+typedef enum {
    VAR_FLAVOR_DEFAULT,   // doesn't start with uppercase
    VAR_FLAVOR_SESSION,   // starts with uppercase, some lower
    VAR_FLAVOR_EEGLINFO      // all uppercase
@@ -1094,20 +1094,20 @@ put_line(FILE *fd, CS s) {
 #define BARTYPE_MARK     4
 
 // Structure used for reading from the eeglinfo file.
-comptime typedef struct {
+typedef struct {
    CS line;   // text of the current line
    FILE* vir_fd;   // file descriptor
    int vir_version;   // eeglinfo version detected or -1
    ArrayList vir_barlines;   // lines starting with |
 } Vir;
 
-comptime typedef enum {
+typedef enum {
    BVAL_NR,
    BVAL_STRING,
    BVAL_EMPTY
 } BValKind;
 
-comptime typedef struct {
+typedef struct {
    BValKind   btag;
    long   bv_nr;
    Byte   *bv_string;

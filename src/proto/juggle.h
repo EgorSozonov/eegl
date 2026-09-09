@@ -3,13 +3,13 @@ void changed(void);
 void jugOnChangeToText(void);
 int trim_to_int(Long x);
 void f_listener_add(Arr(Var) argVars, OUT Var* returnVar);
-void f_listener_flush(Arr(Var) argVars, OUT Var* returnVar UNUSED);
+void f_listener_flush(Arr(Var) argVars, OUT Var*);
 void f_listener_remove(Arr(Var) argVars, OUT Var* returnVar);
 void may_jugInvokeListenersOnChangedText(Book* book, LineNr lnum, LineNr lnume, int added);
 void jugInvokeListenersOnChangedText(Book* book);
 void remove_listeners(Book* book);
 void changed_bytes(LineNr lnum, ColNr col);
-void inserted_bytes(LineNr lnum, ColNr col, int added UNUSED);
+void inserted_bytes(LineNr lnum, ColNr col, int added);
 void appended_lines(LineNr lnum, long count);
 void appended_lines_mark(LineNr lnum, long count);
 void deleted_lines(LineNr lnum, long count);
@@ -35,14 +35,8 @@ void opInsertCharBytes(CS targetLine, int charlen, Boole replace);
 void ins_str(CS s, Unt slen);
 int del_char(Boole fixpos);
 int del_chars(long count, Boole fixpos);
-int del_bytes(
-   long   count,
-   Boole      fixpos_arg,
-   int      use_delcombine UNUSED)       // 'delcombine' option applies
-;
-int insertLine(
-   int      dir // FORWARD or BACKWARD
-);
+int del_bytes(Long   count, Boole fixpos_arg, int      use_delcombine);
+int insertLine(Unt      dir);
 int get_leader_len(CS line, Byte** flags, int backward, int include_space);
 int openLine(
    Unt flags,
@@ -103,9 +97,9 @@ void jugExecuteVisualOperator(ActionArg* cap, int old_col, int clipbYank);
 void beep_flush(void);
 Tyme eeTime(void);
 CS get_ctime(Tyme thetime, int add_newline);
-void f_localtime(Arr(Var) argVars UNUSED, OUT Var* returnVar);
-void f_reltime(Arr(Var) argVars, OUT Var* returnVar UNUSED);
-void f_reltimefloat(Arr(Var) argVars UNUSED, OUT Var* returnVar);
+void f_localtime(Arr(Var), OUT Var* returnVar);
+void f_reltime(Arr(Var) argVars, OUT Var* returnVar);
+void f_reltimefloat(Arr(Var) argVars, OUT Var* returnVar);
 void f_reltimestr(Arr(Var) argVars, OUT Var* returnVar);
 void f_strftime(Arr(Var) argVars, OUT Var* returnVar);
 void f_strptime(Var* argVars, Var* returnVar);
@@ -118,10 +112,10 @@ int set_ref_in_timer(int copyID);
 int timer_valid(Timer *timer);
 void timer_free_all(void);
 void f_timer_info(Arr(Var) argVars, OUT Var* returnVar);
-void f_timer_pause(Arr(Var) argVars, OUT Var* returnVar UNUSED);
+void f_timer_pause(Arr(Var) argVars, OUT Var*);
 void f_timer_start(Arr(Var) argVars, OUT Var* returnVar);
-void f_timer_stop(Arr(Var) argVars, OUT Var* returnVar UNUSED);
-void f_timer_stopall(Arr(Var) argVars UNUSED, OUT Var* returnVar UNUSED);
+void f_timer_stop(Arr(Var) argVars, OUT Var*);
+void f_timer_stopall(Arr(Var), OUT Var*);
 void time_push(void *tv_rel, void *tv_start);
 void time_pop(void   *tp);
 void time_msg(
@@ -159,7 +153,7 @@ int decl(Pos *lp);
 void check_pos(Book* book, Pos *pos);
 long get_sw_value(Book *book);
 long get_sw_value_indent(Book* book, int left);
-long get_sw_value_col(Book* book, ColNr col UNUSED, int left UNUSED);
+long get_sw_value_col(Book* book, ColNr, int);
 int get_indent(void);
 int get_indent_lnum(LineNr lnum);
 int get_indent_buf(Book* book, LineNr lnum);

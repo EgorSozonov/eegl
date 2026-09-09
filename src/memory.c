@@ -18,7 +18,7 @@ pub int lstat(const char* restrict, struct stat* restrict);
 //a positive number. Because the reference to the block is still the negative
 //number, we remember the translation to the new positive number in the
 //double linked trans lists. The structure is the same as the hash lists.
-comptime typedef struct {
+typedef struct {
    MfHashItem nt_hashitem;      // header for hash table and key
 #define nt_old_bnum nt_hashitem.key   // old, negative, number
 
@@ -93,7 +93,7 @@ private void mf_ins_free(MemFile* mfp, BlockHeader* hp);
 private BlockHeader * mf_rem_free(MemFile* mfp);
 private int mf_read(MemFile* mfp, BlockHeader* hp);
 private int mf_write(MemFile* mfp, BlockHeader* hp);
-private int mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset offset UNUSED, unsigned size);
+private int mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset, unsigned size);
 private int mf_trans_add(MemFile* mfp, BlockHeader* hp);
 private void mf_do_open(MemFile* mfp, CS fname, Unt flags);
 private void mf_hash_init(MfHashTable*  mht);
@@ -289,7 +289,7 @@ success:
 
 // alloc() with an ID for alloc_fail().
 pub void *
-alloc_id(Unt size, AllocId id UNUSED) {
+alloc_id(Unt size, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
    return lalloc(size, true);
@@ -305,7 +305,7 @@ allocZeroed(Unt size) {
 
 // Same as allocZeroed() but with allocation id for testing
 pub void *
-allocZeroed_id(Unt size, AllocId id UNUSED) {
+allocZeroed_id(Unt size, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
    return allocZeroed(size);
@@ -372,7 +372,7 @@ success:
 
 // lalloc() with an ID for alloc_fail().
 pub void *
-lalloc_id(Unt size, int message, AllocId id UNUSED) {
+lalloc_id(Unt size, int message, AllocId id) {
    if (alloc_fail_id == id && alloc_does_fail(size))
       return NULL;
    return (lalloc(size, message));
@@ -609,7 +609,7 @@ eeglFreeString(CS x) {
 
 //Return total amount of memory available in Kbyte. Doesn't change when memory has been allocated.
 pub Ulong
-mch_total_mem(int special UNUSED) {
+mch_total_mem(int) {
    Ulong   mem = 0;
    Ulong   shiftright = 10;  // how much to shift "mem" right for Kbyte
 
@@ -798,10 +798,10 @@ private struct InfoPtr {
 // are to be loaded into memory.
 private int dontReleaseBlocksS = false;
 
-comptime typedef struct Block0 Block0;      // contents of the first block
-comptime typedef struct PointerBlock   PointerBlock; // contents of a pointer block
-comptime typedef struct DataBlock   DataBlock;    // contents of a data block
-comptime typedef struct PtrEntry   PtrEntry;         // block/line-count pair
+typedef struct Block0 Block0;      // contents of the first block
+typedef struct PointerBlock   PointerBlock; // contents of a pointer block
+typedef struct DataBlock   DataBlock;    // contents of a data block
+typedef struct PtrEntry   PtrEntry;         // block/line-count pair
 
 #define DATA_ID          (('d' << 8) + 'a')   // data block id
 #define PTR_ID          (('p' << 8) + 't')   // pointer block id
@@ -934,7 +934,7 @@ private LineNr   lowest_marked = 0;
 #define ML_SIMPLE(x) ((x) & 0x10)  // DEL, INS or FIND
 
 // argument for updateBlock0()
-comptime typedef enum {
+typedef enum {
    UB_FNAME = 0, // update timestamp and filename
    UB_SAME_DIR,  // update the B0_SAME_DIR flag
    UB_CRYPT      // update crypt key
@@ -3538,7 +3538,7 @@ attention_message(Book* book, CS swapName) {
    --no_wait_return;
 }
 
-comptime typedef enum {
+typedef enum {
    SEA_CHOICE_NONE = 0,
    SEA_CHOICE_READONLY = 1,
    SEA_CHOICE_EDIT = 2,
@@ -5102,7 +5102,7 @@ mf_write(MemFile* mfp, BlockHeader* hp) {
 // Write block "hp" with data size "size" to file "mfp->fd".
 // Take care of encryption. Return FAIL or OK.
 private int
-mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset offset UNUSED, unsigned size) {
+mf_write_block(MemFile* mfp, BlockHeader* hp, FileOffset, unsigned size) {
    Arr(Byte) data = hp->bh_data;
    int result = OK;
 

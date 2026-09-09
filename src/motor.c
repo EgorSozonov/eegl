@@ -229,7 +229,7 @@ do_intro_line(int row, CS mesg, int add_version){
 
 // ":intro": clear screen, display intro screen and wait for return.
 pub void
-c_intro(Invocation* invo UNUSED){
+c_intro(Invocation*){
    screenclear();
    draw_tabpanel();
    intro_message(true);

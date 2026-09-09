@@ -117,12 +117,7 @@ private void check_end_reg_executing(int advance);
 private Unt vGetOrPeek(Boole advance);
 private int ingestChar(CS buf, int maxlen, long wait_time);
 private int fixInputBuffer(OUT CS buf, int len);
-private CS getCommandNameCb(
-   Unt promptc UNUSED,
-   void* cookie UNUSED,
-   int indent UNUSED,
-   GetlineAlgo do_concat UNUSED
-);
+private CS getCommandNameCb(Unt, void*, int, GetlineAlgo);
 private long time_diff_ms(TimeVal *t1, TimeVal *t2);
 private int get_mouse_class(CS p);
 private void find_start_of_word(Pos*pos);
@@ -1216,7 +1211,7 @@ del_typebuf(int len, int offset) {
 }
 
 // stateG for adding bytes to a recording or 'showcmd'.
-comptime typedef struct {
+typedef struct {
    Byte   buf[MB_MAXBYTES * 3 + 4];
    int      prev_c;
    Unt   buflen;
@@ -2049,7 +2044,7 @@ f_getcharstr(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_getcharmod(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getcharmod(Arr(Var), Var* returnVar) {
    returnVar->number = modMaskG;
 }
 
@@ -2124,7 +2119,7 @@ parse_queued_messages(void) {
 }
 
 
-comptime typedef enum {
+typedef enum {
    mrFail,    // failed, break loop
    mrGet,     // get a character from typeahead
    mrRetry,   // try to map again
@@ -2205,7 +2200,7 @@ checkSimplifyModifier(int const maxOffset) {
    return 0;
 }
 
-comptime typedef struct {
+typedef struct {
    MapBlock* longestFull;
    MapBlock* foundMapping;
    int maxMLen; //max_mlen
@@ -3139,13 +3134,8 @@ input_available(void) {
 
 // Function passed to doCommand() to get the command after a <Cmd> key from typeahead.
 private CS
-getCommandNameCb(
-   Unt promptc UNUSED,
-   void* cookie UNUSED,
-   int indent UNUSED,
-   GetlineAlgo do_concat UNUSED
-) {
-   ArrayList   line_ga;
+getCommandNameCb(Unt, void*, int, GetlineAlgo) {
+   ArrayList line_ga;
    Unt c1 = UNT;
    Unt c2;
    int cmod = 0;
@@ -3789,7 +3779,7 @@ mb_adjustpos(Book* book, Pos *lp) {
 }
 
 pub void
-f_charclass(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_charclass(Arr(Var) argvars, Var*) {
    if (check_for_string_arg(argvars, 0) == FAIL || argvars[0].string == NULL)
       return;
    returnVar->number = mb_get_class(argvars[0].string);
@@ -3908,7 +3898,7 @@ utf_class_buf(Unt c, Book* book) {
    return 2;
 }
 
-comptime typedef struct { // copy from strings.c
+typedef struct { // copy from strings.c
    long first;
    long last;
 } Interval;
@@ -5767,7 +5757,7 @@ mouse_comp_pos(
 //When "popup" is IGNORE_POPUP, do not even check popup portals.
 //Return NULL when something is wrong.
 pub Portal*
-mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED) {
+mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup) {
    Portal   *po;
    Portal   *pwp = NULL;
 
@@ -5845,7 +5835,7 @@ vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp) {
 }
 
 pub void
-f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_getmousepos(Arr(Var), Var* returnVar) {
    Long winid = 0;
    Long winrow = 0;
    Long wincol = 0;

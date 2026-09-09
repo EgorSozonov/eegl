@@ -62,7 +62,7 @@ Unt vpeekc_any(void);
 int char_avail(void);
 void f_getchar(Arr(Var) argvars, Var* returnVar);
 void f_getcharstr(Arr(Var) argvars, Var* returnVar);
-void f_getcharmod(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_getcharmod(Arr(Var), Var* returnVar);
 void parse_queued_messages(void);
 void vungetc(Unt c);
 int input_available(void);
@@ -90,7 +90,7 @@ int utfc_ptr2char_len(
 int utf_class(int c);
 void mb_adjust_cursor(void);
 void mb_adjustpos(Book* book, Pos *lp);
-void f_charclass(Arr(Var) argvars, Var* returnVar UNUSED);
+void f_charclass(Arr(Var) argvars, Var*);
 int utf_class_buf(Unt c, Book* book);
 int mb_char2cells(int c);
 int utf_uint2cells(Unt c);
@@ -132,8 +132,8 @@ int mouse_comp_pos(
    LineNr* lnump,
    int* plines_cache
 );
-Portal* mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup UNUSED);
+Portal* mouseFindPortal(OUT int* rowp, OUT int* colp, MouseFindKind popup);
 int vcol2col(Portal* po, LineNr lnum, int vcol, ColNr *coladdp);
-void f_getmousepos(Arr(Var) argvars UNUSED, Var* returnVar);
+void f_getmousepos(Arr(Var), Var* returnVar);
 void mch_setmouse(Boole on);
 void mch_bevalterm_changed(void);

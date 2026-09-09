@@ -39,33 +39,33 @@ int stat(const char* restrict path, struct stat* restrict buf);
 //{{{vTerm (abstraction over a terminal)
 //{{{types
 
-comptime typedef struct {
+typedef struct {
    Short row;
    Short col;
 } VTermPos;
 
-comptime typedef struct {
+typedef struct {
     //libvterm relies on this memory to be zeroed out before it is returned by the allocator
     void *(*malloc)(Unt size);
     void (*free)(void* ptr);
 } VTermAllocatorFunctions;
 
 // Specifies a rectangular screen area.
-comptime typedef struct {
+typedef struct {
    Short start_row;
    Short end_row;
    Short start_col;
    Short end_col;
 } VTermRect;
 
-comptime typedef struct {
+typedef struct {
    CS str;
    Unt      len : 30;
    unsigned int  initial : 1;
    unsigned int  final : 1;
 } VTermStringFragment;
 
-comptime typedef struct {
+typedef struct {
   Short rows, cols;
 
   VTermAllocatorFunctions* allocator;
@@ -81,7 +81,7 @@ comptime enum {
   VTERM_BASELINE_LOWER,
 };
 
-comptime typedef struct {
+typedef struct {
   VTermPos pos;
   int	   buttons;
 #define MOUSE_BUTTON_LEFT 0x01
@@ -95,7 +95,7 @@ comptime typedef struct {
 } VTermMouseState;
 
 
-comptime typedef enum {
+typedef enum {
    // VTERM_PROP_NONE = 0
    VTERM_PROP_CURSORVISIBLE = 1, // bool
    VTERM_PROP_CURSORBLINK,       // bool
@@ -111,7 +111,7 @@ comptime typedef enum {
    VTERM_N_PROPS
 } VTermProp;
 
-comptime typedef enum {
+typedef enum {
    VTERM_ATTR_BOLD_MASK       = 1 << 0,
    VTERM_ATTR_UNDERLINE_MASK  = 1 << 1,
    VTERM_ATTR_ITALIC_MASK     = 1 << 2,
@@ -121,7 +121,7 @@ comptime typedef enum {
    VTERM_ALL_ATTRS_MASK = (1 << 12) - 1
 } VTermAttrMask;
 
-comptime typedef union {
+typedef union {
    int number;
    VTermStringFragment string;
    Boole boolean;
@@ -129,7 +129,7 @@ comptime typedef union {
 } VTermValue;
 
 // All fields are optional, NULL when not used.
-comptime typedef struct {
+typedef struct {
    int (*damage)(VTermRect rect, void* user);
    int (*moverect)(VTermRect dest, VTermRect src, void* user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void* user);
@@ -142,7 +142,7 @@ comptime typedef struct {
    int (*sb_clear)(void* user);
 } VTermScreenCallbacks;
 
-comptime typedef enum {
+typedef enum {
    VTERM_DAMAGE_CELL,    /* every cell */
    VTERM_DAMAGE_ROW,     /* entire rows */
    VTERM_DAMAGE_SCREEN,  /* entire screen */
@@ -151,7 +151,7 @@ comptime typedef enum {
    VTERM_N_DAMAGES
 } VTermDamageSize;
 
-comptime typedef enum {
+typedef enum {
    // VTERM_ATTR_NONE = 0
    VTERM_ATTR_BOLD = 1,   // bool:   1, 22
    VTERM_ATTR_UNDERLINE,  // number: 4, 21, 24
@@ -162,7 +162,7 @@ comptime typedef enum {
    VTERM_N_ATTRS
 } VTermAttr;
 
-comptime typedef enum {
+typedef enum {
    // VTERM_VALUETYPE_NONE = 0 */
    VTERM_VALUETYPE_BOOL = 1,
    VTERM_VALUETYPE_INT,
@@ -177,7 +177,7 @@ pub declStruct(VTermLineInfo);
 //Copies of VTermState fields that the 'resize' callback might have reason to edit. 'resize' 
 //callback gets total control of these fields and may free-and-reallocate them if required. They
 //will be copied back from the struct after the callback has returned.
-comptime typedef struct {
+typedef struct {
    VTermPos pos;                // current cursor position
    VTermLineInfo *lineinfos[2]; // [1] may be NULL
 } VTermStateFields;
@@ -267,12 +267,6 @@ rect_intersects(VTermRect* a, VTermRect* b) {
 #define VTERM_MAX_COLS 1000
 #define VTERM_MAX_ROWS 1000
 
-#if defined(__GNUC__)
-# define UNUSED __attribute__((unused))
-#else
-# define UNUSED
-#endif
-
 #ifdef DEBUG
 # define DEBUG_LOG(s) fprintf(stderr, s)
 # define DEBUG_LOG1(s, a) fprintf(stderr, s, a)
@@ -299,11 +293,11 @@ comptime declStruct(VTermState);
 comptime declStruct(VTermScreen);
 comptime declStruct(VTerm);
 
-comptime typedef void VTermOutputCallback(CS s, Unt len, void *user);
+typedef void VTermOutputCallback(CS s, Unt len, void *user);
 
 comptime declStruct(VTermGlyphInfo);
 
-comptime typedef struct {
+typedef struct {
    int (*text)(Byte *bytes, Unt len, void *user);
    int (*control)(Byte control, void *user);
    int (*escape)(Byte *bytes, Unt len, void *user);
@@ -322,7 +316,7 @@ private struct VTermLineInfo {
    Unt continuation:1; //Line is a flow continuation of the previous
 };
 
-comptime typedef struct {
+typedef struct {
    int (*putglyph)(VTermGlyphInfo *info, VTermPos pos, void *user);
    int (*movecursor)(VTermPos pos, VTermPos oldpos, int visible, void *user);
    int (*scrollrect)(VTermRect rect, int downward, int rightward, void *user);
@@ -408,7 +402,7 @@ private struct VTerm {
 };
 
 
-comptime typedef struct {
+typedef struct {
    int (*control)(Byte control, void* user);
    int (*csi)(CS leader, long args[], int argcount, CS intermed, Byte command, void *user);
    int (*osc)(int command, VTermStringFragment frag, void* user);
@@ -418,7 +412,7 @@ comptime typedef struct {
    int (*sos)(VTermStringFragment frag, void* user);
 } VTermStateFallbacks;
 
-comptime typedef enum {
+typedef enum {
    VTERM_SELECTION_CLIPBOARD = (1<<0),
    VTERM_SELECTION_PRIMARY   = (1<<1),
    VTERM_SELECTION_SECONDARY = (1<<2),
@@ -426,7 +420,7 @@ comptime typedef enum {
    VTERM_SELECTION_CUT0      = (1<<4), // also CUT1 .. CUT7 by bitshifting
 } VTermSelectionMask;
 
-comptime typedef struct {
+typedef struct {
    int (*set)(VTermSelectionMask mask, VTermStringFragment frag, void* user);
    int (*query)(VTermSelectionMask mask, void* user);
 } VTermSelectionCallbacks;
@@ -690,7 +684,7 @@ private void  vterm_state_get_default_colors(
 );
 private void  vterm_state_setpen(VTermState* state, long args[], int argcount);
 private int  vterm_state_getpen_color(VTermColor col, int argi, long args[], Boole isFg);
-private int  vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED);
+private int  vterm_state_getpen(VTermState* state, long args[], int);
 private void  output_mouse(VTermState *state, int code, int pressed, int modifiers, int col, int row);
 private void  vterm_mouse_move(VTerm *vt, int row, int col, VTermModifier mod);
 private void  vterm_mouse_button(VTerm *vt, int button, int pressed, VTermModifier mod);
@@ -711,7 +705,7 @@ private int  scrollrect(VTermRect rect, int downward, int rightward, void *user)
 private int  movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user);
 private int  setpenattr(VTermAttr attr, VTermValue* val, void* user);
 private int  settermprop(VTermProp prop, VTermValue *val, void *user);
-private int  line_popcount(ScreenCell *buffer, int row, int rows UNUSED, int cols);
+private int  line_popcount(ScreenCell *buffer, int row, int, int cols);
 private void  resize_buffer(
     VTermScreen *screen, int bufidx, int newRows, int newCols, int active, 
     VTermStateFields *statefields
@@ -750,7 +744,7 @@ private int is_col_tabstop(VTermState* state, int col);
 private int is_cursor_in_scrollregion(VTermState* state);
 private void tab(VTermState* state, int count, int direction);
 private void set_lineinfo(VTermState* state, int row, Boole force);
-private int on_text(CS bytes UNUSED, Unt len UNUSED, void* user);
+private int on_text(CS, Unt, void* user);
 private int on_control(unsigned char control, void *user);
 private int settermprop_bool(VTermState *state, VTermProp prop, int v);
 private int settermprop_int(VTermState *state, VTermProp prop, int v);
@@ -797,10 +791,10 @@ private int mch_check_messages(void);
 private void term_flush_messages(void);
 private void closeFailedTerminalBook(Book* book, Book* old_curBook);
 private Book* startSubterminal(Var* argvar, Multistring* argv, JobOptions* opt, Unt flags);
-private CS get_terminaloname(Expand* xp UNUSED, int idx);
-private CS get_termkill_name(Expand *xp UNUSED, int idx);
+private CS get_terminaloname(Expand*, int idx);
+private CS get_termkill_name(Expand*, int idx);
 private void free_scrollback(Terminal* term);
-private ChannelFdKind get_tty_part(Terminal *term UNUSED);
+private ChannelFdKind get_tty_part(Terminal* term);
 private void term_forward_output(Terminal *term);
 private void term_write_job_output(Terminal* term, CS msg_arg, Unt len_arg);
 private void position_cursor(Portal *po, VTermPos* pos);
@@ -834,12 +828,7 @@ private void set_dirty_snapshot(Terminal* term);
 private int handle_damage(VTermRect rect, void *user);
 private void term_scroll_up(Terminal* term, int start_row, int count);
 private int handle_moverect(VTermRect dest, VTermRect src, void* user);
-private int handle_movecursor(
-   VTermPos pos,
-   VTermPos oldpos UNUSED,
-   int visible,
-   void *user
-);
+private int handle_movecursor(VTermPos pos, VTermPos, int visible, void *user);
 private int handle_settermprop(VTermProp prop, VTermValue* value, void* user);
 private void handleShellResize(void);
 private int handle_resize(int rows, int cols, void *user);
@@ -855,10 +844,10 @@ private Unt url_decode(const char *src, const Unt len, CS dst);
 private void sync_shell_dir(ArrayList* gap);
 private int parse_osc(int command, VTermStringFragment frag, void *user);
 private int parse_csi(
-   CS leader UNUSED,
+   CS,
    long args[],
    int argcount,
-   CS intermed UNUSED,
+   CS,
    Byte command,
    void* user
 );
@@ -878,7 +867,7 @@ private int initSubtermAndJob(
 	Var* argvar,
 	Multistring* argv,
 	JobOptions* opt,
-	JobOptions* orig_opt UNUSED
+	JobOptions*
 );
 private int create_pty_only(Terminal* term, JobOptions* opt);
 private void term_free_vterm(Terminal* term);
@@ -1069,7 +1058,7 @@ private struct UTF8DecoderData {
 //}}}
 //{{{keyboard
 
-comptime typedef enum {
+typedef enum {
   VTERM_MOD_NONE  = 0x00,
   VTERM_MOD_SHIFT = 0x01,
   VTERM_MOD_ALT   = 0x02,
@@ -1079,7 +1068,7 @@ comptime typedef enum {
 } VTermModifier;
 
 // The order here must match keycodes[] in src/keyboard.c!
-comptime typedef enum {
+typedef enum {
   VTERM_KEY_NONE,
 
   VTERM_KEY_ENTER,
@@ -1193,7 +1182,7 @@ vterm_keyboard_unichar(VTerm *vt, uint32_t c, VTermModifier mod) {
    vterm_push_output_sprintf(vt, "%s%c", mod & VTERM_MOD_ALT ? ESC_S : "", c);
 }
 
-comptime typedef struct {
+typedef struct {
    enum {
       KEYCODE_NONE,
       KEYCODE_LITERAL,
@@ -1729,7 +1718,7 @@ vterm_scroll_rect(
 //}}}
 //{{{unicode
 
-comptime typedef struct {
+typedef struct {
   int first;
   int last;
 } Interval;
@@ -2558,7 +2547,7 @@ vterm_state_getpen_color(VTermColor col, int argi, long args[], Boole isFg) {
 }
 
 private int 
-vterm_state_getpen(VTermState* state, long args[], int argcount UNUSED) {
+vterm_state_getpen(VTermState* state, long args[], int) {
    int argi = 0;
  
    if ((state->pen.flags & DECO_BOLD) != 0)
@@ -3058,7 +3047,7 @@ settermprop(VTermProp prop, VTermValue *val, void *user) {
 // How many cells are non-blank
 // Returns the position of the first blank cell in the trailing blank end
 private int 
-line_popcount(ScreenCell *buffer, int row, int rows UNUSED, int cols) {
+line_popcount(ScreenCell *buffer, int row, int, int cols) {
   int col = cols - 1;
   while(col >= 0 && buffer[row * cols + col].chars[0] == 0)
     col--;
@@ -4347,7 +4336,7 @@ set_lineinfo(VTermState* state, int row, Boole force) {
 }
 
 private int
-on_text(CS bytes UNUSED, Unt len UNUSED, void* user) {
+on_text(CS, Unt, void* user) {
    VTermState* state = user;
    int npoints = 0;
    Unt eaten = 0;
@@ -6339,7 +6328,7 @@ vterm_state_focus_out(VTermState *state) {
 #define TERM_START_FORCEIT 2
 #define TERM_START_SYSTEM  4
 
-comptime typedef struct sb_line_S {
+typedef struct sb_line_S {
    Unt cols;   // can differ per line
    Arr(CellDeco) sb_cells;   // allocated
    CellDeco sb_fillDeco;   // for short line
@@ -6980,7 +6969,7 @@ theend:
 }
 
 private CS
-get_terminaloname(Expand* xp UNUSED, int idx) {
+get_terminaloname(Expand*, int idx) {
    // Note: Keep this in sync with c_terminal.
    static CS p_termopt_values[] = { SMAP((CS),
       "close",
@@ -7004,7 +6993,7 @@ get_terminaloname(Expand* xp UNUSED, int idx) {
 }
 
 private CS
-get_termkill_name(Expand *xp UNUSED, int idx) {
+get_termkill_name(Expand*, int idx) {
    // These are platform-specific values used for job_stop(). They are defined
    // in each platform's mch_signal_job(). Just use a unified auto-complete list for simplicity.
    static CS p_termkill_values[] = { SMAP((CS),
@@ -7188,8 +7177,8 @@ free_unused_terminals(void) {
 // when writing buffer lines to the job it can be another. This makes it possible to do 
 // "1,5term vim -".
 private ChannelFdKind
-get_tty_part(Terminal *term UNUSED) {
-   ChannelFdKind   parts[3] = {PART_IN, PART_OUT, PART_ERR};
+get_tty_part(Terminal* term) {
+   ChannelFdKind parts[3] = {PART_IN, PART_OUT, PART_ERR};
 
    for (int i = 0; i < 3; ++i) {
       int fd = chJobGetChannel(term->job)->fds[parts[i]].fd;
@@ -7959,7 +7948,7 @@ term_enter_job_mode(void) {
 //When "modify_other_keys" is set, then vgetc() should not reduce a key with modifiers into a basic
 //key.  However, we may only find out after calling vgetc().  Therefore vgetorpeek() will call 
 //check_no_reduce_keys() to update "no_reduce_keys" before using it.
-comptime typedef enum {
+typedef enum {
    NRKS_NONE,   // initial value
    NRKS_CHECK,  // modify_other_keys was off before calling vgetc()
    NRKS_SET,    // no_reduce_keys was incremented in term_vgetc() or
@@ -8506,27 +8495,22 @@ handle_moverect(VTermRect dest, VTermRect src, void* user) {
 }
 
 private int
-handle_movecursor(
-   VTermPos pos,
-   VTermPos oldpos UNUSED,
-   int visible,
-   void *user
-){
-   Terminal   *term = (Terminal *)user;
-   Portal   *po = NULL;
-   int      did_curPor = false;
+handle_movecursor(VTermPos pos, VTermPos, int visible, void *user){
+   Terminal* term = (Terminal *)user;
+   Portal* po = NULL;
+   int did_curPor = false;
 
    term->cursorPos = pos;
    term->tl_cursor_visible = visible;
 
    while (forAllPortalsAndCurPort(OUT &po, OUT &did_curPor)) {
       if (po->book == term->book)
-          position_cursor(po, &pos);
+         position_cursor(po, &pos);
    }
    if (term->book == curBook && !term->isNormalMode)
-   update_cursor(term, term->tl_cursor_visible);
+      update_cursor(term, term->tl_cursor_visible);
 
-    return 1;
+   return 1;
 }
 
 private int
@@ -9328,10 +9312,10 @@ parse_osc(int command, VTermStringFragment frag, void *user) {
 //Called when we cannot recognize a CSI sequence. We recognize the portal position report.
 private int
 parse_csi(
-   CS leader UNUSED,
+   CS,
    long args[],
    int argcount,
-   CS intermed UNUSED,
+   CS,
    Byte command,
    void* user
 ){
@@ -9531,7 +9515,7 @@ dump_term_color(FILE* fd, VTermColor color) {
 // Repeating the previous screen cell:
 //    @{count}
 pub void
-f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
+f_term_dumpwrite(Var* argvars, Var*) {
    Unt max_height = 0;
    Unt max_width = 0;
    FileStat st;
@@ -9542,7 +9526,7 @@ f_term_dumpwrite(Var* argvars, Var* returnVar UNUSED) {
    if (!book)
       return;
    Terminal* term = book->term;
-   if (term->vterm == NULL) {
+   if (!term->vterm) {
       emsg(_(e_job_already_finished));
       return;
    }
@@ -10312,7 +10296,7 @@ f_term_getsize(Arr(Var) argvars, Var* returnVar) {
 
 // "term_setsize(book, rows, cols)" function
 pub void
-f_term_setsize(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_term_setsize(Arr(Var) argvars, Var*) {
    Terminal* term;
    Long rows, cols;
 
@@ -10404,7 +10388,7 @@ f_term_gettty(Arr(Var) argvars, Var* returnVar) {
 
 // "term_list()" function
 pub void
-f_term_list(Arr(Var) argvars UNUSED, Var* returnVar) {
+f_term_list(Arr(Var), Var* returnVar) {
    if (!fstTermP)
       return;
 
@@ -10504,7 +10488,7 @@ f_term_scrape(Arr(Var) argvars, Var* returnVar) {
 
 // "term_sendkeys(book, keys)" function
 pub void
-f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_term_sendkeys(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_sendkeys()");
    if (!book)
       return;
@@ -10532,7 +10516,7 @@ f_term_sendkeys(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 // "term_setapi(book, api)" function
 pub void
-f_term_setapi(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_term_setapi(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_setapi()");
    if (!book)
       return;
@@ -10544,7 +10528,7 @@ f_term_setapi(Arr(Var) argvars, Var* returnVar UNUSED) {
 
 // "term_setrestore(book, command)" function
 pub void
-f_term_setrestore(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_term_setrestore(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_setrestore()");
    if (!book)
       return;
@@ -10556,7 +10540,7 @@ f_term_setrestore(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
 
 // "term_setkill(book, how)" function
 pub void
-f_term_setkill(Arr(Var) argvars UNUSED, Var* returnVar UNUSED) {
+f_term_setkill(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_setkill()");
    if (!book)
       return;
@@ -10591,7 +10575,7 @@ f_term_start(Arr(Var) argvars, Var* returnVar) {
 }
 
 pub void
-f_term_wait(Arr(Var) argvars, Var* returnVar UNUSED) {
+f_term_wait(Arr(Var) argvars, Var*) {
    Book* book = term_get_buf(argvars, S"term_wait()");
    if (!book)
       return;
@@ -10662,7 +10646,7 @@ initSubtermAndJob(
 	Var* argvar,
 	Multistring* argv,
 	JobOptions* opt,
-	JobOptions* orig_opt UNUSED
+	JobOptions*
 ) {
    term->tl_arg0_cmd = NULL;
 
@@ -10925,7 +10909,7 @@ uiInit(void) {
 }
 
 pub void
-ui_write(CS s, int len, int console UNUSED) {
+ui_write(CS s, int len, int console) {
    // Don't output anything in silent mode ("ex -s") unless 'verbose' set
    if (!(silentModeG && p_verbose == 0)) {
       mch_write(s, len);
@@ -11311,13 +11295,13 @@ ui_get_shellsize(void) {
 //The mch_set_shellsize() function will try to set the new size. If this is not possible, 
 //it will adjust visibleRowsG and visibleColsG.
 pub void
-ui_set_shellsize(int mustset UNUSED) {  // set by the user
+ui_set_shellsize(int) {
    mch_set_shellsize();
 }
 
 // Get the portal position in pixels, if possible. Return FAIL when not possible.
 pub int
-uiGetPortPos(int* x, int* y, Long timeout UNUSED) {
+uiGetPortPos(int* x, int* y, Long timeout) {
    return term_get_winpos(x, y, timeout);
 }
 
@@ -11858,7 +11842,7 @@ private int tabPanelAlignS = ALIGN_LEFT;
 private int tpl_columns = 20;
 private int tpl_is_vert = false;
 
-comptime typedef struct {
+typedef struct {
    Portal*po;
    Portal* currPort;
    CS user_defined;

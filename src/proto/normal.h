@@ -209,8 +209,8 @@ CS norCheckMapping(
 void f_hasmapto(Var* argvars, Var* returnVar);
 void f_maplist(Arr(Var) argvars, Var* returnVar);
 void f_maparg(Var* argvars, Var* returnVar);
-void f_mapcheck(Var *argvars, Var* returnVar);
-void f_mapset(Var *argvars, Var* returnVar UNUSED);
+void f_mapcheck(Arr(Var) argvars, Var* returnVar);
+void f_mapset(Arr(Var) argvars, Var*);
 void add_map(CS map, int mode, int nore);
 int langmap_adjust_mb(int c);
 void langmap_init(void);
@@ -272,8 +272,8 @@ CS get_foldtext(
 );
 void foldMoveRange(ArrayList* gap, LineNr line1, LineNr line2, LineNr dest);
 int put_folds(FILE* fd, Portal* po);
-void f_foldclosed(Var *argvars, Var* returnVar);
-void f_foldclosedend(Var *argvars, Var* returnVar);
-void f_foldlevel(Var *argvars UNUSED, Var* returnVar);
-void f_foldtext(Var *argvars UNUSED, Var* returnVar);
-void f_foldtextresult(Var *argvars UNUSED, Var* returnVar);
+void f_foldclosed(Arr(Var) argvars, Var* returnVar);
+void f_foldclosedend(Arr(Var) argvars, Var* returnVar);
+void f_foldlevel(Arr(Var) argvars, Var* returnVar);
+void f_foldtext(Arr(Var), Var* returnVar);
+void f_foldtextresult(Arr(Var) argvars, Var* returnVar);

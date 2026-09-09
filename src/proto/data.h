@@ -1,4 +1,4 @@
-#define GEN_TYPE_L(acc, T) acc typedef struct {\
+#define GEN_TYPE_L(acc, T) typedef struct {\
    T* c;\
    Unt len;\
    Unt cap;\
@@ -27,10 +27,19 @@ L##T * create_L##T (int initCapacity, Arena* a) {\
    result->c = arr;\
    return result;\
 };
+#define last(l) (l)->c[(l)->len - 1];
+#define sLast(l) (l).c[(l).len - 1];
+#define eq(a, b) _Generic((a),\
+   Text: _Generic((b),\
+         Text: eq_Text_Text,\
+         CS: eq_Text_CString\
+      ),\
+   CS: eq_CString_CString\
+)(a, b);
 void list_add_watch(List* l, ListWatch* lw);
 void list_rem_watch(List* l, ListWatch* lwrem);
 List * list_alloc(void);
-List * list_alloc_id(AllocId id UNUSED);
+List * list_alloc_id(AllocId id);
 List * list_alloc_with_items(int count);
 void list_set_item(List *l, int idx, Var *tv);
 void allocReturnList(OUT Var* returnVar);
@@ -266,7 +275,7 @@ int equal_type(TypeSpec *type1, TypeSpec *type2, int flags);
 ExprType get_compare_type(CS p, int* len, int* type_is);
 int tv2bool(Var* tv);
 Bag * allocBag(void);
-Bag * allocBag_id(AllocId id UNUSED);
+Bag * allocBag_id(AllocId id);
 Bag * allocBag_lock(int lock);
 void allocReturnDict(Var* returnVar);
 void returnVar_dict_set(Var* returnVar, Bag* b);
@@ -364,28 +373,28 @@ void f_assert_match(Arr(Var) argvars, Var* returnVar);
 void f_assert_notmatch(Arr(Var) argvars, Var* returnVar);
 void f_assert_report(Arr(Var) argvars, Var* returnVar);
 void f_assert_true(Arr(Var) argvars, Var* returnVar);
-void f_test_alloc_fail(Arr(Var) argvars, Var* returnVar UNUSED);
-void f_test_autochdir(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-void f_test_feedinput(Arr(Var) argvars, Var* returnVar UNUSED);
+void f_test_alloc_fail(Arr(Var) argvars, Var* returnVar);
+void f_test_autochdir(Arr(Var), Var*);
+void f_test_feedinput(Arr(Var) argvars, Var*);
 void f_test_getvalue(Arr(Var) argvars, Var* returnVar);
-void f_test_option_not_set(Arr(Var) argvars, Var* returnVar UNUSED);
-void f_test_override(Arr(Var) argvars, Var* returnVar UNUSED);
+void f_test_option_not_set(Arr(Var) argvars, Var*);
+void f_test_override(Arr(Var) argvars, Var*);
 void f_test_refcount(Arr(Var) argvars, Var* returnVar);
-void f_test_garbagecollect_now(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-void f_test_garbagecollect_soon(Arr(Var) argvars UNUSED, Var* returnVar UNUSED);
-void f_test_ignore_error(Arr(Var) argvars, Var* returnVar UNUSED);
-void f_test_null_blob(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_channel(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_dict(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_job(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_list(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_function(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_partial(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_null_string(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_unknown(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_void(Arr(Var) argvars UNUSED, Var* returnVar);
-void f_test_setmouse(Arr(Var) argvars, Var* returnVar UNUSED);
-void f_test_settime(Arr(Var) argvars, Var* returnVar UNUSED);
+void f_test_garbagecollect_now(Arr(Var), Var*);
+void f_test_garbagecollect_soon(Arr(Var), Var*);
+void f_test_ignore_error(Arr(Var) argvars, Var*);
+void f_test_null_blob(Arr(Var), Var* returnVar);
+void f_test_null_channel(Arr(Var), Var* returnVar);
+void f_test_null_dict(Arr(Var), Var* returnVar);
+void f_test_null_job(Arr(Var), Var* returnVar);
+void f_test_null_list(Arr(Var), Var* returnVar);
+void f_test_null_function(Arr(Var), Var* returnVar);
+void f_test_null_partial(Arr(Var), Var* returnVar);
+void f_test_null_string(Arr(Var), Var* returnVar);
+void f_test_unknown(Arr(Var), Var* returnVar);
+void f_test_void(Arr(Var), Var* returnVar);
+void f_test_setmouse(Arr(Var) argvars, Var*);
+void f_test_settime(Arr(Var) argvars, Var*);
 int check_can_index(Var* var, int evaluate, int verbose);
 int eval_index_inner(
    Var* returnVar,

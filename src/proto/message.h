@@ -71,14 +71,14 @@ void set_keep_msg(Byte *s, char flags);
 void msgmore(long n);
 void set_keep_msg_from_hist(void);
 int do_dialog(
-   int      type UNUSED,
-   Byte   *title UNUSED,
-   Byte   *message,
-   Byte   *buttons,
-   int      dfltbutton,
-   Byte   *textfield UNUSED,   // IObuff for inputdialog(), NULL otherwise
-   int      ex_cmd)       // when true pressing : accepts default and starts a Command
-;
+   int,
+   Byte*,
+   Byte* message,
+   Byte* buttons,
+   int dfltbutton,
+   Byte*,   // IObuff for inputdialog(), NULL otherwise
+   int ex_cmd       // when true pressing : accepts default and starts a Command
+);
 int eeDialog_yesno(
     int      type,
     Byte   *title,

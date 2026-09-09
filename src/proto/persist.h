@@ -1,4 +1,4 @@
-CS get_users(Expand *xp UNUSED, int idx);
+CS get_users(Expand*, int idx);
 int match_user(CS name);
 void free_homedir(void);
 void free_users(void);
