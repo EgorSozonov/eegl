@@ -9,6 +9,7 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 #include <stdarg.h> //va_list etc
 
 #define private static
+#define pub
 #define privateComp
 #define public
 #define OUT
@@ -17,6 +18,7 @@ typedef unsigned char* CS; // ZERO-terminated byte arrays only
 #define null 0
 #define NULLABLE
 #define generic(...)
+#define create(A, B) create_##A##B
 
 typedef int32_t Int;
 typedef uint32_t Unt;

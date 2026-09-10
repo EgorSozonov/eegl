@@ -84,15 +84,6 @@ void ml_setflags(Book* book);
 long ml_find_line_or_offset(Book* book, LineNr lnum, long *offp);
 void goto_byte(long cnt);
 CS memMakePercentSwapName(CS dir, CS dir_end, CS name);
-#define getRefCount(a) _Generic((a),\
-   Job*: _getRefCount\
-)(a);
-#define incRefCount(a) _Generic((a),\
-   Job*: _incRefCount\
-)(a);
-#define decRefCount(a) _Generic((a),\
-   Job*: _decRefCount\
-)(a);
 MemFile * mf_open(CS fname, Unt flags);
 int mf_open_file(MemFile* mfp, CS fname);
 void mf_close(MemFile* mfp, int del_file);

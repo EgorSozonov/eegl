@@ -1,4 +1,4 @@
-GEN_TYPE_L(pub, PollFd);
+GEN_TYPE_L(PollFd);
 Channel* add_channel(void);
 int has_any_channel(void);
 int channel_still_useful(Channel *channel);

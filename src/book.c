@@ -16,6 +16,9 @@
 //The current implementation remembers all file names ever used.
 
 #include "eegl.h"
+#include "proto/book.h"
+#include "proto/data.macros.h"
+#include "proto/channel.h"
 #include <fcntl.h>      // Definition of AT_* constants for utimensat()
 #include <sys/stat.h> // for stat,  utimensat() (modification time changin')
 
@@ -55,6 +58,25 @@ typedef struct {
    Portal* new_curPor;
    Tab* new_curtab;
 } ArgAllState;
+
+typedef struct {
+   CS tyName;
+   int      id;
+   NULLABLE CS text; // if non-empty, the text to display above or before the line
+   int      textPaddingLeft;
+   int      textFlags;
+   LineNr   startLnum;
+   LineNr   endLnum;
+   ColNr      startCol;
+   ColNr      endCol;
+} Prop;
+
+// Struct used to return two values from adjust().
+typedef struct {
+   int dirty;      // if the property was changed
+   int mayDrop;   // whether after this change, the prop may be removed
+} AdjustRes;
+
 
 //}}}
 //{{{@@forward declarations
@@ -187,9 +209,6 @@ private AdjustRes adjust(
    int       added,
    int       flags
 );
-#define create(a, b) _Generic((a),\
-   LBufMatch*: create_LBufMatch\
-   )(a, b)
 #define add(a, b) _Generic((a),\
    LBufMatch*: add_LBufMatch\
    )(a, b)
@@ -3823,9 +3842,9 @@ typedef struct {
    CS match;
 } BufMatch;
 
-GEN_TYPE_L(comptime, BufMatch);
-generic(2) GEN_create_L(private, BufMatch);
-generic(2) GEN_add_L(private, BufMatch);
+GEN_TYPE_L(BufMatch);
+GEN_create_L(rivate, BufMatch);
+generic(2) GEN_add_L(rivate, BufMatch);
 
 //Find all book names that match. For command line expansion of ":book" and ":sbook".
 //Return OK if matches found, FAIL otherwise.
@@ -3837,7 +3856,7 @@ bufExpandBufnames(
 ){
    CS p;
    CS patSaved = NULL;
-   LBufMatch* bufMatches = createLBufMatch(2, matches->a);
+   LBufMatch* bufMatches = create(L, BufMatch)(2, matches->a);
    Fuzzy fuzzy = {};
    fuzzy.a = matches->a;
    RegMatch regmatch;
@@ -3902,7 +3921,7 @@ bufExpandBufnames(
       if (doFuzzy) {
          addFuzzyMatch((FuzzyMatch){.str = p, .score = score}, OUT &fuzzy);
       } else {
-         add(((BufMatch){book, p}), bufMatches);
+         add(OUT bufMatches, ((BufMatch){book, p}));
       }
    }
    if (!doFuzzy) {
@@ -8296,18 +8315,6 @@ f_prop_add(Var *argvars, OUT Var* returnVar) {
              argvars[2].bag, curBook, &argvars[2]);
 }
 
-typedef struct {
-   CS tyName;
-   int      id;
-   NULLABLE CS text; // if non-empty, the text to display above or before the line
-   int      textPaddingLeft;
-   int      textFlags;
-   LineNr   startLnum;
-   LineNr   endLnum;
-   ColNr      startCol;
-   ColNr      endCol;
-} Prop;
-
 //Attach a text property 'type_name' to the text starting at [start_lnum, start_col] and ending at
 //[end_lnum, end_col] in the book "book" and assign identifier "id".
 //When "text" is not NULL add it to book->textPropText[-id - 1].
@@ -9858,13 +9865,6 @@ clearPropTypes(Book* book) {
    book->propTypes = NULL;
    EE_CLEAR(book->propArray);
 }
-
-// Struct used to return two values from adjust().
-typedef struct {
-   int dirty;      // if the property was changed
-   int mayDrop;   // whether after this change, the prop may be removed
-} AdjustRes;
-
 
 //Adjust the property for "added" bytes (can be negative) inserted at "col".
 //

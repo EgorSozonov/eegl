@@ -404,7 +404,6 @@ typedef enum {
    PUBLIC,
    PRIVATE,
    COMPTIME,
-   INTERNAL,
    NONE_OR_ERROR
 } AccessLevel;
 
@@ -597,9 +596,9 @@ generic(2) GEN_add_L(private, Token);
 // The following group of variants are transferred to the AST byte for byte, with no analysis
 // Their values must exactly correspond with the initial group of variants in "Node"
 // The largest value must be stored in "topVerbatimTokenVariant" constant
-#define tokArity        2 //GEN_*()
-#define tokMethod       4 //the argument signifying the method
-#define tokType         5 //the argument holding a type chunk
+#define tokArity        1 //GEN_*()
+#define tokMethod       2 //the argument signifying the method
+#define tokType         3 //the argument holding a type chunk
 
 #define errGenParser    1
 #define errGenEndOfList 2 //reached the closing paren in an (a,b,c) list
@@ -1007,9 +1006,6 @@ parseFile(Text source, FilePath fn, Arena* a) [[unsequenced]] {
             } ei (startsWith(inp, tConst("private")) && isSpaceOrNewline(inp[7])) {
                inp = skipSpaces(inp + 7); //CONSUME "private" and spaces after it
                tryParseToplevelThing(OUT &res, OUT &inp, PRIVATE);
-            } ei (startsWith(inp, tConst("internal")) && isSpaceOrNewline(inp[8])) {
-               inp = skipSpaces(inp + 8); //CONSUME "internal" and spaces after it
-               tryParseToplevelThing(OUT &res, OUT &inp, INTERNAL);
             }
          } ei (inp[1] == 'g') { 
             inp++; //CONSUME the newline
@@ -1137,12 +1133,12 @@ addGeneric(OUT FileParse* r, GenParser g) {
 //}}}
 //{{{writing
 
-//Returns allocated string, caller must free it
+//Return allocated string, caller must free it
 private Text
 buildPublicHeader(FileParse* r) [[unsequenced]] {
    Unt totalLen = 0;
    for (Unt i = 0; i < r->len; i++) {
-      if (r->c[i].acc == PUBLIC) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind != MACRO) {
          totalLen += toplevelLen(r->c + i); 
       }
    }
@@ -1151,13 +1147,42 @@ buildPublicHeader(FileParse* r) [[unsequenced]] {
    newContent[totalLen] = ZERO;
    S w = newContent;
    for (Unt i = 0; i < r->len; i++) {
-      if (r->c[i].acc == PUBLIC) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind != MACRO) {
          toplevelWrite(OUT &w, r->c + i);
       }
    }
    
    if (w - newContent != totalLen) {
-      printf("ERROR in public header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent));
+      printf(
+         "ERROR in public header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
+      );
+   }
+   return (Text){newContent, totalLen};
+}
+
+//Return allocated string, caller must free it
+private Text
+buildMacroHeader(FileParse* r) [[unsequenced]] {
+   Unt totalLen = 0;
+   for (Unt i = 0; i < r->len; i++) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind == MACRO) {
+         totalLen += toplevelLen(r->c + i); 
+      }
+   }
+   
+   S newContent = malloc(totalLen + 1);
+   newContent[totalLen] = ZERO;
+   S w = newContent;
+   for (Unt i = 0; i < r->len; i++) {
+      if (r->c[i].acc == PUBLIC && r->c[i].kind == MACRO) {
+         toplevelWrite(OUT &w, r->c + i);
+      }
+   }
+   
+   if (w - newContent != totalLen) {
+      printf(
+         "ERROR in macro header: totalLen %d but wrote only %d", totalLen, (Unt)(w - newContent)
+      );
    }
    return (Text){newContent, totalLen};
 }
@@ -1178,13 +1203,13 @@ dirExists(S path) {
 }
 
 private S
-determinePublicName(FileParse* r, Boole isInternal, NULLABLE S subdir) [[unsequenced]] {
+determinePublicName(FileParse* r, Boole isMacro, NULLABLE S subdir) [[unsequenced]] {
    S publicName;
-   Unt internalLen = isInternal ? 9 : 0;
+   Unt macrosLen = isMacro ? 7 : 0;
    Unt len;
    if (subdir) {
       Unt subdirLen = strlen(subdir);
-      len = r->fn.len + 1 + internalLen + subdirLen;
+      len = r->fn.len + 1 + macrosLen + subdirLen; //+1 for the slash for the subdir
       publicName = malloc(len + 1);
       publicName[len] = ZERO;
       memcpy(publicName, r->fn.c, r->fn.dirLen);
@@ -1204,17 +1229,17 @@ determinePublicName(FileParse* r, Boole isInternal, NULLABLE S subdir) [[unseque
             r->fn.c + r->fn.dirLen, 
             r->fn.len - r->fn.dirLen - 1 //-1 for the to-be overwritten "c" at the end
       );
-      if (isInternal) {
-         memcpy(publicName + r->fn.len - 1, "internal.", internalLen);
+      if (isMacro) {
+         memcpy(publicName + r->fn.len + subdirLen, "macros.", macrosLen);
       }
       publicName[len - 1] = 'h';
    } else {
-      len = r->fn.len + internalLen;
+      len = r->fn.len + macrosLen;
       publicName = malloc(len + 1);
       publicName[len] = ZERO;
       memcpy(publicName, r->fn.c, r->fn.len - 1);
-      if (isInternal) {
-         memcpy(publicName + r->fn.len - 1, "internal.", internalLen);
+      if (isMacro) {
+         memcpy(publicName + r->fn.len, "macros.", macrosLen); //-1 to overwrite the dot
       }
       publicName[len - 1] = 'h';
    }
@@ -1222,8 +1247,8 @@ determinePublicName(FileParse* r, Boole isInternal, NULLABLE S subdir) [[unseque
 }
 
 private void
-writePublicHeader(FileParse* r, S publicName) {
-   Text publicContent = buildPublicHeader(r);
+writePublicHeader(FileParse* r, Boole isMacro, S publicName) {
+   Text publicContent = isMacro ? buildMacroHeader(r) : buildPublicHeader(r);
    
    FILE* out = fopen(publicName, "w");
    fputs(publicContent.c, out);
@@ -1437,7 +1462,7 @@ private void
 writeResults(FileParse* r, NULLABLE S subdir) {
    Unt countPublics = 0;
    Unt countPrivateFns = 0; //functions only, only they need forward declarations
-   Unt countInternals = 0;
+   Unt countMacros = 0;
    for (Unt i = 0; i < r->len; i++) {
       ToplevelThing thing = r->c[i];
       
@@ -1447,17 +1472,19 @@ writeResults(FileParse* r, NULLABLE S subdir) {
          if (thing.kind == FUNCTION)
             countPrivateFns++; 
          break;
-      case INTERNAL: countInternals++; break;
       default:
+      }
+      if (thing.kind == MACRO) {
+         countMacros++;
       }
    }
    if (countPublics > 0) {
       S publicName = determinePublicName(r, false, subdir);
-      writePublicHeader(r, publicName);
+      writePublicHeader(r, false, publicName);
    }
-   if (countInternals > 0) {
-      S internalName = determinePublicName(r, true, subdir);
-      writePublicHeader(r, internalName);
+   if (countMacros > 0) {
+      S macrosName = determinePublicName(r, true, subdir);
+      writePublicHeader(r, true, macrosName);
    }
    if (countPrivateFns > 0) {
       //Need to rewrite the source file (.c) to add/update the forward fn declarations

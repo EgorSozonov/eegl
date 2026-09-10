@@ -131,6 +131,42 @@ typedef struct s_xdfenv {
    XdFile xdf1, xdf2;
 } XdfEnv;
 
+// used for diff input
+typedef struct {
+   CS externalFname;  //for external diff
+   MmFile mmfile;     //for internal diff
+} DiffInp;
+
+// used for diff DiffResult
+typedef struct {
+   CS outFname;       //for external diff
+   ArrayList dout_ga; //for internal diff
+} DiffResult;
+
+// used for recording hunks from xdiff
+typedef struct {
+   LineNr origLnum;
+   long origCount;
+   LineNr newLnum;
+   long newCount;
+} Hunk;
+
+typedef enum {
+   DIO_OUTPUT_INDICES = 0, //default
+   DIO_OUTPUT_UNIFIED = 1  //unified diff format
+} OutputFormat;
+
+// two diff inputs and one DiffResult
+typedef struct {
+   DiffInp orig;     // original file input
+   DiffInp new;      // new file input
+   DiffResult dio_diff;     //diff DiffResult
+   int dio_internal; // using internal diff
+   OutputFormat dio_outfmt;   //internal diff output format
+   int dio_ctxlen;   // unified diff context length
+} DiffIo;
+
+
 //{{{@@forward declarations
 private Unt line_len(const MmFile *m);
 private int matching_chars_iwhite(const MmFile *s1, const MmFile *s2);
@@ -365,7 +401,6 @@ private int xdl_emit_record(XdFile *xdf, long ri, CS pre, XdEmitCb* ecb);
 private XdChange * xdl_get_hunk(XdChange** xscr, XdEmitConf const* xecfg);
 private int xdl_emit_diff(XdfEnv* xe, XdChange* xscr, XdEmitCb* ecb, XdEmitConf const* xecfg);
 //}}}
-
 //{{{linematch algorithm
 
 #define LN_MAX_BUFS 8
@@ -817,62 +852,6 @@ private int diff_a_works = MAYBE; //true when "diff -a" works, false when it
                                   // doesn't work, MAYBE when not checked yet
 
 #define MAX_DIFF_ANCHORS 20
-
-// used for diff input
-typedef struct {
-   CS externalFname;  //for external diff
-   MmFile mmfile;     //for internal diff
-} DiffInp;
-
-// used for diff DiffResult
-typedef struct {
-   CS outFname;       //for external diff
-   ArrayList dout_ga; //for internal diff
-} DiffResult;
-
-// used for recording hunks from xdiff
-typedef struct {
-   LineNr origLnum;
-   long origCount;
-   LineNr newLnum;
-   long newCount;
-} Hunk;
-
-typedef enum {
-   DIO_OUTPUT_INDICES = 0, //default
-   DIO_OUTPUT_UNIFIED = 1  //unified diff format
-} OutputFormat;
-
-// two diff inputs and one DiffResult
-typedef struct {
-   DiffInp orig;     // original file input
-   DiffInp new;      // new file input
-   DiffResult dio_diff;     //diff DiffResult
-   int dio_internal; // using internal diff
-   OutputFormat dio_outfmt;   //internal diff output format
-   int dio_ctxlen;   // unified diff context length
-} DiffIo;
-
-private Unt bookIndex(Book *);
-private Unt bookIndexInTab(Book *, Tab *);
-private void diff_mark_adjust_tp(Tab *t, Unt idx, LineNr line1, LineNr line2, long amount, long amount_after);
-private void diff_check_unchanged(Tab *t, DiffBlock *dp);
-private int checkSanity(Tab* t, DiffBlock *dp);
-private int check_external_diff(DiffIo *diffio);
-private int diff_file(DiffIo *diffio);
-private int diff_equal_entry(DiffBlock *dp, Unt idx1, Unt idx2);
-private int diff_cmp(CS s1, CS s2);
-private void diff_fold_update(DiffBlock *dp, Unt skip_idx);
-private void diff_read(int iOrig, int iNew, DiffIo *dio);
-private void diff_copy_entry(DiffBlock *dprev, DiffBlock *dp, int iOrig, int iNew);
-private DiffBlock *diff_alloc_new(Tab *t, DiffBlock *dprev, DiffBlock *dp);
-private int parse_diff_ed(Byte *line, Hunk *hunk);
-private int parse_diff_unified(Byte *line, Hunk *hunk);
-private int xdiff_out_indices(long start_a, long count_a, long start_b, long count_b, void *priv);
-private int xdiff_out_unified(void *priv, MmBuffer *mb, int nbuf);
-private int parse_diffanchors(
-      CS diffAnchors, Boole check_only, Book* book, LineNr *anchors, OUT Unt *countAanchors
-);
 
 #define FOR_ALL_DIFFBLOCKS_IN_TAB(t, dp) \
     for ((dp) = (t)->first_diff; (dp) != NULL; (dp) = (dp)->df_next)

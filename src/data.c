@@ -4,7 +4,48 @@
 //## data.c: core data structures
 
 #include "eegl.h"
+#include "proto/book.h"
+#include "proto/channel.h"
 
+//{{{types
+
+// struct used in the array that's given to qsort()
+typedef struct {
+   ListItem* item;
+   int idx;
+} SortItem;
+
+// struct storing information about current sort
+typedef struct {
+   int item_compare_ic;
+   int item_compare_lc;
+   int item_compare_numeric;
+   int item_compare_numbers;
+   int item_compare_float;
+   CS item_compare_func;
+   PartiallyApplied   *item_compare_partial;
+   Bag* item_compare_selfdict;
+   Boole item_compare_func_err;
+   Boole item_compare_keep_zero;
+} SortInfo;
+
+typedef enum {
+   DICT2LIST_KEYS,
+   DICT2LIST_VALUES,
+   DICT2LIST_ITEMS,
+} Dict2List;
+
+#define MATCH_MAX_LEN FUZZY_MATCH_MAX_LEN
+typedef struct match_struct {
+   int needle_len;
+   int haystack_len;
+   int lower_needle[MATCH_MAX_LEN];     // stores codepoints
+   int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
+   double match_bonus[MATCH_MAX_LEN];
+} MatchInfo;
+
+
+//}}}
 //{{{@@forward declarations
 private void list_fix_watch(List* l, ListItem* item);
 private void registerForGc(List* l);
@@ -67,7 +108,7 @@ private int bagAddNumber_special(Bag* b, CS key, Long nr, VarTag vartype);
 private CS skip_literal_key(CS key);
 private int get_literal_key_tv(Arr(CS) arg, Var *tv);
 private DictItem * dictitem_copy(DictItem* org);
-private void bagToList(Arr(Var) argvars, Var* returnVar, dict2List what);
+private void bagToList(Arr(Var) argvars, Var* returnVar, Dict2List what);
 private void dict_free_dict(Bag *d);
 private void dict_free(Bag* d);
 private int get_float_arg(Arr(Var) argvars, OUT double* f);
@@ -121,8 +162,8 @@ private int fuzzy_match_func_compare(const void *s1, const void *s2);
 private void sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz);
 private int has_match(Byte *needle, Byte *haystack);
 private double compute_bonus_codepoint(Unt last_c, Unt c);
-private void setup_match_struct(match_struct *match, CS needle, CS haystack);
-private inline void match_row(match_struct const* match, int row, double* curr_D,
+private void setup_match_struct(MatchInfo* match, CS needle, CS haystack);
+private inline void match_row(MatchInfo* match, int row, double* curr_D,
    double* curr_M, double const* last_D, double const* last_M
 );
 private double match_positions(Byte *needle, Byte *haystack, Unt *positions);
@@ -159,9 +200,8 @@ private int json_decode_all(OUT Var* res, JsReader* reader);
 //}}}
 //{{{list
 
-
 pub
-#define GEN_TYPE_L(acc, T) typedef struct {\
+#define GEN_TYPE_L(T) typedef struct {\
    T* c;\
    Unt len;\
    Unt cap;\
@@ -169,7 +209,7 @@ pub
 } L##T;
 
 pub
-#define GEN_add_L(acc, T) acc void add_L##T (T newItem, L##T * l) {\
+#define GEN_add_L(acc, T) p##acc void add_L##T (L##T * l, T newItem) {\
    if (l->len < l->cap) {\
       l->c[l->len] = newItem;\
    } else {\
@@ -183,8 +223,8 @@ pub
 }
 
 pub
-#define GEN_create_L(T)\
-L##T * create_L##T (int initCapacity, Arena* a) {\
+#define GEN_create_L(acc, T)\
+p##acc L##T * create_L##T (int initCapacity, Arena* a) {\
    int capacity = initCapacity < 4 ? 4 : initCapacity;\
    L##T * result = allocate(L##T, a);\
    result->cap = capacity;\
@@ -1578,28 +1618,6 @@ listVar_remove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    }
 }
 
-private int item_compare(const void *s1, const void *s2);
-private int item_compare2(const void *s1, const void *s2);
-
-// struct used in the array that's given to qsort()
-typedef struct {
-   ListItem   *item;
-   int      idx;
-} SortItem;
-
-// struct storing information about current sort
-typedef struct {
-   int item_compare_ic;
-   int item_compare_lc;
-   int item_compare_numeric;
-   int item_compare_numbers;
-   int item_compare_float;
-   CS item_compare_func;
-   PartiallyApplied   *item_compare_partial;
-   Bag* item_compare_selfdict;
-   Boole item_compare_func_err;
-   Boole item_compare_keep_zero;
-} SortInfo;
 private SortInfo* sortinfo = NULL;
 #define ITEM_COMPARE_FAIL 999
 
@@ -5694,15 +5712,9 @@ bagRemove(Arr(Var) argvars, Var* returnVar, CS arg_errmsg) {
    dictitem_remove(b, di, S"remove()");
 }
 
-typedef enum {
-   DICT2LIST_KEYS,
-   DICT2LIST_VALUES,
-   DICT2LIST_ITEMS,
-} dict2List;
-
 // Turn a dict into a list.
 private void
-bagToList(Arr(Var) argvars, Var* returnVar, dict2List what) {
+bagToList(Arr(Var) argvars, Var* returnVar, Dict2List what) {
    List   *l2;
    DictItem   *di;
    EeSetItem   *hi;
@@ -8651,10 +8663,10 @@ sortFnNamesByScore(Arr(FuzzyMatch) fm, int sz) {
 //Fuzzy match 'pat' in 'str'. Return 0 if there is no match. Otherwise, return the match score.
 pub int
 fuzzyMatchStr(CS str, CS pat) {
-   int      score = FUZZY_SCORE_NONE;
-   Unt   matchpos[FUZZY_MATCH_MAX_LEN];
+   int score = FUZZY_SCORE_NONE;
+   Unt matchpos[FUZZY_MATCH_MAX_LEN];
 
-   if (str == NULL || pat == NULL)
+   if (!str || !pat)
       return score;
 
    fuzzy_match(str, pat, true, &score, matchpos, sizeof(matchpos) / sizeof(matchpos[0]));
@@ -8666,10 +8678,10 @@ fuzzyMatchStr(CS str, CS pat) {
 //Return a dynamic array of matching positions. If there is no match, return NULL.
 pub ArrayList *
 fuzzyMatchStr_with_pos(CS str, CS pat) {
-   int          score = FUZZY_SCORE_NONE;
-   ArrayList       *match_positions = NULL;
-   Unt       matches[FUZZY_MATCH_MAX_LEN];
-   int          j = 0;
+   int score = FUZZY_SCORE_NONE;
+   ArrayList* match_positions = NULL;
+   Unt matches[FUZZY_MATCH_MAX_LEN];
+   int j = 0;
 
    if (str == NULL || pat == NULL)
       return NULL;
@@ -8925,7 +8937,6 @@ theend:
 //Fuzzy match algorithm ported from https://github.com/jhawthorn/fzy.
 //This implementation extends the original by supporting multibyte characters.
 
-#define MATCH_MAX_LEN FUZZY_MATCH_MAX_LEN
 
 #define SCORE_GAP_LEADING -0.005
 #define SCORE_GAP_TRAILING -0.005
@@ -8963,14 +8974,6 @@ has_match(Byte *needle, Byte *haystack) {
    return 1;
 }
 
-typedef struct match_struct {
-   int needle_len;
-   int haystack_len;
-   int lower_needle[MATCH_MAX_LEN];     // stores codepoints
-   int lower_haystack[MATCH_MAX_LEN];   // stores codepoints
-   double match_bonus[MATCH_MAX_LEN];
-} match_struct;
-
 #define IS_WORD_SEP(c) ((c) == '-' || (c) == '_' || (c) == ' ')
 #define IS_PATH_SEP(c) ((c) == '/')
 #define IS_DOT(c)      ((c) == '.')
@@ -8991,7 +8994,7 @@ compute_bonus_codepoint(Unt last_c, Unt c) {
 }
 
 private void
-setup_match_struct(match_struct *match, CS needle, CS haystack) {
+setup_match_struct(MatchInfo* match, CS needle, CS haystack) {
    int i = 0;
    CS p = needle;
    while (*p != ZERO && i < MATCH_MAX_LEN) {
@@ -9016,7 +9019,7 @@ setup_match_struct(match_struct *match, CS needle, CS haystack) {
 }
 
 private inline void
-match_row(match_struct const* match, int row, double* curr_D,
+match_row(MatchInfo* match, int row, double* curr_D,
    double* curr_M, double const* last_D, double const* last_M
 ) {
    int n = match->needle_len;
@@ -9062,7 +9065,7 @@ match_positions(Byte *needle, Byte *haystack, Unt *positions) {
    if (!*needle)
       return SCORE_MIN;
 
-   match_struct match;
+   MatchInfo match;
    setup_match_struct(&match, needle, haystack);
 
    int n = match.needle_len;
@@ -9915,7 +9918,7 @@ parseUnsignedInt(CS pstart, OUT CS* p, OUT Unt* uj, Boole overflow_err) {
    return OK;
 }
 
-comptime enum {
+enum {
    TYPE_UNKNOWN = -1,
    TYPE_INT,
    TYPE_LONGINT,

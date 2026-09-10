@@ -4,6 +4,7 @@
 //## channel.c: implements communication through a socket or any file handle, plus logging
 
 #include "eegl.h"
+#include "proto/data.macros.h"
 
 #ifndef PROTO
 #include <netdb.h>
@@ -88,8 +89,8 @@ typedef struct sockaddr SockAddr;
 #define LOG_ALWAYS 9// must be different from true and false
 
 
-pub GEN_TYPE_L(pub, PollFd);
-GEN_add(comptime, PollFd)
+pub GEN_TYPE_L(PollFd);
+GEN_add_L(rivate, PollFd)
 
 //{{{@@forward declarations
 private void channel_free_contents(Channel* channel);

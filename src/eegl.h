@@ -5582,7 +5582,6 @@ int eeVarPrintf0(CS str, Unt str_m, char const* fmt, va_list ap, Var* tvs)
 #include "proto/term.h"
 #include "proto/ui.h"
 #include "proto/window.h"
-#include "proto/channel.h"
 
 // Not generated automatically so that we can add an extra attribute.
 void ch_log(Channel *ch, const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(2, 3);
